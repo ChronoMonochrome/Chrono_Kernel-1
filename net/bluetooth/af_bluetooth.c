@@ -30,6 +30,10 @@
 #include <net/bluetooth/bluetooth.h>
 #include <linux/proc_fs.h>
 
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
+#include <linux/android_aid.h>
+#endif
+
 #ifndef CONFIG_BT_SOCK_DEBUG
 #undef  BT_DBG
 #define BT_DBG(D...)
@@ -108,15 +112,15 @@ void bt_sock_unregister(int proto)
 }
 EXPORT_SYMBOL(bt_sock_unregister);
 
-#ifdef CONFIG_PARANOID_NETWORK
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
 static inline int current_has_bt_admin(void)
 {
-	return !current_euid();
+	return (!current_euid() || in_egroup_p(AID_NET_BT_ADMIN));
 }
 
 static inline int current_has_bt(void)
 {
-	return current_has_bt_admin();
+	return (current_has_bt_admin() || in_egroup_p(AID_NET_BT));
 }
 # else
 static inline int current_has_bt_admin(void)
