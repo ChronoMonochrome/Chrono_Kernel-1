@@ -1786,6 +1786,9 @@ static inline int is_global_init(struct task_struct *tsk)
 	return tsk->pid == 1;
 }
 
+extern int task_free_register(struct notifier_block *n);
+extern int task_free_unregister(struct notifier_block *n);
+
 /*
  * is_container_init:
  * check whether in the task is init in its own pid namespace.
