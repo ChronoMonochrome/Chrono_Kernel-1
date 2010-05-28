@@ -89,7 +89,7 @@ config ANDROID_PARANOID_NETWORK
 
 config NET_ACTIVITY_STATS
 	bool "Network activity statistics tracking"
-	default n
+	default y
 	help
 	 Network activity statistics are useful for tracking wireless
 	 modem activity on 2G, 3G, 4G wireless networks. Counts number of
@@ -234,7 +234,7 @@ source "net/batman-adv/Kconfig"
 source "net/openvswitch/Kconfig"
 
 config RPS
-	boolean "RPS"
+	boolean
 	depends on SMP && SYSFS && USE_GENERIC_SMP_HELPERS
 	default y
 
