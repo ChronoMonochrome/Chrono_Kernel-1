@@ -1253,6 +1253,9 @@ static void __init mop500_init_machine(void)
 			sizeof(mop500_ske_keypad_data));
 #endif
 
+#ifdef CONFIG_ANDROID_STE_TIMED_VIBRA
+	mop500_vibra_init();
+#endif
 	platform_device_register(&ab8500_device);
 
 	i2c_register_board_info(0, mop500_i2c0_devices,
@@ -1387,6 +1390,9 @@ static void __init hrefv60_init_machine(void)
 				sizeof(mop500_ske_keypad_data));
 #endif
 
+#ifdef CONFIG_ANDROID_STE_TIMED_VIBRA
+	mop500_vibra_init();
+#endif
 	if (machine_is_u8520()) {
 		fixup_ab8505_gpio();
 		platform_device_register(&ab8505_device);

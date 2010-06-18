@@ -26,6 +26,7 @@ obj-$(CONFIG_MACH_MOP500)	+= board-mop500.o board-mop500-sdi.o \
 				board-mop500-u8500uib.o board-mop500-pins.o \
 				board-mop500-bm.o \
 				board-pins-sleep-force.o
+obj-$(CONFIG_ANDROID_STE_TIMED_VIBRA)	+= board-mop500-vibra.o
 obj-$(CONFIG_MACH_U5500)	+= board-u5500.o board-u5500-sdi.o \
 				   board-u5500-regulators.o \
 				   board-u5500-pins.o

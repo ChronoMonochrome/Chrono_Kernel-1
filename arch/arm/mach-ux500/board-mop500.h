@@ -91,6 +91,7 @@ void __init mop500_u8500uib_init(void);
 void __init mop500_stuib_init(void);
 void __init mop500_msp_init(void);
 void __init mop500_pins_init(void);
+void __init mop500_vibra_init(void);
 void __init hrefv60_pins_init(void);
 void __init snowball_pins_init(void);
 void mop500_cyttsp_init(void);
