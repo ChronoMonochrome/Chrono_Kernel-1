@@ -47,13 +47,10 @@
 #define GPIO27_DIR_OUTPUT			0x04
 #define GPIO29_DIR_OUTPUT			0x10
 #define GPIO31_DIR_OUTPUT			0x40
-#define GPIO35_DIR_OUTPUT			0x04
 
 /* Macrocell register definitions */
 #define AB8500_CTRL3_REG			0x0200
 #define AB8500_GPIO_DIR4_REG			0x1013
-#define AB8500_GPIO_DIR5_REG			0x1014
-#define AB8500_GPIO_OUT5_REG			0x1024
 
 /* Nr of FIR/IIR-coeff banks in ANC-block */
 #define AB8500_NR_OF_ANC_COEFF_BANKS		2

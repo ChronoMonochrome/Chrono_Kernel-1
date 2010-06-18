@@ -28,7 +28,6 @@
 #include <sound/pcm.h>
 #include <sound/jack.h>
 #include <sound/pcm_params.h>
-#include <sound/soc-dapm.h>
 #include <mach/hardware.h>
 #include "ux500_pcm.h"
 #include "ux500_msp_dai.h"
@@ -48,6 +47,7 @@
 #define DRIVERMODE_CODEC_ONLY	1
 
 static struct snd_soc_jack jack;
+static bool vibra_on;
 
 /* Power-control */
 static DEFINE_MUTEX(power_lock);
@@ -936,6 +936,8 @@ int ux500_ab8500_soc_machine_drv_init(void)
 		return status;
 	}
 
+	vibra_on = false;
+
 	return 0;
 }
 
@@ -984,6 +986,34 @@ static int gpadc_convert_stable(struct ab8500_gpadc *gpadc,
 }
 
 /* Extended interface */
+
+void ux500_ab8500_audio_pwm_vibra(unsigned char speed_left_pos,
+			unsigned char speed_left_neg,
+			unsigned char speed_right_pos,
+			unsigned char speed_right_neg)
+{
+	bool vibra_on_new;
+
+	vibra_on_new = speed_left_pos | speed_left_neg | speed_right_pos | speed_right_neg;
+	if ((!vibra_on_new) && (vibra_on)) {
+		pr_debug("%s: PWM-vibra off.\n", __func__);
+		vibra_on = false;
+
+		ux500_ab8500_power_control_dec();
+	}
+
+	if ((vibra_on_new) && (!vibra_on)) {
+		pr_debug("%s: PWM-vibra on.\n", __func__);
+		vibra_on = true;
+
+		ux500_ab8500_power_control_inc();
+	}
+
+	ab8500_audio_pwm_vibra(speed_left_pos,
+			speed_left_neg,
+			speed_right_pos,
+			speed_right_neg);
+}
 
 int ux500_ab8500_audio_gpadc_measure(struct ab8500_gpadc *gpadc,
 		u8 channel, bool mode, int *value)
