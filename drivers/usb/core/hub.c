@@ -1612,12 +1612,14 @@ static void choose_devnum(struct usb_device *udev)
 		 * bus->devnum_next. */
 		devnum = find_next_zero_bit(bus->devmap.devicemap, 128,
 					    bus->devnum_next);
-		if (devnum >= 128)
+		/* Due to Hardware bugs we need to reserve a device address
+		 * for flushing of endpoints. */
+		if (devnum >= 127)
 			devnum = find_next_zero_bit(bus->devmap.devicemap,
 						    128, 1);
-		bus->devnum_next = ( devnum >= 127 ? 1 : devnum + 1);
+		bus->devnum_next = devnum >= 126 ? 1 : devnum + 1;
 	}
-	if (devnum < 128) {
+	if (devnum < 127) {
 		set_bit(devnum, bus->devmap.devicemap);
 		udev->devnum = devnum;
 	}

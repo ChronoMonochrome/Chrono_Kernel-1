@@ -108,24 +108,41 @@ static void musb_h_tx_flush_fifo(struct musb_hw_ep *ep)
 {
 	struct musb	*musb = ep->musb;
 	void __iomem	*epio = ep->regs;
+	void __iomem	*regs = ep->musb->mregs;
 	u16		csr;
-	u16		lastcsr = 0;
-	int		retries = 1000;
+	u8		addr;
+	int		retries = 3000; /* 3ms */
 
+	/*
+	 * NOTE: We are using a hack here because the FIFO-FLUSH
+	 * bit is broken in hardware! The hack consists of changing
+	 * the TXFUNCADDR to an unused device address and waiting
+	 * for any pending USB packets to hit the 3-strikes and your
+	 * gone rule.
+	 */
+	addr = musb_readb(regs, MUSB_BUSCTL_OFFSET(ep->epnum, MUSB_TXFUNCADDR));
 	csr = musb_readw(epio, MUSB_TXCSR);
 	while (csr & MUSB_TXCSR_FIFONOTEMPTY) {
-		if (csr != lastcsr)
-			dev_dbg(musb->controller, "Host TX FIFONOTEMPTY csr: %02x\n", csr);
-		lastcsr = csr;
-		csr |= MUSB_TXCSR_FLUSHFIFO;
-		musb_writew(epio, MUSB_TXCSR, csr);
+		musb_writeb(regs, MUSB_BUSCTL_OFFSET(ep->epnum,
+			MUSB_TXFUNCADDR), 127);
 		csr = musb_readw(epio, MUSB_TXCSR);
-		if (WARN(retries-- < 1,
-				"Could not flush host TX%d fifo: csr: %04x\n",
-				ep->epnum, csr))
-			return;
-		mdelay(1);
+		retries--;
+		if (retries == 0) {
+			/* can happen if the USB clocks are OFF */
+			DBG(3, "Could not flush host TX%d "
+				"fifo: csr=0x%04x\n", ep->epnum, csr);
+			break;
+		}
+		udelay(1);
 	}
+	/* clear any errors */
+	csr &= ~(MUSB_TXCSR_H_ERROR
+		| MUSB_TXCSR_H_RXSTALL
+		| MUSB_TXCSR_H_NAKTIMEOUT);
+	musb_writew(epio, MUSB_TXCSR, csr);
+
+	/* restore endpoint address */
+	musb_writeb(regs, MUSB_BUSCTL_OFFSET(ep->epnum, MUSB_TXFUNCADDR), addr);
 }
 
 static void musb_h_ep0_flush_fifo(struct musb_hw_ep *ep)
@@ -1132,7 +1149,9 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 		dev_dbg(musb->controller, "TX 3strikes on ep=%d\n", epnum);
 
 		status = -ETIMEDOUT;
-
+	} else if (tx_csr & MUSB_TXCSR_TXPKTRDY) {
+		/* BUSY - can happen during USB transfer cancel */
+		return;
 	} else if (tx_csr & MUSB_TXCSR_H_NAKTIMEOUT) {
 		dev_dbg(musb->controller, "TX end=%d device not responding\n", epnum);
 
