@@ -52,6 +52,7 @@ int call_sec_world(struct tee_session *ts, int sec_cmd)
 				virt_to_phys(ts->ta),
 				ts->cmd,
 				virt_to_phys((void *)(ts->op)),
+				virt_to_phys((void *)(&ts->err)),
 				virt_to_phys((void *)(&ts->origin)));
 	} else {
 		call_sec_rom_bridge(ISSWAPI_EXECUTE_TA,
@@ -61,6 +62,7 @@ int call_sec_world(struct tee_session *ts, int sec_cmd)
 				virt_to_phys(ts->ta),
 				ts->cmd,
 				virt_to_phys((void *)(ts->op)),
+				virt_to_phys((void *)(&ts->err)),
 				virt_to_phys((void *)(&ts->origin)));
 	}
 	break;
@@ -71,7 +73,16 @@ int call_sec_world(struct tee_session *ts, int sec_cmd)
 				ts->id,
 				NULL,
 				virt_to_phys(ts->ta),
-				virt_to_phys((void *)(&ts->origin)));
+				virt_to_phys((void *)(&ts->err)));
+
+		/* Since the TEE Client API does NOT take care of
+		 * the return value, we print a warning here if
+		 * something went wrong in secure world.
+		 */
+		if (ts->err != TEED_SUCCESS)
+				pr_warning("[%s] failed in secure world\n",
+							__func__);
+
 	break;
 	}
 
