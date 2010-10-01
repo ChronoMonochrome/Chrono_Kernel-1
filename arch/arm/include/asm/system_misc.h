@@ -24,6 +24,8 @@ extern unsigned int user_debug;
 extern void disable_hlt(void);
 extern void enable_hlt(void);
 
+void cpu_idle_wait(void);
+
 #endif /* !__ASSEMBLY__ */
 
 #endif /* __ASM_ARM_SYSTEM_MISC_H */
