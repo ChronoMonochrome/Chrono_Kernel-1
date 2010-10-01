@@ -1,9 +1,6 @@
 # Ux500 Platform Support
 
 ifdef CONFIG_SND_SOC_UX500_DEBUG
-CFLAGS_av8100_audio.o := -DDEBUG
-CFLAGS_ab3550.o := -DDEBUG
-CFLAGS_cg29xx.o := -DDEBUG
 CFLAGS_ux500_pcm.o := -DDEBUG
 CFLAGS_ux500_msp_dai.o := -DDEBUG
 CFLAGS_ux500_av8100.o := -DDEBUG
