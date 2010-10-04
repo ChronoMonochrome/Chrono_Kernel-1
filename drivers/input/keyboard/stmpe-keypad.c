@@ -327,7 +327,7 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
 		goto out_freekeypad;
 	}
 
-	input->name = "STMPE keypad";
+	input->name = "STMPE-keypad";
 	input->id.bustype = BUS_I2C;
 	input->dev.parent = &pdev->dev;
 
