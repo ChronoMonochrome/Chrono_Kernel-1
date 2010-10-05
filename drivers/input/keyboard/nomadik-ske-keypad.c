@@ -56,6 +56,7 @@
  * @board:	keypad platform device
  * @keymap:	matrix scan code table for keycodes
  * @clk:	clock structure pointer
+ * @enable:	flag to enable the driver event
  */
 struct ske_keypad {
 	int irq;
@@ -65,6 +66,7 @@ struct ske_keypad {
 	unsigned short keymap[SKE_KPD_KEYMAP_SIZE];
 	struct clk *clk;
 	spinlock_t ske_keypad_lock;
+	bool enable;
 };
 
 static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
@@ -82,6 +84,54 @@ static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
 	spin_unlock(&keypad->ske_keypad_lock);
 }
 
+static ssize_t ske_show_attr_enable(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct ske_keypad *keypad = platform_get_drvdata(pdev);
+	return sprintf(buf, "%d\n", keypad->enable);
+}
+
+static ssize_t ske_store_attr_enable(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct ske_keypad *keypad = platform_get_drvdata(pdev);
+	unsigned long val;
+
+	if (strict_strtoul(buf, 0, &val))
+		return -EINVAL;
+
+	if ((val != 0) && (val != 1))
+		return -EINVAL;
+
+	if (keypad->enable != val) {
+		keypad->enable = val ? true : false;
+		if (!keypad->enable) {
+			disable_irq(keypad->irq);
+			ske_keypad_set_bits(keypad, SKE_IMSC, ~SKE_KPIMA, 0x0);
+			clk_disable(keypad->clk);
+		} else {
+			clk_enable(keypad->clk);
+			enable_irq(keypad->irq);
+			ske_keypad_set_bits(keypad, SKE_IMSC, 0x0, SKE_KPIMA);
+		}
+	}
+	return count;
+}
+
+static DEVICE_ATTR(enable, S_IWUSR | S_IRUGO,
+	ske_show_attr_enable, ske_store_attr_enable);
+
+static struct attribute *ske_keypad_attrs[] = {
+	&dev_attr_enable.attr,
+	NULL,
+};
+
+static struct attribute_group ske_attr_group = {
+	.attrs = ske_keypad_attrs,
+};
+
 /*
  * ske_keypad_chip_init: init keypad controller configuration
  *
@@ -90,7 +140,7 @@ static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
 static int __devinit ske_keypad_chip_init(struct ske_keypad *keypad)
 {
 	u32 value;
-	int timeout = 50;
+	int timeout = keypad->board->debounce_ms;
 
 	/* check SKE_RIS to be 0 */
 	while ((readl(keypad->reg_base + SKE_RIS) != 0x00000000) && timeout--)
@@ -199,12 +249,14 @@ static irqreturn_t ske_keypad_irq(int irq, void *dev_id)
 
 static int __devinit ske_keypad_probe(struct platform_device *pdev)
 {
-	const struct ske_keypad_platform_data *plat = pdev->dev.platform_data;
 	struct ske_keypad *keypad;
+	struct resource *res = NULL;
 	struct input_dev *input;
-	struct resource *res;
+	struct clk *clk;
+	void __iomem *reg_base;
+	int ret = 0;
 	int irq;
-	int error;
+	struct ske_keypad_platform_data *plat = pdev->dev.platform_data;
 
 	if (!plat) {
 		dev_err(&pdev->dev, "invalid keypad platform data\n");
@@ -218,42 +270,43 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res) {
+	if (res == NULL) {
 		dev_err(&pdev->dev, "missing platform resources\n");
-		return -EINVAL;
+		return -ENXIO;
 	}
 
-	keypad = kzalloc(sizeof(struct ske_keypad), GFP_KERNEL);
-	input = input_allocate_device();
-	if (!keypad || !input) {
-		dev_err(&pdev->dev, "failed to allocate keypad memory\n");
-		error = -ENOMEM;
-		goto err_free_mem;
-	}
-
-	keypad->irq = irq;
-	keypad->board = plat;
-	keypad->input = input;
-	spin_lock_init(&keypad->ske_keypad_lock);
-
-	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
+	res = request_mem_region(res->start, resource_size(res), pdev->name);
+	if (!res) {
 		dev_err(&pdev->dev, "failed to request I/O memory\n");
-		error = -EBUSY;
-		goto err_free_mem;
+		return -EBUSY;
 	}
 
-	keypad->reg_base = ioremap(res->start, resource_size(res));
-	if (!keypad->reg_base) {
+	reg_base = ioremap(res->start, resource_size(res));
+	if (!reg_base) {
 		dev_err(&pdev->dev, "failed to remap I/O memory\n");
-		error = -ENXIO;
-		goto err_free_mem_region;
+		ret = -ENXIO;
+		goto out_freerequest_memregions;
 	}
 
-	keypad->clk = clk_get(&pdev->dev, NULL);
-	if (IS_ERR(keypad->clk)) {
-		dev_err(&pdev->dev, "failed to get clk\n");
-		error = PTR_ERR(keypad->clk);
-		goto err_iounmap;
+	clk = clk_get(&pdev->dev, NULL);
+	if (IS_ERR(clk)) {
+		dev_err(&pdev->dev, "failed to clk_get\n");
+		ret = PTR_ERR(clk);
+		goto out_freeioremap;
+	}
+
+	/* resources are sane; we begin allocation */
+	keypad = kzalloc(sizeof(struct ske_keypad), GFP_KERNEL);
+	if (!keypad) {
+		dev_err(&pdev->dev, "failed to allocate keypad memory\n");
+		goto out_freeclk;
+	}
+
+	input = input_allocate_device();
+	if (!input) {
+		dev_err(&pdev->dev, "failed to input_allocate_device\n");
+		ret = -ENOMEM;
+		goto out_freekeypad;
 	}
 
 	input->id.bustype = BUS_HOST;
@@ -265,60 +318,88 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 	input->keycodemax = ARRAY_SIZE(keypad->keymap);
 
 	input_set_capability(input, EV_MSC, MSC_SCAN);
+	input_set_drvdata(input, keypad);
 
 	__set_bit(EV_KEY, input->evbit);
 	if (!plat->no_autorepeat)
 		__set_bit(EV_REP, input->evbit);
 
 	matrix_keypad_build_keymap(plat->keymap_data, SKE_KEYPAD_ROW_SHIFT,
-			input->keycode, input->keybit);
+					input->keycode, input->keybit);
 
+	ret = input_register_device(input);
+	if (ret) {
+		dev_err(&pdev->dev,
+			"unable to register input device: %d\n", ret);
+		goto out_freeinput;
+	}
+
+	keypad->board	= plat;
+	keypad->irq	= irq;
+	keypad->board	= plat;
+	keypad->input	= input;
+	keypad->reg_base = reg_base;
+	keypad->clk	= clk;
+	keypad->enable	= true;
+
+	/* allocations are sane, we begin HW initialization */
 	clk_enable(keypad->clk);
 
-	/* go through board initialization helpers */
-	if (keypad->board->init)
-		keypad->board->init();
+	if (!keypad->board->init) {
+		dev_err(&pdev->dev, "NULL board initialization helper\n");
+		ret = -EINVAL;
+		goto out_unregisterinput;
+	}
 
-	error = ske_keypad_chip_init(keypad);
-	if (error) {
+	if (keypad->board->init() < 0) {
+		dev_err(&pdev->dev, "unable to set keypad board config\n");
+		ret = -EINVAL;
+		goto out_unregisterinput;
+	}
+
+	ret = ske_keypad_chip_init(keypad);
+	if (ret < 0) {
 		dev_err(&pdev->dev, "unable to init keypad hardware\n");
-		goto err_clk_disable;
+		goto out_unregisterinput;
 	}
 
-	error = request_threaded_irq(keypad->irq, NULL, ske_keypad_irq,
-				     IRQF_ONESHOT, "ske-keypad", keypad);
-	if (error) {
+	ret =  request_threaded_irq(keypad->irq, NULL, ske_keypad_irq,
+				IRQF_ONESHOT, "ske-keypad", keypad);
+	if (ret) {
 		dev_err(&pdev->dev, "allocate irq %d failed\n", keypad->irq);
-		goto err_clk_disable;
+		goto out_unregisterinput;
 	}
 
-	error = input_register_device(input);
-	if (error) {
-		dev_err(&pdev->dev,
-				"unable to register input device: %d\n", error);
-		goto err_free_irq;
+	/* sysfs implementation for dynamic enable/disable the input event */
+	ret = sysfs_create_group(&pdev->dev.kobj, &ske_attr_group);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to create sysfs entries\n");
+		goto out_free_irq;
 	}
 
-	if (plat->wakeup_enable)
-		device_init_wakeup(&pdev->dev, true);
+	device_init_wakeup(&pdev->dev, true);
 
 	platform_set_drvdata(pdev, keypad);
 
 	return 0;
 
-err_free_irq:
+out_free_irq:
 	free_irq(keypad->irq, keypad);
-err_clk_disable:
+out_unregisterinput:
+	input_unregister_device(input);
+	input = NULL;
 	clk_disable(keypad->clk);
-	clk_put(keypad->clk);
-err_iounmap:
-	iounmap(keypad->reg_base);
-err_free_mem_region:
-	release_mem_region(res->start, resource_size(res));
-err_free_mem:
+out_freeinput:
 	input_free_device(input);
+out_freekeypad:
 	kfree(keypad);
-	return error;
+out_freeclk:
+	clk_put(keypad->clk);
+out_freeioremap:
+	iounmap(reg_base);
+out_freerequest_memregions:
+	release_mem_region(res->start, resource_size(res));
+	return ret;
 }
 
 static int __devexit ske_keypad_remove(struct platform_device *pdev)
@@ -330,6 +411,7 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 
 	input_unregister_device(keypad->input);
 
+	sysfs_remove_group(&pdev->dev.kobj, &ske_attr_group);
 	clk_disable(keypad->clk);
 	clk_put(keypad->clk);
 
