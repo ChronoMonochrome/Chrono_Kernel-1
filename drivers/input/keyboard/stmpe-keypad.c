@@ -108,8 +108,50 @@ struct stmpe_keypad {
 
 	unsigned int rows;
 	unsigned int cols;
+	bool enable;
 
 	unsigned short keymap[STMPE_KEYPAD_KEYMAP_SIZE];
+};
+
+static ssize_t stmpe_show_attr_enable(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct stmpe_keypad *keypad = platform_get_drvdata(pdev);
+	return sprintf(buf, "%d\n", keypad->enable);
+}
+
+static ssize_t stmpe_store_attr_enable(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct stmpe_keypad *keypad = platform_get_drvdata(pdev);
+	struct stmpe *stmpe = keypad->stmpe;
+	unsigned long val;
+
+	if (strict_strtoul(buf, 0, &val))
+		return -EINVAL;
+
+	if (keypad->enable != val) {
+		keypad->enable = val;
+		if (!val)
+			stmpe_disable(stmpe, STMPE_BLOCK_KEYPAD);
+		else
+			stmpe_enable(stmpe, STMPE_BLOCK_KEYPAD);
+	}
+	return count;
+}
+
+static DEVICE_ATTR(enable, S_IWUSR | S_IRUGO,
+	stmpe_show_attr_enable, stmpe_store_attr_enable);
+
+static struct attribute *stmpe_keypad_attrs[] = {
+	&dev_attr_enable.attr,
+	NULL,
+};
+
+static struct attribute_group stmpe_attr_group = {
+	.attrs = stmpe_keypad_attrs,
 };
 
 static int stmpe_keypad_read_data(struct stmpe_keypad *keypad, u8 *data)
@@ -331,11 +373,21 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
 		goto out_unregisterinput;
 	}
+    /* sysfs implementation for dynamic enable/disable the input event */
+	ret = sysfs_create_group(&pdev->dev.kobj, &stmpe_attr_group);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to create sysfs entries\n");
+		goto out_free_irq;
+	}
 
+
+	keypad->enable = true;
 	platform_set_drvdata(pdev, keypad);
 
 	return 0;
 
+out_free_irq:
+	free_irq(irq, keypad);
 out_unregisterinput:
 	input_unregister_device(input);
 	input = NULL;
@@ -354,6 +406,7 @@ static int __devexit stmpe_keypad_remove(struct platform_device *pdev)
 
 	stmpe_disable(stmpe, STMPE_BLOCK_KEYPAD);
 
+	sysfs_remove_group(&pdev->dev.kobj, &stmpe_attr_group);
 	free_irq(irq, keypad);
 	input_unregister_device(keypad->input);
 	platform_set_drvdata(pdev, NULL);
