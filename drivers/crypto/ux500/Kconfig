@@ -1,0 +1,15 @@
+
+config CRYPTO_DEV_UX500_HASH
+	tristate "UX500 crypto driver for HASH block"
+	depends on ARCH_U8500
+	select CRYPTO_ALGAPI
+	select CRYPTO_HASH
+	select CRYPTO_HMAC
+        help
+          This selects the UX500 hash driver for the HASH hardware.
+          Depends on U8500/STM DMA if running in DMA mode.
+
+config CRYPTO_DEV_UX500_DEBUG_INFO
+	tristate "Enable UX500 crypto drivers debug info"
+	help
+	  This is to enable the debug info for UX500 crypto drivers.
