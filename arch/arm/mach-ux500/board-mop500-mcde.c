@@ -11,6 +11,7 @@
 #include <linux/gpio.h>
 #include <linux/mfd/ab8500/denc.h>
 #include <linux/workqueue.h>
+#include <linux/dispdev.h>
 #include <asm/mach-types.h>
 #include <video/av8100.h>
 #include <video/mcde_display.h>

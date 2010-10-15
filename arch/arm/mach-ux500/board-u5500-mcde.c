@@ -10,6 +10,7 @@
 #include <linux/kernel.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
+#include <linux/dispdev.h>
 #include <video/av8100.h>
 #include <asm/mach-types.h>
 #include <video/mcde_display.h>
@@ -341,6 +342,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	else
 #endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
 	{
+		struct mcde_fb *mfb;
 		/* Create frame buffer */
 		fbi = mcde_fb_create(ddev,
 			width, height,
@@ -356,6 +358,17 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		} else
 			dev_info(&ddev->dev, "Framebuffer created (%s)\n",
 						ddev->name);
+#ifdef CONFIG_DISPDEV
+		mfb = to_mcde_fb(fbi);
+		/* Create a dispdev overlay for this display */
+		if (dispdev_create(ddev, true, mfb->ovlys[0]) < 0)
+			dev_warn(&ddev->dev,
+				"Failed to create disp for display %s\n",
+						ddev->name);
+		else
+			dev_info(&ddev->dev, "Disp dev created for (%s)\n",
+						ddev->name);
+#endif
 	}
 
 	return 0;
@@ -527,71 +540,6 @@ struct mcde_display_device *mcde_get_main_display(void)
 #endif
 }
 EXPORT_SYMBOL(mcde_get_main_display);
-
-void hdmi_fb_onoff(struct mcde_display_device *ddev,
-		bool enable, u8 cea, u8 vesa_cea_nr)
-{
-	u16 w, h;
-	u16 vw, vh;
-	u32 rotate = FB_ROTATE_UR;
-	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
-
-	dev_dbg(&ddev->dev, "%s\n", __func__);
-	dev_dbg(&ddev->dev, "en:%d cea:%d nr:%d\n", enable, cea, vesa_cea_nr);
-
-	if (enable) {
-		struct fb_info *fbi;
-		if (ddev->enabled) {
-			dev_dbg(&ddev->dev, "Display is already enabled.\n");
-			return;
-		}
-
-		/* Create fb */
-		if (ddev->fbi == NULL) {
-#ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
-			int buffering = 3;
-#else
-			int buffering = 2;
-#endif
-
-			/* Get default values */
-			mcde_dss_get_native_resolution(ddev, &w, &h);
-			vw = w;
-			vh = h * buffering;
-
-			if (vesa_cea_nr != 0)
-				ddev->ceanr_convert(ddev, cea, vesa_cea_nr,
-						buffering, &w, &h, &vw, &vh);
-
-			fbi = mcde_fb_create(ddev, w, h, vw, vh,
-				ddev->default_pixel_format, rotate);
-
-			if (IS_ERR(fbi)) {
-				dev_warn(&ddev->dev,
-					"Failed to create fb for display %s\n",
-							ddev->name);
-				goto hdmi_fb_onoff_end;
-			} else {
-				dev_info(&ddev->dev,
-					"Framebuffer created (%s)\n",
-							ddev->name);
-			}
-			driver_data->fbdevname = (char *)dev_name(fbi->dev);
-		}
-	} else {
-		if (!ddev->enabled) {
-			dev_dbg(&ddev->dev, "Display %s is already disabled.\n",
-					ddev->name);
-			return;
-		}
-
-		mcde_fb_destroy(ddev);
-	}
-
-hdmi_fb_onoff_end:
-	return;
-}
-EXPORT_SYMBOL(hdmi_fb_onoff);
 
 module_init(init_display_devices_u5500);
 #endif
