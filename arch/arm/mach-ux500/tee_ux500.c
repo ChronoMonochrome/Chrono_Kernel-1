@@ -20,11 +20,14 @@
 static u32 call_sec_rom_bridge(u32 service_id, u32 cfg, ...)
 {
 	typedef u32 (*bridge_func)(u32, u32, va_list);
-	static bridge_func hw_sec_rom_pub_bridge;
+	bridge_func hw_sec_rom_pub_bridge;
 	va_list ap;
 	u32 ret;
 
-	if (cpu_is_u8500())
+	if (cpu_is_u8500v2())
+		hw_sec_rom_pub_bridge = (bridge_func)
+			((u32)IO_ADDRESS(U8500_BOOT_ROM_BASE + 0x17300));
+	else if (cpu_is_u8500v1())
 		hw_sec_rom_pub_bridge = (bridge_func)
 			((u32)IO_ADDRESS(U8500_BOOT_ROM_BASE + 0x18300));
 	else if (cpu_is_u5500())
