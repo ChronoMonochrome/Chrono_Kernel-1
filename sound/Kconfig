@@ -23,6 +23,46 @@ menuconfig SOUND
 	  and read <file:Documentation/sound/oss/README.modules>; the module
 	  will be called soundcore.
 
+# added for U8500 audio codec device
+config U8500_ACODEC
+	tristate "U8500 audio codec generic module (used both by SAA and ALSA)"
+	depends on STM_MSP_I2S
+	default Y
+	help
+	  Say Y here if you have a U8500 based device
+	  and want to use its audio codec chip.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called u8500mod_acodec.
+
+choice
+	prompt "Audio codec type"
+	depends on U8500_ACODEC
+	default U8500_AB8500_ED
+
+	config U8500_AB8500_ED
+	bool "U8500 ab8500 v0 audio codec"
+
+	config U8500_AB8500_CUT10
+	bool "U8500 ab8500 v1.x audio codec"
+
+endchoice
+
+choice
+	prompt "Driver mode"
+	depends on U8500_ACODEC
+	default U8500_ACODEC_DMA
+
+	config U8500_ACODEC_DMA
+	bool   "DMA mode"
+
+	config U8500_ACODEC_POLL
+	bool   "Polling mode"
+
+	config U8500_ACODEC_INTR
+	bool   "Interrupt mode"
+endchoice
+
 if SOUND
 
 config SOUND_OSS_CORE
