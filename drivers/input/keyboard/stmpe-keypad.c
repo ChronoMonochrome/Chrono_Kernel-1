@@ -373,13 +373,13 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
 		goto out_unregisterinput;
 	}
-    /* sysfs implementation for dynamic enable/disable the input event */
+
+	/* sysfs implementation for dynamic enable/disable the input event */
 	ret = sysfs_create_group(&pdev->dev.kobj, &stmpe_attr_group);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to create sysfs entries\n");
 		goto out_free_irq;
 	}
-
 
 	keypad->enable = true;
 	platform_set_drvdata(pdev, keypad);
@@ -415,9 +415,43 @@ static int __devexit stmpe_keypad_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int stmpe_keypad_suspend(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct stmpe_keypad *keypad = platform_get_drvdata(pdev);
+	struct stmpe *stmpe = keypad->stmpe;
+
+	if (!device_may_wakeup(stmpe->dev))
+		stmpe_disable(stmpe, STMPE_BLOCK_KEYPAD);
+
+	return 0;
+}
+
+static int stmpe_keypad_resume(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct stmpe_keypad *keypad = platform_get_drvdata(pdev);
+	struct stmpe *stmpe = keypad->stmpe;
+
+	if (!device_may_wakeup(stmpe->dev))
+		stmpe_enable(stmpe, STMPE_BLOCK_KEYPAD);
+
+	return 0;
+}
+
+static const struct dev_pm_ops stmpe_keypad_dev_pm_ops = {
+	.suspend = stmpe_keypad_suspend,
+	.resume = stmpe_keypad_resume,
+};
+#endif
+
 static struct platform_driver stmpe_keypad_driver = {
 	.driver.name	= "stmpe-keypad",
 	.driver.owner	= THIS_MODULE,
+#if CONFIG_PM
+	.driver.pm	= &stmpe_keypad_dev_pm_ops,
+#endif
 	.probe		= stmpe_keypad_probe,
 	.remove		= __devexit_p(stmpe_keypad_remove),
 };
