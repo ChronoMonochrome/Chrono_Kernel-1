@@ -14,6 +14,9 @@
 #include <linux/mfd/core.h>
 #include <linux/mfd/tc35892.h>
 
+#define TC35892_CLKMODE_MODCTL_SLEEP		0x0
+#define TC35892_CLKMODE_MODCTL_OPERATION	(1 << 0)
+
 /**
  * tc35892_reg_read() - read a single TC35892 register
  * @tc35892:	Device to read from
@@ -314,6 +317,42 @@ static int __devexit tc35892_remove(struct i2c_client *client)
 	return 0;
 }
 
+#if CONFIG_PM
+static int tc35892_suspend(struct device *dev)
+{
+	struct tc35892 *tc35892 = dev_get_drvdata(dev);
+	struct i2c_client *client = tc35892->i2c;
+	int ret = 0;
+
+	/* put the system to sleep mode */
+	if (!device_may_wakeup(&client->dev))
+		ret = tc35892_reg_write(tc35892, TC35892_CLKMODE,
+				TC35892_CLKMODE_MODCTL_SLEEP);
+
+	return ret;
+}
+
+static int tc35892_resume(struct device *dev)
+{
+	struct tc35892 *tc35892 = dev_get_drvdata(dev);
+	struct i2c_client *client = tc35892->i2c;
+	int ret = 0;
+
+	/* enable the system into operation */
+	if (!device_may_wakeup(&client->dev))
+		ret = tc35892_reg_write(tc35892, TC35892_CLKMODE,
+				TC35892_CLKMODE_MODCTL_OPERATION);
+
+	return ret;
+}
+
+
+static const struct dev_pm_ops tc35892_dev_pm_ops = {
+	.suspend = tc35892_suspend,
+	.resume  = tc35892_resume,
+};
+#endif
+
 static const struct i2c_device_id tc35892_id[] = {
 	{ "tc35892", 24 },
 	{ }
@@ -323,6 +362,9 @@ MODULE_DEVICE_TABLE(i2c, tc35892_id);
 static struct i2c_driver tc35892_driver = {
 	.driver.name	= "tc35892",
 	.driver.owner	= THIS_MODULE,
+#if CONFIG_PM
+	.driver.pm      = &tc35892_dev_pm_ops,
+#endif
 	.probe		= tc35892_probe,
 	.remove		= __devexit_p(tc35892_remove),
 	.id_table	= tc35892_id,
