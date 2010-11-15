@@ -317,7 +317,7 @@ static int __devexit tc35892_remove(struct i2c_client *client)
 	return 0;
 }
 
-#if CONFIG_PM
+#ifdef CONFIG_PM
 static int tc35892_suspend(struct device *dev)
 {
 	struct tc35892 *tc35892 = dev_get_drvdata(dev);
@@ -362,7 +362,7 @@ MODULE_DEVICE_TABLE(i2c, tc35892_id);
 static struct i2c_driver tc35892_driver = {
 	.driver.name	= "tc35892",
 	.driver.owner	= THIS_MODULE,
-#if CONFIG_PM
+#ifdef CONFIG_PM
 	.driver.pm      = &tc35892_dev_pm_ops,
 #endif
 	.probe		= tc35892_probe,
