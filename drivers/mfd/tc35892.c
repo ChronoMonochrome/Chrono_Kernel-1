@@ -145,6 +145,7 @@ static irqreturn_t tc35892_irq(int irq, void *data)
 	struct tc35892 *tc35892 = data;
 	int status;
 
+again:
 	status = tc35892_reg_read(tc35892, TC35892_IRQST);
 	if (status < 0)
 		return IRQ_NONE;
@@ -159,9 +160,12 @@ static irqreturn_t tc35892_irq(int irq, void *data)
 	/*
 	 * A dummy read or write (to any register) appears to be necessary to
 	 * have the last interrupt clear (for example, GPIO IC write) take
-	 * effect.
+	 * effect. In such a case, recheck for any interrupt which is still
+	 * pending.
 	 */
-	tc35892_reg_read(tc35892, TC35892_IRQST);
+	status = tc35892_reg_read(tc35892, TC35892_IRQST);
+	if (status)
+		goto again;
 
 	return IRQ_HANDLED;
 }
