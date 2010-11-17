@@ -1123,8 +1123,8 @@ static struct musb_fifo_cfg __devinitdata mode_4_cfg[] = {
 
 /* mode 5 - fits in 8KB */
 static struct musb_fifo_cfg __devinitdata mode_5_cfg[] = {
-{ .hw_ep_num =  1, .style = FIFO_TX,   .maxpacket = 512, },
-{ .hw_ep_num =  1, .style = FIFO_RX,   .maxpacket = 512, },
+{ .hw_ep_num =  1, .style = FIFO_TX,   .maxpacket = 512, .mode = BUF_DOUBLE, },
+{ .hw_ep_num =  1, .style = FIFO_RX,   .maxpacket = 512, .mode = BUF_DOUBLE },
 { .hw_ep_num =  2, .style = FIFO_TX,   .maxpacket = 512, },
 { .hw_ep_num =  2, .style = FIFO_RX,   .maxpacket = 512, },
 { .hw_ep_num =  3, .style = FIFO_TX,   .maxpacket = 512, },
