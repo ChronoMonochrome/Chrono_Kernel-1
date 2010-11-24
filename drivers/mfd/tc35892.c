@@ -234,12 +234,15 @@ static int tc35892_chip_init(struct tc35892 *tc35892)
 
 	dev_info(tc35892->dev, "manufacturer: %#x, version: %#x\n", manf, ver);
 
-	/* Put everything except the IRQ module into reset */
+	/*
+	 * Put everything except the IRQ module into reset;
+	 * also spare the GPIO module for any pin initialization
+	 * done during pre-kernel boot
+	 */
 	ret = tc35892_reg_write(tc35892, TC35892_RSTCTRL,
 				TC35892_RSTCTRL_TIMRST
 				| TC35892_RSTCTRL_ROTRST
-				| TC35892_RSTCTRL_KBDRST
-				| TC35892_RSTCTRL_GPIRST);
+				| TC35892_RSTCTRL_KBDRST);
 	if (ret < 0)
 		return ret;
 
