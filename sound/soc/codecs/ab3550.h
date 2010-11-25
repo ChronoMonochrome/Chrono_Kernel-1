@@ -13,9 +13,6 @@
 #ifndef AB3550_CODEC_REGISTERS_H
 #define AB3550_CODEC_REGISTERS_H
 
-extern struct snd_soc_dai ab3550_codec_dai[2];
-extern struct snd_soc_codec_device soc_codec_dev_ab3550;
-
 #define AB3550_SUPPORTED_RATE (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 | \
 			       SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000)
 

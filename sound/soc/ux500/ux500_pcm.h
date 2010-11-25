@@ -1,8 +1,8 @@
 /*
  * Copyright (C) ST-Ericsson SA 2010
  *
- * Author: Ola Lilja ola.o.lilja@stericsson.com,
- *         Roger Nilsson roger.xr.nilsson@stericsson.com
+ * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
+ *         Roger Nilsson <roger.xr.nilsson@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:

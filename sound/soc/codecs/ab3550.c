@@ -2,7 +2,8 @@
  * Copyright (C) ST-Ericsson SA 2010
  *
  * Author: Xie Xiaolei <xie.xiaolei@etericsson.com>,
- *         Roger Nilsson <roger.xr.nilsson@stericsson.com>
+ *         Roger Nilsson <roger.xr.nilsson@stericsson.com>,
+ *         Ola Lilja <ola.o.lilja@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -36,8 +37,11 @@
 
 #define I2C_BANK 0
 
+/* codec private data */
+struct ab3550_codec_dai_data {
+};
+
 static struct device *ab3550_dev;
-static struct snd_soc_codec *ab3550_codec;
 
 static u8 virtual_regs[] = {
 	0, 0
@@ -620,9 +624,6 @@ enum enum_link {
 	LINK = 1
 };
 
-static unsigned int ab3550_read_reg(struct snd_soc_codec *codec,
-				    unsigned int reg);
-
 static enum enum_power get_widget_power_status(enum enum_widget widget)
 {
 	u8 val;
@@ -861,11 +862,306 @@ static enum enum_widget adder_sink_translate(u8 reg)
 	}
 }
 
-/**
-   This function is only called by the SOC framework to
-   set registers associated to the mixer controls.
-*/
-static int ab3550_write_reg(struct snd_soc_codec *codec, unsigned int reg,
+static int ab3550_add_widgets(struct snd_soc_codec *codec)
+{
+	snd_soc_dapm_new_controls(codec, ab3550_dapm_widgets,
+				  ARRAY_SIZE(ab3550_dapm_widgets));
+
+	snd_soc_dapm_add_routes(codec, intercon, ARRAY_SIZE(intercon));
+
+	snd_soc_dapm_new_widgets(codec);
+	return 0;
+}
+
+static void power_for_playback(enum enum_power onoff, int ifsel)
+{
+	dev_dbg(ab3550_dev, "%s: interface %d power %s.\n", __func__,
+		ifsel, onoff == POWER_ON ? "on" : "off");
+	if (mutex_lock_interruptible(&ab3550_pm_mutex)) {
+		dev_warn(ab3550_dev,
+			 "%s: Signal received while waiting on the PM mutex.\n",
+			 __func__);
+		return;
+	}
+	power_widget_unlocked(onoff, ifsel == 0 ?
+			      widget_if0_dld_l : widget_if1_dld_l);
+	power_widget_unlocked(onoff, ifsel == 0 ?
+			      widget_if0_dld_r : widget_if1_dld_r);
+	mutex_unlock(&ab3550_pm_mutex);
+}
+
+static void power_for_capture(enum enum_power onoff, int ifsel)
+{
+	dev_dbg(ab3550_dev, "%s: interface %d power %s", __func__,
+		ifsel, onoff == POWER_ON ? "on" : "off");
+	if (mutex_lock_interruptible(&ab3550_pm_mutex)) {
+		dev_warn(ab3550_dev,
+			 "%s: Signal received while waiting on the PM mutex.\n",
+			 __func__);
+		return;
+	}
+	power_widget_unlocked(onoff, ifsel == 0 ?
+			      widget_if0_uld_l : widget_if1_uld_l);
+	power_widget_unlocked(onoff, ifsel == 0 ?
+			      widget_if0_uld_r : widget_if1_uld_r);
+	mutex_unlock(&ab3550_pm_mutex);
+}
+
+static int ab3550_add_controls(struct snd_soc_codec *codec)
+{
+	int err = 0, i, n = ARRAY_SIZE(ab3550_snd_controls);
+
+	pr_debug("%s: %s called.\n", __FILE__, __func__);
+	for (i = 0; i < n; i++) {
+		err = snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
+					  &ab3550_snd_controls[i], codec));
+		if (err < 0) {
+			pr_err("%s failed to add control No.%d of %d.\n",
+			       __func__, i, n);
+			return err;
+		}
+	}
+	return err;
+}
+
+static int ab3550_pcm_hw_params(struct snd_pcm_substream *substream,
+				struct snd_pcm_hw_params *hw_params,
+				struct snd_soc_dai *dai)
+{
+	u8 val;
+	u8 reg = dai->id == 0 ? INTERFACE0 : INTERFACE1;
+
+	if (!ab3550_dev) {
+		pr_err("%s: The AB3550 codec driver not initialized.\n",
+		       __func__);
+		return -EAGAIN;
+	}
+	dev_info(ab3550_dev, "%s called.\n", __func__);
+	switch (params_rate(hw_params)) {
+	case 8000:
+		val = I2Sx_SR_8000Hz;
+		break;
+	case 16000:
+		val = I2Sx_SR_16000Hz;
+		break;
+	case 44100:
+		val = I2Sx_SR_44100Hz;
+		break;
+	case 48000:
+		val = I2Sx_SR_48000Hz;
+		break;
+	default:
+		return -EINVAL;
+	}
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+	    !dai->capture_active : !dai->playback_active) {
+
+		mask_set_reg(reg, I2Sx_SR_MASK, val << I2Sx_SR_SHIFT);
+		if ((read_reg(reg) & I2Sx_MODE_MASK) == 0) {
+			mask_set_reg(reg, MASTER_GENx_PWR_MASK,
+				     1 << MASTER_GENx_PWR_SHIFT);
+		}
+	}
+	return 0;
+}
+
+static int ab3550_pcm_startup(struct snd_pcm_substream *substream,
+			      struct snd_soc_dai *dai)
+{
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+	    dai->playback_active : dai->capture_active) {
+
+		dev_err(ab3550_dev, "%s: A %s stream is already active.\n",
+			__func__,
+			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+			"PLAYBACK" : "CAPTURE");
+		return -EBUSY;
+	}
+	return 0;
+}
+static int ab3550_pcm_prepare(struct snd_pcm_substream *substream,
+			      struct snd_soc_dai *dai)
+{
+	dev_info(ab3550_dev, "%s called.\n", __func__);
+
+	/* Configure registers for either playback or capture */
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		power_for_playback(POWER_ON, dai->id);
+		dump_registers(__func__,
+			       dai->id == 0 ? INTERFACE0 : INTERFACE1,
+			       RX1, RX2, SPKR, EAR, -1);
+	} else {
+		power_for_capture(POWER_ON, dai->id);
+		dump_registers(__func__, MIC_BIAS1, MIC_BIAS2, MIC1_GAIN, TX1,
+			       dai->id == 0 ? INTERFACE0 : INTERFACE1, -1);
+	}
+	return 0;
+}
+
+static void ab3550_pcm_shutdown(struct snd_pcm_substream *substream,
+				struct snd_soc_dai *dai)
+{
+	u8 iface = dai->id == 0 ? INTERFACE0 : INTERFACE1;
+	dev_info(ab3550_dev, "%s called.\n", __func__);
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		power_for_playback(POWER_OFF, dai->id);
+	else
+		power_for_capture(POWER_OFF, dai->id);
+	if (!dai->playback_active && !dai->capture_active &&
+	    (read_reg(iface) & I2Sx_MODE_MASK) == 0)
+		mask_set_reg(iface, MASTER_GENx_PWR_MASK, 0);
+}
+
+static int ab3550_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
+				 unsigned int freq, int dir)
+{
+	return 0;
+}
+
+static int ab3550_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
+{
+	u8 iface = (codec_dai->id == 0) ? INTERFACE0 : INTERFACE1;
+	u8 val = 0;
+	dev_info(ab3550_dev, "%s called.\n", __func__);
+
+	switch (fmt & (SND_SOC_DAIFMT_FORMAT_MASK |
+		       SND_SOC_DAIFMT_MASTER_MASK)) {
+
+	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS:
+		val |= 1 << I2Sx_MODE_SHIFT;
+		break;
+
+	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM:
+		break;
+
+	default:
+		dev_warn(ab3550_dev, "AB3550_dai: unsupported DAI format "
+			 "0x%x\n", fmt);
+		return -EINVAL;
+	}
+	if (codec_dai->playback_active && codec_dai->capture_active) {
+		if ((read_reg(iface) & I2Sx_MODE_MASK) == val)
+			return 0;
+		else {
+			dev_err(ab3550_dev,
+				"%s: DAI format set differently "
+				"by an existing stream.\n", __func__);
+			return -EINVAL;
+		}
+	}
+	mask_set_reg(iface, I2Sx_MODE_MASK, val);
+	return 0;
+}
+
+struct snd_soc_dai_driver ab3550_dai_drv[] = {
+	{
+		.name = "ab3550-codec-dai.0",
+		.id = 0,
+		.playback = {
+			.stream_name = "AB3550.0 Playback",
+			.channels_min = 2,
+			.channels_max = 2,
+			.rates = AB3550_SUPPORTED_RATE,
+			.formats = AB3550_SUPPORTED_FMT,
+		},
+		.capture = {
+			.stream_name = "AB3550.0 Capture",
+			.channels_min = 2,
+			.channels_max = 2,
+			.rates = AB3550_SUPPORTED_RATE,
+			.formats = AB3550_SUPPORTED_FMT,
+		},
+		.ops = (struct snd_soc_dai_ops[]) {
+			{
+				.startup = ab3550_pcm_startup,
+				.prepare = ab3550_pcm_prepare,
+				.hw_params = ab3550_pcm_hw_params,
+				.shutdown = ab3550_pcm_shutdown,
+				.set_sysclk = ab3550_set_dai_sysclk,
+				.set_fmt = ab3550_set_dai_fmt,
+			}
+		},
+		.symmetric_rates = 1,
+	},
+	{
+		.name = "ab3550-codec-dai.1",
+		.id = 1,
+		.playback = {
+			.stream_name = "AB3550.1 Playback",
+			.channels_min = 2,
+			.channels_max = 2,
+			.rates = AB3550_SUPPORTED_RATE,
+			.formats = AB3550_SUPPORTED_FMT,
+		},
+		.capture = {
+			.stream_name = "AB3550.0 Capture",
+			.channels_min = 2,
+			.channels_max = 2,
+			.rates = AB3550_SUPPORTED_RATE,
+			.formats = AB3550_SUPPORTED_FMT,
+		},
+		.ops = (struct snd_soc_dai_ops[]) {
+			{
+				.startup = ab3550_pcm_startup,
+				.prepare = ab3550_pcm_prepare,
+				.hw_params = ab3550_pcm_hw_params,
+				.shutdown = ab3550_pcm_shutdown,
+				.set_sysclk = ab3550_set_dai_sysclk,
+				.set_fmt = ab3550_set_dai_fmt,
+			}
+		},
+		.symmetric_rates = 1,
+	}
+};
+EXPORT_SYMBOL_GPL(ab3550_dai_drv);
+
+static int ab3550_codec_probe(struct snd_soc_codec *codec)
+{
+	int ret;
+
+	pr_info("%s: Enter.\n", __func__);
+
+	/* Add controls */
+	if (ab3550_add_controls(codec) < 0)
+		return ret;
+
+	/* Add widgets */
+	ab3550_add_widgets(codec);
+
+	return 0;
+}
+
+static int ab3550_codec_remove(struct snd_soc_codec *codec)
+{
+	snd_soc_dapm_free(codec);
+
+	return 0;
+}
+
+#ifdef CONFIG_PM
+static int ab3550_codec_suspend(struct snd_soc_codec *codec, pm_message_t state)
+{
+	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0);
+
+	return 0;
+}
+
+static int ab3550_codec_resume(struct snd_soc_codec *codec)
+{
+	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0xff);
+
+	return 0;
+}
+#else
+#define ab3550_codec_resume NULL
+#define ab3550_codec_suspend NULL
+#endif
+
+/*
+ * This function is only called by the SOC framework to
+ * set registers associated to the mixer controls.
+ */
+static int ab3550_codec_write_reg(struct snd_soc_codec *codec, unsigned int reg,
 			    unsigned int value)
 {
 	if (reg < MIC_BIAS1 || reg > INTERFACE_SWAP)
@@ -881,10 +1177,10 @@ static int ab3550_write_reg(struct snd_soc_codec *codec, unsigned int reg,
 		diff = value ^ oldval;
 
 		/* The APGA is to be turned on/off.
-		   The power bit and the other bits in the
-		   same register won't be changed at the same time
-		   since they belong to different controls.
-		*/
+		 * The power bit and the other bits in the
+		 * same register won't be changed at the same time
+		 * since they belong to different controls.
+		 */
 		if (diff & (1 << APGAx_PWR_SHIFT)) {
 			power_widget_locked(value >> APGAx_PWR_SHIFT & 1,
 					    apga);
@@ -954,333 +1250,21 @@ static int ab3550_write_reg(struct snd_soc_codec *codec, unsigned int reg,
 	return 0;
 }
 
-static unsigned int ab3550_read_reg(struct snd_soc_codec *codec,
+static unsigned int ab3550_codec_read_reg(struct snd_soc_codec *codec,
 				    unsigned int reg)
 {
 	return read_reg(reg);
 }
 
-static int ab3550_add_widgets(struct snd_soc_codec *codec)
-{
-	snd_soc_dapm_new_controls(codec, ab3550_dapm_widgets,
-				  ARRAY_SIZE(ab3550_dapm_widgets));
-
-	snd_soc_dapm_add_routes(codec, intercon, ARRAY_SIZE(intercon));
-
-	snd_soc_dapm_new_widgets(codec);
-	return 0;
-}
-
-static void power_for_playback(enum enum_power onoff, int ifsel)
-{
-	dev_dbg(ab3550_dev, "%s: interface %d power %s.\n", __func__,
-		ifsel, onoff == POWER_ON ? "on" : "off");
-	if (mutex_lock_interruptible(&ab3550_pm_mutex)) {
-		dev_warn(ab3550_dev,
-			 "%s: Signal received while waiting on the PM mutex.\n",
-			 __func__);
-		return;
-	}
-	power_widget_unlocked(onoff, ifsel == 0 ?
-			      widget_if0_dld_l : widget_if1_dld_l);
-	power_widget_unlocked(onoff, ifsel == 0 ?
-			      widget_if0_dld_r : widget_if1_dld_r);
-	mutex_unlock(&ab3550_pm_mutex);
-}
-
-static void power_for_capture(enum enum_power onoff, int ifsel)
-{
-	dev_dbg(ab3550_dev, "%s: interface %d power %s", __func__,
-		ifsel, onoff == POWER_ON ? "on" : "off");
-	if (mutex_lock_interruptible(&ab3550_pm_mutex)) {
-		dev_warn(ab3550_dev,
-			 "%s: Signal received while waiting on the PM mutex.\n",
-			 __func__);
-		return;
-	}
-	power_widget_unlocked(onoff, ifsel == 0 ?
-			      widget_if0_uld_l : widget_if1_uld_l);
-	power_widget_unlocked(onoff, ifsel == 0 ?
-			      widget_if0_uld_r : widget_if1_uld_r);
-	mutex_unlock(&ab3550_pm_mutex);
-}
-
-static int ab3550_add_controls(struct snd_soc_codec *codec)
-{
-	int err = 0, i, n = ARRAY_SIZE(ab3550_snd_controls);
-
-	pr_debug("%s: %s called.\n", __FILE__, __func__);
-	for (i = 0; i < n; i++) {
-		err = snd_ctl_add(codec->card, snd_ctl_new1(
-					  &ab3550_snd_controls[i], codec));
-		if (err < 0) {
-			pr_err("%s failed to add control No.%d of %d.\n",
-			       __func__, i, n);
-			return err;
-		}
-	}
-	return err;
-}
-
-static int ab3550_pcm_hw_params(struct snd_pcm_substream *substream,
-				struct snd_pcm_hw_params *hw_params,
-				struct snd_soc_dai *dai)
-{
-	u8 val;
-	u8 reg = dai->id == 0 ? INTERFACE0 : INTERFACE1;
-
-	if (!ab3550_dev) {
-		pr_err("%s: The AB3550 codec driver not initialized.\n",
-		       __func__);
-		return -EAGAIN;
-	}
-	dev_info(ab3550_dev, "%s called.\n", __func__);
-	switch (params_rate(hw_params)) {
-	case 8000:
-		val = I2Sx_SR_8000Hz;
-		break;
-	case 16000:
-		val = I2Sx_SR_16000Hz;
-		break;
-	case 44100:
-		val = I2Sx_SR_44100Hz;
-		break;
-	case 48000:
-		val = I2Sx_SR_48000Hz;
-		break;
-	default:
-		return -EINVAL;
-	}
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-	    !dai->capture.active : !dai->playback.active) {
-
-		mask_set_reg(reg, I2Sx_SR_MASK, val << I2Sx_SR_SHIFT);
-		if ((read_reg(reg) & I2Sx_MODE_MASK) == 0) {
-			mask_set_reg(reg, MASTER_GENx_PWR_MASK,
-				     1 << MASTER_GENx_PWR_SHIFT);
-		}
-	}
-	return 0;
-}
-
-static int ab3550_pcm_startup(struct snd_pcm_substream *substream,
-			      struct snd_soc_dai *dai)
-{
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-	    dai->playback.active : dai->capture.active) {
-
-		dev_err(ab3550_dev, "%s: A %s stream is already active.\n",
-			__func__,
-			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-			"PLAYBACK" : "CAPTURE");
-		return -EBUSY;
-	}
-	return 0;
-}
-static int ab3550_pcm_prepare(struct snd_pcm_substream *substream,
-			      struct snd_soc_dai *dai)
-{
-	dev_info(ab3550_dev, "%s called.\n", __func__);
-
-	/* Configure registers for either playback or capture */
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		power_for_playback(POWER_ON, dai->id);
-		dump_registers(__func__,
-			       dai->id == 0 ? INTERFACE0 : INTERFACE1,
-			       RX1, RX2, SPKR, EAR, -1);
-	} else {
-		power_for_capture(POWER_ON, dai->id);
-		dump_registers(__func__, MIC_BIAS1, MIC_BIAS2, MIC1_GAIN, TX1,
-			       dai->id == 0 ? INTERFACE0 : INTERFACE1, -1);
-	}
-	return 0;
-}
-
-static void ab3550_pcm_shutdown(struct snd_pcm_substream *substream,
-				struct snd_soc_dai* dai)
-{
-	u8 iface = dai->id == 0 ? INTERFACE0 : INTERFACE1;
-	dev_info(ab3550_dev, "%s called.\n", __func__);
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		power_for_playback(POWER_OFF, dai->id);
-	} else {
-		power_for_capture(POWER_OFF, dai->id);
-	}
-	if (!dai->playback.active && !dai->capture.active &&
-	    (read_reg(iface) & I2Sx_MODE_MASK) == 0)
-		mask_set_reg(iface, MASTER_GENx_PWR_MASK, 0);
-}
-
-static int ab3550_set_dai_sysclk(struct snd_soc_dai* dai, int clk_id,
-				 unsigned int freq, int dir)
-{
-	return 0;
-}
-
-static int ab3550_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
-{
-	u8 iface = (codec_dai->id == 0) ? INTERFACE0 : INTERFACE1;
-	u8 val = 0;
-	dev_info(ab3550_dev, "%s called.\n", __func__);
-
-	switch (fmt & (SND_SOC_DAIFMT_FORMAT_MASK |
-		       SND_SOC_DAIFMT_MASTER_MASK)) {
-
-	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS:
-		val |= 1 << I2Sx_MODE_SHIFT;
-		break;
-
-	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM:
-		break;
-
-	default:
-		dev_warn(ab3550_dev, "AB3550_dai: unsupported DAI format "
-			 "0x%x\n", fmt);
-		return -EINVAL;
-	}
-	if (codec_dai->playback.active && codec_dai->capture.active) {
-		if ((read_reg(iface) & I2Sx_MODE_MASK) == val)
-			return 0;
-		else {
-			dev_err(ab3550_dev,
-				"%s: DAI format set differently "
-				"by an existing stream.\n", __func__);
-			return -EINVAL;
-		}
-	}
-	mask_set_reg(iface, I2Sx_MODE_MASK, val);
-	return 0;
-}
-
-struct snd_soc_dai ab3550_codec_dai[] = {
-	{
-		.name = "ab3550_0",
-		.id = 0,
-		.playback = {
-			.stream_name = "ab3550_0",
-			.channels_min = 2,
-			.channels_max = 2,
-			.rates = AB3550_SUPPORTED_RATE,
-			.formats = AB3550_SUPPORTED_FMT,
-		},
-		.capture = {
-			.stream_name = "ab3550_0",
-			.channels_min = 2,
-			.channels_max = 2,
-			.rates = AB3550_SUPPORTED_RATE,
-			.formats = AB3550_SUPPORTED_FMT,
-		},
-		.ops = (struct snd_soc_dai_ops[]) {
-			{
-				.startup = ab3550_pcm_startup,
-				.prepare = ab3550_pcm_prepare,
-				.hw_params = ab3550_pcm_hw_params,
-				.shutdown = ab3550_pcm_shutdown,
-				.set_sysclk = ab3550_set_dai_sysclk,
-				.set_fmt = ab3550_set_dai_fmt,
-			}
-		},
-		.symmetric_rates = 1,
-		.private_data = NULL
-	},
-	{
-		.name = "ab3550_1",
-		.id = 1,
-		.playback = {
-			.stream_name = "ab3550_1",
-			.channels_min = 2,
-			.channels_max = 2,
-			.rates = AB3550_SUPPORTED_RATE,
-			.formats = AB3550_SUPPORTED_FMT,
-		},
-		.capture = {
-			.stream_name = "ab3550_1",
-			.channels_min = 2,
-			.channels_max = 2,
-			.rates = AB3550_SUPPORTED_RATE,
-			.formats = AB3550_SUPPORTED_FMT,
-		},
-		.ops = (struct snd_soc_dai_ops[]) {
-			{
-				.startup = ab3550_pcm_startup,
-				.prepare = ab3550_pcm_prepare,
-				.hw_params = ab3550_pcm_hw_params,
-				.shutdown = ab3550_pcm_shutdown,
-				.set_sysclk = ab3550_set_dai_sysclk,
-				.set_fmt = ab3550_set_dai_fmt,
-			}
-		},
-		.symmetric_rates = 1,
-		.private_data = NULL
-	}
-};
-EXPORT_SYMBOL_GPL(ab3550_codec_dai);
-
-static int ab3550_codec_probe(struct platform_device *pdev)
-{
-	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-	int ret;
-
-	dev_info(&pdev->dev, "%s called. pdev = %p.\n", __func__, pdev);
-	if (!ab3550_codec) {
-		dev_err(&pdev->dev, "%s: Codec device not registered.\n",
-			__func__);
-		return -EAGAIN;
-	}
-	socdev->card->codec = ab3550_codec;
-	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "%s: Failed to create a new card "
-			"and new PCMs. error %d\n", __func__, ret);
-		goto err;
-	}
-	/* Add controls */
-	if (ab3550_add_controls(ab3550_codec) < 0)
-		goto err;
-	ab3550_add_widgets(ab3550_codec);
-	return 0;
-
-err:
-	snd_soc_free_pcms(socdev);
-	return ret;
-}
-
-static int ab3550_codec_remove(struct platform_device *pdev)
-{
-	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-	snd_soc_free_pcms(socdev);
-	snd_soc_dapm_free(socdev);
-	return 0;
-}
-
-#ifdef CONFIG_PM
-static int ab3550_codec_suspend(struct platform_device *pdev,
-				pm_message_t state)
-{
-	dev_dbg(ab3550_dev, "%s : pdev=%p.\n", __func__, pdev);
-	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0);
-	return 0;
-}
-
-static int ab3550_codec_resume(struct platform_device *pdev)
-{
-	dev_dbg(ab3550_dev, "%s : pdev=%p.\n", __func__, pdev);
-	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0xff);
-	return 0;
-}
-#else
-#define ab3550_codec_resume NULL
-#define ab3550_codec_suspend NULL
-#endif
-
-struct snd_soc_codec_device soc_codec_dev_ab3550 = {
+static struct snd_soc_codec_driver ab3550_codec_drv = {
 	.probe =	ab3550_codec_probe,
 	.remove =	ab3550_codec_remove,
 	.suspend =	ab3550_codec_suspend,
-	.resume =	ab3550_codec_resume
+	.resume =	ab3550_codec_resume,
+	.read =		ab3550_codec_read_reg,
+	.write =	ab3550_codec_write_reg,
 };
-
-EXPORT_SYMBOL_GPL(soc_codec_dev_ab3550);
+EXPORT_SYMBOL_GPL(ab3550_codec_drv);
 
 static inline void init_playback_route(void)
 {
@@ -1334,13 +1318,34 @@ static inline void init_capture_gain(void)
 	mask_set_reg(TX_DIGITAL_PGA1, TXDPGAx_MASK, 0x0f << TXDPGAx_SHIFT);
 }
 
-static int __init ab3550_platform_probe(struct platform_device *pdev)
+static __devinit int ab3550_codec_drv_probe(struct platform_device *pdev)
 {
+	struct ab3550_codec_dai_data *codec_drvdata;
 	int ret = 0;
-	int i;
 	u8 reg;
 
-	pr_debug("%s invoked with pdev = %p.\n", __func__, pdev);
+	pr_debug("%s: Enter.\n", __func__);
+
+	pr_info("%s: Init codec private data.\n", __func__);
+	codec_drvdata = kzalloc(sizeof(struct ab3550_codec_dai_data), GFP_KERNEL);
+	if (codec_drvdata == NULL)
+		return -ENOMEM;
+
+	/* TODO: Add private data to codec_drvdata */
+
+	platform_set_drvdata(pdev, codec_drvdata);
+
+	pr_info("%s: Register codec.\n", __func__);
+	ret = snd_soc_register_codec(&pdev->dev, &ab3550_codec_drv, &ab3550_dai_drv[0], 2);
+	if (ret < 0) {
+		pr_debug("%s: Error: Failed to register codec (ret = %d).\n",
+			__func__,
+			ret);
+		snd_soc_unregister_codec(&pdev->dev);
+		kfree(platform_get_drvdata(pdev));
+		return ret;
+	}
+
 	ab3550_dev = &pdev->dev;
 	/* Initialize the codec registers */
 	for (reg = AB3550_FIRST_REG; reg <= AB3550_LAST_REG; reg++)
@@ -1354,102 +1359,69 @@ static int __init ab3550_platform_probe(struct platform_device *pdev)
 	init_capture_gain();
 	memset(&pm_stack, 0, sizeof(pm_stack));
 
-	ab3550_codec = kzalloc(sizeof(struct snd_soc_codec), GFP_KERNEL);
-	if (ab3550_codec == NULL)
-		return -ENOMEM;
-	ab3550_codec->name = "AB3550";
-	ab3550_codec->owner = THIS_MODULE;
-	ab3550_codec->dai = ab3550_codec_dai;
-	ab3550_codec->num_dai = 2;
-	ab3550_codec->read = ab3550_read_reg;
-	ab3550_codec->write = ab3550_write_reg;
-	ab3550_codec->reg_cache_size = 0;
-	ab3550_codec->reg_cache = NULL;
-	INIT_LIST_HEAD(&ab3550_codec->dapm_widgets);
-	INIT_LIST_HEAD(&ab3550_codec->dapm_paths);
-	mutex_init(&ab3550_codec->mutex);
-	ret = snd_soc_register_codec(ab3550_codec);
-	if (ret) {
-		dev_err(ab3550_dev, "%s: Failed to register codec: %d.\n",
-			__func__, ret);
-		kfree(ab3550_codec);
-	}
-
-	for (i = 0; !ret && i < ARRAY_SIZE(ab3550_codec_dai); i++)
-		ret = snd_soc_register_dai(ab3550_codec_dai + i);
-	if (ret && i == 1) {
-		snd_soc_unregister_codec(ab3550_codec);
-		kfree(ab3550_codec);
-	}
-
-	return ret;
-}
-
-static int ab3550_platform_remove(struct platform_device *pdev)
-{
-	int i;
-
-	pr_debug("%s called.\n", __func__);
-	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0);
-	for (i = 0; i < ARRAY_SIZE(ab3550_codec_dai); i++)
-		snd_soc_unregister_dai(ab3550_codec_dai + i);
-	snd_soc_unregister_codec(ab3550_codec);
-	kfree(ab3550_codec);
-	ab3550_dev = NULL;
 	return 0;
 }
 
-static int ab3550_platform_suspend(struct platform_device *pdev,
+static int __devexit ab3550_codec_drv_remove(struct platform_device *pdev)
+{
+	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0);
+
+	ab3550_dev = NULL;
+
+	snd_soc_unregister_codec(&pdev->dev);
+	kfree(platform_get_drvdata(pdev));
+
+	return 0;
+}
+
+static int ab3550_codec_drv_suspend(struct platform_device *pdev,
 				   pm_message_t state)
 {
 	return 0;
 }
 
-static int ab3550_platform_resume(struct platform_device *pdev)
+static int ab3550_codec_drv_resume(struct platform_device *pdev)
 {
 	return 0;
 }
 
-static struct platform_driver ab3550_platform_driver = {
-	.driver		= {
-		.name		= "ab3550-codec",
-		.owner		= THIS_MODULE,
+static struct platform_driver ab3550_codec_platform_drv = {
+	.driver = {
+		.name = "ab3550-codec",
+		.owner = THIS_MODULE,
 	},
-	.probe		= ab3550_platform_probe,
-	.remove		= ab3550_platform_remove,
-	.suspend	= ab3550_platform_suspend,
-	.resume		= ab3550_platform_resume,
+	.probe = ab3550_codec_drv_probe,
+	.remove = __devexit_p(ab3550_codec_drv_remove),
+	.suspend	= ab3550_codec_drv_suspend,
+	.resume		= ab3550_codec_drv_resume,
 };
 
 
-static int __devinit ab3550_init(void)
+static int __devinit ab3550_codec_platform_drv_init(void)
 {
-	int ret1;
+	int ret;
 
-	pr_debug("%s called.\n", __func__);
+	pr_debug("%s: Enter.\n", __func__);
 
 	ab3550_dev = NULL;
-	ab3550_codec = NULL;
-	/*  Register codec platform driver. */
-	ret1 = platform_driver_register(&ab3550_platform_driver);
-	if (ret1 < 0) {
-		pr_debug("%s: Error %d: Failed to register codec platform "
-			 "driver.\n", __func__, ret1);
-	}
-	return ret1;
+
+	ret = platform_driver_register(&ab3550_codec_platform_drv);
+	if (ret != 0)
+		pr_err("Failed to register AB3550 platform driver (%d)!\n", ret);
+
+	return ret;
 }
 
-static void __devexit ab3550_exit(void)
+static void __exit ab3550_codec_platform_drv_exit(void)
 {
-	pr_debug("u8500_ab3550_init: Enter.\n");
+	pr_debug("%s: Enter.\n", __func__);
 
-	/*  Register codec platform driver. */
-	pr_debug("%s: Un-register codec platform driver.\n", __func__);
-	platform_driver_unregister(&ab3550_platform_driver);
+	platform_driver_unregister(&ab3550_codec_platform_drv);
 }
 
-module_init(ab3550_init);
-module_exit(ab3550_exit);
+
+module_init(ab3550_codec_platform_drv_init);
+module_exit(ab3550_codec_platform_drv_exit);
 
 MODULE_DESCRIPTION("AB3550 Codec driver");
 MODULE_AUTHOR("Xie Xiaolei <xie.xiaolei@stericsson.com>");

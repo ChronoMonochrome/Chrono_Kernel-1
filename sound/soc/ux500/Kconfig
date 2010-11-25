@@ -2,45 +2,40 @@
 # Ux500 SoC audio configuration
 #
 
-config SND_SOC_UX500
+menuconfig SND_SOC_UX500
 	bool "SoC Audio support for Ux500 platform"
 	depends on SND_SOC && STM_I2S && STM_MSP_I2S
 	default n
 	help
-		Say Y if you want to add support for the codecs attached to
-		the I2S of the Ux500. You will also need
-		to select the audio codec to be supported in the driver.
-
-choice
-	prompt "Codec to be used in Ux500 ASoC driver"
-	depends on SND_SOC_UX500
-	default SND_SOC_CG29XX
+		Say Y if you want to add support for the Ux500 platform.
 
 config SND_SOC_UX500_AB3550
-	bool "AB3550"
-	depends on AB3550_CORE
+	bool "Codec - AB3550"
+	depends on SND_SOC_UX500 && (UX500_SOC_DB8500 || UX500_SOC_DB5500) && AB3550_CORE
 	select SND_SOC_AB3550
+	default n
 	help
-		Say Y if you want to use AB3550 codec (Petronella MSA).
+		Say Y if you want to include AB3550 codec (Petronella MSA).
 
 config SND_SOC_UX500_CG29XX
-	bool "CG29xx"
+	bool "Codec - CG29xx"
+	depends on SND_SOC_UX500 && (UX500_SOC_DB8500 || UX500_SOC_DB5500) && MFD_CG2900_AUDIO
 	select SND_SOC_CG29XX
+	default n
 	help
-		Say Y if you want to use CG29xx codec (Combo chip).
+		Say Y if you want to include CG29xx codec (Combo chip).
 
 config SND_SOC_UX500_AV8100
-	bool "AV8100"
-	depends on AV8100
+	bool "Codec - AV8100"
+	depends on SND_SOC_UX500 && (UX500_SOC_DB8500 || UX500_SOC_DB5500) && AV8100
 	select SND_SOC_AV8100
+	default n
 	help
-		Say Y if you want to use AV8100 codec (HDMI chip).
-
-endchoice
+		Say Y if you want to include AV8100 codec (HDMI chip).
 
 config SND_SOC_UX500_DEBUG
 	bool "Activate Ux500 platform debug-mode (pr_debug)"
-	depends on SND_SOC && STM_I2S && STM_MSP_I2S
+	depends on SND_SOC_UX500
 	default n
 	help
 		Say Y if you want to add debug level prints for Ux500 code-files.

@@ -1,8 +1,8 @@
 /*
  * Copyright (C) ST-Ericsson SA 2010
  *
- * Author: Ola Lilja (ola.o.lilja@stericsson.com),
- *         Roger Nilsson (roger.xr.nilsson@stericsson.com)
+ * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
+ *         Roger Nilsson <roger.xr.nilsson@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -68,6 +68,14 @@ static struct snd_pcm_hardware ux500_pcm_hw_capture = {
 	.periods_max = UX500_PLATFORM_PERIODS_MAX,
 };
 
+static const char *stream_str(struct snd_pcm_substream *substream)
+{
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		return "Playback";
+	else
+		return "Capture";
+}
+
 static void ux500_pcm_dma_hw_free(struct device *dev,
 				struct snd_pcm_substream *substream)
 {
@@ -94,8 +102,10 @@ void ux500_pcm_dma_eot_handler(void *data)
 	struct snd_pcm_substream *substream = data;
 	struct snd_pcm_runtime *runtime;
 	struct ux500_pcm_private *private;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *dai = rtd->cpu_dai;
 
-	pr_debug("%s: Enter\n", __func__);
+	pr_err("%s: MSP %d (%s): Enter.\n", __func__, dai->id, stream_str(substream));
 
 	if (substream) {
 		runtime = substream->runtime;
@@ -115,17 +125,35 @@ static int ux500_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct ux500_pcm_private *private;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *dai = rtd->cpu_dai;
+	int ret;
 
-	pr_info("%s: Enter\n", __func__);
+	pr_debug("%s: MSP %d (%s): Enter.\n", __func__, dai->id, stream_str(substream));
 
+	pr_debug("%s: Set runtime hwparams.\n", __func__);
+	if (stream_id == SNDRV_PCM_STREAM_PLAYBACK)
+		snd_soc_set_runtime_hwparams(substream, &ux500_pcm_hw_playback);
+	else
+		snd_soc_set_runtime_hwparams(substream, &ux500_pcm_hw_capture);
+
+
+	/* ensure that buffer size is a multiple of period size */
+	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
+	if (ret < 0) {
+		pr_err("%s: Error: snd_pcm_hw_constraints failed (%d)\n",
+			__func__,
+			ret);
+		return ret;
+	}
+
+	pr_debug("%s: Init runtime private data.\n", __func__);
 	private = kzalloc(sizeof(struct ux500_pcm_private), GFP_KERNEL);
 	if (private == NULL)
 		return -ENOMEM;
-
-	private->msp_id = rtd->dai->cpu_dai->id;
+	private->msp_id = dai->id;
 	runtime->private_data = private;
 
-	pr_debug("%s: Setting HW-config\n", __func__);
+	pr_debug("%s: Set hw-struct for %s.\n", __func__, stream_str(substream));
 	runtime->hw = (stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
 		ux500_pcm_hw_playback : ux500_pcm_hw_capture;
 
@@ -332,35 +360,66 @@ static int ux500_pcm_resume(struct snd_soc_dai *dai)
 	return 0;
 }
 
-struct snd_soc_platform ux500_soc_platform = {
-	.name           = "ux500-audio",
-	.pcm_ops        = &ux500_pcm_ops,
+struct snd_soc_platform_driver ux500_pcm_soc_drv = {
+	.ops		= &ux500_pcm_ops,
 	.pcm_new        = ux500_pcm_new,
 	.pcm_free       = ux500_pcm_free,
 	.suspend        = ux500_pcm_suspend,
 	.resume         = ux500_pcm_resume,
 };
-EXPORT_SYMBOL(ux500_soc_platform);
+EXPORT_SYMBOL(ux500_pcm_soc_drv);
 
-static int __init ux500_pcm_init(void)
+static int __devinit ux500_pcm_drv_probe(struct platform_device *pdev)
 {
 	int ret;
 
-	pr_debug("%s: Register platform.\n", __func__);
-	ret = snd_soc_register_platform(&ux500_soc_platform);
-	if (ret < 0)
-		pr_debug("%s: Error: Failed to register platform!\n",
-			__func__);
+	pr_debug("%s: Register ux500-pcm SoC platform driver.\n", __func__);
+	ret = snd_soc_register_platform(&pdev->dev, &ux500_pcm_soc_drv);
+	if (ret < 0) {
+		pr_err("%s: Error: Failed to register "
+			"ux500-pcm SoC platform driver (%d)!\n",
+			__func__,
+			ret);
+		return ret;
+	}
 
 	return 0;
 }
 
-static void __exit ux500_pcm_exit(void)
+static int __devexit ux500_pcm_drv_remove(struct platform_device *pdev)
 {
-	snd_soc_unregister_platform(&ux500_soc_platform);
+	pr_debug("%s: Unregister ux500-pcm SoC platform driver.\n", __func__);
+	snd_soc_unregister_platform(&pdev->dev);
+
+	return 0;
 }
 
-module_init(ux500_pcm_init);
-module_exit(ux500_pcm_exit);
+static struct platform_driver ux500_pcm_drv = {
+	.driver = {
+			.name = "ux500-pcm",
+			.owner = THIS_MODULE,
+	},
+
+	.probe = ux500_pcm_drv_probe,
+	.remove = __devexit_p(ux500_pcm_drv_remove),
+};
+
+static int __init ux500_pcm_drv_init(void)
+{
+	pr_debug("%s: Register ux500-pcm platform driver.\n", __func__);
+
+	return platform_driver_register(&ux500_pcm_drv);
+}
+
+
+static void __exit ux500_pcm_drv_exit(void)
+{
+	pr_debug("%s: Unregister ux500-pcm platform driver.\n", __func__);
+
+	platform_driver_unregister(&ux500_pcm_drv);
+}
+
+module_init(ux500_pcm_drv_init);
+module_exit(ux500_pcm_drv_exit);
 
 MODULE_LICENSE("GPL");

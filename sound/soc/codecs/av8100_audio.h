@@ -1,7 +1,7 @@
 /*
  * Copyright (C) ST-Ericsson SA 2010
  *
- * Author: Ola Lilja ola.o.lilja@stericsson.com,
+ * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
  *         for ST-Ericsson.
  *
  * License terms:
@@ -151,10 +151,7 @@ struct hdmi_audio_settings {
 	bool				downmix_inhibit;
 };
 
-extern struct snd_soc_dai av8100_codec_dai[];
-extern struct snd_soc_codec_device soc_codec_dev_av8100;
-
-int av8100_codec_change_hdmi_audio_settings(struct snd_pcm_substream *substream,
+int av8100_codec_change_hdmi_audio_settings(struct snd_soc_dai *dai,
 					struct hdmi_audio_settings *as);
 
 #endif /* AV8100_CODEC_H */

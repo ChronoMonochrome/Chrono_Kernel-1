@@ -1,7 +1,7 @@
 /*
  * Copyright (C) ST-Ericsson SA 2010
  *
- * Author: Ola Lilja (ola.o.lilja@stericsson.com)
+ * Author: Ola Lilja <ola.o.lilja@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -29,7 +29,7 @@
 #include "av8100_audio.h"
 
 /* codec private data */
-struct av8100_codec_private_data {
+struct av8100_codec_dai_data {
 	struct hdmi_audio_settings as;
 };
 
@@ -178,43 +178,51 @@ static int av8100_codec_send_audio_infoframe(struct hdmi_audio_settings *as)
 	return 0;
 }
 
-int av8100_codec_change_hdmi_audio_settings(struct snd_pcm_substream *substream,
+static struct av8100_codec_dai_data *get_dai_data_codec(struct snd_soc_codec *codec,
+						int dai_id)
+{
+	struct av8100_codec_dai_data *dai_data = snd_soc_codec_get_drvdata(codec);
+	return &dai_data[dai_id];
+}
+
+static struct av8100_codec_dai_data *get_dai_data(struct snd_soc_dai *codec_dai)
+{
+	return get_dai_data_codec(codec_dai->codec, codec_dai->id);
+}
+
+int av8100_codec_change_hdmi_audio_settings(struct snd_soc_dai *codec_dai,
 					struct hdmi_audio_settings *as)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec *codec = rtd->socdev->card->codec;
-	struct av8100_codec_private_data *av8100_codec_priv = codec->private_data;
+	struct av8100_codec_dai_data *dai_data = get_dai_data(codec_dai);
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	av8100_codec_priv->as.audio_coding_type = as->audio_coding_type;
-	av8100_codec_priv->as.audio_channel_count = as->audio_channel_count;
-	av8100_codec_priv->as.sampling_frequency = as->sampling_frequency;
-	av8100_codec_priv->as.sample_size = as->sample_size;
-	av8100_codec_priv->as.channel_allocation = as->channel_allocation;
-	av8100_codec_priv->as.level_shift_value = as->level_shift_value;
-	av8100_codec_priv->as.downmix_inhibit = as->downmix_inhibit;
+	dai_data->as.audio_coding_type = as->audio_coding_type;
+	dai_data->as.audio_channel_count = as->audio_channel_count;
+	dai_data->as.sampling_frequency = as->sampling_frequency;
+	dai_data->as.sample_size = as->sample_size;
+	dai_data->as.channel_allocation = as->channel_allocation;
+	dai_data->as.level_shift_value = as->level_shift_value;
+	dai_data->as.downmix_inhibit = as->downmix_inhibit;
 
 	return 0;
 }
 
 static int av8100_codec_pcm_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *hw_params,
-				struct snd_soc_dai *dai)
+				struct snd_soc_dai *codec_dai)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec *codec = rtd->socdev->card->codec;
-	struct av8100_codec_private_data *av8100_codec_priv = codec->private_data;
+	struct av8100_codec_dai_data *dai_data = get_dai_data(codec_dai);
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	av8100_codec_send_audio_infoframe(&av8100_codec_priv->as);
+	av8100_codec_send_audio_infoframe(&dai_data->as);
 
 	return 0;
 }
 
 static int av8100_codec_pcm_startup(struct snd_pcm_substream *substream,
-				struct snd_soc_dai *dai)
+				struct snd_soc_dai *codec_dai)
 {
 	int ret;
 
@@ -234,7 +242,7 @@ static int av8100_codec_pcm_startup(struct snd_pcm_substream *substream,
 }
 
 static void av8100_codec_pcm_shutdown(struct snd_pcm_substream *substream,
-				struct snd_soc_dai *dai)
+				struct snd_soc_dai *codec_dai)
 {
 	pr_debug("%s: Enter.\n", __func__);
 }
@@ -301,11 +309,10 @@ static int av8100_codec_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	return 0;
 }
 
-struct snd_soc_dai av8100_codec_dai[] = {
-	{
-		.name = "av8100_0",
+struct snd_soc_dai_driver av8100_dai_drv = {
+		.name = "av8100-codec-dai",
 		.playback = {
-			.stream_name = "av8100_0",
+			.stream_name = "AV8100 Playback",
 			.channels_min = 1,
 			.channels_max = 8,
 			.rates = AV8100_SUPPORTED_RATE,
@@ -321,145 +328,124 @@ struct snd_soc_dai av8100_codec_dai[] = {
 			.set_fmt = av8100_codec_set_dai_fmt,
 			}
 		},
-	}
 };
-EXPORT_SYMBOL_GPL(av8100_codec_dai);
+EXPORT_SYMBOL_GPL(av8100_dai_drv);
 
-static unsigned int av8100_codec_read(struct snd_soc_codec *codec,
-				unsigned int ctl)
+static int av8100_codec_probe(struct snd_soc_codec *codec)
 {
-	pr_debug("%s: Enter.\n", __func__);
+	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 
 	return 0;
 }
 
-static int av8100_codec_write(struct snd_soc_codec *codec,
-			unsigned int ctl,
-			unsigned int value)
+static int av8100_codec_remove(struct snd_soc_codec *codec)
 {
-	pr_debug("%s: Enter.\n", __func__);
+	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 
 	return 0;
 }
 
-static int av8100_codec_probe(struct platform_device *pdev)
+static int av8100_codec_suspend(struct snd_soc_codec *codec)
 {
-	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-	struct snd_soc_codec *codec;
-	struct av8100_codec_private_data *av8100_codec_priv;
-	int ret;
-
-	pr_info("%s: Enter (pdev = %p).\n", __func__, pdev);
-
-	codec = kzalloc(sizeof(struct snd_soc_codec), GFP_KERNEL);
-	if (codec == NULL)
-		return -ENOMEM;
-	codec->name = "AV8100";
-	codec->owner = THIS_MODULE;
-	codec->dai = &av8100_codec_dai[0];
-	codec->num_dai = 1;
-	codec->read = av8100_codec_read;
-	codec->write = av8100_codec_write;
-	INIT_LIST_HEAD(&codec->dapm_widgets);
-	INIT_LIST_HEAD(&codec->dapm_paths);
-
-	pr_info("%s: Init codec private data..\n", __func__);
-	av8100_codec_priv = kzalloc(sizeof(struct av8100_codec_private_data), GFP_KERNEL);
-	if (av8100_codec_priv == NULL)
-		return -ENOMEM;
-
-	/* Setup hdmi_audio_settings default values */
-	av8100_codec_priv->as.audio_coding_type = AV8100_CODEC_CT_IEC60958_PCM;
-	av8100_codec_priv->as.audio_channel_count = AV8100_CODEC_CC_2CH;
-	av8100_codec_priv->as.sampling_frequency = AV8100_CODEC_SF_48KHZ;
-	av8100_codec_priv->as.sample_size = AV8100_CODEC_SS_16BIT;
-	av8100_codec_priv->as.channel_allocation = AV8100_CODEC_CA_FL_FR;
-	av8100_codec_priv->as.level_shift_value = AV8100_CODEC_LSV_0DB;
-	av8100_codec_priv->as.downmix_inhibit = false;
-
-	codec->private_data = &av8100_codec_priv;
-	mutex_init(&codec->mutex);
-	socdev->card->codec = codec;
-
-	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
-	if (ret < 0) {
-		pr_err("%s: Error: to create new PCMs. error %d\n",
-			__func__,
-			ret);
-		goto err;
-	}
-
-	return 0;
-
-err:
-	kfree(codec);
-	return ret;
-}
-
-static int av8100_codec_remove(struct platform_device *pdev)
-{
-	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-	struct snd_soc_codec *codec = socdev->card->codec;
-
-	pr_debug("%s: Enter (pdev = %p).\n", __func__, pdev);
-
-	if (!codec)
-		return 0;
-
-	snd_soc_free_pcms(socdev);
-	kfree(socdev->card->codec);
+	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 
 	return 0;
 }
 
-static int av8100_codec_suspend(struct platform_device *pdev,
-				pm_message_t state)
+static int av8100_codec_resume(struct snd_soc_codec *codec)
 {
-	pr_debug("%s: Enter (pdev = %p).\n", __func__, pdev);
+	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 
 	return 0;
 }
 
-static int av8100_codec_resume(struct platform_device *pdev)
-{
-	pr_debug("%s: Enter (pdev = %p).\n", __func__, pdev);
-
-	return 0;
-}
-
-struct snd_soc_codec_device soc_codec_dev_av8100 = {
+struct snd_soc_codec_driver av8100_codec_drv = {
 	.probe = av8100_codec_probe,
 	.remove = av8100_codec_remove,
 	.suspend = av8100_codec_suspend,
 	.resume = av8100_codec_resume
 };
-EXPORT_SYMBOL_GPL(soc_codec_dev_av8100);
 
-static int __devinit av8100_codec_init(void)
+static __devinit int av8100_codec_drv_probe(struct platform_device *pdev)
+{
+	struct av8100_codec_dai_data *dai_data;
+	int ret;
+
+	pr_debug("%s: Enter.\n", __func__);
+
+	pr_info("%s: Init codec private data..\n", __func__);
+	dai_data = kzalloc(sizeof(struct av8100_codec_dai_data), GFP_KERNEL);
+	if (dai_data == NULL)
+		return -ENOMEM;
+
+	/* Setup hdmi_audio_settings default values */
+	dai_data[0].as.audio_coding_type = AV8100_CODEC_CT_IEC60958_PCM;
+	dai_data[0].as.audio_channel_count = AV8100_CODEC_CC_2CH;
+	dai_data[0].as.sampling_frequency = AV8100_CODEC_SF_48KHZ;
+	dai_data[0].as.sample_size = AV8100_CODEC_SS_16BIT;
+	dai_data[0].as.channel_allocation = AV8100_CODEC_CA_FL_FR;
+	dai_data[0].as.level_shift_value = AV8100_CODEC_LSV_0DB;
+	dai_data[0].as.downmix_inhibit = false;
+
+	platform_set_drvdata(pdev, dai_data);
+
+	pr_info("%s: Register codec.\n", __func__);
+	ret = snd_soc_register_codec(&pdev->dev, &av8100_codec_drv, &av8100_dai_drv, 1);
+	if (ret < 0) {
+		pr_debug("%s: Error: Failed to register codec (ret = %d).\n",
+			__func__,
+			ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static int __devexit av8100_codec_drv_remove(struct platform_device *pdev)
+{
+	snd_soc_unregister_codec(&pdev->dev);
+	kfree(platform_get_drvdata(pdev));
+	return 0;
+}
+
+static const struct platform_device_id av8100_codec_platform_id[] = {
+	{ "av8100-codec", 0 },
+	{ }
+};
+MODULE_DEVICE_TABLE(platform, av8100_codec_platform_id);
+
+static struct platform_driver av8100_codec_platform_drv = {
+	.driver = {
+		.name = "av8100-codec",
+		.owner = THIS_MODULE,
+	},
+	.probe = av8100_codec_drv_probe,
+	.remove = __devexit_p(av8100_codec_drv_remove),
+	.id_table = av8100_codec_platform_id,
+};
+
+static int __devinit av8100_codec_platform_drv_init(void)
 {
 	int ret;
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	pr_info("%s: Register codec-dai.\n", __func__);
-	ret = snd_soc_register_dai(&av8100_codec_dai[0]);
-	if (ret < 0) {
-		pr_debug("%s: Error: Failed to register codec-dai (ret = %d).\n",
-			__func__,
-			ret);
+	ret = platform_driver_register(&av8100_codec_platform_drv);
+	if (ret != 0) {
+		pr_err("Failed to register AV8100 platform driver (%d)!\n", ret);
 	}
 
 	return ret;
 }
 
-static void av8100_codec_exit(void)
+static void __exit av8100_codec_platform_drv_exit(void)
 {
 	pr_debug("%s: Enter.\n", __func__);
 
-	snd_soc_unregister_dai(&av8100_codec_dai[0]);
+	platform_driver_unregister(&av8100_codec_platform_drv);
 }
 
-module_init(av8100_codec_init);
-module_exit(av8100_codec_exit);
+module_init(av8100_codec_platform_drv_init);
+module_exit(av8100_codec_platform_drv_exit);
 
-MODULE_LICENSE("GPL v2");
+MODULE_LICENSE("GPLv2");

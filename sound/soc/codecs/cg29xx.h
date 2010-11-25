@@ -15,10 +15,7 @@
 
 #include <linux/mfd/cg2900_audio.h>
 
-extern struct snd_soc_dai cg29xx_codec_dai[];
-extern struct snd_soc_codec_device soc_codec_dev_cg29xx;
-
-struct cg29xx_dai {
+struct cg29xx_codec_dai_data {
 	struct mutex mutex;
 	unsigned int rx_active;
 	unsigned int tx_active;

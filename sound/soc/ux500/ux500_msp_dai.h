@@ -1,8 +1,8 @@
 /*
  * Copyright (C) ST-Ericsson SA 2010
  *
- * Author: Ola Lilja ola.o.lilja@stericsson.com,
- *         Roger Nilsson roger.xr.nilsson@stericsson.com
+ * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
+ *         Roger Nilsson <roger.xr.nilsson@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -38,13 +38,15 @@
 #define UX500_MSP_MIN_CHANNELS		1
 #define UX500_MSP_MAX_CHANNELS		8
 
-struct ux500_msp_dai_private {
+struct ux500_platform_drvdata {
 	struct i2s_device *i2s;
 	unsigned int fmt;
 	unsigned int tx_mask;
 	unsigned int rx_mask;
 	int slots;
 	int slot_width;
+	bool playback_active;
+	bool capture_active;
 };
 
 extern struct snd_soc_dai ux500_msp_dai[UX500_NBR_OF_DAI];

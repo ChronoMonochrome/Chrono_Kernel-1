@@ -1,8 +1,8 @@
 /*
  * Copyright (C) ST-Ericsson SA 2010
  *
- * Author: Ola Lilja (ola.o.lilja@stericsson.com),
- *         Roger Nilsson (roger.xr.nilsson@stericsson.com)
+ * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
+ *         Roger Nilsson <roger.xr.nilsson@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -11,6 +11,7 @@
  * it under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation.
  */
+
 #include <linux/slab.h>
 #include <asm/dma.h>
 #include <linux/bitops.h>
@@ -23,7 +24,7 @@
 #include "ux500_msp_dai.h"
 #include "ux500_pcm.h"
 
-static struct ux500_msp_dai_private ux500_msp_dai_private[UX500_NBR_OF_DAI] = {
+static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 	{
 		.i2s = NULL,
 		.fmt = 0,
@@ -31,6 +32,8 @@ static struct ux500_msp_dai_private ux500_msp_dai_private[UX500_NBR_OF_DAI] = {
 		.tx_mask = 0x01,
 		.rx_mask = 0x01,
 		.slot_width = 16,
+		.playback_active = false,
+		.capture_active = false,
 	},
 	{
 		.i2s = NULL,
@@ -39,6 +42,8 @@ static struct ux500_msp_dai_private ux500_msp_dai_private[UX500_NBR_OF_DAI] = {
 		.tx_mask = 0x01,
 		.rx_mask = 0x01,
 		.slot_width = 16,
+		.playback_active = false,
+		.capture_active = false,
 	},
 	{
 		.i2s = NULL,
@@ -47,73 +52,22 @@ static struct ux500_msp_dai_private ux500_msp_dai_private[UX500_NBR_OF_DAI] = {
 		.tx_mask = 0x01,
 		.rx_mask = 0x01,
 		.slot_width = 16,
+		.playback_active = false,
+		.capture_active = false,
 	},
-};
-
-static int ux500_msp_dai_i2s_probe(struct i2s_device *i2s)
-{
-	pr_info("%s: Enter (chip_select = %d, i2s = %d).\n",
-		__func__,
-		(int)i2s->chip_select, (int)(i2s));
-
-	ux500_msp_dai_private[i2s->chip_select].i2s = i2s;
-
-	try_module_get(i2s->controller->dev.parent->driver->owner);
-	i2s_set_drvdata(
-		i2s,
-		(void *)&ux500_msp_dai_private[i2s->chip_select]);
-
-	return 0;
-}
-
-static int ux500_msp_dai_i2s_remove(struct i2s_device *i2s)
-{
-	struct ux500_msp_dai_private *ux500_msp_dai_private =
-		i2s_get_drvdata(i2s);
-
-	pr_debug("%s: Enter (chip_select = %d).\n",
-		__func__,
-		(int)i2s->chip_select);
-
-	ux500_msp_dai_private->i2s = NULL;
-	i2s_set_drvdata(i2s, NULL);
-
-	pr_debug("%s: Calling module_put.\n",
-		__func__);
-	module_put(i2s->controller->dev.parent->driver->owner);
-
-	return 0;
-}
-
-static const struct i2s_device_id dev_id_table[] = {
-	{ "i2s_device.0", 0, 0 },
-	{ "i2s_device.1", 0, 0 },
-	{ "i2s_device.2", 0, 0 },
-	{ },
-};
-MODULE_DEVICE_TABLE(i2s, dev_id_table);
-
-static struct i2s_driver i2sdrv_i2s = {
-	.driver = {
-		.name = "ux500_asoc_i2s",
-		.owner = THIS_MODULE,
-	},
-	.probe = ux500_msp_dai_i2s_probe,
-	.remove = __devexit_p(ux500_msp_dai_i2s_remove),
-	.id_table = dev_id_table,
 };
 
 bool ux500_msp_dai_i2s_get_underrun_status(int dai_idx)
 {
-	struct ux500_msp_dai_private *dai_private = &ux500_msp_dai_private[dai_idx];
-	int status = i2s_hw_status(dai_private->i2s->controller);
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
+	int status = i2s_hw_status(drvdata->i2s->controller);
 	return (bool)(status & TRANSMIT_UNDERRUN_ERR_INT);
 }
 
 dma_addr_t ux500_msp_dai_i2s_get_pointer(int dai_idx, int stream_id)
 {
-	struct ux500_msp_dai_private *dai_private = &ux500_msp_dai_private[dai_idx];
-	return i2s_get_pointer(dai_private->i2s->controller,
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
+	return i2s_get_pointer(drvdata->i2s->controller,
 			(stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
 				I2S_DIRECTION_TX :
 				I2S_DIRECTION_RX);
@@ -125,7 +79,7 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 				int dai_idx,
 				int stream_id)
 {
-	struct ux500_msp_dai_private *dai_private = &ux500_msp_dai_private[dai_idx];
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
 	struct i2s_message message;
 	struct i2s_device *i2s_dev;
 	int i;
@@ -138,7 +92,7 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 		sg_len,
 		sg_size);
 
-	if (!ux500_msp_dai[dai_idx].playback.active) {
+	if (!drvdata->playback_active) {
 		pr_err("%s: The I2S controller is not available."
 			"MSP index:%d\n",
 			__func__,
@@ -146,7 +100,7 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 		return ret;
 	}
 
-	i2s_dev = dai_private->i2s;
+	i2s_dev = drvdata->i2s;
 
 	sg = kzalloc(sizeof(struct scatterlist) * sg_len, GFP_ATOMIC);
 	sg_init_table(sg, sg_len);
@@ -174,161 +128,70 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 	return ret;
 }
 
-int ux500_msp_dai_i2s_send_data(void *data,
-				size_t bytes,
-				int dai_idx)
+static const char *stream_str(struct snd_pcm_substream *substream)
 {
-	struct ux500_msp_dai_private *dai_private =
-		&ux500_msp_dai_private[dai_idx];
-	struct i2s_message message;
-	struct i2s_device *i2s_dev;
-	int ret = 0;
-
-	pr_debug("%s: Enter. (MSP-index: %d, bytes = %d).\n",
-		__func__,
-		dai_idx,
-		(int)bytes);
-
-	i2s_dev = dai_private->i2s;
-
-	if (!ux500_msp_dai[dai_idx].playback.active) {
-		pr_err("%s: The I2S controller is not available."
-			"MSP index:%d\n",
-			__func__,
-			dai_idx);
-		return ret;
-	}
-
-	message.i2s_transfer_mode = I2S_TRANSFER_MODE_SINGLE_DMA;
-	message.i2s_direction = I2S_DIRECTION_TX;
-	message.txbytes = bytes;
-	message.txdata = data;
-
-	ret = i2s_transfer(i2s_dev->controller, &message);
-	if (ret < 0) {
-		pr_err("%s: Error: i2s_transfer failed. MSP index: %d\n",
-			__func__,
-			dai_idx);
-	}
-
-	return ret;
-}
-
-int ux500_msp_dai_i2s_receive_data(void *data,
-				size_t bytes,
-				int dai_idx)
-{
-	struct ux500_msp_dai_private *dai_private =
-		&ux500_msp_dai_private[dai_idx];
-	struct i2s_message message;
-	struct i2s_device *i2s_dev;
-	int ret = 0;
-
-	pr_debug("%s: Enter. (MSP-index: %d, Bytes: %d).\n",
-		__func__,
-		dai_idx,
-		(int)bytes);
-
-	i2s_dev = dai_private->i2s;
-
-	if (!ux500_msp_dai[dai_idx].capture.active) {
-		pr_err("%s: MSP controller is not available. (MSP-index: %d)\n",
-			__func__,
-			dai_idx);
-		return ret;
-	}
-
-	message.i2s_transfer_mode = I2S_TRANSFER_MODE_SINGLE_DMA;
-	message.i2s_direction = I2S_DIRECTION_RX;
-	message.rxbytes = bytes;
-	message.rxdata = data;
-	message.dma_flag = 1;
-
-	ret = i2s_transfer(i2s_dev->controller, &message);
-	if (ret < 0) {
-		pr_err("%s: i2s_transfer failed (%d)! (MSP-index: %d)\n",
-			__func__,
-			ret,
-			dai_idx);
-	}
-
-	return ret;
-}
-
-static void ux500_msp_dai_shutdown(struct snd_pcm_substream *substream,
-				struct snd_soc_dai *msp_dai)
-{
-	struct ux500_msp_dai_private *dai_private = msp_dai->private_data;
-
-	pr_info("%s: Enter (stream = %s).\n",
-		__func__,
-		substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-		"SNDRV_PCM_STREAM_PLAYBACK" : "SNDRV_PCM_STREAM_CAPTURE");
-	if (dai_private == NULL)
-		return;
-
-	pr_debug("%s: chip_select = %d.\n",
-		__func__,
-		(int)dai_private->i2s->chip_select);
-
-	if (i2s_cleanup(dai_private->i2s->controller,
-			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-			DISABLE_TRANSMIT : DISABLE_RECEIVE)) {
-
-			pr_err("%s: Error closing i2s for %s.\n",
-			       __func__,
-			       substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-			       "playback" : "capture");
-	}
-	return;
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		return "Playback";
+	else
+		return "Capture";
 }
 
 static int ux500_msp_dai_startup(struct snd_pcm_substream *substream,
-				struct snd_soc_dai *msp_dai)
+				struct snd_soc_dai *dai)
 {
-	struct ux500_msp_dai_private *dai_private =
-		&ux500_msp_dai_private[msp_dai->id];
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
+	bool mode_playback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
 
-	pr_info("%s: MSP Index: %d.\n",
-		__func__,
-		msp_dai->id);
+	pr_debug("%s: MSP %d (%s): Enter.\n", __func__, dai->id, stream_str(substream));
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-		msp_dai->playback.active : msp_dai->capture.active) {
-		pr_err("%s: A %s stream is already active.\n",
+	if ((mode_playback && drvdata->playback_active) ||
+		(!mode_playback && drvdata->capture_active)) {
+		pr_err("%s: Error: MSP %d (%s): Stream already active.\n",
 			__func__,
-			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-			"PLAYBACK" : "CAPTURE");
+			dai->id,
+			stream_str(substream));
 		return -EBUSY;
 	}
 
-	msp_dai->private_data = dai_private;
-
-	if (dai_private->i2s == NULL) {
-		pr_err("%s: MSP index: %d"
-			"i2sdrv.i2s == NULL\n",
-			__func__,
-			msp_dai->id);
-		return -1;
-	}
-
-	if (dai_private->i2s->controller == NULL) {
-		pr_err("%s: MSP index: %d"
-			"i2sdrv.i2s->controller == NULL.\n",
-			__func__,
-			msp_dai->id);
-		return -1;
-	}
+	if (mode_playback)
+		drvdata->playback_active = true;
+	else
+		drvdata->capture_active = true;
 
 	return 0;
 }
 
-static void ux500_msp_dai_setup_multichannel(
-	struct ux500_msp_dai_private *private,
-	struct msp_config *msp_config)
+static void ux500_msp_dai_shutdown(struct snd_pcm_substream *substream,
+				struct snd_soc_dai *dai)
 {
-	struct msp_multichannel_config *multi =
-		&msp_config->multichannel_config;
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
+	bool mode_playback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
+
+	pr_debug("%s: MSP %d (%s): Enter.\n", __func__, dai->id, stream_str(substream));
+
+	if (drvdata == NULL)
+		return;
+
+	if (mode_playback)
+		drvdata->playback_active = false;
+	else
+		drvdata->capture_active = false;
+
+	if (i2s_cleanup(drvdata->i2s->controller,
+			mode_playback ? DISABLE_TRANSMIT : DISABLE_RECEIVE)) {
+			pr_err("%s: Error: MSP %d (%s): Unable to close i2s.\n",
+				__func__,
+				dai->id,
+				stream_str(substream));
+	}
+
+	return;
+}
+
+static void ux500_msp_dai_setup_multichannel(struct ux500_platform_drvdata *private,
+					struct msp_config *msp_config)
+{
+	struct msp_multichannel_config *multi =	&msp_config->multichannel_config;
 
 	if (private->slots > 1) {
 		msp_config->multichannel_configured = 1;
@@ -356,10 +219,9 @@ static void ux500_msp_dai_setup_multichannel(
 	}
 }
 
-static void ux500_msp_dai_setup_frameper(
-	struct ux500_msp_dai_private *private,
-	unsigned int rate,
-	struct msp_protocol_desc *prot_desc)
+static void ux500_msp_dai_setup_frameper(struct ux500_platform_drvdata *private,
+					unsigned int rate,
+					struct msp_protocol_desc *prot_desc)
 {
 	switch (private->slots) {
 	default:
@@ -408,10 +270,9 @@ static void ux500_msp_dai_setup_frameper(
 		prot_desc->total_clocks_for_one_frame);
 }
 
-static void ux500_msp_dai_setup_framing_pcm(
-	struct ux500_msp_dai_private *private,
-	unsigned int rate,
-	struct msp_protocol_desc *prot_desc)
+static void ux500_msp_dai_setup_framing_pcm(struct ux500_platform_drvdata *private,
+					unsigned int rate,
+					struct msp_protocol_desc *prot_desc)
 {
 	u32 frame_length = MSP_FRAME_LENGTH_1;
 	prot_desc->frame_width = 0;
@@ -448,9 +309,8 @@ static void ux500_msp_dai_setup_framing_pcm(
 	ux500_msp_dai_setup_frameper(private, rate, prot_desc);
 }
 
-static void ux500_msp_dai_setup_clocking(
-	unsigned int fmt,
-	struct msp_config *msp_config)
+static void ux500_msp_dai_setup_clocking(unsigned int fmt,
+					struct msp_config *msp_config)
 {
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
@@ -491,9 +351,8 @@ static void ux500_msp_dai_setup_clocking(
 	}
 }
 
-static void ux500_msp_dai_compile_prot_desc_pcm(
-	unsigned int fmt,
-	struct msp_protocol_desc *prot_desc)
+static void ux500_msp_dai_compile_prot_desc_pcm(unsigned int fmt,
+					struct msp_protocol_desc *prot_desc)
 {
 	prot_desc->rx_phase_mode = MSP_SINGLE_PHASE;
 	prot_desc->tx_phase_mode = MSP_SINGLE_PHASE;
@@ -525,8 +384,7 @@ static void ux500_msp_dai_compile_prot_desc_pcm(
 	prot_desc->frame_sync_ignore = MSP_FRAME_SYNC_IGNORE;
 }
 
-static void ux500_msp_dai_compile_prot_desc_i2s(
-	struct msp_protocol_desc *prot_desc)
+static void ux500_msp_dai_compile_prot_desc_i2s(struct msp_protocol_desc *prot_desc)
 {
 	prot_desc->rx_phase_mode = MSP_DUAL_PHASE;
 	prot_desc->tx_phase_mode = MSP_DUAL_PHASE;
@@ -560,11 +418,10 @@ static void ux500_msp_dai_compile_prot_desc_i2s(
 	prot_desc->frame_sync_ignore = MSP_FRAME_SYNC_IGNORE;
 }
 
-static void ux500_msp_dai_compile_msp_config(
-	struct snd_pcm_substream *substream,
-	struct ux500_msp_dai_private *private,
-	unsigned int rate,
-	struct msp_config *msp_config)
+static void ux500_msp_dai_compile_msp_config(struct snd_pcm_substream *substream,
+					struct ux500_platform_drvdata *private,
+					unsigned int rate,
+					struct msp_config *msp_config)
 {
 	struct msp_protocol_desc *prot_desc = &msp_config->protocol_desc;
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -640,31 +497,24 @@ static void ux500_msp_dai_compile_msp_config(
 }
 
 static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
-				struct snd_soc_dai *msp_dai)
+				struct snd_soc_dai *dai)
 {
 	int ret = 0;
-	struct ux500_msp_dai_private *dai_private = msp_dai->private_data;
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct msp_config msp_config;
 
-	pr_debug("%s: Enter (stream = %p - %s, chip_select = %d).\n",
-		__func__,
-		substream,
-		substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-		"SNDRV_PCM_STREAM_PLAYBACK" : "SNDRV_PCM_STREAM_CAPTURE",
-		(int)dai_private->i2s->chip_select);
+	pr_debug("%s: MSP %d (%s): Enter.\n", __func__, dai->id, stream_str(substream));
 
-	pr_debug("%s: Setting up dai with rate %u.\n",
-		__func__,
-		runtime->rate);
+	pr_debug("%s: Setup dai (Rate: %u).\n", __func__, runtime->rate);
+	ux500_msp_dai_compile_msp_config(substream,
+					drvdata,
+					runtime->rate,
+					&msp_config);
 
-	ux500_msp_dai_compile_msp_config(substream, dai_private,
-		runtime->rate, &msp_config);
-
-	ret = i2s_setup(dai_private->i2s->controller, &msp_config);
+	ret = i2s_setup(drvdata->i2s->controller, &msp_config);
 	if (ret < 0) {
-		pr_err("u8500_msp_dai_prepare: i2s_setup failed! "
-		"ret = %d\n", ret);
+		pr_err("%s: Error: i2s_setup failed (ret = %d)!\n", __func__, ret);
 		goto cleanup;
 	}
 
@@ -674,24 +524,21 @@ cleanup:
 
 static int ux500_msp_dai_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params,
-				struct snd_soc_dai *msp_dai)
+				struct snd_soc_dai *dai)
 {
 	unsigned int mask, slots_active;
-	struct ux500_msp_dai_private *private = msp_dai->private_data;
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
 
-	pr_debug("%s: Enter stream: %s, MSP index: %d.\n",
+	pr_debug("%s: MSP %d (%s): Enter.\n",
 			__func__,
-			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-				"SNDRV_PCM_STREAM_PLAYBACK" :
-				"SNDRV_PCM_STREAM_CAPTURE",
-			(int)private->i2s->chip_select);
+			dai->id,
+			stream_str(substream));
 
-	switch (private->fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+	switch (drvdata->fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
 		if (params_channels(params) != 2) {
-			pr_err("%s: The I2S requires "
-				"that the channel count of the substream "
-				"is two. Substream channels: %d.\n",
+			pr_err("%s: Error: I2S requires channels = 2 "
+				"(channels = %d)!\n",
 				__func__,
 				params_channels(params));
 			return -EINVAL;
@@ -701,22 +548,20 @@ static int ux500_msp_dai_hw_params(struct snd_pcm_substream *substream,
 	case SND_SOC_DAIFMT_DSP_A:
 
 		mask = substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-			private->tx_mask :
-			private->rx_mask;
+			drvdata->tx_mask :
+			drvdata->rx_mask;
 
 		slots_active = hweight32(mask);
 
 		pr_debug("TDM slots active: %d", slots_active);
 
 		if (params_channels(params) != slots_active) {
-			pr_err("%s: The PCM format requires "
-				"that the channel count of the substream "
-				"matches the number of active slots.\n"
-				"Number of active slots: %d\n"
-				"Substream channels: %d.\n",
+			pr_err("%s: Error: PCM TDM format requires channels "
+				"to match active slots "
+				"(channels = %d, active slots = %d)!\n",
 				__func__,
-				slots_active,
-				params_channels(params));
+				params_channels(params),
+				slots_active);
 			return -EINVAL;
 		}
 		break;
@@ -728,18 +573,14 @@ static int ux500_msp_dai_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int ux500_msp_dai_set_dai_fmt(struct snd_soc_dai *msp_dai,
+static int ux500_msp_dai_set_dai_fmt(struct snd_soc_dai *dai,
 				unsigned int fmt)
 {
-	struct ux500_msp_dai_private *dai_private =
-		msp_dai->private_data;
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
 
-	pr_debug("%s: MSP index: %d: Enter.\n",
-		__func__,
-		(int)dai_private->i2s->chip_select);
+	pr_debug("%s: MSP %d: Enter.\n", __func__, dai->id);
 
-	switch (fmt &
-		(SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_MASTER_MASK)) {
+	switch (fmt & (SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_MASTER_MASK)) {
 	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS:
 	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM:
 	case SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_CBS_CFS:
@@ -749,9 +590,7 @@ static int ux500_msp_dai_set_dai_fmt(struct snd_soc_dai *msp_dai,
 		break;
 
 	default:
-		pr_err("Unsupported DAI format (0x%x)!\n",
-			fmt);
-		return -EINVAL;
+		goto unsupported_format;
 	}
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
@@ -760,40 +599,46 @@ static int ux500_msp_dai_set_dai_fmt(struct snd_soc_dai *msp_dai,
 		break;
 
 	default:
-		pr_err("Unsupported DAI format (0x%x)!\n",
-			fmt);
-		return -EINVAL;
+		goto unsupported_format;
 	}
 
-	dai_private->fmt = fmt;
+	drvdata->fmt = fmt;
 	return 0;
+
+unsupported_format:
+	pr_err("%s: MSP %d: Error: Unsupported DAI format (0x%x)!\n",
+		__func__,
+		dai->id,
+		fmt);
+	return -EINVAL;
 }
 
 static int ux500_msp_dai_set_tdm_slot(struct snd_soc_dai *dai,
-	unsigned int tx_mask,
-	unsigned int rx_mask,
-	int slots,
-	int slot_width)
+				unsigned int tx_mask,
+				unsigned int rx_mask,
+				int slots,
+				int slot_width)
 {
-	struct ux500_msp_dai_private *private =
-		dai->private_data;
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
 	unsigned int cap;
 
 	if (!(slots == 1 || slots == 2 || slots == 8 || slots == 16)) {
-		pr_err("%s - error: slots %d  Supported values are 1/2/8/16.\n",
+		pr_err("%s: Error: Unsupported slots (%d)! "
+			"Supported values are 1/2/8/16.\n",
 			__func__,
 			slots);
 		return -EINVAL;
 	}
-	private->slots = slots;
+	drvdata->slots = slots;
 
 	if (!(slot_width == 16)) {
-		pr_err("%s - error: slot_width %d  Supported value is 16.\n",
+		pr_err("%s: Error: Unsupported slots_width (%d)!. "
+			"Supported value is 16.\n",
 			__func__,
 			slot_width);
 		return -EINVAL;
 	}
-	private->slot_width = slot_width;
+	drvdata->slot_width = slot_width;
 
 	switch (slots) {
 	default:
@@ -811,28 +656,24 @@ static int ux500_msp_dai_set_tdm_slot(struct snd_soc_dai *dai,
 		break;
 	}
 
-	private->tx_mask = tx_mask & cap;
-	private->rx_mask = rx_mask & cap;
+	drvdata->tx_mask = tx_mask & cap;
+	drvdata->rx_mask = rx_mask & cap;
 
 	return 0;
 }
 
 static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 				int cmd,
-				struct snd_soc_dai *msp_dai)
+				struct snd_soc_dai *dai)
 {
 	int ret = 0;
-	struct ux500_msp_dai_private *dai_private =
-		msp_dai->private_data;
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
 
-	pr_debug("%s: Enter (stream = %p - %s,"
-		" chip_select = %d, cmd = %d).\n",
+	pr_debug("%s: MSP %d (%s): Enter (chip_select = %d, cmd = %d).\n",
 		__func__,
-		substream,
-		substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-			"SNDRV_PCM_STREAM_PLAYBACK" :
-			"SNDRV_PCM_STREAM_CAPTURE",
-		(int)dai_private->i2s->chip_select,
+		dai->id,
+		stream_str(substream),
+		(int)drvdata->i2s->chip_select,
 		cmd);
 
 	switch (cmd) {
@@ -858,9 +699,9 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 	return ret;
 }
 
-struct snd_soc_dai ux500_msp_dai[UX500_NBR_OF_DAI] = {
+static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 	{
-		.name = "ux500_i2s-0",
+		.name = "ux500-msp.0",
 		.id = 0,
 		.suspend = NULL,
 		.resume = NULL,
@@ -888,10 +729,9 @@ struct snd_soc_dai ux500_msp_dai[UX500_NBR_OF_DAI] = {
 			.hw_params = ux500_msp_dai_hw_params,
 			}
 		},
-		.private_data = &ux500_msp_dai_private[0],
 	},
 	{
-		.name = "ux500_i2s-1",
+		.name = "ux500-msp.1",
 		.id = 1,
 		.suspend = NULL,
 		.resume = NULL,
@@ -919,10 +759,9 @@ struct snd_soc_dai ux500_msp_dai[UX500_NBR_OF_DAI] = {
 			.hw_params = ux500_msp_dai_hw_params,
 			}
 		},
-		.private_data = &ux500_msp_dai_private[1],
 	},
 	{
-		.name = "ux500_i2s-2",
+		.name = "ux500-msp.2",
 		.id = 2,
 		.suspend = NULL,
 		.resume = NULL,
@@ -950,51 +789,92 @@ struct snd_soc_dai ux500_msp_dai[UX500_NBR_OF_DAI] = {
 			.hw_params = ux500_msp_dai_hw_params,
 			}
 		},
-		.private_data = &ux500_msp_dai_private[2],
 	},
 };
-EXPORT_SYMBOL(ux500_msp_dai);
+EXPORT_SYMBOL(ux500_msp_dai_drv);
 
-static int __init ux500_msp_dai_init(void)
+static int __devinit ux500_msp_drv_probe(struct i2s_device *i2s_dev)
 {
-	int i;
 	int ret = 0;
+	struct ux500_platform_drvdata *drvdata;
+	int msp_idx = i2s_dev->chip_select;
 
-	ret = i2s_register_driver(&i2sdrv_i2s);
+	pr_debug("%s: Enter (idx: %d, dev-name: %s, drv-name: %s).\n",
+		__func__,
+		msp_idx,
+		dev_name(&i2s_dev->dev),
+		i2s_dev->dev.driver->name);
+
+	drvdata = &platform_drvdata[msp_idx];
+	drvdata->i2s = i2s_dev;
+
+	try_module_get(i2s_dev->controller->dev.parent->driver->owner);
+	i2s_set_drvdata(i2s_dev, drvdata);
+
+	pr_debug("%s: Register MSP %d.\n", __func__, msp_idx);
+	ret = snd_soc_register_dai(&i2s_dev->dev, &ux500_msp_dai_drv[msp_idx]);
 	if (ret < 0) {
-		pr_err("%s: Unable to register as a I2S driver.\n",
-			__func__);
+		pr_err("Error: %s: Failed to register MSP %d.\n", __func__, msp_idx);
 		return ret;
-	}
-
-	for (i = 0; i < UX500_NBR_OF_DAI; i++) {
-		pr_debug("%s: Register MSP dai %d.\n",
-			__func__,
-			i);
-		ret = snd_soc_register_dai(&ux500_msp_dai[i]);
-		if (ret < 0) {
-			pr_err("Error: Failed to register MSP dai %d.\n",
-				i);
-			return ret;
-		}
 	}
 
 	return ret;
 }
 
-static void __exit ux500_msp_dai_exit(void)
+static int ux500_msp_drv_remove(struct i2s_device *i2s_dev)
 {
-	int i;
+	struct ux500_platform_drvdata *drvdata = i2s_get_drvdata(i2s_dev);
+	int msp_idx = i2s_dev->chip_select;
 
+	pr_debug("%s: Enter (idx: %d, dev-name: %s, drv-name: %s).\n",
+		__func__,
+		msp_idx,
+		dev_name(&i2s_dev->dev),
+		i2s_dev->dev.driver->name);
+
+	drvdata->i2s = NULL;
+	i2s_set_drvdata(i2s_dev, NULL);
+
+	pr_debug("%s: Calling module_put.\n", __func__);
+	module_put(i2s_dev->controller->dev.parent->driver->owner);
+
+	pr_debug("%s: Unregister ux500-pcm SoC platform driver.\n", __func__);
+	snd_soc_unregister_dais(&i2s_dev->dev, ARRAY_SIZE(ux500_msp_dai_drv));
+
+	return 0;
+}
+
+static const struct i2s_device_id dev_id_table[] = {
+	{ "i2s_device.0", 0, 0 },
+	{ "i2s_device.1", 1, 0 },
+	{ "i2s_device.2", 2, 0 },
+	{ },
+};
+MODULE_DEVICE_TABLE(i2s, dev_id_table);
+
+static struct i2s_driver i2sdrv_i2s = {
+	.driver = {
+		.name = "i2s",
+		.owner = THIS_MODULE,
+	},
+	.probe = ux500_msp_drv_probe,
+	.remove = __devexit_p(ux500_msp_drv_remove),
+	.id_table = dev_id_table,
+};
+
+static int __init ux500_msp_init(void)
+{
+	return i2s_register_driver(&i2sdrv_i2s);
+}
+
+static void __exit ux500_msp_exit(void)
+{
 	pr_debug("%s: Enter.\n", __func__);
 
 	i2s_unregister_driver(&i2sdrv_i2s);
-
-	for (i = 0; i < UX500_NBR_OF_DAI; i++)
-		snd_soc_unregister_dai(&ux500_msp_dai[i]);
 }
 
-module_init(ux500_msp_dai_init);
-module_exit(ux500_msp_dai_exit);
+module_init(ux500_msp_init);
+module_exit(ux500_msp_exit);
 
-MODULE_LICENSE("GPL v2");
+MODULE_LICENSE("GPLv2");
