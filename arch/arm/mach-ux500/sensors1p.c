@@ -212,8 +212,8 @@ static int __init sensors1p_probe(struct platform_device *pdev)
 		goto err_proximity_gpio;
 	}
 
-	s->hal.startup_time = s->hal.startup_time;
-	s->proximity.startup_time = s->proximity.startup_time;
+	s->hal.startup_time = c->hal.startup_time;
+	s->proximity.startup_time = c->proximity.startup_time;
 
 
 	s->hal.regulator = regulator_get(&pdev->dev, c->hal.regulator);
