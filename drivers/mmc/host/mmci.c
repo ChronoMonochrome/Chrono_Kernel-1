@@ -712,14 +712,14 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
 	}
 }
 
-static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int remain)
+static int mmci_pio_read(struct mmci_host *host, char *buffer,
+			 unsigned int remain, u32 status)
 {
 	void __iomem *base = host->base;
 	char *ptr = buffer;
-	u32 status;
 	int host_remain = host->size;
 
-	do {
+	while (status & MCI_RXDATAAVLBL) {
 		int count = host_remain - (readl(base + MMCIFIFOCNT) << 2);
 
 		if (count > remain)
@@ -738,25 +738,27 @@ static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int rema
 			break;
 
 		status = readl(base + MMCISTATUS);
-	} while (status & MCI_RXDATAAVLBL);
+	}
 
 	return ptr - buffer;
 }
 
-static int mmci_pio_write(struct mmci_host *host, char *buffer, unsigned int remain, u32 status)
+static int mmci_pio_write(struct mmci_host *host, char *buffer,
+			  unsigned int remain, u32 status)
 {
 	struct variant_data *variant = host->variant;
 	void __iomem *base = host->base;
-	char *ptr = buffer;
 
 	unsigned int data_left = host->size;
 	unsigned int count, maxcnt;
+	char *ptr = buffer;
+
+	while (status & MCI_TXFIFOHALFEMPTY) {
+		unsigned int count;
 	char *cache_ptr;
 	int i;
 
-	do {
-		maxcnt = status & MCI_TXFIFOEMPTY ?
-			 variant->fifosize : variant->fifohalfsize;
+		count = min(remain, variant->fifohalfsize);
 
 		/*
 		 * A write to the FIFO must always be done of 4 bytes aligned
@@ -797,7 +799,6 @@ static int mmci_pio_write(struct mmci_host *host, char *buffer, unsigned int rem
 				break;
 		}
 
-		count = min(remain, maxcnt);
 
 		if (!(count % 4) || (data_left == count)) {
 			/*
@@ -837,7 +838,7 @@ static int mmci_pio_write(struct mmci_host *host, char *buffer, unsigned int rem
 			break;
 
 		status = readl(base + MMCISTATUS);
-	} while (status & MCI_TXFIFOHALFEMPTY);
+	};
 
 	return ptr - buffer;
 }
@@ -882,7 +883,7 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
 
 		len = 0;
 		if (status & MCI_RXACTIVE)
-			len = mmci_pio_read(host, buffer, remain);
+			len = mmci_pio_read(host, buffer, remain, status);
 		if (status & MCI_TXACTIVE)
 			len = mmci_pio_write(host, buffer, remain, status);
 
