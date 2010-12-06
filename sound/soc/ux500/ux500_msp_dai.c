@@ -85,6 +85,12 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 	int i;
 	int ret = 0;
 	struct scatterlist *sg;
+	bool playback_req_valid =
+		(drvdata->playback_active &&
+			stream_id == SNDRV_PCM_STREAM_PLAYBACK);
+	bool capture_req_valid =
+		(drvdata->capture_active &&
+			stream_id == SNDRV_PCM_STREAM_CAPTURE);
 
 	pr_debug("%s: Enter (MSP Index: %u, SG-length: %u, SG-size: %u).\n",
 		__func__,
@@ -92,7 +98,7 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 		sg_len,
 		sg_size);
 
-	if (!drvdata->playback_active) {
+	if (!playback_req_valid && !capture_req_valid) {
 		pr_err("%s: The I2S controller is not available."
 			"MSP index:%d\n",
 			__func__,
