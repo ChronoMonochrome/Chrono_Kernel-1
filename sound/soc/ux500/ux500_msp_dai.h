@@ -19,7 +19,7 @@
 #include <linux/spinlock.h>
 #include <linux/i2s/i2s.h>
 
-#define UX500_NBR_OF_DAI 3
+#define UX500_NBR_OF_DAI	4
 
 #define UX500_I2S_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |	\
 			SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000)

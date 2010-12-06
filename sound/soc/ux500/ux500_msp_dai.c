@@ -15,7 +15,7 @@
 #include <linux/slab.h>
 #include <asm/dma.h>
 #include <linux/bitops.h>
-
+#include <mach/hardware.h>
 #include <mach/msp.h>
 #include <linux/i2s/i2s.h>
 
@@ -25,6 +25,17 @@
 #include "ux500_pcm.h"
 
 static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
+	{
+		.i2s = NULL,
+		.fmt = 0,
+		.slots = 1,
+		.tx_mask = 0x01,
+		.rx_mask = 0x01,
+		.slot_width = 16,
+		.playback_active = false,
+		.capture_active = false,
+		.configured = 0,
+	},
 	{
 		.i2s = NULL,
 		.fmt = 0,
@@ -815,6 +826,36 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 			}
 		},
 	},
+	{
+		.name = "ux500-msp.3",
+		.id = 3,
+		.suspend = NULL,
+		.resume = NULL,
+		.playback = {
+			.channels_min = UX500_MSP_MIN_CHANNELS,
+			.channels_max = UX500_MSP_MAX_CHANNELS,
+			.rates = UX500_I2S_RATES,
+			.formats = UX500_I2S_FORMATS,
+		},
+		.capture = {
+			.channels_min = UX500_MSP_MIN_CHANNELS,
+			.channels_max = UX500_MSP_MAX_CHANNELS,
+			.rates = UX500_I2S_RATES,
+			.formats = UX500_I2S_FORMATS,
+		},
+		.ops = (struct snd_soc_dai_ops[]) {
+			{
+			.set_sysclk = NULL,
+			.set_fmt = ux500_msp_dai_set_dai_fmt,
+			.set_tdm_slot = ux500_msp_dai_set_tdm_slot,
+			.startup = ux500_msp_dai_startup,
+			.shutdown = ux500_msp_dai_shutdown,
+			.prepare = ux500_msp_dai_prepare,
+			.trigger = ux500_msp_dai_trigger,
+			.hw_params = ux500_msp_dai_hw_params,
+			}
+		},
+	},
 };
 EXPORT_SYMBOL(ux500_msp_dai_drv);
 
@@ -869,34 +910,60 @@ static int ux500_msp_drv_remove(struct i2s_device *i2s_dev)
 	return 0;
 }
 
-static const struct i2s_device_id dev_id_table[] = {
+static const struct i2s_device_id dev_id_table_v1[] = {
 	{ "i2s_device.0", 0, 0 },
 	{ "i2s_device.1", 1, 0 },
 	{ "i2s_device.2", 2, 0 },
 	{ },
 };
-MODULE_DEVICE_TABLE(i2s, dev_id_table);
+MODULE_DEVICE_TABLE(i2s, dev_id_table_v1);
 
-static struct i2s_driver i2sdrv_i2s = {
+static const struct i2s_device_id dev_id_table_v2[] = {
+	{ "i2s_device.0", 0, 0 },
+	{ "i2s_device.1", 1, 0 },
+	{ "i2s_device.2", 2, 0 },
+	{ "i2s_device.3", 2, 0 },
+	{ },
+};
+MODULE_DEVICE_TABLE(i2s, dev_id_table_v2);
+
+
+static struct i2s_driver i2sdrv_i2s_v1 = {
 	.driver = {
 		.name = "i2s",
 		.owner = THIS_MODULE,
 	},
 	.probe = ux500_msp_drv_probe,
 	.remove = __devexit_p(ux500_msp_drv_remove),
-	.id_table = dev_id_table,
+	.id_table = dev_id_table_v1,
+};
+
+static struct i2s_driver i2sdrv_i2s_v2 = {
+	.driver = {
+		.name = "i2s",
+		.owner = THIS_MODULE,
+	},
+	.probe = ux500_msp_drv_probe,
+	.remove = __devexit_p(ux500_msp_drv_remove),
+	.id_table = dev_id_table_v2,
 };
 
 static int __init ux500_msp_init(void)
 {
-	return i2s_register_driver(&i2sdrv_i2s);
+	if (cpu_is_u8500ed() || cpu_is_u8500v1() || cpu_is_u8500v11())
+		return i2s_register_driver(&i2sdrv_i2s_v1);
+	else
+		return i2s_register_driver(&i2sdrv_i2s_v2);
 }
 
 static void __exit ux500_msp_exit(void)
 {
 	pr_debug("%s: Enter.\n", __func__);
 
-	i2s_unregister_driver(&i2sdrv_i2s);
+	if (cpu_is_u8500ed() || cpu_is_u8500v1() || cpu_is_u8500v11())
+		i2s_unregister_driver(&i2sdrv_i2s_v1);
+	else
+		i2s_unregister_driver(&i2sdrv_i2s_v2);
 }
 
 module_init(ux500_msp_init);
