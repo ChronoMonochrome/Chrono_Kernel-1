@@ -34,6 +34,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.slot_width = 16,
 		.playback_active = false,
 		.capture_active = false,
+		.configured = 0,
 	},
 	{
 		.i2s = NULL,
@@ -44,6 +45,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.slot_width = 16,
 		.playback_active = false,
 		.capture_active = false,
+		.configured = 0,
 	},
 	{
 		.i2s = NULL,
@@ -54,6 +56,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.slot_width = 16,
 		.playback_active = false,
 		.capture_active = false,
+		.configured = 0,
 	},
 };
 
@@ -191,7 +194,10 @@ static void ux500_msp_dai_shutdown(struct snd_pcm_substream *substream,
 				stream_str(substream));
 	}
 
-	return;
+	if (mode_playback)
+		drvdata->configured &= ~PLAYBACK_CONFIGURED;
+	else
+		drvdata->configured &= ~CAPTURE_CONFIGURED;
 }
 
 static void ux500_msp_dai_setup_multichannel(struct ux500_platform_drvdata *private,
@@ -509,8 +515,18 @@ static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
 	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct msp_config msp_config;
+	bool mode_playback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
 
 	pr_debug("%s: MSP %d (%s): Enter.\n", __func__, dai->id, stream_str(substream));
+
+	/* If already configured -> not errors reported */
+	if (mode_playback) {
+		if (drvdata->configured & PLAYBACK_CONFIGURED)
+			goto cleanup;
+	} else {
+		if (drvdata->configured & CAPTURE_CONFIGURED)
+			goto cleanup;
+	}
 
 	pr_debug("%s: Setup dai (Rate: %u).\n", __func__, runtime->rate);
 	ux500_msp_dai_compile_msp_config(substream,
@@ -523,6 +539,9 @@ static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
 		pr_err("%s: Error: i2s_setup failed (ret = %d)!\n", __func__, ret);
 		goto cleanup;
 	}
+
+	drvdata->configured |= mode_playback ?
+			PLAYBACK_CONFIGURED : CAPTURE_CONFIGURED;
 
 cleanup:
 	return ret;

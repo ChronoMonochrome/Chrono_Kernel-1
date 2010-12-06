@@ -38,6 +38,9 @@
 #define UX500_MSP_MIN_CHANNELS		1
 #define UX500_MSP_MAX_CHANNELS		8
 
+#define PLAYBACK_CONFIGURED		1
+#define CAPTURE_CONFIGURED		2
+
 struct ux500_platform_drvdata {
 	struct i2s_device *i2s;
 	unsigned int fmt;
@@ -47,6 +50,7 @@ struct ux500_platform_drvdata {
 	int slot_width;
 	bool playback_active;
 	bool capture_active;
+	u8 configured;
 };
 
 extern struct snd_soc_dai ux500_msp_dai[UX500_NBR_OF_DAI];
