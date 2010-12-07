@@ -273,7 +273,6 @@ static int __exit sensors1p_remove(struct platform_device *pdev)
 }
 
 static struct platform_driver sensors1p_driver = {
-	.probe = sensors1p_probe,
 	.remove = __exit_p(sensors1p_remove),
 	.driver = {
 		.name = "sensors1p",
@@ -283,7 +282,7 @@ static struct platform_driver sensors1p_driver = {
 
 static int __init sensors1p_init(void)
 {
-	return platform_driver_register(&sensors1p_driver);
+	return platform_driver_probe(&sensors1p_driver, sensors1p_probe);
 }
 
 static void __exit sensors1p_exit(void)
