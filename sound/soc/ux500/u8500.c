@@ -24,6 +24,10 @@
 #include "ux500_ab3550.h"
 #endif
 
+#ifdef CONFIG_SND_SOC_UX500_AB8500
+#include "ux500_ab8500.h"
+#endif
+
 #ifdef CONFIG_SND_SOC_UX500_AV8100
 #include "ux500_av8100.h"
 #endif
@@ -101,6 +105,28 @@ struct snd_soc_dai_link u8500_dai_links[] = {
 	.ops = ux500_ab3550_ops,
 	},
 	#endif
+	#ifdef CONFIG_SND_SOC_UX500_AB8500
+	{
+	.name = "ab8500_0",
+	.stream_name = "ab8500_0",
+	.cpu_dai_name = "i2s.1",
+	.codec_dai_name = "ab8500-codec-dai.0",
+	.platform_name = "ux500-pcm.0",
+	.codec_name = "ab8500-codec.0",
+	.init = ux500_ab8500_machine_codec_init,
+	.ops = ux500_ab8500_ops,
+	},
+	{
+	.name = "ab8500_1",
+	.stream_name = "ab8500_1",
+	.cpu_dai_name = "i2s.3",
+	.codec_dai_name = "ab8500-codec-dai.1",
+	.platform_name = "ux500-pcm.0",
+	.codec_name = "ab8500-codec.0",
+	.init = NULL,
+	.ops = ux500_ab8500_ops,
+	},
+	#endif
 	#ifdef CONFIG_SND_SOC_UX500_CG29XX
 	{
 	.name = "cg29xx_0",
@@ -124,7 +150,7 @@ static struct snd_soc_card u8500_drvdata = {
 
 static int __init u8500_soc_init(void)
 {
-	int ret = 0;
+	int ret;
 
 	pr_debug("%s: Enter.\n", __func__);
 
@@ -138,6 +164,15 @@ static int __init u8500_soc_init(void)
 	pr_debug("%s: Register device to generate a probe for CG29xx codec.\n",
 		__func__);
 	platform_device_register(&cg29xx_codec);
+	#endif
+
+	#ifdef CONFIG_SND_SOC_UX500_AB8500
+	pr_debug("%s: Calling init-function for AB8500 machine driver.\n",
+		__func__);
+	ret = ux500_ab8500_soc_machine_drv_init();
+	if (ret)
+		pr_err("%s: ux500_ab8500_soc_machine_drv_init failed (%d).\n",
+			__func__, ret);
 	#endif
 
 	pr_debug("%s: Register device to generate a probe for Ux500-pcm platform.\n",
@@ -186,6 +221,12 @@ static int __init u8500_soc_init(void)
 static void __exit u8500_soc_exit(void)
 {
 	pr_debug("%s: Enter.\n", __func__);
+
+	#ifdef CONFIG_SND_SOC_UX500_AB8500
+	pr_debug("%s: Calling exit-function for AB8500 machine driver.\n",
+		__func__);
+	ux500_ab8500_soc_machine_drv_cleanup();
+	#endif
 
 	pr_debug("%s: Unregister platform device (%s).\n",
 		__func__,

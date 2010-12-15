@@ -3,7 +3,10 @@
 ifdef CONFIG_SND_SOC_UX500_DEBUG
 CFLAGS_ux500_pcm.o := -DDEBUG
 CFLAGS_ux500_msp_dai.o := -DDEBUG
+CFLAGS_ux500_ab3550.o := -DDEBUG
+CFLAGS_ux500_ab8500.o := -DDEBUG
 CFLAGS_ux500_av8100.o := -DDEBUG
+CFLAGS_ux500_cg29xx.o := -DDEBUG
 endif
 
 ifdef CONFIG_SND_SOC_UX500_AB3550
@@ -14,6 +17,11 @@ endif
 ifdef CONFIG_SND_SOC_UX500_AB5500
 snd-soc-ux500-AB5500-objs := ux500_ab5500.o
 obj-$(CONFIG_SND_SOC_UX500_AB5500) += ux500_ab5500.o
+endif
+
+ifdef CONFIG_SND_SOC_UX500_AB8500
+snd-soc-ux500-ab8500-objs := ux500_ab8500.o
+obj-$(CONFIG_SND_SOC_UX500_AB8500) += ux500_ab8500_accessory.o ux500_ab8500.o
 endif
 
 ifdef CONFIG_SND_SOC_UX500_AV8100

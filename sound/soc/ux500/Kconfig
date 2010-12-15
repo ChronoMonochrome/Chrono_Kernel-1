@@ -25,6 +25,14 @@ config SND_SOC_UX500_AB5500
 	help
 	        Say Y if you want to include the AB5500 codec.
 
+config SND_SOC_UX500_AB8500
+	bool "Codec - AB8500"
+	depends on SND_SOC_UX500 && UX500_SOC_DB8500 && AB8500_CORE && AB8500_GPADC
+	select SND_SOC_AB8500
+	default n
+	help
+		Say Y if you want to include AB8500 audio codec.
+
 config SND_SOC_UX500_CG29XX
 	bool "Codec - CG29xx"
 	depends on SND_SOC_UX500 && (UX500_SOC_DB8500 || UX500_SOC_DB5500) && MFD_CG2900_AUDIO

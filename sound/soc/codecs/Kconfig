@@ -109,6 +109,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM9713 if SND_SOC_AC97_BUS
 	select SND_SOC_AB3550
 	select SND_SOC_AB5500
+	select SND_SOC_AB8500
 	select SND_SOC_CG29XX
 	select SND_SOC_AV8100
 	help
@@ -433,6 +434,9 @@ config SND_SOC_AB3550
 	tristate
 
 config SND_SOC_AB5500
+	tristate
+
+config SND_SOC_AB8500
 	tristate
 
 config SND_SOC_CG29XX
