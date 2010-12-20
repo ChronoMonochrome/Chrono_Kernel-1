@@ -47,5 +47,7 @@ static inline void set_delay_fn(void (*fn)(unsigned long))
 	delay_fn = fn;
 }
 
+extern void read_current_timer_delay_loop(unsigned long loops);
+
 #endif /* defined(_ARM_DELAY_H) */
 
