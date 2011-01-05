@@ -68,9 +68,14 @@ static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 		hdmi_ca = AV8100_CODEC_CA_FL_FR_LFE_FC_RL_RR; /* 5.1 */
 		tx_mask = AV8100_CODEC_MASK_5DOT1;
 		break;
+	case 7:
+		hdmi_cc = AV8100_CODEC_CC_8CH;
+		hdmi_ca = AV8100_CODEC_CA_FL_FR_LFE_FC_RL_RR_RLC_RRC; /* 7.1 */
+		tx_mask = AV8100_CODEC_MASK_7DOT0;
+		break;
 	case 8:
-		hdmi_cc = AV8100_CODEC_CC_6CH;
-		hdmi_ca = AV8100_CODEC_CA_FL_FR_LFE_FC_RL_RR_FLC_FRC; /* 7.1 */
+		hdmi_cc = AV8100_CODEC_CC_8CH;
+		hdmi_ca = AV8100_CODEC_CA_FL_FR_LFE_FC_RL_RR_RLC_RRC; /* 7.1 */
 		tx_mask = AV8100_CODEC_MASK_7DOT1;
 		break;
 	default:
