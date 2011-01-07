@@ -105,9 +105,7 @@ void ux500_pcm_dma_eot_handler(void *data)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *dai = rtd->cpu_dai;
 
-	pr_debug("%s: MSP %d (%s): Enter.\n",
-		 __func__,
-		 dai->id, stream_str(substream));
+	pr_debug("%s: MSP %d (%s): Enter.\n", __func__, dai->id, stream_str(substream));
 
 	if (substream) {
 		runtime = substream->runtime;
