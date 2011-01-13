@@ -472,6 +472,8 @@ static void ux500_msp_dai_compile_msp_config(struct snd_pcm_substream *substream
 	msp_config->work_mode = MSP_DMA_MODE;
 	msp_config->frame_freq = rate;
 
+	printk(KERN_INFO "%s: input_clock_freq = %u, frame_freq = %u.\n",
+	       __func__, msp_config->input_clock_freq, msp_config->frame_freq);
 	/* To avoid division by zero in I2S-driver (i2s_setup) */
 	prot_desc->total_clocks_for_one_frame = 1;
 

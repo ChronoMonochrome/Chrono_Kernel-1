@@ -1,5 +1,6 @@
 snd-soc-88pm860x-objs := 88pm860x-codec.o
 snd-soc-ab3550-objs := ab3550.o
+snd-soc-ab5500-objs := ab5500.o
 snd-soc-ac97-objs := ac97.o
 snd-soc-ad1836-objs := ad1836.o
 snd-soc-ad193x-objs := ad193x.o
@@ -106,6 +107,7 @@ snd-soc-max9877-objs := max9877.o
 snd-soc-tpa6130a2-objs := tpa6130a2.o
 
 obj-$(CONFIG_SND_SOC_AB3550)    += snd-soc-ab3550.o
+obj-$(CONFIG_SND_SOC_AB5500)    += snd-soc-ab5500.o
 obj-$(CONFIG_SND_SOC_88PM860X)	+= snd-soc-88pm860x.o
 obj-$(CONFIG_SND_SOC_AB3550)    += snd-soc-ab3550.o
 obj-$(CONFIG_SND_SOC_AC97_CODEC)	+= snd-soc-ac97.o
