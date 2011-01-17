@@ -374,44 +374,51 @@ static const struct snd_kcontrol_new dapm_anc_ear_mute[] = {
 			REG_DIGMULTCONF1_ANCSEL, 1, NORMAL),
 };
 
-/* Handsfree left channel selector control */
-static const char *enum_ihfl_sel[] = {"DA 3", "ANC"};
+/* Earpiece source selector control */
+static const char *enum_ear_source[] = {"Headset Left", "IHF Left"};
+
+static SOC_ENUM_SINGLE_DECL(dapm_enum_ear_source, REG_DMICFILTCONF,
+			REG_DMICFILTCONF_DA3TOEAR, enum_ear_source);
+
+static const struct snd_kcontrol_new dapm_ear_source[] = {
+	SOC_DAPM_ENUM("Earpiece Source", dapm_enum_ear_source),
+};
+
+/* IHF / ANC selector control */
+static const char *enum_ihfx_sel[] = {"Audio Path", "ANC"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ihfl_sel, REG_DIGMULTCONF2,
-			REG_DIGMULTCONF2_HFLSEL, enum_ihfl_sel);
+			REG_DIGMULTCONF2_HFLSEL, enum_ihfx_sel);
 
 static const struct snd_kcontrol_new dapm_ihfl_select[] = {
-	SOC_DAPM_ENUM("Handsfree Left Select", dapm_enum_ihfl_sel),
+	SOC_DAPM_ENUM("IHF Left Source", dapm_enum_ihfl_sel),
 };
-
-/* Handsfree right channel selector control */
-static const char *enum_ihfr_sel[] = {"DA 4", "ANC"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ihfr_sel, REG_DIGMULTCONF2,
-			REG_DIGMULTCONF2_HFRSEL, enum_ihfr_sel);
+			REG_DIGMULTCONF2_HFRSEL, enum_ihfx_sel);
 
 static const struct snd_kcontrol_new dapm_ihfr_select[] = {
-	SOC_DAPM_ENUM("Handsfree Right Select", dapm_enum_ihfr_sel),
+	SOC_DAPM_ENUM("IHF Right Source", dapm_enum_ihfr_sel),
 };
 
-/* Mic 1A/1B selector control */
+/* Mic 1A or 1B selector control */
 static const char *enum_mic1ab_sel[] = {"Mic 1A", "Mic 1B"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_mic1ab_sel, REG_ANACONF3,
 			REG_ANACONF3_MIC1SEL, enum_mic1ab_sel);
 
 static const struct snd_kcontrol_new dapm_mic1ab_select[] = {
-	SOC_DAPM_ENUM("Mic 1A/1B Select", dapm_enum_mic1ab_sel),
+	SOC_DAPM_ENUM("Mic 1A or 1B Select", dapm_enum_mic1ab_sel),
 };
 
-/* Mic 2 / LineIn Right selector control */
+/* Mic 2 or LineIn Right selector control */
 static const char *enum_mic2lr_sel[] = {"Mic 2", "LineIn Right"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_mic2lr_sel, REG_ANACONF3,
 			REG_ANACONF3_LINRSEL, enum_mic2lr_sel);
 
 static const struct snd_kcontrol_new dapm_mic2lr_select[] = {
-	SOC_DAPM_ENUM("Mic 2 / LINR Select", dapm_enum_mic2lr_sel),
+	SOC_DAPM_ENUM("Mic 2 or LINR Select", dapm_enum_mic2lr_sel),
 };
 
 /* AD1 selector control */
@@ -435,7 +442,7 @@ static const struct snd_kcontrol_new dapm_ad2_select[] = {
 };
 
 /* AD3 selector control */
-static const char *enum_ad3_sel[] = {"Mic 1A/1B", "DMic 3"};
+static const char *enum_ad3_sel[] = {"Mic 1", "DMic 3"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ad3_sel, REG_DIGMULTCONF1,
 			REG_DIGMULTCONF1_AD3SEL, enum_ad3_sel);
@@ -455,7 +462,7 @@ static const struct snd_kcontrol_new dapm_ad5_select[] = {
 };
 
 /* AD6 selector control */
-static const char *enum_ad6_sel[] = {"Mic 1A/1B", "DMic 6"};
+static const char *enum_ad6_sel[] = {"Mic 1", "DMic 6"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ad6_sel, REG_DIGMULTCONF1,
 			REG_DIGMULTCONF1_AD6SEL, enum_ad6_sel);
@@ -465,35 +472,62 @@ static const struct snd_kcontrol_new dapm_ad6_select[] = {
 };
 
 /* ANC input selector control */
-static const char *enum_anc_in_sel[] = {"AD 6", "AD 5"};
+static const char *enum_anc_in_sel[] = {"Mic 1 / DMic 6", "Mic 2 / DMic 5"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_anc_in_sel, REG_DMICFILTCONF,
 			REG_DMICFILTCONF_ANCINSEL, enum_anc_in_sel);
 
 static const struct snd_kcontrol_new dapm_anc_in_select[] = {
-	SOC_DAPM_ENUM("ANC Input Select", dapm_enum_anc_in_sel),
+	SOC_DAPM_ENUM("ANC Source", dapm_enum_anc_in_sel),
 };
 
-/* STFIR1 input selector control */
+/* ANC enable control */
+static const char *enum_anc_dis_ena[] = {"Disabled", "Enabled"};
+
+static SOC_ENUM_SINGLE_DECL(dapm_enum_anc_enable, REG_ANCCONF1,
+			REG_ANCCONF1_ENANC, enum_anc_dis_ena);
+
+static const struct snd_kcontrol_new dapm_anc_enable[] = {
+	SOC_DAPM_ENUM("ANC", dapm_enum_anc_enable),
+};
+
+/* Sidetone left input selector control */
 static const char *enum_stfir1_in_sel[] = {
-	"LineIn Left", "LineIn Right", "Mic 1A/1B", "Headset Left"};
+	"LineIn Left", "LineIn Right", "Mic 1", "Headset Left"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_stfir1_in_sel, REG_DIGMULTCONF2,
 			REG_DIGMULTCONF2_FIRSID1SEL, enum_stfir1_in_sel);
 
 static const struct snd_kcontrol_new dapm_stfir1_in_select[] = {
-	SOC_DAPM_ENUM("STFIR1 Input Select", dapm_enum_stfir1_in_sel),
+	SOC_DAPM_ENUM("Sidetone Left Source", dapm_enum_stfir1_in_sel),
 };
 
-/* STFIR2 input selector control */
+/* Sidetone right input selector control */
 static const char *enum_stfir2_in_sel[] = {
-	"LineIn Right", "Mic 1A/1B", "DMic 4", "Headset Right"};
+	"LineIn Right", "Mic 1", "DMic 4", "Headset Right"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_stfir2_in_sel, REG_DIGMULTCONF2,
 			REG_DIGMULTCONF2_FIRSID2SEL, enum_stfir2_in_sel);
 
 static const struct snd_kcontrol_new dapm_stfir2_in_select[] = {
-	SOC_DAPM_ENUM("STFIR2 Input Select", dapm_enum_stfir2_in_sel),
+	SOC_DAPM_ENUM("Sidetone Right Source", dapm_enum_stfir2_in_sel),
+};
+
+/* Vibra path selector control */
+static const char *enum_pwm2vibx[] = {"Audio Path", "PWM Generator"};
+
+static SOC_ENUM_SINGLE_DECL(dapm_enum_pwm2vib1, REG_PWMGENCONF1,
+			REG_PWMGENCONF1_PWMTOVIB1, enum_pwm2vibx);
+
+static const struct snd_kcontrol_new dapm_pwm2vib1[] = {
+	SOC_DAPM_ENUM("Vibra 1 Controller", dapm_enum_pwm2vib1),
+};
+
+static SOC_ENUM_SINGLE_DECL(dapm_enum_pwm2vib2, REG_PWMGENCONF1,
+			REG_PWMGENCONF1_PWMTOVIB2, enum_pwm2vibx);
+
+static const struct snd_kcontrol_new dapm_pwm2vib2[] = {
+	SOC_DAPM_ENUM("Vibra 2 Controller", dapm_enum_pwm2vib2),
 };
 
 static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
@@ -539,6 +573,9 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Earpiece path */
 
+	SND_SOC_DAPM_MUX("Earpiece Source Playback Route",
+			SND_SOC_NOPM, 0, 0, dapm_ear_source),
+
 	SND_SOC_DAPM_MIXER("EAR DAC", REG_DAPATHCONF,
 			REG_DAPATHCONF_ENDACEAR, 0, NULL, 0),
 
@@ -562,15 +599,13 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("DA4 Channel Gain", REG_DAPATHENA,
 			REG_DAPATHENA_ENDA4, 0, NULL, 0),
 
-	SND_SOC_DAPM_MUX("Handsfree Left Select Playback Route",
+	SND_SOC_DAPM_MUX("IHF Left Source Playback Route",
 			SND_SOC_NOPM, 0, 0, dapm_ihfl_select),
-	SND_SOC_DAPM_MUX("Handsfree Right Select Playback Route",
+	SND_SOC_DAPM_MUX("IHF Right Source Playback Route",
 			SND_SOC_NOPM, 0, 0, dapm_ihfr_select),
 
-	SND_SOC_DAPM_SWITCH("Handsfree Left",
-			SND_SOC_NOPM, 0, 0, dapm_ihfl_mute),
-	SND_SOC_DAPM_SWITCH("Handsfree Right",
-			SND_SOC_NOPM, 0, 0, dapm_ihfr_mute),
+	SND_SOC_DAPM_SWITCH("IHF Left", SND_SOC_NOPM, 0, 0, dapm_ihfl_mute),
+	SND_SOC_DAPM_SWITCH("IHF Right", SND_SOC_NOPM, 0, 0, dapm_ihfr_mute),
 
 	SND_SOC_DAPM_MIXER("IHFL DAC", REG_DAPATHCONF,
 			REG_DAPATHCONF_ENDACHFL, 0, NULL, 0),
@@ -601,7 +636,13 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("VIB2 DAC", REG_DAPATHCONF,
 			REG_DAPATHCONF_ENDACVIB2, 0, NULL, 0),
 
-	/* XXX PWM Gen */
+	SND_SOC_DAPM_INPUT("PWMGEN1"),
+	SND_SOC_DAPM_INPUT("PWMGEN2"),
+
+	SND_SOC_DAPM_MUX("Vibra 1 Controller Playback Route",
+			SND_SOC_NOPM, 0, 0, dapm_pwm2vib1),
+	SND_SOC_DAPM_MUX("Vibra 2 Controller Playback Route",
+			SND_SOC_NOPM, 0, 0, dapm_pwm2vib2),
 
 	SND_SOC_DAPM_MIXER("VIB1 Enable", REG_ANACONF4,
 			REG_ANACONF4_ENVIB1, 0, NULL, 0),
@@ -629,7 +670,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("MIC2 Enable", REG_ANACONF2,
 			REG_ANACONF2_ENMIC2, 0, NULL, 0),
 
-	SND_SOC_DAPM_MUX("Mic 2 / LINR Select Capture Route",
+	SND_SOC_DAPM_MUX("Mic 2 or LINR Select Capture Route",
 			SND_SOC_NOPM, 0, 0, dapm_mic2lr_select),
 
 	SND_SOC_DAPM_MIXER("LINL ADC", REG_ANACONF3,
@@ -659,7 +700,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("MIC1A"),
 	SND_SOC_DAPM_INPUT("MIC1B"),
 
-	SND_SOC_DAPM_MUX("Mic 1A/1B Select Capture Route",
+	SND_SOC_DAPM_MUX("Mic 1A or 1B Select Capture Route",
 			SND_SOC_NOPM, 0, 0, dapm_mic1ab_select),
 
 	SND_SOC_DAPM_SWITCH("Mic 1", SND_SOC_NOPM, 0, 0, dapm_mic1_mute),
@@ -692,9 +733,9 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("AD6 Channel Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 
 	SND_SOC_DAPM_MIXER("AD57 Enable", REG_ADPATHENA,
-			REG_ADPATHENA_ENAD57, 0, NULL, 0),
+			REG_ADPATHENA_ENAD5768, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("AD68 Enable", REG_ADPATHENA,
-			REG_ADPATHENA_ENAD57, 0, NULL, 0),
+			REG_ADPATHENA_ENAD5768, 0, NULL, 0),
 
 	SND_SOC_DAPM_AIF_OUT("AD_OUT57", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_AIF_OUT("AD_OUT68", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
@@ -738,10 +779,11 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Acoustical Noise Cancellation path */
 
-	SND_SOC_DAPM_MUX("ANC Input Select Playback Route",
+	SND_SOC_DAPM_MUX("ANC Source Playback Route",
 			SND_SOC_NOPM, 0, 0, dapm_anc_in_select),
 
-	SND_SOC_DAPM_MIXER("ANC Control", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_MUX("ANC Playback Switch",
+			SND_SOC_NOPM, 0, 0, dapm_anc_enable),
 
 	SND_SOC_DAPM_SWITCH("ANC to Earpiece",
 			SND_SOC_NOPM, 0, 0, dapm_anc_ear_mute),
@@ -749,9 +791,9 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Sidetone Filter path */
 
-	SND_SOC_DAPM_MUX("STFIR1 Input Select Playback Route",
+	SND_SOC_DAPM_MUX("Sidetone Left Source Playback Route",
 			SND_SOC_NOPM, 0, 0, dapm_stfir1_in_select),
-	SND_SOC_DAPM_MUX("STFIR2 Input Select Playback Route",
+	SND_SOC_DAPM_MUX("Sidetone Right Source Playback Route",
 			SND_SOC_NOPM, 0, 0, dapm_stfir2_in_select),
 
 	SND_SOC_DAPM_MIXER("STFIR1 Control", SND_SOC_NOPM, 0, 0, NULL, 0),
@@ -791,7 +833,10 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	/* Earpiece path */
 
-	{"EAR DAC", NULL, "HSL Digital Gain"},
+	{"Earpiece Source Playback Route", "Headset Left", "HSL Digital Gain"},
+	{"Earpiece Source Playback Route", "IHF Left", "IHF Left"},
+
+	{"EAR DAC", NULL, "Earpiece Source Playback Route"},
 
 	{"Earpiece", "Playback Switch", "EAR DAC"},
 
@@ -805,16 +850,14 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"DA3 Channel Gain", NULL, "DA_IN3"},
 	{"DA4 Channel Gain", NULL, "DA_IN4"},
 
-	{"Handsfree Left Select Playback Route", "DA 3", "DA3 Channel Gain"},
-	{"Handsfree Right Select Playback Route", "DA 4", "DA4 Channel Gain"},
+	{"IHF Left Source Playback Route", "Audio Path", "DA3 Channel Gain"},
+	{"IHF Right Source Playback Route", "Audio Path", "DA4 Channel Gain"},
 
-	{"Handsfree Left", "Playback Switch",
-			"Handsfree Left Select Playback Route"},
-	{"Handsfree Right", "Playback Switch",
-			"Handsfree Right Select Playback Route"},
+	{"IHF Left", "Playback Switch", "IHF Left Source Playback Route"},
+	{"IHF Right", "Playback Switch", "IHF Right Source Playback Route"},
 
-	{"IHFL DAC", NULL, "Handsfree Left"},
-	{"IHFR DAC", NULL, "Handsfree Right"},
+	{"IHFL DAC", NULL, "IHF Left"},
+	{"IHFR DAC", NULL, "IHF Right"},
 
 	{"IHFL Enable", NULL, "IHFL DAC"},
 	{"IHFR Enable", NULL, "IHFR DAC"},
@@ -831,8 +874,13 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"VIB1 DAC", NULL, "DA5 Channel Gain"},
 	{"VIB2 DAC", NULL, "DA6 Channel Gain"},
 
-	{"VIB1 Enable", NULL, "VIB1 DAC"},
-	{"VIB2 Enable", NULL, "VIB2 DAC"},
+	{"Vibra 1 Controller Playback Route", "Audio Path", "VIB1 DAC"},
+	{"Vibra 2 Controller Playback Route", "Audio Path", "VIB2 DAC"},
+	{"Vibra 1 Controller Playback Route", "PWM Generator", "PWMGEN1"},
+	{"Vibra 2 Controller Playback Route", "PWM Generator", "PWMGEN2"},
+
+	{"VIB1 Enable", NULL, "Vibra 1 Controller Playback Route"},
+	{"VIB2 Enable", NULL, "Vibra 2 Controller Playback Route"},
 
 	{"VIB1", NULL, "VIB1 Enable"},
 	{"VIB2", NULL, "VIB2 Enable"},
@@ -848,11 +896,11 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"LINR Enable", NULL, "LineIn Right"},
 	{"MIC2 Enable", NULL, "Mic 2"},
 
-	{"Mic 2 / LINR Select Capture Route", "LineIn Right", "LINR Enable"},
-	{"Mic 2 / LINR Select Capture Route", "Mic 2", "MIC2 Enable"},
+	{"Mic 2 or LINR Select Capture Route", "LineIn Right", "LINR Enable"},
+	{"Mic 2 or LINR Select Capture Route", "Mic 2", "MIC2 Enable"},
 
 	{"LINL ADC", NULL, "LINL Enable"},
-	{"LINR ADC", NULL, "Mic 2 / LINR Select Capture Route"},
+	{"LINR ADC", NULL, "Mic 2 or LINR Select Capture Route"},
 
 	{"AD 1 Select Capture Route", "LineIn Left", "LINL ADC"},
 	{"AD 2 Select Capture Route", "LineIn Right", "LINR ADC"},
@@ -869,16 +917,16 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	/* Microphone 1 path */
 
-	{"Mic 1A/1B Select Capture Route", "Mic 1A", "MIC1A"},
-	{"Mic 1A/1B Select Capture Route", "Mic 1B", "MIC1B"},
+	{"Mic 1A or 1B Select Capture Route", "Mic 1A", "MIC1A"},
+	{"Mic 1A or 1B Select Capture Route", "Mic 1B", "MIC1B"},
 
-	{"Mic 1", "Capture Switch", "Mic 1A/1B Select Capture Route"},
+	{"Mic 1", "Capture Switch", "Mic 1A or 1B Select Capture Route"},
 
 	{"MIC1 Enable", NULL, "Mic 1"},
 
 	{"MIC1 ADC", NULL, "MIC1 Enable"},
 
-	{"AD 3 Select Capture Route", "Mic 1A/1B", "MIC1 ADC"},
+	{"AD 3 Select Capture Route", "Mic 1", "MIC1 ADC"},
 
 	{"AD3 Channel Gain", NULL, "AD 3 Select Capture Route"},
 
@@ -890,7 +938,7 @@ static const struct snd_soc_dapm_route intercon[] = {
 	/* HD Capture path */
 
 	{"AD 5 Select Capture Route", "Mic 2", "LINR ADC"},
-	{"AD 6 Select Capture Route", "Mic 1A/1B", "MIC1 ADC"},
+	{"AD 6 Select Capture Route", "Mic 1", "MIC1 ADC"},
 
 	{"AD5 Channel Gain", NULL, "AD 5 Select Capture Route"},
 	{"AD6 Channel Gain", NULL, "AD 6 Select Capture Route"},
@@ -944,31 +992,31 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	/* Acoustical Noise Cancellation path */
 
-	{"ANC Input Select Playback Route", "AD 5", "AD5 Channel Gain"},
-	{"ANC Input Select Playback Route", "AD 6", "AD6 Channel Gain"},
+	{"ANC Source Playback Route", "Mic 2 / DMic 5", "AD5 Channel Gain"},
+	{"ANC Source Playback Route", "Mic 1 / DMic 6", "AD6 Channel Gain"},
 
-	{"ANC Control", NULL, "ANC Input Select Playback Route"},
+	{"ANC Playback Switch", "Enabled", "ANC Source Playback Route"},
 
-	{"Handsfree Left Select Playback Route", "ANC", "ANC Control"},
-	{"Handsfree Right Select Playback Route", "ANC", "ANC Control"},
-	{"ANC to Earpiece", "Playback Switch", "ANC Control"},
+	{"IHF Left Source Playback Route", "ANC", "ANC Playback Switch"},
+	{"IHF Right Source Playback Route", "ANC", "ANC Playback Switch"},
+	{"ANC to Earpiece", "Playback Switch", "ANC Playback Switch"},
 
 	{"HSL Digital Gain", NULL, "ANC to Earpiece"},
 
 
 	/* Sidetone Filter path */
 
-	{"STFIR1 Input Select Playback Route", "LineIn Left", "AD1 Enable"},
-	{"STFIR1 Input Select Playback Route", "LineIn Right", "AD2 Enable"},
-	{"STFIR1 Input Select Playback Route", "Mic 1A/1B", "AD3 Enable"},
-	{"STFIR1 Input Select Playback Route", "Headset Left", "DA_IN1"},
-	{"STFIR2 Input Select Playback Route", "LineIn Right", "AD2 Enable"},
-	{"STFIR2 Input Select Playback Route", "Mic 1A/1B", "AD3 Enable"},
-	{"STFIR2 Input Select Playback Route", "DMic 4", "AD4 Enable"},
-	{"STFIR2 Input Select Playback Route", "Headset Right", "DA_IN2"},
+	{"Sidetone Left Source Playback Route", "LineIn Left", "AD1 Enable"},
+	{"Sidetone Left Source Playback Route", "LineIn Right", "AD2 Enable"},
+	{"Sidetone Left Source Playback Route", "Mic 1", "AD3 Enable"},
+	{"Sidetone Left Source Playback Route", "Headset Left", "DA_IN1"},
+	{"Sidetone Right Source Playback Route", "LineIn Right", "AD2 Enable"},
+	{"Sidetone Right Source Playback Route", "Mic 1", "AD3 Enable"},
+	{"Sidetone Right Source Playback Route", "DMic 4", "AD4 Enable"},
+	{"Sidetone Right Source Playback Route", "Headset Right", "DA_IN2"},
 
-	{"STFIR1 Control", NULL, "STFIR1 Input Select Playback Route"},
-	{"STFIR2 Control", NULL, "STFIR2 Input Select Playback Route"},
+	{"STFIR1 Control", NULL, "Sidetone Left Source Playback Route"},
+	{"STFIR2 Control", NULL, "Sidetone Right Source Playback Route"},
 
 	{"STFIR1 Gain", NULL, "STFIR1 Control"},
 	{"STFIR2 Gain", NULL, "STFIR2 Control"},
@@ -1011,12 +1059,14 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_hshpen,
 	REG_ANACONF1, REG_ANACONF1_HSHPEN, enum_dis_ena);
 static SOC_ENUM_SINGLE_DECL(soc_enum_hslowpow,
 	REG_ANACONF1, REG_ANACONF1_HSLOWPOW, enum_dis_ena);
+static SOC_ENUM_SINGLE_DECL(soc_enum_daclowpow1,
+	REG_ANACONF1, REG_ANACONF1_DACLOWPOW1, enum_dis_ena);
 static SOC_ENUM_SINGLE_DECL(soc_enum_daclowpow0,
 	REG_ANACONF1, REG_ANACONF1_DACLOWPOW0, enum_dis_ena);
-static SOC_ENUM_SINGLE_DECL(soc_enum_daclowpow1,
-	REG_ANACONF1, REG_ANACONF1_DACLOWPOW1, enum_ena_dis);
-static SOC_ENUM_SINGLE_DECL(soc_enum_earlowpow,
-	REG_ANACONF1, REG_ANACONF1_EARLOWPOW, enum_dis_ena);
+static SOC_ENUM_SINGLE_DECL(soc_enum_eardaclowpow,
+	REG_ANACONF1, REG_ANACONF1_EARDACLOWPOW, enum_dis_ena);
+static SOC_ENUM_SINGLE_DECL(soc_enum_eardrvlowpow,
+	REG_ANACONF1, REG_ANACONF1_EARDRVLOWPOW, enum_dis_ena);
 
 static const char *enum_earselcm[] = {"0.95V", "1.10V", "1.27V", "1.58V"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_earselcm,
@@ -1079,7 +1129,7 @@ static SOC_ENUM_DOUBLE_DECL(soc_enum_dmic34sinc, REG_DMICFILTCONF,
 static SOC_ENUM_DOUBLE_DECL(soc_enum_dmic56sinc, REG_DMICFILTCONF,
 	REG_DMICFILTCONF_DMIC5SINC3, REG_DMICFILTCONF_DMIC6SINC3, enum_sinc53);
 
-static const char *enum_da2hslr[] = {"Sidetone", "Headset"};
+static const char *enum_da2hslr[] = {"Sidetone", "Audio Path"};
 static SOC_ENUM_DOUBLE_DECL(soc_enum_da2hslr, REG_DIGMULTCONF1,
 	REG_DIGMULTCONF1_DATOHSLEN, REG_DIGMULTCONF1_DATOHSREN,	enum_da2hslr);
 
@@ -1091,13 +1141,25 @@ static const char *enum_fadespeed[] = {"1ms", "4ms", "8ms", "16ms"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_fadespeed,
 	REG_HSRDIGGAIN, REG_HSRDIGGAIN_FADESPEED, enum_fadespeed);
 
+/* XXX move to DAPM */
+static SOC_ENUM_SINGLE_DECL(soc_enum_enfirsids,
+	REG_SIDFIRCONF, REG_SIDFIRCONF_ENFIRSIDS, enum_dis_ena);
+static SOC_ENUM_SINGLE_DECL(soc_enum_parlhf,
+	REG_CLASSDCONF1, REG_CLASSDCONF1_PARLHF, enum_dis_ena);
+static SOC_ENUM_SINGLE_DECL(soc_enum_parlvib,
+	REG_CLASSDCONF1, REG_CLASSDCONF1_PARLVIB, enum_dis_ena);
+
 static struct snd_kcontrol_new ab8500_snd_controls[] = {
 	SOC_ENUM("Headset High Pass Playback Switch", soc_enum_hshpen),
 	SOC_ENUM("Headset Low Power Playback Switch", soc_enum_hslowpow),
-	SOC_ENUM("Headset DAC Low Power Playback Switch", soc_enum_daclowpow0),
-	SOC_ENUM("Headset DAC RTZ Func Playback Switch", soc_enum_daclowpow1),
-	SOC_ENUM("Ear Low Power Playback Switch", soc_enum_earlowpow),
-	SOC_ENUM("Ear Nominal Common Mode Playback Switch", soc_enum_earselcm),
+	SOC_ENUM("Headset DAC Low Power Playback Switch", soc_enum_daclowpow1),
+	SOC_ENUM("Headset DAC Drv Low Power Playback Switch",
+		soc_enum_daclowpow0),
+	SOC_ENUM("Earpiece DAC Low Power Playback Switch",
+		soc_enum_eardaclowpow),
+	SOC_ENUM("Earpiece DAC Drv Low Power Playback Switch",
+		soc_enum_eardrvlowpow),
+	SOC_ENUM("Earpiece Common Mode Playback Switch", soc_enum_earselcm),
 
 	SOC_ENUM("Headset Fade Speed Playback Switch", soc_enum_hsfadspeed),
 
@@ -1111,21 +1173,21 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 	SOC_ENUM("LineIn Mode Capture Switch", soc_enum_ad12voice),
 	SOC_ENUM("Mic Mode Capture Switch", soc_enum_ad34voice),
 
-	SOC_ENUM("Headset/Ear Mode Playback Switch", soc_enum_da12voice),
-	SOC_ENUM("Handsfree Mode Playback Switch", soc_enum_da34voice),
-	SOC_ENUM("Vibrator Mode Playback Switch", soc_enum_da56voice),
+	SOC_ENUM("Headset Mode Playback Switch", soc_enum_da12voice),
+	SOC_ENUM("IHF Mode Playback Switch", soc_enum_da34voice),
+	SOC_ENUM("Vibra Mode Playback Switch", soc_enum_da56voice),
 
-	SOC_ENUM("DA 1-2 and 3-4 Swap Playback Switch", soc_enum_swapda12_34),
+	SOC_ENUM("IHF and Headset Swap Playback Switch", soc_enum_swapda12_34),
 
-	SOC_ENUM("Handsfree Low EMI Mode Playback Switch", soc_enum_hflrswap),
-	SOC_ENUM("Vibrator Low EMI Mode Playback Switch", soc_enum_vib12swap),
+	SOC_ENUM("IHF Low EMI Mode Playback Switch", soc_enum_hflrswap),
+	SOC_ENUM("Vibra Low EMI Mode Playback Switch", soc_enum_vib12swap),
 
-	SOC_ENUM("Handsfree FIR Bypass Playback Switch", soc_enum_fir01byp),
-	SOC_ENUM("Vibrator FIR Bypass Playback Switch", soc_enum_fir23byp),
+	SOC_ENUM("IHF FIR Bypass Playback Switch", soc_enum_fir01byp),
+	SOC_ENUM("Vibra FIR Bypass Playback Switch", soc_enum_fir23byp),
 
 	/* XXX Cannot be changed on the fly with digital channel enabled. */
-	SOC_ENUM("Handsfree High Volume Playback Switch", soc_enum_highvol01),
-	SOC_ENUM("Vibrator High Volume Playback Switch", soc_enum_highvol23),
+	SOC_ENUM("IHF High Volume Playback Switch", soc_enum_highvol01),
+	SOC_ENUM("Vibra High Volume Playback Switch", soc_enum_highvol23),
 
 	SOC_SINGLE("ClassD High Pass Gain Playback Volume",
 		REG_CLASSDCONF3, REG_CLASSDCONF3_DITHHPGAIN,
@@ -1134,17 +1196,30 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_CLASSDCONF3, REG_CLASSDCONF3_DITHWGAIN,
 		REG_CLASSDCONF3_DITHWGAIN_MAX, NORMAL),
 
-	SOC_ENUM("DMic 1-2 Filter Capture Switch", soc_enum_dmic12sinc),
-	SOC_ENUM("DMic 3-4 Filter Capture Switch", soc_enum_dmic34sinc),
-	SOC_ENUM("DMic 5-6 Filter Capture Switch", soc_enum_dmic56sinc),
+	SOC_ENUM("LineIn Filter Capture Switch", soc_enum_dmic12sinc),
+	SOC_ENUM("Mic Filter Capture Switch", soc_enum_dmic34sinc),
+	SOC_ENUM("HD Mic Filter Capture Switch", soc_enum_dmic56sinc),
 
-	/* Whether DA_IN 1-2 are guided to sidetone filters' inputs. */
-	SOC_ENUM("DA_IN Select Playback Route", soc_enum_da2hslr),
+	SOC_ENUM("Headset Source Playback Route", soc_enum_da2hslr),
 
 	/* XXX Cannot be changed on the fly with digital channel enabled. */
-	SOC_ENUM("Headset/Ear Filter Playback Switch", soc_enum_hsesinc),
+	SOC_ENUM("Headset Filter Playback Switch", soc_enum_hsesinc),
 
 	SOC_ENUM("Digital Gain Fade Speed Switch", soc_enum_fadespeed),
+
+	SOC_DOUBLE_R("Vibra PWM Duty Cycle N Playback Volume",
+		REG_PWMGENCONF3, REG_PWMGENCONF5,
+		REG_PWMGENCONFX_PWMVIBXDUTCYC,
+		REG_PWMGENCONFX_PWMVIBXDUTCYC_MAX, NORMAL),
+	SOC_DOUBLE_R("Vibra PWM Duty Cycle P Playback Volume",
+		REG_PWMGENCONF2, REG_PWMGENCONF4,
+		REG_PWMGENCONFX_PWMVIBXDUTCYC,
+		REG_PWMGENCONFX_PWMVIBXDUTCYC_MAX, NORMAL),
+
+	/* XXX move to DAPM */
+	SOC_ENUM("Sidetone Playback Switch", soc_enum_enfirsids),
+	SOC_ENUM("IHF L and R Bridge Playback Route", soc_enum_parlhf),
+	SOC_ENUM("Vibra 1 and 2 Bridge Playback Route", soc_enum_parlvib),
 
 	/* Digital gains for AD side */
 
@@ -1163,10 +1238,10 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 	SOC_DOUBLE_R_TLV("Headset Master Gain Playback Volume",
 		REG_DADIGGAIN1, REG_DADIGGAIN2,
 		0, REG_DADIGGAINX_DAXGAIN_MAX, INVERT, dax_dig_gain_tlv),
-	SOC_DOUBLE_R_TLV("Handsfree Master Gain Playback Volume",
+	SOC_DOUBLE_R_TLV("IHF Master Gain Playback Volume",
 		REG_DADIGGAIN3, REG_DADIGGAIN4,
 		0, REG_DADIGGAINX_DAXGAIN_MAX, INVERT, dax_dig_gain_tlv),
-	SOC_DOUBLE_R_TLV("Vibrator Master Gain Playback Volume",
+	SOC_DOUBLE_R_TLV("Vibra Master Gain Playback Volume",
 		REG_DADIGGAIN5, REG_DADIGGAIN6,
 		0, REG_DADIGGAINX_DAXGAIN_MAX, INVERT, dax_dig_gain_tlv),
 	SOC_DOUBLE_R_TLV("Analog Loopback Gain Playback Volume",
@@ -1180,6 +1255,7 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		0, REG_SIDFIRGAINX_FIRSIDXGAIN_MAX, INVERT, stfir_dig_gain_tlv),
 
 	/* Analog gains */
+
 	SOC_DOUBLE_TLV("Headset Gain Playback Volume",
 		REG_ANAGAIN3,
 		REG_ANAGAIN3_HSLGAIN, REG_ANAGAIN3_HSRGAIN,
@@ -1451,46 +1527,23 @@ static int ab8500_set_dai_tdm_slot(struct snd_soc_dai *dai,
 		BMASK(REG_DIGIFCONF1_IF0BITCLKOS1),
 		data);
 
-	/* Mask to clear RX TDM slots reception for DA path*/
-	clear_mask = BMASK(REG_DASLOTCONFX_SLTODAX4) |
-			BMASK(REG_DASLOTCONFX_SLTODAX3) |
-			BMASK(REG_DASLOTCONFX_SLTODAX2) |
-			BMASK(REG_DASLOTCONFX_SLTODAX1) |
-			BMASK(REG_DASLOTCONFX_SLTODAX0);
-
 	/* XXX Make slot configuration as a control */
 
-	/* DA_IN1 receives slot 9 */
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF1,
-			clear_mask,
-			BMASK(REG_DASLOTCONFX_SLTODAX3) |
-			BMASK(REG_DASLOTCONFX_SLTODAX0));
+	clear_mask = REG_DASLOTCONFX_SLTODAX_MASK;
 
-	/* DA_IN2 receives slot 11 */
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF2,
-			clear_mask,
-			BMASK(REG_DASLOTCONFX_SLTODAX3) |
-			BMASK(REG_DASLOTCONFX_SLTODAX1) |
-			BMASK(REG_DASLOTCONFX_SLTODAX0));
-
-	/* DA_IN3 receives slot 9 */
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF3,
-			clear_mask,
-			BMASK(REG_DASLOTCONFX_SLTODAX3) |
-			BMASK(REG_DASLOTCONFX_SLTODAX0));
-
-	/* DA_IN4 receives slot 11 */
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF4,
-			clear_mask,
-			BMASK(REG_DASLOTCONFX_SLTODAX3) |
-			BMASK(REG_DASLOTCONFX_SLTODAX1) |
-			BMASK(REG_DASLOTCONFX_SLTODAX0));
+	/* DA_IN1/3/5 receives slot 9, DA_IN2/4/6 receives slot 11 */
+	ab8500_update_audio_reg(codec, REG_DASLOTCONF1, clear_mask, 9);
+	ab8500_update_audio_reg(codec, REG_DASLOTCONF2, clear_mask, 11);
+	ab8500_update_audio_reg(codec, REG_DASLOTCONF3, clear_mask, 9);
+	ab8500_update_audio_reg(codec, REG_DASLOTCONF4, clear_mask, 11);
+	ab8500_update_audio_reg(codec, REG_DASLOTCONF5, clear_mask, 9);
+	ab8500_update_audio_reg(codec, REG_DASLOTCONF6, clear_mask, 11);
 
 	/* AD_OUT3 transmits slots 0 & 1 */
 	ab8500_update_audio_reg(codec, REG_ADSLOTSEL1,
 			REG_MASK_ALL,
-			BMASK(REG_ADSLOTSEL_ODDX_1) |
-			BMASK(REG_ADSLOTSEL_EVENX_1));
+			BMASK(REG_ADSLOTSELX_ODDX_1) |
+			BMASK(REG_ADSLOTSELX_EVENX_1));
 
 	return 0;
 }
