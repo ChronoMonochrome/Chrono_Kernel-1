@@ -16,19 +16,11 @@
 
 extern struct snd_soc_ops ux500_ab8500_ops[];
 
-struct snd_soc_pcm_runtime;
-
-int ux500_ab8500_startup(struct snd_pcm_substream *substream);
-
-void ux500_ab8500_shutdown(struct snd_pcm_substream *substream);
-
-int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
-			struct snd_pcm_hw_params *params);
-
-int ux500_ab8500_soc_machine_drv_init(void);
+int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *runtime);
 
 void ux500_ab8500_soc_machine_drv_cleanup(void);
 
-int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *runtime);
+int enable_regulator(const char *name);
+void disable_regulator(const char *name);
 
 #endif

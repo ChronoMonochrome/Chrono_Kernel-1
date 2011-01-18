@@ -30,6 +30,7 @@
 #include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
 #include "ab8500.h"
+#include "../ux500/ux500_ab8500.h"
 
 /* To convert register definition shifts to masks */
 #define BMASK(bsft)	(1 << (bsft))
@@ -42,11 +43,14 @@
 #define GPIO27_DIR_OUTPUT			0x04
 #define GPIO29_DIR_OUTPUT			0x10
 #define GPIO31_DIR_OUTPUT			0x40
+#define GPIO35_DIR_OUTPUT			0x04
 
 /* Macrocell register definitions */
 #define AB8500_CTRL3_REG			0x0200
 #define AB8500_SYSULPCLK_CTRL1_REG		0x020B
 #define AB8500_GPIO_DIR4_REG			0x1013
+#define AB8500_GPIO_DIR5_REG			0x1014
+#define AB8500_GPIO_OUT5_REG			0x1024
 
 /*
  * AB8500 register cache & default register settings
@@ -1617,6 +1621,38 @@ static void configure_audio_macrocell(struct snd_soc_codec *codec)
 	data = ab8500_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG);
 	data |= GPIO27_DIR_OUTPUT | GPIO29_DIR_OUTPUT | GPIO31_DIR_OUTPUT;
 	ab8500_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG, data);
+
+	data = ab8500_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR5_REG);
+	data |= GPIO35_DIR_OUTPUT;
+	ab8500_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR5_REG, data);
+	data = ab8500_read_reg(codec, AB8500_MISC, AB8500_GPIO_OUT5_REG);
+	data |= GPIO35_DIR_OUTPUT;
+	ab8500_write_reg(codec, AB8500_MISC, AB8500_GPIO_OUT5_REG, data);
+}
+
+static int ab8500_set_bias_level(struct snd_soc_codec *codec,
+		enum snd_soc_bias_level level)
+{
+	switch (level) {
+	case SND_SOC_BIAS_ON:
+		break;
+	case SND_SOC_BIAS_PREPARE:
+		if (codec->bias_level == SND_SOC_BIAS_STANDBY)
+			enable_regulator("v-audio");
+		break;
+	case SND_SOC_BIAS_STANDBY:
+		if (codec->bias_level == SND_SOC_BIAS_PREPARE) {
+			set_current_state(TASK_UNINTERRUPTIBLE);
+			schedule_timeout(msecs_to_jiffies(100));
+			disable_regulator("v-audio");
+		}
+		break;
+	case SND_SOC_BIAS_OFF:
+		break;
+	}
+	codec->bias_level = level;
+
+	return 0;
 }
 
 static int ab8500_codec_probe(struct snd_soc_codec *codec)
@@ -1677,6 +1713,7 @@ struct snd_soc_codec_driver ab8500_codec_drv = {
 	.resume =		ab8500_codec_resume,
 	.read =			ab8500_audio_read_reg,
 	.write =		ab8500_audio_write_reg,
+	.set_bias_level =	ab8500_set_bias_level,
 	.reg_cache_size =	ARRAY_SIZE(ab8500_reg_cache),
 	.reg_word_size =	sizeof(u8),
 	.reg_cache_default =	ab8500_reg_cache,
