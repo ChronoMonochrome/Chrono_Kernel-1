@@ -14,6 +14,7 @@
 #include <sound/soc.h>
 #include "../codecs/av8100_audio.h"
 #include "ux500_av8100.h"
+#include "ux500_msp_dai.h"
 
 static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 			struct snd_pcm_hw_params *params)
@@ -145,6 +146,8 @@ static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 			ret);
 		return ret;
 	}
+
+	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);
 
 	return ret;
 }

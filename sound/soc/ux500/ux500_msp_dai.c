@@ -35,6 +35,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.playback_active = false,
 		.capture_active = false,
 		.configured = 0,
+		.data_delay = MSP_DELAY_0,
 	},
 	{
 		.i2s = NULL,
@@ -46,6 +47,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.playback_active = false,
 		.capture_active = false,
 		.configured = 0,
+		.data_delay = MSP_DELAY_0,
 	},
 	{
 		.i2s = NULL,
@@ -57,6 +59,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.playback_active = false,
 		.capture_active = false,
 		.configured = 0,
+		.data_delay = MSP_DELAY_0,
 	},
 	{
 		.i2s = NULL,
@@ -68,6 +71,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.playback_active = false,
 		.capture_active = false,
 		.configured = 0,
+		.data_delay = MSP_DELAY_0,
 	},
 };
 
@@ -383,8 +387,6 @@ static void ux500_msp_dai_compile_prot_desc_pcm(unsigned int fmt,
 	prot_desc->tx_phase2_start_mode = MSP_PHASE2_START_MODE_IMEDIATE;
 	prot_desc->rx_bit_transfer_format = MSP_BTF_MS_BIT_FIRST;
 	prot_desc->tx_bit_transfer_format = MSP_BTF_MS_BIT_FIRST;
-	prot_desc->rx_data_delay = MSP_DELAY_0;
-	prot_desc->tx_data_delay = MSP_DELAY_0;
 
 	if ((fmt & SND_SOC_DAIFMT_FORMAT_MASK) == SND_SOC_DAIFMT_DSP_A) {
 		pr_debug("%s: DSP_A.\n",
@@ -417,8 +419,6 @@ static void ux500_msp_dai_compile_prot_desc_i2s(struct msp_protocol_desc *prot_d
 		MSP_PHASE2_START_MODE_FRAME_SYNC;
 	prot_desc->rx_bit_transfer_format = MSP_BTF_MS_BIT_FIRST;
 	prot_desc->tx_bit_transfer_format = MSP_BTF_MS_BIT_FIRST;
-	prot_desc->rx_data_delay = MSP_DELAY_0;
-	prot_desc->tx_data_delay = MSP_DELAY_0;
 
 	prot_desc->rx_frame_length_1 = MSP_FRAME_LENGTH_1;
 	prot_desc->rx_frame_length_2 = MSP_FRAME_LENGTH_1;
@@ -476,6 +476,9 @@ static void ux500_msp_dai_compile_msp_config(struct snd_pcm_substream *substream
 	       __func__, msp_config->input_clock_freq, msp_config->frame_freq);
 	/* To avoid division by zero in I2S-driver (i2s_setup) */
 	prot_desc->total_clocks_for_one_frame = 1;
+
+	prot_desc->rx_data_delay = private->data_delay;
+	prot_desc->tx_data_delay = private->data_delay;
 
 	pr_debug("%s: rate: %u channels: %d.\n",
 			__func__,
@@ -609,6 +612,33 @@ static int ux500_msp_dai_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	return 0;
+}
+
+int ux500_msp_dai_set_data_delay(struct snd_soc_dai *dai, int delay)
+{
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
+
+	pr_debug("%s: MSP %d: Enter.\n", __func__, dai->id);
+
+	switch (delay) {
+	case MSP_DELAY_0:
+	case MSP_DELAY_1:
+	case MSP_DELAY_2:
+	case MSP_DELAY_3:
+		break;
+	default:
+		goto unsupported_delay;
+	}
+
+	drvdata->data_delay = delay;
+	return 0;
+
+unsupported_delay:
+	pr_err("%s: MSP %d: Error: Unsupported DAI delay (%d)!\n",
+		__func__,
+		dai->id,
+		delay);
+	return -EINVAL;
 }
 
 static int ux500_msp_dai_set_dai_fmt(struct snd_soc_dai *dai,
@@ -924,7 +954,7 @@ static const struct i2s_device_id dev_id_table_v2[] = {
 	{ "i2s_device.0", 0, 0 },
 	{ "i2s_device.1", 1, 0 },
 	{ "i2s_device.2", 2, 0 },
-	{ "i2s_device.3", 2, 0 },
+	{ "i2s_device.3", 3, 0 },
 	{ },
 };
 MODULE_DEVICE_TABLE(i2s, dev_id_table_v2);
