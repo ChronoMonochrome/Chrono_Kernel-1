@@ -47,6 +47,7 @@ void machine_crash_nonpanic_core(void *unused)
 	printk(KERN_DEBUG "CPU %u will stop doing anything useful since another CPU has crashed\n",
 	       smp_processor_id());
 	crash_save_cpu(&regs, smp_processor_id());
+	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
 	flush_cache_all();
 
 	atomic_dec(&waiting_for_crash_ipi);
