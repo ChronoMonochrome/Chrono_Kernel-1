@@ -392,7 +392,8 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 		goto out_free_irq;
 	}
 
-	device_init_wakeup(&pdev->dev, true);
+	if (plat->wakeup_enable)
+		device_init_wakeup(&pdev->dev, true);
 
 	platform_set_drvdata(pdev, keypad);
 
@@ -449,8 +450,11 @@ static int ske_keypad_suspend(struct device *dev)
 
 	if (device_may_wakeup(dev))
 		enable_irq_wake(irq);
-	else
+	else {
+		disable_irq(keypad->irq);
 		ske_keypad_set_bits(keypad, SKE_IMSC, ~SKE_KPIMA, 0x0);
+		clk_disable(keypad->clk);
+	}
 
 	return 0;
 }
@@ -463,8 +467,11 @@ static int ske_keypad_resume(struct device *dev)
 
 	if (device_may_wakeup(dev))
 		disable_irq_wake(irq);
-	else
-		ske_keypad_set_bits(keypad, SKE_IMSC, 0x0, SKE_KPIMA);
+	else {
+		clk_enable(keypad->clk);
+		enable_irq(keypad->irq);
+		ske_keypad_chip_init(keypad);
+	}
 
 	return 0;
 }
