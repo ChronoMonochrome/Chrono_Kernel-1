@@ -244,17 +244,20 @@ static void ske_keypad_read_data(struct ske_keypad *keypad)
 static irqreturn_t ske_keypad_irq(int irq, void *dev_id)
 {
 	struct ske_keypad *keypad = dev_id;
-	int retries = 20;
 
 	/* disable auto scan interrupt; mask the interrupt generated */
 	ske_keypad_set_bits(keypad, SKE_IMSC, ~SKE_KPIMA, 0x0);
 	ske_keypad_set_bits(keypad, SKE_ICR, 0x0, SKE_KPICA);
 
-	while ((readl(keypad->reg_base + SKE_CR) & SKE_KPASON) && --retries)
+	while (readl(keypad->reg_base + SKE_CR) & SKE_KPASON)
 		cpu_relax();
 
 	/* SKEx registers are stable and can be read */
 	ske_keypad_read_data(keypad);
+
+	/* wait one debounce ms */
+	while (readl(keypad->reg_base + SKE_RIS))
+		cpu_relax();
 
 	/* enable auto scan interrupts */
 	ske_keypad_set_bits(keypad, SKE_IMSC, 0x0, SKE_KPIMA);
@@ -349,7 +352,6 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 		goto out_freeinput;
 	}
 
-	keypad->board	= plat;
 	keypad->irq	= irq;
 	keypad->board	= plat;
 	keypad->input	= input;
