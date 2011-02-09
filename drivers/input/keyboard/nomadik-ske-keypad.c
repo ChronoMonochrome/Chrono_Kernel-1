@@ -19,6 +19,7 @@
 #include <linux/slab.h>
 #include <linux/clk.h>
 #include <linux/module.h>
+#include <linux/regulator/consumer.h>
 
 #include <plat/ske.h>
 
@@ -59,6 +60,7 @@
  * @keymap:	matrix scan code table for keycodes
  * @clk:	clock structure pointer
  * @enable:	flag to enable the driver event
+ * @regulator:	pointer to the regulator used for ske kyepad
  */
 struct ske_keypad {
 	int irq;
@@ -69,6 +71,7 @@ struct ske_keypad {
 	struct clk *clk;
 	spinlock_t ske_keypad_lock;
 	bool enable;
+	struct regulator *regulator;
 };
 
 static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
@@ -85,54 +88,6 @@ static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
 
 	spin_unlock(&keypad->ske_keypad_lock);
 }
-
-static ssize_t ske_show_attr_enable(struct device *dev,
-			struct device_attribute *attr, char *buf)
-{
-	struct platform_device *pdev = to_platform_device(dev);
-	struct ske_keypad *keypad = platform_get_drvdata(pdev);
-	return sprintf(buf, "%d\n", keypad->enable);
-}
-
-static ssize_t ske_store_attr_enable(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct platform_device *pdev = to_platform_device(dev);
-	struct ske_keypad *keypad = platform_get_drvdata(pdev);
-	unsigned long val;
-
-	if (strict_strtoul(buf, 0, &val))
-		return -EINVAL;
-
-	if ((val != 0) && (val != 1))
-		return -EINVAL;
-
-	if (keypad->enable != val) {
-		keypad->enable = val ? true : false;
-		if (!keypad->enable) {
-			disable_irq(keypad->irq);
-			ske_keypad_set_bits(keypad, SKE_IMSC, ~SKE_KPIMA, 0x0);
-			clk_disable(keypad->clk);
-		} else {
-			clk_enable(keypad->clk);
-			enable_irq(keypad->irq);
-			ske_keypad_set_bits(keypad, SKE_IMSC, 0x0, SKE_KPIMA);
-		}
-	}
-	return count;
-}
-
-static DEVICE_ATTR(enable, S_IWUSR | S_IRUGO,
-	ske_show_attr_enable, ske_store_attr_enable);
-
-static struct attribute *ske_keypad_attrs[] = {
-	&dev_attr_enable.attr,
-	NULL,
-};
-
-static struct attribute_group ske_attr_group = {
-	.attrs = ske_keypad_attrs,
-};
 
 /*
  * ske_keypad_chip_init: init keypad controller configuration
@@ -184,6 +139,61 @@ static int __init ske_keypad_chip_init(struct ske_keypad *keypad)
 
 	return 0;
 }
+
+static void ske_enable(struct ske_keypad *keypad)
+{
+	if (keypad->enable) {
+		regulator_enable(keypad->regulator);
+		clk_enable(keypad->clk);
+		enable_irq(keypad->irq);
+		ske_keypad_chip_init(keypad);
+	} else {
+		disable_irq(keypad->irq);
+		ske_keypad_set_bits(keypad, SKE_IMSC, ~SKE_KPIMA, 0x0);
+		clk_disable(keypad->clk);
+		regulator_disable(keypad->regulator);
+	}
+}
+
+static ssize_t ske_show_attr_enable(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct ske_keypad *keypad = platform_get_drvdata(pdev);
+	return sprintf(buf, "%d\n", keypad->enable);
+}
+
+static ssize_t ske_store_attr_enable(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct ske_keypad *keypad = platform_get_drvdata(pdev);
+	unsigned long val;
+
+	if (strict_strtoul(buf, 0, &val))
+		return -EINVAL;
+
+	if ((val != 0) && (val != 1))
+		return -EINVAL;
+
+	if (keypad->enable != val) {
+		keypad->enable = val ? true : false;
+		ske_enable(keypad);
+	}
+	return count;
+}
+
+static DEVICE_ATTR(enable, S_IWUSR | S_IRUGO,
+	ske_show_attr_enable, ske_store_attr_enable);
+
+static struct attribute *ske_keypad_attrs[] = {
+	&dev_attr_enable.attr,
+	NULL,
+};
+
+static struct attribute_group ske_attr_group = {
+	.attrs = ske_keypad_attrs,
+};
 
 static void ske_keypad_report(struct ske_keypad *keypad, u8 status, int col)
 {
@@ -330,6 +340,19 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
 		goto out_freekeypad;
 	}
 
+	keypad->regulator = regulator_get(&pdev->dev, "v-ape");
+	if (IS_ERR(keypad->regulator)) {
+		dev_err(&pdev->dev, "regulator_get failed\n");
+		keypad->regulator = NULL;
+		goto out_regulator_get;
+	} else {
+		ret = regulator_enable(keypad->regulator);
+		if (ret < 0) {
+			dev_err(&pdev->dev, "regulator_enable failed\n");
+			goto out_regulator_enable;
+		}
+	}
+
 	input->id.bustype = BUS_HOST;
 	input->name = "ux500-ske-keypad";
 	input->dev.parent = &pdev->dev;
@@ -411,6 +434,10 @@ out_unregisterinput:
 	input = NULL;
 	clk_disable(keypad->clk);
 out_freeinput:
+	regulator_disable(keypad->regulator);
+out_regulator_enable:
+	regulator_put(keypad->regulator);
+out_regulator_get:
 	input_free_device(input);
 out_freekeypad:
 	kfree(keypad);
@@ -439,6 +466,9 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 	if (keypad->board->exit)
 		keypad->board->exit();
 
+	regulator_disable(keypad->regulator);
+	regulator_put(keypad->regulator);
+
 	iounmap(keypad->reg_base);
 	release_mem_region(res->start, resource_size(res));
 	kfree(keypad);
@@ -455,10 +485,9 @@ static int ske_keypad_suspend(struct device *dev)
 
 	if (device_may_wakeup(dev))
 		enable_irq_wake(irq);
-	else {
-		disable_irq(keypad->irq);
-		ske_keypad_set_bits(keypad, SKE_IMSC, ~SKE_KPIMA, 0x0);
-		clk_disable(keypad->clk);
+	else if (keypad->enable) {
+		keypad->enable = false;
+		ske_enable(keypad);
 	}
 
 	return 0;
@@ -472,10 +501,9 @@ static int ske_keypad_resume(struct device *dev)
 
 	if (device_may_wakeup(dev))
 		disable_irq_wake(irq);
-	else {
-		clk_enable(keypad->clk);
-		enable_irq(keypad->irq);
-		ske_keypad_chip_init(keypad);
+	else if (!keypad->enable) {
+		keypad->enable = true;
+		ske_enable(keypad);
 	}
 
 	return 0;
