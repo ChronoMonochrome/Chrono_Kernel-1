@@ -491,7 +491,6 @@ static int apply_var(struct fb_info *fbi, struct mcde_display_device *ddev)
 		/* Apply pixel format */
 		fmt = var_to_pix_fmt_info(var);
 		mfb->pix_fmt = fmt->pix_fmt;
-		mcde_dss_set_pixel_format(ddev, mfb->pix_fmt);
 
 		/* Apply rotation */
 		mcde_dss_set_rotation(ddev, var_to_rotation(var));
@@ -647,6 +646,8 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	ret = apply_var(fbi, ddev);
 	if (ret)
 		goto apply_var_failed;
+
+	mcde_dss_set_pixel_format(ddev, ddev->port->pixel_format);
 
 	/* Setup overlay */
 	get_ovly_info(fbi, NULL, &ovly_info);

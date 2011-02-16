@@ -175,8 +175,6 @@ static int mcde_display_set_pixel_format_default(
 		return ret;
 	}
 
-	ddev->update_flags |= UPDATE_FLAG_PIXEL_FORMAT;
-
 	return 0;
 }
 
@@ -186,11 +184,6 @@ static inline enum mcde_ovly_pix_fmt mcde_display_get_pixel_format_default(
 	return ddev->pixel_format;
 }
 
-static inline enum mcde_port_pix_fmt mcde_display_get_port_pixel_format_default(
-	struct mcde_display_device *ddev)
-{
-	return ddev->port->pixel_format;
-}
 
 static int mcde_display_set_rotation_default(struct mcde_display_device *ddev,
 	enum mcde_display_rotation rotation)
@@ -274,8 +267,7 @@ static int mcde_display_apply_config_default(struct mcde_display_device *ddev)
 	if (!ddev->update_flags)
 		return 0;
 
-	if ((ddev->update_flags & UPDATE_FLAG_VIDEO_MODE) ||
-		(ddev->update_flags & UPDATE_FLAG_PIXEL_FORMAT))
+	if (ddev->update_flags & UPDATE_FLAG_VIDEO_MODE)
 		mcde_chnl_stop_flow(ddev->chnl_state);
 
 	ret = mcde_chnl_apply(ddev->chnl_state);
@@ -421,8 +413,6 @@ void mcde_display_init_device(struct mcde_display_device *ddev)
 	ddev->get_video_mode = mcde_display_get_video_mode_default;
 	ddev->set_pixel_format = mcde_display_set_pixel_format_default;
 	ddev->get_pixel_format = mcde_display_get_pixel_format_default;
-	ddev->get_port_pixel_format =
-				mcde_display_get_port_pixel_format_default;
 	ddev->set_rotation = mcde_display_set_rotation_default;
 	ddev->get_rotation = mcde_display_get_rotation_default;
 	ddev->set_synchronized_update =

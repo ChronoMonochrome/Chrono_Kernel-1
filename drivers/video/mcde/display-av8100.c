@@ -688,8 +688,6 @@ static int hdmi_set_pixel_format(
 		ret = mcde_chnl_set_palette(ddev->chnl_state, NULL);
 	}
 
-	ddev->update_flags |= UPDATE_FLAG_PIXEL_FORMAT;
-
 	return 0;
 }
 
