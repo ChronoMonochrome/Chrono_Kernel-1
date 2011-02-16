@@ -637,7 +637,6 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	if (ret)
 		goto channel_open_failed;
 
-
 	ret = mcde_dss_enable_display(ddev);
 	if (ret)
 		goto display_enable_failed;

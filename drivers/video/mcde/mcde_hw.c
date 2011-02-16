@@ -119,7 +119,7 @@ struct ovly_regs {
 	bool enabled;
 	u32  baseaddress0;
 	u32  baseaddress1;
-	bool reset_buf_id;
+	bool update;
 	u8   bits_per_pixel;
 	u8   bpp;
 	bool bgr;
@@ -140,12 +140,9 @@ struct ovly_regs {
 
 struct mcde_ovly_state {
 	bool inuse;
+	bool update;
 	u8 idx; /* MCDE overlay index */
 	struct mcde_chnl_state *chnl; /* Owner channel */
-	u32 transactionid; /* Apply time stamp */
-	u32 transactionid_regs; /* Register update time stamp */
-	u32 transactionid_hw; /* HW completed time stamp */
-	wait_queue_head_t waitq_hw; /* Waitq for transactionid_hw */
 
 	/* Staged settings */
 	u32 paddr;
@@ -870,13 +867,6 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 
 	/* Handle overlay irqs */
 	irq_status = mcde_rfld(MCDE_RISOVL, OVLFDRIS);
-	for (i = 0; i < num_overlays; i++) {
-		if (irq_status & (1 << i)) {
-			struct mcde_ovly_state *ovly = &overlays[i];
-			ovly->transactionid_hw = ovly->transactionid_regs;
-			wake_up(&ovly->waitq_hw);
-		}
-	}
 	mcde_wfld(MCDE_RISOVL, OVLFDRIS, irq_status);
 
 	/* Handle channel irqs */
@@ -1030,23 +1020,6 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 	}
 
 	return IRQ_HANDLED;
-}
-
-static void wait_for_overlay(struct mcde_ovly_state *ovly)
-{
-	int ret;
-
-	if (ovly->transactionid_hw >= ovly->transactionid_regs)
-		return;
-
-	ret = wait_event_timeout(ovly->waitq_hw,
-		ovly->transactionid_hw == ovly->transactionid_regs,
-		msecs_to_jiffies(OVLY_TIMEOUT));
-	if (!ret)
-		dev_warn(&mcde_dev->dev,
-			"Wait for overlay timeout (ovly=%d,%d<%d)!\n",
-			ovly->idx, ovly->transactionid_hw,
-			ovly->transactionid_regs);
 }
 
 static void wait_for_channel(struct mcde_chnl_state *chnl)
@@ -1411,6 +1384,7 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 	u32 pixelfetchwtrmrklevel;
 	u8  nr_of_bufs = 1;
 	u32 fifo_size;
+	u32 sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
 
 	if (rotation == MCDE_DISPLAY_ROT_180_CCW) {
 		ljinc = -ljinc;
@@ -1447,83 +1421,81 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 	else
 		pixelfetchwtrmrklevel = MCDE_PIXFETCH_MEDIUM_WTRMRKLVL;
 
-	if (regs->reset_buf_id) {
-		u32 sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
-		if (port->update_auto_trig && port->type == MCDE_PORTTYPE_DSI) {
-			switch (port->sync_src) {
-			case MCDE_SYNCSRC_OFF:
-				sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
-				break;
-			case MCDE_SYNCSRC_TE0:
-			case MCDE_SYNCSRC_TE1:
-			case MCDE_SYNCSRC_TE_POLLING:
-			default:
-				sel_mod = MCDE_EXTSRC0CR_SEL_MOD_AUTO_TOGGLE;
-				break;
-			}
-		} else if (port->type == MCDE_PORTTYPE_DPI) {
-			sel_mod = port->update_auto_trig ?
-					MCDE_EXTSRC0CR_SEL_MOD_AUTO_TOGGLE :
-					MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
+	if (port->update_auto_trig && port->type == MCDE_PORTTYPE_DSI) {
+		switch (port->sync_src) {
+		case MCDE_SYNCSRC_OFF:
+			sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
+			break;
+		case MCDE_SYNCSRC_TE0:
+		case MCDE_SYNCSRC_TE1:
+		case MCDE_SYNCSRC_TE_POLLING:
+		default:
+			sel_mod = MCDE_EXTSRC0CR_SEL_MOD_AUTO_TOGGLE;
+			break;
 		}
-
-		regs->reset_buf_id = false;
-		mcde_wreg(MCDE_EXTSRC0CONF + idx * MCDE_EXTSRC0CONF_GROUPOFFSET,
-			MCDE_EXTSRC0CONF_BUF_ID(0) |
-			MCDE_EXTSRC0CONF_BUF_NB(nr_of_bufs) |
-			MCDE_EXTSRC0CONF_PRI_OVLID(idx) |
-			MCDE_EXTSRC0CONF_BPP(regs->bpp) |
-			MCDE_EXTSRC0CONF_BGR(regs->bgr) |
-			MCDE_EXTSRC0CONF_BEBO(regs->bebo) |
-			MCDE_EXTSRC0CONF_BEPO(false));
-		mcde_wreg(MCDE_EXTSRC0CR + idx * MCDE_EXTSRC0CR_GROUPOFFSET,
-			MCDE_EXTSRC0CR_SEL_MOD(sel_mod) |
-			MCDE_EXTSRC0CR_MULTIOVL_CTRL_ENUM(PRIMARY) |
-			MCDE_EXTSRC0CR_FS_DIV_DISABLE(false) |
-			MCDE_EXTSRC0CR_FORCE_FS_DIV(false));
-		mcde_wreg(MCDE_OVL0CR + idx * MCDE_OVL0CR_GROUPOFFSET,
-			MCDE_OVL0CR_OVLEN(regs->enabled) |
-		MCDE_OVL0CR_COLCCTRL(regs->col_conv) |
-			MCDE_OVL0CR_CKEYGEN(false) |
-			MCDE_OVL0CR_ALPHAPMEN(false) |
-			MCDE_OVL0CR_OVLF(false) |
-			MCDE_OVL0CR_OVLR(false) |
-			MCDE_OVL0CR_OVLB(false) |
-			MCDE_OVL0CR_FETCH_ROPC(0) |
-			MCDE_OVL0CR_STBPRIO(0) |
-			MCDE_OVL0CR_BURSTSIZE_ENUM(HW_8W) |
-			/* TODO: enum, get from ovly */
-			MCDE_OVL0CR_MAXOUTSTANDING_ENUM(8_REQ) |
-			/* TODO: _HW_8W, calculate? */
-			MCDE_OVL0CR_ROTBURSTSIZE_ENUM(HW_8W));
-		mcde_wreg(MCDE_OVL0CONF + idx * MCDE_OVL0CONF_GROUPOFFSET,
-			MCDE_OVL0CONF_PPL(ppl) |
-			MCDE_OVL0CONF_EXTSRC_ID(idx) |
-			MCDE_OVL0CONF_LPF(lpf));
-		mcde_wreg(MCDE_OVL0CONF2 + idx * MCDE_OVL0CONF2_GROUPOFFSET,
-			MCDE_OVL0CONF2_BP(regs->alpha_source) |
-			MCDE_OVL0CONF2_ALPHAVALUE(regs->alpha_value) |
-			MCDE_OVL0CONF2_OPQ(regs->opq) |
-			MCDE_OVL0CONF2_PIXOFF(lmrgn & 63) |
-			MCDE_OVL0CONF2_PIXELFETCHERWATERMARKLEVEL(
-				pixelfetchwtrmrklevel));
-		mcde_wreg(MCDE_OVL0LJINC + idx * MCDE_OVL0LJINC_GROUPOFFSET,
-			ljinc);
-		mcde_wreg(MCDE_OVL0CROP + idx * MCDE_OVL0CROP_GROUPOFFSET,
-			MCDE_OVL0CROP_TMRGN(tmrgn) |
-			MCDE_OVL0CROP_LMRGN(lmrgn >> 6));
-		mcde_wreg(MCDE_OVL0COMP + idx * MCDE_OVL0COMP_GROUPOFFSET,
-			MCDE_OVL0COMP_XPOS(regs->xpos) |
-			MCDE_OVL0COMP_CH_ID(regs->ch_id) |
-			MCDE_OVL0COMP_YPOS(regs->ypos) |
-			MCDE_OVL0COMP_Z(regs->z));
+	} else if (port->type == MCDE_PORTTYPE_DPI) {
+		sel_mod = port->update_auto_trig ?
+				MCDE_EXTSRC0CR_SEL_MOD_AUTO_TOGGLE :
+				MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
 	}
+
+	regs->update = false;
+	mcde_wreg(MCDE_EXTSRC0CONF + idx * MCDE_EXTSRC0CONF_GROUPOFFSET,
+		MCDE_EXTSRC0CONF_BUF_ID(0) |
+		MCDE_EXTSRC0CONF_BUF_NB(nr_of_bufs) |
+		MCDE_EXTSRC0CONF_PRI_OVLID(idx) |
+		MCDE_EXTSRC0CONF_BPP(regs->bpp) |
+		MCDE_EXTSRC0CONF_BGR(regs->bgr) |
+		MCDE_EXTSRC0CONF_BEBO(regs->bebo) |
+		MCDE_EXTSRC0CONF_BEPO(false));
+	mcde_wreg(MCDE_EXTSRC0CR + idx * MCDE_EXTSRC0CR_GROUPOFFSET,
+		MCDE_EXTSRC0CR_SEL_MOD(sel_mod) |
+		MCDE_EXTSRC0CR_MULTIOVL_CTRL_ENUM(PRIMARY) |
+		MCDE_EXTSRC0CR_FS_DIV_DISABLE(false) |
+		MCDE_EXTSRC0CR_FORCE_FS_DIV(false));
+	mcde_wreg(MCDE_OVL0CR + idx * MCDE_OVL0CR_GROUPOFFSET,
+		MCDE_OVL0CR_OVLEN(regs->enabled) |
+	MCDE_OVL0CR_COLCCTRL(regs->col_conv) |
+		MCDE_OVL0CR_CKEYGEN(false) |
+		MCDE_OVL0CR_ALPHAPMEN(false) |
+		MCDE_OVL0CR_OVLF(false) |
+		MCDE_OVL0CR_OVLR(false) |
+		MCDE_OVL0CR_OVLB(false) |
+		MCDE_OVL0CR_FETCH_ROPC(0) |
+		MCDE_OVL0CR_STBPRIO(0) |
+		MCDE_OVL0CR_BURSTSIZE_ENUM(HW_8W) |
+		/* TODO: enum, get from ovly */
+		MCDE_OVL0CR_MAXOUTSTANDING_ENUM(8_REQ) |
+		/* TODO: _HW_8W, calculate? */
+		MCDE_OVL0CR_ROTBURSTSIZE_ENUM(HW_8W));
+	mcde_wreg(MCDE_OVL0CONF + idx * MCDE_OVL0CONF_GROUPOFFSET,
+		MCDE_OVL0CONF_PPL(ppl) |
+		MCDE_OVL0CONF_EXTSRC_ID(idx) |
+		MCDE_OVL0CONF_LPF(lpf));
+	mcde_wreg(MCDE_OVL0CONF2 + idx * MCDE_OVL0CONF2_GROUPOFFSET,
+		MCDE_OVL0CONF2_BP(regs->alpha_source) |
+		MCDE_OVL0CONF2_ALPHAVALUE(regs->alpha_value) |
+		MCDE_OVL0CONF2_OPQ(regs->opq) |
+		MCDE_OVL0CONF2_PIXOFF(lmrgn & 63) |
+		MCDE_OVL0CONF2_PIXELFETCHERWATERMARKLEVEL(
+			pixelfetchwtrmrklevel));
+	mcde_wreg(MCDE_OVL0LJINC + idx * MCDE_OVL0LJINC_GROUPOFFSET,
+		ljinc);
+	mcde_wreg(MCDE_OVL0CROP + idx * MCDE_OVL0CROP_GROUPOFFSET,
+		MCDE_OVL0CROP_TMRGN(tmrgn) |
+		MCDE_OVL0CROP_LMRGN(lmrgn >> 6));
 
 	dev_vdbg(&mcde_dev->dev, "Overlay registers setup, idx=%d\n", idx);
 }
 
-static void update_overlay_address_registers(u8 idx, struct ovly_regs *regs)
+static void update_overlay_registers_on_the_fly(u8 idx, struct ovly_regs *regs)
 {
+	mcde_wreg(MCDE_OVL0COMP + idx * MCDE_OVL0COMP_GROUPOFFSET,
+		MCDE_OVL0COMP_XPOS(regs->xpos) |
+		MCDE_OVL0COMP_CH_ID(regs->ch_id) |
+		MCDE_OVL0COMP_YPOS(regs->ypos) |
+		MCDE_OVL0COMP_Z(regs->z));
+
 	mcde_wreg(MCDE_EXTSRC0A0 + idx * MCDE_EXTSRC0A0_GROUPOFFSET,
 		regs->baseaddress0);
 	mcde_wreg(MCDE_EXTSRC0A1 + idx * MCDE_EXTSRC0A1_GROUPOFFSET,
@@ -1995,24 +1967,12 @@ static int enable_mcde_hw(void)
 	for (i = 0; i < num_channels; i++) {
 		struct mcde_chnl_state *chnl = &channels[i];
 		if (chnl->enabled) {
-			if (chnl->ovly0 && chnl->ovly0->inuse) {
-				if (chnl->ovly0->regs.enabled) {
-					chnl->ovly0->transactionid =
-							++chnl->transactionid;
-					chnl->ovly0->regs.reset_buf_id = true;
-				 } else {
-					chnl->transactionid++;
-				}
-			}
-			if (chnl->ovly1 && chnl->ovly1->inuse) {
-				if (chnl->ovly1->regs.enabled) {
-					chnl->ovly1->transactionid =
-							++chnl->transactionid;
-					chnl->ovly1->regs.reset_buf_id = true;
-				} else {
-					chnl->transactionid++;
-				}
-			}
+			if (chnl->ovly0 && chnl->ovly0->inuse &&
+						chnl->ovly0->regs.enabled)
+				chnl->ovly0->regs.update = true;
+			if (chnl->ovly1 && chnl->ovly1->inuse &&
+						chnl->ovly1->regs.enabled)
+				chnl->ovly1->regs.update = true;
 			chnl->transactionid++;
 		}
 	}
@@ -2395,6 +2355,12 @@ static void chnl_update_registers(struct mcde_chnl_state *chnl)
 
 static void chnl_update_continous(struct mcde_chnl_state *chnl)
 {
+
+	if (chnl->continous_running) {
+		chnl->transactionid_regs = chnl->transactionid;
+		wait_for_channel(chnl);
+	}
+
 	if (!chnl->continous_running) {
 		if (chnl->transactionid_regs < chnl->transactionid)
 			chnl_update_registers(chnl);
@@ -2463,23 +2429,15 @@ static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
 static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 						struct mcde_ovly_state *ovly)
 {
-	if (!ovly || (ovly->transactionid_regs >= ovly->transactionid &&
-			chnl->transactionid_regs >= chnl->transactionid))
+	if (!ovly)
 		return;
 
-	update_overlay_address_registers(ovly->idx, &ovly->regs);
-	if (ovly->regs.reset_buf_id) {
-		if (!chnl->continous_running)
-			wait_for_overlay(ovly);
-
+	update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs);
+	if (ovly->regs.update) {
 		update_overlay_registers(ovly->idx, &ovly->regs, &chnl->port,
 			chnl->fifo, chnl->regs.x, chnl->regs.y,
 			chnl->regs.ppl, chnl->regs.lpf, ovly->stride,
 			chnl->vmode.interlaced, chnl->rotation);
-		ovly->transactionid_regs = ovly->transactionid;
-	} else if (chnl->continous_running) {
-		ovly->transactionid_regs = ovly->transactionid;
-		wait_for_overlay(ovly);
 	}
 }
 
@@ -2829,10 +2787,7 @@ struct mcde_ovly_state *mcde_ovly_get(struct mcde_chnl_state *chnl)
 		ovly->h = 0;
 		ovly->alpha_value = 0xFF;
 		ovly->alpha_source = MCDE_OVL1CONF2_BP_PER_PIXEL_ALPHA;
-		/* Reset transactionids */
-		ovly->transactionid = 0;
-		ovly->transactionid_regs = 0;
-		ovly->transactionid_hw = 0;
+		ovly->update = true;
 		mcde_ovly_apply(ovly);
 	}
 
@@ -2847,6 +2802,7 @@ void mcde_ovly_put(struct mcde_ovly_state *ovly)
 		return;
 	if (ovly->regs.enabled) {
 		ovly->paddr = 0;
+		ovly->update = true;
 		mcde_ovly_apply(ovly);/* REVIEW: API call calling API call! */
 	}
 	ovly->inuse = false;
@@ -2856,6 +2812,9 @@ void mcde_ovly_set_source_buf(struct mcde_ovly_state *ovly, u32 paddr)
 {
 	if (!ovly->inuse)
 		return;
+
+	if (paddr == 0 || ovly->paddr == 0)
+		ovly->update = true;
 
 	ovly->paddr = paddr;
 }
@@ -2868,6 +2827,7 @@ void mcde_ovly_set_source_info(struct mcde_ovly_state *ovly,
 
 	ovly->stride = stride;
 	ovly->pix_fmt = pix_fmt;
+	ovly->update = true;
 }
 
 void mcde_ovly_set_source_area(struct mcde_ovly_state *ovly,
@@ -2880,6 +2840,7 @@ void mcde_ovly_set_source_area(struct mcde_ovly_state *ovly,
 	ovly->src_y = y;
 	ovly->w = w;
 	ovly->h = h;
+	ovly->update = true;
 }
 
 void mcde_ovly_set_dest_pos(struct mcde_ovly_state *ovly, u16 x, u16 y, u8 z)
@@ -2904,7 +2865,10 @@ void mcde_ovly_apply(struct mcde_ovly_state *ovly)
 	ovly->regs.baseaddress0 = ovly->paddr;
 	ovly->regs.baseaddress1 = ovly->regs.baseaddress0 + ovly->stride;
 	/*TODO set to true if interlaced *//* REVIEW: Video mode interlaced? */
-	ovly->regs.reset_buf_id = !ovly->chnl->continous_running;
+	if (!ovly->regs.update)
+		ovly->regs.update = ovly->update;
+	ovly->update = false;
+
 	switch (ovly->pix_fmt) {/* REVIEW: Extract to table */
 	case MCDE_OVLYPIXFMT_RGB565:
 		ovly->regs.bits_per_pixel = 16;
@@ -2969,11 +2933,7 @@ void mcde_ovly_apply(struct mcde_ovly_state *ovly)
 	ovly->regs.col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
 	ovly->regs.alpha_source = ovly->alpha_source;
 	ovly->regs.alpha_value = ovly->alpha_value;
-
-	if (ovly->regs.enabled)
-		ovly->transactionid = ++ovly->chnl->transactionid;
-	else
-		ovly->chnl->transactionid++;
+	ovly->chnl->transactionid++;
 
 	mutex_unlock(&mcde_hw_lock);
 
@@ -3290,9 +3250,6 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 					dsi_te_timer_function;
 		channels[i].dsi_te_timer.data = i;
 	}
-
-	for (i = 0; i < num_overlays; i++)
-		init_waitqueue_head(&overlays[i].waitq_hw);
 
 	return 0;
 
