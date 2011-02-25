@@ -132,7 +132,7 @@ static void ab8500_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
 	struct ab8500_gpio *ab8500_gpio = to_ab8500_gpio(chip);
 	int ret;
 	/* Write the data */
-	ret = ab8500_gpio_set_bits(chip, AB8500_GPIO_OUT1_REG, offset, 1);
+	ret = ab8500_gpio_set_bits(chip, AB8500_GPIO_OUT1_REG, offset, val);
 	if (ret < 0)
 		dev_err(ab8500_gpio->dev, "%s write failed\n", __func__);
 }
