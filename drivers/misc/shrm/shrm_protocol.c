@@ -465,7 +465,7 @@ void shm_ca_wake_req_work(struct work_struct *work)
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 			shm_dev->intr_base + GOP_SET_REGISTER_BASE);
 }
-
+#ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
 static int shrm_modem_reset_sequence(void)
 {
 	int err;
@@ -539,6 +539,7 @@ static int shrm_modem_reset_sequence(void)
 
 	return err;
 }
+#endif
 
 static void shrm_modem_reset_callback(unsigned long irq)
 {
