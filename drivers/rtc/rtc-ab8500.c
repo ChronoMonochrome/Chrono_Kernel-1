@@ -241,8 +241,19 @@ static int ab8500_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	 */
 	secs -= get_elapsed_seconds(AB8500_RTC_EPOCH);
 
+#ifndef CONFIG_ANDROID
+	secs += 30; /* Round to nearest minute */
+#endif
+
 	mins = secs / 60;
 
+#ifdef CONFIG_ANDROID
+	/*
+	 * Needed due to Android believes all hw have a wake-up resolution
+	 * in seconds.
+	 */
+	mins++;
+#endif
 	buf[2] = mins & 0xFF;
 	buf[1] = (mins >> 8) & 0xFF;
 	buf[0] = (mins >> 16) & 0xFF;
