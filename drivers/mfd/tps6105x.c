@@ -195,6 +195,7 @@ static int __devinit tps6105x_probe(struct i2c_client *client,
 	return 0;
 
 fail:
+	i2c_set_clientdata(client, NULL);
 	kfree(tps6105x);
 	return ret;
 }
