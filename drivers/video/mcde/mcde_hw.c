@@ -262,7 +262,6 @@ struct mcde_chnl_state {
 	u16 (*map_b)(u8);
 	bool palette_enable;
 	bool synchronized_update;
-	enum mcde_port_pix_fmt pix_fmt;
 	struct mcde_video_mode vmode;
 	enum mcde_display_rotation rotation;
 	u32 rotbuf1;
@@ -2292,7 +2291,6 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 	chnl->port = *port;
 	chnl->fifo = fifo;
 	chnl->formatter_updated = false;
-	chnl->pix_fmt = port->pixel_format;
 
 	chnl->blend_en = true;
 	chnl->blend_ctrl = MCDE_CRA0_BLENDCTRL_SOURCE;
@@ -2318,7 +2316,7 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	}
 	/* REVIEW: 180 deg? */
 
-	chnl->regs.bpp = portfmt2bpp(chnl->pix_fmt);
+	chnl->regs.bpp = portfmt2bpp(chnl->port.pixel_format);
 	chnl->regs.synchronized_update = chnl->synchronized_update;
 	chnl->regs.roten = roten;
 	chnl->regs.rotdir = rotdir;
@@ -2330,7 +2328,8 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	chnl->regs.map_b = chnl->map_b;
 	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
 		chnl->regs.clksel = MCDE_CRA1_CLKSEL_166MHZ;
-		chnl->regs.dsipacking = portfmt2dsipacking(chnl->pix_fmt);
+		chnl->regs.dsipacking =
+				portfmt2dsipacking(chnl->port.pixel_format);
 	} else if (chnl->port.type == MCDE_PORTTYPE_DPI) {
 		if (chnl->port.phy.dpi.tv_mode) {
 			chnl->regs.internal_clk = false;
@@ -2342,7 +2341,8 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 		} else {
 			chnl->regs.internal_clk = true;
 			chnl->regs.clksel = MCDE_CRA1_CLKSEL_LCD;
-			chnl->regs.cdwin = portfmt2cdwin(chnl->pix_fmt);
+			chnl->regs.cdwin =
+					portfmt2cdwin(chnl->port.pixel_format);
 			chnl->regs.bcd = (chnl->port.phy.dpi.clock_div < 2);
 			if (!chnl->regs.bcd)
 				chnl->regs.pcd =
@@ -2525,7 +2525,7 @@ int mcde_chnl_set_pixel_format(struct mcde_chnl_state *chnl,
 
 	if (!chnl->reserved)
 		return -EINVAL;
-	chnl->pix_fmt = pix_fmt;
+	chnl->port.pixel_format = pix_fmt;
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 

@@ -25,12 +25,15 @@
 struct display_driver_data {
 	struct regulator *cvbs_regulator;
 	bool cvbs_regulator_enabled;
+	bool update_port_pixel_format;
 };
 
 static int hdmi_try_video_mode(
 	struct mcde_display_device *ddev, struct mcde_video_mode *video_mode);
 static int hdmi_set_video_mode(
 	struct mcde_display_device *ddev, struct mcde_video_mode *video_mode);
+static int hdmi_set_pixel_format(
+	struct mcde_display_device *ddev, enum mcde_ovly_pix_fmt format);
 
 static ssize_t store_hdmisdtvswitch(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
@@ -49,18 +52,62 @@ static ssize_t store_hdmisdtvswitch(struct device *dev,
 			mdev->port->hdmi_sdtv_switch = HDMI_SWITCH;
 			mdev->native_x_res = NATIVE_XRES_HDMI;
 			mdev->native_y_res = NATIVE_YRES_HDMI;
-			mdev->video_mode.force_update = true;
 		} else {
 			dev_dbg(dev, "hdmi/sdtv switch = sdtv\n");
 			mdev->port->hdmi_sdtv_switch = SDTV_SWITCH;
 			mdev->native_x_res = NATIVE_XRES_SDTV;
 			mdev->native_y_res = NATIVE_YRES_SDTV;
-			mdev->video_mode.force_update = true;
 		}
+		/* implicitely read by a memcmp in dss */
+		mdev->video_mode.force_update = true;
 	}
 
 	return count;
 }
+
+static ssize_t store_input_pixel_format(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mcde_display_device *ddev = to_mcde_display_device(dev);
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+
+	dev_dbg(dev, "%s\n", __func__);
+	if (count > 0) {
+		unsigned long input;
+		if (strict_strtoul(buf, 10, &input) != 0)
+			return -EINVAL;
+		switch (input) {
+		/* intentional fall through */
+		case MCDE_PORTPIXFMT_DSI_16BPP:
+		case MCDE_PORTPIXFMT_DSI_18BPP:
+		case MCDE_PORTPIXFMT_DSI_18BPP_PACKED:
+		case MCDE_PORTPIXFMT_DSI_24BPP:
+		case MCDE_PORTPIXFMT_DSI_YCBCR422:
+			ddev->port->pixel_format = input;
+			break;
+		default:
+			dev_warn(&ddev->dev, "invalid format (%ld)\n",
+								input);
+			return -EINVAL;
+			break;
+		}
+		/* implicitely read by a memcmp in dss */
+		ddev->video_mode.force_update = true;
+		driver_data->update_port_pixel_format = true;
+	}
+
+	return count;
+}
+static ssize_t show_input_pixel_format(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct mcde_display_device *ddev = to_mcde_display_device(dev);
+
+	return sprintf(buf, "%d\n", ddev->port->pixel_format);
+}
+
+static DEVICE_ATTR(input_pixel_format, S_IRUGO | S_IWUSR,
+			show_input_pixel_format, store_input_pixel_format);
 
 /* Supported HDMI modes */
 static struct mcde_video_mode video_modes_supp_hdmi[] = {
@@ -304,6 +351,7 @@ static int hdmi_set_video_mode(
 	bool update = 0;
 	union av8100_configuration av8100_config;
 	struct mcde_display_hdmi_platform_data *pdata = dev->dev.platform_data;
+	struct display_driver_data *driver_data = dev_get_drvdata(&dev->dev);
 	struct av8100_status status;
 
 	/* TODO check video_mode_params */
@@ -312,7 +360,7 @@ static int hdmi_set_video_mode(
 		return -EINVAL;
 	}
 
-	dev_vdbg(&dev->dev, "%s:\n", __func__);
+	dev_dbg(&dev->dev, "%s:\n", __func__);
 	dev_vdbg(&dev->dev, "%s:xres:%d yres:%d hbp:%d hfp:%d vbp1:%d vfp1:%d "
 		"vbp2:%d vfp2:%d interlaced:%d\n", __func__,
 		video_mode->xres,
@@ -324,6 +372,11 @@ static int hdmi_set_video_mode(
 		video_mode->vbp2,
 		video_mode->vfp2,
 		video_mode->interlaced);
+
+	if (driver_data->update_port_pixel_format) {
+		hdmi_set_pixel_format(dev, dev->pixel_format);
+		driver_data->update_port_pixel_format = false;
+	}
 
 	memset(&(dev->video_mode), 0, sizeof(struct mcde_video_mode));
 	memcpy(&(dev->video_mode), video_mode, sizeof(struct mcde_video_mode));
@@ -640,6 +693,7 @@ static int hdmi_set_pixel_format(
 {
 	int ret;
 
+	dev_dbg(&ddev->dev, "%s\n", __func__);
 	ddev->pixel_format = format;
 	mcde_chnl_stop_flow(ddev->chnl_state);
 	ret = mcde_chnl_set_pixel_format(ddev->chnl_state,
@@ -660,6 +714,8 @@ static int hdmi_set_pixel_format(
 			.map_col_ch2 = *map_yv,
 		};
 		ret = mcde_chnl_set_palette(ddev->chnl_state, &palette);
+	} else {
+		ret = mcde_chnl_set_palette(ddev->chnl_state, NULL);
 	}
 
 	ddev->update_flags |= UPDATE_FLAG_PIXEL_FORMAT;
@@ -846,6 +902,9 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	if (device_create_file(&dev->dev, &dev_attr_hdmisdtvswitch))
 		dev_info(&dev->dev,
 			"Unable to create hdmisdtvswitch attr\n");
+	if (device_create_file(&dev->dev, &dev_attr_input_pixel_format))
+		dev_info(&dev->dev,
+			"Unable to create input_pixel_format attr\n");
 
 	if (pdata->cvbs_regulator_id) {
 		driver_data->cvbs_regulator = regulator_get(&dev->dev,
@@ -876,6 +935,7 @@ static int __devexit hdmi_remove(struct mcde_display_device *dev)
 		dev->dev.platform_data;
 
 	/* Remove sysfs file */
+	device_remove_file(&dev->dev, &dev_attr_input_pixel_format);
 	device_remove_file(&dev->dev, &dev_attr_hdmisdtvswitch);
 
 	dev->set_power_mode(dev, MCDE_DISPLAY_PM_OFF);
