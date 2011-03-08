@@ -324,6 +324,8 @@ static int lsm303dlh_a_restore(struct lsm303dlh_a_data *ddata)
 		goto fail;
 
 fail:
+	/* write to the boot bit to reboot memory content */
+	lsm303dlh_a_write(ddata, CTRL_REG2, 0x80, "CTRL_REG2");
 	mutex_unlock(&ddata->lock);
 	return ret;
 }
@@ -757,6 +759,7 @@ static ssize_t lsm303dlh_a_store_mode(struct device *dev,
 	long val;
 	unsigned char data;
 	int error;
+	bool set_boot_bit = false;
 
 	error = strict_strtol(buf, 0, &val);
 	if (error)
@@ -771,11 +774,15 @@ static ssize_t lsm303dlh_a_store_mode(struct device *dev,
 		return -EINVAL;
 	}
 
-	if (ddata->device_status == DEVICE_SUSPENDED &&
-			val == LSM303DLH_A_MODE_OFF) {
-		ddata->mode = val;
-		mutex_unlock(&ddata->lock);
-		return 0;
+	if (ddata->device_status == DEVICE_SUSPENDED) {
+		if (val == LSM303DLH_A_MODE_OFF) {
+			ddata->mode = val;
+			mutex_unlock(&ddata->lock);
+			return 0;
+		} else {
+			/* device is turning on after suspend, reset memory */
+			set_boot_bit = true;
+		}
 	}
 
 	/*  if same mode as existing, return */
@@ -813,6 +820,14 @@ static ssize_t lsm303dlh_a_store_mode(struct device *dev,
 		mutex_unlock(&ddata->lock);
 		return error;
 	}
+
+	/*
+	 * Power on request when device is in suspended state
+	 * write to the boot bit in CTRL_REG2 to reboot memory content
+	 * and ensure correct device behavior after it resumes
+	 */
+	if (set_boot_bit)
+		lsm303dlh_a_write(ddata, CTRL_REG2, 0x80, "CTRL_REG2");
 
 	if (val == LSM303DLH_A_MODE_OFF) {
 #ifdef CONFIG_SENSORS_LSM303DLH_INPUT_DEVICE
