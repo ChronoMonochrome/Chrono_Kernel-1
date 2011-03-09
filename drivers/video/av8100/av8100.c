@@ -3544,11 +3544,13 @@ static int __devinit av8100_probe(struct i2c_client *i2cClient,
 	}
 
 	/* Get clock resource */
-	av8100_globals->inputclk = clk_get(NULL, pdata->inputclk_id);
-	if (IS_ERR(av8100_globals->inputclk)) {
-		av8100_globals->inputclk = NULL;
-		dev_warn(av8100dev, "%s: Failed to get clock '%s'\n",
+	if (pdata->inputclk_id) {
+		av8100_globals->inputclk = clk_get(NULL, pdata->inputclk_id);
+		if (IS_ERR(av8100_globals->inputclk)) {
+			av8100_globals->inputclk = NULL;
+			dev_warn(av8100dev, "%s: Failed to get clock '%s'\n",
 					__func__, pdata->inputclk_id);
+		}
 	}
 
 	av8100_set_state(AV8100_OPMODE_SHUTDOWN);
