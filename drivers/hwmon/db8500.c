@@ -47,6 +47,8 @@ struct db8500_temp {
 	unsigned char min[NUM_SENSORS];
 	unsigned char max[NUM_SENSORS];
 	unsigned char crit[NUM_SENSORS];
+	unsigned char min_alarm[NUM_SENSORS];
+	unsigned char max_alarm[NUM_SENSORS];
 	unsigned short measure_time;
 	struct delayed_work power_off_work;
 	struct mutex lock;
@@ -96,6 +98,12 @@ static ssize_t show_temp_power_off_delay(struct device *dev,
 /* HWMON sysfs interface */
 static ssize_t show_name(struct device *dev, struct device_attribute *devattr,
 			 char *buf)
+{
+	return sprintf(buf, "db8500\n");
+}
+
+static ssize_t show_label(struct device *dev, struct device_attribute *devattr,
+			char *buf)
 {
 	return sprintf(buf, "db8500\n");
 }
@@ -160,8 +168,7 @@ static ssize_t set_crit(struct device *dev,
 		return res;
 
 	mutex_lock(&data->lock);
-	val = (val > 255) ? 0xFF : val;
-
+	val &= 0xFF;
 	data->crit[attr->index - 1] = val;
 	(void)prcmu_config_hotdog(data->crit[attr->index - 1]);
 	mutex_unlock(&data->lock);
@@ -169,18 +176,21 @@ static ssize_t set_crit(struct device *dev,
 	return count;
 }
 
-/* set functions (W nodes) */
+/* start/stop temperature measurement */
 static ssize_t start_temp(struct device *dev, struct device_attribute *devattr,
 		       const char *buf, size_t count)
 {
 	unsigned long val;
 	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	int res = strict_strtoul(buf, 10, &val);
 	if (res < 0)
 		return res;
 
 	mutex_lock(&data->lock);
 	data->measure_time = val & 0xFFFF;
+	data->min_alarm[attr->index - 1] = 0;
+	data->max_alarm[attr->index - 1] = 0;
 	mutex_unlock(&data->lock);
 
 	(void)prcmu_start_temp_sense(data->measure_time);
@@ -205,7 +215,7 @@ static ssize_t stop_temp(struct device *dev, struct device_attribute *devattr,
 
 /*
  * show functions (RO nodes)
- * Notice that min/max/max_hyst refer to millivolts and not millidegrees
+ * Notice that min/max/crit refer to degrees
  */
 static ssize_t show_min(struct device *dev,
 			struct device_attribute *devattr, char *buf)
@@ -234,6 +244,24 @@ static ssize_t show_crit(struct device *dev,
 	return sprintf(buf, "%d\n", data->crit[attr->index - 1]);
 }
 
+/* Alarms */
+static ssize_t show_min_alarm(struct device *dev,
+			      struct device_attribute *devattr, char *buf)
+{
+	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+	/* hwmon attr index starts at 1, thus "attr->index-1" below */
+	return sprintf(buf, "%d\n", data->min_alarm[attr->index - 1]);
+}
+
+static ssize_t show_max_alarm(struct device *dev,
+			      struct device_attribute *devattr, char *buf)
+{
+	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+	/* hwmon attr index starts at 1, thus "attr->index-1" below */
+	return sprintf(buf, "%d\n", data->max_alarm[attr->index - 1]);
+}
 
 /*These node are not included in the kernel hwmon sysfs interface */
 static SENSOR_DEVICE_ATTR(temp_power_off_delay, S_IRUGO | S_IWUSR,
@@ -241,13 +269,16 @@ static SENSOR_DEVICE_ATTR(temp_power_off_delay, S_IRUGO | S_IWUSR,
 			  set_temp_power_off_delay, 0);
 
 /* Chip name, required by hwmon*/
-static SENSOR_DEVICE_ATTR(temp1_start, S_IWUSR, NULL, start_temp, 0);
-static SENSOR_DEVICE_ATTR(temp1_stop, S_IWUSR, NULL, stop_temp, 0);
 static SENSOR_DEVICE_ATTR(name, S_IRUGO, show_name, NULL, 0);
+static SENSOR_DEVICE_ATTR(temp1_start, S_IWUSR, NULL, start_temp, 1);
+static SENSOR_DEVICE_ATTR(temp1_stop, S_IWUSR, NULL, stop_temp, 1);
 static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, show_min, set_min, 1);
 static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_max, set_max, 1);
 static SENSOR_DEVICE_ATTR(temp1_crit, S_IWUSR | S_IRUGO,
 			show_crit, set_crit, 1);
+static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_label, NULL, 1);
+static SENSOR_DEVICE_ATTR(temp1_min_alarm, S_IRUGO, show_min_alarm, NULL, 1);
+static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO, show_max_alarm, NULL, 1);
 
 static struct attribute *db8500_temp_attributes[] = {
 	&sensor_dev_attr_temp_power_off_delay.dev_attr.attr,
@@ -257,6 +288,9 @@ static struct attribute *db8500_temp_attributes[] = {
 	&sensor_dev_attr_temp1_min.dev_attr.attr,
 	&sensor_dev_attr_temp1_max.dev_attr.attr,
 	&sensor_dev_attr_temp1_crit.dev_attr.attr,
+	&sensor_dev_attr_temp1_label.dev_attr.attr,
+	&sensor_dev_attr_temp1_min_alarm.dev_attr.attr,
+	&sensor_dev_attr_temp1_max_alarm.dev_attr.attr,
 	NULL
 };
 
@@ -267,7 +301,13 @@ static const struct attribute_group db8500_temp_group = {
 static irqreturn_t prcmu_hotmon_low_irq_handler(int irq, void *irq_data)
 {
 	struct platform_device *pdev = irq_data;
-	sysfs_notify(&pdev->dev.kobj, NULL, "prcmu_hotmon_low alarm");
+	struct db8500_temp *data = platform_get_drvdata(pdev);
+
+	mutex_lock(&data->lock);
+	data->min_alarm[0] = 1;
+	mutex_unlock(&data->lock);
+
+	sysfs_notify(&pdev->dev.kobj, NULL, "temp1_min_alarm");
 	dev_dbg(&pdev->dev, "DB8500 thermal low warning\n");
 	return IRQ_HANDLED;
 }
@@ -278,7 +318,11 @@ static irqreturn_t prcmu_hotmon_high_irq_handler(int irq, void *irq_data)
 	struct platform_device *pdev = irq_data;
 	struct db8500_temp *data = platform_get_drvdata(pdev);
 
-	sysfs_notify(&pdev->dev.kobj, NULL, "prcmu_hotmon_high alarm");
+	mutex_lock(&data->lock);
+	data->max_alarm[0] = 1;
+	mutex_unlock(&data->lock);
+
+	sysfs_notify(&pdev->dev.kobj, NULL, "temp1_max_alarm");
 	dev_dbg(&pdev->dev, "DB8500 thermal warning, power off in %lu s\n",
 		 (data->power_off_delay) / 1000);
 	delay_in_jiffies = msecs_to_jiffies(data->power_off_delay);
@@ -338,6 +382,9 @@ static int __devinit db8500_temp_probe(struct platform_device *pdev)
 	for (i = 0; i < NUM_SENSORS; i++) {
 		data->min[i] = 0;
 		data->max[i] = 0xFF;
+		data->crit[i] = 0xFF;
+		data->min_alarm[i] = 0;
+		data->max_alarm[i] = 0;
 	}
 
 	mutex_init(&data->lock);
