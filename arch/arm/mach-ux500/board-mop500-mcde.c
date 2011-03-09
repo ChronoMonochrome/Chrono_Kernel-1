@@ -508,7 +508,6 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	struct fb_var_screeninfo var;
 	struct fb_fix_screeninfo fix;
 	struct mcde_fb *mfb;
-	u8 *addr;
 	int i;
 
 	if (event != FB_EVENT_FB_REGISTERED)
@@ -521,10 +520,7 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	mfb = to_mcde_fb(info);
 	var = info->var;
 	fix = info->fix;
-	addr = ioremap(fix.smem_start,
-			var.yres_virtual * fix.line_length);
-	memset(addr, 0x00,
-			var.yres_virtual * fix.line_length);
+
 	/* Apply overlay info */
 	for (i = 0; i < mfb->num_ovlys; i++) {
 		struct mcde_overlay *ovly = mfb->ovlys[i];
@@ -560,7 +556,6 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	struct fb_var_screeninfo var;
 	struct fb_fix_screeninfo fix;
 	struct mcde_fb *mfb;
-	u8 *addr;
 
 	if (event != FB_EVENT_FB_REGISTERED)
 		return 0;
@@ -575,10 +570,6 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 
 	var = info->var;
 	fix = info->fix;
-	addr = ioremap(fix.smem_start,
-			var.yres_virtual * fix.line_length);
-	memset(addr, 0x00,
-			var.yres_virtual * fix.line_length);
 	var.yoffset = var.yoffset ? 0 : var.yres;
 	if (info->fbops->fb_pan_display)
 		ret = info->fbops->fb_pan_display(&var, info);

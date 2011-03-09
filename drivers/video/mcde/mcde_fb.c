@@ -210,7 +210,7 @@ static int reallocate_fb_mem(struct fb_info *fbi, u32 size)
 {
 	struct mcde_fb *mfb = to_mcde_fb(fbi);
 	dma_addr_t paddr;
-	void __iomem *vaddr;
+	void *vaddr;
 	struct hwmem_alloc *alloc;
 	int name;
 
@@ -242,13 +242,19 @@ static int reallocate_fb_mem(struct fb_info *fbi, u32 size)
 		}
 
 		if (mfb->alloc) {
+			hwmem_kunmap(mfb->alloc);
 			hwmem_unpin(mfb->alloc);
 			hwmem_release(mfb->alloc);
 		}
 
 		(void)hwmem_pin(alloc, &paddr, NULL);
 
-		vaddr = ioremap(paddr, size);
+		vaddr = hwmem_kmap(alloc);
+		if (vaddr == NULL) {
+			hwmem_unpin(alloc);
+			hwmem_release(alloc);
+			return -ENOMEM;
+		}
 
 		mfb->alloc = alloc;
 		mfb->alloc_name = name;
@@ -272,6 +278,7 @@ static void free_fb_mem(struct fb_info *fbi)
 	struct mcde_fb *mfb = to_mcde_fb(fbi);
 
 	if (mfb->alloc) {
+		hwmem_kunmap(mfb->alloc);
 		hwmem_unpin(mfb->alloc);
 		hwmem_release(mfb->alloc);
 		mfb->alloc = NULL;
