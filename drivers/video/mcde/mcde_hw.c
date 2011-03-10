@@ -725,7 +725,7 @@ static void update_dpi_registers(enum mcde_chnl chnl_id, struct tv_regs *regs)
 	mcde_wreg(MCDE_TVCRA + idx * MCDE_TVCRA_GROUPOFFSET,
 			MCDE_TVCRA_SEL_MOD(regs->sel_mode_tv)             |
 			MCDE_TVCRA_INTEREN(regs->interlaced_en)           |
-			MCDE_TVCRA_IFIELD(1)                              |
+			MCDE_TVCRA_IFIELD(0)                              |
 			MCDE_TVCRA_TVMODE(regs->tv_mode)                  |
 			MCDE_TVCRA_SDTVMODE(MCDE_TVCRA_SDTVMODE_Y0CBY1CR) |
 			MCDE_TVCRA_CKINV(regs->inv_clk)                   |
