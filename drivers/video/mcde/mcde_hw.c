@@ -45,6 +45,9 @@ static void dsi_te_timer_function(unsigned long value);
 #define OVLY_TIMEOUT 100
 #define CHNL_TIMEOUT 100
 #define SCREEN_PPL_HIGH 1920
+#define SCREEN_PPL_CEA2 720
+#define SCREEN_LPF_CEA2 480
+#define DSI_DELAY0_CEA2_ADD 10
 
 #define MCDE_SLEEP_WATCHDOG 500
 #define DSI_TE_NO_ANSWER_TIMEOUT_INIT 2500
@@ -1895,6 +1898,11 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 			(video_mode->xres + video_mode->hbp +
 				video_mode->hfp) /
 			(1000000 / MCDE_CLK_FREQ_MHZ) / pkt_div;
+
+		if ((screen_ppl == SCREEN_PPL_CEA2) &&
+				(screen_lpf == SCREEN_LPF_CEA2))
+			dsi_delay0 += DSI_DELAY0_CEA2_ADD;
+
 		temp = mcde_rreg(MCDE_DSIVID0CONF0 +
 			fidx * MCDE_DSIVID0CONF0_GROUPOFFSET);
 		mcde_wreg(MCDE_DSIVID0CONF0 +
