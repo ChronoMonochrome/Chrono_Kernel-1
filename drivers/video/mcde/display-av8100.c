@@ -348,7 +348,6 @@ static int hdmi_set_video_mode(
 	struct mcde_display_device *dev, struct mcde_video_mode *video_mode)
 {
 	int ret;
-	bool update = 0;
 	union av8100_configuration av8100_config;
 	struct mcde_display_hdmi_platform_data *pdata = dev->dev.platform_data;
 	struct display_driver_data *driver_data = dev_get_drvdata(&dev->dev);
@@ -437,15 +436,35 @@ static int hdmi_set_video_mode(
 		return -EFAULT;
 	}
 
-	/* Set HDMI mode to OFF */
-	av8100_config.hdmi_format.hdmi_mode = AV8100_HDMI_OFF;
-	av8100_config.hdmi_format.dvi_format = AV8100_DVI_CTRL_CTL0;
-	av8100_config.hdmi_format.hdmi_format = AV8100_HDMI;
-	if (av8100_conf_prep(AV8100_COMMAND_HDMI, &av8100_config))
+	/*
+	 * Don't look at dev->port->hdmi_sdtv_switch; it states only which
+	 * one should be started, not which one is currently working
+	 */
+	if (av8100_conf_get(AV8100_COMMAND_HDMI, &av8100_config))
 		return -EFAULT;
+	if (av8100_config.hdmi_format.hdmi_mode == AV8100_HDMI_ON) {
+		/* Set HDMI mode to OFF */
+		av8100_config.hdmi_format.hdmi_mode = AV8100_HDMI_OFF;
+		av8100_config.hdmi_format.dvi_format = AV8100_DVI_CTRL_CTL0;
+		av8100_config.hdmi_format.hdmi_format = AV8100_HDMI;
+		if (av8100_conf_prep(AV8100_COMMAND_HDMI, &av8100_config))
+			return -EFAULT;
 
-	if (av8100_conf_w(AV8100_COMMAND_HDMI, NULL, NULL, I2C_INTERFACE))
+		if (av8100_conf_w(AV8100_COMMAND_HDMI, NULL, NULL,
+								I2C_INTERFACE))
+			return -EFAULT;
+	}
+	if (av8100_conf_get(AV8100_COMMAND_DENC, &av8100_config))
 		return -EFAULT;
+	if (av8100_config.denc_format.enable) {
+		/* Turn off DENC */
+		av8100_config.denc_format.enable = 0;
+		if (av8100_conf_prep(AV8100_COMMAND_DENC, &av8100_config))
+			return -EFAULT;
+		if (av8100_conf_w(AV8100_COMMAND_DENC, NULL, NULL,
+								I2C_INTERFACE))
+			return -EFAULT;
+	}
 
 	/* Get current av8100 video output format */
 	ret = av8100_conf_get(AV8100_COMMAND_VIDEO_OUTPUT_FORMAT,
@@ -618,55 +637,6 @@ static int hdmi_set_video_mode(
 		return ret;
 	}
 
-	/* Get current av8100 video denc settings format */
-	ret = av8100_conf_get(AV8100_COMMAND_DENC,
-		&av8100_config);
-	if (ret) {
-		dev_err(&dev->dev, "%s:av8100_conf_get "
-				"AV8100_COMMAND_DENC failed\n", __func__);
-		return ret;
-	}
-
-	if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH) {
-		update = true;
-		if (dev->video_mode.yres == NATIVE_YRES_SDTV) {
-			av8100_config.denc_format.standard_selection =
-					AV8100_PAL_BDGHI;
-			av8100_config.denc_format.cvbs_video_format  =
-					AV8100_CVBS_625;
-		} else {
-			av8100_config.denc_format.standard_selection =
-					AV8100_NTSC_M;
-			av8100_config.denc_format.cvbs_video_format  =
-					AV8100_CVBS_525;
-		}
-	} else
-		update = (av8100_config.denc_format.enable != 0);
-
-	if (update) {
-		if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH)
-			av8100_config.denc_format.enable = 1;
-		else
-			av8100_config.denc_format.enable = 0;
-
-		ret = av8100_conf_prep(AV8100_COMMAND_DENC,
-			&av8100_config);
-		if (ret) {
-			dev_err(&dev->dev, "%s:av8100_conf_prep "
-				"AV8100_COMMAND_DENC failed\n", __func__);
-			return ret;
-		}
-
-		/* TODO: prepare depending on OUT fmt */
-		ret = av8100_conf_w(AV8100_COMMAND_DENC,
-			NULL, NULL, I2C_INTERFACE);
-		if (ret) {
-			dev_err(&dev->dev, "%s:av8100_conf_w "
-				"AV8100_COMMAND_DENC failed\n", __func__);
-			return ret;
-		}
-	}
-
 	dev->update_flags |= UPDATE_FLAG_VIDEO_MODE;
 	dev->first_update = true;
 
@@ -748,31 +718,36 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 
 	dev->first_update = false;
 
-	/* Get current av8100 video denc settings format */
-	ret = av8100_conf_get(AV8100_COMMAND_DENC,
-		&av8100_config);
-	if (ret) {
-		dev_err(&dev->dev, "%s:av8100_conf_get "
-				"AV8100_COMMAND_DENC failed\n", __func__);
-		return ret;
-	}
-
 	/*
+	 * Prepare HDMI configuration
 	 * Avoid simultaneous output of DENC and HDMI.
 	 * Only one of them should be enabled.
+	 * Note HDMI and DENC are always turned off in set_video_mode.
 	 */
-	if (av8100_config.denc_format.enable)
-		av8100_config.hdmi_format.hdmi_mode = AV8100_HDMI_OFF;
-	else
+	if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH) {
+		av8100_config.denc_format.enable = 1;
+		if (dev->video_mode.yres == NATIVE_YRES_SDTV) {
+			av8100_config.denc_format.standard_selection =
+					AV8100_PAL_BDGHI;
+			av8100_config.denc_format.cvbs_video_format  =
+					AV8100_CVBS_625;
+		} else {
+			av8100_config.denc_format.standard_selection =
+					AV8100_NTSC_M;
+			av8100_config.denc_format.cvbs_video_format  =
+					AV8100_CVBS_525;
+		}
+		ret = av8100_conf_prep(AV8100_COMMAND_DENC, &av8100_config);
+	} else {
 		av8100_config.hdmi_format.hdmi_mode = AV8100_HDMI_ON;
+		av8100_config.hdmi_format.hdmi_format = AV8100_HDMI;
+		av8100_config.hdmi_format.dvi_format = AV8100_DVI_CTRL_CTL0;
+		ret = av8100_conf_prep(AV8100_COMMAND_HDMI, &av8100_config);
+	}
 
-	av8100_config.hdmi_format.hdmi_format = AV8100_HDMI;
-	av8100_config.hdmi_format.dvi_format = AV8100_DVI_CTRL_CTL0;
-
-	ret = av8100_conf_prep(AV8100_COMMAND_HDMI, &av8100_config);
 	if (ret) {
 		dev_err(&dev->dev, "%s:av8100_conf_prep "
-			"AV8100_COMMAND_HDMI failed\n", __func__);
+			"AV8100_COMMAND_HDMI/DENC failed\n", __func__);
 		return ret;
 	}
 
@@ -784,11 +759,16 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 		return ret;
 	}
 
-	ret = av8100_conf_w(AV8100_COMMAND_HDMI, NULL,
-		NULL, I2C_INTERFACE);
+	if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH)
+		ret = av8100_conf_w(AV8100_COMMAND_DENC, NULL, NULL,
+								I2C_INTERFACE);
+	else
+		ret = av8100_conf_w(AV8100_COMMAND_HDMI, NULL, NULL,
+								I2C_INTERFACE);
 	if (ret) {
 		dev_err(&dev->dev, "%s:av8100_conf_w "
-			"AV8100_COMMAND_HDMI failed\n", __func__);
+			"AV8100_COMMAND_HDMI/DENC failed\n", __func__);
+		return ret;
 	}
 
 	return ret;
@@ -802,7 +782,7 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 
 	/* OFF -> STANDBY */
 	if (ddev->power_mode == MCDE_DISPLAY_PM_OFF &&
-		power_mode != MCDE_DISPLAY_PM_OFF) {
+					power_mode != MCDE_DISPLAY_PM_OFF) {
 		if (ddev->platform_enable) {
 			ret = ddev->platform_enable(ddev);
 			if (ret)
@@ -823,19 +803,20 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 	}
 	/* STANDBY -> ON */
 	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
-		power_mode == MCDE_DISPLAY_PM_ON) {
+				power_mode == MCDE_DISPLAY_PM_ON) {
+
 		ddev->power_mode = MCDE_DISPLAY_PM_ON;
 		goto set_power_and_exit;
 	}
 	/* ON -> STANDBY */
 	else if (ddev->power_mode == MCDE_DISPLAY_PM_ON &&
-		power_mode <= MCDE_DISPLAY_PM_STANDBY) {
+				power_mode <= MCDE_DISPLAY_PM_STANDBY) {
 		ddev->power_mode = MCDE_DISPLAY_PM_STANDBY;
 	}
 
 	/* STANDBY -> OFF */
 	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
-		power_mode == MCDE_DISPLAY_PM_OFF) {
+				power_mode == MCDE_DISPLAY_PM_OFF) {
 		memset(&(ddev->video_mode), 0, sizeof(struct mcde_video_mode));
 		ret = av8100_powerdown();
 		if (ret)
