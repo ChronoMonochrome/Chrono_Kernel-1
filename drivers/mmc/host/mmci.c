@@ -82,6 +82,12 @@ static struct variant_data variant_arm_extended_fifo = {
 	.datalength_bits	= 16,
 };
 
+static struct variant_data variant_arm_extended_fifo = {
+	.fifosize		= 128 * 4,
+	.fifohalfsize		= 64 * 4,
+	.datalength_bits	= 16,
+};
+
 static struct variant_data variant_u300 = {
 	.fifosize		= 16 * 4,
 	.fifohalfsize		= 8 * 4,
