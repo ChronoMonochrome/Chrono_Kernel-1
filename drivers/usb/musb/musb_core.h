@@ -275,6 +275,7 @@ struct musb_hw_ep {
 
 	u8			rx_reinit;
 	u8			tx_reinit;
+	bool			do_tx_pio;
 
 	/* peripheral side */
 	struct musb_ep		ep_in;			/* TX */
