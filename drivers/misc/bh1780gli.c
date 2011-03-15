@@ -116,10 +116,10 @@ static ssize_t bh1780_store_power_state(struct device *dev,
 	if (val < BH1780_POFF || val > BH1780_PON)
 		return -EINVAL;
 
-	mutex_lock(&ddata->lock);
-
 	if (ddata->power_state == val)
 		return count;
+
+	mutex_lock(&ddata->lock);
 
 	if (ddata->power_state == BH1780_POFF)
 		regulator_enable(ddata->regulator);
