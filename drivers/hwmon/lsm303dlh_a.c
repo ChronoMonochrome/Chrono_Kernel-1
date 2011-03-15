@@ -281,6 +281,12 @@ static int lsm303dlh_a_restore(struct lsm303dlh_a_data *ddata)
 	if (ret < 0)
 		goto fail;
 
+	/* write to the boot bit to reboot memory content */
+	ret = lsm303dlh_a_write(ddata, CTRL_REG2, 0x80, "CTRL_REG2");
+
+	if (ret < 0)
+		goto fail;
+
 	ret = lsm303dlh_a_write(ddata, CTRL_REG3, ddata->interrupt_control,
 			"CTRL_REG3");
 
@@ -324,8 +330,8 @@ static int lsm303dlh_a_restore(struct lsm303dlh_a_data *ddata)
 		goto fail;
 
 fail:
-	/* write to the boot bit to reboot memory content */
-	lsm303dlh_a_write(ddata, CTRL_REG2, 0x80, "CTRL_REG2");
+	if (ret < 0)
+		dev_err(&ddata->client->dev, "could not restore the device %d\n", ret);
 	mutex_unlock(&ddata->lock);
 	return ret;
 }
@@ -826,8 +832,17 @@ static ssize_t lsm303dlh_a_store_mode(struct device *dev,
 	 * write to the boot bit in CTRL_REG2 to reboot memory content
 	 * and ensure correct device behavior after it resumes
 	 */
-	if (set_boot_bit)
-		lsm303dlh_a_write(ddata, CTRL_REG2, 0x80, "CTRL_REG2");
+	if (set_boot_bit) {
+		error = lsm303dlh_a_write(ddata, CTRL_REG2, 0x80, "CTRL_REG2");
+		if (error < 0) {
+			if (ddata->regulator && ddata->device_status == DEVICE_ON) {
+				regulator_disable(ddata->regulator);
+				ddata->device_status = DEVICE_OFF;
+			}
+			mutex_unlock(&ddata->lock);
+			return error;
+		}
+	}
 
 	if (val == LSM303DLH_A_MODE_OFF) {
 #ifdef CONFIG_SENSORS_LSM303DLH_INPUT_DEVICE
@@ -1168,6 +1183,7 @@ err_op_failed:
 
 static int __devexit lsm303dlh_a_remove(struct i2c_client *client)
 {
+	int ret;
 	struct lsm303dlh_a_data *ddata;
 
 	ddata = i2c_get_clientdata(client);
@@ -1181,7 +1197,13 @@ static int __devexit lsm303dlh_a_remove(struct i2c_client *client)
 
 	/* safer to make device off */
 	if (ddata->mode != LSM303DLH_A_MODE_OFF) {
-		lsm303dlh_a_write(ddata, CTRL_REG1, 0, "CONTROL");
+		ret = lsm303dlh_a_write(ddata, CTRL_REG1, 0, "CONTROL");
+
+		if (ret < 0) {
+			dev_err(&client->dev, "could not turn off the device %d", ret);
+			return ret;
+		}
+
 		if (ddata->regulator && ddata->device_status == DEVICE_ON) {
 			regulator_disable(ddata->regulator);
 			regulator_put(ddata->regulator);
