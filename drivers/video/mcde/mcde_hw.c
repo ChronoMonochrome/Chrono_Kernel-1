@@ -1501,13 +1501,14 @@ static void do_softwaretrig(struct mcde_chnl_state *chnl)
 	/*
 	* For main and secondary display,
 	* FLOWEN has to be set before a SOFTWARE TRIG
-	* Otherwise not overlay interrupt is triggerd
+	* Otherwise no overlay interrupt is triggerd
 	* However FLOWEN must not be triggered before SOFTWARE TRIG
 	* if rotation is enabled
 	*/
 	if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
 		enable_channel(chnl);
-	else if ((!is_channel_enabled(chnl) && !chnl->regs.roten))
+	else if ((!is_channel_enabled(chnl) && !chnl->regs.roten)
+				|| chnl->power_mode != MCDE_DISPLAY_PM_ON)
 		enable_channel(chnl);
 
 	mcde_wreg(MCDE_CHNL0SYNCHSW +
