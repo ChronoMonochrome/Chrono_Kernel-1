@@ -271,6 +271,8 @@ void cg2900_send_to_hci_logger(struct cg2900_user_data *logger,
 
 	if (logger->read_cb)
 		logger->read_cb(logger, skb_log);
+	else
+		kfree_skb(skb_log);
 
 	return;
 }
