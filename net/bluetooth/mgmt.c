@@ -1892,10 +1892,10 @@ static int pair_device(struct sock *sk, struct hci_dev *hdev, void *data,
 
 	if (cp->addr.type == MGMT_ADDR_BREDR)
 		conn = hci_connect(hdev, ACL_LINK, &cp->addr.bdaddr, sec_level,
-				   auth_type);
+				   auth_type, NULL);
 	else
 		conn = hci_connect(hdev, LE_LINK, &cp->addr.bdaddr, sec_level,
-				   auth_type);
+				   auth_type, NULL);
 
 	memset(&rp, 0, sizeof(rp));
 	bacpy(&rp.addr.bdaddr, &cp->addr.bdaddr);

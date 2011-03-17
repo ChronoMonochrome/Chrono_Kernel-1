@@ -1824,6 +1824,7 @@ static inline void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *sk
 
 		conn = hci_conn_hash_lookup_ba(hdev, ev->link_type, &ev->bdaddr);
 		if (!conn) {
+			/* pkt_type not yet used for incoming connections */
 			conn = hci_conn_add(hdev, ev->link_type, &ev->bdaddr);
 			if (!conn) {
 				BT_ERR("No memory for new connection");
@@ -2933,9 +2934,8 @@ static inline void hci_sync_conn_complete_evt(struct hci_dev *hdev, struct sk_bu
 	case 0x1c:	/* SCO interval rejected */
 	case 0x1a:	/* Unsupported Remote Feature */
 	case 0x1f:	/* Unspecified error */
-		if (conn->out && conn->attempt < 2) {
-			conn->pkt_type = (hdev->esco_type & SCO_ESCO_MASK) |
-					(hdev->esco_type & EDR_ESCO_MASK);
+		if (conn->out && !conn->no_autoretry && conn->attempt < 2) {
+			conn->pkt_type = hdev->esco_type & SCO_ESCO_MASK;
 			hci_setup_sync(conn, conn->link->handle);
 			goto unlock;
 		}
