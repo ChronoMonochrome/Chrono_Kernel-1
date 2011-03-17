@@ -1443,16 +1443,11 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 
 	fifo_size = get_output_fifo_size(fifo);
 
-	if (port->hdmi_sdtv_switch == SDTV_SWITCH)
-		/* TODO: check if these wtrmrk levels work for HDMI as well. */
-		pixelfetchwtrmrklevel = MCDE_PIXFETCH_SMALL_WTRMRKLVL;
-	else {
-		if ((fifo == MCDE_FIFO_A || fifo == MCDE_FIFO_B) &&
-				regs->ppl >= fifo_size * 2)
-			pixelfetchwtrmrklevel = MCDE_PIXFETCH_LARGE_WTRMRKLVL;
-		else
-			pixelfetchwtrmrklevel = MCDE_PIXFETCH_MEDIUM_WTRMRKLVL;
-	}
+	if ((fifo == MCDE_FIFO_A || fifo == MCDE_FIFO_B) &&
+			regs->ppl >= fifo_size * 2)
+		pixelfetchwtrmrklevel = MCDE_PIXFETCH_LARGE_WTRMRKLVL;
+	else
+		pixelfetchwtrmrklevel = MCDE_PIXFETCH_MEDIUM_WTRMRKLVL;
 
 	if (regs->reset_buf_id) {
 		u32 sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
