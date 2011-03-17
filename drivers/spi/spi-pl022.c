@@ -2270,14 +2270,6 @@ static struct vendor_data vendor_db5500_pl023 = {
 	.loopback = true,
 };
 
-static struct vendor_data vendor_db5500_pl023 = {
-	.fifodepth = 32,
-	.max_bpw = 32,
-	.unidir = false,
-	.extended_cr = true,
-	.pl023 = true,
-};
-
 static struct amba_id pl022_ids[] = {
 	{
 		/*
