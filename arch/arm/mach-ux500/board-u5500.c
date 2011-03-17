@@ -145,7 +145,7 @@ static struct av8100_platform_data av8100_plat_data = {
  * I2C
  */
 
-#define U5500_I2C_CONTROLLER(id, _slsu, _tft, _rft, clk, _sm) \
+#define U5500_I2C_CONTROLLER(id, _slsu, _tft, _rft, clk, t_out, _sm) \
 static struct nmk_i2c_controller u5500_i2c##id##_data = { \
 	/*				\
 	 * slave data setup time, which is	\
@@ -160,6 +160,8 @@ static struct nmk_i2c_controller u5500_i2c##id##_data = { \
 	.rft		= _rft,		\
 	/* std. mode operation */	\
 	.clk_freq	= clk,		\
+	/* Slave response timeout(ms) */\
+	.timeout	= t_out,	\
 	.sm		= _sm,		\
 }
 
@@ -170,9 +172,9 @@ static struct nmk_i2c_controller u5500_i2c##id##_data = { \
  * mode of operation
  */
 
-U5500_I2C_CONTROLLER(1,	0xe, 1, 1, 400000, I2C_FREQ_MODE_FAST);
-U5500_I2C_CONTROLLER(2,	0xe, 1, 1, 400000, I2C_FREQ_MODE_FAST);
-U5500_I2C_CONTROLLER(3,	0xe, 1, 1, 400000, I2C_FREQ_MODE_FAST);
+U5500_I2C_CONTROLLER(1,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
+U5500_I2C_CONTROLLER(2,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
+U5500_I2C_CONTROLLER(3,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
 
 static struct lm3530_platform_data u5500_als_platform_data = {
 	.mode = LM3530_BL_MODE_MANUAL,
