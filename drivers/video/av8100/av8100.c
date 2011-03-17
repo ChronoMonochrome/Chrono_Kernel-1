@@ -833,6 +833,9 @@ static int av8100_config_init(void)
 	config.denc_format.enable = 0;
 	config.denc_format.macrovision_enable = 0;
 	config.denc_format.internal_generator = 0;
+	retval = av8100_conf_prep(AV8100_COMMAND_DENC, &config);
+	if (retval)
+		return -EFAULT;
 
 	/* Video output */
 	config.video_output_format.video_output_cea_vesa =

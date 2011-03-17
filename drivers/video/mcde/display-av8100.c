@@ -725,6 +725,8 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 	 * Note HDMI and DENC are always turned off in set_video_mode.
 	 */
 	if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH) {
+		if (av8100_conf_get(AV8100_COMMAND_DENC, &av8100_config))
+			return -EFAULT;
 		av8100_config.denc_format.enable = 1;
 		if (dev->video_mode.yres == NATIVE_YRES_SDTV) {
 			av8100_config.denc_format.standard_selection =
