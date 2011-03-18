@@ -282,6 +282,7 @@ struct mcde_chnl_state {
 	bool continous_running;
 	bool disable_software_trig;
 	bool formatter_updated;
+	bool esram_is_enabled;
 };
 
 static struct mcde_chnl_state *channels;
@@ -404,18 +405,6 @@ static int enable_clocks_and_power(struct platform_device *pdev)
 						, __func__);
 		return -EINVAL;
 	}
-
-	if (regulator_esram_epod) {
-		ret = regulator_enable(regulator_esram_epod);
-		if (ret < 0) {
-			dev_warn(&pdev->dev, "%s: regulator_enable failed\n",
-			__func__);
-			goto regulator_esram_err;
-		}
-	} else {
-		dev_warn(&pdev->dev, "%s: esram_epod regulator is null\n"
-						, __func__);
-	}
 #endif
 	pdata->platform_set_clocks();
 	if (enable_dsi > 0) {
@@ -434,9 +423,6 @@ static int enable_clocks_and_power(struct platform_device *pdev)
 
 clk_mcde_err:
 #ifdef CONFIG_REGULATOR
-	if (regulator_esram_epod)
-		regulator_disable(regulator_esram_epod);
-regulator_esram_err:
 	if (regulator_mcde_epod)
 		regulator_disable(regulator_mcde_epod);
 #endif
@@ -469,22 +455,8 @@ static int disable_clocks_and_power(struct platform_device *pdev)
 					, __func__);
 		goto regulator_mcde_epod_err;
 	}
-
-	if (regulator_esram_epod) {
-		ret = regulator_disable(regulator_esram_epod);
-		if (ret < 0) {
-			dev_warn(&pdev->dev, "%s: regulator_disable failed\n"
-					, __func__);
-			goto regulator_esram_epod_err;
-		}
-	} else {
-		dev_warn(&pdev->dev, "%s: esram_epod regulator is null\n"
-					, __func__);
-	}
 	return ret;
 
-regulator_esram_epod_err:
-	regulator_enable(regulator_mcde_epod);
 regulator_mcde_epod_err:
 	clk_enable(clock_mcde);
 #endif
@@ -592,6 +564,16 @@ static int disable_mcde_hw(bool force_disable)
 			if (chnl->formatter_updated) {
 				disable_formatter(&chnl->port);
 				chnl->formatter_updated = false;
+			}
+			if (chnl->esram_is_enabled) {
+				int ret;
+				ret = regulator_disable(chnl->port.reg_esram);
+				if (ret < 0) {
+					dev_warn(&mcde_dev->dev,
+						"%s: disable failed\n",
+								__func__);
+				}
+				chnl->esram_is_enabled = false;
 			}
 		} else if (chnl->enabled && chnl->continous_running) {
 			mcde_up = true;
@@ -2329,6 +2311,12 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 		chnl->port.phy.dpi.clk_dpi = clock_dpi;
 	}
 
+#ifdef CONFIG_REGULATOR
+	chnl->port.reg_esram = regulator_esram_epod;
+#else
+	chnl->port.reg_esram = NULL;
+#endif
+
 	return chnl;
 }
 
@@ -2384,7 +2372,6 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	chnl->regs.blend_ctrl = chnl->blend_ctrl;
 	chnl->regs.blend_en = chnl->blend_en;
 	chnl->regs.alpha_blend = chnl->alpha_blend;
-
 
 	chnl->transactionid++;
 
@@ -2703,6 +2690,17 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 	enable_mcde_hw();
 	if (!chnl->formatter_updated)
 		(void)update_channel_static_registers(chnl);
+
+	if (chnl->regs.roten && !chnl->esram_is_enabled) {
+		int ret;
+		ret = regulator_enable(chnl->port.reg_esram);
+		if (ret < 0) {
+			dev_warn(&mcde_dev->dev, "%s: disable failed\n",
+			__func__);
+		}
+		chnl->esram_is_enabled = true;
+	}
+
 	ret = _mcde_chnl_update(chnl, update_area);
 	mutex_unlock(&mcde_hw_lock);
 
@@ -2716,6 +2714,7 @@ void mcde_chnl_put(struct mcde_chnl_state *chnl)
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
 	chnl->reserved = false;
+	chnl->port.reg_esram = NULL;
 	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
 		chnl->port.phy.dsi.reg_vana = NULL;
 		chnl->port.phy.dsi.clk_dsi = NULL;
@@ -2781,6 +2780,15 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 	if (chnl->formatter_updated) {
 		disable_formatter(&chnl->port);
 		chnl->formatter_updated = false;
+	}
+	if (chnl->esram_is_enabled) {
+		int ret;
+		ret = regulator_disable(chnl->port.reg_esram);
+		if (ret < 0) {
+			dev_warn(&mcde_dev->dev, "%s: disable failed\n",
+			__func__);
+		}
+		chnl->esram_is_enabled = false;
 	}
 	del_timer(&chnl->dsi_te_timer);
 	del_timer(&chnl->auto_sync_timer);

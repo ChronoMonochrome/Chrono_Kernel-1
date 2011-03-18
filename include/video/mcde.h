@@ -164,6 +164,7 @@ struct mcde_port {
 	enum mcde_sync_src sync_src;
 	bool update_auto_trig;
 	enum mcde_hdmi_sdtv_switch hdmi_sdtv_switch;
+	struct regulator *reg_esram;
 	union {
 		struct {
 			u8 virt_id;
