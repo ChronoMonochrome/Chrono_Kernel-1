@@ -301,9 +301,8 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	if (this->flags & B2R2_BLT_FLAG_DITHER)
 		this->dst.dither = B2R2_TTY_RGB_ROUND_DITHER;
 
-	if (this->flags & B2R2_BLT_FLAG_SOURCE_COLOR_KEY) {
+	if (this->flags & B2R2_BLT_FLAG_SOURCE_COLOR_KEY)
 		this->flag_param = req->user_req.src_color;
-	}
 
 	/* Check for blending */
 	if ((this->flags & B2R2_BLT_FLAG_GLOBAL_ALPHA_BLEND) &&
@@ -765,7 +764,8 @@ static int analyze_color_fill(struct b2r2_node_split_job *this,
 						this->src.color);
 		}
 
-		ret = analyze_fmt_conv(&this->src, &this->dst, &this->ivmx, node_count);
+		ret = analyze_fmt_conv(&this->src, &this->dst,
+			&this->ivmx, node_count);
 		if (ret < 0)
 			goto error;
 	}
@@ -895,7 +895,8 @@ static int analyze_copy(struct b2r2_node_split_job *this,
 
 		this->type = B2R2_COPY;
 
-		ret = analyze_fmt_conv(&this->src, &this->dst, &this->ivmx, &copy_count);
+		ret = analyze_fmt_conv(&this->src, &this->dst, &this->ivmx,
+			&copy_count);
 		if (ret < 0)
 			goto error;
 
@@ -955,7 +956,8 @@ static int analyze_rot_scale_downscale(struct b2r2_node_split_job *this,
 	tmp->win.width = min(tmp->win.width, dst->rect.height);
 	tmp->win.height = dst->rect.width;
 
-	setup_tmp_buf(tmp, this->max_buf_size, dst->fmt, tmp->win.width, tmp->win.height);
+	setup_tmp_buf(tmp, this->max_buf_size, dst->fmt, tmp->win.width,
+		tmp->win.height);
 	tmp->tmp_buf_index = 1;
 	this->work_bufs[0].size = tmp->pitch * tmp->height;
 
@@ -1067,9 +1069,11 @@ static int analyze_rot_scale(struct b2r2_node_split_job *this,
 	upscale = (u32)this->h_rsf * (u32)this->v_rsf < (1 << 20);
 
 	if (upscale)
-		ret = analyze_rot_scale_upscale(this, req, node_count, buf_count);
+		ret = analyze_rot_scale_upscale(this, req, node_count,
+			buf_count);
 	else
-		ret = analyze_rot_scale_downscale(this, req, node_count, buf_count);
+		ret = analyze_rot_scale_downscale(this, req, node_count,
+			buf_count);
 
 	if (ret < 0)
 		goto error;
@@ -1103,7 +1107,8 @@ static int analyze_scaling(struct b2r2_node_split_job *this,
 		goto error;
 
 	/* Find out how many nodes a simple copy would require */
-	ret = analyze_fmt_conv(&this->src, &this->dst, &this->ivmx, &copy_count);
+	ret = analyze_fmt_conv(&this->src, &this->dst, &this->ivmx,
+		&copy_count);
 	if (ret < 0)
 		goto error;
 
@@ -1243,13 +1248,13 @@ static int analyze_scale_factors(struct b2r2_node_split_job *this)
 	u16 vsf;
 
 	if (this->rotation) {
-		ret = calculate_scale_factor(this->src.rect.height,
-					this->dst.rect.width, &hsf);
+		ret = calculate_scale_factor(this->src.rect.width,
+					this->dst.rect.height, &hsf);
 		if (ret < 0)
 			goto error;
 
-		ret = calculate_scale_factor(this->src.rect.width,
-					this->dst.rect.height, &vsf);
+		ret = calculate_scale_factor(this->src.rect.height,
+					this->dst.rect.width, &vsf);
 		if (ret < 0)
 			goto error;
 	} else {
@@ -1484,7 +1489,8 @@ static int configure_sub_rot(struct b2r2_node *node,
 
 			b2r2_log_info("%s: y_pixels=%d\n", __func__, y_pixels);
 
-			ret = configure_rotate(node, src, dst, ivmx, &node, job);
+			ret = configure_rotate(node, src, dst, ivmx,
+				&node, job);
 			if (ret < 0)
 				goto error;
 
@@ -1782,11 +1788,12 @@ static int configure_copy(struct b2r2_node *node,
 		}
 
 		node->node.GROUP0.B2R2_ACK |= B2R2_ACK_MODE_BYPASS_S2_S3;
-		if (this != NULL &&
-				(this->flags & B2R2_BLT_FLAG_SOURCE_COLOR_KEY) != 0) {
+		if (this != NULL && (this->flags &
+				B2R2_BLT_FLAG_SOURCE_COLOR_KEY) != 0) {
 			u32 key_color = 0;
 
-			node->node.GROUP0.B2R2_ACK |= B2R2_ACK_CKEY_SEL_SRC_AFTER_CLUT |
+			node->node.GROUP0.B2R2_ACK |=
+				B2R2_ACK_CKEY_SEL_SRC_AFTER_CLUT |
 				B2R2_ACK_CKEY_RED_MATCH_IF_BETWEEN |
 				B2R2_ACK_CKEY_GREEN_MATCH_IF_BETWEEN |
 				B2R2_ACK_CKEY_BLUE_MATCH_IF_BETWEEN;
@@ -1798,14 +1805,15 @@ static int configure_copy(struct b2r2_node *node,
 			node->node.GROUP12.B2R2_KEY2 = key_color;
 		}
 
-		if (this != NULL &&
-				(this->flags & B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION) != 0) {
+		if (this != NULL && (this->flags &
+				B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION) != 0) {
 			struct b2r2_blt_request *request =
 				container_of(this, struct b2r2_blt_request,
 						node_split_job);
 			node->node.GROUP0.B2R2_INS |= B2R2_INS_CLUTOP_ENABLED;
 			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_CLUT;
-			node->node.GROUP7.B2R2_CCO = B2R2_CCO_CLUT_COLOR_CORRECTION |
+			node->node.GROUP7.B2R2_CCO =
+				B2R2_CCO_CLUT_COLOR_CORRECTION |
 				B2R2_CCO_CLUT_UPDATE;
 			node->node.GROUP7.B2R2_CML = request->clut_phys_addr;
 		}
@@ -3109,9 +3117,8 @@ static void set_target(struct b2r2_node *node, u32 addr,
 	s32 t;
 	s32 b;
 
-	if (buf->tmp_buf_index) {
+	if (buf->tmp_buf_index)
 		node->dst_tmp_index = buf->tmp_buf_index;
-	}
 
 	node->node.GROUP1.B2R2_TBA = addr;
 	node->node.GROUP1.B2R2_TTY = buf->pitch | to_native_fmt(buf->fmt) |
@@ -3180,9 +3187,8 @@ static void set_src(struct b2r2_src_config *src, u32 addr,
 static void set_src_1(struct b2r2_node *node, u32 addr,
 		struct b2r2_node_split_buf *buf)
 {
-	if (buf->tmp_buf_index) {
+	if (buf->tmp_buf_index)
 		node->src_tmp_index = buf->tmp_buf_index;
-	}
 
 	node->src_index = 1;
 
@@ -3205,9 +3211,8 @@ static void set_src_1(struct b2r2_node *node, u32 addr,
 static void set_src_2(struct b2r2_node *node, u32 addr,
 		struct b2r2_node_split_buf *buf)
 {
-	if (buf->tmp_buf_index) {
+	if (buf->tmp_buf_index)
 		node->src_tmp_index = buf->tmp_buf_index;
-	}
 
 	node->src_index = 2;
 
@@ -3223,9 +3228,8 @@ static void set_src_2(struct b2r2_node *node, u32 addr,
 static void set_src_3(struct b2r2_node *node, u32 addr,
 		struct b2r2_node_split_buf *buf)
 {
-	if (buf->tmp_buf_index) {
+	if (buf->tmp_buf_index)
 		node->src_tmp_index = buf->tmp_buf_index;
-	}
 
 	node->src_index = 3;
 
