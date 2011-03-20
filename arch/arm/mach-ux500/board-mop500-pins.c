@@ -348,6 +348,7 @@ void mop500_pins_suspend_force(void)
 	u32 bankaddr;
 	u32 w_imsc;
 	u32 imsc;
+	u32 mask;
 
 	/*
 	 * Apply HSI GPIO Config for DeepSleep
@@ -362,11 +363,17 @@ void mop500_pins_suspend_force(void)
 	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
 		readl(bankaddr + NMK_GPIO_FIMSC);
 
-	writel(0x409C702A & ~w_imsc, bankaddr + NMK_GPIO_DIR);
-	writel(0x001C002A & ~w_imsc, bankaddr + NMK_GPIO_DATS);
-	writel(0x807000 & ~w_imsc, bankaddr + NMK_GPIO_DATC);
-	writel(0x5FFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
-	writel(0         , bankaddr + NMK_GPIO_SLPC);
+	mask = 0;
+	if (machine_is_hrefv60())
+		/* Mask away pin 4 (0x10) which is WLAN_IRQ */
+		mask |= 0x10;
+
+	writel(0x409C702A & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DIR);
+	writel(0x001C002A & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DATS);
+	writel(0x807000 & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DATC);
+	writel(0x5FFFFFFF & ~w_imsc & ~imsc & ~mask, bankaddr + NMK_GPIO_PDIS);
+	writel(readl(bankaddr + NMK_GPIO_SLPC) & mask,
+	       bankaddr + NMK_GPIO_SLPC);
 
 	/* Bank1 */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK1_BASE);
@@ -393,10 +400,15 @@ void mop500_pins_suspend_force(void)
 	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
 		readl(bankaddr + NMK_GPIO_FIMSC);
 
-	writel(0x3D7C0    & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
-	writel(0x803C2830, bankaddr + NMK_GPIO_DIRC);
-	writel(0x3D7C0    & ~w_imsc  , bankaddr + NMK_GPIO_DATC);
-	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	mask = 0;
+	if (machine_is_hrefv60())
+		/* Mask away pin 85 (0x200000) which is WLAN_ENABLE */
+		mask |= 0x200000;
+
+	writel(0x3D7C0    & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DIRS);
+	writel(0x803C2830 & ~mask, bankaddr + NMK_GPIO_DIRC);
+	writel(0x3D7C0    & ~w_imsc  & ~mask, bankaddr + NMK_GPIO_DATC);
+	writel(0xFFFFFFFF & ~w_imsc & ~imsc & ~mask, bankaddr + NMK_GPIO_PDIS);
 	writel(0         , bankaddr + NMK_GPIO_SLPC);
 
 	/* Bank3 */
@@ -453,11 +465,21 @@ void mop500_pins_suspend_force(void)
 	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
 		readl(bankaddr + NMK_GPIO_FIMSC);
 
-	writel(0x8810810  & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
-	writel(0xF57EF7EF, bankaddr + NMK_GPIO_DIRC);
-	writel(0x8810810  & ~w_imsc, bankaddr + NMK_GPIO_DATC);
-	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
-	writel(0         , bankaddr + NMK_GPIO_SLPC);
+	mask = 0;
+	if (!machine_is_hrefv60()) {
+		/* Mask away pin 215 (0x800000) which is WLAN_ENABLE */
+		mask |= 0x800000;
+
+		/* Mask away pin 216 (0x1000000) which is WLAN_IRQ */
+		mask |= 0x1000000;
+	}
+
+	writel(0x8810810  & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DIRS);
+	writel(0xF57EF7EF & ~mask, bankaddr + NMK_GPIO_DIRC);
+	writel(0x8810810  & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DATC);
+	writel(0xFFFFFFFF & ~w_imsc & ~imsc & ~mask, bankaddr + NMK_GPIO_PDIS);
+	writel(readl(bankaddr + NMK_GPIO_SLPC) & mask,
+	       bankaddr + NMK_GPIO_SLPC);
 
 
 	/* Bank7 */
