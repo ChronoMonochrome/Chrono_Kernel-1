@@ -267,6 +267,9 @@ static int init_hw(struct nmk_i2c_dev *dev)
 	dev->cli.operation = I2C_NO_OPERATION;
 
 exit:
+	clk_disable(dev->clk);
+
+	udelay(I2C_DELAY);
 	return stat;
 }
 
@@ -633,6 +636,8 @@ static int nmk_i2c_xfer(struct i2c_adapter *i2c_adap,
 	pm_runtime_get_sync(&dev->pdev->dev);
 
 	clk_enable(dev->clk);
+
+	dev->busy = true;
 
 	status = init_hw(dev);
 	if (status)
@@ -1047,6 +1052,7 @@ static struct platform_driver nmk_i2c_driver = {
 	},
 	.probe = nmk_i2c_probe,
 	.remove = __devexit_p(nmk_i2c_remove),
+	.suspend = nmk_i2c_suspend,
 };
 
 static int __init nmk_i2c_init(void)
