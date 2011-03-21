@@ -103,8 +103,8 @@ static void print_vmode(struct mcde_video_mode *vmode)
 	pr_debug("       hbp: %d\n",    vmode->hbp);
 	pr_debug("       hfp: %d\n",    vmode->hfp);
 	pr_debug("       hsw: %d\n",    vmode->hsw);
-	pr_debug("       vbp: %d\n",    vmode->vbp1);
-	pr_debug("       vfp: %d\n",    vmode->vfp1);
+	pr_debug("       vbp: %d\n",    vmode->vbp);
+	pr_debug("       vfp: %d\n",    vmode->vfp);
 	pr_debug("       vsw: %d\n",    vmode->vsw);
 	pr_debug("interlaced: %s\n", vmode->interlaced ? "true" : "false");
 }
@@ -130,10 +130,8 @@ static int try_video_mode(
 		video_mode->hbp = 40;
 		video_mode->hfp = 8;
 		video_mode->hsw = 96;
-		video_mode->vbp1 = 25;
-		video_mode->vfp1 = 2;
-		video_mode->vbp2 = 0;
-		video_mode->vfp2 = 0;
+		video_mode->vbp = 25;
+		video_mode->vfp = 2;
 		video_mode->vsw = 2;
 		/*
 		 * The pixclock setting is not used within MCDE. The clock is

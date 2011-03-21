@@ -20,6 +20,34 @@
 
 #define AB8500_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
 
+#define SDTV_PIXCLOCK		37037
+
+/*
+ * PAL:
+ * Total nr of active lines:   576
+ * Total nr of blanking lines:  49
+ *                      total: 625
+ */
+#define PAL_HBP			132
+#define PAL_HFP			12
+#define PAL_VBP_FIELD_1		22
+#define PAL_VBP_FIELD_2		23
+#define PAL_VFP_FIELD_1		2
+#define PAL_VFP_FIELD_2		2
+
+/*
+ * NTSC (DV variant):
+ * Total nr of active lines:   480
+ * Total nr of blanking lines:  45
+ *                      total: 525
+ */
+#define NTSC_HBP		122
+#define NTSC_HFP		16
+#define NTSC_VBP_FIELD_1	19
+#define NTSC_VBP_FIELD_2	20
+#define NTSC_VFP_FIELD_1	3
+#define NTSC_VFP_FIELD_2	3
+
 struct display_driver_data {
 	struct ab8500_denc_conf denc_conf;
 	struct platform_device *denc_dev;
@@ -173,10 +201,8 @@ static void print_vmode(struct mcde_video_mode *vmode)
 	pr_debug("  pixclock: %d\n",    vmode->pixclock);
 	pr_debug("       hbp: %d\n",    vmode->hbp);
 	pr_debug("       hfp: %d\n",    vmode->hfp);
-	pr_debug("      vbp1: %d\n",    vmode->vbp1);
-	pr_debug("      vfp1: %d\n",    vmode->vfp1);
-	pr_debug("      vbp2: %d\n",    vmode->vbp2);
-	pr_debug("      vfp2: %d\n",    vmode->vfp2);
+	pr_debug("       vbp: %d\n",    vmode->vbp);
+	pr_debug("       vfp: %d\n",    vmode->vfp);
 	pr_debug("interlaced: %s\n", vmode->interlaced ? "true" : "false");
 }
 
@@ -198,45 +224,26 @@ static int try_video_mode(
 		return -EINVAL;
 	}
 
-
 	/* TODO: move this part to MCDE: mcde_dss_try_video_mode? */
 	/* check for PAL */
 	switch (video_mode->yres) {
 	case 576:
 		/* set including SAV/EAV: */
-		video_mode->hbp = 132;
-		video_mode->hfp =  12;
-		/*
-		 * Total nr of active lines:  576
-		 * Total nr of blanking lines: 49
-		 */
-		video_mode->vbp1 = 22;
-		video_mode->vfp1 =  2;
-		video_mode->vbp2 = 23;
-		video_mode->vfp2 =  2;
-		/* currently only support interlaced */
+		video_mode->hbp = PAL_HBP;
+		video_mode->hfp = PAL_HFP;
+		video_mode->vbp = PAL_VBP_FIELD_1 + PAL_VBP_FIELD_2;
+		video_mode->vfp = PAL_VFP_FIELD_1 + PAL_VFP_FIELD_2;
 		video_mode->interlaced = true;
-		video_mode->pixclock = 37037;
+		video_mode->pixclock = SDTV_PIXCLOCK;
 		break;
 	case 480:
 		/* set including SAV/EAV */
-		video_mode->hbp = 122;
-		video_mode->hfp =  16;
-		/*
-		 * Total nr of active lines:  486.
-		 * Total nr of blanking lines: 39.
-		 */
-		/* Why does the following work? As far as I know the
-		 * total nr of vertical blanking lines between the
-		 * fields equals to 19 or 20, of which 3 are vfp.
-		 */
-		video_mode->vbp1 = 19;
-		video_mode->vfp1 = 3;
-		video_mode->vbp2 = 20;
-		video_mode->vfp2 = 3;
-		/* currently only support interlaced */
+		video_mode->hbp = NTSC_HBP;
+		video_mode->hfp = NTSC_HFP;
+		video_mode->vbp = NTSC_VBP_FIELD_1 + NTSC_VBP_FIELD_2;
+		video_mode->vfp = NTSC_VFP_FIELD_1 + NTSC_VFP_FIELD_2;
 		video_mode->interlaced = true;
-		video_mode->pixclock = 37037;
+		video_mode->pixclock = SDTV_PIXCLOCK;
 		break;
 	default:
 		dev_warn(&ddev->dev,

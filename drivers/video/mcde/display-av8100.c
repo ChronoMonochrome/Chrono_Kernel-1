@@ -116,63 +116,63 @@ static struct mcde_video_mode video_modes_supp_hdmi[] = {
 		.xres = 640,	.yres = 480,
 		.pixclock = 39682,
 		.hbp = 112,	.hfp = 48,
-		.vbp1 = 33,	.vfp1 = 12
+		.vbp = 33,	.vfp = 12
 	},
 	/* 720_480_60_P */
 	{
 		.xres = 720,	.yres = 480,
 		.pixclock = 37000,
 		.hbp = 104,	.hfp = 34,
-		.vbp1 = 30,	.vfp1 = 15
+		.vbp = 30,	.vfp = 15
 	},
 	/* 720_576_50_P */
 	{
 		.xres = 720,	.yres = 576,
 		.pixclock = 37037,
 		.hbp = 132,	.hfp = 12,
-		.vbp1 = 44,	.vfp1 = 5
+		.vbp = 44,	.vfp = 5
 	},
 	/* 1280_720_60_P */
 	{
 		.xres = 1280,	.yres = 720,
 		.pixclock = 13468,
 		.hbp = 256,	.hfp = 114,
-		.vbp1 = 20,	.vfp1 = 10
+		.vbp = 20,	.vfp = 10
 	},
 	/* 1280_720_50_P */
 	{
 		.xres = 1280,	.yres = 720,
 		.pixclock = 13468,
 		.hbp = 260,	.hfp = 440,
-		.vbp1 = 25,	.vfp1 = 5
+		.vbp = 25,	.vfp = 5
 	},
 	/* 1920_1080_30_P */
 	{
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 189,	.hfp = 91,
-		.vbp1 = 36,	.vfp1 = 9
+		.vbp = 36,	.vfp = 9
 	},
 	/* 1920_1080_24_P */
 	{
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 170,	.hfp = 660,
-		.vbp1 = 36,	.vfp1 = 9
+		.vbp = 36,	.vfp = 9
 	},
 	/* 1920_1080_25_P */
 	{
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 192,	.hfp = 528,
-		.vbp1 = 36,	.vfp1 = 9
+		.vbp = 36,	.vfp = 9
 	},
 	/* 720_480_60_I) */
 	{
 		.xres = 720,	.yres = 480,
 		.pixclock = 74074,
 		.hbp = 126,	.hfp = 12,
-		.vbp1 = 44,	.vfp1 = 1,
+		.vbp = 44,	.vfp = 1,
 		.interlaced = true,
 	},
 	/* 720_576_50_I) */
@@ -180,7 +180,7 @@ static struct mcde_video_mode video_modes_supp_hdmi[] = {
 		.xres = 720,	.yres = 576,
 		.pixclock = 74074,
 		.hbp = 132,	.hfp = 12,
-		.vbp1 = 44,	.vfp1 = 5,
+		.vbp = 44,	.vfp = 5,
 		.interlaced = true,
 	},
 	/* 1920_1080_50_I) */
@@ -188,7 +188,7 @@ static struct mcde_video_mode video_modes_supp_hdmi[] = {
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 192,	.hfp = 528,
-		.vbp1 = 20,	.vfp1 = 25,
+		.vbp = 20,	.vfp = 25,
 		.interlaced = true,
 	},
 	/* 1920_1080_60_I) */
@@ -196,7 +196,7 @@ static struct mcde_video_mode video_modes_supp_hdmi[] = {
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 192,	.hfp = 88,
-		.vbp1 = 20,	.vfp1 = 25,
+		.vbp = 20,	.vfp = 25,
 		.interlaced = true,
 	},
 };
@@ -208,7 +208,7 @@ static struct mcde_video_mode video_modes_supp_sdtv[] = {
 		.xres = 720,	.yres = 480,
 		.pixclock = 74074,
 		.hbp = 126,	.hfp = 12,
-		.vbp1 = 44,	.vfp1 = 1,
+		.vbp = 44,	.vfp = 1,
 		.interlaced = true,
 	},
 	/* 720_576_50_I) */
@@ -216,7 +216,7 @@ static struct mcde_video_mode video_modes_supp_sdtv[] = {
 		.xres = 720,	.yres = 576,
 		.pixclock = 74074,
 		.hbp = 132,	.hfp = 12,
-		.vbp1 = 44,	.vfp1 = 5,
+		.vbp = 44,	.vfp = 5,
 		.interlaced = true,
 	},
 };
@@ -257,14 +257,11 @@ static int hdmi_try_video_mode(
 			(video_modes_supp[index].xres +
 				video_modes_supp[index].hbp +
 				video_modes_supp[index].hfp)) &&
-			((video_mode->yres + video_mode->vbp1 +
-				video_mode->vbp2 + video_mode->vfp1 +
-				video_mode->vfp2) ==
+			((video_mode->yres + video_mode->vbp + video_mode->vfp)
+				==
 			(video_modes_supp[index].yres +
-				video_modes_supp[index].vbp1 +
-				video_modes_supp[index].vbp2 +
-				video_modes_supp[index].vfp1 +
-				video_modes_supp[index].vfp2)) &&
+				video_modes_supp[index].vbp +
+				video_modes_supp[index].vfp)) &&
 			(video_mode->pixclock ==
 				video_modes_supp[index].pixclock) &&
 			(video_mode->interlaced ==
@@ -283,14 +280,11 @@ static int hdmi_try_video_mode(
 			(video_modes_supp[index].xres +
 				video_modes_supp[index].hbp +
 				video_modes_supp[index].hfp)) &&
-			((video_mode->yres + video_mode->vbp1 +
-				video_mode->vbp2 + video_mode->vfp1 +
-				video_mode->vfp2) ==
+			((video_mode->yres + video_mode->vbp + video_mode->vfp)
+				==
 			(video_modes_supp[index].yres +
-				video_modes_supp[index].vbp1 +
-				video_modes_supp[index].vbp2 +
-				video_modes_supp[index].vfp1 +
-				video_modes_supp[index].vfp2)) &&
+				video_modes_supp[index].vbp +
+				video_modes_supp[index].vfp)) &&
 			(video_mode->interlaced ==
 				video_modes_supp[index].interlaced)) {
 			match_level = 2;
@@ -325,11 +319,11 @@ static int hdmi_try_video_mode(
 	if (found_index == -1) {
 		dev_dbg(&ddev->dev, "video_mode not accepted\n");
 		dev_dbg(&ddev->dev, "xres:%d yres:%d pixclock:%d hbp:%d hfp:%d "
-			"vfp1:%d vfp2:%d vbp1:%d vbp2:%d intlcd:%d\n",
+			"vfp:%d vbp:%d intlcd:%d\n",
 			video_mode->xres, video_mode->yres,
-			video_mode->pixclock, video_mode->hbp,
-			video_mode->hfp, video_mode->vfp1, video_mode->vfp2,
-			video_mode->vbp1, video_mode->vbp2,
+			video_mode->pixclock,
+			video_mode->hbp, video_mode->hfp,
+			video_mode->vfp, video_mode->vbp,
 			video_mode->interlaced);
 		return -EINVAL;
 	}
@@ -360,16 +354,14 @@ static int hdmi_set_video_mode(
 	}
 
 	dev_dbg(&dev->dev, "%s:\n", __func__);
-	dev_vdbg(&dev->dev, "%s:xres:%d yres:%d hbp:%d hfp:%d vbp1:%d vfp1:%d "
-		"vbp2:%d vfp2:%d interlaced:%d\n", __func__,
+	dev_vdbg(&dev->dev, "%s:xres:%d yres:%d hbp:%d hfp:%d vbp:%d vfp:%d "
+		"interlaced:%d\n", __func__,
 		video_mode->xres,
 		video_mode->yres,
 		video_mode->hbp,
 		video_mode->hfp,
-		video_mode->vbp1,
-		video_mode->vfp1,
-		video_mode->vbp2,
-		video_mode->vfp2,
+		video_mode->vbp,
+		video_mode->vfp,
 		video_mode->interlaced);
 
 	if (driver_data->update_port_pixel_format) {
@@ -489,8 +481,7 @@ static int hdmi_set_video_mode(
 				dev->video_mode.xres +
 				dev->video_mode.hbp + dev->video_mode.hfp,
 				dev->video_mode.yres +
-				dev->video_mode.vbp1 + dev->video_mode.vfp1 +
-				dev->video_mode.vbp2 + dev->video_mode.vfp2,
+				dev->video_mode.vbp + dev->video_mode.vfp,
 				dev->video_mode.pixclock,
 				dev->video_mode.interlaced);
 

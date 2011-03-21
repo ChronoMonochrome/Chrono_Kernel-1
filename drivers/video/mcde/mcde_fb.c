@@ -349,8 +349,8 @@ void vmode_to_var(struct mcde_video_mode *video_mode,
 	var->xres           = video_mode->xres;
 	var->yres           = video_mode->yres;
 	var->pixclock       = video_mode->pixclock;
-	var->upper_margin   = video_mode->vbp1 + video_mode->vbp2;
-	var->lower_margin   = video_mode->vfp1 + video_mode->vfp2;
+	var->upper_margin   = video_mode->vbp;
+	var->lower_margin   = video_mode->vfp;
 	var->vsync_len      = video_mode->vsw;
 	var->left_margin    = video_mode->hbp;
 	var->right_margin   = video_mode->hfp;
@@ -366,10 +366,8 @@ void var_to_vmode(struct fb_var_screeninfo *var,
 	video_mode->xres       = var->xres;
 	video_mode->yres       = var->yres;
 	video_mode->pixclock   = var->pixclock;
-	video_mode->vbp1       = var->upper_margin / 2;
-	video_mode->vfp1       = var->lower_margin / 2;
-	video_mode->vbp2       = video_mode->vbp1 + var->upper_margin % 2;
-	video_mode->vfp2       = video_mode->vfp1 + var->lower_margin % 2;
+	video_mode->vbp        = var->upper_margin;
+	video_mode->vfp        = var->lower_margin;
 	video_mode->vsw        = var->vsync_len;
 	video_mode->hbp        = var->left_margin;
 	video_mode->hfp        = var->right_margin;
@@ -755,4 +753,3 @@ void mcde_fb_exit(void)
 	platform_device_unregister(&mcde_fb_device);
 	platform_driver_unregister(&mcde_fb_driver);
 }
-

@@ -253,17 +253,15 @@ enum mcde_display_rotation {
 #define DSI_CMD_MODE	1
 
 /* Video mode descriptor */
-struct mcde_video_mode {/* REVIEW: Join 1 & 2 */
+struct mcde_video_mode {
 	u32 xres;
 	u32 yres;
 	u32 pixclock;	/* pixel clock in ps (pico seconds) */
-	u32 hbp;	/* hor back porch = left_margin */
-	u32 hfp;	/* hor front porch equals to right_margin */
+	u32 hbp;	/* horizontal back porch: left margin (excl. hsync) */
+	u32 hfp;	/* horizontal front porch: right margin (excl. hsync) */
 	u32 hsw;	/* horizontal sync width */
-	u32 vbp1;	/* field 1: vert back porch equals to upper_margin */
-	u32 vfp1;	/* field 1: vert front porch equals to lower_margin */
-	u32 vbp2;	/* field 2: vert back porch equals to upper_margin */
-	u32 vfp2;	/* field 2: vert front porch equals to lower_margin */
+	u32 vbp;	/* vertical back porch: upper margin (excl. vsync) */
+	u32 vfp;	/* vertical front porch: lower margin (excl. vsync) */
 	u32 vsw;	/* vertical sync width*/
 	bool interlaced;
 	bool force_update; /* when switching between hdmi and sdtv */

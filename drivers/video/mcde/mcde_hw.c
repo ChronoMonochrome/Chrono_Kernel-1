@@ -608,15 +608,17 @@ static void dpi_video_mode_apply(struct mcde_chnl_state *chnl)
 	chnl->tv_regs.sel_mode_tv = chnl->port.phy.dpi.tv_mode;
 	if (chnl->tv_regs.sel_mode_tv) {
 		/* TV mode */
-		u32 bel = chnl->vmode.vbp1 + chnl->vmode.vfp1
-				+ chnl->vmode.vbp2 + chnl->vmode.vfp2;
+		u32 bel;
 		/* -4 since hsw is excluding SAV/EAV, 2 bytes each */
 		chnl->tv_regs.hsw  = chnl->vmode.hbp + chnl->vmode.hfp - 4;
+		/* vbp_field2 = vbp_field1 + 1 */
+		chnl->tv_regs.fsl1 = chnl->vmode.vbp / 2;
+		chnl->tv_regs.fsl2 = chnl->vmode.vbp - chnl->tv_regs.fsl1;
+		/* +1 since vbp_field2 = vbp_field1 + 1 */
+		bel = chnl->vmode.vbp + chnl->vmode.vfp;
 		/* in TV mode: bel2 = bel1 + 1 */
 		chnl->tv_regs.bel1 = bel / 2;
 		chnl->tv_regs.bel2 = bel - chnl->tv_regs.bel1;
-		chnl->tv_regs.fsl1 = chnl->vmode.vbp1;
-		chnl->tv_regs.fsl2 = chnl->vmode.vbp2;
 		if (chnl->port.phy.dpi.bus_width == 4)
 			chnl->tv_regs.tv_mode = MCDE_TVCRA_TVMODE_SDTV_656P_BE;
 		else
@@ -637,8 +639,8 @@ static void dpi_video_mode_apply(struct mcde_chnl_state *chnl)
 		chnl->tv_regs.alw  = chnl->vmode.hfp;
 		chnl->tv_regs.bel1 = chnl->vmode.vsw;
 		chnl->tv_regs.bel2 = chnl->tv_regs.bel1;
-		chnl->tv_regs.dvo  = chnl->vmode.vbp1 + chnl->vmode.vbp2;
-		chnl->tv_regs.bsl  = chnl->vmode.vfp1 + chnl->vmode.vfp2;
+		chnl->tv_regs.dvo  = chnl->vmode.vbp;
+		chnl->tv_regs.bsl  = chnl->vmode.vfp;
 		chnl->tv_regs.fsl1 = 0;
 		chnl->tv_regs.fsl2 = 0;
 		polarity = chnl->port.phy.dpi.polarity;
@@ -1365,7 +1367,6 @@ clk_dsi_err:
 regulator_vana_err:
 clk_dpi_err:
 	return -EINVAL;
-
 }
 
 /* REVIEW: Make update_* an mcde_rectangle? */
@@ -1981,9 +1982,7 @@ static int enable_mcde_hw(void)
 	return 0;
 }
 
-
 /* DSI */
-
 int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
 {
 	int i;
@@ -3183,7 +3182,6 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 	schedule_delayed_work(&hw_timeout_work,
 					msecs_to_jiffies(MCDE_SLEEP_WATCHDOG));
 
-
 	major_version = MCDE_REG2VAL(MCDE_PID, MAJOR_VERSION,
 							mcde_rreg(MCDE_PID));
 	minor_version = MCDE_REG2VAL(MCDE_PID, MINOR_VERSION,
@@ -3213,7 +3211,6 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 		ret = -ENOTSUPP;
 		goto failed_hardware_version;
 	}
-
 
 	for (i = 0; i < num_overlays; i++)
 		overlays[i].idx = i;
@@ -3281,7 +3278,6 @@ failed_overlays_alloc:
 failed_channels_alloc:
 	return ret;
 }
-
 
 static int __devexit mcde_remove(struct platform_device *pdev)
 {
