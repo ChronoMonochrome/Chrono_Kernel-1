@@ -18,11 +18,13 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <linux/i2c.h>
+#include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/module.h>
+#include <linux/regulator/consumer.h>
 
 #define BH1780_REG_CONTROL	0x80
 #define BH1780_REG_PARTID	0x8A
@@ -40,6 +42,7 @@
 
 struct bh1780_data {
 	struct i2c_client *client;
+	struct regulator *regulator;
 	int power_state;
 	/* lock for sysfs operations */
 	struct mutex lock;
@@ -72,6 +75,9 @@ static ssize_t bh1780_show_lux(struct device *dev,
 	struct bh1780_data *ddata = platform_get_drvdata(pdev);
 	int lsb, msb;
 
+	if (ddata->power_state == BH1780_POFF)
+		return -EINVAL;
+
 	lsb = bh1780_read(ddata, BH1780_REG_DLOW, "DLOW");
 	if (lsb < 0)
 		return lsb;
@@ -89,13 +95,9 @@ static ssize_t bh1780_show_power_state(struct device *dev,
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct bh1780_data *ddata = platform_get_drvdata(pdev);
-	int state;
 
-	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
-	if (state < 0)
-		return state;
-
-	return sprintf(buf, "%d\n", state & BH1780_POWMASK);
+	/* we already maintain a sw state */
+	return sprintf(buf, "%d\n", ddata->power_state);
 }
 
 static ssize_t bh1780_store_power_state(struct device *dev,
@@ -104,7 +106,7 @@ static ssize_t bh1780_store_power_state(struct device *dev,
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct bh1780_data *ddata = platform_get_drvdata(pdev);
-	unsigned long val;
+	long val;
 	int error;
 
 	error = strict_strtoul(buf, 0, &val);
@@ -116,11 +118,21 @@ static ssize_t bh1780_store_power_state(struct device *dev,
 
 	mutex_lock(&ddata->lock);
 
+	if (ddata->power_state == val)
+		return count;
+
+	if (ddata->power_state == BH1780_POFF)
+		regulator_enable(ddata->regulator);
+
 	error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
 	if (error < 0) {
 		mutex_unlock(&ddata->lock);
+		regulator_disable(ddata->regulator);
 		return error;
 	}
+
+	if (val == BH1780_POFF)
+		regulator_disable(ddata->regulator);
 
 	msleep(BH1780_PON_DELAY);
 	ddata->power_state = val;
@@ -131,7 +143,7 @@ static ssize_t bh1780_store_power_state(struct device *dev,
 
 static DEVICE_ATTR(lux, S_IRUGO, bh1780_show_lux, NULL);
 
-static DEVICE_ATTR(power_state, S_IWUSR | S_IRUGO,
+static DEVICE_ATTR(power_state, S_IWUGO | S_IRUGO,
 		bh1780_show_power_state, bh1780_store_power_state);
 
 static struct attribute *bh1780_attributes[] = {
@@ -153,21 +165,37 @@ static int __devinit bh1780_probe(struct i2c_client *client,
 
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
 		ret = -EIO;
-		goto err_op_failed;
+		return ret;
 	}
 
 	ddata = kzalloc(sizeof(struct bh1780_data), GFP_KERNEL);
 	if (ddata == NULL) {
+		dev_err(&client->dev, "failed to alloc ddata\n");
 		ret = -ENOMEM;
-		goto err_op_failed;
+		return ret;
 	}
 
 	ddata->client = client;
 	i2c_set_clientdata(client, ddata);
+	dev_set_name(&client->dev, "bh1780");
+
+	ddata->regulator = regulator_get(&client->dev, "v-als");
+	if (IS_ERR(ddata->regulator)) {
+		dev_err(&client->dev, "failed to get regulator\n");
+		ret = PTR_ERR(ddata->regulator);
+		goto free_ddata;
+	}
+
+	regulator_enable(ddata->regulator);
 
 	ret = bh1780_read(ddata, BH1780_REG_PARTID, "PART ID");
-	if (ret < 0)
-		goto err_op_failed;
+	if (ret < 0) {
+		dev_err(&client->dev, "failed to read part ID\n");
+		goto put_regulator;
+	}
+
+	regulator_disable(ddata->regulator);
+	ddata->power_state = BH1780_POFF;
 
 	dev_info(&client->dev, "Ambient Light Sensor, Rev : %d\n",
 			(ret & BH1780_REVMASK));
@@ -176,11 +204,14 @@ static int __devinit bh1780_probe(struct i2c_client *client,
 
 	ret = sysfs_create_group(&client->dev.kobj, &bh1780_attr_group);
 	if (ret)
-		goto err_op_failed;
+		goto put_regulator;
 
 	return 0;
 
-err_op_failed:
+put_regulator:
+	regulator_disable(ddata->regulator);
+	regulator_put(ddata->regulator);
+free_ddata:
 	kfree(ddata);
 	return ret;
 }
@@ -216,6 +247,8 @@ static int bh1780_suspend(struct device *dev)
 	if (ret < 0)
 		return ret;
 
+	regulator_disable(ddata->regulator);
+
 	return 0;
 }
 
@@ -230,11 +263,16 @@ static int bh1780_resume(struct device *dev)
 	ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
 				"CONTROL");
 
+	regulator_enable(ddata->regulator);
+
+	ret = bh1780_write(ddata, BH1780_REG_CONTROL, ddata->power_state,
+			"CONTROL");
 	if (ret < 0)
 		return ret;
 
 	return 0;
 }
+
 static SIMPLE_DEV_PM_OPS(bh1780_pm, bh1780_suspend, bh1780_resume);
 #define BH1780_PMOPS (&bh1780_pm)
 #else
