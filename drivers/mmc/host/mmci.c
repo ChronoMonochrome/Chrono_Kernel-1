@@ -197,8 +197,22 @@ static void mmci_set_mask1(struct mmci_host *host, unsigned int mask)
 
 static void mmci_stop_data(struct mmci_host *host)
 {
+	u32 clk;
+
 	writel(0, host->base + MMCIDATACTRL);
 	mmci_set_mask1(host, 0);
+
+	/* Needed for DDR */
+	if (host->mmc->card && mmc_card_ddr_mode(host->mmc->card)) {
+		clk = readl(host->base + MMCICLOCK);
+		if (clk & MCI_ST_UX500_NEG_EDGE)
+			clk &= ~(MCI_ST_UX500_NEG_EDGE);
+		if (clk & MCI_ST_UX500_CLK_INV)
+			clk &= ~(MCI_ST_UX500_CLK_INV);
+
+		writel(clk, (host->base + MMCICLOCK));
+	}
+
 	host->data = NULL;
 }
 
@@ -463,6 +477,7 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 	unsigned long long clks;
 	void __iomem *base;
 	int blksz_bits;
+	u32 clk;
 
 	dev_dbg(mmc_dev(host->mmc), "blksz %04x blks %04x flags %08x\n",
 		data->blksz, data->blocks, data->flags);
@@ -490,6 +505,18 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 
 	if (data->flags & MMC_DATA_READ)
 		datactrl |= MCI_DPSM_DIRECTION;
+
+	if (host->mmc->card && mmc_card_ddr_mode(host->mmc->card)) {
+		datactrl |= MCI_ST_DPSM_DDRMODE;
+
+		/* Needed for DDR */
+		clk = readl(base + MMCICLOCK);
+		clk |=  MCI_ST_UX500_CLK_INV;
+		if ((data->flags & MMC_DATA_READ))
+			clk |= MCI_ST_UX500_NEG_EDGE;
+
+		writel(clk, (base + MMCICLOCK));
+	}
 
 	/*
 	 * Attempt to use DMA operation mode, if this
