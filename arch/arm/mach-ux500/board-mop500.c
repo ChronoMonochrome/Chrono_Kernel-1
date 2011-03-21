@@ -376,18 +376,25 @@ static struct gpio_keys_button mop500_gpio_keys[] = {
 		.code			= SW_FRONT_PROXIMITY,
 		.active_low		= 0,
 		.can_disable		= 1,
+	},
+	{
+		.desc			= "HED54XXU11 Hall Effect Sensor",
+		.type			= EV_SW,
+		.code			= SW_LID, /* FIXME arbitrary usage */
+		.active_low		= 0,
+		.can_disable		= 1,
 	}
 };
 
-static struct regulator *prox_regulator;
-static int mop500_prox_activate(struct device *dev);
-static void mop500_prox_deactivate(struct device *dev);
+static struct regulator *sensors1p_regulator;
+static int mop500_sensors1p_activate(struct device *dev);
+static void mop500_sensors1p_deactivate(struct device *dev);
 
 static struct gpio_keys_platform_data mop500_gpio_keys_data = {
 	.buttons	= mop500_gpio_keys,
 	.nbuttons	= ARRAY_SIZE(mop500_gpio_keys),
-	.enable		= mop500_prox_activate,
-	.disable	= mop500_prox_deactivate,
+	.enable		= mop500_sensors1p_activate,
+	.disable	= mop500_sensors1p_deactivate,
 };
 
 static struct platform_device mop500_gpio_keys_device = {
@@ -398,23 +405,22 @@ static struct platform_device mop500_gpio_keys_device = {
 	},
 };
 
-static int mop500_prox_activate(struct device *dev)
+static int mop500_sensors1p_activate(struct device *dev)
 {
-	prox_regulator = regulator_get(&mop500_gpio_keys_device.dev,
+	sensors1p_regulator = regulator_get(&mop500_gpio_keys_device.dev,
 						"vcc");
-	if (IS_ERR(prox_regulator)) {
-		dev_err(&mop500_gpio_keys_device.dev,
-			"no regulator\n");
-		return PTR_ERR(prox_regulator);
+	if (IS_ERR(sensors1p_regulator)) {
+		dev_err(&mop500_gpio_keys_device.dev, "no regulator\n");
+		return PTR_ERR(sensors1p_regulator);
 	}
-	regulator_enable(prox_regulator);
+	regulator_enable(sensors1p_regulator);
 	return 0;
 }
 
-static void mop500_prox_deactivate(struct device *dev)
+static void mop500_sensors1p_deactivate(struct device *dev)
 {
-	regulator_disable(prox_regulator);
-	regulator_put(prox_regulator);
+	regulator_disable(sensors1p_regulator);
+	regulator_put(sensors1p_regulator);
 }
 
 /* add any platform devices here - TODO */
