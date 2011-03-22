@@ -144,10 +144,15 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 	cmd.arg |= fn << 28;
 	cmd.arg |= incr_addr ? 0x04000000 : 0x00000000;
 	cmd.arg |= addr << 9;
-	if (blocks == 1 && blksz <= 512)
-		cmd.arg |= (blksz == 512) ? 0 : blksz;	/* byte mode */
+
+	if (blocks == 1 && blksz < 512)
+		cmd.arg |= blksz;			/* byte mode */
+	else if (blocks == 1 && blksz == 512 &&
+		 !(card->host->caps & MMC_CAP_BROKEN_SDIO_CMD53))
+		cmd.arg |= 0;				/* byte mode, 0=512 */
 	else
 		cmd.arg |= 0x08000000 | blocks;		/* block mode */
+
 	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
 
 	data.blksz = blksz;
