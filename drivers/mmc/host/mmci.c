@@ -198,8 +198,20 @@ static void mmci_set_mask1(struct mmci_host *host, unsigned int mask)
 static void mmci_stop_data(struct mmci_host *host)
 {
 	u32 clk;
+	unsigned int datactrl = 0;
 
-	writel(0, host->base + MMCIDATACTRL);
+	/*
+	 * The ST Micro variants has a special bit
+	 * to enable SDIO mode. This bit must remain set even when not
+	 * doing data transfers, otherwise no SDIO interrupts can be
+	 * received.
+	 */
+	if (host->variant->sdio &&
+		host->mmc->card &&
+		mmc_card_sdio(host->mmc->card))
+		datactrl |= MCI_ST_DPSM_SDIOEN;
+
+	writel(datactrl, host->base + MMCIDATACTRL);
 	mmci_set_mask1(host, 0);
 
 	/* Needed for DDR */
@@ -550,7 +562,11 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 		if (mmc_card_sdio(host->mmc->card)) {
 			/*
 			 * The ST Micro variants has a special bit
-			 * to enable SDIO.
+			 * to enable SDIO mode. This bit is set the first time
+			 * a SDIO data transfer is done and must remain set
+			 * after the data transfer is completed. The reason is
+			 * because of otherwise no SDIO interrupts can be
+			 * received.
 			 */
 			datactrl |= MCI_ST_DPSM_SDIOEN;
 
@@ -869,6 +885,9 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 
 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
 
+		if (status & MCI_ST_SDIOIT)
+			mmc_signal_sdio_irq(host->mmc);
+
 		data = host->data;
 		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|
 			      MCI_RXOVERRUN|MCI_DATAEND|MCI_DATABLOCKEND) && data)
@@ -1022,11 +1041,35 @@ static irqreturn_t mmci_cd_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static void mmci_enable_sdio_irq(struct mmc_host *mmc, int enable)
+{
+	unsigned long flags;
+	struct mmci_host *host = mmc_priv(mmc);
+
+	if (enable) {
+		/*
+		 * Since the host is not claimed when doing enable
+		 * we must handle it here.
+		 */
+		spin_lock_irqsave(&host->lock, flags);
+
+		writel((readl(host->base + MMCIMASK0) | MCI_ST_SDIOIT),
+		       (host->base + MMCIMASK0));
+
+		spin_unlock_irqrestore(&host->lock, flags);
+	} else {
+		/* We assumes the host is claimed when doing disable. */
+		writel((readl(host->base + MMCIMASK0) & ~MCI_ST_SDIOIT),
+		       (host->base + MMCIMASK0));
+	}
+}
+
 static const struct mmc_host_ops mmci_ops = {
 	.request	= mmci_request,
 	.set_ios	= mmci_set_ios,
 	.get_ro		= mmci_get_ro,
 	.get_cd		= mmci_get_cd,
+	.enable_sdio_irq = mmci_enable_sdio_irq,
 };
 
 static int __devinit mmci_probe(struct amba_device *dev,
