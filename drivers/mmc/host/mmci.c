@@ -750,13 +750,13 @@ static int mmci_pio_write(struct mmci_host *host, char *buffer,
 	void __iomem *base = host->base;
 
 	unsigned int data_left = host->size;
-	unsigned int count, maxcnt;
+	unsigned int maxcnt;
 	char *ptr = buffer;
 
 	while (status & MCI_TXFIFOHALFEMPTY) {
 		unsigned int count;
-	char *cache_ptr;
-	int i;
+		char *cache_ptr;
+		int i;
 
 		count = min(remain, variant->fifohalfsize);
 
