@@ -687,6 +687,17 @@ config SENSORS_LTC4151
 	  This driver can also be built as a module. If so, the module will
 	  be called ltc4151.
 
+config SENSORS_L3G4200D
+	tristate "ST L3G4200D 3-axis gyroscope"
+	depends on I2C
+	default n
+	help
+	  If you say yes here you get support for 3-axis gyroscope device
+	  L3g4200D.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called l3g4200d.
+
 config SENSORS_LTC4215
 	tristate "Linear Technology LTC4215"
 	depends on I2C && EXPERIMENTAL
