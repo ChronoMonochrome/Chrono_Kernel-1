@@ -196,6 +196,9 @@ struct mmci_host {
 	/* pio stuff */
 	struct sg_mapping_iter	sg_miter;
 	unsigned int		size;
+	unsigned int		cache;
+	unsigned int		cache_len;
+
 	struct regulator	*vcc;
 
 #ifdef CONFIG_DMA_ENGINE
