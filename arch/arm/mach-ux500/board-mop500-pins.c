@@ -369,7 +369,7 @@ void mop500_pins_suspend_force(void)
 		mask |= 0x10;
 
 	writel(0x409C702A & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DIR);
-	writel(0x001C002A & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DATS);
+	writel(0x001C0022 & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DATS);
 	writel(0x807000 & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DATC);
 	writel(0x5FFFFFFF & ~w_imsc & ~imsc & ~mask, bankaddr + NMK_GPIO_PDIS);
 	writel(readl(bankaddr + NMK_GPIO_SLPC) & mask,
@@ -450,9 +450,14 @@ void mop500_pins_suspend_force(void)
 	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
 		readl(bankaddr + NMK_GPIO_FIMSC);
 
+
+	if (machine_is_hrefv60()) {
+		/* Make sure that camera pin 170 "XENON_CHARGE" is low */
+		writel(0x400      & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+		writel(0x400      & ~w_imsc, bankaddr + NMK_GPIO_DATC);
+	}
+
 	writel(0x3FF     , bankaddr + NMK_GPIO_DIRC);
-	writel(0xC00      & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
-	writel(0xC00      & ~w_imsc, bankaddr + NMK_GPIO_DATC);
 	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
 	writel(0         , bankaddr + NMK_GPIO_SLPC);
 
