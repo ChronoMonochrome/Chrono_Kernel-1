@@ -508,6 +508,18 @@ static void update_mcde_registers(void)
 			MCDE_IMSCPP_VCMPBIM(true) |
 			MCDE_IMSCPP_VCMPC0IM(true) |
 			MCDE_IMSCPP_VCMPC1IM(true));
+#ifdef DEBUG
+		/* Enable error interrupts */
+		mcde_wreg(MCDE_IMSCERR,
+			MCDE_IMSCERR_SCHBLCKDIM(true) |
+			MCDE_IMSCERR_OVLFERRIM_MASK |
+			MCDE_IMSCERR_FUAIM(true) |
+			MCDE_IMSCERR_FUBIM(true) |
+			MCDE_IMSCERR_FUC0IM(true) |
+			MCDE_IMSCERR_FUC1IM(true));
+		/* Enable channel abort interrupts */
+		mcde_wreg(MCDE_IMSCCHNL, MCDE_IMSCCHNL_CHNLAIM(0xf));
+#endif
 	}
 
 	/* Enable overlay fetch done interrupts */
@@ -892,12 +904,31 @@ static inline void mcde_handle_vcmp(struct mcde_chnl_state *chnl, u32 int_fld)
 	}
 	chnl->even_vcmp = !chnl->even_vcmp;
 	mcde_wreg_fld(MCDE_RISPP, 0x1 << int_fld, int_fld, 1);
+#ifdef DEBUG
+	if (chnl->ovly0 && mcde_rreg(MCDE_OVL0CR +
+				chnl->ovly0->idx * MCDE_OVL0CR_GROUPOFFSET) &
+				MCDE_OVL0CR_OVLB_MASK)
+		dev_warn(&mcde_dev->dev, "Overlay %d blocked\n",
+							chnl->ovly0->idx);
+	if (chnl->ovly1 && mcde_rreg(MCDE_OVL0CR +
+				chnl->ovly1->idx * MCDE_OVL0CR_GROUPOFFSET) &
+				MCDE_OVL0CR_OVLB_MASK)
+		dev_warn(&mcde_dev->dev, "Overlay %d blocked\n",
+							chnl->ovly1->idx);
+#endif
 }
 
 static irqreturn_t mcde_irq_handler(int irq, void *dev)
 {
 	int i;
 	u32 irq_status;
+#ifdef DEBUG
+	u32 irq_riserr_status;
+	u32 irq_rischnl_status;
+
+	irq_riserr_status = mcde_rreg(MCDE_RISERR);
+	irq_rischnl_status = mcde_rreg(MCDE_RISCHNL);
+#endif
 
 	/* Handle overlay irqs */
 	irq_status = mcde_rfld(MCDE_RISOVL, OVLFDRIS);
@@ -905,18 +936,73 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 
 	/* Handle channel irqs */
 	irq_status = mcde_rreg(MCDE_RISPP);
-	if (irq_status & MCDE_RISPP_VCMPARIS_MASK)
+	if (irq_status & MCDE_RISPP_VCMPARIS_MASK) {
 		mcde_handle_vcmp(&channels[MCDE_CHNL_A],
 						MCDE_RISPP_VCMPARIS_SHIFT);
-	if (irq_status & MCDE_RISPP_VCMPBRIS_MASK)
+#ifdef DEBUG
+		if (irq_riserr_status & MCDE_RISERR_FUARIS_MASK) {
+			dev_warn(&mcde_dev->dev, "FIFO A underflow\n");
+			mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUARIS_MASK);
+		}
+		if (irq_rischnl_status & MCDE_RISCHNL_CHNLARIS(0)) {
+			dev_warn(&mcde_dev->dev, "Channel A abort\n");
+			mcde_wreg(MCDE_RISCHNL, MCDE_RISCHNL_CHNLARIS(0));
+		}
+#endif
+	}
+	if (irq_status & MCDE_RISPP_VCMPBRIS_MASK) {
 		mcde_handle_vcmp(&channels[MCDE_CHNL_B],
 						MCDE_RISPP_VCMPBRIS_SHIFT);
-	if (irq_status & MCDE_RISPP_VCMPC0RIS_MASK)
+#ifdef DEBUG
+		if (irq_riserr_status & MCDE_RISERR_FUBRIS_MASK) {
+			dev_warn(&mcde_dev->dev, "FIFO B underflow\n");
+			mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUBRIS_MASK);
+		}
+		if (irq_rischnl_status & MCDE_RISCHNL_CHNLARIS(1)) {
+			dev_warn(&mcde_dev->dev, "Channel B abort\n");
+			mcde_wreg(MCDE_RISCHNL, MCDE_RISCHNL_CHNLARIS(1));
+		}
+#endif
+	}
+	if (irq_status & MCDE_RISPP_VCMPC0RIS_MASK) {
 		mcde_handle_vcmp(&channels[MCDE_CHNL_C0],
 						MCDE_RISPP_VCMPC0RIS_SHIFT);
-	if (irq_status & MCDE_RISPP_VCMPC1RIS_MASK)
+#ifdef DEBUG
+		if (irq_riserr_status & MCDE_RISERR_FUC0RIS_MASK) {
+			dev_warn(&mcde_dev->dev, "FIFO C0 underflow\n");
+			mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUC0RIS_MASK);
+		}
+		if (irq_rischnl_status & MCDE_RISCHNL_CHNLARIS(2)) {
+			dev_warn(&mcde_dev->dev, "Channel C0 abort\n");
+			mcde_wreg(MCDE_RISCHNL, MCDE_RISCHNL_CHNLARIS(2));
+		}
+#endif
+	}
+	if (irq_status & MCDE_RISPP_VCMPC1RIS_MASK) {
 		mcde_handle_vcmp(&channels[MCDE_CHNL_C1],
 						MCDE_RISPP_VCMPC1RIS_SHIFT);
+#ifdef DEBUG
+		if (irq_riserr_status & MCDE_RISERR_FUC1RIS_MASK) {
+			dev_warn(&mcde_dev->dev, "FIFO C1 underflow\n");
+			mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUC1RIS_MASK);
+		}
+		if (irq_rischnl_status & MCDE_RISCHNL_CHNLARIS(3)) {
+			dev_warn(&mcde_dev->dev, "Channel C1 abort\n");
+			mcde_wreg(MCDE_RISCHNL, MCDE_RISCHNL_CHNLARIS(3));
+		}
+#endif
+	}
+#ifdef DEBUG
+	/* Handle error irqs */
+	if (irq_riserr_status & MCDE_RISERR_SCHBLCKDRIS_MASK) {
+		dev_warn(&mcde_dev->dev, "Scheduler blocked\n");
+		mcde_wreg(MCDE_RISERR, MCDE_RISERR_SCHBLCKDRIS_MASK);
+	}
+	if (irq_riserr_status & MCDE_IMSCERR_OVLFERRIM_MASK) {
+		dev_warn(&mcde_dev->dev, "Overlay fetch error\n");
+		mcde_wreg(MCDE_RISERR, MCDE_IMSCERR_OVLFERRIM_MASK);
+	}
+#endif
 	for (i = 0; i < num_dsilinks; i++) {
 		struct mcde_chnl_state *chnl_from_dsi;
 
