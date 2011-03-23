@@ -194,6 +194,8 @@ static bool is_yvu_fmt(enum b2r2_blt_fmt fmt);
 static bool is_yuv420_fmt(enum b2r2_blt_fmt fmt);
 static bool is_yuv422_fmt(enum b2r2_blt_fmt fmt);
 static bool is_yuv444_fmt(enum b2r2_blt_fmt fmt);
+static bool is_yvu420_fmt(enum b2r2_blt_fmt fmt);
+static bool is_yvu422_fmt(enum b2r2_blt_fmt fmt);
 
 static int fmt_byte_pitch(enum b2r2_blt_fmt fmt, u32 width);
 static enum b2r2_native_fmt to_native_fmt(enum b2r2_blt_fmt fmt);
@@ -426,8 +428,12 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 			__func__, this->dst.win.x, this->dst.win.y,
 			this->dst.win.width, this->dst.win.height, this->dst.dx,
 			this->dst.dy);
-	b2r2_log_info("%s: buf_count=%d, buf_size=%d, node_count=%d\n",
+	if (this->buf_count > 0)
+		b2r2_log_info("%s: buf_count=%d, buf_size=%d, node_count=%d\n",
 			__func__, *buf_count, bufs[0]->size, *node_count);
+	else
+		b2r2_log_info("%s: buf_count=%d, node_count=%d\n",
+			__func__, *buf_count, *node_count);
 
 	return 0;
 
@@ -764,8 +770,8 @@ static int analyze_color_fill(struct b2r2_node_split_job *this,
 						this->src.color);
 		}
 
-		ret = analyze_fmt_conv(&this->src, &this->dst,
-			&this->ivmx, node_count);
+		ret = analyze_fmt_conv(&this->src, &this->dst, &this->ivmx,
+				node_count);
 		if (ret < 0)
 			goto error;
 	}
@@ -896,7 +902,7 @@ static int analyze_copy(struct b2r2_node_split_job *this,
 		this->type = B2R2_COPY;
 
 		ret = analyze_fmt_conv(&this->src, &this->dst, &this->ivmx,
-			&copy_count);
+				&copy_count);
 		if (ret < 0)
 			goto error;
 
@@ -957,7 +963,7 @@ static int analyze_rot_scale_downscale(struct b2r2_node_split_job *this,
 	tmp->win.height = dst->rect.width;
 
 	setup_tmp_buf(tmp, this->max_buf_size, dst->fmt, tmp->win.width,
-		tmp->win.height);
+			tmp->win.height);
 	tmp->tmp_buf_index = 1;
 	this->work_bufs[0].size = tmp->pitch * tmp->height;
 
@@ -1108,7 +1114,7 @@ static int analyze_scaling(struct b2r2_node_split_job *this,
 
 	/* Find out how many nodes a simple copy would require */
 	ret = analyze_fmt_conv(&this->src, &this->dst, &this->ivmx,
-		&copy_count);
+			&copy_count);
 	if (ret < 0)
 		goto error;
 
@@ -1228,7 +1234,7 @@ static int analyze_rotate(struct b2r2_node_split_job *this,
 
 	/* Finally, calculate the node count */
 	*node_count = nodes_per_tile *
-		calc_rot_count(this->dst.rect.width, this->dst.rect.height);
+		calc_rot_count(this->src.rect.width, this->src.rect.height);
 
 	return 0;
 
@@ -1489,8 +1495,8 @@ static int configure_sub_rot(struct b2r2_node *node,
 
 			b2r2_log_info("%s: y_pixels=%d\n", __func__, y_pixels);
 
-			ret = configure_rotate(node, src, dst, ivmx,
-				&node, job);
+			ret = configure_rotate(node, src, dst, ivmx, &node,
+					job);
 			if (ret < 0)
 				goto error;
 
@@ -1788,8 +1794,9 @@ static int configure_copy(struct b2r2_node *node,
 		}
 
 		node->node.GROUP0.B2R2_ACK |= B2R2_ACK_MODE_BYPASS_S2_S3;
-		if (this != NULL && (this->flags &
-				B2R2_BLT_FLAG_SOURCE_COLOR_KEY) != 0) {
+		if (this != NULL &&
+				(this->flags & B2R2_BLT_FLAG_SOURCE_COLOR_KEY)
+				!= 0) {
 			u32 key_color = 0;
 
 			node->node.GROUP0.B2R2_ACK |=
@@ -1805,7 +1812,8 @@ static int configure_copy(struct b2r2_node *node,
 			node->node.GROUP12.B2R2_KEY2 = key_color;
 		}
 
-		if (this != NULL && (this->flags &
+		if (this != NULL &&
+				(this->flags &
 				B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION) != 0) {
 			struct b2r2_blt_request *request =
 				container_of(this, struct b2r2_blt_request,
@@ -2514,8 +2522,14 @@ static void set_buf(struct b2r2_node_split_buf *buf, u32 addr,
 					buf->pitch * buf->height);
 			break;
 		case B2R2_FMT_TYPE_PLANAR:
-			buf->chroma_addr = (u32)(((u8 *)addr) +
+			if (is_yuv422_fmt(buf->fmt) ||
+					is_yuv420_fmt(buf->fmt)) {
+				buf->chroma_addr = (u32)(((u8 *)addr) +
 					buf->pitch * buf->height);
+			} else {
+				buf->chroma_cr_addr = (u32)(((u8 *)addr) +
+					buf->pitch * buf->height);
+			}
 			if (is_yuv420_fmt(buf->fmt)) {
 				/*
 				 * Use ceil(height/2) in case
@@ -2529,10 +2543,15 @@ static void set_buf(struct b2r2_node_split_buf *buf, u32 addr,
 				buf->chroma_cr_addr =
 					(u32)(((u8 *)buf->chroma_addr) +
 					(buf->pitch >> 1) * buf->height);
-			} else {
-				buf->chroma_cr_addr =
-					(u32)(((u8 *)buf->chroma_addr) +
-					(buf->pitch * buf->height));
+			} else if (is_yvu420_fmt(buf->fmt)) {
+				buf->chroma_addr =
+					(u32)(((u8 *)buf->chroma_cr_addr) +
+					(buf->pitch >> 1) *
+					((buf->height + 1) >> 1));
+			} else if (is_yvu422_fmt(buf->fmt)) {
+				buf->chroma_addr =
+					(u32)(((u8 *)buf->chroma_cr_addr) +
+					(buf->pitch >> 1) * buf->height);
 			}
 			break;
 		default:
@@ -2759,9 +2778,13 @@ static bool is_yuv_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
@@ -2777,7 +2800,11 @@ static bool is_yuv_fmt(enum b2r2_blt_fmt fmt)
 static bool is_yvu_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 		return true;
 	default:
 		return false;
@@ -2792,7 +2819,9 @@ static bool is_yuv420_fmt(enum b2r2_blt_fmt fmt)
 
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 		return true;
 	default:
@@ -2806,13 +2835,42 @@ static bool is_yuv422_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		return true;
 	default:
 		return false;
 	}
 }
+
+/**
+ * is_yvu420_fmt() - returns whether the given format is a yvu420 format
+ */
+static bool is_yvu420_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool is_yvu422_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+		return true;
+	default:
+		return false;
+	}
+}
+
 
 /**
  * is_yuv444_fmt() - returns whether the given format is a yuv444 format
@@ -2846,11 +2904,15 @@ static int fmt_byte_pitch(enum b2r2_blt_fmt fmt, u32 width)
 
 	case B2R2_BLT_FMT_8_BIT_A8:                        /* Fall through */
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:            /* Fall through */
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:            /* Fall through */
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE: /* Fall through */
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:       /* Fall through */
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:       /* Fall through */
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:            /* Fall through */
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:            /* Fall through */
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE: /* Fall through */
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:       /* Fall through */
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:       /* Fall through */
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 		return width;
 
@@ -2913,13 +2975,17 @@ static enum b2r2_native_fmt to_native_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 		return B2R2_NATIVE_YCBCR422R;
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 		return B2R2_NATIVE_YCBCR42X_R2B;
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		return B2R2_NATIVE_YCBCR42X_MBN;
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 		return B2R2_NATIVE_YUV;
 	default:
@@ -3001,11 +3067,15 @@ static enum b2r2_fmt_type get_fmt_type(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_8_BIT_A8:
 		return B2R2_FMT_TYPE_RASTER;
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 		return B2R2_FMT_TYPE_PLANAR;
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		return B2R2_FMT_TYPE_SEMI_PLANAR;

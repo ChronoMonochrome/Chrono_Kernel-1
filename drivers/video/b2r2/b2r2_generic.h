@@ -39,13 +39,13 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
  * b2r2_generic_configure()
  */
 int b2r2_generic_configure(const struct b2r2_blt_request *req,
-						   struct b2r2_node *first,
-						   struct b2r2_work_buf *tmp_bufs,
-						   u32 buf_count);
+				struct b2r2_node *first,
+				struct b2r2_work_buf *tmp_bufs,
+				u32 buf_count);
 /**
  * b2r2_generic_set_areas()
  */
 void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
-							struct b2r2_node *first,
-							struct b2r2_blt_rect *dst_rect_area);
+				struct b2r2_node *first,
+				struct b2r2_blt_rect *dst_rect_area);
 #endif

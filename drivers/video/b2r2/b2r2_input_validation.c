@@ -49,7 +49,9 @@ static bool is_valid_format(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_1_BIT_A1:
 	case B2R2_BLT_FMT_8_BIT_A8:
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
@@ -57,7 +59,9 @@ static bool is_valid_format(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
@@ -152,11 +156,15 @@ static s32 width_2_complete_width(s32 width, enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 		return b2r2_align_up(width, 2);
 
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
@@ -172,11 +180,15 @@ static bool is_complete_width_for_fmt(s32 width, enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 		if (!b2r2_is_aligned(width, 2))
 			return false;
 
@@ -200,7 +212,9 @@ static bool is_valid_height_for_fmt(s32 height, enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 		if (!b2r2_is_aligned(height, 2))
 			return false;
 
@@ -249,8 +263,8 @@ static bool validate_img(struct b2r2_blt_img *img)
 	if (b2r2_is_mb_fmt(img->fmt)) {
 		if (!is_complete_width_for_fmt(img->width, img->fmt)) {
 			b2r2_log_info("Validation Error: "
-					"!is_complete_width_for_fmt(img->width, "
-						"img->fmt)\n");
+					"!is_complete_width_for_fmt(img->width,"
+					" img->fmt)\n");
 			return false;
 		}
 	} else {
@@ -259,25 +273,28 @@ static bool validate_img(struct b2r2_blt_img *img)
 			!is_complete_width_for_fmt(img->width, img->fmt))) {
 			b2r2_log_info("Validation Error: "
 					"0 == img->pitch && "
-					"(!is_aligned_width_for_fmt(img->width, img->fmt) || "
-					"!is_complete_width_for_fmt(img->width, "
-						"img->fmt))\n");
+					"(!is_aligned_width_for_fmt(img->width,"
+					" img->fmt) || "
+					"!is_complete_width_for_fmt(img->width,"
+					" img->fmt))\n");
 			return false;
 		}
 
 		if (img->pitch != 0 &&
-			!is_valid_pitch_for_fmt(img->pitch, img->width, img->fmt)) {
+			!is_valid_pitch_for_fmt(img->pitch, img->width,
+					img->fmt)) {
 			b2r2_log_info("Validation Error: "
 					"img->pitch != 0 && "
-					"!is_valid_pitch_for_fmt(img->pitch, img->width, "
-						"img->fmt)\n");
+					"!is_valid_pitch_for_fmt(img->pitch, "
+					"img->width, img->fmt)\n");
 			return false;
 		}
 	}
 
 	if (!is_valid_height_for_fmt(img->width, img->fmt)) {
 		b2r2_log_info("Validation Error: "
-				"!is_valid_height_for_fmt(img->width, img->fmt)\n");
+				"!is_valid_height_for_fmt(img->width, "
+				"img->fmt)\n");
 		return false;
 	}
 
@@ -345,7 +362,7 @@ bool b2r2_validate_user_req(struct b2r2_blt_req *req)
 	if (is_dst_clip_rect_used) {
 		if (!validate_rect(&req->dst_clip_rect)) {
 			b2r2_log_info("Validation Error: "
-					"!validate_rect(&req->dst_clip_rect)\n");
+				"!validate_rect(&req->dst_clip_rect)\n");
 			return false;
 		}
 	}

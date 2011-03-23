@@ -101,6 +101,32 @@ struct b2r2_blt_rect {
  * three separate planes, one for each color component, namely Y, U, and V.
  * All planes use full resolution, there is no subsampling.
  * The buffer shall contain a plane of Y, U, and V data in this order.
+ * @B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR: YVU planar format, organized with
+ * a first plane containing Y pixels, and a second plane containing V and U
+ * pixels interleaved with the first V value first. V and U pixels are
+ * sub-sampled by a factor of two both horizontally and vertically. The buffer
+ * shall contain two planes, one plane with Y, and one with V and U data.
+ * (Same as B2R2 420 Raster 2 buffer - 420 R2B except that chroma order is
+ * swapped.)
+ * @B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR: YVU planar format, organized with
+ * a first plane containing Y pixels, and a second plane containing V and U
+ * pixels interleaved with the first V value first. V and U pixels are
+ * sub-sampled by a factor of two horizontally. The buffer shall contain a
+ * two planes, one with Y, and one with V and U data.
+ * (Same as B2R2 422 Raster 2 buffer - 422 R2B except that chroma order is
+ * swapped.)
+ * @B2R2_BLT_FMT_YVU420_PACKED_PLANAR: YVU planar format, organized with
+ * three separate planes for each color component, namely Y, V, and U.
+ * V and U pixels are sub-sampled by a factor of two both horizontally and
+ * vertically. The buffer shall contain a plane of Y, V, and U data in this
+ * order. (Same as B2R2_BLT_FMT_YUV420_PACKED_PLANAR except that chroma
+ * order is swapped.)
+ * @B2R2_BLT_FMT_YVU422_PACKED_PLANAR: YVU planar format, organized with
+ * three separate planes for each color component, namely Y, V, and U.
+ * V and U pixels are subsampled by a factor of two horizontally.
+ * The buffer shall contain a plane of Y, V, and U data in this order.
+ * (Same as B2R2_BLT_FMT_YUV422_PACKED_PLANAR except that chroma
+ * order is swapped.)
  */
 enum b2r2_blt_fmt {
     B2R2_BLT_FMT_UNUSED = 0,
@@ -125,6 +151,10 @@ enum b2r2_blt_fmt {
     B2R2_BLT_FMT_1_BIT_A1 = 0x7F000006,
     B2R2_BLT_FMT_8_BIT_A8 = 0x7F000007,
     B2R2_BLT_FMT_YUV444_PACKED_PLANAR = 0x7F000008,
+    B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR = 0x7F000009,
+    B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR = 0x7F00000A,
+    B2R2_BLT_FMT_YVU420_PACKED_PLANAR = 0x7F00000B,
+    B2R2_BLT_FMT_YVU422_PACKED_PLANAR = 0x7F00000C,
 };
 
 /**

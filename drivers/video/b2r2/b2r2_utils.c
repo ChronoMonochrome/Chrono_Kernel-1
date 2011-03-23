@@ -80,7 +80,9 @@ int b2r2_get_fmt_bpp(enum b2r2_blt_fmt fmt)
 		return 8;
 
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 		return 12;
 
@@ -90,7 +92,9 @@ int b2r2_get_fmt_bpp(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		return 16;
 
@@ -106,7 +110,8 @@ int b2r2_get_fmt_bpp(enum b2r2_blt_fmt fmt)
 		return 32;
 
 	default:
-		b2r2_log_err("%s: Internal error! Format %#x not recognized.\n", __func__, fmt);
+		b2r2_log_err("%s: Internal error! Format %#x not recognized.\n",
+			__func__, fmt);
 		return 32;
 	}
 }
@@ -115,12 +120,16 @@ int b2r2_get_fmt_y_bpp(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
@@ -128,7 +137,8 @@ int b2r2_get_fmt_y_bpp(enum b2r2_blt_fmt fmt)
 		return 8;
 
 	default:
-		b2r2_log_err("%s: Internal error! Non YCbCr format supplied.\n", __func__);
+		b2r2_log_err("%s: Internal error! Non YCbCr format supplied.\n",
+			__func__);
 		return 8;
 	}
 }
@@ -197,7 +207,9 @@ bool b2r2_is_ycbcrsp_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 		return true;
 
 	default:
@@ -209,7 +221,9 @@ bool b2r2_is_ycbcrp_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 		return true;
 
@@ -222,7 +236,9 @@ bool b2r2_is_ycbcr420_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 		return true;
 
@@ -237,7 +253,9 @@ bool b2r2_is_ycbcr422_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		return true;
 
