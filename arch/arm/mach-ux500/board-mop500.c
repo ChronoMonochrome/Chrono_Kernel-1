@@ -29,6 +29,8 @@
 #include <linux/smsc911x.h>
 #include <linux/gpio_keys.h>
 #include <linux/delay.h>
+#include <linux/leds_pwm.h>
+#include <linux/pwm_backlight.h>
 
 #include <linux/of.h>
 #include <linux/of_platform.h>
@@ -423,10 +425,90 @@ static void mop500_sensors1p_deactivate(struct device *dev)
 	regulator_put(sensors1p_regulator);
 }
 
+#ifdef CONFIG_LEDS_PWM
+static struct led_pwm pwm_leds_data[] = {
+	[0] = {
+		.name = "lcd-backlight",
+		.pwm_id = 1,
+		.max_brightness = 255,
+		.lth_brightness = 90,
+		.pwm_period_ns = 1023,
+	},
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
+	[1] = {
+		.name = "sec-lcd-backlight",
+		.pwm_id = 2,
+		.max_brightness = 255,
+		.lth_brightness = 90,
+		.pwm_period_ns = 1023,
+	},
+#endif
+};
+
+static struct led_pwm_platform_data u8500_leds_data = {
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
+	.num_leds = 2,
+#else
+	.num_leds = 1,
+#endif
+	.leds = pwm_leds_data,
+};
+
+static struct platform_device ux500_leds_device = {
+	.name = "leds_pwm",
+	.dev = {
+		.platform_data = &u8500_leds_data,
+	},
+};
+#endif
+
+#ifdef CONFIG_BACKLIGHT_PWM
+static struct platform_pwm_backlight_data u8500_backlight_data[] = {
+	[0] = {
+	.pwm_id = 1,
+	.max_brightness = 255,
+	.dft_brightness = 200,
+	.lth_brightness = 90,
+	.pwm_period_ns = 1023,
+	},
+	[1] = {
+	.pwm_id = 2,
+	.max_brightness = 255,
+	.dft_brightness = 200,
+	.lth_brightness = 90,
+	.pwm_period_ns = 1023,
+	},
+};
+
+static struct platform_device ux500_backlight_device[] = {
+	[0] = {
+		.name = "pwm-backlight",
+		.id = 0,
+		.dev = {
+			.platform_data = &u8500_backlight_data[0],
+		},
+	},
+	[1] = {
+		.name = "pwm-backlight",
+		.id = 1,
+		.dev = {
+			.platform_data = &u8500_backlight_data[1],
+		},
+	},
+};
+#endif
+
 /* add any platform devices here - TODO */
 static struct platform_device *mop500_platform_devs[] __initdata = {
 	&mop500_gpio_keys_device,
 	&ab8500_device,
+#ifdef CONFIG_LEDS_PWM
+	&ux500_leds_device,
+#endif
+#ifdef CONFIG_BACKLIGHT_PWM
+	&ux500_backlight_device[0],
+	&ux500_backlight_device[1],
+#endif
 };
 
 #ifdef CONFIG_STE_DMA40
