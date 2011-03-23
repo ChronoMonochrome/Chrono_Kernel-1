@@ -391,7 +391,7 @@ config KEYBOARD_NEWTON
 	  To compile this driver as a module, choose M here: the
 	  module will be called newtonkbd.
 
-config KEYBOARD_NOMADIK
+config KEYBOARD_NOMADIK_SKE
 	tristate "ST-Ericsson Nomadik SKE keyboard"
 	depends on PLAT_NOMADIK
 	help
