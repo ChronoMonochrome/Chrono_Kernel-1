@@ -1160,9 +1160,9 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 				return -EINVAL;
 
 			if (port->type == MCDE_PORTTYPE_DSI) {
-				if (port->link == 1 && port->ifc == 0)
-					return -EINVAL;
-				if (port->link == 0 && port->ifc == 1)
+				if ((port->link == 1 &&
+						port->ifc == DSI_VIDEO_MODE) ||
+				(port->link == 0 && port->ifc == DSI_CMD_MODE))
 					return -EINVAL;
 				mcde_wfld(MCDE_CR, DSI0_EN_V3, true);
 
@@ -1179,9 +1179,8 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			if (chnl->id != 1)
 				return -EINVAL;
 
-			if (port->link == 0 && port->ifc == 0)
-				return -EINVAL;
-			if (port->link == 1 && port->ifc == 0)
+			if ((port->link == 0 && port->ifc == DSI_VIDEO_MODE) ||
+				(port->link == 1 && port->ifc == DSI_CMD_MODE))
 				return -EINVAL;
 
 			mcde_wfld(MCDE_CR, DSI1_EN_V3, true);
