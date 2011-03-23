@@ -27,6 +27,7 @@ struct led_pwm_data {
 	struct led_classdev	cdev;
 	struct pwm_device	*pwm;
 	unsigned int 		active_low;
+	unsigned int		lth_brightness;
 	unsigned int		period;
 };
 
@@ -42,7 +43,10 @@ static void led_pwm_set(struct led_classdev *led_cdev,
 		pwm_config(led_dat->pwm, 0, period);
 		pwm_disable(led_dat->pwm);
 	} else {
-		pwm_config(led_dat->pwm, brightness * period / max, period);
+		brightness = led_dat->lth_brightness + (brightness *
+			(led_dat->period - led_dat->lth_brightness) / max);
+		pwm_config(led_dat->pwm, brightness, led_dat->period);
+
 		pwm_enable(led_dat->pwm);
 	}
 }
@@ -79,6 +83,8 @@ static int led_pwm_probe(struct platform_device *pdev)
 		led_dat->cdev.default_trigger = cur_led->default_trigger;
 		led_dat->active_low = cur_led->active_low;
 		led_dat->period = cur_led->pwm_period_ns;
+		led_dat->lth_brightness = cur_led->lth_brightness *
+		      (cur_led->pwm_period_ns / cur_led->max_brightness);
 		led_dat->cdev.brightness_set = led_pwm_set;
 		led_dat->cdev.brightness = LED_OFF;
 		led_dat->cdev.max_brightness = cur_led->max_brightness;
