@@ -154,6 +154,7 @@ static void clean_alloc(struct hwmem_alloc *alloc)
 	}
 
 	alloc->flags = 0;
+	atomic_set(&alloc->ref_cnt, 0);
 
 	clean_hwmem_alloc_threadg_info_list(alloc);
 
