@@ -245,7 +245,7 @@ struct accessory_op_to_jack_state {
 */
 struct devdata {
 
-	struct ab8500 *ab8500;
+	struct ab8500_gpadc *gpadc;
 
 	struct platform_device *codec_p_dev;
 
@@ -697,16 +697,6 @@ void update_jack_status(enum accessory_jack_state jack_status)
 }
 
 /*
-* Returns the mic line voltage in millivolts.
-*/
-static int meas_voltage(u8 input)
-{
-	int raw_vol = ab8500_gpadc_convert(devdata->ab8500->gpadc, input);
-
-	return (raw_vol * 2500)/1023;
-}
-
-/*
 * Returns 1 if accessories are plugged in, 0 if not.
 */
 static int detect_plugged_in(void)
@@ -729,11 +719,11 @@ static int meas_voltage_stable(u8 input)
 	const int dmax = 30;
 	int v1, v2, dv;
 
-	v1 = meas_voltage(input);
+	v1 = ab8500_gpadc_convert(devdata->gpadc, input);
 	do {
 		msleep(sleepms);
 		--iterations;
-		v2 = meas_voltage(input);
+		v2 = ab8500_gpadc_convert(devdata->gpadc, input);
 		dv = abs(v2 - v1);
 		v1 = v2;
 	} while (iterations > 0 && dv > dmax);
@@ -1230,11 +1220,6 @@ static void deferred_init_handler_work(struct work_struct *work)
 
 static int init_platform_devices(struct snd_soc_codec *codec)
 {
-	devdata->ab8500 = dev_get_drvdata(codec->dev->parent);
-	if (!devdata->ab8500 || !devdata->ab8500->gpadc) {
-		pr_err("%s: failed to get ab8500 plat. driver\n", __func__);
-		return -ENOENT;
-	}
 	devdata->codec_dev = codec->dev;
 	devdata->codec_p_dev = to_platform_device(codec->dev);
 
@@ -1256,6 +1241,8 @@ int ab8500_accessory_init(struct snd_soc_codec *codec)
 		pr_err("%s: Memory allocation failed\n", __func__);
 		goto fail_no_mem_for_devdata;
 	}
+
+	devdata->gpadc = ab8500_gpadc_get();
 
 	/* Get vamic1 regulator */
 	devdata->vamic1_reg = regulator_get(NULL, "v-amic1");
