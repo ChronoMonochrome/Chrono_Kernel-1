@@ -1342,7 +1342,6 @@ static int u8500_direct_rendering_mode_ctrl_put(struct snd_kcontrol *kcontrol, s
 	t_ab8500_codec_error error;
 
 	chip->direct_rendering_mode = uinfo->value.enumerated.item[0];
-
 	changed = 1;
 
 	return changed;
@@ -1808,8 +1807,6 @@ static int configure_direct_rendering(struct snd_pcm_substream *substream)
 	writel(0x0, ((char *)(IO_ADDRESS(U8500_MSP1_BASE) + 0x18)));	//MSP
 	writel(0x0, ((char *)(IO_ADDRESS(U8500_MSP1_BASE) + 0x20)));	//MSP
 	writel(0x0, ((char *)(IO_ADDRESS(U8500_MSP1_BASE) + 0x2C)));	//MSP
-
-	printk("\n stm_gpio_altfuncenable for GPIO_ALT_MSP_1\n");
 
 	dsp_configure_audio_codec();
 
