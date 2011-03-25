@@ -48,6 +48,26 @@ choice
 
 endchoice
 
+menu "Debug level for ux500 audio drivers"
+config  STM_ACODEC_DEBUG
+	int "STM ACODEC Debug Level"
+	depends on U8500_ACODEC
+	default 0
+	help
+	  Sets the ACODEC debug ON/OFF for U8500 SoC
+		* 0 OFF
+		* 1 ON
+
+config  STM_ALSA_DEBUG
+	int "STM ALSA Debug Level"
+	depends on SND_U8500_ALSA || SND_U8500_ALSA_AB8500
+	default 0
+	help
+	  Sets the ALSA debug ON/OFF for U8500 SoC
+		* 0 OFF
+		* 1 ON
+endmenu
+
 choice
 	prompt "Driver mode"
 	depends on U8500_ACODEC
