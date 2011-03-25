@@ -417,7 +417,7 @@ static int cg29xx_dai_startup(struct snd_pcm_substream *substream,
 	int err = 0;
 
 	if (!codec_private.session)
-		err = cg2900_audio_open(&codec_private.session);
+		err = cg2900_audio_open(&codec_private.session, NULL);
 
 	return err;
 }
