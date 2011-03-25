@@ -1343,16 +1343,6 @@ static int u8500_direct_rendering_mode_ctrl_put(struct snd_kcontrol *kcontrol, s
 
 	chip->direct_rendering_mode = uinfo->value.enumerated.item[0];
 
-	if (ENABLE == chip->direct_rendering_mode) {
-		stm_gpio_altfuncenable(GPIO_ALT_MSP_1);
-		printk("\n stm_gpio_altfuncenable for GPIO_ALT_MSP_1\n");
-		printk("\n Direct Rendering mode enabled\n");
-	} else {
-		stm_gpio_altfuncdisable(GPIO_ALT_MSP_1);
-		printk("\n stm_gpio_altfuncdisable for GPIO_ALT_MSP_1\n");
-		printk("\n Direct Rendering mode disabled\n");
-	}
-
 	changed = 1;
 
 	return changed;
@@ -1818,12 +1808,6 @@ static int configure_direct_rendering(struct snd_pcm_substream *substream)
 	writel(0x0, ((char *)(IO_ADDRESS(U8500_MSP1_BASE) + 0x18)));	//MSP
 	writel(0x0, ((char *)(IO_ADDRESS(U8500_MSP1_BASE) + 0x20)));	//MSP
 	writel(0x0, ((char *)(IO_ADDRESS(U8500_MSP1_BASE) + 0x2C)));	//MSP
-
-	status = stm_gpio_altfuncenable(GPIO_ALT_MSP_1);
-	if (status) {
-		printk("Error in stm_gpio_altfuncenable, status is %d\n",
-		       status);
-	}
 
 	printk("\n stm_gpio_altfuncenable for GPIO_ALT_MSP_1\n");
 
