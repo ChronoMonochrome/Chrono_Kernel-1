@@ -1286,7 +1286,7 @@ static int ab8500_add_widgets(struct snd_soc_codec *codec)
 {
 	int ret;
 
-	ret = snd_soc_dapm_new_controls(codec, ab8500_dapm_widgets,
+	ret = snd_soc_dapm_new_controls(&codec->dapm, ab8500_dapm_widgets,
 			ARRAY_SIZE(ab8500_dapm_widgets));
 	if (ret < 0) {
 		pr_err("%s: Failed to create DAPM controls (%d).\n",
@@ -1294,7 +1294,8 @@ static int ab8500_add_widgets(struct snd_soc_codec *codec)
 		return ret;
 	}
 
-	ret = snd_soc_dapm_add_routes(codec, intercon, ARRAY_SIZE(intercon));
+	ret = snd_soc_dapm_add_routes(&codec->dapm, intercon,
+			ARRAY_SIZE(intercon));
 	if (ret < 0) {
 		pr_err("%s: Failed to add DAPM routes (%d).\n",
 			__func__, ret);
@@ -1637,11 +1638,11 @@ static int ab8500_set_bias_level(struct snd_soc_codec *codec,
 	case SND_SOC_BIAS_ON:
 		break;
 	case SND_SOC_BIAS_PREPARE:
-		if (codec->bias_level == SND_SOC_BIAS_STANDBY)
+		if (codec->dapm.bias_level == SND_SOC_BIAS_STANDBY)
 			enable_regulator("v-audio");
 		break;
 	case SND_SOC_BIAS_STANDBY:
-		if (codec->bias_level == SND_SOC_BIAS_PREPARE) {
+		if (codec->dapm.bias_level == SND_SOC_BIAS_PREPARE) {
 			set_current_state(TASK_UNINTERRUPTIBLE);
 			schedule_timeout(msecs_to_jiffies(100));
 			disable_regulator("v-audio");
@@ -1650,7 +1651,7 @@ static int ab8500_set_bias_level(struct snd_soc_codec *codec,
 	case SND_SOC_BIAS_OFF:
 		break;
 	}
-	codec->bias_level = level;
+	codec->dapm.bias_level = level;
 
 	return 0;
 }
@@ -1686,7 +1687,7 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 
 static int ab8500_codec_remove(struct snd_soc_codec *codec)
 {
-	snd_soc_dapm_free(codec);
+	snd_soc_dapm_free(&codec->dapm);
 
 	return 0;
 }

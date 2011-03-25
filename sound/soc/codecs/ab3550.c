@@ -864,12 +864,12 @@ static enum enum_widget adder_sink_translate(u8 reg)
 
 static int ab3550_add_widgets(struct snd_soc_codec *codec)
 {
-	snd_soc_dapm_new_controls(codec, ab3550_dapm_widgets,
+	snd_soc_dapm_new_controls(&codec->dapm, ab3550_dapm_widgets,
 				  ARRAY_SIZE(ab3550_dapm_widgets));
 
-	snd_soc_dapm_add_routes(codec, intercon, ARRAY_SIZE(intercon));
+	snd_soc_dapm_add_routes(&codec->dapm, intercon, ARRAY_SIZE(intercon));
 
-	snd_soc_dapm_new_widgets(codec);
+	snd_soc_dapm_new_widgets(&codec->dapm);
 	return 0;
 }
 
@@ -1133,7 +1133,7 @@ static int ab3550_codec_probe(struct snd_soc_codec *codec)
 
 static int ab3550_codec_remove(struct snd_soc_codec *codec)
 {
-	snd_soc_dapm_free(codec);
+	snd_soc_dapm_free(&codec->dapm);
 
 	return 0;
 }
