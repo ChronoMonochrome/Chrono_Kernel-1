@@ -16,8 +16,6 @@
 
 #include <mach/msp.h>
 
-#define UX500_PLATFORM_BUFFER_SIZE	(64*1024)
-
 #define UX500_PLATFORM_MIN_RATE_PLAYBACK 8000
 #define UX500_PLATFORM_MAX_RATE_PLAYBACK 48000
 #define UX500_PLATFORM_MIN_RATE_CAPTURE	8000
@@ -25,17 +23,19 @@
 
 #define UX500_PLATFORM_MIN_CHANNELS 1
 #define UX500_PLATFORM_MAX_CHANNELS 8
-#define UX500_PLATFORM_MIN_PERIOD_BYTES 128
 
-#define UX500_PLATFORM_PERIODS_QUEUED_DMA 5
+#define UX500_PLATFORM_PERIODS_BYTES_MIN	128
+#define UX500_PLATFORM_PERIODS_BYTES_MAX	(64 * PAGE_SIZE)
+#define UX500_PLATFORM_PERIODS_MIN		2
+#define UX500_PLATFORM_PERIODS_MAX		48
+#define UX500_PLATFORM_BUFFER_BYTES_MAX		(2048 * PAGE_SIZE)
 
 extern struct snd_soc_platform ux500_soc_platform;
 
 struct ux500_pcm_private {
 	int msp_id;
 	int stream_id;
-	int period;
-	unsigned int offset;
+	unsigned int no_of_underruns;
 };
 
 void ux500_pcm_dma_eot_handler(void *data);

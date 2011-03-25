@@ -11,19 +11,20 @@
  * it under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation.
  */
-#include <sound/soc.h>
-#include <sound/soc-dai.h>
+#include <linux/slab.h>
 #include <asm/dma.h>
-#include "ux500_msp_dai.h"
-#include "ux500_pcm.h"
+#include <linux/bitops.h>
 
 #include <mach/msp.h>
 #include <linux/i2s/i2s.h>
-#include <linux/bitops.h>
+
+#include <sound/soc.h>
+#include <sound/soc-dai.h>
+#include "ux500_msp_dai.h"
+#include "ux500_pcm.h"
 
 static struct ux500_msp_dai_private ux500_msp_dai_private[UX500_NBR_OF_DAI] = {
 	{
-		.lock = __SPIN_LOCK_UNLOCKED(ux500_msp_dai_private[0].lock),
 		.i2s = NULL,
 		.fmt = 0,
 		.slots = 1,
@@ -32,7 +33,6 @@ static struct ux500_msp_dai_private ux500_msp_dai_private[UX500_NBR_OF_DAI] = {
 		.slot_width = 16,
 	},
 	{
-		.lock = __SPIN_LOCK_UNLOCKED(ux500_msp_dai_private[1].lock),
 		.i2s = NULL,
 		.fmt = 0,
 		.slots = 1,
@@ -41,7 +41,6 @@ static struct ux500_msp_dai_private ux500_msp_dai_private[UX500_NBR_OF_DAI] = {
 		.slot_width = 16,
 	},
 	{
-		.lock = __SPIN_LOCK_UNLOCKED(ux500_msp_dai_private[2].lock),
 		.i2s = NULL,
 		.fmt = 0,
 		.slots = 1,
@@ -53,19 +52,12 @@ static struct ux500_msp_dai_private ux500_msp_dai_private[UX500_NBR_OF_DAI] = {
 
 static int ux500_msp_dai_i2s_probe(struct i2s_device *i2s)
 {
-	unsigned long flags;
-
 	pr_info("%s: Enter (chip_select = %d, i2s = %d).\n",
 		__func__,
 		(int)i2s->chip_select, (int)(i2s));
 
-	spin_lock_irqsave(
-		&ux500_msp_dai_private[i2s->chip_select].lock,
-		flags);
 	ux500_msp_dai_private[i2s->chip_select].i2s = i2s;
-	spin_unlock_irqrestore(
-		&ux500_msp_dai_private[i2s->chip_select].lock,
-		flags);
+
 	try_module_get(i2s->controller->dev.parent->driver->owner);
 	i2s_set_drvdata(
 		i2s,
@@ -76,7 +68,6 @@ static int ux500_msp_dai_i2s_probe(struct i2s_device *i2s)
 
 static int ux500_msp_dai_i2s_remove(struct i2s_device *i2s)
 {
-	unsigned long flags;
 	struct ux500_msp_dai_private *ux500_msp_dai_private =
 		i2s_get_drvdata(i2s);
 
@@ -84,13 +75,8 @@ static int ux500_msp_dai_i2s_remove(struct i2s_device *i2s)
 		__func__,
 		(int)i2s->chip_select);
 
-	spin_lock_irqsave(&ux500_msp_dai_private->lock, flags);
-
 	ux500_msp_dai_private->i2s = NULL;
 	i2s_set_drvdata(i2s, NULL);
-	spin_unlock_irqrestore(
-		&ux500_msp_dai_private->lock,
-		flags);
 
 	pr_debug("%s: Calling module_put.\n",
 		__func__);
@@ -117,22 +103,91 @@ static struct i2s_driver i2sdrv_i2s = {
 	.id_table = dev_id_table,
 };
 
+bool ux500_msp_dai_i2s_get_underrun_status(int dai_idx)
+{
+	struct ux500_msp_dai_private *dai_private = &ux500_msp_dai_private[dai_idx];
+	int status = i2s_hw_status(dai_private->i2s->controller);
+	return (bool)(status & TRANSMIT_UNDERRUN_ERR_INT);
+}
+
+dma_addr_t ux500_msp_dai_i2s_get_pointer(int dai_idx, int stream_id)
+{
+	struct ux500_msp_dai_private *dai_private = &ux500_msp_dai_private[dai_idx];
+	return i2s_get_pointer(dai_private->i2s->controller,
+			(stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
+				I2S_DIRECTION_TX :
+				I2S_DIRECTION_RX);
+}
+
+int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
+				int sg_len,
+				int sg_size,
+				int dai_idx,
+				int stream_id)
+{
+	struct ux500_msp_dai_private *dai_private = &ux500_msp_dai_private[dai_idx];
+	struct i2s_message message;
+	struct i2s_device *i2s_dev;
+	int i;
+	int ret = 0;
+	struct scatterlist *sg;
+
+	pr_debug("%s: Enter (MSP Index: %u, SG-length: %u, SG-size: %u).\n",
+		__func__,
+		dai_idx,
+		sg_len,
+		sg_size);
+
+	if (!ux500_msp_dai[dai_idx].playback.active) {
+		pr_err("%s: The I2S controller is not available."
+			"MSP index:%d\n",
+			__func__,
+			dai_idx);
+		return ret;
+	}
+
+	i2s_dev = dai_private->i2s;
+
+	sg = kzalloc(sizeof(struct scatterlist) * sg_len, GFP_ATOMIC);
+	sg_init_table(sg, sg_len);
+	for (i = 0; i < sg_len; i++) {
+		sg_dma_address(&sg[i]) = dma_addr + i * sg_size;
+		sg_dma_len(&sg[i]) = sg_size;
+	}
+
+	message.i2s_transfer_mode = I2S_TRANSFER_MODE_CYCLIC_DMA;
+	message.i2s_direction = (stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
+					I2S_DIRECTION_TX :
+					I2S_DIRECTION_RX;
+	message.sg = sg;
+	message.sg_len = sg_len;
+
+	ret = i2s_transfer(i2s_dev->controller, &message);
+	if (ret < 0) {
+		pr_err("%s: Error: i2s_transfer failed. MSP index: %d\n",
+			__func__,
+			dai_idx);
+	}
+
+	kfree(sg);
+
+	return ret;
+}
+
 int ux500_msp_dai_i2s_send_data(void *data,
 				size_t bytes,
 				int dai_idx)
 {
-	unsigned long flags;
 	struct ux500_msp_dai_private *dai_private =
 		&ux500_msp_dai_private[dai_idx];
 	struct i2s_message message;
 	struct i2s_device *i2s_dev;
 	int ret = 0;
 
-	pr_debug("%s: Enter MSP Index:%d bytes = %d).\n",
+	pr_debug("%s: Enter. (MSP-index: %d, bytes = %d).\n",
 		__func__,
 		dai_idx,
 		(int)bytes);
-	spin_lock_irqsave(&dai_private->lock, flags);
 
 	i2s_dev = dai_private->i2s;
 
@@ -141,17 +196,13 @@ int ux500_msp_dai_i2s_send_data(void *data,
 			"MSP index:%d\n",
 			__func__,
 			dai_idx);
-		spin_unlock_irqrestore(&dai_private->lock, flags);
 		return ret;
 	}
 
+	message.i2s_transfer_mode = I2S_TRANSFER_MODE_SINGLE_DMA;
+	message.i2s_direction = I2S_DIRECTION_TX;
 	message.txbytes = bytes;
 	message.txdata = data;
-	message.rxbytes = 0;
-	message.rxdata = NULL;
-	message.dma_flag = 1;
-
-	spin_unlock_irqrestore(&dai_private->lock, flags);
 
 	ret = i2s_transfer(i2s_dev->controller, &message);
 	if (ret < 0) {
@@ -167,43 +218,37 @@ int ux500_msp_dai_i2s_receive_data(void *data,
 				size_t bytes,
 				int dai_idx)
 {
-	unsigned long flags;
 	struct ux500_msp_dai_private *dai_private =
 		&ux500_msp_dai_private[dai_idx];
 	struct i2s_message message;
 	struct i2s_device *i2s_dev;
 	int ret = 0;
 
-	pr_debug("%s: Enter MSP Index: %d, bytes = %d).\n",
+	pr_debug("%s: Enter. (MSP-index: %d, Bytes: %d).\n",
 		__func__,
 		dai_idx,
 		(int)bytes);
 
-	spin_lock_irqsave(&dai_private->lock, flags);
-
 	i2s_dev = dai_private->i2s;
 
 	if (!ux500_msp_dai[dai_idx].capture.active) {
-		pr_err("%s: The MSP controller is not available."
-			"MSP index: %d\n",
+		pr_err("%s: MSP controller is not available. (MSP-index: %d)\n",
 			__func__,
 			dai_idx);
-		spin_unlock_irqrestore(&dai_private->lock, flags);
 		return ret;
 	}
 
+	message.i2s_transfer_mode = I2S_TRANSFER_MODE_SINGLE_DMA;
+	message.i2s_direction = I2S_DIRECTION_RX;
 	message.rxbytes = bytes;
 	message.rxdata = data;
-	message.txbytes = 0;
-	message.txdata = NULL;
 	message.dma_flag = 1;
-
-	spin_unlock_irqrestore(&dai_private->lock, flags);
 
 	ret = i2s_transfer(i2s_dev->controller, &message);
 	if (ret < 0) {
-		pr_err("%s: Error: i2s_transfer failed. Msp index: %d\n",
+		pr_err("%s: i2s_transfer failed (%d)! (MSP-index: %d)\n",
 			__func__,
+			ret,
 			dai_idx);
 	}
 
@@ -598,7 +643,6 @@ static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *msp_dai)
 {
 	int ret = 0;
-	unsigned long flags_private;
 	struct ux500_msp_dai_private *dai_private = msp_dai->private_data;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct msp_config msp_config;
@@ -613,10 +657,9 @@ static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
 	pr_debug("%s: Setting up dai with rate %u.\n",
 		__func__,
 		runtime->rate);
-	spin_lock_irqsave(&dai_private->lock, flags_private);
+
 	ux500_msp_dai_compile_msp_config(substream, dai_private,
 		runtime->rate, &msp_config);
-	spin_unlock_irqrestore(&dai_private->lock, flags_private);
 
 	ret = i2s_setup(dai_private->i2s->controller, &msp_config);
 	if (ret < 0) {
@@ -778,7 +821,6 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 				int cmd,
 				struct snd_soc_dai *msp_dai)
 {
-	unsigned long flags;
 	int ret = 0;
 	struct ux500_msp_dai_private *dai_private =
 		msp_dai->private_data;
@@ -792,8 +834,6 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 			"SNDRV_PCM_STREAM_CAPTURE",
 		(int)dai_private->i2s->chip_select,
 		cmd);
-
-	spin_lock_irqsave(&dai_private->lock, flags);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -815,7 +855,6 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 		break;
 	}
 
-	spin_unlock_irqrestore(&dai_private->lock, flags);
 	return ret;
 }
 

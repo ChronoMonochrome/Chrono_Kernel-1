@@ -27,73 +27,49 @@
 #include "ux500_msp_dai.h"
 
 static struct snd_pcm_hardware ux500_pcm_hw_playback = {
-	.info = (SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP |
-			SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_PAUSE),
-	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_U16_LE |
-			SNDRV_PCM_FMTBIT_S16_BE | SNDRV_PCM_FMTBIT_U16_BE,
+	.info = SNDRV_PCM_INFO_INTERLEAVED |
+		SNDRV_PCM_INFO_MMAP |
+		SNDRV_PCM_INFO_RESUME |
+		SNDRV_PCM_INFO_PAUSE,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE |
+		SNDRV_PCM_FMTBIT_U16_LE |
+		SNDRV_PCM_FMTBIT_S16_BE |
+		SNDRV_PCM_FMTBIT_U16_BE,
 	.rates = SNDRV_PCM_RATE_KNOT,
 	.rate_min = UX500_PLATFORM_MIN_RATE_PLAYBACK,
 	.rate_max = UX500_PLATFORM_MAX_RATE_PLAYBACK,
 	.channels_min = UX500_PLATFORM_MIN_CHANNELS,
 	.channels_max = UX500_PLATFORM_MAX_CHANNELS,
-	.buffer_bytes_max = UX500_PLATFORM_BUFFER_SIZE,
-	.period_bytes_min = UX500_PLATFORM_MIN_PERIOD_BYTES,
-	.period_bytes_max = PAGE_SIZE,
-	.periods_min = UX500_PLATFORM_BUFFER_SIZE / PAGE_SIZE,
-	.periods_max = UX500_PLATFORM_BUFFER_SIZE /
-			UX500_PLATFORM_MIN_PERIOD_BYTES
+	.buffer_bytes_max = UX500_PLATFORM_BUFFER_BYTES_MAX,
+	.period_bytes_min = UX500_PLATFORM_PERIODS_BYTES_MIN,
+	.period_bytes_max = UX500_PLATFORM_PERIODS_BYTES_MAX,
+	.periods_min = UX500_PLATFORM_PERIODS_MIN,
+	.periods_max = UX500_PLATFORM_PERIODS_MAX,
 };
 
 static struct snd_pcm_hardware ux500_pcm_hw_capture = {
-	.info = (SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP |
-			SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_PAUSE),
-	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_U16_LE |
-			SNDRV_PCM_FMTBIT_S16_BE | SNDRV_PCM_FMTBIT_U16_BE,
+	.info = SNDRV_PCM_INFO_INTERLEAVED |
+		SNDRV_PCM_INFO_MMAP |
+		SNDRV_PCM_INFO_RESUME |
+		SNDRV_PCM_INFO_PAUSE,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE |
+		SNDRV_PCM_FMTBIT_U16_LE |
+		SNDRV_PCM_FMTBIT_S16_BE |
+		SNDRV_PCM_FMTBIT_U16_BE,
 	.rates = SNDRV_PCM_RATE_KNOT,
 	.rate_min = UX500_PLATFORM_MIN_RATE_CAPTURE,
 	.rate_max = UX500_PLATFORM_MAX_RATE_CAPTURE,
 	.channels_min = UX500_PLATFORM_MIN_CHANNELS,
 	.channels_max = UX500_PLATFORM_MAX_CHANNELS,
-	.buffer_bytes_max = UX500_PLATFORM_BUFFER_SIZE,
-	.period_bytes_min = UX500_PLATFORM_MIN_PERIOD_BYTES,
-	.period_bytes_max = PAGE_SIZE,
-	.periods_min = UX500_PLATFORM_BUFFER_SIZE / PAGE_SIZE,
-	.periods_max = UX500_PLATFORM_BUFFER_SIZE /
-			UX500_PLATFORM_MIN_PERIOD_BYTES
+	.buffer_bytes_max = UX500_PLATFORM_BUFFER_BYTES_MAX,
+	.period_bytes_min = UX500_PLATFORM_PERIODS_BYTES_MIN,
+	.period_bytes_max = UX500_PLATFORM_PERIODS_BYTES_MAX,
+	.periods_min = UX500_PLATFORM_PERIODS_MIN,
+	.periods_max = UX500_PLATFORM_PERIODS_MAX,
 };
 
-static void ux500_pcm_dma_enqueue(struct snd_pcm_substream *substream)
-{
-	unsigned int dma_size;
-	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct ux500_pcm_private *private = substream->runtime->private_data;
-
-	pr_debug("%s: Enter MSP Index: %d.\n",
-			__func__,
-			private->msp_id);
-
-	dma_size = frames_to_bytes(runtime, runtime->period_size);
-	if (substream->pstr->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		ux500_msp_dai_i2s_send_data(
-			(void *)(runtime->dma_addr + private->offset),
-			dma_size,
-			private->msp_id);
-	} else{
-		ux500_msp_dai_i2s_receive_data(
-			(void *)(runtime->dma_addr + private->offset),
-			dma_size,
-			private->msp_id);
-	}
-
-	private->period++;
-	private->period %= runtime->periods;
-	private->offset =
-		frames_to_bytes(runtime, runtime->period_size) *
-		private->period;
-}
-
 static void ux500_pcm_dma_hw_free(struct device *dev,
-		struct snd_pcm_substream *substream)
+				struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_dma_buffer *buf = runtime->dma_buffer_p;
@@ -125,10 +101,10 @@ void ux500_pcm_dma_eot_handler(void *data)
 		runtime = substream->runtime;
 		private = substream->runtime->private_data;
 
-		snd_pcm_period_elapsed(substream);
+		if (ux500_msp_dai_i2s_get_underrun_status(private->msp_id))
+			private->no_of_underruns++;
 
-		if (runtime->status->state == SNDRV_PCM_STATE_RUNNING)
-			ux500_pcm_dma_enqueue(substream);
+		snd_pcm_period_elapsed(substream);
 	}
 }
 EXPORT_SYMBOL(ux500_pcm_dma_eot_handler);
@@ -237,22 +213,37 @@ static int ux500_pcm_prepare(struct snd_pcm_substream *substream)
 
 static int ux500_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	int i;
-	struct ux500_pcm_private *private = substream->runtime->private_data;
+	int ret;
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct ux500_pcm_private *private = runtime->private_data;
+	int stream_id = substream->pstr->stream;
 
 	pr_debug("%s: Enter\n", __func__);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		for (i = 0; i < UX500_PLATFORM_PERIODS_QUEUED_DMA; i++)
-			ux500_pcm_dma_enqueue(substream);
+		private->no_of_underruns = 0;
+		ret = ux500_msp_dai_i2s_configure_sg(runtime->dma_addr,
+						runtime->periods,
+						frames_to_bytes(runtime,
+								runtime->period_size),
+						private->msp_id,
+						stream_id);
+		if (ret) {
+			pr_err("%s: Failed to configure sg-list!\n", __func__);
+			return -EINVAL;
+		}
 		break;
+
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		break;
+
 	case SNDRV_PCM_TRIGGER_STOP:
 		pr_debug("%s: SNDRV_PCM_TRIGGER_STOP\n", __func__);
-		private->period = 0;
+		pr_debug("%s: no_of_underruns = %u\n",
+			__func__,
+			private->no_of_underruns);
 		break;
 
 	default:
@@ -266,18 +257,17 @@ static int ux500_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 
 static snd_pcm_uframes_t ux500_pcm_pointer(struct snd_pcm_substream *substream)
 {
-	unsigned int offset;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct ux500_pcm_private *private = substream->runtime->private_data;
+	int stream_id = substream->pstr->stream;
+	unsigned int offset;
+	dma_addr_t addr;
 
 	pr_debug("%s: Enter\n", __func__);
 
-	offset = bytes_to_frames(runtime, private->offset);
-	if (offset < 0 || private->offset < 0)
-		pr_debug("%s: Offset=%i %i\n",
-			__func__,
-			offset,
-			private->offset);
+	addr = ux500_msp_dai_i2s_get_pointer(private->msp_id, stream_id);
+	offset = bytes_to_frames(runtime, addr - runtime->dma_addr);
+	pr_debug("%s: Offset = %u\n", __func__, offset);
 
 	return offset;
 }

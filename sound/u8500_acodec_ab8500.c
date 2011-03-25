@@ -333,10 +333,11 @@ t_ab8500_codec_error u8500_acodec_send_data(int client_id, void *data,
 		stm_dbg(DBG_ST.acodec, " I2S controller not available\n");
 		return -1;
 	}
+
+	message.i2s_transfer_mode = I2S_TRANSFER_MODE_SINGLE_DMA;
+	message.i2s_direction = I2S_DIRECTION_TX;
 	message.txbytes = bytes;
 	message.txdata = data;
-	message.rxbytes = 0;
-	message.rxdata = NULL;
 	message.dma_flag = dma_flag;
 
 	bytes_transmit = i2s_transfer(i2s_dev->controller, &message);
@@ -369,12 +370,12 @@ t_ab8500_codec_error u8500_acodec_loopback_configure(int client_id, void *data,
 		return -1;
 	}
 
+	message.i2s_transfer_mode = I2S_TRANSFER_MODE_INF_LOOPBACK;
 	message.rxbytes = bytes;
 	message.rxdata = data;
 	message.txbytes = bytes;
 	message.txdata = data;
 	message.dma_flag = dma_flag;
-	message.inf_loopback_xfer = true;
 
 	bytes_receive = i2s_transfer(i2s_dev->controller, &message);
 
@@ -406,10 +407,10 @@ t_ab8500_codec_error u8500_acodec_receive_data(int client_id, void *data,
 		return -1;
 	}
 
+	message.i2s_transfer_mode = I2S_TRANSFER_MODE_SINGLE_DMA;
+	message.i2s_direction = I2S_DIRECTION_RX;
 	message.rxbytes = bytes;
 	message.rxdata = data;
-	message.txbytes = 0;
-	message.txdata = NULL;
 	message.dma_flag = dma_flag;
 
 	bytes_receive = i2s_transfer(i2s_dev->controller, &message);
