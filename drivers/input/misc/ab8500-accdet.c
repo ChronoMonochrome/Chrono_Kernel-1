@@ -149,10 +149,12 @@ enum accessory_irq {
  * Enumerates the op. modes of the avcontrol switch
  * @AUDIO_IN Audio input is selected
  * @VIDEO_OUT Video output is selected
+ * @NOT_SET The av-switch control signal is disconnected.
  */
 enum accessory_avcontrol_dir {
 	AUDIO_IN,
 	VIDEO_OUT,
+	NOT_SET,
 };
 
 /**
@@ -689,8 +691,6 @@ static void unplug_irq_handler_work(struct work_struct *work)
 	dd->btn_state = BUTTON_UNK;
 	config_accdetect(dd);
 
-	set_av_switch(dd, AUDIO_IN);
-
 	accessory_regulator_disable(REGULATOR_ALL);
 
 	report_jack_status(dd);
@@ -747,6 +747,8 @@ static void detect_work(struct work_struct *work)
 		struct ab8500_ad, detect_work.work);
 
 	dev_dbg(&dd->pdev->dev, "%s: Enter\n", __func__);
+
+	set_av_switch(dd, AUDIO_IN);
 
 	new_type = detect(dd, &req_det_count);
 
@@ -956,8 +958,12 @@ static void set_av_switch(struct ab8500_ad *dd,
 {
 	int ret;
 
-	dev_dbg(&dd->pdev->dev, "%s: Enter\n", __func__);
-	if (!dd->gpio35_dir_set) {
+	dev_dbg(&dd->pdev->dev, "%s: Enter (%d)\n", __func__, dir);
+	if (dir == NOT_SET) {
+		ret = gpio_direction_input(dd->pdata->video_ctrl_gpio);
+		dd->gpio35_dir_set = 0;
+		ret = gpio_direction_output(dd->pdata->video_ctrl_gpio, 0);
+	} else if (!dd->gpio35_dir_set) {
 		ret = gpio_direction_output(dd->pdata->video_ctrl_gpio,
 						dir == AUDIO_IN ? 1 : 0);
 		if (ret < 0) {
@@ -1089,9 +1095,11 @@ static void config_accdetect(struct ab8500_ad *dd)
 		release_irq(dd, UNPLUG_IRQ);
 		release_irq(dd, BUTTON_PRESS_IRQ);
 		release_irq(dd, BUTTON_RELEASE_IRQ);
+		set_av_switch(dd, NOT_SET);
 		break;
 
 	case JACK_TYPE_DISCONNECTED:
+		set_av_switch(dd, NOT_SET);
 	case JACK_TYPE_HEADPHONE:
 	case JACK_TYPE_CVIDEO:
 		config_accdetect1_hw(dd, 1);
@@ -1132,7 +1140,6 @@ static void init_work(struct work_struct *work)
 
 	dev_dbg(&dd->pdev->dev, "%s: Enter\n", __func__);
 
-	set_av_switch(dd, AUDIO_IN);
 	dd->jack_type = dd->reported_jack_type = JACK_TYPE_UNSPECIFIED;
 	config_accdetect(dd);
 	queue_delayed_work(dd->irq_work_queue,
