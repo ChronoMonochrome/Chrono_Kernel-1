@@ -33,7 +33,7 @@ struct shrm_net_iface_priv {
 };
 
 int shrm_register_netdev(struct shrm_dev *shrm_dev_data);
-int shrm_net_receive(struct net_device *dev, unsigned char *data);
+int shrm_net_receive(struct net_device *dev);
 int shrm_suspend_netdev(struct net_device *dev);
 int shrm_resume_netdev(struct net_device *dev);
 int shrm_stop_netdev(struct net_device *dev);

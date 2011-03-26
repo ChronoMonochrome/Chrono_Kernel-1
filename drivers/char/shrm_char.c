@@ -112,6 +112,7 @@ void shrm_char_reset_queues(struct shrm_dev *shrm)
 		isadev = &isa_context->isadev[no_dev];
 		q = &isadev->dl_queue;
 
+		spin_lock_bh(&q->update_lock);
 		/* empty out the msg queue */
 		list_for_each_safe(cur_msg_ptr, msg_ptr, &q->msg_list) {
 			cur_msg = list_entry(cur_msg_ptr,
@@ -129,6 +130,8 @@ void shrm_char_reset_queues(struct shrm_dev *shrm)
 		/* wake up the blocking read/select */
 		atomic_set(&q->q_rp, 1);
 		wake_up_interruptible(&q->wq_readable);
+
+		spin_unlock_bh(&q->update_lock);
 	}
 }
 

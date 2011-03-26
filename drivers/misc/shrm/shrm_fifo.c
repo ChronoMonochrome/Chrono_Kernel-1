@@ -125,6 +125,7 @@ void write_boot_info_resp(struct shrm_dev *shrm, u32 config,
 	u8 msg_length;
 	version = SHRM_VER;
 
+	spin_lock_bh(&fifo->fifo_update_lock);
 	/* Read L1 header read content of reader_local_rptr */
 	msg = (u32 *)
 		(fifo->writer_local_wptr+fifo->fifo_virtual_addr);
@@ -144,10 +145,9 @@ void write_boot_info_resp(struct shrm_dev *shrm, u32 config,
 		*msg = ca_csc_inactivity_timer;
 		msg_length = L1_NORMAL_MSG;
 	}
-	spin_lock(&fifo->fifo_update_lock);
 	fifo->writer_local_wptr += msg_length;
 	fifo->availablesize -= msg_length;
-	spin_unlock(&fifo->fifo_update_lock);
+	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
 /**
@@ -240,6 +240,7 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 	 */
 	l2_header = ((l2header << L2_HEADER_OFFSET) |
 					((length) & MASK_0_39_BIT));
+	spin_lock_bh(&fifo->fifo_update_lock);
 	/* Check Local Rptr is less than or equal to Local WPtr */
 	if (fifo->writer_local_rptr <= fifo->writer_local_wptr) {
 		msg = (u32 *)
@@ -257,11 +258,9 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 			/* copy the l2 message in 1 memcpy */
 			memcpy((void *)msg, addr, length);
 			/* UpdateWptr */
-			spin_lock_bh(&fifo->fifo_update_lock);
 			fifo->writer_local_wptr += requiredsize;
 			fifo->availablesize -= requiredsize;
 			fifo->writer_local_wptr %= fifo->end_addr_fifo;
-			spin_unlock_bh(&fifo->fifo_update_lock);
 		} else {
 			/*
 			 * message is split between and of FIFO and beg of FIFO
@@ -273,7 +272,6 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 				/* Add L1 header */
 				*msg = l1_header;
 				msg++;
-				spin_lock_bh(&fifo->fifo_update_lock);
 				/* UpdateWptr */
 				fifo->writer_local_wptr = 0;
 				fifo->availablesize -= size;
@@ -293,7 +291,6 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 							requiredsize-size;
 				fifo->availablesize -=
 							(requiredsize-size);
-				spin_unlock_bh(&fifo->fifo_update_lock);
 			} else if (size == 2) {
 				/* Add L1 header and L2 header */
 				*msg = l1_header;
@@ -301,7 +298,6 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 				*msg = l2_header;
 				msg++;
 
-				spin_lock_bh(&fifo->fifo_update_lock);
 				/* UpdateWptr */
 				fifo->writer_local_wptr = 0;
 				fifo->availablesize -= size;
@@ -320,7 +316,6 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 							requiredsize-size;
 				fifo->availablesize -=
 							(requiredsize-size);
-				spin_unlock_bh(&fifo->fifo_update_lock);
 			} else {
 				/* Add L1 header and L2 header */
 				*msg = l1_header;
@@ -331,7 +326,6 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 				/* copy the l2 message in 1 memcpy */
 				memcpy((void *)msg, addr, (size-2)*4);
 
-				spin_lock_bh(&fifo->fifo_update_lock);
 
 				/* UpdateWptr */
 				fifo->writer_local_wptr = 0;
@@ -351,7 +345,6 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 							requiredsize-size;
 				fifo->availablesize -=
 							(requiredsize-size);
-				spin_unlock_bh(&fifo->fifo_update_lock);
 			}
 
 		}
@@ -370,13 +363,12 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 		 */
 		memcpy((void *)msg, addr, length);
 
-		spin_lock_bh(&fifo->fifo_update_lock);
 		/* UpdateWptr */
 		fifo->writer_local_wptr += requiredsize;
 		fifo->availablesize -= requiredsize;
-		spin_unlock_bh(&fifo->fifo_update_lock);
 
 	}
+	spin_unlock_bh(&fifo->fifo_update_lock);
 	return length;
 }
 
@@ -667,6 +659,7 @@ void update_ac_common_local_rptr(struct shrm_dev *shrm)
 
 	fifo = &ape_shm_fifo_0;
 
+	spin_lock_bh(&fifo->fifo_update_lock);
 	fifo->shared_rptr =
 		(*((u32 *)shrm->ac_common_shared_rptr));
 
@@ -680,10 +673,9 @@ void update_ac_common_local_rptr(struct shrm_dev *shrm)
 	}
 
 	/* Chance of race condition of below variables with write_msg */
-	spin_lock(&fifo->fifo_update_lock);
 	fifo->availablesize += free_space;
 	fifo->writer_local_rptr = fifo->shared_rptr;
-	spin_unlock(&fifo->fifo_update_lock);
+	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
 void update_ac_audio_local_rptr(struct shrm_dev *shrm)
@@ -696,6 +688,7 @@ void update_ac_audio_local_rptr(struct shrm_dev *shrm)
 	u32 free_space = 0;
 
 	fifo = &ape_shm_fifo_1;
+	spin_lock_bh(&fifo->fifo_update_lock);
 	fifo->shared_rptr =
 		(*((u32 *)shrm->ac_audio_shared_rptr));
 
@@ -709,10 +702,9 @@ void update_ac_audio_local_rptr(struct shrm_dev *shrm)
 	}
 
 	/* Chance of race condition of below variables with write_msg */
-	spin_lock(&fifo->fifo_update_lock);
 	fifo->availablesize += free_space;
 	fifo->writer_local_rptr = fifo->shared_rptr;
-	spin_unlock(&fifo->fifo_update_lock);
+	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
 void update_ac_common_shared_wptr(struct shrm_dev *shrm)
@@ -724,11 +716,13 @@ void update_ac_common_shared_wptr(struct shrm_dev *shrm)
 	struct fifo_write_params *fifo;
 
 	fifo = &ape_shm_fifo_0;
+	spin_lock_bh(&fifo->fifo_update_lock);
 	/* Update shared pointer fifo offset of the IPC zone */
 	(*((u32 *)shrm->ac_common_shared_wptr)) =
 						fifo->writer_local_wptr;
 
 	fifo->shared_wptr = fifo->writer_local_wptr;
+	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
 void update_ac_audio_shared_wptr(struct shrm_dev *shrm)
@@ -740,10 +734,12 @@ void update_ac_audio_shared_wptr(struct shrm_dev *shrm)
 	struct fifo_write_params *fifo;
 
 	fifo = &ape_shm_fifo_1;
+	spin_lock_bh(&fifo->fifo_update_lock);
 	/* Update shared pointer fifo offset of the IPC zone */
 	(*((u32 *)shrm->ac_audio_shared_wptr)) =
 						fifo->writer_local_wptr;
 	fifo->shared_wptr = fifo->writer_local_wptr;
+	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
 void update_ca_common_shared_rptr(struct shrm_dev *shrm)
@@ -803,9 +799,11 @@ void get_writer_pointers(u8 channel_type, u32 *writer_local_rptr,
 	else /* channel_type = AUDIO_CHANNEL */
 		fifo = &ape_shm_fifo_1;
 
+	spin_lock_bh(&fifo->fifo_update_lock);
 	*writer_local_rptr = fifo->writer_local_rptr;
 	*writer_local_wptr = fifo->writer_local_wptr;
 	*shared_wptr = fifo->shared_wptr;
+	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
 void set_ca_msg_0_read_notif_send(u8 val)

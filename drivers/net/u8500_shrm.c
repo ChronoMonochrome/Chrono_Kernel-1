@@ -22,16 +22,13 @@
 #include <mach/shrm_net.h>
 #include <mach/shrm.h>
 
-static u8 wr_isi_msg[10*1024];
-
 /**
  * shrm_net_receive() - receive data and copy to user space buffer
  * @dev:	pointer to the network device structure
- * @data:	pointer to the receive buffer
  *
  * Copy data from ISI queue to the user space buffer.
  */
-int shrm_net_receive(struct net_device *dev, u8 *data)
+int shrm_net_receive(struct net_device *dev)
 {
 	struct sk_buff *skb;
 	struct isadev_context *isadev;
@@ -41,9 +38,6 @@ int shrm_net_receive(struct net_device *dev, u8 *data)
 	struct shrm_net_iface_priv *net_iface_priv =
 		(struct shrm_net_iface_priv *)netdev_priv(dev);
 	struct shrm_dev *shrm = net_iface_priv->shrm_device;
-
-	if (data == NULL)
-		goto out;
 
 	isadev = &shrm->isa_context->isadev[ISI_MESSAGING];
 	q = &isadev->dl_queue;
@@ -60,30 +54,10 @@ int shrm_net_receive(struct net_device *dev, u8 *data)
 	if (msgsize <= 0)
 		return msgsize;
 
-	if ((q->readptr+msgsize) >= q->size) {
-		size = (q->size-q->readptr);
-		/*Copy First Part of msg*/
-		memcpy(data,
-			(u8 *)(q->fifo_base + q->readptr), size);
-		/*Copy Second Part of msg at the top of fifo*/
-		memcpy(data+size,
-			(u8 *)(q->fifo_base), (msgsize - size));
-	} else {
-		memcpy(data,
-			(u8 *)(q->fifo_base+q->readptr), msgsize);
-	}
-
-	spin_lock_bh(&q->update_lock);
-	remove_msg_from_queue(q);
-	spin_unlock_bh(&q->update_lock);
-
-	dev_dbg(shrm->dev, "Data len at shrm_net_receive: %d\n", msgsize);
-
 	/*
 	 * The packet has been retrieved from the transmission
 	 * medium. Build an skb around it, so upper layers can handle it
 	 */
-
 	skb = dev_alloc_skb(msgsize);
 	if (!skb) {
 		if (printk_ratelimit())
@@ -92,8 +66,29 @@ int shrm_net_receive(struct net_device *dev, u8 *data)
 		dev->stats.rx_dropped++;
 		goto out;
 	}
-	skb_copy_to_linear_data(skb, data, msgsize);
-	skb_put(skb, msgsize);
+
+	if ((q->readptr+msgsize) >= q->size) {
+		size = (q->size-q->readptr);
+		/*Copy First Part of msg*/
+		skb_copy_to_linear_data(skb,
+				(u8 *)(q->fifo_base + q->readptr), size);
+		skb_put(skb, size);
+
+		/*Copy Second Part of msg at the top of fifo*/
+		skb_copy_to_linear_data_offset(skb, size,
+				(u8 *)(q->fifo_base), (msgsize - size));
+		skb_put(skb, msgsize-size);
+
+	} else {
+		skb_copy_to_linear_data(skb,
+				(u8 *)(q->fifo_base+q->readptr), msgsize);
+		skb_put(skb, msgsize);
+	}
+
+	spin_lock_bh(&q->update_lock);
+	remove_msg_from_queue(q);
+	spin_unlock_bh(&q->update_lock);
+
 	skb_reset_mac_header(skb);
 	__skb_pull(skb, dev->hard_header_len);
 	/*Write metadata, and then pass to the receive level*/
@@ -196,15 +191,8 @@ static netdev_tx_t netdev_isa_write(struct sk_buff *skb, struct net_device *dev)
 			skb->data[SRC_OBJ_INDEX] = skb->data[PIPE_HDL_INDEX];
 	}
 
-	if ((void *)wr_isi_msg !=
-			memcpy((void *)wr_isi_msg, skb->data, skb->len)) {
-		dev_err(shrm->dev, "memcpy failed\n");
-		dev_kfree_skb(skb);
-		return -EFAULT;
-	}
-
 	spin_lock_bh(&shrm->isa_context->common_tx);
-	err = shm_write_msg(shrm, ISI_MESSAGING, (void *)wr_isi_msg,
+	err = shm_write_msg(shrm, ISI_MESSAGING, skb->data,
 			skb->len);
 	if (!err) {
 		dev->stats.tx_packets++;

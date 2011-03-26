@@ -42,7 +42,6 @@ static struct hrtimer timer;
 
 #define PHONET_TASKLET
 #define MAX_RCV_LEN	2048
-static u8 ph_recv_buf[MAX_RCV_LEN];
 
 void do_phonet_rcv_tasklet(unsigned long unused);
 struct tasklet_struct phonet_rcv_tasklet;
@@ -308,7 +307,7 @@ void do_phonet_rcv_tasklet(unsigned long unused)
 
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
 	for (;;) {
-		ret = shrm_net_receive(shrm->ndev, ph_recv_buf);
+		ret = shrm_net_receive(shrm->ndev);
 		if (ret == 0) {
 			dev_dbg(shrm->dev, "len is zero, queue empty\n");
 			break;
