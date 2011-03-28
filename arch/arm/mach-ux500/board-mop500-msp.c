@@ -28,11 +28,18 @@ static DEFINE_SPINLOCK(msp_rxtx_lock);
 /* Reference Count */
 static int msp_rxtx_ref;
 
-static pin_cfg_t mop500_msp1_pins[] = {
-		GPIO33_MSP1_TXD | PIN_OUTPUT_LOW,
-		GPIO34_MSP1_TFS | PIN_INPUT_NOPULL,
-		GPIO35_MSP1_TCK | PIN_INPUT_NOPULL,
-		GPIO36_MSP1_RXD | PIN_INPUT_NOPULL,
+static pin_cfg_t mop500_msp1_pins_init[] = {
+		GPIO33_MSP1_TXD | PIN_OUTPUT_LOW   | PIN_SLPM_WAKEUP_DISABLE,
+		GPIO34_MSP1_TFS | PIN_INPUT_NOPULL | PIN_SLPM_WAKEUP_DISABLE,
+		GPIO35_MSP1_TCK | PIN_INPUT_NOPULL | PIN_SLPM_WAKEUP_DISABLE,
+		GPIO36_MSP1_RXD | PIN_INPUT_NOPULL | PIN_SLPM_WAKEUP_DISABLE,
+};
+
+static pin_cfg_t mop500_msp1_pins_exit[] = {
+		GPIO33_MSP1_TXD | PIN_OUTPUT_LOW   | PIN_SLPM_WAKEUP_ENABLE,
+		GPIO34_MSP1_TFS | PIN_INPUT_NOPULL | PIN_SLPM_WAKEUP_ENABLE,
+		GPIO35_MSP1_TCK | PIN_INPUT_NOPULL | PIN_SLPM_WAKEUP_ENABLE,
+		GPIO36_MSP1_RXD | PIN_INPUT_NOPULL | PIN_SLPM_WAKEUP_ENABLE,
 };
 
 int msp13_i2s_init(void)
@@ -43,7 +50,7 @@ int msp13_i2s_init(void)
 	spin_lock_irqsave(&msp_rxtx_lock, flags);
 	if (msp_rxtx_ref == 0)
 		retval = nmk_config_pins(
-				ARRAY_AND_SIZE(mop500_msp1_pins));
+				ARRAY_AND_SIZE(mop500_msp1_pins_init));
 	if (!retval)
 		msp_rxtx_ref++;
 	spin_unlock_irqrestore(&msp_rxtx_lock, flags);
@@ -61,7 +68,7 @@ int msp13_i2s_exit(void)
 	msp_rxtx_ref--;
 	if (msp_rxtx_ref == 0)
 		retval = nmk_config_pins_sleep(
-				ARRAY_AND_SIZE(mop500_msp1_pins));
+				ARRAY_AND_SIZE(mop500_msp1_pins_exit));
 	spin_unlock_irqrestore(&msp_rxtx_lock, flags);
 
 	return retval;
