@@ -2800,7 +2800,7 @@ static bool is_yuv_fmt(enum b2r2_blt_fmt fmt)
 static bool is_yvu_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
-	case B2R2_BLT_FMT_CB_Y_CR_Y:
+	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
