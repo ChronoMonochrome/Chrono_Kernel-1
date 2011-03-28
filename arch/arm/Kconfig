@@ -933,9 +933,11 @@ config ARCH_U8500
 	select GENERIC_CLOCKEVENTS
 	select CLKDEV_LOOKUP
 	select ARCH_REQUIRE_GPIOLIB
+	select HAVE_CLK
 	select ARCH_HAS_CPUFREQ
 	select HAVE_SMP
 	select MIGHT_HAVE_CACHE_L2X0
+	select NOMADIK_GPIO
 	help
 	  Support for ST-Ericsson's Ux500 architecture
 
