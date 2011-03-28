@@ -771,4 +771,4 @@ static void __exit cg29xx_codec_platform_drv_exit(void)
 module_init(cg29xx_codec_platform_drv_init);
 module_exit(cg29xx_codec_platform_drv_exit);
 
-MODULE_LICENSE("GPLv2");
+MODULE_LICENSE("GPL v2");

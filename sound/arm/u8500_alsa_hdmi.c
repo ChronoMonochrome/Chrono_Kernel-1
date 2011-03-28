@@ -324,7 +324,7 @@ static int snd_u8500_alsa_hdmi_open(struct snd_pcm_substream *substream)
 	ptr_audio_stream->substream = substream;
 
 	stm_config_hw(chip, substream, ALSA_HDMI_DEV, stream_id);
-	init_MUTEX(&(ptr_audio_stream->alsa_sem));
+	sema_init(&(ptr_audio_stream->alsa_sem), 1);
 	init_completion(&(ptr_audio_stream->alsa_com));
 
 	ptr_audio_stream->state = ALSA_STATE_UNPAUSE;

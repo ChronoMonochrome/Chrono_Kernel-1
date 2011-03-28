@@ -448,4 +448,4 @@ static void __exit av8100_codec_platform_drv_exit(void)
 module_init(av8100_codec_platform_drv_init);
 module_exit(av8100_codec_platform_drv_exit);
 
-MODULE_LICENSE("GPLv2");
+MODULE_LICENSE("GPL v2");

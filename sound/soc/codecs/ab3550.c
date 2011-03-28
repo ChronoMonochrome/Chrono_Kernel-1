@@ -1425,4 +1425,4 @@ module_exit(ab3550_codec_platform_drv_exit);
 
 MODULE_DESCRIPTION("AB3550 Codec driver");
 MODULE_AUTHOR("Xie Xiaolei <xie.xiaolei@stericsson.com>");
-MODULE_LICENSE("GPLv2");
+MODULE_LICENSE("GPL v2");
