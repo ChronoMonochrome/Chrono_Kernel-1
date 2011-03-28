@@ -450,7 +450,7 @@ static int tc35892_resume(struct device *dev)
 		if (ret < 0)
 			goto out;
 
-		for (i = 0; i < ARRAY_SIZE(sleep_regs); i++) {
+		for (i = ARRAY_SIZE(sleep_regs) - 1; i >= 0; i--) {
 			ret = tc35892_reg_write(tc35892,
 						sleep_regs[i],
 						sleep_regs_backup[i]);
