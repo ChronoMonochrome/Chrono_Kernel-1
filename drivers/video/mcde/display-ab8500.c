@@ -36,6 +36,19 @@
 #define PAL_VFP_FIELD_2		2
 
 /*
+ * NTSC (ITU-R BT.470-5):
+ * Total nr of active lines:   486
+ * Total nr of blanking lines:  39
+ *                      total: 525
+ */
+#define NTSC_ORG_HBP		122
+#define NTSC_ORG_HFP		16
+#define NTSC_ORG_VBP_FIELD_1	16
+#define NTSC_ORG_VBP_FIELD_2	17
+#define NTSC_ORG_VFP_FIELD_1	3
+#define NTSC_ORG_VFP_FIELD_2	3
+
+/*
  * NTSC (DV variant):
  * Total nr of active lines:   480
  * Total nr of blanking lines:  45
@@ -245,6 +258,15 @@ static int try_video_mode(
 		video_mode->interlaced = true;
 		video_mode->pixclock = SDTV_PIXCLOCK;
 		break;
+	case 486:
+		/* set including SAV/EAV */
+		video_mode->hbp = NTSC_ORG_HBP;
+		video_mode->hfp = NTSC_ORG_HFP;
+		video_mode->vbp = NTSC_ORG_VBP_FIELD_1 + NTSC_ORG_VBP_FIELD_2;
+		video_mode->vfp = NTSC_ORG_VFP_FIELD_1 + NTSC_ORG_VFP_FIELD_2;
+		video_mode->interlaced = true;
+		video_mode->pixclock = SDTV_PIXCLOCK;
+		break;
 	default:
 		dev_warn(&ddev->dev,
 			"%s:Failed to find video mode x=%d, y=%d\n",
@@ -289,7 +311,8 @@ static int set_video_mode(
 		/* TODO: PAL N (e.g. uses a setup of 7.5 IRE) */
 		driver_data->denc_conf.black_level_setup = false;
 		break;
-	case 480: /* NTSC, PAL M */
+	case 480: /* NTSC, PAL M DV variant */
+	case 486: /* NTSC, PAL M original   */
 		/* TODO: PAL M */
 		driver_data->denc_conf.TV_std = TV_STD_NTSC_M;
 		/* TODO: how to choose LOW DEF FILTER */
