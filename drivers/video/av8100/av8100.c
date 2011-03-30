@@ -252,8 +252,8 @@ static const struct color_conversion_cmd *get_color_transform_cmd(
 				enum av8100_color_transform transform);
 static int av8100_open(struct inode *inode, struct file *filp);
 static int av8100_release(struct inode *inode, struct file *filp);
-static int av8100_ioctl(struct inode *inode, struct file *file,
-	unsigned int cmd, unsigned long arg);
+static long av8100_ioctl(struct file *file,
+				unsigned int cmd, unsigned long arg);
 static int __devinit av8100_probe(struct i2c_client *i2cClient,
 	const struct i2c_device_id *id);
 static int __devexit av8100_remove(struct i2c_client *i2cClient);
@@ -272,8 +272,7 @@ static const struct file_operations av8100_fops = {
 	.owner =    THIS_MODULE,
 	.open =     av8100_open,
 	.release =  av8100_release,
-	//.ioctl is no longer in use - needs fixing
-	//.ioctl = av8100_ioctl
+	.unlocked_ioctl = av8100_ioctl
 };
 
 static struct miscdevice av8100_miscdev = {
@@ -3475,7 +3474,7 @@ static int av8100_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static int av8100_ioctl(struct inode *inode, struct file *file,
+static long av8100_ioctl(struct file *file,
 				unsigned int cmd, unsigned long arg)
 {
 	return 0;

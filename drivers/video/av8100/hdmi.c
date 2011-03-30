@@ -23,6 +23,7 @@
 #include "hdmi_loc.h"
 #include <linux/slab.h>
 #include <linux/sched.h>
+#include <linux/smp_lock.h>
 
 #define SYSFS_EVENT_FILENAME "evread"
 
@@ -1633,7 +1634,7 @@ static int hdmi_release(struct inode *inode, struct file *filp)
 }
 
 /* ioctl */
-static int hdmi_ioctl(struct inode *inode, struct file *file,
+static int hdmi_ioctl(struct file *file,
 		       unsigned int cmd, unsigned long arg)
 {
 	u8 value = 0;
@@ -2025,6 +2026,18 @@ ioc_hdcploadaes_err:
 	return 0;
 }
 
+static long hdmi_unlocked_ioctl(struct file *file, unsigned int cmd, 
+							unsigned long arg)
+{
+	int ret;
+
+	lock_kernel();
+	ret = hdmi_ioctl(file, cmd, arg);
+	unlock_kernel();
+
+	return ret;
+}
+
 static unsigned int
 hdmi_poll(struct file *filp, poll_table *wait)
 {
@@ -2048,8 +2061,7 @@ static const struct file_operations hdmi_fops = {
 	.owner =    THIS_MODULE,
 	.open =     hdmi_open,
 	.release =  hdmi_release,
-	//.ioctl is no longer in use - needs fixing
-	//.ioctl = hdmi_ioctl,
+	.unlocked_ioctl = hdmi_unlocked_ioctl,
 	.poll = hdmi_poll
 };
 
