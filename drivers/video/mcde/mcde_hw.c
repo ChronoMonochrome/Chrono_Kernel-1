@@ -817,10 +817,7 @@ static u32 get_output_fifo_size(enum mcde_fifo fifo)
 	switch (fifo) {
 	case MCDE_FIFO_A:
 	case MCDE_FIFO_B:
-		if (hardware_version == MCDE_CHIP_VERSION_1_0_4)
-			ret = MCDE_FIFO_AB_SIZE / 2;
-		else
-			ret = MCDE_FIFO_AB_SIZE;
+		ret = MCDE_FIFO_AB_SIZE;
 		break;
 	case MCDE_FIFO_C0:
 	case MCDE_FIFO_C1:
