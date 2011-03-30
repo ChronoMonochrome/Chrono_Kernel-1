@@ -28,7 +28,7 @@
 
 
 static const struct b2r2_profiler *b2r2_profiler;
-static DECLARE_MUTEX(b2r2_profiler_lock);
+static DEFINE_SEMAPHORE(b2r2_profiler_lock);
 
 
 int b2r2_register_profiler(const struct b2r2_profiler * const profiler)
