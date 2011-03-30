@@ -1,0 +1,420 @@
+/*
+ * Copyright (C) ST-Ericsson SA 2010
+ *
+ * AB8500 display driver
+ *
+ * Author: Marcel Tunnissen <marcel.tuennissen@stericsson.com>
+ * for ST-Ericsson.
+ *
+ * License terms: GNU General Public License (GPL), version 2.
+ */
+
+#include <linux/kernel.h>
+#include <linux/device.h>
+#include <linux/regulator/consumer.h>
+#include <linux/slab.h>
+#include <linux/err.h>
+#include <linux/mfd/ab8500/denc.h>
+#include <video/mcde_display.h>
+#include <video/mcde_display-ab8500.h>
+
+#define AB8500_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
+
+struct display_driver_data {
+	struct ab8500_denc_conf denc_conf;
+	struct platform_device *denc_dev;
+	struct regulator *denc_regulator;
+};
+
+static int try_video_mode(struct mcde_display_device *ddev,
+				struct mcde_video_mode *video_mode);
+static int set_video_mode(struct mcde_display_device *ddev,
+				struct mcde_video_mode *video_mode);
+static int set_power_mode(struct mcde_display_device *ddev,
+				enum mcde_display_power_mode power_mode);
+static int on_first_update(struct mcde_display_device *ddev);
+static int display_update(struct mcde_display_device *ddev);
+
+static int __devinit ab8500_probe(struct mcde_display_device *ddev)
+{
+	int ret = 0;
+	struct ab8500_display_platform_data *pdata = ddev->dev.platform_data;
+	struct display_driver_data *driver_data;
+
+	AB8500_DISP_TRACE;
+
+	if (pdata == NULL) {
+		dev_err(&ddev->dev, "%s:Platform data missing\n", __func__);
+		return -EINVAL;
+	}
+	if (ddev->port->type != MCDE_PORTTYPE_DPI) {
+		dev_err(&ddev->dev, "%s:Invalid port type %d\n", __func__,
+							ddev->port->type);
+		return -EINVAL;
+	}
+
+	driver_data = (struct display_driver_data *)
+		kzalloc(sizeof(struct display_driver_data), GFP_KERNEL);
+	if (!driver_data) {
+		dev_err(&ddev->dev, "Failed to allocate driver data\n");
+		return -ENOMEM;
+	}
+	driver_data->denc_dev = ab8500_denc_get_device();
+	if (!driver_data->denc_dev) {
+		dev_err(&ddev->dev, "Failed to get DENC device\n");
+		ret = -ENODEV;
+		goto dev_get_failed;
+	}
+
+	if (pdata->denc_regulator_id) {
+		driver_data->denc_regulator = regulator_get(&ddev->dev,
+						pdata->denc_regulator_id);
+		if (IS_ERR(driver_data->denc_regulator)) {
+			ret = PTR_ERR(driver_data->denc_regulator);
+			dev_warn(&ddev->dev, "%s:Failed to get regulator %s\n",
+					__func__, pdata->denc_regulator_id);
+			driver_data->denc_regulator = NULL;
+			goto regulator_get_failed;
+		}
+	}
+
+	dev_set_drvdata(&ddev->dev, driver_data);
+
+	ddev->try_video_mode = try_video_mode;
+	ddev->set_video_mode = set_video_mode;
+	ddev->set_power_mode = set_power_mode;
+	ddev->on_first_update = on_first_update;
+	ddev->update = display_update;
+	ddev->prepare_for_update = NULL;
+
+	return 0;
+
+regulator_get_failed:
+	ab8500_denc_put_device(driver_data->denc_dev);
+dev_get_failed:
+	kzfree(driver_data);
+	return ret;
+}
+
+static int __devexit ab8500_remove(struct mcde_display_device *ddev)
+{
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+	AB8500_DISP_TRACE;
+
+	ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);
+
+	if (driver_data->denc_regulator)
+		regulator_put(driver_data->denc_regulator);
+	ab8500_denc_put_device(driver_data->denc_dev);
+	kzfree(driver_data);
+	return 0;
+}
+
+static int ab8500_resume(struct mcde_display_device *ddev)
+{
+	int ret = 0;
+	AB8500_DISP_TRACE;
+
+	ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_STANDBY);
+	if (ret < 0)
+		dev_warn(&ddev->dev, "%s: Failed to resume display\n",
+								__func__);
+
+	return ret;
+}
+
+static int ab8500_suspend(struct mcde_display_device *ddev, pm_message_t state)
+{
+	int ret = 0;
+	AB8500_DISP_TRACE;
+
+	ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);
+	if (ret < 0)
+		dev_warn(&ddev->dev, "%s: Failed to suspend display\n",
+								__func__);
+
+	return ret;
+}
+
+
+static struct mcde_display_driver ab8500_driver = {
+	.probe	= ab8500_probe,
+	.remove = ab8500_remove,
+	.suspend = ab8500_suspend,
+	.resume = ab8500_resume,
+	.driver = {
+		.name	= "mcde_tv_ab8500",
+	},
+};
+
+static void print_vmode(struct mcde_video_mode *vmode)
+{
+	pr_debug("resolution: %dx%d\n", vmode->xres, vmode->yres);
+	pr_debug("  pixclock: %d\n",    vmode->pixclock);
+	pr_debug("       hbp: %d\n",    vmode->hbp);
+	pr_debug("       hfp: %d\n",    vmode->hfp);
+	pr_debug("      vbp1: %d\n",    vmode->vbp1);
+	pr_debug("      vfp1: %d\n",    vmode->vfp1);
+	pr_debug("      vbp2: %d\n",    vmode->vbp2);
+	pr_debug("      vfp2: %d\n",    vmode->vfp2);
+	pr_debug("interlaced: %s\n", vmode->interlaced ? "true" : "false");
+}
+
+static int try_video_mode(
+	struct mcde_display_device *ddev, struct mcde_video_mode *video_mode)
+{
+	AB8500_DISP_TRACE;
+
+	if (ddev == NULL || video_mode == NULL) {
+		dev_warn(&ddev->dev, "%s:ddev = NULL or video_mode = NULL\n",
+			__func__);
+		return -EINVAL;
+	}
+
+	if (video_mode->xres != 720) {
+		dev_warn(&ddev->dev,
+			"%s:Failed to find video mode x=%d, y=%d\n",
+			__func__, video_mode->xres, video_mode->yres);
+		return -EINVAL;
+	}
+
+
+	/* TODO: move this part to MCDE: mcde_dss_try_video_mode? */
+	/* check for PAL */
+	switch (video_mode->yres) {
+	case 576:
+		/* set including SAV/EAV: */
+		video_mode->hbp = 132;
+		video_mode->hfp =  12;
+		/*
+		 * Total nr of active lines:  576
+		 * Total nr of blanking lines: 49
+		 */
+		video_mode->vbp1 = 22;
+		video_mode->vfp1 =  2;
+		video_mode->vbp2 = 23;
+		video_mode->vfp2 =  2;
+		/* currently only support interlaced */
+		video_mode->interlaced = true;
+		video_mode->pixclock = 37037;
+		break;
+	case 480:
+		/* set including SAV/EAV */
+		video_mode->hbp = 122;
+		video_mode->hfp =  16;
+		/*
+		 * Total nr of active lines:  486.
+		 * Total nr of blanking lines: 39.
+		 */
+		/* Why does the following work? As far as I know the
+		 * total nr of vertical blanking lines between the
+		 * fields equals to 19 or 20, of which 3 are vfp.
+		 */
+		video_mode->vbp1 = 19;
+		video_mode->vfp1 = 3;
+		video_mode->vbp2 = 20;
+		video_mode->vfp2 = 3;
+		/* currently only support interlaced */
+		video_mode->interlaced = true;
+		video_mode->pixclock = 37037;
+		break;
+	default:
+		dev_warn(&ddev->dev,
+			"%s:Failed to find video mode x=%d, y=%d\n",
+			__func__, video_mode->xres, video_mode->yres);
+		return -EINVAL;
+	}
+
+	print_vmode(video_mode);
+
+	return 0;
+
+}
+
+static int set_video_mode(
+	struct mcde_display_device *ddev, struct mcde_video_mode *video_mode)
+{
+	int res;
+	struct ab8500_display_platform_data *pdata = ddev->dev.platform_data;
+	struct display_driver_data *driver_data =
+		(struct display_driver_data *)dev_get_drvdata(&ddev->dev);
+	AB8500_DISP_TRACE;
+
+	if (ddev == NULL || video_mode == NULL) {
+		dev_warn(&ddev->dev, "%s:ddev = NULL or video_mode = NULL\n",
+			__func__);
+		return -EINVAL;
+	}
+	ddev->video_mode = *video_mode;
+
+	if (video_mode->xres != 720) {
+		dev_warn(&ddev->dev, "%s:Failed to set video mode x=%d, y=%d\n",
+			__func__, video_mode->xres, video_mode->yres);
+		return -EINVAL;
+	}
+
+	/* check for PAL BDGHI and N */
+	switch (video_mode->yres) {
+	case 576:
+		driver_data->denc_conf.TV_std = TV_STD_PAL_BDGHI;
+		/* TODO: how to choose LOW DEF FILTER */
+		driver_data->denc_conf.cr_filter = TV_CR_PAL_HIGH_DEF_FILTER;
+		/* TODO: PAL N (e.g. uses a setup of 7.5 IRE) */
+		driver_data->denc_conf.black_level_setup = false;
+		break;
+	case 480: /* NTSC, PAL M */
+		/* TODO: PAL M */
+		driver_data->denc_conf.TV_std = TV_STD_NTSC_M;
+		/* TODO: how to choose LOW DEF FILTER */
+		driver_data->denc_conf.cr_filter = TV_CR_NTSC_HIGH_DEF_FILTER;
+		driver_data->denc_conf.black_level_setup = true;
+		break;
+	default:
+		dev_warn(&ddev->dev, "%s:Failed to set video mode x=%d, y=%d\n",
+			__func__, video_mode->xres, video_mode->yres);
+		return -EINVAL;
+	}
+
+
+	driver_data->denc_conf.progressive	= !video_mode->interlaced;
+	driver_data->denc_conf.act_output	= true;
+	driver_data->denc_conf.test_pattern	= false;
+	driver_data->denc_conf.partial_blanking	= true;
+	driver_data->denc_conf.blank_all	= false;
+	driver_data->denc_conf.suppress_col	= false;
+	driver_data->denc_conf.phase_reset_mode	= TV_PHASE_RST_MOD_DISABLE;
+	driver_data->denc_conf.dac_enable	= false;
+	driver_data->denc_conf.act_dc_output	= true;
+
+	set_power_mode(ddev, MCDE_DISPLAY_PM_STANDBY);
+	mcde_chnl_set_col_convert(ddev->chnl_state,
+						&pdata->rgb_2_yCbCr_transform);
+	mcde_chnl_stop_flow(ddev->chnl_state);
+	res = mcde_chnl_set_video_mode(ddev->chnl_state, &ddev->video_mode);
+	if (res < 0) {
+		dev_warn(&ddev->dev, "%s:Failed to set video mode on channel\n",
+			__func__);
+
+		return res;
+	}
+	ddev->update_flags |= UPDATE_FLAG_VIDEO_MODE;
+
+	return 0;
+}
+
+static int set_power_mode(struct mcde_display_device *ddev,
+	enum mcde_display_power_mode power_mode)
+{
+	int ret;
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+	AB8500_DISP_TRACE;
+
+	/* OFF -> STANDBY */
+	if (ddev->power_mode == MCDE_DISPLAY_PM_OFF &&
+					power_mode != MCDE_DISPLAY_PM_OFF) {
+		dev_dbg(&ddev->dev, "off -> standby\n");
+		if (ddev->platform_enable) {
+			ret = ddev->platform_enable(ddev);
+			if (ret)
+				goto error;
+		}
+		if (driver_data->denc_regulator) {
+			ret = regulator_enable(driver_data->denc_regulator);
+			if (ret != 0)
+				goto error;
+		}
+		ab8500_denc_power_up(driver_data->denc_dev);
+		ab8500_denc_reset(driver_data->denc_dev, true);
+		ddev->power_mode = MCDE_DISPLAY_PM_STANDBY;
+	}
+	/* STANDBY -> ON */
+	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
+					power_mode == MCDE_DISPLAY_PM_ON) {
+		dev_dbg(&ddev->dev, "standby -> on\n");
+		ddev->power_mode = MCDE_DISPLAY_PM_ON;
+	}
+	/* ON -> STANDBY */
+	if (ddev->power_mode == MCDE_DISPLAY_PM_ON &&
+					power_mode <= MCDE_DISPLAY_PM_STANDBY) {
+		dev_dbg(&ddev->dev, "on -> standby\n");
+		ab8500_denc_reset(driver_data->denc_dev, false);
+		ddev->power_mode = MCDE_DISPLAY_PM_STANDBY;
+	}
+	/* STANDBY -> OFF */
+	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
+					power_mode == MCDE_DISPLAY_PM_OFF) {
+		dev_dbg(&ddev->dev, "standby -> off\n");
+		memset(&(ddev->video_mode), 0, sizeof(struct mcde_video_mode));
+		if (driver_data->denc_regulator) {
+			ret = regulator_disable(driver_data->denc_regulator);
+			if (ret != 0)
+				goto error;
+		}
+		if (ddev->platform_disable) {
+			ret = ddev->platform_disable(ddev);
+			if (ret)
+				goto error;
+		}
+		ab8500_denc_power_down(driver_data->denc_dev);
+		ddev->power_mode = MCDE_DISPLAY_PM_OFF;
+	}
+
+	return 0;
+error:
+	dev_err(&ddev->dev, "Failed to set power mode");
+	return ret;
+}
+
+static int on_first_update(struct mcde_display_device *ddev)
+{
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+
+	ab8500_denc_conf(driver_data->denc_dev, &driver_data->denc_conf);
+	ab8500_denc_conf_plug_detect(driver_data->denc_dev, true, false,
+							TV_PLUG_TIME_2S);
+	ab8500_denc_mask_int_plug_det(driver_data->denc_dev, false, false);
+	ddev->first_update = false;
+	return 0;
+}
+
+static int display_update(struct mcde_display_device *ddev)
+{
+	int ret;
+
+	if (ddev->first_update)
+		on_first_update(ddev);
+	if (ddev->power_mode != MCDE_DISPLAY_PM_ON && ddev->set_power_mode) {
+		ret = set_power_mode(ddev, MCDE_DISPLAY_PM_ON);
+		if (ret < 0)
+			goto error;
+	}
+	ret = mcde_chnl_update(ddev->chnl_state, &ddev->update_area);
+	if (ret < 0)
+		goto error;
+out:
+	return ret;
+error:
+	dev_warn(&ddev->dev, "%s:Failed to set power mode to on\n", __func__);
+	goto out;
+}
+
+/* Module init */
+static int __init mcde_display_tvout_ab8500_init(void)
+{
+	pr_debug("%s\n", __func__);
+
+	return mcde_display_driver_register(&ab8500_driver);
+}
+late_initcall(mcde_display_tvout_ab8500_init);
+
+static void __exit mcde_display_tvout_ab8500_exit(void)
+{
+	pr_debug("%s\n", __func__);
+
+	mcde_display_driver_unregister(&ab8500_driver);
+}
+module_exit(mcde_display_tvout_ab8500_exit);
+
+MODULE_AUTHOR("Marcel Tunnissen <marcel.tuennissen@stericsson.com>");
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("ST-Ericsson MCDE TVout through AB8500 display driver");
