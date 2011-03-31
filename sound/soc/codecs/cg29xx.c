@@ -381,7 +381,7 @@ static int cg29xx_start_if(struct cg29xx_codec_dai_data *dai_data,
 		stream = &dai_data->tx_active;
 	}
 
-	if (*stream) {
+	if (*stream || (endpid == ENDPOINT_BT_SCO_INOUT)) {
 		pr_debug("asoc cg29xx - %s - The interface has already been started.\n",
 			__func__);
 		return 0;
