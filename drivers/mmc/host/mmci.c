@@ -55,6 +55,7 @@ static unsigned int fmax = 515633;
  * @pwrreg_powerup: power up value for MMCIPOWER register
  * @non_power_of_2_blksize: variant supports block sizes that are not
  *		a power of two.
+ * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
  */
 struct variant_data {
 	unsigned int		clkreg;
@@ -67,6 +68,7 @@ struct variant_data {
 	bool			blksz_datactrl16;
 	unsigned int		pwrreg_powerup;
 	bool			non_power_of_2_blksize;
+	bool			blksz_datactrl16;
 };
 
 static struct variant_data variant_arm = {
@@ -117,6 +119,8 @@ static struct variant_data variant_ux500v2 = {
 	.datalength_bits	= 24,
 	.sdio			= true,
 	.st_clkdiv		= true,
+	.pwrreg_powerup		= MCI_PWR_ON,
+	.non_power_of_2_blksize	= true,
 	.blksz_datactrl16	= true,
 };
 
