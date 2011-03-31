@@ -288,7 +288,8 @@ static pin_cfg_t hrefv60_pins[] = {
 	/* Proximity Sensor */
 	GPIO217_GPIO		| PIN_INPUT_PULLUP,
 
-
+	/* SD card detect */
+	GPIO95_GPIO	| PIN_INPUT_PULLUP,
 };
 
 static pin_cfg_t snowball_pins[] = {
