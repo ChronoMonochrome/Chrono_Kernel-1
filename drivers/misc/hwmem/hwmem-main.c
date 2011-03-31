@@ -59,6 +59,7 @@ struct hwmem_alloc {
 static struct platform_device *hwdev;
 
 static u32 hwmem_paddr;
+static void *hwmem_kaddr;
 static u32 hwmem_size;
 
 static LIST_HEAD(alloc_list);
@@ -307,60 +308,67 @@ static void clean_alloc_list(void)
 	}
 }
 
+static int alloc_kaddrs(void)
+{
+	struct vm_struct *area = get_vm_area(hwmem_size, VM_IOREMAP);
+	if (area == NULL) {
+		dev_info(&hwdev->dev, "Failed to allocate %u bytes kernel"
+						" virtual memory", hwmem_size);
+		return -ENOMSG;
+	}
+
+	hwmem_kaddr = area->addr;
+
+	return 0;
+}
+
+static void free_kaddrs(void)
+{
+	struct vm_struct *area;
+
+	if (hwmem_kaddr == NULL)
+		return;
+
+	area = remove_vm_area(hwmem_kaddr);
+	if (area == NULL)
+		dev_err(&hwdev->dev,
+				"Failed to free kernel virtual memory,"
+							" resource leak!\n");
+
+	kfree(area);
+
+	hwmem_kaddr = NULL;
+}
+
 static int kmap_alloc(struct hwmem_alloc *alloc)
 {
 	int ret;
 	pgprot_t pgprot;
-
-	struct vm_struct *area = get_vm_area(alloc->size, VM_IOREMAP);
-	if (area == NULL) {
-		dev_info(&hwdev->dev, "Failed to allocate %u bytes virtual"
-						" memory", alloc->size);
-		return -ENOMSG;
-	}
+	void *alloc_kaddr = hwmem_kaddr + get_alloc_offset(alloc);
 
 	pgprot = PAGE_KERNEL;
 	cach_set_pgprot_cache_options(&alloc->cach_buf, &pgprot);
 
-	ret = ioremap_page_range((unsigned long)area->addr,
-		(unsigned long)area->addr + alloc->size, alloc->paddr, pgprot);
+	ret = ioremap_page_range((unsigned long)alloc_kaddr,
+		(unsigned long)alloc_kaddr + alloc->size, alloc->paddr,
+								pgprot);
 	if (ret < 0) {
 		dev_info(&hwdev->dev, "Failed to map %#x - %#x", alloc->paddr,
 						alloc->paddr + alloc->size);
-		goto failed_to_map;
+		return ret;
 	}
 
-	alloc->kaddr = area->addr;
+	alloc->kaddr = alloc_kaddr;
 
 	return 0;
-
-failed_to_map:
-	area = remove_vm_area(area->addr);
-	if (area == NULL)
-		dev_err(&hwdev->dev,
-				"Failed to unmap alloc, resource leak!\n");
-
-	kfree(area);
-
-	return ret;
 }
 
 static void kunmap_alloc(struct hwmem_alloc *alloc)
 {
-	struct vm_struct *area;
-
 	if (alloc->kaddr == NULL)
 		return;
 
-	area = remove_vm_area(alloc->kaddr);
-	if (area == NULL) {
-		dev_err(&hwdev->dev,
-				"Failed to unmap alloc, resource leak!\n");
-		return;
-	}
-
-	kfree(area);
-
+	unmap_kernel_range((unsigned long)alloc->kaddr, alloc->size);
 	alloc->kaddr = NULL;
 }
 
@@ -386,7 +394,8 @@ struct hwmem_alloc *hwmem_alloc(u32 size, enum hwmem_alloc_flags flags,
 
 	alloc = find_free_alloc_bestfit(size);
 	if (IS_ERR(alloc)) {
-		dev_info(&hwdev->dev, "Allocation failed, no free slot\n");
+		dev_info(&hwdev->dev, "Could not find slot for %u bytes"
+							" allocation\n", size);
 		goto no_slot;
 	}
 
@@ -800,6 +809,10 @@ static int __devinit hwmem_probe(struct platform_device *pdev)
 	hwmem_paddr = platform_data->start;
 	hwmem_size = platform_data->size;
 
+	ret = alloc_kaddrs();
+	if (ret < 0)
+		goto alloc_kaddrs_failed;
+
 	/*
 	 * No need to flush the caches here. If we can keep track of the cache
 	 * content then none of our memory will be in the caches, if we can't
@@ -827,6 +840,8 @@ static int __devinit hwmem_probe(struct platform_device *pdev)
 ioctl_init_failed:
 	clean_alloc_list();
 init_alloc_list_failed:
+	free_kaddrs();
+alloc_kaddrs_failed:
 	hwdev = NULL;
 
 out:
