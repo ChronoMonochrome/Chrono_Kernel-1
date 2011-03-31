@@ -1891,8 +1891,8 @@ static int stm_msp_resume(struct amba_device *adev)
 
 static struct amba_id stm_msp_ids[] = {
 	{
-		.id = MSP_PER_ID,
-		.mask = MSP_PER_MASK,
+		.id = 0x00280021,
+		.mask = 0x00ffffff,
 	},
 	{
 		0,
