@@ -177,9 +177,8 @@ static int __devinit bh1780_probe(struct i2c_client *client,
 
 	ddata->client = client;
 	i2c_set_clientdata(client, ddata);
-	dev_set_name(&client->dev, "bh1780");
 
-	ddata->regulator = regulator_get(&client->dev, "v-als");
+	ddata->regulator = regulator_get(&client->dev, "vcc");
 	if (IS_ERR(ddata->regulator)) {
 		dev_err(&client->dev, "failed to get regulator\n");
 		ret = PTR_ERR(ddata->regulator);
