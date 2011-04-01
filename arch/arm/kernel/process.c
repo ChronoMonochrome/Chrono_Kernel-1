@@ -31,6 +31,7 @@
 #include <linux/random.h>
 #include <linux/hw_breakpoint.h>
 #include <linux/console.h>
+#include <linux/cpuidle.h>
 
 #include <asm/cacheflush.h>
 #include <asm/processor.h>
@@ -276,7 +277,8 @@ void cpu_idle(void)
 				cpu_relax();
 			} else if (!need_resched()) {
 				stop_critical_timings();
-				pm_idle();
+				if (cpuidle_call_idle())
+					pm_idle();
 				start_critical_timings();
 				/*
 				 * pm_idle functions must always
