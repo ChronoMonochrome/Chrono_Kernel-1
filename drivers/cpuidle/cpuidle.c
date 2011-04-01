@@ -28,6 +28,12 @@ LIST_HEAD(cpuidle_detected_devices);
 static void (*pm_idle_old)(void);
 
 static int enabled_devices;
+static int off __read_mostly;
+
+int cpuidle_disabled(void)
+{
+	return off;
+}
 
 #if defined(CONFIG_ARCH_HAS_CPU_IDLE_WAIT)
 static void cpuidle_kick_cpus(void)
@@ -431,6 +437,9 @@ static int __init cpuidle_init(void)
 {
 	int ret;
 
+	if (cpuidle_disabled())
+		return -ENODEV;
+
 	pm_idle_old = pm_idle;
 
 	ret = cpuidle_add_class_sysfs(&cpu_sysdev_class);
@@ -442,4 +451,5 @@ static int __init cpuidle_init(void)
 	return 0;
 }
 
+module_param(off, int, 0444);
 core_initcall(cpuidle_init);
