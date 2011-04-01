@@ -1147,6 +1147,7 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_fadespeed,
 
 /* Digital interface controls */
 
+/* Clocks */
 static SOC_ENUM_SINGLE_DECL(soc_enum_mastgen,
 	REG_DIGIFCONF1, REG_DIGIFCONF1_ENMASTGEN, enum_dis_ena);
 static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk0,
@@ -1154,6 +1155,7 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk0,
 static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk1,
 	REG_DIGIFCONF1, REG_DIGIFCONF1_ENFSBITCLK1, enum_dis_ena);
 
+/* Digital loopback */
 static SOC_ENUM_SINGLE_DECL(soc_enum_ad1loop,
 	REG_DASLOTCONF1, REG_DASLOTCONF1_DAI7TOADO1, enum_dis_ena);
 static SOC_ENUM_SINGLE_DECL(soc_enum_ad2loop,
@@ -1170,6 +1172,23 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_ad7loop,
 	REG_DASLOTCONF7, REG_DASLOTCONF7_DAI8TOADO7, enum_dis_ena);
 static SOC_ENUM_SINGLE_DECL(soc_enum_ad8loop,
 	REG_DASLOTCONF8, REG_DASLOTCONF8_DAI7TOADO8, enum_dis_ena);
+
+/* Burst mode */
+static SOC_ENUM_SINGLE_DECL(soc_enum_if0fifoen,
+	REG_DIGIFCONF3, REG_DIGIFCONF3_IF0BFIFOEN, enum_dis_ena);
+static const char *enum_mask[] = {"Unmasked", "Masked"};
+static SOC_ENUM_SINGLE_DECL(soc_enum_bfifomask,
+	REG_FIFOCONF1, REG_FIFOCONF1_BFIFOMASK, enum_mask);
+static const char *enum_bitclk0[] = {"19_2_MHz", "38_4_MHz"};
+static SOC_ENUM_SINGLE_DECL(soc_enum_bfifo19m2,
+	REG_FIFOCONF1, REG_FIFOCONF1_BFIFO19M2, enum_bitclk0);
+
+static const char *enum_slavemaster[] = {"Slave", "Master"};
+static SOC_ENUM_SINGLE_DECL(soc_enum_bfifomast,
+	REG_FIFOCONF3, REG_FIFOCONF3_BFIFOMAST, enum_slavemaster);
+static SOC_ENUM_SINGLE_DECL(soc_enum_bfifoint,
+	REG_FIFOCONF3, REG_FIFOCONF3_BFIFORUN, enum_dis_ena);
+
 
 /* TODO: move to DAPM */
 static SOC_ENUM_SINGLE_DECL(soc_enum_enfirsids,
@@ -1308,9 +1327,13 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_DIGLINHSXGAIN_LINTOHSXGAIN_MAX, INVERT, lin2hs_gain_tlv),
 
 	/* Digital Interface controls */
+
+	/* Clocks */
 	SOC_ENUM("Digital Interface Master Generator Switch", soc_enum_mastgen),
 	SOC_ENUM("Digital Interface 0 Bit-clock Switch", soc_enum_fsbitclk0),
 	SOC_ENUM("Digital Interface 1 Bit-clock Switch", soc_enum_fsbitclk1),
+
+	/* Loopback */
 	SOC_ENUM("Digital Interface AD 1 Loopback Switch", soc_enum_ad1loop),
 	SOC_ENUM("Digital Interface AD 2 Loopback Switch", soc_enum_ad2loop),
 	SOC_ENUM("Digital Interface AD 3 Loopback Switch", soc_enum_ad3loop),
@@ -1319,6 +1342,48 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 	SOC_ENUM("Digital Interface AD 6 Loopback Switch", soc_enum_ad6loop),
 	SOC_ENUM("Digital Interface AD 7 Loopback Switch", soc_enum_ad7loop),
 	SOC_ENUM("Digital Interface AD 8 Loopback Switch", soc_enum_ad8loop),
+
+	/* Burst FIFO */
+	SOC_ENUM("Digital Interface 0 FIFO Enable Switch", soc_enum_if0fifoen),
+	SOC_ENUM("Burst FIFO Mask", soc_enum_bfifomask),
+	SOC_ENUM("Burst FIFO Bit-clock Frequency", soc_enum_bfifo19m2),
+	SOC_SINGLE("Burst FIFO Threshold",
+		REG_FIFOCONF1,
+		REG_FIFOCONF1_BFIFOINT_SHIFT,
+		REG_FIFOCONF1_BFIFOINT_MAX,
+		NORMAL),
+	SOC_SINGLE("Burst FIFO Length",
+		REG_FIFOCONF2,
+		REG_FIFOCONF2_BFIFOTX_SHIFT,
+		REG_FIFOCONF2_BFIFOTX_MAX,
+		NORMAL),
+	SOC_SINGLE("Burst FIFO EOS Extra Slots",
+		REG_FIFOCONF3,
+		REG_FIFOCONF3_BFIFOEXSL_SHIFT,
+		REG_FIFOCONF3_BFIFOEXSL_MAX,
+		NORMAL),
+	SOC_SINGLE("Burst FIFO FS Extra Bit-clocks",
+		REG_FIFOCONF3,
+		REG_FIFOCONF3_PREBITCLK0_SHIFT,
+		REG_FIFOCONF3_PREBITCLK0_MAX,
+		NORMAL),
+	SOC_ENUM("Burst FIFO Interface Mode", soc_enum_bfifomast),
+	SOC_ENUM("Burst FIFO Interface Switch", soc_enum_bfifoint),
+	SOC_SINGLE("Burst FIFO Switch Frame Number",
+		REG_FIFOCONF4,
+		REG_FIFOCONF4_BFIFOFRAMSW_SHIFT,
+		REG_FIFOCONF4_BFIFOFRAMSW_MAX,
+		NORMAL),
+	SOC_SINGLE("Burst FIFO Wake Up Delay",
+		REG_FIFOCONF5,
+		REG_FIFOCONF5_BFIFOWAKEUP_SHIFT,
+		REG_FIFOCONF5_BFIFOWAKEUP_MAX,
+		NORMAL),
+	SOC_SINGLE("Burst FIFO Samples In FIFO",
+		REG_FIFOCONF6,
+		REG_FIFOCONF6_BFIFOSAMPLE_SHIFT,
+		REG_FIFOCONF6_BFIFOSAMPLE_MAX,
+		NORMAL),
 };
 
 static int ab8500_codec_set_format_if1(struct snd_soc_codec *codec, unsigned int fmt)
@@ -1640,7 +1705,7 @@ static int ab8500_codec_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		break;
 	case SND_SOC_DAIFMT_CBS_CFM: /* codec clk slave & FRM master */
 	case SND_SOC_DAIFMT_CBM_CFS: /* codec clk master & frame slave */
-		pr_err("%s: ERROR: The device is either a master or a slave.\n");
+		pr_err("%s: ERROR: The device is either a master or a slave.\n", __func__);
 	default:
 		pr_err("%s: ERROR: Unsupporter master mask 0x%x\n",
 				__func__,
