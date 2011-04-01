@@ -141,8 +141,8 @@ static unsigned long
 ab5500_rtc_regs_to_time(struct device *dev, u8 *regs)
 {
 	u64 fat_time = ((u64)regs[5] << 40) | ((u64)regs[4] << 32) |
-		       (regs[3] << 24) | (regs[2] << 16) |
-		       (regs[1] << 8) | regs[0];
+		       ((u64)regs[3] << 24) | ((u64)regs[2] << 16) |
+		       ((u64)regs[1] << 8)  | regs[0];
 	unsigned long secs = (fat_time & 0x1fffff) / AB5500_RTC_CLOCK_RATE;
 	unsigned long mins = fat_time >> 21;
 
@@ -170,7 +170,9 @@ ab5500_rtc_alarm_to_regs(struct device *dev, unsigned long secs, u8 *regs)
 static unsigned long
 ab5500_rtc_regs_to_alarm(struct device *dev, u8 *regs)
 {
-	unsigned long mins = (regs[2] << 16) | (regs[1] << 8) | regs[0];
+	unsigned long mins = ((unsigned long)regs[2] << 16) |
+			     ((unsigned long)regs[1] << 8) |
+			     regs[0];
 	unsigned long secs = mins * 60;
 
 	return secs;
