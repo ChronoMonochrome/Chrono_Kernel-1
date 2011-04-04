@@ -157,7 +157,7 @@ static struct bu21013_platform_device tsc_plat_device = {
 	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
-	.ext_clk = false,
+	.has_ext_clk = false,
 	.x_flip = false,
 	.y_flip = true,
 };
@@ -169,7 +169,7 @@ static struct bu21013_platform_device tsc_plat2_device = {
 	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
-	.ext_clk = false,
+	.has_ext_clk = false,
 	.x_flip = false,
 	.y_flip = true,
 };
