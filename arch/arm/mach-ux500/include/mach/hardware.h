@@ -30,7 +30,16 @@
 #include <mach/db8500-regs.h>
 #include <mach/db5500-regs.h>
 
+/*
+ * FIFO offsets for IPs
+ */
 #define MSP_TX_RX_REG_OFFSET	0
+#define HASH1_TX_REG_OFFSET	0x4
+#define SSP_TX_RX_REG_OFFSET	0x8
+#define SPI_TX_RX_REG_OFFSET	0x8
+#define SD_MMC_TX_RX_REG_OFFSET 0x80
+#define CRYP1_RX_REG_OFFSET	0x10
+#define CRYP1_TX_REG_OFFSET	0x8
 
 #ifndef __ASSEMBLY__
 
