@@ -34,6 +34,11 @@
 #include <asm/io.h>
 #include <asm/sizes.h>
 
+#ifdef CONFIG_ARCH_U8500
+/* To be withdrawn when cpu_is_u8500v20_or_later() call will disapear */
+#include <mach/hardware.h>
+#endif
+
 #include "mmci.h"
 
 #define DRIVER_NAME "mmci-pl18x"
@@ -996,7 +1001,7 @@ static void mmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (mrq->data &&
 	    (!variant->non_power_of_2_blksize ||
 #ifdef CONFIG_ARCH_U8500
-	     !cpu_is_u8500v2() ||
+	     !cpu_is_u8500v20_or_later() ||
 #endif
 	    (mmc->card && mmc_card_ddr_mode(mmc->card))) &&
 	    !is_power_of_2(mrq->data->blksz)) {
