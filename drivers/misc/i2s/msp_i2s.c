@@ -1105,6 +1105,7 @@ static void msp_cyclic_dma_start(struct msp *msp,
 				int sg_len,
 				enum dma_data_direction direction)
 {
+#if 0
 	struct stedma40_cyclic_desc *cdesc;
 	int ret;
 	struct dma_chan *pipeid = (direction == DMA_TO_DEVICE) ?
@@ -1142,6 +1143,8 @@ static void msp_cyclic_dma_start(struct msp *msp,
 
 free:
 	stedma40_cyclic_free(pipeid);
+#endif
+  return;
 }
 
 /* Legacy function. Used by HATS driver. */
@@ -1149,6 +1152,7 @@ static void msp_loopback_inf_start_dma(struct msp *msp,
 				dma_addr_t data,
 				size_t bytes)
 {
+#if 0
 	struct stedma40_cyclic_desc *rxcdesc;
 	struct stedma40_cyclic_desc *txcdesc;
 	struct scatterlist rxsg[2];
@@ -1200,6 +1204,8 @@ free_tx:
 	stedma40_cyclic_free(msp->tx_pipeid);
 free_rx:
 	stedma40_cyclic_free(msp->rx_pipeid);
+#endif 
+  return;
 }
 
 /**
@@ -1646,6 +1652,7 @@ static int stm_msp_disable(struct msp *msp, int direction, i2s_flag flag)
 		return 0;
 	}
 	if (msp->work_mode == MSP_DMA_MODE) {
+#if 0
 		if (flag == DISABLE_ALL || flag == DISABLE_TRANSMIT) {
 			if (msp->tx_pipeid != NULL) {
 				if (msp->infinite) {
@@ -1675,6 +1682,7 @@ static int stm_msp_disable(struct msp *msp, int direction, i2s_flag flag)
 		}
 
 		msp->infinite = false;
+#endif 
 	}
 	if (flag == DISABLE_TRANSMIT)
 		msp_disable_transmit(msp);
@@ -1817,10 +1825,13 @@ static int stm_msp_hw_status(struct i2s_controller *i2s_cont)
 static dma_addr_t stm_msp_get_pointer(struct i2s_controller *i2s_cont,
 				enum i2s_direction_t i2s_direction)
 {
+#if 0
 	struct msp *msp = (struct msp *)i2s_cont->data;
 	return (i2s_direction == I2S_DIRECTION_TX) ?
 		stedma40_get_src_addr(msp->tx_pipeid) :
 		stedma40_get_dst_addr(msp->rx_pipeid);
+#endif
+  return 0;
 }
 
 		/*Platform driver's functions */
