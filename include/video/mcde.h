@@ -137,7 +137,8 @@ enum mcde_port_pix_fmt {
 
 enum mcde_hdmi_sdtv_switch {
 	HDMI_SWITCH,
-	SDTV_SWITCH
+	SDTV_SWITCH,
+	DVI_SWITCH
 };
 
 struct mcde_col_convert {

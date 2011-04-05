@@ -22,6 +22,8 @@
 #include <video/av8100.h>
 #include <video/hdmi.h>
 
+#define SWITCH_HELPSTR ", 0=HDMI, 1=SDTV, 2=DVI\n"
+
 struct display_driver_data {
 	struct regulator *cvbs_regulator;
 	bool cvbs_regulator_enabled;
@@ -35,10 +37,33 @@ static int hdmi_set_video_mode(
 static int hdmi_set_pixel_format(
 	struct mcde_display_device *ddev, enum mcde_ovly_pix_fmt format);
 
+static ssize_t show_hdmisdtvswitch(struct device *dev,
+		struct device_attribute *attr, char *buf);
 static ssize_t store_hdmisdtvswitch(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
+static ssize_t show_input_pixel_format(struct device *dev,
+		struct device_attribute *attr, char *buf);
+static ssize_t store_input_pixel_format(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
 
-static DEVICE_ATTR(hdmisdtvswitch, S_IWUSR, NULL, store_hdmisdtvswitch);
+static DEVICE_ATTR(hdmisdtvswitch, S_IRUGO | S_IWUSR, show_hdmisdtvswitch,
+			store_hdmisdtvswitch);
+static DEVICE_ATTR(input_pixel_format, S_IRUGO | S_IWUSR,
+			show_input_pixel_format, store_input_pixel_format);
+
+static ssize_t show_hdmisdtvswitch(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mcde_display_device *mdev = to_mcde_display_device(dev);
+	int index;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	sprintf(buf, "%1x%s", mdev->port->hdmi_sdtv_switch, SWITCH_HELPSTR);
+	index = 1 + strlen(SWITCH_HELPSTR) + 1;
+
+	return index;
+}
 
 static ssize_t store_hdmisdtvswitch(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
@@ -52,17 +77,30 @@ static ssize_t store_hdmisdtvswitch(struct device *dev,
 			mdev->port->hdmi_sdtv_switch = HDMI_SWITCH;
 			mdev->native_x_res = NATIVE_XRES_HDMI;
 			mdev->native_y_res = NATIVE_YRES_HDMI;
-		} else {
+		} else if ((*buf == 1) || (*buf == '1')) {
 			dev_dbg(dev, "hdmi/sdtv switch = sdtv\n");
 			mdev->port->hdmi_sdtv_switch = SDTV_SWITCH;
 			mdev->native_x_res = NATIVE_XRES_SDTV;
 			mdev->native_y_res = NATIVE_YRES_SDTV;
+		} else if ((*buf == 2) || (*buf == '2')) {
+			dev_dbg(dev, "hdmi/sdtv switch = dvi\n");
+			mdev->port->hdmi_sdtv_switch = DVI_SWITCH;
+			mdev->native_x_res = NATIVE_XRES_HDMI;
+			mdev->native_y_res = NATIVE_YRES_HDMI;
 		}
 		/* implicitely read by a memcmp in dss */
 		mdev->video_mode.force_update = true;
 	}
 
 	return count;
+}
+
+static ssize_t show_input_pixel_format(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mcde_display_device *ddev = to_mcde_display_device(dev);
+
+	return sprintf(buf, "%d\n", ddev->port->pixel_format);
 }
 
 static ssize_t store_input_pixel_format(struct device *dev,
@@ -98,16 +136,6 @@ static ssize_t store_input_pixel_format(struct device *dev,
 
 	return count;
 }
-static ssize_t show_input_pixel_format(struct device *dev,
-				struct device_attribute *attr, char *buf)
-{
-	struct mcde_display_device *ddev = to_mcde_display_device(dev);
-
-	return sprintf(buf, "%d\n", ddev->port->pixel_format);
-}
-
-static DEVICE_ATTR(input_pixel_format, S_IRUGO | S_IWUSR,
-			show_input_pixel_format, store_input_pixel_format);
 
 /* Supported HDMI modes */
 static struct mcde_video_mode video_modes_supp_hdmi[] = {
@@ -709,11 +737,12 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 
 	/*
 	 * Prepare HDMI configuration
-	 * Avoid simultaneous output of DENC and HDMI.
+	 * Avoid simultaneous output of DENC and HDMI/DVI.
 	 * Only one of them should be enabled.
-	 * Note HDMI and DENC are always turned off in set_video_mode.
+	 * Note HDMI/DVI and DENC are always turned off in set_video_mode.
 	 */
-	if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH) {
+	switch (dev->port->hdmi_sdtv_switch) {
+	case SDTV_SWITCH:
 		if (av8100_conf_get(AV8100_COMMAND_DENC, &av8100_config))
 			return -EFAULT;
 		av8100_config.denc_format.enable = 1;
@@ -729,11 +758,20 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 					AV8100_CVBS_525;
 		}
 		ret = av8100_conf_prep(AV8100_COMMAND_DENC, &av8100_config);
-	} else {
+		break;
+	case DVI_SWITCH:
+		av8100_config.hdmi_format.hdmi_mode = AV8100_HDMI_ON;
+		av8100_config.hdmi_format.hdmi_format = AV8100_DVI;
+		av8100_config.hdmi_format.dvi_format = AV8100_DVI_CTRL_CTL0;
+		ret = av8100_conf_prep(AV8100_COMMAND_HDMI, &av8100_config);
+		break;
+	case HDMI_SWITCH:
+	default:
 		av8100_config.hdmi_format.hdmi_mode = AV8100_HDMI_ON;
 		av8100_config.hdmi_format.hdmi_format = AV8100_HDMI;
 		av8100_config.hdmi_format.dvi_format = AV8100_DVI_CTRL_CTL0;
 		ret = av8100_conf_prep(AV8100_COMMAND_HDMI, &av8100_config);
+		break;
 	}
 
 	if (ret) {
