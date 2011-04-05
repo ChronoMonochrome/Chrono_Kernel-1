@@ -15,6 +15,49 @@
 #include <mach/setup.h>
 #include <linux/hwmem.h>
 
+#ifdef CONFIG_STE_TRACE_MODEM
+#include <linux/db8500-modem-trace.h>
+#endif
+
+#ifdef CONFIG_STE_TRACE_MODEM
+static struct resource trace_resource = {
+	.start	= 0,
+	.end	= 0,
+	.name	= "db8500-trace-area",
+	.flags	= IORESOURCE_MEM
+};
+
+static struct db8500_trace_platform_data trace_pdata = {
+	.ape_base = U8500_APE_BASE,
+	.modem_base = U8500_MODEM_BASE,
+};
+
+struct platform_device u8500_trace_modem = {
+	.name	= "db8500-modem-trace",
+	.id = 0,
+	.dev = {
+		.init_name = "db8500-modem-trace",
+		.platform_data = &trace_pdata,
+	},
+	.num_resources = 1,
+	.resource = &trace_resource,
+};
+
+static int __init early_trace_modem(char *p)
+{
+	struct resource *data = &trace_resource;
+	u32 size = memparse(p, &p);
+
+	if (*p == '@')
+		data->start = memparse(p + 1, &p);
+	data->end = data->start + size;
+
+	return 0;
+}
+
+early_param("mem_mtrace", early_trace_modem);
+#endif
+
 static struct hwmem_platform_data hwmem_pdata = {
 	.start = 0,
 	.size = 0,
