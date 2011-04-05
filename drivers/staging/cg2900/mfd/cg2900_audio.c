@@ -33,7 +33,11 @@
 #define MAX_NBR_OF_USERS			10
 #define FIRST_USER				1
 
-#define DEFAULT_SCO_HANDLE			0x0008
+/*
+ * This is a default ACL handle. It is necessary to provide to the chip, but
+ * does not actually do anything.
+ */
+#define DEFAULT_ACL_HANDLE			0x0001
 
 /* Use a timeout of 5 seconds when waiting for a command response */
 #define RESP_TIMEOUT				5000
@@ -2040,7 +2044,7 @@ static void config_pcm_sco_stream(struct audio_info *info, void *_priv,
 	/* codec mode and parameters not used  */
 
 	cfg->inport.type = CG2900_BT_VP_TYPE_BT_SCO;
-	cfg->inport.sco.acl_handle = cpu_to_le16(DEFAULT_SCO_HANDLE);
+	cfg->inport.sco.acl_handle = cpu_to_le16(DEFAULT_ACL_HANDLE);
 
 	cfg->outport.type = CG2900_BT_VP_TYPE_PCM;
 	cfg->outport.pcm.index = CG2900_BT_SESSION_PCM_INDEX_PCM_I2S;
@@ -2116,8 +2120,7 @@ static int conn_start_pcm_to_sco(struct audio_user *audio_user,
 
 		/* zero codec params etc */
 		memset(&sco_cfg, 0, sizeof(sco_cfg));
-		sco_cfg.acl_id = DEFAULT_SCO_HANDLE;
-		PORTCFG_SCO_SET_WBS(sco_cfg, 0); /* No WBS yet */
+		sco_cfg.acl_id = DEFAULT_ACL_HANDLE;
 		PORTCFG_SCO_SET_CODEC(sco_cfg, CG2900_CODEC_TYPE_NONE);
 
 		err = send_vs_port_cfg(audio_user, CG2900_MC_PORT_BT_SCO,

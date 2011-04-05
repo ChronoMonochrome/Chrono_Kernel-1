@@ -378,10 +378,7 @@ struct mc_vs_port_cfg_fm {
 struct mc_vs_port_cfg_sco {
 	__le16	acl_id;
 	__u8	wbs_codec;
-	__u8	sbc_params[3]; /* replace when we actually enable WBS... */
 } __packed;
-#define PORTCFG_SCO_SET_WBS(cfg, wbs)		\
-	set_low_nibble(&(cfg).wbs_codec, (wbs))
 #define PORTCFG_SCO_SET_CODEC(cfg, codec)	\
 	set_high_nibble(&(cfg).wbs_codec, (codec))
 
