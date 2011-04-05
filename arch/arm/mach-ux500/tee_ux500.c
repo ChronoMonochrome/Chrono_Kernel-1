@@ -8,10 +8,9 @@
 #include <linux/kernel.h>
 #include <linux/tee.h>
 #include <linux/io.h>
+#include <linux/errno.h>
 
 #include <mach/hardware.h>
-
-#define BOOT_BRIDGE_FUNC (U8500_BOOT_ROM_BASE + 0x18300)
 
 #define ISSWAPI_EXECUTE_TA 0x11000001
 #define ISSWAPI_CLOSE_TA   0x11000002
@@ -25,8 +24,16 @@ static u32 call_sec_rom_bridge(u32 service_id, u32 cfg, ...)
 	va_list ap;
 	u32 ret;
 
-	hw_sec_rom_pub_bridge =
-		(bridge_func)((u32)IO_ADDRESS(BOOT_BRIDGE_FUNC));
+	if (cpu_is_u8500())
+		hw_sec_rom_pub_bridge = (bridge_func)
+			((u32)IO_ADDRESS(U8500_BOOT_ROM_BASE + 0x18300));
+	else if (cpu_is_u5500())
+		hw_sec_rom_pub_bridge = (bridge_func)
+			((u32)IO_ADDRESS(U5500_BOOT_ROM_BASE + 0x18300));
+	else {
+		pr_err("tee-ux500: Unknown DB Asic!\n");
+		return -EIO;
+	}
 
 	va_start(ap, cfg);
 	ret = hw_sec_rom_pub_bridge(service_id, cfg, ap);
