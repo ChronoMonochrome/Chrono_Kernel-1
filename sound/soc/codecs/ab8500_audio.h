@@ -2,7 +2,8 @@
  * Copyright (C) ST-Ericsson SA 2010
  *
  * Author: Mikko J. Lehto <mikko.lehto@symbio.com>,
- *         Mikko Sarmanne <mikko.sarmanne@symbio.com>
+ *         Mikko Sarmanne <mikko.sarmanne@symbio.com>,
+ *         Ola Lilja <ola.o.lilja@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -513,8 +514,8 @@ int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
 #define REG_FIFOCONF3_BFIFOEXSL_MAX		0x5
 #define REG_FIFOCONF3_PREBITCLK0_SHIFT		2
 #define REG_FIFOCONF3_PREBITCLK0_MAX		0x7
-#define REG_FIFOCONF3_BFIFOMAST			0x02
-#define REG_FIFOCONF3_BFIFORUN			0x01
+#define REG_FIFOCONF3_BFIFOMAST_SHIFT		1
+#define REG_FIFOCONF3_BFIFORUN_SHIFT		0
 
 /* REG_FIFOCONF4 */
 #define REG_FIFOCONF4_BFIFOFRAMSW_SHIFT		0

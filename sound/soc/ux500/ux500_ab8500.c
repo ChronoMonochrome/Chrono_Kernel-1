@@ -3,7 +3,8 @@
  *
  * Author: Mikko J. Lehto <mikko.lehto@symbio.com>,
  *         Mikko Sarmanne <mikko.sarmanne@symbio.com>,
- *         Jarmo K. Kuronen <jarmo.kuronen@symbio.com>
+ *         Jarmo K. Kuronen <jarmo.kuronen@symbio.com>.
+ *         Ola Lilja <ola.o.lilja@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:

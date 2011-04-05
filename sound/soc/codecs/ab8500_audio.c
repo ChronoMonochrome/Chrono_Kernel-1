@@ -3,7 +3,8 @@
  *
  * Author: Mikko J. Lehto <mikko.lehto@symbio.com>,
  *         Mikko Sarmanne <mikko.sarmanne@symbio.com>,
- *         Jarmo K. Kuronen <jarmo.kuronen@symbio.com>
+ *         Jarmo K. Kuronen <jarmo.kuronen@symbio.com>,
+ *         Ola Lilja <ola.o.lilja@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -1185,9 +1186,9 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_bfifo19m2,
 
 static const char *enum_slavemaster[] = {"Slave", "Master"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifomast,
-	REG_FIFOCONF3, REG_FIFOCONF3_BFIFOMAST, enum_slavemaster);
+	REG_FIFOCONF3, REG_FIFOCONF3_BFIFOMAST_SHIFT, enum_slavemaster);
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifoint,
-	REG_FIFOCONF3, REG_FIFOCONF3_BFIFORUN, enum_dis_ena);
+	REG_FIFOCONF3, REG_FIFOCONF3_BFIFORUN_SHIFT, enum_dis_ena);
 
 
 /* TODO: move to DAPM */
