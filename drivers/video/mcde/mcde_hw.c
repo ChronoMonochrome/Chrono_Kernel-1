@@ -864,7 +864,6 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 {
 	int i;
 	u32 irq_status;
-	bool trig = false;
 	struct mcde_chnl_state *chnl;
 
 	/* Handle overlay irqs */
@@ -975,16 +974,20 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 
 		chnl_from_dsi = find_channel_by_dsilink(i);
 
-		trig = false;
+		if (chnl_from_dsi == NULL)
+			continue;
+
 		irq_status = dsi_rfld(i, DSI_DIRECT_CMD_STS_FLAG,
 			TE_RECEIVED_FLAG);
 		if (irq_status) {
 			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
 				disable_flow(chnl_from_dsi);
-			trig = true;
 			dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
 				DSI_DIRECT_CMD_STS_CLR_TE_RECEIVED_CLR(true));
 			dev_vdbg(&mcde_dev->dev, "BTA TE DSI%d\n", i);
+			do_softwaretrig(chnl_from_dsi);
+			dev_vdbg(&mcde_dev->dev, "SW TRIG DSI%d, chnl=%d\n", i,
+				chnl_from_dsi->id);
 		}
 
 		irq_status = dsi_rfld(i, DSI_CMD_MODE_STS_FLAG, ERR_NO_TE_FLAG);
@@ -1003,21 +1006,11 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 				DSI_DIRECT_CMD_STS_CLR_TRIGGER_RECEIVED_CLR(
 						true));
 
-			chnl_from_dsi = find_channel_by_dsilink(i);
-			if (chnl_from_dsi && (chnl_from_dsi->port.sync_src ==
-					MCDE_SYNCSRC_TE_POLLING))
+			if (chnl_from_dsi->port.sync_src ==
+					MCDE_SYNCSRC_TE_POLLING)
 				/* Reset timer */
 				dsi_te_poll_set_timer(chnl_from_dsi,
 						DSI_TE_NO_ANSWER_TIMEOUT);
-		}
-
-		if (!trig)
-			continue;
-		chnl_from_dsi = find_channel_by_dsilink(i);
-		if (chnl_from_dsi) {
-			do_softwaretrig(chnl_from_dsi);
-			dev_vdbg(&mcde_dev->dev, "SW TRIG DSI%d, chnl=%d\n", i,
-				chnl_from_dsi->id);
 		}
 	}
 
@@ -2719,6 +2712,7 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 
 	mutex_lock(&mcde_hw_lock);
 	cancel_delayed_work(&hw_timeout_work);
+	/* This channel is disabled here */
 	chnl->enabled = false;
 	if (mcde_is_enabled && chnl->formatter_updated
 				&& chnl->port.type == MCDE_PORTTYPE_DSI) {
@@ -2749,6 +2743,10 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 	}
 	del_timer(&chnl->dsi_te_timer);
 	del_timer(&chnl->auto_sync_timer);
+	/*
+	 * Check if other channels can be disabled and
+	 * if the hardware can be shutdown
+	 */
 	(void)disable_mcde_hw(false);
 	mutex_unlock(&mcde_hw_lock);
 
