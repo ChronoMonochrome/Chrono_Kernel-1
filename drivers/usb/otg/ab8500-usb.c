@@ -535,6 +535,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 		goto fail1;
 	}
 
+	/* Needed to enable ID detection. */
+	ab8500_usb_wd_workaround(ab);
 	dev_info(&pdev->dev, "AB8500 usb driver initialized\n");
 
 	return 0;
