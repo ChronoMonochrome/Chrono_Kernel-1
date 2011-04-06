@@ -273,6 +273,7 @@ int get_size_of_new_msg(struct message_queue *q)
 	struct queue_element *new_msg = NULL;
 	struct list_head *msg_list;
 	struct shrm_dev *shrm = q->shrm;
+	int size = 0;
 
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
 
@@ -284,12 +285,13 @@ int get_size_of_new_msg(struct message_queue *q)
 			dev_err(shrm->dev, "no message found\n");
 			return -EFAULT;
 		}
+		size = new_msg->size;
 		break;
 	}
 	spin_unlock_bh(&q->update_lock);
 
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
-	return new_msg->size;
+	return size;
 }
 
 /**
