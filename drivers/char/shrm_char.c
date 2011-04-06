@@ -527,13 +527,12 @@ ssize_t isa_write(struct file *filp, const char __user *buf,
  * downlink message once the message is copied. Message is copied from offset
  * location returned by previous ioctl before calling this ioctl.
  */
-static int isa_ioctl(struct inode *inode, struct file *filp,
-				unsigned cmd, unsigned long arg)
+static long isa_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	int err = 0;
+	long err = 0;
 	struct isadev_context *isadev = filp->private_data;
 	struct shrm_dev *shrm = isadev->dl_queue.shrm;
-	u32 m = iminor(inode);
+	u32 m = iminor(filp->f_path.dentry->d_inode);
 
 	isadev = (struct isadev_context *)filp->private_data;
 
@@ -734,7 +733,7 @@ const struct file_operations isa_fops = {
 	.owner = THIS_MODULE,
 	.open = isa_open,
 	.release = isa_close,
-	.ioctl = isa_ioctl,
+	.unlocked_ioctl = isa_ioctl,
 	.mmap = isa_mmap,
 	.read = isa_read,
 	.write = isa_write,
