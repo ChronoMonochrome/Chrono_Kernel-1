@@ -115,7 +115,7 @@ static int ab8500_gpio_get(struct gpio_chip *chip, unsigned offset)
 {
 	struct ab8500_gpio *ab8500_gpio = to_ab8500_gpio(chip);
 	u8 mask = 1 << (offset % 8);
-	u8 reg = AB8500_GPIO_OUT1_REG + (offset / 8);
+	u8 reg = AB8500_GPIO_IN1_REG + (offset / 8);
 	int ret;
 	u8 data;
 	ret = abx500_get_register_interruptible(ab8500_gpio->dev, AB8500_MISC,
