@@ -77,6 +77,21 @@ static void shm_ac_sleep_req_work(struct work_struct *work)
 	mutex_unlock(&ac_state_mutex);
 }
 
+static void shm_ac_wake_req_work(struct work_struct *work)
+{
+	mutex_lock(&ac_state_mutex);
+	/* make sure that we bring down the ac-wake line
+	 * so that prcmu driver will actually write
+	 * to the PRCM_HOSTACCESS_REQ register on the
+	 * next prcmu_ac_wake_req call
+	 */
+	prcmu_ac_sleep_req();
+
+	atomic_inc(&ac_sleep_disable_count);
+	prcmu_ac_wake_req();
+	mutex_unlock(&ac_state_mutex);
+}
+
 static u32 get_host_accessport_val(void)
 {
 	u32 prcm_hostaccess;
@@ -369,6 +384,13 @@ void shm_ac_read_notif_0_tasklet(unsigned long tasklet_data)
 
 			/* multicast that modem is online */
 			nl_send_multicast_message(SHRM_NL_STATUS_MOD_ONLINE, GFP_ATOMIC);
+
+			/* This decrement corresponds to increment
+			 * done in MSR sequecne
+			 */
+			atomic_dec(&ac_sleep_disable_count);
+			queue_work(shm_dev->shm_ac_sleep_wq,
+					&shm_dev->shm_ac_sleep_req);
 		}
 
 	} else if (boot_state == BOOT_DONE) {
@@ -504,6 +526,9 @@ static int shrm_modem_reset_sequence(void)
 	/* reset the state for ac-wake LOW logic */
 	atomic_set(&ac_sleep_disable_count, 0);
 
+	queue_work(shm_dev->shm_ac_wake_wq,
+			&shm_dev->shm_ac_wake_req);
+
 	/* stop network queue */
 	shrm_stop_netdev(shm_dev->ndev);
 
@@ -534,9 +559,6 @@ static int shrm_modem_reset_sequence(void)
 	enable_irq(shm_dev->ca_msg_pending_notif_1_irq);
 	enable_irq(IRQ_PRCMU_CA_WAKE);
 	enable_irq(IRQ_PRCMU_CA_SLEEP);
-
-	/* reset counter for ac-wake/ac-sleep logic */
-	atomic_set(&ac_sleep_disable_count, 0);
 
 	return err;
 }
@@ -730,6 +752,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 	INIT_WORK(&shrm->shm_ca_wake_req, shm_ca_wake_req_work);
 	INIT_WORK(&shrm->shm_ca_sleep_req, shm_ca_sleep_req_work);
 	INIT_WORK(&shrm->shm_ac_sleep_req, shm_ac_sleep_req_work);
+	INIT_WORK(&shrm->shm_ac_wake_req, shm_ac_wake_req_work);
 
 	/* set tasklet data */
 	shm_ca_0_tasklet.data = (unsigned long)shrm;
