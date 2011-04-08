@@ -33,6 +33,18 @@ struct av8100_codec_dai_data {
 	struct hdmi_audio_settings as;
 };
 
+static struct av8100_codec_dai_data *get_dai_data_codec(struct snd_soc_codec *codec,
+						int dai_id)
+{
+	struct av8100_codec_dai_data *dai_data = snd_soc_codec_get_drvdata(codec);
+	return &dai_data[dai_id];
+}
+
+static struct av8100_codec_dai_data *get_dai_data(struct snd_soc_dai *codec_dai)
+{
+	return get_dai_data_codec(codec_dai->codec, codec_dai->id);
+}
+
 /* Extended interface for codec-driver */
 
 int av8100_audio_change_hdmi_audio_settings(struct snd_soc_dai *codec_dai,
@@ -196,18 +208,6 @@ static int av8100_codec_send_audio_infoframe(struct hdmi_audio_settings *as)
 	}
 
 	return 0;
-}
-
-static struct av8100_codec_dai_data *get_dai_data_codec(struct snd_soc_codec *codec,
-						int dai_id)
-{
-	struct av8100_codec_dai_data *dai_data = snd_soc_codec_get_drvdata(codec);
-	return &dai_data[dai_id];
-}
-
-static struct av8100_codec_dai_data *get_dai_data(struct snd_soc_dai *codec_dai)
-{
-	return get_dai_data_codec(codec_dai->codec, codec_dai->id);
 }
 
 static int av8100_codec_pcm_hw_params(struct snd_pcm_substream *substream,

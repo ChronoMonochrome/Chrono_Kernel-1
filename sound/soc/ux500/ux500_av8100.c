@@ -103,7 +103,7 @@ static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 	as.channel_allocation = hdmi_ca;
 	as.level_shift_value = AV8100_CODEC_LSV_0DB;
 	as.downmix_inhibit = false;
-	ret = av8100_codec_change_hdmi_audio_settings(codec_dai, &as);
+	ret = av8100_audio_change_hdmi_audio_settings(codec_dai, &as);
 	if (ret < 0) {
 		pr_err("%s: Unable to change HDMI audio-settings for codec-DAI "
 			"(av8100_codec_change_hdmi_audio_settings returned %d)!\n",
