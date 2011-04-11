@@ -67,6 +67,24 @@ config MACH_UX500_DT
 
 endmenu
 
+choice
+	prompt "Ux500 UIB Keylayout"
+	default KEYLAYOUT_LAYOUT1
+
+config KEYLAYOUT_LAYOUT1
+	bool "UIB Keylayout 1; for generic users"
+	help
+	  Supported keylayout for some numerics, power/call buttons,
+	  volume control etc
+
+config KEYLAYOUT_LAYOUT2
+	bool "UIB Keylayout 2; for connectivity users"
+	help
+	  Supports keylayout numerics 0-9, left/right/up/down/back/
+	  enter keys and special character "."(dot)
+
+endchoice
+
 config UX500_DEBUG_UART
 	int "Ux500 UART to use for low-level debug"
 	default 2

@@ -44,28 +44,62 @@ static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 	},
 };
 
-/* STMPE/SKE keypad use this key layout */
+/*
+ * ux500 keymaps
+ *
+ * Organized row-wise as on the UIB, starting at the top-left
+ *
+ * we support two key layouts, specific to requirements. The first
+ * keylayout includes controls for power/volume a few generic keys;
+ * the second key layout contains the full numeric layout, enter/back/left
+ * buttons along with a "."(dot), specifically for connectivity testing
+ */
 static const unsigned int mop500_keymap[] = {
+#if defined(CONFIG_KEYLAYOUT_LAYOUT1)
 	KEY(2, 5, KEY_END),
-	KEY(4, 1, KEY_POWER),
+	KEY(4, 1, KEY_HOME),
 	KEY(3, 5, KEY_VOLUMEDOWN),
-	KEY(1, 3, KEY_3),
+	KEY(1, 3, KEY_EMAIL),
 	KEY(5, 2, KEY_RIGHT),
-	KEY(5, 0, KEY_9),
+	KEY(5, 0, KEY_BACKSPACE),
 
 	KEY(0, 5, KEY_MENU),
 	KEY(7, 6, KEY_ENTER),
 	KEY(4, 5, KEY_0),
-	KEY(6, 7, KEY_2),
+	KEY(6, 7, KEY_DOT),
 	KEY(3, 4, KEY_UP),
 	KEY(3, 3, KEY_DOWN),
 
 	KEY(6, 4, KEY_SEND),
 	KEY(6, 2, KEY_BACK),
 	KEY(4, 2, KEY_VOLUMEUP),
-	KEY(5, 5, KEY_1),
+	KEY(5, 5, KEY_SPACE),
 	KEY(4, 3, KEY_LEFT),
+	KEY(3, 2, KEY_SEARCH),
+#elif defined(CONFIG_KEYLAYOUT_LAYOUT2)
+	KEY(2, 5, KEY_RIGHT),
+	KEY(4, 1, KEY_ENTER),
+	KEY(3, 5, KEY_MENU),
+	KEY(1, 3, KEY_3),
+	KEY(5, 2, KEY_6),
+	KEY(5, 0, KEY_9),
+
+	KEY(0, 5, KEY_UP),
+	KEY(7, 6, KEY_DOWN),
+	KEY(4, 5, KEY_0),
+	KEY(6, 7, KEY_2),
+	KEY(3, 4, KEY_5),
+	KEY(3, 3, KEY_8),
+
+	KEY(6, 4, KEY_LEFT),
+	KEY(6, 2, KEY_BACK),
+	KEY(4, 2, KEY_KPDOT),
+	KEY(5, 5, KEY_1),
+	KEY(4, 3, KEY_4),
 	KEY(3, 2, KEY_7),
+#else
+#warning "No keypad layout defined."
+#endif
 };
 
 static const struct matrix_keymap_data mop500_keymap_data = {
