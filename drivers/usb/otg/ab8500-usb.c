@@ -223,7 +223,6 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 {
 	u8 reg;
 	enum ab8500_usb_link_status lsts;
-	void *v = NULL;
 	enum usb_phy_events event;
 
 	abx500_get_register_interruptible(ab->dev,
@@ -257,7 +256,6 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 			/* TODO: Enable regulators. */
 			ab8500_usb_peri_phy_en(ab);
 			ab->mode = USB_PERIPHERAL;
-			v = ab->phy.otg->gadget;
 		}
 		event = USB_EVENT_VBUS;
 		break;
@@ -266,7 +264,6 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 		if (ab->phy.otg->host) {
 			ab8500_usb_host_phy_en(ab);
 			ab->mode = USB_HOST;
-			v = ab->phy.otg->host;
 		}
 		ab->phy.otg->default_a = true;
 		event = USB_EVENT_ID;
@@ -284,7 +281,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 		break;
 	}
 
-	atomic_notifier_call_chain(&ab->phy.notifier, event, v);
+	atomic_notifier_call_chain(&ab->phy.notifier, event, &ab->vbus_draw);
 
 	return 0;
 }
@@ -357,9 +354,8 @@ static int ab8500_usb_set_power(struct usb_phy *phy, unsigned mA)
 
 	ab->vbus_draw = mA;
 
-	if (mA)
-		atomic_notifier_call_chain(&ab->phy.notifier,
-				USB_EVENT_ENUMERATED, ab->phy.otg->gadget);
+	atomic_notifier_call_chain(&ab->phy.notifier,
+				USB_EVENT_VBUS, &ab->vbus_draw);
 	return 0;
 }
 
