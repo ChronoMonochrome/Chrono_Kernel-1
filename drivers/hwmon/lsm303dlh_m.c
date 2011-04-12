@@ -535,13 +535,13 @@ static ssize_t lsm303dlh_m_store_mode(struct device *dev,
 			mode == LSM303DLH_M_MODE_SLEEP) {
 		ddata->mode = (mode >> LSM303DLH_M_MR_MD_BIT);
 		mutex_unlock(&ddata->lock);
-		return 0;
+		return count;
 	}
 
 	/*  if same mode as existing, return */
 	if (ddata->mode == mode) {
 		mutex_unlock(&ddata->lock);
-		return 0;
+		return count;
 	}
 
 	/* turn on the supplies if already off */

@@ -784,7 +784,7 @@ static ssize_t lsm303dlh_a_store_mode(struct device *dev,
 		if (val == LSM303DLH_A_MODE_OFF) {
 			ddata->mode = val;
 			mutex_unlock(&ddata->lock);
-			return 0;
+			return count;
 		} else {
 			/* device is turning on after suspend, reset memory */
 			set_boot_bit = true;
@@ -794,7 +794,7 @@ static ssize_t lsm303dlh_a_store_mode(struct device *dev,
 	/*  if same mode as existing, return */
 	if (ddata->mode == val) {
 		mutex_unlock(&ddata->lock);
-		return 0;
+		return count;
 	}
 
 	/* turn on the supplies if already off */

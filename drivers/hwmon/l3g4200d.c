@@ -325,13 +325,13 @@ static ssize_t l3g4200d_store_powermode(struct device *dev,
 			received_value == PM_OFF) {
 		ddata->powermode = received_value;
 		mutex_unlock(&ddata->lock);
-		return 0;
+		return count;
 	}
 
 	/* if sent value is same as current value do nothing */
 	if (ddata->powermode == received_value) {
 		mutex_unlock(&ddata->lock);
-		return 0;
+		return count;
 	}
 
 	/* turn on the power suppliy if it was turned off previously */
