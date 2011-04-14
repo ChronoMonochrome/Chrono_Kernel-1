@@ -200,11 +200,13 @@ static int regulator_check_consumers(struct regulator_dev *rdev,
 		 */
 		if (!regulator->min_uV && !regulator->max_uV)
 			continue;
-
-		if (*max_uV > regulator->max_uV)
-			*max_uV = regulator->max_uV;
-		if (*min_uV < regulator->min_uV)
-			*min_uV = regulator->min_uV;
+		
+		if (regulator->use) {
+			if (*max_uV > regulator->max_uV)
+				*max_uV = regulator->max_uV;
+			if (*min_uV < regulator->min_uV)
+				*min_uV = regulator->min_uV;
+		}
 	}
 
 	if (*min_uV > *max_uV)
