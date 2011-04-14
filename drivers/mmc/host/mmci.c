@@ -236,10 +236,7 @@ static void mmci_stop_data(struct mmci_host *host)
 	/* Needed for DDR */
 	if (host->mmc->card && mmc_card_ddr_mode(host->mmc->card)) {
 		clk = readl(host->base + MMCICLOCK);
-		if (clk & MCI_ST_UX500_NEG_EDGE)
-			clk &= ~(MCI_ST_UX500_NEG_EDGE);
-		if (clk & MCI_ST_UX500_CLK_INV)
-			clk &= ~(MCI_ST_UX500_CLK_INV);
+		clk &= ~MCI_ST_UX500_NEG_EDGE;
 
 		writel(clk, (host->base + MMCICLOCK));
 	}
@@ -543,9 +540,7 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 
 		/* Needed for DDR */
 		clk = readl(base + MMCICLOCK);
-		clk |=  MCI_ST_UX500_CLK_INV;
-		if ((data->flags & MMC_DATA_READ))
-			clk |= MCI_ST_UX500_NEG_EDGE;
+		clk |= MCI_ST_UX500_NEG_EDGE;
 
 		writel(clk, (base + MMCICLOCK));
 	}
