@@ -87,22 +87,22 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 	0x02, /* REG_DIGIFCONF2		(0x1C) */
 	0x00, /* REG_DIGIFCONF3		(0x1D) */
 	0x02, /* REG_DIGIFCONF4		(0x1E) */
-	0xCC, /* REG_ADSLOTSEL1		(0x1F) */
-	0xCC, /* REG_ADSLOTSEL2		(0x20) */
-	0xCC, /* REG_ADSLOTSEL3		(0x21) */
-	0xCC, /* REG_ADSLOTSEL4		(0x22) */
-	0xCC, /* REG_ADSLOTSEL5		(0x23) */
-	0xCC, /* REG_ADSLOTSEL6		(0x24) */
-	0xCC, /* REG_ADSLOTSEL7		(0x25) */
-	0xCC, /* REG_ADSLOTSEL8		(0x26) */
-	0xCC, /* REG_ADSLOTSEL9		(0x27) */
-	0xCC, /* REG_ADSLOTSEL10	(0x28) */
-	0xCC, /* REG_ADSLOTSEL11	(0x29) */
-	0xCC, /* REG_ADSLOTSEL12	(0x2A) */
-	0xCC, /* REG_ADSLOTSEL13	(0x2B) */
-	0xCC, /* REG_ADSLOTSEL14	(0x2C) */
-	0xCC, /* REG_ADSLOTSEL15	(0x2D) */
-	0xCC, /* REG_ADSLOTSEL16	(0x2E) */
+	0xCC, /* REG_ADSLOTSEL1		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL2		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL3		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL4		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL5		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL6		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL7		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL8		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL9		(0xCC) */
+	0xCC, /* REG_ADSLOTSEL10	(0xCC) */
+	0xCC, /* REG_ADSLOTSEL11	(0xCC) */
+	0xCC, /* REG_ADSLOTSEL12	(0xCC) */
+	0xCC, /* REG_ADSLOTSEL13	(0xCC) */
+	0xCC, /* REG_ADSLOTSEL14	(0xCC) */
+	0xCC, /* REG_ADSLOTSEL15	(0xCC) */
+	0xCC, /* REG_ADSLOTSEL16	(0xCC) */
 	0x00, /* REG_ADSLOTHIZCTRL1	(0x2F) */
 	0x00, /* REG_ADSLOTHIZCTRL2	(0x30) */
 	0x00, /* REG_ADSLOTHIZCTRL3	(0x31) */
@@ -1156,6 +1156,82 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk0,
 static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk1,
 	REG_DIGIFCONF1, REG_DIGIFCONF1_ENFSBITCLK1, enum_dis_ena);
 
+/* AD to slot mapping */
+static const char *enum_ad_to_slot_map[] = {"AD_OUT1",
+					"AD_OUT2",
+					"AD_OUT3",
+					"AD_OUT4",
+					"AD_OUT5",
+					"AD_OUT6",
+					"AD_OUT7",
+					"AD_OUT8",
+					"zeroes",
+					"tristate"};
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot0map,
+	REG_ADSLOTSEL1, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot1map,
+	REG_ADSLOTSEL1, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot2map,
+	REG_ADSLOTSEL2, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot3map,
+	REG_ADSLOTSEL2, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot4map,
+	REG_ADSLOTSEL3, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot5map,
+	REG_ADSLOTSEL3, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot6map,
+	REG_ADSLOTSEL4, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot7map,
+	REG_ADSLOTSEL4, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot8map,
+	REG_ADSLOTSEL5, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot9map,
+	REG_ADSLOTSEL5, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot10map,
+	REG_ADSLOTSEL6, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot11map,
+	REG_ADSLOTSEL6, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot12map,
+	REG_ADSLOTSEL7, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot13map,
+	REG_ADSLOTSEL7, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot14map,
+	REG_ADSLOTSEL8, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot15map,
+	REG_ADSLOTSEL8, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot16map,
+	REG_ADSLOTSEL9, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot17map,
+	REG_ADSLOTSEL9, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot18map,
+	REG_ADSLOTSEL10, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot19map,
+	REG_ADSLOTSEL10, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot20map,
+	REG_ADSLOTSEL11, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot21map,
+	REG_ADSLOTSEL11, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot22map,
+	REG_ADSLOTSEL12, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot23map,
+	REG_ADSLOTSEL12, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot24map,
+	REG_ADSLOTSEL13, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot25map,
+	REG_ADSLOTSEL13, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot26map,
+	REG_ADSLOTSEL14, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot27map,
+	REG_ADSLOTSEL14, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot28map,
+	REG_ADSLOTSEL15, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot29map,
+	REG_ADSLOTSEL15, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot30map,
+	REG_ADSLOTSEL16, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_slot31map,
+	REG_ADSLOTSEL16, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
+
 /* Digital loopback */
 static SOC_ENUM_SINGLE_DECL(soc_enum_ad1loop,
 	REG_DASLOTCONF1, REG_DASLOTCONF1_DAI7TOADO1, enum_dis_ena);
@@ -1189,7 +1265,6 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_bfifomast,
 	REG_FIFOCONF3, REG_FIFOCONF3_BFIFOMAST_SHIFT, enum_slavemaster);
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifoint,
 	REG_FIFOCONF3, REG_FIFOCONF3_BFIFORUN_SHIFT, enum_dis_ena);
-
 
 /* TODO: move to DAPM */
 static SOC_ENUM_SINGLE_DECL(soc_enum_enfirsids,
@@ -1334,6 +1409,40 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 	SOC_ENUM("Digital Interface 0 Bit-clock Switch", soc_enum_fsbitclk0),
 	SOC_ENUM("Digital Interface 1 Bit-clock Switch", soc_enum_fsbitclk1),
 
+	/* AD to slot mapping */
+	SOC_ENUM("Digital Interface AD To Slot 0 Map", soc_enum_slot0map),
+	SOC_ENUM("Digital Interface AD To Slot 1 Map", soc_enum_slot1map),
+	SOC_ENUM("Digital Interface AD To Slot 2 Map", soc_enum_slot2map),
+	SOC_ENUM("Digital Interface AD To Slot 3 Map", soc_enum_slot3map),
+	SOC_ENUM("Digital Interface AD To Slot 4 Map", soc_enum_slot4map),
+	SOC_ENUM("Digital Interface AD To Slot 5 Map", soc_enum_slot5map),
+	SOC_ENUM("Digital Interface AD To Slot 6 Map", soc_enum_slot6map),
+	SOC_ENUM("Digital Interface AD To Slot 7 Map", soc_enum_slot7map),
+	SOC_ENUM("Digital Interface AD To Slot 8 Map", soc_enum_slot8map),
+	SOC_ENUM("Digital Interface AD To Slot 9 Map", soc_enum_slot9map),
+	SOC_ENUM("Digital Interface AD To Slot 10 Map", soc_enum_slot10map),
+	SOC_ENUM("Digital Interface AD To Slot 11 Map", soc_enum_slot11map),
+	SOC_ENUM("Digital Interface AD To Slot 12 Map", soc_enum_slot12map),
+	SOC_ENUM("Digital Interface AD To Slot 13 Map", soc_enum_slot13map),
+	SOC_ENUM("Digital Interface AD To Slot 14 Map", soc_enum_slot14map),
+	SOC_ENUM("Digital Interface AD To Slot 15 Map", soc_enum_slot15map),
+	SOC_ENUM("Digital Interface AD To Slot 16 Map", soc_enum_slot16map),
+	SOC_ENUM("Digital Interface AD To Slot 17 Map", soc_enum_slot17map),
+	SOC_ENUM("Digital Interface AD To Slot 18 Map", soc_enum_slot18map),
+	SOC_ENUM("Digital Interface AD To Slot 19 Map", soc_enum_slot19map),
+	SOC_ENUM("Digital Interface AD To Slot 20 Map", soc_enum_slot20map),
+	SOC_ENUM("Digital Interface AD To Slot 21 Map", soc_enum_slot21map),
+	SOC_ENUM("Digital Interface AD To Slot 22 Map", soc_enum_slot22map),
+	SOC_ENUM("Digital Interface AD To Slot 23 Map", soc_enum_slot23map),
+	SOC_ENUM("Digital Interface AD To Slot 24 Map", soc_enum_slot24map),
+	SOC_ENUM("Digital Interface AD To Slot 25 Map", soc_enum_slot25map),
+	SOC_ENUM("Digital Interface AD To Slot 26 Map", soc_enum_slot26map),
+	SOC_ENUM("Digital Interface AD To Slot 27 Map", soc_enum_slot27map),
+	SOC_ENUM("Digital Interface AD To Slot 28 Map", soc_enum_slot28map),
+	SOC_ENUM("Digital Interface AD To Slot 29 Map", soc_enum_slot29map),
+	SOC_ENUM("Digital Interface AD To Slot 30 Map", soc_enum_slot30map),
+	SOC_ENUM("Digital Interface AD To Slot 31 Map", soc_enum_slot31map),
+
 	/* Loopback */
 	SOC_ENUM("Digital Interface AD 1 Loopback Switch", soc_enum_ad1loop),
 	SOC_ENUM("Digital Interface AD 2 Loopback Switch", soc_enum_ad2loop),
@@ -1384,7 +1493,7 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_FIFOCONF6,
 		REG_FIFOCONF6_BFIFOSAMPLE_SHIFT,
 		REG_FIFOCONF6_BFIFOSAMPLE_MAX,
-		NORMAL),
+		NORMAL)
 };
 
 static int ab8500_codec_set_format_if1(struct snd_soc_codec *codec, unsigned int fmt)
@@ -1872,30 +1981,18 @@ static int ab8500_codec_set_dai_tdm_slot(struct snd_soc_dai *dai,
 		/* AD_OUT3 -> slot 0 & 1 */
 		ab8500_codec_update_reg_audio(codec, REG_ADSLOTSEL1,
 			REG_MASK_ALL,
-			BMASK(REG_ADSLOTSELX_ODDX_1) |
-			BMASK(REG_ADSLOTSELX_EVENX_1));
+			REG_ADSLOTSELX_AD_OUT3_TO_SLOT_EVEN |
+			REG_ADSLOTSELX_AD_OUT3_TO_SLOT_ODD);
 		break;
 	case 2:
 		/* AD_OUT3 -> slot 0, AD_OUT2 -> slot 1 */
 		ab8500_codec_update_reg_audio(codec, REG_ADSLOTSEL1,
 			REG_MASK_ALL,
-			BMASK(REG_ADSLOTSELX_ODDX_0) |
-			BMASK(REG_ADSLOTSELX_EVENX_1));
+			REG_ADSLOTSELX_AD_OUT3_TO_SLOT_EVEN |
+			REG_ADSLOTSELX_AD_OUT2_TO_SLOT_ODD);
 		break;
 	case 8:
-		/* AD_OUT3 -> slot 0, AD_OUT2 -> slot 1 */
-		ab8500_codec_update_reg_audio(codec, REG_ADSLOTSEL1,
-			REG_MASK_ALL,
-			BMASK(REG_ADSLOTSELX_ODDX_0) |
-			BMASK(REG_ADSLOTSELX_EVENX_1));
-
-		/* AD_OUT5 -> slot 6, AD_OUT6 -> slot 7 */
-		ab8500_codec_update_reg_audio(codec, REG_ADSLOTSEL4,
-			REG_MASK_ALL,
-			BMASK(REG_ADSLOTSELX_ODDX_0) |
-			BMASK(REG_ADSLOTSELX_ODDX_2) |
-			BMASK(REG_ADSLOTSELX_EVENX_2));
-
+		pr_info("%s: In 8-channel mode AD-to-slot mapping is set manually.", __func__);
 		break;
 	default:
 		pr_err("%s: Unsupported number of active RX-slots (%d)!\n", __func__, slots_active);
