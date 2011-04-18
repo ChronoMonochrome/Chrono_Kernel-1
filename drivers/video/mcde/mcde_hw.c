@@ -2550,6 +2550,11 @@ int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
 
 	chnl->vmode = *vmode;
 
+	if (chnl->ovly0)
+		chnl->ovly0->update = true;
+	if (chnl->ovly1)
+		chnl->ovly1->update = true;
+
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 
 	return 0;
