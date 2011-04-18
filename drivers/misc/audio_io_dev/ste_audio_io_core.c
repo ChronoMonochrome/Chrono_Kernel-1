@@ -19,100 +19,23 @@ static struct audiocodec_context_t *ptr_audio_codec_cnxt;
 
 static struct clk *clk_ptr_msp1;
 static struct clk *clk_ptr_msp3;
+static struct clk *clk_ptr_audioclk;
 static struct clk *clk_ptr_sysclk;
+static struct clk *clk_ptr_ulpclk;
 
 static struct regulator *regulator_vdmic;
 static struct regulator *regulator_vaudio;
 static struct regulator *regulator_vamic1;
 static struct regulator *regulator_vamic2;
 struct regulator *regulator_avsource;
+
 static void ste_audio_io_init_transducer_cnxt(void);
-
-bool ste_audio_io_core_is_ready_for_suspend()
-{
-	bool err = false;
-	mutex_lock(&(ptr_audio_codec_cnxt->audio_io_mutex));
-	if ((!ptr_audio_codec_cnxt->power_client) &&
-			(!ptr_audio_codec_cnxt->audio_codec_powerup))
-		err = true;
-	mutex_unlock(&(ptr_audio_codec_cnxt->audio_io_mutex));
-	return err;
-}
-int ste_audio_io_core_api_init_data(struct platform_device *pdev)
-{
-	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
-	struct ab8500_platform_data *pdata = dev_get_platdata(ab8500->dev);
-	int status = 0;
-	ptr_audio_codec_cnxt = kmalloc(sizeof(struct audiocodec_context_t),
-						GFP_KERNEL);
-	if (!ptr_audio_codec_cnxt)
-		return -ENOMEM;
-
-	memset(ptr_audio_codec_cnxt, 0, sizeof(*ptr_audio_codec_cnxt));
-	ptr_audio_codec_cnxt->dev = &pdev->dev;
-	mutex_init(&(ptr_audio_codec_cnxt->audio_io_mutex));
-
-	if (pdata) {
-		if (pdata->audio) {
-			ptr_audio_codec_cnxt->gpio_altf_init =
-				pdata->audio->ste_gpio_altf_init;
-			ptr_audio_codec_cnxt->gpio_altf_exit =
-				pdata->audio->ste_gpio_altf_exit;
-		}
-	}
-
-	regulator_vdmic = regulator_get(NULL, "v-dmic");
-	if (IS_ERR(regulator_vdmic)) {
-		status = PTR_ERR(regulator_vdmic);
-		dev_err(ptr_audio_codec_cnxt->dev,
-				"Register error for v-dmic=%d", status);
-		goto free_audio_codec_cnxt;
-	}
-	regulator_vamic1 = regulator_get(NULL, "v-amic1");
-	if (IS_ERR(regulator_vamic1)) {
-		status = PTR_ERR(regulator_vamic1);
-		dev_err(ptr_audio_codec_cnxt->dev,
-				"Register error for v-amic1=%d", status);
-		goto free_regulator_vdmic;
-	}
-	regulator_vamic2 = regulator_get(NULL, "v-amic2");
-	if (IS_ERR(regulator_vamic2)) {
-		status = PTR_ERR(regulator_vamic2);
-		dev_err(ptr_audio_codec_cnxt->dev,
-				"Register error for v-amic2=%d", status);
-		goto free_regulator_vdmic_vamic1;
-	}
-	regulator_vaudio = regulator_get(NULL, "v-audio");
-	if (IS_ERR(regulator_vaudio)) {
-		status = PTR_ERR(regulator_vaudio);
-		dev_err(ptr_audio_codec_cnxt->dev,
-				"Register error for v-audio=%d", status);
-		goto free_regulator_vdmic_vamic1_vamic2;
-	}
-	regulator_avsource = regulator_get(ptr_audio_codec_cnxt->dev,
-								"vcc-avswitch");
-	if (IS_ERR(regulator_avsource)) {
-		status = PTR_ERR(regulator_avsource);
-		dev_err(ptr_audio_codec_cnxt->dev,
-				"Register error for vcc-avswitch=%d", status);
-		goto free_regulator_vdmic_vamic1_vamic2_vaudio;
-	}
-
-	ste_audio_io_init_transducer_cnxt();
-	return 0;
-
-free_regulator_vdmic_vamic1_vamic2_vaudio:
-	regulator_put(regulator_vaudio);
-free_regulator_vdmic_vamic1_vamic2:
-	regulator_put(regulator_vamic2);
-free_regulator_vdmic_vamic1:
-	regulator_put(regulator_vamic1);
-free_regulator_vdmic:
-	regulator_put(regulator_vdmic);
-free_audio_codec_cnxt:
-	kfree(ptr_audio_codec_cnxt);
-	return status;
-}
+static int ste_audio_io_core_init_regulators(void);
+static int ste_audio_io_core_init_clocks(void);
+static int ste_audio_io_core_free_regulators(void);
+static int ste_audio_io_core_free_clocks(void);
+static int ste_audio_io_enable_audio_clock(void);
+static int ste_audio_io_disable_audio_clock(void);
 
 static struct transducer_context_t transducer_headset = {
 	.pwr_up_func = ste_audio_io_power_up_headset,
@@ -268,6 +191,198 @@ static struct transducer_context_t transducer_bluetooth = {
 	.pwr_down_func = ste_audio_io_power_down_bluetooth,
 };
 
+bool ste_audio_io_core_is_ready_for_suspend()
+{
+	bool err = false;
+	mutex_lock(&(ptr_audio_codec_cnxt->audio_io_mutex));
+	if ((!ptr_audio_codec_cnxt->power_client) &&
+			(!ptr_audio_codec_cnxt->audio_codec_powerup))
+		err = true;
+	mutex_unlock(&(ptr_audio_codec_cnxt->audio_io_mutex));
+	return err;
+}
+
+static int ste_audio_io_core_init_regulators()
+{
+	int error = 0;
+	regulator_vdmic = regulator_get(NULL, "v-dmic");
+	if (IS_ERR(regulator_vdmic)) {
+		error = PTR_ERR(regulator_vdmic);
+		dev_err(ptr_audio_codec_cnxt->dev,
+				"Register error for v-dmic=%d", error);
+		return error;
+	}
+	regulator_vamic1 = regulator_get(NULL, "v-amic1");
+	if (IS_ERR(regulator_vamic1)) {
+		error = PTR_ERR(regulator_vamic1);
+		dev_err(ptr_audio_codec_cnxt->dev,
+				"Register error for v-amic1=%d", error);
+		goto free_regulator_vdmic;
+	}
+	regulator_vamic2 = regulator_get(NULL, "v-amic2");
+	if (IS_ERR(regulator_vamic2)) {
+		error = PTR_ERR(regulator_vamic2);
+		dev_err(ptr_audio_codec_cnxt->dev,
+				"Register error for v-amic2=%d", error);
+		goto free_regulator_vdmic_vamic1;
+	}
+	regulator_vaudio = regulator_get(NULL, "v-audio");
+	if (IS_ERR(regulator_vaudio)) {
+		error = PTR_ERR(regulator_vaudio);
+		dev_err(ptr_audio_codec_cnxt->dev,
+				"Register error for v-audio=%d", error);
+		goto free_regulator_vdmic_vamic1_vamic2;
+	}
+	regulator_avsource = regulator_get(ptr_audio_codec_cnxt->dev,
+								"vcc-avswitch");
+	if (IS_ERR(regulator_avsource)) {
+		error = PTR_ERR(regulator_avsource);
+		dev_err(ptr_audio_codec_cnxt->dev,
+				"Register error for vcc-avswitch =%d", error);
+		goto free_regulator_vdmic_vamic1_vamic2_vaudio;
+	}
+	return error;
+free_regulator_vdmic_vamic1_vamic2_vaudio:
+	regulator_put(regulator_vaudio);
+free_regulator_vdmic_vamic1_vamic2:
+	regulator_put(regulator_vamic2);
+free_regulator_vdmic_vamic1:
+	regulator_put(regulator_vamic1);
+free_regulator_vdmic:
+	regulator_put(regulator_vdmic);
+	return error;
+}
+
+static int ste_audio_io_core_free_regulators()
+{
+	regulator_put(regulator_vdmic);
+	regulator_put(regulator_vamic1);
+	regulator_put(regulator_vamic2);
+	regulator_put(regulator_vaudio);
+	regulator_put(regulator_avsource);
+	return 0;
+}
+
+static int ste_audio_io_core_init_clocks()
+{
+	int error = 0;
+	clk_ptr_sysclk = clk_get(ptr_audio_codec_cnxt->dev, "sysclk");
+	if (IS_ERR(clk_ptr_sysclk)) {
+		error = -EFAULT;
+		dev_err(ptr_audio_codec_cnxt->dev,
+			"Sysclk get failed error = %d", error);
+		return error;
+	}
+	clk_ptr_ulpclk = clk_get(ptr_audio_codec_cnxt->dev, "ulpclk");
+	if (IS_ERR(clk_ptr_ulpclk)) {
+		error = -EFAULT;
+		dev_err(ptr_audio_codec_cnxt->dev,
+			"Ulpclk get failed error = %d", error);
+		goto free_sysclk;
+	}
+	clk_ptr_audioclk = clk_get(ptr_audio_codec_cnxt->dev, "audioclk");
+	if (IS_ERR(clk_ptr_audioclk)) {
+		error = -EFAULT;
+		dev_err(ptr_audio_codec_cnxt->dev,
+			"Audioclk get failed error = %d", error);
+		goto free_ulpclk;
+	}
+	return error;
+free_ulpclk:
+	clk_put(clk_ptr_ulpclk);
+free_sysclk:
+	clk_put(clk_ptr_sysclk);
+	return error;
+}
+
+static int ste_audio_io_core_free_clocks()
+{
+	clk_put(clk_ptr_audioclk);
+	clk_put(clk_ptr_ulpclk);
+	clk_put(clk_ptr_sysclk);
+	return 0;
+}
+
+int ste_audio_io_core_api_init_data(struct platform_device *pdev)
+{
+	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+	struct ab8500_platform_data *pdata = dev_get_platdata(ab8500->dev);
+	int error = 0;
+	ptr_audio_codec_cnxt = kmalloc(sizeof(struct audiocodec_context_t),
+						GFP_KERNEL);
+	if (!ptr_audio_codec_cnxt)
+		return -ENOMEM;
+
+	memset(ptr_audio_codec_cnxt, 0, sizeof(*ptr_audio_codec_cnxt));
+	ptr_audio_codec_cnxt->dev = &pdev->dev;
+	ptr_audio_codec_cnxt->clk_type = AUDIOIO_ULP_CLK;
+	mutex_init(&(ptr_audio_codec_cnxt->audio_io_mutex));
+
+	if (pdata) {
+		if (pdata->audio) {
+			ptr_audio_codec_cnxt->gpio_altf_init =
+				pdata->audio->ste_gpio_altf_init;
+			ptr_audio_codec_cnxt->gpio_altf_exit =
+				pdata->audio->ste_gpio_altf_exit;
+		}
+	}
+
+	error = ste_audio_io_core_init_regulators();
+	if (error)
+		goto free_audio_codec_cnxt;
+	error = ste_audio_io_core_init_clocks();
+	if (error)
+		goto free_audio_codec_cnxt_regulators;
+	ste_audio_io_init_transducer_cnxt();
+	return error;
+
+free_audio_codec_cnxt_regulators:
+	ste_audio_io_core_free_regulators();
+free_audio_codec_cnxt:
+	kfree(ptr_audio_codec_cnxt);
+	return error;
+}
+
+static int ste_audio_io_enable_audio_clock()
+{
+	int error = 0;
+	if (ptr_audio_codec_cnxt->is_audio_clk_enabled)
+		return 0;
+
+	if (AUDIOIO_ULP_CLK == ptr_audio_codec_cnxt->clk_type) {
+		error = clk_set_parent(clk_ptr_audioclk, clk_ptr_ulpclk);
+		if (error) {
+			dev_err(ptr_audio_codec_cnxt->dev,
+			"Setting Ulpclk as parent failed error = %d", error);
+			return error;
+		}
+	} else {
+		error = clk_set_parent(clk_ptr_audioclk, clk_ptr_sysclk);
+		if (error) {
+			dev_err(ptr_audio_codec_cnxt->dev,
+			"Setting Sysclk as parent failed error = %d", error);
+			return error;
+		}
+	}
+	error = clk_enable(clk_ptr_audioclk);
+	if (error) {
+		dev_err(ptr_audio_codec_cnxt->dev,
+			"Audioclk enable failed error = %d", error);
+		return error;
+	}
+	ptr_audio_codec_cnxt->is_audio_clk_enabled = 1;
+	return error;
+}
+
+static int ste_audio_io_disable_audio_clock()
+{
+	if (!ptr_audio_codec_cnxt->is_audio_clk_enabled)
+		return 0;
+	clk_disable(clk_ptr_audioclk);
+	ptr_audio_codec_cnxt->is_audio_clk_enabled = 0;
+	return 0;
+}
+
 static void ste_audio_io_init_transducer_cnxt(void)
 {
 	ptr_audio_codec_cnxt->transducer[HS_CH] = &transducer_headset;
@@ -289,11 +404,8 @@ static void ste_audio_io_init_transducer_cnxt(void)
 
 void ste_audio_io_core_api_free_data(void)
 {
-	regulator_put(regulator_vdmic);
-	regulator_put(regulator_vamic1);
-	regulator_put(regulator_vamic2);
-	regulator_put(regulator_vaudio);
-	regulator_put(regulator_avsource);
+	ste_audio_io_core_free_regulators();
+	ste_audio_io_core_free_clocks();
 	kfree(ptr_audio_codec_cnxt);
 }
 
@@ -390,7 +502,7 @@ int ste_audio_io_core_api_powerup_audiocodec(int power_client)
 {
 	int error = 0;
 	int acodec_device_id;
-
+	__u8 data, old_data;
 	/* aquire mutex */
 	mutex_lock(&(ptr_audio_codec_cnxt->audio_io_mutex));
 
@@ -401,8 +513,12 @@ int ste_audio_io_core_api_powerup_audiocodec(int power_client)
 	 * common audio blocks for audio and vibrator
 	 */
 	if (!ptr_audio_codec_cnxt->power_client) {
-		__u8 data, old_data;
-
+		error = ste_audio_io_enable_audio_clock();
+		if (error) {
+			dev_err(ptr_audio_codec_cnxt->dev,
+			"Unable to enable audio clock = %d", error);
+			goto err_cleanup;
+		}
 		old_data = HW_REG_READ(AB8500_CTRL3_REG);
 
 		/* Enable 32 Khz clock signal on Clk32KOut2 ball */
@@ -418,15 +534,6 @@ int ste_audio_io_core_api_powerup_audiocodec(int power_client)
 		if (error) {
 			dev_err(ptr_audio_codec_cnxt->dev,
 			"deactivate audio codec reset error = %d", error);
-			goto err_cleanup;
-		}
-		old_data = HW_REG_READ(AB8500_SYSULPCLK_CTRL1_REG);
-		data = ENABLE_AUDIO_CLK_TO_AUDIO_BLK | old_data;
-
-		error = HW_REG_WRITE(AB8500_SYSULPCLK_CTRL1_REG, data);
-		if (error) {
-			dev_err(ptr_audio_codec_cnxt->dev,
-			"enabling clock to audio block error = %d", error);
 			goto err_cleanup;
 		}
 		regulator_enable(regulator_vaudio);
@@ -461,17 +568,6 @@ int ste_audio_io_core_api_powerup_audiocodec(int power_client)
 	/* If audio block requested power up, turn on additional audio blocks */
 	if (power_client == STE_AUDIOIO_POWER_AUDIO) {
 		if (!ptr_audio_codec_cnxt->audio_codec_powerup) {
-			clk_ptr_sysclk =
-				clk_get(ptr_audio_codec_cnxt->dev, "sysclk");
-			if (!IS_ERR(clk_ptr_sysclk)) {
-				error = clk_enable(clk_ptr_sysclk);
-				if (error)
-					goto err_cleanup;
-			} else {
-				error = -EFAULT;
-				goto err_cleanup;
-			}
-
 			clk_ptr_msp1 = clk_get_sys("msp1", NULL);
 			if (!IS_ERR(clk_ptr_msp1)) {
 				error = clk_enable(clk_ptr_msp1);
@@ -554,8 +650,7 @@ int ste_audio_io_core_api_powerdown_audiocodec(int power_client)
 		ptr_audio_codec_cnxt->audio_codec_powerup--;
 		if (!ptr_audio_codec_cnxt->audio_codec_powerup) {
 			ptr_audio_codec_cnxt->power_client &= ~power_client;
-			clk_disable(clk_ptr_sysclk);
-			clk_put(clk_ptr_sysclk);
+			ste_audio_io_disable_audio_clock();
 			clk_disable(clk_ptr_msp1);
 			clk_put(clk_ptr_msp1);
 			if (AB8500_REV_20 <=
@@ -576,6 +671,7 @@ int ste_audio_io_core_api_powerdown_audiocodec(int power_client)
 	/* If no power client registered, power down audio block */
 	if (!ptr_audio_codec_cnxt->power_client) {
 		regulator_disable(regulator_vaudio);
+		ste_audio_io_disable_audio_clock();
 		if (error != 0) {
 			dev_err(ptr_audio_codec_cnxt->dev,
 		"Device Power Down and Analog Parts Power Down error = %d ",
@@ -1462,3 +1558,32 @@ err_cleanup:
 	mutex_unlock(&(ptr_audio_codec_cnxt->audio_io_mutex));
 	return error;
 }
+
+/**
+ * @brief This function sets and enable clock
+ * @clk_type: pointer to structure audioio_clk_select_t
+ * @return 0 on success otherwise negative error code
+ */
+int ste_audio_io_core_clk_select_control(struct audioio_clk_select_t
+						*clk_type)
+{
+	int error = 0;
+	mutex_lock(&(ptr_audio_codec_cnxt->audio_io_mutex));
+	if (ptr_audio_codec_cnxt->clk_type != clk_type->required_clk) {
+		/* disable running clk*/
+		ste_audio_io_disable_audio_clock();
+		/* assign required clk*/
+		ptr_audio_codec_cnxt->clk_type = clk_type->required_clk;
+		/* enable required clk*/
+		error = ste_audio_io_enable_audio_clock();
+		if (error) {
+			dev_err(ptr_audio_codec_cnxt->dev,
+			"Clock enabled failed = %d", error);
+			goto err_cleanup;
+		}
+	}
+err_cleanup:
+	mutex_unlock(&(ptr_audio_codec_cnxt->audio_io_mutex));
+	return error;
+}
+

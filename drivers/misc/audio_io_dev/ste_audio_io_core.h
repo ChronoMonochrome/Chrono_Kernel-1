@@ -43,6 +43,8 @@ struct transducer_context_t {
 
 struct audiocodec_context_t {
 	int	audio_codec_powerup;
+	int	is_audio_clk_enabled;
+	enum	AUDIOIO_CLK_TYPE clk_type;
 	int	power_client;
 	int	vibra_client;
 	struct mutex audio_io_mutex;
@@ -126,6 +128,9 @@ int ste_audio_io_core_api_acodec_power_control(struct audioio_acodec_pwr_ctrl_t
 
 int ste_audio_io_core_api_fir_coeffs_control(struct audioio_fir_coefficients_t
 						*fir_coeffs);
+
+int ste_audio_io_core_clk_select_control(struct audioio_clk_select_t
+						*clk_type);
 
 int ste_audio_io_core_debug(int x);
 

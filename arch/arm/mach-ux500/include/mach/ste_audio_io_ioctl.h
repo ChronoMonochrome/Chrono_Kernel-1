@@ -53,6 +53,8 @@
 					struct audioio_fir_coefficients_t)
 #define AUDIOIO_LOOP_GAIN_DESC_TRNSDR		_IOR(AUDIOIO_IOC_MAGIC, 22,\
 					struct audioio_gain_desc_trnsdr_t)
+#define AUDIOIO_CLK_SELECT_CTRL		_IOR(AUDIOIO_IOC_MAGIC, 23,\
+					struct	audioio_clk_select_t)
 /* audio codec channel ids */
 #define EAR_CH			0
 #define HS_CH			1
@@ -80,6 +82,11 @@
 
 #define AUDIOIO_TRUE		1
 #define AUDIOIO_FALSE		0
+
+enum AUDIOIO_CLK_TYPE {
+	AUDIOIO_ULP_CLK,
+	AUDIOIO_SYS_CLK
+};
 
 enum AUDIOIO_COMMON_SWITCH {
 	AUDIOIO_COMMON_OFF = 0,
@@ -221,4 +228,7 @@ struct audioio_fir_coefficients_t {
 	unsigned short coefficients[STE_AUDIOIO_MAX_COEFFICIENTS];
 };
 
+struct audioio_clk_select_t {
+	enum AUDIOIO_CLK_TYPE required_clk;
+};
 #endif

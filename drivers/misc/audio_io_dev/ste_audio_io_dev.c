@@ -484,6 +484,24 @@ static int process_fir_coeffs_ctrl_cmd(unsigned int cmd, unsigned long arg)
 	return retval;
 }
 
+static int process_clk_select_cmd(unsigned int cmd, unsigned long arg)
+{
+	int retval;
+	struct audioio_clk_select_t *cmd_data;
+	cmd_data = kmalloc(sizeof(struct audioio_clk_select_t),
+								GFP_KERNEL);
+	if (!cmd_data)
+		return -ENOMEM;
+	if (copy_from_user(cmd_data, (void __user *)arg,
+				sizeof(struct audioio_clk_select_t))) {
+		kfree(cmd_data);
+		return -EFAULT;
+	}
+	retval = ste_audio_io_core_clk_select_control(cmd_data);
+	kfree(cmd_data);
+	return retval;
+}
+
 static int ste_audio_io_cmd_parser(unsigned int cmd, unsigned long arg)
 {
 	int retval = 0;
@@ -567,6 +585,9 @@ static int ste_audio_io_cmd_parser(unsigned int cmd, unsigned long arg)
 
 	case AUDIOIO_FIR_COEFFS_CTRL:
 		retval = process_fir_coeffs_ctrl_cmd(cmd, arg);
+		break;
+	case AUDIOIO_CLK_SELECT_CTRL:
+		retval = process_clk_select_cmd(cmd, arg);
 		break;
 	}
 	return retval;
