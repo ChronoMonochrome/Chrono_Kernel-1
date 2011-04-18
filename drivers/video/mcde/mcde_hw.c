@@ -1941,6 +1941,21 @@ int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
 	if (!chnl->formatter_updated)
 		(void)update_channel_static_registers(chnl);
 
+	wait_for_channel(chnl);
+	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+		u8 counter = 10;
+		/*
+		* Wait for CSM_RUNNING,
+		* all data sent for display
+		*/
+		while (dsi_rfld(chnl->port.link,
+			DSI_CMD_MODE_STS, CSM_RUNNING)
+					&& counter--) {
+			cpu_relax();
+			udelay(100);
+		}
+	}
+
 	wrdat[0] = cmd;
 	for (i = 1; i <= len; i++)
 		wrdat[i>>2] |= ((u32)data[i-1] << ((i & 3) * 8));
@@ -2006,6 +2021,21 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int *len)
 	}
 	if (!chnl->formatter_updated)
 		(void)update_channel_static_registers(chnl);
+
+	wait_for_channel(chnl);
+	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+		u8 counter = 10;
+		/*
+		* Wait for CSM_RUNNING,
+		* all data sent for display
+		*/
+		while (dsi_rfld(chnl->port.link,
+			DSI_CMD_MODE_STS, CSM_RUNNING)
+					&& counter--) {
+			cpu_relax();
+			udelay(100);
+		}
+	}
 
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, READ_EN, true);
