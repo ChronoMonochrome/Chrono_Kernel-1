@@ -3,6 +3,16 @@
 #
 comment "HSI controllers"
 
+config STE_HSI
+       tristate "STE HSI controller driver"
+       depends on (ARCH_U8500 || ARCH_NOMADIK) && HSI
+       default n
+       help
+         ST-Ericsson HSI controller.
+         If you say Y here, you will enable the U8500 HSI hardware driver.
+
+         If unsure, say N.
+
 config OMAP_SSI
 	tristate "OMAP SSI hardware driver"
 	depends on ARCH_OMAP && HSI
