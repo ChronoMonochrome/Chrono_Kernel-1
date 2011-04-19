@@ -236,25 +236,26 @@ int remove_msg_from_queue(struct message_queue *q)
 {
 	struct queue_element *old_msg = NULL;
 	struct shrm_dev *shrm = q->shrm;
-	struct list_head *msg;
+	struct list_head *msg_ptr = NULL;
+	struct list_head *old_msg_ptr = NULL;
 
 	dev_dbg(shrm->dev, "%s IN q->readptr %d\n", __func__, q->readptr);
 
-	list_for_each(msg, &q->msg_list) {
-		old_msg = list_entry(msg, struct queue_element, entry);
+	list_for_each_safe(old_msg_ptr, msg_ptr, &q->msg_list) {
+		old_msg = list_entry(old_msg_ptr, struct queue_element, entry);
 		if (old_msg == NULL) {
 			dev_err(shrm->dev, "no message found\n");
 			return -EFAULT;
 		}
+		list_del(old_msg_ptr);
+		q->readptr = (q->readptr + old_msg->size)%q->size;
+		kfree(old_msg);
 		break;
 	}
-	list_del(msg);
-	q->readptr = (q->readptr + old_msg->size)%q->size;
 	if (list_empty(&q->msg_list)) {
 		dev_dbg(shrm->dev, "List is empty setting RP= 0\n");
 		atomic_set(&q->q_rp, 0);
 	}
-	kfree(old_msg);
 
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 	return 0;

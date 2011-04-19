@@ -80,14 +80,6 @@ static void shm_ac_sleep_req_work(struct work_struct *work)
 static void shm_ac_wake_req_work(struct work_struct *work)
 {
 	mutex_lock(&ac_state_mutex);
-	/* make sure that we bring down the ac-wake line
-	 * so that prcmu driver will actually write
-	 * to the PRCM_HOSTACCESS_REQ register on the
-	 * next prcmu_ac_wake_req call
-	 */
-	prcmu_ac_sleep_req();
-
-	atomic_inc(&ac_sleep_disable_count);
 	prcmu_ac_wake_req();
 	mutex_unlock(&ac_state_mutex);
 }
@@ -384,13 +376,6 @@ void shm_ac_read_notif_0_tasklet(unsigned long tasklet_data)
 
 			/* multicast that modem is online */
 			nl_send_multicast_message(SHRM_NL_STATUS_MOD_ONLINE, GFP_ATOMIC);
-
-			/* This decrement corresponds to increment
-			 * done in MSR sequecne
-			 */
-			atomic_dec(&ac_sleep_disable_count);
-			queue_work(shm_dev->shm_ac_sleep_wq,
-					&shm_dev->shm_ac_sleep_req);
 		}
 
 	} else if (boot_state == BOOT_DONE) {
@@ -523,9 +508,13 @@ static int shrm_modem_reset_sequence(void)
 
 	hrtimer_cancel(&timer);
 
-	/* reset the state for ac-wake LOW logic */
+	/*
+	 * keep the count to 0 so that we can bring down the line
+	 * for normal ac-wake and ac-sleep logic
+	 */
 	atomic_set(&ac_sleep_disable_count, 0);
 
+	/* workaround for MSR */
 	queue_work(shm_dev->shm_ac_wake_wq,
 			&shm_dev->shm_ac_wake_req);
 
@@ -598,6 +587,8 @@ static irqreturn_t shrm_prcmu_irq_handler(int irq, void *data)
 #ifdef CONFIG_UX500_SUSPEND
 		suspend_block_sleep();
 #endif
+		if (shrm->msr_flag)
+			atomic_set(&ac_sleep_disable_count, 0);
 		atomic_inc(&ac_sleep_disable_count);
 		queue_work(shrm->shm_ca_wake_wq, &shrm->shm_ca_wake_req);
 		break;
