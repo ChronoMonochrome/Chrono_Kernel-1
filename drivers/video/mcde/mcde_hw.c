@@ -276,6 +276,10 @@ struct mcde_chnl_state {
 	struct col_regs  col_regs;
 	struct tv_regs   tv_regs;
 
+	/* an interlaced digital TV signal generates a VCMP per field */
+	bool vcmp_per_field;
+	bool even_vcmp;
+
 	bool continous_running;
 	bool disable_software_trig;
 	bool formatter_updated;
@@ -857,11 +861,39 @@ static struct mcde_chnl_state *find_channel_by_dsilink(int link)
 	return NULL;
 }
 
+static inline void mcde_handle_vcmp(struct mcde_chnl_state *chnl, u32 int_fld)
+{
+	if (!chnl->vcmp_per_field ||
+			(chnl->vcmp_per_field && chnl->even_vcmp)) {
+		chnl->transactionid_hw = chnl->transactionid_regs;
+		wake_up(&chnl->waitq_hw);
+		if (chnl->port.update_auto_trig &&
+				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
+				chnl->port.type == MCDE_PORTTYPE_DSI &&
+				chnl->continous_running) {
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+				enable_channel(chnl);
+
+			mcde_wreg(MCDE_CHNL0SYNCHSW +
+				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
+				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
+
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+				disable_flow(chnl);
+			mod_timer(&chnl->auto_sync_timer,
+				jiffies +
+				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
+								* 1000));
+		}
+	}
+	chnl->even_vcmp = !chnl->even_vcmp;
+	mcde_wreg_fld(MCDE_RISPP, 0x1 << int_fld, int_fld, 1);
+}
+
 static irqreturn_t mcde_irq_handler(int irq, void *dev)
 {
 	int i;
 	u32 irq_status;
-	struct mcde_chnl_state *chnl;
 
 	/* Handle overlay irqs */
 	irq_status = mcde_rfld(MCDE_RISOVL, OVLFDRIS);
@@ -869,103 +901,18 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 
 	/* Handle channel irqs */
 	irq_status = mcde_rreg(MCDE_RISPP);
-	if (irq_status & MCDE_RISPP_VCMPARIS_MASK) {
-		chnl = &channels[MCDE_CHNL_A];
-		chnl->transactionid_hw = chnl->transactionid_regs;
-		wake_up(&chnl->waitq_hw);
-		mcde_wfld(MCDE_RISPP, VCMPARIS, 1);
-		if (chnl->port.update_auto_trig &&
-				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
-				chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->continous_running) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-				enable_channel(chnl);
-
-			mcde_wreg(MCDE_CHNL0SYNCHSW +
-				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
-				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
-
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-				disable_flow(chnl);
-			mod_timer(&chnl->auto_sync_timer,
-				jiffies +
-				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
-								* 1000));
-		}
-	}
-	if (irq_status & MCDE_RISPP_VCMPBRIS_MASK) {
-		chnl = &channels[MCDE_CHNL_B];
-		chnl->transactionid_hw = chnl->transactionid_regs;
-		wake_up(&chnl->waitq_hw);
-		mcde_wfld(MCDE_RISPP, VCMPBRIS, 1);
-		if (chnl->port.update_auto_trig &&
-				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
-				chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->continous_running) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-				enable_channel(chnl);
-
-			mcde_wreg(MCDE_CHNL0SYNCHSW +
-				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
-				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
-
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-				disable_flow(chnl);
-			mod_timer(&chnl->auto_sync_timer,
-				jiffies +
-				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
-								* 1000));
-		}
-	}
-	if (irq_status & MCDE_RISPP_VCMPC0RIS_MASK) {
-		chnl = &channels[MCDE_CHNL_C0];
-		chnl->transactionid_hw = chnl->transactionid_regs;
-		wake_up(&chnl->waitq_hw);
-		mcde_wfld(MCDE_RISPP, VCMPC0RIS, 1);
-		if (chnl->port.update_auto_trig &&
-				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
-				chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->continous_running) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-				enable_channel(chnl);
-
-			mcde_wreg(MCDE_CHNL0SYNCHSW +
-				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
-				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
-
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-				disable_flow(chnl);
-			mod_timer(&chnl->auto_sync_timer,
-				jiffies +
-				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
-								* 1000));
-
-		}
-	}
-	if (irq_status & MCDE_RISPP_VCMPC1RIS_MASK) {
-		chnl = &channels[MCDE_CHNL_C1];
-		chnl->transactionid_hw = chnl->transactionid_regs;
-		wake_up(&chnl->waitq_hw);
-		mcde_wfld(MCDE_RISPP, VCMPC1RIS, 1);
-		if (chnl->port.update_auto_trig &&
-				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
-				chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->continous_running) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-				enable_channel(chnl);
-
-			mcde_wreg(MCDE_CHNL0SYNCHSW +
-				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
-				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
-
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-				disable_flow(chnl);
-			mod_timer(&chnl->auto_sync_timer,
-				jiffies +
-				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
-								* 1000));
-		}
-	}
+	if (irq_status & MCDE_RISPP_VCMPARIS_MASK)
+		mcde_handle_vcmp(&channels[MCDE_CHNL_A],
+						MCDE_RISPP_VCMPARIS_SHIFT);
+	if (irq_status & MCDE_RISPP_VCMPBRIS_MASK)
+		mcde_handle_vcmp(&channels[MCDE_CHNL_B],
+						MCDE_RISPP_VCMPBRIS_SHIFT);
+	if (irq_status & MCDE_RISPP_VCMPC0RIS_MASK)
+		mcde_handle_vcmp(&channels[MCDE_CHNL_C0],
+						MCDE_RISPP_VCMPC0RIS_SHIFT);
+	if (irq_status & MCDE_RISPP_VCMPC1RIS_MASK)
+		mcde_handle_vcmp(&channels[MCDE_CHNL_C1],
+						MCDE_RISPP_VCMPC1RIS_SHIFT);
 	for (i = 0; i < num_dsilinks; i++) {
 		struct mcde_chnl_state *chnl_from_dsi;
 
@@ -1423,11 +1370,8 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 			sel_mod = MCDE_EXTSRC0CR_SEL_MOD_AUTO_TOGGLE;
 			break;
 		}
-	} else if (port->type == MCDE_PORTTYPE_DPI) {
-		sel_mod = port->update_auto_trig ?
-				MCDE_EXTSRC0CR_SEL_MOD_AUTO_TOGGLE :
-				MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
-	}
+	} else if (port->type == MCDE_PORTTYPE_DPI)
+		sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
 
 	regs->update = false;
 	mcde_wreg(MCDE_EXTSRC0CONF + idx * MCDE_EXTSRC0CONF_GROUPOFFSET,
@@ -2258,6 +2202,8 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 		}
 	} else if (chnl->port.type == MCDE_PORTTYPE_DPI) {
 		chnl->port.phy.dpi.clk_dpi = clock_dpi;
+		if (chnl->port.phy.dpi.tv_mode)
+			chnl->vcmp_per_field = true;
 	}
 
 #ifdef CONFIG_REGULATOR
@@ -2680,6 +2626,10 @@ void mcde_chnl_put(struct mcde_chnl_state *chnl)
 		}
 	} else if (chnl->port.type == MCDE_PORTTYPE_DPI) {
 		chnl->port.phy.dpi.clk_dpi = NULL;
+		if (chnl->port.phy.dpi.tv_mode) {
+			chnl->vcmp_per_field = false;
+			chnl->even_vcmp = false;
+		}
 	}
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
