@@ -24,6 +24,7 @@
  *	bit 16..18 - SLPM pull up/down state
  *	bit 19..20 - SLPM direction
  *	bit 21..22 - SLPM Value (if output)
+ *	bit 23..25 - PDIS value (if input)
  *
  * to facilitate the definition, the following macros are provided
  *
@@ -105,6 +106,14 @@ typedef unsigned long pin_cfg_t;
 	(((x) & PIN_SLPM_VAL_MASK) >> PIN_SLPM_VAL_SHIFT)
 #define PIN_SLPM_VAL_LOW	((1 + 0) << PIN_SLPM_VAL_SHIFT)
 #define PIN_SLPM_VAL_HIGH	((1 + 1) << PIN_SLPM_VAL_SHIFT)
+
+#define PIN_SLPM_PDIS_SHIFT		23
+#define PIN_SLPM_PDIS_MASK		(0x3 << PIN_SLPM_PDIS_SHIFT)
+#define PIN_SLPM_PDIS(x)	\
+	(((x) & PIN_SLPM_PDIS_MASK) >> PIN_SLPM_PDIS_SHIFT)
+#define PIN_SLPM_PDIS_NO_CHANGE		(0 << PIN_SLPM_PDIS_SHIFT)
+#define PIN_SLPM_PDIS_DISABLED		(1 << PIN_SLPM_PDIS_SHIFT)
+#define PIN_SLPM_PDIS_ENABLED		(2 << PIN_SLPM_PDIS_SHIFT)
 
 /* Shortcuts.  Use these instead of separate DIR, PULL, and VAL.  */
 #define PIN_INPUT_PULLDOWN	(PIN_DIR_INPUT | PIN_PULL_DOWN)
