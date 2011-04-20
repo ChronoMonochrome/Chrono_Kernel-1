@@ -482,7 +482,7 @@ int ste_audio_io_core_api_powerup_audiocodec(int power_client)
 				goto err_cleanup;
 			}
 
-			if (AB8500_REV_20 == acodec_device_id) {
+			if (AB8500_REV_20 <= acodec_device_id) {
 				clk_ptr_msp3 = clk_get_sys("msp3", NULL);
 				if (!IS_ERR(clk_ptr_msp3)) {
 					error = clk_enable(clk_ptr_msp3);
@@ -558,7 +558,7 @@ int ste_audio_io_core_api_powerdown_audiocodec(int power_client)
 			clk_put(clk_ptr_sysclk);
 			clk_disable(clk_ptr_msp1);
 			clk_put(clk_ptr_msp1);
-			if (AB8500_REV_20 ==
+			if (AB8500_REV_20 <=
 				abx500_get_chip_id(&ste_audio_io_device->dev)) {
 				clk_disable(clk_ptr_msp3);
 				clk_put(clk_ptr_msp3);
