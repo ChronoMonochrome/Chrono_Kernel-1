@@ -14,16 +14,24 @@
 #include <linux/mfd/ab8500.h>
 #include <linux/slab.h>
 
+struct ab8500_ponkey_variant {
+	const char *irq_falling;
+	const char *irq_rising;
+};
+
+static const struct ab8500_ponkey_variant ab8500_ponkey = {
+	.irq_falling	= "ONKEY_DBF",
+	.irq_rising	= "ONKEY_DBR",
+};
+
 /**
  * struct ab8500_ponkey_info - ab8500 ponkey information
  * @input_dev: pointer to input device
- * @ab8500: ab8500 parent
  * @irq_dbf: irq number for falling transition
  * @irq_dbr: irq number for rising transition
  */
 struct ab8500_ponkey_info {
 	struct input_dev	*idev;
-	struct ab8500		*ab8500;
 	int			irq_dbf;
 	int			irq_dbr;
 };
@@ -45,19 +53,24 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 
 static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 {
-	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+	const struct ab8500_ponkey_variant *variant;
 	struct ab8500_ponkey_info *info;
 	int irq_dbf, irq_dbr, ret;
 
-	irq_dbf = platform_get_irq_byname(pdev, "ONKEY_DBF");
+	variant = (const struct ab8500_ponkey_variant *)
+		  pdev->id_entry->driver_data;
+
+	irq_dbf = platform_get_irq_byname(pdev, variant->irq_falling);
 	if (irq_dbf < 0) {
-		dev_err(&pdev->dev, "No IRQ for ONKEY_DBF,error=%d\n", irq_dbf);
+		dev_err(&pdev->dev, "No IRQ for %s: %d\n",
+			variant->irq_falling, irq_dbf);
 		return irq_dbf;
 	}
 
-	irq_dbr = platform_get_irq_byname(pdev, "ONKEY_DBR");
+	irq_dbr = platform_get_irq_byname(pdev, variant->irq_rising);
 	if (irq_dbr < 0) {
-		dev_err(&pdev->dev, "No IRQ for ONKEY_DBR,error=%d\n", irq_dbr);
+		dev_err(&pdev->dev, "No IRQ for %s: %d\n",
+			variant->irq_rising, irq_dbr);
 		return irq_dbr;
 	}
 
@@ -65,13 +78,12 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 	if (!info)
 		return -ENOMEM;
 
-	info->ab8500 = ab8500;
 	info->irq_dbf = irq_dbf;
 	info->irq_dbr = irq_dbr;
 
 	info->idev = input_allocate_device();
 	if (!info->idev) {
-		dev_err(ab8500->dev, "Failed to allocate input dev\n");
+		dev_err(&pdev->dev, "Failed to allocate input dev\n");
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -83,7 +95,7 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 
 	ret = input_register_device(info->idev);
 	if (ret) {
-		dev_err(ab8500->dev, "Can't register input device: %d\n", ret);
+		dev_err(&pdev->dev, "Can't register input device: %d\n", ret);
 		goto out_unfreedevice;
 	}
 
@@ -91,7 +103,7 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 					IRQF_NO_SUSPEND, "ab8500-ponkey-dbf",
 					info);
 	if (ret < 0) {
-		dev_err(ab8500->dev, "Failed to request dbf IRQ#%d: %d\n",
+		dev_err(&pdev->dev, "Failed to request dbf IRQ#%d: %d\n",
 				info->irq_dbf, ret);
 		goto out_unregisterdevice;
 	}
@@ -100,7 +112,7 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 					IRQF_NO_SUSPEND, "ab8500-ponkey-dbr",
 					info);
 	if (ret < 0) {
-		dev_err(ab8500->dev, "Failed to request dbr IRQ#%d: %d\n",
+		dev_err(&pdev->dev, "Failed to request dbr IRQ#%d: %d\n",
 				info->irq_dbr, ret);
 		goto out_irq_dbf;
 	}
@@ -132,11 +144,18 @@ static int __devexit ab8500_ponkey_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static struct platform_device_id ab8500_ponkey_id_table[] = {
+	{ "ab8500-poweron-key", (kernel_ulong_t)&ab8500_ponkey, },
+	{ },
+};
+MODULE_DEVICE_TABLE(platform, ab8500_ponkey_id_table);
+
 static struct platform_driver ab8500_ponkey_driver = {
 	.driver		= {
 		.name	= "ab8500-poweron-key",
 		.owner	= THIS_MODULE,
 	},
+	.id_table	= ab8500_ponkey_id_table,
 	.probe		= ab8500_ponkey_probe,
 	.remove		= __devexit_p(ab8500_ponkey_remove),
 };
