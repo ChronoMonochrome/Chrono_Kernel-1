@@ -19,6 +19,8 @@
 #include <linux/hwmem.h>
 #include <linux/io.h>
 
+#include <linux/console.h>
+
 #include <video/mcde_fb.h>
 
 #define MCDE_FB_BPP_MAX		16
@@ -98,10 +100,12 @@ static void early_suspend(struct early_suspend *data)
 	struct mcde_fb *mfb =
 		container_of(data, struct mcde_fb, early_suspend);
 
+	console_lock();
 	for (i = 0; i < mfb->num_ovlys; i++) {
 		if (mfb->ovlys[i])
 			mcde_dss_disable_display(mfb->ovlys[i]->ddev);
 	}
+	console_unlock();
 }
 
 static void late_resume(struct early_suspend *data)
@@ -110,12 +114,14 @@ static void late_resume(struct early_suspend *data)
 	struct mcde_fb *mfb =
 		container_of(data, struct mcde_fb, early_suspend);
 
+	console_lock();
 	for (i = 0; i < mfb->num_ovlys; i++) {
 		if (mfb->ovlys[i]) {
 			struct mcde_overlay *ovly = mfb->ovlys[i];
 			(void) mcde_dss_enable_display(ovly->ddev);
 		}
 	}
+	console_unlock();
 }
 #endif
 
