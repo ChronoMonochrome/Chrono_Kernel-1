@@ -174,7 +174,7 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 static struct snd_soc_codec *ab8500_codec;
 static struct clk *clk_ptr_audioclk;
 static struct clk *clk_ptr_sysclk;
-static bool clock_on;
+static int sysclk_on;
 
 /* Reads an arbitrary register from the ab8500 chip.
 */
@@ -1736,13 +1736,15 @@ static int ab8500_codec_pcm_startup(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
 	pr_debug("%s Enter.\n", __func__);
+
+
 	return 0;
 }
 
 static int ab8500_codec_pcm_prepare(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
-	int error = 0;
+	int ret = 0;
 
 	pr_debug("%s Enter.\n", __func__);
 
@@ -1750,44 +1752,21 @@ static int ab8500_codec_pcm_prepare(struct snd_pcm_substream *substream,
 	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE1);
 	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE2);
 
-	if (clock_on)
+	sysclk_on++;
+	pr_debug("sysclk_on changed from %d to %d", sysclk_on-1, sysclk_on);
+
+	if (sysclk_on > 1)
 		return 0;
 
-	clk_ptr_sysclk = clk_get(dai->codec->dev, "sysclk");
-	if (IS_ERR(clk_ptr_sysclk)) {
-		error = -EFAULT;
-		dev_err(dai->codec->dev,
-			"Sysclk get failed error = %d", error);
-		return error;
+	ret = clk_enable(clk_ptr_audioclk);
+	if (ret) {
+		pr_err("ERROR: clk_enable failed (ret = %d)!", ret);
+		sysclk_on = 0;
+		return ret;
 	}
-	clk_ptr_audioclk = clk_get(dai->codec->dev, "audioclk");
-	if (IS_ERR(clk_ptr_audioclk)) {
-		error = -EFAULT;
-		dev_err(dai->codec->dev,
-			"Audioclk get failed error = %d", error);
-		goto free_sysclk;
-	}
-	error = clk_set_parent(clk_ptr_audioclk, clk_ptr_sysclk);
-	if (error) {
-		pr_err("Setting Sysclk as parent failed error = %d", error);
-		return error;
-	}
+	pr_debug("sysclk enabled.");
 
-	error = clk_enable(clk_ptr_audioclk);
-	if (error) {
-		pr_err("Audioclk enable failed error = %d", error);
-		return error;
-	}
-	clock_on = true;
-
-	return error;
-
-free_sysclk:
-	clk_put(clk_ptr_sysclk);
-
-	clock_on = false;
-
-	return error;
+	return ret;
 }
 
 static void ab8500_codec_pcm_shutdown(struct snd_pcm_substream *substream,
@@ -1795,10 +1774,13 @@ static void ab8500_codec_pcm_shutdown(struct snd_pcm_substream *substream,
 {
 	pr_debug("%s Enter.\n", __func__);
 
-	clk_disable(clk_ptr_sysclk);
-	clk_put(clk_ptr_sysclk);
+	sysclk_on--;
+	pr_debug("sysclk_on changed from %d to %d", sysclk_on+1, sysclk_on);
 
-	clock_on = false;
+	if (sysclk_on == 0) {
+		clk_disable(clk_ptr_audioclk);
+		pr_debug("sysclk disabled.");
+	}
 
 	ab8500_codec_dump_all_reg(dai->codec);
 }
@@ -2044,7 +2026,7 @@ static int ab8500_codec_set_dai_tdm_slot(struct snd_soc_dai *dai,
 			REG_ADSLOTSELX_AD_OUT2_TO_SLOT_ODD);
 		break;
 	case 8:
-		pr_info("%s: In 8-channel mode AD-to-slot mapping is set manually.", __func__);
+		pr_debug("%s: In 8-channel mode AD-to-slot mapping is set manually.", __func__);
 		break;
 	default:
 		pr_err("%s: Unsupported number of active RX-slots (%d)!\n", __func__, slots_active);
@@ -2159,9 +2141,27 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 	}
 
 	ab8500_codec = codec;
-	clock_on = false;
 
-	return 0;
+	sysclk_on = 0;
+	clk_ptr_sysclk = clk_get(codec->dev, "sysclk");
+	if (IS_ERR(clk_ptr_sysclk)) {
+		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
+		return -EFAULT;
+	}
+	clk_ptr_audioclk = clk_get(codec->dev, "audioclk");
+	if (IS_ERR(clk_ptr_audioclk)) {
+		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
+		clk_put(clk_ptr_sysclk);
+		return -EFAULT;
+	}
+	ret = clk_set_parent(clk_ptr_audioclk, clk_ptr_sysclk);
+	if (ret) {
+		pr_err("ERROR: clk_set_parent failed (ret = %d)!", ret);
+		clk_put(clk_ptr_sysclk);
+		return ret;
+	}
+
+	return ret;
 }
 
 static int ab8500_codec_remove(struct snd_soc_codec *codec)
