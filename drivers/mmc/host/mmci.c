@@ -904,7 +904,10 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
 		if (status & MCI_TXACTIVE)
 			len = mmci_pio_write(host, buffer, remain, status);
 
-		sg_miter->consumed = len;
+		if (len > sg_miter->consumed)
+			len = sg_miter->consumed;
+		else
+			sg_miter->consumed = len;
 
 		host->size -= len;
 		remain -= len;
