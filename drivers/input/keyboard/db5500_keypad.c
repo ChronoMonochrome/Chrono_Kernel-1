@@ -25,6 +25,7 @@
 #define KEYPAD_NUM_ARRAY_REGS	5
 
 #define KEYPAD_CTR_WRITE_IRQ_ENABLE	(1 << 10)
+#define KEYPAD_CTR_WRITE_CONTROL	(1 << 8)
 #define KEYPAD_CTR_SCAN_ENABLE		(1 << 7)
 
 #define KEYPAD_ARRAY_CHANGEBIT		(1 << 15)
@@ -160,12 +161,41 @@ again:
 	return IRQ_HANDLED;
 }
 
-static int __devinit db5500_keypad_chip_init(struct db5500_keypad *keypad)
+static void db5500_keypad_writel(struct db5500_keypad *keypad, u32 val, u32 reg)
+{
+	int timeout = 4;
+	int allowedbit;
+
+	switch (reg) {
+	case KEYPAD_CTR:
+		allowedbit = KEYPAD_CTR_WRITE_CONTROL;
+		break;
+	case KEYPAD_INT_ENABLE:
+		allowedbit = KEYPAD_CTR_WRITE_IRQ_ENABLE;
+		break;
+	default:
+		BUG();
+	}
+
+	do {
+		u32 ctr = readl(keypad->base + KEYPAD_CTR);
+
+		if (ctr & allowedbit)
+			break;
+
+		udelay(50);
+	} while (--timeout);
+
+	/* Five 32k clk cycles (~150us) required, we waited 200us */
+	WARN_ON(!timeout);
+
+	writel(val, keypad->base + reg);
+}
+
+static int db5500_keypad_chip_init(struct db5500_keypad *keypad)
 {
 	int debounce = keypad->board->debounce_ms;
 	int debounce_hits = 0;
-	int timeout = 100;
-	u32 val;
 
 	if (debounce < KEYPAD_DEBOUNCE_PERIOD_MIN)
 		debounce = KEYPAD_DEBOUNCE_PERIOD_MIN;
@@ -179,20 +209,25 @@ static int __devinit db5500_keypad_chip_init(struct db5500_keypad *keypad)
 	/* Convert the milliseconds to the bit mask */
 	debounce = DIV_ROUND_UP(debounce, KEYPAD_DEBOUNCE_PERIOD_MIN) - 1;
 
-	writel(KEYPAD_CTR_SCAN_ENABLE
-		| ((debounce_hits & 0x7) << 4)
-		| debounce, keypad->base + KEYPAD_CTR);
+	clk_enable(keypad->clk);
 
-	do {
-		val = readl(keypad->base + KEYPAD_CTR);
-	} while ((!(val & KEYPAD_CTR_WRITE_IRQ_ENABLE)) && --timeout);
+	db5500_keypad_writel(keypad,
+			     KEYPAD_CTR_SCAN_ENABLE
+			     | ((debounce_hits & 0x7) << 4)
+			     | debounce,
+			     KEYPAD_CTR);
 
-	if (!timeout)
-		return -EINVAL;
-
-	writel(0x1, keypad->base + KEYPAD_INT_ENABLE);
+	db5500_keypad_writel(keypad, 0x1, KEYPAD_INT_ENABLE);
 
 	return 0;
+}
+
+static void db5500_keypad_close(struct db5500_keypad *keypad)
+{
+	db5500_keypad_writel(keypad, 0, KEYPAD_CTR);
+	db5500_keypad_writel(keypad, 0, KEYPAD_INT_ENABLE);
+
+	clk_disable(keypad->clk);
 }
 
 static int __devinit db5500_keypad_probe(struct platform_device *pdev)
@@ -292,9 +327,6 @@ static int __devinit db5500_keypad_probe(struct platform_device *pdev)
 	keypad->base	= base;
 	keypad->clk	= clk;
 
-	/* allocations are sane, we begin HW initialization */
-	clk_enable(keypad->clk);
-
 	ret = db5500_keypad_chip_init(keypad);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "unable to init keypad hardware\n");
@@ -307,8 +339,6 @@ static int __devinit db5500_keypad_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "allocate irq %d failed\n", keypad->irq);
 		goto out_unregisterinput;
 	}
-
-	device_init_wakeup(&pdev->dev, true);
 
 	platform_set_drvdata(pdev, keypad);
 
@@ -359,8 +389,10 @@ static int db5500_keypad_suspend(struct device *dev)
 
 	if (device_may_wakeup(dev))
 		enable_irq_wake(irq);
-	else
-		/* disable IRQ here */
+	else {
+		disable_irq(irq);
+		db5500_keypad_close(keypad);
+	}
 
 	return 0;
 }
@@ -373,8 +405,10 @@ static int db5500_keypad_resume(struct device *dev)
 
 	if (device_may_wakeup(dev))
 		disable_irq_wake(irq);
-	else
-		/* enable IRQ here */
+	else {
+		db5500_keypad_chip_init(keypad);
+		enable_irq(irq);
+	}
 
 	return 0;
 }
