@@ -244,11 +244,8 @@ static int __devinit db5500_keypad_probe(struct platform_device *pdev)
 	clk = clk_get(&pdev->dev, NULL);
 	if (IS_ERR(clk)) {
 		dev_err(&pdev->dev, "failed to clk_get\n");
-
-		/*
-		 * FIXME: error out here once DB5500 clock framework is in
-		 * place, and remove all the !IS_ERR(clk) checks.
-		 */
+		ret = PTR_ERR(clk);
+		goto out_iounmap;
 	}
 
 	keypad = kzalloc(sizeof(struct db5500_keypad), GFP_KERNEL);
@@ -296,8 +293,7 @@ static int __devinit db5500_keypad_probe(struct platform_device *pdev)
 	keypad->clk	= clk;
 
 	/* allocations are sane, we begin HW initialization */
-	if (!IS_ERR(keypad->clk))
-		clk_enable(keypad->clk);
+	clk_enable(keypad->clk);
 
 	ret = db5500_keypad_chip_init(keypad);
 	if (ret < 0) {
@@ -321,15 +317,14 @@ static int __devinit db5500_keypad_probe(struct platform_device *pdev)
 out_unregisterinput:
 	input_unregister_device(input);
 	input = NULL;
-	if (!IS_ERR(keypad->clk))
-		clk_disable(keypad->clk);
+	clk_disable(keypad->clk);
 out_freeinput:
 	input_free_device(input);
 out_freekeypad:
 	kfree(keypad);
 out_freeclk:
-	if (!IS_ERR(clk))
-		clk_put(clk);
+	clk_put(clk);
+out_iounmap:
 	iounmap(base);
 out_freerequest_memregions:
 	release_mem_region(res->start, resource_size(res));
@@ -345,10 +340,8 @@ static int __devexit db5500_keypad_remove(struct platform_device *pdev)
 	free_irq(keypad->irq, keypad);
 	input_unregister_device(keypad->input);
 
-	if (!IS_ERR(keypad->clk)) {
-		clk_disable(keypad->clk);
-		clk_put(keypad->clk);
-	}
+	clk_disable(keypad->clk);
+	clk_put(keypad->clk);
 
 	iounmap(keypad->base);
 	release_mem_region(res->start, resource_size(res));
