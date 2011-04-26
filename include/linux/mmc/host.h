@@ -266,8 +266,9 @@ struct mmc_host {
 	unsigned int		bus_refs;	/* reference counter */
 
 	unsigned int		sdio_irqs;
-	struct task_struct	*sdio_irq_thread;
-	atomic_t		sdio_irq_thread_abort;
+	struct delayed_work	sdio_irq_work;
+	struct workqueue_struct	*sdio_irq_workqueue;
+	unsigned long		sdio_poll_period;
 
 	mmc_pm_flag_t		pm_flags;	/* requested pm features */
 
@@ -312,7 +313,7 @@ extern void mmc_request_done(struct mmc_host *, struct mmc_request *);
 static inline void mmc_signal_sdio_irq(struct mmc_host *host)
 {
 	host->ops->enable_sdio_irq(host, 0);
-	wake_up_process(host->sdio_irq_thread);
+	queue_delayed_work(host->sdio_irq_workqueue, &host->sdio_irq_work, 0);
 }
 
 struct regulator;

@@ -27,6 +27,8 @@
 
 #include "sdio_ops.h"
 
+#define SDIO_IDLE_POLL_PERIOD 10
+
 static int process_sdio_pending_irqs(struct mmc_card *card)
 {
 	int i, ret, count;
@@ -76,89 +78,50 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
 	return ret;
 }
 
-static int sdio_irq_thread(void *_host)
+static void sdio_irq_work_func(struct work_struct *work)
 {
-	struct mmc_host *host = _host;
-	struct sched_param param = { .sched_priority = 1 };
-	unsigned long period, idle_period;
+	struct mmc_host *host =	(struct mmc_host *)
+		container_of(work, struct mmc_host, sdio_irq_work.work);
 	int ret;
 
-	sched_setscheduler(current, SCHED_FIFO, &param);
-
 	/*
-	 * We want to allow for SDIO cards to work even on non SDIO
-	 * aware hosts.  One thing that non SDIO host cannot do is
-	 * asynchronous notification of pending SDIO card interrupts
-	 * hence we poll for them in that case.
+	 * We claim the host here on drivers behalf for a couple
+	 * reasons:
+	 *
+	 * 1) it is already needed to retrieve the CCCR_INTx;
+	 * 2) we want the driver(s) to clear the IRQ condition ASAP;
+	 * 3) we need to control the abort condition locally.
+	 *
+	 * Just like traditional hard IRQ handlers, we expect SDIO
+	 * IRQ handlers to be quick and to the point, so that the
+	 * holding of the host lock does not cover too much work
+	 * that doesn't require that lock to be held.
 	 */
-	idle_period = msecs_to_jiffies(10);
-	period = (host->caps & MMC_CAP_SDIO_IRQ) ?
-		MAX_SCHEDULE_TIMEOUT : idle_period;
+	mmc_claim_host(host);
 
-	pr_debug("%s: IRQ thread started (poll period = %lu jiffies)\n",
-		 mmc_hostname(host), period);
+	ret = process_sdio_pending_irqs(host->card);
 
-	do {
-		/*
-		 * We claim the host here on drivers behalf for a couple
-		 * reasons:
-		 *
-		 * 1) it is already needed to retrieve the CCCR_INTx;
-		 * 2) we want the driver(s) to clear the IRQ condition ASAP;
-		 * 3) we need to control the abort condition locally.
-		 *
-		 * Just like traditional hard IRQ handlers, we expect SDIO
-		 * IRQ handlers to be quick and to the point, so that the
-		 * holding of the host lock does not cover too much work
-		 * that doesn't require that lock to be held.
-		 */
-		ret = __mmc_claim_host(host, &host->sdio_irq_thread_abort);
-		if (ret)
-			break;
-		ret = process_sdio_pending_irqs(host->card);
-		mmc_release_host(host);
+	mmc_release_host(host);
 
-		/*
-		 * Give other threads a chance to run in the presence of
-		 * errors.
-		 */
-		if (ret < 0) {
-			set_current_state(TASK_INTERRUPTIBLE);
-			if (!kthread_should_stop())
-				schedule_timeout(HZ);
-			set_current_state(TASK_RUNNING);
-		}
-
+	if (host->caps & MMC_CAP_SDIO_IRQ)
+		host->ops->enable_sdio_irq(host, true);
+	else {
 		/*
 		 * Adaptive polling frequency based on the assumption
 		 * that an interrupt will be closely followed by more.
 		 * This has a substantial benefit for network devices.
 		 */
-		if (!(host->caps & MMC_CAP_SDIO_IRQ)) {
-			if (ret > 0)
-				period /= 2;
-			else {
-				period++;
-				if (period > idle_period)
-					period = idle_period;
-			}
+		if (ret > 0)
+			host->sdio_poll_period /= 2;
+		else {
+			host->sdio_poll_period++;
+			if (host->sdio_poll_period > SDIO_IDLE_POLL_PERIOD)
+				host->sdio_poll_period = SDIO_IDLE_POLL_PERIOD;
 		}
-
-		set_current_state(TASK_INTERRUPTIBLE);
-		if (host->caps & MMC_CAP_SDIO_IRQ)
-			host->ops->enable_sdio_irq(host, 1);
-		if (!kthread_should_stop())
-			schedule_timeout(period);
-		set_current_state(TASK_RUNNING);
-	} while (!kthread_should_stop());
-
-	if (host->caps & MMC_CAP_SDIO_IRQ)
-		host->ops->enable_sdio_irq(host, 0);
-
-	pr_debug("%s: IRQ thread exiting with code %d\n",
-		 mmc_hostname(host), ret);
-
-	return ret;
+		queue_delayed_work(host->sdio_irq_workqueue,
+				   &host->sdio_irq_work,
+				   msecs_to_jiffies(host->sdio_poll_period));
+	}
 }
 
 static int sdio_card_irq_get(struct mmc_card *card)
@@ -168,14 +131,28 @@ static int sdio_card_irq_get(struct mmc_card *card)
 	WARN_ON(!host->claimed);
 
 	if (!host->sdio_irqs++) {
-		atomic_set(&host->sdio_irq_thread_abort, 0);
-		host->sdio_irq_thread =
-			kthread_run(sdio_irq_thread, host, "ksdioirqd/%s",
-				mmc_hostname(host));
-		if (IS_ERR(host->sdio_irq_thread)) {
-			int err = PTR_ERR(host->sdio_irq_thread);
+		host->sdio_irq_workqueue =
+			create_singlethread_workqueue("sdio_irq_workqueue");
+		if (host->sdio_irq_workqueue == NULL) {
 			host->sdio_irqs--;
-			return err;
+			return -ENOMEM;
+		}
+
+		INIT_DELAYED_WORK(&host->sdio_irq_work, sdio_irq_work_func);
+
+		/*
+		 * We want to allow for SDIO cards to work even on non SDIO
+		 * aware hosts.  One thing that non SDIO host cannot do is
+		 * asynchronous notification of pending SDIO card interrupts
+		 * hence we poll for them in that case.
+		 */
+		if (host->caps & MMC_CAP_SDIO_IRQ)
+			host->ops->enable_sdio_irq(host, true);
+		else {
+			host->sdio_poll_period = SDIO_IDLE_POLL_PERIOD;
+			queue_delayed_work(host->sdio_irq_workqueue,
+				&host->sdio_irq_work,
+				msecs_to_jiffies(host->sdio_poll_period));
 		}
 	}
 
@@ -190,8 +167,9 @@ static int sdio_card_irq_put(struct mmc_card *card)
 	BUG_ON(host->sdio_irqs < 1);
 
 	if (!--host->sdio_irqs) {
-		atomic_set(&host->sdio_irq_thread_abort, 1);
-		kthread_stop(host->sdio_irq_thread);
+		host->ops->enable_sdio_irq(host, false);
+		destroy_workqueue(host->sdio_irq_workqueue);
+		host->sdio_irq_workqueue = NULL;
 	}
 
 	return 0;
