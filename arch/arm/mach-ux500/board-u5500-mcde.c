@@ -99,8 +99,8 @@ struct mcde_display_device u5500_generic_display0 = {
 	.synchronized_update = false,
 #endif
 	/* TODO: Remove rotation buffers once ESRAM driver is completed */
-	.rotbuf1 = U5500_ESRAM_BASE,
-	.rotbuf2 = U5500_ESRAM_BASE + 0x10000,
+	.rotbuf1 = U5500_ESRAM_BASE + 0x20000 * 2,
+	.rotbuf2 = U5500_ESRAM_BASE + 0x20000 * 2 + 0x10000,
 	.dev = {
 		.platform_data = &u5500_generic_display0_pdata,
 	},
