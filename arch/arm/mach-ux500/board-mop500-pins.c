@@ -531,6 +531,8 @@ void mop500_pins_suspend_force(void)
 		/* Mask away pin 216 (0x1000000) which is WLAN_IRQ */
 		mask |= 0x1000000;
 	}
+	/* Mask away pin 212 (0x100000) which is SDIO DAT1 */
+	mask |= 0x100000;
 
 	writel(0x8810810  & ~w_imsc & ~mask, bankaddr + NMK_GPIO_DIRS);
 	writel(0xF57EF7EF & ~mask, bankaddr + NMK_GPIO_DIRC);
