@@ -45,6 +45,22 @@ static int process_sdio_pending_irqs(struct mmc_card *card)
 		return 1;
 	}
 
+	/*
+	 * Optimization, if there is only 1 function registered
+	 * and IRQ:s are supported and currently enabled, then
+	 * we can assume that this actually is an IRQ and we can
+	 * call the registered IRQ handler directly without
+	 * checking the CCCR registers.
+	 */
+	if ((card->host->caps & MMC_CAP_SDIO_IRQ) &&
+	    card->host->sdio_irqs && (card->sdio_funcs == 1)) {
+		struct sdio_func *func = card->sdio_func[0];
+		if (func && func->irq_handler) {
+			func->irq_handler(func);
+			return 1;
+		}
+	}
+
 	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_INTx, 0, &pending);
 	if (ret) {
 		printk(KERN_DEBUG "%s: error %d reading SDIO_CCCR_INTx\n",
