@@ -373,6 +373,13 @@ config AB5500_CORE
 	  battery-backed RTC, charging control, Regulators, LEDs, vibrator,
 	  system power and temperature, power management and ALSA sound.
 
+config AB5500_GPADC
+	bool "AB5500 GPADC driver"
+	depends on AB5500_CORE
+	default y
+	help
+	  AB5500 GPADC driver used to convert battery/usb voltage.
+
 config PMIC_DA903X
 	bool "Dialog Semiconductor DA9030/DA9034 PMIC Support"
 	depends on I2C=y
