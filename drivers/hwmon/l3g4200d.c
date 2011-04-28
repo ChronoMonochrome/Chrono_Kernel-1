@@ -439,7 +439,7 @@ static int __devinit l3g4200d_probe(struct i2c_client *client,
 
 	dev_set_name(&client->dev, ddata->pdata.name_gyr);
 
-	ddata->regulator = regulator_get(&client->dev, "v-gyro");
+	ddata->regulator = regulator_get(&client->dev, "vdd");
 	if (IS_ERR(ddata->regulator)) {
 		dev_err(&client->dev, "failed to get regulator\n");
 		ret = PTR_ERR(ddata->regulator);
