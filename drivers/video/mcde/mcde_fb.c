@@ -102,7 +102,8 @@ static void early_suspend(struct early_suspend *data)
 
 	console_lock();
 	for (i = 0; i < mfb->num_ovlys; i++) {
-		if (mfb->ovlys[i])
+		if (mfb->ovlys[i] && mfb->ovlys[i]->ddev &&
+				(mfb->ovlys[i]->ddev->stay_alive == false))
 			mcde_dss_disable_display(mfb->ovlys[i]->ddev);
 	}
 	console_unlock();
@@ -772,6 +773,9 @@ void mcde_fb_destroy(struct mcde_display_device *dev)
 
 	fb_dealloc_cmap(&dev->fbi->cmap);
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	unregister_early_suspend(&mfb->early_suspend);
+#endif
 	unregister_framebuffer(dev->fbi);
 	free_fb_mem(dev->fbi);
 	framebuffer_release(dev->fbi);
