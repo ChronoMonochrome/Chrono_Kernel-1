@@ -278,18 +278,12 @@ int shrm_register_netdev(struct shrm_dev *shrm)
 
 int shrm_stop_netdev(struct net_device *dev)
 {
-	struct shrm_net_iface_priv *net_iface_priv =
-			(struct shrm_net_iface_priv *)netdev_priv(dev);
-
 	netif_stop_queue(dev);
 	return 0;
 }
 
 int shrm_restart_netdev(struct net_device *dev)
 {
-	struct shrm_net_iface_priv *net_iface_priv =
-			(struct shrm_net_iface_priv *)netdev_priv(dev);
-
 	if (netif_queue_stopped(dev))
 		netif_wake_queue(dev);
 	return 0;
