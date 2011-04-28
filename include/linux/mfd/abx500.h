@@ -445,6 +445,12 @@ int abx500_get_chip_id(struct device *dev);
 int abx500_event_registers_startup_state_get(struct device *dev, u8 *event);
 int abx500_startup_irq_enabled(struct device *dev, unsigned int irq);
 
+#define abx500_get	abx500_get_register_interruptible
+#define abx500_set	abx500_set_register_interruptible
+#define abx500_get_page	abx500_get_register_page_interruptible
+#define abx500_set_page	abx500_set_register_page_interruptible
+#define abx500_mask_and_set	abx500_mask_and_set_register_interruptible
+
 struct abx500_ops {
 	int (*get_chip_id) (struct device *);
 	int (*get_register) (struct device *, u8, u8, u8 *);
