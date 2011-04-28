@@ -16,6 +16,7 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/sdio_func.h>
 #include <linux/mmc/card.h>
+#include <linux/mmc/sdio.h>
 #include <linux/spinlock.h>
 
 #include <net/mac80211.h>
@@ -80,6 +81,7 @@ static void cw1200_sdio_unlock(struct sbus_priv *self)
 	sdio_release_host(self->func);
 }
 
+#ifndef CONFIG_CW1200_USE_GPIO_IRQ
 static void cw1200_sdio_irq_handler(struct sdio_func *func)
 {
 	struct sbus_priv *self = sdio_get_drvdata(func);
@@ -91,6 +93,76 @@ static void cw1200_sdio_irq_handler(struct sdio_func *func)
 		self->irq_handler(self->irq_priv);
 	spin_unlock_irqrestore(&self->lock, flags);
 }
+#else /* CONFIG_CW1200_USE_GPIO_IRQ */
+static irqreturn_t cw1200_gpio_irq_handler(int irq, void *dev_id)
+{
+	struct sbus_priv *self = dev_id;
+
+	BUG_ON(!self);
+	if (self->irq_handler)
+		self->irq_handler(self->irq_priv);
+	return IRQ_HANDLED;
+}
+
+static int cw1200_request_irq(struct sbus_priv *self,
+			      irq_handler_t handler)
+{
+	int ret;
+	int func_num;
+	int gpio = CONFIG_CW1200_GPIO_IRQ_NUM;
+	int irq = gpio_to_irq(gpio);
+	u8 cccr;
+
+	ret = gpio_request(gpio, "cw1200_irq");
+	if (WARN_ON(ret))
+		goto exit;
+
+	ret = gpio_direction_input(gpio);
+	if (WARN_ON(ret))
+		goto free_gpio;
+
+	ret = request_any_context_irq(irq, handler,
+			IRQF_TRIGGER_RISING, "cw1200_irq", self);
+	if (WARN_ON(ret < 0))
+		goto free_gpio;
+
+	ret = enable_irq_wake(irq);
+	if (WARN_ON(ret))
+		goto free_irq;
+
+	/* Hack to access Fuction-0 */
+	func_num = self->func->num;
+	self->func->num = 0;
+
+	cccr = sdio_readb(self->func, SDIO_CCCR_IENx, &ret);
+	if (WARN_ON(ret))
+		goto set_func;
+
+	/* Master interrupt enable ... */
+	cccr |= 1;
+
+	/* ... for our function */
+	cccr |= 1 << func_num;
+
+	sdio_writeb(self->func, cccr, SDIO_CCCR_IENx, &ret);
+	if (WARN_ON(ret))
+		goto set_func;
+
+	/* Restore the WLAN function number */
+	self->func->num = func_num;
+	return 0;
+
+set_func:
+	self->func->num = func_num;
+	disable_irq_wake(irq);
+free_irq:
+	free_irq(irq, self);
+free_gpio:
+	gpio_free(gpio);
+exit:
+	return ret;
+}
+#endif /* CONFIG_CW1200_USE_GPIO_IRQ */
 
 static int cw1200_sdio_irq_subscribe(struct sbus_priv *self,
 				     sbus_irq_handler handler,
@@ -109,14 +181,18 @@ static int cw1200_sdio_irq_subscribe(struct sbus_priv *self,
 
 	printk(KERN_DEBUG "SW IRQ subscribe\n");
 	sdio_claim_host(self->func);
+#ifndef CONFIG_CW1200_USE_GPIO_IRQ
 	ret = sdio_claim_irq(self->func, cw1200_sdio_irq_handler);
+#else
+	ret = cw1200_request_irq(self, cw1200_gpio_irq_handler);
+#endif
 	sdio_release_host(self->func);
 	return ret;
 }
 
 static int cw1200_sdio_irq_unsubscribe(struct sbus_priv *self)
 {
-	int ret;
+	int ret = 0;
 	unsigned long flags;
 
 	WARN_ON(!self->irq_handler);
@@ -124,9 +200,15 @@ static int cw1200_sdio_irq_unsubscribe(struct sbus_priv *self)
 		return 0;
 
 	printk(KERN_DEBUG "SW IRQ unsubscribe\n");
+#ifndef CONFIG_CW1200_USE_GPIO_IRQ
 	sdio_claim_host(self->func);
 	ret = sdio_release_irq(self->func);
 	sdio_release_host(self->func);
+#else
+	disable_irq_wake(gpio_to_irq(CONFIG_CW1200_GPIO_IRQ_NUM));
+	free_irq(gpio_to_irq(CONFIG_CW1200_GPIO_IRQ_NUM), self);
+	gpio_free(CONFIG_CW1200_GPIO_IRQ_NUM);
+#endif
 
 	spin_lock_irqsave(&self->lock, flags);
 	self->irq_priv = NULL;

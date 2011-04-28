@@ -28,6 +28,17 @@ config CW1200_NON_POWER_OF_TWO_BLOCKSIZES
         which does not have support for non-power-of-two SDIO transfer.
         If unsure, say Y.
 
+config CW1200_USE_GPIO_IRQ
+      bool "Use GPIO interrupt"
+      depends on CW1200
+      help
+        Say Y here if you want to include GPIO IRQ support instead of SDIO IRQ.
+        If unsure, say N.
+
+config CW1200_GPIO_IRQ_NUM
+      int "GPIO number for the IRQ line"
+      depends on CW1200_USE_GPIO_IRQ
+      default 216
 
 config CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE
       bool "Software keep-alive (DEVELOPMENT)"
