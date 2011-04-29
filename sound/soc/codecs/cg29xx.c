@@ -500,7 +500,7 @@ static int cg29xx_dai_hw_params(struct snd_pcm_substream *substream,
 		dai_data->config.conf.i2s_pcm.ratio = ratio;
 	}
 
-	if (!(dai_data->tx_active | dai_data->rx_active)) {
+	if (!(dai_data->tx_active | dai_data->rx_active) && dai_data->config.port != PORT_1_I2S_PCM) {
 		err = cg2900_audio_set_dai_config(
 			codec_private.session,
 			&dai_data->config);
