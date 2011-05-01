@@ -31,7 +31,7 @@
 
 static int cw1200_bh(void *arg);
 
-/* TODO: Werify these numbers with WSM specification. */
+/* TODO: Verify these numbers with WSM specification. */
 #define DOWNLOAD_BLOCK_SIZE_WR	(0x1000 - 4)
 /* an SPI message cannot be bigger than (2"12-1)*2 bytes
  * "*2" to cvt to bytes */
@@ -178,6 +178,42 @@ static inline int cw1200_bh_read_ctrl_reg(struct cw1200_common *priv,
 	return ret;
 }
 
+static int cw1200_device_wakeup(struct cw1200_common *priv)
+{
+	u16 ctrl_reg;
+	int ret;
+
+	bh_printk(KERN_DEBUG "[BH] Device wakeup.\n");
+
+	/* To force the device to be always-on, the host sets WLAN_UP to 1 */
+	ret = cw1200_reg_write_16(priv, ST90TDS_CONTROL_REG_ID,
+			ST90TDS_CONT_WUP_BIT);
+	if (WARN_ON(ret))
+		return ret;
+
+	ret = cw1200_bh_read_ctrl_reg(priv, &ctrl_reg);
+	if (WARN_ON(ret))
+		return ret;
+
+	/* If the device returns WLAN_RDY as 1, the device is active and will
+	 * remain active. */
+	if (ctrl_reg & ST90TDS_CONT_RDY_BIT) {
+		bh_printk(KERN_DEBUG "[BH] Device awake.\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+/* Must be called from BH thraed. */
+void cw1200_enable_powersave(struct cw1200_common *priv,
+			     bool enable)
+{
+	bh_printk(KERN_DEBUG "[BH] Powerave is %s.\n",
+			enable ? "enabled" : "disabled");
+	priv->powersave_enabled = enable;
+}
+
 static int cw1200_bh(void *arg)
 {
 	struct cw1200_common *priv = arg;
@@ -191,17 +227,36 @@ static int cw1200_bh(void *arg)
 	int rx_resync = 1;
 	u16 ctrl_reg = 0;
 	int tx_allowed;
+	int pending_tx = 0;
+	long status;
 
 	for (;;) {
-		int status = wait_event_interruptible(priv->bh_wq, ({
+		if (!priv->hw_bufs_used
+				&& priv->powersave_enabled
+				&& !priv->device_can_sleep)
+			status = 1 * HZ;
+		else
+			status = MAX_SCHEDULE_TIMEOUT;
+
+		status = wait_event_interruptible_timeout(priv->bh_wq, ({
 				rx = atomic_xchg(&priv->bh_rx, 0);
 				tx = atomic_xchg(&priv->bh_tx, 0);
 				term = atomic_xchg(&priv->bh_term, 0);
 				(rx || tx || term);
-			}));
+			}), status);
 
-		if (status || term)
+		if (status < 0 || term)
 			break;
+
+		if (!status) {
+			bh_printk(KERN_DEBUG "[BH] Device wakedown.\n");
+			WARN_ON(cw1200_reg_write_16(priv, ST90TDS_CONTROL_REG_ID, 0));
+			priv->device_can_sleep = true;
+			continue;
+		}
+
+		tx += pending_tx;
+		pending_tx = 0;
 
 		if (rx) {
 			size_t alloc_len;
@@ -211,7 +266,7 @@ static int cw1200_bh(void *arg)
 					priv, &ctrl_reg)))
 				break;
 rx:
-			read_len = (ctrl_reg & 0xFFF) * 2;
+			read_len = (ctrl_reg & ST90TDS_CONT_NEXT_LEN_MASK) * 2;
 			if (!read_len)
 				goto tx;
 
@@ -327,6 +382,19 @@ tx:
 			u8 *data;
 			int ret;
 
+	                if (priv->device_can_sleep) {
+				ret = cw1200_device_wakeup(priv);
+				if (WARN_ON(ret < 0))
+					break;
+				else if (ret)
+					priv->device_can_sleep = false;
+				else {
+					/* Wait for "awake" interrupt */
+					pending_tx = tx;
+					continue;
+				}
+			}
+
 			wsm_alloc_tx_buffer(priv);
 			ret = wsm_get_tx(priv, &data, &tx_len);
 			if (ret <= 0) {
@@ -381,13 +449,13 @@ tx:
 
 		/* HACK!!! Device tends not to send interrupt
 		 * if this extra check is missing */
-		if (!(ctrl_reg & 0xFFF)) {
+		if (!(ctrl_reg & ST90TDS_CONT_NEXT_LEN_MASK)) {
 			if (WARN_ON(cw1200_bh_read_ctrl_reg(
 					priv, &ctrl_reg)))
 				break;
 		}
 
-		if (ctrl_reg & 0xFFF)
+		if (ctrl_reg & ST90TDS_CONT_NEXT_LEN_MASK)
 			goto rx;
 	}
 

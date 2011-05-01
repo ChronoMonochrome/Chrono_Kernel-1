@@ -283,12 +283,14 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 
 	if (changed & IEEE80211_CONF_CHANGE_IDLE) {
 		struct wsm_operational_mode mode = {
-			/* TODO: wsm_power_mode_quiescent is more efficient,
-			 *  but it requires AI to get device on again. */
 			.power_mode = (conf->flags & IEEE80211_CONF_IDLE) ?
-				wsm_power_mode_doze : wsm_power_mode_active
+				wsm_power_mode_quiescent :
+				wsm_power_mode_doze,
+			.disableMoreFlagUsage = true,
 		};
+		wsm_lock_tx(priv);
 		WARN_ON(wsm_set_operational_mode(priv, &mode));
+		wsm_unlock_tx(priv);
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_RETRY_LIMITS) {

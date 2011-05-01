@@ -395,6 +395,10 @@ int cw1200_probe(const struct sbus_ops *sbus_ops,
 	int err = -ENOMEM;
 	struct ieee80211_hw *dev;
 	struct cw1200_common *priv;
+	struct wsm_operational_mode mode = {
+		.power_mode = wsm_power_mode_quiescent,
+		.disableMoreFlagUsage = true,
+	};
 
 	dev = cw1200_init_common(sizeof(struct cw1200_common));
 	if (!dev)
@@ -428,6 +432,9 @@ int cw1200_probe(const struct sbus_ops *sbus_ops,
 		/*       in QUEUE mode properly.           */
 		goto err3;
 	}
+
+	/* Set low-power mode. */
+	WARN_ON(wsm_set_operational_mode(priv, &mode));
 
 	err = cw1200_register_common(dev);
 	if (err) {

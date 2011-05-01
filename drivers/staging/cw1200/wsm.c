@@ -255,19 +255,44 @@ int wsm_write_mib(struct cw1200_common *priv, u16 mibId, void *_buf,
 {
 	int ret;
 	struct wsm_buf *buf = &priv->wsm_cmd_buf;
+	struct wsm_mib mib_buf = {
+		.mibId = mibId,
+		.buf = _buf,
+		.buf_size = buf_size,
+	};
+
 	wsm_cmd_lock(priv);
 
 	WSM_PUT16(buf, mibId);
 	WSM_PUT16(buf, buf_size);
 	WSM_PUT(buf, _buf, buf_size);
 
-	ret = wsm_cmd_send(priv, buf, NULL, 0x0006, WSM_CMD_TIMEOUT);
+	ret = wsm_cmd_send(priv, buf, &mib_buf, 0x0006, WSM_CMD_TIMEOUT);
 	wsm_cmd_unlock(priv);
 	return ret;
 
 nomem:
 	wsm_cmd_unlock(priv);
 	return -ENOMEM;
+}
+
+static int wsm_write_mib_confirm(struct cw1200_common *priv,
+				struct wsm_mib *arg,
+				struct wsm_buf *buf)
+{
+	int ret;
+
+	ret = wsm_generic_confirm(priv, arg, buf);
+	if (ret)
+		return ret;
+
+	if (arg->mibId == 0x1006) {
+		/* OperationalMode: update PM status. */
+		const char *p = arg->buf;
+		cw1200_enable_powersave(priv,
+				(p[0] & 0x0F) ? true : false);
+	}
+	return 0;
 }
 
 /* ******************************************************************** */
@@ -1093,11 +1118,15 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 				ret = wsm_read_mib_confirm(priv, wsm_arg,
 								&wsm_buf);
 			break;
+		case 0x0406:
+			if (likely(wsm_arg))
+				ret = wsm_write_mib_confirm(priv, wsm_arg,
+								&wsm_buf);
+			break;
 		case 0x040B:
 			if (likely(wsm_arg))
 				ret = wsm_join_confirm(priv, wsm_arg, &wsm_buf);
 			break;
-		case 0x0406: /* write_mib */
 		case 0x0407: /* start-scan */
 		case 0x0408: /* stop-scan */
 		case 0x040A: /* wsm_reset */

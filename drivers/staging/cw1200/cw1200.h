@@ -129,6 +129,8 @@ struct cw1200_common {
 	int				hw_bufs_used;
 	wait_queue_head_t		hw_bufs_used_wq;
 	struct sk_buff			*skb_cache;
+	bool				powersave_enabled;
+	bool				device_can_sleep;
 
 	/* WSM */
 	struct wsm_caps			wsm_caps;
