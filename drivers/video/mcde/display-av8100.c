@@ -948,17 +948,24 @@ static u16 map_u(u8 in)
 static int hdmi_set_pixel_format(
 	struct mcde_display_device *ddev, enum mcde_ovly_pix_fmt format)
 {
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+	ddev->pixel_format = format;
+
+	return 0;
+}
+
+static int hdmi_set_port_pixel_format(struct mcde_display_device *ddev)
+{
 	int ret;
 
 	dev_dbg(&ddev->dev, "%s\n", __func__);
-	ddev->pixel_format = format;
 	mcde_chnl_stop_flow(ddev->chnl_state);
 	ret = mcde_chnl_set_pixel_format(ddev->chnl_state,
 						ddev->port->pixel_format);
 
 	if (ret < 0) {
-		dev_warn(&ddev->dev, "%s:Failed to set pixel format = %d\n",
-							__func__, format);
+		dev_warn(&ddev->dev, "%s: Failed to set pixel format = %d\n",
+					__func__, ddev->port->pixel_format);
 		return ret;
 	}
 
@@ -1105,6 +1112,8 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 			driver_data->cvbs_regulator_enabled = true;
 		}
 		ddev->power_mode = MCDE_DISPLAY_PM_STANDBY;
+
+		hdmi_set_port_pixel_format(ddev);
 	}
 	/* STANDBY -> ON */
 	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
