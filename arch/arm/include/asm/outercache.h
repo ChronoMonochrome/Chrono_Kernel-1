@@ -95,6 +95,18 @@ static inline void outer_resume(void)
 		outer_cache.resume();
 }
 
+static inline void outer_prefetch_enable(void)
+{
+	if (outer_cache.prefetch_enable)
+		outer_cache.prefetch_enable();
+}
+
+static inline void outer_prefetch_disable(void)
+{
+	if (outer_cache.prefetch_disable)
+		outer_cache.prefetch_disable();
+}
+
 #else
 
 static inline void outer_inv_range(phys_addr_t start, phys_addr_t end)
