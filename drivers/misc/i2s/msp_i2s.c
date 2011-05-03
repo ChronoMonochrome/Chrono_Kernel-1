@@ -449,7 +449,8 @@ static int configure_clock(struct msp *msp,
 	bit_clock = (config->input_clock_freq * 1000)/(sck_div + 1);
 
 	/* If the bit clock is higher than 19.2MHz, Vape should be run in 100% OPP */
-	if (bit_clock > 19200000) {
+	/* Only consider OPP 100% when bit-clock is used, i.e. MSP master mode */
+	if ((bit_clock > 19200000) && ((config->tx_clock_sel != 0) || (config->rx_clock_sel != 0))) {
 		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "msp_i2s", 100);
 		msp->vape_opp_constraint = 1;
 	} else {
