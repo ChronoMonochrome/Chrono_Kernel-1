@@ -18,6 +18,7 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/sdio.h>
 #include <linux/spinlock.h>
+#include <asm/mach-types.h>
 
 #include <net/mac80211.h>
 
@@ -37,17 +38,45 @@ MODULE_PARM_DESC(device, "SDIO interface device is connected to");
 #define CW1200_GPIO_LOW		(0)
 #define CW1200_GPIO_HIGH	(1)
 
+enum cw1200_plat_t {
+	cw1200_plat_href = 0,
+	cw1200_plat_hrefv60,
+	cw1200_plat_snowball,
+};
+
+struct cw1200_gpio {
+	int reset;
+	int irq;
+};
+
 struct sbus_priv {
 	struct sdio_func	*func;
 	struct cw1200_common	*core;
 	spinlock_t		lock;
 	sbus_irq_handler	irq_handler;
 	void			*irq_priv;
+	enum cw1200_plat_t	plat;
 };
 
 static const struct sdio_device_id if_sdio_ids[] = {
 	{ SDIO_DEVICE(SDIO_ANY_ID, SDIO_ANY_ID) },
 	{ /* end: all zeroes */			},
+};
+
+/* TODO: Move to the platform data */
+static const struct cw1200_gpio cw1200_gpio_table[] = {
+	[cw1200_plat_href] = {
+		.reset = 215,
+		.irq = 216,
+	},
+	[cw1200_plat_hrefv60] = {
+		.reset = 85,
+		.irq = 4,
+	},
+	[cw1200_plat_snowball] = {
+		.reset = 215,
+		.irq = 216,
+	},
 };
 
 /* sbus_ops implemetation */
@@ -109,7 +138,7 @@ static int cw1200_request_irq(struct sbus_priv *self,
 {
 	int ret;
 	int func_num;
-	int gpio = CONFIG_CW1200_GPIO_IRQ_NUM;
+	int gpio = cw1200_gpio_table[self->plat].irq;
 	int irq = gpio_to_irq(gpio);
 	u8 cccr;
 
@@ -194,6 +223,10 @@ static int cw1200_sdio_irq_unsubscribe(struct sbus_priv *self)
 {
 	int ret = 0;
 	unsigned long flags;
+#ifdef CONFIG_CW1200_USE_GPIO_IRQ
+	int gpio = cw1200_gpio_table[self->plat].irq;
+	int irq = gpio_to_irq(gpio);
+#endif
 
 	WARN_ON(!self->irq_handler);
 	if (!self->irq_handler)
@@ -205,9 +238,9 @@ static int cw1200_sdio_irq_unsubscribe(struct sbus_priv *self)
 	ret = sdio_release_irq(self->func);
 	sdio_release_host(self->func);
 #else
-	disable_irq_wake(gpio_to_irq(CONFIG_CW1200_GPIO_IRQ_NUM));
-	free_irq(gpio_to_irq(CONFIG_CW1200_GPIO_IRQ_NUM), self);
-	gpio_free(CONFIG_CW1200_GPIO_IRQ_NUM);
+	disable_irq_wake(irq);
+	free_irq(irq, self);
+	gpio_free(gpio);
 #endif
 
 	spin_lock_irqsave(&self->lock, flags);
@@ -218,7 +251,6 @@ static int cw1200_sdio_irq_unsubscribe(struct sbus_priv *self)
 	return ret;
 }
 
-#ifdef CW1200_U8500_PLATFORM
 static int cw1200_detect_card(void)
 {
 	/* HACK!!!
@@ -286,25 +318,6 @@ static int cw1200_sdio_reset(struct sbus_priv *self)
 	return 0;
 }
 
-#else  /* CW1200_U8500_PLATFORM */
-
-static int cw1200_sdio_off(void)
-{
-	return 0;
-}
-
-static int cw1200_sdio_on(void)
-{
-	return 0;
-}
-
-static int cw1200_sdio_reset(struct sbus_priv *self)
-{
-	return 0;
-}
-
-#endif /* CW1200_U8500_PLATFORM */
-
 static size_t cw1200_align_size(struct sbus_priv *self, size_t size)
 {
 	return sdio_align_size(self->func, size);
@@ -327,6 +340,7 @@ static int cw1200_sdio_probe(struct sdio_func *func,
 {
 	struct sbus_priv *self;
 	int status;
+
 	cw1200_dbg(CW1200_DBG_INIT, "Probe called\n");
 
 	self = kzalloc(sizeof(*self), GFP_KERNEL);
@@ -334,6 +348,13 @@ static int cw1200_sdio_probe(struct sdio_func *func,
 		cw1200_dbg(CW1200_DBG_ERROR, "Can't allocate SDIO sbus_priv.");
 		return -ENOMEM;
 	}
+
+	if (machine_is_snowball())
+		self->plat = cw1200_plat_snowball;
+	else if (machine_is_hrefv60())
+		self->plat = cw1200_plat_hrefv60;
+	else
+		self->plat = cw1200_plat_href;
 
 	spin_lock_init(&self->lock);
 	self->func = func;

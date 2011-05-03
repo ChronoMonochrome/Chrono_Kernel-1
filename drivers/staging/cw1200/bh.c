@@ -23,7 +23,7 @@
 #include "wsm.h"
 #include "sbus.h"
 
-#ifdef CW1200_DEBUG_ENABLE_BH_LOGS
+#if defined(CONFIG_CW1200_BH_DEBUG)
 #define bh_printk(...) printk(__VA_ARGS__)
 #else
 #define bh_printk(...)
@@ -283,15 +283,15 @@ rx:
 
 			BUG_ON(SDIO_BLOCK_SIZE & (SDIO_BLOCK_SIZE - 1));
 
-#ifdef CW1200_NON_POWER_OF_TWO_BLOCKSIZES
+#if defined(CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES)
 			alloc_len = priv->sbus_ops->align_size(
 					priv->sbus_priv, read_len);
-#else
+#else /* CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES */
 			/* Platform's SDIO workaround */
 			alloc_len = read_len & ~(SDIO_BLOCK_SIZE - 1);
 			if (read_len & (SDIO_BLOCK_SIZE - 1))
 				alloc_len += SDIO_BLOCK_SIZE;
-#endif
+#endif /* CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES */
 
 			skb_rx = cw1200_get_skb(priv, alloc_len);
 			if (WARN_ON(!skb_rx))
@@ -315,10 +315,10 @@ rx:
 			if (WARN_ON(wsm_len > read_len))
 				break;
 
-#ifdef CW1200_DEBUG_ENABLE_WSM_DUMPS
+#if defined(CONFIG_CW1200_WSM_DUMPS)
 			print_hex_dump_bytes("<-- ", DUMP_PREFIX_NONE,
 				data, wsm_len);
-#endif /* CW1200_DEBUG_ENABLE_WSM_DUMPS */
+#endif /* CONFIG_CW1200_WSM_DUMPS */
 
 			wsm_id  = __le32_to_cpu(wsm->id) & 0xFFF;
 			wsm_seq = (__le32_to_cpu(wsm->id) >> 13) & 7;
@@ -414,10 +414,10 @@ tx:
 #endif
 
 
-#ifdef CW1200_NON_POWER_OF_TWO_BLOCKSIZES
+#if defined(CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES)
 				tx_len = priv->sbus_ops->align_size(
 						priv->sbus_priv, tx_len);
-#else
+#else /* CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES */
 				/* HACK!!! Platform limitation.
 				* It is also supported by upper layer:
 				* there is always enough space at the
@@ -426,7 +426,7 @@ tx:
 					tx_len &= ~(SDIO_BLOCK_SIZE - 1);
 					tx_len += SDIO_BLOCK_SIZE;
 				}
-#endif
+#endif /* CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES */
 
 				wsm->id |= __cpu_to_le32(
 					priv->wsm_tx_seq << 13);
@@ -437,10 +437,10 @@ tx:
 					break;
 				}
 
-#ifdef CW1200_DEBUG_ENABLE_WSM_DUMPS
+#if defined(CONFIG_CW1200_WSM_DUMPS)
 				print_hex_dump_bytes("--> ", DUMP_PREFIX_NONE,
 					data, __le32_to_cpu(wsm->len));
-#endif /* CW1200_DEBUG_ENABLE_WSM_DUMPS */
+#endif /* CONFIG_CW1200_WSM_DUMPS */
 
 				wsm_txed(priv, data);
 				priv->wsm_tx_seq = (priv->wsm_tx_seq + 1) & 7;

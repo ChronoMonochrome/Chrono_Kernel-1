@@ -30,24 +30,10 @@
 #include "txrx.h"
 #include "ht.h"
 
-/* Debug switches */
-
-/* Dump all WSM (HI) messages. Quite a lot of logs. */
-/* #define CW1200_DEBUG_ENABLE_WSM_DUMPS */
-
-/* Enable WSM logs. Useful for low-level debugging (WSM HI control flow). */
-/* #define CW1200_DEBUG_ENABLE_WSM_LOGS */
-
-/* Enable BH logs. Useful for ultra-level debugging (interrupts and so on). */
-/* #define CW1200_DEBUG_ENABLE_BH_LOGS */
-
-/* Enable TX/RX logs. */
-/* #define CW1200_TXRX_DEBUG */
-
 /* extern */ struct sbus_ops;
 /* extern */ struct task_struct;
 
-#ifdef CW1200_TXRX_DEBUG
+#if defined(CONFIG_CW1200_TXRX_DEBUG)
 #define txrx_printk(...) printk(__VA_ARGS__)
 #else
 #define txrx_printk(...)
@@ -177,10 +163,10 @@ struct cw1200_common {
 	struct work_struct	event_handler;
 	struct delayed_work	bss_loss_work;
 	struct delayed_work	connection_loss_work;
-#ifdef CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE
+#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 	struct delayed_work	keep_alive_work;
 	unsigned long		last_activity_time;
-#endif
+#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 	struct work_struct	tx_failure_work;
 	int			delayed_link_loss;
 

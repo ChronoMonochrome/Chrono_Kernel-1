@@ -20,7 +20,7 @@
 #include "wsm.h"
 #include "bh.h"
 
-#ifdef CW1200_DEBUG_ENABLE_WSM_LOGS
+#if defined(CONFIG_CW1200_WSM_DEBUG)
 #define wsm_printk(...) printk(__VA_ARGS__)
 #else
 #define wsm_printk(...)

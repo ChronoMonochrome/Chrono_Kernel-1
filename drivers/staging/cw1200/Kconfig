@@ -12,14 +12,6 @@ config CW1200
 
 if CW1200
 
-config CW1200_U8500_PLATFORM
-      bool "U8500 platform support"
-      depends on CW1200
-      select CW1200_NON_POWER_OF_TWO_BLOCKSIZES
-      help
-        Say Y if you want to include support for the u8500 platform.
-        This will add u8500 specific initializing code for cw1200.
-
 config CW1200_NON_POWER_OF_TWO_BLOCKSIZES
       bool "Platform supports non-power-of-two SDIO transfer"
       depends on CW1200
@@ -34,11 +26,6 @@ config CW1200_USE_GPIO_IRQ
       help
         Say Y here if you want to include GPIO IRQ support instead of SDIO IRQ.
         If unsure, say N.
-
-config CW1200_GPIO_IRQ_NUM
-      int "GPIO number for the IRQ line"
-      depends on CW1200_USE_GPIO_IRQ
-      default 216
 
 config CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE
       bool "Software keep-alive (DEVELOPMENT)"

@@ -19,8 +19,6 @@
 
 /* extern */ struct cw1200_common;
 
-#define BUG_POWER_OF_TWO_BLOCKSIZE
-
 /* DPLL initial values */
 #define DPLL_INIT_VAL_9000		(0x00000191)
 #define DPLL_INIT_VAL_CW1200		(0x0EC4F121)

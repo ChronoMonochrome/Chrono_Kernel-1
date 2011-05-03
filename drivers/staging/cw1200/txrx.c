@@ -15,7 +15,7 @@
 #include "wsm.h"
 #include "bh.h"
 
-#ifdef CW1200_TX_POLICY_DEBUG
+#if defined(CONFIG_CW1200_TX_POLICY_DEBUG)
 #define tx_policy_printk(...) printk(__VA_ARGS__)
 #else
 #define tx_policy_printk(...)
@@ -506,9 +506,9 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 
 		if (likely(!arg->status)) {
 			tx->flags |= IEEE80211_TX_STAT_ACK;
-#ifdef CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE
+#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 			priv->last_activity_time = jiffies;
-#endif
+#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 			priv->cqm_tx_failure_count = 0;
 			++tx_count;
 		} else {

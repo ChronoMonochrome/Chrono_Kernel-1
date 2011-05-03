@@ -228,13 +228,11 @@ static int cw1200_load_firmware_cw1200(struct cw1200_common *priv)
 			(size_t)DOWNLOAD_BLOCK_SIZE);
 
 		memcpy(buf, &firmware->data[put], block_size);
-#ifdef BUG_POWER_OF_TWO_BLOCKSIZE
 		if (block_size < DOWNLOAD_BLOCK_SIZE) {
 			memset(&buf[block_size],
 				0, DOWNLOAD_BLOCK_SIZE - block_size);
 			tx_size = DOWNLOAD_BLOCK_SIZE;
 		}
-#endif /* BUG_POWER_OF_TWO_BLOCKSIZE */
 
 		/* send the block to sram */
 		ret = cw1200_apb_write(priv,

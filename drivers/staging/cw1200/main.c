@@ -234,10 +234,10 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 		    /* IEEE80211_HW_SUPPORTS_UAPSD | */
 		    IEEE80211_HW_CONNECTION_MONITOR |
 		    IEEE80211_HW_SUPPORTS_CQM_RSSI |
-#ifdef USE_STE_EXTENSIONS
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 		    IEEE80211_HW_SUPPORTS_CQM_BEACON_MISS |
 		    IEEE80211_HW_SUPPORTS_CQM_TX_FAIL |
-#endif
+#endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 		    IEEE80211_HW_BEACON_FILTER;
 
 	hw->wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
@@ -296,9 +296,9 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_DELAYED_WORK(&priv->bss_loss_work, cw1200_bss_loss_work);
 	INIT_DELAYED_WORK(&priv->connection_loss_work,
 			  cw1200_connection_loss_work);
-#ifdef CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE
+#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 	INIT_DELAYED_WORK(&priv->keep_alive_work, cw1200_keep_alive_work);
-#endif
+#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 	INIT_WORK(&priv->tx_failure_work, cw1200_tx_failure_work);
 	INIT_WORK(&priv->set_tim_work, cw1200_set_tim_work);
 	INIT_WORK(&priv->multicast_start_work, cw1200_multicast_start_work);
