@@ -957,8 +957,10 @@ static int stm_msp_configure_enable(struct i2s_controller *i2s_cont,
 
 	/* Two simultanous configuring msp is avoidable */
 	down(&msp->lock);
-	switch (msp->users) {
-	case 0:
+
+	/* Don't enable regulator if its msp1 or msp3 */
+	if (!(msp->reg_enabled) && msp->id != MSP_1_I2S_CONTROLLER
+				&& msp->id != MSP_3_I2S_CONTROLLER) {
 		res = regulator_enable(msp_vape_supply);
 		if (res != 0) {
 			dev_err(&msp->i2s_cont->dev,
@@ -966,7 +968,11 @@ static int stm_msp_configure_enable(struct i2s_controller *i2s_cont,
 			up(&msp->lock);
 			return res;
 		}
+		msp->reg_enabled = 1;
+	}
 
+	switch (msp->users) {
+	case 0:
 		clk_enable(msp->clk);
 		msp->direction = config->direction;
 		break;
@@ -1768,7 +1774,10 @@ static int stm_msp_close(struct i2s_controller *i2s_cont, i2s_flag flag)
 	else {
 		status = stm_msp_disable(msp, MSP_BOTH_T_R_MODE, DISABLE_ALL);
 		clk_disable(msp->clk);
-		status = regulator_disable(msp_vape_supply);
+		if (msp->reg_enabled) {
+			status = regulator_disable(msp_vape_supply);
+			msp->reg_enabled = 0;
+		}
 		if (status != 0) {
 			dev_err(&msp->i2s_cont->dev,
 				"Failed to disable regulator\n");

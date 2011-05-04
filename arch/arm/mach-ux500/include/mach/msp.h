@@ -910,6 +910,7 @@ enum enum_i2s_controller {
  * @polling_flag: Flag used in error handling while polling.
  * @def_elem_len: Flag indicates whether default elem len to be used in
  * protocol_desc or not.
+ * @reg_enabled: Flag indicates whether regulator has been enabled or not.
  * @vape_opp_constraint: 1 if constraint is applied to have vape at 100OPP; 0 otherwise
  * @infinite: true if an infinite transfer has been configured
  *
@@ -942,6 +943,7 @@ struct msp {
 	struct clk *clk;
 	unsigned int direction;
 	int users;
+	int reg_enabled;
 	int loopback_enable;
 	u32 backup_regs[MAX_MSP_BACKUP_REGS];
 	int vape_opp_constraint;
