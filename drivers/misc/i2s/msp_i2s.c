@@ -1227,19 +1227,6 @@ static int msp_dma_xfer(struct msp *msp, struct i2s_message *msg)
 	switch (msg->i2s_transfer_mode) {
 	default:
 	case I2S_TRANSFER_MODE_SINGLE_DMA:
-		if (msg->i2s_direction == I2S_DIRECTION_TX ||
-				msg->i2s_direction == I2S_DIRECTION_BOTH)
-			if (msg->txdata && (msg->txbytes > 0)) {
-				if (!msg->dma_flag)
-					msg->txdata =
-						(void *)dma_map_single(NULL,
-								msg->txdata,
-								msg->txbytes,
-								DMA_TO_DEVICE);
-				status = msp_single_dma_tx(msp,
-						(dma_addr_t)msg->txdata,
-						msg->txbytes);
-			}
 		if (msg->i2s_direction == I2S_DIRECTION_RX ||
 				msg->i2s_direction == I2S_DIRECTION_BOTH)
 			if (msg->rxdata && (msg->rxbytes > 0)) {
@@ -1253,6 +1240,19 @@ static int msp_dma_xfer(struct msp *msp, struct i2s_message *msg)
 				status = msp_single_dma_rx(msp,
 						(dma_addr_t)msg->rxdata,
 						msg->rxbytes);
+			}
+		if (msg->i2s_direction == I2S_DIRECTION_TX ||
+				msg->i2s_direction == I2S_DIRECTION_BOTH)
+			if (msg->txdata && (msg->txbytes > 0)) {
+				if (!msg->dma_flag)
+					msg->txdata =
+						(void *)dma_map_single(NULL,
+								msg->txdata,
+								msg->txbytes,
+								DMA_TO_DEVICE);
+				status = msp_single_dma_tx(msp,
+						(dma_addr_t)msg->txdata,
+						msg->txbytes);
 			}
 		break;
 

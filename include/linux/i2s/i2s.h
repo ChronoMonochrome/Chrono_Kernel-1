@@ -212,6 +212,7 @@ extern int i2s_hw_status(struct i2s_controller *i2s_cont);
 extern dma_addr_t i2s_get_pointer(struct i2s_controller *i2s_cont,
 				enum i2s_direction_t i2s_direction);
 
+extern struct i2s_device *i2s_get_device_from_boardinfo(int chip_select); /* used in MSP LTP tests */
 extern struct i2s_device *i2s_alloc_device(struct device *dev);
 
 extern int i2s_add_device(struct i2s_device *i2s);

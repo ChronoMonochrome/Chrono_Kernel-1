@@ -8,9 +8,8 @@
 /*                                                                            */
 /* This program is distributed in the hope that it will be useful, but        */
 /* WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY */
-/* or FITNES       */
-/* FOR A PARTICULAR PURPOSE. See the GNU General Public License for more      */
-/* details.        */
+/* or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License    */
+/* for more details.                                                          */
 /*                                                                            */
 /* You should have received a copy of the GNU General Public License          */
 /* along with this program. If not, see <http://www.gnu.org/licenses/>.       */
@@ -173,14 +172,46 @@ int i2s_register_driver(struct i2s_driver *sdrv)
 EXPORT_SYMBOL_GPL(i2s_register_driver);
 
 /******************************************************************************/
+struct board_i2s_combined_info {
+	struct i2s_board_info board_info;
+	struct i2s_device *i2s_dev_p;
+};
 struct boardinfo {
 	struct list_head list;
 	unsigned n_board_info;
-	struct i2s_board_info board_info[0];
+	struct board_i2s_combined_info board_i2s_info[0];
 };
 
 static LIST_HEAD(board_list);
 static DEFINE_MUTEX(board_lock);
+
+/*
+ * Get an i2s device. Used in MSP LTP tests.
+ */
+struct i2s_device *i2s_get_device_from_boardinfo(int chip_select)
+{
+	struct boardinfo *bi;
+	struct i2s_device *i2s_dev_p = NULL;
+
+	mutex_lock(&board_lock);
+	list_for_each_entry(bi, &board_list, list) {
+		struct board_i2s_combined_info *chip = bi->board_i2s_info;
+		unsigned n;
+
+		for (n = bi->n_board_info; n > 0; n--, chip++)
+			if (chip->board_info.chip_select == chip_select) {
+				i2s_dev_p = chip->i2s_dev_p;
+				break;
+			}
+		if (i2s_dev_p != NULL)
+			break;
+	}
+	mutex_unlock(&board_lock);
+
+	return i2s_dev_p;
+}
+
+EXPORT_SYMBOL_GPL(i2s_get_device_from_boardinfo);
 
 /* I2S devices should normally not be created by I2S device drivers; that
  * would make them board-specific.  Similarly with I2S master drivers.
@@ -315,13 +346,16 @@ EXPORT_SYMBOL_GPL(i2s_new_device);
 int __init
 i2s_register_board_info(struct i2s_board_info const *info, unsigned n)
 {
+	int i;
 	struct boardinfo *bi;
 
-	bi = kmalloc(sizeof(*bi) + n * sizeof *info, GFP_KERNEL);
+	bi = kmalloc(sizeof(*bi) + (n * sizeof(struct board_i2s_combined_info)), GFP_KERNEL);
 	if (!bi)
 		return -ENOMEM;
 	bi->n_board_info = n;
-	memcpy(bi->board_info, info, n * sizeof *info);
+
+	for (i = 0; i < n; i++)
+		memcpy(&bi->board_i2s_info[i].board_info, &info[i], sizeof *info);
 
 	mutex_lock(&board_lock);
 	list_add_tail(&bi->list, &board_list);
@@ -347,16 +381,16 @@ static void scan_boardinfo(struct i2s_controller *i2s_cont)
 
 	mutex_lock(&board_lock);
 	list_for_each_entry(bi, &board_list, list) {
-		struct i2s_board_info *chip = bi->board_info;
+		struct board_i2s_combined_info *chip = bi->board_i2s_info;
 		unsigned n;
 
 		for (n = bi->n_board_info; n > 0; n--, chip++) {
-			if (chip->id != i2s_cont->id)
+			if (chip->board_info.chip_select != i2s_cont->id)
 				continue;
 			/* NOTE: this relies on i2s_new_device to
 			 * issue diagnostics when given bogus inputs
 			 */
-			(void)i2s_new_device(i2s_cont, chip);
+			chip->i2s_dev_p = i2s_new_device(i2s_cont, &chip->board_info);
 		}
 	}
 	mutex_unlock(&board_lock);

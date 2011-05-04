@@ -17,13 +17,3 @@ config STM_MSP_I2S
 	  If you say Y here, you will enable the U8500 MSP_I2S hardware driver.
 
 	  If unsure, say N.
-
-config STM_I2S_TEST_PROTOCOL_DRIVER
-	tristate "U8500 I2S test protocol driver"
-	depends on STM_I2S && STE_DMA40 && STM_MSP_I2S
-	default n
-	---help---
-	  If you say Y here, you will enable the test protocol driver used for testing I2S Rx and Tx controllers
-
-	  If unsure, say N.
-
