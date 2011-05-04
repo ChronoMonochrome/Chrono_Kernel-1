@@ -433,10 +433,10 @@ const struct color_conversion_cmd col_trans_yuv_to_rgb_v1 = {
 };
 
 const struct color_conversion_cmd col_trans_yuv_to_rgb_v2 = {
-	.c0      = 0x0204, .c1      = 0x012a, .c2      = 0x0000,
-	.c3      = 0xff9c, .c4      = 0x012a, .c5      = 0xff30,
-	.c6      = 0x0000, .c7      = 0x012a, .c8      = 0x0198,
-	.aoffset = 0xfeeb, .boffset = 0x0088, .coffset = 0xff21,
+	.c0      = 0x0198, .c1      = 0x012a, .c2      = 0x0000,
+	.c3      = 0xff30, .c4      = 0x012a, .c5      = 0xff9c,
+	.c6      = 0x0000, .c7      = 0x012a, .c8      = 0x0204,
+	.aoffset = 0xff21, .boffset = 0x0088, .coffset = 0xfeeb,
 	.lmax    = 0xff,
 	.lmin    = 0x00,
 	.cmax    = 0xff,
