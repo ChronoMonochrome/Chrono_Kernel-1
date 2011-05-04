@@ -14,12 +14,6 @@
 #include "pins.h"
 
 static pin_cfg_t u5500_pins_default[] = {
-	/* I2C */
-	GPIO3_I2C1_SCL	| PIN_INPUT_PULLUP,
-	GPIO4_I2C1_SDA	| PIN_INPUT_PULLUP,
-	GPIO218_I2C2_SCL	| PIN_INPUT_PULLUP,
-	GPIO219_I2C2_SDA	| PIN_INPUT_PULLUP,
-
 	/* Keypad */
 	GPIO128_KP_I0	| PIN_INPUT_PULLUP,
 	GPIO130_KP_I1	| PIN_INPUT_PULLUP,
@@ -98,7 +92,23 @@ static pin_cfg_t u5500_pins_default[] = {
 	GPIO204_LCD_VSI1	| PIN_INPUT_PULLUP,
 };
 
+static UX500_PINS(u5500_pins_i2c1,
+	GPIO3_I2C1_SCL,
+	GPIO4_I2C1_SDA,
+);
+
+static UX500_PINS(u5500_pins_i2c2,
+	GPIO218_I2C2_SCL,
+	GPIO219_I2C2_SDA,
+);
+
+static struct ux500_pin_lookup u5500_pins[] = {
+	PIN_LOOKUP("nmk-i2c.1", &u5500_pins_i2c1),
+	PIN_LOOKUP("nmk-i2c.2", &u5500_pins_i2c2),
+};
+
 void __init u5500_pins_init(void)
 {
 	nmk_config_pins(u5500_pins_default, ARRAY_SIZE(u5500_pins_default));
+	ux500_pins_add(u5500_pins, ARRAY_SIZE(u5500_pins));
 }
