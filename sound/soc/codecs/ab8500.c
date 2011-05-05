@@ -1059,6 +1059,7 @@ static DECLARE_TLV_DB_SCALE(lin2hs_gain_tlv, -3800, 200, 1);
 
 static const char *enum_ena_dis[] = {"Enabled", "Disabled"};
 static const char *enum_dis_ena[] = {"Disabled", "Enabled"};
+
 static SOC_ENUM_SINGLE_DECL(soc_enum_hshpen,
 	REG_ANACONF1, REG_ANACONF1_HSHPEN, enum_dis_ena);
 static SOC_ENUM_SINGLE_DECL(soc_enum_hslowpow,
@@ -1145,7 +1146,14 @@ static const char *enum_fadespeed[] = {"1ms", "4ms", "8ms", "16ms"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_fadespeed,
 	REG_HSRDIGGAIN, REG_HSRDIGGAIN_FADESPEED, enum_fadespeed);
 
-/* XXX move to DAPM */
+static SOC_ENUM_SINGLE_DECL(soc_enum_mastgen,
+	REG_DIGIFCONF1, REG_DIGIFCONF1_ENMASTGEN, enum_dis_ena);
+static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk0,
+	REG_DIGIFCONF1, REG_DIGIFCONF1_ENFSBITCLK0, enum_dis_ena);
+static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk1,
+	REG_DIGIFCONF1, REG_DIGIFCONF1_ENFSBITCLK1, enum_dis_ena);
+
+/* TODO: move to DAPM */
 static SOC_ENUM_SINGLE_DECL(soc_enum_enfirsids,
 	REG_SIDFIRCONF, REG_SIDFIRCONF_ENFIRSIDS, enum_dis_ena);
 static SOC_ENUM_SINGLE_DECL(soc_enum_parlhf,
@@ -1220,7 +1228,7 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_PWMGENCONFX_PWMVIBXDUTCYC,
 		REG_PWMGENCONFX_PWMVIBXDUTCYC_MAX, NORMAL),
 
-	/* XXX move to DAPM */
+	/* TODO: move to DAPM */
 	SOC_ENUM("Sidetone Playback Switch", soc_enum_enfirsids),
 	SOC_ENUM("IHF L and R Bridge Playback Route", soc_enum_parlhf),
 	SOC_ENUM("Vibra 1 and 2 Bridge Playback Route", soc_enum_parlvib),
@@ -1280,6 +1288,10 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_DIGLINHSLGAIN, REG_DIGLINHSRGAIN,
 		REG_DIGLINHSXGAIN_LINTOHSXGAIN,
 		REG_DIGLINHSXGAIN_LINTOHSXGAIN_MAX, INVERT, lin2hs_gain_tlv),
+
+	SOC_ENUM("Digital Interface Master Generator Switch", soc_enum_mastgen),
+	SOC_ENUM("Digital Interface 0 Bit-clock Switch", soc_enum_fsbitclk0),
+	SOC_ENUM("Digital Interface 1 Bit-clock Switch", soc_enum_fsbitclk1),
 };
 
 static int ab8500_add_widgets(struct snd_soc_codec *codec)
@@ -1301,6 +1313,63 @@ static int ab8500_add_widgets(struct snd_soc_codec *codec)
 			__func__, ret);
 		return ret;
 	}
+
+	return 0;
+}
+
+int ab8500_set_word_length(struct snd_soc_dai *dai, unsigned int wl)
+{
+	unsigned int clear_mask;
+	unsigned int set_mask = 0;
+	struct snd_soc_codec *codec = dai->codec;
+
+	clear_mask = BMASK(REG_DIGIFCONF2_IF0WL0) | BMASK(REG_DIGIFCONF2_IF0WL1);
+
+	switch (wl) {
+	case 16:
+		break;
+	case 20:
+		set_mask |= BMASK(REG_DIGIFCONF2_IF0WL0);
+		break;
+	case 24:
+		set_mask |= BMASK(REG_DIGIFCONF2_IF0WL1);
+		break;
+	case 32:
+		set_mask |= BMASK(REG_DIGIFCONF2_IF0WL1) |
+			BMASK(REG_DIGIFCONF2_IF0WL0);
+		break;
+	default:
+		pr_err("%s: Unsupporter word-length 0x%x\n", __func__, wl);
+		return -EINVAL;
+	}
+
+	pr_debug("%s: Word-length: %d bits.\n", __func__, wl);
+	ab8500_update_audio_reg(codec, REG_DIGIFCONF2, clear_mask, set_mask);
+
+	return 0;
+}
+
+int ab8500_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay)
+{
+	unsigned int clear_mask;
+	unsigned int set_mask = 0;
+	struct snd_soc_codec *codec = dai->codec;
+
+	clear_mask = BMASK(REG_DIGIFCONF2_IF0DEL);
+
+	switch (delay) {
+	case 0:
+		break;
+	case 1:
+		set_mask |= BMASK(REG_DIGIFCONF2_IF0DEL);
+		break;
+	default:
+		pr_err("%s: Unsupported bit-delay (0x%x)!\n", __func__, delay);
+		return -EINVAL;
+	}
+
+	pr_debug("%s: Bit-delay: %d bits.\n", __func__, delay);
+	ab8500_update_audio_reg(codec, REG_DIGIFCONF2, clear_mask, set_mask);
 
 	return 0;
 }
@@ -1388,16 +1457,16 @@ static int set_dai_clock_gate(struct snd_soc_codec *codec, unsigned int fmt)
 
 	clear_mask = BMASK(REG_DIGIFCONF1_ENMASTGEN) |
 			BMASK(REG_DIGIFCONF1_ENFSBITCLK0);
-	set_mask = 0;
+
+	set_mask = BMASK(REG_DIGIFCONF1_ENMASTGEN);
 
 	switch (fmt & SND_SOC_DAIFMT_CLOCK_MASK) {
 	case SND_SOC_DAIFMT_CONT: /* continuous clock */
-		pr_info("- Clock is not gated\n");
-		set_mask |= BMASK(REG_DIGIFCONF1_ENMASTGEN);
+		pr_info("- Clock is continous.\n");
 		set_mask |= BMASK(REG_DIGIFCONF1_ENFSBITCLK0);
 		break;
 	case SND_SOC_DAIFMT_GATED: /* clock is gated */
-		pr_info("- Clock IS gated\n");
+		pr_info("- Clock is gated.\n");
 		break;
 	default:
 		pr_err("Unsupporter clock mask 0x%x\n",
@@ -1435,22 +1504,26 @@ static int ab8500_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	}
 
 	/* Setting data transfer format */
-	clear_mask = REG_MASK_ALL;
+	clear_mask = BMASK(REG_DIGIFCONF2_IF0FORMAT0) |
+		BMASK(REG_DIGIFCONF2_IF0FORMAT1) |
+		BMASK(REG_DIGIFCONF2_FSYNC0P) |
+		BMASK(REG_DIGIFCONF2_BITCLK0P);
+
 	set_mask = 0;
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S: /* I2S mode */
 		pr_info("- FORMAT I2S\n");
 		set_mask |= BMASK(REG_DIGIFCONF2_IF0FORMAT1);
-		set_mask |= BMASK(REG_DIGIFCONF2_IF0DEL);
 
-		/* 32 bit */
-		set_mask |= BMASK(REG_DIGIFCONF2_IF0WL1) |
-			BMASK(REG_DIGIFCONF2_IF0WL0);
+		/* 32 bit, 0 delay */
+		ab8500_set_word_length(dai, 32);
+		ab8500_set_bit_delay(dai, 0);
+
 		break;
 	case SND_SOC_DAIFMT_DSP_A: /* L data MSB after FRM LRC */
 		pr_info("- FORMAT DSP A\n");
-		set_mask |= BMASK(REG_DIGIFCONF2_IF0FORMAT0);
+		set_mask |= BMASK(REG_DIGIFCONF2_IF0FORMAT1);
 		break;
 	case SND_SOC_DAIFMT_DSP_B: /* L data MSB during FRM LRC */
 		pr_info("- FORMAT DSP B\n");
@@ -1496,9 +1569,8 @@ static int ab8500_set_dai_tdm_slot(struct snd_soc_dai *dai,
 		unsigned int tx_mask, unsigned int rx_mask,
 		int slots, int slot_width)
 {
-	int data;
 	struct snd_soc_codec *codec = dai->codec;
-	unsigned int clear_mask;
+	unsigned int set_mask, clear_mask, slots_active;
 
 	/* Only 16 bit slot width is supported at the moment in TDM mode */
 	if (slot_width != 16) {
@@ -1507,48 +1579,98 @@ static int ab8500_set_dai_tdm_slot(struct snd_soc_dai *dai,
 		return -EINVAL;
 	}
 
-	/* Set the TDM clocking according to slot count */
+	/* Setup TDM clocking according to slot count */
+	pr_debug("%s: Slots, total: %d\n", __func__, slots);
+	clear_mask = BMASK(REG_DIGIFCONF1_IF0BITCLKOS0) |
+			BMASK(REG_DIGIFCONF1_IF0BITCLKOS1);
 	switch (slots) {
 	case 2:
-		data = REG_MASK_NONE;
+		set_mask = REG_MASK_NONE;
 		break;
 	case 4:
-		data = BMASK(REG_DIGIFCONF1_IF0BITCLKOS0);
+		set_mask = BMASK(REG_DIGIFCONF1_IF0BITCLKOS0);
 		break;
 	case 8:
-		data = BMASK(REG_DIGIFCONF1_IF0BITCLKOS1);
+		set_mask = BMASK(REG_DIGIFCONF1_IF0BITCLKOS1);
 		break;
 	case 16:
-		data = BMASK(REG_DIGIFCONF1_IF0BITCLKOS0) |
+		set_mask = BMASK(REG_DIGIFCONF1_IF0BITCLKOS0) |
 				BMASK(REG_DIGIFCONF1_IF0BITCLKOS1);
 		break;
 	default:
-		pr_err("%s: Unsupported slots %d.\n", __func__, slots);
+		pr_err("%s: Unsupported number of slots (%d)!\n", __func__, slots);
+		return -EINVAL;
+	}
+	ab8500_update_audio_reg(codec, REG_DIGIFCONF1, clear_mask, set_mask);
+
+	/* Setup TDM DA according to active tx slots */
+	clear_mask = REG_DASLOTCONFX_SLTODAX_MASK;
+	slots_active = hweight32(tx_mask);
+	pr_debug("%s: Slots, active, TX: %d\n", __func__, slots_active);
+	switch (slots_active) {
+	case 0:
+		break;
+	case 1:
+		/* Slot 9 -> DA_IN1 & DA_IN3 */
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF1, clear_mask, 9);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF3, clear_mask, 9);
+		break;
+	case 2:
+		/* Slot 9 -> DA_IN1 & DA_IN3, Slot 11 -> DA_IN2 & DA_IN4 */
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF1, clear_mask, 9);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF3, clear_mask, 9);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF2, clear_mask, 11);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF4, clear_mask, 11);
+
+		break;
+	case 8:
+		/* Slot 8-15 -> DA_IN1-DA_IN8 */
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF1, clear_mask, 8);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF2, clear_mask, 9);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF3, clear_mask, 10);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF4, clear_mask, 11);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF5, clear_mask, 12);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF6, clear_mask, 13);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF7, clear_mask, 14);
+		ab8500_update_audio_reg(codec, REG_DASLOTCONF8, clear_mask, 15);
+
+		break;
+	default:
+		pr_err("%s: Unsupported number of active TX-slots (%d)!\n", __func__, slots_active);
 		return -EINVAL;
 	}
 
-	ab8500_update_audio_reg(codec, REG_DIGIFCONF1,
-		BMASK(REG_DIGIFCONF1_IF0BITCLKOS0) |
-		BMASK(REG_DIGIFCONF1_IF0BITCLKOS1),
-		data);
-
-	/* XXX Make slot configuration as a control */
-
-	clear_mask = REG_DASLOTCONFX_SLTODAX_MASK;
-
-	/* DA_IN1/3/5 receives slot 9, DA_IN2/4/6 receives slot 11 */
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF1, clear_mask, 9);
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF2, clear_mask, 11);
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF3, clear_mask, 9);
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF4, clear_mask, 11);
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF5, clear_mask, 9);
-	ab8500_update_audio_reg(codec, REG_DASLOTCONF6, clear_mask, 11);
-
-	/* AD_OUT3 transmits slots 0 & 1 */
-	ab8500_update_audio_reg(codec, REG_ADSLOTSEL1,
+	/* Setup TDM AD according to active RX-slots */
+	slots_active = hweight32(rx_mask);
+	pr_debug("%s: Slots, active, RX: %d\n", __func__, slots_active);
+	switch (slots_active) {
+	case 0:
+		break;
+	case 1:
+		/* AD_OUT3 -> slot 0 & 1 */
+		ab8500_update_audio_reg(codec, REG_ADSLOTSEL1,
 			REG_MASK_ALL,
 			BMASK(REG_ADSLOTSELX_ODDX_1) |
 			BMASK(REG_ADSLOTSELX_EVENX_1));
+		break;
+	case 2:
+		/* AD_OUT3 -> slot 0, AD_OUT2 -> slot 1 */
+		ab8500_update_audio_reg(codec, REG_ADSLOTSEL1,
+			REG_MASK_ALL,
+			BMASK(REG_ADSLOTSELX_ODDX_0) |
+			BMASK(REG_ADSLOTSELX_EVENX_1));
+		break;
+	case 8:
+		/* AD_OUT3 -> slot 0, AD_OUT2 -> slot 1 */
+		ab8500_update_audio_reg(codec, REG_ADSLOTSEL1,
+			REG_MASK_ALL,
+			BMASK(REG_ADSLOTSELX_ODDX_0) |
+			BMASK(REG_ADSLOTSELX_EVENX_1));
+		break;
+	default:
+		pr_err("%s: Unsupported number of active RX-slots (%d)!\n", __func__, slots_active);
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -1560,7 +1682,7 @@ struct snd_soc_dai_driver ab8500_codec_dai[] = {
 		.playback = {
 			.stream_name = "ab8500_0p",
 			.channels_min = 1,
-			.channels_max = 2,
+			.channels_max = 8,
 			.rates = AB8500_SUPPORTED_RATE,
 			.formats = AB8500_SUPPORTED_FMT,
 		},
@@ -1583,7 +1705,7 @@ struct snd_soc_dai_driver ab8500_codec_dai[] = {
 		.capture = {
 			.stream_name = "ab8500_0c",
 			.channels_min = 1,
-			.channels_max = 1,
+			.channels_max = 8,
 			.rates = AB8500_SUPPORTED_RATE,
 			.formats = AB8500_SUPPORTED_FMT,
 		},
@@ -1720,12 +1842,16 @@ struct snd_soc_codec_driver ab8500_codec_drv = {
 	.reg_cache_default =	ab8500_reg_cache,
 };
 
-static int __devinit ab8500_codec_drv_probe(struct platform_device *pdev)
+static int ab8500_codec_drv_probe(struct platform_device *pdev)
 {
 	int err;
+	struct ab8500_codec_dai_data *dai_data;
 
 	pr_debug("%s: Enter.\n", __func__);
 
+	platform_set_drvdata(pdev, dai_data);
+
+	pr_info("%s: Register codec.\n", __func__);
 	err = snd_soc_register_codec(&pdev->dev,
 				&ab8500_codec_drv,
 				ab8500_codec_dai,
@@ -1739,7 +1865,7 @@ static int __devinit ab8500_codec_drv_probe(struct platform_device *pdev)
 	return err;
 }
 
-static int __devexit ab8500_codec_drv_remove(struct platform_device *pdev)
+static int ab8500_codec_drv_remove(struct platform_device *pdev)
 {
 	pr_debug("%s Enter.\n", __func__);
 
@@ -1769,7 +1895,7 @@ static struct platform_driver ab8500_codec_platform_drv = {
 		.owner	= THIS_MODULE,
 	},
 	.probe		= ab8500_codec_drv_probe,
-	.remove		= __devexit_p(ab8500_codec_drv_remove),
+	.remove		= ab8500_codec_drv_remove,
 	.suspend	= ab8500_codec_drv_suspend,
 	.resume		= ab8500_codec_drv_resume,
 };

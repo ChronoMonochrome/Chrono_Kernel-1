@@ -28,19 +28,18 @@
 #include "ux500_msp_dai.h"
 #include "../codecs/ab8500.h"
 
-#define AB8500_DAIFMT_TDM_MASTER \
-		(SND_SOC_DAIFMT_DSP_B | \
-		SND_SOC_DAIFMT_CBM_CFM | \
-		SND_SOC_DAIFMT_NB_NF | \
-		SND_SOC_DAIFMT_CONT)
-
 #define TX_SLOT_MONO	0x0008
 #define TX_SLOT_STEREO	0x000a
 #define RX_SLOT_MONO	0x0001
 #define RX_SLOT_STEREO	0x0003
+#define TX_SLOT_8CH	0x00FF
+#define RX_SLOT_8CH	0x00FF
 
 #define DEF_TX_SLOTS	TX_SLOT_STEREO
 #define DEF_RX_SLOTS	RX_SLOT_MONO
+
+#define DRIVERMODE_NORMAL	0
+#define DRIVERMODE_CODEC_ONLY	1
 
 static struct snd_soc_jack jack;
 
@@ -155,11 +154,13 @@ int ux500_ab8500_hw_params(
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-	int channels, ret = 0;
+	unsigned int fmt;
+	int channels, ret = 0, slots, slot_width, driver_mode;
+	bool streamIsPlayback;
 
-	pr_info("%s: Enter\n", __func__);
+	pr_debug("%s: Enter\n", __func__);
 
-	pr_info("%s: substream->pcm->name = %s\n"
+	pr_debug("%s: substream->pcm->name = %s\n"
 		"substream->pcm->id = %s.\n"
 		"substream->name = %s.\n"
 		"substream->number = %d.\n",
@@ -169,49 +170,80 @@ int ux500_ab8500_hw_params(
 		substream->name,
 		substream->number);
 
-	ret = snd_soc_dai_set_fmt(codec_dai, AB8500_DAIFMT_TDM_MASTER);
-	if (ret < 0) {
-		pr_err("%s: snd_soc_dai_set_fmt failed codec_dai %d.\n",
-			__func__, ret);
-		return ret;
-	}
-
-	ret = snd_soc_dai_set_fmt(cpu_dai, AB8500_DAIFMT_TDM_MASTER);
-	if (ret < 0) {
-		pr_err("%s: snd_soc_dai_set_fmt cpu_dai %d.\n",
-				__func__, ret);
-		return ret;
-	}
-
 	channels = params_channels(params);
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		if (channels == 1)
-			tx_slots = TX_SLOT_MONO;
-		else if (channels == 2)
-			tx_slots = TX_SLOT_STEREO;
-		else
-			return -EINVAL;
+	/* Setup codec depending on driver-mode */
+	driver_mode = (channels == 8) ?
+		DRIVERMODE_CODEC_ONLY : DRIVERMODE_NORMAL;
+	pr_debug("%s: Driver-mode: %s.\n",
+		__func__,
+		(driver_mode == DRIVERMODE_NORMAL) ? "NORMAL" : "CODEC_ONLY");
+	if (driver_mode == DRIVERMODE_NORMAL) {
+		ab8500_set_bit_delay(codec_dai, 0);
+		ab8500_set_word_length(codec_dai, 16);
+		fmt = SND_SOC_DAIFMT_DSP_B |
+			SND_SOC_DAIFMT_CBM_CFM |
+			SND_SOC_DAIFMT_NB_NF |
+			SND_SOC_DAIFMT_CONT;
 	} else {
-		if (channels == 1)
-			rx_slots = RX_SLOT_MONO;
-		else if (channels == 2)
-			rx_slots = RX_SLOT_STEREO;
-		else
-			return -EINVAL;
+		ab8500_set_bit_delay(codec_dai, 1);
+		ab8500_set_word_length(codec_dai, 20);
+		fmt = SND_SOC_DAIFMT_DSP_B |
+			SND_SOC_DAIFMT_CBM_CFM |
+			SND_SOC_DAIFMT_NB_NF |
+			SND_SOC_DAIFMT_GATED;
 	}
 
-	pr_info("%s: CPU-DAI TDM: TX=0x%04X RX=0x%04x\n",
-		__func__, tx_slots, rx_slots);
-	ret = snd_soc_dai_set_tdm_slot(cpu_dai,
-					tx_slots, rx_slots,
-					16, 16);
+	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
+	if (ret < 0) {
+		pr_err("%s: snd_soc_dai_set_fmt failed for codec_dai (ret = %d).\n",
+			__func__,
+			ret);
+		return ret;
+	}
 
-	pr_info("%s: CODEC-DAI TDM: TX=0x%04X RX=0x%04x\n",
+	ret = snd_soc_dai_set_fmt(cpu_dai, fmt);
+	if (ret < 0) {
+		pr_err("%s: snd_soc_dai_set_fmt for cpu_dai (ret = %d).\n",
+			__func__,
+			ret);
+		return ret;
+	}
+
+	/* Setup TDM-slots */
+
+	streamIsPlayback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
+	switch (channels) {
+	case 1:
+		slots = 16;
+		slot_width = 16;
+		tx_slots = (streamIsPlayback) ? TX_SLOT_MONO : 0;
+		rx_slots = (streamIsPlayback) ? 0 : RX_SLOT_MONO;
+		break;
+	case 2:
+		slots = 16;
+		slot_width = 16;
+		tx_slots = (streamIsPlayback) ? TX_SLOT_STEREO : 0;
+		rx_slots = (streamIsPlayback) ? 0 : RX_SLOT_STEREO;
+		break;
+	case 8:
+		slots = 16;
+		slot_width = 16;
+		tx_slots = (streamIsPlayback) ? TX_SLOT_8CH : 0;
+		rx_slots = (streamIsPlayback) ? 0 : RX_SLOT_8CH;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	pr_debug("%s: CPU-DAI TDM: TX=0x%04X RX=0x%04x\n",
 		__func__, tx_slots, rx_slots);
-	ret += snd_soc_dai_set_tdm_slot(codec_dai,
-					tx_slots, rx_slots,
-					16, 16);
+	ret = snd_soc_dai_set_tdm_slot(cpu_dai, tx_slots, rx_slots,
+				slots, slot_width);
+
+	pr_debug("%s: CODEC-DAI TDM: TX=0x%04X RX=0x%04x\n",
+		__func__, tx_slots, rx_slots);
+	ret += snd_soc_dai_set_tdm_slot(codec_dai, tx_slots, rx_slots, slots, slot_width);
 
 	return ret;
 }

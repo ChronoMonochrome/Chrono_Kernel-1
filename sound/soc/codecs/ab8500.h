@@ -22,6 +22,9 @@ extern struct snd_soc_codec_driver soc_codec_dev_ab8500;
 
 #define AB8500_SUPPORTED_FMT (SNDRV_PCM_FMTBIT_S16_LE)
 
+int ab8500_set_word_length(struct snd_soc_dai *dai, unsigned int wl);
+int ab8500_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay);
+
 /* AB8500 audio bank (0x0d) register definitions */
 
 #define REG_POWERUP		0x00

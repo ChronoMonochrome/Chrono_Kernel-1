@@ -136,7 +136,6 @@ static int ux500_pcm_open(struct snd_pcm_substream *substream)
 	else
 		snd_soc_set_runtime_hwparams(substream, &ux500_pcm_hw_capture);
 
-
 	/* ensure that buffer size is a multiple of period size */
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 	if (ret < 0) {
@@ -171,9 +170,8 @@ static int ux500_pcm_close(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static int ux500_pcm_hw_params(
-	struct snd_pcm_substream *substream,
-	struct snd_pcm_hw_params *hw_params)
+static int ux500_pcm_hw_params(struct snd_pcm_substream *substream,
+			struct snd_pcm_hw_params *hw_params)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_dma_buffer *buf = runtime->dma_buffer_p;
@@ -369,7 +367,7 @@ struct snd_soc_platform_driver ux500_pcm_soc_drv = {
 };
 EXPORT_SYMBOL(ux500_pcm_soc_drv);
 
-static int __devinit ux500_pcm_drv_probe(struct platform_device *pdev)
+static int ux500_pcm_drv_probe(struct platform_device *pdev)
 {
 	int ret;
 
@@ -386,7 +384,7 @@ static int __devinit ux500_pcm_drv_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int __devexit ux500_pcm_drv_remove(struct platform_device *pdev)
+static int ux500_pcm_drv_remove(struct platform_device *pdev)
 {
 	pr_debug("%s: Unregister ux500-pcm SoC platform driver.\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
@@ -396,12 +394,12 @@ static int __devexit ux500_pcm_drv_remove(struct platform_device *pdev)
 
 static struct platform_driver ux500_pcm_drv = {
 	.driver = {
-			.name = "ux500-pcm",
-			.owner = THIS_MODULE,
+		.name = "ux500-pcm",
+		.owner = THIS_MODULE,
 	},
 
 	.probe = ux500_pcm_drv_probe,
-	.remove = __devexit_p(ux500_pcm_drv_remove),
+	.remove = ux500_pcm_drv_remove,
 };
 
 static int __init ux500_pcm_drv_init(void)
@@ -410,7 +408,6 @@ static int __init ux500_pcm_drv_init(void)
 
 	return platform_driver_register(&ux500_pcm_drv);
 }
-
 
 static void __exit ux500_pcm_drv_exit(void)
 {

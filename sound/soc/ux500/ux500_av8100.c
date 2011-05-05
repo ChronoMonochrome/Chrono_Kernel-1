@@ -16,20 +16,28 @@
 #include "ux500_av8100.h"
 #include "ux500_msp_dai.h"
 
+static const char *stream_str(struct snd_pcm_substream *substream)
+{
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		return "Playback";
+	else
+		return "Capture";
+}
+
 static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 			struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-		int channels = params_channels(params);
+	int channels = params_channels(params);
 	unsigned int tx_mask, fmt;
 	enum hdmi_channel_allocation hdmi_ca;
 	enum hdmi_audio_channel_count hdmi_cc;
 	struct hdmi_audio_settings as;
 	int ret;
 
-	pr_debug("%s: Enter.\n", __func__);
+	pr_debug("%s: Enter (%s).\n", __func__, stream_str(substream));
 	pr_debug("%s: substream->pcm->name = %s.\n", __func__, substream->pcm->name);
 	pr_debug("%s: substream->pcm->id = %s.\n", __func__, substream->pcm->id);
 	pr_debug("%s: substream->name = %s.\n", __func__, substream->name);

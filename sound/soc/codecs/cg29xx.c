@@ -651,7 +651,7 @@ struct snd_soc_codec_driver cg29xx_codec_drv = {
 	.write = cg29xx_codec_write,
 };
 
-static __devinit int cg29xx_codec_drv_probe(struct platform_device *pdev)
+static int cg29xx_codec_drv_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct cg29xx_codec_dai_data *dai_data;
@@ -714,7 +714,7 @@ static __devinit int cg29xx_codec_drv_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int __devexit cg29xx_codec_drv_remove(struct platform_device *pdev)
+static int cg29xx_codec_drv_remove(struct platform_device *pdev)
 {
 	(void)cg2900_audio_close(&codec_private.session);
 
@@ -741,7 +741,7 @@ static struct platform_driver cg29xx_codec_platform_drv = {
 		.owner = THIS_MODULE,
 	},
 	.probe = cg29xx_codec_drv_probe,
-	.remove = __devexit_p(cg29xx_codec_drv_remove),
+	.remove = cg29xx_codec_drv_remove,
 	.suspend	= cg29xx_codec_drv_suspend,
 	.resume		= cg29xx_codec_drv_resume,
 };

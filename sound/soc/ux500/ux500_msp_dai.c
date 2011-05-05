@@ -891,7 +891,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 };
 EXPORT_SYMBOL(ux500_msp_dai_drv);
 
-static int __devinit ux500_msp_drv_probe(struct i2s_device *i2s_dev)
+static int ux500_msp_drv_probe(struct i2s_device *i2s_dev)
 {
 	int ret = 0;
 	struct ux500_platform_drvdata *drvdata;
@@ -966,7 +966,7 @@ static struct i2s_driver i2sdrv_i2s_v1 = {
 		.owner = THIS_MODULE,
 	},
 	.probe = ux500_msp_drv_probe,
-	.remove = __devexit_p(ux500_msp_drv_remove),
+	.remove = ux500_msp_drv_remove,
 	.id_table = dev_id_table_v1,
 };
 
