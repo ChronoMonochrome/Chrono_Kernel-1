@@ -950,6 +950,7 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 {
 	struct mmci_host *host = dev_id;
 	u32 status;
+	int sdio_irq = 0;
 	int ret = 0;
 
 	spin_lock(&host->lock);
@@ -973,7 +974,7 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
 
 		if (status & MCI_ST_SDIOIT)
-			mmc_signal_sdio_irq(host->mmc);
+			sdio_irq = 1;
 
 		data = host->data;
 		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|
@@ -988,6 +989,9 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 	} while (status);
 
 	spin_unlock(&host->lock);
+
+	if (sdio_irq)
+		mmc_signal_sdio_irq(host->mmc);
 
 	return IRQ_RETVAL(ret);
 }
@@ -1138,24 +1142,19 @@ static irqreturn_t mmci_cd_irq(int irq, void *dev_id)
 static void mmci_enable_sdio_irq(struct mmc_host *mmc, int enable)
 {
 	unsigned long flags;
+	unsigned int mask0;
 	struct mmci_host *host = mmc_priv(mmc);
 
-	if (enable) {
-		/*
-		 * Since the host is not claimed when doing enable
-		 * we must handle it here.
-		 */
-		spin_lock_irqsave(&host->lock, flags);
+	spin_lock_irqsave(&host->lock, flags);
 
-		writel((readl(host->base + MMCIMASK0) | MCI_ST_SDIOIT),
-		       (host->base + MMCIMASK0));
+	mask0 = readl(host->base + MMCIMASK0);
+	if (enable)
+		mask0 |= MCI_ST_SDIOIT;
+	else
+		mask0 &= ~MCI_ST_SDIOIT;
+	writel(mask0, host->base + MMCIMASK0);
 
-		spin_unlock_irqrestore(&host->lock, flags);
-	} else {
-		/* We assumes the host is claimed when doing disable. */
-		writel((readl(host->base + MMCIMASK0) & ~MCI_ST_SDIOIT),
-		       (host->base + MMCIMASK0));
-	}
+	spin_unlock_irqrestore(&host->lock, flags);
 }
 
 static const struct mmc_host_ops mmci_ops = {
