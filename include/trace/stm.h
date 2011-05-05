@@ -148,7 +148,7 @@ static inline int stm_trace_printk_buf(
 }
 
 static inline int stm_trace_bprintk_buf(
-		unsigned long ip, const char *fmt, const char *buf, size_t size)
+		unsigned long ip, const char *fmt, const void *buf, size_t size)
 {
 	return 0;
 }
