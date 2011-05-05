@@ -1273,6 +1273,8 @@ static int __devexit ab8500_acc_detect_remove(struct platform_device *pdev)
 }
 
 #if defined(CONFIG_PM)
+static u8 acc_det_ctrl_suspend_val;
+
 static int ab8500_acc_detect_suspend(struct platform_device *pdev,
 			pm_message_t state)
 {
@@ -1284,6 +1286,17 @@ static int ab8500_acc_detect_suspend(struct platform_device *pdev,
 	cancel_delayed_work_sync(&dd->detect_work);
 	cancel_delayed_work_sync(&dd->init_work);
 
+	/* Turn off AccDetect comparators and pull-up */
+	(void) abx500_get_register_interruptible(
+			&dd->pdev->dev,
+			AB8500_ECI_AV_ACC,
+			AB8500_ACC_DET_CTRL_REG,
+			&acc_det_ctrl_suspend_val);
+	(void) abx500_set_register_interruptible(
+			&dd->pdev->dev,
+			AB8500_ECI_AV_ACC,
+			AB8500_ACC_DET_CTRL_REG,
+			0);
 	return 0;
 }
 
@@ -1292,6 +1305,13 @@ static int ab8500_acc_detect_resume(struct platform_device *pdev)
 	struct ab8500_ad *dd = platform_get_drvdata(pdev);
 
 	dev_dbg(&dd->pdev->dev, "%s: Enter\n", __func__);
+
+	/* Turn on AccDetect comparators and pull-up */
+	(void) abx500_set_register_interruptible(
+			&dd->pdev->dev,
+			AB8500_ECI_AV_ACC,
+			AB8500_ACC_DET_CTRL_REG,
+			acc_det_ctrl_suspend_val);
 
 	/* After resume, reinitialize */
 	dd->gpio35_dir_set = dd->accdet1_th_set = dd->accdet2_th_set = 0;
