@@ -267,10 +267,6 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 
 	hw->wiphy->max_scan_ssids = 2;
 
-	/* TODO: You must fill in the @dev member of this structure */
-	/* using SET_IEEE80211_DEV() */
-	/* SET_IEEE80211_DEV(hw, &pdev->dev); */
-
 	SET_IEEE80211_PERM_ADDR(hw, cw1200_mac_template);
 
 	if (hw->wiphy->perm_addr[3] == 0 &&
@@ -409,6 +405,7 @@ int cw1200_probe(const struct sbus_ops *sbus_ops,
 	priv->sbus_ops = sbus_ops;
 	priv->sbus_priv = sbus;
 	priv->pdev = pdev;
+	SET_IEEE80211_DEV(priv->hw, pdev);
 
 	/* WSM callbacks. */
 	priv->wsm_cbc.scan_complete = cw1200_scan_complete_cb;
