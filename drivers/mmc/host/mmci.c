@@ -417,6 +417,10 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
 	struct dma_async_tx_descriptor *desc;
 	int nr_sg;
 
+	/* If less than or equal to the fifo size, don't bother with DMA */
+	if (host->size <= variant->fifosize)
+		return -EINVAL;
+
 	host->dma_current = NULL;
 
 	if (data->flags & MMC_DATA_READ) {
@@ -545,6 +549,38 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 		writel(clk, (base + MMCICLOCK));
 	}
 
+	if (variant->sdio &&
+		host->mmc->card &&
+		mmc_card_sdio(host->mmc->card)) {
+			/*
+			 * The ST Micro variants has a special bit
+			 * to enable SDIO mode. This bit is set the first time
+			 * a SDIO data transfer is done and must remain set
+			 * after the data transfer is completed. The reason is
+			 * because of otherwise no SDIO interrupts can be
+			 * received.
+			 */
+			datactrl |= MCI_ST_DPSM_SDIOEN;
+
+			/*
+			 * The ST Micro variant for SDIO transfer sizes
+			 * less than or equal to 8 bytes needs to have clock
+			 * H/W flow control disabled. Since flow control is
+			 * not really needed for anything that fits in the
+			 * FIFO, we can disable it for any write smaller
+			 * than the FIFO size.
+			 */
+			if ((host->size <= variant->fifosize) &&
+			    (data->flags & MMC_DATA_WRITE))
+				writel(readl(host->base + MMCICLOCK) &
+					~variant->clkreg_enable,
+					host->base + MMCICLOCK);
+			else
+				writel(readl(host->base + MMCICLOCK) |
+					variant->clkreg_enable,
+					host->base + MMCICLOCK);
+	}
+
 	/*
 	 * Attempt to use DMA operation mode, if this
 	 * should fail, fall back to PIO mode
@@ -572,37 +608,6 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 		 */
 		irqmask = MCI_TXFIFOHALFEMPTYMASK;
 	}
-
-	if (variant->sdio && host->mmc->card)
-		if (mmc_card_sdio(host->mmc->card)) {
-			/*
-			 * The ST Micro variants has a special bit
-			 * to enable SDIO mode. This bit is set the first time
-			 * a SDIO data transfer is done and must remain set
-			 * after the data transfer is completed. The reason is
-			 * because of otherwise no SDIO interrupts can be
-			 * received.
-			 */
-			datactrl |= MCI_ST_DPSM_SDIOEN;
-
-			/*
-			 * The ST Micro variant for SDIO transfer sizes
-			 * less then or equal to 8 bytes needs to have clock
-			 * H/W flow control disabled. Since flow control is
-			 * not really needed for anything that fits in the
-			 * FIFO, we can disable it for any write smaller
-			 * than the FIFO size.
-			 */
-			if ((host->size <= variant->fifosize) &&
-			    (data->flags & MMC_DATA_WRITE))
-				writel(readl(host->base + MMCICLOCK) &
-					~variant->clkreg_enable,
-					host->base + MMCICLOCK);
-			else
-				writel(readl(host->base + MMCICLOCK) |
-					variant->clkreg_enable,
-					host->base + MMCICLOCK);
-		}
 
 	writel(datactrl, base + MMCIDATACTRL);
 	writel(readl(base + MMCIMASK0) & ~MCI_DATAENDMASK, base + MMCIMASK0);
