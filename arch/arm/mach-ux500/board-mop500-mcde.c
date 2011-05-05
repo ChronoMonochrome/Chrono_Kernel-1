@@ -105,7 +105,11 @@ struct mcde_display_device generic_display0 = {
 	.id = PRIMARY_DISPLAY_ID,
 	.port = &port0,
 	.chnl_id = MCDE_CHNL_A,
-	.fifo = MCDE_FIFO_C0,
+	/*
+	 * A large fifo is needed when ddr is clocked down to 25% to not get
+	 * latency problems.
+	 */
+	.fifo = MCDE_FIFO_A,
 #ifdef CONFIG_MCDE_DISPLAY_PRIMARY_16BPP
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
 #else
