@@ -326,6 +326,11 @@ static pin_cfg_t snowball_pins[] = {
 
 	/* RSTn_LAN */
 	GPIO141_GPIO		| PIN_OUTPUT_HIGH,
+
+	/* WLAN/GBF */
+	GPIO171_GPIO		| PIN_OUTPUT_HIGH,/* GBF_ENA */
+	GPIO215_GPIO		| PIN_OUTPUT_HIGH,/* WLAN_ENA */
+	GPIO216_GPIO		| PIN_INPUT_PULLUP,/* WLAN_IRQ */
 };
 
 void __init mop500_pins_init(void)
