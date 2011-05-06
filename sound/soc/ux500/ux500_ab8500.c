@@ -147,14 +147,13 @@ void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 		rx_slots = DEF_RX_SLOTS;
 }
 
-int ux500_ab8500_hw_params(
-	struct snd_pcm_substream *substream,
-	struct snd_pcm_hw_params *params)
+int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
+			struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-	unsigned int fmt;
+	unsigned int fmt, fmt_if1;
 	int channels, ret = 0, slots, slot_width, driver_mode;
 	bool streamIsPlayback;
 
@@ -238,14 +237,25 @@ int ux500_ab8500_hw_params(
 
 	pr_debug("%s: CPU-DAI TDM: TX=0x%04X RX=0x%04x\n",
 		__func__, tx_slots, rx_slots);
-	ret = snd_soc_dai_set_tdm_slot(cpu_dai, tx_slots, rx_slots,
-				slots, slot_width);
+	ret = snd_soc_dai_set_tdm_slot(cpu_dai, tx_slots, rx_slots, slots, slot_width);
+	if (ret)
+		return ret;
 
 	pr_debug("%s: CODEC-DAI TDM: TX=0x%04X RX=0x%04x\n",
 		__func__, tx_slots, rx_slots);
-	ret += snd_soc_dai_set_tdm_slot(codec_dai, tx_slots, rx_slots, slots, slot_width);
+	ret = snd_soc_dai_set_tdm_slot(codec_dai, tx_slots, rx_slots, slots, slot_width);
+	if (ret)
+		return ret;
 
-	return ret;
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		pr_debug("%s: Setup IF1 for FM-radio.\n", __func__);
+		fmt_if1 = SND_SOC_DAIFMT_CBM_CFM | SND_SOC_DAIFMT_I2S;
+		ret = ab8500_audio_setup_if1(codec_dai->codec, fmt_if1, 16, 1);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
 }
 
 static int regulator_event(struct snd_soc_dapm_widget *w,

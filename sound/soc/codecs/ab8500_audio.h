@@ -15,16 +15,19 @@
 #ifndef AB8500_CODEC_REGISTERS_H
 #define AB8500_CODEC_REGISTERS_H
 
+#define AB8500_SUPPORTED_RATE (SNDRV_PCM_RATE_48000)
+#define AB8500_SUPPORTED_FMT (SNDRV_PCM_FMTBIT_S16_LE)
+
 extern struct snd_soc_dai_driver ab8500_codec_dai[];
 extern struct snd_soc_codec_driver soc_codec_dev_ab8500;
-
-#define AB8500_SUPPORTED_RATE (SNDRV_PCM_RATE_48000)
-
-#define AB8500_SUPPORTED_FMT (SNDRV_PCM_FMTBIT_S16_LE)
 
 /* Extended interface for codec-driver */
 int ab8500_audio_set_word_length(struct snd_soc_dai *dai, unsigned int wl);
 int ab8500_audio_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay);
+int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
+			unsigned int fmt,
+			unsigned int wl,
+			unsigned int delay);
 
 /* AB8500 audio bank (0x0d) register definitions */
 
@@ -322,6 +325,13 @@ int ab8500_audio_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay);
 #define REG_DIGIFCONF3_IF0BFIFOEN		0
 
 /* REG_DIGIFCONF4 */
+#define REG_DIGIFCONF4_FSYNC1P			6
+#define REG_DIGIFCONF4_BITCLK1P			5
+#define REG_DIGIFCONF4_IF1DEL			4
+#define REG_DIGIFCONF4_IF1FORMAT1		3
+#define REG_DIGIFCONF4_IF1FORMAT0		2
+#define REG_DIGIFCONF4_IF1WL1			1
+#define REG_DIGIFCONF4_IF1WL0			0
 
 /* REG_ADSLOTSELX */
 #define REG_ADSLOTSELX_ODDX_3			7
