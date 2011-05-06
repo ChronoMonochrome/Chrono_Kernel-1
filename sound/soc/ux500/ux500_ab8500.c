@@ -26,7 +26,7 @@
 #include <mach/hardware.h>
 #include "ux500_pcm.h"
 #include "ux500_msp_dai.h"
-#include "../codecs/ab8500.h"
+#include "../codecs/ab8500_audio.h"
 
 #define TX_SLOT_MONO	0x0008
 #define TX_SLOT_STEREO	0x000a
@@ -179,15 +179,15 @@ int ux500_ab8500_hw_params(
 		__func__,
 		(driver_mode == DRIVERMODE_NORMAL) ? "NORMAL" : "CODEC_ONLY");
 	if (driver_mode == DRIVERMODE_NORMAL) {
-		ab8500_set_bit_delay(codec_dai, 0);
-		ab8500_set_word_length(codec_dai, 16);
+		ab8500_audio_set_bit_delay(codec_dai, 0);
+		ab8500_audio_set_word_length(codec_dai, 16);
 		fmt = SND_SOC_DAIFMT_DSP_B |
 			SND_SOC_DAIFMT_CBM_CFM |
 			SND_SOC_DAIFMT_NB_NF |
 			SND_SOC_DAIFMT_CONT;
 	} else {
-		ab8500_set_bit_delay(codec_dai, 1);
-		ab8500_set_word_length(codec_dai, 20);
+		ab8500_audio_set_bit_delay(codec_dai, 1);
+		ab8500_audio_set_word_length(codec_dai, 20);
 		fmt = SND_SOC_DAIFMT_DSP_B |
 			SND_SOC_DAIFMT_CBM_CFM |
 			SND_SOC_DAIFMT_NB_NF |

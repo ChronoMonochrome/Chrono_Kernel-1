@@ -29,8 +29,7 @@
 #include <sound/tlv.h>
 #include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
-#include "ab8500.h"
-#include "../ux500/ux500_ab8500.h"
+#include "ab8500_audio.h"
 
 /* To convert register definition shifts to masks */
 #define BMASK(bsft)	(1 << (bsft))
@@ -172,7 +171,7 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 
 /* Reads an arbitrary register from the ab8500 chip.
 */
-static int ab8500_read_reg(struct snd_soc_codec *codec, unsigned int bank,
+static int ab8500_codec_read_reg(struct snd_soc_codec *codec, unsigned int bank,
 		unsigned int reg)
 {
 	u8 value;
@@ -193,7 +192,7 @@ static int ab8500_read_reg(struct snd_soc_codec *codec, unsigned int bank,
 
 /* Writes an arbitrary register to the ab8500 chip.
  */
-static int ab8500_write_reg(struct snd_soc_codec *codec, unsigned int bank,
+static int ab8500_codec_write_reg(struct snd_soc_codec *codec, unsigned int bank,
 		unsigned int reg, unsigned int value)
 {
 	int status = abx500_set_register_interruptible(
@@ -212,7 +211,7 @@ static int ab8500_write_reg(struct snd_soc_codec *codec, unsigned int bank,
 
 /* Reads an audio register from the cache.
  */
-static unsigned int ab8500_audio_read_reg(struct snd_soc_codec *codec,
+static unsigned int ab8500_codec_read_reg_audio(struct snd_soc_codec *codec,
 		unsigned int reg)
 {
 	u8 *cache = codec->reg_cache;
@@ -221,11 +220,11 @@ static unsigned int ab8500_audio_read_reg(struct snd_soc_codec *codec,
 
 /* Reads an audio register from the hardware.
  */
-static int ab8500_audio_read_reg_nocache(struct snd_soc_codec *codec,
+static int ab8500_codec_read_reg_audio_nocache(struct snd_soc_codec *codec,
 		unsigned int reg)
 {
 	u8 *cache = codec->reg_cache;
-	int value = ab8500_read_reg(codec, AB8500_AUDIO, reg);
+	int value = ab8500_codec_read_reg(codec, AB8500_AUDIO, reg);
 
 	if (value >= 0)
 		cache[reg] = value;
@@ -235,11 +234,11 @@ static int ab8500_audio_read_reg_nocache(struct snd_soc_codec *codec,
 
 /* Writes an audio register to the hardware and cache.
  */
-static int ab8500_audio_write_reg(struct snd_soc_codec *codec,
+static int ab8500_codec_write_reg_audio(struct snd_soc_codec *codec,
 		unsigned int reg, unsigned int value)
 {
 	u8 *cache = codec->reg_cache;
-	int status = ab8500_write_reg(codec, AB8500_AUDIO, reg, value);
+	int status = ab8500_codec_write_reg(codec, AB8500_AUDIO, reg, value);
 
 	if (status >= 0)
 		cache[reg] = value;
@@ -249,29 +248,29 @@ static int ab8500_audio_write_reg(struct snd_soc_codec *codec,
 
 /* Dumps all audio registers.
  */
-static inline void ab8500_audio_dump_all_reg(struct snd_soc_codec *codec)
+static inline void ab8500_codec_dump_all_reg(struct snd_soc_codec *codec)
 {
 	int i;
 
 	pr_debug("%s Enter.\n", __func__);
 
 	for (i = AB8500_FIRST_REG; i <= AB8500_LAST_REG; i++)
-		ab8500_audio_read_reg_nocache(codec, i);
+		ab8500_codec_read_reg_audio_nocache(codec, i);
 }
 
 /* Updates an audio register.
  */
-static inline int ab8500_update_audio_reg(struct snd_soc_codec *codec,
+static inline int ab8500_codec_update_reg_audio(struct snd_soc_codec *codec,
 		unsigned int reg, unsigned int clr, unsigned int ins)
 {
 	unsigned int new, old;
 
-	old = ab8500_audio_read_reg(codec, reg);
+	old = ab8500_codec_read_reg_audio(codec, reg);
 	new = (old & ~clr) | ins;
 	if (old == new)
 		return 0;
 
-	return ab8500_audio_write_reg(codec, reg, new);
+	return ab8500_codec_write_reg_audio(codec, reg, new);
 }
 
 /*--------------------------------------------------------------*/
@@ -1317,7 +1316,9 @@ static int ab8500_add_widgets(struct snd_soc_codec *codec)
 	return 0;
 }
 
-int ab8500_set_word_length(struct snd_soc_dai *dai, unsigned int wl)
+/* Extended interface for codec-driver */
+
+int ab8500_audio_set_word_length(struct snd_soc_dai *dai, unsigned int wl)
 {
 	unsigned int clear_mask;
 	unsigned int set_mask = 0;
@@ -1344,12 +1345,12 @@ int ab8500_set_word_length(struct snd_soc_dai *dai, unsigned int wl)
 	}
 
 	pr_debug("%s: Word-length: %d bits.\n", __func__, wl);
-	ab8500_update_audio_reg(codec, REG_DIGIFCONF2, clear_mask, set_mask);
+	ab8500_codec_update_reg_audio(codec, REG_DIGIFCONF2, clear_mask, set_mask);
 
 	return 0;
 }
 
-int ab8500_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay)
+int ab8500_audio_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay)
 {
 	unsigned int clear_mask;
 	unsigned int set_mask = 0;
@@ -1369,45 +1370,67 @@ int ab8500_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay)
 	}
 
 	pr_debug("%s: Bit-delay: %d bits.\n", __func__, delay);
-	ab8500_update_audio_reg(codec, REG_DIGIFCONF2, clear_mask, set_mask);
+	ab8500_codec_update_reg_audio(codec, REG_DIGIFCONF2, clear_mask, set_mask);
 
 	return 0;
 }
 
-static int ab8500_pcm_hw_params(struct snd_pcm_substream *substream,
+static int ab8500_add_widgets(struct snd_soc_codec *codec)
+{
+	int ret;
+
+	ret = snd_soc_dapm_new_controls(codec, ab8500_dapm_widgets,
+			ARRAY_SIZE(ab8500_dapm_widgets));
+	if (ret < 0) {
+		pr_err("%s: Failed to create DAPM controls (%d).\n",
+			__func__, ret);
+		return ret;
+	}
+
+	ret = snd_soc_dapm_add_routes(codec, intercon, ARRAY_SIZE(intercon));
+	if (ret < 0) {
+		pr_err("%s: Failed to add DAPM routes (%d).\n",
+			__func__, ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static int ab8500_codec_pcm_hw_params(struct snd_pcm_substream *substream,
 		struct snd_pcm_hw_params *hw_params, struct snd_soc_dai *dai)
 {
 	pr_debug("%s Enter.\n", __func__);
 	return 0;
 }
 
-static int ab8500_pcm_startup(struct snd_pcm_substream *substream,
+static int ab8500_codec_pcm_startup(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
 	pr_debug("%s Enter.\n", __func__);
 	return 0;
 }
 
-static int ab8500_pcm_prepare(struct snd_pcm_substream *substream,
+static int ab8500_codec_pcm_prepare(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
 	pr_debug("%s Enter.\n", __func__);
 
 	/* Clear interrupt status registers by reading them. */
-	ab8500_audio_read_reg(dai->codec, REG_AUDINTSOURCE1);
-	ab8500_audio_read_reg(dai->codec, REG_AUDINTSOURCE2);
+	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE1);
+	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE2);
 
 	return 0;
 }
 
-static void ab8500_pcm_shutdown(struct snd_pcm_substream *substream,
+static void ab8500_codec_pcm_shutdown(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
 	pr_debug("%s Enter.\n", __func__);
-	ab8500_audio_dump_all_reg(dai->codec);
+	ab8500_codec_dump_all_reg(dai->codec);
 }
 
-static int ab8500_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
+static int ab8500_codec_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 		unsigned int freq, int dir)
 {
 	pr_debug("%s Enter.\n", __func__);
@@ -1415,7 +1438,8 @@ static int ab8500_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 }
 
 /* Sets Master/Slave relations according format mask */
-static int set_dai_relationship(struct snd_soc_codec *codec, unsigned int fmt)
+static int ab8500_codec_set_dai_relationship(struct snd_soc_codec *codec,
+					unsigned int fmt)
 {
 	unsigned int clear_mask;
 	unsigned int set_mask;
@@ -1444,13 +1468,13 @@ static int set_dai_relationship(struct snd_soc_codec *codec, unsigned int fmt)
 		break;
 	}
 
-	ab8500_update_audio_reg(codec, REG_DIGIFCONF3, clear_mask, set_mask);
+	ab8500_codec_update_reg_audio(codec, REG_DIGIFCONF3, clear_mask, set_mask);
 
 	return 0;
 }
 
 /* Gates clocking according format mask */
-static int set_dai_clock_gate(struct snd_soc_codec *codec, unsigned int fmt)
+static int ab8500_codec_set_dai_clock_gate(struct snd_soc_codec *codec, unsigned int fmt)
 {
 	unsigned int clear_mask;
 	unsigned int set_mask;
@@ -1475,12 +1499,12 @@ static int set_dai_clock_gate(struct snd_soc_codec *codec, unsigned int fmt)
 		break;
 	}
 
-	ab8500_update_audio_reg(codec, REG_DIGIFCONF1, clear_mask, set_mask);
+	ab8500_codec_update_reg_audio(codec, REG_DIGIFCONF1, clear_mask, set_mask);
 
 	return 0;
 }
 
-static int ab8500_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+static int ab8500_codec_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 {
 	unsigned int clear_mask;
 	unsigned int set_mask;
@@ -1490,14 +1514,14 @@ static int ab8500_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	pr_debug("%s: fmt = 0x%x\n", __func__, fmt);
 
 	/* Set Master/Slave */
-	err = set_dai_relationship(codec, fmt);
+	err = ab8500_codec_set_dai_relationship(codec, fmt);
 	if (err) {
 		pr_err("%s: Failed to set master/slave (%d).\n", __func__, err);
 		return err;
 	}
 
 	/* Set clock enable/disable */
-	err = set_dai_clock_gate(codec, fmt);
+	err = ab8500_codec_set_dai_clock_gate(codec, fmt);
 	if (err) {
 		pr_err("%s: Failed to set clock gate (%d).\n", __func__, err);
 		return err;
@@ -1517,8 +1541,8 @@ static int ab8500_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		set_mask |= BMASK(REG_DIGIFCONF2_IF0FORMAT1);
 
 		/* 32 bit, 0 delay */
-		ab8500_set_word_length(dai, 32);
-		ab8500_set_bit_delay(dai, 0);
+		ab8500_audio_set_word_length(dai, 32);
+		ab8500_audio_set_bit_delay(dai, 0);
 
 		break;
 	case SND_SOC_DAIFMT_DSP_A: /* L data MSB after FRM LRC */
@@ -1560,12 +1584,12 @@ static int ab8500_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		break;
 	}
 
-	ab8500_update_audio_reg(codec, REG_DIGIFCONF2, clear_mask, set_mask);
+	ab8500_codec_update_reg_audio(codec, REG_DIGIFCONF2, clear_mask, set_mask);
 
 	return 0;
 }
 
-static int ab8500_set_dai_tdm_slot(struct snd_soc_dai *dai,
+static int ab8500_codec_set_dai_tdm_slot(struct snd_soc_dai *dai,
 		unsigned int tx_mask, unsigned int rx_mask,
 		int slots, int slot_width)
 {
@@ -1601,7 +1625,7 @@ static int ab8500_set_dai_tdm_slot(struct snd_soc_dai *dai,
 		pr_err("%s: Unsupported number of slots (%d)!\n", __func__, slots);
 		return -EINVAL;
 	}
-	ab8500_update_audio_reg(codec, REG_DIGIFCONF1, clear_mask, set_mask);
+	ab8500_codec_update_reg_audio(codec, REG_DIGIFCONF1, clear_mask, set_mask);
 
 	/* Setup TDM DA according to active tx slots */
 	clear_mask = REG_DASLOTCONFX_SLTODAX_MASK;
@@ -1612,27 +1636,27 @@ static int ab8500_set_dai_tdm_slot(struct snd_soc_dai *dai,
 		break;
 	case 1:
 		/* Slot 9 -> DA_IN1 & DA_IN3 */
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF1, clear_mask, 9);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF3, clear_mask, 9);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF1, clear_mask, 9);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF3, clear_mask, 9);
 		break;
 	case 2:
 		/* Slot 9 -> DA_IN1 & DA_IN3, Slot 11 -> DA_IN2 & DA_IN4 */
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF1, clear_mask, 9);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF3, clear_mask, 9);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF2, clear_mask, 11);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF4, clear_mask, 11);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF1, clear_mask, 9);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF3, clear_mask, 9);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF2, clear_mask, 11);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF4, clear_mask, 11);
 
 		break;
 	case 8:
 		/* Slot 8-15 -> DA_IN1-DA_IN8 */
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF1, clear_mask, 8);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF2, clear_mask, 9);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF3, clear_mask, 10);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF4, clear_mask, 11);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF5, clear_mask, 12);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF6, clear_mask, 13);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF7, clear_mask, 14);
-		ab8500_update_audio_reg(codec, REG_DASLOTCONF8, clear_mask, 15);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF1, clear_mask, 8);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF2, clear_mask, 9);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF3, clear_mask, 10);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF4, clear_mask, 11);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF5, clear_mask, 12);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF6, clear_mask, 13);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF7, clear_mask, 14);
+		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF8, clear_mask, 15);
 
 		break;
 	default:
@@ -1648,21 +1672,21 @@ static int ab8500_set_dai_tdm_slot(struct snd_soc_dai *dai,
 		break;
 	case 1:
 		/* AD_OUT3 -> slot 0 & 1 */
-		ab8500_update_audio_reg(codec, REG_ADSLOTSEL1,
+		ab8500_codec_update_reg_audio(codec, REG_ADSLOTSEL1,
 			REG_MASK_ALL,
 			BMASK(REG_ADSLOTSELX_ODDX_1) |
 			BMASK(REG_ADSLOTSELX_EVENX_1));
 		break;
 	case 2:
 		/* AD_OUT3 -> slot 0, AD_OUT2 -> slot 1 */
-		ab8500_update_audio_reg(codec, REG_ADSLOTSEL1,
+		ab8500_codec_update_reg_audio(codec, REG_ADSLOTSEL1,
 			REG_MASK_ALL,
 			BMASK(REG_ADSLOTSELX_ODDX_0) |
 			BMASK(REG_ADSLOTSELX_EVENX_1));
 		break;
 	case 8:
 		/* AD_OUT3 -> slot 0, AD_OUT2 -> slot 1 */
-		ab8500_update_audio_reg(codec, REG_ADSLOTSEL1,
+		ab8500_codec_update_reg_audio(codec, REG_ADSLOTSEL1,
 			REG_MASK_ALL,
 			BMASK(REG_ADSLOTSELX_ODDX_0) |
 			BMASK(REG_ADSLOTSELX_EVENX_1));
@@ -1688,13 +1712,13 @@ struct snd_soc_dai_driver ab8500_codec_dai[] = {
 		},
 		.ops = (struct snd_soc_dai_ops[]) {
 			{
-				.startup = ab8500_pcm_startup,
-				.prepare = ab8500_pcm_prepare,
-				.hw_params = ab8500_pcm_hw_params,
-				.shutdown = ab8500_pcm_shutdown,
-				.set_sysclk = ab8500_set_dai_sysclk,
-				.set_tdm_slot = ab8500_set_dai_tdm_slot,
-				.set_fmt = ab8500_set_dai_fmt,
+				.startup = ab8500_codec_pcm_startup,
+				.prepare = ab8500_codec_pcm_prepare,
+				.hw_params = ab8500_codec_pcm_hw_params,
+				.shutdown = ab8500_codec_pcm_shutdown,
+				.set_sysclk = ab8500_codec_set_dai_sysclk,
+				.set_tdm_slot = ab8500_codec_set_dai_tdm_slot,
+				.set_fmt = ab8500_codec_set_dai_fmt,
 			}
 		},
 		.symmetric_rates = 1
@@ -1711,13 +1735,13 @@ struct snd_soc_dai_driver ab8500_codec_dai[] = {
 		},
 		.ops = (struct snd_soc_dai_ops[]) {
 			{
-				.startup = ab8500_pcm_startup,
-				.prepare = ab8500_pcm_prepare,
-				.hw_params = ab8500_pcm_hw_params,
-				.shutdown = ab8500_pcm_shutdown,
-				.set_sysclk = ab8500_set_dai_sysclk,
-				.set_tdm_slot = ab8500_set_dai_tdm_slot,
-				.set_fmt = ab8500_set_dai_fmt,
+				.startup = ab8500_codec_pcm_startup,
+				.prepare = ab8500_codec_pcm_prepare,
+				.hw_params = ab8500_codec_pcm_hw_params,
+				.shutdown = ab8500_codec_pcm_shutdown,
+				.set_sysclk = ab8500_codec_set_dai_sysclk,
+				.set_tdm_slot = ab8500_codec_set_dai_tdm_slot,
+				.set_fmt = ab8500_codec_set_dai_fmt,
 			}
 		},
 		.symmetric_rates = 1
@@ -1725,23 +1749,23 @@ struct snd_soc_dai_driver ab8500_codec_dai[] = {
 };
 
 /* Configures audio macrocell into the AB8500 Chip */
-static void configure_audio_macrocell(struct snd_soc_codec *codec)
+static void ab8500_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
 {
 	int data;
 
-	data = ab8500_read_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG);
+	data = ab8500_codec_read_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG);
 	data &= ~CLK_32K_OUT2_DISABLE;
-	ab8500_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
+	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
 	data |= INACTIVE_RESET_AUDIO;
-	ab8500_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
+	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
 
-	data = ab8500_read_reg(codec, AB8500_SYS_CTRL2_BLOCK,
+	data = ab8500_codec_read_reg(codec, AB8500_SYS_CTRL2_BLOCK,
 		AB8500_SYSULPCLK_CTRL1_REG);
 	data |= ENABLE_AUDIO_CLK_TO_AUDIO_BLK;
-	ab8500_write_reg(codec, AB8500_SYS_CTRL2_BLOCK,
+	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK,
 		AB8500_SYSULPCLK_CTRL1_REG, data);
 
-	data = ab8500_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG);
+	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG);
 	data |= GPIO27_DIR_OUTPUT | GPIO29_DIR_OUTPUT | GPIO31_DIR_OUTPUT;
 	ab8500_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG, data);
 
@@ -1785,10 +1809,10 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	configure_audio_macrocell(codec);
+	ab8500_codec_configure_audio_macrocell(codec);
 
 	for (i = REG_AUDREV; i >= REG_POWERUP; i--)
-		ab8500_audio_write_reg(codec, i, cache[i]);
+		ab8500_codec_write_reg_audio(codec, i, cache[i]);
 
 	ret = snd_soc_add_controls(codec, ab8500_snd_controls,
 			ARRAY_SIZE(ab8500_snd_controls));
@@ -1829,31 +1853,28 @@ static int ab8500_codec_resume(struct snd_soc_codec *codec)
 	return 0;
 }
 
-struct snd_soc_codec_driver ab8500_codec_drv = {
+struct snd_soc_codec_driver ab8500_codec_driver = {
 	.probe =		ab8500_codec_probe,
 	.remove =		ab8500_codec_remove,
 	.suspend =		ab8500_codec_suspend,
 	.resume =		ab8500_codec_resume,
-	.read =			ab8500_audio_read_reg,
-	.write =		ab8500_audio_write_reg,
+	.read =			ab8500_codec_read_reg_audio,
+	.write =		ab8500_codec_write_reg_audio,
 	.set_bias_level =	ab8500_set_bias_level,
 	.reg_cache_size =	ARRAY_SIZE(ab8500_reg_cache),
 	.reg_word_size =	sizeof(u8),
 	.reg_cache_default =	ab8500_reg_cache,
 };
 
-static int ab8500_codec_drv_probe(struct platform_device *pdev)
+static int __devinit ab8500_codec_driver_probe(struct platform_device *pdev)
 {
 	int err;
-	struct ab8500_codec_dai_data *dai_data;
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	platform_set_drvdata(pdev, dai_data);
-
 	pr_info("%s: Register codec.\n", __func__);
 	err = snd_soc_register_codec(&pdev->dev,
-				&ab8500_codec_drv,
+				&ab8500_codec_driver,
 				ab8500_codec_dai,
 				ARRAY_SIZE(ab8500_codec_dai));
 
@@ -1865,7 +1886,7 @@ static int ab8500_codec_drv_probe(struct platform_device *pdev)
 	return err;
 }
 
-static int ab8500_codec_drv_remove(struct platform_device *pdev)
+static int __devexit ab8500_codec_driver_remove(struct platform_device *pdev)
 {
 	pr_debug("%s Enter.\n", __func__);
 
@@ -1874,7 +1895,7 @@ static int ab8500_codec_drv_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int ab8500_codec_drv_suspend(struct platform_device *pdev,
+static int ab8500_codec_driver_suspend(struct platform_device *pdev,
 		pm_message_t state)
 {
 	pr_debug("%s Enter.\n", __func__);
@@ -1882,31 +1903,31 @@ static int ab8500_codec_drv_suspend(struct platform_device *pdev,
 	return 0;
 }
 
-static int ab8500_codec_drv_resume(struct platform_device *pdev)
+static int ab8500_codec_driver_resume(struct platform_device *pdev)
 {
 	pr_debug("%s Enter.\n", __func__);
 
 	return 0;
 }
 
-static struct platform_driver ab8500_codec_platform_drv = {
+static struct platform_driver ab8500_codec_platform_driver = {
 	.driver	= {
 		.name	= "ab8500-codec",
 		.owner	= THIS_MODULE,
 	},
-	.probe		= ab8500_codec_drv_probe,
-	.remove		= ab8500_codec_drv_remove,
-	.suspend	= ab8500_codec_drv_suspend,
-	.resume		= ab8500_codec_drv_resume,
+	.probe		= ab8500_codec_driver_probe,
+	.remove		= __devexit_p(ab8500_codec_driver_remove),
+	.suspend	= ab8500_codec_driver_suspend,
+	.resume		= ab8500_codec_driver_resume,
 };
 
-static int __devinit ab8500_codec_platform_drv_init(void)
+static int __devinit ab8500_codec_platform_driver_init(void)
 {
 	int ret;
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	ret = platform_driver_register(&ab8500_codec_platform_drv);
+	ret = platform_driver_register(&ab8500_codec_platform_driver);
 	if (ret != 0) {
 		pr_err("%s: Failed to register AB8500 platform driver (%d)!\n",
 			__func__, ret);
@@ -1915,15 +1936,15 @@ static int __devinit ab8500_codec_platform_drv_init(void)
 	return ret;
 }
 
-static void __exit ab8500_codec_platform_drv_exit(void)
+static void __exit ab8500_codec_platform_driver_exit(void)
 {
 	pr_debug("%s: Enter.\n", __func__);
 
-	platform_driver_unregister(&ab8500_codec_platform_drv);
+	platform_driver_unregister(&ab8500_codec_platform_driver);
 }
 
-module_init(ab8500_codec_platform_drv_init);
-module_exit(ab8500_codec_platform_drv_exit);
+module_init(ab8500_codec_platform_driver_init);
+module_exit(ab8500_codec_platform_driver_exit);
 
 MODULE_DESCRIPTION("AB8500 Codec driver");
 MODULE_ALIAS("platform:ab8500-codec");

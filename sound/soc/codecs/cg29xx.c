@@ -79,7 +79,7 @@ static struct cg29xx_codec codec_private = {
 	.session = 0,
 };
 
-static struct snd_soc_dai_ops cg29xx_dai_drv_dai_ops = {
+static struct snd_soc_dai_ops cg29xx_dai_driver_dai_ops = {
 	.startup = cg29xx_dai_startup,
 	.prepare = cg29xx_dai_prepare,
 	.hw_params = cg29xx_dai_hw_params,
@@ -89,7 +89,7 @@ static struct snd_soc_dai_ops cg29xx_dai_drv_dai_ops = {
 	.set_tdm_slot = cg29xx_set_tdm_slot
 };
 
-struct snd_soc_dai_driver cg29xx_dai_drv[] = {
+struct snd_soc_dai_driver cg29xx_dai_driver[] = {
 	{
 	.name = "cg29xx-codec-dai.0",
 	.id = 0,
@@ -107,7 +107,7 @@ struct snd_soc_dai_driver cg29xx_dai_drv[] = {
 		.rates = CG29XX_SUPPORTED_RATE,
 		.formats = CG29XX_SUPPORTED_FMT,
 	},
-	.ops = &cg29xx_dai_drv_dai_ops,
+	.ops = &cg29xx_dai_driver_dai_ops,
 	.symmetric_rates = 1,
 	},
 	{
@@ -127,11 +127,11 @@ struct snd_soc_dai_driver cg29xx_dai_drv[] = {
 		.rates = CG29XX_SUPPORTED_RATE_PCM,
 		.formats = CG29XX_SUPPORTED_FMT,
 	},
-	.ops = &cg29xx_dai_drv_dai_ops,
+	.ops = &cg29xx_dai_driver_dai_ops,
 	.symmetric_rates = 1,
 	}
 };
-EXPORT_SYMBOL_GPL(cg29xx_dai_drv);
+EXPORT_SYMBOL_GPL(cg29xx_dai_driver);
 
 static const char *enum_ifs_input_select[] = {
 	"BT_SCO", "FM_RX"
@@ -642,7 +642,7 @@ static int cg29xx_codec_resume(struct snd_soc_codec *codec)
 	return 0;
 }
 
-struct snd_soc_codec_driver cg29xx_codec_drv = {
+struct snd_soc_codec_driver cg29xx_codec_driver = {
 	.probe = cg29xx_codec_probe,
 	.remove = cg29xx_codec_remove,
 	.suspend = cg29xx_codec_suspend,
@@ -651,7 +651,7 @@ struct snd_soc_codec_driver cg29xx_codec_drv = {
 	.write = cg29xx_codec_write,
 };
 
-static int cg29xx_codec_drv_probe(struct platform_device *pdev)
+static int __devinit cg29xx_codec_driver_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct cg29xx_codec_dai_data *dai_data;
@@ -701,7 +701,7 @@ static int cg29xx_codec_drv_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, dai_data);
 
 	pr_info("%s: Register codec.\n", __func__);
-	ret = snd_soc_register_codec(&pdev->dev, &cg29xx_codec_drv, &cg29xx_dai_drv[0], 2);
+	ret = snd_soc_register_codec(&pdev->dev, &cg29xx_codec_driver, &cg29xx_dai_driver[0], 2);
 	if (ret < 0) {
 		pr_debug("%s: Error: Failed to register codec (ret = %d).\n",
 			__func__,
@@ -714,7 +714,7 @@ static int cg29xx_codec_drv_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int cg29xx_codec_drv_remove(struct platform_device *pdev)
+static int __devexit cg29xx_codec_driver_remove(struct platform_device *pdev)
 {
 	(void)cg2900_audio_close(&codec_private.session);
 
@@ -724,51 +724,50 @@ static int cg29xx_codec_drv_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int cg29xx_codec_drv_suspend(struct platform_device *pdev,
-				   pm_message_t state)
+static int cg29xx_codec_driver_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	return 0;
 }
 
-static int cg29xx_codec_drv_resume(struct platform_device *pdev)
+static int cg29xx_codec_driver_resume(struct platform_device *pdev)
 {
 	return 0;
 }
 
-static struct platform_driver cg29xx_codec_platform_drv = {
+static struct platform_driver cg29xx_codec_platform_driver = {
 	.driver = {
 		.name = "cg29xx-codec",
 		.owner = THIS_MODULE,
 	},
-	.probe = cg29xx_codec_drv_probe,
-	.remove = cg29xx_codec_drv_remove,
-	.suspend	= cg29xx_codec_drv_suspend,
-	.resume		= cg29xx_codec_drv_resume,
+	.probe = cg29xx_codec_driver_probe,
+	.remove = __devexit_p(cg29xx_codec_driver_remove),
+	.suspend = cg29xx_codec_driver_suspend,
+	.resume = cg29xx_codec_driver_resume,
 };
 
 
-static int __devinit cg29xx_codec_platform_drv_init(void)
+static int __devinit cg29xx_codec_platform_driver_init(void)
 {
 	int ret;
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	ret = platform_driver_register(&cg29xx_codec_platform_drv);
+	ret = platform_driver_register(&cg29xx_codec_platform_driver);
 	if (ret != 0)
 		pr_err("Failed to register CG29xx platform driver (%d)!\n", ret);
 
 	return ret;
 }
 
-static void __exit cg29xx_codec_platform_drv_exit(void)
+static void __exit cg29xx_codec_platform_driver_exit(void)
 {
 	pr_debug("%s: Enter.\n", __func__);
 
-	platform_driver_unregister(&cg29xx_codec_platform_drv);
+	platform_driver_unregister(&cg29xx_codec_platform_driver);
 }
 
 
-module_init(cg29xx_codec_platform_drv_init);
-module_exit(cg29xx_codec_platform_drv_exit);
+module_init(cg29xx_codec_platform_driver_init);
+module_exit(cg29xx_codec_platform_driver_exit);
 
 MODULE_LICENSE("GPL v2");

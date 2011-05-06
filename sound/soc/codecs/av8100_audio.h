@@ -10,8 +10,8 @@
  * it under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation.
  */
-#ifndef AV8100_CODEC_H
-#define AV8100_CODEC_H
+#ifndef AV8100_AUDIO_CODEC_H
+#define AV8100_AUDIO_CODEC_H
 
 /* Supported sampling rates */
 #define AV8100_SUPPORTED_RATE (SNDRV_PCM_RATE_48000)
@@ -152,10 +152,11 @@ struct hdmi_audio_settings {
 	bool				downmix_inhibit;
 };
 
-int av8100_codec_change_hdmi_audio_settings(struct snd_soc_dai *dai,
+/* Extended interface for codec-driver */
+int av8100_audio_change_hdmi_audio_settings(struct snd_soc_dai *dai,
 					struct hdmi_audio_settings *as);
 
-#endif /* AV8100_CODEC_H */
+#endif /* AV8100_AUDIO_CODEC_H */
 
 
 

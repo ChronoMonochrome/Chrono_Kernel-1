@@ -367,7 +367,7 @@ struct snd_soc_platform_driver ux500_pcm_soc_drv = {
 };
 EXPORT_SYMBOL(ux500_pcm_soc_drv);
 
-static int ux500_pcm_drv_probe(struct platform_device *pdev)
+static int __devexit ux500_pcm_drv_probe(struct platform_device *pdev)
 {
 	int ret;
 
@@ -384,7 +384,7 @@ static int ux500_pcm_drv_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int ux500_pcm_drv_remove(struct platform_device *pdev)
+static int __devinit ux500_pcm_drv_remove(struct platform_device *pdev)
 {
 	pr_debug("%s: Unregister ux500-pcm SoC platform driver.\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
@@ -392,28 +392,28 @@ static int ux500_pcm_drv_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static struct platform_driver ux500_pcm_drv = {
+static struct platform_driver ux500_pcm_driver = {
 	.driver = {
 		.name = "ux500-pcm",
 		.owner = THIS_MODULE,
 	},
 
 	.probe = ux500_pcm_drv_probe,
-	.remove = ux500_pcm_drv_remove,
+	.remove = __devexit_p(ux500_pcm_drv_remove),
 };
 
 static int __init ux500_pcm_drv_init(void)
 {
 	pr_debug("%s: Register ux500-pcm platform driver.\n", __func__);
 
-	return platform_driver_register(&ux500_pcm_drv);
+	return platform_driver_register(&ux500_pcm_driver);
 }
 
 static void __exit ux500_pcm_drv_exit(void)
 {
 	pr_debug("%s: Unregister ux500-pcm platform driver.\n", __func__);
 
-	platform_driver_unregister(&ux500_pcm_drv);
+	platform_driver_unregister(&ux500_pcm_driver);
 }
 
 module_init(ux500_pcm_drv_init);

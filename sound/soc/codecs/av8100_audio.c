@@ -33,6 +33,26 @@ struct av8100_codec_dai_data {
 	struct hdmi_audio_settings as;
 };
 
+/* Extended interface for codec-driver */
+
+int av8100_audio_change_hdmi_audio_settings(struct snd_soc_dai *codec_dai,
+					struct hdmi_audio_settings *as)
+{
+	struct av8100_codec_dai_data *dai_data = get_dai_data(codec_dai);
+
+	pr_debug("%s: Enter.\n", __func__);
+
+	dai_data->as.audio_coding_type = as->audio_coding_type;
+	dai_data->as.audio_channel_count = as->audio_channel_count;
+	dai_data->as.sampling_frequency = as->sampling_frequency;
+	dai_data->as.sample_size = as->sample_size;
+	dai_data->as.channel_allocation = as->channel_allocation;
+	dai_data->as.level_shift_value = as->level_shift_value;
+	dai_data->as.downmix_inhibit = as->downmix_inhibit;
+
+	return 0;
+}
+
 static int av8100_codec_powerup(void)
 {
 	struct av8100_status status;
@@ -188,24 +208,6 @@ static struct av8100_codec_dai_data *get_dai_data_codec(struct snd_soc_codec *co
 static struct av8100_codec_dai_data *get_dai_data(struct snd_soc_dai *codec_dai)
 {
 	return get_dai_data_codec(codec_dai->codec, codec_dai->id);
-}
-
-int av8100_codec_change_hdmi_audio_settings(struct snd_soc_dai *codec_dai,
-					struct hdmi_audio_settings *as)
-{
-	struct av8100_codec_dai_data *dai_data = get_dai_data(codec_dai);
-
-	pr_debug("%s: Enter.\n", __func__);
-
-	dai_data->as.audio_coding_type = as->audio_coding_type;
-	dai_data->as.audio_channel_count = as->audio_channel_count;
-	dai_data->as.sampling_frequency = as->sampling_frequency;
-	dai_data->as.sample_size = as->sample_size;
-	dai_data->as.channel_allocation = as->channel_allocation;
-	dai_data->as.level_shift_value = as->level_shift_value;
-	dai_data->as.downmix_inhibit = as->downmix_inhibit;
-
-	return 0;
 }
 
 static int av8100_codec_pcm_hw_params(struct snd_pcm_substream *substream,
