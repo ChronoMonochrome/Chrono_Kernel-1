@@ -390,6 +390,7 @@ int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
 /* REG_DASLOTCONF8 */
 #define REG_DASLOTCONF8_DAI7TOADO8		5
 
+#define REG_DASLOTCONFX_SLTODAX_SHIFT		0
 #define REG_DASLOTCONFX_SLTODAX_MASK		0x1F
 
 /* REG_CLASSDCONF1 */

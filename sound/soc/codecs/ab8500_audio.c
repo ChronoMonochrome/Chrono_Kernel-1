@@ -1164,6 +1164,56 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk0,
 static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk1,
 	REG_DIGIFCONF1, REG_DIGIFCONF1_ENFSBITCLK1, enum_dis_ena);
 
+/* DA from slot mapping */
+static const char *enum_da_from_slot_map[] = {"SLOT0",
+					"SLOT1",
+					"SLOT2",
+					"SLOT3",
+					"SLOT4",
+					"SLOT5",
+					"SLOT6",
+					"SLOT7",
+					"SLOT8",
+					"SLOT9",
+					"SLOT10",
+					"SLOT11",
+					"SLOT12",
+					"SLOT13",
+					"SLOT14",
+					"SLOT15",
+					"SLOT16",
+					"SLOT17",
+					"SLOT18",
+					"SLOT19",
+					"SLOT20",
+					"SLOT21",
+					"SLOT22",
+					"SLOT23",
+					"SLOT24",
+					"SLOT25",
+					"SLOT26",
+					"SLOT27",
+					"SLOT28",
+					"SLOT29",
+					"SLOT30",
+					"SLOT31"};
+static SOC_ENUM_SINGLE_DECL(soc_enum_da1slotmap,
+	REG_DASLOTCONF1, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_da2slotmap,
+	REG_DASLOTCONF2, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_da3slotmap,
+	REG_DASLOTCONF3, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_da4slotmap,
+	REG_DASLOTCONF4, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_da5slotmap,
+	REG_DASLOTCONF5, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_da6slotmap,
+	REG_DASLOTCONF6, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_da7slotmap,
+	REG_DASLOTCONF7, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
+static SOC_ENUM_SINGLE_DECL(soc_enum_da8slotmap,
+	REG_DASLOTCONF8, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
+
 /* AD to slot mapping */
 static const char *enum_ad_to_slot_map[] = {"AD_OUT1",
 					"AD_OUT2",
@@ -1175,69 +1225,69 @@ static const char *enum_ad_to_slot_map[] = {"AD_OUT1",
 					"AD_OUT8",
 					"zeroes",
 					"tristate"};
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot0map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot0map,
 	REG_ADSLOTSEL1, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot1map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot1map,
 	REG_ADSLOTSEL1, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot2map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot2map,
 	REG_ADSLOTSEL2, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot3map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot3map,
 	REG_ADSLOTSEL2, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot4map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot4map,
 	REG_ADSLOTSEL3, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot5map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot5map,
 	REG_ADSLOTSEL3, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot6map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot6map,
 	REG_ADSLOTSEL4, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot7map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot7map,
 	REG_ADSLOTSEL4, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot8map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot8map,
 	REG_ADSLOTSEL5, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot9map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot9map,
 	REG_ADSLOTSEL5, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot10map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot10map,
 	REG_ADSLOTSEL6, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot11map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot11map,
 	REG_ADSLOTSEL6, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot12map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot12map,
 	REG_ADSLOTSEL7, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot13map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot13map,
 	REG_ADSLOTSEL7, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot14map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot14map,
 	REG_ADSLOTSEL8, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot15map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot15map,
 	REG_ADSLOTSEL8, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot16map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot16map,
 	REG_ADSLOTSEL9, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot17map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot17map,
 	REG_ADSLOTSEL9, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot18map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot18map,
 	REG_ADSLOTSEL10, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot19map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot19map,
 	REG_ADSLOTSEL10, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot20map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot20map,
 	REG_ADSLOTSEL11, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot21map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot21map,
 	REG_ADSLOTSEL11, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot22map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot22map,
 	REG_ADSLOTSEL12, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot23map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot23map,
 	REG_ADSLOTSEL12, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot24map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot24map,
 	REG_ADSLOTSEL13, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot25map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot25map,
 	REG_ADSLOTSEL13, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot26map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot26map,
 	REG_ADSLOTSEL14, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot27map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot27map,
 	REG_ADSLOTSEL14, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot28map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot28map,
 	REG_ADSLOTSEL15, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot29map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot29map,
 	REG_ADSLOTSEL15, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot30map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot30map,
 	REG_ADSLOTSEL16, REG_ADSLOTSELX_EVEN_SHIFT, enum_ad_to_slot_map);
-static SOC_ENUM_SINGLE_DECL(soc_enum_slot31map,
+static SOC_ENUM_SINGLE_DECL(soc_enum_adslot31map,
 	REG_ADSLOTSEL16, REG_ADSLOTSELX_ODD_SHIFT, enum_ad_to_slot_map);
 
 /* Digital loopback */
@@ -1417,39 +1467,49 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 	SOC_ENUM("Digital Interface 0 Bit-clock Switch", soc_enum_fsbitclk0),
 	SOC_ENUM("Digital Interface 1 Bit-clock Switch", soc_enum_fsbitclk1),
 
+	/* DA from slot mapping */
+	SOC_ENUM("Digital Interface DA 1 From Slot Map", soc_enum_da1slotmap),
+	SOC_ENUM("Digital Interface DA 2 From Slot Map", soc_enum_da2slotmap),
+	SOC_ENUM("Digital Interface DA 3 From Slot Map", soc_enum_da3slotmap),
+	SOC_ENUM("Digital Interface DA 4 From Slot Map", soc_enum_da4slotmap),
+	SOC_ENUM("Digital Interface DA 5 From Slot Map", soc_enum_da5slotmap),
+	SOC_ENUM("Digital Interface DA 6 From Slot Map", soc_enum_da6slotmap),
+	SOC_ENUM("Digital Interface DA 7 From Slot Map", soc_enum_da7slotmap),
+	SOC_ENUM("Digital Interface DA 8 From Slot Map", soc_enum_da8slotmap),
+
 	/* AD to slot mapping */
-	SOC_ENUM("Digital Interface AD To Slot 0 Map", soc_enum_slot0map),
-	SOC_ENUM("Digital Interface AD To Slot 1 Map", soc_enum_slot1map),
-	SOC_ENUM("Digital Interface AD To Slot 2 Map", soc_enum_slot2map),
-	SOC_ENUM("Digital Interface AD To Slot 3 Map", soc_enum_slot3map),
-	SOC_ENUM("Digital Interface AD To Slot 4 Map", soc_enum_slot4map),
-	SOC_ENUM("Digital Interface AD To Slot 5 Map", soc_enum_slot5map),
-	SOC_ENUM("Digital Interface AD To Slot 6 Map", soc_enum_slot6map),
-	SOC_ENUM("Digital Interface AD To Slot 7 Map", soc_enum_slot7map),
-	SOC_ENUM("Digital Interface AD To Slot 8 Map", soc_enum_slot8map),
-	SOC_ENUM("Digital Interface AD To Slot 9 Map", soc_enum_slot9map),
-	SOC_ENUM("Digital Interface AD To Slot 10 Map", soc_enum_slot10map),
-	SOC_ENUM("Digital Interface AD To Slot 11 Map", soc_enum_slot11map),
-	SOC_ENUM("Digital Interface AD To Slot 12 Map", soc_enum_slot12map),
-	SOC_ENUM("Digital Interface AD To Slot 13 Map", soc_enum_slot13map),
-	SOC_ENUM("Digital Interface AD To Slot 14 Map", soc_enum_slot14map),
-	SOC_ENUM("Digital Interface AD To Slot 15 Map", soc_enum_slot15map),
-	SOC_ENUM("Digital Interface AD To Slot 16 Map", soc_enum_slot16map),
-	SOC_ENUM("Digital Interface AD To Slot 17 Map", soc_enum_slot17map),
-	SOC_ENUM("Digital Interface AD To Slot 18 Map", soc_enum_slot18map),
-	SOC_ENUM("Digital Interface AD To Slot 19 Map", soc_enum_slot19map),
-	SOC_ENUM("Digital Interface AD To Slot 20 Map", soc_enum_slot20map),
-	SOC_ENUM("Digital Interface AD To Slot 21 Map", soc_enum_slot21map),
-	SOC_ENUM("Digital Interface AD To Slot 22 Map", soc_enum_slot22map),
-	SOC_ENUM("Digital Interface AD To Slot 23 Map", soc_enum_slot23map),
-	SOC_ENUM("Digital Interface AD To Slot 24 Map", soc_enum_slot24map),
-	SOC_ENUM("Digital Interface AD To Slot 25 Map", soc_enum_slot25map),
-	SOC_ENUM("Digital Interface AD To Slot 26 Map", soc_enum_slot26map),
-	SOC_ENUM("Digital Interface AD To Slot 27 Map", soc_enum_slot27map),
-	SOC_ENUM("Digital Interface AD To Slot 28 Map", soc_enum_slot28map),
-	SOC_ENUM("Digital Interface AD To Slot 29 Map", soc_enum_slot29map),
-	SOC_ENUM("Digital Interface AD To Slot 30 Map", soc_enum_slot30map),
-	SOC_ENUM("Digital Interface AD To Slot 31 Map", soc_enum_slot31map),
+	SOC_ENUM("Digital Interface AD To Slot 0 Map", soc_enum_adslot0map),
+	SOC_ENUM("Digital Interface AD To Slot 1 Map", soc_enum_adslot1map),
+	SOC_ENUM("Digital Interface AD To Slot 2 Map", soc_enum_adslot2map),
+	SOC_ENUM("Digital Interface AD To Slot 3 Map", soc_enum_adslot3map),
+	SOC_ENUM("Digital Interface AD To Slot 4 Map", soc_enum_adslot4map),
+	SOC_ENUM("Digital Interface AD To Slot 5 Map", soc_enum_adslot5map),
+	SOC_ENUM("Digital Interface AD To Slot 6 Map", soc_enum_adslot6map),
+	SOC_ENUM("Digital Interface AD To Slot 7 Map", soc_enum_adslot7map),
+	SOC_ENUM("Digital Interface AD To Slot 8 Map", soc_enum_adslot8map),
+	SOC_ENUM("Digital Interface AD To Slot 9 Map", soc_enum_adslot9map),
+	SOC_ENUM("Digital Interface AD To Slot 10 Map", soc_enum_adslot10map),
+	SOC_ENUM("Digital Interface AD To Slot 11 Map", soc_enum_adslot11map),
+	SOC_ENUM("Digital Interface AD To Slot 12 Map", soc_enum_adslot12map),
+	SOC_ENUM("Digital Interface AD To Slot 13 Map", soc_enum_adslot13map),
+	SOC_ENUM("Digital Interface AD To Slot 14 Map", soc_enum_adslot14map),
+	SOC_ENUM("Digital Interface AD To Slot 15 Map", soc_enum_adslot15map),
+	SOC_ENUM("Digital Interface AD To Slot 16 Map", soc_enum_adslot16map),
+	SOC_ENUM("Digital Interface AD To Slot 17 Map", soc_enum_adslot17map),
+	SOC_ENUM("Digital Interface AD To Slot 18 Map", soc_enum_adslot18map),
+	SOC_ENUM("Digital Interface AD To Slot 19 Map", soc_enum_adslot19map),
+	SOC_ENUM("Digital Interface AD To Slot 20 Map", soc_enum_adslot20map),
+	SOC_ENUM("Digital Interface AD To Slot 21 Map", soc_enum_adslot21map),
+	SOC_ENUM("Digital Interface AD To Slot 22 Map", soc_enum_adslot22map),
+	SOC_ENUM("Digital Interface AD To Slot 23 Map", soc_enum_adslot23map),
+	SOC_ENUM("Digital Interface AD To Slot 24 Map", soc_enum_adslot24map),
+	SOC_ENUM("Digital Interface AD To Slot 25 Map", soc_enum_adslot25map),
+	SOC_ENUM("Digital Interface AD To Slot 26 Map", soc_enum_adslot26map),
+	SOC_ENUM("Digital Interface AD To Slot 27 Map", soc_enum_adslot27map),
+	SOC_ENUM("Digital Interface AD To Slot 28 Map", soc_enum_adslot28map),
+	SOC_ENUM("Digital Interface AD To Slot 29 Map", soc_enum_adslot29map),
+	SOC_ENUM("Digital Interface AD To Slot 30 Map", soc_enum_adslot30map),
+	SOC_ENUM("Digital Interface AD To Slot 31 Map", soc_enum_adslot31map),
 
 	/* Loopback */
 	SOC_ENUM("Digital Interface AD 1 Loopback Switch", soc_enum_ad1loop),
@@ -2045,16 +2105,7 @@ static int ab8500_codec_set_dai_tdm_slot(struct snd_soc_dai *dai,
 
 		break;
 	case 8:
-		/* Slot 8-13 -> DA_IN1-DA_IN6, Slot 24-25 -> DA_IN7-DA_IN8  */
-		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF1, clear_mask, 8);
-		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF2, clear_mask, 9);
-		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF3, clear_mask, 10);
-		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF4, clear_mask, 11);
-		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF5, clear_mask, 12);
-		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF6, clear_mask, 13);
-		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF7, clear_mask, 24);
-		ab8500_codec_update_reg_audio(codec, REG_DASLOTCONF8, clear_mask, 25);
-
+		pr_debug("%s: In 8-channel mode DA-from-slot mapping is set manually.", __func__);
 		break;
 	default:
 		pr_err("%s: Unsupported number of active TX-slots (%d)!\n", __func__, slots_active);
