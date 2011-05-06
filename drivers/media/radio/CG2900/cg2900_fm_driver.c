@@ -4619,6 +4619,8 @@ void fmd_stop_rds_thread(void)
 	FM_INFO_REPORT("fmd_stop_rds_thread");
 	/* In case thread is waiting, set the rds sem */
 	fmd_set_rds_sem();
+	/* Re-initialize RDS Semaphore to zero */
+	sema_init(&rds_sem, 0);
 	cb_rds_func = NULL;
 	rds_thread_required = false;
 	if (rds_thread_task) {
