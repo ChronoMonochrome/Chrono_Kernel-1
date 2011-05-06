@@ -1967,6 +1967,8 @@ int av8100_powerdown(void)
 	if (av8100_globals->opp_requested) {
 		prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
 				(char *)av8100_miscdev.name);
+		prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
+				(char *)av8100_miscdev.name);
 		av8100_globals->opp_requested = false;
 	}
 
@@ -2035,7 +2037,12 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	if (av8100_globals->opp_requested == false) {
 		if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
 				(char *)av8100_miscdev.name, 100)) {
-			dev_err(av8100dev, "OPP 100 failed\n");
+			dev_err(av8100dev, "APE OPP 100 failed\n");
+			return -EFAULT;
+		}
+		if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
+				(char *)av8100_miscdev.name, 100)) {
+			dev_err(av8100dev, "DDR OPP 100 failed\n");
 			return -EFAULT;
 		}
 
