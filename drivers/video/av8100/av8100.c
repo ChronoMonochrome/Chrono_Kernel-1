@@ -623,6 +623,10 @@ static int av8100_plugstartup_event_handle(void)
 		} else {
 			av8100_globals->plug_state = AV8100_UNPLUGGED;
 			dev_dbg(av8100dev, "plug_state:0\n");
+
+			if (av8100_globals->hdmi_ev_cb)
+				av8100_globals->hdmi_ev_cb(
+					AV8100_HDMI_EVENT_HDMI_PLUGOUT);
 		}
 		break;
 	}
@@ -953,12 +957,12 @@ static void clr_plug_status(enum av8100_plugin_status status)
 			av8100_globals->plug_state =
 				AV8100_UNPLUGGED;
 			dev_dbg(av8100dev, "plug_state:0\n");
+
+			if (av8100_globals->hdmi_ev_cb)
+				av8100_globals->hdmi_ev_cb(
+					AV8100_HDMI_EVENT_HDMI_PLUGOUT);
 			break;
 		}
-
-		if (av8100_globals->hdmi_ev_cb)
-			av8100_globals->hdmi_ev_cb(
-				AV8100_HDMI_EVENT_HDMI_PLUGOUT);
 		break;
 
 	case AV8100_CVBS_PLUGIN:
@@ -1010,6 +1014,10 @@ static void set_plug_status(enum av8100_plugin_status status)
 					av8100_plugtimer_int;
 			av8100_plugtimer.data = 0;
 			add_timer(&av8100_plugtimer);
+
+			if (av8100_globals->hdmi_ev_cb)
+				av8100_globals->hdmi_ev_cb(
+					AV8100_HDMI_EVENT_HDMI_PLUGIN);
 			break;
 
 		case AV8100_PLUGGED_STARTUP:
@@ -1017,10 +1025,6 @@ static void set_plug_status(enum av8100_plugin_status status)
 		default:
 			break;
 		}
-
-		if (av8100_globals->hdmi_ev_cb)
-			av8100_globals->hdmi_ev_cb(
-				AV8100_HDMI_EVENT_HDMI_PLUGIN);
 		break;
 
 	case AV8100_CVBS_PLUGIN:
