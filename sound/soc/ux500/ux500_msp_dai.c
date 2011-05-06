@@ -36,6 +36,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.capture_active = false,
 		.configured = 0,
 		.data_delay = MSP_DELAY_0,
+		.master_clk = UX500_MSP_INTERNAL_CLOCK_FREQ,
 	},
 	{
 		.i2s = NULL,
@@ -48,6 +49,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.capture_active = false,
 		.configured = 0,
 		.data_delay = MSP_DELAY_0,
+		.master_clk = UX500_MSP_INTERNAL_CLOCK_FREQ,
 	},
 	{
 		.i2s = NULL,
@@ -60,6 +62,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.capture_active = false,
 		.configured = 0,
 		.data_delay = MSP_DELAY_0,
+		.master_clk = UX500_MSP_INTERNAL_CLOCK_FREQ,
 	},
 	{
 		.i2s = NULL,
@@ -72,6 +75,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.capture_active = false,
 		.configured = 0,
 		.data_delay = MSP_DELAY_0,
+		.master_clk = UX500_MSP_INTERNAL_CLOCK_FREQ,
 	},
 };
 
@@ -452,7 +456,7 @@ static void ux500_msp_dai_compile_msp_config(struct snd_pcm_substream *substream
 
 	memset(msp_config, 0, sizeof(*msp_config));
 
-	msp_config->input_clock_freq = UX500_MSP_INTERNAL_CLOCK_FREQ;
+	msp_config->input_clock_freq = private->master_clk;
 	msp_config->tx_fifo_config = TX_FIFO_ENABLE;
 	msp_config->rx_fifo_config = RX_FIFO_ENABLE;
 	msp_config->spi_clk_mode = SPI_CLK_MODE_NORMAL;
@@ -730,6 +734,34 @@ static int ux500_msp_dai_set_tdm_slot(struct snd_soc_dai *dai,
 	return 0;
 }
 
+static int ux500_msp_dai_set_dai_sysclk(struct snd_soc_dai *dai,
+	int clk_id,
+	unsigned int freq,
+	int dir)
+{
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
+
+	pr_debug("%s: MSP %d: Enter. Clk id: %d, freq: %u.\n",
+		__func__,
+		dai->id,
+		clk_id,
+		freq);
+
+	switch (clk_id) {
+	case UX500_MSP_MASTER_CLOCK:
+		drvdata->master_clk = freq;
+		break;
+
+	default:
+		pr_err("%s: MSP %d: Invalid clkid: %d.\n",
+			__func__,
+			dai->id,
+			clk_id);
+	}
+
+	return 0;
+}
+
 static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 				int cmd,
 				struct snd_soc_dai *dai)
@@ -787,7 +819,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 		},
 		.ops = (struct snd_soc_dai_ops[]) {
 			{
-			.set_sysclk = NULL,
+			.set_sysclk = ux500_msp_dai_set_dai_sysclk,
 			.set_fmt = ux500_msp_dai_set_dai_fmt,
 			.set_tdm_slot = ux500_msp_dai_set_tdm_slot,
 			.startup = ux500_msp_dai_startup,
@@ -817,7 +849,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 		},
 		.ops = (struct snd_soc_dai_ops[]) {
 			{
-			.set_sysclk = NULL,
+			.set_sysclk = ux500_msp_dai_set_dai_sysclk,
 			.set_fmt = ux500_msp_dai_set_dai_fmt,
 			.set_tdm_slot = ux500_msp_dai_set_tdm_slot,
 			.startup = ux500_msp_dai_startup,
@@ -847,7 +879,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 		},
 		.ops = (struct snd_soc_dai_ops[]) {
 			{
-			.set_sysclk = NULL,
+			.set_sysclk = ux500_msp_dai_set_dai_sysclk,
 			.set_fmt = ux500_msp_dai_set_dai_fmt,
 			.set_tdm_slot = ux500_msp_dai_set_tdm_slot,
 			.startup = ux500_msp_dai_startup,
@@ -877,7 +909,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 		},
 		.ops = (struct snd_soc_dai_ops[]) {
 			{
-			.set_sysclk = NULL,
+			.set_sysclk = ux500_msp_dai_set_dai_sysclk,
 			.set_fmt = ux500_msp_dai_set_dai_fmt,
 			.set_tdm_slot = ux500_msp_dai_set_tdm_slot,
 			.startup = ux500_msp_dai_startup,

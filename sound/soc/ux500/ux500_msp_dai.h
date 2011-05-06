@@ -38,7 +38,7 @@
 #ifdef STE_PLATFORM_U5500
 #define UX500_MSP_INTERNAL_CLOCK_FREQ 13000000
 #else
-#define UX500_MSP_INTERNAL_CLOCK_FREQ 38400000
+#define UX500_MSP_INTERNAL_CLOCK_FREQ 40000000
 #endif
 
 #define UX500_MSP_MIN_CHANNELS		1
@@ -46,6 +46,10 @@
 
 #define PLAYBACK_CONFIGURED		1
 #define CAPTURE_CONFIGURED		2
+
+enum ux500_msp_clock_id {
+	UX500_MSP_MASTER_CLOCK,
+};
 
 struct ux500_platform_drvdata {
 	struct i2s_device *i2s;
@@ -58,6 +62,7 @@ struct ux500_platform_drvdata {
 	bool capture_active;
 	u8 configured;
 	int data_delay;
+	unsigned int master_clk;
 };
 
 extern struct snd_soc_dai ux500_msp_dai[UX500_NBR_OF_DAI];

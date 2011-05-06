@@ -14,7 +14,9 @@
 
 #include <sound/soc.h>
 #include "../codecs/cg29xx.h"
+#include "ux500_msp_dai.h"
 
+#define UX500_CG29XX_MSP_CLOCK_FREQ	18900000
 #define UX500_CG29XX_DAI_SLOT_WIDTH	16
 #define UX500_CG29XX_DAI_SLOTS	2
 #define UX500_CG29XX_DAI_ACTIVE_SLOTS	0x01
@@ -66,6 +68,18 @@ int ux500_cg29xx_hw_params(struct snd_pcm_substream *substream,
 
 	if (err) {
 		pr_err("%s: snd_soc_dai_set_fmt(cpu_dai) failed with %d.\n",
+			__func__,
+			err);
+		goto out_err;
+	}
+
+	err = snd_soc_dai_set_sysclk(cpu_dai,
+		UX500_MSP_MASTER_CLOCK,
+		UX500_CG29XX_MSP_CLOCK_FREQ,
+		0);
+
+	if (err) {
+		pr_err("%s: snd_soc_dai_set_sysclk(cpu_dai) failed with %d.\n",
 			__func__,
 			err);
 		goto out_err;
