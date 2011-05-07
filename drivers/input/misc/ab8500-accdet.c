@@ -1318,12 +1318,28 @@ static int ab8500_acc_detect_suspend(struct platform_device *pdev,
 			pm_message_t state)
 {
 	struct ab8500_ad *dd = platform_get_drvdata(pdev);
+	int irq_id, irq;
 
 	dev_dbg(&dd->pdev->dev, "%s: Enter\n", __func__);
 
 	cancel_delayed_work_sync(&dd->unplug_irq_work);
 	cancel_delayed_work_sync(&dd->detect_work);
 	cancel_delayed_work_sync(&dd->init_work);
+
+	if (dd->pdata->is_detection_inverted)
+		irq_desc = irq_desc_inverted;
+	else
+		irq_desc = irq_desc_norm;
+
+	for (irq_id = 0; irq_id < ARRAY_SIZE(irq_desc_norm); irq_id++) {
+		if (irq_desc[irq_id].registered == 1) {
+			irq = platform_get_irq_byname(
+					dd->pdev,
+					irq_desc[irq_id].name);
+
+			disable_irq(irq);
+		}
+	}
 
 	/* Turn off AccDetect comparators and pull-up */
 	(void) abx500_get_register_interruptible(
@@ -1342,6 +1358,7 @@ static int ab8500_acc_detect_suspend(struct platform_device *pdev,
 static int ab8500_acc_detect_resume(struct platform_device *pdev)
 {
 	struct ab8500_ad *dd = platform_get_drvdata(pdev);
+	int irq_id, irq;
 
 	dev_dbg(&dd->pdev->dev, "%s: Enter\n", __func__);
 
@@ -1351,6 +1368,22 @@ static int ab8500_acc_detect_resume(struct platform_device *pdev)
 			AB8500_ECI_AV_ACC,
 			AB8500_ACC_DET_CTRL_REG,
 			acc_det_ctrl_suspend_val);
+
+	if (dd->pdata->is_detection_inverted)
+		irq_desc = irq_desc_inverted;
+	else
+		irq_desc = irq_desc_norm;
+
+	for (irq_id = 0; irq_id < ARRAY_SIZE(irq_desc_norm); irq_id++) {
+		if (irq_desc[irq_id].registered == 1) {
+			irq = platform_get_irq_byname(
+					dd->pdev,
+					irq_desc[irq_id].name);
+
+			enable_irq(irq);
+
+		}
+	}
 
 	/* After resume, reinitialize */
 	dd->gpio35_dir_set = dd->accdet1_th_set = dd->accdet2_th_set = 0;
