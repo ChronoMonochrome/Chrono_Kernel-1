@@ -422,6 +422,38 @@ void cw1200_multicast_stop_work(struct work_struct *work)
 	wsm_unlock_tx(priv);
 }
 
+int cw1200_ampdu_action(struct ieee80211_hw *hw,
+			struct ieee80211_vif *vif,
+			enum ieee80211_ampdu_mlme_action action,
+			struct ieee80211_sta *sta, u16 tid, u16 *ssn)
+{
+	int ret = 0;
+
+	switch (action) {
+	/*
+	 * The hw itself takes care of setting up BlockAck mechanisms.
+	 * So, we only have to allow mac80211 to nagotiate a BlockAck
+	 * agreement. Once that is done, the hw will BlockAck incoming
+	 * AMPDUs without further setup.
+	 */
+	case IEEE80211_AMPDU_RX_START:
+	case IEEE80211_AMPDU_RX_STOP:
+		break;
+	case IEEE80211_AMPDU_TX_START:
+		ieee80211_start_tx_ba_cb_irqsafe(vif, sta->addr, tid);
+		break;
+	case IEEE80211_AMPDU_TX_STOP:
+		ieee80211_stop_tx_ba_cb_irqsafe(vif, sta->addr, tid);
+		break;
+	case IEEE80211_AMPDU_TX_OPERATIONAL:
+		break;
+	default:
+		ret = -ENOTSUPP;
+	}
+
+	return ret;
+}
+
 /* ******************************************************************** */
 /* WSM callback								*/
 void cw1200_suspend_resume(struct cw1200_common *priv,

@@ -38,6 +38,15 @@ config CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE
 
         If unsure, say N.
 
+config CW1200_HT_SUPPORT
+      bool "11n support (DEVELOPMENT)"
+      depends on CW1200
+      help
+        Say Y if you want to enable 11n support in the driver.
+        Note that 11n support is not 100% verified, status is unknown.
+
+        If unsure, say N.
+
 menu "Driver debug features"
       depends on CW1200
 

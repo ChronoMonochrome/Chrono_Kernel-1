@@ -70,6 +70,7 @@ static struct ieee80211_rate cw1200_rates[] = {
 	RATETAB_ENT(360, 11, 0),
 	RATETAB_ENT(480, 12, 0),
 	RATETAB_ENT(540, 13, 0),
+#if defined(CONFIG_CW1200_HT_SUPPORT)
 	RATETAB_ENT(65,  14, 0),
 	RATETAB_ENT(130, 15, 0),
 	RATETAB_ENT(195, 16, 0),
@@ -78,6 +79,7 @@ static struct ieee80211_rate cw1200_rates[] = {
 	RATETAB_ENT(520, 19, 0),
 	RATETAB_ENT(585, 20, 0),
 	RATETAB_ENT(650, 21, 0),
+#endif /* CONFIG_CW1200_HT_SUPPORT */
 };
 
 #define cw1200_a_rates		(cw1200_rates + 4)
@@ -148,6 +150,7 @@ static struct ieee80211_supported_band cw1200_band_2ghz = {
 	.n_channels = ARRAY_SIZE(cw1200_2ghz_chantable),
 	.bitrates = cw1200_g_rates,
 	.n_bitrates = cw1200_g_rates_size,
+#if defined(CONFIG_CW1200_HT_SUPPORT)
 	.ht_cap = {
 		.cap = IEEE80211_HT_CAP_SM_PS |
 			IEEE80211_HT_CAP_GRN_FLD |
@@ -166,6 +169,7 @@ static struct ieee80211_supported_band cw1200_band_2ghz = {
 			.tx_params = IEEE80211_HT_MCS_TX_DEFINED,
 		},
 	},
+#endif /* CONFIG_CW1200_HT_SUPPORT */
 };
 
 static struct ieee80211_supported_band cw1200_band_5ghz = {
@@ -173,6 +177,7 @@ static struct ieee80211_supported_band cw1200_band_5ghz = {
 	.n_channels = ARRAY_SIZE(cw1200_5ghz_chantable),
 	.bitrates = cw1200_a_rates,
 	.n_bitrates = cw1200_a_rates_size,
+#if defined(CONFIG_CW1200_HT_SUPPORT)
 	.ht_cap = {
 		.cap = IEEE80211_HT_CAP_SM_PS |
 			IEEE80211_HT_CAP_GRN_FLD |
@@ -191,6 +196,7 @@ static struct ieee80211_supported_band cw1200_band_5ghz = {
 			.tx_params = IEEE80211_HT_MCS_TX_DEFINED,
 		},
 	},
+#endif /* CONFIG_CW1200_HT_SUPPORT */
 };
 
 static const struct ieee80211_ops cw1200_ops = {
@@ -211,6 +217,7 @@ static const struct ieee80211_ops cw1200_ops = {
 	.configure_filter	= cw1200_configure_filter,
 	.conf_tx		= cw1200_conf_tx,
 	.get_stats		= cw1200_get_stats,
+	.ampdu_action		= cw1200_ampdu_action,
 	/* .get_tx_stats		= cw1200_get_tx_stats */
 };
 
