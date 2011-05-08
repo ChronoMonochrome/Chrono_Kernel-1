@@ -273,6 +273,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	hw->wiphy->bands[IEEE80211_BAND_5GHZ] = &cw1200_band_5ghz;
 
 	hw->wiphy->max_scan_ssids = 2;
+	hw->wiphy->max_scan_ie_len = IEEE80211_MAX_DATA_LEN;
 
 	SET_IEEE80211_PERM_ADDR(hw, cw1200_mac_template);
 
