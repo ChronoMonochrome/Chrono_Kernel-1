@@ -1504,59 +1504,93 @@ static void disable_channel(struct mcde_chnl_state *chnl)
 		chnl->continous_running = false;
 	}
 
-	switch (chnl->id) {
-	case MCDE_CHNL_A:
-		mcde_wfld(MCDE_CRA0, FLOEN, false);
-		wait_for_channel(chnl);
-		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-			msleep(1);
-			if (!mcde_rfld(MCDE_CRA0, FLOEN)) {
-				dev_vdbg(&mcde_dev->dev,
-					"Flow (A) disable after >= %d ms\n", i);
-				goto break_switch;
+	if (hardware_version == MCDE_CHIP_VERSION_1_0_4) {
+		if (is_channel_enabled(chnl)) {
+			wait_for_channel(chnl);
+			/*
+			 * Just to make sure that a frame is triggered when
+			 * we try to disable the channel
+			 */
+			chnl->transactionid++;
+			mcde_wreg(MCDE_CHNL0SYNCHSW +
+				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
+					MCDE_CHNL0SYNCHSW_SW_TRIG(true));
+			disable_flow(chnl);
+			wait_for_channel(chnl);
+			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+				if (!is_channel_enabled(chnl)) {
+					dev_vdbg(&mcde_dev->dev,
+						"Flow %d off after >= %d ms\n",
+								chnl->id, i);
+					goto break_switch;
+				}
+				msleep(1);
 			}
+		} else {
+			dev_vdbg(&mcde_dev->dev,
+				"Flow %d disable after >= %d ms\n",
+								chnl->id, i);
+			goto break_switch;
 		}
-		dev_warn(&mcde_dev->dev, "%s: channel A timeout\n", __func__);
-		break;
-	case MCDE_CHNL_B:
-		mcde_wfld(MCDE_CRB0, FLOEN, false);
-		wait_for_channel(chnl);
-		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-			msleep(1);
-			if (!mcde_rfld(MCDE_CRB0, FLOEN)) {
-				dev_vdbg(&mcde_dev->dev,
-				"Flow (B) disable after >= %d ms\n", i);
-				goto break_switch;
+	} else {
+		switch (chnl->id) {
+		case MCDE_CHNL_A:
+			mcde_wfld(MCDE_CRA0, FLOEN, false);
+			wait_for_channel(chnl);
+			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+				msleep(1);
+				if (!mcde_rfld(MCDE_CRA0, FLOEN)) {
+					dev_vdbg(&mcde_dev->dev,
+					"Flow (A) off after >= %d ms\n", i);
+					goto break_switch;
+				}
 			}
-		}
-		dev_warn(&mcde_dev->dev, "%s: channel B timeout\n", __func__);
-		break;
-	case MCDE_CHNL_C0:
-		mcde_wfld(MCDE_CRC, C1EN, false);
-		wait_for_channel(chnl);
-		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-			msleep(1);
-			if (!mcde_rfld(MCDE_CRC, C1EN)) {
-				dev_vdbg(&mcde_dev->dev,
-				"Flow (C1) disable after >= %d ms\n", i);
-				goto break_switch;
+			dev_warn(&mcde_dev->dev,
+					"%s: channel A timeout\n", __func__);
+			break;
+		case MCDE_CHNL_B:
+			mcde_wfld(MCDE_CRB0, FLOEN, false);
+			wait_for_channel(chnl);
+			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+				msleep(1);
+				if (!mcde_rfld(MCDE_CRB0, FLOEN)) {
+					dev_vdbg(&mcde_dev->dev,
+					"Flow (B) off after >= %d ms\n", i);
+					goto break_switch;
+				}
 			}
-		}
-		dev_warn(&mcde_dev->dev, "%s: channel C0 timeout\n", __func__);
-		break;
-	case MCDE_CHNL_C1:
-		mcde_wfld(MCDE_CRC, C2EN, false);
-		wait_for_channel(chnl);
-		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-			msleep(1);
-			if (!mcde_rfld(MCDE_CRC, C2EN)) {
-				dev_vdbg(&mcde_dev->dev,
-				"Flow (C2) disable after >= %d ms\n", i);
-				goto break_switch;
+			dev_warn(&mcde_dev->dev, "%s: channel B timeout\n",
+								__func__);
+			break;
+		case MCDE_CHNL_C0:
+			mcde_wfld(MCDE_CRC, C1EN, false);
+			wait_for_channel(chnl);
+			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+				msleep(1);
+				if (!mcde_rfld(MCDE_CRC, C1EN)) {
+					dev_vdbg(&mcde_dev->dev,
+					"Flow (C1) off after >= %d ms\n", i);
+					goto break_switch;
+				}
 			}
+			dev_warn(&mcde_dev->dev, "%s: channel C0 timeout\n",
+								__func__);
+			break;
+		case MCDE_CHNL_C1:
+			mcde_wfld(MCDE_CRC, C2EN, false);
+			wait_for_channel(chnl);
+			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+				msleep(1);
+				if (!mcde_rfld(MCDE_CRC, C2EN)) {
+					dev_vdbg(&mcde_dev->dev,
+					"Flow (C2) off after >= %d ms\n", i);
+					goto break_switch;
+				}
+			}
+			dev_warn(&mcde_dev->dev, "%s: channel C1 timeout\n",
+								__func__);
+			break;
 		}
-		dev_warn(&mcde_dev->dev, "%s: channel C1 timeout\n", __func__);
-		break;
 	}
 break_switch:
 	chnl->continous_running = false;
