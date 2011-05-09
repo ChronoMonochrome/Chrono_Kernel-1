@@ -222,7 +222,7 @@ static int bu21013_gpio_board_exit(int reset_pin)
 					__func__);
 			return retval;
 		}
-		gpio_set_value(reset_pin, 0);
+		gpio_free(reset_pin);
 	}
 	bu21013_devices--;
 
