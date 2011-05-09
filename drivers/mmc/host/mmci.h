@@ -211,5 +211,9 @@ struct mmci_host {
 #else
 #define dma_inprogress(host)	(0)
 #endif
+
+#ifdef CONFIG_DEBUG_FS
+	struct dentry		*debug_regs;
+#endif
 };
 

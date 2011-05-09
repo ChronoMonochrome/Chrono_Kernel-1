@@ -115,6 +115,104 @@ static struct variant_data variant_ux500 = {
 	.pwrreg_powerup		= MCI_PWR_ON,
 	.non_power_of_2_blksize	= true,
 };
+/*
+ * Debugfs
+ */
+#ifdef CONFIG_DEBUG_FS
+#include <linux/debugfs.h>
+#include <linux/seq_file.h>
+
+static int mmci_regs_show(struct seq_file *seq, void *v)
+{
+	struct mmci_host *host = seq->private;
+	unsigned long iflags;
+	u32 pwr, clk, arg, cmd, rspcmd, r0, r1, r2, r3;
+	u32 dtimer, dlength, dctrl, dcnt;
+	u32 sta, clear, mask0, mask1, fifocnt, fifo;
+
+	mmc_host_enable(host->mmc);
+	spin_lock_irqsave(&host->lock, iflags);
+
+	pwr = readl(host->base + MMCIPOWER);
+	clk = readl(host->base + MMCICLOCK);
+	arg = readl(host->base + MMCIARGUMENT);
+	cmd = readl(host->base + MMCICOMMAND);
+	rspcmd = readl(host->base + MMCIRESPCMD);
+	r0 = readl(host->base + MMCIRESPONSE0);
+	r1 = readl(host->base + MMCIRESPONSE1);
+	r2 = readl(host->base + MMCIRESPONSE2);
+	r3 = readl(host->base + MMCIRESPONSE3);
+	dtimer = readl(host->base + MMCIDATATIMER);
+	dlength = readl(host->base + MMCIDATALENGTH);
+	dctrl = readl(host->base + MMCIDATACTRL);
+	dcnt = readl(host->base + MMCIDATACNT);
+	sta = readl(host->base + MMCISTATUS);
+	clear = readl(host->base + MMCICLEAR);
+	mask0 = readl(host->base + MMCIMASK0);
+	mask1 = readl(host->base + MMCIMASK1);
+	fifocnt = readl(host->base + MMCIFIFOCNT);
+	fifo = readl(host->base + MMCIFIFO);
+
+	spin_unlock_irqrestore(&host->lock, iflags);
+	mmc_host_disable(host->mmc);
+
+	seq_printf(seq, "\033[1;34mMMCI registers\033[0m\n");
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_power", pwr);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_clock", clk);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_arg", arg);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_cmd", cmd);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_respcmd", rspcmd);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_resp0", r0);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_resp1", r1);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_resp2", r2);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_resp3", r3);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_datatimer", dtimer);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_datalen", dlength);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_datactrl", dctrl);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_datacnt", dcnt);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_status", sta);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_iclear", clear);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_imask0", mask0);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_imask1", mask1);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_fifocnt", fifocnt);
+	seq_printf(seq, "%-20s:0x%x\n", "mmci_fifo", fifo);
+
+	return 0;
+}
+
+static int mmci_regs_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mmci_regs_show, inode->i_private);
+}
+
+static const struct file_operations mmci_fops_regs = {
+	.owner		= THIS_MODULE,
+	.open		= mmci_regs_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static void mmci_debugfs_create(struct mmci_host *host)
+{
+	host->debug_regs = debugfs_create_file("regs", S_IRUGO,
+					       host->mmc->debugfs_root, host,
+					       &mmci_fops_regs);
+
+	if (IS_ERR(host->debug_regs))
+		dev_err(mmc_dev(host->mmc),
+				"failed to create debug regs file\n");
+}
+
+static void mmci_debugfs_remove(struct mmci_host *host)
+{
+	debugfs_remove(host->debug_regs);
+}
+
+#else
+static inline void mmci_debugfs_create(struct mmci_host *host) { }
+static inline void mmci_debugfs_remove(struct mmci_host *host) { }
+#endif
 
 static struct variant_data variant_ux500v2 = {
 	.fifosize		= 30 * 4,
@@ -1379,6 +1477,8 @@ static int __devinit mmci_probe(struct amba_device *dev,
 
 	mmc_add_host(mmc);
 
+	mmci_debugfs_create(host);
+
 	return 0;
 
  irq0_free:
@@ -1414,6 +1514,7 @@ static int __devexit mmci_remove(struct amba_device *dev)
 	if (mmc) {
 		struct mmci_host *host = mmc_priv(mmc);
 
+		mmci_debugfs_remove(host);
 		mmc_remove_host(mmc);
 
 		writel(0, host->base + MMCIMASK0);
