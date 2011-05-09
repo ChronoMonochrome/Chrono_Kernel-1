@@ -21,8 +21,7 @@
 #define TEED_STATE_OPEN_DEV 0
 #define TEED_STATE_OPEN_SESSION 1
 
-#define TEEC_MEM_INPUT  0x00000001
-#define TEEC_MEM_OUTPUT 0x00000002
+static struct mutex sync;
 
 static int tee_open(struct inode *inode, struct file *file);
 static int tee_release(struct inode *inode, struct file *file);
@@ -281,13 +280,6 @@ static int tee_open(struct inode *inode, struct file *filp)
 
 	reset_session(ts);
 
-	ts->sync = kmalloc(sizeof(struct mutex), GFP_KERNEL);
-
-	if (!ts->sync)
-		return -ENOMEM;
-
-	mutex_init(ts->sync);
-
 	return 0;
 }
 
@@ -310,9 +302,6 @@ static int tee_release(struct inode *inode, struct file *filp)
 
 	kfree(ts->op);
 	ts->op = NULL;
-
-	kfree(ts->sync);
-	ts->sync = NULL;
 
 	kfree(ts->ta);
 	ts->ta = NULL;
@@ -342,18 +331,18 @@ static int tee_read(struct file *filp, char __user *buffer,
 
 	ts = (struct tee_session *) (filp->private_data);
 
-	if (ts == NULL || ts->sync == NULL) {
+	if (ts == NULL) {
 		pr_err("[%s] error, private_data not "
 		       "initialized\n", __func__);
 		return -EINVAL;
 	}
 
-	mutex_lock(ts->sync);
+	mutex_lock(&sync);
 
 	buf.err = ts->err;
 	buf.origin = ts->origin;
 
-	mutex_unlock(ts->sync);
+	mutex_unlock(&sync);
 
 	if (copy_to_user(buffer, &buf, length)) {
 		pr_err("[%s] error, copy_to_user failed!\n",
@@ -388,13 +377,13 @@ static int tee_write(struct file *filp, const char __user *buffer,
 
 	ts = (struct tee_session *) (filp->private_data);
 
-	if (ts == NULL || ts->sync == NULL) {
+	if (ts == NULL) {
 		pr_err("[%s] error, private_data not "
 		       "initialized\n", __func__);
 		return -EINVAL;
 	}
 
-	mutex_lock(ts->sync);
+	mutex_lock(&sync);
 
 	switch (ts->state) {
 	case TEED_STATE_OPEN_DEV:
@@ -439,10 +428,178 @@ static int tee_write(struct file *filp, const char __user *buffer,
 	else
 		ret = -EINVAL;
 
-	mutex_unlock(ts->sync);
+	mutex_unlock(&sync);
 
 	return ret;
 }
+
+int teec_initialize_context(const char *name, struct tee_context *context)
+{
+	return TEED_SUCCESS;
+}
+EXPORT_SYMBOL(teec_initialize_context);
+
+int teec_finalize_context(struct tee_context *context)
+{
+	return TEED_SUCCESS;
+}
+EXPORT_SYMBOL(teec_finalize_context);
+
+int teec_open_session(struct tee_context *context,
+		      struct tee_session *session,
+		      const struct tee_uuid *destination,
+		      unsigned int connection_method,
+		      void *connection_data, struct tee_operation *operation,
+		      unsigned int *error_origin)
+{
+	int res = TEED_SUCCESS;
+
+	if (session == NULL || destination == NULL) {
+		pr_err("[%s] session or destination == NULL\n", __func__);
+		if (error_origin != NULL)
+			*error_origin = TEED_ORIGIN_DRIVER;
+		res = TEED_ERROR_BAD_PARAMETERS;
+		goto exit;
+	}
+
+	reset_session(session);
+
+	/*
+	 * Open a session towards an application already loaded inside
+	 * the TEE
+	 */
+	session->uuid = kmalloc(sizeof(struct tee_uuid), GFP_KERNEL);
+
+	if (session->uuid == NULL) {
+		pr_err("[%s] error, out of memory (uuid)\n",
+		       __func__);
+		if (error_origin != NULL)
+			*error_origin = TEED_ORIGIN_DRIVER;
+		res = TEED_ERROR_OUT_OF_MEMORY;
+		goto exit;
+	}
+
+	memcpy(session->uuid, destination, sizeof(struct tee_uuid));
+
+	session->ta = NULL;
+	session->id = 0;
+
+exit:
+	return res;
+}
+EXPORT_SYMBOL(teec_open_session);
+
+int teec_close_session(struct tee_session *session)
+{
+	int res = TEED_SUCCESS;
+
+	mutex_lock(&sync);
+
+	if (session == NULL) {
+		pr_err("[%s] error, session == NULL\n", __func__);
+		res = TEED_ERROR_BAD_PARAMETERS;
+		goto exit;
+	}
+
+	if (call_sec_world(session, TEED_CLOSE_SESSION)) {
+		pr_err("[%s] error, call_sec_world failed\n", __func__);
+		res = TEED_ERROR_GENERIC;
+		goto exit;
+	}
+
+exit:
+	if (session != NULL) {
+		kfree(session->uuid);
+		session->uuid = NULL;
+	}
+
+	mutex_unlock(&sync);
+	return res;
+}
+EXPORT_SYMBOL(teec_close_session);
+
+int teec_invoke_command(
+	struct tee_session *session, unsigned int command_id,
+	struct tee_operation *operation,
+	unsigned int *error_origin)
+{
+	int res = TEED_SUCCESS;
+	int i;
+
+	mutex_lock(&sync);
+
+	if (session == NULL || operation == NULL || error_origin == NULL) {
+		pr_err("[%s] error, input parameters == NULL\n", __func__);
+		if (error_origin != NULL)
+			*error_origin = TEED_ORIGIN_DRIVER;
+		res = TEED_ERROR_BAD_PARAMETERS;
+		goto exit;
+	}
+
+	for (i = 0; i < 4; ++i) {
+		/* We only want to translate memrefs in use. */
+		if (operation->flags & (1 << i)) {
+			operation->shm[i].buffer =
+				(void *)virt_to_phys(
+					operation->shm[i].buffer);
+		}
+	}
+	session->op = operation;
+	session->cmd = command_id;
+
+	/*
+	 * Call secure world
+	 */
+	if (call_sec_world(session, TEED_INVOKE)) {
+		pr_err("[%s] error, call_sec_world failed\n", __func__);
+		if (error_origin != NULL)
+			*error_origin = TEED_ORIGIN_DRIVER;
+		res = TEED_ERROR_GENERIC;
+	}
+	if (session->err != TEED_SUCCESS) {
+		pr_err("[%s] error, call_sec_world failed\n", __func__);
+		if (error_origin != NULL)
+			*error_origin = session->origin;
+		res = session->err;
+	}
+
+	memrefs_phys_to_virt(session);
+	session->op = NULL;
+
+exit:
+	mutex_unlock(&sync);
+	return res;
+}
+EXPORT_SYMBOL(teec_invoke_command);
+
+int teec_allocate_shared_memory(struct tee_context *context,
+				struct tee_sharedmemory *shared_memory)
+{
+	int res = TEED_SUCCESS;
+
+	if (shared_memory == NULL) {
+		res = TEED_ERROR_BAD_PARAMETERS;
+		goto exit;
+	}
+
+	shared_memory->buffer = kmalloc(shared_memory->size,
+					GFP_KERNEL);
+
+	if (shared_memory->buffer == NULL) {
+		res = TEED_ERROR_OUT_OF_MEMORY;
+		goto exit;
+	}
+
+exit:
+	return res;
+}
+EXPORT_SYMBOL(teec_allocate_shared_memory);
+
+void teec_release_shared_memory(struct tee_sharedmemory *shared_memory)
+{
+	kfree(shared_memory->buffer);
+}
+EXPORT_SYMBOL(teec_release_shared_memory);
 
 static const struct file_operations tee_fops = {
 	.owner = THIS_MODULE,
@@ -468,6 +625,8 @@ static int __init tee_init(void)
 		pr_err("[%s] error %d adding character device "
 		       "TEE\n", __func__, err);
 	}
+
+	mutex_init(&sync);
 
 	return err;
 }
