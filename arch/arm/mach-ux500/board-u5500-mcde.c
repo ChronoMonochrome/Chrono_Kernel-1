@@ -20,7 +20,11 @@
 
 #define PRIMARY_DISPLAY_ID	0
 
-static bool rotate_main = true;
+#ifdef CONFIG_FB_MCDE
+
+
+static struct fb_info *fbs[2] = { NULL, NULL };
+static struct mcde_display_device *displays[2] = { NULL, NULL };
 static int display_initialized_during_boot;
 
 static int __init startup_graphics_setup(char *str)
@@ -85,7 +89,11 @@ struct mcde_display_device u5500_generic_display0 = {
 	.port = &port0,
 	.chnl_id = MCDE_CHNL_A,
 	.fifo = MCDE_FIFO_A,
+#ifdef CONFIG_MCDE_DISPLAY_PRIMARY_16BPP
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
+#else
+	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
+#endif
 	.native_x_res = 864,
 	.native_y_res = 480,
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
@@ -102,8 +110,6 @@ struct mcde_display_device u5500_generic_display0 = {
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
 
-static struct fb_info *fbs[2] = { NULL, NULL};
-static struct mcde_display_device *displays[2] = { NULL, NULL };
 /*
 * This function will create the framebuffer for the display that is registered.
 */
@@ -123,10 +129,26 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
 
-	if (ddev->id == PRIMARY_DISPLAY_ID && rotate_main) {
-		swap(width, height);
-		rotate = FB_ROTATE_CW;
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
+	if (ddev->id == PRIMARY_DISPLAY_ID) {
+		switch (CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) {
+		case 0:
+			rotate = FB_ROTATE_UR;
+			break;
+		case 90:
+			rotate = FB_ROTATE_CW;
+			swap(width, height);
+			break;
+		case 180:
+			rotate = FB_ROTATE_UD;
+			break;
+		case 270:
+			rotate = FB_ROTATE_CCW;
+			swap(width, height);
+			break;
+		}
 	}
+#endif
 
 	virtual_width = width;
 	virtual_height = height * 2;
@@ -143,9 +165,10 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		rotate);
 
 	if (IS_ERR(fbs[ddev->id]))
-		pr_warning("Failed to create fb for display %s\n", ddev->name);
+		dev_warn(&ddev->dev, "Failed to create fb for display %s\n",
+								ddev->name);
 	else
-		pr_info("Framebuffer created (%s)\n", ddev->name);
+		dev_info(&ddev->dev, "Framebuffer created (%s)\n", ddev->name);
 
 	return 0;
 }
@@ -170,7 +193,6 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	struct fb_var_screeninfo var;
 	struct fb_fix_screeninfo fix;
 	struct mcde_fb *mfb;
-	u8 *addr;
 	int i;
 
 	if (event != FB_EVENT_FB_REGISTERED)
@@ -183,9 +205,7 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	mfb = to_mcde_fb(info);
 	var = info->var;
 	fix = info->fix;
-	addr = ioremap(fix.smem_start,
-			var.yres_virtual * fix.line_length);
-	memset(addr, 0x00, var.yres_virtual * fix.line_length);
+
 	/* Apply overlay info */
 	for (i = 0; i < mfb->num_ovlys; i++) {
 		struct mcde_overlay *ovly = mfb->ovlys[i];
@@ -221,7 +241,6 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	struct fb_var_screeninfo var;
 	struct fb_fix_screeninfo fix;
 	struct mcde_fb *mfb;
-	u8 *addr;
 
 	if (event != FB_EVENT_FB_REGISTERED)
 		return 0;
@@ -236,9 +255,6 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 
 	var = info->var;
 	fix = info->fix;
-	addr = ioremap(fix.smem_start,
-			var.yres_virtual * fix.line_length);
-	memset(addr, 0x00, var.yres_virtual * fix.line_length);
 	var.yoffset = var.yoffset ? 0 : var.yres;
 	if (info->fbops->fb_pan_display)
 		ret = info->fbops->fb_pan_display(&var, info);
@@ -279,3 +295,4 @@ int __init init_display_devices_u5500(void)
 }
 
 module_init(init_display_devices_u5500);
+#endif
