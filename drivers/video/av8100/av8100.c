@@ -98,8 +98,6 @@
 #define AV8100_WAITTIME_10MS 10
 #define AV8100_WAITTIME_50MS 50
 #define AV8100_WATTIME_100US 100
-#define AV8100_CMD_RET_TRIES 10
-#define AV8100_FWDL_TRIES 10
 
 /* Master clock timing */
 #define MCLK_RNG_17_22	0	/* Use with 19.2 MHZ clock */
@@ -237,6 +235,8 @@ enum av8100_command_size {
 	AV8100_COMMAND_FUSE_AES_KEY_SIZE = 0x12,
 	AV8100_COMMAND_FUSE_AES_CHK_SIZE = 0x2,
 };
+
+static unsigned int waittime_retry[10] = {1, 2, 4, 6, 8, 10, 10, 10, 10, 10};
 
 static void clr_plug_status(enum av8100_plugin_status status);
 static void set_plug_status(enum av8100_plugin_status status);
@@ -2012,7 +2012,8 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	int tempnext = 0x0;
 	char val = 0x0;
 	char CheckSum = 0;
-	int cnt = 10;
+	int cnt;
+	int cnt_max;
 	struct i2c_client *i2c;
 	u8 uc;
 	u8 fdl;
@@ -2175,11 +2176,12 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	}
 
 	/* Wait Internal Micro controler ready */
-	cnt = AV8100_FWDL_TRIES;
+	cnt = 0;
+	cnt_max = ARRAY_SIZE(waittime_retry);
 	retval = av8100_reg_gen_status_r(NULL, NULL, NULL, &uc,
 		NULL, NULL);
-	while ((retval == 0) && (uc != 0x1) && (cnt-- > 0)) {
-		msleep(AV8100_WAITTIME_1MS);
+	while ((retval == 0) && (uc != 0x1) && (cnt++ < cnt_max)) {
+		msleep(waittime_retry[cnt]);
 		retval = av8100_reg_gen_status_r(NULL, NULL, NULL,
 			&uc, NULL, NULL);
 	}
@@ -3349,6 +3351,8 @@ int av8100_conf_w(enum av8100_command_type command_type,
 
 	if (if_type == I2C_INTERFACE) {
 		int cnt = 0;
+		int cnt_max;
+
 		dev_dbg(av8100dev, "av8100_conf_w cmd_type:%02x length:%02x ",
 			command_type, cmd_length);
 		dev_dbg(av8100dev, "buffer: ");
@@ -3376,10 +3380,11 @@ int av8100_conf_w(enum av8100_command_type command_type,
 
 		/* Get the first return byte */
 		msleep(AV8100_WAITTIME_1MS);
-		cnt = AV8100_CMD_RET_TRIES;
+		cnt = 0;
+		cnt_max = ARRAY_SIZE(waittime_retry);
 		retval = get_command_return_first(i2c, command_type);
-		while (retval && (cnt-- > 0)) {
-			msleep(AV8100_WAITTIME_1MS);
+		while (retval && (cnt++ < cnt_max)) {
+			msleep(waittime_retry[cnt]);
 			retval = get_command_return_first(i2c, command_type);
 		}
 		dev_dbg(av8100dev, "first return cnt:%d\n", cnt);
@@ -3418,6 +3423,7 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 	int retval = 0;
 	struct i2c_client *i2c;
 	int cnt;
+	int cnt_max;
 
 	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
 		return -EINVAL;
@@ -3449,10 +3455,11 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 
 	/* Get the first return byte */
 	msleep(AV8100_WAITTIME_1MS);
-	cnt = AV8100_CMD_RET_TRIES;
+	cnt = 0;
+	cnt_max = ARRAY_SIZE(waittime_retry);
 	retval = get_command_return_first(i2c, command_type);
-	while (retval && (cnt-- > 0)) {
-		msleep(AV8100_WAITTIME_1MS);
+	while (retval && (cnt++ < cnt_max)) {
+		msleep(waittime_retry[cnt]);
 		retval = get_command_return_first(i2c, command_type);
 	}
 	dev_dbg(av8100dev, "first return cnt:%d\n", cnt);
