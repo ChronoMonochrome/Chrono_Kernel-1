@@ -14,6 +14,7 @@
  * by the Free Software Foundation.
  */
 
+#include <linux/clk.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/moduleparam.h>
@@ -169,6 +170,11 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 	0x00, /* REG_FIFOCONF6		(0x6E) */
 	0x02, /* REG_AUDREV		(0x6F) - read only */
 };
+
+static struct snd_soc_codec *ab8500_codec;
+static struct clk *clk_ptr_audioclk;
+static struct clk *clk_ptr_sysclk;
+static bool clock_on;
 
 /* Reads an arbitrary register from the ab8500 chip.
 */
@@ -1701,7 +1707,7 @@ static int ab8500_codec_add_widgets(struct snd_soc_codec *codec)
 {
 	int ret;
 
-	ret = snd_soc_dapm_new_controls(codec, ab8500_dapm_widgets,
+	ret = snd_soc_dapm_new_controls(&codec->dapm, ab8500_dapm_widgets,
 			ARRAY_SIZE(ab8500_dapm_widgets));
 	if (ret < 0) {
 		pr_err("%s: Failed to create DAPM controls (%d).\n",
@@ -1709,7 +1715,7 @@ static int ab8500_codec_add_widgets(struct snd_soc_codec *codec)
 		return ret;
 	}
 
-	ret = snd_soc_dapm_add_routes(codec, intercon, ARRAY_SIZE(intercon));
+	ret = snd_soc_dapm_add_routes(&codec->dapm, intercon, ARRAY_SIZE(intercon));
 	if (ret < 0) {
 		pr_err("%s: Failed to add DAPM routes (%d).\n",
 			__func__, ret);
@@ -1736,26 +1742,72 @@ static int ab8500_codec_pcm_startup(struct snd_pcm_substream *substream,
 static int ab8500_codec_pcm_prepare(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
+	int error = 0;
+
 	pr_debug("%s Enter.\n", __func__);
 
 	/* Clear interrupt status registers by reading them. */
 	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE1);
 	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE2);
 
-	return 0;
+	if (clock_on)
+		return 0;
+
+	clk_ptr_sysclk = clk_get(dai->codec->dev, "sysclk");
+	if (IS_ERR(clk_ptr_sysclk)) {
+		error = -EFAULT;
+		dev_err(dai->codec->dev,
+			"Sysclk get failed error = %d", error);
+		return error;
+	}
+	clk_ptr_audioclk = clk_get(dai->codec->dev, "audioclk");
+	if (IS_ERR(clk_ptr_audioclk)) {
+		error = -EFAULT;
+		dev_err(dai->codec->dev,
+			"Audioclk get failed error = %d", error);
+		goto free_sysclk;
+	}
+	error = clk_set_parent(clk_ptr_audioclk, clk_ptr_sysclk);
+	if (error) {
+		pr_err("Setting Sysclk as parent failed error = %d", error);
+		return error;
+	}
+
+	error = clk_enable(clk_ptr_audioclk);
+	if (error) {
+		pr_err("Audioclk enable failed error = %d", error);
+		return error;
+	}
+	clock_on = true;
+
+	return error;
+
+free_sysclk:
+	clk_put(clk_ptr_sysclk);
+
+	clock_on = false;
+
+	return error;
 }
 
 static void ab8500_codec_pcm_shutdown(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
 	pr_debug("%s Enter.\n", __func__);
+
+	clk_disable(clk_ptr_sysclk);
+	clk_put(clk_ptr_sysclk);
+
+	clock_on = false;
+
 	ab8500_codec_dump_all_reg(dai->codec);
 }
 
 static int ab8500_codec_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 		unsigned int freq, int dir)
 {
-	pr_debug("%s Enter.\n", __func__);
+	pr_err("%s Enter.\n", __func__);
+
 	return 0;
 }
 
@@ -2070,39 +2122,14 @@ static void ab8500_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
 
 	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG);
 	data |= GPIO27_DIR_OUTPUT | GPIO29_DIR_OUTPUT | GPIO31_DIR_OUTPUT;
-	ab8500_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG, data);
+	ab8500_codec_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG, data);
 
-	data = ab8500_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR5_REG);
+	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR5_REG);
 	data |= GPIO35_DIR_OUTPUT;
-	ab8500_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR5_REG, data);
-	data = ab8500_read_reg(codec, AB8500_MISC, AB8500_GPIO_OUT5_REG);
+	ab8500_codec_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR5_REG, data);
+	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_OUT5_REG);
 	data |= GPIO35_DIR_OUTPUT;
-	ab8500_write_reg(codec, AB8500_MISC, AB8500_GPIO_OUT5_REG, data);
-}
-
-static int ab8500_set_bias_level(struct snd_soc_codec *codec,
-		enum snd_soc_bias_level level)
-{
-	switch (level) {
-	case SND_SOC_BIAS_ON:
-		break;
-	case SND_SOC_BIAS_PREPARE:
-		if (codec->dapm.bias_level == SND_SOC_BIAS_STANDBY)
-			enable_regulator("v-audio");
-		break;
-	case SND_SOC_BIAS_STANDBY:
-		if (codec->dapm.bias_level == SND_SOC_BIAS_PREPARE) {
-			set_current_state(TASK_UNINTERRUPTIBLE);
-			schedule_timeout(msecs_to_jiffies(100));
-			disable_regulator("v-audio");
-		}
-		break;
-	case SND_SOC_BIAS_OFF:
-		break;
-	}
-	codec->dapm.bias_level = level;
-
-	return 0;
+	ab8500_codec_write_reg(codec, AB8500_MISC, AB8500_GPIO_OUT5_REG, data);
 }
 
 static int ab8500_codec_probe(struct snd_soc_codec *codec)
@@ -2130,6 +2157,9 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 		pr_err("%s: Failed add widgets (%d).\n", __func__, ret);
 		return ret;
 	}
+
+	ab8500_codec = codec;
+	clock_on = false;
 
 	return 0;
 }
@@ -2163,7 +2193,6 @@ struct snd_soc_codec_driver ab8500_codec_driver = {
 	.resume =		ab8500_codec_resume,
 	.read =			ab8500_codec_read_reg_audio,
 	.write =		ab8500_codec_write_reg_audio,
-	.set_bias_level =	ab8500_set_bias_level,
 	.reg_cache_size =	ARRAY_SIZE(ab8500_reg_cache),
 	.reg_word_size =	sizeof(u8),
 	.reg_cache_default =	ab8500_reg_cache,
