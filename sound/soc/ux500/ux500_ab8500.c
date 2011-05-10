@@ -49,50 +49,14 @@ static unsigned int tx_slots = DEF_TX_SLOTS;
 static unsigned int rx_slots = DEF_RX_SLOTS;
 
 /* List the regulators that are to be controlled.. */
-static struct regulator_bulk_data ab8500_regus[5] = {
+static struct regulator_bulk_data ab8500_regus[4] = {
 	{	.supply = "v-dmic"	},
 	{	.supply = "v-audio"	},
 	{	.supply = "v-amic1"	},
-	{	.supply = "v-amic2"	},
-	{	.supply = "vcc-N2158"	}
+	{	.supply = "v-amic2"	}
 };
 
-static int create_regulators(struct device *dev)
-{
-	int i, status = 0;
-
-	pr_debug("%s: Enter.\n", __func__);
-
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
-		ab8500_regus[i].consumer = NULL;
-
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
-		ab8500_regus[i].consumer = regulator_get(
-			dev, ab8500_regus[i].supply);
-		if (IS_ERR(ab8500_regus[i].consumer)) {
-			status = PTR_ERR(ab8500_regus[i].consumer);
-			pr_err("%s: Failed to get supply '%s' (%d)\n",
-				__func__, ab8500_regus[i].supply, status);
-			ab8500_regus[i].consumer = NULL;
-			goto err_get;
-		}
-	}
-
-	return 0;
-
-err_get:
-
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
-		if (ab8500_regus[i].consumer) {
-			regulator_put(ab8500_regus[i].consumer);
-			ab8500_regus[i].consumer = NULL;
-		}
-	}
-
-	return status;
-}
-
-int enable_regulator(const char *name)
+static int enable_regulator(const char *name)
 {
 	int i, status;
 
@@ -101,30 +65,27 @@ int enable_regulator(const char *name)
 			continue;
 
 		status = regulator_enable(ab8500_regus[i].consumer);
-
 		if (status != 0) {
 			pr_err("%s: Failure with regulator %s (%d)\n",
 				__func__, name, status);
 			return status;
-		} else {
-			pr_debug("%s: Enabled regulator %s.\n",
-				__func__, name);
-			return 0;
-		}
+		};
+
+		pr_debug("%s: Enabled regulator %s.\n", __func__, name);
+		return 0;
 	}
 
 	return -EINVAL;
 }
 
-void disable_regulator(const char *name)
+static void disable_regulator(const char *name)
 {
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
 		if (strcmp(name, ab8500_regus[i].supply) == 0) {
 			regulator_disable(ab8500_regus[i].consumer);
-			pr_debug("%s: Disabled regulator %s.\n",
-				__func__, name);
+			pr_debug("%s: Disabled regulator %s.\n", __func__, name);
 			return;
 		}
 	}
@@ -132,13 +93,22 @@ void disable_regulator(const char *name)
 
 int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 {
+	int i;
+	int status = 0;
+
 	pr_info("%s: Enter\n", __func__);
 
-	return 0;
+	/* Enable regulators */
+	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
+		status += enable_regulator(ab8500_regus[i].supply);
+
+	return status;
 }
 
 void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 {
+	int i;
+
 	pr_info("%s: Enter\n", __func__);
 
 	/* Reset slots configuration to default(s) */
@@ -146,6 +116,10 @@ void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 		tx_slots = DEF_TX_SLOTS;
 	else
 		rx_slots = DEF_RX_SLOTS;
+
+	/* Disable regulators */
+	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
+		disable_regulator(ab8500_regus[i].supply);
 }
 
 int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
@@ -259,39 +233,6 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int regulator_event(struct snd_soc_dapm_widget *w,
-		struct snd_kcontrol *k, int event)
-{
-	if (SND_SOC_DAPM_EVENT_ON(event))
-		enable_regulator(w->name);
-	else
-		disable_regulator(w->name);
-	return 0;
-}
-
-static const struct snd_soc_dapm_widget dapm_widgets[] = {
-	SND_SOC_DAPM_MIC("v-dmic", regulator_event),
-	SND_SOC_DAPM_MIC("v-amic1", regulator_event),
-	SND_SOC_DAPM_MIC("v-amic2", regulator_event),
-	SND_SOC_DAPM_MIC("vcc-N2158", regulator_event),
-};
-
-static const struct snd_soc_dapm_route dapm_routes[] = {
-	{"MIC1A", NULL, "v-amic1"},
-
-	{"MIC1B", NULL, "vcc-N2158"},
-	{"vcc-N2158", NULL, "v-amic1"},
-
-	{"MIC2", NULL, "v-amic2"},
-
-	{"DMIC1", NULL, "v-dmic"},
-	{"DMIC2", NULL, "v-dmic"},
-	{"DMIC3", NULL, "v-dmic"},
-	{"DMIC4", NULL, "v-dmic"},
-	{"DMIC5", NULL, "v-dmic"},
-	{"DMIC6", NULL, "v-dmic"},
-};
-
 static int create_jack(struct snd_soc_codec *codec)
 {
 	return snd_soc_jack_new(codec,
@@ -312,19 +253,15 @@ void ux500_ab8500_jack_report(int value)
 }
 EXPORT_SYMBOL_GPL(ux500_ab8500_jack_report);
 
+
 int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
-	int status = 0;
+	int status;
 
-	pr_info("%s: Enter.\n", __func__);
+	pr_info("%s Enter.\n", __func__);
 
-	status = create_regulators(codec->dev);
-	if (status < 0) {
-		pr_err("%s: Failed to instantiate regulators (%d).\n",
-			__func__, status);
-		return status;
-	}
+	/* TODO: Add required DAPM routes to control regulators on demand */
 
 	status = create_jack(codec);
 	if (status < 0) {
@@ -332,19 +269,63 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		return status;
 	}
 
-	snd_soc_dapm_new_controls(codec, dapm_widgets,
-			ARRAY_SIZE(dapm_widgets));
-	snd_soc_dapm_add_routes(codec, dapm_routes,
-			ARRAY_SIZE(dapm_routes));
-	snd_soc_dapm_sync(codec);
+	return 0;
+}
+
+static int create_regulators(void)
+{
+	int i, status = 0;
+
+	pr_debug("%s: Enter.\n", __func__);
+
+	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
+		ab8500_regus[i].consumer = NULL;
+
+	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
+		ab8500_regus[i].consumer = regulator_get(NULL,
+						      ab8500_regus[i].supply);
+		if (IS_ERR(ab8500_regus[i].consumer)) {
+			status = PTR_ERR(ab8500_regus[i].consumer);
+			pr_err("%s: Failed to get supply '%s' (%d)\n",
+				__func__, ab8500_regus[i].supply, status);
+			ab8500_regus[i].consumer = NULL;
+			goto err_get;
+		}
+	}
+
+	return 0;
+
+err_get:
+
+	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
+		if (ab8500_regus[i].consumer) {
+			regulator_put(ab8500_regus[i].consumer);
+			ab8500_regus[i].consumer = NULL;
+		}
+	}
 
 	return status;
+}
+
+int ux500_ab8500_soc_machine_drv_init(void)
+{
+	int status = 0;
+
+	pr_info("%s: Enter.\n", __func__);
+
+	status = create_regulators();
+	if (status < 0) {
+		pr_err("%s: Failed to instantiate regulators (%d).\n",
+			__func__, status);
+		return status;
+	}
+
+	return 0;
 }
 
 void ux500_ab8500_soc_machine_drv_cleanup(void)
 {
 	pr_info("%s: Enter.\n", __func__);
-
 
 	regulator_bulk_free(ARRAY_SIZE(ab8500_regus), ab8500_regus);
 }

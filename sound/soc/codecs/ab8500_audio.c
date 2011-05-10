@@ -177,7 +177,6 @@ static struct clk *clk_ptr_audioclk;
 static struct clk *clk_ptr_sysclk;
 static DEFINE_MUTEX(power_lock);
 static int ab8500_power_count;
-static bool ab8500_vibra_on;
 
 /* Reads an arbitrary register from the ab8500 chip.
 */
@@ -1622,6 +1621,28 @@ static int ab8500_codec_set_bit_delay_if1(struct snd_soc_codec *codec, unsigned 
 	return 0;
 }
 
+/* Configures audio macrocell into the AB8500 Chip */
+static void ab8500_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
+{
+	int data;
+
+	data = ab8500_codec_read_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG);
+	data &= ~CLK_32K_OUT2_DISABLE;
+	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
+	data |= INACTIVE_RESET_AUDIO;
+	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
+
+	data = ab8500_codec_read_reg(codec, AB8500_SYS_CTRL2_BLOCK,
+		AB8500_SYSULPCLK_CTRL1_REG);
+	data |= ENABLE_AUDIO_CLK_TO_AUDIO_BLK;
+	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK,
+		AB8500_SYSULPCLK_CTRL1_REG, data);
+
+	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG);
+	data |= GPIO27_DIR_OUTPUT | GPIO29_DIR_OUTPUT | GPIO31_DIR_OUTPUT;
+	ab8500_codec_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG, data);
+}
+
 static int ab8500_codec_power_control_inc(struct snd_soc_codec *codec)
 {
 	int ret;
@@ -1794,7 +1815,6 @@ static int ab8500_codec_pcm_startup(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
 	pr_debug("%s Enter.\n", __func__);
-
 
 	return 0;
 }
@@ -2121,35 +2141,6 @@ struct snd_soc_dai_driver ab8500_codec_dai[] = {
 	}
 };
 
-/* Configures audio macrocell into the AB8500 Chip */
-static void ab8500_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
-{
-	int data;
-
-	data = ab8500_codec_read_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG);
-	data &= ~CLK_32K_OUT2_DISABLE;
-	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
-	data |= INACTIVE_RESET_AUDIO;
-	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
-
-	data = ab8500_codec_read_reg(codec, AB8500_SYS_CTRL2_BLOCK,
-		AB8500_SYSULPCLK_CTRL1_REG);
-	data |= ENABLE_AUDIO_CLK_TO_AUDIO_BLK;
-	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK,
-		AB8500_SYSULPCLK_CTRL1_REG, data);
-
-	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG);
-	data |= GPIO27_DIR_OUTPUT | GPIO29_DIR_OUTPUT | GPIO31_DIR_OUTPUT;
-	ab8500_codec_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG, data);
-
-	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR5_REG);
-	data |= GPIO35_DIR_OUTPUT;
-	ab8500_codec_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR5_REG, data);
-	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_OUT5_REG);
-	data |= GPIO35_DIR_OUTPUT;
-	ab8500_codec_write_reg(codec, AB8500_MISC, AB8500_GPIO_OUT5_REG, data);
-}
-
 static int ab8500_codec_probe(struct snd_soc_codec *codec)
 {
 	int i, ret;
@@ -2177,7 +2168,6 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 	}
 
 	ab8500_codec = codec;
-	ab8500_vibra_on = false;
 
 	ab8500_power_count = 0;
 	clk_ptr_sysclk = clk_get(codec->dev, "sysclk");
