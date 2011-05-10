@@ -73,6 +73,10 @@ config KTIME_SCALAR
 	bool
 	default y
 
+config KTIME_SCALAR
+	bool
+	default y
+
 config HAVE_TCM
 	bool
 	select GENERIC_ALLOCATOR
