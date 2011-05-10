@@ -13,6 +13,7 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/hsi/hsi.h>
+#include <linux/regulator/consumer.h>
 
 #ifdef CONFIG_STE_DMA40
 #include <linux/dmaengine.h>
@@ -21,30 +22,57 @@
 
 #include <mach/hsi.h>
 
+/*
+ * Copy of HSIR/HSIT context for restoring after HW reset (Vape power off).
+ */
+struct ste_hsi_hw_context {
+	unsigned int tx_mode;
+	unsigned int tx_divisor;
+	unsigned int tx_channels;
+	unsigned int rx_mode;
+	unsigned int rx_channels;
+};
+
 /**
- * struct ste_hsi_controller - Nomadik HSI controller data
- * @dev: device associated to the controller (HSI controller)
- * @rx_base: HSI receiver registers base address
- * @tx_base: HSI transmitter registers base address
+ * struct ste_hsi_controller - STE HSI controller data
+ * @dev: device associated to STE HSI controller
+ * @tx_dma_base: HSI TX peripheral physical address
+ * @rx_dma_base: HSI RX peripheral physical address
+ * @rx_base: HSI RX peripheral virtual address
+ * @tx_base: HSI TX peripheral virtual address
+ * @regulator: STE HSI Vape consumer regulator
+ * @context: copy of client-configured HSI TX / HSI RX registers
+ * @tx_clk: HSI TX core clock (HSITXCLK)
+ * @rx_clk: HSI RX core clock (HSIRXCLK)
+ * @ssitx_clk: HSI TX host clock (HCLK)
+ * @ssirx_clk: HSI RX host clock (HCLK)
+ * @clk_work: structure for delayed HSI clock disabling
+ * @overrun_irq: HSI channels overrun IRQ table
+ * @ck_refcount: reference count for clock enable operation
+ * @ck_lock: locking primitive for HSI clocks
+ * @lock: locking primitive for HSI controller
+ * @use_dma: flag for DMA enabled
+ * @ck_on: flag for HSI clocks enabled
  */
 struct ste_hsi_controller {
 	struct device *dev;
+	dma_addr_t tx_dma_base;
+	dma_addr_t rx_dma_base;
+	unsigned char __iomem *rx_base;
+	unsigned char __iomem *tx_base;
+	struct regulator *regulator;
+	struct ste_hsi_hw_context *context;
 	struct clk *tx_clk;
 	struct clk *rx_clk;
 	struct clk *ssitx_clk;
 	struct clk *ssirx_clk;
 	struct delayed_work clk_work;
-	unsigned char __iomem *rx_base;
-	unsigned char __iomem *tx_base;
 	int overrun_irq[STE_HSI_MAX_CHANNELS];
 	int ck_refcount;
 	spinlock_t ck_lock;
 	spinlock_t lock;
 	unsigned int use_dma:1;
 	unsigned int ck_on:1;
-	/* physical address of rx and tx controller */
-	dma_addr_t rx_dma_base;
-	dma_addr_t tx_dma_base;
 };
 
 #ifdef CONFIG_STE_DMA40
@@ -107,6 +135,146 @@ static void ste_hsi_clk_free(struct clk **pclk)
 	*pclk = NULL;
 }
 
+static void ste_hsi_init_registers(struct ste_hsi_controller *ste_hsi)
+{
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_BUFSTATE);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_FLUSHBITS);
+	/* TO DO: TX channel priorities will be implemented later */
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_PRIORITY);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_BURSTLEN);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_PREAMBLE);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_DATASWAP);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_DMAEN);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKID);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKIC);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKIM);
+
+	/* 0x23 is reset value per DB8500 Design Spec */
+	writel(0x23, ste_hsi->rx_base + STE_HSI_RX_THRESHOLD);
+
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_BUFSTATE);
+
+	/* HSIR clock recovery mode */
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_DETECTOR);
+
+	/* Bits 0,1,2 set to 1 to clear exception flags */
+	writel(0x07, ste_hsi->rx_base + STE_HSI_RX_ACK);
+
+	/* Bits 0..7 set to 1 to clear OVERRUN IRQ  */
+	writel(0xFF, ste_hsi->rx_base + STE_HSI_RX_OVERRUNACK);
+
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_DMAEN);
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_WATERMARKIC);
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_WATERMARKIM);
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_OVERRUNIM);
+
+	/* Flush all errors */
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_EXCEP);
+
+	/* 2 is Flush state, no RX exception generated afterwards */
+	writel(2, ste_hsi->rx_base + STE_HSI_RX_STATE);
+
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_EXCEPIM);
+}
+
+static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
+{
+	unsigned int buffers, i;
+	struct ste_hsi_hw_context *pcontext = ste_hsi->context;
+
+	/*
+	 * Configure TX
+	 */
+	writel(pcontext->tx_mode, ste_hsi->tx_base + STE_HSI_TX_MODE);
+	writel(pcontext->tx_divisor, ste_hsi->tx_base + STE_HSI_TX_DIVISOR);
+	writel(0, ste_hsi->tx_base + STE_HSI_TX_PARITY);
+	writel(pcontext->tx_channels, ste_hsi->tx_base + STE_HSI_TX_CHANNELS);
+	/* Calculate buffers number per channel */
+	buffers = STE_HSI_MAX_BUFFERS / pcontext->tx_channels;
+	for (i = 0; i < pcontext->tx_channels; i++) {
+		/* Set 32 bit long frames */
+		writel(31, ste_hsi->tx_base + STE_HSI_TX_FRAMELENX + 4 * i);
+		writel(buffers * i,
+		       ste_hsi->tx_base + STE_HSI_TX_BASEX + 4 * i);
+		writel(buffers - 1,
+		       ste_hsi->tx_base + STE_HSI_TX_SPANX + 4 * i);
+		writel(buffers - 1,
+		       ste_hsi->tx_base + STE_HSI_TX_WATERMARKX + 4 * i);
+		writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKX + 4 * i);
+	}
+
+	/*
+	 * The value read from this register gives the synchronized status
+	 * of the transmitter state and this synchronization takes 2 HSITCLK
+	 * cycles plus 3 HCLK cycles.
+	 */
+	while (STE_HSI_STATE_IDLE != readl(ste_hsi->tx_base + STE_HSI_TX_STATE))
+		cpu_relax();
+
+	/*
+	 * Configure RX
+	 */
+	writel(pcontext->rx_mode, ste_hsi->rx_base + STE_HSI_RX_MODE);
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_PARITY);
+	writel(pcontext->rx_channels, ste_hsi->rx_base + STE_HSI_RX_CHANNELS);
+	/* Calculate buffers number per channel */
+	buffers = STE_HSI_MAX_BUFFERS / pcontext->rx_channels;
+	for (i = 0; i < pcontext->rx_channels; i++) {
+		/* Set 32 bit long frames */
+		writel(31, ste_hsi->rx_base + STE_HSI_RX_FRAMELENX + 4 * i);
+		writel(buffers * i,
+		       ste_hsi->rx_base + STE_HSI_RX_BASEX + 4 * i);
+		writel(buffers - 1,
+		       ste_hsi->rx_base + STE_HSI_RX_SPANX + 4 * i);
+		writel(buffers - 1,
+		       ste_hsi->rx_base + STE_HSI_RX_WATERMARKX + 4 * i);
+		writel(0, ste_hsi->rx_base + STE_HSI_RX_WATERMARKX + 4 * i);
+	}
+
+	/*
+	 * The value read from this register gives the synchronized status
+	 * of the receiver state and this synchronization takes 2 HSIRCLK
+	 * cycles plus 3 HCLK cycles.
+	 */
+	while (STE_HSI_STATE_IDLE != readl(ste_hsi->tx_base + STE_HSI_RX_STATE))
+		cpu_relax();
+}
+
+/*
+ * When cpuidle framework is setting the sleep or deep sleep state then
+ * the Vape is OFF. This results in re-setting the HSIT/HSIR registers
+ * to default (idle) values.
+ * Function ste_hsi_context() is checking and restoring the HSI registers
+ * to these set by the HSI client by ste_hsi_setup().
+ */
+static void ste_hsi_context(struct ste_hsi_controller *ste_hsi)
+{
+	unsigned int tx_channels;
+	unsigned int rx_channels;
+
+
+	tx_channels = readl(ste_hsi->tx_base + STE_HSI_TX_CHANNELS);
+	rx_channels = readl(ste_hsi->rx_base + STE_HSI_RX_CHANNELS);
+
+	/*
+	 * Checking if the context was lost.
+	 * The target config is at least 2 channels for both TX and RX.
+	 * TX and RX channels are set to 1 after HW reset.
+	 */
+	if ((ste_hsi->context->tx_channels != tx_channels) ||
+		(ste_hsi->context->rx_channels != rx_channels)) {
+		/*
+		 * TO DO: remove "dev_info" after thorough testing.
+		 * Debug left for getting the statistics how frequently the context
+		 * is lost during regular HSI operation.
+		 */
+		dev_info(ste_hsi->dev, "context\n");
+
+		ste_hsi_init_registers(ste_hsi);
+		ste_hsi_setup_registers(ste_hsi);
+	}
+}
+
 static void ste_hsi_clks_free(struct ste_hsi_controller *ste_hsi)
 {
 	ste_hsi_clk_free(&ste_hsi->rx_clk);
@@ -129,13 +297,16 @@ static int ste_hsi_clock_enable(struct hsi_controller *hsi)
 		goto out;
 
 	err = clk_enable(ste_hsi->ssitx_clk);
-	if (unlikely(err))
+	if (unlikely(err)) {
 		clk_disable(ste_hsi->ssirx_clk);
+		goto out;
+	}
 
 	err = clk_enable(ste_hsi->rx_clk);
 	if (unlikely(err)) {
 		clk_disable(ste_hsi->ssitx_clk);
 		clk_disable(ste_hsi->ssirx_clk);
+		goto out;
 	}
 
 	err = clk_enable(ste_hsi->tx_clk);
@@ -143,6 +314,7 @@ static int ste_hsi_clock_enable(struct hsi_controller *hsi)
 		clk_disable(ste_hsi->rx_clk);
 		clk_disable(ste_hsi->ssitx_clk);
 		clk_disable(ste_hsi->ssirx_clk);
+		goto out;
 	}
 
 	ste_hsi->ck_on = 1;
@@ -241,6 +413,8 @@ static int ste_hsi_start_irq(struct hsi_msg *msg)
 	err = ste_hsi_clock_enable(hsi);
 	if (unlikely(err))
 		return err;
+
+	ste_hsi_context(ste_hsi);
 
 	msg->actual_len = 0;
 	msg->status = HSI_STATUS_PROCEEDING;
@@ -361,6 +535,8 @@ static int ste_hsi_start_dma(struct hsi_msg *msg)
 	err = ste_hsi_clock_enable(hsi);
 	if (unlikely(err))
 		return err;
+
+	ste_hsi_context(ste_hsi);
 
 	if (msg->ttype == HSI_MSG_WRITE) {
 		direction = DMA_TO_DEVICE;
@@ -1076,8 +1252,11 @@ static int ste_hsi_setup(struct hsi_client *cl)
 	struct ste_hsi_port *ste_port = hsi_port_drvdata(port);
 	struct hsi_controller *hsi = to_hsi_controller(port->device.parent);
 	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
-	int err, i, buffers;
+	int err;
 	u32 div = 0;
+
+	if (ste_hsi->regulator)
+		regulator_enable(ste_hsi->regulator);
 
 	err = ste_hsi_clock_enable(hsi);
 	if (unlikely(err))
@@ -1089,51 +1268,35 @@ static int ste_hsi_setup(struct hsi_client *cl)
 			--div;
 	}
 
-	port->tx_cfg = cl->tx_cfg;
-	port->rx_cfg = cl->rx_cfg;
-	/* Configure TX */
-	writel(cl->tx_cfg.mode, ste_hsi->tx_base + STE_HSI_TX_MODE);
-	writel(div, ste_hsi->tx_base + STE_HSI_TX_DIVISOR);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_PARITY);
-	/* TODO: Wait for idle here */
-	writel(cl->tx_cfg.channels, ste_hsi->tx_base + STE_HSI_TX_CHANNELS);
-	/* Calculate buffers number per channel */
-	buffers = STE_HSI_MAX_BUFFERS / cl->tx_cfg.channels;
-	for (i = 0; i < cl->tx_cfg.channels; i++) {
-		/* Set 32 bit long frames */
-		writel(31, ste_hsi->tx_base + STE_HSI_TX_FRAMELENX + 4 * i);
-		writel(buffers * i,
-		       ste_hsi->tx_base + STE_HSI_TX_BASEX + 4 * i);
-		writel(buffers - 1,
-		       ste_hsi->tx_base + STE_HSI_TX_SPANX + 4 * i);
-		writel(buffers - 1,
-		       ste_hsi->tx_base + STE_HSI_TX_WATERMARKX + 4 * i);
-		writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKX + 4 * i);
+	if (!ste_hsi->context)
+		ste_hsi->context = kzalloc(sizeof(struct ste_hsi_hw_context), GFP_KERNEL);
+
+	if (!ste_hsi->context) {
+		dev_err(ste_hsi->dev, "Not enough memory for context!\n");
+		return -ENOMEM;
+	} else {
+		/* Save HSI context */
+		ste_hsi->context->tx_mode = cl->tx_cfg.mode;
+		ste_hsi->context->tx_divisor = div;
+		ste_hsi->context->tx_channels = cl->tx_cfg.channels;
+		ste_hsi->context->rx_mode = cl->rx_cfg.mode;
+		ste_hsi->context->rx_channels = cl->rx_cfg.channels;
 	}
 
-	/* Configure RX */
-	writel(cl->rx_cfg.mode, ste_hsi->rx_base + STE_HSI_RX_MODE);
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_PARITY);
-	writel(cl->rx_cfg.channels, ste_hsi->rx_base + STE_HSI_RX_CHANNELS);
-	/* Calculate buffers number per channel */
-	buffers = STE_HSI_MAX_BUFFERS / cl->rx_cfg.channels;
-	for (i = 0; i < cl->rx_cfg.channels; i++) {
-		/* Set 32 bit long frames */
-		writel(31, ste_hsi->rx_base + STE_HSI_RX_FRAMELENX + 4 * i);
-		writel(buffers * i,
-		       ste_hsi->rx_base + STE_HSI_RX_BASEX + 4 * i);
-		writel(buffers - 1,
-		       ste_hsi->rx_base + STE_HSI_RX_SPANX + 4 * i);
-		writel(buffers - 1,
-		       ste_hsi->rx_base + STE_HSI_RX_WATERMARKX + 4 * i);
-		writel(0, ste_hsi->rx_base + STE_HSI_RX_WATERMARKX + 4 * i);
-	}
+	port->tx_cfg = cl->tx_cfg;
+	port->rx_cfg = cl->rx_cfg;
+
+	ste_hsi_setup_registers(ste_hsi);
 
 	ste_port->channels = max(cl->tx_cfg.channels, cl->rx_cfg.channels);
 
 	ste_hsi_setup_dma(cl);
 
 	ste_hsi_clock_disable(hsi);
+
+	if (ste_hsi->regulator)
+		regulator_disable(ste_hsi->regulator);
+
 	return err;
 }
 
@@ -1200,11 +1363,25 @@ static int ste_hsi_flush(struct hsi_client *cl)
 
 static int ste_hsi_start_tx(struct hsi_client *cl)
 {
+	struct hsi_port *port = to_hsi_port(cl->device.parent);
+	struct hsi_controller *hsi = to_hsi_controller(port->device.parent);
+	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
+
+	if (ste_hsi->regulator)
+		regulator_enable(ste_hsi->regulator);
+
 	return 0;
 }
 
 static int ste_hsi_stop_tx(struct hsi_client *cl)
 {
+	struct hsi_port *port = to_hsi_port(cl->device.parent);
+	struct hsi_controller *hsi = to_hsi_controller(port->device.parent);
+	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
+
+	if (ste_hsi->regulator)
+		regulator_disable(ste_hsi->regulator);
+
 	return 0;
 }
 
@@ -1288,40 +1465,7 @@ static int __init ste_hsi_hw_init(struct hsi_controller *hsi)
 	if (unlikely(err))
 		return err;
 
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_BUFSTATE);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_FLUSHBITS);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_PRIORITY);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_BURSTLEN);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_PREAMBLE);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_DATASWAP);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_DMAEN);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKID);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKIC);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKIM);
-
-	/* 0x23 is reset value per DB8500 Design Spec */
-	writel(0x23, ste_hsi->rx_base + STE_HSI_RX_THRESHOLD);
-
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_BUFSTATE);
-
-	/* Bits 0,1,2 set to 1 to clear exception flags */
-	writel(0x07, ste_hsi->rx_base + STE_HSI_RX_ACK);
-
-	/* Bits 0..7 set to 1 to clear OVERRUN IRQ  */
-	writel(0xFF, ste_hsi->rx_base + STE_HSI_RX_OVERRUNACK);
-
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_DMAEN);
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_WATERMARKIC);
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_WATERMARKIM);
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_OVERRUNIM);
-
-	/* Flush all errors */
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_EXCEP);
-
-	/* 2 is Flush state, no RX exception generated afterwards */
-	writel(2, ste_hsi->rx_base + STE_HSI_RX_STATE);
-
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_EXCEPIM);
+	ste_hsi_init_registers(ste_hsi);
 
 	ste_hsi_clock_disable(hsi);
 
@@ -1351,6 +1495,15 @@ static int __init ste_hsi_add_controller(struct hsi_controller *hsi,
 	dev_set_name(&hsi->device, "ste-hsi.%d", hsi->id);
 	ste_hsi->dev = &hsi->device;
 	hsi_controller_set_drvdata(hsi, ste_hsi);
+
+	/* Get and enable regulator */
+	ste_hsi->regulator = regulator_get(&pdev->dev, "v-hsi");
+	if (IS_ERR(ste_hsi->regulator)) {
+		dev_err(&pdev->dev, "could not get v-hsi regulator\n");
+		ste_hsi->regulator = NULL;
+	} else {
+		regulator_enable(ste_hsi->regulator);
+	}
 
 	/* Get and reserve resources for receiver */
 	err = ste_hsi_get_iomem(pdev, "hsi_rx_base", &ste_hsi->rx_base,
@@ -1440,6 +1593,10 @@ static int __init ste_hsi_add_controller(struct hsi_controller *hsi,
 		goto err_clk_free;
 
 	err = hsi_register_controller(hsi);
+
+	if (ste_hsi->regulator)
+		regulator_disable(ste_hsi->regulator);
+
 	if (err)
 		goto err_clk_free;
 
@@ -1457,8 +1614,14 @@ static int ste_hsi_remove_controller(struct hsi_controller *hsi,
 {
 	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
 
+	if (ste_hsi->regulator)
+		regulator_put(ste_hsi->regulator);
+
 	ste_hsi_clks_free(ste_hsi);
 	hsi_unregister_controller(hsi);
+
+	kfree(ste_hsi->context);
+	kfree(ste_hsi);
 
 	return 0;
 }
