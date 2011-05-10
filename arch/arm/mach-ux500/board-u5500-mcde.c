@@ -56,6 +56,17 @@ static int __init startup_graphics_setup(char *str)
 }
 __setup("startup_graphics=", startup_graphics_setup);
 
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+static struct mcde_col_transform rgb_2_yCbCr_transform = {
+	.matrix = {
+		{0x0042, 0x0081, 0x0019},
+		{0xffda, 0xffb6, 0x0070},
+		{0x0070, 0xffa2, 0xffee},
+	},
+	.offset = {0x10, 0x80, 0x80},
+};
+#endif
+
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
 static struct mcde_port port0 = {
 	.type = MCDE_PORTTYPE_DSI,
@@ -158,14 +169,7 @@ static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	.regulator_id = NULL,
 	.cvbs_regulator_id = "v-av8100-AV-switch",
 	.ddb_id = 1,
-	.rgb_2_yCbCr_transform = {
-		.matrix = {
-			{0x42, 0x81, 0x19},
-			{0xffda, 0xffb6, 0x70},
-			{0x70, 0xffa2, 0xffee},
-		},
-		.offset = {0x10, 0x80, 0x80},
-	}
+	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
 static struct mcde_display_device av8100_hdmi = {

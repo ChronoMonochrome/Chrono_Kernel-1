@@ -337,8 +337,10 @@ static int set_video_mode(
 	driver_data->denc_conf.act_dc_output	= true;
 
 	set_power_mode(ddev, MCDE_DISPLAY_PM_STANDBY);
-	mcde_chnl_set_col_convert(ddev->chnl_state,
-						&pdata->rgb_2_yCbCr_transform);
+	if (pdata->rgb_2_yCbCr_transform)
+		mcde_chnl_set_col_convert(ddev->chnl_state,
+						pdata->rgb_2_yCbCr_transform,
+						MCDE_CONVERT_RGB_2_YCBCR);
 	mcde_chnl_stop_flow(ddev->chnl_state);
 	res = mcde_chnl_set_video_mode(ddev->chnl_state, &ddev->video_mode);
 	if (res < 0) {

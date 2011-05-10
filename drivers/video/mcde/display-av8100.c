@@ -823,9 +823,11 @@ static int hdmi_set_video_mode(
 	memset(&(dev->video_mode), 0, sizeof(struct mcde_video_mode));
 	memcpy(&(dev->video_mode), video_mode, sizeof(struct mcde_video_mode));
 
-	if (dev->port->pixel_format == MCDE_PORTPIXFMT_DSI_YCBCR422)
+	if (dev->port->pixel_format == MCDE_PORTPIXFMT_DSI_YCBCR422 &&
+						pdata->rgb_2_yCbCr_transform)
 		mcde_chnl_set_col_convert(dev->chnl_state,
-						&pdata->rgb_2_yCbCr_transform);
+						pdata->rgb_2_yCbCr_transform,
+						MCDE_CONVERT_RGB_2_YCBCR);
 	mcde_chnl_stop_flow(dev->chnl_state);
 
 	ret = mcde_chnl_set_video_mode(dev->chnl_state, &dev->video_mode);

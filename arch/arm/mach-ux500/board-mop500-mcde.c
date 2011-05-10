@@ -67,6 +67,18 @@ static int __init startup_graphics_setup(char *str)
 }
 __setup("startup_graphics=", startup_graphics_setup);
 
+#if defined(CONFIG_DISPLAY_AB8500_TERTIARY) ||\
+					defined(CONFIG_DISPLAY_AV8100_TERTIARY)
+static struct mcde_col_transform rgb_2_yCbCr_transform = {
+	.matrix = {
+		{0x0042, 0x0081, 0x0019},
+		{0xffda, 0xffb6, 0x0070},
+		{0x0070, 0xffa2, 0xffee},
+	},
+	.offset = {0x10, 0x80, 0x80},
+};
+#endif
+
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
 static struct mcde_port port0 = {
 	.type = MCDE_PORTTYPE_DSI,
@@ -277,14 +289,7 @@ static struct mcde_port port_tvout1 = {
 static struct ab8500_display_platform_data ab8500_display_pdata = {
 	.nr_regulators = 2,
 	.regulator_id  = {"v-tvout", "v-ab8500-AV-switch"},
-	.rgb_2_yCbCr_transform = {
-		.matrix = {
-			{0x42, 0x81, 0x19},
-			{0xffda, 0xffb6, 0x70},
-			{0x70, 0xffa2, 0xffee},
-		},
-		.offset = {0x10, 0x80, 0x80},
-	}
+	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
 static struct ux500_pins *tvout_pins;
@@ -389,14 +394,7 @@ static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	.regulator_id = NULL, /* TODO: "display_main" */
 	.cvbs_regulator_id = "v-av8100-AV-switch",
 	.ddb_id = 1,
-	.rgb_2_yCbCr_transform = {
-		.matrix = {
-			{0x42, 0x81, 0x19},
-			{0xffda, 0xffb6, 0x70},
-			{0x70, 0xffa2, 0xffee},
-		},
-		.offset = {0x10, 0x80, 0x80},
-	}
+	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
 static struct mcde_display_device av8100_hdmi = {

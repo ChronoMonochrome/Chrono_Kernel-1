@@ -141,7 +141,14 @@ enum mcde_hdmi_sdtv_switch {
 	DVI_SWITCH
 };
 
-struct mcde_col_convert {
+enum mcde_col_convert {
+	MCDE_CONVERT_RGB_2_RGB,
+	MCDE_CONVERT_RGB_2_YCBCR,
+	MCDE_CONVERT_YCBCR_2_RGB,
+	MCDE_CONVERT_YCBCR_2_YCBCR,
+};
+
+struct mcde_col_transform {
 	u16 matrix[3][3];
 	u16 offset[3];
 };
@@ -197,7 +204,7 @@ enum mcde_ovly_pix_fmt {
 	MCDE_OVLYPIXFMT_RGB888   = 4,
 	MCDE_OVLYPIXFMT_RGBX8888 = 5,
 	MCDE_OVLYPIXFMT_RGBA8888 = 6,
-	MCDE_OVLYPIXFMT_YCbCr422 = 7,/* REVIEW: Capitalize */
+	MCDE_OVLYPIXFMT_YCbCr422 = 7,
 };
 
 /* Display power modes */
@@ -320,7 +327,8 @@ int mcde_chnl_set_pixel_format(struct mcde_chnl_state *chnl,
 int mcde_chnl_set_palette(struct mcde_chnl_state *chnl,
 					struct mcde_palette_table *palette);
 void mcde_chnl_set_col_convert(struct mcde_chnl_state *chnl,
-					struct mcde_col_convert *col_convert);
+					struct mcde_col_transform *transform,
+					enum   mcde_col_convert    convert);
 int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
 					struct mcde_video_mode *vmode);
 /* TODO: Remove rotbuf* parameters when ESRAM allocator is implemented*/

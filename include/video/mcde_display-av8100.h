@@ -32,7 +32,7 @@ struct mcde_display_hdmi_platform_data {
 	const char *cvbs_regulator_id;
 	int reset_delay; /* ms */
 	u32 ddb_id;
-	struct mcde_col_convert rgb_2_yCbCr_transform;
+	struct mcde_col_transform *rgb_2_yCbCr_transform;
 
 	/* Driver data */ /* TODO: move to driver data instead */
 	bool hdmi_platform_enable;

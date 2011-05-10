@@ -266,6 +266,10 @@ struct mcde_chnl_state {
 	u32 rotbuf1;
 	u32 rotbuf2;
 
+	struct mcde_col_transform rgb_2_ycbcr;
+	struct mcde_col_transform ycbcr_2_rgb;
+	struct mcde_col_transform *transform;
+
 	/* Blending */
 	u8 blend_ctrl;
 	bool blend_en;
@@ -1306,6 +1310,82 @@ clk_dpi_err:
 	return -EINVAL;
 }
 
+void mcde_chnl_col_convert_apply(struct mcde_chnl_state *chnl,
+					struct mcde_col_transform *transform)
+{
+	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+
+	if (chnl->transform != transform) {
+
+		chnl->col_regs.y_red     = transform->matrix[0][0];
+		chnl->col_regs.y_green   = transform->matrix[0][1];
+		chnl->col_regs.y_blue    = transform->matrix[0][2];
+		chnl->col_regs.cb_red    = transform->matrix[1][0];
+		chnl->col_regs.cb_green  = transform->matrix[1][1];
+		chnl->col_regs.cb_blue   = transform->matrix[1][2];
+		chnl->col_regs.cr_red    = transform->matrix[2][0];
+		chnl->col_regs.cr_green  = transform->matrix[2][1];
+		chnl->col_regs.cr_blue   = transform->matrix[2][2];
+		chnl->col_regs.off_y     = transform->offset[0];
+		chnl->col_regs.off_cb    = transform->offset[1];
+		chnl->col_regs.off_cr    = transform->offset[2];
+
+		chnl->transform = transform;
+	}
+
+	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
+}
+
+static void chnl_ovly_pixel_format_apply(struct mcde_chnl_state *chnl,
+						struct mcde_ovly_state *ovly)
+{
+	struct mcde_port *port = &chnl->port;
+	struct ovly_regs *regs = &ovly->regs;
+
+	/* Note: YUV -> YUV: blending YUV overlays will not make sense. */
+	static struct mcde_col_transform crycb_2_ycbcr = {
+		/* Note that in MCDE YUV 422 pixels come as VYU pixels */
+		.matrix = {
+			{0x0000, 0x0100, 0x0000},
+			{0x0000, 0x0000, 0x0100},
+			{0x0100, 0x0000, 0x0000},
+		},
+		.offset = {0, 0, 0},
+	};
+
+	if (port->type == MCDE_PORTTYPE_DSI) {
+		if (port->pixel_format != MCDE_PORTPIXFMT_DSI_YCBCR422) {
+			if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422) {
+				/* standard case: DSI: RGB -> RGB */
+				regs->col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
+			} else {
+				/* DSI: YUV -> RGB */
+				/* TODO change matrix */
+				regs->col_conv =
+					MCDE_OVL0CR_COLCCTRL_ENABLED_SAT;
+				mcde_chnl_col_convert_apply(chnl,
+							&chnl->ycbcr_2_rgb);
+			}
+		} else {
+			if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422)
+				/* DSI: RGB -> YUV */
+				mcde_chnl_col_convert_apply(chnl,
+							&chnl->rgb_2_ycbcr);
+			else
+				/* DSI: YUV -> YUV */
+				mcde_chnl_col_convert_apply(chnl,
+							&crycb_2_ycbcr);
+			regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_NO_SAT;
+		}
+	} else if (port->type == MCDE_PORTTYPE_DPI && port->phy.dpi.tv_mode) {
+		regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_NO_SAT;
+		if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422)
+			mcde_chnl_col_convert_apply(chnl, &chnl->rgb_2_ycbcr);
+		else
+			mcde_chnl_col_convert_apply(chnl, &crycb_2_ycbcr);
+	}
+}
+
 /* REVIEW: Make update_* an mcde_rectangle? */
 static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 			struct mcde_port *port, enum mcde_fifo fifo,
@@ -1330,25 +1410,13 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 	}
 
 	/*
-	* TODO: Preferably most of this is done in some apply function instead
-	* of every update. Problem is however that at overlay apply
-	* there is no port type info available (and the question is
-	* whether it is appropriate to add a port type there).
-	* Note that lpf has a dependency on update_y.
-	*/
-	if (port->type == MCDE_PORTTYPE_DPI && port->phy.dpi.tv_mode)
-		/* REVIEW: Why not for DSI? enable in regs? */
-		regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_NO_SAT;
-	else if (port->type == MCDE_PORTTYPE_DSI) {
-		if (port->pixel_format == MCDE_PORTPIXFMT_DSI_YCBCR422)
-			regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_NO_SAT;
-		else
-			regs->col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
-		if (interlaced) {
-			nr_of_bufs = 2;
-			lpf = lpf / 2;
-			ljinc *= 2;
-		}
+	 * Preferably most of this is done in some apply function instead of for
+	 * every update. However lpf has a dependency on update_y.
+	 */
+	if (interlaced && port->type == MCDE_PORTTYPE_DSI) {
+		nr_of_bufs = 2;
+		lpf = lpf / 2;
+		ljinc *= 2;
 	}
 
 	fifo_size = get_output_fifo_size(fifo);
@@ -2205,6 +2273,25 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 	enum mcde_chnl_path path;
 	const struct chnl_config *cfg = NULL;
 
+	static struct mcde_col_transform ycbcr_2_rgb = {
+		/* Note that in MCDE YUV 422 pixels come as VYU pixels */
+		.matrix = {
+			{0xff30, 0x012a, 0xff9c},
+			{0x0000, 0x012a, 0x0204},
+			{0x0199, 0x012a, 0x0000},
+		},
+		.offset = {0x0088, 0xfeeb, 0xff21},
+	};
+
+	static struct mcde_col_transform rgb_2_ycbcr = {
+		.matrix = {
+			{0x0042, 0x0081, 0x0019},
+			{0xffda, 0xffb6, 0x0070},
+			{0x0070, 0xffa2, 0xffee},
+		},
+		.offset = {0x0010, 0x0080, 0x0080},
+	};
+
 	/* Allocate channel */
 	for (i = 0; i < num_channels; i++) {
 		if (chnl_id == channels[i].id)
@@ -2242,6 +2329,8 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 	chnl->port = *port;
 	chnl->fifo = fifo;
 	chnl->formatter_updated = false;
+	chnl->ycbcr_2_rgb = ycbcr_2_rgb;
+	chnl->rgb_2_ycbcr = rgb_2_ycbcr;
 
 	chnl->blend_en = true;
 	chnl->blend_ctrl = MCDE_CRA0_BLENDCTRL_SOURCE;
@@ -2439,6 +2528,7 @@ static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 
 	update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs);
 	if (ovly->regs.update) {
+		chnl_ovly_pixel_format_apply(chnl, ovly);
 		update_overlay_registers(ovly->idx, &ovly->regs, &chnl->port,
 			chnl->fifo, chnl->regs.x, chnl->regs.y,
 			chnl->regs.ppl, chnl->regs.lpf, ovly->stride,
@@ -2540,24 +2630,36 @@ int mcde_chnl_set_palette(struct mcde_chnl_state *chnl,
 }
 
 void mcde_chnl_set_col_convert(struct mcde_chnl_state *chnl,
-					struct mcde_col_convert *col_convert)
+					struct mcde_col_transform *transform,
+					enum   mcde_col_convert    convert)
 {
-	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
-
-	chnl->col_regs.y_red     = col_convert->matrix[0][0];
-	chnl->col_regs.y_green   = col_convert->matrix[0][1];
-	chnl->col_regs.y_blue    = col_convert->matrix[0][2];
-	chnl->col_regs.cb_red    = col_convert->matrix[1][0];
-	chnl->col_regs.cb_green  = col_convert->matrix[1][1];
-	chnl->col_regs.cb_blue   = col_convert->matrix[1][2];
-	chnl->col_regs.cr_red    = col_convert->matrix[2][0];
-	chnl->col_regs.cr_green  = col_convert->matrix[2][1];
-	chnl->col_regs.cr_blue   = col_convert->matrix[2][2];
-	chnl->col_regs.off_y     = col_convert->offset[0];
-	chnl->col_regs.off_cb    = col_convert->offset[1];
-	chnl->col_regs.off_cr    = col_convert->offset[2];
-
-	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
+	switch (convert) {
+	case MCDE_CONVERT_RGB_2_YCBCR:
+		memcpy(&chnl->rgb_2_ycbcr, transform,
+				sizeof(struct mcde_col_transform));
+		/* force update: */
+		if (chnl->transform == &chnl->rgb_2_ycbcr) {
+			chnl->transform = NULL;
+			chnl->ovly0->update = true;
+			chnl->ovly1->update = true;
+		}
+		break;
+	case MCDE_CONVERT_YCBCR_2_RGB:
+		memcpy(&chnl->ycbcr_2_rgb, transform,
+				sizeof(struct mcde_col_transform));
+		/* force update: */
+		if (chnl->transform == &chnl->ycbcr_2_rgb) {
+			chnl->transform = NULL;
+			chnl->ovly0->update = true;
+			chnl->ovly1->update = true;
+		}
+		break;
+	default:
+		/* Trivial transforms are handled internally */
+		dev_warn(&mcde_dev->dev,
+			"%s: unsupported col convert\n", __func__);
+		break;
+	}
 }
 
 int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
