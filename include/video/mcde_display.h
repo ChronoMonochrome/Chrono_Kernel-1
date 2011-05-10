@@ -29,6 +29,7 @@ struct mcde_display_device {
 	const char       *name;
 	int               id;
 	struct mcde_port *port;
+	struct fb_info   *fbi;
 
 	/* MCDE dss driver internal */
 	bool initialized;
@@ -56,6 +57,7 @@ struct mcde_display_device {
 	bool synchronized_update;
 	struct mcde_video_mode video_mode;
 	int update_flags;
+	bool stay_alive;
 
 	/* Driver API */
 	void (*get_native_resolution)(struct mcde_display_device *dev,
@@ -76,7 +78,6 @@ struct mcde_display_device {
 		struct mcde_video_mode *video_mode);
 	void (*get_video_mode)(struct mcde_display_device *dev,
 		struct mcde_video_mode *video_mode);
-
 	int (*set_pixel_format)(struct mcde_display_device *dev,
 		enum mcde_ovly_pix_fmt pix_fmt);
 	enum mcde_ovly_pix_fmt (*get_pixel_format)(
@@ -102,6 +103,9 @@ struct mcde_display_device {
 	int (*on_first_update)(struct mcde_display_device *dev);
 	int (*platform_enable)(struct mcde_display_device *dev);
 	int (*platform_disable)(struct mcde_display_device *dev);
+	int (*ceanr_convert)(struct mcde_display_device *ddev,
+			u8 cea, u8 vesa_cea_nr, int buffering,
+			u16 *w, u16 *h, u16 *vw, u16 *vh);
 };
 
 struct mcde_display_driver {

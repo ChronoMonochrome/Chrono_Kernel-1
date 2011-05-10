@@ -44,6 +44,15 @@ config MCDE_DISPLAY_AV8100
 	depends on FB_MCDE
 	select AV8100
 
+config MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
+	bool "HDMI_FB_AUTO_CREATE"
+	default y
+	depends on MCDE_DISPLAY_AV8100
+	---help---
+	  Say Y if you want the HDMI frame buffer to be created on start
+	  Say N if you want the HDMI frame buffer to be created when HDMI
+	  cable is plugged (needs user space HDMIservice)
+
 config MCDE_DISPLAY_AB8500_DENC
 	tristate "AB8500 CVBS display driver"
 	depends on FB_MCDE

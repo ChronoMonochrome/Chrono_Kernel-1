@@ -86,6 +86,8 @@
 #define IOC_AUDIO_CFG			_IOWR(HDMI_IOC_MAGIC, 15, int)
 #define IOC_PLUG_STATUS			_IOWR(HDMI_IOC_MAGIC, 16, int)
 #define IOC_POWERONOFF			_IOWR(HDMI_IOC_MAGIC, 17, int)
+#define IOC_EVENT_WAKEUP		_IOWR(HDMI_IOC_MAGIC, 18, int)
+#define IOC_POWERSTATE			_IOWR(HDMI_IOC_MAGIC, 19, int)
 
 
 /* HDMI driver */
@@ -100,6 +102,7 @@ enum hdmi_event {
 	HDMI_EVENT_CEC =		0x4,
 	HDMI_EVENT_HDCP =		0x8,
 	HDMI_EVENT_CECTXERR =		0x10,
+	HDMI_EVENT_WAKEUP =		0x20,
 };
 
 enum hdmi_hdcp_auth_type {

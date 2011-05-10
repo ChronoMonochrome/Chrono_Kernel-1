@@ -83,6 +83,10 @@ static ssize_t show_plugstatus(struct device *dev,
 		struct device_attribute *attr, char *buf);
 static ssize_t store_poweronoff(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
+static ssize_t show_poweronoff(struct device *dev,
+		struct device_attribute *attr, char *buf);
+static ssize_t store_evwakeup(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
 
 static DEVICE_ATTR(storeastext, S_IWUSR, NULL, store_storeastext);
 static DEVICE_ATTR(plugdeten, S_IWUSR, NULL, store_plugdeten);
@@ -104,7 +108,9 @@ static DEVICE_ATTR(evread, S_IRUGO, show_evread, NULL);
 static DEVICE_ATTR(evclr, S_IWUSR, NULL, store_evclr);
 static DEVICE_ATTR(audiocfg, S_IWUSR, NULL, store_audiocfg);
 static DEVICE_ATTR(plugstatus, S_IRUGO, show_plugstatus, NULL);
-static DEVICE_ATTR(poweronoff, S_IWUSR, NULL, store_poweronoff);
+static DEVICE_ATTR(poweronoff, S_IRUGO | S_IWUSR, show_poweronoff,
+		store_poweronoff);
+static DEVICE_ATTR(evwakeup, S_IWUSR, NULL, store_evwakeup);
 
 /* Hex to int conversion */
 static unsigned int htoi(const char *ptr)
@@ -605,6 +611,24 @@ static int events_clear(u8 ev)
 	LOCK_HDMI_EVENTS;
 	events &= ~ev & EVENTS_MASK;
 	UNLOCK_HDMI_EVENTS;
+
+	return 0;
+}
+
+static int event_wakeup(void)
+{
+	struct kobject *kobj = &hdmidev->kobj;
+
+	dev_dbg(hdmidev, "%s", __func__);
+
+	LOCK_HDMI_EVENTS;
+	events |= HDMI_EVENT_WAKEUP;
+	events_received = true;
+	UNLOCK_HDMI_EVENTS;
+
+	/* Wake up application waiting for event via call to poll() */
+	sysfs_notify(kobj, NULL, SYSFS_EVENT_FILENAME);
+	wake_up_interruptible(&hdmi_event_wq);
 
 	return 0;
 }
@@ -1615,6 +1639,44 @@ static ssize_t store_poweronoff(struct device *dev,
 	return count;
 }
 
+static ssize_t show_poweronoff(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct hdmi_driver_data *hdmi_driver_data;
+	int index = 0;
+	struct av8100_status status;
+	u8 power_state;
+
+	dev_dbg(hdmidev, "%s\n", __func__);
+
+	hdmi_driver_data = dev_get_drvdata(dev);
+
+	status = av8100_status_get();
+	if (status.av8100_state < AV8100_OPMODE_SCAN)
+		power_state = 0;
+	else
+		power_state = 1;
+
+	if (hdmi_driver_data->store_as_hextext) {
+		snprintf(buf + index, 3, "%02x", power_state);
+		index += 3;
+	} else {
+		*(buf + index++) = power_state;
+	}
+
+	return index;
+}
+
+static ssize_t store_evwakeup(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	dev_dbg(hdmidev, "%s\n", __func__);
+
+	event_wakeup();
+
+	return count;
+}
+
 static int hdmi_open(struct inode *inode, struct file *filp)
 {
 	if (device_open)
@@ -1916,6 +1978,21 @@ ioc_hdcploadaes_err:
 		}
 		break;
 
+	case IOC_EVENT_WAKEUP:
+		/* Trigger event */
+		event_wakeup();
+		break;
+
+	case IOC_POWERSTATE:
+		status = av8100_status_get();
+		value = status.av8100_state >= AV8100_OPMODE_SCAN;
+
+		if (copy_to_user((void *)arg, (void *)&value,
+						sizeof(u8))) {
+			return -EINVAL;
+		}
+		break;
+
 	/* Internal */
 	case IOC_HDMI_ENABLE_INTERRUPTS:
 		av8100_disable_interrupt();
@@ -2087,10 +2164,12 @@ void hdmi_event(enum av8100_hdmi_event ev)
 	/* Set event */
 	switch (ev) {
 	case AV8100_HDMI_EVENT_HDMI_PLUGIN:
+		events &= ~HDMI_EVENT_HDMI_PLUGOUT;
 		events |= events_mask & HDMI_EVENT_HDMI_PLUGIN;
 		break;
 
 	case AV8100_HDMI_EVENT_HDMI_PLUGOUT:
+		events &= ~HDMI_EVENT_HDMI_PLUGIN;
 		events |= events_mask & HDMI_EVENT_HDMI_PLUGOUT;
 		break;
 
@@ -2190,6 +2269,8 @@ int __init hdmi_init(void)
 		dev_info(hdmidev, "Unable to create plugstatus attribute\n");
 	if (device_create_file(hdmidev, &dev_attr_poweronoff))
 		dev_info(hdmidev, "Unable to create poweronoff attribute\n");
+	if (device_create_file(hdmidev, &dev_attr_evwakeup))
+		dev_info(hdmidev, "Unable to create evwakeup attribute\n");
 
 	/* Register event callback */
 	av8100_hdmi_event_cb_set(hdmi_event);
@@ -2224,6 +2305,7 @@ void hdmi_exit(void)
 	device_remove_file(hdmidev, &dev_attr_audiocfg);
 	device_remove_file(hdmidev, &dev_attr_plugstatus);
 	device_remove_file(hdmidev, &dev_attr_poweronoff);
+	device_remove_file(hdmidev, &dev_attr_evwakeup);
 
 	hdmi_driver_data = dev_get_drvdata(hdmidev);
 	kfree(hdmi_driver_data);

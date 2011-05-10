@@ -24,10 +24,10 @@
 
 #define SWITCH_HELPSTR ", 0=HDMI, 1=SDTV, 2=DVI\n"
 
-struct display_driver_data {
-	struct regulator *cvbs_regulator;
-	bool cvbs_regulator_enabled;
-	bool update_port_pixel_format;
+struct cea_vesa_video_mode {
+	u32 cea;
+	u32 vesa_cea_nr;
+	struct mcde_video_mode *video_mode;
 };
 
 static int hdmi_try_video_mode(
@@ -36,6 +36,8 @@ static int hdmi_set_video_mode(
 	struct mcde_display_device *ddev, struct mcde_video_mode *video_mode);
 static int hdmi_set_pixel_format(
 	struct mcde_display_device *ddev, enum mcde_ovly_pix_fmt format);
+static struct mcde_video_mode *video_mode_get(struct mcde_display_device *ddev,
+		u8 cea, u8 vesa_cea_nr);
 
 static ssize_t show_hdmisdtvswitch(struct device *dev,
 		struct device_attribute *attr, char *buf);
@@ -45,6 +47,23 @@ static ssize_t show_input_pixel_format(struct device *dev,
 		struct device_attribute *attr, char *buf);
 static ssize_t store_input_pixel_format(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
+static ssize_t show_disponoff(struct device *dev,
+		struct device_attribute *attr, char *buf);
+static ssize_t store_disponoff(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+static ssize_t show_vesacea(struct device *dev,
+		struct device_attribute *attr, char *buf);
+static ssize_t show_timing(struct device *dev,
+		struct device_attribute *attr, char *buf);
+static ssize_t store_timing(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+static ssize_t store_stayalive(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count);
+static DEVICE_ATTR(disponoff, S_IRUGO | S_IWUSR, show_disponoff,
+		store_disponoff);
+static DEVICE_ATTR(vesacea, S_IRUGO, show_vesacea, NULL);
+static DEVICE_ATTR(timing, S_IRUGO | S_IWUSR, show_timing, store_timing);
+static DEVICE_ATTR(stayalive, S_IWUSR, NULL, store_stayalive);
 
 static DEVICE_ATTR(hdmisdtvswitch, S_IRUGO | S_IWUSR, show_hdmisdtvswitch,
 			store_hdmisdtvswitch);
@@ -135,6 +154,134 @@ static ssize_t store_input_pixel_format(struct device *dev,
 	}
 
 	return count;
+}
+
+static ssize_t show_disponoff(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mcde_display_device *ddev = to_mcde_display_device(dev);
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	if (ddev->fbi && driver_data->fbdevname) {
+		dev_dbg(dev, "name:%s\n", driver_data->fbdevname);
+		strcpy(buf, driver_data->fbdevname);
+		return strlen(driver_data->fbdevname) + 1;
+	}
+	return 0;
+}
+
+static ssize_t store_disponoff(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mcde_display_device *mdev = to_mcde_display_device(dev);
+	bool enable = false;
+	u8 cea = 0;
+	u8 vesa_cea_nr = 0;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	if ((count != DISPONOFF_SIZE) && (count != DISPONOFF_SIZE + 1))
+		return -EINVAL;
+
+	if ((*buf == '0') && (*(buf + 1) == '1'))
+		enable = true;
+	cea = (hex_to_bin(buf[2]) << 4) + hex_to_bin(buf[3]);
+	vesa_cea_nr = (hex_to_bin(buf[4]) << 4) + hex_to_bin(buf[5]);
+	dev_dbg(dev, "enable:%d cea:%d nr:%d\n", enable, cea, vesa_cea_nr);
+
+	hdmi_fb_onoff(mdev, enable, cea, vesa_cea_nr);
+
+	return count;
+}
+
+static ssize_t show_timing(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mcde_display_device *ddev = to_mcde_display_device(dev);
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+	struct mcde_video_mode *video_mode;
+	int index;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	index = 0;
+	if (driver_data->video_mode) {
+		video_mode = driver_data->video_mode;
+		memcpy(buf + index, &video_mode->xres, sizeof(u32));
+		index += sizeof(u32);
+		memcpy(buf + index, &video_mode->yres, sizeof(u32));
+		index += sizeof(u32);
+		memcpy(buf + index, &video_mode->pixclock, sizeof(u32));
+		index += sizeof(u32);
+		memcpy(buf + index, &video_mode->hbp, sizeof(u32));
+		index += sizeof(u32);
+		memcpy(buf + index, &video_mode->hfp, sizeof(u32));
+		index += sizeof(u32);
+		memcpy(buf + index, &video_mode->vbp, sizeof(u32));
+		index += sizeof(u32);
+		memcpy(buf + index, &video_mode->vfp, sizeof(u32));
+		index += sizeof(u32);
+		memcpy(buf + index, &video_mode->interlaced, sizeof(u32));
+		index += sizeof(u32);
+	}
+	return index;
+}
+
+static ssize_t store_timing(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mcde_display_device *ddev = to_mcde_display_device(dev);
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	if (count != TIMING_SIZE)
+		return -EINVAL;
+
+	driver_data->video_mode = video_mode_get(ddev, *buf, *(buf + 1));
+
+	return count;
+}
+
+static ssize_t store_stayalive(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mcde_display_device *ddev = to_mcde_display_device(dev);
+
+	if (count != STAYALIVE_SIZE)
+		return -EINVAL;
+
+	if ((*buf == 1) || (*buf == '1'))
+		ddev->stay_alive = true;
+	else
+		ddev->stay_alive = false;
+
+	dev_dbg(dev, "%s %d\n", __func__, ddev->stay_alive);
+
+	return count;
+}
+
+static int ceanr_convert(struct mcde_display_device *ddev,
+		u8 cea, u8 vesa_cea_nr, int buffering,
+		u16 *w, u16 *h, u16 *vw, u16 *vh)
+{
+	struct mcde_video_mode *video_mode;
+
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+	video_mode = video_mode_get(ddev, cea, vesa_cea_nr);
+	if (video_mode) {
+		*w = video_mode->xres;
+		*h = video_mode->yres;
+		*vw = video_mode->xres;
+		*vh = video_mode->yres * buffering;
+		dev_dbg(&ddev->dev, "cea:%d nr:%d found\n",
+				cea, vesa_cea_nr);
+		return 0;
+	}
+
+	return -EINVAL;
 }
 
 /* Supported HDMI modes */
@@ -248,6 +395,124 @@ static struct mcde_video_mode video_modes_supp_sdtv[] = {
 		.interlaced = true,
 	},
 };
+
+static struct cea_vesa_video_mode cea_vesa_video_mode[] = {
+		/* 640_480_60_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 1,
+			.video_mode = &video_modes_supp_hdmi[0],
+		},
+		/* 720_480_60_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 2,
+			.video_mode = &video_modes_supp_hdmi[1],
+		},
+		/* 720_480_60_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 3,
+			.video_mode = &video_modes_supp_hdmi[1],
+		},
+		/* 720_576_50_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 17,
+			.video_mode = &video_modes_supp_hdmi[2],
+		},
+		/* 720_576_50_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 18,
+			.video_mode = &video_modes_supp_hdmi[2],
+		},
+		/* 1280_720_60_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 4,
+			.video_mode = &video_modes_supp_hdmi[3],
+		},
+		/* 1280_720_50_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 19,
+			.video_mode = &video_modes_supp_hdmi[4],
+		},
+		/* 1920_1080_30_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 34,
+			.video_mode = &video_modes_supp_hdmi[5],
+		},
+		/* 1920_1080_24_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 32,
+			.video_mode = &video_modes_supp_hdmi[6],
+		},
+		/* 1920_1080_25_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 33,
+			.video_mode = &video_modes_supp_hdmi[7],
+		},
+		/* 720_480_60_I) */
+		{
+			.cea = 1,	.vesa_cea_nr = 6,
+			.video_mode = &video_modes_supp_hdmi[8],
+		},
+		/* 720_480_60_I) */
+		{
+			.cea = 1,	.vesa_cea_nr = 7,
+			.video_mode = &video_modes_supp_hdmi[8],
+		},
+		/* 720_576_50_I) */
+		{
+			.cea = 1,	.vesa_cea_nr = 21,
+			.video_mode = &video_modes_supp_hdmi[9],
+		},
+		/* 720_576_50_I) */
+		{
+			.cea = 1,	.vesa_cea_nr = 22,
+			.video_mode = &video_modes_supp_hdmi[9],
+		},
+		/* 1920_1080_50_I) */
+		{
+			.cea = 1,	.vesa_cea_nr = 20,
+			.video_mode = &video_modes_supp_hdmi[10],
+		},
+		/* 1920_1080_60_I) */
+		{
+			.cea = 1,	.vesa_cea_nr = 5,
+			.video_mode = &video_modes_supp_hdmi[11],
+		},
+};
+
+static ssize_t show_vesacea(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int findex;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	for (findex = 0; findex < ARRAY_SIZE(cea_vesa_video_mode); findex++) {
+		*(buf + findex * 2) = cea_vesa_video_mode[findex].cea;
+		*(buf + findex * 2 + 1) =
+				cea_vesa_video_mode[findex].vesa_cea_nr;
+	}
+	*(buf + findex * 2) = '\0';
+
+	return findex * 2 + 1;
+}
+
+static struct mcde_video_mode *video_mode_get(struct mcde_display_device *ddev,
+		u8 cea, u8 vesa_cea_nr)
+{
+	int findex;
+
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+
+	for (findex = 0; findex < ARRAY_SIZE(cea_vesa_video_mode); findex++)
+		if ((cea == cea_vesa_video_mode[findex].cea) &&
+				(vesa_cea_nr ==
+				cea_vesa_video_mode[findex].vesa_cea_nr)) {
+			dev_dbg(&ddev->dev, "cea:%d nr:%d\n", cea, vesa_cea_nr);
+			return cea_vesa_video_mode[findex].video_mode;
+		}
+
+	return NULL;
+}
 
 #define AV8100_MAX_LEVEL 255
 
@@ -445,16 +710,19 @@ static int hdmi_set_video_mode(
 			dev_err(&dev->dev, "av8100_powerup failed\n");
 			return ret;
 		}
+	}
 
+	if (status.av8100_state < AV8100_OPMODE_IDLE) {
 		ret = av8100_download_firmware(NULL, 0, I2C_INTERFACE);
 		if (ret) {
 			dev_err(&dev->dev, "av8100_download_firmware failed\n");
 			av8100_powerdown();
 			return ret;
 		}
-	} else if (av8100_disable_interrupt()) {
-		return -EFAULT;
 	}
+
+	if (av8100_disable_interrupt())
+		return -EFAULT;
 
 	/*
 	 * Don't look at dev->port->hdmi_sdtv_switch; it states only which
@@ -817,6 +1085,14 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 			if (ret)
 				return ret;
 		}
+
+		ret = av8100_powerup();
+		if (ret) {
+			dev_err(&ddev->dev, "av8100_powerup failed\n");
+			return ret;
+		}
+		av8100_enable_interrupt();
+
 		/*
 		 * the regulator for analog TV out is only enabled here,
 		 * this means that one needs to switch to the OFF state
@@ -907,14 +1183,27 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	dev->apply_config = hdmi_apply_config;
 	dev->set_pixel_format = hdmi_set_pixel_format;
 	dev->set_power_mode = hdmi_set_power_mode;
+	dev->ceanr_convert = ceanr_convert;
 
-	/* Create sysfs file for switching between hdmi and sdtv */
+	/* Create sysfs files */
 	if (device_create_file(&dev->dev, &dev_attr_hdmisdtvswitch))
 		dev_info(&dev->dev,
 			"Unable to create hdmisdtvswitch attr\n");
 	if (device_create_file(&dev->dev, &dev_attr_input_pixel_format))
 		dev_info(&dev->dev,
 			"Unable to create input_pixel_format attr\n");
+	if (device_create_file(&dev->dev, &dev_attr_disponoff))
+		dev_info(&dev->dev,
+			"Unable to create disponoff attr\n");
+	if (device_create_file(&dev->dev, &dev_attr_vesacea))
+		dev_info(&dev->dev,
+			"Unable to create ceavesa attr\n");
+	if (device_create_file(&dev->dev, &dev_attr_timing))
+		dev_info(&dev->dev,
+			"Unable to create timing attr\n");
+	if (device_create_file(&dev->dev, &dev_attr_stayalive))
+		dev_info(&dev->dev,
+			"Unable to create stayalive attr\n");
 
 	if (pdata->cvbs_regulator_id) {
 		driver_data->cvbs_regulator = regulator_get(&dev->dev,
@@ -944,9 +1233,13 @@ static int __devexit hdmi_remove(struct mcde_display_device *dev)
 	struct mcde_display_hdmi_platform_data *pdata =
 		dev->dev.platform_data;
 
-	/* Remove sysfs file */
+	/* Remove sysfs files */
 	device_remove_file(&dev->dev, &dev_attr_input_pixel_format);
 	device_remove_file(&dev->dev, &dev_attr_hdmisdtvswitch);
+	device_remove_file(&dev->dev, &dev_attr_disponoff);
+	device_remove_file(&dev->dev, &dev_attr_vesacea);
+	device_remove_file(&dev->dev, &dev_attr_timing);
+	device_remove_file(&dev->dev, &dev_attr_stayalive);
 
 	dev->set_power_mode(dev, MCDE_DISPLAY_PM_OFF);
 

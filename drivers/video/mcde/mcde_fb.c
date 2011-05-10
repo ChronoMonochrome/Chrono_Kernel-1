@@ -203,6 +203,7 @@ static int init_var_fmt(struct fb_var_screeninfo *var,
 	var->yoffset = 0;
 	var->activate = FB_ACTIVATE_NOW;
 	var->rotate = rotate;
+
 	return 0;
 };
 
@@ -668,6 +669,8 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	if (ret)
 		goto fb_register_failed;
 
+	ddev->fbi = fbi;
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	mfb->early_suspend.level =
 				EARLY_SUSPEND_LEVEL_DISABLE_FB;
@@ -702,9 +705,26 @@ int mcde_fb_attach_overlay(struct fb_info *fb_info, struct mcde_overlay *ovl)
 	return -EINVAL;
 }
 
-void mcde_fb_destroy(struct fb_info *fb_info)
+void mcde_fb_destroy(struct mcde_display_device *dev)
 {
-	/* TODO: clean up */
+	struct mcde_fb *mfb;
+	int i;
+
+	dev_vdbg(&dev->dev, "%s\n", __func__);
+
+	mcde_dss_disable_display(dev);
+	mcde_dss_close_channel(dev);
+
+	mfb = to_mcde_fb(dev->fbi);
+	for (i = 0; i < mfb->num_ovlys; i++) {
+		if (mfb->ovlys[i])
+			mcde_dss_destroy_overlay(mfb->ovlys[i]);
+	}
+
+	unregister_framebuffer(dev->fbi);
+	free_fb_mem(dev->fbi);
+	framebuffer_release(dev->fbi);
+	dev->fbi = NULL;
 }
 
 /* Overlay fbs' platform device */

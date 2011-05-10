@@ -1059,10 +1059,7 @@ static void av8100_set_state(enum av8100_operating_mode state)
 {
 	g_av8100_status.av8100_state = state;
 
-	if (state == AV8100_OPMODE_UNDEFINED)
-		g_av8100_status.hdmi_on = false;
-
-	if (state == AV8100_OPMODE_STANDBY) {
+	if (state <= AV8100_OPMODE_STANDBY) {
 		clr_plug_status(AV8100_HDMI_PLUGIN);
 		clr_plug_status(AV8100_CVBS_PLUGIN);
 		g_av8100_status.hdmi_on = false;
@@ -1929,15 +1926,23 @@ static int av8100_powerup2(void)
 
 int av8100_powerup(void)
 {
+	int ret = 0;
+
 	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
 		return -EINVAL;
 
-	if (av8100_powerup1()) {
-		dev_err(av8100dev, "av8100_powerup1 fail\n");
-		return -EFAULT;
+	if (av8100_status_get().av8100_state < AV8100_OPMODE_STANDBY) {
+		ret = av8100_powerup1();
+		if (ret) {
+			dev_err(av8100dev, "av8100_powerup1 fail\n");
+			return -EFAULT;
+		}
 	}
 
-	return av8100_powerup2();
+	if (av8100_status_get().av8100_state < AV8100_OPMODE_SCAN)
+		ret = av8100_powerup2();
+
+	return ret;
 }
 EXPORT_SYMBOL(av8100_powerup);
 

@@ -42,8 +42,8 @@ static struct delayed_work work_dispreg_hdmi;
 #define DISPREG_HDMI_DELAY 6000
 #endif
 
-static struct fb_info *fbs[3] = { NULL, NULL, NULL };
-static struct mcde_display_device *displays[3] = { NULL, NULL, NULL };
+#define MCDE_NR_OF_DISPLAYS 3
+static struct mcde_display_device *displays[MCDE_NR_OF_DISPLAYS] = { NULL };
 static int display_initialized_during_boot;
 
 static int __init startup_graphics_setup(char *str)
@@ -91,7 +91,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-struct mcde_display_generic_platform_data mop500_generic_display0_pdata = {
+struct mcde_display_generic_platform_data generic_display0_pdata = {
 	.reset_delay = 1,
 #ifdef CONFIG_REGULATOR
 	.regulator_id = "vaux12v5",
@@ -100,7 +100,7 @@ struct mcde_display_generic_platform_data mop500_generic_display0_pdata = {
 #endif
 };
 
-struct mcde_display_device mop500_generic_display0 = {
+struct mcde_display_device generic_display0 = {
 	.name = "mcde_disp_generic",
 	.id = PRIMARY_DISPLAY_ID,
 	.port = &port0,
@@ -118,7 +118,7 @@ struct mcde_display_device mop500_generic_display0 = {
 	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,
 	.dev = {
-		.platform_data = &mop500_generic_display0_pdata,
+		.platform_data = &generic_display0_pdata,
 	},
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
@@ -195,7 +195,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-struct mcde_display_dpi_platform_data mop500_generic_display0_pdata = {0};
+struct mcde_display_dpi_platform_data generic_display0_pdata = {0};
 static struct ux500_pins *dpi_pins;
 
 static int dpi_display_platform_enable(struct mcde_display_device *ddev)
@@ -230,7 +230,7 @@ static int dpi_display_platform_disable(struct mcde_display_device *ddev)
 
 }
 
-struct mcde_display_device mop500_generic_display0 = {
+struct mcde_display_device generic_display0 = {
 	.name = "mcde_display_dpi",
 	.id = 0,
 	.port = &port0,
@@ -245,7 +245,7 @@ struct mcde_display_device mop500_generic_display0 = {
 	.native_y_res = 480,
 	/* .synchronized_update: Don't care: port is set to update_auto_trig */
 	.dev = {
-		.platform_data = &mop500_generic_display0_pdata,
+		.platform_data = &generic_display0_pdata,
 	},
 	.platform_enable = dpi_display_platform_enable,
 	.platform_disable = dpi_display_platform_disable,
@@ -413,12 +413,9 @@ struct mcde_display_device av8100_hdmi = {
 
 static void delayed_work_dispreg_hdmi(struct work_struct *ptr)
 {
-	int ret;
-
-	ret = mcde_display_device_register(&av8100_hdmi);
-	if (ret)
+	if (mcde_display_device_register(&av8100_hdmi))
 		pr_warning("Failed to register av8100_hdmi\n");
-	displays[2] = &av8100_hdmi;
+	displays[TERTIARY_DISPLAY_ID] = &av8100_hdmi;
 }
 #endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
 
@@ -432,11 +429,12 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	u16 width, height;
 	u16 virtual_width, virtual_height;
 	u32 rotate = FB_ROTATE_UR;
+	struct fb_info *fbi;
 
 	if (event != MCDE_DSS_EVENT_DISPLAY_REGISTERED)
 		return 0;
 
-	if (ddev->id < PRIMARY_DISPLAY_ID || ddev->id >= ARRAY_SIZE(fbs))
+	if (ddev->id < PRIMARY_DISPLAY_ID || ddev->id >= MCDE_NR_OF_DISPLAYS)
 		return 0;
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
@@ -474,17 +472,26 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		virtual_height = height;
 #endif
 
-	/* Create frame buffer */
-	fbs[ddev->id] = mcde_fb_create(ddev,
-		width, height,
-		virtual_width, virtual_height,
-		ddev->default_pixel_format,
-		rotate);
+	if (ddev->id == TERTIARY_DISPLAY_ID) {
+#ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
+		hdmi_fb_onoff(ddev, 1, 0, 0);
+#endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
+	} else {
+		/* Create frame buffer */
+		fbi = mcde_fb_create(ddev,
+			width, height,
+			virtual_width, virtual_height,
+			ddev->default_pixel_format,
+			rotate);
 
-	if (IS_ERR(fbs[ddev->id]))
-		pr_warning("Failed to create fb for display %s\n", ddev->name);
-	else
-		pr_info("Framebuffer created (%s)\n", ddev->name);
+		if (IS_ERR(fbi))
+			dev_warn(&ddev->dev,
+				"Failed to create fb for display %s\n",
+						ddev->name);
+		else
+			dev_info(&ddev->dev, "Framebuffer created (%s)\n",
+						ddev->name);
+	}
 
 	return 0;
 }
@@ -606,9 +613,9 @@ int __init init_display_devices(void)
 
 #ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
 	if (machine_is_hrefv60())
-		mop500_generic_display0_pdata.reset_gpio = HREFV60_DISP1_RST_GPIO;
+		generic_display0_pdata.reset_gpio = HREFV60_DISP1_RST_GPIO;
 	else
-		mop500_generic_display0_pdata.reset_gpio = MOP500_DISP1_RST_GPIO;
+		generic_display0_pdata.reset_gpio = MOP500_DISP1_RST_GPIO;
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	i2c0 = i2c_get_adapter(0);
@@ -622,16 +629,16 @@ int __init init_display_devices(void)
 		i2c_put_adapter(i2c0);
 
 		/* ret == 0 => U8500 UIB connected */
-		mop500_generic_display0.synchronized_update = (ret == 0);
+		generic_display0.synchronized_update = (ret == 0);
 	}
 #endif
 
 	if (display_initialized_during_boot)
-		mop500_generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
-	ret = mcde_display_device_register(&mop500_generic_display0);
+		generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
+	ret = mcde_display_device_register(&generic_display0);
 	if (ret)
 		pr_warning("Failed to register generic display device 0\n");
-	displays[0] = &mop500_generic_display0;
+	displays[0] = &generic_display0;
 #endif
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
@@ -661,6 +668,85 @@ int __init init_display_devices(void)
 
 	return ret;
 }
+
+struct mcde_display_device *mcde_get_main_display(void)
+{
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY)
+	return &generic_display0;
+#elif defined(CONFIG_DISPLAY_GENERIC_DSI_SECONDARY)
+	return &generic_subdisplay;
+#elif defined(CONFIG_DISPLAY_AV8100_TERTIARY)
+	return &av8100_hdmi;
+#elif defined(CONFIG_DISPLAY_AB8500_TERTIARY)
+	return &tvout_ab8500_display;
+#else
+	return NULL;
+#endif
+}
+EXPORT_SYMBOL(mcde_get_main_display);
+
+void hdmi_fb_onoff(struct mcde_display_device *ddev,
+		bool enable, u8 cea, u8 vesa_cea_nr)
+{
+	struct fb_info *fbi;
+	u16 w, h;
+	u16 vw, vh;
+	u32 rotate = FB_ROTATE_UR;
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+	dev_dbg(&ddev->dev, "en:%d cea:%d nr:%d\n", enable, cea, vesa_cea_nr);
+
+	if (enable) {
+		if (ddev->enabled) {
+			dev_dbg(&ddev->dev, "Display is already enabled.\n");
+			return;
+		}
+
+		/* Create fb */
+		if (ddev->fbi == NULL) {
+			/* Note: change when dynamic buffering is available */
+			int buffering = 2;
+
+			/* Get default values */
+			mcde_dss_get_native_resolution(ddev, &w, &h);
+			vw = w;
+			vh = h * buffering;
+
+			if (vesa_cea_nr != 0)
+				ddev->ceanr_convert(ddev, cea, vesa_cea_nr,
+						buffering, &w, &h, &vw, &vh);
+
+			fbi = mcde_fb_create(ddev, w, h, vw, vh,
+				ddev->default_pixel_format, rotate);
+
+			if (IS_ERR(fbi)) {
+				dev_warn(&ddev->dev,
+					"Failed to create fb for display %s\n",
+							ddev->name);
+				goto hdmi_fb_onoff_end;
+			} else {
+				dev_info(&ddev->dev,
+					"Framebuffer created (%s)\n",
+							ddev->name);
+			}
+			driver_data->fbdevname = (char *)dev_name(fbi->dev);
+		}
+	} else {
+		if (!ddev->enabled) {
+			dev_dbg(&ddev->dev, "Display %s is already disabled.\n",
+					ddev->name);
+			return;
+		}
+
+		mcde_fb_destroy(ddev);
+	}
+
+hdmi_fb_onoff_end:
+	return;
+}
+EXPORT_SYMBOL(hdmi_fb_onoff);
+
 
 module_init(init_display_devices);
 

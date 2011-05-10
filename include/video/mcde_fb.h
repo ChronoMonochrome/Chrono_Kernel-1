@@ -50,11 +50,11 @@ struct mcde_fb {
 /* MCDE fbdev API */
 struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 		uint16_t w, uint16_t h, uint16_t vw, uint16_t vh,
-		enum mcde_ovly_pix_fmt pix_fmt,	uint32_t rotate);
+		enum mcde_ovly_pix_fmt pix_fmt, uint32_t rotate);
 
 int mcde_fb_attach_overlay(struct fb_info *fb_info,
 	struct mcde_overlay *ovl);
-void mcde_fb_destroy(struct fb_info *fb_info);
+void mcde_fb_destroy(struct mcde_display_device *ddev);
 
 /* MCDE fb driver */
 int mcde_fb_init(void);
