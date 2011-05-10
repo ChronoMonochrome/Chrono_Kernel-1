@@ -22,6 +22,7 @@
 #include <linux/delay.h>
 #include <linux/pm.h>
 #include <linux/platform_device.h>
+#include <linux/mutex.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -57,7 +58,7 @@
  * AB8500 register cache & default register settings
  */
 static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
-	0x88, /* REG_POWERUP		(0x00) */
+	0x00, /* REG_POWERUP		(0x00) */
 	0x00, /* REG_AUDSWRESET		(0x01) */
 	0x00, /* REG_ADPATHENA		(0x02) */
 	0x00, /* REG_DAPATHENA		(0x03) */
@@ -174,7 +175,9 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 static struct snd_soc_codec *ab8500_codec;
 static struct clk *clk_ptr_audioclk;
 static struct clk *clk_ptr_sysclk;
-static int sysclk_on;
+static DEFINE_MUTEX(power_lock);
+static int ab8500_power_count;
+static bool ab8500_vibra_on;
 
 /* Reads an arbitrary register from the ab8500 chip.
 */
@@ -1619,6 +1622,61 @@ static int ab8500_codec_set_bit_delay_if1(struct snd_soc_codec *codec, unsigned 
 	return 0;
 }
 
+static int ab8500_codec_power_control_inc(struct snd_soc_codec *codec)
+{
+	int ret;
+	unsigned int set_mask;
+
+	mutex_lock(&power_lock);
+
+	ab8500_power_count++;
+	pr_debug("ab8500_power_count changed from %d to %d",
+		ab8500_power_count-1,
+		ab8500_power_count);
+
+	if (ab8500_power_count == 1) {
+		pr_debug("Enabling AB8500.");
+		set_mask = BMASK(REG_POWERUP_POWERUP) | BMASK(REG_POWERUP_ENANA);
+		ab8500_codec_update_reg_audio(codec, REG_POWERUP, 0x00, set_mask);
+
+		pr_debug("Enabling sysclk.");
+		ret = clk_enable(clk_ptr_audioclk);
+		if (ret) {
+			pr_err("ERROR: clk_enable failed (ret = %d)!", ret);
+			ab8500_power_count = 0;
+			return ret;
+		}
+	}
+
+	mutex_unlock(&power_lock);
+
+	return 0;
+}
+
+static void ab8500_codec_power_control_dec(struct snd_soc_codec *codec)
+{
+	unsigned int clear_mask;
+
+	mutex_lock(&power_lock);
+
+	ab8500_power_count--;
+
+	pr_debug("ab8500_power_count changed from %d to %d",
+		ab8500_power_count+1,
+		ab8500_power_count);
+
+	if (ab8500_power_count == 0) {
+		pr_debug("Disabling sysclk.");
+		clk_disable(clk_ptr_audioclk);
+
+		pr_debug("Disabling AB8500.");
+		clear_mask = BMASK(REG_POWERUP_POWERUP) | BMASK(REG_POWERUP_ENANA);
+		ab8500_codec_update_reg_audio(codec, REG_POWERUP, clear_mask, 0x00);
+	}
+
+	mutex_unlock(&power_lock);
+}
+
 /* Extended interface for codec-driver */
 
 int ab8500_audio_set_word_length(struct snd_soc_dai *dai, unsigned int wl)
@@ -1744,29 +1802,13 @@ static int ab8500_codec_pcm_startup(struct snd_pcm_substream *substream,
 static int ab8500_codec_pcm_prepare(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
-	int ret = 0;
-
 	pr_debug("%s Enter.\n", __func__);
 
 	/* Clear interrupt status registers by reading them. */
 	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE1);
 	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE2);
 
-	sysclk_on++;
-	pr_debug("sysclk_on changed from %d to %d", sysclk_on-1, sysclk_on);
-
-	if (sysclk_on > 1)
-		return 0;
-
-	ret = clk_enable(clk_ptr_audioclk);
-	if (ret) {
-		pr_err("ERROR: clk_enable failed (ret = %d)!", ret);
-		sysclk_on = 0;
-		return ret;
-	}
-	pr_debug("sysclk enabled.");
-
-	return ret;
+	return ab8500_codec_power_control_inc(dai->codec);
 }
 
 static void ab8500_codec_pcm_shutdown(struct snd_pcm_substream *substream,
@@ -1774,13 +1816,7 @@ static void ab8500_codec_pcm_shutdown(struct snd_pcm_substream *substream,
 {
 	pr_debug("%s Enter.\n", __func__);
 
-	sysclk_on--;
-	pr_debug("sysclk_on changed from %d to %d", sysclk_on+1, sysclk_on);
-
-	if (sysclk_on == 0) {
-		clk_disable(clk_ptr_audioclk);
-		pr_debug("sysclk disabled.");
-	}
+	ab8500_codec_power_control_dec(dai->codec);
 
 	ab8500_codec_dump_all_reg(dai->codec);
 }
@@ -2141,8 +2177,9 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 	}
 
 	ab8500_codec = codec;
+	ab8500_vibra_on = false;
 
-	sysclk_on = 0;
+	ab8500_power_count = 0;
 	clk_ptr_sysclk = clk_get(codec->dev, "sysclk");
 	if (IS_ERR(clk_ptr_sysclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
