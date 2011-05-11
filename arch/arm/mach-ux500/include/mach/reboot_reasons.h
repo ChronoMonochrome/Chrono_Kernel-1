@@ -20,6 +20,7 @@
  * at the moment, affect anything.
  */
 #define SW_RESET_NO_ARGUMENT 0x0
+#define SW_RESET_FACTORY_RESET 0x4242
 #define SW_RESET_CRASH 0xDEAD
 #define SW_RESET_NORMAL 0xc001
 

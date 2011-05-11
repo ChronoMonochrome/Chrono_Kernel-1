@@ -14,6 +14,8 @@
 
 struct reboot_reason reboot_reasons[] = {
 	{"crash", SW_RESET_CRASH},
+	{"factory-reset", SW_RESET_FACTORY_RESET},
+	{"recovery", SW_RESET_NORMAL},
 	{"", SW_RESET_NORMAL}, /* Normal Boot */
 };
 
