@@ -207,9 +207,9 @@ struct col_regs {
 	u16 cr_red;
 	u16 cr_green;
 	u16 cr_blue;
-	u16 off_red;
-	u16 off_green;
-	u16 off_blue;
+	u16 off_y;
+	u16 off_cb;
+	u16 off_cr;
 };
 
 struct tv_regs {
@@ -733,10 +733,10 @@ static void update_col_registers(enum mcde_chnl chnl_id, struct col_regs *regs)
 				MCDE_RGBCONV4A_CB_GREEN(regs->cb_green));
 	mcde_wreg(MCDE_RGBCONV5A + idx * MCDE_RGBCONV5A_GROUPOFFSET,
 				MCDE_RGBCONV5A_CB_BLUE(regs->cb_blue) |
-				MCDE_RGBCONV5A_OFF_RED(regs->off_red));
+				MCDE_RGBCONV5A_OFF_RED(regs->off_cr));
 	mcde_wreg(MCDE_RGBCONV6A + idx * MCDE_RGBCONV6A_GROUPOFFSET,
-				MCDE_RGBCONV6A_OFF_GREEN(regs->off_green) |
-				MCDE_RGBCONV6A_OFF_BLUE(regs->off_blue));
+				MCDE_RGBCONV6A_OFF_GREEN(regs->off_y) |
+				MCDE_RGBCONV6A_OFF_BLUE(regs->off_cb));
 }
 
 /* MCDE internal helpers */
@@ -2519,9 +2519,9 @@ void mcde_chnl_set_col_convert(struct mcde_chnl_state *chnl,
 	chnl->col_regs.cr_red    = col_convert->matrix[2][0];
 	chnl->col_regs.cr_green  = col_convert->matrix[2][1];
 	chnl->col_regs.cr_blue   = col_convert->matrix[2][2];
-	chnl->col_regs.off_red   = col_convert->offset[0];
-	chnl->col_regs.off_green = col_convert->offset[1];
-	chnl->col_regs.off_blue  = col_convert->offset[2];
+	chnl->col_regs.off_y     = col_convert->offset[0];
+	chnl->col_regs.off_cb    = col_convert->offset[1];
+	chnl->col_regs.off_cr    = col_convert->offset[2];
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
