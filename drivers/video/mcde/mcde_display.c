@@ -328,9 +328,10 @@ static int mcde_display_invalidate_area_default(
 	return 0;
 }
 
-static int mcde_display_update_default(struct mcde_display_device *ddev)
+static int mcde_display_update_default(struct mcde_display_device *ddev,
+							bool tripple_buffer)
 {
-	int ret;
+	int ret = 0;
 
 	/* TODO: Dirty */
 	if (ddev->prepare_for_update) {
@@ -344,7 +345,8 @@ static int mcde_display_update_default(struct mcde_display_device *ddev)
 		}
 	}
 	/* TODO: Calculate & set update rect */
-	ret = mcde_chnl_update(ddev->chnl_state, &ddev->update_area);
+	ret = mcde_chnl_update(ddev->chnl_state, &ddev->update_area,
+							tripple_buffer);
 	if (ret < 0) {
 		dev_warn(&ddev->dev, "%s:Failed to update channel\n", __func__);
 		return ret;

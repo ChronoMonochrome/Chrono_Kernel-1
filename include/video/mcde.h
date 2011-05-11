@@ -332,7 +332,8 @@ int mcde_chnl_set_power_mode(struct mcde_chnl_state *chnl,
 
 int mcde_chnl_apply(struct mcde_chnl_state *chnl);
 int mcde_chnl_update(struct mcde_chnl_state *chnl,
-					struct mcde_rectangle *update_area);
+			struct mcde_rectangle *update_area,
+			bool tripple_buffer);
 void mcde_chnl_put(struct mcde_chnl_state *chnl);
 
 void mcde_chnl_stop_flow(struct mcde_chnl_state *chnl);

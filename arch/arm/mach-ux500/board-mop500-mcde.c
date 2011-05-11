@@ -462,6 +462,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	virtual_width = width;
 	virtual_height = height * 2;
+
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
 	if (ddev->id == PRIMARY_DISPLAY_ID)
 		virtual_height = height;
@@ -470,6 +471,11 @@ static int display_postregistered_callback(struct notifier_block *nb,
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY_AUTO_SYNC
 	if (ddev->id == SECONDARY_DISPLAY_ID)
 		virtual_height = height;
+#endif
+
+#ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
+	if (ddev->id == TERTIARY_DISPLAY_ID)
+		virtual_height = height * 3;
 #endif
 
 	if (ddev->id == TERTIARY_DISPLAY_ID) {

@@ -143,6 +143,12 @@ config DISPLAY_AV8100_TERTIARY
 	help
 	  Say yes here if HDMI output support
 
+config DISPLAY_AV8100_TRIPPLE_BUFFER
+	bool "Enable tripple buffer for HDMI display"
+	depends on DISPLAY_AV8100_TERTIARY
+	help
+	  Say yes to enable tripple buffer. You'll get double buffer otherwise
+
 endmenu
 
 endif

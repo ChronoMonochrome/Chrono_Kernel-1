@@ -507,10 +507,13 @@ static int apply_var(struct fb_info *fbi, struct mcde_display_device *ddev)
 	for (i = 0; i < mfb->num_ovlys; i++) {
 		struct mcde_overlay *ovly = mfb->ovlys[i];
 		struct mcde_overlay_info info;
+		int num_buffers;
 
 		get_ovly_info(fbi, ovly, &info);
 		(void) mcde_dss_apply_overlay(ovly, &info);
-		ret = mcde_dss_update_overlay(ovly);
+
+		num_buffers = var->yres_virtual / var->yres;
+		mcde_dss_update_overlay(ovly, num_buffers == 3);
 	}
 
 	return 0;

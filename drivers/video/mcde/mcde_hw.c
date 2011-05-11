@@ -964,18 +964,19 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 static void wait_for_channel(struct mcde_chnl_state *chnl)
 {
 	int ret;
+	u32 id = chnl->transactionid_regs;
 
-	if (chnl->transactionid_hw >= chnl->transactionid_regs)
+	if (chnl->transactionid_hw >= id)
 		return;
 
 	ret = wait_event_timeout(chnl->waitq_hw,
-		chnl->transactionid_hw == chnl->transactionid_regs,
+		chnl->transactionid_hw == id,
 		msecs_to_jiffies(CHNL_TIMEOUT));
 	if (!ret)
 		dev_warn(&mcde_dev->dev,
 			"Wait for channel timeout (chnl=%d,%d<%d)!\n",
 			chnl->id, chnl->transactionid_hw,
-			chnl->transactionid_regs);
+			id);
 }
 
 static int update_channel_static_registers(struct mcde_chnl_state *chnl)
@@ -2318,12 +2319,14 @@ static void chnl_update_registers(struct mcde_chnl_state *chnl)
 	chnl->transactionid_regs = chnl->transactionid;
 }
 
-static void chnl_update_continous(struct mcde_chnl_state *chnl)
+static void chnl_update_continous(struct mcde_chnl_state *chnl,
+						bool tripple_buffer)
 {
 
 	if (chnl->continous_running) {
 		chnl->transactionid_regs = chnl->transactionid;
-		wait_for_channel(chnl);
+		if (!tripple_buffer)
+			wait_for_channel(chnl);
 	}
 
 	if (!chnl->continous_running) {
@@ -2410,7 +2413,8 @@ static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 }
 
 static int _mcde_chnl_update(struct mcde_chnl_state *chnl,
-					struct mcde_rectangle *update_area)
+					struct mcde_rectangle *update_area,
+					bool tripple_buffer)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
@@ -2419,6 +2423,9 @@ static int _mcde_chnl_update(struct mcde_chnl_state *chnl,
 			|| (update_area->w == 0 && update_area->h == 0)) {
 		return -EINVAL;
 	}
+
+	if (chnl->port.update_auto_trig && tripple_buffer)
+		wait_for_channel(chnl);
 
 	chnl->regs.x   = update_area->x;
 	chnl->regs.y   = update_area->y;
@@ -2439,7 +2446,7 @@ static int _mcde_chnl_update(struct mcde_chnl_state *chnl,
 	chnl_update_overlay(chnl, chnl->ovly1);
 
 	if (chnl->port.update_auto_trig)
-		chnl_update_continous(chnl);
+		chnl_update_continous(chnl, tripple_buffer);
 	else
 		chnl_update_non_continous(chnl);
 
@@ -2608,10 +2615,10 @@ int mcde_chnl_apply(struct mcde_chnl_state *chnl)
 }
 
 int mcde_chnl_update(struct mcde_chnl_state *chnl,
-					struct mcde_rectangle *update_area)
+					struct mcde_rectangle *update_area,
+					bool tripple_buffer)
 {
 	int ret;
-
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
 	if (!chnl->reserved)
@@ -2623,7 +2630,6 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 		(void)update_channel_static_registers(chnl);
 
 	if (chnl->regs.roten && !chnl->esram_is_enabled) {
-		int ret;
 		ret = regulator_enable(chnl->port.reg_esram);
 		if (ret < 0) {
 			dev_warn(&mcde_dev->dev, "%s: disable failed\n",
@@ -2632,7 +2638,8 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 		chnl->esram_is_enabled = true;
 	}
 
-	ret = _mcde_chnl_update(chnl, update_area);
+	ret = _mcde_chnl_update(chnl, update_area, tripple_buffer);
+
 	mutex_unlock(&mcde_hw_lock);
 
 	dev_vdbg(&mcde_dev->dev, "%s exit with ret %d\n", __func__, ret);
