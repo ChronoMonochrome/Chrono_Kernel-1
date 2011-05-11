@@ -75,7 +75,7 @@ static int set_video_mode(struct mcde_display_device *ddev,
 static int set_power_mode(struct mcde_display_device *ddev,
 				enum mcde_display_power_mode power_mode);
 static int on_first_update(struct mcde_display_device *ddev);
-static int display_update(struct mcde_display_device *ddev);
+static int display_update(struct mcde_display_device *ddev, bool tripple_buf);
 
 static int __devinit ab8500_probe(struct mcde_display_device *ddev)
 {
@@ -447,7 +447,7 @@ static int on_first_update(struct mcde_display_device *ddev)
 	return 0;
 }
 
-static int display_update(struct mcde_display_device *ddev)
+static int display_update(struct mcde_display_device *ddev, bool tripple_buffer)
 {
 	int ret;
 
@@ -458,7 +458,8 @@ static int display_update(struct mcde_display_device *ddev)
 		if (ret < 0)
 			goto error;
 	}
-	ret = mcde_chnl_update(ddev->chnl_state, &ddev->update_area);
+	ret = mcde_chnl_update(ddev->chnl_state, &ddev->update_area,
+			tripple_buffer);
 	if (ret < 0)
 		goto error;
 out:

@@ -1269,7 +1269,7 @@ static int hdmi_resume(struct mcde_display_device *ddev)
 		dev_warn(&ddev->dev, "%s:Failed to resume display\n"
 			, __func__);
 
-	ddev->update(ddev);
+	ddev->update(ddev, 0);
 	return ret;
 }
 
