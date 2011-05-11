@@ -1942,6 +1942,8 @@ int av8100_powerup(void)
 	if (av8100_status_get().av8100_state < AV8100_OPMODE_SCAN)
 		ret = av8100_powerup2();
 
+	av8100_enable_interrupt();
+
 	return ret;
 }
 EXPORT_SYMBOL(av8100_powerup);
@@ -1951,6 +1953,8 @@ int av8100_powerdown(void)
 	int retval = 0;
 
 	struct av8100_platform_data *pdata = av8100dev->platform_data;
+
+	av8100_disable_interrupt();
 
 	if (pdata->alt_powerupseq) {
 		retval = av8100_reg_stby_pend_int_w(
