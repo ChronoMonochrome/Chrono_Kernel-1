@@ -426,5 +426,7 @@ void mcde_display_init_device(struct mcde_display_device *ddev)
 	ddev->update = mcde_display_update_default;
 	ddev->prepare_for_update = mcde_display_prepare_for_update_default;
 	ddev->on_first_update = mcde_display_on_first_update_default;
+
+	mutex_init(&ddev->display_lock);
 }
 

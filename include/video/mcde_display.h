@@ -36,6 +36,7 @@ struct mcde_display_device {
 	enum mcde_chnl chnl_id;
 	enum mcde_fifo fifo;
 	bool first_update;
+	struct mutex display_lock;
 
 	bool enabled;
 	struct mcde_chnl_state *chnl_state;

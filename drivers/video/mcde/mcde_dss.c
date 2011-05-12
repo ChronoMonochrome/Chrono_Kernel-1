@@ -38,7 +38,9 @@ static int apply_overlay(struct mcde_overlay *ovly,
 		 * add offset
 		 */
 		struct mcde_rectangle dirty = info->dirty;
+		mutex_lock(&ovly->ddev->display_lock);
 		ret = ovly->ddev->invalidate_area(ovly->ddev, &dirty);
+		mutex_unlock(&ovly->ddev->display_lock);
 	}
 
 	if (ovly->info.paddr != info->paddr || force)
@@ -69,25 +71,30 @@ static int apply_overlay(struct mcde_overlay *ovly,
 
 int mcde_dss_open_channel(struct mcde_display_device *ddev)
 {
-	int ret;
+	int ret = 0;
 	struct mcde_chnl_state *chnl;
 
+	mutex_lock(&ddev->display_lock);
 	/* Acquire MCDE resources */
 	chnl = mcde_chnl_get(ddev->chnl_id, ddev->fifo, ddev->port);
 	if (IS_ERR(chnl)) {
 		ret = PTR_ERR(chnl);
 		dev_warn(&ddev->dev, "Failed to acquire MCDE channel\n");
-		return ret;
+		goto chnl_get_failed;
 	}
 	ddev->chnl_state = chnl;
-	return 0;
+chnl_get_failed:
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_open_channel);
 
 void mcde_dss_close_channel(struct mcde_display_device *ddev)
 {
+	mutex_lock(&ddev->display_lock);
 	mcde_chnl_put(ddev->chnl_state);
 	ddev->chnl_state = NULL;
+	mutex_unlock(&ddev->display_lock);
 }
 EXPORT_SYMBOL(mcde_dss_close_channel);
 
@@ -98,6 +105,7 @@ int mcde_dss_enable_display(struct mcde_display_device *ddev)
 	if (ddev->enabled)
 		return 0;
 
+	mutex_lock(&ddev->display_lock);
 	mcde_chnl_enable(ddev->chnl_state);
 
 	/* Initiate display communication */
@@ -125,12 +133,15 @@ int mcde_dss_enable_display(struct mcde_display_device *ddev)
 	dev_dbg(&ddev->dev, "Display enabled, chnl=%d\n",
 					ddev->chnl_id);
 	ddev->enabled = true;
+	mutex_unlock(&ddev->display_lock);
+
 	return 0;
 
 enable_sync_failed:
 	ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);
 display_failed:
 	mcde_chnl_disable(ddev->chnl_state);
+	mutex_unlock(&ddev->display_lock);
 	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_enable_display);
@@ -141,6 +152,7 @@ void mcde_dss_disable_display(struct mcde_display_device *ddev)
 		return;
 
 	/* TODO: Disable overlays */
+	mutex_lock(&ddev->display_lock);
 
 	mcde_chnl_stop_flow(ddev->chnl_state);
 
@@ -149,6 +161,7 @@ void mcde_dss_disable_display(struct mcde_display_device *ddev)
 	mcde_chnl_disable(ddev->chnl_state);
 
 	ddev->enabled = false;
+	mutex_unlock(&ddev->display_lock);
 
 	dev_dbg(&ddev->dev, "Display disabled, chnl=%d\n", ddev->chnl_id);
 }
@@ -156,10 +169,14 @@ EXPORT_SYMBOL(mcde_dss_disable_display);
 
 int mcde_dss_apply_channel(struct mcde_display_device *ddev)
 {
+	int ret;
 	if (!ddev->apply_config)
 		return -EINVAL;
+	mutex_lock(&ddev->display_lock);
+	ret = ddev->apply_config(ddev);
+	mutex_unlock(&ddev->display_lock);
 
-	return ddev->apply_config(ddev);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_apply_channel);
 
@@ -175,7 +192,9 @@ struct mcde_overlay *mcde_dss_create_overlay(struct mcde_display_device *ddev,
 	kobject_init(&ovly->kobj, &ovly_type); /* Local ref */
 	kobject_get(&ovly->kobj); /* Creator ref */
 	INIT_LIST_HEAD(&ovly->list);
+	mutex_lock(&ddev->display_lock);
 	list_add(&ddev->ovlys, &ovly->list);
+	mutex_unlock(&ddev->display_lock);
 	ovly->info = *info;
 	ovly->ddev = ddev;
 
@@ -251,43 +270,63 @@ int mcde_dss_update_overlay(struct mcde_overlay *ovly, bool tripple_buffer)
 	if (!ovly->state || !ovly->ddev->update || !ovly->ddev->invalidate_area)
 		return -EINVAL;
 
+	mutex_lock(&ovly->ddev->display_lock);
 	/* Do not perform an update if power mode is off */
-	if (ovly->ddev->get_power_mode(ovly->ddev) == MCDE_DISPLAY_PM_OFF)
-		return 0;
+	if (ovly->ddev->get_power_mode(ovly->ddev) == MCDE_DISPLAY_PM_OFF) {
+		ret = 0;
+		goto power_mode_off;
+	}
 
 	ret = ovly->ddev->update(ovly->ddev, tripple_buffer);
 	if (ret)
-		return ret;
+		goto update_failed;
 
-	return ovly->ddev->invalidate_area(ovly->ddev, NULL);
+	ret = ovly->ddev->invalidate_area(ovly->ddev, NULL);
+
+power_mode_off:
+update_failed:
+	mutex_unlock(&ovly->ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_update_overlay);
 
 void mcde_dss_get_native_resolution(struct mcde_display_device *ddev,
 	u16 *x_res, u16 *y_res)
 {
+	mutex_lock(&ddev->display_lock);
 	ddev->get_native_resolution(ddev, x_res, y_res);
+	mutex_unlock(&ddev->display_lock);
 }
 EXPORT_SYMBOL(mcde_dss_get_native_resolution);
 
 enum mcde_ovly_pix_fmt mcde_dss_get_default_pixel_format(
 	struct mcde_display_device *ddev)
 {
-	return ddev->get_default_pixel_format(ddev);
+	int ret;
+	mutex_lock(&ddev->display_lock);
+	ret = ddev->get_default_pixel_format(ddev);
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_get_default_pixel_format);
 
 void mcde_dss_get_physical_size(struct mcde_display_device *ddev,
 	u16 *physical_width, u16 *physical_height)
 {
+	mutex_lock(&ddev->display_lock);
 	ddev->get_physical_size(ddev, physical_width, physical_height);
+	mutex_unlock(&ddev->display_lock);
 }
 EXPORT_SYMBOL(mcde_dss_get_physical_size);
 
 int mcde_dss_try_video_mode(struct mcde_display_device *ddev,
 	struct mcde_video_mode *video_mode)
 {
-	return ddev->try_video_mode(ddev, video_mode);
+	int ret;
+	mutex_lock(&ddev->display_lock);
+	ret = ddev->try_video_mode(ddev, video_mode);
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_try_video_mode);
 
@@ -297,22 +336,32 @@ int mcde_dss_set_video_mode(struct mcde_display_device *ddev,
 	int ret;
 	struct mcde_video_mode old_vmode;
 
+	mutex_lock(&ddev->display_lock);
 	ddev->get_video_mode(ddev, &old_vmode);
-	if (memcmp(vmode, &old_vmode, sizeof(old_vmode)) == 0)
-		return 0;
+	if (memcmp(vmode, &old_vmode, sizeof(old_vmode)) == 0) {
+		ret = 0;
+		goto same_video_mode;
+	}
 
 	ret = ddev->set_video_mode(ddev, vmode);
 	if (ret)
-		return ret;
+		goto set_video_mode_failed;
 
-	return ddev->invalidate_area(ddev, NULL);
+	if (ddev->invalidate_area)
+		ret = ddev->invalidate_area(ddev, NULL);
+same_video_mode:
+set_video_mode_failed:
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_set_video_mode);
 
 void mcde_dss_get_video_mode(struct mcde_display_device *ddev,
 	struct mcde_video_mode *video_mode)
 {
+	mutex_lock(&ddev->display_lock);
 	ddev->get_video_mode(ddev, video_mode);
+	mutex_unlock(&ddev->display_lock);
 }
 EXPORT_SYMBOL(mcde_dss_get_video_mode);
 
@@ -320,38 +369,61 @@ int mcde_dss_set_pixel_format(struct mcde_display_device *ddev,
 	enum mcde_ovly_pix_fmt pix_fmt)
 {
 	enum mcde_ovly_pix_fmt old_pix_fmt;
+	int ret;
 
+	mutex_lock(&ddev->display_lock);
 	old_pix_fmt = ddev->get_pixel_format(ddev);
-	if (old_pix_fmt == pix_fmt)
-		return 0;
+	if (old_pix_fmt == pix_fmt) {
+		ret = 0;
+		goto same_pixel_format;
+	}
 
-	return ddev->set_pixel_format(ddev, pix_fmt);
+	ret = ddev->set_pixel_format(ddev, pix_fmt);
+
+same_pixel_format:
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_set_pixel_format);
 
 int mcde_dss_get_pixel_format(struct mcde_display_device *ddev)
 {
-	return ddev->get_pixel_format(ddev);
+	int ret;
+	mutex_lock(&ddev->display_lock);
+	ret = ddev->get_pixel_format(ddev);
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_get_pixel_format);
 
 int mcde_dss_set_rotation(struct mcde_display_device *ddev,
 	enum mcde_display_rotation rotation)
 {
+	int ret;
 	enum mcde_display_rotation old_rotation;
 
+	mutex_lock(&ddev->display_lock);
 	old_rotation = ddev->get_rotation(ddev);
-	if (old_rotation == rotation)
-		return 0;
+	if (old_rotation == rotation) {
+		ret = 0;
+		goto same_rotation;
+	}
 
-	return ddev->set_rotation(ddev, rotation);
+	ret = ddev->set_rotation(ddev, rotation);
+same_rotation:
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_set_rotation);
 
 enum mcde_display_rotation mcde_dss_get_rotation(
 	struct mcde_display_device *ddev)
 {
-	return ddev->get_rotation(ddev);
+	int ret;
+	mutex_lock(&ddev->display_lock);
+	ret = ddev->get_rotation(ddev);
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_get_rotation);
 
@@ -359,18 +431,29 @@ int mcde_dss_set_synchronized_update(struct mcde_display_device *ddev,
 	bool enable)
 {
 	int ret;
+	mutex_lock(&ddev->display_lock);
 	ret = ddev->set_synchronized_update(ddev, enable);
 	if (ret)
-		return ret;
+		goto sync_update_failed;
+
 	if (ddev->chnl_state)
 		mcde_chnl_enable_synchronized_update(ddev->chnl_state, enable);
+	mutex_unlock(&ddev->display_lock);
 	return 0;
+
+sync_update_failed:
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_set_synchronized_update);
 
 bool mcde_dss_get_synchronized_update(struct mcde_display_device *ddev)
 {
-	return ddev->get_synchronized_update(ddev);
+	int ret;
+	mutex_lock(&ddev->display_lock);
+	ret = ddev->get_synchronized_update(ddev);
+	mutex_unlock(&ddev->display_lock);
+	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_get_synchronized_update);
 
