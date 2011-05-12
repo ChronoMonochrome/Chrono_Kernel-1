@@ -150,6 +150,7 @@ struct cg2900_chip_dev {
  * @get_power_switch_off_cmd:	Callback called to retrieve
  *				HCI VS_Power_Switch_Off command (command
  *				HCI requires platform specific GPIO data).
+ * @regulator_id:	Id of the regulator that powers on the chip
  * @bus:		Transport used, see @include/net/bluetooth/hci.h.
  * @gpio_sleep:		Array of GPIO sleep settings.
  * @enable_uart:	Callback called when switching from UART GPIO to
@@ -173,6 +174,7 @@ struct cg2900_platform_data {
 	struct sk_buff* (*get_power_switch_off_cmd)(struct cg2900_chip_dev *dev,
 						    u16 *op_code);
 
+	char *regulator_id;
 	__u8 bus;
 	enum cg2900_gpio_pull_sleep *gpio_sleep;
 

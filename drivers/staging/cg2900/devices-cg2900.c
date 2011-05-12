@@ -31,6 +31,7 @@
 #include <plat/pincfg.h>
 #include <asm/mach-types.h>
 #include <linux/mfd/ab8500.h>
+#include <linux/regulator/consumer.h>
 
 #include "cg2900.h"
 #include "devices-cg2900.h"
@@ -70,6 +71,7 @@ struct dcg2900_info {
 	u8	gpio_8_15_pull_down;
 	u8	gpio_16_20_pull_down;
 	spinlock_t	pdb_toggle_lock;
+	struct regulator	*regulator_wlan;
 };
 
 static void dcg2900_enable_chip(struct cg2900_chip_dev *dev)
@@ -198,6 +200,7 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 	struct resource *resource;
 	const char *gbf_name;
 	const char *bt_name = NULL;
+	struct cg2900_platform_data *pdata = dev_get_platdata(dev->dev);
 
 	/* First retrieve and save the resources */
 	info = kzalloc(sizeof(*info), GFP_KERNEL);
@@ -270,12 +273,35 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 	 */
 	if (machine_is_snowball()) {
 		/* Take the regulator */
+		if (pdata->regulator_id) {
+			info->regulator_wlan = regulator_get(dev->dev,
+					pdata->regulator_id);
+			if (IS_ERR(info->regulator_wlan)) {
+				err = PTR_ERR(info->regulator_wlan);
+				dev_warn(dev->dev,
+					"%s: Failed to get regulator '%s'\n",
+					__func__, pdata->regulator_id);
+				info->regulator_wlan = NULL;
+				goto err_handling_free_gpio_bt;
+			}
+			/* Enable it also */
+			err = regulator_enable(info->regulator_wlan);
+			if (err < 0) {
+				dev_warn(dev->dev, "%s: regulator_enable failed\n",
+						__func__);
+				goto err_handling_put_reg;
+			}
+		} else {
+			dev_warn(dev->dev, "%s: no regulator defined for snowball.\n",
+					__func__);
+		}
 	}
 
 finished:
 	dev->b_data = info;
 	return 0;
-
+err_handling_put_reg:
+	regulator_put(info->regulator_wlan);
 err_handling_free_gpio_bt:
 	gpio_free(info->bt_gpio);
 err_handling_free_gpio_gbf:
@@ -290,8 +316,13 @@ static void dcg2900_exit(struct cg2900_chip_dev *dev)
 	struct dcg2900_info *info = dev->b_data;
 
 	if (machine_is_snowball()) {
-		/* Put the regulator */
+		/* Turn off power if we have any */
+		if (info->regulator_wlan) {
+			regulator_disable(info->regulator_wlan);
+			regulator_put(info->regulator_wlan);
+		}
 	}
+
 	dcg2900_disable_chip(dev);
 	if (info->bt_gpio != -1)
 		gpio_free(info->bt_gpio);

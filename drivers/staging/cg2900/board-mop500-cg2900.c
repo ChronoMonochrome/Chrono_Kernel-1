@@ -133,6 +133,7 @@ static struct cg2900_platform_data cg2900_uart_platform_data = {
 		.uart_enabled = cg2900_uart_enabled,
 		.uart_disabled = cg2900_uart_disabled,
 	},
+	.regulator_id =	"vdd",
 };
 
 static struct platform_device ux500_cg2900_uart_device = {
