@@ -286,63 +286,84 @@ static int ceanr_convert(struct mcde_display_device *ddev,
 
 /* Supported HDMI modes */
 static struct mcde_video_mode video_modes_supp_hdmi[] = {
-	/* 640_480_60_P */
+	/* 0 CEA #1 640_480_60_P */
 	{
 		.xres = 640,	.yres = 480,
 		.pixclock = 39682,
 		.hbp = 112,	.hfp = 48,
 		.vbp = 33,	.vfp = 12
 	},
-	/* 720_480_60_P */
+	/* 1 720_480_60_P */
 	{
 		.xres = 720,	.yres = 480,
 		.pixclock = 37000,
 		.hbp = 104,	.hfp = 34,
 		.vbp = 30,	.vfp = 15
 	},
-	/* 720_576_50_P */
+	/* 2 720_576_50_P */
 	{
 		.xres = 720,	.yres = 576,
 		.pixclock = 37037,
 		.hbp = 132,	.hfp = 12,
 		.vbp = 44,	.vfp = 5
 	},
-	/* 1280_720_60_P */
+	/* 3 1280_720_60_P */
 	{
 		.xres = 1280,	.yres = 720,
 		.pixclock = 13468,
 		.hbp = 256,	.hfp = 114,
 		.vbp = 20,	.vfp = 10
 	},
-	/* 1280_720_50_P */
+	/* 4 1280_720_50_P */
 	{
 		.xres = 1280,	.yres = 720,
 		.pixclock = 13468,
 		.hbp = 260,	.hfp = 440,
 		.vbp = 25,	.vfp = 5
 	},
-	/* 1920_1080_30_P */
+	/* 5 1280_720_30_P */
+	{
+		.xres = 1280,	.yres = 720,
+		.pixclock = 13468,
+		.hbp = 260,	.hfp = 1760,
+		.vbp = 20,	.vfp = 10
+	},
+	/* 6 1280_720_24_P */
+	{
+		.xres = 1280,	.yres = 720,
+		.pixclock = 16835,
+		.hbp = 260,	.hfp = 1760,
+		.vbp = 20,	.vfp = 10
+	},
+	/* 7 1280_720_25_P */
+	{
+		.xres = 1280,	.yres = 720,
+		.pixclock = 13468,
+		.hbp = 260,	.hfp = 2420,
+		.vbp = 20,	.vfp = 10
+	},
+	/* 8 1920_1080_30_P */
 	{
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 189,	.hfp = 91,
 		.vbp = 36,	.vfp = 9
 	},
-	/* 1920_1080_24_P */
+	/* 9 1920_1080_24_P */
 	{
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 170,	.hfp = 660,
 		.vbp = 36,	.vfp = 9
 	},
-	/* 1920_1080_25_P */
+	/* 10 1920_1080_25_P */
 	{
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 192,	.hfp = 528,
 		.vbp = 36,	.vfp = 9
 	},
-	/* 720_480_60_I) */
+	/* 11 720_480_60_I */
 	{
 		.xres = 720,	.yres = 480,
 		.pixclock = 74074,
@@ -350,7 +371,7 @@ static struct mcde_video_mode video_modes_supp_hdmi[] = {
 		.vbp = 44,	.vfp = 1,
 		.interlaced = true,
 	},
-	/* 720_576_50_I) */
+	/* 12 720_576_50_I */
 	{
 		.xres = 720,	.yres = 576,
 		.pixclock = 74074,
@@ -358,7 +379,7 @@ static struct mcde_video_mode video_modes_supp_hdmi[] = {
 		.vbp = 44,	.vfp = 5,
 		.interlaced = true,
 	},
-	/* 1920_1080_50_I) */
+	/* 13 1920_1080_50_I */
 	{
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
@@ -366,13 +387,85 @@ static struct mcde_video_mode video_modes_supp_hdmi[] = {
 		.vbp = 20,	.vfp = 25,
 		.interlaced = true,
 	},
-	/* 1920_1080_60_I) */
+	/* 14 1920_1080_60_I */
 	{
 		.xres = 1920,	.yres = 1080,
 		.pixclock = 13468,
 		.hbp = 192,	.hfp = 88,
 		.vbp = 20,	.vfp = 25,
 		.interlaced = true,
+	},
+	/* 15 VESA #9 800_600_60_P */
+	{
+		.xres = 800,	.yres = 600,
+		.pixclock = 25000,
+		.hbp = 168,	.hfp = 88,
+		.vbp = 23,	.vfp = 5,
+		.interlaced = false,
+	},
+	/* 16 VESA #14 848_480_60_P */
+	{
+		.xres = 848,	.yres = 480,
+		.pixclock = 29630,
+		.hbp = 128,	.hfp = 112,
+		.vbp = 23,	.vfp = 14,
+		.interlaced = false,
+	},
+	/* 17 VESA #16 1024_768_60_P */
+	{
+		.xres = 1024,	.yres = 768,
+		.pixclock = 15385,
+		.hbp = 160,	.hfp = 160,
+		.vbp = 29,	.vfp = 9,
+		.interlaced = false,
+	},
+	/* 18 VESA #22 1280_768_60_P */
+	{
+		.xres = 1280,	.yres = 768,
+		.pixclock = 14652,
+		.hbp = 80,	.hfp = 80,
+		.vbp = 12,	.vfp = 10,
+		.interlaced = false,
+	},
+	/* 19 VESA #23 1280_768_60_P */
+	{
+		.xres = 1280,	.yres = 768,
+		.pixclock = 12579,
+		.hbp = 192,	.hfp = 192,
+		.vbp = 20,	.vfp = 10,
+		.interlaced = false,
+	},
+	/* 20 VESA #27 1280_800_60_P */
+	{
+		.xres = 1280,	.yres = 800,
+		.pixclock = 14085,
+		.hbp = 80,	.hfp = 80,
+		.vbp = 14,	.vfp = 9,
+		.interlaced = false,
+	},
+	/* 21 VESA #28 1280_800_60_P */
+	{
+		.xres = 1280,	.yres = 800,
+		.pixclock = 11976,
+		.hbp = 200,	.hfp = 200,
+		.vbp = 22,	.vfp = 9,
+		.interlaced = false,
+	},
+	/* 22 VESA #39 1360_768_60_P */
+	{
+		.xres = 1360,	.yres = 768,
+		.pixclock = 11696,
+		.hbp = 176,	.hfp = 256,
+		.vbp = 18,	.vfp = 9,
+		.interlaced = false,
+	},
+	/* 23 VESA #81 1366_768_60_P */
+	{
+		.xres = 1366,	.yres = 768,
+		.pixclock = 11662,
+		.hbp = 213,	.hfp = 213,
+		.vbp = 24,	.vfp = 6,
+		.interlaced = false,
 	},
 };
 
@@ -432,50 +525,115 @@ static struct cea_vesa_video_mode cea_vesa_video_mode[] = {
 			.cea = 1,	.vesa_cea_nr = 19,
 			.video_mode = &video_modes_supp_hdmi[4],
 		},
+		/* 1280_720_30_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 62,
+			.video_mode = &video_modes_supp_hdmi[5],
+		},
+		/* 1280_720_24_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 60,
+			.video_mode = &video_modes_supp_hdmi[6],
+		},
+		/* 1280_720_25_P */
+		{
+			.cea = 1,	.vesa_cea_nr = 61,
+			.video_mode = &video_modes_supp_hdmi[7],
+		},
 		/* 1920_1080_30_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 34,
-			.video_mode = &video_modes_supp_hdmi[5],
+			.video_mode = &video_modes_supp_hdmi[8],
 		},
 		/* 1920_1080_24_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 32,
-			.video_mode = &video_modes_supp_hdmi[6],
+			.video_mode = &video_modes_supp_hdmi[9],
 		},
 		/* 1920_1080_25_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 33,
-			.video_mode = &video_modes_supp_hdmi[7],
+			.video_mode = &video_modes_supp_hdmi[10],
 		},
 		/* 720_480_60_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 6,
-			.video_mode = &video_modes_supp_hdmi[8],
+			.video_mode = &video_modes_supp_hdmi[11],
 		},
 		/* 720_480_60_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 7,
-			.video_mode = &video_modes_supp_hdmi[8],
+			.video_mode = &video_modes_supp_hdmi[11],
 		},
 		/* 720_576_50_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 21,
-			.video_mode = &video_modes_supp_hdmi[9],
+			.video_mode = &video_modes_supp_hdmi[12],
 		},
 		/* 720_576_50_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 22,
-			.video_mode = &video_modes_supp_hdmi[9],
+			.video_mode = &video_modes_supp_hdmi[12],
 		},
 		/* 1920_1080_50_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 20,
-			.video_mode = &video_modes_supp_hdmi[10],
+			.video_mode = &video_modes_supp_hdmi[13],
 		},
 		/* 1920_1080_60_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 5,
-			.video_mode = &video_modes_supp_hdmi[11],
+			.video_mode = &video_modes_supp_hdmi[14],
+		},
+		/* VESA #4 640_480_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 4,
+			.video_mode = &video_modes_supp_hdmi[0],
+		},
+		/* VESA #9 800_600_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 9,
+			.video_mode = &video_modes_supp_hdmi[15],
+		},
+		/* VESA #14 848_480_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 14,
+			.video_mode = &video_modes_supp_hdmi[16],
+		},
+		/* VESA #16 1024_768_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 16,
+			.video_mode = &video_modes_supp_hdmi[17],
+		},
+		/* VESA #22 1280_768_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 22,
+			.video_mode = &video_modes_supp_hdmi[18],
+		},
+		/* VESA #23 1280_768_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 23,
+			.video_mode = &video_modes_supp_hdmi[19],
+		},
+		/* VESA #27 1280_800_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 27,
+			.video_mode = &video_modes_supp_hdmi[20],
+		},
+		/* VESA #28 1280_800_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 28,
+			.video_mode = &video_modes_supp_hdmi[21],
+		},
+		/* VESA #39 1360_768_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 39,
+			.video_mode = &video_modes_supp_hdmi[22],
+		},
+		/* VESA #81 1366_768_60_P) */
+		{
+			.cea = 0,	.vesa_cea_nr = 81,
+			.video_mode = &video_modes_supp_hdmi[23],
 		},
 };
 

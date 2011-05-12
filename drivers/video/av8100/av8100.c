@@ -64,7 +64,12 @@
 #define AV8100_TE_LINE_NB_18	18
 #define AV8100_TE_LINE_NB_21	21
 #define AV8100_TE_LINE_NB_22	22
+#define AV8100_TE_LINE_NB_24	24
+#define AV8100_TE_LINE_NB_25	25
+#define AV8100_TE_LINE_NB_26	26
+#define AV8100_TE_LINE_NB_29	29
 #define AV8100_TE_LINE_NB_30	30
+#define AV8100_TE_LINE_NB_32	32
 #define AV8100_TE_LINE_NB_38	38
 #define AV8100_TE_LINE_NB_40	40
 #define AV8100_UI_X4_DEFAULT	6
@@ -363,19 +368,19 @@ struct av8100_cea av8100_all_cea[29] = {
 	"+",	3413,	0x770,	5,	32,	1},/*RGB565*/
 { "20 VESA 9       800x600 @ 60 Hz      ",
 	109,	628,	600,	28,	4,
-	0,	"+",	1056,	800,	40,	128,	10,	20782080,
+	0,	"+",	1056,	800,	40,	128,	10,	40000000,
 	"+",	0,	0,	0,	0,	0},/*Settings to be define*/
 { "21 VESA 14      848x480  @ 60 Hz     ",
-	114,	500,	480,	20,	5,
-	0,	"+",	1056,	848,	24,	80,	10,	31680000,
+	114,	517,	480,	20,	5,
+	0,	"+",	1088,	848,	24,	80,	10,	33750000,
 	"-",	0,	0,	0,	0,	0},/*Settings to be define*/
 { "22 VESA 16      1024x768 @ 60 Hz     ",
 	116,	806,	768,	38,	6,
 	0,	"-",	1344,	1024,	24,	135,	10,	65000000,
 	"-",	0,	0,	0,	0,	0},/*Settings to be define*/
 { "23 VESA 22      1280x768 @ 60 Hz     ",
-	122,	802,	768,	34,	4,
-	0,	"+",	1688,	1280,	48,	160,	10,	81250000,
+	122,	790,	768,	34,	4,
+	0,	"+",	1440,	1280,	48,	160,	10,	68250000,
 	"-",	0,	0,	0,	0,	0},/*Settings to be define*/
 { "24 VESA 23      1280x768 @ 60 Hz     ",
 	123,	798,	768,	30,	7,
@@ -390,12 +395,12 @@ struct av8100_cea av8100_all_cea[29] = {
 	0,	"+",	1680,	1280,	72,	128,	10,	83500000,
 	"-",	0,	0,	0,	0,	0},/*Settings to be define*/
 { "27 VESA 39      1360x768 @ 60 Hz     ",
-	139,	790,	768,	22,	5,
-	0,	"-",	1520,	1360,	48,	32,	10,	72000000,
+	139,	795,	768,	22,	5,
+	0,	"-",	1792,	1360,	48,	32,	10,	85500000,
 	"+",	0,	0,	0,	0,	0},/*Settings to be define*/
-{ "28 VESA 81      1360x768 @ 60 Hz     ",
+{ "28 VESA 81      1366x768 @ 60 Hz     ",
 	181,	798,	768,	30,	5,
-	0,	"+",	1776,	1360,	72,	136,	10,	84750000,
+	0,	"+",	1792,	1366,	72,	136,	10,	85750000,
 	"-",	0,	0,	0,	0,	0} /*Settings to be define*/
 };
 
@@ -672,25 +677,36 @@ static u16 av8100_get_te_line_nb(
 	switch (output_video_format) {
 	case AV8100_CEA1_640X480P_59_94HZ:
 	case AV8100_CEA2_3_720X480P_59_94HZ:
+	case AV8100_VESA16_1024X768P_60HZ:
 		retval = AV8100_TE_LINE_NB_30;
+		break;
+
+	case AV8100_CEA4_1280X720P_60HZ:
+	case AV8100_CEA60_1280X720P_24HZ:
+	case AV8100_CEA61_1280X720P_25HZ:
+	case AV8100_CEA62_1280X720P_30HZ:
+		retval = AV8100_TE_LINE_NB_21;
 		break;
 
 	case AV8100_CEA5_1920X1080I_60HZ:
 	case AV8100_CEA6_7_NTSC_60HZ:
 	case AV8100_CEA20_1920X1080I_50HZ:
 	case AV8100_CEA21_22_576I_PAL_50HZ:
+	case AV8100_VESA27_1280X800P_59_91HZ:
 		retval = AV8100_TE_LINE_NB_18;
 		break;
 
-	case AV8100_CEA4_1280X720P_60HZ:
-		retval = AV8100_TE_LINE_NB_21;
+	case AV8100_CEA14_15_480p_60HZ:
+		retval = AV8100_TE_LINE_NB_32;
 		break;
 
 	case AV8100_CEA17_18_720X576P_50HZ:
+	case AV8100_CEA29_30_576P_50HZ:
 		retval = AV8100_TE_LINE_NB_40;
 		break;
 
 	case AV8100_CEA19_1280X720P_50HZ:
+	case AV8100_VESA39_1360X768P_60_02HZ:
 		retval = AV8100_TE_LINE_NB_22;
 		break;
 
@@ -700,28 +716,32 @@ static u16 av8100_get_te_line_nb(
 		retval = AV8100_TE_LINE_NB_38;
 		break;
 
-	case AV8100_CEA60_1280X720P_24HZ:
-	case AV8100_CEA62_1280X720P_30HZ:
-		retval = AV8100_TE_LINE_NB_21;
+	case AV8100_VESA9_800X600P_60_32HZ:
+		retval = AV8100_TE_LINE_NB_24;
 		break;
 
-	case AV8100_CEA14_15_480p_60HZ:
 	case AV8100_VESA14_848X480P_60HZ:
-	case AV8100_CEA61_1280X720P_25HZ:
+		retval = AV8100_TE_LINE_NB_29;
+		break;
+
+	case AV8100_VESA22_1280X768P_59_99HZ:
+		retval = AV8100_TE_LINE_NB_17;
+		break;
+
+	case AV8100_VESA23_1280X768P_59_87HZ:
+	case AV8100_VESA81_1366X768P_59_79HZ:
+		retval = AV8100_TE_LINE_NB_25;
+		break;
+
+	case AV8100_VESA28_1280X800P_59_81HZ:
+		retval = AV8100_TE_LINE_NB_26;
+		break;
+
 	case AV8100_CEA16_1920X1080P_60HZ:
 	case AV8100_CEA31_1920x1080P_50Hz:
-	case AV8100_CEA29_30_576P_50HZ:
-	case AV8100_VESA9_800X600P_60_32HZ:
-	case AV8100_VESA16_1024X768P_60HZ:
-	case AV8100_VESA22_1280X768P_59_99HZ:
-	case AV8100_VESA23_1280X768P_59_87HZ:
-	case AV8100_VESA27_1280X800P_59_91HZ:
-	case AV8100_VESA28_1280X800P_59_81HZ:
-	case AV8100_VESA39_1360X768P_60_02HZ:
-	case AV8100_VESA81_1366X768P_59_79HZ:
 	default:
 		/* TODO */
-		retval = AV8100_TE_LINE_NB_14;
+		retval = AV8100_TE_LINE_NB_38;
 		break;
 	}
 
