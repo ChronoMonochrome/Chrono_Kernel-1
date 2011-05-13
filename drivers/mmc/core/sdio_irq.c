@@ -184,6 +184,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
 
 	if (!--host->sdio_irqs) {
 		host->ops->enable_sdio_irq(host, false);
+		cancel_delayed_work_sync(&host->sdio_irq_work);
 		destroy_workqueue(host->sdio_irq_workqueue);
 		host->sdio_irq_workqueue = NULL;
 	}
