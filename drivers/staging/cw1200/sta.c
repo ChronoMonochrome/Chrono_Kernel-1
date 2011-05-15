@@ -1076,10 +1076,12 @@ static inline int cw1200_enable_listening(struct cw1200_common *priv)
 
 static inline int cw1200_disable_listening(struct cw1200_common *priv)
 {
+	int ret;
 	struct wsm_reset reset = {
 		.reset_statistics = true,
 	};
-	return wsm_reset(priv, &reset);
+	ret = wsm_reset(priv, &reset);
+	return ret;
 }
 
 void cw1200_update_listening(struct cw1200_common *priv, bool enabled)

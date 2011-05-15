@@ -1292,7 +1292,7 @@ static inline int wsm_set_template_frame(struct cw1200_common *priv,
 	u8 *p = skb_push(arg->skb, 4);
 	p[0] = arg->frame_type;
 	p[1] = arg->rate;
-	((u16 *) p)[1] = __cpu_to_le32(arg->skb->len - 4);
+	((u16 *) p)[1] = __cpu_to_le16(arg->skb->len - 4);
 	ret = wsm_write_mib(priv, WSM_MIB_ID_TEMPLATE_FRAME, p, arg->skb->len);
 	skb_pull(arg->skb, 4);
 	return ret;

@@ -1423,7 +1423,7 @@ static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 
 	/* Search for a queue with multicast frames buffered */
 	if (priv->sta_asleep_mask && !priv->suspend_multicast) {
-		tx_allowed_mask = 1 << CW1200_LINK_ID_AFTER_DTIM;
+		tx_allowed_mask = BIT(CW1200_LINK_ID_AFTER_DTIM);
 		for (i = 0; i < 4; ++i) {
 			mcasts += cw1200_queue_get_num_queued(
 					&priv->tx_queue[i], tx_allowed_mask);
@@ -1443,7 +1443,7 @@ static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 		if (priv->sta_asleep_mask) {
 			tx_allowed_mask |= ~priv->tx_suspend_mask[i];
 		} else {
-			tx_allowed_mask |= 1 << CW1200_LINK_ID_AFTER_DTIM;
+			tx_allowed_mask |= BIT(CW1200_LINK_ID_AFTER_DTIM);
 		}
 		if (cw1200_queue_get_num_queued(
 				queue, tx_allowed_mask))
@@ -1486,12 +1486,38 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 		spin_unlock(&priv->wsm_cmd.lock);
 	} else {
 		for (;;) {
+			bool obtain_lock = priv->sta_asleep_mask &&
+					!priv->suspend_multicast;
+			int ret;
+
 			if (atomic_add_return(0, &priv->tx_lock))
 				break;
 
-			if (wsm_get_tx_queue_and_mask(priv, &queue,
-					&tx_allowed_mask, &more))
+			if (obtain_lock)
+				spin_lock_bh(
+					&priv->buffered_multicasts_lock);
+
+			ret = wsm_get_tx_queue_and_mask(priv, &queue,
+					&tx_allowed_mask, &more);
+
+			if (priv->buffered_multicasts &&
+					priv->sta_asleep_mask &&
+					!priv->suspend_multicast &&
+					(ret || tx_allowed_mask !=
+					 BIT(CW1200_LINK_ID_AFTER_DTIM))) {
+				priv->buffered_multicasts = false;
+				priv->suspend_multicast = true;
+				queue_work(priv->workqueue,
+					&priv->multicast_stop_work);
+			}
+
+			if (obtain_lock)
+				spin_unlock_bh(
+					&priv->buffered_multicasts_lock);
+
+			if (ret)
 				break;
+
 
 			if (cw1200_queue_get(queue,
 					tx_allowed_mask,
@@ -1513,6 +1539,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 			*data = (u8 *)wsm;
 			*tx_len = __le16_to_cpu(wsm->hdr.len);
+
 			if (more) {
 				struct ieee80211_hdr *hdr =
 					(struct ieee80211_hdr *) &wsm[1];
@@ -1521,12 +1548,6 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 				 *  to inform PS STAs */
 				hdr->frame_control |=
 					cpu_to_le16(IEEE80211_FCTL_MOREDATA);
-			} else if (priv->mode == NL80211_IFTYPE_AP &&
-					!priv->suspend_multicast) {
-				priv->suspend_multicast = true;
-				wsm_lock_tx_async(priv);
-				queue_work(priv->workqueue,
-					&priv->multicast_stop_work);
 			}
 
 			wsm_printk(KERN_DEBUG "[WSM] >>> 0x%.4X (%d) %p %c\n",

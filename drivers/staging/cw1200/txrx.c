@@ -350,8 +350,8 @@ u32 cw1200_rate_mask_to_wsm(struct cw1200_common *priv, u32 rates)
 	u32 ret = 0;
 	int i;
 	for (i = 0; i < 32; ++i) {
-		if (rates & (1 << i))
-			ret |= 1 << priv->rates[i].hw_value;
+		if (rates & BIT(i))
+			ret |= BIT(priv->rates[i].hw_value);
 	}
 	return ret;
 }
@@ -422,10 +422,12 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		(struct ieee80211_hdr *)skb->data;
 	struct cw1200_sta_priv *sta_priv =
 		(struct cw1200_sta_priv *)&tx_info->control.sta->drv_priv;
+	bool obtain_lock;
 	int link_id = 0;
 	int ret;
 
-	if (tx_info->flags | IEEE80211_TX_CTL_SEND_AFTER_DTIM)
+	if ((tx_info->flags | IEEE80211_TX_CTL_SEND_AFTER_DTIM) &&
+			(priv->mode == NL80211_IFTYPE_AP))
 		link_id = CW1200_LINK_ID_AFTER_DTIM;
 	else if (tx_info->control.sta)
 		link_id = sta_priv->link_id;
@@ -510,8 +512,22 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		if (cw1200_handle_action_tx(priv, skb))
 			goto drop;
 
+	obtain_lock = (link_id == CW1200_LINK_ID_AFTER_DTIM);
+
+	if (obtain_lock)
+		spin_lock_bh(&priv->buffered_multicasts_lock);
+
+	if (link_id == CW1200_LINK_ID_AFTER_DTIM &&
+			!priv->buffered_multicasts) {
+		priv->buffered_multicasts = true;
+		queue_work(priv->workqueue,
+				&priv->multicast_start_work);
+	}
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
 			link_id);
+	if (obtain_lock)
+		spin_unlock_bh(&priv->buffered_multicasts_lock);
+
 	if (!WARN_ON(ret))
 		cw1200_bh_wakeup(priv);
 	else
@@ -773,16 +789,16 @@ int cw1200_alloc_key(struct cw1200_common *priv)
 	if (idx < 0 || idx > WSM_KEY_MAX_INDEX)
 		return -1;
 
-	priv->key_map |= 1 << idx;
+	priv->key_map |= BIT(idx);
 	priv->keys[idx].entryIndex = idx;
 	return idx;
 }
 
 void cw1200_free_key(struct cw1200_common *priv, int idx)
 {
-	BUG_ON(!(priv->key_map & (1 << idx)));
+	BUG_ON(!(priv->key_map & BIT(idx)));
 	memset(&priv->keys[idx], 0, sizeof(priv->keys[idx]));
-	priv->key_map &= ~(1 << idx);
+	priv->key_map &= ~BIT(idx);
 }
 
 void cw1200_free_keys(struct cw1200_common *priv)
@@ -795,7 +811,7 @@ int cw1200_upload_keys(struct cw1200_common *priv)
 {
 	int idx, ret = 0;
 	for (idx = 0; idx <= WSM_KEY_MAX_INDEX; ++idx)
-		if (priv->key_map & (1 << idx)) {
+		if (priv->key_map & BIT(idx)) {
 			ret = wsm_add_key(priv, &priv->keys[idx]);
 			if (ret < 0)
 				break;

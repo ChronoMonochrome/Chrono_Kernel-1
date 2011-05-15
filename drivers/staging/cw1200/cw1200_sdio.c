@@ -121,10 +121,10 @@ static int cw1200_request_irq(struct sbus_priv *self,
 		goto set_func;
 
 	/* Master interrupt enable ... */
-	cccr |= 1;
+	cccr |= BIT(0);
 
 	/* ... for our function */
-	cccr |= 1 << func_num;
+	cccr |= BIT(func_num);
 
 	sdio_writeb(self->func, cccr, SDIO_CCCR_IENx, &ret);
 	if (WARN_ON(ret))

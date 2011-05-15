@@ -167,6 +167,10 @@ struct cw1200_common {
 	u32			tx_suspend_mask[4];
 	u32			sta_asleep_mask;
 	bool			suspend_multicast;
+	bool			aid0_bit_set;
+	unsigned long		aid0_bit_timestamp;
+	spinlock_t		buffered_multicasts_lock;
+	bool			buffered_multicasts;
 	struct work_struct	set_tim_work;
 	struct work_struct	multicast_start_work;
 	struct work_struct	multicast_stop_work;
