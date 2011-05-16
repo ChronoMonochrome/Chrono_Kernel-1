@@ -2,6 +2,19 @@ config MODEM
         bool "Modem Access Framework"
         default n
         help
-          Add support for Modem Access Framework. It allows different
-	  platform specific drivers to register modem access mechanisms
-	  and allows transparent access to modem to the client drivers.
+         Add support for Modem Access Framework. It allows different
+	 platform specific drivers to register modem access mechanisms
+	 and allows transparent access to modem to the client drivers.
+
+	 If unsure, say N.
+
+config MODEM_U8500
+	bool "Modem Access driver for STE U8500 platform"
+	depends on MODEM
+	default n
+	help
+	 Add support for Modem Access driver on STE U8500 platform which
+	 uses Shared Memroy as IPC mechanism between Modem processor and
+	 Application processor.
+
+	 If unsure, say N.
