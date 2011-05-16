@@ -1718,7 +1718,6 @@ static int hdmi_ioctl(struct file *file,
 	u8 aes_status;
 
 	switch (cmd) {
-
 	case IOC_PLUG_DETECT_ENABLE:
 		if (copy_from_user(&plug_detect, (void *)arg,
 			sizeof(struct plug_detect)))
@@ -2074,11 +2073,12 @@ ioc_hdcploadaes_err:
 
 	case IOC_HDMI_CONFIGURATION_WRITE:
 		if (copy_from_user(&command_reg, (void *)arg,
-			sizeof(struct hdmi_command_register)) != 0) {
+				sizeof(struct hdmi_command_register)) != 0) {
 			dev_err(hdmidev, "IOC_HDMI_CONFIGURATION_WRITE "
 				"fail 1\n");
 			command_reg.return_status = EINVAL;
 		} else {
+			command_reg.return_status = 0;
 			if (av8100_conf_w_raw(command_reg.cmd_id,
 					command_reg.buf_len,
 					command_reg.buf,
@@ -2086,7 +2086,7 @@ ioc_hdcploadaes_err:
 					command_reg.buf) != 0) {
 				dev_err(hdmidev, "IOC_HDMI_CONFIGURATION_WRITE "
 					"fail 2\n");
-			command_reg.return_status = EINVAL;
+				command_reg.return_status = EINVAL;
 			}
 		}
 
