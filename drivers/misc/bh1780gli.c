@@ -26,6 +26,10 @@
 #include <linux/module.h>
 #include <linux/regulator/consumer.h>
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
+
 #define BH1780_REG_CONTROL	0x80
 #define BH1780_REG_PARTID	0x8A
 #define BH1780_REG_MANFID	0x8B
@@ -43,10 +47,18 @@
 struct bh1780_data {
 	struct i2c_client *client;
 	struct regulator *regulator;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend early_suspend;
+#endif
 	int power_state;
 	/* lock for sysfs operations */
 	struct mutex lock;
 };
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void bh1780_early_suspend(struct early_suspend *ddata);
+static void bh1780_late_resume(struct early_suspend *ddata);
+#endif
 
 static int bh1780_write(struct bh1780_data *ddata, u8 reg, u8 val, char *msg)
 {
@@ -192,6 +204,12 @@ static int __devinit bh1780_probe(struct i2c_client *client,
 		dev_err(&client->dev, "failed to read part ID\n");
 		goto put_regulator;
 	}
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	ddata->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	ddata->early_suspend.suspend = bh1780_early_suspend;
+	ddata->early_suspend.resume = bh1780_late_resume;
+	register_early_suspend(&ddata->early_suspend);
+#endif
 
 	regulator_disable(ddata->regulator);
 	ddata->power_state = BH1780_POFF;
@@ -226,57 +244,101 @@ static int __devexit bh1780_remove(struct i2c_client *client)
 	return 0;
 }
 
-#ifdef CONFIG_PM
-static int bh1780_suspend(struct device *dev)
+static int bh1780_do_suspend(struct bh1780_data *ddata)
 {
-	struct bh1780_data *ddata;
-	int state, ret;
-	struct i2c_client *client = to_i2c_client(dev);
+	int ret = 0;
 
-	ddata = i2c_get_clientdata(client);
-	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
-	if (state < 0)
-		return state;
+	mutex_lock(&ddata->lock);
 
-	ddata->power_state = state & BH1780_POWMASK;
+	if (ddata->power_state == BH1780_POFF)
+		goto unlock;
 
-	ret = bh1780_write(ddata, BH1780_REG_CONTROL, BH1780_POFF,
-				"CONTROL");
+	ret = bh1780_write(ddata, BH1780_REG_CONTROL, BH1780_POFF, "CONTROL");
 
 	if (ret < 0)
-		return ret;
+		goto unlock;
 
-	regulator_disable(ddata->regulator);
+	if (ddata->regulator)
+		regulator_disable(ddata->regulator);
+unlock:
+	mutex_unlock(&ddata->lock);
+	return ret;
+}
 
-	return 0;
+static int bh1780_do_resume(struct bh1780_data *ddata)
+{
+	int ret = 0;
+
+	mutex_lock(&ddata->lock);
+
+	if (ddata->power_state == BH1780_POFF)
+		goto unlock;
+
+	if (ddata->regulator)
+		regulator_enable(ddata->regulator);
+
+	ret = bh1780_write(ddata, BH1780_REG_CONTROL,
+					ddata->power_state, "CONTROL");
+
+unlock:
+	mutex_unlock(&ddata->lock);
+	return ret;
+}
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
+static int bh1780_suspend(struct device *dev)
+{
+	struct bh1780_data *ddata = dev_get_drvdata(dev);
+	int ret = 0;
+
+	ret = bh1780_do_suspend(ddata);
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"Error while suspending the device\n");
+
+	return ret;
 }
 
 static int bh1780_resume(struct device *dev)
 {
-	struct bh1780_data *ddata;
-	int state, ret;
-	struct i2c_client *client = to_i2c_client(dev);
+	struct bh1780_data *ddata = dev_get_drvdata(dev);
+	int ret = 0;
 
-	ddata = i2c_get_clientdata(client);
-	state = ddata->power_state;
-	ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
-				"CONTROL");
-
-	regulator_enable(ddata->regulator);
-
-	ret = bh1780_write(ddata, BH1780_REG_CONTROL, ddata->power_state,
-			"CONTROL");
+	ret = bh1780_do_resume(ddata);
 	if (ret < 0)
-		return ret;
+		dev_err(&ddata->client->dev,
+				"Error while resuming the device\n");
 
-	return 0;
+	return ret;
 }
 
 static SIMPLE_DEV_PM_OPS(bh1780_pm, bh1780_suspend, bh1780_resume);
 #define BH1780_PMOPS (&bh1780_pm)
 #else
 #define BH1780_PMOPS NULL
-#endif /* CONFIG_PM */
+static void bh1780_early_suspend(struct early_suspend *data)
+{
+	struct bh1780_data *ddata =
+		container_of(data, struct bh1780_data, early_suspend);
+	int ret;
+
+	ret = bh1780_do_suspend(ddata);
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"Error while suspending the device\n");
+}
+
+static void bh1780_late_resume(struct early_suspend *data)
+{
+	struct bh1780_data *ddata =
+		container_of(data, struct bh1780_data, early_suspend);
+	int ret;
+
+	ret = bh1780_do_resume(ddata);
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"Error while resuming the device\n");
+}
+#endif /*!CONFIG_HAS_EARLYSUSPEND && CONFIG_PM */
 
 static const struct i2c_device_id bh1780_id[] = {
 	{ "bh1780", 0 },
@@ -289,7 +351,9 @@ static struct i2c_driver bh1780_driver = {
 	.id_table	= bh1780_id,
 	.driver = {
 		.name = "bh1780",
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
 		.pm	= BH1780_PMOPS,
+#endif
 	},
 };
 
