@@ -20,6 +20,7 @@
 #include <mach/prcmu-regs.h>
 #include <mach/suspend.h>
 #include <mach/reboot_reasons.h>
+#include <linux/modem/modem_client.h>
 
 #define L2_HEADER_ISI		0x0
 #define L2_HEADER_RPC		0x1
@@ -72,14 +73,14 @@ static void shm_ac_sleep_req_work(struct work_struct *work)
 {
 	mutex_lock(&ac_state_mutex);
 	if (atomic_read(&ac_sleep_disable_count) == 0)
-		prcmu_ac_sleep_req();
+		modem_release(shm_dev->modem);
 	mutex_unlock(&ac_state_mutex);
 }
 
 static void shm_ac_wake_req_work(struct work_struct *work)
 {
 	mutex_lock(&ac_state_mutex);
-	prcmu_ac_wake_req();
+	modem_request(shm_dev->modem);
 	mutex_unlock(&ac_state_mutex);
 }
 
@@ -463,7 +464,7 @@ void shm_ca_wake_req_work(struct work_struct *work)
 		shm_fifo_init(shrm);
 
 	mutex_lock(&ac_state_mutex);
-	prcmu_ac_wake_req();
+	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
 	/* send ca_wake_ack_interrupt to CMU */
@@ -614,7 +615,7 @@ static void send_ac_msg_pend_notify_0_work(struct work_struct *work)
 
 	mutex_lock(&ac_state_mutex);
 	atomic_inc(&ac_sleep_disable_count);
-	prcmu_ac_wake_req();
+	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
 	if (!get_host_accessport_val())
@@ -641,7 +642,7 @@ static void send_ac_msg_pend_notify_1_work(struct work_struct *work)
 
 	mutex_lock(&ac_state_mutex);
 	atomic_inc(&ac_sleep_disable_count);
-	prcmu_ac_wake_req();
+	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
 	if (!get_host_accessport_val())
@@ -777,7 +778,6 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 		goto drop;
 	}
 #endif
-
 	return 0;
 
 #ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
@@ -812,12 +812,13 @@ void shrm_protocol_deinit(struct shrm_dev *shrm)
 	destroy_workqueue(shrm->shm_ac_wake_wq);
 	destroy_workqueue(shrm->shm_ca_wake_wq);
 	destroy_workqueue(shrm->shm_ac_sleep_wq);
+	modem_put(shrm->modem);
 }
 
 int get_ca_wake_req_state(void)
 {
 	return ((atomic_read(&ac_sleep_disable_count) > 0) ||
-			prcmu_is_ac_wake_requested());
+			modem_get_usage(shm_dev->modem));
 }
 
 irqreturn_t ca_wake_irq_handler(int irq, void *ctrlr)

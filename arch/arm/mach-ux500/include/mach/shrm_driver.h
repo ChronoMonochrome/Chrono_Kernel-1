@@ -20,6 +20,7 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/sysfs.h>
+#include <linux/modem/modem_client.h>
 
 #include <mach/shrm.h>
 
@@ -115,6 +116,7 @@ struct shrm_dev {
 
 	struct device *dev;
 	struct net_device *ndev;
+	struct modem *modem;
 	struct isa_driver_context *isa_context;
 	struct workqueue_struct *shm_common_ch_wr_wq;
 	struct workqueue_struct *shm_audio_ch_wr_wq;
