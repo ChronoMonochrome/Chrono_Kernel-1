@@ -1,0 +1,7 @@
+config MODEM
+        bool "Modem Access Framework"
+        default n
+        help
+          Add support for Modem Access Framework. It allows different
+	  platform specific drivers to register modem access mechanisms
+	  and allows transparent access to modem to the client drivers.
