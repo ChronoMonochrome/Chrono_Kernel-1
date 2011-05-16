@@ -26,6 +26,7 @@
 
 
 static int cw1200_cancel_scan(struct cw1200_common *priv);
+static int __cw1200_flush(struct cw1200_common *priv, bool drop);
 
 static inline void __cw1200_free_event_queue(struct list_head *list)
 {
@@ -251,18 +252,26 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 
 
 	if ((changed & IEEE80211_CONF_CHANGE_CHANNEL) &&
-		(priv->channel != conf->channel)) {
+			(priv->channel != conf->channel)) {
+		struct ieee80211_channel *ch = conf->channel;
 		struct wsm_switch_channel channel = {
-			.newChannelNumber = conf->channel->hw_value
+			.newChannelNumber = ch->hw_value,
 		};
 		cw1200_cancel_scan(priv);
 		sta_printk(KERN_DEBUG "[STA] Freq %d (wsm ch: %d).\n",
-			conf->channel->center_freq, conf->channel->hw_value);
+			ch->center_freq, ch->hw_value);
 		WARN_ON(wait_event_interruptible_timeout(
 			priv->channel_switch_done,
 			!priv->channel_switch_in_progress, 3 * HZ) <= 0);
-		WARN_ON(wsm_switch_channel(priv, &channel));
-		priv->channel = conf->channel;
+
+		ret = WARN_ON(__cw1200_flush(priv, false));
+		if (!ret) {
+			ret = WARN_ON(wsm_switch_channel(priv, &channel));
+			if (!ret)
+				priv->channel = ch;
+			else
+				wsm_unlock_tx(priv);
+		}
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_PS) {
@@ -567,6 +576,50 @@ int cw1200_set_rts_threshold(struct ieee80211_hw *hw, u32 value)
 	return ret;
 }
 
+static int __cw1200_flush(struct cw1200_common *priv, bool drop)
+{
+	int i, ret;
+
+	if (drop) {
+		for (i = 0; i < 4; ++i)
+			cw1200_queue_clear(&priv->tx_queue[i]);
+	}
+
+	for (;;) {
+		ret = wait_event_interruptible_timeout(
+				priv->tx_queue_stats.wait_link_id_empty,
+				cw1200_queue_stats_is_empty(
+					&priv->tx_queue_stats, -1),
+				10 * HZ);
+
+		if (unlikely(ret <= 0)) {
+			if (!ret)
+				ret = -ETIMEDOUT;
+			break;
+		}
+
+		wsm_lock_tx(priv);
+		if (unlikely(!cw1200_queue_stats_is_empty(
+				&priv->tx_queue_stats, -1))) {
+			/* Highly unlekely: WSM requeued frames. */
+			wsm_unlock_tx(priv);
+			continue;
+		}
+		break;
+	}
+	return ret;
+}
+
+void cw1200_flush(struct ieee80211_hw *hw, bool drop)
+{
+	struct cw1200_common *priv = hw->priv;
+
+	if (!WARN_ON(__cw1200_flush(priv, drop)))
+		wsm_unlock_tx(priv);
+
+	return;
+}
+
 /* ******************************************************************** */
 /* WSM callbacks							*/
 
@@ -628,6 +681,11 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	 * system performance. */
 	ieee80211_rx_irqsafe(priv->hw, skb);
 	*skb_p = NULL;
+}
+
+void cw1200_channel_switch_cb(struct cw1200_common *priv)
+{
+	wsm_unlock_tx(priv);
 }
 
 void cw1200_free_event_queue(struct cw1200_common *priv)

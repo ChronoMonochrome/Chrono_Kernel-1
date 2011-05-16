@@ -218,7 +218,11 @@ static const struct ieee80211_ops cw1200_ops = {
 	.conf_tx		= cw1200_conf_tx,
 	.get_stats		= cw1200_get_stats,
 	.ampdu_action		= cw1200_ampdu_action,
-	/* .get_tx_stats		= cw1200_get_tx_stats */
+	.flush			= cw1200_flush,
+	/* Intentionally not offloaded:					*/
+	/*.channel_switch	= cw1200_channel_switch,		*/
+	/*.remain_on_channel	= cw1200_remain_on_channel,		*/
+	/*.cancel_remain_on_channel = cw1200_cancel_remain_on_channel,	*/
 };
 
 struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
@@ -308,11 +312,18 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_WORK(&priv->multicast_start_work, cw1200_multicast_start_work);
 	INIT_WORK(&priv->multicast_stop_work, cw1200_multicast_stop_work);
 
+	if (unlikely(cw1200_queue_stats_init(&priv->tx_queue_stats,
+			CW1200_LINK_ID_AFTER_DTIM + 1))) {
+		ieee80211_free_hw(hw);
+		return NULL;
+	}
+
 	for (i = 0; i < 4; ++i) {
-		if (unlikely(cw1200_queue_init(&priv->tx_queue[i], i,
-				16, CW1200_LINK_ID_AFTER_DTIM + 1))) {
+		if (unlikely(cw1200_queue_init(&priv->tx_queue[i],
+				&priv->tx_queue_stats, i, 16))) {
 			for (; i > 0; i--)
 				cw1200_queue_deinit(&priv->tx_queue[i - 1]);
+			cw1200_queue_stats_deinit(&priv->tx_queue_stats);
 			ieee80211_free_hw(hw);
 			return NULL;
 		}
@@ -364,6 +375,7 @@ EXPORT_SYMBOL_GPL(cw1200_free_common);
 void cw1200_unregister_common(struct ieee80211_hw *dev)
 {
 	struct cw1200_common *priv = dev->priv;
+	int i;
 
 	priv->sbus_ops->irq_unsubscribe(priv->sbus_priv);
 	cw1200_unregister_bh(priv);
@@ -388,6 +400,10 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 		dev_kfree_skb(priv->skb_cache);
 		priv->skb_cache = NULL;
 	}
+
+	for (i = 0; i < 4; ++i)
+		cw1200_queue_deinit(&priv->tx_queue[i]);
+	cw1200_queue_stats_deinit(&priv->tx_queue_stats);
 }
 EXPORT_SYMBOL_GPL(cw1200_unregister_common);
 
@@ -421,7 +437,7 @@ int cw1200_probe(const struct sbus_ops *sbus_ops,
 	priv->wsm_cbc.rx = cw1200_rx_cb;
 	priv->wsm_cbc.suspend_resume = cw1200_suspend_resume;
 	/* priv->wsm_cbc.set_pm_complete = cw1200_set_pm_complete_cb; */
-	/* priv->wsm_cbc.channel_switch = cw1200_channel_switch_cb; */
+	priv->wsm_cbc.channel_switch = cw1200_channel_switch_cb;
 
 	err = cw1200_register_bh(priv);
 	if (err)

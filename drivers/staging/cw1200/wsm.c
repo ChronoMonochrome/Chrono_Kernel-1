@@ -1499,8 +1499,6 @@ void wsm_txed(struct cw1200_common *priv, u8 *data)
 		priv->wsm_cmd.ptr = NULL;
 		spin_unlock(&priv->wsm_cmd.lock);
 	}
-
-	/* TODO: data queues */
 }
 
 /* ******************************************************************** */

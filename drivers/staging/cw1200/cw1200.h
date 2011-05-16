@@ -52,6 +52,7 @@ enum cw1200_join_status {
 
 struct cw1200_common {
 	struct cw1200_queue		tx_queue[4];
+	struct cw1200_queue_stats	tx_queue_stats;
 
 	struct ieee80211_hw		*hw;
 	struct ieee80211_vif		*vif;
