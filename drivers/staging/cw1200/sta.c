@@ -326,11 +326,11 @@ void cw1200_configure_filter(struct ieee80211_hw *dev,
 			     unsigned int *total_flags,
 			     u64 multicast)
 {
-#if 0
 	struct cw1200_common *priv = dev->priv;
 	struct wsm_rx_filter filter = {
 		.promiscuous = (*total_flags & FIF_PROMISC_IN_BSS) ? 1 : 0,
-		.bssid = (*total_flags & FIF_OTHER_BSS) ? 1 : 0,
+		.bssid = (*total_flags & (FIF_OTHER_BSS | FIF_PROBE_REQ)) ?
+				1 : 0,
 		.fcs = (*total_flags & FIF_FCSFAIL) ? 1 : 0,
 	};
 	struct wsm_beacon_filter_control bf_control = {
@@ -339,18 +339,16 @@ void cw1200_configure_filter(struct ieee80211_hw *dev,
 			(FIF_BCN_PRBRESP_PROMISC | FIF_PROMISC_IN_BSS)) ?
 			1 : 0,
 	};
-#endif
 
 	*total_flags &= FIF_PROMISC_IN_BSS |
 			FIF_OTHER_BSS |
 			FIF_FCSFAIL |
-			FIF_BCN_PRBRESP_PROMISC;
+			FIF_BCN_PRBRESP_PROMISC |
+			FIF_PROBE_REQ;
 
-#if 0
-	/* FIXME: FW behaves strange if promiscuous mode is enabled. */
 	WARN_ON(wsm_set_rx_filter(priv, &filter));
 	WARN_ON(wsm_beacon_filter_control(priv, &bf_control));
-#endif
+	WARN_ON(wsm_set_bssid_filtering(priv, !filter.bssid));
 }
 
 int cw1200_conf_tx(struct ieee80211_hw *dev, u16 queue,
@@ -596,6 +594,8 @@ static int __cw1200_flush(struct cw1200_common *priv, bool drop)
 			if (!ret)
 				ret = -ETIMEDOUT;
 			break;
+		} else {
+			ret = 0;
 		}
 
 		wsm_lock_tx(priv);
