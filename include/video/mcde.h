@@ -277,6 +277,7 @@ struct mcde_rectangle {
 
 struct mcde_overlay_info {
 	u32 paddr;
+	u32 *vaddr;
 	u16 stride; /* buffer line len in bytes */
 	enum mcde_ovly_pix_fmt fmt;
 

@@ -316,10 +316,14 @@ static void get_ovly_info(struct fb_info *fbi, struct mcde_overlay *ovly,
 	memset(info, 0, sizeof(*info));
 	info->paddr = fbi->fix.smem_start +
 		fbi->fix.line_length * fbi->var.yoffset;
+	info->vaddr = (u32 *)(fbi->screen_base +
+		fbi->fix.line_length * fbi->var.yoffset);
 	/* TODO: move mem check to check_var/pan_display */
 	if (info->paddr + fbi->fix.line_length * fbi->var.yres >
-		fbi->fix.smem_start + fbi->fix.smem_len)
+		fbi->fix.smem_start + fbi->fix.smem_len) {
 		info->paddr = fbi->fix.smem_start;
+		info->vaddr = (u32 *)fbi->screen_base;
+	}
 	info->fmt = mfb->pix_fmt;
 	info->stride = fbi->fix.line_length;
 	if (ovly) {
