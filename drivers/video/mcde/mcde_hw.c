@@ -2106,7 +2106,8 @@ static int enable_mcde_hw(void)
 }
 
 /* DSI */
-int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
+static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
+			bool dcs, u8 cmd, u8 *data, int len)
 {
 	int i;
 	u32 wrdat[4] = { 0, 0, 0, 0 };
@@ -2116,9 +2117,8 @@ int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
 	u32 ok;
 	u32 error;
 
-	/* REVIEW: One command at a time */
-	/* REVIEW: Allow read/write on unreserved ports */
-	if (len > MCDE_MAX_DCS_WRITE || chnl->port.type != MCDE_PORTTYPE_DSI)
+	if (len > MCDE_MAX_DSI_DIRECT_CMD_WRITE ||
+			chnl->port.type != MCDE_PORTTYPE_DSI)
 		return -EINVAL;
 
 	mutex_lock(&mcde_hw_lock);
@@ -2145,24 +2145,45 @@ int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
 		}
 	}
 
-	wrdat[0] = cmd;
-	for (i = 1; i <= len; i++)
-		wrdat[i>>2] |= ((u32)data[i-1] << ((i & 3) * 8));
+	if (dcs) {
+		wrdat[0] = cmd;
+		for (i = 1; i <= len; i++)
+			wrdat[i>>2] |= ((u32)data[i-1] << ((i & 3) * 8));
+	} else {
+		/* no explicit cmd byte for generic_write, only params */
+		for (i = 0; i < len; i++)
+			wrdat[i>>2] |= ((u32)data[i] << ((i & 3) * 8));
+	}
 
 	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(WRITE) |
 		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(len > 1) |
 		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_ID(virt_id) |
 		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_SIZE(len+1) |
 		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LP_EN(true);
-	if (len == 0)
-		settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-			DCS_SHORT_WRITE_0);
-	else if (len == 1)
-		settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-			DCS_SHORT_WRITE_1);
-	else
-		settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-			DCS_LONG_WRITE);
+	if (dcs) {
+		if (len == 0)
+			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+				DCS_SHORT_WRITE_0);
+		else if (len == 1)
+			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+				DCS_SHORT_WRITE_1);
+		else
+			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+				DCS_LONG_WRITE);
+	} else {
+		if (len == 0)
+			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+				GENERIC_SHORT_WRITE_0);
+		else if (len == 1)
+			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+				GENERIC_SHORT_WRITE_1);
+		else if (len == 2)
+			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+				GENERIC_SHORT_WRITE_2);
+		else
+			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+				GENERIC_LONG_WRITE);
+	}
 
 	dsi_wreg(link, DSI_DIRECT_CMD_MAIN_SETTINGS, settings);
 	dsi_wreg(link, DSI_DIRECT_CMD_WRDAT0, wrdat[0]);
@@ -2188,6 +2209,16 @@ int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
 	mutex_unlock(&mcde_hw_lock);
 
 	return 0;
+}
+
+int mcde_dsi_generic_write(struct mcde_chnl_state *chnl, u8* para, int len)
+{
+	return mcde_dsi_direct_cmd_write(chnl, false, 0, para, len);
+}
+
+int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
+{
+	return mcde_dsi_direct_cmd_write(chnl, true, cmd, data, len);
 }
 
 int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int *len)

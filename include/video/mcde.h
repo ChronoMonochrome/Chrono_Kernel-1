@@ -409,8 +409,9 @@ void mcde_ovly_put(struct mcde_ovly_state *ovly);
 #define DCS_CMD_WRITE_START           0x2C
 
 #define MCDE_MAX_DCS_READ   4
-#define MCDE_MAX_DCS_WRITE 15
+#define MCDE_MAX_DSI_DIRECT_CMD_WRITE 15
 
+int mcde_dsi_generic_write(struct mcde_chnl_state *chnl, u8* para, int len);
 int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len);
 int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int *len);
 
