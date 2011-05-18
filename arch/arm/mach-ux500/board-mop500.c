@@ -91,7 +91,7 @@ static struct platform_device snowball_led_dev = {
 static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	.gpio_base		= MOP500_AB8500_PIN_GPIO(1),
 	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
-	/* config_reg is the initial configuration of ab8500 pins.
+	/* initial_pin_config is the initial configuration of ab8500 pins.
 	 * The pins can be configured as GPIO or alt functions based
 	 * on value present in GpioSel1 to GpioSel6 and AlternatFunction
 	 * register. This is the array of 7 configuration settings.
@@ -101,9 +101,10 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 *                    Pin GPIO2 (SysClkReq3)
 	 *                    Pin GPIO3 (SysClkReq4)
 	 *                    Pin GPIO4 (SysClkReq6) are configured as GPIO
+	 * GpioSel2 = 0x9E => Pins GPIO10 to GPIO13 are configured as GPIO
 	 * GpioSel3 = 0x80 => Pin GPIO24 (SysClkReq7) is configured as GPIO
 	 * GpioSel4 = 0x01 => Pin GPIO25 (SysClkReq8) is configured as GPIO
-	 * GpioSel5 = 0x7A => Pin GPIO36 (ApeSpiClk)
+	 * GpioSel5 = 0x78 => Pin GPIO36 (ApeSpiClk)
 			      Pin GPIO37 (ApeSpiCSn)
 			      Pin GPIO38 (ApeSpiDout)
 			      Pin GPIO39 (ApeSpiDin) are configured as GPIO
@@ -111,8 +112,18 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 * AlternaFunction = 0x00 => If Pins GPIO10 to 13 are not configured
 	 * as GPIO then this register selectes the alternate fucntions
 	 */
-	.config_reg		= {0x0F, 0x9E, 0x80, 0x01,
-					0x7A, 0x02, 0x00},
+	.initial_pin_config     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x02, 0x00},
+
+	/* initial_pin_direction allows for the initial GPIO direction to
+	 * be set.
+	 */
+	.initial_pin_direction  = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+
+	/*
+	 * initial_pin_pullups allows for the intial configuration of the
+	 * GPIO pullup/pulldown configuration.
+	 */
+	.initial_pin_pullups    = {0xE0, 0x01, 0x00, 0x00, 0x00, 0x00},
 };
 
 static struct gpio_keys_button snowball_key_array[] = {
