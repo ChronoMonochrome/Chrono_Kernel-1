@@ -559,7 +559,7 @@ out:
 /*
  * configures accdet1 input on/off
  */
-void config_accdetect1_hw(struct ab8500_ad *dd, int enable)
+static void config_accdetect1_hw(struct ab8500_ad *dd, int enable)
 {
 	int ret;
 
@@ -628,7 +628,7 @@ out:
 /*
  * reports jack status
  */
-void report_jack_status(struct ab8500_ad *dd)
+static void report_jack_status(struct ab8500_ad *dd)
 {
 	int value = 0;
 
@@ -1189,7 +1189,7 @@ static void init_work(struct work_struct *work)
 /*
  * performs platform device initialization
  */
-int ab8500_accessory_init(struct platform_device *pdev)
+static int ab8500_accessory_init(struct platform_device *pdev)
 {
 	struct ab8500_ad *dd;
 	struct ab8500_platform_data *plat;
@@ -1277,7 +1277,7 @@ fail_no_mem_for_devdata:
 /*
  * Performs platform device cleanup
  */
-void ab8500_accessory_cleanup(struct ab8500_ad *dd)
+static void ab8500_accessory_cleanup(struct ab8500_ad *dd)
 {
 	dev_dbg(&dd->pdev->dev, "Enter: %s\n", __func__);
 
