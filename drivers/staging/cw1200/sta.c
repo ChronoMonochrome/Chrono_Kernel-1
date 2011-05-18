@@ -100,6 +100,7 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	mutex_lock(&priv->conf_mutex);
 	cw1200_free_keys(priv);
 	priv->mode = NL80211_IFTYPE_UNSPECIFIED;
+	priv->listening = false;
 	mutex_unlock(&priv->conf_mutex);
 
 	cancel_delayed_work_sync(&priv->scan.probe_work);
@@ -110,8 +111,11 @@ void cw1200_stop(struct ieee80211_hw *dev)
 #if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 	cancel_delayed_work_sync(&priv->keep_alive_work);
 #endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
+
+	mutex_lock(&priv->conf_mutex);
 	switch (priv->join_status) {
 	case CW1200_JOIN_STATUS_STA:
+		wsm_lock_tx(priv);
 		queue_work(priv->workqueue, &priv->unjoin_work);
 		break;
 	case CW1200_JOIN_STATUS_AP:
@@ -121,11 +125,15 @@ void cw1200_stop(struct ieee80211_hw *dev)
 		priv->sta_asleep_mask = 0;
 		priv->suspend_multicast = false;
 		wsm_reset(priv, &reset);
-		wsm_unlock_tx(priv);
+		break;
+	case CW1200_JOIN_STATUS_MONITOR:
+		cw1200_update_listening(priv, false);
 		break;
 	default:
-		wsm_unlock_tx(priv);
+		break;
 	}
+	mutex_unlock(&priv->conf_mutex);
+
 	flush_workqueue(priv->workqueue);
 	mutex_lock(&priv->conf_mutex);
 
@@ -140,9 +148,7 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	priv->delayed_link_loss = 0;
 
 	priv->link_id_map = 0;
-	priv->join_status = CW1200_JOIN_STATUS_MONITOR;
-
-	/* TODO: Complete deinitialization */
+	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 
 	for (i = 0; i < 4; i++)
 		cw1200_queue_clear(&priv->tx_queue[i]);
@@ -215,6 +221,8 @@ void cw1200_remove_interface(struct ieee80211_hw *dev,
 	WARN_ON(wsm_reset(priv, &reset));
 	cw1200_free_keys(priv);
 	cw1200_setup_mac(priv);
+	priv->listening = false;
+	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 
 	mutex_unlock(&priv->conf_mutex);
 }
@@ -321,24 +329,36 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 	return ret;
 }
 
+void cw1200_update_filtering(struct cw1200_common *priv)
+{
+	int ret;
+
+	if (priv->join_status == CW1200_JOIN_STATUS_PASSIVE)
+		return;
+
+	ret = wsm_set_rx_filter(priv, &priv->rx_filter);
+	if (!ret)
+		ret = wsm_beacon_filter_control(priv, &priv->bf_control);
+	if (!ret)
+		ret = wsm_set_bssid_filtering(priv, !priv->rx_filter.bssid);
+	if (ret)
+		wiphy_err(priv->hw->wiphy,
+				"%s: Update filtering failed: %d.\n",
+				__func__, ret);
+	return;
+}
+
 void cw1200_configure_filter(struct ieee80211_hw *dev,
 			     unsigned int changed_flags,
 			     unsigned int *total_flags,
 			     u64 multicast)
 {
 	struct cw1200_common *priv = dev->priv;
-	struct wsm_rx_filter filter = {
-		.promiscuous = (*total_flags & FIF_PROMISC_IN_BSS) ? 1 : 0,
-		.bssid = (*total_flags & (FIF_OTHER_BSS | FIF_PROBE_REQ)) ?
-				1 : 0,
-		.fcs = (*total_flags & FIF_FCSFAIL) ? 1 : 0,
-	};
-	struct wsm_beacon_filter_control bf_control = {
-		.enabled = 0,
-		.bcn_count = (*total_flags &
-			(FIF_BCN_PRBRESP_PROMISC | FIF_PROMISC_IN_BSS)) ?
-			1 : 0,
-	};
+	bool listening = !!(*total_flags &
+			(FIF_PROMISC_IN_BSS |
+			 FIF_OTHER_BSS |
+			 FIF_BCN_PRBRESP_PROMISC |
+			 FIF_PROBE_REQ));
 
 	*total_flags &= FIF_PROMISC_IN_BSS |
 			FIF_OTHER_BSS |
@@ -346,9 +366,23 @@ void cw1200_configure_filter(struct ieee80211_hw *dev,
 			FIF_BCN_PRBRESP_PROMISC |
 			FIF_PROBE_REQ;
 
-	WARN_ON(wsm_set_rx_filter(priv, &filter));
-	WARN_ON(wsm_beacon_filter_control(priv, &bf_control));
-	WARN_ON(wsm_set_bssid_filtering(priv, !filter.bssid));
+	mutex_lock(&priv->conf_mutex);
+
+	priv->rx_filter.promiscuous = (*total_flags & FIF_PROMISC_IN_BSS)
+			? 1 : 0;
+	priv->rx_filter.bssid = (*total_flags & (FIF_OTHER_BSS |
+			FIF_PROBE_REQ)) ? 1 : 0;
+	priv->rx_filter.fcs = (*total_flags & FIF_FCSFAIL) ? 1 : 0;
+	priv->bf_control.bcn_count = (*total_flags &
+			(FIF_BCN_PRBRESP_PROMISC |
+			 FIF_PROMISC_IN_BSS |
+			 FIF_PROBE_REQ)) ? 1 : 0;
+	if (priv->listening ^ listening) {
+		priv->listening = listening;
+		cw1200_update_listening(priv, listening);
+	}
+	cw1200_update_filtering(priv);
+	mutex_unlock(&priv->conf_mutex);
 }
 
 int cw1200_conf_tx(struct ieee80211_hw *dev, u16 queue,
@@ -597,6 +631,7 @@ static int __cw1200_flush(struct cw1200_common *priv, bool drop)
 		} else {
 			ret = 0;
 		}
+		ret = 0;
 
 		wsm_lock_tx(priv);
 		if (unlikely(!cw1200_queue_stats_is_empty(
@@ -1011,6 +1046,7 @@ void cw1200_join_work(struct work_struct *work)
 		queue_delayed_work(priv->workqueue,
 			&priv->join_timeout, 3 * HZ);
 
+		cw1200_update_listening(priv, false);
 		if (wsm_join(priv, &join)) {
 			memset(&priv->join_bssid[0],
 				0, sizeof(priv->join_bssid));
@@ -1020,6 +1056,7 @@ void cw1200_join_work(struct work_struct *work)
 #if defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 			cancel_delayed_work_sync(&priv->keep_alive_work);
 #endif /* CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
+			cw1200_update_listening(priv, priv->listening);
 		} else {
 			WARN_ON(cw1200_upload_keys(priv));
 #if !defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
@@ -1028,6 +1065,7 @@ void cw1200_join_work(struct work_struct *work)
 			cw1200_queue_requeue(&priv->tx_queue[queueId],
 				__le32_to_cpu(wsm->packetID));
 		}
+		cw1200_update_filtering(priv);
 	}
 	mutex_unlock(&priv->conf_mutex);
 	cfg80211_put_bss(bss);
@@ -1056,7 +1094,7 @@ void cw1200_unjoin_work(struct work_struct *work)
 			priv->join_status != CW1200_JOIN_STATUS_STA);
 	if (priv->join_status == CW1200_JOIN_STATUS_STA) {
 		memset(&priv->join_bssid[0], 0, sizeof(priv->join_bssid));
-		priv->join_status = CW1200_JOIN_STATUS_MONITOR;
+		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 
 		/* Unjoin is a reset. */
 		wsm_flush_tx(priv);
@@ -1069,11 +1107,59 @@ void cw1200_unjoin_work(struct work_struct *work)
 #if defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 		cancel_delayed_work_sync(&priv->keep_alive_work);
 #endif /* CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
+		cw1200_update_listening(priv, priv->listening);
+		cw1200_update_filtering(priv);
 		sta_printk(KERN_DEBUG "[STA] Unjoin.\n");
 	}
 	mutex_unlock(&priv->conf_mutex);
 	wsm_unlock_tx(priv);
 }
+
+static inline int cw1200_enable_listening(struct cw1200_common *priv)
+{
+	struct wsm_start start = {
+		.mode = WSM_START_MODE_P2P_DEV,
+		.band = (priv->channel->band == IEEE80211_BAND_5GHZ) ?
+				WSM_PHY_BAND_5G : WSM_PHY_BAND_2_4G,
+		.channelNumber = priv->channel->hw_value,
+		.beaconInterval = 100,
+		.DTIMPeriod = 1,
+		.probeDelay = 0,
+		.basicRateSet = 0x0F,
+	};
+	return wsm_start(priv, &start);
+}
+
+static inline int cw1200_disable_listening(struct cw1200_common *priv)
+{
+	struct wsm_reset reset = {
+		.reset_statistics = true,
+	};
+	return wsm_reset(priv, &reset);
+}
+
+void cw1200_update_listening(struct cw1200_common *priv, bool enabled)
+{
+	if (enabled) {
+		switch (priv->join_status) {
+		case CW1200_JOIN_STATUS_PASSIVE:
+			if (!WARN_ON(cw1200_enable_listening(priv)))
+				priv->join_status = CW1200_JOIN_STATUS_MONITOR;
+			break;
+		default:
+			break;
+		}
+	} else {
+		switch (priv->join_status) {
+		case CW1200_JOIN_STATUS_MONITOR:
+			if (!WARN_ON(cw1200_disable_listening(priv)))
+				priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
+		default:
+			break;
+		}
+	}
+}
+
 
 /* ******************************************************************** */
 /* STA privates								*/

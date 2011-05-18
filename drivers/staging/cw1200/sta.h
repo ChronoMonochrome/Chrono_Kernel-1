@@ -70,5 +70,7 @@ void cw1200_join_work(struct work_struct *work);
 void cw1200_join_timeout(struct work_struct *work);
 void cw1200_unjoin_work(struct work_struct *work);
 void cw1200_wep_key_work(struct work_struct *work);
+void cw1200_update_listening(struct cw1200_common *priv, bool enabled);
+void cw1200_update_filtering(struct cw1200_common *priv);
 
 #endif

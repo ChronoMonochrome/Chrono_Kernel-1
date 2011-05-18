@@ -605,8 +605,10 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 		ret = WARN_ON(cw1200_upload_keys(priv));
 	if (!ret)
 		ret = WARN_ON(wsm_beacon_transmit(priv, &transmit));
-	if (!ret)
+	if (!ret) {
 		priv->join_status = CW1200_JOIN_STATUS_AP;
+		cw1200_update_filtering(priv);
+	}
 	return ret;
 }
 
@@ -620,6 +622,7 @@ static int cw1200_update_beaconing(struct cw1200_common *priv)
 	if (priv->mode == NL80211_IFTYPE_AP) {
 		ap_printk(KERN_DEBUG "[AP] %s.\n", __func__);
 		WARN_ON(wsm_reset(priv, &reset));
+		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 		WARN_ON(cw1200_start_ap(priv));
 	}
 	return 0;

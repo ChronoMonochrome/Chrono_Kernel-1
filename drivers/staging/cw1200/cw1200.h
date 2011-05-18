@@ -45,7 +45,8 @@
 #define CW1200_LINK_ID_AFTER_DTIM	(CW1200_MAX_STA_IN_AP_MODE + 1)
 
 enum cw1200_join_status {
-	CW1200_JOIN_STATUS_MONITOR = 0,
+	CW1200_JOIN_STATUS_PASSIVE = 0,
+	CW1200_JOIN_STATUS_MONITOR,
 	CW1200_JOIN_STATUS_STA,
 	CW1200_JOIN_STATUS_AP,
 };
@@ -101,6 +102,9 @@ struct cw1200_common {
 	bool				enable_beacon;
 	size_t				ssid_length;
 	u8				ssid[IEEE80211_MAX_SSID_LEN];
+	bool				listening;
+	struct wsm_rx_filter		rx_filter;
+	struct wsm_beacon_filter_control bf_control;
 
 	/* BH */
 	atomic_t			bh_rx;

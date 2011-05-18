@@ -305,7 +305,8 @@ struct cw1200_common;
 
 /* Start modes */
 #define WSM_START_MODE_AP		(0)	/* Mini AP */
-#define WSM_START_MODE_P2P		(1)	/* P2P */
+#define WSM_START_MODE_P2P_GO		(1)	/* P2P GO */
+#define WSM_START_MODE_P2P_DEV		(2)	/* P2P device */
 
 /* SetAssociationMode MIB flags */
 #define WSM_ASSOCIATION_MODE_USE_PREAMBLE_TYPE		(BIT(0))

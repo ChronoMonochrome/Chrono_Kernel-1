@@ -388,7 +388,7 @@ static int wsm_join_confirm(struct cw1200_common *priv,
 			    struct wsm_buf *buf)
 {
 	if (WARN_ON(WSM_GET32(buf) != WSM_STATUS_SUCCESS)) {
-		priv->join_status = CW1200_JOIN_STATUS_MONITOR;
+		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 		wsm_unlock_tx(priv);
 		return -EINVAL;
 	}
@@ -402,7 +402,7 @@ static int wsm_join_confirm(struct cw1200_common *priv,
 
 underflow:
 	WARN_ON(1);
-	priv->join_status = CW1200_JOIN_STATUS_MONITOR;
+	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 	wsm_unlock_tx(priv);
 	return -EINVAL;
 }
