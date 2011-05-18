@@ -47,8 +47,8 @@ static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
 	.axis_map_x = 1,
 	.axis_map_y = 0,
 	.axis_map_z = 2,
-	.negative_x = 1,
-	.negative_y = 1,
+	.negative_x = 0,
+	.negative_y = 0,
 	.negative_z = 1,
 };
 
