@@ -31,6 +31,7 @@
 #include <sound/tlv.h>
 #include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
+#include <linux/mfd/ab8500/sysctrl.h>
 #include "ab8500_audio.h"
 
 /* To convert register definition shifts to masks */
@@ -48,7 +49,6 @@
 
 /* Macrocell register definitions */
 #define AB8500_CTRL3_REG			0x0200
-#define AB8500_SYSULPCLK_CTRL1_REG		0x020B
 #define AB8500_GPIO_DIR4_REG			0x1013
 #define AB8500_GPIO_DIR5_REG			0x1014
 #define AB8500_GPIO_OUT5_REG			0x1024
@@ -1680,19 +1680,13 @@ static int ab8500_codec_set_bit_delay_if1(struct snd_soc_codec *codec, unsigned 
 /* Configures audio macrocell into the AB8500 Chip */
 static void ab8500_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
 {
-	int data;
+	int data, ret;
 
-	data = ab8500_codec_read_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG);
-	data &= ~CLK_32K_OUT2_DISABLE;
-	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
-	data |= INACTIVE_RESET_AUDIO;
-	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK, AB8500_CTRL3_REG, data);
-
-	data = ab8500_codec_read_reg(codec, AB8500_SYS_CTRL2_BLOCK,
-		AB8500_SYSULPCLK_CTRL1_REG);
-	data |= ENABLE_AUDIO_CLK_TO_AUDIO_BLK;
-	ab8500_codec_write_reg(codec, AB8500_SYS_CTRL2_BLOCK,
-		AB8500_SYSULPCLK_CTRL1_REG, data);
+	ret = ab8500_sysctrl_write(AB8500_STW4500CTRL3,
+		AB8500_STW4500CTRL3_CLK32KOUT2DIS | AB8500_STW4500CTRL3_RESETAUDN,
+		AB8500_STW4500CTRL3_RESETAUDN);
+	if (ret < 0)
+		pr_err("%s: WARN: Unable to set reg STW4500CTRL3!\n", __func__);
 
 	data = ab8500_codec_read_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG);
 	data |= GPIO27_DIR_OUTPUT | GPIO29_DIR_OUTPUT | GPIO31_DIR_OUTPUT;

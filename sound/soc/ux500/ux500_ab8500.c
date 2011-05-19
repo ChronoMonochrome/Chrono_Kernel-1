@@ -46,7 +46,9 @@
 static struct snd_soc_jack jack;
 
 static int master_clock_sel;
+/* audioclk -> intclk -> sysclk/ulpclk */
 static struct clk *clk_ptr_audioclk;
+static struct clk *clk_ptr_intclk;
 static struct clk *clk_ptr_sysclk;
 static struct clk *clk_ptr_ulpclk;
 static DEFINE_MUTEX(power_lock);
@@ -199,14 +201,13 @@ static int ux500_ab8500_power_control_inc(void)
 		ab8500_power_count);
 
 	if (ab8500_power_count == 1) {
-		ret = clk_set_parent(clk_ptr_audioclk,
+		ret = clk_set_parent(clk_ptr_intclk,
 				(master_clock_sel == 0) ? clk_ptr_sysclk : clk_ptr_ulpclk);
 		if (ret) {
 			pr_err("%s: ERROR: Setting master-clock to %s failed (ret = %d)!",
 				__func__,
 				(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK",
 				ret);
-			clk_put(clk_ptr_sysclk);
 			return ret;
 		}
 
@@ -433,8 +434,11 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	/* Add controls */
 	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&mclk_input_control, codec));
 
-	/* Setup master clocks */
-	ab8500_power_count = 0;
+	/* Get references to clock-nodes */
+	clk_ptr_sysclk = NULL;
+	clk_ptr_ulpclk = NULL;
+	clk_ptr_intclk = NULL;
+	clk_ptr_audioclk = NULL;
 	clk_ptr_sysclk = clk_get(codec->dev, "sysclk");
 	if (IS_ERR(clk_ptr_sysclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
@@ -445,14 +449,29 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
 		return -EFAULT;
 	}
+	clk_ptr_intclk = clk_get(codec->dev, "intclk");
+	if (IS_ERR(clk_ptr_audioclk)) {
+		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
+		return -EFAULT;
+	}
 	clk_ptr_audioclk = clk_get(codec->dev, "audioclk");
 	if (IS_ERR(clk_ptr_audioclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
-		clk_put(clk_ptr_sysclk);
+		return -EFAULT;
+	}
+
+	/* Set intclk default parent to ulpclk */
+	ret = clk_set_parent(clk_ptr_intclk, clk_ptr_ulpclk);
+	if (ret) {
+		pr_err("%s: ERROR: Setting intclk parent to ulpclk failed (ret = %d)!",
+			__func__,
+			ret);
 		return -EFAULT;
 	}
 
 	master_clock_sel = 1;
+
+	ab8500_power_count = 0;
 
 	return 0;
 }
@@ -478,6 +497,15 @@ void ux500_ab8500_soc_machine_drv_cleanup(void)
 	pr_info("%s: Enter.\n", __func__);
 
 	regulator_bulk_free(ARRAY_SIZE(ab8500_regus), ab8500_regus);
+
+	if (clk_ptr_sysclk != NULL)
+		clk_put(clk_ptr_sysclk);
+	if (clk_ptr_ulpclk != NULL)
+		clk_put(clk_ptr_ulpclk);
+	if (clk_ptr_intclk != NULL)
+		clk_put(clk_ptr_intclk);
+	if (clk_ptr_audioclk != NULL)
+		clk_put(clk_ptr_audioclk);
 }
 
 /* Extended interface */
