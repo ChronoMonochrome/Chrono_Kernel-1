@@ -106,9 +106,7 @@ int cw1200_queue_init(struct cw1200_queue *queue, u8 queue_id,
 
 int cw1200_queue_clear(struct cw1200_queue *queue)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	queue->generation++;
 	list_splice_tail_init(&queue->queue, &queue->pending);
 	while (!list_empty(&queue->pending)) {
@@ -125,7 +123,7 @@ int cw1200_queue_clear(struct cw1200_queue *queue)
 	queue->num_pending = 0;
 	queue->num_sent = 0;
 	memset(queue->link_map_cache, 0, sizeof(int[queue->map_capacity]));
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 	return 0;
 }
 
@@ -144,14 +142,13 @@ int cw1200_queue_deinit(struct cw1200_queue *queue)
 size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 				   u32 allowed_mask)
 {
-	unsigned long flags;
 	size_t ret;
 	int i, bit;
 
 	if (!allowed_mask)
 		return 0;
 
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	if (likely(allowed_mask == (u32) -1))
 		ret = queue->num_queued - queue->num_pending;
 	else {
@@ -161,7 +158,7 @@ size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 				ret += queue->link_map_cache[i];
 		}
 	}
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 	return ret;
 }
 
@@ -169,7 +166,6 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 			struct sk_buff *skb, u8 link_id)
 {
 	int ret;
-	unsigned long flags;
 	struct wsm_tx *wsm;
 
 	wsm = (struct wsm_tx *)skb_push(skb, sizeof(struct wsm_tx));
@@ -180,7 +176,7 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 	if (link_id >= queue->map_capacity)
 		return -EINVAL;
 
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	if (!WARN_ON(list_empty(&queue->free_pool))) {
 		struct cw1200_queue_item *item = list_first_entry(
 			&queue->free_pool, struct cw1200_queue_item, head);
@@ -204,7 +200,7 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 	} else {
 		ret = -ENOENT;
 	}
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 	return ret;
 }
 
@@ -214,10 +210,9 @@ int cw1200_queue_get(struct cw1200_queue *queue,
 		     struct ieee80211_tx_info **tx_info)
 {
 	int ret = -ENOENT;
-	unsigned long flags;
 	struct cw1200_queue_item *item;
 
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	list_for_each_entry(item, &queue->queue, head) {
 		if (allowed_mask & (1 << item->link_id)) {
 			ret = 0;
@@ -232,14 +227,13 @@ int cw1200_queue_get(struct cw1200_queue *queue,
 		++queue->num_pending;
 		--queue->link_map_cache[item->link_id];
 	}
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 	return ret;
 }
 
 int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packetID)
 {
 	int ret = 0;
-	unsigned long flags;
 	u8 queue_generation, queue_id, item_generation, item_id;
 	struct cw1200_queue_item *item;
 	cw1200_queue_parse_id(packetID, &queue_generation, &queue_id,
@@ -247,7 +241,7 @@ int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packetID)
 
 	item = &queue->pool[item_id];
 
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	BUG_ON(queue_id != queue->queue_id);
 	if (unlikely(queue_generation != queue->generation)) {
 		ret = -ENOENT;
@@ -267,15 +261,13 @@ int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packetID)
 		wsm->packetID = __cpu_to_le32(item->packetID);
 		list_move_tail(&item->head, &queue->queue);
 	}
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 	return ret;
 }
 
 int cw1200_queue_requeue_all(struct cw1200_queue *queue)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	while (!list_empty(&queue->pending)) {
 		struct cw1200_queue_item *item = list_first_entry(
 			&queue->pending, struct cw1200_queue_item, head);
@@ -290,7 +282,7 @@ int cw1200_queue_requeue_all(struct cw1200_queue *queue)
 		wsm->packetID = __cpu_to_le32(item->packetID);
 		list_move_tail(&item->head, &queue->queue);
 	}
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 
 	return 0;
 }
@@ -299,7 +291,6 @@ int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
 				u32 packetID)
 {
 	int ret = 0;
-	unsigned long flags;
 	u8 queue_generation, queue_id, item_generation, item_id;
 	struct cw1200_queue_item *item;
 	struct sk_buff *skb_to_free = NULL;
@@ -308,7 +299,7 @@ int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
 
 	item = &queue->pool[item_id];
 
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	BUG_ON(queue_id != queue->queue_id);
 	if (unlikely(queue_generation != queue->generation)) {
 		ret = -ENOENT;
@@ -336,7 +327,7 @@ int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
 			__cw1200_queue_unlock(queue, priv);
 		}
 	}
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 
 	if (skb_to_free)
 		dev_kfree_skb_any(item->skb);
@@ -348,7 +339,6 @@ int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
 				struct sk_buff **skb)
 {
 	int ret = 0;
-	unsigned long flags;
 	u8 queue_generation, queue_id, item_generation, item_id;
 	struct cw1200_queue_item *item;
 	cw1200_queue_parse_id(packetID, &queue_generation, &queue_id,
@@ -356,7 +346,7 @@ int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
 
 	item = &queue->pool[item_id];
 
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	BUG_ON(queue_id != queue->queue_id);
 	if (unlikely(queue_generation != queue->generation)) {
 		ret = -ENOENT;
@@ -370,38 +360,34 @@ int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
 		*skb = item->skb;
 		item->skb = NULL;
 	}
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 	return ret;
 }
 
 void cw1200_queue_lock(struct cw1200_queue *queue, struct cw1200_common *cw1200)
 {
-	unsigned long flags;
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	__cw1200_queue_lock(queue, cw1200);
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 }
 
 void cw1200_queue_unlock(struct cw1200_queue *queue,
 				struct cw1200_common *cw1200)
 {
-	unsigned long flags;
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	__cw1200_queue_unlock(queue, cw1200);
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 }
 
 /*
 int cw1200_queue_get_stats(struct cw1200_queue *queue,
 				struct ieee80211_tx_queue_stats *stats)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&queue->lock, flags);
+	spin_lock_bh(&queue->lock);
 	stats->len = queue->num_queued;
 	stats->limit = queue->capacity;
 	stats->count = queue->num_sent;
-	spin_unlock_irqrestore(&queue->lock, flags);
+	spin_unlock_bh(&queue->lock);
 
 	return 0;
 }

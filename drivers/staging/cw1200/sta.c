@@ -80,7 +80,6 @@ out:
 void cw1200_stop(struct ieee80211_hw *dev)
 {
 	struct cw1200_common *priv = dev->priv;
-	unsigned long flags;
 	LIST_HEAD(list);
 	int i;
 
@@ -132,9 +131,9 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	priv->softled_state = 0;
 	/* cw1200_set_leds(priv); */
 
-	spin_lock_irqsave(&priv->event_queue_lock, flags);
+	spin_lock(&priv->event_queue_lock);
 	list_splice_init(&priv->event_queue, &list);
-	spin_unlock_irqrestore(&priv->event_queue_lock, flags);
+	spin_unlock(&priv->event_queue_lock);
 	__cw1200_free_event_queue(&list);
 
 	priv->delayed_link_loss = 0;
@@ -294,18 +293,17 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_RETRY_LIMITS) {
-		unsigned long flags;
 		sta_printk(KERN_DEBUG "[STA] Retry limits: %d (long), " \
 			"%d (short).\n",
 			conf->long_frame_max_tx_count,
 			conf->short_frame_max_tx_count);
-		spin_lock_irqsave(&priv->tx_policy_cache.lock, flags);
+		spin_lock_bh(&priv->tx_policy_cache.lock);
 		priv->long_frame_max_tx_count = conf->long_frame_max_tx_count;
 		priv->short_frame_max_tx_count =
 			(conf->short_frame_max_tx_count < 0x0F) ?
 			conf->short_frame_max_tx_count : 0x0F;
 		priv->hw->max_rate_tries = priv->short_frame_max_tx_count;
-		spin_unlock_irqrestore(&priv->tx_policy_cache.lock, flags);
+		spin_unlock_bh(&priv->tx_policy_cache.lock);
 		/* TBD: I think we don't need tx_policy_force_upload().
 		 * Outdated policies will leave cache in a normal way. */
 		/* WARN_ON(tx_policy_force_upload(priv)); */
@@ -634,27 +632,25 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 
 void cw1200_free_event_queue(struct cw1200_common *priv)
 {
-	unsigned long flags;
 	LIST_HEAD(list);
 
-	spin_lock_irqsave(&priv->event_queue_lock, flags);
+	spin_lock(&priv->event_queue_lock);
 	list_splice_init(&priv->event_queue, &list);
-	spin_unlock_irqrestore(&priv->event_queue_lock, flags);
+	spin_unlock(&priv->event_queue_lock);
 
 	__cw1200_free_event_queue(&list);
 }
 
 void cw1200_event_handler(struct work_struct *work)
 {
-	unsigned long flags;
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, event_handler);
 	struct cw1200_wsm_event *event;
 	LIST_HEAD(list);
 
-	spin_lock_irqsave(&priv->event_queue_lock, flags);
+	spin_lock(&priv->event_queue_lock);
 	list_splice_init(&priv->event_queue, &list);
-	spin_unlock_irqrestore(&priv->event_queue_lock, flags);
+	spin_unlock(&priv->event_queue_lock);
 
 	list_for_each_entry(event, &list, link) {
 		switch (event->evt.eventId) {

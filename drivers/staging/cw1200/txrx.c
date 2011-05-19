@@ -205,11 +205,10 @@ static int tx_policy_get(struct cw1200_common *priv,
 	int idx;
 	struct tx_policy_cache *cache = &priv->tx_policy_cache;
 	struct tx_policy wanted;
-	unsigned long flags;
 
 	tx_policy_build(priv, &wanted, rates, count);
 
-	spin_lock_irqsave(&cache->lock, flags);
+	spin_lock_bh(&cache->lock);
 	BUG_ON(list_empty(&cache->free));
 	idx = tx_policy_find(cache, &wanted);
 	if (idx >= 0) {
@@ -234,7 +233,7 @@ static int tx_policy_get(struct cw1200_common *priv,
 		/* Lock TX queues. */
 		cw1200_tx_queues_lock(priv);
 	}
-	spin_unlock_irqrestore(&cache->lock, flags);
+	spin_unlock_bh(&cache->lock);
 	return idx;
 }
 
@@ -242,27 +241,25 @@ void tx_policy_put(struct cw1200_common *priv, int idx)
 {
 	int usage, locked;
 	struct tx_policy_cache *cache = &priv->tx_policy_cache;
-	unsigned long flags;
 
-	spin_lock_irqsave(&cache->lock, flags);
+	spin_lock_bh(&cache->lock);
 	locked = list_empty(&cache->free);
 	usage = tx_policy_release(cache, &cache->cache[idx]);
 	if (unlikely(locked) && !usage) {
 		/* Unlock TX queues. */
 		cw1200_tx_queues_unlock(priv);
 	}
-	spin_unlock_irqrestore(&cache->lock, flags);
+	spin_unlock_bh(&cache->lock);
 }
 
 /*
 bool tx_policy_cache_full(struct cw1200_common *priv)
 {
 	bool ret;
-	unsigned long flags;
 	struct tx_policy_cache *cache = &priv->tx_policy_cache;
-	spin_lock_irqsave(&cache->lock, flags);
+	spin_lock_bh(&cache->lock);
 	ret = list_empty(&cache->free);
-	spin_unlock_irqrestore(&cache->lock, flags);
+	spin_unlock_bh(&cache->lock);
 	return ret;
 }
 */
@@ -270,14 +267,13 @@ bool tx_policy_cache_full(struct cw1200_common *priv)
 static int tx_policy_upload(struct cw1200_common *priv)
 {
 	struct tx_policy_cache *cache = &priv->tx_policy_cache;
-	unsigned long flags;
 	int i;
 	struct wsm_set_tx_rate_retry_policy arg = {
 		.hdr = {
 			.numTxRatePolicies = 0,
 		}
 	};
-	spin_lock_irqsave(&cache->lock, flags);
+	spin_lock_bh(&cache->lock);
 
 	/* Upload only modified entries. */
 	for (i = 0; i < TX_POLICY_CACHE_SIZE; ++i) {
@@ -302,7 +298,7 @@ static int tx_policy_upload(struct cw1200_common *priv)
 			++arg.hdr.numTxRatePolicies;
 		}
 	}
-	spin_unlock_irqrestore(&cache->lock, flags);
+	spin_unlock_bh(&cache->lock);
 	tx_policy_printk(KERN_DEBUG "[TX policy] Upload %d policies\n",
 				arg.hdr.numTxRatePolicies);
 	return wsm_set_tx_rate_retry_policy(priv, &arg);

@@ -834,7 +834,6 @@ underflow:
 static int wsm_event_indication(struct cw1200_common *priv, struct wsm_buf *buf)
 {
 	int first;
-	unsigned long flags;
 	struct cw1200_wsm_event *event;
 
 	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
@@ -850,10 +849,10 @@ static int wsm_event_indication(struct cw1200_common *priv, struct wsm_buf *buf)
 	wsm_printk(KERN_DEBUG "[WSM] Event: %d(%d)\n",
 		event->evt.eventId, event->evt.eventData);
 
-	spin_lock_irqsave(&priv->event_queue_lock, flags);
+	spin_lock(&priv->event_queue_lock);
 	first = list_empty(&priv->event_queue);
 	list_add_tail(&event->link, &priv->event_queue);
-	spin_unlock_irqrestore(&priv->event_queue_lock, flags);
+	spin_unlock(&priv->event_queue_lock);
 
 	if (first)
 		queue_work(priv->workqueue, &priv->event_handler);
@@ -941,7 +940,6 @@ int wsm_cmd_send(struct cw1200_common *priv,
 		 struct wsm_buf *buf,
 		 void *arg, u16 cmd, long tmo)
 {
-	unsigned long flags;
 	size_t buf_len = buf->data - buf->begin;
 	int ret;
 
@@ -957,14 +955,14 @@ int wsm_cmd_send(struct cw1200_common *priv,
 	((__le16 *)buf->begin)[0] = __cpu_to_le16(buf_len);
 	((__le16 *)buf->begin)[1] = __cpu_to_le16(cmd);
 
-	spin_lock_irqsave(&priv->wsm_cmd.lock, flags);
+	spin_lock(&priv->wsm_cmd.lock);
 	BUG_ON(priv->wsm_cmd.ptr);
 	priv->wsm_cmd.done = 0;
 	priv->wsm_cmd.ptr = buf->begin;
 	priv->wsm_cmd.len = buf_len;
 	priv->wsm_cmd.arg = arg;
 	priv->wsm_cmd.cmd = cmd;
-	spin_unlock_irqrestore(&priv->wsm_cmd.lock, flags);
+	spin_unlock(&priv->wsm_cmd.lock);
 
 	cw1200_bh_wakeup(priv);
 
@@ -991,11 +989,11 @@ int wsm_cmd_send(struct cw1200_common *priv,
 	if (unlikely(ret == 0)) {
 		u16 raceCheck;
 
-		spin_lock_irqsave(&priv->wsm_cmd.lock, flags);
+		spin_lock(&priv->wsm_cmd.lock);
 		raceCheck = priv->wsm_cmd.cmd;
 		priv->wsm_cmd.arg = NULL;
 		priv->wsm_cmd.ptr = NULL;
-		spin_unlock_irqrestore(&priv->wsm_cmd.lock, flags);
+		spin_unlock(&priv->wsm_cmd.lock);
 
 		/* Race condition check to make sure _confirm is not called
 		 * after exit of _send */
@@ -1009,10 +1007,10 @@ int wsm_cmd_send(struct cw1200_common *priv,
 		}
 		ret = -ETIMEDOUT;
 	} else {
-		spin_lock_irqsave(&priv->wsm_cmd.lock, flags);
+		spin_lock(&priv->wsm_cmd.lock);
 		BUG_ON(!priv->wsm_cmd.done);
 		ret = priv->wsm_cmd.ret;
-		spin_unlock_irqrestore(&priv->wsm_cmd.lock, flags);
+		spin_unlock(&priv->wsm_cmd.lock);
 	}
 	wsm_buf_reset(buf);
 	return ret;
@@ -1070,7 +1068,6 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 		  struct wsm_hdr *wsm, struct sk_buff **skb_p)
 {
 	int ret = 0;
-	unsigned long flags;
 	struct wsm_buf wsm_buf;
 	int link_id = (id >> 6) & 0x0F;
 
@@ -1093,11 +1090,11 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 
 		/* Do not trust FW too much. Protection against repeated
 		 * response and race condition removal (see above). */
-		spin_lock_irqsave(&priv->wsm_cmd.lock, flags);
+		spin_lock(&priv->wsm_cmd.lock);
 		wsm_arg = priv->wsm_cmd.arg;
 		wsm_cmd = priv->wsm_cmd.cmd & ~(0x0F << 6);
 		priv->wsm_cmd.cmd = 0xFFFF;
-		spin_unlock_irqrestore(&priv->wsm_cmd.lock, flags);
+		spin_unlock(&priv->wsm_cmd.lock);
 
 		if (WARN_ON((id & ~0x0400) != wsm_cmd)) {
 			/* Note that any non-zero is a fatal retcode. */
@@ -1154,10 +1151,10 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 			BUG_ON(1);
 		}
 
-		spin_lock_irqsave(&priv->wsm_cmd.lock, flags);
+		spin_lock(&priv->wsm_cmd.lock);
 		priv->wsm_cmd.ret = ret;
 		priv->wsm_cmd.done = 1;
-		spin_unlock_irqrestore(&priv->wsm_cmd.lock, flags);
+		spin_unlock(&priv->wsm_cmd.lock);
 		ret = 0; /* Error response from device should ne stop BH. */
 
 		wake_up_interruptible(&priv->wsm_cmd_wq);
@@ -1418,7 +1415,6 @@ found:
 int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 	       size_t *tx_len)
 {
-	unsigned long flags;
 	struct wsm_tx *wsm = NULL;
 	struct ieee80211_tx_info *tx_info;
 	struct cw1200_queue *queue;
@@ -1437,11 +1433,11 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 	if (priv->wsm_cmd.ptr) {
 		++count;
-		spin_lock_irqsave(&priv->wsm_cmd.lock, flags);
+		spin_lock(&priv->wsm_cmd.lock);
 		BUG_ON(!priv->wsm_cmd.ptr);
 		*data = priv->wsm_cmd.ptr;
 		*tx_len = priv->wsm_cmd.len;
-		spin_unlock_irqrestore(&priv->wsm_cmd.lock, flags);
+		spin_unlock(&priv->wsm_cmd.lock);
 	} else {
 		for (;;) {
 			if (atomic_add_return(0, &priv->tx_lock))
@@ -1498,11 +1494,10 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 void wsm_txed(struct cw1200_common *priv, u8 *data)
 {
-	unsigned long flags;
 	if (data == priv->wsm_cmd.ptr) {
-		spin_lock_irqsave(&priv->wsm_cmd.lock, flags);
+		spin_lock(&priv->wsm_cmd.lock);
 		priv->wsm_cmd.ptr = NULL;
-		spin_unlock_irqrestore(&priv->wsm_cmd.lock, flags);
+		spin_unlock(&priv->wsm_cmd.lock);
 	}
 
 	/* TODO: data queues */
