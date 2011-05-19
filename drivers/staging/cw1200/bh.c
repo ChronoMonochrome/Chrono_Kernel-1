@@ -156,7 +156,7 @@ static void cw1200_put_skb(struct cw1200_common *priv, struct sk_buff *skb)
 		priv->skb_cache = skb;
 }
 
-static inline int cw1200_bh_read_ctrl_reg(struct cw1200_common *priv,
+static int cw1200_bh_read_ctrl_reg(struct cw1200_common *priv,
 					  u16 *ctrl_reg)
 {
 	int ret;
