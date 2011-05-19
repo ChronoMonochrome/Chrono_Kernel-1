@@ -24,7 +24,7 @@
 #include <linux/modem/shrm/shrm.h>
 #include <linux/cdev.h>
 
-#define ISA_DEVICES 6
+#define ISA_DEVICES 7
 
 #define BOOT_INIT  (0)
 #define BOOT_INFO_SYNC  (1)

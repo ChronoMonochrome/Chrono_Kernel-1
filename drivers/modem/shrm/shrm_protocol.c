@@ -29,6 +29,7 @@
 #define L2_HEADER_COMMON_ADVANCED_LOOPBACK	0xC1
 #define L2_HEADER_AUDIO_SIMPLE_LOOPBACK		0x80
 #define L2_HEADER_AUDIO_ADVANCED_LOOPBACK	0x81
+#define L2_HEADER_CIQ		0xC3
 #define MAX_PAYLOAD 1024
 
 static u8 boot_state = BOOT_INIT;
@@ -993,7 +994,8 @@ int shm_write_msg(struct shrm_dev *shrm, u8 l2_header,
 			(l2_header == L2_HEADER_RPC) ||
 			(l2_header == L2_HEADER_SECURITY) ||
 			(l2_header == L2_HEADER_COMMON_SIMPLE_LOOPBACK) ||
-			(l2_header == L2_HEADER_COMMON_ADVANCED_LOOPBACK)) {
+			(l2_header == L2_HEADER_COMMON_ADVANCED_LOOPBACK) ||
+			(l2_header == L2_HEADER_CIQ)) {
 		channel = 0;
 		if (shrm_common_tx_state == SHRM_SLEEP_STATE)
 			shrm_common_tx_state = SHRM_PTR_FREE;
