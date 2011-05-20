@@ -320,7 +320,14 @@ static int cw1200_sdio_reset(struct sbus_priv *self)
 
 static size_t cw1200_align_size(struct sbus_priv *self, size_t size)
 {
-	return sdio_align_size(self->func, size);
+	size_t aligned = sdio_align_size(self->func, size);
+	/* HACK!!! Problems with DMA size on u8500 platform  */
+	if ((aligned & 0x1F) && (aligned & ~0x1F)) {
+		aligned &= ~0x1F;
+		aligned += 0x20;
+	}
+
+	return aligned;
 }
 
 static struct sbus_ops cw1200_sdio_sbus_ops = {
