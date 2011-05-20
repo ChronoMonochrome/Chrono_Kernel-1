@@ -1085,6 +1085,26 @@ static const char *enum_hsfadspeed[] = {"2ms", "0.5ms", "10.6ms", "5ms"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_hsfadspeed,
 	REG_DIGMICCONF, REG_DIGMICCONF_HSFADSPEED, enum_hsfadspeed);
 
+static const char *enum_envdetthre[] = {
+	"250mV", "300mV", "350mV", "400mV",
+	"450mV", "500mV", "550mV", "600mV",
+	"650mV", "700mV", "750mV", "800mV",
+	"850mV", "900mV", "950mV", "1.00V" };
+static SOC_ENUM_SINGLE_DECL(soc_enum_envdetcpen,
+	REG_SIGENVCONF, REG_SIGENVCONF_ENVDETCPEN, enum_dis_ena);
+static SOC_ENUM_SINGLE_DECL(soc_enum_envdeththre,
+	REG_ENVCPCONF, REG_ENVCPCONF_ENVDETHTHRE, enum_envdetthre);
+static SOC_ENUM_SINGLE_DECL(soc_enum_envdetlthre,
+	REG_ENVCPCONF, REG_ENVCPCONF_ENVDETLTHRE, enum_envdetthre);
+
+static const char* enum_envdettime[] = {
+	"26.6us", "53.2us", "106us",  "213us",
+	"426us",  "851us",  "1.70ms", "3.40ms",
+	"6.81ms", "13.6ms", "27.2ms", "54.5ms",
+	"109ms",  "218ms",  "436ms",  "872ms" };
+static SOC_ENUM_SINGLE_DECL(soc_enum_envdettime,
+	REG_SIGENVCONF, REG_SIGENVCONF_ENVDETTIME, enum_envdettime);
+
 static const char *enum_ensemicx[] = {"Differential", "Single Ended"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_ensemic1,
 	REG_ANAGAIN1, REG_ANAGAINX_ENSEMICX, enum_ensemicx);
@@ -1341,6 +1361,14 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 	SOC_ENUM("Earpiece Common Mode Playback Switch", soc_enum_earselcm),
 
 	SOC_ENUM("Headset Fade Speed Playback Switch", soc_enum_hsfadspeed),
+
+	SOC_ENUM("Charge Pump High Threshold For Low Voltage",
+		soc_enum_envdeththre),
+	SOC_ENUM("Charge Pump Low Threshold For Low Voltage",
+		soc_enum_envdetlthre),
+	SOC_ENUM("Charge Pump Envelope Detection", soc_enum_envdetcpen),
+	SOC_ENUM("Charge Pump Envelope Detection Decay Time",
+		soc_enum_envdettime),
 
 	SOC_ENUM("Mic 1 Type Capture Switch", soc_enum_ensemic1),
 	SOC_ENUM("Mic 2 Type Capture Switch", soc_enum_ensemic2),
