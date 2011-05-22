@@ -9,6 +9,8 @@
 #include <linux/platform_device.h>
 #include <asm/mach-types.h>
 #include <mach/irqs-board-mop500.h>
+#include <plat/pincfg.h>
+#include "pins.h"
 #include "../drivers/staging/cw1200/cw1200_plat.h"
 
 static void cw1200_release(struct device *dev);
@@ -66,8 +68,36 @@ const struct cw1200_platform_data *cw1200_get_platform_data(void)
 }
 EXPORT_SYMBOL_GPL(cw1200_get_platform_data);
 
+static int cw1200_pins_enable(bool enable)
+{
+	struct ux500_pins *pins;
+	int ret = 0;
+
+	pins = ux500_pins_get("sdi1");
+	if (!pins) {
+		printk(KERN_ERR "cw1200: Pins are not found. "
+				"Check platform data.\n");
+		return -ENOENT;
+	}
+
+	if (enable)
+		ret = ux500_pins_enable(pins);
+	else
+		ret = ux500_pins_disable(pins);
+
+	if (ret)
+		printk(KERN_ERR "cw1200: Pins can not be %s: %d.\n",
+				enable ? "enabled" : "disabled",
+				ret);
+
+	ux500_pins_put(pins);
+
+	return ret;
+}
+
 int __init mop500_wlan_init(void)
 {
+	int ret;
 	if (machine_is_snowball() ||
 			machine_is_u8500() ||
 			machine_is_u5500() ||
@@ -99,10 +129,18 @@ int __init mop500_wlan_init(void)
 
 	cw1200_device.dev.release = cw1200_release;
 
-	return platform_device_register(&cw1200_device);
+	ret = cw1200_pins_enable(true);
+	if (WARN_ON(ret))
+		return ret;
+
+	ret = platform_device_register(&cw1200_device);
+	if (ret)
+		cw1200_pins_enable(false);
+
+	return ret;
 }
 
 static void cw1200_release(struct device *dev)
 {
-	/* Do nothing: release is handled by SDIO stack */
+	cw1200_pins_enable(false);
 }
