@@ -55,6 +55,9 @@
 #include <mach/devices.h>
 #include <mach/irqs.h>
 #include <mach/ste-dma40-db8500.h>
+#ifdef CONFIG_U8500_SIM_DETECT
+#include <mach/sim_detect.h>
+#endif
 
 #include "pins-db8500.h"
 #include "devices-db8500.h"
@@ -583,8 +586,24 @@ static struct platform_device ux500_backlight_device[] = {
 };
 #endif
 
+#ifdef CONFIG_U8500_SIM_DETECT
+static struct sim_detect_platform_data sim_detect_pdata = {
+	.irq_num		= NOMADIK_GPIO_TO_IRQ(MOP500_AB8500_GPIO(12)),
+};
+struct platform_device u8500_sim_detect_device = {
+	.name	= "sim_detect",
+	.id	= 0,
+	.dev	= {
+			.platform_data          = &sim_detect_pdata,
+	},
+};
+#endif
+
 /* add any platform devices here - TODO */
 static struct platform_device *mop500_platform_devs[] __initdata = {
+#ifdef CONFIG_U8500_SIM_DETECT
+	&u8500_sim_detect_device,
+#endif
 	&u8500_shrm_device,
 #ifdef CONFIG_U8500_MMIO
 	&ux500_mmio_device,
