@@ -99,19 +99,19 @@ static struct ab5500_hvleds_platform_data ab5500_hvleds_data = {
 	.hw_blink = false,
 	.leds = {
 		[0] = {
-			.name = "ab5500-hvled:channel-0:",
+			.name = "red",
 			.led_id = 0,
 			.status = AB5500_LED_ON,
 			.max_current = 10, /* wrong value may damage h/w */
 		},
 		[1] = {
-			.name = "ab5500-hvled:channel-1:",
+			.name = "green",
 			.led_id = 1,
 			.status = AB5500_LED_ON,
 			.max_current = 10, /* wrong value may damage h/w */
 		},
 		[2] {
-			.name = "ab5500-hvled:channel-2:",
+			.name = "blue",
 			.led_id = 2,
 			.status = AB5500_LED_ON,
 			.max_current = 10, /* wrong value may damage h/w */
