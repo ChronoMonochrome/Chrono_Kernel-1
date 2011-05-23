@@ -8,12 +8,8 @@
  * License terms: GNU General Public License (GPL) version 2
  */
 
-#include <linux/delay.h>
-#include <linux/device.h>
 #include <linux/errno.h>
-#include <linux/io.h>
 #include <linux/kernel.h>
-#include <linux/spinlock.h>
 #include <linux/types.h>
 
 #include "cryp_p.h"
@@ -94,23 +90,25 @@ void cryp_flush_inoutfifo(struct cryp_device_data *device_data)
 /**
  * cryp_set_configuration - This routine set the cr CRYP IP
  * @device_data: Pointer to the device data struct for base address.
- * @p_cryp_config: Pointer to the configuration parameter
+ * @cryp_config: Pointer to the configuration parameter
+ * @control_register: The control register to be written later on.
  */
 int cryp_set_configuration(struct cryp_device_data *device_data,
-			   struct cryp_config *p_cryp_config)
+			   struct cryp_config *cryp_config,
+			   u32 *control_register)
 {
-	if (NULL == device_data || NULL == p_cryp_config)
+	u32 cr_for_kse;
+
+	if (NULL == device_data || NULL == cryp_config)
 		return -EINVAL;
 
-	CRYP_PUT_BITS(&device_data->base->cr,
-		      p_cryp_config->keysize,
-		      CRYP_CR_KEYSIZE_POS,
-		      CRYP_CR_KEYSIZE_MASK);
+	*control_register |= (cryp_config->keysize << CRYP_CR_KEYSIZE_POS);
 
 	/* Prepare key for decryption in AES_ECB and AES_CBC mode. */
-	if ((CRYP_ALGORITHM_DECRYPT == p_cryp_config->algodir) &&
-	    ((CRYP_ALGO_AES_ECB == p_cryp_config->algomode) ||
-	     (CRYP_ALGO_AES_CBC == p_cryp_config->algomode))) {
+	if ((CRYP_ALGORITHM_DECRYPT == cryp_config->algodir) &&
+	    ((CRYP_ALGO_AES_ECB == cryp_config->algomode) ||
+	     (CRYP_ALGO_AES_CBC == cryp_config->algomode))) {
+		cr_for_kse = *control_register;
 		/*
 		 * This seems a bit odd, but it is indeed needed to set this to
 		 * encrypt even though it is a decryption that we are doing. It
@@ -118,49 +116,27 @@ int cryp_set_configuration(struct cryp_device_data *device_data,
 		 * After the keyprepartion for decrypting is done you should set
 		 * algodir back to decryption, which is done outside this if
 		 * statement.
-		 */
-		CRYP_PUT_BITS(&device_data->base->cr,
-			      CRYP_ALGORITHM_ENCRYPT,
-			      CRYP_CR_ALGODIR_POS,
-			      CRYP_CR_ALGODIR_MASK);
-
-		/*
+		 *
 		 * According to design specification we should set mode ECB
 		 * during key preparation even though we might be running CBC
 		 * when enter this function.
-		 */
-		CRYP_PUT_BITS(&device_data->base->cr,
-			      CRYP_ALGO_AES_ECB,
-			      CRYP_CR_ALGOMODE_POS,
-			      CRYP_CR_ALGOMODE_MASK);
-
-		CRYP_PUT_BITS(&device_data->base->cr,
-			      CRYP_CRYPEN_ENABLE,
-			      CRYP_CR_CRYPEN_POS,
-			      CRYP_CR_CRYPEN_MASK);
-
-		/*
+		 *
 		 * Writing to KSE_ENABLED will drop CRYPEN when key preparation
 		 * is done. Therefore we need to set CRYPEN again outside this
 		 * if statement when running decryption.
 		 */
-		CRYP_PUT_BITS(&device_data->base->cr,
-			      KSE_ENABLED,
-			      CRYP_CR_KSE_POS,
-			      CRYP_CR_KSE_MASK);
+		cr_for_kse |= ((CRYP_ALGORITHM_ENCRYPT << CRYP_CR_ALGODIR_POS) |
+			       (CRYP_ALGO_AES_ECB << CRYP_CR_ALGOMODE_POS) |
+			       (CRYP_CRYPEN_ENABLE << CRYP_CR_CRYPEN_POS) |
+			       (KSE_ENABLED << CRYP_CR_KSE_POS));
 
+		writel(cr_for_kse, &device_data->base->cr);
 		cryp_wait_until_done(device_data);
 	}
 
-	CRYP_PUT_BITS(&device_data->base->cr,
-		      p_cryp_config->algomode,
-		      CRYP_CR_ALGOMODE_POS,
-		      CRYP_CR_ALGOMODE_MASK);
-
-	CRYP_PUT_BITS(&device_data->base->cr,
-		      p_cryp_config->algodir,
-		      CRYP_CR_ALGODIR_POS,
-		      CRYP_CR_ALGODIR_MASK);
+	*control_register |=
+		((cryp_config->algomode << CRYP_CR_ALGOMODE_POS) |
+		 (cryp_config->algodir << CRYP_CR_ALGODIR_POS));
 
 	return 0;
 }
@@ -300,7 +276,10 @@ int cryp_configure_init_vector(struct cryp_device_data *device_data,
 void cryp_save_device_context(struct cryp_device_data *device_data,
 			      struct cryp_device_context *ctx)
 {
+	enum cryp_algo_mode algomode;
 	struct cryp_register *src_reg = device_data->base;
+	struct cryp_config *config =
+		(struct cryp_config *)device_data->current_ctx;
 
 	/*
 	 * Always start by disable the hardware and wait for it to finish the
@@ -315,28 +294,29 @@ void cryp_save_device_context(struct cryp_device_data *device_data,
 
 	ctx->cr = readl(&src_reg->cr) & CRYP_CR_CONTEXT_SAVE_MASK;
 
-	CRYP_PUT_BITS(&src_reg->cr, 1, CRYP_CR_KEYRDEN_POS,
-		      CRYP_CR_KEYRDEN_MASK);
+	switch (config->keysize) {
+	case CRYP_KEY_SIZE_256:
+		ctx->key_4_l = readl(&src_reg->key_4_l);
+		ctx->key_4_r = readl(&src_reg->key_4_r);
 
-	ctx->key_1_l = readl(&src_reg->key_1_l);
-	ctx->key_1_r = readl(&src_reg->key_1_r);
-	ctx->key_2_l = readl(&src_reg->key_2_l);
-	ctx->key_2_r = readl(&src_reg->key_2_r);
-	ctx->key_3_l = readl(&src_reg->key_3_l);
-	ctx->key_3_r = readl(&src_reg->key_3_r);
-	ctx->key_4_l = readl(&src_reg->key_4_l);
-	ctx->key_4_r = readl(&src_reg->key_4_r);
+	case CRYP_KEY_SIZE_192:
+		ctx->key_3_l = readl(&src_reg->key_3_l);
+		ctx->key_3_r = readl(&src_reg->key_3_r);
 
-	CRYP_PUT_BITS(&src_reg->cr, 0, CRYP_CR_KEYRDEN_POS,
-		      CRYP_CR_KEYRDEN_MASK);
+	case CRYP_KEY_SIZE_128:
+		ctx->key_2_l = readl(&src_reg->key_2_l);
+		ctx->key_2_r = readl(&src_reg->key_2_r);
+
+	default:
+		ctx->key_1_l = readl(&src_reg->key_1_l);
+		ctx->key_1_r = readl(&src_reg->key_1_r);
+	}
 
 	/* Save IV for CBC mode for both AES and DES. */
-	if (CRYP_TEST_BITS(&src_reg->cr, CRYP_CR_ALGOMODE_POS) ==
-			CRYP_ALGO_TDES_CBC ||
-	    CRYP_TEST_BITS(&src_reg->cr, CRYP_CR_ALGOMODE_POS) ==
-			CRYP_ALGO_DES_CBC ||
-	    CRYP_TEST_BITS(&src_reg->cr, CRYP_CR_ALGOMODE_POS) ==
-			CRYP_ALGO_AES_CBC) {
+	algomode = ((ctx->cr & CRYP_CR_ALGOMODE_MASK) >> CRYP_CR_ALGOMODE_POS);
+	if (algomode == CRYP_ALGO_TDES_CBC ||
+	    algomode == CRYP_ALGO_DES_CBC ||
+	    algomode == CRYP_ALGO_AES_CBC) {
 		ctx->init_vect_0_l = readl(&src_reg->init_vect_0_l);
 		ctx->init_vect_0_r = readl(&src_reg->init_vect_0_r);
 		ctx->init_vect_1_l = readl(&src_reg->init_vect_1_l);
@@ -356,7 +336,6 @@ void cryp_restore_device_context(struct cryp_device_data *device_data,
 	struct cryp_register *reg = device_data->base;
 	struct cryp_config *config =
 		(struct cryp_config *)device_data->current_ctx;
-
 
 	/*
 	 * Fall through for all items in switch statement. DES is captured in
@@ -389,9 +368,6 @@ void cryp_restore_device_context(struct cryp_device_data *device_data,
 		writel(ctx->init_vect_1_l, &reg->init_vect_1_l);
 		writel(ctx->init_vect_1_r, &reg->init_vect_1_r);
 	}
-
-	writel(ctx->cr, &reg->cr);
-	cryp_activity(device_data, CRYP_CRYPEN_ENABLE);
 }
 
 /**
@@ -402,8 +378,6 @@ void cryp_restore_device_context(struct cryp_device_data *device_data,
  */
 int cryp_write_indata(struct cryp_device_data *device_data, u32 write_data)
 {
-	if (NULL == device_data)
-		return -EINVAL;
 	writel(write_data, &device_data->base->din);
 
 	return 0;
@@ -417,11 +391,6 @@ int cryp_write_indata(struct cryp_device_data *device_data, u32 write_data)
  */
 int cryp_read_outdata(struct cryp_device_data *device_data, u32 *read_data)
 {
-	if (NULL == device_data)
-		return -EINVAL;
-	if (NULL == read_data)
-		return -EINVAL;
-
 	*read_data = readl(&device_data->base->dout);
 
 	return 0;

@@ -50,7 +50,9 @@
  * CRYP register default values
  */
 #define MAX_DEVICE_SUPPORT		2
-#define CRYP_CR_DEFAULT			0x0002
+
+/* Priv set, keyrden set and datatype 8bits swapped set as default. */
+#define CRYP_CR_DEFAULT			0x0482
 #define CRYP_DMACR_DEFAULT		0x0
 #define CRYP_IMSC_DEFAULT		0x0
 #define CRYP_DIN_DEFAULT		0x0

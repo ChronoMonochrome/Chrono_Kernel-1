@@ -358,12 +358,8 @@ static int cfg_keys(struct cryp_ctx *ctx)
 static int cryp_setup_context(struct cryp_ctx *ctx,
 			      struct cryp_device_data *device_data)
 {
+	u32 control_register = CRYP_CR_DEFAULT;
 	cryp_flush_inoutfifo(device_data);
-
-	CRYP_PUT_BITS(&device_data->base->cr,
-		      ctx->config.datatype,
-		      CRYP_CR_DATATYPE_POS,
-		      CRYP_CR_DATATYPE_MASK);
 
 	switch (cryp_mode) {
 	case CRYP_MODE_INTERRUPT:
@@ -378,9 +374,10 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 		break;
 	}
 
-	if (ctx->updated)
+	if (ctx->updated) {
 		cryp_restore_device_context(device_data, &ctx->dev_ctx);
-	else {
+		control_register = ctx->dev_ctx.cr;
+	} else {
 		if (cfg_keys(ctx) != 0) {
 			dev_err(ctx->device->dev, "[%s]: cfg_keys failed!",
 				__func__);
@@ -395,10 +392,12 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 				return -EPERM;
 		}
 
-		cryp_set_configuration(device_data, &ctx->config);
+		cryp_set_configuration(device_data, &ctx->config,
+				       &control_register);
 	}
 
-	cryp_activity(device_data, CRYP_CRYPEN_ENABLE);
+	writel(control_register | (CRYP_CRYPEN_ENABLE << CRYP_CR_CRYPEN_POS),
+	       &device_data->base->cr);
 
 	return 0;
 }
@@ -612,37 +611,28 @@ static int cryp_dma_read(struct cryp_ctx *ctx, struct scatterlist *sg, int len)
 	return len;
 }
 
-static int cryp_polling_mode(struct cryp_ctx *ctx,
-			     struct cryp_device_data *device_data)
+static void cryp_polling_mode(struct cryp_ctx *ctx,
+			      struct cryp_device_data *device_data)
 {
 	int i;
-	int ret = 0;
 	int remaining_length = ctx->datalen;
-	const u8 *indata = ctx->indata;
-	u8 *outdata = ctx->outdata;
+	u32 *indata = (u32 *)ctx->indata;
+	u32 *outdata = (u32 *)ctx->outdata;
 
-	cryp_activity(device_data, CRYP_CRYPEN_ENABLE);
 	while (remaining_length > 0) {
 		for (i = 0; i < ctx->blocksize / BYTES_PER_WORD; i++) {
-			ret = cryp_write_indata(device_data,
-					       *((u32 *)indata));
-			if (ret)
-				goto out;
-			indata += BYTES_PER_WORD;
+			writel(*indata, &device_data->base->din);
+			++indata;
 			remaining_length -= BYTES_PER_WORD;
 		}
 		cryp_wait_until_done(device_data);
+
 		for (i = 0; i < ctx->blocksize / BYTES_PER_WORD; i++) {
-			ret = cryp_read_outdata(device_data,
-					       (u32 *)outdata);
-			if (ret)
-				goto out;
-			outdata += BYTES_PER_WORD;
+			*outdata = readl(&device_data->base->dout);
+			++outdata;
 		}
 		cryp_wait_until_done(device_data);
 	}
-out:
-	return ret;
 }
 
 static int cryp_disable_power(struct device *dev,
@@ -727,7 +717,7 @@ out:
 static int hw_crypt_noxts(struct cryp_ctx *ctx,
 			  struct cryp_device_data *device_data)
 {
-	int ret;
+	int ret = 0;
 
 	const u8 *indata = ctx->indata;
 	u8 *outdata = ctx->outdata;
@@ -737,8 +727,6 @@ static int hw_crypt_noxts(struct cryp_ctx *ctx,
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
 	ctx->outlen = ctx->datalen;
-	ctx->config.keyrden = CRYP_STATE_ENABLE;
-	ctx->config.datatype = CRYP_DATA_TYPE_8BIT_SWAP;
 
 	if (unlikely(!IS_ALIGNED((u32)indata, 4))) {
 		pr_debug(DEV_DBG_NAME " [%s]: Data isn't aligned! Addr: "
@@ -771,9 +759,7 @@ static int hw_crypt_noxts(struct cryp_ctx *ctx,
 		 * the polling mode. Overhead of doing DMA setup eats up the
 		 * benefits using it.
 		 */
-		ret = cryp_polling_mode(ctx, device_data);
-		if (ret)
-			goto out;
+		cryp_polling_mode(ctx, device_data);
 	} else {
 		dev_err(ctx->device->dev, "[%s]: Invalid operation mode!",
 			__func__);
@@ -781,10 +767,8 @@ static int hw_crypt_noxts(struct cryp_ctx *ctx,
 		goto out;
 	}
 
-	ret = 0;
 	cryp_save_device_context(device_data, &ctx->dev_ctx);
-	if (ctx->updated == 0)
-		ctx->updated = 1;
+	ctx->updated = 1;
 
 out:
 	ctx->indata = indata;
@@ -820,8 +804,6 @@ static int ablk_dma_crypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.keyrden = CRYP_STATE_ENABLE;
-	ctx->config.datatype = CRYP_DATA_TYPE_8BIT_SWAP;
 	ctx->datalen = areq->nbytes;
 	ctx->outlen = areq->nbytes;
 

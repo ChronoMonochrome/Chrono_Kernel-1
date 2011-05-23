@@ -53,12 +53,6 @@ enum cryp_key_prep {
 #define	CRYP_KEY_SIZE_192 (1)
 #define	CRYP_KEY_SIZE_256 (2)
 
-/* Data type Swap */
-#define	CRYP_DATA_TYPE_32BIT_SWAP (0)
-#define	CRYP_DATA_TYPE_16BIT_SWAP (1)
-#define	CRYP_DATA_TYPE_8BIT_SWAP  (2)
-#define	CRYP_DATA_TYPE_BIT_SWAP   (3)
-
 /* AES modes */
 enum cryp_algo_mode {
 	CRYP_ALGO_TDES_ECB,
@@ -88,7 +82,6 @@ enum cryp_mode {
  * struct cryp_config -
  * @keyrden: Cryp state enable/disable
  * @keysize: Key size for AES
- * @datatype: Data type Swap
  * @algomode: AES modes
  * @algodir: Cryp Encryption or Decryption
  *
@@ -97,7 +90,6 @@ enum cryp_mode {
 struct cryp_config {
 	enum cryp_state keyrden;
 	int keysize;
-	int datatype;
 	enum cryp_algo_mode algomode;
 	enum cryp_algorithm_dir algodir;
 };
@@ -267,7 +259,8 @@ void cryp_activity(struct cryp_device_data *device_data,
 void cryp_flush_inoutfifo(struct cryp_device_data *device_data);
 
 int cryp_set_configuration(struct cryp_device_data *device_data,
-			   struct cryp_config *p_cryp_config);
+			   struct cryp_config *cryp_config,
+			   u32 *control_register);
 
 void cryp_configure_for_dma(struct cryp_device_data *device_data,
 			    enum cryp_dma_req_type dma_req);
