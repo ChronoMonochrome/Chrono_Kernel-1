@@ -163,7 +163,7 @@ static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 			{0xffda, 0xffb6, 0x70},
 			{0x70, 0xffa2, 0xffee},
 		},
-		.offset = {0x80, 0x10, 0x80},
+		.offset = {0x10, 0x80, 0x80},
 	}
 };
 
@@ -234,9 +234,15 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	virtual_width = width;
 	virtual_height = height * 2;
+
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
 	if (ddev->id == PRIMARY_DISPLAY_ID)
 		virtual_height = height;
+#endif
+
+#ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
+	if (ddev->id == TERTIARY_DISPLAY_ID)
+		virtual_height = height * 3;
 #endif
 
 	if (ddev->id == TERTIARY_DISPLAY_ID) {
@@ -251,16 +257,20 @@ static int display_postregistered_callback(struct notifier_block *nb,
 			ddev->default_pixel_format,
 			rotate);
 
-		if (IS_ERR(fbi))
+		if (IS_ERR(fbi)) {
 			dev_warn(&ddev->dev,
 				"Failed to create fb for display %s\n",
 						ddev->name);
-		else
+			goto display_postregistered_callback_err;
+		} else
 			dev_info(&ddev->dev, "Framebuffer created (%s)\n",
 						ddev->name);
 	}
 
 	return 0;
+
+display_postregistered_callback_err:
+	return -1;
 }
 
 static struct notifier_block display_nb = {

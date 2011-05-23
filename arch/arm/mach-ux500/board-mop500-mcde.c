@@ -43,7 +43,6 @@ static struct delayed_work work_dispreg_hdmi;
 #endif
 
 #define MCDE_NR_OF_DISPLAYS 3
-static struct mcde_display_device *displays[MCDE_NR_OF_DISPLAYS] = { NULL };
 static int display_initialized_during_boot;
 
 static int __init startup_graphics_setup(char *str)
@@ -419,7 +418,6 @@ static void delayed_work_dispreg_hdmi(struct work_struct *ptr)
 {
 	if (mcde_display_device_register(&av8100_hdmi))
 		pr_warning("Failed to register av8100_hdmi\n");
-	displays[TERTIARY_DISPLAY_ID] = &av8100_hdmi;
 }
 #endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
 
@@ -494,16 +492,20 @@ static int display_postregistered_callback(struct notifier_block *nb,
 			ddev->default_pixel_format,
 			rotate);
 
-		if (IS_ERR(fbi))
+		if (IS_ERR(fbi)) {
 			dev_warn(&ddev->dev,
 				"Failed to create fb for display %s\n",
 						ddev->name);
-		else
+			goto display_postregistered_callback_err;
+		} else
 			dev_info(&ddev->dev, "Framebuffer created (%s)\n",
 						ddev->name);
 	}
 
 	return 0;
+
+display_postregistered_callback_err:
+	return -1;
 }
 
 static struct notifier_block display_nb = {
@@ -648,7 +650,6 @@ int __init init_display_devices(void)
 	ret = mcde_display_device_register(&generic_display0);
 	if (ret)
 		pr_warning("Failed to register generic display device 0\n");
-	displays[0] = &generic_display0;
 #endif
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
@@ -659,7 +660,6 @@ int __init init_display_devices(void)
 	ret = mcde_display_device_register(&generic_subdisplay);
 	if (ret)
 		pr_warning("Failed to register generic sub display device\n");
-	displays[1] = &generic_subdisplay;
 #endif
 
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
@@ -673,7 +673,6 @@ int __init init_display_devices(void)
 	ret = mcde_display_device_register(&tvout_ab8500_display);
 	if (ret)
 		pr_warning("Failed to register ab8500 tvout device\n");
-	displays[2] = &tvout_ab8500_display;
 #endif
 
 	return ret;
