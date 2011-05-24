@@ -16,6 +16,10 @@
 #include <linux/l3g4200d.h>
 #include <linux/regulator/consumer.h>
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
+
 /* l3g4200d gyroscope registers */
 
 #define WHO_AM_I				0x0F
@@ -85,11 +89,19 @@ struct l3g4200d_data {
 	struct l3g4200d_gyro_values data;
 	struct l3g4200d_gyr_platform_data pdata;
 	struct regulator *regulator;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend early_suspend;
+#endif
 	unsigned char powermode;
 	unsigned char odr;
 	unsigned char range;
 	int device_status;
 };
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void l3g4200d_early_suspend(struct early_suspend *ddata);
+static void l3g4200d_late_resume(struct early_suspend *ddata);
+#endif
 
 static int l3g4200d_write(struct l3g4200d_data *ddata, u8 reg,
 				u8 val, char *msg)
@@ -465,6 +477,13 @@ static int __devinit l3g4200d_probe(struct i2c_client *client,
 	ret = sysfs_create_group(&client->dev.kobj, &l3g4200d_attr_group);
 	if (ret)
 		goto exit_free_regulator;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	ddata->early_suspend.level =
+		EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	ddata->early_suspend.suspend = l3g4200d_early_suspend;
+	ddata->early_suspend.resume = l3g4200d_late_resume;
+	register_early_suspend(&ddata->early_suspend);
+#endif
 
 	/*
 	 * turn off the supplies until somebody turns on the device
@@ -511,6 +530,7 @@ static int __devexit l3g4200d_remove(struct i2c_client *client)
 
 	return 0;
 }
+#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_PM)
 
 static int l3g4200d_do_suspend(struct l3g4200d_data *ddata)
 {
@@ -574,7 +594,9 @@ fail:
 	mutex_unlock(&ddata->lock);
 	return ret;
 }
+#endif
 
+#ifndef CONFIG_HAS_EARLYSUSPEND
 #ifdef CONFIG_PM
 static int l3g4200d_suspend(struct device *dev)
 {
@@ -584,6 +606,9 @@ static int l3g4200d_suspend(struct device *dev)
 	ddata = dev_get_drvdata(dev);
 
 	ret = l3g4200d_do_suspend(ddata);
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"Error while suspending the device\n");
 
 	return ret;
 }
@@ -608,6 +633,31 @@ static const struct dev_pm_ops l3g4200d_dev_pm_ops = {
 	.resume = l3g4200d_resume,
 };
 #endif
+#else
+static void l3g4200d_early_suspend(struct early_suspend *data)
+{
+	struct l3g4200d_data *ddata =
+		container_of(data, struct l3g4200d_data, early_suspend);
+	int ret;
+
+	ret = l3g4200d_do_suspend(ddata);
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"Error while suspending the device\n");
+}
+
+static void l3g4200d_late_resume(struct early_suspend *data)
+{
+	struct l3g4200d_data *ddata =
+		container_of(data, struct l3g4200d_data, early_suspend);
+	int ret;
+
+	ret = l3g4200d_do_resume(ddata);
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"Error while resuming the device\n");
+}
+#endif
 
 static const struct i2c_device_id  l3g4200d_id[] = {
 	{"l3g4200d", 0 },
@@ -617,7 +667,7 @@ static const struct i2c_device_id  l3g4200d_id[] = {
 static struct i2c_driver l3g4200d_driver = {
 	.driver = {
 		.name = "l3g4200d",
-#ifdef CONFIG_PM
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
 		.pm = &l3g4200d_dev_pm_ops,
 #endif
 	},
