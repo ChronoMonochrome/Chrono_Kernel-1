@@ -125,6 +125,9 @@ static int cw1200_load_firmware_cw1200(struct cw1200_common *priv)
 	case CW1200_HW_REV_CUT20:
 		fw_path = FIRMWARE_CUT20;
 		break;
+	case CW1200_HW_REV_CUT22:
+		fw_path = FIRMWARE_CUT22;
+		break;
 	default:
 		cw1200_dbg(CW1200_DBG_ERROR,
 			"%s: invalid silicon revision %d.\n",
@@ -422,8 +425,41 @@ int cw1200_load_firmware(struct cw1200_common *priv)
 			break;
 		}
 	} else if (major_revision == 2) {
-		cw1200_dbg(CW1200_DBG_MSG, "Cut 2.0 silicon is detected.\n");
-		priv->hw_revision = CW1200_HW_REV_CUT20;
+		u32 ar1, ar2, ar3;
+		cw1200_dbg(CW1200_DBG_MSG, "Cut 2.x silicon is detected.\n");
+
+		ret = cw1200_ahb_read_32(priv, CW1200_CUT2_ID_ADDR, &ar1);
+		if (ret) {
+			cw1200_dbg(CW1200_DBG_ERROR,
+				"%s: (1) HW detection: can't read CUT ID.\n",
+				__func__);
+			goto out;
+		}
+		ret = cw1200_ahb_read_32(priv, CW1200_CUT2_ID_ADDR + 4, &ar2);
+		if (ret) {
+			cw1200_dbg(CW1200_DBG_ERROR,
+			"%s: (2) HW detection: can't read CUT ID.\n",
+				__func__);
+			goto out;
+		}
+
+		ret = cw1200_ahb_read_32(priv, CW1200_CUT2_ID_ADDR + 8, &ar3);
+		if (ret) {
+			cw1200_dbg(CW1200_DBG_ERROR,
+			"%s: (3) HW detection: can't read CUT ID.\n",
+				__func__);
+			goto out;
+		}
+
+		if (ar1 == CW1200_CUT_22_ID_STR1 &&
+		    ar2 == CW1200_CUT_22_ID_STR2 &&
+		    ar3 == CW1200_CUT_22_ID_STR3) {
+			cw1200_dbg(CW1200_DBG_MSG, "Cut 2.2 detected.\n");
+			priv->hw_revision = CW1200_HW_REV_CUT22;
+		} else {
+			cw1200_dbg(CW1200_DBG_MSG, "Cut 2.0 detected.\n");
+			priv->hw_revision = CW1200_HW_REV_CUT20;
+		}
 	} else {
 		cw1200_dbg(CW1200_DBG_ERROR,
 			"%s: unsupported silicon major revision %d.\n",

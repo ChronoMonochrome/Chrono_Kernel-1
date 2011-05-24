@@ -29,7 +29,11 @@
 #define HIF_9000_SILICON_VERSTAILE	(2)
 
 #define CW1200_CUT_11_ID_STR		(0x302E3830)
+#define CW1200_CUT_22_ID_STR1		(0x302e3132)
+#define CW1200_CUT_22_ID_STR2		(0x32302e30)
+#define CW1200_CUT_22_ID_STR3		(0x3335)
 #define CW1200_CUT_ID_ADDR		(0xFFF17F90)
+#define CW1200_CUT2_ID_ADDR		(0xFFF1FF90)
 
 /* Download control area */
 /* boot loader start address in SRAM */

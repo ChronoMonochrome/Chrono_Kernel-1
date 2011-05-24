@@ -877,6 +877,9 @@ int cw1200_setup_mac(struct cw1200_common *priv)
 		case CW1200_HW_REV_CUT20:
 			sdd_path = SDD_FILE_20;
 			break;
+		case CW1200_HW_REV_CUT22:
+			sdd_path = SDD_FILE_22;
+			break;
 		default:
 			BUG_ON(1);
 		}
