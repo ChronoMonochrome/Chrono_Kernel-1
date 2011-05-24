@@ -244,6 +244,7 @@ static int __devexit bh1780_remove(struct i2c_client *client)
 	return 0;
 }
 
+#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_PM)
 static int bh1780_do_suspend(struct bh1780_data *ddata)
 {
 	int ret = 0;
@@ -284,7 +285,10 @@ unlock:
 	mutex_unlock(&ddata->lock);
 	return ret;
 }
-#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
+#endif
+
+#ifndef CONFIG_HAS_EARLYSUSPEND
+#ifdef CONFIG_PM
 static int bh1780_suspend(struct device *dev)
 {
 	struct bh1780_data *ddata = dev_get_drvdata(dev);
@@ -313,6 +317,7 @@ static int bh1780_resume(struct device *dev)
 
 static SIMPLE_DEV_PM_OPS(bh1780_pm, bh1780_suspend, bh1780_resume);
 #define BH1780_PMOPS (&bh1780_pm)
+#endif /* CONFIG_PM */
 #else
 #define BH1780_PMOPS NULL
 static void bh1780_early_suspend(struct early_suspend *data)
@@ -338,7 +343,7 @@ static void bh1780_late_resume(struct early_suspend *data)
 		dev_err(&ddata->client->dev,
 				"Error while resuming the device\n");
 }
-#endif /*!CONFIG_HAS_EARLYSUSPEND && CONFIG_PM */
+#endif /*!CONFIG_HAS_EARLYSUSPEND */
 
 static const struct i2c_device_id bh1780_id[] = {
 	{ "bh1780", 0 },
