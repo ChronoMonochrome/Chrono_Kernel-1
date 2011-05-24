@@ -430,9 +430,10 @@ int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 			icv_len += 8; /* MIC */
 		}
 
-		if (WARN_ON(skb_headroom(skb) < iv_len + WSM_TX_EXTRA_HEADROOM
-				|| skb_tailroom(skb) < icv_len)) {
-			printk(KERN_ERR "Bug: no space allocated "
+		if (skb_headroom(skb) < iv_len + WSM_TX_EXTRA_HEADROOM
+				|| skb_tailroom(skb) < icv_len) {
+			wiphy_err(priv->hw->wiphy,
+				"Bug: no space allocated "
 				"for crypto headers.\n"
 				"headroom: %d, tailroom: %d, "
 				"req_headroom: %d, req_tailroom: %d\n"
@@ -447,6 +448,22 @@ int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		memset(&newhdr[hdrlen], 0, iv_len);
 		icv = skb_put(skb, icv_len);
 		memset(icv, 0, icv_len);
+	}
+
+	if ((size_t)skb->data & 3) {
+		size_t offset = (size_t)skb->data & 3;
+		u8 *p;
+		if (skb_headroom(skb) < 4) {
+			wiphy_err(priv->hw->wiphy,
+					"Bug: no space allocated "
+					"for DMA alignment.\n"
+					"headroom: %d\n",
+					skb_headroom(skb));
+			goto err;
+		}
+		p = skb_push(skb, offset);
+		memmove(p, &p[offset], skb->len - offset);
+		skb_trim(skb, skb->len - offset);
 	}
 
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
