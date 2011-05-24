@@ -177,6 +177,7 @@ static int lsm303dlh_m_write(struct lsm303dlh_m_data *ddata,
 	return ret;
 }
 
+#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_PM)
 static int lsm303dlh_m_do_suspend(struct lsm303dlh_m_data *ddata)
 {
 	int ret;
@@ -249,6 +250,7 @@ fail:
 	mutex_unlock(&ddata->lock);
 	return ret;
 }
+#endif
 
 static int lsm303dlh_m_read_multi(struct lsm303dlh_m_data *ddata, u8 reg,
 		u8 count, u8 *val, char *msg)
@@ -791,7 +793,8 @@ static int __devexit lsm303dlh_m_remove(struct i2c_client *client)
 	return 0;
 }
 
-#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
+#ifndef CONFIG_HAS_EARLYSUSPEND
+#ifdef CONFIG_PM
 static int lsm303dlh_m_suspend(struct device *dev)
 {
 	struct lsm303dlh_m_data *ddata;
@@ -826,6 +829,7 @@ static const struct dev_pm_ops lsm303dlh_m_dev_pm_ops = {
 	.suspend = lsm303dlh_m_suspend,
 	.resume  = lsm303dlh_m_resume,
 };
+#endif
 #else
 static void lsm303dlh_m_early_suspend(struct early_suspend *data)
 {
