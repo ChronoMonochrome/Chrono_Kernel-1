@@ -11,6 +11,7 @@
 #include <linux/bitops.h>
 
 #define HASH_BLOCK_SIZE			64
+#define HASH_DMA_ALIGN_SIZE		4
 
 /* Maximum value of the length's high word */
 #define HASH_HIGH_WORD_MAX_VAL		0xFFFFFFFFUL
@@ -124,6 +125,12 @@
 			&device_data->base->str,	\
 			0x01, HASH_STR_DCAL_POS,	\
 			HASH_STR_DCAL_MASK)
+
+/* Hardware access method */
+enum hash_mode {
+	HASH_MODE_CPU,
+	HASH_MODE_DMA
+};
 
 /**
  * struct uint64 - Structure to handle 64 bits integers.
@@ -287,14 +294,36 @@ struct hash_config {
 };
 
 /**
+ * struct hash_dma - Structure used for dma.
+ * @mask:		DMA capabilities bitmap mask.
+ * @complete:		Used to maintain state for a "completion".
+ * @chan_mem2hash:	DMA channel.
+ * @cfg_mem2hash:	DMA channel configuration.
+ * @sg_len:		Scatterlist length.
+ * @sg:			Scatterlist.
+ * @nents:		Number of sg entries.
+ */
+struct hash_dma {
+	dma_cap_mask_t		mask;
+	struct completion	complete;
+	struct dma_chan		*chan_mem2hash;
+	void			*cfg_mem2hash;
+	int			sg_len;
+	struct scatterlist	*sg;
+	int			nents;
+};
+
+/**
  * struct hash_ctx - The context used for hash calculations.
  * @key:	The key used in the operation.
  * @keylen:	The length of the key.
  * @updated:	Indicates if hardware is initialized for new operations.
  * @state:	The state of the current calculations.
  * @config:	The current configuration.
- * @digestsize	The size of current digest.
- * @device	Pointer to the device structure.
+ * @digestsize:	The size of current digest.
+ * @device:	Pointer to the device structure.
+ * @dma_mode:	Used in special cases (workaround), e.g. need to change to
+ *		cpu mode, if not supported/working in dma mode.
  */
 struct hash_ctx {
 	u8			*key;
@@ -304,6 +333,7 @@ struct hash_ctx {
 	struct hash_config	config;
 	int			digestsize;
 	struct hash_device_data	*device;
+	bool			dma_mode;
 };
 
 /**
@@ -318,6 +348,7 @@ struct hash_ctx {
  * @regulator:		Pointer to the device's power control.
  * @clk:		Pointer to the device's clock control.
  * @restore_dev_state:	TRUE = saved state, FALSE = no saved state.
+ * @dma:		Structure used for dma.
  */
 struct hash_device_data {
 	struct hash_register __iomem	*base;
@@ -330,6 +361,7 @@ struct hash_device_data {
 	struct ux500_regulator		*regulator;
 	struct clk			*clk;
 	bool				restore_dev_state;
+	struct hash_dma			dma;
 };
 
 int hash_check_hw(struct hash_device_data *device_data);

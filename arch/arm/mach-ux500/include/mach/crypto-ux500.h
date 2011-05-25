@@ -5,6 +5,7 @@
  * License terms: GNU General Public License (GPL) version 2
  */
 #ifndef _CRYPTO_UX500_H
+#include <linux/dmaengine.h>
 #include <plat/ste_dma40.h>
 
 struct cryp_platform_data {
@@ -13,7 +14,8 @@ struct cryp_platform_data {
 };
 
 struct hash_platform_data {
-	struct stedma40_chan_cfg mem_to_engine;
+	void *mem_to_engine;
+	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
 };
 
 #endif
