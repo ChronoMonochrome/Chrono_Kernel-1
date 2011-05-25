@@ -6,7 +6,9 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/err.h>
 #include <linux/platform_device.h>
+#include <linux/regulator/consumer.h>
 #include <asm/mach-types.h>
 #include <mach/irqs-board-mop500.h>
 #include <plat/pincfg.h>
@@ -14,6 +16,8 @@
 #include "../drivers/staging/cw1200/cw1200_plat.h"
 
 static void cw1200_release(struct device *dev);
+static int cw1200_power_ctrl(const struct cw1200_platform_data *pdata,
+			     bool enable);
 
 static struct resource cw1200_href_resources[] = {
 	{
@@ -49,16 +53,14 @@ static struct resource cw1200_href60_resources[] = {
 #endif /* CONFIG_CW1200_USE_GPIO_IRQ */
 };
 
-static struct cw1200_platform_data cw1200_platform_data = {
-	.regulator_vdd = "vdd",
-	.regulator_vio = "vio",
-};
+static struct cw1200_platform_data cw1200_platform_data = { 0 };
 
 static struct platform_device cw1200_device = {
-	.name = "cw1200",
+	.name = "cw1200_wlan",
 	.dev = {
 		.platform_data = &cw1200_platform_data,
 		.release = cw1200_release,
+		.init_name = "cw1200_wlan",
 	},
 };
 
@@ -95,6 +97,36 @@ static int cw1200_pins_enable(bool enable)
 	return ret;
 }
 
+static int cw1200_power_ctrl(const struct cw1200_platform_data *pdata,
+			     bool enable)
+{
+	static const char *vdd_name = "vdd";
+	struct regulator *vdd;
+	int ret = 0;
+
+	vdd = regulator_get(&cw1200_device.dev, vdd_name);
+	if (IS_ERR(vdd)) {
+		ret = PTR_ERR(vdd);
+		dev_warn(&cw1200_device.dev,
+				"%s: Failed to get regulator '%s': %d\n",
+				__func__, vdd_name, ret);
+	} else {
+		if (enable)
+			ret = regulator_enable(vdd);
+		else
+			ret = regulator_disable(vdd);
+
+		if (ret) {
+			dev_warn(&cw1200_device.dev,
+				"%s: Failed to %s regulator '%s': %d\n",
+				__func__, enable ? "enable" : "disable",
+				vdd_name, ret);
+		}
+		regulator_put(vdd);
+	}
+	return  ret;
+}
+
 int __init mop500_wlan_init(void)
 {
 	int ret;
@@ -128,6 +160,8 @@ int __init mop500_wlan_init(void)
 #endif /* #ifdef CONFIG_CW1200_USE_GPIO_IRQ */
 
 	cw1200_device.dev.release = cw1200_release;
+	if (machine_is_snowball())
+		cw1200_platform_data.power_ctrl = cw1200_power_ctrl;
 
 	ret = cw1200_pins_enable(true);
 	if (WARN_ON(ret))

@@ -8,11 +8,12 @@
 #include <linux/ioport.h>
 
 struct cw1200_platform_data {
-	const char *regulator_vdd;
-	const char *regulator_vio;
+	struct platform_device *device;
 	const char *mmc_id;
 	const struct resource *irq;
 	const struct resource *reset;
+	int (*power_ctrl)(const struct cw1200_platform_data *pdata,
+			  bool enable);
 };
 
 /* Declaration only. Should be implemented in arch/xxx/mach-yyy */

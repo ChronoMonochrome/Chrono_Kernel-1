@@ -28,7 +28,7 @@
 MODULE_AUTHOR("Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>");
 MODULE_DESCRIPTION("mac80211 ST-Ericsson CW1200 SDIO driver");
 MODULE_LICENSE("GPL");
-MODULE_ALIAS("cw1200");
+MODULE_ALIAS("cw1200_wlan");
 
 struct sbus_priv {
 	struct sdio_func	*func;
@@ -259,6 +259,9 @@ static int cw1200_sdio_on(const struct cw1200_platform_data *pdata)
 	const struct resource *reset = pdata->reset;
 	gpio_request(reset->start, reset->name);
 	gpio_direction_output(reset->start, 1);
+	msleep(100);
+	gpio_set_value(reset->start, 0);
+	msleep(100);
 	gpio_set_value(reset->start, 1);
 	cw1200_detect_card(pdata);
 	return 0;
@@ -267,7 +270,7 @@ static int cw1200_sdio_on(const struct cw1200_platform_data *pdata)
 static int cw1200_sdio_reset(struct sbus_priv *self)
 {
 	cw1200_sdio_off(self->pdata);
-	mdelay(1000);
+	msleep(1000);
 	cw1200_sdio_on(self->pdata);
 	return 0;
 }
@@ -350,7 +353,7 @@ static void cw1200_sdio_disconnect(struct sdio_func *func)
 }
 
 static struct sdio_driver sdio_driver = {
-	.name		= "cw1200",
+	.name		= "cw1200_wlan",
 	.id_table	= if_sdio_ids,
 	.probe		= cw1200_sdio_probe,
 	.remove		= cw1200_sdio_disconnect,
@@ -359,19 +362,31 @@ static struct sdio_driver sdio_driver = {
 /* Init Module function -> Called by insmod */
 static int __init cw1200_sdio_init(void)
 {
+	const struct cw1200_platform_data *pdata;
 	int ret;
+
+	pdata = cw1200_get_platform_data();
 
 	ret = sdio_register_driver(&sdio_driver);
 	if (ret)
 		goto err_reg;
 
-	ret = cw1200_sdio_on(cw1200_get_platform_data());
+	if (pdata->power_ctrl) {
+		ret = pdata->power_ctrl(pdata, true);
+		if (ret)
+			goto err_power;
+	}
+
+	ret = cw1200_sdio_on(pdata);
 	if (ret)
 		goto err_on;
 
 	return 0;
 
 err_on:
+	if (pdata->power_ctrl)
+		pdata->power_ctrl(pdata, false);
+err_power:
 	sdio_unregister_driver(&sdio_driver);
 err_reg:
 	return ret;
@@ -380,8 +395,12 @@ err_reg:
 /* Called at Driver Unloading */
 static void __exit cw1200_sdio_exit(void)
 {
+	const struct cw1200_platform_data *pdata;
+	pdata = cw1200_get_platform_data();
 	sdio_unregister_driver(&sdio_driver);
-	cw1200_sdio_off(cw1200_get_platform_data());
+	cw1200_sdio_off(pdata);
+	if (pdata->power_ctrl)
+		pdata->power_ctrl(pdata, false);
 }
 
 
