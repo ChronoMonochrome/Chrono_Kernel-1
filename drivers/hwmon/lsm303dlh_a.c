@@ -307,6 +307,7 @@ static int lsm303dlh_a_restore(struct lsm303dlh_a_data *ddata)
 	if (ret < 0)
 		goto fail;
 
+#ifdef CONFIG_SENSORS_LSM303DLH_INPUT_DEVICE
 	ret = lsm303dlh_a_write(ddata, CTRL_REG3, ddata->interrupt_control,
 			"CTRL_REG3");
 
@@ -348,6 +349,7 @@ static int lsm303dlh_a_restore(struct lsm303dlh_a_data *ddata)
 
 	if (ret < 0)
 		goto fail;
+#endif
 
 fail:
 	if (ret < 0)
@@ -465,7 +467,6 @@ static irqreturn_t lsm303dlh_a_gpio_irq(int irq, void *device_data)
 	return IRQ_HANDLED;
 
 }
-#endif
 
 static ssize_t lsm303dlh_a_show_interrupt_control(struct device *dev,
 					struct device_attribute *attr,
@@ -692,6 +693,7 @@ static ssize_t lsm303dlh_a_store_interrupt_threshold(struct device *dev,
 
 	return count;
 }
+#endif
 
 static ssize_t lsm303dlh_a_show_range(struct device *dev,
 					struct device_attribute *attr,
@@ -1002,6 +1004,7 @@ static DEVICE_ATTR(rate, S_IWUGO | S_IRUGO,
 static DEVICE_ATTR(sleep_wake, S_IWUGO | S_IRUGO,
 		lsm303dlh_a_show_sleepwake, lsm303dlh_a_store_sleepwake);
 
+#ifdef CONFIG_SENSORS_LSM303DLH_INPUT_DEVICE
 static DEVICE_ATTR(interrupt_control, S_IWUGO | S_IRUGO,
 		lsm303dlh_a_show_interrupt_control,
 		lsm303dlh_a_store_interrupt_control);
@@ -1021,6 +1024,7 @@ static DEVICE_ATTR(interrupt_duration, S_IWUGO | S_IRUGO,
 static DEVICE_ATTR(interrupt_threshold, S_IWUGO | S_IRUGO,
 		lsm303dlh_a_show_interrupt_threshold,
 		lsm303dlh_a_store_interrupt_threshold);
+#endif
 
 static struct attribute *lsm303dlh_a_attributes[] = {
 	&dev_attr_data.attr,
@@ -1028,11 +1032,13 @@ static struct attribute *lsm303dlh_a_attributes[] = {
 	&dev_attr_mode.attr,
 	&dev_attr_rate.attr,
 	&dev_attr_sleep_wake.attr,
+#ifdef CONFIG_SENSORS_LSM303DLH_INPUT_DEVICE
 	&dev_attr_interrupt_control.attr,
 	&dev_attr_interrupt_channel.attr,
 	&dev_attr_interrupt_configure.attr,
 	&dev_attr_interrupt_duration.attr,
 	&dev_attr_interrupt_threshold.attr,
+#endif
 	NULL
 };
 
