@@ -159,9 +159,11 @@ struct i2s_message {
 	int dma_flag;
 	int tx_offset;
 	int rx_offset;
+	/* cyclic dma */
 	bool cyclic_dma;
-	struct scatterlist *sg;
-	int sg_len;
+	dma_addr_t buf_addr;
+	size_t buf_len;
+	size_t period_len;
 };
 
 typedef enum {

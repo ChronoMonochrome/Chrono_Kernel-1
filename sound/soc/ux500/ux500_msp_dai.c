@@ -97,17 +97,15 @@ dma_addr_t ux500_msp_dai_i2s_get_pointer(int dai_idx, int stream_id)
 }
 
 int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
-				int sg_len,
-				int sg_size,
+				int period_cnt,
+				size_t period_len,
 				int dai_idx,
 				int stream_id)
 {
 	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
 	struct i2s_message message;
 	struct i2s_device *i2s_dev;
-	int i;
 	int ret = 0;
-	struct scatterlist *sg;
 	bool playback_req_valid =
 		(drvdata->playback_active &&
 			stream_id == SNDRV_PCM_STREAM_PLAYBACK);
@@ -115,11 +113,11 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 		(drvdata->capture_active &&
 			stream_id == SNDRV_PCM_STREAM_CAPTURE);
 
-	pr_debug("%s: Enter (MSP Index: %u, SG-length: %u, SG-size: %u).\n",
+	pr_debug("%s: Enter (MSP Index: %u, period-cnt: %u, period-len: %u).\n",
 		__func__,
 		dai_idx,
-		sg_len,
-		sg_size);
+		period_cnt,
+		period_len);
 
 	if (!playback_req_valid && !capture_req_valid) {
 		pr_err("%s: The I2S controller is not available."
@@ -131,19 +129,13 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 
 	i2s_dev = drvdata->i2s;
 
-	sg = kzalloc(sizeof(struct scatterlist) * sg_len, GFP_ATOMIC);
-	sg_init_table(sg, sg_len);
-	for (i = 0; i < sg_len; i++) {
-		sg_dma_address(&sg[i]) = dma_addr + i * sg_size;
-		sg_dma_len(&sg[i]) = sg_size;
-	}
-
 	message.i2s_transfer_mode = I2S_TRANSFER_MODE_CYCLIC_DMA;
 	message.i2s_direction = (stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
 					I2S_DIRECTION_TX :
 					I2S_DIRECTION_RX;
-	message.sg = sg;
-	message.sg_len = sg_len;
+	message.buf_addr = dma_addr;
+	message.buf_len = period_cnt * period_len;
+	message.period_len = period_len;
 
 	ret = i2s_transfer(i2s_dev->controller, &message);
 	if (ret < 0) {
@@ -151,8 +143,6 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 			__func__,
 			dai_idx);
 	}
-
-	kfree(sg);
 
 	return ret;
 }

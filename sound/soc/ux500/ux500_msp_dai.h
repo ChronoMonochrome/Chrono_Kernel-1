@@ -67,8 +67,8 @@ extern struct snd_soc_dai ux500_msp_dai[UX500_NBR_OF_DAI];
 bool ux500_msp_dai_i2s_get_underrun_status(int dai_idx);
 dma_addr_t ux500_msp_dai_i2s_get_pointer(int dai_idx, int stream_id);
 int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
-				int sg_len,
-				int sg_size,
+				int perod_cnt,
+				size_t period_len,
 				int dai_idx,
 				int stream_id);
 int ux500_msp_dai_i2s_send_data(void *data, size_t bytes, int dai_idx);

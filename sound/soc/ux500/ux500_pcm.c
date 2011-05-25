@@ -111,8 +111,17 @@ void ux500_pcm_dma_eot_handler(void *data)
 		runtime = substream->runtime;
 		private = substream->runtime->private_data;
 
-		if (ux500_msp_dai_i2s_get_underrun_status(private->msp_id))
+		if (ux500_msp_dai_i2s_get_underrun_status(private->msp_id)) {
 			private->no_of_underruns++;
+			pr_debug("%s: Nr of underruns (%d)\n", __func__,
+					private->no_of_underruns);
+		}
+
+		/* calc the offset in the circular buffer */
+		private->offset += frames_to_bytes(runtime,
+				runtime->period_size);
+		private->offset %= frames_to_bytes(runtime,
+				runtime->period_size) * runtime->periods;
 
 		snd_pcm_period_elapsed(substream);
 	}
@@ -250,12 +259,12 @@ static int ux500_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		private->no_of_underruns = 0;
+		private->offset = 0;
 		ret = ux500_msp_dai_i2s_configure_sg(runtime->dma_addr,
-						runtime->periods,
-						frames_to_bytes(runtime,
-								runtime->period_size),
-						private->msp_id,
-						stream_id);
+				runtime->periods,
+				frames_to_bytes(runtime, runtime->period_size),
+				private->msp_id,
+				stream_id);
 		if (ret) {
 			pr_err("%s: Failed to configure sg-list!\n", __func__);
 			return -EINVAL;
@@ -284,18 +293,12 @@ static int ux500_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 static snd_pcm_uframes_t ux500_pcm_pointer(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct ux500_pcm_private *private = substream->runtime->private_data;
-	int stream_id = substream->pstr->stream;
-	unsigned int offset;
-	dma_addr_t addr;
+	struct ux500_pcm_private *private = runtime->private_data;
 
-	pr_debug("%s: Enter\n", __func__);
+	pr_debug("%s: dma_offset %d frame %ld\n", __func__, private->offset,
+			bytes_to_frames(substream->runtime, private->offset));
 
-	addr = ux500_msp_dai_i2s_get_pointer(private->msp_id, stream_id);
-	offset = bytes_to_frames(runtime, addr - runtime->dma_addr);
-	pr_debug("%s: Offset = %u\n", __func__, offset);
-
-	return offset;
+	return bytes_to_frames(substream->runtime, private->offset);
 }
 
 static int ux500_pcm_mmap(struct snd_pcm_substream *substream,

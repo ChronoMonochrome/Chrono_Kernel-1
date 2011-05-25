@@ -78,16 +78,13 @@ static int stm_msp_disable(struct msp *msp, int direction,
 			   i2s_flag flag);
 static int stm_msp_close(struct i2s_controller *i2s_cont, i2s_flag flag);
 static int stm_msp_hw_status(struct i2s_controller *i2s_cont);
-static dma_addr_t stm_msp_get_pointer(struct i2s_controller *i2s_cont,
-				enum i2s_direction_t i2s_direction);
 
 #define I2S_DEVICE "i2s_device"
 static struct i2s_algorithm i2s_algo = {
-	.cont_setup = stm_msp_configure_enable,
-	.cont_transfer = stm_msp_transceive_data,
-	.cont_cleanup = stm_msp_close,
-	.cont_hw_status = stm_msp_hw_status,
-	.cont_get_pointer = stm_msp_get_pointer,
+	.cont_setup		= stm_msp_configure_enable,
+	.cont_transfer		= stm_msp_transceive_data,
+	.cont_cleanup		= stm_msp_close,
+	.cont_hw_status		= stm_msp_hw_status,
 };
 
 /**
@@ -1049,7 +1046,6 @@ static int msp_start_dma(struct msp *msp, int transmit, dma_addr_t data,
 	if (transmit) {
 		if (!msp->tx_pipeid)
 			return -EINVAL;
-
 		desc = msp->tx_pipeid->device->
 				device_prep_slave_sg(msp->tx_pipeid,
 						&sg, 1, DMA_TO_DEVICE,
@@ -1102,50 +1098,49 @@ static int msp_single_dma_rx(struct msp *msp, dma_addr_t data, size_t bytes)
 }
 
 static void msp_cyclic_dma_start(struct msp *msp,
-				struct scatterlist *sg,
-				int sg_len,
+				dma_addr_t buf_addr,
+				size_t buf_len,
+				size_t period_len,
 				enum dma_data_direction direction)
 {
-#if 0
-	struct stedma40_cyclic_desc *cdesc;
 	int ret;
+	struct dma_async_tx_descriptor *cdesc;
 	struct dma_chan *pipeid = (direction == DMA_TO_DEVICE) ?
 				msp->tx_pipeid :
 				msp->rx_pipeid;
 
-	cdesc = stedma40_cyclic_prep_sg(pipeid,
-					sg,
-					sg_len,
-					direction,
-					DMA_PREP_INTERRUPT);
+	pr_debug("%s: buf_addr = %p\n", __func__, (void *) buf_addr);
+	pr_debug("%s: buf_len = %d\n", __func__, buf_len);
+	pr_debug("%s: perios_len = %d\n", __func__, period_len);
+
+	/* setup the cyclic description */
+	cdesc = pipeid->device->device_prep_dma_cyclic(pipeid,
+			buf_addr, /* reuse the sq list for the moment */
+			buf_len,
+			period_len,
+			direction);
+
 	if (IS_ERR(cdesc)) {
-		pr_err("%s: Error: stedma40_cyclic_prep_sg failed (%ld)!\n",
+		pr_err("%s: Error: device_prep_dma_cyclic failed (%ld)!\n",
 			__func__,
 			PTR_ERR(cdesc));
 		return;
 	}
 
-	cdesc->period_callback = (direction == DMA_TO_DEVICE) ?
+	cdesc->callback = (direction == DMA_TO_DEVICE) ?
 				msp->xfer_data.tx_handler :
 				msp->xfer_data.rx_handler;
-	cdesc->period_callback_param = (direction == DMA_TO_DEVICE) ?
+	cdesc->callback_param = (direction == DMA_TO_DEVICE) ?
 				msp->xfer_data.tx_callback_data :
 				msp->xfer_data.rx_callback_data;
 
-	ret = stedma40_cyclic_start(pipeid);
-	if (ret) {
-		pr_err("%s: stedma40_cyclic_start failed (%d)!\n", __func__, ret);
-		goto free;
-	}
+	/* submit to the dma */
+	ret = dmaengine_submit(cdesc);
 
-	msp->infinite = true;
+	/* start the dma */
+	dma_async_issue_pending(pipeid);
 
 	return;
-
-free:
-	stedma40_cyclic_free(pipeid);
-#endif
-  return;
 }
 
 /* Legacy function. Used by HATS driver. */
@@ -1205,7 +1200,7 @@ free_tx:
 	stedma40_cyclic_free(msp->tx_pipeid);
 free_rx:
 	stedma40_cyclic_free(msp->rx_pipeid);
-#endif 
+#endif
   return;
 }
 
@@ -1260,16 +1255,18 @@ static int msp_dma_xfer(struct msp *msp, struct i2s_message *msg)
 	case I2S_TRANSFER_MODE_CYCLIC_DMA:
 		if (msg->i2s_direction == I2S_DIRECTION_TX) {
 			msp_cyclic_dma_start(msp,
-					msg->sg,
-					msg->sg_len,
+					msg->buf_addr,
+					msg->buf_len,
+					msg->period_len,
 					DMA_TO_DEVICE);
 			stm_msp_write((stm_msp_read(msp->registers + MSP_GCR) |
 				(TX_ENABLE)),
 				msp->registers + MSP_GCR);
 		} else {
 			msp_cyclic_dma_start(msp,
-					msg->sg,
-					msg->sg_len,
+					msg->buf_addr,
+					msg->buf_len,
+					msg->period_len,
 					DMA_FROM_DEVICE);
 			stm_msp_write((stm_msp_read(msp->registers + MSP_GCR) |
 				(RX_ENABLE)),
@@ -1653,37 +1650,20 @@ static int stm_msp_disable(struct msp *msp, int direction, i2s_flag flag)
 		return 0;
 	}
 	if (msp->work_mode == MSP_DMA_MODE) {
-#if 0
 		if (flag == DISABLE_ALL || flag == DISABLE_TRANSMIT) {
 			if (msp->tx_pipeid != NULL) {
-				if (msp->infinite) {
-					stedma40_cyclic_stop(msp->tx_pipeid);
-					stedma40_cyclic_free(msp->tx_pipeid);
-				}
-				msp->tx_pipeid->device->
-					device_control(msp->tx_pipeid,
-						       DMA_TERMINATE_ALL, 0);
+				dmaengine_terminate_all(msp->tx_pipeid);
 				dma_release_channel(msp->tx_pipeid);
 				msp->tx_pipeid = NULL;
 			}
 		}
 		if ((flag == DISABLE_ALL || flag == DISABLE_RECEIVE)) {
 			if (msp->rx_pipeid != NULL) {
-				if (msp->infinite) {
-					stedma40_cyclic_stop(msp->rx_pipeid);
-					stedma40_cyclic_free(msp->rx_pipeid);
-				}
-
-				msp->rx_pipeid->device->
-					device_control(msp->rx_pipeid,
-						       DMA_TERMINATE_ALL, 0);
+				dmaengine_terminate_all(msp->rx_pipeid);
 				dma_release_channel(msp->rx_pipeid);
 				msp->rx_pipeid = NULL;
 			}
 		}
-
-		msp->infinite = false;
-#endif 
 	}
 	if (flag == DISABLE_TRANSMIT)
 		msp_disable_transmit(msp);
@@ -1821,18 +1801,6 @@ static int stm_msp_hw_status(struct i2s_controller *i2s_cont)
 		stm_msp_write(status, msp->registers + MSP_ICR);
 
 	return status;
-}
-
-static dma_addr_t stm_msp_get_pointer(struct i2s_controller *i2s_cont,
-				enum i2s_direction_t i2s_direction)
-{
-#if 0
-	struct msp *msp = (struct msp *)i2s_cont->data;
-	return (i2s_direction == I2S_DIRECTION_TX) ?
-		stedma40_get_src_addr(msp->tx_pipeid) :
-		stedma40_get_dst_addr(msp->rx_pipeid);
-#endif
-  return 0;
 }
 
 		/*Platform driver's functions */

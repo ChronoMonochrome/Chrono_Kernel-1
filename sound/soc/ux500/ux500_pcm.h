@@ -36,6 +36,7 @@ struct ux500_pcm_private {
 	int msp_id;
 	int stream_id;
 	unsigned int no_of_underruns;
+	unsigned int offset;
 };
 
 void ux500_pcm_dma_eot_handler(void *data);
