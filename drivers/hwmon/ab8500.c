@@ -47,7 +47,7 @@
  */
 #define DEFAULT_POWER_OFF_DELAY 10000
 
-#define NUM_SENSORS 4
+#define NUM_SENSORS 5
 
 /* The driver monitors GPADC - ADC_AUX1 and ADC_AUX2 */
 #define NUM_MONITORED_SENSORS 2
@@ -316,10 +316,13 @@ static ssize_t show_label(struct device *dev,
 		name = "ext_db8500";
 		break;
 	case 3:
-		name = "battery";
+		name = "bat_temp";
 		break;
 	case 4:
 		name = "ab8500";
+		break;
+    case 5:
+		name = "bat_ctrl";
 		break;
 	default:
 		return -EINVAL;
@@ -534,6 +537,10 @@ static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, show_label, NULL, 4);
 static SENSOR_DEVICE_ATTR(temp4_crit_alarm, S_IRUGO,
 			  show_crit_alarm, NULL, 4);
 
+/* GPADC - BAT_CTRL */
+static SENSOR_DEVICE_ATTR(temp5_label, S_IRUGO, show_label, NULL, 5);
+static SENSOR_DEVICE_ATTR(temp5_input, S_IRUGO, show_input, NULL, 5);
+
 static struct attribute *ab8500_temp_attributes[] = {
 	&sensor_dev_attr_temp_power_off_delay.dev_attr.attr,
 	&sensor_dev_attr_temp_monitor_delay.dev_attr.attr,
@@ -562,6 +569,9 @@ static struct attribute *ab8500_temp_attributes[] = {
 	/* AB8500 */
 	&sensor_dev_attr_temp4_label.dev_attr.attr,
 	&sensor_dev_attr_temp4_crit_alarm.dev_attr.attr,
+	/* GPADC - BAT_CTRL */
+	&sensor_dev_attr_temp5_label.dev_attr.attr,
+	&sensor_dev_attr_temp5_input.dev_attr.attr,
 	NULL
 };
 
@@ -645,7 +655,8 @@ static int __devinit ab8500_temp_probe(struct platform_device *pdev)
 	 * AB8500 IRQ will be launched if die crit temp limit is reached.
 	 *
 	 * Also:
-	 * Battery temperature thresholds will not be exposed via hwmon.
+	 * Battery temperature (BatTemp and BatCtrl) thresholds will
+	 * not be exposed via hwmon.
 	 *
 	 * Make sure indexes correspond to the attribute indexes
 	 * used when calling SENSOR_DEVICE_ATRR
@@ -653,7 +664,7 @@ static int __devinit ab8500_temp_probe(struct platform_device *pdev)
 	data->gpadc_addr[0] = ADC_AUX1;
 	data->gpadc_addr[1] = ADC_AUX2;
 	data->gpadc_addr[2] = BTEMP_BALL;
-
+	data->gpadc_addr[4] = BAT_CTRL;
 	mutex_init(&data->lock);
 	data->pdev = pdev;
 	data->power_off_delay = DEFAULT_POWER_OFF_DELAY;
