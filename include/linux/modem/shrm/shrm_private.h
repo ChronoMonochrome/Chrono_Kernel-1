@@ -13,7 +13,7 @@
 #include <linux/io.h>
 #include <linux/ioport.h>
 #include <linux/interrupt.h>
-#include <mach/shrm.h>
+#include <linux/modem/shrm/shrm.h>
 
 #define GOP_OUTPUT_REGISTER_BASE (0x0)
 #define GOP_SET_REGISTER_BASE    (0x4)

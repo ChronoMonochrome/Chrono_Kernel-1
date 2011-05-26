@@ -15,13 +15,13 @@
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
 #include <linux/sched.h>
+#include <linux/modem/shrm/shrm_driver.h>
+#include <linux/modem/shrm/shrm_private.h>
+#include <linux/modem/shrm/shrm_config.h>
+#include <linux/modem/shrm/shrm.h>
 #include <asm/atomic.h>
 
 #include <mach/isa_ioctl.h>
-#include <mach/shrm_driver.h>
-#include <mach/shrm_private.h>
-#include <mach/shrm_config.h>
-#include <mach/shrm.h>
 
 
 #define NAME "IPC_ISA"

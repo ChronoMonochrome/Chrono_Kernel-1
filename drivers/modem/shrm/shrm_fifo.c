@@ -7,10 +7,10 @@
  * License terms: GNU General Public License (GPL) version 2
  */
 
-#include <mach/shrm.h>
-#include <mach/shrm_driver.h>
-#include <mach/shrm_private.h>
-#include <mach/shrm_net.h>
+#include <linux/modem/shrm/shrm.h>
+#include <linux/modem/shrm/shrm_driver.h>
+#include <linux/modem/shrm/shrm_private.h>
+#include <linux/modem/shrm/shrm_net.h>
 
 #define L1_BOOT_INFO_REQ	1
 #define L1_BOOT_INFO_RESP	2

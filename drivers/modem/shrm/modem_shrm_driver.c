@@ -19,14 +19,6 @@
 #include <linux/uaccess.h>
 #include <asm/atomic.h>
 #include <linux/io.h>
-
-#include <mach/isa_ioctl.h>
-#include <mach/shrm_driver.h>
-#include <mach/shrm_private.h>
-#include <mach/shrm_config.h>
-#include <mach/shrm_net.h>
-#include <mach/shrm.h>
-
 #include <linux/skbuff.h>
 #ifdef CONFIG_HIGH_RES_TIMERS
 #include <linux/hrtimer.h>
@@ -35,14 +27,20 @@ static struct hrtimer timer;
 #include <linux/if_ether.h>
 #include <linux/netdevice.h>
 #include <linux/phonet.h>
+#include <linux/modem/shrm/shrm_driver.h>
+#include <linux/modem/shrm/shrm_private.h>
+#include <linux/modem/shrm/shrm_config.h>
+#include <linux/modem/shrm/shrm_net.h>
+#include <linux/modem/shrm/shrm.h>
 
+#include <mach/isa_ioctl.h>
 /* debug functionality */
 #define ISA_DEBUG 0
 
 #define PHONET_TASKLET
 #define MAX_RCV_LEN	2048
 
-void do_phonet_rcv_tasklet(unsigned long unused);
+static void do_phonet_rcv_tasklet(unsigned long unused);
 struct tasklet_struct phonet_rcv_tasklet;
 
 /**

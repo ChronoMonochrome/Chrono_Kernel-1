@@ -11,16 +11,15 @@
 #include <linux/delay.h>
 #include <linux/netlink.h>
 #include <linux/workqueue.h>
-
-#include <mach/shrm.h>
-#include <mach/shrm_driver.h>
-#include <mach/shrm_private.h>
-#include <mach/shrm_net.h>
+#include <linux/modem/shrm/shrm.h>
+#include <linux/modem/shrm/shrm_driver.h>
+#include <linux/modem/shrm/shrm_private.h>
+#include <linux/modem/shrm/shrm_net.h>
+#include <linux/modem/modem_client.h>
 #include <mach/prcmu.h>
 #include <mach/prcmu-regs.h>
 #include <mach/suspend.h>
 #include <mach/reboot_reasons.h>
-#include <linux/modem/modem_client.h>
 
 #define L2_HEADER_ISI		0x0
 #define L2_HEADER_RPC		0x1
@@ -375,7 +374,8 @@ void shm_ac_read_notif_0_tasklet(unsigned long tasklet_data)
 			shrm->msr_flag = 0;
 
 			/* multicast that modem is online */
-			nl_send_multicast_message(SHRM_NL_STATUS_MOD_ONLINE, GFP_ATOMIC);
+			nl_send_multicast_message(SHRM_NL_STATUS_MOD_ONLINE,
+					GFP_ATOMIC);
 		}
 
 	} else if (boot_state == BOOT_DONE) {

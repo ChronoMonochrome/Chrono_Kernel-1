@@ -2,8 +2,8 @@
 # SHM HW kernel configuration
 #
 config U8500_SHRM
-	tristate "U8500 SHRM hardware driver"
-	depends on ARCH_U8500 && PHONET
+	bool "U8500 SHRM hardware driver"
+	depends on ARCH_U8500 && PHONET && MODEM_U8500
 	default Y
 	---help---
 	  If you say Y here, you will enable the STN8500 SHM hardware driver.
@@ -23,7 +23,7 @@ choice
 endchoice
 
 config U8500_SHRM_LOOP_BACK
-	tristate "U8500 SHRM loopback"
+	bool "U8500 SHRM loopback"
 	depends on U8500_SHRM
 	default n
 	---help---

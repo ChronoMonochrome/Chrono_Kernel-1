@@ -22,12 +22,12 @@
 #include <asm/atomic.h>
 #include <linux/io.h>
 #include <linux/slab.h>
+#include <linux/modem/shrm/shrm_driver.h>
+#include <linux/modem/shrm/shrm_private.h>
+#include <linux/modem/shrm/shrm_config.h>
+#include <linux/modem/shrm/shrm.h>
 
 #include <mach/isa_ioctl.h>
-#include <mach/shrm_driver.h>
-#include <mach/shrm_private.h>
-#include <mach/shrm_config.h>
-#include <mach/shrm.h>
 
 
 #ifdef CONFIG_HIGH_RES_TIMERS
@@ -956,14 +956,14 @@ static int isa_open(struct inode *inode, struct file *filp)
 }
 
 const struct file_operations isa_fops = {
-	.owner	= THIS_MODULE,
-	.open 	= isa_open,
+	.owner	 = THIS_MODULE,
+	.open	 = isa_open,
 	.release = isa_close,
-	.ioctl 	= isa_ioctl,
-	.mmap 	= isa_mmap,
-	.read 	= isa_read,
-	.write 	= isa_write,
-	.poll	= isa_select,
+	.ioctl	 = isa_ioctl,
+	.mmap	 = isa_mmap,
+	.read	 = isa_read,
+	.write	 = isa_write,
+	.poll	 = isa_select,
 };
 
 /**
@@ -1123,7 +1123,7 @@ static int __init shrm_probe(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 3);
 	if (!res) {
 		dev_err(shrm->dev,
-			"Unable to map Cmt_msg_pending_notif_common IRQ base\n");
+			"Unable to map Cmt_msg_pending_notif_common IRQbase\n");
 		err = -EBUSY;
 		goto rollback_intr;
 	}

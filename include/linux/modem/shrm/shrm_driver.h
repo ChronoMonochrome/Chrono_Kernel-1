@@ -21,9 +21,7 @@
 #include <linux/platform_device.h>
 #include <linux/sysfs.h>
 #include <linux/modem/modem_client.h>
-
-#include <mach/shrm.h>
-
+#include <linux/modem/shrm/shrm.h>
 #include <linux/cdev.h>
 
 #define ISA_DEVICES 6

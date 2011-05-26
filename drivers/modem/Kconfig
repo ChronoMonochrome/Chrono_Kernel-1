@@ -18,3 +18,5 @@ config MODEM_U8500
 	 Application processor.
 
 	 If unsure, say N.
+
+source "drivers/modem/shrm/Kconfig"

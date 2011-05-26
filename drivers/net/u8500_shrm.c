@@ -12,15 +12,15 @@
 #include <linux/phonet.h>
 #include <linux/if_phonet.h>
 #include <linux/if_arp.h>
+#include <linux/modem/shrm/shrm_driver.h>
+#include <linux/modem/shrm/shrm_private.h>
+#include <linux/modem/shrm/shrm_config.h>
+#include <linux/modem/shrm/shrm_net.h>
+#include <linux/modem/shrm/shrm.h>
 #include <net/sock.h>
 #include <net/phonet/phonet.h>
 #include <net/phonet/pep.h>
 
-#include <mach/shrm_driver.h>
-#include <mach/shrm_private.h>
-#include <mach/shrm_config.h>
-#include <mach/shrm_net.h>
-#include <mach/shrm.h>
 
 /**
  * shrm_net_receive() - receive data and copy to user space buffer
