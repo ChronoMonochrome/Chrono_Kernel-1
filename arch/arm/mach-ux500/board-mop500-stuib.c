@@ -14,6 +14,7 @@
 #include <linux/l3g4200d.h>
 #include <linux/i2c.h>
 #include <linux/input/matrix_keypad.h>
+#include <linux/input/lps001wp.h>
 #include <asm/mach-types.h>
 
 #include "board-mop500.h"
@@ -42,6 +43,11 @@ static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata_u8500 = {
 	.negative_z = 1,
 };
 
+static struct lps001wp_prs_platform_data __initdata lps001wp_pdata = {
+	.poll_interval = 500,
+	.min_interval = 10,
+};
+
 static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 	{
 		/* LSM303DLH Accelerometer */
@@ -57,6 +63,11 @@ static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 		/* L3G4200D Gyroscope */
 		I2C_BOARD_INFO("l3g4200d", 0x68),
 		.platform_data = &l3g4200d_pdata_u8500,
+	},
+	{
+		/* LSP001WM Barometer */
+		I2C_BOARD_INFO("lps001wp_prs_sysfs", 0x5C),
+		.platform_data = &lps001wp_pdata,
 	},
 };
 
