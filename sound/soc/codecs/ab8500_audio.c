@@ -1340,6 +1340,12 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_bfifomast,
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifoint,
 	REG_FIFOCONF3, REG_FIFOCONF3_BFIFORUN_SHIFT, enum_dis_ena);
 
+/* Sidetone */
+static const char *enum_coeffctrl[] = {"Ready", "Apply"};
+static SOC_ENUM_SINGLE_DECL(soc_enum_coeffctrl,
+	REG_SIDFIRADR, REG_SIDFIRADR_FIRSIDSET, enum_coeffctrl);
+
+
 /* TODO: move to DAPM */
 static SOC_ENUM_SINGLE_DECL(soc_enum_enfirsids,
 	REG_SIDFIRCONF, REG_SIDFIRCONF_ENFIRSIDS, enum_dis_ena);
@@ -1585,7 +1591,26 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_FIFOCONF6,
 		REG_FIFOCONF6_BFIFOSAMPLE_SHIFT,
 		REG_FIFOCONF6_BFIFOSAMPLE_MAX,
-		NORMAL)
+		NORMAL),
+
+	/* Sidetone */
+	SOC_SINGLE("Sidetone FIR Coeffecient Index",
+		REG_SIDFIRADR,
+		REG_SIDFIRADR_ADDRESS_SHIFT,
+		REG_SIDFIRADR_ADDRESS_MAX,
+		NORMAL),
+	SOC_ENUM("Sidetone FIR Apply Coeffecients", soc_enum_coeffctrl),
+
+	SOC_SINGLE("Sidetone FIR Coeffecient Value MSB",
+		REG_SIDFIRCOEF1,
+		REG_SIDFIRCOEFX_VALUE_SHIFT,
+		REG_SIDFIRCOEFX_VALUE_MAX,
+		NORMAL),
+	SOC_SINGLE("Sidetone FIR Coeffecient Value LSB",
+		REG_SIDFIRCOEF2,
+		REG_SIDFIRCOEFX_VALUE_SHIFT,
+		REG_SIDFIRCOEFX_VALUE_MAX,
+		NORMAL),
 };
 
 static int ab8500_codec_set_format_if1(struct snd_soc_codec *codec, unsigned int fmt)
