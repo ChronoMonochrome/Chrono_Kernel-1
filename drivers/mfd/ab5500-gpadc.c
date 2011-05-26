@@ -47,7 +47,7 @@
 #define AB5500_GPADC_AUTO_TRIG_ADOUT0_CTRL	0x34
 #define AB5500_GPADC_AUTO_TRIG_ADOUT1_CTRL	0x35
 #define AB5500_GPADC_AUTO_TRIG0_MUX_CTRL	0x37
-#define AB5500_GPADC_AUTO_XALTEMP_CTRL		0x57
+#define AB5500_GPADC_AUTO_XTALTEMP_CTRL		0x57
 #define AB5500_GPADC_KELVIN_CTRL		0xFE
 
 /* gpadc constants */
@@ -194,6 +194,7 @@ struct ab5500_gpadc {
 	struct mutex ab5500_gpadc_lock;
 	struct regulator *regu;
 	int irq;
+	int prev_bdata;
 	spinlock_t gpadc_auto_lock;
 	struct adc_auto_trigger adc_trig[N_AUTO_TRIGGER];
 	struct workqueue_struct *gpadc_wq;
@@ -358,7 +359,7 @@ int ab5500_gpadc_convert(struct ab5500_gpadc *gpadc, u8 input)
 		break;
 	case XTAL_TEMP:
 		ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
-			AB5500_BANK_ADC, AB5500_GPADC_AUTO_XALTEMP_CTRL,
+			AB5500_BANK_ADC, AB5500_GPADC_AUTO_XTALTEMP_CTRL,
 			ADC_XTAL_FORCE_MASK, ADC_XTAL_FORCE_EN);
 		if (ret < 0) {
 			dev_err(gpadc->dev, "gpadc: fail to set xtaltemp\n");
@@ -454,7 +455,7 @@ int ab5500_gpadc_convert(struct ab5500_gpadc *gpadc, u8 input)
 	 */
 	if (input == XTAL_TEMP) {
 		ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
-			AB5500_BANK_ADC, AB5500_GPADC_AUTO_XALTEMP_CTRL,
+			AB5500_BANK_ADC, AB5500_GPADC_AUTO_XTALTEMP_CTRL,
 			ADC_XTAL_FORCE_MASK, ADC_XTAL_FORCE_DI);
 		if (ret < 0) {
 			dev_err(gpadc->dev,
@@ -478,6 +479,17 @@ int ab5500_gpadc_convert(struct ab5500_gpadc *gpadc, u8 input)
 	}
 
 	data = (high_data << 2) | (low_data >> 6);
+	if (input == BAT_CTRL || input == BTEMP_BALL) {
+		/*
+		 * TODO: Re-check with h/w team
+		 * discard null or value < 5, as there is some error
+		 * in conversion
+		 */
+		if (data < 5)
+			data = gpadc->prev_bdata;
+		else
+			gpadc->prev_bdata = data;
+	}
 	result = ab5500_gpadc_ad_to_voltage(gpadc, input, data);
 
 	mutex_unlock(&gpadc->ab5500_gpadc_lock);
