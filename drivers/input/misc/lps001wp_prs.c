@@ -35,19 +35,16 @@
 	moved to input/misc
 ******************************************************************************/
 
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/init.h>
 #include <linux/err.h>
 #include <linux/errno.h>
 #include <linux/delay.h>
-#include <linux/fs.h>
 #include <linux/i2c.h>
-
 #include <linux/input.h>
-#include <linux/uaccess.h>
-
 #include <linux/workqueue.h>
-#include <linux/irq.h>
-#include <linux/gpio.h>
-#include <linux/interrupt.h>
 #include <linux/device.h>
 
 #include <linux/input/lps001wp.h>
@@ -57,13 +54,12 @@
 #define	DEBUG	1
 
 
-#define	PR_ABS_MAX	USHORT_MAX
-
-#define	PR_ABS_MIN	(u16)(0U)
-#define	PR_DLT_MAX	SHORT_MAX
-#define	PR_DLT_MIN	SHORT_MIN
-#define	TEMP_MAX	SHORT_MAX
-#define TEMP_MIN	SHORT_MIN
+#define	PR_ABS_MAX	 0xffff
+#define	PR_ABS_MIN	 0x0000
+#define	PR_DLT_MAX	 0x7ffff
+#define	PR_DLT_MIN	-0x80000 /* 16-bit signed value */
+#define	TEMP_MAX	 0x7fff
+#define TEMP_MIN	-0x80000 /* 16-bit signed value */
 
 
 #define	SENSITIVITY_T_SHIFT	6	/** =	64 LSB/degrC	*/
