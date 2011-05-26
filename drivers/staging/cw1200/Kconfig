@@ -50,6 +50,9 @@ config CW1200_HT_SUPPORT
 menu "Driver debug features"
       depends on CW1200
 
+config CW1200_DEBUGFS
+      bool "Expose driver internals to DebugFS (DEVELOPMENT)"
+
 config CW1200_BH_DEBUG
       bool "Enable low-level device communication logs (DEVELOPMENT)"
 

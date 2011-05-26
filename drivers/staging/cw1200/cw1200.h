@@ -32,6 +32,7 @@
 
 /* extern */ struct sbus_ops;
 /* extern */ struct task_struct;
+/* extern */ struct cw1200_debug_priv;
 
 #if defined(CONFIG_CW1200_TXRX_DEBUG)
 #define txrx_printk(...) printk(__VA_ARGS__)
@@ -54,6 +55,7 @@ enum cw1200_join_status {
 struct cw1200_common {
 	struct cw1200_queue		tx_queue[4];
 	struct cw1200_queue_stats	tx_queue_stats;
+	struct cw1200_debug_priv	*debug;
 
 	struct ieee80211_hw		*hw;
 	struct ieee80211_vif		*vif;
@@ -81,7 +83,7 @@ struct cw1200_common {
 	/* BBP/MAC state */
 	struct ieee80211_rate *rates;
 	u8 mac_addr[ETH_ALEN];
-	struct ieee80211_channel *channel;
+	struct ieee80211_channel	*channel;
 	u8 bssid[ETH_ALEN];
 	struct wsm_edca_params		edca;
 	struct wsm_association_mode	association_mode;

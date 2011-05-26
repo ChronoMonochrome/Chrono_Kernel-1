@@ -38,6 +38,7 @@
 #include "sta.h"
 #include "ap.h"
 #include "scan.h"
+#include "debug.h"
 
 MODULE_AUTHOR("Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>");
 MODULE_DESCRIPTION("Softmac ST-Ericsson CW1200 common code");
@@ -341,7 +342,7 @@ EXPORT_SYMBOL_GPL(cw1200_init_common);
 
 int cw1200_register_common(struct ieee80211_hw *dev)
 {
-	/* struct cw1200_common *priv = dev->priv; */
+	struct cw1200_common *priv = dev->priv;
 	int err;
 
 	err = ieee80211_register_hw(dev);
@@ -356,6 +357,8 @@ int cw1200_register_common(struct ieee80211_hw *dev)
 	if (err)
 		return err;
 #endif /* CONFIG_CW1200_LEDS */
+
+	cw1200_debug_init(priv);
 
 	cw1200_dbg(CW1200_DBG_MSG, "is registered as '%s'\n",
 			wiphy_name(dev->wiphy));
@@ -376,6 +379,8 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 {
 	struct cw1200_common *priv = dev->priv;
 	int i;
+
+	cw1200_debug_release(priv);
 
 	priv->sbus_ops->irq_unsubscribe(priv->sbus_priv);
 	cw1200_unregister_bh(priv);
