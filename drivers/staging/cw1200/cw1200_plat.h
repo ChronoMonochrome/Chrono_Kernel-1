@@ -8,7 +8,6 @@
 #include <linux/ioport.h>
 
 struct cw1200_platform_data {
-	struct platform_device *device;
 	const char *mmc_id;
 	const struct resource *irq;
 	const struct resource *reset;
