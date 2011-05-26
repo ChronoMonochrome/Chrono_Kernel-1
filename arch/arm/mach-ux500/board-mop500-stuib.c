@@ -11,6 +11,7 @@
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/lsm303dlh.h>
+#include <linux/l3g4200d.h>
 #include <linux/i2c.h>
 #include <linux/input/matrix_keypad.h>
 #include <asm/mach-types.h>
@@ -31,6 +32,16 @@ static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata= {
 	.negative_z = 0,
 };
 
+static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata_u8500 = {
+	.name_gyr = "l3g4200d",
+	.axis_map_x = 1,
+	.axis_map_y = 0,
+	.axis_map_z = 2,
+	.negative_x = 0,
+	.negative_y = 0,
+	.negative_z = 1,
+};
+
 static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 	{
 		/* LSM303DLH Accelerometer */
@@ -41,6 +52,11 @@ static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 		/* LSM303DLH Magnetometer */
 		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
 		.platform_data = &lsm303dlh_pdata,
+	},
+	{
+		/* L3G4200D Gyroscope */
+		I2C_BOARD_INFO("l3g4200d", 0x68),
+		.platform_data = &l3g4200d_pdata_u8500,
 	},
 };
 
