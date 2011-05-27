@@ -111,7 +111,6 @@ obj-$(CONFIG_SND_SOC_AB3550)    += snd-soc-ab3550.o
 obj-$(CONFIG_SND_SOC_AB5500)    += snd-soc-ab5500.o
 obj-$(CONFIG_SND_SOC_AB8500)    += snd-soc-ab8500_audio.o
 obj-$(CONFIG_SND_SOC_88PM860X)	+= snd-soc-88pm860x.o
-obj-$(CONFIG_SND_SOC_AB3550)    += snd-soc-ab3550.o
 obj-$(CONFIG_SND_SOC_AC97_CODEC)	+= snd-soc-ac97.o
 obj-$(CONFIG_SND_SOC_AD1836)	+= snd-soc-ad1836.o
 obj-$(CONFIG_SND_SOC_AD193X)	+= snd-soc-ad193x.o

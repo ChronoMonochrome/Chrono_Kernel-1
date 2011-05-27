@@ -1,5 +1,5 @@
 /*
- * Copyright (C) ST-Ericsson SA 2010
+ * Copyright (C) ST-Ericsson SA 2011
  *
  * Author: Xie Xiaolei <xie.xiaolei@etericsson.com>,
  *         Ola Lilja <ola.o.lilja@stericsson.com>,
@@ -19,20 +19,20 @@
 #include <linux/pm.h>
 #include <linux/platform_device.h>
 #include <linux/spi/spi.h>
-#include <linux/mfd/abx500.h>
-#include <linux/bitmap.h>
-#include <linux/bitops.h>
-#include <linux/mutex.h>
-#include <asm/atomic.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/initval.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
+#include <linux/mfd/abx500.h>
+#include <linux/bitmap.h>
+#include <linux/bitops.h>
+#include <asm/atomic.h>
+#include <linux/rwsem.h>
+#include <linux/mutex.h>
+#include <stdarg.h>
 #include "ab5500.h"
-
-#define AB5500_CODEC_DEBUG 0
 
 /* codec private data */
 struct ab5500_codec_dai_data {
@@ -56,6 +56,9 @@ static void mask_set_reg(u8 reg, u8 mask, u8 val)
 		       __func__);
 		return;
 	}
+	/* Check if the reg value falls within the
+	 * range of AB5500 real registers. If
+	 * so, set the mask */
 	if (reg < AB5500_FIRST_REG)
 		return;
 	if (reg <= AB5500_LAST_REG) {
@@ -68,6 +71,11 @@ static void mask_set_reg(u8 reg, u8 mask, u8 val)
 		return;
 
 	/* treatment of virtual registers follows */
+	/*Compute the difference between the new value and the old value.
+	 *1.If there is no difference, do nothing.
+	 *2.If the difference is in the PWR_SHIFT,
+	 *set the PWR masks appropriately.
+	 */
 	oldval = virtual_regs[reg - AB5500_LAST_REG - 1];
 	diff = (val ^ oldval) & mask;
 	if (!diff)
@@ -76,9 +84,13 @@ static void mask_set_reg(u8 reg, u8 mask, u8 val)
 	switch (reg) {
 	case AB5500_VIRTUAL_REG3:
 		if ((diff & (1 << SPKR1_PWR_SHIFT))) {
-			if ((val & (1 << SPKR1_PWR_SHIFT)) == 0)
+			if ((val & (1 << SPKR1_PWR_SHIFT)) == 0) {
+				/* If the new value has PWR_SHIFT disabled, set the 
+				 * PWR_MASK to 0 */
 				mask_set_reg(SPKR1, SPKRx_PWR_MASK, 0);
-			else
+			}
+			else {
+				/* Else, set the PWR_MASK values based on the old value. */
 				switch (oldval & SPKR1_MODE_MASK) {
 				case 0:
 					mask_set_reg(SPKR1, SPKRx_PWR_MASK,
@@ -94,10 +106,15 @@ static void mask_set_reg(u8 reg, u8 mask, u8 val)
 					break;
 				}
 		}
+		}
 		if ((diff & (1 << SPKR2_PWR_SHIFT))) {
-			if ((val & (1 << SPKR2_PWR_SHIFT)) == 0)
+			if ((val & (1 << SPKR2_PWR_SHIFT)) == 0) {
+				/* If the new value has PWR_SHIFT disabled, set the 
+				 * PWR_MASK to 0 */
 				mask_set_reg(SPKR2, SPKRx_PWR_MASK, 0);
-			else
+			}
+			else {
+				/* Else, set the PWR_MASK values based on the old value. */
 				switch (oldval & SPKR2_MODE_MASK) {
 				case 0:
 					mask_set_reg(SPKR2, SPKRx_PWR_MASK,
@@ -108,6 +125,7 @@ static void mask_set_reg(u8 reg, u8 mask, u8 val)
 						     SPKRx_PWR_CLS_D_VALUE);
 					break;
 				}
+			}
 		}
 
 		break;
@@ -126,6 +144,8 @@ static u8 read_reg(u8 reg)
 		       __func__);
 		return 0;
 	}
+	/* Check if the reg value falls within the range of AB5500 real
+	 * registers.If so, set the mask */
 	if (reg < AB5500_FIRST_REG)
 		return 0;
 	else if (reg <= AB5500_LAST_REG) {
@@ -143,51 +163,38 @@ static u8 read_reg(u8 reg)
 /* Components that can be powered up/down */
 enum enum_widget {
 	widget_ear = 0,
-
 	widget_auxo1,
 	widget_auxo2,
 	widget_auxo3,
 	widget_auxo4,
-
 	widget_spkr1,
 	widget_spkr2,
 	widget_spkr1_adder,
 	widget_spkr2_adder,
-
 	widget_pwm_spkr1,
 	widget_pwm_spkr2,
-
 	widget_pwm_spkr1n,
 	widget_pwm_spkr1p,
 	widget_pwm_spkr2n,
 	widget_pwm_spkr2p,
-
 	widget_line1,
 	widget_line2,
-
 	widget_dac1,
 	widget_dac2,
 	widget_dac3,
-
 	widget_rx1,
 	widget_rx2,
 	widget_rx3,
-
 	widget_mic1,
 	widget_mic2,
-
 	widget_micbias1,
 	widget_micbias2,
-
 	widget_apga1,
 	widget_apga2,
-
 	widget_tx1,
 	widget_tx2,
-
 	widget_adc1,
 	widget_adc2,
-
 	widget_if0_dld_l,
 	widget_if0_dld_r,
 	widget_if0_uld_l,
@@ -196,23 +203,19 @@ enum enum_widget {
 	widget_if1_dld_r,
 	widget_if1_uld_l,
 	widget_if1_uld_r,
-
 	widget_mic1p1,
 	widget_mic1n1,
 	widget_mic1p2,
 	widget_mic1n2,
-
 	widget_mic2p1,
 	widget_mic2n1,
 	widget_mic2p2,
 	widget_mic2n2,
-
 	widget_clock,
-
 	number_of_widgets
 };
 
-#if AB5500_CODEC_DEBUG
+/* This is only meant for debugging */
 static const char *widget_names[] = {
 	"EAR", "AUXO1", "AUXO2", "AUXO3", "AUXO4",
 	"SPKR1", "SPKR2", "SPKR1_ADDER", "SPKR2_ADDER",
@@ -233,7 +236,6 @@ static const char *widget_names[] = {
 	"MIC2P1", "MIC2N1", "MIC2P2", "MIC2N2",
 	"CLOCK"
 };
-#endif
 
 struct widget_pm {
 	enum enum_widget widget;
@@ -806,6 +808,15 @@ static struct snd_kcontrol_new ab5500_snd_controls[] = {
 	SOC_SINGLE("Negative Charge Pump", NEG_CHARGE_PUMP, 0, 0x03, 0)
 };
 
+/* count the number of 1 */
+#define count_ones(x) ({						\
+			int num;					\
+			typeof(x) y = x;				\
+			for (num = 0; y; y &= y - 1, num++)		\
+				;					\
+			num;						\
+		})
+
 enum enum_power {
 	POWER_OFF = 0,
 	POWER_ON = 1
@@ -857,8 +868,7 @@ static int has_stacked_neighbors(const unsigned long *neighbors)
 	return bitmap_intersects(stack_map, neighbors, number_of_widgets);
 }
 
-static void power_widget_unlocked(enum enum_power onoff,
-				  enum enum_widget widget)
+static void power_widget_unlocked(enum enum_power onoff, enum enum_widget widget)
 {
 	enum enum_widget w;
 	int done;
@@ -867,10 +877,14 @@ static void power_widget_unlocked(enum enum_power onoff,
 		return;
 	if (get_widget_power_status(widget) == onoff)
 		return;
+
 	for (w = widget, done = 0; !done;) {
 		unsigned long i;
 		unsigned long *srcs = widget_pm_array[w].source_list;
 		unsigned long *sinks = widget_pm_array[w].sink_list;
+
+		dev_info(ab5500_dev, "%s: processing widget %s.\n",
+			__func__, widget_names[w]);
 		if (onoff == POWER_ON &&
 		    !bitmap_empty(srcs, number_of_widgets) &&
 		    !has_powered_neighbors(srcs)) {
@@ -902,6 +916,10 @@ static void power_widget_unlocked(enum enum_power onoff,
 		mask_set_reg(widget_pm_array[w].reg,
 			     1 << widget_pm_array[w].shift,
 			     onoff == POWER_ON ? 0xff : 0);
+		dev_info(ab5500_dev, "%s: widget %s powered %s.\n",
+			__func__, widget_names[w],
+			onoff == POWER_ON ? "on" : "off");
+
 		if (onoff == POWER_ON &&
 		    !bitmap_empty(sinks, number_of_widgets) &&
 		    !has_powered_neighbors(sinks) &&
@@ -941,7 +959,7 @@ static void power_widget_locked(enum enum_power onoff,
 	mutex_unlock(&ab5500_pm_mutex);
 }
 
-#if AB5500_CODEC_DEBUG
+
 static void dump_registers(const char *where, ...)
 {
 	va_list ap;
@@ -955,7 +973,6 @@ static void dump_registers(const char *where, ...)
 	} while (1);
 	va_end(ap);
 }
-#endif
 
 /**
  * update the link two widgets.
@@ -1063,6 +1080,8 @@ static int ab5500_add_widgets(struct snd_soc_codec *codec)
 
 static void power_for_playback(enum enum_power onoff, int ifsel)
 {
+	dev_info(ab5500_dev, "%s: interface %d power %s.\n", __func__,
+		ifsel, onoff == POWER_ON ? "on" : "off");
 	if (mutex_lock_interruptible(&ab5500_pm_mutex)) {
 		dev_warn(ab5500_dev,
 			 "%s: Signal received while waiting on the PM mutex.\n",
@@ -1078,6 +1097,8 @@ static void power_for_playback(enum enum_power onoff, int ifsel)
 
 static void power_for_capture(enum enum_power onoff, int ifsel)
 {
+	dev_info(ab5500_dev, "%s: interface %d power %s", __func__,
+		ifsel, onoff == POWER_ON ? "on" : "off");
 	if (mutex_lock_interruptible(&ab5500_pm_mutex)) {
 		dev_warn(ab5500_dev,
 			 "%s: Signal received while waiting on the PM mutex.\n",
@@ -1095,6 +1116,7 @@ static int ab5500_add_controls(struct snd_soc_codec *codec)
 {
 	int err = 0, i, n = ARRAY_SIZE(ab5500_snd_controls);
 
+	pr_info("%s: %s called.\n", __FILE__, __func__);
 	for (i = 0; i < n; i++) {
 		err = snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
 					  &ab5500_snd_controls[i], codec));
@@ -1132,6 +1154,7 @@ static int ab5500_pcm_hw_params(struct snd_pcm_substream *substream,
 		       __func__);
 		return -EAGAIN;
 	}
+	dev_info(ab5500_dev, "%s called.\n", __func__);
 	switch (params_rate(hw_params)) {
 	case 8000:
 		val = I2Sx_SR_8000Hz;
@@ -1163,11 +1186,14 @@ static int ab5500_pcm_hw_params(struct snd_pcm_substream *substream,
 static int ab5500_pcm_prepare(struct snd_pcm_substream *substream,
 			      struct snd_soc_dai *dai)
 {
+	dev_info(ab5500_dev, "%s called.\n", __func__);
+
 	/* Configure registers for either playback or capture */
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		power_for_playback(POWER_ON, dai->id);
 	else
 		power_for_capture(POWER_ON, dai->id);
+	dump_registers(__func__, RX1, AUXO1_ADDER, RX2, AUXO2_ADDER, RX1_DPGA, RX2_DPGA, AUXO1, AUXO2, -1);
 	return 0;
 }
 
@@ -1175,10 +1201,12 @@ static void ab5500_pcm_shutdown(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *dai)
 {
 	u8 iface = dai->id == 0 ? INTERFACE0 : INTERFACE1;
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+	dev_info(ab5500_dev, "%s called.\n", __func__);
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		power_for_playback(POWER_OFF, dai->id);
-	else
+	} else {
 		power_for_capture(POWER_OFF, dai->id);
+	}
 	if (!dai->playback_active && !dai->capture_active &&
 	    (read_reg(iface) & I2Sx_MODE_MASK) == 0)
 		mask_set_reg(iface, MASTER_GENx_PWR_MASK, 0);
@@ -1194,6 +1222,7 @@ static int ab5500_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 {
 	u8 iface = (codec_dai->id == 0) ? INTERFACE0 : INTERFACE1;
 	u8 val = 0;
+	dev_info(ab5500_dev, "%s called.\n", __func__);
 
 	switch (fmt & (SND_SOC_DAIFMT_FORMAT_MASK |
 		       SND_SOC_DAIFMT_MASTER_MASK)) {
@@ -1341,7 +1370,7 @@ static int ab5500_codec_write_reg(struct snd_soc_codec *codec,
 		 * The APGA is to be turned on/off. The power bit and the
 		 * other bits in the same register won't be changed at the
 		 * same time since they belong to different controls.
-		 */
+		*/
 		if (diff & (1 << APGAx_PWR_SHIFT)) {
 			power_widget_locked(value >> APGAx_PWR_SHIFT & 1,
 					    apga);
@@ -1455,7 +1484,8 @@ static struct snd_soc_codec_driver ab5500_codec_drv = {
 	.resume =	ab5500_codec_resume,
 	.read =		ab5500_codec_read_reg,
 	.write =	ab5500_codec_write_reg,
-}; EXPORT_SYMBOL_GPL(ab5500_codec_drv);
+};
+EXPORT_SYMBOL_GPL(ab5500_codec_drv);
 
 static inline void init_playback_route(void)
 {
@@ -1542,10 +1572,11 @@ static inline void init_capture_gain(void)
 
 static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 {
-	int ret;
+	int ret = 0;
 	u8 reg;
 	struct ab5500_codec_dai_data *codec_drvdata;
 
+	pr_info("%s invoked with pdev = %p.\n", __func__, pdev);
 	ab5500_dev = &pdev->dev;
 	codec_drvdata = kzalloc(sizeof(struct ab5500_codec_dai_data),
 				GFP_KERNEL);
@@ -1567,6 +1598,7 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 
 	mask_set_reg(CLOCK, CLOCK_REF_SELECT_MASK | CLOCK_ENABLE_MASK,
 		     1 << CLOCK_REF_SELECT_SHIFT | 1 << CLOCK_ENABLE_SHIFT);
+	printk(KERN_ERR "Clock Setting ab5500\n");
 	init_playback_route();
 	init_playback_gain();
 	init_capture_route();
@@ -1577,6 +1609,7 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 
 static int __devexit ab5500_platform_remove(struct platform_device *pdev)
 {
+	pr_info("%s called.\n", __func__);
 	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0);
 	snd_soc_unregister_codec(ab5500_dev);
 	kfree(platform_get_drvdata(pdev));
@@ -1610,6 +1643,8 @@ static int __devinit ab5500_init(void)
 {
 	int ret;
 
+	pr_info("%s called.\n", __func__);
+
 	/*  Register codec platform driver. */
 	ret = platform_driver_register(&ab5500_platform_driver);
 	if (ret) {
@@ -1621,6 +1656,7 @@ static int __devinit ab5500_init(void)
 
 static void __devexit ab5500_exit(void)
 {
+	pr_info("%s called.\n", __func__);
 	platform_driver_unregister(&ab5500_platform_driver);
 }
 

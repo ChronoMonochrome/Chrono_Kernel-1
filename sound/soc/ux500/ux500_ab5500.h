@@ -1,5 +1,5 @@
 /*
- * Copyright (C) ST-Ericsson SA 2010
+ * Copyright (C) ST-Ericsson SA 2011
  *
  * Author: Xie Xiaolei (xie.xiaolei@stericsson.com)
  *         for ST-Ericsson.

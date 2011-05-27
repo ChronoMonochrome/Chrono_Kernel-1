@@ -1,5 +1,5 @@
 /*
- * Copyright (C) ST-Ericsson SA 2010
+ * Copyright (C) ST-Ericsson SA 2011
  *
  * Author: Xie Xiaolei (xie.xiaolei@stericsson.com)
  *         for ST-Ericsson.
@@ -12,20 +12,20 @@
  */
 
 #include <linux/io.h>
-#include <linux/spi/spi.h>
 #include <sound/soc.h>
-#include <sound/initval.h>
 #include <asm/mach-types.h>
 
 #include "ux500_pcm.h"
 #include "ux500_msp_dai.h"
+
+#include <linux/spi/spi.h>
+#include <sound/initval.h>
 
 #ifdef CONFIG_SND_SOC_UX500_AB5500
 #include "ux500_ab5500.h"
 #endif
 
 static struct platform_device *u5500_platform_dev;
-
 /* Create dummy devices for platform drivers */
 
 static struct platform_device ux500_pcm = {
@@ -35,6 +35,7 @@ static struct platform_device ux500_pcm = {
 			.platform_data = NULL,
 		},
 };
+
 
 /* Define the whole U5500 soundcard, linking platform to the codec-drivers  */
 struct snd_soc_dai_link u5500_dai_links[] = {
@@ -54,24 +55,8 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 				.hw_params = ux500_ab5500_hw_params,
 			}
 		}
-	},
-	{
-		.name = "ab5500_1",
-		.stream_name = "ab5500_1",
-		.cpu_dai_name = "i2s.1",
-		.codec_dai_name = "ab5500-codec-dai.1",
-		.platform_name = "ux500-pcm.0",
-		.codec_name = "ab5500-codec.9",
-		.init = NULL,
-		.ops = (struct snd_soc_ops[]) {
-			{
-				.startup = ux500_ab5500_startup,
-				.shutdown = ux500_ab5500_shutdown,
-				.hw_params = ux500_ab5500_hw_params,
-			}
-		}
-	},
 #endif
+	}
 };
 
 static struct snd_soc_card u5500_drvdata = {
@@ -83,7 +68,7 @@ static struct snd_soc_card u5500_drvdata = {
 
 static int __init u5500_soc_init(void)
 {
-	int ret;
+	int ret = 0;
 
 	pr_debug("%s: Enter.\n", __func__);
 

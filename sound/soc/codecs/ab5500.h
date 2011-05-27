@@ -1,6 +1,7 @@
 /*
- * Copyright (C) ST-Ericsson SA 2010
+ * Copyright (C) ST-Ericsson SA 2011
  *
+ * Register definitions for AB5500 codec
  * Author: Xie Xiaolei <xie.xiaolei@etericsson.com>
  *         for ST-Ericsson.
  *
@@ -396,4 +397,12 @@
 #define PWM_SPKR2P_SEL_SHIFT 3
 
 #define DUMMY_REG 0xff
+
+/* #define SPKR1_PWR_VBR_SHIFT 0 */
+/* #define SPKR1_PWR_CLS_D_SHIFT 1 */
+/* #define SPKR1_PWR_CLS_AB_SHIFT 2 */
+/* #define SPKR2_PWR_VBR_SHIFT 3 */
+/* #define SPKR2_PWR_CLS_D_SHIFT 4 */
+/* #define SPKR2_PWR_CLS_AB_SHIFT 5 */
+
 #endif
