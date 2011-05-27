@@ -394,8 +394,6 @@ static struct ux500_pin_lookup mop500_pins[] = {
 /*
  * This function is called to force gpio power save
  * settings during suspend.
- * This is a temporary solution until all drivers are
- * controlling their pin settings when in inactive mode.
  */
 static void mop500_pins_suspend_force(void)
 {
@@ -407,7 +405,7 @@ static void mop500_pins_suspend_force(void)
 	/*
 	 * Apply HSI GPIO Config for DeepSleep
 	 *
-	 * Bank0
+	 * Bank0 (pins 0 to 31)
 	 */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK0_BASE);
 
@@ -429,7 +427,7 @@ static void mop500_pins_suspend_force(void)
 	writel(readl(bankaddr + NMK_GPIO_SLPC) & mask,
 	       bankaddr + NMK_GPIO_SLPC);
 
-	/* Bank1 */
+	/* Bank1 (pins 32 to 63) */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK1_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
@@ -444,7 +442,7 @@ static void mop500_pins_suspend_force(void)
 	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
 	writel(0         , bankaddr + NMK_GPIO_SLPC);
 
-	/* Bank2 */
+	/* Bank2 (pins 64 to 95) */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK2_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
@@ -469,7 +467,7 @@ static void mop500_pins_suspend_force(void)
 	 * be on and might send interesting STM debugging data.
 	 */
 
-	/* Bank3 */
+	/* Bank3 (pins 96 to 127) */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK3_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
@@ -483,7 +481,7 @@ static void mop500_pins_suspend_force(void)
 	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
 	writel(0         , bankaddr + NMK_GPIO_SLPC);
 
-	/* Bank4 */
+	/* Bank4 (pins 128 to 159) */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK4_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
@@ -499,7 +497,7 @@ static void mop500_pins_suspend_force(void)
 	writel(0xFFFFFFF9 & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
 	writel(0         , bankaddr + NMK_GPIO_SLPC);
 
-	/* Bank5 */
+	/* Bank5 (pins 160 to 191) */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK5_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
@@ -519,7 +517,7 @@ static void mop500_pins_suspend_force(void)
 	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
 	writel(0         , bankaddr + NMK_GPIO_SLPC);
 
-	/* Bank6 */
+	/* Bank6 (pins 192 to 223) */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK6_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
@@ -547,7 +545,7 @@ static void mop500_pins_suspend_force(void)
 	       bankaddr + NMK_GPIO_SLPC);
 
 
-	/* Bank7 */
+	/* Bank7 (pins 224 to 255) */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK7_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
@@ -562,7 +560,7 @@ static void mop500_pins_suspend_force(void)
 	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
 	writel(0         , bankaddr + NMK_GPIO_SLPC);
 
-	/* Bank8 */
+	/* Bank8 (pins 256 to 287) */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK8_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
