@@ -1529,6 +1529,14 @@ static void pl011_shutdown(struct uart_port *port)
 	if (uap->lcrh_rx != uap->lcrh_tx)
 		pl011_shutdown_channel(uap, uap->lcrh_tx);
 
+	if (uap->port.dev->platform_data) {
+		struct amba_pl011_data *plat;
+
+		plat = uap->port.dev->platform_data;
+		if (plat->exit)
+			plat->exit();
+	}
+
 	/*
 	 * Shut down the clock producer
 	 */
