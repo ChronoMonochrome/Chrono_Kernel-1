@@ -42,6 +42,7 @@
 #define BYTES_PER_WORD		4
 
 static int cryp_mode;
+static atomic_t session_id;
 
 static struct stedma40_chan_cfg *mem_to_engine;
 static struct stedma40_chan_cfg *engine_to_mem;
@@ -85,6 +86,7 @@ struct cryp_ctx {
 	u8 updated;
 	struct cryp_device_context dev_ctx;
 	struct cryp_device_data *device;
+	u32 session_id;
 };
 
 static struct cryp_driver_data driver_data;
@@ -174,6 +176,18 @@ static inline void swap_words_in_key_and_bits_in_byte(const u8 *in,
 		}
 		j -= BYTES_PER_WORD;
 	}
+}
+
+static void add_session_id(struct cryp_ctx *ctx)
+{
+	/*
+	 * We never want 0 to be a valid value, since this is the default value
+	 * for the software context.
+	 */
+	if (unlikely(atomic_inc_and_test(&session_id)))
+		atomic_inc(&session_id);
+
+	ctx->session_id = atomic_read(&session_id);
 }
 
 static irqreturn_t cryp_interrupt_handler(int irq, void *param)
@@ -359,11 +373,10 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 			      struct cryp_device_data *device_data)
 {
 	u32 control_register = CRYP_CR_DEFAULT;
-	cryp_flush_inoutfifo(device_data);
 
 	switch (cryp_mode) {
 	case CRYP_MODE_INTERRUPT:
-		writel(CRYP_IMSC_DEFAULT,  &device_data->base->imsc);
+		writel(CRYP_IMSC_DEFAULT, &device_data->base->imsc);
 		break;
 
 	case CRYP_MODE_DMA:
@@ -374,10 +387,8 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 		break;
 	}
 
-	if (ctx->updated) {
-		cryp_restore_device_context(device_data, &ctx->dev_ctx);
-		control_register = ctx->dev_ctx.cr;
-	} else {
+	if (ctx->updated == 0) {
+		cryp_flush_inoutfifo(device_data);
 		if (cfg_keys(ctx) != 0) {
 			dev_err(ctx->device->dev, "[%s]: cfg_keys failed!",
 				__func__);
@@ -394,7 +405,16 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 
 		cryp_set_configuration(device_data, &ctx->config,
 				       &control_register);
-	}
+		add_session_id(ctx);
+	} else if (ctx->updated == 1 &&
+		   ctx->session_id != atomic_read(&session_id)) {
+		cryp_flush_inoutfifo(device_data);
+		cryp_restore_device_context(device_data, &ctx->dev_ctx);
+
+		add_session_id(ctx);
+		control_register = ctx->dev_ctx.cr;
+	} else
+		control_register = ctx->dev_ctx.cr;
 
 	writel(control_register | (CRYP_CRYPEN_ENABLE << CRYP_CR_CRYPEN_POS),
 	       &device_data->base->cr);
@@ -735,6 +755,7 @@ static int hw_crypt_noxts(struct cryp_ctx *ctx,
 	}
 
 	ret = cryp_setup_context(ctx, device_data);
+
 	if (ret)
 		goto out;
 
@@ -2016,6 +2037,8 @@ static int u8500_cryp_probe(struct platform_device *pdev)
 
 	/* ... and signal that a new device is available. */
 	up(&driver_data.device_allocation);
+
+	atomic_set(&session_id, 1);
 
 	ret = cryp_algs_register_all();
 	if (ret) {

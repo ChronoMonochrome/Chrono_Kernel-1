@@ -80,7 +80,6 @@ enum cryp_mode {
 
 /**
  * struct cryp_config -
- * @keyrden: Cryp state enable/disable
  * @keysize: Key size for AES
  * @algomode: AES modes
  * @algodir: Cryp Encryption or Decryption
@@ -88,7 +87,6 @@ enum cryp_mode {
  * CRYP configuration structure to be passed to set configuration
  */
 struct cryp_config {
-	enum cryp_state keyrden;
 	int keysize;
 	enum cryp_algo_mode algomode;
 	enum cryp_algorithm_dir algodir;
