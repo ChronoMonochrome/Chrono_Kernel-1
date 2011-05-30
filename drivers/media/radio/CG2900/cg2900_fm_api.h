@@ -12,9 +12,12 @@
 #define CG2900_FM_API_H
 
 #include <linux/device.h>
+#include <linux/skbuff.h>
 
 /* Callback function to receive RDS Data. */
 typedef void  (*cg2900_fm_rds_cb)(void);
+
+extern struct sk_buff_head		fm_interrupt_queue;
 
 /**
  * struct cg2900_fm_rds_buf - RDS Group Receiving Structure
@@ -145,6 +148,9 @@ enum cg2900_fm_grid {
  * @CG2900_EVENT_SCAN_CHANNELS_FOUND: Band Scan is completed.
  * @CG2900_EVENT_BLOCK_SCAN_CHANNELS_FOUND: Block Scan is completed.
  * @CG2900_EVENT_SCAN_CANCELLED: Scan/Seek is cancelled.
+ * @CG2900_EVENT_MONO_STEREO_TRANSITION: Mono/Stereo Transition has taken place.
+ * @CG2900_EVENT_DEVICE_RESET: CG2900 has been reset by some other IP.
+ * @CG2900_EVENT_RDS_EVENT: RDS data interrupt has been received from chip.
  *
  * Various Events reported by FM API layer.
  */
@@ -153,7 +159,10 @@ enum cg2900_fm_event {
 	CG2900_EVENT_SEARCH_CHANNEL_FOUND,
 	CG2900_EVENT_SCAN_CHANNELS_FOUND,
 	CG2900_EVENT_BLOCK_SCAN_CHANNELS_FOUND,
-	CG2900_EVENT_SCAN_CANCELLED
+	CG2900_EVENT_SCAN_CANCELLED,
+	CG2900_EVENT_MONO_STEREO_TRANSITION,
+	CG2900_EVENT_DEVICE_RESET,
+	CG2900_EVENT_RDS_EVENT
 };
 
 /**
@@ -197,6 +206,7 @@ enum cg2900_fm_stereo_mode {
 #define DEFAULT_CHANNELS_TO_SCAN			32
 #define MAX_CHANNELS_TO_SCAN				99
 #define MAX_CHANNELS_FOR_BLOCK_SCAN			198
+#define SKB_FM_INTERRUPT_DATA				2
 
 extern u8 fm_event;
 extern struct cg2900_fm_rds_buf fm_rds_buf[MAX_RDS_BUFFER][MAX_RDS_GROUPS];
@@ -976,13 +986,6 @@ void cg2900_handle_device_reset(void);
  * This function is called when Scan Band or seek has completed.
  */
 void wake_up_poll_queue(void);
-
-/**
- * void wake_up_read_queue()- Wakes up the Task waiting on Read Queue.
- * This function is called when RDS data is available for reading by
- * application.
- */
-void wake_up_read_queue(void);
 
 /**
  * void cg2900_fm_set_chip_version()- Sets the Version of the Controller.

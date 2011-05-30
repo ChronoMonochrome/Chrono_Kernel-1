@@ -2309,6 +2309,9 @@ int fmd_rx_get_stereo_mode(
 			)
 {
 	int err;
+	int io_result;
+	u16 response_count;
+	u16 response_data[CMD_RP_GET_STATE_RSP_PARAM_LEN];
 
 	if (fmd_go_cmd_busy()) {
 		err = -EBUSY;
@@ -2325,7 +2328,20 @@ int fmd_rx_get_stereo_mode(
 		goto error;
 	}
 
-	*mode = fmd_state_info.rx_stereo_mode;
+	io_result = fmd_send_cmd_and_read_resp(
+				CMD_FMR_RP_GET_STATE,
+				CMD_RP_GET_STATE_PARAM_LEN,
+				NULL,
+				&response_count,
+				response_data);
+
+	if (io_result != 0) {
+		err = io_result;
+		goto error;
+	}
+
+	/* 2nd element of response is stereo signal */
+	*mode = response_data[1];
 	err = 0;
 
 error:

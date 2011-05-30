@@ -358,7 +358,19 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
          <term>Band Scan</term>
          <listitem>
          <para>
-           For doing a band scan, ie search for all available stations in the entire FM band, IOCTL VIDIOC_S_CTRL should be used with parameter id of the v4l2_control structure should be set to V4L2_CID_CG2900_RADIO_BANDSCAN and the value of v4l2_control structure should be set as V4L2_CG2900_RADIO_BANDSCAN_START. If the IOCTL returns successfully, a thread should be created to start polling to FM driver, to wait till scan is complete. When poll is complete, the found stations along with RSSI should be retrieved using the IOCTL VIDIOC_G_EXT_CTRLS should be used with parameters as described in example code.
+           For doing a band scan, ie search for all available stations in the entire FM band, IOCTL VIDIOC_S_CTRL should be used with parameter id of the v4l2_control structure should be set to V4L2_CID_CG2900_RADIO_BANDSCAN and the value of v4l2_control structure should be set as V4L2_CG2900_RADIO_BANDSCAN_START. If the IOCTL returns successfully, a common thread (which should have been created at the start of the application and is already polling to FM driver for multiple other interrupts including events related to Block Scan and Search Frequency operation) which polls with an infinite timeout iteratively until the end of the user-space application, when poll in one iteration is complete. When poll is complete, thread will make an IOCTL call with VIDIOC_G_EXT_CTRLS with parameter id set to V4L2_CID_CG2900_RADIO_GET_INTERRUPT and the data structure FmInterrupt.controls-&gt;string associated with V4L2_CID_CG2900_RADIO_GET_INTERRUPT shall contain the interrupt retrieved from FMD. Interrupts received in this manner from FMD can be any of the following.
+	   <itemizedlist>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_UNKNOWN</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_SEARCH_COMPLETED</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_BAND_SCAN_COMPLETED</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_BLOCK_SCAN_COMPLETED</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_SCAN_CANCELLED</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_MONO_STEREO_TRANSITION</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_DEVICE_RESET</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_RDS_RECEIVED</para></listitem>
+	   </itemizedlist>
+
+For Band Scan it shall be V4L2_CG2900_RADIO_INTERRUPT_BAND_SCAN_COMPLETE, an appropriate handler should be then called from thethread to retrieve the found stations along with RSSI using the IOCTL VIDIOC_G_EXT_CTRLS, this IOCTL should be used with parameters as described in example code. Note that the common thread for capturing synchronous as well asynchronous events used here is FmInterruptMonitoringThread. It shall be used in other sections i.e. Block Scan, Cancel Scan, Search Frequency and Mono Stereo Transition.
            <programlisting>
 			void Band_Scan()
 		{
@@ -372,62 +384,129 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
 			}
 			pthread_create(&amp;fmScanThread, NULL, FmScanThread, NULL);
 		}
-		static void *FmScanThread(void *param)
+
+		static void *FmInterruptMonitoringThread(void *param)
 		{
-			struct v4l2_ext_controls scanResult;
+			struct v4l2_ext_controls FmInterrupt;
 			struct pollfd pollFd;
 			long * p = NULL;
 			int index, ret, count = 0;
+			int interrupt, interrupt_reason;
 			int err;
+
+			while(closeApp) {
 			pollFd.fd = fd;
 			pollFd.events = POLLRDNORM;
-			ret = poll(&amp;pollFd, 1, MAX_SCAN_SEEK_TIME);
-			if(ret)
-			{
+				/* wait infinitely for interrupt */
+				timeout = -1;
+				ret = poll(&amp;pollFd, 1, timeout);
+				if(!closeApp)
+					break;
+				if(ret) {
 				if(pollFd.revents &amp; POLLRDNORM)
 				{
-					/* Get the Number OF Channels */
+						/* Get the interrupt */
+						FmInterrupt.count = 0;
+						FmInterrupt.ctrl_class = V4L2_CTRL_CLASS_USER;
+						FmInterrupt.controls = (struct v4l2_ext_control *) malloc(sizeof(struct v4l2_ext_control));
+						if(!FmInterrupt.controls)
+							goto error;
+						FmInterrupt.controls-&gt;id = V4L2_CID_CG2900_RADIO_GET_INTERRUPT;
+						FmInterrupt.controls-&gt;size = 2;
+						FmInterrupt.controls-&gt;string = (int *)malloc(sizeof(int) * FmInterrupt.controls-&gt;size);
+						interrupt_buffer_pointer = FmInterrupt.controls-&gt;string;
+						if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &amp;FmInterrupt) &lt; 0) {
+							printf("VIDIOC_G_EXT_CTRLS:error!!\n");
+							ret_val = -1;
+							goto error_free_ext_control_string;
+						}
+
+						if(!ret_val) {
+							interrupt = *interrupt_buffer_pointer;
+							interrupt_reason = *(interrupt_buffer_pointer + 1);
+							printf("Interrupt = %d, , Result = %d\n", interrupt, interrupt_reason);
+							if(interrupt_reason == 0) {
+								switch(interrupt)
+								{
+								case V4L2_CG2900_RADIO_INTERRUPT_BAND_SCAN_COMPLETED:
+								/* Band Scan Completed */
+								HandleBandScanCompletion();
+								otherOperationInProgress = 0;
+								break;
+
+								}
+							}
+						}
+error_free_ext_control_string:
+						free(FmInterrupt.controls-&gt;string);
+error_free_ext_control_control:
+						free(FmInterrupt.controls);
+error:
+						otherOperationInProgress = 0;
+					} else {
+						printf ("FmInterruptMonitoringThread : poll returned = %d\n", ret);
+					}
+				}
+			}
+                        return 0;
+		}
+
+		static void HandleBandScanCompletion()
+		{
+			struct v4l2_ext_controls scanResult;
+			long * band_scan_pointer = NULL;
+			int err;
+			int index, ret, count = 0;
+
+			/* Get the Number Of Channels */
 					scanResult.count = 0;
 					scanResult.ctrl_class = V4L2_CTRL_CLASS_USER;
 					scanResult.controls = (struct v4l2_ext_control *) malloc(sizeof(struct v4l2_ext_control));
-					scanResult.controls->id = V4L2_CID_CG2900_RADIO_BANDSCAN_GET_RESULTS;
-					scanResult.controls->size = 0;
-					scanResult.controls->string = NULL;
+			if(!scanResult.controls)
+				goto done;
+			scanResult.controls-&gt;id = V4L2_CID_CG2900_RADIO_BANDSCAN_GET_RESULTS;
+			scanResult.controls-&gt;size = 0;
+			scanResult.controls-&gt;string = NULL;
 					err = ioctl(fd, VIDIOC_G_EXT_CTRLS, &amp; scanResult);
+
 				if (err &lt; 0 &amp; &amp; errno !=  ENOSPC) {
 					printf("VIDIOC_G_EXT_CTRLS:error!!\n");
-					goto err;
+				goto error_free_ext_control_control;
 				}
-				/* Allocate memory to receive the data from driver */
-				if(scanResult.controls->size &gt; 0 )
+
+			if(scanResult.controls-&gt;size &gt; 0 )
 				{
-					scanResult.controls->string = (long *)malloc(sizeof(long) * 2 * scanResult.controls->size );
-					p = scanResult.controls->string;
-					printf("\nNumber of Channels Found = %d \n", scanResult.controls->size);
-					/* Retrieve the Data now */
-					ret = ioctl(fd, VIDIOC_G_EXT_CTRLS, &amp;scanResult);
-					if (ret &lt; 0) {
+				scanResult.controls-&gt;string = (long *)malloc(sizeof(long) * 2 * scanResult.controls-&gt;size );
+				band_scan_pointer = scanResult.controls-&gt;string;
+				printf("\n\n\n==================================\n");
+				printf("\nNumber of Channels Found = %d \n", scanResult.controls-&gt;size);
+				printf("\n==================================\n");
+				if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &amp;scanResult) &lt; 0) {
 						printf("VIDIOC_G_EXT_CTRLS:error!!\n");
-						goto err;
+					goto error_free_ext_control_string;
 					}
-					for (index = 0, count = 0; index &lt; scanResult.controls->size; index ++, count +=2) {
-						printf("%d	 %d.%d		%d\n", index + 1, MEGAHRTZ((*(p +count + 0) * 125) / 2), *(p + count + 1));
+				printf("\n================================\n");
+				printf("\nSNo. 	Frequency(MHz)	RSSI\n");
+				printf("\n================================\n");
+				for (index = 0, count = 0; index &lt; scanResult.controls-&gt;size; index ++, count +=2) {
+					printf("%d   	 %d.%d   	%d\n", index + 1,
+						MEGAHRTZ((*(band_scan_pointer +count + 0) * 125) / 2),
+						*(band_scan_pointer + count + 1));
 					}
-					err:
-					free(p);
-					free(scanResult.controls);
+				printf("\n================================\n");
+		error_free_ext_control_string:
+				free(band_scan_pointer);
 				}
-				else if( pollFd.revents &amp; POLLHUP)
+			else if(scanResult.controls-&gt;size == 0)
 				{
-					printf("\nScan Cancelled By User!!\n");
+				printf("\nNo channels found during scanning!!\n");
 				}
+		error_free_ext_control_control:
 				free(scanResult.controls);
+		done:
+			otherOperationInProgress = 0;
 			}
-			else if( ret == 0){
-				printf("\nError in Scanning, Timeout!!!\n");
-			}
-			return 0;
-		}
+
            </programlisting>
            Note: Currently the retrieved signal strength is in decimals and not in "dBuV", proper external conversion required.
          </para>
@@ -445,7 +524,19 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
          <term>Block Scan</term>
          <listitem>
          <para>
-           The Block Scan functionality will take two inputs, start and stop frequency (V4L2 compliance) and enables the host to scan all channels with in that range for RSSI values. The measured channels will be stored in a list in order of channel number and the  block scan feature to identify "empty" channels for transmission. And for doing a block scan, IOCTL VIDIOC_S_EXT_CTRL with parameter id of the v4l2_control structure should be set to V4L2_CID_FM_RADIO_BLOCKSCAN_START. If the IOCTL returns successfully, a thread should be created to start polling to FM driver, to wait till scan is complete. When poll is complete, the found stations along with RSSI should be retrieved using the IOCTL VIDIOC_G_EXT_CTRLS should be used with parameters as described in example code.
+           The Block Scan functionality will take two inputs, start and stop frequency (V4L2 compliance) and enables the host to scan all channels with in that range for RSSI values. The measured channels will be stored in a list in order of channel number and the  block scan feature to identify "empty" channels for transmission. And for doing a block scan, IOCTL VIDIOC_S_EXT_CTRL with parameter id of the v4l2_control structure should be set to V4L2_CID_FM_RADIO_BLOCKSCAN_START. If the IOCTL returns successfully, a common thread (which should have been created at the start of the application and is already polling to FM driver for multiple other interrupts including events related to Band Scan and Search Frequency operation) which polls with an infinite timeout iteratively until the end of the user-space application, when poll in one iteration is complete. When poll is complete, thread will make an IOCTL call with VIDIOC_G_EXT_CTRLS with parameter id set to V4L2_CID_CG2900_RADIO_GET_INTERRUPT and the data structure FmInterrupt.controls-&gt;string associated with V4L2_CID_CG2900_RADIO_GET_INTERRUPT shall contain the interrupt retrieved from FMD. Interrupts received in this manner from FMD can be any of the following.
+	   <itemizedlist>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_UNKNOWN</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_SEARCH_COMPLETED</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_BAND_SCAN_COMPLETED</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_BLOCK_SCAN_COMPLETED</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_SCAN_CANCELLED</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_MONO_STEREO_TRANSITION</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_DEVICE_RESET</para></listitem>
+	   <listitem><para>V4L2_CG2900_RADIO_INTERRUPT_RDS_RECEIVED</para></listitem>
+           </itemizedlist>
+
+For Block Scan it shall be V4L2_CG2900_RADIO_INTERRUPT_BLOCK_SCAN_COMPLETED, an appropriate handler should be then called from thethread to retrieve the found stations along with RSSI using the IOCTL VIDIOC_G_EXT_CTRLS, this IOCTL should be used with parameters as described in example code. Note that the common thread for capturing synchronous as well asynchronous events used here is FmInterruptMonitoringThread. It shall be used in other sections i.e. Band Scan, Cancel Scan, Search Frequency and Mono Stereo Transition. When poll is complete, the found stations along with RSSI should be retrieved using the IOCTL VIDIOC_G_EXT_CTRLS should be used with parameters as described in example code.
            <programlisting>
 		void Block_Scan()
 		{
@@ -458,39 +549,103 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
 			ext_ctrl.ctrl_class = V4L2_CTRL_CLASS_USER;
 			ext_ctrl.controls = (struct v4l2_ext_control *) malloc(sizeof(struct v4l2_ext_control));
 			ext_ctrl.count = 0;
-			ext_ctrl.controls->id = V4L2_CID_CG2900_RADIO_BLOCKSCAN_START;
-			ext_ctrl.controls->size = 2;
-			ext_ctrl.controls->string = (long *)malloc(sizeof(long) * ext_ctrl.controls->size);
-			p = ext_ctrl.controls->string;
+			ext_ctrl.controls-&gt;id = V4L2_CID_CG2900_RADIO_BLOCKSCAN_START;
+			ext_ctrl.controls-&gt;size = 2;
+			ext_ctrl.controls-&gt;string = (long *)malloc(sizeof(long) * ext_ctrl.controls-&gt;size);
+			p = ext_ctrl.controls-&gt;string;
 			*p = (StartFreq * 2)/ 125;
 			*(p + 1) = (EndFreq * 2)/ 125;;
 			if (ioctl(fd, VIDIOC_S_EXT_CTRLS, &amp;ext_ctrl) &lt; 0)
 				printf("APP_BlockScanStart:VIDIOC_S_EXT_CTRLS:error!!\n");
-			free(ext_ctrl.controls->string);
+			free(ext_ctrl.controls-&gt;string);
 			free(ext_ctrl.controls);
 			pthread_create(&amp;fmBlockScanThread, NULL, FmBlockScanThread, NULL);
 		}
-		static void *FmBlockScanThread(void *param)
+
+		static void *FmInterruptMonitoringThread(void *param)
 		{
-			struct v4l2_ext_controls blockscanResult;
+			struct v4l2_ext_controls FmInterrupt;
 			struct pollfd pollFd;
 			long * p = NULL;
+			int index, ret, count = 0;
+			int interrupt, interrupt_reason;
+			int err;
+
+			while(closeApp) {
+				pollFd.fd = fd;
+				pollFd.events = POLLRDNORM;
+				/* wait infinitely for interrupt */
+				timeout = -1;
+				ret = poll(&amp;pollFd, 1, timeout);
+				if(!closeApp)
+					break;
+				if(ret) {
+					if(pollFd.revents &amp; POLLRDNORM)
+					{
+						/* Get the interrupt */
+						FmInterrupt.count = 0;
+						FmInterrupt.ctrl_class = V4L2_CTRL_CLASS_USER;
+						FmInterrupt.controls = (struct v4l2_ext_control *) malloc(sizeof(struct v4l2_ext_control));
+						if(!FmInterrupt.controls)
+							goto error;
+						FmInterrupt.controls-&gt;id = V4L2_CID_CG2900_RADIO_GET_INTERRUPT;
+						FmInterrupt.controls-&gt;size = 2;
+						FmInterrupt.controls-&gt;string = (int *)malloc(sizeof(int) * FmInterrupt.controls-&gt;size);
+						interrupt_buffer_pointer = FmInterrupt.controls-&gt;string;
+						if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &amp;FmInterrupt) &lt; 0) {
+							printf("VIDIOC_G_EXT_CTRLS:error!!\n");
+							ret_val = -1;
+							goto error_free_ext_control_string;
+						}
+
+						if(!ret_val) {
+							interrupt = *interrupt_buffer_pointer;
+							interrupt_reason = *(interrupt_buffer_pointer + 1);
+							printf("Interrupt = %d, , Result = %d\n", interrupt, interrupt_reason);
+							if(interrupt_reason == 0) {
+								switch(interrupt)
+								{
+								case V4L2_CG2900_RADIO_INTERRUPT_BLOCK_SCAN_COMPLETED:
+								/* Block Scan Completed */
+								HandleBlockScanCompletion();
+								otherOperationInProgress = 0;
+								break;
+								}
+							}
+						}
+error_free_ext_control_string:
+						free(FmInterrupt.controls-&gt;string);
+error_free_ext_control_control:
+						free(FmInterrupt.controls);
+error:
+						otherOperationInProgress = 0;
+					} else {
+						printf ("FmInterruptMonitoringThread : poll returned = %d\n", ret);
+					}
+				}
+			}
+			return 0;
+		}
+
+		static void HandleBlockScanCompletion()
+		{
+			struct v4l2_ext_controls blockscanResult;
+			long * block_scan_pointer = NULL;
 			int index, ret;
 			int err;
 			int current_grid = -1;
 			FILE *fp;
 			long start_freq = StartFreq;
 			long next_freq_offset = 0;
+
 			fp = fopen("/sys/module/radio_cg2900/parameters/grid", "r");
 			if(fp != NULL)
 			{
-				/*
-				 * Retrieve the currently set grid to determine the next channel is
-				 * 50 Khz, 100 Khz or 200 Khz apart
-				 */
+				/* Retrieve the currently set grid to determine the next channel is 50 Khz, 100 Khz or 200 Khz apart */
 				fscanf(fp, "%d", &amp;current_grid);
 				fclose(fp);
 			}
+
 			if(current_grid == 0) {
 				next_freq_offset = 50000;
 			} else if	(current_grid == 1) {
@@ -498,57 +653,53 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
 			} else if (current_grid == 2) {
 				next_freq_offset = 200000;
 			}
-			pollFd.fd = fd;
-			pollFd.events = POLLRDNORM;
-			ret = poll(&amp;pollFd, 1, MAX_SCAN_SEEK_TIME);
-			if(ret) {
-			        if(pollFd.revents &amp; POLLRDNORM)
-			        {
+
 				        /* Get the Number Of Channels */
 				        blockscanResult.count = 0;
 				        blockscanResult.ctrl_class = V4L2_CTRL_CLASS_USER;
 				        blockscanResult.controls = (struct v4l2_ext_control *) malloc(sizeof(struct v4l2_ext_control));
-				        blockscanResult.controls->id = V4L2_CID_CG2900_RADIO_BLOCKSCAN_GET_RESULTS;
-				        blockscanResult.controls->size = 0;
-				        blockscanResult.controls->string = NULL;
+			if(!blockscanResult.controls)
+				goto done;
+			blockscanResult.controls-&gt;id = V4L2_CID_CG2900_RADIO_BLOCKSCAN_GET_RESULTS;
+			blockscanResult.controls-&gt;size = 0;
+
+			blockscanResult.controls-&gt;string = NULL;
 				        err = ioctl(fd, VIDIOC_G_EXT_CTRLS, &amp;blockscanResult);
+
 					if (err &lt; 0 &amp;&amp; errno !=  ENOSPC) {
 						printf("VIDIOC_G_EXT_CTRLS:error!!\n");
-						goto err;
+				goto error_free_ext_control_control;
 					}
-			if(blockscanResult.controls->size > 0 )
+
+			if(blockscanResult.controls-&gt;size &gt; 0)
 			{
-				blockscanResult.controls->string = (long *)malloc(sizeof(long) * blockscanResult.controls->size );
-				p = blockscanResult.controls->string;
+				blockscanResult.controls-&gt;string = (long *)malloc(sizeof(long) * blockscanResult.controls-&gt;size );
+				block_scan_pointer = blockscanResult.controls-&gt;string;
 			        if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &amp;blockscanResult) &lt; 0) {
 			                printf("VIDIOC_G_EXT_CTRLS:error!!\n");
-			                goto err;
+					goto error_free_ext_control_string;
 			        }
-			        printf("\nSNo. 	RSSI\n");
-				for (index = 0; index &lt; blockscanResult.controls->size; index ++) {
-					printf("%d.%d   	%d\n", MEGAHRTZ(start_freq), *(p + index));
+				printf("\n================================\n");
+				printf("\nMHz.	RSSI\n");
+				printf("\n================================\n");
+				for (index = 0; index &lt; blockscanResult.controls-&gt;size; index ++) {
+					printf("%d.%d		%d\n", MEGAHRTZ(start_freq), *(block_scan_pointer + index));
 					start_freq += next_freq_offset;
 			        }
-				err:
-				    free(p);
+				printf("\n================================\n");
+		error_free_ext_control_string:
+				free(block_scan_pointer);
 			        }
-				else if(blockscanResult.controls->size == 0)
+			else if(blockscanResult.controls-&gt;size == 0)
 				{
 				      printf("\nNo channels found during Block Scan!!\n");
 				}
+		error_free_ext_control_control:
 				free(blockscanResult.controls);
-			}
-		        else if( pollFd.revents &amp; POLLHUP)
-		        {
-		                printf("\nBlock Scan Cancelled By User!!\n");
-			}
-		  }
-		  else if(ret == 0) {
-			printf("\nError in Block Scan, Timeout!!!\n");
-		  }
+		done:
 		  otherOperationInProgress = 0;
-		  return 0;
 	   }
+
 
            </programlisting>
            Note: Currently the retrieved signal strength is in decimals and not in "dBuV", proper external conversion required.
@@ -567,7 +718,7 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
          <term>Cancel Scan/Seek</term>
          <listitem>
          <para>
-           This is used for stopping an active Band Scan, Seek operation and Block Scan. IOCTL VIDIOC_S_CTRL should be used with parameter id of the v4l2_control structure. For Eg incase of Band scan the parameter id should be set to V4L2_CID_CG2900_RADIO_BANDSCAN and the value of v4l2_control structure should be set as V4L2_CG2900_RADIO_BANDSCAN_STOP.
+           This is used for stopping an active Band Scan, Seek operation and Block Scan. IOCTL VIDIOC_S_CTRL should be used with parameter id of the v4l2_control structure. For Eg incase of Band scan the parameter id should be set to V4L2_CID_CG2900_RADIO_BANDSCAN and the value of v4l2_control structure should be set as V4L2_CG2900_RADIO_BANDSCAN_STOP. The example thread shown in following code snippet FmInterruptMonitoringThread shall have already been started as mentioned in Band Scan and Block sections, it shall receive an asynchronous event V4L2_CG2900_RADIO_INTERRUPT_SCAN_CANCELLED.
            <programlisting>
 		struct v4l2_control sctrl;
 		int ret;
@@ -577,6 +728,72 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
 		if (ret &lt; 0) {
 			printf("VIDIOC_S_CTRL:error!!\n");
 		}
+
+		static void *FmInterruptMonitoringThread(void *param)
+		{
+			struct v4l2_ext_controls FmInterrupt;
+			struct pollfd pollFd;
+			long * p = NULL;
+			int index, ret, count = 0;
+			int interrupt, interrupt_reason;
+			int err;
+
+			while(closeApp) {
+				pollFd.fd = fd;
+				pollFd.events = POLLRDNORM;
+				/* wait infinitely for interrupt */
+				timeout = -1;
+				ret = poll(&amp;pollFd, 1, timeout);
+				if(!closeApp)
+					break;
+				if(ret) {
+					if(pollFd.revents &amp; POLLRDNORM)
+					{
+						/* Get the interrupt */
+						FmInterrupt.count = 0;
+						FmInterrupt.ctrl_class = V4L2_CTRL_CLASS_USER;
+						FmInterrupt.controls = (struct v4l2_ext_control *) malloc(sizeof(struct v4l2_ext_control));
+						if(!FmInterrupt.controls)
+							goto error;
+						FmInterrupt.controls-&gt;id = V4L2_CID_CG2900_RADIO_GET_INTERRUPT;
+						FmInterrupt.controls-&gt;size = 2;
+						FmInterrupt.controls-&gt;string = (int *)malloc(sizeof(int) * FmInterrupt.controls-&gt;size);
+						interrupt_buffer_pointer = FmInterrupt.controls-&gt;string;
+						if (ioctl(fd, VIDIOC_G_EXT_CTRLS, &amp;FmInterrupt) &lt; 0) {
+							printf("VIDIOC_G_EXT_CTRLS:error!!\n");
+							ret_val = -1;
+							goto error_free_ext_control_string;
+						}
+
+						if(!ret_val) {
+							interrupt = *interrupt_buffer_pointer;
+							interrupt_reason = *(interrupt_buffer_pointer + 1);
+							printf("Interrupt = %d, , Result = %d\n", interrupt, interrupt_reason);
+							if(interrupt_reason == 0) {
+								switch(interrupt)
+								{
+								case V4L2_CG2900_RADIO_INTERRUPT_SCAN_CANCELLED:
+								/* Scan/Search/Block Scan Cancelled */
+								printf(" Scan cancelled by user\n");
+								otherOperationInProgress = 0;
+								break;
+								}
+							}
+						}
+error_free_ext_control_string:
+						free(FmInterrupt.controls-&gt;string);
+error_free_ext_control_control:
+						free(FmInterrupt.controls);
+error:
+						otherOperationInProgress = 0;
+					} else {
+						printf ("FmInterruptMonitoringThread : poll returned = %d\n", ret);
+					}
+				}
+			}
+			return 0;
+		}
+
            </programlisting>
          </para>
          </listitem>
@@ -593,7 +810,7 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
          <term>RDS Receive</term>
          <listitem>
          <para>
-           For enabling/disabling RDS for FM Rx, IOCTL VIDIOC_S_TUNER should be used with parameter rxsubchans of the v4l2_tuner structure set to V4L2_TUNER_SUB_RDS if rds needs to be enabled and the same value must not be set in case rds is to be disabled. A thread should be created and read() should be called to receive RDS data from driver. The RDS data received from FM Driver should be parsed in user space to retrive RDS information i.e Radio Text, Program Service Name, Program Identification, Program Type, Alternate Frequency, etc.
+           For enabling/disabling RDS for FM Rx, IOCTL VIDIOC_S_TUNER should be used with parameter rxsubchans of the v4l2_tuner structure set to V4L2_TUNER_SUB_RDS if rds needs to be enabled and the same value must not be set in case rds is to be disabled. Once RDS data is available, the appplication would be signalled waiting on poll. If the Interrupt retrieved using V4L2_CID_CG2900_RADIO_GET_INTERRUPT is V4L2_CG2900_RADIO_INTERRUPT_RDS_RECEIVED, RDS data can be retrieved using the read() functionality from the CG2900 FM driver. The RDS data received from FM Driver should be parsed in user space to retrive RDS information i.e Radio Text, Program Service Name, Program Identification, Program Type, Alternate Frequency, etc.
            <programlisting>
            void rds_rx_set(bool enable_rds)
            {
@@ -1003,7 +1220,6 @@ Note: Currently the retrieved signal strength is in decimals and not in "dBuV", 
        </varlistentry>
      </variablelist>
    </section>
-
 
  </chapter>
  <chapter id="driver-configuration">
