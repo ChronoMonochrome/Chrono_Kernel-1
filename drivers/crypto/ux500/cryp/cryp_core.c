@@ -376,11 +376,11 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 
 	switch (cryp_mode) {
 	case CRYP_MODE_INTERRUPT:
-		writel(CRYP_IMSC_DEFAULT, &device_data->base->imsc);
+		writel_relaxed(CRYP_IMSC_DEFAULT, &device_data->base->imsc);
 		break;
 
 	case CRYP_MODE_DMA:
-		writel(CRYP_DMACR_DEFAULT, &device_data->base->dmacr);
+		writel_relaxed(CRYP_DMACR_DEFAULT, &device_data->base->dmacr);
 		break;
 
 	default:
@@ -416,7 +416,8 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 	} else
 		control_register = ctx->dev_ctx.cr;
 
-	writel(control_register | (CRYP_CRYPEN_ENABLE << CRYP_CR_CRYPEN_POS),
+	writel(control_register |
+	       (CRYP_CRYPEN_ENABLE << CRYP_CR_CRYPEN_POS),
 	       &device_data->base->cr);
 
 	return 0;
@@ -634,23 +635,19 @@ static int cryp_dma_read(struct cryp_ctx *ctx, struct scatterlist *sg, int len)
 static void cryp_polling_mode(struct cryp_ctx *ctx,
 			      struct cryp_device_data *device_data)
 {
-	int i;
+	int len = ctx->blocksize / BYTES_PER_WORD;
 	int remaining_length = ctx->datalen;
 	u32 *indata = (u32 *)ctx->indata;
 	u32 *outdata = (u32 *)ctx->outdata;
 
 	while (remaining_length > 0) {
-		for (i = 0; i < ctx->blocksize / BYTES_PER_WORD; i++) {
-			writel(*indata, &device_data->base->din);
-			++indata;
-			remaining_length -= BYTES_PER_WORD;
-		}
+		writesl(&device_data->base->din, indata, len);
+		indata += len;
+		remaining_length -= (len * BYTES_PER_WORD);
 		cryp_wait_until_done(device_data);
 
-		for (i = 0; i < ctx->blocksize / BYTES_PER_WORD; i++) {
-			*outdata = readl(&device_data->base->dout);
-			++outdata;
-		}
+		readsl(&device_data->base->dout, outdata, len);
+		outdata += len;
 		cryp_wait_until_done(device_data);
 	}
 }

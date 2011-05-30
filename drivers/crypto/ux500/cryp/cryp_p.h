@@ -21,16 +21,17 @@
  * Generic Macros
  */
 #define CRYP_SET_BITS(reg_name, mask) \
-	writel((readl(reg_name) | mask), reg_name)
+	writel_relaxed((readl_relaxed(reg_name) | mask), reg_name)
 
 #define CRYP_WRITE_BIT(reg_name, val, mask) \
-	writel(((readl(reg_name) & ~(mask)) | ((val) & (mask))), reg_name)
+	writel_relaxed(((readl_relaxed(reg_name) & ~(mask)) |\
+			((val) & (mask))), reg_name)
 
 #define CRYP_TEST_BITS(reg_name, val) \
-	(readl(reg_name) & (val))
+	(readl_relaxed(reg_name) & (val))
 
 #define CRYP_PUT_BITS(reg, val, shift, mask) \
-	writel(((readl(reg) & ~(mask)) | \
+	writel_relaxed(((readl_relaxed(reg) & ~(mask)) | \
 		(((u32)val << shift) & (mask))), reg)
 
 /**

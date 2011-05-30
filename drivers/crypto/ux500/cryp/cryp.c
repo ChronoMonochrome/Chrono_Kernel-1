@@ -34,14 +34,22 @@ int cryp_check(struct cryp_device_data *device_data)
 		return -EINVAL;
 
 	/* Check Peripheral and Pcell Id Register for CRYP */
-	if ((CRYP_PERIPHERAL_ID0 == readl(&device_data->base->periphId0))
-	    && (CRYP_PERIPHERAL_ID1 == readl(&device_data->base->periphId1))
-	    && (CRYP_PERIPHERAL_ID2 == readl(&device_data->base->periphId2))
-	    && (CRYP_PERIPHERAL_ID3 == readl(&device_data->base->periphId3))
-	    && (CRYP_PCELL_ID0 == readl(&device_data->base->pcellId0))
-	    && (CRYP_PCELL_ID1 == readl(&device_data->base->pcellId1))
-	    && (CRYP_PCELL_ID2 == readl(&device_data->base->pcellId2))
-	    && (CRYP_PCELL_ID3 == readl(&device_data->base->pcellId3))) {
+	if ((CRYP_PERIPHERAL_ID0 ==
+	     readl_relaxed(&device_data->base->periphId0))
+	    && (CRYP_PERIPHERAL_ID1 ==
+		readl_relaxed(&device_data->base->periphId1))
+	    && (CRYP_PERIPHERAL_ID2 ==
+		readl_relaxed(&device_data->base->periphId2))
+	    && (CRYP_PERIPHERAL_ID3 ==
+		readl_relaxed(&device_data->base->periphId3))
+	    && (CRYP_PCELL_ID0 ==
+		readl_relaxed(&device_data->base->pcellId0))
+	    && (CRYP_PCELL_ID1 ==
+		readl_relaxed(&device_data->base->pcellId1))
+	    && (CRYP_PCELL_ID2 ==
+		readl_relaxed(&device_data->base->pcellId2))
+	    && (CRYP_PCELL_ID3 ==
+		readl_relaxed(&device_data->base->pcellId3))) {
 		return 0;
 	}
 
@@ -83,7 +91,8 @@ void cryp_flush_inoutfifo(struct cryp_device_data *device_data)
 	 * register when starting a new calculation, which means Input FIFO is
 	 * not full and input FIFO is empty.
 	 */
-	while (readl(&device_data->base->sr) != CRYP_SR_INFIFO_READY_MASK)
+	while (readl_relaxed(&device_data->base->sr) !=
+	       CRYP_SR_INFIFO_READY_MASK)
 		cpu_relax();
 }
 
@@ -130,7 +139,7 @@ int cryp_set_configuration(struct cryp_device_data *device_data,
 			       (CRYP_CRYPEN_ENABLE << CRYP_CR_CRYPEN_POS) |
 			       (KSE_ENABLED << CRYP_CR_KSE_POS));
 
-		writel(cr_for_kse, &device_data->base->cr);
+		writel_relaxed(cr_for_kse, &device_data->base->cr);
 		cryp_wait_until_done(device_data);
 	}
 
@@ -201,27 +210,27 @@ int cryp_configure_key_values(struct cryp_device_data *device_data,
 
 	switch (key_reg_index) {
 	case CRYP_KEY_REG_1:
-		writel(key_value.key_value_left,
+		writel_relaxed(key_value.key_value_left,
 		       &device_data->base->key_1_l);
-		writel(key_value.key_value_right,
+		writel_relaxed(key_value.key_value_right,
 		       &device_data->base->key_1_r);
 		break;
 	case CRYP_KEY_REG_2:
-		writel(key_value.key_value_left,
+		writel_relaxed(key_value.key_value_left,
 		       &device_data->base->key_2_l);
-		writel(key_value.key_value_right,
+		writel_relaxed(key_value.key_value_right,
 		       &device_data->base->key_2_r);
 		break;
 	case CRYP_KEY_REG_3:
-		writel(key_value.key_value_left,
+		writel_relaxed(key_value.key_value_left,
 		       &device_data->base->key_3_l);
-		writel(key_value.key_value_right,
+		writel_relaxed(key_value.key_value_right,
 		       &device_data->base->key_3_r);
 		break;
 	case CRYP_KEY_REG_4:
-		writel(key_value.key_value_left,
+		writel_relaxed(key_value.key_value_left,
 		       &device_data->base->key_4_l);
-		writel(key_value.key_value_right,
+		writel_relaxed(key_value.key_value_right,
 		       &device_data->base->key_4_r);
 		break;
 	default:
@@ -249,15 +258,15 @@ int cryp_configure_init_vector(struct cryp_device_data *device_data,
 
 	switch (init_vector_index) {
 	case CRYP_INIT_VECTOR_INDEX_0:
-		writel(init_vector_value.init_value_left,
+		writel_relaxed(init_vector_value.init_value_left,
 		       &device_data->base->init_vect_0_l);
-		writel(init_vector_value.init_value_right,
+		writel_relaxed(init_vector_value.init_value_right,
 		       &device_data->base->init_vect_0_r);
 		break;
 	case CRYP_INIT_VECTOR_INDEX_1:
-		writel(init_vector_value.init_value_left,
+		writel_relaxed(init_vector_value.init_value_left,
 		       &device_data->base->init_vect_1_l);
-		writel(init_vector_value.init_value_right,
+		writel_relaxed(init_vector_value.init_value_right,
 		       &device_data->base->init_vect_1_r);
 		break;
 	default:
@@ -293,26 +302,26 @@ void cryp_save_device_context(struct cryp_device_data *device_data,
 		cryp_configure_for_dma(device_data, CRYP_DMA_DISABLE_BOTH);
 
 	if (CRYP_TEST_BITS(&src_reg->sr, CRYP_SR_IFEM_MASK) == 0)
-		ctx->din = readl(&src_reg->din);
+		ctx->din = readl_relaxed(&src_reg->din);
 
-	ctx->cr = readl(&src_reg->cr) & CRYP_CR_CONTEXT_SAVE_MASK;
+	ctx->cr = readl_relaxed(&src_reg->cr) & CRYP_CR_CONTEXT_SAVE_MASK;
 
 	switch (config->keysize) {
 	case CRYP_KEY_SIZE_256:
-		ctx->key_4_l = readl(&src_reg->key_4_l);
-		ctx->key_4_r = readl(&src_reg->key_4_r);
+		ctx->key_4_l = readl_relaxed(&src_reg->key_4_l);
+		ctx->key_4_r = readl_relaxed(&src_reg->key_4_r);
 
 	case CRYP_KEY_SIZE_192:
-		ctx->key_3_l = readl(&src_reg->key_3_l);
-		ctx->key_3_r = readl(&src_reg->key_3_r);
+		ctx->key_3_l = readl_relaxed(&src_reg->key_3_l);
+		ctx->key_3_r = readl_relaxed(&src_reg->key_3_r);
 
 	case CRYP_KEY_SIZE_128:
-		ctx->key_2_l = readl(&src_reg->key_2_l);
-		ctx->key_2_r = readl(&src_reg->key_2_r);
+		ctx->key_2_l = readl_relaxed(&src_reg->key_2_l);
+		ctx->key_2_r = readl_relaxed(&src_reg->key_2_r);
 
 	default:
-		ctx->key_1_l = readl(&src_reg->key_1_l);
-		ctx->key_1_r = readl(&src_reg->key_1_r);
+		ctx->key_1_l = readl_relaxed(&src_reg->key_1_l);
+		ctx->key_1_r = readl_relaxed(&src_reg->key_1_r);
 	}
 
 	/* Save IV for CBC mode for both AES and DES. */
@@ -320,10 +329,10 @@ void cryp_save_device_context(struct cryp_device_data *device_data,
 	if (algomode == CRYP_ALGO_TDES_CBC ||
 	    algomode == CRYP_ALGO_DES_CBC ||
 	    algomode == CRYP_ALGO_AES_CBC) {
-		ctx->init_vect_0_l = readl(&src_reg->init_vect_0_l);
-		ctx->init_vect_0_r = readl(&src_reg->init_vect_0_r);
-		ctx->init_vect_1_l = readl(&src_reg->init_vect_1_l);
-		ctx->init_vect_1_r = readl(&src_reg->init_vect_1_r);
+		ctx->init_vect_0_l = readl_relaxed(&src_reg->init_vect_0_l);
+		ctx->init_vect_0_r = readl_relaxed(&src_reg->init_vect_0_r);
+		ctx->init_vect_1_l = readl_relaxed(&src_reg->init_vect_1_l);
+		ctx->init_vect_1_r = readl_relaxed(&src_reg->init_vect_1_r);
 	}
 }
 
@@ -346,30 +355,30 @@ void cryp_restore_device_context(struct cryp_device_data *device_data,
 	 */
 	switch (config->keysize) {
 	case CRYP_KEY_SIZE_256:
-		writel(ctx->key_4_l, &reg->key_4_l);
-		writel(ctx->key_4_r, &reg->key_4_r);
+		writel_relaxed(ctx->key_4_l, &reg->key_4_l);
+		writel_relaxed(ctx->key_4_r, &reg->key_4_r);
 
 	case CRYP_KEY_SIZE_192:
-		writel(ctx->key_3_l, &reg->key_3_l);
-		writel(ctx->key_3_r, &reg->key_3_r);
+		writel_relaxed(ctx->key_3_l, &reg->key_3_l);
+		writel_relaxed(ctx->key_3_r, &reg->key_3_r);
 
 	case CRYP_KEY_SIZE_128:
-		writel(ctx->key_2_l, &reg->key_2_l);
-		writel(ctx->key_2_r, &reg->key_2_r);
+		writel_relaxed(ctx->key_2_l, &reg->key_2_l);
+		writel_relaxed(ctx->key_2_r, &reg->key_2_r);
 
 	default:
-		writel(ctx->key_1_l, &reg->key_1_l);
-		writel(ctx->key_1_r, &reg->key_1_r);
+		writel_relaxed(ctx->key_1_l, &reg->key_1_l);
+		writel_relaxed(ctx->key_1_r, &reg->key_1_r);
 	}
 
 	/* Restore IV for CBC mode for AES and DES. */
 	if (config->algomode == CRYP_ALGO_TDES_CBC ||
 	    config->algomode == CRYP_ALGO_DES_CBC ||
 	    config->algomode == CRYP_ALGO_AES_CBC) {
-		writel(ctx->init_vect_0_l, &reg->init_vect_0_l);
-		writel(ctx->init_vect_0_r, &reg->init_vect_0_r);
-		writel(ctx->init_vect_1_l, &reg->init_vect_1_l);
-		writel(ctx->init_vect_1_r, &reg->init_vect_1_r);
+		writel_relaxed(ctx->init_vect_0_l, &reg->init_vect_0_l);
+		writel_relaxed(ctx->init_vect_0_r, &reg->init_vect_0_r);
+		writel_relaxed(ctx->init_vect_1_l, &reg->init_vect_1_l);
+		writel_relaxed(ctx->init_vect_1_r, &reg->init_vect_1_r);
 	}
 }
 
@@ -381,7 +390,7 @@ void cryp_restore_device_context(struct cryp_device_data *device_data,
  */
 int cryp_write_indata(struct cryp_device_data *device_data, u32 write_data)
 {
-	writel(write_data, &device_data->base->din);
+	writel_relaxed(write_data, &device_data->base->din);
 
 	return 0;
 }
@@ -394,7 +403,7 @@ int cryp_write_indata(struct cryp_device_data *device_data, u32 write_data)
  */
 int cryp_read_outdata(struct cryp_device_data *device_data, u32 *read_data)
 {
-	*read_data = readl(&device_data->base->dout);
+	*read_data = readl_relaxed(&device_data->base->dout);
 
 	return 0;
 }

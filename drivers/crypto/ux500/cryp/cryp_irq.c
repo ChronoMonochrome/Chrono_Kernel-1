@@ -23,9 +23,9 @@ void cryp_enable_irq_src(struct cryp_device_data *device_data, u32 irq_src)
 
 	dev_dbg(device_data->dev, "[%s]", __func__);
 
-	i = readl(&device_data->base->imsc);
+	i = readl_relaxed(&device_data->base->imsc);
 	i = i | irq_src;
-	writel(i, &device_data->base->imsc);
+	writel_relaxed(i, &device_data->base->imsc);
 }
 
 void cryp_disable_irq_src(struct cryp_device_data *device_data, u32 irq_src)
@@ -34,12 +34,12 @@ void cryp_disable_irq_src(struct cryp_device_data *device_data, u32 irq_src)
 
 	dev_dbg(device_data->dev, "[%s]", __func__);
 
-	i = readl(&device_data->base->imsc);
+	i = readl_relaxed(&device_data->base->imsc);
 	i = i & ~irq_src;
-	writel(i, &device_data->base->imsc);
+	writel_relaxed(i, &device_data->base->imsc);
 }
 
 bool cryp_pending_irq_src(struct cryp_device_data *device_data, u32 irq_src)
 {
-	return (readl(&device_data->base->mis) & irq_src) > 0;
+	return (readl_relaxed(&device_data->base->mis) & irq_src) > 0;
 }
