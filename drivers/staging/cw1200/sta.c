@@ -116,7 +116,8 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	switch (priv->join_status) {
 	case CW1200_JOIN_STATUS_STA:
 		wsm_lock_tx(priv);
-		queue_work(priv->workqueue, &priv->unjoin_work);
+		if (queue_work(priv->workqueue, &priv->unjoin_work) <= 0)
+			wsm_unlock_tx(priv);
 		break;
 	case CW1200_JOIN_STATUS_AP:
 		/* If you see this warning please change the code to iterate

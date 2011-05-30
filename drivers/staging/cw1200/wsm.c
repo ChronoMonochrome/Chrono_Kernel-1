@@ -818,7 +818,9 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 				wsm_printk(KERN_DEBUG \
 					"[WSM] Issue unjoin command (RX).\n");
 				wsm_lock_tx_async(priv);
-				queue_work(priv->workqueue, &priv->unjoin_work);
+				if (queue_work(priv->workqueue,
+						&priv->unjoin_work) <= 0)
+					wsm_unlock_tx(priv);
 			}
 		}
 		priv->wsm_cbc.rx(priv, &rx, skb_p);
@@ -1310,7 +1312,8 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		wsm_lock_tx_async(priv);
 		BUG_ON(priv->join_pending_frame);
 		priv->join_pending_frame = wsm;
-		queue_work(priv->workqueue, &priv->join_work);
+		if (queue_work(priv->workqueue, &priv->join_work) <= 0)
+			wsm_unlock_tx(priv);
 		handled = true;
 	}
 	break;
@@ -1319,7 +1322,8 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		wsm_printk(KERN_DEBUG "[WSM] Issue set_default_wep_key.\n");
 		wsm_lock_tx_async(priv);
 		priv->wep_default_key_id = tx_info->control.hw_key->keyidx;
-		queue_work(priv->workqueue, &priv->wep_key_work);
+		if (queue_work(priv->workqueue, &priv->wep_key_work) <= 0)
+			wsm_unlock_tx(priv);
 		handled = true;
 	}
 	break;
@@ -1357,7 +1361,9 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 			wsm->more = 0;
 #endif /* 0 */
 			wsm_lock_tx_async(priv);
-			queue_work(priv->workqueue, &priv->unjoin_work);
+			if (queue_work(priv->workqueue,
+					&priv->unjoin_work) <= 0)
+				wsm_unlock_tx(priv);
 		}
 	}
 	break;
