@@ -287,7 +287,8 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		priv->powersave_mode.pmMode =
 				(conf->flags & IEEE80211_CONF_PS) ?
 				WSM_PSM_PS : WSM_PSM_ACTIVE;
-		WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
+		if (priv->join_status == CW1200_JOIN_STATUS_STA)
+			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_MONITOR) {
@@ -1065,6 +1066,7 @@ void cw1200_join_work(struct work_struct *work)
 			cancel_delayed_work_sync(&priv->keep_alive_work);
 #endif /* CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 			cw1200_update_listening(priv, priv->listening);
+			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 		} else {
 			WARN_ON(cw1200_upload_keys(priv));
 #if !defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
