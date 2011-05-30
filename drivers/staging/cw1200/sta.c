@@ -696,13 +696,20 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	hdr->signal = (s8)arg->rcpiRssi;
 	hdr->antenna = 0;
 
-	if (arg->flags & 0x07)
+	if (WSM_RX_STATUS_ENCRYPTION(arg->flags)) {
 		hdr->flag |= RX_FLAG_DECRYPTED;
-	if (arg->flags & BIT(14))
+		if (!arg->status &&
+				(WSM_RX_STATUS_ENCRYPTION(arg->flags) ==
+				 WSM_RX_STATUS_TKIP)) {
+			hdr->flag |= RX_FLAG_MMIC_STRIPPED;
+			skb_trim(skb, skb->len - 8 /*MICHAEL_MIC_LEN*/);
+		}
+	}
+	if (arg->flags & WSM_RX_STATUS_HT)
 		hdr->flag |= RX_FLAG_HT;
 #if 0
 	/* Wrong: ACK could be disable for this ACL */
-	if (arg->flags & BIT(16))
+	if (arg->flags & WSM_RX_STATUS_ADDRESS1)
 		priv->last_activity_time = jiffies;
 #endif
 

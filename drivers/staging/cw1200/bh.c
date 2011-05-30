@@ -359,14 +359,6 @@ rx:
 			}
 
 			read_len = 0;
-
-			{
-				/* HACK!!! */
-				/* Read CONFIG Register Value - HW BUG */
-				u32 val32;
-				WARN_ON(cw1200_reg_read_32(priv,
-					ST90TDS_CONFIG_REG_ID, &val32));
-			}
 		}
 
 tx:
