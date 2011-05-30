@@ -274,7 +274,8 @@ int cryp_configure_init_vector(struct cryp_device_data *device_data,
  * @ctx: Crypto device context
  */
 void cryp_save_device_context(struct cryp_device_data *device_data,
-			      struct cryp_device_context *ctx)
+			      struct cryp_device_context *ctx,
+			      int cryp_mode)
 {
 	enum cryp_algo_mode algomode;
 	struct cryp_register *src_reg = device_data->base;
@@ -287,7 +288,9 @@ void cryp_save_device_context(struct cryp_device_data *device_data,
 	 */
 	cryp_activity(device_data, CRYP_CRYPEN_DISABLE);
 	cryp_wait_until_done(device_data);
-	cryp_configure_for_dma(device_data, CRYP_DMA_DISABLE_BOTH);
+
+	if (cryp_mode == CRYP_MODE_DMA)
+		cryp_configure_for_dma(device_data, CRYP_DMA_DISABLE_BOTH);
 
 	if (CRYP_TEST_BITS(&src_reg->sr, CRYP_SR_IFEM_MASK) == 0)
 		ctx->din = readl(&src_reg->din);

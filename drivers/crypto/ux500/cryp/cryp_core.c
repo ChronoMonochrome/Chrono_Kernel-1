@@ -670,7 +670,8 @@ static int cryp_disable_power(struct device *dev,
 	spin_lock(&device_data->ctx_lock);
 	if (save_device_context && device_data->current_ctx) {
 		cryp_save_device_context(device_data,
-				&device_data->current_ctx->dev_ctx);
+				&device_data->current_ctx->dev_ctx,
+				cryp_mode);
 		device_data->restore_dev_ctx = true;
 	}
 	spin_unlock(&device_data->ctx_lock);
@@ -788,7 +789,7 @@ static int hw_crypt_noxts(struct cryp_ctx *ctx,
 		goto out;
 	}
 
-	cryp_save_device_context(device_data, &ctx->dev_ctx);
+	cryp_save_device_context(device_data, &ctx->dev_ctx, cryp_mode);
 	ctx->updated = 1;
 
 out:
@@ -856,7 +857,7 @@ static int ablk_dma_crypt(struct ablkcipher_request *areq)
 	wait_for_completion(&ctx->device->dma.cryp_dma_complete);
 	cryp_dma_done(ctx);
 
-	cryp_save_device_context(device_data, &ctx->dev_ctx);
+	cryp_save_device_context(device_data, &ctx->dev_ctx, cryp_mode);
 	ctx->updated = 1;
 
 out_power:

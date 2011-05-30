@@ -278,7 +278,8 @@ int cryp_configure_protection(struct cryp_device_data *device_data,
 
 /* Power management funtions */
 void cryp_save_device_context(struct cryp_device_data *device_data,
-			      struct cryp_device_context *ctx);
+			      struct cryp_device_context *ctx,
+			      int cryp_mode);
 
 void cryp_restore_device_context(struct cryp_device_data *device_data,
 				 struct cryp_device_context *ctx);
