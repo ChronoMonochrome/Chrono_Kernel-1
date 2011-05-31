@@ -139,19 +139,25 @@ static unsigned int htoi(const char *ptr)
 
 static int event_enable(bool enable, enum hdmi_event ev)
 {
-	struct av8100_status status;
+	struct kobject *kobj = &hdmidev->kobj;
 
 	dev_dbg(hdmidev, "enable_event %d %02x\n", enable, ev);
-	if (enable) {
-		status = av8100_status_get();
-		if (status.av8100_state < AV8100_OPMODE_IDLE) {
-			av8100_disable_interrupt();
-			av8100_enable_interrupt();
-		}
-
+	if (enable)
 		events_mask |= ev;
-	} else
+	else
 		events_mask &= ~ev;
+
+	if (events & ev) {
+		/* Report pending event */
+		/* Wake up application waiting for event via call to poll() */
+		sysfs_notify(kobj, NULL, SYSFS_EVENT_FILENAME);
+
+		LOCK_HDMI_EVENTS;
+		events_received = true;
+		UNLOCK_HDMI_EVENTS;
+
+		wake_up_interruptible(&hdmi_event_wq);
+	}
 
 	return 0;
 }
@@ -170,6 +176,11 @@ static int plugdeten(struct plug_detect *pldet)
 		}
 	}
 
+	event_enable(pldet->hdmi_detect_enable != 0,
+		HDMI_EVENT_HDMI_PLUGIN);
+	event_enable(pldet->hdmi_detect_enable != 0,
+		HDMI_EVENT_HDMI_PLUGOUT);
+
 	av8100_reg_hdmi_5_volt_time_r(&denc_off_time, NULL, NULL);
 
 	retval = av8100_reg_hdmi_5_volt_time_w(
@@ -182,11 +193,6 @@ static int plugdeten(struct plug_detect *pldet)
 			"register\n");
 		return -EFAULT;
 	}
-
-	event_enable(pldet->hdmi_detect_enable != 0,
-		HDMI_EVENT_HDMI_PLUGIN);
-	event_enable(pldet->hdmi_detect_enable != 0,
-		HDMI_EVENT_HDMI_PLUGOUT);
 
 	return retval;
 }
@@ -2165,31 +2171,31 @@ void hdmi_event(enum av8100_hdmi_event ev)
 	switch (ev) {
 	case AV8100_HDMI_EVENT_HDMI_PLUGIN:
 		events &= ~HDMI_EVENT_HDMI_PLUGOUT;
-		events |= events_mask & HDMI_EVENT_HDMI_PLUGIN;
+		events |= HDMI_EVENT_HDMI_PLUGIN;
 		break;
 
 	case AV8100_HDMI_EVENT_HDMI_PLUGOUT:
 		events &= ~HDMI_EVENT_HDMI_PLUGIN;
-		events |= events_mask & HDMI_EVENT_HDMI_PLUGOUT;
+		events |= HDMI_EVENT_HDMI_PLUGOUT;
 		break;
 
 	case AV8100_HDMI_EVENT_CEC:
-		events |= events_mask & HDMI_EVENT_CEC;
+		events |= HDMI_EVENT_CEC;
 		break;
 
 	case AV8100_HDMI_EVENT_HDCP:
-		events |= events_mask & HDMI_EVENT_HDCP;
+		events |= HDMI_EVENT_HDCP;
 		break;
 
 	case AV8100_HDMI_EVENT_CECTXERR:
-		events |= events_mask & HDMI_EVENT_CECTXERR;
+		events |= HDMI_EVENT_CECTXERR;
 		break;
 
 	default:
 		break;
 	}
 
-	events_new = events;
+	events_new = events_mask & events;
 
 	UNLOCK_HDMI_EVENTS;
 

@@ -243,6 +243,7 @@ enum av8100_command_size {
 
 static unsigned int waittime_retry[10] = {1, 2, 4, 6, 8, 10, 10, 10, 10, 10};
 
+static int av8100_5V_w(u8 denc_off, u8 hdmi_off, u8 on);
 static void clr_plug_status(enum av8100_plugin_status status);
 static void set_plug_status(enum av8100_plugin_status status);
 static void cec_rx(void);
@@ -537,11 +538,21 @@ static int av8100_int_event_handle(void)
 	}
 
 	if (hpdi & av8100_globals->hpdm) {
+
 		/* HDMI plugin change */
 		if (hpds) {
+			/* Plugged */
+			/* Set 5V always on */
+			av8100_5V_w(av8100_globals->denc_off_time,
+					0,
+					av8100_globals->on_time);
 			dev_dbg(av8100dev, "hpds 1\n");
 			set_plug_status(AV8100_HDMI_PLUGIN);
 		} else {
+			/* Unplugged */
+			av8100_5V_w(av8100_globals->denc_off_time,
+					av8100_globals->hdmi_off_time,
+					av8100_globals->on_time);
 			dev_dbg(av8100dev, "hpds 0\n");
 			clr_plug_status(AV8100_HDMI_PLUGIN);
 		}
@@ -616,6 +627,8 @@ static int av8100_plugstartup_event_handle(void)
 			dev_dbg(av8100dev,
 				"av8100_reg_stby_int_mask_w fail\n");
 		}
+
+		msleep(1);
 
 		/* Get actual plug status */
 		if (av8100_reg_stby_r(NULL, NULL, &hpds, &cpds,	NULL))
@@ -1814,28 +1827,14 @@ static int av8100_powerup1(void)
 	msleep(AV8100_WAITTIME_1MS);
 
 	if (pdata->alt_powerupseq) {
-		u8 denc_off_time;
-		u8 hdmi_off_time;
-		u8 on_time;
-
-		/* Save the cycle values */
-		denc_off_time = av8100_globals->denc_off_time;
-		hdmi_off_time = av8100_globals->hdmi_off_time;
-		on_time = av8100_globals->on_time;
-
 		dev_dbg(av8100dev, "powerup seq alt\n");
-		retval = av8100_reg_hdmi_5_volt_time_w(0, 0, AV8100_ON_TIME);
+		retval = av8100_5V_w(0, 0, AV8100_ON_TIME);
 		if (retval) {
 			dev_err(av8100dev, "%s reg_wr err 1\n", __func__);
 			goto av8100_powerup1_err;
 		}
 
 		udelay(AV8100_WATTIME_100US);
-
-		/* Get the cycle values */
-		av8100_globals->denc_off_time = denc_off_time;
-		av8100_globals->hdmi_off_time = hdmi_off_time;
-		av8100_globals->on_time = on_time;
 
 		retval = av8100_reg_stby_pend_int_w(
 				AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
@@ -1927,10 +1926,9 @@ static int av8100_powerup2(void)
 	msleep(AV8100_WAITTIME_1MS);
 
 	/* ON time & OFF time on 5v HDMI plug detect */
-	retval = av8100_reg_hdmi_5_volt_time_w(
-			av8100_globals->denc_off_time,
-			av8100_globals->hdmi_off_time,
-			av8100_globals->on_time);
+	retval = av8100_5V_w(av8100_globals->denc_off_time,
+				av8100_globals->hdmi_off_time,
+				av8100_globals->on_time);
 	if (retval) {
 		dev_err(av8100dev,
 			"Failed to write the value to av8100 register\n");
@@ -2388,10 +2386,10 @@ int av8100_reg_stby_w(
 }
 EXPORT_SYMBOL(av8100_reg_stby_w);
 
-int av8100_reg_hdmi_5_volt_time_w(u8 denc_off, u8 hdmi_off, u8 on)
+static int av8100_5V_w(u8 denc_off, u8 hdmi_off, u8 on)
 {
-	int retval;
 	u8 val;
+	int retval;
 
 	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
 		return -EINVAL;
@@ -2412,14 +2410,28 @@ int av8100_reg_hdmi_5_volt_time_w(u8 denc_off, u8 hdmi_off, u8 on)
 	/* Write to register */
 	retval = register_write_internal(AV8100_HDMI_5_VOLT_TIME, val);
 
+	UNLOCK_AV8100_HW;
+
+	return retval;
+}
+
+int av8100_reg_hdmi_5_volt_time_w(u8 denc_off, u8 hdmi_off, u8 on)
+{
+	int retval;
+
+	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+		return -EINVAL;
+
+	retval = av8100_5V_w(denc_off, hdmi_off, on);
+
 	/* Set vars */
 	if (chip_version > 1)
 		av8100_globals->denc_off_time = denc_off;
 
 	av8100_globals->hdmi_off_time = hdmi_off;
-	av8100_globals->on_time = on;
+	if (on)
+		av8100_globals->on_time = on;
 
-	UNLOCK_AV8100_HW;
 	return retval;
 }
 EXPORT_SYMBOL(av8100_reg_hdmi_5_volt_time_w);
