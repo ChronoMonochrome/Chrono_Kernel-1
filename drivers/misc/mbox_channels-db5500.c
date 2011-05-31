@@ -475,7 +475,7 @@ static void handle_open_msg(u16 channel, u8 mbox_id)
 		schedule_work(&tx_chan->open_msg);
 	} else {
 		/* No tx channel found on the list, allocate new element */
-		tx_chan = kzalloc(sizeof(*tx_chan), GFP_KERNEL);
+		tx_chan = kzalloc(sizeof(*tx_chan), GFP_ATOMIC);
 		if (tx_chan == NULL) {
 			dev_err(&channels.pdev->dev,
 				"failed to allocate memory\n");
