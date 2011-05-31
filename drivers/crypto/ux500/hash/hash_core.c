@@ -39,9 +39,9 @@
  * Pre-calculated empty message digests.
  */
 static u8 zero_message_hash_sha1[SHA1_DIGEST_SIZE] = {
-	0xDA, 0x39, 0xA3, 0xEE, 0x5E, 0x6B, 0x4B, 0x0D,
-	0x32, 0x55, 0xBF, 0xEF, 0x95, 0x60, 0x18, 0x90,
-	0xAF, 0xD8, 0x07, 0x09
+	0xda, 0x39, 0xa3, 0xee, 0x5e, 0x6b, 0x4b, 0x0d,
+	0x32, 0x55, 0xbf, 0xef, 0x95, 0x60, 0x18, 0x90,
+	0xaf, 0xd8, 0x07, 0x09
 };
 
 static u8 zero_message_hash_sha256[SHA256_DIGEST_SIZE] = {
@@ -49,6 +49,21 @@ static u8 zero_message_hash_sha256[SHA256_DIGEST_SIZE] = {
 	0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
 	0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
 	0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55
+};
+
+/* HMAC-SHA1, no key */
+static u8 zero_message_hmac_sha1[SHA1_DIGEST_SIZE] = {
+	0xfb, 0xdb, 0x1d, 0x1b, 0x18, 0xaa, 0x6c, 0x08,
+	0x32, 0x4b, 0x7d, 0x64, 0xb7, 0x1f, 0xb7, 0x63,
+	0x70, 0x69, 0x0e, 0x1d
+};
+
+/* HMAC-SHA256, no key */
+static u8 zero_message_hmac_sha256[SHA256_DIGEST_SIZE] = {
+	0xb6, 0x13, 0x67, 0x9a, 0x08, 0x14, 0xd9, 0xec,
+	0x77, 0x2f, 0x95, 0xd7, 0x78, 0xc3, 0x5f, 0xc5,
+	0xff, 0x16, 0x97, 0xc4, 0x93, 0x71, 0x56, 0x53,
+	0xc6, 0xc7, 0x12, 0x14, 0x42, 0x92, 0xc5, 0xad
 };
 
 /**
@@ -104,13 +119,15 @@ static void release_hash_device(struct hash_device_data *device_data)
  * @device_data:	Structure for the hash device.
  * @zero_hash:		Buffer to return the empty message digest.
  * @zero_hash_size:	Hash size of the empty message digest.
+ * @zero_digest:	True if zero_digest returned.
  */
 static int get_empty_message_digest(
 		struct hash_device_data *device_data,
-		u8 *zero_hash, u32 *zero_hash_size)
+		u8 *zero_hash, u32 *zero_hash_size, bool *zero_digest)
 {
 	int ret = 0;
 	struct hash_ctx *ctx = device_data->current_ctx;
+	*zero_digest = false;
 
 	/**
 	 * Caller responsible for ctx != NULL.
@@ -118,12 +135,16 @@ static int get_empty_message_digest(
 
 	if (HASH_OPER_MODE_HASH == ctx->config.oper_mode) {
 		if (HASH_ALGO_SHA1 == ctx->config.algorithm) {
-			zero_hash = zero_message_hash_sha1;
+			memcpy(zero_hash, &zero_message_hash_sha1[0],
+					SHA1_DIGEST_SIZE);
 			*zero_hash_size = SHA1_DIGEST_SIZE;
+			*zero_digest = true;
 		} else if (HASH_ALGO_SHA256 ==
 				ctx->config.algorithm) {
-			zero_hash = zero_message_hash_sha256;
+			memcpy(zero_hash, &zero_message_hash_sha256[0],
+					SHA256_DIGEST_SIZE);
 			*zero_hash_size = SHA256_DIGEST_SIZE;
+			*zero_digest = true;
 		} else {
 			dev_err(device_data->dev, "[%s] "
 					"Incorrect algorithm!"
@@ -131,14 +152,33 @@ static int get_empty_message_digest(
 			ret = -EINVAL;
 			goto out;
 		}
-	} else {
-		dev_err(device_data->dev, "[%s] "
-				"Incorrect hash mode!"
-				, __func__);
-		ret = -EINVAL;
-		goto out;
+	} else if (HASH_OPER_MODE_HMAC == ctx->config.oper_mode) {
+		if (!ctx->keylen) {
+			if (HASH_ALGO_SHA1 == ctx->config.algorithm) {
+				memcpy(zero_hash, &zero_message_hmac_sha1[0],
+						SHA1_DIGEST_SIZE);
+				*zero_hash_size = SHA1_DIGEST_SIZE;
+				*zero_digest = true;
+			} else if (HASH_ALGO_SHA256 == ctx->config.algorithm) {
+				memcpy(zero_hash, &zero_message_hmac_sha256[0],
+						SHA256_DIGEST_SIZE);
+				*zero_hash_size = SHA256_DIGEST_SIZE;
+				*zero_digest = true;
+			} else {
+				dev_err(device_data->dev, "[%s] "
+						"Incorrect algorithm!"
+						, __func__);
+				ret = -EINVAL;
+				goto out;
+			}
+		} else {
+			dev_dbg(device_data->dev, "[%s] Continue hash "
+					"calculation, since hmac key avalable",
+					__func__);
+		}
 	}
 out:
+
 	return ret;
 }
 
@@ -292,6 +332,52 @@ static int hash_get_device_data(struct hash_ctx *ctx,
 }
 
 /**
+ * hash_hw_write_key - Writes the key to the hardware registries.
+ *
+ * @device_data:	Structure for the hash device.
+ * @key:		Key to be written.
+ * @keylen:		The lengt of the key.
+ *
+ * Note! This function DOES NOT write to the NBLW registry, even though
+ * specified in the the hw design spec. Either due to incorrect info in the
+ * spec or due to a bug in the hw.
+ */
+static void hash_hw_write_key(struct hash_device_data *device_data,
+		const u8 *key, unsigned int keylen)
+{
+	u32 word = 0;
+
+	HASH_CLEAR_BITS(&device_data->base->str, HASH_STR_NBLW_MASK);
+	while (keylen >= 4) {
+		word = ((u32) (key[3] & 0xff) << 24) |
+			((u32) (key[2] & 0xff) << 16) |
+			((u32) (key[1] & 0xff) << 8) |
+			((u32) (key[0] & 0xff));
+
+		HASH_SET_DIN(word);
+		keylen -= 4;
+		key += 4;
+	}
+
+	/* Take care of the remaining bytes in the last word */
+	if (keylen) {
+		word = 0;
+		while (keylen) {
+			word |= (key[keylen - 1] << (8 * (keylen - 1)));
+			keylen--;
+		}
+		HASH_SET_DIN(word);
+	}
+	while (device_data->base->str & HASH_STR_DCAL_MASK)
+		cpu_relax();
+
+	HASH_SET_DCAL;
+
+	while (device_data->base->str & HASH_STR_DCAL_MASK)
+		cpu_relax();
+}
+
+/**
  * init_hash_hw - Initialise the hash hardware for a new calculation.
  * @device_data:	Structure for the hash device.
  * @ctx:		The hash context.
@@ -315,6 +401,9 @@ static int init_hash_hw(struct hash_device_data *device_data,
 
 	hash_begin(device_data, ctx);
 
+	if (ctx->config.oper_mode == HASH_OPER_MODE_HMAC)
+		hash_hw_write_key(device_data, ctx->key, ctx->keylen);
+
 	return ret;
 }
 
@@ -330,6 +419,9 @@ static int hash_init(struct ahash_request *req)
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
 
 	pr_debug(DEV_DBG_NAME " [%s] data size: %d", __func__, req->nbytes);
+
+	if (!ctx->key)
+		ctx->keylen = 0;
 
 	memset(&ctx->state, 0, sizeof(struct hash_state));
 	ctx->updated = 0;
@@ -384,6 +476,7 @@ static void hash_messagepad(struct hash_device_data *device_data,
 {
 	dev_dbg(device_data->dev, "[%s] (bytes in final msg=%d))",
 			__func__, index_bytes);
+
 	/*
 	 * Clear hash str register, only clear NBLW
 	 * since DCAL will be reset by hardware.
@@ -509,10 +602,24 @@ int hash_setconfiguration(struct hash_device_data *device_data,
 	 * MODE bit. This bit selects between HASH or HMAC mode for the
 	 * selected algorithm. 0b0 = HASH and 0b1 = HMAC.
 	 */
-	if (HASH_OPER_MODE_HASH == config->oper_mode) {
+	if (HASH_OPER_MODE_HASH == config->oper_mode)
 		HASH_CLEAR_BITS(&device_data->base->cr,
 				HASH_CR_MODE_MASK);
-	} else {	/* HMAC mode or wrong hash mode */
+	else if (HASH_OPER_MODE_HMAC == config->oper_mode) {
+		HASH_SET_BITS(&device_data->base->cr,
+				HASH_CR_MODE_MASK);
+		if (device_data->current_ctx->keylen > HASH_BLOCK_SIZE) {
+			/* Truncate key to blocksize */
+			dev_dbg(device_data->dev, "[%s] LKEY set", __func__);
+			HASH_SET_BITS(&device_data->base->cr,
+					HASH_CR_LKEY_MASK);
+		} else {
+			dev_dbg(device_data->dev, "[%s] LKEY cleared",
+					__func__);
+			HASH_CLEAR_BITS(&device_data->base->cr,
+					HASH_CR_LKEY_MASK);
+		}
+	} else {	/* Wrong hash mode */
 		ret = -EPERM;
 		dev_err(device_data->dev, "[%s] HASH_INVALID_PARAMETER!",
 				__func__);
@@ -700,6 +807,7 @@ int hash_hw_update(struct ahash_request *req)
 		data_buffer = walk.data;
 		ret = hash_process_data(device_data, ctx,
 				msg_length, data_buffer, buffer, &index);
+
 		if (ret) {
 			dev_err(device_data->dev, "[%s] hash_internal_hw_"
 					"update() failed!", __func__);
@@ -959,7 +1067,7 @@ static int ahash_final(struct ahash_request *req)
 	struct hash_device_data *device_data;
 	u8 digest[SHA256_DIGEST_SIZE];
 
-	pr_debug(DEV_DBG_NAME "[%s] ", __func__);
+	pr_debug(DEV_DBG_NAME " [%s] ", __func__);
 
 	ret = hash_get_device_data(ctx, &device_data);
 	if (ret)
@@ -983,29 +1091,34 @@ static int ahash_final(struct ahash_request *req)
 					"failed!", __func__);
 			goto out_power;
 		}
-	} else if (!ctx->state.index) {
+	} else if (req->nbytes == 0 && ctx->keylen == 0) {
 		u8 zero_hash[SHA256_DIGEST_SIZE];
 		u32 zero_hash_size = 0;
-
+		bool zero_digest = false;
 		/**
 		 * Use a pre-calculated empty message digest
 		 * (workaround since hw return zeroes, hw bug!?)
 		 */
-		ret = get_empty_message_digest(device_data,
-				&zero_hash[0], &zero_hash_size);
-		if (!ret && likely(zero_hash_size == ctx->digestsize))
-			memcpy(req->result, &zero_hash[0],
-					ctx->digestsize);
-		else
+		ret = get_empty_message_digest(device_data, &zero_hash[0],
+				&zero_hash_size, &zero_digest);
+		if (!ret && likely(zero_hash_size == ctx->digestsize) &&
+				zero_digest) {
+			memcpy(req->result, &zero_hash[0], ctx->digestsize);
+			goto out_power;
+		} else if (!ret && !zero_digest) {
+			dev_dbg(device_data->dev, "[%s] HMAC zero msg with "
+					"key, continue...", __func__);
+		} else {
 			dev_err(device_data->dev, "[%s] ret=%d, or wrong "
 					"digest size? %s", __func__, ret,
 					(zero_hash_size == ctx->digestsize) ?
 					"true" : "false");
-		/**
-		 * Empty message digest copied to req->result, or return error
-		 */
-		goto out_power;
-	} else {
+			/* Return error */
+			goto out_power;
+		}
+	}
+
+	if (!ctx->updated) {
 		ret = init_hash_hw(device_data, ctx);
 		if (ret) {
 			dev_err(device_data->dev, "[%s] init_hash_hw() "
@@ -1014,8 +1127,19 @@ static int ahash_final(struct ahash_request *req)
 		}
 	}
 
-	hash_messagepad(device_data, ctx->state.buffer,
-			ctx->state.index);
+	if (ctx->state.index)
+		hash_messagepad(device_data, ctx->state.buffer,
+				ctx->state.index);
+
+	if (ctx->config.oper_mode == HASH_OPER_MODE_HMAC && ctx->key) {
+		unsigned int keylen = ctx->keylen;
+		u8 *key = ctx->key;
+
+		dev_dbg(device_data->dev, "[%s] keylen: %d", __func__,
+				ctx->keylen);
+		hash_hw_write_key(device_data, key, keylen);
+	}
+
 	hash_get_digest(device_data, digest, ctx->config.algorithm);
 	memcpy(req->result, digest, ctx->digestsize);
 
@@ -1028,8 +1152,37 @@ out_power:
 out:
 	release_hash_device(device_data);
 
+	/**
+	 * Allocated in setkey, and only used in HMAC.
+	 */
+	kfree(ctx->key);
+
 	return ret;
 }
+
+static int hash_setkey(struct crypto_ahash *tfm,
+		const u8 *key, unsigned int keylen, int alg)
+{
+	int ret = 0;
+	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+
+	pr_debug(DEV_DBG_NAME " [%s] keylen: %d", __func__, keylen);
+
+	/**
+	 * Freed in final.
+	 */
+	ctx->key = kmalloc(keylen, GFP_KERNEL);
+	if (!ctx->key) {
+		pr_err(DEV_DBG_NAME " [%s] Failed to allocate ctx->key "
+		       "for %d\n", __func__, alg);
+		return -ENOMEM;
+	}
+
+	memcpy(ctx->key, key, keylen);
+	ctx->keylen = keylen;
+
+	return ret;
+ }
 
 static int ahash_sha1_init(struct ahash_request *req)
 {
@@ -1095,6 +1248,86 @@ out:
 	return ret1 ? ret1 : ret2;
 }
 
+static int hmac_sha1_init(struct ahash_request *req)
+{
+	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
+	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+
+	pr_debug(DEV_DBG_NAME " [%s]: (ctx=0x%x)!", __func__, (u32) ctx);
+
+	ctx->config.data_format	= HASH_DATA_8_BITS;
+	ctx->config.algorithm	= HASH_ALGO_SHA1;
+	ctx->config.oper_mode	= HASH_OPER_MODE_HMAC;
+	ctx->digestsize		= SHA1_DIGEST_SIZE;
+
+	return hash_init(req);
+}
+
+static int hmac_sha256_init(struct ahash_request *req)
+{
+	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
+	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
+
+	pr_debug(DEV_DBG_NAME " [%s]: (ctx=0x%x)!", __func__, (u32) ctx);
+
+	ctx->config.data_format	= HASH_DATA_8_BITS;
+	ctx->config.algorithm	= HASH_ALGO_SHA256;
+	ctx->config.oper_mode	= HASH_OPER_MODE_HMAC;
+	ctx->digestsize		= SHA256_DIGEST_SIZE;
+
+	return hash_init(req);
+}
+
+static int hmac_sha1_digest(struct ahash_request *req)
+{
+	int ret2, ret1;
+
+	pr_debug(DEV_DBG_NAME " [%s]", __func__);
+
+	ret1 = hmac_sha1_init(req);
+	if (ret1)
+		goto out;
+
+	ret1 = ahash_update(req);
+	ret2 = ahash_final(req);
+
+out:
+	return ret1 ? ret1 : ret2;
+}
+
+static int hmac_sha256_digest(struct ahash_request *req)
+{
+	int ret2, ret1;
+
+	pr_debug(DEV_DBG_NAME " [%s]", __func__);
+
+	ret1 = hmac_sha256_init(req);
+	if (ret1)
+		goto out;
+
+	ret1 = ahash_update(req);
+	ret2 = ahash_final(req);
+
+out:
+	return ret1 ? ret1 : ret2;
+}
+
+static int hmac_sha1_setkey(struct crypto_ahash *tfm,
+		const u8 *key, unsigned int keylen)
+{
+	pr_debug(DEV_DBG_NAME " [%s]", __func__);
+
+	return hash_setkey(tfm, key, keylen, HASH_ALGO_SHA1);
+}
+
+static int hmac_sha256_setkey(struct crypto_ahash *tfm,
+		const u8 *key, unsigned int keylen)
+{
+	pr_debug(DEV_DBG_NAME " [%s]", __func__);
+
+	return hash_setkey(tfm, key, keylen, HASH_ALGO_SHA256);
+}
+
 static struct ahash_alg ahash_sha1_alg = {
 	.init			 = ahash_sha1_init,
 	.update			 = ahash_update,
@@ -1130,12 +1363,52 @@ static struct ahash_alg ahash_sha256_alg = {
 	}
 };
 
+static struct ahash_alg hmac_sha1_alg = {
+	.init			 = hmac_sha1_init,
+	.update			 = ahash_update,
+	.final			 = ahash_final,
+	.digest			 = hmac_sha1_digest,
+	.setkey			 = hmac_sha1_setkey,
+	.halg.digestsize	 = SHA1_DIGEST_SIZE,
+	.halg.statesize		 = sizeof(struct hash_ctx),
+	.halg.base = {
+		.cra_name        = "hmac(sha1)",
+		.cra_driver_name = "hmac-sha1-u8500",
+		.cra_flags       = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
+		.cra_blocksize   = SHA1_BLOCK_SIZE,
+		.cra_ctxsize	 = sizeof(struct hash_ctx),
+		.cra_type	 = &crypto_ahash_type,
+		.cra_module      = THIS_MODULE,
+	}
+};
+
+static struct ahash_alg hmac_sha256_alg = {
+	.init			 = hmac_sha256_init,
+	.update			 = ahash_update,
+	.final			 = ahash_final,
+	.digest			 = hmac_sha256_digest,
+	.setkey			 = hmac_sha256_setkey,
+	.halg.digestsize	 = SHA256_DIGEST_SIZE,
+	.halg.statesize		 = sizeof(struct hash_ctx),
+	.halg.base = {
+		.cra_name        = "hmac(sha256)",
+		.cra_driver_name = "hmac-sha256-u8500",
+		.cra_flags       = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
+		.cra_blocksize   = SHA256_BLOCK_SIZE,
+		.cra_ctxsize	 = sizeof(struct hash_ctx),
+		.cra_type	 = &crypto_ahash_type,
+		.cra_module      = THIS_MODULE,
+	}
+};
+
 /**
  * struct hash_alg *u8500_hash_algs[] -
  */
 static struct ahash_alg *u8500_ahash_algs[] = {
 	&ahash_sha1_alg,
-	&ahash_sha256_alg
+	&ahash_sha256_alg,
+	&hmac_sha1_alg,
+	&hmac_sha256_alg
 };
 
 /**
@@ -1533,3 +1806,5 @@ MODULE_LICENSE("GPL");
 
 MODULE_ALIAS("sha1-all");
 MODULE_ALIAS("sha256-all");
+MODULE_ALIAS("hmac-sha1-all");
+MODULE_ALIAS("hmac-sha256-all");

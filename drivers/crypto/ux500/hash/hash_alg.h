@@ -297,7 +297,7 @@ struct hash_config {
  * @device	Pointer to the device structure.
  */
 struct hash_ctx {
-	u8			key[HASH_BLOCK_SIZE];
+	u8			*key;
 	u32			keylen;
 	u8			updated;
 	struct hash_state	state;
