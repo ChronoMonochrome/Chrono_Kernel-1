@@ -15,10 +15,10 @@
 #include <linux/pm.h>
 
 #include <plat/gpio-nomadik.h>
-extern struct dev_power_domain ux500_dev_power_domain;
 
 #include <mach/hardware.h>
 
+#include "pm/pm.h"
 #include "devices-common.h"
 
 struct amba_device *
