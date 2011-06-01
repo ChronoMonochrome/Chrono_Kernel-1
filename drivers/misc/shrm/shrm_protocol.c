@@ -37,7 +37,6 @@ static u8 recieve_audio_msg[8*1024];
 static received_msg_handler rx_common_handler;
 static received_msg_handler rx_audio_handler;
 static struct hrtimer timer;
-static char is_earlydrop;
 struct sock *shrm_nl_sk;
 
 static char shrm_common_tx_state = SHRM_SLEEP_STATE;
@@ -698,11 +697,8 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 	rx_audio_handler = audio_rx_handler;
 	atomic_set(&ac_sleep_disable_count, 0);
 
-	is_earlydrop = cpu_is_u8500ed();
-	if (is_earlydrop != 0x01) {
-		hrtimer_init(&timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-		timer.function = callback;
-	}
+	hrtimer_init(&timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	timer.function = callback;
 
 	shrm->shm_common_ch_wr_wq = create_singlethread_workqueue
 		("shm_common_channel_irq");
