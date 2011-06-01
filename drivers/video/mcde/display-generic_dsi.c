@@ -246,7 +246,6 @@ static int generic_resume(struct mcde_display_device *ddev)
 			, __func__);
 	ddev->set_synchronized_update(ddev,
 					ddev->get_synchronized_update(ddev));
-	ddev->update(ddev, false);
 	return ret;
 }
 

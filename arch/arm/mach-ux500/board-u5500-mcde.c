@@ -318,6 +318,7 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 		struct mcde_overlay *ovly = mfb->ovlys[i];
 		struct mcde_overlay_info ovly_info;
 		struct mcde_fb *mfb = to_mcde_fb(info);
+		int num_buffers;
 		memset(&ovly_info, 0, sizeof(ovly_info));
 		ovly_info.paddr = fix.smem_start +
 			fix.line_length * var.yoffset;
@@ -331,7 +332,8 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 		ovly_info.dirty.w = var.xres;
 		ovly_info.dirty.h = var.yres;
 		(void) mcde_dss_apply_overlay(ovly, &ovly_info);
-		ret = mcde_dss_update_overlay(ovly);
+		num_buffers = var.yres_virtual / var.yres;
+		ret = mcde_dss_update_overlay(ovly, num_buffers == 3);
 		if (ret)
 			break;
 	}
