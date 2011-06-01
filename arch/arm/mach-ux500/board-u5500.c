@@ -151,9 +151,9 @@ static struct nmk_i2c_controller u5500_i2c##id##_data = { \
  * mode of operation
  */
 
-U5500_I2C_CONTROLLER(1,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
-U5500_I2C_CONTROLLER(2,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
-U5500_I2C_CONTROLLER(3,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
+U5500_I2C_CONTROLLER(1,	0xe, 1, 10, 400000, 200, I2C_FREQ_MODE_FAST);
+U5500_I2C_CONTROLLER(2,	0xe, 1, 10, 400000, 200, I2C_FREQ_MODE_FAST);
+U5500_I2C_CONTROLLER(3,	0xe, 1, 10, 400000, 200, I2C_FREQ_MODE_FAST);
 
 static struct i2c_board_info __initdata u5500_i2c1_devices[] = {
 	{
