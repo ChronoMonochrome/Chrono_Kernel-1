@@ -110,7 +110,7 @@ static struct stedma40_chan_cfg msp1_dma_rx = {
 	.high_priority = true,
 	.dir = STEDMA40_PERIPH_TO_MEM,
 
-	.src_dev_type = DB8500_DMA_DEV30_MSP1_RX, /* v2: MSP3 RX */
+	.src_dev_type = DB8500_DMA_DEV30_MSP3_RX,
 	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
 
 	.src_info.psize = STEDMA40_PSIZE_LOG_4,
@@ -134,7 +134,7 @@ static struct stedma40_chan_cfg msp1_dma_tx = {
 
 static struct msp_i2s_platform_data msp1_platform_data = {
 	.id = MSP_1_I2S_CONTROLLER,
-	.msp_i2s_dma_rx = &msp1_dma_rx,
+	.msp_i2s_dma_rx = NULL,
 	.msp_i2s_dma_tx = &msp1_dma_tx,
 	.msp_i2s_init = msp13_i2s_init,
 	.msp_i2s_exit = msp13_i2s_exit,
@@ -147,8 +147,9 @@ static struct stedma40_chan_cfg msp2_dma_rx = {
 	.src_dev_type = DB8500_DMA_DEV14_MSP2_RX,
 	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
 
-	.src_info.psize = STEDMA40_PSIZE_LOG_4,
-	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+	/* MSP2 DMA doesn't work with PSIZE == 4 on DB8500v2 */
+	.src_info.psize = STEDMA40_PSIZE_LOG_1,
+	.dst_info.psize = STEDMA40_PSIZE_LOG_1,
 
 	/* data_width is set during configuration */
 };
@@ -203,29 +204,12 @@ static struct i2s_board_info stm_i2s_board_info[] __initdata = {
 	},
 };
 
-static void __init mop500_msp_fixup(void)
-{
-	if (cpu_is_u8500ed() || cpu_is_u8500v1())
-		return;
-
-	/* DMA Rx is moved to MSP3 on DB8500v2 */
-	msp1_platform_data.msp_i2s_dma_rx = NULL;
-
-	/* MSP2 DMA doesn't work with PSIZE == 4 on DB8500v2 */
-	msp2_dma_rx.src_info.psize = STEDMA40_PSIZE_LOG_1;
-	msp2_dma_rx.dst_info.psize = STEDMA40_PSIZE_LOG_1;
-}
-
 void __init mop500_msp_init(void)
 {
-	mop500_msp_fixup();
-
 	db8500_add_msp0_i2s(&msp0_platform_data);
 	db8500_add_msp1_i2s(&msp1_platform_data);
 	db8500_add_msp2_i2s(&msp2_platform_data);
-
-	if (cpu_is_u8500v2())
-		db8500_add_msp3_i2s(&msp3_platform_data);
+	db8500_add_msp3_i2s(&msp3_platform_data);
 
 	i2s_register_board_info(stm_i2s_board_info,
 				ARRAY_SIZE(stm_i2s_board_info));

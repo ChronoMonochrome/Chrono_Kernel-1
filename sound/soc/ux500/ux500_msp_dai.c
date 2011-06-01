@@ -969,60 +969,33 @@ static int ux500_msp_drv_remove(struct i2s_device *i2s_dev)
 	return 0;
 }
 
-static const struct i2s_device_id dev_id_table_v1[] = {
-	{ "i2s_device.0", 0, 0 },
-	{ "i2s_device.1", 1, 0 },
-	{ "i2s_device.2", 2, 0 },
-	{ },
-};
-MODULE_DEVICE_TABLE(i2s, dev_id_table_v1);
-
-static const struct i2s_device_id dev_id_table_v2[] = {
+static const struct i2s_device_id dev_id_table[] = {
 	{ "i2s_device.0", 0, 0 },
 	{ "i2s_device.1", 1, 0 },
 	{ "i2s_device.2", 2, 0 },
 	{ "i2s_device.3", 3, 0 },
 	{ },
 };
-MODULE_DEVICE_TABLE(i2s, dev_id_table_v2);
+MODULE_DEVICE_TABLE(i2s, dev_id_table);
 
-
-static struct i2s_driver i2sdrv_i2s_v1 = {
-	.driver = {
-		.name = "i2s",
-		.owner = THIS_MODULE,
-	},
-	.probe = ux500_msp_drv_probe,
-	.remove = ux500_msp_drv_remove,
-	.id_table = dev_id_table_v1,
-};
-
-static struct i2s_driver i2sdrv_i2s_v2 = {
+static struct i2s_driver i2sdrv_i2s = {
 	.driver = {
 		.name = "i2s",
 		.owner = THIS_MODULE,
 	},
 	.probe = ux500_msp_drv_probe,
 	.remove = __devexit_p(ux500_msp_drv_remove),
-	.id_table = dev_id_table_v2,
+	.id_table = dev_id_table,
 };
 
 static int __init ux500_msp_init(void)
 {
-	if (cpu_is_u8500ed() || cpu_is_u8500v1() || cpu_is_u8500v11())
-		return i2s_register_driver(&i2sdrv_i2s_v1);
-	else
-		return i2s_register_driver(&i2sdrv_i2s_v2);
+	return i2s_register_driver(&i2sdrv_i2s);
 }
 
 static void __exit ux500_msp_exit(void)
 {
-	pr_debug("%s: Enter.\n", __func__);
-
-	if (cpu_is_u8500ed() || cpu_is_u8500v1() || cpu_is_u8500v11())
-		i2s_unregister_driver(&i2sdrv_i2s_v1);
-	else
-		i2s_unregister_driver(&i2sdrv_i2s_v2);
+	i2s_unregister_driver(&i2sdrv_i2s);
 }
 
 module_init(ux500_msp_init);
