@@ -288,6 +288,19 @@ static struct ab5500_platform_data ab5500_plf_data = {
 	.regulator	= &u5500_ab5500_regulator_data,
 	.dev_data[AB5500_DEVID_LEDS] = &ab5500_hvleds_data,
 	.dev_data_sz[AB5500_DEVID_LEDS] = sizeof(ab5500_hvleds_data),
+	.init_settings = (struct abx500_init_settings[]){
+			{
+				.bank = 0x3,
+				.reg = 0x17,
+				.setting = 0x0F,
+			},
+			{
+				.bank = 0x3,
+				.reg = 0x18,
+				.setting = 0x10,
+			},
+	},
+	.init_settings_sz = 2,
 };
 
 static struct platform_device u5500_ab5500_device = {
