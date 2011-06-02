@@ -31,29 +31,15 @@ static unsigned int db5500_mloader_shm_total_size;
 module_param_named(shm_total_size, db5500_mloader_shm_total_size, uint, 0600);
 MODULE_PARM_DESC(shm_total_size, "Total Size of SHM shared memory");
 
-static int __init db5500_bootargs_memmap(char *str)
+static int __init db5500_bootargs_modem_memmap(char *p)
 {
-	char start_val_str[10];
-	char *next_val_str;
-	int ret;
+	db5500_bootargs_memmap_modem_total_size = memparse(p, &p);
+	if (*p == '@')
+		db5500_bootargs_memmap_modem_start = memparse(p + 1, &p);
 
-	next_val_str = strchr(str, '$');
-	if (next_val_str == NULL)
-		return -EINVAL;
-	strncpy(start_val_str, str, next_val_str - str);
-	ret = strict_strtoul(start_val_str, 0,
-				&db5500_bootargs_memmap_modem_total_size);
-	if (ret < 0)
-		return -EINVAL;
-
-	ret = strict_strtoul(next_val_str + 1, 0,
-					&db5500_bootargs_memmap_modem_start);
-	if (ret < 0)
-		return -EINVAL;
-
-	return 1;
+	return 0;
 }
-__setup("memmap=", db5500_bootargs_memmap);
+early_param("mem_modem", db5500_bootargs_modem_memmap);
 
 static int __init db5500_bootargs_shm_total_size(char *str)
 {
@@ -63,7 +49,7 @@ static int __init db5500_bootargs_shm_total_size(char *str)
 		return -EINVAL;
 	return 1;
 }
-__setup("mloader.shm_total_size=", db5500_bootargs_shm_total_size);
+early_param("mloader.shm_total_size", db5500_bootargs_shm_total_size);
 
 static int __exit db5500_mloader_remove(struct platform_device *pdev)
 {
