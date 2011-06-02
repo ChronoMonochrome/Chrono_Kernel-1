@@ -15,11 +15,6 @@
 #include "cw1200.h"
 #include "debug.h"
 
-/* private */
-struct cw1200_debug_priv {
-	struct dentry *debugfs_phy;
-};
-
 /* join_status */
 static const char * const cw1200_debug_join_status[] = {
 	"passive",
@@ -101,6 +96,7 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 {
 	int i;
 	struct cw1200_common *priv = seq->private;
+	struct cw1200_debug_priv *d = priv->debug;
 	seq_puts(seq,   "CW1200 Wireless LAN driver status\n");
 	seq_printf(seq, "Hardware:   %d.%d\n",
 		priv->wsm_caps.hardwareId,
@@ -246,6 +242,17 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 	if (atomic_read(&priv->tx_lock))
 		seq_printf(seq, "TXlock cnt: %d\n",
 			atomic_read(&priv->tx_lock));
+
+	seq_printf(seq, "TXed:       %d\n",
+		d->tx);
+	seq_printf(seq, "AGG TXed:   %d\n",
+		d->tx_agg);
+	seq_printf(seq, "MORE TXed:  %d\n",
+		d->tx_more);
+	seq_printf(seq, "RXed:       %d\n",
+		d->rx);
+	seq_printf(seq, "AGG RXed:   %d\n",
+		d->rx_agg);
 
 	seq_printf(seq, "Scan:       %s\n",
 		atomic_read(&priv->scan.in_progress) ? "active" : "idle");

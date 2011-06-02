@@ -14,6 +14,7 @@
 #include "cw1200.h"
 #include "wsm.h"
 #include "bh.h"
+#include "debug.h"
 
 #if defined(CONFIG_CW1200_TX_POLICY_DEBUG)
 #define tx_policy_printk(...) printk(__VA_ARGS__)
@@ -524,6 +525,11 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 #endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 			priv->cqm_tx_failure_count = 0;
 			++tx_count;
+			cw1200_debug_txed(priv);
+			if (arg->flags & WSM_TX_STATUS_AGGREGATION) {
+				tx->flags |= IEEE80211_TX_STAT_AMPDU;
+				cw1200_debug_txed_agg(priv);
+			}
 		} else {
 			/* TODO: Update TX failure counters */
 			if (unlikely(priv->cqm_tx_failure_thold &&

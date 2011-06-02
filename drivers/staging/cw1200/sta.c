@@ -17,6 +17,7 @@
 #include "sta.h"
 #include "fwio.h"
 #include "bh.h"
+#include "debug.h"
 
 #if defined(CONFIG_CW1200_STA_DEBUG)
 #define sta_printk(...) printk(__VA_ARGS__)
@@ -709,6 +710,10 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	}
 	if (arg->flags & WSM_RX_STATUS_HT)
 		hdr->flag |= RX_FLAG_HT;
+
+	cw1200_debug_rxed(priv);
+	if (arg->flags & WSM_RX_STATUS_AGGREGATE)
+		cw1200_debug_rxed_agg(priv);
 #if 0
 	/* Wrong: ACK could be disable for this ACL */
 	if (arg->flags & WSM_RX_STATUS_ADDRESS1)

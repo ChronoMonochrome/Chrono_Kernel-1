@@ -5,8 +5,42 @@ struct cw200_common;
 
 #ifdef CONFIG_CW1200_DEBUGFS
 
+struct cw1200_debug_priv {
+	struct dentry *debugfs_phy;
+	int tx;
+	int tx_agg;
+	int tx_more;
+	int rx;
+	int rx_agg;
+};
+
 int cw1200_debug_init(struct cw1200_common *priv);
 void cw1200_debug_release(struct cw1200_common *priv);
+
+static inline void cw1200_debug_txed(struct cw1200_common *priv)
+{
+	++priv->debug->tx;
+}
+
+static inline void cw1200_debug_txed_agg(struct cw1200_common *priv)
+{
+	++priv->debug->tx_agg;
+}
+
+static inline void cw1200_debug_txed_more(struct cw1200_common *priv)
+{
+	++priv->debug->tx_more;
+}
+
+static inline void cw1200_debug_rxed(struct cw1200_common *priv)
+{
+	++priv->debug->rx;
+}
+
+static inline void cw1200_debug_rxed_agg(struct cw1200_common *priv)
+{
+	++priv->debug->rx_agg;
+}
 
 #else /* CONFIG_CW1200_DEBUGFS */
 
@@ -16,6 +50,26 @@ static inline int cw1200_debug_init(struct cw1200_common *priv)
 }
 
 static inline void cw1200_debug_release(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_txed(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_txed_agg(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_txed_more(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_rxed(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_rxed_agg(struct cw1200_common *priv)
 {
 }
 
