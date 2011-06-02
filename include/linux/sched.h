@@ -1877,6 +1877,8 @@ static inline void task_set_no_new_privs(struct task_struct *p)
 
 #define JOBCTL_PENDING_MASK	JOBCTL_STOP_PENDING
 
+extern bool task_set_jobctl_pending(struct task_struct *task,
+				    unsigned int mask);
 extern void task_clear_jobctl_pending(struct task_struct *task,
 				      unsigned int mask);
 
