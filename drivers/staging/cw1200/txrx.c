@@ -563,6 +563,66 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	}
 }
 
+void cw1200_rx_cb(struct cw1200_common *priv,
+		  struct wsm_rx *arg,
+		  struct sk_buff **skb_p)
+{
+	struct sk_buff *skb = *skb_p;
+	struct ieee80211_rx_status *hdr = IEEE80211_SKB_RXCB(skb);
+	hdr->flag = 0;
+
+	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
+		/* STA is stopped. */
+		return;
+	}
+
+	if (unlikely(arg->status)) {
+		if (arg->status == WSM_STATUS_MICFAILURE) {
+			txrx_printk(KERN_DEBUG "[RX] MIC failure.\n");
+			hdr->flag |= RX_FLAG_MMIC_ERROR;
+		} else if (arg->status == WSM_STATUS_NO_KEY_FOUND) {
+			txrx_printk(KERN_DEBUG "[RX] No key found.\n");
+			return;
+		} else {
+			txrx_printk(KERN_DEBUG "[RX] Receive failure: %d.\n",
+				arg->status);
+			return;
+		}
+	}
+
+	hdr->mactime = 0; /* Not supported by WSM */
+	hdr->freq = ieee80211_channel_to_frequency(arg->channelNumber);
+	hdr->band = (hdr->freq >= 5000) ?
+		IEEE80211_BAND_5GHZ : IEEE80211_BAND_2GHZ;
+	hdr->rate_idx = arg->rxedRate;
+	if (hdr->rate_idx >= 4) /* TODO: Use common convert function. */
+		hdr->rate_idx -= 2;
+	hdr->signal = (s8)arg->rcpiRssi;
+	hdr->antenna = 0;
+
+	if (WSM_RX_STATUS_ENCRYPTION(arg->flags)) {
+		hdr->flag |= RX_FLAG_DECRYPTED;
+		if (!arg->status &&
+				(WSM_RX_STATUS_ENCRYPTION(arg->flags) ==
+				 WSM_RX_STATUS_TKIP)) {
+			hdr->flag |= RX_FLAG_MMIC_STRIPPED;
+			skb_trim(skb, skb->len - 8 /*MICHAEL_MIC_LEN*/);
+		}
+	}
+	if (arg->flags & WSM_RX_STATUS_HT)
+		hdr->flag |= RX_FLAG_HT;
+
+	cw1200_debug_rxed(priv);
+	if (arg->flags & WSM_RX_STATUS_AGGREGATE)
+		cw1200_debug_rxed_agg(priv);
+
+	/* Not that we really need _irqsafe variant here,
+	 * but it offloads realtime bh thread and improve
+	 * system performance. */
+	ieee80211_rx_irqsafe(priv->hw, skb);
+	*skb_p = NULL;
+}
+
 /* ******************************************************************** */
 /* Security								*/
 

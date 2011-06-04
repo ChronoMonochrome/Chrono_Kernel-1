@@ -45,9 +45,6 @@ void cw1200_flush(struct ieee80211_hw *hw, bool drop);
 /* ******************************************************************** */
 /* WSM callbacks							*/
 
-void cw1200_rx_cb(struct cw1200_common *priv,
-		  struct wsm_rx *arg,
-		  struct sk_buff **skb_p);
 /* void cw1200_set_pm_complete_cb(struct cw1200_common *priv,
 	struct wsm_set_pm_complete *arg); */
 void cw1200_channel_switch_cb(struct cw1200_common *priv);

@@ -68,6 +68,9 @@ int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb);
 
 void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 			  struct wsm_tx_confirm *arg);
+void cw1200_rx_cb(struct cw1200_common *priv,
+		  struct wsm_rx *arg,
+		  struct sk_buff **skb_p);
 
 /* ******************************************************************** */
 /* Timeout								*/
