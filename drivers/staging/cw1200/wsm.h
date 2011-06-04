@@ -471,6 +471,9 @@ struct cw1200_common;
 /* Test Purposes Only */
 #define WSM_MIB_ID_BLOCK_ACK_INFO		0x100D
 
+/* 4.42 UseMultiTxConfMessage */
+#define WSM_MIB_USE_MULTI_TX_CONF		0x1024
+
 /* 4.43 Keep-alive period */
 #define WSM_MIB_ID_KEEP_ALIVE_PERIOD		0x1025
 
@@ -1440,6 +1443,17 @@ static inline int wsm_set_bssid_filtering(struct cw1200_common *priv,
 		.filter = !enabled,
 	};
 	return wsm_write_mib(priv, WSM_MIB_ID_DISABLE_BSSID_FILTER,
+			&arg, sizeof(arg));
+}
+
+/* UseMultiTxConfMessage */
+
+static inline int wsm_use_multi_tx_conf(struct cw1200_common *priv,
+					bool enabled)
+{
+	__le32 arg = enabled ? __cpu_to_le32(1) : 0;
+
+	return wsm_write_mib(priv, WSM_MIB_USE_MULTI_TX_CONF,
 			&arg, sizeof(arg));
 }
 

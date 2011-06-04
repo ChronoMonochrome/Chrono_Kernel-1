@@ -728,7 +728,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	/* Not that we really need _irqsafe variant here,
 	 * but it offloads realtime bh thread and improve
 	 * system performance. */
-	ieee80211_rx_irqsafe(priv->hw, skb);
+	ieee80211_rx(priv->hw, skb);
 	*skb_p = NULL;
 }
 
@@ -1073,6 +1073,7 @@ void cw1200_join_work(struct work_struct *work)
 			cw1200_update_listening(priv, priv->listening);
 			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 		} else {
+			/* Upload keys */
 			WARN_ON(cw1200_upload_keys(priv));
 #if !defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 			WARN_ON(wsm_keep_alive_period(priv, 30 /* sec */));

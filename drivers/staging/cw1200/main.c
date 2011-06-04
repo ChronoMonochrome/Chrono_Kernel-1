@@ -465,6 +465,9 @@ int cw1200_probe(const struct sbus_ops *sbus_ops,
 	/* Set low-power mode. */
 	WARN_ON(wsm_set_operational_mode(priv, &mode));
 
+	/* Enable multi-TX confirmation */
+	WARN_ON(wsm_use_multi_tx_conf(priv, true));
+
 	err = cw1200_register_common(dev);
 	if (err) {
 		priv->sbus_ops->irq_unsubscribe(priv->sbus_priv);

@@ -19,6 +19,7 @@
 #include "cw1200.h"
 #include "wsm.h"
 #include "bh.h"
+#include "debug.h"
 
 #if defined(CONFIG_CW1200_WSM_DEBUG)
 #define wsm_printk(...) printk(__VA_ARGS__)
@@ -362,19 +363,50 @@ int wsm_stop_scan(struct cw1200_common *priv)
 
 static int wsm_tx_confirm(struct cw1200_common *priv, struct wsm_buf *buf)
 {
-	if (priv->wsm_cbc.tx_confirm) {
-		struct wsm_tx_confirm tx_confirm;
+	struct wsm_tx_confirm tx_confirm;
 
-		tx_confirm.packetID = WSM_GET32(buf);
-		tx_confirm.status = WSM_GET32(buf);
-		tx_confirm.txedRate = WSM_GET8(buf);
-		tx_confirm.ackFailures = WSM_GET8(buf);
-		tx_confirm.flags = WSM_GET16(buf);
-		tx_confirm.mediaDelay = WSM_GET32(buf);
-		tx_confirm.txQueueDelay = WSM_GET32(buf);
+	tx_confirm.packetID = WSM_GET32(buf);
+	tx_confirm.status = WSM_GET32(buf);
+	tx_confirm.txedRate = WSM_GET8(buf);
+	tx_confirm.ackFailures = WSM_GET8(buf);
+	tx_confirm.flags = WSM_GET16(buf);
+	tx_confirm.mediaDelay = WSM_GET32(buf);
+	tx_confirm.txQueueDelay = WSM_GET32(buf);
+
+	if (priv->wsm_cbc.tx_confirm)
 		priv->wsm_cbc.tx_confirm(priv, &tx_confirm);
-	}
 	return 0;
+
+underflow:
+	WARN_ON(1);
+	return -EINVAL;
+}
+
+static int wsm_multi_tx_confirm(struct cw1200_common *priv,
+				struct wsm_buf *buf)
+{
+	int ret;
+	int count;
+	int i;
+
+	count = WSM_GET32(buf);
+	if (WARN_ON(count <= 0))
+		return -EINVAL;
+	else if (count > 1) {
+		ret = wsm_release_tx_buffer(priv, count - 1);
+		if (ret < 0)
+			return ret;
+		else if (ret > 0)
+			cw1200_bh_wakeup(priv);
+	}
+
+	cw1200_debug_txed_multi(priv, count);
+	for (i = 0; i < count; ++i) {
+		ret = wsm_tx_confirm(priv, buf);
+		if (ret)
+			return ret;
+	}
+	return ret;
 
 underflow:
 	WARN_ON(1);
@@ -1085,7 +1117,8 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 
 	if (id == 0x404) {
 		ret = wsm_tx_confirm(priv, &wsm_buf);
-		cw1200_bh_wakeup(priv);
+	} else if (id == 0x41E) {
+		ret = wsm_multi_tx_confirm(priv, &wsm_buf);
 	} else if (id & 0x0400) {
 		void *wsm_arg;
 		u16 wsm_cmd;

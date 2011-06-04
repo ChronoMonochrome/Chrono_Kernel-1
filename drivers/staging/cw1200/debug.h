@@ -12,6 +12,8 @@ struct cw1200_debug_priv {
 	int tx_more;
 	int rx;
 	int rx_agg;
+	int tx_multi;
+	int tx_multi_frames;
 };
 
 int cw1200_debug_init(struct cw1200_common *priv);
@@ -30,6 +32,13 @@ static inline void cw1200_debug_txed_agg(struct cw1200_common *priv)
 static inline void cw1200_debug_txed_more(struct cw1200_common *priv)
 {
 	++priv->debug->tx_more;
+}
+
+static inline void cw1200_debug_txed_multi(struct cw1200_common *priv,
+					   int count)
+{
+	++priv->debug->tx_multi;
+	priv->debug->tx_multi_frames += count;
 }
 
 static inline void cw1200_debug_rxed(struct cw1200_common *priv)
@@ -62,6 +71,11 @@ static inline void cw1200_debug_txed_agg(struct cw1200_common *priv)
 }
 
 static inline void cw1200_debug_txed_more(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_txed_multi(struct cw1200_common *priv,
+					   int count)
 {
 }
 

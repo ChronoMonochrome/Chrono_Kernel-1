@@ -112,15 +112,17 @@ static inline void wsm_alloc_tx_buffer(struct cw1200_common *priv)
 	++priv->hw_bufs_used;
 }
 
-static int wsm_release_tx_buffer(struct cw1200_common *priv)
+int wsm_release_tx_buffer(struct cw1200_common *priv, int count)
 {
 	int ret = 0;
-	int hw_bufs_used = priv->hw_bufs_used--;
-	if (WARN_ON(!hw_bufs_used))
+	int hw_bufs_used = priv->hw_bufs_used;
+
+	priv->hw_bufs_used -= count;
+	if (WARN_ON(priv->hw_bufs_used < 0))
 		ret = -1;
 	else if (hw_bufs_used >= priv->wsm_caps.numInpChBufs - 1)
 		ret = 1;
-	else if (hw_bufs_used == 1)
+	if (!priv->hw_bufs_used)
 		wake_up_interruptible(&priv->hw_bufs_used_wq);
 	return ret;
 }
@@ -338,11 +340,7 @@ rx:
 			rx_resync = 0;
 
 			if (wsm_id & 0x0400) {
-				int rc = wsm_release_tx_buffer(priv);
-				/* TODO: 3.60 Multi-transmit confirmation
-				 * requires special handling.
-				 * Not supported yet. */
-				BUG_ON((wsm_id & 0x3F) == 0x1E);
+				int rc = wsm_release_tx_buffer(priv, 1);
 				if (WARN_ON(rc < 0))
 					break;
 				else if (rc > 0)
@@ -390,7 +388,7 @@ tx:
 			wsm_alloc_tx_buffer(priv);
 			ret = wsm_get_tx(priv, &data, &tx_len);
 			if (ret <= 0) {
-				wsm_release_tx_buffer(priv);
+				wsm_release_tx_buffer(priv, 1);
 				if (WARN_ON(ret < 0))
 					break;
 			} else {
@@ -425,7 +423,7 @@ tx:
 
 				if (WARN_ON(cw1200_data_write(priv,
 				    data, tx_len))) {
-					wsm_release_tx_buffer(priv);
+					wsm_release_tx_buffer(priv, 1);
 					break;
 				}
 
