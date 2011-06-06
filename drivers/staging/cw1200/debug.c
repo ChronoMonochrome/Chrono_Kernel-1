@@ -247,8 +247,6 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 		d->tx);
 	seq_printf(seq, "AGG TXed:   %d\n",
 		d->tx_agg);
-	seq_printf(seq, "MORE TXed:  %d\n",
-		d->tx_more);
 	seq_printf(seq, "MULTI TXed: %d (%d)\n",
 		d->tx_multi, d->tx_multi_frames);
 	seq_printf(seq, "RXed:       %d\n",

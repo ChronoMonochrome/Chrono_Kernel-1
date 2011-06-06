@@ -9,7 +9,6 @@ struct cw1200_debug_priv {
 	struct dentry *debugfs_phy;
 	int tx;
 	int tx_agg;
-	int tx_more;
 	int rx;
 	int rx_agg;
 	int tx_multi;
@@ -27,11 +26,6 @@ static inline void cw1200_debug_txed(struct cw1200_common *priv)
 static inline void cw1200_debug_txed_agg(struct cw1200_common *priv)
 {
 	++priv->debug->tx_agg;
-}
-
-static inline void cw1200_debug_txed_more(struct cw1200_common *priv)
-{
-	++priv->debug->tx_more;
 }
 
 static inline void cw1200_debug_txed_multi(struct cw1200_common *priv,
@@ -67,10 +61,6 @@ static inline void cw1200_debug_txed(struct cw1200_common *priv)
 }
 
 static inline void cw1200_debug_txed_agg(struct cw1200_common *priv)
-{
-}
-
-static inline void cw1200_debug_txed_more(struct cw1200_common *priv)
 {
 }
 

@@ -83,6 +83,8 @@ static void tx_policy_build(const struct cw1200_common *priv,
 
 	/* minstrel is buggy a little bit, so distille
 	 * incoming rates first. */
+
+	/* Sort rates in descending order. */
 	for (i = 1; i < count; ++i) {
 		if (rates[i].idx < 0) {
 			count = i;
@@ -95,6 +97,7 @@ static void tx_policy_build(const struct cw1200_common *priv,
 		}
 	}
 
+	/* Eliminate duplicates. */
 	total = rates[0].count;
 	for (i = 0, j = 1; j < count; ++j) {
 		if (rates[j].idx == rates[i].idx) {
@@ -108,16 +111,17 @@ static void tx_policy_build(const struct cw1200_common *priv,
 		}
 		total += rates[j].count;
 	}
-	if (i + 1 < count)
-		count = i + 1;
+	count = i + 1;
 
+	/* Re-fill policy trying to keep every requested rate and with
+	 * respect to the global max tx retransmission count. */
 	if (limit < count)
 		limit = count;
-
 	if (total > limit) {
-		for (i = count - 1; i >= 0; --i) {
-			if (rates[i].count > limit - i)
-				rates[i].count = limit - i;
+		for (i = 0; i < count; ++i) {
+			int left = count - i - 1;
+			if (rates[i].count > limit - left)
+				rates[i].count = limit - left;
 			limit -= rates[i].count;
 		}
 	}
