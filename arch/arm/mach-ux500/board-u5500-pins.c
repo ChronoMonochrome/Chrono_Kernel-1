@@ -106,9 +106,17 @@ static UX500_PINS(u5500_pins_i2c2,
 	GPIO219_I2C2_SDA,
 );
 
+static UX500_PINS(u5500_pins_spi3,
+	GPIO187_SPI3_CS0n	| PIN_OUTPUT_HIGH,
+	GPIO188_SPI3_RXD	| PIN_INPUT_PULLDOWN,
+	GPIO189_SPI3_TXD	| PIN_OUTPUT_LOW,
+	GPIO190_SPI3_CLK	| PIN_OUTPUT_LOW,
+);
+
 static struct ux500_pin_lookup u5500_pins[] = {
 	PIN_LOOKUP("nmk-i2c.1", &u5500_pins_i2c1),
 	PIN_LOOKUP("nmk-i2c.2", &u5500_pins_i2c2),
+	PIN_LOOKUP("spi3", &u5500_pins_spi3),
 };
 
 void __init u5500_pins_init(void)

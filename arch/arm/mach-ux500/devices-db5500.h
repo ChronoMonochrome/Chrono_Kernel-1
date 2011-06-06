@@ -76,11 +76,11 @@
 		       0x10080023)
 #define db5500_add_spi2(parent, pdata) \
 	dbx500_add_spi(parent, "spi2", U5500_SPI2_BASE, \
-		       IRQ_DB5500_SPI2, pdata		\
+		       IRQ_DB5500_SPI2, pdata,		\
 		       0x10080023)
 #define db5500_add_spi3(parent, pdata) \
 	dbx500_add_spi(parent, "spi3", U5500_SPI3_BASE, \
-		       IRQ_DB5500_SPI3, pdata		\
+		       IRQ_DB5500_SPI3, pdata,		\
 		       0x10080023)
 
 #define db5500_add_uart0(parent, plat) \

@@ -260,14 +260,14 @@ static void __init u5500_msp_init(void)
  * SPI
  */
 
-static struct pl022_ssp_controller u5500_spi1_data = {
+static struct pl022_ssp_controller u5500_spi3_data = {
 	.bus_id		= 1,
 	.num_chipselect	= 4,	/* 3 possible CS lines + 1 for tests */
 };
 
 static void __init u5500_spi_init(void)
 {
-	db5500_add_spi1(&u5500_spi1_data);
+	db5500_add_spi3(&u5500_spi3_data);
 }
 
 static struct resource ab5500_resources[] = {
