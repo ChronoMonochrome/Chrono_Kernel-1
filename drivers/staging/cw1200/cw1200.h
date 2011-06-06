@@ -81,7 +81,8 @@ struct cw1200_common {
 	/* calibration, output power limit and rssi<->dBm conversation data */
 
 	/* BBP/MAC state */
-	struct ieee80211_rate *rates;
+	struct ieee80211_rate		*rates;
+	struct ieee80211_rate		*mcs_rates;
 	u8 mac_addr[ETH_ALEN];
 	struct ieee80211_channel	*channel;
 	u8 bssid[ETH_ALEN];
@@ -107,6 +108,7 @@ struct cw1200_common {
 	bool				listening;
 	struct wsm_rx_filter		rx_filter;
 	struct wsm_beacon_filter_control bf_control;
+	u8				ba_tid_mask;
 
 	/* BH */
 	atomic_t			bh_rx;

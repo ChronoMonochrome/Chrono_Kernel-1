@@ -972,12 +972,8 @@ void cw1200_join_work(struct work_struct *work)
 
 		wsm_flush_tx(priv);
 
-		/* TX block_ack can use only 3 TX buffers,
-		 * which is /slightly/ :) unefficient => disabled.
-		 * RX block ACK is enabled for everything but voice.
-		 * TODO: Verify video lags, change 0x3F -> 0x0F
-		 * if necessary. */
-		WARN_ON(wsm_set_block_ack_policy(priv, 0x00, 0x3F));
+		WARN_ON(wsm_set_block_ack_policy(priv,
+				priv->ba_tid_mask, priv->ba_tid_mask));
 
 #if defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 		priv->last_activity_time = jiffies;

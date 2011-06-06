@@ -71,22 +71,22 @@ static struct ieee80211_rate cw1200_rates[] = {
 	RATETAB_ENT(360, 11, 0),
 	RATETAB_ENT(480, 12, 0),
 	RATETAB_ENT(540, 13, 0),
-#if defined(CONFIG_CW1200_HT_SUPPORT)
-	RATETAB_ENT(65,  14, 0),
-	RATETAB_ENT(130, 15, 0),
-	RATETAB_ENT(195, 16, 0),
-	RATETAB_ENT(260, 17, 0),
-	RATETAB_ENT(390, 18, 0),
-	RATETAB_ENT(520, 19, 0),
-	RATETAB_ENT(585, 20, 0),
-	RATETAB_ENT(650, 21, 0),
-#endif /* CONFIG_CW1200_HT_SUPPORT */
+	RATETAB_ENT(65,  14, IEEE80211_TX_RC_MCS),
+	RATETAB_ENT(130, 15, IEEE80211_TX_RC_MCS),
+	RATETAB_ENT(195, 16, IEEE80211_TX_RC_MCS),
+	RATETAB_ENT(260, 17, IEEE80211_TX_RC_MCS),
+	RATETAB_ENT(390, 18, IEEE80211_TX_RC_MCS),
+	RATETAB_ENT(520, 19, IEEE80211_TX_RC_MCS),
+	RATETAB_ENT(585, 20, IEEE80211_TX_RC_MCS),
+	RATETAB_ENT(650, 21, IEEE80211_TX_RC_MCS),
 };
 
 #define cw1200_a_rates		(cw1200_rates + 4)
 #define cw1200_a_rates_size	(ARRAY_SIZE(cw1200_rates) - 4)
 #define cw1200_g_rates		(cw1200_rates + 0)
 #define cw1200_g_rates_size	(ARRAY_SIZE(cw1200_rates))
+#define cw1200_n_rates		(cw1200_rates + 12)
+#define cw1200_n_rates_size	(ARRAY_SIZE(cw1200_rates) - 12)
 
 
 #define CHAN2G(_channel, _freq, _flags) {			\
@@ -151,7 +151,6 @@ static struct ieee80211_supported_band cw1200_band_2ghz = {
 	.n_channels = ARRAY_SIZE(cw1200_2ghz_chantable),
 	.bitrates = cw1200_g_rates,
 	.n_bitrates = cw1200_g_rates_size,
-#if defined(CONFIG_CW1200_HT_SUPPORT)
 	.ht_cap = {
 		.cap = IEEE80211_HT_CAP_SM_PS |
 			IEEE80211_HT_CAP_GRN_FLD |
@@ -160,8 +159,6 @@ static struct ieee80211_supported_band cw1200_band_2ghz = {
 			IEEE80211_HT_CAP_DELAY_BA |
 			IEEE80211_HT_CAP_MAX_AMSDU,
 		.ht_supported = 1,
-		/* TODO: It was 4K for cut 1.1 HW, if I remember
-		 * it correctly. Needs to be verified on cut 2 HW. */
 		.ampdu_factor = IEEE80211_HT_MAX_AMPDU_8K,
 		.ampdu_density = IEEE80211_HT_MPDU_DENSITY_NONE,
 		.mcs = {
@@ -170,7 +167,6 @@ static struct ieee80211_supported_band cw1200_band_2ghz = {
 			.tx_params = IEEE80211_HT_MCS_TX_DEFINED,
 		},
 	},
-#endif /* CONFIG_CW1200_HT_SUPPORT */
 };
 
 static struct ieee80211_supported_band cw1200_band_5ghz = {
@@ -178,7 +174,6 @@ static struct ieee80211_supported_band cw1200_band_5ghz = {
 	.n_channels = ARRAY_SIZE(cw1200_5ghz_chantable),
 	.bitrates = cw1200_a_rates,
 	.n_bitrates = cw1200_a_rates_size,
-#if defined(CONFIG_CW1200_HT_SUPPORT)
 	.ht_cap = {
 		.cap = IEEE80211_HT_CAP_SM_PS |
 			IEEE80211_HT_CAP_GRN_FLD |
@@ -187,8 +182,6 @@ static struct ieee80211_supported_band cw1200_band_5ghz = {
 			IEEE80211_HT_CAP_DELAY_BA |
 			IEEE80211_HT_CAP_MAX_AMSDU,
 		.ht_supported = 1,
-		/* TODO: It was 4K for cut 1.1 HW, if I remember
-		* it correctly. Needs to be verified on cut 2 HW. */
 		.ampdu_factor = IEEE80211_HT_MAX_AMPDU_8K,
 		.ampdu_density = IEEE80211_HT_MPDU_DENSITY_NONE,
 		.mcs = {
@@ -197,7 +190,6 @@ static struct ieee80211_supported_band cw1200_band_5ghz = {
 			.tx_params = IEEE80211_HT_MCS_TX_DEFINED,
 		},
 	},
-#endif /* CONFIG_CW1200_HT_SUPPORT */
 };
 
 static const struct ieee80211_ops cw1200_ops = {
@@ -240,15 +232,18 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	priv->hw = hw;
 	priv->mode = NL80211_IFTYPE_UNSPECIFIED;
 	priv->rates = cw1200_rates; /* TODO: fetch from FW */
+	priv->mcs_rates = cw1200_n_rates;
+	/* Enable block ACK for every TID but voice. */
+	priv->ba_tid_mask = 0x3F;
 
 	hw->flags = IEEE80211_HW_SIGNAL_DBM |
 		    IEEE80211_HW_SUPPORTS_PS |
 		    /* IEEE80211_HW_SUPPORTS_UAPSD | */
 		    IEEE80211_HW_CONNECTION_MONITOR |
 		    IEEE80211_HW_SUPPORTS_CQM_RSSI |
-#if defined(CONFIG_CW1200_HT_SUPPORT)
-		    IEEE80211_HW_AMPDU_AGGREGATION |
-#endif
+		    /* Aggregation is fully controlled by firmware.
+		     * Do not need any support from the mac80211 stack */
+		    /* IEEE80211_HW_AMPDU_AGGREGATION | */
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 		    IEEE80211_HW_SUPPORTS_CQM_BEACON_MISS |
 		    IEEE80211_HW_SUPPORTS_CQM_TX_FAIL |

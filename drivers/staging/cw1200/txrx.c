@@ -22,6 +22,14 @@
 #define tx_policy_printk(...)
 #endif
 
+static int cw1200_handle_action_rx(struct cw1200_common *priv,
+				   struct sk_buff *skb);
+static int cw1200_handle_action_tx(struct cw1200_common *priv,
+				   struct sk_buff *skb);
+static const struct ieee80211_rate *
+cw1200_get_tx_rate(const struct cw1200_common *priv,
+		   const struct ieee80211_tx_rate *rate);
+
 /* ******************************************************************** */
 /* TX queue lock / unlock						*/
 
@@ -67,8 +75,7 @@ static void tx_policy_build(const struct cw1200_common *priv,
 	/* [out] */ struct tx_policy *policy,
 	struct ieee80211_tx_rate *rates, size_t count)
 {
-	int i;
-	const struct ieee80211_rate *rates_tbl = priv->rates;
+	int i, j;
 	unsigned limit = priv->short_frame_max_tx_count;
 	unsigned total = 0;
 	BUG_ON(rates[0].idx < 0);
@@ -76,22 +83,34 @@ static void tx_policy_build(const struct cw1200_common *priv,
 
 	/* minstrel is buggy a little bit, so distille
 	 * incoming rates first. */
-	for (i = 0; i < count; ++i) {
-		if (rates[i].idx < 0)
-			break;
-		/* minstrel is buggy a little bit. */
-		if (i && (rates[i].idx == rates[i - 1].idx)) {
-			rates[i - 1].count += rates[i].count;
+	for (i = 1; i < count; ++i) {
+		if (rates[i].idx < 0) {
+			count = i;
 			break;
 		}
-		total += rates[i].count;
-		if (i && (rates[i].idx > rates[i - 1].idx)) {
+		if (rates[i].idx > rates[i - 1].idx) {
 			struct ieee80211_tx_rate tmp = rates[i - 1];
 			rates[i - 1] = rates[i];
 			rates[i] = tmp;
 		}
 	}
-	count = i;
+
+	total = rates[0].count;
+	for (i = 0, j = 1; j < count; ++j) {
+		if (rates[j].idx == rates[i].idx) {
+			rates[i].count += rates[j].count;
+		} else if (rates[j].idx > rates[i].idx) {
+			break;
+		} else {
+			++i;
+			if (i != j)
+				rates[i] = rates[j];
+		}
+		total += rates[j].count;
+	}
+	if (i + 1 < count)
+		count = i + 1;
+
 	if (limit < count)
 		limit = count;
 
@@ -102,12 +121,12 @@ static void tx_policy_build(const struct cw1200_common *priv,
 			limit -= rates[i].count;
 		}
 	}
-	policy->defined = rates_tbl[rates[0].idx].hw_value + 1;
+	policy->defined = cw1200_get_tx_rate(priv, &rates[0])->hw_value + 1;
 
 	for (i = 0; i < count; ++i) {
 		register unsigned rateid, off, shift, retries;
 
-		rateid = rates_tbl[rates[i].idx].hw_value;
+		rateid = cw1200_get_tx_rate(priv, &rates[i])->hw_value;
 		off = rateid >> 3;		/* eq. rateid / 8 */
 		shift = (rateid & 0x07) << 2;	/* eq. (rateid % 8) * 4 */
 
@@ -331,13 +350,26 @@ u32 cw1200_rate_mask_to_wsm(struct cw1200_common *priv, u32 rates)
 	return ret;
 }
 
+static const struct ieee80211_rate *
+cw1200_get_tx_rate(const struct cw1200_common *priv,
+		   const struct ieee80211_tx_rate *rate)
+{
+	if (rate->idx < 0)
+		return NULL;
+	if (rate->flags & IEEE80211_TX_RC_MCS)
+		return &priv->mcs_rates[rate->idx];
+	return &priv->hw->wiphy->bands[priv->channel->band]->
+		bitrates[rate->idx];
+}
+
 /* NOTE: cw1200_skb_to_wsm executes in atomic context. */
 int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
 			struct wsm_tx *wsm)
 {
 	bool tx_policy_renew = false;
 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
-	struct ieee80211_rate *rate = ieee80211_get_tx_rate(priv->hw, tx_info);
+	const struct ieee80211_rate *rate = cw1200_get_tx_rate(priv,
+		&tx_info->control.rates[0]);
 
 	memset(wsm, 0, sizeof(*wsm));
 	wsm->hdr.len = __cpu_to_le16(skb->len);
@@ -467,6 +499,10 @@ int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		skb_trim(skb, skb->len - offset);
 	}
 
+	if (ieee80211_is_action(hdr->frame_control))
+		if (cw1200_handle_action_tx(priv, skb))
+			goto drop;
+
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
 			link_id);
 	if (!WARN_ON(ret))
@@ -480,12 +516,42 @@ err:
 	/* TODO: Update TX failure counters */
 	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
+
+drop:
+	dev_kfree_skb_any(skb);
+	return NETDEV_TX_OK;
+}
+
+/* ******************************************************************** */
+
+static int cw1200_handle_action_rx(struct cw1200_common *priv,
+				   struct sk_buff *skb)
+{
+	struct ieee80211_mgmt *mgmt = (void *)skb->data;
+
+	/* Filter block ACK negotiation: fully controlled by firmware */
+	if (mgmt->u.action.category == WLAN_CATEGORY_BACK)
+		return 1;
+
+	return 0;
+}
+
+static int cw1200_handle_action_tx(struct cw1200_common *priv,
+				   struct sk_buff *skb)
+{
+	struct ieee80211_mgmt *mgmt = (void *)skb->data;
+
+	/* Filter block ACK negotiation: fully controlled by firmware */
+	if (mgmt->u.action.category == WLAN_CATEGORY_BACK)
+		return 1;
+
+	return 0;
 }
 
 /* ******************************************************************** */
 
 void cw1200_tx_confirm_cb(struct cw1200_common *priv,
-				struct wsm_tx_confirm *arg)
+			  struct wsm_tx_confirm *arg)
 {
 	u8 queue_id = cw1200_queue_get_queue_id(arg->packetID);
 	struct cw1200_queue *queue = &priv->tx_queue[queue_id];
@@ -527,7 +593,9 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 			++tx_count;
 			cw1200_debug_txed(priv);
 			if (arg->flags & WSM_TX_STATUS_AGGREGATION) {
-				tx->flags |= IEEE80211_TX_STAT_AMPDU;
+				/* Do not report aggregation to mac80211:
+				 * it confuses minstrel a lot. */
+				/* tx->flags |= IEEE80211_TX_STAT_AMPDU; */
 				cw1200_debug_txed_agg(priv);
 			}
 		} else {
@@ -569,6 +637,8 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 {
 	struct sk_buff *skb = *skb_p;
 	struct ieee80211_rx_status *hdr = IEEE80211_SKB_RXCB(skb);
+	const struct ieee80211_rate *rate;
+	__le16 frame_control;
 	hdr->flag = 0;
 
 	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
@@ -590,13 +660,29 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 		}
 	}
 
+	if (skb->len < sizeof(struct ieee80211_hdr_3addr)) {
+		wiphy_warn(priv->hw->wiphy, "Mailformed SDU rx'ed.\n");
+		return;
+	}
+
+	frame_control = *(__le16*)skb->data;
 	hdr->mactime = 0; /* Not supported by WSM */
 	hdr->freq = ieee80211_channel_to_frequency(arg->channelNumber);
 	hdr->band = (hdr->freq >= 5000) ?
 		IEEE80211_BAND_5GHZ : IEEE80211_BAND_2GHZ;
-	hdr->rate_idx = arg->rxedRate;
-	if (hdr->rate_idx >= 4) /* TODO: Use common convert function. */
-		hdr->rate_idx -= 2;
+
+	if (arg->rxedRate >= 4)
+		rate = &priv->rates[arg->rxedRate - 2];
+	else
+		rate = &priv->rates[arg->rxedRate];
+
+	if (rate >= priv->mcs_rates) {
+		hdr->rate_idx = rate - priv->mcs_rates;
+		hdr->flag |= RX_FLAG_HT;
+	} else {
+		hdr->rate_idx = rate - priv->rates;
+	}
+
 	hdr->signal = (s8)arg->rcpiRssi;
 	hdr->antenna = 0;
 
@@ -609,12 +695,15 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 			skb_trim(skb, skb->len - 8 /*MICHAEL_MIC_LEN*/);
 		}
 	}
-	if (arg->flags & WSM_RX_STATUS_HT)
-		hdr->flag |= RX_FLAG_HT;
 
 	cw1200_debug_rxed(priv);
 	if (arg->flags & WSM_RX_STATUS_AGGREGATE)
 		cw1200_debug_rxed_agg(priv);
+
+	if (ieee80211_is_action(frame_control) &&
+			(arg->flags & WSM_RX_STATUS_ADDRESS1))
+		if (cw1200_handle_action_rx(priv, skb))
+			return;
 
 	/* Not that we really need _irqsafe variant here,
 	 * but it offloads realtime bh thread and improve

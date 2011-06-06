@@ -427,31 +427,11 @@ int cw1200_ampdu_action(struct ieee80211_hw *hw,
 			enum ieee80211_ampdu_mlme_action action,
 			struct ieee80211_sta *sta, u16 tid, u16 *ssn)
 {
-	int ret = 0;
-
-	switch (action) {
-	/*
-	 * The hw itself takes care of setting up BlockAck mechanisms.
-	 * So, we only have to allow mac80211 to nagotiate a BlockAck
-	 * agreement. Once that is done, the hw will BlockAck incoming
-	 * AMPDUs without further setup.
-	 */
-	case IEEE80211_AMPDU_RX_START:
-	case IEEE80211_AMPDU_RX_STOP:
-		break;
-	case IEEE80211_AMPDU_TX_START:
-		ieee80211_start_tx_ba_cb_irqsafe(vif, sta->addr, tid);
-		break;
-	case IEEE80211_AMPDU_TX_STOP:
-		ieee80211_stop_tx_ba_cb_irqsafe(vif, sta->addr, tid);
-		break;
-	case IEEE80211_AMPDU_TX_OPERATIONAL:
-		break;
-	default:
-		ret = -ENOTSUPP;
-	}
-
-	return ret;
+	/* Aggregation is implemented fully in firmware,
+	 * including block ack negotiation. Do not allow
+	 * mac80211 stack to do anything: it interferes with
+	 * the firmware. */
+	return -ENOTSUPP;
 }
 
 /* ******************************************************************** */
@@ -606,6 +586,8 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 	if (!ret)
 		ret = WARN_ON(wsm_beacon_transmit(priv, &transmit));
 	if (!ret) {
+		WARN_ON(wsm_set_block_ack_policy(priv,
+			priv->ba_tid_mask, priv->ba_tid_mask));
 		priv->join_status = CW1200_JOIN_STATUS_AP;
 		cw1200_update_filtering(priv);
 	}
