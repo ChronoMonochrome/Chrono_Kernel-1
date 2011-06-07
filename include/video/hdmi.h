@@ -113,9 +113,8 @@ enum hdmi_hdcp_auth_type {
 };
 
 enum hdmi_hdcp_encr_type {
-	HDMI_HDCP_ENCR_OFF = 0,
-	HDMI_HDCP_ENCR_OESS = 1,
-	HDMI_HDCP_ENCR_EESS = 2,
+	HDMI_HDCP_ENCR_OESS = 0,
+	HDMI_HDCP_ENCR_EESS = 1,
 };
 
 struct plug_detect {

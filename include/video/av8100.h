@@ -321,11 +321,6 @@ enum av8100_hdcp_auth_req_type {
 	AV8100_HDCP_AUTH_CONT = 3,
 };
 
-enum av8100_hdcp_encr_req_type {
-	AV8100_HDCP_ENCR_REQ_OFF = 0,
-	AV8100_HDCP_ENCR_REQ_ON = 1,
-};
-
 enum av8100_hdcp_encr_use {
 	AV8100_HDCP_ENCR_USE_OESS = 0,
 	AV8100_HDCP_ENCR_USE_EESS = 1,
@@ -333,7 +328,6 @@ enum av8100_hdcp_encr_use {
 
 struct av8100_hdcp_management_format_cmd {
 	unsigned char req_type;
-	unsigned char req_encr;
 	unsigned char encr_use;
 };
 

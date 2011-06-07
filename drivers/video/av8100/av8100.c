@@ -233,7 +233,7 @@ enum av8100_command_size {
 	AV8100_COMMAND_DENC_SIZE = 0x6,
 	AV8100_COMMAND_HDMI_SIZE = 0x4,
 	AV8100_COMMAND_HDCP_SENDKEY_SIZE = 0xA,
-	AV8100_COMMAND_HDCP_MANAGEMENT_SIZE = 0x4,
+	AV8100_COMMAND_HDCP_MANAGEMENT_SIZE = 0x3,
 	AV8100_COMMAND_INFOFRAMES_SIZE = 0x21,
 	AV8100_COMMAND_EDID_SECTION_READBACK_SIZE  = 0x3,
 	AV8100_COMMAND_PATTERNGENERATOR_SIZE  = 0x4,
@@ -1523,8 +1523,7 @@ static int configuration_hdcp_management_get(char *buffer,
 		return AV8100_FAIL;
 
 	buffer[0] = av8100_config->hdmi_hdcp_management_format_cmd.req_type;
-	buffer[1] = av8100_config->hdmi_hdcp_management_format_cmd.req_encr;
-	buffer[2] = av8100_config->hdmi_hdcp_management_format_cmd.encr_use;
+	buffer[1] = av8100_config->hdmi_hdcp_management_format_cmd.encr_use;
 
 	*length = AV8100_COMMAND_HDCP_MANAGEMENT_SIZE - 1;
 	return 0;

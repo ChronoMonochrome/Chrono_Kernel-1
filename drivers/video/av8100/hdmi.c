@@ -561,23 +561,13 @@ static int hdcpauthencr(u8 auth_type, u8 encr_type, u8 *len, u8 *data)
 	}
 
 	switch (encr_type) {
-	case HDMI_HDCP_ENCR_OFF:
-		config.hdcp_management_format.req_encr =
-				AV8100_HDCP_ENCR_REQ_OFF;
-		config.hdcp_management_format.encr_use =
-				AV8100_HDCP_ENCR_USE_OESS;
-		break;
-
 	case HDMI_HDCP_ENCR_OESS:
-		config.hdcp_management_format.req_encr =
-				AV8100_HDCP_ENCR_REQ_ON;
+	default:
 		config.hdcp_management_format.encr_use =
 				AV8100_HDCP_ENCR_USE_OESS;
 		break;
 
 	case HDMI_HDCP_ENCR_EESS:
-		config.hdcp_management_format.req_encr =
-				AV8100_HDCP_ENCR_REQ_ON;
 		config.hdcp_management_format.encr_use =
 				AV8100_HDCP_ENCR_USE_EESS;
 		break;
