@@ -1253,13 +1253,6 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 				return ret;
 		}
 
-		ret = av8100_powerup();
-		if (ret) {
-			dev_err(&ddev->dev, "av8100_powerup failed\n");
-			return ret;
-		}
-		av8100_enable_interrupt();
-
 		/*
 		 * the regulator for analog TV out is only enabled here,
 		 * this means that one needs to switch to the OFF state
@@ -1292,10 +1285,7 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
 				power_mode == MCDE_DISPLAY_PM_OFF) {
 		memset(&(ddev->video_mode), 0, sizeof(struct mcde_video_mode));
-		ret = av8100_powerdown();
-		if (ret)
-			dev_err(&ddev->dev, "%s:av8100_powerdown failed\n"
-								, __func__);
+
 		if (ddev->platform_disable) {
 			ret = ddev->platform_disable(ddev);
 			if (ret)

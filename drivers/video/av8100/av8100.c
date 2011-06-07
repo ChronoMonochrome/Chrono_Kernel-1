@@ -476,9 +476,60 @@ static const struct i2c_device_id av8100_id[] = {
 	{ }
 };
 
+#ifdef CONFIG_PM
+static int av8100_suspend(struct i2c_client *i2c_client, pm_message_t state)
+{
+	int ret;
+
+	dev_dbg(av8100dev, "%s\n", __func__);
+
+	ret = av8100_powerdown();
+	if (ret)
+		dev_err(av8100dev, "av8100_powerdown failed\n");
+
+	return ret;
+}
+
+static int av8100_resume(struct i2c_client *i2c_client)
+{
+	int ret;
+	u8 hpds = 0;
+
+	dev_dbg(av8100dev, "%s\n", __func__);
+
+	ret = av8100_powerup();
+	if (ret) {
+		dev_err(av8100dev, "av8100_powerup failed\n");
+		return ret;
+	}
+
+	/* Check HDMI plug status */
+	if (av8100_reg_stby_r(NULL, NULL, &hpds, NULL, NULL)) {
+		dev_warn(av8100dev, "av8100_reg_stby_r failed\n");
+		goto av8100_resume_end;
+	}
+
+	if (hpds)
+		set_plug_status(AV8100_HDMI_PLUGIN); /* Plugged*/
+	else
+		clr_plug_status(AV8100_HDMI_PLUGIN); /* Unplugged*/
+
+	av8100_globals->hpdm = AV8100_STANDBY_INTERRUPT_MASK_HPDM_HIGH;
+	av8100_enable_interrupt();
+
+av8100_resume_end:
+	return 0;
+}
+#else
+#define av8100_suspend NULL
+#define av8100_resume NULL
+#endif
+
 static struct i2c_driver av8100_driver = {
 	.probe	= av8100_probe,
 	.remove = av8100_remove,
+	.suspend = av8100_suspend,
+	.resume = av8100_resume,
 	.driver = {
 		.name	= "av8100",
 	},
@@ -538,7 +589,6 @@ static int av8100_int_event_handle(void)
 	}
 
 	if (hpdi & av8100_globals->hpdm) {
-
 		/* HDMI plugin change */
 		if (hpds) {
 			/* Plugged */
