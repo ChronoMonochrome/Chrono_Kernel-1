@@ -21,8 +21,16 @@
 #define DSI_UNIT_INTERVAL_0	0xA
 #define DSI_UNIT_INTERVAL_2	0x5
 
-#define PRIMARY_DISPLAY_ID	0
-#define AV8100_DISPLAY_ID	2
+enum {
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
+	PRIMARY_DISPLAY_ID,
+#endif
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+	AV8100_DISPLAY_ID,
+#endif
+	MCDE_NR_OF_DISPLAYS
+};
+
 
 #ifdef CONFIG_FB_MCDE
 
@@ -33,7 +41,6 @@ static struct delayed_work work_dispreg_hdmi;
 #define DISPREG_HDMI_DELAY 6000
 #endif
 
-#define MCDE_NR_OF_DISPLAYS 2
 static int display_initialized_during_boot;
 
 static int __init startup_graphics_setup(char *str)
@@ -250,12 +257,14 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	if (ddev->id == AV8100_DISPLAY_ID)
 		virtual_height = height * 3;
 #endif
-
-	if (ddev->id == AV8100_DISPLAY_ID) {
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+	if (ddev->id == AV8100_DISPLAY_ID)
 #ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
 		hdmi_fb_onoff(ddev, 1, 0, 0);
 #endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
-	} else {
+	else
+#endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
+	{
 		/* Create frame buffer */
 		fbi = mcde_fb_create(ddev,
 			width, height,
