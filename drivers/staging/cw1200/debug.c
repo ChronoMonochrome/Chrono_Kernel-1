@@ -253,7 +253,10 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 		d->rx);
 	seq_printf(seq, "AGG RXed:   %d\n",
 		d->rx_agg);
-
+	seq_printf(seq, "TX miss:    %d\n",
+		d->tx_cache_miss);
+	seq_printf(seq, "TX copy:    %d\n",
+		d->tx_copy);
 	seq_printf(seq, "Scan:       %s\n",
 		atomic_read(&priv->scan.in_progress) ? "active" : "idle");
 	seq_printf(seq, "Led state:  0x%.2X\n",

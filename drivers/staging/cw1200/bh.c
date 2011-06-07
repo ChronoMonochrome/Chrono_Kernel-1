@@ -120,7 +120,7 @@ int wsm_release_tx_buffer(struct cw1200_common *priv, int count)
 	priv->hw_bufs_used -= count;
 	if (WARN_ON(priv->hw_bufs_used < 0))
 		ret = -1;
-	else if (hw_bufs_used >= priv->wsm_caps.numInpChBufs - 1)
+	else if (hw_bufs_used >= priv->wsm_caps.numInpChBufs)
 		ret = 1;
 	if (!priv->hw_bufs_used)
 		wake_up_interruptible(&priv->hw_bufs_used_wq);
@@ -363,9 +363,7 @@ tx:
 		/* HACK! One buffer is reserved for control path */
 		BUG_ON(priv->hw_bufs_used > priv->wsm_caps.numInpChBufs);
 		tx_allowed =
-			priv->hw_bufs_used + 1 < priv->wsm_caps.numInpChBufs;
-		if (unlikely(!tx_allowed && priv->wsm_cmd.ptr))
-			tx_allowed = 1;
+			priv->hw_bufs_used < priv->wsm_caps.numInpChBufs;
 
 		if (tx && tx_allowed) {
 			size_t tx_len;

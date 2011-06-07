@@ -323,6 +323,7 @@ static int tx_policy_upload(struct cw1200_common *priv)
 		}
 	}
 	spin_unlock_bh(&cache->lock);
+	cw1200_debug_tx_cache_miss(priv);
 	tx_policy_printk(KERN_DEBUG "[TX policy] Upload %d policies\n",
 				arg.hdr.numTxRatePolicies);
 	return wsm_set_tx_rate_retry_policy(priv, &arg);
@@ -501,6 +502,7 @@ int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		p = skb_push(skb, offset);
 		memmove(p, &p[offset], skb->len - offset);
 		skb_trim(skb, skb->len - offset);
+		cw1200_debug_tx_copy(priv);
 	}
 
 	if (ieee80211_is_action(hdr->frame_control))
@@ -647,7 +649,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 
 	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
 		/* STA is stopped. */
-		return;
+		goto drop;
 	}
 
 	if (unlikely(arg->status)) {
@@ -656,17 +658,18 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 			hdr->flag |= RX_FLAG_MMIC_ERROR;
 		} else if (arg->status == WSM_STATUS_NO_KEY_FOUND) {
 			txrx_printk(KERN_DEBUG "[RX] No key found.\n");
-			return;
+			goto drop;
 		} else {
 			txrx_printk(KERN_DEBUG "[RX] Receive failure: %d.\n",
 				arg->status);
-			return;
+			goto drop;
 		}
 	}
 
 	if (skb->len < sizeof(struct ieee80211_hdr_3addr)) {
-		wiphy_warn(priv->hw->wiphy, "Mailformed SDU rx'ed.\n");
-		return;
+		wiphy_warn(priv->hw->wiphy, "Mailformed SDU rx'ed. "
+				"Size is lesser than IEEE header.\n");
+		goto drop;
 	}
 
 	frame_control = *(__le16*)skb->data;
@@ -691,13 +694,47 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	hdr->antenna = 0;
 
 	if (WSM_RX_STATUS_ENCRYPTION(arg->flags)) {
-		hdr->flag |= RX_FLAG_DECRYPTED;
-		if (!arg->status &&
-				(WSM_RX_STATUS_ENCRYPTION(arg->flags) ==
-				 WSM_RX_STATUS_TKIP)) {
+		size_t iv_len = 0, icv_len = 0;
+		size_t hdrlen = ieee80211_hdrlen(frame_control);
+
+		hdr->flag |= RX_FLAG_DECRYPTED | RX_FLAG_IV_STRIPPED;
+
+		/* Oops... There is no fast way to ask mac80211 about
+		 * IV/ICV lengths. Even defineas are not exposed.*/
+		switch (WSM_RX_STATUS_ENCRYPTION(arg->flags)) {
+		case WSM_RX_STATUS_WEP:
+			iv_len = 4 /* WEP_IV_LEN */;
+			icv_len = 4 /* WEP_ICV_LEN */;
+			break;
+		case WSM_RX_STATUS_TKIP:
+			iv_len = 8 /* TKIP_IV_LEN */;
+			icv_len = 4 /* TKIP_ICV_LEN */
+				+ 8 /*MICHAEL_MIC_LEN*/;
 			hdr->flag |= RX_FLAG_MMIC_STRIPPED;
-			skb_trim(skb, skb->len - 8 /*MICHAEL_MIC_LEN*/);
+			break;
+		case WSM_RX_STATUS_AES:
+			iv_len = 8 /* CCMP_HDR_LEN */;
+			icv_len = 8 /* CCMP_MIC_LEN */;
+			break;
+		case WSM_RX_STATUS_WAPI:
+			iv_len = 18 /* WAPI_HDR_LEN */;
+			icv_len = 16 /* WAPI_MIC_LEN */;
+			break;
+		default:
+			WARN_ON("Unknown encryption type");
+			goto drop;
 		}
+
+		if (skb->len < hdrlen + iv_len + icv_len) {
+			wiphy_warn(priv->hw->wiphy, "Mailformed SDU rx'ed. "
+				"Size is lesser than crypto headers.\n");
+			goto drop;
+		}
+
+		/* Remove IV, ICV and MIC */
+		skb_trim(skb, skb->len - icv_len);
+		memmove(skb->data + iv_len, skb->data, hdrlen);
+		skb_pull(skb, iv_len);
 	}
 
 	cw1200_debug_rxed(priv);
@@ -714,6 +751,11 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	 * system performance. */
 	ieee80211_rx_irqsafe(priv->hw, skb);
 	*skb_p = NULL;
+	return;
+
+drop:
+	/* TODO: update failure counters */
+	return;
 }
 
 /* ******************************************************************** */
