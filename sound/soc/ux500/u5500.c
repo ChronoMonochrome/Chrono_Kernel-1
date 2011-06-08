@@ -15,6 +15,7 @@
 #include <linux/spi/spi.h>
 #include <sound/soc.h>
 #include <sound/initval.h>
+#include <asm/mach-types.h>
 
 #include "ux500_pcm.h"
 #include "ux500_msp_dai.h"
@@ -85,6 +86,9 @@ static int __init u5500_soc_init(void)
 	int ret;
 
 	pr_debug("%s: Enter.\n", __func__);
+
+	if (!machine_is_u5500())
+		return 0;
 
 	platform_device_register(&ux500_pcm);
 

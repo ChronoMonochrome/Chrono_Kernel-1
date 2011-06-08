@@ -13,6 +13,7 @@
 
 #include <linux/io.h>
 #include <sound/soc.h>
+#include <asm/mach-types.h>
 
 #include "ux500_pcm.h"
 #include "ux500_msp_dai.h"
@@ -153,6 +154,9 @@ static int __init u8500_soc_init(void)
 	int ret;
 
 	pr_debug("%s: Enter.\n", __func__);
+
+	if (machine_is_u5500())
+		return 0;
 
 	#ifdef CONFIG_SND_SOC_UX500_AV8100
 	pr_debug("%s: Register device to generate a probe for AV8100 codec.\n",
