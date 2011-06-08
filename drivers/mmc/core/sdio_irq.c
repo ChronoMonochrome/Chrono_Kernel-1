@@ -115,9 +115,13 @@ static void sdio_irq_work_func(struct work_struct *work)
 	 */
 	mmc_claim_host(host);
 
-	ret = process_sdio_pending_irqs(host->card);
+	/* Check if there are any subscribers to IRQ:s */
+	if (!host->sdio_irqs) {
+		mmc_release_host(host);
+		return;
+	}
 
-	mmc_release_host(host);
+	ret = process_sdio_pending_irqs(host->card);
 
 	if (host->caps & MMC_CAP_SDIO_IRQ)
 		host->ops->enable_sdio_irq(host, true);
@@ -138,6 +142,8 @@ static void sdio_irq_work_func(struct work_struct *work)
 				   &host->sdio_irq_work,
 				   msecs_to_jiffies(host->sdio_poll_period));
 	}
+
+	mmc_release_host(host);
 }
 
 static int sdio_card_irq_get(struct mmc_card *card)
@@ -184,9 +190,25 @@ static int sdio_card_irq_put(struct mmc_card *card)
 
 	if (!--host->sdio_irqs) {
 		host->ops->enable_sdio_irq(host, false);
+
+		/*
+		 * Temporarily release the host in order to complete
+		 * any pending work before destroying the work queue.
+		 *
+		 * There is a theroetical chance of messing up here,
+		 * if a calling driver is waiting to claim the host
+		 * in order to claim an SDIO IRQ, and that call falls through
+		 * while releasing the IRQ:s here, there is no guarantee
+		 * that that IRQ:s will be reliably turned on or off.
+		 * This will be fixed in a coming patch, but this solution
+		 * is deemed good enough for now since it fixes an obvious
+		 * error and the failing case deemed not likely to happen.
+		 */
+		mmc_release_host(card->host);
 		cancel_delayed_work_sync(&host->sdio_irq_work);
 		destroy_workqueue(host->sdio_irq_workqueue);
 		host->sdio_irq_workqueue = NULL;
+		mmc_claim_host(card->host);
 	}
 
 	return 0;
