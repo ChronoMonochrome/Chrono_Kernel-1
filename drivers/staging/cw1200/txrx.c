@@ -674,7 +674,9 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 
 	frame_control = *(__le16*)skb->data;
 	hdr->mactime = 0; /* Not supported by WSM */
-	hdr->freq = ieee80211_channel_to_frequency(arg->channelNumber);
+        hdr->freq = ieee80211_channel_to_frequency(arg->channelNumber,
+                (arg->channelNumber > 14) ?
+			IEEE80211_BAND_5GHZ : IEEE80211_BAND_2GHZ);
 	hdr->band = (hdr->freq >= 5000) ?
 		IEEE80211_BAND_5GHZ : IEEE80211_BAND_2GHZ;
 
