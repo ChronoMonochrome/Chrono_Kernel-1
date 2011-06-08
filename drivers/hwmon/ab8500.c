@@ -46,6 +46,7 @@
  * frame, this driver will. Time unit is ms.
  */
 #define DEFAULT_POWER_OFF_DELAY 10000
+#define DEFAULT_MONITOR_DELAY 1000
 
 #define NUM_SENSORS 5
 
@@ -91,11 +92,15 @@ static bool find_active_thresholds(struct ab8500_temp *data)
 	dev_dbg(&data->pdev->dev, "No active thresholds,"
 		"cancel deferred job (if it exists)"
 		"and reset temp monitor delay\n");
-	mutex_lock(&data->lock);
-	data->gpadc_monitor_delay = 0;
 	cancel_delayed_work_sync(&data->work);
-	mutex_unlock(&data->lock);
 	return false;
+}
+
+
+static inline void schedule_monitor(struct ab8500_temp *data) {
+	unsigned long delay_in_jiffies;
+	delay_in_jiffies = msecs_to_jiffies(data->gpadc_monitor_delay);
+	schedule_delayed_work(&data->work, delay_in_jiffies);
 }
 
 static void thermal_power_off(struct work_struct *work)
@@ -226,22 +231,21 @@ static ssize_t set_temp_monitor_delay(struct device *dev,
 				      const char *buf, size_t count)
 {
 	int res;
-	unsigned long delay_in_jiffies, delay_in_s;
+	unsigned long delay_in_s;
 	struct ab8500_temp *data = dev_get_drvdata(dev);
 
-	if (!find_active_thresholds(data)) {
-		dev_dbg(dev, "No thresholds to monitor, disregarding delay\n");
-		return count;
-	}
 	res = strict_strtoul(buf, 10, &delay_in_s);
 	if (res < 0)
 		return res;
 
 	mutex_lock(&data->lock);
 	data->gpadc_monitor_delay = delay_in_s * 1000;
+
+	if (find_active_thresholds(data)) {
+		schedule_monitor(data);
+	}
+
 	mutex_unlock(&data->lock);
-	delay_in_jiffies = msecs_to_jiffies(data->gpadc_monitor_delay);
-	schedule_delayed_work(&data->work, delay_in_jiffies);
 
 	return count;
 }
@@ -251,7 +255,7 @@ static ssize_t set_temp_power_off_delay(struct device *dev,
 					const char *buf, size_t count)
 {
 	int res;
-	unsigned long delay_in_jiffies, delay_in_s;
+	unsigned long delay_in_s;
 	struct ab8500_temp *data = dev_get_drvdata(dev);
 
 	res = strict_strtoul(buf, 10, &delay_in_s);
@@ -261,7 +265,6 @@ static ssize_t set_temp_power_off_delay(struct device *dev,
 	mutex_lock(&data->lock);
 	data->power_off_delay = delay_in_s * 1000;
 	mutex_unlock(&data->lock);
-	delay_in_jiffies = msecs_to_jiffies(data->power_off_delay);
 
 	return count;
 }
@@ -366,9 +369,13 @@ static ssize_t set_min(struct device *dev, struct device_attribute *devattr,
 		data->min_alarm[attr->index - 1] = 0;
 
 	data->min[attr->index - 1] = val;
-	mutex_unlock(&data->lock);
+
 	if (val == 0)
 		(void) find_active_thresholds(data);
+	else
+		schedule_monitor(data);
+
+	mutex_unlock(&data->lock);
 
 	return count;
 }
@@ -392,9 +399,13 @@ static ssize_t set_max(struct device *dev, struct device_attribute *devattr,
 		data->max_alarm[attr->index - 1] = 0;
 
 	data->max[attr->index - 1] = val;
-	mutex_unlock(&data->lock);
+
 	if (val == 0)
 		(void) find_active_thresholds(data);
+	else
+		schedule_monitor(data);
+
+	mutex_unlock(&data->lock);
 
 	return count;
 }
@@ -419,9 +430,13 @@ static ssize_t set_max_hyst(struct device *dev,
 		data->max_hyst_alarm[attr->index - 1] = 0;
 
 	data->max_hyst[attr->index - 1] = val;
-	mutex_unlock(&data->lock);
+
 	if (val == 0)
 		(void) find_active_thresholds(data);
+	else
+		schedule_monitor(data);
+
+	mutex_unlock(&data->lock);
 
 	return count;
 }
@@ -668,6 +683,7 @@ static int __devinit ab8500_temp_probe(struct platform_device *pdev)
 	mutex_init(&data->lock);
 	data->pdev = pdev;
 	data->power_off_delay = DEFAULT_POWER_OFF_DELAY;
+	data->gpadc_monitor_delay = DEFAULT_MONITOR_DELAY;
 
 	platform_set_drvdata(pdev, data);
 
