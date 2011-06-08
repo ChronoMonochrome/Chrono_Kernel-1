@@ -311,7 +311,7 @@ static int av8100_codec_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	return 0;
 }
 
-struct snd_soc_dai_driver av8100_dai_drv = {
+struct snd_soc_dai_driver av8100_dai_driver = {
 		.name = "av8100-codec-dai",
 		.playback = {
 			.stream_name = "AV8100 Playback",
@@ -331,7 +331,7 @@ struct snd_soc_dai_driver av8100_dai_drv = {
 			}
 		},
 };
-EXPORT_SYMBOL_GPL(av8100_dai_drv);
+EXPORT_SYMBOL_GPL(av8100_dai_driver);
 
 static int av8100_codec_probe(struct snd_soc_codec *codec)
 {
@@ -392,7 +392,7 @@ static __devinit int av8100_codec_drv_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, dai_data);
 
 	pr_info("%s: Register codec.\n", __func__);
-	ret = snd_soc_register_codec(&pdev->dev, &av8100_codec_drv, &av8100_dai_drv, 1);
+	ret = snd_soc_register_codec(&pdev->dev, &av8100_codec_drv, &av8100_dai_driver, 1);
 	if (ret < 0) {
 		pr_debug("%s: Error: Failed to register codec (ret = %d).\n",
 			__func__,
@@ -416,7 +416,7 @@ static const struct platform_device_id av8100_codec_platform_id[] = {
 };
 MODULE_DEVICE_TABLE(platform, av8100_codec_platform_id);
 
-static struct platform_driver av8100_codec_platform_drv = {
+static struct platform_driver av8100_codec_platform_driver = {
 	.driver = {
 		.name = "av8100-codec",
 		.owner = THIS_MODULE,
@@ -432,7 +432,7 @@ static int __devinit av8100_codec_platform_drv_init(void)
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	ret = platform_driver_register(&av8100_codec_platform_drv);
+	ret = platform_driver_register(&av8100_codec_platform_driver);
 	if (ret != 0) {
 		pr_err("Failed to register AV8100 platform driver (%d)!\n", ret);
 	}
@@ -444,7 +444,7 @@ static void __exit av8100_codec_platform_drv_exit(void)
 {
 	pr_debug("%s: Enter.\n", __func__);
 
-	platform_driver_unregister(&av8100_codec_platform_drv);
+	platform_driver_unregister(&av8100_codec_platform_driver);
 }
 
 module_init(av8100_codec_platform_drv_init);
