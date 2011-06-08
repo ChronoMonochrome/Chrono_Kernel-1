@@ -526,8 +526,8 @@ int cw1200_set_key(struct ieee80211_hw *dev, enum set_key_cmd cmd,
 				wsm_key->aesGroupKey.keyId = key->keyidx;
 			}
 			break;
-#if 0
-		case WLAN_CIPHER_SUITE_WAPI:
+#ifdef CONFIG_CW1200_WAPI_SUPPORT
+		case WLAN_CIPHER_SUITE_SMS4:
 			if (pairwise) {
 				wsm_key->type = WSM_KEY_TYPE_WAPI_PAIRWISE;
 				memcpy(wsm_key->wapiPairwiseKey.peerAddress,
@@ -546,7 +546,7 @@ int cw1200_set_key(struct ieee80211_hw *dev, enum set_key_cmd cmd,
 				wsm_key->wapiGroupKey.keyId = key->keyidx;
 			}
 			break;
-#endif
+#endif /* CONFIG_CW1200_WAPI_SUPPORT */
 		default:
 			WARN_ON(1);
 			cw1200_free_key(priv, idx);
