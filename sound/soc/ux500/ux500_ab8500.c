@@ -292,7 +292,7 @@ int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
 
-	pr_info("%s: Enter\n", __func__);
+	pr_debug("%s: Enter\n", __func__);
 
 	/* If we start recording we better enable the needed mic-regulators */
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -455,7 +455,7 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_codec *codec = rtd->codec;
 	int ret;
 
-	pr_info("%s Enter.\n", __func__);
+	pr_debug("%s Enter.\n", __func__);
 
 	/* TODO: Add required DAPM routes to control regulators on demand */
 
@@ -522,7 +522,7 @@ int ux500_ab8500_soc_machine_drv_init(void)
 {
 	int status = 0;
 
-	pr_info("%s: Enter.\n", __func__);
+	pr_debug("%s: Enter.\n", __func__);
 
 	status = create_regulators();
 	if (status < 0) {
@@ -536,7 +536,7 @@ int ux500_ab8500_soc_machine_drv_init(void)
 
 void ux500_ab8500_soc_machine_drv_cleanup(void)
 {
-	pr_info("%s: Enter.\n", __func__);
+	pr_debug("%s: Enter.\n", __func__);
 
 	regulator_bulk_free(ARRAY_SIZE(reg_info), reg_info);
 

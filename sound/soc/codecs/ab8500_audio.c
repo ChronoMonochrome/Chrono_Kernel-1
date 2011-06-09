@@ -2316,7 +2316,7 @@ static int __devinit ab8500_codec_driver_probe(struct platform_device *pdev)
 
 static int __devexit ab8500_codec_driver_remove(struct platform_device *pdev)
 {
-	pr_debug("%s Enter.\n", __func__);
+	pr_info("%s Enter.\n", __func__);
 
 	snd_soc_unregister_codec(&pdev->dev);
 
@@ -2353,7 +2353,7 @@ static int __devinit ab8500_codec_platform_driver_init(void)
 {
 	int ret;
 
-	pr_debug("%s: Enter.\n", __func__);
+	pr_info("%s: Enter.\n", __func__);
 
 	ret = platform_driver_register(&ab8500_codec_platform_driver);
 	if (ret != 0) {
@@ -2366,7 +2366,7 @@ static int __devinit ab8500_codec_platform_driver_init(void)
 
 static void __exit ab8500_codec_platform_driver_exit(void)
 {
-	pr_debug("%s: Enter.\n", __func__);
+	pr_info("%s: Enter.\n", __func__);
 
 	platform_driver_unregister(&ab8500_codec_platform_driver);
 }

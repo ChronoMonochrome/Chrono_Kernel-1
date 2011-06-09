@@ -924,7 +924,7 @@ static int ux500_msp_drv_probe(struct i2s_device *i2s_dev)
 	struct ux500_platform_drvdata *drvdata;
 	int msp_idx = i2s_dev->chip_select;
 
-	pr_debug("%s: Enter (idx: %d, dev-name: %s, drv-name: %s).\n",
+	pr_info("%s: Enter (idx: %d, dev-name: %s, drv-name: %s).\n",
 		__func__,
 		msp_idx,
 		dev_name(&i2s_dev->dev),
@@ -951,7 +951,7 @@ static int ux500_msp_drv_remove(struct i2s_device *i2s_dev)
 	struct ux500_platform_drvdata *drvdata = i2s_get_drvdata(i2s_dev);
 	int msp_idx = i2s_dev->chip_select;
 
-	pr_debug("%s: Enter (idx: %d, dev-name: %s, drv-name: %s).\n",
+	pr_info("%s: Enter (idx: %d, dev-name: %s, drv-name: %s).\n",
 		__func__,
 		msp_idx,
 		dev_name(&i2s_dev->dev),

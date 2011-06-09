@@ -172,7 +172,7 @@ static int ux500_pcm_close(struct snd_pcm_substream *substream)
 {
 	struct ux500_pcm_private *private = substream->runtime->private_data;
 
-	pr_info("%s: Enter\n", __func__);
+	pr_debug("%s: Enter\n", __func__);
 
 	kfree(private);
 
@@ -187,7 +187,7 @@ static int ux500_pcm_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 	int size;
 
-	pr_info("%s: Enter\n", __func__);
+	pr_debug("%s: Enter\n", __func__);
 
 	size = params_buffer_bytes(hw_params);
 
@@ -374,7 +374,7 @@ static int __devexit ux500_pcm_drv_probe(struct platform_device *pdev)
 {
 	int ret;
 
-	pr_debug("%s: Register ux500-pcm SoC platform driver.\n", __func__);
+	pr_info("%s: Register ux500-pcm SoC platform driver.\n", __func__);
 	ret = snd_soc_register_platform(&pdev->dev, &ux500_pcm_soc_drv);
 	if (ret < 0) {
 		pr_err("%s: Error: Failed to register "
@@ -389,7 +389,7 @@ static int __devexit ux500_pcm_drv_probe(struct platform_device *pdev)
 
 static int __devinit ux500_pcm_drv_remove(struct platform_device *pdev)
 {
-	pr_debug("%s: Unregister ux500-pcm SoC platform driver.\n", __func__);
+	pr_info("%s: Unregister ux500-pcm SoC platform driver.\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 
 	return 0;
