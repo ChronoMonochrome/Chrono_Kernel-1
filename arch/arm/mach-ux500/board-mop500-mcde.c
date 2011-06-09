@@ -39,10 +39,21 @@ static struct delayed_work work_dispreg_hdmi;
 #endif
 
 enum {
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
 	PRIMARY_DISPLAY_ID,
+#endif
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
 	SECONDARY_DISPLAY_ID,
+#endif
+#ifdef CONFIG_DISPLAY_FICTIVE
+	FICTIVE_DISPLAY_ID,
+#endif
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 	AV8100_DISPLAY_ID,
+#endif
+#ifdef CONFIG_DISPLAY_AB8500_TERTIARY
 	AB8500_DISPLAY_ID,
+#endif
 	MCDE_NR_OF_DISPLAYS
 };
 static int display_initialized_during_boot;
@@ -79,6 +90,17 @@ static struct mcde_col_transform rgb_2_yCbCr_transform = {
 };
 #endif
 
+#ifdef CONFIG_DISPLAY_FICTIVE
+static struct mcde_display_device fictive_display = {
+	.name = "mcde_disp_fictive",
+	.id = FICTIVE_DISPLAY_ID,
+	.fictive = true,
+	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
+	.native_x_res = 1280,
+	.native_y_res = 720,
+};
+#endif /* CONFIG_DISPLAY_FICTIVE */
+
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
 static struct mcde_port port0 = {
 	.type = MCDE_PORTTYPE_DSI,
@@ -104,7 +126,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-struct mcde_display_generic_platform_data generic_display0_pdata = {
+static struct mcde_display_generic_platform_data generic_display0_pdata = {
 	.reset_delay = 1,
 #ifdef CONFIG_REGULATOR
 	.regulator_id = "vaux12v5",
@@ -113,7 +135,7 @@ struct mcde_display_generic_platform_data generic_display0_pdata = {
 #endif
 };
 
-struct mcde_display_device generic_display0 = {
+static struct mcde_display_device generic_display0 = {
 	.name = "mcde_disp_generic",
 	.id = PRIMARY_DISPLAY_ID,
 	.port = &port0,
@@ -212,7 +234,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-struct mcde_display_dpi_platform_data generic_display0_pdata = {0};
+static struct mcde_display_dpi_platform_data generic_display0_pdata = {0};
 static struct ux500_pins *dpi_pins;
 
 static int dpi_display_platform_enable(struct mcde_display_device *ddev)
@@ -247,7 +269,7 @@ static int dpi_display_platform_disable(struct mcde_display_device *ddev)
 
 }
 
-struct mcde_display_device generic_display0 = {
+static struct mcde_display_device generic_display0 = {
 	.name = "mcde_display_dpi",
 	.id = 0,
 	.port = &port0,
@@ -406,7 +428,6 @@ static struct mcde_display_device av8100_hdmi = {
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB888,
 	.native_x_res = 1280,
 	.native_y_res = 720,
-	.synchronized_update = false,
 	.dev = {
 		.platform_data = &av8100_hdmi_pdata,
 	},
@@ -436,7 +457,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	if (event != MCDE_DSS_EVENT_DISPLAY_REGISTERED)
 		return 0;
 
-	if (ddev->id < PRIMARY_DISPLAY_ID || ddev->id >= MCDE_NR_OF_DISPLAYS)
+	if (ddev->id < 0 || ddev->id >= MCDE_NR_OF_DISPLAYS)
 		return 0;
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
@@ -626,6 +647,11 @@ int __init init_display_devices(void)
 	ret = mcde_dss_register_notifier(&display_nb);
 	if (ret)
 		pr_warning("Failed to register dss notifier\n");
+#ifdef CONFIG_DISPLAY_FICTIVE
+	ret = mcde_display_device_register(&fictive_display);
+	if (ret)
+		pr_warning("Failed to register fictive display device\n");
+#endif
 
 #ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
 	if (machine_is_hrefv60())

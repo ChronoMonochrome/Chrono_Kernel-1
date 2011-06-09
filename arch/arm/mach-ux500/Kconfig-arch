@@ -149,6 +149,12 @@ config DISPLAY_AV8100_TRIPPLE_BUFFER
 	help
 	  Say yes to enable tripple buffer. You'll get double buffer otherwise
 
+config DISPLAY_FICTIVE
+	bool "DISPLAY fictive"
+	default n
+	---help---
+	  Say Y if you want a fictive display that doesn't access hardware
+
 endmenu
 
 endif

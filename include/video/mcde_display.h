@@ -30,6 +30,7 @@ struct mcde_display_device {
 	int               id;
 	struct mcde_port *port;
 	struct fb_info   *fbi;
+	bool              fictive;
 
 	/* MCDE dss driver internal */
 	bool initialized;

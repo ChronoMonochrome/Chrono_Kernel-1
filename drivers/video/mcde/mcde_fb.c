@@ -490,6 +490,9 @@ static int apply_var(struct fb_info *fbi, struct mcde_display_device *ddev)
 	}
 	fbi->fix.line_length = line_len;
 
+	if (ddev->fictive)
+		goto apply_var_end;
+
 	if (ddev) {
 		/* Apply pixel format */
 		fmt = var_to_pix_fmt_info(var);
@@ -520,6 +523,7 @@ static int apply_var(struct fb_info *fbi, struct mcde_display_device *ddev)
 		mcde_dss_update_overlay(ovly, num_buffers == 3);
 	}
 
+apply_var_end:
 	return 0;
 }
 
@@ -638,13 +642,15 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	init_fb(fbi);
 	mfb = to_mcde_fb(fbi);
 
-	ret = mcde_dss_open_channel(ddev);
-	if (ret)
-		goto channel_open_failed;
+	if (ddev->fictive == false) {
+		ret = mcde_dss_open_channel(ddev);
+		if (ret)
+			goto channel_open_failed;
 
-	ret = mcde_dss_enable_display(ddev);
-	if (ret)
-		goto display_enable_failed;
+		ret = mcde_dss_enable_display(ddev);
+		if (ret)
+			goto display_enable_failed;
+	}
 
 	/* Prepare var and allocate frame buffer memory */
 	init_var_fmt(&fbi->var, w, h, vw, vh, pix_fmt, rotate);
@@ -653,7 +659,8 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	if (ret)
 		goto apply_var_failed;
 
-	mcde_dss_set_pixel_format(ddev, ddev->port->pixel_format);
+	if (ddev->fictive == false)
+		mcde_dss_set_pixel_format(ddev, ddev->port->pixel_format);
 
 	/* Setup overlay */
 	get_ovly_info(fbi, NULL, &ovly_info);
@@ -665,9 +672,11 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	mfb->ovlys[0] = ovly;
 	mfb->num_ovlys = 1;
 
-	ret = mcde_dss_enable_overlay(ovly);
-	if (ret)
-		goto ovly_enable_failed;
+	if (ddev->fictive == false) {
+		ret = mcde_dss_enable_overlay(ovly);
+		if (ret)
+			goto ovly_enable_failed;
+	}
 
 	mfb->id = ddev->id;
 
@@ -679,11 +688,13 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	ddev->fbi = fbi;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	mfb->early_suspend.level =
+	if (ddev->fictive == false) {
+		mfb->early_suspend.level =
 				EARLY_SUSPEND_LEVEL_DISABLE_FB;
-	mfb->early_suspend.suspend = early_suspend;
-	mfb->early_suspend.resume = late_resume;
-	register_early_suspend(&mfb->early_suspend);
+		mfb->early_suspend.suspend = early_suspend;
+		mfb->early_suspend.resume = late_resume;
+		register_early_suspend(&mfb->early_suspend);
+	}
 #endif
 
 	goto out;
@@ -719,8 +730,10 @@ void mcde_fb_destroy(struct mcde_display_device *dev)
 
 	dev_vdbg(&dev->dev, "%s\n", __func__);
 
-	mcde_dss_disable_display(dev);
-	mcde_dss_close_channel(dev);
+	if (dev->fictive == false) {
+		mcde_dss_disable_display(dev);
+		mcde_dss_close_channel(dev);
+	}
 
 	mfb = to_mcde_fb(dev->fbi);
 	for (i = 0; i < mfb->num_ovlys; i++) {
