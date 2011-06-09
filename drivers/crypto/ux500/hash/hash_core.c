@@ -36,6 +36,22 @@
 #define DEV_DBG_NAME "hashX hashX:"
 
 /**
+ * Pre-calculated empty message digests.
+ */
+static u8 zero_message_hash_sha1[SHA1_DIGEST_SIZE] = {
+	0xDA, 0x39, 0xA3, 0xEE, 0x5E, 0x6B, 0x4B, 0x0D,
+	0x32, 0x55, 0xBF, 0xEF, 0x95, 0x60, 0x18, 0x90,
+	0xAF, 0xD8, 0x07, 0x09
+};
+
+static u8 zero_message_hash_sha256[SHA256_DIGEST_SIZE] = {
+	0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
+	0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
+	0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
+	0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55
+};
+
+/**
  * struct hash_driver_data - data specific to the driver.
  *
  * @device_list:	A list of registered devices to choose from.
@@ -62,6 +78,69 @@ static struct hash_driver_data	driver_data;
  */
 static void hash_messagepad(struct hash_device_data *device_data,
 		const u32 *message, u8 index_bytes);
+
+/**
+ * release_hash_device - Releases a previously allocated hash device.
+ * @device_data:	Structure for the hash device.
+ *
+ */
+static void release_hash_device(struct hash_device_data *device_data)
+{
+	spin_lock(&device_data->ctx_lock);
+	device_data->current_ctx->device = NULL;
+	device_data->current_ctx = NULL;
+	spin_unlock(&device_data->ctx_lock);
+
+	/*
+	 * The down_interruptible part for this semaphore is called in
+	 * cryp_get_device_data.
+	 */
+	up(&driver_data.device_allocation);
+}
+
+/**
+ * get_empty_message_digest - Returns a pre-calculated digest for
+ * the empty message.
+ * @device_data:	Structure for the hash device.
+ * @zero_hash:		Buffer to return the empty message digest.
+ * @zero_hash_size:	Hash size of the empty message digest.
+ */
+static int get_empty_message_digest(
+		struct hash_device_data *device_data,
+		u8 *zero_hash, u32 *zero_hash_size)
+{
+	int ret = 0;
+	struct hash_ctx *ctx = device_data->current_ctx;
+
+	/**
+	 * Caller responsible for ctx != NULL.
+	 */
+
+	if (HASH_OPER_MODE_HASH == ctx->config.oper_mode) {
+		if (HASH_ALGO_SHA1 == ctx->config.algorithm) {
+			zero_hash = zero_message_hash_sha1;
+			*zero_hash_size = SHA1_DIGEST_SIZE;
+		} else if (HASH_ALGO_SHA256 ==
+				ctx->config.algorithm) {
+			zero_hash = zero_message_hash_sha256;
+			*zero_hash_size = SHA256_DIGEST_SIZE;
+		} else {
+			dev_err(device_data->dev, "[%s] "
+					"Incorrect algorithm!"
+					, __func__);
+			ret = -EINVAL;
+			goto out;
+		}
+	} else {
+		dev_err(device_data->dev, "[%s] "
+				"Incorrect hash mode!"
+				, __func__);
+		ret = -EINVAL;
+		goto out;
+	}
+out:
+	return ret;
+}
 
 /**
  * hash_disable_power - Request to disable power and clock.
@@ -215,17 +294,15 @@ static int hash_get_device_data(struct hash_ctx *ctx,
 /**
  * init_hash_hw - Initialise the hash hardware for a new calculation.
  * @device_data:	Structure for the hash device.
- * @req:		The hash request for the job.
+ * @ctx:		The hash context.
  *
  * This function will enable the bits needed to clear and start a new
  * calculation.
  */
 static int init_hash_hw(struct hash_device_data *device_data,
-		struct ahash_request *req)
+		struct hash_ctx *ctx)
 {
 	int ret = 0;
-	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
-	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
 
 	dev_dbg(device_data->dev, "[%s] (ctx=0x%x)!", __func__, (u32)ctx);
 
@@ -252,7 +329,7 @@ static int hash_init(struct ahash_request *req)
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
 
-	pr_debug(DEV_DBG_NAME "[%s] (ctx=0x%x)!", __func__, (u32)ctx);
+	pr_debug(DEV_DBG_NAME " [%s] data size: %d", __func__, req->nbytes);
 
 	memset(&ctx->state, 0, sizeof(struct hash_state));
 	ctx->updated = 0;
@@ -331,11 +408,13 @@ static void hash_messagepad(struct hash_device_data *device_data,
 	HASH_SET_NBLW(index_bytes * 8);
 	dev_dbg(device_data->dev, "[%s] DIN=0x%08x NBLW=%d", __func__,
 			readl(&device_data->base->din),
-			readl(&device_data->base->str));
+			(int)(readl(&device_data->base->str) &
+				HASH_STR_NBLW_MASK));
 	HASH_SET_DCAL;
 	dev_dbg(device_data->dev, "[%s] after dcal -> DIN=0x%08x NBLW=%d",
 			__func__, readl(&device_data->base->din),
-			readl(&device_data->base->str));
+			(int)(readl(&device_data->base->str) &
+				HASH_STR_NBLW_MASK));
 
 	while (device_data->base->str & HASH_STR_DCAL_MASK)
 		cpu_relax();
@@ -484,6 +563,86 @@ void hash_begin(struct hash_device_data *device_data, struct hash_ctx *ctx)
 	HASH_CLEAR_BITS(&device_data->base->str, HASH_STR_NBLW_MASK);
 }
 
+int hash_process_data(
+		struct hash_device_data *device_data,
+		struct hash_ctx *ctx, int msg_length, u8 *data_buffer,
+		u8 *buffer, u8 *index)
+{
+	int ret = 0;
+	u32 count;
+
+	do {
+		if ((*index + msg_length) < HASH_BLOCK_SIZE) {
+			for (count = 0; count < msg_length; count++) {
+				buffer[*index + count] =
+					*(data_buffer + count);
+			}
+			*index += msg_length;
+			msg_length = 0;
+		} else {
+			if (ctx->updated) {
+				ret = hash_resume_state(device_data,
+						&ctx->state);
+				if (ret) {
+					dev_err(device_data->dev, "[%s] "
+							"hash_resume_state()"
+							" failed!", __func__);
+					goto out;
+				}
+
+			} else {
+				ret = init_hash_hw(device_data, ctx);
+				if (ret) {
+					dev_err(device_data->dev, "[%s] "
+							"init_hash_hw()"
+							" failed!", __func__);
+					goto out;
+				}
+				ctx->updated = 1;
+			}
+			/*
+			 * If 'data_buffer' is four byte aligned and
+			 * local buffer does not have any data, we can
+			 * write data directly from 'data_buffer' to
+			 * HW peripheral, otherwise we first copy data
+			 * to a local buffer
+			 */
+			if ((0 == (((u32)data_buffer) % 4))
+					&& (0 == *index))
+				hash_processblock(device_data,
+						(const u32 *)
+						data_buffer);
+			else {
+				for (count = 0; count <
+						(u32)(HASH_BLOCK_SIZE -
+							*index);
+						count++) {
+					buffer[*index + count] =
+						*(data_buffer + count);
+				}
+				hash_processblock(device_data,
+						(const u32 *)buffer);
+			}
+			hash_incrementlength(ctx, HASH_BLOCK_SIZE);
+			data_buffer += (HASH_BLOCK_SIZE - *index);
+			msg_length -= (HASH_BLOCK_SIZE - *index);
+			*index = 0;
+
+			ret = hash_save_state(device_data,
+					&ctx->state);
+			if (ret) {
+				dev_err(device_data->dev, "[%s] "
+						"hash_save_state()"
+						" failed!", __func__);
+				goto out;
+			}
+		}
+	} while (msg_length != 0);
+out:
+
+	return ret;
+}
+
 /**
  * hash_hw_update - Updates current HASH computation hashing another part of
  *                  the message.
@@ -496,22 +655,22 @@ int hash_hw_update(struct ahash_request *req)
 {
 	int ret = 0;
 	u8 index;
-	u32 count;
-	u8 *p_buffer;
+	u8 *buffer;
 	struct hash_device_data *device_data;
-	u8 *p_data_buffer;
+	u8 *data_buffer;
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
 	struct crypto_hash_walk walk;
 	int msg_length = crypto_hash_walk_first(req, &walk);
 
-	pr_debug(DEV_DBG_NAME "[%s] ", __func__);
+	pr_debug(DEV_DBG_NAME " [%s] datalength: %d", __func__, msg_length);
 
+	/* Empty message ("") is correct indata */
 	if (msg_length == 0)
-		return -EPERM;
+		return ret;
 
 	index = ctx->state.index;
-	p_buffer = (u8 *)ctx->state.buffer;
+	buffer = (u8 *)ctx->state.buffer;
 
 	/* Check if ctx->state.length + msg_length
 	   overflows */
@@ -538,91 +697,29 @@ int hash_hw_update(struct ahash_request *req)
 
 	/* Main loop */
 	while (0 != msg_length) {
-		p_data_buffer = walk.data;
-		if ((index + msg_length) < HASH_BLOCK_SIZE) {
-			for (count = 0; count < msg_length; count++) {
-				p_buffer[index + count] =
-				    *(p_data_buffer + count);
-			}
-
-			index += msg_length;
-		} else {
-			if (!ctx->updated) {
-				ret = init_hash_hw(device_data, req);
-				if (ret) {
-					dev_err(device_data->dev, "[%s] "
-						"init_hash_hw() failed!",
-						__func__);
-					goto out;
-				}
-				ctx->updated = 1;
-			} else {
-				ret = hash_resume_state(device_data,
-						&ctx->state);
-				if (ret) {
-					dev_err(device_data->dev, "[%s] "
-						"hash_resume_state() failed!",
-						__func__);
-					goto out_power;
-				}
-			}
-
-			/*
-			 * If 'p_data_buffer' is four byte aligned and local
-			 * buffer does not have any data, we can write data
-			 * directly from 'p_data_buffer' to HW peripheral,
-			 * otherwise we first copy data to a local buffer
-			 */
-			if ((0 == (((u32) p_data_buffer) % 4))
-					&& (0 == index)) {
-				hash_processblock(device_data,
-						(const u32 *)p_data_buffer);
-			} else {
-				for (count = 0;
-				     count < (u32)(HASH_BLOCK_SIZE - index);
-				     count++) {
-					p_buffer[index + count] =
-					    *(p_data_buffer + count);
-				}
-
-				hash_processblock(device_data,
-						(const u32 *)p_buffer);
-			}
-
-			hash_incrementlength(ctx, HASH_BLOCK_SIZE);
-			index = 0;
-
-			ret = hash_save_state(device_data, &ctx->state);
-			if (ret) {
-				dev_err(device_data->dev, "[%s] "
-					"hash_save_state() failed!", __func__);
-				goto out_power;
-			}
+		data_buffer = walk.data;
+		ret = hash_process_data(device_data, ctx,
+				msg_length, data_buffer, buffer, &index);
+		if (ret) {
+			dev_err(device_data->dev, "[%s] hash_internal_hw_"
+					"update() failed!", __func__);
+			goto out_power;
 		}
+
 		msg_length = crypto_hash_walk_done(&walk, 0);
 	}
 
 	ctx->state.index = index;
 
-	dev_dbg(device_data->dev, "[%s] END(msg_length=%d in bits, in=%d, "
-		"bin=%d))", __func__, msg_length, ctx->state.index,
-		ctx->state.bit_index);
+	dev_dbg(device_data->dev, "[%s] indata length=%d, "
+		"bin=%d))", __func__, ctx->state.index,	ctx->state.bit_index);
 out_power:
 	/* Disable power (and clock) */
 	if (hash_disable_power(device_data, false))
 		dev_err(device_data->dev, "[%s]: "
 				"hash_disable_power() failed!", __func__);
 out:
-	spin_lock(&device_data->ctx_lock);
-	device_data->current_ctx = NULL;
-	ctx->device = NULL;
-	spin_unlock(&device_data->ctx_lock);
-
-	/*
-	 * The down_interruptible part for this semaphore is called in
-	 * cryp_get_device_data.
-	 */
-	up(&driver_data.device_allocation);
+	release_hash_device(device_data);
 
 	return ret;
 }
@@ -812,9 +909,9 @@ void hash_get_digest(struct hash_device_data *device_data,
 	}
 
 	if (algorithm == HASH_ALGO_SHA1)
-		loop_ctr = HASH_SHA1_DIGEST_SIZE / sizeof(u32);
+		loop_ctr = SHA1_DIGEST_SIZE / sizeof(u32);
 	else
-		loop_ctr = HASH_SHA2_DIGEST_SIZE / sizeof(u32);
+		loop_ctr = SHA256_DIGEST_SIZE / sizeof(u32);
 
 	dev_dbg(device_data->dev, "[%s] digest array:(0x%x)",
 			__func__, (u32) digest);
@@ -837,11 +934,12 @@ static int ahash_update(struct ahash_request *req)
 {
 	int ret = 0;
 
-	pr_debug(DEV_DBG_NAME "[%s] ", __func__);
+	pr_debug(DEV_DBG_NAME " [%s] ", __func__);
 
 	ret = hash_hw_update(req);
 	if (ret) {
-		pr_err(DEV_DBG_NAME "[%s] hash_hw_update() failed!", __func__);
+		pr_err(DEV_DBG_NAME " [%s] hash_hw_update() failed!",
+				__func__);
 		goto out;
 	}
 
@@ -859,9 +957,10 @@ static int ahash_final(struct ahash_request *req)
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
 	struct hash_device_data *device_data;
-	u8 digest[HASH_MSG_DIGEST_SIZE];
+	u8 digest[SHA256_DIGEST_SIZE];
 
 	pr_debug(DEV_DBG_NAME "[%s] ", __func__);
+
 	ret = hash_get_device_data(ctx, &device_data);
 	if (ret)
 		return ret;
@@ -876,14 +975,7 @@ static int ahash_final(struct ahash_request *req)
 		goto out;
 	}
 
-	if (!ctx->updated) {
-		ret = init_hash_hw(device_data, req);
-		if (ret) {
-			dev_err(device_data->dev, "[%s] init_hash_hw() "
-					"failed!", __func__);
-			goto out_power;
-		}
-	} else {
+	if (ctx->updated) {
 		ret = hash_resume_state(device_data, &ctx->state);
 
 		if (ret) {
@@ -891,11 +983,39 @@ static int ahash_final(struct ahash_request *req)
 					"failed!", __func__);
 			goto out_power;
 		}
+	} else if (!ctx->state.index) {
+		u8 zero_hash[SHA256_DIGEST_SIZE];
+		u32 zero_hash_size = 0;
+
+		/**
+		 * Use a pre-calculated empty message digest
+		 * (workaround since hw return zeroes, hw bug!?)
+		 */
+		ret = get_empty_message_digest(device_data,
+				&zero_hash[0], &zero_hash_size);
+		if (!ret && likely(zero_hash_size == ctx->digestsize))
+			memcpy(req->result, &zero_hash[0],
+					ctx->digestsize);
+		else
+			dev_err(device_data->dev, "[%s] ret=%d, or wrong "
+					"digest size? %s", __func__, ret,
+					(zero_hash_size == ctx->digestsize) ?
+					"true" : "false");
+		/**
+		 * Empty message digest copied to req->result, or return error
+		 */
+		goto out_power;
+	} else {
+		ret = init_hash_hw(device_data, ctx);
+		if (ret) {
+			dev_err(device_data->dev, "[%s] init_hash_hw() "
+					"failed!", __func__);
+			goto out_power;
+		}
 	}
 
 	hash_messagepad(device_data, ctx->state.buffer,
 			ctx->state.index);
-
 	hash_get_digest(device_data, digest, ctx->config.algorithm);
 	memcpy(req->result, digest, ctx->digestsize);
 
@@ -906,16 +1026,7 @@ out_power:
 				__func__);
 
 out:
-	spin_lock(&device_data->ctx_lock);
-	device_data->current_ctx = NULL;
-	ctx->device = NULL;
-	spin_unlock(&device_data->ctx_lock);
-
-	/*
-	 * The down_interruptible part for this semaphore is called in
-	 * cryp_get_device_data.
-	 */
-	up(&driver_data.device_allocation);
+	release_hash_device(device_data);
 
 	return ret;
 }
@@ -925,7 +1036,7 @@ static int ahash_sha1_init(struct ahash_request *req)
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
 
-	pr_debug(DEV_DBG_NAME "[%s]: (ctx=0x%x)!", __func__, (u32) ctx);
+	pr_debug(DEV_DBG_NAME " [%s]: (ctx=0x%x)!", __func__, (u32) ctx);
 
 	ctx->config.data_format = HASH_DATA_8_BITS;
 	ctx->config.algorithm = HASH_ALGO_SHA1;
@@ -940,7 +1051,7 @@ static int ahash_sha256_init(struct ahash_request *req)
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct hash_ctx *ctx = crypto_ahash_ctx(tfm);
 
-	pr_debug(DEV_DBG_NAME "[%s]: (ctx=0x%x)!", __func__, (u32) ctx);
+	pr_debug(DEV_DBG_NAME " [%s]: (ctx=0x%x)!", __func__, (u32) ctx);
 
 	ctx->config.data_format = HASH_DATA_8_BITS;
 	ctx->config.algorithm = HASH_ALGO_SHA256;
@@ -952,8 +1063,11 @@ static int ahash_sha256_init(struct ahash_request *req)
 
 static int ahash_sha1_digest(struct ahash_request *req)
 {
-	int ret2, ret1 = ahash_sha1_init(req);
+	int ret2, ret1;
 
+	pr_debug(DEV_DBG_NAME " [%s]", __func__);
+
+	ret1 = ahash_sha1_init(req);
 	if (ret1)
 		goto out;
 
@@ -966,8 +1080,11 @@ out:
 
 static int ahash_sha256_digest(struct ahash_request *req)
 {
-	int ret2, ret1 = ahash_sha256_init(req);
+	int ret2, ret1;
 
+	pr_debug(DEV_DBG_NAME " [%s]", __func__);
+
+	ret1 = ahash_sha256_init(req);
 	if (ret1)
 		goto out;
 
@@ -1024,19 +1141,20 @@ static struct ahash_alg *u8500_ahash_algs[] = {
 /**
  * hash_algs_register_all -
  */
-static int ahash_algs_register_all(void)
+static int ahash_algs_register_all(struct hash_device_data *device_data)
 {
 	int ret;
 	int i;
 	int count;
 
-	pr_debug("[%s]", __func__);
+	dev_dbg(device_data->dev, "[%s]", __func__);
 
 	for (i = 0; i < ARRAY_SIZE(u8500_ahash_algs); i++) {
 		ret = crypto_register_ahash(u8500_ahash_algs[i]);
 		if (ret) {
 			count = i;
-			pr_err("[%s] alg registration failed",
+			dev_err(device_data->dev, "[%s] alg registration"
+					" failed",
 				u8500_ahash_algs[i]->halg.base.cra_driver_name);
 			goto unreg;
 		}
@@ -1051,11 +1169,11 @@ unreg:
 /**
  * hash_algs_unregister_all -
  */
-static void ahash_algs_unregister_all(void)
+static void ahash_algs_unregister_all(struct hash_device_data *device_data)
 {
 	int i;
 
-	pr_debug(DEV_DBG_NAME " [%s]", __func__);
+	dev_dbg(device_data->dev, "[%s]", __func__);
 
 	for (i = 0; i < ARRAY_SIZE(u8500_ahash_algs); i++)
 		crypto_unregister_ahash(u8500_ahash_algs[i]);
@@ -1145,7 +1263,7 @@ static int u8500_hash_probe(struct platform_device *pdev)
 	/* ... and signal that a new device is available. */
 	up(&driver_data.device_allocation);
 
-	ret = ahash_algs_register_all();
+	ret = ahash_algs_register_all(device_data);
 	if (ret) {
 		dev_err(dev, "[%s] ahash_algs_register_all() "
 				"failed!", __func__);
@@ -1155,7 +1273,7 @@ static int u8500_hash_probe(struct platform_device *pdev)
 	if (hash_disable_power(device_data, false))
 		dev_err(dev, "[%s]: hash_disable_power() failed!", __func__);
 
-	dev_info(dev, "[%s] successfully probed", __func__);
+	dev_info(dev, "[%s] successfully probed\n", __func__);
 	return 0;
 
 out_power:
@@ -1221,7 +1339,7 @@ static int u8500_hash_remove(struct platform_device *pdev)
 
 	/* If this was the last device, remove the services */
 	if (list_empty(&driver_data.device_list.k_list))
-		ahash_algs_unregister_all();
+		ahash_algs_unregister_all(device_data);
 
 	if (hash_disable_power(device_data, false))
 		dev_err(dev, "[%s]: hash_disable_power() failed",
@@ -1281,7 +1399,7 @@ static void u8500_hash_shutdown(struct platform_device *pdev)
 
 	/* If this was the last device, remove the services */
 	if (list_empty(&driver_data.device_list.k_list))
-		ahash_algs_unregister_all();
+		ahash_algs_unregister_all(device_data);
 
 	iounmap(device_data->base);
 
@@ -1387,7 +1505,7 @@ static struct platform_driver hash_driver = {
  */
 static int __init u8500_hash_mod_init(void)
 {
-	pr_debug("[%s] is called!", __func__);
+	pr_debug(DEV_DBG_NAME " [%s] is called!", __func__);
 
 	klist_init(&driver_data.device_list, NULL, NULL);
 	/* Initialize the semaphore to 0 devices (locked state) */
@@ -1401,7 +1519,8 @@ static int __init u8500_hash_mod_init(void)
  */
 static void __exit u8500_hash_mod_fini(void)
 {
-	pr_debug("[%s] is called!", __func__);
+	pr_debug(DEV_DBG_NAME " [%s] is called!", __func__);
+
 	platform_driver_unregister(&hash_driver);
 	return;
 }
@@ -1412,5 +1531,5 @@ module_exit(u8500_hash_mod_fini);
 MODULE_DESCRIPTION("Driver for ST-Ericsson U8500 HASH engine.");
 MODULE_LICENSE("GPL");
 
-MODULE_ALIAS("sha1-u8500");
-MODULE_ALIAS("sha256-u8500");
+MODULE_ALIAS("sha1-all");
+MODULE_ALIAS("sha256-all");

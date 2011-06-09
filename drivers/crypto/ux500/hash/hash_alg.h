@@ -10,11 +10,7 @@
 
 #include <linux/bitops.h>
 
-/* Number of bytes the message digest */
-#define HASH_MSG_DIGEST_SIZE	32
-#define HASH_BLOCK_SIZE		64
-#define HASH_SHA1_DIGEST_SIZE	20
-#define HASH_SHA2_DIGEST_SIZE	32
+#define HASH_BLOCK_SIZE			64
 
 /* Maximum value of the length's high word */
 #define HASH_HIGH_WORD_MAX_VAL		0xFFFFFFFFUL
