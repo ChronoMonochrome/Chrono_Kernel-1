@@ -46,8 +46,7 @@
 #define CG2900_PG2_HCI_REV		0x0200
 #define CG2900_PG1_SPECIAL_HCI_REV	0x0700
 
-#define CHIP_INITIAL_HIGH_TIMEOUT	5 /* ms */
-#define CHIP_INITIAL_LOW_TIMEOUT	2 /* us */
+#define CHIP_INITIAL_LOW_TIMEOUT	20 /* ms */
 
 struct vs_power_sw_off_cmd {
 	__le16	op_code;
@@ -77,32 +76,22 @@ struct dcg2900_info {
 static void dcg2900_enable_chip(struct cg2900_chip_dev *dev)
 {
 	struct dcg2900_info *info = dev->b_data;
-	unsigned long flags;
 
 	if (info->gbf_gpio == -1)
 		return;
 
 	/*
-	 * Due to a bug in some CG2900 we cannot just set GPIO high to enable
-	 * the chip. We must do the following:
-	 * 1: Set PDB high
-	 * 2: Wait a few milliseconds
-	 * 3: Set PDB low
-	 * 4: Wait 2 microseconds
-	 * 5: Set PDB high
-	 * We disable interrupts step 3-5 to assure that step 4 does not take
-	 * too long time (which would invalidate the fix).
+	 * Due to a bug in CG2900 we cannot just set GPIO high to enable
+	 * the chip. We must wait more than 20 msecs before enbling the
+	 * chip.
+	 * - Set PDB to low.
+	 * - Wait for 20 msecs
+	 * - Set PDB to high.
 	 */
-	gpio_set_value(info->gbf_gpio, 1);
-
-	schedule_timeout_uninterruptible(
-			msecs_to_jiffies(CHIP_INITIAL_HIGH_TIMEOUT));
-
-	spin_lock_irqsave(&info->pdb_toggle_lock, flags);
 	gpio_set_value(info->gbf_gpio, 0);
-	udelay(CHIP_INITIAL_LOW_TIMEOUT);
+	schedule_timeout_uninterruptible(msecs_to_jiffies(
+				CHIP_INITIAL_LOW_TIMEOUT));
 	gpio_set_value(info->gbf_gpio, 1);
-	spin_unlock_irqrestore(&info->pdb_toggle_lock, flags);
 }
 
 static void dcg2900_disable_chip(struct cg2900_chip_dev *dev)
