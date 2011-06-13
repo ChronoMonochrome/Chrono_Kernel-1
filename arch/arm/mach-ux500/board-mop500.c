@@ -260,6 +260,7 @@ static struct fixed_voltage_config snowball_gpio_wlan_vbat_data = {
 	.microvolts		= 3600000,
 	.enable_high		= 1,
 	.init_data		= &gpio_wlan_vbat_regulator,
+	.startup_delay		= 3500, /* Startup time */
 };
 
 /*
