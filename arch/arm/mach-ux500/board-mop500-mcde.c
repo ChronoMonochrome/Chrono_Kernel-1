@@ -129,7 +129,7 @@ static struct mcde_port port0 = {
 static struct mcde_display_generic_platform_data generic_display0_pdata = {
 	.reset_delay = 1,
 #ifdef CONFIG_REGULATOR
-	.regulator_id = "vaux12v5",
+	.regulator_id = "v-display",
 	.min_supply_voltage = 2500000, /* 2.5V */
 	.max_supply_voltage = 2700000 /* 2.7V */
 #endif
@@ -326,7 +326,7 @@ static int ab8500_platform_enable(struct mcde_display_device *ddev)
 			return -EINVAL;
 	}
 
-	dev_info(&ddev->dev, "%s\n", __func__);
+	dev_dbg(&ddev->dev, "%s\n", __func__);
 	res = ux500_pins_enable(tvout_pins);
 	if (res != 0)
 		goto failed;
@@ -342,7 +342,7 @@ static int ab8500_platform_disable(struct mcde_display_device *ddev)
 {
 	int res;
 
-	dev_info(&ddev->dev, "%s\n", __func__);
+	dev_dbg(&ddev->dev, "%s\n", __func__);
 
 	res = ux500_pins_disable(tvout_pins);
 	if (res != 0)
@@ -419,6 +419,47 @@ static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
+static struct ux500_pins *av8100_pins;
+static int av8100_platform_enable(struct mcde_display_device *ddev)
+{
+	int res;
+
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+	if (!av8100_pins) {
+		av8100_pins = ux500_pins_get("av8100-hdmi");
+		if (!av8100_pins) {
+			res = -EINVAL;
+			goto failed;
+		}
+	}
+
+	res = ux500_pins_enable(av8100_pins);
+	if (res != 0)
+		goto failed;
+
+	return res;
+
+failed:
+	dev_warn(&ddev->dev, "Failure during %s\n", __func__);
+	return res;
+}
+
+static int av8100_platform_disable(struct mcde_display_device *ddev)
+{
+	int res;
+
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+
+	res = ux500_pins_disable(av8100_pins);
+	if (res != 0)
+		goto failed;
+	return res;
+
+failed:
+	dev_warn(&ddev->dev, "Failure during %s\n", __func__);
+	return res;
+}
+
 struct mcde_display_device av8100_hdmi = {
 	.name = "av8100_hdmi",
 	.id = AV8100_DISPLAY_ID,
@@ -431,8 +472,8 @@ struct mcde_display_device av8100_hdmi = {
 	.dev = {
 		.platform_data = &av8100_hdmi_pdata,
 	},
-	.platform_enable = NULL,
-	.platform_disable = NULL,
+	.platform_enable = av8100_platform_enable,
+	.platform_disable = av8100_platform_disable,
 };
 
 static void delayed_work_dispreg_hdmi(struct work_struct *ptr)
@@ -453,6 +494,9 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	u16 virtual_width, virtual_height;
 	u32 rotate = FB_ROTATE_UR;
 	struct fb_info *fbi;
+#ifdef CONFIG_DISPDEV
+	struct mcde_fb *mfb;
+#endif
 
 	if (event != MCDE_DSS_EVENT_DISPLAY_REGISTERED)
 		return 0;
@@ -498,33 +542,50 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		virtual_height = height;
 #endif
 
-#ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
-	if (ddev->id == AV8100_DISPLAY_ID)
-		virtual_height = height * 3;
-#endif
-
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 	if (ddev->id == AV8100_DISPLAY_ID) {
 #ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
 		hdmi_fb_onoff(ddev, 1, 0, 0);
-#endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
-	} else {
-		/* Create frame buffer */
-		fbi = mcde_fb_create(ddev,
-			width, height,
-			virtual_width, virtual_height,
-			ddev->default_pixel_format,
-			rotate);
+#endif
+		goto display_postregistered_callback_end;
+	}
+#endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
 
-		if (IS_ERR(fbi)) {
-			dev_warn(&ddev->dev,
-				"Failed to create fb for display %s\n",
-						ddev->name);
-			goto display_postregistered_callback_err;
-		} else
-			dev_info(&ddev->dev, "Framebuffer created (%s)\n",
-						ddev->name);
+	/* Create frame buffer */
+	fbi = mcde_fb_create(ddev,
+		width, height,
+		virtual_width, virtual_height,
+		ddev->default_pixel_format,
+		rotate);
+
+	if (IS_ERR(fbi)) {
+		dev_warn(&ddev->dev,
+			"Failed to create fb for display %s\n",
+					ddev->name);
+		goto display_postregistered_callback_err;
+	} else {
+		dev_info(&ddev->dev, "Framebuffer created (%s)\n",
+					ddev->name);
 	}
 
+#ifdef CONFIG_DISPDEV
+	mfb = to_mcde_fb(fbi);
+
+	/* Create a dispdev overlay for this display */
+	if (dispdev_create(ddev, true, mfb->ovlys[0]) < 0) {
+		dev_warn(&ddev->dev,
+			"Failed to create disp for display %s\n",
+					ddev->name);
+		goto display_postregistered_callback_err;
+	} else {
+		dev_info(&ddev->dev, "Disp dev created for (%s)\n",
+					ddev->name);
+	}
+#endif
+
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+display_postregistered_callback_end:
+#endif
 	return 0;
 
 display_postregistered_callback_err:
