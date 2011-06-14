@@ -66,9 +66,6 @@ static pin_cfg_t mop500_pins_common[] = {
 	GPIO31_U2_CTSn	| PIN_INPUT_PULLUP,
 	GPIO32_U2_RTSn	| PIN_OUTPUT_HIGH,
 
-	/* Display & HDMI HW sync */
-	GPIO68_LCD_VSI0	| PIN_INPUT_PULLUP,
-	GPIO69_LCD_VSI1	| PIN_INPUT_PULLUP,
 };
 
 static pin_cfg_t mop500_pins_default[] = {
@@ -295,6 +292,10 @@ static UX500_PINS(mop500_pins_mcde_tvout,
 	GPIO150_LCDA_CLK,
 );
 
+static UX500_PINS(mop500_pins_mcde_hdmi,
+	GPIO69_LCD_VSI1	| PIN_INPUT_PULLUP,
+);
+
 static UX500_PINS(mop500_pins_ske,
 	GPIO153_KP_I7 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
 	GPIO154_KP_I6 | PIN_INPUT_PULLDOWN | PIN_SLPM_INPUT_PULLUP,
@@ -389,6 +390,7 @@ static UX500_PINS(mop500_pins_usb,
 static struct ux500_pin_lookup mop500_pins[] = {
 	PIN_LOOKUP("mcde-dpi", &mop500_pins_mcde_dpi),
 	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout),
+	PIN_LOOKUP("av8100-hdmi", &mop500_pins_mcde_hdmi),
 	PIN_LOOKUP("nmk-i2c.0", &mop500_pins_i2c0),
 	PIN_LOOKUP("nmk-i2c.1", &mop500_pins_i2c1),
 	PIN_LOOKUP("nmk-i2c.2", &mop500_pins_i2c2),
