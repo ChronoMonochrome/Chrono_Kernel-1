@@ -45,14 +45,37 @@
 
 static struct snd_soc_jack jack;
 
-static int master_clock_sel;
+/* Power-control */
+static DEFINE_MUTEX(power_lock);
+static int ab8500_power_count;
+
+/* Clocks */
 /* audioclk -> intclk -> sysclk/ulpclk */
+static int master_clock_sel;
 static struct clk *clk_ptr_audioclk;
 static struct clk *clk_ptr_intclk;
 static struct clk *clk_ptr_sysclk;
 static struct clk *clk_ptr_ulpclk;
-static DEFINE_MUTEX(power_lock);
-static int ab8500_power_count;
+
+/* Regulators */
+static enum regulator_idx {
+	REGULATOR_AUDIO,
+	REGULATOR_DMIC,
+	REGULATOR_AMIC1,
+	REGULATOR_AMIC2
+};
+static struct regulator_bulk_data reg_info[4] = {
+	{	.supply = "v-audio"	},
+	{	.supply = "v-dmic"	},
+	{	.supply = "v-amic1"	},
+	{	.supply = "v-amic2"	}
+};
+static bool reg_enabled[4] =  {
+	false,
+	false,
+	false,
+	false
+};
 
 /* Slot configuration */
 static unsigned int tx_slots = DEF_TX_SLOTS;
@@ -109,46 +132,46 @@ static const struct snd_kcontrol_new mclk_input_control = {
 
 /* Regulators */
 
-static struct regulator_bulk_data ab8500_regus[4] = {
-	{	.supply = "v-dmic"	},
-	{	.supply = "v-audio"	},
-	{	.supply = "v-amic1"	},
-	{	.supply = "v-amic2"	}
-};
-
-static int enable_regulator(const char *name)
+static int enable_regulator(enum regulator_idx idx)
 {
-	int i, status;
-
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
-		if (strcmp(name, ab8500_regus[i].supply) != 0)
-			continue;
-
-		status = regulator_enable(ab8500_regus[i].consumer);
-		if (status != 0) {
-			pr_err("%s: Failure with regulator %s (ret = %d)\n",
-				__func__, name, status);
-			return status;
-		};
-
-		pr_debug("%s: Enabled regulator %s.\n", __func__, name);
+	int ret;
+pr_err("%s: DORIAN regulator %d.\n", __func__, (int)idx);
+	if (reg_enabled[idx])
 		return 0;
-	}
 
-	return -EINVAL;
+	ret = regulator_enable(reg_info[idx].consumer);
+	if (ret != 0) {
+		pr_err("%s: Failure to enable regulator '%s' (ret = %d)\n",
+			__func__, reg_info[idx].supply, ret);
+		return ret;
+	};
+
+	reg_enabled[idx] = true;
+	pr_debug("%s: Enabled regulator '%s', status: %d, %d, %d, %d\n",
+		__func__,
+		reg_info[idx].supply,
+		(int)reg_enabled[0],
+		(int)reg_enabled[1],
+		(int)reg_enabled[2],
+		(int)reg_enabled[3]);
+	return 0;
 }
 
-static void disable_regulator(const char *name)
+static void disable_regulator(enum regulator_idx idx)
 {
-	int i;
+	if (!reg_enabled[idx])
+		return;
 
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
-		if (strcmp(name, ab8500_regus[i].supply) == 0) {
-			regulator_disable(ab8500_regus[i].consumer);
-			pr_debug("%s: Disabled regulator %s.\n", __func__, name);
-			return;
-		}
-	}
+	regulator_disable(reg_info[idx].consumer);
+
+	reg_enabled[idx] = false;
+	pr_debug("%s: Disabled regulator '%s', status: %d, %d, %d, %d\n",
+		__func__,
+		reg_info[idx].supply,
+		(int)reg_enabled[0],
+		(int)reg_enabled[1],
+		(int)reg_enabled[2],
+		(int)reg_enabled[3]);
 }
 
 static int create_regulators(void)
@@ -157,17 +180,16 @@ static int create_regulators(void)
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
-		ab8500_regus[i].consumer = NULL;
+	for (i = 0; i < ARRAY_SIZE(reg_info); ++i)
+		reg_info[i].consumer = NULL;
 
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
-		ab8500_regus[i].consumer = regulator_get(NULL,
-						      ab8500_regus[i].supply);
-		if (IS_ERR(ab8500_regus[i].consumer)) {
-			status = PTR_ERR(ab8500_regus[i].consumer);
-			pr_err("%s: ERROR: Failed to get supply '%s' (ret = %d)!\n",
-				__func__, ab8500_regus[i].supply, status);
-			ab8500_regus[i].consumer = NULL;
+	for (i = 0; i < ARRAY_SIZE(reg_info); ++i) {
+		reg_info[i].consumer = regulator_get(NULL, reg_info[i].supply);
+		if (IS_ERR(reg_info[i].consumer)) {
+			status = PTR_ERR(reg_info[i].consumer);
+			pr_err("%s: ERROR: Failed to get regulator '%s' (ret = %d)!\n",
+				__func__, reg_info[i].supply, status);
+			reg_info[i].consumer = NULL;
 			goto err_get;
 		}
 	}
@@ -176,17 +198,17 @@ static int create_regulators(void)
 
 err_get:
 
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
-		if (ab8500_regus[i].consumer) {
-			regulator_put(ab8500_regus[i].consumer);
-			ab8500_regus[i].consumer = NULL;
+	for (i = 0; i < ARRAY_SIZE(reg_info); ++i) {
+		if (reg_info[i].consumer) {
+			regulator_put(reg_info[i].consumer);
+			reg_info[i].consumer = NULL;
 		}
 	}
 
 	return status;
 }
 
-/* Master clock */
+/* Power/clock control */
 
 static int ux500_ab8500_power_control_inc(void)
 {
@@ -214,6 +236,8 @@ static int ux500_ab8500_power_control_inc(void)
 		pr_debug("%s: Enabling master-clock (%s).",
 			__func__,
 			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
+
+		/* Enable audio-clock */
 		ret = clk_enable(clk_ptr_audioclk);
 		if (ret) {
 			pr_err("%s: ERROR: clk_enable failed (ret = %d)!", __func__, ret);
@@ -221,7 +245,11 @@ static int ux500_ab8500_power_control_inc(void)
 			return ret;
 		}
 
+		/* Power on audio-parts of AB8500 */
 		ab8500_audio_power_control(true);
+
+		/* Turn on audio-regulator */
+		ret = enable_regulator(REGULATOR_AUDIO);
 	}
 
 	mutex_unlock(&power_lock);
@@ -244,9 +272,15 @@ static void ux500_ab8500_power_control_dec(void)
 		pr_debug("%s: Disabling master-clock (%s).",
 			__func__,
 			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
+
+		/* Disable audio-clock */
 		clk_disable(clk_ptr_audioclk);
 
+		/* Power off audio-parts of AB8500 */
 		ab8500_audio_power_control(false);
+
+		/* Turn off audio-regulator */
+		disable_regulator(REGULATOR_AUDIO);
 	}
 
 	mutex_unlock(&power_lock);
@@ -256,24 +290,29 @@ static void ux500_ab8500_power_control_dec(void)
 
 int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 {
-	int i;
-	int status = 0;
+	int ret = 0;
 
 	pr_info("%s: Enter\n", __func__);
 
-	/* Enable regulators */
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
-		status += enable_regulator(ab8500_regus[i].supply);
+	/* If we start recording we better enable the needed mic-regulators */
+	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+		if (ab8500_audio_dapm_path_active(AB8500_AUDIO_DAPM_PATH_DMIC))
+			ret += enable_regulator(REGULATOR_DMIC);
+		if (ab8500_audio_dapm_path_active(AB8500_AUDIO_DAPM_PATH_AMIC1))
+			ret += enable_regulator(REGULATOR_AMIC1);
+		if (ab8500_audio_dapm_path_active(AB8500_AUDIO_DAPM_PATH_AMIC2))
+			ret += enable_regulator(REGULATOR_AMIC2);
+		if (ret != 0)
+			return ret;
+	}
 
 	return ux500_ab8500_power_control_inc();
 
-	return status;
+	return ret;
 }
 
 void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 {
-	int i;
-
 	pr_info("%s: Enter\n", __func__);
 
 	/* Reset slots configuration to default(s) */
@@ -282,9 +321,12 @@ void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 	else
 		rx_slots = DEF_RX_SLOTS;
 
-	/* Disable regulators */
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
-		disable_regulator(ab8500_regus[i].supply);
+	/* Disable all mic-regulators that were enabled when we stop recording */
+	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+		disable_regulator(REGULATOR_DMIC);
+		disable_regulator(REGULATOR_AMIC1);
+		disable_regulator(REGULATOR_AMIC2);
+	}
 
 	ux500_ab8500_power_control_dec();
 }
@@ -496,7 +538,7 @@ void ux500_ab8500_soc_machine_drv_cleanup(void)
 {
 	pr_info("%s: Enter.\n", __func__);
 
-	regulator_bulk_free(ARRAY_SIZE(ab8500_regus), ab8500_regus);
+	regulator_bulk_free(ARRAY_SIZE(reg_info), reg_info);
 
 	if (clk_ptr_sysclk != NULL)
 		clk_put(clk_ptr_sysclk);

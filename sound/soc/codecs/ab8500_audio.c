@@ -278,8 +278,6 @@ static inline int ab8500_codec_update_reg_audio(struct snd_soc_codec *codec,
 	return ab8500_codec_write_reg_audio(codec, reg, new);
 }
 
-/*--------------------------------------------------------------*/
-
 /* Whether widget's register definitions should be inverted or not */
 enum control_inversion {
 	NORMAL = 0,
@@ -1850,6 +1848,36 @@ int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
 		return -1;
 
 	return 0;
+}
+
+bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path)
+{
+	int reg, reg_mask;
+
+	switch (dapm_path) {
+	case AB8500_AUDIO_DAPM_PATH_DMIC:
+		reg = ab8500_codec_read_reg_audio(ab8500_codec, REG_DIGMICCONF);
+		reg_mask = BMASK(REG_DIGMICCONF_ENDMIC1) |
+			BMASK(REG_DIGMICCONF_ENDMIC2) |
+			BMASK(REG_DIGMICCONF_ENDMIC3) |
+			BMASK(REG_DIGMICCONF_ENDMIC4) |
+			BMASK(REG_DIGMICCONF_ENDMIC5) |
+			BMASK(REG_DIGMICCONF_ENDMIC6);
+		return reg & reg_mask;
+
+	case AB8500_AUDIO_DAPM_PATH_AMIC1:
+		reg = ab8500_codec_read_reg_audio(ab8500_codec, REG_ANACONF2);
+		reg_mask = BMASK(REG_ANACONF2_MUTMIC1);
+		return !(reg & reg_mask);
+
+	case AB8500_AUDIO_DAPM_PATH_AMIC2:
+		reg = ab8500_codec_read_reg_audio(ab8500_codec, REG_ANACONF2);
+		reg_mask = BMASK(REG_ANACONF2_MUTMIC2);
+		return !(reg & reg_mask);
+
+	default:
+		return false;
+	}
 }
 
 static int ab8500_codec_add_widgets(struct snd_soc_codec *codec)
