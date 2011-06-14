@@ -23,6 +23,7 @@ extern struct snd_soc_dai_driver ab8500_codec_dai[];
 extern struct snd_soc_codec_driver soc_codec_dev_ab8500;
 
 /* Extended interface for codec-driver */
+void ab8500_audio_power_control(bool power_on);
 int ab8500_audio_set_word_length(struct snd_soc_dai *dai, unsigned int wl);
 int ab8500_audio_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay);
 int ab8500_audio_setup_if1(struct snd_soc_codec *codec,

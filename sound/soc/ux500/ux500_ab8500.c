@@ -14,6 +14,7 @@
  * by the Free Software Foundation.
  */
 
+#include <linux/clk.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/device.h>
@@ -44,11 +45,68 @@
 
 static struct snd_soc_jack jack;
 
+static int master_clock_sel;
+static struct clk *clk_ptr_audioclk;
+static struct clk *clk_ptr_sysclk;
+static struct clk *clk_ptr_ulpclk;
+static DEFINE_MUTEX(power_lock);
+static int ab8500_power_count;
+
 /* Slot configuration */
 static unsigned int tx_slots = DEF_TX_SLOTS;
 static unsigned int rx_slots = DEF_RX_SLOTS;
 
-/* List the regulators that are to be controlled.. */
+/* Machine-driver ALSA-controls */
+
+static int mclk_input_control_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = 2;
+	if (uinfo->value.enumerated.item) {
+		uinfo->value.enumerated.item = 1;
+		strcpy(uinfo->value.enumerated.name, "ULPCLK");
+	} else {
+		strcpy(uinfo->value.enumerated.name, "SYSCLK");
+	}
+	return 0;
+}
+
+static int mclk_input_control_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.enumerated.item[0] = master_clock_sel;
+	return 0;
+}
+
+static int mclk_input_control_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	unsigned int val;
+
+	val = (ucontrol->value.enumerated.item[0] != 0);
+	if (master_clock_sel == val)
+		return 0;
+
+	master_clock_sel = val;
+
+	return 1;
+}
+
+static const struct snd_kcontrol_new mclk_input_control = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "Master Clock Select",
+	.index = 0,
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.info = mclk_input_control_info,
+	.get = mclk_input_control_get,
+	.put = mclk_input_control_put,
+	.private_value = 1 /* ULPCLK */
+};
+
+/* Regulators */
+
 static struct regulator_bulk_data ab8500_regus[4] = {
 	{	.supply = "v-dmic"	},
 	{	.supply = "v-audio"	},
@@ -66,7 +124,7 @@ static int enable_regulator(const char *name)
 
 		status = regulator_enable(ab8500_regus[i].consumer);
 		if (status != 0) {
-			pr_err("%s: Failure with regulator %s (%d)\n",
+			pr_err("%s: Failure with regulator %s (ret = %d)\n",
 				__func__, name, status);
 			return status;
 		};
@@ -91,6 +149,110 @@ static void disable_regulator(const char *name)
 	}
 }
 
+static int create_regulators(void)
+{
+	int i, status = 0;
+
+	pr_debug("%s: Enter.\n", __func__);
+
+	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
+		ab8500_regus[i].consumer = NULL;
+
+	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
+		ab8500_regus[i].consumer = regulator_get(NULL,
+						      ab8500_regus[i].supply);
+		if (IS_ERR(ab8500_regus[i].consumer)) {
+			status = PTR_ERR(ab8500_regus[i].consumer);
+			pr_err("%s: ERROR: Failed to get supply '%s' (ret = %d)!\n",
+				__func__, ab8500_regus[i].supply, status);
+			ab8500_regus[i].consumer = NULL;
+			goto err_get;
+		}
+	}
+
+	return 0;
+
+err_get:
+
+	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
+		if (ab8500_regus[i].consumer) {
+			regulator_put(ab8500_regus[i].consumer);
+			ab8500_regus[i].consumer = NULL;
+		}
+	}
+
+	return status;
+}
+
+/* Master clock */
+
+static int ux500_ab8500_power_control_inc(void)
+{
+	int ret;
+
+	mutex_lock(&power_lock);
+
+	ab8500_power_count++;
+	pr_debug("%s: ab8500_power_count changed from %d to %d",
+		__func__,
+		ab8500_power_count-1,
+		ab8500_power_count);
+
+	if (ab8500_power_count == 1) {
+		ret = clk_set_parent(clk_ptr_audioclk,
+				(master_clock_sel == 0) ? clk_ptr_sysclk : clk_ptr_ulpclk);
+		if (ret) {
+			pr_err("%s: ERROR: Setting master-clock to %s failed (ret = %d)!",
+				__func__,
+				(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK",
+				ret);
+			clk_put(clk_ptr_sysclk);
+			return ret;
+		}
+
+		pr_debug("%s: Enabling master-clock (%s).",
+			__func__,
+			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
+		ret = clk_enable(clk_ptr_audioclk);
+		if (ret) {
+			pr_err("%s: ERROR: clk_enable failed (ret = %d)!", __func__, ret);
+			ab8500_power_count = 0;
+			return ret;
+		}
+
+		ab8500_audio_power_control(true);
+	}
+
+	mutex_unlock(&power_lock);
+
+	return 0;
+}
+
+static void ux500_ab8500_power_control_dec(void)
+{
+	mutex_lock(&power_lock);
+
+	ab8500_power_count--;
+
+	pr_debug("%s: ab8500_power_count changed from %d to %d",
+		__func__,
+		ab8500_power_count+1,
+		ab8500_power_count);
+
+	if (ab8500_power_count == 0) {
+		pr_debug("%s: Disabling master-clock (%s).",
+			__func__,
+			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
+		clk_disable(clk_ptr_audioclk);
+
+		ab8500_audio_power_control(false);
+	}
+
+	mutex_unlock(&power_lock);
+}
+
+/* ASoC */
+
 int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 {
 	int i;
@@ -101,6 +263,8 @@ int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 	/* Enable regulators */
 	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
 		status += enable_regulator(ab8500_regus[i].supply);
+
+	return ux500_ab8500_power_control_inc();
 
 	return status;
 }
@@ -120,6 +284,8 @@ void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 	/* Disable regulators */
 	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
 		disable_regulator(ab8500_regus[i].supply);
+
+	ux500_ab8500_power_control_dec();
 }
 
 int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
@@ -170,7 +336,7 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 
 	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
 	if (ret < 0) {
-		pr_err("%s: snd_soc_dai_set_fmt failed for codec_dai (ret = %d).\n",
+		pr_err("%s: ERROR: snd_soc_dai_set_fmt failed for codec_dai (ret = %d)!\n",
 			__func__,
 			ret);
 		return ret;
@@ -178,7 +344,7 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 
 	ret = snd_soc_dai_set_fmt(cpu_dai, fmt);
 	if (ret < 0) {
-		pr_err("%s: snd_soc_dai_set_fmt for cpu_dai (ret = %d).\n",
+		pr_err("%s: ERROR: snd_soc_dai_set_fmt for cpu_dai (ret = %d)!\n",
 			__func__,
 			ret);
 		return ret;
@@ -233,78 +399,62 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int create_jack(struct snd_soc_codec *codec)
-{
-	return snd_soc_jack_new(codec,
-	"AB8500 Hs Status",
-	SND_JACK_HEADPHONE     |
-	SND_JACK_MICROPHONE    |
-	SND_JACK_HEADSET       |
-	SND_JACK_LINEOUT       |
-	SND_JACK_MECHANICAL    |
-	SND_JACK_VIDEOOUT,
-	&jack);
-}
-
-void ux500_ab8500_jack_report(int value)
-{
-	if (jack.jack)
-		snd_soc_jack_report(&jack, value, 0xFF);
-}
-EXPORT_SYMBOL_GPL(ux500_ab8500_jack_report);
-
+struct snd_soc_ops ux500_ab8500_ops[] = {
+	{
+	.hw_params = ux500_ab8500_hw_params,
+	.startup = ux500_ab8500_startup,
+	.shutdown = ux500_ab8500_shutdown,
+	}
+};
 
 int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
-	int status;
+	int ret;
 
 	pr_info("%s Enter.\n", __func__);
 
 	/* TODO: Add required DAPM routes to control regulators on demand */
 
-	status = create_jack(codec);
-	if (status < 0) {
-		pr_err("%s: Failed to create Jack (%d).\n", __func__, status);
-		return status;
+	ret = snd_soc_jack_new(codec,
+			"AB8500 Hs Status",
+			SND_JACK_HEADPHONE     |
+			SND_JACK_MICROPHONE    |
+			SND_JACK_HEADSET       |
+			SND_JACK_LINEOUT       |
+			SND_JACK_MECHANICAL    |
+			SND_JACK_VIDEOOUT,
+			&jack);
+	if (ret < 0) {
+		pr_err("%s: ERROR: Failed to create Jack (ret = %d)!\n", __func__, ret);
+		return ret;
 	}
+
+	/* Add controls */
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&mclk_input_control, codec));
+
+	/* Setup master clocks */
+	ab8500_power_count = 0;
+	clk_ptr_sysclk = clk_get(codec->dev, "sysclk");
+	if (IS_ERR(clk_ptr_sysclk)) {
+		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
+		return -EFAULT;
+	}
+	clk_ptr_ulpclk = clk_get(codec->dev, "ulpclk");
+	if (IS_ERR(clk_ptr_sysclk)) {
+		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
+		return -EFAULT;
+	}
+	clk_ptr_audioclk = clk_get(codec->dev, "audioclk");
+	if (IS_ERR(clk_ptr_audioclk)) {
+		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
+		clk_put(clk_ptr_sysclk);
+		return -EFAULT;
+	}
+
+	master_clock_sel = 1;
 
 	return 0;
-}
-
-static int create_regulators(void)
-{
-	int i, status = 0;
-
-	pr_debug("%s: Enter.\n", __func__);
-
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i)
-		ab8500_regus[i].consumer = NULL;
-
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
-		ab8500_regus[i].consumer = regulator_get(NULL,
-						      ab8500_regus[i].supply);
-		if (IS_ERR(ab8500_regus[i].consumer)) {
-			status = PTR_ERR(ab8500_regus[i].consumer);
-			pr_err("%s: Failed to get supply '%s' (%d)\n",
-				__func__, ab8500_regus[i].supply, status);
-			ab8500_regus[i].consumer = NULL;
-			goto err_get;
-		}
-	}
-
-	return 0;
-
-err_get:
-
-	for (i = 0; i < ARRAY_SIZE(ab8500_regus); ++i) {
-		if (ab8500_regus[i].consumer) {
-			regulator_put(ab8500_regus[i].consumer);
-			ab8500_regus[i].consumer = NULL;
-		}
-	}
-
-	return status;
 }
 
 int ux500_ab8500_soc_machine_drv_init(void)
@@ -315,7 +465,7 @@ int ux500_ab8500_soc_machine_drv_init(void)
 
 	status = create_regulators();
 	if (status < 0) {
-		pr_err("%s: Failed to instantiate regulators (%d).\n",
+		pr_err("%s: ERROR: Failed to instantiate regulators (ret = %d)!\n",
 			__func__, status);
 		return status;
 	}
@@ -330,10 +480,12 @@ void ux500_ab8500_soc_machine_drv_cleanup(void)
 	regulator_bulk_free(ARRAY_SIZE(ab8500_regus), ab8500_regus);
 }
 
-struct snd_soc_ops ux500_ab8500_ops[] = {
-	{
-	.hw_params = ux500_ab8500_hw_params,
-	.startup = ux500_ab8500_startup,
-	.shutdown = ux500_ab8500_shutdown,
-	}
-};
+/* Extended interface */
+
+void ux500_ab8500_jack_report(int value)
+{
+	if (jack.jack)
+		snd_soc_jack_report(&jack, value, 0xFF);
+}
+EXPORT_SYMBOL_GPL(ux500_ab8500_jack_report);
+

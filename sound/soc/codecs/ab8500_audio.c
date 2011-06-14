@@ -14,7 +14,6 @@
  * by the Free Software Foundation.
  */
 
-#include <linux/clk.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/moduleparam.h>
@@ -173,10 +172,7 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 };
 
 static struct snd_soc_codec *ab8500_codec;
-static struct clk *clk_ptr_audioclk;
-static struct clk *clk_ptr_sysclk;
-static DEFINE_MUTEX(power_lock);
-static int ab8500_power_count;
+
 
 /* Reads an arbitrary register from the ab8500 chip.
 */
@@ -1703,59 +1699,26 @@ static void ab8500_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
 	ab8500_codec_write_reg(codec, AB8500_MISC, AB8500_GPIO_DIR4_REG, data);
 }
 
-static int ab8500_codec_power_control_inc(struct snd_soc_codec *codec)
+/* Extended interface for codec-driver */
+
+void ab8500_audio_power_control(bool power_on)
 {
-	int ret;
-	unsigned int set_mask;
+	if (ab8500_codec == NULL) {
+		pr_err("%s: ERROR: AB8500 ASoC-driver not yet probed!\n", __func__);
+		return;
+	}
 
-	mutex_lock(&power_lock);
-
-	ab8500_power_count++;
-	pr_debug("ab8500_power_count changed from %d to %d",
-		ab8500_power_count-1,
-		ab8500_power_count);
-
-	if (ab8500_power_count == 1) {
+	if (power_on) {
+		unsigned int set_mask;
 		pr_debug("Enabling AB8500.");
 		set_mask = BMASK(REG_POWERUP_POWERUP) | BMASK(REG_POWERUP_ENANA);
-		ab8500_codec_update_reg_audio(codec, REG_POWERUP, 0x00, set_mask);
-
-		pr_debug("Enabling sysclk.");
-		ret = clk_enable(clk_ptr_audioclk);
-		if (ret) {
-			pr_err("ERROR: clk_enable failed (ret = %d)!", ret);
-			ab8500_power_count = 0;
-			return ret;
-		}
-	}
-
-	mutex_unlock(&power_lock);
-
-	return 0;
-}
-
-static void ab8500_codec_power_control_dec(struct snd_soc_codec *codec)
-{
-	unsigned int clear_mask;
-
-	mutex_lock(&power_lock);
-
-	ab8500_power_count--;
-
-	pr_debug("ab8500_power_count changed from %d to %d",
-		ab8500_power_count+1,
-		ab8500_power_count);
-
-	if (ab8500_power_count == 0) {
-		pr_debug("Disabling sysclk.");
-		clk_disable(clk_ptr_audioclk);
-
+		ab8500_codec_update_reg_audio(ab8500_codec, REG_POWERUP, 0x00, set_mask);
+	} else {
+		unsigned int clear_mask;
 		pr_debug("Disabling AB8500.");
 		clear_mask = BMASK(REG_POWERUP_POWERUP) | BMASK(REG_POWERUP_ENANA);
-		ab8500_codec_update_reg_audio(codec, REG_POWERUP, clear_mask, 0x00);
+		ab8500_codec_update_reg_audio(ab8500_codec, REG_POWERUP, clear_mask, 0x00);
 	}
-
-	mutex_unlock(&power_lock);
 }
 
 /* Extended interface for codec-driver */
@@ -1888,15 +1851,13 @@ static int ab8500_codec_pcm_prepare(struct snd_pcm_substream *substream,
 	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE1);
 	ab8500_codec_read_reg_audio(dai->codec, REG_AUDINTSOURCE2);
 
-	return ab8500_codec_power_control_inc(dai->codec);
+	return 0;
 }
 
 static void ab8500_codec_pcm_shutdown(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
 	pr_debug("%s Enter.\n", __func__);
-
-	ab8500_codec_power_control_dec(dai->codec);
 
 	ab8500_codec_dump_all_reg(dai->codec);
 }
@@ -2220,31 +2181,13 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 
 	ab8500_codec = codec;
 
-	ab8500_power_count = 0;
-	clk_ptr_sysclk = clk_get(codec->dev, "sysclk");
-	if (IS_ERR(clk_ptr_sysclk)) {
-		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
-		return -EFAULT;
-	}
-	clk_ptr_audioclk = clk_get(codec->dev, "audioclk");
-	if (IS_ERR(clk_ptr_audioclk)) {
-		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
-		clk_put(clk_ptr_sysclk);
-		return -EFAULT;
-	}
-	ret = clk_set_parent(clk_ptr_audioclk, clk_ptr_sysclk);
-	if (ret) {
-		pr_err("ERROR: clk_set_parent failed (ret = %d)!", ret);
-		clk_put(clk_ptr_sysclk);
-		return ret;
-	}
-
 	return ret;
 }
 
 static int ab8500_codec_remove(struct snd_soc_codec *codec)
 {
 	snd_soc_dapm_free(&codec->dapm);
+	ab8500_codec = NULL;
 
 	return 0;
 }
