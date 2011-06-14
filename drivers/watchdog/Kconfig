@@ -294,6 +294,22 @@ config COH901327_WATCHDOG
 	  This watchdog is used to reset the system and thus cannot be
 	  compiled as a module.
 
+config UX500_WATCHDOG
+	bool "ST-Ericsson UX500 watchdog"
+	depends on ARCH_U8500
+	default y if MACH_U8500
+	help
+	  Say Y here to include Watchdog timer support for the
+	  watchdog existing in the prcmu of ST-Ericsson UX500 series platforms.
+	  This watchdog is used to reset the system and thus cannot be
+	  compiled as a module.
+
+config UX500_WATCHDOG_DEBUG
+	bool "ST-Ericsson UX500 watchdog DEBUG"
+	depends on ARCH_U8500 && DEBUG_FS
+	help
+	  Say Y here to add various debugfs entries in wdog/
+
 config TWL4030_WATCHDOG
 	tristate "TWL4030 Watchdog"
 	depends on TWL4030_CORE
