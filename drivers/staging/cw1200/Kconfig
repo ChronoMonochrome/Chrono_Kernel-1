@@ -35,7 +35,14 @@ config CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE
         or you suspect problems with the implementation.
         Please finalize software the software keep-alive functionality in
         that case.
+        If unsure, say N.
 
+config CW1200_5GHZ_SUPPORT
+      bool "5GHz band support"
+      depends on CW1200
+      help
+        Say Y if your device supports 5GHz band. Should be disabled for
+        CW1100 silicon.
         If unsure, say N.
 
 menu "Driver debug features"

@@ -124,6 +124,7 @@ static struct ieee80211_channel cw1200_2ghz_chantable[] = {
 	CHAN2G(14, 2484, 0),
 };
 
+#ifdef CONFIG_CW1200_5GHZ_SUPPORT
 static struct ieee80211_channel cw1200_5ghz_chantable[] = {
 	CHAN5G(34, 0),		CHAN5G(36, 0),
 	CHAN5G(38, 0),		CHAN5G(40, 0),
@@ -145,6 +146,7 @@ static struct ieee80211_channel cw1200_5ghz_chantable[] = {
 	CHAN5G(208, 0),		CHAN5G(212, 0),
 	CHAN5G(216, 0),
 };
+#endif /* CONFIG_CW1200_5GHZ_SUPPORT */
 
 static struct ieee80211_supported_band cw1200_band_2ghz = {
 	.channels = cw1200_2ghz_chantable,
@@ -169,6 +171,7 @@ static struct ieee80211_supported_band cw1200_band_2ghz = {
 	},
 };
 
+#ifdef CONFIG_CW1200_5GHZ_SUPPORT
 static struct ieee80211_supported_band cw1200_band_5ghz = {
 	.channels = cw1200_5ghz_chantable,
 	.n_channels = ARRAY_SIZE(cw1200_5ghz_chantable),
@@ -191,6 +194,7 @@ static struct ieee80211_supported_band cw1200_band_5ghz = {
 		},
 	},
 };
+#endif /* CONFIG_CW1200_5GHZ_SUPPORT */
 
 static const struct ieee80211_ops cw1200_ops = {
 	.start			= cw1200_start,
@@ -273,7 +277,9 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
 
 	hw->wiphy->bands[IEEE80211_BAND_2GHZ] = &cw1200_band_2ghz;
+#ifdef CONFIG_CW1200_5GHZ_SUPPORT
 	hw->wiphy->bands[IEEE80211_BAND_5GHZ] = &cw1200_band_5ghz;
+#endif /* CONFIG_CW1200_5GHZ_SUPPORT */
 
 	hw->wiphy->max_scan_ssids = 2;
 	hw->wiphy->max_scan_ie_len = IEEE80211_MAX_DATA_LEN;
