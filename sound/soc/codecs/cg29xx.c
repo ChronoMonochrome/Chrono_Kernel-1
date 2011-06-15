@@ -25,7 +25,7 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <linux/bitops.h>
-#include <linux/mfd/cg2900_audio.h>
+#include <../../../drivers/staging/cg2900/include/cg2900_audio.h>
 
 #include "cg29xx.h"
 

@@ -13,7 +13,7 @@
 #ifndef CG29XX_CODEC_H
 #define CG29XX_CODEC_H
 
-#include <linux/mfd/cg2900_audio.h>
+#include <../../../drivers/staging/cg2900/include/cg2900_audio.h>
 
 struct cg29xx_codec_dai_data {
 	struct mutex mutex;
