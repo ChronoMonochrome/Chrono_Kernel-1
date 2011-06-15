@@ -1060,7 +1060,7 @@ static int __init cmld_init_module(void)
 	/* Activate SVA 90 KHz timer */
 	if (htim_base == NULL)
 		goto out;
-	iowrite32((1<<26), htim_base);
+	iowrite32((1<<26) | ioread32(htim_base), htim_base);
 	iounmap(htim_base);
 
 	/*i = ioread32(PRCM_SVAMMDSPCLK_MGT) & 0xFF;
