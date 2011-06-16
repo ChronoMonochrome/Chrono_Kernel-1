@@ -77,7 +77,8 @@ enum ab8500_usb_link_status {
 enum ab8500_usb_mode {
 	USB_IDLE = 0,
 	USB_PERIPHERAL,
-	USB_HOST
+	USB_HOST,
+	USB_DEDICATED_CHG
 };
 
 struct ab8500_usb {
@@ -170,7 +171,6 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 	clk_enable(ab->sysclk);
 
 	ab8500_usb_regulator_ctrl(ab, sel_host, true);
-
 	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
 				(char *)dev_name(ab->dev), 100);
 
@@ -184,12 +184,8 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 	ab8500_usb_wd_workaround(ab);
 }
 
-static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
+static void ab8500_usb_wd_linkstatus(struct ab8500_usb *ab,u8 bit)
 {
-	u8 bit;
-	bit = sel_host ? AB8500_BIT_PHY_CTRL_HOST_EN :
-			AB8500_BIT_PHY_CTRL_DEVICE_EN;
-
 	/* Wrokaround for v2.0 bug # 31952 */
 	if (ab->rev == 0x20) {
 		abx500_mask_and_set_register_interruptible(ab->dev,
@@ -199,6 +195,15 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
 					bit);
 		udelay(AB8500_V20_31952_DISABLE_DELAY_US);
 	}
+}
+
+static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
+{
+	u8 bit;
+	bit = sel_host ? AB8500_BIT_PHY_CTRL_HOST_EN :
+			AB8500_BIT_PHY_CTRL_DEVICE_EN;
+
+	ab8500_usb_wd_linkstatus(ab,bit);
 
 	abx500_mask_and_set_register_interruptible(ab->dev,
 				AB8500_USB,
@@ -277,6 +282,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 	case USB_LINK_ACA_RID_C_HS_CHIRP:
 	case USB_LINK_DEDICATED_CHG:
 		/* TODO: vbus_draw */
+		ab->mode = USB_DEDICATED_CHG;
 		event = USB_EVENT_CHARGER;
 		break;
 	}
@@ -313,6 +319,14 @@ static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
 		ab8500_usb_host_phy_dis(ab);
 	else if (ab->mode == USB_PERIPHERAL)
 		ab8500_usb_peri_phy_dis(ab);
+	else if (ab->mode == USB_DEDICATED_CHG && ab->rev == 0x20) {
+		ab8500_usb_wd_linkstatus(ab,AB8500_BIT_PHY_CTRL_DEVICE_EN);
+		abx500_mask_and_set_register_interruptible(ab->dev,
+				AB8500_USB,
+				AB8500_USB_PHY_CTRL_REG,
+				AB8500_BIT_PHY_CTRL_DEVICE_EN,
+				0);
+	}
 	ab->mode = USB_IDLE;
 
 	if (ab->rev < 0x20)
