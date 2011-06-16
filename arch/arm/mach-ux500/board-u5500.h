@@ -10,6 +10,9 @@
 #define GPIO_SDMMC_CD          180
 #define GPIO_MMC_CARD_CTRL     227
 #define GPIO_MMC_CARD_VSEL     185
+#define GPIO_PRIMARY_CAM_XSHUTDOWN  1
+#define GPIO_SECONDARY_CAM_XSHUTDOWN  2
+
 
 struct ab5500_regulator_platform_data;
 extern struct ab5500_regulator_platform_data u5500_ab5500_regulator_data;

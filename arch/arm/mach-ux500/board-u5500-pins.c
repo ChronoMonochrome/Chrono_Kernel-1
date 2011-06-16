@@ -90,6 +90,10 @@ static pin_cfg_t u5500_pins_default[] = {
 
 	/* Display & HDMI HW sync */
 	GPIO204_LCD_VSI1	| PIN_INPUT_PULLUP,
+
+	/* Camera & MMIO XshutDown*/
+	GPIO1_GPIO		| PIN_OUTPUT_LOW,
+	GPIO2_GPIO		| PIN_OUTPUT_LOW,
 };
 
 static UX500_PINS(u5500_pins_i2c1,
