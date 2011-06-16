@@ -33,7 +33,7 @@ do { \
 	barrier(); \
 } while (0)
 
-#define preempt_enable_no_resched() \
+#define __preempt_enable_no_resched() \
 do { \
 	barrier(); \
 	dec_preempt_count(); \
@@ -47,10 +47,16 @@ do { \
 
 #define preempt_enable() \
 do { \
-	preempt_enable_no_resched(); \
+	__preempt_enable_no_resched(); \
 	barrier(); \
 	preempt_check_resched(); \
 } while (0)
+
+#ifndef CONFIG_PREEMPT_RT_BASE
+# define preempt_enable_no_resched()   __preempt_enable_no_resched()
+#else
+# define preempt_enable_no_resched()   preempt_enable()
+#endif
 
 /* For debugging and tracer internals only! */
 #define add_preempt_count_notrace(val)			\
@@ -97,6 +103,18 @@ do { \
 #define preempt_enable_no_resched_notrace()	barrier()
 #define preempt_enable_notrace()		barrier()
 
+#endif
+
+#ifdef CONFIG_PREEMPT_RT_FULL
+# define preempt_disable_rt()		preempt_disable()
+# define preempt_enable_rt()		preempt_enable()
+# define preempt_disable_nort()		do { } while (0)
+# define preempt_enable_nort()		do { } while (0)
+#else
+# define preempt_disable_rt()		do { } while (0)
+# define preempt_enable_rt()		do { } while (0)
+# define preempt_disable_nort()		preempt_disable()
+# define preempt_enable_nort()		preempt_enable()
 #endif
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
