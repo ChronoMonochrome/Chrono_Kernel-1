@@ -111,6 +111,36 @@ struct mmio_info {
  */
 static struct mmio_info *info;
 
+/*
+ * This function converts a given logical memory region size
+ * to appropriate ISP_MCU_SYS_SIZEx register value.
+ */
+static int get_mcu_sys_size(u32 size, u32 *val)
+{
+	int ret = 0;
+
+	if (size > 0 && size <= SZ_4K)
+		*val = 4;
+	else if (size > SZ_4K && size <= SZ_8K)
+		*val = 5;
+	else if (size > SZ_8K && size <= SZ_16K)
+		*val = 6;
+	else if (size > SZ_16K && size <= SZ_32K)
+		*val = 7;
+	else if (size > SZ_32K && size <= SZ_64K)
+		*val = 0;
+	else if (size > SZ_64K && size <= SZ_1M)
+		*val = 1;
+	else if (size > SZ_1M  && size <= SZ_16M)
+		*val = 2;
+	else if (size > SZ_16M && size <= SZ_256M)
+		*val = 3;
+	else
+		ret = -EINVAL;
+
+	return ret;
+}
+
 static int mmio_cam_pwr_sensor(struct mmio_info *info, int on)
 {
 	int err = 0;
@@ -302,8 +332,13 @@ static int mmio_load_xp70_fw(struct mmio_info *info,
 		 */
 		writew(upper_16_bits(xp70_fw->addr_sdram_ext),
 		       info->siabase + SIA_ISP_MCU_SYS_ADDR1_OFFSET);
-		/* ISP_MCU_SYS_SIZEx XP70 register (size of the code =64KB) */
-		writew(0x0, info->siabase + SIA_ISP_MCU_SYS_SIZE1_OFFSET);
+		/* ISP_MCU_SYS_SIZEx XP70 register */
+		err = get_mcu_sys_size(xp70_fw->size_sdram_ext, &itval);
+
+		if (err)
+			goto err_exit;
+
+		writew(itval, info->siabase + SIA_ISP_MCU_SYS_SIZE1_OFFSET);
 	}
 
 	return 0;
