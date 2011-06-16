@@ -34,8 +34,14 @@
 #include <stdarg.h>
 #include "ab5500.h"
 
+/* No of digital interface on the Codec */
+#define NO_CODEC_DAI_IF  2
+
 /* codec private data */
 struct ab5500_codec_dai_data {
+	bool playback_active;
+	bool capture_active;
+
 };
 
 static struct device *ab5500_dev;
@@ -85,8 +91,11 @@ static void mask_set_reg(u8 reg, u8 mask, u8 val)
 	case AB5500_VIRTUAL_REG3:
 		if ((diff & (1 << SPKR1_PWR_SHIFT))) {
 			if ((val & (1 << SPKR1_PWR_SHIFT)) == 0) {
-				/* If the new value has PWR_SHIFT disabled, set the 
-				 * PWR_MASK to 0 */
+				/*
+				 * If the new value has PWR_SHIFT
+				 * disabled, set the
+				 * PWR_MASK to 0
+				 */
 				mask_set_reg(SPKR1, SPKRx_PWR_MASK, 0);
 			}
 			else {
@@ -109,8 +118,11 @@ static void mask_set_reg(u8 reg, u8 mask, u8 val)
 		}
 		if ((diff & (1 << SPKR2_PWR_SHIFT))) {
 			if ((val & (1 << SPKR2_PWR_SHIFT)) == 0) {
-				/* If the new value has PWR_SHIFT disabled, set the 
-				 * PWR_MASK to 0 */
+				/*
+				 * If the new value has PWR_SHIFT
+				 * disabled, set the
+				 * PWR_MASK to 0
+				 */
 				mask_set_reg(SPKR2, SPKRx_PWR_MASK, 0);
 			}
 			else {
@@ -374,11 +386,15 @@ static const struct snd_soc_dapm_route intercon[] = {
 };
 
 
-struct codec_dai_private {
-	unsigned active_flags;
-} privates[] = {
-	{0},
-	{0}
+struct ab5500_codec_dai_data  ab5500_codec_privates[NO_CODEC_DAI_IF] = {
+	{
+		.playback_active = false,
+		.capture_active = false,
+	},
+	{
+		.playback_active = false,
+		.capture_active = false,
+	}
 };
 
 static const char *enum_rx_input_select[] = {
@@ -882,9 +898,9 @@ static void power_widget_unlocked(enum enum_power onoff, enum enum_widget widget
 		unsigned long i;
 		unsigned long *srcs = widget_pm_array[w].source_list;
 		unsigned long *sinks = widget_pm_array[w].sink_list;
-
-		dev_info(ab5500_dev, "%s: processing widget %s.\n",
+		dev_dbg(ab5500_dev, "%s: processing widget %s.\n",
 			__func__, widget_names[w]);
+
 		if (onoff == POWER_ON &&
 		    !bitmap_empty(srcs, number_of_widgets) &&
 		    !has_powered_neighbors(srcs)) {
@@ -916,10 +932,9 @@ static void power_widget_unlocked(enum enum_power onoff, enum enum_widget widget
 		mask_set_reg(widget_pm_array[w].reg,
 			     1 << widget_pm_array[w].shift,
 			     onoff == POWER_ON ? 0xff : 0);
-		dev_info(ab5500_dev, "%s: widget %s powered %s.\n",
+		dev_dbg(ab5500_dev, "%s: widget %s powered %s.\n",
 			__func__, widget_names[w],
 			onoff == POWER_ON ? "on" : "off");
-
 		if (onoff == POWER_ON &&
 		    !bitmap_empty(sinks, number_of_widgets) &&
 		    !has_powered_neighbors(sinks) &&
@@ -968,7 +983,7 @@ static void dump_registers(const char *where, ...)
 		short reg = va_arg(ap, int);
 		if (reg < 0)
 			break;
-		dev_info(ab5500_dev, "%s from %s> 0x%02X : 0x%02X.\n",
+		dev_dbg(ab5500_dev, "%s from %s> 0x%02X : 0x%02X.\n",
 			__func__, where, reg, read_reg(reg));
 	} while (1);
 	va_end(ap);
@@ -1080,7 +1095,7 @@ static int ab5500_add_widgets(struct snd_soc_codec *codec)
 
 static void power_for_playback(enum enum_power onoff, int ifsel)
 {
-	dev_info(ab5500_dev, "%s: interface %d power %s.\n", __func__,
+	dev_dbg(ab5500_dev, "%s: interface %d power %s.\n", __func__,
 		ifsel, onoff == POWER_ON ? "on" : "off");
 	if (mutex_lock_interruptible(&ab5500_pm_mutex)) {
 		dev_warn(ab5500_dev,
@@ -1186,14 +1201,19 @@ static int ab5500_pcm_hw_params(struct snd_pcm_substream *substream,
 static int ab5500_pcm_prepare(struct snd_pcm_substream *substream,
 			      struct snd_soc_dai *dai)
 {
-	dev_info(ab5500_dev, "%s called.\n", __func__);
-
+	dev_dbg(ab5500_dev, "%s called.\n", __func__);
 	/* Configure registers for either playback or capture */
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+	if ((substream->stream == SNDRV_PCM_STREAM_PLAYBACK) &&
+		!(ab5500_codec_privates[dai->id].playback_active == true)) {
 		power_for_playback(POWER_ON, dai->id);
-	else
+		ab5500_codec_privates[dai->id].playback_active = true;
+	} else if ((substream->stream == SNDRV_PCM_STREAM_CAPTURE) &&
+		!(ab5500_codec_privates[dai->id].capture_active == true)) {
 		power_for_capture(POWER_ON, dai->id);
-	dump_registers(__func__, RX1, AUXO1_ADDER, RX2, AUXO2_ADDER, RX1_DPGA, RX2_DPGA, AUXO1, AUXO2, -1);
+		ab5500_codec_privates[dai->id].capture_active = true;
+	}
+	dump_registers(__func__, RX1, AUXO1_ADDER, RX2,
+			AUXO2_ADDER, RX1_DPGA, RX2_DPGA, AUXO1, AUXO2, -1);
 	return 0;
 }
 
@@ -1204,8 +1224,11 @@ static void ab5500_pcm_shutdown(struct snd_pcm_substream *substream,
 	dev_info(ab5500_dev, "%s called.\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		power_for_playback(POWER_OFF, dai->id);
+		ab5500_codec_privates[dai->id].playback_active = false;
 	} else {
 		power_for_capture(POWER_OFF, dai->id);
+		ab5500_codec_privates[dai->id].capture_active = false;
+
 	}
 	if (!dai->playback_active && !dai->capture_active &&
 	    (read_reg(iface) & I2Sx_MODE_MASK) == 0)

@@ -680,9 +680,9 @@ static void power_widget_unlocked(enum enum_power onoff,
 		unsigned long i;
 		unsigned long *srcs = widget_pm_array[w].source_list;
 		unsigned long *sinks = widget_pm_array[w].sink_list;
-
 		dev_dbg(ab3550_dev, "%s: processing widget %s.\n",
 			__func__, widget_names[w]);
+
 		if (onoff == POWER_ON &&
 		    !bitmap_empty(srcs, number_of_widgets) &&
 		    !has_powered_neighbors(srcs)) {
@@ -877,6 +877,7 @@ static void power_for_playback(enum enum_power onoff, int ifsel)
 {
 	dev_dbg(ab3550_dev, "%s: interface %d power %s.\n", __func__,
 		ifsel, onoff == POWER_ON ? "on" : "off");
+
 	if (mutex_lock_interruptible(&ab3550_pm_mutex)) {
 		dev_warn(ab3550_dev,
 			 "%s: Signal received while waiting on the PM mutex.\n",

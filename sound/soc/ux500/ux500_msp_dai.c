@@ -536,10 +536,12 @@ static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
 
 	/* If already configured -> not errors reported */
 	if (mode_playback) {
-		if (drvdata->configured & PLAYBACK_CONFIGURED)
+		if ((drvdata->configured & PLAYBACK_CONFIGURED) &&
+			(drvdata->playback_active))
 			goto cleanup;
 	} else {
-		if (drvdata->configured & CAPTURE_CONFIGURED)
+		if ((drvdata->configured & CAPTURE_CONFIGURED) &&
+			(drvdata->capture_active))
 			goto cleanup;
 	}
 

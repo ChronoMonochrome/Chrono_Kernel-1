@@ -242,7 +242,6 @@ static int ux500_pcm_hw_free(struct snd_pcm_substream *substream)
 static int ux500_pcm_prepare(struct snd_pcm_substream *substream)
 {
 	pr_debug("%s: Enter\n", __func__);
-
 	return 0;
 }
 
@@ -258,6 +257,12 @@ static int ux500_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		pr_debug("%s: START/PAUSE-RELEASE\n", __func__);
+		if (runtime->status->state == SNDRV_PCM_STATE_XRUN) {
+			pr_debug("XRUN occurred\n");
+				return 0;
+		}
+
 		private->no_of_underruns = 0;
 		private->offset = 0;
 		ret = ux500_msp_dai_i2s_configure_sg(runtime->dma_addr,
@@ -305,7 +310,6 @@ static int ux500_pcm_mmap(struct snd_pcm_substream *substream,
 			struct vm_area_struct *vma)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-
 	pr_debug("%s: Enter.\n", __func__);
 
 	return dma_mmap_coherent(
