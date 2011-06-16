@@ -22,12 +22,16 @@
 
 #include <mach/prcmu.h>
 
+#include "pm/pm.h"
+
 #define GPIO_DATA(_name, first, num)					\
 	{								\
 		.name		= _name,				\
 		.first_gpio	= first,				\
 		.first_irq	= NOMADIK_GPIO_TO_IRQ(first),		\
 		.num_gpio	= num,					\
+		.get_secondary_status = ux500_pm_gpio_read_wake_up_status, \
+		.set_ioforce	= ux500_pm_prcmu_set_ioforce,		\
 	}
 
 #define GPIO_RESOURCE(block)						\
@@ -51,8 +55,8 @@
 	{								\
 		.name		= "gpio",				\
 		.id		= block,				\
-		.num_resources	= 2,					\
-		.resource	= &u5500_gpio_resources[block * 2],	\
+		.num_resources 	= 3,					\
+		.resource	= &u5500_gpio_resources[block * 3],	\
 		.dev = {						\
 			.platform_data = &u5500_gpio_data[block],	\
 		},							\
