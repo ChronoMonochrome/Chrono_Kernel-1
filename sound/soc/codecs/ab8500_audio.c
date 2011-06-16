@@ -14,6 +14,7 @@
  * by the Free Software Foundation.
  */
 
+#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/moduleparam.h>
@@ -1339,10 +1340,111 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_bfifoint,
 	REG_FIFOCONF3, REG_FIFOCONF3_BFIFORUN_SHIFT, enum_dis_ena);
 
 /* Sidetone */
+
+static int st_fir_value_control_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = REG_MASK_ALL;
+
+	return 0;
+}
+
+static int st_fir_value_control_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	return 0;
+}
+
+static int st_fir_value_control_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	int ret;
+	unsigned int val_msb = (int)ucontrol->value.integer.value[0] / 256;
+	unsigned int val_lsb = (int)ucontrol->value.integer.value[0] - val_msb * 256;
+	ret = ab8500_codec_write_reg_audio(ab8500_codec, REG_SIDFIRCOEF1, val_msb);
+	ret |= ab8500_codec_write_reg_audio(ab8500_codec, REG_SIDFIRCOEF2, val_lsb);
+	if (ret < 0) {
+		pr_err("%s: ERROR: Failed to write FIR-coeffecient!\n", __func__);
+		return 0;
+	}
+	return 1;
+}
+
+static const struct snd_kcontrol_new st_fir_value_control = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "Sidetone FIR Coeffecient Value",
+	.index = 0,
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.info = st_fir_value_control_info,
+	.get = st_fir_value_control_get,
+	.put = st_fir_value_control_put,
+	.private_value = 1 /* ULPCLK */
+};
+
+static int st_fir_apply_control_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = 2;
+	if (uinfo->value.enumerated.item) {
+		uinfo->value.enumerated.item = 1;
+		strcpy(uinfo->value.enumerated.name, "Apply");
+	} else {
+		strcpy(uinfo->value.enumerated.name, "Ready");
+	}
+	return 0;
+}
+
+static int st_fir_apply_control_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	int reg = ab8500_codec_read_reg_audio(ab8500_codec, REG_SIDFIRADR);
+	ucontrol->value.enumerated.item[0] = reg & BMASK(REG_SIDFIRADR_FIRSIDSET);
+
+	return 0;
+}
+
+static int st_fir_apply_control_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	int ret;
+
+	if (ucontrol->value.enumerated.item[0] != 0) {
+		ret = ab8500_codec_write_reg_audio(ab8500_codec,
+						REG_SIDFIRADR,
+						BMASK(REG_SIDFIRADR_FIRSIDSET));
+		if (ret < 0) {
+			pr_err("%s: ERROR: Failed to apply FIR-coeffecients!\n", __func__);
+			return 0;
+		}
+		pr_debug("%s: FIR-coeffecients applied.\n", __func__);
+	}
+
+	ret = ab8500_codec_write_reg_audio(ab8500_codec, REG_SIDFIRADR, 0);
+	if (ret < 0)
+		pr_err("%s: ERROR: Going to ready failed!\n", __func__);
+
+	return 1;
+}
+
+static const struct snd_kcontrol_new st_fir_apply_control = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "Sidetone FIR Apply Coeffecients",
+	.index = 0,
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.info = st_fir_apply_control_info,
+	.get = st_fir_apply_control_get,
+	.put = st_fir_apply_control_put,
+	.private_value = 0 /* Ready */
+};
+
 static const char *enum_coeffctrl[] = {"Ready", "Apply"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_coeffctrl,
 	REG_SIDFIRADR, REG_SIDFIRADR_FIRSIDSET, enum_coeffctrl);
-
 
 /* TODO: move to DAPM */
 static SOC_ENUM_SINGLE_DECL(soc_enum_enfirsids,
@@ -1596,18 +1698,6 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_SIDFIRADR,
 		REG_SIDFIRADR_ADDRESS_SHIFT,
 		REG_SIDFIRADR_ADDRESS_MAX,
-		NORMAL),
-	SOC_ENUM("Sidetone FIR Apply Coeffecients", soc_enum_coeffctrl),
-
-	SOC_SINGLE("Sidetone FIR Coeffecient Value MSB",
-		REG_SIDFIRCOEF1,
-		REG_SIDFIRCOEFX_VALUE_SHIFT,
-		REG_SIDFIRCOEFX_VALUE_MAX,
-		NORMAL),
-	SOC_SINGLE("Sidetone FIR Coeffecient Value LSB",
-		REG_SIDFIRCOEF2,
-		REG_SIDFIRCOEFX_VALUE_SHIFT,
-		REG_SIDFIRCOEFX_VALUE_MAX,
 		NORMAL),
 };
 
@@ -2240,6 +2330,7 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 	for (i = REG_AUDREV; i >= REG_POWERUP; i--)
 		ab8500_codec_write_reg_audio(codec, i, cache[i]);
 
+	/* Add controls */
 	ret = snd_soc_add_controls(codec, ab8500_snd_controls,
 			ARRAY_SIZE(ab8500_snd_controls));
 	if (ret < 0) {
@@ -2248,6 +2339,11 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 		return ret;
 	}
 
+	/* Add controls with events */
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&st_fir_value_control, codec));
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&st_fir_apply_control, codec));
+
+	/* Add DAPM-widgets */
 	ret = ab8500_codec_add_widgets(codec);
 	if (ret < 0) {
 		pr_err("%s: Failed add widgets (%d).\n", __func__, ret);
