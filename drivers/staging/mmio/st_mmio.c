@@ -513,7 +513,7 @@ out:
 	return ret;
 }
 
-static int mmio_ioctl(struct inode *node, struct file *filp, u32 cmd,
+static long mmio_ioctl(struct file *filp, u32 cmd,
 		      unsigned long arg)
 {
 	struct mmio_input_output_t data;
