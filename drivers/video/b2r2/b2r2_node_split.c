@@ -46,11 +46,25 @@ static const u32 vmx_rgb_to_yuv[] = {
 	B2R2_VMX3_RGB_TO_YUV_601_VIDEO,
 };
 
+static const u32 vmx_rgb_to_blt_yuv888[] = {
+	B2R2_VMX0_RGB_TO_BLT_YUV888_601_VIDEO,
+	B2R2_VMX1_RGB_TO_BLT_YUV888_601_VIDEO,
+	B2R2_VMX2_RGB_TO_BLT_YUV888_601_VIDEO,
+	B2R2_VMX3_RGB_TO_BLT_YUV888_601_VIDEO,
+};
+
 static const u32 vmx_yuv_to_rgb[] = {
 	B2R2_VMX0_YUV_TO_RGB_601_VIDEO,
 	B2R2_VMX1_YUV_TO_RGB_601_VIDEO,
 	B2R2_VMX2_YUV_TO_RGB_601_VIDEO,
 	B2R2_VMX3_YUV_TO_RGB_601_VIDEO,
+};
+
+static const u32 vmx_blt_yuv888_to_rgb[] = {
+	B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO,
+	B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO,
+	B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO,
+	B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO,
 };
 
 static const u32 vmx_yvu_to_rgb[] = {
@@ -250,6 +264,32 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	if (this->flags & B2R2_BLT_FLAG_BLUR) {
 		ret = -ENOSYS;
 		goto unsupported;
+	}
+
+	/* Unsupported formats on src */
+	switch (req->user_req.src_img.fmt) {
+	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+		if (!is_rgb_fmt(req->user_req.dst_img.fmt)) {
+			ret = -ENOSYS;
+			goto unsupported;
+		}
+		break;
+	default:
+		break;
+	}
+
+	/* Unsupported formats on dst */
+	switch (req->user_req.dst_img.fmt) {
+	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+		if (!is_rgb_fmt(req->user_req.src_img.fmt)) {
+			ret = -ENOSYS;
+			goto unsupported;
+		}
+		break;
+	default:
+		break;
 	}
 
 	if ((this->flags & B2R2_BLT_FLAG_SOURCE_COLOR_KEY) &&
@@ -651,6 +691,9 @@ static int analyze_fmt_conv(struct b2r2_node_split_buf *src,
 	if (is_rgb_fmt(src->fmt)) {
 		if (is_yvu_fmt(dst->fmt))
 			*vmx = &vmx_rgb_to_yvu[0];
+		else if (dst->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888)
+			*vmx = &vmx_rgb_to_blt_yuv888[0];
 		else if (is_yuv_fmt(dst->fmt))
 			*vmx = &vmx_rgb_to_yuv[0];
 		else if (is_bgr_fmt(dst->fmt))
@@ -660,14 +703,30 @@ static int analyze_fmt_conv(struct b2r2_node_split_buf *src,
 			*vmx = &vmx_yvu_to_rgb[0];
 		else if (is_bgr_fmt(dst->fmt))
 			*vmx = &vmx_yvu_to_bgr[0];
+		else if (dst->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888)
+			BUG_ON(1);
 		else if (is_yuv_fmt(dst->fmt) &&
 				!is_yvu_fmt(dst->fmt))
 			*vmx = &vmx_yvu_to_yuv[0];
+	} else if (src->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+			src->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888) {
+		if (is_rgb_fmt(dst->fmt))
+			*vmx = &vmx_blt_yuv888_to_rgb[0];
+		else
+			/*
+			 * not supported, b2r2_node_split_analyze()
+			 * should have returned ENOSYS.
+			 */
+			BUG_ON(1);
 	} else if (is_yuv_fmt(src->fmt)) {
 		if (is_rgb_fmt(dst->fmt))
 			*vmx = &vmx_yuv_to_rgb[0];
 		else if (is_bgr_fmt(dst->fmt))
 			*vmx = &vmx_yuv_to_bgr[0];
+		else if (dst->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888)
+			BUG_ON(1);
 		else if (is_yvu_fmt(dst->fmt))
 			*vmx = &vmx_yvu_to_yuv[0];
 	} else if (is_bgr_fmt(src->fmt)) {
@@ -675,6 +734,9 @@ static int analyze_fmt_conv(struct b2r2_node_split_buf *src,
 			*vmx = &vmx_rgb_to_bgr[0];
 		else if (is_yvu_fmt(dst->fmt))
 			*vmx = &vmx_bgr_to_yvu[0];
+		else if (dst->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888)
+			BUG_ON(1);
 		else if (is_yuv_fmt(dst->fmt))
 			*vmx = &vmx_bgr_to_yuv[0];
 	}

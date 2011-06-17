@@ -143,7 +143,8 @@ enum b2r2_ack {
 	B2R2_ACK_MODE_BYPASS_S2_S3 =                 0x7 << B2R2_ACK_MODE_SHIFT,
 	B2R2_ACK_MODE_CLIPMASK_LOGICAL_SECOND_PASS = 0x8 << B2R2_ACK_MODE_SHIFT,
 	B2R2_ACK_MODE_CLIPMASK_XYL_LOGICAL =         0x9 << B2R2_ACK_MODE_SHIFT,
-	B2R2_ACK_MODE_CLIPMASK_XYL_BLEND_NOT_PREMULT = 0xa << B2R2_ACK_MODE_SHIFT,
+	B2R2_ACK_MODE_CLIPMASK_XYL_BLEND_NOT_PREMULT =
+						     0xa << B2R2_ACK_MODE_SHIFT,
 	B2R2_ACK_MODE_CLIPMASK_XYL_BLEND_PREMULT =   0xb << B2R2_ACK_MODE_SHIFT,
 
 	/* ALU channel selection */
@@ -633,5 +634,50 @@ enum b2r2_plug_page_size {
 #define B2R2_VMX1_YVU_TO_YUV_601_VIDEO 0x00040000
 #define B2R2_VMX2_YVU_TO_YUV_601_VIDEO 0x20000000
 #define B2R2_VMX3_YVU_TO_YUV_601_VIDEO 0x00000000
+
+/* VMX register values for RGB to BLT_YUV888 conversion */
+
+/* 601 Video Matrix (standard 601 conversion) */
+/*
+ * BLT_YUV888 has color components laid out in memory as V, U, Y, (Alpha)
+ * with V at the first byte (due to little endian addressing).
+ * B2R2 expects them to be as U, Y, V, (A)
+ * with U at the first byte.
+ * Note: RGB -> BLT_YUV888 values are calculated by multiplying
+ * the RGB -> YUV matrix [A], with [S] to form [S]x[A] where
+ *     |0 1 0|
+ * S = |0 0 1|
+ *     |1 0 0|
+ * Essentially changing the order of rows in the original
+ * matrix [A].
+ * row1 -> row3
+ * row2 -> row1
+ * row3 -> row2
+ * Values in the offset vector are swapped in the same manner.
+ */
+#define B2R2_VMX0_RGB_TO_BLT_YUV888_601_VIDEO 0x0982581d
+#define B2R2_VMX1_RGB_TO_BLT_YUV888_601_VIDEO 0xfa9ea483
+#define B2R2_VMX2_RGB_TO_BLT_YUV888_601_VIDEO 0x107e4beb
+#define B2R2_VMX3_RGB_TO_BLT_YUV888_601_VIDEO 0x00020080
+
+/* VMX register values for BLT_YUV888 to RGB conversion */
+
+/*
+ * Note: BLT_YUV888 -> RGB values are calculated by multiplying
+ * the YUV -> RGB matrix [A], with [S] to form [A]x[S] where
+ *     |0 0 1|
+ * S = |1 0 0|
+ *     |0 1 0|
+ * Essentially changing the order of columns in the original
+ * matrix [A].
+ * col1 -> col3
+ * col2 -> col1
+ * col3 -> col2
+ * Values in the offset vector remain unchanged.
+ */
+#define B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO 0x20000121
+#define B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO 0x201ea74c
+#define B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO 0x2006f000
+#define B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO 0x34f21322
 
 #endif /* B2R2_HW_H__ */

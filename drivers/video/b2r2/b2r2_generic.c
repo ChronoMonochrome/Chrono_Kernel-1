@@ -543,22 +543,27 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
-		/*
-		 * Set up IVMX
-		 * The destination format is in fact YUV,
-		 * but the input stage stores the data in
-		 * an intermediate buffer which is RGB.
-		 * Hence the conversion from YUV to RGB.
-		 */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-		node->node.GROUP15.B2R2_VMX0 = B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 = B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 = B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
-
 		if ((req->user_req.flags & B2R2_BLT_FLAG_SOURCE_FILL) != 0) {
 			fill_fmt = B2R2_NATIVE_AYCBCR8888;
+			/*
+			 * Set up IVMX
+			 * The destination format is in fact YUV,
+			 * but the input stage stores the data in
+			 * an intermediate buffer which is RGB.
+			 * Hence the conversion from YUV to RGB.
+			 * Format of the supplied src_color is
+			 * B2R2_BLT_FMT_32_BIT_AYUV8888.
+			 */
+			node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
+			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
+			node->node.GROUP15.B2R2_VMX0 =
+					B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO;
+			node->node.GROUP15.B2R2_VMX1 =
+					B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO;
+			node->node.GROUP15.B2R2_VMX2 =
+					B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO;
+			node->node.GROUP15.B2R2_VMX3 =
+					B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO;
 		} else {
 			/* SOURCE_FILL_RAW */
 			bool dst_yuv_planar =
@@ -599,7 +604,22 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 				fill_fmt = to_native_fmt(dst_img->fmt);
 			}
 
-			if (dst_img->fmt == B2R2_BLT_FMT_Y_CB_Y_CR) {
+			switch (dst_img->fmt) {
+			case B2R2_BLT_FMT_24_BIT_YUV888:
+			case B2R2_BLT_FMT_32_BIT_AYUV8888:
+				node->node.GROUP0.B2R2_INS |=
+					B2R2_INS_IVMX_ENABLED;
+				node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
+				node->node.GROUP15.B2R2_VMX0 =
+					B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO;
+				node->node.GROUP15.B2R2_VMX1 =
+					B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO;
+				node->node.GROUP15.B2R2_VMX2 =
+					B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO;
+				node->node.GROUP15.B2R2_VMX3 =
+					B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO;
+				break;
+			case B2R2_BLT_FMT_Y_CB_Y_CR:
 				/*
 				 * Setup input VMX to convert YVU to
 				 * RGB 601 VIDEO
@@ -614,6 +634,27 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 					B2R2_VMX2_YVU_TO_RGB_601_VIDEO;
 				node->node.GROUP15.B2R2_VMX3 =
 					B2R2_VMX3_YVU_TO_RGB_601_VIDEO;
+				break;
+			default:
+				/*
+				 * Set up IVMX
+				 * The destination format is in fact YUV,
+				 * but the input stage stores the data in
+				 * an intermediate buffer which is RGB.
+				 * Hence the conversion from YUV to RGB.
+				 */
+				node->node.GROUP0.B2R2_INS |=
+					B2R2_INS_IVMX_ENABLED;
+				node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
+				node->node.GROUP15.B2R2_VMX0 =
+					B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
+				node->node.GROUP15.B2R2_VMX1 =
+					B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
+				node->node.GROUP15.B2R2_VMX2 =
+					B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
+				node->node.GROUP15.B2R2_VMX3 =
+					B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
+				break;
 			}
 		}
 		break;
@@ -766,36 +807,54 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_RGB_TO_BGR;
 		break;
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
+		/*
+		 * Setup input VMX to convert YVU to RGB 601 VIDEO
+		 * Chroma components are swapped so
+		 * it is YVU and not YUV.
+		 */
+		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
+		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
+		node->node.GROUP15.B2R2_VMX0 =
+			B2R2_VMX0_YVU_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX1 =
+			B2R2_VMX1_YVU_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX2 =
+			B2R2_VMX2_YVU_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX3 =
+			B2R2_VMX3_YVU_TO_RGB_601_VIDEO;
+		break;
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
-	case B2R2_BLT_FMT_24_BIT_YUV888:
-	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 		/* Set up IVMX */
 		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
 		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-		if (src_img->fmt == B2R2_BLT_FMT_Y_CB_Y_CR) {
-			/*
-			 * Setup input VMX to convert YVU to RGB 601 VIDEO
-			 * Chroma components are swapped so
-			 * it is YVU and not YUV.
-			 */
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_YVU_TO_RGB_601_VIDEO;
-		} else {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
-		}
+		node->node.GROUP15.B2R2_VMX0 =
+			B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX1 =
+			B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX2 =
+			B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX3 =
+			B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
+		break;
+	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+		/*
+		 * Set up IVMX.
+		 * Color components are laid out in memory as V, U, Y, (A)
+		 * with V at the first byte (due to little endian addressing).
+		 * B2R2 expects them to be as U, Y, V, (A)
+		 * with U at the first byte.
+		 */
+		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
+		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
+		node->node.GROUP15.B2R2_VMX0 =
+			B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX1 =
+			B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX2 =
+			B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO;
+		node->node.GROUP15.B2R2_VMX3 =
+			B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO;
 		break;
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
@@ -2002,13 +2061,13 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 			node->node.GROUP0.B2R2_INS |= B2R2_INS_OVMX_ENABLED;
 			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_OVMX;
 			node->node.GROUP16.B2R2_VMX0 =
-				B2R2_VMX0_RGB_TO_YUV_601_VIDEO;
+				B2R2_VMX0_RGB_TO_BLT_YUV888_601_VIDEO;
 			node->node.GROUP16.B2R2_VMX1 =
-				B2R2_VMX1_RGB_TO_YUV_601_VIDEO;
+				B2R2_VMX1_RGB_TO_BLT_YUV888_601_VIDEO;
 			node->node.GROUP16.B2R2_VMX2 =
-				B2R2_VMX2_RGB_TO_YUV_601_VIDEO;
+				B2R2_VMX2_RGB_TO_BLT_YUV888_601_VIDEO;
 			node->node.GROUP16.B2R2_VMX3 =
-				B2R2_VMX3_RGB_TO_YUV_601_VIDEO;
+				B2R2_VMX3_RGB_TO_BLT_YUV888_601_VIDEO;
 			break;
 		default:
 			break;
