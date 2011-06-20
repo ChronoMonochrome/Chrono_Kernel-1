@@ -51,8 +51,8 @@ static pin_cfg_t xshutdown_fw[] = {
 	GPIO142_IP_GPIO3
 };
 static pin_cfg_t xshutdown_disable[] = {
-	GPIO141_GPIO,
-	GPIO142_GPIO
+	GPIO141_GPIO | PIN_OUTPUT_LOW,
+	GPIO142_GPIO | PIN_OUTPUT_LOW
 };
 
 struct mmio_board_data{
