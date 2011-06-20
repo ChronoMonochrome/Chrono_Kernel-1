@@ -16,8 +16,6 @@
 #include "../codecs/ab5500.h"
 int ux500_ab5500_startup(struct snd_pcm_substream *substream)
 {
-	printk(KERN_DEBUG "%s: Enter.\n", __func__);
-
 	return 0;
 }
 

@@ -135,7 +135,7 @@ static const struct snd_kcontrol_new mclk_input_control = {
 static int enable_regulator(enum regulator_idx idx)
 {
 	int ret;
-pr_err("%s: DORIAN regulator %d.\n", __func__, (int)idx);
+
 	if (reg_enabled[idx])
 		return 0;
 
@@ -313,7 +313,7 @@ int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 
 void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 {
-	pr_info("%s: Enter\n", __func__);
+	pr_debug("%s: Enter\n", __func__);
 
 	/* Reset slots configuration to default(s) */
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
