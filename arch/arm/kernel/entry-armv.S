@@ -408,7 +408,7 @@ ENDPROC(__pabt_svc)
 	@ perform a quick test inline since it should be false
 	@ 99.9999% of the time.  The rest is done out of line.
 	cmp	r4, #TASK_SIZE
-	blhs	kuser_cmpxchg_fixup
+	blhs	kuser_cmpxchg64_fixup
 #endif
 #endif
 	.endm
