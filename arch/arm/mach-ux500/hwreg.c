@@ -300,23 +300,19 @@ static int hwreg_address_open(struct inode *inode, struct file *file)
 static ssize_t hwreg_address_write(struct file *file,
 	const char __user *user_buf, size_t count, loff_t *ppos)
 {
-	char buf[32];
-	int buf_size;
+	int err;
 	unsigned long user_address;
 
-	/* Get userspace string and assure termination */
-	buf_size = min(count, (sizeof(buf) - 1));
-	if (copy_from_user(buf, user_buf, buf_size))
-		return -EFAULT;
-	buf[buf_size] = 0;
+	err = kstrtoul_from_user(user_buf, count, 0, &user_address);
 
-	if(strict_strtoul(buf, 0, &user_address))
-		return -EINVAL;
+	if (err)
+		return err;
+
 	if (hwreg_io_ptov(user_address)==NULL)
 		return -EADDRNOTAVAIL;
 
 	debug_address = user_address;
-	return buf_size;
+	return count;
 }
 
 static int hwreg_value_print(struct seq_file *s, void *p)
@@ -338,24 +334,19 @@ static int hwreg_value_open(struct inode *inode, struct file *file)
 static ssize_t hwreg_value_write(struct file *file,
 	const char __user *user_buf, size_t count, loff_t *ppos)
 {
-	char buf[32];
-	int buf_size;
+	int err;
 	unsigned long user_val;
 	void *ptr;
 
-	/* Get userspace string and assure termination */
-	buf_size = min(count, (sizeof(buf)-1));
-	if (copy_from_user(buf, user_buf, buf_size))
-		return -EFAULT;
-	buf[buf_size] = 0;
+	err = kstrtoul_from_user(user_buf, count, 0, &user_val);
 
-	if (strict_strtoul(buf, 0, &user_val))
-		return -EINVAL;
+	if (err)
+		return err;
 
 	if ((ptr = hwreg_io_ptov(debug_address)) == NULL)
 		return -EFAULT;
 	writel(user_val, ptr);
-	return buf_size;
+	return count;
 }
 
 static const struct file_operations hwreg_address_fops = {
