@@ -390,6 +390,26 @@ static /* TODO: const, compiler bug? */ struct chnl_config chnl_configs[] = {
 	  .fabmux = true, .fabmux_set = true },
 };
 
+#define DSI_READ_TIMEOUT 10
+#define DSI_READ_DELAY 100
+
+/*
+ * Wait for CSM_RUNNING, all data sent for display
+ */
+static inline void wait_while_dsi_running(int lnk)
+{
+	u8 counter = DSI_READ_TIMEOUT;
+	while (dsi_rfld(lnk, DSI_CMD_MODE_STS, CSM_RUNNING) && --counter) {
+		dev_vdbg(&mcde_dev->dev,
+			"%s: DSI link %u read running state retry %u times\n"
+			, __func__, lnk, (DSI_READ_TIMEOUT - counter));
+		udelay(DSI_READ_DELAY);
+	}
+	if (!counter)
+		dev_warn(&mcde_dev->dev,
+			"%s: DSI link %u read timeout!\n", __func__, lnk);
+}
+
 static int enable_clocks_and_power(struct platform_device *pdev)
 {
 	struct mcde_platform_data *pdata = pdev->dev.platform_data;
@@ -565,19 +585,10 @@ static int disable_mcde_hw(bool force_disable)
 		struct mcde_chnl_state *chnl = &channels[i];
 		if (force_disable ||
 			(chnl->enabled && !chnl->continous_running)) {
-			u8 counter = 10;
 			disable_channel(chnl);
 			if (chnl->port.type == MCDE_PORTTYPE_DSI)
-				/*
-				* Wait for CSM_RUNNING,
-				* all data sent for display
-				*/
-				while (dsi_rfld(chnl->port.link,
-					DSI_CMD_MODE_STS, CSM_RUNNING)
-							&& counter--) {
-					cpu_relax();
-					udelay(100);
-				}
+				wait_while_dsi_running(chnl->port.link);
+
 			if (chnl->formatter_updated) {
 				disable_formatter(&chnl->port);
 				chnl->formatter_updated = false;
@@ -2131,19 +2142,7 @@ static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
 		(void)update_channel_static_registers(chnl);
 
 	wait_for_channel(chnl);
-	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
-		u8 counter = 10;
-		/*
-		* Wait for CSM_RUNNING,
-		* all data sent for display
-		*/
-		while (dsi_rfld(chnl->port.link,
-			DSI_CMD_MODE_STS, CSM_RUNNING)
-					&& counter--) {
-			cpu_relax();
-			udelay(100);
-		}
-	}
+	wait_while_dsi_running(chnl->port.link);
 
 	if (dcs) {
 		wrdat[0] = cmd;
@@ -2243,19 +2242,7 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int *len)
 		(void)update_channel_static_registers(chnl);
 
 	wait_for_channel(chnl);
-	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
-		u8 counter = 10;
-		/*
-		* Wait for CSM_RUNNING,
-		* all data sent for display
-		*/
-		while (dsi_rfld(chnl->port.link,
-			DSI_CMD_MODE_STS, CSM_RUNNING)
-					&& counter--) {
-			cpu_relax();
-			udelay(100);
-		}
-	}
+	wait_while_dsi_running(chnl->port.link);
 
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, READ_EN, true);
@@ -2622,11 +2609,7 @@ static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
 			chnl->port.sync_src == MCDE_SYNCSRC_BTA) {
 			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
 				enable_channel(chnl);
-			while (dsi_rfld(chnl->port.link, DSI_CMD_MODE_STS,
-				CSM_RUNNING)) {
-				cpu_relax();
-				udelay(100);
-			}
+			wait_while_dsi_running(chnl->port.link);
 			dsi_te_request(chnl);
 		}
 	} else {
@@ -2960,19 +2943,9 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 	/* This channel is disabled here */
 	chnl->enabled = false;
 	if (mcde_is_enabled && chnl->formatter_updated
-				&& chnl->port.type == MCDE_PORTTYPE_DSI) {
-		u8 counter = 10;
-		/*
-		* Wait for CSM_RUNNING,
-		* all data sent for display
-		*/
-		while (dsi_rfld(chnl->port.link,
-			DSI_CMD_MODE_STS, CSM_RUNNING)
-					&& counter--) {
-			cpu_relax();
-			udelay(100);
-		}
-	}
+				&& chnl->port.type == MCDE_PORTTYPE_DSI)
+		wait_while_dsi_running(chnl->port.link);
+
 	if (chnl->formatter_updated) {
 		disable_formatter(&chnl->port);
 		chnl->formatter_updated = false;
