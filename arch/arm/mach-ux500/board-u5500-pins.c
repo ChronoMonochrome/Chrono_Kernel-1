@@ -94,6 +94,9 @@ static pin_cfg_t u5500_pins_default[] = {
 	/* Camera & MMIO XshutDown*/
 	GPIO1_GPIO		| PIN_OUTPUT_LOW,
 	GPIO2_GPIO		| PIN_OUTPUT_LOW,
+
+	GPIO202_ACCU0_RXD	| PIN_INPUT_PULLUP,
+	GPIO203_ACCU0_TXD	| PIN_OUTPUT_HIGH,
 };
 
 static UX500_PINS(u5500_pins_i2c1,
