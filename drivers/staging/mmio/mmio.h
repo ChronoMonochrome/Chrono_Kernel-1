@@ -12,6 +12,7 @@
 #include <linux/ioctl.h>
 
 #define MMIO_NAME "mmio_camera"
+#define SRA_SUPPORT 1
 
 #ifdef SRA_SUPPORT
 #define SREG_16_BIT (0x1)
