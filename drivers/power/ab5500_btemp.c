@@ -536,7 +536,15 @@ static int ab5500_btemp_get_property(struct power_supply *psy,
 		val->intval = di->bat->bat_type[di->bat->batt_id].name;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
-		val->intval = di->bat_temp * 10;
+		if (di->bat->batt_id == BATTERY_UNKNOWN)
+		/*
+		 * In case the battery is not identified, its assumed that
+		 * we are using the power supply and since no monitoring is
+		 * done for the same, a nominal temp is hardocded.
+		 */
+			val->intval = 250;
+		else
+			val->intval = di->bat_temp * 10;
 		break;
 	default:
 		return -EINVAL;
