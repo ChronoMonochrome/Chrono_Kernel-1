@@ -694,9 +694,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("AD1 Channel Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("AD2 Channel Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 
-	SND_SOC_DAPM_MIXER("AD1 Enable", REG_ADPATHENA,
-			REG_ADPATHENA_ENAD12, 0, NULL, 0),
-	SND_SOC_DAPM_MIXER("AD2 Enable", REG_ADPATHENA,
+	SND_SOC_DAPM_MIXER("AD12 Enable", REG_ADPATHENA,
 			REG_ADPATHENA_ENAD12, 0, NULL, 0),
 
 	SND_SOC_DAPM_AIF_OUT("AD_OUT1", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
@@ -916,11 +914,11 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"AD1 Channel Gain", NULL, "AD 1 Select Capture Route"},
 	{"AD2 Channel Gain", NULL, "AD 2 Select Capture Route"},
 
-	{"AD1 Enable", NULL, "AD1 Channel Gain"},
-	{"AD2 Enable", NULL, "AD2 Channel Gain"},
+	{"AD12 Enable", NULL, "AD1 Channel Gain"},
+	{"AD12 Enable", NULL, "AD2 Channel Gain"},
 
-	{"AD_OUT1", NULL, "AD1 Enable"},
-	{"AD_OUT2", NULL, "AD2 Enable"},
+	{"AD_OUT1", NULL, "AD12 Enable"},
+	{"AD_OUT2", NULL, "AD12 Enable"},
 
 
 	/* Microphone 1 path */
@@ -1014,11 +1012,11 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	/* Sidetone Filter path */
 
-	{"Sidetone Left Source Playback Route", "LineIn Left", "AD1 Enable"},
-	{"Sidetone Left Source Playback Route", "LineIn Right", "AD2 Enable"},
+	{"Sidetone Left Source Playback Route", "LineIn Left", "AD12 Enable"},
+	{"Sidetone Left Source Playback Route", "LineIn Right", "AD12 Enable"},
 	{"Sidetone Left Source Playback Route", "Mic 1", "AD3 Enable"},
 	{"Sidetone Left Source Playback Route", "Headset Left", "DA_IN1"},
-	{"Sidetone Right Source Playback Route", "LineIn Right", "AD2 Enable"},
+	{"Sidetone Right Source Playback Route", "LineIn Right", "AD12 Enable"},
 	{"Sidetone Right Source Playback Route", "Mic 1", "AD3 Enable"},
 	{"Sidetone Right Source Playback Route", "DMic 4", "AD4 Enable"},
 	{"Sidetone Right Source Playback Route", "Headset Right", "DA_IN2"},
