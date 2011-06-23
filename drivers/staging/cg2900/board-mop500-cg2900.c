@@ -12,6 +12,7 @@
 #include <asm/mach-types.h>
 
 #include <linux/gpio.h>
+#include <linux/gpio/nomadik.h>
 #include <linux/ioport.h>
 #include <linux/platform_device.h>
 
