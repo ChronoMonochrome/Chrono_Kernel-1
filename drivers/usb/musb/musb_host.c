@@ -129,7 +129,7 @@ static void musb_h_tx_flush_fifo(struct musb_hw_ep *ep)
 		retries--;
 		if (retries == 0) {
 			/* can happen if the USB clocks are OFF */
-			DBG(3, "Could not flush host TX%d "
+			dev_dbg(musb->controller, "Could not flush host TX%d "
 				"fifo: csr=0x%04x\n", ep->epnum, csr);
 			break;
 		}
