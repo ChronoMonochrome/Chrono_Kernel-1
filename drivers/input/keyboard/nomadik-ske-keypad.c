@@ -22,7 +22,7 @@
 #include <linux/regulator/consumer.h>
 
 #include <plat/ske.h>
-#include <plat/gpio.h>
+#include <linux/gpio/nomadik.h>
 
 /* SKE_CR bits */
 #define SKE_KPMLT	(0x1 << 6)
