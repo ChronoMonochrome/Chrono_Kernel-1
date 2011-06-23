@@ -12,13 +12,13 @@
 #include <linux/errno.h>	/* Defines standard err codes */
 #include <linux/io.h>
 #include <linux/miscdevice.h>
-#include <linux/mmio.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 #include <linux/workqueue.h>
 #include <mach/prcmu.h>
+#include "mmio.h"
 
 #define ISP_REGION_IO				(0xE0000000)
 #define SIA_ISP_REG_ADDR			(0x521E4)
