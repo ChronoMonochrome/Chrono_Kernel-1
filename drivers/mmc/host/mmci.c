@@ -73,7 +73,6 @@ struct variant_data {
 	bool			blksz_datactrl16;
 	unsigned int		pwrreg_powerup;
 	bool			non_power_of_2_blksize;
-	bool			blksz_datactrl16;
 };
 
 static struct variant_data variant_arm = {
@@ -81,12 +80,6 @@ static struct variant_data variant_arm = {
 	.fifohalfsize		= 8 * 4,
 	.datalength_bits	= 16,
 	.pwrreg_powerup		= MCI_PWR_UP,
-};
-
-static struct variant_data variant_arm_extended_fifo = {
-	.fifosize		= 128 * 4,
-	.fifohalfsize		= 64 * 4,
-	.datalength_bits	= 16,
 };
 
 static struct variant_data variant_arm_extended_fifo = {
