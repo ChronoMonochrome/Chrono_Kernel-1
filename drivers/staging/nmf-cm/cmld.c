@@ -17,6 +17,7 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/sched.h>
 
 #include <cm/inc/cm_def.h>
 #include <cm/engine/api/cm_engine.h>

@@ -18,6 +18,7 @@
 #include <cm/engine/api/control/configuration_engine.h>
 #include <cm/engine/api/perfmeter_engine.h>
 #include <cm/engine/os_adaptation_layer/inc/os_adaptation_layer.h>
+#include <linux/plist.h>
 
 #include "configuration.h"
 

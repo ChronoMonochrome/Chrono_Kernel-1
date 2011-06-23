@@ -14,6 +14,7 @@
 #include <linux/plist.h>
 #include <linux/slab.h>
 #include <linux/spinlock_types.h>
+#include <linux/sched.h>
 
 #include <cm/engine/api/control/irq_engine.h>
 
