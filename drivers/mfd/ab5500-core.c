@@ -1314,6 +1314,10 @@ static const struct ab_family_id ids[] __initdata = {
 		.id = AB5500_1_1,
 		.name = "1.1"
 	},
+	{
+		.id = AB5500_2_0,
+		.name = "2.0"
+	},
 	/* Terminator */
 	{
 		.id = 0x00,
