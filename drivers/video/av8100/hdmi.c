@@ -23,7 +23,6 @@
 #include "hdmi_loc.h"
 #include <linux/slab.h>
 #include <linux/sched.h>
-#include <linux/smp_lock.h>
 
 #define SYSFS_EVENT_FILENAME "evread"
 
@@ -2104,9 +2103,7 @@ static long hdmi_unlocked_ioctl(struct file *file, unsigned int cmd,
 {
 	int ret;
 
-	lock_kernel();
 	ret = hdmi_ioctl(file, cmd, arg);
-	unlock_kernel();
 
 	return ret;
 }
