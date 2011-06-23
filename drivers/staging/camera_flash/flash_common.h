@@ -2,6 +2,7 @@
 #define __FLASH_COMMON_H__
 
 #include "camera_flash_bitfields.h"
+#include "camera_flash.h"
 
 struct flash_chip_ops{
 	int (*get_modes)( void *priv_data, unsigned long *modes);
