@@ -14,6 +14,7 @@
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
+#include <linux/sched.h>
 #include <asm/atomic.h>
 
 #include <mach/isa_ioctl.h>
