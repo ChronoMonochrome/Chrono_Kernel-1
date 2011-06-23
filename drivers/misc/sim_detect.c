@@ -115,6 +115,7 @@ static int __devinit sim_detect_probe(struct platform_device *pdev)
 		       "sim activity", sim_detect);
 	if (ret < 0)
 		goto out_free_irq;
+	return 0;
 out_free_irq:
 	modem_put(sim_detect->modem);
 	platform_set_drvdata(pdev, NULL);
