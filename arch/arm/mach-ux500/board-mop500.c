@@ -588,7 +588,7 @@ static struct platform_device ux500_backlight_device[] = {
 
 #ifdef CONFIG_U8500_SIM_DETECT
 static struct sim_detect_platform_data sim_detect_pdata = {
-	.irq_num		= NOMADIK_GPIO_TO_IRQ(MOP500_AB8500_GPIO(12)),
+	.irq_num		= NOMADIK_GPIO_TO_IRQ(MOP500_AB8500_GPIO(6)),
 };
 struct platform_device u8500_sim_detect_device = {
 	.name	= "sim_detect",
