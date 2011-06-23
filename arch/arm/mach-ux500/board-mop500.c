@@ -800,9 +800,8 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 	&snowball_led_dev,
 	&snowball_key_dev,
 	&snowball_sbnet_dev,
-	&ab8500_device,
+//	&ab8500_device,
 	&snowball_gpio_wlan_vbat_regulator_device,
-	&ux500_hwmem_device,
 	&u8500_mcde_device,
 	&u8500_b2r2_device,
 };
@@ -813,10 +812,12 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 */
 static void accessory_detect_config(void)
 {
+#ifdef CONFIG_INPUT_AB8500_ACCDET
 	if (machine_is_hrefv60())
 		ab8500_accdet_pdata.is_detection_inverted = true;
 	else
 		ab8500_accdet_pdata.is_detection_inverted = false;
+#endif
 }
 
 static void __init mop500_init_machine(void)
