@@ -37,8 +37,6 @@
 
 /* AB5500 Charger constants */
 #define AB5500_USB_LINK_STATUS		0x78
-#define USB_CHARG_DET_ENA_MASK		0x01
-#define USB_CHARG_DET_ENA		0x01
 #define CHARGER_REV_SUP			0x10
 #define SW_EOC				0x40
 #define USB_CHAR_DET			0x02
@@ -396,12 +394,6 @@ static int ab5500_charger_read_usb_type(struct ab5500_charger *di)
 	int ret;
 	u8 val;
 
-	ret = abx500_get_register_interruptible(di->dev,
-		AB5500_BANK_IT, AB5500_IT_SOURCE22_REG, &val);
-	if (ret < 0) {
-		dev_err(di->dev, "%s ab5500 read failed\n", __func__);
-		return ret;
-	}
 	ret = abx500_get_register_interruptible(di->dev, AB5500_BANK_USB,
 		AB5500_USB_LINE_STATUS, &val);
 	if (ret < 0) {
@@ -426,45 +418,17 @@ static int ab5500_charger_read_usb_type(struct ab5500_charger *di)
  */
 static int ab5500_charger_detect_usb_type(struct ab5500_charger *di)
 {
-	int i, ret;
+	int ret;
 	u8 val;
 
-	/*
-	 * On getting the VBUS rising edge detect interrupt there
-	 * is a 250ms delay after which the register UsbLineStatus
-	 * is filled with valid data.
-	 */
-	for (i = 0; i < 10; i++) {
-		msleep(250);
-		ret = abx500_get_register_interruptible(di->dev,
-			AB5500_BANK_IT, AB5500_IT_SOURCE22_REG,
-			&val);
-		if (ret < 0) {
-			dev_err(di->dev, "%s ab5500 read failed\n", __func__);
-			return ret;
-		}
-		if (!(val & USB_LINK_UPDATE))
-			continue;
-
-		ret = abx500_get_register_interruptible(di->dev,
-				AB5500_BANK_USB, AB5500_USB_LINE_STATUS, &val);
-		if (ret < 0) {
-			dev_err(di->dev, "%s ab5500 read failed\n", __func__);
-			return ret;
-		}
-		/*
-		 * Until the IT source register is read the UsbLineStatus
-		 * register is not updated, hence doing the same
-		 * Revisit this:
-		 */
-
-		/* get the USB type */
-		val = (val & AB5500_USB_LINK_STATUS) >> 3;
-		if (val) {
-			dev_dbg(di->dev, "values = %d\n", val);
-			break;
-		}
+	ret = abx500_get_register_interruptible(di->dev,
+			AB5500_BANK_USB, AB5500_USB_LINE_STATUS, &val);
+	if (ret < 0) {
+		dev_err(di->dev, "%s ab5500 read failed\n", __func__);
+		return ret;
 	}
+	/* get the USB type */
+	val = (val & AB5500_USB_LINK_STATUS) >> 3;
 	ret = ab5500_charger_max_usb_curr(di,
 		(enum ab5500_charger_link_status) val);
 
@@ -1528,15 +1492,6 @@ static int ab5500_charger_init_hw_registers(struct ab5500_charger *di)
 	ret = abx500_mask_and_set_register_interruptible(di->dev,
 			AB5500_BANK_USB, AB5500_USB_OTG_CTRL,
 			USB_ID_DEVICE_DET_ENA_MASK, USB_ID_DEVICE_DET_ENA);
-	if (ret) {
-		dev_err(di->dev, "failed to enable usb charger detection\n");
-		goto out;
-	}
-
-	/* Enable USB Charger Detection */
-	ret = abx500_mask_and_set_register_interruptible(di->dev,
-			AB5500_BANK_USB, AB5500_USB_LINE_CTRL2,
-			USB_CHARG_DET_ENA_MASK, USB_CHARG_DET_ENA);
 	if (ret) {
 		dev_err(di->dev, "failed to enable usb charger detection\n");
 		goto out;
