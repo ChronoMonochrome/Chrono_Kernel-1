@@ -13,7 +13,6 @@
 
 #include <linux/power_supply.h>
 #include <linux/mfd/abx500.h>
-#include <linux/mfd/abx500/ab5500.h>
 #include <linux/mfd/abx500/ab5500-bm.h>
 #include "board-u5500-bm.h"
 

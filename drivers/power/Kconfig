@@ -310,7 +310,7 @@ config AB8500_BATTERY_THERM_ON_BATCTRL
 
 config AB5500_BM
 	bool "AB5500 Battery Management Driver"
-	depends on AB5500_CORE && MACH_B5500
+	depends on AB5500_CORE && AB8500_GPADC && ARCH_U8500
 	help
 	  Say Y to include support for AB5500 battery management.
 
