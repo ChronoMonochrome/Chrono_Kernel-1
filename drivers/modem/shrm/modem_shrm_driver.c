@@ -334,7 +334,8 @@ static int shrm_probe(struct platform_device *pdev)
 	shrm->modem = modem_get(shrm->dev, "u8500-shrm-modem");
 	if (shrm->modem == NULL) {
 		dev_err(shrm->dev, " Could not retrieve the modem.\n");
-		return -ENODEV;
+		err = -ENODEV;
+		goto rollback_intr;
 	}
 
 	/* initialise the SHM */
