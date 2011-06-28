@@ -357,6 +357,21 @@ static void ab8500_usb_phy_disable_work(struct work_struct *work)
 		ab8500_usb_peri_phy_dis(ab);
 }
 
+static unsigned ab8500_eyediagram_workaroud(struct ab8500_usb *ab, unsigned mA)
+{
+	if (mA > 100) {
+		/* AB V2 has eye diagram issues when drawing more
+		 * than 100mA from VBUS.So setting charging current
+		 * to 100mA in case of standard host
+		 */
+		if (ab->rev < 0x30)
+			mA = 100;
+		else
+			mA = 300;
+	}
+	return mA;
+}
+
 static int ab8500_usb_set_power(struct usb_phy *phy, unsigned mA)
 {
 	struct ab8500_usb *ab;
@@ -365,6 +380,8 @@ static int ab8500_usb_set_power(struct usb_phy *phy, unsigned mA)
 		return -ENODEV;
 
 	ab = phy_to_ab(phy);
+
+	mA = ab8500_eyediagram_workaroud(ab, mA);
 
 	ab->vbus_draw = mA;
 
