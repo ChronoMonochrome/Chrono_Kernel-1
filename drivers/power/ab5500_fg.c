@@ -359,7 +359,7 @@ cc_err:
  */
 static int ab5500_fg_inst_curr(struct ab5500_fg *di)
 {
-	u8 low, high, value;
+	u8 low, high;
 	static int val;
 	int ret = 0;
 	bool fg_off = false;
@@ -1378,9 +1378,11 @@ static int ab5500_fg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		if (di->flags.bat_ovv)
 			val->intval = 47500000;
-		else
-			val->intval = ab5500_gpadc_convert
-						(di->gpadc, MAIN_BAT_V) * 1000;
+		else {
+			di->vbat = ab5500_gpadc_convert
+					(di->gpadc, MAIN_BAT_V);
+			val->intval = di->vbat * 1000;
+		}
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		di->inst_curr = ab5500_fg_inst_curr(di);
