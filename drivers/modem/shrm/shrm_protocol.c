@@ -985,7 +985,8 @@ int shm_write_msg(struct shrm_dev *shrm, u8 l2_header,
 
 	if (boot_state != BOOT_DONE) {
 		dev_err(shrm->dev,
-				"error after boot done  call this fn\n");
+			"error:after boot done  call this fn, L2Header = %d\n",
+			l2_header);
 		ret = -ENODEV;
 		goto out;
 	}

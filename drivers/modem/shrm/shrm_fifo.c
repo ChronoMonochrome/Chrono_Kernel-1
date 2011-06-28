@@ -108,6 +108,7 @@ u8 read_boot_info_req(struct shrm_dev *shrm,
 	msgtype = (header & L1_MAPID_MASK) >> L1_MSG_MAPID_OFFSET;
 	if (msgtype != L1_BOOT_INFO_REQ) {
 		dev_err(shrm->dev, "Read_Boot_Info_Req Fatal ERROR\n");
+		dev_err(shrm->dev, "Received msgtype is %d\n", msgtype);
 		BUG();
 	}
 	*config = (header >> CONFIG_OFFSET) & MASK_0_15_BIT;
@@ -401,17 +402,17 @@ u8 read_one_l2msg_common(struct shrm_dev *shrm,
 
 	if (msgtype != L1_NORMAL_MSG) {
 		/* Fatal ERROR - should never happens */
-		dev_dbg(shrm->dev, "wr_wptr= %x\n",
+		dev_info(shrm->dev, "wr_wptr= %x\n",
 						fifo->reader_local_wptr);
-		dev_dbg(shrm->dev, "wr_rptr= %x\n",
+		dev_info(shrm->dev, "wr_rptr= %x\n",
 						fifo->reader_local_rptr);
-		dev_dbg(shrm->dev, "shared_wptr= %x\n",
+		dev_info(shrm->dev, "shared_wptr= %x\n",
 						fifo->shared_wptr);
-		dev_dbg(shrm->dev, "shared_rptr= %x\n",
+		dev_info(shrm->dev, "shared_rptr= %x\n",
 						fifo->shared_rptr);
-		dev_dbg(shrm->dev, "availsize= %x\n",
+		dev_info(shrm->dev, "availsize= %x\n",
 						fifo->availablesize);
-		dev_dbg(shrm->dev, "end_fifo= %x\n",
+		dev_info(shrm->dev, "end_fifo= %x\n",
 						fifo->end_addr_fifo);
 		/* Fatal ERROR - should never happens */
 		dev_crit(shrm->dev, "Fatal ERROR - should never happen\n");
@@ -506,18 +507,19 @@ u8 read_one_l2msg_audio(struct shrm_dev *shrm,
 
 	if (msgtype != L1_NORMAL_MSG) {
 		/* Fatal ERROR - should never happens */
-		dev_dbg(shrm->dev, "wr_local_wptr= %x\n",
+		dev_info(shrm->dev, "wr_local_wptr= %x\n",
 						fifo->reader_local_wptr);
-		dev_dbg(shrm->dev, "wr_local_rptr= %x\n",
+		dev_info(shrm->dev, "wr_local_rptr= %x\n",
 						fifo->reader_local_rptr);
-		dev_dbg(shrm->dev, "shared_wptr= %x\n",
+		dev_info(shrm->dev, "shared_wptr= %x\n",
 						fifo->shared_wptr);
-		dev_dbg(shrm->dev, "shared_rptr= %x\n",
+		dev_info(shrm->dev, "shared_rptr= %x\n",
 						fifo->shared_rptr);
-		dev_dbg(shrm->dev, "availsize=%x\n",
+		dev_info(shrm->dev, "availsize=%x\n",
 						fifo->availablesize);
-		dev_dbg(shrm->dev, "end_fifo= %x\n",
+		dev_info(shrm->dev, "end_fifo= %x\n",
 						fifo->end_addr_fifo);
+		dev_info(shrm->dev, "Received msgtype is &d\n", msgtype);
 		/* Fatal ERROR - should never happens */
 		dev_crit(shrm->dev, "Fatal ERROR - should never happen\n");
 		BUG();
