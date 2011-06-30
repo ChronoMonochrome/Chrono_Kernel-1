@@ -38,7 +38,7 @@ static struct uib __initdata mop500_uibs[] = {
 	},
 };
 
-static struct uib *mop500_uib;
+static struct uib __initdata *mop500_uib;
 
 static int __init mop500_uib_setup(char *str)
 {
@@ -64,7 +64,7 @@ __setup("uib=", mop500_uib_setup);
  * The UIBs are detected after the I2C host controllers are registered, so
  * i2c_register_board_info() can't be used.
  */
-void mop500_uib_i2c_add(int busnum, struct i2c_board_info *info,
+void mop500_uib_i2c_add(int busnum, struct i2c_board_info const *info,
 		unsigned n)
 {
 	struct i2c_adapter *adap;

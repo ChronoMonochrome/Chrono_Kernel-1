@@ -47,20 +47,6 @@ static pin_cfg_t mop500_pins_common[] = {
 	/* STMPE1601/tc35893 keypad  IRQ */
 	GPIO218_GPIO	| PIN_INPUT_PULLUP,
 
-	/* USB */
-	GPIO256_USB_NXT,
-	GPIO257_USB_STP	| PIN_OUTPUT_HIGH,
-	GPIO258_USB_XCLK,
-	GPIO259_USB_DIR,
-	GPIO260_USB_DAT7,
-	GPIO261_USB_DAT6,
-	GPIO262_USB_DAT5,
-	GPIO263_USB_DAT4,
-	GPIO264_USB_DAT3,
-	GPIO265_USB_DAT2,
-	GPIO266_USB_DAT1,
-	GPIO267_USB_DAT0,
-
 	/* UART */
 	/* uart-0 pins gpio configuration should be
 	 * kept intact to prevent glitch in tx line
@@ -172,7 +158,7 @@ static pin_cfg_t hrefv60_pins[] = {
 	GPIO145_GPIO	| PIN_INPUT_PULLDOWN,/* HAL_SW */
 
 	/* Audio Amplifier Interface */
-	GPIO149_GPIO	| PIN_OUTPUT_LOW, /* VAUDIO_HF_EN */
+	GPIO149_GPIO	| PIN_OUTPUT_HIGH, /* VAUDIO_HF_EN, enable MAX8968 */
 
 	/* GBF INTERFACE */
 	GPIO171_GPIO	| PIN_OUTPUT_LOW, /* GBF_ENA_RESET */
@@ -379,6 +365,22 @@ static UX500_PINS(mop500_pins_sdi4,
 	GPIO207_MC4_DAT4	| PIN_INPUT_PULLUP,
 );
 
+/* USB */
+static UX500_PINS(mop500_pins_usb,
+	GPIO256_USB_NXT,
+	GPIO257_USB_STP		| PIN_OUTPUT_HIGH,
+	GPIO258_USB_XCLK,
+	GPIO259_USB_DIR,
+	GPIO260_USB_DAT7,
+	GPIO261_USB_DAT6,
+	GPIO262_USB_DAT5,
+	GPIO263_USB_DAT4,
+	GPIO264_USB_DAT3,
+	GPIO265_USB_DAT2,
+	GPIO266_USB_DAT1,
+	GPIO267_USB_DAT0,
+);
+
 static struct ux500_pin_lookup mop500_pins[] = {
 	PIN_LOOKUP("mcde-dpi", &mop500_pins_mcde_dpi),
 	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout),
@@ -391,6 +393,7 @@ static struct ux500_pin_lookup mop500_pins[] = {
 	PIN_LOOKUP("sdi1", &mop500_pins_sdi1),
 	PIN_LOOKUP("sdi2", &mop500_pins_sdi2),
 	PIN_LOOKUP("sdi4", &mop500_pins_sdi4),
+	PIN_LOOKUP("ab8500-usb.0", &mop500_pins_usb),
 };
 
 /*
@@ -752,6 +755,17 @@ static pin_cfg_t mop500_pins_common_power_save_bank7[] = {
 	GPIO230_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
 };
 
+static pin_cfg_t mop500_pins_common_power_save_bank7_href60[] = {
+	GPIO224_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+	GPIO225_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+	GPIO226_GPIO | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+	GPIO227_GPIO | PIN_SLPM_OUTPUT_LOW | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+
+	GPIO228_GPIO | PIN_SLPM_OUTPUT_LOW | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+	GPIO229_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+	GPIO230_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+};
+
 static pin_cfg_t mop500_pins_common_power_save_bank8[] = {
 	GPIO256_GPIO | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_ENABLED,
 	GPIO257_GPIO | PIN_SLPM_OUTPUT_HIGH | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
@@ -808,6 +822,10 @@ void mop500_pins_suspend_force(void)
 		sleep_pins_config_pm(mop500_pins_common_power_save_bank6,
 			ARRAY_SIZE(mop500_pins_common_power_save_bank6));
 
+	if (machine_is_hrefv60())
+		sleep_pins_config_pm(mop500_pins_common_power_save_bank7_href60,
+			ARRAY_SIZE(mop500_pins_common_power_save_bank7_href60));
+	else
 	sleep_pins_config_pm(mop500_pins_common_power_save_bank7,
 		ARRAY_SIZE(mop500_pins_common_power_save_bank7));
 
