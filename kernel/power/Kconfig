@@ -351,3 +351,7 @@ config CPU_PM
        bool "CPU PM"
        default y
        depends on SUSPEND || CPU_IDLE
+
+config PM_GENERIC_DOMAINS
+	bool
+	depends on PM
