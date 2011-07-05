@@ -207,7 +207,7 @@ static struct gpio_chip ab8500gpio_chip = {
 
 static unsigned int irq_to_rising(unsigned int irq)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio = irq_get_chip_data(irq);
 	int offset = irq - ab8500_gpio->irq_base;
 	int new_irq = offset +  AB8500_INT_GPIO6R
 			+ ab8500_gpio->parent->irq_base;
@@ -216,7 +216,7 @@ static unsigned int irq_to_rising(unsigned int irq)
 
 static unsigned int irq_to_falling(unsigned int irq)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio = irq_get_chip_data(irq);
 	int offset = irq - ab8500_gpio->irq_base;
 	int new_irq = offset +  AB8500_INT_GPIO6F
 			+  ab8500_gpio->parent->irq_base;
@@ -261,15 +261,16 @@ static irqreturn_t handle_falling(int irq, void *dev)
 	return IRQ_HANDLED;
 }
 
-static void ab8500_gpio_irq_lock(unsigned int irq)
+static void ab8500_gpio_irq_lock(struct irq_data *data)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio = irq_data_get_irq_chip_data(data);
 	mutex_lock(&ab8500_gpio->lock);
 }
 
-static void ab8500_gpio_irq_sync_unlock(unsigned int irq)
+static void ab8500_gpio_irq_sync_unlock(struct irq_data *data)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio = irq_data_get_irq_chip_data(data);
+	unsigned int irq = data->irq;
 	int offset = irq - ab8500_gpio->irq_base;
 	bool rising = ab8500_gpio->rising & BIT(offset);
 	bool falling = ab8500_gpio->falling & BIT(offset);
@@ -316,21 +317,22 @@ static void ab8500_gpio_irq_sync_unlock(unsigned int irq)
 }
 
 
-static void ab8500_gpio_irq_mask(unsigned int irq)
+static void ab8500_gpio_irq_mask(struct irq_data *data)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio = irq_data_get_irq_chip_data(data);
 	ab8500_gpio->irq_action = MASK;
 }
 
-static void ab8500_gpio_irq_unmask(unsigned int irq)
+static void ab8500_gpio_irq_unmask(struct irq_data *data)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio =  irq_data_get_irq_chip_data(data);
 	ab8500_gpio->irq_action = UNMASK;
 }
 
-static int ab8500_gpio_irq_set_type(unsigned int irq, unsigned int type)
+static int ab8500_gpio_irq_set_type(struct irq_data *data, unsigned int type)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio = irq_data_get_irq_chip_data(data);
+	unsigned int irq = data->irq;
 	int offset = irq - ab8500_gpio->irq_base;
 
 	if (type == IRQ_TYPE_EDGE_BOTH) {
@@ -344,28 +346,28 @@ static int ab8500_gpio_irq_set_type(unsigned int irq, unsigned int type)
 	return 0;
 }
 
-unsigned int ab8500_gpio_irq_startup(unsigned int irq)
+unsigned int ab8500_gpio_irq_startup(struct irq_data *data)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio = irq_data_get_irq_chip_data(data);
 	ab8500_gpio->irq_action = STARTUP;
 	return 0;
 }
 
-void ab8500_gpio_irq_shutdown(unsigned int irq)
+void ab8500_gpio_irq_shutdown(struct irq_data *data)
 {
-	struct ab8500_gpio *ab8500_gpio = get_irq_chip_data(irq);
+	struct ab8500_gpio *ab8500_gpio = irq_data_get_irq_chip_data(data);
 	ab8500_gpio->irq_action = SHUTDOWN;
 }
 
 static struct irq_chip ab8500_gpio_irq_chip = {
 	.name			= "ab8500-gpio",
-	.startup		= ab8500_gpio_irq_startup,
-	.shutdown		= ab8500_gpio_irq_shutdown,
-	.bus_lock		= ab8500_gpio_irq_lock,
-	.bus_sync_unlock	= ab8500_gpio_irq_sync_unlock,
-	.mask			= ab8500_gpio_irq_mask,
-	.unmask			= ab8500_gpio_irq_unmask,
-	.set_type		= ab8500_gpio_irq_set_type,
+	.irq_startup		= ab8500_gpio_irq_startup,
+	.irq_shutdown		= ab8500_gpio_irq_shutdown,
+	.irq_bus_lock		= ab8500_gpio_irq_lock,
+	.irq_bus_sync_unlock	= ab8500_gpio_irq_sync_unlock,
+	.irq_mask		= ab8500_gpio_irq_mask,
+	.irq_unmask		= ab8500_gpio_irq_unmask,
+	.irq_set_type		= ab8500_gpio_irq_set_type,
 };
 
 static int ab8500_gpio_irq_init(struct ab8500_gpio *ab8500_gpio)
@@ -374,14 +376,14 @@ static int ab8500_gpio_irq_init(struct ab8500_gpio *ab8500_gpio)
 	int irq;
 
 	for (irq = base; irq < base + AB8500_NUM_VIR_GPIO_IRQ ; irq++) {
-		set_irq_chip_data(irq, ab8500_gpio);
-		set_irq_chip_and_handler(irq, &ab8500_gpio_irq_chip,
+		irq_set_chip_data(irq, ab8500_gpio);
+		irq_set_chip_and_handler(irq, &ab8500_gpio_irq_chip,
 				handle_simple_irq);
-		set_irq_nested_thread(irq, 1);
+		irq_set_nested_thread(irq, 1);
 #ifdef CONFIG_ARM
 		set_irq_flags(irq, IRQF_VALID);
 #else
-		set_irq_noprobe(irq);
+		irq_set_noprobe(irq);
 #endif
 	}
 
@@ -397,8 +399,8 @@ static void ab8500_gpio_irq_remove(struct ab8500_gpio *ab8500_gpio)
 #ifdef CONFIG_ARM
 		set_irq_flags(irq, 0);
 #endif
-		set_irq_chip_and_handler(irq, NULL, NULL);
-		set_irq_chip_data(irq, NULL);
+		irq_set_chip_and_handler(irq, NULL, NULL);
+		irq_set_chip_data(irq, NULL);
 	}
 }
 
