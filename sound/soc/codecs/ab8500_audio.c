@@ -293,7 +293,7 @@ static int st_fir_value_control_info(struct snd_kcontrol *kcontrol,
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 1;
 	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = REG_MASK_ALL;
+	uinfo->value.integer.max = (REG_MASK_ALL+1) * (REG_MASK_ALL+1) - 1;
 
 	return 0;
 }
@@ -308,8 +308,9 @@ static int st_fir_value_control_put(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
 	int ret;
-	unsigned int val_msb = (int)ucontrol->value.integer.value[0] / 256;
-	unsigned int val_lsb = (int)ucontrol->value.integer.value[0] - val_msb * 256;
+	unsigned int val_msb = (int)ucontrol->value.integer.value[0] / (REG_MASK_ALL+1);
+	unsigned int val_lsb = (int)ucontrol->value.integer.value[0] -
+			val_msb * (REG_MASK_ALL+1);
 	ret = ab8500_codec_write_reg_audio(ab8500_codec, REG_SIDFIRCOEF1, val_msb);
 	ret |= ab8500_codec_write_reg_audio(ab8500_codec, REG_SIDFIRCOEF2, val_lsb);
 	if (ret < 0) {
