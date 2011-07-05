@@ -240,9 +240,10 @@ struct hwmem_alloc *hwmem_alloc(size_t size, enum hwmem_alloc_flags flags,
 	alloc->flags = flags;
 	alloc->default_access = def_access;
 	INIT_LIST_HEAD(&alloc->threadg_info_list);
+#ifdef CONFIG_DEBUG_FS
 	alloc->creator = __builtin_return_address(0);
 	alloc->creator_tgid = task_tgid_nr(current);
-
+#endif
 	alloc->mem_type = resolve_mem_type(mem_type);
 	if (IS_ERR(alloc->mem_type)) {
 		ret = PTR_ERR(alloc->mem_type);
