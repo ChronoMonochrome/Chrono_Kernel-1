@@ -646,7 +646,7 @@ static const struct snd_kcontrol_new dapm_pwm2vib2[] = {
 	SOC_DAPM_ENUM("Vibra 2 Controller", dapm_enum_pwm2vib2),
 };
 
-/* DAPM Widgets */
+/* DAPM-widgets */
 
 static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	/* Headset path */
@@ -772,7 +772,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	SND_SOC_DAPM_INPUT("LINL"),
 	SND_SOC_DAPM_INPUT("LINR"),
-	SND_SOC_DAPM_INPUT("MIC2"),
+	SND_SOC_DAPM_INPUT("MIC2 Input"),
 
 	SND_SOC_DAPM_SWITCH("LineIn Left", SND_SOC_NOPM, 0, 0, dapm_linl_mute),
 	SND_SOC_DAPM_SWITCH("LineIn Right", SND_SOC_NOPM, 0, 0, dapm_linr_mute),
@@ -809,8 +809,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Microphone 1 path */
 
-	SND_SOC_DAPM_INPUT("MIC1A"),
-	SND_SOC_DAPM_INPUT("MIC1B"),
+	SND_SOC_DAPM_INPUT("MIC1 Input"),
 
 	SND_SOC_DAPM_MUX("Mic 1A or 1B Select Capture Route",
 			SND_SOC_NOPM, 0, 0, dapm_mic1ab_select),
@@ -853,12 +852,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Digital Microphone path */
 
-	SND_SOC_DAPM_INPUT("DMIC1"),
-	SND_SOC_DAPM_INPUT("DMIC2"),
-	SND_SOC_DAPM_INPUT("DMIC3"),
-	SND_SOC_DAPM_INPUT("DMIC4"),
-	SND_SOC_DAPM_INPUT("DMIC5"),
-	SND_SOC_DAPM_INPUT("DMIC6"),
+	SND_SOC_DAPM_INPUT("DMIC Input"),
 
 	SND_SOC_DAPM_SWITCH("DMic 1", SND_SOC_NOPM, 0, 0, dapm_dmic1_mute),
 	SND_SOC_DAPM_SWITCH("DMic 2", SND_SOC_NOPM, 0, 0, dapm_dmic2_mute),
@@ -904,9 +898,9 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("STFIR2 Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 };
 
-/* DAPM interconnection */
+/* DAPM-routes */
 
-static const struct snd_soc_dapm_route intercon[] = {
+static const struct snd_soc_dapm_route dapm_routes[] = {
 	/* Headset path */
 
 	{"DA1 Channel Gain", NULL, "DA_IN1"},
@@ -992,7 +986,7 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	{"LineIn Left", "Capture Switch", "LINL"},
 	{"LineIn Right", "Capture Switch", "LINR"},
-	{"Mic 2", "Capture Switch", "MIC2"},
+	{"Mic 2", "Capture Switch", "MIC2 Input"},
 
 	{"LINL Enable", NULL, "LineIn Left"},
 	{"LINR Enable", NULL, "LineIn Right"},
@@ -1018,8 +1012,8 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	/* Microphone 1 path */
 
-	{"Mic 1A or 1B Select Capture Route", "Mic 1A", "MIC1A"},
-	{"Mic 1A or 1B Select Capture Route", "Mic 1B", "MIC1B"},
+	{"Mic 1A or 1B Select Capture Route", "Mic 1A", "MIC1 Input"},
+	{"Mic 1A or 1B Select Capture Route", "Mic 1B", "MIC1 Input"},
 
 	{"Mic 1", "Capture Switch", "Mic 1A or 1B Select Capture Route"},
 
@@ -1051,12 +1045,12 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	/* Digital Microphone path */
 
-	{"DMic 1", "Capture Switch", "DMIC1"},
-	{"DMic 2", "Capture Switch", "DMIC2"},
-	{"DMic 3", "Capture Switch", "DMIC3"},
-	{"DMic 4", "Capture Switch", "DMIC4"},
-	{"DMic 5", "Capture Switch", "DMIC5"},
-	{"DMic 6", "Capture Switch", "DMIC6"},
+	{"DMic 1", "Capture Switch", "DMIC Input"},
+	{"DMic 2", "Capture Switch", "DMIC Input"},
+	{"DMic 3", "Capture Switch", "DMIC Input"},
+	{"DMic 4", "Capture Switch", "DMIC Input"},
+	{"DMic 5", "Capture Switch", "DMIC Input"},
+	{"DMic 6", "Capture Switch", "DMIC Input"},
 
 	{"AD 1 Select Capture Route", "DMic 1", "DMic 1"},
 	{"AD 2 Select Capture Route", "DMic 2", "DMic 2"},
@@ -2011,7 +2005,7 @@ static int ab8500_codec_add_widgets(struct snd_soc_codec *codec)
 		return ret;
 	}
 
-	ret = snd_soc_dapm_add_routes(&codec->dapm, intercon, ARRAY_SIZE(intercon));
+	ret = snd_soc_dapm_add_routes(&codec->dapm, dapm_routes, ARRAY_SIZE(dapm_routes));
 	if (ret < 0) {
 		pr_err("%s: Failed to add DAPM routes (%d).\n",
 			__func__, ret);

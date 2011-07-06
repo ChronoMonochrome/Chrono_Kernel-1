@@ -19,8 +19,9 @@
 #include <linux/moduleparam.h>
 #include <linux/device.h>
 #include <linux/io.h>
-#include <sound/soc.h>
 #include <linux/regulator/consumer.h>
+#include <sound/soc.h>
+#include <sound/soc-dapm.h>
 #include <sound/pcm.h>
 #include <sound/jack.h>
 #include <sound/pcm_params.h>
@@ -81,55 +82,6 @@ static bool reg_enabled[4] =  {
 /* Slot configuration */
 static unsigned int tx_slots = DEF_TX_SLOTS;
 static unsigned int rx_slots = DEF_RX_SLOTS;
-
-/* Machine-driver ALSA-controls */
-
-static int mclk_input_control_info(struct snd_kcontrol *kcontrol,
-			    struct snd_ctl_elem_info *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-	uinfo->count = 1;
-	uinfo->value.enumerated.items = 2;
-	if (uinfo->value.enumerated.item) {
-		uinfo->value.enumerated.item = 1;
-		strcpy(uinfo->value.enumerated.name, "ULPCLK");
-	} else {
-		strcpy(uinfo->value.enumerated.name, "SYSCLK");
-	}
-	return 0;
-}
-
-static int mclk_input_control_get(struct snd_kcontrol *kcontrol,
-			   struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.enumerated.item[0] = master_clock_sel;
-	return 0;
-}
-
-static int mclk_input_control_put(struct snd_kcontrol *kcontrol,
-			   struct snd_ctl_elem_value *ucontrol)
-{
-	unsigned int val;
-
-	val = (ucontrol->value.enumerated.item[0] != 0);
-	if (master_clock_sel == val)
-		return 0;
-
-	master_clock_sel = val;
-
-	return 1;
-}
-
-static const struct snd_kcontrol_new mclk_input_control = {
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-	.name = "Master Clock Select",
-	.index = 0,
-	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
-	.info = mclk_input_control_info,
-	.get = mclk_input_control_get,
-	.put = mclk_input_control_put,
-	.private_value = 1 /* ULPCLK */
-};
 
 /* Regulators */
 
@@ -207,6 +159,137 @@ err_get:
 	}
 
 	return status;
+}
+
+/* Controls - Non-DAPM Non-ASoC */
+
+static int mclk_input_control_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = 2;
+	if (uinfo->value.enumerated.item) {
+		uinfo->value.enumerated.item = 1;
+		strcpy(uinfo->value.enumerated.name, "ULPCLK");
+	} else {
+		strcpy(uinfo->value.enumerated.name, "SYSCLK");
+	}
+	return 0;
+}
+
+static int mclk_input_control_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.enumerated.item[0] = master_clock_sel;
+	return 0;
+}
+
+static int mclk_input_control_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	unsigned int val;
+
+	val = (ucontrol->value.enumerated.item[0] != 0);
+	if (master_clock_sel == val)
+		return 0;
+
+	master_clock_sel = val;
+
+	return 1;
+}
+
+static const struct snd_kcontrol_new mclk_input_control = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "Master Clock Select",
+	.index = 0,
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.info = mclk_input_control_info,
+	.get = mclk_input_control_get,
+	.put = mclk_input_control_put,
+	.private_value = 1 /* ULPCLK */
+};
+
+/* DAPM-events */
+
+static int dapm_mic1reg_event(struct snd_soc_dapm_widget *w,
+			struct snd_kcontrol *k, int event)
+{
+	int ret = 0;
+
+	if (SND_SOC_DAPM_EVENT_ON(event))
+		ret = enable_regulator(REGULATOR_AMIC1);
+	else
+		disable_regulator(REGULATOR_AMIC1);
+
+	return ret;
+}
+
+static int dapm_mic2reg_event(struct snd_soc_dapm_widget *w,
+			struct snd_kcontrol *k, int event)
+{
+	int ret = 0;
+
+	if (SND_SOC_DAPM_EVENT_ON(event))
+		ret = enable_regulator(REGULATOR_AMIC2);
+	else
+		disable_regulator(REGULATOR_AMIC2);
+
+	return ret;
+}
+
+static int dapm_dmicreg_event(struct snd_soc_dapm_widget *w,
+			struct snd_kcontrol *k, int event)
+{
+	int ret = 0;
+
+	if (SND_SOC_DAPM_EVENT_ON(event))
+		ret = enable_regulator(REGULATOR_DMIC);
+	else
+		disable_regulator(REGULATOR_DMIC);
+
+	return ret;
+}
+
+/* DAPM-widgets */
+
+static const struct snd_soc_dapm_widget ux500_ab8500_dapm_widgets[] = {
+	SND_SOC_DAPM_MIC("MIC1 Regulator", dapm_mic1reg_event),
+	SND_SOC_DAPM_MIC("MIC2 Regulator", dapm_mic2reg_event),
+	SND_SOC_DAPM_MIC("DMIC Regulator", dapm_dmicreg_event),
+};
+
+/* DAPM-routes */
+
+static const struct snd_soc_dapm_route ux500_ab8500_dapm_intercon[] = {
+	{"MIC1 Input", NULL, "MIC1 Regulator"},
+	{"MIC2 Input", NULL, "MIC2 Regulator"},
+	{"DMIC Input", NULL, "DMIC Regulator"},
+};
+
+static int add_widgets(struct snd_soc_codec *codec)
+{
+	int ret;
+
+	ret = snd_soc_dapm_new_controls(&codec->dapm,
+			ux500_ab8500_dapm_widgets,
+			ARRAY_SIZE(ux500_ab8500_dapm_widgets));
+	if (ret < 0) {
+		pr_err("%s: Failed to create DAPM controls (%d).\n",
+			__func__, ret);
+		return ret;
+	}
+
+	ret = snd_soc_dapm_add_routes(&codec->dapm,
+				ux500_ab8500_dapm_intercon,
+				ARRAY_SIZE(ux500_ab8500_dapm_intercon));
+	if (ret < 0) {
+		pr_err("%s: Failed to add DAPM routes (%d).\n",
+			__func__, ret);
+		return ret;
+	}
+
+	return 0;
 }
 
 /* Power/clock control */
@@ -295,18 +378,6 @@ int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 
 	pr_debug("%s: Enter\n", __func__);
 
-	/* If we start recording we better enable the needed mic-regulators */
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		if (ab8500_audio_dapm_path_active(AB8500_AUDIO_DAPM_PATH_DMIC))
-			ret += enable_regulator(REGULATOR_DMIC);
-		if (ab8500_audio_dapm_path_active(AB8500_AUDIO_DAPM_PATH_AMIC1))
-			ret += enable_regulator(REGULATOR_AMIC1);
-		if (ab8500_audio_dapm_path_active(AB8500_AUDIO_DAPM_PATH_AMIC2))
-			ret += enable_regulator(REGULATOR_AMIC2);
-		if (ret != 0)
-			return ret;
-	}
-
 	/* Enable gpio.1-clock (needed by DSP in burst mode) */
 	ret = clk_enable(clk_ptr_gpio1);
 	if (ret) {
@@ -326,13 +397,6 @@ void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 		tx_slots = DEF_TX_SLOTS;
 	else
 		rx_slots = DEF_RX_SLOTS;
-
-	/* Disable all mic-regulators that were enabled when we stop recording */
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		disable_regulator(REGULATOR_DMIC);
-		disable_regulator(REGULATOR_AMIC1);
-		disable_regulator(REGULATOR_AMIC2);
-	}
 
 	clk_disable(clk_ptr_gpio1);
 	ux500_ab8500_power_control_dec();
@@ -527,6 +591,13 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	master_clock_sel = 1;
 
 	ab8500_power_count = 0;
+
+	/* Add DAPM-widgets */
+	ret = add_widgets(codec);
+	if (ret < 0) {
+		pr_err("%s: Failed add widgets (%d).\n", __func__, ret);
+		return ret;
+	}
 
 	return 0;
 }
