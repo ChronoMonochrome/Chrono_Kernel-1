@@ -427,7 +427,10 @@ static int __devexit db5500_keypad_remove(struct platform_device *pdev)
 	clk_put(keypad->clk);
 
 	iounmap(keypad->base);
-	release_mem_region(res->start, resource_size(res));
+
+	if (res)
+		release_mem_region(res->start, resource_size(res));
+
 	kfree(keypad);
 
 	return 0;
