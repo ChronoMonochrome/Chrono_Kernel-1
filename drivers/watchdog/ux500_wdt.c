@@ -40,7 +40,7 @@ MODULE_PARM_DESC(nowayout,
 				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
 static u8 wdog_id;
 static bool wdt_en;
-static bool wdt_auto_off = true;
+static bool wdt_auto_off = false;
 static bool safe_close;
 
 static int ux500_wdt_open(struct inode *inode, struct file *file)
@@ -382,13 +382,44 @@ static int __exit ux500_wdt_remove(struct platform_device *dev)
 	misc_deregister(&ux500_wdt_miscdev);
 	return 0;
 }
+#ifdef CONFIG_PM
+static int ux500_wdt_suspend(struct platform_device *pdev,
+			     pm_message_t state)
+{
+	if (wdt_en && !wdt_auto_off) {
+		prcmu_disable_a9wdog(wdog_id);
+		prcmu_config_a9wdog(1, true);
 
+		prcmu_load_a9wdog(wdog_id, timeout * 1000);
+		prcmu_enable_a9wdog(wdog_id);
+	}
+	return 0;
+}
+
+static int ux500_wdt_resume(struct platform_device *pdev)
+{
+	if (wdt_en && !wdt_auto_off) {
+		prcmu_disable_a9wdog(wdog_id);
+		prcmu_config_a9wdog(1, wdt_auto_off);
+
+		prcmu_load_a9wdog(wdog_id, timeout * 1000);
+		prcmu_enable_a9wdog(wdog_id);
+	}
+	return 0;
+}
+
+#else
+#define ux500_wdt_suspend NULL
+#define ux500_wdt_resume NULL
+#endif
 static struct platform_driver ux500_wdt_driver = {
 	.remove		= __exit_p(ux500_wdt_remove),
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "ux500_wdt",
 	},
+	.suspend	= ux500_wdt_suspend,
+	.resume		= ux500_wdt_resume,
 };
 
 static int __init ux500_wdt_init(void)
