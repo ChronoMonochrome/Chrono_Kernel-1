@@ -987,7 +987,7 @@ MACHINE_START(HREFV60, "ST-Ericsson U8500 Platform HREFv60+")
 	.restart	= ux500_restart,
 MACHINE_END
 
-MACHINE_START(SNOWBALL, "Calao Systems Snowball platform")
+MACHINE_START(SNOWBALL, "ST-Ericsson Snowball platform")
 	.atag_offset	= 0x100,
 	.map_io		= u8500_map_io,
 	.init_irq	= ux500_init_irq,
