@@ -401,32 +401,6 @@ static int ab5500_charger_read_usb_type(struct ab5500_charger *di)
 	return ret;
 }
 
-/**
- * ab5500_charger_detect_usb_type() - get the type of usb connected
- * @di:		pointer to the ab5500_charger structure
- *
- * Detect the type of the plugged USB
- * Returns error code in case of failure else 0 on success
- */
-static int ab5500_charger_detect_usb_type(struct ab5500_charger *di)
-{
-	int ret;
-	u8 val;
-
-	ret = abx500_get_register_interruptible(di->dev,
-			AB5500_BANK_USB, AB5500_USB_LINE_STATUS, &val);
-	if (ret < 0) {
-		dev_err(di->dev, "%s ab5500 read failed\n", __func__);
-		return ret;
-	}
-	/* get the USB type */
-	val = (val & AB5500_USB_LINK_STATUS) >> 3;
-	ret = ab5500_charger_max_usb_curr(di,
-		(enum ab5500_charger_link_status) val);
-
-	return ret;
-}
-
 static int ab5500_charger_voltage_map[] = {
 	3500 ,
 	3525 ,
@@ -1075,13 +1049,6 @@ void ab5500_charger_detect_usb_type_work(struct work_struct *work)
 		power_supply_changed(&di->usb_chg.psy);
 	} else {
 		di->vbus_detected = 1;
-
-		ret = ab5500_charger_detect_usb_type(di);
-		if (!ret) {
-			di->usb.charger_connected = 1;
-			power_supply_changed(&di->usb_chg.psy);
-		}
-
 	}
 }
 
@@ -1713,7 +1680,7 @@ static int __devinit ab5500_charger_probe(struct platform_device *pdev)
 		di->vbus_detected = true;
 		di->vbus_detected_start = true;
 		queue_work(di->charger_wq,
-			&di->detect_usb_type_work);
+			&di->usb_link_status_work);
 	}
 
 	/* Register interrupts */
