@@ -40,8 +40,8 @@
 #define CHARGER_REV_SUP			0x10
 #define SW_EOC				0x40
 #define USB_CHAR_DET			0x02
-#define USB_CHAR_DET_DONE		0x02
 #define VBUS_RISING			0x20
+#define VBUS_FALLING			0x40
 #define USB_LINK_UPDATE			0x02
 #define USB_CH_TH_PROT_LOW		0x02
 #define USB_CH_TH_PROT_HIGH		0x01
@@ -285,16 +285,8 @@ static int ab5500_charger_detect_chargers(struct ab5500_charger *di)
 
 	if (val & VBUS_RISING)
 		result |= USB_PW_CONN;
-
-	ret = abx500_get_register_interruptible(di->dev, AB5500_BANK_IT,
-		AB5500_IT_SOURCE9, &val);
-	if (ret < 0) {
-		dev_err(di->dev, "%s ab5500 read failed\n", __func__);
-		return ret;
-	}
-
-	if (val & USB_CHAR_DET_DONE)
-		result |= USB_PW_CONN;
+	else if (val & VBUS_FALLING)
+		result = NO_PW_CONN;
 
 	return result;
 }
