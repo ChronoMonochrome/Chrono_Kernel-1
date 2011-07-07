@@ -654,7 +654,10 @@ int wsm_set_pm(struct cw1200_common *priv, const struct wsm_set_pm *arg)
 
 	wsm_cmd_lock(priv);
 
-	WSM_PUT32(buf, arg->pmMode);
+	WSM_PUT8(buf, arg->pmMode);
+	WSM_PUT8(buf, arg->fastPsmIdlePeriod);
+	WSM_PUT8(buf, arg->apPsmChangePeriod);
+	WSM_PUT8(buf, arg->minAutoPsPollPeriod);
 
 	ret = wsm_cmd_send(priv, buf, NULL, 0x0010, WSM_CMD_TIMEOUT);
 

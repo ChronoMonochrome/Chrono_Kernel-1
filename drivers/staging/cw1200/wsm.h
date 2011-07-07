@@ -133,16 +133,16 @@ struct cw1200_common;
 #define WSM_PSM_ACTIVE			(0)
 
 /* 802.11 PS mode */
-#define WSM_PSM_PS			(1)
+#define WSM_PSM_PS			BIT(0)
+
+/* Dynamic aka Fast power save */
+#define WSM_PSM_FAST_PS			(BIT(0) | BIT(7))
 
 /* Undetermined */
 /* Note : Undetermined status is reported when the */
 /* NULL data frame used to advertise the PM mode to */
 /* the AP at Pre or Post Background Scan is not Acknowledged */
-#define WSM_PSM_UNKNOWN			(2)
-
-/* Use this flag to enable the fast power-saving mode */
-#define WSM_PM_F_FAST_PSM_ENABLE	(0x80)
+#define WSM_PSM_UNKNOWN			BIT(1)
 
 /* Queue IDs */
 /* best effort/legacy */

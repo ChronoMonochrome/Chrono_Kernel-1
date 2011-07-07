@@ -88,7 +88,7 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	wsm_lock_tx(priv);
 
 	if (priv->join_status == CW1200_JOIN_STATUS_STA &&
-			priv->powersave_mode.pmMode != WSM_PSM_PS) {
+			!(priv->powersave_mode.pmMode & WSM_PSM_PS)) {
 		struct wsm_set_pm pm = priv->powersave_mode;
 		pm.pmMode = WSM_PSM_PS;
 		WARN_ON(wsm_set_pm(priv, &pm));
@@ -139,7 +139,7 @@ void cw1200_scan_work(struct work_struct *work)
 			WARN_ON(wsm_set_output_power(priv,
 						priv->output_power * 10));
 		if (priv->join_status == CW1200_JOIN_STATUS_STA &&
-				priv->powersave_mode.pmMode != WSM_PSM_PS)
+				!(priv->powersave_mode.pmMode & WSM_PSM_PS))
 			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 
 		if (priv->scan.req)

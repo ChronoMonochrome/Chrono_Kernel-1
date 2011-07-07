@@ -285,9 +285,22 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_PS) {
-		priv->powersave_mode.pmMode =
-				(conf->flags & IEEE80211_CONF_PS) ?
-				WSM_PSM_PS : WSM_PSM_ACTIVE;
+		if (!(conf->flags & IEEE80211_CONF_PS))
+			priv->powersave_mode.pmMode = WSM_PSM_ACTIVE;
+		else if (conf->dynamic_ps_timeout <= 0)
+			priv->powersave_mode.pmMode = WSM_PSM_PS;
+		else
+			priv->powersave_mode.pmMode = WSM_PSM_FAST_PS;
+
+		/* Firmware requires that value for this 1-byte field must
+		 * be specified in units of 500us. Values above the 128ms
+		 * threshold are not supported. */
+		if (conf->dynamic_ps_timeout >= 0x80)
+			priv->powersave_mode.fastPsmIdlePeriod = 0xFF;
+		else
+			priv->powersave_mode.fastPsmIdlePeriod =
+					conf->dynamic_ps_timeout << 1;
+
 		if (priv->join_status == CW1200_JOIN_STATUS_STA)
 			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 	}

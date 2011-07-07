@@ -153,6 +153,18 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 			priv->edca.params[i].maxReceiveLifetime);
 	}
 	if (priv->join_status == CW1200_JOIN_STATUS_STA) {
+		static const char *pmMode = "unknown";
+		switch (priv->powersave_mode.pmMode) {
+		case WSM_PSM_ACTIVE:
+			pmMode = "off";
+			break;
+		case WSM_PSM_PS:
+			pmMode = "on";
+			break;
+		case WSM_PSM_FAST_PS:
+			pmMode = "dynamic";
+			break;
+		}
 		seq_printf(seq, "Preamble:   %s\n",
 			cw1200_debug_preamble[
 			priv->association_mode.preambleType]);
@@ -166,8 +178,7 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 			priv->bss_params.aid);
 		seq_printf(seq, "Rates:      0x%.8X\n",
 			priv->bss_params.operationalRateSet);
-		seq_printf(seq, "Powersave:  %s\n",
-			priv->powersave_mode.pmMode ? "off" : "on");
+		seq_printf(seq, "Powersave:  %s\n", pmMode);
 	}
 	seq_printf(seq, "HT:         %s\n",
 		cw1200_is_ht(&priv->ht_info) ? "on" : "off");
