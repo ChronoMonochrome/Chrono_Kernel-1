@@ -14,7 +14,6 @@
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/gpio.h>
-#include <linux/mmio.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/regulator/consumer.h>
@@ -23,6 +22,7 @@
 #include <mach/gpio.h>
 #include <mach/devices.h>
 #include "board-u5500.h"
+#include "../drivers/staging/mmio/mmio.h"
 
 struct mmio_board_data{
 	int number_of_regulators;
@@ -98,7 +98,6 @@ static int mmio_pin_cfg_init(struct mmio_platform_data *pdata)
 
 static void mmio_pin_cfg_exit(struct mmio_platform_data *pdata)
 {
-	struct mmio_board_data *extra = pdata->extra;
 }
 
 /*
