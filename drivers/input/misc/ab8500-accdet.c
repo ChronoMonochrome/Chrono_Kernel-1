@@ -1352,6 +1352,10 @@ static int ab8500_acc_detect_suspend(struct platform_device *pdev,
 			AB8500_ECI_AV_ACC,
 			AB8500_ACC_DET_CTRL_REG,
 			0);
+
+	if (dd->jack_type == JACK_TYPE_HEADSET)
+		accessory_regulator_disable(REGULATOR_VAMIC1);
+
 	return 0;
 }
 
@@ -1361,6 +1365,9 @@ static int ab8500_acc_detect_resume(struct platform_device *pdev)
 	int irq_id, irq;
 
 	dev_dbg(&dd->pdev->dev, "%s: Enter\n", __func__);
+
+	if (dd->jack_type == JACK_TYPE_HEADSET)
+		accessory_regulator_enable(REGULATOR_VAMIC1);
 
 	/* Turn on AccDetect comparators and pull-up */
 	(void) abx500_set_register_interruptible(
