@@ -63,6 +63,7 @@
 #define STE_HSI_RX_SPANX               0x140
 #define STE_HSI_RX_GAUGEX              0x180
 #define STE_HSI_RX_WATERMARKX          0x1C0
+#define STE_HSI_RX_FRAMEBURSTCNT       0x1E0
 #define STE_HSI_RX_DMAEN               0x200
 #define STE_HSI_RX_WATERMARKIS         0x204
 #define STE_HSI_RX_WATERMARKIM         0x208
@@ -101,7 +102,9 @@
 #define STE_HSI_MAX_BUFFERS            32
 
 /* Max channels of STE HSI controller */
-#define STE_HSI_MAX_CHANNELS           4
+#define STE_HSI_MAX_CHANNELS           2
+
+#define STE_HSI_DMA_MAX_BURST          1
 
 struct stedma40_chan_cfg;
 

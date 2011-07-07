@@ -198,9 +198,19 @@ static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
 		       ste_hsi->tx_base + STE_HSI_TX_BASEX + 4 * i);
 		writel(buffers - 1,
 		       ste_hsi->tx_base + STE_HSI_TX_SPANX + 4 * i);
-		writel(buffers - 1,
-		       ste_hsi->tx_base + STE_HSI_TX_WATERMARKX + 4 * i);
+
+	/*
+	 * The DMA burst request and the buffer occupation interrupt are
+	 * asserted when the free space in the corresponding channel buffer
+	 * is greater than the value programmed in TX_WATERMARKX field.
+	 * The field value must be less than the corresponding SPAN value.
+	 */
+#ifdef CONFIG_STE_DMA40
+		writel(STE_HSI_DMA_MAX_BURST-1,
+			ste_hsi->tx_base + STE_HSI_TX_WATERMARKX + 4 * i);
+#else /* IRQ mode */
 		writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKX + 4 * i);
+#endif
 	}
 
 	/*
@@ -215,7 +225,16 @@ static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
 	 * Configure RX
 	 */
 	writel(pcontext->rx_mode, ste_hsi->rx_base + STE_HSI_RX_MODE);
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_PARITY);
+
+	if (STE_HSI_MODE_PIPELINED == pcontext->rx_mode)
+		/*
+		 * 0x0F: The READY line is negated after the start of the
+		 * 16th frame reception in PIPELINED mode.
+		 */
+		writel(0x0F, ste_hsi->rx_base + STE_HSI_RX_FRAMEBURSTCNT);
+	else
+		writel(0, ste_hsi->rx_base + STE_HSI_RX_FRAMEBURSTCNT);
+
 	writel(pcontext->rx_channels, ste_hsi->rx_base + STE_HSI_RX_CHANNELS);
 	/* Calculate buffers number per channel */
 	buffers = STE_HSI_MAX_BUFFERS / pcontext->rx_channels;
@@ -226,9 +245,19 @@ static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
 		       ste_hsi->rx_base + STE_HSI_RX_BASEX + 4 * i);
 		writel(buffers - 1,
 		       ste_hsi->rx_base + STE_HSI_RX_SPANX + 4 * i);
-		writel(buffers - 1,
-		       ste_hsi->rx_base + STE_HSI_RX_WATERMARKX + 4 * i);
+
+	/*
+	 * The DMA burst request and the buffer occupation interrupt are
+	 * asserted when the busy space in the corresponding channel buffer
+	 * is greater than the value programmed in RX_WATERMARKX field.
+	 * The field value must be less than the corresponding SPAN value.
+	 */
+#ifdef CONFIG_STE_DMA40
+		writel(STE_HSI_DMA_MAX_BURST-1,
+			ste_hsi->rx_base + STE_HSI_RX_WATERMARKX + 4 * i);
+#else /* IRQ mode */
 		writel(0, ste_hsi->rx_base + STE_HSI_RX_WATERMARKX + 4 * i);
+#endif
 	}
 
 	/*
@@ -642,13 +671,13 @@ static int ste_hsi_setup_dma(struct hsi_client *cl)
 		.src_addr = 0,	/* dynamic data */
 		.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
 		.direction = DMA_FROM_DEVICE,
-		.src_maxburst = 1,
+		.src_maxburst = STE_HSI_DMA_MAX_BURST,
 	};
 	struct dma_slave_config tx_conf = {
 		.dst_addr = 0,	/* dynamic data */
 		.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
 		.direction = DMA_TO_DEVICE,
-		.dst_maxburst = 1,
+		.dst_maxburst = STE_HSI_DMA_MAX_BURST,
 	};
 
 	if (!ste_hsi->use_dma)
@@ -1279,7 +1308,13 @@ static int ste_hsi_setup(struct hsi_client *cl)
 		ste_hsi->context->tx_mode = cl->tx_cfg.mode;
 		ste_hsi->context->tx_divisor = div;
 		ste_hsi->context->tx_channels = cl->tx_cfg.channels;
-		ste_hsi->context->rx_mode = cl->rx_cfg.mode;
+
+		if ((HSI_FLOW_PIPE == cl->rx_cfg.flow) &&
+			(HSI_MODE_FRAME == cl->rx_cfg.mode))
+			ste_hsi->context->rx_mode = STE_HSI_MODE_PIPELINED;
+		else
+			ste_hsi->context->rx_mode = cl->rx_cfg.mode;
+
 		ste_hsi->context->rx_channels = cl->rx_cfg.channels;
 	}
 
