@@ -12,6 +12,7 @@
 #include <linux/export.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/mmc/card.h>
 
 #ifndef SDIO_VENDOR_ID_TI
