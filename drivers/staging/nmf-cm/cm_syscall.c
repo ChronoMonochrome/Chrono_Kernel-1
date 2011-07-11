@@ -7,6 +7,7 @@
 #include <linux/interrupt.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/vmalloc.h>
 #include <cm/engine/api/cm_engine.h>
 #include "cmioctl.h"
 #include "osal-kernel.h"
@@ -65,7 +66,7 @@ inline int cmld_InstantiateComponent(struct cm_process_priv* procPriv,
 		return -EFAULT;
 
 	if (data.in.dataFile != NULL) {
-		dataFile = OSAL_Alloc(data.in.dataFileSize);
+		dataFile = vmalloc(data.in.dataFileSize);
 		if (dataFile == NULL) {
 			data.out.error = CM_NO_MORE_MEMORY;
 			goto out;
@@ -99,7 +100,7 @@ inline int cmld_InstantiateComponent(struct cm_process_priv* procPriv,
 
 out:
 	if (dataFile)
-		OSAL_Free(dataFile);
+		vfree(dataFile);
 	/* Copy results back to userspace */
 	if (copy_to_user(&param->out, &data.out, sizeof(data.out)))
 		return -EFAULT;
