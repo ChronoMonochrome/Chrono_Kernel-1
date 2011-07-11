@@ -34,8 +34,6 @@ struct LoadMapItem
   struct LoadMapItem* pNextItem;// Pointer on the next list item, NULL if last one.
   void*        pXROM;           // Start address of XROM
   void*        pYROM;           // Start address of YROM
-
-  void*        memHandle;       // handle of allocated memory for this structure and name, local field not use by mmdsp
 };
 
 struct LoadMapHdr

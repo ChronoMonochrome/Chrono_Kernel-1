@@ -37,7 +37,7 @@ typedef t_nmf_error t_cm_error;                                             //!<
 /*   tests/src/common/nte/src/nte.c                                              */
 /*********************************************************************************/
 #define CM_LAST_ERROR_ID                    ((t_cm_error)-128)
-#define CM_INTEGRATION_ERROR               NMF_INTEGRATION_ERROR0       //!< \ref NMF_INTEGRATION_ERROR0
+#define CM_INTEGRATION_ERROR                NMF_INTEGRATION_ERROR0      //!< \ref NMF_INTEGRATION_ERROR0
 
     /* Communication */
 #define CM_FLUSH_MESSAGE                    NMF_FLUSH_MESSAGE           //!< Message send after call to CM_FlushChannel()
@@ -107,6 +107,7 @@ typedef t_nmf_error t_cm_error;                                             //!<
 #define CM_PWR_NOT_AVAILABLE                ((t_cm_error)-16)           //!< No modification of the state of the power input
 
     /* Common errors */
+#define CM_INVALID_DATA                     ((t_cm_error)-4)            //!< Invalid internal data encountered
 #define CM_OUT_OF_LIMITS                    ((t_cm_error)-3)            //!< User reach an internal nmf limits of limits.h file
 #define CM_INVALID_PARAMETER                NMF_INVALID_PARAMETER       //!< \ref NMF_INVALID_PARAMETER
 #define CM_NOT_YET_IMPLEMENTED              ((t_cm_error)-1)            //!< CM API not yet implemented

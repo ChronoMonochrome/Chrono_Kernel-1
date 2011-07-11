@@ -70,6 +70,7 @@ typedef struct t_component_instance {
     t_cm_domain_id          domainId;                         //!< Domain where the component has been installed
 
     struct t_client_of_singleton    *clientOfSingleton;       //!< Client of singleton list
+    t_memory_handle         loadMapHandle;       // handle of allocated memory for the loadMap structure and name;
 } t_component_instance;
 
 t_component_template* cm_lookupTemplate(t_nmf_core_id dspId, t_dup_char str);

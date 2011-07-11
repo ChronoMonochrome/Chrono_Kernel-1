@@ -10,12 +10,14 @@
 #include <cm/engine/elf/inc/mmdsp.h>
 #include <cm/engine/dsp/inc/semaphores_dsp.h>
 #include <cm/engine/dsp/mmdsp/inc/mmdsp_hwp.h>
+#include <cm/engine/os_adaptation_layer/inc/os_adaptation_layer.h>
 
 #include <cm/engine/power_mgt/inc/power.h>
 
 #include <cm/engine/utils/inc/string.h>
 #include <cm/engine/trace/inc/trace.h>
 #include <cm/engine/memory/inc/domain.h>
+#include <cm/engine/component/inc/instance.h>
 #include <cm/engine/component/inc/component_type.h>
 #include <inc/nmf-limits.h>
 
@@ -24,6 +26,9 @@
 static t_memory_handle headerHandle[NB_CORE_IDS] = {INVALID_MEMORY_HANDLE, };
 static struct LoadMapHdr *headerAddresses[NB_CORE_IDS] = {0, };
 static t_uint32 headerOffsets[NB_CORE_IDS] = {0, };
+static t_uint32 entryNumber[NB_CORE_IDS] = {0, };
+
+#define myoffsetof(TYPE, MEMBER) ((unsigned int) &((TYPE *)0)->MEMBER)
 
 t_cm_error cm_DSPABI_AddLoadMap(
         t_cm_domain_id domainId,
@@ -33,6 +38,8 @@ t_cm_error cm_DSPABI_AddLoadMap(
         void *componentHandle)
 {
     t_nmf_core_id coreId = cm_DM_GetDomainCoreId(domainId);
+    int count=0;
+    struct LoadMapItem* curItem = NULL;
 
     if (headerHandle[coreId] == 0) /* Create loadmap header */
     {
@@ -85,20 +92,53 @@ t_cm_error cm_DSPABI_AddLoadMap(
 
         pItem = (struct LoadMapItem*)cm_DSP_GetHostLogicalAddress(handle);
         cm_DSP_GetDspAddress(handle, &dspentry);
+	count++;
+	entryNumber[coreId]++;
 
         // Link this new loadmap with the previous one
         if(headerAddresses[coreId]->pFirstItem == NULL)
             headerAddresses[coreId]->pFirstItem = (struct LoadMapItem *)dspentry;
         else
         {
-            struct LoadMapItem* curItem;
+            const t_dsp_desc* pDspDesc = cm_DSP_GetState(coreId);
+            t_uint32 endSegmentAddr = SDRAMMEM16_BASE_ADDR + pDspDesc->segments[SDRAM_DATA_USER].size / 2;
+            struct LoadMapItem* curItem, *prevItem = NULL;
+            t_uint32  curItemDspAdress;
 
-            curItem = headerAddresses[coreId]->pFirstItem;
-            curItem = (struct LoadMapItem*)(((t_uint32)curItem - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]); // To ARM address
+            if(
+                    ((t_uint32)headerAddresses[coreId]->pFirstItem < SDRAMMEM16_BASE_ADDR) ||
+                    ((t_uint32)headerAddresses[coreId]->pFirstItem > endSegmentAddr))
+            {
+                ERROR("Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n",
+                        headerOffsets[coreId], &headerAddresses[coreId]->pFirstItem, 0, 0, 0, 0);
+
+                return CM_INVALID_DATA;
+            }
+            curItemDspAdress = (t_uint32)headerAddresses[coreId]->pFirstItem;
+            curItem = (struct LoadMapItem*)((curItemDspAdress - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]); // To ARM address
+            count++;
             while(curItem->pNextItem != NULL)
             {
-                curItem = curItem->pNextItem;
-                curItem = (struct LoadMapItem*)(((t_uint32)curItem - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]); // To ARM address
+                if(((t_uint32)curItem->pNextItem < SDRAMMEM16_BASE_ADDR) || ((t_uint32)curItem->pNextItem > endSegmentAddr))
+                {
+			if (prevItem == NULL)
+				ERROR("AddLoadMap: Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n"
+				      "Previou (first) component name %s<%s>\n",
+				      curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
+				      curItem->pARMThis ? (char*)(((t_component_instance *)&curItem->pARMThis)->pathname) : "<null>",
+				      curItem->pARMThis ? (char*)(((t_component_instance *)&curItem->pARMThis)->template->name) : "<null>", 0, 0);
+			else
+				ERROR("AddLoadMap: Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n"
+				      "Previous valid component name %s<%s>",
+				      curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
+				      prevItem->pARMThis ? (char*)(((t_component_instance *)&prevItem->pARMThis)->pathname) : "<null>",
+				      prevItem->pARMThis ? (char*)(((t_component_instance *)&prevItem->pARMThis)->template->name) : "<null>", 0, 0);
+			return CM_INVALID_DATA;
+                }
+                curItemDspAdress = (t_uint32)curItem->pNextItem;
+		prevItem = curItem;
+                curItem = (struct LoadMapItem*)((curItemDspAdress - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]); // To ARM address
+		count++;
             }
             curItem->pNextItem = (struct LoadMapItem *)dspentry;
         }
@@ -211,11 +251,16 @@ t_cm_error cm_DSPABI_AddLoadMap(
         /*
          * Set memory handle (not used externally)
          */
-        pItem->memHandle = (void*)handle;
+        ((t_component_instance *)componentHandle)->loadMapHandle = handle;
     }
 
     OSAL_mb();
 
+    if (count != entryNumber[coreId]) {
+	    ERROR("AddLoadMap: corrumption, number of component differs: count=%d, expected %d (last item @ %p)\n",
+		  count, entryNumber[coreId], curItem, 0, 0, 0);
+	    return CM_INVALID_DATA;
+    }
     return CM_OK;
 }
 
@@ -226,62 +271,158 @@ t_cm_error cm_DSPABI_RemoveLoadMap(
         const char* localname,
         void *componentHandle)
 {
-    struct LoadMapItem* curItem, **prevItemReference;
+    struct LoadMapItem **prevItemReference;
+    t_uint32  prevItemReferenceDspAddress, curItemDspAdress;
     t_nmf_core_id coreId = cm_DM_GetDomainCoreId(domainId);
+    const t_dsp_desc* pDspDesc = cm_DSP_GetState(coreId);
+    t_uint32 endSegmentAddr = SDRAMMEM16_BASE_ADDR + pDspDesc->segments[SDRAM_DATA_USER].size / 2;
+    struct LoadMapItem* curItem = NULL;
 
     CM_ASSERT (headerHandle[coreId] != INVALID_MEMORY_HANDLE);
 
     /* parse list until we find this */
+    prevItemReferenceDspAddress = 0x2;                          // DSP address of load map head pointer
     prevItemReference = &headerAddresses[coreId]->pFirstItem;
-    curItem = *prevItemReference;
-    while(curItem != NULL)
+    curItemDspAdress = (t_uint32)*prevItemReference;
+    while(curItemDspAdress != 0x0)
     {
-        curItem = (struct LoadMapItem*)(((t_uint32)curItem - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]); // To ARM address
-
-        if(curItem->pARMThis == componentHandle)
-            break;
-
-        prevItemReference = &curItem->pNextItem;
-        curItem = *prevItemReference;
-    }
-
-
-    // Remove component from loadmap if founded
-    if(curItem != NULL)
-    {
-        /* take local semaphore */
-        cm_DSP_SEM_Take(coreId,LOADMAP_SEMAPHORE_USE_NB);
-
-        /* remove element from list */
-        *prevItemReference = curItem->pNextItem;
-
-        /* update nRevision field in header */
-        headerAddresses[coreId]->nRevision++;
-
-        /* If this is the last item, deallocate !!! */
-        if(headerAddresses[coreId]->pFirstItem == NULL)
+        if((curItemDspAdress < SDRAMMEM16_BASE_ADDR) || (curItemDspAdress > endSegmentAddr))
         {
-            // Deallocate memory
-            cm_DM_Free(headerHandle[coreId], TRUE);
-            headerHandle[coreId] = INVALID_MEMORY_HANDLE;
+            ERROR("Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n",
+                    prevItemReferenceDspAddress, prevItemReference, 0, 0, 0, 0);
 
-            //Register Header into XRAM:2
-            cm_DSP_WriteXRamWord(coreId, 2, 0);
+            return CM_OK;
         }
 
-        /* deallocate memory */
-        cm_DM_Free((t_memory_handle)curItem->memHandle, TRUE);
+        curItem = (struct LoadMapItem*)((curItemDspAdress - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]); // To ARM address
 
-        /* be sure memory is updated before releasing local semaphore */
-        OSAL_mb();
+        if(curItem->pARMThis == componentHandle)
+        {
+            // Remove component from loadmap
 
-        /* release local semaphore */
-        cm_DSP_SEM_Give(coreId,LOADMAP_SEMAPHORE_USE_NB);
-    }
-    else
-    {
-        ERROR("Component not in LoadMap %s, memory corruption????\n", localname, 0, 0, 0, 0, 0);
-    }
+            /* take local semaphore */
+            cm_DSP_SEM_Take(coreId,LOADMAP_SEMAPHORE_USE_NB);
+
+            /* remove element from list */
+            *prevItemReference = curItem->pNextItem;
+
+            /* update nRevision field in header */
+            headerAddresses[coreId]->nRevision++;
+
+            /* If this is the last item, deallocate !!! */
+            if(headerAddresses[coreId]->pFirstItem == NULL)
+            {
+                // Deallocate memory
+                cm_DM_Free(headerHandle[coreId], TRUE);
+                headerHandle[coreId] = INVALID_MEMORY_HANDLE;
+
+                //Register Header into XRAM:2
+                cm_DSP_WriteXRamWord(coreId, 2, 0);
+            }
+
+            /* deallocate memory */
+            cm_DM_Free(((t_component_instance *)componentHandle)->loadMapHandle, TRUE);
+
+            /* be sure memory is updated before releasing local semaphore */
+            OSAL_mb();
+
+            /* release local semaphore */
+            cm_DSP_SEM_Give(coreId,LOADMAP_SEMAPHORE_USE_NB);
+
+	    entryNumber[coreId]--;
+
+            return CM_OK;
+        }
+
+        prevItemReferenceDspAddress = curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem);
+        prevItemReference = &curItem->pNextItem;
+        curItemDspAdress = (t_uint32)*prevItemReference;
+    };
+
+    ERROR("Memory corruption in MMDSP: component not in LoadMap %s\n", localname, 0, 0, 0, 0, 0);
 
     return CM_OK;
 }
+
+#if 0
+t_cm_error cm_DSPABI_CheckLoadMap_nolock(t_nmf_core_id coreId)
+{
+    int count=0;
+    static int dump = 5;
+    struct LoadMapItem* curItem = NULL;
+
+    if (!dump)
+            return CM_OK;
+    if (headerHandle[coreId] == 0) /* No load map yet */
+            return CM_OK;
+
+    {
+        // No entry in loadmap
+        if(headerAddresses[coreId]->pFirstItem == NULL)
+            return CM_OK;
+
+        {
+            const t_dsp_desc* pDspDesc = cm_DSP_GetState(coreId);
+            t_uint32 endSegmentAddr = SDRAMMEM16_BASE_ADDR + pDspDesc->segments[SDRAM_DATA_USER].size / 2;
+            struct LoadMapItem *prevItem=NULL;
+            t_uint32  curItemDspAdress;
+
+            if (((t_uint32)headerAddresses[coreId]->pFirstItem < SDRAMMEM16_BASE_ADDR) ||
+		((t_uint32)headerAddresses[coreId]->pFirstItem > endSegmentAddr))
+            {
+                ERROR("CheckLoadMap: Memory corruption in MMDSP at first item: at data DSP address=%x or ARM address=%x\n",
+                      headerOffsets[coreId], &headerAddresses[coreId]->pFirstItem, 0, 0, 0, 0);
+                dump--;
+                return CM_INVALID_COMPONENT_HANDLE;
+            }
+            curItemDspAdress = (t_uint32)headerAddresses[coreId]->pFirstItem;
+            curItem = (struct LoadMapItem*)((curItemDspAdress - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]);
+	    count++;
+            while(curItem->pNextItem != NULL)
+            {
+                if(((t_uint32)curItem->pNextItem < SDRAMMEM16_BASE_ADDR) || ((t_uint32)curItem->pNextItem > endSegmentAddr))
+                {
+                    if (!prevItem)
+                        ERROR("CheckLoadMap: Memory corruption in MMDSP (count=%d): at data DSP address=%x or ARM address=%x\n"
+                        "Previous (first) component name %s<%s>\n",
+                        count,
+                        curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
+                        (char*)(((t_component_instance *)&curItem->pARMThis)->pathname),
+                        (char*)(((t_component_instance *)&curItem->pARMThis)->template->name), 0);
+                    else
+                        ERROR("CheckLoadMap: Memory corruption in MMDSP (count=%d): at data DSP address=%x or ARM address=%x\n"
+                        "Previous valid component name %s<%s>",
+                        count,
+                        curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
+                        (char*)(((t_component_instance *)&prevItem->pARMThis)->pathname),
+                        (char*)(((t_component_instance *)&prevItem->pARMThis)->template->name), 0);
+                    dump--;
+                return CM_INVALID_COMPONENT_HANDLE;
+                }
+                curItemDspAdress = (t_uint32)curItem->pNextItem;
+                prevItem = curItem;
+                curItem = (struct LoadMapItem*)((curItemDspAdress - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]); // To ARM address
+		count++;
+            }
+        }
+
+    }
+
+    if (count != entryNumber[coreId]) {
+	    ERROR("CheckLoadMap: number of component differs: count=%d, expected %d (last item @ %p)\n", count, entryNumber[coreId],
+		  curItem, 0, 0, 0);
+	    dump--;
+	    return CM_INVALID_COMPONENT_HANDLE;
+    }
+    return CM_OK;
+}
+
+t_cm_error cm_DSPABI_CheckLoadMap(t_nmf_core_id coreId)
+{
+	t_cm_error error;
+	OSAL_LOCK_API();
+	error = cm_DSPABI_CheckLoadMap_nolock(coreId);
+	OSAL_UNLOCK_API();
+	return error;
+}
+#endif
