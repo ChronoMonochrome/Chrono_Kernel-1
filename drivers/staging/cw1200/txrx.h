@@ -61,7 +61,7 @@ u32 cw1200_rate_mask_to_wsm(struct cw1200_common *priv,
 			       u32 rates);
 int cw1200_skb_to_wsm(struct cw1200_common *priv,
 		      struct sk_buff *skb, struct wsm_tx *wsm);
-int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb);
+void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb);
 
 /* ******************************************************************** */
 /* WSM callbacks							*/

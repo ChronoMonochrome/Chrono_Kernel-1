@@ -412,7 +412,7 @@ int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
 
 /* ******************************************************************** */
 
-int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
+void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 {
 	struct cw1200_common *priv = dev->priv;
 	unsigned queue = skb_get_queue_mapping(skb);
@@ -516,16 +516,16 @@ int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	else
 		goto err;
 
-	return NETDEV_TX_OK;
+	return;
 
 err:
 	/* TODO: Update TX failure counters */
 	dev_kfree_skb_any(skb);
-	return NETDEV_TX_OK;
+	return;
 
 drop:
 	dev_kfree_skb_any(skb);
-	return NETDEV_TX_OK;
+	return;
 }
 
 /* ******************************************************************** */
