@@ -38,13 +38,8 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		.link_id = 0,
 	};
 
-
-	/* Link ID mapping works fine in STA mode as well.
-	 * It's better to keep same handling for both STA ans AP modes */
-#if 0
 	if (priv->mode != NL80211_IFTYPE_AP)
 		return 0;
-#endif
 
 	map_link.link_id = ffs(~(priv->link_id_map | 1)) - 1;
 	if (map_link.link_id > CW1200_MAX_STA_IN_AP_MODE) {
