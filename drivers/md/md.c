@@ -7120,7 +7120,8 @@ static int md_seq_show(struct seq_file *seq, void *v)
 {
 	struct mddev *mddev = v;
 	sector_t sectors;
-	struct md_rdev *rdev;
+	mdk_rdev_t *rdev;
+	struct bitmap *bitmap;
 
 	if (v == (void*)1) {
 		struct md_personality *pers;
