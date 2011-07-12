@@ -40,7 +40,7 @@ struct mmio_board_data{
  * Fill names of regulators required for powering up the
  * camera sensor in below array
  */
-static char *regulator_names[] = {"v-mmio-camera" , "v-ana"};
+static char *regulator_names[] = {"v-mmio-camera"};
 
 static int mmio_clock_init(struct mmio_platform_data *pdata)
 {
