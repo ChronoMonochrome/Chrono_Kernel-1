@@ -2066,7 +2066,7 @@ static void ieee80211_sta_timer(unsigned long data)
 }
 
 static void ieee80211_sta_connection_lost(struct ieee80211_sub_if_data *sdata,
-					  u8 *bssid)
+					  u8 *bssid, u8 reason)
 {
 	struct ieee80211_local *local = sdata->local;
 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
@@ -2084,8 +2084,7 @@ static void ieee80211_sta_connection_lost(struct ieee80211_sub_if_data *sdata,
 	 * but that's not a problem.
 	 */
 	ieee80211_send_deauth_disassoc(sdata, bssid,
-			IEEE80211_STYPE_DEAUTH,
-			WLAN_REASON_DISASSOC_DUE_TO_INACTIVITY,
+			IEEE80211_STYPE_DEAUTH, reason,
 			NULL, true);
 	mutex_lock(&ifmgd->mtx);
 }
@@ -2131,7 +2130,8 @@ void ieee80211_sta_work(struct ieee80211_sub_if_data *sdata)
 					    " AP %pM, disconnecting.\n",
 					    sdata->name, bssid);
 #endif
-				ieee80211_sta_connection_lost(sdata, bssid);
+				ieee80211_sta_connection_lost(sdata, bssid,
+					WLAN_REASON_DISASSOC_DUE_TO_INACTIVITY);
 			}
 		} else if (time_is_after_jiffies(ifmgd->probe_timeout))
 			run_again(ifmgd, ifmgd->probe_timeout);
@@ -2143,7 +2143,8 @@ void ieee80211_sta_work(struct ieee80211_sub_if_data *sdata)
 				    sdata->name,
 				    bssid, probe_wait_ms);
 #endif
-			ieee80211_sta_connection_lost(sdata, bssid);
+			ieee80211_sta_connection_lost(sdata, bssid,
+				WLAN_REASON_DISASSOC_DUE_TO_INACTIVITY);
 		} else if (ifmgd->probe_send_count < max_tries) {
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 			wiphy_debug(local->hw.wiphy,
@@ -2165,7 +2166,8 @@ void ieee80211_sta_work(struct ieee80211_sub_if_data *sdata)
 				    sdata->name,
 				    bssid, probe_wait_ms);
 
-			ieee80211_sta_connection_lost(sdata, bssid);
+			ieee80211_sta_connection_lost(sdata, bssid,
+				WLAN_REASON_DISASSOC_DUE_TO_INACTIVITY);
 		}
 	}
 
@@ -2254,6 +2256,24 @@ void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata)
 
 	if (!ifmgd->associated)
 		return;
+
+	if (sdata->flags & IEEE80211_SDATA_DISCONNECT_RESUME) {
+		sdata->flags &= ~IEEE80211_SDATA_DISCONNECT_RESUME;
+		mutex_lock(&ifmgd->mtx);
+		if (ifmgd->associated) {
+#ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+			wiphy_debug(sdata->local->hw.wiphy,
+				    "%s: driver requested disconnect after resume.\n",
+				    sdata->name);
+#endif
+			ieee80211_sta_connection_lost(sdata,
+				ifmgd->associated->bssid,
+				WLAN_REASON_UNSPECIFIED);
+			mutex_unlock(&ifmgd->mtx);
+			return;
+		}
+		mutex_unlock(&ifmgd->mtx);
+	}
 
 	if (test_and_clear_bit(TMR_RUNNING_TIMER, &ifmgd->timers_running))
 		add_timer(&ifmgd->timer);
