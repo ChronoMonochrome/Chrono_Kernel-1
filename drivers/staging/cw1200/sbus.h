@@ -32,6 +32,7 @@ struct sbus_ops {
 	int (*irq_unsubscribe)(struct sbus_priv *self);
 	int (*reset)(struct sbus_priv *self);
 	size_t (*align_size)(struct sbus_priv *self, size_t size);
+	int (*power_mgmt)(struct sbus_priv *self, bool suspend);
 };
 
 #endif /* CW1200_SBUS_H */

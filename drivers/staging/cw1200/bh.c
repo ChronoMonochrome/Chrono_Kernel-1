@@ -39,6 +39,14 @@ static int cw1200_bh(void *arg);
 #define PIGGYBACK_CTRL_REG	(2)
 #define EFFECTIVE_BUF_SIZE	(MAX_SZ_RD_WR_BUFFERS - PIGGYBACK_CTRL_REG)
 
+/* Suspend state privates */
+enum cw1200_bh_pm_state {
+	CW1200_BH_RESUMED = 0,
+	CW1200_BH_SUSPEND,
+	CW1200_BH_SUSPENDED,
+	CW1200_BH_RESUME,
+};
+
 typedef int (*cw1200_wsm_handler)(struct cw1200_common *priv,
 	u8 *data, size_t size);
 
@@ -52,10 +60,11 @@ int cw1200_register_bh(struct cw1200_common *priv)
 	atomic_set(&priv->bh_rx, 0);
 	atomic_set(&priv->bh_tx, 0);
 	atomic_set(&priv->bh_term, 0);
+	atomic_set(&priv->bh_suspend, CW1200_BH_RESUMED);
 	priv->buf_id_tx = 0;
 	priv->buf_id_rx = 0;
 	init_waitqueue_head(&priv->bh_wq);
-	init_waitqueue_head(&priv->hw_bufs_used_wq);
+	init_waitqueue_head(&priv->bh_evt_wq);
 	priv->bh_thread = kthread_create(&cw1200_bh, priv, "cw1200_bh");
 	if (IS_ERR(priv->bh_thread)) {
 		err = PTR_ERR(priv->bh_thread);
@@ -107,6 +116,30 @@ void cw1200_bh_wakeup(struct cw1200_common *priv)
 		wake_up_interruptible(&priv->bh_wq);
 }
 
+void cw1200_bh_suspend(struct cw1200_common *priv)
+{
+	bh_printk(KERN_DEBUG "[BH] suspend.\n");
+	if (WARN_ON(priv->bh_error))
+		return;
+
+	atomic_set(&priv->bh_suspend, CW1200_BH_SUSPEND);
+	wake_up_interruptible(&priv->bh_wq);
+	wait_event_interruptible(priv->bh_evt_wq, priv->bh_error ||
+			(CW1200_BH_SUSPENDED == atomic_read(&priv->bh_suspend)));
+}
+
+void cw1200_bh_resume(struct cw1200_common *priv)
+{
+	bh_printk(KERN_DEBUG "[BH] resume.\n");
+	if (WARN_ON(priv->bh_error))
+		return;
+
+	atomic_set(&priv->bh_suspend, CW1200_BH_RESUME);
+	wake_up_interruptible(&priv->bh_wq);
+	wait_event_interruptible(priv->bh_evt_wq, priv->bh_error ||
+			(CW1200_BH_RESUMED == atomic_read(&priv->bh_suspend)));
+}
+
 static inline void wsm_alloc_tx_buffer(struct cw1200_common *priv)
 {
 	++priv->hw_bufs_used;
@@ -123,7 +156,7 @@ int wsm_release_tx_buffer(struct cw1200_common *priv, int count)
 	else if (hw_bufs_used >= priv->wsm_caps.numInpChBufs)
 		ret = 1;
 	if (!priv->hw_bufs_used)
-		wake_up_interruptible(&priv->hw_bufs_used_wq);
+		wake_up_interruptible(&priv->bh_evt_wq);
 	return ret;
 }
 
@@ -221,7 +254,7 @@ static int cw1200_bh(void *arg)
 	struct cw1200_common *priv = arg;
 	struct sk_buff *skb_rx = NULL;
 	size_t read_len = 0;
-	int rx, tx, term;
+	int rx, tx, term, suspend;
 	struct wsm_hdr *wsm;
 	size_t wsm_len;
 	int wsm_id;
@@ -244,7 +277,8 @@ static int cw1200_bh(void *arg)
 				rx = atomic_xchg(&priv->bh_rx, 0);
 				tx = atomic_xchg(&priv->bh_tx, 0);
 				term = atomic_xchg(&priv->bh_term, 0);
-				(rx || tx || term);
+				suspend = atomic_read(&priv->bh_suspend);
+				(rx || tx || term || suspend);
 			}), status);
 
 		if (status < 0 || term)
@@ -252,8 +286,34 @@ static int cw1200_bh(void *arg)
 
 		if (!status) {
 			bh_printk(KERN_DEBUG "[BH] Device wakedown.\n");
-			WARN_ON(cw1200_reg_write_16(priv, ST90TDS_CONTROL_REG_ID, 0));
+			WARN_ON(cw1200_reg_write_16(priv,
+					ST90TDS_CONTROL_REG_ID, 0));
 			priv->device_can_sleep = true;
+			continue;
+		} else if (suspend) {
+			bh_printk(KERN_DEBUG "[BH] Device suspend.\n");
+			if (priv->powersave_enabled &&
+					!priv->device_can_sleep) {
+				WARN_ON(cw1200_reg_write_16(priv,
+						ST90TDS_CONTROL_REG_ID, 0));
+				priv->device_can_sleep = true;
+			}
+
+			atomic_set(&priv->bh_suspend, CW1200_BH_SUSPENDED);
+			wake_up_interruptible(&priv->bh_evt_wq);
+			status = wait_event_interruptible(priv->bh_wq,
+					CW1200_BH_RESUME == atomic_read(
+						&priv->bh_suspend));
+			if (status < 0) {
+				wiphy_err(priv->hw->wiphy,
+					"%s: Failed to wait for resume: %ld.\n",
+					__func__, status);
+				break;
+			}
+			bh_printk(KERN_DEBUG "[BH] Device resume.\n");
+			atomic_set(&priv->bh_suspend, CW1200_BH_RESUMED);
+			wake_up_interruptible(&priv->bh_evt_wq);
+			atomic_add(1, &priv->bh_rx);
 			continue;
 		}
 

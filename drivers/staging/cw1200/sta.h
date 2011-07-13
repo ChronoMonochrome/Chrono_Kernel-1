@@ -72,5 +72,6 @@ void cw1200_unjoin_work(struct work_struct *work);
 void cw1200_wep_key_work(struct work_struct *work);
 void cw1200_update_listening(struct cw1200_common *priv, bool enabled);
 void cw1200_update_filtering(struct cw1200_common *priv);
+int __cw1200_flush(struct cw1200_common *priv, bool drop);
 
 #endif

@@ -33,6 +33,8 @@
 /* extern */ struct sbus_ops;
 /* extern */ struct task_struct;
 /* extern */ struct cw1200_debug_priv;
+/* extern */ struct cw1200_suspend_state;
+/* extern */ struct firmware;
 
 #if defined(CONFIG_CW1200_TXRX_DEBUG)
 #define txrx_printk(...) printk(__VA_ARGS__)
@@ -81,6 +83,7 @@ struct cw1200_common {
 	/* calibration, output power limit and rssi<->dBm conversation data */
 
 	/* BBP/MAC state */
+	const struct firmware		*sdd;
 	struct ieee80211_rate		*rates;
 	struct ieee80211_rate		*mcs_rates;
 	u8 mac_addr[ETH_ALEN];
@@ -110,20 +113,22 @@ struct cw1200_common {
 	struct wsm_beacon_filter_control bf_control;
 	u8				ba_tid_mask;
 	struct wsm_multicast_filter	multicast_filter;
+	struct cw1200_suspend_state	*suspend_state;
 
 	/* BH */
 	atomic_t			bh_rx;
 	atomic_t			bh_tx;
 	atomic_t			bh_term;
+	atomic_t			bh_suspend;
 	struct task_struct		*bh_thread;
 	int				bh_error;
 	wait_queue_head_t		bh_wq;
+	wait_queue_head_t		bh_evt_wq;
 	int				buf_id_tx;	/* byte */
 	int				buf_id_rx;	/* byte */
 	int				wsm_rx_seq;	/* byte */
 	int				wsm_tx_seq;	/* byte */
 	int				hw_bufs_used;
-	wait_queue_head_t		hw_bufs_used_wq;
 	struct sk_buff			*skb_cache;
 	bool				powersave_enabled;
 	bool				device_can_sleep;
@@ -194,11 +199,11 @@ struct cw1200_sta_priv {
 };
 
 /* interfaces for the drivers */
-int cw1200_probe(const struct sbus_ops *sbus_ops,
-		 struct sbus_priv *sbus,
-		 struct device *pdev,
-		 struct cw1200_common **pself);
-void cw1200_release(struct cw1200_common *self);
+int cw1200_core_probe(const struct sbus_ops *sbus_ops,
+		      struct sbus_priv *sbus,
+		      struct device *pdev,
+		      struct cw1200_common **pself);
+void cw1200_core_release(struct cw1200_common *self);
 
 #define CW1200_DBG_MSG		0x00000001
 #define CW1200_DBG_NIY		0x00000002

@@ -26,7 +26,6 @@
 #include <linux/vmalloc.h>
 #include <linux/random.h>
 #include <linux/sched.h>
-
 #include <net/mac80211.h>
 
 #include "cw1200.h"
@@ -39,6 +38,7 @@
 #include "ap.h"
 #include "scan.h"
 #include "debug.h"
+#include "pm.h"
 
 MODULE_AUTHOR("Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>");
 MODULE_DESCRIPTION("Softmac ST-Ericsson CW1200 common code");
@@ -220,6 +220,10 @@ static const struct ieee80211_ops cw1200_ops = {
 	.get_stats		= cw1200_get_stats,
 	.ampdu_action		= cw1200_ampdu_action,
 	.flush			= cw1200_flush,
+#ifdef CONFIG_PM
+	.suspend		= cw1200_wow_suspend,
+	.resume			= cw1200_wow_resume,
+#endif /* CONFIG_PM */
 	/* Intentionally not offloaded:					*/
 	/*.channel_switch	= cw1200_channel_switch,		*/
 	/*.remain_on_channel	= cw1200_remain_on_channel,		*/
@@ -412,16 +416,21 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 		priv->skb_cache = NULL;
 	}
 
+	if (priv->sdd) {
+		release_firmware(priv->sdd);
+		priv->sdd = NULL;
+	}
+
 	for (i = 0; i < 4; ++i)
 		cw1200_queue_deinit(&priv->tx_queue[i]);
 	cw1200_queue_stats_deinit(&priv->tx_queue_stats);
 }
 EXPORT_SYMBOL_GPL(cw1200_unregister_common);
 
-int cw1200_probe(const struct sbus_ops *sbus_ops,
-		 struct sbus_priv *sbus,
-		 struct device *pdev,
-		 struct cw1200_common **pself)
+int cw1200_core_probe(const struct sbus_ops *sbus_ops,
+		      struct sbus_priv *sbus,
+		      struct device *pdev,
+		      struct cw1200_common **pself)
 {
 	int err = -ENOMEM;
 	struct ieee80211_hw *dev;
@@ -489,12 +498,12 @@ err1:
 err:
 	return err;
 }
-EXPORT_SYMBOL_GPL(cw1200_probe);
+EXPORT_SYMBOL_GPL(cw1200_core_probe);
 
-void cw1200_release(struct cw1200_common *self)
+void cw1200_core_release(struct cw1200_common *self)
 {
 	cw1200_unregister_common(self->hw);
 	cw1200_free_common(self->hw);
 	return;
 }
-EXPORT_SYMBOL_GPL(cw1200_release);
+EXPORT_SYMBOL_GPL(cw1200_core_release);

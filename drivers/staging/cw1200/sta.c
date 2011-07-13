@@ -27,7 +27,6 @@
 
 
 static int cw1200_cancel_scan(struct cw1200_common *priv);
-static int __cw1200_flush(struct cw1200_common *priv, bool drop);
 
 static inline void __cw1200_free_event_queue(struct list_head *list)
 {
@@ -652,7 +651,7 @@ int cw1200_set_rts_threshold(struct ieee80211_hw *hw, u32 value)
 	return ret;
 }
 
-static int __cw1200_flush(struct cw1200_common *priv, bool drop)
+int __cw1200_flush(struct cw1200_common *priv, bool drop)
 {
 	int i, ret;
 
@@ -859,43 +858,42 @@ int cw1200_setup_mac(struct cw1200_common *priv)
 	if (wsm_get_station_id(priv, &prev_mac[0])
 	    || memcmp(prev_mac, priv->mac_addr, ETH_ALEN)) {
 		const char *sdd_path = NULL;
-		const struct firmware *firmware = NULL;
 		struct wsm_configuration cfg = {
 			.dot11StationId = &priv->mac_addr[0],
 		};
 
-		switch (priv->hw_revision) {
-		case CW1200_HW_REV_CUT10:
-			sdd_path = SDD_FILE_10;
-			break;
-		case CW1200_HW_REV_CUT11:
-			sdd_path = SDD_FILE_11;
-			break;
-		case CW1200_HW_REV_CUT20:
-			sdd_path = SDD_FILE_20;
-			break;
-		case CW1200_HW_REV_CUT22:
-			sdd_path = SDD_FILE_22;
-			break;
-		default:
-			BUG_ON(1);
+		if (!priv->sdd) {
+			switch (priv->hw_revision) {
+			case CW1200_HW_REV_CUT10:
+				sdd_path = SDD_FILE_10;
+				break;
+			case CW1200_HW_REV_CUT11:
+				sdd_path = SDD_FILE_11;
+				break;
+			case CW1200_HW_REV_CUT20:
+				sdd_path = SDD_FILE_20;
+				break;
+			case CW1200_HW_REV_CUT22:
+				sdd_path = SDD_FILE_22;
+				break;
+			default:
+				BUG_ON(1);
+			}
+
+			ret = request_firmware(&priv->sdd,
+				sdd_path, priv->pdev);
+
+			if (unlikely(ret)) {
+				cw1200_dbg(CW1200_DBG_ERROR,
+					"%s: can't load sdd file %s.\n",
+					__func__, sdd_path);
+				return ret;
+			}
 		}
 
-		ret = request_firmware(&firmware,
-			sdd_path, priv->pdev);
-
-		if (unlikely(ret)) {
-			cw1200_dbg(CW1200_DBG_ERROR,
-				"%s: can't load sdd file %s.\n",
-				__func__, sdd_path);
-			return ret;
-		}
-
-		cfg.dpdData = firmware->data;
-		cfg.dpdData_size = firmware->size;
+		cfg.dpdData = priv->sdd->data;
+		cfg.dpdData_size = priv->sdd->size;
 		ret = WARN_ON(wsm_configuration(priv, &cfg));
-
-		release_firmware(firmware);
 	}
 	if (ret)
 		return ret;

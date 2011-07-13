@@ -39,7 +39,7 @@ struct sbus_priv {
 	void			*irq_priv;
 };
 
-static const struct sdio_device_id if_sdio_ids[] = {
+static const struct sdio_device_id cw1200_sdio_ids[] = {
 	{ SDIO_DEVICE(SDIO_ANY_ID, SDIO_ANY_ID) },
 	{ /* end: all zeroes */			},
 };
@@ -52,7 +52,8 @@ static int cw1200_sdio_memcpy_fromio(struct sbus_priv *self,
 {
 	int ret = sdio_memcpy_fromio(self->func, dst, addr, count);
 	if (ret) {
-		printk(KERN_ERR "!!! Can't read %d bytes from 0x%.8X. Err %d.\n",
+		printk(KERN_ERR "!!! Can't read %d bytes from 0x%.8X."
+				" Err %d.\n",
 				count, addr, ret);
 	}
 	return ret;
@@ -111,10 +112,6 @@ static int cw1200_request_irq(struct sbus_priv *self,
 	if (WARN_ON(ret < 0))
 		goto exit;
 
-	ret = enable_irq_wake(irq->start);
-	if (WARN_ON(ret))
-		goto free_irq;
-
 	/* Hack to access Fuction-0 */
 	func_num = self->func->num;
 	self->func->num = 0;
@@ -139,8 +136,6 @@ static int cw1200_request_irq(struct sbus_priv *self,
 
 set_func:
 	self->func->num = func_num;
-	disable_irq_wake(irq->start);
-free_irq:
 	free_irq(irq->start, self);
 exit:
 	return ret;
@@ -191,7 +186,6 @@ static int cw1200_sdio_irq_unsubscribe(struct sbus_priv *self)
 	ret = sdio_release_irq(self->func);
 	sdio_release_host(self->func);
 #else
-	disable_irq_wake(irq->start);
 	free_irq(irq->start, self);
 #endif
 
@@ -283,7 +277,7 @@ static int cw1200_sdio_reset(struct sbus_priv *self)
 	return 0;
 }
 
-static size_t cw1200_align_size(struct sbus_priv *self, size_t size)
+static size_t cw1200_sdio_align_size(struct sbus_priv *self, size_t size)
 {
 	size_t aligned = sdio_align_size(self->func, size);
 	/* HACK!!! Problems with DMA size on u8500 platform  */
@@ -295,6 +289,25 @@ static size_t cw1200_align_size(struct sbus_priv *self, size_t size)
 	return aligned;
 }
 
+static int cw1200_sdio_pm(struct sbus_priv *self, bool  suspend)
+{
+	int ret;
+        const struct resource *irq = self->pdata->irq;
+	struct sdio_func *func = self->func;
+
+	sdio_claim_host(func);
+	if (suspend)
+		ret = mmc_host_disable(func->card->host);
+	else
+		ret = mmc_host_enable(func->card->host);
+	sdio_release_host(func);
+
+	if (!ret && irq)
+		ret = set_irq_wake(irq->start, suspend);
+
+	return ret;
+}
+
 static struct sbus_ops cw1200_sdio_sbus_ops = {
 	.sbus_memcpy_fromio	= cw1200_sdio_memcpy_fromio,
 	.sbus_memcpy_toio	= cw1200_sdio_memcpy_toio,
@@ -303,7 +316,8 @@ static struct sbus_ops cw1200_sdio_sbus_ops = {
 	.irq_subscribe		= cw1200_sdio_irq_subscribe,
 	.irq_unsubscribe	= cw1200_sdio_irq_unsubscribe,
 	.reset			= cw1200_sdio_reset,
-	.align_size		= cw1200_align_size,
+	.align_size		= cw1200_sdio_align_size,
+	.power_mgmt		= cw1200_sdio_pm,
 };
 
 /* Probe Function to be called by SDIO stack when device is discovered */
@@ -329,7 +343,7 @@ static int cw1200_sdio_probe(struct sdio_func *func,
 	sdio_enable_func(func);
 	sdio_release_host(func);
 
-	status = cw1200_probe(&cw1200_sdio_sbus_ops,
+	status = cw1200_core_probe(&cw1200_sdio_sbus_ops,
 			      self, &func->dev, &self->core);
 	if (status) {
 		sdio_claim_host(func);
@@ -342,14 +356,15 @@ static int cw1200_sdio_probe(struct sdio_func *func,
 	return status;
 }
 
-/* Disconnect Function to be called by SDIO stack when device is disconnected */
+/* Disconnect Function to be called by SDIO stack when
+ * device is disconnected */
 static void cw1200_sdio_disconnect(struct sdio_func *func)
 {
 	struct sbus_priv *self = sdio_get_drvdata(func);
 
 	if (self) {
 		if (self->core) {
-			cw1200_release(self->core);
+			cw1200_core_release(self->core);
 			self->core = NULL;
 		}
 		sdio_claim_host(func);
@@ -362,7 +377,7 @@ static void cw1200_sdio_disconnect(struct sdio_func *func)
 
 static struct sdio_driver sdio_driver = {
 	.name		= "cw1200_wlan",
-	.id_table	= if_sdio_ids,
+	.id_table	= cw1200_sdio_ids,
 	.probe		= cw1200_sdio_probe,
 	.remove		= cw1200_sdio_disconnect,
 };
