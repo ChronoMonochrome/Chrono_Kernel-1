@@ -16,6 +16,10 @@
 #include <linux/lsm303dlh.h>
 #include <linux/regulator/consumer.h>
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
+
 #define WHO_AM_I    0x0F
 
 /* lsm303dlhc accelerometer registers */
@@ -77,6 +81,7 @@ struct lsm303dlhc_a_t {
  * @mode: current mode of operation
  * @rate: current sampling rate
  * @shift_adjust: current shift adjust value set according to range
+ * @early_suspend: early suspend structure
  * @device_status: device is ON, OFF or SUSPENDED
  * @id: accelerometer device id
  */
@@ -87,6 +92,7 @@ struct lsm303dlhc_a_data {
 	struct lsm303dlhc_a_t data;
 	struct lsm303dlh_platform_data pdata;
 	struct regulator *regulator;
+	struct early_suspend early_suspend;
 	unsigned char range;
 	unsigned char mode;
 	unsigned char rate;
@@ -94,6 +100,11 @@ struct lsm303dlhc_a_data {
 	int device_status;
 	int id;
 };
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void lsm303dlhc_a_early_suspend(struct early_suspend *data);
+static void lsm303dlhc_a_late_resume(struct early_suspend *data);
+#endif
 
 static int lsm303dlhc_a_write(struct lsm303dlhc_a_data *ddata, u8 reg,
 		u8 val, char *msg)
@@ -116,7 +127,7 @@ static int lsm303dlhc_a_read(struct lsm303dlhc_a_data *ddata, u8 reg, char *msg)
 	return ret;
 }
 
-#ifdef (CONFIG_PM)
+#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_PM)
 static int lsm303dlhc_a_do_suspend(struct lsm303dlhc_a_data *ddata)
 {
 	int ret;
@@ -523,6 +534,14 @@ static int __devinit lsm303dlhc_a_probe(struct i2c_client *client,
 	if (ret)
 		goto exit_free_regulator;
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	adata->early_suspend.level =
+			EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	adata->early_suspend.suspend = lsm303dlhc_a_early_suspend;
+	adata->early_suspend.resume = lsm303dlhc_a_late_resume;
+	register_early_suspend(&adata->early_suspend);
+#endif
+
 	if (adata->device_status == DEVICE_ON && adata->regulator) {
 		regulator_disable(adata->regulator);
 		adata->device_status = DEVICE_OFF;
@@ -574,7 +593,7 @@ static int __devexit lsm303dlhc_a_remove(struct i2c_client *client)
 	return 0;
 }
 
-#ifdef (CONFIG_PM)
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
 static int lsm303dlhc_a_suspend(struct device *dev)
 {
 	struct lsm303dlhc_a_data *ddata;
@@ -609,6 +628,27 @@ static const struct dev_pm_ops lsm303dlhc_a_dev_pm_ops = {
 	.suspend = lsm303dlhc_a_suspend,
 	.resume  = lsm303dlhc_a_resume,
 };
+#else
+static void lsm303dlhc_a_early_suspend(struct early_suspend *data)
+{
+	struct lsm303dlhc_a_data *ddata =
+		container_of(data, struct lsm303dlhc_a_data, early_suspend);
+	int ret;
+
+	ret = lsm303dlhc_a_do_suspend(ddata);
+}
+
+static void lsm303dlhc_a_late_resume(struct early_suspend *data)
+{
+	struct lsm303dlhc_a_data *ddata =
+		container_of(data, struct lsm303dlhc_a_data, early_suspend);
+	int ret;
+
+	ret = lsm303dlhc_a_restore(ddata);
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"lsm303dlhc_a late resume failed\n");
+}
 #endif /* CONFIG_PM */
 
 static const struct i2c_device_id lsm303dlhc_a_id[] = {
@@ -622,7 +662,7 @@ static struct i2c_driver lsm303dlhc_a_driver = {
 	.id_table	= lsm303dlhc_a_id,
 	.driver = {
 		.name = "lsm303dlhc_a",
-	#ifdef (CONFIG_PM)
+	#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
 		.pm	=	&lsm303dlhc_a_dev_pm_ops,
 	#endif
 	},
