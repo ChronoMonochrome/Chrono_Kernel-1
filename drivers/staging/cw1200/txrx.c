@@ -643,7 +643,6 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 {
 	struct sk_buff *skb = *skb_p;
 	struct ieee80211_rx_status *hdr = IEEE80211_SKB_RXCB(skb);
-	const struct ieee80211_rate *rate;
 	__le16 frame_control;
 	hdr->flag = 0;
 
@@ -680,16 +679,13 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 			arg->channelNumber,
 			hdr->band);
 
-	if (arg->rxedRate >= 4)
-		rate = &priv->rates[arg->rxedRate - 2];
-	else
-		rate = &priv->rates[arg->rxedRate];
-
-	if (rate >= priv->mcs_rates) {
-		hdr->rate_idx = rate - priv->mcs_rates;
+	if (arg->rxedRate >= 14) {
 		hdr->flag |= RX_FLAG_HT;
+		hdr->rate_idx = arg->rxedRate - 14;
+	} else if (arg->rxedRate >= 4) {
+		hdr->rate_idx = arg->rxedRate - 2;
 	} else {
-		hdr->rate_idx = rate - priv->rates;
+		hdr->rate_idx = arg->rxedRate;
 	}
 
 	hdr->signal = (s8)arg->rcpiRssi;

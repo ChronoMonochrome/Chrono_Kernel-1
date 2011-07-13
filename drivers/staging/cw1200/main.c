@@ -71,6 +71,9 @@ static struct ieee80211_rate cw1200_rates[] = {
 	RATETAB_ENT(360, 11, 0),
 	RATETAB_ENT(480, 12, 0),
 	RATETAB_ENT(540, 13, 0),
+};
+
+static struct ieee80211_rate cw1200_mcs_rates[] = {
 	RATETAB_ENT(65,  14, IEEE80211_TX_RC_MCS),
 	RATETAB_ENT(130, 15, IEEE80211_TX_RC_MCS),
 	RATETAB_ENT(195, 16, IEEE80211_TX_RC_MCS),
@@ -85,8 +88,8 @@ static struct ieee80211_rate cw1200_rates[] = {
 #define cw1200_a_rates_size	(ARRAY_SIZE(cw1200_rates) - 4)
 #define cw1200_g_rates		(cw1200_rates + 0)
 #define cw1200_g_rates_size	(ARRAY_SIZE(cw1200_rates))
-#define cw1200_n_rates		(cw1200_rates + 12)
-#define cw1200_n_rates_size	(ARRAY_SIZE(cw1200_rates) - 12)
+#define cw1200_n_rates		(cw1200_mcs_rates)
+#define cw1200_n_rates_size	(ARRAY_SIZE(cw1200_mcs_rates))
 
 
 #define CHAN2G(_channel, _freq, _flags) {			\
