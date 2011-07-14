@@ -11,6 +11,9 @@
 #include <plat/ste_dma40.h>
 #include <mach/hardware.h>
 #include <mach/usb.h>
+#include <plat/pincfg.h>
+#include "pins.h"
+#include "board-mop500-usb.h"
 
 #define MUSB_DMA40_RX_CH { \
 		.mode = STEDMA40_MODE_LOGICAL, \
@@ -87,6 +90,7 @@ static struct ux500_musb_board_data musb_board_data = {
 };
 
 static u64 ux500_musb_dmamask = DMA_BIT_MASK(32);
+static struct ux500_pins *usb_gpio_pins;
 
 static struct musb_hdrc_config musb_hdrc_config = {
 	.multipoint	= true,
@@ -123,6 +127,37 @@ struct platform_device ux500_musb_device = {
 	},
 	.num_resources = ARRAY_SIZE(usb_resources),
 	.resource = usb_resources,
+};
+
+static void enable_gpio(void)
+{
+	ux500_pins_enable(usb_gpio_pins);
+}
+static void disable_gpio(void)
+{
+	ux500_pins_disable(usb_gpio_pins);
+}
+static int get_gpio(struct device *device)
+{
+	usb_gpio_pins = ux500_pins_get(dev_name(device));
+
+	if (usb_gpio_pins == NULL) {
+		dev_err(device, "Could not get %s:usb_gpio_pins structure\n",
+				dev_name(device));
+
+		return PTR_ERR(usb_gpio_pins);
+	}
+	return 0;
+}
+static void put_gpio(void)
+{
+	ux500_pins_put(usb_gpio_pins);
+}
+struct ab8500_usbgpio_platform_data ab8500_usbgpio_plat_data = {
+	.get		= &get_gpio,
+	.enable		= &enable_gpio,
+	.disable	= &disable_gpio,
+	.put		= &put_gpio,
 };
 
 static inline void ux500_usb_dma_update_rx_ch_config(int *src_dev_type)
