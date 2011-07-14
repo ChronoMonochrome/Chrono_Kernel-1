@@ -357,11 +357,42 @@ void cw1200_update_filtering(struct cw1200_common *priv)
 		ret = wsm_beacon_filter_control(priv, &priv->bf_control);
 	if (!ret)
 		ret = wsm_set_bssid_filtering(priv, !priv->rx_filter.bssid);
+	if (!ret)
+		ret = wsm_set_multicast_filter(priv, &priv->multicast_filter);
 	if (ret)
 		wiphy_err(priv->hw->wiphy,
 				"%s: Update filtering failed: %d.\n",
 				__func__, ret);
 	return;
+}
+
+u64 cw1200_prepare_multicast(struct ieee80211_hw *hw,
+			     struct netdev_hw_addr_list *mc_list)
+{
+	struct cw1200_common *priv = hw->priv;
+	struct netdev_hw_addr *ha;
+	int count = 0;
+
+	/* Disable multicast filtering */
+	memset(&priv->multicast_filter, 0x00, sizeof(priv->multicast_filter));
+
+	if (netdev_hw_addr_list_count(mc_list) > WSM_MAX_GRP_ADDRTABLE_ENTRIES)
+		return 0;
+
+	/* Enable if requested */
+	netdev_hw_addr_list_for_each(ha, mc_list) {
+		sta_printk(KERN_DEBUG "[STA] multicast: %pM\n", ha->addr);
+		memcpy(&priv->multicast_filter.macAddress[count],
+		       ha->addr, ETH_ALEN);
+		count++;
+	}
+
+	if (count) {
+		priv->multicast_filter.enable = __cpu_to_le32(1);
+		priv->multicast_filter.numOfAddresses = __cpu_to_le32(count);
+	}
+
+	return netdev_hw_addr_list_count(mc_list);
 }
 
 void cw1200_configure_filter(struct ieee80211_hw *dev,

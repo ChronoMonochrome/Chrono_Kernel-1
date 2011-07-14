@@ -358,6 +358,7 @@ struct cw1200_common;
 
 /* 4.5  dot11GroupAddressesTable */
 #define WSM_MIB_ID_DOT11_GROUP_ADDRESSES_TABLE	0x0004
+#define WSM_MAX_GRP_ADDRTABLE_ENTRIES		8
 
 /* 4.6  dot11WepDefaultKeyId */
 #define WSM_MIB_ID_DOT11_WEP_DEFAULT_KEY_ID	0x0005
@@ -1444,6 +1445,33 @@ static inline int wsm_set_bssid_filtering(struct cw1200_common *priv,
 	};
 	return wsm_write_mib(priv, WSM_MIB_ID_DISABLE_BSSID_FILTER,
 			&arg, sizeof(arg));
+}
+
+/* Multicat filtering - 4.5 */
+struct wsm_multicast_filter {
+	__le32 enable;
+	__le32 numOfAddresses;
+	u8 macAddress[WSM_MAX_GRP_ADDRTABLE_ENTRIES][ETH_ALEN];
+} __packed;
+
+static inline int wsm_set_multicast_filter(struct cw1200_common *priv,
+					   struct wsm_multicast_filter *fp)
+{
+	return wsm_write_mib(priv, WSM_MIB_ID_DOT11_GROUP_ADDRESSES_TABLE,
+			     fp, sizeof(*fp));
+}
+
+/* IPv4 filtering - 4.10 */
+struct wsm_ipv4_filter {
+	__le32 enable;
+	u8 ipv4Address[4];
+} __packed;
+
+static inline int wsm_set_ipv4_arp_filter(struct cw1200_common *priv,
+				      struct wsm_ipv4_filter *fp)
+{
+	return wsm_write_mib(priv, WSM_MIB_ID_ARP_IP_ADDRESSES_TABLE,
+			    fp, sizeof(*fp));
 }
 
 /* UseMultiTxConfMessage */

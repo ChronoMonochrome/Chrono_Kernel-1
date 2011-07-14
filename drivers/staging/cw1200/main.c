@@ -214,6 +214,7 @@ static const struct ieee80211_ops cw1200_ops = {
 	.set_rts_threshold	= cw1200_set_rts_threshold,
 	.config			= cw1200_config,
 	.bss_info_changed	= cw1200_bss_info_changed,
+	.prepare_multicast	= cw1200_prepare_multicast,
 	.configure_filter	= cw1200_configure_filter,
 	.conf_tx		= cw1200_conf_tx,
 	.get_stats		= cw1200_get_stats,

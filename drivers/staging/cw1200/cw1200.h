@@ -109,6 +109,7 @@ struct cw1200_common {
 	struct wsm_rx_filter		rx_filter;
 	struct wsm_beacon_filter_control bf_control;
 	u8				ba_tid_mask;
+	struct wsm_multicast_filter	multicast_filter;
 
 	/* BH */
 	atomic_t			bh_rx;
