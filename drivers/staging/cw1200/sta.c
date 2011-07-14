@@ -109,9 +109,6 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	cancel_delayed_work_sync(&priv->join_timeout);
 	cancel_delayed_work_sync(&priv->bss_loss_work);
 	cancel_delayed_work_sync(&priv->connection_loss_work);
-#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
-	cancel_delayed_work_sync(&priv->keep_alive_work);
-#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 
 	mutex_lock(&priv->conf_mutex);
 	switch (priv->join_status) {
@@ -826,28 +823,6 @@ void cw1200_connection_loss_work(struct work_struct *work)
 	ieee80211_connection_loss(priv->vif);
 }
 
-#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
-void cw1200_keep_alive_work(struct work_struct *work)
-{
-	struct cw1200_common *priv =
-		container_of(work, struct cw1200_common, keep_alive_work.work);
-	unsigned long now = jiffies;
-	unsigned long delta = now - priv->last_activity_time;
-	unsigned long tmo = 30 * HZ;
-
-	if (delta >= tmo) {
-		sta_printk(KERN_DEBUG "[CQM] Keep-alive ping.\n");
-		STUB();
-		/* TODO: Do a keep-alive ping :) */
-		priv->last_activity_time = now;
-	} else {
-		tmo -= delta;
-	}
-	queue_delayed_work(priv->workqueue,
-		&priv->keep_alive_work, tmo);
-}
-#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
-
 void cw1200_tx_failure_work(struct work_struct *work)
 {
 	struct cw1200_common *priv =
@@ -1019,12 +994,6 @@ void cw1200_join_work(struct work_struct *work)
 		WARN_ON(wsm_set_block_ack_policy(priv,
 				priv->ba_tid_mask, priv->ba_tid_mask));
 
-#if defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
-		priv->last_activity_time = jiffies;
-		/* Queue keep-alive ping avery 30 sec. */
-		queue_delayed_work(priv->workqueue,
-			&priv->keep_alive_work, 30 * HZ);
-#endif /* CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 		/* Queue unjoin if not associated in 3 sec. */
 		queue_delayed_work(priv->workqueue,
 			&priv->join_timeout, 3 * HZ);
@@ -1036,17 +1005,12 @@ void cw1200_join_work(struct work_struct *work)
 			cw1200_queue_remove(&priv->tx_queue[queueId],
 				priv, __le32_to_cpu(wsm->packetID));
 			cancel_delayed_work_sync(&priv->join_timeout);
-#if defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
-			cancel_delayed_work_sync(&priv->keep_alive_work);
-#endif /* CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 			cw1200_update_listening(priv, priv->listening);
 			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 		} else {
 			/* Upload keys */
 			WARN_ON(cw1200_upload_keys(priv));
-#if !defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
 			WARN_ON(wsm_keep_alive_period(priv, 30 /* sec */));
-#endif /* CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 			cw1200_queue_requeue(&priv->tx_queue[queueId],
 				__le32_to_cpu(wsm->packetID));
 		}
@@ -1089,9 +1053,6 @@ void cw1200_unjoin_work(struct work_struct *work)
 		cw1200_free_event_queue(priv);
 		cancel_work_sync(&priv->event_handler);
 		cancel_delayed_work_sync(&priv->connection_loss_work);
-#if defined(CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
-		cancel_delayed_work_sync(&priv->keep_alive_work);
-#endif /* CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 		cw1200_update_listening(priv, priv->listening);
 		cw1200_update_filtering(priv);
 		sta_printk(KERN_DEBUG "[STA] Unjoin.\n");

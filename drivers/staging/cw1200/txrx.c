@@ -592,9 +592,6 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 
 		if (likely(!arg->status)) {
 			tx->flags |= IEEE80211_TX_STAT_ACK;
-#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
-			priv->last_activity_time = jiffies;
-#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 			priv->cqm_tx_failure_count = 0;
 			++tx_count;
 			cw1200_debug_txed(priv);

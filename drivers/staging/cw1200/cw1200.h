@@ -173,10 +173,6 @@ struct cw1200_common {
 	struct work_struct	event_handler;
 	struct delayed_work	bss_loss_work;
 	struct delayed_work	connection_loss_work;
-#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
-	struct delayed_work	keep_alive_work;
-	unsigned long		last_activity_time;
-#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 	struct work_struct	tx_failure_work;
 	int			delayed_link_loss;
 

@@ -314,9 +314,6 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_DELAYED_WORK(&priv->bss_loss_work, cw1200_bss_loss_work);
 	INIT_DELAYED_WORK(&priv->connection_loss_work,
 			  cw1200_connection_loss_work);
-#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
-	INIT_DELAYED_WORK(&priv->keep_alive_work, cw1200_keep_alive_work);
-#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 	INIT_WORK(&priv->tx_failure_work, cw1200_tx_failure_work);
 	INIT_WORK(&priv->set_tim_work, cw1200_set_tim_work);
 	INIT_WORK(&priv->multicast_start_work, cw1200_multicast_start_work);
