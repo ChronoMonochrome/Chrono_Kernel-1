@@ -825,6 +825,21 @@ static int ab5500_charger_usb_en(struct ux500_charger *charger,
 					__func__, __LINE__);
 			return ret;
 		}
+
+		/*
+		 * Register DCIOCURRENT is one among the charging watchdog
+		 * rekick sequence, hence irrespective of usb charging this
+		 * register will have to be written.
+		 */
+		ret = abx500_set_register_interruptible(di->dev,
+				AB5500_BANK_CHG, AB5500_DCIOCURRENT,
+				RESET);
+		if (ret) {
+			dev_err(di->dev, "%s write failed %d\n",
+					__func__, __LINE__);
+			return ret;
+		}
+
 		di->usb.charger_online = 1;
 	} else {
 		/* ChVoltLevel: max voltage upto which battery can be charged */
@@ -946,6 +961,19 @@ static int ab5500_charger_watchdog_kick(struct ux500_charger *charger)
 		dev_err(di->dev, "%s write failed %d\n", __func__, __LINE__);
 		return ret;
 	}
+	/*
+	 * Register DCIOCURRENT is one among the charging watchdog
+	 * rekick sequence, hence irrespective of usb charging this
+	 * register will have to be written.
+	 */
+	ret = abx500_set_register_interruptible(di->dev,
+			AB5500_BANK_CHG, AB5500_DCIOCURRENT,
+			RESET);
+	if (ret) {
+		dev_err(di->dev, "%s write failed %d\n", __func__, __LINE__);
+		return ret;
+	}
+
 	return ret;
 }
 
