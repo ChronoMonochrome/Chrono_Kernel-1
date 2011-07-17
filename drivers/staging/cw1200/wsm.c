@@ -179,7 +179,7 @@ int wsm_reset(struct cw1200_common *priv, const struct wsm_reset *arg)
 {
 	int ret;
 	struct wsm_buf *buf = &priv->wsm_cmd_buf;
-	u16 cmd = 0x000A | ((arg->link_id & 0x0F) << 6);
+	u16 cmd = 0x000A | WSM_TX_LINK_ID(arg->link_id);
 
 	wsm_cmd_lock(priv);
 
@@ -361,7 +361,9 @@ int wsm_stop_scan(struct cw1200_common *priv)
 }
 
 
-static int wsm_tx_confirm(struct cw1200_common *priv, struct wsm_buf *buf)
+static int wsm_tx_confirm(struct cw1200_common *priv,
+			  struct wsm_buf *buf,
+			  int link_id)
 {
 	struct wsm_tx_confirm tx_confirm;
 
@@ -372,6 +374,7 @@ static int wsm_tx_confirm(struct cw1200_common *priv, struct wsm_buf *buf)
 	tx_confirm.flags = WSM_GET16(buf);
 	tx_confirm.mediaDelay = WSM_GET32(buf);
 	tx_confirm.txQueueDelay = WSM_GET32(buf);
+	tx_confirm.link_id = link_id;
 
 	if (priv->wsm_cbc.tx_confirm)
 		priv->wsm_cbc.tx_confirm(priv, &tx_confirm);
@@ -383,7 +386,7 @@ underflow:
 }
 
 static int wsm_multi_tx_confirm(struct cw1200_common *priv,
-				struct wsm_buf *buf)
+				struct wsm_buf *buf, int link_id)
 {
 	int ret;
 	int count;
@@ -402,7 +405,7 @@ static int wsm_multi_tx_confirm(struct cw1200_common *priv,
 
 	cw1200_debug_txed_multi(priv, count);
 	for (i = 0; i < count; ++i) {
-		ret = wsm_tx_confirm(priv, buf);
+		ret = wsm_tx_confirm(priv, buf, link_id);
 		if (ret)
 			return ret;
 	}
@@ -754,7 +757,7 @@ int wsm_map_link(struct cw1200_common *priv, const struct wsm_map_link *arg)
 {
 	int ret;
 	struct wsm_buf *buf = &priv->wsm_cmd_buf;
-	u16 cmd = 0x001C | ((arg->link_id & 0x0F) << 6);
+	u16 cmd = 0x001C | WSM_TX_LINK_ID(arg->link_id);
 
 	wsm_cmd_lock(priv);
 
@@ -1109,7 +1112,7 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 	int link_id = (id >> 6) & 0x0F;
 
 	/* Strip link id. */
-	id &= ~(0x0F << 6);
+	id &= ~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX);
 
 	wsm_buf.begin = (u8 *)&wsm[0];
 	wsm_buf.data = (u8 *)&wsm[1];
@@ -1119,9 +1122,9 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 			wsm_buf.end - wsm_buf.begin);
 
 	if (id == 0x404) {
-		ret = wsm_tx_confirm(priv, &wsm_buf);
+		ret = wsm_tx_confirm(priv, &wsm_buf, link_id);
 	} else if (id == 0x41E) {
-		ret = wsm_multi_tx_confirm(priv, &wsm_buf);
+		ret = wsm_multi_tx_confirm(priv, &wsm_buf, link_id);
 	} else if (id & 0x0400) {
 		void *wsm_arg;
 		u16 wsm_cmd;
@@ -1130,7 +1133,8 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 		 * response and race condition removal (see above). */
 		spin_lock(&priv->wsm_cmd.lock);
 		wsm_arg = priv->wsm_cmd.arg;
-		wsm_cmd = priv->wsm_cmd.cmd & ~(0x0F << 6);
+		wsm_cmd = priv->wsm_cmd.cmd &
+				~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX);
 		priv->wsm_cmd.cmd = 0xFFFF;
 		spin_unlock(&priv->wsm_cmd.lock);
 
@@ -1501,9 +1505,10 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 				/* Update link id */
 				sta_priv = (struct cw1200_sta_priv *)
 					&tx_info->control.sta->drv_priv;
-				wsm->hdr.id &= __cpu_to_le16(~(0x0F << 6));
-				wsm->hdr.id |=
-					cpu_to_le16(sta_priv->link_id << 6);
+				wsm->hdr.id &= __cpu_to_le16(
+					~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX));
+				wsm->hdr.id |= cpu_to_le16(
+					WSM_TX_LINK_ID(sta_priv->link_id));
 			}
 
 			*data = (u8 *)wsm;
@@ -1519,6 +1524,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 			} else if (priv->mode == NL80211_IFTYPE_AP &&
 					!priv->suspend_multicast) {
 				priv->suspend_multicast = true;
+				wsm_lock_tx_async(priv);
 				queue_work(priv->workqueue,
 					&priv->multicast_stop_work);
 			}

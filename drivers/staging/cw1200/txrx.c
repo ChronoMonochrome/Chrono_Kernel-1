@@ -14,6 +14,7 @@
 #include "cw1200.h"
 #include "wsm.h"
 #include "bh.h"
+#include "ap.h"
 #include "debug.h"
 
 #if defined(CONFIG_CW1200_TX_POLICY_DEBUG)
@@ -575,8 +576,16 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 
 	if ((arg->status == WSM_REQUEUE) &&
 	    (arg->flags & WSM_TX_STATUS_REQUEUE)) {
+		/* "Requeue" means "implicit suspend" */
+		struct wsm_suspend_resume suspend = {
+			.link_id = arg->link_id,
+			.stop = 1,
+			.multicast = !arg->link_id,
+		};
+		cw1200_suspend_resume(priv, &suspend);
 		WARN_ON(cw1200_queue_requeue(queue, arg->packetID));
-	} else if (!WARN_ON(cw1200_queue_get_skb(queue, arg->packetID, &skb))) {
+	} else if (!WARN_ON(cw1200_queue_get_skb(
+			queue, arg->packetID, &skb))) {
 		struct ieee80211_tx_info *tx = IEEE80211_SKB_CB(skb);
 		struct wsm_tx *wsm_tx = (struct wsm_tx *)skb->data;
 		int rate_id = (wsm_tx->flags >> 4) & 0x07;

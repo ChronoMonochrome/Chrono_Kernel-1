@@ -476,8 +476,10 @@ tx:
 				}
 #endif /* CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES */
 
-				wsm->id |= __cpu_to_le32(
-					priv->wsm_tx_seq << 13);
+				wsm->id &= __cpu_to_le32(
+						~WSM_TX_SEQ(WSM_TX_SEQ_MAX));
+				wsm->id |= cpu_to_le32(
+						WSM_TX_SEQ(priv->wsm_tx_seq));
 
 				if (WARN_ON(cw1200_data_write(priv,
 				    data, tx_len))) {
@@ -491,7 +493,8 @@ tx:
 #endif /* CONFIG_CW1200_WSM_DUMPS */
 
 				wsm_txed(priv, data);
-				priv->wsm_tx_seq = (priv->wsm_tx_seq + 1) & 7;
+				priv->wsm_tx_seq = (priv->wsm_tx_seq + 1) &
+						WSM_TX_SEQ_MAX;
 			}
 		}
 

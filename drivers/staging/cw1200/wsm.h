@@ -540,6 +540,13 @@ struct wsm_hdr {
 	__le16 id;
 };
 
+#define WSM_TX_SEQ_MAX			(7)
+#define WSM_TX_SEQ(seq)			\
+		((seq & WSM_TX_SEQ_MAX) << 13)
+#define WSM_TX_LINK_ID_MAX		(0x0F)
+#define WSM_TX_LINK_ID(link_id)		\
+		((link_id & WSM_TX_LINK_ID_MAX) << 6)
+
 /* ******************************************************************** */
 /* WSM capcbility							*/
 
@@ -701,6 +708,8 @@ struct wsm_tx_confirm {
 	/* The total time in microseconds that the frame spent in */
 	/* the WLAN device before transmission was started. */
 	/* [out] */ u32 txQueueDelay;
+
+	/* [out]*/ u32 link_id;
 };
 
 /* 3.15 */

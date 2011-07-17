@@ -398,7 +398,6 @@ void cw1200_multicast_start_work(struct work_struct *work)
 		container_of(work, struct cw1200_common, multicast_start_work);
 
         (void)cw1200_set_tim_impl(priv, true);
-	wsm_lock_tx(priv);
 	priv->suspend_multicast = false;
 	wsm_unlock_tx(priv);
 	cw1200_bh_wakeup(priv);
@@ -409,9 +408,8 @@ void cw1200_multicast_stop_work(struct work_struct *work)
         struct cw1200_common *priv =
                 container_of(work, struct cw1200_common, multicast_stop_work);
 
-	/* Lock flushes send queue in device. Just to make sure DTIM beacom
-	 * and frames are sent. */
-	wsm_lock_tx(priv);
+	/* Flush to make sure DTIM beacon and frames are sent. */
+	wsm_flush_tx(priv);
 	priv->suspend_multicast = true;
         (void)cw1200_set_tim_impl(priv, false);
 	wsm_unlock_tx(priv);
@@ -452,15 +450,17 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 		arg->multicast ? "broadcast" : "unicast");
 
 	if (arg->multicast) {
-		if (arg->stop)
+		if (arg->stop) {
+			wsm_lock_tx_async(priv);
 			queue_work(priv->workqueue,
 				&priv->multicast_stop_work);
-		else {
+		} else {
 			/* Handle only if there is data to be sent */
 			for (i = 0; i < 4; ++i) {
 				if (cw1200_queue_get_num_queued(
 						&priv->tx_queue[i],
 						after_dtim)) {
+					wsm_lock_tx_async(priv);
 					queue_work(priv->workqueue,
 						&priv->multicast_start_work);
 					break;
