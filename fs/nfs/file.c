@@ -259,7 +259,7 @@ nfs_file_mmap(struct file * file, struct vm_area_struct * vma)
  * fall back to doing a synchronous write.
  */
 static int
-nfs_file_fsync(struct file *file, int datasync)
+nfs_file_fsync(struct file *file, loff_t start, loff_t end, int datasync)
 {
 	struct dentry *dentry = file->f_path.dentry;
 	struct nfs_open_context *ctx = nfs_file_open_context(file);
@@ -270,6 +270,11 @@ nfs_file_fsync(struct file *file, int datasync)
 	dprintk("NFS: fsync file(%s/%s) datasync %d\n",
 			dentry->d_parent->d_name.name, dentry->d_name.name,
 			datasync);
+	mutex_lock(&inode->i_mutex);
+
+	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
+	if (ret)
+		return ret;
 	mutex_lock(&inode->i_mutex);
 
 	nfs_inc_stats(inode, NFSIOS_VFSFSYNC);
