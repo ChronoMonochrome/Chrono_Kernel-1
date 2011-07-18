@@ -728,7 +728,7 @@ static void wakeup_process(unsigned long data)
 static int dspload_monitor(void *idx)
 {
 	int i = (int)idx;
-	unsigned char current_opp_request = HALF_OPP;
+	unsigned char current_opp_request = FULL_OPP;
 	struct mpcConfig *mpc = &osalEnv.mpc[i];
 	struct timer_list timer;
 
