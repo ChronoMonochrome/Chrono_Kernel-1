@@ -374,6 +374,7 @@ struct cw1200_common;
 
 /* 4.10 ArpIpAddressesTable */
 #define WSM_MIB_ID_ARP_IP_ADDRESSES_TABLE	0x1001
+#define WSM_MAX_ARP_IP_ADDRTABLE_ENTRIES	1
 
 /* 4.11 TemplateFrame */
 #define WSM_MIB_ID_TEMPLATE_FRAME		0x1002
@@ -1471,13 +1472,13 @@ static inline int wsm_set_multicast_filter(struct cw1200_common *priv,
 }
 
 /* IPv4 filtering - 4.10 */
-struct wsm_ipv4_filter {
+struct wsm_arp_ipv4_filter {
 	__le32 enable;
-	u8 ipv4Address[4];
+	__be32 ipv4Address[WSM_MAX_ARP_IP_ADDRTABLE_ENTRIES];
 } __packed;
 
-static inline int wsm_set_ipv4_arp_filter(struct cw1200_common *priv,
-				      struct wsm_ipv4_filter *fp)
+static inline int wsm_set_arp_ipv4_filter(struct cw1200_common *priv,
+					  struct wsm_arp_ipv4_filter *fp)
 {
 	return wsm_write_mib(priv, WSM_MIB_ID_ARP_IP_ADDRESSES_TABLE,
 			    fp, sizeof(*fp));

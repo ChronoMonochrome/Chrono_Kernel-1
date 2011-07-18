@@ -163,7 +163,37 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 	}
 
 	/* TODO: BSS_CHANGED_IBSS */
-	/* TODO: BSS_CHANGED_ARP_FILTER */
+
+	if (changed & BSS_CHANGED_ARP_FILTER) {
+		struct wsm_arp_ipv4_filter filter = {0};
+		int i;
+
+		ap_printk(KERN_DEBUG "[STA] BSS_CHANGED_ARP_FILTER "
+				     "enabled: %d, cnt: %d\n",
+				     info->arp_filter_enabled,
+				     info->arp_addr_cnt);
+
+		if (info->arp_filter_enabled)
+			filter.enable = __cpu_to_le32(1);
+
+		/* Currently only one IP address is supported by firmware.
+		 * In case of more IPs arp filtering will be disabled. */
+		if (info->arp_addr_cnt > 0 &&
+		    info->arp_addr_cnt <= WSM_MAX_ARP_IP_ADDRTABLE_ENTRIES) {
+			for(i=0; i<info->arp_addr_cnt;i++) {
+				filter.ipv4Address[i] = info->arp_addr_list[i];
+				ap_printk(KERN_DEBUG "[STA] addr[%d]: 0x%X\n",
+					  i, filter.ipv4Address[i]);
+			}
+		} else
+			filter.enable = 0;
+
+		ap_printk(KERN_DEBUG "[STA] arp ip filter enable: %d\n",
+			  __le32_to_cpu(filter.enable));
+
+		if (wsm_set_arp_ipv4_filter(priv, &filter))
+			WARN_ON(1);
+	}
 
 	if (changed & BSS_CHANGED_BEACON_ENABLED)
 		priv->enable_beacon = info->enable_beacon;
