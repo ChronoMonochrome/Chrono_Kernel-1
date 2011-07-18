@@ -175,28 +175,6 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetMpcMemoryMpcAddress(t_cm_memory_han
     return CM_OK;
 }
 
-PUBLIC IMPORT_SHARED t_cm_error CM_ENGINE_GetMpcMemorySize(
-	t_cm_memory_handle handle,
-	t_uint32 *pSize)
-{
-    t_cm_error error;
-    t_memory_handle validHandle;
-
-    OSAL_LOCK_API();
-
-    if((error = cm_MM_getValidMemoryHandle(handle, &validHandle)) != CM_OK)
-    {
-        OSAL_UNLOCK_API();
-        return error;
-    }
-
-    *pSize = validHandle->size;
-
-    OSAL_UNLOCK_API();
-    return CM_OK;
-}
-
-
 PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetMpcMemoryStatus(t_nmf_core_id coreId, t_cm_mpc_memory_type memType, t_cm_allocator_status *pStatus)
 {
     t_dsp_memory_type_id dspMemType;

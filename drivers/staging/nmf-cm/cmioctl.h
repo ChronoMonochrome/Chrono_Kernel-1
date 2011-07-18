@@ -16,7 +16,12 @@
 #include <cm/engine/memory/inc/memory_type.h>
 #include <cm/engine/perfmeter/inc/perfmeter_type.h>
 #include <cm/engine/repository_mgt/inc/repository_type.h>
-#include "cm_dma.h"
+
+
+enum cmdma_type {
+    CMDMA_MEM_2_PER,
+    CMDMA_PER_2_MEM
+};
 
 #define CMLD_DEV_NAME \
 	{ "cm_control", \

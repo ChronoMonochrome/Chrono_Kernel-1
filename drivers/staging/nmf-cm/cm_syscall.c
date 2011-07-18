@@ -9,12 +9,11 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 #include <cm/engine/api/cm_engine.h>
+#include <linux/sched.h>
 #include "cmioctl.h"
 #include "osal-kernel.h"
 #include "cmld.h"
-#include <cm/engine/memory/inc/remote_allocator.h>
-#include <linux/kernel.h>
-#include <linux/sched.h>
+#include "cm_dma.h"
 
 /** Dequeue and free per-process messages for specific binding
  *
@@ -1225,40 +1224,47 @@ inline int cmld_Unmigrate(CM_Unmigrate_t __user *param)
 	return 0;
 }
 
-int cmld_SetupRelinkArea(CM_SetupRelinkArea_t __user *param)
+int cmld_SetupRelinkArea(struct cm_process_priv *procPriv,
+			 CM_SetupRelinkArea_t __user *param)
 {
 	CM_SetupRelinkArea_t data;
-	t_cm_system_address systemAddress;
-	t_uint32 size;
+	struct list_head *cursor, *next;
+	struct memAreaDesc_t *entry = NULL;
 
 	/* coverity[tainted_data_argument : FALSE] */
 	if (copy_from_user(&data.in, &param->in, sizeof(data.in)))
 		return -EFAULT;
 
 
-	data.out.error = CM_ENGINE_GetMpcMemorySystemAddress(
-			data.in.mem_handle, &systemAddress);
+	/* check that it is actually owned by the process */
+	data.out.error = CM_UNKNOWN_MEMORY_HANDLE;
 
-	if (data.out.error != CM_OK)
-		return 0;
+	if (lock_process(procPriv))
+		return -ERESTARTSYS;
+	list_for_each_safe(cursor, next, &procPriv->memAreaDescList){
+		entry = list_entry(cursor, struct memAreaDesc_t, list);
+		if (entry->handle == data.in.mem_handle)
+			break;
+	}
+	unlock_process(procPriv);
 
-	data.out.error = CM_ENGINE_GetMpcMemorySize(data.in.mem_handle, &size);
-	if (data.out.error != CM_OK)
-		return 0;
+	if ((entry == NULL) || (entry->handle != data.in.mem_handle))
+		goto out;
 
-	if (size < data.in.segments * data.in.segmentsize)
+	if (entry->size < data.in.segments * data.in.segmentsize)
 	{
-		return -EINVAL;
+		data.out.error = CM_INVALID_PARAMETER;
+		goto out;
 	}
 
 	data.out.error = cmdma_setup_relink_area(
-				systemAddress.physical,
-				data.in.peripheral_addr,
-				data.in.segments,
-				data.in.segmentsize,
-				data.in.LOS,
-				data.in.type);
-
+		entry->physAddr,
+		data.in.peripheral_addr,
+		data.in.segments,
+		data.in.segmentsize,
+		data.in.LOS,
+		data.in.type);
+out:
 	if (copy_to_user(&param->out, &data.out, sizeof(data.out)))
 		return -EFAULT;
 
@@ -1381,7 +1387,6 @@ int cmld_PrivReserveMemory(struct cm_process_priv *procPriv, unsigned int physAd
 				       __func__, current->pid, physAddr, (int)curr->tid);*/
 				err = -EBUSY;
 			} else {
-				//current->pid;
 				curr->tid = current->pid;
 				err = 0;
 			}

@@ -27,6 +27,7 @@
 #include "osal-kernel.h"
 #include "cmld.h"
 #include "cm_service.h"
+#include "cm_dma.h"
 
 #define CMDRIVER_PATCH_VERSION 106
 #define O_FLUSH 0x1000000
@@ -624,7 +625,8 @@ static long cmld_control_ctl(struct file *file, unsigned int cmd, unsigned long 
 		return cmld_Unmigrate((CM_Unmigrate_t *)arg);
 
 	case CM_SETUPRELINKAREA:
-		return cmld_SetupRelinkArea((CM_SetupRelinkArea_t *)arg);
+		return cmld_SetupRelinkArea(procPriv,
+					    (CM_SetupRelinkArea_t *)arg);
 
 	case CM_PUSHCOMPONENT:
 		return cmld_PushComponent((CM_PushComponent_t *)arg);
@@ -1226,7 +1228,9 @@ static int __init cmld_init_module(void)
 		}
 	}
 
-	return 0;
+	err = cmdma_init();
+	if (err == 0)
+		return 0;
 
 out_all:
 	if (err) {
@@ -1303,6 +1307,7 @@ static void __exit cmld_cleanup_module(void)
 
 	CM_ENGINE_Destroy();
 
+	cmdma_destroy();
 	unmapRegions();
 #ifdef 	CM_DEBUG_ALLOC
 	cleanup_debug_alloc();

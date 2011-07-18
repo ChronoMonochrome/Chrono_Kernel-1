@@ -75,10 +75,6 @@ PUBLIC IMPORT_SHARED t_cm_error CM_ENGINE_GetMpcMemoryMpcAddress(
         t_cm_memory_handle handle,
         t_uint32 *pMpcAddress);
 
-PUBLIC IMPORT_SHARED t_cm_error CM_ENGINE_GetMpcMemorySize(
-	t_cm_memory_handle handle,
-	t_uint32 *pSize);
-
 /*!
  * \brief Get the memory status for given memory type of a given Media Processor Core
  *
@@ -92,7 +88,6 @@ PUBLIC IMPORT_SHARED t_cm_error CM_ENGINE_GetMpcMemoryStatus(
         t_cm_domain_id domainId,
         t_cm_mpc_memory_type memType,
         t_cm_allocator_status *pStatus);
-
 
 #endif /* CM_MEMORY_ENGINE_H_ */
 

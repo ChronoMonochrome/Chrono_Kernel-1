@@ -126,7 +126,7 @@ int cmld_GetRequiredComponentFiles(struct cm_process_priv *cmPriv,
 				   CM_GetRequiredComponentFiles_t __user *);
 int cmld_Migrate(CM_Migrate_t __user *);
 int cmld_Unmigrate(CM_Unmigrate_t __user *);
-int cmld_SetupRelinkArea(CM_SetupRelinkArea_t __user *);
+int cmld_SetupRelinkArea(struct cm_process_priv *, CM_SetupRelinkArea_t __user *);
 int cmld_PushComponent(CM_PushComponent_t __user *);
 int cmld_ReleaseComponent(CM_ReleaseComponent_t __user *);
 int cmld_PrivGetMPCMemoryDesc(struct cm_process_priv *, CM_PrivGetMPCMemoryDesc_t __user *);

@@ -7,11 +7,7 @@
 
 #ifndef __CMDMA_H
 #define __CMDMA_H
-
-enum cmdma_type {
-    CMDMA_MEM_2_PER,
-    CMDMA_PER_2_MEM
-};
+#include "cmioctl.h"
 
 int cmdma_setup_relink_area(
     unsigned int mem_addr,
@@ -21,4 +17,7 @@ int cmdma_setup_relink_area(
     unsigned int LOS,
     enum cmdma_type type);
 
+void cmdma_stop_dma(void);
+int cmdma_init(void);
+void cmdma_destroy(void);
 #endif

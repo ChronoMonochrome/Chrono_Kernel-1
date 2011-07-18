@@ -21,6 +21,7 @@
 #include "osal-kernel.h"
 #include "cmld.h"
 #include "cm_service.h"
+#include "cm_dma.h"
 
 /* Panic managment */
 static void service_tasklet_func(unsigned long);
@@ -75,6 +76,13 @@ static void service_tasklet_func(unsigned long unused)
 				msg.d.srv.srvData.panic = desc.u.panic;
 
 				dispatch_service_msg(&msg);
+				/*
+				 * Stop DMA directly before shutdown, to avoid bad sound.
+				 * Should be called after DSP has stopped executing, to avoid the DSP
+				 * re-starting DMA
+				 */
+				if (osalEnv.mpc[i].coreId == SIA_CORE_ID)
+					cmdma_stop_dma();
 				break;
 			}
 			case CM_MPC_SERVICE_PRINT: {

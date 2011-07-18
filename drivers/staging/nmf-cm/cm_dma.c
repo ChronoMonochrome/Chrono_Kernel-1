@@ -6,15 +6,16 @@
 #include <linux/kernel.h>
 #include <linux/err.h>
 #include <linux/slab.h>
+#include <linux/dmaengine.h>
 #include <asm/io.h>
+#include <mach/db8500-regs.h>
 
- #include "cm_dma.h"
+#include "cm_dma.h"
 
- #define CMDMA_LIDX (2)
- #define CMDMA_BASE (0x801C0000)
- #define CMDMA_REG_LCLA (0x024)
+#define CMDMA_LIDX (2)
+#define CMDMA_REG_LCLA (0x024)
 
-void __iomem *virtbase = NULL;
+static void __iomem *virtbase = NULL;
 
 static int cmdma_write_cyclic_list_mem2per(
     unsigned int from_addr,
@@ -30,6 +31,8 @@ static int cmdma_write_cyclic_list_per2mem(
     unsigned int segmentsize,
     unsigned int LOS);
 
+static bool cmdma_setup_relink_area_called = false;
+
 int cmdma_setup_relink_area( unsigned int mem_addr,
     unsigned int per_addr,
     unsigned int segments,
@@ -37,6 +40,9 @@ int cmdma_setup_relink_area( unsigned int mem_addr,
     unsigned int LOS,
     enum cmdma_type type)
 {
+    if (!cmdma_setup_relink_area_called)
+	    cmdma_setup_relink_area_called = true;
+
     switch (type) {
 
     case CMDMA_MEM_2_PER:
@@ -63,7 +69,7 @@ int cmdma_setup_relink_area( unsigned int mem_addr,
  static unsigned int cmdma_getlcla( void) {
 
     if(!virtbase)
-        virtbase = ioremap(CMDMA_BASE, CMDMA_REG_LCLA + sizeof(int) );
+        virtbase = ioremap(U8500_DMA_BASE, CMDMA_REG_LCLA + sizeof(int) );
 
     return readl(virtbase + CMDMA_REG_LCLA);
  }
@@ -87,6 +93,8 @@ int cmdma_setup_relink_area( unsigned int mem_addr,
 
     relink[3] = (((dst_addr >> 16)  & 0xFFFFUL) << 16 ) |
         0x8201UL | ((LOS+1) << 1) | (burst_size<<10);
+
+    (void) dma_map_single(NULL, relink, 16, DMA_TO_DEVICE);
 }
 
 static void cmdma_write_relink_params_per2mem (
@@ -108,6 +116,8 @@ static void cmdma_write_relink_params_per2mem (
 
     relink[3] = (((dst_addr >> 16)  & 0xFFFFUL) << 16 ) |
         0x1200UL | ((LOS+1) << 1) | (burst_size<<10);
+
+    (void) dma_map_single(NULL, relink, 16, DMA_TO_DEVICE);
 }
 
 static int cmdma_write_cyclic_list_mem2per(
@@ -175,4 +185,41 @@ static int cmdma_write_cyclic_list_per2mem(
     }
 
     return 0;
+}
+
+static void __iomem *dmabase = 0;
+int cmdma_init(void)
+{
+	dmabase = ioremap_nocache(U8500_DMA_BASE, PAGE_SIZE);
+	if (dmabase == NULL)
+		return -ENOMEM;
+	else
+		return 0;
+}
+
+void cmdma_destroy(void)
+{
+	iounmap(dmabase);
+}
+
+#define SSLNK_CHAN_2 (0x40C + 0x20 * 2)
+#define SDLNK_CHAN_2 (0x41C + 0x20 * 2)
+
+void cmdma_stop_dma(void)
+{
+    if(cmdma_setup_relink_area_called) {
+        cmdma_setup_relink_area_called = false;
+        if (readl(dmabase + SSLNK_CHAN_2) & (0x3 << 28)) {
+            printk(KERN_ERR "CM: ERROR - RX DMA was running\n");
+        }
+        if (readl(dmabase + SDLNK_CHAN_2) & (0x3 << 28)) {
+            printk(KERN_ERR "CM: ERROR - TX DMA was running\n");
+        }
+
+        writel(~(1 << 28), dmabase + SSLNK_CHAN_2);
+        while (readl(dmabase + SSLNK_CHAN_2) & (0x3 << 28));
+
+        writel(~(1 << 28), dmabase + SDLNK_CHAN_2);
+        while (readl(dmabase + SDLNK_CHAN_2) & (0x3 << 28));
+    }
 }

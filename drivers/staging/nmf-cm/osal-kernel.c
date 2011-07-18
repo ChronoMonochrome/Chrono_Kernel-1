@@ -28,6 +28,7 @@
 #include "osal-kernel.h"
 #include "cm_service.h"
 #include "cmld.h"
+#include "cm_dma.h"
 
 __iomem void *prcmu_base = NULL;
 __iomem void *prcmu_tcdm_base = NULL;
@@ -830,6 +831,10 @@ void OSAL_DisablePwrRessource(t_nmf_power_resource resource, t_uint32 firstParam
 			kthread_stop(osalEnv.mpc[idx].monitor_tsk);
 			osalEnv.mpc[idx].monitor_tsk = NULL;
 		}
+
+		/* Stop the DMA (normally done on DSP side, but be safe) */
+        if (firstParam == SIA_CORE_ID)
+            cmdma_stop_dma();
 
 		/* Stop the DSP */
 		if (regulator_disable(osalEnv.mpc[idx].mmdsp_regulator) < 0)
