@@ -137,11 +137,6 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetRequiredComponentFiles(
     compServer = cm_lookupComponent(server);
     switch(action)
     {
-    case GET_EE_NAME:
-        /* Get Executive Engine names */
-        error = cm_CFG_GetRequiredExecutiveEngineComponentNames(fileList, listSize);
-        break;
-
     case BIND_FROMUSER:{
         t_interface_provide_description itfProvide;
 
@@ -308,4 +303,19 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_ReleaseComponent (const char *name)
 	OSAL_UNLOCK_API();
 
 	return err;
+}
+
+PUBLIC EXPORT_SHARED t_bool CM_ENGINE_IsComponentCacheEmpty(void)
+{
+	int i;
+
+	OSAL_LOCK_API();
+	for(i = 0; i < NHASH; i++) {
+		if (componentCaches[i] != NULL) {
+			OSAL_UNLOCK_API();
+			return FALSE;
+		}
+	}
+	OSAL_UNLOCK_API();
+	return TRUE;
 }

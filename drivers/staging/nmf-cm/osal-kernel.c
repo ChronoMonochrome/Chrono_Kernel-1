@@ -18,7 +18,6 @@
 #include <linux/timer.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
-#include <mach/prcmu.h>
 
 #include <trace/stm.h>
 
@@ -383,7 +382,7 @@ t_nmf_osal_sync_handle OSAL_CreateLock(void)
 void OSAL_Lock(t_nmf_osal_sync_handle handle)
 {
 		// unfortunately there is no return value to this function
-		// so we cannot use 'down_interruptible()'
+		// so we cannot use 'mutex_lock_killable()'
 		mutex_lock((struct mutex*)handle);
 }
 
@@ -833,8 +832,8 @@ void OSAL_DisablePwrRessource(t_nmf_power_resource resource, t_uint32 firstParam
 		}
 
 		/* Stop the DMA (normally done on DSP side, but be safe) */
-        if (firstParam == SIA_CORE_ID)
-            cmdma_stop_dma();
+		if (firstParam == SIA_CORE_ID)
+			cmdma_stop_dma();
 
 		/* Stop the DSP */
 		if (regulator_disable(osalEnv.mpc[idx].mmdsp_regulator) < 0)

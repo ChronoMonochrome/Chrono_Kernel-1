@@ -18,7 +18,6 @@
 
 typedef enum
 {
-    GET_EE_NAME,
     BIND_ASYNC,
     BIND_TRACE,
     BIND_FROMUSER,

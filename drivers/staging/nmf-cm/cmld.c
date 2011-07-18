@@ -29,7 +29,7 @@
 #include "cm_service.h"
 #include "cm_dma.h"
 
-#define CMDRIVER_PATCH_VERSION 106
+#define CMDRIVER_PATCH_VERSION 109
 #define O_FLUSH 0x1000000
 
 static int cmld_major;
@@ -690,6 +690,11 @@ static long cmld_control_ctl(struct file *file, unsigned int cmd, unsigned long 
 			return copy_to_user((void*)arg, &v, sizeof(v));
 		} else
 			return -EINVAL;
+	case CM_PRIV_ISCOMPONENTCACHEEMPTY:
+		if (CM_ENGINE_IsComponentCacheEmpty())
+			return 0;
+		else
+			return -ENOENT;
 
 	default: {
 		pr_err("CM(%s): unsupported command %i\n", __func__, cmd);

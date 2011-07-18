@@ -585,9 +585,9 @@ typedef struct{
 #define CM_PRIVGETMPCMEMORYDESC			_IOWR('c', 100, CM_PrivGetMPCMemoryDesc_t)
 #define CM_PRIVRESERVEMEMORY 			_IOW('c', 101, unsigned int)
 #define CM_PRIV_GETBOARDVERSION 		_IOR('c', 102, unsigned int)
+#define CM_PRIV_ISCOMPONENTCACHEEMPTY 		_IO('c', 103)
 
 enum board_version {
-	U8500_V1,
 	U8500_V2
 };
 #endif

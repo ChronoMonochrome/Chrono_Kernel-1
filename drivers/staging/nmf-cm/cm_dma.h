@@ -1,6 +1,6 @@
 /*
  * Copyright (C) ST-Ericsson SA 2010
-  * License terms:  GNU General Public License (GPL), version 2, with
+ * License terms:  GNU General Public License (GPL), version 2, with
  * user space exemption described in the top-level COPYING file in
  * the Linux kernel source tree.
  */

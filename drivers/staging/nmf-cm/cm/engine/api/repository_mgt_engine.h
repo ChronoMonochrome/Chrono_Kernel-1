@@ -83,4 +83,11 @@ PUBLIC IMPORT_SHARED t_cm_error CM_ENGINE_PushComponent(const char *name, const 
  */
 PUBLIC IMPORT_SHARED t_cm_error CM_ENGINE_ReleaseComponent (const char *name);
 
+/*!
+ * \brief Check if the CM Component Cache is empty.
+ *
+ * \return a boolean value TRUE or FALSE.
+ * \ingroup CM_ENGINE_API
+ */
+PUBLIC IMPORT_SHARED t_bool CM_ENGINE_IsComponentCacheEmpty(void);
 #endif /*REPOSITORY_MGT_ENGINE_H_*/

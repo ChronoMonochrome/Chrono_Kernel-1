@@ -34,7 +34,4 @@ PUBLIC t_cm_error cm_CFG_CheckMpcStatus(t_nmf_core_id coreId);
 
 void cm_CFG_ReleaseMpc(t_nmf_core_id coreId);
 
-PUBLIC t_cm_error cm_CFG_GetRequiredExecutiveEngineComponentNames(
-        char fileList[][MAX_INTERFACE_TYPE_NAME_LENGTH], t_uint32 listSize);
-
 #endif /* __INC_CONFIGURATION_H_ */
