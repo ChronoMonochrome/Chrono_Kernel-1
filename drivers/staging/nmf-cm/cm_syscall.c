@@ -514,10 +514,25 @@ inline int cmld_CreateMemoryDomain(struct cm_process_priv *procPriv,
 		data.out.error = CM_ENGINE_CreateMemoryDomain(procPriv->pid,
 							      &domain,
 							      &data.out.handle);
-	else
-		data.out.error = CM_ENGINE_CreateMemoryDomain(data.in.client,
-							      &domain,
-							      &data.out.handle);
+	else {
+		/* Check if client is valid (ie already registered) */
+		struct list_head* head;
+		struct cm_process_priv *entry;
+
+		list_for_each(head, &process_list) {
+			entry = list_entry(head, struct cm_process_priv,
+					   entry);
+			if (entry->pid == data.in.client)
+				break;
+		}
+		if (head == &process_list)
+			data.out.error = CM_INVALID_PARAMETER;
+		else
+			data.out.error =
+				CM_ENGINE_CreateMemoryDomain(data.in.client,
+							     &domain,
+							     &data.out.handle);
+	}
 
 	/* Copy results back to userspace */
 	if (copy_to_user(&param->out, &data.out, sizeof(data.out)))
