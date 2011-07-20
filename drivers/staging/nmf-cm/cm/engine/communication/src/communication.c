@@ -24,7 +24,7 @@
 
 #include <cm/engine/component/inc/initializer.h>
 
-#define ARM_DSP_EVENT_FIFO_SIZE 16
+#define ARM_DSP_EVENT_FIFO_SIZE 128
 
 t_dsp_memory_type_id comsLocation;
 t_dsp_memory_type_id paramsLocation;
