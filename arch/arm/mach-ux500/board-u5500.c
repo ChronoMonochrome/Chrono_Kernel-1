@@ -106,24 +106,30 @@ static struct lm3530_platform_data u5500_als_platform_data = {
 
 /* leds-ab5500 */
 static struct ab5500_hvleds_platform_data ab5500_hvleds_data = {
-	.hw_blink = false,
+	.hw_fade = false,
 	.leds = {
 		[0] = {
 			.name = "red",
+			.led_on = true,
 			.led_id = 0,
-			.status = AB5500_LED_ON,
+			.fade_hi = 255,
+			.fade_lo = 0,
 			.max_current = 10, /* wrong value may damage h/w */
 		},
 		[1] = {
 			.name = "green",
+			.led_on = true,
 			.led_id = 1,
-			.status = AB5500_LED_ON,
+			.fade_hi = 255,
+			.fade_lo = 0,
 			.max_current = 10, /* wrong value may damage h/w */
 		},
 		[2] {
 			.name = "blue",
+			.led_on = true,
 			.led_id = 2,
-			.status = AB5500_LED_ON,
+			.fade_hi = 255,
+			.fade_lo = 0,
 			.max_current = 10, /* wrong value may damage h/w */
 		},
 	},
