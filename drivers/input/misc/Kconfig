@@ -24,7 +24,7 @@ config INPUT_88PM860X_ONKEY
 
 config INPUT_AB8500_ACCDET
 	bool "AB8500 AV Accessory detection"
-	depends on AB8500_CORE && AB8500_GPADC && AB8500_GPIO
+	depends on AB8500_CORE && AB8500_GPADC && GPIO_AB8500
 	help
 	  Say Y here to enable AV accessory detection features for ST-Ericsson's
 	  AB8500 Mix-Sig PMIC.
