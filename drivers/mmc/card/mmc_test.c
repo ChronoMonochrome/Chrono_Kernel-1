@@ -3080,7 +3080,7 @@ static const struct file_operations mmc_test_fops_testlist = {
 	.release	= single_release,
 };
 
-static void mmc_test_free_file_test(struct mmc_card *card)
+static void mmc_test_free_dbgfs_file(struct mmc_card *card)
 {
 	struct mmc_test_dbgfs_file *df, *dfs;
 
@@ -3097,34 +3097,21 @@ static void mmc_test_free_file_test(struct mmc_card *card)
 	mutex_unlock(&mmc_test_lock);
 }
 
-static int mmc_test_register_file_test(struct mmc_card *card)
+static int __mmc_test_register_dbgfs_file(struct mmc_card *card,
+	const char *name, mode_t mode, const struct file_operations *fops)
 {
 	struct dentry *file = NULL;
 	struct mmc_test_dbgfs_file *df;
-	int ret = 0;
-
-	mutex_lock(&mmc_test_lock);
 
 	if (card->debugfs_root)
-		file = debugfs_create_file("test", S_IWUSR | S_IRUGO,
-			card->debugfs_root, card, &mmc_test_fops_test);
+		file = debugfs_create_file(name, mode, card->debugfs_root,
+			card, fops);
 
 	if (IS_ERR_OR_NULL(file)) {
 		dev_err(&card->dev,
-			"Can't create test. Perhaps debugfs is disabled.\n");
-		ret = -ENODEV;
-		goto err;
-	}
-
-	if (card->debugfs_root)
-		file = debugfs_create_file("testlist", S_IRUGO,
-			card->debugfs_root, card, &mmc_test_fops_testlist);
-
-	if (IS_ERR_OR_NULL(file)) {
-		dev_err(&card->dev,
-			"Can't create testlist. Perhaps debugfs is disabled.\n");
-		ret = -ENODEV;
-		goto err;
+			"Can't create %s. Perhaps debugfs is disabled.\n",
+			name);
+		return -ENODEV;
 	}
 
 	df = kmalloc(sizeof(struct mmc_test_dbgfs_file), GFP_KERNEL);
@@ -3132,14 +3119,31 @@ static int mmc_test_register_file_test(struct mmc_card *card)
 		debugfs_remove(file);
 		dev_err(&card->dev,
 			"Can't allocate memory for internal usage.\n");
-		ret = -ENOMEM;
-		goto err;
+		return -ENOMEM;
 	}
 
 	df->card = card;
 	df->file = file;
 
 	list_add(&df->link, &mmc_test_file_test);
+	return 0;
+}
+
+static int mmc_test_register_dbgfs_file(struct mmc_card *card)
+{
+	int ret;
+
+	mutex_lock(&mmc_test_lock);
+
+	ret = __mmc_test_register_dbgfs_file(card, "test", S_IWUSR | S_IRUGO,
+		&mmc_test_fops_test);
+	if (ret)
+		goto err;
+
+	ret = __mmc_test_register_dbgfs_file(card, "testlist", S_IRUGO,
+		&mmc_test_fops_testlist);
+	if (ret)
+		goto err;
 
 err:
 	mutex_unlock(&mmc_test_lock);
@@ -3154,7 +3158,7 @@ static int mmc_test_probe(struct mmc_card *card)
 	if (!mmc_card_mmc(card) && !mmc_card_sd(card))
 		return -ENODEV;
 
-	ret = mmc_test_register_file_test(card);
+	ret = mmc_test_register_dbgfs_file(card);
 	if (ret)
 		return ret;
 
@@ -3166,7 +3170,7 @@ static int mmc_test_probe(struct mmc_card *card)
 static void mmc_test_remove(struct mmc_card *card)
 {
 	mmc_test_free_result(card);
-	mmc_test_free_file_test(card);
+	mmc_test_free_dbgfs_file(card);
 }
 
 static struct mmc_driver mmc_driver = {
@@ -3186,7 +3190,7 @@ static void __exit mmc_test_exit(void)
 {
 	/* Clear stalled data if card is still plugged */
 	mmc_test_free_result(NULL);
-	mmc_test_free_file_test(NULL);
+	mmc_test_free_dbgfs_file(NULL);
 
 	mmc_unregister_driver(&mmc_driver);
 }
