@@ -280,6 +280,8 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			priv->cqm_tx_failure_thold =
 					info->cqm_tx_fail_thold;
 			priv->cqm_tx_failure_count = 0;
+			cancel_delayed_work_sync(&priv->bss_loss_work);
+			cancel_delayed_work_sync(&priv->connection_loss_work);
 #endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 
 			priv->bss_params.beaconLostCount =
