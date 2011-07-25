@@ -922,31 +922,45 @@ void cw1200_join_work(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, join_work);
 	const struct wsm_tx *wsm = priv->join_pending_frame;
-	const u8 *frame = (u8 *)&wsm[1];
-	const u8 *bssid = &frame[4]; /* AP SSID in a 802.11 frame */
+	const struct ieee80211_hdr *frame = (struct ieee80211_hdr *)&wsm[1];
+	const u8 *bssid = &frame->addr1[0]; /* AP SSID in a 802.11 frame */
 	struct cfg80211_bss *bss;
-	const u8 *ssidie;
-	const u8 *dtimie;
+	const u8 *ssidie = NULL;
+	const u8 *dtimie = NULL;
 	const struct ieee80211_tim_ie *tim = NULL;
-	u8 queueId = wsm_queue_id_to_linux(wsm->queueId);
+	u8 queueId;
+	bool action;
+
+	BUG_ON(!wsm);
+	BUG_ON(!priv->channel);
+
+	queueId = wsm_queue_id_to_linux(wsm->queueId);
+	action = ieee80211_is_action(frame->frame_control);
+
+	if (unlikely(priv->join_status == CW1200_JOIN_STATUS_STA)) {
+		wsm_lock_tx(priv);
+		cw1200_unjoin_work(&priv->unjoin_work);
+	}
 
 	cancel_delayed_work_sync(&priv->join_timeout);
 
 	bss = cfg80211_get_bss(priv->hw->wiphy, NULL, bssid, NULL, 0, 0, 0);
-	if (!bss) {
+	if (!bss && !action) {
 		priv->join_pending_frame = NULL;
 		cw1200_queue_remove(&priv->tx_queue[queueId],
 			priv, __le32_to_cpu(wsm->packetID));
+		wsm_unlock_tx(priv);
 		return;
+	} else if (bss) {
+		ssidie = cfg80211_find_ie(WLAN_EID_SSID,
+			bss->information_elements,
+			bss->len_information_elements);
+		dtimie = cfg80211_find_ie(WLAN_EID_TIM,
+			bss->information_elements,
+			bss->len_information_elements);
+		if (dtimie)
+			tim = (struct ieee80211_tim_ie *)&dtimie[2];
 	}
-	ssidie = cfg80211_find_ie(WLAN_EID_SSID,
-		bss->information_elements,
-		bss->len_information_elements);
-	dtimie = cfg80211_find_ie(WLAN_EID_TIM,
-		bss->information_elements,
-		bss->len_information_elements);
-	if (dtimie)
-		tim = (struct ieee80211_tim_ie *)&dtimie[2];
 
 	mutex_lock(&priv->conf_mutex);
 	{
@@ -969,9 +983,16 @@ void cw1200_join_work(struct work_struct *work)
 				join.dtimPeriod);
 		}
 
+		if (action) {
+			join.probeForJoin = 0;
+			join.flags |= WSM_JOIN_FLAGS_UNSYNCRONIZED |
+					WSM_JOIN_FLAGS_FORCE;
+		} else {
+			WARN_ON(wsm_set_block_ack_policy(priv,
+				priv->ba_tid_mask, priv->ba_tid_mask));
+		}
+
 		priv->join_pending_frame = NULL;
-		BUG_ON(!wsm);
-		BUG_ON(!priv->channel);
 
 		join.channelNumber = priv->channel->hw_value;
 		join.band = (priv->channel->band == IEEE80211_BAND_5GHZ) ?
@@ -988,9 +1009,6 @@ void cw1200_join_work(struct work_struct *work)
 		}
 
 		wsm_flush_tx(priv);
-
-		WARN_ON(wsm_set_block_ack_policy(priv,
-				priv->ba_tid_mask, priv->ba_tid_mask));
 
 		/* Queue unjoin if not associated in 3 sec. */
 		queue_delayed_work(priv->workqueue,

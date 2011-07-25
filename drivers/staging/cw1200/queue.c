@@ -319,7 +319,7 @@ int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packetID)
 		item->packetID = cw1200_queue_make_packet_id(
 			queue_generation, queue_id, item_generation, item_id);
 		wsm->packetID = __cpu_to_le32(item->packetID);
-		list_move_tail(&item->head, &queue->queue);
+		list_move(&item->head, &queue->queue);
 	}
 	spin_unlock_bh(&queue->lock);
 	return ret;
@@ -330,8 +330,8 @@ int cw1200_queue_requeue_all(struct cw1200_queue *queue)
 	struct cw1200_queue_stats *stats = queue->stats;
 	spin_lock_bh(&queue->lock);
 	while (!list_empty(&queue->pending)) {
-		struct cw1200_queue_item *item = list_first_entry(
-			&queue->pending, struct cw1200_queue_item, head);
+		struct cw1200_queue_item *item = list_entry(
+			queue->pending.prev, struct cw1200_queue_item, head);
 		struct wsm_tx *wsm = (struct wsm_tx *)item->skb->data;
 
 		--queue->num_pending;
@@ -347,7 +347,7 @@ int cw1200_queue_requeue_all(struct cw1200_queue *queue)
 			queue->generation, queue->queue_id,
 			item->generation, item - queue->pool);
 		wsm->packetID = __cpu_to_le32(item->packetID);
-		list_move_tail(&item->head, &queue->queue);
+		list_move(&item->head, &queue->queue);
 	}
 	spin_unlock_bh(&queue->lock);
 

@@ -284,7 +284,16 @@ struct cw1200_common;
 
 /* Join flags */
 /* Unsynchronized */
-#define WSM_JOIN_FLAGS_UNSYNCRONIZED	(1)
+#define WSM_JOIN_FLAGS_UNSYNCRONIZED	BIT(0)
+/* The BSS owner is a P2P GO */
+#define WSM_JOIN_FLAGS_P2P_GO		BIT(1)
+/* Force to join BSS with the BSSID and the
+ * SSID specified without waiting for beacons. The
+ * ProbeForJoin parameter is ignored. */
+#define WSM_JOIN_FLAGS_FORCE		BIT(2)
+/* Give probe request/response higher
+ * priority over the BT traffic */
+#define WSM_JOIN_FLAGS_PRIO		BIT(3)
 
 /* Key types */
 #define WSM_KEY_TYPE_WEP_DEFAULT	(0)

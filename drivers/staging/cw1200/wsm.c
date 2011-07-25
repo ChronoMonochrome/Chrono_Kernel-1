@@ -1260,7 +1260,14 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 				sizeof(priv->join_bssid)))) {
 			if (ieee80211_is_auth(fctl))
 				action = doJoin;
-			else
+			else if (ieee80211_is_probe_req(fctl))
+				action = doTx;
+			else if (ieee80211_is_action(fctl)) {
+				if (priv->join_status)
+					action = doTx;
+				else
+					action = doJoin;
+			} else
 				action = doDrop;
 		}
 		break;
@@ -1344,8 +1351,6 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * in FW: it can't do RX/TX before "join".
 		 * "Join" here is not an association,
 		 * but just a syncronization between AP and STA.
-		 * BTW that means device can't receive frames
-		 * in monitor mode.
 		 * priv->join_status is used only in bh thread and does
 		 * not require protection */
 		wsm_printk(KERN_DEBUG "[WSM] Issue join command.\n");
