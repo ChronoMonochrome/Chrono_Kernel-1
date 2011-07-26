@@ -7,7 +7,7 @@
 #include <linux/module.h>
 #include <linux/pm_qos.h>
 #include <linux/pm_runtime.h>
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #include <linux/jiffies.h>
 #include "power.h"
 

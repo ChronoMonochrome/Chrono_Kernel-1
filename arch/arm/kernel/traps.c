@@ -28,7 +28,7 @@
 #ifdef CONFIG_SAMSUNG_LOG_BUF
 #include <linux/mfd/ux500_wdt.h>
 #endif
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #include <asm/cacheflush.h>
 #include <asm/exception.h>
 #include <asm/system.h>
