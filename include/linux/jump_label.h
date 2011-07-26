@@ -142,8 +142,7 @@ jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
 	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
 
 #else  /* !HAVE_JUMP_LABEL */
-
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 
 struct static_key {
 	atomic_t enabled;
