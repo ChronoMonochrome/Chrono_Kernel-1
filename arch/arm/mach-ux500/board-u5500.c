@@ -219,27 +219,15 @@ static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
 #define ROW_PIN_I1      130
 #define ROW_PIN_I2      132
 #define ROW_PIN_I3      134
-#define ROW_PIN_I4      136
-#define ROW_PIN_I5      138
-#define ROW_PIN_I6      140
-#define ROW_PIN_I7      142
-#define COL_PIN_O0      129
-#define COL_PIN_O1      131
-#define COL_PIN_O2      133
-#define COL_PIN_O3      135
 #define COL_PIN_O4      137
 #define COL_PIN_O5      139
-#define COL_PIN_O6      141
-#define COL_PIN_O7      143
 
 static int db5500_kp_rows[] = {
 	ROW_PIN_I0, ROW_PIN_I1, ROW_PIN_I2, ROW_PIN_I3,
-	ROW_PIN_I4, ROW_PIN_I5, ROW_PIN_I6, ROW_PIN_I7,
 };
 
 static int db5500_kp_cols[] = {
-	COL_PIN_O0, COL_PIN_O1, COL_PIN_O2, COL_PIN_O3,
-	COL_PIN_O4, COL_PIN_O5, COL_PIN_O6, COL_PIN_O7,
+	COL_PIN_O4, COL_PIN_O5,
 };
 
 static bool db5500_config;
@@ -274,7 +262,7 @@ static int db5500_kp_init(void)
 	if (pins)
 		ux500_pins_enable(pins);
 
-	for (i = 0; i < KEYPAD_MAX_ROWS - 1; i++) {
+	for (i = 0; i < ARRAY_SIZE(db5500_kp_rows); i++) {
 		ret = db5500_set_gpio_row(db5500_kp_rows[i]);
 		if (ret < 0) {
 			pr_err("db5500_kp_init: failed init\n");
@@ -328,6 +316,8 @@ static struct db5500_keypad_platform_data u5500_keypad_board = {
 	.gpio_output_pins = db5500_kp_cols,
 	.keymap_data	= &u5500_keymap_data,
 	.no_autorepeat	= true,
+	.krow		= ARRAY_SIZE(db5500_kp_rows),
+	.kcol		= ARRAY_SIZE(db5500_kp_cols),
 	.debounce_ms	= 40, /* milliseconds */
 	.switch_delay	= 200, /* in jiffies */
 };
