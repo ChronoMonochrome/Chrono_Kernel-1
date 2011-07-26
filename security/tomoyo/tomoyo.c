@@ -200,7 +200,7 @@ static int tomoyo_file_ioctl(struct file *file, unsigned int cmd,
 }
 
 static int tomoyo_path_chmod(struct dentry *dentry, struct vfsmount *mnt,
-			     mode_t mode)
+			     umode_t mode)
 {
 	struct path path = { mnt, dentry };
 	return tomoyo_path_number_perm(TOMOYO_TYPE_CHMOD, &path,
