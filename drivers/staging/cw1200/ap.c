@@ -233,7 +233,6 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			/* Associated: kill join timeout */
 			cancel_delayed_work_sync(&priv->join_timeout);
 
-			/* TODO: This code is not verified {{{ */
 			rcu_read_lock();
 			if (info->bssid)
 				sta = ieee80211_find_sta(vif, info->bssid);
@@ -254,7 +253,20 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 				priv->bss_params.operationalRateSet = -1;
 			}
 			rcu_read_unlock();
-			/* }}} */
+
+			if (sta) {
+				__le32 val = 0;
+				if (priv->ht_info.operation_mode &
+				IEEE80211_HT_OP_MODE_NON_GF_STA_PRSNT) {
+					ap_printk(KERN_DEBUG"[STA]"
+						" Non-GF STA present\n");
+					/* Non Green field capable STA */
+					val = __cpu_to_le32(BIT(1));
+				}
+				WARN_ON(wsm_write_mib(priv,
+					WSM_MID_ID_SET_HT_PROTECTION,
+					&val, sizeof(val)));
+			}
 
 			priv->association_mode.greenfieldMode =
 				cw1200_ht_greenfield(&priv->ht_info);
