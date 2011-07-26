@@ -2560,7 +2560,7 @@ return -EPERM;
 	return error;
 }
 
-static int may_mknod(mode_t mode)
+static int may_mknod(umode_t mode)
 {
 	switch (mode & S_IFMT) {
 	case S_IFREG:
