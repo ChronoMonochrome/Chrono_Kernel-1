@@ -74,9 +74,9 @@ struct db5500_keypad {
 	u8 previous_set[KEYPAD_MAX_ROWS];
 	bool enable;
 	bool valid_key;
-	int db5500_rows[KEYPAD_MAX_ROWS - 1];
+	int db5500_rows[KEYPAD_MAX_ROWS];
 	int db5500_cols[KEYPAD_MAX_COLS];
-	int gpio_input_irq[KEYPAD_MAX_ROWS - 1];
+	int gpio_input_irq[KEYPAD_MAX_ROWS];
 	int gpio_row;
 	int gpio_col;
 };
@@ -274,7 +274,7 @@ static void db5500_mode_enable(struct db5500_keypad *keypad, bool enable)
 		db5500_keypad_writel(keypad, 0, KEYPAD_INT_ENABLE);
 		if (keypad->board->exit)
 			keypad->board->exit();
-		for (i = 0; i < KEYPAD_MAX_ROWS - 1; i++) {
+		for (i = 0; i < keypad->board->krow; i++) {
 			enable_irq(keypad->gpio_input_irq[i]);
 			enable_irq_wake(keypad->gpio_input_irq[i]);
 		}
@@ -283,7 +283,7 @@ static void db5500_mode_enable(struct db5500_keypad *keypad, bool enable)
 	} else {
 		regulator_enable(keypad->regulator);
 		clk_enable(keypad->clk);
-		for (i = 0; i < KEYPAD_MAX_ROWS - 1; i++) {
+		for (i = 0; i < keypad->board->krow; i++) {
 			disable_irq_nosync(keypad->gpio_input_irq[i]);
 			disable_irq_wake(keypad->gpio_input_irq[i]);
 		}
@@ -325,13 +325,13 @@ static int db5500_read_get_gpio_row(struct db5500_keypad *keypad)
 	int ret;
 
 	/* read all rows GPIO data register values */
-	for (row = 0; row < KEYPAD_MAX_ROWS - 1; row++) {
+	for (row = 0; row < keypad->board->krow; row++) {
 		ret  = gpio_get_value(keypad->db5500_rows[row]);
 		value += (1 << row) *  ret;
 	}
 
 	/* get the exact row */
-	for (row = 0; row < KEYPAD_MAX_ROWS - 1; row++) {
+	for (row = 0; row < keypad->board->krow; row++) {
 		if (((1 << row) & value) == 0)
 			return row;
 	}
@@ -363,7 +363,7 @@ static void db5500_free_cols(struct db5500_keypad *keypad)
 {
 	int i ;
 
-	for (i = 0; i < KEYPAD_MAX_COLS; i++) {
+	for (i = 0; i < keypad->board->kcol; i++) {
 		gpio_request(keypad->db5500_cols[i], "db5500-kpd");
 		gpio_direction_output(keypad->db5500_cols[i], 0);
 		gpio_free(keypad->db5500_cols[i]);
@@ -377,7 +377,7 @@ static void db5500_manual_scan(struct db5500_keypad *keypad)
 
 	keypad->valid_key = false;
 
-	for (col = 0; col < KEYPAD_MAX_COLS; col++) {
+	for (col = 0; col < keypad->board->kcol; col++) {
 		db5500_set_cols(keypad, col);
 		row = db5500_read_get_gpio_row(keypad);
 		if (row >= 0) {
@@ -580,16 +580,19 @@ if (!keypad->board->init) {
 		goto out_unregisterinput;
 	}
 
-	for (i = 0; i < KEYPAD_MAX_ROWS - 1; i++) {
+	for (i = 0; i < keypad->board->krow; i++) {
 		keypad->db5500_rows[i] = *plat->gpio_input_pins;
-		keypad->db5500_cols[i] = *plat->gpio_output_pins;
 		keypad->gpio_input_irq[i] =
 				GPIO_TO_IRQ(keypad->db5500_rows[i]);
 		plat->gpio_input_pins++;
+	}
+
+	for (i = 0; i < keypad->board->kcol; i++) {
+		keypad->db5500_cols[i] = *plat->gpio_output_pins;
 		plat->gpio_output_pins++;
 	}
 
-	for (i = 0; i < KEYPAD_MAX_ROWS - 1; i++) {
+	for (i = 0; i < keypad->board->krow; i++) {
 		ret =  request_threaded_irq(keypad->gpio_input_irq[i],
 				NULL, db5500_keypad_gpio_irq,
 				IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND,
