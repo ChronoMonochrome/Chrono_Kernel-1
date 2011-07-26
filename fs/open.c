@@ -509,7 +509,7 @@ out_unlock:
 	return error;
 }
 
-SYSCALL_DEFINE2(fchmod, unsigned int, fd, mode_t, mode)
+SYSCALL_DEFINE2(fchmod, unsigned int, fd, umode_t, mode)
 {
 	struct file * file;
 	int err = -EBADF;
@@ -523,7 +523,7 @@ SYSCALL_DEFINE2(fchmod, unsigned int, fd, mode_t, mode)
 	return err;
 }
 
-SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
+SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, umode_t, mode)
 {
 	struct path path;
 	int error;
@@ -536,7 +536,7 @@ SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
 	return error;
 }
 
-SYSCALL_DEFINE2(chmod, const char __user *, filename, mode_t, mode)
+SYSCALL_DEFINE2(chmod, const char __user *, filename, umode_t, mode)
 {
 	return sys_fchmodat(AT_FDCWD, filename, mode);
 }
