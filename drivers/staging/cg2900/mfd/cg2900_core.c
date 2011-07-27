@@ -380,6 +380,8 @@ static void work_hw_registered(struct work_struct *work)
 	if (BOOT_READY != info->boot_state) {
 		dev_err(dev->dev,
 			"Could not read out revision from the chip\n");
+		info->boot_state = BOOT_FAILED;
+		dev->t_cb.set_chip_power(dev, false);
 		return;
 	}
 
