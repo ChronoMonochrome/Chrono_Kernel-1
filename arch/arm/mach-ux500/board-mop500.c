@@ -120,9 +120,9 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	.initial_pin_config     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x02, 0x00},
 
 	/* initial_pin_direction allows for the initial GPIO direction to
-	 * be set.
+	 * be set. For Snowball we set GPIO26 to output.
 	 */
-	.initial_pin_direction  = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	.initial_pin_direction  = {0x00, 0x00, 0x00, 0x02, 0x00, 0x00},
 
 	/*
 	 * initial_pin_pullups allows for the intial configuration of the
