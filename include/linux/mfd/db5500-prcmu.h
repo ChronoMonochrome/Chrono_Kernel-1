@@ -30,6 +30,8 @@ u16 db5500_prcmu_get_reset_code(void);
 bool db5500_prcmu_is_ac_wake_requested(void);
 int db5500_prcmu_set_arm_opp(u8 opp);
 int db5500_prcmu_get_arm_opp(void);
+int db5500_prcmu_set_ape_opp(u8 opp);
+int db5500_prcmu_get_ape_opp(void);
 
 static inline unsigned long prcmu_clock_rate(u8 clock)
 {
@@ -142,6 +144,15 @@ static inline int db5500_prcmu_get_arm_opp(void)
 	return 0;
 }
 
+static inline int db5500_prcmu_set_ape_opp(u8 opp)
+{
+	return 0;
+}
+
+static inline int db5500_prcmu_get_ape_opp(void)
+{
+	return 0;
+}
 
 #endif /* CONFIG_MFD_DB5500_PRCMU */
 

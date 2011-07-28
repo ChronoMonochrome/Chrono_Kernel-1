@@ -163,6 +163,11 @@ enum db5500_arm_opp {
 	DB5500_ARM_EXT_OPP,
 };
 
+enum db5500_ape_opp {
+	DB5500_APE_100_OPP = 1,
+	DB5500_APE_50_OPP
+};
+
 enum epod_state {
 	EPOD_OFF,
 	EPOD_ON,
@@ -423,6 +428,9 @@ static __iomem void *tcdm_base;
 struct clk_mgt {
 	unsigned int offset;
 	u32 pllsw;
+	u32 div;
+	bool scalable;
+	bool force50;
 };
 
 /* PRCMU Firmware Details */
@@ -434,35 +442,47 @@ static struct {
 
 static DEFINE_SPINLOCK(clk_mgt_lock);
 
-#define CLK_MGT_ENTRY(_name)[PRCMU_##_name] = {	\
-	(DB5500_PRCM_##_name##_MGT), 0			\
+#define CLK_MGT_ENTRY(_name, _scalable)[PRCMU_##_name] = {	\
+	.offset = DB5500_PRCM_##_name##_MGT,			\
+	.scalable = _scalable,					\
 }
+
 static struct clk_mgt clk_mgt[PRCMU_NUM_REG_CLOCKS] = {
-	CLK_MGT_ENTRY(SGACLK),
-	CLK_MGT_ENTRY(UARTCLK),
-	CLK_MGT_ENTRY(MSP02CLK),
-	CLK_MGT_ENTRY(I2CCLK),
-	CLK_MGT_ENTRY(SDMMCCLK),
-	CLK_MGT_ENTRY(SPARE1CLK),
-	CLK_MGT_ENTRY(PER1CLK),
-	CLK_MGT_ENTRY(PER2CLK),
-	CLK_MGT_ENTRY(PER3CLK),
-	CLK_MGT_ENTRY(PER5CLK),
-	CLK_MGT_ENTRY(PER6CLK),
-	CLK_MGT_ENTRY(PWMCLK),
-	CLK_MGT_ENTRY(IRDACLK),
-	CLK_MGT_ENTRY(IRRCCLK),
-	CLK_MGT_ENTRY(HDMICLK),
-	CLK_MGT_ENTRY(APEATCLK),
-	CLK_MGT_ENTRY(APETRACECLK),
-	CLK_MGT_ENTRY(MCDECLK),
-	CLK_MGT_ENTRY(DSIALTCLK),
-	CLK_MGT_ENTRY(DMACLK),
-	CLK_MGT_ENTRY(B2R2CLK),
-	CLK_MGT_ENTRY(TVCLK),
-	CLK_MGT_ENTRY(RNGCLK),
-	CLK_MGT_ENTRY(SIACLK),
-	CLK_MGT_ENTRY(SVACLK),
+	CLK_MGT_ENTRY(SGACLK, true),
+	CLK_MGT_ENTRY(UARTCLK, false),
+	CLK_MGT_ENTRY(MSP02CLK, false),
+	CLK_MGT_ENTRY(I2CCLK, false),
+	[PRCMU_SDMMCCLK] {
+		.offset		= DB5500_PRCM_SDMMCCLK_MGT,
+		.force50	= true,
+		.scalable	= false,
+
+	},
+	[PRCMU_SPARE1CLK] {
+		.offset		= DB5500_PRCM_SPARE1CLK_MGT,
+		.force50	= true,
+		.scalable	= false,
+
+	},
+	CLK_MGT_ENTRY(PER1CLK, false),
+	CLK_MGT_ENTRY(PER2CLK, true),
+	CLK_MGT_ENTRY(PER3CLK, true),
+	CLK_MGT_ENTRY(PER5CLK, false),	/* used for SPI */
+	CLK_MGT_ENTRY(PER6CLK, true),
+	CLK_MGT_ENTRY(PWMCLK, false),
+	CLK_MGT_ENTRY(IRDACLK, false),
+	CLK_MGT_ENTRY(IRRCCLK, false),
+	CLK_MGT_ENTRY(HDMICLK, false),
+	CLK_MGT_ENTRY(APEATCLK, false),
+	CLK_MGT_ENTRY(APETRACECLK, true),
+	CLK_MGT_ENTRY(MCDECLK, true),
+	CLK_MGT_ENTRY(DSIALTCLK, false),
+	CLK_MGT_ENTRY(DMACLK, true),
+	CLK_MGT_ENTRY(B2R2CLK, true),
+	CLK_MGT_ENTRY(TVCLK, false),
+	CLK_MGT_ENTRY(RNGCLK, false),
+	CLK_MGT_ENTRY(SIACLK, false),
+	CLK_MGT_ENTRY(SVACLK, false),
 };
 
 bool db5500_prcmu_is_ac_wake_requested(void)
@@ -1049,6 +1069,165 @@ bailout:
 	return r;
 }
 
+static void __init prcmu_ape_clocks_init(void)
+{
+	u8 opp = db5500_prcmu_get_ape_opp();
+	unsigned long flags;
+	int i;
+
+	WARN(opp != APE_100_OPP, "%s: Initial APE OPP (%u) not 100%%?\n",
+	     __func__, opp);
+
+	for (i = 0; i < PRCMU_NUM_REG_CLOCKS; i++) {
+		struct clk_mgt *clkmgt = &clk_mgt[i];
+		u32 clkval;
+		u32 div;
+
+		if (!clkmgt->scalable && !clkmgt->force50)
+			continue;
+
+		spin_lock_irqsave(&clk_mgt_lock, flags);
+
+		clkval = readl(_PRCMU_BASE + clkmgt->offset);
+		div = clkval & PRCM_CLK_MGT_CLKPLLDIV_MASK;
+		div >>= PRCM_CLK_MGT_CLKPLLDIV_SHIFT;
+
+		if (clkmgt->force50) {
+			div *= 2;
+
+			clkval &= ~PRCM_CLK_MGT_CLKPLLDIV_MASK;
+			clkval |= div << PRCM_CLK_MGT_CLKPLLDIV_SHIFT;
+			writel(clkval, _PRCMU_BASE + clkmgt->offset);
+
+			spin_unlock_irqrestore(&clk_mgt_lock, flags);
+			continue;
+		}
+
+		spin_unlock_irqrestore(&clk_mgt_lock, flags);
+
+		clkmgt->div = div;
+		if (!div)
+			pr_err("%s: scalable clock at offset %#x has zero divisor\n",
+			       __func__, clkmgt->offset);
+	}
+}
+
+static void prcmu_ape_clocks_scale(u8 opp)
+{
+	unsigned long irqflags;
+	unsigned int i;
+	u32 clkval;
+
+	/*
+	 * Note: calling printk() under the following lock can cause lock
+	 * recursion via clk_enable() for the console UART!
+	 */
+	spin_lock_irqsave(&clk_mgt_lock, irqflags);
+
+	/* take a lock on HW (HWSEM)*/
+	while ((readl(_PRCMU_BASE + PRCM_SEM) & PRCM_SEM_PRCM_SEM) != 0)
+		cpu_relax();
+
+	for (i = 0; i < PRCMU_NUM_REG_CLOCKS; i++) {
+		u32 divval;
+
+		if (!clk_mgt[i].scalable)
+			continue;
+
+		clkval = readl(_PRCMU_BASE + clk_mgt[i].offset);
+		divval = clk_mgt[i].div;
+
+		pr_debug("PRCMU: reg %#x prev clk = 0x%x stored div = 0x%x\n",
+			 clk_mgt[i].offset, clkval, divval);
+
+		if (opp == DB5500_APE_50_OPP)
+			divval *= 2;
+
+		clkval &= ~PRCM_CLK_MGT_CLKPLLDIV_MASK;
+		clkval |= divval << PRCM_CLK_MGT_CLKPLLDIV_SHIFT;
+
+		pr_debug("PRCMU: wr 0x%x in reg 0x%x\n",
+			 clkval, clk_mgt[i].offset);
+
+		writel(clkval, _PRCMU_BASE + clk_mgt[i].offset);
+	}
+
+	/* release lock */
+	writel(0, (_PRCMU_BASE + PRCM_SEM));
+
+	spin_unlock_irqrestore(&clk_mgt_lock, irqflags);
+}
+
+int db5500_prcmu_set_ape_opp(u8 opp)
+{
+	int ret = 0;
+	u8 db5500_opp;
+
+	if (opp == db5500_prcmu_get_ape_opp())
+		return ret;
+
+	if (cpu_is_u5500v1())
+		return -EINVAL;
+
+	switch (opp) {
+	case APE_100_OPP:
+		db5500_opp = DB5500_APE_100_OPP;
+		break;
+	case APE_50_OPP:
+		db5500_opp = DB5500_APE_50_OPP;
+		break;
+	default:
+		pr_err("prcmu: %s() received wrong opp value: %d\n",
+				__func__, opp);
+		ret = -EINVAL;
+		goto bailout;
+	}
+
+	mutex_lock(&mb1_transfer.lock);
+
+	prcmu_ape_clocks_scale(db5500_opp);
+
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(1))
+		cpu_relax();
+
+	writeb(MB1H_APE_OPP, PRCM_REQ_MB1_HEADER);
+	writeb(db5500_opp, PRCM_REQ_MB1_APE_OPP);
+	writel(MBOX_BIT(1), (_PRCMU_BASE + PRCM_MBOX_CPU_SET));
+
+	if (!wait_for_completion_timeout(&mb1_transfer.work,
+		msecs_to_jiffies(500))) {
+		ret = -EIO;
+		WARN(1, "prcmu: failed to set ape opp to %u", opp);
+		goto unlock_and_return;
+	}
+
+	if (mb1_transfer.ack.header != MB1H_APE_OPP ||
+		(mb1_transfer.ack.ape_opp != db5500_opp) ||
+		(mb1_transfer.ack.arm_voltage_st != RC_SUCCESS))
+		ret = -EIO;
+
+unlock_and_return:
+	mutex_unlock(&mb1_transfer.lock);
+bailout:
+	return ret;
+}
+
+int db5500_prcmu_get_ape_opp(void)
+{
+	u8 opp = readb(PRCM_ACK_MB1_CURRENT_APE_OPP);
+
+	switch (opp) {
+	case DB5500_APE_100_OPP:
+		return APE_100_OPP;
+	case DB5500_APE_50_OPP:
+		return APE_50_OPP;
+	default:
+		pr_err("prcmu: %s() read unknown opp value: %d\n",
+				__func__, opp);
+		return APE_100_OPP;
+	}
+}
+
 /**
  * db5500_prcmu_get_arm_opp - get the current ARM OPP
  *
@@ -1321,6 +1500,11 @@ static bool read_mailbox_1(void)
 		mb1_transfer.ack.arm_voltage_st =
 			readb(PRCM_ACK_MB1_ARM_VOLT_STATUS);
 		break;
+	case MB1H_APE_OPP:
+		mb1_transfer.ack.ape_opp = readb(PRCM_ACK_MB1_CURRENT_APE_OPP);
+		mb1_transfer.ack.ape_voltage_st =
+			readb(PRCM_ACK_MB1_APE_VOLT_STATUS);
+		break;
 	case MB1H_ARM_APE_OPP:
 		mb1_transfer.ack.ape_opp = readb(PRCM_ACK_MB1_CURRENT_APE_OPP);
 		mb1_transfer.ack.ape_voltage_st =
@@ -1557,6 +1741,7 @@ void __init db5500_prcmu_early_init(void)
 					 handle_simple_irq);
 		set_irq_flags(irq, IRQF_VALID);
 	}
+	prcmu_ape_clocks_init();
 }
 
 /*
