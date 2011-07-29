@@ -341,19 +341,25 @@ static int db5500_read_get_gpio_row(struct db5500_keypad *keypad)
 
 static void db5500_set_cols(struct db5500_keypad *keypad, int col)
 {
-	int i ;
+	int i, ret;
 	int value;
 
 	/*
 	 * Set all columns except the requested column
 	 * output pin as high
 	 */
-	for (i = 0; i < KEYPAD_MAX_COLS; i++) {
+	for (i = 0; i < keypad->board->kcol; i++) {
 		if (i == col)
 			value = 0;
 		else
 			value = 1;
-		gpio_request(keypad->db5500_cols[i], "db5500-kpd");
+		ret = gpio_request(keypad->db5500_cols[i], "db5500-kpd");
+
+		if (ret < 0) {
+			pr_err("db5500_set_cols: gpio request failed\n");
+			continue;
+		}
+
 		gpio_direction_output(keypad->db5500_cols[i], value);
 		gpio_free(keypad->db5500_cols[i]);
 	}
@@ -361,10 +367,16 @@ static void db5500_set_cols(struct db5500_keypad *keypad, int col)
 
 static void db5500_free_cols(struct db5500_keypad *keypad)
 {
-	int i ;
+	int i, ret;
 
 	for (i = 0; i < keypad->board->kcol; i++) {
-		gpio_request(keypad->db5500_cols[i], "db5500-kpd");
+		ret = gpio_request(keypad->db5500_cols[i], "db5500-kpd");
+
+		if (ret < 0) {
+			pr_err("db5500_free_cols: gpio request failed\n");
+			continue;
+		}
+
 		gpio_direction_output(keypad->db5500_cols[i], 0);
 		gpio_free(keypad->db5500_cols[i]);
 	}
