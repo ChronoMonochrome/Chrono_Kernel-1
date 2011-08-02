@@ -422,7 +422,6 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		(struct ieee80211_hdr *)skb->data;
 	struct cw1200_sta_priv *sta_priv =
 		(struct cw1200_sta_priv *)&tx_info->control.sta->drv_priv;
-	bool obtain_lock;
 	int link_id = 0;
 	int ret;
 
@@ -512,21 +511,18 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		if (cw1200_handle_action_tx(priv, skb))
 			goto drop;
 
-	obtain_lock = (link_id == CW1200_LINK_ID_AFTER_DTIM);
-
-	if (obtain_lock)
-		spin_lock_bh(&priv->buffered_multicasts_lock);
+	spin_lock_bh(&priv->buffered_multicasts_lock);
 
 	if (link_id == CW1200_LINK_ID_AFTER_DTIM &&
 			!priv->buffered_multicasts) {
 		priv->buffered_multicasts = true;
-		queue_work(priv->workqueue,
+		if (priv->sta_asleep_mask)
+			queue_work(priv->workqueue,
 				&priv->multicast_start_work);
 	}
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
 			link_id);
-	if (obtain_lock)
-		spin_unlock_bh(&priv->buffered_multicasts_lock);
+	spin_unlock_bh(&priv->buffered_multicasts_lock);
 
 	if (!WARN_ON(ret))
 		cw1200_bh_wakeup(priv);

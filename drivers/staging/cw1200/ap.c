@@ -89,18 +89,28 @@ void cw1200_sta_notify(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
 		(struct cw1200_sta_priv *)&sta->drv_priv;
 	u32 bit = BIT(sta_priv->link_id);
 
+	spin_lock_bh(&priv->buffered_multicasts_lock);
 	switch (notify_cmd) {
 		case STA_NOTIFY_SLEEP:
+			if (priv->buffered_multicasts &&
+					!priv->sta_asleep_mask)
+				queue_work(priv->workqueue,
+					&priv->multicast_start_work);
 			priv->sta_asleep_mask |= bit;
 			break;
 		case STA_NOTIFY_AWAKE:
 			priv->sta_asleep_mask &= ~bit;
+			if (priv->tx_multicast &&
+					!priv->sta_asleep_mask)
+				queue_work(priv->workqueue,
+					&priv->multicast_stop_work);
 			cw1200_bh_wakeup(priv);
 			break;
 	}
+	spin_unlock_bh(&priv->buffered_multicasts_lock);
 }
 
-static int cw1200_set_tim_impl(struct cw1200_common *priv)
+static int cw1200_set_tim_impl(struct cw1200_common *priv, bool aid0_bit_set)
 {
 	struct wsm_template_frame frame = {
 		.frame_type = WSM_FRAME_TYPE_BEACON,
@@ -120,7 +130,7 @@ static int cw1200_set_tim_impl(struct cw1200_common *priv)
 		frame.skb->data[tim_offset + 2] = 0;
 
 		/* Set/reset aid0 bit */
-		if (priv->aid0_bit_set)
+		if (aid0_bit_set)
 			frame.skb->data[tim_offset + 4] |= 1;
 		else
 			frame.skb->data[tim_offset + 4] &= ~1;
@@ -137,7 +147,7 @@ void cw1200_set_tim_work(struct work_struct *work)
 {
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, set_tim_work);
-	(void)cw1200_set_tim_impl(priv);
+	(void)cw1200_set_tim_impl(priv, priv->aid0_bit_set);
 }
 
 int cw1200_set_tim(struct ieee80211_hw *dev, struct ieee80211_sta *sta,
@@ -441,15 +451,11 @@ void cw1200_multicast_start_work(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, multicast_start_work);
 
-	bool store_timestamp = !priv->aid0_bit_set;
-
-	priv->aid0_bit_set = true;
-	cw1200_set_tim_impl(priv);
-	if (store_timestamp) {
-		unsigned long now = jiffies;
-		if (unlikely(!now))
-			++now;
-		priv->aid0_bit_timestamp = now;
+	if (!priv->aid0_bit_set) {
+		wsm_lock_tx(priv);
+		cw1200_set_tim_impl(priv, true);
+		priv->aid0_bit_set = true;
+		wsm_unlock_tx(priv);
 	}
 }
 
@@ -458,12 +464,12 @@ void cw1200_multicast_stop_work(struct work_struct *work)
         struct cw1200_common *priv =
                 container_of(work, struct cw1200_common, multicast_stop_work);
 
-	/* Flush to make sure frames are sent. */
-	wsm_lock_tx(priv);
-	wsm_unlock_tx(priv);
-
-	priv->aid0_bit_set = false;
-	cw1200_set_tim_impl(priv);
+	if (priv->aid0_bit_set) {
+		wsm_lock_tx(priv);
+		priv->aid0_bit_set = false;
+		cw1200_set_tim_impl(priv, false);
+		wsm_unlock_tx(priv);
+	}
 }
 
 int cw1200_ampdu_action(struct ieee80211_hw *hw,
@@ -500,27 +506,16 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 		arg->multicast ? "broadcast" : "unicast");
 
 	if (arg->multicast) {
+		spin_lock_bh(&priv->buffered_multicasts_lock);
 		if (arg->stop) {
-			queue_work(priv->workqueue,
-				&priv->multicast_stop_work);
+			priv->tx_multicast = false;
 		} else {
-			/* Handle only if there is data to be sent
-			* and aid0 is set in the beacon. */
-			unsigned long timestamp =
-					priv->aid0_bit_timestamp;
-			/* 20ms grace interval is used to make sure
-			 * the beacon was actually sent by hardware. */
-			static const unsigned long grace_interval =
-					HZ * 20 / 1000;
-
-			if (timestamp &&
-				jiffies - timestamp > grace_interval) {
-
-				priv->aid0_bit_timestamp = 0;
-				priv->suspend_multicast = false;
+			priv->tx_multicast = priv->aid0_bit_set &&
+					priv->buffered_multicasts;
+			if (priv->tx_multicast)
 				cw1200_bh_wakeup(priv);
-			}
 		}
+		spin_unlock_bh(&priv->buffered_multicasts_lock);
 	} else {
 		if (arg->stop)
 			set = unicast;

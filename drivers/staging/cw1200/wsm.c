@@ -1427,7 +1427,7 @@ static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 	int mcasts = 0;
 
 	/* Search for a queue with multicast frames buffered */
-	if (priv->sta_asleep_mask && !priv->suspend_multicast) {
+	if (priv->tx_multicast) {
 		tx_allowed_mask = BIT(CW1200_LINK_ID_AFTER_DTIM);
 		for (i = 0; i < 4; ++i) {
 			mcasts += cw1200_queue_get_num_queued(
@@ -1447,6 +1447,7 @@ static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 		tx_allowed_mask = ~priv->sta_asleep_mask;
 		if (priv->sta_asleep_mask) {
 			tx_allowed_mask |= ~priv->tx_suspend_mask[i];
+			tx_allowed_mask &= ~BIT(CW1200_LINK_ID_AFTER_DTIM);
 		} else {
 			tx_allowed_mask |= BIT(CW1200_LINK_ID_AFTER_DTIM);
 		}
@@ -1491,34 +1492,27 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 		spin_unlock(&priv->wsm_cmd.lock);
 	} else {
 		for (;;) {
-			bool obtain_lock = priv->sta_asleep_mask &&
-					!priv->suspend_multicast;
 			int ret;
 
 			if (atomic_add_return(0, &priv->tx_lock))
 				break;
 
-			if (obtain_lock)
-				spin_lock_bh(
-					&priv->buffered_multicasts_lock);
+			spin_lock_bh(&priv->buffered_multicasts_lock);
 
 			ret = wsm_get_tx_queue_and_mask(priv, &queue,
 					&tx_allowed_mask, &more);
 
 			if (priv->buffered_multicasts &&
-					priv->sta_asleep_mask &&
-					!priv->suspend_multicast &&
-					(ret || tx_allowed_mask !=
-					 BIT(CW1200_LINK_ID_AFTER_DTIM))) {
+					(ret || !more) &&
+					(priv->tx_multicast ||
+					 !priv->sta_asleep_mask)) {
 				priv->buffered_multicasts = false;
-				priv->suspend_multicast = true;
-				queue_work(priv->workqueue,
-					&priv->multicast_stop_work);
+				if (priv->tx_multicast)
+					queue_work(priv->workqueue,
+						&priv->multicast_stop_work);
 			}
 
-			if (obtain_lock)
-				spin_unlock_bh(
-					&priv->buffered_multicasts_lock);
+			spin_unlock_bh(&priv->buffered_multicasts_lock);
 
 			if (ret)
 				break;

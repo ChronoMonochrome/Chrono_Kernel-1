@@ -121,7 +121,6 @@ void cw1200_stop(struct ieee80211_hw *dev)
 		 * through the map and reset each link separately. */
 		WARN_ON(priv->link_id_map);
 		priv->sta_asleep_mask = 0;
-		priv->suspend_multicast = false;
 		wsm_reset(priv, &reset);
 		break;
 	case CW1200_JOIN_STATUS_MONITOR:
