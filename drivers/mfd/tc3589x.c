@@ -484,7 +484,7 @@ static int tc3589x_resume(struct device *dev)
 		if (ret < 0)
 			goto out;
 
-		for (i = 0; i < ARRAY_SIZE(sleep_regs); i++) {
+		for (i = ARRAY_SIZE(sleep_regs) - 1; i >= 0; i--) {
 			ret = tc3589x_reg_write(tc3589x,
 						sleep_regs[i],
 						sleep_regs_backup[i]);
