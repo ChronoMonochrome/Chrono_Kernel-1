@@ -284,12 +284,6 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 
 	hw->sta_data_size = sizeof(struct cw1200_sta_priv);
 
-	/*
-	 * For now, disable PS by default because it affects
-	 * link stability significantly.
-	 */
-	hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
-
 	hw->wiphy->bands[IEEE80211_BAND_2GHZ] = &cw1200_band_2ghz;
 #ifdef CONFIG_CW1200_5GHZ_SUPPORT
 	hw->wiphy->bands[IEEE80211_BAND_5GHZ] = &cw1200_band_5ghz;
