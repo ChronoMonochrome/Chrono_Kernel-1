@@ -595,7 +595,20 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 			.multicast = !arg->link_id,
 		};
 		cw1200_suspend_resume(priv, &suspend);
-		WARN_ON(cw1200_queue_requeue(queue, arg->packetID));
+		if (suspend.multicast) {
+			/* HACK!!! WSM324 firmware has tendency to requeue
+			 * multicast frames in a loop, causing performance
+			 * drop and high power consumption of the driver.
+			 * In this situation it is better just to drop
+			 * the problematic frame. */
+			wiphy_warn(priv->hw->wiphy, "Attempt to requeue a "
+					"multicat frame. Frame is dropped\n");
+			WARN_ON(cw1200_queue_remove(queue, priv,
+					arg->packetID));
+		} else {
+			WARN_ON(cw1200_queue_requeue(queue,
+					arg->packetID));
+		}
 	} else if (!WARN_ON(cw1200_queue_get_skb(
 			queue, arg->packetID, &skb))) {
 		struct ieee80211_tx_info *tx = IEEE80211_SKB_CB(skb);
