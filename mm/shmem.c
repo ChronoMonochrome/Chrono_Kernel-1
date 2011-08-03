@@ -237,39 +237,216 @@ static swp_entry_t shmem_get_swap(struct shmem_inode_info *info, pgoff_t index)
 		info->i_direct[index] : (swp_entry_t){0};
 }
 
+/*
+ * Replace item expected in radix tree by a new item, while holding tree lock.
+ */
+static int shmem_radix_tree_replace(struct address_space *mapping,
+			pgoff_t index, void *expected, void *replacement)
+{
+	void **pslot;
+	void *item = NULL;
+
+	VM_BUG_ON(!expected);
+	pslot = radix_tree_lookup_slot(&mapping->page_tree, index);
+	if (pslot)
+		item = radix_tree_deref_slot_protected(pslot,
+							&mapping->tree_lock);
+	if (item != expected)
+		return -ENOENT;
+	if (replacement)
+		radix_tree_replace_slot(pslot, replacement);
+	else
+		radix_tree_delete(&mapping->page_tree, index);
+	return 0;
+}
+
+/*
+ * Like find_get_pages, but collecting swap entries as well as pages.
+ */
+static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+					pgoff_t start, unsigned int nr_pages,
+					struct page **pages, pgoff_t *indices)
+{
+	unsigned int i;
+	unsigned int ret;
+	unsigned int nr_found;
+
+	rcu_read_lock();
+restart:
+	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
+				(void ***)pages, indices, start, nr_pages);
+	ret = 0;
+	for (i = 0; i < nr_found; i++) {
+		struct page *page;
+repeat:
+		page = radix_tree_deref_slot((void **)pages[i]);
+		if (unlikely(!page))
+			continue;
+		if (radix_tree_exception(page)) {
+			if (radix_tree_exceptional_entry(page))
+				goto export;
+			/* radix_tree_deref_retry(page) */
+			goto restart;
+		}
+		if (!page_cache_get_speculative(page))
+			goto repeat;
+
+		/* Has the page moved? */
+		if (unlikely(page != *((void **)pages[i]))) {
+			page_cache_release(page);
+			goto repeat;
+		}
+export:
+		indices[ret] = indices[i];
+		pages[ret] = page;
+		ret++;
+	}
+	if (unlikely(!ret && nr_found))
+		goto restart;
+	rcu_read_unlock();
+	return ret;
+}
+
+/*
+ * Remove swap entry from radix tree, free the swap and its page cache.
+ */
+static int shmem_free_swap(struct address_space *mapping,
+			   pgoff_t index, void *radswap)
+{
+	int error;
+
+	spin_lock_irq(&mapping->tree_lock);
+	error = shmem_radix_tree_replace(mapping, index, radswap, NULL);
+	spin_unlock_irq(&mapping->tree_lock);
+	if (!error)
+		free_swap_and_cache(radix_to_swp_entry(radswap));
+	return error;
+}
+
+/*
+ * Pagevec may contain swap entries, so shuffle up pages before releasing.
+ */
+static void shmem_pagevec_release(struct pagevec *pvec)
+{
+	int i, j;
+
+	for (i = 0, j = 0; i < pagevec_count(pvec); i++) {
+		struct page *page = pvec->pages[i];
+		if (!radix_tree_exceptional_entry(page))
+			pvec->pages[j++] = page;
+	}
+	pvec->nr = j;
+	pagevec_release(pvec);
+}
+
+/*
+ * Remove range of pages and swap entries from radix tree, and free them.
+ */
 void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 {
 	struct address_space *mapping = inode->i_mapping;
 	struct shmem_inode_info *info = SHMEM_I(inode);
 	pgoff_t start = (lstart + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
 	pgoff_t end = (lend >> PAGE_CACHE_SHIFT);
+	struct pagevec pvec;
+	pgoff_t indices[PAGEVEC_SIZE];
+	long nr_swaps_freed = 0;
 	pgoff_t index;
-	swp_entry_t swap;
+	int i;
 
-	truncate_inode_pages_range(mapping, lstart, lend);
+	BUG_ON((lend & (PAGE_CACHE_SIZE - 1)) != (PAGE_CACHE_SIZE - 1));
 
-	if (end > SHMEM_NR_DIRECT)
-		end = SHMEM_NR_DIRECT;
+	pagevec_init(&pvec, 0);
+	index = start;
+	while (index <= end) {
+		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
+							pvec.pages, indices);
+		if (!pvec.nr)
+			break;
+		mem_cgroup_uncharge_start();
+		for (i = 0; i < pagevec_count(&pvec); i++) {
+			struct page *page = pvec.pages[i];
 
-	spin_lock(&info->lock);
-	for (index = start; index < end; index++) {
-		swap = shmem_get_swap(info, index);
-		if (swap.val) {
-			free_swap_and_cache(swap);
-			shmem_put_swap(info, index, (swp_entry_t){0});
-			info->swapped--;
+			index = indices[i];
+			if (index > end)
+				break;
+
+			if (radix_tree_exceptional_entry(page)) {
+				nr_swaps_freed += !shmem_free_swap(mapping,
+								index, page);
+				continue;
+			}
+
+			if (!trylock_page(page))
+				continue;
+			if (page->mapping == mapping) {
+				VM_BUG_ON(PageWriteback(page));
+				truncate_inode_page(mapping, page);
+			}
+			unlock_page(page);
+		}
+		shmem_pagevec_release(&pvec);
+		mem_cgroup_uncharge_end();
+		cond_resched();
+		index++;
+	}
+
+	if (partial) {
+		struct page *page = NULL;
+		shmem_getpage(inode, start - 1, &page, SGP_READ, NULL);
+		if (page) {
+			zero_user_segment(page, partial, PAGE_CACHE_SIZE);
+			set_page_dirty(page);
+			unlock_page(page);
+			page_cache_release(page);
 		}
 	}
 
-	if (mapping->nrpages) {
-		spin_unlock(&info->lock);
-		/*
-		 * A page may have meanwhile sneaked in from swap.
-		 */
-		truncate_inode_pages_range(mapping, lstart, lend);
-		spin_lock(&info->lock);
+	index = start;
+	for ( ; ; ) {
+		cond_resched();
+		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
+							pvec.pages, indices);
+		if (!pvec.nr) {
+			if (index == start)
+				break;
+			index = start;
+			continue;
+		}
+		if (index == start && indices[0] > end) {
+			shmem_pagevec_release(&pvec);
+			break;
+		}
+		mem_cgroup_uncharge_start();
+		for (i = 0; i < pagevec_count(&pvec); i++) {
+			struct page *page = pvec.pages[i];
+
+			index = indices[i];
+			if (index > end)
+				break;
+
+			if (radix_tree_exceptional_entry(page)) {
+				nr_swaps_freed += !shmem_free_swap(mapping,
+								index, page);
+				continue;
+			}
+
+			lock_page(page);
+			if (page->mapping == mapping) {
+				VM_BUG_ON(PageWriteback(page));
+				truncate_inode_page(mapping, page);
+			}
+			unlock_page(page);
+		}
+		shmem_pagevec_release(&pvec);
+		mem_cgroup_uncharge_end();
+		index++;
 	}
 
+	spin_lock(&info->lock);
+	info->swapped -= nr_swaps_freed;
 	shmem_recalc_inode(inode);
 	spin_unlock(&info->lock);
 
@@ -493,11 +670,10 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
 	}
 
 	/*
-	 * Just for this patch, we have a toy implementation,
-	 * which can swap out only the first SHMEM_NR_DIRECT pages:
-	 * for simple demonstration of where we need to think about swap.
+	 * Disable even the toy swapping implementation, while we convert
+	 * functions one by one to having swap entries in the radix tree.
 	 */
-	if (index >= SHMEM_NR_DIRECT)
+	if (index < ULONG_MAX)
 		goto redirty;
 
 	swap = get_swap_page();
