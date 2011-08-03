@@ -414,32 +414,34 @@ static void shmem_swp_set(struct shmem_inode_info *info, swp_entry_t *entry, uns
  *
  * If the entry does not exist, allocate it.
  */
-static swp_entry_t *shmem_swp_alloc(struct shmem_inode_info *info,
-			unsigned long index, enum sgp_type sgp, gfp_t gfp)
+static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+					pgoff_t start, unsigned int nr_pages,
+					struct page **pages, pgoff_t *indices)
 {
-	struct inode *inode = &info->vfs_inode;
-	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
-	struct page *page = NULL;
-	swp_entry_t *entry;
+	unsigned int i;
+	unsigned int ret;
+	unsigned int nr_found;
 
-	if (sgp != SGP_WRITE &&
-	    ((loff_t) index << PAGE_CACHE_SHIFT) >= i_size_read(inode))
-		return ERR_PTR(-EINVAL);
-
-	while (!(entry = shmem_swp_entry(info, index, &page))) {
-		if (sgp == SGP_READ)
-			return shmem_swp_map(ZERO_PAGE(0));
-		/*
-		 * Test used_blocks against 1 less max_blocks, since we have 1 data
-		 * page (and perhaps indirect index pages) yet to allocate:
-		 * a waste to allocate index if we cannot allocate data.
-		 */
-		if (sbinfo->max_blocks) {
-			if (percpu_counter_compare(&sbinfo->used_blocks,
-						sbinfo->max_blocks - 1) >= 0)
-				return ERR_PTR(-ENOSPC);
-			percpu_counter_inc(&sbinfo->used_blocks);
-			inode->i_blocks += BLOCKS_PER_PAGE;
+	rcu_read_lock();
+restart:
+	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
+				(void ***)pages, indices, start, nr_pages);
+	ret = 0;
+	for (i = 0; i < nr_found; i++) {
+		struct page *page;
+repeat:
+		page = radix_tree_deref_slot((void **)pages[i]);
+		if (unlikely(!page))
+			continue;
+		if (radix_tree_exception(page)) {
+			if (radix_tree_deref_retry(page))
+				goto restart;
+			/*
+			 * Otherwise, we must be storing a swap entry
+			 * here as an exceptional entry: so return it
+			 * without attempting to raise page count.
+			 */
+			goto export;
 		}
 
 		spin_unlock(&info->lock);
