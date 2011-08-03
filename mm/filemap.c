@@ -861,7 +861,7 @@ repeat:
 				 * when entry at index 0 moves out of or back
 				 * to root: none yet gotten, safe to restart.
 				 */
-				WARN_ON(iter.index);
+				WARN_ON(start | i);
 				goto restart;
 			}
 			/*
