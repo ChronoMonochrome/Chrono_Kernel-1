@@ -1184,10 +1184,10 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 			WARN_ON(wsm_arg != NULL);
 			ret = wsm_generic_confirm(priv, wsm_arg, &wsm_buf);
 			if (ret)
-				printk(KERN_ERR
-					"[WSM] wsm_generic_confirm "
+				wiphy_warn(priv->hw->wiphy,
+					"wsm_generic_confirm "
 					"failed for request 0x%.4X.\n",
-					id);
+					id & ~0x0400);
 			break;
 		default:
 			BUG_ON(1);

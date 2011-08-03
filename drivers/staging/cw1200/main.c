@@ -390,6 +390,8 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 	struct cw1200_common *priv = dev->priv;
 	int i;
 
+	ieee80211_unregister_hw(dev);
+
 	cw1200_debug_release(priv);
 
 	priv->sbus_ops->irq_unsubscribe(priv->sbus_priv);
@@ -399,7 +401,6 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 	cw1200_unregister_leds(priv);
 #endif /* CONFIG_CW1200_LEDS */
 
-	ieee80211_unregister_hw(dev);
 	mutex_destroy(&priv->conf_mutex);
 	mutex_destroy(&priv->eeprom_mutex);
 

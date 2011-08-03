@@ -426,7 +426,8 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	int ret;
 
 	if ((tx_info->flags | IEEE80211_TX_CTL_SEND_AFTER_DTIM) &&
-			(priv->mode == NL80211_IFTYPE_AP))
+			(priv->mode == NL80211_IFTYPE_AP) &&
+			priv->enable_beacon)
 		link_id = CW1200_LINK_ID_AFTER_DTIM;
 	else if (tx_info->control.sta)
 		link_id = sta_priv->link_id;

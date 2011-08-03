@@ -16,7 +16,7 @@
 static int cw1200_scan_start(struct cw1200_common *priv, struct wsm_scan *scan)
 {
 	int ret, i;
-	int tmo = 1000;
+	int tmo = 2000;
 
 	for (i = 0; i < scan->numOfChannels; ++i)
 		tmo += scan->ch[i].maxChannelTime + 10;
@@ -91,7 +91,7 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 			!(priv->powersave_mode.pmMode & WSM_PSM_PS)) {
 		struct wsm_set_pm pm = priv->powersave_mode;
 		pm.pmMode = WSM_PSM_PS;
-		WARN_ON(wsm_set_pm(priv, &pm));
+		wsm_set_pm(priv, &pm);
 	}
 
 	BUG_ON(priv->scan.req);
@@ -140,7 +140,7 @@ void cw1200_scan_work(struct work_struct *work)
 						priv->output_power * 10));
 		if (priv->join_status == CW1200_JOIN_STATUS_STA &&
 				!(priv->powersave_mode.pmMode & WSM_PSM_PS))
-			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
+			wsm_set_pm(priv, &priv->powersave_mode);
 
 		if (priv->scan.req)
 			printk(KERN_DEBUG "[SCAN] Scan completed.\n");
@@ -273,8 +273,8 @@ void cw1200_scan_timeout(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, scan.timeout.work);
 	if (likely(atomic_xchg(&priv->scan.in_progress, 0))) {
-		cw1200_dbg(CW1200_DBG_ERROR,
-			"CW1200 FW: Timeout waiting for scan " \
+		wiphy_warn(priv->hw->wiphy,
+			"Timeout waiting for scan " \
 			"complete notification.\n");
 		cw1200_scan_complete(priv);
 	}
