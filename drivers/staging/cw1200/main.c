@@ -268,6 +268,11 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 					  BIT(NL80211_IFTYPE_AP) |
 					  BIT(NL80211_IFTYPE_MESH_POINT);
 
+	/* Support only for limited wowlan functionalities */
+	hw->wiphy->wowlan.flags = WIPHY_WOWLAN_ANY |
+					  WIPHY_WOWLAN_DISCONNECT;
+	hw->wiphy->wowlan.n_patterns = 0;
+
 	hw->channel_change_time = 1000;	/* TODO: find actual value */
 	/* priv->beacon_req_id = cpu_to_le32(0); */
 	hw->queues = 4;
