@@ -1262,7 +1262,8 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 				action = doJoin;
 			else if (ieee80211_is_probe_req(fctl))
 				action = doTx;
-			else if (ieee80211_is_action(fctl)) {
+			else if (ieee80211_is_action(fctl) ||
+					ieee80211_is_probe_resp(fctl)) {
 				if (priv->join_status)
 					action = doTx;
 				else
