@@ -968,16 +968,21 @@ void cw1200_join_work(struct work_struct *work)
 	mutex_lock(&priv->conf_mutex);
 	{
 		struct wsm_join join = {
-			.mode = (bss->capability & WLAN_CAPABILITY_IBSS) ?
-				WSM_JOIN_MODE_IBSS : WSM_JOIN_MODE_BSS,
+			.mode = WSM_JOIN_MODE_BSS,
 			.preambleType = WSM_JOIN_PREAMBLE_SHORT,
 			.probeForJoin = 1,
 			/* dtimPeriod will be updated after association */
 			.dtimPeriod = 1,
-			.beaconInterval = bss->beacon_interval,
+			.beaconInterval = 100,
 			/* basicRateSet will be updated after association */
 			.basicRateSet = 7,
 		};
+
+		if (bss) {
+			join.mode = (bss->capability & WLAN_CAPABILITY_IBSS) ?
+				WSM_JOIN_MODE_IBSS : WSM_JOIN_MODE_BSS;
+			join.beaconInterval = bss->beacon_interval;
+		}
 
 		if (tim && tim->dtim_period > 1) {
 			join.dtimPeriod = tim->dtim_period;
@@ -1036,7 +1041,8 @@ void cw1200_join_work(struct work_struct *work)
 		cw1200_update_filtering(priv);
 	}
 	mutex_unlock(&priv->conf_mutex);
-	cfg80211_put_bss(bss);
+	if (bss)
+		cfg80211_put_bss(bss);
 }
 
 void cw1200_join_timeout(struct work_struct *work)
