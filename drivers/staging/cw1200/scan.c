@@ -13,6 +13,8 @@
 #include "cw1200.h"
 #include "scan.h"
 
+static void cw1200_scan_restart_delayed(struct cw1200_common *priv);
+
 static int cw1200_scan_start(struct cw1200_common *priv, struct wsm_scan *scan)
 {
 	int ret, i;
@@ -28,6 +30,7 @@ static int cw1200_scan_start(struct cw1200_common *priv, struct wsm_scan *scan)
 	if (unlikely(ret)) {
 		atomic_set(&priv->scan.in_progress, 0);
 		cancel_delayed_work_sync(&priv->scan.timeout);
+		cw1200_scan_restart_delayed(priv);
 	}
 	return ret;
 }
@@ -48,7 +51,7 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	if (req->n_ssids == 1 && !req->ssids[0].ssid_len)
 		req->n_ssids = 0;
 
-	printk(KERN_DEBUG "[SCAN] Scan request for %d SSIDs.\n",
+	wiphy_dbg(hw->wiphy, "[SCAN] Scan request for %d SSIDs.\n",
 		req->n_ssids);
 
 	if (req->n_ssids > WSM_SCAN_MAX_NUM_OF_SSIDS)
@@ -143,25 +146,14 @@ void cw1200_scan_work(struct work_struct *work)
 			wsm_set_pm(priv, &priv->powersave_mode);
 
 		if (priv->scan.req)
-			printk(KERN_DEBUG "[SCAN] Scan completed.\n");
+			wiphy_dbg(priv->hw->wiphy,
+					"[SCAN] Scan completed.\n");
 		else
-			printk(KERN_DEBUG "[SCAN] Scan canceled.\n");
+			wiphy_dbg(priv->hw->wiphy,
+					"[SCAN] Scan canceled.\n");
 
 		priv->scan.req = NULL;
-
-		if (priv->delayed_link_loss) {
-			priv->delayed_link_loss = 0;
-			/* Restart beacon loss timer and requeue
-			   BSS loss work. */
-			printk(KERN_DEBUG "[CQM] Requeue BSS loss in %d " \
-					"beacons.\n",
-				priv->cqm_beacon_loss_count);
-			cancel_delayed_work_sync(&priv->bss_loss_work);
-			queue_delayed_work(priv->workqueue,
-					&priv->bss_loss_work,
-					priv->cqm_beacon_loss_count * HZ / 10);
-		}
-
+		cw1200_scan_restart_delayed(priv);
 		wsm_unlock_tx(priv);
 		mutex_unlock(&priv->conf_mutex);
 		ieee80211_scan_completed(priv->hw, priv->scan.status ? 1 : 0);
@@ -231,22 +223,38 @@ fail:
 	return;
 }
 
+static void cw1200_scan_restart_delayed(struct cw1200_common *priv)
+{
+	if (priv->delayed_link_loss) {
+		int tmo = priv->cqm_beacon_loss_count;
+
+		if (priv->scan.direct_probe)
+			tmo = 0;
+
+		priv->delayed_link_loss = 0;
+		/* Restart beacon loss timer and requeue
+		   BSS loss work. */
+		wiphy_dbg(priv->hw->wiphy,
+				"[CQM] Requeue BSS loss in %d "
+				"beacons.\n", tmo);
+		cancel_delayed_work_sync(&priv->bss_loss_work);
+		queue_delayed_work(priv->workqueue,
+				&priv->bss_loss_work,
+				tmo * HZ / 10);
+	}
+	if (priv->delayed_unjoin) {
+		priv->delayed_unjoin = false;
+		if (queue_work(priv->workqueue, &priv->unjoin_work) <= 0)
+			wsm_unlock_tx(priv);
+	}
+}
+
 static void cw1200_scan_complete(struct cw1200_common *priv)
 {
 	if (priv->scan.direct_probe) {
-		printk(KERN_DEBUG "[SCAN] Direct probe complete.\n");
+		wiphy_dbg(priv->hw->wiphy, "[SCAN] Direct probe complete.\n");
+		cw1200_scan_restart_delayed(priv);
 		priv->scan.direct_probe = 0;
-
-		if (priv->delayed_link_loss) {
-			priv->delayed_link_loss = 0;
-			/* Requeue BSS loss work now. Direct probe does not
-			 * affect BSS loss subscription. */
-			printk(KERN_DEBUG "[CQM] Requeue BSS loss now.\n");
-			cancel_delayed_work_sync(&priv->bss_loss_work);
-			queue_delayed_work(priv->workqueue,
-						&priv->bss_loss_work, 0);
-		}
-
 		up(&priv->scan.lock);
 		wsm_unlock_tx(priv);
 	} else {
@@ -310,7 +318,7 @@ void cw1200_probe_work(struct work_struct *work)
 	size_t ies_len;
 	int ret;
 
-	printk(KERN_DEBUG "[SCAN] Direct probe work.\n");
+	wiphy_dbg(priv->hw->wiphy, "[SCAN] Direct probe work.\n");
 
 	if (!priv->channel) {
 		dev_kfree_skb(priv->scan.probe_skb);

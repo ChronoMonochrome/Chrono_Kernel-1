@@ -154,6 +154,7 @@ struct cw1200_common {
 	struct delayed_work	join_timeout;
 	struct work_struct	unjoin_work;
 	int			join_dtim_period;
+	bool			delayed_unjoin;
 
 	/* TX/RX and security */
 	s8			wep_default_key_id;

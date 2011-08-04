@@ -1064,6 +1064,13 @@ void cw1200_unjoin_work(struct work_struct *work)
 	};
 
 	mutex_lock(&priv->conf_mutex);
+	if (unlikely(atomic_read(&priv->scan.in_progress))) {
+		BUG_ON(priv->delayed_unjoin);
+		priv->delayed_unjoin = true;
+		mutex_unlock(&priv->conf_mutex);
+		return;
+	}
+
 	BUG_ON(priv->join_status &&
 			priv->join_status != CW1200_JOIN_STATUS_STA);
 	if (priv->join_status == CW1200_JOIN_STATUS_STA) {
