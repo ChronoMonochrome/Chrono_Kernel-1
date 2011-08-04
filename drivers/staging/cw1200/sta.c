@@ -67,6 +67,17 @@ int cw1200_start(struct ieee80211_hw *dev)
 	priv->cqm_link_loss_count = 60;
 	priv->cqm_beacon_loss_count = 20;
 
+	/* Temporary configuration - beacon filter table */
+	priv->bf_table.numOfIEs = __cpu_to_le32(1);
+	priv->bf_table.entry[0].ieId = WLAN_EID_VENDOR_SPECIFIC;
+	priv->bf_table.entry[0].actionFlags = WSM_BEACON_FILTER_IE_HAS_CHANGED |
+					WSM_BEACON_FILTER_IE_NO_LONGER_PRESENT |
+					WSM_BEACON_FILTER_IE_HAS_APPEARED;
+	priv->bf_table.entry[0].oui[0] = 0x50;
+	priv->bf_table.entry[0].oui[1] = 0x6F;
+	priv->bf_table.entry[0].oui[2] = 0x9A;
+
+	priv->bf_control.enabled = 1;
 	ret = cw1200_setup_mac(priv);
 	if (WARN_ON(ret))
 		goto out;
@@ -304,6 +315,50 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 	}
 
+	if (changed & IEEE80211_CONF_CHANGE_P2P_PS) {
+		struct wsm_p2p_ps_modeinfo *modeinfo;
+		modeinfo = &priv->p2p_ps_modeinfo;
+		sta_printk(KERN_DEBUG "[STA] IEEE80211_CONF_CHANGE_P2P_PS\n");
+
+		if (conf->p2p_ps.ctwindow >= 128)
+			modeinfo->oppPsCTWindow = 127;
+		else if (conf->p2p_ps.ctwindow >= 0)
+			modeinfo->oppPsCTWindow = conf->p2p_ps.ctwindow;
+
+		switch (conf->p2p_ps.opp_ps) {
+			case 0:
+				modeinfo->oppPsCTWindow &= ~(BIT(7));
+				break;
+			case 1:
+				modeinfo->oppPsCTWindow |= BIT(7);
+				break;
+			default:
+				break;
+		}
+
+		/* Notice of Absence */
+		modeinfo->count = conf->p2p_ps.count;
+		modeinfo->startTime = __cpu_to_le32(conf->p2p_ps.start);
+		modeinfo->duration = __cpu_to_le32(conf->p2p_ps.duration);
+		modeinfo->interval = __cpu_to_le32(conf->p2p_ps.interval);
+
+		if(conf->p2p_ps.count)
+			modeinfo->dtimCount = 1;
+		else
+			modeinfo->dtimCount = 0;
+
+		if (priv->join_status == CW1200_JOIN_STATUS_STA ||
+		    priv->join_status == CW1200_JOIN_STATUS_AP) {
+#if defined(CONFIG_CW1200_STA_DEBUG)
+			print_hex_dump_bytes("p2p_ps_modeinfo: ",
+					     DUMP_PREFIX_NONE,
+					     (u8*) modeinfo,
+					     sizeof(*modeinfo));
+#endif
+			WARN_ON(wsm_set_p2p_ps_modeinfo(priv, modeinfo));
+		}
+	}
+
 	if (changed & IEEE80211_CONF_CHANGE_MONITOR) {
 		/* TBD: It looks like it's transparent
 		 * there's a monitor interface present -- use this
@@ -352,6 +407,8 @@ void cw1200_update_filtering(struct cw1200_common *priv)
 		return;
 
 	ret = wsm_set_rx_filter(priv, &priv->rx_filter);
+	if (!ret)
+		ret = wsm_set_beacon_filter_table(priv, &priv->bf_table);
 	if (!ret)
 		ret = wsm_beacon_filter_control(priv, &priv->bf_control);
 	if (!ret)

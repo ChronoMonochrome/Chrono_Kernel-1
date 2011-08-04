@@ -257,6 +257,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 		    /* Aggregation is fully controlled by firmware.
 		     * Do not need any support from the mac80211 stack */
 		    /* IEEE80211_HW_AMPDU_AGGREGATION | */
+		    IEEE80211_HW_SUPPORTS_P2P_PS |
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 		    IEEE80211_HW_SUPPORTS_CQM_BEACON_MISS |
 		    IEEE80211_HW_SUPPORTS_CQM_TX_FAIL |
@@ -266,7 +267,9 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	hw->wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
 					  BIT(NL80211_IFTYPE_ADHOC) |
 					  BIT(NL80211_IFTYPE_AP) |
-					  BIT(NL80211_IFTYPE_MESH_POINT);
+					  BIT(NL80211_IFTYPE_MESH_POINT) |
+					  BIT(NL80211_IFTYPE_P2P_CLIENT) |
+					  BIT(NL80211_IFTYPE_P2P_GO);
 
 	/* Support only for limited wowlan functionalities */
 	hw->wiphy->wowlan.flags = WIPHY_WOWLAN_ANY |

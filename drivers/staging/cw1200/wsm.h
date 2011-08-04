@@ -1246,6 +1246,32 @@ static inline int wsm_set_rx_filter(struct cw1200_common *priv,
 	return wsm_write_mib(priv, WSM_MIB_ID_RX_FILTER, &val, sizeof(val));
 }
 
+#define WSM_BEACON_FILTER_IE_HAS_CHANGED	BIT(0)
+#define WSM_BEACON_FILTER_IE_NO_LONGER_PRESENT	BIT(1)
+#define WSM_BEACON_FILTER_IE_HAS_APPEARED	BIT(2)
+
+struct wsm_beacon_filter_table_entry {
+	u8	ieId;
+	u8	actionFlags;
+	u8	oui[3];
+	u8	matchData[3];
+} __packed;
+
+struct wsm_beacon_filter_table {
+	__le32 numOfIEs;
+	struct wsm_beacon_filter_table_entry entry[10];
+} __packed;
+
+static inline int wsm_set_beacon_filter_table(struct cw1200_common *priv,
+					struct wsm_beacon_filter_table *ft)
+{
+	size_t size = __le32_to_cpu(ft->numOfIEs) *
+		     sizeof(struct wsm_beacon_filter_table_entry) +
+		     sizeof(__le32);
+
+	return wsm_write_mib(priv, WSM_MIB_ID_BEACON_FILTER_TABLE, ft, size);
+}
+
 struct wsm_beacon_filter_control {
 	int enabled;
 	int bcn_count;
@@ -1480,7 +1506,7 @@ static inline int wsm_set_multicast_filter(struct cw1200_common *priv,
 			     fp, sizeof(*fp));
 }
 
-/* IPv4 filtering - 4.10 */
+/* ARP IPv4 filtering - 4.10 */
 struct wsm_arp_ipv4_filter {
 	__le32 enable;
 	__be32 ipv4Address[WSM_MAX_ARP_IP_ADDRTABLE_ENTRIES];
@@ -1491,6 +1517,24 @@ static inline int wsm_set_arp_ipv4_filter(struct cw1200_common *priv,
 {
 	return wsm_write_mib(priv, WSM_MIB_ID_ARP_IP_ADDRESSES_TABLE,
 			    fp, sizeof(*fp));
+}
+
+/* P2P Power Save Mode Info - 4.31 */
+struct wsm_p2p_ps_modeinfo {
+	u8	oppPsCTWindow;
+	u8	count;
+	u8	reserved;
+	u8	dtimCount;
+	__le32	duration;
+	__le32	interval;
+	__le32	startTime;
+} __packed;
+
+static inline int wsm_set_p2p_ps_modeinfo(struct cw1200_common *priv,
+					  struct wsm_p2p_ps_modeinfo *mi)
+{
+	return wsm_write_mib(priv, WSM_MIB_ID_P2P_PS_MODE_INFO,
+			     mi, sizeof(*mi));
 }
 
 /* UseMultiTxConfMessage */

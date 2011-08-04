@@ -23,7 +23,8 @@
 static int cw1200_upload_beacon(struct cw1200_common *priv);
 static int cw1200_start_ap(struct cw1200_common *priv);
 static int cw1200_update_beaconing(struct cw1200_common *priv);
-
+static int cw1200_enable_beaconing(struct cw1200_common *priv,
+				   bool enable);
 
 /* ******************************************************************** */
 /* AP API								*/
@@ -205,15 +206,30 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			WARN_ON(1);
 	}
 
-	if (changed & BSS_CHANGED_BEACON_ENABLED)
-		priv->enable_beacon = info->enable_beacon;
 
-	if (changed & BSS_CHANGED_BEACON)
-		WARN_ON(cw1200_upload_beacon(priv));
-
-	if (changed & (BSS_CHANGED_BEACON_ENABLED | BSS_CHANGED_BEACON |
-			BSS_CHANGED_BEACON_INT))
+	if (changed & BSS_CHANGED_BEACON) {
+		ap_printk(KERN_DEBUG "BSS_CHANGED_BEACON\n");
 		WARN_ON(cw1200_update_beaconing(priv));
+		WARN_ON(cw1200_upload_beacon(priv));
+	}
+
+	if (changed & BSS_CHANGED_BEACON_ENABLED) {
+		ap_printk(KERN_DEBUG "BSS_CHANGED_BEACON_ENABLED\n");
+
+		if (priv->enable_beacon != info->enable_beacon) {
+			WARN_ON(cw1200_enable_beaconing(priv,
+							info->enable_beacon));
+			priv->enable_beacon = info->enable_beacon;
+		}
+	}
+
+	if (changed & BSS_CHANGED_BEACON_INT) {
+		ap_printk(KERN_DEBUG "CHANGED_BEACON_INT\n");
+		/* Restart AP only when connected */
+		if(priv->join_status == CW1200_JOIN_STATUS_AP)
+			WARN_ON(cw1200_update_beaconing(priv));
+	}
+
 
 	if (changed & BSS_CHANGED_ASSOC) {
 		wsm_lock_tx(priv);
@@ -562,7 +578,6 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 		.frame_type = WSM_FRAME_TYPE_BEACON,
 	};
 
-	ap_printk(KERN_DEBUG "[AP] %s.\n", __func__);
 
 	frame.skb = ieee80211_beacon_get(priv->hw, priv->vif);
 	if (WARN_ON(!frame.skb))
@@ -597,6 +612,16 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 	return ret;
 }
 
+static int cw1200_enable_beaconing(struct cw1200_common *priv,
+				   bool enable)
+{
+	struct wsm_beacon_transmit transmit = {
+		.enableBeaconing = enable,
+	};
+
+	return wsm_beacon_transmit(priv, &transmit);
+}
+
 static int cw1200_start_ap(struct cw1200_common *priv)
 {
 	int ret;
@@ -616,23 +641,18 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 				conf->basic_rates),
 		.ssidLength = priv->ssid_length,
 	};
-	struct wsm_beacon_transmit transmit = {
-		.enableBeaconing = priv->enable_beacon,
-	};
+	priv->beacon_int = conf->beacon_int;
 
 	memcpy(&start.ssid[0], priv->ssid, start.ssidLength);
 
-	ap_printk(KERN_DEBUG "[AP] ch: %d(%d), bcn: %d(%d), brt: 0x%.8X, ssid: %.*s %s.\n",
+	ap_printk(KERN_DEBUG "[AP] ch: %d(%d), bcn: %d(%d), brt: 0x%.8X, ssid: %.*s.\n",
 		start.channelNumber, start.band,
 		start.beaconInterval, start.DTIMPeriod,
 		start.basicRateSet,
-		start.ssidLength, start.ssid,
-		transmit.enableBeaconing ? "ena" : "dis");
+		start.ssidLength, start.ssid);
 	ret = WARN_ON(wsm_start(priv, &start));
 	if (!ret)
 		ret = WARN_ON(cw1200_upload_keys(priv));
-	if (!ret)
-		ret = WARN_ON(wsm_beacon_transmit(priv, &transmit));
 	if (!ret) {
 		WARN_ON(wsm_set_block_ack_policy(priv,
 			priv->ba_tid_mask, priv->ba_tid_mask));
@@ -644,16 +664,24 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 
 static int cw1200_update_beaconing(struct cw1200_common *priv)
 {
+	struct ieee80211_bss_conf *conf = &priv->vif->bss_conf;
 	struct wsm_reset reset = {
 		.link_id = 0,
 		.reset_statistics = true,
 	};
 
 	if (priv->mode == NL80211_IFTYPE_AP) {
-		ap_printk(KERN_DEBUG "[AP] %s.\n", __func__);
-		WARN_ON(wsm_reset(priv, &reset));
-		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
-		WARN_ON(cw1200_start_ap(priv));
+		/* TODO: check if changed channel, band */
+		if (priv->join_status != CW1200_JOIN_STATUS_AP ||
+		    priv->beacon_int != conf->beacon_int) {
+			ap_printk(KERN_DEBUG "ap restarting\n");
+			if (priv->join_status != CW1200_JOIN_STATUS_PASSIVE)
+				WARN_ON(wsm_reset(priv, &reset));
+			priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
+			WARN_ON(cw1200_start_ap(priv));
+		} else
+			ap_printk(KERN_DEBUG "ap started join_status: %d\n",
+				  priv->join_status);
 	}
 	return 0;
 }

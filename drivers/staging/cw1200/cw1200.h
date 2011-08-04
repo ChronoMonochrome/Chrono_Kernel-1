@@ -106,14 +106,17 @@ struct cw1200_common {
 	u8				short_frame_max_tx_count;
 	int				mode;
 	bool				enable_beacon;
+	int				beacon_int;
 	size_t				ssid_length;
 	u8				ssid[IEEE80211_MAX_SSID_LEN];
 	bool				listening;
 	struct wsm_rx_filter		rx_filter;
+	struct wsm_beacon_filter_table	bf_table;
 	struct wsm_beacon_filter_control bf_control;
 	u8				ba_tid_mask;
 	struct wsm_multicast_filter	multicast_filter;
 	struct cw1200_suspend_state	*suspend_state;
+	struct wsm_p2p_ps_modeinfo	p2p_ps_modeinfo;
 
 	/* BH */
 	atomic_t			bh_rx;
