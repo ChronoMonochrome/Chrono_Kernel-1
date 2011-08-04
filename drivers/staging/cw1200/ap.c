@@ -501,9 +501,12 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 	if (!arg->link_id) /* For all links */
 		unicast = BIT(CW1200_MAX_STA_IN_AP_MODE + 1) - 2;
 
-	ap_printk(KERN_DEBUG "[AP] %s: %s\n",
-		arg->stop ? "stop" : "start",
-		arg->multicast ? "broadcast" : "unicast");
+	/* if () is intendend to protect against spam. FW sends
+	 * "start multicast" request on every DTIM. */
+	if (arg->stop || !arg->multicast || priv->buffered_multicasts)
+		ap_printk(KERN_DEBUG "[AP] %s: %s\n",
+				arg->stop ? "stop" : "start",
+				arg->multicast ? "broadcast" : "unicast");
 
 	if (arg->multicast) {
 		spin_lock_bh(&priv->buffered_multicasts_lock);
