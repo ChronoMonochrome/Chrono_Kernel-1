@@ -27,7 +27,7 @@
 #include <mach/hardware.h>
 
 /*
- * If DB8500 warm interrupt is set, user space will be notified.
+ * If DBX500 warm interrupt is set, user space will be notified.
  * If user space doesn't shut down the platform within this time
  * frame, this driver will. Time unit is ms.
  */
@@ -41,7 +41,7 @@
 /* This driver monitors DB thermal*/
 #define NUM_SENSORS 1
 
-struct db8500_temp {
+struct dbx500_temp {
 	struct platform_device *pdev;
 	struct device *hwmon_dev;
 	unsigned char min[NUM_SENSORS];
@@ -58,10 +58,10 @@ struct db8500_temp {
 
 static void thermal_power_off(struct work_struct *work)
 {
-	struct db8500_temp *data = container_of(work, struct db8500_temp,
+	struct dbx500_temp *data = container_of(work, struct dbx500_temp,
 						power_off_work.work);
 
-	dev_warn(&data->pdev->dev, "Power off due to DB8500 thermal warning\n");
+	dev_warn(&data->pdev->dev, "Power off due to DBX500 thermal warning\n");
 	pm_power_off();
 }
 
@@ -71,7 +71,7 @@ static ssize_t set_temp_power_off_delay(struct device *dev,
 {
 	int res;
 	unsigned long delay_in_s;
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 
 	res = strict_strtoul(buf, 10, &delay_in_s);
 	if (res < 0) {
@@ -90,7 +90,7 @@ static ssize_t show_temp_power_off_delay(struct device *dev,
 					 struct device_attribute *devattr,
 					 char *buf)
 {
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	/* return time in s, not ms */
 	return sprintf(buf, "%lu\n", (data->power_off_delay) / 1000);
 }
@@ -99,13 +99,13 @@ static ssize_t show_temp_power_off_delay(struct device *dev,
 static ssize_t show_name(struct device *dev, struct device_attribute *devattr,
 			 char *buf)
 {
-	return sprintf(buf, "db8500\n");
+	return sprintf(buf, "dbx500\n");
 }
 
 static ssize_t show_label(struct device *dev, struct device_attribute *devattr,
 			char *buf)
 {
-	return sprintf(buf, "db8500\n");
+	return show_name(dev, devattr, buf);
 }
 
 /* set functions (RW nodes) */
@@ -113,7 +113,7 @@ static ssize_t set_min(struct device *dev, struct device_attribute *devattr,
 		       const char *buf, size_t count)
 {
 	unsigned long val;
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	int res = strict_strtoul(buf, 10, &val);
 	if (res < 0)
@@ -136,7 +136,7 @@ static ssize_t set_max(struct device *dev, struct device_attribute *devattr,
 		       const char *buf, size_t count)
 {
 	unsigned long val;
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	int res = strict_strtoul(buf, 10, &val);
 	if (res < 0)
@@ -161,7 +161,7 @@ static ssize_t set_crit(struct device *dev,
 			    const char *buf, size_t count)
 {
 	unsigned long val;
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	int res = strict_strtoul(buf, 10, &val);
 	if (res < 0)
@@ -181,7 +181,7 @@ static ssize_t start_temp(struct device *dev, struct device_attribute *devattr,
 		       const char *buf, size_t count)
 {
 	unsigned long val;
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	int res = strict_strtoul(buf, 10, &val);
 	if (res < 0)
@@ -194,7 +194,8 @@ static ssize_t start_temp(struct device *dev, struct device_attribute *devattr,
 	mutex_unlock(&data->lock);
 
 	(void)prcmu_start_temp_sense(data->measure_time);
-	dev_dbg(&data->pdev->dev, "DB8500 thermal start measurement\n");
+	dev_dbg(&data->pdev->dev, "DBX500 thermal start measurement\n");
+
 	return count;
 }
 
@@ -202,13 +203,13 @@ static ssize_t stop_temp(struct device *dev, struct device_attribute *devattr,
 		       const char *buf, size_t count)
 {
 	unsigned long val;
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	int res = strict_strtoul(buf, 10, &val);
 	if (res < 0)
 		return res;
 
 	(void)prcmu_stop_temp_sense();
-	dev_dbg(&data->pdev->dev, "DB8500 thermal stop measurement\n");
+	dev_dbg(&data->pdev->dev, "DBX500 thermal stop measurement\n");
 
 	return count;
 }
@@ -220,7 +221,7 @@ static ssize_t stop_temp(struct device *dev, struct device_attribute *devattr,
 static ssize_t show_min(struct device *dev,
 			struct device_attribute *devattr, char *buf)
 {
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	/* hwmon attr index starts at 1, thus "attr->index-1" below */
 	return sprintf(buf, "%d\n", data->min[attr->index - 1]);
@@ -229,7 +230,7 @@ static ssize_t show_min(struct device *dev,
 static ssize_t show_max(struct device *dev,
 			struct device_attribute *devattr, char *buf)
 {
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	/* hwmon attr index starts at 1, thus "attr->index-1" below */
 	return sprintf(buf, "%d\n", data->max[attr->index - 1]);
@@ -238,7 +239,7 @@ static ssize_t show_max(struct device *dev,
 static ssize_t show_crit(struct device *dev,
 			     struct device_attribute *devattr, char *buf)
 {
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	/* hwmon attr index starts at 1, thus "attr->index-1" below */
 	return sprintf(buf, "%d\n", data->crit[attr->index - 1]);
@@ -248,7 +249,7 @@ static ssize_t show_crit(struct device *dev,
 static ssize_t show_min_alarm(struct device *dev,
 			      struct device_attribute *devattr, char *buf)
 {
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	/* hwmon attr index starts at 1, thus "attr->index-1" below */
 	return sprintf(buf, "%d\n", data->min_alarm[attr->index - 1]);
@@ -257,7 +258,7 @@ static ssize_t show_min_alarm(struct device *dev,
 static ssize_t show_max_alarm(struct device *dev,
 			      struct device_attribute *devattr, char *buf)
 {
-	struct db8500_temp *data = dev_get_drvdata(dev);
+	struct dbx500_temp *data = dev_get_drvdata(dev);
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	/* hwmon attr index starts at 1, thus "attr->index-1" below */
 	return sprintf(buf, "%d\n", data->max_alarm[attr->index - 1]);
@@ -280,7 +281,7 @@ static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_label, NULL, 1);
 static SENSOR_DEVICE_ATTR(temp1_min_alarm, S_IRUGO, show_min_alarm, NULL, 1);
 static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO, show_max_alarm, NULL, 1);
 
-static struct attribute *db8500_temp_attributes[] = {
+static struct attribute *dbx500_temp_attributes[] = {
 	&sensor_dev_attr_temp_power_off_delay.dev_attr.attr,
 	&sensor_dev_attr_name.dev_attr.attr,
 	&sensor_dev_attr_temp1_start.dev_attr.attr,
@@ -294,21 +295,21 @@ static struct attribute *db8500_temp_attributes[] = {
 	NULL
 };
 
-static const struct attribute_group db8500_temp_group = {
-	.attrs = db8500_temp_attributes,
+static const struct attribute_group dbx500_temp_group = {
+	.attrs = dbx500_temp_attributes,
 };
 
 static irqreturn_t prcmu_hotmon_low_irq_handler(int irq, void *irq_data)
 {
 	struct platform_device *pdev = irq_data;
-	struct db8500_temp *data = platform_get_drvdata(pdev);
+	struct dbx500_temp *data = platform_get_drvdata(pdev);
 
 	mutex_lock(&data->lock);
 	data->min_alarm[0] = 1;
 	mutex_unlock(&data->lock);
 
 	sysfs_notify(&pdev->dev.kobj, NULL, "temp1_min_alarm");
-	dev_dbg(&pdev->dev, "DB8500 thermal low warning\n");
+	dev_dbg(&pdev->dev, "DBX500 thermal low warning\n");
 	return IRQ_HANDLED;
 }
 
@@ -316,29 +317,29 @@ static irqreturn_t prcmu_hotmon_high_irq_handler(int irq, void *irq_data)
 {
 	unsigned long delay_in_jiffies;
 	struct platform_device *pdev = irq_data;
-	struct db8500_temp *data = platform_get_drvdata(pdev);
+	struct dbx500_temp *data = platform_get_drvdata(pdev);
 
 	mutex_lock(&data->lock);
 	data->max_alarm[0] = 1;
 	mutex_unlock(&data->lock);
 
 	sysfs_notify(&pdev->dev.kobj, NULL, "temp1_max_alarm");
-	dev_dbg(&pdev->dev, "DB8500 thermal warning, power off in %lu s\n",
+	dev_dbg(&pdev->dev, "DBX500 thermal warning, power off in %lu s\n",
 		 (data->power_off_delay) / 1000);
 	delay_in_jiffies = msecs_to_jiffies(data->power_off_delay);
 	schedule_delayed_work(&data->power_off_work, delay_in_jiffies);
 	return IRQ_HANDLED;
 }
 
-static int __devinit db8500_temp_probe(struct platform_device *pdev)
+static int __devinit dbx500_temp_probe(struct platform_device *pdev)
 {
-	struct db8500_temp *data;
+	struct dbx500_temp *data;
 	int err = 0, i;
 	int irq;
 
-	dev_dbg(&pdev->dev, "db8500_temp: Function db8500_temp_probe.\n");
+	dev_dbg(&pdev->dev, "dbx500_temp: Function dbx500_temp_probe.\n");
 
-	data = kzalloc(sizeof(struct db8500_temp), GFP_KERNEL);
+	data = kzalloc(sizeof(struct dbx500_temp), GFP_KERNEL);
 	if (!data)
 		return -ENOMEM;
 
@@ -348,13 +349,15 @@ static int __devinit db8500_temp_probe(struct platform_device *pdev)
 		goto exit;
 	}
 
-	err = request_threaded_irq(irq, NULL, prcmu_hotmon_low_irq_handler,
-		IRQF_NO_SUSPEND, "db8500_temp_low", pdev);
+	err = request_threaded_irq(irq, NULL,
+				prcmu_hotmon_low_irq_handler,
+				IRQF_NO_SUSPEND,
+				"dbx500_temp_low", pdev);
 	if (err < 0) {
-		dev_err(&pdev->dev, "db8500: Failed allocate HOTMON_LOW.\n");
+		dev_err(&pdev->dev, "dbx500: Failed allocate HOTMON_LOW.\n");
 		goto exit;
 	} else {
-		dev_dbg(&pdev->dev, "db8500: Succeed allocate HOTMON_LOW.\n");
+		dev_dbg(&pdev->dev, "dbx500: Succeed allocate HOTMON_LOW.\n");
 	}
 
 	irq = platform_get_irq_byname(pdev, "IRQ_HOTMON_HIGH");
@@ -363,13 +366,15 @@ static int __devinit db8500_temp_probe(struct platform_device *pdev)
 		goto exit;
 	}
 
-	err = request_threaded_irq(irq, NULL, prcmu_hotmon_high_irq_handler,
-		IRQF_NO_SUSPEND, "db8500_temp_high", pdev);
+	err = request_threaded_irq(irq, NULL,
+				prcmu_hotmon_high_irq_handler,
+				IRQF_NO_SUSPEND,
+				 "dbx500_temp_high", pdev);
 	if (err < 0) {
-		dev_err(&pdev->dev, "db8500: Failed allocate HOTMON_HIGH.\n");
+		dev_err(&pdev->dev, "dbx500: Failed allocate HOTMON_HIGH.\n");
 		goto exit;
 	} else {
-		dev_dbg(&pdev->dev, "db8500: Succeed allocate HOTMON_HIGH.\n");
+		dev_dbg(&pdev->dev, "dbx500: Succeed allocate HOTMON_HIGH.\n");
 	}
 
 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
@@ -396,7 +401,7 @@ static int __devinit db8500_temp_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, data);
 
-	err = sysfs_create_group(&pdev->dev.kobj, &db8500_temp_group);
+	err = sysfs_create_group(&pdev->dev.kobj, &dbx500_temp_group);
 	if (err < 0) {
 		dev_err(&pdev->dev, "Create sysfs group failed (%d)\n", err);
 		goto exit_platform_data;
@@ -411,40 +416,40 @@ exit:
 	return err;
 }
 
-static int __devexit db8500_temp_remove(struct platform_device *pdev)
+static int __devexit dbx500_temp_remove(struct platform_device *pdev)
 {
-	struct db8500_temp *data = platform_get_drvdata(pdev);
+	struct dbx500_temp *data = platform_get_drvdata(pdev);
 
 	hwmon_device_unregister(data->hwmon_dev);
-	sysfs_remove_group(&pdev->dev.kobj, &db8500_temp_group);
+	sysfs_remove_group(&pdev->dev.kobj, &dbx500_temp_group);
 	platform_set_drvdata(pdev, NULL);
 	kfree(data);
 	return 0;
 }
 
 /* No action required in suspend/resume, thus the lack of functions */
-static struct platform_driver db8500_temp_driver = {
+static struct platform_driver dbx500_temp_driver = {
 	.driver = {
 		.owner = THIS_MODULE,
-		.name = "db8500_temp",
+		.name = "dbx500_temp",
 	},
-	.probe = db8500_temp_probe,
-	.remove = __devexit_p(db8500_temp_remove),
+	.probe = dbx500_temp_probe,
+	.remove = __devexit_p(dbx500_temp_remove),
 };
 
-static int __init db8500_temp_init(void)
+static int __init dbx500_temp_init(void)
 {
-	return platform_driver_register(&db8500_temp_driver);
+	return platform_driver_register(&dbx500_temp_driver);
 }
 
-static void __exit db8500_temp_exit(void)
+static void __exit dbx500_temp_exit(void)
 {
-	platform_driver_unregister(&db8500_temp_driver);
+	platform_driver_unregister(&dbx500_temp_driver);
 }
 
 MODULE_AUTHOR("WenHai Fang <wenhai.h.fang@stericsson.com>");
-MODULE_DESCRIPTION("DB8500 temperature driver");
+MODULE_DESCRIPTION("DBX500 temperature driver");
 MODULE_LICENSE("GPL");
 
-module_init(db8500_temp_init)
-module_exit(db8500_temp_exit)
+module_init(dbx500_temp_init)
+module_exit(dbx500_temp_exit)
