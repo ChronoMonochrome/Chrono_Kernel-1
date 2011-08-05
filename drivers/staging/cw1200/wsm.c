@@ -1255,7 +1255,8 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 
 	switch (priv->mode) {
 	case NL80211_IFTYPE_STATION:
-		if (unlikely(!priv->join_status ||
+		if (unlikely(
+			(priv->join_status <= CW1200_JOIN_STATUS_MONITOR) ||
 			memcmp(frame->addr1, priv->join_bssid,
 				sizeof(priv->join_bssid)))) {
 			if (ieee80211_is_auth(fctl))
@@ -1264,7 +1265,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 				action = doTx;
 			else if (ieee80211_is_action(fctl) ||
 					ieee80211_is_probe_resp(fctl)) {
-				if (priv->join_status)
+				if (priv->join_status > CW1200_JOIN_STATUS_MONITOR)
 					action = doTx;
 				else
 					action = doJoin;

@@ -995,9 +995,10 @@ void cw1200_join_work(struct work_struct *work)
 	BUG_ON(!priv->channel);
 
 	queueId = wsm_queue_id_to_linux(wsm->queueId);
-	action = ieee80211_is_action(frame->frame_control);
+	action = ieee80211_is_action(frame->frame_control) ||
+			ieee80211_is_probe_resp(frame->frame_control);
 
-	if (unlikely(priv->join_status == CW1200_JOIN_STATUS_STA)) {
+	if (unlikely(priv->join_status)) {
 		wsm_lock_tx(priv);
 		cw1200_unjoin_work(&priv->unjoin_work);
 	}
@@ -1122,15 +1123,26 @@ void cw1200_unjoin_work(struct work_struct *work)
 
 	mutex_lock(&priv->conf_mutex);
 	if (unlikely(atomic_read(&priv->scan.in_progress))) {
-		BUG_ON(priv->delayed_unjoin);
+		if (priv->delayed_unjoin) {
+			wiphy_err(priv->hw->wiphy,
+				"%s: Unexpected: delayed unjoin "
+				"is already scheduled.\n",
+				__func__);
+			BUG_ON(1);
+		}
 		priv->delayed_unjoin = true;
 		mutex_unlock(&priv->conf_mutex);
 		return;
 	}
 
-	BUG_ON(priv->join_status &&
-			priv->join_status != CW1200_JOIN_STATUS_STA);
-	if (priv->join_status == CW1200_JOIN_STATUS_STA) {
+	if (priv->join_status &&
+			priv->join_status > CW1200_JOIN_STATUS_STA) {
+		wiphy_err(priv->hw->wiphy,
+				"%s: Unexpected: join status: %d\n",
+				__func__, priv->join_status);
+		BUG_ON(1);
+	}
+	if (priv->join_status) {
 		memset(&priv->join_bssid[0], 0, sizeof(priv->join_bssid));
 		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 

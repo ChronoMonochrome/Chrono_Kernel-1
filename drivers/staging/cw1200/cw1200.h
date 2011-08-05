@@ -47,6 +47,7 @@
 #define CW1200_MAX_STA_IN_AP_MODE	(5)
 #define CW1200_LINK_ID_AFTER_DTIM	(CW1200_MAX_STA_IN_AP_MODE + 1)
 
+/* Please keep order */
 enum cw1200_join_status {
 	CW1200_JOIN_STATUS_PASSIVE = 0,
 	CW1200_JOIN_STATUS_MONITOR,
