@@ -1470,7 +1470,7 @@ static inline int wsm_keep_alive_period(struct cw1200_common *priv,
 					int period)
 {
 	struct wsm_keep_alive_period arg = {
-		.keepAlivePeriod = period,
+		.keepAlivePeriod = __cpu_to_le16(period),
 	};
 	return wsm_write_mib(priv, WSM_MIB_ID_KEEP_ALIVE_PERIOD,
 			&arg, sizeof(arg));

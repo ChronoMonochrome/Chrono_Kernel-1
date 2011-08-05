@@ -313,6 +313,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_WORK(&priv->join_work, cw1200_join_work);
 	INIT_DELAYED_WORK(&priv->join_timeout, cw1200_join_timeout);
 	INIT_WORK(&priv->unjoin_work, cw1200_unjoin_work);
+	INIT_WORK(&priv->offchannel_work, cw1200_offchannel_work);
 	INIT_WORK(&priv->wep_key_work, cw1200_wep_key_work);
 	INIT_WORK(&priv->tx_policy_upload_work, tx_policy_upload_work);
 	INIT_LIST_HEAD(&priv->event_queue);

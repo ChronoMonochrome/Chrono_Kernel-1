@@ -12,6 +12,7 @@
 #include <linux/sched.h>
 #include "cw1200.h"
 #include "scan.h"
+#include "sta.h"
 
 static void cw1200_scan_restart_delayed(struct cw1200_common *priv);
 
@@ -95,6 +96,9 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 		struct wsm_set_pm pm = priv->powersave_mode;
 		pm.pmMode = WSM_PSM_PS;
 		wsm_set_pm(priv, &pm);
+	} else if (priv->join_status == CW1200_JOIN_STATUS_MONITOR) {
+		/* FW bug: driver has to restart p2p-dev mode after scan */
+		cw1200_disable_listening(priv);
 	}
 
 	BUG_ON(priv->scan.req);
@@ -242,6 +246,13 @@ static void cw1200_scan_restart_delayed(struct cw1200_common *priv)
 				&priv->bss_loss_work,
 				tmo * HZ / 10);
 	}
+
+	/* FW bug: driver has to restart p2p-dev mode after scan. */
+	if (priv->join_status == CW1200_JOIN_STATUS_MONITOR) {
+		cw1200_enable_listening(priv);
+		cw1200_update_filtering(priv);
+	}
+
 	if (priv->delayed_unjoin) {
 		priv->delayed_unjoin = false;
 		if (queue_work(priv->workqueue, &priv->unjoin_work) <= 0)
@@ -258,21 +269,21 @@ static void cw1200_scan_complete(struct cw1200_common *priv)
 		up(&priv->scan.lock);
 		wsm_unlock_tx(priv);
 	} else {
-		queue_work(priv->workqueue, &priv->scan.work);
+		cw1200_scan_work(&priv->scan.work);
 	}
 }
 
 void cw1200_scan_complete_cb(struct cw1200_common *priv,
 				struct wsm_scan_complete *arg)
 {
-	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
+	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED))
 		/* STA is stopped. */
 		return;
-	}
 
-	if (likely(atomic_xchg(&priv->scan.in_progress, 0))) {
-		cancel_delayed_work_sync(&priv->scan.timeout);
-		cw1200_scan_complete(priv);
+	if (cancel_delayed_work_sync(&priv->scan.timeout) > 0) {
+		priv->scan.status = 1;
+		queue_delayed_work(priv->workqueue,
+				&priv->scan.timeout, 0);
 	}
 }
 
@@ -281,9 +292,14 @@ void cw1200_scan_timeout(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, scan.timeout.work);
 	if (likely(atomic_xchg(&priv->scan.in_progress, 0))) {
-		wiphy_warn(priv->hw->wiphy,
-			"Timeout waiting for scan " \
-			"complete notification.\n");
+		if (priv->scan.status > 0)
+			priv->scan.status = 0;
+		else if (!priv->scan.status) {
+			wiphy_warn(priv->hw->wiphy,
+				"Timeout waiting for scan "
+				"complete notification.\n");
+			priv->scan.status = -ETIMEDOUT;
+		}
 		cw1200_scan_complete(priv);
 	}
 }
@@ -367,6 +383,9 @@ void cw1200_probe_work(struct work_struct *work)
 	}
 
 	mutex_lock(&priv->conf_mutex);
+	/* FW bug: driver has to restart p2p-dev mode after scan */
+	if (priv->join_status == CW1200_JOIN_STATUS_MONITOR)
+		cw1200_disable_listening(priv);
 	ret = WARN_ON(wsm_set_template_frame(priv, &frame));
 	priv->scan.direct_probe = 1;
 	if (!ret) {

@@ -157,6 +157,7 @@ struct cw1200_common {
 	struct work_struct	join_work;
 	struct delayed_work	join_timeout;
 	struct work_struct	unjoin_work;
+	struct work_struct	offchannel_work;
 	int			join_dtim_period;
 	bool			delayed_unjoin;
 

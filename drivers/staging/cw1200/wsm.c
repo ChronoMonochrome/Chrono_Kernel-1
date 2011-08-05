@@ -423,22 +423,16 @@ static int wsm_join_confirm(struct cw1200_common *priv,
 			    struct wsm_buf *buf)
 {
 	if (WARN_ON(WSM_GET32(buf) != WSM_STATUS_SUCCESS)) {
-		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
-		wsm_unlock_tx(priv);
 		return -EINVAL;
 	}
 
 	arg->minPowerLevel = WSM_GET32(buf);
 	arg->maxPowerLevel = WSM_GET32(buf);
 
-	priv->join_status = CW1200_JOIN_STATUS_STA;
-	wsm_unlock_tx(priv);
 	return 0;
 
 underflow:
 	WARN_ON(1);
-	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
-	wsm_unlock_tx(priv);
 	return -EINVAL;
 }
 
@@ -1249,6 +1243,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		doProbe,
 		doDrop,
 		doJoin,
+		doOffchannel,
 		doWep,
 		doTx,
 	} action = doTx;
@@ -1263,14 +1258,11 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 				action = doJoin;
 			else if (ieee80211_is_probe_req(fctl))
 				action = doTx;
-			else if (ieee80211_is_action(fctl) ||
-					ieee80211_is_probe_resp(fctl)) {
-				if (priv->join_status > CW1200_JOIN_STATUS_MONITOR)
-					action = doTx;
-				else
-					action = doJoin;
-			} else
-				action = doDrop;
+			else if (priv->join_status >=
+					CW1200_JOIN_STATUS_MONITOR)
+				action = doTx;
+			else
+				action = doOffchannel;
 		}
 		break;
 	case NL80211_IFTYPE_AP:
@@ -1360,6 +1352,15 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		BUG_ON(priv->join_pending_frame);
 		priv->join_pending_frame = wsm;
 		if (queue_work(priv->workqueue, &priv->join_work) <= 0)
+			wsm_unlock_tx(priv);
+		handled = true;
+	}
+	break;
+	case doOffchannel:
+	{
+		wsm_printk(KERN_DEBUG "[WSM] Offchannel TX request.\n");
+		wsm_lock_tx_async(priv);
+		if (queue_work(priv->workqueue, &priv->offchannel_work) <= 0)
 			wsm_unlock_tx(priv);
 		handled = true;
 	}

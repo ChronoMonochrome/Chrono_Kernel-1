@@ -351,6 +351,7 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			WARN_ON(wsm_set_bss_params(priv, &priv->bss_params));
 			WARN_ON(wsm_set_beacon_wakeup_period(priv,
 				dtim_interval, listen_interval));
+			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 #if 0
 			/* It's better to override internal TX rete; otherwise
 			 * device sends RTS at too high rate. However device
