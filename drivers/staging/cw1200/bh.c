@@ -270,6 +270,9 @@ static int cw1200_bh(void *arg)
 				&& priv->powersave_enabled
 				&& !priv->device_can_sleep)
 			status = 1 * HZ;
+		else if (priv->hw_bufs_used)
+			/* Interrupt loss detection */
+			status = 1 * HZ;
 		else
 			status = MAX_SCHEDULE_TIMEOUT;
 
@@ -284,7 +287,10 @@ static int cw1200_bh(void *arg)
 		if (status < 0 || term)
 			break;
 
-		if (!status) {
+		if (!status && priv->hw_bufs_used) {
+			wiphy_warn(priv->hw->wiphy, "Missed interrupt?\n");
+			rx = 1;
+		} else if (!status) {
 			bh_printk(KERN_DEBUG "[BH] Device wakedown.\n");
 			WARN_ON(cw1200_reg_write_16(priv,
 					ST90TDS_CONTROL_REG_ID, 0));

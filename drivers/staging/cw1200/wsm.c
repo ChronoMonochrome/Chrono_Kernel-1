@@ -27,10 +27,10 @@
 #define wsm_printk(...)
 #endif
 
-#define WSM_CMD_TIMEOUT		(1 * HZ)
-#define WSM_CMD_JOIN_TIMEOUT	(7 * HZ) /* Join timeout is 5 sec. in FW */
+#define WSM_CMD_TIMEOUT		(2 * HZ) /* With respect to interrupt loss */
+#define WSM_CMD_JOIN_TIMEOUT	(7 * HZ) /* Join timeout is 5 sec. in FW   */
 #define WSM_CMD_START_TIMEOUT	(7 * HZ)
-#define WSM_TX_TIMEOUT		(1 * HZ)
+#define WSM_CMD_RESET_TIMEOUT	(3 * HZ) /* 2 sec. timeout was observed.   */
 #define WSM_CMD_LAST_CHANCE_TIMEOUT (10 * HZ)
 
 #define WSM_SKIP(buf, size)						\
@@ -184,7 +184,7 @@ int wsm_reset(struct cw1200_common *priv, const struct wsm_reset *arg)
 	wsm_cmd_lock(priv);
 
 	WSM_PUT32(buf, arg->reset_statistics ? 0 : 1);
-	ret = wsm_cmd_send(priv, buf, NULL, cmd, WSM_CMD_TIMEOUT);
+	ret = wsm_cmd_send(priv, buf, NULL, cmd, WSM_CMD_RESET_TIMEOUT);
 	wsm_cmd_unlock(priv);
 	return ret;
 
