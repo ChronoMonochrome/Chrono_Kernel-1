@@ -253,3 +253,23 @@ struct platform_device ux500_b2r2_device = {
 	.resource	= b2r2_resources,
 };
 
+static struct resource u5500_thsens_resources[] = {
+	[0] = {
+		.name	= "IRQ_HOTMON_LOW",
+		.start  = IRQ_DB5500_PRCMU_TEMP_SENSOR_LOW,
+		.end    = IRQ_DB5500_PRCMU_TEMP_SENSOR_LOW,
+		.flags  = IORESOURCE_IRQ,
+	},
+	[1] = {
+		.name	= "IRQ_HOTMON_HIGH",
+		.start  = IRQ_DB5500_PRCMU_TEMP_SENSOR_HIGH,
+		.end    = IRQ_DB5500_PRCMU_TEMP_SENSOR_HIGH,
+		.flags  = IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device ux500_thsens_device = {
+	.name           = "dbx500_temp",
+	.resource       = u5500_thsens_resources,
+	.num_resources  = ARRAY_SIZE(u5500_thsens_resources),
+};

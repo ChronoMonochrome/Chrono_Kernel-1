@@ -310,8 +310,8 @@ static struct resource u8500_thsens_resources[] = {
 	},
 };
 
-struct platform_device u8500_thsens_device = {
-	.name           = "db8500_temp",
+struct platform_device ux500_thsens_device = {
+	.name           = "dbx500_temp",
 	.resource       = u8500_thsens_resources,
 	.num_resources  = ARRAY_SIZE(u8500_thsens_resources),
 };

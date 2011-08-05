@@ -365,6 +365,7 @@ static struct platform_device *u5500_platform_devices[] __initdata = {
 #ifdef CONFIG_U5500_MMIO
 	&u5500_mmio_device,
 #endif
+	&ux500_thsens_device,
 };
 
 static void __init u5500_i2c_init(struct device *parent)
