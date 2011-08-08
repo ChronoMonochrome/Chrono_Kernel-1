@@ -92,7 +92,9 @@ struct lsm303dlhc_a_data {
 	struct lsm303dlhc_a_t data;
 	struct lsm303dlh_platform_data pdata;
 	struct regulator *regulator;
+#ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend early_suspend;
+#endif
 	unsigned char range;
 	unsigned char mode;
 	unsigned char rate;
