@@ -221,6 +221,11 @@ static pin_cfg_t snowball_pins[] = {
 	/* RSTn_LAN */
 	GPIO141_GPIO		| PIN_OUTPUT_HIGH,
 
+	/*  Accelerometer/Magnetometer */
+	GPIO163_GPIO		| PIN_INPUT_PULLUP, /* ACCEL_IRQ1 */
+	GPIO164_GPIO		| PIN_INPUT_PULLUP, /* ACCEL_IRQ2 */
+	GPIO165_GPIO		| PIN_INPUT_PULLUP, /* MAG_DRDY */
+
 	/* WLAN/GBF */
 	GPIO171_GPIO		| PIN_OUTPUT_HIGH,/* GBF_ENA */
 	GPIO215_GPIO		| PIN_OUTPUT_LOW,/* WLAN_ENA */
@@ -913,6 +918,8 @@ void __init snowball_pins_init(void)
 	nmk_config_pins(mop500_pins_common,
 			ARRAY_SIZE(mop500_pins_common));
 
+	ux500_pins_add(mop500_pins, ARRAY_SIZE(mop500_pins));
+
 	nmk_config_pins(snowball_pins,
 			ARRAY_SIZE(snowball_pins));
 }
@@ -921,6 +928,8 @@ void __init hrefv60_pins_init(void)
 {
 	nmk_config_pins(mop500_pins_common,
 			ARRAY_SIZE(mop500_pins_common));
+
+	ux500_pins_add(mop500_pins, ARRAY_SIZE(mop500_pins));
 
 	nmk_config_pins(hrefv60_pins,
 			ARRAY_SIZE(hrefv60_pins));

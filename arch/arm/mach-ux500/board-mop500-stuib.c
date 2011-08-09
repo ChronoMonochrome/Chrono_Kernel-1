@@ -308,6 +308,11 @@ void __init mop500_stuib_init(void)
 		lsm303dlh_pdata.irq_a1 = HREFV60_ACCEL_INT1_GPIO;
 		lsm303dlh_pdata.irq_a2 = HREFV60_ACCEL_INT2_GPIO;
 		lsm303dlh_pdata.irq_m = HREFV60_MAGNET_DRDY_GPIO;
+	}
+	else if (machine_is_snowball()) {
+		lsm303dlh_pdata.irq_a1 = SNOWBALL_ACCEL_INT1_GPIO;
+		lsm303dlh_pdata.irq_a2 = SNOWBALL_ACCEL_INT2_GPIO;
+		lsm303dlh_pdata.irq_m = SNOWBALL_MAGNET_DRDY_GPIO;
 	} else {
 		lsm303dlh_pdata.irq_a1 = GPIO_ACCEL_INT1;
 		lsm303dlh_pdata.irq_a2 = GPIO_ACCEL_INT2;
