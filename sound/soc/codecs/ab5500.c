@@ -1258,6 +1258,7 @@ static int ab5500_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 
 	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS:
 		val |= 1 << I2Sx_MODE_SHIFT;
+		mask_set_reg(iface, I2Sx_MODE_MASK, val);
 		break;
 
 	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM:
