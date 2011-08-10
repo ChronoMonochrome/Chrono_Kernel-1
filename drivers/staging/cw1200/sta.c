@@ -1113,6 +1113,9 @@ void cw1200_join_work(struct work_struct *work)
 			memcpy(&join.ssid[0], &ssidie[2], join.ssidLength);
 		}
 
+		if (priv->vif->p2p)
+			join.flags |= WSM_JOIN_FLAGS_P2P_GO;
+
 		wsm_flush_tx(priv);
 
 		WARN_ON(wsm_set_block_ack_policy(priv,

@@ -698,7 +698,8 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 	int ret;
 	struct ieee80211_bss_conf *conf = &priv->vif->bss_conf;
 	struct wsm_start start = {
-		.mode = WSM_START_MODE_AP,
+		.mode = priv->vif->p2p ?
+				WSM_START_MODE_P2P_GO : WSM_START_MODE_AP,
 		.band = (priv->channel->band == IEEE80211_BAND_5GHZ) ?
 				WSM_PHY_BAND_5G : WSM_PHY_BAND_2_4G,
 		.channelNumber = priv->channel->hw_value,
