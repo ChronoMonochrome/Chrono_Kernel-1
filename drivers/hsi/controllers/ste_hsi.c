@@ -14,6 +14,8 @@
 #include <linux/platform_device.h>
 #include <linux/hsi/hsi.h>
 #include <linux/regulator/consumer.h>
+#include <linux/gpio.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #ifdef CONFIG_STE_DMA40
 #include <linux/dmaengine.h>
@@ -88,9 +90,12 @@ struct ste_hsi_port {
 	struct list_head txqueue[STE_HSI_MAX_CHANNELS];
 	struct list_head rxqueue[STE_HSI_MAX_CHANNELS];
 	struct list_head brkqueue;
+	int cawake_irq;
+	int acwake_gpio;
 	int tx_irq;
 	int rx_irq;
 	int excep_irq;
+	struct tasklet_struct cawake_tasklet;
 	struct tasklet_struct rx_tasklet;
 	struct tasklet_struct tx_tasklet;
 	struct tasklet_struct exception_tasklet;
@@ -867,6 +872,38 @@ out:
 	spin_unlock_bh(&ste_hsi->lock);
 }
 
+static void ste_hsi_cawake_tasklet(unsigned long data)
+{
+	struct hsi_port *port = (struct hsi_port *)data;
+	struct hsi_controller *hsi = to_hsi_controller(port->device.parent);
+	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
+	struct ste_hsi_port *ste_port = hsi_port_drvdata(port);
+	u32 prcm_line_value;
+	int level;
+
+	prcm_line_value = prcmu_read(DB8500_PRCM_LINE_VALUE);
+	level = (prcm_line_value & DB8500_PRCM_LINE_VALUE_HSI_CAWAKE0) ? 1 : 0;
+
+	dev_info(ste_hsi->dev, "cawake %s\n", level ? "HIGH" : "LOW");
+	hsi_event(hsi->port, level ? HSI_EVENT_START_RX : HSI_EVENT_STOP_RX);
+	enable_irq(ste_port->cawake_irq);
+}
+
+static irqreturn_t ste_hsi_cawake_isr(int irq, void *data)
+{
+	struct hsi_port *port = data;
+
+	/* IRQ processed only if device initialized */
+	if ((port->device.parent) && (data)) {
+		struct ste_hsi_port *ste_port = hsi_port_drvdata(port);
+
+		disable_irq_nosync(irq);
+		tasklet_hi_schedule(&ste_port->cawake_tasklet);
+	}
+
+	return IRQ_HANDLED;
+}
+
 static void ste_hsi_rx_tasklet(unsigned long data)
 {
 	struct hsi_port *port = (struct hsi_port *)data;
@@ -1145,6 +1182,36 @@ static int __init ste_hsi_get_iomem(struct platform_device *pdev,
 	return 0;
 }
 
+static int __init ste_hsi_acwake_gpio_init(struct platform_device *pdev,
+					   int *gpio)
+{
+	int err = 0;
+	const char *gpio_name = "hsi0_acwake";
+	struct resource *resource;
+
+	resource = platform_get_resource_byname(pdev, IORESOURCE_IO, gpio_name);
+	if (unlikely(!resource)) {
+		dev_err(&pdev->dev, "hsi0_acwake does not exist\n");
+		return -EINVAL;
+	}
+
+	*gpio = resource->start;
+	err = gpio_request(*gpio, gpio_name);
+	if (err < 0) {
+		dev_err(&pdev->dev, "Can't request GPIO %d\n", *gpio);
+		return err;
+	}
+
+	/* Initial level set to 0 (LOW) */
+	err = gpio_direction_output(*gpio, 0);
+	if (err < 0) {
+		dev_err(&pdev->dev, "Can't init GPIO %d\n", *gpio);
+		gpio_free(*gpio);
+	}
+
+	return err;
+}
+
 static int __init ste_hsi_get_irq(struct platform_device *pdev,
 				  const char *res_name,
 				  irqreturn_t(*isr) (int, void *), void *data,
@@ -1392,11 +1459,14 @@ static int ste_hsi_flush(struct hsi_client *cl)
 static int ste_hsi_start_tx(struct hsi_client *cl)
 {
 	struct hsi_port *port = to_hsi_port(cl->device.parent);
+	struct ste_hsi_port *ste_port = hsi_port_drvdata(port);
 	struct hsi_controller *hsi = to_hsi_controller(port->device.parent);
 	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
 
 	if (ste_hsi->regulator)
 		regulator_enable(ste_hsi->regulator);
+
+	gpio_set_value(ste_port->acwake_gpio, 1); /* HIGH */
 
 	return 0;
 }
@@ -1404,8 +1474,11 @@ static int ste_hsi_start_tx(struct hsi_client *cl)
 static int ste_hsi_stop_tx(struct hsi_client *cl)
 {
 	struct hsi_port *port = to_hsi_port(cl->device.parent);
+	struct ste_hsi_port *ste_port = hsi_port_drvdata(port);
 	struct hsi_controller *hsi = to_hsi_controller(port->device.parent);
 	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
+
+	gpio_set_value(ste_port->acwake_gpio, 0); /* LOW */
 
 	if (ste_hsi->regulator)
 		regulator_disable(ste_hsi->regulator);
@@ -1449,6 +1522,16 @@ static int ste_hsi_ports_init(struct hsi_controller *hsi,
 		hsi_port_set_drvdata(port, ste_port);
 		ste_port->dev = &port->device;
 
+		err = ste_hsi_acwake_gpio_init(pdev, &ste_port->acwake_gpio);
+		if (err)
+			return err;
+
+		sprintf(irq_name, "hsi0_cawake");
+		err = ste_hsi_get_irq(pdev, irq_name, ste_hsi_cawake_isr, port,
+				      &ste_port->cawake_irq);
+		if (err)
+			return err;
+
 		sprintf(irq_name, "hsi_rx_irq%d", i);
 		err = ste_hsi_get_irq(pdev, irq_name, ste_hsi_rx_isr, port,
 				      &ste_port->rx_irq);
@@ -1460,6 +1543,9 @@ static int ste_hsi_ports_init(struct hsi_controller *hsi,
 				      &ste_port->tx_irq);
 		if (err)
 			return err;
+
+		tasklet_init(&ste_port->cawake_tasklet, ste_hsi_cawake_tasklet,
+			     (unsigned long)port);
 
 		tasklet_init(&ste_port->rx_tasklet, ste_hsi_rx_tasklet,
 			     (unsigned long)port);
@@ -1658,9 +1744,13 @@ static int ste_hsi_remove_controller(struct hsi_controller *hsi,
 				     struct platform_device *pdev)
 {
 	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
+	struct hsi_port *port = to_hsi_port(&pdev->dev);
+	struct ste_hsi_port *ste_port = hsi_port_drvdata(port);
 
 	if (ste_hsi->regulator)
 		regulator_put(ste_hsi->regulator);
+
+	gpio_free(ste_port->acwake_gpio);
 
 	ste_hsi_clks_free(ste_hsi);
 	hsi_unregister_controller(hsi);
