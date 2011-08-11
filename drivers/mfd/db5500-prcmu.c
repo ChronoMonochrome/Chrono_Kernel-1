@@ -27,6 +27,8 @@
 #include <mach/db5500-regs.h>
 #include "dbx500-prcmu-regs.h"
 
+#define PRCM_SW_RST_REASON (tcdm_base + 0xFF8) /* 2 bytes */
+
 #define _PRCM_MB_HEADER (tcdm_base + 0xFE8)
 #define PRCM_REQ_MB0_HEADER (_PRCM_MB_HEADER + 0x0)
 #define PRCM_REQ_MB1_HEADER (_PRCM_MB_HEADER + 0x1)
@@ -955,6 +957,29 @@ int db5500_prcmu_set_display_clocks(void)
 	/* PLLDIV=14, PLLSW=2, CLKEN=1 */
 	writel(PRCMU_DSI_LP_CLOCK_SETTING, PRCM_TVCLK_MGT);
 	return 0;
+}
+
+/**
+ * db5500_prcmu_system_reset - System reset
+ *
+ * Saves the reset reason code and then sets the APE_SOFTRST register which
+ * fires an interrupt to fw
+ */
+void db5500_prcmu_system_reset(u16 reset_code)
+{
+	writew(reset_code, PRCM_SW_RST_REASON);
+	writel(1, PRCM_APE_SOFTRST);
+}
+
+/**
+ * db5500_prcmu_get_reset_code - Retrieve SW reset reason code
+ *
+ * Retrieves the reset reason code stored by prcmu_system_reset() before
+ * last restart.
+ */
+u16 db5500_prcmu_get_reset_code(void)
+{
+	return readw(PRCM_SW_RST_REASON);
 }
 
 static void ack_dbb_wakeup(void)
