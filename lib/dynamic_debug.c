@@ -529,6 +529,30 @@ EXPORT_SYMBOL(__dynamic_netdev_dbg);
 
 #endif
 
+int __dynamic_netdev_dbg(struct _ddebug *descriptor,
+		      const struct net_device *dev, const char *fmt, ...)
+{
+	struct va_format vaf;
+	va_list args;
+	int res;
+
+	BUG_ON(!descriptor);
+	BUG_ON(!fmt);
+
+	va_start(args, fmt);
+
+	vaf.fmt = fmt;
+	vaf.va = &args;
+
+	res = dynamic_emit_prefix(descriptor);
+	res += __netdev_printk(KERN_CONT, dev, &vaf);
+
+	va_end(args);
+
+	return res;
+}
+EXPORT_SYMBOL(__dynamic_netdev_dbg);
+
 static __initdata char ddebug_setup_string[1024];
 static __init int ddebug_setup_query(char *str)
 {
