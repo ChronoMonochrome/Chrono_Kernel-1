@@ -997,6 +997,88 @@ static void ack_dbb_wakeup(void)
 	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
 }
 
+int db5500_prcmu_set_epod(u16 epod, u8 epod_state)
+{
+	int r = 0;
+	bool ram_retention = false;
+
+	/* check argument */
+	BUG_ON(epod < DB5500_EPOD_ID_BASE);
+	BUG_ON(epod_state > EPOD_STATE_ON);
+	BUG_ON((epod - DB5500_EPOD_ID_BASE) >= DB5500_NUM_EPOD_ID);
+
+	if (epod == DB5500_EPOD_ID_ESRAM12)
+		ram_retention = true;
+
+	/* check argument */
+	BUG_ON(epod_state == EPOD_STATE_RAMRET && !ram_retention);
+
+	/* get lock */
+	mutex_lock(&mb2_transfer.lock);
+
+	/* wait for mailbox */
+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(2))
+		cpu_relax();
+
+	/* Retention is allowed only for ESRAM12 */
+	if (epod  == DB5500_EPOD_ID_ESRAM12) {
+		switch (epod_state) {
+		case EPOD_STATE_ON:
+			mb2_transfer.req.epod_st[epod - DB5500_EPOD_ID_BASE] =
+				EPOD_OOR_ON;
+			break;
+		case EPOD_STATE_OFF:
+			mb2_transfer.req.epod_st[epod - DB5500_EPOD_ID_BASE] =
+				EPOD_OOR_OFF;
+			break;
+		case EPOD_STATE_RAMRET:
+			mb2_transfer.req.epod_st[epod - DB5500_EPOD_ID_BASE] =
+				EPOD_OOR_RET;
+			break;
+		default:
+			r = -EINVAL;
+			goto unlock_and_return;
+			break;
+		}
+	} else {
+		if (epod_state == EPOD_STATE_ON)
+			mb2_transfer.req.epod_st[epod - DB5500_EPOD_ID_BASE] =
+				EPOD_ON;
+		else if (epod_state == EPOD_STATE_OFF)
+			mb2_transfer.req.epod_st[epod - DB5500_EPOD_ID_BASE] =
+				EPOD_OFF;
+		else {
+			r = -EINVAL;
+			goto unlock_and_return;
+		}
+	}
+	/* fill in mailbox */
+	writeb((epod - DB5500_EPOD_ID_BASE), PRCM_REQ_MB2_EPOD_CLIENT);
+	writeb(mb2_transfer.req.epod_st[epod - DB5500_EPOD_ID_BASE],
+		PRCM_REQ_MB2_EPOD_STATE);
+
+	writeb(MB2H_EPOD_REQUEST, PRCM_REQ_MB2_HEADER);
+
+	writel(MBOX_BIT(2), PRCM_MBOX_CPU_SET);
+
+	if (!wait_for_completion_timeout(&mb2_transfer.work,
+		msecs_to_jiffies(500))) {
+		pr_err("prcmu: set_epod() failed.\n"
+			"prcmu: Please check your firmware version.\n");
+		r = -EIO;
+		WARN(1, "Failed to set epod");
+		goto unlock_and_return;
+	}
+
+	if (mb2_transfer.ack.status != RC_SUCCESS ||
+		mb2_transfer.ack.header != MB2H_EPOD_REQUEST)
+		r = -EIO;
+
+unlock_and_return:
+	mutex_unlock(&mb2_transfer.lock);
+	return r;
+}
+
 static inline void print_unknown_header_warning(u8 n, u8 header)
 {
 	pr_warning("prcmu: Unknown message header (%d) in mailbox %d.\n",

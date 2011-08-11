@@ -332,7 +332,7 @@ static inline bool prcmu_pending_irq(void)
 static inline int prcmu_set_epod(u16 epod_id, u8 epod_state)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_set_epod(epod_id, epod_state);
 	else
 		return db8500_prcmu_set_epod(epod_id, epod_state);
 }
