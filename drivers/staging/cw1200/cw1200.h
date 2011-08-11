@@ -172,6 +172,7 @@ struct cw1200_common {
 	u32			link_id_map;
 	u32			tx_suspend_mask[4];
 	u32			sta_asleep_mask;
+	u32			pspoll_mask;
 	bool			aid0_bit_set;
 	spinlock_t		buffered_multicasts_lock;
 	bool			buffered_multicasts;

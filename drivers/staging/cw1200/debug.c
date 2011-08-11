@@ -217,6 +217,8 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 		priv->link_id_map);
 	cw1200_debug_print_map(seq, priv, "Asleep map: ",
 		priv->sta_asleep_mask);
+	cw1200_debug_print_map(seq, priv, "PSPOLL map: ",
+		priv->pspoll_mask);
 
 	seq_puts(seq, "\n");
 

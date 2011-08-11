@@ -136,6 +136,7 @@ void cw1200_stop(struct ieee80211_hw *dev)
 		priv->tx_multicast = false;
 		priv->aid0_bit_set = false;
 		priv->buffered_multicasts = false;
+		priv->pspoll_mask = 0;
 		wsm_reset(priv, &reset);
 		break;
 	case CW1200_JOIN_STATUS_MONITOR:

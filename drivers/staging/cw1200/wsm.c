@@ -1450,6 +1450,7 @@ static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 		tx_allowed_mask = ~priv->sta_asleep_mask;
 		if (priv->sta_asleep_mask) {
 			tx_allowed_mask |= ~priv->tx_suspend_mask[i];
+			tx_allowed_mask |= priv->pspoll_mask;
 			tx_allowed_mask &= ~BIT(CW1200_LINK_ID_AFTER_DTIM);
 		} else {
 			tx_allowed_mask |= BIT(CW1200_LINK_ID_AFTER_DTIM);
@@ -1537,6 +1538,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 					~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX));
 				wsm->hdr.id |= cpu_to_le16(
 					WSM_TX_LINK_ID(sta_priv->link_id));
+				priv->pspoll_mask &= ~BIT(sta_priv->link_id);
 			}
 
 			*data = (u8 *)wsm;

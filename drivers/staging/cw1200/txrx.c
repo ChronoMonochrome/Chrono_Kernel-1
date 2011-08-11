@@ -425,12 +425,12 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	int link_id = 0;
 	int ret;
 
-	if ((tx_info->flags | IEEE80211_TX_CTL_SEND_AFTER_DTIM) &&
+	if (tx_info->control.sta)
+		link_id = sta_priv->link_id;
+	else if ((tx_info->flags | IEEE80211_TX_CTL_SEND_AFTER_DTIM) &&
 			(priv->mode == NL80211_IFTYPE_AP) &&
 			priv->enable_beacon)
 		link_id = CW1200_LINK_ID_AFTER_DTIM;
-	else if (tx_info->control.sta)
-		link_id = sta_priv->link_id;
 
 	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d).\n",
 			skb->len, queue, link_id);
@@ -568,6 +568,50 @@ static int cw1200_handle_action_tx(struct cw1200_common *priv,
 	return 0;
 }
 
+static int cw1200_handle_pspoll(struct cw1200_common *priv,
+				struct sk_buff *skb)
+{
+	struct ieee80211_sta *sta;
+	struct cw1200_sta_priv *sta_priv;
+	struct ieee80211_pspoll *pspoll =
+		(struct ieee80211_pspoll *) skb->data;
+	u32 pspoll_mask;
+	int drop = 1;
+	int i;
+
+	if (priv->join_status != CW1200_JOIN_STATUS_AP)
+		goto done;
+	if (memcmp(priv->vif->addr, pspoll->bssid, ETH_ALEN))
+		goto done;
+
+	rcu_read_lock();
+	sta = ieee80211_find_sta(priv->vif, pspoll->ta);
+	if (!sta) {
+		rcu_read_unlock();
+		goto done;
+	}
+	sta_priv = (struct cw1200_sta_priv *)&sta->drv_priv;
+	pspoll_mask = BIT(sta_priv->link_id);
+	rcu_read_unlock();
+
+	priv->pspoll_mask |= pspoll_mask;
+	drop = 0;
+
+	/* Do not report pspols if data for given link id is
+	 * queued already. */
+	for (i = 0; i < 4; ++i) {
+		if (cw1200_queue_get_num_queued(
+				&priv->tx_queue[i],
+				pspoll_mask)) {
+			cw1200_bh_wakeup(priv);
+			drop = 1;
+			break;
+		}
+	}
+done:
+	return drop;
+}
+
 /* ******************************************************************** */
 
 void cw1200_tx_confirm_cb(struct cw1200_common *priv,
@@ -697,13 +741,18 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 		}
 	}
 
-	if (skb->len < sizeof(struct ieee80211_hdr_3addr)) {
+	if (skb->len < sizeof(struct ieee80211_pspoll)) {
 		wiphy_warn(priv->hw->wiphy, "Mailformed SDU rx'ed. "
 				"Size is lesser than IEEE header.\n");
 		goto drop;
 	}
 
 	frame_control = *(__le16*)skb->data;
+
+	if (unlikely(ieee80211_is_pspoll(frame_control)))
+		if (cw1200_handle_pspoll(priv, skb))
+			goto drop;
+
 	hdr->mactime = 0; /* Not supported by WSM */
 	hdr->band = (arg->channelNumber > 14) ?
 			IEEE80211_BAND_5GHZ : IEEE80211_BAND_2GHZ;

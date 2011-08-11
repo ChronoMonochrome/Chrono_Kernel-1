@@ -120,7 +120,8 @@ static int cw1200_set_tim_impl(struct cw1200_common *priv, bool aid0_bit_set)
 	};
 	u16 tim_offset, tim_length;
 
-	ap_printk(KERN_DEBUG "[AP] %s.\n", __func__);
+	ap_printk(KERN_DEBUG "[AP] %s mcast: %s.\n",
+		__func__, aid0_bit_set ? "ena" : "dis");
 
 	frame.skb = ieee80211_beacon_get_tim(priv->hw, priv->vif,
 			&tim_offset, &tim_length);
