@@ -402,7 +402,7 @@ static inline int prcmu_get_ddr_opp(void)
 static inline int prcmu_set_arm_opp(u8 opp)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_set_arm_opp(opp);
 	else
 		return db8500_prcmu_set_arm_opp(opp);
 }
@@ -410,7 +410,7 @@ static inline int prcmu_set_arm_opp(u8 opp)
 static inline int prcmu_get_arm_opp(void)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_get_arm_opp();
 	else
 		return db8500_prcmu_get_arm_opp();
 }
