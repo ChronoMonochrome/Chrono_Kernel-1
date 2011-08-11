@@ -492,7 +492,7 @@ static inline int prcmu_enable_dsipll(void)
 static inline int prcmu_config_esram0_deep_sleep(u8 state)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_config_esram0_deep_sleep(state);
 	else
 		return db8500_prcmu_config_esram0_deep_sleep(state);
 }

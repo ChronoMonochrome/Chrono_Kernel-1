@@ -626,6 +626,67 @@ static void config_wakeups(void)
 	last_abb_events = abb_events;
 }
 
+int db5500_prcmu_config_esram0_deep_sleep(u8 state)
+{
+	unsigned long flags;
+
+	if ((state > ESRAM0_DEEP_SLEEP_STATE_RET) ||
+	    (state < ESRAM0_DEEP_SLEEP_STATE_OFF))
+		return -EINVAL;
+
+	spin_lock_irqsave(&mb0_transfer.lock, flags);
+
+	if (state == ESRAM0_DEEP_SLEEP_STATE_RET)
+		writeb(RET_ST, PRCM_REQ_MB0_ESRAM0_STATE);
+	else
+		writeb(OFF_ST, PRCM_REQ_MB0_ESRAM0_STATE);
+
+	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
+
+	return 0;
+}
+
+int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk, bool keep_ap_pll)
+{
+	int r = 0;
+	unsigned long flags;
+
+	/* Deep Idle is not supported in DB5500 */
+	BUG_ON((state < PRCMU_AP_SLEEP) || (state >= PRCMU_AP_DEEP_IDLE));
+
+	spin_lock_irqsave(&mb0_transfer.lock, flags);
+
+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
+		cpu_relax();
+
+	switch (state) {
+	case PRCMU_AP_IDLE:
+		writeb(DB5500_AP_IDLE, PRCM_REQ_MB0_AP_POWER_STATE);
+		/* TODO: Can be high latency */
+		writeb(DDR_PWR_STATE_UNCHANGED, PRCM_REQ_MB0_DDR_STATE);
+		break;
+	case PRCMU_AP_SLEEP:
+		writeb(DB5500_AP_SLEEP, PRCM_REQ_MB0_AP_POWER_STATE);
+		break;
+	case PRCMU_AP_DEEP_SLEEP:
+		writeb(DB5500_AP_DEEP_SLEEP, PRCM_REQ_MB0_AP_POWER_STATE);
+		break;
+	default:
+		r = -EINVAL;
+		goto unlock_return;
+	}
+	writeb((keep_ap_pll ? 1 : 0), PRCM_REQ_MB0_AP_PLL_STATE);
+	writeb((keep_ulp_clk ? 1 : 0), PRCM_REQ_MB0_ULP_CLOCK_STATE);
+
+	writeb(MB0H_PWR_STATE_TRANS, PRCM_REQ_MB0_HEADER);
+	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
+
+unlock_return:
+	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
+
+	return r;
+}
+
 void db5500_prcmu_enable_wakeups(u32 wakeups)
 {
 	unsigned long flags;
