@@ -352,9 +352,10 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			WARN_ON(wsm_set_association_mode(priv,
 				&priv->association_mode));
 			WARN_ON(wsm_set_bss_params(priv, &priv->bss_params));
+			priv->setbssparams_done = true;
 			WARN_ON(wsm_set_beacon_wakeup_period(priv,
 				dtim_interval, listen_interval));
-			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
+			cw1200_set_pm(priv, &priv->powersave_mode);
 #if 0
 			/* It's better to override internal TX rete; otherwise
 			 * device sends RTS at too high rate. However device
@@ -460,6 +461,7 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 				priv->cqm_beacon_loss_count :
 				priv->cqm_link_loss_count;
 			WARN_ON(wsm_set_bss_params(priv, &priv->bss_params));
+			priv->setbssparams_done = true;
 		}
 #endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 	}

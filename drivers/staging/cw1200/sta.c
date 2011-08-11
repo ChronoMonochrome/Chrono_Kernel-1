@@ -50,13 +50,19 @@ int cw1200_start(struct ieee80211_hw *dev)
 	mutex_lock(&priv->conf_mutex);
 
 	/* default ECDA */
-	WSM_EDCA_SET(&priv->edca, 0, 0x0002, 0x0003, 0x0007, 47);
-	WSM_EDCA_SET(&priv->edca, 1, 0x0002, 0x0007, 0x000f, 94);
-	WSM_EDCA_SET(&priv->edca, 2, 0x0003, 0x000f, 0x03ff, 0);
-	WSM_EDCA_SET(&priv->edca, 3, 0x0007, 0x000f, 0x03ff, 0);
+	WSM_EDCA_SET(&priv->edca, 0, 0x0002, 0x0003, 0x0007, 47, false);
+	WSM_EDCA_SET(&priv->edca, 1, 0x0002, 0x0007, 0x000f, 94, false);
+	WSM_EDCA_SET(&priv->edca, 2, 0x0003, 0x000f, 0x03ff, 0, false);
+	WSM_EDCA_SET(&priv->edca, 3, 0x0007, 0x000f, 0x03ff, 0, false);
 	ret = wsm_set_edca_params(priv, &priv->edca);
 	if (WARN_ON(ret))
 		goto out;
+
+	ret = cw1200_set_uapsd_param(priv, &priv->edca);
+	if (WARN_ON(ret))
+		goto out;
+
+	priv->setbssparams_done = false;
 
 	memset(priv->bssid, ~0, ETH_ALEN);
 	memcpy(priv->mac_addr, dev->wiphy->perm_addr, ETH_ALEN);
@@ -315,7 +321,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 					conf->dynamic_ps_timeout << 1;
 
 		if (priv->join_status == CW1200_JOIN_STATUS_STA)
-			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
+			cw1200_set_pm(priv, &priv->powersave_mode);
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_P2P_PS) {
@@ -505,13 +511,26 @@ int cw1200_conf_tx(struct ieee80211_hw *dev, u16 queue,
 {
 	struct cw1200_common *priv = dev->priv;
 	int ret = 0;
+	/* To prevent re-applying PM request OID again and again*/
+	bool old_uapsdFlags;
 
 	mutex_lock(&priv->conf_mutex);
 
 	if (queue < dev->queues) {
+		old_uapsdFlags = priv->uapsd_info.uapsdFlags;
+
 		WSM_EDCA_SET(&priv->edca, queue, params->aifs,
-			params->cw_min, params->cw_max, params->txop);
+			params->cw_min, params->cw_max, params->txop,
+			params->uapsd);
 		ret = wsm_set_edca_params(priv, &priv->edca);
+
+		if (!ret && (priv->mode == NL80211_IFTYPE_STATION)) {
+			ret = cw1200_set_uapsd_param(priv, &priv->edca);
+			if (!ret && priv->setbssparams_done &&
+				(priv->join_status == CW1200_JOIN_STATUS_STA) &&
+				(old_uapsdFlags != priv->uapsd_info.uapsdFlags))
+				cw1200_set_pm(priv, &priv->powersave_mode);
+		}
 	} else
 		ret = -EINVAL;
 
@@ -541,6 +560,16 @@ int cw1200_get_tx_stats(struct ieee80211_hw *dev,
 	return 0;
 }
 */
+
+int cw1200_set_pm(struct cw1200_common *priv, const struct wsm_set_pm *arg)
+{
+	struct wsm_set_pm pm = *arg;
+
+	if (priv->uapsd_info.uapsdFlags != 0)
+		pm.pmMode &= ~WSM_PSM_FAST_PS_FLAG;
+
+	return wsm_set_pm(priv, &pm);
+}
 
 int cw1200_set_key(struct ieee80211_hw *dev, enum set_key_cmd cmd,
 		   struct ieee80211_vif *vif, struct ieee80211_sta *sta,
@@ -1168,6 +1197,8 @@ void cw1200_unjoin_work(struct work_struct *work)
 		cancel_delayed_work_sync(&priv->connection_loss_work);
 		cw1200_update_listening(priv, priv->listening);
 		cw1200_update_filtering(priv);
+		priv->setbssparams_done = false;
+
 		sta_printk(KERN_DEBUG "[STA] Unjoin.\n");
 	}
 	mutex_unlock(&priv->conf_mutex);
@@ -1221,6 +1252,39 @@ void cw1200_update_listening(struct cw1200_common *priv, bool enabled)
 	}
 }
 
+int cw1200_set_uapsd_param(struct cw1200_common *priv,
+				const struct wsm_edca_params *arg)
+{
+	int ret;
+	u16 uapsdFlags = 0;
+
+	/* Here's the mapping AC [queue, bit]
+	VO [0,3], VI [1, 2], BE [2, 1], BK [3, 0]*/
+
+	if (arg->params[0].uapsdEnable)
+		uapsdFlags |= 1 << 3;
+
+	if (arg->params[1].uapsdEnable)
+		uapsdFlags |= 1 << 2;
+
+	if (arg->params[2].uapsdEnable)
+		uapsdFlags |= 1 << 1;
+
+	if (arg->params[3].uapsdEnable)
+		uapsdFlags |= 1;
+
+	/* Currently pseudo U-APSD operation is not supported, so setting
+	* MinAutoTriggerInterval, MaxAutoTriggerInterval and
+	* AutoTriggerStep to 0 */
+
+	priv->uapsd_info.uapsdFlags = cpu_to_le16(uapsdFlags);
+	priv->uapsd_info.minAutoTriggerInterval = 0;
+	priv->uapsd_info.maxAutoTriggerInterval = 0;
+	priv->uapsd_info.autoTriggerStep = 0;
+
+	ret = wsm_set_uapsd_info(priv, &priv->uapsd_info);
+	return ret;
+}
 
 /* ******************************************************************** */
 /* STA privates								*/

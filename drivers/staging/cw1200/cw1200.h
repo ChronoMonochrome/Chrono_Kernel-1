@@ -118,6 +118,8 @@ struct cw1200_common {
 	struct wsm_multicast_filter	multicast_filter;
 	struct cw1200_pm_state		pm_state;
 	struct wsm_p2p_ps_modeinfo	p2p_ps_modeinfo;
+	struct wsm_uapsd_info           uapsd_info;
+	bool                            setbssparams_done;
 
 	/* BH */
 	atomic_t			bh_rx;

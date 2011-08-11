@@ -135,6 +135,9 @@ struct cw1200_common;
 /* 802.11 PS mode */
 #define WSM_PSM_PS			BIT(0)
 
+/* Fast Power Save bit */
+#define WSM_PSM_FAST_PS_FLAG		BIT(7)
+
 /* Dynamic aka Fast power save */
 #define WSM_PSM_FAST_PS			(BIT(0) | BIT(7))
 
@@ -1044,6 +1047,9 @@ struct wsm_edca_queue_params {
 	/* the access class. Overrides the global */
 	/* dot11MaxReceiveLifetime value */
 	/* [in] */ u32 maxReceiveLifetime;
+
+	/* UAPSD trigger support for the access class. */
+	/* [in] */ bool uapsdEnable;
 };
 
 struct wsm_edca_params {
@@ -1051,16 +1057,20 @@ struct wsm_edca_params {
 	struct wsm_edca_queue_params params[4];
 };
 
-#define WSM_EDCA_SET(edca, queue, aifs, cw_min, cw_max, txop)	\
+#define WSM_EDCA_SET(edca, queue, aifs, cw_min, cw_max, txop, uapsd)	\
 	do {							\
 		struct wsm_edca_queue_params *p = &(edca)->params[queue]; \
 		p->cwMin = (cw_min);				\
 		p->cwMax = (cw_max);				\
 		p->aifns = (aifs);				\
 		p->txOpLimit = (txop);				\
+		p->uapsdEnable = (uapsd);			\
 	} while (0)
 
 int wsm_set_edca_params(struct cw1200_common *priv,
+			const struct wsm_edca_params *arg);
+
+int wsm_set_uapsd_param(struct cw1200_common *priv,
 			const struct wsm_edca_params *arg);
 
 /* 3.38 */
@@ -1546,6 +1556,22 @@ static inline int wsm_use_multi_tx_conf(struct cw1200_common *priv,
 
 	return wsm_write_mib(priv, WSM_MIB_USE_MULTI_TX_CONF,
 			&arg, sizeof(arg));
+}
+
+
+/* 4.26 SetUpasdInformation */
+struct wsm_uapsd_info {
+	__le16 uapsdFlags;
+	__le16 minAutoTriggerInterval;
+	__le16 maxAutoTriggerInterval;
+	__le16 autoTriggerStep;
+};
+
+static inline int wsm_set_uapsd_info(struct cw1200_common *priv,
+				     struct wsm_uapsd_info *arg)
+{
+	return wsm_write_mib(priv, WSM_MIB_ID_SET_UAPSD_INFORMATION,
+				arg, sizeof(*arg));
 }
 
 /* ******************************************************************** */
