@@ -76,7 +76,9 @@ int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		reset.link_id = sta_priv->link_id;
 		priv->link_id_map &= ~BIT(sta_priv->link_id);
 		sta_priv->link_id = 0;
+		wsm_lock_tx(priv);
 		WARN_ON(wsm_reset(priv, &reset));
+		wsm_unlock_tx(priv);
 	}
 	return 0;
 }
@@ -676,10 +678,12 @@ static int cw1200_update_beaconing(struct cw1200_common *priv)
 		if (priv->join_status != CW1200_JOIN_STATUS_AP ||
 		    priv->beacon_int != conf->beacon_int) {
 			ap_printk(KERN_DEBUG "ap restarting\n");
+			wsm_lock_tx(priv);
 			if (priv->join_status != CW1200_JOIN_STATUS_PASSIVE)
 				WARN_ON(wsm_reset(priv, &reset));
 			priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 			WARN_ON(cw1200_start_ap(priv));
+			wsm_unlock_tx(priv);
 		} else
 			ap_printk(KERN_DEBUG "ap started join_status: %d\n",
 				  priv->join_status);

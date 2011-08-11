@@ -230,11 +230,13 @@ void cw1200_remove_interface(struct ieee80211_hw *dev,
 	priv->mode = NL80211_IFTYPE_MONITOR;
 	memset(priv->mac_addr, 0, ETH_ALEN);
 	memset(priv->bssid, 0, ETH_ALEN);
+	wsm_lock_tx(priv);
 	WARN_ON(wsm_reset(priv, &reset));
 	cw1200_free_keys(priv);
 	cw1200_setup_mac(priv);
 	priv->listening = false;
 	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
+	wsm_unlock_tx(priv);
 
 	mutex_unlock(&priv->conf_mutex);
 }
@@ -489,7 +491,9 @@ void cw1200_configure_filter(struct ieee80211_hw *dev,
 			 FIF_PROBE_REQ)) ? 1 : 0;
 	if (priv->listening ^ listening) {
 		priv->listening = listening;
+		wsm_lock_tx(priv);
 		cw1200_update_listening(priv, listening);
+		wsm_unlock_tx(priv);
 	}
 	cw1200_update_filtering(priv);
 	mutex_unlock(&priv->conf_mutex);
