@@ -19,6 +19,7 @@
 #include <linux/irq.h>
 #include <linux/jiffies.h>
 #include <linux/bitops.h>
+#include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <mach/hardware.h>
@@ -894,7 +895,7 @@ void __init db5500_prcmu_early_init(void)
  * prcmu_fw_init - arch init call for the Linux PRCMU fw init logic
  *
  */
-int __init db5500_prcmu_init(void)
+static int __init db5500_prcmu_probe(struct platform_device *pdev)
 {
 	int err = 0;
 
@@ -915,6 +916,18 @@ int __init db5500_prcmu_init(void)
 no_irq_return:
 	return err;
 
+}
+
+static struct platform_driver db5500_prcmu_driver = {
+	.driver = {
+		.name = "db5500-prcmu",
+		.owner = THIS_MODULE,
+	},
+};
+
+static int __init db5500_prcmu_init(void)
+{
+	return platform_driver_probe(&db5500_prcmu_driver, db5500_prcmu_probe);
 }
 
 arch_initcall(db5500_prcmu_init);
