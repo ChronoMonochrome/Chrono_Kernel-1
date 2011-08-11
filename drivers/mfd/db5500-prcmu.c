@@ -20,6 +20,9 @@
 #include <linux/jiffies.h>
 #include <linux/bitops.h>
 #include <linux/platform_device.h>
+#include <linux/mfd/core.h>
+#include <linux/regulator/db5500-prcmu.h>
+#include <linux/regulator/machine.h>
 #include <linux/interrupt.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <mach/hardware.h>
@@ -1351,6 +1354,83 @@ void __init db5500_prcmu_early_init(void)
 	}
 }
 
+/*
+ * Power domain switches (ePODs) modeled as regulators for the DB5500 SoC
+ */
+static struct regulator_consumer_supply db5500_vape_consumers[] = {
+	REGULATOR_SUPPLY("v-ape", NULL),
+	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.0"),
+	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.1"),
+	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.2"),
+	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.3"),
+	REGULATOR_SUPPLY("vcore", "sdi0"),
+	REGULATOR_SUPPLY("vcore", "sdi1"),
+	REGULATOR_SUPPLY("vcore", "sdi2"),
+	REGULATOR_SUPPLY("vcore", "sdi3"),
+	REGULATOR_SUPPLY("vcore", "sdi4"),
+	REGULATOR_SUPPLY("vcore", "uart0"),
+	REGULATOR_SUPPLY("vcore", "uart1"),
+	REGULATOR_SUPPLY("vcore", "uart2"),
+	REGULATOR_SUPPLY("vcore", "uart3"),
+};
+
+static struct regulator_consumer_supply db5500_sga_consumers[] = {
+	REGULATOR_SUPPLY("v-mali", NULL),
+};
+
+static struct regulator_consumer_supply db5500_hva_consumers[] = {
+	REGULATOR_SUPPLY("v-hva", NULL),
+};
+
+static struct regulator_consumer_supply db5500_sia_consumers[] = {
+	REGULATOR_SUPPLY("v-sia", "mmio_camera"),
+};
+
+static struct regulator_consumer_supply db5500_disp_consumers[] = {
+	REGULATOR_SUPPLY("vsupply", "b2r2_bus"),
+	REGULATOR_SUPPLY("vsupply", "mcde"),
+};
+
+static struct regulator_consumer_supply db5500_esram12_consumers[] = {
+	REGULATOR_SUPPLY("v-esram12", "mcde"),
+	REGULATOR_SUPPLY("esram12", "cm_control"),
+};
+
+#define DB5500_REGULATOR_SWITCH(lower, upper)                           \
+[DB5500_REGULATOR_SWITCH_##upper] = {                                   \
+	.constraints = {                                                \
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,              \
+	},                                                              \
+	.consumer_supplies      = db5500_##lower##_consumers,            \
+	.num_consumer_supplies  = ARRAY_SIZE(db5500_##lower##_consumers),\
+}
+
+static struct regulator_init_data db5500_regulators[DB5500_NUM_REGULATORS] = {
+	[DB5500_REGULATOR_VAPE] = {
+		.constraints = {
+			.valid_ops_mask	= REGULATOR_CHANGE_STATUS,
+		},
+		.consumer_supplies	= db5500_vape_consumers,
+		.num_consumer_supplies	= ARRAY_SIZE(db5500_vape_consumers),
+	},
+	DB5500_REGULATOR_SWITCH(sga, SGA),
+	DB5500_REGULATOR_SWITCH(hva, HVA),
+	DB5500_REGULATOR_SWITCH(sia, SIA),
+	DB5500_REGULATOR_SWITCH(disp, DISP),
+	DB5500_REGULATOR_SWITCH(esram12, ESRAM12),
+};
+
+static struct mfd_cell db5500_prcmu_devs[] = {
+	{
+		.name = "db5500-prcmu-regulators",
+		.platform_data = &db5500_regulators,
+		.pdata_size = sizeof(db5500_regulators),
+	},
+	{
+		.name = "cpufreq-u5500",
+	},
+};
+
 /**
  * prcmu_fw_init - arch init call for the Linux PRCMU fw init logic
  *
@@ -1372,6 +1452,15 @@ static int __init db5500_prcmu_probe(struct platform_device *pdev)
 		err = -EBUSY;
 		goto no_irq_return;
 	}
+
+	err = mfd_add_devices(&pdev->dev, 0, db5500_prcmu_devs,
+			      ARRAY_SIZE(db5500_prcmu_devs), NULL,
+			      0);
+
+	if (err)
+		pr_err("prcmu: Failed to add subdevices\n");
+	else
+		pr_info("DB5500 PRCMU initialized\n");
 
 no_irq_return:
 	return err;
