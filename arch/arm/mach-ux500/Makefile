@@ -6,6 +6,8 @@ obj-y				:= clock.o cpu.o devices.o dcache.o \
 				   devices-common.o id.o pins.o \
 				   usb.o reboot_reasons.o timer.o \
 				   uart-db8500.o clock-debug.o
+obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o
+
 obj-y				+= pm/ test/
 
 
@@ -17,6 +19,7 @@ obj-$(CONFIG_TOUCHSCREEN_CYTTSP_SPI)    += board-u5500-cyttsp.o
 board-mcde-objs			+= board-u5500-mcde.o
 endif
 ifeq ($(CONFIG_UX500_SOC_DB8500), y)
+
 
 obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db8500.o devices-db8500.o \
 				   clock-db8500.o dma-db8500.o
