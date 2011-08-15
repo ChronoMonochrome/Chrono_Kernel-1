@@ -281,7 +281,7 @@ extern unsigned int * log_buf_writel;
  * ioremap and friends.
  *
  * ioremap takes a PCI memory address, as specified in
- * Documentation/IO-mapping.txt.
+ * Documentation/io-mapping.txt.
  *
  */
 #ifndef __arch_ioremap
