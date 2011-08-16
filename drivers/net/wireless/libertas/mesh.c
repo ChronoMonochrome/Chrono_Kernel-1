@@ -1174,6 +1174,17 @@ static ssize_t capability_get(struct device *dev,
 	return snprintf(buf, 5, "%d\n", defs.meshie.val.mesh_capability);
 }
 
+<<<<<<< HEAD
+=======
+static const struct net_device_ops mesh_netdev_ops = {
+	.ndo_open		= lbs_mesh_dev_open,
+	.ndo_stop 		= lbs_mesh_stop,
+	.ndo_start_xmit		= lbs_hard_start_xmit,
+	.ndo_set_mac_address	= lbs_set_mac_address,
+	.ndo_set_rx_mode	= lbs_set_multicast_list,
+};
+
+>>>>>>> afc4b13... net: remove use of ndo_set_multicast_list in drivers
 /**
  * capability_set - Set function for sysfs attribute capability
  * @dev: the &struct device

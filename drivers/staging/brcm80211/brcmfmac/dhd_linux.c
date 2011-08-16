@@ -2131,6 +2131,7 @@ int dhd_bus_start(dhd_pub_t *dhdp)
 	return 0;
 }
 
+<<<<<<< HEAD
 int
 dhd_iovar(dhd_pub_t *pub, int ifidx, char *name, char *cmd_buf, uint cmd_len,
 	  int set)
@@ -2164,6 +2165,16 @@ static struct net_device_ops dhd_ops_pri = {
 	.ndo_start_xmit = dhd_start_xmit,
 	.ndo_set_mac_address = dhd_set_mac_address,
 	.ndo_set_multicast_list = dhd_set_multicast_list
+=======
+static struct net_device_ops brcmf_netdev_ops_pri = {
+	.ndo_open = brcmf_netdev_open,
+	.ndo_stop = brcmf_netdev_stop,
+	.ndo_get_stats = brcmf_netdev_get_stats,
+	.ndo_do_ioctl = brcmf_netdev_ioctl_entry,
+	.ndo_start_xmit = brcmf_netdev_start_xmit,
+	.ndo_set_mac_address = brcmf_netdev_set_mac_address,
+	.ndo_set_rx_mode = brcmf_netdev_set_multicast_list,
+>>>>>>> afc4b13... net: remove use of ndo_set_multicast_list in drivers
 };
 
 int dhd_net_attach(dhd_pub_t *dhdp, int ifidx)

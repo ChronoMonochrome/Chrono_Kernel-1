@@ -3239,12 +3239,20 @@ static const struct net_device_ops qeth_l3_netdev_ops = {
 	.ndo_get_stats		= qeth_get_stats,
 	.ndo_start_xmit		= qeth_l3_hard_start_xmit,
 	.ndo_validate_addr	= eth_validate_addr,
+<<<<<<< HEAD
 	.ndo_set_multicast_list = qeth_l3_set_multicast_list,
 	.ndo_do_ioctl	   	= qeth_l3_do_ioctl,
 	.ndo_change_mtu	   	= qeth_change_mtu,
 	.ndo_fix_features   	= qeth_l3_fix_features,
 	.ndo_set_features   	= qeth_l3_set_features,
 	.ndo_vlan_rx_register	= qeth_l3_vlan_rx_register,
+=======
+	.ndo_set_rx_mode	= qeth_l3_set_multicast_list,
+	.ndo_do_ioctl		= qeth_l3_do_ioctl,
+	.ndo_change_mtu		= qeth_change_mtu,
+	.ndo_fix_features	= qeth_l3_fix_features,
+	.ndo_set_features	= qeth_l3_set_features,
+>>>>>>> afc4b13... net: remove use of ndo_set_multicast_list in drivers
 	.ndo_vlan_rx_add_vid	= qeth_l3_vlan_rx_add_vid,
 	.ndo_vlan_rx_kill_vid   = qeth_l3_vlan_rx_kill_vid,
 	.ndo_tx_timeout	   	= qeth_tx_timeout,
@@ -3256,12 +3264,20 @@ static const struct net_device_ops qeth_l3_osa_netdev_ops = {
 	.ndo_get_stats		= qeth_get_stats,
 	.ndo_start_xmit		= qeth_l3_hard_start_xmit,
 	.ndo_validate_addr	= eth_validate_addr,
+<<<<<<< HEAD
 	.ndo_set_multicast_list = qeth_l3_set_multicast_list,
 	.ndo_do_ioctl	   	= qeth_l3_do_ioctl,
 	.ndo_change_mtu	   	= qeth_change_mtu,
 	.ndo_fix_features   	= qeth_l3_fix_features,
 	.ndo_set_features   	= qeth_l3_set_features,
 	.ndo_vlan_rx_register	= qeth_l3_vlan_rx_register,
+=======
+	.ndo_set_rx_mode	= qeth_l3_set_multicast_list,
+	.ndo_do_ioctl		= qeth_l3_do_ioctl,
+	.ndo_change_mtu		= qeth_change_mtu,
+	.ndo_fix_features	= qeth_l3_fix_features,
+	.ndo_set_features	= qeth_l3_set_features,
+>>>>>>> afc4b13... net: remove use of ndo_set_multicast_list in drivers
 	.ndo_vlan_rx_add_vid	= qeth_l3_vlan_rx_add_vid,
 	.ndo_vlan_rx_kill_vid   = qeth_l3_vlan_rx_kill_vid,
 	.ndo_tx_timeout	   	= qeth_tx_timeout,

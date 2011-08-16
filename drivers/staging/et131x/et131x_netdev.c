@@ -702,3 +702,57 @@ int et131x_set_mac_addr(struct net_device *netdev, void *new_mac)
 	netif_wake_queue(netdev);
 	return result;
 }
+<<<<<<< HEAD
+=======
+
+static const struct net_device_ops et131x_netdev_ops = {
+	.ndo_open		= et131x_open,
+	.ndo_stop		= et131x_close,
+	.ndo_start_xmit		= et131x_tx,
+	.ndo_set_rx_mode	= et131x_multicast,
+	.ndo_tx_timeout		= et131x_tx_timeout,
+	.ndo_change_mtu		= et131x_change_mtu,
+	.ndo_set_mac_address	= et131x_set_mac_addr,
+	.ndo_validate_addr	= eth_validate_addr,
+	.ndo_get_stats		= et131x_stats,
+	.ndo_do_ioctl		= et131x_ioctl,
+};
+
+/**
+ * et131x_device_alloc
+ *
+ * Returns pointer to the allocated and initialized net_device struct for
+ * this device.
+ *
+ * Create instances of net_device and wl_private for the new adapter and
+ * register the device's entry points in the net_device structure.
+ */
+struct net_device *et131x_device_alloc(void)
+{
+	struct net_device *netdev;
+
+	/* Alloc net_device and adapter structs */
+	netdev = alloc_etherdev(sizeof(struct et131x_adapter));
+
+	if (netdev == NULL) {
+		printk(KERN_ERR "et131x: Alloc of net_device struct failed\n");
+		return NULL;
+	}
+
+	/* Setup the function registration table (and other data) for a
+	 * net_device
+	 */
+	/* netdev->init               = &et131x_init; */
+	/* netdev->set_config = &et131x_config; */
+	netdev->watchdog_timeo = ET131X_TX_TIMEOUT;
+	netdev->netdev_ops = &et131x_netdev_ops;
+
+	/* netdev->ethtool_ops        = &et131x_ethtool_ops; */
+
+	/* Poll? */
+	/* netdev->poll               = &et131x_poll; */
+	/* netdev->poll_controller    = &et131x_poll_controller; */
+	return netdev;
+}
+
+>>>>>>> afc4b13... net: remove use of ndo_set_multicast_list in drivers
