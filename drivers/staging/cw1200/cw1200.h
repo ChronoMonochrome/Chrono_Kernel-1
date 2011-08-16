@@ -29,11 +29,11 @@
 #include "scan.h"
 #include "txrx.h"
 #include "ht.h"
+#include "pm.h"
 
 /* extern */ struct sbus_ops;
 /* extern */ struct task_struct;
 /* extern */ struct cw1200_debug_priv;
-/* extern */ struct cw1200_suspend_state;
 /* extern */ struct firmware;
 
 #if defined(CONFIG_CW1200_TXRX_DEBUG)
@@ -116,7 +116,7 @@ struct cw1200_common {
 	struct wsm_beacon_filter_control bf_control;
 	u8				ba_tid_mask;
 	struct wsm_multicast_filter	multicast_filter;
-	struct cw1200_suspend_state	*suspend_state;
+	struct cw1200_pm_state		pm_state;
 	struct wsm_p2p_ps_modeinfo	p2p_ps_modeinfo;
 
 	/* BH */

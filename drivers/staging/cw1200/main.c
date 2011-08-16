@@ -349,6 +349,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	init_waitqueue_head(&priv->wsm_startup_done);
 	wsm_buf_init(&priv->wsm_cmd_buf);
 	tx_policy_init(priv);
+	cw1200_pm_init(&priv->pm_state, priv);
 
 	return hw;
 }
@@ -429,6 +430,7 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 	for (i = 0; i < 4; ++i)
 		cw1200_queue_deinit(&priv->tx_queue[i]);
 	cw1200_queue_stats_deinit(&priv->tx_queue_stats);
+	cw1200_pm_deinit(&priv->pm_state);
 }
 EXPORT_SYMBOL_GPL(cw1200_unregister_common);
 

@@ -719,6 +719,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 {
 	struct sk_buff *skb = *skb_p;
 	struct ieee80211_rx_status *hdr = IEEE80211_SKB_RXCB(skb);
+	unsigned long grace_period;
 	__le16 frame_control;
 	hdr->flag = 0;
 
@@ -824,6 +825,15 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 			(arg->flags & WSM_RX_STATUS_ADDRESS1))
 		if (cw1200_handle_action_rx(priv, skb))
 			return;
+
+	/* Stay awake for 1sec. after frame is received to give
+	 * userspace chance to react and acquire appropriate
+	 * wakelock. */
+	if (ieee80211_is_auth(frame_control))
+		grace_period = 5 * HZ;
+	else
+		grace_period = 1 * HZ;
+	cw1200_pm_stay_awake(&priv->pm_state, grace_period);
 
 	/* Not that we really need _irqsafe variant here,
 	 * but it offloads realtime bh thread and improve
