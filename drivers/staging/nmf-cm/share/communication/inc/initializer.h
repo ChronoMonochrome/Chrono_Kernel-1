@@ -19,6 +19,7 @@
 #define NMF_ULP_ALLOWSLEEP          8
 #define NMF_CONSTRUCT_SYNC_INDEX    9
 #define NMF_START_SYNC_INDEX        10
+#define NMF_STOP_SYNC_INDEX         11
 
 /*
  * Index of datas in command parameter format

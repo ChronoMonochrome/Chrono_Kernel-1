@@ -584,6 +584,7 @@ t_cm_error cm_stopComponent(t_component_instance* component, t_nmf_client_id cli
 {
     char  value[MAX_PROPERTY_VALUE_LENGTH];
     t_cm_error error = CM_OK;
+    t_bool isHwProperty;
 
     /*
      * Special code for SINGLETON handling
@@ -609,6 +610,12 @@ t_cm_error cm_stopComponent(t_component_instance* component, t_nmf_client_id cli
     // CM_ASSERT component->state == STATE_RUNNABLE
     component->state = STATE_STOPPED;
 
+    isHwProperty = (cm_getComponentProperty(
+                component,
+                "hardware",
+                value,
+                sizeof(value)) == CM_OK);
+
     if (cm_DSP_GetState(component->template->dspId)->state != MPC_STATE_BOOTED)
     {
         error = CM_MPC_NOT_RESPONDING;
@@ -621,7 +628,7 @@ t_cm_error cm_stopComponent(t_component_instance* component, t_nmf_client_id cli
         if(component->template->LCCStopAddress != 0)
         {
             if ((error = cm_COMP_CallService(
-                    NMF_STOP_INDEX,
+                    isHwProperty ? NMF_STOP_SYNC_INDEX : NMF_STOP_INDEX,
                     component,
                     component->template->LCCStopAddress)) != CM_OK)
             {
@@ -634,11 +641,7 @@ t_cm_error cm_stopComponent(t_component_instance* component, t_nmf_client_id cli
     /*
      * Power on, HW resources if required
      */
-    if(cm_getComponentProperty(
-            component,
-            "hardware",
-            value,
-            sizeof(value)) == CM_OK)
+    if(isHwProperty)
     {
         cm_PWR_DisableMPC(MPC_PWR_HWIP, component->template->dspId);
     }

@@ -52,7 +52,8 @@ PRIVATE const t_callback_method internalHostJumptable[] = {
     processSyncAcknowledge,
     processAsyncAcknowledge,
     processSyncAcknowledge,
-    processSyncAcknowledge
+    processSyncAcknowledge, // Start sync
+    processSyncAcknowledge // Stop sync
 };
 
 PUBLIC t_cm_error cm_COM_Init(t_nmf_coms_location _comsLocation)

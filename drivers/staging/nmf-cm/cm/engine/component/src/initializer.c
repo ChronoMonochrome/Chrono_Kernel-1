@@ -134,6 +134,7 @@ PUBLIC t_cm_error cm_COMP_CallService(
     t_uint16 params[INIT_COMPONENT_CMD_SIZE];
     t_bool isSynchronous = (serviceIndex == NMF_CONSTRUCT_SYNC_INDEX ||
                             serviceIndex == NMF_START_SYNC_INDEX ||
+                            serviceIndex == NMF_STOP_SYNC_INDEX ||
                             serviceIndex == NMF_DESTROY_INDEX)?TRUE:FALSE;
 
     params[INIT_COMPONENT_CMD_HANDLE_INDEX] = (t_uint16)((unsigned int)pComp & 0xFFFF);

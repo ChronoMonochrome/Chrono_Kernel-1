@@ -19,10 +19,10 @@ struct t_page_chuncks {
     t_cm_chunk              chunks[CHUNKS_PER_PAGE];
 };
 
-static struct t_page_chuncks   *firstPage;
+static struct t_page_chuncks   *firstPage = 0;
 
-static unsigned int            freeChunks;
-static t_cm_chunk              *firstFreeChunk;
+static unsigned int            freeChunks = 0;
+static t_cm_chunk              *firstFreeChunk = 0;
 
 t_cm_chunk* allocChunk()
 {
@@ -91,4 +91,7 @@ void freeChunkPool(void)
         firstPage = firstPage->nextPage;
         OSAL_Free(tofree);
     }
+
+    firstFreeChunk = 0;
+    freeChunks = 0;
 }
