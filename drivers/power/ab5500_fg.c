@@ -1751,13 +1751,6 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 
 	list_add_tail(&di->node, &ab5500_fg_list);
 
-	/* Initialize OVV, and other registers */
-	ret = ab5500_fg_init_hw_registers(di);
-	if (ret) {
-		dev_err(di->dev, "failed to initialize registers\n");
-		goto free_fg_wq;
-	}
-
 	/* Consider battery unknown until we're informed otherwise */
 	di->flags.batt_unknown = true;
 
@@ -1766,6 +1759,13 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(di->dev, "failed to register FG psy\n");
 		goto free_fg_wq;
+	}
+
+	/* Initialize OVV, and other registers */
+	ret = ab5500_fg_init_hw_registers(di);
+	if (ret) {
+		dev_err(di->dev, "failed to initialize registers\n");
+		goto pow_unreg;
 	}
 
 	di->fg_samples = SEC_TO_SAMPLE(di->bat->fg_params->init_timer);
@@ -1793,6 +1793,8 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 	dev_info(di->dev, "probe success\n");
 	return ret;
 
+pow_unreg:
+	power_supply_unregister(&di->fg_psy);
 free_fg_wq:
 	destroy_workqueue(di->fg_wq);
 free_device_info:
