@@ -722,7 +722,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 		goto free_wq2;
 	}
 	shrm->shm_ca_wake_wq = create_singlethread_workqueue("shm_ca_wake_req");
-	if (!shrm->shm_ac_wake_wq) {
+	if (!shrm->shm_ca_wake_wq) {
 		dev_err(shrm->dev, "failed to create work queue\n");
 		err = -ENOMEM;
 		goto free_wq3;
