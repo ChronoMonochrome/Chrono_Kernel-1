@@ -668,12 +668,13 @@ int mbox_channel_register(u16 channel, mbox_channel_cb_t *cb, void *priv)
 		spin_lock(&mbox_unit->rx_lock);
 		list_del(&rx_chan->list);
 		spin_unlock(&mbox_unit->rx_lock);
+		mutex_unlock(&rx_chan->lock);
 		kfree(rx_chan);
 	} else {
 		rx_chan->seq_number++;
 		rx_chan->state = MBOX_OPEN;
+		mutex_unlock(&rx_chan->lock);
 	}
-	mutex_unlock(&rx_chan->lock);
 exit:
 	return res;
 }
@@ -1036,7 +1037,6 @@ static int mboxtest_prepare(struct mboxtest_data *mboxtest)
 	registration_done = true;
 	return 0;
 err:
-	kfree(mboxtest);
 	return err;
 }
 
