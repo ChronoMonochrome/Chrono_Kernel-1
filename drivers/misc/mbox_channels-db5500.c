@@ -52,10 +52,7 @@
 #define GET_SEQ_NUMBER(mbox_msg)		(((mbox_msg) >> 24)
 
 /* Number of buffers */
-#define NUM_DSP_BUFFER	3
-
-/* circular buffer indicator */
-static int buffer_index;
+#define NUM_DSP_BUFFER	4
 
 enum mbox_msg{
 	MBOX_CLOSE,
@@ -140,7 +137,22 @@ struct rx_channel {
 	u8			length;
 };
 
-/* This structure holds status of mbox channel - common for tx and rx */
+/**
+ * struct channel_status - status of mbox channel - common for tx and rx
+ * @list :		holds list of channels registered
+ * @channel :		holds channel number
+ * @state :		holds state of channel
+ * @cb:			holds callback function forr rx channel
+ * @with_ack :		holds if ack is needed
+ * @rx:			holds pointer to rx_channel
+ * @tx :		holds pointer to tx_channel
+ * @receive_wq :	holds pointer to receive workqueue_struct
+ * @cast_wq :		holds pointer to cast workqueue_struct
+ * @open_msg:		holds work_struct for open msg
+ * @receive_msg :	holds work_struct for receive msg
+ * @cast_msg:		holds work_struct for cast msg
+ * @lock:		holds lock for channel
+ */
 struct channel_status {
 	struct list_head	list;
 	u16			channel;
@@ -151,8 +163,10 @@ struct channel_status {
 	bool			with_ack;
 	struct rx_channel	rx;
 	struct tx_channel	tx;
-	struct work_struct	receive_msg;
+	struct workqueue_struct	*receive_wq;
+	struct workqueue_struct	*cast_wq;
 	struct work_struct	open_msg;
+	struct work_struct	receive_msg;
 	struct work_struct	cast_msg;
 	struct mutex		lock;
 };
@@ -318,7 +332,8 @@ static int send_pdu(struct channel_status *chan_status, int command,
 						chan_status->priv);
 			else
 				dev_err(&channels.pdev->dev,
-					"%s no callback provided\n", __func__);
+					"%s no callback provided:header 0x%x\n",
+					__func__, header);
 
 			/* Increment sequence number */
 			chan_status->seq_number++;
@@ -351,15 +366,12 @@ void mbox_handle_receive_msg(struct work_struct *work)
 	/* Call client's callback and reset state */
 	if (rx_chan->cb) {
 		static int rx_pending_count;
-
+		rx_chan->cb(rx_pending[rx_pending_count].buffer,
+				rx_pending[rx_pending_count].length,
+				rx_pending[rx_pending_count].priv);
+		rx_pending_count++;
 		if (rx_pending_count == NUM_DSP_BUFFER)
 			rx_pending_count = 0;
-		else
-			rx_pending_count++;
-	rx_chan->cb(rx_pending[rx_pending_count].buffer,
-			rx_pending[rx_pending_count].length,
-			rx_pending[rx_pending_count].priv);
-		buffer_index--;
 	} else {
 		dev_err(&channels.pdev->dev,
 				"%s no callback provided\n", __func__);
@@ -392,35 +404,16 @@ void mbox_handle_cast_msg(struct work_struct *work)
 	}
 }
 
-static bool handle_receive_msg(u32 mbox_msg, struct list_head *rx_list)
+static bool handle_receive_msg(u32 mbox_msg, struct channel_status *rx_chan)
 {
-	struct list_head *pos;
-	struct channel_status *tmp;
 	int i;
 	static int rx_pending_count;
-	struct channel_status *rx_chan = NULL;
-	struct mbox_unit_status *mbox_unit = container_of(rx_list,
-			struct mbox_unit_status,
-			rx_chans);
-	spin_lock(&mbox_unit->rx_lock);
-	list_for_each(pos, rx_list) {
-		tmp = list_entry(pos, struct channel_status, list);
-		if (tmp->state == MBOX_SEND ||
-				tmp->state == MBOX_CAST)
-			/* Received message is payload */
-			rx_chan = tmp;
-	}
-	/* Received message is header */
-	spin_unlock(&mbox_unit->rx_lock);
+
 	if (rx_chan) {
 		/* Store received data in RX channel buffer */
 		rx_chan->rx.buffer[rx_chan->rx.index++] = mbox_msg;
 		/* Check if it's last data of PDU */
 		if (rx_chan->rx.index == rx_chan->rx.length) {
-			if (rx_pending_count == NUM_DSP_BUFFER)
-				rx_pending_count = 0;
-			else
-				rx_pending_count++;
 			for (i = 0; i < MAILBOX_NR_OF_DATAWORDS; i++) {
 				rx_pending[rx_pending_count].buffer[i] =
 					rx_chan->rx.buffer[i];
@@ -432,11 +425,11 @@ static bool handle_receive_msg(u32 mbox_msg, struct list_head *rx_list)
 			rx_chan->rx.length = 0;
 			rx_chan->state = MBOX_OPEN;
 			rx_chan->seq_number++;
-			buffer_index++;
-			if (buffer_index >= NUM_DSP_BUFFER)
-				dev_err(&channels.pdev->dev,
-					"rxbuf overflow%d\n", buffer_index);
-			schedule_work(&rx_chan->receive_msg);
+			rx_pending_count++;
+			if (rx_pending_count == NUM_DSP_BUFFER)
+				rx_pending_count = 0;
+			queue_work(rx_chan->receive_wq,
+			&rx_chan->receive_msg);
 		}
 		dev_dbg(&channels.pdev->dev, "%s OK\n", __func__);
 		return true;
@@ -453,7 +446,7 @@ static void handle_open_msg(u16 channel, u8 mbox_id)
 	channel = get_tx_channel(channel);
 	dev_dbg(&channels.pdev->dev, "%s mbox_id %d\tchannel %x\n",
 			__func__, mbox_id, channel);
-	/* Get TX channesenx for given mbox unit */
+	/* Get TX channel for given mbox unit */
 	tx_list = get_tx_list(mbox_id);
 	if (tx_list == NULL) {
 		dev_err(&channels.pdev->dev, "given mbox id is not valid %d\n",
@@ -497,25 +490,10 @@ static void handle_open_msg(u16 channel, u8 mbox_id)
 	}
 }
 
-static void handle_cast_msg(u16 channel, struct list_head *rx_list,
+static void handle_cast_msg(u16 channel, struct channel_status *rx_chan,
 						u32 mbox_msg, bool send)
 {
-	struct list_head *pos;
-	struct channel_status *tmp;
-	struct channel_status *rx_chan = NULL;
-	struct mbox_unit_status *mbox_unit = container_of(rx_list,
-						struct mbox_unit_status,
-							 rx_chans);
 	dev_dbg(&channels.pdev->dev, " %s\n", __func__);
-	/* Search for channel in rx list */
-	spin_lock(&mbox_unit->rx_lock);
-	list_for_each(pos, rx_list) {
-		tmp = list_entry(pos, struct channel_status, list);
-		if (tmp->channel == channel)
-			rx_chan = tmp;
-	}
-	spin_unlock(&mbox_unit->rx_lock);
-
 	if (rx_chan) {
 		rx_chan->rx.buffer[0] = mbox_msg;
 		rx_chan->with_ack = send;
@@ -525,7 +503,8 @@ static void handle_cast_msg(u16 channel, struct list_head *rx_list,
 			rx_chan->rx.index = 0;
 			rx_chan->state = MBOX_CAST;
 		}
-		schedule_work(&rx_chan->cast_msg);
+		queue_work(rx_chan->cast_wq,
+			&rx_chan->cast_msg);
 	} else {
 		/* Channel not found, peer sent wrong message */
 		dev_err(&channels.pdev->dev, "channel %d doesn't exist\n",
@@ -543,6 +522,11 @@ static void mbox_cb(u32 mbox_msg, void *priv)
 	struct list_head *rx_list;
 	u8 type = GET_TYPE(mbox_msg);
 	u16 channel = GET_CHANNEL(mbox_msg);
+	struct mbox_unit_status *mbox_unit;
+	struct list_head *pos;
+	struct channel_status *tmp;
+	struct channel_status *rx_chan = NULL;
+	bool is_Payload = 0;
 
 	dev_dbg(&channels.pdev->dev, "%s type %d\t, mbox_msg %x\n",
 		       __func__, type, mbox_msg);
@@ -554,9 +538,31 @@ static void mbox_cb(u32 mbox_msg, void *priv)
 		return;
 	}
 
-	/* If received message is payload this function will take care of it */
-	if (handle_receive_msg(mbox_msg, rx_list))
-		return;
+	mbox_unit = container_of(rx_list, struct mbox_unit_status, rx_chans);
+	/* Search for channel in rx list */
+	spin_lock(&mbox_unit->rx_lock);
+	list_for_each(pos, rx_list) {
+		tmp = list_entry(pos, struct channel_status, list);
+		if (tmp->state == MBOX_SEND ||
+				tmp->state == MBOX_CAST) {
+			/* Received message is payload */
+			is_Payload = 1;
+			rx_chan = tmp;
+		} else
+		if (tmp->channel == channel)
+			rx_chan = tmp;
+	}
+	spin_unlock(&mbox_unit->rx_lock);
+	/* if callback is present for that RX channel */
+	if (rx_chan && rx_chan->cb) {
+		/* If received message is payload this
+		 * function will take care of it
+		 */
+		if ((is_Payload) && (handle_receive_msg(mbox_msg, rx_chan)))
+			return;
+	} else
+		dev_err(&channels.pdev->dev, "callback not present:msg 0x%x "
+				"rx_chan 0x%x\n", mbox_msg, (u32)rx_chan);
 
 	/* Received message is header as no RX channel is in SEND/CAST state */
 	switch (type) {
@@ -567,10 +573,14 @@ static void mbox_cb(u32 mbox_msg, void *priv)
 		handle_open_msg(channel, mbox_id);
 		break;
 	case MBOX_SEND:
-		handle_cast_msg(channel, rx_list, mbox_msg, true);
+		/* if callback is present for that RX channel */
+		if (rx_chan && rx_chan->cb)
+			handle_cast_msg(channel, rx_chan, mbox_msg, true);
 		break;
 	case MBOX_CAST:
-		handle_cast_msg(channel, rx_list, mbox_msg, false);
+		/* if callback is present for that RX channel */
+		if (rx_chan && rx_chan->cb)
+			handle_cast_msg(channel, rx_chan, mbox_msg, false);
 		break;
 	case MBOX_ACK:
 	case MBOX_NAK:
@@ -598,10 +608,10 @@ int mbox_channel_register(u16 channel, mbox_channel_cb_t *cb, void *priv)
 	struct mbox_unit_status *mbox_unit;
 
 	dev_dbg(&channels.pdev->dev, " %s channel = %d\n", __func__, channel);
-	/* Closing of channels is not implemented */
+	/* Check for callback fcn */
 	if (cb == NULL) {
 		dev_err(&channels.pdev->dev,
-			"channel close is not implemented\n");
+			"channel callback missing:channel %d\n", channel);
 		res = -EINVAL;
 		goto exit;
 	}
@@ -654,6 +664,18 @@ int mbox_channel_register(u16 channel, mbox_channel_cb_t *cb, void *priv)
 	rx_chan->seq_number = CHANNEL_START_SEQUENCE_NUMBER;
 	mutex_init(&rx_chan->lock);
 	INIT_LIST_HEAD(&rx_chan->rx.pending);
+	rx_chan->cast_wq = create_singlethread_workqueue("mbox_cast_msg");
+	if (!rx_chan->cast_wq) {
+		dev_err(&channels.pdev->dev, "failed to create work queue\n");
+		res = -ENOMEM;
+		goto error_cast_wq;
+	}
+	rx_chan->receive_wq = create_singlethread_workqueue("mbox_receive_msg");
+	if (!rx_chan->receive_wq) {
+		dev_err(&channels.pdev->dev, "failed to create work queue\n");
+		res = -ENOMEM;
+		goto error_recv_wq;
+	}
 	INIT_WORK(&rx_chan->open_msg, mbox_handle_open_msg);
 	INIT_WORK(&rx_chan->cast_msg, mbox_handle_cast_msg);
 	INIT_WORK(&rx_chan->receive_msg, mbox_handle_receive_msg);
@@ -669,16 +691,78 @@ int mbox_channel_register(u16 channel, mbox_channel_cb_t *cb, void *priv)
 		list_del(&rx_chan->list);
 		spin_unlock(&mbox_unit->rx_lock);
 		mutex_unlock(&rx_chan->lock);
-		kfree(rx_chan);
+		goto error_send_pdu;
 	} else {
 		rx_chan->seq_number++;
 		rx_chan->state = MBOX_OPEN;
 		mutex_unlock(&rx_chan->lock);
+		return res;
 	}
+error_send_pdu:
+	flush_workqueue(rx_chan->receive_wq);
+error_recv_wq:
+	flush_workqueue(rx_chan->cast_wq);
+error_cast_wq:
+	kfree(rx_chan);
 exit:
 	return res;
 }
 EXPORT_SYMBOL(mbox_channel_register);
+
+/**
+ * mbox_channel_deregister() - DeRegisters for a channel
+ * @channel:	Channel Number.
+ *
+ * This routine is used to deregister for a logical channel.
+ * It first does sanity check on the requested channel availability
+ * and parameters. Then it deletes the channel
+ */
+int mbox_channel_deregister(u16 channel)
+{
+	struct channel_status *rx_chan = NULL;
+	struct list_head *pos, *rx_list;
+	int res = 0;
+	struct mbox_unit_status *mbox_unit;
+
+	dev_dbg(&channels.pdev->dev, " %s channel = %d\n", __func__, channel);
+	/* Check if provided channel number is valid */
+	if (!check_channel(channel, MBOX_RX)) {
+		dev_err(&channels.pdev->dev, "wrong mbox channel number %d\n",
+			channel);
+		res = -EINVAL;
+		goto exit;
+	}
+
+	rx_list = get_rx_list(get_mbox_id(channel));
+	if (rx_list == NULL) {
+		dev_err(&channels.pdev->dev, "given mbox id is not valid\n");
+		res = -EINVAL;
+		goto exit;
+	}
+
+	mbox_unit = container_of(rx_list, struct mbox_unit_status, rx_chans);
+
+	/* Check if channel is already registered */
+	spin_lock(&mbox_unit->rx_lock);
+	list_for_each(pos, rx_list) {
+		rx_chan = list_entry(pos, struct channel_status, list);
+
+		if (rx_chan->channel == channel) {
+			dev_dbg(&channels.pdev->dev,
+				"channel found\n");
+			rx_chan->cb = NULL;
+		}
+	}
+	list_del(&rx_chan->list);
+	spin_unlock(&mbox_unit->rx_lock);
+	flush_workqueue(rx_chan->cast_wq);
+	flush_workqueue(rx_chan->receive_wq);
+	kfree(rx_chan);
+
+exit:
+	return res;
+}
+EXPORT_SYMBOL(mbox_channel_deregister);
 
 /**
  * mbox_channel_send() - Send messages
