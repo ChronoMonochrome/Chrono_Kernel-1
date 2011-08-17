@@ -333,6 +333,11 @@ struct cw1200_common;
 #define WSM_RCPI_RSSI_DONT_USE_UPPER	(BIT(2))
 #define WSM_RCPI_RSSI_DONT_USE_LOWER	(BIT(3))
 
+/* Update-ie constants */
+#define WSM_UPDATE_IE_BEACON		(BIT(0))
+#define WSM_UPDATE_IE_PROBE_RESP	(BIT(1))
+#define WSM_UPDATE_IE_PROBE_REQ		(BIT(2))
+
 /* WSM events */
 /* Error */
 #define WSM_EVENT_ERROR			(0)
@@ -1168,7 +1173,17 @@ struct wsm_suspend_resume {
 typedef void (*wsm_suspend_resume_cb) (struct cw1200_common *priv,
 				       struct wsm_suspend_resume *arg);
 
-/* 3.53 Update-IE request: Not implemented: not relevant. */
+/* 3.54 Update-IE request. */
+struct wsm_update_ie {
+	/* WSM_UPDATE_IE_... */
+	/* [in] */ u16 what;
+	/* [in] */ u16 count;
+	/* [in] */ u8 *ies;
+	/* [in] */ size_t length;
+};
+
+int wsm_update_ie(struct cw1200_common *priv,
+		  const struct wsm_update_ie *arg);
 
 /* 3.56 */
 struct wsm_map_link {

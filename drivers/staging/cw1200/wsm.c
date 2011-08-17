@@ -768,6 +768,30 @@ nomem:
 	return -ENOMEM;
 }
 
+/* ******************************************************************** */
+
+int wsm_update_ie(struct cw1200_common *priv,
+		  const struct wsm_update_ie *arg)
+{
+	int ret;
+	struct wsm_buf *buf = &priv->wsm_cmd_buf;
+
+	wsm_cmd_lock(priv);
+
+	WSM_PUT16(buf, arg->what);
+	WSM_PUT16(buf, arg->count);
+	WSM_PUT(buf, arg->ies, arg->length);
+
+	ret = wsm_cmd_send(priv, buf, NULL, 0x001B, WSM_CMD_TIMEOUT);
+
+	wsm_cmd_unlock(priv);
+	return ret;
+
+nomem:
+	wsm_cmd_unlock(priv);
+	return -ENOMEM;
+
+}
 
 /* ******************************************************************** */
 /* WSM indication events implementation					*/
@@ -1122,7 +1146,7 @@ int wsm_handle_exception(struct cw1200_common *priv, u8 *data, size_t len)
 	else
 		wiphy_err(priv->hw->wiphy,
 			"Firmware assert at %.*s, line %d\n",
-			sizeof(fname), fname, reg[0]);
+			sizeof(fname), fname, reg[1]);
 
 	for (i = 0; i < 12; i += 4)
 		wiphy_err(priv->hw->wiphy,
@@ -1225,6 +1249,7 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 		case 0x0418: /* beacon_transmit */
 		case 0x0419: /* start_find */
 		case 0x041A: /* stop_find */
+		case 0x041B: /* update_ie */
 		case 0x041C: /* map_link */
 			WARN_ON(wsm_arg != NULL);
 			ret = wsm_generic_confirm(priv, wsm_arg, &wsm_buf);

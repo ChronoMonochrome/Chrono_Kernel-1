@@ -115,34 +115,38 @@ void cw1200_sta_notify(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
 
 static int cw1200_set_tim_impl(struct cw1200_common *priv, bool aid0_bit_set)
 {
-	struct wsm_template_frame frame = {
-		.frame_type = WSM_FRAME_TYPE_BEACON,
+	struct sk_buff *skb;
+	struct wsm_update_ie update_ie = {
+		.what = WSM_UPDATE_IE_BEACON,
+		.count = 1,
 	};
 	u16 tim_offset, tim_length;
 
 	ap_printk(KERN_DEBUG "[AP] %s mcast: %s.\n",
 		__func__, aid0_bit_set ? "ena" : "dis");
 
-	frame.skb = ieee80211_beacon_get_tim(priv->hw, priv->vif,
+	skb = ieee80211_beacon_get_tim(priv->hw, priv->vif,
 			&tim_offset, &tim_length);
-	if (WARN_ON(!frame.skb))
+	if (WARN_ON(!skb))
 		return -ENOMEM;
 
 	if (tim_offset && tim_length >= 6) {
 		/* Ignore DTIM count from mac80211:
 		 * firmware handles DTIM internally. */
-		frame.skb->data[tim_offset + 2] = 0;
+		skb->data[tim_offset + 2] = 0;
 
 		/* Set/reset aid0 bit */
 		if (aid0_bit_set)
-			frame.skb->data[tim_offset + 4] |= 1;
+			skb->data[tim_offset + 4] |= 1;
 		else
-			frame.skb->data[tim_offset + 4] &= ~1;
+			skb->data[tim_offset + 4] &= ~1;
 	}
 
-	WARN_ON(wsm_set_template_frame(priv, &frame));
+	update_ie.ies = &skb->data[tim_offset];
+	update_ie.length = tim_length;
+	WARN_ON(wsm_update_ie(priv, &update_ie));
 
-	dev_kfree_skb(frame.skb);
+	dev_kfree_skb(skb);
 
 	return 0;
 }
@@ -661,7 +665,7 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 		ret = WARN_ON(cw1200_upload_keys(priv));
 	if (!ret) {
 		WARN_ON(wsm_set_block_ack_policy(priv,
-			priv->ba_tid_mask, priv->ba_tid_mask));
+			0, 0));
 		priv->join_status = CW1200_JOIN_STATUS_AP;
 		cw1200_update_filtering(priv);
 	}
