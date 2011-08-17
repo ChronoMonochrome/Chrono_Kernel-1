@@ -35,26 +35,26 @@
 
 #define WSM_SKIP(buf, size)						\
 	do {								\
-		if (unlikely(buf->data + size > buf->end))		\
+		if (unlikely((buf)->data + size > (buf)->end))		\
 			goto underflow;					\
-		buf->data += size;					\
+		(buf)->data += size;					\
 	} while (0)
 
 #define WSM_GET(buf, ptr, size)						\
 	do {								\
-		if (unlikely(buf->data + size > buf->end))		\
+		if (unlikely((buf)->data + size > (buf)->end))		\
 			goto underflow;					\
-		memcpy(ptr, buf->data, size);				\
-		buf->data += size;					\
+		memcpy(ptr, (buf)->data, size);				\
+		(buf)->data += size;					\
 	} while (0)
 
 #define __WSM_GET(buf, type, cvt)					\
 	({								\
 		type val;						\
-		if (unlikely(buf->data + sizeof(type) > buf->end))	\
+		if (unlikely((buf)->data + sizeof(type) > (buf)->end))	\
 			goto underflow;					\
-		val = cvt(*(type *)buf->data);				\
-		buf->data += sizeof(type);				\
+		val = cvt(*(type *)(buf)->data);			\
+		(buf)->data += sizeof(type);				\
 		val;							\
 	})
 
@@ -64,20 +64,20 @@
 
 #define WSM_PUT(buf, ptr, size)						\
 	do {								\
-		if (unlikely(buf->data + size > buf->end))		\
-			if (unlikely(wsm_buf_reserve(buf, size)))	\
+		if (unlikely((buf)->data + size > (buf)->end))		\
+			if (unlikely(wsm_buf_reserve((buf), size)))	\
 				goto nomem;				\
-		memcpy(buf->data, ptr, size);				\
-		buf->data += size;					\
+		memcpy((buf)->data, ptr, size);				\
+		(buf)->data += size;					\
 	} while (0)
 
-#define __WSM_PUT(buf, val, type, cvt)					  \
-	do {								  \
-		if (unlikely(buf->data + sizeof(type) > buf->end))	  \
-			if (unlikely(wsm_buf_reserve(buf, sizeof(type)))) \
-				goto nomem;				  \
-		*(type *)buf->data = cvt(val);				  \
-		buf->data += sizeof(type);				  \
+#define __WSM_PUT(buf, val, type, cvt)					\
+	do {								\
+		if (unlikely((buf)->data + sizeof(type) > (buf)->end))	\
+			if (unlikely(wsm_buf_reserve((buf), sizeof(type)))) \
+				goto nomem;				\
+		*(type *)(buf)->data = cvt(val);			\
+		(buf)->data += sizeof(type);				\
 	} while (0)
 
 #define WSM_PUT8(buf, val)  __WSM_PUT(buf, val, u8, (u8))
@@ -1094,8 +1094,59 @@ void wsm_unlock_tx(struct cw1200_common *priv)
 
 int wsm_handle_exception(struct cw1200_common *priv, u8 *data, size_t len)
 {
-	STUB();
+	struct wsm_buf buf;
+	u32 reason;
+	u32 reg[18];
+	char fname[48];
+	size_t i;
+
+	static const char *reason_str[] = {
+		"undefined instruction",
+		"prefetch abort",
+		"data abort",
+		"unknown error",
+	};
+
+	buf.begin = buf.data = data;
+	buf.end = &buf.begin[len];
+
+	reason = WSM_GET32(&buf);
+	for (i = 0; i < ARRAY_SIZE(reg); ++i)
+		reg[i] = WSM_GET32(&buf);
+	WSM_GET(&buf, fname, sizeof(fname));
+
+	if (reason < 4)
+		wiphy_err(priv->hw->wiphy,
+			"Firmware exception: %s.\n",
+			reason_str[reason]);
+	else
+		wiphy_err(priv->hw->wiphy,
+			"Firmware assert at %.*s, line %d\n",
+			sizeof(fname), fname, reg[0]);
+
+	for (i = 0; i < 12; i += 4)
+		wiphy_err(priv->hw->wiphy,
+			"R%d: 0x%.8X, R%d: 0x%.8X, R%d: 0x%.8X, R%d: 0x%.8X,\n",
+			i + 0, reg[i + 0], i + 1, reg[i + 1],
+			i + 2, reg[i + 2], i + 3, reg[i + 3]);
+	wiphy_err(priv->hw->wiphy,
+		"R12: 0x%.8X, SP: 0x%.8X, LR: 0x%.8X, PC: 0x%.8X,\n",
+		reg[i + 0], reg[i + 1], reg[i + 2], reg[i + 3]);
+	i += 4;
+	wiphy_err(priv->hw->wiphy,
+		"CPSR: 0x%.8X, SPSR: 0x%.8X\n",
+		reg[i + 0], reg[i + 1]);
+
+	print_hex_dump_bytes("R1: ", DUMP_PREFIX_NONE,
+		fname, sizeof(fname));
 	return 0;
+
+underflow:
+	wiphy_err(priv->hw->wiphy,
+		"Firmware exception.\n");
+	print_hex_dump_bytes("Exception: ", DUMP_PREFIX_NONE,
+		data, len);
+        return -EINVAL;
 }
 
 int wsm_handle_rx(struct cw1200_common *priv, int id,
