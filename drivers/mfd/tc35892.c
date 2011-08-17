@@ -170,8 +170,8 @@ static void tc35892_irq_dummy(unsigned int irq)
 
 static struct irq_chip tc35892_irq_chip = {
 	.name	= "tc35892",
-	.mask	= tc35892_irq_dummy,
-	.unmask	= tc35892_irq_dummy,
+	.irq_mask	= tc35892_irq_dummy,
+	.irq_unmask	= tc35892_irq_dummy,
 };
 
 static int tc35892_irq_init(struct tc35892 *tc35892)
@@ -180,10 +180,10 @@ static int tc35892_irq_init(struct tc35892 *tc35892)
 	int irq;
 
 	for (irq = base; irq < base + TC35892_NR_INTERNAL_IRQS; irq++) {
-		set_irq_chip_data(irq, tc35892);
-		set_irq_chip_and_handler(irq, &tc35892_irq_chip,
+		irq_set_chip_data(irq, tc35892);
+		irq_set_chip_and_handler(irq, &tc35892_irq_chip,
 					 handle_edge_irq);
-		set_irq_nested_thread(irq, 1);
+		irq_set_nested_thread(irq, 1);
 #ifdef CONFIG_ARM
 		set_irq_flags(irq, IRQF_VALID);
 #else
@@ -203,8 +203,8 @@ static void tc35892_irq_remove(struct tc35892 *tc35892)
 #ifdef CONFIG_ARM
 		set_irq_flags(irq, 0);
 #endif
-		set_irq_chip_and_handler(irq, NULL, NULL);
-		set_irq_chip_data(irq, NULL);
+		irq_set_chip_and_handler(irq, NULL, NULL);
+		irq_set_chip_data(irq, NULL);
 	}
 }
 
