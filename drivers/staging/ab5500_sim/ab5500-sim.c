@@ -230,14 +230,16 @@ static int __devinit ab5500_sim_probe(struct platform_device *pdev)
 	int irq;
 	struct ab5500_sim *di =
 		kzalloc(sizeof(struct ab5500_sim), GFP_KERNEL);
-	if (!di)
-		return -ENOMEM;
-
+	if (!di) {
+		ret = -ENOMEM;
+		goto error_alloc;
+	}
 	dev_info(&pdev->dev, "ab5500_sim_driver PROBE\n");
 	irq = platform_get_irq_byname(pdev, "SIMOFF");
 	if (irq < 0) {
 		dev_err(&pdev->dev, "Get irq by name failed\n");
-		return irq;
+		ret = irq;
+		goto exit;
 	}
 	di->irq_base = irq;
 	di->dev = &pdev->dev;
@@ -246,13 +248,14 @@ static int __devinit ab5500_sim_probe(struct platform_device *pdev)
 	/* sysfs interface to configure sim reg from user space */
 	if (sysfs_create_group(&pdev->dev.kobj, &ab5500sim_attr_grp) < 0) {
 		dev_err(&pdev->dev, " Failed creating sysfs group\n");
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto error_sysfs;
 	}
 	ret = request_threaded_irq(irq, NULL, ab5500_sim_irq_handler,
 			IRQF_NO_SUSPEND , "ab5500-sim", pdev);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Request threaded irq failed (%d)\n", ret);
-		goto exit;
+		goto error_irq;
 	}
 	/* this is the contiguous irq for sim removal,falling edge */
 	irq = irq + 1;
@@ -261,13 +264,16 @@ static int __devinit ab5500_sim_probe(struct platform_device *pdev)
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Request threaded irq failed (%d)\n", ret);
 		free_irq(--irq, di);
-		goto exit;
+		goto error_irq;
 	}
 	return ret;
-exit:
+error_irq:
 	sysfs_remove_group(&pdev->dev.kobj, &ab5500sim_attr_grp);
+error_sysfs:
 	platform_set_drvdata(pdev, NULL);
+exit:
 	kfree(di);
+error_alloc:
 	return ret;
 }
 
