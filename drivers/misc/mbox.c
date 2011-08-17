@@ -69,8 +69,9 @@ static struct mbox *get_mbox_with_id(u8 id)
 int mbox_send(struct mbox *mbox, u32 mbox_msg, bool block)
 {
 	int res = 0;
+	unsigned long flag;
 
-	spin_lock(&mbox->lock);
+	spin_lock_irqsave(&mbox->lock, flag);
 
 	dev_dbg(&(mbox->pdev->dev),
 		"About to buffer 0x%X to mailbox 0x%X."
@@ -87,14 +88,14 @@ int mbox_send(struct mbox *mbox, u32 mbox_msg, bool block)
 			res = -ENOMEM;
 			goto exit;
 		}
-		spin_unlock(&mbox->lock);
+		spin_unlock_irqrestore(&mbox->lock, flag);
 		dev_dbg(&(mbox->pdev->dev),
 			"Buffer full in blocking call! Sleeping...\n");
 		mbox->client_blocked = 1;
 		wait_for_completion(&mbox->buffer_available);
 		dev_dbg(&(mbox->pdev->dev),
 			"Blocking send was woken up! Trying again...\n");
-		spin_lock(&mbox->lock);
+		spin_lock_irqsave(&mbox->lock, flag);
 	}
 
 	mbox->buffer[mbox->write_index] = mbox_msg;
@@ -107,7 +108,7 @@ int mbox_send(struct mbox *mbox, u32 mbox_msg, bool block)
 	writel(MBOX_ENABLE_IRQ, mbox->virtbase_peer + MBOX_FIFO_THRES_FREE);
 
 exit:
-	spin_unlock(&mbox->lock);
+	spin_unlock_irqrestore(&mbox->lock, flag);
 	return res;
 }
 EXPORT_SYMBOL(mbox_send);
@@ -462,7 +463,9 @@ struct mbox *mbox_setup(u8 mbox_id, mbox_recv_cb_t *mbox_cb, void *priv)
 	}
 
 	dev_dbg(&(mbox->pdev->dev), "Allocating irq %d...\n", irq);
-	res = request_irq(irq, mbox_irq, 0, mbox->name, (void *) mbox);
+	res = request_threaded_irq(irq, NULL, mbox_irq,
+			IRQF_NO_SUSPEND | IRQF_ONESHOT,
+			mbox->name, (void *) mbox);
 	if (res < 0) {
 		dev_err(&(mbox->pdev->dev),
 			"Unable to allocate mbox irq %d\n", irq);
