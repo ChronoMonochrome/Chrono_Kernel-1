@@ -414,6 +414,7 @@ struct ab8500_bm_data ab8500_bm_data = {
 	.interval_charging	= 5,
 	.interval_not_charging	= 120,
 	.temp_hysteresis	= 3,
+	.gnd_lift_resistance	= 34,
 	.maxi			= &maxi_params,
 	.chg_params		= &chg,
 	.fg_params		= &fg,
