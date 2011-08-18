@@ -23,6 +23,7 @@ struct cw1200_suspend_state {
 	unsigned long bss_loss_tmo;
 	unsigned long connection_loss_tmo;
 	unsigned long join_tmo;
+	unsigned long direct_probe;
 };
 
 static struct dev_pm_ops cw1200_pm_ops = {
@@ -165,24 +166,45 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 		return -EAGAIN;
 #endif
 
-	/* Ensure pending operations are done. */
-	ret = wait_event_interruptible_timeout(
-		priv->channel_switch_done,
-		!priv->channel_switch_in_progress, 3 * HZ);
-	if (WARN_ON(!ret))
-		return -ETIMEDOUT;
-	else if (WARN_ON(ret < 0))
-		return ret;
+	/* Make sure there is no configuration requests in progress. */
+	if (!mutex_trylock(&priv->conf_mutex))
+		return -EBUSY;
 
-	/* Flush and lock TX. */
-	ret = __cw1200_flush(priv, false);
-	if (WARN_ON(ret < 0))
-		return ret;
+	/* Ensure pending operations are done.
+	 * Note also that wow_suspend must return in ~2.5sec, before
+	 * watchdog is triggered. */
+	if (priv->channel_switch_in_progress) {
+		mutex_unlock(&priv->conf_mutex);
+		return -EBUSY;
+	}
+
+	/* Do not suspend when join work is scheduled */
+	if (work_pending(&priv->join_work)) {
+		mutex_unlock(&priv->conf_mutex);
+		return -EBUSY;
+	}
+
+	/* Do not suspend when scanning */
+	if (down_trylock(&priv->scan.lock)) {
+		mutex_unlock(&priv->conf_mutex);
+		return -EBUSY;
+	}
+
+	/* Lock TX. */
+	wsm_lock_tx_async(priv);
+	if (priv->hw_bufs_used) {
+		wsm_unlock_tx(priv);
+		up(&priv->scan.lock);
+		mutex_unlock(&priv->conf_mutex);
+		return -EBUSY;
+	}
 
 	/* Allocate state */
 	state = kzalloc(sizeof(struct cw1200_suspend_state), GFP_KERNEL);
 	if (!state) {
 		wsm_unlock_tx(priv);
+		up(&priv->scan.lock);
+		mutex_unlock(&priv->conf_mutex);
 		return -ENOMEM;
 	}
 
@@ -193,9 +215,8 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 		cw1200_suspend_work(&priv->connection_loss_work);
 	state->join_tmo =
 		cw1200_suspend_work(&priv->join_timeout);
-
-	/* Flush workqueue */
-	flush_workqueue(priv->workqueue);
+	state->direct_probe =
+		cw1200_suspend_work(&priv->scan.probe_work);
 
 	/* Stop serving thread */
 	cw1200_bh_suspend(priv);
@@ -244,9 +265,17 @@ int cw1200_wow_resume(struct ieee80211_hw *hw)
 			state->connection_loss_tmo);
 	cw1200_resume_work(priv, &priv->join_timeout,
 			state->join_tmo);
+	cw1200_resume_work(priv, &priv->scan.probe_work,
+			state->direct_probe);
 
 	/* Unlock datapath */
 	wsm_unlock_tx(priv);
+
+	/* Unlock scan */
+	up(&priv->scan.lock);
+
+	/* Unlock configuration mutex */
+	mutex_unlock(&priv->conf_mutex);
 
 	/* Free memory */
 	kfree(state);

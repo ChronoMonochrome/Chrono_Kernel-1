@@ -13,6 +13,7 @@
 #include "cw1200.h"
 #include "scan.h"
 #include "sta.h"
+#include "pm.h"
 
 static void cw1200_scan_restart_delayed(struct cw1200_common *priv);
 
@@ -25,6 +26,7 @@ static int cw1200_scan_start(struct cw1200_common *priv, struct wsm_scan *scan)
 		tmo += scan->ch[i].maxChannelTime + 10;
 
 	atomic_set(&priv->scan.in_progress, 1);
+	cw1200_pm_stay_awake(&priv->pm_state, tmo * HZ / 1000);
 	queue_delayed_work(priv->workqueue, &priv->scan.timeout,
 		tmo * HZ / 1000);
 	ret = wsm_scan(priv, scan);

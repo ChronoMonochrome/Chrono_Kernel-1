@@ -539,6 +539,13 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 		if (arg->stop) {
 			priv->tx_multicast = false;
 		} else {
+			/* Firmware sends this indication every DTIM if there
+			 * is a STA in powersave connected. There is no reason
+			 * to suspend, following wakeup will consume much more
+			 * power than could be saved. */
+			cw1200_pm_stay_awake(&priv->pm_state,
+					priv->join_dtim_period *
+					(priv->beacon_int + 20) * HZ / 1024);
 			priv->tx_multicast = priv->aid0_bit_set &&
 					priv->buffered_multicasts;
 			if (priv->tx_multicast)
@@ -652,6 +659,7 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 		.ssidLength = priv->ssid_length,
 	};
 	priv->beacon_int = conf->beacon_int;
+	priv->join_dtim_period = conf->dtim_period;
 
 	memcpy(&start.ssid[0], priv->ssid, start.ssidLength);
 
