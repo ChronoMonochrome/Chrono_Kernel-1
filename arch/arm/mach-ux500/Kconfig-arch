@@ -103,6 +103,12 @@ config DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
 	help
 	  Say yes to enable auto sync for primary display
 
+config DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
+	bool "Sony acx424akp DSI display"
+	select MCDE_DISPLAY_SONY_ACX424AKP_DSI
+	help
+	  Say yes here when using a sony acx424akp DSI display
+
 config SONY_SY35560_ENABLE_ESD_CHECK
 	bool "Enable esd status check for primary display"
 	depends on DISPLAY_SONY_SY35560_DSI_PRIMARY

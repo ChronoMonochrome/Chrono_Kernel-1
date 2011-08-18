@@ -14,6 +14,7 @@
 #include <asm/mach-types.h>
 #include <video/mcde_display.h>
 #include <video/mcde_display-generic_dsi.h>
+#include <video/mcde_display-sony_acx424akp_dsi.h>
 #include <video/mcde_display-av8100.h>
 #include <video/mcde_fb.h>
 #include <video/mcde_dss.h>
@@ -22,7 +23,8 @@
 #define DSI_UNIT_INTERVAL_2	0x5
 
 enum {
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
+		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
 	PRIMARY_DISPLAY_ID,
 #endif
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
@@ -138,6 +140,73 @@ struct mcde_display_device u5500_generic_display0 = {
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
 
+#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
+static struct mcde_port port1 = {
+	.type = MCDE_PORTTYPE_DSI,
+	.mode = MCDE_PORTMODE_CMD,
+	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
+	.ifc = DSI_VIDEO_MODE,
+	.link = 0,
+#if defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY) &&      \
+		defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
+	.sync_src = MCDE_SYNCSRC_OFF,
+	.update_auto_trig = true,
+#else
+	.sync_src = MCDE_SYNCSRC_BTA,
+	.update_auto_trig = false,
+#endif
+	.phy = {
+		.dsi = {
+			.virt_id = 0,
+			.num_data_lanes = 2,
+			.ui = DSI_UNIT_INTERVAL_0,
+			.clk_cont = false,
+			.data_lanes_swap = false,
+		},
+	},
+};
+
+struct mcde_display_sony_acx424akp_platform_data \
+			sony_acx424akp_display0_pdata = {
+	.reset_gpio = 226,
+	.reset_high = true,
+	.reset_delay = 11,
+	.reset_low_delay = 1,
+	.sleep_out_delay = 140,
+#ifdef CONFIG_REGULATOR
+	.regulator_id = "v-display",
+	.min_supply_voltage = 2800000, /* 2.8V */
+	.max_supply_voltage = 2800000 /* 2.8V */
+#endif
+};
+
+struct mcde_display_device sony_acx424akp_display0 = {
+	.name = "mcde_disp_sony_acx424akp",
+	.id = PRIMARY_DISPLAY_ID,
+	.port = &port1,
+	.chnl_id = MCDE_CHNL_A,
+	.fifo = MCDE_FIFO_A,
+#ifdef CONFIG_MCDE_DISPLAY_PRIMARY_16BPP
+	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
+#else
+	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
+#endif
+	.native_x_res = 480,
+	.native_y_res = 854,
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
+	.synchronized_update = true,
+#else
+	.synchronized_update = false,
+#endif
+	/* TODO: Remove rotation buffers once ESRAM driver is completed */
+	.rotbuf1 = U5500_ESRAM_BASE + 0x20000 * 2,
+	.rotbuf2 = U5500_ESRAM_BASE + 0x20000 * 2 + 0x10000,
+	.dev = {
+		.platform_data = &sony_acx424akp_display0_pdata,
+	},
+};
+#endif /* CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY */
+
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 static struct mcde_port port2 = {
 	.type = MCDE_PORTTYPE_DSI,
@@ -213,7 +282,11 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	u16 width, height;
 	u16 virtual_width, virtual_height;
 	u32 rotate = FB_ROTATE_UR;
+	u32 rotate_angle = 0;
 	struct fb_info *fbi;
+
+	struct mcde_display_sony_acx424akp_platform_data *pdata =
+					ddev->dev.platform_data;
 
 	if (event != MCDE_DSS_EVENT_DISPLAY_REGISTERED)
 		return 0;
@@ -223,9 +296,16 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
 
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
+	if (pdata->disp_panel == DISPLAY_SONY_ACX424AKP)
+		rotate_angle = 0;
+	else
+		rotate_angle = \
+			CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE;
+
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
+		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
 	if (ddev->id == PRIMARY_DISPLAY_ID) {
-		switch (CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) {
+		switch (rotate_angle) {
 		case 0:
 			rotate = FB_ROTATE_UR;
 			break;
@@ -247,7 +327,8 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	virtual_width = width;
 	virtual_height = height * 2;
 
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) &&	\
+#if (defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
+		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)) &&	\
 			defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
 	if (ddev->id == PRIMARY_DISPLAY_ID)
 		virtual_height = height;
@@ -298,8 +379,9 @@ static struct notifier_block display_nb = {
 * The main display will not be updated if startup graphics is displayed
 * from u-boot.
 */
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) &&	\
-			defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
+#if (defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
+		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY))  && \
+		defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
 static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	unsigned long event, void *data)
 {
@@ -402,11 +484,26 @@ int __init init_display_devices_u5500(void)
 		pr_warning("Failed to register dss notifier\n");
 
 #ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
-	if (display_initialized_during_boot)
-		u5500_generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
-	ret = mcde_display_device_register(&u5500_generic_display0);
-	if (ret)
-		pr_warning("Failed to register generic display device 0\n");
+	if (cpu_is_u5500v1()) {
+		if (display_initialized_during_boot)
+			generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
+		ret = mcde_display_device_register(&generic_display0);
+		if (ret)
+			pr_warning("Failed to register generic \
+							display device 0\n");
+	}
+#endif
+
+#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
+	if (cpu_is_u5500v2()) {
+		if (display_initialized_during_boot)
+			sony_acx424akp_display0.power_mode = \
+						 MCDE_DISPLAY_PM_STANDBY;
+		ret = mcde_display_device_register(&sony_acx424akp_display0);
+		if (ret)
+			pr_warning("Failed to register sony acx424akp \
+							display device 0\n");
+	}
 #endif
 
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
@@ -419,6 +516,87 @@ int __init init_display_devices_u5500(void)
 
 	return ret;
 }
+
+struct mcde_display_device *mcde_get_main_display(void)
+{
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
+		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
+	if (cpu_is_u5500v1())
+		return &generic_display0;
+	if (cpu_is_u5500v2())
+		return &sony_acx424akp_display0;
+#elif defined(CONFIG_DISPLAY_AV8100_TERTIARY)
+	return &av8100_hdmi;
+#else
+	return NULL;
+#endif
+}
+EXPORT_SYMBOL(mcde_get_main_display);
+
+void hdmi_fb_onoff(struct mcde_display_device *ddev,
+		bool enable, u8 cea, u8 vesa_cea_nr)
+{
+	u16 w, h;
+	u16 vw, vh;
+	u32 rotate = FB_ROTATE_UR;
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+	dev_dbg(&ddev->dev, "en:%d cea:%d nr:%d\n", enable, cea, vesa_cea_nr);
+
+	if (enable) {
+		struct fb_info *fbi;
+		if (ddev->enabled) {
+			dev_dbg(&ddev->dev, "Display is already enabled.\n");
+			return;
+		}
+
+		/* Create fb */
+		if (ddev->fbi == NULL) {
+#ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
+			int buffering = 3;
+#else
+			int buffering = 2;
+#endif
+
+			/* Get default values */
+			mcde_dss_get_native_resolution(ddev, &w, &h);
+			vw = w;
+			vh = h * buffering;
+
+			if (vesa_cea_nr != 0)
+				ddev->ceanr_convert(ddev, cea, vesa_cea_nr,
+						buffering, &w, &h, &vw, &vh);
+
+			fbi = mcde_fb_create(ddev, w, h, vw, vh,
+				ddev->default_pixel_format, rotate);
+
+			if (IS_ERR(fbi)) {
+				dev_warn(&ddev->dev,
+					"Failed to create fb for display %s\n",
+							ddev->name);
+				goto hdmi_fb_onoff_end;
+			} else {
+				dev_info(&ddev->dev,
+					"Framebuffer created (%s)\n",
+							ddev->name);
+			}
+			driver_data->fbdevname = (char *)dev_name(fbi->dev);
+		}
+	} else {
+		if (!ddev->enabled) {
+			dev_dbg(&ddev->dev, "Display %s is already disabled.\n",
+					ddev->name);
+			return;
+		}
+
+		mcde_fb_destroy(ddev);
+	}
+
+hdmi_fb_onoff_end:
+	return;
+}
+EXPORT_SYMBOL(hdmi_fb_onoff);
 
 module_init(init_display_devices_u5500);
 #endif
