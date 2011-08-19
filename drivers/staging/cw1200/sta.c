@@ -1165,13 +1165,14 @@ void cw1200_unjoin_work(struct work_struct *work)
 	mutex_lock(&priv->conf_mutex);
 	if (unlikely(atomic_read(&priv->scan.in_progress))) {
 		if (priv->delayed_unjoin) {
-			wiphy_err(priv->hw->wiphy,
-				"%s: Unexpected: delayed unjoin "
+			wiphy_dbg(priv->hw->wiphy,
+				"%s: Delayed unjoin "
 				"is already scheduled.\n",
 				__func__);
-			BUG_ON(1);
+			wsm_unlock_tx(priv);
+		} else {
+			priv->delayed_unjoin = true;
 		}
-		priv->delayed_unjoin = true;
 		mutex_unlock(&priv->conf_mutex);
 		return;
 	}
