@@ -842,7 +842,7 @@ static int wsm_startup_indication(struct cw1200_common *priv,
 
 	priv->wsm_caps.firmwareReady = 1;
 
-	wake_up_interruptible(&priv->wsm_startup_done);
+	wake_up(&priv->wsm_startup_done);
 	return 0;
 
 underflow:
@@ -929,7 +929,7 @@ static int wsm_channel_switch_indication(struct cw1200_common *priv,
 	WARN_ON(WSM_GET32(buf));
 
 	priv->channel_switch_in_progress = 0;
-	wake_up_interruptible(&priv->channel_switch_done);
+	wake_up(&priv->channel_switch_done);
 
 	if (priv->wsm_cbc.channel_switch)
 		priv->wsm_cbc.channel_switch(priv);
@@ -1035,7 +1035,7 @@ int wsm_cmd_send(struct cw1200_common *priv,
 		do {
 			/* It's safe to use unprotected access to
 			 * wsm_cmd.done here */
-			ret = wait_event_interruptible_timeout(
+			ret = wait_event_timeout(
 					priv->wsm_cmd_wq,
 					priv->wsm_cmd.done, tmo);
 			rx_timestamp = jiffies - priv->rx_timestamp;
@@ -1059,7 +1059,7 @@ int wsm_cmd_send(struct cw1200_common *priv,
 			/* If wsm_handle_rx got stuck in _confirm we will hang
 			 * system there. It's better than silently currupt
 			 * stack or heap, isn't it? */
-			BUG_ON(wait_event_interruptible_timeout(
+			BUG_ON(wait_event_timeout(
 					priv->wsm_cmd_wq, priv->wsm_cmd.done,
 					WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
 		}
@@ -1081,7 +1081,7 @@ void wsm_lock_tx(struct cw1200_common *priv)
 {
 	wsm_cmd_lock(priv);
 	if (atomic_add_return(1, &priv->tx_lock) == 1) {
-		WARN_ON(wait_event_interruptible_timeout(priv->bh_evt_wq,
+		WARN_ON(wait_event_timeout(priv->bh_evt_wq,
 			!priv->hw_bufs_used, WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
 		wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
 	}
@@ -1097,7 +1097,7 @@ void wsm_lock_tx_async(struct cw1200_common *priv)
 void wsm_flush_tx(struct cw1200_common *priv)
 {
 	BUG_ON(!atomic_read(&priv->tx_lock));
-	WARN_ON(wait_event_interruptible_timeout(priv->bh_evt_wq,
+	WARN_ON(wait_event_timeout(priv->bh_evt_wq,
 		!priv->hw_bufs_used, WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
 }
 
@@ -1269,7 +1269,7 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 		spin_unlock(&priv->wsm_cmd.lock);
 		ret = 0; /* Error response from device should ne stop BH. */
 
-		wake_up_interruptible(&priv->wsm_cmd_wq);
+		wake_up(&priv->wsm_cmd_wq);
 	} else if (id & 0x0800) {
 		switch (id) {
 		case 0x0801:

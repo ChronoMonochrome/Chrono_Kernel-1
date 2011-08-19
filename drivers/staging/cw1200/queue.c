@@ -153,7 +153,7 @@ int cw1200_queue_clear(struct cw1200_queue *queue)
 	}
 	spin_unlock_bh(&stats->lock);
 	spin_unlock_bh(&queue->lock);
-	wake_up_interruptible(&stats->wait_link_id_empty);
+	wake_up(&stats->wait_link_id_empty);
 	return 0;
 }
 
@@ -279,7 +279,7 @@ int cw1200_queue_get(struct cw1200_queue *queue,
 	}
 	spin_unlock_bh(&queue->lock);
 	if (wakeup_stats)
-		wake_up_interruptible(&stats->wait_link_id_empty);
+		wake_up(&stats->wait_link_id_empty);
 	return ret;
 }
 

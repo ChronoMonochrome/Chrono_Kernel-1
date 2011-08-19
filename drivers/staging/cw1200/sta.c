@@ -289,7 +289,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		cw1200_cancel_scan(priv);
 		sta_printk(KERN_DEBUG "[STA] Freq %d (wsm ch: %d).\n",
 			ch->center_freq, ch->hw_value);
-		WARN_ON(wait_event_interruptible_timeout(
+		WARN_ON(wait_event_timeout(
 			priv->channel_switch_done,
 			!priv->channel_switch_in_progress, 3 * HZ) <= 0);
 
@@ -762,7 +762,7 @@ int __cw1200_flush(struct cw1200_common *priv, bool drop)
 	}
 
 	for (;;) {
-		ret = wait_event_interruptible_timeout(
+		ret = wait_event_timeout(
 				priv->tx_queue_stats.wait_link_id_empty,
 				cw1200_queue_stats_is_empty(
 					&priv->tx_queue_stats, -1),

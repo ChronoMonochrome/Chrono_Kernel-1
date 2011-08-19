@@ -89,7 +89,7 @@ void cw1200_unregister_bh(struct cw1200_common *priv)
 	priv->bh_thread = NULL;
 	bh_printk(KERN_DEBUG "[BH] unregister.\n");
 	atomic_add(1, &priv->bh_term);
-	wake_up_interruptible(&priv->bh_wq);
+	wake_up(&priv->bh_wq);
 	kthread_stop(thread);
 #ifdef HAS_PUT_TASK_STRUCT
 	put_task_struct(thread);
@@ -103,7 +103,7 @@ void cw1200_irq_handler(struct cw1200_common *priv)
 		return;
 
 	if (atomic_add_return(1, &priv->bh_rx) == 1)
-		wake_up_interruptible(&priv->bh_wq);
+		wake_up(&priv->bh_wq);
 }
 
 void cw1200_bh_wakeup(struct cw1200_common *priv)
@@ -113,31 +113,33 @@ void cw1200_bh_wakeup(struct cw1200_common *priv)
 		return;
 
 	if (atomic_add_return(1, &priv->bh_tx) == 1)
-		wake_up_interruptible(&priv->bh_wq);
+		wake_up(&priv->bh_wq);
 }
 
-void cw1200_bh_suspend(struct cw1200_common *priv)
+int cw1200_bh_suspend(struct cw1200_common *priv)
 {
 	bh_printk(KERN_DEBUG "[BH] suspend.\n");
 	if (WARN_ON(priv->bh_error))
-		return;
+		return 0;
 
 	atomic_set(&priv->bh_suspend, CW1200_BH_SUSPEND);
-	wake_up_interruptible(&priv->bh_wq);
-	wait_event_interruptible(priv->bh_evt_wq, priv->bh_error ||
-			(CW1200_BH_SUSPENDED == atomic_read(&priv->bh_suspend)));
+	wake_up(&priv->bh_wq);
+	return wait_event_timeout(priv->bh_evt_wq, priv->bh_error ||
+		(CW1200_BH_SUSPENDED == atomic_read(&priv->bh_suspend)),
+		 1 * HZ) ? 0 : -ETIMEDOUT;
 }
 
-void cw1200_bh_resume(struct cw1200_common *priv)
+int cw1200_bh_resume(struct cw1200_common *priv)
 {
 	bh_printk(KERN_DEBUG "[BH] resume.\n");
 	if (WARN_ON(priv->bh_error))
-		return;
+		return 0;
 
 	atomic_set(&priv->bh_suspend, CW1200_BH_RESUME);
-	wake_up_interruptible(&priv->bh_wq);
-	wait_event_interruptible(priv->bh_evt_wq, priv->bh_error ||
-			(CW1200_BH_RESUMED == atomic_read(&priv->bh_suspend)));
+	wake_up(&priv->bh_wq);
+	return wait_event_timeout(priv->bh_evt_wq, priv->bh_error ||
+		(CW1200_BH_RESUMED == atomic_read(&priv->bh_suspend)),
+		1 * HZ) ? 0 : -ETIMEDOUT;
 }
 
 static inline void wsm_alloc_tx_buffer(struct cw1200_common *priv)
@@ -156,7 +158,7 @@ int wsm_release_tx_buffer(struct cw1200_common *priv, int count)
 	else if (hw_bufs_used >= priv->wsm_caps.numInpChBufs)
 		ret = 1;
 	if (!priv->hw_bufs_used)
-		wake_up_interruptible(&priv->bh_evt_wq);
+		wake_up(&priv->bh_evt_wq);
 	return ret;
 }
 
@@ -306,7 +308,7 @@ static int cw1200_bh(void *arg)
 			}
 
 			atomic_set(&priv->bh_suspend, CW1200_BH_SUSPENDED);
-			wake_up_interruptible(&priv->bh_evt_wq);
+			wake_up(&priv->bh_evt_wq);
 			status = wait_event_interruptible(priv->bh_wq,
 					CW1200_BH_RESUME == atomic_read(
 						&priv->bh_suspend));
@@ -318,7 +320,7 @@ static int cw1200_bh(void *arg)
 			}
 			bh_printk(KERN_DEBUG "[BH] Device resume.\n");
 			atomic_set(&priv->bh_suspend, CW1200_BH_RESUMED);
-			wake_up_interruptible(&priv->bh_evt_wq);
+			wake_up(&priv->bh_evt_wq);
 			atomic_add(1, &priv->bh_rx);
 			continue;
 		}

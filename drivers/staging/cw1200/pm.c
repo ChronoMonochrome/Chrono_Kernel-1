@@ -173,40 +173,26 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 	/* Ensure pending operations are done.
 	 * Note also that wow_suspend must return in ~2.5sec, before
 	 * watchdog is triggered. */
-	if (priv->channel_switch_in_progress) {
-		mutex_unlock(&priv->conf_mutex);
-		return -EBUSY;
-	}
+	if (priv->channel_switch_in_progress)
+		goto revert1;
 
 	/* Do not suspend when join work is scheduled */
-	if (work_pending(&priv->join_work)) {
-		mutex_unlock(&priv->conf_mutex);
-		return -EBUSY;
-	}
+	if (work_pending(&priv->join_work))
+		goto revert1;
 
 	/* Do not suspend when scanning */
-	if (down_trylock(&priv->scan.lock)) {
-		mutex_unlock(&priv->conf_mutex);
-		return -EBUSY;
-	}
+	if (down_trylock(&priv->scan.lock))
+		goto revert1;
 
 	/* Lock TX. */
 	wsm_lock_tx_async(priv);
-	if (priv->hw_bufs_used) {
-		wsm_unlock_tx(priv);
-		up(&priv->scan.lock);
-		mutex_unlock(&priv->conf_mutex);
-		return -EBUSY;
-	}
+	if (priv->hw_bufs_used)
+		goto revert3;
 
 	/* Allocate state */
 	state = kzalloc(sizeof(struct cw1200_suspend_state), GFP_KERNEL);
-	if (!state) {
-		wsm_unlock_tx(priv);
-		up(&priv->scan.lock);
-		mutex_unlock(&priv->conf_mutex);
-		return -ENOMEM;
-	}
+	if (!state)
+		goto revert3;
 
 	/* Store delayed work states. */
 	state->bss_loss_tmo =
@@ -219,7 +205,8 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 		cw1200_suspend_work(&priv->scan.probe_work);
 
 	/* Stop serving thread */
-	cw1200_bh_suspend(priv);
+	if (cw1200_bh_suspend(priv))
+		goto revert4;
 
 	/* Store suspend state */
 	pm_state->suspend_state = state;
@@ -241,6 +228,23 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 	}
 
 	return 0;
+
+revert4:
+	cw1200_resume_work(priv, &priv->bss_loss_work,
+			state->bss_loss_tmo);
+	cw1200_resume_work(priv, &priv->connection_loss_work,
+			state->connection_loss_tmo);
+	cw1200_resume_work(priv, &priv->join_timeout,
+			state->join_tmo);
+	cw1200_resume_work(priv, &priv->scan.probe_work,
+			state->direct_probe);
+	kfree(state);
+revert3:
+	wsm_unlock_tx(priv);
+	up(&priv->scan.lock);
+revert1:
+	mutex_unlock(&priv->conf_mutex);
+	return -EBUSY;
 }
 
 int cw1200_wow_resume(struct ieee80211_hw *hw)
@@ -256,7 +260,7 @@ int cw1200_wow_resume(struct ieee80211_hw *hw)
 	priv->sbus_ops->power_mgmt(priv->sbus_priv, false);
 
 	/* Resume BH thread */
-	cw1200_bh_resume(priv);
+	WARN_ON(cw1200_bh_resume(priv));
 
 	/* Resume delayed work */
 	cw1200_resume_work(priv, &priv->bss_loss_work,
