@@ -56,6 +56,7 @@ static struct clk *clk_ptr_audioclk;
 static struct clk *clk_ptr_intclk;
 static struct clk *clk_ptr_sysclk;
 static struct clk *clk_ptr_ulpclk;
+static struct clk *clk_ptr_gpio1;
 
 /* Regulators */
 static enum regulator_idx {
@@ -306,9 +307,14 @@ int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 			return ret;
 	}
 
-	return ux500_ab8500_power_control_inc();
+	/* Enable gpio.1-clock (needed by DSP in burst mode) */
+	ret = clk_enable(clk_ptr_gpio1);
+	if (ret) {
+		pr_err("%s: ERROR: clk_enable(gpio.1) failed (ret = %d)!", __func__, ret);
+		return ret;
+	}
 
-	return ret;
+	return ux500_ab8500_power_control_inc();
 }
 
 void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
@@ -328,6 +334,7 @@ void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 		disable_regulator(REGULATOR_AMIC2);
 	}
 
+	clk_disable(clk_ptr_gpio1);
 	ux500_ab8500_power_control_dec();
 }
 
@@ -481,6 +488,7 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	clk_ptr_ulpclk = NULL;
 	clk_ptr_intclk = NULL;
 	clk_ptr_audioclk = NULL;
+	clk_ptr_gpio1 = NULL;
 	clk_ptr_sysclk = clk_get(codec->dev, "sysclk");
 	if (IS_ERR(clk_ptr_sysclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
@@ -499,6 +507,11 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	clk_ptr_audioclk = clk_get(codec->dev, "audioclk");
 	if (IS_ERR(clk_ptr_audioclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
+		return -EFAULT;
+	}
+	clk_ptr_gpio1 = clk_get_sys("gpio.1", NULL);
+	if (IS_ERR(clk_ptr_gpio1)) {
+		pr_err("ERROR: clk_get_sys(gpio.1) failed (ret = %d)!", -EFAULT);
 		return -EFAULT;
 	}
 
@@ -548,6 +561,8 @@ void ux500_ab8500_soc_machine_drv_cleanup(void)
 		clk_put(clk_ptr_intclk);
 	if (clk_ptr_audioclk != NULL)
 		clk_put(clk_ptr_audioclk);
+	if (clk_ptr_gpio1 != NULL)
+		clk_put(clk_ptr_gpio1);
 }
 
 /* Extended interface */
