@@ -17,6 +17,7 @@
 #include "sbus.h"
 
 static int cw1200_suspend_late(struct device *dev);
+static int cw1200_pm_remove(struct platform_device *pdev);
 
 /* private */
 struct cw1200_suspend_state {
@@ -30,8 +31,11 @@ static struct dev_pm_ops cw1200_pm_ops = {
 	.suspend_noirq = cw1200_suspend_late,
 };
 static struct platform_driver cw1200_power_driver = {
-	.driver.name = "cw1200_power",
-	.driver.pm = &cw1200_pm_ops,
+	.remove = cw1200_pm_remove,
+	.driver = {
+		.name = "cw1200_power",
+		.pm = &cw1200_pm_ops,
+	},
 };
 static struct platform_device cw1200_power_device = {
 	.name = "cw1200_power",
@@ -148,6 +152,11 @@ static int cw1200_suspend_late(struct device *dev)
 			__func__);
 		return -EAGAIN;
 	}
+	return 0;
+}
+
+static int cw1200_pm_remove(struct platform_device *pdev)
+{
 	return 0;
 }
 
