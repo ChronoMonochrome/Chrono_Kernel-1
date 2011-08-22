@@ -43,7 +43,7 @@ void key_schedule_gc(time_t gc_at)
 	kenter("%ld", gc_at - now);
 
 	if (gc_at <= now) {
-		schedule_work(&key_gc_work);
+		queue_work(system_nrt_wq, &key_gc_work);
 	} else if (gc_at < key_gc_next_run) {
 		expires = jiffies + (gc_at - now) * HZ;
 		mod_timer(&key_gc_timer, expires);
@@ -57,7 +57,7 @@ static void key_gc_timer_func(unsigned long data)
 {
 	kenter("");
 	key_gc_next_run = LONG_MAX;
-	schedule_work(&key_gc_work);
+	queue_work(system_nrt_wq, &key_gc_work);
 }
 
 /*
@@ -196,7 +196,7 @@ gc_released_our_lock:
 	key_gc_new_timer = new_timer;
 	key_gc_again = true;
 	clear_bit(0, &key_gc_executing);
-	schedule_work(&key_gc_work);
+	queue_work(system_nrt_wq, &key_gc_work);
 	kleave(" [continue]");
 	return;
 
