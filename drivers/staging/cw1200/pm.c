@@ -26,6 +26,7 @@ struct cw1200_suspend_state {
 	unsigned long connection_loss_tmo;
 	unsigned long join_tmo;
 	unsigned long direct_probe;
+	unsigned long link_id_gc;
 };
 
 static struct dev_pm_ops cw1200_pm_ops = {
@@ -241,10 +242,16 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 		cw1200_suspend_work(&priv->join_timeout);
 	state->direct_probe =
 		cw1200_suspend_work(&priv->scan.probe_work);
+	state->link_id_gc =
+		cw1200_suspend_work(&priv->link_id_gc_work);
 
 	/* Stop serving thread */
 	if (cw1200_bh_suspend(priv))
 		goto revert4;
+
+	ret = timer_pending(&priv->mcast_timeout);
+	if (ret)
+		goto revert5;
 
 	/* Store suspend state */
 	pm_state->suspend_state = state;
@@ -267,6 +274,8 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 
 	return 0;
 
+revert5:
+	WARN_ON(cw1200_bh_resume(priv));
 revert4:
 	cw1200_resume_work(priv, &priv->bss_loss_work,
 			state->bss_loss_tmo);
@@ -276,6 +285,8 @@ revert4:
 			state->join_tmo);
 	cw1200_resume_work(priv, &priv->scan.probe_work,
 			state->direct_probe);
+	cw1200_resume_work(priv, &priv->link_id_gc_work,
+			state->link_id_gc);
 	kfree(state);
 revert3:
 	wsm_unlock_tx(priv);
@@ -309,6 +320,8 @@ int cw1200_wow_resume(struct ieee80211_hw *hw)
 			state->join_tmo);
 	cw1200_resume_work(priv, &priv->scan.probe_work,
 			state->direct_probe);
+	cw1200_resume_work(priv, &priv->link_id_gc_work,
+			state->link_id_gc);
 
 	/* Unlock datapath */
 	wsm_unlock_tx(priv);

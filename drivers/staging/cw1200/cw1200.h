@@ -46,6 +46,7 @@
 
 #define CW1200_MAX_STA_IN_AP_MODE	(5)
 #define CW1200_LINK_ID_AFTER_DTIM	(CW1200_MAX_STA_IN_AP_MODE + 1)
+#define CW1200_MAX_REQUEUE_ATTEMPTS	(5)
 
 /* Please keep order */
 enum cw1200_join_status {
@@ -53,6 +54,20 @@ enum cw1200_join_status {
 	CW1200_JOIN_STATUS_MONITOR,
 	CW1200_JOIN_STATUS_STA,
 	CW1200_JOIN_STATUS_AP,
+};
+
+enum cw1200_link_status {
+	CW1200_LINK_OFF,
+	CW1200_LINK_RESERVE,
+	CW1200_LINK_SOFT,
+	CW1200_LINK_HARD,
+};
+
+struct cw1200_link_entry {
+	unsigned long			timestamp;
+	enum cw1200_link_status		status;
+	u8				mac[ETH_ALEN];
+	bool				ps;
 };
 
 struct cw1200_common {
@@ -172,6 +187,9 @@ struct cw1200_common {
 
 	/* AP powersave */
 	u32			link_id_map;
+	struct cw1200_link_entry link_id_db[CW1200_MAX_STA_IN_AP_MODE];
+	struct work_struct	link_id_work;
+	struct delayed_work	link_id_gc_work;
 	u32			tx_suspend_mask[4];
 	u32			sta_asleep_mask;
 	u32			pspoll_mask;
@@ -182,6 +200,7 @@ struct cw1200_common {
 	struct work_struct	set_tim_work;
 	struct work_struct	multicast_start_work;
 	struct work_struct	multicast_stop_work;
+	struct timer_list	mcast_timeout;
 
 
 	/* WSM events and CQM implementation */

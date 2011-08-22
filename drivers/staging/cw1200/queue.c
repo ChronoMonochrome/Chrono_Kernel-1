@@ -221,6 +221,7 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 
 		list_move_tail(&item->head, &queue->queue);
 		item->skb = skb;
+		item->generation = 0;
 		item->packetID = cw1200_queue_make_packet_id(
 			queue->generation, queue->queue_id,
 			item->generation, item - queue->pool);
@@ -249,7 +250,8 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 int cw1200_queue_get(struct cw1200_queue *queue,
 		     u32 link_id_map,
 		     struct wsm_tx **tx,
-		     struct ieee80211_tx_info **tx_info)
+		     struct ieee80211_tx_info **tx_info,
+		     int *link_id)
 {
 	int ret = -ENOENT;
 	struct cw1200_queue_item *item;
@@ -267,6 +269,7 @@ int cw1200_queue_get(struct cw1200_queue *queue,
 	if (!WARN_ON(ret)) {
 		*tx = (struct wsm_tx *)item->skb->data;
 		*tx_info = IEEE80211_SKB_CB(item->skb);
+		*link_id = item->link_id;
 		list_move_tail(&item->head, &queue->pending);
 		++queue->num_pending;
 		--queue->link_map_cache[item->link_id];

@@ -251,6 +251,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	hw->flags = IEEE80211_HW_SIGNAL_DBM |
 		    IEEE80211_HW_SUPPORTS_PS |
 		    IEEE80211_HW_SUPPORTS_DYNAMIC_PS |
+		    IEEE80211_HW_AP_LINK_PS |
 		    /* TODO: Fix this
 		     Disable UAPSD support due to performance drop */
 		    /* IEEE80211_HW_SUPPORTS_UAPSD | */
@@ -285,7 +286,9 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 
 	hw->max_rates = 8;
 	hw->max_rate_tries = 15;
-	hw->extra_tx_headroom = WSM_TX_EXTRA_HEADROOM;
+	hw->extra_tx_headroom = WSM_TX_EXTRA_HEADROOM +
+		8  /* TKIP IV */ +
+		12 /* TKIP ICV and MIC */;
 
 	hw->sta_data_size = sizeof(struct cw1200_sta_priv);
 
@@ -328,6 +331,11 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_WORK(&priv->set_tim_work, cw1200_set_tim_work);
 	INIT_WORK(&priv->multicast_start_work, cw1200_multicast_start_work);
 	INIT_WORK(&priv->multicast_stop_work, cw1200_multicast_stop_work);
+	INIT_WORK(&priv->link_id_work, cw1200_link_id_work);
+	INIT_DELAYED_WORK(&priv->link_id_gc_work, cw1200_link_id_gc_work);
+	init_timer(&priv->mcast_timeout);
+	priv->mcast_timeout.data = (unsigned long)priv;
+	priv->mcast_timeout.function = cw1200_mcast_timeout;
 
 	if (unlikely(cw1200_pm_init(&priv->pm_state, priv))) {
 		ieee80211_free_hw(hw);

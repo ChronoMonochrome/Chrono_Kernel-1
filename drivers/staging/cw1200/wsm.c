@@ -851,6 +851,7 @@ underflow:
 }
 
 static int wsm_receive_indication(struct cw1200_common *priv,
+					int link_id,
 					struct wsm_buf *buf,
 					struct sk_buff **skb_p)
 {
@@ -865,6 +866,7 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 		rx.rxedRate = WSM_GET8(buf);
 		rx.rcpiRssi = WSM_GET8(buf);
 		rx.flags = WSM_GET32(buf);
+		rx.link_id = link_id;
 		fctl = *(__le16 *)buf->data;
 		hdr_len = buf->data - buf->begin;
 		skb_pull(*skb_p, hdr_len);
@@ -1276,7 +1278,8 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 			ret = wsm_startup_indication(priv, &wsm_buf);
 			break;
 		case 0x0804:
-			ret = wsm_receive_indication(priv, &wsm_buf, skb_p);
+			ret = wsm_receive_indication(priv, link_id,
+					&wsm_buf, skb_p);
 			break;
 		case 0x0805:
 			ret = wsm_event_indication(priv, &wsm_buf);
@@ -1309,7 +1312,8 @@ out:
 
 static bool wsm_handle_tx_data(struct cw1200_common *priv,
 			       const struct wsm_tx *wsm,
-			       const struct ieee80211_tx_info *tx_info)
+			       const struct ieee80211_tx_info *tx_info,
+			       int *link_id)
 {
 	bool handled = false;
 	const struct ieee80211_hdr *frame =
@@ -1344,6 +1348,24 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	case NL80211_IFTYPE_AP:
 		if (unlikely(!priv->join_status))
 			action = doDrop;
+		if (*link_id == CW1200_LINK_ID_AFTER_DTIM)
+			*link_id = 0;
+		else if (WARN_ON(!(BIT(*link_id) &
+				(BIT(0) | priv->link_id_map))))
+			action = doDrop;
+		if (cw1200_queue_get_generation(wsm->packetID) >
+				CW1200_MAX_REQUEUE_ATTEMPTS) {
+			/* HACK!!! WSM324 firmware has tendency to requeue
+			 * multicast frames in a loop, causing performance
+			 * drop and high power consumption of the driver.
+			 * In this situation it is better just to drop
+			 * the problematic frame. */
+			wiphy_warn(priv->hw->wiphy,
+					"Too many attempts "
+					"to requeue a frame. "
+					"Frame is dropped.\n");
+			action = doDrop;
+		}
 		break;
 	case NL80211_IFTYPE_ADHOC:
 	case NL80211_IFTYPE_MESH_POINT:
@@ -1550,8 +1572,8 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 	struct wsm_tx *wsm = NULL;
 	struct ieee80211_tx_info *tx_info;
 	struct cw1200_queue *queue;
-	struct cw1200_sta_priv *sta_priv;
 	u32 tx_allowed_mask = 0;
+	int link_id;
 	/*
 	 * Count was intended as an input for wsm->more flag.
 	 * During implementation it was found that wsm->more
@@ -1600,25 +1622,21 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 			if (cw1200_queue_get(queue,
 					tx_allowed_mask,
-					&wsm, &tx_info))
+					&wsm, &tx_info, &link_id))
 				continue;
 
-			if (wsm_handle_tx_data(priv, wsm, tx_info))
+			if (wsm_handle_tx_data(priv, wsm, tx_info, &link_id))
 				continue;  /* Handled by WSM */
 
-			if (tx_info->control.sta) {
-				/* Update link id */
-				sta_priv = (struct cw1200_sta_priv *)
-					&tx_info->control.sta->drv_priv;
-				wsm->hdr.id &= __cpu_to_le16(
-					~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX));
-				wsm->hdr.id |= cpu_to_le16(
-					WSM_TX_LINK_ID(sta_priv->link_id));
-				priv->pspoll_mask &= ~BIT(sta_priv->link_id);
-			}
+			wsm->hdr.id &= __cpu_to_le16(
+				~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX));
+			wsm->hdr.id |= cpu_to_le16(
+				WSM_TX_LINK_ID(link_id));
+			priv->pspoll_mask &= ~BIT(link_id);
 
 			*data = (u8 *)wsm;
 			*tx_len = __le16_to_cpu(wsm->hdr.len);
+
 
 			if (more) {
 				struct ieee80211_hdr *hdr =

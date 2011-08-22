@@ -64,7 +64,8 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *cw1200,
 int cw1200_queue_get(struct cw1200_queue *queue,
 		     u32 link_id_map,
 		     struct wsm_tx **tx,
-		     struct ieee80211_tx_info **tx_info);
+		     struct ieee80211_tx_info **tx_info,
+		     int *link_id);
 int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packetID);
 int cw1200_queue_requeue_all(struct cw1200_queue *queue);
 int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
@@ -79,12 +80,14 @@ void cw1200_queue_unlock(struct cw1200_queue *queue,
 bool cw1200_queue_stats_is_empty(struct cw1200_queue_stats *stats,
 				 u32 link_id_map);
 
-/* int cw1200_queue_get_stats(struct cw1200_queue *queue,
-struct ieee80211_tx_queue_stats *stats); */
-
 static inline u8 cw1200_queue_get_queue_id(u32 packetID)
 {
 	return (packetID >> 16) & 0xFF;
+}
+
+static inline u8 cw1200_queue_get_generation(u32 packetID)
+{
+	return (packetID >>  8) & 0xFF;
 }
 
 #endif /* CW1200_QUEUE_H_INCLUDED */

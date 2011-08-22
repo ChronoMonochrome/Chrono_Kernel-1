@@ -807,6 +807,9 @@ struct wsm_rx {
 
 	/* Size of the frame */
 	/* [out] */ size_t frame_size;
+
+	/* Link ID */
+	/* [out] */ int link_id;
 };
 
 /* = sizeof(generic hi hdr) + sizeof(wsm hdr) */

@@ -36,6 +36,12 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 void cw1200_set_tim_work(struct work_struct *work);
 void cw1200_multicast_start_work(struct work_struct *work);
 void cw1200_multicast_stop_work(struct work_struct *work);
-
+void cw1200_mcast_timeout(unsigned long arg);
+int cw1200_find_link_id(struct cw1200_common *priv, const u8 *mac);
+int cw1200_alloc_link_id(struct cw1200_common *priv, const u8 *mac);
+void cw1200_link_id_work(struct work_struct *work);
+void cw1200_link_id_gc_work(struct work_struct *work);
+void cw1200_ps_notify(struct cw1200_common *priv,
+		      int link_id, bool ps);
 
 #endif

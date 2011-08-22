@@ -10,6 +10,7 @@
  */
 
 #include <net/mac80211.h>
+#include <linux/etherdevice.h>
 
 #include "cw1200.h"
 #include "wsm.h"
@@ -420,17 +421,35 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
 	struct ieee80211_hdr *hdr =
 		(struct ieee80211_hdr *)skb->data;
+	const u8 *da = ieee80211_get_DA(hdr);
 	struct cw1200_sta_priv *sta_priv =
 		(struct cw1200_sta_priv *)&tx_info->control.sta->drv_priv;
-	int link_id = 0;
+	int link_id;
 	int ret;
+	int i;
 
-	if (tx_info->control.sta)
+	if (likely(tx_info->control.sta && sta_priv->link_id))
 		link_id = sta_priv->link_id;
-	else if ((tx_info->flags | IEEE80211_TX_CTL_SEND_AFTER_DTIM) &&
-			(priv->mode == NL80211_IFTYPE_AP) &&
-			priv->enable_beacon)
-		link_id = CW1200_LINK_ID_AFTER_DTIM;
+	else if (priv->mode != NL80211_IFTYPE_AP)
+		link_id = 0;
+	else if (is_multicast_ether_addr(da)) {
+		if (priv->enable_beacon)
+			link_id = CW1200_LINK_ID_AFTER_DTIM;
+		else
+			link_id = 0;
+	} else {
+		link_id = cw1200_find_link_id(priv, da);
+		if (!link_id)
+			link_id = cw1200_alloc_link_id(priv, da);
+		if (!link_id) {
+			wiphy_err(priv->hw->wiphy,
+				"%s: No more link IDs available.\n",
+				__func__);
+			goto err;
+		}
+	}
+	if (link_id && link_id <= CW1200_MAX_STA_IN_AP_MODE)
+		priv->link_id_db[link_id - 1].timestamp = jiffies;
 
 	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d).\n",
 			skb->len, queue, link_id);
@@ -438,22 +457,13 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	if (WARN_ON(queue >= 4))
 		goto err;
 
-#if 0
-	{
-		/* HACK!!!
-		* Workarounnd against a bug in WSM_A21.05.0288 firmware.
-		* In AP mode FW calculates FCS incorrectly when DA
-		* is FF:FF:FF:FF:FF:FF. Just for verification,
-		* do not enable this code in the real live. */
-		static const u8 mac_ff[] =
-			{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-		static const u8 mac_mc[] =
-			{0x01, 0x00, 0x5e, 0x00, 0x00, 0x16};
-		if (!memcmp(&skb->data[4], mac_ff, sizeof(mac_ff)))
-			memcpy(&skb->data[4], mac_mc, sizeof(mac_mc));
+	if (unlikely(ieee80211_is_auth(hdr->frame_control))) {
+		spin_lock_bh(&priv->buffered_multicasts_lock);
+		priv->sta_asleep_mask &= ~BIT(link_id);
+		for (i = 0; i < 4; ++i)
+			priv->tx_suspend_mask[i] &= ~BIT(link_id);
+		spin_unlock_bh(&priv->buffered_multicasts_lock);
 	}
-#endif
-
 
 	/* IV/ICV injection. */
 	/* TODO: Quite unoptimal. It's better co modify mac80211
@@ -471,8 +481,9 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 			icv_len += 8; /* MIC */
 		}
 
-		if (skb_headroom(skb) < iv_len + WSM_TX_EXTRA_HEADROOM
-				|| skb_tailroom(skb) < icv_len) {
+		if ((skb_headroom(skb) + skb_tailroom(skb) <
+			iv_len + icv_len + WSM_TX_EXTRA_HEADROOM) ||
+			(skb_headroom(skb) < iv_len + WSM_TX_EXTRA_HEADROOM)) {
 			wiphy_err(priv->hw->wiphy,
 				"Bug: no space allocated "
 				"for crypto headers.\n"
@@ -482,6 +493,17 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 				skb_headroom(skb), skb_tailroom(skb),
 				iv_len + WSM_TX_EXTRA_HEADROOM, icv_len);
 			goto err;
+		} else if (skb_tailroom(skb) < icv_len) {
+			size_t offset = icv_len - skb_tailroom(skb);
+			u8 *p;
+			wiphy_warn(priv->hw->wiphy,
+				"Slowpath: tailroom is not big enough. "
+				"Req: %d, got: %d.\n",
+				icv_len, skb_tailroom(skb));
+
+			p = skb_push(skb, offset);
+			memmove(p, &p[offset], skb->len - offset);
+			skb_trim(skb, skb->len - offset);
 		}
 
 		newhdr = skb_push(skb, iv_len);
@@ -572,9 +594,9 @@ static int cw1200_handle_pspoll(struct cw1200_common *priv,
 				struct sk_buff *skb)
 {
 	struct ieee80211_sta *sta;
-	struct cw1200_sta_priv *sta_priv;
 	struct ieee80211_pspoll *pspoll =
 		(struct ieee80211_pspoll *) skb->data;
+	int link_id = 0;
 	u32 pspoll_mask;
 	int drop = 1;
 	int i;
@@ -586,13 +608,21 @@ static int cw1200_handle_pspoll(struct cw1200_common *priv,
 
 	rcu_read_lock();
 	sta = ieee80211_find_sta(priv->vif, pspoll->ta);
-	if (!sta) {
-		rcu_read_unlock();
-		goto done;
+	if (sta) {
+		struct cw1200_sta_priv *sta_priv;
+		sta_priv = (struct cw1200_sta_priv *)&sta->drv_priv;
+		link_id = sta_priv->link_id;
+		pspoll_mask = BIT(sta_priv->link_id);
 	}
-	sta_priv = (struct cw1200_sta_priv *)&sta->drv_priv;
-	pspoll_mask = BIT(sta_priv->link_id);
 	rcu_read_unlock();
+	if (!link_id)
+		/* Slowpath */
+		link_id = cw1200_find_link_id(priv, pspoll->ta);
+
+	if (!link_id)
+		goto done;
+
+	pspoll_mask = BIT(link_id);
 
 	priv->pspoll_mask |= pspoll_mask;
 	drop = 0;
@@ -608,6 +638,7 @@ static int cw1200_handle_pspoll(struct cw1200_common *priv,
 			break;
 		}
 	}
+	txrx_printk(KERN_DEBUG "[RX] PSPOLL: %s\n", drop ? "local" : "fwd");
 done:
 	return drop;
 }
@@ -631,6 +662,10 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	if (WARN_ON(queue_id >= 4))
 		return;
 
+	if (arg->status)
+		txrx_printk(KERN_DEBUG "TX failed: %d.\n",
+				arg->status);
+
 	if ((arg->status == WSM_REQUEUE) &&
 	    (arg->flags & WSM_TX_STATUS_REQUEUE)) {
 		/* "Requeue" means "implicit suspend" */
@@ -640,20 +675,10 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 			.multicast = !arg->link_id,
 		};
 		cw1200_suspend_resume(priv, &suspend);
-		if (suspend.multicast) {
-			/* HACK!!! WSM324 firmware has tendency to requeue
-			 * multicast frames in a loop, causing performance
-			 * drop and high power consumption of the driver.
-			 * In this situation it is better just to drop
-			 * the problematic frame. */
-			wiphy_warn(priv->hw->wiphy, "Attempt to requeue a "
-					"multicat frame. Frame is dropped\n");
-			WARN_ON(cw1200_queue_remove(queue, priv,
-					arg->packetID));
-		} else {
-			WARN_ON(cw1200_queue_requeue(queue,
-					arg->packetID));
-		}
+		wiphy_warn(priv->hw->wiphy, "Requeue (try %d).\n",
+			cw1200_queue_get_generation(arg->packetID) + 1);
+		WARN_ON(cw1200_queue_requeue(queue,
+				arg->packetID));
 	} else if (!WARN_ON(cw1200_queue_get_skb(
 			queue, arg->packetID, &skb))) {
 		struct ieee80211_tx_info *tx = IEEE80211_SKB_CB(skb);
@@ -719,14 +744,17 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 {
 	struct sk_buff *skb = *skb_p;
 	struct ieee80211_rx_status *hdr = IEEE80211_SKB_RXCB(skb);
+	struct ieee80211_hdr *frame = (struct ieee80211_hdr *)skb->data;
 	unsigned long grace_period;
-	__le16 frame_control;
 	hdr->flag = 0;
 
 	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
 		/* STA is stopped. */
 		goto drop;
 	}
+
+	if (arg->link_id && arg->link_id <= CW1200_MAX_STA_IN_AP_MODE)
+		priv->link_id_db[arg->link_id - 1].timestamp = jiffies;
 
 	if (unlikely(arg->status)) {
 		if (arg->status == WSM_STATUS_MICFAILURE) {
@@ -748,9 +776,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 		goto drop;
 	}
 
-	frame_control = *(__le16*)skb->data;
-
-	if (unlikely(ieee80211_is_pspoll(frame_control)))
+	if (unlikely(ieee80211_is_pspoll(frame->frame_control)))
 		if (cw1200_handle_pspoll(priv, skb))
 			goto drop;
 
@@ -775,7 +801,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 
 	if (WSM_RX_STATUS_ENCRYPTION(arg->flags)) {
 		size_t iv_len = 0, icv_len = 0;
-		size_t hdrlen = ieee80211_hdrlen(frame_control);
+		size_t hdrlen = ieee80211_hdrlen(frame->frame_control);
 
 		hdr->flag |= RX_FLAG_DECRYPTED | RX_FLAG_IV_STRIPPED;
 
@@ -821,7 +847,7 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	if (arg->flags & WSM_RX_STATUS_AGGREGATE)
 		cw1200_debug_rxed_agg(priv);
 
-	if (ieee80211_is_action(frame_control) &&
+	if (ieee80211_is_action(frame->frame_control) &&
 			(arg->flags & WSM_RX_STATUS_ADDRESS1))
 		if (cw1200_handle_action_rx(priv, skb))
 			return;
@@ -829,11 +855,15 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	/* Stay awake for 1sec. after frame is received to give
 	 * userspace chance to react and acquire appropriate
 	 * wakelock. */
-	if (ieee80211_is_auth(frame_control))
+	if (ieee80211_is_auth(frame->frame_control))
 		grace_period = 5 * HZ;
 	else
 		grace_period = 1 * HZ;
 	cw1200_pm_stay_awake(&priv->pm_state, grace_period);
+
+	/* Notify driver and mac80211 about PM state */
+	cw1200_ps_notify(priv, arg->link_id,
+			ieee80211_has_pm(frame->frame_control));
 
 	/* Not that we really need _irqsafe variant here,
 	 * but it offloads realtime bh thread and improve

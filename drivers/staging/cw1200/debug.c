@@ -38,6 +38,12 @@ static const char * const cw1200_debug_fw_types[] = {
 	"Platform test",
 };
 
+static const char * const cw1200_debug_link_id[] = {
+	"OFF",
+	"REQ",
+	"SOFT",
+	"HARD",
+};
 
 static const char *cw1200_debug_mode(int mode)
 {
@@ -219,6 +225,17 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 		priv->sta_asleep_mask);
 	cw1200_debug_print_map(seq, priv, "PSPOLL map: ",
 		priv->pspoll_mask);
+
+	seq_puts(seq, "\n");
+
+	for (i = 0; i < CW1200_MAX_STA_IN_AP_MODE; ++i) {
+		if (priv->link_id_db[i].status) {
+			seq_printf(seq, "Link %d:     %s, %pM\n",
+				i + 1, cw1200_debug_link_id[
+				priv->link_id_db[i].status],
+				priv->link_id_db[i].mac);
+		}
+	}
 
 	seq_puts(seq, "\n");
 
