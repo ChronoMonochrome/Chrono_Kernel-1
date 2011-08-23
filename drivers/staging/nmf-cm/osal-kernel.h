@@ -7,6 +7,7 @@
 #ifndef OSAL_KERNEL_H
 #define OSAL_KERNEL_H
 
+#include <linux/debugfs.h>
 #include <linux/interrupt.h>
 #include <linux/hwmem.h>
 #include <linux/regulator/consumer.h>
@@ -17,37 +18,55 @@
 #include <cm/engine/api/channel_engine.h>
 #include <cm/engine/api/control/configuration_engine.h>
 #include <cm/engine/api/perfmeter_engine.h>
+/*
+ * Do not include ELF definition from cm/engine/elf/inc/elfapi.h file
+ * because it conflicts with definition from linux/elf.h file
+ */
+#define _CM_ELF_H
 #include <cm/engine/os_adaptation_layer/inc/os_adaptation_layer.h>
 #include <linux/plist.h>
 
 #include "configuration.h"
 
-/** Per-MPC configuration structure */
+/*
+ * Per-MPC configuration structure
+ * Use struct debugfs_blob_wrapper to store pointer and size of section
+ * to allow easy re-use of data through debugfs
+ */
 struct mpcConfig {
-	const t_nmf_core_id coreId;     /**< MPC coreId */
-	const char *name;               /**< MPC name */
-        t_uint8    nbYramBanks;         /**< number of TCM ram banks to reserve for y memory */
-	t_nmf_executive_engine_id eeId; /**< Type of Executive Engine */
-	const void *baseP;              /**< Physical base address of the MPC */
-	void       *baseL;              /**< Remapped base address of the MPC */
-	struct hwmem_alloc *hwmemCode;  /**< hwmem code segment */
-	u32        sdramCodeP;          /**< Physical base address for MPC SDRAM Code region */
-	void       *sdramCodeL;         /**< Remapped base address for MPC SDRAM Code region */
-	size_t     sdramCodeSize;       /**< Size of MPC SDRAM Code region */
-	struct hwmem_alloc *hwmemData;  /**< hwmem data segment */
-	u32        sdramDataP;          /**< Physical base address for MPC SDRAM Data region */
-	void       *sdramDataL;         /**< Remapped base address for MPC SDRAM Data region */
-	size_t     sdramDataSize;       /**< Size of MPC SDRAM Data region */
-	const unsigned int interrupt0;  /**< interrupt line triggered by the MPC, for MPC events (if HSEM not used) */
-	const unsigned int interrupt1;  /**< interrupt line triggered by the MPC, for PANIC events */
-	struct tasklet_struct tasklet;  /**< taskket used to process MPC events */
+	const t_nmf_core_id coreId;      /**< MPC coreId */
+	const char *name;                /**< MPC name */
+        t_uint8    nbYramBanks;          /**< number of TCM ram banks to reserve for y memory */
+	t_nmf_executive_engine_id eeId;  /**< Type of Executive Engine */
+	const void *base_phys;           /**< Physical base address of the MPC */
+	struct debugfs_blob_wrapper base;/**< Remapped base address of the MPC and size of TCM24 */
+	struct hwmem_alloc *hwmem_code;  /**< hwmem code segment */
+	u32        sdram_code_phys;      /**< Physical base address for MPC SDRAM Code region */
+	struct debugfs_blob_wrapper sdram_code; /**< Remapped base address and size for MPC SDRAM Code */
+	struct hwmem_alloc *hwmem_data;  /**< hwmem data segment */
+	u32        sdram_data_phys;      /**< Physical base address for MPC SDRAM Data region */
+	struct debugfs_blob_wrapper sdram_data; /**< Remapped base address and size for MPC SDRAM Data */
+	const unsigned int interrupt0;   /**< interrupt line triggered by the MPC, for MPC events (if HSEM not used) */
+	const unsigned int interrupt1;   /**< interrupt line triggered by the MPC, for PANIC events */
+	struct tasklet_struct tasklet;   /**< taskket used to process MPC events */
 	struct regulator *mmdsp_regulator; /**< mmdsp regulator linked to this MPC */
 	struct regulator *pipe_regulator;  /**< hardware pipe linked to this MPC */
 #ifdef CONFIG_HAS_WAKELOCK
-	struct wake_lock wakelock;      /**< wakelock for this MPC to prevent ARM to go in APSLEEP state */
+	struct wake_lock wakelock;       /**< wakelock for this MPC to prevent ARM to go in APSLEEP state */
 #endif
-	struct task_struct *monitor_tsk;/**< task to monitor the dsp load; */
+	struct task_struct *monitor_tsk; /**< task to monitor the dsp load; */
 	t_cm_mpc_load_counter oldLoadCounter; /**< previous load counter of the DSP */
+#ifdef CONFIG_DEBUG_FS
+	struct dentry *dir;              /**< debugfs dir entry */
+	struct dentry *comp_dir;         /**< debugfs component dir entry */
+	struct dentry *domain_dir;       /**< debugfs domain dir entry */
+	struct dentry *snapshot_dir;     /**< debugfs snapshot dir entry */
+	struct dentry *mem_file;         /**< debugfs meminfo file entry */
+	struct dentry *tcm_file;         /**< debugfs meminfo file entry */
+	struct dentry *esram_file;       /**< debugfs meminfo file entry */
+	s8         load;                 /**< current load of the DSP */
+	s8         opp_request;          /**< current requested opp of the DSP */
+#endif
 };
 
 /** Describes current Kernel OSAL environment
@@ -63,8 +82,8 @@ struct mpcConfig {
 struct OsalEnvironment
 {
 	struct mpcConfig mpc[NB_MPC];
-	void* hwsem_base;       /** < Remapped base address of the hardware semaphores */
-	void* esram_base;       /** < Remapped base address for embedded RAM used within the CM */
+	void* hwsem_base;  /** < Remapped base address of the hardware semaphores */
+	void* esram_base;  /**< Remapped base address embedded RAM used within the CM */
 	struct regulator *esram_regulator[NB_ESRAM]; /**< regulator for ESRAM bank 1+2 and 3+4 */
 	struct prcmu_auto_pm_config dsp_sleep;
 	struct prcmu_auto_pm_config dsp_idle;

@@ -59,15 +59,15 @@ static t_component_instance* getCorrespondingInstance(
                 return instance;
             }
 
-            for(i = 0; i < instance->template->requireNumber; i++) {
-                int nb = instance->template->requires[i].collectionSize, j;
+            for(i = 0; i < instance->Template->requireNumber; i++) {
+                int nb = instance->Template->requires[i].collectionSize, j;
                 for(j = 0; j < nb; j++) {
                     if(instance->interfaceReferences[i][j].instance != NULL &&
                             instance->interfaceReferences[i][j].instance != (t_component_instance *)NMF_HOST_COMPONENT &&
                             instance->interfaceReferences[i][j].instance != (t_component_instance *)NMF_VOID_COMPONENT &&
                             instance->interfaceReferences[i][j].instance->thisAddress == panicThis)
                     {
-                        *itfName = instance->template->requires[i].name;
+                        *itfName = instance->Template->requires[i].name;
                         *instHandle = ENTRY2HANDLE(instance, k);
                         return instance;
                     }
@@ -181,8 +181,8 @@ PUBLIC EXPORT_SHARED t_cm_error CM_getServiceDescription(
 
             if(instance != 0)
             {
-                cm_DSP_GetDspAddress(instance->memories[instance->template->codeMemory->id], &DspAddress);
-                cm_DSP_GetDspMemoryHandleSize(instance->memories[instance->template->codeMemory->id], &DspSize);
+                cm_DSP_GetDspAddress(instance->memories[instance->Template->codeMemory->id], &DspAddress);
+                cm_DSP_GetDspMemoryHandleSize(instance->memories[instance->Template->codeMemory->id], &DspSize);
             }
 
             if(DspAddress <= srcDescr->u.panic.info.mpc.panicInfo1 &&
@@ -206,7 +206,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_getServiceDescription(
         if(instance != 0)
         {
             LOG_INTERNAL(0, "Error:  Component=%s<%s>\n",
-                    instance->pathname, instance->template->name, 0, 0, 0, 0);
+                    instance->pathname, instance->Template->name, 0, 0, 0, 0);
         }
 
         // We don't set rtos/commonpart/serviceReason = MPC_SERVICE_NONE, since we don't want the

@@ -21,11 +21,6 @@
 
 /** Nomadik embedded Static RAM base address*/
 #define ESRAM_BASE (U8500_ESRAM_BASE + 0x10000) // V1/V2 config: 0-64k: secure;
-#define HWSEM_BASE U8500_HSEM_BASE
-
-/** SxA base address */
-#define SVA_BASE_ADDR U8500_SVA_BASE
-#define SIA_BASE_ADDR U8500_SIA_BASE
 
 /** Nomadik embedded ram size for CM (in Kb) */
 #define ESRAM_SIZE 576
@@ -48,8 +43,8 @@ enum {
 #define SDRAM_CODE_SIZE_SIA (2*ONE_KB)
 #define SDRAM_DATA_SIZE     (8*ONE_KB)
 
-extern int cfgCommunicationLocationInSDRAM;
-extern int cfgSemaphoreTypeHSEM;
+extern bool cfgCommunicationLocationInSDRAM;
+extern bool cfgSemaphoreTypeHSEM;
 extern int cfgESRAMSize;
 
 int init_config(void);

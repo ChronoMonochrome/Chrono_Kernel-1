@@ -34,7 +34,7 @@ ifdef KERNELRELEASE
   GENERIC_CM_FILES := $(filter-out $(CMENGINESRC_COPY_NO_BUILD), $(GENERIC_CM_FILES))
 
   CM_OBJS := $(GENERIC_CM_FILES:.c=.o)
-  CM_OBJS += cmld.o cm_syscall.o osal-kernel.o cm_service.o configuration.o
+  CM_OBJS += cmld.o cm_syscall.o osal-kernel.o cm_service.o cm_debug.o configuration.o
   CM_OBJS += cm_dma.o
 
   obj-$(CONFIG_U8500_CM) := cm.o

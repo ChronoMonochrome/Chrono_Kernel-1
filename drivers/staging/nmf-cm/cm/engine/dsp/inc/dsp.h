@@ -17,7 +17,6 @@
 #include <share/inc/nmf.h>
 #include <cm/engine/memory/inc/domain_type.h>
 #include <cm/engine/memory/inc/memory.h>
-#include <share/semaphores/inc/semaphores.h>
 #include <cm/engine/memory/inc/remote_allocator.h>
 
 

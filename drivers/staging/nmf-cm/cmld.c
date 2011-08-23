@@ -11,10 +11,8 @@
  */
 
 #include <linux/cdev.h>
-#include <linux/fs.h>
 #include <linux/io.h>
 #include <linux/mm.h>
-#include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/sched.h>
@@ -23,13 +21,14 @@
 #include <cm/engine/api/cm_engine.h>
 #include <cm/engine/api/control/irq_engine.h>
 
-#include "cmioctl.h"
 #include "osal-kernel.h"
 #include "cmld.h"
+#include "cmioctl.h"
+#include "cm_debug.h"
 #include "cm_service.h"
 #include "cm_dma.h"
 
-#define CMDRIVER_PATCH_VERSION 109
+#define CMDRIVER_PATCH_VERSION 112
 #define O_FLUSH 0x1000000
 
 static int cmld_major;
@@ -49,19 +48,13 @@ static DEFINE_MUTEX(process_lock); /* lock used to protect previous list */
 LIST_HEAD(channel_list);
 static DEFINE_MUTEX(channel_lock); /* lock used to protect previous list */
 
-/* Variables used to manage temporary allocation of ESRAM
-   reserved for DMA and B2R2 + MCDE */
-/* As of now, the reservation is done in RME */
-static int cfgESRAM_ReserveMCDE = 0;
-static int cfgESRAM_ReserveDMA  = 0;
-static int cfgESRAMDmaSize      = 4;   /* in Kb */
-static int cfgESRAMMcdeSize     = 128; /* in Kb */
-module_param(cfgESRAM_ReserveMCDE, bool, S_IRUGO);
-module_param(cfgESRAM_ReserveDMA, bool, S_IRUGO);
-module_param(cfgESRAMDmaSize, uint, S_IRUGO);
-module_param(cfgESRAMMcdeSize, uint, S_IRUGO);
-static t_cm_domain_id dmaDomainId, mcdeDomainId;
-static t_cm_memory_handle dmaMemoryHdl, mcdeMemoryHdl;
+#ifdef CONFIG_DEBUG_FS
+/* Debugfs support */
+bool user_has_debugfs = false;
+bool dump_done = true;
+module_param(dump_done, bool, S_IWUSR|S_IRUGO);
+static DECLARE_WAIT_QUEUE_HEAD(dump_waitq);
+#endif
 
 static inline struct cm_process_priv *getProcessPriv(void)
 {
@@ -95,6 +88,9 @@ static inline struct cm_process_priv *getProcessPriv(void)
 	entry->pid = current->tgid;
 	mutex_lock(&process_lock);
 	list_add(&entry->entry, &process_list);
+#ifdef CONFIG_DEBUG_FS
+	cm_debug_proc_init(entry);
+#endif
 out:
 	mutex_unlock(&process_lock);
 	return entry;
@@ -113,11 +109,9 @@ static inline void freeMessages(struct cm_channel_priv* channelPriv)
 		warn = 1;
 	}
 	spin_unlock_bh(&channelPriv->bh_lock);
-	if (warn) {
+	if (warn)
 		pr_err("[CM - PID=%d]: Some remaining"
 		       " message(s) freed\n", current->tgid);
-		warn = 0;
-	}
 }
 
 /* Free all pending memory areas and relative descriptors  */
@@ -231,6 +225,10 @@ static void freeProcessPriv(struct kref *ref)
 		pr_err("[CM - PID=%d]: Error while flushing some remaining"
 		       " domains: error=%d\n", current->tgid, err);
 
+#ifdef CONFIG_DEBUG_FS
+	debugfs_remove_recursive(entry->dir);
+#endif
+
 	/* Free the per-process descriptor */
 	OSAL_Free(entry);
 }
@@ -288,8 +286,6 @@ static int cmld_release(struct inode *inode, struct file *file)
 {
 	struct cm_process_priv* procPriv;
 
-	BUG_ON(file->private_data == NULL);
-	
 	/* The driver must guarantee that all related resources are released.
 	   Thus all these checks below are necessary to release all remaining
 	   resources still linked to this 'client', in case of abnormal process
@@ -364,11 +360,11 @@ static ssize_t cmld_read(struct file *file, char *buf, size_t count, loff_t *ppo
 	if (iminor(file->f_dentry->d_inode) == 0)
 		return -ENOSYS;
 	
-	BUG_ON(channelPriv == NULL);
 	messageQueue = &channelPriv->messageQueue;
  
 	if (mutex_lock_killable(&channelPriv->msgQueueLock))
 		return -ERESTARTSYS;
+
 wait:
 	while (plist_head_empty(messageQueue)) {
 		mutex_unlock(&channelPriv->msgQueueLock);
@@ -467,9 +463,8 @@ static int cmld_flush(struct file *file, fl_owner_t id)
 {
 	if (iminor(file->f_dentry->d_inode) != 0) {
 		struct cm_channel_priv* channelPriv = (struct cm_channel_priv*)(file->private_data);
-		//channelPriv->closed = CHANNEL_CLOSED;
 		file->f_flags |= O_FLUSH;
-		wake_up_all(&channelPriv->waitq);
+		wake_up_interruptible(&channelPriv->waitq);
 	}
 	return 0;
 }
@@ -695,11 +690,17 @@ static long cmld_control_ctl(struct file *file, unsigned int cmd, unsigned long 
 			return 0;
 		else
 			return -ENOENT;
-
-	default: {
+	case CM_PRIV_DEBUGFS_READY:
+#ifdef CONFIG_DEBUG_FS
+		user_has_debugfs = true;
+#endif
+		return 0;
+	case CM_PRIV_DEBUGFS_DUMP_DONE:
+	case CM_PRIV_DEBUGFS_WAIT_DUMP:
+		return 0;
+	default:
 		pr_err("CM(%s): unsupported command %i\n", __func__, cmd);
 		return -EINVAL;
-	}
 	}
 
 	return 0;
@@ -712,7 +713,14 @@ static long cmld_control_ctl(struct file *file, unsigned int cmd, unsigned long 
  */
 static long cmld_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	BUG_ON(filp->private_data == NULL);
+#ifdef CONFIG_DEBUG_FS
+	if (cmd == CM_PRIV_DEBUGFS_DUMP_DONE) {
+		dump_done = true;
+		wake_up_interruptible(&dump_waitq);
+		return 0;
+	} else if (wait_event_interruptible(dump_waitq, dump_done))
+		return -ERESTARTSYS;
+#endif
 
 	if (iminor(filp->f_dentry->d_inode) == 0) {
 		return cmld_control_ctl(filp, cmd, arg);
@@ -755,8 +763,6 @@ static int cmld_mmap(struct file* file, struct vm_area_struct* vma)
 	struct cm_process_priv* procPriv = file->private_data;
 	struct memAreaDesc_t* curr = NULL;
 	unsigned int vma_size = vma->vm_end-vma->vm_start;
-
-	BUG_ON(procPriv == NULL);
 
 	listHead = &procPriv->memAreaDescList;
 
@@ -918,7 +924,7 @@ static int configureMpc(unsigned i, t_cfg_allocator_id *dataAllocId)
 	 * (see in remapRegions()) and we need to create the segment only at first call.
 	 * => we reuse the same allocId for the following MPCs
 	 */
-	if ((osalEnv.mpc[i].sdramDataL != osalEnv.mpc[0].sdramDataL)
+	if ((osalEnv.mpc[i].sdram_data.data != osalEnv.mpc[0].sdram_data.data)
 	    || *dataAllocId == -1) {
 		err = CM_ENGINE_AddMpcSdramSegment(&dataSegment, dataAllocId, "Data");
 		if (err != CM_OK) {
@@ -1155,62 +1161,9 @@ static int __init cmld_init_module(void)
 			CMDRIVER_PATCH_VERSION);
 	}
 
-	/* Reserve DMA and MCDE ESRAM if needed */
-	if (cfgESRAM_ReserveDMA) {
-		t_cm_domain_memory  domain = INIT_DOMAIN;
-
-		// Reserve memory used by DMA
-		domain.coreId = ARM_CORE_ID;
-		domain.esramData.offset = 0x0;
-		domain.esramData.size   = cfgESRAMDmaSize * ONE_KB;
-		err = CM_ENGINE_CreateMemoryDomain(NMF_CORE_CLIENT,
-						   &domain, &dmaDomainId);
-		if (err != CM_OK) {
-			pr_err("CM: Create DMA/ESRAM domain failed with error code: %d\n", err);
-			err = -EAGAIN;
-			goto out_all;
-		}
-
-		err = CM_ENGINE_AllocMpcMemory(dmaDomainId,
-					       NMF_CORE_CLIENT,
-					       CM_MM_MPC_ESRAM16,
-					       cfgESRAMDmaSize * ONE_KB / 2,
-					       CM_MM_MPC_ALIGN_NONE,
-					       &dmaMemoryHdl);
-		if (err != CM_OK) {
-			pr_err("CM: Alloc DMA in ESRAM domain failed with error code: %d\n", err);
-			err = -EAGAIN;
-			goto out_all;
-		}
-	}
-
-	if (cfgESRAM_ReserveMCDE) {
-		t_cm_domain_memory  domain = INIT_DOMAIN;
-
-		// Reserve memory used by MCDE
-		domain.coreId = ARM_CORE_ID;
-		domain.esramData.offset = (cfgESRAMSize - cfgESRAMMcdeSize) * ONE_KB;
-		domain.esramData.size   = cfgESRAMMcdeSize * ONE_KB;
-		err = CM_ENGINE_CreateMemoryDomain(NMF_CORE_CLIENT,
-						   &domain, &mcdeDomainId);
-		if (err != CM_OK) {
-			pr_err("CM: Create MCDE/ESRAM domain failed with error code: %d\n", err);
-			err = -EAGAIN;
-			goto out_all;
-		}
-
-		err = CM_ENGINE_AllocMpcMemory(mcdeDomainId,
-					       NMF_CORE_CLIENT,
-					       CM_MM_MPC_ESRAM16,
-					       cfgESRAMMcdeSize * ONE_KB / 2,
-					       CM_MM_MPC_ALIGN_NONE,
-					       &mcdeMemoryHdl);
-		if (err != CM_OK) {
-			pr_err("CM: Alloc MCDE in ESRAM domain failed with error code: %d\n", err);
-			err = -EAGAIN;
-			goto out_all;
-		}
-	}
+#ifdef CONFIG_DEBUG_FS
+	cm_debug_init();
+#endif
 
 	/* Configure MPC Cores */
 	for (i=0; i<NB_MPC; i++) {
@@ -1238,18 +1191,9 @@ static int __init cmld_init_module(void)
 		return 0;
 
 out_all:
-	if (err) {
-		if (cfgESRAM_ReserveMCDE) {
-			if (mcdeMemoryHdl)
-				CM_ENGINE_FreeMpcMemory(mcdeMemoryHdl);
-			CM_ENGINE_DestroyMemoryDomain(mcdeDomainId);
-		}
-		if (cfgESRAM_ReserveDMA) {
-			if (dmaMemoryHdl)
-				CM_ENGINE_FreeMpcMemory(dmaMemoryHdl);
-			CM_ENGINE_DestroyMemoryDomain(dmaDomainId);
-		}
-	}
+#ifdef CONFIG_DEBUG_FS
+	cm_debug_exit();
+#endif
 	free_mpc_irqs(i);
 	CM_ENGINE_Destroy();
 	i=ARRAY_SIZE(cmld_devname);
@@ -1285,16 +1229,6 @@ static void __exit cmld_cleanup_module(void)
 	if (!list_empty(&process_list))
 		pr_err("CM Driver ending with non empty process list\n");
 	
-	if (cfgESRAM_ReserveMCDE) {
-		if (mcdeMemoryHdl)
-			CM_ENGINE_FreeMpcMemory(mcdeMemoryHdl);
-		CM_ENGINE_DestroyMemoryDomain(mcdeDomainId);
-	}
-	if (cfgESRAM_ReserveDMA) {
-		if (dmaMemoryHdl)
-			CM_ENGINE_FreeMpcMemory(dmaMemoryHdl);
-		CM_ENGINE_DestroyMemoryDomain(dmaDomainId);
-	}
         if (cfgSemaphoreTypeHSEM)
 		free_irq(IRQ_DB8500_HSEM, NULL);
 	free_mpc_irqs(NB_MPC);
@@ -1316,6 +1250,9 @@ static void __exit cmld_cleanup_module(void)
 	unmapRegions();
 #ifdef 	CM_DEBUG_ALLOC
 	cleanup_debug_alloc();
+#endif
+#ifdef CONFIG_DEBUG_FS
+	cm_debug_exit();
 #endif
 }
 module_init(cmld_init_module);

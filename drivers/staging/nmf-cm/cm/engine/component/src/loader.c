@@ -15,6 +15,7 @@
 void START(void);
 void END(char*);
 
+#undef NHASH
 #define NHASH 79       //Use a prime number!
 #define MULT 17
 
@@ -107,9 +108,9 @@ t_uint32 cm_resolvSymbol(
     int i, j;
 
     // Search if this method is provided by EE and resolve it directly
-    for(i = 0; i < ee->template->provideNumber; i++)
+    for(i = 0; i < ee->Template->provideNumber; i++)
     {
-        t_interface_provide* provide = &ee->template->provides[i];
+        t_interface_provide* provide = &ee->Template->provides[i];
 
         for(j = 0; j < provide->interface->methodNumber; j++)
         {

@@ -18,7 +18,6 @@
 #include <cm/engine/trace/inc/trace.h>
 #include <cm/engine/trace/inc/xtitrace.h>
 
-static t_cm_chunk* cm_MM_RA_getLastChunk(t_cm_allocator_desc* alloc);
 static void cm_MM_RA_checkAllocator(t_cm_allocator_desc* alloc);
 //static void cm_MM_RA_checkAlloc(t_cm_allocator_desc* alloc, t_uint32 size, t_uint32 align, t_uint32 min, t_uint32 max);
 
@@ -56,18 +55,12 @@ PUBLIC t_cm_allocator_desc* cm_MM_CreateAllocator(t_cm_size size, t_uint32 offse
     alloc->next = ListOfAllocators;
     ListOfAllocators = alloc;
 
-    /* Create first chunk */
-    alloc->chunks = allocChunk();
-
     /* assign name */
     alloc->pAllocName = name;
 
-    alloc->chunks->size    = size;
-    alloc->chunks->offset  = offset;
-    alloc->chunks->alloc   = alloc;
-    alloc->free_mem_chunks[bin_index(alloc->chunks->size)] = alloc->chunks;
-
-    alloc->size = size;
+    alloc->maxSize = size;
+    alloc->sbrkSize = 0;
+    alloc->offset = offset;
 
     //TODO, juraj, alloc impacts trace format
     cm_TRC_traceMemAlloc(TRACE_ALLOCATOR_COMMAND_CREATE, 0, size, name);
@@ -111,65 +104,17 @@ PUBLIC t_cm_error cm_MM_DeleteAllocator(t_cm_allocator_desc *alloc)
 
 PUBLIC t_cm_error cm_MM_ResizeAllocator(t_cm_allocator_desc *alloc, t_cm_size size)
 {
-    t_cm_error error;
-
     /* sanity check */
     if (size == 0)
         return CM_INVALID_PARAMETER;
 
-    if((error = fillChunkPool()) != CM_OK)
-        return error;
+    if(alloc->sbrkSize > size)
+        return CM_NO_MORE_MEMORY;
 
-    if (size > alloc->size) {
-        /* ok, increase allocator */
-        t_uint32 deltaSize = size - alloc->size;
-        t_cm_chunk *last = cm_MM_RA_getLastChunk(alloc);
+    alloc->maxSize = size;
 
-        if (last->status == MEM_FREE) {
-            /* last chunk is a free one, just increase size */
-            unlinkFreeMem(alloc, last);
-            last->size += deltaSize;
-            alloc->size += deltaSize;
-            /* now list of free chunk is potentially no more ordered */
-            updateFreeList(alloc, last);
-        } else {
-            /* last chunk is a used one, add new free chunk */
-            last->size += deltaSize;
-            splitChunk(alloc, last, last->offset + deltaSize, FREE_CHUNK_AFTER);
-            alloc->size += deltaSize;
-        }
-    } else {
-        /* reduce allocator */
-        t_uint32 deltaSize = alloc->size - size;
-        t_cm_chunk *last = cm_MM_RA_getLastChunk(alloc);
-
-        /* check if resize is possible */
-        if (last->status == MEM_USED)
-            return CM_NO_MORE_MEMORY;
-        if (last->size < deltaSize)
-            return CM_NO_MORE_MEMORY;
-
-        /* ok, rezise can be performed */
-        if (last->size == deltaSize)        {
-            t_cm_chunk *prev = last->prev;
-
-            /* remove last free chunk */
-            mergeChunk(alloc, prev, last);
-            prev->size -= deltaSize;
-        } else {
-            unlinkFreeMem(alloc, last);
-            /* reduce size of last free chunk */
-            last->size -= deltaSize;
-            /* now list of free chunk is potentially no more ordered */
-            updateFreeList(alloc, last);
-        }
-    }
-
-    alloc->size = size;
-
-    if (cmIntensiveCheckState) {
+    if (cmIntensiveCheckState)
         cm_MM_RA_checkAllocator(alloc);
-    }
 
     return CM_OK;
 }
@@ -251,13 +196,40 @@ PUBLIC t_memory_handle cm_MM_Alloc(
         }
     }
 
+    // Try to increase sbrkSize through maxSize
+    aligned_offset = ALIGN_VALUE(MAX((alloc->offset + alloc->sbrkSize), seg_offset), (memAlignment + 1));
+
+    aligned_end = aligned_offset + size;
+
+    if ((aligned_end <= seg_end)
+            && aligned_end <= (alloc->offset + alloc->maxSize)
+            && aligned_offset >= seg_offset
+            && aligned_offset >= (alloc->offset + alloc->sbrkSize))
+    {
+        /* If that fit requirement, create a new free chunk at the end of current allocator */
+        chunk = allocChunk();
+
+        /* Update chunk size */
+        chunk->offset = alloc->offset + alloc->sbrkSize; // offset start at end of current allocator
+        chunk->size = aligned_end - chunk->offset;
+        chunk->alloc = alloc;
+
+        /* Chain it with latest chunk */
+        linkChunk(alloc, alloc->lastChunk, chunk);
+
+        /* Increase sbrkSize to end of this new chunk */
+        alloc->sbrkSize += chunk->size;
+
+        goto foundNew;
+   }
+
     return INVALID_MEMORY_HANDLE;
 
 found:
-
     /* Remove chunk from free list */
     unlinkFreeMem(alloc, chunk);
 
+foundNew:
     //create an empty chunk before the allocated one
     if (chunk->offset < aligned_offset) {
         chunk = splitChunk(alloc, chunk, aligned_offset, FREE_CHUNK_BEFORE);
@@ -279,21 +251,45 @@ found:
         cm_MM_RA_checkAllocator(alloc);
     }
 
-    chunk->alloc = alloc;
     return (t_memory_handle) chunk;
 }
 
 //caution - if successfull, the chunk offset will be aligned with seg_offset
 //caution++ the offset of the allocated chunk changes implicitly
-PUBLIC t_memory_handle cm_MM_Realloc(
+PUBLIC t_cm_error cm_MM_Realloc(
                 t_cm_allocator_desc* alloc,
                 const t_cm_size size,
                 const t_uint32 offset,
-                const t_cm_memory_alignment memAlignment,
-                const t_memory_handle handle)
+                t_memory_handle *handle)
 {
-    t_cm_chunk *chunk = (t_cm_chunk*)handle;
+    t_cm_chunk *chunk = (t_cm_chunk*)*handle;
+    t_uint32 oldOffset = chunk->offset;
+    t_uint32 oldSize = chunk->size;
+    t_uint32 oldDomainId = chunk->domainId;
+    t_uint16 userData = chunk->userData;
 
+    cm_MM_Free(alloc, *handle);
+
+    *handle = cm_MM_Alloc(alloc, size, CM_MM_ALIGN_NONE, offset, size, oldDomainId);
+
+    if(*handle == INVALID_MEMORY_HANDLE)
+    {
+        *handle = cm_MM_Alloc(alloc, oldSize, CM_MM_ALIGN_NONE, oldOffset, oldSize, oldDomainId);
+
+        CM_ASSERT(*handle != INVALID_MEMORY_HANDLE);
+
+        chunk = (t_cm_chunk*)*handle;
+        chunk->userData = userData;
+
+        return CM_NO_MORE_MEMORY;
+    }
+
+    chunk = (t_cm_chunk*)*handle;
+    chunk->userData = userData;
+
+    return CM_OK;
+
+#if 0
     /* check reallocation is related to this chunk! */
     CM_ASSERT(chunk->offset <= (offset + size));
     CM_ASSERT(offset <= (chunk->offset + chunk->size));
@@ -311,12 +307,20 @@ PUBLIC t_memory_handle cm_MM_Realloc(
         }
     }
 
-    /* check if extend high, note as above */
+    /* check if extend high, extend sbrk if necessary */
     if ( (offset + size) > (chunk->offset + chunk->size)) {
-        if ((chunk->next == 0)
-           ||(chunk->next->status != MEM_FREE)
-           ||( (chunk->next->offset + chunk->next->size) < (offset + size))) {
-            return INVALID_MEMORY_HANDLE;
+        if(chunk->next == 0)
+        {
+            // check if allocator can be extended to maxSize
+            if((offset + size) > (alloc->offset + alloc->maxSize))
+                return INVALID_MEMORY_HANDLE;
+        }
+        else
+        {
+            if ((chunk->next->status != MEM_FREE)
+                    ||( (chunk->next->offset + chunk->next->size) < (offset + size))) {
+                return INVALID_MEMORY_HANDLE;
+            }
         }
     }
 
@@ -324,90 +328,63 @@ PUBLIC t_memory_handle cm_MM_Realloc(
         return INVALID_MEMORY_HANDLE;
 
 
-#if 0
-    /* extend low
-     *      all conditions should have been checked
-     *      this must not fail
-     */
-    if (offset < chunk->offset) {
-        t_cm_chunk *tmp = splitChunk(alloc, chunk->prev, offset, FREE_CHUNK_BEFORE); //tmp = chunk->prev
-        CM_ASSERT(tmp);
-        tmp->status = MEM_USED;
-        tmp->prev->status = MEM_FREE;
-        mergeChunk(alloc, tmp, chunk);
-        if ((tmp->prev->prev != 0)
-           && (tmp->prev->prev->status == MEM_FREE)) {
-            mergeChunk(alloc, tmp->prev->prev, tmp->prev);
-        }
-        chunk = tmp;
-    }
-
-    /* extend high */
-    if ( (offset + size) > (chunk->offset + chunk->size)) {
-        t_cm_chunk *tmp = splitChunk(alloc, chunk->next, offset + size, FREE_CHUNK_AFTER); //tmp = chunk->next->next
-        CM_ASSERT(tmp);
-        tmp->status = MEM_USED;
-        mergeChunk(alloc, chunk, tmp);
-        if ((tmp->next->next != 0)
-           && (tmp->next->next->status == MEM_FREE)) {
-            mergeChunk(alloc, tmp->next, tmp->next->next);
-        }
-    }
-
-    /* reduce top */
-    if ((offset + size) < (chunk->offset + chunk->size)) {
-        t_cm_chunk *tmp = splitChunk(alloc, chunk, offset + size, FREE_CHUNK_AFTER); //tmp = chunk, chunk = result
-        CM_ASSERT(tmp);
-        tmp->status = MEM_USED;
-        tmp->next->status = MEM_FREE;
-        if ((tmp->next->next != 0)
-           && (tmp->next->next->status == MEM_FREE)) {
-            mergeChunk(alloc, tmp->next, tmp->next->next);
-        }
-    }
-
-    /* reduce bottom */
-    if (offset > chunk->offset) {
-        t_cm_chunk *tmp = splitChunk(alloc, chunk, offset, FREE_CHUNK_BEFORE); //tmp->next = chunk, tmp = result
-        CM_ASSERT(tmp);
-        tmp->status = MEM_USED;
-        tmp->prev->status = MEM_FREE;
-        if ((tmp->prev->prev != 0)
-           &&(tmp->prev->prev->status == MEM_FREE)) {
-            mergeChunk(alloc, tmp->prev->prev, tmp->prev);
-        }
-        chunk = tmp;
-    }
-#else
     /* extend low
      *      all conditions should have been checked
      *      this must not fail
      */
     if (offset < chunk->offset) {
         t_uint32 delta = chunk->prev->offset + chunk->prev->size - offset;
-        CM_ASSERT(chunk->prev->status == MEM_FREE); //TODO, juraj, already checked
-        unlinkFreeMem(alloc, chunk->prev);
-        chunk->prev->size -= delta;
+        t_cm_chunk *prev = chunk->prev;
+
         chunk->offset -= delta;
         chunk->size += delta;
-        updateFreeList(alloc, chunk->prev);
+
+        CM_ASSERT(prev->status == MEM_FREE); //TODO, juraj, already checked
+        unlinkFreeMem(alloc, prev);
+        prev->size -= delta;
+        if(prev->size == 0)
+        {
+            unlinkChunk(alloc, prev);
+            freeChunk(prev);
+        } else {
+            updateFreeList(alloc, prev);
+        }
     }
 
     /* extend high */
     if ( (offset + size) > (chunk->offset + chunk->size)) {
         t_uint32 delta = size - chunk->size;
-        CM_ASSERT(chunk->next->status == MEM_FREE); //TODO, juraj, already checked
-        unlinkFreeMem(alloc, chunk->next);
+        t_cm_chunk *next = chunk->next;
+
         chunk->size += delta;
-        chunk->next->offset += delta;
-        chunk->next->size -= delta;
-        updateFreeList(alloc, chunk->next);
+
+        if(next == 0)
+        {
+            alloc->sbrkSize += delta;
+        } else {
+            CM_ASSERT(next->status == MEM_FREE);
+            unlinkFreeMem(alloc, next);
+            next->offset += delta;
+            next->size -= delta;
+            if(next->size == 0)
+            {
+                unlinkChunk(alloc, next);
+                freeChunk(next);
+            } else {
+                updateFreeList(alloc, next);
+            }
+        }
     }
 
     /* reduce top */
     if ((offset + size) < (chunk->offset + chunk->size)) {
-        if (chunk->next->status == MEM_FREE) {
-            t_uint32 delta = chunk->size - size;
+        t_uint32 delta = chunk->size - size;
+
+        if(chunk->next == 0) {
+            alloc->sbrkSize -= delta;
+            chunk->size -= delta;
+
+        } else if (chunk->next->status == MEM_FREE) {
             unlinkFreeMem(alloc, chunk->next);
             chunk->size -= delta;
             chunk->next->offset -= delta;
@@ -435,10 +412,11 @@ PUBLIC t_memory_handle cm_MM_Realloc(
             tmp->prev->status = MEM_FREE;
         }
     }
-#endif
+
     cm_MM_RA_checkAllocator(alloc);
 
     return (t_memory_handle)chunk;
+#endif
 }
 
 PUBLIC void cm_MM_Free(t_cm_allocator_desc* alloc, t_memory_handle memHandle)
@@ -453,19 +431,58 @@ PUBLIC void cm_MM_Free(t_cm_allocator_desc* alloc, t_memory_handle memHandle)
     chunk->status = MEM_FREE;
     chunk->domainId = 0x0;
 
+    // Invariant: Current chunk is free but not in free list
+
     /* Check if the previous chunk is free */
-    if((chunk->prev != 0) && (chunk->prev->status == MEM_FREE)) {
-        chunk = chunk->prev; //chunk, ie. chunk->next, will be freed
-        mergeChunk(alloc, chunk, chunk->next);
+    if((chunk->prev != 0) && (chunk->prev->status == MEM_FREE))
+    {
+        t_cm_chunk* prev = chunk->prev;
+
+        // Remove chunk to be freed from memory list
+        unlinkChunk(alloc, chunk);
+
+        // Remove previous from free list
+        unlinkFreeMem(alloc, prev);
+
+        // Update previous size
+        prev->size += chunk->size;
+
+        freeChunk(chunk);
+
+        chunk = prev;
     }
 
     /* Check if the next chunk is free */
-    if((chunk->next != 0) && (chunk->next->status == MEM_FREE)) {
-        mergeChunk(alloc, chunk, chunk->next);
+    if((chunk->next != 0) && (chunk->next->status == MEM_FREE))
+    {
+        t_cm_chunk* next = chunk->next;
+
+        // Remove next from memory list
+        unlinkChunk(alloc, next);
+
+        // Remove next from free list
+        unlinkFreeMem(alloc, next);
+
+        // Update previous size
+        chunk->size += next->size;
+
+        freeChunk(next);
     }
 
-    unlinkFreeMem(alloc, chunk);
-    updateFreeList(alloc, chunk);
+    if(chunk->next == 0)
+    {
+        // If we are the last one, decrease sbrkSize
+        alloc->sbrkSize -= chunk->size;
+
+        unlinkChunk(alloc, chunk);
+        freeChunk(chunk);
+
+    }
+    else
+    {
+        // Add it in free list
+        updateFreeList(alloc, chunk);
+    }
 
     if (cmIntensiveCheckState) {
         cm_MM_RA_checkAllocator(alloc);
@@ -475,6 +492,7 @@ PUBLIC void cm_MM_Free(t_cm_allocator_desc* alloc, t_memory_handle memHandle)
 PUBLIC t_cm_error cm_MM_GetAllocatorStatus(t_cm_allocator_desc* alloc, t_uint32 offset, t_uint32 size, t_cm_allocator_status *pStatus)
 {
     t_cm_chunk* chunk = alloc->chunks;
+    t_uint32 sbrkFree = alloc->maxSize - alloc->sbrkSize;
     t_uint8 min_free_size_updated = FALSE;
 
     /* Init status */
@@ -484,14 +502,13 @@ PUBLIC t_cm_error cm_MM_GetAllocatorStatus(t_cm_allocator_desc* alloc, t_uint32 
     pStatus->global.minimum_free_size = 0xFFFFFFFF;
     pStatus->global.accumulate_free_memory = 0;
     pStatus->global.accumulate_used_memory = 0;
-    pStatus->global.size = alloc->size;
+    pStatus->global.size = alloc->maxSize;
     pStatus->domain.maximum_free_size = 0;
     pStatus->domain.minimum_free_size = 0xFFFFFFFF;
     pStatus->domain.accumulate_free_memory = 0;
     pStatus->domain.accumulate_used_memory = 0;
     pStatus->domain.size= size;
 
-    //TODO, juraj, get allocator status for a domain
     /* Parse all chunks */
     while(chunk != 0)
     {
@@ -521,6 +538,17 @@ PUBLIC t_cm_error cm_MM_GetAllocatorStatus(t_cm_allocator_desc* alloc, t_uint32 
         chunk = chunk->next;
     }
 
+    /* Accumulate free space between sbrkSize and maxSize */
+    pStatus->global.accumulate_free_memory += sbrkFree;
+    if (sbrkFree > 0)
+        pStatus->global.free_block_number++;
+    if (pStatus->global.maximum_free_size < sbrkFree)
+        pStatus->global.maximum_free_size = sbrkFree;
+    if (pStatus->global.minimum_free_size > sbrkFree) {
+        pStatus->global.minimum_free_size = sbrkFree;
+        min_free_size_updated = TRUE;
+    }
+
     /* Put max free size to min free size */
     if (min_free_size_updated == FALSE) {
         pStatus->global.minimum_free_size = pStatus->global.maximum_free_size;
@@ -542,7 +570,7 @@ PUBLIC t_uint32 cm_MM_GetSize(t_memory_handle memHandle)
 
 PUBLIC t_uint32 cm_MM_GetAllocatorSize(t_cm_allocator_desc* alloc)
 {
-    return alloc->size;
+    return alloc->maxSize;
 }
 
 PUBLIC void cm_MM_SetMemoryHandleUserData(t_memory_handle memHandle, t_uint16 userData)
@@ -565,24 +593,29 @@ PUBLIC void cm_MM_GetMemoryHandleUserData(t_memory_handle memHandle, t_uint16 *p
 static void cm_MM_RA_checkAllocator(t_cm_allocator_desc* alloc)
 {
     t_cm_chunk *chunk = alloc->chunks;
-    t_cm_chunk *first = chunk;
-    t_cm_chunk *last = chunk;
     t_uint32 size = 0;
     int i;
 
+    CM_ASSERT(alloc->sbrkSize <= alloc->maxSize);
+
     while(chunk != 0) {
+        if(chunk == alloc->chunks)
+            CM_ASSERT(chunk->prev == 0);
+        if(chunk == alloc->lastChunk)
+            CM_ASSERT(chunk->next == 0);
+
         CM_ASSERT(chunk->alloc == alloc);
 
         if (chunk->next != 0) {
             CM_ASSERT(!((chunk->status == MEM_FREE) && (chunk->next->status == MEM_FREE))); //two free adjacent blocks
             CM_ASSERT(chunk->offset < chunk->next->offset); //offsets reverted
-            last = chunk->next;
+            CM_ASSERT(chunk->offset + chunk->size == chunk->next->offset); // Not hole in allocator
         }
         size += chunk->size;
         chunk = chunk->next;
     }
 
-    CM_ASSERT(size == alloc->size);
+    CM_ASSERT(size == alloc->sbrkSize);
 
     for(i = 0; i < BINS; i++)
     {
@@ -591,71 +624,9 @@ static void cm_MM_RA_checkAllocator(t_cm_allocator_desc* alloc)
             if (chunk->next_free_mem != 0) {
                 CM_ASSERT(chunk->size <= chunk->next_free_mem->size); //free list not ordered
             }
-            CM_ASSERT(!(chunk->prev == 0 && (chunk != first))); //chunk not linked properly
-            CM_ASSERT(!(chunk->next == 0 && (chunk != last))); //chunk not linked property
             chunk = chunk->next_free_mem;
         }
     }
-}
-
-#if 0
-static void cm_MM_RA_checkAlloc(t_cm_allocator_desc* alloc, t_uint32 size, t_uint32 align, t_uint32 min, t_uint32 max)
-{
-    t_cm_chunk *chunk = alloc->chunks;
-
-    while(chunk != 0) {
-        if (chunk->status == MEM_USED) {
-            chunk = chunk->next;
-            continue;
-        }
-        if (chunk->size < size) {
-            chunk = chunk->next;
-            continue;
-        }
-
-        if (min < chunk->offset) {
-            t_uint32 aligned_offset = ALIGN_VALUE(chunk->offset, align + 1);
-            t_uint32 aligned_end = aligned_offset + size;
-            if ((aligned_offset + size <= chunk->offset + chunk->size)
-                    && (chunk->offset + chunk->size <= aligned_end)){
-                break;
-            }
-        }
-
-        if (min >= chunk->offset) {
-            t_uint32 aligned_offset = ALIGN_VALUE(min, align + 1);
-            t_uint32 aligned_end = aligned_offset + size;
-            if ((aligned_offset + size <= chunk->offset + chunk->size)
-                    && (chunk->offset + chunk->size <= aligned_end)) {
-                break;
-            }
-        }
-
-        chunk = chunk->next;
-    }
-
-    CM_ASSERT(chunk == 0);
-}
-#endif
-
-/***************************************************************************/
-/*
- * cm_mm_ra_getLastChunk
- * param handle     : Handle of the allocator
- * return : last
- *
- * Free all chunk in the allocator
- * Free allocator descriptor
- *
- */
-/***************************************************************************/
-static t_cm_chunk* cm_MM_RA_getLastChunk(t_cm_allocator_desc* alloc)
-{
-    t_cm_chunk* pChunk = alloc->chunks;
-
-    while(pChunk->next != 0) {pChunk = pChunk->next;}
-
-    return pChunk;
 }
 
 PUBLIC void cm_MM_DumpMemory(t_cm_allocator_desc* alloc, t_uint32 start, t_uint32 end)
@@ -669,7 +640,7 @@ PUBLIC void cm_MM_DumpMemory(t_cm_allocator_desc* alloc, t_uint32 start, t_uint3
           || ((chunk->offset > start) && (chunk->offset + chunk->size < end))
           || ((chunk->offset < start) && (chunk->offset + chunk->size > end)))
         {
-            LOG_INTERNAL(0, "ALLOCATOR chunk 0x%08x -> 0x%08x: status:%s, domainId: 0x%x\n",
+            LOG_INTERNAL(0, "ALLOCATOR chunk [0x%08x -> 0x%08x[: status:%s, domainId: 0x%x\n",
                     chunk->offset,
                     chunk->offset + chunk->size,
                     chunk->status?"FREE":"USED",

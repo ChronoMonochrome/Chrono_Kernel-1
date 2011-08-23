@@ -27,6 +27,8 @@ t_ee_state eeState[NB_CORE_IDS];
 
 /****************************************************************** Functions
  ****************************************************************************/
+static t_cm_error cm_EEM_allocPanicArea(t_nmf_core_id coreId, t_cm_domain_id domainId);
+static void cm_EEM_freePanicArea(t_nmf_core_id coreId);
 
 PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetExecutiveEngineHandle(
         t_cm_domain_id domainId,
@@ -109,9 +111,19 @@ PUBLIC t_cm_error cm_EEM_Init(
         return error;
     }
 
+    /* allocate sdram memory for panic area */
+    error = cm_EEM_allocPanicArea(coreId, cm_DSP_GetState(coreId)->domainEE);
+    if (error != CM_OK) {
+        cm_delayedDestroyComponent(eeState[coreId].instance);
+        eeState[coreId].instance = (t_component_instance *)0;
+        cm_DSP_Shutdown(coreId);
+        return error;
+    }
+
     /* allocate sdram memory to share perfmeters data */
     error = cm_PFM_allocatePerfmeterDataMemory(coreId, cm_DSP_GetState(coreId)->domainEE);
     if (error != CM_OK) {
+        cm_EEM_freePanicArea(coreId);
         cm_delayedDestroyComponent(eeState[coreId].instance);
         eeState[coreId].instance = (t_component_instance *)0;
         cm_DSP_Shutdown(coreId);
@@ -168,7 +180,7 @@ PUBLIC void cm_EEM_Close(t_nmf_core_id coreId)
     cm_delayedDestroyComponent(eeState[coreId].instance);
     eeState[coreId].instance = (t_component_instance *)0;
     cm_PFM_deallocatePerfmeterDataMemory(coreId);
-
+    cm_EEM_freePanicArea(coreId);
     cm_DSP_Shutdown(coreId);
 }
 
@@ -323,8 +335,13 @@ t_cm_error cm_EEM_ForceWakeup(t_nmf_core_id coreId)
         else if ((error = cm_COMP_ULPForceWakeup(coreId)) != CM_OK)
         {
             if (error == CM_MPC_NOT_RESPONDING) {
-                ERROR("CM_MPC_NOT_RESPONDING: DSP %s can't be wakeup'ed\n", cm_getDspName(coreId), 0, 0, 0, 0, 0);
-                cm_DSP_SetStatePanic(coreId);
+                if(cm_DSP_GetState(coreId)->state == MPC_STATE_PANIC)
+                    /* Don't print error which has been done by Panic handling */;
+                else
+                {
+                    ERROR("CM_MPC_NOT_RESPONDING: DSP %s can't be wakeup'ed\n", cm_getDspName(coreId), 0, 0, 0, 0, 0);
+                    cm_DSP_SetStatePanic(coreId);
+                }
             }
             return error;
         }
@@ -346,4 +363,30 @@ void cm_EEM_AllowSleep(t_nmf_core_id coreId)
             ERROR("CM_MPC_NOT_RESPONDING: DSP %s can't be allow sleep'ed\n", cm_getDspName(coreId), 0, 0, 0, 0, 0);
         }
     }
+}
+
+/* internal api */
+t_cm_error cm_EEM_allocPanicArea(t_nmf_core_id coreId, t_cm_domain_id domainId)
+{
+    t_cm_error error = CM_OK;
+
+    eeState[coreId].panicArea.handle = cm_DM_Alloc(cm_DSP_GetState(coreId)->domainEE, SDRAM_EXT24, 45 /* 42 registers, pc, 2 magic words */,CM_MM_ALIGN_WORD, TRUE);
+    if (eeState[coreId].panicArea.handle == INVALID_MEMORY_HANDLE)
+        error = CM_NO_MORE_MEMORY;
+    else {
+        t_uint32 mmdspAddr;
+
+        eeState[coreId].panicArea.addr = cm_DSP_GetHostLogicalAddress(eeState[coreId].panicArea.handle);
+        cm_DSP_GetDspAddress(eeState[coreId].panicArea.handle, &mmdspAddr);
+
+        cm_writeAttribute(eeState[coreId].instance, "rtos/commonpart/panicDataAddr", mmdspAddr);
+    }
+
+    return error;
+}
+
+void cm_EEM_freePanicArea(t_nmf_core_id coreId)
+{
+    eeState[coreId].panicArea.addr = 0;
+    cm_DM_Free(eeState[coreId].panicArea.handle, TRUE);
 }

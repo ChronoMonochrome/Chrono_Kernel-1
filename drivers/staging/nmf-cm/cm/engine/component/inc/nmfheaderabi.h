@@ -28,7 +28,7 @@ typedef struct {
     char                    *type;                  //!< Type of this Interface
     t_uint8                 methodNumber;           //!< Number of method in the interfaces
     t_uint8                 reserved1, reserved2, reserved3;
-    char                    *methodNames[];        //!< Array of method names
+    char                    *methodNames[1];        //!< Array of method names [methodNumber]
 } t_elf_interface_description;
 
 /*!
@@ -64,7 +64,7 @@ typedef struct {
     t_uint8     collectionSize;                         //!< Size of the collection (1 if not a collection)
     t_uint8     reserved1, reserved2;
     t_elf_interface_description     *interface;         //!< Interface description
-    t_elf_interface_require_index   indexes[];           /*!< Require information for each collection index
+    t_elf_interface_require_index   indexes[1];           /*!< Require information for each collection index
                                                                         \note Real type: indexes[collectionSize],
                                                                         available only if not static interface */
 }  t_elf_required_interface;
@@ -89,7 +89,7 @@ typedef struct {
     t_uint8                         collectionSize;         //!< Size of the collection (1 if not a collection)
     t_uint8                         reserved1;
 	t_elf_interface_description     *interface;             //!< Interface description
-    t_uint32                        methodSymbols[];        /*!< Symbol of the real name of methods of the interface for each collection index
+    t_uint32                        methodSymbols[1];        /*!< Symbol of the real name of methods of the interface for each collection index
                                                                     \note Real type: methodSymbols[collectionSize][methodNumber]
                                                                     \note Use relocation in order to get symbol information*/
 } t_elf_provided_interface;

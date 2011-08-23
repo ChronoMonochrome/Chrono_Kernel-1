@@ -103,7 +103,7 @@ static t_interface_description* getInterfaceDescription(t_tmp_elfdescription *el
     }
 
     // Create a new interface if not exists
-    itf = (t_interface_description*)OSAL_Alloc_Zero(sizeof(t_interface_description) + sizeof(char*) * (elfitf->methodNumber /*- 1*/));
+    itf = (t_interface_description*)OSAL_Alloc_Zero(sizeof(t_interface_description) + sizeof(t_dup_char) * (elfitf->methodNumber - 1));
     if(itf == NULL)
         goto out_itf_type;
     itf->referenceCounter = 1;
@@ -343,7 +343,7 @@ t_cm_error cm_ELF_CheckFile(
                     elfhandle->requires[i].requireTypes, 0, 0, 0);
             CM_ASSERT(elfhandle->requires[i].collectionSize != 0);
 
-            ref += sizeof(t_elf_required_interface);
+            ref = (char*)&require->indexes[0];
 
             if((elfhandle->requires[i].requireTypes & VIRTUAL_REQUIRE) == 0 &&
                     (elfhandle->requires[i].requireTypes & STATIC_REQUIRE) == 0)
@@ -420,7 +420,7 @@ t_cm_error cm_ELF_CheckFile(
                         0,0, 0, 0);
                 CM_ASSERT(elfhandle->provides[i].collectionSize != 0);
 
-                ref += sizeof(t_elf_required_interface);
+                ref = (char*)&provide->methodSymbols[0];
 
                 {
                     t_uint32 *methodSymbols = (t_uint32*)ref;

@@ -72,11 +72,11 @@ void cm_TRC_traceLoadMap(
         trace.header.v = HEADER(TRACE_TYPE_COMPONENT, sizeof(trace));
 
         trace.command = (t_uint16)command;
-        trace.domainId = (t_uint16)component->template->dspId + 1;
+        trace.domainId = (t_uint16)component->Template->dspId + 1;
         trace.componentContext = (t_uint32)component->thisAddress;
         trace.componentUserContext = (t_uint32)component;
         cm_StringCopy((char*)trace.componentLocalName, component->pathname, MAX_COMPONENT_NAME_LENGTH);
-        cm_StringCopy((char*)trace.componentTemplateName, component->template->name, MAX_TEMPLATE_NAME_LENGTH);
+        cm_StringCopy((char*)trace.componentTemplateName, component->Template->name, MAX_TEMPLATE_NAME_LENGTH);
 
         writeN((struct t_nmfTraceChannelHeader*)&trace);
 
@@ -90,12 +90,12 @@ void cm_TRC_traceLoadMap(
              */
             tracemethod.header.v = HEADER(TRACE_TYPE_METHOD, sizeof(tracemethod));
 
-            tracemethod.domainId = (t_uint16)component->template->dspId + 1;
+            tracemethod.domainId = (t_uint16)component->Template->dspId + 1;
             tracemethod.componentContext = (t_uint32)component->thisAddress;
 
-            for(i = 0; i < component->template->provideNumber; i++)
+            for(i = 0; i < component->Template->provideNumber; i++)
             {
-                t_interface_provide* provide = &component->template->provides[i];
+                t_interface_provide* provide = &component->Template->provides[i];
 
                 for(j = 0; j < provide->collectionSize; j++)
                 {
@@ -133,7 +133,7 @@ void cm_TRC_traceBinding(
         }
         else
         {
-            trace.clientDomainId = (t_uint16)clientComponent->template->dspId + 1;
+            trace.clientDomainId = (t_uint16)clientComponent->Template->dspId + 1;
             trace.clientComponentContext = (t_uint32)clientComponent->thisAddress;
         }
         if(requiredItfName != NULL)
@@ -153,7 +153,7 @@ void cm_TRC_traceBinding(
         }
         else
         {
-            trace.serverDomainId = (t_uint16)serverComponent->template->dspId + 1;
+            trace.serverDomainId = (t_uint16)serverComponent->Template->dspId + 1;
             trace.serverComponentContext = (t_uint32)serverComponent->thisAddress;
         }
         if(providedItfName != NULL)

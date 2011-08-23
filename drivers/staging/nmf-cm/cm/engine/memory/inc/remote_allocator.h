@@ -76,8 +76,11 @@ typedef t_cm_chunk* t_memory_handle;
 //TODO, juraj, add memType to alloc struct ?
 typedef struct cm_allocator_desc {
     const char     *pAllocName;             /* Name of the allocator */
-    t_uint32        size;                   /* Size of the allocator */
+    t_uint32        maxSize;                /* Max size of the allocator -> Potentially increase/decrease by stack management */
+    t_uint32        sbrkSize;               /* Current size of allocator */
+    t_uint32        offset;                 /* Offset of the allocator */
     t_cm_chunk     *chunks;                 /* Array of chunk */
+    t_cm_chunk     *lastChunk;              /* Null terminated last chunk of previous array declaration */
     t_cm_chunk     *free_mem_chunks[BINS];  /* List of free memory */
     struct cm_allocator_desc* next;         /* List of allocator */
 } t_cm_allocator_desc;
@@ -158,12 +161,11 @@ PUBLIC t_memory_handle cm_MM_Alloc(
  *
  * \ingroup MEMORY_INTERNAL
  */
-PUBLIC t_memory_handle cm_MM_Realloc(
+PUBLIC t_cm_error cm_MM_Realloc(
                 t_cm_allocator_desc* alloc,
                 const t_cm_size size,
                 const t_uint32 offset,
-                const t_cm_memory_alignment memAlignment,
-                const t_memory_handle handle);
+                t_memory_handle *handle);
 /*!
  * \brief Frees the allocated chunk
  *

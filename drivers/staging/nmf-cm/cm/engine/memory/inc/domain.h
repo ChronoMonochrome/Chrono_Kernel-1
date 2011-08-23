@@ -52,6 +52,7 @@ typedef struct {
             t_cm_domain_id        parent_ref;  //parent domain reference
         } child;
     } scratch;
+    void *dbgCooky;                            //pointer to OS internal data
 } t_cm_domain_desc;
 
 #ifdef DEBUG

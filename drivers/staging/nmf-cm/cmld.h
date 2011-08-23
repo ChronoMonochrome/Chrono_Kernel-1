@@ -32,6 +32,11 @@ struct cm_process_priv
 	struct mutex mutex;               /**< per process mutex: protect memAreaDescList */
 	struct list_head memAreaDescList; /**< memAreaDesc_t list */
 	struct mutex host2mpcLock;        /**< used to synchronize each AllocEvent + PushEvent */
+#ifdef CONFIG_DEBUG_FS
+	struct dentry *dir;               /**< debugfs dir entry under nmf-cm/proc */
+	struct dentry *comp_dir;          /**< debugfs dir entry under nmf-cm/proc/..%components */
+	struct dentry *domain_dir;        /**< debugfs dir entry under nmf-cm/proc/..%domains */
+#endif
 };
 
 /** Component Manager per-channel private structure
@@ -69,6 +74,10 @@ struct memAreaDesc_t {
 
 extern struct list_head channel_list; /**< List of all allocated channel structures */
 extern struct list_head process_list; /**< List of all allocated process private structure */
+#ifdef CONFIG_DEBUG_FS
+extern bool user_has_debugfs; /**< Whether user side has proper support of debugfs to take a dump */
+extern bool dump_done; /**< Whether a dump has to be taken or not */
+#endif
 
 /** Lock/unlock per process mutex
  *

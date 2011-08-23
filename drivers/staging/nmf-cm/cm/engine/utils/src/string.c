@@ -14,6 +14,7 @@
 #include <cm/engine/memory/inc/memory.h>
 #include <cm/engine/os_adaptation_layer/inc/os_adaptation_layer.h>
 
+#undef NHASH
 #define NHASH 257       //Use a prime number!
 #define MULT 17
 
@@ -29,6 +30,7 @@ struct t_linkedstring
 
 static struct t_linkedstring *list[NHASH];
 
+#undef myoffsetof
 #define myoffsetof(st, m) \
      ((int) ( (char *)&((st *)(0))->m - (char *)0 ))
 

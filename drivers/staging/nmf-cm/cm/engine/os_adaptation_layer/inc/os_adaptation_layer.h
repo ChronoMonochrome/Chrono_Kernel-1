@@ -14,6 +14,7 @@
 
 #include <cm/inc/cm_type.h>
 #include <cm/engine/communication/inc/communication_type.h>
+#include <cm/engine/component/inc/instance.h>
 
 /*!
  * \brief Identifier of a trace channel (id in [0..255])
@@ -42,6 +43,15 @@ typedef t_uint8 t_nmf_osal_sync_error;
 #define SYNC_OK                 ((t_nmf_osal_sync_error)0)
 #define SEM_TIMEOUT_NORMAL      3000
 #define SEM_TIMEOUT_DEBUG       300000
+
+struct osal_debug_operations {
+	void (*component_create)(t_component_instance *component);
+	void (*component_destroy)(t_component_instance *component);
+	void (*domain_create)(t_cm_domain_id id);
+	void (*domain_destroy)(t_cm_domain_id id);
+};
+
+extern struct osal_debug_operations osal_debug_ops;
 
 /*!
  * \brief Description of the Scheduling part of the OS Adaptation Layer

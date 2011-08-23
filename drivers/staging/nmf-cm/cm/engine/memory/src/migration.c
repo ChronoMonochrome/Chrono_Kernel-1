@@ -79,6 +79,7 @@ static t_cm_error _cm_migration_initSegment(
 
     handle = cm_DM_Alloc(dst, ESRAM_EXT16, size >> 1, CM_MM_ALIGN_AHB_BURST, TRUE); //note: byte to half-word conversion
     if (handle == 0) {
+        ERROR("CM_NO_MORE_MEMORY: Unable to init segment for migration\n", 0, 0, 0, 0, 0, 0);
         return CM_NO_MORE_MEMORY;
     }
 

@@ -55,7 +55,7 @@ typedef struct t_component_instance {
 
     t_component_state       state;                            //!< Component state
     t_nmf_ee_priority       priority;                         //!< Executive engine component priority
-    t_component_template   *template;                         //!< Component template
+    t_component_template   *Template;                         //!< Component template
 
     t_uint32                thisAddress;                      //!< Cached value of cm_DSP_GetDspAddress(component->memories[data], &thisAddress);
 
@@ -71,6 +71,7 @@ typedef struct t_component_instance {
 
     struct t_client_of_singleton    *clientOfSingleton;       //!< Client of singleton list
     t_memory_handle         loadMapHandle;       // handle of allocated memory for the loadMap structure and name;
+    void *dbgCooky;                                           //!< pointer to OS internal data
 } t_component_instance;
 
 t_component_template* cm_lookupTemplate(t_nmf_core_id dspId, t_dup_char str);
@@ -115,7 +116,7 @@ t_cm_error cm_loadComponent(
  * \ingroup COMPONENT_INTERNAL
  */
 t_cm_error cm_unloadComponent(
-        t_component_template *template);
+        t_component_template *reftemplate);
 
 /*!
  * \internal

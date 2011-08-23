@@ -13,7 +13,6 @@
 #include <share/communication/inc/nmf_fifo_desc.h>
 #include <cm/engine/memory/inc/memory.h>
 #include <cm/engine/component/inc/instance.h>
-#include <share/semaphores/inc/semaphores.h>
 #include <cm/engine/memory/inc/domain.h>
 
 /*

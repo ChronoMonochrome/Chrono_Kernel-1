@@ -49,7 +49,7 @@ PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId)
     // Get interface description
     if((error = cm_getProvidedInterface(ee, "service", &itfProvide)) != CM_OK)
         return error;
-    provide = &ee->template->provides[itfProvide.provideIndex];
+    provide = &ee->Template->provides[itfProvide.provideIndex];
 
 
     if ((error = dspevent_createDspEventFifo(
@@ -78,6 +78,7 @@ PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId)
     {
         OSAL_DestroySemaphore(initializerDesc[coreId].fifoSemHandle);
         dspevent_destroyDspEventFifo(initializerDesc[coreId].dspfifoHandle);
+        ERROR("CM_NO_MORE_MEMORY: fifo_alloc() failed in cm_COMP_INIT_Init()\n", 0, 0, 0, 0, 0, 0);
         return CM_NO_MORE_MEMORY;
     }
 
@@ -92,6 +93,7 @@ PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId)
         OSAL_DestroySemaphore(initializerDesc[coreId].fifoSemHandle);
         fifo_free(initializerDesc[coreId].downlinkFifo);
         dspevent_destroyDspEventFifo(initializerDesc[coreId].dspfifoHandle);
+        ERROR("CM_NO_MORE_MEMORY: fifo_alloc() failed in cm_COMP_INIT_Init()\n", 0, 0, 0, 0, 0, 0);
         return CM_NO_MORE_MEMORY;
     }
 
@@ -144,7 +146,7 @@ PUBLIC t_cm_error cm_COMP_CallService(
     params[INIT_COMPONENT_CMD_METHOD_INDEX] =  (t_uint16)(methodAddress & 0xFFFF);
     params[INIT_COMPONENT_CMD_METHOD_INDEX+1] =  (t_uint16)(methodAddress >> 16);
 
-    error = cm_COMP_generic(pComp->template->dspId, params, sizeof(params) / sizeof(t_uint16), serviceIndex);
+    error = cm_COMP_generic(pComp->Template->dspId, params, sizeof(params) / sizeof(t_uint16), serviceIndex);
 
     if (isSynchronous == TRUE && error == CM_OK) {
         if (OSAL_SEMAPHORE_WAIT_TIMEOUT(semHandle) != SYNC_OK)

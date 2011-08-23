@@ -21,7 +21,7 @@ typedef struct _t_interface_description {
     t_uint16                referenceCounter;       //!< Number of template referencing the interface
     t_uint8                 methodNumber;           //!< Number of method in the interfaces
     struct _t_interface_description* next;
-    t_dup_char              methodNames[];        //!< Array of method names
+    t_dup_char              methodNames[1];        //!< Array of method names
 } t_interface_description;
 
 /*!

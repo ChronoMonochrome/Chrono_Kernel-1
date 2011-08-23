@@ -12,7 +12,7 @@
 
 #include <cm/engine/api/configuration_engine.h>
 #include <cm/engine/configuration/inc/configuration_status.h>
-
+#include <cm/engine/power_mgt/inc/power.h>
 #include "osal-kernel.h"
 
 /* Per-driver environment */
@@ -20,28 +20,28 @@ struct OsalEnvironment osalEnv =
 {
 	.mpc = {
 		{
-			.coreId        = SVA_CORE_ID,
-			.name          = "sva",
-			.baseP         = (void*)SVA_BASE_ADDR,
-			.interrupt0     = IRQ_DB8500_SVA,
-			.interrupt1     = IRQ_DB8500_SVA2,
+			.coreId          = SVA_CORE_ID,
+			.name            = "sva",
+			.base_phys       = (void*)U8500_SVA_BASE,
+			.interrupt0      = IRQ_DB8500_SVA,
+			.interrupt1      = IRQ_DB8500_SVA2,
 			.mmdsp_regulator = NULL,
 			.pipe_regulator  = NULL,
 			.monitor_tsk     = NULL,
-			.hwmemCode       = NULL,
-			.hwmemData       = NULL,
+			.hwmem_code      = NULL,
+			.hwmem_data      = NULL,
 		},
 		{
-			.coreId        = SIA_CORE_ID,
-			.name          = "sia",
-			.baseP         = (void*)SIA_BASE_ADDR,
-			.interrupt0     = IRQ_DB8500_SIA,
-			.interrupt1     = IRQ_DB8500_SIA2,
+			.coreId          = SIA_CORE_ID,
+			.name            = "sia",
+			.base_phys       = (void*)U8500_SIA_BASE,
+			.interrupt0      = IRQ_DB8500_SIA,
+			.interrupt1      = IRQ_DB8500_SIA2,
 			.mmdsp_regulator = NULL,
 			.pipe_regulator  = NULL,
 			.monitor_tsk     = NULL,
-			.hwmemCode       = NULL,
-			.hwmemData       = NULL,
+			.hwmem_code      = NULL,
+			.hwmem_data      = NULL,
 		}
 	},
 	.esram_regulator = { NULL, NULL},
@@ -79,17 +79,39 @@ DECLARE_MPC_PARAM(SVA, SDRAM_DATA_SIZE, "", 1);
 
 DECLARE_MPC_PARAM(SIA, 0, "\n\t\t\t(0 means shared with SVA)", 2);
 
-int cfgCommunicationLocationInSDRAM = 1;
+bool cfgCommunicationLocationInSDRAM = true;
 module_param(cfgCommunicationLocationInSDRAM, bool, S_IRUGO);
 MODULE_PARM_DESC(cfgCommunicationLocationInSDRAM, "Location of communications (SDRAM or ESRAM)");
 
-int cfgSemaphoreTypeHSEM = 1;
+bool cfgSemaphoreTypeHSEM = true;
 module_param(cfgSemaphoreTypeHSEM, bool, S_IRUGO);
 MODULE_PARM_DESC(cfgSemaphoreTypeHSEM, "Semaphore used (HSEM or LSEM)");
 
 int cfgESRAMSize = ESRAM_SIZE;
 module_param(cfgESRAMSize, uint, S_IRUGO);
 MODULE_PARM_DESC(cfgESRAMSize, "Size of ESRAM used in the CM (in Kb)");
+
+static int set_param_powerMode(const char *val, struct kernel_param *kp)
+{
+	/* No equals means "set"... */
+	if (!val) val = "1";
+
+	/* One of =[yYnN01] */
+	switch (val[0]) {
+	case 'y': case 'Y': case '1':
+		CM_ENGINE_SetMode(CM_CMD_DBG_MODE, 0);
+		break;
+	case 'n': case 'N': case '0':
+		CM_ENGINE_SetMode(CM_CMD_DBG_MODE, 1);
+		break;
+	default:
+		return -EINVAL;
+	}
+	return 0;
+}
+
+module_param_call(powerMode, set_param_powerMode, param_get_bool, &powerMode, S_IWUSR|S_IRUGO);
+MODULE_PARM_DESC(powerMode, "DSP power mode enable");
 
 int init_config(void)
 {
@@ -102,14 +124,16 @@ int init_config(void)
 		pr_err("SDRAM data size for SVA must be greater than 0\n");
 		return -EINVAL;
 	}
-	osalEnv.mpc[SVA].nbYramBanks   = cfgMpcYBanks_SVA;
-	osalEnv.mpc[SVA].eeId          = cfgSchedulerTypeHybrid_SVA ? HYBRID_EXECUTIVE_ENGINE : SYNCHRONOUS_EXECUTIVE_ENGINE;
-	osalEnv.mpc[SVA].sdramCodeSize = cfgMpcSDRAMCodeSize_SVA * ONE_KB;
-	osalEnv.mpc[SVA].sdramDataSize = cfgMpcSDRAMDataSize_SVA * ONE_KB;
-	osalEnv.mpc[SIA].nbYramBanks   = cfgMpcYBanks_SIA;
-	osalEnv.mpc[SIA].eeId          = cfgSchedulerTypeHybrid_SIA ? HYBRID_EXECUTIVE_ENGINE : SYNCHRONOUS_EXECUTIVE_ENGINE;
-	osalEnv.mpc[SIA].sdramCodeSize = cfgMpcSDRAMCodeSize_SIA * ONE_KB;
-	osalEnv.mpc[SIA].sdramDataSize = cfgMpcSDRAMDataSize_SIA * ONE_KB;
+	osalEnv.mpc[SVA].nbYramBanks     = cfgMpcYBanks_SVA;
+	osalEnv.mpc[SVA].eeId            = cfgSchedulerTypeHybrid_SVA ? HYBRID_EXECUTIVE_ENGINE : SYNCHRONOUS_EXECUTIVE_ENGINE;
+	osalEnv.mpc[SVA].sdram_code.size = cfgMpcSDRAMCodeSize_SVA * ONE_KB;
+	osalEnv.mpc[SVA].sdram_data.size = cfgMpcSDRAMDataSize_SVA * ONE_KB;
+	osalEnv.mpc[SVA].base.size       = 128*ONE_KB; //we expose only TCM24
+	osalEnv.mpc[SIA].nbYramBanks     = cfgMpcYBanks_SIA;
+	osalEnv.mpc[SIA].eeId            = cfgSchedulerTypeHybrid_SIA ? HYBRID_EXECUTIVE_ENGINE : SYNCHRONOUS_EXECUTIVE_ENGINE;
+	osalEnv.mpc[SIA].sdram_code.size = cfgMpcSDRAMCodeSize_SIA * ONE_KB;
+	osalEnv.mpc[SIA].sdram_data.size = cfgMpcSDRAMDataSize_SIA * ONE_KB;
+	osalEnv.mpc[SIA].base.size       = 128*ONE_KB; //we expose only TCM24
 
 	return 0;
 }

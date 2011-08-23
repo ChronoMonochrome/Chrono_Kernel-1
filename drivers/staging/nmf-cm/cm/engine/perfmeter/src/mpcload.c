@@ -10,6 +10,8 @@
 #include <cm/engine/api/perfmeter_engine.h>
 #include <cm/engine/os_adaptation_layer/inc/os_adaptation_layer.h>
 
+#include <cm/engine/trace/inc/trace.h>
+
 #define PERFMETER_MAX_RETRIES                           32
 #define PERFMETER_DATA_WORD_NB                          7
 
@@ -96,9 +98,10 @@ PUBLIC t_cm_error cm_PFM_allocatePerfmeterDataMemory(t_nmf_core_id coreId, t_cm_
     t_mpcLoad *pMpcLoad = (t_mpcLoad *) &mpcLoad_i[coreId];
 
     pMpcLoad->perfmeterDataHandle = cm_DM_Alloc(domainId, SDRAM_EXT24, PERFMETER_DATA_WORD_NB, CM_MM_ALIGN_WORD, TRUE);
-    if (pMpcLoad->perfmeterDataHandle == INVALID_MEMORY_HANDLE)
+    if (pMpcLoad->perfmeterDataHandle == INVALID_MEMORY_HANDLE) {
         error = CM_NO_MORE_MEMORY;
-    else {
+        ERROR("CM_NO_MORE_MEMORY: Unable to allocate perfmeter\n", 0, 0, 0, 0, 0, 0);
+    } else {
         t_uint32 mmdspAddr;
 
         pMpcLoad->perfmeterDataAddr = cm_DSP_GetHostLogicalAddress(pMpcLoad->perfmeterDataHandle);

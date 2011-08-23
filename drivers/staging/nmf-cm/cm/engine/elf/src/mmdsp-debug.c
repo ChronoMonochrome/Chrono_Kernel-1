@@ -28,6 +28,7 @@ static struct LoadMapHdr *headerAddresses[NB_CORE_IDS] = {0, };
 static t_uint32 headerOffsets[NB_CORE_IDS] = {0, };
 static t_uint32 entryNumber[NB_CORE_IDS] = {0, };
 
+#undef myoffsetof
 #define myoffsetof(TYPE, MEMBER) ((unsigned int) &((TYPE *)0)->MEMBER)
 
 t_cm_error cm_DSPABI_AddLoadMap(
@@ -45,8 +46,10 @@ t_cm_error cm_DSPABI_AddLoadMap(
     {
         headerHandle[coreId] = cm_DM_Alloc(domainId, SDRAM_EXT16,
                                            sizeof(struct LoadMapHdr)/2, CM_MM_ALIGN_2WORDS, TRUE);
-        if (headerHandle[coreId] == INVALID_MEMORY_HANDLE)
+        if (headerHandle[coreId] == INVALID_MEMORY_HANDLE) {
+            ERROR("CM_NO_MORE_MEMORY: Unable to allocate loadmap in cm_DSPABI_AddLoadMap()\n", 0, 0, 0, 0, 0, 0);
             return CM_NO_MORE_MEMORY;
+        }
 
         headerAddresses[coreId] = (struct LoadMapHdr*)cm_DSP_GetHostLogicalAddress(headerHandle[coreId]);
 
@@ -87,8 +90,10 @@ t_cm_error cm_DSPABI_AddLoadMap(
         handle = cm_DM_Alloc(domainId, SDRAM_EXT16,
                              sizeof(struct LoadMapItem)/2 + (1 + fnlenaligned/2) + (1 + lnlenaligned/2),
                              CM_MM_ALIGN_2WORDS, TRUE);
-        if (handle == INVALID_MEMORY_HANDLE)
+        if (handle == INVALID_MEMORY_HANDLE) {
+            ERROR("CM_NO_MORE_MEMORY: Unable to allocate loadmap entry in cm_DSPABI_AddLoadMap\n", 0, 0, 0, 0, 0, 0);
             return CM_NO_MORE_MEMORY;
+        }
 
         pItem = (struct LoadMapItem*)cm_DSP_GetHostLogicalAddress(handle);
         cm_DSP_GetDspAddress(handle, &dspentry);
@@ -126,13 +131,13 @@ t_cm_error cm_DSPABI_AddLoadMap(
 				      "Previou (first) component name %s<%s>\n",
 				      curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
 				      curItem->pARMThis ? (char*)(((t_component_instance *)&curItem->pARMThis)->pathname) : "<null>",
-				      curItem->pARMThis ? (char*)(((t_component_instance *)&curItem->pARMThis)->template->name) : "<null>", 0, 0);
+				      curItem->pARMThis ? (char*)(((t_component_instance *)&curItem->pARMThis)->Template->name) : "<null>", 0, 0);
 			else
 				ERROR("AddLoadMap: Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n"
 				      "Previous valid component name %s<%s>",
 				      curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
 				      prevItem->pARMThis ? (char*)(((t_component_instance *)&prevItem->pARMThis)->pathname) : "<null>",
-				      prevItem->pARMThis ? (char*)(((t_component_instance *)&prevItem->pARMThis)->template->name) : "<null>", 0, 0);
+				      prevItem->pARMThis ? (char*)(((t_component_instance *)&prevItem->pARMThis)->Template->name) : "<null>", 0, 0);
 			return CM_INVALID_DATA;
                 }
                 curItemDspAdress = (t_uint32)curItem->pNextItem;
@@ -388,14 +393,14 @@ t_cm_error cm_DSPABI_CheckLoadMap_nolock(t_nmf_core_id coreId)
                         count,
                         curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
                         (char*)(((t_component_instance *)&curItem->pARMThis)->pathname),
-                        (char*)(((t_component_instance *)&curItem->pARMThis)->template->name), 0);
+                        (char*)(((t_component_instance *)&curItem->pARMThis)->Template->name), 0);
                     else
                         ERROR("CheckLoadMap: Memory corruption in MMDSP (count=%d): at data DSP address=%x or ARM address=%x\n"
                         "Previous valid component name %s<%s>",
                         count,
                         curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
                         (char*)(((t_component_instance *)&prevItem->pARMThis)->pathname),
-                        (char*)(((t_component_instance *)&prevItem->pARMThis)->template->name), 0);
+                        (char*)(((t_component_instance *)&prevItem->pARMThis)->Template->name), 0);
                     dump--;
                 return CM_INVALID_COMPONENT_HANDLE;
                 }

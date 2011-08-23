@@ -102,6 +102,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_AllocMpcMemory(
     if(*pHandle == (t_cm_memory_handle)INVALID_MEMORY_HANDLE)
     {
         OSAL_UNLOCK_API();
+        ERROR("CM_NO_MORE_MEMORY: CM_AllocMpcMemory() failed\n", 0, 0, 0, 0, 0, 0);
         return CM_NO_MORE_MEMORY;
     }
 

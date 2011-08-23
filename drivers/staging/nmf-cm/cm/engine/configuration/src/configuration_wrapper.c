@@ -89,20 +89,20 @@ PUBLIC void CM_ENGINE_Destroy(void)
 	if ((instance = componentEntry(i)) == NULL)
 		continue;
 	clientId = domainDesc[instance->domainId].client;
-        LOG_INTERNAL(0, "Found a remaining component %s (%s) when destroying the CM !!!\n", instance->pathname, instance->template->name, 0, 0, 0, 0);
+        LOG_INTERNAL(0, "Found a remaining component %s (%s) when destroying the CM !!!\n", instance->pathname, instance->Template->name, 0, 0, 0, 0);
         if (/* skip EE */
-                (instance->template->classe == FIRMWARE) ||
+                (instance->Template->classe == FIRMWARE) ||
                 /* Skip all binding components */
-                (cm_StringCompare(instance->template->name, "_ev.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_st.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_sk.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_tr.", 4) == 0))
+                (cm_StringCompare(instance->Template->name, "_ev.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_st.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_sk.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_tr.", 4) == 0))
             continue;
 
         /*
          * Special code for SINGLETON handling
          */
-        if(instance->template->classe == SINGLETON)
+        if(instance->Template->classe == SINGLETON)
         {
             struct t_client_of_singleton* cl = instance->clientOfSingleton;
 
@@ -126,7 +126,7 @@ PUBLIC void CM_ENGINE_Destroy(void)
         // Stop the component
         error = cm_stopComponent(instance, clientId);
         if (error != CM_OK && error != CM_COMPONENT_NOT_STARTED)
-            LOG_INTERNAL(0, "Error stopping component %s/%x (%s, error=%d, client=%u)\n", instance->pathname, instance, instance->template->name, error, clientId, 0);
+            LOG_INTERNAL(0, "Error stopping component %s/%x (%s, error=%d, client=%u)\n", instance->pathname, instance, instance->Template->name, error, clientId, 0);
 
         // Destroy dependencies
         cm_destroyRequireInterface(instance, clientId);
@@ -142,16 +142,16 @@ PUBLIC void CM_ENGINE_Destroy(void)
         clientId = domainDesc[instance->domainId].client;
 
         if (/* skip EE */
-                (instance->template->classe == FIRMWARE) ||
+                (instance->Template->classe == FIRMWARE) ||
                 /* Skip all binding components */
-                (cm_StringCompare(instance->template->name, "_ev.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_st.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_sk.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_tr.", 4) == 0)) {
+                (cm_StringCompare(instance->Template->name, "_ev.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_st.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_sk.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_tr.", 4) == 0)) {
             continue;
         }
 
-        if(instance->template->classe == SINGLETON)
+        if(instance->Template->classe == SINGLETON)
         {
             clientId = instance->clientOfSingleton->clientId;
         }

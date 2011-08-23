@@ -31,9 +31,14 @@ DECLARE_TASKLET(cmld_service_tasklet, service_tasklet_func, 0);
 void dispatch_service_msg(struct osal_msg *msg)
 {
 	struct list_head *head, *next;
-
-	/* Note: no lock needed to protect the channel_list to protect against list
-	   changes, as the current tasklet is disabled each time we modify the list */
+#ifdef CONFIG_DEBUG_FS
+	bool dump_flag_to_set = true;
+#endif
+	/*
+	 * Note: no lock needed to protect the channel_list against list
+	 * changes, as the current tasklet is disabled each time we modify
+	 * the list
+	 */
 	list_for_each_safe(head, next, &channel_list) {
 		struct cm_channel_priv *channelPriv = list_entry(head, struct cm_channel_priv, entry);
 		struct osal_msg *new_msg;
@@ -50,6 +55,19 @@ void dispatch_service_msg(struct osal_msg *msg)
 		}
 		memcpy(new_msg, msg, msg_size);
 		plist_node_init(&new_msg->msg_entry, 0);
+#ifdef CONFIG_DEBUG_FS
+		if (user_has_debugfs && dump_flag_to_set
+		    && (new_msg->d.srv.srvType == NMF_SERVICE_PANIC)) {
+			/*
+			 * The reciever of this message will do the DSP
+			 * memory dump
+			 */
+			new_msg->d.srv.srvData.panic.panicSource
+				|= DEBUGFS_DUMP_FLAG;
+			dump_flag_to_set = false;
+			dump_done = false;
+		}
+#endif
 		spin_lock_bh(&channelPriv->bh_lock);
 		plist_add(&new_msg->msg_entry, &channelPriv->messageQueue);
 		spin_unlock_bh(&channelPriv->bh_lock);
@@ -77,8 +95,9 @@ static void service_tasklet_func(unsigned long unused)
 
 				dispatch_service_msg(&msg);
 				/*
-				 * Stop DMA directly before shutdown, to avoid bad sound.
-				 * Should be called after DSP has stopped executing, to avoid the DSP
+				 * Stop DMA directly before shutdown, to avoid
+				 * bad sound. Should be called after DSP has
+				 * stopped executing, to avoid the DSP
 				 * re-starting DMA
 				 */
 				if (osalEnv.mpc[i].coreId == SIA_CORE_ID)
@@ -90,7 +109,8 @@ static void service_tasklet_func(unsigned long unused)
 				if (CM_ReadMPCString(osalEnv.mpc[i].coreId,
 						     desc.u.print.dspAddress, msg,
 						     sizeof(msg)) == CM_OK)
-					printk(msg, desc.u.print.value1, desc.u.print.value2);
+					printk(msg, desc.u.print.value1,
+					       desc.u.print.value2);
 				break;
 			}
 			default:

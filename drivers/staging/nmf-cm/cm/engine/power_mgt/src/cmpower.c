@@ -29,7 +29,7 @@ static t_uint32 _pwrMPCMemoryCountT[NB_CORE_IDS];
 // -------------------------------------------------------------------------------
 // Internal data to store the global Power Manager mode (see cm_PWR_Init fct)
 // -------------------------------------------------------------------------------
-static t_nmf_power_mode _pwrMode = NORMAL_PWR_MODE;
+t_nmf_power_mode powerMode = NORMAL_PWR_MODE;
 
 // -------------------------------------------------------------------------------
 // cm_PWR_Init
@@ -52,12 +52,12 @@ PUBLIC t_cm_error cm_PWR_Init(void)
 // -------------------------------------------------------------------------------
 void cm_PWR_SetMode(t_nmf_power_mode aMode)
 {
-	_pwrMode = aMode;
+	powerMode = aMode;
 }
 
 t_nmf_power_mode cm_PWR_GetMode()
 {
-    return _pwrMode;
+    return powerMode;
 }
 
 t_uint32 cm_PWR_GetMPCMemoryCount(t_nmf_core_id coreId)

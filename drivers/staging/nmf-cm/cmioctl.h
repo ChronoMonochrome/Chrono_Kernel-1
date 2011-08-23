@@ -9,6 +9,10 @@
 #ifndef __CMIOCTL_H
 #define __CMIOCTL_H
 
+#ifndef __KERNEL__
+#define BITS_PER_BYTE 8
+#endif
+
 #include <cm/engine/component/inc/component_type.h>
 #include <cm/engine/communication/inc/communication_type.h>
 #include <cm/engine/configuration/inc/configuration_type.h>
@@ -17,6 +21,8 @@
 #include <cm/engine/perfmeter/inc/perfmeter_type.h>
 #include <cm/engine/repository_mgt/inc/repository_type.h>
 
+#define DEBUGFS_ROOT "nmf-cm"
+#define DEBUGFS_DUMP_FLAG (1 << (sizeof(t_panic_source)*BITS_PER_BYTE - 1))
 
 enum cmdma_type {
     CMDMA_MEM_2_PER,
@@ -586,6 +592,9 @@ typedef struct{
 #define CM_PRIVRESERVEMEMORY 			_IOW('c', 101, unsigned int)
 #define CM_PRIV_GETBOARDVERSION 		_IOR('c', 102, unsigned int)
 #define CM_PRIV_ISCOMPONENTCACHEEMPTY 		_IO('c', 103)
+#define CM_PRIV_DEBUGFS_READY 			_IO('c', 104)
+#define CM_PRIV_DEBUGFS_WAIT_DUMP 		_IO('c', 105)
+#define CM_PRIV_DEBUGFS_DUMP_DONE 		_IO('c', 106)
 
 enum board_version {
 	U8500_V2

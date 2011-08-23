@@ -4,6 +4,7 @@
  * License terms: GNU General Public License (GPL) version 2.
  */
 #include <cm/engine/memory/inc/remote_allocator_utils.h>
+#include <cm/engine/trace/inc/trace.h>
 
 /***************************************************************************/
 /*
@@ -15,18 +16,29 @@
  *
  */
 /***************************************************************************/
-PUBLIC void linkChunk(t_cm_chunk* prev, t_cm_chunk* add)
+PUBLIC void linkChunk(t_cm_allocator_desc* alloc, t_cm_chunk* prev, t_cm_chunk* add)
 {
-    /* Link previous */
-    add->prev = prev;
-    add->next = prev->next;
-
-    /* Link next */
-    if (prev->next != 0)
+    // Link previous
+    if(prev == 0)
     {
-        prev->next->prev = add;
+        add->next = alloc->chunks;
+        alloc->chunks = add;
     }
-    prev->next = add;
+    else
+    {
+        add->prev = prev;
+        add->next = prev->next;
+        prev->next = add;
+    }
+
+    // Link next
+    if(add->next == 0)
+    {
+        // Link at the end
+        alloc->lastChunk = add;
+    }
+    else
+        add->next->prev = add;
 }
 
 /***************************************************************************/
@@ -39,24 +51,28 @@ PUBLIC void linkChunk(t_cm_chunk* prev, t_cm_chunk* add)
  *
  */
 /***************************************************************************/
-PUBLIC void unlinkChunk(t_cm_allocator_desc* alloc ,t_cm_chunk* current)
+PUBLIC void unlinkChunk(t_cm_allocator_desc* alloc, t_cm_chunk* current)
 {
-    /* Unlink previous */
-    if (current->prev !=0)
-    {
+    /* Link previous with next */
+    if (current->prev != 0)
         current->prev->next = current->next;
+    else
+    {
+        CM_ASSERT(alloc->chunks == current);
+
+        // We remove the first, update chunks
+        alloc->chunks = current->next;
     }
 
-    /* Unlink next */
-    if (current->next !=0)
-    {
+    /* Link next with previous */
+    if(current->next != 0)
         current->next->prev= current->prev;
-    }
-
-    /* Update first pointer */
-    if (alloc ->chunks == current)
+    else
     {
-    alloc ->chunks = current->next;
+        CM_ASSERT(alloc->lastChunk == current);
+
+        // We remove the last, update lastChunk
+        alloc->lastChunk = current->prev;
     }
 }
 
@@ -196,42 +212,6 @@ PUBLIC void updateFreeList(t_cm_allocator_desc* alloc , t_cm_chunk* chunk)
 
 /***************************************************************************/
 /*
- * mergeChunk
- * param allocHandle  : Allocator handle
- * param merged_chunk : Pointer on merged chunk
- * param destroy      : Pointer on chunk to destroy
- *
- * Link and destroy merged chunks
- *
- */
-/***************************************************************************/
-PUBLIC void mergeChunk(t_cm_allocator_desc* alloc,t_cm_chunk *merged_chunk, t_cm_chunk *destroy)
-{
-    /* Assign offset to the merged */
-    /* assume chunks ordered!
-    if (merged_chunk->offset > destroy->offset) {
-        merged_chunk->offset = destroy->offset;
-    }
-    */
-
-    /* Remove chunk */
-    unlinkChunk(alloc, destroy);
-    unlinkFreeMem(alloc, destroy);
-
-    if (merged_chunk->status == MEM_FREE)
-        unlinkFreeMem(alloc, merged_chunk);
-
-    /* Update size */
-    merged_chunk->size += destroy->size;
-
-    if (merged_chunk->status == MEM_FREE)
-        updateFreeList(alloc, merged_chunk);
-
-    freeChunk(destroy);
-}
-
-/***************************************************************************/
-/*
  * splitChunk
  * param allocHandle : Allocator handle
  * param chunk       : Current chunk (modified in place)
@@ -262,7 +242,7 @@ PUBLIC t_cm_chunk* splitChunk(t_cm_allocator_desc* alloc ,t_cm_chunk *chunk,
     new_chunk->alloc  = alloc;
     chunk->size = offset - chunk->offset;
 
-    linkChunk(chunk, new_chunk);
+    linkChunk(alloc, chunk, new_chunk);
     unlinkFreeMem(alloc, free);
     updateFreeList(alloc, free);
 

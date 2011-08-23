@@ -131,6 +131,7 @@ PUBLIC t_cm_error cm_COM_AllocateMpc(t_nmf_core_id coreId)
     return CM_OK;
 oom:
     cm_COM_FreeMpc(coreId);
+    ERROR("CM_NO_MORE_MEMORY: fifo_alloc() failed in cm_COM_AllocateMpc()\n", 0, 0, 0, 0, 0, 0);
     return CM_NO_MORE_MEMORY;
 }
 

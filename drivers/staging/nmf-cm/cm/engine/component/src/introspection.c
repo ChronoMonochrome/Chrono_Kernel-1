@@ -15,7 +15,7 @@ t_cm_error cm_getComponentProperty(
 	const char                 *propName,
     char                       value[MAX_PROPERTY_VALUE_LENGTH],
     t_uint32                   valueLength){
-	t_component_template* template = component->template;
+	t_component_template* template = component->Template;
     int i;
 
     for(i = 0; i < template->propertyNumber; i++) {
@@ -40,11 +40,11 @@ static t_attribute* cm_getAttributeDescriptor(
 {
     int i;
 
-    for(i = 0; i < component->template->attributeNumber; i++)
+    for(i = 0; i < component->Template->attributeNumber; i++)
     {
-        if(cm_StringCompare(component->template->attributes[i].name, attrName, MAX_ATTRIBUTE_NAME_LENGTH) == 0)
+        if(cm_StringCompare(component->Template->attributes[i].name, attrName, MAX_ATTRIBUTE_NAME_LENGTH) == 0)
         {
-            return &component->template->attributes[i];
+            return &component->Template->attributes[i];
         }
     }
 
@@ -76,7 +76,7 @@ t_cm_logical_address cm_getAttributeHostAddr(
     if((attribute = cm_getAttributeDescriptor(component, attrName)) == NULL)
         return 0x0;
 
-    // TODO JPF: component->template->attributes[i].memory.offset could be converted in byte during load
+    // TODO JPF: component->Template->attributes[i].memory.offset could be converted in byte during load
     return cm_DSP_GetHostLogicalAddress(component->memories[attribute->memory.memory->id]) +
             attribute->memory.offset * attribute->memory.memory->memEntSize;
 }
@@ -96,7 +96,7 @@ t_cm_error cm_readAttribute(
         return CM_NO_SUCH_ATTRIBUTE;
     }
 
-    // TODO JPF: component->template->attributes[i].memory.offset could be converted in byte during load
+    // TODO JPF: component->Template->attributes[i].memory.offset could be converted in byte during load
     hostAddr = cm_DSP_GetHostLogicalAddress(component->memories[attribute->memory.memory->id]) +
             attribute->memory.offset * attribute->memory.memory->memEntSize;
 
@@ -137,7 +137,7 @@ t_cm_error cm_writeAttribute(
         return CM_NO_SUCH_ATTRIBUTE;
     }
 
-    // TODO JPF: component->template->attributes[i].memory.offset could be converted in byte during load
+    // TODO JPF: component->Template->attributes[i].memory.offset could be converted in byte during load
     hostAddr = cm_DSP_GetHostLogicalAddress(component->memories[attribute->memory.memory->id]) +
             attribute->memory.offset * attribute->memory.memory->memEntSize;
 
@@ -173,7 +173,7 @@ t_dsp_address cm_getFunction(
     if((error = cm_getProvidedInterface(component, interfaceName, &itfProvide)) != CM_OK)
         return error;
 
-    provide = &component->template->provides[itfProvide.provideIndex];
+    provide = &component->Template->provides[itfProvide.provideIndex];
 
     for(i = 0; i < provide->interface->methodNumber; i++)
     {
@@ -232,12 +232,12 @@ PUBLIC t_cm_error cm_getProvidedInterface(const t_component_instance* server,
         t_interface_provide_description *itfProvide){
     int i;
 
-    for(i = 0; i < server->template->provideNumber; i++)
+    for(i = 0; i < server->Template->provideNumber; i++)
     {
         int collectionIndex;
-        if(compareItfName(server->template->provides[i].name, itfName, &collectionIndex) == 0)
+        if(compareItfName(server->Template->provides[i].name, itfName, &collectionIndex) == 0)
         {
-            t_interface_provide *provide = &server->template->provides[i];
+            t_interface_provide *provide = &server->Template->provides[i];
             if(collectionIndex >= 0)
             {
                 if(! (provide->provideTypes & COLLECTION_PROVIDE)) {
@@ -287,10 +287,10 @@ t_cm_error cm_getRequiredInterface(const t_component_instance* client,
         t_interface_require_description *itfRequire){
     int i;
 
-    for(i = 0; i < client->template->requireNumber; i++) {
+    for(i = 0; i < client->Template->requireNumber; i++) {
         int collectionIndex;
-        if(compareItfName(client->template->requires[i].name, itfName, &collectionIndex) == 0) {
-            t_interface_require *require = &client->template->requires[i];
+        if(compareItfName(client->Template->requires[i].name, itfName, &collectionIndex) == 0) {
+            t_interface_require *require = &client->Template->requires[i];
              if(collectionIndex >= 0) {
                 if(! (require->requireTypes & COLLECTION_REQUIRE)) {
                     ERROR("CM_NO_SUCH_REQUIRED_INTERFACE(%s, %s)\n",

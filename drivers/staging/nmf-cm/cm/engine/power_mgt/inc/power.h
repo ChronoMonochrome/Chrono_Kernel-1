@@ -18,9 +18,11 @@
 
 typedef enum
 {
-    NORMAL_PWR_MODE = 0x1,        //!< Normal mode
-    DISABLE_PWR_MODE = 0x2        //!< Disable mode - CM Power management is disabled. CM Power domain are always enabled and the EEs are loaded by default
+    DISABLE_PWR_MODE = 0x0, //!< Disable mode - CM Power management is disabled. CM Power domain are always enabled and the EEs are loaded by default
+    NORMAL_PWR_MODE = 0x1   //!< Normal mode
 } t_nmf_power_mode;
+
+extern t_nmf_power_mode powerMode;
 
 PUBLIC t_cm_error cm_PWR_Init(void);
 void cm_PWR_SetMode(t_nmf_power_mode aMode);

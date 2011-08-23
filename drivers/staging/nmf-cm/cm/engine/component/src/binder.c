@@ -76,8 +76,8 @@ static void cm_bindLowLevelInterface(
 {
     const t_component_instance* client = itfRequire->client;
     t_component_instance* server = (t_component_instance*)itfLocalBC->server;
-    t_interface_require *require = &client->template->requires[itfRequire->requireIndex];
-    t_interface_provide* provide = &server->template->provides[itfLocalBC->provideIndex];
+    t_interface_require *require = &client->Template->requires[itfRequire->requireIndex];
+    t_interface_provide* provide = &server->Template->provides[itfLocalBC->provideIndex];
     int k, j;
 
     if(require->indexes != NULL)
@@ -139,7 +139,7 @@ static void cm_bindLowLevelInterface(
     }
     else
     {
-        t_function_relocation *reloc = client->template->delayedRelocation;
+        t_function_relocation *reloc = client->Template->delayedRelocation;
         while(reloc != NULL) {
             for(j = 0; j < provide->interface->methodNumber; j++)
             {
@@ -174,7 +174,7 @@ static void cm_bindLowLevelInterface(
          * cm_destroyInstance() of server to succeed (interrupt line bindings are
          * destroyed after the check in cm_destroyInstance()
          */
-        if (client->template->classe != FIRMWARE)
+        if (client->Template->classe != FIRMWARE)
             server->providedItfUsedCount++;
     }
 }
@@ -194,7 +194,7 @@ static void cm_registerLowLevelInterfaceToConst(
         // This is an unbind from a true component (not to void)
         // Do not count bindings from EE (ie interrupt line)
         if ((targetInstance == NULL)
-                && (client->template->classe != FIRMWARE)
+                && (client->Template->classe != FIRMWARE)
                 && (itfRef->instance != (t_component_instance *)NMF_VOID_COMPONENT)
                 && (itfRef->instance != NULL))
         {
@@ -211,14 +211,14 @@ static void cm_bindLowLevelInterfaceToConst(
         const t_dsp_address functionAddress,
         const t_component_instance* targetInstance) {
     const t_component_instance* client = itfRequire->client;
-    t_interface_require *require = &client->template->requires[itfRequire->requireIndex];
+    t_interface_require *require = &client->Template->requires[itfRequire->requireIndex];
     int j, k;
 
 
     // If DSP is off/panic/... -> write nothing
     if(
             require->indexes != NULL
-            && cm_DSP_GetState(client->template->dspId)->state == MPC_STATE_BOOTED)
+            && cm_DSP_GetState(client->Template->dspId)->state == MPC_STATE_BOOTED)
     {
         t_interface_require_index *requireindex = &require->indexes[itfRequire->collectionIndex];
 
@@ -295,8 +295,8 @@ t_cm_error cm_bindInterface(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_BIND_SYNCHRONOUS,
             itfRequire->client, itfProvide->server,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
-            itfProvide->server->template->provides[itfProvide->provideIndex].name);
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
+            itfProvide->server->Template->provides[itfProvide->provideIndex].name);
 
   	return CM_OK;
 }
@@ -312,7 +312,7 @@ void cm_unbindInterface(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_UNBIND_SYNCHRONOUS,
             itfRequire->client, NULL,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
             NULL);
 
     cm_bindLowLevelInterfaceToConst(itfRequire,
@@ -329,12 +329,12 @@ t_cm_error cm_bindInterfaceToVoid(
 		 itfRequire->client->pathname, itfRequire->client, itfRequire->origName, 0, 0, 0);
 
     cm_bindLowLevelInterfaceToConst(itfRequire,
-            cm_EEM_getExecutiveEngine(itfRequire->client->template->dspId)->voidAddr,
+            cm_EEM_getExecutiveEngine(itfRequire->client->Template->dspId)->voidAddr,
             (t_component_instance*)NMF_VOID_COMPONENT);
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_BIND_SYNCHRONOUS,
             itfRequire->client, NULL,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
             NULL);
 
 	return CM_OK;
@@ -369,7 +369,7 @@ t_cm_error cm_bindInterfaceTrace(
         const t_interface_provide_description *itfProvide,
         t_elfdescription *elfhandleTrace)
 {
-    t_interface_require *require = &itfRequire->client->template->requires[itfRequire->requireIndex];
+    t_interface_require *require = &itfRequire->client->Template->requires[itfRequire->requireIndex];
     t_interface_require_description bcitfRequire;
     t_interface_provide_description bcitfProvide;
     t_trace_bf_info *bfInfo;
@@ -418,8 +418,8 @@ t_cm_error cm_bindInterfaceTrace(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_BIND_SYNCHRONOUS,
             itfRequire->client, itfProvide->server,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
-            itfProvide->server->template->provides[itfProvide->provideIndex].name);
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
+            itfProvide->server->Template->provides[itfProvide->provideIndex].name);
 
     return CM_OK;
 }
@@ -435,7 +435,7 @@ void cm_unbindInterfaceTrace(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_UNBIND_SYNCHRONOUS,
             itfRequire->client, NULL,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
             NULL);
 
     /* Unbind Client from Event Binding Component */
@@ -464,7 +464,7 @@ t_cm_error cm_bindInterfaceAsynchronous(
         t_uint32 fifosize,
         t_dsp_memory_type_id dspEventMemType,
         t_elfdescription *elfhandleEvent) {
-    t_interface_require *require = &itfRequire->client->template->requires[itfRequire->requireIndex];
+    t_interface_require *require = &itfRequire->client->Template->requires[itfRequire->requireIndex];
     t_interface_require_description eventitfRequire;
     t_interface_provide_description eventitfProvide;
     t_async_bf_info *bfInfo;
@@ -536,8 +536,8 @@ t_cm_error cm_bindInterfaceAsynchronous(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_BIND_ASYNCHRONOUS,
             itfRequire->client, itfProvide->server,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
-            itfProvide->server->template->provides[itfProvide->provideIndex].name);
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
+            itfProvide->server->Template->provides[itfProvide->provideIndex].name);
 
     return CM_OK;
 }
@@ -553,7 +553,7 @@ void cm_unbindInterfaceAsynchronous(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_UNBIND_ASYNCHRONOUS,
             itfRequire->client, NULL,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
             NULL);
 
     /* Unbind Client from Event Binding Component */
@@ -586,8 +586,8 @@ PRIVATE t_cm_error cm_createParamsFifo(t_component_instance *stub,
         t_uint32 *fifoElemSize,
         t_uint32 bcDescSize)
 {
-    t_nmf_core_id stubcore = (stub != NULL) ?(stub->template->dspId): ARM_CORE_ID;
-    t_nmf_core_id skelcore = (skeleton != NULL) ?(skeleton->template->dspId) : ARM_CORE_ID;
+    t_nmf_core_id stubcore = (stub != NULL) ?(stub->Template->dspId): ARM_CORE_ID;
+    t_nmf_core_id skelcore = (skeleton != NULL) ?(skeleton->Template->dspId) : ARM_CORE_ID;
     t_component_instance *bcnotnull = (stub != NULL) ? stub : skeleton;
     int _fifoelemsize;
 
@@ -601,8 +601,10 @@ PRIVATE t_cm_error cm_createParamsFifo(t_component_instance *stub,
 
     /* Allocation of the fifo params */
     *fifo = fifo_alloc(stubcore, skelcore, _fifoelemsize, fifosize, 1+bcDescSize, paramsLocation, extendedFieldLocation, domainId); /* 1+nbMethods fro hostBCThis_or_TOP space */
-    if(*fifo == NULL)
+    if(*fifo == NULL) {
+        ERROR("CM_NO_MORE_MEMORY: fifo_alloc() failed in cm_createParamsFifo()\n", 0, 0, 0, 0, 0, 0);
         return CM_NO_MORE_MEMORY;
+    }
 
     if(stub != NULL)
     {
@@ -639,7 +641,7 @@ PRIVATE t_cm_error cm_createDSPSkeleton(
         t_elfdescription *elfhandleSkeleton,
         t_dspskel_bf_info *bfInfo)
 {
-    t_interface_provide *provide = &itfProvide->server->template->provides[itfProvide->provideIndex];
+    t_interface_provide *provide = &itfProvide->server->Template->provides[itfProvide->provideIndex];
     t_interface_require_description skelitfRequire;
     t_cm_error error;
     unsigned int fifoeventsize = 0;
@@ -715,7 +717,7 @@ t_cm_error cm_bindComponentFromCMCore(
         t_dsp_memory_type_id dspEventMemType,
         t_elfdescription *elfhandleSkeleton,
         t_host2mpc_bf_info **bfInfo) {
-    t_interface_provide *provide = &itfProvide->server->template->provides[itfProvide->provideIndex];
+    t_interface_provide *provide = &itfProvide->server->Template->provides[itfProvide->provideIndex];
     t_dsp_offset shareVarOffset;
     t_cm_error error;
 
@@ -771,7 +773,7 @@ t_cm_error cm_bindComponentFromCMCore(
             fifo_params_setSharedField(
                     (*bfInfo)->fifo,
                     1+i,
-                    skel->template->provides[0].indexes[0][i].methodAddresses
+                    skel->Template->provides[0].indexes[0][i].methodAddresses
                     );
         }
     }
@@ -779,7 +781,7 @@ t_cm_error cm_bindComponentFromCMCore(
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_BIND_ASYNCHRONOUS,
             ARM_TRACE_COMPONENT, itfProvide->server,
             NULL,
-            itfProvide->server->template->provides[itfProvide->provideIndex].name);
+            itfProvide->server->Template->provides[itfProvide->provideIndex].name);
 
     return CM_OK;
 }
@@ -788,7 +790,7 @@ void cm_unbindComponentFromCMCore(
         t_host2mpc_bf_info* bfInfo) {
     t_component_instance *skel = bfInfo->dspskeleton.skelInstance;
     t_interface_reference* itfProvide = &skel->interfaceReferences[0][0];
-    t_interface_provide *provide = &itfProvide->instance->template->provides[itfProvide->provideIndex];
+    t_interface_provide *provide = &itfProvide->instance->Template->provides[itfProvide->provideIndex];
 
     LOG_INTERNAL(1, "\n##### UnBind HOST -> %s/%x.%s #####\n",
 		 itfProvide->instance->pathname, itfProvide->instance, provide->name, 0, 0, 0);
@@ -796,7 +798,7 @@ void cm_unbindComponentFromCMCore(
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_UNBIND_ASYNCHRONOUS,
             ARM_TRACE_COMPONENT, itfProvide->instance,
             NULL,
-            itfProvide->instance->template->provides[itfProvide->provideIndex].name);
+            itfProvide->instance->Template->provides[itfProvide->provideIndex].name);
 
     // Destroy FIFO params
     cm_destroyParamsFifo(bfInfo->fifo);
@@ -866,7 +868,7 @@ t_cm_error cm_bindComponentToCMCore(
         t_uint32                                context,
         t_elfdescription                        *elfhandleStub,
         t_mpc2host_bf_info                      ** bfInfo) {
-    t_interface_require *require = &itfRequire->client->template->requires[itfRequire->requireIndex];
+    t_interface_require *require = &itfRequire->client->Template->requires[itfRequire->requireIndex];
     t_interface_provide_description itfstubProvide;
     t_cm_error error;
     t_uint32 fifoelemsize;
@@ -921,7 +923,7 @@ t_cm_error cm_bindComponentToCMCore(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_BIND_ASYNCHRONOUS,
             itfRequire->client, ARM_TRACE_COMPONENT,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
             NULL);
 
     return error;
@@ -936,7 +938,7 @@ void cm_unbindComponentToCMCore(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_UNBIND_ASYNCHRONOUS,
             itfRequire->client, ARM_TRACE_COMPONENT,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
             NULL);
 
     /* Unbind virtual interface coms */
@@ -962,7 +964,7 @@ t_cm_error cm_bindInterfaceDistributed(
         t_dsp_memory_type_id dspEventMemType,
         t_elfdescription                        *elfhandleSkeleton,
         t_elfdescription                        *elfhandleStub) {
-    t_interface_require *require = &itfRequire->client->template->requires[itfRequire->requireIndex];
+    t_interface_require *require = &itfRequire->client->Template->requires[itfRequire->requireIndex];
     t_interface_provide_description itfstubProvide;
     t_cm_error error;
     t_mpc2mpc_bf_info *bfInfo;
@@ -1041,15 +1043,15 @@ t_cm_error cm_bindInterfaceDistributed(
             fifo_params_setSharedField(
                     bfInfo->fifo,
                     1+i,
-                    skel->template->provides[0].indexes[0][i].methodAddresses
+                    skel->Template->provides[0].indexes[0][i].methodAddresses
                     );
         }
     }
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_BIND_ASYNCHRONOUS,
             itfRequire->client, itfProvide->server,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
-            itfProvide->server->template->provides[itfProvide->provideIndex].name);
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
+            itfProvide->server->Template->provides[itfProvide->provideIndex].name);
 
     return CM_OK;
 }
@@ -1066,7 +1068,7 @@ void cm_unbindInterfaceDistributed(
 
     cm_TRC_traceBinding(TRACE_BIND_COMMAND_UNBIND_ASYNCHRONOUS,
             itfRequire->client, NULL,
-            itfRequire->client->template->requires[itfRequire->requireIndex].name,
+            itfRequire->client->Template->requires[itfRequire->requireIndex].name,
             NULL);
 
     /* Unbind virtual interface */
@@ -1138,15 +1140,15 @@ void cm_destroyRequireInterface(t_component_instance* component, t_nmf_client_id
     /*
      * Special code for SINGLETON handling
      */
-    if(component->template->classe == SINGLETON)
+    if(component->Template->classe == SINGLETON)
     {
         if(getNumberOfBind(component) > 0)
             return;
     }
 
-    for(i = 0; i < component->template->requireNumber; i++)
+    for(i = 0; i < component->Template->requireNumber; i++)
     {
-        int nb = component->template->requires[i].collectionSize;
+        int nb = component->Template->requires[i].collectionSize;
         for(j = 0; j < nb; j++)
         {
             if(component->interfaceReferences[i][j].instance != NULL)
@@ -1157,7 +1159,7 @@ void cm_destroyRequireInterface(t_component_instance* component, t_nmf_client_id
                 itfRequire.client = component;
                 itfRequire.requireIndex = i;
                 itfRequire.collectionIndex = j;
-                itfRequire.origName = component->template->requires[i].name;
+                itfRequire.origName = component->Template->requires[i].name;
 
                 switch (itfRef->bfInfoID) {
                 case BF_SYNCHRONOUS:
@@ -1202,7 +1204,7 @@ void cm_registerSingletonBinding(
         t_interface_provide_description*        itfProvide,
         t_nmf_client_id                         clientId)
 {
-    if(component->template->classe == SINGLETON)
+    if(component->Template->classe == SINGLETON)
     {
         struct t_client_of_singleton* cl = cm_getClientOfSingleton(component, FALSE, clientId);
         if(cl != NULL)
@@ -1226,7 +1228,7 @@ t_bool cm_unregisterSingletonBinding(
         t_interface_provide_description*        itfProvide,
         t_nmf_client_id                         clientId)
 {
-    if(component->template->classe == SINGLETON)
+    if(component->Template->classe == SINGLETON)
     {
         struct t_client_of_singleton* cl = cm_getClientOfSingleton(component, FALSE, clientId);
         if(cl != NULL)
@@ -1251,17 +1253,17 @@ t_bool cm_unregisterSingletonBinding(
             LOG_INTERNAL(1, "  -> Singleton[%d] : All required of %s/%x logically unbound, perform physical unbind\n",
                     clientId, itfRequire->client->pathname, itfRequire->client, 0, 0, 0);
 
-            (void)cm_EEM_ForceWakeup(component->template->dspId);
+            (void)cm_EEM_ForceWakeup(component->Template->dspId);
 
             // This is the last binding unbind all !!!
             cm_destroyRequireInterface(component, clientId);
 
-            cm_EEM_AllowSleep(component->template->dspId);
+            cm_EEM_AllowSleep(component->Template->dspId);
         }
         else if(itfProvide->server != NULL)
         {
             t_interface_require* itfReq;
-            itfReq = &itfRequire->client->template->requires[itfRequire->requireIndex];
+            itfReq = &itfRequire->client->Template->requires[itfRequire->requireIndex];
             if((itfReq->requireTypes & OPTIONAL_REQUIRE) != 0x0)
                 return TRUE;
         }

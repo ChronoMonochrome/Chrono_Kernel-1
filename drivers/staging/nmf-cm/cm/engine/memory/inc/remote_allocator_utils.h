@@ -20,14 +20,13 @@ typedef enum {
 
 PUBLIC void updateFreeList(t_cm_allocator_desc* alloc, t_cm_chunk* chunk);
 
-PUBLIC void linkChunk(t_cm_chunk* prev,t_cm_chunk* add);
+PUBLIC void linkChunk(t_cm_allocator_desc* alloc, t_cm_chunk* prev,t_cm_chunk* add);
 PUBLIC void unlinkChunk(t_cm_allocator_desc* alloc,t_cm_chunk* current);
 
 PUBLIC void unlinkFreeMem(t_cm_allocator_desc* alloc,t_cm_chunk* current);
 PUBLIC void linkFreeMemBefore(t_cm_chunk* add, t_cm_chunk* next);
 PUBLIC void linkFreeMemAfter(t_cm_chunk* prev,t_cm_chunk* add);
 
-PUBLIC void mergeChunk(t_cm_allocator_desc* alloc,t_cm_chunk *c,t_cm_chunk *destroy);
 PUBLIC t_cm_chunk* splitChunk(t_cm_allocator_desc* alloc, t_cm_chunk *chunk, t_uint32 offset, t_mem_split_position position);
 
 #endif /*REMOTE_ALLOCATOR_UTILS_H_*/

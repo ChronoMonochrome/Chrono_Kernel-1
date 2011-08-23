@@ -18,6 +18,7 @@
 #include <cm/engine/trace/inc/trace.h>
 
 
+#undef NHASH
 #define NHASH 157       //Use a prime number!
 #define MULT 17
 
@@ -144,10 +145,10 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetRequiredComponentFiles(
         if((error = cm_checkValidServer(compServer, providedItfServerName,
                 &itfProvide)) == CM_OK)
         {
-            cm_StringCopy(type, itfProvide.server->template->provides[itfProvide.provideIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
+            cm_StringCopy(type, itfProvide.server->Template->provides[itfProvide.provideIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
 
             cm_StringCopy(fileList[0], "_sk.", MAX_INTERFACE_TYPE_NAME_LENGTH);
-            cm_StringConcatenate(fileList[0], itfProvide.server->template->provides[itfProvide.provideIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
+            cm_StringConcatenate(fileList[0], itfProvide.server->Template->provides[itfProvide.provideIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
         }
     } break;
 
@@ -160,11 +161,11 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetRequiredComponentFiles(
         if((error = cm_checkValidClient(compClient, requiredItfClientName,
                 &itfRequire, &bindable)) == CM_OK)
         {
-            cm_StringCopy(type, itfRequire.client->template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
-            *methodNumber = itfRequire.client->template->requires[itfRequire.requireIndex].interface->methodNumber;
+            cm_StringCopy(type, itfRequire.client->Template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
+            *methodNumber = itfRequire.client->Template->requires[itfRequire.requireIndex].interface->methodNumber;
 
             cm_StringCopy(fileList[0], "_st.", MAX_INTERFACE_TYPE_NAME_LENGTH);
-            cm_StringConcatenate(fileList[0], itfRequire.client->template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
+            cm_StringConcatenate(fileList[0], itfRequire.client->Template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
         }
     }; break;
 
@@ -179,18 +180,18 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetRequiredComponentFiles(
                 compServer, providedItfServerName,
                 &itfRequire, &itfProvide, &bindable)) == CM_OK)
         {
-                if(compClient->template->dspId != compServer->template->dspId)
+                if(compClient->Template->dspId != compServer->Template->dspId)
                 {
                     cm_StringCopy(fileList[0], "_sk.", MAX_INTERFACE_TYPE_NAME_LENGTH);
-                    cm_StringConcatenate(fileList[0], itfRequire.client->template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
+                    cm_StringConcatenate(fileList[0], itfRequire.client->Template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
 
                     cm_StringCopy(fileList[1], "_st.", MAX_INTERFACE_TYPE_NAME_LENGTH);
-                    cm_StringConcatenate(fileList[1], itfRequire.client->template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
+                    cm_StringConcatenate(fileList[1], itfRequire.client->Template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
                 }
                 else
                 {
                     cm_StringCopy(fileList[0], "_ev.", MAX_INTERFACE_TYPE_NAME_LENGTH);
-                    cm_StringConcatenate(fileList[0], itfRequire.client->template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
+                    cm_StringConcatenate(fileList[0], itfRequire.client->Template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
                 }
         }
     }; break;
@@ -207,7 +208,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetRequiredComponentFiles(
                 &itfRequire, &itfProvide, &bindable)) == CM_OK)
         {
             cm_StringCopy(fileList[0], "_tr.", MAX_INTERFACE_TYPE_NAME_LENGTH);
-            cm_StringConcatenate(fileList[0], itfRequire.client->template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
+            cm_StringConcatenate(fileList[0], itfRequire.client->Template->requires[itfRequire.requireIndex].interface->type, MAX_INTERFACE_TYPE_NAME_LENGTH);
         }
     }; break;
 

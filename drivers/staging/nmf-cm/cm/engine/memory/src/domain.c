@@ -13,6 +13,7 @@
 #include <cm/engine/dsp/inc/dsp.h>
 #include <cm/engine/component/inc/instance.h>
 #include <cm/engine/power_mgt/inc/power.h>
+#include <cm/engine/trace/inc/trace.h>
 
 /*
  * domain_memory structure is all we need
@@ -42,6 +43,7 @@ static void cm_DM_DomainError(const t_cm_domain_id parentId, const t_nmf_client_
     domainDesc.scratch.parent.handle    = 0;             \
     domainDesc.scratch.child.alloc      = 0;             \
     domainDesc.scratch.child.parent_ref = 0;             \
+    domainDesc.dbgCooky                 = NULL;          \
     } while (0)
 
 #define FIND_DOMAIN_ID(domainId)                                                           \
@@ -204,6 +206,9 @@ PUBLIC t_cm_error cm_DM_CreateDomain(const t_nmf_client_id client, const t_cm_do
     domainDesc[domainId].client = client;
     domainDesc[domainId].domain = *domain;
 
+    if (osal_debug_ops.domain_create)
+	    osal_debug_ops.domain_create(domainId);
+
     *handle = domainId;
 
     return CM_OK;
@@ -280,21 +285,15 @@ PUBLIC t_cm_error cm_DM_CreateDomainScratch(const t_nmf_client_id client, const 
         if ((oldMin > scratchMin) || (oldMax < scratchMax)) {
             t_uint32 newMin = (oldMin > scratchMin)?scratchMin:oldMin;
             t_uint32 newMax = (oldMax < scratchMax)?scratchMax:oldMax;
-            t_uint16 userData;
 
-            /* save user data lost during realloc, user data do not change */
-            cm_MM_GetMemoryHandleUserData(domainDesc[parentId].scratch.parent.handle, &userData, 0);
-            memhandle = cm_MM_Realloc(cm_DM_getAllocator(parentId, ESRAM_EXT16), newMax - newMin, newMin,
-                                      CM_MM_MPC_ALIGN_NONE, domainDesc[parentId].scratch.parent.handle);
-            if (memhandle == 0) {
+            if(cm_MM_Realloc(cm_DM_getAllocator(parentId, ESRAM_EXT16), newMax - newMin, newMin,
+                                      &domainDesc[parentId].scratch.parent.handle) != CM_OK)
+            {
                 /* failed to extend the zone */
                 cm_DM_DestroyDomain(*handle);
                 cm_DM_DomainError(parentId, client);
                 return CM_NO_MORE_MEMORY;
             }
-
-            cm_MM_SetMemoryHandleUserData(memhandle, userData);
-            domainDesc[parentId].scratch.parent.handle = memhandle;
         }
     }
 
@@ -382,7 +381,6 @@ PUBLIC t_cm_error cm_DM_DestroyDomain(t_cm_domain_id handle)
             t_uint32 oldMax = 0x0;
             t_uint32 scratchMin = domainDesc[handle].domain.esramData.offset;
             t_uint32 scratchMax = domainDesc[handle].domain.esramData.offset + domainDesc[handle].domain.esramData.size;
-            t_memory_handle memhandle;
 
             /* compute the remaining reserved zone size */
             for(i = 0; i < MAX_USER_DOMAIN_NB; i++) {
@@ -400,19 +398,14 @@ PUBLIC t_cm_error cm_DM_DestroyDomain(t_cm_domain_id handle)
 
             /* resize the scratch zone */
             if ((oldMin > scratchMin) || (oldMax < scratchMax)) {
-                t_uint16 userData;
-
-                /* save user data lost during realloc, user data do not change */
-                cm_MM_GetMemoryHandleUserData(domainDesc[parentId].scratch.parent.handle, &userData, 0);
-                memhandle = cm_MM_Realloc(cm_DM_getAllocator(parentId, ESRAM_EXT16), oldMax - oldMin, oldMin,
-                                          CM_MM_MPC_ALIGN_NONE, domainDesc[parentId].scratch.parent.handle);
-                CM_ASSERT(memhandle); //the realloc shouldn't fail..
-
-                cm_MM_SetMemoryHandleUserData(memhandle, userData);
-                domainDesc[parentId].scratch.parent.handle = memhandle;
+                CM_ASSERT(cm_MM_Realloc(cm_DM_getAllocator(parentId, ESRAM_EXT16), oldMax - oldMin, oldMin,
+                                          &domainDesc[parentId].scratch.parent.handle) == CM_OK); //the realloc shouldn't fail..
             }
         }
     }
+
+    if (osal_debug_ops.domain_destroy)
+	    osal_debug_ops.domain_destroy(handle);
 
     //reset the domain desc
     INIT_DOMAIN_STRUCT(domainDesc[handle]);
@@ -482,6 +475,10 @@ PUBLIC t_memory_handle cm_DM_Alloc(t_cm_domain_id domainId, t_dsp_memory_type_id
                     cm_DSP_GetState(coreId)->allocator[memType]->baseAddress.physical + cm_MM_GetOffset(handle),
                     cm_MM_GetSize(handle));
         }
+    } else {
+        LOG_INTERNAL(0, "CM_NO_MORE_MEMORY domainId: %d, memType %d, wordSize %d, alignement %d\n",
+                domainId, memType, wordSize, memAlignment, 0, 0);
+        cm_MM_DumpMemory(alloc, offset, offset + size);
     }
 
     return handle;

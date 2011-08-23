@@ -528,20 +528,27 @@ PUBLIC t_cm_error cm_DSP_setStackSize(t_nmf_core_id coreId, t_uint32 newStackSiz
 {
     t_uint8 nbXramBanks;
     t_uint32 xramSize;
+    t_cm_error error;
 
     /* compute size of xram allocator */
     nbXramBanks = SxA_NB_BLOCK_RAM - mpcDesc[coreId].nbYramBank;
 
     /* check first that required stack size is less then xram memory ....*/
-    if (newStackSize >= nbXramBanks * 4 * ONE_KB)
+    if (newStackSize >= nbXramBanks * 4 * ONE_KB) {
+        ERROR("CM_NO_MORE_MEMORY: cm_DSP_setStackSize(), required stack size doesn't fit in XRAM.\n", 0, 0, 0, 0, 0, 0);
         return CM_NO_MORE_MEMORY;
+    }
 
     /* compute new xram allocator size */
     xramSize = nbXramBanks * 4 * ONE_KB - newStackSize;
 
     /* try to resize it */
-    return cm_MM_ResizeAllocator(cm_DSP_GetAllocator(coreId, INTERNAL_XRAM24),
-                                 xramSize << dspMemoryTypeId2OffsetShifter[INTERNAL_XRAM24]);
+    if ((error = cm_MM_ResizeAllocator(cm_DSP_GetAllocator(coreId, INTERNAL_XRAM24),
+                                 xramSize << dspMemoryTypeId2OffsetShifter[INTERNAL_XRAM24])) == CM_NO_MORE_MEMORY) {
+        ERROR("CM_NO_MORE_MEMORY: Couldn't resize stack in cm_DSP_setStackSize()\n", 0, 0, 0, 0, 0, 0);
+    }
+
+    return error;
 }
 
 PUBLIC t_cm_error cm_DSP_IsNbYramBanksValid(t_nmf_core_id coreId, t_uint8 nbYramBanks)

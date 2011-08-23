@@ -33,8 +33,10 @@ t_cm_error dspevent_createDspEventFifo(
 
     // Allocate fifo
     *pHandle = cm_DM_Alloc(pComp->domainId, dspEventMemType, fifoNbElem*fifoElemSizeInWord, CM_MM_ALIGN_2WORDS, TRUE);
-    if(*pHandle == INVALID_MEMORY_HANDLE)
-		return 	CM_NO_MORE_MEMORY;
+    if(*pHandle == INVALID_MEMORY_HANDLE) {
+        ERROR("CM_NO_MORE_MEMORY: dspevent_createDspEventFifo()\n", 0, 0, 0, 0, 0, 0);
+        return 	CM_NO_MORE_MEMORY;
+    }
 
     cm_DSP_GetDspAddress(*pHandle, &dspElementAddr);
 

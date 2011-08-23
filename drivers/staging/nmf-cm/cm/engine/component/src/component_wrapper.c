@@ -139,7 +139,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_DestroyComponent(
     }
     else
     {
-        t_nmf_core_id coreId = component->template->dspId;
+        t_nmf_core_id coreId = component->Template->dspId;
 
         (void)cm_EEM_ForceWakeup(coreId);
 
@@ -171,18 +171,19 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_FlushComponents(t_nmf_client_id client
     (void)cm_EEM_ForceWakeup(SIA_CORE_ID);
 
     /* Destroy all host2mpc bindings */
+    OSAL_LOCK_COM();
     for (i=0; i<Host2MpcBindingTable.idxMax; i++)
     {
 	    t_host2mpc_bf_info* bfInfo;
-	    OSAL_LOCK_COM();
 	    bfInfo = Host2MpcBindingTable.entries[i];
 	    if ((bfInfo != NULL) && (bfInfo->clientId == clientId)) {
 		    cm_delEntry(&Host2MpcBindingTable, i);
 		    OSAL_UNLOCK_COM();
 		    cm_unbindComponentFromCMCore(bfInfo);
-	    } else
-		    OSAL_UNLOCK_COM();
+                    OSAL_LOCK_COM();
+	    }
     }
+    OSAL_UNLOCK_COM();
 
     /* First, stop all remaining components for this client */
     for (i=0; i<ComponentTable.idxMax; i++)
@@ -190,18 +191,18 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_FlushComponents(t_nmf_client_id client
 	if ((instance = componentEntry(i)) == NULL)
 		continue;
         if (/* skip EE */
-                (instance->template->classe == FIRMWARE) ||
+                (instance->Template->classe == FIRMWARE) ||
                 /* Skip all binding components */
-                (cm_StringCompare(instance->template->name, "_ev.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_st.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_sk.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_tr.", 4) == 0))
+                (cm_StringCompare(instance->Template->name, "_ev.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_st.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_sk.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_tr.", 4) == 0))
             continue;
 
         /*
          * Special code for SINGLETON handling
          */
-        if(instance->template->classe == SINGLETON)
+        if(instance->Template->classe == SINGLETON)
         {
             struct t_client_of_singleton* cl = cm_getClientOfSingleton(instance, FALSE, clientId);
             if(cl == NULL)
@@ -218,7 +219,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_FlushComponents(t_nmf_client_id client
         // Stop the component
         error = cm_stopComponent(instance, clientId);
         if (error != CM_OK && error != CM_COMPONENT_NOT_STARTED)
-            LOG_INTERNAL(0, "Error stopping component %s/%x (%s, error=%d, client=%u)\n", instance->pathname, instance, instance->template->name, error, clientId, 0);
+            LOG_INTERNAL(0, "Error stopping component %s/%x (%s, error=%d, client=%u)\n", instance->pathname, instance, instance->Template->name, error, clientId, 0);
 
         // Destroy dependencies
         cm_destroyRequireInterface(instance, clientId);
@@ -230,12 +231,12 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_FlushComponents(t_nmf_client_id client
 	if ((instance = componentEntry(i)) == NULL)
 		continue;
         if (/* skip EE */
-                (instance->template->classe == FIRMWARE) ||
+                (instance->Template->classe == FIRMWARE) ||
                 /* Skip all binding components */
-                (cm_StringCompare(instance->template->name, "_ev.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_st.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_sk.", 4) == 0) ||
-                (cm_StringCompare(instance->template->name, "_tr.", 4) == 0)) {
+                (cm_StringCompare(instance->Template->name, "_ev.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_st.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_sk.", 4) == 0) ||
+                (cm_StringCompare(instance->Template->name, "_tr.", 4) == 0)) {
 		continue;
         }
 
@@ -243,7 +244,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_FlushComponents(t_nmf_client_id client
        /*
         * Special code for SINGLETON handling
         */
-       if(instance->template->classe == SINGLETON)
+       if(instance->Template->classe == SINGLETON)
        {
            struct t_client_of_singleton* cl = cm_getClientOfSingleton(instance, FALSE, clientId);
            if(cl == NULL)
@@ -316,7 +317,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponent(
         goto out;
 
     // Check that client and server component run on same DSP
-    if (itfRequire.client->template->dspId != itfProvide.server->template->dspId)
+    if (itfRequire.client->Template->dspId != itfProvide.server->Template->dspId)
     {
         error = CM_ILLEGAL_BINDING;
         goto out;
@@ -325,7 +326,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponent(
     // Check if we really need to bind
     if(bindable)
     {
-        if ((error = cm_EEM_ForceWakeup(itfRequire.client->template->dspId)) != CM_OK)
+        if ((error = cm_EEM_ForceWakeup(itfRequire.client->Template->dspId)) != CM_OK)
             goto out;
 
         /*
@@ -336,7 +337,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponent(
         else
             error = cm_bindInterface(&itfRequire, &itfProvide);
 
-        cm_EEM_AllowSleep(itfRequire.client->template->dspId);
+        cm_EEM_AllowSleep(itfRequire.client->Template->dspId);
     }
 
     cm_registerSingletonBinding(client, &itfRequire, &itfProvide, clientId);
@@ -376,7 +377,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_UnbindComponent(
     // Check if we really need to unbind
     if(cm_unregisterSingletonBinding(client, &itfRequire, &itfProvide, clientId))
     {
-        (void)cm_EEM_ForceWakeup(itfRequire.client->template->dspId);
+        (void)cm_EEM_ForceWakeup(itfRequire.client->Template->dspId);
 
         if(bfInfoID == BF_SYNCHRONOUS)
             cm_unbindInterface(&itfRequire);
@@ -385,7 +386,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_UnbindComponent(
                     &itfRequire,
                     (t_trace_bf_info*)itfRequire.client->interfaceReferences[itfRequire.requireIndex][itfRequire.collectionIndex].bfInfo);
 
-        cm_EEM_AllowSleep(itfRequire.client->template->dspId);
+        cm_EEM_AllowSleep(itfRequire.client->Template->dspId);
 
         error = CM_OK;
     }
@@ -416,12 +417,12 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentToVoid(
    // Check if we really need to bind
     if(bindable)
     {
-        if ((error = cm_EEM_ForceWakeup(itfRequire.client->template->dspId)) != CM_OK)
+        if ((error = cm_EEM_ForceWakeup(itfRequire.client->Template->dspId)) != CM_OK)
             goto out;
 
         error = cm_bindInterfaceToVoid(&itfRequire);
 
-        cm_EEM_AllowSleep(itfRequire.client->template->dspId);
+        cm_EEM_AllowSleep(itfRequire.client->Template->dspId);
     }
 
     cm_registerSingletonBinding(client, &itfRequire, NULL, clientId);
@@ -496,13 +497,13 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentAsynchronous(
     if(bindable)
     {
         // Create the binding and bind it to the client (or all sub-components clients ....)
-        if (itfRequire.client->template->dspId != itfProvide.server->template->dspId)
+        if (itfRequire.client->Template->dspId != itfProvide.server->Template->dspId)
         {
-            if ((error = cm_EEM_ForceWakeup(itfRequire.client->template->dspId)) != CM_OK)
+            if ((error = cm_EEM_ForceWakeup(itfRequire.client->Template->dspId)) != CM_OK)
                 goto out;
-            if ((error = cm_EEM_ForceWakeup(itfProvide.server->template->dspId)) != CM_OK)
+            if ((error = cm_EEM_ForceWakeup(itfProvide.server->Template->dspId)) != CM_OK)
             {
-                cm_EEM_AllowSleep(itfRequire.client->template->dspId);
+                cm_EEM_AllowSleep(itfRequire.client->Template->dspId);
                 goto out;
             }
 
@@ -515,12 +516,12 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentAsynchronous(
                     elfhandleSkeletonOrEvent,
                     elfhandleStub);
 
-            cm_EEM_AllowSleep(itfRequire.client->template->dspId);
-            cm_EEM_AllowSleep(itfProvide.server->template->dspId);
+            cm_EEM_AllowSleep(itfRequire.client->Template->dspId);
+            cm_EEM_AllowSleep(itfProvide.server->Template->dspId);
         }
         else
         {
-            if ((error = cm_EEM_ForceWakeup(itfRequire.client->template->dspId)) != CM_OK)
+            if ((error = cm_EEM_ForceWakeup(itfRequire.client->Template->dspId)) != CM_OK)
                 goto out;
 
             // This is a acynchronous communication
@@ -531,7 +532,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentAsynchronous(
                     dspEventMemType,
                     elfhandleSkeletonOrEvent);
 
-            cm_EEM_AllowSleep(itfRequire.client->template->dspId);
+            cm_EEM_AllowSleep(itfRequire.client->Template->dspId);
         }
     }
 
@@ -570,8 +571,8 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_UnbindComponentAsynchronous(
         // Check if this is a Asynchronous binding
         if(bfInfoID == BF_DSP2DSP)
         {
-            t_nmf_core_id clientDsp = itfRequire.client->template->dspId;
-            t_nmf_core_id serverDsp = itfProvide.server->template->dspId;
+            t_nmf_core_id clientDsp = itfRequire.client->Template->dspId;
+            t_nmf_core_id serverDsp = itfProvide.server->Template->dspId;
 
             (void)cm_EEM_ForceWakeup(clientDsp);
             (void)cm_EEM_ForceWakeup(serverDsp);
@@ -587,7 +588,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_UnbindComponentAsynchronous(
         }
         else if(bfInfoID == BF_ASYNCHRONOUS)
         {
-            t_nmf_core_id clientDsp = itfRequire.client->template->dspId;
+            t_nmf_core_id clientDsp = itfRequire.client->Template->dspId;
 
             (void)cm_EEM_ForceWakeup(clientDsp);
 
@@ -641,7 +642,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentFromCMCore(
                     &itfProvide)) != CM_OK)
         goto out;
 
-    if ((error = cm_EEM_ForceWakeup(itfProvide.server->template->dspId)) != CM_OK)
+    if ((error = cm_EEM_ForceWakeup(itfProvide.server->Template->dspId)) != CM_OK)
         goto out;
 
     switch(eventMemType)
@@ -665,7 +666,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentFromCMCore(
 				       elfhandleSkeleton,
 				       &bfInfo);
 
-    cm_EEM_AllowSleep(itfProvide.server->template->dspId);
+    cm_EEM_AllowSleep(itfProvide.server->Template->dspId);
 
 out:
     cm_ELF_CloseFile(TRUE, elfhandleSkeleton);
@@ -681,9 +682,9 @@ out:
 
 	    if (error != CM_OK) {
 		    OSAL_LOCK_API();
-		    (void)cm_EEM_ForceWakeup(itfProvide.server->template->dspId);
+		    (void)cm_EEM_ForceWakeup(itfProvide.server->Template->dspId);
 		    cm_unbindComponentFromCMCore(bfInfo);
-		    cm_EEM_AllowSleep(itfProvide.server->template->dspId);
+		    cm_EEM_AllowSleep(itfProvide.server->Template->dspId);
 		    OSAL_UNLOCK_API();
 	    }
     }
@@ -709,7 +710,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_UnbindComponentFromCMCore(
     // Check if this is a DSP to Host binding
     //if(bfInfo->id != BF_HOST2DSP)
     //    return CM_ILLEGAL_UNBINDING;
-    coreId = bfInfo->dspskeleton.skelInstance->template->dspId;
+    coreId = bfInfo->dspskeleton.skelInstance->Template->dspId;
 
     (void)cm_EEM_ForceWakeup(coreId);
 
@@ -756,7 +757,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentToCMCore(
     // Check if we really need to bind
     if(bindable)
     {
-        if ((error = cm_EEM_ForceWakeup(itfRequire.client->template->dspId)) != CM_OK)
+        if ((error = cm_EEM_ForceWakeup(itfRequire.client->Template->dspId)) != CM_OK)
             goto out;
 
         error = cm_bindComponentToCMCore(
@@ -766,7 +767,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentToCMCore(
                 elfhandleStub,
                 (t_mpc2host_bf_info**)mpc2hostId);
 
-        cm_EEM_AllowSleep(itfRequire.client->template->dspId);
+        cm_EEM_AllowSleep(itfRequire.client->Template->dspId);
     }
 
     cm_registerSingletonBinding(client, &itfRequire, NULL, clientId);
@@ -811,11 +812,11 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_UnbindComponentToCMCore(
     // Check if we really need to unbind
     if(cm_unregisterSingletonBinding(client, &itfRequire, &itfProvide, clientId))
     {
-        (void)cm_EEM_ForceWakeup(itfRequire.client->template->dspId);
+        (void)cm_EEM_ForceWakeup(itfRequire.client->Template->dspId);
 
         cm_unbindComponentToCMCore(&itfRequire, bfInfo);
 
-        cm_EEM_AllowSleep(itfRequire.client->template->dspId);
+        cm_EEM_AllowSleep(itfRequire.client->Template->dspId);
 
         error = CM_OK;
     }
@@ -838,7 +839,7 @@ PUBLIC EXPORT_SHARED t_event_params_handle CM_ENGINE_AllocEvent(t_cm_bf_host2mpc
     if(bfInfo->dspskeleton.skelInstance->interfaceReferences[0][0].instance->state != STATE_RUNNABLE) {
         ERROR("CM_COMPONENT_NOT_STARTED: Call interface before start component %s<%s>\n",
                 bfInfo->dspskeleton.skelInstance->pathname,
-                bfInfo->dspskeleton.skelInstance->template->name, 0, 0, 0, 0);
+                bfInfo->dspskeleton.skelInstance->Template->name, 0, 0, 0, 0);
     }
 
     eventHandle = cm_AllocEvent(bfInfo->fifo);
@@ -891,13 +892,13 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_ReadComponentAttribute(
         error = CM_INVALID_COMPONENT_HANDLE;
     else
     {
-        if ((error = cm_EEM_ForceWakeup(component->template->dspId)) != CM_OK)
+        if ((error = cm_EEM_ForceWakeup(component->Template->dspId)) != CM_OK)
             goto out;
 
         // t_uint24 -> t_uint32 possible since we know it same size
         error = cm_readAttribute(component, attrName, (t_uint32*)attrValue);
 
-        cm_EEM_AllowSleep(component->template->dspId);
+        cm_EEM_AllowSleep(component->Template->dspId);
     }
 
 out:
@@ -921,7 +922,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentListHeader(
     *headerComponent = 0;
     for (i=0; i < ComponentTable.idxMax; i++) {
 	    if ((componentEntry(i) != NULL) &&
-		(componentEntry(i)->template->classe != FIRMWARE) &&
+		(componentEntry(i)->Template->classe != FIRMWARE) &&
 		(domainDesc[componentEntry(i)->domainId].client == client)) {
 		    *headerComponent = ENTRY2HANDLE(componentEntry(i), i);;
 		    break;  
@@ -950,7 +951,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentListNext(
 	*nextComponent = 0;
 	for (i++; i < ComponentTable.idxMax; i++) {
 	    if ((componentEntry(i) != NULL) &&
-		(componentEntry(i)->template->classe != FIRMWARE) &&
+		(componentEntry(i)->Template->classe != FIRMWARE) &&
 		(domainDesc[componentEntry(i)->domainId].client == client)) {
 		    *nextComponent = ENTRY2HANDLE(componentEntry(i), i);;
 		    break;  
@@ -985,9 +986,9 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentDescription(
     } else {
         cm_StringCopy(
                 templateName,
-                comp->template->name,
+                comp->Template->name,
                 templateNameLength);
-        *coreId = comp->template->dspId;
+        *coreId = comp->Template->dspId;
         cm_StringCopy(
                 localName,
                 comp->pathname,
@@ -1018,7 +1019,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentRequiredInterfaceNumber(
     if (NULL == comp) {
         error = CM_INVALID_COMPONENT_HANDLE;
     } else {
-        *numberRequiredInterfaces = comp->template->requireNumber;
+        *numberRequiredInterfaces = comp->Template->requireNumber;
 
         error = CM_OK;
     }
@@ -1046,29 +1047,29 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentRequiredInterface(
     // Sanity check
     if (NULL == comp) {
         error = CM_INVALID_COMPONENT_HANDLE;
-    } else if(index >= comp->template->requireNumber) {
+    } else if(index >= comp->Template->requireNumber) {
         error = CM_NO_SUCH_REQUIRED_INTERFACE;
     } else {
         cm_StringCopy(
                 itfName,
-                comp->template->requires[index].name,
+                comp->Template->requires[index].name,
                 itfNameLength);
         cm_StringCopy(
                 itfType,
-                comp->template->requires[index].interface->type,
+                comp->Template->requires[index].interface->type,
                 itfTypeLength);
-        if(comp->template->requires[index].requireTypes & COLLECTION_REQUIRE)
-            *collectionSize = comp->template->requires[index].collectionSize;
+        if(comp->Template->requires[index].requireTypes & COLLECTION_REQUIRE)
+            *collectionSize = comp->Template->requires[index].collectionSize;
         else
             *collectionSize = -1;
 
 	if(requireState != NULL) {
 		*requireState = 0;
-		if(comp->template->requires[index].requireTypes & COLLECTION_REQUIRE)
+		if(comp->Template->requires[index].requireTypes & COLLECTION_REQUIRE)
 			*requireState |= CM_REQUIRE_COLLECTION;
-        	if(comp->template->requires[index].requireTypes & OPTIONAL_REQUIRE)
+		if(comp->Template->requires[index].requireTypes & OPTIONAL_REQUIRE)
                 	*requireState |= CM_REQUIRE_OPTIONAL;
-        	if(comp->template->requires[index].requireTypes & STATIC_REQUIRE)
+		if(comp->Template->requires[index].requireTypes & STATIC_REQUIRE)
                 	*requireState |= CM_REQUIRE_STATIC;
 	}
 
@@ -1119,9 +1120,9 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentRequiredInterfaceBinding(
         } else if(*server != 0) {
             cm_StringCopy(
                     serverItfName,
-                    itfProvide.server->template->provides[itfProvide.provideIndex].name,
+                    itfProvide.server->Template->provides[itfProvide.provideIndex].name,
                     serverItfNameLength);
-            if(itfProvide.server->template->provides[itfProvide.provideIndex].provideTypes & COLLECTION_PROVIDE) {
+            if(itfProvide.server->Template->provides[itfProvide.provideIndex].provideTypes & COLLECTION_PROVIDE) {
                 int len = cm_StringLength(serverItfName, serverItfNameLength);
                 serverItfName[len++] = '[';
                 if(itfProvide.collectionIndex >= 100)
@@ -1158,7 +1159,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentProvidedInterfaceNumber(
     if (NULL == comp) {
         error = CM_INVALID_COMPONENT_HANDLE;
     } else {
-        *numberProvidedInterfaces = comp->template->provideNumber;
+        *numberProvidedInterfaces = comp->Template->provideNumber;
 
         error = CM_OK;
     }
@@ -1185,19 +1186,19 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentProvidedInterface(
     // Sanity check
     if (NULL == comp) {
         error = CM_INVALID_COMPONENT_HANDLE;
-    } else if(index >= comp->template->provideNumber) {
+    } else if(index >= comp->Template->provideNumber) {
         error = CM_NO_SUCH_PROVIDED_INTERFACE;
     } else {
         cm_StringCopy(
                 itfName,
-                comp->template->provides[index].name,
+                comp->Template->provides[index].name,
                 itfNameLength);
         cm_StringCopy(
                 itfType,
-                comp->template->provides[index].interface->type,
+                comp->Template->provides[index].interface->type,
                 itfTypeLength);
-        if(comp->template->provides[index].provideTypes & COLLECTION_PROVIDE)
-            *collectionSize = comp->template->provides[index].collectionSize;
+        if(comp->Template->provides[index].provideTypes & COLLECTION_PROVIDE)
+            *collectionSize = comp->Template->provides[index].collectionSize;
         else
             *collectionSize = -1;
 
@@ -1225,7 +1226,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentPropertyNumber(
     if (NULL == comp) {
         error = CM_INVALID_COMPONENT_HANDLE;
     } else {
-        *numberProperties = comp->template->propertyNumber;
+        *numberProperties = comp->Template->propertyNumber;
 
         error = CM_OK;
     }
@@ -1249,12 +1250,12 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_GetComponentPropertyName(
     // Sanity check
     if (NULL == comp) {
         error = CM_INVALID_COMPONENT_HANDLE;
-    } else if(index >= comp->template->propertyNumber) {
+    } else if(index >= comp->Template->propertyNumber) {
         error = CM_NO_SUCH_PROPERTY;
     } else {
         cm_StringCopy(
                 propertyName,
-                comp->template->properties[index].name,
+                comp->Template->properties[index].name,
                 propertyNameLength);
 
         error = CM_OK;

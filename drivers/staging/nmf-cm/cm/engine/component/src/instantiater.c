@@ -110,16 +110,16 @@ static void cm_DestroyComponentMemory(t_component_instance *component)
         }
     }
 
-    for(i = 0; i < component->template->requireNumber; i++)
+    for(i = 0; i < component->Template->requireNumber; i++)
     {
         OSAL_Free(component->interfaceReferences[i]);
     }
 
     cm_StringRelease(component->pathname);
 
-    cm_ELF_FreeInstance(component->template->dspId, component->template->memories, component->memories);
+    cm_ELF_FreeInstance(component->Template->dspId, component->Template->memories, component->memories);
 
-    cm_unloadComponent(component->template);
+    cm_unloadComponent(component->Template);
     OSAL_Free(component);
 }
 
@@ -130,12 +130,15 @@ static void cm_DestroyComponentMemory(t_component_instance *component)
 void cm_delayedDestroyComponent(t_component_instance *component) {
     int i;
 
+    if (osal_debug_ops.component_destroy)
+	    osal_debug_ops.component_destroy(component);
+
     /*
      * Remove component from load map here
      */
     cm_DSPABI_RemoveLoadMap(
             component->domainId,
-            component->template->name,
+            component->Template->name,
             component->memories,
             component->pathname,
             component);
@@ -146,28 +149,28 @@ void cm_delayedDestroyComponent(t_component_instance *component) {
     /*
      * disconnect interrupt handler if needed
      */
-    for(i = 0; i < component->template->provideNumber; i++)
+    for(i = 0; i < component->Template->provideNumber; i++)
     {
-        if(component->template->provides[i].interruptLine)
+        if(component->Template->provides[i].interruptLine)
         {
-            cm_unbindInterfaceStaticInterrupt(component->template->dspId, component->template->provides[i].interruptLine);
+            cm_unbindInterfaceStaticInterrupt(component->Template->dspId, component->Template->provides[i].interruptLine);
         }
     }
 
     /*
      * Update dsp stack size if needed
      */
-    if (component->template->minStackSize > MIN_STACK_SIZE)
+    if (component->Template->minStackSize > MIN_STACK_SIZE)
     {
-        if (cm_EEM_isStackUpdateNeed(component->template->dspId, component->priority, FALSE, component->template->minStackSize))
+        if (cm_EEM_isStackUpdateNeed(component->Template->dspId, component->priority, FALSE, component->Template->minStackSize))
         {
             t_uint32 newStackValue;
             t_uint32 maxComponentStackSize;
 
             maxComponentStackSize = cm_getMaxStackValue(component);
-            cm_EEM_UpdateStack(component->template->dspId, component->priority, maxComponentStackSize, &newStackValue);
-	    if (cm_DSP_GetState(component->template->dspId)->state == MPC_STATE_BOOTED)
-		    cm_COMP_UpdateStack(component->template->dspId, newStackValue);
+            cm_EEM_UpdateStack(component->Template->dspId, component->priority, maxComponentStackSize, &newStackValue);
+	    if (cm_DSP_GetState(component->Template->dspId)->state == MPC_STATE_BOOTED)
+		    cm_COMP_UpdateStack(component->Template->dspId, newStackValue);
         }
     }
 
@@ -253,7 +256,7 @@ t_cm_error cm_instantiateComponent(const char* templateName,
     }
 
     component->interfaceReferences = (t_interface_reference**)((char*)component + sizeof(t_component_instance));
-    component->template = template;
+    component->Template = template;
 
     /*
      * Update linked list
@@ -300,7 +303,7 @@ t_cm_error cm_instantiateComponent(const char* templateName,
     component->thisAddress = 0xFFFFFFFF;
     component->state = STATE_NONE;
 
-    if(component->template->classe == SINGLETON)
+    if(component->Template->classe == SINGLETON)
     {   // Return same handle for singleton component
         struct t_client_of_singleton* cl = cm_getClientOfSingleton(component, TRUE, domainDesc[domainId].client);
         if(cl == NULL)
@@ -450,6 +453,9 @@ t_cm_error cm_instantiateComponent(const char* templateName,
     else
         component->state = STATE_STOPPED;
 
+    if (osal_debug_ops.component_create)
+	    osal_debug_ops.component_create(component);
+
     *refcomponent = component;
     return CM_OK;
 }
@@ -495,7 +501,7 @@ t_cm_error cm_startComponent(t_component_instance* component, t_nmf_client_id cl
     /*
      * Special code for SINGLETON handling
      */
-    if(component->template->classe == SINGLETON)
+    if(component->Template->classe == SINGLETON)
     {
         struct t_client_of_singleton* cl = cm_getClientOfSingleton(component, FALSE, clientId);
         if(cl != NULL)
@@ -515,15 +521,15 @@ t_cm_error cm_startComponent(t_component_instance* component, t_nmf_client_id cl
     /*
      * Check that all required binding have been binded!
      */
-    for(i = 0; i < component->template->requireNumber; i++)
+    for(i = 0; i < component->Template->requireNumber; i++)
     {
-        int nb = component->template->requires[i].collectionSize, j;
+        int nb = component->Template->requires[i].collectionSize, j;
         for(j = 0; j < nb; j++)
         {
             if(component->interfaceReferences[i][j].instance == NULL  &&
-                    (component->template->requires[i].requireTypes & (OPTIONAL_REQUIRE | INTRINSEC_REQUIRE)) == 0)
+                    (component->Template->requires[i].requireTypes & (OPTIONAL_REQUIRE | INTRINSEC_REQUIRE)) == 0)
             {
-                ERROR("CM_REQUIRE_INTERFACE_UNBINDED: Required interface '%s'.'%s' binded\n", component->pathname, component->template->requires[i].name, 0, 0, 0, 0);
+                ERROR("CM_REQUIRE_INTERFACE_UNBINDED: Required interface '%s'.'%s' binded\n", component->pathname, component->Template->requires[i].name, 0, 0, 0, 0);
                 return CM_REQUIRE_INTERFACE_UNBINDED;
             }
         }
@@ -542,12 +548,12 @@ t_cm_error cm_startComponent(t_component_instance* component, t_nmf_client_id cl
     {
         // The PRCMU seem not supporting the transition of asking HW IP on while DSP in retention
         // -> Thus force wake up of the MMDSP before asking the transition
-        if ((error = cm_EEM_ForceWakeup(component->template->dspId)) != CM_OK)
+        if ((error = cm_EEM_ForceWakeup(component->Template->dspId)) != CM_OK)
             return error;
 
-        error = cm_PWR_EnableMPC(MPC_PWR_HWIP, component->template->dspId);
+        error = cm_PWR_EnableMPC(MPC_PWR_HWIP, component->Template->dspId);
 
-        cm_EEM_AllowSleep(component->template->dspId);
+        cm_EEM_AllowSleep(component->Template->dspId);
 
         if(error != CM_OK)
             return error;
@@ -556,16 +562,16 @@ t_cm_error cm_startComponent(t_component_instance* component, t_nmf_client_id cl
     /*
      * Call starter if available
      */
-    if(component->template->LCCStartAddress != 0)
+    if(component->Template->LCCStartAddress != 0)
     {
-        if (cm_DSP_GetState(component->template->dspId)->state != MPC_STATE_BOOTED)
+        if (cm_DSP_GetState(component->Template->dspId)->state != MPC_STATE_BOOTED)
         {
             return CM_MPC_NOT_RESPONDING;
         }
         else if ((error = cm_COMP_CallService(
-                (component->priority > cm_EEM_getExecutiveEngine(component->template->dspId)->instance->priority)?NMF_START_SYNC_INDEX:NMF_START_INDEX,
+                (component->priority > cm_EEM_getExecutiveEngine(component->Template->dspId)->instance->priority)?NMF_START_SYNC_INDEX:NMF_START_INDEX,
                 component,
-                component->template->LCCStartAddress)) != CM_OK)
+                component->Template->LCCStartAddress)) != CM_OK)
         {
             if (error == CM_MPC_NOT_RESPONDING)
                 ERROR("CM_MPC_NOT_RESPONDING: can't call starter '%s'\n", component->pathname, 0, 0, 0, 0, 0);
@@ -589,7 +595,7 @@ t_cm_error cm_stopComponent(t_component_instance* component, t_nmf_client_id cli
     /*
      * Special code for SINGLETON handling
      */
-    if(component->template->classe == SINGLETON)
+    if(component->Template->classe == SINGLETON)
     {
         struct t_client_of_singleton* cl = cm_getClientOfSingleton(component, FALSE, clientId);
         if(cl != NULL)
@@ -616,7 +622,7 @@ t_cm_error cm_stopComponent(t_component_instance* component, t_nmf_client_id cli
                 value,
                 sizeof(value)) == CM_OK);
 
-    if (cm_DSP_GetState(component->template->dspId)->state != MPC_STATE_BOOTED)
+    if (cm_DSP_GetState(component->Template->dspId)->state != MPC_STATE_BOOTED)
     {
         error = CM_MPC_NOT_RESPONDING;
     }
@@ -625,12 +631,12 @@ t_cm_error cm_stopComponent(t_component_instance* component, t_nmf_client_id cli
         /*
          * Call stopper if available
          */
-        if(component->template->LCCStopAddress != 0)
+        if(component->Template->LCCStopAddress != 0)
         {
             if ((error = cm_COMP_CallService(
                     isHwProperty ? NMF_STOP_SYNC_INDEX : NMF_STOP_INDEX,
                     component,
-                    component->template->LCCStopAddress)) != CM_OK)
+                    component->Template->LCCStopAddress)) != CM_OK)
             {
                 if (error == CM_MPC_NOT_RESPONDING)
                     ERROR("CM_MPC_NOT_RESPONDING: can't call stopper '%s'\n", component->pathname, 0, 0, 0, 0, 0);
@@ -643,7 +649,7 @@ t_cm_error cm_stopComponent(t_component_instance* component, t_nmf_client_id cli
      */
     if(isHwProperty)
     {
-        cm_PWR_DisableMPC(MPC_PWR_HWIP, component->template->dspId);
+        cm_PWR_DisableMPC(MPC_PWR_HWIP, component->Template->dspId);
     }
 
     return error;
@@ -654,7 +660,7 @@ t_cm_error cm_destroyInstance(t_component_instance* component, t_destroy_state f
     int i, j;
 
     LOG_INTERNAL(1, "\n##### Destroy %s/%x (%s) component on %s #####\n",
-                 component->pathname, component, component->template->name, cm_getDspName(component->template->dspId), 0, 0);
+                 component->pathname, component, component->Template->name, cm_getDspName(component->Template->dspId), 0, 0);
 
     /*
      * Component life cycle sanity check; do it only when destroying last reference.
@@ -667,15 +673,15 @@ t_cm_error cm_destroyInstance(t_component_instance* component, t_destroy_state f
         // CM_ASSERT component->state == STATE_STOPPED
 
         // Check that all required binding have been unbound!
-        for(i = 0; i < component->template->requireNumber; i++)
+        for(i = 0; i < component->Template->requireNumber; i++)
         {
-            int nb = component->template->requires[i].collectionSize;
+            int nb = component->Template->requires[i].collectionSize;
             for(j = 0; j < nb; j++)
             {
                 if(component->interfaceReferences[i][j].instance != NULL)
                 {
                     ERROR("CM_COMPONENT_NOT_UNBINDED: Required interface %s/%x.%s still binded\n",
-                            component->pathname, component, component->template->requires[i].name, 0, 0, 0);
+                            component->pathname, component, component->Template->requires[i].name, 0, 0, 0);
                     return CM_COMPONENT_NOT_UNBINDED;
                 }
             }
@@ -694,19 +700,19 @@ t_cm_error cm_destroyInstance(t_component_instance* component, t_destroy_state f
             {
                 if ((componentEntry(idx) == NULL) || (componentEntry(idx) == component))
                     continue;
-                for (i = 0; i < componentEntry(idx)->template->requireNumber; i++)
+                for (i = 0; i < componentEntry(idx)->Template->requireNumber; i++)
                 {
-                    for (j = 0; j < componentEntry(idx)->template->requires[i].collectionSize; j++)
+                    for (j = 0; j < componentEntry(idx)->Template->requires[i].collectionSize; j++)
                     {
                         if(componentEntry(idx)->interfaceReferences[i][j].instance == component
-                                && component->template->provides[componentEntry(idx)->interfaceReferences[i][j].provideIndex].interruptLine == 0)
+                                && component->Template->provides[componentEntry(idx)->interfaceReferences[i][j].provideIndex].interruptLine == 0)
                         {
                             ERROR("  -> %s/%x.%s still used by %s/%x.%s\n",
                                     component->pathname, component,
-                                    component->template->provides[componentEntry(idx)->interfaceReferences[i][j].provideIndex].name,
+                                    component->Template->provides[componentEntry(idx)->interfaceReferences[i][j].provideIndex].name,
                                     componentEntry(idx)->pathname,
                                     componentEntry(idx),
-                                    componentEntry(idx)->template->requires[i].name);
+                                    componentEntry(idx)->Template->requires[i].name);
                         }
                     }
                 }
@@ -718,18 +724,18 @@ t_cm_error cm_destroyInstance(t_component_instance* component, t_destroy_state f
 
     // Sanity check finished, here, we will do the JOB whatever error
 
-    if (cm_DSP_GetState(component->template->dspId)->state == MPC_STATE_BOOTED)
+    if (cm_DSP_GetState(component->Template->dspId)->state == MPC_STATE_BOOTED)
     {
         /*
          * Call destroy if available
          */
         /* Call the destructor only if we don't want to force the destruction */
-        if(forceDestroy != DESTROY_WITHOUT_CHECK_CALL && component->template->LCCDestroyAddress != 0)
+        if(forceDestroy != DESTROY_WITHOUT_CHECK_CALL && component->Template->LCCDestroyAddress != 0)
         {
             if (cm_COMP_CallService(
                     NMF_DESTROY_INDEX,
                     component,
-                    component->template->LCCDestroyAddress) != CM_OK)
+                    component->Template->LCCDestroyAddress) != CM_OK)
             {
                 ERROR("CM_MPC_NOT_RESPONDING: can't call destroy '%s'\n", component->pathname, 0, 0, 0, 0, 0);
             }
@@ -750,7 +756,7 @@ t_cm_error cm_destroyInstanceForClient(t_component_instance* component, t_destro
     /*
      * Special code for SINGLETON handling
      */
-    if(component->template->classe == SINGLETON)
+    if(component->Template->classe == SINGLETON)
     {
         struct t_client_of_singleton* cl = cm_getClientOfSingleton(component, FALSE, clientId);
         int nbinstance;
@@ -762,7 +768,7 @@ t_cm_error cm_destroyInstanceForClient(t_component_instance* component, t_destro
         if(nbinstance > 0)
         {
             LOG_INTERNAL(1, "##### Singleton : Delete handle of %s/%x (%s) component on %s [%d] provItf=%d #####\n",
-                 component->pathname, component, component->template->name, cm_getDspName(component->template->dspId),
+                 component->pathname, component, component->Template->name, cm_getDspName(component->Template->dspId),
                  nbinstance, component->providedItfUsedCount);
             return CM_OK;
         }
@@ -776,7 +782,7 @@ t_cm_error cm_destroyInstanceForClient(t_component_instance* component, t_destro
 
 static t_uint32 cm_getMaxStackValue(t_component_instance *pComponent)
 {
-    t_nmf_executive_engine_id executiveEngineId = cm_EEM_getExecutiveEngine(pComponent->template->dspId)->executiveEngineId;
+    t_nmf_executive_engine_id executiveEngineId = cm_EEM_getExecutiveEngine(pComponent->Template->dspId)->executiveEngineId;
     t_uint32 res = MIN_STACK_SIZE;
     unsigned int i;
 
@@ -784,11 +790,11 @@ static t_uint32 cm_getMaxStackValue(t_component_instance *pComponent)
     {
 	if ((componentEntry(i) != NULL) &&
 	    (componentEntry(i) != pComponent) &&
-            (pComponent->template->dspId == componentEntry(i)->template->dspId) &&
+            (pComponent->Template->dspId == componentEntry(i)->Template->dspId) &&
             (executiveEngineId == SYNCHRONOUS_EXECUTIVE_ENGINE || componentEntry(i)->priority == pComponent->priority))
         {
-		if (componentEntry(i)->template->minStackSize > res)
-                res = componentEntry(i)->template->minStackSize;
+		if (componentEntry(i)->Template->minStackSize > res)
+                res = componentEntry(i)->Template->minStackSize;
         }
     }
 

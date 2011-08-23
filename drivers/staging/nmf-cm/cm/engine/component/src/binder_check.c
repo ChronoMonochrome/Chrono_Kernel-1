@@ -29,7 +29,7 @@ t_cm_error cm_checkValidClient(
 
         if(itfRef->instance != (t_component_instance*)NULL)
         {
-            if(client->template->classe == SINGLETON)
+            if(client->Template->classe == SINGLETON)
             {
                 // Singleton is immutable thus we can't rebind it, nevertheless it's not an issue
                 *bindable = FALSE;
@@ -41,11 +41,11 @@ t_cm_error cm_checkValidClient(
 
                 if(itfRef->instance == (const t_component_instance*)NMF_VOID_COMPONENT)
                     ERROR("CM_INTERFACE_ALREADY_BINDED(): Component (%s<%s>.s) already bound to VOID\n",
-                            client->pathname, client->template->name, requiredItfClientName, 0, 0, 0);
+                            client->pathname, client->Template->name, requiredItfClientName, 0, 0, 0);
                 else
                     ERROR("CM_INTERFACE_ALREADY_BINDED(): Component (%s<%s>.s) already bound to another server (%s<%s>.%s)\n",
-                            client->pathname, client->template->name, requiredItfClientName,
-                            itfRef->instance->pathname, itfRef->instance->template->name, itfRef->instance->template->provides[itfRef->provideIndex].name);
+                            client->pathname, client->Template->name, requiredItfClientName,
+                            itfRef->instance->pathname, itfRef->instance->Template->name, itfRef->instance->Template->provides[itfRef->provideIndex].name);
                 return CM_INTERFACE_ALREADY_BINDED;
             }
         }
@@ -53,7 +53,7 @@ t_cm_error cm_checkValidClient(
 
     // Delayed Component LC state check done only if not optional required interface or intrinsic one that has been solved by loader
     {
-        t_interface_require* itfReq = &client->template->requires[itfRequire->requireIndex];
+        t_interface_require* itfReq = &client->Template->requires[itfRequire->requireIndex];
 
         if((itfReq->requireTypes & (OPTIONAL_REQUIRE | INTRINSEC_REQUIRE)) == 0) {
             if(client->state == STATE_RUNNABLE)
@@ -107,7 +107,7 @@ t_cm_error cm_checkValidBinding(
 
     // If this is a singleton which has been already bound check that next binding is at the same server
     if(*bindable == FALSE
-            && client->template->classe == SINGLETON)
+            && client->Template->classe == SINGLETON)
     {
         t_interface_reference* itfRef = &client->interfaceReferences[itfRequire->requireIndex][itfRequire->collectionIndex];
         while( itfRef->instance != server
@@ -117,7 +117,7 @@ t_cm_error cm_checkValidBinding(
             if(itfRef->instance == (const t_component_instance*)NMF_VOID_COMPONENT)
             {
                 ERROR("CM_INTERFACE_ALREADY_BINDED(): Singleton (%s<%s>.s) already bound to VOID\n",
-                        client->pathname, client->template->name, requiredItfClientName, 0, 0, 0);
+                        client->pathname, client->Template->name, requiredItfClientName, 0, 0, 0);
                 return CM_INTERFACE_ALREADY_BINDED;
             }
             else if(itfRef->bfInfoID == BF_ASYNCHRONOUS || itfRef->bfInfoID == BF_TRACE)
@@ -131,16 +131,16 @@ t_cm_error cm_checkValidBinding(
             else
             {
                 ERROR("CM_INTERFACE_ALREADY_BINDED(): Singleton (%s<%s>.s) already bound to different server (%s<%s>.%s)\n",
-                        client->pathname, client->template->name, requiredItfClientName,
-                        itfRef->instance->pathname, itfRef->instance->template->name, itfRef->instance->template->provides[itfRef->provideIndex].name);
+                        client->pathname, client->Template->name, requiredItfClientName,
+                        itfRef->instance->pathname, itfRef->instance->Template->name, itfRef->instance->Template->provides[itfRef->provideIndex].name);
                 return CM_INTERFACE_ALREADY_BINDED;
             }
         }
     }
 
     // Check if provided and required type matches
-    require = &client->template->requires[itfRequire->requireIndex];
-    provide = &server->template->provides[itfProvide->provideIndex];
+    require = &client->Template->requires[itfRequire->requireIndex];
+    provide = &server->Template->provides[itfProvide->provideIndex];
     if(require->interface != provide->interface)
     {
         ERROR("CM_ILLEGAL_BINDING(%s, %s)\n", require->interface->type, provide->interface->type, 0, 0, 0, 0);
@@ -149,7 +149,7 @@ t_cm_error cm_checkValidBinding(
 
     // Check if static required interface binded to singleton component
     if((require->requireTypes & STATIC_REQUIRE) &&
-            (server->template->classe != SINGLETON))
+            (server->Template->classe != SINGLETON))
     {
         ERROR("CM_ILLEGAL_BINDING(): Can't bind static required interface to not singleton component\n",
                 0, 0, 0, 0, 0, 0);
@@ -175,14 +175,14 @@ t_cm_error cm_checkValidUnbinding(
     if ((error = cm_getRequiredInterface(client, requiredItfClientName, itfRequire)) != CM_OK)
         return error;
 
-    itfReq = &client->template->requires[itfRequire->requireIndex];
+    itfReq = &client->Template->requires[itfRequire->requireIndex];
 
     // Check if the requiredItfClientName is required by client component
     if ((error = cm_lookupInterface(itfRequire, itfProvide)) != CM_OK)
     {
         // We allow to unbind optional required of singleton even if not binded, since it could have been unbound previously but we don't
         // want to break bind singleton reference counter
-        if((client->template->classe == SINGLETON) &&
+        if((client->Template->classe == SINGLETON) &&
                 (itfReq->requireTypes & OPTIONAL_REQUIRE) != 0x0)
             return CM_OK;
 
@@ -190,7 +190,7 @@ t_cm_error cm_checkValidUnbinding(
     }
 
     // Singleton is immutable, don't unbind it
-    if(client->template->classe == SINGLETON)
+    if(client->Template->classe == SINGLETON)
         return CM_OK;
 
     /* if interface is optionnal then allow unbinding even if not stop */
