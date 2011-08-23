@@ -435,7 +435,7 @@ struct buffer_head *gfs2_meta_ra(struct gfs2_glock *gl, u64 dblock, u32 extlen)
 	if (buffer_uptodate(first_bh))
 		goto out;
 	if (!buffer_locked(first_bh))
-		ll_rw_block(READ_SYNC | REQ_META, 1, &first_bh);
+		ll_rw_block(READ_SYNC | REQ_META | REQ_PRIO, 1, &first_bh);
 
 	dblock++;
 	extlen--;
