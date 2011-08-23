@@ -93,21 +93,12 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 
 	wsm_lock_tx(priv);
 
-	if (priv->join_status == CW1200_JOIN_STATUS_STA &&
-			!(priv->powersave_mode.pmMode & WSM_PSM_PS)) {
-		struct wsm_set_pm pm = priv->powersave_mode;
-		pm.pmMode = WSM_PSM_PS;
-		wsm_set_pm(priv, &pm);
-	} else if (priv->join_status == CW1200_JOIN_STATUS_MONITOR) {
-		/* FW bug: driver has to restart p2p-dev mode after scan */
-		cw1200_disable_listening(priv);
-	}
-
 	BUG_ON(priv->scan.req);
 	priv->scan.req = req;
 	priv->scan.n_ssids = 0;
 	priv->scan.status = 0;
 	priv->scan.begin = &req->channels[0];
+	priv->scan.curr = priv->scan.begin;
 	priv->scan.end = &req->channels[req->n_channels];
 	priv->scan.output_power = priv->output_power;
 
@@ -124,6 +115,7 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	}
 
 	mutex_unlock(&priv->conf_mutex);
+
 	if (frame.skb)
 		dev_kfree_skb(frame.skb);
 	queue_work(priv->workqueue, &priv->scan.work);
@@ -139,11 +131,34 @@ void cw1200_scan_work(struct work_struct *work)
 		.scanType = WSM_SCAN_TYPE_FOREGROUND,
 		.scanFlags = WSM_SCAN_FLAG_SPLIT_METHOD,
 	};
+	bool first_run = priv->scan.begin == priv->scan.curr &&
+			priv->scan.begin != priv->scan.end;
 	int i;
+
+	if (first_run) {
+		/* Firmware gets crazy if scan request is sent
+		 * when STA is joined but not yet associated.
+		 * Force unjoin in this case. */
+		if (cancel_delayed_work_sync(&priv->join_timeout) > 0)
+			cw1200_join_timeout(&priv->join_timeout.work);
+	}
 
 	mutex_lock(&priv->conf_mutex);
 
-	if (!priv->scan.req || (priv->scan.begin == priv->scan.end)) {
+	if (first_run) {
+		if (priv->join_status == CW1200_JOIN_STATUS_STA &&
+				!(priv->powersave_mode.pmMode & WSM_PSM_PS)) {
+			struct wsm_set_pm pm = priv->powersave_mode;
+			pm.pmMode = WSM_PSM_PS;
+			wsm_set_pm(priv, &pm);
+		} else if (priv->join_status == CW1200_JOIN_STATUS_MONITOR) {
+			/* FW bug: driver has to restart p2p-dev mode
+			 * after scan */
+			cw1200_disable_listening(priv);
+		}
+	}
+
+	if (!priv->scan.req || (priv->scan.curr == priv->scan.end)) {
 		if (priv->scan.output_power != priv->output_power)
 			WARN_ON(wsm_set_output_power(priv,
 						priv->output_power * 10));
@@ -166,8 +181,8 @@ void cw1200_scan_work(struct work_struct *work)
 		up(&priv->scan.lock);
 		return;
 	} else {
-		struct ieee80211_channel *first = *priv->scan.begin;
-		for (it = priv->scan.begin + 1, i = 1;
+		struct ieee80211_channel *first = *priv->scan.curr;
+		for (it = priv->scan.curr + 1, i = 1;
 		     it != priv->scan.end && i < WSM_SCAN_MAX_NUM_OF_CHANNELS;
 		     ++it, ++i) {
 			if ((*it)->band != first->band)
@@ -187,7 +202,7 @@ void cw1200_scan_work(struct work_struct *work)
 			(first->flags & IEEE80211_CHAN_PASSIVE_SCAN) ? 0 : 2;
 		scan.numOfSSIDs = priv->scan.n_ssids;
 		scan.ssids = &priv->scan.ssids[0];
-		scan.numOfChannels = it - priv->scan.begin;
+		scan.numOfChannels = it - priv->scan.curr;
 		/* TODO: Is it optimal? */
 		scan.probeDelay = 100;
 		/* It is not stated in WSM specification, however
@@ -196,14 +211,14 @@ void cw1200_scan_work(struct work_struct *work)
 		if (priv->join_status == CW1200_JOIN_STATUS_STA)
 			scan.scanType = WSM_SCAN_TYPE_BACKGROUND;
 		scan.ch = kzalloc(
-			sizeof(struct wsm_scan_ch[it - priv->scan.begin]),
+			sizeof(struct wsm_scan_ch[it - priv->scan.curr]),
 			GFP_KERNEL);
 		if (!scan.ch) {
 			priv->scan.status = -ENOMEM;
 			goto fail;
 		}
 		for (i = 0; i < scan.numOfChannels; ++i) {
-			scan.ch[i].number = priv->scan.begin[i]->hw_value;
+			scan.ch[i].number = priv->scan.curr[i]->hw_value;
 			scan.ch[i].minChannelTime = 50;
 			scan.ch[i].maxChannelTime = 110;
 		}
@@ -217,13 +232,13 @@ void cw1200_scan_work(struct work_struct *work)
 		kfree(scan.ch);
 		if (WARN_ON(priv->scan.status))
 			goto fail;
-		priv->scan.begin = it;
+		priv->scan.curr = it;
 	}
 	mutex_unlock(&priv->conf_mutex);
 	return;
 
 fail:
-	priv->scan.begin = priv->scan.end;
+	priv->scan.curr = priv->scan.end;
 	mutex_unlock(&priv->conf_mutex);
 	queue_work(priv->workqueue, &priv->scan.work);
 	return;
