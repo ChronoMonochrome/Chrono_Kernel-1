@@ -2330,7 +2330,7 @@ static int musb_suspend(struct device *dev)
 	return 0;
 }
 
-static int musb_resume_noirq(struct device *dev)
+static int musb_resume(struct device *dev)
 {
 	/* for static cmos like DaVinci, register values were preserved
 	 * unless for some reason the whole soc powered down or the USB
@@ -2371,7 +2371,7 @@ static int musb_runtime_resume(struct device *dev)
 
 static const struct dev_pm_ops musb_dev_pm_ops = {
 	.suspend	= musb_suspend,
-	.resume_noirq	= musb_resume_noirq,
+	.resume		= musb_resume,
 	.runtime_suspend = musb_runtime_suspend,
 	.runtime_resume = musb_runtime_resume,
 };
