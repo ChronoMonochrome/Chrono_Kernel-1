@@ -1163,6 +1163,10 @@ static int __init cmld_init_module(void)
 
 #ifdef CONFIG_DEBUG_FS
 	cm_debug_init();
+	if (osal_debug_ops.domain_create) {
+		osal_debug_ops.domain_create(DEFAULT_SVA_DOMAIN);
+		osal_debug_ops.domain_create(DEFAULT_SIA_DOMAIN);
+	}
 #endif
 
 	/* Configure MPC Cores */

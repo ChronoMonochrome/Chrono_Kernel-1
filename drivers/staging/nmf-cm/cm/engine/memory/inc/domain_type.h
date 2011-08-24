@@ -33,7 +33,6 @@ typedef t_uint8 t_cm_domain_id;
  * \ingroup CM_DOMAIN_API
  */
 typedef t_uint32 t_nmf_client_id;
-// TO BE REMOVED LATER, I guess, when default domains will be removed (PP)
 #define NMF_CORE_CLIENT (t_nmf_client_id)-1
 #define NMF_CURRENT_CLIENT (t_nmf_client_id)0
 

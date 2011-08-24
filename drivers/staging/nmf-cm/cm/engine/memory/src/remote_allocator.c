@@ -649,3 +649,8 @@ PUBLIC void cm_MM_DumpMemory(t_cm_allocator_desc* alloc, t_uint32 start, t_uint3
         chunk = chunk->next;
     }
 }
+
+PUBLIC void cm_MM_SetDefaultDomain(t_memory_handle memHandle, t_uint32 domainId)
+{
+	((t_cm_chunk *) memHandle)->domainId = domainId;
+}

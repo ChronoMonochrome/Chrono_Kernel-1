@@ -194,8 +194,7 @@ static ssize_t domain_read(struct file *file, char __user *userbuf,
 	int ret=0;
 
 	OSAL_LOCK_API();
-	if ((cm_DM_CheckDomain(id, DOMAIN_ANY) == CM_OK)
-	    && (domain->domain.coreId != -1)
+	if ((domain->domain.coreId != -1)
 	    && (domain->dbgCooky != NULL)) {
 		t_cm_allocator_status status;
 		t_uint32 dOffset;
@@ -822,8 +821,6 @@ void cm_debug_init(void)
 			debugfs_create_u8("requested_opp", S_IRUSR|S_IRGRP,
 					  osalEnv.mpc[i].dir,
 					  &osalEnv.mpc[i].opp_request);
-
-
 		}
 	}
 	osal_debug_ops.component_create  = cm_debug_component_create;

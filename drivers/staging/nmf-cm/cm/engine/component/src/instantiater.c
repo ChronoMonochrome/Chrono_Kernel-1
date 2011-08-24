@@ -278,7 +278,7 @@ t_cm_error cm_instantiateComponent(const char* templateName,
 
     LOG_INTERNAL(1, "\n##### Instantiate %s/%x (%s) component on %s at priority %d #####\n", component->pathname, component, template->name, cm_getDspName(coreId), priority, 0);
 
-    if((error = cm_ELF_LoadInstance(domainId, elfhandle, template->memories, component->memories)) != CM_OK)
+    if((error = cm_ELF_LoadInstance(domainId, elfhandle, template->memories, component->memories, template->classe == SINGLETON)) != CM_OK)
     {
         cm_DestroyComponentMemory(component);
         return error;
@@ -298,7 +298,6 @@ t_cm_error cm_instantiateComponent(const char* templateName,
     /*
      * Create a new component instance
      */
-    component->domainId = domainId;
     component->priority = priority;
     component->thisAddress = 0xFFFFFFFF;
     component->state = STATE_NONE;
@@ -314,6 +313,12 @@ t_cm_error cm_instantiateComponent(const char* templateName,
 
         cl->numberOfInstance = 1;
         template->singletonIfAvaliable = component;
+	if (cm_DM_GetDomainCoreId(domainId) == SVA_CORE_ID)
+		component->domainId = DEFAULT_SVA_DOMAIN;
+	else
+		component->domainId = DEFAULT_SIA_DOMAIN;
+    } else {
+        component->domainId = domainId;
     }
 
     if(component->memories[template->thisMemory->id] != INVALID_MEMORY_HANDLE)

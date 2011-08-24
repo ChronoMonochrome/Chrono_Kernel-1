@@ -574,7 +574,8 @@ static t_cm_error allocSegment(
         t_cm_domain_id          domainId,
         t_elfdescription        *elfhandle,
         t_memory_handle         memories[NUMBER_OF_MMDSP_MEMORY],
-        t_memory_property       property) {
+        t_memory_property       property,
+        t_bool                  isSingleton) {
     t_memory_id memId;
     const t_elfmemory           *thisMemory;            //!< Memory used to determine this
     const t_elfmemory           *codeMemory;            //!< Memory used to determine code
@@ -610,6 +611,9 @@ static t_cm_error allocSegment(
 
             cm_DSP_GetDspAddress(memories[memId], &elfhandle->segments[memId].mpcAddr);
 
+	    if (isSingleton)
+		    cm_DM_SetDefaultDomain(memories[memId], cm_DM_GetDomainCoreId(domainId));
+
             // Log it
             LOG_INTERNAL(1, "\t%s%s: 0x%x..+0x%x (0x%x)\n",
                     mapping->memoryName,
@@ -639,11 +643,12 @@ static t_cm_error allocSegment(
 t_cm_error cm_ELF_LoadTemplate(
         t_cm_domain_id          domainId,
         t_elfdescription        *elfhandle,
-        t_memory_handle         sharedMemories[NUMBER_OF_MMDSP_MEMORY])
+        t_memory_handle         sharedMemories[NUMBER_OF_MMDSP_MEMORY],
+        t_bool                  isSingleton)
 {
     t_cm_error error;
 
-    if((error = allocSegment(domainId, elfhandle, sharedMemories, MEM_SHARABLE)) != CM_OK)
+    if((error = allocSegment(domainId, elfhandle, sharedMemories, MEM_SHARABLE, isSingleton)) != CM_OK)
         return error;
 
     // Load each readonly segment
@@ -657,7 +662,8 @@ t_cm_error cm_ELF_LoadInstance(
         t_cm_domain_id          domainId,
         t_elfdescription        *elfhandle,
         t_memory_handle         sharedMemories[NUMBER_OF_MMDSP_MEMORY],
-        t_memory_handle         privateMemories[NUMBER_OF_MMDSP_MEMORY])
+        t_memory_handle         privateMemories[NUMBER_OF_MMDSP_MEMORY],
+        t_bool                  isSingleton)
 {
     t_memory_id memId;
     t_cm_error error;
@@ -668,7 +674,7 @@ t_cm_error cm_ELF_LoadInstance(
         privateMemories[memId] = sharedMemories[memId];
     }
 
-    if((error = allocSegment(domainId, elfhandle, privateMemories, MEM_PRIVATE)) != CM_OK)
+    if((error = allocSegment(domainId, elfhandle, privateMemories, MEM_PRIVATE, isSingleton)) != CM_OK)
         return error;
 
     // Load each writable memory

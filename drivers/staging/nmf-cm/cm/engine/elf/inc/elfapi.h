@@ -48,7 +48,8 @@ void cm_ELF_CloseFile(
 t_cm_error cm_ELF_LoadTemplate(
         t_cm_domain_id          domainId,
         t_elfdescription        *elfhandle,
-        t_memory_handle         sharedMemories[NUMBER_OF_MMDSP_MEMORY]);
+        t_memory_handle         sharedMemories[NUMBER_OF_MMDSP_MEMORY],
+        t_bool                  isSingleton);
 
 /*!
  * \internal
@@ -73,7 +74,8 @@ t_cm_error cm_ELF_LoadInstance(
         t_cm_domain_id          domainId,
         t_elfdescription        *elfhandle,
         t_memory_handle         sharedMemories[NUMBER_OF_MMDSP_MEMORY],
-        t_memory_handle         privateMemories[NUMBER_OF_MMDSP_MEMORY]);
+        t_memory_handle         privateMemories[NUMBER_OF_MMDSP_MEMORY],
+        t_bool                  isSingleton);
 
 void cm_ELF_FreeInstance(
         t_nmf_core_id coreId,

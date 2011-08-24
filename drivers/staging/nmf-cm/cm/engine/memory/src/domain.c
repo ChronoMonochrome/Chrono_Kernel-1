@@ -122,6 +122,20 @@ PUBLIC t_cm_error cm_DM_Init(void)
     domainDesc[2].client = NMF_CORE_CLIENT;
     domainDesc[3].client = NMF_CORE_CLIENT;
 
+    /* We use domain 1 and 2 for the singleton, only used for components structure */
+    domainDesc[DEFAULT_SVA_DOMAIN].type = DOMAIN_NORMAL;
+    domainDesc[DEFAULT_SVA_DOMAIN].domain.coreId= SVA_CORE_ID;
+    domainDesc[DEFAULT_SVA_DOMAIN].domain.esramCode.size = (t_uint32)-1;
+    domainDesc[DEFAULT_SVA_DOMAIN].domain.esramData.size = (t_uint32)-1;
+    domainDesc[DEFAULT_SVA_DOMAIN].domain.sdramCode.size = (t_uint32)-1;
+    domainDesc[DEFAULT_SVA_DOMAIN].domain.sdramData.size = (t_uint32)-1;
+    domainDesc[DEFAULT_SIA_DOMAIN].type = DOMAIN_NORMAL;
+    domainDesc[DEFAULT_SIA_DOMAIN].domain.coreId= SIA_CORE_ID;
+    domainDesc[DEFAULT_SIA_DOMAIN].domain.esramCode.size = (t_uint32)-1;
+    domainDesc[DEFAULT_SIA_DOMAIN].domain.esramData.size = (t_uint32)-1;
+    domainDesc[DEFAULT_SIA_DOMAIN].domain.sdramCode.size = (t_uint32)-1;
+    domainDesc[DEFAULT_SIA_DOMAIN].domain.sdramData.size = (t_uint32)-1;
+
     for(i = 0; i < MAX_SCRATCH_DOMAIN_NB; i++) {
         domainScratchDesc[i].domainId  = 0;
         domainScratchDesc[i].parentId  = 0;
@@ -585,3 +599,10 @@ static void cm_DM_DomainError(const t_cm_domain_id parentId, const t_nmf_client_
             domainDesc[parentId].domain.esramData.offset + domainDesc[parentId].domain.esramData.size);
 }
 
+PUBLIC void cm_DM_SetDefaultDomain(t_memory_handle memHandle, t_nmf_core_id coreId)
+{
+	if (coreId == SVA_CORE_ID)
+		cm_MM_SetDefaultDomain(memHandle, DEFAULT_SVA_DOMAIN);
+	else if (coreId == SIA_CORE_ID)
+		cm_MM_SetDefaultDomain(memHandle, DEFAULT_SIA_DOMAIN);
+}

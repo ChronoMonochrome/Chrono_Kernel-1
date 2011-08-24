@@ -20,6 +20,10 @@
 #include <cm/engine/memory/inc/memory.h>
 #include <cm/engine/dsp/inc/dsp.h>
 
+/* These default domains are used for singleton only ! */
+#define DEFAULT_SVA_DOMAIN (t_cm_domain_id)1
+#define DEFAULT_SIA_DOMAIN (t_cm_domain_id)2
+
 /*!
  * \brief Domain type.
  * \internal
@@ -152,4 +156,8 @@ PUBLIC t_cm_error cm_DM_GetAllocatorStatus(t_cm_domain_id domainId, t_dsp_memory
 
 PUBLIC t_cm_error cm_DM_GetDomainAbsAdresses(t_cm_domain_id domainId, t_cm_domain_info *info);
 
+/*!
+ * \brief Change the domain for the given allocated chunk
+ */
+PUBLIC void cm_DM_SetDefaultDomain(t_memory_handle memHandle, t_nmf_core_id coreId);
 #endif /* DOMAIN_H_ */

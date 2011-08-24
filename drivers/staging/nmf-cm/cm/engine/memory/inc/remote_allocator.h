@@ -261,4 +261,15 @@ PUBLIC void cm_MM_GetMemoryHandleUserData(t_memory_handle memHandle, t_uint16 *p
  */
 PUBLIC void cm_MM_DumpMemory(t_cm_allocator_desc* alloc, t_uint32 start, t_uint32 end);
 
+/*!
+ * \brief Change the domain for the given chunk of memory
+ *
+ * \param[in] memHandle The given chunk of memory
+ * \param[in] domainId  The new domain id to set
+ *
+ * \retval void
+ *
+ * \ingroup MEMORY_INTERNAL
+ */
+PUBLIC void cm_MM_SetDefaultDomain(t_memory_handle memHandle, t_uint32 domainId);
 #endif /* _REMOTE_ALLOCATOR_H_*/

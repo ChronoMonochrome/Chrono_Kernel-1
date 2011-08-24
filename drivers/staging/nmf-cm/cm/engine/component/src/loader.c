@@ -226,7 +226,7 @@ t_cm_error cm_loadComponent(
          * Load shared memory from file
          */
         // START();
-        if((error = cm_ELF_LoadTemplate(domainId, elfhandle, template->memories)) != CM_OK)
+        if((error = cm_ELF_LoadTemplate(domainId, elfhandle, template->memories, template->classe == SINGLETON)) != CM_OK)
             goto out;
         MMDSP_serializeMemories(elfhandle->instanceProperty, &template->codeMemory, &template->thisMemory);
         // END("cm_ELF_LoadTemplate");
