@@ -14,7 +14,7 @@ endif
 ifeq ($(CONFIG_UX500_SOC_DB8500), y)
 obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db8500.o devices-db8500.o \
 				   prcmu-db8500.o clock-db8500.o \
-				   regulator-db8500.o
+				   regulator-db8500.o dma-db8500.o
 endif
 
 obj-$(CONFIG_MACH_MOP500)	+= board-mop500.o board-mop500-sdi.o \
