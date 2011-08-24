@@ -239,12 +239,7 @@ static struct mcde_port port2 = {
 	.hdmi_sdtv_switch = HDMI_SWITCH,
 };
 
-static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
-	.reset_gpio = 0,
-	.reset_delay = 1,
-	.regulator_id = NULL,
-	.cvbs_regulator_id = "v-av8100-AV-switch",
-	.ddb_id = 1,
+struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 

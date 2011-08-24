@@ -866,18 +866,25 @@ static u32 get_output_fifo_size(enum mcde_fifo fifo)
 
 static u8 get_dsi_formid(const struct mcde_port *port)
 {
-	if (port->ifc == DSI_VIDEO_MODE && port->link == 0)
-		return MCDE_CTRLA_FORMID_DSI0VID;
-	else if (port->ifc == DSI_VIDEO_MODE && port->link == 1)
-		return MCDE_CTRLA_FORMID_DSI1VID;
-	else if (port->ifc == DSI_VIDEO_MODE && port->link == 2)
-		return MCDE_CTRLA_FORMID_DSI2VID;
-	else if (port->ifc == DSI_CMD_MODE && port->link == 0)
-		return MCDE_CTRLA_FORMID_DSI0CMD;
-	else if (port->ifc == DSI_CMD_MODE && port->link == 1)
-		return MCDE_CTRLA_FORMID_DSI1CMD;
-	else if (port->ifc == DSI_CMD_MODE && port->link == 2)
-		return MCDE_CTRLA_FORMID_DSI2CMD;
+	if (hardware_version == MCDE_CHIP_VERSION_4_0_4) {
+		if (port->link == 0)
+			return MCDE_CTRLA_FORMID_DSI0VID;
+		if (port->link == 1)
+			return MCDE_CTRLA_FORMID_DSI0CMD;
+	} else {
+		if (port->ifc == DSI_VIDEO_MODE && port->link == 0)
+			return MCDE_CTRLA_FORMID_DSI0VID;
+		else if (port->ifc == DSI_VIDEO_MODE && port->link == 1)
+			return MCDE_CTRLA_FORMID_DSI1VID;
+		else if (port->ifc == DSI_VIDEO_MODE && port->link == 2)
+			return MCDE_CTRLA_FORMID_DSI2VID;
+		else if (port->ifc == DSI_CMD_MODE && port->link == 0)
+			return MCDE_CTRLA_FORMID_DSI0CMD;
+		else if (port->ifc == DSI_CMD_MODE && port->link == 1)
+			return MCDE_CTRLA_FORMID_DSI1CMD;
+		else if (port->ifc == DSI_CMD_MODE && port->link == 2)
+			return MCDE_CTRLA_FORMID_DSI2CMD;
+	}
 	return 0;
 }
 
@@ -1283,8 +1290,9 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			}
 		}
 
-		if (hardware_version == MCDE_CHIP_VERSION_1_0_4)
-			idx = chnl->id;
+		if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
+		    hardware_version == MCDE_CHIP_VERSION_4_0_4)
+			idx = port->link;
 		else
 			idx = 2 * port->link + port->ifc;
 
@@ -1994,8 +2002,9 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		u32 dsi_delay0 = 0;
 		u32 screen_ppl, screen_lpf;
 
-		if (hardware_version == MCDE_CHIP_VERSION_1_0_4)
-			fidx = chnl_id;
+		if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
+		    hardware_version == MCDE_CHIP_VERSION_4_0_4)
+			fidx = port->link;
 		else
 			fidx = 2 * port->link + port->ifc;
 
@@ -3542,7 +3551,8 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 	for (i = 0; i < num_overlays; i++)
 		overlays[i].idx = i;
 
-	if (hardware_version == MCDE_CHIP_VERSION_1_0_4) {
+	if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
+	    hardware_version == MCDE_CHIP_VERSION_4_0_4) {
 		channels[0].ovly0 = &overlays[0];
 		channels[0].ovly1 = &overlays[1];
 		channels[1].ovly0 = &overlays[2];
