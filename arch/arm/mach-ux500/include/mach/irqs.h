@@ -32,6 +32,9 @@
 /* After chip-specific IRQ numbers we have the GPIO ones */
 #define NOMADIK_GPIO_TO_IRQ(gpio)	((gpio) + DBX500_NR_INTERNAL_IRQS)
 #define NOMADIK_IRQ_TO_GPIO(irq)	((irq) - DBX500_NR_INTERNAL_IRQS)
+
+#define GPIO_TO_IRQ			NOMADIK_GPIO_TO_IRQ
+#define IRQ_TO_GPIO			NOMADIK_IRQ_TO_GPIO
 #define IRQ_GPIO_END			NOMADIK_GPIO_TO_IRQ(NOMADIK_NR_GPIO)
 
 #define IRQ_SOC_START			IRQ_GPIO_END
