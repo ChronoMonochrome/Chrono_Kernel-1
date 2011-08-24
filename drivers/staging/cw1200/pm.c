@@ -17,7 +17,8 @@
 #include "sbus.h"
 
 static int cw1200_suspend_late(struct device *dev);
-static int cw1200_pm_remove(struct platform_device *pdev);
+static void cw1200_pm_release(struct device * dev);
+static int cw1200_pm_probe(struct platform_device *pdev);
 
 /* private */
 struct cw1200_suspend_state {
@@ -30,40 +31,60 @@ struct cw1200_suspend_state {
 static struct dev_pm_ops cw1200_pm_ops = {
 	.suspend_noirq = cw1200_suspend_late,
 };
+
 static struct platform_driver cw1200_power_driver = {
-	.remove = cw1200_pm_remove,
+	.probe = cw1200_pm_probe,
 	.driver = {
 		.name = "cw1200_power",
 		.pm = &cw1200_pm_ops,
 	},
 };
-static struct platform_device cw1200_power_device = {
-	.name = "cw1200_power",
-};
 
-static void cw1200_pm_init_common(struct cw1200_pm_state *pm,
+static int cw1200_pm_init_common(struct cw1200_pm_state *pm,
 				  struct cw1200_common *priv)
 {
+	int ret;
+
 	spin_lock_init(&pm->lock);
-	cw1200_power_device.dev.platform_data = priv;
-	platform_device_register(&cw1200_power_device);
-	platform_driver_register(&cw1200_power_driver);
+	ret = platform_driver_register(&cw1200_power_driver);
+	if (ret)
+		return ret;
+	pm->pm_dev = platform_device_alloc("cw1200_power", 0);
+	if (!pm->pm_dev) {
+		platform_driver_unregister(&cw1200_power_driver);
+		return ENOMEM;
+	}
+
+	pm->pm_dev->dev.platform_data = priv;
+	ret = platform_device_add(pm->pm_dev);
+	if (ret) {
+		kfree(pm->pm_dev);
+		pm->pm_dev = NULL;
+	}
+
+	return ret;
 }
 
 static void cw1200_pm_deinit_common(struct cw1200_pm_state *pm)
 {
 	platform_driver_unregister(&cw1200_power_driver);
-	platform_device_unregister(&cw1200_power_device);
+	if (pm->pm_dev) {
+		platform_device_unregister(pm->pm_dev);
+		kfree(pm->pm_dev);
+		pm->pm_dev = NULL;
+	}
 }
 
 #ifdef CONFIG_WAKELOCK
 
-void cw1200_pm_init(struct cw1200_pm_state *pm,
+int cw1200_pm_init(struct cw1200_pm_state *pm,
 		    struct cw1200_common *priv)
 {
-	cw1200_pm_init_common(pm, priv);
-	wake_lock_init(&pm->wakelock,
-		WAKE_LOCK_SUSPEND, "cw1200_wlan");
+	int ret = cw1200_pm_init_common(pm, priv);
+	if (!ret)
+		wake_lock_init(&pm->wakelock,
+			WAKE_LOCK_SUSPEND, "cw1200_wlan");
+	return ret;
 }
 
 void cw1200_pm_deinit(struct cw1200_pm_state *pm)
@@ -91,12 +112,15 @@ static void cw1200_pm_stay_awake_tmo(unsigned long)
 {
 }
 
-void cw1200_pm_init(struct cw1200_pm_state *pm)
+int cw1200_pm_init(struct cw1200_pm_state *pm)
 {
-	cw1200_init_common(pm);
-	init_timer(&pm->stay_awake);
-	pm->stay_awake.data = (unsigned long)pm;
-	pm->stay_awake.function = cw1200_pm_stay_awake_tmo;
+	int ret = cw1200_pm_init_common(pm);
+	if (!ret)
+		init_timer(&pm->stay_awake);
+		pm->stay_awake.data = (unsigned long)pm;
+		pm->stay_awake.function = cw1200_pm_stay_awake_tmo;
+	}
+	return ret;
 }
 
 void cw1200_pm_deinit(struct cw1200_pm_state *pm)
@@ -155,8 +179,13 @@ static int cw1200_suspend_late(struct device *dev)
 	return 0;
 }
 
-static int cw1200_pm_remove(struct platform_device *pdev)
+static void cw1200_pm_release(struct device *dev)
 {
+}
+
+static int cw1200_pm_probe(struct platform_device *pdev)
+{
+	pdev->dev.release = cw1200_pm_release;
 	return 0;
 }
 

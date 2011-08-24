@@ -329,6 +329,11 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_WORK(&priv->multicast_start_work, cw1200_multicast_start_work);
 	INIT_WORK(&priv->multicast_stop_work, cw1200_multicast_stop_work);
 
+	if (unlikely(cw1200_pm_init(&priv->pm_state, priv))) {
+		ieee80211_free_hw(hw);
+		return NULL;
+	}
+
 	if (unlikely(cw1200_queue_stats_init(&priv->tx_queue_stats,
 			CW1200_LINK_ID_AFTER_DTIM + 1))) {
 		ieee80211_free_hw(hw);
@@ -351,7 +356,6 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	init_waitqueue_head(&priv->wsm_startup_done);
 	wsm_buf_init(&priv->wsm_cmd_buf);
 	tx_policy_init(priv);
-	cw1200_pm_init(&priv->pm_state, priv);
 
 	return hw;
 }

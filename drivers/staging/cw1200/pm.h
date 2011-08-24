@@ -31,10 +31,11 @@ struct cw1200_pm_state {
 #else
 	struct timer_list stay_awake;
 #endif
+	struct platform_device *pm_dev;
 	spinlock_t lock;
 };
 
-void cw1200_pm_init(struct cw1200_pm_state *pm,
+int cw1200_pm_init(struct cw1200_pm_state *pm,
 		    struct cw1200_common *priv);
 void cw1200_pm_deinit(struct cw1200_pm_state *pm);
 void cw1200_pm_stay_awake(struct cw1200_pm_state *pm,
