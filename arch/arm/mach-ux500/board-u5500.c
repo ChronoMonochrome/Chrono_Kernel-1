@@ -379,8 +379,16 @@ static void __init u5500_i2c_init(struct device *parent)
 	if (cpu_is_u5500v1())
 		i2c_register_board_info(2, ARRAY_AND_SIZE(u5500v1_i2c2_sensor_devices));
 
-	if (cpu_is_u5500v2())
+	if (cpu_is_u5500v2()) {
+		/*
+		 * In V2 display is mounted in reverse direction,
+		 * so need to change the intial
+		 * settings of Accelerometer and Magnetometer
+		 */
+		lsm303dlh_pdata.negative_x = 1;
+		lsm303dlh_pdata.negative_y = 1;
 		i2c_register_board_info(2, ARRAY_AND_SIZE(u5500v2_i2c2_sensor_devices));
+	}
 }
 
 static void __init u5500_uart_init(struct device *parent)
