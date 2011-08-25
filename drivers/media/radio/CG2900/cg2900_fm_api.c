@@ -2424,11 +2424,13 @@ int cg2900_fm_rds_off(void)
 		result = -EINVAL;
 		goto error;
 	}
-	/* Stop the RDS Thread */
-	fm_rds_status = false;
-	FM_DEBUG_REPORT("cg2900_fm_rds_off: "
-			"Stopping RDS Thread");
-	fmd_stop_rds_thread();
+	if (fm_rds_status) {
+		/* Stop the RDS Thread */
+		FM_DEBUG_REPORT("cg2900_fm_rds_off: "
+				"Stopping RDS Thread");
+		fmd_stop_rds_thread();
+		fm_rds_status = false;
+	}
 
 error:
 	FM_DEBUG_REPORT("cg2900_fm_rds_off: returning %d",

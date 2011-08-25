@@ -1023,7 +1023,7 @@ static void fmd_read_cb(
 	FM_INFO_REPORT("fmd_read_cb");
 
 	if (skb->data == NULL || skb->len == 0)
-		goto error;
+		return;
 
 	spin_lock(&fmd_spinlock_read);
 	CG2900_HEX_READ_PACKET_DUMP;
@@ -1035,7 +1035,6 @@ static void fmd_read_cb(
 					FM_GET_PKT_LEN(skb->data),
 					FM_GET_RSP_PKT_ADDR(skb->data));
 
-error:
 	kfree_skb(skb);
 	spin_unlock(&fmd_spinlock_read);
 }
@@ -4639,11 +4638,8 @@ void fmd_stop_rds_thread(void)
 	sema_init(&rds_sem, 0);
 	cb_rds_func = NULL;
 	rds_thread_required = false;
-	if (rds_thread_task) {
-		kthread_stop(rds_thread_task);
+	if (rds_thread_task)
 		rds_thread_task = NULL;
-		return;
-	}
 }
 
 void fmd_get_rds_sem(void)
