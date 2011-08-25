@@ -419,7 +419,7 @@ static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
-static struct mcde_display_device av8100_hdmi = {
+struct mcde_display_device av8100_hdmi = {
 	.name = "av8100_hdmi",
 	.id = AV8100_DISPLAY_ID,
 	.port = &port2,

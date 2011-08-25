@@ -13,4 +13,8 @@
 
 #include <video/mcde_display.h>
 
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+extern struct mcde_display_device av8100_hdmi;
+#endif
+
 #endif /* __BOARD_MOP500_MCDE_H */
