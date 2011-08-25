@@ -7,7 +7,9 @@
 #ifndef __MACH_IRQS_BOARD_U5500_H
 #define __MACH_IRQS_BOARD_U5500_H
 
-#define AB5500_NR_IRQS		(23 * 8)
+#include <linux/mfd/abx500/ab5500.h>
+
+#define AB5500_NR_IRQS		(AB5500_NUM_IRQ_REGS * 8)
 #define IRQ_AB5500_BASE		IRQ_BOARD_START
 #define IRQ_AB5500_END		(IRQ_AB5500_BASE + AB5500_NR_IRQS)
 
