@@ -22,6 +22,7 @@
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/suspend.h>
+#include <linux/kthread.h>
 #include <linux/syscore_ops.h>
 #include <trace/events/power.h>
 
@@ -159,9 +160,10 @@ static int suspend_enter(suspend_state_t state)
 	if (suspend_test(TEST_PLATFORM))
 		goto Platform_wake;
 
+
 	error = disable_nonboot_cpus();
 	if (error || suspend_test(TEST_CPUS))
-		goto Enable_cpus;
+		goto Platform_wake;
 
 	arch_suspend_disable_irqs();
 	BUG_ON(!irqs_disabled());
@@ -177,9 +179,6 @@ static int suspend_enter(suspend_state_t state)
 
 	arch_suspend_enable_irqs();
 	BUG_ON(irqs_disabled());
-
- Enable_cpus:
-	enable_nonboot_cpus();
 
  Platform_wake:
 	if (suspend_ops->wake)
@@ -256,6 +255,15 @@ static void suspend_finish(void)
 	pm_restore_console();
 }
 
+static int plug_secondary_cpus(void *data)
+{
+	if (!(suspend_test(TEST_FREEZER) ||
+	      suspend_test(TEST_DEVICES) ||
+	      suspend_test(TEST_PLATFORM)))
+		enable_nonboot_cpus();
+	return 0;
+}
+
 /**
  *	enter_state - Do common work of entering low-power state.
  *	@state:		pm_state structure for state we're entering.
@@ -269,6 +277,7 @@ static void suspend_finish(void)
 int enter_state(suspend_state_t state)
 {
 	int error;
+	struct task_struct *cpu_task;
 
 	if (!valid_state(state))
 		return -ENODEV;
@@ -297,6 +306,11 @@ int enter_state(suspend_state_t state)
 	pr_debug("PM: Finishing wakeup.\n");
 	suspend_finish();
  Unlock:
+
+	cpu_task = kthread_run(plug_secondary_cpus,
+			       NULL, "cpu-plug");
+	BUG_ON(IS_ERR(cpu_task));
+
 	mutex_unlock(&pm_mutex);
 	return error;
 }
