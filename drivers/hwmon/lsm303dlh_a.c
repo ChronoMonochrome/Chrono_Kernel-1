@@ -198,6 +198,7 @@ struct lsm303dlh_a_data {
 	unsigned char interrupt_duration[2];
 	unsigned char interrupt_threshold[2];
 	int device_status;
+	int id;
 };
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -990,6 +991,18 @@ static ssize_t lsm303dlh_a_store_sleepwake(struct device *dev,
 	return count;
 }
 
+static ssize_t lsm303dlh_a_show_id(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct lsm303dlh_a_data *ddata = platform_get_drvdata(pdev);
+
+	return sprintf(buf, "%d\n", ddata->id);
+}
+
+static DEVICE_ATTR(id, S_IRUGO, lsm303dlh_a_show_id, NULL);
+
 static DEVICE_ATTR(data, S_IRUGO, lsm303dlh_a_show_data, NULL);
 
 static DEVICE_ATTR(range, S_IWUGO | S_IRUGO,
@@ -1027,6 +1040,7 @@ static DEVICE_ATTR(interrupt_threshold, S_IWUGO | S_IRUGO,
 #endif
 
 static struct attribute *lsm303dlh_a_attributes[] = {
+	&dev_attr_id.attr,
 	&dev_attr_data.attr,
 	&dev_attr_range.attr,
 	&dev_attr_mode.attr,
@@ -1089,6 +1103,7 @@ static int __devinit lsm303dlh_a_probe(struct i2c_client *client,
 
 	dev_info(&client->dev, "3-Axis Accelerometer, ID : %d\n",
 			 ret);
+	ddata->id = ret;
 
 	mutex_init(&ddata->lock);
 

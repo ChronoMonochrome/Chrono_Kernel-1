@@ -117,6 +117,10 @@
 #define LSM303DLH_M_RATE_30_00 0x05
 #define LSM303DLH_M_RATE_75_00 0x06
 
+#ifdef CONFIG_SENSORS_LSM303DLHC
+#define LSM303DLH_M_RATE_220_00 0x07
+#endif
+
 /* Multiple byte transfer enable */
 #define MULTIPLE_I2C_TR 0x80
 
