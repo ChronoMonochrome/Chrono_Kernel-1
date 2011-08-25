@@ -117,6 +117,8 @@ static int ab8500_temp_irq_handler(int irq, struct abx500_temp *data)
 	mutex_lock(&data->lock);
 	data->crit_alarm[4] = 1;
 	mutex_unlock(&data->lock);
+
+	hwmon_notify(data->crit_alarm[4], NULL);
 	sysfs_notify(&data->pdev->dev.kobj, NULL, "temp5_crit_alarm");
 	dev_info(&data->pdev->dev, "AB8500 thermal warning,"
 		" power off in %lu s\n", data->power_off_delay);

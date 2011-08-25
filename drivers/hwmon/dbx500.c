@@ -323,6 +323,7 @@ static irqreturn_t prcmu_hotmon_high_irq_handler(int irq, void *irq_data)
 	data->max_alarm[0] = 1;
 	mutex_unlock(&data->lock);
 
+	hwmon_notify(data->max_alarm[0], NULL);
 	sysfs_notify(&pdev->dev.kobj, NULL, "temp1_max_alarm");
 	dev_dbg(&pdev->dev, "DBX500 thermal warning, power off in %lu s\n",
 		 (data->power_off_delay) / 1000);

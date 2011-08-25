@@ -266,6 +266,10 @@ struct ab8500_gpio_platform_data;
 
 /**
  * struct ab8500_platform_data - AB8500 platform data
+ * @pm_power_off: Should machine pm power off hook be registered or not
+ * @thermal_power_off_pending: Set if there was a thermal alarm
+ * @thermal_set_time_sec: Time of the thermal alarm
+ * @thermal_time_out: Time out before the thermal alarm should be ignored
  * @irq_base: start of AB8500 IRQs, AB8500_NR_IRQS will be used
  * @init: board-specific initialization after detection of ab8500
  * @num_regulator_reg_init: number of regulator init registers
@@ -279,6 +283,9 @@ struct ab8500_gpio_platform_data;
 struct ab8500_platform_data {
 	int irq_base;
 	bool pm_power_off;
+	bool thermal_power_off_pending;
+	long thermal_set_time_sec;
+	long thermal_time_out;
 	void (*init) (struct ab8500 *);
 	int num_regulator_reg_init;
 	struct ab8500_regulator_reg_init *regulator_reg_init;

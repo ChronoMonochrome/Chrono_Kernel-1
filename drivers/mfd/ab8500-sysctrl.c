@@ -14,11 +14,15 @@
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab8500.h>
 #include <linux/mfd/abx500/ab8500-sysctrl.h>
+#include <linux/time.h>
+#include <linux/hwmon.h>
 
 static struct device *sysctrl_dev;
 
 void ab8500_power_off(void)
 {
+	struct ab8500_platform_data *plat;
+	struct timespec ts;
 	sigset_t old;
 	sigset_t all;
 	static char *pss[] = {"ab8500_ac", "ab8500_usb"};
@@ -66,13 +70,50 @@ void ab8500_power_off(void)
 shutdown:
 	sigfillset(&all);
 
+	plat = dev_get_platdata(sysctrl_dev->parent);
+		getnstimeofday(&ts);
 	if (!sigprocmask(SIG_BLOCK, &all, &old)) {
-		(void)ab8500_sysctrl_set(AB8500_STW4500CTRL1,
-					 AB8500_STW4500CTRL1_SWOFF |
-					 AB8500_STW4500CTRL1_SWRESET4500N);
-		(void)sigprocmask(SIG_SETMASK, &old, NULL);
+		if (ts.tv_sec == 0 ||
+			(ts.tv_sec - plat->thermal_set_time_sec >
+				plat->thermal_time_out))
+			plat->thermal_power_off_pending = false;
+		if (!plat->thermal_power_off_pending) {
+			(void)ab8500_sysctrl_set(AB8500_STW4500CTRL1,
+				AB8500_STW4500CTRL1_SWOFF |
+				AB8500_STW4500CTRL1_SWRESET4500N);
+			(void)sigprocmask(SIG_SETMASK, &old, NULL);
+		} else {
+			(void)ab8500_sysctrl_set(AB8500_STW4500CTRL1,
+				AB8500_STW4500CTRL1_THDB8500SWOFF |
+				AB8500_STW4500CTRL1_SWRESET4500N);
+			(void)sigprocmask(SIG_SETMASK, &old, NULL);
+		}
 	}
 }
+
+static int ab8500_notifier_call(struct notifier_block *this,
+				unsigned long val, void *data)
+{
+	struct ab8500_platform_data *plat;
+	static struct timespec ts;
+	if (sysctrl_dev == NULL)
+		return -EAGAIN;
+
+	plat = dev_get_platdata(sysctrl_dev->parent);
+	if (val) {
+		getnstimeofday(&ts);
+		plat->thermal_set_time_sec = ts.tv_sec;
+		plat->thermal_power_off_pending = true;
+	} else {
+		plat->thermal_set_time_sec = 0;
+		plat->thermal_power_off_pending = false;
+	}
+	return 0;
+}
+
+static struct notifier_block ab8500_notifier = {
+	.notifier_call = ab8500_notifier_call,
+};
 
 static inline bool valid_bank(u8 bank)
 {
@@ -118,6 +159,7 @@ static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
 	plat = dev_get_platdata(pdev->dev.parent);
 	if (plat->pm_power_off)
 		pm_power_off = ab8500_power_off;
+	hwmon_notifier_register(&ab8500_notifier);
 	return 0;
 }
 

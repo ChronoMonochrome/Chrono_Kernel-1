@@ -163,6 +163,7 @@ static void gpadc_monitor(struct work_struct *work)
 					ret);
 				break;
 			}
+			hwmon_notify(data->max_alarm[i], NULL);
 			sysfs_notify(&data->pdev->dev.kobj, NULL, alarm_node);
 		}
 		if (updated_max_hyst_alarm) {
