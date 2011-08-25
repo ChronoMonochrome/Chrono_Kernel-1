@@ -319,6 +319,7 @@ static ssize_t lsm303dlh_m_store_rate(struct device *dev,
 static int lsm303dlh_m_xyz_read(struct lsm303dlh_m_data *ddata)
 {
 	unsigned char xyz_data[6];
+	short temp;
 	int ret = lsm303dlh_m_read_multi(ddata, OUT_X_M,
 			6, xyz_data, "OUT_X_M");
 	if (ret < 0)
@@ -331,6 +332,16 @@ static int lsm303dlh_m_xyz_read(struct lsm303dlh_m_data *ddata)
 		(((xyz_data[2]) << 8) | xyz_data[3]);
 	ddata->data[2] = (short)
 		(((xyz_data[4]) << 8) | xyz_data[5]);
+
+#ifdef SENSORS_LSM303DLHC
+	/*
+	 * the out registers are in x, z and y order
+	 * so swap y and z values
+	 */
+	temp = ddata->data[1];
+	ddata->data[1] = ddata->data[2];
+	ddata->data[2] = temp;
+#endif
 
 	/* taking orientation of x,y,z axis into account*/
 

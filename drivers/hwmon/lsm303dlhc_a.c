@@ -51,7 +51,7 @@
 #define SHIFT_ADJ_8G 2 /* ~3.9/16*/
 #define SHIFT_ADJ_16G 1 /* ~3.9/16*/
 
-#define AXISDATA_REG    0x29    /* axis data */
+#define AXISDATA_REG    0x28    /* axis data */
 
 /* lsm303dlh magnetometer registers */
 #define IRA_REG_M	0x0A
