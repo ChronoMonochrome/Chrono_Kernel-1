@@ -46,7 +46,7 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 		.cpu_dai_name = "i2s.0",
 		.codec_dai_name = "ab5500-codec-dai.0",
 		.platform_name = "ux500-pcm.0",
-		.codec_name = "ab5500-codec.9",
+		.codec_name = "ab5500-codec.0",
 		.init = NULL,
 		.ops = (struct snd_soc_ops[]) {
 			{
