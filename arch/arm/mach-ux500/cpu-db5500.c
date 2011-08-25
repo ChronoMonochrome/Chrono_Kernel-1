@@ -12,7 +12,8 @@
 
 #include <asm/pmu.h>
 #include <asm/mach/map.h>
-#include <asm/pmu.h>
+#include <asm/cacheflush.h>
+#include <asm/tlbflush.h>
 
 #include <linux/gpio.h>
 
@@ -169,6 +170,38 @@ static void __init db5500_add_gpios(struct device *parent)
 			 IRQ_DB5500_GPIO0, &pdata);
 }
 
+static u8 db5500_revision;
+
+bool cpu_is_u5500v1()
+{
+	return db5500_revision == 0xA0;
+}
+
+bool cpu_is_u5500v2()
+{
+	return db5500_revision == 0xB0;
+}
+
+static void db5500_rev_init(void)
+{
+	const char *version = "UNKNOWN";
+	unsigned int asicid;
+
+	/* As in devicemaps_init() */
+	local_flush_tlb_all();
+	flush_cache_all();
+
+	asicid = readl_relaxed(__io_address(U5500_ASIC_ID_ADDRESS));
+	db5500_revision = asicid & 0xff;
+
+	if (cpu_is_u5500v1())
+		version = "1.0";
+	else if (cpu_is_u5500v2())
+		version = "2.0";
+
+	pr_info("DB5500 v%s [%#010x]\n", version, asicid);
+}
+
 void __init u5500_map_io(void)
 {
 	/*
@@ -181,6 +214,8 @@ void __init u5500_map_io(void)
 	iotable_init(u5500_io_desc, ARRAY_SIZE(u5500_io_desc));
 
 	_PRCMU_BASE = __io_address(U5500_PRCMU_BASE);
+
+	db5500_rev_init();
 }
 
 static void __init db5500_pmu_init(void)
