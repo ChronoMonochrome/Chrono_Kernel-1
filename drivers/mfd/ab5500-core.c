@@ -991,6 +991,19 @@ static struct mfd_cell ab5500_devs[AB5500_NUM_DEVICES] = {
 			},
 		},
 	},
+	[AB5500_DEVID_TEMPMON] = {
+		.name = "abx500-temp",
+		.id = AB5500_DEVID_TEMPMON,
+		.num_resources = 1,
+		.resources = (struct resource[]) {
+			{
+				.name   = "ABX500_TEMP_WARM",
+				.flags  = IORESOURCE_IRQ,
+				.start  = AB5500_IRQ(2, 2),
+				.end    = AB5500_IRQ(2, 2),
+			},
+		},
+	},
 };
 
 /*

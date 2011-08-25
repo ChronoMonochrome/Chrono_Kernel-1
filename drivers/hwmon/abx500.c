@@ -623,6 +623,7 @@ exit_platform_data:
 	hwmon_device_unregister(data->hwmon_dev);
 	platform_set_drvdata(pdev, NULL);
 exit:
+	kfree(data->gpadc_auto);
 	kfree(data);
 	return err;
 }
@@ -635,6 +636,7 @@ static int __devexit abx500_temp_remove(struct platform_device *pdev)
 	hwmon_device_unregister(data->hwmon_dev);
 	sysfs_remove_group(&pdev->dev.kobj, &abx500_temp_group);
 	platform_set_drvdata(pdev, NULL);
+	kfree(data->gpadc_auto);
 	kfree(data);
 	return 0;
 }
