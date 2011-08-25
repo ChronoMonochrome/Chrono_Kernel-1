@@ -13,15 +13,28 @@
 #include <linux/interrupt.h>
 #include <linux/mfd/ab8500.h>
 #include <linux/slab.h>
+#include <linux/mfd/abx500.h>
+
+/* Ponkey time control bits */
+#define AB5500_MCB		0x2F
+#define AB5500_PONKEY_10SEC	0x0
+#define AB5500_PONKEY_5SEC	0x1
+#define AB5500_PONKEY_DISABLE	0x2
+#define AB5500_PONKEY_TMR_MASK	0x1
+#define AB5500_PONKEY_TR_MASK	0x2
+
+static int ab5500_ponkey_hw_init(struct platform_device *);
 
 struct ab8500_ponkey_variant {
 	const char *irq_falling;
 	const char *irq_rising;
+	int (*hw_init)(struct platform_device *);
 };
 
 static const struct ab8500_ponkey_variant ab5500_onswa = {
 	.irq_falling	= "ONSWAn_falling",
 	.irq_rising	= "ONSWAn_rising",
+	.hw_init	= ab5500_ponkey_hw_init,
 };
 
 static const struct ab8500_ponkey_variant ab8500_ponkey = {
@@ -40,6 +53,37 @@ struct ab8500_ponkey_info {
 	int			irq_dbf;
 	int			irq_dbr;
 };
+
+static int ab5500_ponkey_hw_init(struct platform_device *pdev)
+{
+	u8 val;
+	struct ab5500_ponkey_platform_data *pdata;
+
+	pdata = pdev->dev.platform_data;
+	if (pdata) {
+		switch (pdata->shutdown_secs) {
+		case 0:
+			val = AB5500_PONKEY_DISABLE;
+			break;
+		case 5:
+			val = AB5500_PONKEY_5SEC;
+			break;
+		case 10:
+			val = AB5500_PONKEY_10SEC;
+			break;
+		default:
+			val = AB5500_PONKEY_10SEC;
+		}
+	} else {
+		val = AB5500_PONKEY_10SEC;
+	}
+	return abx500_mask_and_set(
+		&pdev->dev,
+		AB5500_BANK_STARTUP,
+		AB5500_MCB,
+		AB5500_PONKEY_TMR_MASK | AB5500_PONKEY_TR_MASK,
+		val);
+}
 
 /* AB8500 gives us an interrupt when ONKEY is held */
 static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
@@ -64,6 +108,14 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 
 	variant = (const struct ab8500_ponkey_variant *)
 		  pdev->id_entry->driver_data;
+
+	if (variant->hw_init) {
+		ret = variant->hw_init(pdev);
+		if (ret < 0) {
+			dev_err(&pdev->dev, "Failed to init hw");
+			return ret;
+		}
+	}
 
 	irq_dbf = platform_get_irq_byname(pdev, variant->irq_falling);
 	if (irq_dbf < 0) {
