@@ -21,6 +21,84 @@
 #include <video/mcde.h>
 #include <mach/prcmu-fw-api.h>
 #include <mach/ste-dma40-db8500.h>
+#include <pm/pm.h>
+
+#include "pins-db8500.h"
+
+#define GPIO_DATA(_name, first, num)					\
+	{								\
+		.name		= _name,				\
+		.first_gpio	= first,				\
+		.first_irq	= NOMADIK_GPIO_TO_IRQ(first),		\
+		.num_gpio	= num,					\
+		.get_secondary_status = ux500_pm_gpio_read_wake_up_status, \
+		.set_ioforce	= ux500_pm_prcmu_set_ioforce,		\
+		.supports_sleepmode = true,				\
+	}
+
+#define GPIO_RESOURCE(block)						\
+	{								\
+		.start	= U8500_GPIOBANK##block##_BASE,			\
+		.end	= U8500_GPIOBANK##block##_BASE + 127,		\
+		.flags	= IORESOURCE_MEM,				\
+	},								\
+	{								\
+		.start	= IRQ_DB8500_GPIO##block,			\
+		.end	= IRQ_DB8500_GPIO##block,			\
+		.flags	= IORESOURCE_IRQ,				\
+	},								\
+	{								\
+		.start	= IRQ_PRCMU_GPIO##block,			\
+		.end	= IRQ_PRCMU_GPIO##block,			\
+		.flags	= IORESOURCE_IRQ,				\
+	}
+
+#define GPIO_DEVICE(block)						\
+	{								\
+		.name 		= "gpio",				\
+		.id		= block,				\
+		.num_resources 	= 3,					\
+		.resource	= &u8500_gpio_resources[block * 3],	\
+		.dev = {						\
+			.platform_data = &u8500_gpio_data[block],	\
+		},							\
+	}
+
+static struct nmk_gpio_platform_data u8500_gpio_data[] = {
+	GPIO_DATA("GPIO-0-31", 0, 32),
+	GPIO_DATA("GPIO-32-63", 32, 5), /* 37..63 not routed to pin */
+	GPIO_DATA("GPIO-64-95", 64, 32),
+	GPIO_DATA("GPIO-96-127", 96, 2), /* 98..127 not routed to pin */
+	GPIO_DATA("GPIO-128-159", 128, 32),
+	GPIO_DATA("GPIO-160-191", 160, 12), /* 172..191 not routed to pin */
+	GPIO_DATA("GPIO-192-223", 192, 32),
+	GPIO_DATA("GPIO-224-255", 224, 7), /* 231..255 not routed to pin */
+	GPIO_DATA("GPIO-256-288", 256, 12), /* 268..288 not routed to pin */
+};
+
+static struct resource u8500_gpio_resources[] = {
+	GPIO_RESOURCE(0),
+	GPIO_RESOURCE(1),
+	GPIO_RESOURCE(2),
+	GPIO_RESOURCE(3),
+	GPIO_RESOURCE(4),
+	GPIO_RESOURCE(5),
+	GPIO_RESOURCE(6),
+	GPIO_RESOURCE(7),
+	GPIO_RESOURCE(8),
+};
+
+struct platform_device u8500_gpio_devs[] = {
+	GPIO_DEVICE(0),
+	GPIO_DEVICE(1),
+	GPIO_DEVICE(2),
+	GPIO_DEVICE(3),
+	GPIO_DEVICE(4),
+	GPIO_DEVICE(5),
+	GPIO_DEVICE(6),
+	GPIO_DEVICE(7),
+	GPIO_DEVICE(8),
+};
 
 static struct resource u8500_shrm_resources[] = {
 	[0] = {

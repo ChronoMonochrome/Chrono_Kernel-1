@@ -124,32 +124,19 @@ static struct platform_device db8500_prcmu_device = {
 };
 
 static struct platform_device *platform_devs[] __initdata = {
+	&u8500_gpio_devs[0],
+	&u8500_gpio_devs[1],
+	&u8500_gpio_devs[2],
+	&u8500_gpio_devs[3],
+	&u8500_gpio_devs[4],
+	&u8500_gpio_devs[5],
+	&u8500_gpio_devs[6],
+	&u8500_gpio_devs[7],
+	&u8500_gpio_devs[8],
 	&db8500_pmu_device,
 	&ux500_prcmu_wdt_device,
 	&db8500_prcmu_device,
 };
-
-static resource_size_t __initdata db8500_gpio_base[] = {
-	U8500_GPIOBANK0_BASE,
-	U8500_GPIOBANK1_BASE,
-	U8500_GPIOBANK2_BASE,
-	U8500_GPIOBANK3_BASE,
-	U8500_GPIOBANK4_BASE,
-	U8500_GPIOBANK5_BASE,
-	U8500_GPIOBANK6_BASE,
-	U8500_GPIOBANK7_BASE,
-	U8500_GPIOBANK8_BASE,
-};
-
-static void __init db8500_add_gpios(struct device *parent)
-{
-	struct nmk_gpio_platform_data pdata = {
-		.supports_sleepmode = true,
-	};
-
-	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db8500_gpio_base),
-			 IRQ_DB8500_GPIO0, &pdata);
-}
 
 static int usb_db8500_rx_dma_cfg[] = {
 	DB8500_DMA_DEV38_USB_OTG_IEP_1_9,
@@ -202,7 +189,6 @@ struct device * __init u8500_init_devices(void)
 
 	db8500_dma_init();
 	db8500_add_rtc(parent);
-	db8500_add_gpios(parent);
 	db8500_add_usb(parent, usb_db8500_rx_dma_cfg, usb_db8500_tx_dma_cfg);
 
 	platform_device_register_data(parent,
