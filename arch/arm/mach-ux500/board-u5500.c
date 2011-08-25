@@ -77,7 +77,6 @@ static struct av8100_platform_data av8100_plat_data = {
 	.mclk_freq = 1, /* MCLK_RNG_22_27 */
 };
 
-
 /*
  * leds LM3530
  */
@@ -165,10 +164,23 @@ static struct i2c_board_info __initdata u5500_i2c1_devices[] = {
 	},
 };
 
-static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
+static struct i2c_board_info __initdata u5500v1_i2c2_sensor_devices[] = {
+ 	{
+ 		/* LSM303DLH Accelerometer */
+ 		I2C_BOARD_INFO("lsm303dlh_a", 0x19),
+ 		.platform_data = &lsm303dlh_pdata,
+ 	},
+ 	{
+		/* LSM303DLH Magnetometer */
+		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
+		.platform_data = &lsm303dlh_pdata,
+	},
+};
+
+static struct i2c_board_info __initdata u5500v2_i2c2_sensor_devices[] = {
 	{
-		/* LSM303DLH Accelerometer */
-		I2C_BOARD_INFO("lsm303dlh_a", 0x19),
+		/* LSM303DLHC Accelerometer */
+		I2C_BOARD_INFO("lsm303dlhc_a", 0x19),
 		.platform_data = &lsm303dlh_pdata,
 	},
 	{
@@ -176,6 +188,9 @@ static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
 		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
 		.platform_data = &lsm303dlh_pdata,
 	},
+};
+
+static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
 	{
 		/* Backlight */
 		I2C_BOARD_INFO("lm3530-led", 0x36),
@@ -350,6 +365,12 @@ static void __init u5500_i2c_init(struct device *parent)
 
 	i2c_register_board_info(1, ARRAY_AND_SIZE(u5500_i2c1_devices));
 	i2c_register_board_info(2, ARRAY_AND_SIZE(u5500_i2c2_devices));
+
+	if (cpu_is_u5500v1())
+		i2c_register_board_info(2, ARRAY_AND_SIZE(u5500v1_i2c2_sensor_devices));
+
+	if (cpu_is_u5500v2())
+		i2c_register_board_info(2, ARRAY_AND_SIZE(u5500v2_i2c2_sensor_devices));
 }
 
 static void __init u5500_uart_init(struct device *parent)
