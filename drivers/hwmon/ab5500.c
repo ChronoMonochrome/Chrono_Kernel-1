@@ -23,6 +23,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/platform_device.h>
 #include <linux/mfd/abx500/ab5500-gpadc.h>
+#include <linux/mfd/abx500/ab5500-bm.h>
 #include "abx500.h"
 
 /* AB5500 driver monitors GPADC - XTAL_TEMP, PCB_TEMP,
@@ -47,12 +48,17 @@ static int ab5500_output_convert(int val, u8 sensor)
 
 static int ab5500_read_sensor(struct abx500_temp *data, u8 sensor)
 {
+	int val;
 	/*
-	 * TODO: Add support for BAT_CTRL node, since this
+	 * Special treatment for BAT_CTRL node, since this
 	 * temperature measurement is more complex than just
 	 * an ADC readout
 	 */
-	int val = ab5500_gpadc_convert(data->ab5500_gpadc, sensor);
+	if (sensor == BAT_CTRL)
+		val = ab5500_btemp_get_batctrl_temp(data->ab5500_btemp);
+	else
+		val = ab5500_gpadc_convert(data->ab5500_gpadc, sensor);
+
 	if (val < 0)
 		return val;
 	else
@@ -155,6 +161,10 @@ int __init abx500_hwmon_init(struct abx500_temp *data)
 	data->ab5500_gpadc = ab5500_gpadc_get("ab5500-adc.0");
 	if (IS_ERR(data->ab5500_gpadc))
 		return PTR_ERR(data->ab5500_gpadc);
+
+	data->ab5500_btemp = ab5500_btemp_get();
+	if (IS_ERR(data->ab5500_btemp))
+		return PTR_ERR(data->ab5500_btemp);
 
 	err = ab5500_temp_shutdown_auto(data);
 	if (err < 0) {

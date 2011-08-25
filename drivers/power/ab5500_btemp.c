@@ -110,6 +110,17 @@ struct ab5500_btemp *ab5500_btemp_get(void)
 }
 
 /**
+ * ab5500_btemp_get_batctrl_temp() - get the temperature
+ * @di:      pointer to the ab5500_btemp structure
+ *
+ * Returns the batctrl temperature in millidegrees
+ */
+int ab5500_btemp_get_batctrl_temp(struct ab5500_btemp *di)
+{
+	return di->bat_temp * 1000;
+}
+
+/**
  * ab5500_btemp_batctrl_volt_to_res() - convert batctrl voltage to resistance
  * @di:		pointer to the ab5500_btemp structure
  * @v_batctrl:	measured batctrl voltage

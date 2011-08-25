@@ -12,6 +12,7 @@
 struct ab8500_gpadc;
 struct ab5500_gpadc;
 struct ab8500_btemp;
+struct ab5500_btemp;
 struct adc_auto_input;
 struct abx500_temp;
 
@@ -63,6 +64,7 @@ struct abx500_temp {
 	struct ab8500_gpadc *ab8500_gpadc;
 	struct ab5500_gpadc *ab5500_gpadc;
 	struct ab8500_btemp *ab8500_btemp;
+	struct ab5500_btemp *ab5500_btemp;	
 	struct adc_auto_input *gpadc_auto;
 	struct abx500_temp_ops ops;
 	u8 gpadc_addr[NUM_SENSORS];

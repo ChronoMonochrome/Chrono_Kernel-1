@@ -100,9 +100,19 @@
 
 #ifdef CONFIG_AB5500_BM
 void ab5500_charger_usb_state_changed(u8 bm_usb_state, u16 mA);
+struct ab5500_btemp *ab5500_btemp_get(void);
+int ab5500_btemp_get_batctrl_temp(struct ab5500_btemp *btemp);
 #else
 static void ab5500_charger_usb_state_changed(u8 bm_usb_state, u16 mA)
 {
+}
+inline struct ab5500_btemp *ab5500_btemp_get(void)
+{
+	return 0;
+}
+inline int ab5500_btemp_get_batctrl_temp(struct ab5500_btemp *btemp)
+{
+	return 0;
 }
 #endif
 #endif /* _AB5500_BM_H */
