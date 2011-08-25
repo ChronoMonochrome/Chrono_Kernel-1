@@ -38,6 +38,7 @@
 #include <linux/jiffies.h>
 #include <linux/mutex.h>
 #include <linux/mfd/abx500/ab8500-gpadc.h>
+#include <linux/mfd/abx500/ab8500-bm.h>
 #include <linux/pm.h>
 
 /*
@@ -50,13 +51,17 @@
 
 #define NUM_SENSORS 5
 
-/* The driver monitors GPADC - ADC_AUX1 and ADC_AUX2 */
-#define NUM_MONITORED_SENSORS 2
+/*
+ * The driver monitors GPADC - ADC_AUX1, ADC_AUX2, BTEMP_BALL
+ * and BAT_CTRL.
+ */
+#define NUM_MONITORED_SENSORS 4
 
 struct ab8500_temp {
 	struct platform_device *pdev;
 	struct device *hwmon_dev;
 	struct ab8500_gpadc *gpadc;
+	struct ab8500_btemp *btemp;
 	u8 gpadc_addr[NUM_SENSORS];
 	unsigned long min[NUM_SENSORS];
 	unsigned long max[NUM_SENSORS];
@@ -131,10 +136,21 @@ static void gpadc_monitor(struct work_struct *work)
 		    && data->min[i] == 0)
 			continue;
 
-		val = ab8500_gpadc_convert(data->gpadc, data->gpadc_addr[i]);
-		if (val < 0) {
-			dev_err(&data->pdev->dev, "GPADC read failed\n");
-			continue;
+		/*
+		 * Special treatment for the BAT_CTRL node, since this
+		 * temperature measurement is more complex than just
+		 * an ADC readout
+		 */
+		if (data->gpadc_addr[i] == BAT_CTRL) {
+			val = ab8500_btemp_get_batctrl_temp(data->btemp);
+		} else {
+			val = ab8500_gpadc_convert(data->gpadc,
+				data->gpadc_addr[i]);
+			if (val < 0) {
+				dev_err(&data->pdev->dev,
+					"GPADC read failed\n");
+				continue;
+			}
 		}
 
 		mutex_lock(&data->lock);
@@ -322,10 +338,10 @@ static ssize_t show_label(struct device *dev,
 		name = "bat_temp";
 		break;
 	case 4:
-		name = "ab8500";
-		break;
-    case 5:
 		name = "bat_ctrl";
+		break;
+	case 5:
+		name = "ab8500";
 		break;
 	default:
 		return -EINVAL;
@@ -342,9 +358,18 @@ static ssize_t show_input(struct device *dev,
 	/* hwmon attr index starts at 1, thus "attr->index-1" below */
 	u8 gpadc_addr = data->gpadc_addr[attr->index - 1];
 
-	val = ab8500_gpadc_convert(data->gpadc, gpadc_addr);
-	if (val < 0)
-		dev_err(&data->pdev->dev, "GPADC read failed\n");
+	/*
+	 * Special treatment for the BAT_CTRL node, since this
+	 * temperature measurement is more complex than just
+	 * an ADC readout
+	 */
+	if (gpadc_addr == BAT_CTRL) {
+		val = ab8500_btemp_get_batctrl_temp(data->btemp);
+	} else {
+		val = ab8500_gpadc_convert(data->gpadc, gpadc_addr);
+		if (val < 0)
+			dev_err(&data->pdev->dev, "GPADC read failed\n");
+	}
 
 	return sprintf(buf, "%d\n", val);
 }
@@ -546,15 +571,31 @@ static SENSOR_DEVICE_ATTR(temp2_max_hyst_alarm, S_IRUGO,
 /* GPADC - BTEMP_BALL */
 static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO, show_label, NULL, 3);
 static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO, show_input, NULL, 3);
-
-/* AB8500 */
-static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, show_label, NULL, 4);
-static SENSOR_DEVICE_ATTR(temp4_crit_alarm, S_IRUGO,
-			  show_crit_alarm, NULL, 4);
+static SENSOR_DEVICE_ATTR(temp3_min, S_IWUSR | S_IRUGO, show_min, set_min, 3);
+static SENSOR_DEVICE_ATTR(temp3_max, S_IWUSR | S_IRUGO, show_max, set_max, 3);
+static SENSOR_DEVICE_ATTR(temp3_max_hyst, S_IWUSR | S_IRUGO,
+			  show_max_hyst, set_max_hyst, 3);
+static SENSOR_DEVICE_ATTR(temp3_min_alarm, S_IRUGO, show_min_alarm, NULL, 3);
+static SENSOR_DEVICE_ATTR(temp3_max_alarm, S_IRUGO, show_max_alarm, NULL, 3);
+static SENSOR_DEVICE_ATTR(temp3_max_hyst_alarm, S_IRUGO,
+			  show_max_hyst_alarm, NULL, 3);
 
 /* GPADC - BAT_CTRL */
+static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, show_label, NULL, 4);
+static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, show_input, NULL, 4);
+static SENSOR_DEVICE_ATTR(temp4_min, S_IWUSR | S_IRUGO, show_min, set_min, 4);
+static SENSOR_DEVICE_ATTR(temp4_max, S_IWUSR | S_IRUGO, show_max, set_max, 4);
+static SENSOR_DEVICE_ATTR(temp4_max_hyst, S_IWUSR | S_IRUGO,
+			  show_max_hyst, set_max_hyst, 4);
+static SENSOR_DEVICE_ATTR(temp4_min_alarm, S_IRUGO, show_min_alarm, NULL, 4);
+static SENSOR_DEVICE_ATTR(temp4_max_alarm, S_IRUGO, show_max_alarm, NULL, 4);
+static SENSOR_DEVICE_ATTR(temp4_max_hyst_alarm, S_IRUGO,
+			  show_max_hyst_alarm, NULL, 4);
+
+/* AB8500 */
 static SENSOR_DEVICE_ATTR(temp5_label, S_IRUGO, show_label, NULL, 5);
-static SENSOR_DEVICE_ATTR(temp5_input, S_IRUGO, show_input, NULL, 5);
+static SENSOR_DEVICE_ATTR(temp5_crit_alarm, S_IRUGO,
+			  show_crit_alarm, NULL, 5);
 
 static struct attribute *ab8500_temp_attributes[] = {
 	&sensor_dev_attr_temp_power_off_delay.dev_attr.attr,
@@ -581,12 +622,24 @@ static struct attribute *ab8500_temp_attributes[] = {
 	/* GPADC - BTEMP_BALL */
 	&sensor_dev_attr_temp3_label.dev_attr.attr,
 	&sensor_dev_attr_temp3_input.dev_attr.attr,
-	/* AB8500 */
-	&sensor_dev_attr_temp4_label.dev_attr.attr,
-	&sensor_dev_attr_temp4_crit_alarm.dev_attr.attr,
+	&sensor_dev_attr_temp3_min.dev_attr.attr,
+	&sensor_dev_attr_temp3_max.dev_attr.attr,
+	&sensor_dev_attr_temp3_max_hyst.dev_attr.attr,
+	&sensor_dev_attr_temp3_min_alarm.dev_attr.attr,
+	&sensor_dev_attr_temp3_max_alarm.dev_attr.attr,
+	&sensor_dev_attr_temp3_max_hyst_alarm.dev_attr.attr,
 	/* GPADC - BAT_CTRL */
+	&sensor_dev_attr_temp4_label.dev_attr.attr,
+	&sensor_dev_attr_temp4_input.dev_attr.attr,
+	&sensor_dev_attr_temp4_min.dev_attr.attr,
+	&sensor_dev_attr_temp4_max.dev_attr.attr,
+	&sensor_dev_attr_temp4_max_hyst.dev_attr.attr,
+	&sensor_dev_attr_temp4_min_alarm.dev_attr.attr,
+	&sensor_dev_attr_temp4_max_alarm.dev_attr.attr,
+	&sensor_dev_attr_temp4_max_hyst_alarm.dev_attr.attr,
+	/* AB8500 */
 	&sensor_dev_attr_temp5_label.dev_attr.attr,
-	&sensor_dev_attr_temp5_input.dev_attr.attr,
+	&sensor_dev_attr_temp5_crit_alarm.dev_attr.attr,
 	NULL
 };
 
@@ -605,9 +658,9 @@ static irqreturn_t ab8500_temp_irq_handler(int irq, void *irq_data)
 	 * used for AB8500 thermal warning from HW.
 	 */
 	mutex_lock(&data->lock);
-	data->crit_alarm[3] = 1;
+	data->crit_alarm[4] = 1;
 	mutex_unlock(&data->lock);
-	sysfs_notify(&pdev->dev.kobj, NULL, "temp4_crit_alarm");
+	sysfs_notify(&pdev->dev.kobj, NULL, "temp5_crit_alarm");
 	dev_info(&pdev->dev, "AB8500 thermal warning, power off in %lu s\n",
 		 data->power_off_delay);
 	delay_in_jiffies = msecs_to_jiffies(data->power_off_delay);
@@ -645,6 +698,7 @@ static int __devinit ab8500_temp_probe(struct platform_device *pdev)
 		goto exit;
 
 	data->gpadc = ab8500_gpadc_get();
+	data->btemp = ab8500_btemp_get();
 
 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
 	if (IS_ERR(data->hwmon_dev)) {
@@ -665,13 +719,10 @@ static int __devinit ab8500_temp_probe(struct platform_device *pdev)
 	 * GPADC - ADC_AUX2, connected to NTC R2150 near DB8500 on HREF
 	 * Hence, temp#_min/max/max_hyst refer to millivolts and not
 	 * millidegrees
+	 * This is not the case for BAT_CTRL where millidegrees is used
 	 *
 	 * HREF HW does not support reading AB8500 temperature. BUT an
 	 * AB8500 IRQ will be launched if die crit temp limit is reached.
-	 *
-	 * Also:
-	 * Battery temperature (BatTemp and BatCtrl) thresholds will
-	 * not be exposed via hwmon.
 	 *
 	 * Make sure indexes correspond to the attribute indexes
 	 * used when calling SENSOR_DEVICE_ATRR
@@ -679,7 +730,7 @@ static int __devinit ab8500_temp_probe(struct platform_device *pdev)
 	data->gpadc_addr[0] = ADC_AUX1;
 	data->gpadc_addr[1] = ADC_AUX2;
 	data->gpadc_addr[2] = BTEMP_BALL;
-	data->gpadc_addr[4] = BAT_CTRL;
+	data->gpadc_addr[3] = BAT_CTRL;
 	mutex_init(&data->lock);
 	data->pdev = pdev;
 	data->power_off_delay = DEFAULT_POWER_OFF_DELAY;
