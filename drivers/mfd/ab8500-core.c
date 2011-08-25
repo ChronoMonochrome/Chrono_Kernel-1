@@ -746,7 +746,7 @@ static struct resource __devinitdata ab8500_usb_resources[] = {
 
 static struct resource __devinitdata ab8500_temp_resources[] = {
 	{
-		.name  = "AB8500_TEMP_WARM",
+		.name  = "ABX500_TEMP_WARM",
 		.start = AB8500_INT_TEMP_WARM,
 		.end   = AB8500_INT_TEMP_WARM,
 		.flags = IORESOURCE_IRQ,
@@ -831,7 +831,7 @@ static struct mfd_cell __devinitdata abx500_common_devs[] = {
 		.name = "ab8500-denc",
 	},
 	{
-		.name = "ab8500-temp",
+		.name = "abx500-temp",
 		.num_resources = ARRAY_SIZE(ab8500_temp_resources),
 		.resources = ab8500_temp_resources,
 	},
