@@ -710,20 +710,6 @@ config SENSORS_LSM303DLH_INPUT_DEVICE
 	  interrupts, need to be enabled only when input device support
 	  is required.
 
-config SENSORS_LSM303DLHC
-	tristate "ST LSM303DLHC 3-axis accelerometer and 3-axis magnetometer"
-	depends on I2C
-	default n
-	help
-	  This driver provides support for the LSM303DLHC chip which includes a
-	  3-axis accelerometer and a 3-axis magnetometer.
-
-	  This driver can also be built as modules.  If so, the module for
-	  accelerometer will be called lsm303dlhc_a and for magnetometer it will
-	  be called lsm303dlh_m.
-
-	  Say Y here if you have a device containing lsm303dlhc chip.
-
 config SENSORS_L3G4200D
 	tristate "ST L3G4200D 3-axis gyroscope"
 	depends on I2C
