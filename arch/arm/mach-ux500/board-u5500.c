@@ -122,6 +122,14 @@ static struct ab5500_hvleds_platform_data ab5500_hvleds_data = {
 	},
 };
 
+static struct ab5500_ponkey_platform_data ab5500_ponkey_data = {
+	/*
+	 * Shutdown time in secs. Can be set
+	 * to 10sec, 5sec and 0sec(disabled)
+	 */
+	.shutdown_secs = 10,
+};
+
 /*
  * I2C
  */
@@ -328,6 +336,8 @@ static struct ab5500_platform_data ab5500_plf_data = {
 	.dev_data[AB5500_DEVID_BTEMP] = &abx500_bm_pt_data,
 	.dev_data_sz[AB5500_DEVID_BTEMP] = sizeof(abx500_bm_pt_data),
 #endif
+	.dev_data[AB5500_DEVID_ONSWA] = &ab5500_ponkey_data,
+	.dev_data_sz[AB5500_DEVID_ONSWA] = sizeof(ab5500_ponkey_data),
 };
 
 static struct platform_device u5500_ab5500_device = {
