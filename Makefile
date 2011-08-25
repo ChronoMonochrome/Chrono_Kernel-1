@@ -8,6 +8,10 @@ ifeq ("$(CROSS_COMPILE)", "")
    CROSS_COMPILE=/home/Ishida/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
 endif
 
+ifeq ("$(O)", "")
+   O=/home/Ishida/obj_nodebug
+endif
+
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
