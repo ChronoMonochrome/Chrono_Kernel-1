@@ -123,10 +123,8 @@ static void ab8500_usb_wd_workaround(struct ab8500_usb *ab)
 		(AB8500_BIT_WD_CTRL_ENABLE
 		| AB8500_BIT_WD_CTRL_KICK));
 
-	if (ab->rev > 0x10) /* v1.1 v2.0 */
+	if (ab->rev > 0x10) /* v2.0 v3.0 */
 		udelay(AB8500_WD_V11_DISABLE_DELAY_US);
-	else /* v1.0 */
-		msleep(AB8500_WD_V10_DISABLE_DELAY_MS);
 
 	abx500_set_register_interruptible(ab->dev,
 		AB8500_SYS_CTRL2_BLOCK,
@@ -142,25 +140,10 @@ static void ab8500_usb_regulator_ctrl(struct ab8500_usb *ab, bool sel_host,
 		regulator_enable(ab->v_ulpi);
 		regulator_enable(ab->v_musb);
 
-		if (sel_host && (ab->rev < 0x20))
-			/* Enable v-usb */
-			abx500_mask_and_set_register_interruptible(ab->dev,
-					AB8500_REGU_CTRL1,
-					AB8500_VBUS_CTRL_REG,
-					AB8500_BIT_VBUS_ENABLE,
-					AB8500_BIT_VBUS_ENABLE);
 	} else {
 		regulator_disable(ab->v_musb);
 		regulator_disable(ab->v_ulpi);
 		regulator_disable(ab->v_ape);
-
-		if (sel_host && (ab->rev < 0x20))
-			/* Disable v-usb */
-			abx500_mask_and_set_register_interruptible(ab->dev,
-					AB8500_REGU_CTRL1,
-					AB8500_VBUS_CTRL_REG,
-					AB8500_BIT_VBUS_ENABLE,
-					0);
 	}
 }
 
@@ -184,8 +167,6 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 				bit,
 				bit);
 
-	/* Needed to enable the phy.*/
-	ab8500_usb_wd_workaround(ab);
 }
 
 static void ab8500_usb_wd_linkstatus(struct ab8500_usb *ab,u8 bit)
@@ -214,6 +195,9 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
 				AB8500_USB_PHY_CTRL_REG,
 				bit,
 				0);
+
+	/* Needed to disable the phy.*/
+	ab8500_usb_wd_workaround(ab);
 
 	clk_disable(ab->sysclk);
 
@@ -306,16 +290,6 @@ static void ab8500_usb_delayed_work(struct work_struct *work)
 	ab8500_usb_link_status_update(ab);
 }
 
-static irqreturn_t ab8500_usb_v1x_connect_irq(int irq, void *data)
-{
-	struct ab8500_usb *ab = (struct ab8500_usb *) data;
-
-	/* Wait for link status to become stable. */
-	schedule_delayed_work(&ab->dwork, ab->link_status_wait);
-
-	return IRQ_HANDLED;
-}
-
 static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
 {
 	struct ab8500_usb *ab = (struct ab8500_usb *) data;
@@ -334,10 +308,6 @@ static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
 				0);
 	}
 	ab->mode = USB_IDLE;
-
-	if (ab->rev < 0x20)
-		/* Wait for link status to become stable. */
-		schedule_delayed_work(&ab->dwork, ab->link_status_wait);
 
 	return IRQ_HANDLED;
 }
@@ -536,41 +506,7 @@ static int ab8500_usb_irq_setup(struct platform_device *pdev,
 	int err;
 	int irq;
 
-	if (ab->rev < 0x20) {
-		irq = platform_get_irq_byname(pdev, "ID_WAKEUP_R");
-		if (irq < 0) {
-			err = irq;
-			dev_err(&pdev->dev, "ID rise irq not found\n");
-			goto irq_fail;
-		}
-		err = request_threaded_irq(irq, NULL,
-			ab8500_usb_v1x_connect_irq,
-			IRQF_NO_SUSPEND | IRQF_SHARED,
-			"usb-id-rise", ab);
-		if (err < 0) {
-			dev_err(ab->dev,
-				"request_irq failed for ID rise irq\n");
-			goto irq_fail;
-		}
-		ab->irq_num_id_rise = irq;
-
-		irq = platform_get_irq_byname(pdev, "VBUS_DET_R");
-		if (irq < 0) {
-			err = irq;
-			dev_err(&pdev->dev, "VBUS rise irq not found\n");
-			goto irq_fail;
-		}
-		err = request_threaded_irq(irq, NULL,
-			ab8500_usb_v1x_connect_irq,
-			IRQF_NO_SUSPEND | IRQF_SHARED,
-			"usb-vbus-rise", ab);
-		if (err < 0) {
-			dev_err(ab->dev,
-				"request_irq failed for Vbus rise irq\n");
-			goto irq_fail;
-		}
-		ab->irq_num_vbus_rise = irq;
-	}else { /* 0x20 */
+	if (ab->rev > 0x10) { /* 0x20 0x30 */
 		irq = platform_get_irq_byname(pdev, "USB_LINK_STATUS");
 		if (irq < 0) {
 			err = irq;
@@ -642,8 +578,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	if (rev < 0) {
 		dev_err(&pdev->dev, "Chip id read failed\n");
 		return rev;
-	} else if (rev < 0x10) {
-		dev_err(&pdev->dev, "Unsupported AB8500 chip\n");
+	} else if (rev < 0x20) {
+		dev_err(&pdev->dev, "Unsupported AB8500 chip rev=%d\n", rev);
 		return -ENODEV;
 	}
 
@@ -692,9 +628,6 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 		err = PTR_ERR(ab->sysclk);
 		goto fail1;
 	}
-
-	if (ab->rev < 0x20)
-		ab->link_status_wait = AB8500_V1x_LINK_STAT_WAIT;
 
 	err = ab8500_usb_irq_setup(pdev, ab);
 	if (err < 0)
