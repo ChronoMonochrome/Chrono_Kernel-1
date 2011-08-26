@@ -28,7 +28,7 @@
 #include "cm_service.h"
 #include "cm_dma.h"
 
-#define CMDRIVER_PATCH_VERSION 112
+#define CMDRIVER_PATCH_VERSION 115
 #define O_FLUSH 0x1000000
 
 static int cmld_major;
@@ -50,9 +50,9 @@ static DEFINE_MUTEX(channel_lock); /* lock used to protect previous list */
 
 #ifdef CONFIG_DEBUG_FS
 /* Debugfs support */
-bool user_has_debugfs = false;
-bool dump_done = true;
-module_param(dump_done, bool, S_IWUSR|S_IRUGO);
+bool cmld_user_has_debugfs = false;
+bool cmld_dump_ongoing = false;
+module_param(cmld_dump_ongoing, bool, S_IWUSR|S_IRUGO);
 static DECLARE_WAIT_QUEUE_HEAD(dump_waitq);
 #endif
 
@@ -88,9 +88,7 @@ static inline struct cm_process_priv *getProcessPriv(void)
 	entry->pid = current->tgid;
 	mutex_lock(&process_lock);
 	list_add(&entry->entry, &process_list);
-#ifdef CONFIG_DEBUG_FS
 	cm_debug_proc_init(entry);
-#endif
 out:
 	mutex_unlock(&process_lock);
 	return entry;
@@ -692,7 +690,7 @@ static long cmld_control_ctl(struct file *file, unsigned int cmd, unsigned long 
 			return -ENOENT;
 	case CM_PRIV_DEBUGFS_READY:
 #ifdef CONFIG_DEBUG_FS
-		user_has_debugfs = true;
+		cmld_user_has_debugfs = true;
 #endif
 		return 0;
 	case CM_PRIV_DEBUGFS_DUMP_DONE:
@@ -715,10 +713,10 @@ static long cmld_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 #ifdef CONFIG_DEBUG_FS
 	if (cmd == CM_PRIV_DEBUGFS_DUMP_DONE) {
-		dump_done = true;
+		cmld_dump_ongoing = false;
 		wake_up_interruptible(&dump_waitq);
 		return 0;
-	} else if (wait_event_interruptible(dump_waitq, dump_done))
+	} else if (wait_event_interruptible(dump_waitq, (!cmld_dump_ongoing)))
 		return -ERESTARTSYS;
 #endif
 
@@ -1161,13 +1159,11 @@ static int __init cmld_init_module(void)
 			CMDRIVER_PATCH_VERSION);
 	}
 
-#ifdef CONFIG_DEBUG_FS
 	cm_debug_init();
 	if (osal_debug_ops.domain_create) {
 		osal_debug_ops.domain_create(DEFAULT_SVA_DOMAIN);
 		osal_debug_ops.domain_create(DEFAULT_SIA_DOMAIN);
 	}
-#endif
 
 	/* Configure MPC Cores */
 	for (i=0; i<NB_MPC; i++) {
@@ -1195,9 +1191,7 @@ static int __init cmld_init_module(void)
 		return 0;
 
 out_all:
-#ifdef CONFIG_DEBUG_FS
 	cm_debug_exit();
-#endif
 	free_mpc_irqs(i);
 	CM_ENGINE_Destroy();
 	i=ARRAY_SIZE(cmld_devname);
@@ -1255,9 +1249,7 @@ static void __exit cmld_cleanup_module(void)
 #ifdef 	CM_DEBUG_ALLOC
 	cleanup_debug_alloc();
 #endif
-#ifdef CONFIG_DEBUG_FS
 	cm_debug_exit();
-#endif
 }
 module_init(cmld_init_module);
 module_exit(cmld_cleanup_module);

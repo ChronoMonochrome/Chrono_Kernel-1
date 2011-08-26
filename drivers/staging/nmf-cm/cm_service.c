@@ -56,7 +56,7 @@ void dispatch_service_msg(struct osal_msg *msg)
 		memcpy(new_msg, msg, msg_size);
 		plist_node_init(&new_msg->msg_entry, 0);
 #ifdef CONFIG_DEBUG_FS
-		if (user_has_debugfs && dump_flag_to_set
+		if (cmld_user_has_debugfs && dump_flag_to_set
 		    && (new_msg->d.srv.srvType == NMF_SERVICE_PANIC)) {
 			/*
 			 * The reciever of this message will do the DSP
@@ -65,7 +65,7 @@ void dispatch_service_msg(struct osal_msg *msg)
 			new_msg->d.srv.srvData.panic.panicSource
 				|= DEBUGFS_DUMP_FLAG;
 			dump_flag_to_set = false;
-			dump_done = false;
+			cmld_dump_ongoing = true;
 		}
 #endif
 		spin_lock_bh(&channelPriv->bh_lock);

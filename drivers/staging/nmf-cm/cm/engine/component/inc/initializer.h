@@ -15,6 +15,7 @@
 
 PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId);
 PUBLIC t_cm_error cm_COMP_CallService(int serviceIndex, t_component_instance *pComp, t_uint32 methodAddress);
+PUBLIC void cm_COMP_Flush(t_nmf_core_id coreId);
 PUBLIC void cm_COMP_INIT_Close(t_nmf_core_id coreId);
 PUBLIC t_cm_error cm_COMP_UpdateStack(t_nmf_core_id coreId, t_uint32 stackSize);
 PUBLIC t_cm_error cm_COMP_ULPForceWakeup(t_nmf_core_id coreId);

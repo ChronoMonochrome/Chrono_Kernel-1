@@ -33,6 +33,7 @@ static struct {
     t_nmf_fifo_arm_desc* uplinkFifo;
     t_memory_handle dspfifoHandle;
     t_nmf_osal_sem_handle fifoSemHandle;
+    t_uint32 servicePending;                // TODO : Use sem counter instead of defining such variable (need to create new OSAL)
 } initializerDesc[NB_CORE_IDS];
 
 PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId)
@@ -63,6 +64,7 @@ PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId)
         return error;
 
     /* create fifo semaphore */
+    initializerDesc[coreId].servicePending = 0;
     initializerDesc[coreId].fifoSemHandle = OSAL_CreateSemaphore(DEFAULT_INITIALIZER_FIFO_SIZE);
     if (initializerDesc[coreId].fifoSemHandle == 0) {
         dspevent_destroyDspEventFifo(initializerDesc[coreId].dspfifoHandle);
@@ -158,6 +160,31 @@ PUBLIC t_cm_error cm_COMP_CallService(
     return error;
 }
 
+PUBLIC void cm_COMP_Flush(t_nmf_core_id coreId) {
+
+    if(initializerDesc[coreId].servicePending > 0)
+    {
+        t_uint16 params[INIT_COMPONENT_CMD_SIZE];
+        t_uint32 methodAddress = cm_EEM_getExecutiveEngine(coreId)->voidAddr;
+
+        // If service still pending on MMDSP side, send a flush command (today, we reuse Destroy to not create new empty service)
+        // When we receive the result, this mean that we have flushed all previous request.
+
+        params[INIT_COMPONENT_CMD_HANDLE_INDEX] = (t_uint16)(0x0 & 0xFFFF);
+        params[INIT_COMPONENT_CMD_HANDLE_INDEX+1] =  (t_uint16)(0x0 >> 16);
+        params[INIT_COMPONENT_CMD_THIS_INDEX] =  (t_uint16)(0x0 & 0xFFFF);
+        params[INIT_COMPONENT_CMD_THIS_INDEX+1] =  (t_uint16)(0x0 >> 16);
+        params[INIT_COMPONENT_CMD_METHOD_INDEX] =  (t_uint16)(methodAddress & 0xFFFF);
+        params[INIT_COMPONENT_CMD_METHOD_INDEX+1] =  (t_uint16)(methodAddress >> 16);
+
+        if (cm_COMP_generic(coreId, params, sizeof(params) / sizeof(t_uint16), NMF_DESTROY_INDEX) != CM_OK ||
+                OSAL_SEMAPHORE_WAIT_TIMEOUT(semHandle) != SYNC_OK)
+        {
+            ERROR("CM_MPC_NOT_RESPONDING: can't call flush service\n", 0, 0, 0, 0, 0, 0);
+        }
+    }
+}
+
 PUBLIC void cm_COMP_INIT_Close(t_nmf_core_id coreId)
 {
     unsigned int i;
@@ -187,6 +214,7 @@ PUBLIC void processAsyncAcknowledge(t_nmf_core_id coreId, t_event_params_handle 
 {
     cm_AcknowledgeEvent(initializerDesc[coreId].uplinkFifo);
 
+    initializerDesc[coreId].servicePending--;
     OSAL_SemaphorePost(initializerDesc[coreId].fifoSemHandle,1);
 }
 
@@ -194,6 +222,7 @@ PUBLIC void processSyncAcknowledge(t_nmf_core_id coreId, t_event_params_handle p
 {
     cm_AcknowledgeEvent(initializerDesc[coreId].uplinkFifo);
 
+    initializerDesc[coreId].servicePending--;
     OSAL_SemaphorePost(initializerDesc[coreId].fifoSemHandle,1);
     OSAL_SemaphorePost(semHandle,1);
 }
@@ -309,6 +338,7 @@ PRIVATE t_cm_error cm_COMP_generic(
     if (OSAL_SEMAPHORE_WAIT_TIMEOUT(initializerDesc[coreId].fifoSemHandle) != SYNC_OK)
         return CM_MPC_NOT_RESPONDING;
 
+
     // AllocEvent
     if((_xyuv_data = cm_AllocEvent(initializerDesc[coreId].downlinkFifo)) == NULL)
     {
@@ -325,6 +355,8 @@ PRIVATE t_cm_error cm_COMP_generic(
 
     // Send Command
     error = cm_PushEventTrace(initializerDesc[coreId].downlinkFifo, _xyuv_data, serviceIndex,0);
+    if(error == CM_OK)
+        initializerDesc[coreId].servicePending++;
 
 unlock:
     OSAL_UNLOCK_COM();

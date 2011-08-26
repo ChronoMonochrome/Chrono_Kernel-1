@@ -745,6 +745,10 @@ t_cm_error cm_destroyInstance(t_component_instance* component, t_destroy_state f
                 ERROR("CM_MPC_NOT_RESPONDING: can't call destroy '%s'\n", component->pathname, 0, 0, 0, 0, 0);
             }
         }
+        else
+        {
+            cm_COMP_Flush(component->Template->dspId);
+        }
     }
 
     cm_delayedDestroyComponent(component);

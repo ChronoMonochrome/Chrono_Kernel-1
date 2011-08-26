@@ -75,8 +75,8 @@ struct memAreaDesc_t {
 extern struct list_head channel_list; /**< List of all allocated channel structures */
 extern struct list_head process_list; /**< List of all allocated process private structure */
 #ifdef CONFIG_DEBUG_FS
-extern bool user_has_debugfs; /**< Whether user side has proper support of debugfs to take a dump */
-extern bool dump_done; /**< Whether a dump has to be taken or not */
+extern bool cmld_user_has_debugfs; /**< Whether user side has proper support of debugfs to take a dump */
+extern bool cmld_dump_ongoing; /**< Whether a dump is on-going */
 #endif
 
 /** Lock/unlock per process mutex

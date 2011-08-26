@@ -847,9 +847,8 @@ void OSAL_DisablePwrRessource(t_nmf_power_resource resource, t_uint32 firstParam
 			return;
 		}
 
-#ifdef CONFIG_DEBUG_FS
 		cm_debug_destroy_tcm_file(idx);
-#endif
+
 		/* Stop the DSP load monitoring */
 		clear_bit(idx, &running_dsp);
 		if (osalEnv.mpc[idx].monitor_tsk) {
@@ -985,9 +984,8 @@ t_cm_error OSAL_EnablePwrRessource(t_nmf_power_resource resource, t_uint32 first
 			       "thread: %ld\n", PTR_ERR(osalEnv.mpc[idx].monitor_tsk));
 			osalEnv.mpc[idx].monitor_tsk = NULL;
 		}
-#ifdef CONFIG_DEBUG_FS
+
 		cm_debug_create_tcm_file(idx);
-#endif
 		break;
 	}
 	case CM_OSAL_POWER_SxA_AUTOIDLE:

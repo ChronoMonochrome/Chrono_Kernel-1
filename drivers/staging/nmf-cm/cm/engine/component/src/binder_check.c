@@ -40,10 +40,10 @@ t_cm_error cm_checkValidClient(
                 t_interface_reference* itfRef = &client->interfaceReferences[itfRequire->requireIndex][itfRequire->collectionIndex];
 
                 if(itfRef->instance == (const t_component_instance*)NMF_VOID_COMPONENT)
-                    ERROR("CM_INTERFACE_ALREADY_BINDED(): Component (%s<%s>.s) already bound to VOID\n",
+                    ERROR("CM_INTERFACE_ALREADY_BINDED(): Component (%s<%s>.%s) already bound to VOID\n",
                             client->pathname, client->Template->name, requiredItfClientName, 0, 0, 0);
                 else
-                    ERROR("CM_INTERFACE_ALREADY_BINDED(): Component (%s<%s>.s) already bound to another server (%s<%s>.%s)\n",
+                    ERROR("CM_INTERFACE_ALREADY_BINDED(): Component (%s<%s>.%s) already bound to another server (%s<%s>.%s)\n",
                             client->pathname, client->Template->name, requiredItfClientName,
                             itfRef->instance->pathname, itfRef->instance->Template->name, itfRef->instance->Template->provides[itfRef->provideIndex].name);
                 return CM_INTERFACE_ALREADY_BINDED;
@@ -116,7 +116,7 @@ t_cm_error cm_checkValidBinding(
         {
             if(itfRef->instance == (const t_component_instance*)NMF_VOID_COMPONENT)
             {
-                ERROR("CM_INTERFACE_ALREADY_BINDED(): Singleton (%s<%s>.s) already bound to VOID\n",
+                ERROR("CM_INTERFACE_ALREADY_BINDED(): Singleton (%s<%s>.%s) already bound to VOID\n",
                         client->pathname, client->Template->name, requiredItfClientName, 0, 0, 0);
                 return CM_INTERFACE_ALREADY_BINDED;
             }
@@ -130,7 +130,7 @@ t_cm_error cm_checkValidBinding(
             }
             else
             {
-                ERROR("CM_INTERFACE_ALREADY_BINDED(): Singleton (%s<%s>.s) already bound to different server (%s<%s>.%s)\n",
+                ERROR("CM_INTERFACE_ALREADY_BINDED(): Singleton (%s<%s>.%s) already bound to different server (%s<%s>.%s)\n",
                         client->pathname, client->Template->name, requiredItfClientName,
                         itfRef->instance->pathname, itfRef->instance->Template->name, itfRef->instance->Template->provides[itfRef->provideIndex].name);
                 return CM_INTERFACE_ALREADY_BINDED;
