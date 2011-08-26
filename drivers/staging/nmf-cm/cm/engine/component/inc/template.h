@@ -45,6 +45,25 @@ struct t_component_instance;
 
 /*!
  * \internal
+ * \brief Description of a provided interface method on a collection index ; Available only when template loaded
+ * \ingroup COMPONENT_INTERNAL
+ */
+typedef struct {
+    t_uint32               methodAddresses;             //!< Address of each method
+} t_interface_provide_index_loaded;
+
+/*!
+ * \internal
+ * \brief Description of a provided interface ; Available only when template loaded
+ * \ingroup COMPONENT_INTERNAL
+ */
+typedef struct {
+    t_interface_provide_index_loaded    **indexesLoaded;                  //!< Provide information for each collection index
+} t_interface_provide_loaded;
+
+
+/*!
+ * \internal
  * \brief Description of a component template
  * \ingroup COMPONENT_INTERNAL
  */
@@ -79,6 +98,8 @@ typedef struct _t_component_template {
     t_attribute         *attributes;            //!< Array of attributes in this template
     t_interface_provide *provides;              //!< Array of interface provided by this template
     t_interface_require *requires;              //!< Array of interface required by this template
+
+    t_interface_provide_loaded  *providesLoaded;    //!< Array of interface provided by this template ; Available when loaded
 
     t_bool                      descriptionAssociatedWithTemplate;
 

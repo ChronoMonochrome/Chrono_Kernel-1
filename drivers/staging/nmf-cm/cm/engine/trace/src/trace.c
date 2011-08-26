@@ -96,12 +96,13 @@ void cm_TRC_traceLoadMap(
             for(i = 0; i < component->Template->provideNumber; i++)
             {
                 t_interface_provide* provide = &component->Template->provides[i];
+                t_interface_provide_loaded* provideLoaded = &component->Template->providesLoaded[i];
 
                 for(j = 0; j < provide->collectionSize; j++)
                 {
                     for(k = 0; k < provide->interface->methodNumber; k++)
                     {
-                        tracemethod.methodId = provide->indexes[j][k].methodAddresses;
+                        tracemethod.methodId = provideLoaded->indexesLoaded[j][k].methodAddresses;
 
                         cm_StringCopy((char*)tracemethod.methodName, provide->interface->methodNames[k], MAX_INTERFACE_METHOD_NAME_LENGTH);
 

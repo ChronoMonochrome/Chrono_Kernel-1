@@ -65,7 +65,6 @@ typedef struct {
  * \ingroup COMPONENT_INTERNAL
  */
 typedef struct {
-    t_uint32               methodAddresses;             //!< Address of each method ; Available only when template loaded
     t_memory_reference     memory;                      //!< Memory of the method
 } t_interface_provide_index;
 

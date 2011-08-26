@@ -43,6 +43,7 @@ PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId)
     t_dsp_offset sharedVarOffset;
     t_interface_provide_description itfProvide;
     t_interface_provide* provide;
+    t_interface_provide_loaded* provideLoaded;
 
     ee = cm_EEM_getExecutiveEngine(coreId)->instance;
 
@@ -50,6 +51,7 @@ PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId)
     if((error = cm_getProvidedInterface(ee, "service", &itfProvide)) != CM_OK)
         return error;
     provide = &ee->Template->provides[itfProvide.provideIndex];
+    provideLoaded = &ee->Template->providesLoaded[itfProvide.provideIndex];
 
 
     if ((error = dspevent_createDspEventFifo(
@@ -114,7 +116,7 @@ PUBLIC t_cm_error cm_COMP_INIT_Init(t_nmf_core_id coreId)
         fifo_params_setSharedField(
                 initializerDesc[coreId].downlinkFifo,
                 i + 1,
-                provide->indexes[itfProvide.collectionIndex][i].methodAddresses);
+                provideLoaded->indexesLoaded[itfProvide.collectionIndex][i].methodAddresses);
     }
 
     /* DSP->HOST ParamsFifo extended fields initialisation */

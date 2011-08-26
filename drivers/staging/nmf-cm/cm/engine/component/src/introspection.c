@@ -166,6 +166,7 @@ t_dsp_address cm_getFunction(
 {
     t_interface_provide_description itfProvide;
     t_interface_provide* provide;
+    t_interface_provide_loaded* provideLoaded;
     t_cm_error error;
     int i;
 
@@ -174,12 +175,13 @@ t_dsp_address cm_getFunction(
         return error;
 
     provide = &component->Template->provides[itfProvide.provideIndex];
+    provideLoaded = &component->Template->providesLoaded[itfProvide.provideIndex];
 
     for(i = 0; i < provide->interface->methodNumber; i++)
     {
         if(cm_StringCompare(provide->interface->methodNames[i], methodName, MAX_INTERFACE_METHOD_NAME_LENGTH) == 0)
         {
-            return provide->indexes[itfProvide.collectionIndex][i].methodAddresses;
+            return provideLoaded->indexesLoaded[itfProvide.collectionIndex][i].methodAddresses;
         }
     }
 

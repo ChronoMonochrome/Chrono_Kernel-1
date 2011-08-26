@@ -78,6 +78,7 @@ static void cm_bindLowLevelInterface(
     t_component_instance* server = (t_component_instance*)itfLocalBC->server;
     t_interface_require *require = &client->Template->requires[itfRequire->requireIndex];
     t_interface_provide* provide = &server->Template->provides[itfLocalBC->provideIndex];
+    t_interface_provide_loaded* provideLoaded = &server->Template->providesLoaded[itfLocalBC->provideIndex];
     int k, j;
 
     if(require->indexes != NULL)
@@ -113,7 +114,7 @@ static void cm_bindLowLevelInterface(
                 // We are 64word byte aligned, combine this write with first method
                 *(volatile t_uint64*)hostAddr =
                         ((t_uint64)server->thisAddress << 0) |
-                        ((t_uint64)provide->indexes[itfLocalBC->collectionIndex][0].methodAddresses << 32);
+                        ((t_uint64)provideLoaded->indexesLoaded[itfLocalBC->collectionIndex][0].methodAddresses << 32);
                 hostAddr += 2;
                 j = 1;
             }
@@ -127,14 +128,14 @@ static void cm_bindLowLevelInterface(
             // Word align copy
             for(; j < require->interface->methodNumber - 1; j+=2) {
                 *(volatile t_uint64*)hostAddr =
-                        ((t_uint64)provide->indexes[itfLocalBC->collectionIndex][j].methodAddresses << 0) |
-                        ((t_uint64)provide->indexes[itfLocalBC->collectionIndex][j+1].methodAddresses << 32);
+                        ((t_uint64)provideLoaded->indexesLoaded[itfLocalBC->collectionIndex][j].methodAddresses << 0) |
+                        ((t_uint64)provideLoaded->indexesLoaded[itfLocalBC->collectionIndex][j+1].methodAddresses << 32);
                 hostAddr += 2;
             }
 
             // Last word align if required
             if(j < require->interface->methodNumber)
-                *hostAddr = provide->indexes[itfLocalBC->collectionIndex][j].methodAddresses;
+                *hostAddr = provideLoaded->indexesLoaded[itfLocalBC->collectionIndex][j].methodAddresses;
         }
     }
     else
@@ -147,7 +148,7 @@ static void cm_bindLowLevelInterface(
                     cm_ELF_performRelocation(
                                         reloc->type,
                                         reloc->symbol_name,
-                                        provide->indexes[itfLocalBC->collectionIndex][j].methodAddresses,
+                                        provideLoaded->indexesLoaded[itfLocalBC->collectionIndex][j].methodAddresses,
                                         reloc->reloc_addr);
                     break;
                 }
@@ -773,7 +774,7 @@ t_cm_error cm_bindComponentFromCMCore(
             fifo_params_setSharedField(
                     (*bfInfo)->fifo,
                     1+i,
-                    skel->Template->provides[0].indexes[0][i].methodAddresses
+                    skel->Template->providesLoaded[0].indexesLoaded[0][i].methodAddresses
                     );
         }
     }
@@ -1043,7 +1044,7 @@ t_cm_error cm_bindInterfaceDistributed(
             fifo_params_setSharedField(
                     bfInfo->fifo,
                     1+i,
-                    skel->Template->provides[0].indexes[0][i].methodAddresses
+                    skel->Template->providesLoaded[0].indexesLoaded[0][i].methodAddresses
                     );
         }
     }

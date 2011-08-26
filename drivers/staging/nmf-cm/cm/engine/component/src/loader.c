@@ -111,12 +111,13 @@ t_uint32 cm_resolvSymbol(
     for(i = 0; i < ee->Template->provideNumber; i++)
     {
         t_interface_provide* provide = &ee->Template->provides[i];
+        t_interface_provide_loaded* provideLoaded = &ee->Template->providesLoaded[i];
 
         for(j = 0; j < provide->interface->methodNumber; j++)
         {
             if(provide->interface->methodNames[j] == symbolName)
             {
-                return provide->indexes[0][j].methodAddresses; // Here we assume no collection provided !!
+                return provideLoaded->indexesLoaded[0][j].methodAddresses; // Here we assume no collection provided !!
             }
         }
     }
@@ -244,17 +245,40 @@ t_cm_error cm_loadComponent(
             template->LCCConstructAddress = cm_EEM_getExecutiveEngine(coreId)->voidAddr;
 
         // Compute provide methodIndex
-        for(i = 0; i < template->provideNumber; i++)
+        if(template->provideNumber != 0)
         {
-            for(j = 0; j < template->provides[i].collectionSize; j++)
-            {
-                for(k = 0; k < template->provides[i].interface->methodNumber; k++)
-                {
-                    template->provides[i].indexes[j][k].methodAddresses =
-                            MemoryToDspAdress(template, &template->provides[i].indexes[j][k].memory);
+            template->providesLoaded =
+                    (t_interface_provide_loaded*)OSAL_Alloc_Zero(sizeof(t_interface_provide_loaded) * template->provideNumber);
+            if(template->providesLoaded == NULL)
+                goto oom;
 
-                    LOG_INTERNAL(2, "    [%d, %d] method '%s' @ %x\n",
-                            j, k, template->provides[i].interface->methodNames[k], template->provides[i].indexes[j][k].methodAddresses, 0, 0);
+            for(i = 0; i < template->provideNumber; i++)
+            {
+                template->providesLoaded[i].indexesLoaded = (t_interface_provide_index_loaded**)OSAL_Alloc_Zero(
+                        sizeof(t_interface_provide_index_loaded*) * template->provides[i].collectionSize);
+                if(template->providesLoaded[i].indexesLoaded == NULL)
+                    goto oom;
+
+                if(template->provides[i].interface->methodNumber != 0)
+                {
+                    for(j = 0; j < template->provides[i].collectionSize; j++)
+                    {
+                        template->providesLoaded[i].indexesLoaded[j] = (t_interface_provide_index_loaded*)OSAL_Alloc(
+                                sizeof(t_interface_provide_index_loaded) * template->provides[i].interface->methodNumber);
+                        if(template->providesLoaded[i].indexesLoaded[j] == NULL)
+                            goto oom;
+
+                        for(k = 0; k < template->provides[i].interface->methodNumber; k++)
+                        {
+                            template->providesLoaded[i].indexesLoaded[j][k].methodAddresses =
+                                    MemoryToDspAdress(template, &template->provides[i].indexes[j][k].memory);
+
+                            LOG_INTERNAL(2, "    [%d, %d] method '%s' @ %x\n",
+                                    j, k, template->provides[i].interface->methodNames[k],
+                                    template->providesLoaded[i].indexesLoaded[j][k].methodAddresses, 0, 0);
+                        }
+
+                    }
                 }
             }
         }
@@ -282,6 +306,8 @@ t_cm_error cm_loadComponent(
         templateAdd(template);
 
         return CM_OK;
+    oom:
+        error = CM_NO_MORE_MEMORY;
     out:
         cm_unloadComponent(template);
         return error;
@@ -315,6 +341,25 @@ PUBLIC t_cm_error cm_unloadComponent(
             reloc = reloc->next;
             cm_StringRelease(tofree->symbol_name);
             OSAL_Free(tofree);
+        }
+
+        if(template->providesLoaded != NULL)
+        {
+            int i, j;
+
+            for(i = 0; i < template->provideNumber; i++)
+            {
+                if(template->providesLoaded[i].indexesLoaded != NULL)
+                {
+                    for(j = 0; j < template->provides[i].collectionSize; j++)
+                    {
+                        OSAL_Free(template->providesLoaded[i].indexesLoaded[j]);
+                    }
+                    OSAL_Free(template->providesLoaded[i].indexesLoaded);
+                }
+            }
+
+            OSAL_Free(template->providesLoaded);
         }
 
         if(template->descriptionAssociatedWithTemplate)
