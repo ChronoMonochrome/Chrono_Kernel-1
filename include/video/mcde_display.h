@@ -60,6 +60,7 @@ struct mcde_display_device {
 	struct mcde_video_mode video_mode;
 	int update_flags;
 	bool stay_alive;
+	int check_transparency;
 
 	/* Driver API */
 	void (*get_native_resolution)(struct mcde_display_device *dev,

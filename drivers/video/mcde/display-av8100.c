@@ -24,6 +24,13 @@
 
 #define SWITCH_HELPSTR ", 0=HDMI, 1=SDTV, 2=DVI\n"
 
+/* AVI Infoframe */
+#define AVI_INFOFRAME_DATA_SIZE	13
+#define AVI_INFOFRAME_TYPE	0x82
+#define AVI_INFOFRAME_VERSION	0x02
+#define AVI_INFOFRAME_DB1	0x10	/* Active Information present */
+#define AVI_INFOFRAME_DB2	0x08	/* Active Portion Aspect ratio */
+
 struct cea_vesa_video_mode {
 	u32 cea;
 	u32 vesa_cea_nr;
@@ -672,6 +679,40 @@ static struct mcde_video_mode *video_mode_get(struct mcde_display_device *ddev,
 	return NULL;
 }
 
+static u8 ceanr_get(struct mcde_display_device *ddev)
+{
+	int cnt;
+	int cea;
+	int vesa_cea_nr;
+	struct mcde_video_mode *vmode = &ddev->video_mode;
+	struct mcde_video_mode *vmode_try;
+
+	if (!vmode)
+		return 0;
+
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+
+	for (cnt = 0; cnt < ARRAY_SIZE(cea_vesa_video_mode); cnt++) {
+		vmode_try = cea_vesa_video_mode[cnt].video_mode;
+		cea = cea_vesa_video_mode[cnt].cea;
+		vesa_cea_nr = cea_vesa_video_mode[cnt].vesa_cea_nr;
+
+		if (cea && vmode_try->xres == vmode->xres &&
+				vmode_try->yres == vmode->yres &&
+				vmode_try->pixclock == vmode->pixclock &&
+				vmode_try->hbp == vmode->hbp &&
+				vmode_try->hfp == vmode->hfp &&
+				vmode_try->vbp == vmode->vbp &&
+				vmode_try->vfp == vmode->vfp &&
+				vmode_try->interlaced == vmode->interlaced) {
+			dev_dbg(&ddev->dev, "ceanr:%d\n", vesa_cea_nr);
+			return vesa_cea_nr;
+		}
+	}
+
+	return 0;
+}
+
 #define AV8100_MAX_LEVEL 255
 
 static int hdmi_try_video_mode(
@@ -1167,6 +1208,9 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 {
 	int ret;
 	union av8100_configuration av8100_config;
+	u8 *infofr_data;
+	int infofr_crc;
+	int cnt;
 
 	dev->first_update = false;
 
@@ -1235,6 +1279,45 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 		return ret;
 	}
 
+	/* AVI Infoframe only if HDMI */
+	if (dev->port->hdmi_sdtv_switch != HDMI_SWITCH)
+		goto hdmi_on_first_update_end;
+
+	/* Create AVI Infoframe */
+	av8100_config.infoframes_format.type = AVI_INFOFRAME_TYPE;
+	av8100_config.infoframes_format.version = AVI_INFOFRAME_VERSION;
+	av8100_config.infoframes_format.length = AVI_INFOFRAME_DATA_SIZE;
+
+	/* AVI Infoframe data */
+	infofr_data = &av8100_config.infoframes_format.data[0];
+	memset(infofr_data, 0, AVI_INFOFRAME_DATA_SIZE);
+	infofr_data[0] = AVI_INFOFRAME_DB1;
+	infofr_data[1] = AVI_INFOFRAME_DB2;
+	infofr_data[3] = ceanr_get(dev);
+
+	/* Calculate AVI Infoframe checksum */
+	infofr_crc = av8100_config.infoframes_format.type +
+			av8100_config.infoframes_format.version +
+			av8100_config.infoframes_format.length;
+	for (cnt = 0; cnt < AVI_INFOFRAME_DATA_SIZE; cnt++)
+		infofr_crc += infofr_data[cnt];
+	infofr_crc &= 0xFF;
+	av8100_config.infoframes_format.crc = 0x100 - infofr_crc;
+
+	/* Send AVI Infoframe */
+	if (av8100_conf_prep(AV8100_COMMAND_INFOFRAMES,
+		&av8100_config) != 0) {
+		dev_err(&dev->dev, "av8100_conf_prep FAIL\n");
+		return -EINVAL;
+	}
+
+	if (av8100_conf_w(AV8100_COMMAND_INFOFRAMES,
+		NULL, NULL, I2C_INTERFACE) != 0) {
+		dev_err(&dev->dev, "av8100_conf_w FAIL\n");
+		return -EINVAL;
+	}
+
+hdmi_on_first_update_end:
 	return ret;
 }
 
@@ -1285,7 +1368,10 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
 				power_mode == MCDE_DISPLAY_PM_OFF) {
 		memset(&(ddev->video_mode), 0, sizeof(struct mcde_video_mode));
-
+		ret = av8100_powerscan();
+		if (ret)
+			dev_err(&ddev->dev, "%s:av8100_powerscan failed\n"
+								, __func__);
 		if (ddev->platform_disable) {
 			ret = ddev->platform_disable(ddev);
 			if (ret)
@@ -1422,6 +1508,9 @@ static int hdmi_resume(struct mcde_display_device *ddev)
 {
 	int ret;
 
+	if (ddev->chnl_state == NULL)
+		return 0;
+
 	/* set_power_mode will handle call platform_enable */
 	ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_STANDBY);
 	if (ret < 0)
@@ -1434,6 +1523,9 @@ static int hdmi_resume(struct mcde_display_device *ddev)
 static int hdmi_suspend(struct mcde_display_device *ddev, pm_message_t state)
 {
 	int ret;
+
+	if (ddev->chnl_state == NULL)
+		return 0;
 
 	/* set_power_mode will handle call platform_disable */
 	ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);

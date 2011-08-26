@@ -30,14 +30,14 @@ struct bus_type mcde_bus_type;
 static int mcde_suspend_device(struct device *dev, void *data)
 {
 	pm_message_t* state = (pm_message_t *) data;
-	if (dev->driver->suspend)
+	if (dev->driver && dev->driver->suspend)
 		return dev->driver->suspend(dev, *state);
 	return 0;
 }
 
 static int mcde_resume_device(struct device *dev, void *data)
 {
-	if (dev->driver->resume)
+	if (dev->driver && dev->driver->resume)
 		return dev->driver->resume(dev);
 	return 0;
 }

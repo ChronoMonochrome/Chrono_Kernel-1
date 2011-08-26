@@ -236,7 +236,7 @@ enum mcde_display_rotation {
 #define MCDE_FIFO_AB_SIZE 640
 #define MCDE_FIFO_C0C1_SIZE 160
 
-#define MCDE_PIXFETCH_LARGE_WTRMRKLVL 128
+#define MCDE_PIXFETCH_LARGE_WTRMRKLVL 256
 #define MCDE_PIXFETCH_MEDIUM_WTRMRKLVL 64
 #define MCDE_PIXFETCH_SMALL_WTRMRKLVL 16
 
@@ -251,6 +251,7 @@ enum mcde_display_rotation {
 #define MCDE_AUTO_SYNC_WATCHDOG 5
 
 /* Hardware versions */
+#define MCDE_CHIP_VERSION_4_0_4 4       /* U5500 V2 */
 #define MCDE_CHIP_VERSION_1_0_4 3	/* U5500 V1 */
 #define MCDE_CHIP_VERSION_3_0_8 2	/* U8500 V2 */
 #define MCDE_CHIP_VERSION_3_0_5 1	/* U8500 V1 */
@@ -412,8 +413,11 @@ void mcde_ovly_put(struct mcde_ovly_state *ovly);
 #define MCDE_MAX_DSI_DIRECT_CMD_WRITE 15
 
 int mcde_dsi_generic_write(struct mcde_chnl_state *chnl, u8* para, int len);
-int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len);
-int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int *len);
+int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl,
+		u8 cmd, u8 *data, int len);
+int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
+		u8 cmd, u32 *data, int *len);
+int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl, int size);
 
 /* MCDE */
 

@@ -485,6 +485,8 @@ static int apply_var(struct fb_info *fbi, struct mcde_display_device *ddev)
 
 	var = &fbi->var;
 
+	ddev->check_transparency = 60;
+
 	/* Reallocate memory */
 	line_len = (fbi->var.bits_per_pixel * var->xres_virtual) / 8;
 	line_len = ALIGN(line_len, MCDE_BUF_LINE_ALIGMENT);
@@ -564,31 +566,47 @@ static int mcde_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 
 static int mcde_fb_set_par(struct fb_info *fbi)
 {
+	struct mcde_fb *mfb = to_mcde_fb(fbi);
+	struct mcde_display_device *ddev = fb_to_display(fbi);
 	dev_vdbg(fbi->dev, "%s\n", __func__);
 
-	return apply_var(fbi, fb_to_display(fbi));
-}
+	if (mfb->ovlys[0]->state == NULL &&
+		ddev->fictive == false) {
+		printk(KERN_INFO "%s() - Enable fb %p\n",
+			__func__,
+			mfb->ovlys[0]);
+		mcde_dss_enable_overlay(mfb->ovlys[0]);
+	}
 
-static int mcde_fb_setcolreg(unsigned regno, unsigned red, unsigned green,
-			unsigned blue, unsigned transp, struct fb_info *fbi)
-{
-	dev_vdbg(fbi->dev, "%s\n", __func__);
-
-	/*Nothing to see here, move along*/
-	return 0;
-}
-
-static int mcde_fb_setcmap(struct fb_cmap *cmap, struct fb_info *fbi)
-{
-	dev_vdbg(fbi->dev, "%s\n", __func__);
-
-	/*Nothing to see here, move along*/
-	return 0;
+	return apply_var(fbi, ddev);
 }
 
 static int mcde_fb_blank(int blank, struct fb_info *fbi)
 {
-	return 0;
+	int ret = 0;
+	struct mcde_display_device *ddev = fb_to_display(fbi);
+
+	dev_vdbg(fbi->dev, "%s\n", __func__);
+
+	if (ddev->fictive)
+		goto mcde_fb_blank_end;
+
+	switch (blank) {
+	case FB_BLANK_NORMAL:
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+	case FB_BLANK_POWERDOWN:
+		mcde_dss_disable_display(ddev);
+	break;
+	case FB_BLANK_UNBLANK:
+		ret = mcde_dss_enable_display(ddev);
+	break;
+	default:
+		ret = -EINVAL;
+	}
+
+mcde_fb_blank_end:
+	return ret;
 }
 
 static int mcde_fb_pan_display(struct fb_var_screeninfo *var,
@@ -633,8 +651,6 @@ static struct fb_ops fb_ops = {
 	.fb_imageblit   = sys_imageblit,
 	.fb_check_var   = mcde_fb_check_var,
 	.fb_set_par     = mcde_fb_set_par,
-	.fb_setcolreg   = mcde_fb_setcolreg,
-	.fb_setcmap     = mcde_fb_setcmap,
 	.fb_blank       = mcde_fb_blank,
 	.fb_pan_display = mcde_fb_pan_display,
 	.fb_rotate      = mcde_fb_rotate,
@@ -711,10 +727,6 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	if (ret)
 		goto fb_register_failed;
 
-	ret = fb_alloc_cmap(&fbi->cmap, 256, 0);
-	if (ret)
-		dev_warn(&ddev->dev, "%s: Allocate color map memory failed!\n", __func__);
-
 	ddev->fbi = fbi;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -771,10 +783,9 @@ void mcde_fb_destroy(struct mcde_display_device *dev)
 			mcde_dss_destroy_overlay(mfb->ovlys[i]);
 	}
 
-	fb_dealloc_cmap(&dev->fbi->cmap);
-
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	unregister_early_suspend(&mfb->early_suspend);
+	if (dev->fictive == false)
+		unregister_early_suspend(&mfb->early_suspend);
 #endif
 	unregister_framebuffer(dev->fbi);
 	free_fb_mem(dev->fbi);

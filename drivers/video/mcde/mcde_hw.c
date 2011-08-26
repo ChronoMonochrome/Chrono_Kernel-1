@@ -32,6 +32,7 @@
 
 static void disable_channel(struct mcde_chnl_state *chnl);
 static void watchdog_auto_sync_timer_function(unsigned long arg);
+static int _mcde_chnl_enable(struct mcde_chnl_state *chnl);
 static int _mcde_chnl_apply(struct mcde_chnl_state *chnl);
 static void disable_flow(struct mcde_chnl_state *chnl);
 static void enable_channel(struct mcde_chnl_state *chnl);
@@ -654,7 +655,8 @@ static void dpi_video_mode_apply(struct mcde_chnl_state *chnl)
 			chnl->tv_regs.tv_mode = MCDE_TVCRA_TVMODE_SDTV_656P_BE;
 		else
 			chnl->tv_regs.tv_mode = MCDE_TVCRA_TVMODE_SDTV_656P;
-		if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+		if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+			hardware_version == MCDE_CHIP_VERSION_4_0_4)
 			chnl->tv_regs.inv_clk = true;
 		else {
 			chnl->tv_regs.dho  = MCDE_CONFIG_TVOUT_HBORDER;
@@ -720,7 +722,8 @@ static void update_dpi_registers(enum mcde_chnl chnl_id, struct tv_regs *regs)
 
 	/* Horizontal timing registers */
 	if (!regs->sel_mode_tv ||
-			hardware_version == MCDE_CHIP_VERSION_3_0_8) {
+			hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+			hardware_version == MCDE_CHIP_VERSION_4_0_4) {
 		mcde_wreg(MCDE_TVLBALWA + idx * MCDE_TVLBALWA_GROUPOFFSET,
 					MCDE_TVLBALWA_LBW(regs->hsw) |
 					MCDE_TVLBALWA_ALW(regs->alw));
@@ -898,14 +901,16 @@ static inline void mcde_handle_vcmp(struct mcde_chnl_state *chnl, u32 int_fld)
 				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
 				chnl->port.type == MCDE_PORTTYPE_DSI &&
 				chnl->continous_running) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+				hardware_version == MCDE_CHIP_VERSION_4_0_4)
 				enable_channel(chnl);
 
 			mcde_wreg(MCDE_CHNL0SYNCHSW +
 				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
 				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
 
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+				hardware_version == MCDE_CHIP_VERSION_4_0_4)
 				disable_flow(chnl);
 			mod_timer(&chnl->auto_sync_timer,
 				jiffies +
@@ -1025,7 +1030,8 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 		irq_status = dsi_rfld(i, DSI_DIRECT_CMD_STS_FLAG,
 			TE_RECEIVED_FLAG);
 		if (irq_status) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+				hardware_version == MCDE_CHIP_VERSION_4_0_4)
 				disable_flow(chnl_from_dsi);
 			dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
 				DSI_DIRECT_CMD_STS_CLR_TE_RECEIVED_CLR(true));
@@ -1037,7 +1043,8 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 
 		irq_status = dsi_rfld(i, DSI_CMD_MODE_STS_FLAG, ERR_NO_TE_FLAG);
 		if (irq_status) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+				hardware_version == MCDE_CHIP_VERSION_4_0_4)
 				disable_flow(chnl_from_dsi);
 			dsi_wreg(i, DSI_CMD_MODE_STS_CLR,
 				DSI_CMD_MODE_STS_CLR_ERR_NO_TE_CLR(true));
@@ -1130,7 +1137,8 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 					(port->sync_src == MCDE_SYNCSRC_TE1))
 			mcde_wreg(MCDE_CTRLC1, MCDE_CTRLC1_FIFOWTRMRK(
 					get_output_fifo_size(MCDE_FIFO_C1)));
-	} else if (hardware_version == MCDE_CHIP_VERSION_3_0_8) {
+	} else if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+			hardware_version == MCDE_CHIP_VERSION_4_0_4) {
 		switch (chnl->fifo) {
 		case MCDE_FIFO_A:
 			mcde_wreg(MCDE_CHNL0MUXING_V2 + chnl->id *
@@ -1480,6 +1488,18 @@ static void chnl_ovly_pixel_format_apply(struct mcde_chnl_state *chnl,
 			mcde_chnl_col_convert_apply(chnl, &chnl->rgb_2_ycbcr);
 		else
 			mcde_chnl_col_convert_apply(chnl, &crycb_2_ycbcr);
+	} else if (port->type == MCDE_PORTTYPE_DPI) {
+		/* Note: YUV is not support port pixel format for DPI */
+		if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422) {
+			/* standard case: DPI: RGB -> RGB */
+			regs->col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
+		} else {
+			/* DPI: YUV -> RGB */
+			regs->col_conv =
+				MCDE_OVL0CR_COLCCTRL_ENABLED_SAT;
+			mcde_chnl_col_convert_apply(chnl,
+						&chnl->ycbcr_2_rgb);
+		}
 	}
 }
 
@@ -1611,7 +1631,8 @@ static void do_softwaretrig(struct mcde_chnl_state *chnl)
 	* However FLOWEN must not be triggered before SOFTWARE TRIG
 	* if rotation is enabled
 	*/
-	if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+	if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+		hardware_version == MCDE_CHIP_VERSION_4_0_4)
 		enable_channel(chnl);
 	else if ((!is_channel_enabled(chnl) && !chnl->regs.roten)
 				|| chnl->power_mode != MCDE_DISPLAY_PM_ON)
@@ -1621,7 +1642,8 @@ static void do_softwaretrig(struct mcde_chnl_state *chnl)
 		chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
 		MCDE_CHNL0SYNCHSW_SW_TRIG(true));
 
-	if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+	if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+		hardware_version == MCDE_CHIP_VERSION_4_0_4)
 		disable_flow(chnl);
 	else
 		enable_channel(chnl);
@@ -2116,17 +2138,18 @@ static int enable_mcde_hw(void)
 	return 0;
 }
 
+#define DSI_WRITE_CMD_TIMEOUT 1000
+
 /* DSI */
 static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
 			bool dcs, u8 cmd, u8 *data, int len)
 {
-	int i;
+	int i, ret = 0;
 	u32 wrdat[4] = { 0, 0, 0, 0 };
 	u32 settings;
 	u8 link = chnl->port.link;
 	u8 virt_id = chnl->port.phy.dsi.virt_id;
-	u32 ok;
-	u32 error;
+	u32 counter = DSI_WRITE_CMD_TIMEOUT;
 
 	if (len > MCDE_MAX_DSI_DIRECT_CMD_WRITE ||
 			chnl->port.type != MCDE_PORTTYPE_DSI)
@@ -2134,6 +2157,7 @@ static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
 
 	mutex_lock(&mcde_hw_lock);
 
+	_mcde_chnl_enable(chnl);
 	if (enable_mcde_hw()) {
 		mutex_unlock(&mcde_hw_lock);
 		return -EINVAL;
@@ -2193,21 +2217,35 @@ static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
 	if (len > 11)
 		dsi_wreg(link, DSI_DIRECT_CMD_WRDAT3, wrdat[3]);
 	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
+	dsi_wreg(link, DSI_CMD_MODE_STS_CLR, ~0);
 	dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
 
-	/* TODO: irq wait and error check */
-	mdelay(10);
+	/* loop will normally run zero or one time until WRITE_COMPLETED */
+	while (!dsi_rfld(link, DSI_DIRECT_CMD_STS, WRITE_COMPLETED)
+			&& --counter)
+		cpu_relax();
 
-	ok = dsi_rreg(link, DSI_DIRECT_CMD_STS);
-	error = dsi_rreg(link, DSI_CMD_MODE_STS);
-	dev_vdbg(&mcde_dev->dev, "DSI Write ok %x error %x\n", ok, error);
+	if (!counter) {
+		dev_err(&mcde_dev->dev,
+			"%s: DSI write cmd 0x%x timeout on DSI link %u!\n",
+			__func__, cmd, link);
+		ret = -ETIME;
+	} else {
+		/* inform if >100 loops before command completion */
+		if (counter < (DSI_WRITE_CMD_TIMEOUT-DSI_WRITE_CMD_TIMEOUT/10))
+			dev_vdbg(&mcde_dev->dev,
+				"%s: %u loops for DSI command %x completion\n",
+				__func__, (DSI_WRITE_CMD_TIMEOUT - counter),
+				cmd);
 
-	dsi_wreg(link, DSI_CMD_MODE_STS_CLR, ~0);
-	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
+		dev_vdbg(&mcde_dev->dev, "DSI Write ok %x error %x\n",
+			dsi_rreg(link, DSI_DIRECT_CMD_STS_FLAG),
+			dsi_rreg(link, DSI_CMD_MODE_STS_FLAG));
+	}
 
 	mutex_unlock(&mcde_hw_lock);
 
-	return 0;
+	return ret;
 }
 
 int mcde_dsi_generic_write(struct mcde_chnl_state *chnl, u8* para, int len)
@@ -2220,7 +2258,8 @@ int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
 	return mcde_dsi_direct_cmd_write(chnl, true, cmd, data, len);
 }
 
-int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int *len)
+int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
+			u8 cmd, u32 *data, int *len)
 {
 	int ret = 0;
 	u8 link = chnl->port.link;
@@ -2234,6 +2273,7 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int *len)
 
 	mutex_lock(&mcde_hw_lock);
 
+	_mcde_chnl_enable(chnl);
 	if (enable_mcde_hw()) {
 		mutex_unlock(&mcde_hw_lock);
 		return -EINVAL;
@@ -2287,6 +2327,61 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int *len)
 	mutex_unlock(&mcde_hw_lock);
 
 	return ret;
+}
+/*
+ * Set Maximum Return Packet size is a command that specifies the
+ * maximum size of the payload transmitted from peripheral back to
+ * the host processor.
+ *
+ * During power-on or reset sequence, the Maximum Return Packet Size
+ * is set to a default value of one. In order to be able to use
+ * mcde_dsi_dcs_read for reading more than 1 byte at a time, this
+ * parameter should be set by the host processor to the desired value
+ * in the initialization routine before commencing normal operation.
+ */
+int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl, int size)
+{
+	u32 settings;
+	u8 link = chnl->port.link;
+	u8 virt_id = chnl->port.phy.dsi.virt_id;
+
+	if (chnl->port.type != MCDE_PORTTYPE_DSI)
+		return -EINVAL;
+
+	if (size > 4)
+		return -EINVAL;
+
+	mutex_lock(&mcde_hw_lock);
+
+	if (enable_mcde_hw()) {
+		mutex_unlock(&mcde_hw_lock);
+		return -EINVAL;
+	}
+
+	/*
+	 * Set Maximum Return Packet Size is a four-byte command packet
+	 * (including ECC) that specifies the maximum size of the payload.
+	 * The order of bytes is:
+	 * Data ID, two-byte value for maximum return packet size,
+	 * followed by the ECC byte.
+	 */
+
+	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(WRITE) |
+		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(1) |
+		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_ID(virt_id) |
+		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_SIZE(size) |
+		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LP_EN(true);
+	settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+		SET_MAX_PKT_SIZE);
+	dsi_wreg(link, DSI_DIRECT_CMD_MAIN_SETTINGS, settings);
+	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
+	dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
+
+	dsi_wreg(link, DSI_CMD_MODE_STS_CLR, ~0);
+	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
+
+	mutex_unlock(&mcde_hw_lock);
+	return 0;
 }
 
 static void dsi_te_poll_req(struct mcde_chnl_state *chnl)
@@ -2562,7 +2657,8 @@ static void chnl_update_continous(struct mcde_chnl_state *chnl,
 		if (chnl->port.sync_src == MCDE_SYNCSRC_TE0) {
 			mcde_wfld(MCDE_CRC, SYCEN0, true);
 		 } else if (chnl->port.sync_src == MCDE_SYNCSRC_TE1) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8) {
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+				hardware_version == MCDE_CHIP_VERSION_4_0_4) {
 				mcde_wfld(MCDE_VSCRC1, VSSEL, 1);
 				mcde_wfld(MCDE_CRC, SYCEN1, true);
 			} else {
@@ -2582,7 +2678,8 @@ static void chnl_update_continous(struct mcde_chnl_state *chnl,
 		if (chnl->port.type == MCDE_PORTTYPE_DSI &&
 				chnl->port.sync_src == MCDE_SYNCSRC_OFF) {
 			chnl->disable_software_trig = false;
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8) {
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+				hardware_version == MCDE_CHIP_VERSION_4_0_4) {
 				mcde_wreg(MCDE_CHNL0SYNCHSW +
 				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
 					MCDE_CHNL0SYNCHSW_SW_TRIG(true));
@@ -2607,7 +2704,8 @@ static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
 			chnl->power_mode == MCDE_DISPLAY_PM_ON) {
 		if (chnl->port.type == MCDE_PORTTYPE_DSI &&
 			chnl->port.sync_src == MCDE_SYNCSRC_BTA) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+				hardware_version == MCDE_CHIP_VERSION_4_0_4)
 				enable_channel(chnl);
 			wait_while_dsi_running(chnl->port.link);
 			dsi_te_request(chnl);
@@ -2633,6 +2731,8 @@ static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 			chnl->fifo, chnl->regs.x, chnl->regs.y,
 			chnl->regs.ppl, chnl->regs.lpf, ovly->stride,
 			chnl->vmode.interlaced, chnl->rotation);
+		if (chnl->id == MCDE_CHNL_A || chnl->id == MCDE_CHNL_B)
+			update_col_registers(chnl->id, &chnl->col_regs);
 	}
 }
 
@@ -2675,6 +2775,13 @@ static int _mcde_chnl_update(struct mcde_chnl_state *chnl,
 		chnl_update_non_continous(chnl);
 
 	dev_vdbg(&mcde_dev->dev, "Channel updated, chnl=%d\n", chnl->id);
+	return 0;
+}
+
+static int _mcde_chnl_enable(struct mcde_chnl_state *chnl)
+{
+	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+	chnl->enabled = true;
 	return 0;
 }
 
@@ -2928,7 +3035,7 @@ void mcde_chnl_enable(struct mcde_chnl_state *chnl)
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
 	mutex_lock(&mcde_hw_lock);
-	chnl->enabled = true;
+	_mcde_chnl_enable(chnl);
 	mutex_unlock(&mcde_hw_lock);
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
@@ -3209,8 +3316,6 @@ static int init_clocks_and_power(struct platform_device *pdev)
 	} else {
 		dev_dbg(&pdev->dev, "%s: No regulator id supplied\n",
 								__func__);
-		ret = -EINVAL;
-		goto regulator_vana_err;
 	}
 #endif
 
@@ -3421,7 +3526,13 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 					development_version >= 4) {
 		hardware_version = MCDE_CHIP_VERSION_1_0_4;
 		mcde_dynamic_power_management = false;
+		num_channels = 2;
+		num_overlays = 3;
 		dev_info(&mcde_dev->dev, "V1_U5500 HW\n");
+	} else if (major_version == 4 && minor_version == 0 &&
+					development_version >= 4) {
+		hardware_version = MCDE_CHIP_VERSION_4_0_4;
+		dev_info(&mcde_dev->dev, "V2_U5500 HW\n");
 	} else {
 		dev_err(&mcde_dev->dev, "Unsupported HW version\n");
 		ret = -ENOTSUPP;
@@ -3458,6 +3569,7 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 		init_timer(&channels[i].auto_sync_timer);
 		channels[i].auto_sync_timer.function =
 					watchdog_auto_sync_timer_function;
+
 		init_timer(&channels[i].dsi_te_timer);
 		channels[i].dsi_te_timer.function =
 					dsi_te_timer_function;
@@ -3467,7 +3579,6 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 	return 0;
 
 failed_hardware_version:
-	free_irq(mcde_irq, &pdev->dev);
 failed_request_irq:
 	disable_mcde_hw(true);
 failed_enable_clocks:
@@ -3492,6 +3603,8 @@ failed_overlays_alloc:
 	kfree(channels);
 	channels = NULL;
 failed_channels_alloc:
+	num_channels = 0;
+	num_overlays = 0;
 	return ret;
 }
 
@@ -3570,7 +3683,6 @@ static struct platform_driver mcde_driver = {
 int __init mcde_init(void)
 {
 	mutex_init(&mcde_hw_lock);
-
 	return platform_driver_register(&mcde_driver);
 }
 
