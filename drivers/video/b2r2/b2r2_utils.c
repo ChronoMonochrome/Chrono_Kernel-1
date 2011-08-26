@@ -101,12 +101,14 @@ int b2r2_get_fmt_bpp(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 		return 24;
 
 	case B2R2_BLT_FMT_32_BIT_ARGB8888:
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		return 32;
 
 	default:
@@ -134,6 +136,8 @@ int b2r2_get_fmt_y_bpp(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		return 8;
 
 	default:
@@ -155,9 +159,11 @@ bool b2r2_is_single_plane_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_32_BIT_ARGB8888:
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 		return true;
@@ -178,9 +184,11 @@ bool b2r2_is_independent_pixel_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_32_BIT_ARGB8888:
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 		return true;
 
@@ -196,6 +204,8 @@ bool b2r2_is_ycbcri_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		return true;
 
 	default:
@@ -270,6 +280,8 @@ bool b2r2_is_ycbcr444_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
 		return true;
 
 	default:

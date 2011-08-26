@@ -127,6 +127,10 @@ struct b2r2_blt_rect {
  * The buffer shall contain a plane of Y, V, and U data in this order.
  * (Same as B2R2_BLT_FMT_YUV422_PACKED_PLANAR except that chroma
  * order is swapped.)
+ * @B2R2_BLT_FMT_24_BIT_VUY888: 24 bits per pixel VUY format with colors
+ * stored as V 23:16, U 15:8, and Y 7:0.
+ * @B2R2_BLT_FMT_32_BIT_VUYA8888: 32 bits per pixel VUYA format with colors
+ * stored as V 31:24, U 23:16, Y 15:8, and Alpha 7:0.
  */
 enum b2r2_blt_fmt {
     B2R2_BLT_FMT_UNUSED = 0,
@@ -155,6 +159,8 @@ enum b2r2_blt_fmt {
     B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR = 0x7F00000A,
     B2R2_BLT_FMT_YVU420_PACKED_PLANAR = 0x7F00000B,
     B2R2_BLT_FMT_YVU422_PACKED_PLANAR = 0x7F00000C,
+    B2R2_BLT_FMT_24_BIT_VUY888 = 0x7F00000D,
+    B2R2_BLT_FMT_32_BIT_VUYA8888 = 0x7F00000E,
 };
 
 /**

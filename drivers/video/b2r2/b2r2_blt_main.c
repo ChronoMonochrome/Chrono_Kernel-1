@@ -339,7 +339,7 @@ static int b2r2_blt_release(struct inode *inode, struct file *filp)
 		job = b2r2_core_job_find_first_with_tag((int) instance);
 		while (job) {
 			b2r2_core_job_cancel(job);
-			/* This release matches addref in b2r2_core_job_find... */
+			/* Matches addref in b2r2_core_job_find... */
 			b2r2_core_job_release(job, __func__);
 			job = b2r2_core_job_find_first_with_tag((int) instance);
 		}
@@ -483,8 +483,8 @@ static long b2r2_blt_ioctl(struct file *file,
 			b2r2_log_info("b2r2_blt=%d Going generic.\n", ret);
 			request_gen = kmalloc(sizeof(*request_gen), GFP_KERNEL);
 			if (!request_gen) {
-				b2r2_log_err(
-					"%s: Failed to alloc mem for request_gen\n", __func__);
+				b2r2_log_err("%s: Failed to alloc mem for "
+					"request_gen\n", __func__);
 				return -ENOMEM;
 			}
 
@@ -513,19 +513,27 @@ static long b2r2_blt_ioctl(struct file *file,
 			 * make a copy that the HW can use.
 			 */
 			if ((request_gen->user_req.flags &
-					B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION) != 0) {
-				request_gen->clut = dma_alloc_coherent(b2r2_blt_device(),
-					CLUT_SIZE, &(request_gen->clut_phys_addr),
+					B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION)
+					!= 0) {
+				request_gen->clut =
+					dma_alloc_coherent(b2r2_blt_device(),
+					CLUT_SIZE,
+					&(request_gen->clut_phys_addr),
 					GFP_DMA | GFP_KERNEL);
 				if (request_gen->clut == NULL) {
-					b2r2_log_err("%s CLUT allocation failed.\n", __func__);
+					b2r2_log_err("%s CLUT allocation "
+						"failed.\n", __func__);
 					kfree(request_gen);
 					return -ENOMEM;
 				}
 
-				if (copy_from_user(request_gen->clut, request_gen->user_req.clut, CLUT_SIZE)) {
-					b2r2_log_err("%s: CLUT copy_from_user failed\n", __func__);
-					dma_free_coherent(b2r2_blt_device(), CLUT_SIZE, request_gen->clut,
+				if (copy_from_user(request_gen->clut,
+						request_gen->user_req.clut,
+						CLUT_SIZE)) {
+					b2r2_log_err("%s: CLUT copy_from_user "
+						"failed\n", __func__);
+					dma_free_coherent(b2r2_blt_device(),
+						CLUT_SIZE, request_gen->clut,
 						request_gen->clut_phys_addr);
 					request_gen->clut = NULL;
 					request_gen->clut_phys_addr = 0;
@@ -537,7 +545,8 @@ static long b2r2_blt_ioctl(struct file *file,
 			request_gen->profile = is_profiler_registered_approx();
 
 			ret = b2r2_generic_blt(instance, request_gen);
-			b2r2_log_info("\nb2r2_generic_blt=%d Generic done.\n", ret);
+			b2r2_log_info("\nb2r2_generic_blt=%d Generic done.\n",
+				ret);
 		}
 #endif /* CONFIG_B2R2_GENERIC_FALLBACK */
 
@@ -1339,9 +1348,8 @@ static void tile_job_callback_gen(struct b2r2_core_job *job)
 
 #ifdef CONFIG_DEBUG_FS
 	/* Notify if a tile job is cancelled */
-	if (job->job_state == B2R2_CORE_JOB_CANCELED) {
+	if (job->job_state == B2R2_CORE_JOB_CANCELED)
 		b2r2_log_info("%s: Tile job cancelled:\n", __func__);
-	}
 #endif
 
 	/* Local addref / release within this func */
@@ -1832,19 +1840,24 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			x = -dst_rect->x;
 
 		for (; x < dst_rect->width &&
-				x + dst_rect->x < dst_img_width; x += tmp_buf_width) {
+				x + dst_rect->x < dst_img_width;
+				x += tmp_buf_width) {
 			/*
 			 * Tile jobs are freed by the supplied release function
 			 * when ref_count on a tile_job reaches zero.
 			 */
-			struct b2r2_core_job *tile_job = kmalloc(sizeof(*tile_job), GFP_KERNEL);
+			struct b2r2_core_job *tile_job =
+				kmalloc(sizeof(*tile_job), GFP_KERNEL);
 			if (tile_job == NULL) {
 				/*
-				 * Skip this tile. Do not abort, just hope for better luck
-				 * with rest of the tiles. Memory might become available.
+				 * Skip this tile. Do not abort,
+				 * just hope for better luck
+				 * with rest of the tiles.
+				 * Memory might become available.
 				 */
 				b2r2_log_info("%s: Failed to alloc job. "
-					"Skipping tile at (x, y)=(%d, %d)\n", __func__, x, y);
+					"Skipping tile at (x, y)=(%d, %d)\n",
+					__func__, x, y);
 				continue;
 			}
 			tile_job->tag = request->job.tag;
@@ -1865,7 +1878,8 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 				 * Only a part of the tile can be written.
 				 * Limit imposed by buffer size.
 				 */
-				dst_rect_tile.width = dst_img_width - (x + dst_rect->x);
+				dst_rect_tile.width =
+					dst_img_width - (x + dst_rect->x);
 			} else if (x + tmp_buf_width > dst_rect->width) {
 				/*
 				 * Only a part of the tile can be written.
@@ -1877,10 +1891,12 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 				dst_rect_tile.width = tmp_buf_width;
 			}
 			/*
-			 * Where applicable, calculate area in src buffer that is needed
-			 * to generate the specified part of destination rectangle.
+			 * Where applicable, calculate area in src buffer
+			 * that is needed to generate the specified part
+			 * of destination rectangle.
 			 */
-			b2r2_generic_set_areas(request, request->first_node, &dst_rect_tile);
+			b2r2_generic_set_areas(request,
+				request->first_node, &dst_rect_tile);
 			/* Submit the job */
 			b2r2_log_info("%s: Submitting job\n", __func__);
 
@@ -1940,7 +1956,8 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			x + dst_rect->x < dst_img_width; x += tmp_buf_width) {
 		struct b2r2_core_job *tile_job = NULL;
 		if (x + tmp_buf_width < dst_rect->width &&
-				x + dst_rect->x + tmp_buf_width < dst_img_width) {
+				x + dst_rect->x + tmp_buf_width <
+				dst_img_width) {
 			/*
 			 * Tile jobs are freed by the supplied release function
 			 * when ref_count on a tile_job reaches zero.
@@ -1987,26 +2004,29 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		}
 		/*
 		 * y is now the last row. Either because the whole dst_rect
-		 * has been processed, or because the last row that will be written
-		 * to dst_img has been reached. Limits imposed in the same way
-		 * as for width.
+		 * has been processed, or because the last row that will be
+		 * written to dst_img has been reached. Limits imposed in
+		 * the same way as for width.
 		 */
 		dst_rect_tile.y = y;
 		if (y + dst_rect->y + tmp_buf_height > dst_img_height)
-			dst_rect_tile.height = dst_img_height - (y + dst_rect->y);
+			dst_rect_tile.height =
+				dst_img_height - (y + dst_rect->y);
 		else if (y + tmp_buf_height > dst_rect->height)
 			dst_rect_tile.height = dst_rect->height - y;
 		else
 			dst_rect_tile.height = tmp_buf_height;
 
-		b2r2_generic_set_areas(request, request->first_node, &dst_rect_tile);
+		b2r2_generic_set_areas(request,
+			request->first_node, &dst_rect_tile);
 
 		b2r2_log_info("%s: Submitting job\n", __func__);
 		inc_stat(&stat_n_in_blt_add);
 
 		mutex_lock(&instance->lock);
 		if (x + tmp_buf_width < dst_rect->width &&
-				x + dst_rect->x + tmp_buf_width < dst_img_width) {
+				x + dst_rect->x + tmp_buf_width <
+				dst_img_width) {
 			request_id = b2r2_core_job_add(tile_job);
 		} else {
 			/*
@@ -2036,7 +2056,8 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 
 		inc_stat(&stat_n_in_blt_wait);
 		if (x + tmp_buf_width < dst_rect->width &&
-				x + dst_rect->x + tmp_buf_width < dst_img_width) {
+				x + dst_rect->x + tmp_buf_width <
+				dst_img_width) {
 			ret = b2r2_core_job_wait(tile_job);
 		} else {
 			/*
@@ -2056,8 +2077,10 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 				"%s: Synchronous wait done\n", __func__);
 
 			if (x + tmp_buf_width < dst_rect->width &&
-					x + dst_rect->x + tmp_buf_width < dst_img_width)
-				nsec_active_in_b2r2 += tile_job->nsec_active_in_hw;
+					x + dst_rect->x + tmp_buf_width <
+					dst_img_width)
+				nsec_active_in_b2r2 +=
+					tile_job->nsec_active_in_hw;
 			else
 				nsec_active_in_b2r2 +=
 					request->job.nsec_active_in_hw;
@@ -2069,7 +2092,8 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		 * when the last tile is processed.
 		 */
 		if (x + tmp_buf_width < dst_rect->width &&
-				x + dst_rect->x + tmp_buf_width < dst_img_width) {
+				x + dst_rect->x + tmp_buf_width <
+				dst_img_width) {
 			b2r2_core_job_release(tile_job, __func__);
 		} else {
 			b2r2_core_job_release(&request->job, __func__);
@@ -2100,7 +2124,8 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 
 	if (request->profile) {
 		request->nsec_active_in_cpu =
-			(s32)((u32)task_sched_runtime(current) - thread_runtime_at_start);
+			(s32)((u32)task_sched_runtime(current) -
+			thread_runtime_at_start);
 		request->total_time_nsec =
 			(s32)(b2r2_get_curr_nsec() - request->start_time_nsec);
 		request->job.nsec_active_in_hw = nsec_active_in_b2r2;
@@ -2433,7 +2458,8 @@ static int resolve_buf(struct b2r2_blt_img *img,
 			if (file == NULL)
 				return -EINVAL;
 #ifdef CONFIG_FB
-			if (MAJOR(file->f_dentry->d_inode->i_rdev) == FB_MAJOR) {
+			if (MAJOR(file->f_dentry->d_inode->i_rdev) ==
+					FB_MAJOR) {
 				/*
 				 * This is a frame buffer device, find fb_info
 				 * (OK to do it like this, no locking???)
@@ -2503,7 +2529,8 @@ static int resolve_buf(struct b2r2_blt_img *img,
  * @resolved_buf: Gathered info (physical address etc.) about buffer
  * @is_dst: true if the buffer is a destination buffer, false if the buffer is a
  *          source buffer.
- * @rect: rectangle in the image buffer that should be synced. NULL the buffer is a source mask.
+ * @rect: rectangle in the image buffer that should be synced.
+ *        NULL if the buffer is a source mask.
  * @img_width: width of the complete image buffer
  * @fmt: buffer format
 */
@@ -2554,11 +2581,15 @@ static void sync_buf(struct b2r2_blt_img *img,
 			(img->fmt ==
 				B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE)) {
 		sa.start = (unsigned long)resolved->virtual_address;
-		sa.end = (unsigned long)resolved->virtual_address + img->buf.len;
+		sa.end = (unsigned long)resolved->virtual_address +
+			img->buf.len;
 		start_phys = resolved->physical_address;
 		end_phys = resolved->physical_address + img->buf.len;
 	} else {
-		/* buffer is not a src_mask so make use of rect when clean & flush caches*/
+		/*
+		 * buffer is not a src_mask so make use of rect when
+		 * clean & flush caches
+		 */
 		u32 bpp;	/* Bits per pixel */
 		u32 pitch;
 
@@ -2573,11 +2604,13 @@ static void sync_buf(struct b2r2_blt_img *img,
 		case B2R2_BLT_FMT_24_BIT_RGB888:   /* Fall through */
 		case B2R2_BLT_FMT_24_BIT_ARGB8565: /* Fall through */
 		case B2R2_BLT_FMT_24_BIT_YUV888:
+		case B2R2_BLT_FMT_24_BIT_VUY888:
 			bpp =  24;
 			break;
 		case B2R2_BLT_FMT_32_BIT_ARGB8888: /* Fall through */
 		case B2R2_BLT_FMT_32_BIT_ABGR8888: /* Fall through */
 		case B2R2_BLT_FMT_32_BIT_AYUV8888:
+		case B2R2_BLT_FMT_32_BIT_VUYA8888:
 			bpp = 32;
 			break;
 		default:
@@ -2930,7 +2963,8 @@ static int debugfs_b2r2_blt_request_read(struct file *filp, char __user *buf,
 		goto out;
 	}
 
-	dev_size = sprintf_req(&debugfs_latest_request, Buf, sizeof(char) * 4096);
+	dev_size = sprintf_req(&debugfs_latest_request, Buf,
+		sizeof(char) * 4096);
 
 	/* No more to read if offset != 0 */
 	if (*f_pos > dev_size)

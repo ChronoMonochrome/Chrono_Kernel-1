@@ -70,6 +70,8 @@ static bool is_valid_format(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		return true;
 
 	default:
@@ -105,9 +107,11 @@ static bool is_valid_pitch_for_fmt(u32 pitch, s32 width, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_32_BIT_ARGB8888:
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		if (!b2r2_is_aligned(pitch, 4))
 			return false;
 
@@ -127,6 +131,7 @@ static bool is_aligned_width_for_fmt(s32 width, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
 		if (!b2r2_is_aligned(width, 4))
 			return false;
 

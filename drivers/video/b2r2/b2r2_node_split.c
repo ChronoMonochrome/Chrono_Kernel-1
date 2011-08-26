@@ -67,6 +67,33 @@ static const u32 vmx_blt_yuv888_to_rgb[] = {
 	B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO,
 };
 
+static const u32 vmx_yuv_to_blt_yuv888[] = {
+	B2R2_VMX0_YUV_TO_BLT_YUV888,
+	B2R2_VMX1_YUV_TO_BLT_YUV888,
+	B2R2_VMX2_YUV_TO_BLT_YUV888,
+	B2R2_VMX3_YUV_TO_BLT_YUV888,
+};
+
+static const u32 vmx_blt_yuv888_to_yuv[] = {
+	B2R2_VMX0_BLT_YUV888_TO_YUV,
+	B2R2_VMX1_BLT_YUV888_TO_YUV,
+	B2R2_VMX2_BLT_YUV888_TO_YUV,
+	B2R2_VMX3_BLT_YUV888_TO_YUV,
+};
+
+static const u32 vmx_yvu_to_blt_yuv888[] = {
+	B2R2_VMX0_YVU_TO_BLT_YUV888,
+	B2R2_VMX1_YVU_TO_BLT_YUV888,
+	B2R2_VMX2_YVU_TO_BLT_YUV888,
+	B2R2_VMX3_YVU_TO_BLT_YUV888,
+};
+
+static const u32 vmx_blt_yuv888_to_yvu[] = {
+	B2R2_VMX0_BLT_YUV888_TO_YVU,
+	B2R2_VMX1_BLT_YUV888_TO_YVU,
+	B2R2_VMX2_BLT_YUV888_TO_YVU,
+	B2R2_VMX3_BLT_YUV888_TO_YVU,
+};
 static const u32 vmx_yvu_to_rgb[] = {
 	B2R2_VMX0_YVU_TO_RGB_601_VIDEO,
 	B2R2_VMX1_YVU_TO_RGB_601_VIDEO,
@@ -270,6 +297,8 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	switch (req->user_req.src_img.fmt) {
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		if (!is_rgb_fmt(req->user_req.dst_img.fmt)) {
 			ret = -ENOSYS;
 			goto unsupported;
@@ -283,6 +312,8 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	switch (req->user_req.dst_img.fmt) {
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		if (!is_rgb_fmt(req->user_req.src_img.fmt)) {
 			ret = -ENOSYS;
 			goto unsupported;
@@ -692,7 +723,14 @@ static int analyze_fmt_conv(struct b2r2_node_split_buf *src,
 		if (is_yvu_fmt(dst->fmt))
 			*vmx = &vmx_rgb_to_yvu[0];
 		else if (dst->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
-				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888)
+				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+				dst->fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+				dst->fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+			/*
+			 * (A)YUV/VUY(A) formats differ only in component
+			 * order. This is handled by the endianness bit
+			 * in B2R2_STY/TTY registers when src/target are set.
+			 */
 			*vmx = &vmx_rgb_to_blt_yuv888[0];
 		else if (is_yuv_fmt(dst->fmt))
 			*vmx = &vmx_rgb_to_yuv[0];
@@ -704,29 +742,48 @@ static int analyze_fmt_conv(struct b2r2_node_split_buf *src,
 		else if (is_bgr_fmt(dst->fmt))
 			*vmx = &vmx_yvu_to_bgr[0];
 		else if (dst->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
-				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888)
-			BUG_ON(1);
+				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+				dst->fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+				dst->fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+			*vmx = &vmx_yvu_to_blt_yuv888[0];
 		else if (is_yuv_fmt(dst->fmt) &&
 				!is_yvu_fmt(dst->fmt))
 			*vmx = &vmx_yvu_to_yuv[0];
 	} else if (src->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
-			src->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888) {
-		if (is_rgb_fmt(dst->fmt))
+			src->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+			src->fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+			src->fmt == B2R2_BLT_FMT_32_BIT_VUYA8888) {
+		/*
+		 * (A)YUV/VUY(A) formats differ only in component
+		 * order. This is handled by the endianness bit
+		 * in B2R2_STY/TTY registers when src/target are set.
+		 */
+		if (is_rgb_fmt(dst->fmt)) {
 			*vmx = &vmx_blt_yuv888_to_rgb[0];
-		else
-			/*
-			 * not supported, b2r2_node_split_analyze()
-			 * should have returned ENOSYS.
-			 */
-			BUG_ON(1);
+		} else if (is_yvu_fmt(dst->fmt)) {
+			*vmx = &vmx_blt_yuv888_to_yvu[0];
+		} else if (is_yuv_fmt(dst->fmt)) {
+			switch (dst->fmt) {
+			case B2R2_BLT_FMT_24_BIT_YUV888:
+			case B2R2_BLT_FMT_32_BIT_AYUV8888:
+			case B2R2_BLT_FMT_24_BIT_VUY888:
+			case B2R2_BLT_FMT_32_BIT_VUYA8888: /* do nothing */
+				break;
+			default:
+				*vmx = &vmx_blt_yuv888_to_yuv[0];
+				break;
+			}
+		}
 	} else if (is_yuv_fmt(src->fmt)) {
 		if (is_rgb_fmt(dst->fmt))
 			*vmx = &vmx_yuv_to_rgb[0];
 		else if (is_bgr_fmt(dst->fmt))
 			*vmx = &vmx_yuv_to_bgr[0];
 		else if (dst->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
-				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888)
-			BUG_ON(1);
+				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+				dst->fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+				dst->fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+			*vmx = &vmx_yuv_to_blt_yuv888[0];
 		else if (is_yvu_fmt(dst->fmt))
 			*vmx = &vmx_yvu_to_yuv[0];
 	} else if (is_bgr_fmt(src->fmt)) {
@@ -735,7 +792,9 @@ static int analyze_fmt_conv(struct b2r2_node_split_buf *src,
 		else if (is_yvu_fmt(dst->fmt))
 			*vmx = &vmx_bgr_to_yvu[0];
 		else if (dst->fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
-				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888)
+				dst->fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+				dst->fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+				dst->fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
 			BUG_ON(1);
 		else if (is_yuv_fmt(dst->fmt))
 			*vmx = &vmx_bgr_to_yuv[0];
@@ -778,7 +837,8 @@ static int analyze_color_fill(struct b2r2_node_split_job *this,
 	if ((!this->blend) && ((this->flags & B2R2_BLT_FLAG_SOURCE_FILL_RAW) ||
 			(this->dst.fmt == B2R2_BLT_FMT_32_BIT_ARGB8888) ||
 			(this->dst.fmt == B2R2_BLT_FMT_32_BIT_ABGR8888) ||
-			(this->dst.fmt == B2R2_BLT_FMT_32_BIT_AYUV8888))) {
+			(this->dst.fmt == B2R2_BLT_FMT_32_BIT_AYUV8888) ||
+			(this->dst.fmt == B2R2_BLT_FMT_32_BIT_VUYA8888))) {
 		this->type = B2R2_DIRECT_FILL;
 
 		/* The color format will be the same as the dst fmt */
@@ -2707,6 +2767,7 @@ static enum b2r2_ty get_alpha_range(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 	case B2R2_BLT_FMT_32_BIT_ARGB8888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 	case B2R2_BLT_FMT_8_BIT_A8:
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 		return B2R2_TY_ALPHA_RANGE_255; /* 0 - 255 */
@@ -2725,6 +2786,8 @@ static u8 get_alpha(enum b2r2_blt_fmt fmt, u32 pixel)
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 		return (pixel >> 24) & 0xff;
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+		return pixel & 0xff;
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 		return (pixel & 0xfff) >> 16;
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
@@ -2753,6 +2816,10 @@ static u32 set_alpha(enum b2r2_blt_fmt fmt, u8 alpha, u32 color)
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 		color &= 0x00ffffff;
 		alpha_mask = alpha << 24;
+		break;
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+		color &= 0xffffff00;
+		alpha_mask = alpha;
 		break;
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 		color &= 0x00ffff;
@@ -2793,6 +2860,7 @@ static bool fmt_has_alpha(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 	case B2R2_BLT_FMT_1_BIT_A1:
 	case B2R2_BLT_FMT_8_BIT_A8:
 		return true;
@@ -2837,6 +2905,8 @@ static bool is_yuv_fmt(enum b2r2_blt_fmt fmt)
 	switch (fmt) {
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
@@ -2942,6 +3012,8 @@ static bool is_yuv444_fmt(enum b2r2_blt_fmt fmt)
 	switch (fmt) {
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 		return true;
 	default:
@@ -2988,11 +3060,13 @@ static int fmt_byte_pitch(enum b2r2_blt_fmt fmt, u32 width)
 	case B2R2_BLT_FMT_24_BIT_RGB888:   /* Fall through */
 	case B2R2_BLT_FMT_24_BIT_ARGB8565: /* Fall through */
 	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
 		return width * 3;
 
 	case B2R2_BLT_FMT_32_BIT_ARGB8888: /* Fall through */
 	case B2R2_BLT_FMT_32_BIT_ABGR8888: /* Fall through */
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		return width << 2;
 
 	default:
@@ -3026,11 +3100,13 @@ static enum b2r2_native_fmt to_native_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 		return B2R2_NATIVE_RGB888;
 	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_VUY888: /* Not actually supported by HW */
 		return B2R2_NATIVE_YCBCR888;
 	case B2R2_BLT_FMT_32_BIT_ABGR8888: /* Not actually supported by HW */
 	case B2R2_BLT_FMT_32_BIT_ARGB8888:
 		return B2R2_NATIVE_ARGB8888;
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888: /* Not actually supported by HW */
 		return B2R2_NATIVE_AYCBCR8888;
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 		return B2R2_NATIVE_YCBCR422R;
@@ -3125,6 +3201,8 @@ static enum b2r2_fmt_type get_fmt_type(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 	case B2R2_BLT_FMT_1_BIT_A1:
 	case B2R2_BLT_FMT_8_BIT_A8:
 		return B2R2_FMT_TYPE_RASTER;
@@ -3256,6 +3334,11 @@ static void set_target(struct b2r2_node *node, u32 addr,
 	node->node.GROUP1.B2R2_TTY = buf->pitch | to_native_fmt(buf->fmt) |
 			buf->alpha_range | buf->chroma_selection | buf->hso |
 			buf->vso | buf->dither | buf->plane_selection;
+
+	if (buf->fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+			buf->fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+		node->node.GROUP1.B2R2_TTY |= B2R2_TY_ENDIAN_BIG_NOT_LITTLE;
+
 	node->node.GROUP1.B2R2_TSZ =
 			((buf->win.width & 0xfff) << B2R2_SZ_WIDTH_SHIFT) |
 			((buf->win.height & 0xfff) << B2R2_SZ_HEIGHT_SHIFT);
@@ -3306,6 +3389,11 @@ static void set_src(struct b2r2_src_config *src, u32 addr,
 	src->B2R2_SBA = addr;
 	src->B2R2_STY = buf->pitch | to_native_fmt(buf->fmt) |
 			buf->alpha_range | buf->hso | buf->vso;
+
+	if (buf->fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+			buf->fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+		src->B2R2_STY |= B2R2_TY_ENDIAN_BIG_NOT_LITTLE;
+
 	src->B2R2_SSZ = ((buf->win.width & 0xfff) << B2R2_SZ_WIDTH_SHIFT) |
 			((buf->win.height & 0xfff) << B2R2_SZ_HEIGHT_SHIFT);
 	src->B2R2_SXY = ((buf->win.x & 0xffff) << B2R2_XY_X_SHIFT) |
@@ -3330,6 +3418,11 @@ static void set_src_1(struct b2r2_node *node, u32 addr,
 	node->node.GROUP3.B2R2_SBA = addr;
 	node->node.GROUP3.B2R2_STY = buf->pitch | to_native_fmt(buf->fmt) |
 			buf->alpha_range | buf->hso | buf->vso;
+
+	if (buf->fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+			buf->fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+		node->node.GROUP3.B2R2_STY |= B2R2_TY_ENDIAN_BIG_NOT_LITTLE;
+
 	node->node.GROUP3.B2R2_SXY =
 			((buf->win.x & 0xffff) << B2R2_XY_X_SHIFT) |
 			((buf->win.y & 0xffff) << B2R2_XY_Y_SHIFT);
