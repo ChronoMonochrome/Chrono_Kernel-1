@@ -879,11 +879,6 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("LINL to HSL Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("LINR to HSR Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 
-	/* Analog Loopback path */
-
-	SND_SOC_DAPM_MIXER("AD1 to IHFL Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_MIXER("AD2 to IHFR Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
-
 	/* Acoustical Noise Cancellation path */
 
 	SND_SOC_DAPM_MUX("ANC Source Playback Route",
@@ -1082,14 +1077,6 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	{"HSL DAC Driver", NULL, "LINL to HSL Gain"},
 	{"HSR DAC Driver", NULL, "LINR to HSR Gain"},
-
-	/* Analog Loopback path */
-
-	{"AD1 to IHFL Gain", NULL, "AD1 Channel Gain"},
-	{"AD2 to IHFR Gain", NULL, "AD2 Channel Gain"},
-
-	{"IHFL DAC", NULL, "AD1 to IHFL Gain"},
-	{"IHFR DAC", NULL, "AD2 to IHFR Gain"},
 
 	/* Acoustical Noise Cancellation path */
 
