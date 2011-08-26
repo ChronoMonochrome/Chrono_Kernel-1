@@ -32,7 +32,9 @@
 #include "av8100_regs.h"
 #include <video/av8100.h>
 #include <video/hdmi.h>
-#include "av8100_fw.h"
+#include <linux/firmware.h>
+
+#define AV8100_FW_FILENAME "av8100.fw"
 
 /* Interrupts */
 #define AV8100_INT_EVENT 0x1
@@ -82,7 +84,10 @@
 #define HDMI_FUSE_AES_KEY_RET_SIZE 2
 #define HDMI_LOADAES_END_BLK_NR 145
 #define HDMI_CRC32_SIZE 4
-#define HDMI_REVOC_LIST_SIZE 30
+#define HDMI_HDCP_MGMT_BKSV_SIZE 5
+#define HDMI_HDCP_MGMT_SHA_SIZE 20
+#define HDMI_HDCP_MGMT_MAX_DEVICES_SIZE 20
+#define HDMI_HDCP_MGMT_DEVICE_MASK 0x7F
 #define HDMI_EDIDREAD_SIZE 0x7F
 
 #define HPDS_INVALID 0xF
@@ -190,6 +195,8 @@ struct av8100_globals_t {
 	bool opp_requested;
 	struct regulator *regulator_pwr;
 	bool regulator_requested;
+	bool pre_suspend_power;
+	bool ints_enabled;
 };
 
 /**
@@ -247,6 +254,7 @@ static int av8100_5V_w(u8 denc_off, u8 hdmi_off, u8 on);
 static void clr_plug_status(enum av8100_plugin_status status);
 static void set_plug_status(enum av8100_plugin_status status);
 static void cec_rx(void);
+static void cec_tx(void);
 static void cec_txerr(void);
 static void hdcp_changed(void);
 static const struct color_conversion_cmd *get_color_transform_cmd(
@@ -266,7 +274,6 @@ static wait_queue_head_t av8100_event;
 static int av8100_flag = 0x0;
 static struct av8100_globals_t *av8100_globals;
 static u8 chip_version;
-static char av8100_receivetab[AV8100_FW_SIZE];
 struct device *av8100dev;
 
 static const struct file_operations av8100_fops = {
@@ -479,13 +486,21 @@ static const struct i2c_device_id av8100_id[] = {
 #ifdef CONFIG_PM
 static int av8100_suspend(struct i2c_client *i2c_client, pm_message_t state)
 {
-	int ret;
+	int ret = 0;
 
 	dev_dbg(av8100dev, "%s\n", __func__);
 
-	ret = av8100_powerdown();
-	if (ret)
-		dev_err(av8100dev, "av8100_powerdown failed\n");
+	if (!av8100_globals)
+		return ret;
+
+	av8100_globals->pre_suspend_power =
+		(av8100_status_get().av8100_state > AV8100_OPMODE_SHUTDOWN);
+
+	if (av8100_globals->pre_suspend_power) {
+		ret = av8100_powerdown();
+		if (ret)
+			dev_err(av8100dev, "av8100_powerdown failed\n");
+	}
 
 	return ret;
 }
@@ -497,6 +512,7 @@ static int av8100_resume(struct i2c_client *i2c_client)
 
 	dev_dbg(av8100dev, "%s\n", __func__);
 
+	if (av8100_globals->pre_suspend_power) {
 	ret = av8100_powerup();
 	if (ret) {
 		dev_err(av8100dev, "av8100_powerup failed\n");
@@ -516,6 +532,7 @@ static int av8100_resume(struct i2c_client *i2c_client)
 
 	av8100_globals->hpdm = AV8100_STANDBY_INTERRUPT_MASK_HPDM_HIGH;
 	av8100_enable_interrupt();
+	}
 
 av8100_resume_end:
 	return 0;
@@ -631,7 +648,19 @@ av8100_int_event_handle_1:
 
 	/* CEC received */
 	if (ceci && cecrx) {
+		u8 val;
+
 		dev_dbg(av8100dev, "cecrx\n");
+
+		/* Clear cecrx in status reg*/
+		if (av8100_reg_r(AV8100_GENERAL_STATUS, &val) == 0) {
+			if (av8100_reg_w(AV8100_GENERAL_STATUS,
+				val & ~AV8100_GENERAL_STATUS_CECREC_MASK))
+				dev_info(av8100dev, "gen_stat write error\n");
+		} else {
+			dev_info(av8100dev, "gen_stat read error\n");
+		}
+
 		/* Report CEC event */
 		cec_rx();
 	}
@@ -641,6 +670,10 @@ av8100_int_event_handle_1:
 		dev_dbg(av8100dev, "cectxerr\n");
 		/* Report CEC tx error event */
 		cec_txerr();
+	} else if (ceci && cectx) {
+		dev_dbg(av8100dev, "cectx\n");
+		/* Report CEC tx event */
+		cec_tx();
 	}
 
 	/* HDCP event */
@@ -1125,6 +1158,12 @@ static void cec_rx(void)
 		av8100_globals->hdmi_ev_cb(AV8100_HDMI_EVENT_CEC);
 }
 
+static void cec_tx(void)
+{
+	if (av8100_globals && av8100_globals->hdmi_ev_cb)
+		av8100_globals->hdmi_ev_cb(AV8100_HDMI_EVENT_CECTX);
+}
+
 static void cec_txerr(void)
 {
 	if (av8100_globals && av8100_globals->hdmi_ev_cb)
@@ -1456,9 +1495,10 @@ static int configuration_cec_message_write_get(char *buffer,
 
 	buffer[0] = av8100_config->hdmi_cec_message_write_cmd.buffer_length;
 	memcpy(&buffer[1], av8100_config->hdmi_cec_message_write_cmd.buffer,
-		HDMI_CEC_MESSAGE_WRITE_BUFFER_SIZE);
+		av8100_config->hdmi_cec_message_write_cmd.buffer_length);
 
-	*length = AV8100_COMMAND_CEC_MESSAGE_WRITE_SIZE - 1;
+	*length = av8100_config->hdmi_cec_message_write_cmd.buffer_length + 1;
+
 	return 0;
 }
 
@@ -1542,7 +1582,7 @@ static int configuration_infoframe_get(char *buffer,
 	memcpy(&buffer[4], av8100_config->hdmi_infoframes_cmd.data,
 	HDMI_INFOFRAME_DATA_SIZE);
 
-	*length = AV8100_COMMAND_INFOFRAMES_SIZE - 1;
+	*length = av8100_config->hdmi_infoframes_cmd.length + 4;
 	return 0;
 }
 
@@ -1658,8 +1698,6 @@ static int get_command_return_data(struct i2c_client *i2c,
 		if (retval)
 			goto get_command_return_data_fail;
 
-		/* TODO: buffer_length is always zero */
-		/* *buffer_length = val;*/
 		dev_dbg(av8100dev, "cec buflen:%d\n", val);
 		*buffer_length = val;
 
@@ -1689,6 +1727,11 @@ static int get_command_return_data(struct i2c_client *i2c,
 		break;
 
 	case AV8100_COMMAND_HDCP_MANAGEMENT:
+		{
+		u8 nrdev;
+		u8 devcnt;
+		int cnt;
+
 		/* Get the second return byte */
 		retval = read_single_byte(i2c,
 			AV8100_2ND_RET_BYTE_OFFSET, &val);
@@ -1704,18 +1747,19 @@ static int get_command_return_data(struct i2c_client *i2c,
 			/* Ignore return data */
 			break;
 
-		/* Get the return buffer length */
-		if (command_buffer[0] ==
+		dev_dbg(av8100dev, "req_type:%02x ", command_buffer[0]);
+
+		/* Check if revoc list data is requested */
+		if (command_buffer[0] !=
 			HDMI_REQUEST_FOR_REVOCATION_LIST_INPUT) {
-			*buffer_length = HDMI_REVOC_LIST_SIZE;
-		} else {
-			*buffer_length = 0x0;
+			*buffer_length = 0;
+			break;
 		}
 
 		dev_dbg(av8100dev, "return data: ");
 
 		/* Get the return buffer */
-		for (index = 0; index < *buffer_length; ++index) {
+		for (cnt = 0; cnt < HDMI_HDCP_MGMT_BKSV_SIZE; cnt++) {
 			retval = read_single_byte(i2c,
 				AV8100_HDCP_RET_BUF_OFFSET + index, &val);
 			if (retval) {
@@ -1725,9 +1769,65 @@ static int get_command_return_data(struct i2c_client *i2c,
 				*(buffer + index) = val;
 				dev_dbg(av8100dev, "%02x ", *(buffer + index));
 			}
+			index++;
 		}
 
+		/* Get Device count */
+		retval = read_single_byte(i2c,
+			AV8100_HDCP_RET_BUF_OFFSET + index, &nrdev);
+		if (retval) {
+			*buffer_length = 0;
+			goto get_command_return_data_fail;
+		} else {
+			*(buffer + index) = nrdev;
+			dev_dbg(av8100dev, "%02x ", *(buffer + index));
+		}
+		index++;
+
+		/* Determine number of devices */
+		nrdev &= HDMI_HDCP_MGMT_DEVICE_MASK;
+		if (nrdev > HDMI_HDCP_MGMT_MAX_DEVICES_SIZE)
+			nrdev = HDMI_HDCP_MGMT_MAX_DEVICES_SIZE;
+
+		/* Get Bksv for each connected equipment */
+		for (devcnt = 0; devcnt < nrdev; devcnt++)
+			for (cnt = 0; cnt < HDMI_HDCP_MGMT_BKSV_SIZE; cnt++) {
+				retval = read_single_byte(i2c,
+					AV8100_HDCP_RET_BUF_OFFSET + index,
+									&val);
+				if (retval) {
+					*buffer_length = 0;
+					goto get_command_return_data_fail;
+				} else {
+					*(buffer + index) = val;
+					dev_dbg(av8100dev, "%02x ",
+							*(buffer + index));
+				}
+				index++;
+			}
+
+		if (nrdev == 0)
+			goto hdcp_management_end;
+
+		/* Get SHA signature */
+		for (cnt = 0; cnt < HDMI_HDCP_MGMT_SHA_SIZE - 1; cnt++) {
+			retval = read_single_byte(i2c,
+				AV8100_HDCP_RET_BUF_OFFSET + index, &val);
+			if (retval) {
+				*buffer_length = 0;
+				goto get_command_return_data_fail;
+			} else {
+				*(buffer + index) = val;
+				dev_dbg(av8100dev, "%02x ", *(buffer + index));
+			}
+			index++;
+		}
+
+hdcp_management_end:
+		*buffer_length = index;
+
 		dev_dbg(av8100dev, "\n");
+		}
 		break;
 
 	case AV8100_COMMAND_EDID_SECTION_READBACK:
@@ -1875,6 +1975,8 @@ static int av8100_powerup1(void)
 	/* Need to wait before proceeding */
 	msleep(AV8100_WAITTIME_1MS);
 
+	av8100_set_state(AV8100_OPMODE_STANDBY);
+
 	if (pdata->alt_powerupseq) {
 		dev_dbg(av8100dev, "powerup seq alt\n");
 		retval = av8100_5V_w(0, 0, AV8100_ON_TIME);
@@ -1928,8 +2030,6 @@ static int av8100_powerup1(void)
 		msleep(AV8100_WAITTIME_1MS);
 	}
 
-	av8100_set_state(AV8100_OPMODE_STANDBY);
-
 	/* Get chip version */
 	retval = av8100_reg_stby_pend_int_r(NULL, NULL, NULL, &chip_version);
 	if (retval) {
@@ -1961,18 +2061,6 @@ av8100_powerup1_err:
 static int av8100_powerup2(void)
 {
 	int retval;
-	struct av8100_platform_data *pdata = av8100dev->platform_data;
-
-	/* Master clock timing, running, search for plug */
-	retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_HIGH,
-		AV8100_STANDBY_STBY_HIGH, pdata->mclk_freq);
-	if (retval) {
-		dev_err(av8100dev,
-			"Failed to write the value to av8100 register\n");
-		return retval;
-	}
-
-	msleep(AV8100_WAITTIME_1MS);
 
 	/* ON time & OFF time on 5v HDMI plug detect */
 	retval = av8100_5V_w(av8100_globals->denc_off_time,
@@ -1990,6 +2078,99 @@ static int av8100_powerup2(void)
 
 	return 0;
 }
+
+static int register_read_internal(u8 offset, u8 *value)
+{
+	int retval = 0;
+	struct i2c_client *i2c;
+
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
+		return -EINVAL;
+
+	if (!av8100_config)
+		return -EINVAL;
+
+	i2c = av8100_config->client;
+
+	/* Read from register */
+	retval = read_single_byte(i2c, offset, value);
+	if (retval)	{
+		dev_dbg(av8100dev,
+			"Failed to read the value from av8100 register\n");
+		return -EFAULT;
+	}
+
+	return retval;
+}
+
+static int register_write_internal(u8 offset, u8 value)
+{
+	int retval;
+	struct i2c_client *i2c;
+
+	if (!av8100_config)
+		return -EINVAL;
+
+	i2c = av8100_config->client;
+
+	/* Write to register */
+	retval = write_single_byte(i2c, offset, value);
+	if (retval) {
+		dev_dbg(av8100dev,
+			"Failed to write the value to av8100 register\n");
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
+int av8100_powerscan(void)
+{
+	int retval;
+	struct av8100_platform_data *pdata = av8100dev->platform_data;
+
+	dev_dbg(av8100dev, "%s\n", __func__);
+
+	if (av8100_status_get().av8100_state > AV8100_OPMODE_SCAN) {
+		dev_dbg(av8100dev, "set to scan mode\n");
+
+		av8100_disable_interrupt();
+
+		/* Stby mode */
+		retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
+			AV8100_STANDBY_STBY_LOW, pdata->mclk_freq);
+		if (retval) {
+			dev_err(av8100dev,
+				"Failed to write to av8100 register\n");
+			return retval;
+		}
+
+		/* Remove APE OPP requirement */
+		if (av8100_globals->opp_requested) {
+			prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+					(char *)av8100_miscdev.name);
+			prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
+					(char *)av8100_miscdev.name);
+			av8100_globals->opp_requested = false;
+		}
+
+		/* Clock disable */
+		if (av8100_globals->inputclk &&
+				av8100_globals->inputclk_requested) {
+			clk_disable(av8100_globals->inputclk);
+			av8100_globals->inputclk_requested = false;
+		}
+
+		msleep(AV8100_WAITTIME_1MS);
+
+		av8100_enable_interrupt();
+
+		av8100_set_state(AV8100_OPMODE_SCAN);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(av8100_powerscan);
 
 int av8100_powerup(void)
 {
@@ -2021,6 +2202,8 @@ int av8100_powerdown(void)
 
 	struct av8100_platform_data *pdata = av8100dev->platform_data;
 
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
+		goto av8100_powerdown_end;
 	av8100_disable_interrupt();
 
 	if (pdata->alt_powerupseq) {
@@ -2034,9 +2217,6 @@ int av8100_powerdown(void)
 			dev_err(av8100dev, "%s reg_wr err\n", __func__);
 		msleep(AV8100_WAITTIME_50MS);
 	}
-
-	if (gpio_get_value(pdata->reset) == 0)
-		return 0;
 
 	/* Remove APE OPP requirement */
 	if (av8100_globals->opp_requested) {
@@ -2068,11 +2248,12 @@ int av8100_powerdown(void)
 
 	av8100_set_state(AV8100_OPMODE_SHUTDOWN);
 
+av8100_powerdown_end:
 	return retval;
 }
 EXPORT_SYMBOL(av8100_powerdown);
 
-int av8100_download_firmware(char *fw_buff, int nbytes,
+int av8100_download_firmware(char *fw_buf, int nbytes,
 	enum interface_type if_type)
 {
 	int retval;
@@ -2080,9 +2261,8 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	int increment = 15;
 	int index = 0;
 	int size = 0x0;
-	int tempnext = 0x0;
 	char val = 0x0;
-	char CheckSum = 0;
+	char checksum = 0;
 	int cnt;
 	int cnt_max;
 	struct i2c_client *i2c;
@@ -2091,19 +2271,43 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	u8 hld;
 	u8 wa;
 	u8 ra;
+	struct av8100_platform_data *pdata = av8100dev->platform_data;
+	const struct firmware *fw_file;
+	u8 *fw_buff;
+	int fw_bytes;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	if (!av8100_config)
 		return -EINVAL;
+
+	/* Request firmware */
+	if (request_firmware(&fw_file,
+			       AV8100_FW_FILENAME,
+			       av8100dev)) {
+		dev_err(av8100dev, "fw request failed\n");
+		return -EFAULT;
+	}
+
+	/* Master clock timing, running */
+	retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
+		AV8100_STANDBY_STBY_HIGH, pdata->mclk_freq);
+	if (retval) {
+		dev_err(av8100dev,
+			"Failed to write the value to av8100 register\n");
+		goto av8100_download_firmware_err;
+	}
+
+	msleep(AV8100_WAITTIME_1MS);
 
 	/* Clock enable */
 	if (av8100_globals->inputclk &&
 			av8100_globals->inputclk_requested == false) {
 		if (clk_enable(av8100_globals->inputclk)) {
 			dev_err(av8100dev, "inputclk en failed\n");
-			return -EFAULT;
+			retval = -EFAULT;
+			goto av8100_download_firmware_err;
 		}
 
 		av8100_globals->inputclk_requested = true;
@@ -2114,12 +2318,16 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 		if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
 				(char *)av8100_miscdev.name, 100)) {
 			dev_err(av8100dev, "APE OPP 100 failed\n");
-			return -EFAULT;
+			retval = -EFAULT;
+			goto av8100_download_firmware_err;
 		}
 		if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
 				(char *)av8100_miscdev.name, 100)) {
 			dev_err(av8100dev, "DDR OPP 100 failed\n");
-			return -EFAULT;
+			prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+					(char *)av8100_miscdev.name);
+			retval = -EFAULT;
+			goto av8100_download_firmware_err;
 		}
 
 		av8100_globals->opp_requested = true;
@@ -2127,8 +2335,10 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 
 	msleep(AV8100_WAITTIME_10MS);
 
-	fw_buff = av8100_fw_buff;
-	nbytes = AV8100_FW_SIZE;
+	/* Prepare firmware data */
+	fw_bytes = fw_file->size;
+	fw_buff = (u8 *)fw_file->data;
+	dev_dbg(av8100dev, "fw size:%d\n", fw_bytes);
 
 	i2c = av8100_config->client;
 
@@ -2141,14 +2351,16 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	if (retval) {
 		dev_err(av8100dev,
 			"Failed to write the value to av8100 register\n");
-		return -EFAULT;
+		retval = -EFAULT;
+		goto av8100_download_firmware_err;
 	}
 
 	retval = av8100_reg_gen_ctrl_r(&fdl, &hld, &wa, &ra);
 	if (retval) {
 		dev_err(av8100dev,
 			"Failed to read the value from av8100 register\n");
-		return -EFAULT;
+		retval = -EFAULT;
+		goto av8100_download_firmware_err;
 	} else {
 		dev_dbg(av8100dev, "GENERAL_CONTROL_REG register fdl:%d "
 			"hld:%d wa:%d ra:%d\n", fdl, hld, wa, ra);
@@ -2156,8 +2368,8 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 
 	LOCK_AV8100_HW;
 
-	temp = nbytes % increment;
-	for (size = 0; size < (nbytes-temp); size = size + increment,
+	temp = fw_bytes % increment;
+	for (size = 0; size < (fw_bytes-temp); size = size + increment,
 		index += increment) {
 		if (if_type == I2C_INTERFACE) {
 			retval = write_multi_byte(i2c,
@@ -2167,20 +2379,20 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 				dev_dbg(av8100dev, "Failed to download the "
 					"av8100 firmware\n");
 				UNLOCK_AV8100_HW;
-				return -EFAULT;
+				retval = -EFAULT;
+				goto av8100_download_firmware_err;
 			}
 		} else if (if_type == DSI_INTERFACE) {
 			dev_dbg(av8100dev,
 				"DSI_INTERFACE is currently not supported\n");
 			UNLOCK_AV8100_HW;
-			return -EINVAL;
+			retval = -EINVAL;
+			goto av8100_download_firmware_err;
 		} else {
 			UNLOCK_AV8100_HW;
-			return -EINVAL;
+			retval = -EINVAL;
+			goto av8100_download_firmware_err;
 		}
-
-		for (tempnext = size; tempnext < (increment+size); tempnext++)
-			av8100_receivetab[tempnext] = fw_buff[tempnext];
 	}
 
 	/* Transfer last firmware bytes */
@@ -2191,29 +2403,23 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 			dev_dbg(av8100dev,
 				"Failed to download the av8100 firmware\n");
 			UNLOCK_AV8100_HW;
-			return -EFAULT;
+			retval = -EFAULT;
+			goto av8100_download_firmware_err;
 		}
 	} else if (if_type == DSI_INTERFACE) {
 		/* TODO: Add support for DSI firmware download */
 		UNLOCK_AV8100_HW;
-		return -EINVAL;
+		retval = -EINVAL;
+		goto av8100_download_firmware_err;
 	} else {
 		UNLOCK_AV8100_HW;
-		return -EINVAL;
+		retval = -EINVAL;
+		goto av8100_download_firmware_err;
 	}
-
-	for (tempnext = size; tempnext < (size+temp); tempnext++)
-		av8100_receivetab[tempnext] = fw_buff[tempnext];
 
 	/* check transfer*/
-	for (size = 0; size < nbytes; size++) {
-		CheckSum = CheckSum ^ fw_buff[size];
-		if (av8100_receivetab[size] != fw_buff[size]) {
-			dev_dbg(av8100dev, ">Fw download fail....i=%d\n", size);
-			dev_dbg(av8100dev, "Transm = %x, Receiv = %x\n",
-				fw_buff[size], av8100_receivetab[size]);
-		}
-	}
+	for (size = 0; size < fw_bytes; size++)
+		checksum = checksum ^ fw_buff[size];
 
 	UNLOCK_AV8100_HW;
 
@@ -2221,17 +2427,19 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	if (retval) {
 		dev_dbg(av8100dev,
 			"Failed to read the value from the av8100 register\n");
-		return -EFAULT;
+		retval = -EFAULT;
+		goto av8100_download_firmware_err;
 	}
 
-	dev_dbg(av8100dev, "CheckSum:%x,val:%x\n", CheckSum, val);
+	dev_dbg(av8100dev, "checksum:%x,val:%x\n", checksum, val);
 
-	if (CheckSum != val) {
+	if (checksum != val) {
 		dev_dbg(av8100dev,
-			">Fw downloading.... FAIL CheckSum issue\n");
-		dev_dbg(av8100dev, "Checksum = %d\n", CheckSum);
-		dev_dbg(av8100dev, "Checksum read: %d\n", val);
-		return -EFAULT;
+			">Fw downloading.... FAIL checksum issue\n");
+		dev_dbg(av8100dev, "checksum = %d\n", checksum);
+		dev_dbg(av8100dev, "checksum read: %d\n", val);
+		retval = -EFAULT;
+		goto av8100_download_firmware_err;
 	} else {
 		dev_dbg(av8100dev, ">Fw downloading.... success\n");
 	}
@@ -2243,12 +2451,13 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	if (retval) {
 		dev_dbg(av8100dev,
 			"Failed to write the value to the av8100 register\n");
-		return -EFAULT;
+		retval = -EFAULT;
+		goto av8100_download_firmware_err;
 	}
 
 	/* Wait Internal Micro controler ready */
 	cnt = 0;
-	cnt_max = ARRAY_SIZE(waittime_retry);
+	cnt_max = sizeof(waittime_retry);
 	retval = av8100_reg_gen_status_r(NULL, NULL, NULL, &uc,
 		NULL, NULL);
 	while ((retval == 0) && (uc != 0x1) && (cnt++ < cnt_max)) {
@@ -2261,15 +2470,38 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	if (retval)	{
 		dev_dbg(av8100dev,
 			"Failed to read the value from the av8100 register\n");
-		return -EFAULT;
+		retval = -EFAULT;
+		goto av8100_download_firmware_err;
 	}
 
 	if (uc != 0x1)
 		dev_dbg(av8100dev, "UC is not ready\n");
 
+	release_firmware(fw_file);
+
 	av8100_set_state(AV8100_OPMODE_IDLE);
 
 	return 0;
+
+av8100_download_firmware_err:
+	release_firmware(fw_file);
+
+	/* Remove APE OPP requirement */
+	if (av8100_globals->opp_requested) {
+		prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+				(char *)av8100_miscdev.name);
+		prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
+				(char *)av8100_miscdev.name);
+		av8100_globals->opp_requested = false;
+	}
+
+	/* Clock disable */
+	if (av8100_globals->inputclk && av8100_globals->inputclk_requested) {
+		clk_disable(av8100_globals->inputclk);
+		av8100_globals->inputclk_requested = false;
+	}
+
+	return retval;
 }
 EXPORT_SYMBOL(av8100_download_firmware);
 
@@ -2280,11 +2512,14 @@ int av8100_disable_interrupt(void)
 	u8 hpdm = 0;
 	u8 cpdm = 0;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
-	if (!av8100_config)
+	if (!av8100_globals || !av8100_config)
 		return -EINVAL;
+
+	if (!av8100_globals->ints_enabled)
+		return 0;
 
 	i2c = av8100_config->client;
 
@@ -2313,10 +2548,8 @@ int av8100_disable_interrupt(void)
 		return -EFAULT;
 	}
 
-	if (av8100_globals) {
-		hpdm = av8100_globals->hpdm;
-		cpdm = av8100_globals->cpdm;
-	}
+	hpdm = av8100_globals->hpdm;
+	cpdm = av8100_globals->cpdm;
 
 	retval = av8100_reg_stby_int_mask_w(
 			AV8100_STANDBY_INTERRUPT_MASK_HPDM_LOW,
@@ -2329,10 +2562,9 @@ int av8100_disable_interrupt(void)
 		return -EFAULT;
 	}
 
-	if (av8100_globals) {
-		av8100_globals->hpdm = hpdm;
-		av8100_globals->cpdm = cpdm;
-	}
+	av8100_globals->hpdm = hpdm;
+	av8100_globals->cpdm = cpdm;
+	av8100_globals->ints_enabled = false;
 
 	return 0;
 }
@@ -2343,11 +2575,14 @@ int av8100_enable_interrupt(void)
 	int retval;
 	struct i2c_client *i2c;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	if (!av8100_globals || !av8100_config)
 		return -EINVAL;
+
+	if (av8100_globals->ints_enabled)
+		return 0;
 
 	i2c = av8100_config->client;
 
@@ -2387,31 +2622,11 @@ int av8100_enable_interrupt(void)
 		return -EFAULT;
 	}
 
+	av8100_globals->ints_enabled = true;
+
 	return 0;
 }
 EXPORT_SYMBOL(av8100_enable_interrupt);
-
-static int register_write_internal(u8 offset, u8 value)
-{
-	int retval;
-	struct i2c_client *i2c;
-
-	if (!av8100_config)
-		return -EINVAL;
-
-	i2c = av8100_config->client;
-
-	/* Write to register */
-	retval = write_single_byte(i2c, offset, value);
-	if (retval) {
-		dev_dbg(av8100dev,
-			"Failed to write the value to av8100 register\n");
-		return -EFAULT;
-	}
-
-	return 0;
-}
-EXPORT_SYMBOL(register_write_internal);
 
 int av8100_reg_stby_w(
 		u8 cpd, u8 stby, u8 mclkrng)
@@ -2419,7 +2634,7 @@ int av8100_reg_stby_w(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2440,7 +2655,7 @@ static int av8100_5V_w(u8 denc_off, u8 hdmi_off, u8 on)
 	u8 val;
 	int retval;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2468,7 +2683,7 @@ int av8100_reg_hdmi_5_volt_time_w(u8 denc_off, u8 hdmi_off, u8 on)
 {
 	int retval;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	retval = av8100_5V_w(denc_off, hdmi_off, on);
@@ -2491,7 +2706,7 @@ int av8100_reg_stby_int_mask_w(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2519,7 +2734,7 @@ int av8100_reg_stby_pend_int_w(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2544,7 +2759,7 @@ int av8100_reg_gen_int_mask_w(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2572,7 +2787,7 @@ int av8100_reg_gen_int_w(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2599,7 +2814,7 @@ int av8100_reg_gpio_conf_w(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2626,7 +2841,7 @@ int av8100_reg_gen_ctrl_w(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2650,7 +2865,7 @@ int av8100_reg_fw_dl_entry_w(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2672,7 +2887,7 @@ int av8100_reg_w(
 	int retval = 0;
 	struct i2c_client *i2c;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2698,38 +2913,13 @@ int av8100_reg_w(
 }
 EXPORT_SYMBOL(av8100_reg_w);
 
-int register_read_internal(u8 offset, u8 *value)
-{
-	int retval = 0;
-	struct i2c_client *i2c;
-
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
-		return -EINVAL;
-
-	if (!av8100_config)
-		return -EINVAL;
-
-	i2c = av8100_config->client;
-
-	/* Read from register */
-	retval = read_single_byte(i2c, offset, value);
-	if (retval)	{
-		dev_dbg(av8100dev,
-			"Failed to read the value from av8100 register\n");
-		return -EFAULT;
-	}
-
-	return retval;
-}
-EXPORT_SYMBOL(register_read_internal);
-
 int av8100_reg_stby_r(
 		u8 *cpd, u8 *stby, u8 *hpds, u8 *cpds, u8 *mclkrng)
 {
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2760,7 +2950,7 @@ int av8100_reg_hdmi_5_volt_time_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2798,7 +2988,7 @@ int av8100_reg_stby_int_mask_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2828,7 +3018,7 @@ int av8100_reg_stby_pend_int_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2864,7 +3054,7 @@ int av8100_reg_gen_int_mask_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2905,7 +3095,7 @@ int av8100_reg_gen_int_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2945,7 +3135,7 @@ int av8100_reg_gen_status_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -2984,7 +3174,7 @@ int av8100_reg_gpio_conf_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -3022,7 +3212,7 @@ int av8100_reg_gen_ctrl_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -3050,7 +3240,7 @@ int av8100_reg_fw_dl_entry_r(
 	int retval;
 	u8 val;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -3075,7 +3265,7 @@ int av8100_reg_r(
 	int retval = 0;
 	struct i2c_client *i2c;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -3328,7 +3518,7 @@ int av8100_conf_w(enum av8100_command_type command_type,
 	u32 cmd_length = 0;
 	struct i2c_client *i2c;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	if (return_buffer_length)
@@ -3466,7 +3656,7 @@ int av8100_conf_w(enum av8100_command_type command_type,
 		/* Get the first return byte */
 		msleep(AV8100_WAITTIME_1MS);
 		cnt = 0;
-		cnt_max = ARRAY_SIZE(waittime_retry);
+		cnt_max = sizeof(waittime_retry);
 		retval = get_command_return_first(i2c, command_type);
 		while (retval && (cnt++ < cnt_max)) {
 			msleep(waittime_retry[cnt]);
@@ -3510,7 +3700,7 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 	int cnt;
 	int cnt_max;
 
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
@@ -3541,7 +3731,7 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 	/* Get the first return byte */
 	msleep(AV8100_WAITTIME_1MS);
 	cnt = 0;
-	cnt_max = ARRAY_SIZE(waittime_retry);
+	cnt_max = sizeof(waittime_retry);
 	retval = get_command_return_first(i2c, command_type);
 	while (retval && (cnt++ < cnt_max)) {
 		msleep(waittime_retry[cnt]);

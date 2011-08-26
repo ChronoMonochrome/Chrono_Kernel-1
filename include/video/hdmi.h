@@ -33,7 +33,7 @@
 #define HDMI_AES_KSVSIZE		5
 #define HDMI_AES_KEYSIZE		288
 #define HDMI_CRC32_SIZE			4
-#define HDMI_REVOC_LIST_SIZE		30
+#define HDMI_HDCPAUTHRESP_SIZE		126
 
 #define HDMI_STOREASTEXT_TEXT_SIZE	2
 #define HDMI_STOREASTEXT_BIN_SIZE	1
@@ -103,6 +103,7 @@ enum hdmi_event {
 	HDMI_EVENT_HDCP =		0x8,
 	HDMI_EVENT_CECTXERR =		0x10,
 	HDMI_EVENT_WAKEUP =		0x20,
+	HDMI_EVENT_CECTX =		0x40,
 };
 
 enum hdmi_hdcp_auth_type {
@@ -158,11 +159,37 @@ struct hdcp_loadaesall {
 	u8 result;
 };
 
+
+/* hdcp_authencr resp coding
+ *
+ * When encr_type is 2 (request revoc list), the response is given by
+ * resp_size is != 0 and resp containing the folllowing:
+ *
+ * u8[5]		Bksv from sink (not belonging to revocation list)
+ * u8			Device count
+ * Additional output if Nrofdevices > 0:
+ * u8[5 * Nrofdevices]	Bksv per connected equipment
+ * u8[20]			SHA signature
+ *
+ * Device count coding:
+ *	0 = a simple receiver is connected
+ *	0x80 = a repeater is connected without downstream equipment
+ *	0x81 = a repeater is connected with one downstream equipment
+ *	up to 0x94 = (0x80 + 0x14) a repeater is connected with downstream
+ *	equipment (thus up to 20 connected equipments)
+ *	1  = repeater without sink equipment connected
+ *	>1 = number of connected equipment on the repeater
+ * Nrofdevices = Device count & 0x7F (max 20)
+ *
+ * Max resp_size is 5 + 1 + 5 * 20 + 20 = 126 bytes
+ *
+ */
 struct hdcp_authencr {
 	u8 auth_type;
 	u8 encr_type;
 	u8 result;
-	u8 revoc_list[HDMI_REVOC_LIST_SIZE];
+	u8 resp_size;
+	u8 resp[HDMI_HDCPAUTHRESP_SIZE];
 };
 
 struct audio_cfg {

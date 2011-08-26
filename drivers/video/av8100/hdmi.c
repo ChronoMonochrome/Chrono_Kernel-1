@@ -23,6 +23,7 @@
 #include "hdmi_loc.h"
 #include <linux/slab.h>
 #include <linux/sched.h>
+#include <linux/delay.h>
 
 #define SYSFS_EVENT_FILENAME "evread"
 
@@ -285,10 +286,35 @@ static int cecread(u8 *src, u8 *dest, u8 *data_len, u8 *data)
 	return 0;
 }
 
+/* CEC tx status can be set or read */
+static bool cec_tx_status(enum cec_tx_status_action action)
+{
+	static bool cec_tx_busy;
+
+	switch (action) {
+	case CEC_TX_SET_FREE:
+		cec_tx_busy = false;
+		dev_dbg(hdmidev, "cec_tx_busy set:%d\n", cec_tx_busy);
+		break;
+
+	case CEC_TX_SET_BUSY:
+		cec_tx_busy = true;
+		dev_dbg(hdmidev, "cec_tx_busy set:%d\n", cec_tx_busy);
+		break;
+
+	case CEC_TX_CHECK:
+	default:
+		dev_dbg(hdmidev, "cec_tx_busy chk:%d\n", cec_tx_busy);
+		break;
+	}
+
+	return cec_tx_busy;
+}
 static int cecsend(u8 src, u8 dest, u8 data_len, u8 *data)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
+	int cnt;
 
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
@@ -316,11 +342,25 @@ static int cecsend(u8 src, u8 dest, u8 data_len, u8 *data)
 		return -EINVAL;
 	}
 
+	if (av8100_enable_interrupt() != 0) {
+		dev_err(hdmidev, "av8100_ei FAIL\n");
+		return -EINVAL;
+	}
+
+	cnt = 0;
+	while ((cnt < CECTX_TRY) && cec_tx_status(CEC_TX_CHECK)) {
+		/* Wait for pending CEC to be finished */
+		msleep(CECTX_WAITTIME);
+		cnt++;
+	}
+	dev_dbg(hdmidev, "cectxcnt:%d\n", cnt);
+
 	if (av8100_conf_w(AV8100_COMMAND_CEC_MESSAGE_WRITE,
 		NULL, NULL, I2C_INTERFACE) != 0) {
 		dev_err(hdmidev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
+	cec_tx_status(CEC_TX_SET_BUSY);
 
 	return 0;
 }
@@ -838,7 +878,8 @@ static ssize_t store_ceceven(struct device *dev,
 			enable = true;
 	}
 
-	event_enable(enable, HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR);
+	event_enable(enable, HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR |
+						HDMI_EVENT_CECTX);
 
 	return count;
 }
@@ -900,17 +941,24 @@ static ssize_t store_cecsend(struct device *dev,
 	struct cec_rw cec_w;
 	int index = 0;
 	int cnt;
+	int store_as_text;
 
 	dev_dbg(hdmidev, "%s\n", __func__);
 
 	hdmi_driver_data = dev_get_drvdata(dev);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if ((*buf == 'F') || (*buf == 'f'))
+		/* To be able to override bin format for test purpose */
+		store_as_text = 1;
+	else
+		store_as_text = hdmi_driver_data->store_as_hextext;
+
+	if (store_as_text) {
 		if ((count < HDMI_CECSEND_TEXT_SIZE_MIN) ||
 			(count > HDMI_CECSEND_TEXT_SIZE_MAX))
 			return -EINVAL;
 
-		cec_w.src = htoi(buf + index);
+		cec_w.src = htoi(buf + index) & 0x0F;
 		index += 2;
 		cec_w.dest = htoi(buf + index);
 		index += 2;
@@ -1343,28 +1391,30 @@ static ssize_t store_hdcpauthencr(struct device *dev,
 	int index = 0;
 	u8 crc;
 	u8 progged;
-	int result = HDMI_RESULT_OK;
+	int result = HDMI_RESULT_NOT_OK;
 
 	dev_dbg(hdmidev, "%s\n", __func__);
 
 	hdmi_driver_data = dev_get_drvdata(dev);
 
 	/* Default not OK */
-	hdmi_driver_data->authencr.result = HDMI_RESULT_NOT_OK;
+	hdmi_driver_data->authencr.buf_len = 0;
 
-	if (hdcpchkaesotp(&crc, &progged))
-		return -EINVAL;
+	if (hdcpchkaesotp(&crc, &progged)) {
+		result = HDMI_AES_NOT_FUSED;
+		goto store_hdcpauthencr_end;
+	}
 
 	if (!progged) {
 		/* AES is not fused */
 		result = HDMI_AES_NOT_FUSED;
-		goto store_hdcpauthencr_err;
+		goto store_hdcpauthencr_end;
 	}
 
 	if (hdmi_driver_data->store_as_hextext) {
 		if ((count != HDMI_HDCPAUTHENCR_TEXT_SIZE) &&
 			(count != HDMI_HDCPAUTHENCR_TEXT_SIZE + 1))
-			return -EINVAL;
+			goto store_hdcpauthencr_end;
 
 		hdcp_authencr.auth_type = htoi(buf + index);
 		index += 2;
@@ -1372,7 +1422,7 @@ static ssize_t store_hdcpauthencr(struct device *dev,
 		index += 2;
 	} else {
 		if (count != HDMI_HDCPAUTHENCR_BIN_SIZE)
-			return -EINVAL;
+			goto store_hdcpauthencr_end;
 
 		hdcp_authencr.auth_type = *(buf + index++);
 		hdcp_authencr.encr_type = *(buf + index++);
@@ -1381,9 +1431,11 @@ static ssize_t store_hdcpauthencr(struct device *dev,
 	if (hdcpauthencr(hdcp_authencr.auth_type, hdcp_authencr.encr_type,
 		 &hdmi_driver_data->authencr.buf_len,
 		 hdmi_driver_data->authencr.buf))
-		return -EINVAL;
+		goto store_hdcpauthencr_end;
 
-store_hdcpauthencr_err:
+	result = HDMI_RESULT_OK;
+
+store_hdcpauthencr_end:
 	hdmi_driver_data->authencr.result = result;
 	return count;
 }
@@ -1400,9 +1452,6 @@ static ssize_t show_hdcpauthencr(struct device *dev,
 
 	hdmi_driver_data = dev_get_drvdata(dev);
 
-	len = hdmi_driver_data->authencr.buf_len;
-	if (len > AUTH_BUF_LEN)
-		len = AUTH_BUF_LEN;
 
 	if (hdmi_driver_data->store_as_hextext) {
 		snprintf(buf + index, 3, "%02x",
@@ -1411,6 +1460,15 @@ static ssize_t show_hdcpauthencr(struct device *dev,
 	} else
 		*(buf + index++) = hdmi_driver_data->authencr.result;
 
+	dev_dbg(hdmidev, "result:%02x\n", hdmi_driver_data->authencr.result);
+
+	/* resp_size */
+	len = hdmi_driver_data->authencr.buf_len;
+	if (len > AUTH_BUF_LEN)
+		len = AUTH_BUF_LEN;
+	dev_dbg(hdmidev, "resp_size:%d\n", len);
+
+	/* resp */
 	cnt = 0;
 	while (cnt < len) {
 		if (hdmi_driver_data->store_as_hextext) {
@@ -1426,8 +1484,6 @@ static ssize_t show_hdcpauthencr(struct device *dev,
 
 		cnt++;
 	}
-
-	dev_dbg(hdmidev, "result:%02x\n", hdmi_driver_data->authencr.result);
 
 	if (hdmi_driver_data->store_as_hextext)
 		index++;
@@ -1695,34 +1751,28 @@ static int hdmi_ioctl(struct file *file,
 		       unsigned int cmd, unsigned long arg)
 {
 	u8 value = 0;
-	struct plug_detect plug_detect;
-	struct edid_read edid_read;
-	struct cec_rw cec_read;
-	struct cec_rw cec_send;
-	struct info_fr info_fr;
-	struct hdcp_fuseaes hdcp_fuseaes;
-	struct hdcp_loadaesall hdcp_loadaesall;
-	int block_cnt;
-	struct hdcp_loadaesone hdcp_loadaesone;
-	struct hdcp_authencr hdcp_authencr;
-	struct audio_cfg audio_cfg;
-	union av8100_configuration config;
 	struct hdmi_register reg;
-	struct hdmi_command_register command_reg;
 	struct av8100_status status;
 	u8 aes_status;
 
 	switch (cmd) {
 	case IOC_PLUG_DETECT_ENABLE:
+		{
+		struct plug_detect plug_detect;
+
 		if (copy_from_user(&plug_detect, (void *)arg,
 			sizeof(struct plug_detect)))
 			return -EINVAL;
 
 		if (plugdeten(&plug_detect))
 			return -EINVAL;
+		}
 		break;
 
 	case IOC_EDID_READ:
+		{
+		struct edid_read edid_read;
+
 		if (copy_from_user(&edid_read, (void *)arg,
 				sizeof(struct edid_read)))
 			return -EINVAL;
@@ -1735,16 +1785,21 @@ static int hdmi_ioctl(struct file *file,
 			sizeof(struct edid_read))) {
 			return -EINVAL;
 		}
+		}
 		break;
 
 	case IOC_CEC_EVENT_ENABLE:
 		if (copy_from_user(&value, (void *)arg, sizeof(u8)))
 			return -EINVAL;
 
-		event_enable(value != 0, HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR);
+		event_enable(value != 0, HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR |
+							HDMI_EVENT_CECTX);
 		break;
 
 	case IOC_CEC_READ:
+		{
+		struct cec_rw cec_read;
+
 		if (cecread(&cec_read.src, &cec_read.dest, &cec_read.length,
 			cec_read.data))
 			return -EINVAL;
@@ -1753,9 +1808,13 @@ static int hdmi_ioctl(struct file *file,
 			sizeof(struct cec_rw))) {
 			return -EINVAL;
 		}
+		}
 		break;
 
 	case IOC_CEC_SEND:
+		{
+		struct cec_rw cec_send;
+
 		if (copy_from_user(&cec_send, (void *)arg,
 				sizeof(struct cec_rw)))
 			return -EINVAL;
@@ -1765,9 +1824,13 @@ static int hdmi_ioctl(struct file *file,
 				cec_send.length,
 				cec_send.data))
 			return -EINVAL;
+		}
 		break;
 
 	case IOC_INFOFRAME_SEND:
+		{
+		struct info_fr info_fr;
+
 		if (copy_from_user(&info_fr, (void *)arg,
 				sizeof(struct info_fr)))
 			return -EINVAL;
@@ -1775,6 +1838,7 @@ static int hdmi_ioctl(struct file *file,
 		if (infofrsend(info_fr.type, info_fr.ver, info_fr.crc,
 			info_fr.length, info_fr.data))
 			return -EINVAL;
+		}
 		break;
 
 	case IOC_HDCP_EVENT_ENABLE:
@@ -1795,6 +1859,9 @@ static int hdmi_ioctl(struct file *file,
 		break;
 
 	case IOC_HDCP_FUSEAES:
+		{
+		struct hdcp_fuseaes hdcp_fuseaes;
+
 		if (copy_from_user(&hdcp_fuseaes, (void *)arg,
 				sizeof(struct hdcp_fuseaes)))
 			return -EINVAL;
@@ -1807,9 +1874,15 @@ static int hdmi_ioctl(struct file *file,
 			sizeof(struct hdcp_fuseaes))) {
 			return -EINVAL;
 		}
+		}
 		break;
 
 	case IOC_HDCP_LOADAES:
+		{
+		int block_cnt;
+		struct hdcp_loadaesone hdcp_loadaesone;
+		struct hdcp_loadaesall hdcp_loadaesall;
+
 		if (copy_from_user(&hdcp_loadaesall, (void *)arg,
 				sizeof(struct hdcp_loadaesall)))
 			return -EINVAL;
@@ -1878,32 +1951,55 @@ ioc_hdcploadaes_err:
 			sizeof(struct hdcp_loadaesall))) {
 			return -EINVAL;
 		}
+		}
 		break;
 
 	case IOC_HDCP_AUTHENCR_REQ:
+		{
+		struct hdcp_authencr hdcp_authencr;
+		int result = HDMI_RESULT_NOT_OK;
+
+		u8 buf[AUTH_BUF_LEN];
+
 		if (copy_from_user(&hdcp_authencr, (void *)arg,
 				sizeof(struct hdcp_authencr)))
 			return -EINVAL;
 
 		/* Default not OK */
-		hdcp_authencr.result = HDMI_RESULT_NOT_OK;
+		hdcp_authencr.resp_size = 0;
 
-		if (hdcpchkaesotp(&value, &aes_status))
-			return -EINVAL;
+		if (hdcpchkaesotp(&value, &aes_status)) {
+			result = HDMI_AES_NOT_FUSED;
+			goto hdcp_authencr_end;
+		}
 
 		if (!aes_status) {
 			/* AES is not fused */
-			hdcp_authencr.result = HDMI_AES_NOT_FUSED;
-			break;
+			result = HDMI_AES_NOT_FUSED;
+			goto hdcp_authencr_end;
 		}
 
 		if (hdcpauthencr(hdcp_authencr.auth_type,
 				hdcp_authencr.encr_type,
 				&value,
-				hdcp_authencr.revoc_list))
-			return -EINVAL;
+				buf)) {
+			result = HDMI_RESULT_NOT_OK;
+			goto hdcp_authencr_end;
+		}
 
-		hdcp_authencr.result = HDMI_RESULT_OK;
+		if (value > AUTH_BUF_LEN)
+			value = AUTH_BUF_LEN;
+
+		result = HDMI_RESULT_OK;
+		hdcp_authencr.resp_size = value;
+		memcpy(hdcp_authencr.resp, buf, value);
+
+hdcp_authencr_end:
+		hdcp_authencr.result = result;
+		if (copy_to_user((void *)arg, (void *)&hdcp_authencr,
+			sizeof(struct hdcp_authencr)))
+			return -EINVAL;
+		}
 		break;
 
 	case IOC_HDCP_STATE_GET:
@@ -1937,11 +2033,15 @@ ioc_hdcploadaes_err:
 		break;
 
 	case IOC_AUDIO_CFG:
+		{
+		struct audio_cfg audio_cfg;
+
 		if (copy_from_user(&audio_cfg, (void *)arg,
 				sizeof(struct audio_cfg)))
 			return -EINVAL;
 
 		audiocfg(&audio_cfg);
+		}
 		break;
 
 	case IOC_PLUG_STATUS:
@@ -2004,6 +2104,9 @@ ioc_hdcploadaes_err:
 		break;
 
 	case IOC_HDMI_ONOFF:
+		{
+		union av8100_configuration config;
+
 		/* Get desired HDMI mode on or off */
 		if (copy_from_user(&value, (void *)arg, sizeof(u8)))
 			return -EFAULT;
@@ -2025,6 +2128,7 @@ ioc_hdcploadaes_err:
 			I2C_INTERFACE) != 0) {
 			dev_err(hdmidev, "av8100_conf_w FAIL\n");
 			return -EINVAL;
+		}
 		}
 		break;
 
@@ -2067,6 +2171,8 @@ ioc_hdcploadaes_err:
 		break;
 
 	case IOC_HDMI_CONFIGURATION_WRITE:
+		{
+		struct hdmi_command_register command_reg;
 		if (copy_from_user(&command_reg, (void *)arg,
 				sizeof(struct hdmi_command_register)) != 0) {
 			dev_err(hdmidev, "IOC_HDMI_CONFIGURATION_WRITE "
@@ -2089,6 +2195,7 @@ ioc_hdcploadaes_err:
 			sizeof(struct hdmi_command_register)) != 0) {
 			return -EINVAL;
 		}
+		}
 		break;
 
 	default:
@@ -2096,16 +2203,6 @@ ioc_hdcploadaes_err:
 	}
 
 	return 0;
-}
-
-static long hdmi_unlocked_ioctl(struct file *file, unsigned int cmd, 
-							unsigned long arg)
-{
-	int ret;
-
-	ret = hdmi_ioctl(file, cmd, arg);
-
-	return ret;
 }
 
 static unsigned int
@@ -2131,7 +2228,7 @@ static const struct file_operations hdmi_fops = {
 	.owner =    THIS_MODULE,
 	.open =     hdmi_open,
 	.release =  hdmi_release,
-	.unlocked_ioctl = hdmi_unlocked_ioctl,
+	.unlocked_ioctl = hdmi_ioctl,
 	.poll = hdmi_poll
 };
 
@@ -2164,6 +2261,7 @@ void hdmi_event(enum av8100_hdmi_event ev)
 	case AV8100_HDMI_EVENT_HDMI_PLUGOUT:
 		events &= ~HDMI_EVENT_HDMI_PLUGIN;
 		events |= HDMI_EVENT_HDMI_PLUGOUT;
+		cec_tx_status(CEC_TX_SET_FREE);
 		break;
 
 	case AV8100_HDMI_EVENT_CEC:
@@ -2176,6 +2274,12 @@ void hdmi_event(enum av8100_hdmi_event ev)
 
 	case AV8100_HDMI_EVENT_CECTXERR:
 		events |= HDMI_EVENT_CECTXERR;
+		cec_tx_status(CEC_TX_SET_FREE);
+		break;
+
+	case AV8100_HDMI_EVENT_CECTX:
+		events |= HDMI_EVENT_CECTX;
+		cec_tx_status(CEC_TX_SET_FREE);
 		break;
 
 	default:

@@ -404,6 +404,7 @@ enum av8100_hdmi_event {
 	AV8100_HDMI_EVENT_CEC =			0x4,
 	AV8100_HDMI_EVENT_HDCP =		0x8,
 	AV8100_HDMI_EVENT_CECTXERR =		0x10,
+	AV8100_HDMI_EVENT_CECTX =		0x20,	/* Transm no error */
 };
 
 struct av8100_status {
@@ -415,6 +416,7 @@ struct av8100_status {
 
 int av8100_init(void);
 void av8100_exit(void);
+int av8100_powerscan(void);
 int av8100_powerup(void);
 int av8100_powerdown(void);
 int av8100_disable_interrupt(void);

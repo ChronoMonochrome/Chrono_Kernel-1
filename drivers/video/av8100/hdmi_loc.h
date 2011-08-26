@@ -13,7 +13,9 @@
 #define COMMAND_BUF_LEN	128
 #define AES_KEY_SIZE	16
 #define CRC32_SIZE	4
-#define AUTH_BUF_LEN	30
+#define AUTH_BUF_LEN	126
+#define CECTX_TRY	20
+#define CECTX_WAITTIME	25
 
 struct edid_data {
 	u8 buf_len;
@@ -53,6 +55,12 @@ struct hdmi_command_register {
 	unsigned char buf_len;			/* input, output */
 	unsigned char buf[COMMAND_BUF_LEN];	/* input, output */
 	unsigned char return_status;		/* output */
+};
+
+enum cec_tx_status_action {
+	CEC_TX_SET_FREE,
+	CEC_TX_SET_BUSY,
+	CEC_TX_CHECK
 };
 
 /* Internal */
