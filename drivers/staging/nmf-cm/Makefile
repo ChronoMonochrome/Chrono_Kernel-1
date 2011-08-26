@@ -7,7 +7,7 @@
 #
 # Rules to build kernel modules
 #
-ifndef MM_MAKEFILES_DIR
+ifdef KERNELRELEASE
 
   # $(src): current relative dir; $(kbuild-dir): cur absolute dir
   ifdef kbuild-dir

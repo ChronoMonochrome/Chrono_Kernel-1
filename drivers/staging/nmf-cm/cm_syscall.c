@@ -13,6 +13,7 @@
 #include "cmld.h"
 #include <cm/engine/memory/inc/remote_allocator.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
 
 /** Dequeue and free per-process messages for specific binding
  *
@@ -1379,8 +1380,8 @@ int cmld_PrivReserveMemory(struct cm_process_priv *procPriv, unsigned int physAd
 				       __func__, current->pid, physAddr, (int)curr->tid);*/
 				err = -EBUSY;
 			} else {
-				curr->tid = 0;
 				//current->pid;
+				curr->tid = current->pid;
 				err = 0;
 			}
 			break;
