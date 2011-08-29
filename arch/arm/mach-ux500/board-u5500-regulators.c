@@ -117,9 +117,7 @@ ab5500_regulator_init_data[AB5500_NUM_REGULATORS] = {
 	},
 	[AB5500_LDO_SIM] = {
 		.constraints = {
-			.boot_on        = 1,
-			.always_on      = 1,
-			.min_uV         = 2900000,
+			.min_uV		= 1875000,
 			.max_uV		= 2900000,
 			.apply_uV	= 1,
 			.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
