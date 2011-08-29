@@ -144,6 +144,16 @@ enum fmd_debug_levels {
  * This is just a hexadecimal number with no units.
  */
 #define DEFAULT_AVERAGE_NOISE_MAX_VALUE			0x0030
+/*
+ * Minimum Audio Deviation Level, as per CG2900 FM User Manual.
+ * This is units of 10 Hz.
+ */
+#define MIN_AUDIO_DEVIATION						0x157C
+/*
+ * Maximum Audio Deviation Level, as per CG2900 FM UserManual.
+ * This is units of 10 Hz.
+ */
+#define MAX_AUDIO_DEVIATION						0x3840
 #define FREQUENCY_CONVERTOR_KHZ_HZ			1000
 #define CHANNEL_FREQ_CONVERTER_MHZ			50
 /* Interrupt(s) for CG2900 */
@@ -220,6 +230,7 @@ enum fmd_debug_levels {
 #define CMD_TST_TONE_ENABLE				0x0027
 #define CMD_TST_TONE_CONNECT				0x0047
 #define CMD_TST_TONE_SET_PARAMS				0x0067
+#define CMD_FMT_RP_LIMITER_SETCONTROL				0x01C4
 
 /* FM Command Id Parameter Length */
 #define CMD_GET_VERSION_PARAM_LEN			0
@@ -278,6 +289,7 @@ enum fmd_debug_levels {
 #define CMD_TST_TONE_ENABLE_PARAM_LEN			1
 #define CMD_TST_TONE_CONNECT_PARAM_LEN			2
 #define CMD_TST_TONE_SET_PARAMS_PARAM_LEN		6
+#define CMD_FMT_RP_LIMITER_SETCONTROL_PARAM_LEN		2
 
 /* FM HCI Command and event specific */
 #define FM_WRITE					0x00
@@ -1761,4 +1773,22 @@ int fmd_test_tone_set_params(
 int fmd_rx_set_deemphasis(
 			u8 deemphasis
 			);
+
+/**
+ * fmd_limiter_setcontrol()- Sets the Limiter Controls.
+ *
+ * This function sets the limiter control.
+ * @audio_deviation: Limiting level of Audio Deviation.
+ * @notification_hold_off_time: Minimum time between
+ * two limiting interrupts.
+ *
+ * Returns:
+ *	 0,  if operation completed successfully.
+ *	 -EINVAL, otherwise.
+ */
+int fmd_limiter_setcontrol(
+			u16 audio_deviation,
+			u16 notification_hold_off_time
+			);
+
 #endif /* _FMDRIVER_H_  */

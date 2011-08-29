@@ -26,6 +26,8 @@
 #define FW_FILE_PARAM_LEN				3
 /* RDS Tx PTY set to Other music */
 #define OTHER_MUSIC			15
+#define DEFAULT_AUDIO_DEVIATION 0x1AA9
+#define DEFAULT_NOTIFICATION_HOLD_OFF_TIME 0x000A
 
 static bool fm_rds_status;
 static bool fm_prev_rds_status;
@@ -1257,6 +1259,20 @@ int cg2900_fm_set_tx_default_settings(
 	if (0 != result) {
 		FM_ERR_REPORT("cg2900_fm_set_tx_default_settings: "
 			      "fmd_set_mode failed %x",
+			      (unsigned int)result);
+		result = -EINVAL;
+		goto error;
+	}
+
+	/* Sets the Limiter Values */
+	FM_DEBUG_REPORT("cg2900_fm_set_tx_default_settings: "
+			"Sending fmd_limiter_setcontrol");
+	result = fmd_limiter_setcontrol(
+				DEFAULT_AUDIO_DEVIATION,
+				DEFAULT_NOTIFICATION_HOLD_OFF_TIME);
+	if (0 != result) {
+		FM_ERR_REPORT("cg2900_fm_set_tx_default_settings: "
+			      "fmd_limiter_setcontrol failed %x",
 			      (unsigned int)result);
 		result = -EINVAL;
 		goto error;

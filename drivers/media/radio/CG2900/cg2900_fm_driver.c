@@ -4833,6 +4833,53 @@ error:
 	return err;
 }
 
+int fmd_limiter_setcontrol(
+			u16 audio_deviation,
+			u16 notification_hold_off_time
+			)
+{
+	int err;
+	int io_result;
+	u16 parameters[CMD_FMT_RP_LIMITER_SETCONTROL_PARAM_LEN];
+
+	if (fmd_go_cmd_busy()) {
+		err = -EBUSY;
+		goto error;
+	}
+
+	if (!fmd_state_info.fmd_initialized) {
+		err = -ENOEXEC;
+		goto error;
+	}
+
+	if (audio_deviation < MIN_AUDIO_DEVIATION ||
+		audio_deviation > MAX_AUDIO_DEVIATION ||
+		notification_hold_off_time > 0x7FFF) {
+		err = -EINVAL;
+		goto error;
+	}
+
+	parameters[0] = audio_deviation;
+	parameters[1] = notification_hold_off_time;
+
+	io_result = fmd_send_cmd_and_read_resp(
+			CMD_FMT_RP_LIMITER_SETCONTROL,
+			CMD_FMT_RP_LIMITER_SETCONTROL_PARAM_LEN,
+			parameters,
+			NULL,
+			NULL);
+
+	if (io_result != 0) {
+		err = io_result;
+		goto error;
+	}
+
+	err = 0;
+
+error:
+	return err;
+}
+
 MODULE_AUTHOR("Hemant Gupta");
 MODULE_LICENSE("GPL v2");
 
