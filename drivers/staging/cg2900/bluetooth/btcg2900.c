@@ -1061,6 +1061,7 @@ static int remove_common(struct platform_device *pdev,
 		goto finished;
 
 	BT_INFO("Unregistering CG2900");
+	info->hdev->driver_data = NULL;
 	err = hci_unregister_dev(info->hdev);
 	if (err)
 		BT_ERR("Can not unregister HCI device (%d)", err);

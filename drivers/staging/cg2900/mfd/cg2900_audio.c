@@ -111,6 +111,7 @@ struct endpoint_config_node {
  *				audio channel.
  * @dev_fm:			Device registered by this driver for the FM
  *				audio channel.
+ * @filp:			Current char device file pointer.
  * @management_mutex:		Mutex for handling access to CG2900 Audio driver
  *				management.
  * @bt_mutex:			Mutex for handling access to BT audio channel.
@@ -136,6 +137,7 @@ struct audio_info {
 	struct device			*parent;
 	struct device			*dev_bt;
 	struct device			*dev_fm;
+	struct file			*filp;
 	struct mutex			management_mutex;
 	struct mutex			bt_mutex;
 	struct mutex			fm_mutex;
@@ -2825,6 +2827,7 @@ static int audio_dev_open(struct inode *inode, struct file *filp)
 	}
 	filp->private_data = char_dev_info;
 	char_dev_info->info = info;
+	info->filp = filp;
 
 	mutex_init(&char_dev_info->management_mutex);
 	mutex_init(&char_dev_info->rw_mutex);
@@ -2861,7 +2864,14 @@ static int audio_dev_release(struct inode *inode, struct file *filp)
 {
 	int err = 0;
 	struct char_dev_info *dev = filp->private_data;
-	struct audio_info *info = dev->info;
+	struct audio_info *info;
+
+	if (!dev) {
+		pr_err("audio_dev_release: Transport closed");
+		return -EBADF;
+	}
+
+	info = dev->info;
 
 	dev_dbg(BT_DEV, "audio_dev_release\n");
 
@@ -2879,6 +2889,7 @@ static int audio_dev_release(struct inode *inode, struct file *filp)
 
 	kfree(dev);
 	filp->private_data = NULL;
+	info->filp = NULL;
 
 	return err;
 }
@@ -2907,10 +2918,17 @@ static ssize_t audio_dev_read(struct file *filp, char __user *buf, size_t count,
 			      loff_t *f_pos)
 {
 	struct char_dev_info *dev = filp->private_data;
-	struct audio_info *info = dev->info;
+	struct audio_info *info;
 	unsigned int bytes_to_copy;
 	int err = 0;
 	struct sk_buff *skb;
+
+	if (!dev) {
+		pr_err("audio_dev_read: Transport closed");
+		return -EBADF;
+	}
+
+	info = dev->info;
 
 	dev_dbg(BT_DEV, "audio_dev_read count %d\n", count);
 
@@ -2988,7 +3006,7 @@ static ssize_t audio_dev_write(struct file *filp, const char __user *buf,
 	pr_debug("audio_dev_write count %d", count);
 
 	if (!dev) {
-		pr_err("No dev supplied in private data");
+		pr_err("audio_dev_write: Transport closed");
 		return -EBADF;
 	}
 	info = dev->info;
@@ -3170,7 +3188,7 @@ static unsigned int audio_dev_poll(struct file *filp, poll_table *wait)
 	unsigned int mask = 0;
 
 	if (!dev) {
-		pr_err("No dev supplied in private data");
+		pr_err("audio_dev_poll: Transport closed");
 		return POLLERR | POLLRDHUP;
 	}
 	info = dev->info;
@@ -3343,6 +3361,9 @@ static int common_remove(struct audio_info *info, struct device *dev)
 	if (err)
 		dev_err(dev, "Error %d deregistering misc dev\n", err);
 	info->misc_registered = false;
+
+	if (info->filp)
+		info->filp->private_data = NULL;
 
 	dev_info(dev, "CG2900 Audio driver removed\n");
 	return err;

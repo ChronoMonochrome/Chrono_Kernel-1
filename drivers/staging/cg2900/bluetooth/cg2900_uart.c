@@ -333,9 +333,10 @@ static void wake_up_chip(struct uart_info *uart_info);
  */
 static bool is_chip_flow_off(struct uart_info *uart_info)
 {
-	int lines;
+	int lines = 0;
 
-	lines = hci_uart_tiocmget(uart_info->hu);
+	if (uart_info->hu)
+		lines = hci_uart_tiocmget(uart_info->hu);
 
 	if (lines & TIOCM_CTS)
 		return false;
@@ -577,6 +578,11 @@ static void wake_up_chip(struct uart_info *uart_info)
 	if (!timeout_jiffies && uart_info->sleep_state != CHIP_RESUMING)
 		return;
 
+	if (!uart_info->hu) {
+		dev_err(MAIN_DEV, "wake_up_chip: UART not open\n");
+		return;
+	}
+
 	mutex_lock(&(uart_info->sleep_state_lock));
 
 	/*
@@ -602,7 +608,7 @@ static void wake_up_chip(struct uart_info *uart_info)
 		/* Disable IRQ only when it was enabled. */
 		unset_cts_irq(uart_info);
 		(void)hci_uart_set_baudrate(uart_info->hu,
-							uart_info->baud_rate);
+					    uart_info->baud_rate);
 
 		enable_uart_pins(uart_info);
 
@@ -650,6 +656,11 @@ static void set_chip_sleep_mode(struct work_struct *work)
 	if (!timeout_jiffies)
 		return;
 
+	if (!uart_info->hu) {
+		dev_err(MAIN_DEV, "set_chip_sleep_mode: UART not open\n");
+		return;
+	}
+
 	if (uart_info->tx_in_progress || uart_info->rx_in_progress) {
 		dev_dbg(MAIN_DEV, "Not going to sleep, TX/RX in progress\n");
 		return;
@@ -674,13 +685,12 @@ static void set_chip_sleep_mode(struct work_struct *work)
 		 * Set baud zero.
 		 * This cause shut off UART clock as well.
 		 */
-		(void)hci_uart_set_baudrate(uart_info->hu,
-							ZERO_BAUD_RATE);
+		(void)hci_uart_set_baudrate(uart_info->hu, ZERO_BAUD_RATE);
 		err = set_cts_irq(uart_info);
 		if (err < 0) {
 			enable_uart_pins(uart_info);
 			(void)hci_uart_set_baudrate(uart_info->hu,
-							uart_info->baud_rate);
+						uart_info->baud_rate);
 			hci_uart_flow_ctrl(uart_info->hu, FLOW_ON);
 			hci_uart_set_break(uart_info->hu, BREAK_OFF);
 
@@ -1060,6 +1070,11 @@ static void work_do_transmit(struct work_struct *work)
 
 	kfree(current_work);
 
+	if (!uart_info->hu) {
+		dev_err(MAIN_DEV, "work_do_transmit: UART not open\n");
+		return;
+	}
+
 	spin_lock_bh(&(uart_info->transmission_lock));
 	/* Mark that there is an ongoing transfer. */
 	uart_info->tx_in_progress = true;
@@ -1127,6 +1142,11 @@ static int set_baud_rate(struct hci_uart *hu, int baud)
 			"Trying to set new baud rate before old setting "
 			   "is finished\n");
 		return -EALREADY;
+	}
+
+	if (!uart_info->hu) {
+		dev_err(MAIN_DEV, "set_baud_rate: UART not open\n");
+		return -EFAULT;
 	}
 
 	/*
@@ -1243,6 +1263,11 @@ static int uart_open(struct cg2900_chip_dev *dev)
 	struct sk_buff *skb;
 	struct hci_command_hdr *cmd;
 	struct uart_info *uart_info = dev_get_drvdata(dev->dev);
+
+	if (!uart_info->hu) {
+		dev_err(MAIN_DEV, "uart_open: UART not open\n");
+		return -EACCES;
+	}
 
 	/*
 	 * Chip has just been started up. It has a system to autodetect

@@ -37,6 +37,7 @@
  * struct char_dev_user - Stores device information.
  * @dev:		Current device.
  * @miscdev:		Registered device struct.
+ * @filp:		Current file pointer.
  * @name:		Name of device.
  * @rx_queue:		Data queue.
  * @rx_wait_queue:	Wait queue.
@@ -48,6 +49,7 @@
 struct char_dev_user {
 	struct device		*dev;
 	struct miscdevice	miscdev;
+	struct file		*filp;
 	char			*name;
 	struct sk_buff_head	rx_queue;
 	wait_queue_head_t	rx_wait_queue;
@@ -147,6 +149,7 @@ static int char_dev_open(struct inode *inode, struct file *filp)
 	}
 
 	filp->private_data = dev;
+	dev->filp = filp;
 	user = dev_get_platdata(dev->dev);
 
 	/* First initiate wait queues for this device. */
@@ -188,7 +191,7 @@ static int char_dev_release(struct inode *inode, struct file *filp)
 	pr_debug("char_dev_release");
 
 	if (!dev) {
-		pr_err("Calling with NULL pointer");
+		pr_err("char_dev_release: Calling with NULL pointer");
 		return -EBADF;
 	}
 
@@ -203,6 +206,7 @@ static int char_dev_release(struct inode *inode, struct file *filp)
 	dev_info(MAIN_DEV, "char_dev %s closed\n", dev->name);
 
 	filp->private_data = NULL;
+	dev->filp = NULL;
 	wake_up_interruptible(&dev->rx_wait_queue);
 	wake_up_interruptible(&dev->reset_wait_queue);
 
@@ -241,7 +245,7 @@ static ssize_t char_dev_read(struct file *filp, char __user *buf, size_t count,
 	pr_debug("char_dev_read");
 
 	if (!dev) {
-		pr_err("Calling with NULL pointer");
+		pr_err("char_dev_read: Calling with NULL pointer");
 		return -EBADF;
 	}
 	mutex_lock(&dev->read_mutex);
@@ -322,7 +326,7 @@ static ssize_t char_dev_write(struct file *filp, const char __user *buf,
 	pr_debug("char_dev_write");
 
 	if (!dev) {
-		pr_err("Calling with NULL pointer");
+		pr_err("char_dev_write: Calling with NULL pointer");
 		return -EBADF;
 	}
 
@@ -385,6 +389,11 @@ static long char_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 	int err = 0;
 	int ret_val;
 	void __user *user_arg = (void __user *)arg;
+
+	if (!dev) {
+		pr_err("char_dev_unlocked_ioctl: Calling with NULL pointer");
+		return -EBADF;
+	}
 
 	dev_dbg(dev->dev, "char_dev_unlocked_ioctl for %s\n"
 		"\tDIR: %d\n"
@@ -464,7 +473,7 @@ static unsigned int char_dev_poll(struct file *filp, poll_table *wait)
 	unsigned int mask = 0;
 
 	if (!dev) {
-		pr_debug("Device not open");
+		pr_debug("char_dev_poll: Device not open");
 		return POLLERR | POLLRDHUP;
 	}
 
@@ -525,6 +534,10 @@ static void remove_dev(struct char_dev_user *dev_usr)
 
 	mutex_destroy(&dev_usr->read_mutex);
 	mutex_destroy(&dev_usr->write_mutex);
+
+	dev_usr->dev = NULL;
+	if (dev_usr->filp)
+		dev_usr->filp->private_data = NULL;
 
 	/* Remove device node in file system. */
 	misc_deregister(&dev_usr->miscdev);
