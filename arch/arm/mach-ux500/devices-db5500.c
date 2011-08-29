@@ -217,7 +217,7 @@ static struct mcde_platform_data mcde_pdata = {
 	.platform_disable_dsipll = mcde_platform_disable_dsipll,
 };
 
-struct platform_device u5500_mcde_device = {
+struct platform_device ux500_mcde_device = {
 	.name = "mcde",
 	.id = -1,
 	.dev = {
@@ -242,7 +242,7 @@ static struct resource b2r2_resources[] = {
 	},
 };
 
-struct platform_device u5500_b2r2_device = {
+struct platform_device ux500_b2r2_device = {
 	.name	= "b2r2",
 	.id	= 0,
 	.dev	= {

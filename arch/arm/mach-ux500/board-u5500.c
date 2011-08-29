@@ -358,9 +358,9 @@ static struct platform_device u5500_mloader_device = {
 
 static struct platform_device *u5500_platform_devices[] __initdata = {
 	&u5500_ab5500_device,
-	&u5500_mcde_device,
+	&ux500_mcde_device,
 	&ux500_hwmem_device,
-	&u5500_b2r2_device,
+	&ux500_b2r2_device,
 	&u5500_mloader_device,
 #ifdef CONFIG_U5500_MMIO
 	&u5500_mmio_device,

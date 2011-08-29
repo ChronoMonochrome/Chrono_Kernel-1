@@ -13,11 +13,11 @@ struct amba_device;
 extern struct platform_device u5500_gpio_devs[];
 extern struct platform_device u8500_gpio_devs[];
 
-extern struct platform_device u8500_mcde_device;
-extern struct platform_device u5500_mcde_device;
+extern struct platform_device ux500_mcde_device;
+extern struct platform_device ux500_mcde_device;
 extern struct platform_device u8500_shrm_device;
-extern struct platform_device u8500_b2r2_device;
-extern struct platform_device u5500_b2r2_device;
+extern struct platform_device ux500_b2r2_device;
+extern struct platform_device ux500_b2r2_device;
 extern struct platform_device u8500_trace_modem;
 extern struct platform_device ux500_hwmem_device;
 extern struct amba_device ux500_pl031_device;
