@@ -1690,7 +1690,7 @@ static void disable_channel(struct mcde_chnl_state *chnl)
 								chnl->id, i);
 					goto break_switch;
 				}
-				msleep(1);
+				mdelay(1);
 			}
 		} else {
 			dev_vdbg(&mcde_dev->dev,
@@ -1704,7 +1704,7 @@ static void disable_channel(struct mcde_chnl_state *chnl)
 			mcde_wfld(MCDE_CRA0, FLOEN, false);
 			wait_for_channel(chnl);
 			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				msleep(1);
+				mdelay(1);
 				if (!mcde_rfld(MCDE_CRA0, FLOEN)) {
 					dev_vdbg(&mcde_dev->dev,
 					"Flow (A) off after >= %d ms\n", i);
@@ -1718,7 +1718,7 @@ static void disable_channel(struct mcde_chnl_state *chnl)
 			mcde_wfld(MCDE_CRB0, FLOEN, false);
 			wait_for_channel(chnl);
 			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				msleep(1);
+				mdelay(1);
 				if (!mcde_rfld(MCDE_CRB0, FLOEN)) {
 					dev_vdbg(&mcde_dev->dev,
 					"Flow (B) off after >= %d ms\n", i);
@@ -1732,7 +1732,7 @@ static void disable_channel(struct mcde_chnl_state *chnl)
 			mcde_wfld(MCDE_CRC, C1EN, false);
 			wait_for_channel(chnl);
 			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				msleep(1);
+				mdelay(1);
 				if (!mcde_rfld(MCDE_CRC, C1EN)) {
 					dev_vdbg(&mcde_dev->dev,
 					"Flow (C1) off after >= %d ms\n", i);
@@ -1746,7 +1746,7 @@ static void disable_channel(struct mcde_chnl_state *chnl)
 			mcde_wfld(MCDE_CRC, C2EN, false);
 			wait_for_channel(chnl);
 			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				msleep(1);
+				mdelay(1);
 				if (!mcde_rfld(MCDE_CRC, C2EN)) {
 					dev_vdbg(&mcde_dev->dev,
 					"Flow (C2) off after >= %d ms\n", i);
@@ -1782,7 +1782,7 @@ static void enable_channel(struct mcde_chnl_state *chnl)
 					"Flow (A) enable after >= %d ms\n", i);
 				return;
 			}
-			msleep(1);
+			mdelay(1);
 		}
 		break;
 	case MCDE_CHNL_B:
@@ -1793,7 +1793,7 @@ static void enable_channel(struct mcde_chnl_state *chnl)
 					"Flow (B) enable after >= %d ms\n", i);
 				return;
 			}
-			msleep(1);
+			mdelay(1);
 		}
 		break;
 	case MCDE_CHNL_C0:
@@ -1804,7 +1804,7 @@ static void enable_channel(struct mcde_chnl_state *chnl)
 					"Flow (C1) enable after >= %d ms\n", i);
 				return;
 			}
-			msleep(1);
+			mdelay(1);
 		}
 		mcde_wfld(MCDE_CRC, POWEREN, true);
 		break;
@@ -1816,7 +1816,7 @@ static void enable_channel(struct mcde_chnl_state *chnl)
 					"Flow (C2) enable after >= %d ms\n", i);
 				return;
 			}
-			msleep(1);
+			mdelay(1);
 		}
 		mcde_wfld(MCDE_CRC, POWEREN, true);
 		break;
