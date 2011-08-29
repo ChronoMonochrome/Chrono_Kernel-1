@@ -59,6 +59,11 @@
 #include <mach/sim_detect.h>
 #endif
 
+#ifdef CONFIG_KEYBOARD_NOMADIK_SKE
+#include <plat/ske.h>
+#include "pins.h"
+#endif
+
 #include "pins-db8500.h"
 #include "devices-db8500.h"
 #include "board-mop500.h"
@@ -305,6 +310,173 @@ struct platform_device ab8500_device = {
 	.num_resources = 1,
 	.resource = ab8500_resources,
 };
+
+
+
+#ifdef CONFIG_KEYBOARD_NOMADIK_SKE
+
+/*
+ * Nomadik SKE keypad
+ */
+#define ROW_PIN_I0      164
+#define ROW_PIN_I1      163
+#define ROW_PIN_I2      162
+#define ROW_PIN_I3      161
+#define ROW_PIN_I4      156
+#define ROW_PIN_I5      155
+#define ROW_PIN_I6      154
+#define ROW_PIN_I7      153
+#define COL_PIN_O0      168
+#define COL_PIN_O1      167
+#define COL_PIN_O2      166
+#define COL_PIN_O3      165
+#define COL_PIN_O4      160
+#define COL_PIN_O5      159
+#define COL_PIN_O6      158
+#define COL_PIN_O7      157
+
+static int ske_kp_rows[] = {
+	ROW_PIN_I0, ROW_PIN_I1, ROW_PIN_I2, ROW_PIN_I3,
+	ROW_PIN_I4, ROW_PIN_I5, ROW_PIN_I6, ROW_PIN_I7,
+};
+static int ske_kp_cols[] = {
+	COL_PIN_O0, COL_PIN_O1, COL_PIN_O2, COL_PIN_O3,
+	COL_PIN_O4, COL_PIN_O5, COL_PIN_O6, COL_PIN_O7,
+};
+
+static bool ske_config;
+/*
+ * ske_set_gpio_row: request and set gpio rows
+ */
+static int ske_set_gpio_row(int gpio)
+{
+	int ret;
+
+	if (!ske_config) {
+		ret = gpio_request(gpio, "ske-kp");
+		if (ret < 0) {
+			pr_err("ske_set_gpio_row: gpio request failed\n");
+			return ret;
+		}
+	}
+
+	ret = gpio_direction_output(gpio, 1);
+	if (ret < 0) {
+		pr_err("ske_set_gpio_row: gpio direction failed\n");
+		gpio_free(gpio);
+	}
+
+	return ret;
+}
+
+/*
+ * ske_kp_init - enable the gpio configuration
+ */
+static int ske_kp_init(void)
+{
+	struct ux500_pins *pins;
+	int ret, i;
+
+	pins = ux500_pins_get("ske");
+	if (pins)
+		ux500_pins_enable(pins);
+
+	for (i = 0; i < SKE_KPD_MAX_ROWS; i++) {
+		ret = ske_set_gpio_row(ske_kp_rows[i]);
+		if (ret < 0) {
+			pr_err("ske_kp_init: failed init\n");
+			return ret;
+		}
+	}
+	if (!ske_config)
+		ske_config = true;
+
+	return 0;
+}
+
+static int ske_kp_exit(void)
+{
+	struct ux500_pins *pins;
+
+	pins = ux500_pins_get("ske");
+	if (pins)
+		ux500_pins_disable(pins);
+
+	return 0;
+}
+
+
+static const unsigned int mop500_ske_keymap[] = {
+#if defined(CONFIG_KEYLAYOUT_LAYOUT1)
+	KEY(2, 5, KEY_END),
+	KEY(4, 1, KEY_HOME),
+	KEY(3, 5, KEY_VOLUMEDOWN),
+	KEY(1, 3, KEY_EMAIL),
+	KEY(5, 2, KEY_RIGHT),
+	KEY(5, 0, KEY_BACKSPACE),
+
+	KEY(0, 5, KEY_MENU),
+	KEY(7, 6, KEY_ENTER),
+	KEY(4, 5, KEY_0),
+	KEY(6, 7, KEY_DOT),
+	KEY(3, 4, KEY_UP),
+	KEY(3, 3, KEY_DOWN),
+
+	KEY(6, 4, KEY_SEND),
+	KEY(6, 2, KEY_BACK),
+	KEY(4, 2, KEY_VOLUMEUP),
+	KEY(5, 5, KEY_SPACE),
+	KEY(4, 3, KEY_LEFT),
+	KEY(3, 2, KEY_SEARCH),
+#elif defined(CONFIG_KEYLAYOUT_LAYOUT2)
+	KEY(2, 5, KEY_RIGHT),
+	KEY(4, 1, KEY_ENTER),
+	KEY(3, 5, KEY_MENU),
+	KEY(1, 3, KEY_3),
+	KEY(5, 2, KEY_6),
+	KEY(5, 0, KEY_9),
+
+	KEY(0, 5, KEY_UP),
+	KEY(7, 6, KEY_DOWN),
+	KEY(4, 5, KEY_0),
+	KEY(6, 7, KEY_2),
+	KEY(3, 4, KEY_5),
+	KEY(3, 3, KEY_8),
+
+	KEY(6, 4, KEY_LEFT),
+	KEY(6, 2, KEY_BACK),
+	KEY(4, 2, KEY_KPDOT),
+	KEY(5, 5, KEY_1),
+	KEY(4, 3, KEY_4),
+	KEY(3, 2, KEY_7),
+#else
+#warning "No keypad layout defined."
+#endif
+};
+
+static struct matrix_keymap_data mop500_ske_keymap_data = {
+        .keymap         = mop500_ske_keymap,
+        .keymap_size    = ARRAY_SIZE(mop500_ske_keymap),
+};
+
+
+
+static struct ske_keypad_platform_data mop500_ske_keypad_data = {
+	.init           = ske_kp_init,
+	.exit           = ske_kp_exit,
+	.gpio_input_pins = ske_kp_rows,
+	.gpio_output_pins = ske_kp_cols,
+	.keymap_data    = &mop500_ske_keymap_data,
+	.no_autorepeat  = true,
+	.krow           = SKE_KPD_MAX_ROWS,     /* 8x8 matrix */
+	.kcol           = SKE_KPD_MAX_COLS,
+	.debounce_ms    = 20,                   /* in timeout period */
+	.switch_delay	= 200,			/* in jiffies */
+};
+
+#endif
+
+
 
 /*
  * TC35892
@@ -909,6 +1081,11 @@ static void __init mop500_init_machine(void)
 	mop500_uart_init(parent);
 	mop500_wlan_init();
 
+#ifdef CONFIG_KEYBOARD_NOMADIK_SKE
+	db8500_add_ske_keypad(parent, &mop500_ske_keypad_data,
+			sizeof(mop500_ske_keypad_data));
+#endif
+
 	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
 
 	i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
@@ -987,6 +1164,11 @@ static void __init hrefv60_init_machine(void)
 	hrefv60_sdi_init(parent);
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
+
+#ifdef CONFIG_KEYBOARD_NOMADIK_SKE
+	db8500_add_ske_keypad(parent, &mop500_ske_keypad_data,
+				sizeof(mop500_ske_keypad_data));
+#endif
 
 	platform_device_register(&ab8500_device);
 
