@@ -34,6 +34,7 @@
 #include <mach/setup.h>
 
 #include "pins-db5500.h"
+#include "pins.h"
 #include "devices-db5500.h"
 #include "board-u5500.h"
 #include "board-u5500-bm.h"
@@ -208,6 +209,127 @@ static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
 		I2C_BOARD_INFO("av8100", 0x70),
 		.platform_data = &av8100_plat_data,
 	},
+};
+
+/*
+ * Keypad
+ */
+
+#define ROW_PIN_I0      128
+#define ROW_PIN_I1      130
+#define ROW_PIN_I2      132
+#define ROW_PIN_I3      134
+#define ROW_PIN_I4      136
+#define ROW_PIN_I5      138
+#define ROW_PIN_I6      140
+#define ROW_PIN_I7      142
+#define COL_PIN_O0      129
+#define COL_PIN_O1      131
+#define COL_PIN_O2      133
+#define COL_PIN_O3      135
+#define COL_PIN_O4      137
+#define COL_PIN_O5      139
+#define COL_PIN_O6      141
+#define COL_PIN_O7      143
+
+static int db5500_kp_rows[] = {
+	ROW_PIN_I0, ROW_PIN_I1, ROW_PIN_I2, ROW_PIN_I3,
+	ROW_PIN_I4, ROW_PIN_I5, ROW_PIN_I6, ROW_PIN_I7,
+};
+
+static int db5500_kp_cols[] = {
+	COL_PIN_O0, COL_PIN_O1, COL_PIN_O2, COL_PIN_O3,
+	COL_PIN_O4, COL_PIN_O5, COL_PIN_O6, COL_PIN_O7,
+};
+
+static bool db5500_config;
+static int db5500_set_gpio_row(int gpio)
+{
+	int ret = -1;
+
+	if (db5500_config)
+		return ret;
+
+	ret = gpio_request(gpio, "db5500_kpd");
+	if (ret < 0) {
+		pr_err("db5500_set_gpio_row: gpio request failed\n");
+		return ret;
+	}
+
+	ret = gpio_direction_output(gpio, 1);
+	if (ret < 0) {
+		pr_err("db5500_set_gpio_row: gpio direction failed\n");
+		gpio_free(gpio);
+	}
+
+	return ret;
+}
+
+static int db5500_kp_init(void)
+{
+	struct ux500_pins *pins;
+	int ret, i;
+
+	pins = ux500_pins_get("db5500_kp");
+	if (pins)
+		ux500_pins_enable(pins);
+
+	for (i = 0; i < KEYPAD_MAX_ROWS - 1; i++) {
+		ret = db5500_set_gpio_row(db5500_kp_rows[i]);
+		if (ret < 0) {
+			pr_err("db5500_kp_init: failed init\n");
+			ux500_pins_disable(pins);
+			return ret;
+		}
+	}
+
+	BUG_ON(db5500_config);
+
+	db5500_config = true;
+
+	return 0;
+}
+
+static int db5500_kp_exit(void)
+{
+	struct ux500_pins *pins;
+
+	pins = ux500_pins_get("db5500_kp");
+	if (pins)
+		ux500_pins_disable(pins);
+
+	return 0;
+}
+
+static const unsigned int u5500_keymap[] = {
+	KEY(4, 0, KEY_CAMERA), /* Camera2 */
+	KEY(4, 1, KEY_CAMERA_FOCUS), /* Camera1 */
+	KEY(4, 2, KEY_MENU),
+	KEY(4, 3, KEY_BACK),
+	KEY(5, 2, KEY_SEND),
+	KEY(5, 3, KEY_HOME),
+#ifndef CONFIG_INPUT_AB8500_PONKEY
+	/* AB5500 ONSWa is also hooked up to this key */
+	KEY(8, 0, KEY_END),
+#endif
+	KEY(8, 1, KEY_VOLUMEUP),
+	KEY(8, 2, KEY_VOLUMEDOWN),
+};
+
+static struct matrix_keymap_data u5500_keymap_data = {
+	.keymap		= u5500_keymap,
+	.keymap_size	= ARRAY_SIZE(u5500_keymap),
+};
+
+static struct db5500_keypad_platform_data u5500_keypad_board = {
+	.init           = db5500_kp_init,
+	.exit           = db5500_kp_exit,
+	.gpio_input_pins = db5500_kp_rows,
+	.gpio_output_pins = db5500_kp_cols,
+	.keymap_data	= &u5500_keymap_data,
+	.no_autorepeat	= true,
+	.debounce_ms	= 40, /* milliseconds */
+	.switch_delay	= 200, /* in jiffies */
 };
 
 /*
