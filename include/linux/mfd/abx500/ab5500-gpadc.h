@@ -34,6 +34,7 @@
 /* VBAT with TX off only min trigger */
 #define MAIN_BAT_V_TRIG_MIN		14
 #define GPADC0_V		15
+#define VIBRA_KELVIN		16
 
 /*
  * Frequency of auto adc conversion

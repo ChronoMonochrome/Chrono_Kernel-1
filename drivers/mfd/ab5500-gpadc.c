@@ -99,6 +99,7 @@
 #define MIN_INDEX			0x02
 #define MAX_INDEX			0x03
 #define CTRL_INDEX			0x01
+#define KELVIN_SCALE_VOL45		0x00
 
 /* GPADC constants from AB5500 spec  */
 #define GPADC0_MIN		0
@@ -129,6 +130,8 @@
 #define USBID_MAX		1800
 #define KELVIN_MIN		0
 #define KELVIN_MAX		4500
+#define VIBRA_MIN		0
+#define VIBRA_MAX		4500
 
 /* This is used for calibration */
 #define ADC_RESOLUTION			1023
@@ -253,7 +256,9 @@ struct adc_data adc_tab[] = {
 	ADC_DATA(ACC_DETECT3, 0x19, ACCDET3_MIN, ACCDET3_MAX, 0),
 	ADC_DATA(MAIN_BAT_V_TRIG_MIN, 0x0C, VBAT_MIN, VBAT_MAX, 0),
 	ADC_DATA(MAIN_BAT_V_TXON_TRIG_MIN, 0x0C, VBAT_MIN, VBAT_MAX, 0),
+	ADC_DATA(VIBRA_KELVIN, 0x16, VIBRA_MIN, VIBRA_MAX, 0),
 };
+
 /**
  * ab5500_gpadc_get() - returns a reference to the primary AB5500 GPADC
  * (i.e. the first GPADC in the instance list)
@@ -279,6 +284,7 @@ static int ab5500_gpadc_ad_to_voltage(struct ab5500_gpadc *gpadc,
 	int res;
 
 	switch (in) {
+	case VIBRA_KELVIN:
 	case GPADC0_V:
 	case PCB_TEMP:
 	case BTEMP_BALL:
@@ -401,6 +407,15 @@ int ab5500_gpadc_convert(struct ab5500_gpadc *gpadc, u8 input)
 				MUX_SCALE_ACCDET3_MASK, ACCDET3_SCALE_VOL27);
 		if (ret < 0) {
 			dev_err(gpadc->dev, "gpadc: fail to set accdet3\n");
+			goto out;
+		}
+		break;
+	case VIBRA_KELVIN:
+		ret = abx500_set_register_interruptible(gpadc->dev,
+				AB5500_BANK_ADC, AB5500_GPADC_KELVIN_CTRL,
+				KELVIN_SCALE_VOL45);
+		if (ret < 0) {
+			dev_err(gpadc->dev, "gpadc: fail to set kelv scale\n");
 			goto out;
 		}
 		break;
