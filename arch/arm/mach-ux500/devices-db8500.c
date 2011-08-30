@@ -21,7 +21,7 @@
 #include <video/mcde.h>
 #include <mach/prcmu-fw-api.h>
 #include <mach/ste-dma40-db8500.h>
-#include <pm/pm.h>
+#include "pm/pm.h"
 
 #include "pins-db8500.h"
 
