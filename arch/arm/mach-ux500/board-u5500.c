@@ -11,6 +11,7 @@
 #include <linux/gpio/nomadik.h>
 #include <linux/i2c.h>
 #include <linux/mfd/abx500/ab5500.h>
+#include <linux/ab5500-vibra.h>
 #include <linux/amba/pl022.h>
 #include <linux/delay.h>
 #include <linux/led-lm3530.h>
@@ -147,6 +148,20 @@ static struct ab5500_ponkey_platform_data ab5500_ponkey_data = {
 	 * to 10sec, 5sec and 0sec(disabled)
 	 */
 	.shutdown_secs = 10,
+};
+
+/* ab5500-vibra */
+static struct ab5500_vibra_platform_data ab5500_vibra_data = {
+	.type           = AB5500_VIB_ROTARY,
+	.voltage        = AB5500_VIB_VOLT_MIN,
+	/*
+	 * EOL voltage in millivolts. By default, it is
+	 * disabled. Set threshold volatge to enable.
+	 */
+	.eol_voltage	= 0,
+	.res_freq       = AB5500_VIB_RFREQ_150HZ,
+	.magnitude      = 0x7F,
+	.pulse          = AB5500_VIB_PULSE_130ms,
 };
 
 /*
@@ -486,6 +501,8 @@ static struct ab5500_platform_data ab5500_plf_data = {
 #endif
 	.dev_data[AB5500_DEVID_LEDS] = &ab5500_hvleds_data,
 	.dev_data_sz[AB5500_DEVID_LEDS] = sizeof(ab5500_hvleds_data),
+	.dev_data[AB5500_DEVID_VIBRATOR] = &ab5500_vibra_data,
+	.dev_data_sz[AB5500_DEVID_VIBRATOR] = sizeof(ab5500_vibra_data),
 	.init_settings = &ab5500_init_settings,
 	.init_settings_sz = ARRAY_SIZE(ab5500_init_settings),
 #if defined(CONFIG_AB5500_BM)
