@@ -519,7 +519,7 @@ u8 read_one_l2msg_audio(struct shrm_dev *shrm,
 						fifo->availablesize);
 		dev_info(shrm->dev, "end_fifo= %x\n",
 						fifo->end_addr_fifo);
-		dev_info(shrm->dev, "Received msgtype is &d\n", msgtype);
+		dev_info(shrm->dev, "Received msgtype is %d\n", msgtype);
 		/* Fatal ERROR - should never happens */
 		dev_crit(shrm->dev, "Fatal ERROR - should never happen\n");
 		BUG();
