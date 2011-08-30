@@ -103,7 +103,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-struct mcde_display_generic_platform_data u5500_generic_display0_pdata = {
+struct mcde_display_generic_platform_data generic_display0_pdata = {
 	.reset_gpio = 226,
 	.reset_delay = 10,
 	.sleep_out_delay = 140,
@@ -114,7 +114,7 @@ struct mcde_display_generic_platform_data u5500_generic_display0_pdata = {
 #endif
 };
 
-struct mcde_display_device u5500_generic_display0 = {
+struct mcde_display_device generic_display0 = {
 	.name = "mcde_disp_generic",
 	.id = PRIMARY_DISPLAY_ID,
 	.port = &port0,
@@ -136,7 +136,7 @@ struct mcde_display_device u5500_generic_display0 = {
 	.rotbuf1 = U5500_ESRAM_BASE + 0x20000 * 2,
 	.rotbuf2 = U5500_ESRAM_BASE + 0x20000 * 2 + 0x10000,
 	.dev = {
-		.platform_data = &u5500_generic_display0_pdata,
+		.platform_data = &generic_display0_pdata,
 	},
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
@@ -241,6 +241,11 @@ static struct mcde_port port2 = {
 };
 
 struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
+	.reset_gpio = 0,
+	.reset_delay = 1,
+	.regulator_id = NULL,
+	.cvbs_regulator_id = "v-av8100-AV-switch",
+	.ddb_id = 1,
 	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
@@ -355,19 +360,23 @@ static int display_postregistered_callback(struct notifier_block *nb,
 				"Failed to create fb for display %s\n",
 						ddev->name);
 			goto display_postregistered_callback_err;
-		} else
+		} else {
 			dev_info(&ddev->dev, "Framebuffer created (%s)\n",
 						ddev->name);
+		}
+
 #ifdef CONFIG_DISPDEV
 		mfb = to_mcde_fb(fbi);
 		/* Create a dispdev overlay for this display */
-		if (dispdev_create(ddev, true, mfb->ovlys[0]) < 0)
+		if (dispdev_create(ddev, true, mfb->ovlys[0]) < 0) {
 			dev_warn(&ddev->dev,
 				"Failed to create disp for display %s\n",
 						ddev->name);
-		else
+			goto display_postregistered_callback_err;
+		} else {
 			dev_info(&ddev->dev, "Disp dev created for (%s)\n",
 						ddev->name);
+		}
 #endif
 	}
 
@@ -476,7 +485,7 @@ static struct notifier_block framebuffer_nb = {
 	.notifier_call = framebuffer_postregistered_callback,
 };
 
-int __init init_display_devices_u5500(void)
+int __init init_display_devices(void)
 {
 	int ret = 0;
 
@@ -541,5 +550,5 @@ struct mcde_display_device *mcde_get_main_display(void)
 }
 EXPORT_SYMBOL(mcde_get_main_display);
 
-module_init(init_display_devices_u5500);
+module_init(init_display_devices);
 #endif
