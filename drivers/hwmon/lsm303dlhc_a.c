@@ -510,7 +510,7 @@ static int __devinit lsm303dlhc_a_probe(struct i2c_client *client,
 	adata->device_status = DEVICE_OFF;
 	dev_set_name(&client->dev, adata->pdata.name_a);
 
-	adata->regulator = regulator_get(&client->dev, "v-accel");
+	adata->regulator = regulator_get(&client->dev, "vdd");
 	if (IS_ERR(adata->regulator)) {
 		dev_err(&client->dev, "failed to get regulator\n");
 		ret = PTR_ERR(adata->regulator);
