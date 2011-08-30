@@ -597,4 +597,14 @@ config INPUT_XEN_KBDDEV_FRONTEND
 	  To compile this driver as a module, choose M here: the
 	  module will be called xen-kbdfront.
 
+config INPUT_STE_FF_VIBRA
+	tristate "ST-Ericsson Force Feedback Vibrator"
+	depends on STE_AUDIO_IO_DEV
+	select INPUT_FF_MEMLESS
+	help
+	  This option enables support for ST-Ericsson's Vibrator which
+	  registers as an input force feedback driver.
+
+	  To compile this driver as a module, choose M here. The module will
+	  be called ste_ff_vibra.
 endif
