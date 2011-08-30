@@ -24,6 +24,7 @@
 
 #include "flask.h"
 #include "av_permissions.h"
+#include "security.h"
 
 struct nlmsg_perm {
 	u16	nlmsg_type;
