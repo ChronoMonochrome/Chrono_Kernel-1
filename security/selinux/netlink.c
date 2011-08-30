@@ -22,6 +22,8 @@
 #include <linux/selinux_netlink.h>
 #include <net/net_namespace.h>
 
+#include "security.h"
+
 static struct sock *selnl;
 
 static int selnl_msglen(int msgtype)
