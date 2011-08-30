@@ -388,7 +388,7 @@ static int dispdev_queue_buffer(struct dispdev *dd,
 		info.paddr = mem_chunk.paddr;
 		mcde_dss_apply_overlay(dd->ovly, &info);
 		mcde_dss_update_overlay(dd->ovly, false);
-	} else {
+	} else if (buffer->display_update) {
 		dd->buffers_need_update = true;
 	}
 
