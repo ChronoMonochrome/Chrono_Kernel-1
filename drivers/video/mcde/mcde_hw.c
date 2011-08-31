@@ -1129,21 +1129,6 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			else if (port->ifc == DSI_CMD_MODE && port->link == 2)
 				mcde_wfld(MCDE_CR, DSICMD2_EN_V1, true);
 		}
-
-		if (chnl->fifo == MCDE_FIFO_C0)
-			mcde_wreg(MCDE_CTRLC0, MCDE_CTRLC0_FIFOWTRMRK(
-					get_output_fifo_size(MCDE_FIFO_C0)));
-		else if (chnl->fifo == MCDE_FIFO_C1)
-			mcde_wreg(MCDE_CTRLC1, MCDE_CTRLC1_FIFOWTRMRK(
-					get_output_fifo_size(MCDE_FIFO_C1)));
-		else if (port->update_auto_trig &&
-					(port->sync_src == MCDE_SYNCSRC_TE0))
-			mcde_wreg(MCDE_CTRLC0, MCDE_CTRLC0_FIFOWTRMRK(
-					get_output_fifo_size(MCDE_FIFO_C0)));
-		else if (port->update_auto_trig &&
-					(port->sync_src == MCDE_SYNCSRC_TE1))
-			mcde_wreg(MCDE_CTRLC1, MCDE_CTRLC1_FIFOWTRMRK(
-					get_output_fifo_size(MCDE_FIFO_C1)));
 	} else if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
 			hardware_version == MCDE_CHIP_VERSION_4_0_4) {
 		switch (chnl->fifo) {
@@ -1155,15 +1140,11 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 				mcde_wfld(MCDE_CTRLA, FORMTYPE,
 						MCDE_CTRLA_FORMTYPE_DPITV);
 				mcde_wfld(MCDE_CTRLA, FORMID, port->link);
-				mcde_wfld(MCDE_CTRLA, FIFOWTRMRK,
-					get_output_fifo_size(MCDE_FIFO_A));
 			} else if (port->type == MCDE_PORTTYPE_DSI) {
 				mcde_wfld(MCDE_CTRLA, FORMTYPE,
 						MCDE_CTRLA_FORMTYPE_DSI);
 				mcde_wfld(MCDE_CTRLA, FORMID,
 							get_dsi_formid(port));
-				mcde_wfld(MCDE_CTRLA, FIFOWTRMRK,
-					get_output_fifo_size(MCDE_FIFO_A));
 			}
 			break;
 		case MCDE_FIFO_B:
@@ -1174,15 +1155,11 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 				mcde_wfld(MCDE_CTRLB, FORMTYPE,
 						MCDE_CTRLB_FORMTYPE_DPITV);
 				mcde_wfld(MCDE_CTRLB, FORMID, port->link);
-				mcde_wfld(MCDE_CTRLB, FIFOWTRMRK,
-					get_output_fifo_size(MCDE_FIFO_B));
 			} else if (port->type == MCDE_PORTTYPE_DSI) {
 				mcde_wfld(MCDE_CTRLB, FORMTYPE,
 						MCDE_CTRLB_FORMTYPE_DSI);
 				mcde_wfld(MCDE_CTRLB, FORMID,
 							get_dsi_formid(port));
-				mcde_wfld(MCDE_CTRLB, FIFOWTRMRK,
-					get_output_fifo_size(MCDE_FIFO_B));
 			}
 
 			break;
@@ -1195,8 +1172,6 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			mcde_wfld(MCDE_CTRLC0, FORMTYPE,
 						MCDE_CTRLC0_FORMTYPE_DSI);
 			mcde_wfld(MCDE_CTRLC0, FORMID, get_dsi_formid(port));
-			mcde_wfld(MCDE_CTRLC0, FIFOWTRMRK,
-					get_output_fifo_size(MCDE_FIFO_C0));
 			break;
 		case MCDE_FIFO_C1:
 			mcde_wreg(MCDE_CHNL0MUXING_V2 + chnl->id *
@@ -1207,8 +1182,6 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			mcde_wfld(MCDE_CTRLC1, FORMTYPE,
 						MCDE_CTRLC1_FORMTYPE_DSI);
 			mcde_wfld(MCDE_CTRLC1, FORMID, get_dsi_formid(port));
-			mcde_wfld(MCDE_CTRLC1, FIFOWTRMRK,
-					get_output_fifo_size(MCDE_FIFO_C1));
 			break;
 		default:
 			return -EINVAL;
@@ -1230,8 +1203,6 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			} else if (port->type == MCDE_PORTTYPE_DPI) {
 				mcde_wfld(MCDE_CR, DPI_EN_V3, true);
 			}
-			mcde_wfld(MCDE_CTRLA, FIFOWTRMRK,
-				get_output_fifo_size(MCDE_FIFO_A));
 			break;
 		case MCDE_FIFO_B:
 			if (port->type != MCDE_PORTTYPE_DSI)
@@ -1245,9 +1216,6 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 				return -EINVAL;
 
 			mcde_wfld(MCDE_CR, DSI1_EN_V3, true);
-			mcde_wfld(MCDE_CTRLB, FIFOWTRMRK,
-				get_output_fifo_size(MCDE_FIFO_B));
-
 			break;
 		default:
 			return -EINVAL;
@@ -1901,6 +1869,35 @@ static void work_sleep_function(struct work_struct *ptr)
 
 /* TODO get from register */
 #define MCDE_CLK_FREQ_MHZ 160
+static u32 get_pkt_div(u32 disp_ppl,
+		struct mcde_port *port,
+		enum mcde_fifo fifo)
+{
+	/*
+	 * The lines can be split in several packets only on DSI CMD mode.
+	 * In DSI VIDEO mode, 1 line = 1 packet.
+	 * DPI is like DSI VIDEO (watermark = 1 line).
+	 * DPI waits for fifo ready only for the first line of the first frame.
+	 * If line is wider than fifo size, one can set watermark
+	 * at fifo size, or set it to line size as watermark will be
+	 * saturated at fifo size inside MCDE.
+	 */
+	switch (port->type) {
+	case MCDE_PORTTYPE_DSI:
+		if (port->ifc == DSI_CMD_MODE)
+			/* Equivalent of ceil(disp_ppl/fifo_size) */
+			return (disp_ppl - 1) / get_output_fifo_size(fifo) + 1;
+		else
+			return 1;
+		break;
+	case MCDE_PORTTYPE_DPI:
+		return 1;
+		break;
+	default:
+		break;
+	}
+	return 1;
+}
 
 void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 				struct mcde_port *port, enum mcde_fifo fifo,
@@ -1909,8 +1906,36 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 	u8 idx = chnl_id;
 	u32 out_synch_src = MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
 	u32 src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
+	u32 fifo_wtrmrk = 0;
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+
+	/*
+	 * Select appropriate fifo watermark.
+	 * Watermark will be saturated at fifo size inside MCDE.
+	 */
+	fifo_wtrmrk = video_mode->xres /
+		get_pkt_div(video_mode->xres, port, fifo);
+
+	dev_vdbg(&mcde_dev->dev, "%s fifo_watermark=%d for chnl_id=%d\n",
+		__func__, fifo_wtrmrk, chnl_id);
+
+	switch (chnl_id) {
+	case MCDE_CHNL_A:
+		mcde_wfld(MCDE_CTRLA, FIFOWTRMRK, fifo_wtrmrk);
+		break;
+	case MCDE_CHNL_B:
+		mcde_wfld(MCDE_CTRLB, FIFOWTRMRK, fifo_wtrmrk);
+		break;
+	case MCDE_CHNL_C0:
+		mcde_wfld(MCDE_CTRLC0, FIFOWTRMRK, fifo_wtrmrk);
+		break;
+	case MCDE_CHNL_C1:
+		mcde_wfld(MCDE_CTRLC1, FIFOWTRMRK, fifo_wtrmrk);
+		break;
+	default:
+		break;
+	}
 
 	/* Channel */
 	if (port->update_auto_trig && port->type == MCDE_PORTTYPE_DSI) {
@@ -2011,13 +2036,7 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		screen_ppl = video_mode->xres;
 		screen_lpf = video_mode->yres;
 
-		if (screen_ppl == SCREEN_PPL_HIGH) {
-			pkt_div = (screen_ppl - 1) /
-					get_output_fifo_size(fifo) + 1;
-		} else {
-			pkt_div = screen_ppl /
-					(get_output_fifo_size(fifo) * 2) + 1;
-		}
+		pkt_div = get_pkt_div(screen_ppl, port, fifo);
 
 		if (video_mode->interlaced)
 			screen_lpf /= 2;
