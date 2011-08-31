@@ -9,6 +9,16 @@ menuconfig SND_SOC_UX500
 	help
 		Say Y if you want to add support for the Ux500 platform.
 
+choice
+	prompt "Platform 5500/8500"
+	depends on SND_SOC_UX500
+	default SND_SOC_U8500
+	config SND_SOC_U8500
+	bool "Platform - U8500"
+	config SND_SOC_U5500
+	bool "Platform - U5500"
+endchoice
+
 config SND_SOC_UX500_AB3550
 	bool "Codec - AB3550"
 	depends on SND_SOC_UX500 && (UX500_SOC_DB8500 || UX500_SOC_DB5500) && AB3550_CORE
