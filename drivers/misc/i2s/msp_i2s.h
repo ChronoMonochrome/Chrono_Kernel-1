@@ -18,7 +18,7 @@
 #ifndef STM_MSP_HEADER
 #define STM_MSP_HEADER
 
-#define MSP_DR 0x00
+#define MSP_DR 		0x00
 #define MSP_GCR		0x04
 #define MSP_TCF		0x08
 #define MSP_RCF		0x0c
@@ -27,22 +27,22 @@
 #define MSP_DMACR	0x18
 
 #define MSP_IMSC	0x20
-#define MSP_RI 0x24
-#define MSP_MIS 0x28
+#define MSP_RIS		0x24
+#define MSP_MIS 	0x28
 #define MSP_ICR		0x2c
 #define MSP_MCR		0x30
-#define MSP_RCV 0x34
-#define MSP_RCM 0x38
+#define MSP_RCV 	0x34
+#define MSP_RCM 	0x38
 
 #define MSP_TCE0	0x40
 #define MSP_TCE1	0x44
-#define MSP_TCE2 0x48
-#define MSP_TCE3 0x4c
+#define MSP_TCE2 	0x48
+#define MSP_TCE3 	0x4c
 
 #define MSP_RCE0	0x60
 #define MSP_RCE1	0x64
 #define MSP_RCE2	0x68
-#define MSP_RCE3 0x6c
+#define MSP_RCE3 	0x6c
 
 #define MSP_ITCR	0x80
 #define MSP_ITIP	0x84
@@ -51,13 +51,13 @@
 
 #define MSP_PID0	0xfe0
 #define MSP_PID1	0xfe4
-#define MSP_PID2 0xfe8
+#define MSP_PID2 	0xfe8
 #define MSP_PID3	0xfec
 
 #define MSP_CID0	0xff0
-#define MSP_CID1 0xff4
+#define MSP_CID1 	0xff4
 #define MSP_CID2	0xff8
-#define MSP_CID3 0xffc
+#define MSP_CID3 	0xffc
 
 
 /* Single or dual phase mode */
@@ -72,8 +72,8 @@ enum
 -----------------------------------*/
 enum
 {
-	    MSP_SxHIFTER_IDLE   = 0,
-	    MSP_SHIFTER_WORKING = 1
+        MSP_SxHIFTER_IDLE   = 0,
+        MSP_SHIFTER_WORKING = 1
 };
 
 
@@ -121,10 +121,10 @@ enum
 ---------------------------------------*/
 enum
 {
-	MSP_DELAY_0 = 0,
-	MSP_DELAY_1 = 1,
-	MSP_DELAY_2 = 2,
-	MSP_DELAY_3 = 3
+	MSP_DELAY_0 			= 0,
+	MSP_DELAY_1 			= 1,
+	MSP_DELAY_2 			= 2,
+	MSP_DELAY_3 			= 3
 };
 
 
@@ -139,14 +139,14 @@ enum
 /* Protocol dependant parameters list */
 struct msp_protocol_desc
 {
-	    u32 phase_mode;
-	    u32 frame_len_1;
-	    u32 frame_len_2;
-	    u32 element_len_1;
-	    u32 element_len_2;
-	    u32 data_delay;
-	    u32 tx_clock_edge;
-	    u32 rx_clock_edge;
+        u32 phase_mode;
+        u32 frame_len_1;
+        u32 frame_len_2;
+        u32 element_len_1;
+        u32 element_len_2;
+        u32 data_delay;
+        u32 tx_clock_edge;
+        u32 rx_clock_edge;
 };
 #define RX_ENABLE_MASK         0x00000001
 #define RX_FIFO_ENABLE_MASK    0x00000002

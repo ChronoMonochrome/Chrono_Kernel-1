@@ -274,7 +274,7 @@ int i2s_add_device(struct i2s_device *i2s)
 	else
 		dev_dbg(dev, "registered child %s\n", dev_name(&i2s->dev));
 
-	  done:
+      done:
 	mutex_unlock(&i2s_add_lock);
 	return status;
 }
@@ -449,7 +449,7 @@ static int i2s_register_controller(struct i2s_controller *cont)
 
 	dev_dbg(&cont->dev, "controller [%s] registered\n", cont->name);
 	scan_boardinfo(cont);
-	  out_unlock:
+      out_unlock:
 	mutex_unlock(&core_lock);
 	return res;
 }
@@ -612,9 +612,9 @@ static int __init i2s_init(void)
 		goto err1;
 	return 0;
 
-	  err1:
+      err1:
 	bus_unregister(&i2s_bus_type);
-	  err0:
+      err0:
 	return status;
 }
 
