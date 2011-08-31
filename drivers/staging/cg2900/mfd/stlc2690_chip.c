@@ -1294,22 +1294,27 @@ static struct mfd_cell stlc2690_devs[] = {
 	{
 		.name = "cg2900-btcmd",
 		.platform_data = &btcmd_data,
+		.pdata_size = sizeof(btcmd_data),
 	},
 	{
 		.name = "cg2900-btacl",
 		.platform_data = &btacl_data,
+		.pdata_size = sizeof(btacl_data),
 	},
 	{
 		.name = "cg2900-btevt",
 		.platform_data = &btevt_data,
+		.pdata_size = sizeof(btevt_data),
 	},
 	{
 		.name = "cg2900-hcilogger",
 		.platform_data = &hci_logger_data,
+		.pdata_size = sizeof(hci_logger_data),
 	},
 	{
 		.name = "cg2900-core",
 		.platform_data = &core_data,
+		.pdata_size = sizeof(core_data),
 	},
 };
 
@@ -1354,26 +1359,31 @@ static struct mfd_cell stlc2690_char_devs[] = {
 		.name = "cg2900-chardev",
 		.id = 0,
 		.platform_data = &char_btcmd_data,
+		.pdata_size = sizeof(char_btcmd_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 1,
 		.platform_data = &char_btacl_data,
+		.pdata_size = sizeof(char_btacl_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 2,
 		.platform_data = &char_btevt_data,
+		.pdata_size = sizeof(char_btevt_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 7,
 		.platform_data = &char_hci_logger_data,
+		.pdata_size = sizeof(char_hci_logger_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 8,
 		.platform_data = &char_core_data,
+		.pdata_size = sizeof(char_core_data),
 	},
 };
 

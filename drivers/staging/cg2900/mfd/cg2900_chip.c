@@ -2943,46 +2943,57 @@ static struct mfd_cell cg2900_devs[] = {
 	{
 		.name = "cg2900-btcmd",
 		.platform_data = &btcmd_data,
+		.pdata_size = sizeof(btcmd_data),
 	},
 	{
 		.name = "cg2900-btacl",
 		.platform_data = &btacl_data,
+		.pdata_size = sizeof(btacl_data),
 	},
 	{
 		.name = "cg2900-btevt",
 		.platform_data = &btevt_data,
+		.pdata_size = sizeof(btevt_data),
 	},
 	{
 		.name = "cg2900-fm",
 		.platform_data = &fm_data,
+		.pdata_size = sizeof(fm_data),
 	},
 	{
 		.name = "cg2900-gnss",
 		.platform_data = &gnss_data,
+		.pdata_size = sizeof(gnss_data),
 	},
 	{
 		.name = "cg2900-debug",
 		.platform_data = &debug_data,
+		.pdata_size = sizeof(debug_data),
 	},
 	{
 		.name = "cg2900-stetools",
 		.platform_data = &ste_tools_data,
+		.pdata_size = sizeof(ste_tools_data),
 	},
 	{
 		.name = "cg2900-hcilogger",
 		.platform_data = &hci_logger_data,
+		.pdata_size = sizeof(hci_logger_data),
 	},
 	{
 		.name = "cg2900-core",
 		.platform_data = &core_data,
+		.pdata_size = sizeof(core_data),
 	},
 	{
 		.name = "cg2900-audiobt",
 		.platform_data = &audio_bt_data,
+		.pdata_size = sizeof(audio_bt_data),
 	},
 	{
 		.name = "cg2900-audiofm",
 		.platform_data = &audio_fm_data,
+		.pdata_size = sizeof(audio_fm_data),
 	},
 };
 
@@ -3065,56 +3076,67 @@ static struct mfd_cell cg2900_char_devs[] = {
 		.name = "cg2900-chardev",
 		.id = 0,
 		.platform_data = &char_btcmd_data,
+		.pdata_size = sizeof(char_btcmd_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 1,
 		.platform_data = &char_btacl_data,
+		.pdata_size = sizeof(char_btacl_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 2,
 		.platform_data = &char_btevt_data,
+		.pdata_size = sizeof(char_btevt_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 3,
 		.platform_data = &char_fm_data,
+		.pdata_size = sizeof(char_fm_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 4,
 		.platform_data = &char_gnss_data,
+		.pdata_size = sizeof(char_gnss_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 5,
 		.platform_data = &char_debug_data,
+		.pdata_size = sizeof(char_debug_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 6,
 		.platform_data = &char_ste_tools_data,
+		.pdata_size = sizeof(char_ste_tools_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 7,
 		.platform_data = &char_hci_logger_data,
+		.pdata_size = sizeof(char_hci_logger_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 8,
 		.platform_data = &char_core_data,
+		.pdata_size = sizeof(char_core_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 9,
 		.platform_data = &char_audio_bt_data,
+		.pdata_size = sizeof(char_audio_bt_data),
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 10,
 		.platform_data = &char_audio_fm_data,
+		.pdata_size = sizeof(char_audio_fm_data),
 	},
 };
 
