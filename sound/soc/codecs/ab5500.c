@@ -1107,6 +1107,11 @@ static void power_for_playback(enum enum_power onoff, int ifsel)
 			      widget_if0_dld_l : widget_if1_dld_l);
 	power_widget_unlocked(onoff, ifsel == 0 ?
 			      widget_if0_dld_r : widget_if1_dld_r);
+
+	mask_set_reg(SPKR1, SPKRx_PWR_MASK, 0x03 << SPKRx_PWR_SHIFT);
+	mask_set_reg(SPKR1, SPKRx_GAIN_MASK, 0x12 << SPKRx_GAIN_SHIFT);
+	mask_set_reg(RX3_DPGA, RXx_DPGA_MASK, 0x3F << RXx_DPGA_SHIFT);
+
 	mutex_unlock(&ab5500_pm_mutex);
 }
 
@@ -1447,7 +1452,7 @@ static int ab5500_codec_write_reg(struct snd_soc_codec *codec,
 		 */
 
 		/* changed between the two amplifier modes */
-		if (hweight8(diff & SPKR1_MODE_MASK) == 2) {
+		if (count_ones(diff & SPKR1_MODE_MASK) == 2) {
 			set_reg(reg, value);
 			break;
 		}
@@ -1526,6 +1531,12 @@ static inline void init_playback_route(void)
 	update_widgets_link(LINK, widget_dac2, widget_auxo2,
 			    AUXO2_ADDER, DAC2_TO_X_MASK, 0xff);
 
+	/* if1_dld_l -> rx3 -> dac3 -> spkr1 */
+	update_widgets_link(LINK, widget_if1_dld_l, widget_rx3, RX3,
+				RXx_DATA_MASK, 0x05 << RXx_DATA_SHIFT);
+	update_widgets_link(LINK, widget_rx3, widget_dac3, 0, 0, 0);
+	update_widgets_link(LINK, widget_dac3, widget_spkr1, SPKR1_ADDER,
+				DAC3_TO_X_MASK, 0xff);
 }
 
 static inline void init_capture_route(void)

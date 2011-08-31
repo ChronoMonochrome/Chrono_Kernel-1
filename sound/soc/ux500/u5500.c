@@ -39,7 +39,6 @@ static struct platform_device ux500_pcm = {
 
 /* Define the whole U5500 soundcard, linking platform to the codec-drivers  */
 struct snd_soc_dai_link u5500_dai_links[] = {
-#ifdef CONFIG_SND_SOC_UX500_AB5500
 	{
 		.name = "ab5500_0",
 		.stream_name = "ab5500_0",
@@ -55,7 +54,22 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 				.hw_params = ux500_ab5500_hw_params,
 			}
 		}
-#endif
+	},
+	{
+		.name = "ab5500_1",
+		.stream_name = "ab5500_1",
+		.cpu_dai_name = "i2s.1",
+		.codec_dai_name = "ab5500-codec-dai.1",
+		.platform_name = "ux500-pcm.0",
+		.codec_name = "ab5500-codec.0",
+		.init = NULL,
+		.ops = (struct snd_soc_ops[]) {
+			{
+				.startup = ux500_ab5500_startup,
+				.shutdown = ux500_ab5500_shutdown,
+				.hw_params = ux500_ab5500_hw_params,
+			}
+		}
 	}
 };
 
