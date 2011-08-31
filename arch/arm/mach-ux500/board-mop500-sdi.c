@@ -68,6 +68,8 @@ struct stedma40_chan_cfg mop500_sdi0_dma_cfg_rx = {
 	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
+	.use_fixed_channel = true,
+	.phy_channel = 0,
 };
 
 static struct stedma40_chan_cfg mop500_sdi0_dma_cfg_tx = {
@@ -77,6 +79,8 @@ static struct stedma40_chan_cfg mop500_sdi0_dma_cfg_tx = {
 	.dst_dev_type = DB8500_DMA_DEV29_SD_MM0_TX,
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
+	.use_fixed_channel = true,
+	.phy_channel = 0,
 };
 #endif
 

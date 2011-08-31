@@ -165,6 +165,9 @@ static struct stedma40_chan_cfg msp2_dma_tx = {
 	.src_info.psize = STEDMA40_PSIZE_LOG_4,
 	.dst_info.psize = STEDMA40_PSIZE_LOG_4,
 
+	.use_fixed_channel = true,
+	.phy_channel = 1,
+
 	/* data_width is set during configuration */
 };
 
