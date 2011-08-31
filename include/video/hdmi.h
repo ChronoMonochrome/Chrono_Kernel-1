@@ -119,44 +119,44 @@ enum hdmi_hdcp_encr_type {
 };
 
 struct plug_detect {
-	u8 hdmi_detect_enable;
-	u8 on_time;
-	u8 hdmi_off_time;
+	__u8 hdmi_detect_enable;
+	__u8 on_time;
+	__u8 hdmi_off_time;
 };
 
 struct edid_read {
-	u8 address;
-	u8 block_nr;
-	u8 data_length;
-	u8 data[HDMI_EDID_DATA_SIZE];
+	__u8 address;
+	__u8 block_nr;
+	__u8 data_length;
+	__u8 data[HDMI_EDID_DATA_SIZE];
 };
 
 struct cec_rw  {
-	u8 src;
-	u8 dest;
-	u8 length;
-	u8 data[HDMI_CEC_SIZE];
+	__u8 src;
+	__u8 dest;
+	__u8 length;
+	__u8 data[HDMI_CEC_SIZE];
 };
 
 struct info_fr {
-	u8 type;
-	u8 ver;
-	u8 crc;
-	u8 length;
-	u8 data[HDMI_INFOFR_SIZE];
+	__u8 type;
+	__u8 ver;
+	__u8 crc;
+	__u8 length;
+	__u8 data[HDMI_INFOFR_SIZE];
 };
 
 struct hdcp_fuseaes {
-	u8 key[HDMI_FUSE_KEYSIZE];
-	u8 crc;
-	u8 result;
+	__u8 key[HDMI_FUSE_KEYSIZE];
+	__u8 crc;
+	__u8 result;
 };
 
 struct hdcp_loadaesall {
-	u8 key[HDMI_AES_KEYSIZE];
-	u8 ksv[HDMI_AES_KSVSIZE];
-	u8 crc32[HDMI_CRC32_SIZE];
-	u8 result;
+	__u8 key[HDMI_AES_KEYSIZE];
+	__u8 ksv[HDMI_AES_KSVSIZE];
+	__u8 crc32[HDMI_CRC32_SIZE];
+	__u8 result;
 };
 
 
@@ -165,11 +165,11 @@ struct hdcp_loadaesall {
  * When encr_type is 2 (request revoc list), the response is given by
  * resp_size is != 0 and resp containing the folllowing:
  *
- * u8[5]		Bksv from sink (not belonging to revocation list)
- * u8			Device count
+ * __u8[5]		Bksv from sink (not belonging to revocation list)
+ * __u8			Device count
  * Additional output if Nrofdevices > 0:
- * u8[5 * Nrofdevices]	Bksv per connected equipment
- * u8[20]			SHA signature
+ * __u8[5 * Nrofdevices]	Bksv per connected equipment
+ * __u8[20]			SHA signature
  *
  * Device count coding:
  *	0 = a simple receiver is connected
@@ -185,21 +185,21 @@ struct hdcp_loadaesall {
  *
  */
 struct hdcp_authencr {
-	u8 auth_type;
-	u8 encr_type;
-	u8 result;
-	u8 resp_size;
-	u8 resp[HDMI_HDCPAUTHRESP_SIZE];
+	__u8 auth_type;
+	__u8 encr_type;
+	__u8 result;
+	__u8 resp_size;
+	__u8 resp[HDMI_HDCPAUTHRESP_SIZE];
 };
 
 struct audio_cfg {
-	u8 if_format;
-	u8 i2s_entries;
-	u8 freq;
-	u8 word_length;
-	u8 format;
-	u8 if_mode;
-	u8 mute;
+	__u8 if_format;
+	__u8 i2s_entries;
+	__u8 freq;
+	__u8 word_length;
+	__u8 format;
+	__u8 if_mode;
+	__u8 mute;
 };
 
 #endif /* __HDMI__H__ */
