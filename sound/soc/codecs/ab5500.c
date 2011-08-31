@@ -1600,8 +1600,10 @@ static inline void init_playback_gain(void)
 static inline void init_capture_gain(void)
 {
 	/* 0x06, 0x0f: pure gain values */
-	mask_set_reg(MIC1_GAIN, MICx_GAIN_MASK, 0x06 << MICx_GAIN_SHIFT);
+	mask_set_reg(MIC1_GAIN, MICx_GAIN_MASK, 0x08 << MICx_GAIN_SHIFT);
 	mask_set_reg(TX_DPGA1, TX_DPGAx_MASK, 0x0f << TX_DPGAx_SHIFT);
+	mask_set_reg(MIC2_GAIN, MICx_GAIN_MASK, 0x08 << MICx_GAIN_SHIFT);
+	mask_set_reg(TX_DPGA2, TX_DPGAx_MASK, 0x0f << TX_DPGAx_SHIFT);
 }
 
 static int __devinit ab5500_platform_probe(struct platform_device *pdev)
@@ -1630,8 +1632,8 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 	for (reg = AB5500_FIRST_REG; reg <= AB5500_LAST_REG; reg++)
 		set_reg(reg, 0);
 
-	mask_set_reg(CLOCK, CLOCK_REF_SELECT_MASK | CLOCK_ENABLE_MASK,
-		     1 << CLOCK_REF_SELECT_SHIFT | 1 << CLOCK_ENABLE_SHIFT);
+	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 1 << CLOCK_ENABLE_SHIFT);
+
 	printk(KERN_ERR "Clock Setting ab5500\n");
 	init_playback_route();
 	init_playback_gain();
