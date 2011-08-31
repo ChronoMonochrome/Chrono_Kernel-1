@@ -2075,10 +2075,15 @@ static void data_from_chip(struct cg2900_chip_dev *dev,
 		goto user_found;
 	}
 
-	/* Search through the list of all open channels to find the user */
+	/*
+	 * Search through the list of all open channels to find the user.
+	 * We skip the audio channels since they have already been checked
+	 * earlier in this function.
+	 */
 	list_for_each(cursor, &info->open_channels) {
 		tmp = list_entry(cursor, struct cg2900_channel_item, list);
-		if (tmp->user->h4_channel == h4_channel) {
+		if (tmp->user->h4_channel == h4_channel &&
+		    !tmp->user->is_audio) {
 			user = tmp->user;
 			goto user_found;
 		}
