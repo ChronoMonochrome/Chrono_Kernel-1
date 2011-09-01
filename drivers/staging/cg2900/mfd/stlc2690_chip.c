@@ -42,6 +42,10 @@
 #include "cg2900_lib.h"
 #include "stlc2690_chip.h"
 
+#ifndef MAX
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+
 #define MAIN_DEV				(main_info->dev)
 #define BOOT_DEV				(info->user_in_charge->dev)
 
@@ -211,6 +215,9 @@ struct stlc2690_skb_data {
  *				channel open and close.
  * @last_user:			Last user of this chip.
  * @logger:			Logger user of this chip.
+ * @startup:			True if system is starting up.
+ * @mfd_size:			Number of MFD cells.
+ * @mfd_char_size:		Number of MFD char device cells.
  */
 struct stlc2690_chip_info {
 	char				*patch_file_name;
@@ -227,6 +234,9 @@ struct stlc2690_chip_info {
 	struct cg2900_user_data		*user_in_charge;
 	struct cg2900_user_data		*last_user;
 	struct cg2900_user_data		*logger;
+	bool				startup;
+	int				mfd_size;
+	int				mfd_char_size;
 };
 
 /**
@@ -247,6 +257,9 @@ static struct main_info *main_info;
  * main_wait_queue - Main Wait Queue in STLC2690 driver.
  */
 static DECLARE_WAIT_QUEUE_HEAD(main_wait_queue);
+
+static struct mfd_cell stlc2690_devs[];
+static struct mfd_cell stlc2690_char_devs[];
 
 static void chip_startup_finished(struct stlc2690_chip_info *info, int err);
 
@@ -1499,6 +1512,16 @@ static bool check_chip_support(struct cg2900_chip_dev *dev)
 		set_plat_data(&stlc2690_devs[i], dev);
 	for (i = 0; i < ARRAY_SIZE(stlc2690_char_devs); i++)
 		set_plat_data(&stlc2690_char_devs[i], dev);
+	mutex_unlock(&main_info->man_mutex);
+
+	dev_info(dev->dev, "Chip supported by the STLC2690 chip driver\n");
+
+	/* Close the transport, which will power off the chip */
+	if (dev->t_cb.close)
+		dev->t_cb.close(dev);
+
+	dev_dbg(dev->dev, "New main_state: STLC2690_IDLE\n");
+	info->main_state = STLC2690_IDLE;
 
 	err = mfd_add_devices(dev->dev, main_info->cell_base_id, stlc2690_devs,
 			      ARRAY_SIZE(stlc2690_devs), NULL, 0);
@@ -1516,17 +1539,12 @@ static bool check_chip_support(struct cg2900_chip_dev *dev)
 		goto err_handling_remove_devs;
 	}
 
-	main_info->cell_base_id += 30;
-	mutex_unlock(&main_info->man_mutex);
-
-	dev_info(dev->dev, "Chip supported by the STLC2690 chip driver\n");
-
-	/* Close the transport, which will power off the chip */
-	if (dev->t_cb.close)
-		dev->t_cb.close(dev);
-
-	dev_dbg(dev->dev, "New main_state: STLC2690_IDLE\n");
-	info->main_state = STLC2690_IDLE;
+	/*
+	 * Increase base ID so next connected transport will not get the
+	 * same device IDs.
+	 */
+	main_info->cell_base_id += MAX(ARRAY_SIZE(stlc2690_devs),
+				       ARRAY_SIZE(stlc2690_char_devs));
 
 	return true;
 

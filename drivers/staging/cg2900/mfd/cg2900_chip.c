@@ -43,6 +43,10 @@
 #include "cg2900_core.h"
 #include "cg2900_lib.h"
 
+#ifndef MAX
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+
 #define MAIN_DEV				(main_info->dev)
 #define BOOT_DEV				(info->user_in_charge->dev)
 
@@ -329,6 +333,9 @@ struct cg2900_skb_data {
  * @selftest_work:		Delayed work for reading selftest results.
  * @nbr_of_polls:		Number of times we should poll for selftest
  *				results.
+ * @startup:			True if system is starting up.
+ * @mfd_size:			Number of MFD cells.
+ * @mfd_char_size:		Number of MFD char device cells.
  */
 struct cg2900_chip_info {
 	struct device			*dev;
@@ -361,6 +368,9 @@ struct cg2900_chip_info {
 	struct cg2900_user_data		*fm_audio;
 	struct cg2900_delayed_work_struct	selftest_work;
 	int				nbr_of_polls;
+	bool				startup;
+	int				mfd_size;
+	int				mfd_char_size;
 };
 
 /**
@@ -381,6 +391,9 @@ static struct main_info *main_info;
  * main_wait_queue - Main Wait Queue in CG2900 driver.
  */
 static DECLARE_WAIT_QUEUE_HEAD(main_wait_queue);
+
+static struct mfd_cell cg2900_devs[];
+static struct mfd_cell cg2900_char_devs[];
 
 static void chip_startup_finished(struct cg2900_chip_info *info, int err);
 static void chip_shutdown(struct cg2900_user_data *user);
@@ -1137,6 +1150,38 @@ shut_down_chip:
 	info->main_state = CG2900_IDLE;
 	wake_up_all(&main_wait_queue);
 
+	/* If this is called during system startup, register the devices. */
+	if (info->startup) {
+		int err;
+
+		err = mfd_add_devices(dev->dev, main_info->cell_base_id,
+				      cg2900_devs, info->mfd_size, NULL, 0);
+		if (err) {
+			dev_err(dev->dev, "Failed to add cg2900_devs (%d)\n",
+				err);
+			goto finished;
+		}
+
+		err = mfd_add_devices(dev->dev, main_info->cell_base_id,
+				      cg2900_char_devs, info->mfd_char_size,
+				      NULL, 0);
+		if (err) {
+			dev_err(dev->dev, "Failed to add cg2900_char_devs (%d)"
+					"\n", err);
+			mfd_remove_devices(dev->dev);
+			goto finished;
+		}
+
+		/*
+		 * Increase base ID so next connected transport will not get the
+		 * same device IDs.
+		 */
+		main_info->cell_base_id += MAX(info->mfd_size,
+					       info->mfd_char_size);
+		info->startup = false;
+	}
+
+finished:
 	kfree(my_work);
 }
 
@@ -3184,7 +3229,6 @@ static bool check_chip_support(struct cg2900_chip_dev *dev)
 	struct cg2900_platform_data *pf_data;
 	struct cg2900_chip_info *info;
 	int i;
-	int err;
 
 	dev_dbg(dev->dev, "check_chip_support\n");
 
@@ -3272,22 +3316,15 @@ static bool check_chip_support(struct cg2900_chip_dev *dev)
 	for (i = 0; i < ARRAY_SIZE(cg2900_char_devs); i++)
 		set_plat_data(&cg2900_char_devs[i], dev);
 
-	err = mfd_add_devices(dev->dev, main_info->cell_base_id, cg2900_devs,
-			      ARRAY_SIZE(cg2900_devs), NULL, 0);
-	if (err) {
-		dev_err(dev->dev, "Failed to add cg2900_devs (%d)\n", err);
-		goto err_handling_free_settings_name;
-	}
+	info->startup = true;
+	info->mfd_size = ARRAY_SIZE(cg2900_devs);
+	info->mfd_char_size = ARRAY_SIZE(cg2900_char_devs);
 
-	err = mfd_add_devices(dev->dev, main_info->cell_base_id,
-			      cg2900_char_devs, ARRAY_SIZE(cg2900_char_devs),
-			      NULL, 0);
-	if (err) {
-		dev_err(dev->dev, "Failed to add cg2900_char_devs (%d)\n", err);
-		goto err_handling_remove_devs;
-	}
+	/*
+	 * The devices will be registered when chip has been powered down, i.e.
+	 * when the system startup is ready.
+	 */
 
-	main_info->cell_base_id += 30;
 	mutex_unlock(&main_info->man_mutex);
 
 	dev_info(dev->dev, "Chip supported by the CG2900 chip driver\n");
@@ -3297,11 +3334,6 @@ static bool check_chip_support(struct cg2900_chip_dev *dev)
 
 	return true;
 
-err_handling_remove_devs:
-	mfd_remove_devices(dev->dev);
-err_handling_free_settings_name:
-	kfree(info->settings_file_name);
-	mutex_unlock(&main_info->man_mutex);
 err_handling_free_patch_name:
 	kfree(info->patch_file_name);
 err_handling_destroy_wq:
