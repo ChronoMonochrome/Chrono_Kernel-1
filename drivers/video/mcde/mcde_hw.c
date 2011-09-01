@@ -677,14 +677,14 @@ static void dpi_video_mode_apply(struct mcde_chnl_state *chnl)
 		chnl->tv_regs.fsl1 = 0;
 		chnl->tv_regs.fsl2 = 0;
 		polarity = chnl->port.phy.dpi.polarity;
-		chnl->tv_regs.lcdtim1 |= MCDE_LCDTIM1A_IPC(
-				(polarity & DPI_ACT_ON_FALLING_EDGE) != 0);
 		chnl->tv_regs.lcdtim1 = MCDE_LCDTIM1A_IHS(
 				(polarity & DPI_ACT_LOW_HSYNC) != 0);
 		chnl->tv_regs.lcdtim1 |= MCDE_LCDTIM1A_IVS(
 				(polarity & DPI_ACT_LOW_VSYNC) != 0);
 		chnl->tv_regs.lcdtim1 |= MCDE_LCDTIM1A_IOE(
 				(polarity & DPI_ACT_LOW_DATA_ENABLE) != 0);
+		chnl->tv_regs.lcdtim1 |= MCDE_LCDTIM1A_IPC(
+				(polarity & DPI_ACT_ON_FALLING_EDGE) != 0);
 	}
 }
 
