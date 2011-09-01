@@ -699,7 +699,7 @@ int __init init_display_devices(void)
 	struct i2c_adapter *i2c0;
 #endif
 
-	if (!(machine_is_u8500() || machine_is_snowball()))
+	if (!cpu_is_u8500())
 		return ret;
 
 	ret = fb_register_client(&framebuffer_nb);

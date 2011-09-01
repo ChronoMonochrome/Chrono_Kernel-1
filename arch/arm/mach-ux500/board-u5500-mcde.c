@@ -484,7 +484,7 @@ int __init init_display_devices(void)
 {
 	int ret = 0;
 
-	if (!machine_is_u5500())
+	if (!cpu_is_u5500())
 		return ret;
 
 	ret = fb_register_client(&framebuffer_nb);
