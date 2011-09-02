@@ -1747,7 +1747,7 @@ static int hdmi_release(struct inode *inode, struct file *filp)
 }
 
 /* ioctl */
-static int hdmi_ioctl(struct file *file,
+static long hdmi_ioctl(struct file *file,
 		       unsigned int cmd, unsigned long arg)
 {
 	u8 value = 0;

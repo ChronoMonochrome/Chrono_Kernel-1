@@ -430,7 +430,7 @@ static int dispdev_dequeue_buffer(struct dispdev *dd)
 	return i;
 }
 
-int dispdev_ioctl(struct file *file, unsigned int cmd,
+long dispdev_ioctl(struct file *file, unsigned int cmd,
 							unsigned long arg)
 {
 	int ret;
