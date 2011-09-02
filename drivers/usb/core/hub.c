@@ -30,6 +30,12 @@
 
 #include "usb.h"
 
+#ifdef CONFIG_ARCH_U8500
+#define MAX_TOPO_LEVEL_U8500 2
+#define MAX_USB_DEVICE_U8500 8
+int usb_device_count;
+#endif
+
 /* if we are in debug mode, always announce new devices */
 #ifdef DEBUG
 #ifndef CONFIG_USB_ANNOUNCE_NEW_DEVICES
@@ -1326,11 +1332,20 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	/* Hubs have proper suspend/resume support. */
 	usb_enable_autosuspend(hdev);
 
+#ifdef CONFIG_ARCH_U8500
+	if (hdev->level > MAX_TOPO_LEVEL_U8500) {
+		dev_err(&intf->dev,
+			"Unsupported bus topology: > %d "
+			" hub nesting\n", MAX_TOPO_LEVEL_U8500);
+		return -E2BIG;
+	}
+#else
 	if (hdev->level == MAX_TOPO_LEVEL) {
 		dev_err(&intf->dev,
 			"Unsupported bus topology: hub nested too deep\n");
 		return -E2BIG;
 	}
+#endif
 
 #ifdef	CONFIG_USB_OTG_BLACKLIST_HUB
 	if (hdev->parent) {
@@ -3426,6 +3441,22 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 			status = -ENOTCONN;	/* Don't retry */
 			goto loop;
 		}
+
+#ifdef CONFIG_ARCH_U8500
+		if (hdev->parent == NULL)
+				usb_device_count = 1;
+
+		if (usb_device_count > MAX_USB_DEVICE_U8500) {
+
+				dev_err(&udev->dev,
+					"device connected is more than %d\n",
+					MAX_USB_DEVICE_U8500);
+
+				status = -ENOTCONN;     /* Don't retry */
+				goto loop;
+		}
+#endif
+
 
 		/* reset (non-USB 3.0 devices) and get descriptor */
 		status = hub_port_init(hub, udev, port1, i);

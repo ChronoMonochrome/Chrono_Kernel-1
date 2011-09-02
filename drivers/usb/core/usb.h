@@ -1,5 +1,9 @@
 #include <linux/pm.h>
 
+#ifdef CONFIG_ARCH_U8500
+extern int usb_device_count;
+#endif
+
 /* Functions local to drivers/usb/core/ */
 
 extern int usb_create_sysfs_dev_files(struct usb_device *dev);
