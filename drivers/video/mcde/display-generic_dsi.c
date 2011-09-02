@@ -174,13 +174,18 @@ static int __devinit generic_probe(struct mcde_display_device *dev)
 				pdata->regulator = NULL;
 				goto regulator_get_failed;
 			}
-			ret = regulator_set_voltage(pdata->regulator,
+
+			if (regulator_set_voltage(pdata->regulator,
 					pdata->min_supply_voltage,
-					pdata->max_supply_voltage);
-			if (ret < 0) {
+					pdata->max_supply_voltage) < 0) {
+				int volt;
+
 				dev_warn(&dev->dev,
-					"%s:Failed to set regulator '%s'\n",
+					"%s:Failed to set voltage '%s'\n",
 					__func__, pdata->regulator_id);
+				volt = regulator_get_voltage(pdata->regulator);
+				dev_warn(&dev->dev,
+					"Voltage:%d\n", volt);
 			}
 
 			/*
