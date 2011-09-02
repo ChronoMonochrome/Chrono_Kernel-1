@@ -25,7 +25,6 @@
 #include <linux/platform_device.h>
 #include <linux/sched.h>
 #include <linux/skbuff.h>
-#include <linux/spinlock.h>
 #include <linux/string.h>
 #include <linux/types.h>
 #include <plat/pincfg.h>
@@ -46,7 +45,7 @@
 #define CG2900_PG2_HCI_REV		0x0200
 #define CG2900_PG1_SPECIAL_HCI_REV	0x0700
 
-#define CHIP_INITIAL_LOW_TIMEOUT	20 /* ms */
+#define CHIP_ENABLE_PDB_LOW_TIMEOUT     100 /* ms */
 
 struct vs_power_sw_off_cmd {
 	__le16	op_code;
@@ -69,7 +68,6 @@ struct dcg2900_info {
 	u8	gpio_0_7_pull_down;
 	u8	gpio_8_15_pull_down;
 	u8	gpio_16_20_pull_down;
-	spinlock_t	pdb_toggle_lock;
 	struct regulator	*regulator_wlan;
 };
 
@@ -90,7 +88,7 @@ static void dcg2900_enable_chip(struct cg2900_chip_dev *dev)
 	 */
 	gpio_set_value(info->gbf_gpio, 0);
 	schedule_timeout_uninterruptible(msecs_to_jiffies(
-				CHIP_INITIAL_LOW_TIMEOUT));
+				CHIP_ENABLE_PDB_LOW_TIMEOUT));
 	gpio_set_value(info->gbf_gpio, 1);
 }
 
@@ -197,8 +195,6 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 		dev_err(dev->dev, "Could not allocate dcg2900_info\n");
 		return -ENOMEM;
 	}
-
-	spin_lock_init(&info->pdb_toggle_lock);
 
 	if (!dev->pdev->num_resources) {
 		dev_dbg(dev->dev, "No resources available\n");
