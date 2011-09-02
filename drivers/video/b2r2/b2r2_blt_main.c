@@ -1374,6 +1374,14 @@ static void job_callback_gen(struct b2r2_core_job *job)
 	/* Local addref / release within this func */
 	b2r2_core_job_addref(job, __func__);
 
+	/* Unresolve the buffers */
+	unresolve_buf(&request->user_req.src_img.buf,
+		&request->src_resolved);
+	unresolve_buf(&request->user_req.src_mask.buf,
+		&request->src_mask_resolved);
+	unresolve_buf(&request->user_req.dst_img.buf,
+		&request->dst_resolved);
+
 	/* Move to report list if the job shall be reported */
 	/* FIXME: Use a smaller struct? */
 	mutex_lock(&request->instance->lock);
@@ -2096,21 +2104,27 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 				dst_img_width) {
 			b2r2_core_job_release(tile_job, __func__);
 		} else {
+			/*
+			 * Update profiling information before
+			 * the request is released together with
+			 * its core_job.
+			 */
+			if (request->profile) {
+				request->nsec_active_in_cpu =
+					(s32)((u32)task_sched_runtime(current) -
+					thread_runtime_at_start);
+				request->total_time_nsec =
+					(s32)(b2r2_get_curr_nsec() -
+					request->start_time_nsec);
+				request->job.nsec_active_in_hw =
+					nsec_active_in_b2r2;
+
+				b2r2_call_profiler_blt_done(request);
+			}
+
 			b2r2_core_job_release(&request->job, __func__);
 		}
 	}
-
-
-	ret = 0;
-
-
-	/* Unresolve the buffers */
-	unresolve_buf(&request->user_req.src_img.buf,
-		&request->src_resolved);
-	unresolve_buf(&request->user_req.src_mask.buf,
-		&request->src_mask_resolved);
-	unresolve_buf(&request->user_req.dst_img.buf,
-		&request->dst_resolved);
 
 	dec_stat(&stat_n_in_blt);
 
@@ -2120,17 +2134,6 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			work_bufs[i].virt_addr,
 			work_bufs[i].phys_addr);
 		memset(&(work_bufs[i]), 0, sizeof(work_bufs[i]));
-	}
-
-	if (request->profile) {
-		request->nsec_active_in_cpu =
-			(s32)((u32)task_sched_runtime(current) -
-			thread_runtime_at_start);
-		request->total_time_nsec =
-			(s32)(b2r2_get_curr_nsec() - request->start_time_nsec);
-		request->job.nsec_active_in_hw = nsec_active_in_b2r2;
-
-		b2r2_call_profiler_blt_done(request);
 	}
 
 	return request_id;
@@ -2470,7 +2473,8 @@ static int resolve_buf(struct b2r2_blt_img *img,
 
 					if (info && info->dev &&
 							MINOR(info->dev->devt) ==
-							MINOR(file->f_dentry->d_inode->i_rdev)) {
+						MINOR(file->f_dentry->
+							d_inode->i_rdev)) {
 						resolved->file_physical_start =
 							info->fix.smem_start;
 						resolved->file_virtual_start =
@@ -2482,7 +2486,8 @@ static int resolve_buf(struct b2r2_blt_img *img,
 							resolved->file_physical_start +
 							img->buf.offset;
 						resolved->virtual_address =
-							(void *)(resolved->file_virtual_start +
+						(void *) (resolved->
+							file_virtual_start +
 							img->buf.offset);
 
 						ret = 0;
