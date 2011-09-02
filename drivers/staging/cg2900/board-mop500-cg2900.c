@@ -20,11 +20,12 @@
 #include <net/bluetooth/hci.h>
 
 #include <plat/pincfg.h>
+#include <mach/gpio.h>
 
 #include "cg2900.h"
 #include "devices-cg2900.h"
 #include "pins-db8500.h"
-
+#include "pins.h"
 
 #define CG2900_BT_ENABLE_GPIO		170
 #define CG2900_GBF_ENA_RESET_GPIO	171
@@ -140,6 +141,27 @@ static struct resource cg2900_uart_resources[] = {
 	},
 };
 
+static struct resource cg2900_uart_resources_u9500[] = {
+	{
+		.start = CG2900_GBF_ENA_RESET_GPIO,
+		.end = CG2900_GBF_ENA_RESET_GPIO,
+		.flags = IORESOURCE_IO,
+		.name = "gbf_ena_reset",
+	},
+	{
+		.start = CG2900_BT_CTS_GPIO,
+		.end = CG2900_BT_CTS_GPIO,
+		.flags = IORESOURCE_IO,
+		.name = "cts_gpio",
+	},
+	{
+		.start = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
+		.end = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
+		.flags = IORESOURCE_IRQ,
+		.name = "cts_irq",
+	},
+};
+
 static pin_cfg_t cg2900_uart_enabled[] = {
 	GPIO0_U0_CTSn   | PIN_INPUT_PULLUP,
 	GPIO1_U0_RTSn   | PIN_OUTPUT_HIGH,
@@ -195,7 +217,12 @@ static int __init board_cg2900_init(void)
 	dcg2900_init_platdata(&cg2900_test_platform_data);
 	dcg2900_init_platdata(&cg2900_uart_platform_data);
 
-	if (machine_is_hrefv60()) {
+	if (pins_for_u9500()) {
+		ux500_cg2900_uart_device.num_resources =
+				ARRAY_SIZE(cg2900_uart_resources_u9500);
+		ux500_cg2900_uart_device.resource =
+				cg2900_uart_resources_u9500;
+	} else if (machine_is_hrefv60()) {
 		ux500_cg2900_uart_device.num_resources =
 				ARRAY_SIZE(cg2900_uart_resources);
 		ux500_cg2900_uart_device.resource =
