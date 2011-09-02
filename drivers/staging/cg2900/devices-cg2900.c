@@ -11,6 +11,7 @@
  * Board specific device support for the Linux Bluetooth HCI H:4 Driver
  * for ST-Ericsson connectivity controller.
  */
+
 #define NAME			"devices-cg2900"
 #define pr_fmt(fmt)		NAME ": " fmt "\n"
 
@@ -23,7 +24,6 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/sched.h>
 #include <linux/skbuff.h>
 #include <linux/string.h>
 #include <linux/types.h>
@@ -45,8 +45,6 @@
 #define CG2900_PG2_HCI_REV		0x0200
 #define CG2900_PG1_SPECIAL_HCI_REV	0x0700
 
-#define CHIP_ENABLE_PDB_LOW_TIMEOUT     100 /* ms */
-
 struct vs_power_sw_off_cmd {
 	__le16	op_code;
 	u8	len;
@@ -57,48 +55,6 @@ struct vs_power_sw_off_cmd {
 	u8	gpio_8_15_pull_down;
 	u8	gpio_16_20_pull_down;
 } __packed;
-
-struct dcg2900_info {
-	int	gbf_gpio;
-	int	bt_gpio;
-	bool	sleep_gpio_set;
-	u8	gpio_0_7_pull_up;
-	u8	gpio_8_15_pull_up;
-	u8	gpio_16_20_pull_up;
-	u8	gpio_0_7_pull_down;
-	u8	gpio_8_15_pull_down;
-	u8	gpio_16_20_pull_down;
-	struct regulator	*regulator_wlan;
-};
-
-static void dcg2900_enable_chip(struct cg2900_chip_dev *dev)
-{
-	struct dcg2900_info *info = dev->b_data;
-
-	if (info->gbf_gpio == -1)
-		return;
-
-	/*
-	 * Due to a bug in CG2900 we cannot just set GPIO high to enable
-	 * the chip. We must wait more than 20 msecs before enbling the
-	 * chip.
-	 * - Set PDB to low.
-	 * - Wait for 20 msecs
-	 * - Set PDB to high.
-	 */
-	gpio_set_value(info->gbf_gpio, 0);
-	schedule_timeout_uninterruptible(msecs_to_jiffies(
-				CHIP_ENABLE_PDB_LOW_TIMEOUT));
-	gpio_set_value(info->gbf_gpio, 1);
-}
-
-static void dcg2900_disable_chip(struct cg2900_chip_dev *dev)
-{
-	struct dcg2900_info *info = dev->b_data;
-
-	if (info->gbf_gpio != -1)
-		gpio_set_value(info->gbf_gpio, 0);
-}
 
 static struct sk_buff *dcg2900_get_power_switch_off_cmd
 				(struct cg2900_chip_dev *dev, u16 *op_code)
@@ -184,9 +140,6 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 {
 	int err = 0;
 	struct dcg2900_info *info;
-	struct resource *resource;
-	const char *gbf_name;
-	const char *bt_name = NULL;
 	struct cg2900_platform_data *pdata = dev_get_platdata(dev->dev);
 
 	/* First retrieve and save the resources */
@@ -205,55 +158,9 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 		goto finished;
 	}
 
-	resource = platform_get_resource_byname(dev->pdev, IORESOURCE_IO,
-						"gbf_ena_reset");
-	if (!resource) {
-		dev_err(dev->dev, "GBF GPIO does not exist\n");
-		err = -EINVAL;
+	err = dcg2900_setup(dev, info);
+	if (err)
 		goto err_handling;
-	}
-	info->gbf_gpio = resource->start;
-	gbf_name = resource->name;
-
-	resource = platform_get_resource_byname(dev->pdev, IORESOURCE_IO,
-						"bt_enable");
-	/* BT Enable GPIO may not exist */
-	if (resource) {
-		info->bt_gpio = resource->start;
-		bt_name = resource->name;
-	}
-
-	/* Now setup the GPIOs */
-	err = gpio_request(info->gbf_gpio, gbf_name);
-	if (err < 0) {
-		dev_err(dev->dev, "gpio_request failed with err: %d\n", err);
-		goto err_handling;
-	}
-
-	err = gpio_direction_output(info->gbf_gpio, 0);
-	if (err < 0) {
-		dev_err(dev->dev, "gpio_direction_output failed with err: %d\n",
-			err);
-		goto err_handling_free_gpio_gbf;
-	}
-
-	if (!bt_name) {
-		info->bt_gpio = -1;
-		goto finished;
-	}
-
-	err = gpio_request(info->bt_gpio, bt_name);
-	if (err < 0) {
-		dev_err(dev->dev, "gpio_request failed with err: %d\n", err);
-		goto err_handling_free_gpio_gbf;
-	}
-
-	err = gpio_direction_output(info->bt_gpio, 1);
-	if (err < 0) {
-		dev_err(dev->dev, "gpio_direction_output failed with err: %d\n",
-			err);
-		goto err_handling_free_gpio_bt;
-	}
 
 	/*
 	 * Enable the power on snowball
