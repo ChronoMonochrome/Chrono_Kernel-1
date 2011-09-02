@@ -297,7 +297,7 @@ static int cw1200_sdio_pm(struct sbus_priv *self, bool  suspend)
 	sdio_release_host(func);
 
 	if (!ret && irq)
-		ret = set_irq_wake(irq->start, suspend);
+		ret = irq_set_irq_wake(irq->start, suspend);
 
 	return ret;
 }
