@@ -417,7 +417,7 @@ int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl,
 		u8 cmd, u8 *data, int len);
 int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
 		u8 cmd, u32 *data, int *len);
-int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl, int size);
+int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl);
 
 /* MCDE */
 

@@ -174,9 +174,15 @@ static int __devinit generic_probe(struct mcde_display_device *dev)
 				pdata->regulator = NULL;
 				goto regulator_get_failed;
 			}
-			regulator_set_voltage(pdata->regulator,
+			ret = regulator_set_voltage(pdata->regulator,
 					pdata->min_supply_voltage,
 					pdata->max_supply_voltage);
+			if (ret < 0) {
+				dev_warn(&dev->dev,
+					"%s:Failed to set regulator '%s'\n",
+					__func__, pdata->regulator_id);
+			}
+
 			/*
 			* When u-boot has display a startup screen.
 			* U-boot has turned on display power however the

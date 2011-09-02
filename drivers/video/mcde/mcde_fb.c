@@ -481,6 +481,9 @@ static int apply_var(struct fb_info *fbi, struct mcde_display_device *ddev)
 	struct pix_fmt_info *fmt;
 	u32 line_len, size;
 
+	if (!ddev)
+		return -ENODEV;
+
 	dev_vdbg(&(ddev->dev), "%s\n", __func__);
 
 	var = &fbi->var;
@@ -502,22 +505,20 @@ static int apply_var(struct fb_info *fbi, struct mcde_display_device *ddev)
 	if (ddev->fictive)
 		goto apply_var_end;
 
-	if (ddev) {
-		/* Apply pixel format */
-		fmt = var_to_pix_fmt_info(var);
-		mfb->pix_fmt = fmt->pix_fmt;
+	/* Apply pixel format */
+	fmt = var_to_pix_fmt_info(var);
+	mfb->pix_fmt = fmt->pix_fmt;
 
-		/* Apply rotation */
-		mcde_dss_set_rotation(ddev, var_to_rotation(var));
-		/* Apply video mode */
-		memset(&vmode, 0, sizeof(struct mcde_video_mode));
-		var_to_vmode(var, &vmode);
-		ret = mcde_dss_set_video_mode(ddev, &vmode);
-		if (ret)
-			return ret;
+	/* Apply rotation */
+	mcde_dss_set_rotation(ddev, var_to_rotation(var));
+	/* Apply video mode */
+	memset(&vmode, 0, sizeof(struct mcde_video_mode));
+	var_to_vmode(var, &vmode);
+	ret = mcde_dss_set_video_mode(ddev, &vmode);
+	if (ret)
+		return ret;
 
-		mcde_dss_apply_channel(ddev);
-	}
+	mcde_dss_apply_channel(ddev);
 
 	/* Apply overlay info */
 	for (i = 0; i < mfb->num_ovlys; i++) {

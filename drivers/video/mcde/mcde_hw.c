@@ -2337,6 +2337,7 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
 
 	return ret;
 }
+
 /*
  * Set Maximum Return Packet size is a command that specifies the
  * maximum size of the payload transmitted from peripheral back to
@@ -2348,7 +2349,7 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
  * parameter should be set by the host processor to the desired value
  * in the initialization routine before commencing normal operation.
  */
-int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl, int size)
+int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl)
 {
 	u32 settings;
 	u8 link = chnl->port.link;
@@ -2357,37 +2358,28 @@ int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl, int size)
 	if (chnl->port.type != MCDE_PORTTYPE_DSI)
 		return -EINVAL;
 
-	if (size > 4)
-		return -EINVAL;
-
 	mutex_lock(&mcde_hw_lock);
 
 	if (enable_mcde_hw()) {
 		mutex_unlock(&mcde_hw_lock);
-		return -EINVAL;
+		return -EIO;
 	}
 
 	/*
 	 * Set Maximum Return Packet Size is a four-byte command packet
 	 * (including ECC) that specifies the maximum size of the payload.
 	 * The order of bytes is:
-	 * Data ID, two-byte value for maximum return packet size,
-	 * followed by the ECC byte.
 	 */
-
 	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(WRITE) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(1) |
+		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(false) |
 		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_ID(virt_id) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_SIZE(size) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LP_EN(true);
-	settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-		SET_MAX_PKT_SIZE);
+		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_SIZE(2) |
+		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LP_EN(true) |
+		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
+							SET_MAX_PKT_SIZE);
 	dsi_wreg(link, DSI_DIRECT_CMD_MAIN_SETTINGS, settings);
-	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
+	dsi_wreg(link, DSI_DIRECT_CMD_WRDAT0, MCDE_MAX_DCS_READ);
 	dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
-
-	dsi_wreg(link, DSI_CMD_MODE_STS_CLR, ~0);
-	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
 
 	mutex_unlock(&mcde_hw_lock);
 	return 0;
