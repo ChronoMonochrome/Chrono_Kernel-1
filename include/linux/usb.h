@@ -362,7 +362,15 @@ struct usb_bus {
  * limit. Because the arrays need to add a bit for hub status data, we
  * do 31, so plus one evens out to four bytes.
  */
+
+#ifdef CONFIG_ARCH_U8500
+/**
+* On U8500 platform we support 16 ports only
+*/
+#define USB_MAXCHILDREN		(16)
+#else
 #define USB_MAXCHILDREN		(31)
+#endif
 
 struct usb_tt;
 
