@@ -252,9 +252,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 		    IEEE80211_HW_SUPPORTS_PS |
 		    IEEE80211_HW_SUPPORTS_DYNAMIC_PS |
 		    IEEE80211_HW_AP_LINK_PS |
-		    /* TODO: Fix this
-		     Disable UAPSD support due to performance drop */
-		    /* IEEE80211_HW_SUPPORTS_UAPSD | */
+		    IEEE80211_HW_SUPPORTS_UAPSD |
 		    IEEE80211_HW_CONNECTION_MONITOR |
 		    IEEE80211_HW_SUPPORTS_CQM_RSSI |
 		    /* Aggregation is fully controlled by firmware.
