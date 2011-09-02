@@ -26,6 +26,7 @@
 #include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
+#include <linux/list.h>
 #include <linux/regulator/consumer.h>
 #include <mach/prcmu.h>
 
@@ -35,6 +36,8 @@
 #include <linux/firmware.h>
 
 #define AV8100_FW_FILENAME "av8100.fw"
+
+#define AV8100_DEVNR_DEFAULT 0
 
 /* Interrupts */
 #define AV8100_INT_EVENT 0x1
@@ -49,6 +52,7 @@
 
 /* Command offsets */
 #define AV8100_COMMAND_OFFSET		0x10
+#define AV8100_CUTVER_OFFSET		0x11
 #define AV8100_COMMAND_MAX_LENGTH	0x81
 #define AV8100_CMD_BUF_OFFSET		(AV8100_COMMAND_OFFSET + 1)
 #define AV8100_2ND_RET_BYTE_OFFSET	(AV8100_COMMAND_OFFSET + 1)
@@ -109,27 +113,12 @@
 #define AV8100_WAITTIME_50MS 50
 #define AV8100_WATTIME_100US 100
 
-/* Master clock timing */
-#define MCLK_RNG_17_22	0	/* Use with 19.2 MHZ clock */
-#define MCLK_RNG_22_27	1
-#define MCLK_RNG_27_33	2
-#define MCLK_RNG_31_38	3	/* Use with 38.4 MHZ clock */
-#define MCLK_RNG_36_44	4
-#define MCLK_RNG_40_49	5
-#define MCLK_RNG_45_55	6
-#define MCLK_RNG_49_60	7
-#define MCLK_RNG_54_66	8
-#define MCLK_RNG_58_71	9
-#define MCLK_RNG_63_77	10
-#define MCLK_RNG_67_82	11
-#define MCLK_RNG_72_88	12
-#define MCLK_RNG_76_93	13
-#define MCLK_RNG_85_104	14
-#define MCLK_RNG_94_115	15
-
-DEFINE_MUTEX(av8100_hw_mutex);
+static DEFINE_MUTEX(av8100_hw_mutex);
 #define LOCK_AV8100_HW mutex_lock(&av8100_hw_mutex)
 #define UNLOCK_AV8100_HW mutex_unlock(&av8100_hw_mutex)
+static DEFINE_MUTEX(av8100_fwdl_mutex);
+#define LOCK_AV8100_FWDL mutex_lock(&av8100_fwdl_mutex)
+#define UNLOCK_AV8100_FWDL mutex_unlock(&av8100_fwdl_mutex)
 
 struct color_conversion_cmd {
 	unsigned short	c0;
@@ -150,7 +139,7 @@ struct color_conversion_cmd {
 	unsigned char	cmin;
 };
 
-struct av8100_config_t {
+struct av8100_config {
 	struct i2c_client *client;
 	struct i2c_device_id *id;
 	struct av8100_video_input_format_cmd hdmi_video_input_cmd;
@@ -180,7 +169,7 @@ enum av8100_plug_state {
 	AV8100_PLUGGED
 };
 
-struct av8100_globals_t {
+struct av8100_params {
 	int denc_off_time;/* 5 volt time */
 	int hdmi_off_time;/* 5 volt time */
 	int on_time;/* 5 volt time */
@@ -188,6 +177,7 @@ struct av8100_globals_t {
 	u8 cpdm;/*stby_int_mask*/
 	u8 cecm;/*gen_int_mask*/
 	u8 hdcpm;/*gen_int_mask*/
+	u8 uovbm;/*gen_int_mask*/
 	void (*hdmi_ev_cb)(enum av8100_hdmi_event);
 	enum av8100_plug_state plug_state;
 	struct clk *inputclk;
@@ -248,33 +238,41 @@ enum av8100_command_size {
 	AV8100_COMMAND_FUSE_AES_CHK_SIZE = 0x2,
 };
 
-static unsigned int waittime_retry[10] = {1, 2, 4, 6, 8, 10, 10, 10, 10, 10};
+struct av8100_device {
+	struct list_head	list;
+	struct miscdevice	miscdev;
+	struct device		*dev;
+	struct av8100_config	config;
+	struct av8100_status	status;
+	struct timer_list	timer;
+	wait_queue_head_t	event;
+	int			flag;
+	struct av8100_params	params;
+	u8			chip_version;
+};
+
+static const unsigned int waittime_retry[10] =	{
+					1, 2, 4, 6, 8, 10, 10, 10, 10, 10};
 
 static int av8100_5V_w(u8 denc_off, u8 hdmi_off, u8 on);
-static void clr_plug_status(enum av8100_plugin_status status);
-static void set_plug_status(enum av8100_plugin_status status);
-static void cec_rx(void);
-static void cec_tx(void);
-static void cec_txerr(void);
-static void hdcp_changed(void);
+static void clr_plug_status(struct av8100_device *adev,
+	enum av8100_plugin_status status);
+static void set_plug_status(struct av8100_device *adev,
+	enum av8100_plugin_status status);
+static void cec_rx(struct av8100_device *adev);
+static void cec_tx(struct av8100_device *adev);
+static void cec_txerr(struct av8100_device *adev);
+static void hdcp_changed(struct av8100_device *adev);
 static const struct color_conversion_cmd *get_color_transform_cmd(
+				struct av8100_device *adev,
 				enum av8100_color_transform transform);
 static int av8100_open(struct inode *inode, struct file *filp);
 static int av8100_release(struct inode *inode, struct file *filp);
 static long av8100_ioctl(struct file *file,
 				unsigned int cmd, unsigned long arg);
-static int __devinit av8100_probe(struct i2c_client *i2cClient,
+static int __devinit av8100_probe(struct i2c_client *i2c_client,
 	const struct i2c_device_id *id);
-static int __devexit av8100_remove(struct i2c_client *i2cClient);
-
-static struct av8100_config_t *av8100_config;
-static struct av8100_status	g_av8100_status = {0};
-static struct timer_list av8100_plugtimer;
-static wait_queue_head_t av8100_event;
-static int av8100_flag = 0x0;
-static struct av8100_globals_t *av8100_globals;
-static u8 chip_version;
-struct device *av8100dev;
+static int __devexit av8100_remove(struct i2c_client *i2c_client);
 
 static const struct file_operations av8100_fops = {
 	.owner =    THIS_MODULE,
@@ -283,13 +281,10 @@ static const struct file_operations av8100_fops = {
 	.unlocked_ioctl = av8100_ioctl
 };
 
-static struct miscdevice av8100_miscdev = {
-	MISC_DYNAMIC_MINOR,
-	"av8100",
-	&av8100_fops
-};
+/* List of devices */
+static LIST_HEAD(av8100_device_list);
 
-struct av8100_cea av8100_all_cea[29] = {
+static const struct av8100_cea av8100_all_cea[29] = {
 /* cea id
  *	cea_nr	vtot	vact	vsbpp	vslen
  *	vsfp	vpol	htot	hact	hbp	hslen	hfp	freq
@@ -483,23 +478,76 @@ static const struct i2c_device_id av8100_id[] = {
 	{ }
 };
 
+static struct av8100_device *devnr_to_adev(int devnr)
+{
+	/* Get device from list of devices */
+	struct list_head *element;
+	struct av8100_device *av8100_dev;
+	int cnt = 0;
+
+	list_for_each(element, &av8100_device_list) {
+		av8100_dev = list_entry(element, struct av8100_device, list);
+		if (cnt == devnr)
+			return av8100_dev;
+		cnt++;
+	}
+
+	return NULL;
+}
+
+static struct av8100_device *dev_to_adev(struct device *dev)
+{
+	/* Get device from list of devices */
+	struct list_head *element;
+	struct av8100_device *av8100_dev;
+	int cnt = 0;
+
+	list_for_each(element, &av8100_device_list) {
+		av8100_dev = list_entry(element, struct av8100_device, list);
+		if (av8100_dev->dev == dev)
+			return av8100_dev;
+		cnt++;
+	}
+
+	return NULL;
+}
+
+static int adev_to_devnr(struct av8100_device *adev)
+{
+	/* Get devnr from list of devices */
+	struct list_head *element;
+	struct av8100_device *av8100_dev;
+	int cnt = 0;
+
+	list_for_each(element, &av8100_device_list) {
+		av8100_dev = list_entry(element, struct av8100_device, list);
+		if (av8100_dev == adev)
+			return cnt;
+		cnt++;
+	}
+
+	return -EINVAL;
+}
+
 #ifdef CONFIG_PM
 static int av8100_suspend(struct i2c_client *i2c_client, pm_message_t state)
 {
 	int ret = 0;
+	struct av8100_device *adev;
 
-	dev_dbg(av8100dev, "%s\n", __func__);
+	adev = dev_to_adev(&i2c_client->dev);
+	if (!adev)
+		return -EFAULT;
 
-	if (!av8100_globals)
-		return ret;
+	dev_dbg(adev->dev, "%s\n", __func__);
 
-	av8100_globals->pre_suspend_power =
+	adev->params.pre_suspend_power =
 		(av8100_status_get().av8100_state > AV8100_OPMODE_SHUTDOWN);
 
-	if (av8100_globals->pre_suspend_power) {
+	if (adev->params.pre_suspend_power) {
 		ret = av8100_powerdown();
 		if (ret)
-			dev_err(av8100dev, "av8100_powerdown failed\n");
+			dev_err(adev->dev, "av8100_powerdown failed\n");
 	}
 
 	return ret;
@@ -509,29 +557,35 @@ static int av8100_resume(struct i2c_client *i2c_client)
 {
 	int ret;
 	u8 hpds = 0;
+	struct av8100_device *adev;
 
-	dev_dbg(av8100dev, "%s\n", __func__);
+	adev = dev_to_adev(&i2c_client->dev);
+	if (!adev)
+		return -EFAULT;
 
-	if (av8100_globals->pre_suspend_power) {
-	ret = av8100_powerup();
-	if (ret) {
-		dev_err(av8100dev, "av8100_powerup failed\n");
-		return ret;
-	}
+	dev_dbg(adev->dev, "%s\n", __func__);
 
-	/* Check HDMI plug status */
-	if (av8100_reg_stby_r(NULL, NULL, &hpds, NULL, NULL)) {
-		dev_warn(av8100dev, "av8100_reg_stby_r failed\n");
-		goto av8100_resume_end;
-	}
+	if (adev->params.pre_suspend_power) {
+		ret = av8100_powerup();
+		if (ret) {
+			dev_err(adev->dev, "av8100_powerup failed\n");
+			return ret;
+		}
 
-	if (hpds)
-		set_plug_status(AV8100_HDMI_PLUGIN); /* Plugged*/
-	else
-		clr_plug_status(AV8100_HDMI_PLUGIN); /* Unplugged*/
+		/* Check HDMI plug status */
+		if (av8100_reg_stby_r(NULL, NULL, &hpds, NULL, NULL)) {
+			dev_warn(adev->dev, "av8100_reg_stby_r failed\n");
+			goto av8100_resume_end;
+		}
 
-	av8100_globals->hpdm = AV8100_STANDBY_INTERRUPT_MASK_HPDM_HIGH;
-	av8100_enable_interrupt();
+		if (hpds)
+			set_plug_status(adev, AV8100_HDMI_PLUGIN); /* Plugged*/
+		else
+			clr_plug_status(adev,
+					AV8100_HDMI_PLUGIN); /* Unplugged*/
+
+		adev->params.hpdm = AV8100_STANDBY_INTERRUPT_MASK_HPDM_HIGH;
+		av8100_enable_interrupt();
 	}
 
 av8100_resume_end:
@@ -555,30 +609,32 @@ static struct i2c_driver av8100_driver = {
 
 static void av8100_plugtimer_int(unsigned long value)
 {
-	av8100_flag |= AV8100_PLUGSTARTUP_EVENT;
-	wake_up_interruptible(&av8100_event);
-	del_timer(&av8100_plugtimer);
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev((int)value);
+	adev->flag |= AV8100_PLUGSTARTUP_EVENT;
+	wake_up_interruptible(&adev->event);
+	del_timer(&adev->timer);
 }
 
-static int av8100_int_event_handle(void)
+static int av8100_int_event_handle(struct av8100_device *adev)
 {
 	u8 hpdi = 0;
 	u8 cpdi = 0;
+	u8 uovbi = 0;
 	u8 hdcpi = 0;
 	u8 ceci = 0;
 	u8 hpds = 0;
 	u8 cpds = 0;
 	u8 hdcps = 0;
+	u8 onuvb = 0;
 	u8 cectxerr = 0;
 	u8 cecrx = 0;
 	u8 cectx = 0;
 
-	if (!av8100_globals)
-		return -EINVAL;
-
 	/* STANDBY_PENDING_INTERRUPT reg */
 	if (av8100_reg_stby_pend_int_r(&hpdi, &cpdi, NULL, NULL)) {
-		dev_dbg(av8100dev, "av8100_reg_stby_pend_int_r failed\n");
+		dev_dbg(adev->dev, "av8100_reg_stby_pend_int_r failed\n");
 		goto av8100_int_event_handle_1;
 	}
 
@@ -589,112 +645,113 @@ static int av8100_int_event_handle(void)
 
 		/* STANDBY reg */
 		if (av8100_reg_stby_r(NULL, NULL, &hpds, &cpds, NULL)) {
-			dev_dbg(av8100dev, "av8100_reg_stby_r failed\n");
+			dev_dbg(adev->dev, "av8100_reg_stby_r failed\n");
 			goto av8100_int_event_handle_1;
 		}
 	}
 
-	if (cpdi & av8100_globals->cpdm) {
+	if (cpdi & adev->params.cpdm) {
 		/* TVout plugin change */
 		if (cpds) {
-			dev_dbg(av8100dev, "cpds 1\n");
-			set_plug_status(AV8100_CVBS_PLUGIN);
+			dev_dbg(adev->dev, "cpds 1\n");
+			set_plug_status(adev, AV8100_CVBS_PLUGIN);
 		} else {
-			dev_dbg(av8100dev, "cpds 0\n");
-			clr_plug_status(AV8100_CVBS_PLUGIN);
+			dev_dbg(adev->dev, "cpds 0\n");
+			clr_plug_status(adev, AV8100_CVBS_PLUGIN);
 		}
 	}
 
-	if (hpdi & av8100_globals->hpdm) {
+	if (hpdi & adev->params.hpdm) {
 		/* HDMI plugin change */
 		if (hpds) {
 			/* Plugged */
 			/* Set 5V always on */
-			av8100_5V_w(av8100_globals->denc_off_time,
+			av8100_5V_w(adev->params.denc_off_time,
 					0,
-					av8100_globals->on_time);
-			dev_dbg(av8100dev, "hpds 1\n");
-			set_plug_status(AV8100_HDMI_PLUGIN);
+					adev->params.on_time);
+			dev_dbg(adev->dev, "hpds 1\n");
+			set_plug_status(adev, AV8100_HDMI_PLUGIN);
 		} else {
 			/* Unplugged */
-			av8100_5V_w(av8100_globals->denc_off_time,
-					av8100_globals->hdmi_off_time,
-					av8100_globals->on_time);
-			dev_dbg(av8100dev, "hpds 0\n");
-			clr_plug_status(AV8100_HDMI_PLUGIN);
+			av8100_5V_w(adev->params.denc_off_time,
+					adev->params.hdmi_off_time,
+					adev->params.on_time);
+			dev_dbg(adev->dev, "hpds 0\n");
+			clr_plug_status(adev, AV8100_HDMI_PLUGIN);
 		}
 	}
 
 av8100_int_event_handle_1:
 	/* GENERAL_INTERRUPT reg */
 	if (av8100_reg_gen_int_r(NULL, NULL, NULL, &ceci,
-			&hdcpi, NULL, NULL)) {
-		dev_dbg(av8100dev, "av8100_reg_stby_pend_int_r failed\n");
+			&hdcpi, &uovbi, NULL)) {
+		dev_dbg(adev->dev, "av8100_reg_gen_int_r failed\n");
 		return -EINVAL;
 	}
 
 	/* CEC or HDCP event */
-	if (ceci | hdcpi) {
+	if (ceci | hdcpi | uovbi) {
 		/* Clear pending interrupts */
 		av8100_reg_gen_int_w(1, 1, 1, 1, 1, 1);
 
 		/* GENERAL_STATUS reg */
 		if (av8100_reg_gen_status_r(&cectxerr, &cecrx, &cectx, NULL,
-				NULL, &hdcps) != 0) {
-			dev_dbg(av8100dev, "av8100_reg_gen_status_r fail\n");
+				&onuvb, &hdcps) != 0) {
+			dev_dbg(adev->dev, "av8100_reg_gen_status_r fail\n");
 			return -EINVAL;
 		}
 	}
+
+	/* Underflow or overflow */
+	if (uovbi)
+		dev_dbg(adev->dev, "uovbi %d\n", onuvb);
 
 	/* CEC received */
 	if (ceci && cecrx) {
 		u8 val;
 
-		dev_dbg(av8100dev, "cecrx\n");
+		dev_dbg(adev->dev, "cecrx\n");
 
 		/* Clear cecrx in status reg*/
 		if (av8100_reg_r(AV8100_GENERAL_STATUS, &val) == 0) {
 			if (av8100_reg_w(AV8100_GENERAL_STATUS,
 				val & ~AV8100_GENERAL_STATUS_CECREC_MASK))
-				dev_info(av8100dev, "gen_stat write error\n");
+				dev_info(adev->dev, "gen_stat write error\n");
 		} else {
-			dev_info(av8100dev, "gen_stat read error\n");
+			dev_info(adev->dev, "gen_stat read error\n");
 		}
 
 		/* Report CEC event */
-		cec_rx();
+		cec_rx(adev);
 	}
 
 	/* CEC tx error */
 	if (ceci && cectx && cectxerr) {
-		dev_dbg(av8100dev, "cectxerr\n");
+		dev_dbg(adev->dev, "cectxerr\n");
 		/* Report CEC tx error event */
-		cec_txerr();
+		cec_txerr(adev);
 	} else if (ceci && cectx) {
-		dev_dbg(av8100dev, "cectx\n");
+		dev_dbg(adev->dev, "cectx\n");
 		/* Report CEC tx event */
-		cec_tx();
+		cec_tx(adev);
 	}
 
 	/* HDCP event */
 	if (hdcpi) {
-		dev_dbg(av8100dev, "hdcpch:%0x\n", hdcps);
+		dev_dbg(adev->dev, "hdcpch:%0x\n", hdcps);
 		/* Report HDCP status change event */
-		hdcp_changed();
+		hdcp_changed(adev);
 	}
 
 	return 0;
 }
 
-static int av8100_plugstartup_event_handle(void)
+static int av8100_plugstartup_event_handle(struct av8100_device *adev)
 {
 	u8 hpds = 0;
 	u8 cpds = 0;
 
-	if (!av8100_globals)
-		return -EINVAL;
-
-	switch (av8100_globals->plug_state) {
+	switch (adev->params.plug_state) {
 	case AV8100_UNPLUGGED:
 	case AV8100_PLUGGED:
 	default:
@@ -702,31 +759,31 @@ static int av8100_plugstartup_event_handle(void)
 
 	case AV8100_PLUGGED_STARTUP:
 		/* Unmask interrupt */
-		av8100_globals->hpdm = AV8100_STANDBY_INTERRUPT_MASK_HPDM_HIGH;
-		if (av8100_reg_stby_int_mask_w(av8100_globals->hpdm,
-			av8100_globals->cpdm,
+		adev->params.hpdm = AV8100_STANDBY_INTERRUPT_MASK_HPDM_HIGH;
+		if (av8100_reg_stby_int_mask_w(adev->params.hpdm,
+				adev->params.cpdm,
 			AV8100_STANDBY_INTERRUPT_MASK_STBYGPIOCFG_INPUT,
 			AV8100_STANDBY_INTERRUPT_MASK_IPOL_LOW)) {
-			dev_dbg(av8100dev,
+			dev_dbg(adev->dev,
 				"av8100_reg_stby_int_mask_w fail\n");
 		}
 
-		msleep(1);
+		mdelay(AV8100_WAITTIME_1MS);
 
 		/* Get actual plug status */
 		if (av8100_reg_stby_r(NULL, NULL, &hpds, &cpds,	NULL))
-			dev_dbg(av8100dev, "av8100_reg_stby_r fail\n");
+			dev_dbg(adev->dev, "av8100_reg_stby_r fail\n");
 
 		/* Set plugstate */
 		if (hpds) {
-			av8100_globals->plug_state = AV8100_PLUGGED;
-			dev_dbg(av8100dev, "plug_state:2\n");
+			adev->params.plug_state = AV8100_PLUGGED;
+			dev_dbg(adev->dev, "plug_state:2\n");
 		} else {
-			av8100_globals->plug_state = AV8100_UNPLUGGED;
-			dev_dbg(av8100dev, "plug_state:0\n");
+			adev->params.plug_state = AV8100_UNPLUGGED;
+			dev_dbg(adev->dev, "plug_state:0\n");
 
-			if (av8100_globals->hdmi_ev_cb)
-				av8100_globals->hdmi_ev_cb(
+			if (adev->params.hdmi_ev_cb)
+				adev->params.hdmi_ev_cb(
 					AV8100_HDMI_EVENT_HDMI_PLUGOUT);
 		}
 		break;
@@ -737,22 +794,22 @@ static int av8100_plugstartup_event_handle(void)
 
 static int av8100_thread(void *p)
 {
-	u8 flags;
+	u8			flags;
+	struct av8100_device	*adev = p;
 
 	while (1) {
-		wait_event_interruptible(av8100_event, (av8100_flag != 0));
-		flags = av8100_flag;
-		av8100_flag = 0;
+		wait_event_interruptible(adev->event, (adev->flag != 0));
+		flags = adev->flag;
+		adev->flag = 0;
 
-		if (!av8100_globals ||
-			g_av8100_status.av8100_state < AV8100_OPMODE_STANDBY)
+		if (adev->status.av8100_state < AV8100_OPMODE_STANDBY)
 			continue;
 
 		if (flags & AV8100_INT_EVENT)
-			(void)av8100_int_event_handle();
+			(void)av8100_int_event_handle(adev);
 
 		if (flags & AV8100_PLUGSTARTUP_EVENT)
-			(void)av8100_plugstartup_event_handle();
+			(void)av8100_plugstartup_event_handle(adev);
 	}
 
 	return 0;
@@ -760,8 +817,12 @@ static int av8100_thread(void *p)
 
 static irqreturn_t av8100_intr_handler(int irq, void *p)
 {
-	av8100_flag |= AV8100_INT_EVENT;
-	wake_up_interruptible(&av8100_event);
+	struct av8100_device *adev;
+
+	adev = (struct av8100_device *) p;
+	adev->flag |= AV8100_INT_EVENT;
+	wake_up_interruptible(&adev->event);
+
 	return IRQ_HANDLED;
 }
 
@@ -850,8 +911,8 @@ static u16 av8100_get_ui_x4(
 	return AV8100_UI_X4_DEFAULT;
 }
 
-static int av8100_config_video_output_dep(enum av8100_output_CEA_VESA
-	output_format)
+static int av8100_config_video_output_dep(
+		enum av8100_output_CEA_VESA output_format)
 {
 	int retval;
 	union av8100_configuration config;
@@ -919,21 +980,15 @@ static int av8100_config_video_output_dep(enum av8100_output_CEA_VESA
 	return 0;
 }
 
-static int av8100_config_init(void)
+static int av8100_config_init(struct av8100_device *adev)
 {
 	int retval;
 	union av8100_configuration config;
 
-	dev_dbg(av8100dev, "%s\n", __func__);
-
-	av8100_config = kzalloc(sizeof(struct av8100_config_t), GFP_KERNEL);
-	if (!av8100_config) {
-		dev_err(av8100dev, "%s: Failed to allocate config\n", __func__);
-		return AV8100_FAIL;
-	}
+	dev_dbg(adev->dev, "%s\n", __func__);
 
 	memset(&config, 0, sizeof(union av8100_configuration));
-	memset(av8100_config, 0, sizeof(union av8100_configuration));
+	memset(&adev->config, 0, sizeof(struct av8100_config));
 
 	/* Color conversion */
 	config.color_transform = AV8100_COLOR_TRANSFORM_INDENTITY;
@@ -1010,72 +1065,49 @@ static int av8100_config_init(void)
 	return 0;
 }
 
-static void av8100_config_exit(void)
+static int av8100_params_init(struct av8100_device *adev)
 {
-	dev_dbg(av8100dev, "%s\n", __func__);
+	dev_dbg(adev->dev, "%s\n", __func__);
 
-	kfree(av8100_config);
-	av8100_config = NULL;
-}
+	adev->params.denc_off_time = AV8100_DENC_OFF_TIME;
+	adev->params.hdmi_off_time = AV8100_HDMI_OFF_TIME;
+	adev->params.on_time = AV8100_ON_TIME;
 
-static int av8100_globals_init(void)
-{
-	dev_dbg(av8100dev, "%s\n", __func__);
+	adev->params.hpdm = AV8100_STANDBY_INTERRUPT_MASK_HPDM_HIGH;
+	adev->params.cpdm = AV8100_STANDBY_INTERRUPT_MASK_CPDM_HIGH;
+	adev->params.hdcpm = AV8100_GENERAL_INTERRUPT_MASK_HDCPM_HIGH;
+	adev->params.cecm = AV8100_GENERAL_INTERRUPT_MASK_CECM_HIGH;
+	adev->params.uovbm = AV8100_GENERAL_INTERRUPT_MASK_UOVBM_HIGH;
 
-	av8100_globals = kzalloc(sizeof(struct av8100_globals_t), GFP_KERNEL);
-	if (!av8100_globals) {
-		dev_err(av8100dev, "%s: Alloc failure\n", __func__);
-		return AV8100_FAIL;
-	}
-
-	av8100_globals->denc_off_time = AV8100_DENC_OFF_TIME;
-	av8100_globals->hdmi_off_time = AV8100_HDMI_OFF_TIME;
-	av8100_globals->on_time = AV8100_ON_TIME;
-
-	av8100_globals->hpdm = AV8100_STANDBY_INTERRUPT_MASK_HPDM_HIGH;
-	av8100_globals->cpdm = AV8100_STANDBY_INTERRUPT_MASK_CPDM_HIGH;
-	av8100_globals->hdcpm = AV8100_GENERAL_INTERRUPT_MASK_HDCPM_HIGH;
-	av8100_globals->cecm = AV8100_GENERAL_INTERRUPT_MASK_CECM_HIGH;
-
-	av8100_globals->plug_state = AV8100_UNPLUGGED;
-	av8100_globals->inputclk = NULL;
-	av8100_globals->inputclk_requested = false;
-	av8100_globals->opp_requested = false;
-	av8100_globals->regulator_requested = false;
+	adev->params.plug_state = AV8100_UNPLUGGED;
+	adev->params.inputclk = NULL;
+	adev->params.inputclk_requested = false;
+	adev->params.opp_requested = false;
+	adev->params.regulator_requested = false;
 
 	return 0;
 }
 
-static void av8100_globals_exit(void)
+static void clr_plug_status(struct av8100_device *adev,
+			enum av8100_plugin_status status)
 {
-	dev_dbg(av8100dev, "%s\n", __func__);
-
-	kfree(av8100_globals);
-	av8100_globals = NULL;
-}
-
-static void clr_plug_status(enum av8100_plugin_status status)
-{
-	g_av8100_status.av8100_plugin_status &= ~status;
+	adev->status.av8100_plugin_status &= ~status;
 
 	switch (status) {
 	case AV8100_HDMI_PLUGIN:
-		if (!av8100_globals)
-			return;
-
-		switch (av8100_globals->plug_state) {
+		switch (adev->params.plug_state) {
 		case AV8100_UNPLUGGED:
 		case AV8100_PLUGGED_STARTUP:
 		default:
 			break;
 
 		case AV8100_PLUGGED:
-			av8100_globals->plug_state =
+			adev->params.plug_state =
 				AV8100_UNPLUGGED;
-			dev_dbg(av8100dev, "plug_state:0\n");
+			dev_dbg(adev->dev, "plug_state:0\n");
 
-			if (av8100_globals->hdmi_ev_cb)
-				av8100_globals->hdmi_ev_cb(
+			if (adev->params.hdmi_ev_cb)
+				adev->params.hdmi_ev_cb(
 					AV8100_HDMI_EVENT_HDMI_PLUGOUT);
 			break;
 		}
@@ -1090,49 +1122,47 @@ static void clr_plug_status(enum av8100_plugin_status status)
 	}
 }
 
-static void set_plug_status(enum av8100_plugin_status status)
+static void set_plug_status(struct av8100_device *adev,
+			enum av8100_plugin_status status)
 {
-	g_av8100_status.av8100_plugin_status |= status;
+	adev->status.av8100_plugin_status |= status;
 
 	switch (status) {
 	case AV8100_HDMI_PLUGIN:
-		if (!av8100_globals)
-			return;
-
-		switch (av8100_globals->plug_state) {
+		switch (adev->params.plug_state) {
 		case AV8100_UNPLUGGED:
-			av8100_globals->plug_state =
+			adev->params.plug_state =
 				AV8100_PLUGGED_STARTUP;
 
-			dev_dbg(av8100dev, "plug_state:1\n");
+			dev_dbg(adev->dev, "plug_state:1\n");
 
 			/*
 			 * Mask interrupts to avoid plug detect during
 			 * startup
 			 *  */
-			av8100_globals->hpdm =
+			adev->params.hpdm =
 				AV8100_STANDBY_INTERRUPT_MASK_HPDM_LOW;
 			if (av8100_reg_stby_int_mask_w(
-				av8100_globals->hpdm,
-				av8100_globals->cpdm,
+					adev->params.hpdm,
+					adev->params.cpdm,
 				AV8100_STANDBY_INTERRUPT_MASK_STBYGPIOCFG_INPUT,
 				AV8100_STANDBY_INTERRUPT_MASK_IPOL_LOW)) {
-				dev_dbg(av8100dev,
-					"av8100_reg_stby_int_mask_w"
-					"fail\n");
+				dev_dbg(adev->dev,
+					"av8100_reg_stby_int_mask_w fail\n");
 			}
 
 			/* Set plug startup timer */
-			init_timer(&av8100_plugtimer);
-			av8100_plugtimer.expires = jiffies +
+			init_timer(&adev->timer);
+			adev->timer.expires = jiffies +
 					AV8100_PLUGSTARTUP_TIME;
-			av8100_plugtimer.function =
+			adev->timer.function =
 					av8100_plugtimer_int;
-			av8100_plugtimer.data = 0;
-			add_timer(&av8100_plugtimer);
+			adev->timer.data = 0;
+			adev->timer.data = adev_to_devnr(adev);
+			mod_timer(&adev->timer, adev->timer.expires);
 
-			if (av8100_globals->hdmi_ev_cb)
-				av8100_globals->hdmi_ev_cb(
+			if (adev->params.hdmi_ev_cb)
+				adev->params.hdmi_ev_cb(
 					AV8100_HDMI_EVENT_HDMI_PLUGIN);
 			break;
 
@@ -1152,38 +1182,39 @@ static void set_plug_status(enum av8100_plugin_status status)
 	}
 }
 
-static void cec_rx(void)
+static void cec_rx(struct av8100_device *adev)
 {
-	if (av8100_globals && av8100_globals->hdmi_ev_cb)
-		av8100_globals->hdmi_ev_cb(AV8100_HDMI_EVENT_CEC);
+	if (adev->params.hdmi_ev_cb)
+		adev->params.hdmi_ev_cb(AV8100_HDMI_EVENT_CEC);
 }
 
-static void cec_tx(void)
+static void cec_tx(struct av8100_device *adev)
 {
-	if (av8100_globals && av8100_globals->hdmi_ev_cb)
-		av8100_globals->hdmi_ev_cb(AV8100_HDMI_EVENT_CECTX);
+	if (adev->params.hdmi_ev_cb)
+		adev->params.hdmi_ev_cb(AV8100_HDMI_EVENT_CECTX);
 }
 
-static void cec_txerr(void)
+static void cec_txerr(struct av8100_device *adev)
 {
-	if (av8100_globals && av8100_globals->hdmi_ev_cb)
-		av8100_globals->hdmi_ev_cb(AV8100_HDMI_EVENT_CECTXERR);
+	if (adev->params.hdmi_ev_cb)
+		adev->params.hdmi_ev_cb(AV8100_HDMI_EVENT_CECTXERR);
 }
 
-static void hdcp_changed(void)
+static void hdcp_changed(struct av8100_device *adev)
 {
-	if (av8100_globals && av8100_globals->hdmi_ev_cb)
-		av8100_globals->hdmi_ev_cb(AV8100_HDMI_EVENT_HDCP);
+	if (adev->params.hdmi_ev_cb)
+		adev->params.hdmi_ev_cb(AV8100_HDMI_EVENT_HDCP);
 }
 
-static void av8100_set_state(enum av8100_operating_mode state)
+static void av8100_set_state(struct av8100_device *adev,
+			enum av8100_operating_mode state)
 {
-	g_av8100_status.av8100_state = state;
+	adev->status.av8100_state = state;
 
 	if (state <= AV8100_OPMODE_STANDBY) {
-		clr_plug_status(AV8100_HDMI_PLUGIN);
-		clr_plug_status(AV8100_CVBS_PLUGIN);
-		g_av8100_status.hdmi_on = false;
+		clr_plug_status(adev, AV8100_HDMI_PLUGIN);
+		clr_plug_status(adev, AV8100_CVBS_PLUGIN);
+		adev->status.hdmi_on = false;
 	}
 }
 
@@ -1200,10 +1231,11 @@ static int write_single_byte(struct i2c_client *client, u8 reg,
 	u8 data)
 {
 	int ret;
+	struct device *dev = &client->dev;
 
 	ret = i2c_smbus_write_byte_data(client, reg, data);
 	if (ret < 0)
-		dev_dbg(av8100dev, "i2c smbus write byte failed\n");
+		dev_dbg(dev, "i2c smbus write byte failed\n");
 
 	return ret;
 }
@@ -1221,12 +1253,13 @@ static int write_single_byte(struct i2c_client *client, u8 reg,
 static int read_single_byte(struct i2c_client *client, u8 reg, u8 *val)
 {
 	int value;
+	struct device *dev = &client->dev;
 
 	value = i2c_smbus_read_byte_data(client, reg);
 	if (value < 0) {
-		dev_dbg(av8100dev, "i2c smbus read byte failed,read data = %x "
+		dev_dbg(dev, "i2c smbus read byte failed,read data = %x "
 			"from offset:%x\n" , value, reg);
-		return AV8100_FAIL;
+		return -EFAULT;
 	}
 
 	*val = (u8) value;
@@ -1247,150 +1280,139 @@ static int write_multi_byte(struct i2c_client *client, u8 reg,
 		u8 *buf, u8 nbytes)
 {
 	int ret;
+	struct device *dev = &client->dev;
 
 	ret = i2c_smbus_write_i2c_block_data(client, reg, nbytes, buf);
 	if (ret < 0)
-		dev_dbg(av8100dev, "i2c smbus write multi byte error\n");
+		dev_dbg(dev, "i2c smbus write multi byte error\n");
 
 	return ret;
 }
 
-static int configuration_video_input_get(char *buffer,
-	unsigned int *length)
+static int configuration_video_input_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_video_input_cmd.dsi_input_mode;
-	buffer[1] = av8100_config->hdmi_video_input_cmd.input_pixel_format;
-	buffer[2] = REG_16_8_MSB(av8100_config->hdmi_video_input_cmd.
+	buffer[0] = adev->config.hdmi_video_input_cmd.dsi_input_mode;
+	buffer[1] = adev->config.hdmi_video_input_cmd.input_pixel_format;
+	buffer[2] = REG_16_8_MSB(adev->config.hdmi_video_input_cmd.
 		total_horizontal_pixel);
-	buffer[3] = REG_16_8_LSB(av8100_config->hdmi_video_input_cmd.
+	buffer[3] = REG_16_8_LSB(adev->config.hdmi_video_input_cmd.
 		total_horizontal_pixel);
-	buffer[4] = REG_16_8_MSB(av8100_config->hdmi_video_input_cmd.
+	buffer[4] = REG_16_8_MSB(adev->config.hdmi_video_input_cmd.
 		total_horizontal_active_pixel);
-	buffer[5] = REG_16_8_LSB(av8100_config->hdmi_video_input_cmd.
+	buffer[5] = REG_16_8_LSB(adev->config.hdmi_video_input_cmd.
 		total_horizontal_active_pixel);
-	buffer[6] = REG_16_8_MSB(av8100_config->hdmi_video_input_cmd.
+	buffer[6] = REG_16_8_MSB(adev->config.hdmi_video_input_cmd.
 		total_vertical_lines);
-	buffer[7] = REG_16_8_LSB(av8100_config->hdmi_video_input_cmd.
+	buffer[7] = REG_16_8_LSB(adev->config.hdmi_video_input_cmd.
 		total_vertical_lines);
-	buffer[8] = REG_16_8_MSB(av8100_config->hdmi_video_input_cmd.
+	buffer[8] = REG_16_8_MSB(adev->config.hdmi_video_input_cmd.
 		total_vertical_active_lines);
-	buffer[9] = REG_16_8_LSB(av8100_config->hdmi_video_input_cmd.
+	buffer[9] = REG_16_8_LSB(adev->config.hdmi_video_input_cmd.
 		total_vertical_active_lines);
-	buffer[10] = av8100_config->hdmi_video_input_cmd.video_mode;
-	buffer[11] = av8100_config->hdmi_video_input_cmd.nb_data_lane;
-	buffer[12] = av8100_config->hdmi_video_input_cmd.
+	buffer[10] = adev->config.hdmi_video_input_cmd.video_mode;
+	buffer[11] = adev->config.hdmi_video_input_cmd.nb_data_lane;
+	buffer[12] = adev->config.hdmi_video_input_cmd.
 		nb_virtual_ch_command_mode;
-	buffer[13] = av8100_config->hdmi_video_input_cmd.
+	buffer[13] = adev->config.hdmi_video_input_cmd.
 		nb_virtual_ch_video_mode;
-	buffer[14] = REG_16_8_MSB(av8100_config->hdmi_video_input_cmd.
+	buffer[14] = REG_16_8_MSB(adev->config.hdmi_video_input_cmd.
 		TE_line_nb);
-	buffer[15] = REG_16_8_LSB(av8100_config->hdmi_video_input_cmd.
+	buffer[15] = REG_16_8_LSB(adev->config.hdmi_video_input_cmd.
 		TE_line_nb);
-	buffer[16] = av8100_config->hdmi_video_input_cmd.TE_config;
-	buffer[17] = REG_32_8_MSB(av8100_config->hdmi_video_input_cmd.
+	buffer[16] = adev->config.hdmi_video_input_cmd.TE_config;
+	buffer[17] = REG_32_8_MSB(adev->config.hdmi_video_input_cmd.
 		master_clock_freq);
-	buffer[18] = REG_32_8_MMSB(av8100_config->hdmi_video_input_cmd.
+	buffer[18] = REG_32_8_MMSB(adev->config.hdmi_video_input_cmd.
 		master_clock_freq);
-	buffer[19] = REG_32_8_MLSB(av8100_config->hdmi_video_input_cmd.
+	buffer[19] = REG_32_8_MLSB(adev->config.hdmi_video_input_cmd.
 		master_clock_freq);
-	buffer[20] = REG_32_8_LSB(av8100_config->hdmi_video_input_cmd.
+	buffer[20] = REG_32_8_LSB(adev->config.hdmi_video_input_cmd.
 		master_clock_freq);
-	buffer[21] = av8100_config->hdmi_video_input_cmd.ui_x4;
+	buffer[21] = adev->config.hdmi_video_input_cmd.ui_x4;
 
 	*length = AV8100_COMMAND_VIDEO_INPUT_FORMAT_SIZE - 1;
 	return 0;
 
 }
 
-static int configuration_audio_input_get(char *buffer,
-	unsigned int *length)
+static int configuration_audio_input_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_audio_input_cmd.
-		audio_input_if_format;
-	buffer[1] = av8100_config->hdmi_audio_input_cmd.i2s_input_nb;
-	buffer[2] = av8100_config->hdmi_audio_input_cmd.sample_audio_freq;
-	buffer[3] = av8100_config->hdmi_audio_input_cmd.audio_word_lg;
-	buffer[4] = av8100_config->hdmi_audio_input_cmd.audio_format;
-	buffer[5] = av8100_config->hdmi_audio_input_cmd.audio_if_mode;
-	buffer[6] = av8100_config->hdmi_audio_input_cmd.audio_mute;
+	buffer[0] = adev->config.hdmi_audio_input_cmd.audio_input_if_format;
+	buffer[1] = adev->config.hdmi_audio_input_cmd.i2s_input_nb;
+	buffer[2] = adev->config.hdmi_audio_input_cmd.sample_audio_freq;
+	buffer[3] = adev->config.hdmi_audio_input_cmd.audio_word_lg;
+	buffer[4] = adev->config.hdmi_audio_input_cmd.audio_format;
+	buffer[5] = adev->config.hdmi_audio_input_cmd.audio_if_mode;
+	buffer[6] = adev->config.hdmi_audio_input_cmd.audio_mute;
 
 	*length = AV8100_COMMAND_AUDIO_INPUT_FORMAT_SIZE - 1;
 	return 0;
 }
 
-static int configuration_video_output_get(char *buffer,
-	unsigned int *length)
+static int configuration_video_output_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_video_output_cmd.
+	buffer[0] = adev->config.hdmi_video_output_cmd.
 		video_output_cea_vesa;
 
 	if (buffer[0] == AV8100_CUSTOM) {
-		buffer[1] = av8100_config->hdmi_video_output_cmd.
+		buffer[1] = adev->config.hdmi_video_output_cmd.
 			vsync_polarity;
-		buffer[2] = av8100_config->hdmi_video_output_cmd.
+		buffer[2] = adev->config.hdmi_video_output_cmd.
 			hsync_polarity;
-		buffer[3] = REG_16_8_MSB(av8100_config->
+		buffer[3] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.total_horizontal_pixel);
-		buffer[4] = REG_16_8_LSB(av8100_config->
+		buffer[4] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.total_horizontal_pixel);
-		buffer[5] = REG_16_8_MSB(av8100_config->
+		buffer[5] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.total_horizontal_active_pixel);
-		buffer[6] = REG_16_8_LSB(av8100_config->
+		buffer[6] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.total_horizontal_active_pixel);
-		buffer[7] = REG_16_8_MSB(av8100_config->
+		buffer[7] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.total_vertical_in_half_lines);
-		buffer[8] = REG_16_8_LSB(av8100_config->
+		buffer[8] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.total_vertical_in_half_lines);
-		buffer[9] = REG_16_8_MSB(av8100_config->
+		buffer[9] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.
 				total_vertical_active_in_half_lines);
-		buffer[10] = REG_16_8_LSB(av8100_config->
+		buffer[10] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.
 				total_vertical_active_in_half_lines);
-		buffer[11] = REG_16_8_MSB(av8100_config->
+		buffer[11] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.hsync_start_in_pixel);
-		buffer[12] = REG_16_8_LSB(av8100_config->
+		buffer[12] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.hsync_start_in_pixel);
-		buffer[13] = REG_16_8_MSB(av8100_config->
+		buffer[13] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.hsync_length_in_pixel);
-		buffer[14] = REG_16_8_LSB(av8100_config->
+		buffer[14] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.hsync_length_in_pixel);
-		buffer[15] = REG_16_8_MSB(av8100_config->
+		buffer[15] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.vsync_start_in_half_line);
-		buffer[16] = REG_16_8_LSB(av8100_config->
+		buffer[16] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.vsync_start_in_half_line);
-		buffer[17] = REG_16_8_MSB(av8100_config->
+		buffer[17] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.vsync_length_in_half_line);
-		buffer[18] = REG_16_8_LSB(av8100_config->
+		buffer[18] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.vsync_length_in_half_line);
-		buffer[19] = REG_16_8_MSB(av8100_config->
+		buffer[19] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.hor_video_start_pixel);
-		buffer[20] = REG_16_8_LSB(av8100_config->
+		buffer[20] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.hor_video_start_pixel);
-		buffer[21] = REG_16_8_MSB(av8100_config->
+		buffer[21] = REG_16_8_MSB(adev->config.
 			hdmi_video_output_cmd.vert_video_start_pixel);
-		buffer[22] = REG_16_8_LSB(av8100_config->
+		buffer[22] = REG_16_8_LSB(adev->config.
 			hdmi_video_output_cmd.vert_video_start_pixel);
-		buffer[23] = av8100_config->
-			hdmi_video_output_cmd.video_type;
-		buffer[24] = av8100_config->
-			hdmi_video_output_cmd.pixel_repeat;
-		buffer[25] = REG_32_8_MSB(av8100_config->
+		buffer[23] = adev->config.hdmi_video_output_cmd.video_type;
+		buffer[24] = adev->config.hdmi_video_output_cmd.pixel_repeat;
+		buffer[25] = REG_32_8_MSB(adev->config.
 			hdmi_video_output_cmd.pixel_clock_freq_Hz);
-		buffer[26] = REG_32_8_MMSB(av8100_config->
+		buffer[26] = REG_32_8_MMSB(adev->config.
 			hdmi_video_output_cmd.pixel_clock_freq_Hz);
-		buffer[27] = REG_32_8_MLSB(av8100_config->
+		buffer[27] = REG_32_8_MLSB(adev->config.
 			hdmi_video_output_cmd.pixel_clock_freq_Hz);
-		buffer[28] = REG_32_8_LSB(av8100_config->
+		buffer[28] = REG_32_8_LSB(adev->config.
 			hdmi_video_output_cmd.pixel_clock_freq_Hz);
 
 		*length = AV8100_COMMAND_VIDEO_OUTPUT_FORMAT_SIZE - 1;
@@ -1401,58 +1423,53 @@ static int configuration_video_output_get(char *buffer,
 	return 0;
 }
 
-static int configuration_video_scaling_get(char *buffer,
-	unsigned int *length)
+static int configuration_video_scaling_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = REG_16_8_MSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[0] = REG_16_8_MSB(adev->config.hdmi_video_scaling_cmd.
 		h_start_in_pixel);
-	buffer[1] = REG_16_8_LSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[1] = REG_16_8_LSB(adev->config.hdmi_video_scaling_cmd.
 		h_start_in_pixel);
-	buffer[2] = REG_16_8_MSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[2] = REG_16_8_MSB(adev->config.hdmi_video_scaling_cmd.
 		h_stop_in_pixel);
-	buffer[3] = REG_16_8_LSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[3] = REG_16_8_LSB(adev->config.hdmi_video_scaling_cmd.
 		h_stop_in_pixel);
-	buffer[4] = REG_16_8_MSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[4] = REG_16_8_MSB(adev->config.hdmi_video_scaling_cmd.
 		v_start_in_line);
-	buffer[5] = REG_16_8_LSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[5] = REG_16_8_LSB(adev->config.hdmi_video_scaling_cmd.
 		v_start_in_line);
-	buffer[6] = REG_16_8_MSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[6] = REG_16_8_MSB(adev->config.hdmi_video_scaling_cmd.
 		v_stop_in_line);
-	buffer[7] = REG_16_8_LSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[7] = REG_16_8_LSB(adev->config.hdmi_video_scaling_cmd.
 		v_stop_in_line);
-	buffer[8] = REG_16_8_MSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[8] = REG_16_8_MSB(adev->config.hdmi_video_scaling_cmd.
 		h_start_out_pixel);
-	buffer[9] = REG_16_8_LSB(av8100_config->hdmi_video_scaling_cmd
+	buffer[9] = REG_16_8_LSB(adev->config.hdmi_video_scaling_cmd
 		.h_start_out_pixel);
-	buffer[10] = REG_16_8_MSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[10] = REG_16_8_MSB(adev->config.hdmi_video_scaling_cmd.
 		h_stop_out_pixel);
-	buffer[11] = REG_16_8_LSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[11] = REG_16_8_LSB(adev->config.hdmi_video_scaling_cmd.
 		h_stop_out_pixel);
-	buffer[12] = REG_16_8_MSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[12] = REG_16_8_MSB(adev->config.hdmi_video_scaling_cmd.
 		v_start_out_line);
-	buffer[13] = REG_16_8_LSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[13] = REG_16_8_LSB(adev->config.hdmi_video_scaling_cmd.
 		v_start_out_line);
-	buffer[14] = REG_16_8_MSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[14] = REG_16_8_MSB(adev->config.hdmi_video_scaling_cmd.
 		v_stop_out_line);
-	buffer[15] = REG_16_8_LSB(av8100_config->hdmi_video_scaling_cmd.
+	buffer[15] = REG_16_8_LSB(adev->config.hdmi_video_scaling_cmd.
 		v_stop_out_line);
 
 	*length = AV8100_COMMAND_VIDEO_SCALING_FORMAT_SIZE - 1;
 	return 0;
 }
 
-static int configuration_colorspace_conversion_get(char *buffer,
-	unsigned int *length)
+static int configuration_colorspace_conversion_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
 	const struct color_conversion_cmd *hdmi_color_space_conversion_cmd;
-	if (!av8100_config)
-		return AV8100_FAIL;
 
 	hdmi_color_space_conversion_cmd =
-		get_color_transform_cmd(av8100_config->color_transform);
+		get_color_transform_cmd(adev, adev->config.color_transform);
 
 	buffer[0] = REG_12_8_MSB(hdmi_color_space_conversion_cmd->c0);
 	buffer[1] = REG_16_8_LSB(hdmi_color_space_conversion_cmd->c0);
@@ -1487,17 +1504,14 @@ static int configuration_colorspace_conversion_get(char *buffer,
 	return 0;
 }
 
-static int configuration_cec_message_write_get(char *buffer,
-	unsigned int *length)
+static int configuration_cec_message_write_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
+	buffer[0] = adev->config.hdmi_cec_message_write_cmd.buffer_length;
+	memcpy(&buffer[1], adev->config.hdmi_cec_message_write_cmd.buffer,
+			adev->config.hdmi_cec_message_write_cmd.buffer_length);
 
-	buffer[0] = av8100_config->hdmi_cec_message_write_cmd.buffer_length;
-	memcpy(&buffer[1], av8100_config->hdmi_cec_message_write_cmd.buffer,
-		av8100_config->hdmi_cec_message_write_cmd.buffer_length);
-
-	*length = av8100_config->hdmi_cec_message_write_cmd.buffer_length + 1;
+	*length = adev->config.hdmi_cec_message_write_cmd.buffer_length + 1;
 
 	return 0;
 }
@@ -1505,123 +1519,101 @@ static int configuration_cec_message_write_get(char *buffer,
 static int configuration_cec_message_read_get(char *buffer,
 	unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
 	/* No buffer data */
 	*length = AV8100_COMMAND_CEC_MESSAGE_READ_BACK_SIZE - 1;
 	return 0;
 }
 
-static int configuration_denc_get(char *buffer,
-	unsigned int *length)
+static int configuration_denc_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_denc_cmd.cvbs_video_format;
-	buffer[1] = av8100_config->hdmi_denc_cmd.standard_selection;
-	buffer[2] = av8100_config->hdmi_denc_cmd.enable;
-	buffer[3] = av8100_config->hdmi_denc_cmd.macrovision_enable;
-	buffer[4] = av8100_config->hdmi_denc_cmd.internal_generator;
+	buffer[0] = adev->config.hdmi_denc_cmd.cvbs_video_format;
+	buffer[1] = adev->config.hdmi_denc_cmd.standard_selection;
+	buffer[2] = adev->config.hdmi_denc_cmd.enable;
+	buffer[3] = adev->config.hdmi_denc_cmd.macrovision_enable;
+	buffer[4] = adev->config.hdmi_denc_cmd.internal_generator;
 
 	*length = AV8100_COMMAND_DENC_SIZE - 1;
 	return 0;
 }
 
-static int configuration_hdmi_get(char *buffer, unsigned int *length)
+static int configuration_hdmi_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_cmd.hdmi_mode;
-	buffer[1] = av8100_config->hdmi_cmd.hdmi_format;
-	buffer[2] = av8100_config->hdmi_cmd.dvi_format;
+	buffer[0] = adev->config.hdmi_cmd.hdmi_mode;
+	buffer[1] = adev->config.hdmi_cmd.hdmi_format;
+	buffer[2] = adev->config.hdmi_cmd.dvi_format;
 
 	*length = AV8100_COMMAND_HDMI_SIZE - 1;
 	return 0;
 }
 
-static int configuration_hdcp_sendkey_get(char *buffer,
-	unsigned int *length)
+static int configuration_hdcp_sendkey_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
+	buffer[0] = adev->config.hdmi_hdcp_send_key_cmd.key_number;
+	memcpy(&buffer[1], adev->config.hdmi_hdcp_send_key_cmd.data,
+			adev->config.hdmi_hdcp_send_key_cmd.data_len);
 
-	buffer[0] = av8100_config->hdmi_hdcp_send_key_cmd.key_number;
-	memcpy(&buffer[1], av8100_config->hdmi_hdcp_send_key_cmd.data,
-		av8100_config->hdmi_hdcp_send_key_cmd.data_len);
-
-	*length = av8100_config->hdmi_hdcp_send_key_cmd.data_len + 1;
+	*length = adev->config.hdmi_hdcp_send_key_cmd.data_len + 1;
 	return 0;
 }
 
-static int configuration_hdcp_management_get(char *buffer,
-	unsigned int *length)
+static int configuration_hdcp_management_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_hdcp_management_format_cmd.req_type;
-	buffer[1] = av8100_config->hdmi_hdcp_management_format_cmd.encr_use;
+	buffer[0] = adev->config.hdmi_hdcp_management_format_cmd.req_type;
+	buffer[1] = adev->config.hdmi_hdcp_management_format_cmd.encr_use;
 
 	*length = AV8100_COMMAND_HDCP_MANAGEMENT_SIZE - 1;
 	return 0;
 }
 
-static int configuration_infoframe_get(char *buffer,
-	unsigned int *length)
+static int configuration_infoframe_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_infoframes_cmd.type;
-	buffer[1] = av8100_config->hdmi_infoframes_cmd.version;
-	buffer[2] = av8100_config->hdmi_infoframes_cmd.length;
-	buffer[3] = av8100_config->hdmi_infoframes_cmd.crc;
-	memcpy(&buffer[4], av8100_config->hdmi_infoframes_cmd.data,
+	buffer[0] = adev->config.hdmi_infoframes_cmd.type;
+	buffer[1] = adev->config.hdmi_infoframes_cmd.version;
+	buffer[2] = adev->config.hdmi_infoframes_cmd.length;
+	buffer[3] = adev->config.hdmi_infoframes_cmd.crc;
+	memcpy(&buffer[4], adev->config.hdmi_infoframes_cmd.data,
 	HDMI_INFOFRAME_DATA_SIZE);
 
-	*length = av8100_config->hdmi_infoframes_cmd.length + 4;
+	*length = adev->config.hdmi_infoframes_cmd.length + 4;
 	return 0;
 }
 
-static int av8100_edid_section_readback_get(char *buffer, unsigned int *length)
+static int av8100_edid_section_readback_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	buffer[0] = av8100_config->hdmi_edid_section_readback_cmd.address;
-	buffer[1] = av8100_config->hdmi_edid_section_readback_cmd.
+	buffer[0] = adev->config.hdmi_edid_section_readback_cmd.address;
+	buffer[1] = adev->config.hdmi_edid_section_readback_cmd.
 		block_number;
 
 	*length = AV8100_COMMAND_EDID_SECTION_READBACK_SIZE - 1;
 	return 0;
 }
 
-static int configuration_pattern_generator_get(char *buffer,
-	unsigned int *length)
+static int configuration_pattern_generator_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_pattern_generator_cmd.pattern_type;
-	buffer[1] = av8100_config->hdmi_pattern_generator_cmd.
+	buffer[0] = adev->config.hdmi_pattern_generator_cmd.pattern_type;
+	buffer[1] = adev->config.hdmi_pattern_generator_cmd.
 		pattern_video_format;
-	buffer[2] = av8100_config->hdmi_pattern_generator_cmd.
+	buffer[2] = adev->config.hdmi_pattern_generator_cmd.
 		pattern_audio_mode;
 
 	*length = AV8100_COMMAND_PATTERNGENERATOR_SIZE - 1;
 	return 0;
 }
 
-static int configuration_fuse_aes_key_get(char *buffer,
-	unsigned int *length)
+static int configuration_fuse_aes_key_get(struct av8100_device *adev,
+			char *buffer, unsigned int *length)
 {
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	buffer[0] = av8100_config->hdmi_fuse_aes_key_cmd.fuse_operation;
-	if (av8100_config->hdmi_fuse_aes_key_cmd.fuse_operation) {
+	buffer[0] = adev->config.hdmi_fuse_aes_key_cmd.fuse_operation;
+	if (adev->config.hdmi_fuse_aes_key_cmd.fuse_operation) {
 		/* Write key command */
-		memcpy(&buffer[1], av8100_config->hdmi_fuse_aes_key_cmd.key,
+		memcpy(&buffer[1], adev->config.hdmi_fuse_aes_key_cmd.key,
 			HDMI_FUSE_AES_KEY_SIZE);
 
 		*length = AV8100_COMMAND_FUSE_AES_KEY_SIZE - 1;
@@ -1636,15 +1628,16 @@ static int get_command_return_first(struct i2c_client *i2c,
 		enum av8100_command_type command_type) {
 	int retval = 0;
 	char val;
+	struct device *dev = &i2c->dev;
 
 	retval = read_single_byte(i2c, AV8100_COMMAND_OFFSET, &val);
 	if (retval) {
-		dev_dbg(av8100dev, "%s 1st ret failed\n", __func__);
+		dev_dbg(dev, "%s 1st ret failed\n", __func__);
 		return retval;
 	}
 
 	if (val != (0x80 | command_type)) {
-		dev_dbg(av8100dev, "%s 1st ret wrong:%x\n", __func__, val);
+		dev_dbg(dev, "%s 1st ret wrong:%x\n", __func__, val);
 		return -EFAULT;
 	}
 
@@ -1660,6 +1653,7 @@ static int get_command_return_data(struct i2c_client *i2c,
 	int retval = 0;
 	char val;
 	int index = 0;
+	struct device *dev = &i2c->dev;
 
 	if (buffer_length)
 		*buffer_length = 0;
@@ -1682,14 +1676,14 @@ static int get_command_return_data(struct i2c_client *i2c,
 			goto get_command_return_data_fail2r;
 
 		if (val) {
-			retval = AV8100_FAIL;
+			retval = -EFAULT;
 			goto get_command_return_data_fail2v;
 		}
 		break;
 
 	case AV8100_COMMAND_CEC_MESSAGE_READ_BACK:
 		if ((buffer == NULL) ||	(buffer_length == NULL)) {
-			retval = AV8100_FAIL;
+			retval = -EINVAL;
 			goto get_command_return_data_fail;
 		}
 
@@ -1698,17 +1692,17 @@ static int get_command_return_data(struct i2c_client *i2c,
 		if (retval)
 			goto get_command_return_data_fail;
 
-		dev_dbg(av8100dev, "cec buflen:%d\n", val);
+		dev_dbg(dev, "cec buflen:%d\n", val);
 		*buffer_length = val;
 
 		if (*buffer_length >
 			HDMI_CEC_READ_MAXSIZE) {
-			dev_dbg(av8100dev, "CEC size too large %d\n",
+			dev_dbg(dev, "CEC size too large %d\n",
 				*buffer_length);
 			*buffer_length = HDMI_CEC_READ_MAXSIZE;
 		}
 
-		dev_dbg(av8100dev, "return data: ");
+		dev_dbg(dev, "return data: ");
 
 		/* Get the return buffer */
 		for (index = 0; index < *buffer_length; ++index) {
@@ -1719,11 +1713,11 @@ static int get_command_return_data(struct i2c_client *i2c,
 				goto get_command_return_data_fail;
 			} else {
 				*(buffer + index) = val;
-				dev_dbg(av8100dev, "%02x ", *(buffer + index));
+				dev_dbg(dev, "%02x ", *(buffer + index));
 			}
 		}
 
-		dev_dbg(av8100dev, "\n");
+		dev_dbg(dev, "\n");
 		break;
 
 	case AV8100_COMMAND_HDCP_MANAGEMENT:
@@ -1747,7 +1741,7 @@ static int get_command_return_data(struct i2c_client *i2c,
 			/* Ignore return data */
 			break;
 
-		dev_dbg(av8100dev, "req_type:%02x ", command_buffer[0]);
+		dev_dbg(dev, "req_type:%02x ", command_buffer[0]);
 
 		/* Check if revoc list data is requested */
 		if (command_buffer[0] !=
@@ -1756,7 +1750,7 @@ static int get_command_return_data(struct i2c_client *i2c,
 			break;
 		}
 
-		dev_dbg(av8100dev, "return data: ");
+		dev_dbg(dev, "return data: ");
 
 		/* Get the return buffer */
 		for (cnt = 0; cnt < HDMI_HDCP_MGMT_BKSV_SIZE; cnt++) {
@@ -1767,7 +1761,7 @@ static int get_command_return_data(struct i2c_client *i2c,
 				goto get_command_return_data_fail;
 			} else {
 				*(buffer + index) = val;
-				dev_dbg(av8100dev, "%02x ", *(buffer + index));
+				dev_dbg(dev, "%02x ", *(buffer + index));
 			}
 			index++;
 		}
@@ -1780,7 +1774,7 @@ static int get_command_return_data(struct i2c_client *i2c,
 			goto get_command_return_data_fail;
 		} else {
 			*(buffer + index) = nrdev;
-			dev_dbg(av8100dev, "%02x ", *(buffer + index));
+			dev_dbg(dev, "%02x ", *(buffer + index));
 		}
 		index++;
 
@@ -1800,7 +1794,7 @@ static int get_command_return_data(struct i2c_client *i2c,
 					goto get_command_return_data_fail;
 				} else {
 					*(buffer + index) = val;
-					dev_dbg(av8100dev, "%02x ",
+					dev_dbg(dev, "%02x ",
 							*(buffer + index));
 				}
 				index++;
@@ -1818,7 +1812,7 @@ static int get_command_return_data(struct i2c_client *i2c,
 				goto get_command_return_data_fail;
 			} else {
 				*(buffer + index) = val;
-				dev_dbg(av8100dev, "%02x ", *(buffer + index));
+				dev_dbg(dev, "%02x ", *(buffer + index));
 			}
 			index++;
 		}
@@ -1826,20 +1820,20 @@ static int get_command_return_data(struct i2c_client *i2c,
 hdcp_management_end:
 		*buffer_length = index;
 
-		dev_dbg(av8100dev, "\n");
+		dev_dbg(dev, "\n");
 		}
 		break;
 
 	case AV8100_COMMAND_EDID_SECTION_READBACK:
 		if ((buffer == NULL) ||	(buffer_length == NULL)) {
-			retval = AV8100_FAIL;
+			retval = -EINVAL;
 			goto get_command_return_data_fail;
 		}
 
 		/* Return buffer length is fixed */
 		*buffer_length = HDMI_EDIDREAD_SIZE;
 
-		dev_dbg(av8100dev, "return data: ");
+		dev_dbg(dev, "return data: ");
 
 		/* Get the return buffer */
 		for (index = 0; index < *buffer_length; ++index) {
@@ -1850,16 +1844,16 @@ hdcp_management_end:
 				goto get_command_return_data_fail;
 			} else {
 				*(buffer + index) = val;
-				dev_dbg(av8100dev, "%02x ", *(buffer + index));
+				dev_dbg(dev, "%02x ", *(buffer + index));
 			}
 		}
 
-		dev_dbg(av8100dev, "\n");
+		dev_dbg(dev, "\n");
 		break;
 
 	case AV8100_COMMAND_FUSE_AES_KEY:
 		if ((buffer == NULL) ||	(buffer_length == NULL)) {
-			retval = AV8100_FAIL;
+			retval = -EINVAL;
 			goto get_command_return_data_fail;
 		}
 
@@ -1872,7 +1866,7 @@ hdcp_management_end:
 
 		/* Check the second return byte */
 		if (val) {
-			retval = AV8100_FAIL;
+			retval = -EFAULT;
 			goto get_command_return_data_fail2v;
 		}
 
@@ -1886,7 +1880,7 @@ hdcp_management_end:
 			goto get_command_return_data_fail;
 
 		*buffer = val;
-		dev_dbg(av8100dev, "CRC:%02x ", val);
+		dev_dbg(dev, "CRC:%02x ", val);
 
 		/* Get programmed status */
 		retval = read_single_byte(i2c,
@@ -1896,13 +1890,13 @@ hdcp_management_end:
 
 		*(buffer + 1) = val;
 
-		dev_dbg(av8100dev, "programmed:%02x ", val);
+		dev_dbg(dev, "programmed:%02x ", val);
 		break;
 
 	case AV8100_COMMAND_HDCP_SENDKEY:
 		if ((command_buffer[0] == HDMI_LOADAES_END_BLK_NR) &&
 			((buffer == NULL) || (buffer_length == NULL))) {
-			retval = AV8100_FAIL;
+			retval = -EINVAL;
 			goto get_command_return_data_fail;
 		}
 
@@ -1913,7 +1907,7 @@ hdcp_management_end:
 			goto get_command_return_data_fail2r;
 
 		if (val) {
-			retval = AV8100_FAIL;
+			retval = -EFAULT;
 			goto get_command_return_data_fail2v;
 		}
 
@@ -1921,13 +1915,13 @@ hdcp_management_end:
 			/* Return CRC32 if last AES block */
 			int cnt;
 
-			dev_dbg(av8100dev, "CRC32:");
+			dev_dbg(dev, "CRC32:");
 			for (cnt = 0; cnt < HDMI_CRC32_SIZE; cnt++) {
 				if (read_single_byte(i2c,
 					AV8100_CRC32_OFFSET + cnt, &val))
 					goto get_command_return_data_fail;
 				*(buffer + cnt) = val;
-				dev_dbg(av8100dev, "%02x", val);
+				dev_dbg(dev, "%02x", val);
 			}
 
 			*buffer_length = HDMI_CRC32_SIZE;
@@ -1935,53 +1929,53 @@ hdcp_management_end:
 		break;
 
 	default:
-		retval = AV8100_INVALID_COMMAND;
+		retval = -EFAULT;
 		break;
 	}
 
 	return retval;
 get_command_return_data_fail2r:
-	dev_dbg(av8100dev, "%s Reading 2nd return byte failed\n", __func__);
+	dev_dbg(dev, "%s Reading 2nd return byte failed\n", __func__);
 	return retval;
 get_command_return_data_fail2v:
-	dev_dbg(av8100dev, "%s 2nd return byte is wrong:%x\n", __func__, val);
+	dev_dbg(dev, "%s 2nd return byte is wrong:%x\n", __func__, val);
 	return retval;
 get_command_return_data_fail:
-	dev_dbg(av8100dev, "%s FAIL\n", __func__);
+	dev_dbg(dev, "%s FAIL\n", __func__);
 	return retval;
 }
 
-static int av8100_powerup1(void)
+static int av8100_powerup1(struct av8100_device *adev)
 {
 	int retval;
-	struct av8100_platform_data *pdata = av8100dev->platform_data;
+	struct av8100_platform_data *pdata = adev->dev->platform_data;
 
 	/* Regulator enable */
-	if ((av8100_globals->regulator_pwr) &&
-			(av8100_globals->regulator_requested == false)) {
-		retval = regulator_enable(av8100_globals->regulator_pwr);
+	if ((adev->params.regulator_pwr) &&
+			(adev->params.regulator_requested == false)) {
+		retval = regulator_enable(adev->params.regulator_pwr);
 		if (retval < 0) {
-			dev_warn(av8100dev, "%s: regulator_enable failed\n",
+			dev_warn(adev->dev, "%s: regulator_enable failed\n",
 			__func__);
 			return retval;
 		}
-		dev_dbg(av8100dev, "regulator_enable ok\n");
-		av8100_globals->regulator_requested = true;
+		dev_dbg(adev->dev, "regulator_enable ok\n");
+		adev->params.regulator_requested = true;
 	}
 
 	/* Reset av8100 */
 	gpio_set_value(pdata->reset, 1);
 
 	/* Need to wait before proceeding */
-	msleep(AV8100_WAITTIME_1MS);
+	mdelay(AV8100_WAITTIME_1MS);
 
-	av8100_set_state(AV8100_OPMODE_STANDBY);
+	av8100_set_state(adev, AV8100_OPMODE_STANDBY);
 
 	if (pdata->alt_powerupseq) {
-		dev_dbg(av8100dev, "powerup seq alt\n");
+		dev_dbg(adev->dev, "powerup seq alt\n");
 		retval = av8100_5V_w(0, 0, AV8100_ON_TIME);
 		if (retval) {
-			dev_err(av8100dev, "%s reg_wr err 1\n", __func__);
+			dev_err(adev->dev, "%s reg_wr err 1\n", __func__);
 			goto av8100_powerup1_err;
 		}
 
@@ -1993,7 +1987,7 @@ static int av8100_powerup1(void)
 				AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
 				AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_HIGH);
 		if (retval) {
-			dev_err(av8100dev, "%s reg_wr err 2\n", __func__);
+			dev_err(adev->dev, "%s reg_wr err 2\n", __func__);
 			goto av8100_powerup1_err;
 		}
 
@@ -2002,20 +1996,20 @@ static int av8100_powerup1(void)
 		retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
 				AV8100_STANDBY_STBY_HIGH, pdata->mclk_freq);
 		if (retval) {
-			dev_err(av8100dev, "%s reg_wr err 3\n", __func__);
+			dev_err(adev->dev, "%s reg_wr err 3\n", __func__);
 			goto av8100_powerup1_err;
 		}
 
-		msleep(AV8100_WAITTIME_1MS);
+		mdelay(AV8100_WAITTIME_1MS);
 
 		retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
 				AV8100_STANDBY_STBY_LOW, pdata->mclk_freq);
 		if (retval) {
-			dev_err(av8100dev, "%s reg_wr err 4\n", __func__);
+			dev_err(adev->dev, "%s reg_wr err 4\n", __func__);
 			goto av8100_powerup1_err;
 		}
 
-		msleep(AV8100_WAITTIME_1MS);
+		mdelay(AV8100_WAITTIME_1MS);
 
 		retval = av8100_reg_stby_pend_int_w(
 				AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
@@ -2023,30 +2017,31 @@ static int av8100_powerup1(void)
 				AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
 				AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_LOW);
 		if (retval) {
-			dev_err(av8100dev, "%s reg_wr err 5\n", __func__);
+			dev_err(adev->dev, "%s reg_wr err 5\n", __func__);
 			goto av8100_powerup1_err;
 		}
 
-		msleep(AV8100_WAITTIME_1MS);
+		mdelay(AV8100_WAITTIME_1MS);
 	}
 
 	/* Get chip version */
-	retval = av8100_reg_stby_pend_int_r(NULL, NULL, NULL, &chip_version);
+	retval = av8100_reg_stby_pend_int_r(NULL, NULL, NULL,
+					&adev->chip_version);
 	if (retval) {
-		dev_err(av8100dev, "Failed to read chip version\n");
+		dev_err(adev->dev, "Failed to read chip version\n");
 		goto av8100_powerup1_err;
 	}
 
-	dev_info(av8100dev, "chip version:%d\n", chip_version);
+	dev_info(adev->dev, "chip version:%d\n", adev->chip_version);
 
-	switch (chip_version) {
+	switch (adev->chip_version) {
 	case AV8100_CHIPVER_1:
 	case AV8100_CHIPVER_2:
 		break;
 
 	default:
-		dev_err(av8100dev, "Unsupported chip version:%d\n",
-			chip_version);
+		dev_err(adev->dev, "Unsupported chip version:%d\n",
+				adev->chip_version);
 		goto av8100_powerup1_err;
 		break;
 	}
@@ -2058,23 +2053,23 @@ av8100_powerup1_err:
 	return -EFAULT;
 }
 
-static int av8100_powerup2(void)
+static int av8100_powerup2(struct av8100_device *adev)
 {
 	int retval;
 
 	/* ON time & OFF time on 5v HDMI plug detect */
-	retval = av8100_5V_w(av8100_globals->denc_off_time,
-				av8100_globals->hdmi_off_time,
-				av8100_globals->on_time);
+	retval = av8100_5V_w(adev->params.denc_off_time,
+				adev->params.hdmi_off_time,
+				adev->params.on_time);
 	if (retval) {
-		dev_err(av8100dev,
+		dev_err(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		return retval;
 	}
 
-	msleep(AV8100_WAITTIME_1MS);
+	mdelay(AV8100_WAITTIME_1MS);
 
-	av8100_set_state(AV8100_OPMODE_SCAN);
+	av8100_set_state(adev, AV8100_OPMODE_SCAN);
 
 	return 0;
 }
@@ -2083,19 +2078,21 @@ static int register_read_internal(u8 offset, u8 *value)
 {
 	int retval = 0;
 	struct i2c_client *i2c;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EFAULT;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
-	if (!av8100_config)
-		return -EINVAL;
-
-	i2c = av8100_config->client;
+	i2c = adev->config.client;
 
 	/* Read from register */
 	retval = read_single_byte(i2c, offset, value);
 	if (retval)	{
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to read the value from av8100 register\n");
 		return -EFAULT;
 	}
@@ -2107,16 +2104,18 @@ static int register_write_internal(u8 offset, u8 value)
 {
 	int retval;
 	struct i2c_client *i2c;
+	struct av8100_device *adev;
 
-	if (!av8100_config)
-		return -EINVAL;
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EFAULT;
 
-	i2c = av8100_config->client;
+	i2c = adev->config.client;
 
 	/* Write to register */
 	retval = write_single_byte(i2c, offset, value);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		return -EFAULT;
 	}
@@ -2127,12 +2126,19 @@ static int register_write_internal(u8 offset, u8 value)
 int av8100_powerscan(void)
 {
 	int retval;
-	struct av8100_platform_data *pdata = av8100dev->platform_data;
+	struct av8100_device *adev;
+	struct av8100_platform_data *pdata;
 
-	dev_dbg(av8100dev, "%s\n", __func__);
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EFAULT;
+
+	pdata = adev->dev->platform_data;
+
+	dev_dbg(adev->dev, "%s\n", __func__);
 
 	if (av8100_status_get().av8100_state > AV8100_OPMODE_SCAN) {
-		dev_dbg(av8100dev, "set to scan mode\n");
+		dev_dbg(adev->dev, "set to scan mode\n");
 
 		av8100_disable_interrupt();
 
@@ -2140,32 +2146,32 @@ int av8100_powerscan(void)
 		retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
 			AV8100_STANDBY_STBY_LOW, pdata->mclk_freq);
 		if (retval) {
-			dev_err(av8100dev,
+			dev_err(adev->dev,
 				"Failed to write to av8100 register\n");
 			return retval;
 		}
 
 		/* Remove APE OPP requirement */
-		if (av8100_globals->opp_requested) {
+		if (adev->params.opp_requested) {
 			prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
-					(char *)av8100_miscdev.name);
+					(char *)adev->miscdev.name);
 			prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
-					(char *)av8100_miscdev.name);
-			av8100_globals->opp_requested = false;
+					(char *)adev->miscdev.name);
+			adev->params.opp_requested = false;
 		}
 
 		/* Clock disable */
-		if (av8100_globals->inputclk &&
-				av8100_globals->inputclk_requested) {
-			clk_disable(av8100_globals->inputclk);
-			av8100_globals->inputclk_requested = false;
+		if (adev->params.inputclk &&
+				adev->params.inputclk_requested) {
+			clk_disable(adev->params.inputclk);
+			adev->params.inputclk_requested = false;
 		}
 
-		msleep(AV8100_WAITTIME_1MS);
+		mdelay(AV8100_WAITTIME_1MS);
 
 		av8100_enable_interrupt();
 
-		av8100_set_state(AV8100_OPMODE_SCAN);
+		av8100_set_state(adev, AV8100_OPMODE_SCAN);
 	}
 
 	return 0;
@@ -2175,20 +2181,25 @@ EXPORT_SYMBOL(av8100_powerscan);
 int av8100_powerup(void)
 {
 	int ret = 0;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EFAULT;
 
 	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
 		return -EINVAL;
 
 	if (av8100_status_get().av8100_state < AV8100_OPMODE_STANDBY) {
-		ret = av8100_powerup1();
+		ret = av8100_powerup1(adev);
 		if (ret) {
-			dev_err(av8100dev, "av8100_powerup1 fail\n");
+			dev_err(adev->dev, "av8100_powerup1 fail\n");
 			return -EFAULT;
 		}
 	}
 
 	if (av8100_status_get().av8100_state < AV8100_OPMODE_SCAN)
-		ret = av8100_powerup2();
+		ret = av8100_powerup2(adev);
 
 	av8100_enable_interrupt();
 
@@ -2199,11 +2210,18 @@ EXPORT_SYMBOL(av8100_powerup);
 int av8100_powerdown(void)
 {
 	int retval = 0;
+	struct av8100_device *adev;
+	struct av8100_platform_data *pdata;
 
-	struct av8100_platform_data *pdata = av8100dev->platform_data;
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EFAULT;
+
+	pdata = adev->dev->platform_data;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		goto av8100_powerdown_end;
+
 	av8100_disable_interrupt();
 
 	if (pdata->alt_powerupseq) {
@@ -2214,39 +2232,39 @@ int av8100_powerdown(void)
 				AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_HIGH);
 
 		if (retval)
-			dev_err(av8100dev, "%s reg_wr err\n", __func__);
+			dev_err(adev->dev, "%s reg_wr err\n", __func__);
 		msleep(AV8100_WAITTIME_50MS);
 	}
 
 	/* Remove APE OPP requirement */
-	if (av8100_globals->opp_requested) {
+	if (adev->params.opp_requested) {
 		prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
-				(char *)av8100_miscdev.name);
+				(char *)adev->miscdev.name);
 		prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
-				(char *)av8100_miscdev.name);
-		av8100_globals->opp_requested = false;
+				(char *)adev->miscdev.name);
+		adev->params.opp_requested = false;
 	}
 
 	/* Clock disable */
-	if (av8100_globals->inputclk && av8100_globals->inputclk_requested) {
-		clk_disable(av8100_globals->inputclk);
-		av8100_globals->inputclk_requested = false;
+	if (adev->params.inputclk && adev->params.inputclk_requested) {
+		clk_disable(adev->params.inputclk);
+		adev->params.inputclk_requested = false;
 	}
 
 	/* Regulator disable */
-	if ((av8100_globals->regulator_pwr) &&
-			(av8100_globals->regulator_requested)) {
-		dev_dbg(av8100dev, "regulator_disable\n");
-		regulator_disable(av8100_globals->regulator_pwr);
-		av8100_globals->regulator_requested = false;
+	if ((adev->params.regulator_pwr) &&
+			(adev->params.regulator_requested)) {
+		dev_dbg(adev->dev, "regulator_disable\n");
+		regulator_disable(adev->params.regulator_pwr);
+		adev->params.regulator_requested = false;
 	}
 
 	gpio_set_value(pdata->reset, 0);
 
 	if (pdata->alt_powerupseq)
-		msleep(AV8100_WAITTIME_5MS);
+		mdelay(AV8100_WAITTIME_5MS);
 
-	av8100_set_state(AV8100_OPMODE_SHUTDOWN);
+	av8100_set_state(adev, AV8100_OPMODE_SHUTDOWN);
 
 av8100_powerdown_end:
 	return retval;
@@ -2271,66 +2289,85 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 	u8 hld;
 	u8 wa;
 	u8 ra;
-	struct av8100_platform_data *pdata = av8100dev->platform_data;
+	struct av8100_platform_data *pdata;
 	const struct firmware *fw_file;
 	u8 *fw_buff;
 	int fw_bytes;
+	struct av8100_device *adev;
+	struct av8100_status status;
 
-	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
 		return -EINVAL;
 
-	if (!av8100_config)
-		return -EINVAL;
+	LOCK_AV8100_FWDL;
+
+	status = av8100_status_get();
+	if (status.av8100_state <= AV8100_OPMODE_SHUTDOWN) {
+		retval = -EINVAL;
+		goto av8100_download_firmware_err2;
+	}
+
+	if (status.av8100_state >= AV8100_OPMODE_INIT) {
+		dev_dbg(adev->dev, "FW already ok\n");
+		retval = 0;
+		goto av8100_download_firmware_err2;
+	}
+
+	av8100_set_state(adev, AV8100_OPMODE_INIT);
+
+	pdata = adev->dev->platform_data;
 
 	/* Request firmware */
 	if (request_firmware(&fw_file,
 			       AV8100_FW_FILENAME,
-			       av8100dev)) {
-		dev_err(av8100dev, "fw request failed\n");
-		return -EFAULT;
+			       adev->dev)) {
+		dev_err(adev->dev, "fw request failed\n");
+		retval = -EFAULT;
+		goto av8100_download_firmware_err2;
 	}
 
 	/* Master clock timing, running */
 	retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
 		AV8100_STANDBY_STBY_HIGH, pdata->mclk_freq);
 	if (retval) {
-		dev_err(av8100dev,
+		dev_err(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		goto av8100_download_firmware_err;
 	}
 
-	msleep(AV8100_WAITTIME_1MS);
+	mdelay(AV8100_WAITTIME_1MS);
 
 	/* Clock enable */
-	if (av8100_globals->inputclk &&
-			av8100_globals->inputclk_requested == false) {
-		if (clk_enable(av8100_globals->inputclk)) {
-			dev_err(av8100dev, "inputclk en failed\n");
+	if (adev->params.inputclk &&
+			adev->params.inputclk_requested == false) {
+		if (clk_enable(adev->params.inputclk)) {
+			dev_err(adev->dev, "inputclk en failed\n");
 			retval = -EFAULT;
 			goto av8100_download_firmware_err;
 		}
 
-		av8100_globals->inputclk_requested = true;
+		adev->params.inputclk_requested = true;
 	}
 
 	/* Request 100% APE OPP */
-	if (av8100_globals->opp_requested == false) {
+	if (adev->params.opp_requested == false) {
 		if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-				(char *)av8100_miscdev.name, 100)) {
-			dev_err(av8100dev, "APE OPP 100 failed\n");
+				(char *)adev->miscdev.name, 100)) {
+			dev_err(adev->dev, "APE OPP 100 failed\n");
 			retval = -EFAULT;
 			goto av8100_download_firmware_err;
 		}
 		if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
-				(char *)av8100_miscdev.name, 100)) {
-			dev_err(av8100dev, "DDR OPP 100 failed\n");
+				(char *)adev->miscdev.name, 100)) {
+			dev_err(adev->dev, "DDR OPP 100 failed\n");
 			prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
-					(char *)av8100_miscdev.name);
+					(char *)adev->miscdev.name);
 			retval = -EFAULT;
 			goto av8100_download_firmware_err;
 		}
 
-		av8100_globals->opp_requested = true;
+		adev->params.opp_requested = true;
 	}
 
 	msleep(AV8100_WAITTIME_10MS);
@@ -2338,9 +2375,9 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 	/* Prepare firmware data */
 	fw_bytes = fw_file->size;
 	fw_buff = (u8 *)fw_file->data;
-	dev_dbg(av8100dev, "fw size:%d\n", fw_bytes);
+	dev_dbg(adev->dev, "fw size:%d\n", fw_bytes);
 
-	i2c = av8100_config->client;
+	i2c = adev->config.client;
 
 	/* Enable firmware download */
 	retval = av8100_reg_gen_ctrl_w(
@@ -2349,7 +2386,7 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 		AV8100_GENERAL_CONTROL_WA_LOW,
 		AV8100_GENERAL_CONTROL_RA_LOW);
 	if (retval) {
-		dev_err(av8100dev,
+		dev_err(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		retval = -EFAULT;
 		goto av8100_download_firmware_err;
@@ -2357,12 +2394,12 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 
 	retval = av8100_reg_gen_ctrl_r(&fdl, &hld, &wa, &ra);
 	if (retval) {
-		dev_err(av8100dev,
+		dev_err(adev->dev,
 			"Failed to read the value from av8100 register\n");
 		retval = -EFAULT;
 		goto av8100_download_firmware_err;
 	} else {
-		dev_dbg(av8100dev, "GENERAL_CONTROL_REG register fdl:%d "
+		dev_dbg(adev->dev, "GENERAL_CONTROL_REG register fdl:%d "
 			"hld:%d wa:%d ra:%d\n", fdl, hld, wa, ra);
 	}
 
@@ -2376,14 +2413,14 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 				AV8100_FIRMWARE_DOWNLOAD_ENTRY, fw_buff + size,
 				increment);
 			if (retval) {
-				dev_dbg(av8100dev, "Failed to download the "
+				dev_dbg(adev->dev, "Failed to download the "
 					"av8100 firmware\n");
 				UNLOCK_AV8100_HW;
 				retval = -EFAULT;
 				goto av8100_download_firmware_err;
 			}
 		} else if (if_type == DSI_INTERFACE) {
-			dev_dbg(av8100dev,
+			dev_dbg(adev->dev,
 				"DSI_INTERFACE is currently not supported\n");
 			UNLOCK_AV8100_HW;
 			retval = -EINVAL;
@@ -2400,7 +2437,7 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 		retval = write_multi_byte(i2c,
 			AV8100_FIRMWARE_DOWNLOAD_ENTRY, fw_buff + size, temp);
 		if (retval) {
-			dev_dbg(av8100dev,
+			dev_dbg(adev->dev,
 				"Failed to download the av8100 firmware\n");
 			UNLOCK_AV8100_HW;
 			retval = -EFAULT;
@@ -2425,23 +2462,23 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 
 	retval = av8100_reg_fw_dl_entry_r(&val);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to read the value from the av8100 register\n");
 		retval = -EFAULT;
 		goto av8100_download_firmware_err;
 	}
 
-	dev_dbg(av8100dev, "checksum:%x,val:%x\n", checksum, val);
+	dev_dbg(adev->dev, "checksum:%x,val:%x\n", checksum, val);
 
 	if (checksum != val) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			">Fw downloading.... FAIL checksum issue\n");
-		dev_dbg(av8100dev, "checksum = %d\n", checksum);
-		dev_dbg(av8100dev, "checksum read: %d\n", val);
+		dev_dbg(adev->dev, "checksum = %d\n", checksum);
+		dev_dbg(adev->dev, "checksum read: %d\n", val);
 		retval = -EFAULT;
 		goto av8100_download_firmware_err;
 	} else {
-		dev_dbg(av8100dev, ">Fw downloading.... success\n");
+		dev_dbg(adev->dev, ">Fw downloading.... success\n");
 	}
 
 	/* Set to idle mode */
@@ -2449,7 +2486,7 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 		AV8100_GENERAL_CONTROL_HLD_LOW,	AV8100_GENERAL_CONTROL_WA_LOW,
 		AV8100_GENERAL_CONTROL_RA_LOW);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to the av8100 register\n");
 		retval = -EFAULT;
 		goto av8100_download_firmware_err;
@@ -2460,47 +2497,75 @@ int av8100_download_firmware(char *fw_buf, int nbytes,
 	cnt_max = sizeof(waittime_retry);
 	retval = av8100_reg_gen_status_r(NULL, NULL, NULL, &uc,
 		NULL, NULL);
-	while ((retval == 0) && (uc != 0x1) && (cnt++ < cnt_max)) {
-		msleep(waittime_retry[cnt]);
+	while ((retval == 0) && (uc != 0x1) && (cnt < cnt_max)) {
+		mdelay(waittime_retry[cnt]);
 		retval = av8100_reg_gen_status_r(NULL, NULL, NULL,
 			&uc, NULL, NULL);
+		cnt++;
 	}
-	dev_dbg(av8100dev, "av8100 fwdl cnt:%d\n", cnt);
+	dev_dbg(adev->dev, "av8100 fwdl cnt:%d\n", cnt);
 
 	if (retval)	{
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to read the value from the av8100 register\n");
 		retval = -EFAULT;
 		goto av8100_download_firmware_err;
 	}
 
 	if (uc != 0x1)
-		dev_dbg(av8100dev, "UC is not ready\n");
+		dev_dbg(adev->dev, "UC is not ready\n");
 
 	release_firmware(fw_file);
 
-	av8100_set_state(AV8100_OPMODE_IDLE);
+	if (adev->chip_version != 1) {
+		/* Get cut version */
+		retval = read_single_byte(i2c, AV8100_CUTVER_OFFSET, &val);
+		if (retval) {
+			dev_err(adev->dev, "Read cut ver failed\n");
+			return retval;
+		}
 
+		switch (val) {
+		case 0:
+			dev_dbg(adev->dev, "Cut ver 0 (2.1)\n");
+			break;
+		case 1:
+			dev_dbg(adev->dev, "Cut ver 1 (2.2)\n");
+			break;
+		case 3:
+			dev_dbg(adev->dev, "Cut ver 3 (2.3)\n");
+			break;
+		default:
+			dev_dbg(adev->dev, "Cut ver %d\n", val);
+			break;
+		}
+	}
+
+	av8100_set_state(adev, AV8100_OPMODE_IDLE);
+
+	UNLOCK_AV8100_FWDL;
 	return 0;
 
 av8100_download_firmware_err:
 	release_firmware(fw_file);
 
 	/* Remove APE OPP requirement */
-	if (av8100_globals->opp_requested) {
+	if (adev->params.opp_requested) {
 		prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
-				(char *)av8100_miscdev.name);
+				(char *)adev->miscdev.name);
 		prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
-				(char *)av8100_miscdev.name);
-		av8100_globals->opp_requested = false;
+				(char *)adev->miscdev.name);
+		adev->params.opp_requested = false;
 	}
 
 	/* Clock disable */
-	if (av8100_globals->inputclk && av8100_globals->inputclk_requested) {
-		clk_disable(av8100_globals->inputclk);
-		av8100_globals->inputclk_requested = false;
+	if (adev->params.inputclk && adev->params.inputclk_requested) {
+		clk_disable(adev->params.inputclk);
+		adev->params.inputclk_requested = false;
 	}
 
+av8100_download_firmware_err2:
+	UNLOCK_AV8100_FWDL;
 	return retval;
 }
 EXPORT_SYMBOL(av8100_download_firmware);
@@ -2508,20 +2573,19 @@ EXPORT_SYMBOL(av8100_download_firmware);
 int av8100_disable_interrupt(void)
 {
 	int retval;
-	struct i2c_client *i2c;
 	u8 hpdm = 0;
 	u8 cpdm = 0;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
-	if (!av8100_globals || !av8100_config)
-		return -EINVAL;
-
-	if (!av8100_globals->ints_enabled)
+	if (!adev->params.ints_enabled)
 		return 0;
-
-	i2c = av8100_config->client;
 
 	retval = av8100_reg_stby_pend_int_w(
 			AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
@@ -2529,7 +2593,7 @@ int av8100_disable_interrupt(void)
 			AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
 			AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_LOW);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		return -EFAULT;
 	}
@@ -2543,13 +2607,13 @@ int av8100_disable_interrupt(void)
 			AV8100_GENERAL_INTERRUPT_MASK_UOVBM_LOW,
 			AV8100_GENERAL_INTERRUPT_MASK_TEM_LOW);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		return -EFAULT;
 	}
 
-	hpdm = av8100_globals->hpdm;
-	cpdm = av8100_globals->cpdm;
+	hpdm = adev->params.hpdm;
+	cpdm = adev->params.cpdm;
 
 	retval = av8100_reg_stby_int_mask_w(
 			AV8100_STANDBY_INTERRUPT_MASK_HPDM_LOW,
@@ -2557,14 +2621,14 @@ int av8100_disable_interrupt(void)
 			AV8100_STANDBY_INTERRUPT_MASK_STBYGPIOCFG_INPUT,
 			AV8100_STANDBY_INTERRUPT_MASK_IPOL_LOW);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		return -EFAULT;
 	}
 
-	av8100_globals->hpdm = hpdm;
-	av8100_globals->cpdm = cpdm;
-	av8100_globals->ints_enabled = false;
+	adev->params.hpdm = hpdm;
+	adev->params.cpdm = cpdm;
+	adev->params.ints_enabled = false;
 
 	return 0;
 }
@@ -2573,18 +2637,17 @@ EXPORT_SYMBOL(av8100_disable_interrupt);
 int av8100_enable_interrupt(void)
 {
 	int retval;
-	struct i2c_client *i2c;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
-	if (!av8100_globals || !av8100_config)
-		return -EINVAL;
-
-	if (av8100_globals->ints_enabled)
+	if (adev->params.ints_enabled)
 		return 0;
-
-	i2c = av8100_config->client;
 
 	retval = av8100_reg_stby_pend_int_w(
 			AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
@@ -2592,7 +2655,7 @@ int av8100_enable_interrupt(void)
 			AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
 			AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_LOW);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		return -EFAULT;
 	}
@@ -2601,28 +2664,28 @@ int av8100_enable_interrupt(void)
 			AV8100_GENERAL_INTERRUPT_MASK_EOCM_LOW,
 			AV8100_GENERAL_INTERRUPT_MASK_VSIM_LOW,
 			AV8100_GENERAL_INTERRUPT_MASK_VSOM_LOW,
-			av8100_globals->cecm,
-			av8100_globals->hdcpm,
-			AV8100_GENERAL_INTERRUPT_MASK_UOVBM_LOW,
+			adev->params.cecm,
+			adev->params.hdcpm,
+			adev->params.uovbm,
 			AV8100_GENERAL_INTERRUPT_MASK_TEM_LOW);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		return -EFAULT;
 	}
 
 	retval = av8100_reg_stby_int_mask_w(
-			av8100_globals->hpdm,
-			av8100_globals->cpdm,
+			adev->params.hpdm,
+			adev->params.cpdm,
 			AV8100_STANDBY_INTERRUPT_MASK_STBYGPIOCFG_INPUT,
 			AV8100_STANDBY_INTERRUPT_MASK_IPOL_LOW);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		return -EFAULT;
 	}
 
-	av8100_globals->ints_enabled = true;
+	adev->params.ints_enabled = true;
 
 	return 0;
 }
@@ -2654,6 +2717,11 @@ static int av8100_5V_w(u8 denc_off, u8 hdmi_off, u8 on)
 {
 	u8 val;
 	int retval;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
@@ -2663,7 +2731,7 @@ static int av8100_5V_w(u8 denc_off, u8 hdmi_off, u8 on)
 	/* Set register value.
 	 * chip_version == 1 have one common off time
 	 * chip_version > 1 support different off time for hdmi and tvout. */
-	if (chip_version == 1)
+	if (adev->chip_version == 1)
 		val = AV8100_HDMI_5_VOLT_TIME_OFF_TIME(hdmi_off) |
 			AV8100_HDMI_5_VOLT_TIME_ON_TIME(on);
 	else
@@ -2682,6 +2750,11 @@ static int av8100_5V_w(u8 denc_off, u8 hdmi_off, u8 on)
 int av8100_reg_hdmi_5_volt_time_w(u8 denc_off, u8 hdmi_off, u8 on)
 {
 	int retval;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
@@ -2689,12 +2762,12 @@ int av8100_reg_hdmi_5_volt_time_w(u8 denc_off, u8 hdmi_off, u8 on)
 	retval = av8100_5V_w(denc_off, hdmi_off, on);
 
 	/* Set vars */
-	if (chip_version > 1)
-		av8100_globals->denc_off_time = denc_off;
+	if (adev->chip_version > 1)
+		adev->params.denc_off_time = denc_off;
 
-	av8100_globals->hdmi_off_time = hdmi_off;
+	adev->params.hdmi_off_time = hdmi_off;
 	if (on)
-		av8100_globals->on_time = on;
+		adev->params.on_time = on;
 
 	return retval;
 }
@@ -2705,6 +2778,11 @@ int av8100_reg_stby_int_mask_w(
 {
 	int retval;
 	u8 val;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
@@ -2720,8 +2798,8 @@ int av8100_reg_stby_int_mask_w(
 	/* Write to register */
 	retval = register_write_internal(AV8100_STANDBY_INTERRUPT_MASK, val);
 
-	av8100_globals->hpdm = hpdm;
-	av8100_globals->cpdm = cpdm;
+	adev->params.hpdm = hpdm;
+	adev->params.cpdm = cpdm;
 
 	UNLOCK_AV8100_HW;
 	return retval;
@@ -2886,23 +2964,23 @@ int av8100_reg_w(
 {
 	int retval = 0;
 	struct i2c_client *i2c;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
 
-	if (!av8100_config) {
-		UNLOCK_AV8100_HW;
-		return -EINVAL;
-	}
-
-	i2c = av8100_config->client;
+	i2c = adev->config.client;
 
 	/* Write to register */
 	retval = write_single_byte(i2c, offset, value);
 	if (retval) {
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to write the value to av8100 register\n");
 		UNLOCK_AV8100_HW;
 		return -EFAULT;
@@ -2949,6 +3027,11 @@ int av8100_reg_hdmi_5_volt_time_r(
 {
 	int retval;
 	u8 val;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
@@ -2959,7 +3042,7 @@ int av8100_reg_hdmi_5_volt_time_r(
 	retval = register_read_internal(AV8100_HDMI_5_VOLT_TIME, &val);
 
 	/* Set return params */
-	if (chip_version == 1) {
+	if (adev->chip_version == 1) {
 		if (denc_off_time)
 			*denc_off_time = 0;
 		if (hdmi_off_time)
@@ -3264,23 +3347,23 @@ int av8100_reg_r(
 {
 	int retval = 0;
 	struct i2c_client *i2c;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
 
 	LOCK_AV8100_HW;
 
-	if (!av8100_config) {
-		retval = AV8100_FAIL;
-		goto av8100_register_read_out;
-	}
-
-	i2c = av8100_config->client;
+	i2c = adev->config.client;
 
 	/* Read from register */
 	retval = read_single_byte(i2c, offset, value);
 	if (retval)	{
-		dev_dbg(av8100dev,
+		dev_dbg(adev->dev,
 			"Failed to read the value from av8100 register\n");
 		retval = -EFAULT;
 		goto av8100_register_read_out;
@@ -3295,104 +3378,107 @@ EXPORT_SYMBOL(av8100_reg_r);
 int av8100_conf_get(enum av8100_command_type command_type,
 	union av8100_configuration *config)
 {
-	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
 		return -EINVAL;
 
-	if (!av8100_config || !config)
-		return AV8100_FAIL;
+	if (av8100_status_get().av8100_state == AV8100_OPMODE_UNDEFINED)
+		return -EINVAL;
 
 	/* Put configuration data to the corresponding data struct depending
 	 * on command type */
 	switch (command_type) {
 	case AV8100_COMMAND_VIDEO_INPUT_FORMAT:
 		memcpy(&config->video_input_format,
-			&av8100_config->hdmi_video_input_cmd,
+			&adev->config.hdmi_video_input_cmd,
 			sizeof(struct av8100_video_input_format_cmd));
 		break;
 
 	case AV8100_COMMAND_AUDIO_INPUT_FORMAT:
 		memcpy(&config->audio_input_format,
-			&av8100_config->hdmi_audio_input_cmd,
+			&adev->config.hdmi_audio_input_cmd,
 			sizeof(struct av8100_audio_input_format_cmd));
 		break;
 
 	case AV8100_COMMAND_VIDEO_OUTPUT_FORMAT:
 		memcpy(&config->video_output_format,
-			&av8100_config->hdmi_video_output_cmd,
+			&adev->config.hdmi_video_output_cmd,
 			sizeof(struct av8100_video_output_format_cmd));
 		break;
 
 	case AV8100_COMMAND_VIDEO_SCALING_FORMAT:
 		memcpy(&config->video_scaling_format,
-			&av8100_config->hdmi_video_scaling_cmd,
+			&adev->config.hdmi_video_scaling_cmd,
 			sizeof(struct av8100_video_scaling_format_cmd));
 		break;
 
 	case AV8100_COMMAND_COLORSPACECONVERSION:
-		config->color_transform = av8100_config->color_transform;
+		config->color_transform = adev->config.color_transform;
 		break;
 
 	case AV8100_COMMAND_CEC_MESSAGE_WRITE:
 		memcpy(&config->cec_message_write_format,
-			&av8100_config->hdmi_cec_message_write_cmd,
+			&adev->config.hdmi_cec_message_write_cmd,
 			sizeof(struct av8100_cec_message_write_format_cmd));
 		break;
 
 	case AV8100_COMMAND_CEC_MESSAGE_READ_BACK:
 		memcpy(&config->cec_message_read_back_format,
-			&av8100_config->hdmi_cec_message_read_back_cmd,
+			&adev->config.hdmi_cec_message_read_back_cmd,
 			sizeof(struct av8100_cec_message_read_back_format_cmd));
 		break;
 
 	case AV8100_COMMAND_DENC:
-		memcpy(&config->denc_format, &av8100_config->hdmi_denc_cmd,
+		memcpy(&config->denc_format, &adev->config.hdmi_denc_cmd,
 				sizeof(struct av8100_denc_format_cmd));
 		break;
 
 	case AV8100_COMMAND_HDMI:
-		memcpy(&config->hdmi_format, &av8100_config->hdmi_cmd,
+		memcpy(&config->hdmi_format, &adev->config.hdmi_cmd,
 				sizeof(struct av8100_hdmi_cmd));
 		break;
 
 	case AV8100_COMMAND_HDCP_SENDKEY:
 		memcpy(&config->hdcp_send_key_format,
-			&av8100_config->hdmi_hdcp_send_key_cmd,
+			&adev->config.hdmi_hdcp_send_key_cmd,
 			sizeof(struct av8100_hdcp_send_key_format_cmd));
 		break;
 
 	case AV8100_COMMAND_HDCP_MANAGEMENT:
 		memcpy(&config->hdcp_management_format,
-			&av8100_config->hdmi_hdcp_management_format_cmd,
+			&adev->config.hdmi_hdcp_management_format_cmd,
 			sizeof(struct av8100_hdcp_management_format_cmd));
 		break;
 
 	case AV8100_COMMAND_INFOFRAMES:
 		memcpy(&config->infoframes_format,
-			&av8100_config->hdmi_infoframes_cmd,
+			&adev->config.hdmi_infoframes_cmd,
 			sizeof(struct av8100_infoframes_format_cmd));
 		break;
 
 	case AV8100_COMMAND_EDID_SECTION_READBACK:
 		memcpy(&config->edid_section_readback_format,
-			&av8100_config->hdmi_edid_section_readback_cmd,
+			&adev->config.hdmi_edid_section_readback_cmd,
 			sizeof(struct
 				av8100_edid_section_readback_format_cmd));
 		break;
 
 	case AV8100_COMMAND_PATTERNGENERATOR:
 		memcpy(&config->pattern_generator_format,
-			&av8100_config->hdmi_pattern_generator_cmd,
+			&adev->config.hdmi_pattern_generator_cmd,
 			sizeof(struct av8100_pattern_generator_format_cmd));
 		break;
 
 	case AV8100_COMMAND_FUSE_AES_KEY:
 		memcpy(&config->fuse_aes_key_format,
-			&av8100_config->hdmi_fuse_aes_key_cmd,
+			&adev->config.hdmi_fuse_aes_key_cmd,
 			sizeof(struct av8100_fuse_aes_key_format_cmd));
 		break;
 
 	default:
-		return AV8100_FAIL;
+		return -EINVAL;
 		break;
 	}
 
@@ -3403,105 +3489,108 @@ EXPORT_SYMBOL(av8100_conf_get);
 int av8100_conf_prep(enum av8100_command_type command_type,
 	union av8100_configuration *config)
 {
-	if (!av8100_config || !config)
-		return AV8100_FAIL;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!config || !adev)
+		return -EINVAL;
 
 	/* Put configuration data to the corresponding data struct depending
 	 * on command type */
 	switch (command_type) {
 	case AV8100_COMMAND_VIDEO_INPUT_FORMAT:
-		memcpy(&av8100_config->hdmi_video_input_cmd,
+		memcpy(&adev->config.hdmi_video_input_cmd,
 			&config->video_input_format,
 			sizeof(struct av8100_video_input_format_cmd));
 		break;
 
 	case AV8100_COMMAND_AUDIO_INPUT_FORMAT:
-		memcpy(&av8100_config->hdmi_audio_input_cmd,
+		memcpy(&adev->config.hdmi_audio_input_cmd,
 			&config->audio_input_format,
 			sizeof(struct av8100_audio_input_format_cmd));
 		break;
 
 	case AV8100_COMMAND_VIDEO_OUTPUT_FORMAT:
-		memcpy(&av8100_config->hdmi_video_output_cmd,
+		memcpy(&adev->config.hdmi_video_output_cmd,
 			&config->video_output_format,
 			sizeof(struct av8100_video_output_format_cmd));
 
 		/* Set params that depend on video output */
-		av8100_config_video_output_dep(av8100_config->
+		av8100_config_video_output_dep(adev->config.
 			hdmi_video_output_cmd.video_output_cea_vesa);
 		break;
 
 	case AV8100_COMMAND_VIDEO_SCALING_FORMAT:
-		memcpy(&av8100_config->hdmi_video_scaling_cmd,
+		memcpy(&adev->config.hdmi_video_scaling_cmd,
 			&config->video_scaling_format,
 			sizeof(struct av8100_video_scaling_format_cmd));
 		break;
 
 	case AV8100_COMMAND_COLORSPACECONVERSION:
-		av8100_config->color_transform = config->color_transform;
+		adev->config.color_transform = config->color_transform;
 		break;
 
 	case AV8100_COMMAND_CEC_MESSAGE_WRITE:
-		memcpy(&av8100_config->hdmi_cec_message_write_cmd,
+		memcpy(&adev->config.hdmi_cec_message_write_cmd,
 			&config->cec_message_write_format,
 			sizeof(struct av8100_cec_message_write_format_cmd));
 		break;
 
 	case AV8100_COMMAND_CEC_MESSAGE_READ_BACK:
-		memcpy(&av8100_config->hdmi_cec_message_read_back_cmd,
+		memcpy(&adev->config.hdmi_cec_message_read_back_cmd,
 			&config->cec_message_read_back_format,
 			sizeof(struct av8100_cec_message_read_back_format_cmd));
 		break;
 
 	case AV8100_COMMAND_DENC:
-		memcpy(&av8100_config->hdmi_denc_cmd, &config->denc_format,
+		memcpy(&adev->config.hdmi_denc_cmd, &config->denc_format,
 				sizeof(struct av8100_denc_format_cmd));
 		break;
 
 	case AV8100_COMMAND_HDMI:
-		memcpy(&av8100_config->hdmi_cmd, &config->hdmi_format,
+		memcpy(&adev->config.hdmi_cmd, &config->hdmi_format,
 				sizeof(struct av8100_hdmi_cmd));
 		break;
 
 	case AV8100_COMMAND_HDCP_SENDKEY:
-		memcpy(&av8100_config->hdmi_hdcp_send_key_cmd,
+		memcpy(&adev->config.hdmi_hdcp_send_key_cmd,
 			&config->hdcp_send_key_format,
 			sizeof(struct av8100_hdcp_send_key_format_cmd));
 		break;
 
 	case AV8100_COMMAND_HDCP_MANAGEMENT:
-		memcpy(&av8100_config->hdmi_hdcp_management_format_cmd,
+		memcpy(&adev->config.hdmi_hdcp_management_format_cmd,
 			&config->hdcp_management_format,
 			sizeof(struct av8100_hdcp_management_format_cmd));
 		break;
 
 	case AV8100_COMMAND_INFOFRAMES:
-		memcpy(&av8100_config->hdmi_infoframes_cmd,
+		memcpy(&adev->config.hdmi_infoframes_cmd,
 			&config->infoframes_format,
 			sizeof(struct av8100_infoframes_format_cmd));
 		break;
 
 	case AV8100_COMMAND_EDID_SECTION_READBACK:
-		memcpy(&av8100_config->hdmi_edid_section_readback_cmd,
+		memcpy(&adev->config.hdmi_edid_section_readback_cmd,
 			&config->edid_section_readback_format,
 			sizeof(struct
 				av8100_edid_section_readback_format_cmd));
 		break;
 
 	case AV8100_COMMAND_PATTERNGENERATOR:
-		memcpy(&av8100_config->hdmi_pattern_generator_cmd,
+		memcpy(&adev->config.hdmi_pattern_generator_cmd,
 			&config->pattern_generator_format,
 			sizeof(struct av8100_pattern_generator_format_cmd));
 		break;
 
 	case AV8100_COMMAND_FUSE_AES_KEY:
-		memcpy(&av8100_config->hdmi_fuse_aes_key_cmd,
+		memcpy(&adev->config.hdmi_fuse_aes_key_cmd,
 			&config->fuse_aes_key_format,
 			sizeof(struct av8100_fuse_aes_key_format_cmd));
 		break;
 
 	default:
-		return AV8100_FAIL;
+		return -EINVAL;
 		break;
 	}
 
@@ -3517,6 +3606,11 @@ int av8100_conf_w(enum av8100_command_type command_type,
 	u8 cmd_buffer[AV8100_COMMAND_MAX_LENGTH];
 	u32 cmd_length = 0;
 	struct i2c_client *i2c;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
@@ -3524,47 +3618,44 @@ int av8100_conf_w(enum av8100_command_type command_type,
 	if (return_buffer_length)
 		*return_buffer_length = 0;
 
-	if (!av8100_config)
-		return AV8100_FAIL;
-
-	i2c = av8100_config->client;
+	i2c = adev->config.client;
 
 	memset(&cmd_buffer, 0x00, AV8100_COMMAND_MAX_LENGTH);
 
-#define PRNK_MODE(_m) dev_dbg(av8100dev, "cmd: " #_m "\n");
+#define PRNK_MODE(_m) dev_dbg(adev->dev, "cmd: " #_m "\n");
 
 	/* Fill the command buffer with configuration data */
 	switch (command_type) {
 	case AV8100_COMMAND_VIDEO_INPUT_FORMAT:
 		PRNK_MODE(AV8100_COMMAND_VIDEO_INPUT_FORMAT);
-		configuration_video_input_get(cmd_buffer, &cmd_length);
+		configuration_video_input_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	case AV8100_COMMAND_AUDIO_INPUT_FORMAT:
 		PRNK_MODE(AV8100_COMMAND_AUDIO_INPUT_FORMAT);
-		configuration_audio_input_get(cmd_buffer, &cmd_length);
+		configuration_audio_input_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	case AV8100_COMMAND_VIDEO_OUTPUT_FORMAT:
 		PRNK_MODE(AV8100_COMMAND_VIDEO_OUTPUT_FORMAT);
-		configuration_video_output_get(cmd_buffer, &cmd_length);
+		configuration_video_output_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	case AV8100_COMMAND_VIDEO_SCALING_FORMAT:
 		PRNK_MODE(AV8100_COMMAND_VIDEO_SCALING_FORMAT);
-		configuration_video_scaling_get(cmd_buffer,
+		configuration_video_scaling_get(adev, cmd_buffer,
 			&cmd_length);
 		break;
 
 	case AV8100_COMMAND_COLORSPACECONVERSION:
 		PRNK_MODE(AV8100_COMMAND_COLORSPACECONVERSION);
-		configuration_colorspace_conversion_get(cmd_buffer,
+		configuration_colorspace_conversion_get(adev, cmd_buffer,
 			&cmd_length);
 		break;
 
 	case AV8100_COMMAND_CEC_MESSAGE_WRITE:
 		PRNK_MODE(AV8100_COMMAND_CEC_MESSAGE_WRITE);
-		configuration_cec_message_write_get(cmd_buffer,
+		configuration_cec_message_write_get(adev, cmd_buffer,
 			&cmd_length);
 		break;
 
@@ -3576,49 +3667,49 @@ int av8100_conf_w(enum av8100_command_type command_type,
 
 	case AV8100_COMMAND_DENC:
 		PRNK_MODE(AV8100_COMMAND_DENC);
-		configuration_denc_get(cmd_buffer, &cmd_length);
+		configuration_denc_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	case AV8100_COMMAND_HDMI:
 		PRNK_MODE(AV8100_COMMAND_HDMI);
-		configuration_hdmi_get(cmd_buffer, &cmd_length);
+		configuration_hdmi_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	case AV8100_COMMAND_HDCP_SENDKEY:
 		PRNK_MODE(AV8100_COMMAND_HDCP_SENDKEY);
-		configuration_hdcp_sendkey_get(cmd_buffer, &cmd_length);
+		configuration_hdcp_sendkey_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	case AV8100_COMMAND_HDCP_MANAGEMENT:
 		PRNK_MODE(AV8100_COMMAND_HDCP_MANAGEMENT);
-		configuration_hdcp_management_get(cmd_buffer,
+		configuration_hdcp_management_get(adev, cmd_buffer,
 			&cmd_length);
 		break;
 
 	case AV8100_COMMAND_INFOFRAMES:
 		PRNK_MODE(AV8100_COMMAND_INFOFRAMES);
-		configuration_infoframe_get(cmd_buffer, &cmd_length);
+		configuration_infoframe_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	case AV8100_COMMAND_EDID_SECTION_READBACK:
 		PRNK_MODE(AV8100_COMMAND_EDID_SECTION_READBACK);
-		av8100_edid_section_readback_get(cmd_buffer, &cmd_length);
+		av8100_edid_section_readback_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	case AV8100_COMMAND_PATTERNGENERATOR:
 		PRNK_MODE(AV8100_COMMAND_PATTERNGENERATOR);
-		configuration_pattern_generator_get(cmd_buffer,
+		configuration_pattern_generator_get(adev, cmd_buffer,
 			&cmd_length);
 		break;
 
 	case AV8100_COMMAND_FUSE_AES_KEY:
 		PRNK_MODE(AV8100_COMMAND_FUSE_AES_KEY);
-		configuration_fuse_aes_key_get(cmd_buffer, &cmd_length);
+		configuration_fuse_aes_key_get(adev, cmd_buffer, &cmd_length);
 		break;
 
 	default:
-		dev_dbg(av8100dev, "Invalid command type\n");
-		retval = AV8100_INVALID_COMMAND;
+		dev_dbg(adev->dev, "Invalid command type\n");
+		retval = -EFAULT;
 		break;
 	}
 
@@ -3628,11 +3719,11 @@ int av8100_conf_w(enum av8100_command_type command_type,
 		int cnt = 0;
 		int cnt_max;
 
-		dev_dbg(av8100dev, "av8100_conf_w cmd_type:%02x length:%02x ",
+		dev_dbg(adev->dev, "av8100_conf_w cmd_type:%02x length:%02x ",
 			command_type, cmd_length);
-		dev_dbg(av8100dev, "buffer: ");
+		dev_dbg(adev->dev, "buffer: ");
 		while (cnt < cmd_length) {
-			dev_dbg(av8100dev, "%02x ", cmd_buffer[cnt]);
+			dev_dbg(adev->dev, "%02x ", cmd_buffer[cnt]);
 			cnt++;
 		}
 
@@ -3654,15 +3745,16 @@ int av8100_conf_w(enum av8100_command_type command_type,
 
 
 		/* Get the first return byte */
-		msleep(AV8100_WAITTIME_1MS);
+		mdelay(AV8100_WAITTIME_1MS);
 		cnt = 0;
 		cnt_max = sizeof(waittime_retry);
 		retval = get_command_return_first(i2c, command_type);
-		while (retval && (cnt++ < cnt_max)) {
-			msleep(waittime_retry[cnt]);
+		while (retval && (cnt < cnt_max)) {
+			mdelay(waittime_retry[cnt]);
 			retval = get_command_return_first(i2c, command_type);
+			cnt++;
 		}
-		dev_dbg(av8100dev, "first return cnt:%d\n", cnt);
+		dev_dbg(adev->dev, "first return cnt:%d\n", cnt);
 
 		if (retval) {
 			UNLOCK_AV8100_HW;
@@ -3674,14 +3766,14 @@ int av8100_conf_w(enum av8100_command_type command_type,
 	} else if (if_type == DSI_INTERFACE) {
 		/* TODO */
 	} else {
-		retval = AV8100_INVALID_INTERFACE;
-		dev_dbg(av8100dev, "Invalid command type\n");
+		retval = -EINVAL;
+		dev_dbg(adev->dev, "Invalid command type\n");
 	}
 
 	if (command_type == AV8100_COMMAND_HDMI) {
-		g_av8100_status.hdmi_on = ((av8100_config->hdmi_cmd.
+		adev->status.hdmi_on = ((adev->config.hdmi_cmd.
 			hdmi_mode == AV8100_HDMI_ON) &&
-			(av8100_config->hdmi_cmd.hdmi_format == AV8100_HDMI));
+			(adev->config.hdmi_cmd.hdmi_format == AV8100_HDMI));
 	}
 
 	UNLOCK_AV8100_HW;
@@ -3699,6 +3791,11 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 	struct i2c_client *i2c;
 	int cnt;
 	int cnt_max;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	if (av8100_status_get().av8100_state <= AV8100_OPMODE_SHUTDOWN)
 		return -EINVAL;
@@ -3708,12 +3805,7 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 	if (return_buffer_length)
 		*return_buffer_length = 0;
 
-	if (!av8100_config) {
-		retval = AV8100_FAIL;
-		goto av8100_conf_w_raw_out;
-	}
-
-	i2c = av8100_config->client;
+	i2c = adev->config.client;
 
 	/* Write the command buffer */
 	retval = write_multi_byte(i2c,
@@ -3729,15 +3821,16 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 
 
 	/* Get the first return byte */
-	msleep(AV8100_WAITTIME_1MS);
+	mdelay(AV8100_WAITTIME_1MS);
 	cnt = 0;
 	cnt_max = sizeof(waittime_retry);
 	retval = get_command_return_first(i2c, command_type);
-	while (retval && (cnt++ < cnt_max)) {
-		msleep(waittime_retry[cnt]);
+	while (retval && (cnt < cnt_max)) {
+		mdelay(waittime_retry[cnt]);
 		retval = get_command_return_first(i2c, command_type);
+		cnt++;
 	}
-	dev_dbg(av8100dev, "first return cnt:%d\n", cnt);
+	dev_dbg(adev->dev, "first return cnt:%d\n", cnt);
 	if (retval)
 		goto av8100_conf_w_raw_out;
 
@@ -3752,7 +3845,14 @@ EXPORT_SYMBOL(av8100_conf_w_raw);
 
 struct av8100_status av8100_status_get(void)
 {
-	return g_av8100_status;
+	struct av8100_status status = {0};
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (adev)
+		return adev->status;
+	else
+		return status;
 }
 EXPORT_SYMBOL(av8100_status_get);
 
@@ -3768,6 +3868,11 @@ enum av8100_output_CEA_VESA av8100_video_output_format_get(int xres,
 	int hres_div = 1;
 	long freq1;
 	long freq2;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
 	/*
 	* 720_576_I need a divider for hact and htot since
@@ -3783,7 +3888,7 @@ enum av8100_output_CEA_VESA av8100_video_output_format_get(int xres,
 			av8100_all_cea[index].htotale /
 			av8100_all_cea[index].vtotale;
 
-		dev_dbg(av8100dev, "freq1:%ld freq2:%ld\n", freq1, freq2);
+		dev_dbg(adev->dev, "freq1:%ld freq2:%ld\n", freq1, freq2);
 		if ((xres == av8100_all_cea[index].hactive / hres_div) &&
 			(yres == av8100_all_cea[index].vactive * yres_div) &&
 			(htot == av8100_all_cea[index].htotale / hres_div) &&
@@ -3795,7 +3900,7 @@ enum av8100_output_CEA_VESA av8100_video_output_format_get(int xres,
 	}
 
 av8100_video_output_format_get_out:
-	dev_dbg(av8100dev, "av8100_video_output_format_get %d %d %d %d %d\n",
+	dev_dbg(adev->dev, "av8100_video_output_format_get %d %d %d %d %d\n",
 		xres, yres, htot, vtot, index);
 	return index;
 }
@@ -3803,25 +3908,29 @@ EXPORT_SYMBOL(av8100_video_output_format_get);
 
 void av8100_hdmi_event_cb_set(void (*hdmi_ev_cb)(enum av8100_hdmi_event))
 {
-	if (av8100_globals)
-		av8100_globals->hdmi_ev_cb = hdmi_ev_cb;
+	struct av8100_device *adev;
+
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (adev)
+		adev->params.hdmi_ev_cb = hdmi_ev_cb;
 }
 EXPORT_SYMBOL(av8100_hdmi_event_cb_set);
 
 u8 av8100_ver_get(void)
 {
-	u8 ret;
+	struct av8100_device *adev;
 
-	LOCK_AV8100_HW;
-	ret = chip_version;
-	UNLOCK_AV8100_HW;
+	adev = devnr_to_adev(AV8100_DEVNR_DEFAULT);
+	if (!adev)
+		return -EINVAL;
 
-	return ret;
+	return adev->chip_version;
 }
 EXPORT_SYMBOL(av8100_ver_get);
 
 static const struct color_conversion_cmd *get_color_transform_cmd(
-				enum av8100_color_transform transform)
+			struct av8100_device *adev,
+			enum av8100_color_transform transform)
 {
 	const struct color_conversion_cmd *result;
 
@@ -3833,7 +3942,7 @@ static const struct color_conversion_cmd *get_color_transform_cmd(
 		result = &col_trans_identity_clamp_yuv;
 		break;
 	case AV8100_COLOR_TRANSFORM_YUV_TO_RGB:
-		if (chip_version == AV8100_CHIPVER_1)
+		if (adev->chip_version == AV8100_CHIPVER_1)
 			result = &col_trans_yuv_to_rgb_v1;
 		else
 			result = &col_trans_yuv_to_rgb_v2;
@@ -3845,7 +3954,7 @@ static const struct color_conversion_cmd *get_color_transform_cmd(
 		result = &col_trans_rgb_to_denc;
 		break;
 	default:
-		dev_warn(av8100dev, "Unknown color space transform\n");
+		dev_warn(adev->dev, "Unknown color space transform\n");
 		result = &col_trans_identity;
 		break;
 	}
@@ -3854,13 +3963,13 @@ static const struct color_conversion_cmd *get_color_transform_cmd(
 
 static int av8100_open(struct inode *inode, struct file *filp)
 {
-	dev_dbg(av8100dev, "av8100_open is called\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int av8100_release(struct inode *inode, struct file *filp)
 {
-	dev_dbg(av8100dev, "av8100_release is called\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
@@ -3870,50 +3979,83 @@ static long av8100_ioctl(struct file *file,
 	return 0;
 }
 
-static int __devinit av8100_probe(struct i2c_client *i2cClient,
+int av8100_device_register(struct av8100_device *adev)
+{
+	adev->miscdev.minor = MISC_DYNAMIC_MINOR;
+	adev->miscdev.name = "av8100";
+	adev->miscdev.fops = &av8100_fops;
+
+	if (misc_register(&adev->miscdev)) {
+		pr_err("av8100 misc_register failed\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+int av8100_init_device(struct av8100_device *adev, struct device *dev)
+{
+	adev->dev = dev;
+
+	if (av8100_config_init(adev)) {
+		dev_info(dev, "av8100_config_init failed\n");
+		return -EFAULT;
+	}
+
+	if (av8100_params_init(adev)) {
+		dev_info(dev, "av8100_params_init failed\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+static int __devinit av8100_probe(struct i2c_client *i2c_client,
 	const struct i2c_device_id *id)
 {
 	int ret = 0;
-	struct av8100_platform_data *pdata = i2cClient->dev.platform_data;
+	struct av8100_platform_data *pdata = i2c_client->dev.platform_data;
+	struct device *dev;
+	struct av8100_device *adev;
 
-	av8100dev = &i2cClient->dev;
+	dev = &i2c_client->dev;
 
-	dev_dbg(av8100dev, "%s\n", __func__);
+	dev_dbg(dev, "%s\n", __func__);
 
-	av8100_set_state(AV8100_OPMODE_UNDEFINED);
-
-	ret = av8100_config_init();
-	if (ret) {
-		dev_info(av8100dev, "av8100_config_init failed\n");
-		goto err;
+	/* Allocate device data */
+	adev = kzalloc(sizeof(struct av8100_device), GFP_KERNEL);
+	if (!adev) {
+		dev_info(dev, "%s: Alloc failure\n", __func__);
+		return -ENOMEM;
 	}
 
-	ret = av8100_globals_init();
-	if (ret) {
-		dev_info(av8100dev, "av8100_globals_init failed\n");
-		goto err;
-	}
+	/* Add to list */
+	list_add_tail(&adev->list, &av8100_device_list);
 
-	if (!i2c_check_functionality(i2cClient->adapter,
-		I2C_FUNC_SMBUS_BYTE_DATA |
-		I2C_FUNC_SMBUS_READ_WORD_DATA)) {
+	av8100_device_register(adev);
+
+	av8100_init_device(adev, dev);
+
+	av8100_set_state(adev, AV8100_OPMODE_UNDEFINED);
+
+	if (!i2c_check_functionality(i2c_client->adapter,
+			I2C_FUNC_SMBUS_BYTE_DATA |
+			I2C_FUNC_SMBUS_READ_WORD_DATA)) {
 		ret = -ENODEV;
-		dev_info(av8100dev, "av8100 i2c_check_functionality failed\n");
+		dev_info(dev, "av8100 i2c_check_functionality failed\n");
 		goto err;
 	}
 
-	init_waitqueue_head(&av8100_event);
+	init_waitqueue_head(&adev->event);
 
-	av8100_config->client = i2cClient;
-	av8100_config->id = (struct i2c_device_id *) id;
-	i2c_set_clientdata(i2cClient, av8100_config);
+	adev->config.client = i2c_client;
+	adev->config.id = (struct i2c_device_id *) id;
+	i2c_set_clientdata(i2c_client, &adev->config);
 
-	kthread_run(av8100_thread, NULL, "av8100_thread");
+	kthread_run(av8100_thread, adev, "av8100_thread");
 
 	ret = request_irq(pdata->irq, av8100_intr_handler,
-			IRQF_TRIGGER_RISING, "av8100", av8100_config);
+			IRQF_TRIGGER_RISING, "av8100", adev);
 	if (ret) {
-		dev_err(av8100dev, "av8100_hw request_irq %d failed %d\n",
+		dev_err(dev, "av8100_hw request_irq %d failed %d\n",
 			pdata->irq, ret);
 		gpio_free(pdata->irq);
 		goto err;
@@ -3921,33 +4063,33 @@ static int __devinit av8100_probe(struct i2c_client *i2cClient,
 
 	/* Get regulator resource */
 	if (pdata->regulator_pwr_id) {
-		av8100_globals->regulator_pwr = regulator_get(av8100dev,
+		adev->params.regulator_pwr = regulator_get(dev,
 				pdata->regulator_pwr_id);
-		if (IS_ERR(av8100_globals->regulator_pwr)) {
-			ret = PTR_ERR(av8100_globals->regulator_pwr);
-			dev_warn(av8100dev,
+		if (IS_ERR(adev->params.regulator_pwr)) {
+			ret = PTR_ERR(adev->params.regulator_pwr);
+			dev_warn(dev,
 				"%s: Failed to get regulator '%s'\n",
 				__func__, pdata->regulator_pwr_id);
-			av8100_globals->regulator_pwr = NULL;
+			adev->params.regulator_pwr = NULL;
 			return ret;
 		}
 	}
 
 	/* Get clock resource */
 	if (pdata->inputclk_id) {
-		av8100_globals->inputclk = clk_get(NULL, pdata->inputclk_id);
-		if (IS_ERR(av8100_globals->inputclk)) {
-			av8100_globals->inputclk = NULL;
-			dev_warn(av8100dev, "%s: Failed to get clock '%s'\n",
+		adev->params.inputclk = clk_get(NULL, pdata->inputclk_id);
+		if (IS_ERR(adev->params.inputclk)) {
+			adev->params.inputclk = NULL;
+			dev_warn(dev, "%s: Failed to get clock '%s'\n",
 					__func__, pdata->inputclk_id);
 		}
 	}
 
-	av8100_set_state(AV8100_OPMODE_SHUTDOWN);
+	av8100_set_state(adev, AV8100_OPMODE_SHUTDOWN);
 
 	/* Obtain the chip version */
-	if (av8100_powerup1()) {
-		dev_err(av8100dev, "av8100_powerup1 fail\n");
+	if (av8100_powerup1(adev)) {
+		dev_err(adev->dev, "av8100_powerup1 fail\n");
 		return -EFAULT;
 	}
 
@@ -3957,44 +4099,44 @@ err:
 	return ret;
 }
 
-static int __devexit av8100_remove(struct i2c_client *i2cClient)
+static int __devexit av8100_remove(struct i2c_client *i2c_client)
 {
-	dev_dbg(av8100dev, "%s\n", __func__);
+	struct av8100_device *adev;
 
-	av8100_config_exit();
-	av8100_globals_exit();
-	if (av8100_globals->inputclk)
-		clk_put(av8100_globals->inputclk);
+	adev = dev_to_adev(&i2c_client->dev);
+	if (!adev)
+		return -EFAULT;
+
+	dev_dbg(adev->dev, "%s\n", __func__);
+
+	if (adev->params.inputclk)
+		clk_put(adev->params.inputclk);
 
 	/* Release regulator resource */
-	if (av8100_globals->regulator_pwr)
-		regulator_put(av8100_globals->regulator_pwr);
+	if (adev->params.regulator_pwr)
+		regulator_put(adev->params.regulator_pwr);
+
+	misc_deregister(&adev->miscdev);
+
+	/* Remove from list */
+	list_del(&adev->list);
+
+	/* Free device data */
+	kfree(adev);
 
 	return 0;
 }
 
 int av8100_init(void)
 {
-	int ret;
-
 	pr_debug("%s\n", __func__);
 
-	ret = i2c_add_driver(&av8100_driver);
-	if (ret) {
+	if (i2c_add_driver(&av8100_driver)) {
 		pr_err("av8100 i2c_add_driver failed\n");
-		goto av8100_init_err;
+		return -EFAULT;
 	}
 
-	ret = misc_register(&av8100_miscdev);
-	if (ret) {
-		pr_err("av8100 misc_register failed\n");
-		goto av8100_init_err;
-	}
-
-	return ret;
-
-av8100_init_err:
-	return ret;
+	return 0;
 }
 module_init(av8100_init);
 
@@ -4002,7 +4144,6 @@ void av8100_exit(void)
 {
 	pr_debug("%s\n", __func__);
 
-	misc_deregister(&av8100_miscdev);
 	i2c_del_driver(&av8100_driver);
 }
 module_exit(av8100_exit);

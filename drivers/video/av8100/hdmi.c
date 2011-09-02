@@ -24,20 +24,30 @@
 #include <linux/slab.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
+#include <linux/list.h>
 
 #define SYSFS_EVENT_FILENAME "evread"
+#define HDMI_DEVNR_DEFAULT	0
 
 DEFINE_MUTEX(hdmi_events_mutex);
 #define LOCK_HDMI_EVENTS mutex_lock(&hdmi_events_mutex)
 #define UNLOCK_HDMI_EVENTS mutex_unlock(&hdmi_events_mutex)
 #define EVENTS_MASK 0xFF
 
-static int device_open;
-static int events;
-static int events_mask;
-static bool events_received;
-static wait_queue_head_t hdmi_event_wq;
-struct device *hdmidev;
+struct hdmi_device {
+	struct list_head	list;
+	struct miscdevice	miscdev;
+	struct device		*dev;
+	struct hdmi_sysfs_data	sysfs_data;
+	int			events;
+	int			events_mask;
+	wait_queue_head_t	event_wq;
+	bool			events_received;
+	int			devnr;
+};
+
+/* List of devices */
+static LIST_HEAD(hdmi_device_list);
 
 static ssize_t store_storeastext(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
@@ -88,39 +98,43 @@ static ssize_t show_poweronoff(struct device *dev,
 static ssize_t store_evwakeup(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
 
-static DEVICE_ATTR(storeastext, S_IWUSR, NULL, store_storeastext);
-static DEVICE_ATTR(plugdeten, S_IWUSR, NULL, store_plugdeten);
-static DEVICE_ATTR(edidread, S_IRUGO | S_IWUSR, show_edidread, store_edidread);
-static DEVICE_ATTR(ceceven, S_IWUSR, NULL, store_ceceven);
-static DEVICE_ATTR(cecread, S_IRUGO, show_cecread, NULL);
-static DEVICE_ATTR(cecsend, S_IWUSR, NULL, store_cecsend);
-static DEVICE_ATTR(infofrsend, S_IWUSR, NULL, store_infofrsend);
-static DEVICE_ATTR(hdcpeven, S_IWUSR, NULL, store_hdcpeven);
-static DEVICE_ATTR(hdcpchkaesotp, S_IRUGO, show_hdcpchkaesotp, NULL);
-static DEVICE_ATTR(hdcpfuseaes, S_IRUGO | S_IWUSR, show_hdcpfuseaes,
-		store_hdcpfuseaes);
-static DEVICE_ATTR(hdcploadaes, S_IRUGO | S_IWUSR, show_hdcploadaes,
-		store_hdcploadaes);
-static DEVICE_ATTR(hdcpauthencr, S_IRUGO | S_IWUSR, show_hdcpauthencr,
-		store_hdcpauthencr);
-static DEVICE_ATTR(hdcpstateget, S_IRUGO, show_hdcpstateget, NULL);
-static DEVICE_ATTR(evread, S_IRUGO, show_evread, NULL);
-static DEVICE_ATTR(evclr, S_IWUSR, NULL, store_evclr);
-static DEVICE_ATTR(audiocfg, S_IWUSR, NULL, store_audiocfg);
-static DEVICE_ATTR(plugstatus, S_IRUGO, show_plugstatus, NULL);
-static DEVICE_ATTR(poweronoff, S_IRUGO | S_IWUSR, show_poweronoff,
-		store_poweronoff);
-static DEVICE_ATTR(evwakeup, S_IWUSR, NULL, store_evwakeup);
+static const struct device_attribute hdmi_sysfs_attrs[] = {
+	__ATTR(storeastext, S_IWUSR, NULL, store_storeastext),
+	__ATTR(plugdeten, S_IWUSR, NULL, store_plugdeten),
+	__ATTR(edidread, S_IRUGO | S_IWUSR, show_edidread, store_edidread),
+	__ATTR(ceceven, S_IWUSR, NULL, store_ceceven),
+	__ATTR(cecread, S_IRUGO, show_cecread, NULL),
+	__ATTR(cecsend, S_IWUSR, NULL, store_cecsend),
+	__ATTR(infofrsend, S_IWUSR, NULL, store_infofrsend),
+	__ATTR(hdcpeven, S_IWUSR, NULL, store_hdcpeven),
+	__ATTR(hdcpchkaesotp, S_IRUGO, show_hdcpchkaesotp, NULL),
+	__ATTR(hdcpfuseaes, S_IRUGO | S_IWUSR, show_hdcpfuseaes,
+			store_hdcpfuseaes),
+	__ATTR(hdcploadaes, S_IRUGO | S_IWUSR, show_hdcploadaes,
+			store_hdcploadaes),
+	__ATTR(hdcpauthencr, S_IRUGO | S_IWUSR, show_hdcpauthencr,
+			store_hdcpauthencr),
+	__ATTR(hdcpstateget, S_IRUGO, show_hdcpstateget, NULL),
+	__ATTR(evread, S_IRUGO, show_evread, NULL),
+	__ATTR(evclr, S_IWUSR, NULL, store_evclr),
+	__ATTR(audiocfg, S_IWUSR, NULL, store_audiocfg),
+	__ATTR(plugstatus, S_IRUGO, show_plugstatus, NULL),
+	__ATTR(poweronoff, S_IRUGO | S_IWUSR, show_poweronoff,
+			store_poweronoff),
+	__ATTR(evwakeup, S_IWUSR, NULL, store_evwakeup),
+	__ATTR_NULL
+};
 
 /* Hex to int conversion */
 static unsigned int htoi(const char *ptr)
 {
 	unsigned int value = 0;
-	char ch = *ptr;
+	char ch;
 
 	if (!ptr)
 		return 0;
 
+	ch = *ptr;
 	if (isdigit(ch))
 		value = ch - '0';
 	else
@@ -137,32 +151,67 @@ static unsigned int htoi(const char *ptr)
 	return value;
 }
 
-static int event_enable(bool enable, enum hdmi_event ev)
+static struct hdmi_device *dev_to_hdev(struct device *dev)
 {
-	struct kobject *kobj = &hdmidev->kobj;
+	/* Get device from list of devices */
+	struct list_head *element;
+	struct hdmi_device *hdmi_dev;
+	int cnt = 0;
 
-	dev_dbg(hdmidev, "enable_event %d %02x\n", enable, ev);
+	list_for_each(element, &hdmi_device_list) {
+		hdmi_dev = list_entry(element, struct hdmi_device, list);
+		if (hdmi_dev->dev == dev)
+			return hdmi_dev;
+		cnt++;
+	}
+
+	return NULL;
+}
+
+static struct hdmi_device *devnr_to_hdev(int devnr)
+{
+	/* Get device from list of devices */
+	struct list_head *element;
+	struct hdmi_device *hdmi_dev;
+	int cnt = 0;
+
+	list_for_each(element, &hdmi_device_list) {
+		hdmi_dev = list_entry(element, struct hdmi_device, list);
+		if (cnt == devnr)
+			return hdmi_dev;
+		cnt++;
+	}
+
+	return NULL;
+}
+
+static int event_enable(struct hdmi_device *hdev, bool enable,
+		enum hdmi_event ev)
+{
+	struct kobject *kobj = &hdev->dev->kobj;
+
+	dev_dbg(hdev->dev, "enable_event %d %02x\n", enable, ev);
 	if (enable)
-		events_mask |= ev;
+		hdev->events_mask |= ev;
 	else
-		events_mask &= ~ev;
+		hdev->events_mask &= ~ev;
 
-	if (events & ev) {
+	if (hdev->events & ev) {
 		/* Report pending event */
 		/* Wake up application waiting for event via call to poll() */
 		sysfs_notify(kobj, NULL, SYSFS_EVENT_FILENAME);
 
 		LOCK_HDMI_EVENTS;
-		events_received = true;
+		hdev->events_received = true;
 		UNLOCK_HDMI_EVENTS;
 
-		wake_up_interruptible(&hdmi_event_wq);
+		wake_up_interruptible(&hdev->event_wq);
 	}
 
 	return 0;
 }
 
-static int plugdeten(struct plug_detect *pldet)
+static int plugdeten(struct hdmi_device *hdev, struct plug_detect *pldet)
 {
 	struct av8100_status status;
 	u8 denc_off_time = 0;
@@ -171,14 +220,14 @@ static int plugdeten(struct plug_detect *pldet)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
 
-	event_enable(pldet->hdmi_detect_enable != 0,
+	event_enable(hdev, pldet->hdmi_detect_enable != 0,
 		HDMI_EVENT_HDMI_PLUGIN);
-	event_enable(pldet->hdmi_detect_enable != 0,
+	event_enable(hdev, pldet->hdmi_detect_enable != 0,
 		HDMI_EVENT_HDMI_PLUGOUT);
 
 	av8100_reg_hdmi_5_volt_time_r(&denc_off_time, NULL, NULL);
@@ -189,7 +238,7 @@ static int plugdeten(struct plug_detect *pldet)
 			pldet->on_time);
 
 	if (retval) {
-		dev_err(hdmidev, "Failed to write the value to av8100 "
+		dev_err(hdev->dev, "Failed to write the value to av8100 "
 			"register\n");
 		return -EFAULT;
 	}
@@ -197,7 +246,8 @@ static int plugdeten(struct plug_detect *pldet)
 	return retval;
 }
 
-static int edidread(struct edid_read *edidread, u8 *len, u8 *data)
+static int edidread(struct hdmi_device *hdev, struct edid_read *edidread,
+			u8 *len, u8 *data)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -205,14 +255,14 @@ static int edidread(struct edid_read *edidread, u8 *len, u8 *data)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
 
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) != 0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -220,28 +270,29 @@ static int edidread(struct edid_read *edidread, u8 *len, u8 *data)
 	config.edid_section_readback_format.address = edidread->address;
 	config.edid_section_readback_format.block_number = edidread->block_nr;
 
-	dev_dbg(hdmidev, "addr:%0x blnr:%0x",
+	dev_dbg(hdev->dev, "addr:%0x blnr:%0x",
 		config.edid_section_readback_format.address,
 		config.edid_section_readback_format.block_number);
 
 	if (av8100_conf_prep(AV8100_COMMAND_EDID_SECTION_READBACK,
 		&config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_EDID_SECTION_READBACK,
 		len, data, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
 
-	dev_dbg(hdmidev, "len:%0x\n", *len);
+	dev_dbg(hdev->dev, "len:%0x\n", *len);
 
 	return 0;
 }
 
-static int cecread(u8 *src, u8 *dest, u8 *data_len, u8 *data)
+static int cecread(struct hdmi_device *hdev, u8 *src, u8 *dest, u8 *data_len,
+			u8 *data)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -251,27 +302,27 @@ static int cecread(u8 *src, u8 *dest, u8 *data_len, u8 *data)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
 
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
-		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) !=	0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) != 0) {
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
 
 	if (av8100_conf_prep(AV8100_COMMAND_CEC_MESSAGE_READ_BACK,
 			&config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_CEC_MESSAGE_READ_BACK,
 		&buf_len, buff, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
 
@@ -287,30 +338,33 @@ static int cecread(u8 *src, u8 *dest, u8 *data_len, u8 *data)
 }
 
 /* CEC tx status can be set or read */
-static bool cec_tx_status(enum cec_tx_status_action action)
+static bool cec_tx_status(struct hdmi_device *hdev,
+				enum cec_tx_status_action action)
 {
 	static bool cec_tx_busy;
 
 	switch (action) {
 	case CEC_TX_SET_FREE:
 		cec_tx_busy = false;
-		dev_dbg(hdmidev, "cec_tx_busy set:%d\n", cec_tx_busy);
+		dev_dbg(hdev->dev, "cec_tx_busy set:%d\n", cec_tx_busy);
 		break;
 
 	case CEC_TX_SET_BUSY:
 		cec_tx_busy = true;
-		dev_dbg(hdmidev, "cec_tx_busy set:%d\n", cec_tx_busy);
+		dev_dbg(hdev->dev, "cec_tx_busy set:%d\n", cec_tx_busy);
 		break;
 
 	case CEC_TX_CHECK:
 	default:
-		dev_dbg(hdmidev, "cec_tx_busy chk:%d\n", cec_tx_busy);
+		dev_dbg(hdev->dev, "cec_tx_busy chk:%d\n", cec_tx_busy);
 		break;
 	}
 
 	return cec_tx_busy;
 }
-static int cecsend(u8 src, u8 dest, u8 data_len, u8 *data)
+
+static int cecsend(struct hdmi_device *hdev, u8 src, u8 dest, u8 data_len,
+			u8 *data)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -319,14 +373,14 @@ static int cecsend(u8 src, u8 dest, u8 data_len, u8 *data)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
 
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) != 0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -338,34 +392,35 @@ static int cecsend(u8 src, u8 dest, u8 data_len, u8 *data)
 
 	if (av8100_conf_prep(AV8100_COMMAND_CEC_MESSAGE_WRITE,
 		&config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_enable_interrupt() != 0) {
-		dev_err(hdmidev, "av8100_ei FAIL\n");
+		dev_err(hdev->dev, "av8100_ei FAIL\n");
 		return -EINVAL;
 	}
 
 	cnt = 0;
-	while ((cnt < CECTX_TRY) && cec_tx_status(CEC_TX_CHECK)) {
+	while ((cnt < CECTX_TRY) && cec_tx_status(hdev, CEC_TX_CHECK)) {
 		/* Wait for pending CEC to be finished */
 		msleep(CECTX_WAITTIME);
 		cnt++;
 	}
-	dev_dbg(hdmidev, "cectxcnt:%d\n", cnt);
+	dev_dbg(hdev->dev, "cectxcnt:%d\n", cnt);
 
 	if (av8100_conf_w(AV8100_COMMAND_CEC_MESSAGE_WRITE,
 		NULL, NULL, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
-	cec_tx_status(CEC_TX_SET_BUSY);
+	cec_tx_status(hdev, CEC_TX_SET_BUSY);
 
 	return 0;
 }
 
-static int infofrsend(u8 type, u8 version, u8 crc, u8 data_len, u8 *data)
+static int infofrsend(struct hdmi_device *hdev, u8 type, u8 version, u8 crc,
+			u8 data_len, u8 *data)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -373,14 +428,14 @@ static int infofrsend(u8 type, u8 version, u8 crc, u8 data_len, u8 *data)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
 
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) != 0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -395,20 +450,20 @@ static int infofrsend(u8 type, u8 version, u8 crc, u8 data_len, u8 *data)
 	memcpy(&config.infoframes_format.data, data, data_len);
 	if (av8100_conf_prep(AV8100_COMMAND_INFOFRAMES,
 		&config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_INFOFRAMES,
 		NULL, NULL, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
 
 	return 0;
 }
 
-static int hdcpchkaesotp(u8 *crc, u8 *progged)
+static int hdcpchkaesotp(struct hdmi_device *hdev, u8 *crc, u8 *progged)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -418,7 +473,7 @@ static int hdcpchkaesotp(u8 *crc, u8 *progged)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
@@ -426,7 +481,7 @@ static int hdcpchkaesotp(u8 *crc, u8 *progged)
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) !=
 			0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -435,13 +490,13 @@ static int hdcpchkaesotp(u8 *crc, u8 *progged)
 	memset(config.fuse_aes_key_format.key, 0, AV8100_FUSE_KEY_SIZE);
 	if (av8100_conf_prep(AV8100_COMMAND_FUSE_AES_KEY,
 		&config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_FUSE_AES_KEY,
 		&buf_len, buf, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
 
@@ -453,7 +508,7 @@ static int hdcpchkaesotp(u8 *crc, u8 *progged)
 	return 0;
 }
 
-static int hdcpfuseaes(u8 *key, u8 crc, u8 *result)
+static int hdcpfuseaes(struct hdmi_device *hdev, u8 *key, u8 crc, u8 *result)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -466,7 +521,7 @@ static int hdcpfuseaes(u8 *key, u8 crc, u8 *result)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
@@ -474,7 +529,7 @@ static int hdcpfuseaes(u8 *key, u8 crc, u8 *result)
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) !=
 			0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -483,18 +538,18 @@ static int hdcpfuseaes(u8 *key, u8 crc, u8 *result)
 	memcpy(config.fuse_aes_key_format.key, key, AV8100_FUSE_KEY_SIZE);
 	if (av8100_conf_prep(AV8100_COMMAND_FUSE_AES_KEY,
 		&config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_FUSE_AES_KEY,
 		&buf_len, buf, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
 
 	if (buf_len == 2) {
-		dev_dbg(hdmidev, "buf[0]:%02x buf[1]:%02x\n", buf[0], buf[1]);
+		dev_dbg(hdev->dev, "buf[0]:%02x buf[1]:%02x\n", buf[0], buf[1]);
 		if ((crc == buf[0]) && (buf[1] == 1))
 			/* OK */
 			*result = HDMI_RESULT_OK;
@@ -505,7 +560,8 @@ static int hdcpfuseaes(u8 *key, u8 crc, u8 *result)
 	return 0;
 }
 
-static int hdcploadaes(u8 block, u8 key_len, u8 *key, u8 *result, u8 *crc32)
+static int hdcploadaes(struct hdmi_device *hdev, u8 block, u8 key_len, u8 *key,
+			u8 *result, u8 *crc32)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -515,19 +571,19 @@ static int hdcploadaes(u8 block, u8 key_len, u8 *key, u8 *result, u8 *crc32)
 	/* Default not OK */
 	*result = HDMI_RESULT_NOT_OK;
 
-	dev_dbg(hdmidev, "%s block:%d\n", __func__, block);
+	dev_dbg(hdev->dev, "%s block:%d\n", __func__, block);
 
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
 
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) != 0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -536,19 +592,19 @@ static int hdcploadaes(u8 block, u8 key_len, u8 *key, u8 *result, u8 *crc32)
 	config.hdcp_send_key_format.data_len = key_len;
 	memcpy(config.hdcp_send_key_format.data, key, key_len);
 	if (av8100_conf_prep(AV8100_COMMAND_HDCP_SENDKEY, &config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_HDCP_SENDKEY,
 		&buf_len, buf, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
 
 	if ((buf_len == CRC32_SIZE) && (crc32)) {
 		memcpy(crc32, buf, CRC32_SIZE);
-		dev_dbg(hdmidev, "crc32:%02x%02x%02x%02x\n",
+		dev_dbg(hdev->dev, "crc32:%02x%02x%02x%02x\n",
 			crc32[0], crc32[1], crc32[2], crc32[3]);
 	}
 
@@ -557,7 +613,8 @@ static int hdcploadaes(u8 block, u8 key_len, u8 *key, u8 *result, u8 *crc32)
 	return 0;
 }
 
-static int hdcpauthencr(u8 auth_type, u8 encr_type, u8 *len, u8 *data)
+static int hdcpauthencr(struct hdmi_device *hdev, u8 auth_type, u8 encr_type,
+			u8 *len, u8 *data)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -565,14 +622,14 @@ static int hdcpauthencr(u8 auth_type, u8 encr_type, u8 *len, u8 *data)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
 
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) != 0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -614,61 +671,61 @@ static int hdcpauthencr(u8 auth_type, u8 encr_type, u8 *len, u8 *data)
 
 	if (av8100_conf_prep(AV8100_COMMAND_HDCP_MANAGEMENT,
 		&config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_HDCP_MANAGEMENT,
 		len, data, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
 
 	return 0;
 }
 
-static u8 events_read(void)
+static u8 events_read(struct hdmi_device *hdev)
 {
 	int ret;
 
 	LOCK_HDMI_EVENTS;
-	ret = events;
-	dev_dbg(hdmidev, "%s %02x\n", __func__, events);
+	ret = hdev->events;
+	dev_dbg(hdev->dev, "%s %02x\n", __func__, hdev->events);
 	UNLOCK_HDMI_EVENTS;
 
 	return ret;
 }
 
-static int events_clear(u8 ev)
+static int events_clear(struct hdmi_device *hdev, u8 ev)
 {
-	dev_dbg(hdmidev, "%s %02x\n", __func__, ev);
+	dev_dbg(hdev->dev, "%s %02x\n", __func__, ev);
 
 	LOCK_HDMI_EVENTS;
-	events &= ~ev & EVENTS_MASK;
+	hdev->events &= ~ev & EVENTS_MASK;
 	UNLOCK_HDMI_EVENTS;
 
 	return 0;
 }
 
-static int event_wakeup(void)
+static int event_wakeup(struct hdmi_device *hdev)
 {
-	struct kobject *kobj = &hdmidev->kobj;
+	struct kobject *kobj = &hdev->dev->kobj;
 
-	dev_dbg(hdmidev, "%s", __func__);
+	dev_dbg(hdev->dev, "%s", __func__);
 
 	LOCK_HDMI_EVENTS;
-	events |= HDMI_EVENT_WAKEUP;
-	events_received = true;
+	hdev->events |= HDMI_EVENT_WAKEUP;
+	hdev->events_received = true;
 	UNLOCK_HDMI_EVENTS;
 
 	/* Wake up application waiting for event via call to poll() */
 	sysfs_notify(kobj, NULL, SYSFS_EVENT_FILENAME);
-	wake_up_interruptible(&hdmi_event_wq);
+	wake_up_interruptible(&hdev->event_wq);
 
 	return 0;
 }
 
-static int audiocfg(struct audio_cfg *cfg)
+static int audiocfg(struct hdmi_device *hdev, struct audio_cfg *cfg)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
@@ -676,14 +733,14 @@ static int audiocfg(struct audio_cfg *cfg)
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup failed\n");
+			dev_err(hdev->dev, "av8100_powerup failed\n");
 			return -EINVAL;
 		}
 	}
 
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) != 0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -698,13 +755,13 @@ static int audiocfg(struct audio_cfg *cfg)
 
 	if (av8100_conf_prep(AV8100_COMMAND_AUDIO_INPUT_FORMAT,
 		&config) != 0) {
-		dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 		return -EINVAL;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_AUDIO_INPUT_FORMAT,
 		NULL, NULL, I2C_INTERFACE) != 0) {
-		dev_err(hdmidev, "av8100_conf_w FAIL\n");
+		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 		return -EINVAL;
 	}
 
@@ -715,11 +772,12 @@ static int audiocfg(struct audio_cfg *cfg)
 static ssize_t store_storeastext(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
 	if ((count != HDMI_STOREASTEXT_BIN_SIZE) &&
 		(count != HDMI_STOREASTEXT_TEXT_SIZE) &&
@@ -727,17 +785,17 @@ static ssize_t store_storeastext(struct device *dev,
 		return -EINVAL;
 
 	if ((count == HDMI_STOREASTEXT_BIN_SIZE) && (*buf == 0x1))
-		hdmi_driver_data->store_as_hextext = true;
+		hdev->sysfs_data.store_as_hextext = true;
 	else if (((count == HDMI_STOREASTEXT_TEXT_SIZE) ||
 		(count == HDMI_STOREASTEXT_TEXT_SIZE + 1)) && (*buf == '0') &&
 			(*(buf + 1) == '1')) {
-		hdmi_driver_data->store_as_hextext = true;
+		hdev->sysfs_data.store_as_hextext = true;
 	} else {
-		hdmi_driver_data->store_as_hextext = false;
+		hdev->sysfs_data.store_as_hextext = false;
 	}
 
-	dev_dbg(hdmidev, "store_as_hextext:%0d\n",
-		hdmi_driver_data->store_as_hextext);
+	dev_dbg(hdev->dev, "store_as_hextext:%0d\n",
+		hdev->sysfs_data.store_as_hextext);
 
 	return count;
 }
@@ -745,15 +803,16 @@ static ssize_t store_storeastext(struct device *dev,
 static ssize_t store_plugdeten(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct plug_detect plug_detect;
 	int index = 0;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_PLUGDETEN_TEXT_SIZE) &&
 			(count != HDMI_PLUGDETEN_TEXT_SIZE + 1))
 			return -EINVAL;
@@ -771,7 +830,7 @@ static ssize_t store_plugdeten(struct device *dev,
 		plug_detect.hdmi_off_time = *(buf + index++);
 	}
 
-	if (plugdeten(&plug_detect))
+	if (plugdeten(hdev, &plug_detect))
 		return -EINVAL;
 
 	return count;
@@ -780,16 +839,17 @@ static ssize_t store_plugdeten(struct device *dev,
 static ssize_t store_edidread(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct edid_read edid_read;
 	int index = 0;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
-	dev_dbg(hdmidev, "count:%d\n", count);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
+	dev_dbg(hdev->dev, "count:%d\n", count);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_EDIDREAD_TEXT_SIZE) &&
 			(count != HDMI_EDIDREAD_TEXT_SIZE + 1))
 			return -EINVAL;
@@ -804,8 +864,8 @@ static ssize_t store_edidread(struct device *dev,
 		edid_read.block_nr = *(buf + index++);
 	}
 
-	if (edidread(&edid_read, &hdmi_driver_data->edid_data.buf_len,
-			hdmi_driver_data->edid_data.buf))
+	if (edidread(hdev, &edid_read, &hdev->sysfs_data.edid_data.buf_len,
+			hdev->sysfs_data.edid_data.buf))
 		return -EINVAL;
 
 	return count;
@@ -814,42 +874,43 @@ static ssize_t store_edidread(struct device *dev,
 static ssize_t show_edidread(struct device *dev, struct device_attribute *attr,
 		char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	int len;
 	int index = 0;
 	int cnt;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	len = hdmi_driver_data->edid_data.buf_len;
+	len = hdev->sysfs_data.edid_data.buf_len;
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x", len);
 		index += 2;
 	} else
 		*(buf + index++) = len;
 
-	dev_dbg(hdmidev, "len:%02x\n", len);
+	dev_dbg(hdev->dev, "len:%02x\n", len);
 
 	cnt = 0;
 	while (cnt < len) {
-		if (hdmi_driver_data->store_as_hextext) {
+		if (hdev->sysfs_data.store_as_hextext) {
 			snprintf(buf + index, 3, "%02x",
-				hdmi_driver_data->edid_data.buf[cnt]);
+				hdev->sysfs_data.edid_data.buf[cnt]);
 			index += 2;
 		} else
 			*(buf + index++) =
-				hdmi_driver_data->edid_data.buf[cnt];
+				hdev->sysfs_data.edid_data.buf[cnt];
 
-		dev_dbg(hdmidev, "%02x ",
-			hdmi_driver_data->edid_data.buf[cnt]);
+		dev_dbg(hdev->dev, "%02x ",
+			hdev->sysfs_data.edid_data.buf[cnt]);
 
 		cnt++;
 	}
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	return index;
@@ -858,14 +919,15 @@ static ssize_t show_edidread(struct device *dev, struct device_attribute *attr,
 static ssize_t store_ceceven(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	bool enable = false;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_CECEVEN_TEXT_SIZE) &&
 			(count != HDMI_CECEVEN_TEXT_SIZE + 1))
 			return -EINVAL;
@@ -878,7 +940,7 @@ static ssize_t store_ceceven(struct device *dev,
 			enable = true;
 	}
 
-	event_enable(enable, HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR |
+	event_enable(hdev, enable, HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR |
 						HDMI_EVENT_CECTX);
 
 	return count;
@@ -887,20 +949,21 @@ static ssize_t store_ceceven(struct device *dev,
 static ssize_t show_cecread(struct device *dev, struct device_attribute *attr,
 		char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct cec_rw cec_read;
 	int index = 0;
 	int cnt;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (cecread(&cec_read.src, &cec_read.dest, &cec_read.length,
+	if (cecread(hdev, &cec_read.src, &cec_read.dest, &cec_read.length,
 		cec_read.data))
 		return -EINVAL;
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x", cec_read.src);
 		index += 2;
 		snprintf(buf + index, 3, "%02x", cec_read.dest);
@@ -913,22 +976,22 @@ static ssize_t show_cecread(struct device *dev, struct device_attribute *attr,
 		*(buf + index++) = cec_read.length;
 	}
 
-	dev_dbg(hdmidev, "len:%02x\n", cec_read.length);
+	dev_dbg(hdev->dev, "len:%02x\n", cec_read.length);
 
 	cnt = 0;
 	while (cnt < cec_read.length) {
-		if (hdmi_driver_data->store_as_hextext) {
+		if (hdev->sysfs_data.store_as_hextext) {
 			snprintf(buf + index, 3, "%02x", cec_read.data[cnt]);
 			index += 2;
 		} else
 			*(buf + index++) = cec_read.data[cnt];
 
-		dev_dbg(hdmidev, "%02x ", cec_read.data[cnt]);
+		dev_dbg(hdev->dev, "%02x ", cec_read.data[cnt]);
 
 		cnt++;
 	}
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	return index;
@@ -937,21 +1000,22 @@ static ssize_t show_cecread(struct device *dev, struct device_attribute *attr,
 static ssize_t store_cecsend(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct cec_rw cec_w;
 	int index = 0;
 	int cnt;
 	int store_as_text;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
 	if ((*buf == 'F') || (*buf == 'f'))
 		/* To be able to override bin format for test purpose */
 		store_as_text = 1;
 	else
-		store_as_text = hdmi_driver_data->store_as_hextext;
+		store_as_text = hdev->sysfs_data.store_as_hextext;
 
 	if (store_as_text) {
 		if ((count < HDMI_CECSEND_TEXT_SIZE_MIN) ||
@@ -970,7 +1034,7 @@ static ssize_t store_cecsend(struct device *dev,
 		while (cnt < cec_w.length) {
 			cec_w.data[cnt] = htoi(buf + index);
 			index += 2;
-			dev_dbg(hdmidev, "%02x ", cec_w.data[cnt]);
+			dev_dbg(hdev->dev, "%02x ", cec_w.data[cnt]);
 			cnt++;
 		}
 	} else {
@@ -986,10 +1050,7 @@ static ssize_t store_cecsend(struct device *dev,
 		memcpy(cec_w.data, buf + index, cec_w.length);
 	}
 
-	if (cecsend(cec_w.src,
-			cec_w.dest,
-			cec_w.length,
-			cec_w.data))
+	if (cecsend(hdev, cec_w.src, cec_w.dest, cec_w.length, cec_w.data))
 		return -EINVAL;
 
 	return count;
@@ -998,16 +1059,17 @@ static ssize_t store_cecsend(struct device *dev,
 static ssize_t store_infofrsend(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct info_fr info_fr;
 	int index = 0;
 	int cnt;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count < HDMI_INFOFRSEND_TEXT_SIZE_MIN) ||
 			(count > HDMI_INFOFRSEND_TEXT_SIZE_MAX))
 			return -EINVAL;
@@ -1027,7 +1089,7 @@ static ssize_t store_infofrsend(struct device *dev,
 		while (cnt < info_fr.length) {
 			info_fr.data[cnt] = htoi(buf + index);
 			index += 2;
-			dev_dbg(hdmidev, "%02x ", info_fr.data[cnt]);
+			dev_dbg(hdev->dev, "%02x ", info_fr.data[cnt]);
 			cnt++;
 		}
 	} else {
@@ -1045,7 +1107,7 @@ static ssize_t store_infofrsend(struct device *dev,
 		memcpy(info_fr.data, buf + index, info_fr.length);
 	}
 
-	if (infofrsend(info_fr.type, info_fr.ver, info_fr.crc,
+	if (infofrsend(hdev, info_fr.type, info_fr.ver, info_fr.crc,
 		info_fr.length, info_fr.data))
 		return -EINVAL;
 
@@ -1055,14 +1117,15 @@ static ssize_t store_infofrsend(struct device *dev,
 static ssize_t store_hdcpeven(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	bool enable = false;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_HDCPEVEN_TEXT_SIZE) &&
 			(count != HDMI_HDCPEVEN_TEXT_SIZE + 1))
 			return -EINVAL;
@@ -1075,7 +1138,7 @@ static ssize_t store_hdcpeven(struct device *dev,
 			enable = true;
 	}
 
-	event_enable(enable, HDMI_EVENT_HDCP);
+	event_enable(hdev, enable, HDMI_EVENT_HDCP);
 
 	return count;
 }
@@ -1083,28 +1146,29 @@ static ssize_t store_hdcpeven(struct device *dev,
 static ssize_t show_hdcpchkaesotp(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	u8 crc;
 	u8 progged;
 	int index = 0;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdcpchkaesotp(&crc, &progged))
+	if (hdcpchkaesotp(hdev, &crc, &progged))
 		return -EINVAL;
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x", progged);
 		index += 2;
 	} else {
 		*(buf + index++) = progged;
 	}
 
-	dev_dbg(hdmidev, "progged:%02x\n", progged);
+	dev_dbg(hdev->dev, "progged:%02x\n", progged);
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	return index;
@@ -1113,19 +1177,20 @@ static ssize_t show_hdcpchkaesotp(struct device *dev,
 static ssize_t store_hdcpfuseaes(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct hdcp_fuseaes hdcp_fuseaes;
 	int index = 0;
 	int cnt;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
 	/* Default not OK */
-	hdmi_driver_data->fuse_result = HDMI_RESULT_NOT_OK;
+	hdev->sysfs_data.fuse_result = HDMI_RESULT_NOT_OK;
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_HDCP_FUSEAES_TEXT_SIZE) &&
 			(count != HDMI_HDCP_FUSEAES_TEXT_SIZE + 1))
 			return -EINVAL;
@@ -1134,12 +1199,12 @@ static ssize_t store_hdcpfuseaes(struct device *dev,
 		while (cnt < HDMI_HDCP_FUSEAES_KEYSIZE) {
 			hdcp_fuseaes.key[cnt] = htoi(buf + index);
 			index += 2;
-			dev_dbg(hdmidev, "%02x ", hdcp_fuseaes.key[cnt]);
+			dev_dbg(hdev->dev, "%02x ", hdcp_fuseaes.key[cnt]);
 			cnt++;
 		}
 		hdcp_fuseaes.crc = htoi(&buf[index]);
 		index += 2;
-		dev_dbg(hdmidev, "%02x ", hdcp_fuseaes.crc);
+		dev_dbg(hdev->dev, "%02x ", hdcp_fuseaes.crc);
 	} else {
 		if (count != HDMI_HDCP_FUSEAES_BIN_SIZE)
 			return -EINVAL;
@@ -1150,13 +1215,13 @@ static ssize_t store_hdcpfuseaes(struct device *dev,
 		hdcp_fuseaes.crc = *(buf + index++);
 	}
 
-	if (hdcpfuseaes(hdcp_fuseaes.key, hdcp_fuseaes.crc,
+	if (hdcpfuseaes(hdev, hdcp_fuseaes.key, hdcp_fuseaes.crc,
 		&hdcp_fuseaes.result))
 		return -EINVAL;
 
-	dev_dbg(hdmidev, "fuseresult:%02x ", hdcp_fuseaes.result);
+	dev_dbg(hdev->dev, "fuseresult:%02x ", hdcp_fuseaes.result);
 
-	hdmi_driver_data->fuse_result = hdcp_fuseaes.result;
+	hdev->sysfs_data.fuse_result = hdcp_fuseaes.result;
 
 	return count;
 }
@@ -1164,23 +1229,23 @@ static ssize_t store_hdcpfuseaes(struct device *dev,
 static ssize_t show_hdcpfuseaes(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	int index = 0;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
-		snprintf(buf + index, 3, "%02x",
-			hdmi_driver_data->fuse_result);
+	if (hdev->sysfs_data.store_as_hextext) {
+		snprintf(buf + index, 3, "%02x", hdev->sysfs_data.fuse_result);
 		index += 2;
 	} else
-		*(buf + index++) = hdmi_driver_data->fuse_result;
+		*(buf + index++) = hdev->sysfs_data.fuse_result;
 
-	dev_dbg(hdmidev, "status:%02x\n", hdmi_driver_data->fuse_result);
+	dev_dbg(hdev->dev, "status:%02x\n", hdev->sysfs_data.fuse_result);
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	return index;
@@ -1189,7 +1254,7 @@ static ssize_t show_hdcpfuseaes(struct device *dev,
 static ssize_t store_hdcploadaes(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct hdcp_loadaesone hdcp_loadaes;
 	int index = 0;
 	int block_cnt;
@@ -1198,14 +1263,15 @@ static ssize_t store_hdcploadaes(struct device *dev,
 	u8 crc;
 	u8 progged;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
 	/* Default not OK */
-	hdmi_driver_data->loadaes_result = HDMI_RESULT_NOT_OK;
+	hdev->sysfs_data.loadaes_result = HDMI_RESULT_NOT_OK;
 
-	if (hdcpchkaesotp(&crc, &progged))
+	if (hdcpchkaesotp(hdev, &crc, &progged))
 		return -EINVAL;
 
 	if (!progged) {
@@ -1214,10 +1280,10 @@ static ssize_t store_hdcploadaes(struct device *dev,
 		goto store_hdcploadaes_err;
 	}
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_HDCP_LOADAES_TEXT_SIZE) &&
 			(count != HDMI_HDCP_LOADAES_TEXT_SIZE + 1)) {
-			dev_err(hdmidev, "%s", "count mismatch\n");
+			dev_err(hdev->dev, "%s", "count mismatch\n");
 			return -EINVAL;
 		}
 
@@ -1228,17 +1294,18 @@ static ssize_t store_hdcploadaes(struct device *dev,
 			while (cnt < HDMI_HDCP_AES_KEYSIZE) {
 				hdcp_loadaes.key[cnt] =	htoi(buf + index);
 				index += 2;
-				dev_dbg(hdmidev, "%02x ",
+				dev_dbg(hdev->dev, "%02x ",
 					hdcp_loadaes.key[cnt]);
 				cnt++;
 			}
 
-			if (hdcploadaes(block_cnt + HDMI_HDCP_AES_BLOCK_START,
+			if (hdcploadaes(hdev,
+					block_cnt + HDMI_HDCP_AES_BLOCK_START,
 					HDMI_HDCP_AES_KEYSIZE,
 					hdcp_loadaes.key,
 					&hdcp_loadaes.result,
 					crc32_rcvd)) {
-				dev_err(hdmidev, "%s %d\n",
+				dev_err(hdev->dev, "%s %d\n",
 					"hdcploadaes err aes block",
 					block_cnt + HDMI_HDCP_AES_BLOCK_START);
 				return -EINVAL;
@@ -1258,17 +1325,18 @@ static ssize_t store_hdcploadaes(struct device *dev,
 			hdcp_loadaes.key[cnt] =
 					htoi(&buf[index]);
 			index += 2;
-			dev_dbg(hdmidev, "%02x ", hdcp_loadaes.key[cnt]);
+			dev_dbg(hdev->dev, "%02x ", hdcp_loadaes.key[cnt]);
 			cnt++;
 		}
 
-		if (hdcploadaes(HDMI_HDCP_KSV_BLOCK,
+		if (hdcploadaes(hdev, HDMI_HDCP_KSV_BLOCK,
 				HDMI_HDCP_AES_KSVSIZE +
 				HDMI_HDCP_AES_KSVZEROESSIZE,
 				hdcp_loadaes.key,
 				&hdcp_loadaes.result,
 				NULL)) {
-			dev_err(hdmidev, "%s %d\n", "hdcploadaes err in ksv\n",
+			dev_err(hdev->dev,
+				"%s %d\n", "hdcploadaes err in ksv\n",
 				block_cnt + HDMI_HDCP_AES_BLOCK_START);
 			return -EINVAL;
 		}
@@ -1283,7 +1351,7 @@ static ssize_t store_hdcploadaes(struct device *dev,
 		}
 
 		if (memcmp(hdcp_loadaes.crc32, crc32_rcvd, CRC32_SIZE)) {
-			dev_dbg(hdmidev, "crc32exp:%02x%02x%02x%02x\n",
+			dev_dbg(hdev->dev, "crc32exp:%02x%02x%02x%02x\n",
 				hdcp_loadaes.crc32[0],
 				hdcp_loadaes.crc32[1],
 				hdcp_loadaes.crc32[2],
@@ -1293,7 +1361,7 @@ static ssize_t store_hdcploadaes(struct device *dev,
 		}
 	} else {
 		if (count != HDMI_HDCP_LOADAES_BIN_SIZE) {
-			dev_err(hdmidev, "%s", "count mismatch\n");
+			dev_err(hdev->dev, "%s", "count mismatch\n");
 			return -EINVAL;
 		}
 
@@ -1304,12 +1372,13 @@ static ssize_t store_hdcploadaes(struct device *dev,
 					HDMI_HDCP_AES_KEYSIZE);
 			index += HDMI_HDCP_AES_KEYSIZE;
 
-			if (hdcploadaes(block_cnt + HDMI_HDCP_AES_BLOCK_START,
+			if (hdcploadaes(hdev,
+					block_cnt + HDMI_HDCP_AES_BLOCK_START,
 					HDMI_HDCP_AES_KEYSIZE,
 					hdcp_loadaes.key,
 					&hdcp_loadaes.result,
 					crc32_rcvd)) {
-				dev_err(hdmidev, "%s %d\n",
+				dev_err(hdev->dev, "%s %d\n",
 					"hdcploadaes err aes block",
 					block_cnt + HDMI_HDCP_AES_BLOCK_START);
 				return -EINVAL;
@@ -1328,13 +1397,14 @@ static ssize_t store_hdcploadaes(struct device *dev,
 				HDMI_HDCP_AES_KSVSIZE);
 		index += HDMI_HDCP_AES_KSVSIZE;
 
-		if (hdcploadaes(HDMI_HDCP_KSV_BLOCK,
+		if (hdcploadaes(hdev, HDMI_HDCP_KSV_BLOCK,
 				HDMI_HDCP_AES_KSVSIZE +
 				HDMI_HDCP_AES_KSVZEROESSIZE,
 				hdcp_loadaes.key,
 				&hdcp_loadaes.result,
 				NULL)) {
-			dev_err(hdmidev, "%s %d\n", "hdcploadaes err in ksv\n",
+			dev_err(hdev->dev, "%s %d\n",
+				"hdcploadaes err in ksv\n",
 				block_cnt + HDMI_HDCP_AES_BLOCK_START);
 			return -EINVAL;
 		}
@@ -1344,7 +1414,7 @@ static ssize_t store_hdcploadaes(struct device *dev,
 
 		/* CRC32 */
 		if (memcmp(hdcp_loadaes.crc32, crc32_rcvd, CRC32_SIZE)) {
-			dev_dbg(hdmidev, "crc32exp:%02x%02x%02x%02x\n",
+			dev_dbg(hdev->dev, "crc32exp:%02x%02x%02x%02x\n",
 				hdcp_loadaes.crc32[0],
 				hdcp_loadaes.crc32[1],
 				hdcp_loadaes.crc32[2],
@@ -1354,30 +1424,31 @@ static ssize_t store_hdcploadaes(struct device *dev,
 	}
 
 store_hdcploadaes_err:
-	hdmi_driver_data->loadaes_result = hdcp_loadaes.result;
+	hdev->sysfs_data.loadaes_result = hdcp_loadaes.result;
 	return count;
 }
 
 static ssize_t show_hdcploadaes(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	int index = 0;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x",
-			hdmi_driver_data->loadaes_result);
+			hdev->sysfs_data.loadaes_result);
 		index += 2;
 	} else
-		*(buf + index++) = hdmi_driver_data->loadaes_result;
+		*(buf + index++) = hdev->sysfs_data.loadaes_result;
 
-	dev_dbg(hdmidev, "result:%02x\n", hdmi_driver_data->loadaes_result);
+	dev_dbg(hdev->dev, "result:%02x\n", hdev->sysfs_data.loadaes_result);
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	return index;
@@ -1386,21 +1457,22 @@ static ssize_t show_hdcploadaes(struct device *dev,
 static ssize_t store_hdcpauthencr(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct hdcp_authencr hdcp_authencr;
 	int index = 0;
 	u8 crc;
 	u8 progged;
 	int result = HDMI_RESULT_NOT_OK;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	/* Default not OK */
-	hdmi_driver_data->authencr.buf_len = 0;
+	/* Default */
+	hdev->sysfs_data.authencr.buf_len = 0;
 
-	if (hdcpchkaesotp(&crc, &progged)) {
+	if (hdcpchkaesotp(hdev, &crc, &progged)) {
 		result = HDMI_AES_NOT_FUSED;
 		goto store_hdcpauthencr_end;
 	}
@@ -1411,7 +1483,7 @@ static ssize_t store_hdcpauthencr(struct device *dev,
 		goto store_hdcpauthencr_end;
 	}
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_HDCPAUTHENCR_TEXT_SIZE) &&
 			(count != HDMI_HDCPAUTHENCR_TEXT_SIZE + 1))
 			goto store_hdcpauthencr_end;
@@ -1428,64 +1500,65 @@ static ssize_t store_hdcpauthencr(struct device *dev,
 		hdcp_authencr.encr_type = *(buf + index++);
 	}
 
-	if (hdcpauthencr(hdcp_authencr.auth_type, hdcp_authencr.encr_type,
-		 &hdmi_driver_data->authencr.buf_len,
-		 hdmi_driver_data->authencr.buf))
+	if (hdcpauthencr(hdev, hdcp_authencr.auth_type, hdcp_authencr.encr_type,
+		 &hdev->sysfs_data.authencr.buf_len,
+		 hdev->sysfs_data.authencr.buf))
 		goto store_hdcpauthencr_end;
 
 	result = HDMI_RESULT_OK;
 
 store_hdcpauthencr_end:
-	hdmi_driver_data->authencr.result = result;
+	hdev->sysfs_data.authencr.result = result;
 	return count;
 }
 
 static ssize_t show_hdcpauthencr(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	int len;
 	int index = 0;
 	int cnt;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-
-	if (hdmi_driver_data->store_as_hextext) {
+	/* result */
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x",
-			hdmi_driver_data->authencr.result);
+			hdev->sysfs_data.authencr.result);
 		index += 2;
 	} else
-		*(buf + index++) = hdmi_driver_data->authencr.result;
+		*(buf + index++) = hdev->sysfs_data.authencr.result;
 
-	dev_dbg(hdmidev, "result:%02x\n", hdmi_driver_data->authencr.result);
+	dev_dbg(hdev->dev, "result:%02x\n", hdev->sysfs_data.authencr.result);
 
 	/* resp_size */
-	len = hdmi_driver_data->authencr.buf_len;
+	len = hdev->sysfs_data.authencr.buf_len;
 	if (len > AUTH_BUF_LEN)
 		len = AUTH_BUF_LEN;
-	dev_dbg(hdmidev, "resp_size:%d\n", len);
+	dev_dbg(hdev->dev, "resp_size:%d\n", len);
 
 	/* resp */
 	cnt = 0;
 	while (cnt < len) {
-		if (hdmi_driver_data->store_as_hextext) {
+		if (hdev->sysfs_data.store_as_hextext) {
 			snprintf(buf + index, 3, "%02x",
-				hdmi_driver_data->authencr.buf[cnt]);
+				hdev->sysfs_data.authencr.buf[cnt]);
 			index += 2;
 
-			dev_dbg(hdmidev, "%02x ",
-				hdmi_driver_data->authencr.buf[cnt]);
+			dev_dbg(hdev->dev, "%02x ",
+				hdev->sysfs_data.authencr.buf[cnt]);
 
 		} else
-			*(buf + index++) = hdmi_driver_data->authencr.buf[cnt];
+			*(buf + index++) = hdev->sysfs_data.authencr.buf[cnt];
 
 		cnt++;
 	}
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	return index;
@@ -1494,26 +1567,27 @@ static ssize_t show_hdcpauthencr(struct device *dev,
 static ssize_t show_hdcpstateget(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	u8 hdcp_state;
 	int index = 0;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
 	if (av8100_reg_gen_status_r(NULL, NULL, NULL, NULL, NULL, &hdcp_state))
 			return -EINVAL;
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x", hdcp_state);
 		index += 2;
 	} else
 		*(buf + index++) = hdcp_state;
 
-	dev_dbg(hdmidev, "status:%02x\n", hdcp_state);
+	dev_dbg(hdev->dev, "status:%02x\n", hdcp_state);
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	return index;
@@ -1522,27 +1596,28 @@ static ssize_t show_hdcpstateget(struct device *dev,
 static ssize_t show_evread(struct device *dev, struct device_attribute *attr,
 		char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	int index = 0;
 	u8 ev;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	ev = events_read();
+	ev = events_read(hdev);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x", ev);
 		index += 2;
 	} else
 		*(buf + index++) = ev;
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	/* Events are read: clear events */
-	events_clear(EVENTS_MASK);
+	events_clear(hdev, EVENTS_MASK);
 
 	return index;
 }
@@ -1550,15 +1625,16 @@ static ssize_t show_evread(struct device *dev, struct device_attribute *attr,
 static ssize_t store_evclr(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	u8 ev;
 	int index = 0;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_EVCLR_TEXT_SIZE) &&
 			(count != HDMI_EVCLR_TEXT_SIZE + 1))
 			return -EINVAL;
@@ -1572,7 +1648,7 @@ static ssize_t store_evclr(struct device *dev,
 		ev = *(buf + index++);
 	}
 
-	events_clear(ev);
+	events_clear(hdev, ev);
 
 	return count;
 }
@@ -1580,15 +1656,16 @@ static ssize_t store_evclr(struct device *dev,
 static ssize_t store_audiocfg(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	struct audio_cfg audio_cfg;
 	int index = 0;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_AUDIOCFG_TEXT_SIZE) &&
 			(count != HDMI_AUDIOCFG_TEXT_SIZE + 1))
 			return -EINVAL;
@@ -1620,7 +1697,7 @@ static ssize_t store_audiocfg(struct device *dev,
 		audio_cfg.mute = *(buf + index++);
 	}
 
-	audiocfg(&audio_cfg);
+	audiocfg(hdev, &audio_cfg);
 
 	return count;
 }
@@ -1628,25 +1705,26 @@ static ssize_t store_audiocfg(struct device *dev,
 static ssize_t show_plugstatus(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	int index = 0;
 	struct av8100_status av8100_status;
 	u8 plstat;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
 	av8100_status = av8100_status_get();
 	plstat = av8100_status.av8100_plugin_status == AV8100_HDMI_PLUGIN;
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x", plstat);
 		index += 2;
 	} else
 		*(buf + index++) = plstat;
 
-	if (hdmi_driver_data->store_as_hextext)
+	if (hdev->sysfs_data.store_as_hextext)
 		index++;
 
 	return index;
@@ -1655,14 +1733,15 @@ static ssize_t show_plugstatus(struct device *dev,
 static ssize_t store_poweronoff(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	bool enable = false;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		if ((count != HDMI_POWERONOFF_TEXT_SIZE) &&
 			(count != HDMI_POWERONOFF_TEXT_SIZE + 1))
 			return -EINVAL;
@@ -1677,12 +1756,12 @@ static ssize_t store_poweronoff(struct device *dev,
 
 	if (enable == 0) {
 		if (av8100_powerdown() != 0) {
-			dev_err(hdmidev, "av8100_powerdown FAIL\n");
+			dev_err(hdev->dev, "av8100_powerdown FAIL\n");
 			return -EINVAL;
 		}
 	} else {
 		if (av8100_powerup() != 0) {
-			dev_err(hdmidev, "av8100_powerup FAIL\n");
+			dev_err(hdev->dev, "av8100_powerup FAIL\n");
 			return -EINVAL;
 		}
 	}
@@ -1693,14 +1772,15 @@ static ssize_t store_poweronoff(struct device *dev,
 static ssize_t show_poweronoff(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 	int index = 0;
 	struct av8100_status status;
 	u8 power_state;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	if (!hdev)
+		return -EFAULT;
 
-	hdmi_driver_data = dev_get_drvdata(dev);
+	dev_dbg(hdev->dev, "%s\n", __func__);
 
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_SCAN)
@@ -1708,7 +1788,7 @@ static ssize_t show_poweronoff(struct device *dev,
 	else
 		power_state = 1;
 
-	if (hdmi_driver_data->store_as_hextext) {
+	if (hdev->sysfs_data.store_as_hextext) {
 		snprintf(buf + index, 3, "%02x", power_state);
 		index += 3;
 	} else {
@@ -1721,28 +1801,25 @@ static ssize_t show_poweronoff(struct device *dev,
 static ssize_t store_evwakeup(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	dev_dbg(hdmidev, "%s\n", __func__);
+	struct hdmi_device *hdev = dev_to_hdev(dev);
 
-	event_wakeup();
+	if (!hdev)
+		return -EFAULT;
+
+	dev_dbg(hdev->dev, "%s\n", __func__);
+
+	event_wakeup(hdev);
 
 	return count;
 }
 
 static int hdmi_open(struct inode *inode, struct file *filp)
 {
-	if (device_open)
-		return -EBUSY;
-
-	device_open++;
-
 	return 0;
 }
 
 static int hdmi_release(struct inode *inode, struct file *filp)
 {
-	if (device_open)
-		device_open--;
-
 	return 0;
 }
 
@@ -1754,6 +1831,7 @@ static long hdmi_ioctl(struct file *file,
 	struct hdmi_register reg;
 	struct av8100_status status;
 	u8 aes_status;
+	struct hdmi_device *hdev = devnr_to_hdev(HDMI_DEVNR_DEFAULT);
 
 	switch (cmd) {
 	case IOC_PLUG_DETECT_ENABLE:
@@ -1764,7 +1842,7 @@ static long hdmi_ioctl(struct file *file,
 			sizeof(struct plug_detect)))
 			return -EINVAL;
 
-		if (plugdeten(&plug_detect))
+		if (plugdeten(hdev, &plug_detect))
 			return -EINVAL;
 		}
 		break;
@@ -1777,7 +1855,7 @@ static long hdmi_ioctl(struct file *file,
 				sizeof(struct edid_read)))
 			return -EINVAL;
 
-		if (edidread(&edid_read, &edid_read.data_length,
+		if (edidread(hdev, &edid_read, &edid_read.data_length,
 				edid_read.data))
 			return -EINVAL;
 
@@ -1792,7 +1870,8 @@ static long hdmi_ioctl(struct file *file,
 		if (copy_from_user(&value, (void *)arg, sizeof(u8)))
 			return -EINVAL;
 
-		event_enable(value != 0, HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR |
+		event_enable(hdev, value != 0,
+					HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR |
 							HDMI_EVENT_CECTX);
 		break;
 
@@ -1800,8 +1879,8 @@ static long hdmi_ioctl(struct file *file,
 		{
 		struct cec_rw cec_read;
 
-		if (cecread(&cec_read.src, &cec_read.dest, &cec_read.length,
-			cec_read.data))
+		if (cecread(hdev, &cec_read.src, &cec_read.dest,
+				&cec_read.length, cec_read.data))
 			return -EINVAL;
 
 		if (copy_to_user((void *)arg, (void *)&cec_read,
@@ -1819,9 +1898,7 @@ static long hdmi_ioctl(struct file *file,
 				sizeof(struct cec_rw)))
 			return -EINVAL;
 
-		if (cecsend(cec_send.src,
-				cec_send.dest,
-				cec_send.length,
+		if (cecsend(hdev, cec_send.src, cec_send.dest, cec_send.length,
 				cec_send.data))
 			return -EINVAL;
 		}
@@ -1835,7 +1912,7 @@ static long hdmi_ioctl(struct file *file,
 				sizeof(struct info_fr)))
 			return -EINVAL;
 
-		if (infofrsend(info_fr.type, info_fr.ver, info_fr.crc,
+		if (infofrsend(hdev, info_fr.type, info_fr.ver, info_fr.crc,
 			info_fr.length, info_fr.data))
 			return -EINVAL;
 		}
@@ -1845,11 +1922,11 @@ static long hdmi_ioctl(struct file *file,
 		if (copy_from_user(&value, (void *)arg, sizeof(u8)))
 			return -EINVAL;
 
-		event_enable(value != 0, HDMI_EVENT_HDCP);
+		event_enable(hdev, value != 0, HDMI_EVENT_HDCP);
 		break;
 
 	case IOC_HDCP_CHKAESOTP:
-		if (hdcpchkaesotp(&value, &aes_status))
+		if (hdcpchkaesotp(hdev, &value, &aes_status))
 			return -EINVAL;
 
 		if (copy_to_user((void *)arg, (void *)&aes_status,
@@ -1866,7 +1943,7 @@ static long hdmi_ioctl(struct file *file,
 				sizeof(struct hdcp_fuseaes)))
 			return -EINVAL;
 
-		if (hdcpfuseaes(hdcp_fuseaes.key, hdcp_fuseaes.crc,
+		if (hdcpfuseaes(hdev, hdcp_fuseaes.key, hdcp_fuseaes.crc,
 				&hdcp_fuseaes.result))
 				return -EINVAL;
 
@@ -1887,7 +1964,7 @@ static long hdmi_ioctl(struct file *file,
 				sizeof(struct hdcp_loadaesall)))
 			return -EINVAL;
 
-		if (hdcpchkaesotp(&value, &aes_status))
+		if (hdcpchkaesotp(hdev, &value, &aes_status))
 			return -EINVAL;
 
 		if (!aes_status) {
@@ -1903,7 +1980,8 @@ static long hdmi_ioctl(struct file *file,
 					block_cnt * HDMI_HDCP_AES_KEYSIZE,
 					HDMI_HDCP_AES_KEYSIZE);
 
-			if (hdcploadaes(block_cnt + HDMI_HDCP_AES_BLOCK_START,
+			if (hdcploadaes(hdev,
+					block_cnt + HDMI_HDCP_AES_BLOCK_START,
 					HDMI_HDCP_AES_KEYSIZE,
 					hdcp_loadaesone.key,
 					&hdcp_loadaesone.result,
@@ -1921,7 +1999,7 @@ static long hdmi_ioctl(struct file *file,
 		memcpy(hdcp_loadaesone.key + HDMI_HDCP_AES_KSVZEROESSIZE,
 				hdcp_loadaesall.ksv, HDMI_HDCP_AES_KSVSIZE);
 
-		if (hdcploadaes(HDMI_HDCP_KSV_BLOCK,
+		if (hdcploadaes(hdev, HDMI_HDCP_KSV_BLOCK,
 				HDMI_HDCP_AES_KSVSIZE +
 				HDMI_HDCP_AES_KSVZEROESSIZE,
 				hdcp_loadaesone.key,
@@ -1935,7 +2013,7 @@ static long hdmi_ioctl(struct file *file,
 		/* CRC32 */
 		if (memcmp(hdcp_loadaesall.crc32, hdcp_loadaesone.crc32,
 				CRC32_SIZE)) {
-			dev_dbg(hdmidev, "crc32exp:%02x%02x%02x%02x\n",
+			dev_dbg(hdev->dev, "crc32exp:%02x%02x%02x%02x\n",
 				hdcp_loadaesall.crc32[0],
 				hdcp_loadaesall.crc32[1],
 				hdcp_loadaesall.crc32[2],
@@ -1968,7 +2046,7 @@ ioc_hdcploadaes_err:
 		/* Default not OK */
 		hdcp_authencr.resp_size = 0;
 
-		if (hdcpchkaesotp(&value, &aes_status)) {
+		if (hdcpchkaesotp(hdev, &value, &aes_status)) {
 			result = HDMI_AES_NOT_FUSED;
 			goto hdcp_authencr_end;
 		}
@@ -1979,7 +2057,7 @@ ioc_hdcploadaes_err:
 			goto hdcp_authencr_end;
 		}
 
-		if (hdcpauthencr(hdcp_authencr.auth_type,
+		if (hdcpauthencr(hdev, hdcp_authencr.auth_type,
 				hdcp_authencr.encr_type,
 				&value,
 				buf)) {
@@ -2014,7 +2092,7 @@ hdcp_authencr_end:
 		break;
 
 	case IOC_EVENTS_READ:
-		value = events_read();
+		value = events_read(hdev);
 
 		if (copy_to_user((void *)arg, (void *)&value,
 			sizeof(u8))) {
@@ -2022,14 +2100,14 @@ hdcp_authencr_end:
 		}
 
 		/* Events are read: clear events */
-		events_clear(EVENTS_MASK);
+		events_clear(hdev, EVENTS_MASK);
 		break;
 
 	case IOC_EVENTS_CLEAR:
 		if (copy_from_user(&value, (void *)arg, sizeof(u8)))
 			return -EINVAL;
 
-		events_clear(value);
+		events_clear(hdev, value);
 		break;
 
 	case IOC_AUDIO_CFG:
@@ -2040,7 +2118,7 @@ hdcp_authencr_end:
 				sizeof(struct audio_cfg)))
 			return -EINVAL;
 
-		audiocfg(&audio_cfg);
+		audiocfg(hdev, &audio_cfg);
 		}
 		break;
 
@@ -2061,12 +2139,12 @@ hdcp_authencr_end:
 
 		if (value == 0) {
 			if (av8100_powerdown() != 0) {
-				dev_err(hdmidev, "av8100_powerdown FAIL\n");
+				dev_err(hdev->dev, "av8100_powerdown FAIL\n");
 				return -EINVAL;
 			}
 		} else {
 			if (av8100_powerup() != 0) {
-				dev_err(hdmidev, "av8100_powerup FAIL\n");
+				dev_err(hdev->dev, "av8100_powerup FAIL\n");
 				return -EINVAL;
 			}
 		}
@@ -2074,7 +2152,7 @@ hdcp_authencr_end:
 
 	case IOC_EVENT_WAKEUP:
 		/* Trigger event */
-		event_wakeup();
+		event_wakeup(hdev);
 		break;
 
 	case IOC_POWERSTATE:
@@ -2091,14 +2169,14 @@ hdcp_authencr_end:
 	case IOC_HDMI_ENABLE_INTERRUPTS:
 		av8100_disable_interrupt();
 		if (av8100_enable_interrupt() != 0) {
-			dev_err(hdmidev, "av8100_conf_get FAIL\n");
+			dev_err(hdev->dev, "av8100_ei FAIL\n");
 			return -EINVAL;
 		}
 		break;
 
 	case IOC_HDMI_DOWNLOAD_FW:
 		if (av8100_download_firmware(NULL, 0, I2C_INTERFACE) != 0) {
-			dev_err(hdmidev, "av8100 dl fw FAIL\n");
+			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
 		}
 		break;
@@ -2112,7 +2190,7 @@ hdcp_authencr_end:
 			return -EFAULT;
 
 		if (av8100_conf_get(AV8100_COMMAND_HDMI, &config) != 0) {
-			dev_err(hdmidev, "av8100_conf_get FAIL\n");
+			dev_err(hdev->dev, "av8100_conf_get FAIL\n");
 			return -EINVAL;
 		}
 		if (value == 0)
@@ -2121,12 +2199,12 @@ hdcp_authencr_end:
 			config.hdmi_format.hdmi_mode = AV8100_HDMI_ON;
 
 		if (av8100_conf_prep(AV8100_COMMAND_HDMI, &config) != 0) {
-			dev_err(hdmidev, "av8100_conf_prep FAIL\n");
+			dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
 			return -EINVAL;
 		}
 		if (av8100_conf_w(AV8100_COMMAND_HDMI, NULL, NULL,
 			I2C_INTERFACE) != 0) {
-			dev_err(hdmidev, "av8100_conf_w FAIL\n");
+			dev_err(hdev->dev, "av8100_conf_w FAIL\n");
 			return -EINVAL;
 		}
 		}
@@ -2139,7 +2217,7 @@ hdcp_authencr_end:
 		}
 
 		if (av8100_reg_w(reg.offset, reg.value) != 0) {
-			dev_err(hdmidev, "hdmi_register_write FAIL\n");
+			dev_err(hdev->dev, "hdmi_register_write FAIL\n");
 			return -EINVAL;
 		}
 		break;
@@ -2151,7 +2229,7 @@ hdcp_authencr_end:
 		}
 
 		if (av8100_reg_r(reg.offset, &reg.value) != 0) {
-			dev_err(hdmidev, "hdmi_register_write FAIL\n");
+			dev_err(hdev->dev, "hdmi_register_write FAIL\n");
 			return -EINVAL;
 		}
 
@@ -2173,9 +2251,10 @@ hdcp_authencr_end:
 	case IOC_HDMI_CONFIGURATION_WRITE:
 		{
 		struct hdmi_command_register command_reg;
+
 		if (copy_from_user(&command_reg, (void *)arg,
 				sizeof(struct hdmi_command_register)) != 0) {
-			dev_err(hdmidev, "IOC_HDMI_CONFIGURATION_WRITE "
+			dev_err(hdev->dev, "IOC_HDMI_CONFIGURATION_WRITE "
 				"fail 1\n");
 			command_reg.return_status = EINVAL;
 		} else {
@@ -2185,7 +2264,8 @@ hdcp_authencr_end:
 					command_reg.buf,
 					&(command_reg.buf_len),
 					command_reg.buf) != 0) {
-				dev_err(hdmidev, "IOC_HDMI_CONFIGURATION_WRITE "
+				dev_err(hdev->dev,
+					"IOC_HDMI_CONFIGURATION_WRITE "
 					"fail 2\n");
 				command_reg.return_status = EINVAL;
 			}
@@ -2209,14 +2289,19 @@ static unsigned int
 hdmi_poll(struct file *filp, poll_table *wait)
 {
 	unsigned int mask = 0;
+	struct hdmi_device *hdev;
 
-	dev_dbg(hdmidev, "%s\n", __func__);
+	hdev = devnr_to_hdev(HDMI_DEVNR_DEFAULT);
+	if (!hdev)
+		return 0;
 
-	poll_wait(filp, &hdmi_event_wq , wait);
+	dev_dbg(hdev->dev, "%s\n", __func__);
+
+	poll_wait(filp, &hdev->event_wq , wait);
 
 	LOCK_HDMI_EVENTS;
-	if (events_received == true) {
-		events_received = false;
+	if (hdev->events_received == true) {
+		hdev->events_received = false;
 		mask = POLLIN | POLLRDNORM;
 	}
 	UNLOCK_HDMI_EVENTS;
@@ -2232,180 +2317,164 @@ static const struct file_operations hdmi_fops = {
 	.poll = hdmi_poll
 };
 
-static struct miscdevice hdmi_miscdev = {
-	MISC_DYNAMIC_MINOR,
-	"hdmi",
-	&hdmi_fops
-};
-
 /* Event callback function called by hw driver */
 void hdmi_event(enum av8100_hdmi_event ev)
 {
 	int events_old;
 	int events_new;
-	struct kobject *kobj = &hdmidev->kobj;
+	struct hdmi_device *hdev;
+	struct kobject *kobj;
 
-	dev_dbg(hdmidev, "hdmi_event %02x\n", ev);
+	hdev = devnr_to_hdev(HDMI_DEVNR_DEFAULT);
+	if (!hdev)
+		return;
+
+	dev_dbg(hdev->dev, "hdmi_event %02x\n", ev);
+
+	kobj = &(hdev->dev->kobj);
 
 	LOCK_HDMI_EVENTS;
 
-	events_old = events;
+	events_old = hdev->events;
 
 	/* Set event */
 	switch (ev) {
 	case AV8100_HDMI_EVENT_HDMI_PLUGIN:
-		events &= ~HDMI_EVENT_HDMI_PLUGOUT;
-		events |= HDMI_EVENT_HDMI_PLUGIN;
+		hdev->events &= ~HDMI_EVENT_HDMI_PLUGOUT;
+		hdev->events |= HDMI_EVENT_HDMI_PLUGIN;
 		break;
 
 	case AV8100_HDMI_EVENT_HDMI_PLUGOUT:
-		events &= ~HDMI_EVENT_HDMI_PLUGIN;
-		events |= HDMI_EVENT_HDMI_PLUGOUT;
-		cec_tx_status(CEC_TX_SET_FREE);
+		hdev->events &= ~HDMI_EVENT_HDMI_PLUGIN;
+		hdev->events |= HDMI_EVENT_HDMI_PLUGOUT;
+		cec_tx_status(hdev, CEC_TX_SET_FREE);
 		break;
 
 	case AV8100_HDMI_EVENT_CEC:
-		events |= HDMI_EVENT_CEC;
+		hdev->events |= HDMI_EVENT_CEC;
 		break;
 
 	case AV8100_HDMI_EVENT_HDCP:
-		events |= HDMI_EVENT_HDCP;
+		hdev->events |= HDMI_EVENT_HDCP;
 		break;
 
 	case AV8100_HDMI_EVENT_CECTXERR:
-		events |= HDMI_EVENT_CECTXERR;
-		cec_tx_status(CEC_TX_SET_FREE);
+		hdev->events |= HDMI_EVENT_CECTXERR;
+		cec_tx_status(hdev, CEC_TX_SET_FREE);
 		break;
 
 	case AV8100_HDMI_EVENT_CECTX:
-		events |= HDMI_EVENT_CECTX;
-		cec_tx_status(CEC_TX_SET_FREE);
+		hdev->events |= HDMI_EVENT_CECTX;
+		cec_tx_status(hdev, CEC_TX_SET_FREE);
 		break;
 
 	default:
 		break;
 	}
 
-	events_new = events_mask & events;
+	events_new = hdev->events_mask & hdev->events;
 
 	UNLOCK_HDMI_EVENTS;
 
-	dev_dbg(hdmidev, "hdmi events:%02x, events_old:%02x mask:%02x\n",
-			events_new, events_old, events_mask);
+	dev_dbg(hdev->dev, "hdmi events:%02x, events_old:%02x mask:%02x\n",
+			events_new, events_old, hdev->events_mask);
 
 	if (events_new != events_old) {
 		/* Wake up application waiting for event via call to poll() */
 		sysfs_notify(kobj, NULL, SYSFS_EVENT_FILENAME);
 
 		LOCK_HDMI_EVENTS;
-		events_received = true;
+		hdev->events_received = true;
 		UNLOCK_HDMI_EVENTS;
 
-		wake_up_interruptible(&hdmi_event_wq);
+		wake_up_interruptible(&hdev->event_wq);
 	}
 }
 EXPORT_SYMBOL(hdmi_event);
 
+int hdmi_device_register(struct hdmi_device *hdev)
+{
+	hdev->miscdev.minor = MISC_DYNAMIC_MINOR;
+	hdev->miscdev.name = "hdmi";
+	hdev->miscdev.fops = &hdmi_fops;
+
+	if (misc_register(&hdev->miscdev)) {
+		pr_err("hdmi misc_register failed\n");
+		return -EFAULT;
+	}
+
+	hdev->dev = hdev->miscdev.this_device;
+
+	return 0;
+}
+
 int __init hdmi_init(void)
 {
+	struct hdmi_device *hdev;
+	int i;
 	int ret;
-	struct hdmi_driver_data *hdmi_driver_data;
 
-	ret = misc_register(&hdmi_miscdev);
-	if (ret)
-		goto hdmi_init_out;
-
-	hdmidev = hdmi_miscdev.this_device;
-
-	hdmi_driver_data =
-		kzalloc(sizeof(struct hdmi_driver_data), GFP_KERNEL);
-
-	if (!hdmi_driver_data)
+	/* Allocate device data */
+	hdev = kzalloc(sizeof(struct hdmi_device), GFP_KERNEL);
+	if (!hdev) {
+		pr_err("%s: Alloc failure\n", __func__);
 		return -ENOMEM;
+	}
 
-	dev_set_drvdata(hdmidev, hdmi_driver_data);
+	/* Add to list */
+	list_add_tail(&hdev->list, &hdmi_device_list);
+
+	if (hdmi_device_register(hdev)) {
+		pr_err("%s: Alloc failure\n", __func__);
+		return -EFAULT;
+	}
+
+	hdev->devnr = HDMI_DEVNR_DEFAULT;
 
 	/* Default sysfs file format is hextext */
-	hdmi_driver_data->store_as_hextext = true;
+	hdev->sysfs_data.store_as_hextext = true;
 
-	init_waitqueue_head(&hdmi_event_wq);
+	init_waitqueue_head(&hdev->event_wq);
 
-	if (device_create_file(hdmidev, &dev_attr_storeastext))
-		dev_info(hdmidev, "Unable to create storeastext attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_plugdeten))
-		dev_info(hdmidev, "Unable to create plugdeten attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_edidread))
-		dev_info(hdmidev, "Unable to create edidread attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_ceceven))
-		dev_info(hdmidev, "Unable to create ceceven attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_cecread))
-		dev_info(hdmidev, "Unable to create cecread attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_cecsend))
-		dev_info(hdmidev, "Unable to create cecsend attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_infofrsend))
-		dev_info(hdmidev, "Unable to create infofrsend attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_hdcpeven))
-		dev_info(hdmidev, "Unable to create hdcpeven attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_hdcpchkaesotp))
-		dev_info(hdmidev, "Unable to create hdcpchkaesotp attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_hdcpfuseaes))
-		dev_info(hdmidev, "Unable to create hdcpfuseaes attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_hdcploadaes))
-		dev_info(hdmidev, "Unable to create hdcploadaes attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_hdcpauthencr))
-		dev_info(hdmidev, "Unable to create hdcpauthreq attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_hdcpstateget))
-		dev_info(hdmidev, "Unable to create hdcpstateget attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_evread))
-		dev_info(hdmidev, "Unable to create evread attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_evclr))
-		dev_info(hdmidev, "Unable to create evclr attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_audiocfg))
-		dev_info(hdmidev, "Unable to create audiocfg attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_plugstatus))
-		dev_info(hdmidev, "Unable to create plugstatus attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_poweronoff))
-		dev_info(hdmidev, "Unable to create poweronoff attribute\n");
-	if (device_create_file(hdmidev, &dev_attr_evwakeup))
-		dev_info(hdmidev, "Unable to create evwakeup attribute\n");
+	/* Create sysfs attrs */
+	for (i = 0; attr_name(hdmi_sysfs_attrs[i]); i++) {
+		ret = device_create_file(hdev->dev, &hdmi_sysfs_attrs[i]);
+		if (ret)
+			dev_err(hdev->dev,
+				"Unable to create sysfs attr %s (%d)\n",
+				hdmi_sysfs_attrs[i].attr.name, ret);
+	}
 
 	/* Register event callback */
 	av8100_hdmi_event_cb_set(hdmi_event);
 
-hdmi_init_out:
-	return ret;
+	return 0;
 }
 late_initcall(hdmi_init);
 
 void hdmi_exit(void)
 {
-	struct hdmi_driver_data *hdmi_driver_data;
+	struct hdmi_device *hdev = NULL;
+	int i;
+
+	if (list_empty(&hdmi_device_list))
+		return;
+	else
+		hdev = list_entry(hdmi_device_list.next,
+				struct hdmi_device, list);
 
 	/* Deregister event callback */
 	av8100_hdmi_event_cb_set(NULL);
 
-	device_remove_file(hdmidev, &dev_attr_storeastext);
-	device_remove_file(hdmidev, &dev_attr_plugdeten);
-	device_remove_file(hdmidev, &dev_attr_edidread);
-	device_remove_file(hdmidev, &dev_attr_ceceven);
-	device_remove_file(hdmidev, &dev_attr_cecread);
-	device_remove_file(hdmidev, &dev_attr_cecsend);
-	device_remove_file(hdmidev, &dev_attr_infofrsend);
-	device_remove_file(hdmidev, &dev_attr_hdcpeven);
-	device_remove_file(hdmidev, &dev_attr_hdcpchkaesotp);
-	device_remove_file(hdmidev, &dev_attr_hdcpfuseaes);
-	device_remove_file(hdmidev, &dev_attr_hdcploadaes);
-	device_remove_file(hdmidev, &dev_attr_hdcpauthencr);
-	device_remove_file(hdmidev, &dev_attr_hdcpstateget);
-	device_remove_file(hdmidev, &dev_attr_evread);
-	device_remove_file(hdmidev, &dev_attr_evclr);
-	device_remove_file(hdmidev, &dev_attr_audiocfg);
-	device_remove_file(hdmidev, &dev_attr_plugstatus);
-	device_remove_file(hdmidev, &dev_attr_poweronoff);
-	device_remove_file(hdmidev, &dev_attr_evwakeup);
+	/* Remove sysfs attrs */
+	for (i = 0; attr_name(hdmi_sysfs_attrs[i]); i++)
+		device_remove_file(hdev->dev, &hdmi_sysfs_attrs[i]);
 
-	hdmi_driver_data = dev_get_drvdata(hdmidev);
-	kfree(hdmi_driver_data);
+	misc_deregister(&hdev->miscdev);
 
-	misc_deregister(&hdmi_miscdev);
+	/* Remove from list */
+	list_del(&hdev->list);
+
+	/* Free device data */
+	kfree(hdev);
 }

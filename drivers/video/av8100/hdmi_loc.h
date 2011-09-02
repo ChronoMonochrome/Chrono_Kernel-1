@@ -39,7 +39,7 @@ struct hdcp_loadaesone {
 	u8 crc32[CRC32_SIZE];
 };
 
-struct hdmi_driver_data {
+struct hdmi_sysfs_data {
 	bool			store_as_hextext;
 	struct plug_detect	plug_detect;
 	bool			enable_cec_event;
