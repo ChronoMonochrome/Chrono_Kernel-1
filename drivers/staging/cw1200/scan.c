@@ -51,6 +51,10 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	if (!priv->vif)
 		return -EINVAL;
 
+	/* Scan when P2P_GO corrupt firmware MiniAP mode */
+	if (priv->join_status == CW1200_JOIN_STATUS_AP)
+		return -EOPNOTSUPP;
+
 	if (req->n_ssids == 1 && !req->ssids[0].ssid_len)
 		req->n_ssids = 0;
 

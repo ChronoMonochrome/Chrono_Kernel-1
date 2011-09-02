@@ -763,11 +763,14 @@ int __cw1200_flush(struct cw1200_common *priv, bool drop)
 	}
 
 	for (;;) {
+		/* TODO: correct flush handlin is required when dev_stop.
+		 * Temporary workaround: 2s
+		 */
 		ret = wait_event_timeout(
 				priv->tx_queue_stats.wait_link_id_empty,
 				cw1200_queue_stats_is_empty(
 					&priv->tx_queue_stats, -1),
-				10 * HZ);
+				2 * HZ);
 
 		if (unlikely(ret <= 0)) {
 			if (!ret)
