@@ -85,7 +85,7 @@ static struct platform_device ux500_cg2900_test_device = {
 	},
 };
 
-static struct resource cg2900_uart_resources[] = {
+static struct resource cg2900_uart_resources_pre_v60[] = {
 	{
 		.start = CG2900_GBF_ENA_RESET_GPIO,
 		.end = CG2900_GBF_ENA_RESET_GPIO,
@@ -103,6 +103,21 @@ static struct resource cg2900_uart_resources[] = {
 		.end = CG2900_BT_CTS_GPIO,
 		.flags = IORESOURCE_IO,
 		.name = "cts_gpio",
+	},
+	{
+		.start = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
+		.end = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
+		.flags = IORESOURCE_IRQ,
+		.name = "cts_irq",
+	},
+};
+
+static struct resource cg2900_uart_resources[] = {
+	{
+		.start = CG2900_GBF_ENA_RESET_GPIO,
+		.end = CG2900_GBF_ENA_RESET_GPIO,
+		.flags = IORESOURCE_IO,
+		.name = "gbf_ena_reset",
 	},
 	{
 		.start = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
@@ -143,8 +158,6 @@ static struct platform_device ux500_cg2900_uart_device = {
 		.platform_data = &cg2900_uart_platform_data,
 		.parent = &ux500_cg2900_device.dev,
 	},
-	.num_resources = ARRAY_SIZE(cg2900_uart_resources),
-	.resource = cg2900_uart_resources,
 };
 
 static bool mach_supported(void)
@@ -168,6 +181,18 @@ static int __init board_cg2900_init(void)
 
 	dcg2900_init_platdata(&cg2900_test_platform_data);
 	dcg2900_init_platdata(&cg2900_uart_platform_data);
+
+	if (machine_is_hrefv60()) {
+		ux500_cg2900_uart_device.num_resources =
+				ARRAY_SIZE(cg2900_uart_resources);
+		ux500_cg2900_uart_device.resource =
+				cg2900_uart_resources;
+	} else {
+		ux500_cg2900_uart_device.num_resources =
+				ARRAY_SIZE(cg2900_uart_resources_pre_v60);
+		ux500_cg2900_uart_device.resource =
+				cg2900_uart_resources_pre_v60;
+	}
 
 	err = platform_device_register(&ux500_cg2900_device);
 	if (err)
