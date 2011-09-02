@@ -28,6 +28,7 @@
 
 #define CG2900_BT_ENABLE_GPIO		170
 #define CG2900_GBF_ENA_RESET_GPIO	171
+#define WLAN_PMU_EN_GPIO		226
 #define CG2900_BT_CTS_GPIO		0
 
 enum cg2900_gpio_pull_sleep cg2900_sleep_gpio[21] = {
@@ -118,6 +119,12 @@ static struct resource cg2900_uart_resources[] = {
 		.end = CG2900_GBF_ENA_RESET_GPIO,
 		.flags = IORESOURCE_IO,
 		.name = "gbf_ena_reset",
+	},
+	{
+		.start = WLAN_PMU_EN_GPIO,
+		.end = WLAN_PMU_EN_GPIO,
+		.flags = IORESOURCE_IO,
+		.name = "pmu_en",
 	},
 	{
 		.start = CG2900_BT_CTS_GPIO,

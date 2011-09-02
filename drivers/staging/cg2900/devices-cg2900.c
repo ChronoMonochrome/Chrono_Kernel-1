@@ -149,10 +149,12 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 		return -ENOMEM;
 	}
 
+	info->gbf_gpio = -1;
+	info->pmuen_gpio = -1;
+	info->bt_gpio = -1;
+
 	if (!dev->pdev->num_resources) {
 		dev_dbg(dev->dev, "No resources available\n");
-		info->gbf_gpio = -1;
-		info->bt_gpio = -1;
 		goto finished;
 	}
 
@@ -218,6 +220,8 @@ static void dcg2900_exit(struct cg2900_chip_dev *dev)
 	dcg2900_disable_chip(dev);
 	if (info->bt_gpio != -1)
 		gpio_free(info->bt_gpio);
+	if (info->pmuen_gpio != -1)
+		gpio_free(info->pmuen_gpio);
 	if (info->gbf_gpio != -1)
 		gpio_free(info->gbf_gpio);
 	kfree(info);
