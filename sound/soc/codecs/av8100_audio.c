@@ -85,7 +85,7 @@ static int av8100_codec_powerup(void)
 		}
 	}
 	if (status.av8100_state < AV8100_OPMODE_INIT) {
-		ret = av8100_download_firmware(NULL, 0, I2C_INTERFACE);
+		ret = av8100_download_firmware(I2C_INTERFACE);
 		if (ret != 0) {
 			pr_err("%s: Download firmware failed "
 				"(av8100_download_firmware returned %d)!\n",
