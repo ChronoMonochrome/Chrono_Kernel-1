@@ -120,6 +120,12 @@ static struct resource cg2900_uart_resources[] = {
 		.name = "gbf_ena_reset",
 	},
 	{
+		.start = CG2900_BT_CTS_GPIO,
+		.end = CG2900_BT_CTS_GPIO,
+		.flags = IORESOURCE_IO,
+		.name = "cts_gpio",
+	},
+	{
 		.start = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
 		.end = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
 		.flags = IORESOURCE_IRQ,
