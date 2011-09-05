@@ -235,13 +235,13 @@ static int db5500_set_gpio_row(int gpio)
 {
 	int ret = -1;
 
-	if (db5500_config)
-		return ret;
 
-	ret = gpio_request(gpio, "db5500_kpd");
-	if (ret < 0) {
-		pr_err("db5500_set_gpio_row: gpio request failed\n");
-		return ret;
+	if (!db5500_config) {
+		ret = gpio_request(gpio, "db5500_kpd");
+		if (ret < 0) {
+			pr_err("db5500_set_gpio_row: gpio request failed\n");
+			return ret;
+		}
 	}
 
 	ret = gpio_direction_output(gpio, 1);
@@ -266,14 +266,12 @@ static int db5500_kp_init(void)
 		ret = db5500_set_gpio_row(db5500_kp_rows[i]);
 		if (ret < 0) {
 			pr_err("db5500_kp_init: failed init\n");
-			ux500_pins_disable(pins);
 			return ret;
 		}
 	}
 
-	BUG_ON(db5500_config);
-
-	db5500_config = true;
+	if (!db5500_config)
+		db5500_config = true;
 
 	return 0;
 }
