@@ -411,8 +411,7 @@ int av8100_powerup(void);
 int av8100_powerdown(void);
 int av8100_disable_interrupt(void);
 int av8100_enable_interrupt(void);
-int av8100_download_firmware(char *fw_buff, int numOfBytes,
-	enum interface_type if_type);
+int av8100_download_firmware(enum interface_type if_type);
 int av8100_reg_stby_w(
 		unsigned char cpd,
 		unsigned char stby,

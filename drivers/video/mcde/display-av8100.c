@@ -835,8 +835,8 @@ static int hdmi_set_video_mode(
 {
 	int ret;
 	union av8100_configuration av8100_config;
-	struct mcde_display_hdmi_platform_data *pdata = dev->dev.platform_data;
-	struct display_driver_data *driver_data = dev_get_drvdata(&dev->dev);
+	struct mcde_display_hdmi_platform_data *pdata;
+	struct display_driver_data *driver_data;
 	struct av8100_status status;
 
 	/* TODO check video_mode_params */
@@ -844,6 +844,9 @@ static int hdmi_set_video_mode(
 		pr_warning("%s:ddev = NULL or video_mode = NULL\n", __func__);
 		return -EINVAL;
 	}
+
+	pdata = dev->dev.platform_data;
+	driver_data = dev_get_drvdata(&dev->dev);
 
 	dev_dbg(&dev->dev, "%s:\n", __func__);
 	dev_vdbg(&dev->dev, "%s:xres:%d yres:%d hbp:%d hfp:%d vbp:%d vfp:%d "
@@ -914,7 +917,7 @@ static int hdmi_set_video_mode(
 	}
 
 	if (status.av8100_state < AV8100_OPMODE_IDLE) {
-		ret = av8100_download_firmware(NULL, 0, I2C_INTERFACE);
+		ret = av8100_download_firmware(I2C_INTERFACE);
 		if (ret) {
 			dev_err(&dev->dev, "av8100_download_firmware failed\n");
 			av8100_powerdown();

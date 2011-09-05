@@ -2271,8 +2271,7 @@ av8100_powerdown_end:
 }
 EXPORT_SYMBOL(av8100_powerdown);
 
-int av8100_download_firmware(char *fw_buf, int nbytes,
-	enum interface_type if_type)
+int av8100_download_firmware(enum interface_type if_type)
 {
 	int retval;
 	int temp = 0x0;
