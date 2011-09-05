@@ -81,14 +81,6 @@ config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE
 	default "180" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_180
 	default "270" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_270
 
-config DISPLAY_SONY_SY35560_DSI_PRIMARY
-	bool "Sony SY35560 primary display support"
-	depends on MACH_U8500_PDP
-	select MCDE_DISPLAY_SONY_SY35560_DSI
-	default y
-	help
-	  Say yes here if main display exists
-
 config DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	bool "Enable v-sync for primary display"
 	depends on DISPLAY_GENERIC_DSI_PRIMARY || DISPLAY_SONY_SY35560_DSI_PRIMARY

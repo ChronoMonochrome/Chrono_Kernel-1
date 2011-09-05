@@ -4,7 +4,6 @@ obj-$(CONFIG_FB_MCDE)		+= mcde.o
 
 obj-$(CONFIG_MCDE_DISPLAY_GENERIC_DSI)		+= display-generic_dsi.o
 obj-$(CONFIG_MCDE_DISPLAY_SONY_ACX424AKP_DSI)   += display-sony_acx424akp_dsi.o
-obj-$(CONFIG_MCDE_DISPLAY_SONY_SY35560_DSI)	+= display-sony_sy35560_dsi.o
 obj-$(CONFIG_MCDE_DISPLAY_VUIB500_DPI)		+= display-vuib500-dpi.o
 obj-$(CONFIG_MCDE_DISPLAY_AB8500_DENC)		+= display-ab8500.o
 obj-$(CONFIG_MCDE_DISPLAY_AV8100)		+= display-av8100.o

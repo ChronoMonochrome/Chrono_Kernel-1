@@ -19,10 +19,6 @@ config MCDE_DISPLAY_SONY_ACX424AKP_DSI
 	tristate "Sony acx424akp DSI display driver"
 	depends on FB_MCDE
 
-config MCDE_DISPLAY_SONY_SY35560_DSI
-	tristate "Sony sy35560 display driver"
-	depends on FB_MCDE
-
 config MCDE_DISPLAY_DPI
 	bool "Support for DPI displays within MCDE"
 	depends on FB_MCDE
