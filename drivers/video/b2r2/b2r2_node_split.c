@@ -94,6 +94,7 @@ static const u32 vmx_blt_yuv888_to_yvu[] = {
 	B2R2_VMX2_BLT_YUV888_TO_YVU,
 	B2R2_VMX3_BLT_YUV888_TO_YVU,
 };
+
 static const u32 vmx_yvu_to_rgb[] = {
 	B2R2_VMX0_YVU_TO_RGB_601_VIDEO,
 	B2R2_VMX1_YVU_TO_RGB_601_VIDEO,
@@ -299,7 +300,7 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_32_BIT_VUYA8888:
-		if (!is_rgb_fmt(req->user_req.dst_img.fmt)) {
+		if (is_bgr_fmt(req->user_req.dst_img.fmt)) {
 			ret = -ENOSYS;
 			goto unsupported;
 		}
@@ -314,7 +315,7 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_32_BIT_VUYA8888:
-		if (!is_rgb_fmt(req->user_req.src_img.fmt)) {
+		if (is_bgr_fmt(req->user_req.src_img.fmt)) {
 			ret = -ENOSYS;
 			goto unsupported;
 		}
