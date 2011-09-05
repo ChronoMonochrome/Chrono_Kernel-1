@@ -5,6 +5,7 @@
  */
 
 #include <linux/proc_fs.h>
+#include <linux/sched.h>
 
 #include "osal-kernel.h"
 #include "cm_debug.h"

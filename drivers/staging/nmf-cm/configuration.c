@@ -91,7 +91,7 @@ int cfgESRAMSize = ESRAM_SIZE;
 module_param(cfgESRAMSize, uint, S_IRUGO);
 MODULE_PARM_DESC(cfgESRAMSize, "Size of ESRAM used in the CM (in Kb)");
 
-static int set_param_powerMode(const char *val, struct kernel_param *kp)
+static int set_param_powerMode(const char *val, const struct kernel_param *kp)
 {
 	/* No equals means "set"... */
 	if (!val) val = "1";
