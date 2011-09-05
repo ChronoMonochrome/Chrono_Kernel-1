@@ -203,7 +203,7 @@ static int trace_probe(struct platform_device *pdev)
 	trace_priv->misc_dev.name = DEVICE_NAME;
 	trace_priv->misc_dev.fops = &trace_fops;
 	trace_priv->area = (void __iomem *)ioremap_nocache(mem->start,
-						mem->end - mem->start);
+						resource_size(mem));
 	if (!trace_priv->area) {
 		rv = -ENOMEM;
 		goto outfree;
