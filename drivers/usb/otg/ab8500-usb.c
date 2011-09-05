@@ -55,6 +55,18 @@
 #define AB8500_V20_31952_DISABLE_DELAY_US 100 /* usec */
 #define AB8500_WD_V10_DISABLE_DELAY_MS 100 /* ms */
 
+/* Registers in bank 0x11 */
+#define AB8500_BANK12_ACCESS	0x00
+
+/* Registers in bank 0x12 */
+#define AB8500_USB_PHY_TUNE1	0x05
+#define AB8500_USB_PHY_TUNE2	0x06
+#define AB8500_USB_PHY_TUNE3	0x07
+
+
+
+
+
 /* Usb line status register */
 enum ab8500_usb_link_status {
 	USB_LINK_NOT_CONFIGURED = 0,
@@ -573,6 +585,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 				dev_get_platdata(pdev->dev.parent);
 	int err;
 	int rev;
+	int ret = -1;
 
 	rev = abx500_get_chip_id(&pdev->dev);
 	if (rev < 0) {
@@ -639,6 +652,52 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 		goto fail3;
 	}
 
+	/* Write Phy tuning values */
+	if (ab->rev == 0x30) {
+		/* Enable the PBT/Bank 0x12 access */
+		ret = abx500_set_register_interruptible(ab->dev,
+							AB8500_DEVELOPMENT,
+							AB8500_BANK12_ACCESS,
+							0x01);
+		if (ret < 0)
+			printk(KERN_ERR "Failed to enable bank12"
+						" access ret=%d\n", ret);
+
+			ret = abx500_set_register_interruptible(ab->dev,
+							AB8500_DEBUG,
+							AB8500_USB_PHY_TUNE1,
+							0xC8);
+		if (ret < 0)
+			printk(KERN_ERR "Failed to set PHY_TUNE1"
+						" register ret=%d\n", ret);
+
+			ret = abx500_set_register_interruptible(ab->dev,
+							AB8500_DEBUG,
+							AB8500_USB_PHY_TUNE2,
+							0x00);
+		if (ret < 0)
+			printk(KERN_ERR "Failed to set PHY_TUNE2"
+						" register ret=%d\n", ret);
+
+			ret = abx500_set_register_interruptible(ab->dev,
+							AB8500_DEBUG,
+							AB8500_USB_PHY_TUNE3,
+							0x78);
+
+		if (ret < 0)
+			printk(KERN_ERR "Failed to set PHY_TUNE3"
+						" regester ret=%d\n", ret);
+
+		/* Switch to normal mode/disable Bank 0x12 access */
+			ret = abx500_set_register_interruptible(ab->dev,
+							AB8500_DEVELOPMENT,
+							AB8500_BANK12_ACCESS,
+							0x00);
+
+		if (ret < 0)
+			printk(KERN_ERR "Failed to switch bank12"
+						" access ret=%d\n", ret);
+	}
 	/* Needed to enable ID detection. */
 	ab8500_usb_wd_workaround(ab);
 
