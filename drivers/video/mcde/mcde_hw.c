@@ -2366,9 +2366,9 @@ int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl)
 	}
 
 	/*
-	 * Set Maximum Return Packet Size is a four-byte command packet
-	 * (including ECC) that specifies the maximum size of the payload.
-	 * The order of bytes is:
+	 * Set Maximum Return Packet Size is a two-byte command packet
+	 * that specifies the maximum size of the payload as u16 value.
+	 * The order of bytes is: MaxSize LSB, MaxSize MSB
 	 */
 	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(WRITE) |
 		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(false) |
