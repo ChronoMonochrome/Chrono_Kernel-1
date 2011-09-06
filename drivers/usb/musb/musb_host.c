@@ -817,6 +817,8 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 
 		if (hw_ep->do_tx_pio) {
 			/* PIO to load FIFO */
+			/* Unmap the buffer so that CPU can use it */
+			usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
 			qh->segsize = load_count;
 			musb_write_fifo(hw_ep, load_count, buf);
 		}
@@ -909,6 +911,8 @@ static bool musb_h_ep0_continue(struct musb *musb, u16 len, struct urb *urb)
 		if (fifo_count < len)
 			urb->status = -EOVERFLOW;
 
+		/* Unmap the buffer so that CPU can use it */
+		usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
 		musb_read_fifo(hw_ep, fifo_count, fifo_dest);
 
 		urb->actual_length += fifo_count;
@@ -948,6 +952,8 @@ static bool musb_h_ep0_continue(struct musb *musb, u16 len, struct urb *urb)
 					fifo_count,
 					(fifo_count == 1) ? "" : "s",
 					fifo_dest);
+			/* Unmap the buffer so that CPU can use it */
+			usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
 			musb_write_fifo(hw_ep, fifo_count, fifo_dest);
 
 			urb->actual_length += fifo_count;
