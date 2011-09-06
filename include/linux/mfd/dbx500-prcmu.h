@@ -387,14 +387,14 @@ int prcmu_set_clock_rate(u8 clock, unsigned long rate);
 static inline int prcmu_set_ddr_opp(u8 opp)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_set_ddr_opp(opp);
 	else
 		return db8500_prcmu_set_ddr_opp(opp);
 }
 static inline int prcmu_get_ddr_opp(void)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_get_ddr_opp();
 	else
 		return db8500_prcmu_get_ddr_opp();
 }

@@ -1228,6 +1228,24 @@ int db5500_prcmu_get_ape_opp(void)
 	}
 }
 
+int db5500_prcmu_get_ddr_opp(void)
+{
+	return readb(_PRCMU_BASE + PRCM_DDR_SUBSYS_APE_MINBW);
+}
+
+int db5500_prcmu_set_ddr_opp(u8 opp)
+{
+	if (cpu_is_u5500v1())
+		return -EINVAL;
+
+	if (opp != DDR_100_OPP && opp != DDR_50_OPP)
+		return -EINVAL;
+
+	writeb(opp, _PRCMU_BASE + PRCM_DDR_SUBSYS_APE_MINBW);
+
+	return 0;
+}
+
 /**
  * db5500_prcmu_get_arm_opp - get the current ARM OPP
  *

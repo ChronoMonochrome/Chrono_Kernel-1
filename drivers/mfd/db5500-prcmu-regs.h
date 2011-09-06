@@ -116,6 +116,7 @@
 
 #define PRCM_MMIP_LS_CLAMP_SET 0x420
 #define PRCM_MMIP_LS_CLAMP_CLR 0x424
+#define PRCM_DDR_SUBSYS_APE_MINBW 0x438
 
 /* Miscellaneous unit registers */
 #define PRCM_DSI_SW_RESET 0x324
