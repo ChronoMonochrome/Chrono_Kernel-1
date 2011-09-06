@@ -3493,14 +3493,6 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 	update_mcde_registers();
 	mcde_is_enabled = true;
 
-	ret = request_irq(mcde_irq, mcde_irq_handler, 0, "mcde",
-							&mcde_dev->dev);
-	if (ret) {
-		dev_dbg(&mcde_dev->dev, "Failed to request irq (irq=%d)\n",
-								mcde_irq);
-		goto failed_request_irq;
-	}
-
 	schedule_delayed_work(&hw_timeout_work,
 					msecs_to_jiffies(MCDE_SLEEP_WATCHDOG));
 
@@ -3578,10 +3570,18 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 		channels[i].dsi_te_timer.data = i;
 	}
 
+	ret = request_irq(mcde_irq, mcde_irq_handler, 0, "mcde",
+							&mcde_dev->dev);
+	if (ret) {
+		dev_dbg(&mcde_dev->dev, "Failed to request irq (irq=%d)\n",
+								mcde_irq);
+		goto failed_request_irq;
+	}
+
 	return 0;
 
-failed_hardware_version:
 failed_request_irq:
+failed_hardware_version:
 	disable_mcde_hw(true);
 failed_enable_clocks:
 	remove_clocks_and_power(pdev);
