@@ -26,6 +26,7 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <linux/mfd/abx500.h>
+#include <linux/mfd/abx500/ab5500.h>
 #include <linux/bitmap.h>
 #include <linux/bitops.h>
 #include <asm/atomic.h>
