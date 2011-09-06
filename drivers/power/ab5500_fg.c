@@ -26,6 +26,7 @@
 #include <linux/mfd/abx500/ab5500-gpadc.h>
 #include <linux/mfd/abx500/ab5500-bm.h>
 #include <linux/mfd/abx500.h>
+#include <linux/mfd/abx500/ab5500.h>
 
 static LIST_HEAD(ab5500_fg_list);
 

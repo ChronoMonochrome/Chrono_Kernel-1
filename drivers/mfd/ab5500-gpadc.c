@@ -17,6 +17,7 @@
 #include <linux/slab.h>
 #include <linux/list.h>
 #include <linux/mfd/abx500.h>
+#include <linux/mfd/abx500/ab5500.h>
 #include <linux/mfd/abx500/ab5500-gpadc.h>
 
 /*
