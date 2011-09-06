@@ -507,6 +507,7 @@ static void __init u5500_uart_init(struct device *parent)
 	db5500_add_uart0(parent, NULL);
 	db5500_add_uart1(parent, NULL);
 	db5500_add_uart2(parent, NULL);
+	db5500_add_uart3(parent, NULL);
 }
 
 static void __init u5500_init_machine(void)

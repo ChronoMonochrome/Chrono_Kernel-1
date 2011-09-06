@@ -187,7 +187,7 @@ static const dma_addr_t dma40_tx_map[DB8500_DMA_NR_DEV] = {
 	[DB8500_DMA_DEV47_SLIM0_CH9_TX_DST_SXA7_RX_TX] = 0,
 	[DB8500_DMA_DEV48_CAC1_TX] = U8500_CRYP1_BASE + CRYP1_TX_REG_OFFSET,
 	[DB8500_DMA_DEV49_CAC1_TX_HAC1_TX] = 0,
-	[DB8500_DMA_DEV50_HAC1_TX] = 0,
+	[DB8500_DMA_DEV50_HAC1_TX] = U8500_HASH1_BASE + HASH1_TX_REG_OFFSET,
 	[DB8500_DMA_MEMCPY_TX_0] = 0,
 	[DB8500_DMA_DEV52_SLIM1_CH4_TX_HSI_TX_CH4] = 0,
 	[DB8500_DMA_DEV53_SLIM1_CH5_TX_HSI_TX_CH5] = 0,
@@ -228,6 +228,7 @@ static struct stedma40_platform_data dma40_plat_data = {
 #ifdef CONFIG_UX500_CONTEXT
 #define D40_DREG_GCC		0x000
 #define D40_DREG_LCPA		0x020
+#define D40_DREG_LCLA		0x024
 
 static void __iomem *base;
 
@@ -235,10 +236,12 @@ static int dma_context_notifier_call(struct notifier_block *this,
 				     unsigned long event, void *data)
 {
 	static unsigned long lcpa;
+	static unsigned long lcla;
 	static unsigned long gcc;
 
 	switch (event) {
 	case CONTEXT_APE_SAVE:
+		lcla = readl(base + D40_DREG_LCLA);
 		lcpa = readl(base + D40_DREG_LCPA);
 		gcc = readl(base + D40_DREG_GCC);
 		break;
@@ -246,6 +249,7 @@ static int dma_context_notifier_call(struct notifier_block *this,
 	case CONTEXT_APE_RESTORE:
 		writel(gcc, base + D40_DREG_GCC);
 		writel(lcpa, base + D40_DREG_LCPA);
+		writel(lcla, base + D40_DREG_LCLA);
 		break;
 	}
 	return NOTIFY_OK;
