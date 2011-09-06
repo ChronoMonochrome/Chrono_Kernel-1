@@ -115,6 +115,31 @@ struct mad_data {
 
 static struct mad_data *mad;
 
+static void mad_receive_cb(u32 *data, u32 length, void *priv);
+static int mad_read(struct file *filp, char __user *buff, size_t count,
+		loff_t *offp);
+static int mad_write(struct file *filp, const char __user *buff, size_t count,
+		loff_t *offp);
+static unsigned int mad_select(struct file *filp, poll_table *wait);
+static void mad_send_cb(u32 *data, u32 len, void *arg);
+static int mad_open(struct inode *ino, struct file *filp);
+static int mad_close(struct inode *ino, struct file *filp);
+
+static const struct file_operations mad_fops = {
+	.release = mad_close,
+	.open    = mad_open,
+	.read    = mad_read,
+	.write   = mad_write,
+	.poll    = mad_select,
+	.owner   = THIS_MODULE,
+};
+
+static struct miscdevice mad_dev = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name  = MAD_NAME,
+	.fops  = &mad_fops
+};
+
 /**
  *  mad_send_cb - This function is default callback for send.
  *  @data -Pointer to the data buffer
@@ -123,7 +148,7 @@ static struct mad_data *mad;
  */
 static void mad_send_cb(u32 *data, u32 len, void *arg)
 {
-	pr_debug("%s", __func__);
+	dev_dbg(mad_dev.this_device, "%s", __func__);
 }
 
 /**
@@ -159,8 +184,7 @@ static void mad_receive_cb(u32 *data, u32 length, void *priv)
 		mad->dsp_shm_write_ptr =  ioremap(data[1],
 			mad->max_tx_buffs * mad->write_offset);
 		if (mad->dsp_shm_write_ptr == NULL)
-			pr_err("%s :Error write address ioremap failed  %X\n",
-			 __func__ ,(u32) mad->dsp_shm_write_ptr);
+			dev_err(mad_dev.this_device, "incrt write address");
 
 		/* Initialize all buffer numbers */
 		mad->tx_buffer_num = 0;
@@ -173,7 +197,8 @@ static void mad_receive_cb(u32 *data, u32 length, void *priv)
 		msg.priv = mad;
 
 		if (mbox_channel_send(&msg))
-			pr_err("%s: cannot send data\n", __func__);
+			dev_err(mad_dev.this_device, "%s: can't send data\n",
+					__func__);
 
 	} /* setup message for reading SHM */
 	else if (*data == VCS_MBOX_MSG_READ_IF_SETUP) {
@@ -208,7 +233,8 @@ static void mad_receive_cb(u32 *data, u32 length, void *priv)
 		msg.priv = mad;
 
 		if (mbox_channel_send(&msg))
-			pr_err("%s: cannot send data\n", __func__);
+			dev_err(mad_dev.this_device, "%s: can't send data\n",
+					__func__);
 
 		/* allow read */
 		spin_lock_irqsave(&mad->lock, flags);
@@ -224,9 +250,11 @@ static void mad_receive_cb(u32 *data, u32 length, void *priv)
 		*/
 		if ((data[1] <=  0) || (mad->rx_buff == NULL)) {
 			if (mad->rx_buff == NULL)
-				pr_notice("%s :MAD closed", __func__);
+				dev_warn(mad_dev.this_device, "%s :MAD closed",
+						__func__);
 			else
-				pr_notice("%s : Zero size  message", __func__);
+				dev_warn(mad_dev.this_device, "%s :0-len msg",
+						__func__);
 		} else {
 			mad->rx_buff[mad->rx_buffer_num] = data[1];
 			mad->rx_buffer_num++;
@@ -243,8 +271,9 @@ static void mad_receive_cb(u32 *data, u32 length, void *priv)
 			mad->data_written++;
 
 			if (mad->data_written > MAX_NUM_RX_BUFF) {
-				pr_notice("%s : Read msg overflow = %u\n",
-						mad->data_written, __func__);
+				dev_warn(mad_dev.this_device,
+						"%s :Read msg overflow = %u\n",
+						__func__ , mad->data_written);
 				/*
 				 * Donot exceed MAX_NUM_RX_BUFF size of buffer
 				 * TO DO overflow control
@@ -256,7 +285,7 @@ static void mad_receive_cb(u32 *data, u32 length, void *priv)
 		}
 	} else {
 		/* received Invalid message */
-		pr_err("%s : Invalid Mesasge sent by the DSP\n ", __func__);
+		dev_err(mad_dev.this_device, "%s : Invalid Msg", __func__);
 	}
 }
 
@@ -267,7 +296,7 @@ static int mad_read(struct file *filp, char __user *buff, size_t count,
 	unsigned int size = 0;
 	void __iomem *shm_ptr = NULL;
 
-	pr_debug("%s", __func__);
+	dev_dbg(mad_dev.this_device, "%s", __func__);
 
 	if (!(mad->data_written > 0)) {
 		if (wait_event_interruptible(mad->readq,
@@ -277,7 +306,7 @@ static int mad_read(struct file *filp, char __user *buff, size_t count,
 	}
 
 	if (mad->dsp_shm_read_ptr == NULL) {
-		pr_err("%s :No Read shared memory pointer yet", __func__);
+		dev_err(mad_dev.this_device, "%s :pointer err", __func__);
 		return -EINVAL ;
 	}
 
@@ -287,7 +316,7 @@ static int mad_read(struct file *filp, char __user *buff, size_t count,
 		 * It shouldnt come here : we ensured that message size
 		 * smaller that buffer length
 		 */
-		pr_err("%s : Incorrect length", __func__);
+		dev_err(mad_dev.this_device, "%s : Incrct length", __func__);
 		return -EFAULT;
 	}
 	size = mad->rx_buff[mad->rx_buffer_read];
@@ -296,7 +325,7 @@ static int mad_read(struct file *filp, char __user *buff, size_t count,
 	shm_ptr = (u8 *)(mad->dsp_shm_read_ptr +
 			(mad->rx_buff[mad->rx_buffer_read] * mad->read_offset));
 	if (copy_to_user(buff, shm_ptr, size) < 0) {
-		pr_err("%s :Error in copy to user", __func__);
+		dev_err(mad_dev.this_device, "%s :copy to user", __func__);
 		return -EFAULT;
 	}
 
@@ -310,7 +339,7 @@ static int mad_read(struct file *filp, char __user *buff, size_t count,
 	if (mad->data_written < 0) {
 		/* Means wrong read*/
 		mad->data_written = 0;
-		pr_err("%s :Read More than Received", __func__);
+		dev_err(mad_dev.this_device, "%s :data Rcev err", __func__);
 	}
 	spin_unlock_irqrestore(&mad->lock, flags);
 	return size;
@@ -323,11 +352,11 @@ static int mad_write(struct file *filp, const char __user *buff, size_t count,
 	void __iomem  *dsp_write_address;
 	struct mbox_channel_msg msg;
 
-	pr_debug("%s", __func__);
+	dev_dbg(mad_dev.this_device, "%s", __func__);
 
 	/* check for valid write pointer else skip writing*/
 	if (mad->dsp_shm_write_ptr == NULL) {
-		pr_err("%s : Illegal memory access\n", __func__);
+		dev_err(mad_dev.this_device, "%s :Illegal memory", __func__);
 		return -EFAULT;
 	}
 
@@ -335,7 +364,7 @@ static int mad_write(struct file *filp, const char __user *buff, size_t count,
 				(mad->tx_buffer_num * mad->write_offset));
 
 	if (copy_from_user(dsp_write_address, buff, count)) {
-		pr_err("%s: Cannot access memory\n", __func__);
+		dev_err(mad_dev.this_device, "%s:copy_from_user\n", __func__);
 		return -EFAULT;
 	}
 
@@ -356,7 +385,7 @@ static int mad_write(struct file *filp, const char __user *buff, size_t count,
 
 	retval = mbox_channel_send(&msg);
 	if (retval) {
-		pr_err("%s: cannot send data\n", __func__);
+		dev_err(mad_dev.this_device, "%s:can't send data", __func__);
 		return retval;
 	}
 	return count;
@@ -367,7 +396,7 @@ static unsigned int mad_select(struct file *filp, poll_table *wait)
 	unsigned int mask = 0;
 	unsigned long flags;
 
-	pr_debug("%s", __func__);
+	dev_dbg(mad_dev.this_device, "%s", __func__);
 
 	poll_wait(filp, &mad->readq,  wait);
 	spin_lock_irqsave(&mad->lock, flags);
@@ -383,10 +412,10 @@ static int mad_open(struct inode *ino, struct file *filp)
 {
 	int	err = 0;
 
-	pr_debug("%s", __func__);
+	dev_dbg(mad_dev.this_device, "%s", __func__);
 
 	if (mad->open_check == true) {
-		pr_err("%s :MAD is already opened", __func__);
+		dev_err(mad_dev.this_device, "%s :Already opened", __func__);
 		return -EFAULT;
 	}
 
@@ -394,14 +423,14 @@ static int mad_open(struct inode *ino, struct file *filp)
 				sizeof(mad->rx_buff)), GFP_KERNEL);
 
 	if (mad->rx_buff == NULL) {
-		pr_err("%s: Cannot allocate RX memory\n", __func__);
+		dev_err(mad_dev.this_device, "%s:RX memory\n", __func__);
 		err = -ENOMEM;
 		goto error;
 	}
 
 	mad->tx_buff =  kzalloc(MAX_NR_OF_DATAWORDS, GFP_KERNEL);
 	if (mad->tx_buff == NULL) {
-		pr_err("%s: Cannot allocate TX memory\n", __func__);
+		dev_err(mad_dev.this_device, "%s:TX memory\n", __func__);
 		err = -ENOMEM;
 		goto error;
 	}
@@ -412,7 +441,7 @@ static int mad_open(struct inode *ino, struct file *filp)
 
 	err = mbox_channel_register(CHANNEL_NUM_RX, mad_receive_cb, mad);
 	if (err) {
-		pr_err("%s: Cannot register channel\n", __func__);
+		dev_err(mad_dev.this_device, "%s: register err", __func__);
 		err = -EFAULT;
 		goto error;
 	}
@@ -427,7 +456,7 @@ error:
 
 static int mad_close(struct inode *ino, struct file *filp)
 {
-	pr_debug("%s", __func__);
+	dev_dbg(mad_dev.this_device, "%s", __func__);
 
 	if (mad->dsp_shm_write_ptr != NULL) {
 		iounmap(mad->dsp_shm_write_ptr);
@@ -447,28 +476,13 @@ static int mad_close(struct inode *ino, struct file *filp)
 	return 0;
 }
 
-static const struct file_operations mad_fops = {
-	.release = mad_close,
-	.open    = mad_open,
-	.read    = mad_read,
-	.write   = mad_write,
-	.poll    = mad_select,
-	.owner   = THIS_MODULE,
-};
-
-static struct miscdevice mad_dev = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name  = MAD_NAME,
-	.fops  = &mad_fops
-};
-
 static int __init mad_init(void)
 {
-	pr_debug("%s", __func__);
+	dev_dbg(mad_dev.this_device, "%s", __func__);
 
 	mad = kzalloc(sizeof(*mad), GFP_KERNEL);
 	if (mad == NULL) {
-		pr_err("%s :MAD Memory Allocation Failed", __func__);
+		dev_err(mad_dev.this_device, "%s :MAD failed", __func__);
 		return -ENOMEM;
 	}
 
@@ -478,7 +492,7 @@ module_init(mad_init);
 
 static void  __exit mad_exit(void)
 {
-	pr_debug("%s", __func__);
+	dev_dbg(mad_dev.this_device, "%s", __func__);
 
 	kfree(mad);
 
