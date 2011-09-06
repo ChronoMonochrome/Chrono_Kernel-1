@@ -1886,7 +1886,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 		status = -ENODEV;
 		goto fail0;
 	}
-
+	dev->dma_mask = 0 ;
 	/* allocate */
 	musb = allocate_instance(dev, plat->config, ctrl);
 	if (!musb) {

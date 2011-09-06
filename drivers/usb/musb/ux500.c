@@ -28,6 +28,8 @@
 
 #include "musb_core.h"
 
+static void ux500_musb_set_vbus(struct musb *musb, int is_on);
+
 struct ux500_glue {
 	struct device		*dev;
 	struct platform_device	*musb;
@@ -35,12 +37,107 @@ struct ux500_glue {
 };
 #define glue_to_musb(g)	platform_get_drvdata(g->musb)
 
-/**
- * ux500_musb_init() - Initialize the platform USB driver.
- * @musb: struct musb pointer.
- *
- * This function initialize the USB controller and Phy.
-*/
+/* blocking notifier support */
+static int musb_otg_notifications(struct notifier_block *nb,
+		unsigned long event, void *unused)
+{
+	struct musb	*musb = container_of(nb, struct musb, nb);
+
+	switch (event) {
+	case USB_EVENT_ID:
+		dev_dbg(musb->controller, "ID GND\n");
+		if (is_otg_enabled(musb)) {
+#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+			if (musb->gadget_driver)
+				ux500_musb_set_vbus(musb, 1);
+#endif
+			} else {
+				ux500_musb_set_vbus(musb, 1);
+		}
+		break;
+
+	case USB_EVENT_VBUS:
+		dev_dbg(musb->controller, "VBUS Connect\n");
+
+		break;
+
+	case USB_EVENT_NONE:
+		dev_dbg(musb->controller, "VBUS Disconnect\n");
+#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+		if (is_otg_enabled(musb) || is_peripheral_enabled(musb))
+			if (musb->gadget_driver)
+#endif
+				{
+					dev_dbg(musb->controller, "Add runtime powermangement code here\n");
+			}
+
+		break;
+	default:
+		dev_dbg(musb->controller, "ID float\n");
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_OK;
+}
+
+static void ux500_musb_set_vbus(struct musb *musb, int is_on)
+{
+	u8		devctl;
+	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
+	int ret = 1;
+	/* HDRC controls CPEN, but beware current surges during device
+	 * connect.  They can trigger transient overcurrent conditions
+	 * that must be ignored.
+	 */
+
+	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
+
+	if (is_on) {
+		if (musb->xceiv->state == OTG_STATE_A_IDLE) {
+			/* start the session */
+			devctl |= MUSB_DEVCTL_SESSION;
+			musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
+			/*
+			 * Wait for the musb to set as A device to enable the
+			 * VBUS
+			 */
+			while (musb_readb(musb->mregs, MUSB_DEVCTL) & 0x80) {
+
+				if (time_after(jiffies, timeout)) {
+					dev_err(musb->controller,
+					"configured as A device timeout");
+					ret = -EINVAL;
+					break;
+				}
+			}
+
+		} else {
+			musb->is_active = 1;
+			musb->xceiv->default_a = 1;
+			musb->xceiv->state = OTG_STATE_A_WAIT_VRISE;
+			devctl |= MUSB_DEVCTL_SESSION;
+			MUSB_HST_MODE(musb);
+		}
+	} else {
+		musb->is_active = 0;
+
+		/* NOTE:  we're skipping A_WAIT_VFALL -> A_IDLE and
+		 * jumping right to B_IDLE...
+		 */
+
+		musb->xceiv->default_a = 0;
+		musb->xceiv->state = OTG_STATE_B_IDLE;
+		devctl &= ~MUSB_DEVCTL_SESSION;
+
+		MUSB_DEV_MODE(musb);
+	}
+	musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
+
+	dev_dbg(musb->controller, "VBUS %s, devctl %02x "
+		/* otg %3x conf %08x prcm %08x */ "\n",
+		otg_state_string(musb->xceiv->state),
+		musb_readb(musb->mregs, MUSB_DEVCTL));
+}
+
 static int ux500_musb_init(struct musb *musb)
 {
 	musb->xceiv = usb_get_transceiver();
@@ -49,6 +146,7 @@ static int ux500_musb_init(struct musb *musb)
 		return -ENODEV;
 	}
 
+	musb->nb.notifier_call = musb_otg_notifications;
 	return 0;
 }
 
@@ -68,6 +166,8 @@ static int ux500_musb_exit(struct musb *musb)
 static const struct musb_platform_ops ux500_ops = {
 	.init		= ux500_musb_init,
 	.exit		= ux500_musb_exit,
+
+	.set_vbus	= ux500_musb_set_vbus,
 };
 
 /**
