@@ -539,9 +539,8 @@ struct mcde_display_device *mcde_get_main_display(void)
 		return &sony_acx424akp_display0;
 #elif defined(CONFIG_DISPLAY_AV8100_TERTIARY)
 	return &av8100_hdmi;
-#else
-	return NULL;
 #endif
+	return NULL;
 }
 EXPORT_SYMBOL(mcde_get_main_display);
 
