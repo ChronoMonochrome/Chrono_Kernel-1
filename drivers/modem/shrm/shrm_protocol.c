@@ -480,33 +480,6 @@ static int shrm_modem_reset_sequence(void)
 	int err;
 	unsigned long flags;
 
-	/*
-	 * disable irqs
-	 * very much needed for user-space initiated
-	 * modem-reset
-	 */
-	disable_irq_nosync(shm_dev->ac_read_notif_0_irq);
-	disable_irq_nosync(shm_dev->ac_read_notif_1_irq);
-	disable_irq_nosync(shm_dev->ca_msg_pending_notif_0_irq);
-	disable_irq_nosync(shm_dev->ca_msg_pending_notif_1_irq);
-	disable_irq_nosync(IRQ_PRCMU_CA_WAKE);
-	disable_irq_nosync(IRQ_PRCMU_CA_SLEEP);
-
-
-	/* update the boot_state */
-	spin_lock_irqsave(&boot_lock, flags);
-	boot_state = BOOT_UNKNOWN;
-
-	/*
-	 * put a barrier over here to make sure boot_state is updated
-	 * else, it is seen that some of already executing modem
-	 * irqs or tasklets fail the protocol checks and will ultimately
-	 * try to acces the modem causing system to hang.
-	 * This is particularly seen with user-space initiated modem reset
-	 */
-	wmb();
-	spin_unlock_irqrestore(&boot_lock, flags);
-
 	hrtimer_cancel(&timer);
 
 	/*
@@ -582,6 +555,7 @@ DECLARE_TASKLET(shrm_sw_reset_callback, shrm_modem_reset_callback,
 static irqreturn_t shrm_prcmu_irq_handler(int irq, void *data)
 {
 	struct shrm_dev *shrm = data;
+	unsigned long flags;
 
 	switch (irq) {
 	case IRQ_PRCMU_CA_WAKE:
@@ -597,6 +571,27 @@ static irqreturn_t shrm_prcmu_irq_handler(int irq, void *data)
 		queue_work(shrm->shm_ca_wake_wq, &shrm->shm_ca_sleep_req);
 		break;
 	case IRQ_PRCMU_MODEM_SW_RESET_REQ:
+		/* update the boot_state */
+		spin_lock_irqsave(&boot_lock, flags);
+		boot_state = BOOT_UNKNOWN;
+
+		/*
+		 * put a barrier over here to make sure boot_state is updated
+		 * else, it is seen that some of already executing modem
+		 * irqs or tasklets fail the protocol checks and will ultimately
+		 * try to acces the modem causing system to hang.
+		 * This is particularly seen with user-space initiated modem reset
+		 */
+		wmb();
+		spin_unlock_irqrestore(&boot_lock, flags);
+
+		disable_irq_nosync(shrm->ac_read_notif_0_irq);
+		disable_irq_nosync(shrm->ac_read_notif_1_irq);
+		disable_irq_nosync(shrm->ca_msg_pending_notif_0_irq);
+		disable_irq_nosync(shrm->ca_msg_pending_notif_1_irq);
+		disable_irq_nosync(IRQ_PRCMU_CA_WAKE);
+		disable_irq_nosync(IRQ_PRCMU_CA_SLEEP);
+
 		tasklet_schedule(&shrm_sw_reset_callback);
 		break;
 	default:
