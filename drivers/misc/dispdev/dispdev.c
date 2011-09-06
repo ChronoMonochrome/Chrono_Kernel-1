@@ -532,7 +532,7 @@ int dispdev_create(struct mcde_display_device *ddev, bool overlay,
 	int ret = 0;
 	struct dispdev *dd;
 	struct mcde_video_mode vmode;
-	struct mcde_overlay_info info;
+	struct mcde_overlay_info info = {0};
 
 	static int counter;
 	char *name = "dispdev0";
