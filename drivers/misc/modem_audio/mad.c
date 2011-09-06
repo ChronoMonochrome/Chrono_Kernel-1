@@ -248,7 +248,8 @@ static void mad_receive_cb(u32 *data, u32 length, void *priv)
 		* Check if you have valid message with proper length in message
 		* otherwise Dont care
 		*/
-		if ((data[1] <=  0) || (mad->rx_buff == NULL)) {
+		if ((data[1] <=  0) || (mad->rx_buff == NULL)
+				|| (mad->dsp_shm_read_ptr == NULL)) {
 			if (mad->rx_buff == NULL)
 				dev_warn(mad_dev.this_device, "%s :MAD closed",
 						__func__);
@@ -470,7 +471,7 @@ static int mad_close(struct inode *ino, struct file *filp)
 
 	kfree(mad->rx_buff);
 	kfree(mad->tx_buff);
-
+	mad->data_written = 0;
 	mad->open_check = false;
 
 	return 0;
