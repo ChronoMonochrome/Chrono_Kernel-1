@@ -9,30 +9,6 @@
 #define __DEVICES_CG2900_H
 
 #include "cg2900.h"
-#include <linux/clk.h>
-
-#define CHIP_ENABLE_PDB_LOW_TIMEOUT	100 /* ms */
-#define CHIP_ENABLE_PMU_EN_TIMEOUT	300 /* us */
-
-struct dcg2900_info {
-	int	gbf_gpio;
-	int	pmuen_gpio;
-	int	bt_gpio;
-	bool	sleep_gpio_set;
-	u8	gpio_0_7_pull_up;
-	u8	gpio_8_15_pull_up;
-	u8	gpio_16_20_pull_up;
-	u8	gpio_0_7_pull_down;
-	u8	gpio_8_15_pull_down;
-	u8	gpio_16_20_pull_down;
-	struct clk	*lpoclk;
-	struct regulator        *regulator_wlan;
-};
-
-extern void dcg2900_enable_chip(struct cg2900_chip_dev *dev);
-extern void dcg2900_disable_chip(struct cg2900_chip_dev *dev);
-extern int dcg2900_setup(struct cg2900_chip_dev *dev,
-				struct dcg2900_info *info);
 
 /**
  * enum cg2900_gpio_pull_sleep - GPIO pull setting in sleep.
