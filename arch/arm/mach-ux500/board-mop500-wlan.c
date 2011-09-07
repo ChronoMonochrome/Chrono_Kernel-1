@@ -13,7 +13,7 @@
 #include <mach/irqs.h>
 #include <plat/pincfg.h>
 #include "pins.h"
-#include "../drivers/staging/cw1200/cw1200_plat.h"
+#include <mach/cw1200_plat.h>
 
 static void cw1200_release(struct device *dev);
 static int cw1200_power_ctrl(const struct cw1200_platform_data *pdata,
