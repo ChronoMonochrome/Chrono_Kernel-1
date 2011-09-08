@@ -1127,9 +1127,14 @@ static int ahash_final(struct ahash_request *req)
 		}
 	}
 
-	if (ctx->state.index)
+	if (ctx->state.index) {
 		hash_messagepad(device_data, ctx->state.buffer,
 				ctx->state.index);
+	} else {
+		HASH_SET_DCAL;
+		while (device_data->base->str & HASH_STR_DCAL_MASK)
+			cpu_relax();
+	}
 
 	if (ctx->config.oper_mode == HASH_OPER_MODE_HMAC && ctx->key) {
 		unsigned int keylen = ctx->keylen;
