@@ -348,6 +348,7 @@ static irqreturn_t mbox_irq(int irq, void *arg)
 	if (nbr_occup == 0)
 		goto exit;
 
+redo:
 	if (mbox->cb == NULL) {
 		dev_dbg(&(mbox->pdev->dev), "No receive callback registered, "
 			"leaving %d incoming messages in fifo!\n", nbr_occup);
@@ -362,6 +363,11 @@ static irqreturn_t mbox_irq(int irq, void *arg)
 	dev_dbg(&(mbox->pdev->dev), "Calling callback for message 0x%X!\n",
 		mbox_value);
 	mbox->cb(mbox_value, mbox->client_data);
+
+	nbr_occup = readl(mbox->virtbase_local + MBOX_FIFO_STATUS) & 0x7;
+
+	if (nbr_occup > 0)
+		goto redo;
 
 exit:
 	dev_dbg(&(mbox->pdev->dev), "Exit mbox IRQ. ri = %d, wi = %d\n",

@@ -121,7 +121,7 @@ struct rx_pending_elem {
 	void			*priv;
 };
 
-struct rx_pending_elem rx_pending[NUM_DSP_BUFFER + 1];
+struct rx_pending_elem rx_pending[NUM_DSP_BUFFER];
 
 /* This structure holds list of pending elements for mbox tx channel */
 struct tx_channel {
@@ -154,6 +154,7 @@ struct rx_channel {
  * @lock:		holds lock for channel
  */
 struct channel_status {
+	atomic_t rcv_counter;
 	struct list_head	list;
 	u16			channel;
 	int			state;
@@ -362,6 +363,9 @@ void mbox_handle_receive_msg(struct work_struct *work)
 			struct channel_status,
 			receive_msg);
 
+	if (!atomic_read(&rx_chan->rcv_counter))
+		return;
+rcv_msg:
 	/* Call client's callback and reset state */
 	if (rx_chan->cb) {
 		static int rx_pending_count;
@@ -375,6 +379,8 @@ void mbox_handle_receive_msg(struct work_struct *work)
 		dev_err(&channels.pdev->dev,
 				"%s no callback provided\n", __func__);
 	}
+	if (atomic_dec_and_test(&rx_chan->rcv_counter) > 0)
+		goto rcv_msg;
 
 }
 
@@ -413,12 +419,14 @@ static bool handle_receive_msg(u32 mbox_msg, struct channel_status *rx_chan)
 	if (rx_chan) {
 		/* Store received data in RX channel buffer */
 		rx_chan->rx.buffer[rx_chan->rx.index++] = mbox_msg;
+
 		/* Check if it's last data of PDU */
 		if (rx_chan->rx.index == rx_chan->rx.length) {
 			for (i = 0; i < MAILBOX_NR_OF_DATAWORDS; i++) {
 				rx_pending[rx_pending_count].buffer[i] =
 					rx_chan->rx.buffer[i];
 			}
+
 			rx_pending[rx_pending_count].length =
 				rx_chan->rx.length;
 			rx_pending[rx_pending_count].priv = rx_chan->priv;
@@ -429,10 +437,12 @@ static bool handle_receive_msg(u32 mbox_msg, struct channel_status *rx_chan)
 			rx_pending_count++;
 			if (rx_pending_count == NUM_DSP_BUFFER)
 				rx_pending_count = 0;
+			atomic_inc(&rx_chan->rcv_counter);
 			queue_work(rx_chan->receive_wq,
 			&rx_chan->receive_msg);
 		}
 		dev_dbg(&channels.pdev->dev, "%s OK\n", __func__);
+
 		return true;
 	}
 	return false;
@@ -529,6 +539,9 @@ static void mbox_cb(u32 mbox_msg, void *priv)
 	struct channel_status *rx_chan = NULL;
 	bool is_Payload = 0;
 
+	dev_dbg(&channels.pdev->dev, "%s type %d\t, mbox_msg %x\n",
+		       __func__, type, mbox_msg);
+
 	/* Get RX channels list for given mbox unit */
 	rx_list = get_rx_list(mbox_id);
 	if (rx_list == NULL) {
@@ -606,6 +619,7 @@ int mbox_channel_register(u16 channel, mbox_channel_cb_t *cb, void *priv)
 	int res = 0;
 	struct mbox_unit_status *mbox_unit;
 
+	dev_dbg(&channels.pdev->dev, " %s channel = %d\n", __func__, channel);
 	/* Check for callback fcn */
 	if (cb == NULL) {
 		dev_err(&channels.pdev->dev,
@@ -655,6 +669,7 @@ int mbox_channel_register(u16 channel, mbox_channel_cb_t *cb, void *priv)
 		goto exit;
 	}
 
+	atomic_set(&rx_chan->rcv_counter, 0);
 	/* Fill out newly allocated element and add it to rx list */
 	rx_chan->channel = channel;
 	rx_chan->cb = cb;
@@ -780,22 +795,26 @@ int mbox_channel_send(struct mbox_channel_msg *msg)
 	struct channel_status *tx_chan = NULL;
 	struct pending_elem *pending;
 	struct mbox_unit_status *mbox_unit;
+	int res = 0;
 
 	if (msg->length > MAILBOX_NR_OF_DATAWORDS || msg->length == 0) {
 		dev_err(&channels.pdev->dev, "data length incorrect\n");
-		return -EINVAL;
+		res = -EINVAL;
+		goto exit;
 	}
 
 	if (!check_channel(msg->channel, MBOX_TX)) {
 		dev_err(&channels.pdev->dev, "wrong channel number %d\n",
 			msg->channel);
-		return -EINVAL;
+		res = -EINVAL;
+		goto exit;
 	}
 
 	tx_list = get_tx_list(get_mbox_id(msg->channel));
 	if (tx_list == NULL) {
 		dev_err(&channels.pdev->dev, "given mbox id is not valid\n");
-		return -EINVAL;
+		res = -EINVAL;
+		goto exit;
 	}
 
 	mbox_unit = container_of(tx_list, struct mbox_unit_status, tx_chans);
@@ -814,7 +833,8 @@ int mbox_channel_send(struct mbox_channel_msg *msg)
 	if (pending == NULL) {
 		dev_err(&channels.pdev->dev,
 			"couldn't allocate memory for pending\n");
-		return -ENOMEM;
+		res = -ENOMEM;
+		goto exit;
 	}
 	pending->data = msg->data;
 	pending->length = msg->length;
@@ -836,7 +856,8 @@ int mbox_channel_send(struct mbox_channel_msg *msg)
 			dev_err(&channels.pdev->dev,
 					"couldn't allocate memory for \
 					tx_chan\n");
-			return -ENOMEM;
+			res = -ENOMEM;
+			goto exit;
 		}
 		tx_chan->channel = msg->channel;
 		tx_chan->cb = msg->cb;
@@ -856,6 +877,9 @@ int mbox_channel_send(struct mbox_channel_msg *msg)
 		mutex_unlock(&tx_chan->lock);
 	}
 	return 0;
+
+exit:
+	return res;
 }
 EXPORT_SYMBOL(mbox_channel_send);
 
