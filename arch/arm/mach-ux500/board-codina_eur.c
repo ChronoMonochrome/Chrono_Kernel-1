@@ -2606,6 +2606,7 @@ MACHINE_START(CODINA, "SAMSUNG CODINA")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
 	.atag_offset	= 0x100,
 	.map_io		= u8500_map_io,
+	.smp		= smp_ops(ux500_smp_ops),
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
 	.handle_irq     = gic_handle_irq,
