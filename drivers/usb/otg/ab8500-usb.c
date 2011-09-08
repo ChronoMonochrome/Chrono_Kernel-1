@@ -41,6 +41,10 @@
 #define AB8500_USB_LINE_STAT_REG 0x80
 #define AB8500_USB_PHY_CTRL_REG 0x8A
 #define AB8500_VBUS_CTRL_REG 0x82
+#define AB8500_IT_SOURCE2_REG 0x01
+#define AB8500_IT_SOURCE20_REG 0x13
+#define AB8500_SRC_INT_USB_HOST 0x04
+#define AB8500_SRC_INT_USB_DEVICE 0x80
 
 #define AB8500_BIT_OTG_STAT_ID (1 << 0)
 #define AB8500_BIT_PHY_CTRL_HOST_EN (1 << 0)
@@ -448,6 +452,84 @@ static int ab8500_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
 
 	return 0;
 }
+/**
+ * ab8500_usb_boot_detect : detect the USB cable during boot time.
+ * @device: value for device.
+ *
+ * This function is used to detect the USB cable during boot time.
+ */
+static int ab8500_usb_boot_detect(struct ab8500_usb *ab)
+{
+	int err;
+	struct device *device = ab->dev;
+	u8 usb_status = 0;
+	u8 val = 0;
+
+	/* Disabling PHY before selective enable or disable */
+	abx500_mask_and_set_register_interruptible(ab->dev,
+				AB8500_USB,
+				AB8500_USB_PHY_CTRL_REG,
+				AB8500_BIT_PHY_CTRL_DEVICE_EN,
+				AB8500_BIT_PHY_CTRL_DEVICE_EN);
+
+	udelay(100);
+
+	abx500_mask_and_set_register_interruptible(ab->dev,
+				AB8500_USB,
+				AB8500_USB_PHY_CTRL_REG,
+				AB8500_BIT_PHY_CTRL_DEVICE_EN,
+				0);
+
+	abx500_mask_and_set_register_interruptible(ab->dev,
+				AB8500_USB,
+				AB8500_USB_PHY_CTRL_REG,
+				AB8500_BIT_PHY_CTRL_HOST_EN,
+				AB8500_BIT_PHY_CTRL_HOST_EN);
+
+	udelay(100);
+
+	abx500_mask_and_set_register_interruptible(ab->dev,
+				AB8500_USB,
+				AB8500_USB_PHY_CTRL_REG,
+				AB8500_BIT_PHY_CTRL_HOST_EN,
+				0);
+
+
+	err = abx500_get_register_interruptible(device,
+		AB8500_INTERRUPT, AB8500_IT_SOURCE20_REG,
+		&usb_status);
+	if (err < 0) {
+		dev_err(device, "Read IT 20 failed\n");
+		return err;
+	}
+
+	if (usb_status & AB8500_SRC_INT_USB_HOST)
+		ab8500_usb_host_phy_en(ab);
+
+
+	err = abx500_get_register_interruptible(device,
+		AB8500_INTERRUPT, AB8500_IT_SOURCE2_REG,
+		&usb_status);
+	if (err < 0) {
+		dev_err(device, "Read IT 2 failed\n");
+		return err;
+	}
+
+	if (usb_status & AB8500_SRC_INT_USB_DEVICE) {
+		/* Check if it is a dedicated charger */
+		(void)abx500_get_register_interruptible(device,
+		AB8500_USB, AB8500_USB_LINE_STAT_REG, &val);
+
+		val = (val >> 3) & 0x0F;
+
+	if (val == USB_LINK_DEDICATED_CHG)
+		ab->mode = USB_DEDICATED_CHG;
+	else
+		ab8500_usb_peri_phy_en(ab);
+	}
+
+	return 0;
+}
 
 static void ab8500_usb_regulator_put(struct ab8500_usb *ab)
 {
@@ -709,6 +791,10 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 			(char *)dev_name(ab->dev), 50);
 
 	dev_info(&pdev->dev, "revision 0x%2x driver initialized\n", ab->rev);
+
+	err = ab8500_usb_boot_detect(ab);
+	if (err < 0)
+		goto fail3;
 
 	return 0;
 fail3:
