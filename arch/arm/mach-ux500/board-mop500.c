@@ -912,7 +912,7 @@ static struct stedma40_chan_cfg ssp0_dma_cfg_tx = {
 #endif
 
 static struct pl022_ssp_controller ssp0_plat = {
-	.bus_id = 0,
+	.bus_id = 4,
 #ifdef CONFIG_STE_DMA40
 	.enable_dma = 1,
 	.dma_filter = stedma40_filter,
