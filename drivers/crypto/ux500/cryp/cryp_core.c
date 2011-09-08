@@ -33,7 +33,6 @@
 
 #include <mach/crypto-ux500.h>
 #include <mach/hardware.h>
-#include <mach/ste-dma40-db8500.h>
 
 #include "cryp_p.h"
 #include "cryp.h"
@@ -1194,13 +1193,14 @@ static int cryp_hw_calculate(struct cryp_ctx *ctx)
 	}
 
 	if (hw_crypt_noxts(ctx, device_data))
-		pr_err("u8500_cryp:crypX: [%s]: hw_crypt_noxts() failed!",
+		dev_err(device_data->dev, "[%s]: hw_crypt_noxts() failed!",
 			__func__);
 
 out:
 	if (cryp_disable_power(device_data->dev, device_data, false))
 		dev_err(device_data->dev, "[%s]: "
 			"cryp_disable_power() failed!", __func__);
+
 	/* Release the device */
 	spin_lock(&device_data->ctx_lock);
 	device_data->current_ctx = NULL;
@@ -1232,7 +1232,7 @@ static void aes_encrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 	ctx->datalen = ctx->blocksize;
 
 	if (cryp_hw_calculate(ctx))
-		pr_err("u8500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
+		pr_err("ux500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
 				__func__);
 }
 
@@ -1252,7 +1252,7 @@ static void aes_decrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 	ctx->datalen = ctx->blocksize;
 
 	if (cryp_hw_calculate(ctx))
-		pr_err("u8500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
+		pr_err("ux500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
 				__func__);
 }
 
@@ -1272,7 +1272,7 @@ static void des_encrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 	ctx->datalen = ctx->blocksize;
 
 	if (cryp_hw_calculate(ctx))
-		pr_err("u8500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
+		pr_err("ux500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
 				__func__);
 }
 
@@ -1292,7 +1292,7 @@ static void des_decrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 	ctx->datalen = ctx->blocksize;
 
 	if (cryp_hw_calculate(ctx))
-		pr_err("u8500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
+		pr_err("ux500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
 				__func__);
 }
 
@@ -1312,7 +1312,7 @@ static void des3_encrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 	ctx->datalen = ctx->blocksize;
 
 	if (cryp_hw_calculate(ctx))
-		pr_err("u8500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
+		pr_err("ux500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
 				__func__);
 }
 
@@ -1332,7 +1332,7 @@ static void des3_decrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 	ctx->datalen = ctx->blocksize;
 
 	if (cryp_hw_calculate(ctx))
-		pr_err("u8500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
+		pr_err("ux500_cryp:crypX: [%s]: cryp_hw_calculate() failed!",
 				__func__);
 }
 
@@ -1605,7 +1605,7 @@ static int des3_cbc_decrypt(struct ablkcipher_request *areq)
  */
 static struct crypto_alg aes_alg = {
 	.cra_name		=	"aes",
-	.cra_driver_name	=	"aes-u8500",
+	.cra_driver_name	=	"aes-ux500",
 	.cra_priority		=	100,
 	.cra_flags		=	CRYPTO_ALG_TYPE_CIPHER,
 	.cra_blocksize		=	AES_BLOCK_SIZE,
@@ -1629,7 +1629,7 @@ static struct crypto_alg aes_alg = {
  */
 static struct crypto_alg des_alg = {
 	.cra_name		=	"des",
-	.cra_driver_name	=	"des-u8500",
+	.cra_driver_name	=	"des-ux500",
 	.cra_priority		=	100,
 	.cra_flags		=	CRYPTO_ALG_TYPE_CIPHER,
 	.cra_blocksize		=	DES_BLOCK_SIZE,
@@ -1653,7 +1653,7 @@ static struct crypto_alg des_alg = {
  */
 static struct crypto_alg des3_alg = {
 	.cra_name		=	"des3_ede",
-	.cra_driver_name	=	"des3_ede-u8500",
+	.cra_driver_name	=	"des3_ede-ux500",
 	.cra_priority		=	100,
 	.cra_flags		=	CRYPTO_ALG_TYPE_CIPHER,
 	.cra_blocksize		=	DES3_EDE_BLOCK_SIZE,
@@ -1677,7 +1677,7 @@ static struct crypto_alg des3_alg = {
  */
 static struct crypto_alg aes_ecb_alg = {
 	.cra_name		=	"ecb(aes)",
-	.cra_driver_name	=	"ecb-aes-u8500",
+	.cra_driver_name	=	"ecb-aes-ux500",
 	.cra_priority		=	100,
 	.cra_flags		=	CRYPTO_ALG_TYPE_ABLKCIPHER |
 					CRYPTO_ALG_ASYNC,
@@ -1703,7 +1703,7 @@ static struct crypto_alg aes_ecb_alg = {
  */
 static struct crypto_alg aes_cbc_alg = {
 	.cra_name		=	"cbc(aes)",
-	.cra_driver_name	=	"cbc-aes-u8500",
+	.cra_driver_name	=	"cbc-aes-ux500",
 	.cra_priority		=	100,
 	.cra_flags		=	CRYPTO_ALG_TYPE_ABLKCIPHER |
 					CRYPTO_ALG_ASYNC,
@@ -1730,7 +1730,7 @@ static struct crypto_alg aes_cbc_alg = {
  */
 static struct crypto_alg aes_ctr_alg = {
 	.cra_name		=	"ctr(aes)",
-	.cra_driver_name	=	"ctr-aes-u8500",
+	.cra_driver_name	=	"ctr-aes-ux500",
 	.cra_priority		=	100,
 	.cra_flags		=	CRYPTO_ALG_TYPE_ABLKCIPHER |
 					CRYPTO_ALG_ASYNC,
@@ -1757,7 +1757,7 @@ static struct crypto_alg aes_ctr_alg = {
  */
 static struct crypto_alg des_ecb_alg = {
 	.cra_name		=	"ecb(des)",
-	.cra_driver_name	=	"ecb-des-u8500",
+	.cra_driver_name	=	"ecb-des-ux500",
 	.cra_priority		=	100,
 	.cra_flags              =       CRYPTO_ALG_TYPE_ABLKCIPHER |
 					CRYPTO_ALG_ASYNC,
@@ -1783,7 +1783,7 @@ static struct crypto_alg des_ecb_alg = {
  */
 static struct crypto_alg des_cbc_alg = {
 	.cra_name		=	"cbc(des)",
-	.cra_driver_name	=	"cbc-des-u8500",
+	.cra_driver_name	=	"cbc-des-ux500",
 	.cra_priority		=	100,
 	.cra_flags		=	CRYPTO_ALG_TYPE_ABLKCIPHER |
 					CRYPTO_ALG_ASYNC,
@@ -1810,7 +1810,7 @@ static struct crypto_alg des_cbc_alg = {
  */
 static struct crypto_alg des3_ecb_alg = {
 	.cra_name		=	"ecb(des3_ede)",
-	.cra_driver_name	=	"ecb-des3_ede-u8500",
+	.cra_driver_name	=	"ecb-des3_ede-ux500",
 	.cra_priority		=	100,
 	.cra_flags              =       CRYPTO_ALG_TYPE_ABLKCIPHER |
 					CRYPTO_ALG_ASYNC,
@@ -1836,7 +1836,7 @@ static struct crypto_alg des3_ecb_alg = {
  */
 static struct crypto_alg des3_cbc_alg = {
 	.cra_name		=	"cbc(des3_ede)",
-	.cra_driver_name	=	"cbc-des3_ede-u8500",
+	.cra_driver_name	=	"cbc-des3_ede-ux500",
 	.cra_priority		=	100,
 	.cra_flags		=	CRYPTO_ALG_TYPE_ABLKCIPHER |
 					CRYPTO_ALG_ASYNC,
@@ -1859,9 +1859,9 @@ static struct crypto_alg des3_cbc_alg = {
 };
 
 /**
- * struct crypto_alg *u8500_cryp_algs[] -
+ * struct crypto_alg *ux500_cryp_algs[] -
  */
-static struct crypto_alg *u8500_cryp_algs[] = {
+static struct crypto_alg *ux500_cryp_algs[] = {
 	&aes_alg,
 	&des_alg,
 	&des3_alg,
@@ -1885,19 +1885,19 @@ static int cryp_algs_register_all(void)
 
 	pr_debug("[%s]", __func__);
 
-	for (i = 0; i < ARRAY_SIZE(u8500_cryp_algs); i++) {
-		ret = crypto_register_alg(u8500_cryp_algs[i]);
+	for (i = 0; i < ARRAY_SIZE(ux500_cryp_algs); i++) {
+		ret = crypto_register_alg(ux500_cryp_algs[i]);
 		if (ret) {
 			count = i;
 			pr_err("[%s] alg registration failed",
-				u8500_cryp_algs[i]->cra_driver_name);
+				ux500_cryp_algs[i]->cra_driver_name);
 			goto unreg;
 		}
 	}
 	return 0;
 unreg:
 	for (i = 0; i < count; i++)
-		crypto_unregister_alg(u8500_cryp_algs[i]);
+		crypto_unregister_alg(ux500_cryp_algs[i]);
 	return ret;
 }
 
@@ -1910,11 +1910,11 @@ static void cryp_algs_unregister_all(void)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	for (i = 0; i < ARRAY_SIZE(u8500_cryp_algs); i++)
-		crypto_unregister_alg(u8500_cryp_algs[i]);
+	for (i = 0; i < ARRAY_SIZE(ux500_cryp_algs); i++)
+		crypto_unregister_alg(ux500_cryp_algs[i]);
 }
 
-static int u8500_cryp_probe(struct platform_device *pdev)
+static int ux500_cryp_probe(struct platform_device *pdev)
 {
 	int ret;
 	int cryp_error = 0;
@@ -2071,7 +2071,7 @@ out:
 	return ret;
 }
 
-static int u8500_cryp_remove(struct platform_device *pdev)
+static int ux500_cryp_remove(struct platform_device *pdev)
 {
 	struct resource *res = NULL;
 	struct resource *res_irq = NULL;
@@ -2137,7 +2137,7 @@ static int u8500_cryp_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static void u8500_cryp_shutdown(struct platform_device *pdev)
+static void ux500_cryp_shutdown(struct platform_device *pdev)
 {
 	struct resource *res_irq = NULL;
 	struct cryp_device_data *device_data;
@@ -2190,7 +2190,7 @@ static void u8500_cryp_shutdown(struct platform_device *pdev)
 
 }
 
-static int u8500_cryp_suspend(struct platform_device *pdev, pm_message_t state)
+static int ux500_cryp_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	int ret;
 	struct cryp_device_data *device_data;
@@ -2234,7 +2234,7 @@ static int u8500_cryp_suspend(struct platform_device *pdev, pm_message_t state)
 	return ret;
 }
 
-static int u8500_cryp_resume(struct platform_device *pdev)
+static int ux500_cryp_resume(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct cryp_device_data *device_data;
@@ -2274,40 +2274,39 @@ static int u8500_cryp_resume(struct platform_device *pdev)
 }
 
 static struct platform_driver cryp_driver = {
-	.probe  = u8500_cryp_probe,
-	.remove = u8500_cryp_remove,
-	.shutdown = u8500_cryp_shutdown,
-	.suspend  = u8500_cryp_suspend,
-	.resume   = u8500_cryp_resume,
+	.probe  = ux500_cryp_probe,
+	.remove = ux500_cryp_remove,
+	.shutdown = ux500_cryp_shutdown,
+	.suspend  = ux500_cryp_suspend,
+	.resume   = ux500_cryp_resume,
 	.driver = {
 		.owner = THIS_MODULE,
 		.name  = "cryp1"
 	}
 };
 
-static int __init u8500_cryp_mod_init(void)
+static int __init ux500_cryp_mod_init(void)
 {
 	pr_debug("[%s] is called!", __func__);
-
 	klist_init(&driver_data.device_list, NULL, NULL);
 	/* Initialize the semaphore to 0 devices (locked state) */
 	sema_init(&driver_data.device_allocation, 0);
 	return platform_driver_register(&cryp_driver);
 }
 
-static void __exit u8500_cryp_mod_fini(void)
+static void __exit ux500_cryp_mod_fini(void)
 {
 	pr_debug("[%s] is called!", __func__);
 	platform_driver_unregister(&cryp_driver);
 	return;
 }
 
-module_init(u8500_cryp_mod_init);
-module_exit(u8500_cryp_mod_fini);
+module_init(ux500_cryp_mod_init);
+module_exit(ux500_cryp_mod_fini);
 
 module_param(cryp_mode, int, 0);
 
-MODULE_DESCRIPTION("Driver for ST-Ericsson U8500 CRYP crypto engine.");
+MODULE_DESCRIPTION("Driver for ST-Ericsson UX500 CRYP crypto engine.");
 MODULE_ALIAS("aes-all");
 MODULE_ALIAS("des-all");
 

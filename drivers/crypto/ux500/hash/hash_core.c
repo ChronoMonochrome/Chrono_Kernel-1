@@ -1337,7 +1337,7 @@ static struct ahash_alg ahash_sha1_alg = {
 	.halg.statesize		 = sizeof(struct hash_ctx),
 	.halg.base = {
 		.cra_name	 = "sha1",
-		.cra_driver_name = "sha1-u8500",
+		.cra_driver_name = "sha1-ux500",
 		.cra_flags	 = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
 		.cra_blocksize	 = SHA1_BLOCK_SIZE,
 		.cra_ctxsize	 = sizeof(struct hash_ctx),
@@ -1354,7 +1354,7 @@ static struct ahash_alg ahash_sha256_alg = {
 	.halg.statesize		 = sizeof(struct hash_ctx),
 	.halg.base = {
 		.cra_name        = "sha256",
-		.cra_driver_name = "sha256-u8500",
+		.cra_driver_name = "sha256-ux500",
 		.cra_flags       = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
 		.cra_blocksize   = SHA256_BLOCK_SIZE,
 		.cra_ctxsize	 = sizeof(struct hash_ctx),
@@ -1373,7 +1373,7 @@ static struct ahash_alg hmac_sha1_alg = {
 	.halg.statesize		 = sizeof(struct hash_ctx),
 	.halg.base = {
 		.cra_name        = "hmac(sha1)",
-		.cra_driver_name = "hmac-sha1-u8500",
+		.cra_driver_name = "hmac-sha1-ux500",
 		.cra_flags       = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
 		.cra_blocksize   = SHA1_BLOCK_SIZE,
 		.cra_ctxsize	 = sizeof(struct hash_ctx),
@@ -1392,7 +1392,7 @@ static struct ahash_alg hmac_sha256_alg = {
 	.halg.statesize		 = sizeof(struct hash_ctx),
 	.halg.base = {
 		.cra_name        = "hmac(sha256)",
-		.cra_driver_name = "hmac-sha256-u8500",
+		.cra_driver_name = "hmac-sha256-ux500",
 		.cra_flags       = CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC,
 		.cra_blocksize   = SHA256_BLOCK_SIZE,
 		.cra_ctxsize	 = sizeof(struct hash_ctx),
@@ -1402,9 +1402,9 @@ static struct ahash_alg hmac_sha256_alg = {
 };
 
 /**
- * struct hash_alg *u8500_hash_algs[] -
+ * struct hash_alg *ux500_hash_algs[] -
  */
-static struct ahash_alg *u8500_ahash_algs[] = {
+static struct ahash_alg *ux500_ahash_algs[] = {
 	&ahash_sha1_alg,
 	&ahash_sha256_alg,
 	&hmac_sha1_alg,
@@ -1422,20 +1422,20 @@ static int ahash_algs_register_all(struct hash_device_data *device_data)
 
 	dev_dbg(device_data->dev, "[%s]", __func__);
 
-	for (i = 0; i < ARRAY_SIZE(u8500_ahash_algs); i++) {
-		ret = crypto_register_ahash(u8500_ahash_algs[i]);
+	for (i = 0; i < ARRAY_SIZE(ux500_ahash_algs); i++) {
+		ret = crypto_register_ahash(ux500_ahash_algs[i]);
 		if (ret) {
 			count = i;
 			dev_err(device_data->dev, "[%s] alg registration"
 					" failed",
-				u8500_ahash_algs[i]->halg.base.cra_driver_name);
+				ux500_ahash_algs[i]->halg.base.cra_driver_name);
 			goto unreg;
 		}
 	}
 	return 0;
 unreg:
 	for (i = 0; i < count; i++)
-		crypto_unregister_ahash(u8500_ahash_algs[i]);
+		crypto_unregister_ahash(ux500_ahash_algs[i]);
 	return ret;
 }
 
@@ -1448,15 +1448,15 @@ static void ahash_algs_unregister_all(struct hash_device_data *device_data)
 
 	dev_dbg(device_data->dev, "[%s]", __func__);
 
-	for (i = 0; i < ARRAY_SIZE(u8500_ahash_algs); i++)
-		crypto_unregister_ahash(u8500_ahash_algs[i]);
+	for (i = 0; i < ARRAY_SIZE(ux500_ahash_algs); i++)
+		crypto_unregister_ahash(ux500_ahash_algs[i]);
 }
 
 /**
- * u8500_hash_probe - Function that probes the hash hardware.
+ * ux500_hash_probe - Function that probes the hash hardware.
  * @pdev: The platform device.
  */
-static int u8500_hash_probe(struct platform_device *pdev)
+static int ux500_hash_probe(struct platform_device *pdev)
 {
 	int			ret = 0;
 	struct resource		*res = NULL;
@@ -1571,10 +1571,10 @@ out:
 }
 
 /**
- * u8500_hash_remove - Function that removes the hash device from the platform.
+ * ux500_hash_remove - Function that removes the hash device from the platform.
  * @pdev: The platform device.
  */
-static int u8500_hash_remove(struct platform_device *pdev)
+static int ux500_hash_remove(struct platform_device *pdev)
 {
 	struct resource		*res;
 	struct hash_device_data *device_data;
@@ -1633,10 +1633,10 @@ static int u8500_hash_remove(struct platform_device *pdev)
 }
 
 /**
- * u8500_hash_shutdown - Function that shutdown the hash device.
+ * ux500_hash_shutdown - Function that shutdown the hash device.
  * @pdev: The platform device
  */
-static void u8500_hash_shutdown(struct platform_device *pdev)
+static void ux500_hash_shutdown(struct platform_device *pdev)
 {
 	struct resource *res = NULL;
 	struct hash_device_data *device_data;
@@ -1686,11 +1686,11 @@ static void u8500_hash_shutdown(struct platform_device *pdev)
 }
 
 /**
- * u8500_hash_suspend - Function that suspends the hash device.
+ * ux500_hash_suspend - Function that suspends the hash device.
  * @pdev:	The platform device.
  * @state:	-
  */
-static int u8500_hash_suspend(struct platform_device *pdev, pm_message_t state)
+static int ux500_hash_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	int ret;
 	struct hash_device_data *device_data;
@@ -1726,10 +1726,10 @@ static int u8500_hash_suspend(struct platform_device *pdev, pm_message_t state)
 }
 
 /**
- * u8500_hash_resume - Function that resume the hash device.
+ * ux500_hash_resume - Function that resume the hash device.
  * @pdev:	The platform device.
  */
-static int u8500_hash_resume(struct platform_device *pdev)
+static int ux500_hash_resume(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct hash_device_data *device_data;
@@ -1762,11 +1762,11 @@ static int u8500_hash_resume(struct platform_device *pdev)
 }
 
 static struct platform_driver hash_driver = {
-	.probe  = u8500_hash_probe,
-	.remove = u8500_hash_remove,
-	.shutdown = u8500_hash_shutdown,
-	.suspend  = u8500_hash_suspend,
-	.resume   = u8500_hash_resume,
+	.probe  = ux500_hash_probe,
+	.remove = ux500_hash_remove,
+	.shutdown = ux500_hash_shutdown,
+	.suspend  = ux500_hash_suspend,
+	.resume   = ux500_hash_resume,
 	.driver = {
 		.owner = THIS_MODULE,
 		.name  = "hash1",
@@ -1774,12 +1774,11 @@ static struct platform_driver hash_driver = {
 };
 
 /**
- * u8500_hash_mod_init - The kernel module init function.
+ * ux500_hash_mod_init - The kernel module init function.
  */
-static int __init u8500_hash_mod_init(void)
+static int __init ux500_hash_mod_init(void)
 {
 	pr_debug(DEV_DBG_NAME " [%s] is called!", __func__);
-
 	klist_init(&driver_data.device_list, NULL, NULL);
 	/* Initialize the semaphore to 0 devices (locked state) */
 	sema_init(&driver_data.device_allocation, 0);
@@ -1788,9 +1787,9 @@ static int __init u8500_hash_mod_init(void)
 }
 
 /**
- * u8500_hash_mod_fini - The kernel module exit function.
+ * ux500_hash_mod_fini - The kernel module exit function.
  */
-static void __exit u8500_hash_mod_fini(void)
+static void __exit ux500_hash_mod_fini(void)
 {
 	pr_debug(DEV_DBG_NAME " [%s] is called!", __func__);
 
@@ -1798,10 +1797,10 @@ static void __exit u8500_hash_mod_fini(void)
 	return;
 }
 
-module_init(u8500_hash_mod_init);
-module_exit(u8500_hash_mod_fini);
+module_init(ux500_hash_mod_init);
+module_exit(ux500_hash_mod_fini);
 
-MODULE_DESCRIPTION("Driver for ST-Ericsson U8500 HASH engine.");
+MODULE_DESCRIPTION("Driver for ST-Ericsson UX500 HASH engine.");
 MODULE_LICENSE("GPL");
 
 MODULE_ALIAS("sha1-all");

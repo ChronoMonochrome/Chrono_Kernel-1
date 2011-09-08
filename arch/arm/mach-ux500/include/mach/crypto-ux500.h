@@ -6,11 +6,14 @@
  */
 #ifndef _CRYPTO_UX500_H
 #include <plat/ste_dma40.h>
-#include <mach/ste-dma40-db8500.h>
 
 struct cryp_platform_data {
 	struct stedma40_chan_cfg mem_to_engine;
 	struct stedma40_chan_cfg engine_to_mem;
+};
+
+struct hash_platform_data {
+	struct stedma40_chan_cfg mem_to_engine;
 };
 
 #endif

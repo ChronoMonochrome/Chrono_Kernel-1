@@ -12,6 +12,8 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 
+#include <mach/hardware.h>
+
 #include "cryp_p.h"
 #include "cryp.h"
 
@@ -30,26 +32,33 @@ void cryp_wait_until_done(struct cryp_device_data *device_data)
  */
 int cryp_check(struct cryp_device_data *device_data)
 {
+	int peripheralID2 = 0;
+
 	if (NULL == device_data)
 		return -EINVAL;
 
+	if (cpu_is_u8500())
+		peripheralID2 = CRYP_PERIPHERAL_ID2_DB8500;
+	else if (cpu_is_u5500())
+		peripheralID2 = CRYP_PERIPHERAL_ID2_DB5500;
+
 	/* Check Peripheral and Pcell Id Register for CRYP */
 	if ((CRYP_PERIPHERAL_ID0 ==
-	     readl_relaxed(&device_data->base->periphId0))
+		readl_relaxed(&device_data->base->periphId0))
 	    && (CRYP_PERIPHERAL_ID1 ==
-		readl_relaxed(&device_data->base->periphId1))
-	    && (CRYP_PERIPHERAL_ID2 ==
-		readl_relaxed(&device_data->base->periphId2))
+		    readl_relaxed(&device_data->base->periphId1))
+	    && (peripheralID2 ==
+		    readl_relaxed(&device_data->base->periphId2))
 	    && (CRYP_PERIPHERAL_ID3 ==
-		readl_relaxed(&device_data->base->periphId3))
+		    readl_relaxed(&device_data->base->periphId3))
 	    && (CRYP_PCELL_ID0 ==
-		readl_relaxed(&device_data->base->pcellId0))
+		    readl_relaxed(&device_data->base->pcellId0))
 	    && (CRYP_PCELL_ID1 ==
-		readl_relaxed(&device_data->base->pcellId1))
+		    readl_relaxed(&device_data->base->pcellId1))
 	    && (CRYP_PCELL_ID2 ==
-		readl_relaxed(&device_data->base->pcellId2))
+		    readl_relaxed(&device_data->base->pcellId2))
 	    && (CRYP_PCELL_ID3 ==
-		readl_relaxed(&device_data->base->pcellId3))) {
+		    readl_relaxed(&device_data->base->pcellId3))) {
 		return 0;
 	}
 

@@ -9,5 +9,5 @@ CFLAGS_cryp.o := -DDEBUG -O0
 CFLAGS_cryp_irq.o := -DDEBUG -O0
 endif
 
-obj-$(CONFIG_CRYPTO_DEV_UX500_CRYP) += u8500_cryp.o
-u8500_cryp-objs :=  cryp.o cryp_irq.o cryp_core.o
+obj-$(CONFIG_CRYPTO_DEV_UX500_CRYP) += ux500_cryp.o
+ux500_cryp-objs :=  cryp.o cryp_irq.o cryp_core.o

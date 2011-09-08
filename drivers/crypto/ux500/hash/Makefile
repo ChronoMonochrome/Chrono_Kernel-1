@@ -7,5 +7,5 @@ ifdef CONFIG_CRYPTO_DEV_UX500_DEBUG
 CFLAGS_hash_core.o := -DDEBUG -O0
 endif
 
-obj-$(CONFIG_CRYPTO_DEV_UX500_HASH) += u8500_hash.o
-u8500_hash-objs :=  hash_core.o
+obj-$(CONFIG_CRYPTO_DEV_UX500_HASH) += ux500_hash.o
+ux500_hash-objs :=  hash_core.o
