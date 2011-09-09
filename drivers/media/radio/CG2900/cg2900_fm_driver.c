@@ -10,10 +10,10 @@
 
 #include <linux/device.h>
 #include <linux/time.h>
-#include <linux/mfd/cg2900.h>
 #include <linux/module.h>
 #include <linux/skbuff.h>
 #include <asm-generic/errno-base.h>
+#include "cg2900.h"
 #include "cg2900_fm_driver.h"
 
 /*

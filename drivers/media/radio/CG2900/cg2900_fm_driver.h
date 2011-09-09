@@ -15,7 +15,6 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/uaccess.h>
-#include <linux/smp_lock.h>
 #include <linux/semaphore.h>
 #include <linux/version.h>
 #include <linux/kthread.h>

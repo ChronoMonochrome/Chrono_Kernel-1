@@ -10,14 +10,13 @@
 
 #include<linux/init.h>
 #include<linux/videodev2.h>
-#include"linux/videodev.h"
 #include<media/v4l2-ioctl.h>
 #include<media/v4l2-common.h>
 #include<linux/module.h>
 #include <linux/platform_device.h>
 #include<linux/string.h>
 #include<linux/wait.h>
-#include<linux/mfd/cg2900.h>
+#include"cg2900.h"
 #include"cg2900_fm_driver.h"
 
 #define RADIO_CG2900_VERSION KERNEL_VERSION(1, 1, 0)
@@ -267,7 +266,6 @@ static const struct v4l2_ioctl_ops cg2900_ioctl_ops = {
 /* V4L2 Video Device Structure */
 static struct video_device cg2900_video_device = {
 	.name = "STE CG2900 FM Rx/Tx Radio",
-	.vfl_type = VID_TYPE_TUNER | VID_TYPE_CAPTURE,
 	.fops = &cg2900_fops,
 	.ioctl_ops = &cg2900_ioctl_ops,
 	.release = video_device_release_empty,
@@ -1663,6 +1661,11 @@ static int vidioc_get_ext_ctrls(
 				"failed with reason = %d",
 				(*fm_interrupt_buffer),
 				(*(fm_interrupt_buffer + 1)));
+			/*
+			 * Update return value, so that application
+			 * can read the event failure reason.
+			 */
+			ret_val = 0;
 			break;
 		}
 
@@ -2530,7 +2533,7 @@ static int cg2900_open(
 	int ret_val = -EINVAL;
 	struct video_device *vdev = video_devdata(file);
 
-	lock_kernel();
+	mutex_lock(&fm_mutex);
 	users++;
 	FM_INFO_REPORT("cg2900_open: users = %d", users);
 
@@ -2572,7 +2575,7 @@ switch_on_error:
 init_error:
 	users--;
 done:
-	unlock_kernel();
+	mutex_unlock(&fm_mutex);
 	FM_DEBUG_REPORT("cg2900_open: returning %d", ret_val);
 	return ret_val;
 }
