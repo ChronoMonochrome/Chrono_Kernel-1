@@ -88,6 +88,8 @@ void __init mop500_msp_init(void);
 void __init mop500_pins_init(void);
 void __init hrefv60_pins_init(void);
 void __init snowball_pins_init(void);
+void mop500_cyttsp_init(void);
+void __init mop500_u8500uib_r3_init(void);
 
 void mop500_uib_i2c_add(int busnum, struct i2c_board_info const *info,
 		unsigned n);

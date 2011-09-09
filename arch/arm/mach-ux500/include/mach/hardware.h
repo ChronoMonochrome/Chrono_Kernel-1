@@ -41,6 +41,19 @@
 #define CRYP1_RX_REG_OFFSET	0x10
 #define CRYP1_TX_REG_OFFSET	0x8
 
+#define MSP_0_CONTROLLER 1
+#define MSP_1_CONTROLLER 2
+#define MSP_2_CONTROLLER 3
+#define MSP_3_CONTROLLER 4
+
+#define SSP_0_CONTROLLER 4
+#define SSP_1_CONTROLLER 5
+
+#define SPI023_0_CONTROLLER 6
+#define SPI023_1_CONTROLLER 7
+#define SPI023_2_CONTROLLER 8
+#define SPI023_3_CONTROLLER 9
+
 #ifndef __ASSEMBLY__
 
 #include <mach/id.h>

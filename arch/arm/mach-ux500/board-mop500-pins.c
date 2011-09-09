@@ -394,6 +394,14 @@ static UX500_PINS(mop500_pins_usb,
 	GPIO267_USB_DAT0,
 );
 
+/* SPI2 */
+static UX500_PINS(mop500_pins_spi2,
+	GPIO216_GPIO    | PIN_OUTPUT_HIGH,
+	GPIO218_SPI2_RXD        | PIN_INPUT_PULLDOWN,
+	GPIO215_SPI2_TXD        | PIN_OUTPUT_LOW,
+	GPIO217_SPI2_CLK        | PIN_OUTPUT_LOW,
+);
+
 static struct ux500_pin_lookup mop500_pins[] = {
 	PIN_LOOKUP("mcde-dpi", &mop500_pins_mcde_dpi),
 	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout),
@@ -408,6 +416,7 @@ static struct ux500_pin_lookup mop500_pins[] = {
 	PIN_LOOKUP("sdi2", &mop500_pins_sdi2),
 	PIN_LOOKUP("sdi4", &mop500_pins_sdi4),
 	PIN_LOOKUP("ab8500-usb.0", &mop500_pins_usb),
+	PIN_LOOKUP("spi2", &mop500_pins_spi2),
 };
 
 /*
