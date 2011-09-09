@@ -30,6 +30,7 @@ typedef t_uint8 t_panic_reason;
  *  Reason                   | Information                       | Behavior
  *  -------------------------------------------------------------------
  *  INTERNAL_PANIC           | Not interpreted                   | Fatal panic, stop MPC
+ *  MPC_NOT_RESPONDING_PANIC | Not interpreted                   | Fatal panic, stop MPC
  *  USER_STACK_OVERFLOW      | Faulting address & SPu            | Fatal panic, stop MPC
  *  SYSTEM_STACK_OVERFLOW    | Faulting address &  SPu           | Fatal panic, stop MPC
  *  UNALIGNED_LONG_ACCESS    | Indicative Faulting address & SPu | Fatal panic, stop MPC
@@ -45,7 +46,7 @@ typedef t_uint8 t_panic_reason;
  */
 typedef enum {
     INTERNAL_PANIC =                 1,
-    RESERVED_PANIC =                 2,
+    MPC_NOT_RESPONDING_PANIC =       2,
     USER_STACK_OVERFLOW =            3,
     SYSTEM_STACK_OVERFLOW =          4,
     UNALIGNED_LONG_ACCESS =          5,

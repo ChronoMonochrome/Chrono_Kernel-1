@@ -28,7 +28,7 @@
 #include "cm_service.h"
 #include "cm_dma.h"
 
-#define CMDRIVER_PATCH_VERSION 115
+#define CMDRIVER_PATCH_VERSION 117
 #define O_FLUSH 0x1000000
 
 static int cmld_major;

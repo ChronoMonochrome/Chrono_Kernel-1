@@ -24,16 +24,16 @@ const struct {
 	unsigned int SP:1;
 	unsigned int interface:1;
 } reason_descrs[] = {
-		{"NONE_PANIC",            0,  0,  0,  0},
-		{"INTERNAL_PANIC",        1,  0,  0,  0},
-		{"Reserved Panic",        0,  0,  0,  0},
-		{"USER_STACK_OVERFLOW",   0,  1,  1,  0},
-		{"SYSTEM_STACK_OVERFLOW", 0,  1,  1,  0},
-		{"UNALIGNED_LONG_ACCESS", 0,  1,  0,  0},
-		{"EVENT_FIFO_OVERFLOW",   0,  0,  0,  1},
-		{"PARAM_FIFO_OVERFLOW",   0,  0,  0,  1},
-		{"INTERFACE_NOT_BINDED",  0,  0,  0,  0},
-		{"USER_PANIC",            1,  0,  0,  0}
+		{"NONE_PANIC",                0,  0,  0,  0},
+		{"INTERNAL_PANIC",            1,  0,  0,  0},
+		{"MPC_NOT_RESPONDING_PANIC",  0,  0,  0,  0}, /* Should not be useful since in that case CM_getServiceDescription() not call */
+		{"USER_STACK_OVERFLOW",       0,  1,  1,  0},
+		{"SYSTEM_STACK_OVERFLOW",     0,  1,  1,  0},
+		{"UNALIGNED_LONG_ACCESS",     0,  1,  0,  0},
+		{"EVENT_FIFO_OVERFLOW",       0,  0,  0,  1},
+		{"PARAM_FIFO_OVERFLOW",       0,  0,  0,  1},
+		{"INTERFACE_NOT_BINDED",      0,  0,  0,  0},
+		{"USER_PANIC",                1,  0,  0,  0}
 };
 
 static t_component_instance* getCorrespondingInstance(

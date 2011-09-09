@@ -430,6 +430,20 @@ PUBLIC void OSAL_DisableServiceMessages(void);
  */
 PUBLIC void OSAL_EnableServiceMessages(void);
 
+/*!
+ * \brief Generate 'software' panic due to dsp crash
+ *
+ * We request that the os part generate a panic to notify cm users
+*  that a problem occur but not dsp panic has been sent (for example
+*  a dsp crash)
+ *
+ * \param[in] t_nmf_core_id  : core_id is the id of dsp for which we need to generate a panic.
+ * \param[in] reason  : additional information. Today only 0 is valid.
+ *
+ * \ingroup CM_ENGINE_OSAL_API
+ */
+PUBLIC void OSAL_GeneratePanic(t_nmf_core_id coreId, t_uint32 reason);
+
 extern /*const*/ t_nmf_osal_sync_handle lockHandleApi;
 extern /*const*/ t_nmf_osal_sync_handle lockHandleCom;
 extern /*const*/ t_nmf_osal_sem_handle semHandle;
@@ -470,7 +484,6 @@ extern /*const*/ t_nmf_osal_sem_handle semHandle;
  * \ingroup CM_ENGINE_OSAL_API
  */
 #define OSAL_SEMAPHORE_WAIT_TIMEOUT(semHandle) OSAL_SemaphoreWaitTimed(semHandle, (cm_PWR_GetMode() == NORMAL_PWR_MODE)?SEM_TIMEOUT_NORMAL:SEM_TIMEOUT_DEBUG)
-
 
 /****************/
 /* Generic part */

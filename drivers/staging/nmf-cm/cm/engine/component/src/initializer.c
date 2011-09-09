@@ -24,6 +24,7 @@
 
 /* private prototype */
 PRIVATE t_cm_error cm_COMP_generic(t_nmf_core_id coreId, t_event_params_handle paramArray, t_uint32 paramNumber, t_uint32 serviceIndex);
+PRIVATE void cm_COMP_generatePanic(t_nmf_core_id coreId);
 
 /*
  * This module is tightly coupled with cm_DSP_components one (communication/initializer)
@@ -153,8 +154,10 @@ PUBLIC t_cm_error cm_COMP_CallService(
     error = cm_COMP_generic(pComp->Template->dspId, params, sizeof(params) / sizeof(t_uint16), serviceIndex);
 
     if (isSynchronous == TRUE && error == CM_OK) {
-        if (OSAL_SEMAPHORE_WAIT_TIMEOUT(semHandle) != SYNC_OK)
+        if (OSAL_SEMAPHORE_WAIT_TIMEOUT(semHandle) != SYNC_OK) {
+            cm_COMP_generatePanic(pComp->Template->dspId);
             error = CM_MPC_NOT_RESPONDING;
+        }
     }
 
     return error;
@@ -180,6 +183,7 @@ PUBLIC void cm_COMP_Flush(t_nmf_core_id coreId) {
         if (cm_COMP_generic(coreId, params, sizeof(params) / sizeof(t_uint16), NMF_DESTROY_INDEX) != CM_OK ||
                 OSAL_SEMAPHORE_WAIT_TIMEOUT(semHandle) != SYNC_OK)
         {
+            cm_COMP_generatePanic(coreId);
             ERROR("CM_MPC_NOT_RESPONDING: can't call flush service\n", 0, 0, 0, 0, 0, 0);
         }
     }
@@ -250,8 +254,10 @@ PUBLIC t_cm_error cm_COMP_ULPForceWakeup(
     error = cm_COMP_generic(coreId, NULL, 0, NMF_ULP_FORCEWAKEUP);
 
     if (error == CM_OK) {
-        if (OSAL_SEMAPHORE_WAIT_TIMEOUT(semHandle) != SYNC_OK)
+        if (OSAL_SEMAPHORE_WAIT_TIMEOUT(semHandle) != SYNC_OK) {
+            cm_COMP_generatePanic(coreId);
             error = CM_MPC_NOT_RESPONDING;
+        }
     }
 
     return error;
@@ -335,8 +341,10 @@ PRIVATE t_cm_error cm_COMP_generic(
     t_uint32 i;
 
     // wait for an event in fifo
-    if (OSAL_SEMAPHORE_WAIT_TIMEOUT(initializerDesc[coreId].fifoSemHandle) != SYNC_OK)
+    if (OSAL_SEMAPHORE_WAIT_TIMEOUT(initializerDesc[coreId].fifoSemHandle) != SYNC_OK) {
+        cm_COMP_generatePanic(coreId);
         return CM_MPC_NOT_RESPONDING;
+    }
 
 
     // AllocEvent
@@ -364,3 +372,12 @@ unlock:
     return error;
 }
 
+PRIVATE void cm_COMP_generatePanic(t_nmf_core_id coreId)
+{
+    const t_dsp_desc* pDspDesc = cm_DSP_GetState(coreId);
+
+    if (pDspDesc->state != MPC_STATE_PANIC) {
+        cm_DSP_SetStatePanic(coreId);
+        OSAL_GeneratePanic(coreId, 0);
+    }
+}

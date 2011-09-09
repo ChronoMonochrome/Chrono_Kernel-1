@@ -551,15 +551,7 @@ t_cm_error cm_startComponent(t_component_instance* component, t_nmf_client_id cl
             value,
             sizeof(value)) == CM_OK)
     {
-        // The PRCMU seem not supporting the transition of asking HW IP on while DSP in retention
-        // -> Thus force wake up of the MMDSP before asking the transition
-        if ((error = cm_EEM_ForceWakeup(component->Template->dspId)) != CM_OK)
-            return error;
-
         error = cm_PWR_EnableMPC(MPC_PWR_HWIP, component->Template->dspId);
-
-        cm_EEM_AllowSleep(component->Template->dspId);
-
         if(error != CM_OK)
             return error;
     }

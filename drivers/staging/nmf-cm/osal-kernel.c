@@ -1069,6 +1069,28 @@ t_cm_error OSAL_EnablePwrRessource(t_nmf_power_resource resource, t_uint32 first
 }
 
 /*!
+  * \brief Generate 'software' panic to notify cm users
+  *  that a problem occurs but no dsp panic has been sent yet
+  * (for example a dsp crash)
+  * \ingroup CM_ENGINE_OSAL_API
+  */
+void OSAL_GeneratePanic(t_nmf_core_id coreId, t_uint32 reason)
+{
+	struct osal_msg msg;
+
+	/* Create and dispatch a shutdown service message */
+	msg.msg_type = MSG_SERVICE;
+	msg.d.srv.srvType = NMF_SERVICE_PANIC;
+	msg.d.srv.srvData.panic.panicReason = MPC_NOT_RESPONDING_PANIC;
+	msg.d.srv.srvData.panic.panicSource = MPC_EE;
+	msg.d.srv.srvData.panic.info.mpc.coreid = coreId;
+	msg.d.srv.srvData.panic.info.mpc.faultingComponent = 0;
+	msg.d.srv.srvData.panic.info.mpc.panicInfo1 = reason;
+	msg.d.srv.srvData.panic.info.mpc.panicInfo2 = 0;
+	dispatch_service_msg(&msg);
+}
+
+/*!
  * \brief Generate an OS-Panic. Called in from CM_ASSERT().
  * \ingroup CM_ENGINE_OSAL_API
  */

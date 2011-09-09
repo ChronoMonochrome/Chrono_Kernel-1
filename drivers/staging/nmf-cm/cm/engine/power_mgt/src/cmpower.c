@@ -9,6 +9,7 @@
 #include <cm/engine/trace/inc/trace.h>
 #include <cm/engine/utils/inc/convert.h>
 #include <cm/engine/dsp/inc/dsp.h>
+#include <cm/engine/executive_engine_mgt/inc/executive_engine_mgt.h>
 
 // -------------------------------------------------------------------------------
 // Compilation flags
@@ -93,11 +94,20 @@ PUBLIC t_cm_error cm_PWR_EnableMPC(
         if(_pwrMPCHWIPCountT[coreId]++ == 0)
         {
             LOG_INTERNAL(__PWR_DEBUG_TRACE_LEVEL, "[Pwr] MPC %s HW IP enable clock\n",cm_getDspName(coreId), 0, 0, 0, 0, 0);
+
+            // The PRCMU seem not supporting the transition of asking HW IP on while DSP in retention
+            // -> Thus force wake up of the MMDSP before asking the transition
+            if ((error = cm_EEM_ForceWakeup(coreId)) != CM_OK)
+                return error;
+
             if((error = OSAL_EnablePwrRessource(CM_OSAL_POWER_SxA_HARDWARE, coreId, 0)) != CM_OK)
             {
                 ERROR("[Pwr] MPC %s HW IP clock can't be enabled\n", cm_getDspName(coreId), 0, 0, 0, 0, 0);
+                cm_EEM_AllowSleep(coreId);
                 return error;
             }
+
+            cm_EEM_AllowSleep(coreId);
         }
         break;
     }
@@ -122,7 +132,15 @@ PUBLIC void cm_PWR_DisableMPC(
         if(--_pwrMPCHWIPCountT[coreId] == 0)
         {
             LOG_INTERNAL(__PWR_DEBUG_TRACE_LEVEL, "[Pwr] MPC %s HW IP disable clock\n",cm_getDspName(coreId), 0, 0, 0, 0, 0);
+
+            // The PRCMU seem not supporting the transition of asking HW IP on while DSP in retention
+            // -> Thus force wake up of the MMDSP before asking the transition
+            if (cm_EEM_ForceWakeup(coreId) != CM_OK)
+                return;
+
             OSAL_DisablePwrRessource(CM_OSAL_POWER_SxA_HARDWARE, coreId, 0);
+
+            cm_EEM_AllowSleep(coreId);
         }
         break;
     }

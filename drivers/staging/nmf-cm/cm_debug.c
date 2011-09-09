@@ -195,7 +195,7 @@ static ssize_t domain_read(struct file *file, char __user *userbuf,
 	int ret=0;
 
 	OSAL_LOCK_API();
-	if ((domain->domain.coreId != -1)
+	if ((domain->domain.coreId != MASK_ALL8)
 	    && (domain->dbgCooky != NULL)) {
 		t_cm_allocator_status status;
 		t_uint32 dOffset;
