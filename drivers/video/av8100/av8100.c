@@ -468,7 +468,7 @@ const struct color_conversion_cmd col_trans_yuv_to_denc = {
 
 const struct color_conversion_cmd col_trans_rgb_to_denc = {
 	.c0      = 0x0070, .c1      = 0xffb6, .c2      = 0xffda,
-	.c3      = 0x0019, .c4      = 0x0081, .c5      = 0x0042,
+	.c3      = 0x0042, .c4      = 0x0081, .c5      = 0x0019,
 	.c6      = 0xffee, .c7      = 0xffa2, .c8      = 0x0070,
 	.aoffset = 0x007f, .boffset = 0x0010, .coffset = 0x007f,
 	.lmax    = 0xff,
