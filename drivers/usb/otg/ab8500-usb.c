@@ -72,6 +72,9 @@
 #define USB_PROBE_DELAY 1000 /* 1 seconds */
 #define USB_LIMIT (200) /* If we have more than 200 irqs per second */
 
+#define PUBLIC_ID_BACKUPRAM1 (U8500_BACKUPRAM1_BASE + 0x0FC0)
+#define MAX_USB_SERIAL_NUMBER_LEN 31
+
 /* Usb line status register */
 enum ab8500_usb_link_status {
 	USB_LINK_NOT_CONFIGURED = 0,
@@ -119,6 +122,7 @@ struct ab8500_usb {
 	struct regulator *v_ulpi;
 	struct ab8500_usbgpio_platform_data *usb_gpio;
 	struct delayed_work work_usb_workaround;
+	struct kobject *serial_number_kobj;
 };
 
 static inline struct ab8500_usb *phy_to_ab(struct usb_phy *x)
@@ -702,6 +706,50 @@ irq_fail:
 	return err;
 }
 
+/* Sys interfaces */
+static ssize_t usb_serial_number
+		(struct kobject *kobj, struct attribute *attr, char *buf)
+{
+	u32 bufer[5];
+	void __iomem *backup_ram = NULL;
+
+	backup_ram = ioremap(PUBLIC_ID_BACKUPRAM1, 0x14);
+
+	if (backup_ram) {
+		bufer[0] = readl(backup_ram);
+		bufer[1] = readl(backup_ram + 4);
+		bufer[2] = readl(backup_ram + 8);
+		bufer[3] = readl(backup_ram + 0x0c);
+		bufer[4] = readl(backup_ram + 0x10);
+
+		snprintf(buf, MAX_USB_SERIAL_NUMBER_LEN+1,
+				"%.8X%.8X%.8X%.8X%.8X",
+			bufer[0], bufer[1], bufer[2], bufer[3], bufer[4]);
+
+		iounmap(backup_ram);
+	} else
+			printk(KERN_ERR "$$ ioremap failed\n");
+
+	return strlen(buf);
+}
+
+static struct attribute usb_serial_number_attribute = \
+			{.name = "serial_number", .mode = S_IRUGO};
+
+static struct attribute *serial_number[] = {
+	&usb_serial_number_attribute,
+	NULL
+};
+
+const struct sysfs_ops usb_sysfs_ops = {
+	.show  = usb_serial_number,
+};
+
+static struct kobj_type ktype_serial_number = {
+	.sysfs_ops = &usb_sysfs_ops,
+	.default_attrs = serial_number,
+};
+
 static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 {
 	struct ab8500_usb	*ab;
@@ -827,6 +875,22 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	}
 	/* Needed to enable ID detection. */
 	ab8500_usb_wd_workaround(ab);
+
+	ab->serial_number_kobj = kzalloc(sizeof(struct kobject), GFP_KERNEL);
+
+	if (ab->serial_number_kobj == NULL)
+		ret = -ENOMEM;
+	ab->serial_number_kobj->ktype = &ktype_serial_number;
+	kobject_init(ab->serial_number_kobj, ab->serial_number_kobj->ktype);
+
+	ret = kobject_set_name(ab->serial_number_kobj, "usb_serial_number");
+	if (ret)
+		kfree(ab->serial_number_kobj);
+
+	ret = kobject_add(ab->serial_number_kobj, NULL, "usb_serial_number");
+	if (ret)
+		kfree(ab->serial_number_kobj);
+
 
 	err = ab->usb_gpio->get(ab->dev);
 	if (err < 0)
