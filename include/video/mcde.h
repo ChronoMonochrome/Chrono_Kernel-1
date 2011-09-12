@@ -172,16 +172,12 @@ struct mcde_port {
 	enum mcde_sync_src sync_src;
 	bool update_auto_trig;
 	enum mcde_hdmi_sdtv_switch hdmi_sdtv_switch;
-	struct regulator *reg_esram;
 	union {
 		struct {
 			u8 virt_id;
 			u8 num_data_lanes;
 			u8 ui;
 			bool clk_cont;
-			struct clk *clk_dsi;
-			struct clk *clk_dsi_lp;
-			struct regulator *reg_vana;
 
 			/* DSI data lanes are swapped if true */
 			bool data_lanes_swap;
@@ -191,7 +187,6 @@ struct mcde_port {
 			bool tv_mode;
 			u16 clock_div; /* use 0 or 1 for no clock divider */
 			u32 polarity;    /* see DPI_ACT_LOW_* definitions */
-			struct clk *clk_dpi;
 		} dpi;
 	} phy;
 };
