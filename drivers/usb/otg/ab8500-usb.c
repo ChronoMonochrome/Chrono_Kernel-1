@@ -36,6 +36,7 @@
 #include <linux/regulator/consumer.h>
 #include <mach/prcmu.h>
 #include <mach/usb.h>
+#include <linux/kernel_stat.h>
 
 #define AB8500_MAIN_WD_CTRL_REG 0x01
 #define AB8500_USB_LINE_STAT_REG 0x80
@@ -68,8 +69,8 @@
 #define AB8500_USB_PHY_TUNE3	0x07
 
 
-
-
+#define USB_PROBE_DELAY 1000 /* 1 seconds */
+#define USB_LIMIT (200) /* If we have more than 200 irqs per second */
 
 /* Usb line status register */
 enum ab8500_usb_link_status {
@@ -117,6 +118,7 @@ struct ab8500_usb {
 	struct regulator *v_musb;
 	struct regulator *v_ulpi;
 	struct ab8500_usbgpio_platform_data *usb_gpio;
+	struct delayed_work work_usb_workaround;
 };
 
 static inline struct ab8500_usb *phy_to_ab(struct usb_phy *x)
@@ -148,6 +150,33 @@ static void ab8500_usb_wd_workaround(struct ab8500_usb *ab)
 		0);
 }
 
+static void ab8500_usb_load(struct work_struct *work)
+{
+	int cpu;
+	unsigned int num_irqs = 0;
+	static unsigned int old_num_irqs = UINT_MAX;
+	struct delayed_work *work_usb_workaround = to_delayed_work(work);
+	struct ab8500_usb *ab = container_of(work_usb_workaround,
+				struct ab8500_usb, work_usb_workaround);
+
+	for_each_online_cpu(cpu)
+	num_irqs += kstat_irqs_cpu(IRQ_DB8500_USBOTG, cpu);
+
+	if ((num_irqs > old_num_irqs) &&
+		(num_irqs - old_num_irqs) > USB_LIMIT)
+			prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
+							"usb", 125);
+	else
+			prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
+							"usb", 25);
+
+	old_num_irqs = num_irqs;
+
+	schedule_delayed_work_on(0,
+				&ab->work_usb_workaround,
+				msecs_to_jiffies(USB_PROBE_DELAY));
+}
+
 static void ab8500_usb_regulator_ctrl(struct ab8500_usb *ab, bool sel_host,
 					bool enable)
 {
@@ -174,8 +203,15 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 	clk_enable(ab->sysclk);
 
 	ab8500_usb_regulator_ctrl(ab, sel_host, true);
+
 	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
 				(char *)dev_name(ab->dev), 100);
+
+	if (!sel_host) {
+		schedule_delayed_work_on(0,
+					&ab->work_usb_workaround,
+					msecs_to_jiffies(USB_PROBE_DELAY));
+	}
 
 	abx500_mask_and_set_register_interruptible(ab->dev,
 				AB8500_USB,
@@ -223,6 +259,13 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
 
 	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
 				(char *)dev_name(ab->dev), 50);
+
+	if (!sel_host) {
+
+		cancel_delayed_work_sync(&ab->work_usb_workaround);
+		prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
+			"usb", 25);
+	}
 }
 
 #define ab8500_usb_host_phy_en(ab)	ab8500_usb_phy_enable(ab, true)
@@ -300,8 +343,8 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 
 static void ab8500_usb_delayed_work(struct work_struct *work)
 {
-	struct ab8500_usb *ab = container_of(work, struct ab8500_usb,
-						dwork.work);
+	struct delayed_work *dwork = to_delayed_work(work);
+	struct ab8500_usb *ab = container_of(dwork, struct ab8500_usb, dwork);
 
 	ab8500_usb_link_status_update(ab);
 }
@@ -714,6 +757,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	/* all: Disable phy when called from set_host and set_peripheral */
 	INIT_WORK(&ab->phy_dis_work, ab8500_usb_phy_disable_work);
 
+	INIT_DELAYED_WORK_DEFERRABLE(&ab->work_usb_workaround,
+							ab8500_usb_load);
 	err = ab8500_usb_regulator_get(ab);
 	if (err)
 		goto fail0;
@@ -791,6 +836,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 			(char *)dev_name(ab->dev), 50);
 
 	dev_info(&pdev->dev, "revision 0x%2x driver initialized\n", ab->rev);
+
+	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "usb", 25);
 
 	err = ab8500_usb_boot_detect(ab);
 	if (err < 0)
