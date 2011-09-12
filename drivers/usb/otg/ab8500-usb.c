@@ -174,7 +174,7 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 	clk_enable(ab->sysclk);
 
 	ab8500_usb_regulator_ctrl(ab, sel_host, true);
-	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
 				(char *)dev_name(ab->dev), 100);
 
 	abx500_mask_and_set_register_interruptible(ab->dev,
@@ -221,7 +221,7 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
 
 	ab->usb_gpio->disable();
 
-	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
 				(char *)dev_name(ab->dev), 50);
 }
 
