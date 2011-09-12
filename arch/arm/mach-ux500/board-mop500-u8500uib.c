@@ -72,7 +72,7 @@ static struct i2c_board_info __initdata mop500_i2c2_devices_u8500[] = {
  */
 static const unsigned int u8500_keymap[] = {
 	KEY(3, 1, KEY_END),
-	KEY(4, 1, KEY_POWER),
+	KEY(4, 1, KEY_HOME),
 	KEY(6, 4, KEY_VOLUMEDOWN),
 	KEY(4, 2, KEY_EMAIL),
 	KEY(3, 3, KEY_RIGHT),
