@@ -25,6 +25,7 @@
 #define SW_RESET_NORMAL 0xc001
 #define SW_RESET_CHARGING 0xCAFE
 #define SW_RESET_COLDSTART 0x0
+#define SW_RESET_RECOVERY 0x5502
 
 /*
  * The array reboot_reasons[] is used when you want to map a string to a reboot
