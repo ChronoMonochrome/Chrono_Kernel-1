@@ -1995,6 +1995,16 @@ static struct regulator_consumer_supply db5500_esram12_consumers[] = {
 	.num_consumer_supplies  = ARRAY_SIZE(db5500_##lower##_consumers),\
 }
 
+#define DB5500_REGULATOR_SWITCH_VAPE(lower, upper)			\
+[DB5500_REGULATOR_SWITCH_##upper] = {					\
+	.supply_regulator = "db5500-vape",				\
+	.constraints = {						\
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,		\
+	},								\
+	.consumer_supplies      = db5500_##lower##_consumers,		\
+	.num_consumer_supplies  = ARRAY_SIZE(db5500_##lower##_consumers),\
+}									\
+
 static struct regulator_init_data db5500_regulators[DB5500_NUM_REGULATORS] = {
 	[DB5500_REGULATOR_VAPE] = {
 		.constraints = {
@@ -2003,10 +2013,14 @@ static struct regulator_init_data db5500_regulators[DB5500_NUM_REGULATORS] = {
 		.consumer_supplies	= db5500_vape_consumers,
 		.num_consumer_supplies	= ARRAY_SIZE(db5500_vape_consumers),
 	},
-	DB5500_REGULATOR_SWITCH(sga, SGA),
-	DB5500_REGULATOR_SWITCH(hva, HVA),
-	DB5500_REGULATOR_SWITCH(sia, SIA),
-	DB5500_REGULATOR_SWITCH(disp, DISP),
+	DB5500_REGULATOR_SWITCH_VAPE(sga, SGA),
+	DB5500_REGULATOR_SWITCH_VAPE(hva, HVA),
+	DB5500_REGULATOR_SWITCH_VAPE(sia, SIA),
+	DB5500_REGULATOR_SWITCH_VAPE(disp, DISP),
+	/*
+	 * ESRAM12 is put in retention by the firmware when VAPE is
+	 * turned off so there's no need to hold VAPE.
+	 */
 	DB5500_REGULATOR_SWITCH(esram12, ESRAM12),
 };
 
