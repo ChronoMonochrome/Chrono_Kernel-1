@@ -33,10 +33,10 @@ static int generic_platform_enable(struct mcde_display_device *dev)
 		}
 	}
 	if (pdata->reset_gpio)
-		gpio_set_value(pdata->reset_gpio, pdata->reset_high);
+		gpio_set_value_cansleep(pdata->reset_gpio, pdata->reset_high);
 	mdelay(pdata->reset_delay);
 	if (pdata->reset_gpio)
-		gpio_set_value(pdata->reset_gpio, !pdata->reset_high);
+		gpio_set_value_cansleep(pdata->reset_gpio, !pdata->reset_high);
 
 	return 0;
 }
