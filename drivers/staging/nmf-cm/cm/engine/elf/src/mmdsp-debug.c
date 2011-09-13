@@ -296,7 +296,10 @@ t_cm_error cm_DSPABI_RemoveLoadMap(
             ERROR("Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n",
                     prevItemReferenceDspAddress, prevItemReference, 0, 0, 0, 0);
 
-            return CM_OK;
+	    /* free the entry anyway to avoid leakage */
+            cm_DM_Free(((t_component_instance *)componentHandle)->loadMapHandle, TRUE);
+
+	    return CM_OK;
         }
 
         curItem = (struct LoadMapItem*)((curItemDspAdress - headerOffsets[coreId]) * 2 + (t_uint32)headerAddresses[coreId]); // To ARM address
@@ -345,6 +348,9 @@ t_cm_error cm_DSPABI_RemoveLoadMap(
     };
 
     ERROR("Memory corruption in MMDSP: component not in LoadMap %s\n", localname, 0, 0, 0, 0, 0);
+
+    /* free the entry anyway to avoid leakage */
+    cm_DM_Free(((t_component_instance *)componentHandle)->loadMapHandle, TRUE);
 
     return CM_OK;
 }
