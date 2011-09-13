@@ -26,14 +26,12 @@ static struct resource cw1200_href_resources[] = {
 		.flags = IORESOURCE_IO,
 		.name = "cw1200_reset",
 	},
-#ifdef CONFIG_CW1200_USE_GPIO_IRQ
 	{
 		.start = NOMADIK_GPIO_TO_IRQ(216),
 		.end = NOMADIK_GPIO_TO_IRQ(216),
 		.flags = IORESOURCE_IRQ,
 		.name = "cw1200_irq",
 	},
-#endif /* CONFIG_CW1200_USE_GPIO_IRQ */
 };
 
 static struct resource cw1200_href60_resources[] = {
@@ -43,14 +41,12 @@ static struct resource cw1200_href60_resources[] = {
 		.flags = IORESOURCE_IO,
 		.name = "cw1200_reset",
 	},
-#ifdef CONFIG_CW1200_USE_GPIO_IRQ
 	{
 		.start = NOMADIK_GPIO_TO_IRQ(4),
 		.end = NOMADIK_GPIO_TO_IRQ(4),
 		.flags = IORESOURCE_IRQ,
 		.name = "cw1200_irq",
 	},
-#endif /* CONFIG_CW1200_USE_GPIO_IRQ */
 };
 
 static struct cw1200_platform_data cw1200_platform_data = { 0 };
@@ -155,9 +151,7 @@ int __init mop500_wlan_init(void)
 		cw1200_platform_data.mmc_id = "mmc3";
 
 	cw1200_platform_data.reset = &cw1200_device.resource[0];
-#ifdef CONFIG_CW1200_USE_GPIO_IRQ
 	cw1200_platform_data.irq = &cw1200_device.resource[1];
-#endif /* #ifdef CONFIG_CW1200_USE_GPIO_IRQ */
 
 	cw1200_device.dev.release = cw1200_release;
 	if (machine_is_snowball())
