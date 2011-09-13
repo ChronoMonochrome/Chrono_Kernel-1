@@ -12,6 +12,7 @@
 #include <linux/clk.h>
 
 #define CHIP_ENABLE_PDB_LOW_TIMEOUT     100 /* ms */
+#define CHIP_ENABLE_PMU_EN_TIMEOUT	300 /* us */
 
 struct dcg2900_info {
 	int	gbf_gpio;

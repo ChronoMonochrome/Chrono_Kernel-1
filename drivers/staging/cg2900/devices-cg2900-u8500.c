@@ -37,7 +37,7 @@ void dcg2900_enable_chip(struct cg2900_chip_dev *dev)
 
 	/*
 	 * Due to a bug in CG2900 we cannot just set GPIO high to enable
-	 * the chip. We must wait more than 100 msecs before enbling the
+	 * the chip. We must wait more than 100 msecs before enabling the
 	 * chip.
 	 * - Set PDB to low.
 	 * - Wait for 100 msecs
@@ -46,6 +46,16 @@ void dcg2900_enable_chip(struct cg2900_chip_dev *dev)
 	gpio_set_value(info->gbf_gpio, 0);
 	schedule_timeout_uninterruptible(msecs_to_jiffies(
 					CHIP_ENABLE_PDB_LOW_TIMEOUT));
+
+	if (info->pmuen_gpio != -1) {
+		/*
+		 * We must first set PMU_EN pin high and then wait 300 us before
+		 * setting the GBF_EN high.
+		 */
+		gpio_set_value(info->pmuen_gpio, 1);
+		udelay(CHIP_ENABLE_PMU_EN_TIMEOUT);
+	}
+
 	gpio_set_value(info->gbf_gpio, 1);
 }
 
@@ -55,6 +65,8 @@ void dcg2900_disable_chip(struct cg2900_chip_dev *dev)
 
 	if (info->gbf_gpio != -1)
 		gpio_set_value(info->gbf_gpio, 0);
+	if (info->pmuen_gpio != -1)
+		gpio_set_value(info->pmuen_gpio, 0);
 }
 
 int dcg2900_setup(struct cg2900_chip_dev *dev,
@@ -64,6 +76,7 @@ int dcg2900_setup(struct cg2900_chip_dev *dev,
 	struct resource *resource;
 	const char *gbf_name;
 	const char *bt_name = NULL;
+	const char *pmuen_name = NULL;
 
 	resource = platform_get_resource_byname(dev->pdev, IORESOURCE_IO,
 						"gbf_ena_reset");
@@ -84,35 +97,64 @@ int dcg2900_setup(struct cg2900_chip_dev *dev,
 		bt_name = resource->name;
 	}
 
+	resource = platform_get_resource_byname(dev->pdev, IORESOURCE_IO,
+						"pmu_en");
+	/* PMU_EN GPIO may not exist */
+	if (resource) {
+		info->pmuen_gpio = resource->start;
+		pmuen_name = resource->name;
+	}
+
 	/* Now setup the GPIOs */
 	err = gpio_request(info->gbf_gpio, gbf_name);
 	if (err < 0) {
-		dev_err(dev->dev, "gpio_request failed with err: %d\n", err);
+		dev_err(dev->dev, "gpio_request %s failed with err: %d\n",
+			gbf_name, err);
 		goto err_handling;
 	}
 
 	err = gpio_direction_output(info->gbf_gpio, 0);
 	if (err < 0) {
-		dev_err(dev->dev, "gpio_direction_output failed with err: %d\n",
-			err);
+		dev_err(dev->dev,
+			"gpio_direction_output %s failed with err: %d\n",
+			gbf_name, err);
 		goto err_handling_free_gpio_gbf;
 	}
 
-	if (!bt_name) {
-		info->bt_gpio = -1;
-		goto finished;
+	if (!pmuen_name)
+		goto set_bt_gpio;
+
+	err = gpio_request(info->pmuen_gpio, pmuen_name);
+	if (err < 0) {
+		dev_err(dev->dev, "gpio_request %s failed with err: %d\n",
+			pmuen_name, err);
+		goto err_handling_free_gpio_gbf;
 	}
+
+	err = gpio_direction_output(info->pmuen_gpio, 0);
+	if (err < 0) {
+		dev_err(dev->dev,
+			"gpio_direction_output %s failed with err: %d\n",
+			pmuen_name, err);
+		goto err_handling_free_gpio_pmuen;
+	}
+
+set_bt_gpio:
+	if (!bt_name)
+		goto finished;
 
 	err = gpio_request(info->bt_gpio, bt_name);
 	if (err < 0) {
-		dev_err(dev->dev, "gpio_request failed with err: %d\n", err);
-		goto err_handling_free_gpio_gbf;
+		dev_err(dev->dev, "gpio_request %s failed with err: %d\n",
+			bt_name, err);
+		goto err_handling_free_gpio_pmuen;
 	}
 
 	err = gpio_direction_output(info->bt_gpio, 1);
 	if (err < 0) {
-		dev_err(dev->dev, "gpio_direction_output failed with err: %d\n",
-			err);
+		dev_err(dev->dev,
+			"gpio_direction_output %s failed with err: %d\n",
+			bt_name, err);
 		goto err_handling_free_gpio_bt;
 	}
 
@@ -122,8 +164,15 @@ finished:
 
 err_handling_free_gpio_bt:
 	gpio_free(info->bt_gpio);
+	info->bt_gpio = -1;
+err_handling_free_gpio_pmuen:
+	if (info->pmuen_gpio != -1) {
+		gpio_free(info->pmuen_gpio);
+		info->pmuen_gpio = -1;
+	}
 err_handling_free_gpio_gbf:
 	gpio_free(info->gbf_gpio);
+	info->gbf_gpio = -1;
 err_handling:
 
 	return err;
