@@ -120,7 +120,7 @@ struct ab8500_usb {
 	struct regulator *v_ape;
 	struct regulator *v_musb;
 	struct regulator *v_ulpi;
-	struct ab8500_usbgpio_platform_data *usb_gpio;
+	struct abx500_usbgpio_platform_data *usb_gpio;
 	struct delayed_work work_usb_workaround;
 	struct kobject *serial_number_kobj;
 };

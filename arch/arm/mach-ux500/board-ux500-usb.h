@@ -5,9 +5,9 @@
  * License terms: GNU General Public License (GPL) version 2
  */
 
-#ifndef __BOARD_MOP500_USB_H
-#define __BOARD_MOP500_USB_H
+#ifndef __BOARD_UX500_USB_H
+#define __BOARD_UX500_USB_H
 
-extern struct ab8500_usbgpio_platform_data ab8500_usbgpio_plat_data;
+extern struct abx500_usbgpio_platform_data abx500_usbgpio_plat_data;
 
 #endif

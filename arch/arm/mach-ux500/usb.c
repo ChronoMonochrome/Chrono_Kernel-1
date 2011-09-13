@@ -13,7 +13,7 @@
 #include <mach/usb.h>
 #include <plat/pincfg.h>
 #include "pins.h"
-#include "board-mop500-usb.h"
+#include "board-ux500-usb.h"
 
 #define MUSB_DMA40_RX_CH { \
 		.mode = STEDMA40_MODE_LOGICAL, \
@@ -153,7 +153,7 @@ static void put_gpio(void)
 {
 	ux500_pins_put(usb_gpio_pins);
 }
-struct ab8500_usbgpio_platform_data ab8500_usbgpio_plat_data = {
+struct abx500_usbgpio_platform_data abx500_usbgpio_plat_data = {
 	.get		= &get_gpio,
 	.enable		= &enable_gpio,
 	.disable	= &disable_gpio,
