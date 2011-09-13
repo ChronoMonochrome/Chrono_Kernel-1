@@ -100,6 +100,9 @@
 #define AB9540_MODEM_CTRL2_REG			0x23
 #define AB9540_MODEM_CTRL2_SWDBBRSTN_BIT	BIT(2)
 
+static bool no_bm; /* No battery management */
+module_param(no_bm, bool, S_IRUGO);
+
 /*
  * Map interrupt numbers to the LATCH and MASK register offsets, Interrupt
  * numbers are indexed into this array with (num / 8). The interupts are
@@ -781,26 +784,6 @@ static struct mfd_cell __devinitdata abx500_common_devs[] = {
 		.resources = ab8500_rtc_resources,
 	},
 	{
-		.name = "ab8500-charger",
-		.num_resources = ARRAY_SIZE(ab8500_charger_resources),
-		.resources = ab8500_charger_resources,
-	},
-	{
-		.name = "ab8500-btemp",
-		.num_resources = ARRAY_SIZE(ab8500_btemp_resources),
-		.resources = ab8500_btemp_resources,
-	},
-	{
-		.name = "ab8500-fg",
-		.num_resources = ARRAY_SIZE(ab8500_fg_resources),
-		.resources = ab8500_fg_resources,
-	},
-	{
-		.name = "ab8500-chargalg",
-		.num_resources = ARRAY_SIZE(ab8500_chargalg_resources),
-		.resources = ab8500_chargalg_resources,
-	},
-	{
 		.name = "ab8500-acc-det",
 		.num_resources = ARRAY_SIZE(ab8500_av_acc_detect_resources),
 		.resources = ab8500_av_acc_detect_resources,
@@ -860,6 +843,29 @@ static struct mfd_cell __devinitdata ab9540_devs[] = {
 		.name = "ab9540-usb",
 		.num_resources = ARRAY_SIZE(ab8500_usb_resources),
 		.resources = ab8500_usb_resources,
+	},
+};
+
+static struct mfd_cell __devinitdata ab8500_bm_devs[] = {
+	{
+		.name = "ab8500-charger",
+		.num_resources = ARRAY_SIZE(ab8500_charger_resources),
+		.resources = ab8500_charger_resources,
+	},
+	{
+		.name = "ab8500-btemp",
+		.num_resources = ARRAY_SIZE(ab8500_btemp_resources),
+		.resources = ab8500_btemp_resources,
+	},
+	{
+		.name = "ab8500-fg",
+		.num_resources = ARRAY_SIZE(ab8500_fg_resources),
+		.resources = ab8500_fg_resources,
+	},
+	{
+		.name = "ab8500-chargalg",
+		.num_resources = ARRAY_SIZE(ab8500_chargalg_resources),
+		.resources = ab8500_chargalg_resources,
 	},
 };
 
@@ -1132,6 +1138,15 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
 			      ab8500->irq_base);
 	if (ret)
 		goto out_freeirq;
+
+	if (!no_bm) {
+		/* Add battery management devices */
+		ret = mfd_add_devices(ab8500->dev, 0, ab8500_bm_devs,
+				      ARRAY_SIZE(ab8500_bm_devs), NULL,
+				      ab8500->irq_base);
+		if (ret)
+			dev_err(ab8500->dev, "error adding bm devices\n");
+	}
 
 	if (is_ab9540(ab8500))
 		ret = sysfs_create_group(&ab8500->dev->kobj,

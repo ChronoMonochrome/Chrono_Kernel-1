@@ -2421,6 +2421,9 @@ static int ab8500_charger_usb_notifier_call(struct notifier_block *nb,
 	else /* Should never occur */
 		bm_usb_state = AB8500_BM_USB_STATE_RESET_FS;
 
+	if (di == NULL)
+		return;
+
 	dev_dbg(di->dev, "%s usb_state: 0x%02x mA: %d\n",
 		__func__, bm_usb_state, mA);
 
