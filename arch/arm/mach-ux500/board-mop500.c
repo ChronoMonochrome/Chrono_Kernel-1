@@ -53,6 +53,7 @@
 #include <mach/setup.h>
 #include <mach/devices.h>
 #include <mach/sensors1p.h>
+#include <mach/ab8500-accdet.h>
 #include <mach/irqs.h>
 #include <mach/ste-dma40-db8500.h>
 #ifdef CONFIG_U8500_SIM_DETECT
@@ -137,6 +138,15 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 */
 	.initial_pin_pullups    = {0xE0, 0x01, 0x00, 0x00, 0x00, 0x00},
 };
+
+#ifdef CONFIG_INPUT_AB8500_ACCDET
+static struct ab8500_accdet_platform_data ab8500_accdet_pdata = {
+	.btn_keycode = KEY_MEDIA,
+	.accdet1_dbth = ACCDET1_TH_1200mV | ACCDET1_DB_70ms,
+	.accdet2122_th = ACCDET21_TH_1000mV | ACCDET22_TH_1000mV,
+	.video_ctrl_gpio = MOP500_AB8500_GPIO(34),
+};
+#endif
 
 static struct gpio_keys_button snowball_key_array[] = {
 	{
