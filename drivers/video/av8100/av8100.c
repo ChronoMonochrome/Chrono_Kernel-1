@@ -1964,7 +1964,7 @@ static int av8100_powerup1(struct av8100_device *adev)
 	}
 
 	/* Reset av8100 */
-	gpio_set_value(pdata->reset, 1);
+	gpio_set_value_cansleep(pdata->reset, 1);
 
 	/* Need to wait before proceeding */
 	mdelay(AV8100_WAITTIME_1MS);
@@ -2259,7 +2259,7 @@ int av8100_powerdown(void)
 		adev->params.regulator_requested = false;
 	}
 
-	gpio_set_value(pdata->reset, 0);
+	gpio_set_value_cansleep(pdata->reset, 0);
 
 	if (pdata->alt_powerupseq)
 		mdelay(AV8100_WAITTIME_5MS);
