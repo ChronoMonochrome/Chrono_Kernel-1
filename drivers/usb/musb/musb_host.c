@@ -46,6 +46,7 @@
 #include "musb_core.h"
 #include "musb_host.h"
 
+static bool is_host_dma_enabled;
 
 /* MUSB HOST status 22-mar-2006
  *
@@ -710,7 +711,7 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 	musb_ep_select(mbase, epnum);
 
 	/* candidate for DMA? */
-	dma_controller = musb->dma_controller;
+	dma_controller = is_host_dma_enabled ? musb->dma_controller : NULL;
 	if (is_dma_capable() && epnum && dma_controller) {
 		dma_channel = is_out ? hw_ep->tx_channel : hw_ep->rx_channel;
 		if (!dma_channel) {
@@ -2278,6 +2279,7 @@ static int musb_h_start(struct usb_hcd *hcd)
 	 */
 	hcd->state = HC_STATE_RUNNING;
 	musb->port1_status = 0;
+	is_host_dma_enabled = false;
 	return 0;
 }
 
