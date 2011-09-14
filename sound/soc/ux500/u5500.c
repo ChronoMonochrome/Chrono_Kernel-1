@@ -25,6 +25,12 @@
 #include "ux500_ab5500.h"
 #endif
 
+#ifdef CONFIG_SND_SOC_UX500_AV8100
+#include "ux500_av8100.h"
+#endif
+#ifdef CONFIG_SND_SOC_UX500_CG29XX
+#include "ux500_cg29xx.h"
+#endif
 static struct platform_device *u5500_platform_dev;
 /* Create dummy devices for platform drivers */
 
@@ -36,7 +42,25 @@ static struct platform_device ux500_pcm = {
 		},
 };
 
+#ifdef CONFIG_SND_SOC_UX500_AV8100
+static struct platform_device av8100_codec = {
+		.name = "av8100-codec",
+		.id = 0,
+		.dev = {
+			.platform_data = NULL,
+		},
+};
+#endif
 
+#ifdef CONFIG_SND_SOC_UX500_CG29XX
+static struct platform_device cg29xx_codec = {
+		.name = "cg29xx-codec",
+		.id = 0,
+		.dev = {
+			.platform_data = NULL,
+		},
+};
+#endif
 /* Define the whole U5500 soundcard, linking platform to the codec-drivers  */
 struct snd_soc_dai_link u5500_dai_links[] = {
 	{
@@ -55,6 +79,18 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 			}
 		}
 	},
+	#ifdef CONFIG_SND_SOC_UX500_CG29XX
+	{
+	.name = "cg29xx_0",
+	.stream_name = "cg29xx_0",
+	.cpu_dai_name = "i2s.0",
+	.codec_dai_name = "cg29xx-codec-dai.0",
+	.platform_name = "ux500-pcm.0",
+	.codec_name = "cg29xx-codec.0",
+	.init = NULL,
+	.ops = ux500_cg29xx_ops,
+	},
+	#endif
 	{
 		.name = "ab5500_1",
 		.stream_name = "ab5500_1",
@@ -70,7 +106,19 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 				.hw_params = ux500_ab5500_hw_params,
 			}
 		}
-	}
+	},
+	#ifdef CONFIG_SND_SOC_UX500_AV8100
+	{
+		.name = "hdmi",
+		.stream_name = "hdmi",
+		.cpu_dai_name = "i2s.2",
+		.codec_dai_name = "av8100-codec-dai",
+		.platform_name = "ux500-pcm.0",
+		.codec_name = "av8100-codec.0",
+		.init = NULL,
+		.ops = ux500_av8100_ops,
+	},
+	#endif
 };
 
 static struct snd_soc_card u5500_drvdata = {
@@ -89,6 +137,21 @@ static int __init u5500_soc_init(void)
 	if (!machine_is_u5500())
 		return 0;
 
+	pr_debug("%s: Enter.\n", __func__);
+
+	#ifdef CONFIG_SND_SOC_UX500_AV8100
+	pr_debug("%s: Register device to generate a probe for AV8100 codec.\n",
+		__func__);
+	platform_device_register(&av8100_codec);
+	#endif
+
+	#ifdef CONFIG_SND_SOC_UX500_CG29XX
+	pr_debug("%s: Register device to generate a probe for CG29xx codec.\n",
+		__func__);
+	platform_device_register(&cg29xx_codec);
+	#endif
+	pr_debug("%s: Register device to generate a probe for Ux500-pcm platform.\n",
+		__func__);
 	platform_device_register(&ux500_pcm);
 
 	u5500_platform_dev = platform_device_alloc("soc-audio", -1);
