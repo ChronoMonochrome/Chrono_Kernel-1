@@ -379,9 +379,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 
 	if (changed & IEEE80211_CONF_CHANGE_IDLE) {
 		struct wsm_operational_mode mode = {
-			.power_mode = (conf->flags & IEEE80211_CONF_IDLE) ?
-				wsm_power_mode_quiescent :
-				wsm_power_mode_doze,
+			.power_mode = wsm_power_mode_quiescent,
 			.disableMoreFlagUsage = true,
 		};
 		wsm_lock_tx(priv);
