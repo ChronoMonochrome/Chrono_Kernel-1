@@ -68,6 +68,10 @@ static pin_cfg_t u5500_pins_default[] = {
 
 	GPIO202_ACCU0_RXD	| PIN_INPUT_PULLUP,
 	GPIO203_ACCU0_TXD	| PIN_OUTPUT_HIGH,
+
+	/* Board Id Identification B5500 or S5500 */
+	GPIO0_GPIO		| PIN_INPUT_PULLUP,
+
 };
 
 static UX500_PINS(db5500_kp_pins,
