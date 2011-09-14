@@ -517,6 +517,35 @@ static struct platform_device *u5500_platform_devices[] __initdata = {
 	&ux500_thsens_device,
 };
 
+/*
+ * This function check whether it is Small S5500 board
+ * GPIO0 is HIGH for S5500
+ */
+bool is_s5500_board()
+{
+	int err , val ;
+
+	err = gpio_request(GPIO_BOARD_VERSION, "Board Version");
+	if (err) {
+		pr_err("Error %d while requesting GPIO for Board Version\n",
+				err);
+		return err;
+	}
+
+	err = gpio_direction_input(GPIO_BOARD_VERSION);
+	if (err) {
+		pr_err("Error %d while setting GPIO for Board Version"
+				"output mode\n", err);
+		return err;
+	}
+
+	val = gpio_get_value(GPIO_BOARD_VERSION);
+
+	gpio_free(GPIO_BOARD_VERSION);
+
+	return (val == 1);
+}
+
 static void __init u5500_i2c_init(struct device *parent)
 {
 	db5500_add_i2c1(pareent, &u5500_i2c1_data);

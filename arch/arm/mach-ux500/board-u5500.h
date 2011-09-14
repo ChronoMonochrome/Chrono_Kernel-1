@@ -10,6 +10,7 @@
 #define GPIO_SDMMC_CD          180
 #define GPIO_MMC_CARD_CTRL     227
 #define GPIO_MMC_CARD_VSEL     185
+#define GPIO_BOARD_VERSION  0
 #define GPIO_PRIMARY_CAM_XSHUTDOWN  1
 #define GPIO_SECONDARY_CAM_XSHUTDOWN  2
 #define CYPRESS_TOUCH_INT_PIN 179
@@ -23,5 +24,6 @@ extern struct ab5500_regulator_platform_data u5500_ab5500_regulator_data;
 extern void u5500_pins_init(void);
 extern void __init u5500_regulators_init(void);
 void u5500_cyttsp_init(void);
+bool is_s5500_board();
 
 #endif
