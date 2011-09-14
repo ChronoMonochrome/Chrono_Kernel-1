@@ -145,7 +145,8 @@ int __init mop500_wlan_init(void)
 		return -ENOTSUPP;
 	}
 
-	if (machine_is_snowball())
+	if (machine_is_snowball() ||
+		machine_is_u5500())
 		cw1200_platform_data.mmc_id = "mmc2";
 	else
 		cw1200_platform_data.mmc_id = "mmc3";
