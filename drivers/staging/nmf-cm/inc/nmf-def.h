@@ -21,7 +21,7 @@
  *
  * \ingroup NMF_VERSION
  */
-#define NMF_VERSION ((2 << 16) | (10 << 8) | (117))
+#define NMF_VERSION ((2 << 16) | (10 << 8) | (118))
 
 /*!
  * \brief Get NMF major version corresponding to NMF version number

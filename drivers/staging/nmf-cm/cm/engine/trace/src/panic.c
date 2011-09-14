@@ -32,7 +32,7 @@ const struct {
 		{"UNALIGNED_LONG_ACCESS",     0,  1,  0,  0},
 		{"EVENT_FIFO_OVERFLOW",       0,  0,  0,  1},
 		{"PARAM_FIFO_OVERFLOW",       0,  0,  0,  1},
-		{"INTERFACE_NOT_BINDED",      0,  0,  0,  0},
+		{"INTERFACE_NOT_BINDED",      0,  1,  0,  0},
 		{"USER_PANIC",                1,  0,  0,  0}
 };
 
