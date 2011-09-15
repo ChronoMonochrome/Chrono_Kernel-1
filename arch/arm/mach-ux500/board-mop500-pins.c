@@ -65,8 +65,6 @@ static pin_cfg_t mop500_pins_common[] = {
 	GPIO30_U2_TXD	| PIN_OUTPUT_HIGH,
 	GPIO31_U2_CTSn	| PIN_INPUT_PULLUP,
 	GPIO32_U2_RTSn	| PIN_OUTPUT_HIGH,
-
-	GPIO226_GPIO	| PIN_OUTPUT_LOW, /* WLAN_PMU_EN / AC_WAKE0 */
 };
 
 static pin_cfg_t mop500_pins_default[] = {
