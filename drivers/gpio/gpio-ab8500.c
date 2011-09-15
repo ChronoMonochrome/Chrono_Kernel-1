@@ -495,6 +495,69 @@ static int __devexit ab8500_gpio_remove(struct platform_device *pdev)
 	return 0;
 }
 
+/*
+ * ab8500_gpio_config_select()
+ *
+ * Configure functionality of pin, either specific use or GPIO.
+ * @dev: device pointer
+ * @gpio: gpio number
+ * @gpio_select: true if the pin should be used as GPIO
+ */
+int ab8500_gpio_config_select(struct device *dev,
+				enum ab8500_pin gpio, bool gpio_select)
+{
+	u8 offset = gpio - AB8500_PIN_GPIO1;
+	u8 reg = AB8500_GPIO_SEL1_REG + (offset / 8);
+	u8 pos = offset % 8;
+	u8 val = gpio_select ? 1 : 0;
+	int ret;
+
+	ret = abx500_mask_and_set_register_interruptible(dev,
+		AB8500_MISC, reg, 1 << pos, val << pos);
+	if (ret < 0)
+		dev_err(dev, "%s write failed\n", __func__);
+
+	dev_vdbg(dev, "%s (bank, addr, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+		__func__, AB8500_MISC, reg, 1 << pos, val << pos);
+
+	return ret;
+}
+
+/*
+ * ab8500_gpio_config_get_select()
+ *
+ * Read currently configured functionality, either specific use or GPIO.
+ * @dev: device pointer
+ * @gpio: gpio number
+ * @gpio_select: pointer to pin selection status
+ */
+int ab8500_gpio_config_get_select(struct device *dev,
+					enum ab8500_pin gpio, bool *gpio_select)
+{
+	u8 offset =  gpio - AB8500_PIN_GPIO1;
+	u8 reg = AB8500_GPIO_SEL1_REG + (offset / 8);
+	u8 pos = offset % 8;
+	u8 val;
+	int ret;
+
+	ret = abx500_get_register_interruptible(dev,
+				AB8500_MISC, reg, &val);
+	if (ret < 0) {
+		dev_err(dev, "%s read failed\n", __func__);
+		return ret;
+	}
+
+	if (val & (1 << pos))
+		*gpio_select = true;
+	else
+		*gpio_select = false;
+
+	dev_vdbg(dev, "%s (bank, addr, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+		__func__, AB8500_MISC, reg, 1 << pos, val);
+
+	return 0;
+}
+
 static struct platform_driver ab8500_gpio_driver = {
 	.driver = {
 		.name = "ab8500-gpio",
