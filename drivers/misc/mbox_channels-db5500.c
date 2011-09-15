@@ -282,7 +282,6 @@ static int send_pdu(struct channel_status *chan_status, int command,
 	struct mbox *mbox;
 	u32 header = 0;
 	int ret = 0;
-
 	/* SEND PDU is not supported */
 	if (command == MBOX_SEND) {
 		dev_err(&channels.pdev->dev, "SEND command not implemented\n");
@@ -387,8 +386,10 @@ void mbox_handle_open_msg(struct work_struct *work)
 	/* Change channel state to OPEN */
 	tx_chan->state = MBOX_OPEN;
 	/* If pending list not empty, start sending data */
+	mutex_lock(&tx_chan->lock);
 	if (!list_empty(&tx_chan->tx.pending))
 		send_pdu(tx_chan, MBOX_CAST, tx_chan->channel);
+	mutex_unlock(&tx_chan->lock);
 }
 
 void mbox_handle_cast_msg(struct work_struct *work)
@@ -528,8 +529,6 @@ static void mbox_cb(u32 mbox_msg, void *priv)
 	struct channel_status *rx_chan = NULL;
 	bool is_Payload = 0;
 
-	dev_dbg(&channels.pdev->dev, "%s type %d\t, mbox_msg %x\n",
-		       __func__, type, mbox_msg);
 	/* Get RX channels list for given mbox unit */
 	rx_list = get_rx_list(mbox_id);
 	if (rx_list == NULL) {
@@ -607,7 +606,6 @@ int mbox_channel_register(u16 channel, mbox_channel_cb_t *cb, void *priv)
 	int res = 0;
 	struct mbox_unit_status *mbox_unit;
 
-	dev_dbg(&channels.pdev->dev, " %s channel = %d\n", __func__, channel);
 	/* Check for callback fcn */
 	if (cb == NULL) {
 		dev_err(&channels.pdev->dev,
@@ -983,7 +981,6 @@ static void mboxtest_receive_cb(u32 *data, u32 len, void *arg)
 
 	printk(KERN_INFO "receive_cb.. data.= 0x%X, len = %d\n",
 								*data, len);
-
 	for (i = 0; i < len; i++)
 		*(mboxtest->rx_pointer++) = *(data++);
 
