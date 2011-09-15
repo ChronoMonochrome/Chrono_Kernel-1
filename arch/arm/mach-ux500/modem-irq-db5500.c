@@ -133,7 +133,7 @@ static int modem_irq_init(void)
 
 	err = request_threaded_irq(IRQ_DB5500_MODEM, NULL,
 				   modem_cpu_irq_handler,
-				   IRQF_ONESHOT | IRQF_ONESHOT,
+				   IRQF_NO_SUSPEND | IRQF_ONESHOT,
 				   "modem_irq", mi);
 	if (err)
 		pr_err("modem_irq: Could not register IRQ %d\n",
