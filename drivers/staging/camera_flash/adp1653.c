@@ -117,7 +117,8 @@ static int adp1653_enable_flash_mode(void *priv_data,
 
 	if(enable){
 
-		if(!(mode & ADP1653_SUPPORTED_MODES)){
+		if((!(mode & ADP1653_SUPPORTED_MODES)) &&
+		  (mode != FLASH_MODE_NONE)) {
 			DEBUG_LOG("Unsupported mode %lx\n",mode);
 			err = -EINVAL;
 			goto out;
