@@ -294,6 +294,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 	case USB_LINK_NOT_CONFIGURED:
 	case USB_LINK_RESERVED:
 	case USB_LINK_NOT_VALID_LINK:
+	case USB_LINK_ACA_RID_B:
 		if (ab->mode == USB_HOST)
 			ab8500_usb_host_phy_dis(ab);
 		else if (ab->mode == USB_PERIPHERAL)
@@ -310,29 +311,36 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 	case USB_LINK_HOST_CHG_NM:
 	case USB_LINK_HOST_CHG_HS:
 	case USB_LINK_HOST_CHG_HS_CHIRP:
-		if (ab->phy.otg->gadget) {
-			/* TODO: Enable regulators. */
-			ab8500_usb_peri_phy_en(ab);
+	case USB_LINK_ACA_RID_C_NM:
+	case USB_LINK_ACA_RID_C_HS:
+	case USB_LINK_ACA_RID_C_HS_CHIRP:
+		if (ab->mode == USB_HOST) {
 			ab->mode = USB_PERIPHERAL;
+			ab8500_usb_host_phy_dis(ab);
+			ab8500_usb_peri_phy_en(ab);
+		}
+		if (ab->mode == USB_IDLE) {
+			ab->mode = USB_PERIPHERAL;
+			ab8500_usb_peri_phy_en(ab);
 		}
 		event = USB_EVENT_VBUS;
 		break;
 
 	case USB_LINK_HM_IDGND:
-		if (ab->phy.otg->host) {
-			ab8500_usb_host_phy_en(ab);
+	case USB_LINK_ACA_RID_A:
+		if (ab->mode == USB_PERIPHERAL) {
 			ab->mode = USB_HOST;
+			ab8500_usb_peri_phy_dis(ab);
+			ab8500_usb_host_phy_en(ab);
+		}
+		if (ab->mode == USB_IDLE) {
+			ab->mode = USB_HOST;
+			ab8500_usb_host_phy_en(ab);
 		}
 		ab->phy.otg->default_a = true;
 		event = USB_EVENT_ID;
 		break;
 
-	case USB_LINK_ACA_RID_A:
-	case USB_LINK_ACA_RID_B:
-		/* TODO */
-	case USB_LINK_ACA_RID_C_NM:
-	case USB_LINK_ACA_RID_C_HS:
-	case USB_LINK_ACA_RID_C_HS_CHIRP:
 	case USB_LINK_DEDICATED_CHG:
 		/* TODO: vbus_draw */
 		ab->mode = USB_DEDICATED_CHG;
