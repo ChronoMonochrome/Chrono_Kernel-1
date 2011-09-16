@@ -46,8 +46,6 @@
 #include "musb_core.h"
 #include "musb_host.h"
 
-static bool is_host_dma_enabled;
-
 /* MUSB HOST status 22-mar-2006
  *
  * - There's still lots of partial code duplication for fault paths, so
@@ -308,7 +306,7 @@ start:
 		dev_dbg(musb->controller, "Start TX%d %s\n", epnum,
 			hw_ep->tx_channel ? "dma" : "pio");
 
-		if (!hw_ep->tx_channel || hw_ep->do_tx_pio)
+		if (!hw_ep->tx_channel)
 			musb_h_tx_start(hw_ep);
 		else if (is_cppi_enabled() || tusb_dma_omap())
 			musb_h_tx_dma_start(hw_ep);
@@ -674,6 +672,8 @@ static bool musb_tx_dma_program(struct dma_controller *dma,
 
 	if (!dma->channel_program(channel, pkt_size, mode,
 			urb->transfer_dma + offset, length)) {
+		dma->channel_release(channel);
+		hw_ep->tx_channel = NULL;
 
 		csr = musb_readw(epio, MUSB_TXCSR);
 		csr &= ~(MUSB_TXCSR_AUTOSET | MUSB_TXCSR_DMAENAB);
@@ -711,7 +711,7 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 	musb_ep_select(mbase, epnum);
 
 	/* candidate for DMA? */
-	dma_controller = is_host_dma_enabled ? musb->dma_controller : NULL;
+	dma_controller = musb->dma_controller;
 	if (is_dma_capable() && epnum && dma_controller) {
 		dma_channel = is_out ? hw_ep->tx_channel : hw_ep->rx_channel;
 		if (!dma_channel) {
@@ -812,11 +812,11 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 		else
 			load_count = min((u32) packet_sz, len);
 
-		if (!dma_channel || !musb_tx_dma_program(dma_controller,
+		if (dma_channel && musb_tx_dma_program(dma_controller,
 					hw_ep, qh, urb, offset, len))
-			hw_ep->do_tx_pio = true;
+			load_count = 0;
 
-		if (hw_ep->do_tx_pio) {
+		if (load_count) {
 			/* PIO to load FIFO */
 			/* Unmap the buffer so that CPU can use it */
 			usb_hcd_unmap_urb_for_dma(musb_to_hcd(musb), urb);
@@ -1126,7 +1126,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 	struct urb		*urb = next_urb(qh);
 	u32			status = 0;
 	void __iomem		*mbase = musb->mregs;
-	struct dma_channel	*dma = NULL;
+	struct dma_channel	*dma;
 	bool			transfer_pending = false;
 
 	musb_ep_select(mbase, epnum);
@@ -1757,9 +1757,9 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 				dma->desired_mode, buf, length);
 
 			if (!ret) {
+				c->channel_release(dma);
+				hw_ep->rx_channel = NULL;
 				dma = NULL;
-				/* Restore CSR */
-				musb_writew(epio, MUSB_RXCSR, rx_csr);
 			}
 		}
 #endif	/* Mentor DMA */
@@ -2279,7 +2279,6 @@ static int musb_h_start(struct usb_hcd *hcd)
 	 */
 	hcd->state = HC_STATE_RUNNING;
 	musb->port1_status = 0;
-	is_host_dma_enabled = false;
 	return 0;
 }
 
