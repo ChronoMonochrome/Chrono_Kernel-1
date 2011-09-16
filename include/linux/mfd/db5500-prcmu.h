@@ -49,6 +49,11 @@ static inline int prcmu_set_clock_rate(u8 clock, unsigned long rate)
 {
 	return 0;
 }
+int db5500_prcmu_get_hotdog(void);
+int db5500_prcmu_config_hotdog(u8 threshold);
+int db5500_prcmu_config_hotmon(u8 low, u8 high);
+int db5500_prcmu_start_temp_sense(u16 cycles32k);
+int db5500_prcmu_stop_temp_sense(void);
 #else /* !CONFIG_UX500_SOC_DB5500 */
 
 static inline void db5500_prcmu_early_init(void) {}
@@ -162,6 +167,29 @@ static inline int db5500_prcmu_set_ddr_opp(u8 opp)
 }
 
 static inline int db5500_prcmu_get_ddr_opp(void)
+{
+	return 0;
+}
+
+static inline int db5500_prcmu_get_hotdog(void)
+{
+	return -ENOSYS;
+}
+static inline int db5500_prcmu_config_hotdog(u8 threshold)
+{
+	return 0;
+}
+
+static inline int db5500_prcmu_config_hotmon(u8 low, u8 high)
+{
+	return 0;
+}
+
+static inline int db5500_prcmu_start_temp_sense(u16 cycles32k)
+{
+	return 0;
+}
+static inline int db5500_prcmu_stop_temp_sense(void)
 {
 	return 0;
 }

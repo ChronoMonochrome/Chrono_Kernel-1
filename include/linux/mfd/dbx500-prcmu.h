@@ -500,7 +500,7 @@ static inline int prcmu_config_esram0_deep_sleep(u8 state)
 static inline int prcmu_config_hotdog(u8 threshold)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_config_hotdog(threshold);
 	else
 		return db8500_prcmu_config_hotdog(threshold);
 }
@@ -508,7 +508,7 @@ static inline int prcmu_config_hotdog(u8 threshold)
 static inline int prcmu_config_hotmon(u8 low, u8 high)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_config_hotmon(low, high);
 	else
 		return db8500_prcmu_config_hotmon(low, high);
 }
@@ -516,7 +516,7 @@ static inline int prcmu_config_hotmon(u8 low, u8 high)
 static inline int prcmu_start_temp_sense(u16 cycles32k)
 {
 	if (cpu_is_u5500())
-		return  -EINVAL;
+		return  db5500_prcmu_start_temp_sense(cycles32k);
 	else
 		return  db8500_prcmu_start_temp_sense(cycles32k);
 }
@@ -524,7 +524,7 @@ static inline int prcmu_start_temp_sense(u16 cycles32k)
 static inline int prcmu_stop_temp_sense(void)
 {
 	if (cpu_is_u5500())
-		return  -EINVAL;
+		return  db5500_prcmu_stop_temp_sense();
 	else
 		return  db8500_prcmu_stop_temp_sense();
 }

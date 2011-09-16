@@ -73,6 +73,11 @@
 #define PRCM_ACK_MB6 (tcdm_base + 0xF0C)
 #define PRCM_ACK_MB7 (tcdm_base + 0xF08)
 
+/* Share info */
+#define PRCM_SHARE_INFO (tcdm_base + 0xEC8)
+
+#define PRCM_SHARE_INFO_HOTDOG (PRCM_SHARE_INFO + 62)
+
 /* Mailbox 0 REQs */
 #define PRCM_REQ_MB0_AP_POWER_STATE    (PRCM_REQ_MB0 + 0x0)
 #define PRCM_REQ_MB0_ULP_CLOCK_STATE   (PRCM_REQ_MB0 + 0x1)
@@ -153,6 +158,20 @@ enum sysclk_state {
 	SYSCLK_ON,
 };
 
+/* Mailbox 4 headers */
+enum mb4_header {
+	MB4H_CFG_HOTDOG = 7,
+	MB4H_CFG_HOTMON = 8,
+	MB4H_CFG_HOTPERIOD = 10,
+};
+
+/* Mailbox 4 ACK headers */
+enum mb4_ack_header {
+	MB4H_ACK_CFG_HOTDOG = 5,
+	MB4H_ACK_CFG_HOTMON = 6,
+	MB4H_ACK_CFG_HOTPERIOD = 8,
+};
+
 /* Mailbox 5 headers. */
 enum mb5_header {
 	MB5H_I2C_WRITE = 1,
@@ -211,6 +230,16 @@ enum db5500_ap_pwr_state {
 
 /* Ack. mailbox 3 fields */
 #define PRCM_ACK_MB3_REFCLK_REQ		(PRCM_ACK_MB3 + 0x0)
+
+
+/* Request mailbox 4 fields */
+#define PRCM_REQ_MB4_HOTDOG_THRESHOLD           (PRCM_REQ_MB4 + 32)
+#define PRCM_REQ_MB4_HOT_PERIOD                 (PRCM_REQ_MB4 + 34)
+#define PRCM_REQ_MB4_HOTMON_LOW                 (PRCM_REQ_MB4 + 36)
+#define PRCM_REQ_MB4_HOTMON_HIGH                (PRCM_REQ_MB4 + 38)
+
+/* Ack. mailbox 4 field */
+#define PRCM_ACK_MB4_REQUESTS                   (PRCM_ACK_MB4 + 0x0)
 
 /* Request mailbox 5 fields. */
 #define PRCM_REQ_MB5_I2C_SLAVE (PRCM_REQ_MB5 + 0)
@@ -404,6 +433,21 @@ static struct {
 		u8 status;
 	} ack;
 } mb3_transfer;
+
+/*
+ * mb4_transfer - state needed for mailbox 4 communication.
+ * @lock:       The transaction lock.
+ * @work:       The transaction completion structure.
+ * @ack:        Acknowledgement data
+ */
+static struct {
+	struct mutex lock;
+	struct completion work;
+	struct {
+		u8 header;
+		u8 status;
+	} ack;
+} mb4_transfer;
 
 /*
  * mb5_transfer - state needed for mailbox 5 communication.
@@ -928,6 +972,103 @@ void db5500_prcmu_get_abb_event_buffer(void __iomem **buf)
 		*buf = (PRCM_ACK_MB0_WAKEUP_1_ABB);
 	else
 		*buf = (PRCM_ACK_MB0_WAKEUP_0_ABB);
+}
+
+/* This function should be called with lock */
+static int mailbox4_request(u8 mb4_request, u8 ack_request)
+{
+	int ret = 0;
+
+	writeb(mb4_request, PRCM_REQ_MB4_HEADER);
+	writel(MBOX_BIT(4), (_PRCMU_BASE + PRCM_MBOX_CPU_SET));
+
+	if (!wait_for_completion_timeout(&mb4_transfer.work,
+		msecs_to_jiffies(500))) {
+		pr_err("prcmu: MB4 request %d failed", mb4_request);
+		ret = -EIO;
+		WARN(1, "prcmu: failed mb4 request");
+		goto failed;
+	}
+
+	if (mb4_transfer.ack.header != ack_request ||
+		mb4_transfer.ack.status != RC_SUCCESS)
+		ret = -EIO;
+failed:
+	return ret;
+}
+
+int db5500_prcmu_get_hotdog(void)
+{
+	return readw(PRCM_SHARE_INFO_HOTDOG);
+}
+
+int db5500_prcmu_config_hotdog(u8 threshold)
+{
+	int r = 0;
+
+	mutex_lock(&mb4_transfer.lock);
+
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(4))
+		cpu_relax();
+
+	writew(threshold, PRCM_REQ_MB4_HOTDOG_THRESHOLD);
+	r = mailbox4_request(MB4H_CFG_HOTDOG, MB4H_ACK_CFG_HOTDOG);
+
+	mutex_unlock(&mb4_transfer.lock);
+
+	return r;
+}
+
+int db5500_prcmu_config_hotmon(u8 low, u8 high)
+{
+	int r = 0;
+
+	mutex_lock(&mb4_transfer.lock);
+
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(4))
+		cpu_relax();
+
+	writew(low, PRCM_REQ_MB4_HOTMON_LOW);
+	writew(high, PRCM_REQ_MB4_HOTMON_HIGH);
+
+	r = mailbox4_request(MB4H_CFG_HOTMON, MB4H_ACK_CFG_HOTMON);
+
+	mutex_unlock(&mb4_transfer.lock);
+
+	return r;
+}
+
+static int config_hot_period(u16 val)
+{
+	int r = 0;
+
+	mutex_lock(&mb4_transfer.lock);
+
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(4))
+		cpu_relax();
+
+	writew(val, PRCM_REQ_MB4_HOT_PERIOD);
+	r = mailbox4_request(MB4H_CFG_HOTPERIOD, MB4H_ACK_CFG_HOTPERIOD);
+
+	mutex_unlock(&mb4_transfer.lock);
+
+	return r;
+}
+
+/*
+ * period in milli seconds
+ */
+int db5500_prcmu_start_temp_sense(u16 period)
+{
+	if (period == 0xFFFF)
+		return -EINVAL;
+
+	return config_hot_period(period);
+}
+
+int db5500_prcmu_stop_temp_sense(void)
+{
+	return config_hot_period(0xFFFF);
 }
 
 /**
@@ -1596,7 +1737,28 @@ static bool read_mailbox_3(void)
 
 static bool read_mailbox_4(void)
 {
-	writel(MBOX_BIT(4), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
+	u8 header;
+	bool do_complete = true;
+
+	header = readb(PRCM_ACK_MB4_HEADER);
+	mb4_transfer.ack.header = header;
+	switch (header) {
+	case MB4H_ACK_CFG_HOTDOG:
+	case MB4H_ACK_CFG_HOTMON:
+	case MB4H_ACK_CFG_HOTPERIOD:
+		mb4_transfer.ack.status = readb(PRCM_ACK_MB4_REQUESTS);
+		break;
+	default:
+		print_unknown_header_warning(4, header);
+		do_complete = false;
+		break;
+	}
+
+	writel(MBOX_BIT(4), (_PRCMU_BASE + PRCM_ARM_IT1_CLEAR));
+
+	if (do_complete)
+		complete(&mb4_transfer.work);
+
 	return false;
 }
 
@@ -1749,6 +1911,8 @@ void __init db5500_prcmu_early_init(void)
 	init_completion(&mb2_transfer.work);
 	mutex_init(&mb3_transfer.sysclk_lock);
 	init_completion(&mb3_transfer.sysclk_work);
+	mutex_init(&mb4_transfer.lock);
+	init_completion(&mb4_transfer.work);
 	mutex_init(&mb5_transfer.lock);
 	init_completion(&mb5_transfer.work);
 
