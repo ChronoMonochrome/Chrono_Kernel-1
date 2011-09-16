@@ -30,21 +30,50 @@
 #include "dsilink_regs.h"
 #include "mcde_regs.h"
 
-static void disable_channel(struct mcde_chnl_state *chnl);
+
+/* MCDE channel states
+ *
+ * Allowed state transitions:
+ *   IDLE <-> SUSPEND
+ *   IDLE <-> DSI_READ
+ *   IDLE <-> DSI_WRITE
+ *   IDLE -> SETUP -> (WAIT_TE ->) RUNNING -> STOPPING1 -> STOPPING2 -> IDLE
+ *   WAIT_TE -> STOPPED (for missing TE to allow re-enable)
+ */
+enum chnl_state {
+	CHNLSTATE_SUSPEND,   /* HW in suspended mode, initial state */
+	CHNLSTATE_IDLE,      /* Channel aquired, but not running, FLOEN==0 */
+	CHNLSTATE_DSI_READ,  /* Executing DSI read */
+	CHNLSTATE_DSI_WRITE, /* Executing DSI write */
+	CHNLSTATE_SETUP,     /* Channel register setup to prepare for running */
+	CHNLSTATE_WAIT_TE,   /* Waiting for BTA or external TE */
+	CHNLSTATE_RUNNING,   /* Update started, FLOEN=1, FLOEN==1 */
+	CHNLSTATE_STOPPING,  /* Stopping, FLOEN=0, FLOEN==1, awaiting VCMP */
+	CHNLSTATE_STOPPED,   /* Stopped, after VCMP, FLOEN==0|1 */
+};
+
+static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
+							enum chnl_state state);
+static int set_channel_state_sync(struct mcde_chnl_state *chnl,
+							enum chnl_state state);
+static void stop_channel(struct mcde_chnl_state *chnl);
 static void watchdog_auto_sync_timer_function(unsigned long arg);
 static int _mcde_chnl_enable(struct mcde_chnl_state *chnl);
 static int _mcde_chnl_apply(struct mcde_chnl_state *chnl);
 static void disable_flow(struct mcde_chnl_state *chnl);
-static void enable_channel(struct mcde_chnl_state *chnl);
+static void enable_flow(struct mcde_chnl_state *chnl);
 static void do_softwaretrig(struct mcde_chnl_state *chnl);
-static int is_channel_enabled(struct mcde_chnl_state *chnl);
 static void dsi_te_poll_req(struct mcde_chnl_state *chnl);
 static void dsi_te_poll_set_timer(struct mcde_chnl_state *chnl,
 		unsigned int timeout);
 static void dsi_te_timer_function(unsigned long value);
+static int wait_for_vcmp(struct mcde_chnl_state *chnl);
+static void probe_hw(void);
+static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 
 #define OVLY_TIMEOUT 100
 #define CHNL_TIMEOUT 100
+#define FLOW_STOP_TIMEOUT 20
 #define SCREEN_PPL_HIGH 1920
 #define SCREEN_PPL_CEA2 720
 #define SCREEN_LPF_CEA2 480
@@ -53,6 +82,10 @@ static void dsi_te_timer_function(unsigned long value);
 #define MCDE_SLEEP_WATCHDOG 500
 #define DSI_TE_NO_ANSWER_TIMEOUT_INIT 2500
 #define DSI_TE_NO_ANSWER_TIMEOUT 250
+#define DSI_READ_TIMEOUT 200
+#define DSI_WRITE_CMD_TIMEOUT 1000
+#define DSI_READ_DELAY 5
+#define MCDE_FLOWEN_MAX_TRIAL 60
 
 static u8 *mcdeio;
 static u8 **dsiio;
@@ -71,9 +104,29 @@ static struct clk *clock_dsi;
 static struct clk *clock_mcde;
 static struct clk *clock_dsi_lp;
 static u8 mcde_is_enabled;
-static struct mutex mcde_hw_lock;
 static struct delayed_work hw_timeout_work;
 static u8 dsi_pll_is_enabled;
+
+static struct mutex mcde_hw_lock;
+static inline void mcde_lock(const char *func, int line)
+{
+	mutex_lock(&mcde_hw_lock);
+	dev_vdbg(&mcde_dev->dev, "Enter MCDE: %s:%d\n", func, line);
+}
+
+static inline void mcde_unlock(const char *func, int line)
+{
+	dev_vdbg(&mcde_dev->dev, "Exit MCDE: %s:%d\n", func, line);
+	mutex_unlock(&mcde_hw_lock);
+}
+
+static inline bool mcde_trylock(const char *func, int line)
+{
+	bool locked = mutex_trylock(&mcde_hw_lock) == 1;
+	if (locked)
+		dev_vdbg(&mcde_dev->dev, "Enter MCDE: %s:%d\n", func, line);
+	return locked;
+}
 
 static u8 mcde_dynamic_power_management = true;
 
@@ -85,13 +138,22 @@ static inline void dsi_wreg(int i, u32 reg, u32 val)
 {
 	writel(val, dsiio[i] + reg);
 }
+
 #define dsi_rfld(__i, __reg, __fld) \
-	((dsi_rreg(__i, __reg) & __reg##_##__fld##_MASK) >> \
-		__reg##_##__fld##_SHIFT)
+({ \
+	const u32 mask = __reg##_##__fld##_MASK; \
+	const u32 shift = __reg##_##__fld##_SHIFT; \
+	((dsi_rreg(__i, __reg) & mask) >> shift); \
+})
+
 #define dsi_wfld(__i, __reg, __fld, __val) \
-	dsi_wreg(__i, __reg, (dsi_rreg(__i, __reg) & \
-	~__reg##_##__fld##_MASK) | (((__val) << __reg##_##__fld##_SHIFT) & \
-		 __reg##_##__fld##_MASK))
+({ \
+	const u32 mask = __reg##_##__fld##_MASK; \
+	const u32 shift = __reg##_##__fld##_SHIFT; \
+	const u32 oldval = dsi_rreg(__i, __reg); \
+	const u32 newval = ((__val) << shift); \
+	dsi_wreg(__i, __reg, (oldval & ~mask) | (newval & mask)); \
+})
 
 static inline u32 mcde_rreg(u32 reg)
 {
@@ -101,23 +163,32 @@ static inline void mcde_wreg(u32 reg, u32 val)
 {
 	writel(val, mcdeio + reg);
 }
-#define mcde_wreg_fld(__reg, __fld_mask, __fld_shift, __val) \
-	mcde_wreg(__reg, (mcde_rreg(__reg) & ~(__fld_mask)) |\
-			(((__val) << (__fld_shift)) & (__fld_mask)))
+
 
 #define mcde_rfld(__reg, __fld) \
-	((mcde_rreg(__reg) & __reg##_##__fld##_MASK) >> \
-		__reg##_##__fld##_SHIFT)
+({ \
+	const u32 mask = __reg##_##__fld##_MASK; \
+	const u32 shift = __reg##_##__fld##_SHIFT; \
+	((mcde_rreg(__reg) & mask) >> shift); \
+})
+
 #define mcde_wfld(__reg, __fld, __val) \
-	mcde_wreg_fld(__reg, __reg##_##__fld##_MASK,\
-						__reg##_##__fld##_SHIFT, __val)
+({ \
+	const u32 mask = __reg##_##__fld##_MASK; \
+	const u32 shift = __reg##_##__fld##_SHIFT; \
+	const u32 oldval = mcde_rreg(__reg); \
+	const u32 newval = ((__val) << shift); \
+	mcde_wreg(__reg, (oldval & ~mask) | (newval & mask)); \
+})
 
 struct ovly_regs {
-	u8   ch_id;
 	bool enabled;
+	bool dirty;
+	bool dirty_buf;
+
+	u8   ch_id;
 	u32  baseaddress0;
 	u32  baseaddress1;
-	bool update;
 	u8   bits_per_pixel;
 	u8   bpp;
 	bool bgr;
@@ -138,9 +209,10 @@ struct ovly_regs {
 
 struct mcde_ovly_state {
 	bool inuse;
-	bool update;
 	u8 idx; /* MCDE overlay index */
 	struct mcde_chnl_state *chnl; /* Owner channel */
+	bool dirty;
+	bool dirty_buf;
 
 	/* Staged settings */
 	u32 paddr;
@@ -165,6 +237,8 @@ struct mcde_ovly_state {
 static struct mcde_ovly_state *overlays;
 
 struct chnl_regs {
+	bool dirty;
+
 	bool floen;
 	u16  x;
 	u16  y;
@@ -183,8 +257,8 @@ struct chnl_regs {
 	bool synchronized_update;
 	bool roten;
 	u8   rotdir;
-	u32  rotbuf1; /* TODO: Replace with eSRAM alloc */
-	u32  rotbuf2; /* TODO: Replace with eSRAM alloc */
+	u32  rotbuf1;
+	u32  rotbuf2;
 
 	/* Blending */
 	u8 blend_ctrl;
@@ -196,6 +270,8 @@ struct chnl_regs {
 };
 
 struct col_regs {
+	bool dirty;
+
 	u16 y_red;
 	u16 y_green;
 	u16 y_blue;
@@ -211,6 +287,8 @@ struct col_regs {
 };
 
 struct tv_regs {
+	bool dirty;
+
 	u16 dho; /* TV mode: left border width; destination horizontal offset */
 		 /* LCD MODE: horizontal back porch */
 	u16 alw; /* TV mode: right border width */
@@ -243,10 +321,11 @@ struct mcde_chnl_state {
 	struct mcde_ovly_state *ovly0;
 	struct mcde_ovly_state *ovly1;
 	const struct chnl_config *cfg;
-	u32 transactionid;
-	u32 transactionid_regs;
-	u32 transactionid_hw;
-	wait_queue_head_t waitq_hw; /* Waitq for transactionid_hw */
+	enum chnl_state state;
+	wait_queue_head_t state_waitq;
+	wait_queue_head_t vcmp_waitq;
+	atomic_t vcmp_cnt;
+
 	/* Used as watchdog timer for auto sync feature */
 	struct timer_list auto_sync_timer;
 	struct timer_list dsi_te_timer;
@@ -282,8 +361,6 @@ struct mcde_chnl_state {
 	bool vcmp_per_field;
 	bool even_vcmp;
 
-	bool continous_running;
-	bool disable_software_trig;
 	bool formatter_updated;
 	bool esram_is_enabled;
 };
@@ -388,9 +465,6 @@ static /* TODO: const, compiler bug? */ struct chnl_config chnl_configs[] = {
 	  .fabmux = true, .fabmux_set = true },
 };
 
-#define DSI_READ_TIMEOUT 10
-#define DSI_READ_DELAY 100
-
 /*
  * Wait for CSM_RUNNING, all data sent for display
  */
@@ -403,6 +477,7 @@ static inline void wait_while_dsi_running(int lnk)
 			, __func__, lnk, (DSI_READ_TIMEOUT - counter));
 		udelay(DSI_READ_DELAY);
 	}
+	WARN_ON(!counter);
 	if (!counter)
 		dev_warn(&mcde_dev->dev,
 			"%s: DSI link %u read timeout!\n", __func__, lnk);
@@ -446,7 +521,6 @@ static void update_mcde_registers(void)
 		mcde_wreg(MCDE_CONF0,
 			MCDE_CONF0_IFIFOCTRLWTRMRKLVL(7));
 
-		mcde_wfld(MCDE_RISOVL, OVLFDRIS, 1);
 		mcde_wfld(MCDE_RISPP, VCMPARIS, 1);
 		mcde_wfld(MCDE_RISPP, VCMPBRIS, 1);
 
@@ -465,7 +539,6 @@ static void update_mcde_registers(void)
 			MCDE_CONF0_OUTMUX4(pdata->outmux[4]) |
 			pdata->syncmux);
 
-		mcde_wfld(MCDE_RISOVL, OVLFDRIS, 1);
 		mcde_wfld(MCDE_RISPP, VCMPARIS, 1);
 		mcde_wfld(MCDE_RISPP, VCMPBRIS, 1);
 		mcde_wfld(MCDE_RISPP, VCMPC0RIS, 1);
@@ -477,22 +550,10 @@ static void update_mcde_registers(void)
 			MCDE_IMSCPP_VCMPBIM(true) |
 			MCDE_IMSCPP_VCMPC0IM(true) |
 			MCDE_IMSCPP_VCMPC1IM(true));
-#ifdef DEBUG
-		/* Enable error interrupts */
-		mcde_wreg(MCDE_IMSCERR,
-			MCDE_IMSCERR_SCHBLCKDIM(true) |
-			MCDE_IMSCERR_OVLFERRIM_MASK |
-			MCDE_IMSCERR_FUAIM(true) |
-			MCDE_IMSCERR_FUBIM(true) |
-			MCDE_IMSCERR_FUC0IM(true) |
-			MCDE_IMSCERR_FUC1IM(true));
-		/* Enable channel abort interrupts */
-		mcde_wreg(MCDE_IMSCCHNL, MCDE_IMSCCHNL_CHNLAIM(0xf));
-#endif
 	}
 
-	/* Enable overlay fetch done interrupts */
-	mcde_wfld(MCDE_IMSCOVL, OVLFDIM, 0x3f);
+	mcde_wreg(MCDE_IMSCCHNL, MCDE_IMSCCHNL_CHNLAIM(0xf));
+	mcde_wreg(MCDE_IMSCERR, 0xFFFF01FF);
 
 	/* Setup sync pulse length
 	 * Setting VSPMAX=0 disables the filter and VSYNC
@@ -509,6 +570,7 @@ static void update_mcde_registers(void)
 static void disable_formatter(struct mcde_port *port)
 {
 	if (port->type == MCDE_PORTTYPE_DSI) {
+		wait_while_dsi_running(port->link);
 		if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
 			struct mcde_platform_data *pdata =
 				    mcde_dev->dev.platform_data;
@@ -535,11 +597,10 @@ static void disable_mcde_hw(bool force_disable)
 
 	for (i = 0; i < num_channels; i++) {
 		struct mcde_chnl_state *chnl = &channels[i];
-		if (force_disable ||
-			(chnl->enabled && !chnl->continous_running)) {
-			disable_channel(chnl);
-			if (chnl->port.type == MCDE_PORTTYPE_DSI)
-				wait_while_dsi_running(chnl->port.link);
+		if (force_disable || (chnl->enabled &&
+					chnl->state != CHNLSTATE_RUNNING)) {
+			stop_channel(chnl);
+			set_channel_state_sync(chnl, CHNLSTATE_SUSPEND);
 
 			if (chnl->formatter_updated) {
 				disable_formatter(&chnl->port);
@@ -550,20 +611,13 @@ static void disable_mcde_hw(bool force_disable)
 							regulator_esram_epod));
 				chnl->esram_is_enabled = false;
 			}
-		} else if (chnl->enabled && chnl->continous_running) {
+		} else if (chnl->enabled && chnl->state == CHNLSTATE_RUNNING) {
 			mcde_up = true;
 		}
 	}
 
 	if (mcde_up)
 		return;
-
-	for (i = 0; i < num_channels; i++) {
-		struct mcde_chnl_state *chnl = &channels[i];
-		chnl->formatter_updated = false;
-		del_timer(&chnl->dsi_te_timer);
-		del_timer(&chnl->auto_sync_timer);
-	}
 
 	free_irq(mcde_irq, &mcde_dev->dev);
 
@@ -626,6 +680,7 @@ static void dpi_video_mode_apply(struct mcde_chnl_state *chnl)
 		chnl->tv_regs.lcdtim1 |= MCDE_LCDTIM1A_IPC(
 				(polarity & DPI_ACT_ON_FALLING_EDGE) != 0);
 	}
+	chnl->tv_regs.dirty = true;
 }
 
 static void update_dpi_registers(enum mcde_chnl chnl_id, struct tv_regs *regs)
@@ -682,6 +737,7 @@ static void update_dpi_registers(enum mcde_chnl chnl_id, struct tv_regs *regs)
 	if (!regs->sel_mode_tv)
 		mcde_wreg(MCDE_LCDTIM1A + idx * MCDE_LCDTIM1A_GROUPOFFSET,
 								regs->lcdtim1);
+	regs->dirty = false;
 }
 
 static void update_col_registers(enum mcde_chnl chnl_id, struct col_regs *regs)
@@ -707,6 +763,7 @@ static void update_col_registers(enum mcde_chnl chnl_id, struct col_regs *regs)
 	mcde_wreg(MCDE_RGBCONV6A + idx * MCDE_RGBCONV6A_GROUPOFFSET,
 				MCDE_RGBCONV6A_OFF_GREEN(regs->off_y) |
 				MCDE_RGBCONV6A_OFF_BLUE(regs->off_cb));
+	regs->dirty = false;
 }
 
 /* MCDE internal helpers */
@@ -838,27 +895,20 @@ static struct mcde_chnl_state *find_channel_by_dsilink(int link)
 	return NULL;
 }
 
-static inline void mcde_handle_vcmp(struct mcde_chnl_state *chnl, u32 int_fld)
+static inline void mcde_handle_vcmp(struct mcde_chnl_state *chnl)
 {
 	if (!chnl->vcmp_per_field ||
 			(chnl->vcmp_per_field && chnl->even_vcmp)) {
-		chnl->transactionid_hw = chnl->transactionid_regs;
-		wake_up(&chnl->waitq_hw);
+		atomic_inc(&chnl->vcmp_cnt);
+		if (chnl->state == CHNLSTATE_STOPPING)
+			set_channel_state_atomic(chnl, CHNLSTATE_STOPPED);
+		wake_up_all(&chnl->vcmp_waitq);
+
 		if (chnl->port.update_auto_trig &&
 				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
 				chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->continous_running) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-				hardware_version == MCDE_CHIP_VERSION_4_0_4)
-				enable_channel(chnl);
-
-			mcde_wreg(MCDE_CHNL0SYNCHSW +
-				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
-				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
-
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-				hardware_version == MCDE_CHIP_VERSION_4_0_4)
-				disable_flow(chnl);
+				chnl->state == CHNLSTATE_RUNNING) {
+			do_softwaretrig(chnl);
 			mod_timer(&chnl->auto_sync_timer,
 				jiffies +
 				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
@@ -866,106 +916,66 @@ static inline void mcde_handle_vcmp(struct mcde_chnl_state *chnl, u32 int_fld)
 		}
 	}
 	chnl->even_vcmp = !chnl->even_vcmp;
-	mcde_wreg_fld(MCDE_RISPP, 0x1 << int_fld, int_fld, 1);
-#ifdef DEBUG
-	if (chnl->ovly0 && mcde_rreg(MCDE_OVL0CR +
-				chnl->ovly0->idx * MCDE_OVL0CR_GROUPOFFSET) &
-				MCDE_OVL0CR_OVLB_MASK)
-		dev_warn(&mcde_dev->dev, "Overlay %d blocked\n",
-							chnl->ovly0->idx);
-	if (chnl->ovly1 && mcde_rreg(MCDE_OVL0CR +
-				chnl->ovly1->idx * MCDE_OVL0CR_GROUPOFFSET) &
-				MCDE_OVL0CR_OVLB_MASK)
-		dev_warn(&mcde_dev->dev, "Overlay %d blocked\n",
-							chnl->ovly1->idx);
-#endif
+}
+
+static void handle_dsi_irq(struct mcde_chnl_state *chnl, int i)
+{
+	u32 irq_status = dsi_rfld(i, DSI_DIRECT_CMD_STS_FLAG, TE_RECEIVED_FLAG);
+	if (irq_status) {
+		dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
+				DSI_DIRECT_CMD_STS_CLR_TE_RECEIVED_CLR(true));
+		dev_vdbg(&mcde_dev->dev, "BTA TE DSI%d\n", i);
+		do_softwaretrig(chnl);
+	}
+
+	irq_status = dsi_rfld(i, DSI_CMD_MODE_STS_FLAG, ERR_NO_TE_FLAG);
+	if (irq_status) {
+		dsi_wreg(i, DSI_CMD_MODE_STS_CLR,
+			DSI_CMD_MODE_STS_CLR_ERR_NO_TE_CLR(true));
+		dev_warn(&mcde_dev->dev, "NO_TE DSI%d\n", i);
+		set_channel_state_atomic(chnl, CHNLSTATE_STOPPED);
+	}
+
+	irq_status = dsi_rfld(i, DSI_DIRECT_CMD_STS, TRIGGER_RECEIVED);
+	if (irq_status) {
+		/* DSI TE polling answer received */
+		dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
+			DSI_DIRECT_CMD_STS_CLR_TRIGGER_RECEIVED_CLR(true));
+
+		/* Reset TE watchdog timer */
+		if (chnl->port.sync_src == MCDE_SYNCSRC_TE_POLLING)
+			dsi_te_poll_set_timer(chnl, DSI_TE_NO_ANSWER_TIMEOUT);
+	}
 }
 
 static irqreturn_t mcde_irq_handler(int irq, void *dev)
 {
 	int i;
 	u32 irq_status;
-#ifdef DEBUG
-	u32 irq_riserr_status;
-	u32 irq_rischnl_status;
 
-	irq_riserr_status = mcde_rreg(MCDE_RISERR);
-	irq_rischnl_status = mcde_rreg(MCDE_RISCHNL);
-#endif
-
-	/* Handle overlay irqs */
-	irq_status = mcde_rfld(MCDE_RISOVL, OVLFDRIS);
-	mcde_wfld(MCDE_RISOVL, OVLFDRIS, irq_status);
+	irq_status = mcde_rreg(MCDE_MISCHNL);
+	if (irq_status) {
+		dev_err(&mcde_dev->dev, "chnl error=%.8x\n", irq_status);
+		mcde_wreg(MCDE_RISCHNL, irq_status);
+	}
+	irq_status = mcde_rreg(MCDE_MISERR);
+	if (irq_status) {
+		dev_err(&mcde_dev->dev, "error=%.8x\n", irq_status);
+		mcde_wreg(MCDE_RISERR, irq_status);
+	}
 
 	/* Handle channel irqs */
 	irq_status = mcde_rreg(MCDE_RISPP);
-	if (irq_status & MCDE_RISPP_VCMPARIS_MASK) {
-		mcde_handle_vcmp(&channels[MCDE_CHNL_A],
-						MCDE_RISPP_VCMPARIS_SHIFT);
-#ifdef DEBUG
-		if (irq_riserr_status & MCDE_RISERR_FUARIS_MASK) {
-			dev_warn(&mcde_dev->dev, "FIFO A underflow\n");
-			mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUARIS_MASK);
-		}
-		if (irq_rischnl_status & MCDE_RISCHNL_CHNLARIS(0)) {
-			dev_warn(&mcde_dev->dev, "Channel A abort\n");
-			mcde_wreg(MCDE_RISCHNL, MCDE_RISCHNL_CHNLARIS(0));
-		}
-#endif
-	}
-	if (irq_status & MCDE_RISPP_VCMPBRIS_MASK) {
-		mcde_handle_vcmp(&channels[MCDE_CHNL_B],
-						MCDE_RISPP_VCMPBRIS_SHIFT);
-#ifdef DEBUG
-		if (irq_riserr_status & MCDE_RISERR_FUBRIS_MASK) {
-			dev_warn(&mcde_dev->dev, "FIFO B underflow\n");
-			mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUBRIS_MASK);
-		}
-		if (irq_rischnl_status & MCDE_RISCHNL_CHNLARIS(1)) {
-			dev_warn(&mcde_dev->dev, "Channel B abort\n");
-			mcde_wreg(MCDE_RISCHNL, MCDE_RISCHNL_CHNLARIS(1));
-		}
-#endif
-	}
-	if (irq_status & MCDE_RISPP_VCMPC0RIS_MASK) {
-		mcde_handle_vcmp(&channels[MCDE_CHNL_C0],
-						MCDE_RISPP_VCMPC0RIS_SHIFT);
-#ifdef DEBUG
-		if (irq_riserr_status & MCDE_RISERR_FUC0RIS_MASK) {
-			dev_warn(&mcde_dev->dev, "FIFO C0 underflow\n");
-			mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUC0RIS_MASK);
-		}
-		if (irq_rischnl_status & MCDE_RISCHNL_CHNLARIS(2)) {
-			dev_warn(&mcde_dev->dev, "Channel C0 abort\n");
-			mcde_wreg(MCDE_RISCHNL, MCDE_RISCHNL_CHNLARIS(2));
-		}
-#endif
-	}
-	if (irq_status & MCDE_RISPP_VCMPC1RIS_MASK) {
-		mcde_handle_vcmp(&channels[MCDE_CHNL_C1],
-						MCDE_RISPP_VCMPC1RIS_SHIFT);
-#ifdef DEBUG
-		if (irq_riserr_status & MCDE_RISERR_FUC1RIS_MASK) {
-			dev_warn(&mcde_dev->dev, "FIFO C1 underflow\n");
-			mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUC1RIS_MASK);
-		}
-		if (irq_rischnl_status & MCDE_RISCHNL_CHNLARIS(3)) {
-			dev_warn(&mcde_dev->dev, "Channel C1 abort\n");
-			mcde_wreg(MCDE_RISCHNL, MCDE_RISCHNL_CHNLARIS(3));
-		}
-#endif
-	}
-#ifdef DEBUG
-	/* Handle error irqs */
-	if (irq_riserr_status & MCDE_RISERR_SCHBLCKDRIS_MASK) {
-		dev_warn(&mcde_dev->dev, "Scheduler blocked\n");
-		mcde_wreg(MCDE_RISERR, MCDE_RISERR_SCHBLCKDRIS_MASK);
-	}
-	if (irq_riserr_status & MCDE_IMSCERR_OVLFERRIM_MASK) {
-		dev_warn(&mcde_dev->dev, "Overlay fetch error\n");
-		mcde_wreg(MCDE_RISERR, MCDE_IMSCERR_OVLFERRIM_MASK);
-	}
-#endif
+	if (irq_status & MCDE_RISPP_VCMPARIS_MASK)
+		mcde_handle_vcmp(&channels[MCDE_CHNL_A]);
+	if (irq_status & MCDE_RISPP_VCMPBRIS_MASK)
+		mcde_handle_vcmp(&channels[MCDE_CHNL_B]);
+	if (irq_status & MCDE_RISPP_VCMPC0RIS_MASK)
+		mcde_handle_vcmp(&channels[MCDE_CHNL_C0]);
+	if (irq_status & MCDE_RISPP_VCMPC1RIS_MASK)
+		mcde_handle_vcmp(&channels[MCDE_CHNL_C1]);
+	mcde_wreg(MCDE_RISPP, irq_status);
+
 	for (i = 0; i < num_dsilinks; i++) {
 		struct mcde_chnl_state *chnl_from_dsi;
 
@@ -974,64 +984,98 @@ static irqreturn_t mcde_irq_handler(int irq, void *dev)
 		if (chnl_from_dsi == NULL)
 			continue;
 
-		irq_status = dsi_rfld(i, DSI_DIRECT_CMD_STS_FLAG,
-			TE_RECEIVED_FLAG);
-		if (irq_status) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-				hardware_version == MCDE_CHIP_VERSION_4_0_4)
-				disable_flow(chnl_from_dsi);
-			dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
-				DSI_DIRECT_CMD_STS_CLR_TE_RECEIVED_CLR(true));
-			dev_vdbg(&mcde_dev->dev, "BTA TE DSI%d\n", i);
-			do_softwaretrig(chnl_from_dsi);
-			dev_vdbg(&mcde_dev->dev, "SW TRIG DSI%d, chnl=%d\n", i,
-				chnl_from_dsi->id);
-		}
-
-		irq_status = dsi_rfld(i, DSI_CMD_MODE_STS_FLAG, ERR_NO_TE_FLAG);
-		if (irq_status) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-				hardware_version == MCDE_CHIP_VERSION_4_0_4)
-				disable_flow(chnl_from_dsi);
-			dsi_wreg(i, DSI_CMD_MODE_STS_CLR,
-				DSI_CMD_MODE_STS_CLR_ERR_NO_TE_CLR(true));
-			dev_info(&mcde_dev->dev, "NO_TE DSI%d\n", i);
-		}
-
-		irq_status = dsi_rfld(i, DSI_DIRECT_CMD_STS, TRIGGER_RECEIVED);
-		if (irq_status) {
-			/* DSI TE polling answer received */
-			dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
-				DSI_DIRECT_CMD_STS_CLR_TRIGGER_RECEIVED_CLR(
-						true));
-
-			if (chnl_from_dsi->port.sync_src ==
-					MCDE_SYNCSRC_TE_POLLING)
-				/* Reset timer */
-				dsi_te_poll_set_timer(chnl_from_dsi,
-						DSI_TE_NO_ANSWER_TIMEOUT);
-		}
+		handle_dsi_irq(chnl_from_dsi, i);
 	}
 
 	return IRQ_HANDLED;
 }
 
-static void wait_for_channel(struct mcde_chnl_state *chnl)
+/* Transitions allowed: WAIT_TE -> UPDATE -> STOPPING */
+static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
+							enum chnl_state state)
 {
-	int ret;
-	u32 id = chnl->transactionid_regs;
+	enum chnl_state chnl_state = chnl->state;
 
-	if (chnl->transactionid_hw >= id)
-		return;
+	dev_dbg(&mcde_dev->dev, "Channel state change"
+		" (chnl=%d, old=%d, new=%d)\n", chnl->id, chnl_state, state);
 
-	ret = wait_event_timeout(chnl->waitq_hw,
-		chnl->transactionid_hw == id,
-		msecs_to_jiffies(CHNL_TIMEOUT));
-	if (!ret)
-		dev_warn(&mcde_dev->dev,
-			"Wait for channel timeout (chnl=%d,%d<%d)!\n",
-			chnl->id, chnl->transactionid_hw,
-			id);
+	if ((chnl_state == CHNLSTATE_SETUP && state == CHNLSTATE_WAIT_TE) ||
+	    (chnl_state == CHNLSTATE_SETUP && state == CHNLSTATE_RUNNING) ||
+	    (chnl_state == CHNLSTATE_WAIT_TE && state == CHNLSTATE_RUNNING) ||
+	    (chnl_state == CHNLSTATE_RUNNING && state == CHNLSTATE_STOPPING)) {
+		/* Set wait TE, running, or stopping state */
+		chnl->state = state;
+		return 0;
+	} else if ((chnl_state == CHNLSTATE_STOPPING &&
+						state == CHNLSTATE_STOPPED) ||
+		   (chnl_state == CHNLSTATE_WAIT_TE &&
+						state == CHNLSTATE_STOPPED)) {
+		/* Set stopped state */
+		chnl->state = state;
+		wake_up_all(&chnl->state_waitq);
+		return 0;
+	} else if (state == CHNLSTATE_IDLE) {
+		/* Set idle state */
+		WARN_ON_ONCE(chnl_state != CHNLSTATE_DSI_READ &&
+			     chnl_state != CHNLSTATE_DSI_WRITE &&
+			     chnl_state != CHNLSTATE_SUSPEND);
+		chnl->state = state;
+		wake_up_all(&chnl->state_waitq);
+		return 0;
+	} else {
+		/* Invalid atomic state transition */
+		dev_warn(&mcde_dev->dev, "Channel state change error (chnl=%d,"
+			" old=%d, new=%d)\n", chnl->id, chnl_state, state);
+		WARN_ON_ONCE(true);
+		return -EINVAL;
+	}
+}
+
+/* LOCKING: mcde_hw_lock */
+static int set_channel_state_sync(struct mcde_chnl_state *chnl,
+							enum chnl_state state)
+{
+	int ret = 0;
+	enum chnl_state chnl_state = chnl->state;
+
+	dev_dbg(&mcde_dev->dev, "Channel state change"
+		" (chnl=%d, old=%d, new=%d)\n", chnl->id, chnl->state, state);
+
+	/* No change */
+	if (chnl_state == state)
+		return 0;
+
+	/* Wait for IDLE before changing state */
+	if (chnl_state != CHNLSTATE_IDLE) {
+		ret = wait_event_timeout(chnl->state_waitq,
+			/* STOPPED -> IDLE is manual, so wait for both */
+			chnl->state == CHNLSTATE_STOPPED ||
+			chnl->state == CHNLSTATE_IDLE,
+						msecs_to_jiffies(CHNL_TIMEOUT));
+		if (WARN_ON_ONCE(!ret))
+			dev_warn(&mcde_dev->dev, "Wait for channel timeout "
+						"(chnl=%d, curr=%d, new=%d)\n",
+						chnl->id, chnl->state, state);
+		chnl_state = chnl->state;
+	}
+
+	/* Do manual transition from STOPPED to IDLE */
+	if (chnl_state == CHNLSTATE_STOPPED)
+		wait_for_flow_disabled(chnl);
+
+	/* State is IDLE, do transition to new state */
+	chnl->state = state;
+
+	return ret;
+}
+
+static int wait_for_vcmp(struct mcde_chnl_state *chnl)
+{
+	u64 vcmp = atomic_read(&chnl->vcmp_cnt) + 1;
+	int ret = wait_event_timeout(chnl->vcmp_waitq,
+					atomic_read(&chnl->vcmp_cnt) >= vcmp,
+						msecs_to_jiffies(CHNL_TIMEOUT));
+	return ret;
 }
 
 static int update_channel_static_registers(struct mcde_chnl_state *chnl)
@@ -1285,9 +1329,8 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 		}
 	}
 
-	if (port->type == MCDE_PORTTYPE_DPI) {
+	if (port->type == MCDE_PORTTYPE_DPI)
 		WARN_ON_ONCE(clk_enable(clock_dpi));
-	}
 
 	mcde_wfld(MCDE_CR, MCDEEN, true);
 	chnl->formatter_updated = true;
@@ -1295,7 +1338,6 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 	dev_vdbg(&mcde_dev->dev, "Static registers setup, chnl=%d\n", chnl->id);
 
 	return 0;
-
 dsi_link_error:
 	if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
 		struct mcde_platform_data *pdata =
@@ -1328,6 +1370,7 @@ void mcde_chnl_col_convert_apply(struct mcde_chnl_state *chnl,
 		chnl->col_regs.off_y     = transform->offset[0];
 		chnl->col_regs.off_cb    = transform->offset[1];
 		chnl->col_regs.off_cr    = transform->offset[2];
+		chnl->col_regs.dirty = true;
 
 		chnl->transform = transform;
 	}
@@ -1453,7 +1496,6 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 	} else if (port->type == MCDE_PORTTYPE_DPI)
 		sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
 
-	regs->update = false;
 	mcde_wreg(MCDE_EXTSRC0CONF + idx * MCDE_EXTSRC0CONF_GROUPOFFSET,
 		MCDE_EXTSRC0CONF_BUF_ID(0) |
 		MCDE_EXTSRC0CONF_BUF_NB(nr_of_bufs) |
@@ -1498,6 +1540,7 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 	mcde_wreg(MCDE_OVL0CROP + idx * MCDE_OVL0CROP_GROUPOFFSET,
 		MCDE_OVL0CROP_TMRGN(tmrgn) |
 		MCDE_OVL0CROP_LMRGN(lmrgn >> 6));
+	regs->dirty = false;
 
 	dev_vdbg(&mcde_dev->dev, "Overlay registers setup, idx=%d\n", idx);
 }
@@ -1514,37 +1557,35 @@ static void update_overlay_registers_on_the_fly(u8 idx, struct ovly_regs *regs)
 		regs->baseaddress0);
 	mcde_wreg(MCDE_EXTSRC0A1 + idx * MCDE_EXTSRC0A1_GROUPOFFSET,
 		regs->baseaddress1);
+	regs->dirty_buf = false;
 }
 
 static void do_softwaretrig(struct mcde_chnl_state *chnl)
 {
-	/*
-	* For main and secondary display,
-	* FLOWEN has to be set before a SOFTWARE TRIG
-	* Otherwise no overlay interrupt is triggerd
-	* However FLOWEN must not be triggered before SOFTWARE TRIG
-	* if rotation is enabled
-	*/
-	if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-		hardware_version == MCDE_CHIP_VERSION_4_0_4)
-		enable_channel(chnl);
-	else if ((!is_channel_enabled(chnl) && !chnl->regs.roten)
-				|| chnl->power_mode != MCDE_DISPLAY_PM_ON)
-		enable_channel(chnl);
+	unsigned long flags;
 
+	local_irq_save(flags);
+
+	enable_flow(chnl);
 	mcde_wreg(MCDE_CHNL0SYNCHSW +
 		chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
 		MCDE_CHNL0SYNCHSW_SW_TRIG(true));
+	disable_flow(chnl);
 
-	if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-		hardware_version == MCDE_CHIP_VERSION_4_0_4)
-		disable_flow(chnl);
-	else
-		enable_channel(chnl);
+	local_irq_restore(flags);
+
+	dev_vdbg(&mcde_dev->dev, "Software TRIG on channel %d\n", chnl->id);
 }
 
 static void disable_flow(struct mcde_chnl_state *chnl)
 {
+	unsigned long flags;
+
+	if (WARN_ON_ONCE(chnl->state != CHNLSTATE_RUNNING))
+		return;
+
+	local_irq_save(flags);
+
 	switch (chnl->id) {
 	case MCDE_CHNL_A:
 		mcde_wfld(MCDE_CRA0, FLOEN, false);
@@ -1559,17 +1600,25 @@ static void disable_flow(struct mcde_chnl_state *chnl)
 		mcde_wfld(MCDE_CRC, C2EN, false);
 		break;
 	}
-}
-#define MCDE_FLOWEN_MAX_TRIAL 60
 
-static void disable_channel(struct mcde_chnl_state *chnl)
+	set_channel_state_atomic(chnl, CHNLSTATE_STOPPING);
+
+	local_irq_restore(flags);
+}
+
+static void stop_channel(struct mcde_chnl_state *chnl)
 {
-	int i;
 	const struct mcde_port *port = &chnl->port;
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	chnl->disable_software_trig = true;
+	if (chnl->state != CHNLSTATE_RUNNING)
+		return;
+
+	if (chnl->port.update_auto_trig &&
+			chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
+			chnl->port.type == MCDE_PORTTYPE_DSI)
+		del_timer(&chnl->auto_sync_timer);
 
 	if (port->type == MCDE_PORTTYPE_DSI) {
 		dsi_wfld(port->link, DSI_MCTL_MAIN_PHY_CTL, CLK_CONTINUOUS,
@@ -1578,109 +1627,69 @@ static void disable_channel(struct mcde_chnl_state *chnl)
 			del_timer(&chnl->dsi_te_timer);
 	}
 
-	if (chnl->port.update_auto_trig &&
-			chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
-			chnl->port.type == MCDE_PORTTYPE_DSI) {
-		del_timer(&chnl->auto_sync_timer);
-		chnl->continous_running = false;
-	}
-
-	if (hardware_version == MCDE_CHIP_VERSION_1_0_4) {
-		if (is_channel_enabled(chnl)) {
-			wait_for_channel(chnl);
-			/*
-			 * Just to make sure that a frame is triggered when
-			 * we try to disable the channel
-			 */
-			chnl->transactionid++;
-			mcde_wreg(MCDE_CHNL0SYNCHSW +
-				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
-					MCDE_CHNL0SYNCHSW_SW_TRIG(true));
-			disable_flow(chnl);
-			wait_for_channel(chnl);
-			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				if (!is_channel_enabled(chnl)) {
-					dev_vdbg(&mcde_dev->dev,
-						"Flow %d off after >= %d ms\n",
-								chnl->id, i);
-					goto break_switch;
-				}
-				mdelay(1);
-			}
-		} else {
-			dev_vdbg(&mcde_dev->dev,
-				"Flow %d disable after >= %d ms\n",
-								chnl->id, i);
-			goto break_switch;
-		}
-	} else {
-		switch (chnl->id) {
-		case MCDE_CHNL_A:
-			mcde_wfld(MCDE_CRA0, FLOEN, false);
-			wait_for_channel(chnl);
-			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				mdelay(1);
-				if (!mcde_rfld(MCDE_CRA0, FLOEN)) {
-					dev_vdbg(&mcde_dev->dev,
-					"Flow (A) off after >= %d ms\n", i);
-					goto break_switch;
-				}
-			}
-			dev_warn(&mcde_dev->dev,
-					"%s: channel A timeout\n", __func__);
-			break;
-		case MCDE_CHNL_B:
-			mcde_wfld(MCDE_CRB0, FLOEN, false);
-			wait_for_channel(chnl);
-			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				mdelay(1);
-				if (!mcde_rfld(MCDE_CRB0, FLOEN)) {
-					dev_vdbg(&mcde_dev->dev,
-					"Flow (B) off after >= %d ms\n", i);
-					goto break_switch;
-				}
-			}
-			dev_warn(&mcde_dev->dev, "%s: channel B timeout\n",
-								__func__);
-			break;
-		case MCDE_CHNL_C0:
-			mcde_wfld(MCDE_CRC, C1EN, false);
-			wait_for_channel(chnl);
-			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				mdelay(1);
-				if (!mcde_rfld(MCDE_CRC, C1EN)) {
-					dev_vdbg(&mcde_dev->dev,
-					"Flow (C1) off after >= %d ms\n", i);
-					goto break_switch;
-				}
-			}
-			dev_warn(&mcde_dev->dev, "%s: channel C0 timeout\n",
-								__func__);
-			break;
-		case MCDE_CHNL_C1:
-			mcde_wfld(MCDE_CRC, C2EN, false);
-			wait_for_channel(chnl);
-			for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-				mdelay(1);
-				if (!mcde_rfld(MCDE_CRC, C2EN)) {
-					dev_vdbg(&mcde_dev->dev,
-					"Flow (C2) off after >= %d ms\n", i);
-					goto break_switch;
-				}
-			}
-			dev_warn(&mcde_dev->dev, "%s: channel C1 timeout\n",
-								__func__);
-			break;
-		}
-	}
-break_switch:
-	chnl->continous_running = false;
+	disable_flow(chnl);
+	/*
+	 * Needs to manually trigger VCOMP after the channel is
+	 * disabled for video mode.
+	*/
+	if (chnl->port.update_auto_trig)
+		mcde_wreg(MCDE_SISPP, 1 << chnl->id);
 }
 
-static void enable_channel(struct mcde_chnl_state *chnl)
+static void wait_for_flow_disabled(struct mcde_chnl_state *chnl)
+{
+	int i = 0;
+
+	switch (chnl->id) {
+	case MCDE_CHNL_A:
+		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+			if (!mcde_rfld(MCDE_CRA0, FLOEN)) {
+				dev_vdbg(&mcde_dev->dev,
+					"Flow (A) disable after >= %d ms\n", i);
+				break;
+			}
+			msleep(1);
+		}
+		break;
+	case MCDE_CHNL_B:
+		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+			if (!mcde_rfld(MCDE_CRB0, FLOEN)) {
+				dev_vdbg(&mcde_dev->dev,
+				"Flow (B) disable after >= %d ms\n", i);
+				break;
+			}
+			msleep(1);
+		}
+		break;
+	case MCDE_CHNL_C0:
+		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+			if (!mcde_rfld(MCDE_CRC, C1EN)) {
+				dev_vdbg(&mcde_dev->dev,
+				"Flow (C1) disable after >= %d ms\n", i);
+				break;
+			}
+			msleep(1);
+		}
+		break;
+	case MCDE_CHNL_C1:
+		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
+			if (!mcde_rfld(MCDE_CRC, C2EN)) {
+				dev_vdbg(&mcde_dev->dev,
+				"Flow (C2) disable after >= %d ms\n", i);
+				break;
+			}
+			msleep(1);
+		}
+		break;
+	}
+	if (i == MCDE_FLOWEN_MAX_TRIAL)
+		dev_err(&mcde_dev->dev, "%s: channel %d timeout\n",
+							__func__, chnl->id);
+}
+
+static void enable_flow(struct mcde_chnl_state *chnl)
 {
 	const struct mcde_port *port = &chnl->port;
-	int i;
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
@@ -1688,70 +1697,32 @@ static void enable_channel(struct mcde_chnl_state *chnl)
 		dsi_wfld(port->link, DSI_MCTL_MAIN_PHY_CTL, CLK_CONTINUOUS,
 				port->phy.dsi.clk_cont);
 
+	/*
+	 * When ROTEN is set, the FLOEN bit will also be set but
+	 * the flow has to be started anyway.
+	 */
 	switch (chnl->id) {
 	case MCDE_CHNL_A:
+		WARN_ON_ONCE(mcde_rfld(MCDE_CRA0, FLOEN));
+		mcde_wfld(MCDE_CRA0, ROTEN, chnl->regs.roten);
 		mcde_wfld(MCDE_CRA0, FLOEN, true);
-		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-			if (mcde_rfld(MCDE_CRA0, FLOEN)) {
-				dev_vdbg(&mcde_dev->dev,
-					"Flow (A) enable after >= %d ms\n", i);
-				return;
-			}
-			mdelay(1);
-		}
 		break;
 	case MCDE_CHNL_B:
+		WARN_ON_ONCE(mcde_rfld(MCDE_CRB0, FLOEN));
+		mcde_wfld(MCDE_CRB0, ROTEN, chnl->regs.roten);
 		mcde_wfld(MCDE_CRB0, FLOEN, true);
-		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-			if (mcde_rfld(MCDE_CRB0, FLOEN)) {
-				dev_vdbg(&mcde_dev->dev,
-					"Flow (B) enable after >= %d ms\n", i);
-				return;
-			}
-			mdelay(1);
-		}
 		break;
 	case MCDE_CHNL_C0:
+		WARN_ON_ONCE(mcde_rfld(MCDE_CRC, C1EN));
 		mcde_wfld(MCDE_CRC, C1EN, true);
-		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-			if (mcde_rfld(MCDE_CRC, C1EN)) {
-				dev_vdbg(&mcde_dev->dev,
-					"Flow (C1) enable after >= %d ms\n", i);
-				return;
-			}
-			mdelay(1);
-		}
-		mcde_wfld(MCDE_CRC, POWEREN, true);
 		break;
 	case MCDE_CHNL_C1:
+		WARN_ON_ONCE(mcde_rfld(MCDE_CRC, C2EN));
 		mcde_wfld(MCDE_CRC, C2EN, true);
-		for (i = 0; i < MCDE_FLOWEN_MAX_TRIAL; i++) {
-			if (mcde_rfld(MCDE_CRC, C2EN)) {
-				dev_vdbg(&mcde_dev->dev,
-					"Flow (C2) enable after >= %d ms\n", i);
-				return;
-			}
-			mdelay(1);
-		}
-		mcde_wfld(MCDE_CRC, POWEREN, true);
 		break;
 	}
-}
-#undef MCDE_FLOWEN_MAX_TRIAL
 
-static int is_channel_enabled(struct mcde_chnl_state *chnl)
-{
-	switch (chnl->id) {
-	case MCDE_CHNL_A:
-		return mcde_rfld(MCDE_CRA0, FLOEN);
-	case MCDE_CHNL_B:
-		return mcde_rfld(MCDE_CRB0, FLOEN);
-	case MCDE_CHNL_C0:
-		return mcde_rfld(MCDE_CRC, C1EN);
-	case MCDE_CHNL_C1:
-		return mcde_rfld(MCDE_CRC, C2EN);
-	}
-	return 0;
+	set_channel_state_atomic(chnl, CHNLSTATE_RUNNING);
 }
 
 static void watchdog_auto_sync_timer_function(unsigned long arg)
@@ -1762,11 +1733,8 @@ static void watchdog_auto_sync_timer_function(unsigned long arg)
 		if (chnl->port.update_auto_trig &&
 				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
 				chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->continous_running) {
-			mcde_wreg(MCDE_CHNL0SYNCHSW +
-				chnl->id
-				* MCDE_CHNL0SYNCHSW_GROUPOFFSET,
-				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
+				chnl->state == CHNLSTATE_RUNNING) {
+			do_softwaretrig(chnl);
 			mod_timer(&chnl->auto_sync_timer,
 				jiffies +
 				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
@@ -1778,10 +1746,10 @@ static void watchdog_auto_sync_timer_function(unsigned long arg)
 static void work_sleep_function(struct work_struct *ptr)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
-	if (mutex_trylock(&mcde_hw_lock) == 1) {
+	if (mcde_trylock(__func__, __LINE__)) {
 		if (mcde_dynamic_power_management)
-			(void)disable_mcde_hw(false);
-		mutex_unlock(&mcde_hw_lock);
+			disable_mcde_hw(false);
+		mcde_unlock(__func__, __LINE__);
 	}
 }
 
@@ -1911,33 +1879,27 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		MCDE_CHNL0BCKGNDCOL_R(0));
 
 	if (chnl_id == MCDE_CHNL_A || chnl_id == MCDE_CHNL_B) {
-		u32 mcde_crx0;
 		u32 mcde_crx1;
 		u32 mcde_pal0x;
 		u32 mcde_pal1x;
 		if (chnl_id == MCDE_CHNL_A) {
-			mcde_crx0 = MCDE_CRA0;
 			mcde_crx1 = MCDE_CRA1;
 			mcde_pal0x = MCDE_PAL0A;
 			mcde_pal1x = MCDE_PAL1A;
+			mcde_wfld(MCDE_CRA0, PALEN, regs->palette_enable);
 		} else {
-			mcde_crx0 = MCDE_CRB0;
 			mcde_crx1 = MCDE_CRB1;
 			mcde_pal0x = MCDE_PAL0B;
 			mcde_pal1x = MCDE_PAL1B;
+			mcde_wfld(MCDE_CRB0, PALEN, regs->palette_enable);
 		}
-		mcde_wreg_fld(mcde_crx0, MCDE_CRA0_ROTEN_MASK,
-				MCDE_CRA0_ROTEN_SHIFT, regs->roten);
-		mcde_wreg_fld(mcde_crx0, MCDE_CRA0_PALEN_MASK,
-				MCDE_CRA0_PALEN_SHIFT, regs->palette_enable);
 		mcde_wreg(mcde_crx1,
 			MCDE_CRA1_PCD(regs->pcd) |
 			MCDE_CRA1_CLKSEL(regs->clksel) |
 			MCDE_CRA1_CDWIN(regs->cdwin) |
 			MCDE_CRA1_OUTBPP(bpp2outbpp(regs->bpp)) |
 			MCDE_CRA1_BCD(regs->bcd) |
-			MCDE_CRA1_CLKTYPE(regs->internal_clk)
-		);
+			MCDE_CRA1_CLKTYPE(regs->internal_clk));
 		if (regs->palette_enable) {
 			int i;
 			for (i = 0; i < 256; i++) {
@@ -2016,13 +1978,10 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 	}
 
 	if (regs->roten) {
-		/* TODO: Allocate memory in ESRAM instead of
-				static allocations. */
 		mcde_wreg(MCDE_ROTADD0A + chnl_id * MCDE_ROTADD0A_GROUPOFFSET,
 			regs->rotbuf1);
 		mcde_wreg(MCDE_ROTADD1A + chnl_id * MCDE_ROTADD1A_GROUPOFFSET,
 			regs->rotbuf2);
-
 		mcde_wreg(MCDE_ROTACONF + chnl_id * MCDE_ROTACONF_GROUPOFFSET,
 			MCDE_ROTACONF_ROTBURSTSIZE_ENUM(8W) |
 			MCDE_ROTACONF_ROTBURSTSIZE_HW(1) |
@@ -2044,6 +2003,7 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 	}
 
 	dev_vdbg(&mcde_dev->dev, "Channel registers setup, chnl=%d\n", chnl_id);
+	regs->dirty = false;
 }
 
 static int enable_mcde_hw(void)
@@ -2054,12 +2014,31 @@ static int enable_mcde_hw(void)
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
 	cancel_delayed_work(&hw_timeout_work);
-
 	schedule_delayed_work(&hw_timeout_work,
 					msecs_to_jiffies(MCDE_SLEEP_WATCHDOG));
 
-	if (mcde_is_enabled)
+	for (i = 0; i < num_channels; i++) {
+		struct mcde_chnl_state *chnl = &channels[i];
+		if (chnl->state == CHNLSTATE_SUSPEND) {
+			/* Mark all registers as dirty */
+			set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+			chnl->ovly0->regs.dirty = true;
+			chnl->ovly0->regs.dirty_buf = true;
+			if (chnl->ovly1) {
+				chnl->ovly1->regs.dirty = true;
+				chnl->ovly1->regs.dirty_buf = true;
+			}
+			chnl->regs.dirty = true;
+			chnl->col_regs.dirty = true;
+			chnl->tv_regs.dirty = true;
+			atomic_set(&chnl->vcmp_cnt, 0);
+		}
+	}
+
+	if (mcde_is_enabled) {
+		dev_vdbg(&mcde_dev->dev, "%s - already enabled\n", __func__);
 		return 0;
+	}
 
 	enable_clocks_and_power(mcde_dev);
 
@@ -2074,25 +2053,11 @@ static int enable_mcde_hw(void)
 
 	update_mcde_registers();
 
-	/* update hardware with same settings as before power down*/
-	for (i = 0; i < num_channels; i++) {
-		struct mcde_chnl_state *chnl = &channels[i];
-		if (chnl->enabled) {
-			if (chnl->ovly0 && chnl->ovly0->inuse &&
-						chnl->ovly0->regs.enabled)
-				chnl->ovly0->regs.update = true;
-			if (chnl->ovly1 && chnl->ovly1->inuse &&
-						chnl->ovly1->regs.enabled)
-				chnl->ovly1->regs.update = true;
-			chnl->transactionid++;
-		}
-	}
+	dev_vdbg(&mcde_dev->dev, "%s - enable done\n", __func__);
 
 	mcde_is_enabled = true;
 	return 0;
 }
-
-#define DSI_WRITE_CMD_TIMEOUT 1000
 
 /* DSI */
 static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
@@ -2109,18 +2074,17 @@ static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
 			chnl->port.type != MCDE_PORTTYPE_DSI)
 		return -EINVAL;
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 
 	_mcde_chnl_enable(chnl);
 	if (enable_mcde_hw()) {
-		mutex_unlock(&mcde_hw_lock);
+		mcde_unlock(__func__, __LINE__);
 		return -EINVAL;
 	}
 	if (!chnl->formatter_updated)
 		(void)update_channel_static_registers(chnl);
 
-	wait_for_channel(chnl);
-	wait_while_dsi_running(chnl->port.link);
+	set_channel_state_sync(chnl, CHNLSTATE_DSI_WRITE);
 
 	if (dcs) {
 		wrdat[0] = cmd;
@@ -2197,7 +2161,9 @@ static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
 			dsi_rreg(link, DSI_CMD_MODE_STS_FLAG));
 	}
 
-	mutex_unlock(&mcde_hw_lock);
+	set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+
+	mcde_unlock(__func__, __LINE__);
 
 	return ret;
 }
@@ -2225,18 +2191,17 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
 	if (*len > MCDE_MAX_DCS_READ || chnl->port.type != MCDE_PORTTYPE_DSI)
 		return -EINVAL;
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 
 	_mcde_chnl_enable(chnl);
 	if (enable_mcde_hw()) {
-		mutex_unlock(&mcde_hw_lock);
+		mcde_unlock(__func__, __LINE__);
 		return -EINVAL;
 	}
 	if (!chnl->formatter_updated)
 		(void)update_channel_static_registers(chnl);
 
-	wait_for_channel(chnl);
-	wait_while_dsi_running(chnl->port.link);
+	set_channel_state_sync(chnl, CHNLSTATE_DSI_READ);
 
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, READ_EN, true);
@@ -2265,20 +2230,22 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
 		rdsize = dsi_rfld(link, DSI_DIRECT_CMD_RD_PROPERTY, RD_SIZE);
 		rddat = dsi_rreg(link, DSI_DIRECT_CMD_RDDAT);
 		if (rdsize < *len)
-			pr_err("DCS incomplete read %d<%d (%.8X)\n",
-				rdsize, *len, rddat);/* REVIEW: dev_dbg */
+			dev_warn(&mcde_dev->dev, "DCS incomplete read %d<%d"
+					" (%.8X)\n", rdsize, *len, rddat);
 		*len = min(*len, rdsize);
 		memcpy(data, &rddat, *len);
 	} else {
-		pr_err("DCS read failed, err=%d, sts=%X\n",
-			error, dsi_rreg(link, DSI_DIRECT_CMD_STS));
+		dev_err(&mcde_dev->dev, "DCS read failed, err=%d, sts=%X\n",
+				error, dsi_rreg(link, DSI_DIRECT_CMD_STS));
 		ret = -EIO;
 	}
 
 	dsi_wreg(link, DSI_CMD_MODE_STS_CLR, ~0);
 	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
 
-	mutex_unlock(&mcde_hw_lock);
+	set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+
+	mcde_unlock(__func__, __LINE__);
 
 	return ret;
 }
@@ -2303,12 +2270,14 @@ int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl)
 	if (chnl->port.type != MCDE_PORTTYPE_DSI)
 		return -EINVAL;
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 
 	if (enable_mcde_hw()) {
-		mutex_unlock(&mcde_hw_lock);
+		mcde_unlock(__func__, __LINE__);
 		return -EIO;
 	}
+
+	set_channel_state_sync(chnl, CHNLSTATE_DSI_WRITE);
 
 	/*
 	 * Set Maximum Return Packet Size is a two-byte command packet
@@ -2326,7 +2295,10 @@ int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl)
 	dsi_wreg(link, DSI_DIRECT_CMD_WRDAT0, MCDE_MAX_DCS_READ);
 	dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
 
-	mutex_unlock(&mcde_hw_lock);
+	set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+
+	mcde_unlock(__func__, __LINE__);
+
 	return 0;
 }
 
@@ -2388,6 +2360,8 @@ static void dsi_te_request(struct mcde_chnl_state *chnl)
 
 	dev_vdbg(&mcde_dev->dev, "Request BTA TE, chnl=%d\n",
 		chnl->id);
+
+	set_channel_state_atomic(chnl, CHNLSTATE_WAIT_TE);
 
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, REG_TE_EN, true);
@@ -2545,105 +2519,73 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	chnl->regs.blend_en = chnl->blend_en;
 	chnl->regs.alpha_blend = chnl->alpha_blend;
 
-	chnl->transactionid++;
+	chnl->regs.dirty = true;
 
 	dev_vdbg(&mcde_dev->dev, "Channel applied, chnl=%d\n", chnl->id);
 	return 0;
 }
 
-static void chnl_update_registers(struct mcde_chnl_state *chnl)
+static void setup_channel(struct mcde_chnl_state *chnl)
 {
-	/* REVIEW: Move content to update_channel_register */
-	/* and remove this one */
-	if (chnl->port.type == MCDE_PORTTYPE_DPI)
-		update_dpi_registers(chnl->id, &chnl->tv_regs);
-	if (chnl->id == MCDE_CHNL_A || chnl->id == MCDE_CHNL_B)
-		update_col_registers(chnl->id, &chnl->col_regs);
-	update_channel_registers(chnl->id, &chnl->regs, &chnl->port,
-						chnl->fifo, &chnl->vmode);
+	set_channel_state_sync(chnl, CHNLSTATE_SETUP);
 
-	chnl->transactionid_regs = chnl->transactionid;
+	if (chnl->port.type == MCDE_PORTTYPE_DPI && chnl->tv_regs.dirty)
+		update_dpi_registers(chnl->id, &chnl->tv_regs);
+	if ((chnl->id == MCDE_CHNL_A || chnl->id == MCDE_CHNL_B) &&
+							chnl->col_regs.dirty)
+		update_col_registers(chnl->id, &chnl->col_regs);
+	if (chnl->regs.dirty)
+		update_channel_registers(chnl->id, &chnl->regs, &chnl->port,
+						chnl->fifo, &chnl->vmode);
 }
 
 static void chnl_update_continous(struct mcde_chnl_state *chnl,
 						bool tripple_buffer)
 {
-
-	if (chnl->continous_running) {
-		chnl->transactionid_regs = chnl->transactionid;
+	if (chnl->state == CHNLSTATE_RUNNING) {
 		if (!tripple_buffer)
-			wait_for_channel(chnl);
+			wait_for_vcmp(chnl);
+		return;
 	}
 
-	if (!chnl->continous_running) {
-		if (chnl->transactionid_regs < chnl->transactionid)
-			chnl_update_registers(chnl);
-		if (chnl->port.sync_src == MCDE_SYNCSRC_TE0) {
+	setup_channel(chnl);
+	if (chnl->port.sync_src == MCDE_SYNCSRC_TE0) {
+		mcde_wfld(MCDE_CRC, SYCEN0, true);
+	} else if (chnl->port.sync_src == MCDE_SYNCSRC_TE1) {
+		if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
+			hardware_version == MCDE_CHIP_VERSION_4_0_4) {
+			mcde_wfld(MCDE_VSCRC1, VSSEL, 1);
+			mcde_wfld(MCDE_CRC, SYCEN1, true);
+		} else {
+			mcde_wfld(MCDE_VSCRC1, VSSEL, 0);
 			mcde_wfld(MCDE_CRC, SYCEN0, true);
-		 } else if (chnl->port.sync_src == MCDE_SYNCSRC_TE1) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-				hardware_version == MCDE_CHIP_VERSION_4_0_4) {
-				mcde_wfld(MCDE_VSCRC1, VSSEL, 1);
-				mcde_wfld(MCDE_CRC, SYCEN1, true);
-			} else {
-				mcde_wfld(MCDE_VSCRC1, VSSEL, 0);
-				mcde_wfld(MCDE_CRC, SYCEN0, true);
-			}
-		}
-		chnl->continous_running = true;
-
-		/*
-		* For main and secondary display,
-		* FLOWEN has to be set before a SOFTWARE TRIG
-		* Otherwise not overlay interrupt is triggerd
-		*/
-		enable_channel(chnl);
-
-		if (chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->port.sync_src == MCDE_SYNCSRC_OFF) {
-			chnl->disable_software_trig = false;
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-				hardware_version == MCDE_CHIP_VERSION_4_0_4) {
-				mcde_wreg(MCDE_CHNL0SYNCHSW +
-				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
-					MCDE_CHNL0SYNCHSW_SW_TRIG(true));
-				disable_flow(chnl);
-			}
-			mod_timer(&chnl->auto_sync_timer,
-					jiffies +
-			msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG * 1000));
 		}
 	}
+
+	if (chnl->port.type == MCDE_PORTTYPE_DSI &&
+				chnl->port.sync_src == MCDE_SYNCSRC_OFF) {
+		do_softwaretrig(chnl);
+		mod_timer(&chnl->auto_sync_timer, jiffies +
+			msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG * 1000));
+	} else
+		enable_flow(chnl);
 }
 
 static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
 {
 	/* Commit settings to registers */
-	wait_for_channel(chnl);
-	if (chnl->transactionid_regs < chnl->transactionid)
-		chnl_update_registers(chnl);
+	setup_channel(chnl);
 
-	/* TODO: look at port sync source and synched_update */
 	if (chnl->regs.synchronized_update &&
-			chnl->power_mode == MCDE_DISPLAY_PM_ON) {
-		if (chnl->port.type == MCDE_PORTTYPE_DSI) {
-			if (chnl->port.sync_src == MCDE_SYNCSRC_BTA) {
-				if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-					enable_channel(chnl);
-				wait_while_dsi_running(chnl->port.link);
-				dsi_te_request(chnl);
-			} else if (chnl->port.sync_src == MCDE_SYNCSRC_TE0) {
-				mcde_wfld(MCDE_CRC, SYCEN0, true);
-				if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
-					enable_channel(chnl);
-			}
-		}
+				chnl->power_mode == MCDE_DISPLAY_PM_ON) {
+		if (chnl->port.type == MCDE_PORTTYPE_DSI &&
+					chnl->port.sync_src == MCDE_SYNCSRC_BTA)
+			dsi_te_request(chnl);
 	} else {
 		do_softwaretrig(chnl);
 		dev_vdbg(&mcde_dev->dev, "Channel update (no sync), chnl=%d\n",
 			chnl->id);
 	}
-
 }
 
 static void chnl_update_overlay(struct mcde_chnl_state *chnl,
@@ -2652,8 +2594,9 @@ static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 	if (!ovly)
 		return;
 
-	update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs);
-	if (ovly->regs.update) {
+	if (ovly->regs.dirty_buf)
+		update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs);
+	if (ovly->regs.dirty) {
 		chnl_ovly_pixel_format_apply(chnl, ovly);
 		update_overlay_registers(ovly->idx, &ovly->regs, &chnl->port,
 			chnl->fifo, chnl->regs.x, chnl->regs.y,
@@ -2677,7 +2620,7 @@ static int _mcde_chnl_update(struct mcde_chnl_state *chnl,
 	}
 
 	if (chnl->port.update_auto_trig && tripple_buffer)
-		wait_for_channel(chnl);
+		wait_for_vcmp(chnl);
 
 	chnl->regs.x   = update_area->x;
 	chnl->regs.y   = update_area->y;
@@ -2775,8 +2718,8 @@ void mcde_chnl_set_col_convert(struct mcde_chnl_state *chnl,
 		/* force update: */
 		if (chnl->transform == &chnl->rgb_2_ycbcr) {
 			chnl->transform = NULL;
-			chnl->ovly0->update = true;
-			chnl->ovly1->update = true;
+			chnl->ovly0->dirty = true;
+			chnl->ovly1->dirty = true;
 		}
 		break;
 	case MCDE_CONVERT_YCBCR_2_RGB:
@@ -2785,8 +2728,8 @@ void mcde_chnl_set_col_convert(struct mcde_chnl_state *chnl,
 		/* force update: */
 		if (chnl->transform == &chnl->ycbcr_2_rgb) {
 			chnl->transform = NULL;
-			chnl->ovly0->update = true;
-			chnl->ovly1->update = true;
+			chnl->ovly0->dirty = true;
+			chnl->ovly1->dirty = true;
 		}
 		break;
 	default:
@@ -2807,10 +2750,9 @@ int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
 
 	chnl->vmode = *vmode;
 
-	if (chnl->ovly0)
-		chnl->ovly0->update = true;
+	chnl->ovly0->dirty = true;
 	if (chnl->ovly1)
-		chnl->ovly1->update = true;
+		chnl->ovly1->dirty = true;
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 
@@ -2876,9 +2818,9 @@ int mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	if (!chnl->reserved)
 		return -EINVAL;
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 	ret = _mcde_chnl_apply(chnl);
-	mutex_unlock(&mcde_hw_lock);
+	mcde_unlock(__func__, __LINE__);
 
 	dev_vdbg(&mcde_dev->dev, "%s exit with ret %d\n", __func__, ret);
 
@@ -2895,7 +2837,7 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 	if (!chnl->reserved)
 		return -EINVAL;
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 	enable_mcde_hw();
 	if (!chnl->formatter_updated)
 		(void)update_channel_static_registers(chnl);
@@ -2907,7 +2849,7 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 
 	ret = _mcde_chnl_update(chnl, update_area, tripple_buffer);
 
-	mutex_unlock(&mcde_hw_lock);
+	mcde_unlock(__func__, __LINE__);
 
 	dev_vdbg(&mcde_dev->dev, "%s exit with ret %d\n", __func__, ret);
 
@@ -2917,6 +2859,13 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 void mcde_chnl_put(struct mcde_chnl_state *chnl)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+
+	if (chnl->enabled) {
+		stop_channel(chnl);
+		cancel_delayed_work(&hw_timeout_work);
+		disable_mcde_hw(false);
+		chnl->enabled = false;
+	}
 
 	chnl->reserved = false;
 	if (chnl->port.type == MCDE_PORTTYPE_DPI) {
@@ -2933,10 +2882,10 @@ void mcde_chnl_stop_flow(struct mcde_chnl_state *chnl)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 	if (mcde_is_enabled && chnl->enabled)
-		disable_channel(chnl);
-	mutex_unlock(&mcde_hw_lock);
+		stop_channel(chnl);
+	mcde_unlock(__func__, __LINE__);
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
@@ -2945,9 +2894,9 @@ void mcde_chnl_enable(struct mcde_chnl_state *chnl)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 	_mcde_chnl_enable(chnl);
-	mutex_unlock(&mcde_hw_lock);
+	mcde_unlock(__func__, __LINE__);
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
@@ -2956,30 +2905,13 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 	cancel_delayed_work(&hw_timeout_work);
-	/* This channel is disabled here */
-	chnl->enabled = false;
-	if (mcde_is_enabled && chnl->formatter_updated
-				&& chnl->port.type == MCDE_PORTTYPE_DSI)
-		wait_while_dsi_running(chnl->port.link);
-
-	if (chnl->formatter_updated) {
-		disable_formatter(&chnl->port);
-		chnl->formatter_updated = false;
-	}
-	if (chnl->esram_is_enabled) {
-		WARN_ON_ONCE(regulator_disable(regulator_esram_epod));
-		chnl->esram_is_enabled = false;
-	}
-	del_timer(&chnl->dsi_te_timer);
-	del_timer(&chnl->auto_sync_timer);
-	/*
-	 * Check if other channels can be disabled and
-	 * if the hardware can be shutdown
-	 */
+	/* The channel must be stopped before it is disabled */
+	WARN_ON_ONCE(chnl->state == CHNLSTATE_RUNNING);
 	disable_mcde_hw(false);
-	mutex_unlock(&mcde_hw_lock);
+	chnl->enabled = false;
+	mcde_unlock(__func__, __LINE__);
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
@@ -3015,7 +2947,7 @@ struct mcde_ovly_state *mcde_ovly_get(struct mcde_chnl_state *chnl)
 		ovly->h = 0;
 		ovly->alpha_value = 0xFF;
 		ovly->alpha_source = MCDE_OVL1CONF2_BP_PER_PIXEL_ALPHA;
-		ovly->update = true;
+		ovly->dirty = true;
 		mcde_ovly_apply(ovly);
 	}
 
@@ -3030,7 +2962,7 @@ void mcde_ovly_put(struct mcde_ovly_state *ovly)
 		return;
 	if (ovly->regs.enabled) {
 		ovly->paddr = 0;
-		ovly->update = true;
+		ovly->dirty = true;
 		mcde_ovly_apply(ovly);/* REVIEW: API call calling API call! */
 	}
 	ovly->inuse = false;
@@ -3041,8 +2973,8 @@ void mcde_ovly_set_source_buf(struct mcde_ovly_state *ovly, u32 paddr)
 	if (!ovly->inuse)
 		return;
 
-	if (paddr == 0 || ovly->paddr == 0)
-		ovly->update = true;
+	ovly->dirty = paddr == 0 || ovly->paddr == 0;
+	ovly->dirty_buf = true;
 
 	ovly->paddr = paddr;
 }
@@ -3055,7 +2987,7 @@ void mcde_ovly_set_source_info(struct mcde_ovly_state *ovly,
 
 	ovly->stride = stride;
 	ovly->pix_fmt = pix_fmt;
-	ovly->update = true;
+	ovly->dirty = true;
 }
 
 void mcde_ovly_set_source_area(struct mcde_ovly_state *ovly,
@@ -3068,7 +3000,7 @@ void mcde_ovly_set_source_area(struct mcde_ovly_state *ovly,
 	ovly->src_y = y;
 	ovly->w = w;
 	ovly->h = h;
-	ovly->update = true;
+	ovly->dirty = true;
 }
 
 void mcde_ovly_set_dest_pos(struct mcde_ovly_state *ovly, u16 x, u16 y, u8 z)
@@ -3079,6 +3011,7 @@ void mcde_ovly_set_dest_pos(struct mcde_ovly_state *ovly, u16 x, u16 y, u8 z)
 	ovly->dst_x = x;
 	ovly->dst_y = y;
 	ovly->dst_z = z;
+	ovly->dirty = true;
 }
 
 void mcde_ovly_apply(struct mcde_ovly_state *ovly)
@@ -3086,16 +3019,21 @@ void mcde_ovly_apply(struct mcde_ovly_state *ovly)
 	if (!ovly->inuse)
 		return;
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 
-	ovly->regs.ch_id = ovly->chnl->id;
-	ovly->regs.enabled = ovly->paddr != 0;
-	ovly->regs.baseaddress0 = ovly->paddr;
-	ovly->regs.baseaddress1 = ovly->regs.baseaddress0 + ovly->stride;
-	/*TODO set to true if interlaced *//* REVIEW: Video mode interlaced? */
-	if (!ovly->regs.update)
-		ovly->regs.update = ovly->update;
-	ovly->update = false;
+	if (ovly->dirty || ovly->dirty_buf) {
+		ovly->regs.ch_id = ovly->chnl->id;
+		ovly->regs.enabled = ovly->paddr != 0;
+		ovly->regs.baseaddress0 = ovly->paddr;
+		ovly->regs.baseaddress1 =
+					ovly->regs.baseaddress0 + ovly->stride;
+		ovly->regs.dirty_buf = true;
+		ovly->dirty_buf = false;
+	}
+	if (!ovly->dirty) {
+		mcde_unlock(__func__, __LINE__);
+		return;
+	}
 
 	switch (ovly->pix_fmt) {/* REVIEW: Extract to table */
 	case MCDE_OVLYPIXFMT_RGB565:
@@ -3161,9 +3099,11 @@ void mcde_ovly_apply(struct mcde_ovly_state *ovly)
 	ovly->regs.col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
 	ovly->regs.alpha_source = ovly->alpha_source;
 	ovly->regs.alpha_value = ovly->alpha_value;
-	ovly->chnl->transactionid++;
 
-	mutex_unlock(&mcde_hw_lock);
+	ovly->regs.dirty = true;
+	ovly->dirty = false;
+
+	mcde_unlock(__func__, __LINE__);
 
 	dev_vdbg(&mcde_dev->dev, "Overlay applied, idx=%d chnl=%d\n",
 						ovly->idx, ovly->chnl->id);
@@ -3280,6 +3220,92 @@ static void remove_clocks_and_power(struct platform_device *pdev)
 	regulator_put(regulator_mcde_epod);
 	regulator_put(regulator_esram_epod);
 }
+static void probe_hw(void)
+{
+	int i;
+	u8 major_version;
+	u8 minor_version;
+	u8 development_version;
+
+	dev_info(&mcde_dev->dev, "Probe HW\n");
+
+	/* Get MCDE HW version */
+	regulator_enable(regulator_mcde_epod);
+	clk_enable(clock_mcde);
+	major_version = (u8)mcde_rfld(MCDE_PID, MAJOR_VERSION);
+	minor_version = (u8)mcde_rfld(MCDE_PID, MINOR_VERSION);
+	development_version = (u8)mcde_rfld(MCDE_PID, DEVELOPMENT_VERSION);
+
+	dev_info(&mcde_dev->dev, "MCDE HW revision %u.%u.%u.%u\n",
+			major_version, minor_version, development_version,
+					mcde_rfld(MCDE_PID, METALFIX_VERSION));
+
+	clk_disable(clock_mcde);
+	regulator_disable(regulator_mcde_epod);
+
+	if (major_version == 3 && minor_version == 0 &&
+					development_version >= 8) {
+		hardware_version = MCDE_CHIP_VERSION_3_0_8;
+		dev_info(&mcde_dev->dev, "V2 HW\n");
+	} else if (major_version == 3 && minor_version == 0 &&
+					development_version >= 5) {
+		hardware_version = MCDE_CHIP_VERSION_3_0_5;
+		dev_info(&mcde_dev->dev, "V1 HW\n");
+	} else if (major_version == 1 && minor_version == 0 &&
+					development_version >= 4) {
+		hardware_version = MCDE_CHIP_VERSION_1_0_4;
+		mcde_dynamic_power_management = false;
+		num_channels = 2;
+		num_overlays = 3;
+		dev_info(&mcde_dev->dev, "V1_U5500 HW\n");
+	} else if (major_version == 4 && minor_version == 0 &&
+					development_version >= 4) {
+		hardware_version = MCDE_CHIP_VERSION_4_0_4;
+		dev_info(&mcde_dev->dev, "V2_U5500 HW\n");
+	} else {
+		dev_err(&mcde_dev->dev, "Unsupported HW version\n");
+	}
+
+	/* Init MCDE */
+	for (i = 0; i < num_overlays; i++)
+		overlays[i].idx = i;
+
+	if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
+	    hardware_version == MCDE_CHIP_VERSION_4_0_4) {
+		channels[0].ovly0 = &overlays[0];
+		channels[0].ovly1 = &overlays[1];
+		channels[1].ovly0 = &overlays[2];
+		channels[1].ovly1 = NULL;
+	} else {
+		channels[0].ovly0 = &overlays[0];
+		channels[0].ovly1 = &overlays[1];
+		channels[1].ovly0 = &overlays[2];
+		channels[1].ovly1 = &overlays[3];
+		channels[2].ovly0 = &overlays[4];
+		channels[2].ovly1 = NULL;
+		channels[3].ovly0 = &overlays[5];
+		channels[3].ovly1 = NULL;
+	}
+
+	for (i = 0; i < num_channels; i++) {
+		channels[i].id = i;
+
+		channels[i].ovly0->chnl = &channels[i];
+		if (channels[i].ovly1)
+			channels[i].ovly1->chnl = &channels[i];
+
+		init_waitqueue_head(&channels[i].state_waitq);
+		init_waitqueue_head(&channels[i].vcmp_waitq);
+		init_timer(&channels[i].auto_sync_timer);
+		channels[i].auto_sync_timer.function =
+					watchdog_auto_sync_timer_function;
+
+		init_timer(&channels[i].dsi_te_timer);
+		channels[i].dsi_te_timer.function =
+					dsi_te_timer_function;
+		channels[i].dsi_te_timer.data = i;
+	}
+}
 
 static int __devinit mcde_probe(struct platform_device *pdev)
 {
@@ -3287,9 +3313,6 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 	int i;
 	struct resource *res;
 	struct mcde_platform_data *pdata = pdev->dev.platform_data;
-	u8 major_version;
-	u8 minor_version;
-	u8 development_version;
 
 	if (!pdata) {
 		dev_dbg(&pdev->dev, "No platform data\n");
@@ -3371,102 +3394,14 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK_DEFERRABLE(&hw_timeout_work, work_sleep_function);
 
-	enable_clocks_and_power(mcde_dev);
+	probe_hw();
 
-	update_mcde_registers();
-	mcde_is_enabled = true;
-
-	schedule_delayed_work(&hw_timeout_work,
-					msecs_to_jiffies(MCDE_SLEEP_WATCHDOG));
-
-	major_version = MCDE_REG2VAL(MCDE_PID, MAJOR_VERSION,
-							mcde_rreg(MCDE_PID));
-	minor_version = MCDE_REG2VAL(MCDE_PID, MINOR_VERSION,
-							mcde_rreg(MCDE_PID));
-	development_version = MCDE_REG2VAL(MCDE_PID, DEVELOPMENT_VERSION,
-							mcde_rreg(MCDE_PID));
-
-	dev_info(&mcde_dev->dev, "MCDE HW revision %u.%u.%u.%u\n",
-			major_version, minor_version, development_version,
-					mcde_rfld(MCDE_PID, METALFIX_VERSION));
-
-	if (major_version == 3 && minor_version == 0 &&
-					development_version >= 8) {
-		hardware_version = MCDE_CHIP_VERSION_3_0_8;
-		dev_info(&mcde_dev->dev, "V2 HW\n");
-	} else if (major_version == 3 && minor_version == 0 &&
-					development_version >= 5) {
-		hardware_version = MCDE_CHIP_VERSION_3_0_5;
-		dev_info(&mcde_dev->dev, "V1 HW\n");
-	} else if (major_version == 1 && minor_version == 0 &&
-					development_version >= 4) {
-		hardware_version = MCDE_CHIP_VERSION_1_0_4;
-		mcde_dynamic_power_management = false;
-		num_channels = 2;
-		num_overlays = 3;
-		dev_info(&mcde_dev->dev, "V1_U5500 HW\n");
-	} else if (major_version == 4 && minor_version == 0 &&
-					development_version >= 4) {
-		hardware_version = MCDE_CHIP_VERSION_4_0_4;
-		dev_info(&mcde_dev->dev, "V2_U5500 HW\n");
-	} else {
-		dev_err(&mcde_dev->dev, "Unsupported HW version\n");
-		ret = -ENOTSUPP;
-		goto failed_hardware_version;
-	}
-
-	for (i = 0; i < num_overlays; i++)
-		overlays[i].idx = i;
-
-	if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
-	    hardware_version == MCDE_CHIP_VERSION_4_0_4) {
-		channels[0].ovly0 = &overlays[0];
-		channels[0].ovly1 = &overlays[1];
-		channels[1].ovly0 = &overlays[2];
-		channels[1].ovly1 = NULL;
-	} else {
-		channels[0].ovly0 = &overlays[0];
-		channels[0].ovly1 = &overlays[1];
-		channels[1].ovly0 = &overlays[2];
-		channels[1].ovly1 = &overlays[3];
-		channels[2].ovly0 = &overlays[4];
-		channels[2].ovly1 = NULL;
-		channels[3].ovly0 = &overlays[5];
-		channels[3].ovly1 = NULL;
-	}
-
-	for (i = 0; i < num_channels; i++) {
-		channels[i].id = i;
-
-		channels[i].ovly0->chnl = &channels[i];
-		if (channels[i].ovly1)
-			channels[i].ovly1->chnl = &channels[i];
-
-		init_waitqueue_head(&channels[i].waitq_hw);
-		init_timer(&channels[i].auto_sync_timer);
-		channels[i].auto_sync_timer.function =
-					watchdog_auto_sync_timer_function;
-
-		init_timer(&channels[i].dsi_te_timer);
-		channels[i].dsi_te_timer.function =
-					dsi_te_timer_function;
-		channels[i].dsi_te_timer.data = i;
-	}
-
-	ret = request_irq(mcde_irq, mcde_irq_handler, 0, "mcde",
-							&mcde_dev->dev);
-	if (ret) {
-		dev_dbg(&mcde_dev->dev, "Failed to request irq (irq=%d)\n",
-								mcde_irq);
-		goto failed_request_irq;
-	}
+	ret = enable_mcde_hw();
+	if (ret)
+		goto failed_mcde_enable;
 
 	return 0;
-
-failed_request_irq:
-failed_hardware_version:
-	disable_mcde_hw(true);
-	remove_clocks_and_power(pdev);
+failed_mcde_enable:
 failed_init_clocks:
 failed_map_dsi_io:
 failed_get_dsi_io:
@@ -3516,14 +3451,15 @@ static int mcde_resume(struct platform_device *pdev)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 
 	if (enable_mcde_hw()) {
-		mutex_unlock(&mcde_hw_lock);
+		mcde_unlock(__func__, __LINE__);
 		return -EINVAL;
 	}
 
-	mutex_unlock(&mcde_hw_lock);
+	mcde_unlock(__func__, __LINE__);
+
 	return 0;
 }
 
@@ -3533,17 +3469,17 @@ static int mcde_suspend(struct platform_device *pdev, pm_message_t state)
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	mutex_lock(&mcde_hw_lock);
+	mcde_lock(__func__, __LINE__);
 
 	cancel_delayed_work(&hw_timeout_work);
 
 	if (!mcde_is_enabled) {
-		mutex_unlock(&mcde_hw_lock);
+		mcde_unlock(__func__, __LINE__);
 		return 0;
 	}
 	disable_mcde_hw(true);
 
-	mutex_unlock(&mcde_hw_lock);
+	mcde_unlock(__func__, __LINE__);
 
 	return ret;
 }
