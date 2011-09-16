@@ -407,16 +407,13 @@ static void ab8500_usb_phy_disable_work(struct work_struct *work)
 
 static unsigned ab8500_eyediagram_workaroud(struct ab8500_usb *ab, unsigned mA)
 {
-	if (mA > 100) {
-		/* AB V2 has eye diagram issues when drawing more
-		 * than 100mA from VBUS.So setting charging current
-		 * to 100mA in case of standard host
-		 */
-		if (ab->rev < 0x30)
-			mA = 100;
-		else
-			mA = 300;
-	}
+	/* AB V2 has eye diagram issues when drawing more
+	 * than 100mA from VBUS.So setting charging current
+	 * to 100mA in case of standard host
+	 */
+	if ((ab->rev < 0x30) && (mA > 100))
+		mA = 100;
+
 	return mA;
 }
 
