@@ -35,6 +35,8 @@
 		.dst_info.psize = STEDMA40_PSIZE_LOG_16, \
 	}
 
+#define USB_OTG_GPIO_CS      76
+
 static struct stedma40_chan_cfg musb_dma_rx_ch[UX500_MUSB_DMA_NUM_RX_CHANNELS]
 	= {
 	MUSB_DMA40_RX_CH,
@@ -158,6 +160,7 @@ struct abx500_usbgpio_platform_data abx500_usbgpio_plat_data = {
 	.enable		= &enable_gpio,
 	.disable	= &disable_gpio,
 	.put		= &put_gpio,
+	.usb_cs		= USB_OTG_GPIO_CS,
 };
 
 static inline void ux500_usb_dma_update_rx_ch_config(int *src_dev_type)

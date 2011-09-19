@@ -28,6 +28,7 @@ struct abx500_usbgpio_platform_data {
 	void (*enable)(void);
 	void (*disable)(void);
 	void (*put)(void);
+	int usb_cs;
 };
 
 #endif

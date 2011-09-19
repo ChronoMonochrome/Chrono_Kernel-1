@@ -23,10 +23,12 @@
 #include <mach/hardware.h>
 #include <mach/devices.h>
 #include <mach/setup.h>
+#include <mach/usb.h>
 
 #include "pins-db5500.h"
 #include "devices-db5500.h"
 #include <linux/led-lm3530.h>
+#include "board-ux500-usb.h"
 
 /*
  * GPIO
@@ -111,6 +113,8 @@ static struct ab5500_platform_data ab5500_plf_data = {
 	.init_settings = NULL,
 	.init_settings_sz = 0,
 	.pm_power_off = false,
+	.dev_data[AB5500_DEVID_USB] = &abx500_usbgpio_plat_data,
+	.dev_data_sz[AB5500_DEVID_USB] = sizeof(abx500_usbgpio_plat_data),
 };
 
 static struct platform_device ab5500_device = {
