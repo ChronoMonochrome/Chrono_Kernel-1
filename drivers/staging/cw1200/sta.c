@@ -1119,9 +1119,6 @@ void cw1200_join_work(struct work_struct *work)
 
 		wsm_flush_tx(priv);
 
-		WARN_ON(wsm_set_block_ack_policy(priv,
-				priv->ba_tid_mask, priv->ba_tid_mask));
-
 		/* Queue unjoin if not associated in 3 sec. */
 		queue_delayed_work(priv->workqueue,
 			&priv->join_timeout, 3 * HZ);
@@ -1142,6 +1139,8 @@ void cw1200_join_work(struct work_struct *work)
 				__le32_to_cpu(wsm->packetID));
 			priv->join_status = CW1200_JOIN_STATUS_STA;
 		}
+		WARN_ON(wsm_set_block_ack_policy(priv,
+			priv->ba_tid_mask, priv->ba_tid_mask));
 		cw1200_update_filtering(priv);
 	}
 	mutex_unlock(&priv->conf_mutex);
@@ -1202,6 +1201,8 @@ void cw1200_unjoin_work(struct work_struct *work)
 		cancel_work_sync(&priv->event_handler);
 		cancel_delayed_work_sync(&priv->connection_loss_work);
 		cw1200_update_listening(priv, priv->listening);
+		WARN_ON(wsm_set_block_ack_policy(priv,
+			priv->ba_tid_mask, priv->ba_tid_mask));
 		cw1200_update_filtering(priv);
 		priv->setbssparams_done = false;
 
