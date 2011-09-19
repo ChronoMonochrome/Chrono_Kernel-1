@@ -67,6 +67,9 @@ enum ab8500_pin {
 	AB8500_PIN_GPIO42,
 };
 
+int ab8500_config_pulldown(struct device *dev,
+				enum ab8500_pin gpio, bool enable);
+
 int ab8500_gpio_config_select(struct device *dev,
 				enum ab8500_pin gpio, bool gpio_select);
 

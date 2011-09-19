@@ -507,6 +507,23 @@ static int __devexit ab8500_gpio_remove(struct platform_device *pdev)
 	return 0;
 }
 
+int ab8500_config_pulldown(struct device *dev,
+				enum ab8500_pin gpio, bool enable)
+{
+	u8 offset =  gpio - AB8500_PIN_GPIO1;
+	u8 pos = offset % 8;
+	u8 val = enable ? 0 : 1;
+	u8 reg = AB8500_GPIO_PUD1_REG + (offset / 8);
+	int ret;
+
+	ret = abx500_mask_and_set_register_interruptible(dev,
+				AB8500_MISC, reg, 1 << pos, val << pos);
+	if (ret < 0)
+		dev_err(dev, "%s write failed\n", __func__);
+	return ret;
+}
+EXPORT_SYMBOL(ab8500_config_pulldown);
+
 /*
  * ab8500_gpio_config_select()
  *
