@@ -2,6 +2,7 @@
  * Copyright (C) ST-Ericsson SA 2011
  *
  * Author: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
+  *Author: Bartosz Markowski <bartosz.markowski@tieto.com> for ST-Ericsson
  * License terms: GNU General Public License (GPL) version 2
  */
 
@@ -17,31 +18,10 @@
 
 static void cw1200_release(struct device *dev);
 
-static struct resource cw1200_href_resources[] = {
+static struct resource cw1200_u5500_resources[] = {
 	{
-		.start = 215,
-		.end = 215,
-		.flags = IORESOURCE_IO,
-		.name = "cw1200_reset",
-	},
-	{
-		.start = NOMADIK_GPIO_TO_IRQ(216),
-		.end = NOMADIK_GPIO_TO_IRQ(216),
-		.flags = IORESOURCE_IRQ,
-		.name = "cw1200_irq",
-	},
-};
-
-static struct resource cw1200_href60_resources[] = {
-	{
-		.start = 85,
-		.end = 85,
-		.flags = IORESOURCE_IO,
-		.name = "cw1200_reset",
-	},
-	{
-		.start = NOMADIK_GPIO_TO_IRQ(4),
-		.end = NOMADIK_GPIO_TO_IRQ(4),
+		.start = NOMADIK_GPIO_TO_IRQ(129),
+		.end = NOMADIK_GPIO_TO_IRQ(129),
 		.flags = IORESOURCE_IRQ,
 		.name = "cw1200_irq",
 	},
@@ -69,7 +49,7 @@ static int cw1200_pins_enable(bool enable)
 	struct ux500_pins *pins = NULL;
 	int ret = 0;
 
-	pins = ux500_pins_get("sdi1");
+	pins = ux500_pins_get("sdi3");
 
 	if (!pins) {
 		printk(KERN_ERR "cw1200: Pins are not found. "
@@ -92,17 +72,13 @@ static int cw1200_pins_enable(bool enable)
 	return ret;
 }
 
-int __init mop500_wlan_init(void)
+int __init u5500_wlan_init(void)
 {
 	int ret;
 
-	if (machine_is_u8500() || machine_is_nomadik()) {
-		cw1200_device.num_resources = ARRAY_SIZE(cw1200_href_resources);
-		cw1200_device.resource = cw1200_href_resources;
-	} else if (machine_is_hrefv60()) {
-		cw1200_device.num_resources =
-				ARRAY_SIZE(cw1200_href60_resources);
-		cw1200_device.resource = cw1200_href60_resources;
+	if (machine_is_u5500()) {
+		cw1200_device.num_resources = ARRAY_SIZE(cw1200_u5500_resources);
+		cw1200_device.resource = cw1200_u5500_resources;
 	} else {
 		dev_err(&cw1200_device.dev,
 				"Unsupported mach type %d "
@@ -111,10 +87,8 @@ int __init mop500_wlan_init(void)
 		return -ENOTSUPP;
 	}
 
-	cw1200_platform_data.mmc_id = "mmc3";
-
-	cw1200_platform_data.reset = &cw1200_device.resource[0];
-	cw1200_platform_data.irq = &cw1200_device.resource[1];
+	cw1200_platform_data.mmc_id = "mmc2";
+	cw1200_platform_data.irq = &cw1200_device.resource[0];
 
 	cw1200_device.dev.release = cw1200_release;
 
