@@ -95,7 +95,6 @@ struct ab5500_usb {
 	struct clk *sysclk;
 	struct regulator *v_ape;
 	struct abx500_usbgpio_platform_data *usb_gpio;
-	struct delayed_work work_usb_workaround;
 };
 
 static int ab5500_usb_irq_setup(struct platform_device *pdev,
@@ -150,12 +149,6 @@ static void ab5500_usb_phy_enable(struct ab5500_usb *ab, bool sel_host)
 	clk_enable(ab->sysclk);
 	regulator_enable(ab->v_ape);
 
-	if (!sel_host) {
-		schedule_delayed_work_on(0,
-					&ab->work_usb_workaround,
-					msecs_to_jiffies(USB_PROBE_DELAY));
-	}
-
 	abx500_set_register_interruptible(ab->dev,
 			AB5500_BANK_USB,
 			AB5500_USB_PHY_CTRL_REG,
@@ -179,13 +172,6 @@ static void ab5500_usb_phy_disable(struct ab5500_usb *ab, bool sel_host)
 	regulator_disable(ab->v_ape);
 	clk_disable(ab->sysclk);
 	ab->usb_gpio->disable();
-	if (!sel_host) {
-
-		cancel_delayed_work_sync(&ab->work_usb_workaround);
-		prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
-			"usb", 25);
-	}
-
 }
 
 #define ab5500_usb_peri_phy_en(ab)	ab5500_usb_phy_enable(ab, false)
