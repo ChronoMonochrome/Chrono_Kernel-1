@@ -18,6 +18,8 @@ struct ab8500_gpio_platform_data {
 	int gpio_base;
 	u32 irq_base;
 	u8  config_reg[8];
+	u8  config_direction[6];
+	u8  config_pullups[6];
 };
 
 enum ab8500_pin {

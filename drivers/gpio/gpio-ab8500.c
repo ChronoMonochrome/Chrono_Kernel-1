@@ -445,6 +445,18 @@ static int __devinit ab8500_gpio_probe(struct platform_device *pdev)
 				pdata->config_reg[i]);
 		if (ret < 0)
 			goto out_free;
+
+		ret = abx500_set_register_interruptible(ab8500_gpio->dev,
+				AB8500_MISC, i + AB8500_GPIO_DIR1_REG,
+				pdata->config_direction[i]);
+		if (ret < 0)
+			goto out_free;
+
+		ret = abx500_set_register_interruptible(ab8500_gpio->dev,
+				AB8500_MISC, i + AB8500_GPIO_PUD1_REG,
+				pdata->config_pullups[i]);
+		if (ret < 0)
+			goto out_free;
 	}
 	ret = abx500_set_register_interruptible(ab8500_gpio->dev, AB8500_MISC,
 				AB8500_GPIO_ALTFUN_REG,
