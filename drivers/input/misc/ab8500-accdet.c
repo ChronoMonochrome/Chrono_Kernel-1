@@ -260,7 +260,7 @@ static void ab8500_config_hw_test_plug_connected(struct abx500_ad *dd,
 
 	dev_dbg(&dd->pdev->dev, "%s:%d\n", __func__, enable);
 
-	ret = ab8500_config_pull_up_or_down(&dd->pdev->dev,
+	ret = ab8500_config_pulldown(&dd->pdev->dev,
 					dd->pdata->video_ctrl_gpio, !enable);
 	if (ret < 0) {
 		dev_err(&dd->pdev->dev,
