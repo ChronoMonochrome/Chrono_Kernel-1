@@ -155,6 +155,9 @@ probe_failed:
 #else
 		;
 #endif
+	} else {
+		pr_debug("%s: probe of %s rejects match %d\n",
+		       drv->name, dev_name(dev), ret);
 	}
 	/*
 	 * Ignore errors returned by ->probe so that the next driver can try
