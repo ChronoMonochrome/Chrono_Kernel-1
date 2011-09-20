@@ -214,11 +214,15 @@ static struct mcde_platform_data mcde_pdata = {
 	.syncmux = 0x00,  /* DPI channel A and B on output pins A and B resp */
 	.num_channels = 4,
 	.num_overlays = 6,
+#ifdef CONFIG_MCDE_DISPLAY_DSI
 	.regulator_vana_id = "v-ana",
+#endif
 	.regulator_mcde_epod_id = "vsupply",
 	.regulator_esram_epod_id = "v-esram34",
+#ifdef CONFIG_MCDE_DISPLAY_DSI
 	.clock_dsi_id = "hdmi",
 	.clock_dsi_lp_id = "tv",
+#endif
 	.clock_dpi_id = "lcd",
 	.clock_mcde_id = "mcde",
 	.platform_set_clocks = mcde_platform_set_display_clocks,

@@ -209,8 +209,10 @@ static struct mcde_platform_data mcde_pdata = {
 	.num_overlays = 3,
 	.regulator_mcde_epod_id = "vsupply",
 	.regulator_esram_epod_id = "v-esram12",
+#ifdef CONFIG_MCDE_DISPLAY_DSI
 	.clock_dsi_id = "hdmi",
 	.clock_dsi_lp_id = "tv",
+#endif
 	.clock_mcde_id = "mcde",
 	.platform_set_clocks = mcde_platform_set_display_clocks,
 	.platform_enable_dsipll = mcde_platform_enable_dsipll,
