@@ -206,10 +206,6 @@ static int cw1200_bh_read_ctrl_reg(struct cw1200_common *priv,
 		if (ret)
 			printk(KERN_ERR
 				"[BH] Failed to read control register.\n");
-		else
-			printk(KERN_WARNING
-				"[BH] Second attempt to read control "
-				"register passed. This is a firmware bug.\n");
 	}
 
 	return ret;

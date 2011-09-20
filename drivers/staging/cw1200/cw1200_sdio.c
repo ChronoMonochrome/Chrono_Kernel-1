@@ -50,13 +50,7 @@ static int cw1200_sdio_memcpy_fromio(struct sbus_priv *self,
 				     unsigned int addr,
 				     void *dst, int count)
 {
-	int ret = sdio_memcpy_fromio(self->func, dst, addr, count);
-	if (ret) {
-		printk(KERN_ERR "!!! Can't read %d bytes from 0x%.8X."
-				" Err %d.\n",
-				count, addr, ret);
-	}
-	return ret;
+	return sdio_memcpy_fromio(self->func, dst, addr, count);
 }
 
 static int cw1200_sdio_memcpy_toio(struct sbus_priv *self,
