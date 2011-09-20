@@ -1445,6 +1445,7 @@ int prcmu_resetout(u8 resoutn, u8 state)
 int db5500_prcmu_enable_dsipll(void)
 {
 	int i;
+	int ret = 0;
 
 	/* Enable DSIPLL_RESETN resets */
 	writel(PRCMU_RESET_DSIPLL, _PRCMU_BASE + PRCM_APE_RESETN_CLR);
@@ -1467,9 +1468,14 @@ int db5500_prcmu_enable_dsipll(void)
 			break;
 		udelay(100);
 	}
+
+	if ((readl(_PRCMU_BASE + PRCM_PLLDSI_LOCKP) &
+			PRCMU_PLLDSI_LOCKP_LOCKED)
+					!= PRCMU_PLLDSI_LOCKP_LOCKED)
+		ret = -EIO;
 	/* Release DSIPLL_RESETN */
 	writel(PRCMU_RESET_DSIPLL, _PRCMU_BASE + PRCM_APE_RESETN_SET);
-	return 0;
+	return ret;
 }
 
 int db5500_prcmu_disable_dsipll(void)
