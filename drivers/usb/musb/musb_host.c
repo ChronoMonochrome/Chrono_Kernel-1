@@ -1451,7 +1451,7 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 	size_t			xfer_len;
 	void __iomem		*mbase = musb->mregs;
 	int			pipe;
-	u16			rx_csr, val;
+	u16			rx_csr, val, restore_csr;
 	bool			iso_err = false;
 	bool			done = false;
 	u32			status;
@@ -1733,6 +1733,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
  */
 
 			val = musb_readw(epio, MUSB_RXCSR);
+
+			/* retain the original value,
+			 * which will be used to reset CSR
+			 */
+			restore_csr = val;
 			val &= ~MUSB_RXCSR_H_REQPKT;
 
 			if (dma->desired_mode == 0)
@@ -1761,6 +1766,7 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 				hw_ep->rx_channel = NULL;
 				dma = NULL;
 			}
+			musb_writew(epio, MUSB_RXCSR, restore_csr);
 		}
 #endif	/* Mentor DMA */
 
