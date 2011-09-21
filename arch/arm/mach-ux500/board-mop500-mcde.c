@@ -120,7 +120,7 @@ static struct mcde_port port0 = {
 static struct mcde_display_generic_platform_data generic_display0_pdata = {
 	.reset_delay = 1,
 #ifdef CONFIG_REGULATOR
-	.regulator_id = "v-display",
+	.regulator_id = "vaux12v5",
 	.min_supply_voltage = 2500000, /* 2.5V */
 	.max_supply_voltage = 2800000 /* 2.8V */
 #endif
@@ -182,7 +182,7 @@ static struct mcde_port subdisplay_port = {
 static struct mcde_display_generic_platform_data generic_subdisplay_pdata = {
 	.reset_delay = 1,
 #ifdef CONFIG_REGULATOR
-	.regulator_id = "v-display",
+	.regulator_id = "vaux12v5",
 	.min_supply_voltage = 2500000, /* 2.5V */
 	.max_supply_voltage = 2800000 /* 2.8V */
 #endif
@@ -301,7 +301,7 @@ static struct mcde_port port_tvout1 = {
 
 static struct ab8500_display_platform_data ab8500_display_pdata = {
 	.nr_regulators = 2,
-	.regulator_id  = {"v-tvout", "v-ab8500-AV-switch"},
+	.regulator_id  = {"vtvout", "vcc-N2158"},
 	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
@@ -405,7 +405,7 @@ static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	.reset_gpio = 0,
 	.reset_delay = 1,
 	.regulator_id = NULL, /* TODO: "display_main" */
-	.cvbs_regulator_id = "v-av8100-AV-switch",
+	.cvbs_regulator_id = "vcc-N2158",
 	.ddb_id = 1,
 	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
