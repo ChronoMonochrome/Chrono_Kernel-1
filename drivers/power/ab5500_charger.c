@@ -27,6 +27,7 @@
 #include <linux/mfd/abx500/ab5500-bm.h>
 #include <linux/mfd/abx500/ab5500-gpadc.h>
 #include <linux/mfd/abx500/ux500_chargalg.h>
+#include <linux/usb/otg.h>
 
 /* Charger constants */
 #define NO_PW_CONN			0
@@ -168,6 +169,11 @@ struct ab5500_charger_usb_state {
  *				Work for checking Main thermal status
  * @check_usb_thermal_prot_work:
  *				Work for checking USB thermal status
+ * @ otg:			pointer to struct otg_transceiver, used to
+ *				notify the current during a standard host
+ *				charger.
+ * @nb:				structture of type notifier_block, which has
+ *				a function pointer referenced by usb driver.
  */
 struct ab5500_charger {
 	struct device *dev;
@@ -190,14 +196,9 @@ struct ab5500_charger {
 	struct work_struct usb_link_status_work;
 	struct work_struct usb_state_changed_work;
 	struct work_struct check_usb_thermal_prot_work;
+	struct otg_transceiver *otg;
+	struct notifier_block nb;
 };
-
-/*
- * TODO: This variable is static in order to get information
- * about maximum current and USB state from the USB driver
- * This should be solved in a better way
- */
-static struct ab5500_charger *static_di;
 
 /* USB properties */
 static enum power_supply_property ab5500_charger_usb_props[] = {
@@ -1130,15 +1131,16 @@ static void ab5500_charger_usb_link_status_work(struct work_struct *work)
 static void ab5500_charger_usb_state_changed_work(struct work_struct *work)
 {
 	int ret;
+	unsigned long flags;
 	struct ab5500_charger *di = container_of(work,
 		struct ab5500_charger, usb_state_changed_work);
 
 	if (!di->vbus_detected)
 		return;
 
-	spin_lock(&di->usb_state.usb_lock);
+	spin_lock_irqsave(&di->usb_state.usb_lock, flags);
 	di->usb_state.usb_changed = false;
-	spin_unlock(&di->usb_state.usb_lock);
+	spin_unlock_irqrestore(&di->usb_state.usb_lock, flags);
 
 	/*
 	 * wait for some time until you get updates from the usb stack
@@ -1521,25 +1523,41 @@ static struct ab5500_charger_interrupts ab5500_charger_irq[] = {
 	/*{"CHG_SW_TIMER_OUT", ab5500_charger_chwdexp_handler},*/
 };
 
-void ab5500_charger_usb_state_changed(u8 bm_usb_state, u16 mA)
+static int ab5500_charger_usb_notifier_call(struct notifier_block *nb,
+		unsigned long event, void *power)
 {
-	struct ab5500_charger *di = static_di;
+	struct ab5500_charger *di =
+		container_of(nb, struct ab5500_charger, nb);
+	enum ab5500_usb_state bm_usb_state;
+	unsigned mA = *((unsigned *)power);
+
+	/* TODO: State is fabricate  here. See if charger really needs USB
+	 * state or if mA is enough
+	 */
+	if ((di->usb_state.usb_current == 2) && (mA > 2))
+		bm_usb_state = AB5500_BM_USB_STATE_RESUME;
+	else if (mA == 0)
+		bm_usb_state = AB5500_BM_USB_STATE_RESET_HS;
+	else if (mA == 2)
+		bm_usb_state = AB5500_BM_USB_STATE_SUSPEND;
+	else if (mA >= 8) /* 8, 100, 500 */
+		bm_usb_state = AB5500_BM_USB_STATE_CONFIGURED;
+	else /* Should never occur */
+		bm_usb_state = AB5500_BM_USB_STATE_RESET_FS;
 
 	dev_dbg(di->dev, "%s usb_state: 0x%02x mA: %d\n",
 		__func__, bm_usb_state, mA);
 
 	spin_lock(&di->usb_state.usb_lock);
 	di->usb_state.usb_changed = true;
-	spin_unlock(&di->usb_state.usb_lock);
-
 	di->usb_state.state = bm_usb_state;
 	di->usb_state.usb_current = mA;
+	spin_unlock(&di->usb_state.usb_lock);
 
 	queue_work(di->charger_wq, &di->usb_state_changed_work);
 
-	return;
+	return NOTIFY_OK;
 }
-EXPORT_SYMBOL(ab5500_charger_usb_state_changed);
 
 #if defined(CONFIG_PM)
 static int ab5500_charger_resume(struct platform_device *pdev)
@@ -1585,6 +1603,9 @@ static int __devexit ab5500_charger_remove(struct platform_device *pdev)
 		free_irq(irq, di);
 	}
 
+	otg_unregister_notifier(di->otg, &di->nb);
+	otg_put_transceiver(di->otg);
+
 	/* Delete the work queue */
 	destroy_workqueue(di->charger_wq);
 
@@ -1605,8 +1626,6 @@ static int __devinit ab5500_charger_probe(struct platform_device *pdev)
 		kzalloc(sizeof(struct ab5500_charger), GFP_KERNEL);
 	if (!di)
 		return -ENOMEM;
-
-	static_di = di;
 
 	/* get parent data */
 	di->dev = &pdev->dev;
@@ -1702,6 +1721,18 @@ static int __devinit ab5500_charger_probe(struct platform_device *pdev)
 		goto free_device_info;
 	}
 
+	di->otg = otg_get_transceiver();
+	if (!di->otg) {
+		dev_err(di->dev, "failed to get otg transceiver\n");
+		goto free_usb;
+	}
+	di->nb.notifier_call = ab5500_charger_usb_notifier_call;
+	ret = otg_register_notifier(di->otg, &di->nb);
+	if (ret) {
+		dev_err(di->dev, "failed to register otg notifier\n");
+		goto put_otg_transceiver;
+	}
+
 	/* Identify the connected charger types during startup */
 	charger_status = ab5500_charger_detect_chargers(di);
 	if (charger_status & USB_PW_CONN) {
@@ -1734,13 +1765,17 @@ static int __devinit ab5500_charger_probe(struct platform_device *pdev)
 	return ret;
 
 free_irq:
-	power_supply_unregister(&di->usb_chg.psy);
+	otg_unregister_notifier(di->otg, &di->nb);
 
 	/* We also have to free all successfully registered irqs */
 	for (i = i - 1; i >= 0; i--) {
 		irq = platform_get_irq_byname(pdev, ab5500_charger_irq[i].name);
 		free_irq(irq, di);
 	}
+put_otg_transceiver:
+	otg_put_transceiver(di->otg);
+free_usb:
+	power_supply_unregister(&di->usb_chg.psy);
 free_charger_wq:
 	destroy_workqueue(di->charger_wq);
 free_device_info:
