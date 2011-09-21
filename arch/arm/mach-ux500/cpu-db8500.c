@@ -135,6 +135,7 @@ static struct platform_device *platform_devs[] __initdata = {
 	&u8500_gpio_devs[8],
 	&db8500_pmu_device,
 	&db8500_prcmu_device,
+	&u8500_wdt_device,
 };
 
 static int usb_db8500_rx_dma_cfg[] = {

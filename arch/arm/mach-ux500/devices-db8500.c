@@ -264,6 +264,11 @@ struct platform_device ux500_b2r2_device = {
 	.resource	= b2r2_resources,
 };
 
+struct platform_device u8500_wdt_device = {
+	.name		= "u8500_wdt",
+	.id		= -1,
+};
+
 /*
  * Thermal Sensor
  */
