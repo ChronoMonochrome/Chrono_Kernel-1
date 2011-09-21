@@ -186,6 +186,167 @@ static struct miscdevice u8500_wdt_miscdev = {
 	.fops = &u8500_wdt_fops,
 };
 
+#ifdef CONFIG_U8500_WATCHDOG_DEBUG
+
+enum wdog_dbg {
+	WDOG_DBG_CONFIG,
+	WDOG_DBG_LOAD,
+	WDOG_DBG_KICK,
+	WDOG_DBG_EN,
+	WDOG_DBG_DIS,
+};
+
+static ssize_t wdog_dbg_write(struct file *file,
+			      const char __user *user_buf,
+			      size_t count, loff_t *ppos)
+{
+	unsigned long val;
+	int err;
+	enum wdog_dbg v = (enum wdog_dbg)((struct seq_file *)
+					  (file->private_data))->private;
+
+	switch(v) {
+	case WDOG_DBG_CONFIG:
+		err = kstrtoul_from_user(user_buf, count, 0, &val);
+
+		if (!err) {
+			wdt_auto_off = val != 0;
+			(void) prcmu_config_a9wdog(1,
+						 wdt_auto_off);
+		}
+		else {
+			pr_err("u8500_wdt:dbg: unknown value\n");
+		}
+		break;
+	case WDOG_DBG_LOAD:
+		err = kstrtoul_from_user(user_buf, count, 0, &val);
+
+		if (!err) {
+			timeout = val;
+			/* Convert seconds to ms */
+			prcmu_disable_a9wdog(wdog_id);
+			prcmu_load_a9wdog(wdog_id, timeout * 1000);
+			prcmu_enable_a9wdog(wdog_id);
+		}
+		else {
+			pr_err("u8500_wdt:dbg: unknown value\n");
+		}
+		break;
+	case WDOG_DBG_KICK:
+		(void) prcmu_kick_a9wdog(wdog_id);
+		break;
+	case WDOG_DBG_EN:
+		wdt_en = true;
+		(void) prcmu_enable_a9wdog(wdog_id);
+		break;
+	case WDOG_DBG_DIS:
+		wdt_en = false;
+		(void) prcmu_disable_a9wdog(wdog_id);
+		break;
+	}
+
+	return count;
+}
+
+static int wdog_dbg_read(struct seq_file *s, void *p)
+{
+	enum wdog_dbg v = (enum wdog_dbg)s->private;
+
+	switch(v) {
+	case WDOG_DBG_CONFIG:
+		seq_printf(s,"wdog is on id %d, auto off on sleep: %s\n",
+			   (int)wdog_id,
+			   wdt_auto_off ? "enabled": "disabled");
+		break;
+	case WDOG_DBG_LOAD:
+		/* In 1s */
+		seq_printf(s, "wdog load is: %d s\n",
+			   timeout);
+		break;
+	case WDOG_DBG_KICK:
+		break;
+	case WDOG_DBG_EN:
+	case WDOG_DBG_DIS:
+		seq_printf(s, "wdog is %sabled\n",
+			       wdt_en ? "en" : "dis");
+		break;
+	}
+	return 0;
+}
+
+static int wdog_dbg_open(struct inode *inode,
+			struct file *file)
+{
+	return single_open(file, wdog_dbg_read, inode->i_private);
+}
+
+static const struct file_operations wdog_dbg_fops = {
+	.open		= wdog_dbg_open,
+	.write		= wdog_dbg_write,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+	.owner		= THIS_MODULE,
+};
+
+static int __init wdog_dbg_init(void)
+{
+	struct dentry *wdog_dir;
+
+	wdog_dir = debugfs_create_dir("wdog", NULL);
+	if (IS_ERR_OR_NULL(wdog_dir))
+		goto fail;
+
+	if (IS_ERR_OR_NULL(debugfs_create_u8("id",
+					     S_IWUGO | S_IRUGO, wdog_dir,
+					     &wdog_id)))
+		goto fail;
+
+	if (IS_ERR_OR_NULL(debugfs_create_file("config",
+					       S_IWUGO | S_IRUGO, wdog_dir,
+					       (void *)WDOG_DBG_CONFIG,
+					       &wdog_dbg_fops)))
+		goto fail;
+
+	if (IS_ERR_OR_NULL(debugfs_create_file("load",
+					       S_IWUGO | S_IRUGO, wdog_dir,
+					       (void *)WDOG_DBG_LOAD,
+					       &wdog_dbg_fops)))
+		goto fail;
+
+	if (IS_ERR_OR_NULL(debugfs_create_file("kick",
+					       S_IWUGO, wdog_dir,
+					       (void *)WDOG_DBG_KICK,
+					       &wdog_dbg_fops)))
+		goto fail;
+
+	if (IS_ERR_OR_NULL(debugfs_create_file("enable",
+					       S_IWUGO | S_IRUGO, wdog_dir,
+					       (void *)WDOG_DBG_EN,
+					       &wdog_dbg_fops)))
+		goto fail;
+
+	if (IS_ERR_OR_NULL(debugfs_create_file("disable",
+					       S_IWUGO | S_IRUGO, wdog_dir,
+					       (void *)WDOG_DBG_DIS,
+					       &wdog_dbg_fops)))
+		goto fail;
+
+	return 0;
+fail:
+	pr_err("u8500:wdog: Failed to initialize wdog dbg\n");
+	debugfs_remove_recursive(wdog_dir);
+
+	return -EFAULT;
+}
+
+#else
+static inline int __init wdog_dbg_init(void)
+{
+	return 0;
+}
+#endif
+
 static int __init u8500_wdt_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -201,9 +362,16 @@ static int __init u8500_wdt_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	ret = wdog_dbg_init();
+	if (ret < 0)
+		goto fail;
+
 	dev_info(&pdev->dev, "initialized\n");
 
 	return 0;
+fail:
+	misc_deregister(&u8500_wdt_miscdev);
+	return ret;
 }
 
 static int __exit u8500_wdt_remove(struct platform_device *dev)

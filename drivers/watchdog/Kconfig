@@ -359,6 +359,12 @@ config U8500_WATCHDOG
 	  This watchdog is used to reset the system and thus cannot be
 	  compiled as a module.
 
+config U8500_WATCHDOG_DEBUG
+	bool "ST-Ericsson U8500 watchdog DEBUG"
+	depends on UX500_SOC_DB8500 && DEBUG_FS
+	help
+	  Say Y here to add various debugfs entries in wdog/
+
 # AVR32 Architecture
 
 config AT32AP700X_WDT
