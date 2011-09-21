@@ -81,7 +81,7 @@ static struct accessory_regu_descriptor ab8500_regu_desc[3] = {
 	},
 	{
 		.id = REGULATOR_AVSWITCH,
-		.name = "vcc-avswitch",
+		.name = "vcc-N2158",
 	},
 };
 
