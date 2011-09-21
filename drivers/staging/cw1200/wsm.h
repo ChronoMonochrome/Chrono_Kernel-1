@@ -173,6 +173,22 @@ struct cw1200_common;
 /* STBC allowed */
 #define WSM_HT_TX_STBC			(BIT(7))
 
+/* EPTA prioirty flags for BT Coex */
+/* default epta priority */
+#define WSM_EPTA_PRIORITY_DEFAULT	4
+/* use for normal data */
+#define WSM_EPTA_PRIORITY_DATA		4
+/* use for connect/disconnect/roaming*/
+#define WSM_EPTA_PRIORITY_MGT		5
+/* use for action frames */
+#define WSM_EPTA_PRIORITY_ACTION	5
+/* use for AC_VI data */
+#define WSM_EPTA_PRIORITY_VIDEO		5
+/* use for AC_VO data */
+#define WSM_EPTA_PRIORITY_VOICE		6
+/* use for EAPOL exchange */
+#define WSM_EPTA_PRIORITY_EAPOL		7
+
 /* TX status */
 /* Frame was sent aggregated */
 /* Only valid for WSM_SUCCESS status. */
@@ -1589,6 +1605,20 @@ static inline int wsm_set_uapsd_info(struct cw1200_common *priv,
 				     struct wsm_uapsd_info *arg)
 {
 	return wsm_write_mib(priv, WSM_MIB_ID_SET_UAPSD_INFORMATION,
+				arg, sizeof(*arg));
+}
+
+/* 4.22 OverrideInternalTxRate */
+struct wsm_override_internal_txrate {
+	u8 internalTxRate;
+	u8 nonErpInternalTxRate;
+	u8 reserved[2];
+} __packed;
+
+static inline int wsm_set_override_internal_txrate(struct cw1200_common *priv,
+				     struct wsm_override_internal_txrate *arg)
+{
+	return wsm_write_mib(priv, WSM_MIB_ID_OVERRIDE_INTERNAL_TX_RATE,
 				arg, sizeof(*arg));
 }
 

@@ -945,6 +945,66 @@ void cw1200_tx_failure_work(struct work_struct *work)
 /* ******************************************************************** */
 /* Internal API								*/
 
+
+
+/*
+* This function is called to Parse the SDD file
+ *to extract listen_interval and PTA related information
+*/
+static int cw1200_parse_SDD_file(struct cw1200_common *priv)
+{
+	u8 *sdd_data = (u8 *)priv->sdd->data;
+	struct cw1200_sdd {
+		u8 id ;
+		u8 length ;
+		u8 data[] ;
+	} *pElement;
+	int parsedLength = 0;
+	#define SDD_PTA_CFG_ELT_ID 0xEB
+	#define FIELD_OFFSET(type, field) ((u8 *)&((type*)0)->field - (u8 *)0)
+
+	priv->is_BT_Present = false;
+
+	pElement = (struct cw1200_sdd *)sdd_data;
+
+	pElement = (struct cw1200_sdd *)((u8*)pElement +
+		FIELD_OFFSET(struct cw1200_sdd, data) + pElement->length);
+
+	parsedLength += (FIELD_OFFSET(struct cw1200_sdd, data) +
+			pElement->length);
+
+	while (parsedLength <= priv->sdd->size) {
+		switch (pElement->id) {
+		case SDD_PTA_CFG_ELT_ID:
+		{
+			priv->conf_listen_interval =
+				(*((u16 *)pElement->data+1) >> 7) & 0x1F;
+			priv->is_BT_Present = true;
+			sta_printk(KERN_DEBUG "PTA element found.\n");
+			sta_printk(KERN_DEBUG "Listen Interval %d\n",
+						priv->conf_listen_interval);
+		}
+		break;
+
+		default:
+		break;
+		}
+
+		pElement = (struct cw1200_sdd *)
+			((u8 *)pElement + FIELD_OFFSET(struct cw1200_sdd, data)
+					+ pElement->length);
+		parsedLength +=
+		(FIELD_OFFSET(struct cw1200_sdd, data) + pElement->length);
+	}
+
+	if (priv->is_BT_Present == false) {
+		sta_printk(KERN_DEBUG "PTA element NOT found.\n");
+		priv->conf_listen_interval = 0;
+	}
+	return 0;
+}
+
+
 int cw1200_setup_mac(struct cw1200_common *priv)
 {
 	/* TBD: Do you know how to assing MAC address without
@@ -1002,6 +1062,8 @@ int cw1200_setup_mac(struct cw1200_common *priv)
 		cfg.dpdData = priv->sdd->data;
 		cfg.dpdData_size = priv->sdd->size;
 		ret = WARN_ON(wsm_configuration(priv, &cfg));
+		/* Parse SDD file for PTA element */
+		cw1200_parse_SDD_file(priv);
 	}
 	if (ret)
 		return ret;
@@ -1097,6 +1159,19 @@ void cw1200_join_work(struct work_struct *work)
 			/* basicRateSet will be updated after association */
 			.basicRateSet = 7,
 		};
+
+		/* BT Coex related changes */
+		if (priv->is_BT_Present) {
+			if (((priv->conf_listen_interval * 100) %
+					bss->beacon_interval) == 0)
+				priv->listen_interval =
+					((priv->conf_listen_interval * 100) /
+					bss->beacon_interval);
+			else
+				priv->listen_interval =
+					((priv->conf_listen_interval * 100) /
+					bss->beacon_interval + 1);
+		}
 
 		if (tim && tim->dtim_period > 1) {
 			join.dtimPeriod = tim->dtim_period;

@@ -23,6 +23,8 @@
 #define CW1200_LINK_ID_GC_TIMEOUT ((unsigned long)(10 * HZ))
 
 static int cw1200_upload_beacon(struct cw1200_common *priv);
+static int cw1200_upload_pspoll(struct cw1200_common *priv);
+static int cw1200_upload_null(struct cw1200_common *priv);
 static int cw1200_start_ap(struct cw1200_common *priv);
 static int cw1200_update_beaconing(struct cw1200_common *priv);
 static int cw1200_enable_beaconing(struct cw1200_common *priv,
@@ -193,6 +195,56 @@ int cw1200_set_tim(struct ieee80211_hw *dev, struct ieee80211_sta *sta,
 	struct cw1200_common *priv = dev->priv;
 	queue_work(priv->workqueue, &priv->set_tim_work);
 	return 0;
+}
+
+static int cw1200_set_btcoexinfo(struct cw1200_common *priv)
+{
+	struct wsm_override_internal_txrate arg;
+	int ret = 0;
+
+	if (priv->mode == NL80211_IFTYPE_STATION) {
+		/* Plumb PSPOLL and NULL template */
+		WARN_ON(cw1200_upload_pspoll(priv));
+		WARN_ON(cw1200_upload_null(priv));
+	} else {
+		return 0;
+	}
+
+	memset(&arg, 0, sizeof(struct wsm_override_internal_txrate));
+
+	if (!priv->vif->p2p) {
+		/* STATION mode */
+		if (priv->bss_params.operationalRateSet & ~0xF) {
+			ap_printk(KERN_DEBUG "[STA] STA has ERP rates\n");
+			/* G or BG mode */
+			arg.internalTxRate = (__ffs(
+			priv->bss_params.operationalRateSet & ~0xF));
+		} else {
+			ap_printk(KERN_DEBUG "[STA] STA has non ERP rates\n");
+			/* B only mode */
+			arg.internalTxRate = (__ffs(
+			priv->association_mode.basicRateSet));
+		}
+		arg.nonErpInternalTxRate = (__ffs(
+			priv->association_mode.basicRateSet));
+	} else {
+		/* P2P mode */
+		arg.internalTxRate = (__ffs(
+			priv->bss_params.operationalRateSet & ~0xF));
+		arg.nonErpInternalTxRate = (__ffs(
+			priv->bss_params.operationalRateSet & ~0xF));
+	}
+
+	ap_printk(KERN_DEBUG "[STA] BTCOEX_INFO"
+		"MODE %d, internalTxRate : %x, nonErpInternalTxRate: %x\n",
+		priv->mode,
+		arg.internalTxRate,
+		arg.nonErpInternalTxRate);
+
+	ret = WARN_ON(wsm_write_mib(priv, WSM_MIB_ID_OVERRIDE_INTERNAL_TX_RATE,
+		&arg, sizeof(arg)));
+
+	return ret;
 }
 
 void cw1200_bss_info_changed(struct ieee80211_hw *dev,
@@ -389,6 +441,9 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			WARN_ON(wsm_set_beacon_wakeup_period(priv,
 				dtim_interval, listen_interval));
 			cw1200_set_pm(priv, &priv->powersave_mode);
+
+			if (priv->is_BT_Present)
+				WARN_ON(cw1200_set_btcoexinfo(priv));
 #if 0
 			/* It's better to override internal TX rete; otherwise
 			 * device sends RTS at too high rate. However device
@@ -678,6 +733,46 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 		frame.frame_type = WSM_FRAME_TYPE_PROBE_RESPONSE;
 		ret = wsm_set_template_frame(priv, &frame);
 	}
+	dev_kfree_skb(frame.skb);
+
+	return ret;
+}
+
+static int cw1200_upload_pspoll(struct cw1200_common *priv)
+{
+	int ret = 0;
+	struct wsm_template_frame frame = {
+		.frame_type = WSM_FRAME_TYPE_PS_POLL,
+		.rate = 0xFF,
+	};
+
+
+	frame.skb = ieee80211_pspoll_get(priv->hw, priv->vif);
+	if (WARN_ON(!frame.skb))
+		return -ENOMEM;
+
+	ret = wsm_set_template_frame(priv, &frame);
+
+	dev_kfree_skb(frame.skb);
+
+	return ret;
+}
+
+static int cw1200_upload_null(struct cw1200_common *priv)
+{
+	int ret = 0;
+	struct wsm_template_frame frame = {
+		.frame_type = WSM_FRAME_TYPE_NULL,
+		.rate = 0xFF,
+	};
+
+
+	frame.skb = ieee80211_nullfunc_get(priv->hw, priv->vif);
+	if (WARN_ON(!frame.skb))
+		return -ENOMEM;
+
+	ret = wsm_set_template_frame(priv, &frame);
+
 	dev_kfree_skb(frame.skb);
 
 	return ret;

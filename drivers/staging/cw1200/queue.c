@@ -199,14 +199,15 @@ size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 }
 
 int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
-			struct sk_buff *skb, u8 link_id)
+			struct sk_buff *skb, struct tx_info *txinfo)
 {
 	int ret;
 	struct wsm_tx *wsm;
 	struct cw1200_queue_stats *stats = queue->stats;
+	u8	link_id = txinfo->link_id;
 
 	wsm = (struct wsm_tx *)skb_push(skb, sizeof(struct wsm_tx));
-	ret = cw1200_skb_to_wsm(priv, skb, wsm);
+	ret = cw1200_skb_to_wsm(priv, skb, wsm, txinfo);
 	if (ret)
 		return ret;
 

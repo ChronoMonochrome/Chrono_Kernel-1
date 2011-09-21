@@ -371,12 +371,13 @@ cw1200_get_tx_rate(const struct cw1200_common *priv,
 
 /* NOTE: cw1200_skb_to_wsm executes in atomic context. */
 int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
-			struct wsm_tx *wsm)
+			struct wsm_tx *wsm,  struct tx_info *txinfo)
 {
 	bool tx_policy_renew = false;
 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
 	const struct ieee80211_rate *rate = cw1200_get_tx_rate(priv,
 		&tx_info->control.rates[0]);
+	u8 priority = 0;
 
 	memset(wsm, 0, sizeof(*wsm));
 	wsm->hdr.len = __cpu_to_le16(skb->len);
@@ -409,6 +410,32 @@ int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
 	}
 
 	wsm->queueId = wsm_queue_id_to_wsm(skb_get_queue_mapping(skb));
+
+	/* BT Coex specific handling */
+	if (priv->is_BT_Present) {
+		struct ieee80211_hdr *hdr =
+		(struct ieee80211_hdr *)(skb->data + sizeof(struct wsm_tx));
+
+		if (cpu_to_be16(txinfo->ethertype) == ETH_P_PAE)
+			priority = WSM_EPTA_PRIORITY_EAPOL;
+		else if (ieee80211_is_action(hdr->frame_control))
+			priority = WSM_EPTA_PRIORITY_ACTION;
+		else if (ieee80211_is_mgmt(hdr->frame_control))
+			priority = WSM_EPTA_PRIORITY_MGT;
+		else if ((wsm->queueId == WSM_QUEUE_VOICE))
+			priority = WSM_EPTA_PRIORITY_VOICE;
+		else if ((wsm->queueId == WSM_QUEUE_VIDEO))
+			priority = WSM_EPTA_PRIORITY_VIDEO;
+		else
+			priority = WSM_EPTA_PRIORITY_DATA;
+
+		txrx_printk(KERN_DEBUG "[TX] EPTA priority %x.\n",
+			((priority) & 0x7));
+
+		/* Set EPTA priority */
+		wsm->flags |= (((priority) & 0x7) << 1);
+	}
+
 	return 0;
 }
 
@@ -427,6 +454,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	int link_id;
 	int ret;
 	int i;
+	struct tx_info txinfo;
 
 	if (likely(tx_info->control.sta && sta_priv->link_id))
 		link_id = sta_priv->link_id;
@@ -463,6 +491,39 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		for (i = 0; i < 4; ++i)
 			priv->tx_suspend_mask[i] &= ~BIT(link_id);
 		spin_unlock_bh(&priv->buffered_multicasts_lock);
+	}
+
+	/* BT Coex support related configuration */
+	if (priv->is_BT_Present) {
+		txinfo.ethertype = 0;
+
+		if (ieee80211_is_data_qos(hdr->frame_control) ||
+			ieee80211_is_data(hdr->frame_control)) {
+			unsigned int headerlen =
+				ieee80211_get_hdrlen_from_skb(skb);
+
+			/* Skip LLC SNAP header (+6) */
+			if (headerlen > 0)
+				txinfo.ethertype =
+					*((u16 *)(skb->data + headerlen + 6));
+		}
+		else if (ieee80211_is_assoc_req(hdr->frame_control) ||
+			ieee80211_is_reassoc_req(hdr->frame_control)) {
+			struct ieee80211_mgmt *mgt_frame =
+					(struct ieee80211_mgmt *)skb->data;
+
+			if (mgt_frame->u.assoc_req.listen_interval <
+							priv->listen_interval) {
+				txrx_printk(KERN_DEBUG
+				"Modified Listen Interval to %x from %x\n",
+				priv->listen_interval,
+				mgt_frame->u.assoc_req.listen_interval);
+				/* Replace listen interval derieved from
+				the one read from SDD */
+				mgt_frame->u.assoc_req.listen_interval =
+					priv->listen_interval;
+			}
+		}
 	}
 
 	/* IV/ICV injection. */
@@ -543,8 +604,10 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 			queue_work(priv->workqueue,
 				&priv->multicast_start_work);
 	}
+
+	txinfo.link_id = link_id;
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
-			link_id);
+			&txinfo);
 	spin_unlock_bh(&priv->buffered_multicasts_lock);
 
 	if (!WARN_ON(ret))
