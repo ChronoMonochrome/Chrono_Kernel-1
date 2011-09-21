@@ -15,6 +15,7 @@
 #include <linux/gpio/nomadik.h>
 #include <linux/ioport.h>
 #include <linux/platform_device.h>
+#include <linux/mfd/ab8500/gpio.h>
 
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci.h>
@@ -31,7 +32,7 @@
 #define CG2900_BT_ENABLE_GPIO		170
 #define CG2900_GBF_ENA_RESET_GPIO	171
 #define WLAN_PMU_EN_GPIO		226
-#define WLAN_PMU_EN_GPIO_U9500		MOP500_AB8500_GPIO(10)
+#define WLAN_PMU_EN_GPIO_U9500		AB8500_PIN_GPIO11
 #define CG2900_BT_CTS_GPIO		0
 
 enum cg2900_gpio_pull_sleep cg2900_sleep_gpio[21] = {
