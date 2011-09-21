@@ -1037,7 +1037,8 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			DSI_MCTL_DPHY_TIMEOUT_LPRX_TO_VAL(0x3fff));
 		dsi_wreg(lnk, DSI_MCTL_MAIN_PHY_CTL,
 			DSI_MCTL_MAIN_PHY_CTL_WAIT_BURST_TIME(0xf) |
-			DSI_MCTL_MAIN_PHY_CTL_LANE2_EN(true) |
+			DSI_MCTL_MAIN_PHY_CTL_LANE2_EN(
+				port->phy.dsi.num_data_lanes >= 2) |
 			DSI_MCTL_MAIN_PHY_CTL_CLK_CONTINUOUS(
 				port->phy.dsi.clk_cont));
 		dsi_wreg(lnk, DSI_MCTL_ULPOUT_TIME,
@@ -1057,7 +1058,8 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			DSI_MCTL_MAIN_EN_IF2_EN(port->ifc == 1));
 		while (dsi_rfld(lnk, DSI_MCTL_MAIN_STS, CLKLANE_READY) == 0 ||
 			dsi_rfld(lnk, DSI_MCTL_MAIN_STS, DAT1_READY) == 0 ||
-			dsi_rfld(lnk, DSI_MCTL_MAIN_STS, DAT2_READY) == 0) {
+			(dsi_rfld(lnk, DSI_MCTL_MAIN_STS, DAT2_READY) == 0 &&
+					port->phy.dsi.num_data_lanes > 1)) {
 			mdelay(1);
 			if (i++ == 10) {
 				dev_warn(&mcde_dev->dev,
@@ -1077,10 +1079,10 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			MCDE_DSIVID0CONF0_DCSVID_NOTGEN(true));
 
 		if (port->mode == MCDE_PORTMODE_CMD) {
-			if (port->ifc == DSI_VIDEO_MODE)
+			if (port->ifc == 0)
 				dsi_wfld(port->link, DSI_CMD_MODE_CTL, IF1_ID,
 					port->phy.dsi.virt_id);
-			else if (port->ifc == DSI_CMD_MODE)
+			else if (port->ifc == 1)
 				dsi_wfld(port->link, DSI_CMD_MODE_CTL, IF2_ID,
 					port->phy.dsi.virt_id);
 		}
