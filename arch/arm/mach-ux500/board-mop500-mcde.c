@@ -40,21 +40,11 @@ static struct delayed_work work_dispreg_hdmi;
 #endif
 
 enum {
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
 	PRIMARY_DISPLAY_ID,
-#endif
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
 	SECONDARY_DISPLAY_ID,
-#endif
-#ifdef CONFIG_DISPLAY_FICTIVE
 	FICTIVE_DISPLAY_ID,
-#endif
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 	AV8100_DISPLAY_ID,
-#endif
-#ifdef CONFIG_DISPLAY_AB8500_TERTIARY
 	AB8500_DISPLAY_ID,
-#endif
 	MCDE_NR_OF_DISPLAYS
 };
 static int display_initialized_during_boot;
