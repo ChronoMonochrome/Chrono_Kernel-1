@@ -2290,7 +2290,7 @@ static int rt73usb_conf_tx(struct ieee80211_hw *hw,
 	return 0;
 }
 
-static u64 rt73usb_get_tsf(struct ieee80211_hw *hw)
+static u64 rt73usb_get_tsf(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
 {
 	struct rt2x00_dev *rt2x00dev = hw->priv;
 	u64 tsf;

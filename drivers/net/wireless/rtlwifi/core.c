@@ -776,7 +776,7 @@ out:
 	mutex_unlock(&rtlpriv->locks.conf_mutex);
 }
 
-static u64 rtl_op_get_tsf(struct ieee80211_hw *hw)
+static u64 rtl_op_get_tsf(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
 {
 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 	u64 tsf;
@@ -785,7 +785,8 @@ static u64 rtl_op_get_tsf(struct ieee80211_hw *hw)
 	return tsf;
 }
 
-static void rtl_op_set_tsf(struct ieee80211_hw *hw, u64 tsf)
+static void rtl_op_set_tsf(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+			   u64 tsf)
 {
 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
@@ -795,7 +796,8 @@ static void rtl_op_set_tsf(struct ieee80211_hw *hw, u64 tsf)
 	rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_CORRECT_TSF, (u8 *) (&bibss));
 }
 
-static void rtl_op_reset_tsf(struct ieee80211_hw *hw)
+static void rtl_op_reset_tsf(struct ieee80211_hw *hw,
+			     struct ieee80211_vif *vif)
 {
 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 	u8 tmp = 0;

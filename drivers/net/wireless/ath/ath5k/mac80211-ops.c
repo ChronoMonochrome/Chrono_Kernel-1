@@ -624,7 +624,7 @@ ath5k_conf_tx(struct ieee80211_hw *hw, struct ieee80211_vif *vif, u16 queue,
 
 
 static u64
-ath5k_get_tsf(struct ieee80211_hw *hw)
+ath5k_get_tsf(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
 {
 	struct ath5k_softc *sc = hw->priv;
 
@@ -633,7 +633,7 @@ ath5k_get_tsf(struct ieee80211_hw *hw)
 
 
 static void
-ath5k_set_tsf(struct ieee80211_hw *hw, u64 tsf)
+ath5k_set_tsf(struct ieee80211_hw *hw, struct ieee80211_vif *vif, u64 tsf)
 {
 	struct ath5k_softc *sc = hw->priv;
 
@@ -642,7 +642,7 @@ ath5k_set_tsf(struct ieee80211_hw *hw, u64 tsf)
 
 
 static void
-ath5k_reset_tsf(struct ieee80211_hw *hw)
+ath5k_reset_tsf(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
 {
 	struct ath5k_softc *sc = hw->priv;
 
