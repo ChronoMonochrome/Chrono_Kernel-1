@@ -47,11 +47,6 @@ static int musb_otg_notifications(struct notifier_block *nb,
 	case USB_EVENT_ID:
 		dev_dbg(musb->controller, "ID GND\n");
 		if (is_otg_enabled(musb)) {
-#ifdef CONFIG_USB_GADGET_MUSB_HDRC
-			if (musb->gadget_driver)
-				ux500_musb_set_vbus(musb, 1);
-#endif
-			} else {
 				ux500_musb_set_vbus(musb, 1);
 		}
 		break;
@@ -63,13 +58,6 @@ static int musb_otg_notifications(struct notifier_block *nb,
 
 	case USB_EVENT_NONE:
 		dev_dbg(musb->controller, "VBUS Disconnect\n");
-#ifdef CONFIG_USB_GADGET_MUSB_HDRC
-		if (is_otg_enabled(musb) || is_peripheral_enabled(musb))
-			if (musb->gadget_driver)
-#endif
-				{
-					dev_dbg(musb->controller, "Add runtime powermangement code here\n");
-			}
 
 		break;
 	default:
@@ -140,6 +128,7 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 
 static int ux500_musb_init(struct musb *musb)
 {
+	int status;
 	musb->xceiv = usb_get_transceiver();
 	if (!musb->xceiv) {
 		pr_err("HS USB OTG: no transceiver configured\n");
@@ -147,7 +136,16 @@ static int ux500_musb_init(struct musb *musb)
 	}
 
 	musb->nb.notifier_call = musb_otg_notifications;
+	status = otg_register_notifier(musb->xceiv, &musb->nb);
+
+	if (status < 0) {
+		dev_dbg(musb->controller, "notification register failed\n");
+		goto err1;
+	}
+
 	return 0;
+err1:
+	return status;
 }
 
 /**
