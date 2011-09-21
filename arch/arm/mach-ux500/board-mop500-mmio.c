@@ -70,7 +70,7 @@ struct mmio_board_data{
 
 /* Fill names of regulators required for powering up the
  * camera sensor in below array */
-static char *regulator_names[] = {"v-mmio-camera" , "v-ana"};
+static char *regulator_names[] = {"vaux12v5" , "vddcsi1v2"};
 
 /* This function is used to translate the physical GPIO used for reset GPIO
  * to logical IPGPIO that needs to be communicated to Firmware. so that
