@@ -228,10 +228,10 @@ static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
 
 	if (STE_HSI_MODE_PIPELINED == pcontext->rx_mode)
 		/*
-		 * 0x0F: The READY line is negated after the start of the
-		 * 16th frame reception in PIPELINED mode.
+		 * 0xFF: The READY line is negated after the start of the
+		 * 256th frame reception in PIPELINED mode.
 		 */
-		writel(0x0F, ste_hsi->rx_base + STE_HSI_RX_FRAMEBURSTCNT);
+		writel(0xFF, ste_hsi->rx_base + STE_HSI_RX_FRAMEBURSTCNT);
 	else
 		writel(0, ste_hsi->rx_base + STE_HSI_RX_FRAMEBURSTCNT);
 
