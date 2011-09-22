@@ -487,6 +487,7 @@ void cw1200_configure_filter(struct ieee80211_hw *dev,
 			FIF_BCN_PRBRESP_PROMISC |
 			FIF_PROBE_REQ;
 
+	down(&priv->scan.lock);
 	mutex_lock(&priv->conf_mutex);
 
 	priv->rx_filter.promiscuous = (*total_flags & FIF_PROMISC_IN_BSS)
@@ -506,6 +507,7 @@ void cw1200_configure_filter(struct ieee80211_hw *dev,
 	}
 	cw1200_update_filtering(priv);
 	mutex_unlock(&priv->conf_mutex);
+	up(&priv->scan.lock);
 }
 
 int cw1200_conf_tx(struct ieee80211_hw *dev, u16 queue,
