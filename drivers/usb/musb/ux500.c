@@ -37,6 +37,32 @@ struct ux500_glue {
 };
 #define glue_to_musb(g)	platform_get_drvdata(g->musb)
 
+static struct timer_list notify_timer;
+
+static void musb_notify_idle(unsigned long _musb)
+{
+	struct musb	*musb = (void *)_musb;
+	unsigned long	flags;
+
+	u8	devctl;
+
+	spin_lock_irqsave(&musb->lock, flags);
+	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
+
+	switch (musb->xceiv->state) {
+	case OTG_STATE_A_WAIT_BCON:
+		devctl &= ~MUSB_DEVCTL_SESSION;
+		musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
+		musb->xceiv->state = OTG_STATE_B_IDLE;
+		MUSB_DEV_MODE(musb);
+		break;
+	case OTG_STATE_A_SUSPEND:
+	default:
+		break;
+	}
+	spin_unlock_irqrestore(&musb->lock, flags);
+}
+
 /* blocking notifier support */
 static int musb_otg_notifications(struct notifier_block *nb,
 		unsigned long event, void *unused)
@@ -126,6 +152,40 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 		musb_readb(musb->mregs, MUSB_DEVCTL));
 }
 
+static void ux500_musb_try_idle(struct musb *musb, unsigned long timeout)
+{
+	static unsigned long	last_timer;
+
+	if (timeout == 0)
+		timeout = jiffies + msecs_to_jiffies(3);
+
+	/* Never idle if active, or when VBUS timeout is not set as host */
+	if (musb->is_active || ((musb->a_wait_bcon == 0)
+			&& (musb->xceiv->state == OTG_STATE_A_WAIT_BCON))) {
+		dev_dbg(musb->controller, "%s active, deleting timer\n",
+			otg_state_string(musb->xceiv->state));
+		del_timer(&notify_timer);
+		last_timer = jiffies;
+		return;
+	}
+
+	if (time_after(last_timer, timeout)) {
+		if (!timer_pending(&notify_timer))
+			last_timer = timeout;
+		else {
+			dev_dbg(musb->controller, "Longer idle timer "
+						"already pending, ignoring\n");
+			return;
+		}
+	}
+	last_timer = timeout;
+
+	dev_dbg(musb->controller, "%s inactive, for idle timer for %lu ms\n",
+		otg_state_string(musb->xceiv->state),
+		(unsigned long)jiffies_to_msecs(timeout - jiffies));
+	mod_timer(&notify_timer, timeout);
+}
+
 static int ux500_musb_init(struct musb *musb)
 {
 	int status;
@@ -142,6 +202,8 @@ static int ux500_musb_init(struct musb *musb)
 		dev_dbg(musb->controller, "notification register failed\n");
 		goto err1;
 	}
+
+	setup_timer(&notify_timer, musb_notify_idle, (unsigned long) musb);
 
 	return 0;
 err1:
@@ -166,6 +228,7 @@ static const struct musb_platform_ops ux500_ops = {
 	.exit		= ux500_musb_exit,
 
 	.set_vbus	= ux500_musb_set_vbus,
+	.try_idle	= ux500_musb_try_idle,
 };
 
 /**
