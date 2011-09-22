@@ -33,6 +33,9 @@ static void __iomem *twd_base;
 static struct clk *twd_clk;
 static unsigned long twd_timer_rate;
 
+static DEFINE_PER_CPU(u32, twd_ctrl);
+static DEFINE_PER_CPU(u32, twd_load);
+
 static struct clock_event_device __percpu **twd_evt;
 static int twd_ppi;
 
@@ -343,5 +346,26 @@ void __init twd_local_timer_of_register(void)
 
 out:
 	WARN(err, "twd_local_timer_of_register failed (%d)\n", err);
+}
+#endif
+
+#if defined(CONFIG_HOTPLUG) || defined(CONFIG_CPU_IDLE)
+void twd_save(void)
+{
+	int this_cpu = smp_processor_id();
+
+	per_cpu(twd_ctrl, this_cpu) = __raw_readl(twd_base + TWD_TIMER_CONTROL);
+	per_cpu(twd_load, this_cpu) = __raw_readl(twd_base + TWD_TIMER_LOAD);
+
+}
+
+void twd_restore(void)
+{
+	int this_cpu = smp_processor_id();
+
+	__raw_writel(per_cpu(twd_ctrl, this_cpu),
+		     twd_base + TWD_TIMER_CONTROL);
+	__raw_writel(per_cpu(twd_load, this_cpu),
+		     twd_base + TWD_TIMER_LOAD);
 }
 #endif
