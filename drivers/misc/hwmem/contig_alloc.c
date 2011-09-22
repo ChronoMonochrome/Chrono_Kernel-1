@@ -43,6 +43,12 @@ struct instance {
 
 #ifdef CONFIG_DEBUG_FS
 	struct inode *debugfs_inode;
+	int cona_status_free;
+	int cona_status_used;
+	int cona_status_max_cont;
+	int cona_status_max_check;
+	int cona_status_biggest_free;
+	int cona_status_printed;
 #endif /* #ifdef CONFIG_DEBUG_FS */
 };
 
@@ -140,6 +146,12 @@ void *cona_alloc(void *instance, size_t size)
 	} else {
 		alloc->in_use = true;
 	}
+#ifdef CONFIG_DEBUG_FS
+	instance_l->cona_status_max_cont += alloc->size;
+	instance_l->cona_status_max_check =
+					max(instance_l->cona_status_max_check,
+					instance_l->cona_status_max_cont);
+#endif /* #ifdef CONFIG_DEBUG_FS */
 
 out:
 	mutex_unlock(&lock);
@@ -156,6 +168,10 @@ void cona_free(void *instance, void *alloc)
 	mutex_lock(&lock);
 
 	alloc_l->in_use = false;
+
+#ifdef CONFIG_DEBUG_FS
+	instance_l->cona_status_max_cont -= alloc_l->size;
+#endif /* #ifdef CONFIG_DEBUG_FS */
 
 	other = list_entry(alloc_l->list.prev, struct alloc, list);
 	if ((alloc_l->list.prev != &instance_l->alloc_list) &&
@@ -236,6 +252,10 @@ static int init_alloc_list(struct instance *instance)
 		alloc->in_use = true;
 		list_add_tail(&alloc->list, &instance->alloc_list);
 		curr_pos = alloc->paddr + alloc->size;
+
+#ifdef CONFIG_DEBUG_FS
+		instance->cona_status_max_cont += alloc->size;
+#endif /* #ifdef CONFIG_DEBUG_FS */
 
 		next_64mib_boundary += SZ_64M;
 	}
@@ -319,7 +339,10 @@ static phys_addr_t get_alloc_offset(struct instance *instance,
 
 #ifdef CONFIG_DEBUG_FS
 
-static int print_alloc(struct alloc *alloc, char **buf, size_t buf_size);
+static int print_alloc(struct instance *instance, struct alloc *alloc,
+						char **buf, size_t buf_size);
+static int print_alloc_status(struct instance *instance, char **buf,
+						size_t buf_size);
 static struct instance *get_instance_from_file(struct file *file);
 static int debugfs_allocs_read(struct file *filp, char __user *buf,
 						size_t count, loff_t *f_pos);
@@ -329,7 +352,8 @@ static const struct file_operations debugfs_allocs_fops = {
 	.read  = debugfs_allocs_read,
 };
 
-static int print_alloc(struct alloc *alloc, char **buf, size_t buf_size)
+static int print_alloc(struct instance *instance, struct alloc *alloc,
+						char **buf, size_t buf_size)
 {
 	int ret;
 	int i;
@@ -341,9 +365,64 @@ static int print_alloc(struct alloc *alloc, char **buf, size_t buf_size)
 		else
 			buf_size_l = buf_size;
 
+		if (i == 1) {
+			if (alloc->in_use)
+				instance->cona_status_used += alloc->size;
+			else
+				instance->cona_status_free += alloc->size;
+		}
+
+		if (!alloc->in_use) {
+			instance->cona_status_biggest_free =
+				max((size_t)alloc->size,
+				(size_t)instance->cona_status_biggest_free);
+		}
+
 		ret = snprintf(*buf, buf_size_l, "paddr: %10x\tsize: %10u\t"
-				"in use: %1u\n", alloc->paddr, alloc->size,
-								alloc->in_use);
+				"in use: %1u\t used: %10u (%dMB)"
+				" \t free: %10u (%dMB)\n",
+				alloc->paddr,
+				alloc->size,
+				alloc->in_use,
+				instance->cona_status_used,
+				instance->cona_status_used/1024/1024,
+				instance->cona_status_free,
+				instance->cona_status_free/1024/1024);
+
+		if (ret < 0)
+			return -ENOMSG;
+		else if (ret + 1 > buf_size)
+			return -EINVAL;
+	}
+
+	*buf += ret;
+
+	return 0;
+}
+
+static int print_alloc_status(struct instance *instance, char **buf,
+							size_t buf_size)
+{
+	int ret;
+	int i;
+
+	for (i = 0; i < 2; i++) {
+		size_t buf_size_l;
+		if (i == 0)
+			buf_size_l = 0;
+		else
+			buf_size_l = buf_size;
+
+		ret = snprintf(*buf, buf_size_l, "Overall peak usage:\t%10u "
+				"(%dMB)\nCurrent max usage:\t%10u (%dMB)\n"
+				"Current biggest free:\t%10d (%dMB)\n",
+				instance->cona_status_max_check,
+				instance->cona_status_max_check/1024/1024,
+				instance->cona_status_max_cont,
+				instance->cona_status_max_cont/1024/1024,
+				instance->cona_status_biggest_free,
+				instance->cona_status_biggest_free/1024/1024);
+
 		if (ret < 0)
 			return -ENOMSG;
 		else if (ret + 1 > buf_size)
@@ -385,12 +464,12 @@ static int debugfs_allocs_read(struct file *file, char __user *buf,
 	/* private_data is intialized to NULL in open which I assume is 0. */
 	void **curr_pos = &file->private_data;
 	size_t bytes_read;
+	bool readout_aborted = false;
 
 	if (local_buf == NULL)
 		return -ENOMEM;
 
 	mutex_lock(&lock);
-
 	instance = get_instance_from_file(file);
 	if (IS_ERR(instance)) {
 		ret = PTR_ERR(instance);
@@ -403,13 +482,16 @@ static int debugfs_allocs_read(struct file *file, char __user *buf,
 		if (alloc_offset < (phys_addr_t)*curr_pos)
 			continue;
 
-		ret = print_alloc(curr_alloc, &local_buf_pos, available_space -
-					(size_t)(local_buf_pos - local_buf));
-		if (ret == -EINVAL) /* No more room */
-			break;
-		else if (ret < 0)
-			goto out;
+		ret = print_alloc(instance, curr_alloc, &local_buf_pos,
+				available_space - (size_t)(local_buf_pos -
+				local_buf));
 
+		if (ret == -EINVAL) { /* No more room */
+			readout_aborted = true;
+			break;
+		} else if (ret < 0) {
+			goto out;
+		}
 		/*
 		 * There could be an overflow issue here in the unlikely case
 		 * where the region is placed at the end of the address range
@@ -418,6 +500,28 @@ static int debugfs_allocs_read(struct file *file, char __user *buf,
 		 * defer fixing it till it happens.
 		 */
 		*curr_pos = (void *)(alloc_offset + 1);
+
+		/* Make sure to also print status if there were any prints */
+		instance->cona_status_printed = false;
+	}
+
+	if (!readout_aborted && !instance->cona_status_printed) {
+		ret = print_alloc_status(instance, &local_buf_pos,
+					available_space -
+					(size_t)(local_buf_pos - local_buf));
+
+		if (ret == -EINVAL) /* No more room */
+			readout_aborted = true;
+		else if (ret < 0)
+			goto out;
+		else
+			instance->cona_status_printed = true;
+	}
+
+	if (!readout_aborted) {
+		instance->cona_status_free = 0;
+		instance->cona_status_used = 0;
+		instance->cona_status_biggest_free = 0;
 	}
 
 	bytes_read = (size_t)(local_buf_pos - local_buf);
@@ -430,7 +534,6 @@ static int debugfs_allocs_read(struct file *file, char __user *buf,
 
 out:
 	kfree(local_buf);
-
 	mutex_unlock(&lock);
 
 	return ret;
