@@ -1618,6 +1618,7 @@ static void disable_flow(struct mcde_chnl_state *chnl)
 static void stop_channel(struct mcde_chnl_state *chnl)
 {
 	const struct mcde_port *port = &chnl->port;
+	bool dpi_lcd_mode;
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
@@ -1639,9 +1640,13 @@ static void stop_channel(struct mcde_chnl_state *chnl)
 	disable_flow(chnl);
 	/*
 	 * Needs to manually trigger VCOMP after the channel is
-	 * disabled for video mode.
+	 * disabled. For all channels using video mode
+	 * except for dpi lcd.
 	*/
-	if (chnl->port.update_auto_trig)
+	dpi_lcd_mode = (port->type == MCDE_PORTTYPE_DPI &&
+				!chnl->port.phy.dpi.tv_mode);
+
+	if (chnl->port.update_auto_trig && !dpi_lcd_mode)
 		mcde_wreg(MCDE_SISPP, 1 << chnl->id);
 }
 
@@ -1984,6 +1989,30 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 			fidx * MCDE_DSIVID0DELAY1_GROUPOFFSET,
 			MCDE_DSIVID0DELAY1_TEREQDEL(0) |
 			MCDE_DSIVID0DELAY1_FRAMESTARTDEL(0));
+	} else if (port->type == MCDE_PORTTYPE_DPI &&
+						!port->phy.dpi.tv_mode) {
+		/* DPI LCD Mode */
+		if (chnl_id == MCDE_CHNL_A) {
+			mcde_wreg(MCDE_SYNCHCONFA,
+				MCDE_SYNCHCONFA_HWREQVEVENT_ENUM(
+							ACTIVE_VIDEO) |
+				MCDE_SYNCHCONFA_HWREQVCNT(
+							video_mode->yres - 1) |
+				MCDE_SYNCHCONFA_SWINTVEVENT_ENUM(
+							ACTIVE_VIDEO) |
+				MCDE_SYNCHCONFA_SWINTVCNT(
+							video_mode->yres - 1));
+		} else if (chnl_id == MCDE_CHNL_B) {
+			mcde_wreg(MCDE_SYNCHCONFB,
+				MCDE_SYNCHCONFB_HWREQVEVENT_ENUM(
+							ACTIVE_VIDEO) |
+				MCDE_SYNCHCONFB_HWREQVCNT(
+							video_mode->yres - 1) |
+				MCDE_SYNCHCONFB_SWINTVEVENT_ENUM(
+							ACTIVE_VIDEO) |
+				MCDE_SYNCHCONFB_SWINTVCNT(
+							video_mode->yres - 1));
+		}
 	}
 
 	if (regs->roten) {
