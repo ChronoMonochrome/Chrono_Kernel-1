@@ -184,9 +184,31 @@ static void ab8500_usb_load(struct work_struct *work)
 static void ab8500_usb_regulator_ctrl(struct ab8500_usb *ab, bool sel_host,
 					bool enable)
 {
+	int ret = 0, volt = 0;
+
 	if (enable) {
 		regulator_enable(ab->v_ape);
+		if (ab->rev >= 0x30) {
+			ret = regulator_set_voltage(ab->v_ulpi,
+						1300000, 1350000);
+			if (ret < 0)
+				dev_err(ab->dev, "Failed to set the Vintcore"
+						" to 1.3V, ret=%d\n", ret);
+			ret = regulator_set_optimum_mode(ab->v_ulpi,
+								28000);
+			if (ret < 0)
+				dev_err(ab->dev, "Failed to set optimum mode"
+						" (ret=%d)\n", ret);
+
+		}
 		regulator_enable(ab->v_ulpi);
+		if (ab->rev >= 0x30) {
+			volt = regulator_get_voltage(ab->v_ulpi);
+			if ((volt != 1300000) && (volt != 1350000))
+					dev_err(ab->dev, "Vintcore is not"
+							" set to 1.3V"
+							" volt=%d\n", volt);
+		}
 		regulator_enable(ab->v_musb);
 
 	} else {
@@ -833,7 +855,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	}
 
 	/* Write Phy tuning values */
-	if (ab->rev == 0x30) {
+	if (ab->rev >= 0x30) {
 		/* Enable the PBT/Bank 0x12 access */
 		ret = abx500_set_register_interruptible(ab->dev,
 							AB8500_DEVELOPMENT,
