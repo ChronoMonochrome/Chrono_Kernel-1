@@ -64,17 +64,9 @@ static struct mmci_platform_data u5500_sdi0_data = {
  * SDI 1 (MicroSD slot)
  */
 
-/* MMCIPOWER bits */
-#define MCI_DATA2DIREN		(1 << 2)
-#define MCI_CMDDIREN		(1 << 3)
-#define MCI_DATA0DIREN		(1 << 4)
-#define MCI_DATA31DIREN		(1 << 5)
-#define MCI_FBCLKEN		(1 << 7)
-
-static u32 u5500_sdi1_vdd_handler(struct device *dev, unsigned int vdd,
-				  unsigned char power_mode)
+static int u5500_sdi1_ios_handler(struct device *dev, struct mmc_ios *ios)
 {
-	switch (power_mode) {
+	switch (ios->power_mode) {
 	case MMC_POWER_UP:
 	case MMC_POWER_ON:
 		/*
@@ -93,8 +85,7 @@ static u32 u5500_sdi1_vdd_handler(struct device *dev, unsigned int vdd,
 		break;
 	}
 
-	return MCI_FBCLKEN | MCI_CMDDIREN | MCI_DATA0DIREN |
-	       MCI_DATA2DIREN;
+	return 0;
 }
 
 static struct stedma40_chan_cfg sdi1_dma_cfg_rx = {
@@ -116,7 +107,7 @@ static struct stedma40_chan_cfg sdi1_dma_cfg_tx = {
 };
 
 static struct mmci_platform_data u5500_sdi1_data = {
-	.vdd_handler    = u5500_sdi1_vdd_handler,
+	.ios_handler    = u5500_sdi1_ios_handler,
 	.ocr_mask       = MMC_VDD_29_30,
 	.f_max          = 50000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA |
