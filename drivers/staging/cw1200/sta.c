@@ -127,6 +127,9 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	cancel_delayed_work_sync(&priv->connection_loss_work);
 	cancel_delayed_work_sync(&priv->link_id_gc_work);
 
+	if (timer_pending(&priv->mcast_timeout))
+		del_timer_sync(&priv->mcast_timeout);
+
 	mutex_lock(&priv->conf_mutex);
 	switch (priv->join_status) {
 	case CW1200_JOIN_STATUS_STA:
