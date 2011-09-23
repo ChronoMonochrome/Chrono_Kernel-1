@@ -20,13 +20,17 @@ static ssize_t db5500_mloader_sysfs_finalize(struct device *dev,
 				      struct device_attribute *attr,
 				      const char *buf, size_t count);
 
+static ssize_t db5500_mloader_sysfs_itpmode(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf);
 
 static DEVICE_ATTR(addr, S_IRUSR|S_IRGRP, db5500_mloader_sysfs_addr, NULL);
 static DEVICE_ATTR(finalize, S_IWUSR, NULL, db5500_mloader_sysfs_finalize);
+static DEVICE_ATTR(is_itpmode, S_IRUSR|S_IRGRP, db5500_mloader_sysfs_itpmode, NULL);
 
 static unsigned int db5500_bootargs_memmap_modem_start;
 static unsigned int db5500_bootargs_memmap_modem_total_size;
-
+static unsigned int db5500_mloader_itpmode;
 static unsigned int db5500_mloader_shm_total_size;
 module_param_named(shm_total_size, db5500_mloader_shm_total_size, uint, 0600);
 MODULE_PARM_DESC(shm_total_size, "Total Size of SHM shared memory");
@@ -51,10 +55,23 @@ static int __init db5500_bootargs_shm_total_size(char *str)
 }
 early_param("mloader.shm_total_size", db5500_bootargs_shm_total_size);
 
+static int __init db5500_bootargs_itpmode(char *p)
+{
+	int ret;
+	int count = 3;
+	if (!memcmp(p, "itp", count))
+		db5500_mloader_itpmode = true;
+	else
+		db5500_mloader_itpmode = false;
+	return 1;
+}
+early_param("modem_boot_type", db5500_bootargs_itpmode);
+
 static int __exit db5500_mloader_remove(struct platform_device *pdev)
 {
 	sysfs_remove_file(&pdev->dev.kobj, &dev_attr_addr.attr);
 	sysfs_remove_file(&pdev->dev.kobj, &dev_attr_finalize.attr);
+	sysfs_remove_file(&pdev->dev.kobj, &dev_attr_is_itpmode.attr);
 
 	return 0;
 }
@@ -94,6 +111,14 @@ static ssize_t db5500_mloader_sysfs_addr(struct device *dev,
 		       db5500_bootargs_memmap_modem_start,
 		       db5500_bootargs_memmap_modem_total_size,
 		       db5500_mloader_shm_total_size);
+}
+
+static ssize_t db5500_mloader_sysfs_itpmode(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	return sprintf(buf, "0x%x\n",
+		       db5500_mloader_itpmode);
 }
 
 static ssize_t db5500_mloader_sysfs_finalize(struct device *dev,
@@ -138,7 +163,12 @@ static int __init db5500_mloader_probe(struct platform_device *pdev)
 		sysfs_remove_file(&pdev->dev.kobj, &dev_attr_addr.attr);
 		return ret;
 	}
-
+	ret = sysfs_create_file(&pdev->dev.kobj, &dev_attr_is_itpmode.attr);
+	if (ret) {
+		sysfs_remove_file(&pdev->dev.kobj, &dev_attr_finalize.attr);
+		sysfs_remove_file(&pdev->dev.kobj, &dev_attr_addr.attr);
+		return ret;
+	}
 	return 0;
 
 }
