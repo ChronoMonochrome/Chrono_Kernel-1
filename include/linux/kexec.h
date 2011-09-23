@@ -110,6 +110,7 @@ struct kimage {
 
 /* kexec interface functions */
 extern void machine_kexec(struct kimage *image);
+extern void machine_crash_swreset(void);
 extern int machine_kexec_prepare(struct kimage *image);
 extern void machine_kexec_cleanup(struct kimage *image);
 extern asmlinkage long sys_kexec_load(unsigned long entry,

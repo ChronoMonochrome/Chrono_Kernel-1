@@ -135,3 +135,13 @@ void machine_crash_swreset(void)
 	outer_disable();
 	arm_pm_restart(0, NULL);
 }
+
+void machine_crash_swreset(void)
+{
+	printk(KERN_INFO "Software reset on panic!\n");
+
+	flush_cache_all();
+	outer_flush_all();
+	outer_disable();
+	arm_pm_restart(0, NULL);
+}
