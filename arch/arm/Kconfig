@@ -2079,6 +2079,13 @@ config KEXEC
 	  initially work for you.  It may help to enable device hotplugging
 	  support.
 
+config CRASH_SWRESET
+	bool "Perform a software reset at a panic (EXPERIMENTAL)"
+	depends on EXPERIMENTAL
+	depends on KEXEC
+	help
+	  If no crash kernel has been loaded, perform a SW reset as plan B.
+
 config ATAGS_PROC
 	bool "Export atags in procfs"
 	depends on KEXEC
