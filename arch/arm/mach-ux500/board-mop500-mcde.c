@@ -17,6 +17,7 @@
 #include <video/mcde_display.h>
 #include <video/mcde_display-generic_dsi.h>
 #include <video/mcde_display-vuib500-dpi.h>
+#include <video/mcde_display-sony_acx424akp_dsi.h>
 #include <video/mcde_display-av8100.h>
 #include <video/mcde_display-ab8500.h>
 #include <video/mcde_fb.h>
@@ -143,7 +144,11 @@ static struct mcde_display_device generic_display0 = {
 #endif
 	.native_x_res = 864,
 	.native_y_res = 480,
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
+	.synchronized_update = true,
+#else
 	.synchronized_update = false,
+#endif
 	/* TODO: Remove rotation buffers once ESRAM driver is completed */
 	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,
@@ -152,6 +157,54 @@ static struct mcde_display_device generic_display0 = {
 	},
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
+
+#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
+static struct mcde_port sony_port0 = {
+	.type = MCDE_PORTTYPE_DSI,
+	.mode = MCDE_PORTMODE_CMD,
+	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
+	.ifc = 1,
+	.link = 0,
+	.sync_src = MCDE_SYNCSRC_BTA,
+	.update_auto_trig = false,
+	.phy = {
+		.dsi = {
+			.virt_id = 0,
+			.num_data_lanes = 2,
+			.ui = DSI_UNIT_INTERVAL_0,
+			.clk_cont = false,
+			.data_lanes_swap = false,
+		},
+	},
+};
+
+struct mcde_display_sony_acx424akp_platform_data
+			sony_acx424akp_display0_pdata = {
+	.reset_gpio = HREFV60_DISP2_RST_GPIO,
+	.regulator_id = "vaux12v5",
+};
+
+static struct mcde_display_device sony_acx424akp_display0 = {
+	.name = "mcde_disp_sony_acx424akp",
+	.id = PRIMARY_DISPLAY_ID,
+	.port = &sony_port0,
+	.chnl_id = MCDE_CHNL_A,
+	/*
+	 * A large fifo is needed when ddr is clocked down to 25% to not get
+	 * latency problems.
+	 */
+	.fifo = MCDE_FIFO_A,
+	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
+	.native_x_res = 480,
+	.native_y_res = 854,
+	.synchronized_update = true,
+	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4,
+	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,
+	.dev = {
+		.platform_data = &sony_acx424akp_display0_pdata,
+	},
+};
+#endif /* CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY */
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
 static struct mcde_port subdisplay_port = {
@@ -484,6 +537,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	u16 width, height;
 	u16 virtual_width, virtual_height;
 	u32 rotate = FB_ROTATE_UR;
+	u32 rotate_angle = 0;
 	struct fb_info *fbi;
 #ifdef CONFIG_DISPDEV
 	struct mcde_fb *mfb;
@@ -497,9 +551,16 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
 
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
+	if (uib_is_u8500uibr3())
+		rotate_angle = 0;
+	else
+		rotate_angle = \
+			CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE;
+
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
+		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
 	if (ddev->id == PRIMARY_DISPLAY_ID) {
-		switch (CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) {
+		switch (rotate_angle) {
 		case 0:
 			rotate = FB_ROTATE_UR;
 			break;
@@ -681,12 +742,24 @@ static struct notifier_block framebuffer_nb = {
 	.notifier_call = framebuffer_postregistered_callback,
 };
 
+static void setup_primary_display(void)
+{
+	/* Display reset GPIO is different depending on reference boards */
+	if (machine_is_hrefv60())
+		generic_display0_pdata.reset_gpio = HREFV60_DISP1_RST_GPIO;
+	else
+		generic_display0_pdata.reset_gpio = MOP500_DISP1_RST_GPIO;
+
+	/* Not all STUIB supports VSYNC, disable vsync for STUIB */
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
+	if (uib_is_stuib())
+		generic_display0.synchronized_update = false;
+#endif
+}
+
 int __init init_display_devices(void)
 {
 	int ret = 0;
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
-	struct i2c_adapter *i2c0;
-#endif
 
 	if (!cpu_is_u8500())
 		return ret;
@@ -704,41 +777,41 @@ int __init init_display_devices(void)
 		pr_warning("Failed to register fictive display device\n");
 #endif
 
+	/* Set powermode to STANDBY if startup graphics is executed */
 #ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
-	if (machine_is_hrefv60())
-		generic_display0_pdata.reset_gpio = HREFV60_DISP1_RST_GPIO;
-	else
-		generic_display0_pdata.reset_gpio = MOP500_DISP1_RST_GPIO;
-
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
-	if (!machine_is_snowball()) {
-		i2c0 = i2c_get_adapter(0);
-		if (i2c0) {
-			/*
-			 * U8500-UIB has the TC35893 at 0x44 on I2C0, the
-			 * ST-UIB has not.
-			 */
-			ret = i2c_smbus_xfer(i2c0, 0x44, 0, I2C_SMBUS_WRITE, 0,
-					I2C_SMBUS_QUICK, NULL);
-			i2c_put_adapter(i2c0);
-
-			/* ret == 0 => U8500 UIB connected */
-			generic_display0.synchronized_update = (ret == 0);
-		}
-	} else {
-		/* Snowball dont have uib */
-		generic_display0.synchronized_update = 0;
-	}
-#endif
-
 	if (display_initialized_during_boot)
 		generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
-	ret = mcde_display_device_register(&generic_display0);
+#endif
+#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
+	if (display_initialized_during_boot)
+		sony_acx424akp_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
+#endif
+
+#if defined(CONFIG_DISPLAY_GENERIC_PRIMARY) || \
+	defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
+	/*
+	 * For reference platforms different panels are used
+	 * depending on UIB
+	 * UIB = User Interface Board
+	 */
+	setup_primary_display();
+
+#ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
+	/* Launch generic display for STUIB and U8500UIB */
+	if (!uib_is_u8500uibr3())
+		ret = mcde_display_device_register(&generic_display0);
+#endif
+#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
+	/* Sony display on U8500UIBV3 */
+	if (uib_is_u8500uibr3())
+		ret = mcde_display_device_register(&sony_acx424akp_display0);
+#endif
 	if (ret)
-		pr_warning("Failed to register generic display device 0\n");
+		pr_warning("Failed to register primary display device\n");
 #endif
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
+	/* Display reset GPIO is different depending on reference boards */
 	if (machine_is_hrefv60())
 		generic_subdisplay_pdata.reset_gpio = HREFV60_DISP2_RST_GPIO;
 	else
@@ -771,8 +844,16 @@ int __init init_display_devices(void)
 
 struct mcde_display_device *mcde_get_main_display(void)
 {
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY)
+#if defined(CONFIG_DISPLAY_GENERIC_PRIMARY) && \
+	defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
+	if (!uib_is_u8500uibr3())
+		return &generic_display0;
+	else
+		return &sony_acx424akp_display0;
+#elif defined(CONFIG_DISPLAY_GENERIC_PRIMARY)
 	return &generic_display0;
+#elif defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
+	return &sony_acx424akp_display0;
 #elif defined(CONFIG_DISPLAY_GENERIC_DSI_SECONDARY)
 	return &generic_subdisplay;
 #elif defined(CONFIG_DISPLAY_AV8100_TERTIARY)
