@@ -308,7 +308,7 @@ static irqreturn_t ab5500_usb_device_disconnect_irq(int irq, void *data)
  *
  * This function is used to handle the host cable insert work.
  */
-static void ab5500_usb_host_disconnect_irq(int irq, void *data)
+static irqreturn_t ab5500_usb_host_disconnect_irq(int irq, void *data)
 {
 	struct ab5500_usb *ab = (struct ab5500_usb *) data;
 	/* disable usb chip Select */
