@@ -188,6 +188,7 @@ struct mmci_host {
 	unsigned int		cclk;
 	u32			pwr_reg;
 	u32			clk_reg;
+	u32			datactrl_reg;
 	struct mmci_platform_data *plat;
 	struct variant_data	*variant;
 

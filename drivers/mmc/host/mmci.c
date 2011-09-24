@@ -265,6 +265,7 @@ static void mmci_stop_data(struct mmci_host *host)
 	writel(0, host->base + MMCIDATACTRL);
 	mmci_set_mask1(host, 0);
 	host->data = NULL;
+	host->datactrl_reg = 0;
 }
 
 static void mmci_init_sg(struct mmci_host *host, struct mmc_data *data)
@@ -375,13 +376,13 @@ static inline void mmci_dma_release(struct mmci_host *host)
 	host->dma_rx_channel = host->dma_tx_channel = NULL;
 }
 
-static void mmci_dma_data_error(struct mmci_host *host)
+static void mmci_dma_data_error(struct mmci_host *host, struct mmc_data *data)
 {
 	dev_err(mmc_dev(host->mmc), "error during DMA transfer!\n");
 	dmaengine_terminate_all(host->dma_current);
 	host->dma_current = NULL;
 	host->dma_desc_current = NULL;
-	host->data->host_cookie = 0;
+	data->host_cookie = 0;
 }
 
 static void mmci_dma_unmap(struct mmci_host *host, struct mmc_data *data)
@@ -421,7 +422,7 @@ static void mmci_dma_finalize(struct mmci_host *host, struct mmc_data *data)
 	 */
 	if (status & MCI_RXDATAAVLBLMASK) {
 		data->error = -EIO;
-		mmci_dma_data_error(host);
+		mmci_dma_data_error(host, data);
 	}
 
 	if (!data->host_cookie)
@@ -523,7 +524,7 @@ static inline int mmci_dma_prep_next(struct mmci_host *host,
 	return __mmci_dma_prep_data(host, data, &nd->dma_chan, &nd->dma_desc);
 }
 
-static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+static int mmci_dma_start_data(struct mmci_host *host)
 {
 	int ret;
 	struct mmc_data *data = host->data;
@@ -540,15 +541,15 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
 	dmaengine_submit(host->dma_desc_current);
 	dma_async_issue_pending(host->dma_current);
 
-	datactrl |= MCI_DPSM_DMAENABLE;
+	host->datactrl_reg |= MCI_DPSM_DMAENABLE;
 
 	/* Some hardware versions need special flags for SDIO DMA write */
 	if (variant->sdio && host->mmc->card && mmc_card_sdio(host->mmc->card)
 	    && (data->flags & MMC_DATA_WRITE))
-		datactrl |= variant->dma_sdio_req_ctrl;
+		host->datactrl_reg |= variant->dma_sdio_req_ctrl;
 
 	/* Trigger the DMA transfer */
-	writel(datactrl, host->base + MMCIDATACTRL);
+	writel(host->datactrl_reg, host->base + MMCIDATACTRL);
 
 	/*
 	 * Let the MMCI say when the data is ended and it's time
@@ -642,11 +643,16 @@ static inline void mmci_dma_finalize(struct mmci_host *host, struct mmc_data *da
 {
 }
 
-static inline void mmci_dma_data_error(struct mmci_host *host)
+static inline void mmci_dma_data_error(struct mmci_host *host, struct mmc_data *data)
 {
 }
 
-static inline int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+static inline int mmci_dma_start_data(struct mmci_host *host)
+{
+	return -ENOSYS;
+}
+
+static inline int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data)
 {
 	return -ENOSYS;
 }
@@ -656,10 +662,10 @@ static inline int mmci_dma_start_data(struct mmci_host *host, unsigned int datac
 
 #endif
 
-static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+static void mmci_setup_datactrl(struct mmci_host *host, struct mmc_data *data)
 {
 	struct variant_data *variant = host->variant;
-	unsigned int datactrl, timeout, irqmask;
+	unsigned int datactrl, timeout;
 	unsigned long long clks;
 	void __iomem *base;
 	int blksz_bits;
@@ -714,12 +720,21 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 
 			mmci_write_clkreg(host, clk);
 		}
+	host->datactrl_reg = datactrl;
+	writel(datactrl, base + MMCIDATACTRL);
+}
+
+static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+{
+	unsigned int irqmask;
+	struct variant_data *variant = host->variant;
+	void __iomem *base = host->base;
 
 	/*
 	 * Attempt to use DMA operation mode, if this
 	 * should fail, fall back to PIO mode
 	 */
-	if (!mmci_dma_start_data(host, datactrl))
+	if (!mmci_dma_start_data(host))
 		return;
 
 	/* IRQ mode, map the SG list for CPU reading/writing */
@@ -743,7 +758,6 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 		irqmask = MCI_TXFIFOHALFEMPTYMASK;
 	}
 
-	writel(datactrl, base + MMCIDATACTRL);
 	writel(readl(base + MMCIMASK0) & ~MCI_DATAENDMASK, base + MMCIMASK0);
 	mmci_set_mask1(host, irqmask);
 }
@@ -787,7 +801,7 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
 
 		/* Terminate the DMA transfer */
 		if (dma_inprogress(host)) {
-			mmci_dma_data_error(host);
+			mmci_dma_data_error(host, data);
 			mmci_dma_unmap(host, data);
 		}
 
@@ -863,16 +877,16 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
 	}
 
 	if (!cmd->data || cmd->error) {
-		if (host->data) {
-			/* Terminate the DMA transfer */
-			if (dma_inprogress(host)) {
-				mmci_dma_data_error(host);
-				mmci_dma_unmap(host, host->data);
-			}
-			mmci_stop_data(host);
+		/* Terminate the DMA transfer */
+		if (dma_inprogress(host)) {
+			mmci_dma_data_error(host, host->mrq->data);
+			mmci_dma_unmap(host, host->mrq->data);
 		}
+		if (host->data)
+			mmci_stop_data(host);
 		mmci_request_end(host, cmd->mrq);
 	} else if (!(cmd->data->flags & MMC_DATA_READ)) {
+		mmci_setup_datactrl(host, cmd->data);
 		mmci_start_data(host, cmd->data);
 	}
 }
@@ -1091,6 +1105,7 @@ static void mmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct mmci_host *host = mmc_priv(mmc);
 	unsigned long flags;
+	bool dmaprep_after_cmd = false;
 
 	WARN_ON(host->mrq != NULL);
 
@@ -1106,13 +1121,27 @@ static void mmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	host->mrq = mrq;
 
-	if (mrq->data)
+	if (mrq->data) {
+		dmaprep_after_cmd =
+			(host->variant->clkreg_enable &&
+			 (mrq->data->flags & MMC_DATA_READ)) ||
+			!(mrq->data->flags & MMC_DATA_READ);
 		mmci_get_next_data(host, mrq->data);
-
-	if (mrq->data && mrq->data->flags & MMC_DATA_READ)
-		mmci_start_data(host, mrq->data);
+		if (mrq->data->flags & MMC_DATA_READ) {
+			mmci_setup_datactrl(host, mrq->data);
+			if (!dmaprep_after_cmd)
+				mmci_start_data(host, mrq->data);
+		}
+	}
 
 	mmci_start_command(host, mrq->cmd, 0);
+
+	if (mrq->data && dmaprep_after_cmd) {
+		mmci_dma_prep_data(host, mrq->data);
+
+		if (mrq->data->flags & MMC_DATA_READ)
+			mmci_start_data(host, mrq->data);
+	}
 
 	spin_unlock_irqrestore(&host->lock, flags);
 }
