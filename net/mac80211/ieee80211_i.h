@@ -594,6 +594,8 @@ struct ieee80211_sub_if_data {
 	__be16 control_port_protocol;
 	bool control_port_no_encrypt;
 
+	struct ieee80211_tx_queue_params tx_conf[IEEE80211_MAX_QUEUES];
+
 	struct work_struct work;
 	struct sk_buff_head skb_queue;
 
@@ -735,7 +737,6 @@ struct ieee80211_local {
 	struct workqueue_struct *workqueue;
 
 	unsigned long queue_stop_reasons[IEEE80211_MAX_QUEUES];
-	struct ieee80211_tx_queue_params tx_conf[IEEE80211_MAX_QUEUES];
 	/* also used to protect ampdu_ac_queue and amdpu_ac_stop_refcnt */
 	spinlock_t queue_stop_reason_lock;
 
