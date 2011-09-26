@@ -39,7 +39,17 @@ static inline unsigned int __attribute_const__ dbx500_revision(void)
 static inline bool __attribute_const__ cpu_is_u8500(void)
 {
 #ifdef CONFIG_UX500_SOC_DB8500
-	return dbx500_partnumber() == 0x8500;
+	/* partnumber 8520 also comes under 8500 */
+	return ((dbx500_partnumber() >> 8) & 0xff) == 0x85;
+#else
+	return false;
+#endif
+}
+
+static inline bool __attribute_const__ cpu_is_u8520(void)
+{
+#ifdef CONFIG_UX500_SOC_DB8500
+	return dbx500_partnumber() == 0x8520;
 #else
 	return false;
 #endif
