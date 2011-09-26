@@ -436,6 +436,14 @@ static ssize_t show_crit_alarm(struct device *dev,
 	return sprintf(buf, "%ld\n", data->crit_alarm[attr->index - 1]);
 }
 
+static mode_t abx500_attrs_visible(struct kobject *kobj,
+				   struct attribute *a, int n)
+{
+	struct device *dev = container_of(kobj, struct device, kobj);
+	struct abx500_temp *data = dev_get_drvdata(dev);
+	return data->ops.is_visible(a, n);
+}
+
 static SENSOR_DEVICE_ATTR(temp_monitor_delay, S_IRUGO | S_IWUSR,
 			  show_temp_monitor_delay, set_temp_monitor_delay, 0);
 static SENSOR_DEVICE_ATTR(temp_power_off_delay, S_IRUGO | S_IWUSR,
@@ -493,9 +501,17 @@ static SENSOR_DEVICE_ATTR(temp4_max_alarm, S_IRUGO, show_max_alarm, NULL, 4);
 static SENSOR_DEVICE_ATTR(temp4_max_hyst_alarm, S_IRUGO,
 			  show_max_hyst_alarm, NULL, 4);
 
-/* GPADC - SENSOR4 */
+/* GPADC - SENSOR5 */
 static SENSOR_DEVICE_ATTR(temp5_label, S_IRUGO, show_label, NULL, 5);
 static SENSOR_DEVICE_ATTR(temp5_input, S_IRUGO, show_input, NULL, 5);
+static SENSOR_DEVICE_ATTR(temp5_min, S_IWUSR | S_IRUGO, show_min, set_min, 4);
+static SENSOR_DEVICE_ATTR(temp5_max, S_IWUSR | S_IRUGO, show_max, set_max, 4);
+static SENSOR_DEVICE_ATTR(temp5_max_hyst, S_IWUSR | S_IRUGO,
+			  show_max_hyst, set_max_hyst, 4);
+static SENSOR_DEVICE_ATTR(temp5_min_alarm, S_IRUGO, show_min_alarm, NULL, 4);
+static SENSOR_DEVICE_ATTR(temp5_max_alarm, S_IRUGO, show_max_alarm, NULL, 4);
+static SENSOR_DEVICE_ATTR(temp5_max_hyst_alarm, S_IRUGO,
+			  show_max_hyst_alarm, NULL, 4);
 static SENSOR_DEVICE_ATTR(temp5_crit_alarm, S_IRUGO,
 			  show_crit_alarm, NULL, 5);
 
@@ -542,12 +558,19 @@ struct attribute *abx500_temp_attributes[] = {
 	/* GPADC SENSOR5*/
 	&sensor_dev_attr_temp5_label.dev_attr.attr,
 	&sensor_dev_attr_temp5_input.dev_attr.attr,
+	&sensor_dev_attr_temp5_min.dev_attr.attr,
+	&sensor_dev_attr_temp5_max.dev_attr.attr,
+	&sensor_dev_attr_temp5_max_hyst.dev_attr.attr,
+	&sensor_dev_attr_temp5_min_alarm.dev_attr.attr,
+	&sensor_dev_attr_temp5_max_alarm.dev_attr.attr,
+	&sensor_dev_attr_temp5_max_hyst_alarm.dev_attr.attr,
 	&sensor_dev_attr_temp5_crit_alarm.dev_attr.attr,
 	NULL
 };
 
 static const struct attribute_group abx500_temp_group = {
 	.attrs = abx500_temp_attributes,
+	.is_visible = abx500_attrs_visible,
 };
 
 static irqreturn_t abx500_temp_irq_handler(int irq, void *irq_data)

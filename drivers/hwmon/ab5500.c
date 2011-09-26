@@ -139,6 +139,11 @@ static int ab5500_temp_shutdown_auto(struct abx500_temp *data)
 	return ret;
 }
 
+static int ab5500_is_visible(struct attribute *attr, int n)
+{
+	return attr->mode;
+}
+
 static int ab5500_temp_irq_handler(int irq, struct abx500_temp *data)
 {
 	/*
@@ -195,6 +200,7 @@ int __init abx500_hwmon_init(struct abx500_temp *data)
 	data->ops.irq_handler = ab5500_temp_irq_handler;
 	data->ops.show_name  = ab5500_show_name;
 	data->ops.show_label = ab5500_show_label;
+	data->ops.is_visible = ab5500_is_visible;
 
 	return 0;
 }

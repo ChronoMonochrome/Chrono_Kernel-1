@@ -41,13 +41,8 @@ static int ab8500_read_sensor(struct abx500_temp *data, u8 sensor)
 	 * Special treatment for the BAT_CTRL node, since this
 	 * temperature measurement is more complex than just
 	 * an ADC readout
-	 *
-	 * DIE_TEMP input temperature reading is not supported
-	 * in AB8500
 	 */
-	if (sensor == DIE_TEMP)
-		val = 0;
-	else if (sensor == BAT_CTRL)
+	if (sensor == BAT_CTRL)
 		val = ab8500_btemp_get_batctrl_temp(data->ab8500_btemp);
 	else
 		val = ab8500_gpadc_convert(data->ab8500_gpadc, sensor);
@@ -105,6 +100,20 @@ static ssize_t ab8500_show_label(struct device *dev,
 		return -EINVAL;
 	}
 	return sprintf(buf, "%s\n", name);
+}
+
+static int ab8500_is_visible(struct attribute *attr, int n)
+{
+	if (!strcmp(attr->name, "temp5_input") ||
+	    !strcmp(attr->name, "temp5_min") ||
+	    !strcmp(attr->name, "temp5_max") ||
+	    !strcmp(attr->name, "temp5_max_hyst") ||
+	    !strcmp(attr->name, "temp5_min_alarm") ||
+	    !strcmp(attr->name, "temp5_max_alarm") ||
+	    !strcmp(attr->name, "temp5_max_hyst_alarm"))
+		return 0;
+
+	return attr->mode;
 }
 
 static int ab8500_temp_irq_handler(int irq, struct abx500_temp *data)
@@ -168,6 +177,7 @@ int __init abx500_hwmon_init(struct abx500_temp *data)
 	data->ops.irq_handler = ab8500_temp_irq_handler;
 	data->ops.show_name  = ab8500_show_name;
 	data->ops.show_label = ab8500_show_label;
+	data->ops.is_visible = ab8500_is_visible;
 
 	return 0;
 }

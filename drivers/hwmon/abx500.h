@@ -22,6 +22,7 @@ struct abx500_temp;
  * @irq_handler: irq handler
  * @show_name: hwmon device name
  * @show_label: hwmon attribute label
+ * @is_visible: is attribute visible
  */
 struct abx500_temp_ops {
 	int (*read_sensor)(struct abx500_temp *, u8);
@@ -30,6 +31,7 @@ struct abx500_temp_ops {
 			struct device_attribute *, char *);
 	ssize_t (*show_label) (struct device *,
 			struct device_attribute *, char *);
+	int (*is_visible)(struct attribute *, int);
 };
 
 /**
