@@ -396,9 +396,7 @@ struct abx500_ad ab8500_accessory_det_callbacks = {
 	.turn_on_accdet_comparator	= ab8500_turn_on_accdet_comparator,
 	.accdet_abx500_gpadc_get	= ab8500_accdet_abx500_gpadc_get,
 	.config_hw_test_plug_connected	= ab8500_config_hw_test_plug_connected,
-	.startup			= NULL,
 	.set_av_switch			= ab8500_set_av_switch,
-	.tv_out_connected		= false,
 	.get_platform_data		= ab8500_get_platform_data,
 };
 

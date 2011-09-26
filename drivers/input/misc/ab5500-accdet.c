@@ -28,8 +28,6 @@
 #define AB5500_ACC_DET_CTRL_REG		0x23
 #define AB5500_VDENC_CTRL0		0x80
 
-#define ENABLE_TV_PLUG_DETECT		0x01
-
 /* REGISTER: AB8500_ACC_DET_CTRL_REG */
 #define BITS_ACCDETCTRL2_ENA		(0x20 | 0x10 | 0x08)
 #define BITS_ACCDETCTRL1_ENA		(0x02 | 0x01)
@@ -243,95 +241,9 @@ static void ab5500_turn_on_accdet_comparator(struct platform_device *pdev)
 			acc_det_ctrl_suspend_val);
 }
 
-irqreturn_t plug_tv_connect_irq_handler(int irq, void *_userdata)
-{
-	struct abx500_ad *dd = _userdata;
-
-	dev_dbg(&dd->pdev->dev, "%s: Enter (irq=%d)\n", __func__, irq);
-
-	dd->tv_out_connected = true;
-	report_jack_status(dd);
-
-	return IRQ_HANDLED;
-}
-
-irqreturn_t plug_tv_removal_irq_handler(int irq, void *_userdata)
-{
-	struct abx500_ad *dd = _userdata;
-
-	dev_dbg(&dd->pdev->dev, "%s: Enter (irq=%d)\n", __func__, irq);
-
-	dd->tv_out_connected = false;
-	report_jack_status(dd);
-
-	return IRQ_HANDLED;
-}
-
 static void *ab5500_accdet_abx500_gpadc_get(void)
 {
 	return ab5500_gpadc_get("ab5500-adc.0");
-}
-
-static int ab5500_startup(struct abx500_ad *dd)
-{
-	int ret;
-	int irq, irq_removal;
-
-	irq = platform_get_irq_byname(dd->pdev,
-			"plugTVdet");
-	if (irq < 0) {
-		dev_err(&dd->pdev->dev,	"%s: Failed to get irq plugTVdet \n",
-				__func__);
-		return irq;
-	}
-
-	irq_removal = platform_get_irq_byname(dd->pdev,
-			"plugTVdet_removal");
-	if (irq_removal < 0) {
-		dev_err(&dd->pdev->dev,	"%s: Failed to get irq"
-			"plugTVdet_removal \n", __func__);
-		return irq_removal;
-	}
-
-	ret = request_threaded_irq(irq, NULL,
-				plug_tv_connect_irq_handler,
-				IRQF_NO_SUSPEND | IRQF_SHARED,
-				"plugTVdet",
-				dd);
-	if (ret != 0) {
-		dev_err(&dd->pdev->dev,
-			"%s: Failed to claim irq plugTVdet (%d)\n",
-			__func__, ret);
-		return ret;
-	}
-
-	ret = request_threaded_irq(irq_removal, NULL,
-				plug_tv_removal_irq_handler,
-				IRQF_NO_SUSPEND | IRQF_SHARED,
-				"plugTVdet_removal",
-				dd);
-	if (ret != 0) {
-		dev_err(&dd->pdev->dev,
-			"%s: Failed to claim irq plugTVdet_removal (%d)\n",
-			__func__, ret);
-		goto req_irq_fail;
-	}
-
-	ret = abx500_set_register_interruptible(&dd->pdev->dev,
-			AB5500_BANK_VDENC, AB5500_VDENC_CTRL0,
-			ENABLE_TV_PLUG_DETECT);
-	if (ret < 0) {
-		dev_err(&dd->pdev->dev,
-			"%s: Failed to update reg (%d).\n", __func__, ret);
-		goto ab_write_fail;
-	}
-
-	return 0;
-
-req_irq_fail:
-ab_write_fail:
-	free_irq(irq, dd);
-	return ret;
 }
 
 struct abx500_accdet_platform_data *
@@ -355,7 +267,6 @@ struct abx500_ad ab5500_accessory_det_callbacks = {
 	.turn_on_accdet_comparator	= ab5500_turn_on_accdet_comparator,
 	.accdet_abx500_gpadc_get	= ab5500_accdet_abx500_gpadc_get,
 	.config_hw_test_plug_connected	= ab5500_config_hw_test_plug_connected,
-	.startup			= ab5500_startup,
 	.set_av_switch			= NULL,
 	.get_platform_data		= ab5500_get_platform_data,
 };

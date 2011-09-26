@@ -276,9 +276,6 @@ void report_jack_status(struct abx500_ad *dd)
 {
 	int value = 0;
 
-	if (dd->tv_out_connected == true)
-		value = SND_JACK_VIDEOOUT;
-
 	/* Never report possible open cable */
 	if (dd->jack_type == JACK_TYPE_OPENCABLE)
 		goto out;
@@ -753,14 +750,6 @@ static int abx500_accessory_init(struct platform_device *pdev)
 		dev_err(&pdev->dev, "%s: create_button_input_dev failed.\n",
 			__func__);
 		goto fail_no_btn_input_dev;
-	}
-
-	if (dd->startup) {
-		ret = dd->startup(dd);
-		if (ret < 0) {
-			dev_err(&pdev->dev, "Chip specific init failed\n");
-			goto fail_no_regulators;
-		}
 	}
 
 	ret = create_regulators(dd);

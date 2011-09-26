@@ -280,7 +280,6 @@ struct accessory_detect_task {
  * @config_hw_test_plug_connected: Call back to configure the hw for
  *	accessory detection.
  * @set_av_switch: Call back to configure the switch for tvout or audioout.
- * @startup: Call back to do the Chip specific initialization.
  * @get_platform_data: call to get platform specific data.
  */
 struct abx500_ad {
@@ -316,8 +315,6 @@ struct abx500_ad {
 	struct accessory_regu_descriptor *regu_desc;
 	int no_of_regu_desc;
 
-	bool tv_out_connected;
-
 	void (*config_accdetect2_hw)(struct abx500_ad *, int);
 	void (*config_accdetect1_hw)(struct abx500_ad *, int);
 	int (*detect_plugged_in)(struct abx500_ad *);
@@ -329,7 +326,6 @@ struct abx500_ad {
 	void (*config_hw_test_plug_connected)(struct abx500_ad *dd, int enable);
 	void (*set_av_switch)(struct abx500_ad *dd,
 		enum accessory_avcontrol_dir dir);
-	int (*startup)(struct abx500_ad *dd);
 	struct abx500_accdet_platform_data *
 	(*get_platform_data)(struct platform_device *pdev);
 };
