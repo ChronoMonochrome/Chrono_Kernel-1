@@ -296,8 +296,7 @@ static int cw1200_bh(void *arg)
 			continue;
 		} else if (suspend) {
 			bh_printk(KERN_DEBUG "[BH] Device suspend.\n");
-			if (priv->powersave_enabled &&
-					!priv->device_can_sleep) {
+			if (priv->powersave_enabled) {
 				WARN_ON(cw1200_reg_write_16(priv,
 						ST90TDS_CONTROL_REG_ID, 0));
 				priv->device_can_sleep = true;
