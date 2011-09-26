@@ -1765,8 +1765,8 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 				c->channel_release(dma);
 				hw_ep->rx_channel = NULL;
 				dma = NULL;
+				musb_writew(epio, MUSB_RXCSR, restore_csr);
 			}
-			musb_writew(epio, MUSB_RXCSR, restore_csr);
 		}
 #endif	/* Mentor DMA */
 
