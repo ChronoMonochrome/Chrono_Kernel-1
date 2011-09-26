@@ -1007,7 +1007,7 @@ static struct mfd_cell ab5500_devs[AB5500_NUM_DEVICES] = {
 	[AB5500_DEVID_ACCDET] = {
 		.name = "ab5500-acc-det",
 		.id = AB5500_DEVID_ACCDET,
-		.num_resources = 10,
+		.num_resources = 8,
 		.resources = (struct resource[]) {
 			{
 				.name	= "acc_detedt22db_rising",
@@ -1056,18 +1056,6 @@ static struct mfd_cell ab5500_devs[AB5500_NUM_DEVICES] = {
 				.flags	= IORESOURCE_IRQ,
 				.start	= AB5500_IRQ(3, 0),
 				.end	= AB5500_IRQ(3, 0),
-			},
-			{
-				.name	= "plugTVdet",
-				.flags	= IORESOURCE_IRQ,
-				.start	= AB5500_IRQ(13, 7),
-				.end	= AB5500_IRQ(13, 7),
-			},
-			{
-				.name	= "plugTVdet_removal",
-				.flags	= IORESOURCE_IRQ,
-				.start	= AB5500_IRQ(23, 2),
-				.end	= AB5500_IRQ(23, 2),
 			},
 		},
 	},
