@@ -841,6 +841,15 @@ static u8 portfmt2cdwin(enum mcde_port_pix_fmt pix_fmt)
 	}
 }
 
+static u32 get_input_fifo_size(void)
+{
+	if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
+			hardware_version == MCDE_CHIP_VERSION_4_0_4)
+		return MCDE_INPUT_FIFO_SIZE_4_0_4;
+	else
+		return MCDE_INPUT_FIFO_SIZE_3_0_8;
+}
+
 static u32 get_output_fifo_size(enum mcde_fifo fifo)
 {
 	u32 ret = 1; /* Avoid div by zero */
@@ -1477,9 +1486,9 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 
 	if ((fifo == MCDE_FIFO_A || fifo == MCDE_FIFO_B) &&
 			regs->ppl >= fifo_size * 2)
-		pixelfetchwtrmrklevel = MCDE_PIXFETCH_LARGE_WTRMRKLVL;
+		pixelfetchwtrmrklevel = get_input_fifo_size() * 2;
 	else
-		pixelfetchwtrmrklevel = MCDE_PIXFETCH_MEDIUM_WTRMRKLVL;
+		pixelfetchwtrmrklevel = get_input_fifo_size() / 2;
 
 	if (port->update_auto_trig && port->type == MCDE_PORTTYPE_DSI) {
 		switch (port->sync_src) {
