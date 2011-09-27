@@ -636,7 +636,7 @@ static bool musb_tx_dma_program(struct dma_controller *dma,
 		length = channel->max_len;
 
 	csr = musb_readw(epio, MUSB_TXCSR);
-	if (length > pkt_size) {
+	if (length >= pkt_size) {
 		mode = 1;
 		csr |= MUSB_TXCSR_DMAMODE | MUSB_TXCSR_DMAENAB;
 		/* autoset shouldn't be set in high bandwidth */
@@ -1158,6 +1158,21 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 		status = -ETIMEDOUT;
 	} else if (tx_csr & MUSB_TXCSR_TXPKTRDY) {
 		/* BUSY - can happen during USB transfer cancel */
+
+		/* MUSB_TXCSR_TXPKTRDY indicates that the data written
+		 * to the FIFO by DMA has not still gone on the USB bus.
+		 * DMA completion callback doesn't indicate that data has
+		 * gone on the USB bus. So, if we reach this case, need to
+		 * wait for the MUSB_TXCSR_TXPKTRDY to be cleared and then
+		 * proceed.
+		 */
+		dev_dbg(musb->controller, "TXPKTRDY set. Data transfer ongoing. Wait...\n");
+
+		do {
+			tx_csr = musb_readw(epio, MUSB_TXCSR);
+		} while ((tx_csr & MUSB_TXCSR_TXPKTRDY) != 0);
+		dev_dbg(musb->controller, "TXPKTRDY Cleared. Continue...\n");
+
 		return;
 	} else if (tx_csr & MUSB_TXCSR_H_NAKTIMEOUT) {
 		dev_dbg(musb->controller, "TX end=%d device not responding\n", epnum);
