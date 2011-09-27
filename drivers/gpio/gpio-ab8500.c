@@ -174,9 +174,9 @@ static int ab8500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
 		int start;
 		int end;
 	} clusters[] = {
-		{.start = 6,  .end = 13},
-		{.start = 24, .end = 25},
-		{.start = 36, .end = 41},
+		{.start = 5,  .end = 12}, /* GPIO numbers start from 1 */
+		{.start = 23, .end = 24},
+		{.start = 35, .end = 40},
 	};
 	struct ab8500_gpio *ab8500_gpio = to_ab8500_gpio(chip);
 	int base = ab8500_gpio->irq_base;
