@@ -7,6 +7,7 @@
 #include <linux/io.h>
 #include <linux/errno.h>
 #include <linux/clksrc-dbx500-prcmu.h>
+#include <linux/clksrc-db5500-mtimer.h>
 #include <linux/of.h>
 
 #include <asm/smp_twd.h>
@@ -70,12 +71,18 @@ static void __init ux500_timer_init(void)
 	 * depending on delay which is not yet calibrated. RTC-RTT is in the
 	 * always-on powerdomain and is used as clockevent instead of twd when
 	 * sleeping.
-	 * The PRCMU timer 4(3 for DB5500) register a clocksource and
-	 * sched_clock with higher rating then MTU since is always-on.
 	 *
+	 * The PRCMU timer 4 (3 for DB5500) registers a clocksource and
+	 * sched_clock with higher rating than the MTU since it is
+	 * always-on.
+	 *
+	 * On DB5500, the MTIMER is the best clocksource since, unlike the
+	 * PRCMU timer, it doesn't occasionally go backwards.
 	 */
 
 	nmdk_timer_init(mtu_timer_base);
+	if (cpu_is_u5500())
+		db5500_mtimer_init(__io_address(U5500_MTIMER_BASE));
 	clksrc_dbx500_prcmu_init(prcmu_timer_base);
 	ux500_twd_init();
 }
