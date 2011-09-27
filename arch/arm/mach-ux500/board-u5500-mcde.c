@@ -278,6 +278,9 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	u32 rotate = FB_ROTATE_UR;
 	u32 rotate_angle = 0;
 	struct fb_info *fbi;
+#ifdef CONFIG_DISPDEV
+	struct mcde_fb *mfb;
+#endif
 
 	struct mcde_display_sony_acx424akp_platform_data *pdata =
 					ddev->dev.platform_data;
@@ -337,43 +340,40 @@ static int display_postregistered_callback(struct notifier_block *nb,
 #ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
 		hdmi_fb_onoff(ddev, 1, 0, 0);
 #endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
-		;
-	} else
+		goto out;
+	}
 #endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
-	{
-		struct mcde_fb *mfb;
-		/* Create frame buffer */
-		fbi = mcde_fb_create(ddev,
-			width, height,
-			virtual_width, virtual_height,
-			ddev->default_pixel_format,
-			rotate);
 
-		if (IS_ERR(fbi)) {
-			dev_warn(&ddev->dev,
-				"Failed to create fb for display %s\n",
-						ddev->name);
-			goto display_postregistered_callback_err;
-		} else {
-			dev_info(&ddev->dev, "Framebuffer created (%s)\n",
-						ddev->name);
-		}
+	/* Create frame buffer */
+	fbi = mcde_fb_create(ddev,
+		width, height,
+		virtual_width, virtual_height,
+		ddev->default_pixel_format,
+		rotate);
 
-#ifdef CONFIG_DISPDEV
-		mfb = to_mcde_fb(fbi);
-		/* Create a dispdev overlay for this display */
-		if (dispdev_create(ddev, true, mfb->ovlys[0]) < 0) {
-			dev_warn(&ddev->dev,
-				"Failed to create disp for display %s\n",
-						ddev->name);
-			goto display_postregistered_callback_err;
-		} else {
-			dev_info(&ddev->dev, "Disp dev created for (%s)\n",
-						ddev->name);
-		}
-#endif
+	if (IS_ERR(fbi)) {
+		dev_warn(&ddev->dev,
+			"Failed to create fb for display %s\n", ddev->name);
+		goto display_postregistered_callback_err;
+	} else {
+		dev_info(&ddev->dev, "Framebuffer created (%s)\n", ddev->name);
 	}
 
+#ifdef CONFIG_DISPDEV
+	mfb = to_mcde_fb(fbi);
+	/* Create a dispdev overlay for this display */
+	if (dispdev_create(ddev, true, mfb->ovlys[0]) < 0) {
+		dev_warn(&ddev->dev,
+			"Failed to create disp for display %s\n", ddev->name);
+		goto display_postregistered_callback_err;
+	} else {
+		dev_info(&ddev->dev, "Disp dev created for (%s)\n", ddev->name);
+	}
+#endif
+
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+out:
+#endif
 	return 0;
 
 display_postregistered_callback_err:
