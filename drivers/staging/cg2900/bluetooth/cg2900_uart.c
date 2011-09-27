@@ -1395,6 +1395,16 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 				"New sleep_state: CHIP_POWERED_DOWN\n");
 			uart_info->sleep_state = CHIP_POWERED_DOWN;
 		}
+
+		/*
+		 * Reset the uart_info state so that
+		 * next packet can be handled
+		 * correctly by driver.
+		 */
+		uart_info->rx_state = W4_PACKET_TYPE;
+		uart_info->rx_count = 0;
+		kfree_skb(uart_info->rx_skb);
+		uart_info->rx_skb = NULL;
 		cg2900_disable_regulator(uart_info);
 		/*
 		 * Setting baud rate to 0 will tell UART driver to shut off its
