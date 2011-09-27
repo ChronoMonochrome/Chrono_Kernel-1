@@ -91,7 +91,11 @@ static struct ux500_musb_board_data musb_board_data = {
 	.dma_filter = stedma40_filter,
 };
 
+#ifdef CONFIG_USB_UX500_DMA
 static u64 ux500_musb_dmamask = DMA_BIT_MASK(32);
+#else
+static u64 ux500_musb_dmamask = DMA_BIT_MASK(0);
+#endif
 static struct ux500_pins *usb_gpio_pins;
 
 static struct musb_hdrc_config musb_hdrc_config = {
