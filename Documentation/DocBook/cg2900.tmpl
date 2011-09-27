@@ -1268,6 +1268,24 @@
        </listitem>
      </varlistentry>
 
+     <varlistentry>
+       <term>HCI Raw</term>
+       <listitem>
+         <variablelist>
+           <varlistentry>
+             <term>File</term>
+             <listitem><para><filename>/dev/cg2900_hci_raw</filename></para></listitem>
+           </varlistentry>
+           <varlistentry>
+             <term>Description</term>
+             <listitem>
+             <para>The cg2900_hci_raw is the device for raw access to HCI interface.</para>
+             </listitem>
+           </varlistentry>
+         </variablelist>
+       </listitem>
+     </varlistentry>
+
     </variablelist>
   </section>
 
@@ -1286,6 +1304,24 @@
          <para>
            To simplify design and limitation as well as keeping the API simple and reliable, the driver only supports
            one user per HCI channel.
+           <!-- TODO: Briefly describe the limitation, unless all
+              information is already present in the title.
+              Use full english sentences.
+              Repeat the varlistentry for each limitation.
+              If none are known, replace this varlistentry
+              with the one below. -->
+           <!-- TODO: This guideline for this chapter may be extended
+              during the user-guide guidelines drop. -->
+         </para>
+       </listitem>
+     </varlistentry>
+     <varlistentry>
+       <term>HCI Raw channel requires exclusive access to chip.</term>
+       <listitem>
+         <para>
+           cg2900_hci_raw channel cannot be opened if there are any other channels already opened except hci_logger channel.
+           Also any other channels cannot be opened except hci_logger channel when cg2900_hci_raw is already opened.
+           This is to guarantee that different users won't interfere with each other and prevent flow control issues.
            <!-- TODO: Briefly describe the limitation, unless all
               information is already present in the title.
               Use full english sentences.

@@ -210,6 +210,9 @@ static int char_dev_release(struct inode *inode, struct file *filp)
 	wake_up_interruptible(&dev->rx_wait_queue);
 	wake_up_interruptible(&dev->reset_wait_queue);
 
+	/* Purge the queue since the device is closed now */
+	skb_queue_purge(&dev->rx_queue);
+
 	mutex_unlock(&dev->write_mutex);
 	mutex_unlock(&dev->read_mutex);
 	mutex_unlock(&char_info->open_mutex);
