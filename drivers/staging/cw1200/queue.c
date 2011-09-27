@@ -29,7 +29,7 @@
 	u8			generation;
 	u8			link_id;
 	u8			raw_link_id;
-	u8			reserved[1];
+	u8			tid;
 };
 
 static inline void __cw1200_queue_lock(struct cw1200_queue *queue,
@@ -200,7 +200,8 @@ size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 }
 
 int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
-			struct sk_buff *skb, struct tx_info *txinfo, u8 raw_link_id)
+			struct sk_buff *skb, struct tx_info *txinfo,
+			u8 raw_link_id, u8 tid)
 {
 	int ret;
 	struct wsm_tx *wsm;
@@ -230,6 +231,7 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 		wsm->packetID = __cpu_to_le32(item->packetID);
 		item->link_id = link_id;
 		item->raw_link_id = raw_link_id;
+		item->tid = tid;
 
 		++queue->num_queued;
 		++queue->link_map_cache[link_id];
@@ -409,7 +411,7 @@ int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
 }
 
 int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
-				struct sk_buff **skb)
+				struct sk_buff **skb, int *tid)
 {
 	int ret = 0;
 	u8 queue_generation, queue_id, item_generation, item_id;
@@ -431,6 +433,7 @@ int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
 		ret = -ENOENT;
 	} else {
 		*skb = item->skb;
+		*tid = item->tid;
 		item->skb = NULL;
 	}
 	spin_unlock_bh(&queue->lock);

@@ -448,6 +448,8 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
 	struct ieee80211_hdr *hdr =
 		(struct ieee80211_hdr *)skb->data;
+	int was_buffered = 0;
+	int tid = CW1200_MAX_TID;
 	const u8 *da = ieee80211_get_DA(hdr);
 	struct cw1200_sta_priv *sta_priv =
 		(struct cw1200_sta_priv *)&tx_info->control.sta->drv_priv;
@@ -477,14 +479,14 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 				__func__);
 			goto err;
 		}
-		if (tx_info->control.sta &&
-			(tx_info->control.sta->uapsd_queues & BIT(queue)))
-			link_id = CW1200_LINK_ID_UAPSD;
-		else
-			link_id = raw_link_id;
+		link_id = raw_link_id;
 	}
 	if (raw_link_id)
 		priv->link_id_db[raw_link_id - 1].timestamp = jiffies;
+
+	if (tx_info->control.sta &&
+			(tx_info->control.sta->uapsd_queues & BIT(queue)))
+		link_id = CW1200_LINK_ID_UAPSD;
 
 	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d (%d)).\n",
 			skb->len, queue, link_id, raw_link_id);
@@ -498,6 +500,13 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		for (i = 0; i < 4; ++i)
 			priv->tx_suspend_mask[i] &= ~BIT(raw_link_id);
 		spin_unlock_bh(&priv->buffered_multicasts_lock);
+	} else if (ieee80211_is_data_qos(hdr->frame_control) ||
+			ieee80211_is_qos_nullfunc(hdr->frame_control)) {
+		u8 *qos = ieee80211_get_qos_ctl(hdr);
+		tid = qos[0] & IEEE80211_QOS_CTL_TID_MASK;
+	} else if (ieee80211_is_data(hdr->frame_control) ||
+			ieee80211_is_nullfunc(hdr->frame_control)) {
+		tid = 0;
 	}
 
 	/* BT Coex support related configuration */
@@ -613,9 +622,18 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	}
 
 	txinfo.link_id = link_id;
+
+	if (raw_link_id && tid < CW1200_MAX_TID)
+		was_buffered = priv->link_id_db[raw_link_id - 1]
+				.buffered[tid]++;
+
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
-			&txinfo, raw_link_id);
+			&txinfo, raw_link_id, tid);
+
 	spin_unlock_bh(&priv->buffered_multicasts_lock);
+
+	if (raw_link_id && !was_buffered && tid < CW1200_MAX_TID)
+		ieee80211_sta_set_buffered(tx_info->control.sta, tid, true);
 
 	if (!WARN_ON(ret))
 		cw1200_bh_wakeup(priv);
@@ -721,6 +739,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	u8 queue_id = cw1200_queue_get_queue_id(arg->packetID);
 	struct cw1200_queue *queue = &priv->tx_queue[queue_id];
 	struct sk_buff *skb;
+	int tid = CW1200_MAX_TID;
 
 	txrx_printk(KERN_DEBUG "[TX] TX confirm.\n");
 
@@ -750,7 +769,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 		WARN_ON(cw1200_queue_requeue(queue,
 				arg->packetID));
 	} else if (!WARN_ON(cw1200_queue_get_skb(
-			queue, arg->packetID, &skb))) {
+			queue, arg->packetID, &skb, &tid))) {
 		struct ieee80211_tx_info *tx = IEEE80211_SKB_CB(skb);
 		struct wsm_tx *wsm_tx = (struct wsm_tx *)skb->data;
 		int rate_id = (wsm_tx->flags >> 4) & 0x07;
@@ -802,10 +821,39 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 		}
 
 		skb_pull(skb, sizeof(struct wsm_tx));
+		cw1200_notify_buffered_tx(priv, skb, arg->link_id, tid);
 		ieee80211_tx_status(priv->hw, skb);
-
 		WARN_ON(cw1200_queue_remove(queue, priv, arg->packetID));
 	}
+}
+
+void cw1200_notify_buffered_tx(struct cw1200_common *priv,
+			       struct sk_buff *skb, int link_id, int tid)
+{
+	struct ieee80211_sta *sta;
+	struct ieee80211_hdr *hdr;
+	u8 *buffered;
+	u8 still_buffered = 0;
+
+	if (link_id && tid < CW1200_MAX_TID) {
+		buffered = priv->link_id_db
+				[link_id - 1].buffered;
+
+		spin_lock_bh(&priv->buffered_multicasts_lock);
+		if (!WARN_ON(!buffered[tid]))
+			still_buffered = --buffered[tid];
+		spin_unlock_bh(&priv->buffered_multicasts_lock);
+
+		if (!still_buffered && tid < CW1200_MAX_TID) {
+			hdr = (struct ieee80211_hdr *) skb->data;
+			rcu_read_lock();
+			sta = ieee80211_find_sta(priv->vif, hdr->addr1);
+			if (sta)
+				ieee80211_sta_set_buffered(sta, tid, false);
+			rcu_read_unlock();
+		}
+	}
+
 }
 
 void cw1200_rx_cb(struct cw1200_common *priv,

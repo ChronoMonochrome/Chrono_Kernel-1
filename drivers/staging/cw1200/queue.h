@@ -61,7 +61,8 @@ void cw1200_queue_deinit(struct cw1200_queue *queue);
 size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 				   u32 link_id_map);
 int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *cw1200,
-			struct sk_buff *skb,  struct tx_info *txinfo, u8 raw_link_id);
+			struct sk_buff *skb,  struct tx_info *txinfo,
+			u8 raw_link_id, u8 tid);
 int cw1200_queue_get(struct cw1200_queue *queue,
 		     u32 link_id_map,
 		     struct wsm_tx **tx,
@@ -72,7 +73,7 @@ int cw1200_queue_requeue_all(struct cw1200_queue *queue);
 int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
 				u32 packetID);
 int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
-				struct sk_buff **skb);
+				struct sk_buff **skb, int *tid);
 void cw1200_queue_lock(struct cw1200_queue *queue,
 			struct cw1200_common *cw1200);
 void cw1200_queue_unlock(struct cw1200_queue *queue,

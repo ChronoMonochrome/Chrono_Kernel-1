@@ -84,30 +84,6 @@ void cw1200_sta_notify(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
 		       enum sta_notify_cmd notify_cmd,
 		       struct ieee80211_sta *sta)
 {
-	struct cw1200_common *priv = dev->priv;
-	struct cw1200_sta_priv *sta_priv =
-		(struct cw1200_sta_priv *)&sta->drv_priv;
-	u32 bit = BIT(sta_priv->link_id);
-
-	spin_lock_bh(&priv->buffered_multicasts_lock);
-	switch (notify_cmd) {
-		case STA_NOTIFY_SLEEP:
-			if (priv->buffered_multicasts &&
-					!priv->sta_asleep_mask)
-				queue_work(priv->workqueue,
-					&priv->multicast_start_work);
-			priv->sta_asleep_mask |= bit;
-			break;
-		case STA_NOTIFY_AWAKE:
-			priv->sta_asleep_mask &= ~bit;
-			if (priv->tx_multicast &&
-					!priv->sta_asleep_mask)
-				queue_work(priv->workqueue,
-					&priv->multicast_stop_work);
-			cw1200_bh_wakeup(priv);
-			break;
-	}
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
 }
 
 static void __cw1200_ps_notify(struct cw1200_common *priv,
@@ -901,6 +877,7 @@ int cw1200_alloc_link_id(struct cw1200_common *priv, const u8 *mac)
 			ret);
 		priv->link_id_db[ret - 1].status = CW1200_LINK_RESERVE;
 		memcpy(&priv->link_id_db[ret - 1].mac, mac, ETH_ALEN);
+		memset(&priv->link_id_db[ret - 1].buffered, 0, CW1200_MAX_TID);
 		wsm_lock_tx_async(priv);
 		if (queue_work(priv->workqueue, &priv->link_id_work) <= 0)
 			wsm_unlock_tx(priv);

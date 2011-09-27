@@ -1395,6 +1395,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * probe responses.
 		 * The easiest way to get it back is to convert
 		 * probe request into WSM start_scan command. */
+		int tid;
 		int rate_id = (wsm->flags >> 4) & 0x07;
 		struct cw1200_queue *queue =
 			&priv->tx_queue[cw1200_queue_get_queue_id(
@@ -1405,7 +1406,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		BUG_ON(priv->scan.probe_skb);
 		BUG_ON(cw1200_queue_get_skb(queue,
 					wsm->packetID,
-					&priv->scan.probe_skb));
+					&priv->scan.probe_skb, &tid));
 		BUG_ON(cw1200_queue_remove(queue, priv,
 						wsm->packetID));
 		/* Release used TX rate policy */
@@ -1421,12 +1422,15 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * We are dropping everything except AUTH in non-joined mode. */
 		struct sk_buff *skb;
 		int rate_id = (wsm->flags >> 4) & 0x07;
+		int tid = 8;
 		struct cw1200_queue *queue =
 			&priv->tx_queue[cw1200_queue_get_queue_id(
 				wsm->packetID)];
 		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X):"
 			" not joined.\n", fctl);
-		BUG_ON(cw1200_queue_get_skb(queue, wsm->packetID, &skb));
+		BUG_ON(cw1200_queue_get_skb(queue, wsm->packetID, &skb, &tid));
+		skb_pull(skb, sizeof(struct wsm_tx));
+		cw1200_notify_buffered_tx(priv, skb, link_id, tid);
 		BUG_ON(cw1200_queue_remove(queue, priv, wsm->packetID));
 		/* Release used TX rate policy */
 		tx_policy_put(priv, rate_id);

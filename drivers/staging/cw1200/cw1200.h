@@ -50,6 +50,8 @@
 #define CW1200_LINK_ID_MAX		(CW1200_MAX_STA_IN_AP_MODE + 3)
 #define CW1200_MAX_REQUEUE_ATTEMPTS	(5)
 
+#define CW1200_MAX_TID			(8)
+
 /* Please keep order */
 enum cw1200_join_status {
 	CW1200_JOIN_STATUS_PASSIVE = 0,
@@ -69,6 +71,7 @@ struct cw1200_link_entry {
 	unsigned long			timestamp;
 	enum cw1200_link_status		status;
 	u8				mac[ETH_ALEN];
+	u8				buffered[CW1200_MAX_TID];
 	bool				ps;
 };
 
