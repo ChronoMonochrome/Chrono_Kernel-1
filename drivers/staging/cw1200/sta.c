@@ -101,10 +101,6 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	LIST_HEAD(list);
 	int i;
 
-	struct wsm_reset reset = {
-		.reset_statistics = true,
-	};
-
 	wsm_lock_tx(priv);
 
 	while (down_trylock(&priv->scan.lock)) {
@@ -114,51 +110,18 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	}
 	up(&priv->scan.lock);
 
-	mutex_lock(&priv->conf_mutex);
-	cw1200_free_keys(priv);
-	priv->mode = NL80211_IFTYPE_UNSPECIFIED;
-	priv->listening = false;
-	mutex_unlock(&priv->conf_mutex);
-
 	cancel_delayed_work_sync(&priv->scan.probe_work);
 	cancel_delayed_work_sync(&priv->scan.timeout);
 	cancel_delayed_work_sync(&priv->join_timeout);
 	cancel_delayed_work_sync(&priv->bss_loss_work);
 	cancel_delayed_work_sync(&priv->connection_loss_work);
 	cancel_delayed_work_sync(&priv->link_id_gc_work);
-
-	if (timer_pending(&priv->mcast_timeout))
-		del_timer_sync(&priv->mcast_timeout);
-
-	mutex_lock(&priv->conf_mutex);
-	switch (priv->join_status) {
-	case CW1200_JOIN_STATUS_STA:
-		wsm_lock_tx(priv);
-		if (queue_work(priv->workqueue, &priv->unjoin_work) <= 0)
-			wsm_unlock_tx(priv);
-		break;
-	case CW1200_JOIN_STATUS_AP:
-		/* If you see this warning please change the code to iterate
-		 * through the map and reset each link separately. */
-		WARN_ON(priv->link_id_map);
-		priv->sta_asleep_mask = 0;
-		priv->enable_beacon = false;
-		priv->tx_multicast = false;
-		priv->aid0_bit_set = false;
-		priv->buffered_multicasts = false;
-		priv->pspoll_mask = 0;
-		wsm_reset(priv, &reset);
-		break;
-	case CW1200_JOIN_STATUS_MONITOR:
-		cw1200_update_listening(priv, false);
-		break;
-	default:
-		break;
-	}
-	mutex_unlock(&priv->conf_mutex);
-
 	flush_workqueue(priv->workqueue);
+	del_timer_sync(&priv->mcast_timeout);
+
 	mutex_lock(&priv->conf_mutex);
+	priv->mode = NL80211_IFTYPE_UNSPECIFIED;
+	priv->listening = false;
 
 	priv->softled_state = 0;
 	/* cw1200_set_leds(priv); */
@@ -170,7 +133,6 @@ void cw1200_stop(struct ieee80211_hw *dev)
 
 	priv->delayed_link_loss = 0;
 
-	priv->link_id_map = 0;
 	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 
 	for (i = 0; i < 4; i++)
@@ -230,23 +192,56 @@ void cw1200_remove_interface(struct ieee80211_hw *dev,
 			     struct ieee80211_vif *vif)
 {
 	struct cw1200_common *priv = dev->priv;
-
 	struct wsm_reset reset = {
 		.reset_statistics = true,
 	};
+	int i;
 
 	mutex_lock(&priv->conf_mutex);
-
+	wsm_lock_tx(priv);
+	switch (priv->join_status) {
+	case CW1200_JOIN_STATUS_STA:
+		wsm_lock_tx(priv);
+		if (queue_work(priv->workqueue, &priv->unjoin_work) <= 0)
+			wsm_unlock_tx(priv);
+		break;
+	case CW1200_JOIN_STATUS_AP:
+		for (i = 0; priv->link_id_map; ++i) {
+			if (priv->link_id_map & BIT(i)) {
+				reset.link_id = i;
+				wsm_reset(priv, &reset);
+				priv->link_id_map &= ~BIT(i);
+			}
+		}
+		memset(priv->link_id_db, 0,
+				sizeof(priv->link_id_db));
+		memset(priv->tx_suspend_mask, 0,
+				sizeof(priv->tx_suspend_mask));
+		priv->sta_asleep_mask = 0;
+		priv->enable_beacon = false;
+		priv->tx_multicast = false;
+		priv->aid0_bit_set = false;
+		priv->buffered_multicasts = false;
+		priv->pspoll_mask = 0;
+		reset.link_id = 0;
+		wsm_reset(priv, &reset);
+		break;
+	case CW1200_JOIN_STATUS_MONITOR:
+		cw1200_update_listening(priv, false);
+		break;
+	default:
+		break;
+	}
 	priv->vif = NULL;
 	priv->mode = NL80211_IFTYPE_MONITOR;
 	memset(priv->mac_addr, 0, ETH_ALEN);
 	memset(priv->bssid, 0, ETH_ALEN);
-	wsm_lock_tx(priv);
-	WARN_ON(wsm_reset(priv, &reset));
 	cw1200_free_keys(priv);
 	cw1200_setup_mac(priv);
 	priv->listening = false;
 	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
+	if (!__cw1200_flush(priv, true))
+		wsm_unlock_tx(priv);
 	wsm_unlock_tx(priv);
 
 	mutex_unlock(&priv->conf_mutex);
@@ -385,6 +380,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			.power_mode = wsm_power_mode_quiescent,
 			.disableMoreFlagUsage = true,
 		};
+
 		wsm_lock_tx(priv);
 		/* Disable p2p-dev mode forced by TX request */
 		if ((priv->join_status == CW1200_JOIN_STATUS_MONITOR) &&
@@ -760,29 +756,27 @@ int __cw1200_flush(struct cw1200_common *priv, bool drop)
 {
 	int i, ret;
 
-	if (drop) {
-		for (i = 0; i < 4; ++i)
-			cw1200_queue_clear(&priv->tx_queue[i]);
-	}
-
 	for (;;) {
-		/* TODO: correct flush handlin is required when dev_stop.
+		/* TODO: correct flush handling is required when dev_stop.
 		 * Temporary workaround: 2s
 		 */
-		ret = wait_event_timeout(
+		if (drop) {
+			for (i = 0; i < 4; ++i)
+				cw1200_queue_clear(&priv->tx_queue[i]);
+		} else {
+			ret = wait_event_timeout(
 				priv->tx_queue_stats.wait_link_id_empty,
 				cw1200_queue_stats_is_empty(
 					&priv->tx_queue_stats, -1),
 				2 * HZ);
+		}
 
-		if (unlikely(ret <= 0)) {
-			if (!ret)
-				ret = -ETIMEDOUT;
+		if (!drop && unlikely(ret <= 0)) {
+			ret = -ETIMEDOUT;
 			break;
 		} else {
 			ret = 0;
 		}
-		ret = 0;
 
 		wsm_lock_tx(priv);
 		if (unlikely(!cw1200_queue_stats_is_empty(
@@ -799,6 +793,16 @@ int __cw1200_flush(struct cw1200_common *priv, bool drop)
 void cw1200_flush(struct ieee80211_hw *hw, bool drop)
 {
 	struct cw1200_common *priv = hw->priv;
+
+	switch (priv->mode) {
+	case NL80211_IFTYPE_MONITOR:
+		drop = true;
+		break;
+	case NL80211_IFTYPE_AP:
+		if (!priv->enable_beacon)
+			drop = true;
+		break;
+	}
 
 	if (!WARN_ON(__cw1200_flush(priv, drop)))
 		wsm_unlock_tx(priv);

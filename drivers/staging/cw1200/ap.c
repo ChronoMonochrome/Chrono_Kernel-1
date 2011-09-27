@@ -134,8 +134,11 @@ static int cw1200_set_tim_impl(struct cw1200_common *priv, bool aid0_bit_set)
 
 	skb = ieee80211_beacon_get_tim(priv->hw, priv->vif,
 			&tim_offset, &tim_length);
-	if (WARN_ON(!skb))
-		return -ENOMEM;
+	if (!skb) {
+		if (!__cw1200_flush(priv, true));
+			wsm_unlock_tx(priv);
+		return -ENOENT;
+	}
 
 	if (tim_offset && tim_length >= 6) {
 		/* Ignore DTIM count from mac80211:

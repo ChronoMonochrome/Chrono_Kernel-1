@@ -764,8 +764,11 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 			.multicast = !arg->link_id,
 		};
 		cw1200_suspend_resume(priv, &suspend);
-		wiphy_warn(priv->hw->wiphy, "Requeue (try %d).\n",
-			cw1200_queue_get_generation(arg->packetID) + 1);
+		wiphy_warn(priv->hw->wiphy, "Requeue for link_id %d (try %d)."
+			" STAs asleep: 0x%.8X\n",
+			arg->link_id,
+			cw1200_queue_get_generation(arg->packetID) + 1,
+			priv->sta_asleep_mask);
 		WARN_ON(cw1200_queue_requeue(queue,
 				arg->packetID));
 	} else if (!WARN_ON(cw1200_queue_get_skb(
