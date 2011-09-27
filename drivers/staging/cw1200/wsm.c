@@ -1313,7 +1313,7 @@ out:
 static bool wsm_handle_tx_data(struct cw1200_common *priv,
 			       const struct wsm_tx *wsm,
 			       const struct ieee80211_tx_info *tx_info,
-			       int *link_id)
+			       int link_id)
 {
 	bool handled = false;
 	const struct ieee80211_hdr *frame =
@@ -1348,9 +1348,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	case NL80211_IFTYPE_AP:
 		if (unlikely(!priv->join_status))
 			action = doDrop;
-		if (*link_id == CW1200_LINK_ID_AFTER_DTIM)
-			*link_id = 0;
-		else if (WARN_ON(!(BIT(*link_id) &
+		else if (WARN_ON(!(BIT(link_id) &
 				(BIT(0) | priv->link_id_map))))
 			action = doDrop;
 		if (cw1200_queue_get_generation(wsm->packetID) >
@@ -1546,6 +1544,7 @@ static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 	for (i = 0; i < 4; ++i) {
 		queue = &priv->tx_queue[i];
 		tx_allowed_mask = ~priv->sta_asleep_mask;
+		tx_allowed_mask |= BIT(CW1200_LINK_ID_UAPSD);
 		if (priv->sta_asleep_mask) {
 			tx_allowed_mask |= ~priv->tx_suspend_mask[i];
 			tx_allowed_mask |= priv->pspoll_mask;
@@ -1625,7 +1624,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 					&wsm, &tx_info, &link_id))
 				continue;
 
-			if (wsm_handle_tx_data(priv, wsm, tx_info, &link_id))
+			if (wsm_handle_tx_data(priv, wsm, tx_info, link_id))
 				continue;  /* Handled by WSM */
 
 			wsm->hdr.id &= __cpu_to_le16(

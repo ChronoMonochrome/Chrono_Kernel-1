@@ -95,7 +95,7 @@ static void cw1200_debug_print_map(struct seq_file *seq,
 	seq_printf(seq, "%s0-> ", label);
 	for (i = 0; i < priv->tx_queue_stats.map_capacity; ++i)
 		seq_printf(seq, "%s ", (map & BIT(i)) ? "**" : "..");
-	seq_printf(seq, "<-%d\n", priv->tx_queue_stats.map_capacity);
+	seq_printf(seq, "<-%d\n", priv->tx_queue_stats.map_capacity - 1);
 }
 
 static int cw1200_status_show(struct seq_file *seq, void *v)

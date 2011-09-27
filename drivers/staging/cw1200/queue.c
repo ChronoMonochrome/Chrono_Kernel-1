@@ -28,7 +28,8 @@
 	 */
 	u8			generation;
 	u8			link_id;
-	u8			reserved[2];
+	u8			raw_link_id;
+	u8			reserved[1];
 };
 
 static inline void __cw1200_queue_lock(struct cw1200_queue *queue,
@@ -199,7 +200,7 @@ size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 }
 
 int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
-			struct sk_buff *skb, struct tx_info *txinfo)
+			struct sk_buff *skb, struct tx_info *txinfo, u8 raw_link_id)
 {
 	int ret;
 	struct wsm_tx *wsm;
@@ -228,6 +229,7 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 			item->generation, item - queue->pool);
 		wsm->packetID = __cpu_to_le32(item->packetID);
 		item->link_id = link_id;
+		item->raw_link_id = raw_link_id;
 
 		++queue->num_queued;
 		++queue->link_map_cache[link_id];
@@ -270,7 +272,7 @@ int cw1200_queue_get(struct cw1200_queue *queue,
 	if (!WARN_ON(ret)) {
 		*tx = (struct wsm_tx *)item->skb->data;
 		*tx_info = IEEE80211_SKB_CB(item->skb);
-		*link_id = item->link_id;
+		*link_id = item->raw_link_id;
 		list_move_tail(&item->head, &queue->pending);
 		++queue->num_pending;
 		--queue->link_map_cache[item->link_id];

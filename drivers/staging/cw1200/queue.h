@@ -61,7 +61,7 @@ void cw1200_queue_deinit(struct cw1200_queue *queue);
 size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 				   u32 link_id_map);
 int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *cw1200,
-			struct sk_buff *skb,  struct tx_info *txinfo);
+			struct sk_buff *skb,  struct tx_info *txinfo, u8 raw_link_id);
 int cw1200_queue_get(struct cw1200_queue *queue,
 		     u32 link_id_map,
 		     struct wsm_tx **tx,

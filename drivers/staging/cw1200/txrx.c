@@ -451,45 +451,52 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	const u8 *da = ieee80211_get_DA(hdr);
 	struct cw1200_sta_priv *sta_priv =
 		(struct cw1200_sta_priv *)&tx_info->control.sta->drv_priv;
-	int link_id;
+	int link_id, raw_link_id;
 	int ret;
 	int i;
 	struct tx_info txinfo;
 
 	if (likely(tx_info->control.sta && sta_priv->link_id))
-		link_id = sta_priv->link_id;
+		raw_link_id = link_id = sta_priv->link_id;
 	else if (priv->mode != NL80211_IFTYPE_AP)
-		link_id = 0;
+		raw_link_id = link_id = 0;
 	else if (is_multicast_ether_addr(da)) {
-		if (priv->enable_beacon)
+		if (priv->enable_beacon) {
+			raw_link_id = 0;
 			link_id = CW1200_LINK_ID_AFTER_DTIM;
-		else
-			link_id = 0;
+		} else {
+			raw_link_id = link_id = 0;
+		}
 	} else {
-		link_id = cw1200_find_link_id(priv, da);
-		if (!link_id)
-			link_id = cw1200_alloc_link_id(priv, da);
-		if (!link_id) {
+		raw_link_id = cw1200_find_link_id(priv, da);
+		if (!raw_link_id)
+			raw_link_id = cw1200_alloc_link_id(priv, da);
+		if (!raw_link_id) {
 			wiphy_err(priv->hw->wiphy,
 				"%s: No more link IDs available.\n",
 				__func__);
 			goto err;
 		}
+		if (tx_info->control.sta &&
+			(tx_info->control.sta->uapsd_queues & BIT(queue)))
+			link_id = CW1200_LINK_ID_UAPSD;
+		else
+			link_id = raw_link_id;
 	}
-	if (link_id && link_id <= CW1200_MAX_STA_IN_AP_MODE)
-		priv->link_id_db[link_id - 1].timestamp = jiffies;
+	if (raw_link_id)
+		priv->link_id_db[raw_link_id - 1].timestamp = jiffies;
 
-	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d).\n",
-			skb->len, queue, link_id);
+	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d (%d)).\n",
+			skb->len, queue, link_id, raw_link_id);
 
 	if (WARN_ON(queue >= 4))
 		goto err;
 
 	if (unlikely(ieee80211_is_auth(hdr->frame_control))) {
 		spin_lock_bh(&priv->buffered_multicasts_lock);
-		priv->sta_asleep_mask &= ~BIT(link_id);
+		priv->sta_asleep_mask &= ~BIT(raw_link_id);
 		for (i = 0; i < 4; ++i)
-			priv->tx_suspend_mask[i] &= ~BIT(link_id);
+			priv->tx_suspend_mask[i] &= ~BIT(raw_link_id);
 		spin_unlock_bh(&priv->buffered_multicasts_lock);
 	}
 
@@ -607,7 +614,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 
 	txinfo.link_id = link_id;
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
-			&txinfo);
+			&txinfo, raw_link_id);
 	spin_unlock_bh(&priv->buffered_multicasts_lock);
 
 	if (!WARN_ON(ret))

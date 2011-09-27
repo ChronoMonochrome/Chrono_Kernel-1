@@ -277,6 +277,8 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 					  WIPHY_WOWLAN_DISCONNECT;
 	hw->wiphy->wowlan.n_patterns = 0;
 
+	hw->wiphy->flags |= WIPHY_FLAG_SUPPORTS_UAPSD;
+
 	hw->channel_change_time = 1000;	/* TODO: find actual value */
 	/* priv->beacon_req_id = cpu_to_le32(0); */
 	hw->queues = 4;
@@ -341,7 +343,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	}
 
 	if (unlikely(cw1200_queue_stats_init(&priv->tx_queue_stats,
-			CW1200_LINK_ID_AFTER_DTIM + 1))) {
+			CW1200_LINK_ID_MAX))) {
 		ieee80211_free_hw(hw);
 		return NULL;
 	}
