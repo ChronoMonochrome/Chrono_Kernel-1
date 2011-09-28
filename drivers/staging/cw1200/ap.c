@@ -674,8 +674,6 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 static int cw1200_upload_beacon(struct cw1200_common *priv)
 {
 	int ret = 0;
-	const u8 *ssidie;
-	const struct ieee80211_mgmt *mgmt;
 	struct wsm_template_frame frame = {
 		.frame_type = WSM_FRAME_TYPE_BEACON,
 	};
@@ -684,20 +682,6 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 	frame.skb = ieee80211_beacon_get(priv->hw, priv->vif);
 	if (WARN_ON(!frame.skb))
 		return -ENOMEM;
-
-	mgmt = (struct ieee80211_mgmt *)frame.skb->data;
-	ssidie = cfg80211_find_ie(WLAN_EID_SSID,
-		mgmt->u.beacon.variable,
-		frame.skb->len - (mgmt->u.beacon.variable - frame.skb->data));
-	memset(priv->ssid, 0, sizeof(priv->ssid));
-	if (ssidie) {
-		priv->ssid_length = ssidie[1];
-		if (WARN_ON(priv->ssid_length > sizeof(priv->ssid)))
-			priv->ssid_length = sizeof(priv->ssid);
-		memcpy(priv->ssid, &ssidie[2], priv->ssid_length);
-	} else {
-		priv->ssid_length = 0;
-	}
 
 	ret = wsm_set_template_frame(priv, &frame);
 	if (!ret) {
@@ -767,6 +751,9 @@ static int cw1200_enable_beaconing(struct cw1200_common *priv,
 static int cw1200_start_ap(struct cw1200_common *priv)
 {
 	int ret;
+	const u8 *ssidie;
+	struct sk_buff *skb;
+	int offset;
 	struct ieee80211_bss_conf *conf = &priv->vif->bss_conf;
 	struct wsm_start start = {
 		.mode = priv->vif->p2p ?
@@ -782,11 +769,32 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 		.probeDelay = 100,
 		.basicRateSet = cw1200_rate_mask_to_wsm(priv,
 				conf->basic_rates),
-		.ssidLength = priv->ssid_length,
 	};
+
+	/* Get SSID */
+	skb = ieee80211_beacon_get(priv->hw, priv->vif);
+	if (WARN_ON(!skb))
+		return -ENOMEM;
+
+	offset = offsetof(struct ieee80211_mgmt, u.beacon.variable);
+	ssidie = cfg80211_find_ie(WLAN_EID_SSID, skb->data + offset,
+				  skb->len - offset);
+
+	memset(priv->ssid, 0, sizeof(priv->ssid));
+	if (ssidie) {
+		priv->ssid_length = ssidie[1];
+		if (WARN_ON(priv->ssid_length > sizeof(priv->ssid)))
+			priv->ssid_length = sizeof(priv->ssid);
+		memcpy(priv->ssid, &ssidie[2], priv->ssid_length);
+	} else {
+		priv->ssid_length = 0;
+	}
+	dev_kfree_skb(skb);
+
 	priv->beacon_int = conf->beacon_int;
 	priv->join_dtim_period = conf->dtim_period;
 
+	start.ssidLength = priv->ssid_length;
 	memcpy(&start.ssid[0], priv->ssid, start.ssidLength);
 
 	memset(&priv->link_id_db, 0, sizeof(priv->link_id_db));
