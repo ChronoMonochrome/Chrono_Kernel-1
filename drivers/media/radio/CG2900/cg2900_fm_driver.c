@@ -190,6 +190,7 @@ struct fmd_rds_group {
  * available for processing or not.
  * @interrupt_queue: Circular Queue to store the received interrupt from chip.
  * @gocmd:  Command which is in progress.
+ * @mode:  Current Mode of FM Radio.
  * @rds_group:  Array of RDS group Buffer
  * @callback: Callback registered by upper layers.
  */
@@ -213,6 +214,7 @@ struct fmd_states_info {
 	bool		interrupt_available_for_processing;
 	u16			interrupt_queue[MAX_COUNT_OF_IRQS];
 	enum fmd_gocmd gocmd;
+	enum fmd_mode mode;
 	struct fmd_rds_group	rds_group[MAX_RDS_GROUPS];
 	fmd_radio_cb callback;
 };
@@ -1788,6 +1790,7 @@ int fmd_init(void)
 	memset(&fmd_state_info, 0, sizeof(fmd_state_info));
 	fmd_state_info.fmd_initialized = true;
 	fmd_state_info.gocmd = FMD_STATE_NONE;
+	fmd_state_info.mode = FMD_MODE_IDLE;
 	fmd_state_info.callback = NULL;
 	fmd_state_info.rx_freq_range = FMD_FREQRANGE_EUROAMERICA;
 	fmd_state_info.rx_stereo_mode = FMD_STEREOMODE_BLENDING;
@@ -1926,10 +1929,12 @@ int fmd_set_mode(
 		goto error;
 	}
 
-	if (fmd_get_cmd_sem())
+	if (fmd_get_cmd_sem()) {
 		err = -ETIME;
-	else
-		err = 0;
+		goto error;
+	}
+	fmd_state_info.mode = mode;
+	err = 0;
 
 error:
 	return err;
@@ -2620,7 +2625,7 @@ error:
 	return err;
 }
 
-int fmd_rx_block_scan(
+int fmd_block_scan(
 			u32 start_freq,
 			u32 stop_freq,
 			u8 antenna
@@ -2660,9 +2665,21 @@ int fmd_rx_block_scan(
 	}
 
 	/* Convert the start frequency to corresponsing channel */
-	io_result = fmd_rx_frequency_to_channel(
-				start_freq,
-				&start_channel);
+	switch (fmd_state_info.mode) {
+	case FMD_MODE_RX:
+		io_result = fmd_rx_frequency_to_channel(
+					start_freq,
+					&start_channel);
+		break;
+	case FMD_MODE_TX:
+		io_result = fmd_tx_frequency_to_channel(
+					start_freq,
+					&start_channel);
+		break;
+	default:
+		err = -EINVAL;
+		goto error;
+	}
 
 	if (io_result != 0) {
 		err = io_result;
@@ -2670,9 +2687,21 @@ int fmd_rx_block_scan(
 	}
 
 	/* Convert the end frequency to corresponsing channel */
-	io_result = fmd_rx_frequency_to_channel(
-				stop_freq,
-				&stop_channel);
+	switch (fmd_state_info.mode) {
+	case FMD_MODE_RX:
+		io_result = fmd_rx_frequency_to_channel(
+					stop_freq,
+					&stop_channel);
+		break;
+	case FMD_MODE_TX:
+		io_result = fmd_tx_frequency_to_channel(
+					stop_freq,
+					&stop_channel);
+		break;
+	default:
+		err = -EINVAL;
+		goto error;
+	}
 
 	if (io_result != 0) {
 		err = io_result;
@@ -2703,7 +2732,7 @@ error:
 	return err;
 }
 
-int fmd_rx_get_block_scan_result(
+int fmd_get_block_scan_result(
 			u32 index,
 			u16 *num_channels,
 			u16 *rssi

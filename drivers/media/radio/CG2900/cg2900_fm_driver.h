@@ -1013,7 +1013,7 @@ int fmd_rx_get_scan_band_info(
 			);
 
 /**
- * fmd_rx_block_scan() - Starts Block Scan.
+ * fmd_block_scan() - Starts Block Scan.
  *
  * Starts block scan for retriving the RSSI level of channels
  * in the given block.
@@ -1029,14 +1029,14 @@ int fmd_rx_get_scan_band_info(
  *   -EBUSY, if FM Driver is not in idle state.
  *   -EINVAL, if wrong response received from chip.
  */
-int fmd_rx_block_scan(
+int fmd_block_scan(
 			u32 start_freq,
 			u32 stop_freq,
 			u8 antenna
 			);
 
 /**
- * fmd_rx_get_block_scan_result() - Retrieves RSSI Level of channels.
+ * fmd_get_block_scan_result() - Retrieves RSSI Level of channels.
  *
  * Retrieves the RSSI level of the channels in the block.
  * @index: (out) Index value to retrieve the channels.
@@ -1049,7 +1049,7 @@ int fmd_rx_block_scan(
  *   -EINVAL, if parameter is invalid.
  *   -EINVAL, if wrong response received from chip.
  */
-int fmd_rx_get_block_scan_result(
+int fmd_get_block_scan_result(
 			u32 index,
 			u16 *numchannels,
 			u16 *rssi

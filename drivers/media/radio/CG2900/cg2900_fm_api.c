@@ -1732,7 +1732,7 @@ int cg2900_fm_start_block_scan(
 	}
 	result = fmd_get_antenna(
 			&antenna);
-	result = fmd_rx_block_scan(
+	result = fmd_block_scan(
 			start_freq/FREQUENCY_CONVERTOR_KHZ_HZ,
 			end_freq/FREQUENCY_CONVERTOR_KHZ_HZ,
 			antenna);
@@ -1771,7 +1771,7 @@ int cg2900_fm_get_block_scan_result(
 	cnt = 33;
 	while ((cnt--) && (result == 0)) {
 		/* Get all channels, including empty ones */
-		result = fmd_rx_get_block_scan_result(
+		result = fmd_get_block_scan_result(
 						      cnt * 6,
 						      num_of_scanchan,
 						      rssi);
