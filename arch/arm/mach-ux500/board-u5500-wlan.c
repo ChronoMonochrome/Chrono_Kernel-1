@@ -27,22 +27,22 @@ static struct resource cw1200_u5500_resources[] = {
 	},
 };
 
-static struct cw1200_platform_data cw1200_platform_data = { 0 };
+static struct cw1200_platform_data cw1200_u5500_platform_data = { 0 };
 
 static struct platform_device cw1200_device = {
 	.name = "cw1200_wlan",
 	.dev = {
-		.platform_data = &cw1200_platform_data,
+		.platform_data = &cw1200_u5500_platform_data,
 		.release = cw1200_release,
 		.init_name = "cw1200_wlan",
 	},
 };
 
-const struct cw1200_platform_data *cw1200_get_platform_data(void)
+const struct cw1200_platform_data *cw1200_u5500_get_platform_data(void)
 {
-	return &cw1200_platform_data;
+	return &cw1200_u5500_platform_data;
 }
-EXPORT_SYMBOL_GPL(cw1200_get_platform_data);
+EXPORT_SYMBOL_GPL(cw1200_u5500_get_platform_data);
 
 static int cw1200_pins_enable(bool enable)
 {
@@ -87,8 +87,8 @@ int __init u5500_wlan_init(void)
 		return -ENOTSUPP;
 	}
 
-	cw1200_platform_data.mmc_id = "mmc2";
-	cw1200_platform_data.irq = &cw1200_device.resource[0];
+	cw1200_u5500_platform_data.mmc_id = "mmc2";
+	cw1200_u5500_platform_data.irq = &cw1200_device.resource[0];
 
 	cw1200_device.dev.release = cw1200_release;
 
