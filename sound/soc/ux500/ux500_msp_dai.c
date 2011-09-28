@@ -76,7 +76,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.capture_active = false,
 		.configured = 0,
 		.data_delay = MSP_DELAY_0,
-		.master_clk = UX500_MSP_INTERNAL_CLOCK_FREQ,
+		.master_clk = UX500_MSP1_INTERNAL_CLOCK_FREQ,
 	},
 };
 
@@ -447,10 +447,7 @@ static void ux500_msp_dai_compile_msp_config(struct snd_pcm_substream *substream
 
 	memset(msp_config, 0, sizeof(*msp_config));
 
-	if (machine_is_u5500())
-		msp_config->input_clock_freq = UX500_MSP_INTERNAL_CLOCK_FREQ;
-	else
-		msp_config->input_clock_freq = private->master_clk;
+	msp_config->input_clock_freq = private->master_clk;
 
 	msp_config->tx_fifo_config = TX_FIFO_ENABLE;
 	msp_config->rx_fifo_config = RX_FIFO_ENABLE;
