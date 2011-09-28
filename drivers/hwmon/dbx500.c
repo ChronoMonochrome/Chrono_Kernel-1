@@ -27,13 +27,6 @@
 #include <mach/hardware.h>
 
 /*
- * If DBX500 warm interrupt is set, user space will be notified.
- * If user space doesn't shut down the platform within this time
- * frame, this driver will. Time unit is ms.
- */
-#define DEFAULT_POWER_OFF_DELAY 10000
-
-/*
  * Default measure period to 0xFF x cycle32k
  */
 #define DEFAULT_MEASURE_TIME 0xFF
@@ -50,50 +43,8 @@ struct dbx500_temp {
 	unsigned char min_alarm[NUM_SENSORS];
 	unsigned char max_alarm[NUM_SENSORS];
 	unsigned short measure_time;
-	struct delayed_work power_off_work;
 	struct mutex lock;
-	/* Delay (ms) before power off */
-	unsigned long power_off_delay;
 };
-
-static void thermal_power_off(struct work_struct *work)
-{
-	struct dbx500_temp *data = container_of(work, struct dbx500_temp,
-						power_off_work.work);
-
-	dev_warn(&data->pdev->dev, "Power off due to DBX500 thermal warning\n");
-	pm_power_off();
-}
-
-static ssize_t set_temp_power_off_delay(struct device *dev,
-					struct device_attribute *devattr,
-					const char *buf, size_t count)
-{
-	int res;
-	unsigned long delay_in_s;
-	struct dbx500_temp *data = dev_get_drvdata(dev);
-
-	res = strict_strtoul(buf, 10, &delay_in_s);
-	if (res < 0) {
-		dev_warn(&data->pdev->dev, "Set power_off_delay wrong\n");
-		return res;
-	}
-
-	mutex_lock(&data->lock);
-	data->power_off_delay = delay_in_s * 1000;
-	mutex_unlock(&data->lock);
-
-	return count;
-}
-
-static ssize_t show_temp_power_off_delay(struct device *dev,
-					 struct device_attribute *devattr,
-					 char *buf)
-{
-	struct dbx500_temp *data = dev_get_drvdata(dev);
-	/* return time in s, not ms */
-	return sprintf(buf, "%lu\n", (data->power_off_delay) / 1000);
-}
 
 /* HWMON sysfs interface */
 static ssize_t show_name(struct device *dev, struct device_attribute *devattr,
@@ -264,11 +215,6 @@ static ssize_t show_max_alarm(struct device *dev,
 	return sprintf(buf, "%d\n", data->max_alarm[attr->index - 1]);
 }
 
-/*These node are not included in the kernel hwmon sysfs interface */
-static SENSOR_DEVICE_ATTR(temp_power_off_delay, S_IRUGO | S_IWUSR,
-			  show_temp_power_off_delay,
-			  set_temp_power_off_delay, 0);
-
 /* Chip name, required by hwmon*/
 static SENSOR_DEVICE_ATTR(name, S_IRUGO, show_name, NULL, 0);
 static SENSOR_DEVICE_ATTR(temp1_start, S_IWUSR, NULL, start_temp, 1);
@@ -282,7 +228,6 @@ static SENSOR_DEVICE_ATTR(temp1_min_alarm, S_IRUGO, show_min_alarm, NULL, 1);
 static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO, show_max_alarm, NULL, 1);
 
 static struct attribute *dbx500_temp_attributes[] = {
-	&sensor_dev_attr_temp_power_off_delay.dev_attr.attr,
 	&sensor_dev_attr_name.dev_attr.attr,
 	&sensor_dev_attr_temp1_start.dev_attr.attr,
 	&sensor_dev_attr_temp1_stop.dev_attr.attr,
@@ -315,7 +260,6 @@ static irqreturn_t prcmu_hotmon_low_irq_handler(int irq, void *irq_data)
 
 static irqreturn_t prcmu_hotmon_high_irq_handler(int irq, void *irq_data)
 {
-	unsigned long delay_in_jiffies;
 	struct platform_device *pdev = irq_data;
 	struct dbx500_temp *data = platform_get_drvdata(pdev);
 
@@ -325,10 +269,7 @@ static irqreturn_t prcmu_hotmon_high_irq_handler(int irq, void *irq_data)
 
 	hwmon_notify(data->max_alarm[0], NULL);
 	sysfs_notify(&pdev->dev.kobj, NULL, "temp1_max_alarm");
-	dev_dbg(&pdev->dev, "DBX500 thermal warning, power off in %lu s\n",
-		 (data->power_off_delay) / 1000);
-	delay_in_jiffies = msecs_to_jiffies(data->power_off_delay);
-	schedule_delayed_work(&data->power_off_work, delay_in_jiffies);
+
 	return IRQ_HANDLED;
 }
 
@@ -394,10 +335,8 @@ static int __devinit dbx500_temp_probe(struct platform_device *pdev)
 	}
 
 	mutex_init(&data->lock);
-	INIT_DELAYED_WORK(&data->power_off_work, thermal_power_off);
 
 	data->pdev = pdev;
-	data->power_off_delay = DEFAULT_POWER_OFF_DELAY;
 	data->measure_time = DEFAULT_MEASURE_TIME;
 
 	platform_set_drvdata(pdev, data);
