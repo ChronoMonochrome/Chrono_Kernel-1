@@ -31,6 +31,11 @@
  */
 #define DEFAULT_MEASURE_TIME 0xFF
 
+/*
+ * Default critical sensor temperature
+ */
+#define DEFAULT_CRITICAL_TEMP 85
+
 /* This driver monitors DB thermal*/
 #define NUM_SENSORS 1
 
@@ -43,8 +48,38 @@ struct dbx500_temp {
 	unsigned char min_alarm[NUM_SENSORS];
 	unsigned char max_alarm[NUM_SENSORS];
 	unsigned short measure_time;
+	bool monitoring_active;
 	struct mutex lock;
 };
+
+static inline void start_temp_monitoring(struct dbx500_temp *data,
+					 const int index)
+{
+	unsigned int i;
+
+	/* determine if there are any sensors worth monitoring */
+	for (i = 0; i < NUM_SENSORS; i++)
+		if (data->min[i] || data->max[i])
+			goto start_monitoring;
+
+	return;
+
+start_monitoring:
+	/* kick off the monitor job */
+	data->min_alarm[index] = 0;
+	data->max_alarm[index] = 0;
+
+	(void) prcmu_start_temp_sense(data->measure_time);
+	data->monitoring_active = true;
+}
+
+static inline void stop_temp_monitoring(struct dbx500_temp *data)
+{
+	if (data->monitoring_active) {
+		(void) prcmu_stop_temp_sense();
+		data->monitoring_active = false;
+	}
+}
 
 /* HWMON sysfs interface */
 static ssize_t show_name(struct device *dev, struct device_attribute *devattr,
@@ -77,8 +112,13 @@ static ssize_t set_min(struct device *dev, struct device_attribute *devattr,
 
 	data->min[attr->index - 1] = val;
 
-	(void)prcmu_config_hotmon(data->min[attr->index - 1],
+	stop_temp_monitoring(data);
+
+	(void) prcmu_config_hotmon(data->min[attr->index - 1],
 			data->max[attr->index - 1]);
+
+	start_temp_monitoring(data, (attr->index - 1));
+
 	mutex_unlock(&data->lock);
 	return count;
 }
@@ -100,8 +140,13 @@ static ssize_t set_max(struct device *dev, struct device_attribute *devattr,
 
 	data->max[attr->index - 1] = val;
 
-	(void)prcmu_config_hotmon(data->min[attr->index - 1],
+	stop_temp_monitoring(data);
+
+	(void) prcmu_config_hotmon(data->min[attr->index - 1],
 		data->max[attr->index - 1]);
+
+	start_temp_monitoring(data, (attr->index - 1));
+
 	mutex_unlock(&data->lock);
 
 	return count;
@@ -121,46 +166,8 @@ static ssize_t set_crit(struct device *dev,
 	mutex_lock(&data->lock);
 	val &= 0xFF;
 	data->crit[attr->index - 1] = val;
-	(void)prcmu_config_hotdog(data->crit[attr->index - 1]);
+	(void) prcmu_config_hotdog(data->crit[attr->index - 1]);
 	mutex_unlock(&data->lock);
-
-	return count;
-}
-
-/* start/stop temperature measurement */
-static ssize_t start_temp(struct device *dev, struct device_attribute *devattr,
-		       const char *buf, size_t count)
-{
-	unsigned long val;
-	struct dbx500_temp *data = dev_get_drvdata(dev);
-	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-	int res = strict_strtoul(buf, 10, &val);
-	if (res < 0)
-		return res;
-
-	mutex_lock(&data->lock);
-	data->measure_time = val & 0xFFFF;
-	data->min_alarm[attr->index - 1] = 0;
-	data->max_alarm[attr->index - 1] = 0;
-	mutex_unlock(&data->lock);
-
-	(void)prcmu_start_temp_sense(data->measure_time);
-	dev_dbg(&data->pdev->dev, "DBX500 thermal start measurement\n");
-
-	return count;
-}
-
-static ssize_t stop_temp(struct device *dev, struct device_attribute *devattr,
-		       const char *buf, size_t count)
-{
-	unsigned long val;
-	struct dbx500_temp *data = dev_get_drvdata(dev);
-	int res = strict_strtoul(buf, 10, &val);
-	if (res < 0)
-		return res;
-
-	(void)prcmu_stop_temp_sense();
-	dev_dbg(&data->pdev->dev, "DBX500 thermal stop measurement\n");
 
 	return count;
 }
@@ -217,8 +224,6 @@ static ssize_t show_max_alarm(struct device *dev,
 
 /* Chip name, required by hwmon*/
 static SENSOR_DEVICE_ATTR(name, S_IRUGO, show_name, NULL, 0);
-static SENSOR_DEVICE_ATTR(temp1_start, S_IWUSR, NULL, start_temp, 1);
-static SENSOR_DEVICE_ATTR(temp1_stop, S_IWUSR, NULL, stop_temp, 1);
 static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, show_min, set_min, 1);
 static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_max, set_max, 1);
 static SENSOR_DEVICE_ATTR(temp1_crit, S_IWUSR | S_IRUGO,
@@ -229,8 +234,6 @@ static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO, show_max_alarm, NULL, 1);
 
 static struct attribute *dbx500_temp_attributes[] = {
 	&sensor_dev_attr_name.dev_attr.attr,
-	&sensor_dev_attr_temp1_start.dev_attr.attr,
-	&sensor_dev_attr_temp1_stop.dev_attr.attr,
 	&sensor_dev_attr_temp1_min.dev_attr.attr,
 	&sensor_dev_attr_temp1_max.dev_attr.attr,
 	&sensor_dev_attr_temp1_crit.dev_attr.attr,
@@ -328,8 +331,8 @@ static int __devinit dbx500_temp_probe(struct platform_device *pdev)
 
 	for (i = 0; i < NUM_SENSORS; i++) {
 		data->min[i] = 0;
-		data->max[i] = 0xFF;
-		data->crit[i] = 0xFF;
+		data->max[i] = 0;
+		data->crit[i] = DEFAULT_CRITICAL_TEMP;
 		data->min_alarm[i] = 0;
 		data->max_alarm[i] = 0;
 	}
@@ -338,6 +341,10 @@ static int __devinit dbx500_temp_probe(struct platform_device *pdev)
 
 	data->pdev = pdev;
 	data->measure_time = DEFAULT_MEASURE_TIME;
+	data->monitoring_active = false;
+
+	/* set PRCMU to disable platform when we get to the critical temp */
+	(void) prcmu_config_hotdog(DEFAULT_CRITICAL_TEMP);
 
 	platform_set_drvdata(pdev, data);
 
