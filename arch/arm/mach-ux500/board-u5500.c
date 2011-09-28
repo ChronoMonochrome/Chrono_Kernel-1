@@ -522,14 +522,14 @@ static struct hash_platform_data u5500_hash1_platform_data = {
 
 static struct platform_device *u5500_platform_devices[] __initdata = {
 	&u5500_ab5500_device,
-	&ux500_mcde_device,
+	&u5500_mcde_device,
 	&ux500_hwmem_device,
-	&ux500_b2r2_device,
+	&u5500_b2r2_device,
 	&u5500_mloader_device,
 #ifdef CONFIG_U5500_MMIO
 	&u5500_mmio_device,
 #endif
-	&ux500_thsens_device,
+	&u5500_thsens_device,
 };
 
 /*

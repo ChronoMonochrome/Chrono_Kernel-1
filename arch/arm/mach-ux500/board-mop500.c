@@ -828,9 +828,9 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 	&ux500_mmio_device,
 #endif
 	&ux500_hwmem_device,
-	&ux500_mcde_device,
-	&ux500_b2r2_device,
-	&ux500_thsens_device,
+	&u8500_mcde_device,
+	&u8500_b2r2_device,
+	&u8500_thsens_device,
 #ifdef CONFIG_STE_TRACE_MODEM
 	&u8500_trace_modem,
 #endif
@@ -1062,8 +1062,8 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 	&snowball_led_dev,
 	&snowball_key_dev,
 	&snowball_sbnet_dev,
-	&ux500_mcde_device,
-	&ux500_b2r2_device,
+	&u8500_mcde_device,
+	&u8500_b2r2_device,
 };
 
 /*

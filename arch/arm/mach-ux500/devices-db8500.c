@@ -197,7 +197,7 @@ static int mcde_platform_set_display_clocks(void)
 	return prcmu_set_display_clocks();
 }
 
-static struct mcde_platform_data mcde_pdata = {
+static struct mcde_platform_data mcde_u8500_pdata = {
 	.num_dsilinks = 3,
 	/*
 	 * [0] = 3: 24 bits DPI: connect LSB Ch B to D[0:7]
@@ -228,11 +228,11 @@ static struct mcde_platform_data mcde_pdata = {
 	.platform_disable_dsipll = mcde_platform_disable_dsipll,
 };
 
-struct platform_device ux500_mcde_device = {
+struct platform_device u8500_mcde_device = {
 	.name = "mcde",
 	.id = -1,
 	.dev = {
-		.platform_data = &mcde_pdata,
+		.platform_data = &mcde_u8500_pdata,
 	},
 	.num_resources = ARRAY_SIZE(mcde_resources),
 	.resource = mcde_resources,
@@ -253,7 +253,7 @@ static struct resource b2r2_resources[] = {
 	},
 };
 
-struct platform_device ux500_b2r2_device = {
+struct platform_device u8500_b2r2_device = {
 	.name	= "b2r2",
 	.id	= 0,
 	.dev	= {
@@ -264,8 +264,32 @@ struct platform_device ux500_b2r2_device = {
 	.resource	= b2r2_resources,
 };
 
+/*
+ * WATCHDOG
+ */
+
+static struct resource u8500_wdt_resources[] = {
+	[0] = {
+		.start  = U8500_TWD_BASE,
+		.end    = U8500_TWD_BASE+0x37,
+		.flags  = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start  = IRQ_LOCALWDOG,
+		.end  = IRQ_LOCALWDOG,
+		.flags  = IORESOURCE_IRQ,
+	}
+};
+
 struct platform_device u8500_wdt_device = {
-	.name		= "u8500_wdt",
+	.name           = "mpcore_wdt",
+	.id             = -1,
+	.resource       = u8500_wdt_resources,
+	.num_resources  = ARRAY_SIZE(u8500_wdt_resources),
+};
+
+struct platform_device u8500_prcmu_wdt_device = {
+	.name		= "ux500_wdt",
 	.id		= -1,
 };
 
@@ -288,7 +312,7 @@ static struct resource u8500_thsens_resources[] = {
 	},
 };
 
-struct platform_device ux500_thsens_device = {
+struct platform_device u8500_thsens_device = {
 	.name           = "dbx500_temp",
 	.resource       = u8500_thsens_resources,
 	.num_resources  = ARRAY_SIZE(u8500_thsens_resources),
