@@ -25,6 +25,7 @@
 #include <linux/mfd/abx500/ab8500-gpadc.h>
 #include <linux/mfd/abx500/ab8500-bm.h>
 #include "abx500.h"
+#include <asm/mach-types.h>
 
 #define DEFAULT_POWER_OFF_DELAY 10000
 
@@ -136,7 +137,7 @@ static int ab8500_temp_irq_handler(int irq, struct abx500_temp *data)
 	return 0;
 }
 
-int __init abx500_hwmon_init(struct abx500_temp *data)
+int __init ab8500_hwmon_init(struct abx500_temp *data)
 {
 	data->ab8500_gpadc = ab8500_gpadc_get();
 	if (IS_ERR(data->ab8500_gpadc))

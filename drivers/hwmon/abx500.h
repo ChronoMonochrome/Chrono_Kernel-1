@@ -89,6 +89,7 @@ struct abx500_temp {
 	int monitored_sensors;
 };
 
-int abx500_hwmon_init(struct abx500_temp *data) __init;
+int ab8500_hwmon_init(struct abx500_temp *data) __init;
+int ab5500_hwmon_init(struct abx500_temp *data) __init;
 
 #endif /* _ABX500_H */

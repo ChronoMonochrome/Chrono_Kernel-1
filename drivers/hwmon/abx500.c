@@ -36,6 +36,8 @@
 #include <linux/jiffies.h>
 #include <linux/mutex.h>
 #include <linux/pm.h>
+#include <asm/mach-types.h>
+
 #include "abx500.h"
 
 #define DEFAULT_MONITOR_DELAY 1000
@@ -610,7 +612,10 @@ static int __devinit abx500_temp_probe(struct platform_device *pdev)
 	mutex_init(&data->lock);
 
 	/* Chip specific initialization */
-	err = abx500_hwmon_init(data);
+	if (!machine_is_u5500())
+		err = ab8500_hwmon_init(data);
+	else
+		err = ab5500_hwmon_init(data);
 	if (err	< 0) {
 		dev_err(&pdev->dev, "abx500 init failed");
 		goto exit;
