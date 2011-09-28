@@ -141,7 +141,6 @@ struct mcde_display_device generic_display0 = {
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
 
-#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 static struct mcde_port port1 = {
 	.type = MCDE_PORTTYPE_DSI,
 	.mode = MCDE_PORTMODE_CMD,
@@ -206,7 +205,6 @@ struct mcde_display_device sony_acx424akp_display0 = {
 		.platform_data = &sony_acx424akp_display0_pdata,
 	},
 };
-#endif /* CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY */
 
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 static struct mcde_port port2 = {
@@ -480,7 +478,7 @@ static struct notifier_block framebuffer_nb = {
 	.notifier_call = framebuffer_postregistered_callback,
 };
 
-int __init init_display_devices(void)
+int __init init_u5500_display_devices(void)
 {
 	int ret = 0;
 
@@ -529,7 +527,7 @@ int __init init_display_devices(void)
 	return ret;
 }
 
-struct mcde_display_device *mcde_get_main_display(void)
+struct mcde_display_device *mcde_u5500_get_main_display(void)
 {
 #if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
 		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
@@ -542,7 +540,7 @@ struct mcde_display_device *mcde_get_main_display(void)
 #endif
 	return NULL;
 }
-EXPORT_SYMBOL(mcde_get_main_display);
+EXPORT_SYMBOL(mcde_u5500_get_main_display);
 
-module_init(init_display_devices);
+module_init(init_u5500_display_devices);
 #endif
