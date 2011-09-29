@@ -2497,7 +2497,7 @@ int av8100_download_firmware(enum interface_type if_type)
 
 	/* Wait Internal Micro controler ready */
 	cnt = 0;
-	cnt_max = sizeof(waittime_retry);
+	cnt_max = sizeof(waittime_retry) / sizeof(waittime_retry[0]);
 	retval = av8100_reg_gen_status_r(NULL, NULL, NULL, &uc,
 		NULL, NULL);
 	while ((retval == 0) && (uc != 0x1) && (cnt < cnt_max)) {
@@ -3756,7 +3756,7 @@ int av8100_conf_w(enum av8100_command_type command_type,
 		/* Get the first return byte */
 		mdelay(AV8100_WAITTIME_1MS);
 		cnt = 0;
-		cnt_max = sizeof(waittime_retry);
+		cnt_max = sizeof(waittime_retry) / sizeof(waittime_retry[0]);
 		retval = get_command_return_first(i2c, command_type);
 		while (retval && (cnt < cnt_max)) {
 			mdelay(waittime_retry[cnt]);
@@ -3832,7 +3832,7 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 	/* Get the first return byte */
 	mdelay(AV8100_WAITTIME_1MS);
 	cnt = 0;
-	cnt_max = sizeof(waittime_retry);
+	cnt_max = sizeof(waittime_retry) / sizeof(waittime_retry[0]);
 	retval = get_command_return_first(i2c, command_type);
 	while (retval && (cnt < cnt_max)) {
 		mdelay(waittime_retry[cnt]);
