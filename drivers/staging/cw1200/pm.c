@@ -70,8 +70,8 @@ static void cw1200_pm_deinit_common(struct cw1200_pm_state *pm)
 {
 	platform_driver_unregister(&cw1200_power_driver);
 	if (pm->pm_dev) {
+		pm->pm_dev->dev.platform_data = NULL;
 		platform_device_unregister(pm->pm_dev);
-		kfree(pm->pm_dev);
 		pm->pm_dev = NULL;
 	}
 }
