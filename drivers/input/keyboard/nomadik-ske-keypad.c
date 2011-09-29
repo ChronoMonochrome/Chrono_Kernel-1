@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (C) ST-Ericsson SA 2010
  *
  * Author: Naveen Kumar G <naveen.gaddipati@stericsson.com> for ST-Ericsson
@@ -52,26 +52,34 @@
 #define SKE_NUM_ASRX_REGISTERS	(4)
 #define	KEY_PRESSED_DELAY	10
 
+
+#define KEY_REPORTED	1
+#define KEY_PRESSED	2
+
 /**
  * struct ske_keypad  - data structure used by keypad driver
- * @irq:	irq no
- * @reg_base:	ske regsiters base address
- * @input:	pointer to input device object
- * @board:	keypad platform device
- * @keymap:	matrix scan code table for keycodes
- * @clk:	clock structure pointer
- * @enable:	flag to enable the driver event
- * @regulator:	pointer to the regulator used for ske kyepad
- * @gpio_input_irq: array for gpio irqs
- * @key_pressed: hold the key state
- * @work: delayed work variable for gpio switch
- * @ske_rows: rows gpio array for ske
- * @ske_cols: columns gpio array for ske
- * @gpio_row: gpio row
- * @gpio_col: gpio column
- * @gpio_work: delayed work variable for release gpio key
+ * @dev:		Pointer to the structure device
+ * @irq:		irq no
+ * @reg_base:		ske regsiters base address
+ * @input:		pointer to input device object
+ * @board:		keypad platform device
+ * @keymap:		matrix scan code table for keycodes
+ * @clk:		clock structure pointer
+ * @enable:		flag to enable the driver event
+ * @regulator:		pointer to the regulator used for ske kyepad
+ * @gpio_input_irq:	array for gpio irqs
+ * @key_pressed:	hold the key state
+ * @work:		delayed work variable for gpio switch
+ * @ske_rows:		rows gpio array for ske
+ * @ske_cols:		columns gpio array for ske
+ * @gpio_row:		gpio row
+ * @gpio_col:		gpio column
+ * @gpio_work:		delayed work variable for release gpio key
+ * @keys:		matrix holding key status
+ * @scan_work:		delayed work for scaning new key actions
  */
 struct ske_keypad {
+	struct device *dev;
 	int irq;
 	void __iomem *reg_base;
 	struct input_dev *input;
@@ -89,6 +97,8 @@ struct ske_keypad {
 	int gpio_row;
 	int gpio_col;
 	struct delayed_work gpio_work;
+	u8 keys[SKE_KPD_MAX_ROWS][SKE_KPD_MAX_COLS];
+	struct delayed_work scan_work;
 };
 
 static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
@@ -106,7 +116,7 @@ static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
 	spin_unlock(&keypad->ske_keypad_lock);
 }
 
-/*
+/**
  * ske_keypad_chip_init: init keypad controller configuration
  *
  * Enable Multi key press detection, auto scan mode
@@ -123,7 +133,7 @@ static int __devinit ske_keypad_chip_init(struct ske_keypad *keypad)
 	if (!timeout)
 		return -EINVAL;
 
-	/*
+	/**
 	 * set debounce value
 	 * keypad dbounce is configured in DBCR[15:8]
 	 * dbounce value in steps of 32/32.768 ms
@@ -138,7 +148,7 @@ static int __devinit ske_keypad_chip_init(struct ske_keypad *keypad)
 	/* enable multi key detection */
 	ske_keypad_set_bits(keypad, SKE_CR, 0x0, SKE_KPMLT);
 
-	/*
+	/**
 	 * set up the number of columns
 	 * KPCN[5:3] defines no. of keypad columns to be auto scanned
 	 */
@@ -162,6 +172,7 @@ static void ske_mode_enable(struct ske_keypad *keypad, bool enable)
 	int i;
 
 	if (!enable) {
+		dev_dbg(keypad->dev, "%s disable keypad\n", __func__);
 		writel(0, keypad->reg_base + SKE_CR);
 		if (keypad->board->exit)
 			keypad->board->exit();
@@ -172,6 +183,7 @@ static void ske_mode_enable(struct ske_keypad *keypad, bool enable)
 		clk_disable(keypad->clk);
 		regulator_disable(keypad->regulator);
 	} else {
+		dev_dbg(keypad->dev, "%s enable keypad\n", __func__);
 		regulator_enable(keypad->regulator);
 		clk_enable(keypad->clk);
 		for (i = 0; i < keypad->board->krow; i++) {
@@ -238,7 +250,6 @@ static struct attribute_group ske_attr_group = {
 static void ske_keypad_report(struct ske_keypad *keypad, u8 status, int col)
 {
 	int row = 0, code, pos;
-	struct input_dev *input = keypad->input;
 	u32 ske_ris;
 	int num_of_rows;
 
@@ -253,10 +264,13 @@ static void ske_keypad_report(struct ske_keypad *keypad, u8 status, int col)
 		ske_ris = readl(keypad->reg_base + SKE_RIS);
 		keypad->key_pressed = ske_ris & SKE_KPRISA;
 
-		input_event(input, EV_MSC, MSC_SCAN, code);
-		input_report_key(input, keypad->keymap[code],
-						keypad->key_pressed);
-		input_sync(input);
+		dev_dbg(keypad->dev,
+			"%s key_pressed:%d code:%d row:%d col:%d\n",
+			__func__, keypad->key_pressed, code, row, col);
+
+		if (keypad->key_pressed)
+			keypad->keys[row][col] |= KEY_PRESSED;
+
 		num_of_rows--;
 	} while (num_of_rows);
 }
@@ -267,7 +281,7 @@ static void ske_keypad_read_data(struct ske_keypad *keypad)
 	int col = 0;
 	int ske_asr, i;
 
-	/*
+	/**
 	 * Read the auto scan registers
 	 *
 	 * Each SKE_ASRx (x=0 to x=3) contains two row values.
@@ -292,26 +306,95 @@ static void ske_keypad_read_data(struct ske_keypad *keypad)
 		}
 	}
 }
-static void ske_keypad_scan(struct ske_keypad *keypad)
+
+static void ske_keypad_scan_work(struct work_struct *work)
 {
-	int timeout = keypad->board->debounce_ms;
+	int timeout = 10;
+	int i, j, code;
+	struct ske_keypad *keypad = container_of(work,
+					struct ske_keypad, scan_work.work);
+	struct input_dev *input = keypad->input;
 
-	/* disable auto scan interrupt; mask the interrupt generated */
-	ske_keypad_set_bits(keypad, SKE_IMSC, ~SKE_KPIMA, 0x0);
-	ske_keypad_set_bits(keypad, SKE_ICR, 0x0, SKE_KPICA);
-
-	while ((readl(keypad->reg_base + SKE_CR) & SKE_KPASON) && --timeout)
+	/* Wait for autoscan to complete */
+	while (readl(keypad->reg_base + SKE_CR) & SKE_KPASON)
 		cpu_relax();
 
 	/* SKEx registers are stable and can be read */
 	ske_keypad_read_data(keypad);
 
-	/* wait until raw interrupt is clear */
-	while ((readl(keypad->reg_base + SKE_RIS)) && --timeout)
-		msleep(KEY_PRESSED_DELAY);
+	/* Check for key actions */
+	for (i = 0; i < SKE_KPD_MAX_ROWS; i++) {
+		for (j = 0; j < SKE_KPD_MAX_COLS; j++) {
+			switch (keypad->keys[i][j]) {
+			case KEY_REPORTED:
+				/**
+				 * Key was reported but is no longer pressed,
+				 * report it as released.
+				 */
+				code = MATRIX_SCAN_CODE(i, j,
+							SKE_KEYPAD_ROW_SHIFT);
+				input_event(input, EV_MSC, MSC_SCAN, code);
+				input_report_key(input, keypad->keymap[code],
+						 0);
+				input_sync(input);
+				keypad->keys[i][j] = 0;
+				dev_dbg(keypad->dev,
+					"%s Key release reported, code:%d\n",
+					__func__, code);
+				break;
+			case KEY_PRESSED:
+				/* Key pressed but not yet reported, report */
+				code = MATRIX_SCAN_CODE(i, j,
+							SKE_KEYPAD_ROW_SHIFT);
+				input_event(input, EV_MSC, MSC_SCAN, code);
+				input_report_key(input, keypad->keymap[code],
+						 1);
+				input_sync(input);
+				dev_dbg(keypad->dev,
+					"%s Key press reported, code:%d\n",
+					__func__, code);
+				/* Intentional fall though */
+			case (KEY_REPORTED | KEY_PRESSED):
+				/**
+				 * Key pressed and reported, just reset
+				 * KEY_PRESSED for next scan
+				 */
+				keypad->keys[i][j] = KEY_REPORTED;
+				break;
+			}
+		}
+	}
 
-	/* enable auto scan interrupts */
-	ske_keypad_set_bits(keypad, SKE_IMSC, 0x0, SKE_KPIMA);
+	if (keypad->key_pressed) {
+		/* Key still pressed, schedule work to poll changes in 50 ms */
+		schedule_delayed_work(&keypad->scan_work,
+				      msecs_to_jiffies(50));
+	} else {
+		/* For safty measure, clear interrupt once more */
+		ske_keypad_set_bits(keypad, SKE_ICR, 0x0, SKE_KPICA);
+
+		/* Wait for raw interrupt to clear */
+		while ((readl(keypad->reg_base + SKE_RIS) & SKE_KPRISA) &&
+		       --timeout) {
+			udelay(10);
+		}
+
+		if (!timeout)
+			dev_err(keypad->dev,
+				"%s Timeed out waiting on irq to clear\n",
+				__func__);
+
+		/* enable auto scan interrupts */
+		ske_keypad_set_bits(keypad, SKE_IMSC, 0x0, SKE_KPIMA);
+
+		/**
+		 * Schedule the work queue to change it to GPIO mode
+		 * if there is no activity in SKE mode
+		 */
+		if (!keypad->key_pressed && keypad->enable)
+			schedule_delayed_work(&keypad->work,
+					      keypad->board->switch_delay);
+	}
 }
 
 static void ske_gpio_switch_work(struct work_struct *work)
@@ -332,6 +415,10 @@ static void ske_gpio_release_work(struct work_struct *work)
 
 	code = MATRIX_SCAN_CODE(keypad->gpio_row, keypad->gpio_col,
 						SKE_KEYPAD_ROW_SHIFT);
+
+	dev_dbg(keypad->dev, "%s Key press reported, code:%d\n",
+		__func__, code);
+
 	input_event(input, EV_MSC, MSC_SCAN, code);
 	input_report_key(input, keypad->keymap[code], 1);
 	input_sync(input);
@@ -365,7 +452,7 @@ static void ske_set_cols(struct ske_keypad *keypad, int col)
 	int i ;
 	int value;
 
-	/*
+	/**
 	 * Set all columns except the requested column
 	 * output pin as high
 	 */
@@ -418,10 +505,16 @@ static irqreturn_t ske_keypad_gpio_irq(int irq, void *dev_id)
 		if (!keypad->enable) {
 			keypad->enable = true;
 			ske_mode_enable(keypad, true);
+			/**
+			 * Schedule the work queue to change it back to GPIO
+			 * mode if there is no activity in SKE mode
+			 */
+			schedule_delayed_work(&keypad->work,
+					      keypad->board->switch_delay);
 		}
-		/*
-		 * Schedule the work queue to change it to
-		 * report the key pressed, if it is not detected in SKE mode.
+		/**
+		 * Schedule delayed work to report key press if it is not
+		 * detected in SKE mode.
 		 */
 		if (keypad->key_pressed)
 			schedule_delayed_work(&keypad->gpio_work,
@@ -433,18 +526,14 @@ static irqreturn_t ske_keypad_gpio_irq(int irq, void *dev_id)
 static irqreturn_t ske_keypad_irq(int irq, void *dev_id)
 {
 	struct ske_keypad *keypad = dev_id;
-
 	cancel_delayed_work_sync(&keypad->gpio_work);
 	cancel_delayed_work_sync(&keypad->work);
-	ske_keypad_scan(keypad);
 
-	/*
-	 * Schedule the work queue to change it to
-	 * GPIO mode, if there is no activity in SKE mode
-	 */
-	if (!keypad->key_pressed && keypad->enable)
-		schedule_delayed_work(&keypad->work,
-				keypad->board->switch_delay);
+	/* disable auto scan interrupt; mask the interrupt generated */
+	ske_keypad_set_bits(keypad, SKE_IMSC, SKE_KPIMA, 0x0);
+	ske_keypad_set_bits(keypad, SKE_ICR, 0x0, SKE_KPICA);
+
+	schedule_delayed_work(&keypad->scan_work, 0);
 
 	return IRQ_HANDLED;
 }
@@ -504,6 +593,7 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to allocate keypad memory\n");
 		goto out_freeclk;
 	}
+	keypad->dev = &pdev->dev;
 
 	input = input_allocate_device();
 	if (!input) {
@@ -556,6 +646,7 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 	keypad->clk	= clk;
 	INIT_DELAYED_WORK(&keypad->work, ske_gpio_switch_work);
 	INIT_DELAYED_WORK(&keypad->gpio_work, ske_gpio_release_work);
+	INIT_DELAYED_WORK(&keypad->scan_work, ske_keypad_scan_work);
 
 	/* allocations are sane, we begin HW initialization */
 	clk_enable(keypad->clk);
@@ -659,6 +750,7 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 
 	cancel_delayed_work_sync(&keypad->gpio_work);
 	cancel_delayed_work_sync(&keypad->work);
+	cancel_delayed_work_sync(&keypad->scan_work);
 	free_irq(keypad->irq, keypad);
 
 	input_unregister_device(keypad->input);
@@ -691,6 +783,7 @@ static int ske_keypad_suspend(struct device *dev)
 	else {
 		cancel_delayed_work_sync(&keypad->gpio_work);
 		cancel_delayed_work_sync(&keypad->work);
+		cancel_delayed_work_sync(&keypad->scan_work);
 		disable_irq(irq);
 		if (keypad->enable) {
 			ske_mode_enable(keypad, false);
