@@ -31,8 +31,6 @@ struct  mcde_display_sony_acx424akp_platform_data {
 	enum display_panel_type disp_panel; /* display panel types */
 
 	/* Driver data */
-	bool sony_acx424akp_platform_enable;
-	struct regulator *regulator;
 	int max_supply_voltage;
 	int min_supply_voltage;
 };
