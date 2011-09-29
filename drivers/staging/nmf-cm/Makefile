@@ -7,7 +7,7 @@
 #
 # Rules to build kernel modules
 #
-ifdef KERNELRELEASE
+ifneq ($(findstring KERNELRELEASE,$(.VARIABLES)),)
 
   # $(src): current relative dir; $(kbuild-dir): cur absolute dir
   ifdef kbuild-dir
