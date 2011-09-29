@@ -916,11 +916,10 @@ static int hdmi_set_video_mode(
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_IDLE) {
+	if (status.av8100_state <= AV8100_OPMODE_IDLE) {
 		ret = av8100_download_firmware(I2C_INTERFACE);
 		if (ret) {
 			dev_err(&dev->dev, "av8100_download_firmware failed\n");
-			av8100_powerdown();
 			return ret;
 		}
 	}
