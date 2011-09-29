@@ -260,7 +260,7 @@ static int edidread(struct hdmi_device *hdev, struct edid_read *edidread,
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
@@ -307,7 +307,7 @@ static int cecread(struct hdmi_device *hdev, u8 *src, u8 *dest, u8 *data_len,
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
@@ -378,7 +378,7 @@ static int cecsend(struct hdmi_device *hdev, u8 src, u8 dest, u8 data_len,
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
@@ -433,7 +433,7 @@ static int infofrsend(struct hdmi_device *hdev, u8 type, u8 version, u8 crc,
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
@@ -478,7 +478,7 @@ static int hdcpchkaesotp(struct hdmi_device *hdev, u8 *crc, u8 *progged)
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
@@ -525,7 +525,7 @@ static int hdcpfuseaes(struct hdmi_device *hdev, u8 *key, u8 crc, u8 *result)
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
@@ -579,7 +579,7 @@ static int hdcploadaes(struct hdmi_device *hdev, u8 block, u8 key_len, u8 *key,
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
@@ -625,7 +625,7 @@ static int hdcpauthencr(struct hdmi_device *hdev, u8 auth_type, u8 encr_type,
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
@@ -736,7 +736,7 @@ static int audiocfg(struct hdmi_device *hdev, struct audio_cfg *cfg)
 		}
 	}
 
-	if (status.av8100_state < AV8100_OPMODE_INIT) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100 dl fw FAIL\n");
 			return -EINVAL;
