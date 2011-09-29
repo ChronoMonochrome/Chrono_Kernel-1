@@ -32,6 +32,7 @@
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
 #include <linux/errno.h>
+#include <linux/slab.h>
 #include <linux/io.h>
 #include <linux/irq.h>
 #include <linux/platform_device.h>
@@ -130,7 +131,8 @@ static ssize_t mbox_write_fifo(struct device *dev,
 	char *token;
 	char *val;
 
-	struct mbox *mbox = (struct mbox *) dev->platform_data;
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mbox *mbox = platform_get_drvdata(pdev);
 
 	strncpy((char *) &int_buf, buf, sizeof(int_buf));
 	token = (char *) &int_buf;
@@ -158,7 +160,8 @@ static ssize_t mbox_read_fifo(struct device *dev,
 			      char *buf)
 {
 	int mbox_value;
-	struct mbox *mbox = (struct mbox *) dev->platform_data;
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mbox *mbox = platform_get_drvdata(pdev);
 
 	if ((readl(mbox->virtbase_local + MBOX_FIFO_STATUS) & 0x7) <= 0)
 		return sprintf(buf, "Mailbox is empty\n");
@@ -515,24 +518,18 @@ EXPORT_SYMBOL(mbox_setup);
 
 int __init mbox_probe(struct platform_device *pdev)
 {
-	struct mbox local_mbox;
 	struct mbox *mbox;
 	int res = 0;
 	dev_dbg(&(pdev->dev), "Probing mailbox (pdev = 0x%X)...\n", (u32) pdev);
 
-	memset(&local_mbox, 0x0, sizeof(struct mbox));
-
-	/* Associate our mbox data with the platform device */
-	res = platform_device_add_data(pdev,
-				       (void *) &local_mbox,
-				       sizeof(struct mbox));
-	if (res != 0) {
-		dev_err(&(pdev->dev),
-			"Unable to allocate driver platform data!\n");
-		goto exit;
+	mbox = kzalloc(sizeof(struct mbox), GFP_KERNEL);
+	if (mbox == NULL) {
+		dev_err(&pdev->dev,
+				"Could not allocate memory for struct mbox\n");
+		return -ENOMEM;
 	}
 
-	mbox = (struct mbox *) pdev->dev.platform_data;
+
 	mbox->pdev = pdev;
 	mbox->write_index = 0;
 	mbox->read_index = 0;
@@ -543,13 +540,23 @@ int __init mbox_probe(struct platform_device *pdev)
 	sprintf(mbox->name, "%s", MBOX_NAME);
 	spin_lock_init(&mbox->lock);
 
+	platform_set_drvdata(pdev, mbox);
 	dev_info(&(pdev->dev), "Mailbox driver loaded\n");
 
-exit:
 	return res;
 }
 
+static int __exit mbox_remove(struct platform_device *pdev)
+{
+	struct mbox *mbox = platform_get_drvdata(pdev);
+
+	list_del(&mbox->list);
+	kfree(mbox);
+	return 0;
+}
+
 static struct platform_driver mbox_driver = {
+	.remove = __exit_p(mbox_remove),
 	.driver = {
 		.name = MBOX_NAME,
 		.owner = THIS_MODULE,
