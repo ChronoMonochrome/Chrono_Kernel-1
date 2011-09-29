@@ -29,6 +29,7 @@
 #include <video/mcde.h>
 #include "dsilink_regs.h"
 #include "mcde_regs.h"
+#include "mcde_debugfs.h"
 
 
 /* MCDE channel states
@@ -2632,8 +2633,10 @@ static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 	if (!ovly)
 		return;
 
-	if (ovly->regs.dirty_buf)
+	if (ovly->regs.dirty_buf) {
 		update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs);
+		mcde_debugfs_overlay_update(chnl->id, ovly->idx);
+	}
 	if (ovly->regs.dirty) {
 		chnl_ovly_pixel_format_apply(chnl, ovly);
 		update_overlay_registers(ovly->idx, &ovly->regs, &chnl->port,
@@ -2684,6 +2687,7 @@ static int _mcde_chnl_update(struct mcde_chnl_state *chnl,
 		chnl_update_non_continous(chnl);
 
 	dev_vdbg(&mcde_dev->dev, "Channel updated, chnl=%d\n", chnl->id);
+	mcde_debugfs_channel_update(chnl->id);
 	return 0;
 }
 
@@ -3325,6 +3329,7 @@ static void probe_hw(void)
 		channels[3].ovly1 = NULL;
 	}
 
+	mcde_debugfs_create(&mcde_dev->dev);
 	for (i = 0; i < num_channels; i++) {
 		channels[i].id = i;
 
@@ -3342,6 +3347,11 @@ static void probe_hw(void)
 		channels[i].dsi_te_timer.function =
 					dsi_te_timer_function;
 		channels[i].dsi_te_timer.data = i;
+
+		mcde_debugfs_channel_create(i, &channels[i]);
+		mcde_debugfs_overlay_create(i, 0);
+		if (channels[i].ovly1)
+			mcde_debugfs_overlay_create(i, 1);
 	}
 }
 

@@ -1,6 +1,11 @@
-
-mcde-objs			:= mcde_mod.o mcde_hw.o mcde_dss.o mcde_display.o mcde_bus.o mcde_fb.o
-obj-$(CONFIG_FB_MCDE)		+= mcde.o
+mcde-objs		+= mcde_mod.o
+mcde-objs		+= mcde_hw.o
+mcde-objs		+= mcde_dss.o
+mcde-objs		+= mcde_display.o
+mcde-objs		+= mcde_bus.o
+mcde-objs		+= mcde_fb.o
+mcde-objs		+= mcde_debugfs.o
+obj-$(CONFIG_FB_MCDE)	+= mcde.o
 
 obj-$(CONFIG_MCDE_DISPLAY_GENERIC_DSI)		+= display-generic_dsi.o
 obj-$(CONFIG_MCDE_DISPLAY_SONY_ACX424AKP_DSI)   += display-sony_acx424akp_dsi.o
