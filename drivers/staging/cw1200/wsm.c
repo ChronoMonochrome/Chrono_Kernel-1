@@ -1348,9 +1348,13 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	case NL80211_IFTYPE_AP:
 		if (unlikely(!priv->join_status))
 			action = doDrop;
-		else if (WARN_ON(!(BIT(link_id) &
-				(BIT(0) | priv->link_id_map))))
+		else if (unlikely(!(BIT(link_id) &
+				(BIT(0) | priv->link_id_map)))) {
+			wiphy_warn(priv->hw->wiphy,
+					"A frame with expired link id "
+					"is dropped.\n");
 			action = doDrop;
+		}
 		if (cw1200_queue_get_generation(wsm->packetID) >
 				CW1200_MAX_REQUEUE_ATTEMPTS) {
 			/* HACK!!! WSM324 firmware has tendency to requeue
