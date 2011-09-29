@@ -97,4 +97,8 @@ void mop500_uib_i2c_add(int busnum, struct i2c_board_info const *info,
 int msp13_i2s_init(void);
 int msp13_i2s_exit(void);
 
+int uib_is_stuib(void);
+int uib_is_u8500uib(void);
+int uib_is_u8500uibr3(void);
+
 #endif

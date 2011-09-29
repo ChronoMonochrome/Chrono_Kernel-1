@@ -20,6 +20,7 @@ enum mop500_uib {
 	STUIB,
 	U8500UIB,
 	U8500UIB_R3,
+	NO_UIB,
 };
 
 struct uib {
@@ -27,6 +28,8 @@ struct uib {
 	const char *option;
 	void (*init)(void);
 };
+
+static u8 type_of_uib = NO_UIB;
 
 static struct uib __initdata mop500_uibs[] = {
 	[STUIB] = {
@@ -98,7 +101,30 @@ void mop500_uib_i2c_add(int busnum, struct i2c_board_info const *info,
 static void __init __mop500_uib_init(struct uib *uib, const char *why)
 {
 	pr_info("%s (%s)\n", uib->name, why);
+
+	if (strcmp("stuib", uib->option) == 0)
+		type_of_uib = STUIB;
+	else if (strcmp("u8500uib", uib->option) == 0)
+		type_of_uib = U8500UIB;
+	else if (strcmp("u8500uibr3", uib->option) == 0)
+		type_of_uib = U8500UIB_R3;
+
 	uib->init();
+}
+
+int uib_is_stuib(void)
+{
+	return (type_of_uib == STUIB);
+}
+
+int uib_is_u8500uib(void)
+{
+	return (type_of_uib == U8500UIB);
+}
+
+int uib_is_u8500uibr3(void)
+{
+	return (type_of_uib == U8500UIB_R3);
 }
 
 /*
@@ -132,9 +158,10 @@ static int __init mop500_uib_init(void)
 			__mop500_uib_init(&mop500_uibs[STUIB],
 					"fallback, could not get i2c3");
 			return -ENODEV;
-        }
+		}
 		ret = i2c_smbus_xfer(i2c3, 0x4B, 0, I2C_SMBUS_WRITE, 0,
 				I2C_SMBUS_QUICK, NULL);
+		i2c_put_adapter(i2c3);
 		if (ret == 0)
 			uib = &mop500_uibs[U8500UIB];
 		else
