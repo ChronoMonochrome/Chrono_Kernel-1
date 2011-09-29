@@ -363,7 +363,7 @@ static int mmio_power_enable(struct mmio_platform_data *pdata)
 		}
 	}
 	/* Set Xenon Charge */
-	gpio_set_value(extra->xenon_charge, 1);
+	gpio_set_value_cansleep(extra->xenon_charge, 1);
 	dev_dbg(pdata->dev , "Board %s() Exit\n", __func__);
 	return 0;
 err_regulator:
