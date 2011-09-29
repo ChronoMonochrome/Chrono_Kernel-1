@@ -36,7 +36,11 @@
 #include <linux/firmware.h>
 
 #define AV8100_FW_FILENAME "av8100.fw"
-
+#define CUT_STR_0 "2.1"
+#define CUT_STR_1 "2.2"
+#define CUT_STR_3 "2.3"
+#define CUT_STR_30 "3.0"
+#define CUT_STR_UNKNOWN ""
 #define AV8100_DEVNR_DEFAULT 0
 
 /* Interrupts */
@@ -2517,6 +2521,8 @@ int av8100_download_firmware(enum interface_type if_type)
 	release_firmware(fw_file);
 
 	if (adev->chip_version != 1) {
+		char *cut_str;
+
 		/* Get cut version */
 		retval = read_single_byte(i2c, AV8100_CUTVER_OFFSET, &val);
 		if (retval) {
@@ -2525,19 +2531,23 @@ int av8100_download_firmware(enum interface_type if_type)
 		}
 
 		switch (val) {
-		case 0:
-			dev_dbg(adev->dev, "Cut ver 0 (2.1)\n");
+		case 0x00:
+			cut_str = CUT_STR_0;
 			break;
-		case 1:
-			dev_dbg(adev->dev, "Cut ver 1 (2.2)\n");
+		case 0x01:
+			cut_str = CUT_STR_1;
 			break;
-		case 3:
-			dev_dbg(adev->dev, "Cut ver 3 (2.3)\n");
+		case 0x03:
+			cut_str = CUT_STR_3;
+			break;
+		case 0x30:
+			cut_str = CUT_STR_30;
 			break;
 		default:
-			dev_dbg(adev->dev, "Cut ver %d\n", val);
+			cut_str = CUT_STR_UNKNOWN;
 			break;
 		}
+		dev_dbg(adev->dev, "Cut ver %d %s\n", val, cut_str);
 	}
 
 	av8100_set_state(adev, AV8100_OPMODE_IDLE);
