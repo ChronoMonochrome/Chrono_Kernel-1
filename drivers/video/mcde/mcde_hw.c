@@ -86,6 +86,7 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define DSI_READ_TIMEOUT 200
 #define DSI_WRITE_CMD_TIMEOUT 1000
 #define DSI_READ_DELAY 5
+#define DSI_READ_NBR_OF_RETRIES 2
 #define MCDE_FLOWEN_MAX_TRIAL 60
 
 static u8 *mcdeio;
@@ -2224,8 +2225,9 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
 	u8 link = chnl->port.link;
 	u8 virt_id = chnl->port.phy.dsi.virt_id;
 	u32 settings;
-	int wait = 100;
-	bool error, ok;
+	bool ok = false;
+	bool error, ack_with_err;
+	u8 nbr_of_retries = DSI_READ_NBR_OF_RETRIES;
 
 	if (*len > MCDE_MAX_DCS_READ || chnl->port.type != MCDE_PORTTYPE_DSI)
 		return -EINVAL;
@@ -2252,15 +2254,26 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
 		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(DCS_READ);
 	dsi_wreg(link, DSI_DIRECT_CMD_MAIN_SETTINGS, settings);
 	dsi_wreg(link, DSI_DIRECT_CMD_WRDAT0, cmd);
-	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
-	dsi_wreg(link, DSI_DIRECT_CMD_RD_STS_CLR, ~0);
-	dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
 
-	/* TODO */
-	while (wait-- && !(error = dsi_rfld(link, DSI_DIRECT_CMD_STS,
-		READ_COMPLETED_WITH_ERR)) && !(ok = dsi_rfld(link,
-		DSI_DIRECT_CMD_STS, READ_COMPLETED)))
-		mdelay(10);
+	do {
+		u8 wait  = DSI_READ_TIMEOUT;
+		dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
+		dsi_wreg(link, DSI_DIRECT_CMD_RD_STS_CLR, ~0);
+		dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
+
+		while (wait-- && !(error = dsi_rfld(link, DSI_DIRECT_CMD_STS,
+					READ_COMPLETED_WITH_ERR)) &&
+				!(ok = dsi_rfld(link, DSI_DIRECT_CMD_STS,
+							READ_COMPLETED)))
+			udelay(DSI_READ_DELAY);
+
+		ack_with_err = dsi_rfld(link, DSI_DIRECT_CMD_STS,
+						ACKNOWLEDGE_WITH_ERR_RECEIVED);
+		if (ack_with_err)
+			dev_warn(&mcde_dev->dev,
+					"DCS Acknowledge Error Report %.4X\n",
+				dsi_rfld(link, DSI_DIRECT_CMD_STS, ACK_VAL));
+	} while (--nbr_of_retries && ack_with_err);
 
 	if (ok) {
 		int rdsize;
