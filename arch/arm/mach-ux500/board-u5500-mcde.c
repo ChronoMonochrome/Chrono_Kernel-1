@@ -333,11 +333,12 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		virtual_height = height * 3;
 #endif
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
-	if (ddev->id == AV8100_DISPLAY_ID)
+	if (ddev->id == AV8100_DISPLAY_ID) {
 #ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
 		hdmi_fb_onoff(ddev, 1, 0, 0);
 #endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
-	else
+		;
+	} else
 #endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
 	{
 		struct mcde_fb *mfb;
