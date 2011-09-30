@@ -533,8 +533,12 @@ static void ab5500_fg_acc_cur_work(struct work_struct *work)
 	di->fg_samples = (cnt_low | (cnt_high << 8));
 	val = (low | (med << 8) | (high << 16));
 
-	di->accu_charge = (val * QLSB_NANO_AMP_HOURS_X10)/10000;
-	di->avg_curr = (val * FG_LSB_IN_MA) / (di->fg_samples * 1000);
+	if (di->fg_samples) {
+		di->accu_charge = (val * QLSB_NANO_AMP_HOURS_X10)/10000;
+		di->avg_curr = (val * FG_LSB_IN_MA) / (di->fg_samples * 1000);
+	} else
+		dev_err(di->dev,
+			"samples is zero, using previous calculated average current\n");
 	di->flags.conv_done = true;
 
 	mutex_unlock(&di->cc_lock);
