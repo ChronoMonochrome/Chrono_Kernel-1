@@ -11,10 +11,6 @@
 #ifndef __MCDE_DISPLAY_SONY_ACX424AKP__H__
 #define __MCDE_DISPLAY_SONY_ACX424AKP__H__
 
-#include <linux/regulator/consumer.h>
-
-#include "mcde_display.h"
-
 enum display_panel_type {
 	DISPLAY_NONE			= 0,
 	DISPLAY_SONY_ACX424AKP          = 0x1b81,
@@ -23,16 +19,7 @@ enum display_panel_type {
 struct  mcde_display_sony_acx424akp_platform_data {
 	/* Platform info */
 	int reset_gpio;
-	bool reset_high;
-	const char *regulator_id;
-	int reset_delay; /* ms */
-	int reset_low_delay; /* ms */
-	int sleep_out_delay; /* ms */
 	enum display_panel_type disp_panel; /* display panel types */
-
-	/* Driver data */
-	int max_supply_voltage;
-	int min_supply_voltage;
 };
 
 #endif /* __MCDE_DISPLAY_SONY_ACX424AKP__H__ */
