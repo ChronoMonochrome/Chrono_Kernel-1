@@ -123,28 +123,12 @@ static struct mcde_display_device samsung_s6d16d0_display0 = {
 
 #ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 static struct mcde_port sony_port0 = {
-	.type = MCDE_PORTTYPE_DSI,
-	.mode = MCDE_PORTMODE_CMD,
-	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
-	.ifc = 1,
 	.link = 0,
-	.sync_src = MCDE_SYNCSRC_BTA,
-	.update_auto_trig = false,
-	.phy = {
-		.dsi = {
-			.virt_id = 0,
-			.num_data_lanes = 2,
-			.ui = DSI_UNIT_INTERVAL_0,
-			.clk_cont = false,
-			.data_lanes_swap = false,
-		},
-	},
 };
 
 struct mcde_display_sony_acx424akp_platform_data
 			sony_acx424akp_display0_pdata = {
 	.reset_gpio = HREFV60_DISP2_RST_GPIO,
-	.regulator_id = "vddi",
 };
 
 static struct mcde_display_device sony_acx424akp_display0 = {
@@ -158,8 +142,6 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 	 */
 	.fifo = MCDE_FIFO_A,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-	.native_x_res = 480,
-	.native_y_res = 854,
 	.synchronized_update = true,
 	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,

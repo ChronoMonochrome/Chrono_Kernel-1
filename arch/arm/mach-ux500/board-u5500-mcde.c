@@ -142,42 +142,12 @@ struct mcde_display_device generic_display0 = {
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
 
 static struct mcde_port port1 = {
-	.type = MCDE_PORTTYPE_DSI,
-	.mode = MCDE_PORTMODE_CMD,
-	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
-	.ifc = DSI_VIDEO_MODE,
 	.link = 0,
-#if defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY) &&      \
-		defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
-	.sync_src = MCDE_SYNCSRC_OFF,
-	.update_auto_trig = true,
-#else
-	.sync_src = MCDE_SYNCSRC_BTA,
-	.update_auto_trig = false,
-#endif
-	.phy = {
-		.dsi = {
-			.virt_id = 0,
-			.num_data_lanes = 2,
-			.ui = DSI_UNIT_INTERVAL_0,
-			.clk_cont = false,
-			.data_lanes_swap = false,
-		},
-	},
 };
 
 struct mcde_display_sony_acx424akp_platform_data \
 			sony_acx424akp_display0_pdata = {
 	.reset_gpio = 226,
-	.reset_high = true,
-	.reset_delay = 11,
-	.reset_low_delay = 1,
-	.sleep_out_delay = 140,
-#ifdef CONFIG_REGULATOR
-	.regulator_id = "vddi",
-	.min_supply_voltage = 2800000, /* 2.8V */
-	.max_supply_voltage = 2800000 /* 2.8V */
-#endif
 };
 
 struct mcde_display_device sony_acx424akp_display0 = {
@@ -191,8 +161,6 @@ struct mcde_display_device sony_acx424akp_display0 = {
 #else
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
 #endif
-	.native_x_res = 480,
-	.native_y_res = 854,
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	.synchronized_update = true,
 #else
