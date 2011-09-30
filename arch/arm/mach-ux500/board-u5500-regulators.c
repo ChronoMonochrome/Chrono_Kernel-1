@@ -23,8 +23,6 @@ static struct regulator_consumer_supply ab5500_ldo_g_consumers[] = {
 };
 
 static struct regulator_consumer_supply ab5500_ldo_h_consumers[] = {
-	/* Remove once sony display driver is updated */
-	REGULATOR_SUPPLY("vddi", NULL),
 	REGULATOR_SUPPLY("vddi", "mcde_disp_sony_acx424akp.0"),
 	REGULATOR_SUPPLY("vdd", "1-004b"), /* Synaptics */
 	REGULATOR_SUPPLY("vin", "2-0036"), /* LM3530 */
