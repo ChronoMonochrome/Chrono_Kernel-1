@@ -380,11 +380,35 @@ exit:
 	return IRQ_HANDLED;
 }
 
+static void mbox_shutdown(struct mbox *mbox)
+{
+#if defined(CONFIG_DEBUG_FS)
+	debugfs_remove(mbox->dentry);
+	device_remove_file(&mbox->pdev->dev, &dev_attr_fifo);
+#endif
+	writel(MBOX_DISABLE_IRQ, mbox->virtbase_local + MBOX_FIFO_THRES_OCCUP);
+	writel(MBOX_DISABLE_IRQ, mbox->virtbase_peer + MBOX_FIFO_THRES_FREE);
+	free_irq(mbox->irq, NULL);
+	mbox->client_blocked = 0;
+	iounmap(mbox->virtbase_local);
+	iounmap(mbox->virtbase_peer);
+	mbox->cb = NULL;
+	mbox->client_data = NULL;
+	mbox->allocated = false;
+}
+
+void mbox_reset_state(struct mbox *mbox)
+{
+	list_for_each_entry(mbox, &mboxs, list) {
+		mbox_shutdown(mbox);
+	}
+}
+
+
 /* Setup is executed once for each mbox pair */
 struct mbox *mbox_setup(u8 mbox_id, mbox_recv_cb_t *mbox_cb, void *priv)
 {
 	struct resource *resource;
-	int irq;
 	int res;
 	struct mbox *mbox;
 
@@ -463,21 +487,21 @@ struct mbox *mbox_setup(u8 mbox_id, mbox_recv_cb_t *mbox_cb, void *priv)
 	mbox->client_blocked = 0;
 
 	/* Get IRQ for mailbox and allocate it */
-	irq = platform_get_irq_byname(mbox->pdev, "mbox_irq");
-	if (irq < 0) {
+	mbox->irq = platform_get_irq_byname(mbox->pdev, "mbox_irq");
+	if (mbox->irq < 0) {
 		dev_err(&(mbox->pdev->dev),
 			"Unable to retrieve mbox irq resource\n");
 		mbox = NULL;
 		goto exit;
 	}
 
-	dev_dbg(&(mbox->pdev->dev), "Allocating irq %d...\n", irq);
-	res = request_threaded_irq(irq, NULL, mbox_irq,
+	dev_dbg(&(mbox->pdev->dev), "Allocating irq %d...\n", mbox->irq);
+	res = request_threaded_irq(mbox->irq, NULL, mbox_irq,
 			IRQF_NO_SUSPEND | IRQF_ONESHOT,
 			mbox->name, (void *) mbox);
 	if (res < 0) {
 		dev_err(&(mbox->pdev->dev),
-			"Unable to allocate mbox irq %d\n", irq);
+			"Unable to allocate mbox irq %d\n", mbox->irq);
 		mbox = NULL;
 		goto exit;
 	}
@@ -503,7 +527,7 @@ struct mbox *mbox_setup(u8 mbox_id, mbox_recv_cb_t *mbox_cb, void *priv)
 		dev_warn(&(mbox->pdev->dev),
 			 "Unable to create mbox sysfs entry");
 
-	(void) debugfs_create_file("mbox", S_IFREG | S_IRUGO, NULL,
+	mbox->dentry = debugfs_create_file("mbox", S_IFREG | S_IRUGO, NULL,
 				   NULL, &mbox_operations);
 #endif
 
@@ -550,16 +574,57 @@ static int __exit mbox_remove(struct platform_device *pdev)
 {
 	struct mbox *mbox = platform_get_drvdata(pdev);
 
+	mbox_shutdown(mbox);
 	list_del(&mbox->list);
 	kfree(mbox);
 	return 0;
 }
+
+#ifdef CONFIG_PM
+int mbox_suspend(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mbox *mbox = platform_get_drvdata(pdev);
+
+	/*
+	 * Nothing to be done for now, once APE-Modem power management is
+	 * in place communication will have to be stopped.
+	 */
+
+	list_for_each_entry(mbox, &mboxs, list) {
+		if (mbox->client_blocked)
+			return -EBUSY;
+	}
+	return 0;
+}
+
+int mbox_resume(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mbox *mbox = platform_get_drvdata(pdev);
+
+	/*
+	 * Nothing to be done for now, once APE-Modem power management is
+	 * in place communication will have to be resumed.
+	 */
+
+	return 0;
+}
+
+static const struct dev_pm_ops mbox_dev_pm_ops = {
+	.suspend_noirq = mbox_suspend,
+	.resume_noirq = mbox_resume,
+};
+#endif
 
 static struct platform_driver mbox_driver = {
 	.remove = __exit_p(mbox_remove),
 	.driver = {
 		.name = MBOX_NAME,
 		.owner = THIS_MODULE,
+#ifdef CONFIG_PM
+		.pm = &mbox_dev_pm_ops,
+#endif
 	},
 };
 
