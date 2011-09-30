@@ -287,17 +287,33 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		cw1200_cancel_scan(priv);
 		sta_printk(KERN_DEBUG "[STA] Freq %d (wsm ch: %d).\n",
 			ch->center_freq, ch->hw_value);
-		WARN_ON(wait_event_timeout(
-			priv->channel_switch_done,
-			!priv->channel_switch_in_progress, 3 * HZ) <= 0);
 
 		ret = WARN_ON(__cw1200_flush(priv, false));
 		if (!ret) {
+			while(down_trylock(&priv->scan.lock)) {
+				sta_printk(KERN_DEBUG "[STA] waiting, "
+						      "scan in progress.\n");
+				msleep(100);
+			}
+
 			ret = WARN_ON(wsm_switch_channel(priv, &channel));
-			if (!ret)
-				priv->channel = ch;
-			else
+			if (!ret) {
+				ret = wait_event_timeout(
+					priv->channel_switch_done,
+					!priv->channel_switch_in_progress,
+					3 * HZ);
+				/* TODO: We should check also switch channel
+				 * complete indication
+				 */
+				if (ret) {
+					priv->channel = ch;
+					ret = 0;
+				} else
+					ret = -ETIMEDOUT;
+			} else
 				wsm_unlock_tx(priv);
+
+			up(&priv->scan.lock);
 		}
 	}
 

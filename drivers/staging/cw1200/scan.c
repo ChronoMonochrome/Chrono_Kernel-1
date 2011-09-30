@@ -364,11 +364,13 @@ void cw1200_probe_work(struct work_struct *work)
 		return;
 	}
 
+	mutex_lock(&priv->conf_mutex);
 	if (unlikely(down_trylock(&priv->scan.lock))) {
 		/* Scan is already in progress. Requeue self. */
 		schedule();
 		queue_delayed_work(priv->workqueue,
 					&priv->scan.probe_work, HZ / 10);
+		mutex_unlock(&priv->conf_mutex);
 		return;
 	}
 
@@ -403,7 +405,6 @@ void cw1200_probe_work(struct work_struct *work)
 		}
 	}
 
-	mutex_lock(&priv->conf_mutex);
 	/* FW bug: driver has to restart p2p-dev mode after scan */
 	if (priv->join_status == CW1200_JOIN_STATUS_MONITOR)
 		cw1200_disable_listening(priv);
