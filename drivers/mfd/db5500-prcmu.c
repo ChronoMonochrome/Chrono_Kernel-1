@@ -28,6 +28,8 @@
 #include <mach/hardware.h>
 #include <mach/irqs.h>
 #include <mach/db5500-regs.h>
+#include <mach/prcmu-debug.h>
+
 #include "db5500-prcmu-regs.h"
 
 #define PRCMU_FW_VERSION_OFFSET 0xA4
@@ -1066,6 +1068,8 @@ int db5500_prcmu_set_arm_opp(u8 opp)
 unlock_and_return:
 	mutex_unlock(&mb1_transfer.lock);
 bailout:
+	if (!r)
+		prcmu_debug_arm_opp_log(opp);
 	return r;
 }
 
