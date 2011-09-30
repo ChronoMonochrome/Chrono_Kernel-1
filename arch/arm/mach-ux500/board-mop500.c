@@ -58,7 +58,6 @@
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/devices.h>
-#include <mach/sensors1p.h>
 #ifdef CONFIG_INPUT_AB8500_ACCDET
 #include <mach/abx500-accdet.h>
 #endif
@@ -927,30 +926,6 @@ struct platform_device u8500_sim_detect_device = {
 };
 #endif
 
-#ifdef CONFIG_SENSORS1P_MOP
-static struct sensors1p_config sensors1p_config = {
-      /* SFH7741 */
-       .proximity = {
-               .pin = EGPIO_PIN_7,
-               .startup_time = 120, /* ms */
-               .regulator = "v-proximity",
-       },
-       /* HED54XXU11 */
-       .hal = {
-               .pin = EGPIO_PIN_8,
-               .startup_time = 100, /* Actually, I have no clue. */
-               .regulator = "v-hal",
-       },
-};
-
-struct platform_device sensors1p_device = {
-       .name = "sensors1p",
-       .dev = {
-               .platform_data = (void *)&sensors1p_config,
-       },
-};
-#endif
-
 #ifdef CONFIG_CRYPTO_DEV_UX500
 static struct cryp_platform_data u8500_cryp1_platform_data = {
 	.mem_to_engine = {
@@ -991,9 +966,6 @@ static struct hash_platform_data u8500_hash1_platform_data = {
 
 /* add any platform devices here - TODO */
 static struct platform_device *mop500_platform_devs[] __initdata = {
-#ifdef CONFIG_SENSORS1P_MOP
-       &sensors1p_device,
-#endif
 #ifdef CONFIG_U8500_SIM_DETECT
 	&u8500_sim_detect_device,
 #endif

@@ -106,13 +106,6 @@ config UX500_GPIO_KEYS
         help
 	  Add proximity and hal sensors as a gpio keyboard.
 
-config SENSORS1P_MOP
-	tristate "HAL and Proximity sensors support"
-	depends on REGULATOR && (GPIO_STMPE2401 || GPIO_TC35892)
-	help
-	  Add support for Osram's SFH7741 Proximity Sensor and Samsumg
-	  HED54XXU11 HAL Switch
-
 config U5500_MODEM_IRQ
 	bool "Modem IRQ support"
 	depends on UX500_SOC_DB5500
