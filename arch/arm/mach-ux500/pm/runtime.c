@@ -99,13 +99,19 @@ static int ux500_pd_runtime_idle(struct device *dev)
 
 static int ux500_pd_runtime_suspend(struct device *dev)
 {
+	int ret;
 	struct pm_runtime_data *prd = __to_prd(dev);
 
 	dev_vdbg(dev, "%s()\n", __func__);
 
 	platform_pm_runtime_bug(dev, prd);
 
+	ret = pm_generic_runtime_suspend(dev);
+	if (ret)
+		return ret;
+
 	if (prd && test_bit(BIT_ACTIVE, &prd->flags)) {
+
 		if (prd->pins)
 			ux500_pins_disable(prd->pins);
 
@@ -134,15 +140,14 @@ static int ux500_pd_runtime_resume(struct device *dev)
 			ux500_regulator_atomic_enable(prd->regulator);
 
 		set_bit(BIT_ENABLED, &prd->flags);
-	}
 
-	return 0;
+	}
+	return pm_generic_runtime_resume(dev);
 }
 
 static int ux500_pd_suspend_noirq(struct device *dev)
 {
 	struct pm_runtime_data *prd = __to_prd(dev);
-	int ret;
 
 	dev_vdbg(dev, "%s()\n", __func__);
 
@@ -159,10 +164,6 @@ static int ux500_pd_suspend_noirq(struct device *dev)
 	 * reason.  We still need to do the power save stuff when going into
 	 * suspend, so force it here.
 	 */
-	ret = pm_generic_runtime_suspend(dev);
-	if (ret)
-		return ret;
-
 	return ux500_pd_runtime_suspend(dev);
 }
 
@@ -188,9 +189,7 @@ static int ux500_pd_resume_noirq(struct device *dev)
 	 * but we forced it down in suspend_noirq above.  Bring it
 	 * up since pm-runtime thinks it is not suspended.
 	 */
-	ux500_pd_runtime_resume(dev);
-
-	return pm_generic_runtime_resume(dev);
+	return ux500_pd_runtime_resume(dev);
 }
 
 static int ux500_pd_bus_notify(struct notifier_block *nb,
