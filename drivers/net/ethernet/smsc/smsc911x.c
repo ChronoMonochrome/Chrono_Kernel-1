@@ -2343,6 +2343,7 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
 	unsigned int intcfg = 0;
 	int res_size, irq_flags;
 	int retval;
+	int to = 100;
 
 	pr_info("Driver version %s\n", SMSC_DRV_VERSION);
 
@@ -2418,6 +2419,18 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
 	/* apply the right access if shifting is needed */
 	if (pdata->config.shift)
 		pdata->ops = &shifted_smsc911x_ops;
+
+	/* poll the READY bit in PMT_CTRL. Any other access to the device is
+	 * forbidden while this bit isn't set. Try for 100ms
+	 */
+	while (!(smsc911x_reg_read(pdata, PMT_CTRL) & PMT_CTRL_READY_) && --to)
+		udelay(1000);
+
+	if (to == 0) {
+		pr_err("Device not READY in 100ms aborting\n");
+		goto out_0;
+	}
+
 
 	retval = smsc911x_init(dev);
 	if (retval < 0)
