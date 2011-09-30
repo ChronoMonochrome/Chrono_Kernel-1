@@ -29,6 +29,7 @@
 #include <linux/types.h>
 #include <plat/pincfg.h>
 #include <asm/mach-types.h>
+#include <mach/id.h>
 #include <linux/mfd/ab8500.h>
 #include <linux/regulator/consumer.h>
 
@@ -157,6 +158,10 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 		dev_dbg(dev->dev, "No resources available\n");
 		goto finished;
 	}
+	if (cpu_is_u8500())
+		err = dcg2900_setup(dev, info);
+	else
+		err = dcg2900_u5500_setup(dev, info);
 
 	err = dcg2900_setup(dev, info);
 	if (err)
@@ -272,8 +277,15 @@ void dcg2900_init_platdata(struct cg2900_platform_data *data)
 {
 	data->init = dcg2900_init;
 	data->exit = dcg2900_exit;
-	data->enable_chip = dcg2900_enable_chip;
-	data->disable_chip = dcg2900_disable_chip;
+
+	if (cpu_is_u8500()) {
+		data->enable_chip = dcg2900_enable_chip;
+		data->disable_chip = dcg2900_disable_chip;
+	} else {
+		data->enable_chip = dcg2900_u5500_enable_chip;
+		data->disable_chip = dcg2900_u5500_disable_chip;
+	}
+
 	data->get_power_switch_off_cmd = dcg2900_get_power_switch_off_cmd;
 
 	data->uart.enable_uart = dcg2900_enable_uart;

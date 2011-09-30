@@ -18,7 +18,7 @@
 
 #define CG2900_BT_CTS_GPIO		168
 
-enum cg2900_gpio_pull_sleep cg2900_sleep_gpio[21] = {
+enum cg2900_gpio_pull_sleep cg2900_u5500_sleep_gpio[21] = {
 	CG2900_NO_PULL,		/* GPIO 0:  PTA_CONFX */
 	CG2900_PULL_DN,		/* GPIO 1:  PTA_STATUS */
 	CG2900_NO_PULL,		/* GPIO 2:  UART_CTSN */
@@ -55,7 +55,7 @@ static struct platform_device ux500_cg2900_chip_device = {
 
 static struct cg2900_platform_data cg2900_test_platform_data = {
 	.bus = HCI_VIRTUAL,
-	.gpio_sleep = cg2900_sleep_gpio,
+	.gpio_sleep = cg2900_u5500_sleep_gpio,
 };
 
 static struct platform_device ux500_cg2900_test_device = {
@@ -97,7 +97,7 @@ static pin_cfg_t cg2900_uart_disabled[] = {
 
 static struct cg2900_platform_data cg2900_uart_platform_data = {
 	.bus = HCI_UART,
-	.gpio_sleep = cg2900_sleep_gpio,
+	.gpio_sleep = cg2900_u5500_sleep_gpio,
 	.uart = {
 		.n_uart_gpios = 4,
 		.uart_enabled = cg2900_uart_enabled,

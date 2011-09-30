@@ -26,7 +26,7 @@
 #include "devices-cg2900.h"
 
 /* prcmu resout1 pin is used for CG2900 reset*/
-void dcg2900_enable_chip(struct cg2900_chip_dev *dev)
+void dcg2900_u5500_enable_chip(struct cg2900_chip_dev *dev)
 {
 	struct dcg2900_info *info = dev->b_data;
 
@@ -45,7 +45,7 @@ void dcg2900_enable_chip(struct cg2900_chip_dev *dev)
 	prcmu_resetout(1, 1);
 }
 
-void dcg2900_disable_chip(struct cg2900_chip_dev *dev)
+void dcg2900_u5500_disable_chip(struct cg2900_chip_dev *dev)
 {
 	struct dcg2900_info *info = dev->b_data;
 
@@ -53,7 +53,7 @@ void dcg2900_disable_chip(struct cg2900_chip_dev *dev)
 	clk_disable(info->lpoclk);
 }
 
-int dcg2900_setup(struct cg2900_chip_dev *dev,
+int dcg2900_u5500_setup(struct cg2900_chip_dev *dev,
 				struct dcg2900_info *info)
 {
 	info->lpoclk = clk_get(dev->dev, "lpoclk");
