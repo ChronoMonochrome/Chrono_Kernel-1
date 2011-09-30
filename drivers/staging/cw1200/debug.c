@@ -309,6 +309,64 @@ static const struct file_operations fops_status = {
 	.owner = THIS_MODULE,
 };
 
+static int cw1200_counters_show(struct seq_file *seq, void *v)
+{
+	int ret;
+	struct cw1200_common *priv = seq->private;
+	struct wsm_counters_table counters;
+
+	ret = wsm_get_counters_table(priv, &counters);
+	if (ret)
+		return ret;
+
+#define CAT_STR(x, y) x ## y
+#define PUT_COUNTER(tab, name) \
+	seq_printf(seq, "%s:" tab "%d\n", #name, \
+		__le32_to_cpu(counters.CAT_STR(count, name)))
+
+	PUT_COUNTER("\t\t", PlcpErrors);
+	PUT_COUNTER("\t\t", FcsErrors);
+	PUT_COUNTER("\t\t", TxPackets);
+	PUT_COUNTER("\t\t", RxPackets);
+	PUT_COUNTER("\t\t", RxPacketErrors);
+	PUT_COUNTER("\t",   RxDecryptionFailures);
+	PUT_COUNTER("\t\t", RxMicFailures);
+	PUT_COUNTER("\t",   RxNoKeyFailures);
+	PUT_COUNTER("\t",   TxMulticastFrames);
+	PUT_COUNTER("\t",   TxFramesSuccess);
+	PUT_COUNTER("\t",   TxFrameFailures);
+	PUT_COUNTER("\t",   TxFramesRetried);
+	PUT_COUNTER("\t",   TxFramesMultiRetried);
+	PUT_COUNTER("\t",   RxFrameDuplicates);
+	PUT_COUNTER("\t\t", RtsSuccess);
+	PUT_COUNTER("\t\t", RtsFailures);
+	PUT_COUNTER("\t\t", AckFailures);
+	PUT_COUNTER("\t",   RxMulticastFrames);
+	PUT_COUNTER("\t",   RxFramesSuccess);
+	PUT_COUNTER("\t",   RxCMACICVErrors);
+	PUT_COUNTER("\t\t", RxCMACReplays);
+	PUT_COUNTER("\t",   RxMgmtCCMPReplays);
+
+#undef PUT_COUNTER
+#undef CAT_STR
+
+	return 0;
+}
+
+static int cw1200_counters_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, &cw1200_counters_show,
+		inode->i_private);
+}
+
+static const struct file_operations fops_counters = {
+	.open = cw1200_counters_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+	.owner = THIS_MODULE,
+};
+
 int cw1200_debug_init(struct cw1200_common *priv)
 {
 	struct cw1200_debug_priv *d = kzalloc(sizeof(struct cw1200_debug_priv),
@@ -324,6 +382,10 @@ int cw1200_debug_init(struct cw1200_common *priv)
 
 	if (!debugfs_create_file("status", S_IRUSR, d->debugfs_phy,
 			priv, &fops_status))
+		goto err;
+
+	if (!debugfs_create_file("counters", S_IRUSR, d->debugfs_phy,
+			priv, &fops_counters))
 		goto err;
 
 	return 0;

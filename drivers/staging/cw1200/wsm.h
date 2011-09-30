@@ -1266,7 +1266,39 @@ static inline int wsm_set_rcpi_rssi_threshold(struct cw1200_common *priv,
 			     sizeof(*arg));
 }
 
-static inline int wsm_get_station_id(struct cw1200_common *priv, u8 * mac)
+struct wsm_counters_table {
+	__le32 countPlcpErrors;
+	__le32 countFcsErrors;
+	__le32 countTxPackets;
+	__le32 countRxPackets;
+	__le32 countRxPacketErrors;
+	__le32 countRxDecryptionFailures;
+	__le32 countRxMicFailures;
+	__le32 countRxNoKeyFailures;
+	__le32 countTxMulticastFrames;
+	__le32 countTxFramesSuccess;
+	__le32 countTxFrameFailures;
+	__le32 countTxFramesRetried;
+	__le32 countTxFramesMultiRetried;
+	__le32 countRxFrameDuplicates;
+	__le32 countRtsSuccess;
+	__le32 countRtsFailures;
+	__le32 countAckFailures;
+	__le32 countRxMulticastFrames;
+	__le32 countRxFramesSuccess;
+	__le32 countRxCMACICVErrors;
+	__le32 countRxCMACReplays;
+	__le32 countRxMgmtCCMPReplays;
+};
+
+static inline int wsm_get_counters_table(struct cw1200_common *priv,
+					 struct wsm_counters_table *arg)
+{
+	return wsm_read_mib(priv, WSM_MIB_ID_COUNTERS_TABLE,
+			arg, sizeof(*arg));
+}
+
+static inline int wsm_get_station_id(struct cw1200_common *priv, u8 *mac)
 {
 	return wsm_read_mib(priv, WSM_MIB_ID_DOT11_STATION_ID, mac, ETH_ALEN);
 }
