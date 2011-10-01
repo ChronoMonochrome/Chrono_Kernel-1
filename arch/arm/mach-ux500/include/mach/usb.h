@@ -31,4 +31,5 @@ struct abx500_usbgpio_platform_data {
 	int usb_cs;
 };
 
+void ux500_restore_context(void);
 #endif

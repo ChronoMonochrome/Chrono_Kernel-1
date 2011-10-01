@@ -25,9 +25,11 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
+#include <mach/usb.h>
 
 #include "musb_core.h"
 
+#define DEFAULT_DEVCTL 0x81
 static void ux500_musb_set_vbus(struct musb *musb, int is_on);
 
 struct ux500_glue {
@@ -38,6 +40,145 @@ struct ux500_glue {
 #define glue_to_musb(g)	platform_get_drvdata(g->musb)
 
 static struct timer_list notify_timer;
+struct musb_context_registers context;
+struct musb *_musb;
+void ux500_store_context(struct musb *musb)
+{
+#ifdef CONFIG_PM
+	int i;
+	void __iomem *musb_base = musb->mregs;
+	void __iomem *epio;
+	_musb = musb;
+
+	if (is_host_enabled(musb)) {
+		context.frame = musb_readw(musb_base, MUSB_FRAME);
+		context.testmode = musb_readb(musb_base, MUSB_TESTMODE);
+	}
+	context.power = musb_readb(musb_base, MUSB_POWER);
+	context.intrtxe = musb_readw(musb_base, MUSB_INTRTXE);
+	context.intrrxe = musb_readw(musb_base, MUSB_INTRRXE);
+	context.intrusbe = musb_readb(musb_base, MUSB_INTRUSBE);
+	context.index = musb_readb(musb_base, MUSB_INDEX);
+	context.devctl = DEFAULT_DEVCTL;
+	for (i = 0; i < musb->config->num_eps; ++i) {
+		epio = musb->endpoints[i].regs;
+		context.index_regs[i].txmaxp =
+				musb_readw(epio, MUSB_TXMAXP);
+		context.index_regs[i].txcsr =
+		musb_readw(epio, MUSB_TXCSR);
+		context.index_regs[i].rxmaxp =
+			musb_readw(epio, MUSB_RXMAXP);
+		context.index_regs[i].rxcsr =
+			musb_readw(epio, MUSB_RXCSR);
+
+		if (musb->dyn_fifo) {
+			context.index_regs[i].txfifoadd =
+				musb_read_txfifoadd(musb_base);
+			context.index_regs[i].rxfifoadd =
+				musb_read_rxfifoadd(musb_base);
+			context.index_regs[i].txfifosz =
+				musb_read_txfifosz(musb_base);
+			context.index_regs[i].rxfifosz =
+				musb_read_rxfifosz(musb_base);
+		}
+		if (is_host_enabled(musb)) {
+			context.index_regs[i].txtype =
+				musb_readb(epio, MUSB_TXTYPE);
+			context.index_regs[i].txinterval =
+			musb_readb(epio, MUSB_TXINTERVAL);
+			context.index_regs[i].rxtype =
+				musb_readb(epio, MUSB_RXTYPE);
+			context.index_regs[i].rxinterval =
+				musb_readb(epio, MUSB_RXINTERVAL);
+
+			context.index_regs[i].txfunaddr =
+			musb_read_txfunaddr(musb_base, i);
+			context.index_regs[i].txhubaddr =
+				musb_read_txhubaddr(musb_base, i);
+			context.index_regs[i].txhubport =
+				musb_read_txhubport(musb_base, i);
+
+			context.index_regs[i].rxfunaddr =
+				musb_read_rxfunaddr(musb_base, i);
+			context.index_regs[i].rxhubaddr =
+				musb_read_rxhubaddr(musb_base, i);
+			context.index_regs[i].rxhubport =
+				musb_read_rxhubport(musb_base, i);
+		}
+	}
+#endif
+}
+void ux500_restore_context(void)
+{
+#ifdef CONFIG_PM
+	int i;
+	struct musb *musb = _musb;
+	void __iomem *musb_base = musb->mregs;
+	void __iomem *ep_target_regs;
+	void __iomem *epio;
+
+	if (is_host_enabled(musb)) {
+		musb_writew(musb_base, MUSB_FRAME, context.frame);
+		musb_writeb(musb_base, MUSB_TESTMODE, context.testmode);
+	 }
+	musb_writeb(musb_base, MUSB_POWER, context.power);
+	musb_writew(musb_base, MUSB_INTRTXE, context.intrtxe);
+	musb_writew(musb_base, MUSB_INTRRXE, context.intrrxe);
+	musb_writeb(musb_base, MUSB_INTRUSBE, context.intrusbe);
+	musb_writeb(musb_base, MUSB_DEVCTL, context.devctl);
+
+	for (i = 0; i < musb->config->num_eps; ++i) {
+		epio = musb->endpoints[i].regs;
+		musb_writew(epio, MUSB_TXMAXP,
+			context.index_regs[i].txmaxp);
+		musb_writew(epio, MUSB_TXCSR,
+			context.index_regs[i].txcsr);
+		musb_writew(epio, MUSB_RXMAXP,
+			context.index_regs[i].rxmaxp);
+		musb_writew(epio, MUSB_RXCSR,
+			context.index_regs[i].rxcsr);
+
+	if (musb->dyn_fifo) {
+		musb_write_txfifosz(musb_base,
+			context.index_regs[i].txfifosz);
+		musb_write_rxfifosz(musb_base,
+			context.index_regs[i].rxfifosz);
+		musb_write_txfifoadd(musb_base,
+			context.index_regs[i].txfifoadd);
+		musb_write_rxfifoadd(musb_base,
+		context.index_regs[i].rxfifoadd);
+		}
+
+	if (is_host_enabled(musb)) {
+		musb_writeb(epio, MUSB_TXTYPE,
+			context.index_regs[i].txtype);
+		musb_writeb(epio, MUSB_TXINTERVAL,
+			context.index_regs[i].txinterval);
+		musb_writeb(epio, MUSB_RXTYPE,
+			context.index_regs[i].rxtype);
+		musb_writeb(epio, MUSB_RXINTERVAL,
+
+		musb->context.index_regs[i].rxinterval);
+		musb_write_txfunaddr(musb_base, i,
+			context.index_regs[i].txfunaddr);
+		musb_write_txhubaddr(musb_base, i,
+			context.index_regs[i].txhubaddr);
+		musb_write_txhubport(musb_base, i,
+			context.index_regs[i].txhubport);
+
+		ep_target_regs =
+			musb_read_target_reg_base(i, musb_base);
+
+		musb_write_rxfunaddr(ep_target_regs,
+				context.index_regs[i].rxfunaddr);
+		musb_write_rxhubaddr(ep_target_regs,
+			context.index_regs[i].rxhubaddr);
+		musb_write_rxhubport(ep_target_regs,
+		context.index_regs[i].rxhubport);
+		}
+	}
+#endif
+}
 
 static void musb_notify_idle(unsigned long _musb)
 {
@@ -185,7 +326,10 @@ static void ux500_musb_try_idle(struct musb *musb, unsigned long timeout)
 		(unsigned long)jiffies_to_msecs(timeout - jiffies));
 	mod_timer(&notify_timer, timeout);
 }
-
+static void ux500_musb_enable(struct musb *musb)
+{
+	ux500_store_context(musb);
+}
 static int ux500_musb_init(struct musb *musb)
 {
 	int status;
@@ -229,6 +373,8 @@ static const struct musb_platform_ops ux500_ops = {
 
 	.set_vbus	= ux500_musb_set_vbus,
 	.try_idle	= ux500_musb_try_idle,
+
+	.enable		= ux500_musb_enable,
 };
 
 /**

@@ -340,10 +340,12 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 		if (ab->mode == USB_HOST) {
 			ab->mode = USB_PERIPHERAL;
 			ab8500_usb_host_phy_dis(ab);
+			ux500_restore_context();
 			ab8500_usb_peri_phy_en(ab);
 		}
 		if (ab->mode == USB_IDLE) {
 			ab->mode = USB_PERIPHERAL;
+			ux500_restore_context();
 			ab8500_usb_peri_phy_en(ab);
 		}
 		event = USB_EVENT_VBUS;
@@ -354,10 +356,12 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 		if (ab->mode == USB_PERIPHERAL) {
 			ab->mode = USB_HOST;
 			ab8500_usb_peri_phy_dis(ab);
+			ux500_restore_context();
 			ab8500_usb_host_phy_en(ab);
 		}
 		if (ab->mode == USB_IDLE) {
 			ab->mode = USB_HOST;
+			ux500_restore_context();
 			ab8500_usb_host_phy_en(ab);
 		}
 		ab->phy.otg->default_a = true;
