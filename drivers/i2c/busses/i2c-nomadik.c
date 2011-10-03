@@ -628,13 +628,7 @@ static int nmk_i2c_xfer(struct i2c_adapter *i2c_adap,
 
 	dev->busy = true;
 
-	if (dev->regulator)
-		regulator_enable(dev->regulator);
 	pm_runtime_get_sync(&dev->pdev->dev);
-
-	clk_enable(dev->clk);
-
-	dev->busy = true;
 
 	status = init_hw(dev);
 	if (status)
@@ -668,10 +662,8 @@ static int nmk_i2c_xfer(struct i2c_adapter *i2c_adap,
 	}
 
 out:
-	clk_disable(dev->clk);
-	pm_runtime_put_sync(&dev->pdev->dev);
-	if (dev->regulator)
-		regulator_disable(dev->regulator);
+
+	pm_runtime_put(&dev->pdev->dev);
 
 	dev->busy = false;
 
@@ -861,9 +853,9 @@ static irqreturn_t i2c_irq_handler(int irq, void *arg)
 
 
 #ifdef CONFIG_PM
-static int nmk_i2c_suspend(struct device *dev)
+
+static int nmk_i2c_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	struct platform_device *pdev = to_platform_device(dev);
 	struct nmk_i2c_dev *nmk_i2c = platform_get_drvdata(pdev);
 
 	if (nmk_i2c->busy)
@@ -872,14 +864,43 @@ static int nmk_i2c_suspend(struct device *dev)
 	return 0;
 }
 
-static int nmk_i2c_resume(struct device *dev)
+static int nmk_i2c_suspend_noirq(struct device *dev)
 {
+	struct nmk_i2c_dev *nmk_i2c =
+		platform_get_drvdata(to_platform_device(dev));
+
+	if (nmk_i2c->busy)
+		return -EBUSY;
+
 	return 0;
 }
+
 #else
 #define nmk_i2c_suspend	NULL
-#define nmk_i2c_resume	NULL
+#define nmk_i2c_suspend_noirq NULL
 #endif
+
+static int nmk_i2c_runtime_suspend(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct nmk_i2c_dev *nmk_i2c = platform_get_drvdata(pdev);
+
+	clk_disable(nmk_i2c->clk);
+	if (nmk_i2c->regulator)
+		regulator_disable(nmk_i2c->regulator);
+	return 0;
+}
+
+static int nmk_i2c_runtime_resume(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct nmk_i2c_dev *nmk_i2c = platform_get_drvdata(pdev);
+
+	if (nmk_i2c->regulator)
+		regulator_enable(nmk_i2c->regulator);
+	clk_enable(nmk_i2c->clk);
+	return 0;
+}
 
 /*
  * We use noirq so that we suspend late and resume before the wakeup interrupt
@@ -887,8 +908,9 @@ static int nmk_i2c_resume(struct device *dev)
  * there has been a regular pm runtime resume (via pm_runtime_get_sync()).
  */
 static const struct dev_pm_ops nmk_i2c_pm = {
-	.suspend_noirq	= nmk_i2c_suspend,
-	.resume_noirq	= nmk_i2c_resume,
+	SET_RUNTIME_PM_OPS(nmk_i2c_runtime_suspend, nmk_i2c_runtime_resume,
+			   NULL)
+	.suspend_noirq	= nmk_i2c_suspend_noirq,
 };
 
 static unsigned int nmk_i2c_functionality(struct i2c_adapter *adap)
