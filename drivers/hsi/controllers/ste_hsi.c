@@ -1514,6 +1514,7 @@ static int __init ste_hsi_add_controller(struct hsi_controller *hsi,
 	char overrun_name[] = "hsi_rx_overrun_chxxx";
 	unsigned char i;
 	int err;
+	unsigned long rate;
 
 	ste_hsi = kzalloc(sizeof(struct ste_hsi_controller), GFP_KERNEL);
 	if (!ste_hsi) {
@@ -1583,6 +1584,22 @@ static int __init ste_hsi_add_controller(struct hsi_controller *hsi,
 	if (IS_ERR(ste_hsi->ssirx_clk)) {
 		dev_err(&hsi->device, "Couldn't get HSIR HCLK clock\n");
 		err = PTR_ERR(ste_hsi->ssirx_clk);
+		goto err_clk_free;
+	}
+
+	/* Set HSITXCLK rate to 100 MHz */
+	rate = clk_round_rate(ste_hsi->tx_clk, 100000000);
+	err = clk_set_rate(ste_hsi->tx_clk, rate);
+	if (unlikely(err)) {
+		dev_err(&hsi->device, "Couldn't set HSIT clock rate\n");
+		goto err_clk_free;
+	}
+
+	/* Set HSIRXCLK rate to 200 MHz */
+	rate = clk_round_rate(ste_hsi->rx_clk, 200000000);
+	err = clk_set_rate(ste_hsi->rx_clk, rate);
+	if (unlikely(err)) {
+		dev_err(&hsi->device, "Couldn't set HSIR clock rate\n");
 		goto err_clk_free;
 	}
 
