@@ -19,7 +19,6 @@
 
 static int __devinit fictive_probe(struct mcde_display_device *dev)
 {
-	dev->prepare_for_update = NULL;
 	dev->platform_enable = NULL,
 	dev->platform_disable = NULL,
 	dev->set_power_mode = NULL;

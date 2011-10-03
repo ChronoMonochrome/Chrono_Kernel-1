@@ -136,7 +136,6 @@ static int __devinit ab8500_probe(struct mcde_display_device *ddev)
 	ddev->set_power_mode = set_power_mode;
 	ddev->on_first_update = on_first_update;
 	ddev->update = display_update;
-	ddev->prepare_for_update = NULL;
 
 	return 0;
 

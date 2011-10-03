@@ -101,8 +101,6 @@ struct mcde_display_device {
 	int (*invalidate_area)(struct mcde_display_device *dev,
 						struct mcde_rectangle *area);
 	int (*update)(struct mcde_display_device *dev, bool tripple_buffer);
-	int (*prepare_for_update)(struct mcde_display_device *dev,
-		u16 x, u16 y, u16 w, u16 h);
 	int (*on_first_update)(struct mcde_display_device *dev);
 	int (*platform_enable)(struct mcde_display_device *dev);
 	int (*platform_disable)(struct mcde_display_device *dev);

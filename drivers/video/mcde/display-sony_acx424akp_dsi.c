@@ -285,7 +285,6 @@ static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 	}
 
 	/* TODO: Remove when DSI send command uses interrupts */
-	dev->prepare_for_update = NULL;
 	dev->platform_enable = sony_acx424akp_platform_enable,
 	dev->platform_disable = sony_acx424akp_platform_disable,
 	dev->set_power_mode = sony_acx424akp_set_power_mode;

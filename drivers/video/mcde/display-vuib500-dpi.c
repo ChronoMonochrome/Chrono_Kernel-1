@@ -50,7 +50,6 @@ static int __devinit dpi_display_probe(struct mcde_display_device *ddev)
 
 	ddev->try_video_mode = try_video_mode;
 	ddev->set_video_mode = set_video_mode;
-	ddev->prepare_for_update = NULL;
 	dev_info(&ddev->dev, "DPI display probed\n");
 
 	goto out;

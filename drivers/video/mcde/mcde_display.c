@@ -333,18 +333,6 @@ static int mcde_display_update_default(struct mcde_display_device *ddev,
 {
 	int ret = 0;
 
-	/* TODO: Dirty */
-	if (ddev->prepare_for_update) {
-		/* TODO: Send dirty rectangle */
-		ret = ddev->prepare_for_update(ddev, 0, 0,
-			ddev->native_x_res, ddev->native_y_res);
-		if (ret < 0) {
-			dev_warn(&ddev->dev,
-				"%s:Failed to prepare for update\n", __func__);
-			return ret;
-		}
-	}
-	/* TODO: Calculate & set update rect */
 	ret = mcde_chnl_update(ddev->chnl_state, &ddev->update_area,
 							tripple_buffer);
 	if (ret < 0) {
@@ -367,30 +355,6 @@ static int mcde_display_update_default(struct mcde_display_device *ddev,
 	dev_vdbg(&ddev->dev, "Overlay updated, chnl=%d\n", ddev->chnl_id);
 
 	return 0;
-}
-
-static int mcde_display_prepare_for_update_default(
-					struct mcde_display_device *ddev,
-					u16 x, u16 y, u16 w, u16 h)
-{
-	int ret;
-	u8 params[8] = { x >> 8, x & 0xff,
-			(x + w - 1) >> 8, (x + w - 1) & 0xff,
-			 y >> 8, y & 0xff,
-			(y + h - 1) >> 8, (y + h - 1) & 0xff };
-
-	if (ddev->port->type != MCDE_PORTTYPE_DSI)
-		return -EINVAL;
-
-	ret = mcde_dsi_dcs_write(ddev->chnl_state,
-		DCS_CMD_SET_COLUMN_ADDRESS, &params[0], 4);
-	if (ret)
-		return ret;
-
-	ret = mcde_dsi_dcs_write(ddev->chnl_state,
-		DCS_CMD_SET_PAGE_ADDRESS, &params[4], 4);
-
-	return ret;
 }
 
 static inline int mcde_display_on_first_update_default(
@@ -424,7 +388,6 @@ void mcde_display_init_device(struct mcde_display_device *ddev)
 	ddev->apply_config = mcde_display_apply_config_default;
 	ddev->invalidate_area = mcde_display_invalidate_area_default;
 	ddev->update = mcde_display_update_default;
-	ddev->prepare_for_update = mcde_display_prepare_for_update_default;
 	ddev->on_first_update = mcde_display_on_first_update_default;
 
 	mutex_init(&ddev->display_lock);

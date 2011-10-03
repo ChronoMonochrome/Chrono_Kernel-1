@@ -207,8 +207,6 @@ static int __devinit generic_probe(struct mcde_display_device *dev)
 		}
 	}
 
-	/* TODO: Remove when DSI send command uses interrupts */
-	dev->prepare_for_update = NULL;
 	dev->platform_enable = generic_platform_enable,
 	dev->platform_disable = generic_platform_disable,
 	dev->set_power_mode = generic_set_power_mode;

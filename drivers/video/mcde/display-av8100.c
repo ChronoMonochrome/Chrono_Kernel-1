@@ -1423,7 +1423,6 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	if (av8100_ver_get() > AV8100_CHIPVER_1)
 		dev->port->phy.dsi.clk_cont = true;
 
-	dev->prepare_for_update = NULL;
 	dev->on_first_update = hdmi_on_first_update;
 	dev->try_video_mode = hdmi_try_video_mode;
 	dev->set_video_mode = hdmi_set_video_mode;
