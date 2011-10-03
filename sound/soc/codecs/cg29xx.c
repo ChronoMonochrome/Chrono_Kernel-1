@@ -198,7 +198,6 @@ static int cg29xx_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	struct cg29xx_codec_dai_data *dai_data = get_dai_data(codec_dai);
 	unsigned int prot;
 	unsigned int msel;
-
 	prot = fmt & SND_SOC_DAIFMT_FORMAT_MASK;
 	msel = fmt & SND_SOC_DAIFMT_MASTER_MASK;
 
@@ -219,8 +218,8 @@ static int cg29xx_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	case SND_SOC_DAIFMT_DSP_A:
 		if (dai_data->config.port != PORT_1_I2S_PCM ||
 			msel == SND_SOC_DAIFMT_CBM_CFM) {
-			pr_err("cg29xx_dai: unsupported DAI format 0x%x\n",
-				fmt);
+			pr_err("cg29xx_dai: unsupported DAI format 0x%x port=%d,msel=%d\n",
+				fmt, dai_data->config.port, msel);
 			return -EINVAL;
 		}
 		break;
@@ -666,8 +665,8 @@ static int __devinit cg29xx_codec_driver_probe(struct platform_device *pdev)
 
 	dai_data[0].tx_active = 0;
 	dai_data[0].rx_active = 0;
-	dai_data[0].input_select = 0;
-	dai_data[0].output_select = 0;
+	dai_data[0].input_select = 1;
+	dai_data[0].output_select = 1;
 	dai_data[0].config.port = PORT_0_I2S;
 	dai_data[0].config.conf.i2s.mode = DAI_MODE_SLAVE;
 	dai_data[0].config.conf.i2s.half_period = HALF_PER_DUR_16;

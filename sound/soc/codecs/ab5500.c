@@ -1212,26 +1212,35 @@ static int ab5500_pcm_hw_params(struct snd_pcm_substream *substream,
 static int ab5500_pcm_prepare(struct snd_pcm_substream *substream,
 			      struct snd_soc_dai *dai)
 {
-	dev_dbg(ab5500_dev, "%s called.\n", __func__);
+	dev_info(ab5500_dev, "%s called.\n", __func__);
+	u8 value = (dai->id == 1) ? INTERFACE1 : INTERFACE0;
+
 	/* Configure registers for either playback or capture */
 	if ((substream->stream == SNDRV_PCM_STREAM_PLAYBACK) &&
 		!(ab5500_codec_privates[dai->id].playback_active == true)) {
 		power_for_playback(POWER_ON, dai->id);
 		ab5500_codec_privates[dai->id].playback_active = true;
+		mask_set_reg(value, I2Sx_TRISTATE_MASK,
+						0 << I2Sx_TRISTATE_SHIFT);
 	} else if ((substream->stream == SNDRV_PCM_STREAM_CAPTURE) &&
 		!(ab5500_codec_privates[dai->id].capture_active == true)) {
 		power_for_capture(POWER_ON, dai->id);
 		ab5500_codec_privates[dai->id].capture_active = true;
+		mask_set_reg(value, I2Sx_TRISTATE_MASK,
+						0 << I2Sx_TRISTATE_SHIFT);
+
 	}
+
 	dump_registers(__func__, RX1, AUXO1_ADDER, RX2,
 			AUXO2_ADDER, RX1_DPGA, RX2_DPGA, AUXO1, AUXO2, -1);
+
 	return 0;
 }
 
 static void ab5500_pcm_shutdown(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *dai)
 {
-	u8 iface = dai->id == 0 ? INTERFACE0 : INTERFACE1;
+	u8 iface = (dai->id == 0) ? INTERFACE0 : INTERFACE1;
 	dev_info(ab5500_dev, "%s called.\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		power_for_playback(POWER_OFF, dai->id);
@@ -1239,11 +1248,13 @@ static void ab5500_pcm_shutdown(struct snd_pcm_substream *substream,
 	} else {
 		power_for_capture(POWER_OFF, dai->id);
 		ab5500_codec_privates[dai->id].capture_active = false;
-
 	}
 	if (!dai->playback_active && !dai->capture_active &&
-	    (read_reg(iface) & I2Sx_MODE_MASK) == 0)
+	    (read_reg(iface) & I2Sx_MODE_MASK) == 0) {
+		mask_set_reg(iface, I2Sx_TRISTATE_MASK,
+					1 << I2Sx_TRISTATE_SHIFT);
 		mask_set_reg(iface, MASTER_GENx_PWR_MASK, 0);
+		}
 }
 
 static int ab5500_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
@@ -1640,6 +1651,8 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 		set_reg(reg, 0);
 
 	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 1 << CLOCK_ENABLE_SHIFT);
+	mask_set_reg(INTERFACE0, I2Sx_TRISTATE_MASK, 1 << I2Sx_TRISTATE_SHIFT);
+	mask_set_reg(INTERFACE1, I2Sx_TRISTATE_MASK, 1 << I2Sx_TRISTATE_SHIFT);
 
 	printk(KERN_ERR "Clock Setting ab5500\n");
 	init_playback_route();
