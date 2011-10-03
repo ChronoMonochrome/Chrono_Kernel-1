@@ -102,9 +102,123 @@ out_err:
 	return err;
 }
 
+int u5500_cg29xx_hw_params(struct snd_pcm_substream *substream,
+			struct snd_pcm_hw_params *params)
+
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+	int channels = params_channels(params);
+	int err;
+	struct snd_soc_codec *codec = codec_dai->codec;
+	int dai_id = codec_dai->id;
+	struct cg29xx_codec_dai_data *codec_drvdata =
+				snd_soc_codec_get_drvdata(codec);
+	struct cg29xx_codec_dai_data *dai_data = &codec_drvdata[dai_id];
+
+	pr_debug("%s: Enter.\n", __func__);
+	pr_debug("%s: substream->pcm->name=%s\n",
+						__func__, substream->pcm->name);
+	pr_debug("%s: substream->pcm->id = %s\n", __func__, substream->pcm->id);
+	pr_debug("%s: substream->name = %s.\n", __func__, substream->name);
+	pr_debug("%s: substream->number = %d.\n", __func__, substream->number);
+	pr_debug("%s: channels = %d.\n", __func__, channels);
+	pr_debug("%s: DAI-index (Codec): %d\n", __func__, codec_dai->id);
+	pr_debug("%s: DAI-index (Platform): %d\n", __func__, cpu_dai->id);
+
+	if (dai_data->config.port == PORT_0_I2S) {
+		err = snd_soc_dai_set_fmt(codec_dai,
+				SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS);
+		if (err) {
+			pr_err("%s: snd_soc_dai_set_fmt (codec) failed with %d.\n",
+				__func__,
+				err);
+			goto out_err;
+		}
+
+		err = snd_soc_dai_set_fmt(cpu_dai,
+			SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS);
+
+		if (err) {
+			pr_err("%s: snd_soc_dai_set_sysclk(cpu_dai) failed with %d.\n",
+				__func__,
+				err);
+			goto out_err;
+		}
+	}	else {
+		err = snd_soc_dai_set_fmt(codec_dai,
+			SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS);
+		if (err) {
+			pr_err("%s: snd_soc_dai_set_fmt(codec) failed with %d.\n",
+				__func__,
+				err);
+			goto out_err;
+			}
+
+		err = snd_soc_dai_set_tdm_slot(codec_dai,
+					1 << CG29XX_DAI_SLOT0_SHIFT,
+					1 << CG29XX_DAI_SLOT0_SHIFT,
+					UX500_CG29XX_DAI_SLOTS,
+					UX500_CG29XX_DAI_SLOT_WIDTH);
+
+		if (err) {
+			pr_err("%s: cg29xx_set_tdm_slot(codec_dai) failed with %d.\n",
+					__func__,
+					err);
+			goto out_err;
+		}
+
+		err = snd_soc_dai_set_fmt(cpu_dai,
+					SND_SOC_DAIFMT_DSP_A |
+					SND_SOC_DAIFMT_CBS_CFS |
+					SND_SOC_DAIFMT_NB_NF);
+
+		if (err) {
+			pr_err("%s: snd_soc_dai_set_fmt(cpu_dai) failed with %d.\n",
+				__func__,
+				err);
+			goto out_err;
+		}
+
+		err = snd_soc_dai_set_sysclk(cpu_dai,
+			UX500_MSP_MASTER_CLOCK,
+			UX500_CG29XX_MSP_CLOCK_FREQ,
+			0);
+
+		if (err) {
+			pr_err("%s: snd_soc_dai_set_sysclk(cpu_dai) failed with %d.\n",
+				__func__,
+				err);
+			goto out_err;
+		}
+
+		err = snd_soc_dai_set_tdm_slot(cpu_dai,
+					UX500_CG29XX_DAI_ACTIVE_SLOTS,
+					UX500_CG29XX_DAI_ACTIVE_SLOTS,
+					UX500_CG29XX_DAI_SLOTS,
+					UX500_CG29XX_DAI_SLOT_WIDTH);
+
+		if (err) {
+			pr_err("%s: cg29xx_set_tdm_slot(cpu_dai) failed with %d.\n",
+				__func__,
+				err);
+			goto out_err;
+		}
+	}
+out_err:
+	return err;
+}
+
 struct snd_soc_ops ux500_cg29xx_ops[] = {
 	{
-	.hw_params = ux500_cg29xx_hw_params,
+		.hw_params = ux500_cg29xx_hw_params,
+	}
+};
+
+struct snd_soc_ops u5500_cg29xx_ops[] = {
+	{
+		.hw_params = u5500_cg29xx_hw_params,
 	}
 };
 

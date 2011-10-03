@@ -81,14 +81,24 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 	},
 	#ifdef CONFIG_SND_SOC_UX500_CG29XX
 	{
-	.name = "cg29xx_0",
-	.stream_name = "cg29xx_0",
-	.cpu_dai_name = "i2s.0",
-	.codec_dai_name = "cg29xx-codec-dai.0",
-	.platform_name = "ux500-pcm.0",
-	.codec_name = "cg29xx-codec.0",
-	.init = NULL,
-	.ops = ux500_cg29xx_ops,
+		.name = "cg29xx_0",
+		.stream_name = "cg29xx_0",
+		.cpu_dai_name = "i2s.1",
+		.codec_dai_name = "cg29xx-codec-dai.0",
+		.platform_name = "ux500-pcm.0",
+		.codec_name = "cg29xx-codec.0",
+		.init = NULL,
+		.ops = u5500_cg29xx_ops,
+	},
+	{
+		.name = "cg29xx_1",
+		.stream_name = "cg29xx_1",
+		.cpu_dai_name = "i2s.0",
+		.codec_dai_name = "cg29xx-codec-dai.1",
+		.platform_name = "ux500-pcm.0",
+		.codec_name = "cg29xx-codec.0",
+		.init = NULL,
+		.ops = u5500_cg29xx_ops,
 	},
 	#endif
 	{

@@ -15,5 +15,6 @@
 #define UX500_CG29XX_H
 
 extern struct snd_soc_ops ux500_cg29xx_ops[];
+extern struct snd_soc_ops u5500_cg29xx_ops[];
 
 #endif
