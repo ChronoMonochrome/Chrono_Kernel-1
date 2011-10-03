@@ -106,7 +106,10 @@ static int mcde_drv_suspend(struct device *_dev, pm_message_t state)
 	struct mcde_display_driver *drv = to_mcde_display_driver(_dev->driver);
 	struct mcde_display_device *dev = to_mcde_display_device(_dev);
 
-	return drv->suspend(dev, state);
+	if (drv->suspend)
+		return drv->suspend(dev, state);
+	else
+		return dev->set_power_mode(dev, MCDE_DISPLAY_PM_OFF);
 }
 
 static int mcde_drv_resume(struct device *_dev)
@@ -114,7 +117,10 @@ static int mcde_drv_resume(struct device *_dev)
 	struct mcde_display_driver *drv = to_mcde_display_driver(_dev->driver);
 	struct mcde_display_device *dev = to_mcde_display_device(_dev);
 
-	return drv->resume(dev);
+	if (drv->resume)
+		return drv->resume(dev);
+	else
+		return dev->set_power_mode(dev, MCDE_DISPLAY_PM_STANDBY);
 }
 
 /* Bus device */
@@ -139,10 +145,8 @@ int mcde_display_driver_register(struct mcde_display_driver *drv)
 		drv->driver.remove = mcde_drv_remove;
 	if (drv->shutdown)
 		drv->driver.shutdown = mcde_drv_shutdown;
-	if (drv->suspend)
-		drv->driver.suspend = mcde_drv_suspend;
-	if (drv->resume)
-		drv->driver.resume = mcde_drv_resume;
+	drv->driver.suspend = mcde_drv_suspend;
+	drv->driver.resume = mcde_drv_resume;
 
 	return driver_register(&drv->driver);
 }
