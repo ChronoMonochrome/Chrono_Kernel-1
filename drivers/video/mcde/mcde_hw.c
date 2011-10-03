@@ -69,7 +69,7 @@ static void dsi_te_poll_set_timer(struct mcde_chnl_state *chnl,
 		unsigned int timeout);
 static void dsi_te_timer_function(unsigned long value);
 static int wait_for_vcmp(struct mcde_chnl_state *chnl);
-static void probe_hw(void);
+static int probe_hw(void);
 static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 
 #define OVLY_TIMEOUT 100
@@ -322,7 +322,6 @@ struct mcde_chnl_state {
 	struct mcde_port port;
 	struct mcde_ovly_state *ovly0;
 	struct mcde_ovly_state *ovly1;
-	const struct chnl_config *cfg;
 	enum chnl_state state;
 	wait_queue_head_t state_waitq;
 	wait_queue_head_t vcmp_waitq;
@@ -364,105 +363,6 @@ struct mcde_chnl_state {
 };
 
 static struct mcde_chnl_state *channels;
-
-struct chnl_config {
-	/* Key */
-	enum mcde_chnl_path path;
-
-	/* Value */
-	bool swap_a_c0;
-	bool swap_a_c0_set;
-	bool swap_b_c1;
-	bool swap_b_c1_set;
-	bool fabmux;
-	bool fabmux_set;
-	bool f01mux;
-	bool f01mux_set;
-};
-
-static /* TODO: const, compiler bug? */ struct chnl_config chnl_configs[] = {
-	/* Channel A */
-	{ .path = MCDE_CHNLPATH_CHNLA_FIFOA_DPI_0,
-	  .swap_a_c0 = false, .swap_a_c0_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLA_FIFOA_DSI_IFC0_0,
-	  .swap_a_c0 = false, .swap_a_c0_set = true,
-	  .fabmux = false, .fabmux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLA_FIFOA_DSI_IFC0_1,
-	  .swap_a_c0 = false, .swap_a_c0_set = true,
-	  .fabmux = true, .fabmux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLA_FIFOC0_DSI_IFC0_2,
-	  .swap_a_c0 = true, .swap_a_c0_set = true,
-	  .f01mux = false, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLA_FIFOC0_DSI_IFC1_0,
-	  .swap_a_c0 = true, .swap_a_c0_set = true,
-	  .f01mux = false, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLA_FIFOC0_DSI_IFC1_1,
-	  .swap_a_c0 = true, .swap_a_c0_set = true,
-	  .f01mux = true, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLA_FIFOA_DSI_IFC1_2,
-	  .swap_a_c0 = false, .swap_a_c0_set = true,
-	  .fabmux = false, .fabmux_set = true },
-	/* Channel B */
-	{ .path = MCDE_CHNLPATH_CHNLB_FIFOB_DPI_1,
-	  .swap_b_c1 = false, .swap_b_c1_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLB_FIFOB_DSI_IFC0_0,
-	  .swap_b_c1 = false, .swap_b_c1_set = true,
-	  .fabmux = true, .fabmux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLB_FIFOB_DSI_IFC0_1,
-	  .swap_b_c1 = false, .swap_b_c1_set = true,
-	  .fabmux = false, .fabmux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLB_FIFOC1_DSI_IFC0_2,
-	  .swap_b_c1 = true, .swap_b_c1_set = true,
-	  .f01mux = true, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLB_FIFOC1_DSI_IFC1_0,
-	  .swap_b_c1 = true, .swap_b_c1_set = true,
-	  .f01mux = true, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLB_FIFOC1_DSI_IFC1_1,
-	  .swap_b_c1 = true, .swap_b_c1_set = true,
-	  .f01mux = false, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLB_FIFOB_DSI_IFC1_2,
-	  .swap_b_c1 = false, .swap_b_c1_set = true,
-	  .fabmux = true, .fabmux_set = true },
-	/* Channel C0 */
-	{ .path = MCDE_CHNLPATH_CHNLC0_FIFOA_DSI_IFC0_0,
-	  .swap_a_c0 = true, .swap_a_c0_set = true,
-	  .fabmux = false, .fabmux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC0_FIFOA_DSI_IFC0_1,
-	  .swap_a_c0 = true, .swap_a_c0_set = true,
-	  .fabmux = true, .fabmux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC0_FIFOC0_DSI_IFC0_2,
-	  .swap_a_c0 = false, .swap_a_c0_set = true,
-	  .f01mux = false, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC0_FIFOC0_DSI_IFC1_0,
-	  .swap_a_c0 = false, .swap_a_c0_set = true,
-	  .f01mux = false, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC0_FIFOC0_DSI_IFC1_1,
-	  .swap_a_c0 = false, .swap_a_c0_set = true,
-	  .f01mux = true, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC0_FIFOA_DSI_IFC1_2,
-	  .swap_a_c0 = true, .swap_a_c0_set = true,
-	  .fabmux = false, .fabmux_set = true },
-	/* Channel C1 */
-	{ .path = MCDE_CHNLPATH_CHNLC1_FIFOB_DSI_IFC0_0,
-	  .swap_b_c1 = true, .swap_b_c1_set = true,
-	  .fabmux = true, .fabmux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC1_FIFOB_DSI_IFC0_1,
-	  .swap_b_c1 = true, .swap_b_c1_set = true,
-	  .fabmux = false, .fabmux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC1_FIFOC1_DSI_IFC0_2,
-	  .swap_b_c1 = false, .swap_b_c1_set = true,
-	  .f01mux = true, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC1_FIFOC1_DSI_IFC1_0,
-	  .swap_b_c1 = false, .swap_b_c1_set = true,
-	  .f01mux = true, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC1_FIFOC1_DSI_IFC1_1,
-	  .swap_b_c1 = false, .swap_b_c1_set = true,
-	  .f01mux = false, .f01mux_set = true },
-	{ .path = MCDE_CHNLPATH_CHNLC1_FIFOB_DSI_IFC1_2,
-	  .swap_b_c1 = true, .swap_b_c1_set = true,
-	  .fabmux = true, .fabmux_set = true },
-};
-
 /*
  * Wait for CSM_RUNNING, all data sent for display
  */
@@ -647,15 +547,7 @@ static void dpi_video_mode_apply(struct mcde_chnl_state *chnl)
 			chnl->tv_regs.tv_mode = MCDE_TVCRA_TVMODE_SDTV_656P_BE;
 		else
 			chnl->tv_regs.tv_mode = MCDE_TVCRA_TVMODE_SDTV_656P;
-		if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-			hardware_version == MCDE_CHIP_VERSION_4_0_4)
-			chnl->tv_regs.inv_clk = true;
-		else {
-			chnl->tv_regs.dho  = MCDE_CONFIG_TVOUT_HBORDER;
-			chnl->tv_regs.alw  = MCDE_CONFIG_TVOUT_HBORDER;
-			chnl->tv_regs.dvo  = MCDE_CONFIG_TVOUT_VBORDER;
-			chnl->tv_regs.bsl  = MCDE_CONFIG_TVOUT_VBORDER;
-		}
+		chnl->tv_regs.inv_clk = true;
 	} else {
 		/* LCD mode */
 		u32 polarity;
@@ -714,24 +606,11 @@ static void update_dpi_registers(enum mcde_chnl chnl_id, struct tv_regs *regs)
 					MCDE_TVISLA_FSL2(regs->fsl2));
 
 	/* Horizontal timing registers */
-	if (!regs->sel_mode_tv ||
-			hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-			hardware_version == MCDE_CHIP_VERSION_4_0_4) {
-		mcde_wreg(MCDE_TVLBALWA + idx * MCDE_TVLBALWA_GROUPOFFSET,
-					MCDE_TVLBALWA_LBW(regs->hsw) |
-					MCDE_TVLBALWA_ALW(regs->alw));
-		mcde_wreg(MCDE_TVTIM1A + idx * MCDE_TVTIM1A_GROUPOFFSET,
-					MCDE_TVTIM1A_DHO(regs->dho));
-	} else {
-		/* in earlier versions the LBW and DHO fields are swapped
-		 * TV mode only
-		 */
-		mcde_wreg(MCDE_TVLBALWA + idx * MCDE_TVLBALWA_GROUPOFFSET,
-					MCDE_TVLBALWA_LBW(regs->dho) |
-					MCDE_TVLBALWA_ALW(regs->alw));
-		mcde_wreg(MCDE_TVTIM1A + idx * MCDE_TVTIM1A_GROUPOFFSET,
-					MCDE_TVTIM1A_DHO(regs->hsw));
-	}
+	mcde_wreg(MCDE_TVLBALWA + idx * MCDE_TVLBALWA_GROUPOFFSET,
+				MCDE_TVLBALWA_LBW(regs->hsw) |
+				MCDE_TVLBALWA_ALW(regs->alw));
+	mcde_wreg(MCDE_TVTIM1A + idx * MCDE_TVTIM1A_GROUPOFFSET,
+				MCDE_TVTIM1A_DHO(regs->dho));
 	if (!regs->sel_mode_tv)
 		mcde_wreg(MCDE_LCDTIM1A + idx * MCDE_LCDTIM1A_GROUPOFFSET,
 								regs->lcdtim1);
@@ -1076,46 +955,14 @@ static int wait_for_vcmp(struct mcde_chnl_state *chnl)
 
 static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 {
-	const struct chnl_config *cfg = chnl->cfg;
 	const struct mcde_port *port = &chnl->port;
 
-	if (hardware_version == MCDE_CHIP_VERSION_3_0_5) {
-		/* Fifo & muxing */
-		if (cfg->swap_a_c0_set)
-			mcde_wfld(MCDE_CONF0, SWAP_A_C0_V1, cfg->swap_a_c0);
-		if (cfg->swap_b_c1_set)
-			mcde_wfld(MCDE_CONF0, SWAP_B_C1_V1, cfg->swap_b_c1);
-		if (cfg->fabmux_set)
-			mcde_wfld(MCDE_CR, FABMUX_V1, cfg->fabmux);
-		if (cfg->f01mux_set)
-			mcde_wfld(MCDE_CR, F01MUX_V1, cfg->f01mux);
-
-		if (port->type == MCDE_PORTTYPE_DPI) {
-			if (port->link == 0)
-				mcde_wfld(MCDE_CR, DPIA_EN_V1, true);
-			else if (port->link == 1)
-				mcde_wfld(MCDE_CR, DPIB_EN_V1, true);
-		} else if (port->type == MCDE_PORTTYPE_DSI) {
-			if (port->ifc == DSI_VIDEO_MODE && port->link == 0)
-				mcde_wfld(MCDE_CR, DSIVID0_EN_V1, true);
-			else if (port->ifc == DSI_VIDEO_MODE && port->link == 1)
-				mcde_wfld(MCDE_CR, DSIVID1_EN_V1, true);
-			else if (port->ifc == DSI_VIDEO_MODE && port->link == 2)
-				mcde_wfld(MCDE_CR, DSIVID2_EN_V1, true);
-			else if (port->ifc == DSI_CMD_MODE && port->link == 0)
-				mcde_wfld(MCDE_CR, DSICMD0_EN_V1, true);
-			else if (port->ifc == DSI_CMD_MODE && port->link == 1)
-				mcde_wfld(MCDE_CR, DSICMD1_EN_V1, true);
-			else if (port->ifc == DSI_CMD_MODE && port->link == 2)
-				mcde_wfld(MCDE_CR, DSICMD2_EN_V1, true);
-		}
-	} else if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-			hardware_version == MCDE_CHIP_VERSION_4_0_4) {
+	if (hardware_version != MCDE_CHIP_VERSION_1_0_4) {
 		switch (chnl->fifo) {
 		case MCDE_FIFO_A:
-			mcde_wreg(MCDE_CHNL0MUXING_V2 + chnl->id *
-				MCDE_CHNL0MUXING_V2_GROUPOFFSET,
-				MCDE_CHNL0MUXING_V2_FIFO_ID_ENUM(FIFO_A));
+			mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
+				MCDE_CHNL0MUXING_GROUPOFFSET,
+				MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_A));
 			if (port->type == MCDE_PORTTYPE_DPI) {
 				mcde_wfld(MCDE_CTRLA, FORMTYPE,
 						MCDE_CTRLA_FORMTYPE_DPITV);
@@ -1128,9 +975,9 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			}
 			break;
 		case MCDE_FIFO_B:
-			mcde_wreg(MCDE_CHNL0MUXING_V2 + chnl->id *
-				MCDE_CHNL0MUXING_V2_GROUPOFFSET,
-				MCDE_CHNL0MUXING_V2_FIFO_ID_ENUM(FIFO_B));
+			mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
+				MCDE_CHNL0MUXING_GROUPOFFSET,
+				MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_B));
 			if (port->type == MCDE_PORTTYPE_DPI) {
 				mcde_wfld(MCDE_CTRLB, FORMTYPE,
 						MCDE_CTRLB_FORMTYPE_DPITV);
@@ -1144,9 +991,9 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 
 			break;
 		case MCDE_FIFO_C0:
-			mcde_wreg(MCDE_CHNL0MUXING_V2 + chnl->id *
-				MCDE_CHNL0MUXING_V2_GROUPOFFSET,
-				MCDE_CHNL0MUXING_V2_FIFO_ID_ENUM(FIFO_C0));
+			mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
+				MCDE_CHNL0MUXING_GROUPOFFSET,
+				MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_C0));
 			if (port->type == MCDE_PORTTYPE_DPI)
 				return -EINVAL;
 			mcde_wfld(MCDE_CTRLC0, FORMTYPE,
@@ -1154,9 +1001,9 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			mcde_wfld(MCDE_CTRLC0, FORMID, get_dsi_formid(port));
 			break;
 		case MCDE_FIFO_C1:
-			mcde_wreg(MCDE_CHNL0MUXING_V2 + chnl->id *
-				MCDE_CHNL0MUXING_V2_GROUPOFFSET,
-				MCDE_CHNL0MUXING_V2_FIFO_ID_ENUM(FIFO_C1));
+			mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
+				MCDE_CHNL0MUXING_GROUPOFFSET,
+				MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_C1));
 			if (port->type == MCDE_PORTTYPE_DPI)
 				return -EINVAL;
 			mcde_wfld(MCDE_CTRLC1, FORMTYPE,
@@ -1166,7 +1013,7 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 		default:
 			return -EINVAL;
 		}
-	} else if (hardware_version == MCDE_CHIP_VERSION_1_0_4) {
+	} else {
 		switch (chnl->fifo) {
 		case MCDE_FIFO_A:
 			/* only channel A is supported */
@@ -1237,12 +1084,6 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 		dev_dbg(&mcde_dev->dev, "DSI%d LINK_EN\n", lnk);
 
 		if (port->sync_src == MCDE_SYNCSRC_TE_POLLING) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_5) {
-				dev_err(&mcde_dev->dev,
-				"DSI TE polling is not supported on this HW\n");
-				goto dsi_link_error;
-			}
-
 			/* Enable DSI TE polling */
 			dsi_te_poll_req(chnl);
 
@@ -1255,15 +1096,7 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, REG_TE_EN, true);
 		}
 
-		if (hardware_version == MCDE_CHIP_VERSION_3_0_5) {
-			if (port->phy.dsi.data_lanes_swap) {
-				dev_warn(&mcde_dev->dev,
-				"DSI %d data lane remap not available!\n",
-				lnk);
-				goto dsi_link_error;
-			}
-		} else
-			dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, DLX_REMAP_EN,
+		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, DLX_REMAP_EN,
 					port->phy.dsi.data_lanes_swap);
 
 		dsi_wreg(lnk, DSI_MCTL_DPHY_STATIC,
@@ -2403,8 +2236,6 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 {
 	int i;
 	struct mcde_chnl_state *chnl = NULL;
-	enum mcde_chnl_path path;
-	const struct chnl_config *cfg = NULL;
 
 	static struct mcde_col_transform ycbcr_2_rgb = {
 		/* Note that in MCDE YUV 422 pixels come as VYU pixels */
@@ -2439,26 +2270,6 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 		return ERR_PTR(-EBUSY);
 	}
 
-	if (hardware_version == MCDE_CHIP_VERSION_3_0_5) {
-		path = MCDE_CHNLPATH(chnl->id, fifo, port->type,
-						port->ifc, port->link);
-		for (i = 0; i < ARRAY_SIZE(chnl_configs); i++)
-			if (chnl_configs[i].path == path) {
-				cfg = &chnl_configs[i];
-				break;
-			}
-		if (cfg == NULL) {
-			dev_dbg(&mcde_dev->dev, "Invalid config, chnl=%d,"
-					" path=0x%.8X\n", chnl_id, path);
-			return ERR_PTR(-EINVAL);
-		} else {
-			dev_info(&mcde_dev->dev, "Config, chnl=%d,"
-					" path=0x%.8X\n", chnl_id, path);
-		}
-	}
-	/* TODO: verify that cfg is ok to activate (check other chnl cfgs) */
-
-	chnl->cfg = cfg;
 	chnl->port = *port;
 	chnl->fifo = fifo;
 	chnl->formatter_updated = false;
@@ -3231,7 +3042,8 @@ static void remove_clocks_and_power(struct platform_device *pdev)
 	regulator_put(regulator_mcde_epod);
 	regulator_put(regulator_esram_epod);
 }
-static void probe_hw(void)
+
+static int probe_hw(void)
 {
 	int i;
 	u8 major_version;
@@ -3260,8 +3072,8 @@ static void probe_hw(void)
 		dev_info(&mcde_dev->dev, "V2 HW\n");
 	} else if (major_version == 3 && minor_version == 0 &&
 					development_version >= 5) {
-		hardware_version = MCDE_CHIP_VERSION_3_0_5;
 		dev_info(&mcde_dev->dev, "V1 HW\n");
+		return -ENOTSUPP;
 	} else if (major_version == 1 && minor_version == 0 &&
 					development_version >= 4) {
 		hardware_version = MCDE_CHIP_VERSION_1_0_4;
@@ -3275,6 +3087,7 @@ static void probe_hw(void)
 		dev_info(&mcde_dev->dev, "V2_U5500 HW\n");
 	} else {
 		dev_err(&mcde_dev->dev, "Unsupported HW version\n");
+		return -ENOTSUPP;
 	}
 
 	/* Init MCDE */
@@ -3318,6 +3131,7 @@ static void probe_hw(void)
 		if (channels[i].ovly1)
 			mcde_debugfs_overlay_create(i, 1);
 	}
+	return 0;
 }
 
 static int __devinit mcde_probe(struct platform_device *pdev)
@@ -3407,7 +3221,9 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK_DEFERRABLE(&hw_timeout_work, work_sleep_function);
 
-	probe_hw();
+	ret = probe_hw();
+	if (ret)
+		goto failed_probe_hw;
 
 	ret = enable_mcde_hw();
 	if (ret)
@@ -3415,6 +3231,8 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 
 	return 0;
 failed_mcde_enable:
+failed_probe_hw:
+	remove_clocks_and_power(pdev);
 failed_init_clocks:
 failed_map_dsi_io:
 failed_get_dsi_io:
