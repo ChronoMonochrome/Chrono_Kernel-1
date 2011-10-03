@@ -76,6 +76,7 @@ extern struct clkops prcmu_opp100_clk_ops;
 extern struct mutex clk_opp100_mutex;
 extern struct clkops prcc_pclk_ops;
 extern struct clkops prcc_kclk_ops;
+extern struct clkops prcc_kclk_rec_ops;
 extern struct clkops sga_clk_ops;
 
 #define CLK_LOOKUP(_clk, _dev_id, _con_id) \

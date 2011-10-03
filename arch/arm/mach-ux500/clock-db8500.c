@@ -511,8 +511,8 @@ static DEF_PRCMU_CLK(per6clk, PRCMU_PER6CLK, 133330000);
 static DEF_PRCMU_CLK(per7clk, PRCMU_PER7CLK, 100000000);
 static DEF_PRCMU_SCALABLE_CLK(lcdclk, PRCMU_LCDCLK);
 static DEF_PRCMU_OPP100_CLK(bmlclk, PRCMU_BMLCLK, 200000000);
-static DEF_PRCMU_CLK(hsitxclk, PRCMU_HSITXCLK, 100000000);
-static DEF_PRCMU_CLK(hsirxclk, PRCMU_HSIRXCLK, 200000000);
+static DEF_PRCMU_SCALABLE_CLK(hsitxclk, PRCMU_HSITXCLK);
+static DEF_PRCMU_SCALABLE_CLK(hsirxclk, PRCMU_HSIRXCLK);
 static DEF_PRCMU_SCALABLE_CLK(hdmiclk, PRCMU_HDMICLK);
 static DEF_PRCMU_CLK(apeatclk, PRCMU_APEATCLK, 160000000);
 static DEF_PRCMU_CLK(apetraceclk, PRCMU_APETRACECLK, 160000000);
@@ -640,10 +640,24 @@ static DEF_PER2_KCLK(5, p2_sdi3_kclk, &sdmmcclk);
 static DEF_PER_CLK(p2_sdi3_clk, &p2_pclk7, &p2_sdi3_kclk);
 
 /* HSIR */
-static DEF_PER2_KCLK(6, p2_ssirx_kclk, &hsirxclk);
+static struct clk p2_ssirx_kclk = {
+	.name = "p2_ssirx_kclk",
+	.ops = &prcc_kclk_rec_ops,
+	.io_base = U8500_CLKRST2_BASE,
+	.cg_sel = BIT(6),
+	.parent = &hsirxclk,
+	.clock = &per2clk,
+};
 
 /* HSIT */
-static DEF_PER2_KCLK(7, p2_ssitx_kclk, &hsitxclk);
+static struct clk p2_ssitx_kclk = {
+	.name = "p2_ssitx_kclk",
+	.ops = &prcc_kclk_rec_ops,
+	.io_base = U8500_CLKRST2_BASE,
+	.cg_sel = BIT(7),
+	.parent = &hsitxclk,
+	.clock = &per2clk,
+};
 
 /* SSP0 */
 static DEF_PER3_KCLK(1, p3_ssp0_kclk, &sspclk);

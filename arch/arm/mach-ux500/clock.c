@@ -428,6 +428,13 @@ struct clkops prcc_kclk_ops = {
 	.disable = prcc_kclk_disable,
 };
 
+struct clkops prcc_kclk_rec_ops = {
+	.enable = prcc_kclk_enable,
+	.disable = prcc_kclk_disable,
+	.round_rate = clk_round_rate_rec,
+	.set_rate = clk_set_rate_rec,
+};
+
 int __init clk_init(void)
 {
 	if (cpu_is_u8500()) {
