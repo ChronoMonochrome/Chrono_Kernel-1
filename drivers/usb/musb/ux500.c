@@ -46,9 +46,15 @@ void ux500_store_context(struct musb *musb)
 {
 #ifdef CONFIG_PM
 	int i;
-	void __iomem *musb_base = musb->mregs;
+	void __iomem *musb_base;
 	void __iomem *epio;
-	_musb = musb;
+
+	if (musb != NULL)
+		_musb = musb;
+	else
+		return;
+
+	musb_base = musb->mregs;
 
 	if (is_host_enabled(musb)) {
 		context.frame = musb_readw(musb_base, MUSB_FRAME);
@@ -112,11 +118,17 @@ void ux500_restore_context(void)
 {
 #ifdef CONFIG_PM
 	int i;
-	struct musb *musb = _musb;
-	void __iomem *musb_base = musb->mregs;
+	struct musb *musb;
+	void __iomem *musb_base;
 	void __iomem *ep_target_regs;
 	void __iomem *epio;
 
+	if (_musb != NULL)
+		musb = _musb;
+	else
+		return;
+
+	musb_base = musb->mregs;
 	if (is_host_enabled(musb)) {
 		musb_writew(musb_base, MUSB_FRAME, context.frame);
 		musb_writeb(musb_base, MUSB_TESTMODE, context.testmode);
