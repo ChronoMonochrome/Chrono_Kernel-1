@@ -442,9 +442,7 @@ static int configure_clock(struct msp *msp,
 	temp_reg |= FRAME_PERIOD_BITS(frame_per);
 	stm_msp_write(temp_reg, msp->registers + MSP_SRG);
 
-	/* Input clock frequency value configured is in MHz/1000 */
-	bit_clock = (config->input_clock_freq * 1000)/(sck_div + 1);
-
+	bit_clock = (config->input_clock_freq)/(sck_div + 1);
 	/* If the bit clock is higher than 19.2MHz, Vape should be run in 100% OPP */
 	/* Only consider OPP 100% when bit-clock is used, i.e. MSP master mode */
 	if ((bit_clock > 19200000) && ((config->tx_clock_sel != 0) || (config->rx_clock_sel != 0))) {
