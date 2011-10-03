@@ -108,6 +108,7 @@ static struct clk *clock_dsi_lp;
 static u8 mcde_is_enabled;
 static struct delayed_work hw_timeout_work;
 static u8 dsi_pll_is_enabled;
+static u8 dsi_ifc_is_supported;
 
 static struct mutex mcde_hw_lock;
 static inline void mcde_lock(const char *func, int line)
@@ -414,41 +415,27 @@ static void update_mcde_registers(void)
 {
 	struct mcde_platform_data *pdata = mcde_dev->dev.platform_data;
 
-	if (hardware_version == MCDE_CHIP_VERSION_1_0_4) {
-		/* Setup output muxing */
-		mcde_wreg(MCDE_CONF0,
-			MCDE_CONF0_IFIFOCTRLWTRMRKLVL(7));
+	/* Setup output muxing */
+	mcde_wreg(MCDE_CONF0,
+		MCDE_CONF0_IFIFOCTRLWTRMRKLVL(7) |
+		MCDE_CONF0_OUTMUX0(pdata->outmux[0]) |
+		MCDE_CONF0_OUTMUX1(pdata->outmux[1]) |
+		MCDE_CONF0_OUTMUX2(pdata->outmux[2]) |
+		MCDE_CONF0_OUTMUX3(pdata->outmux[3]) |
+		MCDE_CONF0_OUTMUX4(pdata->outmux[4]) |
+		pdata->syncmux);
 
-		mcde_wfld(MCDE_RISPP, VCMPARIS, 1);
-		mcde_wfld(MCDE_RISPP, VCMPBRIS, 1);
+	mcde_wfld(MCDE_RISPP, VCMPARIS, 1);
+	mcde_wfld(MCDE_RISPP, VCMPBRIS, 1);
+	mcde_wfld(MCDE_RISPP, VCMPC0RIS, 1);
+	mcde_wfld(MCDE_RISPP, VCMPC1RIS, 1);
 
-		/* Enable channel VCMP interrupts */
-		mcde_wreg(MCDE_IMSCPP,
-			MCDE_IMSCPP_VCMPAIM(true) |
-			MCDE_IMSCPP_VCMPBIM(true));
-	} else {
-		/* Setup output muxing */
-		mcde_wreg(MCDE_CONF0,
-			MCDE_CONF0_IFIFOCTRLWTRMRKLVL(7) |
-			MCDE_CONF0_OUTMUX0(pdata->outmux[0]) |
-			MCDE_CONF0_OUTMUX1(pdata->outmux[1]) |
-			MCDE_CONF0_OUTMUX2(pdata->outmux[2]) |
-			MCDE_CONF0_OUTMUX3(pdata->outmux[3]) |
-			MCDE_CONF0_OUTMUX4(pdata->outmux[4]) |
-			pdata->syncmux);
-
-		mcde_wfld(MCDE_RISPP, VCMPARIS, 1);
-		mcde_wfld(MCDE_RISPP, VCMPBRIS, 1);
-		mcde_wfld(MCDE_RISPP, VCMPC0RIS, 1);
-		mcde_wfld(MCDE_RISPP, VCMPC1RIS, 1);
-
-		/* Enable channel VCMP interrupts */
-		mcde_wreg(MCDE_IMSCPP,
-			MCDE_IMSCPP_VCMPAIM(true) |
-			MCDE_IMSCPP_VCMPBIM(true) |
-			MCDE_IMSCPP_VCMPC0IM(true) |
-			MCDE_IMSCPP_VCMPC1IM(true));
-	}
+	/* Enable channel VCMP interrupts */
+	mcde_wreg(MCDE_IMSCPP,
+		MCDE_IMSCPP_VCMPAIM(true) |
+		MCDE_IMSCPP_VCMPBIM(true) |
+		MCDE_IMSCPP_VCMPC0IM(true) |
+		MCDE_IMSCPP_VCMPC1IM(true));
 
 	mcde_wreg(MCDE_IMSCCHNL, MCDE_IMSCCHNL_CHNLAIM(0xf));
 	mcde_wreg(MCDE_IMSCERR, 0xFFFF01FF);
@@ -720,8 +707,7 @@ static u8 portfmt2cdwin(enum mcde_port_pix_fmt pix_fmt)
 
 static u32 get_input_fifo_size(void)
 {
-	if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
-			hardware_version == MCDE_CHIP_VERSION_4_0_4)
+	if (hardware_version == MCDE_CHIP_VERSION_4_0_4)
 		return MCDE_INPUT_FIFO_SIZE_4_0_4;
 	else
 		return MCDE_INPUT_FIFO_SIZE_3_0_8;
@@ -747,28 +733,12 @@ static u32 get_output_fifo_size(enum mcde_fifo fifo)
 	return ret;
 }
 
-static u8 get_dsi_formid(const struct mcde_port *port)
+static inline u8 get_dsi_formatter_id(const struct mcde_port *port)
 {
-	if (hardware_version == MCDE_CHIP_VERSION_4_0_4) {
-		if (port->link == 0)
-			return MCDE_CTRLA_FORMID_DSI0VID;
-		if (port->link == 1)
-			return MCDE_CTRLA_FORMID_DSI0CMD;
-	} else {
-		if (port->ifc == DSI_VIDEO_MODE && port->link == 0)
-			return MCDE_CTRLA_FORMID_DSI0VID;
-		else if (port->ifc == DSI_VIDEO_MODE && port->link == 1)
-			return MCDE_CTRLA_FORMID_DSI1VID;
-		else if (port->ifc == DSI_VIDEO_MODE && port->link == 2)
-			return MCDE_CTRLA_FORMID_DSI2VID;
-		else if (port->ifc == DSI_CMD_MODE && port->link == 0)
-			return MCDE_CTRLA_FORMID_DSI0CMD;
-		else if (port->ifc == DSI_CMD_MODE && port->link == 1)
-			return MCDE_CTRLA_FORMID_DSI1CMD;
-		else if (port->ifc == DSI_CMD_MODE && port->link == 2)
-			return MCDE_CTRLA_FORMID_DSI2CMD;
-	}
-	return 0;
+	if (dsi_ifc_is_supported)
+		return 2 * port->link + port->ifc;
+	else
+		return port->link;
 }
 
 static struct mcde_chnl_state *find_channel_by_dsilink(int link)
@@ -957,96 +927,60 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 {
 	const struct mcde_port *port = &chnl->port;
 
-	if (hardware_version != MCDE_CHIP_VERSION_1_0_4) {
-		switch (chnl->fifo) {
-		case MCDE_FIFO_A:
-			mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
-				MCDE_CHNL0MUXING_GROUPOFFSET,
-				MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_A));
-			if (port->type == MCDE_PORTTYPE_DPI) {
-				mcde_wfld(MCDE_CTRLA, FORMTYPE,
-						MCDE_CTRLA_FORMTYPE_DPITV);
-				mcde_wfld(MCDE_CTRLA, FORMID, port->link);
-			} else if (port->type == MCDE_PORTTYPE_DSI) {
-				mcde_wfld(MCDE_CTRLA, FORMTYPE,
-						MCDE_CTRLA_FORMTYPE_DSI);
-				mcde_wfld(MCDE_CTRLA, FORMID,
-							get_dsi_formid(port));
-			}
-			break;
-		case MCDE_FIFO_B:
-			mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
-				MCDE_CHNL0MUXING_GROUPOFFSET,
-				MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_B));
-			if (port->type == MCDE_PORTTYPE_DPI) {
-				mcde_wfld(MCDE_CTRLB, FORMTYPE,
-						MCDE_CTRLB_FORMTYPE_DPITV);
-				mcde_wfld(MCDE_CTRLB, FORMID, port->link);
-			} else if (port->type == MCDE_PORTTYPE_DSI) {
-				mcde_wfld(MCDE_CTRLB, FORMTYPE,
-						MCDE_CTRLB_FORMTYPE_DSI);
-				mcde_wfld(MCDE_CTRLB, FORMID,
-							get_dsi_formid(port));
-			}
-
-			break;
-		case MCDE_FIFO_C0:
-			mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
-				MCDE_CHNL0MUXING_GROUPOFFSET,
-				MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_C0));
-			if (port->type == MCDE_PORTTYPE_DPI)
-				return -EINVAL;
-			mcde_wfld(MCDE_CTRLC0, FORMTYPE,
-						MCDE_CTRLC0_FORMTYPE_DSI);
-			mcde_wfld(MCDE_CTRLC0, FORMID, get_dsi_formid(port));
-			break;
-		case MCDE_FIFO_C1:
-			mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
-				MCDE_CHNL0MUXING_GROUPOFFSET,
-				MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_C1));
-			if (port->type == MCDE_PORTTYPE_DPI)
-				return -EINVAL;
-			mcde_wfld(MCDE_CTRLC1, FORMTYPE,
-						MCDE_CTRLC1_FORMTYPE_DSI);
-			mcde_wfld(MCDE_CTRLC1, FORMID, get_dsi_formid(port));
-			break;
-		default:
-			return -EINVAL;
+	switch (chnl->fifo) {
+	case MCDE_FIFO_A:
+		mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
+			MCDE_CHNL0MUXING_GROUPOFFSET,
+			MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_A));
+		if (port->type == MCDE_PORTTYPE_DPI) {
+			mcde_wfld(MCDE_CTRLA, FORMTYPE,
+					MCDE_CTRLA_FORMTYPE_DPITV);
+			mcde_wfld(MCDE_CTRLA, FORMID, port->link);
+		} else if (port->type == MCDE_PORTTYPE_DSI) {
+			mcde_wfld(MCDE_CTRLA, FORMTYPE,
+					MCDE_CTRLA_FORMTYPE_DSI);
+			mcde_wfld(MCDE_CTRLA, FORMID,
+						get_dsi_formatter_id(port));
 		}
-	} else {
-		switch (chnl->fifo) {
-		case MCDE_FIFO_A:
-			/* only channel A is supported */
-			if (chnl->id != 0)
-				return -EINVAL;
-
-			if (port->type == MCDE_PORTTYPE_DSI) {
-				if ((port->link == 1 &&
-						port->ifc == DSI_VIDEO_MODE) ||
-				(port->link == 0 && port->ifc == DSI_CMD_MODE))
-					return -EINVAL;
-				mcde_wfld(MCDE_CR, DSI0_EN_V3, true);
-
-			} else if (port->type == MCDE_PORTTYPE_DPI) {
-				mcde_wfld(MCDE_CR, DPI_EN_V3, true);
-			}
-			break;
-		case MCDE_FIFO_B:
-			if (port->type != MCDE_PORTTYPE_DSI)
-				return -EINVAL;
-			/* only channel B is supported */
-			if (chnl->id != 1)
-				return -EINVAL;
-
-			if ((port->link == 0 && port->ifc == DSI_VIDEO_MODE) ||
-				(port->link == 1 && port->ifc == DSI_CMD_MODE))
-				return -EINVAL;
-
-			mcde_wfld(MCDE_CR, DSI1_EN_V3, true);
-			break;
-		default:
-			return -EINVAL;
+		break;
+	case MCDE_FIFO_B:
+		mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
+			MCDE_CHNL0MUXING_GROUPOFFSET,
+			MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_B));
+		if (port->type == MCDE_PORTTYPE_DPI) {
+			mcde_wfld(MCDE_CTRLB, FORMTYPE,
+					MCDE_CTRLB_FORMTYPE_DPITV);
+			mcde_wfld(MCDE_CTRLB, FORMID, port->link);
+		} else if (port->type == MCDE_PORTTYPE_DSI) {
+			mcde_wfld(MCDE_CTRLB, FORMTYPE,
+					MCDE_CTRLB_FORMTYPE_DSI);
+			mcde_wfld(MCDE_CTRLB, FORMID,
+						get_dsi_formatter_id(port));
 		}
+
+		break;
+	case MCDE_FIFO_C0:
+		mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
+			MCDE_CHNL0MUXING_GROUPOFFSET,
+			MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_C0));
+		if (port->type == MCDE_PORTTYPE_DPI)
+			return -EINVAL;
+		mcde_wfld(MCDE_CTRLC0, FORMTYPE,
+					MCDE_CTRLC0_FORMTYPE_DSI);
+		mcde_wfld(MCDE_CTRLC0, FORMID, get_dsi_formatter_id(port));
+		break;
+	case MCDE_FIFO_C1:
+		mcde_wreg(MCDE_CHNL0MUXING + chnl->id *
+			MCDE_CHNL0MUXING_GROUPOFFSET,
+			MCDE_CHNL0MUXING_FIFO_ID_ENUM(FIFO_C1));
+		if (port->type == MCDE_PORTTYPE_DPI)
+			return -EINVAL;
+		mcde_wfld(MCDE_CTRLC1, FORMTYPE,
+					MCDE_CTRLC1_FORMTYPE_DSI);
+		mcde_wfld(MCDE_CTRLC1, FORMID, get_dsi_formatter_id(port));
+		break;
+	default:
+		return -EINVAL;
 	}
 
 	/* Formatter */
@@ -1074,11 +1008,7 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 		}
 		dsi_pll_is_enabled++;
 
-		if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
-		    hardware_version == MCDE_CHIP_VERSION_4_0_4)
-			idx = port->link;
-		else
-			idx = 2 * port->link + port->ifc;
+		idx = get_dsi_formatter_id(port);
 
 		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, true);
 		dev_dbg(&mcde_dev->dev, "DSI%d LINK_EN\n", lnk);
@@ -1733,11 +1663,7 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		u32 dsi_delay0 = 0;
 		u32 screen_ppl, screen_lpf;
 
-		if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
-		    hardware_version == MCDE_CHIP_VERSION_4_0_4)
-			fidx = port->link;
-		else
-			fidx = 2 * port->link + port->ifc;
+		fidx = get_dsi_formatter_id(port);
 
 		screen_ppl = video_mode->xres;
 		screen_lpf = video_mode->yres;
@@ -2377,14 +2303,8 @@ static void chnl_update_continous(struct mcde_chnl_state *chnl,
 	if (chnl->port.sync_src == MCDE_SYNCSRC_TE0) {
 		mcde_wfld(MCDE_CRC, SYCEN0, true);
 	} else if (chnl->port.sync_src == MCDE_SYNCSRC_TE1) {
-		if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-			hardware_version == MCDE_CHIP_VERSION_4_0_4) {
-			mcde_wfld(MCDE_VSCRC1, VSSEL, 1);
-			mcde_wfld(MCDE_CRC, SYCEN1, true);
-		} else {
-			mcde_wfld(MCDE_VSCRC1, VSSEL, 0);
-			mcde_wfld(MCDE_CRC, SYCEN0, true);
-		}
+		mcde_wfld(MCDE_VSCRC1, VSSEL, 1);
+		mcde_wfld(MCDE_CRC, SYCEN1, true);
 	}
 
 	enable_flow(chnl);
@@ -3069,6 +2989,7 @@ static int probe_hw(void)
 	if (major_version == 3 && minor_version == 0 &&
 					development_version >= 8) {
 		hardware_version = MCDE_CHIP_VERSION_3_0_8;
+		dsi_ifc_is_supported = true;
 		dev_info(&mcde_dev->dev, "V2 HW\n");
 	} else if (major_version == 3 && minor_version == 0 &&
 					development_version >= 5) {
@@ -3076,11 +2997,8 @@ static int probe_hw(void)
 		return -ENOTSUPP;
 	} else if (major_version == 1 && minor_version == 0 &&
 					development_version >= 4) {
-		hardware_version = MCDE_CHIP_VERSION_1_0_4;
-		mcde_dynamic_power_management = false;
-		num_channels = 2;
-		num_overlays = 3;
 		dev_info(&mcde_dev->dev, "V1_U5500 HW\n");
+		return -ENOTSUPP;
 	} else if (major_version == 4 && minor_version == 0 &&
 					development_version >= 4) {
 		hardware_version = MCDE_CHIP_VERSION_4_0_4;
@@ -3094,8 +3012,7 @@ static int probe_hw(void)
 	for (i = 0; i < num_overlays; i++)
 		overlays[i].idx = i;
 
-	if (hardware_version == MCDE_CHIP_VERSION_1_0_4 ||
-	    hardware_version == MCDE_CHIP_VERSION_4_0_4) {
+	if (hardware_version == MCDE_CHIP_VERSION_4_0_4) {
 		channels[0].ovly0 = &overlays[0];
 		channels[0].ovly1 = &overlays[1];
 		channels[1].ovly0 = &overlays[2];

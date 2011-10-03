@@ -181,7 +181,6 @@ enum mcde_display_rotation {
 
 /* Hardware versions */
 #define MCDE_CHIP_VERSION_4_0_4 4       /* U5500 V2 */
-#define MCDE_CHIP_VERSION_1_0_4 3	/* U5500 V1 */
 #define MCDE_CHIP_VERSION_3_0_8 2	/* U8500 V2 */
 #define MCDE_CHIP_VERSION_3	0
 
