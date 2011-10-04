@@ -384,7 +384,7 @@ static ssize_t cw1200_11n_read(struct file *file,
 }
 
 static ssize_t cw1200_11n_write(struct file *file,
-	char __user *user_buf, size_t count, loff_t *ppos)
+	const char __user *user_buf, size_t count, loff_t *ppos)
 {
 	struct cw1200_common *priv = file->private_data;
 	struct ieee80211_supported_band *band[2] = {

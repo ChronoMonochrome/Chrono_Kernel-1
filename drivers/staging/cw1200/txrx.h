@@ -18,6 +18,7 @@
 /* extern */ struct sk_buff;
 /* extern */ struct wsm_tx;
 /* extern */ struct wsm_tx_confirm;
+/* extern */ struct cw1200_txpriv;
 
 struct tx_policy {
 	union {
@@ -43,11 +44,6 @@ struct tx_policy_cache {
 	spinlock_t lock;
 };
 
-struct tx_info {
-	u8	link_id;
-	u16	ethertype;
-};
-
 /* ******************************************************************** */
 /* TX policy cache							*/
 /* Intention of TX policy cache is an overcomplicated WSM API.
@@ -66,7 +62,7 @@ u32 cw1200_rate_mask_to_wsm(struct cw1200_common *priv,
 			       u32 rates);
 int cw1200_skb_to_wsm(struct cw1200_common *priv,
 		      struct sk_buff *skb, struct wsm_tx *wsm,
-			struct tx_info *txinfo);
+		      struct cw1200_txpriv *txpriv);
 void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb);
 void cw1200_notify_buffered_tx(struct cw1200_common *priv,
 			       struct sk_buff *skb, int link_id, int tid);

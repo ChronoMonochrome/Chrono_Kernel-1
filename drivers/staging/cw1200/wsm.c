@@ -1399,7 +1399,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * probe responses.
 		 * The easiest way to get it back is to convert
 		 * probe request into WSM start_scan command. */
-		int tid;
+		const struct cw1200_txpriv *txpriv;
 		int rate_id = (wsm->flags >> 4) & 0x07;
 		struct cw1200_queue *queue =
 			&priv->tx_queue[cw1200_queue_get_queue_id(
@@ -1410,7 +1410,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		BUG_ON(priv->scan.probe_skb);
 		BUG_ON(cw1200_queue_get_skb(queue,
 					wsm->packetID,
-					&priv->scan.probe_skb, &tid));
+					&priv->scan.probe_skb, &txpriv));
 		BUG_ON(cw1200_queue_remove(queue, priv,
 						wsm->packetID));
 		/* Release used TX rate policy */
@@ -1426,15 +1426,16 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * We are dropping everything except AUTH in non-joined mode. */
 		struct sk_buff *skb;
 		int rate_id = (wsm->flags >> 4) & 0x07;
-		int tid = 8;
+		const struct cw1200_txpriv *txpriv = NULL;
 		struct cw1200_queue *queue =
 			&priv->tx_queue[cw1200_queue_get_queue_id(
 				wsm->packetID)];
 		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X):"
 			" not joined.\n", fctl);
-		BUG_ON(cw1200_queue_get_skb(queue, wsm->packetID, &skb, &tid));
+		BUG_ON(cw1200_queue_get_skb(queue, wsm->packetID,
+				&skb, &txpriv));
 		skb_pull(skb, sizeof(struct wsm_tx));
-		cw1200_notify_buffered_tx(priv, skb, link_id, tid);
+		cw1200_notify_buffered_tx(priv, skb, link_id, txpriv->tid);
 		BUG_ON(cw1200_queue_remove(queue, priv, wsm->packetID));
 		/* Release used TX rate policy */
 		tx_policy_put(priv, rate_id);
@@ -1580,7 +1581,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 	struct ieee80211_tx_info *tx_info;
 	struct cw1200_queue *queue;
 	u32 tx_allowed_mask = 0;
-	int link_id;
+	const struct cw1200_txpriv *txpriv = NULL;
 	/*
 	 * Count was intended as an input for wsm->more flag.
 	 * During implementation it was found that wsm->more
@@ -1629,17 +1630,18 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 			if (cw1200_queue_get(queue,
 					tx_allowed_mask,
-					&wsm, &tx_info, &link_id))
+					&wsm, &tx_info, &txpriv))
 				continue;
 
-			if (wsm_handle_tx_data(priv, wsm, tx_info, link_id))
+			if (wsm_handle_tx_data(priv, wsm,
+					tx_info, txpriv->raw_link_id))
 				continue;  /* Handled by WSM */
 
 			wsm->hdr.id &= __cpu_to_le16(
 				~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX));
 			wsm->hdr.id |= cpu_to_le16(
-				WSM_TX_LINK_ID(link_id));
-			priv->pspoll_mask &= ~BIT(link_id);
+				WSM_TX_LINK_ID(txpriv->raw_link_id));
+			priv->pspoll_mask &= ~BIT(txpriv->raw_link_id);
 
 			*data = (u8 *)wsm;
 			*tx_len = __le16_to_cpu(wsm->hdr.len);

@@ -24,6 +24,12 @@
 #define tx_policy_printk(...)
 #endif
 
+/* txrx private */
+struct __cw1200_txpriv {
+	struct cw1200_txpriv super;
+	u16 ethertype;
+};
+
 static int cw1200_handle_action_rx(struct cw1200_common *priv,
 				   struct sk_buff *skb);
 static int cw1200_handle_action_tx(struct cw1200_common *priv,
@@ -371,8 +377,10 @@ cw1200_get_tx_rate(const struct cw1200_common *priv,
 
 /* NOTE: cw1200_skb_to_wsm executes in atomic context. */
 int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
-			struct wsm_tx *wsm,  struct tx_info *txinfo)
+			struct wsm_tx *wsm,  struct cw1200_txpriv *txpriv)
 {
+	struct __cw1200_txpriv *info =
+		container_of(txpriv, struct __cw1200_txpriv, super);
 	bool tx_policy_renew = false;
 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
 	const struct ieee80211_rate *rate = cw1200_get_tx_rate(priv,
@@ -416,7 +424,7 @@ int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
 		struct ieee80211_hdr *hdr =
 		(struct ieee80211_hdr *)(skb->data + sizeof(struct wsm_tx));
 
-		if (cpu_to_be16(txinfo->ethertype) == ETH_P_PAE)
+		if (cpu_to_be16(info->ethertype) == ETH_P_PAE)
 			priority = WSM_EPTA_PRIORITY_EAPOL;
 		else if (ieee80211_is_action(hdr->frame_control))
 			priority = WSM_EPTA_PRIORITY_ACTION;
@@ -449,14 +457,15 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	struct ieee80211_hdr *hdr =
 		(struct ieee80211_hdr *)skb->data;
 	int was_buffered = 0;
-	int tid = CW1200_MAX_TID;
 	const u8 *da = ieee80211_get_DA(hdr);
 	struct cw1200_sta_priv *sta_priv =
 		(struct cw1200_sta_priv *)&tx_info->control.sta->drv_priv;
 	int link_id, raw_link_id;
 	int ret;
 	int i;
-	struct tx_info txinfo;
+	struct __cw1200_txpriv txpriv = {
+		.super.tid = CW1200_MAX_TID,
+	};
 
 	if (likely(tx_info->control.sta && sta_priv->link_id))
 		raw_link_id = link_id = sta_priv->link_id;
@@ -503,15 +512,15 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	} else if (ieee80211_is_data_qos(hdr->frame_control) ||
 			ieee80211_is_qos_nullfunc(hdr->frame_control)) {
 		u8 *qos = ieee80211_get_qos_ctl(hdr);
-		tid = qos[0] & IEEE80211_QOS_CTL_TID_MASK;
+		txpriv.super.tid = qos[0] & IEEE80211_QOS_CTL_TID_MASK;
 	} else if (ieee80211_is_data(hdr->frame_control) ||
 			ieee80211_is_nullfunc(hdr->frame_control)) {
-		tid = 0;
+		txpriv.super.tid = 0;
 	}
 
 	/* BT Coex support related configuration */
 	if (priv->is_BT_Present) {
-		txinfo.ethertype = 0;
+		txpriv.ethertype = 0;
 
 		if (ieee80211_is_data_qos(hdr->frame_control) ||
 			ieee80211_is_data(hdr->frame_control)) {
@@ -520,7 +529,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 
 			/* Skip LLC SNAP header (+6) */
 			if (headerlen > 0)
-				txinfo.ethertype =
+				txpriv.ethertype =
 					*((u16 *)(skb->data + headerlen + 6));
 		}
 		else if (ieee80211_is_assoc_req(hdr->frame_control) ||
@@ -621,19 +630,20 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 				&priv->multicast_start_work);
 	}
 
-	txinfo.link_id = link_id;
-
-	if (raw_link_id && tid < CW1200_MAX_TID)
+	if (raw_link_id && txpriv.super.tid < CW1200_MAX_TID)
 		was_buffered = priv->link_id_db[raw_link_id - 1]
-				.buffered[tid]++;
+				.buffered[txpriv.super.tid]++;
 
+	txpriv.super.link_id = link_id;
+	txpriv.super.raw_link_id = raw_link_id;
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
-			&txinfo, raw_link_id, tid);
+			&txpriv.super);
 
 	spin_unlock_bh(&priv->buffered_multicasts_lock);
 
-	if (raw_link_id && !was_buffered && tid < CW1200_MAX_TID)
-		ieee80211_sta_set_buffered(tx_info->control.sta, tid, true);
+	if (raw_link_id && !was_buffered && txpriv.super.tid < CW1200_MAX_TID)
+		ieee80211_sta_set_buffered(tx_info->control.sta,
+				txpriv.super.tid, true);
 
 	if (!WARN_ON(ret))
 		cw1200_bh_wakeup(priv);
@@ -739,7 +749,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	u8 queue_id = cw1200_queue_get_queue_id(arg->packetID);
 	struct cw1200_queue *queue = &priv->tx_queue[queue_id];
 	struct sk_buff *skb;
-	int tid = CW1200_MAX_TID;
+	const struct cw1200_txpriv *txpriv = NULL;
 
 	txrx_printk(KERN_DEBUG "[TX] TX confirm: %d, %d.\n",
 		arg->status, arg->ackFailures);
@@ -773,7 +783,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 		WARN_ON(cw1200_queue_requeue(queue,
 				arg->packetID));
 	} else if (!WARN_ON(cw1200_queue_get_skb(
-			queue, arg->packetID, &skb, &tid))) {
+			queue, arg->packetID, &skb, &txpriv))) {
 		struct ieee80211_tx_info *tx = IEEE80211_SKB_CB(skb);
 		struct wsm_tx *wsm_tx = (struct wsm_tx *)skb->data;
 		int rate_id = (wsm_tx->flags >> 4) & 0x07;
@@ -827,7 +837,8 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 		}
 
 		skb_pull(skb, sizeof(struct wsm_tx));
-		cw1200_notify_buffered_tx(priv, skb, arg->link_id, tid);
+		cw1200_notify_buffered_tx(priv, skb, arg->link_id,
+				txpriv->tid);
 		ieee80211_tx_status(priv->hw, skb);
 		WARN_ON(cw1200_queue_remove(queue, priv, arg->packetID));
 	}
