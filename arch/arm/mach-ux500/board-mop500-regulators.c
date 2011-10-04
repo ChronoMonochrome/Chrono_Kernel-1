@@ -185,8 +185,7 @@ static struct regulator_consumer_supply ab8500_sysclkreq_4_consumers[] = {
 };
 
 /* ab8500 regulator register initialization */
-struct ab8500_regulator_reg_init
-ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
 	/*
 	 * VanaRequestCtrl          = HP/LP depending on VxRequest
 	 * VpllRequestCtrl          = HP/LP depending on VxRequest
@@ -393,7 +392,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
 };
 
 /* AB8500 regulators */
-struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
+static struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
 	/* supplies to the display/camera */
 	[AB8500_LDO_AUX1] = {
 		.constraints = {
@@ -535,4 +534,11 @@ struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
 			ARRAY_SIZE(ab8500_sysclkreq_4_consumers),
 		.consumer_supplies = ab8500_sysclkreq_4_consumers,
 	},
+};
+
+struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
+	.reg_init               = ab8500_reg_init,
+	.num_reg_init           = ARRAY_SIZE(ab8500_reg_init),
+	.regulator              = ab8500_regulators,
+	.num_regulator          = ARRAY_SIZE(ab8500_regulators),
 };

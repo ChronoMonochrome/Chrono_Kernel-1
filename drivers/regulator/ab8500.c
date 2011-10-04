@@ -1083,14 +1083,22 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
 static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
 {
 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
-	struct ab8500_platform_data *pdata;
+	struct ab8500_platform_data *ppdata;
+	struct ab8500_regulator_platform_data *pdata;
 	int i, err;
 
 	if (!ab8500) {
 		dev_err(&pdev->dev, "null mfd parent\n");
 		return -EINVAL;
 	}
-	pdata = dev_get_platdata(ab8500->dev);
+
+	ppdata = dev_get_platdata(ab8500->dev);
+	if (!ppdata) {
+		dev_err(&pdev->dev, "null parent pdata\n");
+		return -EINVAL;
+	}
+
+	pdata = ppdata->regulator;
 	if (!pdata) {
 		dev_err(&pdev->dev, "null pdata\n");
 		return -EINVAL;
@@ -1103,13 +1111,13 @@ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
 	}
 
 	/* initialize registers */
-	for (i = 0; i < pdata->num_regulator_reg_init; i++) {
+	for (i = 0; i < pdata->num_reg_init; i++) {
 		int id;
 		u8 mask, value;
 
-		id = pdata->regulator_reg_init[i].id;
-		mask = pdata->regulator_reg_init[i].mask;
-		value = pdata->regulator_reg_init[i].value;
+		id = pdata->reg_init[i].id;
+		mask = pdata->reg_init[i].mask;
+		value = pdata->reg_init[i].value;
 
 		/* check for configuration errors */
 		BUG_ON(id >= AB8500_NUM_REGULATOR_REGISTERS);
@@ -1241,5 +1249,6 @@ module_exit(ab8500_regulator_exit);
 
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Sundar Iyer <sundar.iyer@stericsson.com>");
+MODULE_AUTHOR("Bengt Jonsson <bengt.g.jonsson@stericsson.com>");
 MODULE_DESCRIPTION("Regulator Driver for ST-Ericsson AB8500 Mixed-Sig PMIC");
 MODULE_ALIAS("platform:ab8500-regulator");
