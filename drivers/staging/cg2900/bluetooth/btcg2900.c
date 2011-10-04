@@ -913,13 +913,10 @@ static int probe_common(struct platform_device *pdev,
 
 	dev_set_drvdata(dev, info);
 
-	pf_data = mfd_get_cell(pdev)->platform_data;
+	pf_data = dev_get_platdata(dev);
 	pf_data->dev = dev;
 	pf_data->read_cb = hci_read_cb;
 	pf_data->reset_cb = hci_reset_cb;
-
-	/* Set platform data */
-	dev->platform_data = pf_data;
 
 	/* Init and register hdev */
 	err = register_bluetooth(info);
@@ -1051,7 +1048,7 @@ static int remove_common(struct platform_device *pdev,
 	struct cg2900_user_data *pf_data;
 	struct dev_info *dev_info;
 
-	pf_data = mfd_get_cell(pdev)->platform_data;
+	pf_data = dev_get_platdata(&pdev->dev);
 	dev_info = cg2900_get_usr(pf_data);
 
 	kfree(dev_info);
