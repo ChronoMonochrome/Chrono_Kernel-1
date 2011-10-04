@@ -2696,6 +2696,8 @@ static ssize_t cg2900_read(
 	if ((fm_rds_info.rds_head == fm_rds_info.rds_tail) ||
 	    (fm_rds_buf[fm_rds_info.rds_tail]
 	     [current_rds_grp].block1 == 0x0000)) {
+		/* Remove all Interrupts from the queue */
+		skb_queue_purge(&fm_interrupt_queue);
 		FM_INFO_REPORT("cg2900_read: returning 0");
 		return 0;
 	}
@@ -2807,6 +2809,8 @@ static ssize_t cg2900_read(
 			fm_rds_info.rds_block_sent = 0;
 
 		if (!cg2900_device.rx_rds_enabled) {
+			/* Remove all Interrupts from the queue */
+			skb_queue_purge(&fm_interrupt_queue);
 			FM_INFO_REPORT("cg2900_read: returning 0");
 			spin_unlock(&fm_spinlock);
 			return 0;

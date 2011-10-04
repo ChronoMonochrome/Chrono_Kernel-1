@@ -1803,7 +1803,7 @@ int cg2900_fm_get_block_scan_result(
 
 		/* Enable the PA */
 		result = fmd_tx_set_pa(true);
-	if (0 != result) {
+		if (0 != result) {
 			FM_ERR_REPORT("cg2900_fm_get_block_scan_result:"
 				      " fmd_tx_set_pa "
 				      "failed %d",
@@ -2415,8 +2415,6 @@ int cg2900_fm_rds_off(void)
 	memset(fm_rds_buf, 0,
 	       sizeof(struct cg2900_fm_rds_buf) *
 	       MAX_RDS_BUFFER * MAX_RDS_GROUPS);
-	/* Remove all Interrupts from the queue */
-	skb_queue_purge(&fm_interrupt_queue);
 	result = fmd_rx_set_rds(FMD_SWITCH_OFF_RDS);
 	if (0 != result) {
 		FM_ERR_REPORT("cg2900_fm_rds_off: fmd_rx_set_rds failed, "
@@ -2664,13 +2662,21 @@ int cg2900_fm_set_frequency(
 		result = -EINVAL;
 		goto error;
 	}
-	memset(&fm_rds_info, 0,
-		sizeof(struct cg2900_fm_rds_info));
-	memset(fm_rds_buf, 0,
-		sizeof(struct cg2900_fm_rds_buf) *
-		MAX_RDS_BUFFER * MAX_RDS_GROUPS);
-	/* Remove all Interrupts from the queue */
-	skb_queue_purge(&fm_interrupt_queue);
+	/* Check if RDS needs to be disabled before Setting Frequency */
+	if (fm_rds_status) {
+		/* Stop RDS if it is active */
+		result = cg2900_fm_rds_off();
+		fm_prev_rds_status = true;
+	} else {
+		memset(&fm_rds_info, 0,
+			sizeof(struct cg2900_fm_rds_info));
+		memset(fm_rds_buf, 0,
+			sizeof(struct cg2900_fm_rds_buf) *
+			MAX_RDS_BUFFER * MAX_RDS_GROUPS);
+		/* Remove all Interrupts from the queue */
+		skb_queue_purge(&fm_interrupt_queue);
+	}
+
 	if (CG2900_FM_RX_MODE == fm_mode) {
 		FM_DEBUG_REPORT("cg2900_fm_set_frequency: "
 				"fmd_rx_set_frequency");
@@ -2688,7 +2694,14 @@ int cg2900_fm_set_frequency(
 			      (unsigned int)result);
 		result = -EINVAL;
 		goto error;
+	} else {
+		if (fm_prev_rds_status) {
+			/* Restart RDS if it was active earlier */
+			cg2900_fm_rds_on();
+			fm_prev_rds_status = false;
+		}
 	}
+
 	if (CG2900_FM_TX_MODE == fm_mode) {
 		FM_DEBUG_REPORT("cg2900_fm_set_frequency:"
 				" Sending Set" "fmd_tx_set_pa");
