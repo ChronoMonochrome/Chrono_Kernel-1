@@ -145,6 +145,7 @@ static int bu21013_gpio_board_init(int reset_pin)
 					__func__);
 			return retval;
 		}
+		gpio_set_value(reset_pin, 1);
 	}
 
 	return retval;
@@ -167,6 +168,7 @@ static int bu21013_gpio_board_exit(int reset_pin)
 					__func__);
 			return retval;
 		}
+		gpio_set_value(reset_pin, 0);
 		gpio_free(reset_pin);
 	}
 	bu21013_devices--;
@@ -191,7 +193,11 @@ static struct bu21013_platform_device tsc_plat_device = {
 	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
-	.has_ext_clk = false,
+	.x_max_res = 480,
+	.y_max_res = 864,
+	.portrait = true,
+	.has_ext_clk = true,
+	.enable_ext_clk = false,
 #if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
 		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
 	.x_flip		= true,
@@ -209,7 +215,11 @@ static struct bu21013_platform_device tsc_plat2_device = {
 	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
-	.has_ext_clk = false,
+	.x_max_res = 480,
+	.y_max_res = 864,
+	.portrait = true,
+	.has_ext_clk = true,
+	.enable_ext_clk = false,
 #if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
 		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
 	.x_flip		= true,
@@ -222,11 +232,11 @@ static struct bu21013_platform_device tsc_plat2_device = {
 
 static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
 	{
-		I2C_BOARD_INFO("bu21013_tp", 0x5C),
+		I2C_BOARD_INFO("bu21013_ts", 0x5C),
 		.platform_data = &tsc_plat_device,
 	},
 	{
-		I2C_BOARD_INFO("bu21013_tp", 0x5D),
+		I2C_BOARD_INFO("bu21013_ts", 0x5D),
 		.platform_data = &tsc_plat2_device,
 	},
 
