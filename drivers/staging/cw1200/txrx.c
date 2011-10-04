@@ -741,7 +741,8 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	struct sk_buff *skb;
 	int tid = CW1200_MAX_TID;
 
-	txrx_printk(KERN_DEBUG "[TX] TX confirm.\n");
+	txrx_printk(KERN_DEBUG "[TX] TX confirm: %d, %d.\n",
+		arg->status, arg->ackFailures);
 
 	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
 		/* STA is stopped. */
@@ -806,6 +807,8 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 				queue_work(priv->workqueue,
 						&priv->tx_failure_work);
 			}
+			if (tx_count)
+				++tx_count;
 		}
 
 		for (i = 0; i < IEEE80211_TX_MAX_RATES; ++i) {
