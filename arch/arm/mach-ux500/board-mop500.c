@@ -856,7 +856,7 @@ static struct sim_detect_platform_data sim_detect_pdata = {
 	.irq_num		= MOP500_AB8500_VIR_GPIO_IRQ(6),
 };
 struct platform_device u8500_sim_detect_device = {
-	.name	= "sim_detect",
+	.name	= "sim-detect",
 	.id	= 0,
 	.dev	= {
 			.platform_data          = &sim_detect_pdata,
