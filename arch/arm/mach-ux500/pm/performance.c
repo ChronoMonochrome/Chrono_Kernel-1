@@ -16,6 +16,7 @@
 #include <linux/kernel.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/cpu.h>
+#include <linux/pm_qos_params.h>
 
 #include <mach/irqs.h>
 
@@ -47,6 +48,8 @@
 
 static struct delayed_work work_mmc;
 static struct delayed_work work_wlan_workaround;
+static struct pm_qos_request_list wlan_pm_qos_latency;
+static bool wlan_pm_qos_is_latency_0;
 
 static void wlan_load(struct work_struct *work)
 {
@@ -58,12 +61,31 @@ static void wlan_load(struct work_struct *work)
 		num_irqs += kstat_irqs_cpu(IRQ_DB8500_SDMMC1, cpu);
 
 	if ((num_irqs > old_num_irqs) &&
-	    (num_irqs - old_num_irqs) > WLAN_LIMIT)
+	    (num_irqs - old_num_irqs) > WLAN_LIMIT) {
 		prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
 					     "wlan", 125);
-	else
+		if (!wlan_pm_qos_is_latency_0) {
+			/*
+			 * The wake up latency is set to 0 to prevent
+			 * the system from going to sleep. This improves
+			 * the wlan throughput in DMA mode.
+			 * The wake up latency from sleep adds ~5% overhead
+			 * for TX in some cases.
+			 * This change doesn't increase performance for wlan
+			 * PIO since the CPU usage prevents sleep in this mode.
+			 */
+			pm_qos_add_request(&wlan_pm_qos_latency,
+					   PM_QOS_CPU_DMA_LATENCY, 0);
+			wlan_pm_qos_is_latency_0 = true;
+		}
+	} else {
 		prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
 					     "wlan", 25);
+		if (wlan_pm_qos_is_latency_0) {
+			pm_qos_remove_request(&wlan_pm_qos_latency);
+			wlan_pm_qos_is_latency_0 = false;
+		}
+	}
 
 	old_num_irqs = num_irqs;
 
