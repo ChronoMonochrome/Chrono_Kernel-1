@@ -80,10 +80,35 @@ int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	return 0;
 }
 
-void cw1200_sta_notify(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
-		       enum sta_notify_cmd notify_cmd,
-		       struct ieee80211_sta *sta)
+static void __cw1200_sta_notify(struct ieee80211_hw *dev,
+				struct ieee80211_vif *vif,
+				enum sta_notify_cmd notify_cmd,
+				struct ieee80211_sta *sta)
 {
+	struct cw1200_common *priv = dev->priv;
+	struct cw1200_sta_priv *sta_priv =
+		(struct cw1200_sta_priv *)&sta->drv_priv;
+	u32 bit = BIT(sta_priv->link_id);
+
+	spin_lock_bh(&priv->buffered_multicasts_lock);
+	switch (notify_cmd) {
+		case STA_NOTIFY_SLEEP:
+			if (priv->buffered_multicasts &&
+					!priv->sta_asleep_mask)
+				queue_work(priv->workqueue,
+					&priv->multicast_start_work);
+			priv->sta_asleep_mask |= bit;
+			break;
+		case STA_NOTIFY_AWAKE:
+			priv->sta_asleep_mask &= ~bit;
+			if (priv->tx_multicast &&
+					!priv->sta_asleep_mask)
+				queue_work(priv->workqueue,
+					&priv->multicast_stop_work);
+			cw1200_bh_wakeup(priv);
+			break;
+	}
+	spin_unlock_bh(&priv->buffered_multicasts_lock);
 }
 
 static void __cw1200_ps_notify(struct cw1200_common *priv,
@@ -96,7 +121,7 @@ static void __cw1200_ps_notify(struct cw1200_common *priv,
 
 	priv->link_id_db[link_id - 1].ps = ps;
 	if (sta) {
-		cw1200_sta_notify(priv->hw, priv->vif,
+		__cw1200_sta_notify(priv->hw, priv->vif,
 			ps ? STA_NOTIFY_SLEEP : STA_NOTIFY_AWAKE, sta);
 		ieee80211_sta_ps_transition_ni(sta, ps);
 	}

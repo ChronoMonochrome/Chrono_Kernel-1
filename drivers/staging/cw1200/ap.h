@@ -18,9 +18,6 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		   struct ieee80211_sta *sta);
 int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		      struct ieee80211_sta *sta);
-void cw1200_sta_notify(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
-		       enum sta_notify_cmd notify_cmd,
-		       struct ieee80211_sta *sta);
 void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			     struct ieee80211_vif *vif,
 			     struct ieee80211_bss_conf *info,

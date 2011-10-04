@@ -207,7 +207,6 @@ static const struct ieee80211_ops cw1200_ops = {
 	.tx			= cw1200_tx,
 	.hw_scan		= cw1200_hw_scan,
 	.set_tim		= cw1200_set_tim,
-	.sta_notify		= cw1200_sta_notify,
 	.sta_add		= cw1200_sta_add,
 	.sta_remove		= cw1200_sta_remove,
 	.set_key		= cw1200_set_key,
