@@ -18,6 +18,7 @@
  * @mutex:	The mutex to lock when operating on the clock. %NULL means that
  *		the common clock spinlock will be used.
  * @enabled:	A reference counter of the enable requests for the clock.
+ * @rate_locked: A rate lock counter used by clk_set_rate().
  * @opp100:	A flag saying whether the clock is requested to run at the
  *		OPP 100%% frequency.
  * @rate:	The frequency of the clock. For scalable and scaling clocks,
@@ -39,6 +40,7 @@ struct clk {
 	const char *name;
 	struct mutex *mutex;
 	unsigned int enabled;
+	unsigned int rate_locked;
 	bool opp100;
 	unsigned long rate;
 	unsigned int io_base;

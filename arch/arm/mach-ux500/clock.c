@@ -213,6 +213,36 @@ long clk_round_rate_rec(struct clk *clk, unsigned long rate)
 	return rounded_rate;
 }
 
+static void lock_parent_rate(struct clk *clk)
+{
+	unsigned long flags;
+
+	if (clk->parent == NULL)
+		return;
+
+	__clk_lock(clk->parent, clk->mutex, &flags);
+
+	lock_parent_rate(clk->parent);
+	clk->parent->rate_locked++;
+
+	__clk_unlock(clk->parent, clk->mutex, flags);
+}
+
+static void unlock_parent_rate(struct clk *clk)
+{
+	unsigned long flags;
+
+	if (clk->parent == NULL)
+		return;
+
+	__clk_lock(clk->parent, clk->mutex, &flags);
+
+	unlock_parent_rate(clk->parent);
+	clk->parent->rate_locked--;
+
+	__clk_unlock(clk->parent, clk->mutex, flags);
+}
+
 int clk_set_rate(struct clk *clk, unsigned long rate)
 {
 	int err;
@@ -223,8 +253,20 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 
 	__clk_lock(clk, NO_LOCK, &flags);
 
-	err =  __clk_set_rate(clk, rate);
+	if (clk->enabled) {
+		err = -EBUSY;
+		goto unlock_and_return;
+	}
+	if (clk->rate_locked) {
+		err = -EAGAIN;
+		goto unlock_and_return;
+	}
 
+	lock_parent_rate(clk);
+	err =  __clk_set_rate(clk, rate);
+	unlock_parent_rate(clk);
+
+unlock_and_return:
 	__clk_unlock(clk, NO_LOCK, flags);
 
 	return err;
@@ -241,8 +283,17 @@ int clk_set_rate_rec(struct clk *clk, unsigned long rate)
 
 	__clk_lock(clk->parent, clk->mutex, &flags);
 
+	if (clk->parent->enabled) {
+		err = -EBUSY;
+		goto unlock_and_return;
+	}
+	if (clk->parent->rate_locked != 1) {
+		err = -EAGAIN;
+		goto unlock_and_return;
+	}
 	err = __clk_set_rate(clk->parent, rate);
 
+unlock_and_return:
 	__clk_unlock(clk->parent, clk->mutex, flags);
 
 	return err;
