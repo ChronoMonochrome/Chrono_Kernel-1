@@ -19,11 +19,15 @@
 #include <linux/autoconf.h>
 #endif
 
-/** Nomadik embedded Static RAM base address*/
+/* Embedded Static RAM base address */
 #define ESRAM_BASE (U8500_ESRAM_BASE + 0x10000) // V1/V2 config: 0-64k: secure;
 
-/** Nomadik embedded ram size for CM (in Kb) */
-#define ESRAM_SIZE 576
+/*
+ * Embedded ram size for CM (in Kb)
+ * 5 banks of 128k: skip the first half bank (secure) and the last
+ * one (used for MCDE/B2R2), but include DMA part (4k after the secure part)
+ */
+#define ESRAM_SIZE 448
 enum {
 	ESRAM_12,
 	ESRAM_34,

@@ -89,8 +89,6 @@ int remapRegions(void)
 		pr_err("%s: could not remap ESRAM Base\n", __func__);
 		return -ENOMEM;
 	}
-	memset(osalEnv.esram_base, 0x0, cfgESRAMSize*ONE_KB);
-
 
 	/* Allocate code and data sections for MPC (SVA, SIA) */
         for (i=0; i<NB_MPC; i++) {
