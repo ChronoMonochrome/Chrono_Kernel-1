@@ -244,8 +244,13 @@ bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path);
 #define REG_MUTECONF_MUTHSR			4
 
 /* REG_SHORTCIRCONF */
+
 /* REG_ANACONF5 */
 #define REG_ANACONF5_ENCPHS			7
+#define REG_ANACONF5_HSLDACTOLOL		5
+#define REG_ANACONF5_HSRDACTOLOR		4
+#define REG_ANACONF5_ENLOL			3
+#define REG_ANACONF5_ENLOR			2
 #define REG_ANACONF5_HSAUTOEN			0
 
 /* REG_ENVCPCONF */
