@@ -161,6 +161,81 @@ err_get:
 	return status;
 }
 
+/* Power/clock control */
+
+static int ux500_ab8500_power_control_inc(void)
+{
+	int ret;
+
+	mutex_lock(&power_lock);
+
+	ab8500_power_count++;
+	pr_debug("%s: ab8500_power_count changed from %d to %d",
+		__func__,
+		ab8500_power_count-1,
+		ab8500_power_count);
+
+	if (ab8500_power_count == 1) {
+		/* Turn on audio-regulator */
+		ret = enable_regulator(REGULATOR_AUDIO);
+
+		/* Enable audio-clock */
+		ret = clk_set_parent(clk_ptr_intclk,
+				(master_clock_sel == 0) ? clk_ptr_sysclk : clk_ptr_ulpclk);
+		if (ret) {
+			pr_err("%s: ERROR: Setting master-clock to %s failed (ret = %d)!",
+				__func__,
+				(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK",
+				ret);
+			return ret;
+		}
+		pr_debug("%s: Enabling master-clock (%s).",
+			__func__,
+			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
+		ret = clk_enable(clk_ptr_audioclk);
+		if (ret) {
+			pr_err("%s: ERROR: clk_enable failed (ret = %d)!", __func__, ret);
+			ab8500_power_count = 0;
+			return ret;
+		}
+
+		/* Power on audio-parts of AB8500 */
+		ab8500_audio_power_control(true);
+	}
+
+	mutex_unlock(&power_lock);
+
+	return 0;
+}
+
+static void ux500_ab8500_power_control_dec(void)
+{
+	mutex_lock(&power_lock);
+
+	ab8500_power_count--;
+
+	pr_debug("%s: ab8500_power_count changed from %d to %d",
+		__func__,
+		ab8500_power_count+1,
+		ab8500_power_count);
+
+	if (ab8500_power_count == 0) {
+		/* Power off audio-parts of AB8500 */
+		ab8500_audio_power_control(false);
+
+		/* Disable audio-clock */
+		pr_debug("%s: Disabling master-clock (%s).",
+			__func__,
+			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
+		clk_disable(clk_ptr_audioclk);
+
+		/* Turn off audio-regulator */
+		disable_regulator(REGULATOR_AUDIO);
+	}
+
+	mutex_unlock(&power_lock);
+}
+
 /* Controls - Non-DAPM Non-ASoC */
 
 static int mclk_input_control_info(struct snd_kcontrol *kcontrol,
@@ -212,6 +287,18 @@ static const struct snd_kcontrol_new mclk_input_control = {
 
 /* DAPM-events */
 
+static int dapm_audioreg_event(struct snd_soc_dapm_widget *w,
+			struct snd_kcontrol *k, int event)
+{
+	if (SND_SOC_DAPM_EVENT_ON(event))
+		ux500_ab8500_power_control_inc();
+	else
+		ux500_ab8500_power_control_dec();
+
+	return 0;
+}
+
+
 static int dapm_mic1reg_event(struct snd_soc_dapm_widget *w,
 			struct snd_kcontrol *k, int event)
 {
@@ -254,18 +341,39 @@ static int dapm_dmicreg_event(struct snd_soc_dapm_widget *w,
 /* DAPM-widgets */
 
 static const struct snd_soc_dapm_widget ux500_ab8500_dapm_widgets[] = {
-	SND_SOC_DAPM_MIC("MIC1 Regulator", dapm_mic1reg_event),
-	SND_SOC_DAPM_MIC("MIC2 Regulator", dapm_mic2reg_event),
-	SND_SOC_DAPM_MIC("DMIC Regulator", dapm_dmicreg_event),
+	SND_SOC_DAPM_SUPPLY("AUDIO Regulator", SND_SOC_NOPM, 0, 0, dapm_audioreg_event,
+			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+	SND_SOC_DAPM_SUPPLY("AMIC1 Regulator", SND_SOC_NOPM, 0, 0, dapm_mic1reg_event,
+			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+	SND_SOC_DAPM_SUPPLY("AMIC2 Regulator", SND_SOC_NOPM, 0, 0, dapm_mic2reg_event,
+			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+	SND_SOC_DAPM_SUPPLY("DMIC Regulator", SND_SOC_NOPM, 0, 0, dapm_dmicreg_event,
+			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 };
 
 /* DAPM-routes */
 
 static const struct snd_soc_dapm_route ux500_ab8500_dapm_intercon[] = {
-	{"MIC1 Input", NULL, "MIC1 Regulator"},
-	{"MIC2 Input", NULL, "MIC2 Regulator"},
-	{"DMIC Input", NULL, "DMIC Regulator"},
+
+	/* Power AB8500 audio-block when AD/DA is active */
+	{"DAC", NULL, "AUDIO Regulator"},
+	{"ADC", NULL, "AUDIO Regulator"},
+
+	/* Power AMIC1-regulator when MIC1 is enabled */
+	{"MIC1 Enable", NULL, "AMIC1 Regulator"},
+
+	/* Power AMIC2-regulator when MIC1 is enabled */
+	{"MIC2 Enable", NULL, "AMIC2 Regulator"},
+
+	/* Power DMIC-regulator when any digital mic is enabled */
+	{"DMic 1", NULL, "DMIC Regulator"},
+	{"DMic 2", NULL, "DMIC Regulator"},
+	{"DMic 3", NULL, "DMIC Regulator"},
+	{"DMic 4", NULL, "DMIC Regulator"},
+	{"DMic 5", NULL, "DMIC Regulator"},
+	{"DMic 6", NULL, "DMIC Regulator"},
 };
+
 
 static int add_widgets(struct snd_soc_codec *codec)
 {
@@ -292,84 +400,6 @@ static int add_widgets(struct snd_soc_codec *codec)
 	return 0;
 }
 
-/* Power/clock control */
-
-static int ux500_ab8500_power_control_inc(void)
-{
-	int ret;
-
-	mutex_lock(&power_lock);
-
-	ab8500_power_count++;
-	pr_debug("%s: ab8500_power_count changed from %d to %d",
-		__func__,
-		ab8500_power_count-1,
-		ab8500_power_count);
-
-	if (ab8500_power_count == 1) {
-		ret = clk_set_parent(clk_ptr_intclk,
-				(master_clock_sel == 0) ? clk_ptr_sysclk : clk_ptr_ulpclk);
-		if (ret) {
-			pr_err("%s: ERROR: Setting master-clock to %s failed (ret = %d)!",
-				__func__,
-				(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK",
-				ret);
-			return ret;
-		}
-
-		pr_debug("%s: Enabling master-clock (%s).",
-			__func__,
-			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
-
-		/* Enable audio-clock */
-		ret = clk_enable(clk_ptr_audioclk);
-		if (ret) {
-			pr_err("%s: ERROR: clk_enable failed (ret = %d)!", __func__, ret);
-			ab8500_power_count = 0;
-			return ret;
-		}
-
-		/* Power on audio-parts of AB8500 */
-		ab8500_audio_power_control(true);
-
-		/* Turn on audio-regulator */
-		ret = enable_regulator(REGULATOR_AUDIO);
-	}
-
-	mutex_unlock(&power_lock);
-
-	return 0;
-}
-
-static void ux500_ab8500_power_control_dec(void)
-{
-	mutex_lock(&power_lock);
-
-	ab8500_power_count--;
-
-	pr_debug("%s: ab8500_power_count changed from %d to %d",
-		__func__,
-		ab8500_power_count+1,
-		ab8500_power_count);
-
-	if (ab8500_power_count == 0) {
-		pr_debug("%s: Disabling master-clock (%s).",
-			__func__,
-			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
-
-		/* Disable audio-clock */
-		clk_disable(clk_ptr_audioclk);
-
-		/* Power off audio-parts of AB8500 */
-		ab8500_audio_power_control(false);
-
-		/* Turn off audio-regulator */
-		disable_regulator(REGULATOR_AUDIO);
-	}
-
-	mutex_unlock(&power_lock);
-}
-
 /* ASoC */
 
 int ux500_ab8500_startup(struct snd_pcm_substream *substream)
@@ -385,7 +415,7 @@ int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 		return ret;
 	}
 
-	return ux500_ab8500_power_control_inc();
+	return 0;
 }
 
 void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
@@ -399,7 +429,6 @@ void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 		rx_slots = DEF_RX_SLOTS;
 
 	clk_disable(clk_ptr_gpio1);
-	ux500_ab8500_power_control_dec();
 }
 
 int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
@@ -527,8 +556,6 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	int ret;
 
 	pr_debug("%s Enter.\n", __func__);
-
-	/* TODO: Add required DAPM routes to control regulators on demand */
 
 	ret = snd_soc_jack_new(codec,
 			"AB8500 Hs Status",

@@ -671,44 +671,69 @@ static const struct snd_kcontrol_new dapm_pwm2vib2[] = {
 	SOC_DAPM_ENUM("Vibra 2 Controller", dapm_enum_pwm2vib2),
 };
 
-/* DAPM-widgets */
-
 static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
-	/* Headset path */
+
+	/* DA/AD */
+
+	SND_SOC_DAPM_INPUT("ADC Input"),
+	SND_SOC_DAPM_DAC("ADC", "ab8500_0c", SND_SOC_NOPM, 0, 0),
+
+	SND_SOC_DAPM_DAC("DAC", "ab8500_0p", SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_OUTPUT("DAC Output"),
 
 	SND_SOC_DAPM_AIF_IN("DA_IN1", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_AIF_IN("DA_IN2", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_IN("DA_IN3", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_IN("DA_IN4", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_IN("DA_IN5", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_IN("DA_IN6", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_OUT("AD_OUT1", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_OUT("AD_OUT2", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_OUT("AD_OUT3", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_OUT("AD_OUT4", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_OUT("AD_OUT57", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_AIF_OUT("AD_OUT68", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
 
-	/* XXX SwapDA12_34 */
+	/* Headset path */
 
-	SND_SOC_DAPM_MIXER("DA1 Channel Gain", REG_DAPATHENA,
-			REG_DAPATHENA_ENDA1, 0, NULL, 0),
-	SND_SOC_DAPM_MIXER("DA2 Channel Gain", REG_DAPATHENA,
-			REG_DAPATHENA_ENDA2, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("Charge Pump", REG_ANACONF5, REG_ANACONF5_ENCPHS, 0, NULL, 0),
 
-	SND_SOC_DAPM_MIXER("HSL Digital Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_MIXER("HSR Digital Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
-
-	SND_SOC_DAPM_MIXER("HSL DAC", REG_DAPATHCONF,
-			REG_DAPATHCONF_ENDACHSL, 0, NULL, 0),
-	SND_SOC_DAPM_MIXER("HSR DAC", REG_DAPATHCONF,
-			REG_DAPATHCONF_ENDACHSR, 0, NULL, 0),
-
-	SND_SOC_DAPM_MIXER("HSL DAC Driver", REG_ANACONF3,
-			REG_ANACONF3_ENDRVHSL, 0, NULL, 0),
-	SND_SOC_DAPM_MIXER("HSR DAC Driver", REG_ANACONF3,
-			REG_ANACONF3_ENDRVHSR, 0, NULL, 0),
+	SND_SOC_DAPM_DAC("DA1 Enable", "ab8500_0c",
+			REG_DAPATHENA, REG_DAPATHENA_ENDA1, 0),
+	SND_SOC_DAPM_DAC("DA2 Enable", "ab8500_0c",
+			REG_DAPATHENA, REG_DAPATHENA_ENDA2, 0),
 
 	SND_SOC_DAPM_SWITCH("Headset Left", SND_SOC_NOPM, 0, 0, dapm_hsl_mute),
 	SND_SOC_DAPM_SWITCH("Headset Right", SND_SOC_NOPM, 0, 0, dapm_hsr_mute),
 
-	SND_SOC_DAPM_MIXER("HSL Enable", REG_ANACONF4,
-			REG_ANACONF4_ENHSL, 0, NULL, 0),
-	SND_SOC_DAPM_MIXER("HSR Enable", REG_ANACONF4,
-			REG_ANACONF4_ENHSR, 0, NULL, 0),
+	SND_SOC_DAPM_PGA("HSL Digital Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_PGA("HSR Digital Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 
-	SND_SOC_DAPM_MIXER("Charge Pump", REG_ANACONF5,
-			REG_ANACONF5_ENCPHS, 0, NULL, 0),
+	SND_SOC_DAPM_DAC("HSL DAC", "ab8500_0c",
+			REG_DAPATHCONF, REG_DAPATHCONF_ENDACHSL, 0),
+	SND_SOC_DAPM_DAC("HSR DAC", "ab8500_0c",
+			REG_DAPATHCONF, REG_DAPATHCONF_ENDACHSR, 0),
+	SND_SOC_DAPM_MIXER("HSL DAC Mute", REG_MUTECONF, REG_MUTECONF_MUTDACHSL,
+			INVERT, NULL, 0),
+	SND_SOC_DAPM_MIXER("HSR DAC Mute", REG_MUTECONF, REG_MUTECONF_MUTDACHSR,
+			INVERT, NULL, 0),
+	SND_SOC_DAPM_DAC("HSL DAC Driver", "ab8500_0c",
+			REG_ANACONF3, REG_ANACONF3_ENDRVHSL, 0),
+	SND_SOC_DAPM_DAC("HSR DAC Driver", "ab8500_0c",
+			REG_ANACONF3, REG_ANACONF3_ENDRVHSR, 0),
+
+	SND_SOC_DAPM_MIXER("HSL Mute", REG_MUTECONF, REG_MUTECONF_MUTHSL,
+			INVERT, NULL, 0),
+	SND_SOC_DAPM_MIXER("HSR Mute", REG_MUTECONF, REG_MUTECONF_MUTHSR,
+			INVERT, NULL, 0),
+	SND_SOC_DAPM_MIXER("HSL Enable", REG_ANACONF4, REG_ANACONF4_ENHSL,
+			NORMAL, NULL, 0),
+	SND_SOC_DAPM_MIXER("HSR Enable", REG_ANACONF4, REG_ANACONF4_ENHSR,
+			NORMAL, NULL, 0),
+	SND_SOC_DAPM_PGA("HSL Gain", SND_SOC_NOPM, 0,
+			0, NULL, 0),
+	SND_SOC_DAPM_PGA("HSR Gain", SND_SOC_NOPM, 0,
+			0, NULL, 0),
 
 	SND_SOC_DAPM_OUTPUT("HSL"),
 	SND_SOC_DAPM_OUTPUT("HSR"),
@@ -746,11 +771,6 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Handsfree path */
 
-	SND_SOC_DAPM_AIF_IN("DA_IN3", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
-	SND_SOC_DAPM_AIF_IN("DA_IN4", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
-
-	/* XXX SwapDA12_34 */
-
 	SND_SOC_DAPM_MIXER("DA3 Channel Gain", REG_DAPATHENA,
 			REG_DAPATHENA_ENDA3, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("DA4 Channel Gain", REG_DAPATHENA,
@@ -787,8 +807,6 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Vibrator path */
 
-	SND_SOC_DAPM_AIF_IN("DA_IN5", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
-	SND_SOC_DAPM_AIF_IN("DA_IN6", "ab8500_0p", 0, SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_MUX("Vibra 1", SND_SOC_NOPM, 0, 0, &dapm_vibra1_mux),
 	SND_SOC_DAPM_MUX("Vibra 2", SND_SOC_NOPM, 0, 0, &dapm_vibra2_mux),
 	SND_SOC_DAPM_MIXER("DA5 Channel Gain", REG_DAPATHENA,
@@ -853,9 +871,6 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("AD12 Enable", REG_ADPATHENA,
 			REG_ADPATHENA_ENAD12, 0, NULL, 0),
 
-	SND_SOC_DAPM_AIF_OUT("AD_OUT1", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
-	SND_SOC_DAPM_AIF_OUT("AD_OUT2", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
-
 	/* Microphone 1 path */
 
 	SND_SOC_DAPM_INPUT("MIC1 Input"),
@@ -879,8 +894,6 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("AD3 Enable", REG_ADPATHENA,
 			REG_ADPATHENA_ENAD34, 0, NULL, 0),
 
-	SND_SOC_DAPM_AIF_OUT("AD_OUT3", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
-
 	/* HD Capture path */
 
 	SND_SOC_DAPM_MUX("AD 5 Select Capture Route",
@@ -895,9 +908,6 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 			REG_ADPATHENA_ENAD5768, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("AD68 Enable", REG_ADPATHENA,
 			REG_ADPATHENA_ENAD5768, 0, NULL, 0),
-
-	SND_SOC_DAPM_AIF_OUT("AD_OUT57", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
-	SND_SOC_DAPM_AIF_OUT("AD_OUT68", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
 
 	/* Digital Microphone path */
 
@@ -950,31 +960,45 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 /* DAPM-routes */
 
 static const struct snd_soc_dapm_route dapm_routes[] = {
+	/* AD/DA */
+	{"ADC", NULL, "ADC Input"},
+	{"DAC Output", NULL, "DAC"},
+
+	/* Powerup charge pump if DA1/2 is in use */
+	{"DA_IN1", NULL, "Charge Pump"},
+	{"DA_IN2", NULL, "Charge Pump"},
+
 	/* Headset path */
 
-	{"DA1 Channel Gain", NULL, "DA_IN1"},
-	{"DA2 Channel Gain", NULL, "DA_IN2"},
+	{"DA1 Enable", NULL, "DA_IN1"},
+	{"DA2 Enable", NULL, "DA_IN2"},
 
-	{"HSL Digital Gain", NULL, "DA1 Channel Gain"},
-	{"HSR Digital Gain", NULL, "DA2 Channel Gain"},
+	{"HSL Digital Gain", NULL, "DA1 Enable"},
+	{"HSR Digital Gain", NULL, "DA2 Enable"},
 
 	{"HSL DAC", NULL, "HSL Digital Gain"},
 	{"HSR DAC", NULL, "HSR Digital Gain"},
 
-	{"HSL DAC Driver", NULL, "HSL DAC"},
-	{"HSR DAC Driver", NULL, "HSR DAC"},
+	{"HSL DAC Mute", NULL, "HSL DAC"},
+	{"HSR DAC Mute", NULL, "HSR DAC"},
 
-	{"Headset Left", "Playback Switch", "HSL DAC Driver"},
-	{"Headset Right", "Playback Switch", "HSR DAC Driver"},
+	{"HSL DAC Driver", NULL, "HSL DAC Mute"},
+	{"HSR DAC Driver", NULL, "HSR DAC Mute"},
+
+	{"HSL Mute", NULL, "HSL DAC Driver"},
+	{"HSR Mute", NULL, "HSR DAC Driver"},
+
+	{"Headset Left", "Playback Switch", "HSL Mute"},
+	{"Headset Right", "Playback Switch", "HSR Mute"},
 
 	{"HSL Enable", NULL, "Headset Left"},
 	{"HSR Enable", NULL, "Headset Right"},
 
-	{"Charge Pump", NULL, "HSL Enable"},
-	{"Charge Pump", NULL, "HSR Enable"},
+	{"HSL Gain", NULL, "HSL Enable"},
+	{"HSR Gain", NULL, "HSR Enable"},
 
-	{"HSL", NULL, "Charge Pump"},
-	{"HSR", NULL, "Charge Pump"},
+	{"HSL", NULL, "HSL Gain"},
+	{"HSR", NULL, "HSR Gain"},
 
 	/* IHF or Lineout path */
 
@@ -1038,7 +1062,6 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 
 	{"IHFL", NULL, "IHF or Lineout Select"},
 	{"IHFR", NULL, "IHF or Lineout Select"},
-
 
 	/* Vibrator path */
 
@@ -1182,8 +1205,8 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 	{"STFIR1 Gain", NULL, "STFIR1 Control"},
 	{"STFIR2 Gain", NULL, "STFIR2 Control"},
 
-	{"DA1 Channel Gain", NULL, "STFIR1 Gain"},
-	{"DA2 Channel Gain", NULL, "STFIR2 Gain"},
+	{"DA1 Enable", NULL, "STFIR1 Gain"},
+	{"DA2 Enable", NULL, "STFIR2 Gain"},
 };
 
 /* Controls - Non-DAPM ASoC */
