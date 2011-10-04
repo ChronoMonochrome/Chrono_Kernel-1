@@ -1524,14 +1524,13 @@ static struct ab8500_force_reg ab8500_force_reg[] = {
 		/*
 		 * ExtSupplyRegu (HSI: 0x2a on v2-v40?)
 		 * OTP: 0x15, HSI: 0x28, suspend: 0x28/0x3f (value/mask)
-		 * [5:4] VExtSupply3Regu[1:0] = 10 = Vext3 off
 		 * [3:2] VExtSupply2Regu[1:0] = 10 = Vext2 in HW control
 		 * [1:0] VExtSupply1Regu[1:0] = 00 = Vext1 off
 		 */
 		.name = "ExtSupplyRegu",
 		.bank = 0x04,
 		.addr = 0x08,
-		.mask = 0x3f,
+		.mask = 0x0f,
 		.val  = 0x08,
 	},
 	{
@@ -1747,21 +1746,6 @@ static int __devinit ab8500_regulator_debug_probe(struct platform_device *plf)
 				val = (val & ~val_mask) | (0x03 & val_mask);
 				ab8500_force_reg[i].val = val;
 			}
-		}
-	}
-
-	/*
-	 * find ExtSupplyRegu register (bank 0x04, addr 0x08)
-	 * and update value (Vext3 in high power).
-	 */
-	for (i = 0; i < ARRAY_SIZE(ab8500_force_reg); i++) {
-		if (ab8500_force_reg[i].bank == 0x04 &&
-		    ab8500_force_reg[i].addr == 0x08) {
-			u8 val, val_mask = 0x30;
-
-			val = ab8500_force_reg[i].val;
-			val = (val & ~val_mask) | (0x10 & val_mask);
-			ab8500_force_reg[i].val = val;
 		}
 	}
 

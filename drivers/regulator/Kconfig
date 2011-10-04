@@ -247,6 +247,14 @@ config REGULATOR_AB8500
 	  This driver supports the regulators found on the ST-Ericsson mixed
 	  signal AB8500 PMIC
 
+config REGULATOR_AB8500_EXT
+	bool "ST-Ericsson AB8500 External Regulators"
+	depends on REGULATOR_AB8500
+	default y if REGULATOR_AB8500
+	help
+	  This driver supports the external regulator controls found on the
+	  ST-Ericsson mixed signal AB8500 PMIC
+
 config REGULATOR_DBX500_PRCMU
 	bool
 

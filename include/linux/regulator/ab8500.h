@@ -10,6 +10,8 @@
 #ifndef __LINUX_MFD_AB8500_REGULATOR_H
 #define __LINUX_MFD_AB8500_REGULATOR_H
 
+#include <linux/platform_device.h>
+
 /* AB8500 regulators */
 enum ab8500_regulator_id {
 	AB8500_LDO_AUX1,
@@ -154,11 +156,27 @@ enum ab9540_regulator_reg {
 	AB9540_NUM_REGULATOR_REGISTERS,
 };
 
+/* AB8500 external regulators */
+enum ab8500_ext_regulator_id {
+	AB8500_EXT_SUPPLY3,
+	AB8500_NUM_EXT_REGULATORS,
+};
+
 struct ab8500_regulator_platform_data {
 	int num_reg_init;
 	struct ab8500_regulator_reg_init *reg_init;
 	int num_regulator;
 	struct regulator_init_data *regulator;
+	int num_ext_regulator;
+	struct regulator_init_data *ext_regulator;
 };
+
+#ifdef CONFIG_REGULATOR_AB8500_EXT
+__devinit int ab8500_ext_regulator_init(struct platform_device *pdev);
+__devexit int ab8500_ext_regulator_exit(struct platform_device *pdev);
+#else
+inline __devinit int ab8500_ext_regulator_init(struct platform_device *pdev) {}
+inline __devexit int ab8500_ext_regulator_exit(struct platform_device *pdev) {}
+#endif
 
 #endif
