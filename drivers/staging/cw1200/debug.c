@@ -367,6 +367,55 @@ static const struct file_operations fops_counters = {
 	.owner = THIS_MODULE,
 };
 
+static int cw1200_generic_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
+}
+
+static ssize_t cw1200_11n_read(struct file *file,
+	char __user *user_buf, size_t count, loff_t *ppos)
+{
+	struct cw1200_common *priv = file->private_data;
+	struct ieee80211_supported_band *band =
+		priv->hw->wiphy->bands[IEEE80211_BAND_2GHZ];
+	return simple_read_from_buffer(user_buf, count, ppos,
+		band->ht_cap.ht_supported ? "1\n" : "0\n", 2);
+}
+
+static ssize_t cw1200_11n_write(struct file *file,
+	char __user *user_buf, size_t count, loff_t *ppos)
+{
+	struct cw1200_common *priv = file->private_data;
+	struct ieee80211_supported_band *band[2] = {
+		priv->hw->wiphy->bands[IEEE80211_BAND_2GHZ],
+		priv->hw->wiphy->bands[IEEE80211_BAND_5GHZ],
+	};
+	char buf[1];
+	int ena = 0;
+
+	if (!count)
+		return -EINVAL;
+	if (copy_from_user(buf, user_buf, 1))
+		return -EFAULT;
+	if (buf[0] == 1)
+		ena = 1;
+
+	band[0]->ht_cap.ht_supported = ena;
+#ifdef CONFIG_CW1200_5GHZ_SUPPORT
+	band[1]->ht_cap.ht_supported = ena;
+#endif /* CONFIG_CW1200_5GHZ_SUPPORT */
+
+	return count;
+}
+
+static const struct file_operations fops_11n = {
+	.open = cw1200_generic_open,
+	.read = cw1200_11n_read,
+	.write = cw1200_11n_write,
+	.llseek = default_llseek,
+};
+
 int cw1200_debug_init(struct cw1200_common *priv)
 {
 	struct cw1200_debug_priv *d = kzalloc(sizeof(struct cw1200_debug_priv),
@@ -386,6 +435,10 @@ int cw1200_debug_init(struct cw1200_common *priv)
 
 	if (!debugfs_create_file("counters", S_IRUSR, d->debugfs_phy,
 			priv, &fops_counters))
+		goto err;
+
+	if (!debugfs_create_file("11n", S_IRUSR | S_IWUSR,
+			d->debugfs_phy, priv, &fops_11n))
 		goto err;
 
 	return 0;
