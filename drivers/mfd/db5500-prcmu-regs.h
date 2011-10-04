@@ -123,4 +123,10 @@
 #define PRCM_RESOUTN_SET_OFFSET 0x214
 #define PRCM_RESOUTN_CLR_OFFSET 0x218
 
+/* APE - Modem Registers */
+#define PRCM_HOSTACCESS_REQ	0x334
+/* APE - Modem register bit maipulation */
+#define PRCM_HOSTACCESS_REQ_BIT BIT(0)
+#define PRCM_APE_ACK		0x49c
+#define PRCM_APE_ACK_BIT	0x01
 #endif

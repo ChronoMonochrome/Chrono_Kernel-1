@@ -27,7 +27,12 @@ int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk,
 int db5500_prcmu_config_esram0_deep_sleep(u8 state);
 void db5500_prcmu_system_reset(u16 reset_code);
 u16 db5500_prcmu_get_reset_code(void);
-bool db5500_prcmu_is_ac_wake_requested(void);
+#ifdef CONFIG_UX500_SOC_DB5500
+void prcmu_modem_req(void);
+void prcmu_modem_rel(void);
+void prcmu_ape_ack(void);
+#endif
+bool db5500_prcmu_is_modem_requested(void);
 int db5500_prcmu_set_arm_opp(u8 opp);
 int db5500_prcmu_get_arm_opp(void);
 int db5500_prcmu_set_ape_opp(u8 opp);
@@ -136,10 +141,16 @@ static inline u16 db5500_prcmu_get_reset_code(void)
 	return 0;
 }
 
-static inline bool db5500_prcmu_is_ac_wake_requested(void)
+static inline bool db5500_prcmu_is_modem_requested(void)
 {
 	return 0;
 }
+
+#ifdef CONFIG_UX500_SOC_DB5500
+static void prcmu_ape_ack(void) {}
+static void prcmu_modem_req(void) {}
+static void prcmu_modem_rel(void) {}
+#endif
 
 static inline int db5500_prcmu_set_arm_opp(u8 opp)
 {

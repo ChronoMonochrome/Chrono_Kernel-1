@@ -362,12 +362,14 @@ static u32 prcmu_wakeup_bit[NUM_PRCMU_WAKEUP_INDICES] = {
  * @lock                The transaction lock.
  * @dbb_irqs_lock       lock used for (un)masking DBB wakeup interrupts
  * @mask_work:          Work structure used for (un)masking wakeup interrupts.
+ * @ac_wake_lock:	mutex to lock modem_req and modem_rel
  * @req:                Request data that need to persist between requests.
  */
 static struct {
 	spinlock_t lock;
 	spinlock_t dbb_irqs_lock;
 	struct work_struct mask_work;
+	struct mutex ac_wake_lock;
 	struct {
 		u32 dbb_irqs;
 		u32 dbb_wakeups;
@@ -532,9 +534,73 @@ static struct clk_mgt clk_mgt[PRCMU_NUM_REG_CLOCKS] = {
 	CLK_MGT_ENTRY(SVACLK, false),
 };
 
-bool db5500_prcmu_is_ac_wake_requested(void)
+static atomic_t modem_req_state = ATOMIC_INIT(0);
+
+bool db5500_prcmu_is_modem_requested(void)
 {
-	return false;
+	return (atomic_read(&modem_req_state) != 0);
+}
+
+/**
+ * prcmu_modem_req - APE requests Modem to wake up
+ *
+ * Whenever APE wants to send message to the modem, it will have to call this
+ * function to make sure that modem is awake.
+ */
+void prcmu_modem_req(void)
+{
+	u32 val;
+
+	mutex_lock(&mb0_transfer.ac_wake_lock);
+
+	val = readl(_PRCMU_BASE + PRCM_HOSTACCESS_REQ);
+	if (val & PRCM_HOSTACCESS_REQ_BIT)
+		goto unlock_and_return;
+
+	writel((val | PRCM_HOSTACCESS_REQ_BIT),
+		(_PRCMU_BASE + PRCM_HOSTACCESS_REQ));
+	atomic_set(&modem_req_state, 1);
+
+unlock_and_return:
+	mutex_unlock(&mb0_transfer.ac_wake_lock);
+
+}
+
+/**
+ * prcmu_modem_rel - APE has no more messages to send and hence releases modem.
+ *
+ * APE to Modem communication is initiated by modem_req and once the
+ * communication is completed, APE sends modem_rel to complete the protocol.
+ */
+void prcmu_modem_rel(void)
+{
+	u32 val;
+
+	mutex_lock(&mb0_transfer.ac_wake_lock);
+
+	val = readl(_PRCMU_BASE + PRCM_HOSTACCESS_REQ);
+	if (!(val & PRCM_HOSTACCESS_REQ_BIT))
+		goto unlock_and_return;
+
+	writel((val & ~PRCM_HOSTACCESS_REQ_BIT),
+		(_PRCMU_BASE + PRCM_HOSTACCESS_REQ));
+
+	atomic_set(&modem_req_state, 0);
+
+unlock_and_return:
+	mutex_unlock(&mb0_transfer.ac_wake_lock);
+}
+
+/**
+ * prcm_ape_ack - send an acknowledgement to modem
+ *
+ * On ape receiving ape_req, APE will have to acknowledge for the interrupt
+ * received. This function will send the acknowledgement by writing to the
+ * prcmu register and an interrupt is trigerred to modem.
+ */
+void prcmu_ape_ack(void)
+{
+	writel(PRCM_APE_ACK_BIT, (_PRCMU_BASE + PRCM_APE_ACK));
 }
 
 /**
@@ -1933,6 +1999,7 @@ void __init db5500_prcmu_early_init(void)
 	tcdm_base = __io_address(U5500_PRCMU_TCDM_BASE);
 	spin_lock_init(&mb0_transfer.lock);
 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);
+	mutex_init(&mb0_transfer.ac_wake_lock);
 	mutex_init(&mb1_transfer.lock);
 	init_completion(&mb1_transfer.work);
 	mutex_init(&mb2_transfer.lock);
