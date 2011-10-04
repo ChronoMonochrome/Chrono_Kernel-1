@@ -529,6 +529,27 @@ static DEF_PRCMU_CLK(uiccclk, PRCMU_UICCCLK, 48000000);
 static DEF_PRCMU_CLK(timclk, PRCMU_TIMCLK, 2400000);
 static DEF_PRCMU_CLK(sdmmcclk, PRCMU_SDMMCCLK, 50000000);
 
+static struct clk dsi0escclk = {
+	.name = "dsi0escclk",
+	.ops = &prcmu_scalable_clk_ops,
+	.cg_sel = PRCMU_DSI0ESCCLK,
+	.parent = &tvclk,
+};
+
+static struct clk dsi1escclk = {
+	.name = "dsi1escclk",
+	.ops = &prcmu_scalable_clk_ops,
+	.cg_sel = PRCMU_DSI1ESCCLK,
+	.parent = &tvclk,
+};
+
+static struct clk dsi2escclk = {
+	.name = "dsi2escclk",
+	.ops = &prcmu_scalable_clk_ops,
+	.cg_sel = PRCMU_DSI2ESCCLK,
+	.parent = &tvclk,
+};
+
 /* PRCC PClocks */
 
 static DEF_PER1_PCLK(0, p1_pclk0);
