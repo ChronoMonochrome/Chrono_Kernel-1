@@ -120,7 +120,7 @@ static struct channel_info *find_chnl(u8 chnl_id)
 
 static struct overlay_info *find_ovly(struct channel_info *ci, u8 ovly_id)
 {
-	if (!ci || ovly_id > MAX_NUM_OVERLAYS)
+	if (!ci || ovly_id >= MAX_NUM_OVERLAYS)
 		return NULL;
 	return &ci->overlays[ovly_id];
 }

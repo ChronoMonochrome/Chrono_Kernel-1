@@ -2635,7 +2635,7 @@ static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 
 	if (ovly->regs.dirty_buf) {
 		update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs);
-		mcde_debugfs_overlay_update(chnl->id, ovly->idx);
+		mcde_debugfs_overlay_update(chnl->id, ovly != chnl->ovly0);
 	}
 	if (ovly->regs.dirty) {
 		chnl_ovly_pixel_format_apply(chnl, ovly);
