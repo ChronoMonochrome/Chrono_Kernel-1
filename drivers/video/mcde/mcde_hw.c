@@ -1786,7 +1786,7 @@ static u32 get_pkt_div(u32 disp_ppl,
 	 */
 	switch (port->type) {
 	case MCDE_PORTTYPE_DSI:
-		if (port->ifc == DSI_CMD_MODE)
+		if (port->mode == MCDE_PORTMODE_CMD)
 			/* Equivalent of ceil(disp_ppl/fifo_size) */
 			return (disp_ppl - 1) / get_output_fifo_size(fifo) + 1;
 		else
