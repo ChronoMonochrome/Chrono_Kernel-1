@@ -462,7 +462,6 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		(struct cw1200_sta_priv *)&tx_info->control.sta->drv_priv;
 	int link_id, raw_link_id;
 	int ret;
-	int i;
 	struct __cw1200_txpriv txpriv = {
 		.super.tid = CW1200_MAX_TID,
 	};
@@ -504,11 +503,10 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		goto err;
 
 	if (unlikely(ieee80211_is_auth(hdr->frame_control))) {
-		spin_lock_bh(&priv->buffered_multicasts_lock);
+		spin_lock_bh(&priv->ps_state_lock);
 		priv->sta_asleep_mask &= ~BIT(raw_link_id);
-		for (i = 0; i < 4; ++i)
-			priv->tx_suspend_mask[i] &= ~BIT(raw_link_id);
-		spin_unlock_bh(&priv->buffered_multicasts_lock);
+		priv->pspoll_mask &= ~BIT(raw_link_id);
+		spin_unlock_bh(&priv->ps_state_lock);
 	} else if (ieee80211_is_data_qos(hdr->frame_control) ||
 			ieee80211_is_qos_nullfunc(hdr->frame_control)) {
 		u8 *qos = ieee80211_get_qos_ctl(hdr);
@@ -620,7 +618,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		if (cw1200_handle_action_tx(priv, skb))
 			goto drop;
 
-	spin_lock_bh(&priv->buffered_multicasts_lock);
+	spin_lock_bh(&priv->ps_state_lock);
 
 	if (link_id == CW1200_LINK_ID_AFTER_DTIM &&
 			!priv->buffered_multicasts) {
@@ -639,7 +637,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
 			&txpriv.super);
 
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
+	spin_unlock_bh(&priv->ps_state_lock);
 
 	if (raw_link_id && !was_buffered && txpriv.super.tid < CW1200_MAX_TID)
 		ieee80211_sta_set_buffered(tx_info->control.sta,
@@ -695,7 +693,7 @@ static int cw1200_handle_pspoll(struct cw1200_common *priv,
 	struct ieee80211_pspoll *pspoll =
 		(struct ieee80211_pspoll *) skb->data;
 	int link_id = 0;
-	u32 pspoll_mask;
+	u32 pspoll_mask = 0;
 	int drop = 1;
 	int i;
 
@@ -711,16 +709,15 @@ static int cw1200_handle_pspoll(struct cw1200_common *priv,
 		sta_priv = (struct cw1200_sta_priv *)&sta->drv_priv;
 		link_id = sta_priv->link_id;
 		pspoll_mask = BIT(sta_priv->link_id);
+
+		/* HACK! To be removed when accurate TX ststus
+		 * reporting for dropped frames is implemented. */
+		if (priv->pspoll_mask & pspoll_mask)
+			ieee80211_sta_eosp_irqsafe(sta);
 	}
 	rcu_read_unlock();
 	if (!link_id)
-		/* Slowpath */
-		link_id = cw1200_find_link_id(priv, pspoll->ta);
-
-	if (!link_id)
 		goto done;
-
-	pspoll_mask = BIT(link_id);
 
 	priv->pspoll_mask |= pspoll_mask;
 	drop = 0;
@@ -856,10 +853,10 @@ void cw1200_notify_buffered_tx(struct cw1200_common *priv,
 		buffered = priv->link_id_db
 				[link_id - 1].buffered;
 
-		spin_lock_bh(&priv->buffered_multicasts_lock);
+		spin_lock_bh(&priv->ps_state_lock);
 		if (!WARN_ON(!buffered[tid]))
 			still_buffered = --buffered[tid];
-		spin_unlock_bh(&priv->buffered_multicasts_lock);
+		spin_unlock_bh(&priv->ps_state_lock);
 
 		if (!still_buffered && tid < CW1200_MAX_TID) {
 			hdr = (struct ieee80211_hdr *) skb->data;
@@ -880,7 +877,9 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	struct sk_buff *skb = *skb_p;
 	struct ieee80211_rx_status *hdr = IEEE80211_SKB_RXCB(skb);
 	struct ieee80211_hdr *frame = (struct ieee80211_hdr *)skb->data;
+	struct cw1200_link_entry *entry = NULL;
 	unsigned long grace_period;
+	bool early_data = false;
 	hdr->flag = 0;
 
 	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
@@ -888,8 +887,13 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 		goto drop;
 	}
 
-	if (arg->link_id && arg->link_id <= CW1200_MAX_STA_IN_AP_MODE)
-		priv->link_id_db[arg->link_id - 1].timestamp = jiffies;
+	if (arg->link_id && arg->link_id <= CW1200_MAX_STA_IN_AP_MODE) {
+		entry =	&priv->link_id_db[arg->link_id - 1];
+		if (entry->status == CW1200_LINK_SOFT &&
+				ieee80211_is_data(frame->frame_control))
+			early_data = true;
+		entry->timestamp = jiffies;
+	}
 
 	if (unlikely(arg->status)) {
 		if (arg->status == WSM_STATUS_MICFAILURE) {
@@ -996,15 +1000,19 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 		grace_period = 1 * HZ;
 	cw1200_pm_stay_awake(&priv->pm_state, grace_period);
 
-	/* Notify driver and mac80211 about PM state */
-	cw1200_ps_notify(priv, arg->link_id,
-			ieee80211_has_pm(frame->frame_control));
-
-	/* Not that we really need _irqsafe variant here,
-	 * but it offloads realtime bh thread and improve
-	 * system performance. */
-	ieee80211_rx_irqsafe(priv->hw, skb);
+	if (unlikely(early_data)) {
+		spin_lock_bh(&priv->ps_state_lock);
+		/* Double-check status with lock held */
+		if (entry->status == CW1200_LINK_SOFT)
+			skb_queue_tail(&entry->rx_queue, skb);
+		else
+			ieee80211_rx_irqsafe(priv->hw, skb);
+		spin_unlock_bh(&priv->ps_state_lock);
+	} else {
+		ieee80211_rx_irqsafe(priv->hw, skb);
+	}
 	*skb_p = NULL;
+
 	return;
 
 drop:

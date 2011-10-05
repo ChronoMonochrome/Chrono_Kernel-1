@@ -136,7 +136,7 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 
 	for (i = 0; i < 4; i++)
-		cw1200_queue_clear(&priv->tx_queue[i]);
+		cw1200_queue_clear(&priv->tx_queue[i], priv);
 
 	/* HACK! */
 	if (atomic_xchg(&priv->tx_lock, 1) != 1)
@@ -215,8 +215,6 @@ void cw1200_remove_interface(struct ieee80211_hw *dev,
 		}
 		memset(priv->link_id_db, 0,
 				sizeof(priv->link_id_db));
-		memset(priv->tx_suspend_mask, 0,
-				sizeof(priv->tx_suspend_mask));
 		priv->sta_asleep_mask = 0;
 		priv->enable_beacon = false;
 		priv->tx_multicast = false;
@@ -762,7 +760,7 @@ int __cw1200_flush(struct cw1200_common *priv, bool drop)
 		 */
 		if (drop) {
 			for (i = 0; i < 4; ++i)
-				cw1200_queue_clear(&priv->tx_queue[i]);
+				cw1200_queue_clear(&priv->tx_queue[i], priv);
 		} else {
 			ret = wait_event_timeout(
 				priv->tx_queue_stats.wait_link_id_empty,

@@ -116,7 +116,7 @@ int cw1200_queue_init(struct cw1200_queue *queue,
 	return 0;
 }
 
-int cw1200_queue_clear(struct cw1200_queue *queue)
+int cw1200_queue_clear(struct cw1200_queue *queue, struct cw1200_common *priv)
 {
 	int i;
 	struct cw1200_queue_stats *stats = queue->stats;
@@ -145,6 +145,10 @@ int cw1200_queue_clear(struct cw1200_queue *queue)
 		queue->link_map_cache[i] = 0;
 	}
 	spin_unlock_bh(&stats->lock);
+	if (unlikely(queue->overfull)) {
+		queue->overfull = false;
+		__cw1200_queue_unlock(queue, priv);
+	}
 	spin_unlock_bh(&queue->lock);
 	wake_up(&stats->wait_link_id_empty);
 	return 0;
@@ -156,9 +160,10 @@ void cw1200_queue_stats_deinit(struct cw1200_queue_stats *stats)
 	stats->link_map_cache = NULL;
 }
 
-void cw1200_queue_deinit(struct cw1200_queue *queue)
+void cw1200_queue_deinit(struct cw1200_queue *queue,
+			 struct cw1200_common *priv)
 {
-	cw1200_queue_clear(queue);
+	cw1200_queue_clear(queue, priv);
 	INIT_LIST_HEAD(&queue->free_pool);
 	kfree(queue->pool);
 	kfree(queue->link_map_cache);

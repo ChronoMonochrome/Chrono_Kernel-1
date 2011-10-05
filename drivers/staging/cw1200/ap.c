@@ -29,6 +29,10 @@ static int cw1200_start_ap(struct cw1200_common *priv);
 static int cw1200_update_beaconing(struct cw1200_common *priv);
 static int cw1200_enable_beaconing(struct cw1200_common *priv,
 				   bool enable);
+static void __cw1200_sta_notify(struct ieee80211_hw *dev,
+				struct ieee80211_vif *vif,
+				enum sta_notify_cmd notify_cmd,
+				struct ieee80211_sta *sta);
 
 /* ******************************************************************** */
 /* AP API								*/
@@ -39,22 +43,26 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	struct cw1200_common *priv = hw->priv;
 	struct cw1200_sta_priv *sta_priv =
 			(struct cw1200_sta_priv *)&sta->drv_priv;
+	struct cw1200_link_entry *entry;
+	struct sk_buff *skb;
 
 	if (priv->mode != NL80211_IFTYPE_AP)
 		return 0;
 
 	sta_priv->link_id = cw1200_find_link_id(priv, sta->addr);
-	if (!sta_priv->link_id) {
+	if (WARN_ON(!sta_priv->link_id)) {
+		/* Impossible error */
 		wiphy_info(priv->hw->wiphy,
 			"[AP] No more link IDs available.\n");
 		return -ENOENT;
 	}
 
-	spin_lock_bh(&priv->buffered_multicasts_lock);
-	priv->link_id_db[sta_priv->link_id - 1].status = CW1200_LINK_HARD;
-	if (priv->link_id_db[sta_priv->link_id - 1].ps)
-		ieee80211_sta_ps_transition(sta, true);
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
+	entry = &priv->link_id_db[sta_priv->link_id - 1];
+	spin_lock_bh(&priv->ps_state_lock);
+	entry->status = CW1200_LINK_HARD;
+	while ((skb = skb_dequeue(&entry->rx_queue)))
+		ieee80211_rx_irqsafe(priv->hw, skb);
+	spin_unlock_bh(&priv->ps_state_lock);
 	return 0;
 }
 
@@ -64,19 +72,24 @@ int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	struct cw1200_common *priv = hw->priv;
 	struct cw1200_sta_priv *sta_priv =
 			(struct cw1200_sta_priv *)&sta->drv_priv;
+	struct cw1200_link_entry *entry;
 
 	if (priv->mode != NL80211_IFTYPE_AP || !sta_priv->link_id)
 		return 0;
 
-	spin_lock_bh(&priv->buffered_multicasts_lock);
-	priv->link_id_db[sta_priv->link_id - 1].status = CW1200_LINK_SOFT;
-	priv->link_id_db[sta_priv->link_id - 1].timestamp = jiffies;
+	/* HACK! To be removed when accurate TX ststus
+	 * reporting for dropped frames is implemented. */
+	ieee80211_sta_eosp_irqsafe(sta);
+
+	entry = &priv->link_id_db[sta_priv->link_id - 1];
+	spin_lock_bh(&priv->ps_state_lock);
+	entry->status = CW1200_LINK_SOFT;
+	entry->timestamp = jiffies;
 	if (!delayed_work_pending(&priv->link_id_gc_work))
 		queue_delayed_work(priv->workqueue,
 				&priv->link_id_gc_work,
 				CW1200_LINK_ID_GC_TIMEOUT);
-	priv->link_id_db[sta_priv->link_id - 1].ps = false;
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
+	spin_unlock_bh(&priv->ps_state_lock);
 	return 0;
 }
 
@@ -89,45 +102,44 @@ static void __cw1200_sta_notify(struct ieee80211_hw *dev,
 	struct cw1200_sta_priv *sta_priv =
 		(struct cw1200_sta_priv *)&sta->drv_priv;
 	u32 bit = BIT(sta_priv->link_id);
+	u32 prev = priv->sta_asleep_mask & bit;
 
-	spin_lock_bh(&priv->buffered_multicasts_lock);
 	switch (notify_cmd) {
 		case STA_NOTIFY_SLEEP:
-			if (priv->buffered_multicasts &&
+			if (!prev) {
+				if (priv->buffered_multicasts &&
 					!priv->sta_asleep_mask)
 				queue_work(priv->workqueue,
 					&priv->multicast_start_work);
-			priv->sta_asleep_mask |= bit;
+				priv->sta_asleep_mask |= bit;
+			}
 			break;
 		case STA_NOTIFY_AWAKE:
-			priv->sta_asleep_mask &= ~bit;
-			if (priv->tx_multicast &&
-					!priv->sta_asleep_mask)
-				queue_work(priv->workqueue,
-					&priv->multicast_stop_work);
-			cw1200_bh_wakeup(priv);
+			if (prev) {
+				priv->sta_asleep_mask &= ~bit;
+				priv->pspoll_mask &= ~bit;
+				if (priv->tx_multicast &&
+						!priv->sta_asleep_mask)
+					queue_work(priv->workqueue,
+						&priv->multicast_stop_work);
+				cw1200_bh_wakeup(priv);
+			}
 			break;
 	}
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
 }
 
-static void __cw1200_ps_notify(struct cw1200_common *priv,
-			       struct ieee80211_sta *sta,
-			       int link_id, bool ps)
+void cw1200_sta_notify(struct ieee80211_hw *dev,
+		       struct ieee80211_vif *vif,
+		       enum sta_notify_cmd notify_cmd,
+		       struct ieee80211_sta *sta)
 {
-	txrx_printk(KERN_DEBUG "%s for LinkId: %d. Suspend: %.8X\n",
-			ps ? "Stop" : "Start",
-			link_id, priv->tx_suspend_mask[0]);
-
-	priv->link_id_db[link_id - 1].ps = ps;
-	if (sta) {
-		__cw1200_sta_notify(priv->hw, priv->vif,
-			ps ? STA_NOTIFY_SLEEP : STA_NOTIFY_AWAKE, sta);
-		ieee80211_sta_ps_transition_ni(sta, ps);
-	}
+	struct cw1200_common *priv = dev->priv;
+	spin_lock_bh(&priv->ps_state_lock);
+	__cw1200_sta_notify(dev, vif, notify_cmd, sta);
+	spin_unlock_bh(&priv->ps_state_lock);
 }
 
-void cw1200_ps_notify(struct cw1200_common *priv,
+static void cw1200_ps_notify(struct cw1200_common *priv,
 		      int link_id, bool ps)
 {
 	struct ieee80211_sta *sta;
@@ -135,13 +147,17 @@ void cw1200_ps_notify(struct cw1200_common *priv,
 	if (!link_id || link_id > CW1200_MAX_STA_IN_AP_MODE)
 		return;
 
-	if (!!ps == !!priv->link_id_db[link_id - 1].ps)
-		return;
+	txrx_printk(KERN_DEBUG "%s for LinkId: %d. STAs asleep: %.8X\n",
+			ps ? "Stop" : "Start",
+			link_id, priv->sta_asleep_mask);
 
 	rcu_read_lock();
 	sta = ieee80211_find_sta(priv->vif,
 			priv->link_id_db[link_id - 1].mac);
-	__cw1200_ps_notify(priv, sta, link_id, ps);
+	if (sta) {
+		__cw1200_sta_notify(priv->hw, priv->vif,
+			ps ? STA_NOTIFY_SLEEP : STA_NOTIFY_AWAKE, sta);
+	}
 	rcu_read_unlock();
 }
 
@@ -594,12 +610,12 @@ void cw1200_mcast_timeout(unsigned long arg)
 	struct cw1200_common *priv =
 		(struct cw1200_common *)arg;
 
-	spin_lock_bh(&priv->buffered_multicasts_lock);
+	spin_lock_bh(&priv->ps_state_lock);
 	priv->tx_multicast = priv->aid0_bit_set &&
 			priv->buffered_multicasts;
 	if (priv->tx_multicast)
 		cw1200_bh_wakeup(priv);
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
+	spin_unlock_bh(&priv->ps_state_lock);
 }
 
 int cw1200_ampdu_action(struct ieee80211_hw *hw,
@@ -620,18 +636,6 @@ int cw1200_ampdu_action(struct ieee80211_hw *hw,
 void cw1200_suspend_resume(struct cw1200_common *priv,
 			  struct wsm_suspend_resume *arg)
 {
-	int queue = BIT(wsm_queue_id_to_linux(arg->queue));
-	u32 unicast = BIT(arg->link_id);
-	u32 wakeup_required = 0;
-	u32 set = 0;
-	u32 clear;
-	u32 tx_suspend_mask;
-	bool cancel_tmo = false;
-	int i;
-
-	if (!arg->link_id) /* For all links */
-		unicast = BIT(CW1200_MAX_STA_IN_AP_MODE + 1) - 2;
-
 	/* if () is intendend to protect against spam. FW sends
 	 * "start multicast" request on every DTIM. */
 	if (arg->stop || !arg->multicast || priv->buffered_multicasts)
@@ -640,7 +644,8 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 				arg->multicast ? "broadcast" : "unicast");
 
 	if (arg->multicast) {
-		spin_lock_bh(&priv->buffered_multicasts_lock);
+		bool cancel_tmo = false;
+		spin_lock_bh(&priv->ps_state_lock);
 		if (arg->stop) {
 			priv->tx_multicast = false;
 		} else {
@@ -658,43 +663,18 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 				cw1200_bh_wakeup(priv);
 			}
 		}
-		spin_unlock_bh(&priv->buffered_multicasts_lock);
+		spin_unlock_bh(&priv->ps_state_lock);
 		if (cancel_tmo)
 			del_timer_sync(&priv->mcast_timeout);
 	} else {
-		if (arg->stop)
-			set = unicast;
-		else
-			set = 0;
-
-		clear = set ^ unicast;
-
-		/* TODO: if (!priv->uapsd) */
-		queue = 0x0F;
-
-		spin_lock_bh(&priv->buffered_multicasts_lock);
-		priv->sta_asleep_mask |= set;
-		for (i = 0; i < 4; ++i) {
-			if (!(queue & BIT(i)))
-				continue;
-
-			tx_suspend_mask = priv->tx_suspend_mask[i];
-			priv->tx_suspend_mask[i] =
-				(tx_suspend_mask & ~clear) | set;
-
-			wakeup_required = wakeup_required ||
-				cw1200_queue_get_num_queued(
-					&priv->tx_queue[i],
-					tx_suspend_mask & clear);
-		}
-		spin_unlock_bh(&priv->buffered_multicasts_lock);
+		spin_lock_bh(&priv->ps_state_lock);
 		cw1200_ps_notify(priv, arg->link_id, arg->stop);
+		spin_unlock_bh(&priv->ps_state_lock);
+		if (!arg->stop)
+			cw1200_bh_wakeup(priv);
 	}
-	if (wakeup_required)
-		cw1200_bh_wakeup(priv);
 	return;
 }
-
 
 /* ******************************************************************** */
 /* AP privates								*/
@@ -873,7 +853,7 @@ static int cw1200_update_beaconing(struct cw1200_common *priv)
 int cw1200_find_link_id(struct cw1200_common *priv, const u8 *mac)
 {
 	int i, ret = 0;
-	spin_lock_bh(&priv->buffered_multicasts_lock);
+	spin_lock_bh(&priv->ps_state_lock);
 	for (i = 0; i < CW1200_MAX_STA_IN_AP_MODE; ++i) {
 		if (!memcmp(mac, priv->link_id_db[i].mac, ETH_ALEN) &&
 				priv->link_id_db[i].status) {
@@ -882,7 +862,7 @@ int cw1200_find_link_id(struct cw1200_common *priv, const u8 *mac)
 			break;
 		}
 	}
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
+	spin_unlock_bh(&priv->ps_state_lock);
 	return ret;
 }
 
@@ -892,7 +872,7 @@ int cw1200_alloc_link_id(struct cw1200_common *priv, const u8 *mac)
 	unsigned long max_inactivity = 0;
 	unsigned long now = jiffies;
 
-	spin_lock_bh(&priv->buffered_multicasts_lock);
+	spin_lock_bh(&priv->ps_state_lock);
 	for (i = 0; i < CW1200_MAX_STA_IN_AP_MODE; ++i) {
 		if (!priv->link_id_db[i].status) {
 			ret = i + 1;
@@ -909,11 +889,13 @@ int cw1200_alloc_link_id(struct cw1200_common *priv, const u8 *mac)
 		}
 	}
 	if (ret) {
+		struct cw1200_link_entry *entry = &priv->link_id_db[ret - 1];
 		ap_printk(KERN_DEBUG "[AP] STA added, link_id: %d\n",
 			ret);
-		priv->link_id_db[ret - 1].status = CW1200_LINK_RESERVE;
-		memcpy(&priv->link_id_db[ret - 1].mac, mac, ETH_ALEN);
-		memset(&priv->link_id_db[ret - 1].buffered, 0, CW1200_MAX_TID);
+		entry->status = CW1200_LINK_RESERVE;
+		memcpy(&entry->mac, mac, ETH_ALEN);
+		memset(&entry->buffered, 0, CW1200_MAX_TID);
+		skb_queue_head_init(&entry->rx_queue);
 		wsm_lock_tx_async(priv);
 		if (queue_work(priv->workqueue, &priv->link_id_work) <= 0)
 			wsm_unlock_tx(priv);
@@ -922,7 +904,7 @@ int cw1200_alloc_link_id(struct cw1200_common *priv, const u8 *mac)
 			"[AP] Early: no more link IDs available.\n");
 	}
 
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
+	spin_unlock_bh(&priv->ps_state_lock);
 	return ret;
 }
 
@@ -950,13 +932,13 @@ void cw1200_link_id_gc_work(struct work_struct *work)
 	long ttl;
 	bool need_reset;
 	u32 mask;
-	int i, j;
+	int i;
 
 	if (priv->join_status != CW1200_JOIN_STATUS_AP)
 		return;
 
 	wsm_lock_tx(priv);
-	spin_lock_bh(&priv->buffered_multicasts_lock);
+	spin_lock_bh(&priv->ps_state_lock);
 	for (i = 0; i < CW1200_MAX_STA_IN_AP_MODE; ++i) {
 		need_reset = false;
 		mask = BIT(i + 1);
@@ -965,8 +947,7 @@ void cw1200_link_id_gc_work(struct work_struct *work)
 			 !(priv->link_id_map & mask))) {
 			if (priv->link_id_map & mask) {
 				priv->sta_asleep_mask &= ~mask;
-				for (j = 0; j < 4; ++j)
-					priv->tx_suspend_mask[j] &= ~mask;
+				priv->pspoll_mask &= ~mask;
 				need_reset = true;
 			}
 			priv->link_id_map |= mask;
@@ -974,7 +955,7 @@ void cw1200_link_id_gc_work(struct work_struct *work)
 				priv->link_id_db[i].status = CW1200_LINK_SOFT;
 			memcpy(map_link.mac_addr, priv->link_id_db[i].mac,
 					ETH_ALEN);
-			spin_unlock_bh(&priv->buffered_multicasts_lock);
+			spin_unlock_bh(&priv->ps_state_lock);
 			if (need_reset) {
 				reset.link_id = i + 1;
 				WARN_ON(wsm_reset(priv, &reset));
@@ -982,7 +963,7 @@ void cw1200_link_id_gc_work(struct work_struct *work)
 			map_link.link_id = i + 1;
 			WARN_ON(wsm_map_link(priv, &map_link));
 			next_gc = min(next_gc, CW1200_LINK_ID_GC_TIMEOUT);
-			spin_lock_bh(&priv->buffered_multicasts_lock);
+			spin_lock_bh(&priv->ps_state_lock);
 		} else if (priv->link_id_db[i].status == CW1200_LINK_SOFT) {
 			ttl = priv->link_id_db[i].timestamp - now +
 					CW1200_LINK_ID_GC_TIMEOUT;
@@ -991,22 +972,23 @@ void cw1200_link_id_gc_work(struct work_struct *work)
 				priv->link_id_db[i].status = CW1200_LINK_OFF;
 				priv->link_id_map &= ~mask;
 				priv->sta_asleep_mask &= ~mask;
-				for (j = 0; j < 4; ++j)
-					priv->tx_suspend_mask[j] &= ~mask;
+				priv->pspoll_mask &= ~mask;
 				memset(map_link.mac_addr, 0, ETH_ALEN);
-				spin_unlock_bh(&priv->buffered_multicasts_lock);
+				spin_unlock_bh(&priv->ps_state_lock);
 				reset.link_id = i + 1;
 				WARN_ON(wsm_reset(priv, &reset));
-				spin_lock_bh(&priv->buffered_multicasts_lock);
+				spin_lock_bh(&priv->ps_state_lock);
 			} else {
 				next_gc = min(next_gc, (unsigned long)ttl);
 			}
 		}
-		if (need_reset)
+		if (need_reset) {
+			skb_queue_purge(&priv->link_id_db[i].rx_queue);
 			ap_printk(KERN_DEBUG "[AP] STA removed, link_id: %d\n",
 					reset.link_id);
+		}
 	}
-	spin_unlock_bh(&priv->buffered_multicasts_lock);
+	spin_unlock_bh(&priv->ps_state_lock);
 	if (next_gc != -1)
 		queue_delayed_work(priv->workqueue,
 				&priv->link_id_gc_work, next_gc);

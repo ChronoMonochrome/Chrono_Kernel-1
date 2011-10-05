@@ -1555,7 +1555,6 @@ static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 		tx_allowed_mask = ~priv->sta_asleep_mask;
 		tx_allowed_mask |= BIT(CW1200_LINK_ID_UAPSD);
 		if (priv->sta_asleep_mask) {
-			tx_allowed_mask |= ~priv->tx_suspend_mask[i];
 			tx_allowed_mask |= priv->pspoll_mask;
 			tx_allowed_mask &= ~BIT(CW1200_LINK_ID_AFTER_DTIM);
 		} else {
@@ -1607,7 +1606,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 			if (atomic_add_return(0, &priv->tx_lock))
 				break;
 
-			spin_lock_bh(&priv->buffered_multicasts_lock);
+			spin_lock_bh(&priv->ps_state_lock);
 
 			ret = wsm_get_tx_queue_and_mask(priv, &queue,
 					&tx_allowed_mask, &more);
@@ -1622,7 +1621,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 						&priv->multicast_stop_work);
 			}
 
-			spin_unlock_bh(&priv->buffered_multicasts_lock);
+			spin_unlock_bh(&priv->ps_state_lock);
 
 			if (ret)
 				break;

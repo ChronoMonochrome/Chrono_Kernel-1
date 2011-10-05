@@ -18,6 +18,9 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		   struct ieee80211_sta *sta);
 int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		      struct ieee80211_sta *sta);
+void cw1200_sta_notify(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
+		       enum sta_notify_cmd notify_cmd,
+		       struct ieee80211_sta *sta);
 void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			     struct ieee80211_vif *vif,
 			     struct ieee80211_bss_conf *info,
@@ -38,7 +41,5 @@ int cw1200_find_link_id(struct cw1200_common *priv, const u8 *mac);
 int cw1200_alloc_link_id(struct cw1200_common *priv, const u8 *mac);
 void cw1200_link_id_work(struct work_struct *work);
 void cw1200_link_id_gc_work(struct work_struct *work);
-void cw1200_ps_notify(struct cw1200_common *priv,
-		      int link_id, bool ps);
 
 #endif

@@ -72,7 +72,7 @@ struct cw1200_link_entry {
 	enum cw1200_link_status		status;
 	u8				mac[ETH_ALEN];
 	u8				buffered[CW1200_MAX_TID];
-	bool				ps;
+	struct sk_buff_head		rx_queue;
 };
 
 struct cw1200_common {
@@ -198,11 +198,10 @@ struct cw1200_common {
 	struct cw1200_link_entry link_id_db[CW1200_MAX_STA_IN_AP_MODE];
 	struct work_struct	link_id_work;
 	struct delayed_work	link_id_gc_work;
-	u32			tx_suspend_mask[4];
 	u32			sta_asleep_mask;
 	u32			pspoll_mask;
 	bool			aid0_bit_set;
-	spinlock_t		buffered_multicasts_lock;
+	spinlock_t		ps_state_lock;
 	bool			buffered_multicasts;
 	bool			tx_multicast;
 	struct work_struct	set_tim_work;

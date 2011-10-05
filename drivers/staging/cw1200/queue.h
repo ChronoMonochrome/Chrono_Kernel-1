@@ -60,9 +60,10 @@ int cw1200_queue_init(struct cw1200_queue *queue,
 		      struct cw1200_queue_stats *stats,
 		      u8 queue_id,
 		      size_t capacity);
-int cw1200_queue_clear(struct cw1200_queue *queue);
+int cw1200_queue_clear(struct cw1200_queue *queue, struct cw1200_common *priv);
 void cw1200_queue_stats_deinit(struct cw1200_queue_stats *stats);
-void cw1200_queue_deinit(struct cw1200_queue *queue);
+void cw1200_queue_deinit(struct cw1200_queue *queue,
+			 struct cw1200_common *priv);
 
 size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 				   u32 link_id_map);

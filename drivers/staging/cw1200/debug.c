@@ -211,11 +211,7 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 
 	seq_puts(seq, "\n");
 	for (i = 0; i < 4; ++i) {
-		char buf[32];
-		snprintf(buf, sizeof(buf), "TX lock(%d): ", i);
 		cw1200_queue_status_show(seq, &priv->tx_queue[i]);
-		cw1200_debug_print_map(seq, priv, buf,
-			priv->tx_suspend_mask[i]);
 		seq_puts(seq, "\n");
 	}
 

@@ -207,6 +207,7 @@ static const struct ieee80211_ops cw1200_ops = {
 	.tx			= cw1200_tx,
 	.hw_scan		= cw1200_hw_scan,
 	.set_tim		= cw1200_set_tim,
+	.sta_notify		= cw1200_sta_notify,
 	.sta_add		= cw1200_sta_add,
 	.sta_remove		= cw1200_sta_remove,
 	.set_key		= cw1200_set_key,
@@ -325,7 +326,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_DELAYED_WORK(&priv->connection_loss_work,
 			  cw1200_connection_loss_work);
 	INIT_WORK(&priv->tx_failure_work, cw1200_tx_failure_work);
-	spin_lock_init(&priv->buffered_multicasts_lock);
+	spin_lock_init(&priv->ps_state_lock);
 	INIT_WORK(&priv->set_tim_work, cw1200_set_tim_work);
 	INIT_WORK(&priv->multicast_start_work, cw1200_multicast_start_work);
 	INIT_WORK(&priv->multicast_stop_work, cw1200_multicast_stop_work);
@@ -350,7 +351,8 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 		if (unlikely(cw1200_queue_init(&priv->tx_queue[i],
 				&priv->tx_queue_stats, i, 16))) {
 			for (; i > 0; i--)
-				cw1200_queue_deinit(&priv->tx_queue[i - 1]);
+				cw1200_queue_deinit(&priv->tx_queue[i - 1],
+						priv);
 			cw1200_queue_stats_deinit(&priv->tx_queue_stats);
 			ieee80211_free_hw(hw);
 			return NULL;
@@ -440,7 +442,7 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 	}
 
 	for (i = 0; i < 4; ++i)
-		cw1200_queue_deinit(&priv->tx_queue[i]);
+		cw1200_queue_deinit(&priv->tx_queue[i], priv);
 	cw1200_queue_stats_deinit(&priv->tx_queue_stats);
 	cw1200_pm_deinit(&priv->pm_state);
 }
