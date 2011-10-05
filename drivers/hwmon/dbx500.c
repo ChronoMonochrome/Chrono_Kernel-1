@@ -13,7 +13,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/platform_device.h>
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <linux/hwmon.h>
 #include <linux/sysfs.h>
 #include <linux/hwmon-sysfs.h>
