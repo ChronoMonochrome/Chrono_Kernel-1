@@ -1567,9 +1567,9 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 			switch (port->sync_src) {
 			case MCDE_SYNCSRC_TE0:
 				out_synch_src =
-				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_VSYNC0;
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_TE0;
 				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
 				break;
 			case MCDE_SYNCSRC_OFF:
 				src_synch =
@@ -1578,26 +1578,26 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 			case MCDE_SYNCSRC_TE1:
 			default:
 				out_synch_src =
-				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_VSYNC1;
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_TE1;
 				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
 				break;
 			case MCDE_SYNCSRC_TE_POLLING:
 				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
 				break;
 			}
 		} else {
 			if (port->sync_src == MCDE_SYNCSRC_TE0) {
 				out_synch_src =
-				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_VSYNC0;
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_TE0;
 				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
 			}
 		}
 	} else if (port->type == MCDE_PORTTYPE_DPI) {
 		src_synch = port->update_auto_trig ?
-					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT :
+					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE :
 					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
 	}
 
@@ -1741,8 +1741,7 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		mcde_wreg(MCDE_ROTADD1A + chnl_id * MCDE_ROTADD1A_GROUPOFFSET,
 			regs->rotbuf2);
 		mcde_wreg(MCDE_ROTACONF + chnl_id * MCDE_ROTACONF_GROUPOFFSET,
-			MCDE_ROTACONF_ROTBURSTSIZE_ENUM(8W) |
-			MCDE_ROTACONF_ROTBURSTSIZE_HW(1) |
+			MCDE_ROTACONF_ROTBURSTSIZE_ENUM(HW_8W) |
 			MCDE_ROTACONF_ROTDIR(regs->rotdir) |
 			MCDE_ROTACONF_STRIP_WIDTH_ENUM(16PIX) |
 			MCDE_ROTACONF_RD_MAXOUT_ENUM(4_REQ) |
@@ -2239,7 +2238,7 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	chnl->regs.map_g = chnl->map_g;
 	chnl->regs.map_b = chnl->map_b;
 	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
-		chnl->regs.clksel = MCDE_CRA1_CLKSEL_166MHZ;
+		chnl->regs.clksel = MCDE_CRA1_CLKSEL_MCDECLK;
 		chnl->regs.dsipacking =
 				portfmt2dsipacking(chnl->port.pixel_format);
 	} else if (chnl->port.type == MCDE_PORTTYPE_DPI) {
@@ -2247,12 +2246,12 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 			chnl->regs.internal_clk = false;
 			chnl->regs.bcd = true;
 			if (chnl->id == MCDE_CHNL_A)
-				chnl->regs.clksel = MCDE_CRA1_CLKSEL_EXT_TV1;
+				chnl->regs.clksel = MCDE_CRA1_CLKSEL_TV1CLK;
 			else
-				chnl->regs.clksel = MCDE_CRA1_CLKSEL_EXT_TV2;
+				chnl->regs.clksel = MCDE_CRA1_CLKSEL_TV2CLK;
 		} else {
 			chnl->regs.internal_clk = true;
-			chnl->regs.clksel = MCDE_CRA1_CLKSEL_LCD;
+			chnl->regs.clksel = MCDE_CRA1_CLKSEL_CLKPLL72;
 			chnl->regs.cdwin =
 					portfmt2cdwin(chnl->port.pixel_format);
 			chnl->regs.bcd = (chnl->port.phy.dpi.clock_div < 2);
