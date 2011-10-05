@@ -69,7 +69,7 @@ static void dsi_te_poll_set_timer(struct mcde_chnl_state *chnl,
 		unsigned int timeout);
 static void dsi_te_timer_function(unsigned long value);
 static int wait_for_vcmp(struct mcde_chnl_state *chnl);
-static int probe_hw(void);
+static int probe_hw(struct platform_device *pdev);
 static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 
 #define OVLY_TIMEOUT 100
@@ -89,14 +89,19 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define DSI_READ_NBR_OF_RETRIES 2
 #define MCDE_FLOWEN_MAX_TRIAL 60
 
+#define MCDE_VERSION_4_0_4 0x04000400
+#define MCDE_VERSION_3_0_8 0x03000800
+#define MCDE_VERSION_3_0_5 0x03000500
+#define MCDE_VERSION_1_0_4 0x01000400
+
 static u8 *mcdeio;
 static u8 **dsiio;
 static struct platform_device *mcde_dev;
 static u8 num_dsilinks;
 static u8 num_channels;
 static u8 num_overlays;
-static u8 hardware_version;
 static int mcde_irq;
+static u32 input_fifo_size;
 
 static struct regulator *regulator_vana;
 static struct regulator *regulator_mcde_epod;
@@ -705,14 +710,6 @@ static u8 portfmt2cdwin(enum mcde_port_pix_fmt pix_fmt)
 	}
 }
 
-static u32 get_input_fifo_size(void)
-{
-	if (hardware_version == MCDE_CHIP_VERSION_4_0_4)
-		return MCDE_INPUT_FIFO_SIZE_4_0_4;
-	else
-		return MCDE_INPUT_FIFO_SIZE_3_0_8;
-}
-
 static u32 get_output_fifo_size(enum mcde_fifo fifo)
 {
 	u32 ret = 1; /* Avoid div by zero */
@@ -1236,9 +1233,9 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 
 	if ((fifo == MCDE_FIFO_A || fifo == MCDE_FIFO_B) &&
 			regs->ppl >= fifo_size * 2)
-		pixelfetchwtrmrklevel = get_input_fifo_size() * 2;
+		pixelfetchwtrmrklevel = input_fifo_size * 2;
 	else
-		pixelfetchwtrmrklevel = get_input_fifo_size() / 2;
+		pixelfetchwtrmrklevel = input_fifo_size / 2;
 
 	if (port->update_auto_trig && port->type == MCDE_PORTTYPE_DSI) {
 		switch (port->sync_src) {
@@ -2963,69 +2960,102 @@ static void remove_clocks_and_power(struct platform_device *pdev)
 	regulator_put(regulator_esram_epod);
 }
 
-static int probe_hw(void)
+static int probe_hw(struct platform_device *pdev)
 {
 	int i;
-	u8 major_version;
-	u8 minor_version;
-	u8 development_version;
+	int ret;
+	u32 pid;
+	struct resource *res;
 
 	dev_info(&mcde_dev->dev, "Probe HW\n");
 
 	/* Get MCDE HW version */
 	regulator_enable(regulator_mcde_epod);
 	clk_enable(clock_mcde);
-	major_version = (u8)mcde_rfld(MCDE_PID, MAJOR_VERSION);
-	minor_version = (u8)mcde_rfld(MCDE_PID, MINOR_VERSION);
-	development_version = (u8)mcde_rfld(MCDE_PID, DEVELOPMENT_VERSION);
+	pid = mcde_rreg(MCDE_PID);
 
-	dev_info(&mcde_dev->dev, "MCDE HW revision %u.%u.%u.%u\n",
-			major_version, minor_version, development_version,
-					mcde_rfld(MCDE_PID, METALFIX_VERSION));
+	dev_info(&mcde_dev->dev, "MCDE HW revision 0x%.8X\n", pid);
 
 	clk_disable(clock_mcde);
 	regulator_disable(regulator_mcde_epod);
 
-	if (major_version == 3 && minor_version == 0 &&
-					development_version >= 8) {
-		hardware_version = MCDE_CHIP_VERSION_3_0_8;
+	switch (pid) {
+	case MCDE_VERSION_3_0_8:
+		num_dsilinks = 3;
+		num_channels = 4;
+		num_overlays = 6;
 		dsi_ifc_is_supported = true;
-		dev_info(&mcde_dev->dev, "V2 HW\n");
-	} else if (major_version == 3 && minor_version == 0 &&
-					development_version >= 5) {
-		dev_info(&mcde_dev->dev, "V1 HW\n");
-		return -ENOTSUPP;
-	} else if (major_version == 1 && minor_version == 0 &&
-					development_version >= 4) {
-		dev_info(&mcde_dev->dev, "V1_U5500 HW\n");
-		return -ENOTSUPP;
-	} else if (major_version == 4 && minor_version == 0 &&
-					development_version >= 4) {
-		hardware_version = MCDE_CHIP_VERSION_4_0_4;
-		dev_info(&mcde_dev->dev, "V2_U5500 HW\n");
-	} else {
+		input_fifo_size = 128;
+		dev_info(&mcde_dev->dev, "db8500 V2 HW\n");
+		break;
+	case MCDE_VERSION_4_0_4:
+		num_dsilinks = 2;
+		num_channels = 2;
+		num_overlays = 3;
+		input_fifo_size = 80;
+		dsi_ifc_is_supported = false;
+		dev_info(&mcde_dev->dev, "db5500 V2 HW\n");
+		break;
+	case MCDE_VERSION_3_0_5:
+		/* Intentional */
+	case MCDE_VERSION_1_0_4:
+		/* Intentional */
+	default:
 		dev_err(&mcde_dev->dev, "Unsupported HW version\n");
-		return -ENOTSUPP;
+		ret = -ENOTSUPP;
+		goto unsupported_hw;
+		break;
+	}
+
+	channels = kzalloc(num_channels * sizeof(struct mcde_chnl_state),
+								GFP_KERNEL);
+	if (!channels) {
+		ret = -ENOMEM;
+		goto failed_channels_alloc;
+	}
+
+	overlays = kzalloc(num_overlays * sizeof(struct mcde_ovly_state),
+								GFP_KERNEL);
+	if (!overlays) {
+		ret = -ENOMEM;
+		goto failed_overlays_alloc;
+	}
+
+	dsiio = kzalloc(num_dsilinks * sizeof(*dsiio), GFP_KERNEL);
+	if (!dsiio) {
+		ret = -ENOMEM;
+		goto failed_dsi_alloc;
+	}
+
+	for (i = 0; i < num_dsilinks; i++) {
+		res = platform_get_resource(pdev, IORESOURCE_MEM, 1+i);
+		if (!res) {
+			dev_dbg(&pdev->dev, "No DSI%d io defined\n", i);
+			ret = -EINVAL;
+			goto failed_get_dsi_io;
+		}
+		dsiio[i] = ioremap(res->start, res->end - res->start + 1);
+		if (!dsiio[i]) {
+			dev_dbg(&pdev->dev, "MCDE DSI%d iomap failed\n", i);
+			ret = -EINVAL;
+			goto failed_map_dsi_io;
+		}
+		dev_info(&pdev->dev, "MCDE DSI%d iomap: 0x%.8X->0x%.8X\n",
+			i, (u32)res->start, (u32)dsiio[i]);
 	}
 
 	/* Init MCDE */
 	for (i = 0; i < num_overlays; i++)
 		overlays[i].idx = i;
 
-	if (hardware_version == MCDE_CHIP_VERSION_4_0_4) {
-		channels[0].ovly0 = &overlays[0];
-		channels[0].ovly1 = &overlays[1];
-		channels[1].ovly0 = &overlays[2];
-		channels[1].ovly1 = NULL;
-	} else {
-		channels[0].ovly0 = &overlays[0];
-		channels[0].ovly1 = &overlays[1];
-		channels[1].ovly0 = &overlays[2];
+	channels[0].ovly0 = &overlays[0];
+	channels[0].ovly1 = &overlays[1];
+	channels[1].ovly0 = &overlays[2];
+
+	if (pid == MCDE_VERSION_3_0_8) {
 		channels[1].ovly1 = &overlays[3];
 		channels[2].ovly0 = &overlays[4];
-		channels[2].ovly1 = NULL;
 		channels[3].ovly0 = &overlays[5];
-		channels[3].ovly1 = NULL;
 	}
 
 	mcde_debugfs_create(&mcde_dev->dev);
@@ -3049,12 +3079,32 @@ static int probe_hw(void)
 			mcde_debugfs_overlay_create(i, 1);
 	}
 	return 0;
+
+failed_map_dsi_io:
+	for (i = 0; i < num_dsilinks; i++) {
+		if (dsiio[i])
+			iounmap(dsiio[i]);
+	}
+failed_get_dsi_io:
+	kfree(dsiio);
+	dsiio = NULL;
+failed_dsi_alloc:
+	kfree(overlays);
+	overlays = NULL;
+failed_overlays_alloc:
+	kfree(channels);
+	channels = NULL;
+unsupported_hw:
+failed_channels_alloc:
+	num_dsilinks = 0;
+	num_channels = 0;
+	num_overlays = 0;
+	return ret;
 }
 
 static int __devinit mcde_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	int i;
 	struct resource *res;
 	struct mcde_platform_data *pdata = pdev->dev.platform_data;
 
@@ -3063,31 +3113,7 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	num_dsilinks = pdata->num_dsilinks;
 	mcde_dev = pdev;
-
-	num_channels = pdata->num_channels;
-	num_overlays = pdata->num_overlays;
-
-	channels = kzalloc(num_channels * sizeof(struct mcde_chnl_state),
-								GFP_KERNEL);
-	if (!channels) {
-		ret = -ENOMEM;
-		goto failed_channels_alloc;
-	}
-
-	overlays = kzalloc(num_overlays * sizeof(struct mcde_ovly_state),
-								GFP_KERNEL);
-	if (!overlays) {
-		ret = -ENOMEM;
-		goto failed_overlays_alloc;
-	}
-
-	dsiio = kzalloc(num_dsilinks * sizeof(*dsiio), GFP_KERNEL);
-	if (!dsiio) {
-		ret = -ENOMEM;
-		goto failed_dsi_alloc;
-	}
 
 	/* Hook up irq */
 	mcde_irq = platform_get_irq(pdev, 0);
@@ -3112,22 +3138,6 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 	}
 	dev_info(&pdev->dev, "MCDE iomap: 0x%.8X->0x%.8X\n",
 		(u32)res->start, (u32)mcdeio);
-	for (i = 0; i < num_dsilinks; i++) {
-		res = platform_get_resource(pdev, IORESOURCE_MEM, 1+i);
-		if (!res) {
-			dev_dbg(&pdev->dev, "No DSI%d io defined\n", i);
-			ret = -EINVAL;
-			goto failed_get_dsi_io;
-		}
-		dsiio[i] = ioremap(res->start, res->end - res->start + 1);
-		if (!dsiio[i]) {
-			dev_dbg(&pdev->dev, "MCDE DSI%d iomap failed\n", i);
-			ret = -EINVAL;
-			goto failed_map_dsi_io;
-		}
-		dev_info(&pdev->dev, "MCDE DSI%d iomap: 0x%.8X->0x%.8X\n",
-			i, (u32)res->start, (u32)dsiio[i]);
-	}
 
 	ret = init_clocks_and_power(pdev);
 	if (ret < 0) {
@@ -3138,7 +3148,7 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK_DEFERRABLE(&hw_timeout_work, work_sleep_function);
 
-	ret = probe_hw();
+	ret = probe_hw(pdev);
 	if (ret)
 		goto failed_probe_hw;
 
@@ -3147,31 +3157,15 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 		goto failed_mcde_enable;
 
 	return 0;
+
 failed_mcde_enable:
 failed_probe_hw:
 	remove_clocks_and_power(pdev);
 failed_init_clocks:
-failed_map_dsi_io:
-failed_get_dsi_io:
-	for (i = 0; i < num_dsilinks; i++) {
-		if (dsiio[i])
-			iounmap(dsiio[i]);
-	}
 	iounmap(mcdeio);
 failed_map_mcde_io:
 failed_get_mcde_io:
 failed_irq_get:
-	kfree(dsiio);
-	dsiio = NULL;
-failed_dsi_alloc:
-	kfree(overlays);
-	overlays = NULL;
-failed_overlays_alloc:
-	kfree(channels);
-	channels = NULL;
-failed_channels_alloc:
-	num_channels = 0;
-	num_overlays = 0;
 	return ret;
 }
 

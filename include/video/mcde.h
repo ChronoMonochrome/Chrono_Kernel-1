@@ -168,9 +168,6 @@ enum mcde_display_rotation {
 #define MCDE_FIFO_AB_SIZE 640
 #define MCDE_FIFO_C0C1_SIZE 160
 
-#define MCDE_INPUT_FIFO_SIZE_4_0_4 80
-#define MCDE_INPUT_FIFO_SIZE_3_0_8 128
-
 /* Tv-out defines */
 #define MCDE_CONFIG_TVOUT_BACKGROUND_LUMINANCE		0x83
 #define MCDE_CONFIG_TVOUT_BACKGROUND_CHROMINANCE_CB	0x9C
@@ -178,11 +175,6 @@ enum mcde_display_rotation {
 
 /* In seconds */
 #define MCDE_AUTO_SYNC_WATCHDOG 5
-
-/* Hardware versions */
-#define MCDE_CHIP_VERSION_4_0_4 4       /* U5500 V2 */
-#define MCDE_CHIP_VERSION_3_0_8 2	/* U8500 V2 */
-#define MCDE_CHIP_VERSION_3	0
 
 /* DSI modes */
 #define DSI_VIDEO_MODE	0
