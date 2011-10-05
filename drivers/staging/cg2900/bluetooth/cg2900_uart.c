@@ -24,6 +24,7 @@
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/pm.h>
+#include <linux/pm_qos_params.h>
 #include <linux/poll.h>
 #include <linux/sched.h>
 #include <linux/skbuff.h>
@@ -58,6 +59,9 @@
 #define UART_RX_TIMEOUT		20
 #define UART_RESP_TIMEOUT	1000
 #define UART_RESUME_TIMEOUT	20
+
+/* Max latency in microseconds for PM QoS to achieve max throughput */
+#define CG2900_PM_QOS_LATENCY	30
 
 /* Number of bytes to reserve at start of sk_buffer when receiving packet */
 #define RX_SKB_RESERVE		8
@@ -286,6 +290,8 @@ struct uart_delayed_work_struct {
  * @chip_dev:		Chip device for current UART transport.
  * @cts_irq:		CTS interrupt for this UART.
  * @cts_gpio:		CTS GPIO for this UART.
+ * @suspend_blocked:	True if suspend operation is blocked in the framework.
+ * @pm_qos_latency:	PM QoS structure.
  */
 struct uart_info {
 	enum uart_rx_state		rx_state;
@@ -313,6 +319,8 @@ struct uart_info {
 	struct cg2900_chip_dev		chip_dev;
 	int				cts_irq;
 	int				cts_gpio;
+	bool				suspend_blocked;
+	struct pm_qos_request_list	pm_qos_latency;
 };
 
 /* Module parameters */
@@ -395,6 +403,9 @@ static void handle_cts_irq(struct work_struct *work)
 	struct uart_work_struct *current_work =
 		container_of(work, struct uart_work_struct, work);
 	struct uart_info *uart_info = (struct uart_info *)current_work->data;
+
+	pm_qos_update_request(&uart_info->pm_qos_latency,
+			      CG2900_PM_QOS_LATENCY);
 
 	spin_lock_bh(&(uart_info->transmission_lock));
 	/* Mark that there is an ongoing transfer. */
@@ -593,6 +604,12 @@ static void wake_up_chip(struct uart_info *uart_info)
 	if (CHIP_POWERED_DOWN == uart_info->sleep_state)
 		goto finished;
 
+	if (!uart_info->suspend_blocked) {
+		uart_info->suspend_blocked = true;
+		pm_qos_update_request(&uart_info->pm_qos_latency,
+				      CG2900_PM_QOS_LATENCY);
+	}
+
 	/*
 	 * This function indicates data is transmitted.
 	 * Therefore see to that the chip is awake.
@@ -709,6 +726,11 @@ static void set_chip_sleep_mode(struct work_struct *work)
 
 		dev_dbg(MAIN_DEV, "New sleep_state: CHIP_ASLEEP\n");
 		uart_info->sleep_state = CHIP_ASLEEP;
+		if (uart_info->suspend_blocked) {
+			uart_info->suspend_blocked = false;
+			pm_qos_update_request(&uart_info->pm_qos_latency,
+					      PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE);
+		}
 		break;
 	case CHIP_AWAKE:
 		chars_in_buffer = hci_uart_chars_in_buffer(uart_info->hu);
@@ -1353,6 +1375,11 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 	}
 
 	if (chip_on) {
+		if (!uart_info->suspend_blocked) {
+			uart_info->suspend_blocked = true;
+			pm_qos_update_request(&uart_info->pm_qos_latency,
+					      CG2900_PM_QOS_LATENCY);
+		}
 		if (uart_info->sleep_state != CHIP_POWERED_DOWN) {
 			dev_err(MAIN_DEV, "Chip is already powered up (%d)\n",
 				uart_info->sleep_state);
@@ -1387,6 +1414,12 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 			break;
 		default:
 			break;
+		}
+
+		if (uart_info->suspend_blocked) {
+			uart_info->suspend_blocked = false;
+			pm_qos_update_request(&uart_info->pm_qos_latency,
+					      PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE);
 		}
 
 		if (pf_data->disable_chip) {
@@ -1951,6 +1984,9 @@ static int __devinit cg2900_uart_probe(struct platform_device *pdev)
 	uart_info->chip_dev.dev = &pdev->dev;
 	uart_info->chip_dev.t_data = uart_info;
 
+	pm_qos_add_request(&uart_info->pm_qos_latency, PM_QOS_CPU_DMA_LATENCY,
+			   PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE);
+
 	resource = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
 						"cts_irq");
 	if (!resource) {
@@ -2046,6 +2082,7 @@ static int __devexit cg2900_uart_remove(struct platform_device *pdev)
 	if (uart_info->hu)
 		hci_uart_unregister_proto(uart_info->hu->proto);
 
+	pm_qos_remove_request(&uart_info->pm_qos_latency);
 	destroy_workqueue(uart_info->wq);
 
 	dev_info(MAIN_DEV, "CG2900 UART removed\n");
