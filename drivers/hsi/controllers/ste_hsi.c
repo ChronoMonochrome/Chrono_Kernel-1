@@ -141,8 +141,6 @@ static void ste_hsi_init_registers(struct ste_hsi_controller *ste_hsi)
 	writel(0, ste_hsi->tx_base + STE_HSI_TX_FLUSHBITS);
 	/* TO DO: TX channel priorities will be implemented later */
 	writel(0, ste_hsi->tx_base + STE_HSI_TX_PRIORITY);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_BURSTLEN);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_PREAMBLE);
 	writel(0, ste_hsi->tx_base + STE_HSI_TX_DATASWAP);
 	writel(0, ste_hsi->tx_base + STE_HSI_TX_DMAEN);
 	writel(0, ste_hsi->tx_base + STE_HSI_TX_WATERMARKID);
@@ -187,7 +185,6 @@ static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
 	 */
 	writel(pcontext->tx_mode, ste_hsi->tx_base + STE_HSI_TX_MODE);
 	writel(pcontext->tx_divisor, ste_hsi->tx_base + STE_HSI_TX_DIVISOR);
-	writel(0, ste_hsi->tx_base + STE_HSI_TX_PARITY);
 	writel(pcontext->tx_channels, ste_hsi->tx_base + STE_HSI_TX_CHANNELS);
 	/* Calculate buffers number per channel */
 	buffers = STE_HSI_MAX_BUFFERS / pcontext->tx_channels;
@@ -879,7 +876,7 @@ static void ste_hsi_rx_tasklet(unsigned long data)
 	u32 irq_status, irq_mask;
 	unsigned int i;
 
-	irq_status = readl(ste_hsi->rx_base + STE_HSI_RX_WATERMARKIS);
+	irq_status = readl(ste_hsi->rx_base + STE_HSI_RX_WATERMARKMIS);
 	if (!irq_status)
 		goto out;
 
@@ -927,7 +924,7 @@ static void ste_hsi_tx_tasklet(unsigned long data)
 	u32 irq_status, irq_mask;
 	unsigned int i;
 
-	irq_status = readl(ste_hsi->tx_base + STE_HSI_TX_WATERMARKIS);
+	irq_status = readl(ste_hsi->tx_base + STE_HSI_TX_WATERMARKMIS);
 	if (!irq_status)
 		goto out;
 

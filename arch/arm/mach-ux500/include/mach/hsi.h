@@ -16,13 +16,11 @@
 #define STE_HSI_TX_IOSTATE             0x00C
 #define STE_HSI_TX_BUFSTATE            0x010
 #define STE_HSI_TX_DIVISOR             0x014
-#define STE_HSI_TX_PARITY              0x018
 #define STE_HSI_TX_BREAK               0x01C
 #define STE_HSI_TX_CHANNELS            0x020
 #define STE_HSI_TX_FLUSHBITS           0x024
 #define STE_HSI_TX_PRIORITY            0x028
-#define STE_HSI_TX_BURSTLEN            0x02C
-#define STE_HSI_TX_PREAMBLE            0x030
+#define STE_HSI_TX_STATICCONFID        0x02C
 #define STE_HSI_TX_DATASWAP            0x034
 #define STE_HSI_TX_FRAMELENX           0x080
 #define STE_HSI_TX_BUFFERX             0x0C0
@@ -31,10 +29,11 @@
 #define STE_HSI_TX_GAUGEX              0x180
 #define STE_HSI_TX_WATERMARKX          0x1C0
 #define STE_HSI_TX_DMAEN               0x200
-#define STE_HSI_TX_WATERMARKIS         0x204
+#define STE_HSI_TX_WATERMARKMIS        0x204
 #define STE_HSI_TX_WATERMARKIM         0x208
 #define STE_HSI_TX_WATERMARKIC         0x20C
 #define STE_HSI_TX_WATERMARKID         0x210
+#define STE_HSI_TX_WATERMARKIS         0x214
 #define STE_HSI_TX_PERIPHID0           0xFE0
 #define STE_HSI_TX_PERIPHID1           0xFE4
 #define STE_HSI_TX_PERIPHID2           0xFE8
@@ -46,7 +45,6 @@
 #define STE_HSI_RX_STATE               0x008
 #define STE_HSI_RX_BUFSTATE            0x00C
 #define STE_HSI_RX_THRESHOLD           0x010
-#define STE_HSI_RX_PARITY              0x014
 #define STE_HSI_RX_DETECTOR            0x018
 #define STE_HSI_RX_EXCEP               0x01C
 #define STE_HSI_RX_ACK                 0x020
@@ -65,7 +63,7 @@
 #define STE_HSI_RX_WATERMARKX          0x1C0
 #define STE_HSI_RX_FRAMEBURSTCNT       0x1E0
 #define STE_HSI_RX_DMAEN               0x200
-#define STE_HSI_RX_WATERMARKIS         0x204
+#define STE_HSI_RX_WATERMARKMIS        0x204
 #define STE_HSI_RX_WATERMARKIM         0x208
 #define STE_HSI_RX_WATERMARKIC         0x20C
 #define STE_HSI_RX_WATERMARKID         0x210
@@ -73,6 +71,7 @@
 #define STE_HSI_RX_OVERRUNIM           0x218
 #define STE_HSI_RX_EXCEPMIS            0x21C
 #define STE_HSI_RX_EXCEPIM             0x220
+#define STE_HSI_RX_WATERMARKIS         0x224
 #define STE_HSI_RX_PERIPHID0           0xFE0
 #define STE_HSI_RX_PERIPHID1           0xFE4
 #define STE_HSI_RX_PERIPHID2           0xFE8
