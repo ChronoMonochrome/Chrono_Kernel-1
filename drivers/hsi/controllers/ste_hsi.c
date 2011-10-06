@@ -1353,17 +1353,13 @@ static int ste_hsi_flush(struct hsi_client *cl)
 	writel(0, ste_hsi->rx_base + STE_HSI_RX_DMAEN);
 	ste_hsi_terminate_dma(ste_port);
 
-	/* Flush all HSIR and HSIT buffers */
+	/* Flush HSIT buffers */
 	writel(0, ste_hsi->tx_base + STE_HSI_TX_STATE);
 	writel(0, ste_hsi->tx_base + STE_HSI_TX_BUFSTATE);
+
+	/* Flush HSIR pipeline and channel buffers */
 	writel(0, ste_hsi->rx_base + STE_HSI_RX_STATE);
-	/*
-	 * BUFSTATE is cleared twice on purpose:
-	 * first time all fifos are cleared
-	 * second time to clear data that was in pipline buffer
-	 * and was transfered to fifos
-	 */
-	writel(0, ste_hsi->rx_base + STE_HSI_RX_BUFSTATE);
+	writel(0, ste_hsi->rx_base + STE_HSI_RX_PIPEGAUGE);
 	writel(0, ste_hsi->rx_base + STE_HSI_RX_BUFSTATE);
 
 	/* Flush all errors */
