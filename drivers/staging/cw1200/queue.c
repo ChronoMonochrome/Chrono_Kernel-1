@@ -11,37 +11,37 @@
 
 #include "net/mac80211.h"
 #include "queue.h"
-#include "wsm.h"
-#include "txrx.h"
 #include "cw1200.h"
+#include "debug.h"
 
 /* private */ struct cw1200_queue_item
 {
 	struct list_head	head;
 	struct sk_buff		*skb;
 	u32			packetID;
+	unsigned long		timestamp;
 	struct cw1200_txpriv	txpriv;
 	u8			generation;
 };
 
-static inline void __cw1200_queue_lock(struct cw1200_queue *queue,
-						struct cw1200_common *cw1200)
+static inline void __cw1200_queue_lock(struct cw1200_queue *queue)
 {
+	struct cw1200_queue_stats *stats = queue->stats;
 	if (queue->tx_locked_cnt++ == 0) {
 		txrx_printk(KERN_DEBUG "[TX] Queue %d is locked.\n",
 				queue->queue_id);
-		ieee80211_stop_queue(cw1200->hw, queue->queue_id);
+		ieee80211_stop_queue(stats->priv->hw, queue->queue_id);
 	}
 }
 
-static inline void __cw1200_queue_unlock(struct cw1200_queue *queue,
-						struct cw1200_common *cw1200)
+static inline void __cw1200_queue_unlock(struct cw1200_queue *queue)
 {
+	struct cw1200_queue_stats *stats = queue->stats;
 	BUG_ON(!queue->tx_locked_cnt);
 	if (--queue->tx_locked_cnt == 0) {
 		txrx_printk(KERN_DEBUG "[TX] Queue %d is unlocked.\n",
 				queue->queue_id);
-		ieee80211_wake_queue(cw1200->hw, queue->queue_id);
+		ieee80211_wake_queue(stats->priv->hw, queue->queue_id);
 	}
 }
 
@@ -65,11 +65,95 @@ static inline u32 cw1200_queue_make_packet_id(u8 queue_generation, u8 queue_id,
 		((u32)queue_generation << 24);
 }
 
+static void cw1200_queue_post_gc(struct cw1200_queue_stats *stats,
+				 struct list_head *gc_list)
+{
+	struct cw1200_queue_item *item;
+
+	while (!list_empty(gc_list)) {
+		item = list_first_entry(
+			gc_list, struct cw1200_queue_item, head);
+		list_del(&item->head);
+		stats->skb_dtor(stats->priv, item->skb, &item->txpriv);
+		kfree(item);
+	}
+}
+
+static void cw1200_queue_register_post_gc(struct list_head *gc_list,
+				     struct cw1200_queue_item *item)
+{
+	struct cw1200_queue_item *gc_item;
+	gc_item = kmalloc(sizeof(struct cw1200_queue_item),
+			GFP_KERNEL | GFP_ATOMIC);
+	BUG_ON(!gc_item);
+	memcpy(gc_item, item, sizeof(struct cw1200_queue_item));
+	list_move_tail(&gc_item->head, gc_list);
+}
+
+static void __cw1200_queue_gc(struct cw1200_queue *queue,
+			      struct list_head *head,
+			      bool unlock)
+{
+	struct cw1200_queue_stats *stats = queue->stats;
+	struct cw1200_queue_item *item = NULL;
+	bool wakeup_stats = false;
+
+	while (!list_empty(&queue->queue)) {
+		item = list_first_entry(
+			&queue->queue, struct cw1200_queue_item, head);
+		if (jiffies - item->timestamp < queue->ttl)
+			break;
+		--queue->num_queued;
+		--queue->link_map_cache[item->txpriv.link_id];
+		spin_lock_bh(&stats->lock);
+		--stats->num_queued;
+		if (!--stats->link_map_cache[item->txpriv.link_id])
+			wakeup_stats = true;
+		spin_unlock_bh(&stats->lock);
+		cw1200_debug_tx_ttl(stats->priv);
+		cw1200_queue_register_post_gc(head, item);
+		item->skb = NULL;
+		list_move_tail(&item->head, &queue->free_pool);
+	}
+
+	if (wakeup_stats)
+		wake_up(&stats->wait_link_id_empty);
+
+	if (queue->overfull) {
+		if (queue->num_queued <= (queue->capacity >> 1)) {
+			queue->overfull = false;
+			if (unlock)
+				__cw1200_queue_unlock(queue);
+		} else {
+			unsigned long tmo = item->timestamp + queue->ttl;
+			mod_timer(&queue->gc, tmo);
+			cw1200_pm_stay_awake(&stats->priv->pm_state,
+					tmo - jiffies);
+		}
+	}
+}
+
+static void cw1200_queue_gc(unsigned long arg)
+{
+	LIST_HEAD(list);
+	struct cw1200_queue *queue =
+		(struct cw1200_queue *)arg;
+
+	spin_lock_bh(&queue->lock);
+	__cw1200_queue_gc(queue, &list, true);
+	spin_unlock_bh(&queue->lock);
+	cw1200_queue_post_gc(queue->stats, &list);
+}
+
 int cw1200_queue_stats_init(struct cw1200_queue_stats *stats,
-			    size_t map_capacity)
+			    size_t map_capacity,
+			    cw1200_queue_skb_dtor_t skb_dtor,
+			    struct cw1200_common *priv)
 {
 	memset(stats, 0, sizeof(*stats));
 	stats->map_capacity = map_capacity;
+	stats->skb_dtor = skb_dtor;
+	stats->priv = priv;
 	spin_lock_init(&stats->lock);
 	init_waitqueue_head(&stats->wait_link_id_empty);
 
@@ -84,7 +168,8 @@ int cw1200_queue_stats_init(struct cw1200_queue_stats *stats,
 int cw1200_queue_init(struct cw1200_queue *queue,
 		      struct cw1200_queue_stats *stats,
 		      u8 queue_id,
-		      size_t capacity)
+		      size_t capacity,
+		      unsigned long ttl)
 {
 	size_t i;
 
@@ -92,10 +177,14 @@ int cw1200_queue_init(struct cw1200_queue *queue,
 	queue->stats = stats;
 	queue->capacity = capacity;
 	queue->queue_id = queue_id;
+	queue->ttl = ttl;
 	INIT_LIST_HEAD(&queue->queue);
 	INIT_LIST_HEAD(&queue->pending);
 	INIT_LIST_HEAD(&queue->free_pool);
 	spin_lock_init(&queue->lock);
+	init_timer(&queue->gc);
+	queue->gc.data = (unsigned long)queue;
+	queue->gc.function = cw1200_queue_gc;
 
 	queue->pool = kzalloc(sizeof(struct cw1200_queue_item) * capacity,
 			GFP_KERNEL);
@@ -116,9 +205,10 @@ int cw1200_queue_init(struct cw1200_queue *queue,
 	return 0;
 }
 
-int cw1200_queue_clear(struct cw1200_queue *queue, struct cw1200_common *priv)
+int cw1200_queue_clear(struct cw1200_queue *queue)
 {
 	int i;
+	LIST_HEAD(gc_list);
 	struct cw1200_queue_stats *stats = queue->stats;
 
 	spin_lock_bh(&queue->lock);
@@ -128,15 +218,12 @@ int cw1200_queue_clear(struct cw1200_queue *queue, struct cw1200_common *priv)
 		struct cw1200_queue_item *item = list_first_entry(
 			&queue->pending, struct cw1200_queue_item, head);
 		WARN_ON(!item->skb);
-		if (likely(item->skb)) {
-			dev_kfree_skb_any(item->skb);
-			item->skb = NULL;
-		}
+		cw1200_queue_register_post_gc(&gc_list, item);
+		item->skb = NULL;
 		list_move_tail(&item->head, &queue->free_pool);
 	}
 	queue->num_queued = 0;
 	queue->num_pending = 0;
-	queue->num_sent = 0;
 
 	spin_lock_bh(&stats->lock);
 	for (i = 0; i < stats->map_capacity; ++i) {
@@ -147,10 +234,11 @@ int cw1200_queue_clear(struct cw1200_queue *queue, struct cw1200_common *priv)
 	spin_unlock_bh(&stats->lock);
 	if (unlikely(queue->overfull)) {
 		queue->overfull = false;
-		__cw1200_queue_unlock(queue, priv);
+		__cw1200_queue_unlock(queue);
 	}
 	spin_unlock_bh(&queue->lock);
 	wake_up(&stats->wait_link_id_empty);
+	cw1200_queue_post_gc(stats, &gc_list);
 	return 0;
 }
 
@@ -160,10 +248,10 @@ void cw1200_queue_stats_deinit(struct cw1200_queue_stats *stats)
 	stats->link_map_cache = NULL;
 }
 
-void cw1200_queue_deinit(struct cw1200_queue *queue,
-			 struct cw1200_common *priv)
+void cw1200_queue_deinit(struct cw1200_queue *queue)
 {
-	cw1200_queue_clear(queue, priv);
+	cw1200_queue_clear(queue);
+	del_timer_sync(&queue->gc);
 	INIT_LIST_HEAD(&queue->free_pool);
 	kfree(queue->pool);
 	kfree(queue->link_map_cache);
@@ -196,17 +284,13 @@ size_t cw1200_queue_get_num_queued(struct cw1200_queue *queue,
 	return ret;
 }
 
-int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
-			struct sk_buff *skb, struct cw1200_txpriv *txpriv)
+int cw1200_queue_put(struct cw1200_queue *queue,
+		     struct sk_buff *skb,
+		     struct cw1200_txpriv *txpriv)
 {
-	int ret;
-	struct wsm_tx *wsm;
+	int ret = 0;
+	LIST_HEAD(gc_list);
 	struct cw1200_queue_stats *stats = queue->stats;
-
-	wsm = (struct wsm_tx *)skb_push(skb, sizeof(struct wsm_tx));
-	ret = cw1200_skb_to_wsm(priv, skb, wsm, txpriv);
-	if (ret)
-		return ret;
 
 	if (txpriv->link_id >= queue->stats->map_capacity)
 		return -EINVAL;
@@ -224,7 +308,7 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 		item->packetID = cw1200_queue_make_packet_id(
 			queue->generation, queue->queue_id,
 			item->generation, item - queue->pool);
-		wsm->packetID = __cpu_to_le32(item->packetID);
+		item->timestamp = jiffies;
 
 		++queue->num_queued;
 		++queue->link_map_cache[txpriv->link_id];
@@ -236,12 +320,17 @@ int cw1200_queue_put(struct cw1200_queue *queue, struct cw1200_common *priv,
 
 		if (queue->num_queued >= queue->capacity) {
 			queue->overfull = true;
-			__cw1200_queue_lock(queue, priv);
+			__cw1200_queue_gc(queue, &gc_list, false);
+			if (queue->overfull)
+				__cw1200_queue_lock(queue);
+
 		}
 	} else {
 		ret = -ENOENT;
 	}
 	spin_unlock_bh(&queue->lock);
+	if (unlikely(!list_empty(&gc_list)))
+		cw1200_queue_post_gc(stats, &gc_list);
 	return ret;
 }
 
@@ -268,6 +357,7 @@ int cw1200_queue_get(struct cw1200_queue *queue,
 		*tx = (struct wsm_tx *)item->skb->data;
 		*tx_info = IEEE80211_SKB_CB(item->skb);
 		*txpriv = &item->txpriv;
+		(*tx)->packetID = __cpu_to_le32(item->packetID);
 		list_move_tail(&item->head, &queue->pending);
 		++queue->num_pending;
 		--queue->link_map_cache[item->txpriv.link_id];
@@ -307,7 +397,6 @@ int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packetID)
 		WARN_ON(1);
 		ret = -ENOENT;
 	} else {
-		struct wsm_tx *wsm = (struct wsm_tx *)item->skb->data;
 		--queue->num_pending;
 		++queue->link_map_cache[item->txpriv.link_id];
 
@@ -319,7 +408,6 @@ int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packetID)
 		item->generation = ++item_generation;
 		item->packetID = cw1200_queue_make_packet_id(
 			queue_generation, queue_id, item_generation, item_id);
-		wsm->packetID = __cpu_to_le32(item->packetID);
 		list_move(&item->head, &queue->queue);
 	}
 	spin_unlock_bh(&queue->lock);
@@ -333,7 +421,6 @@ int cw1200_queue_requeue_all(struct cw1200_queue *queue)
 	while (!list_empty(&queue->pending)) {
 		struct cw1200_queue_item *item = list_entry(
 			queue->pending.prev, struct cw1200_queue_item, head);
-		struct wsm_tx *wsm = (struct wsm_tx *)item->skb->data;
 
 		--queue->num_pending;
 		++queue->link_map_cache[item->txpriv.link_id];
@@ -347,7 +434,6 @@ int cw1200_queue_requeue_all(struct cw1200_queue *queue)
 		item->packetID = cw1200_queue_make_packet_id(
 			queue->generation, queue->queue_id,
 			item->generation, item - queue->pool);
-		wsm->packetID = __cpu_to_le32(item->packetID);
 		list_move(&item->head, &queue->queue);
 	}
 	spin_unlock_bh(&queue->lock);
@@ -355,13 +441,15 @@ int cw1200_queue_requeue_all(struct cw1200_queue *queue)
 	return 0;
 }
 
-int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
-				u32 packetID)
+int cw1200_queue_remove(struct cw1200_queue *queue, u32 packetID)
 {
 	int ret = 0;
 	u8 queue_generation, queue_id, item_generation, item_id;
 	struct cw1200_queue_item *item;
-	struct sk_buff *skb_to_free = NULL;
+	struct cw1200_queue_stats *stats = queue->stats;
+	struct sk_buff *gc_skb = NULL;
+	struct cw1200_txpriv gc_txpriv;
+
 	cw1200_queue_parse_id(packetID, &queue_generation, &queue_id,
 				&item_generation, &item_id);
 
@@ -378,12 +466,13 @@ int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
 		WARN_ON(1);
 		ret = -ENOENT;
 	} else {
+		gc_txpriv = item->txpriv;
+		gc_skb = item->skb;
+		item->skb = NULL;
 		--queue->num_pending;
 		--queue->num_queued;
 		++queue->num_sent;
 		++item->generation;
-		skb_to_free = item->skb;
-		item->skb = NULL;
 		/* Do not use list_move_tail here, but list_move:
 		 * try to utilize cache row.
 		 */
@@ -392,20 +481,19 @@ int cw1200_queue_remove(struct cw1200_queue *queue, struct cw1200_common *priv,
 		if (unlikely(queue->overfull) &&
 		    (queue->num_queued <= (queue->capacity >> 1))) {
 			queue->overfull = false;
-			__cw1200_queue_unlock(queue, priv);
+			__cw1200_queue_unlock(queue);
 		}
 	}
 	spin_unlock_bh(&queue->lock);
 
-	if (skb_to_free)
-		dev_kfree_skb_any(item->skb);
+	if (gc_skb)
+		stats->skb_dtor(stats->priv, gc_skb, &gc_txpriv);
 
 	return ret;
 }
 
 int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
-			 struct sk_buff **skb,
-			 const struct cw1200_txpriv **txpriv)
+			 struct sk_buff **skb)
 {
 	int ret = 0;
 	u8 queue_generation, queue_id, item_generation, item_id;
@@ -427,41 +515,24 @@ int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
 		ret = -ENOENT;
 	} else {
 		*skb = item->skb;
-		*txpriv = &item->txpriv;
-		item->skb = NULL;
 	}
 	spin_unlock_bh(&queue->lock);
 	return ret;
 }
 
-void cw1200_queue_lock(struct cw1200_queue *queue, struct cw1200_common *cw1200)
+void cw1200_queue_lock(struct cw1200_queue *queue)
 {
 	spin_lock_bh(&queue->lock);
-	__cw1200_queue_lock(queue, cw1200);
+	__cw1200_queue_lock(queue);
 	spin_unlock_bh(&queue->lock);
 }
 
-void cw1200_queue_unlock(struct cw1200_queue *queue,
-				struct cw1200_common *cw1200)
+void cw1200_queue_unlock(struct cw1200_queue *queue)
 {
 	spin_lock_bh(&queue->lock);
-	__cw1200_queue_unlock(queue, cw1200);
+	__cw1200_queue_unlock(queue);
 	spin_unlock_bh(&queue->lock);
 }
-
-/*
-int cw1200_queue_get_stats(struct cw1200_queue *queue,
-				struct ieee80211_tx_queue_stats *stats)
-{
-	spin_lock_bh(&queue->lock);
-	stats->len = queue->num_queued;
-	stats->limit = queue->capacity;
-	stats->count = queue->num_sent;
-	spin_unlock_bh(&queue->lock);
-
-	return 0;
-}
-*/
 
 bool cw1200_queue_stats_is_empty(struct cw1200_queue_stats *stats,
 				 u32 link_id_map)

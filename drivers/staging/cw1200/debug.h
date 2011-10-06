@@ -15,6 +15,7 @@ struct cw1200_debug_priv {
 	int tx_multi_frames;
 	int tx_cache_miss;
 	int tx_copy;
+	int tx_ttl;
 };
 
 int cw1200_debug_init(struct cw1200_common *priv);
@@ -57,6 +58,11 @@ static inline void cw1200_debug_tx_copy(struct cw1200_common *priv)
 	++priv->debug->tx_copy;
 }
 
+static inline void cw1200_debug_tx_ttl(struct cw1200_common *priv)
+{
+	++priv->debug->tx_ttl;
+}
+
 #else /* CONFIG_CW1200_DEBUGFS */
 
 static inline int cw1200_debug_init(struct cw1200_common *priv)
@@ -94,6 +100,10 @@ static inline void cw1200_debug_tx_cache_miss(struct cw1200_common *priv)
 }
 
 static inline void cw1200_debug_tx_copy(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_tx_ttl(struct cw1200_common *priv)
 {
 }
 

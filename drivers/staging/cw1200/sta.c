@@ -136,7 +136,7 @@ void cw1200_stop(struct ieee80211_hw *dev)
 	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 
 	for (i = 0; i < 4; i++)
-		cw1200_queue_clear(&priv->tx_queue[i], priv);
+		cw1200_queue_clear(&priv->tx_queue[i]);
 
 	/* HACK! */
 	if (atomic_xchg(&priv->tx_lock, 1) != 1)
@@ -760,7 +760,7 @@ int __cw1200_flush(struct cw1200_common *priv, bool drop)
 		 */
 		if (drop) {
 			for (i = 0; i < 4; ++i)
-				cw1200_queue_clear(&priv->tx_queue[i], priv);
+				cw1200_queue_clear(&priv->tx_queue[i]);
 		} else {
 			ret = wait_event_timeout(
 				priv->tx_queue_stats.wait_link_id_empty,
@@ -1135,7 +1135,7 @@ void cw1200_join_work(struct work_struct *work)
 	bss = cfg80211_get_bss(priv->hw->wiphy, NULL, bssid, NULL, 0, 0, 0);
 	if (!bss) {
 		cw1200_queue_remove(&priv->tx_queue[queueId],
-			priv, __le32_to_cpu(wsm->packetID));
+			__le32_to_cpu(wsm->packetID));
 		wsm_unlock_tx(priv);
 		return;
 	}
@@ -1210,7 +1210,7 @@ void cw1200_join_work(struct work_struct *work)
 			memset(&priv->join_bssid[0],
 				0, sizeof(priv->join_bssid));
 			cw1200_queue_remove(&priv->tx_queue[queueId],
-				priv, __le32_to_cpu(wsm->packetID));
+				__le32_to_cpu(wsm->packetID));
 			cancel_delayed_work_sync(&priv->join_timeout);
 			cw1200_update_listening(priv, priv->listening);
 		} else {

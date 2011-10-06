@@ -24,15 +24,9 @@
 #define tx_policy_printk(...)
 #endif
 
-/* txrx private */
-struct __cw1200_txpriv {
-	struct cw1200_txpriv super;
-	u16 ethertype;
-};
+#define CW1200_INVALID_RATE_ID (0xFF)
 
 static int cw1200_handle_action_rx(struct cw1200_common *priv,
-				   struct sk_buff *skb);
-static int cw1200_handle_action_tx(struct cw1200_common *priv,
 				   struct sk_buff *skb);
 static const struct ieee80211_rate *
 cw1200_get_tx_rate(const struct cw1200_common *priv,
@@ -45,14 +39,14 @@ static inline void cw1200_tx_queues_lock(struct cw1200_common *priv)
 {
 	int i;
 	for (i = 0; i < 4; ++i)
-		cw1200_queue_lock(&priv->tx_queue[i], priv);
+		cw1200_queue_lock(&priv->tx_queue[i]);
 }
 
 static inline void cw1200_tx_queues_unlock(struct cw1200_common *priv)
 {
 	int i;
 	for (i = 0; i < 4; ++i)
-		cw1200_queue_unlock(&priv->tx_queue[i], priv);
+		cw1200_queue_unlock(&priv->tx_queue[i]);
 }
 
 /* ******************************************************************** */
@@ -269,7 +263,7 @@ static int tx_policy_get(struct cw1200_common *priv,
 	return idx;
 }
 
-void tx_policy_put(struct cw1200_common *priv, int idx)
+static void tx_policy_put(struct cw1200_common *priv, int idx)
 {
 	int usage, locked;
 	struct tx_policy_cache *cache = &priv->tx_policy_cache;
@@ -352,6 +346,18 @@ void tx_policy_upload_work(struct work_struct *work)
 /* ******************************************************************** */
 /* cw1200 TX implementation						*/
 
+struct cw1200_txinfo {
+	struct sk_buff *skb;
+	unsigned queue;
+	struct ieee80211_tx_info *tx_info;
+	const struct ieee80211_rate *rate;
+	struct ieee80211_hdr *hdr;
+	size_t hdrlen;
+	const u8 *da;
+	struct cw1200_sta_priv *sta_priv;
+	struct cw1200_txpriv txpriv;
+};
+
 u32 cw1200_rate_mask_to_wsm(struct cw1200_common *priv, u32 rates)
 {
 	u32 ret = 0;
@@ -375,35 +381,271 @@ cw1200_get_tx_rate(const struct cw1200_common *priv,
 		bitrates[rate->idx];
 }
 
-/* NOTE: cw1200_skb_to_wsm executes in atomic context. */
-int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
-			struct wsm_tx *wsm,  struct cw1200_txpriv *txpriv)
+static int
+cw1200_tx_h_calc_link_ids(struct cw1200_common *priv,
+			  struct cw1200_txinfo *t)
 {
-	struct __cw1200_txpriv *info =
-		container_of(txpriv, struct __cw1200_txpriv, super);
-	bool tx_policy_renew = false;
-	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
-	const struct ieee80211_rate *rate = cw1200_get_tx_rate(priv,
-		&tx_info->control.rates[0]);
+
+	if (likely(t->tx_info->control.sta && t->sta_priv->link_id))
+		t->txpriv.raw_link_id =
+				t->txpriv.link_id =
+				t->sta_priv->link_id;
+	else if (priv->mode != NL80211_IFTYPE_AP)
+		t->txpriv.raw_link_id =
+				t->txpriv.link_id = 0;
+	else if (is_multicast_ether_addr(t->da)) {
+		if (priv->enable_beacon) {
+			t->txpriv.raw_link_id = 0;
+			t->txpriv.link_id = CW1200_LINK_ID_AFTER_DTIM;
+		} else {
+			t->txpriv.raw_link_id = 0;
+			t->txpriv.link_id = 0;
+		}
+	} else {
+		t->txpriv.link_id = cw1200_find_link_id(priv, t->da);
+		if (!t->txpriv.link_id)
+			t->txpriv.link_id = cw1200_alloc_link_id(priv, t->da);
+		if (!t->txpriv.link_id) {
+			wiphy_err(priv->hw->wiphy,
+				"%s: No more link IDs available.\n",
+				__func__);
+			return -ENOENT;
+		}
+		t->txpriv.raw_link_id = t->txpriv.link_id;
+	}
+	if (t->txpriv.raw_link_id)
+		priv->link_id_db[t->txpriv.raw_link_id - 1].timestamp =
+				jiffies;
+
+	if (t->tx_info->control.sta &&
+			(t->tx_info->control.sta->uapsd_queues & BIT(t->queue)))
+		t->txpriv.link_id = CW1200_LINK_ID_UAPSD;
+	return 0;
+}
+
+static void
+cw1200_tx_h_pm(struct cw1200_common *priv,
+	       struct cw1200_txinfo *t)
+{
+	if (unlikely(ieee80211_is_auth(t->hdr->frame_control))) {
+		u32 mask = ~BIT(t->txpriv.raw_link_id);
+		spin_lock_bh(&priv->ps_state_lock);
+		priv->sta_asleep_mask &= mask;
+		priv->pspoll_mask &= mask;
+		spin_unlock_bh(&priv->ps_state_lock);
+	}
+}
+
+static void
+cw1200_tx_h_calc_tid(struct cw1200_common *priv,
+		     struct cw1200_txinfo *t)
+{
+	if (ieee80211_is_data_qos(t->hdr->frame_control)) {
+		u8 *qos = ieee80211_get_qos_ctl(t->hdr);
+		t->txpriv.tid = qos[0] & IEEE80211_QOS_CTL_TID_MASK;
+	} else if (ieee80211_is_data(t->hdr->frame_control)) {
+		t->txpriv.tid = 0;
+	}
+}
+
+/* IV/ICV injection. */
+/* TODO: Quite unoptimal. It's better co modify mac80211
+ * to reserve space for IV */
+static int
+cw1200_tx_h_crypt(struct cw1200_common *priv,
+		  struct cw1200_txinfo *t)
+{
+	size_t iv_len;
+	size_t icv_len;
+	u8 *icv;
+	u8 *newhdr;
+
+	if (!t->tx_info->control.hw_key ||
+	    !(t->hdr->frame_control &
+	     __cpu_to_le32(IEEE80211_FCTL_PROTECTED)))
+		return 0;
+
+	iv_len = t->tx_info->control.hw_key->iv_len;
+	icv_len = t->tx_info->control.hw_key->icv_len;
+
+	if (t->tx_info->control.hw_key->cipher == WLAN_CIPHER_SUITE_TKIP) {
+		icv_len += 8; /* MIC */
+	}
+
+	if ((skb_headroom(t->skb) + skb_tailroom(t->skb) <
+			 iv_len + icv_len + WSM_TX_EXTRA_HEADROOM) ||
+			(skb_headroom(t->skb) <
+			 iv_len + WSM_TX_EXTRA_HEADROOM)) {
+		wiphy_err(priv->hw->wiphy,
+			"Bug: no space allocated for crypto headers.\n"
+			"headroom: %d, tailroom: %d, "
+			"req_headroom: %d, req_tailroom: %d\n"
+			"Please fix it in cw1200_get_skb().\n",
+			skb_headroom(t->skb), skb_tailroom(t->skb),
+			iv_len + WSM_TX_EXTRA_HEADROOM, icv_len);
+		return -ENOMEM;
+	} else if (skb_tailroom(t->skb) < icv_len) {
+		size_t offset = icv_len - skb_tailroom(t->skb);
+		u8 *p;
+		wiphy_warn(priv->hw->wiphy,
+			"Slowpath: tailroom is not big enough. "
+			"Req: %d, got: %d.\n",
+			icv_len, skb_tailroom(t->skb));
+
+		p = skb_push(t->skb, offset);
+		memmove(p, &p[offset], t->skb->len - offset);
+		skb_trim(t->skb, t->skb->len - offset);
+	}
+
+	newhdr = skb_push(t->skb, iv_len);
+	memmove(newhdr, newhdr + iv_len, t->hdrlen);
+	t->hdrlen += iv_len;
+	icv = skb_put(t->skb, icv_len);
+
+	return 0;
+}
+
+static int
+cw1200_tx_h_align(struct cw1200_common *priv,
+		  struct cw1200_txinfo *t)
+{
+	size_t offset = (size_t)t->skb->data & 3;
+	u8 *p;
+
+	if (!offset)
+		return 0;
+
+	if (skb_headroom(t->skb) < offset) {
+		wiphy_err(priv->hw->wiphy,
+			"Bug: no space allocated "
+			"for DMA alignment.\n"
+			"headroom: %d\n",
+			skb_headroom(t->skb));
+		return -ENOMEM;
+	}
+	p = skb_push(t->skb, offset);
+	memmove(p, &p[offset], t->skb->len - offset);
+	skb_trim(t->skb, t->skb->len - offset);
+	cw1200_debug_tx_copy(priv);
+	return 0;
+}
+
+static int
+cw1200_tx_h_action(struct cw1200_common *priv,
+		   struct cw1200_txinfo *t)
+{
+	struct ieee80211_mgmt *mgmt =
+		(struct ieee80211_mgmt *)t->hdr;
+	if (ieee80211_is_action(t->hdr->frame_control) &&
+			mgmt->u.action.category == WLAN_CATEGORY_BACK)
+		return 1;
+	else
+		return 0;
+}
+
+/* Add WSM header */
+static struct wsm_tx *
+cw1200_tx_h_wsm(struct cw1200_common *priv,
+		struct cw1200_txinfo *t)
+{
+	struct wsm_tx *wsm;
+
+	if (skb_headroom(t->skb) < sizeof(struct wsm_tx)) {
+		wiphy_err(priv->hw->wiphy,
+			"Bug: no space allocated "
+			"for WSM header.\n"
+			"headroom: %d\n",
+			skb_headroom(t->skb));
+		return NULL;
+	}
+
+	wsm = (struct wsm_tx *)skb_push(t->skb, sizeof(struct wsm_tx));
+	t->txpriv.offset += sizeof(struct wsm_tx);
+	memset(wsm, 0, sizeof(*wsm));
+	wsm->hdr.len = __cpu_to_le16(t->skb->len);
+	wsm->hdr.id = __cpu_to_le16(0x0004);
+	wsm->queueId = wsm_queue_id_to_wsm(t->queue);
+	return wsm;
+}
+
+/* BT Coex specific handling */
+static void
+cw1200_tx_h_bt(struct cw1200_common *priv,
+	       struct cw1200_txinfo *t,
+	       struct wsm_tx *wsm)
+{
 	u8 priority = 0;
 
-	memset(wsm, 0, sizeof(*wsm));
-	wsm->hdr.len = __cpu_to_le16(skb->len);
-	wsm->hdr.id = __cpu_to_le16(0x0004);
-	if (rate) {
-		wsm->maxTxRate = rate->hw_value;
-		if (rate->flags & IEEE80211_TX_RC_MCS) {
-			if (cw1200_ht_greenfield(&priv->ht_info))
-				wsm->htTxParameters |=
-					__cpu_to_le32(WSM_HT_TX_GREENFIELD);
-			else
-				wsm->htTxParameters |=
-					__cpu_to_le32(WSM_HT_TX_MIXED);
+	if (!priv->is_BT_Present)
+		return;
+
+	if (unlikely(ieee80211_is_nullfunc(t->hdr->frame_control)))
+		priority = WSM_EPTA_PRIORITY_MGT;
+	else if (ieee80211_is_data(t->hdr->frame_control)) {
+		/* Skip LLC SNAP header (+6) */
+		u8 *payload = &t->skb->data[t->hdrlen];
+		u16 *ethertype = (u16 *) &payload[6];
+		if (unlikely(*ethertype == __be16_to_cpu(ETH_P_PAE)))
+			priority = WSM_EPTA_PRIORITY_EAPOL;
+	}
+	else if (unlikely(ieee80211_is_assoc_req(t->hdr->frame_control) ||
+		ieee80211_is_reassoc_req(t->hdr->frame_control))) {
+		struct ieee80211_mgmt *mgt_frame =
+				(struct ieee80211_mgmt *)t->hdr;
+
+		if (mgt_frame->u.assoc_req.listen_interval <
+						priv->listen_interval) {
+			txrx_printk(KERN_DEBUG
+				"Modified Listen Interval to %d from %d\n",
+				priv->listen_interval,
+				mgt_frame->u.assoc_req.listen_interval);
+			/* Replace listen interval derieved from
+			 * the one read from SDD */
+			mgt_frame->u.assoc_req.listen_interval =
+				priv->listen_interval;
 		}
 	}
-	wsm->flags = tx_policy_get(priv,
-		tx_info->control.rates, IEEE80211_TX_MAX_RATES,
-		&tx_policy_renew) << 4;
+
+	if (likely(!priority)) {
+		if (ieee80211_is_action(t->hdr->frame_control))
+			priority = WSM_EPTA_PRIORITY_ACTION;
+		else if (ieee80211_is_mgmt(t->hdr->frame_control))
+			priority = WSM_EPTA_PRIORITY_MGT;
+		else if ((wsm->queueId == WSM_QUEUE_VOICE))
+			priority = WSM_EPTA_PRIORITY_VOICE;
+		else if ((wsm->queueId == WSM_QUEUE_VIDEO))
+			priority = WSM_EPTA_PRIORITY_VIDEO;
+		else
+			priority = WSM_EPTA_PRIORITY_DATA;
+	}
+
+	txrx_printk(KERN_DEBUG "[TX] EPTA priority %d.\n",
+		priority);
+
+	wsm->flags |= priority << 1;
+}
+
+static void
+cw1200_tx_h_rate_policy(struct cw1200_common *priv,
+			struct cw1200_txinfo *t,
+			struct wsm_tx *wsm)
+{
+	bool tx_policy_renew = false;
+
+	wsm->maxTxRate = t->rate->hw_value;
+	if (t->rate->flags & IEEE80211_TX_RC_MCS) {
+		if (cw1200_ht_greenfield(&priv->ht_info))
+			wsm->htTxParameters |=
+				__cpu_to_le32(WSM_HT_TX_GREENFIELD);
+		else
+			wsm->htTxParameters |=
+				__cpu_to_le32(WSM_HT_TX_MIXED);
+	}
+
+	t->txpriv.rate_id = tx_policy_get(priv,
+		t->tx_info->control.rates, IEEE80211_TX_MAX_RATES,
+		&tx_policy_renew);
+	wsm->flags = t->txpriv.rate_id << 4;
 
 	if (tx_policy_renew) {
 		tx_policy_printk(KERN_DEBUG "[TX] TX policy renew.\n");
@@ -416,211 +658,15 @@ int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
 		cw1200_tx_queues_lock(priv);
 		queue_work(priv->workqueue, &priv->tx_policy_upload_work);
 	}
-
-	wsm->queueId = wsm_queue_id_to_wsm(skb_get_queue_mapping(skb));
-
-	/* BT Coex specific handling */
-	if (priv->is_BT_Present) {
-		struct ieee80211_hdr *hdr =
-		(struct ieee80211_hdr *)(skb->data + sizeof(struct wsm_tx));
-
-		if (cpu_to_be16(info->ethertype) == ETH_P_PAE)
-			priority = WSM_EPTA_PRIORITY_EAPOL;
-		else if (ieee80211_is_action(hdr->frame_control))
-			priority = WSM_EPTA_PRIORITY_ACTION;
-		else if (ieee80211_is_mgmt(hdr->frame_control))
-			priority = WSM_EPTA_PRIORITY_MGT;
-		else if ((wsm->queueId == WSM_QUEUE_VOICE))
-			priority = WSM_EPTA_PRIORITY_VOICE;
-		else if ((wsm->queueId == WSM_QUEUE_VIDEO))
-			priority = WSM_EPTA_PRIORITY_VIDEO;
-		else
-			priority = WSM_EPTA_PRIORITY_DATA;
-
-		txrx_printk(KERN_DEBUG "[TX] EPTA priority %x.\n",
-			((priority) & 0x7));
-
-		/* Set EPTA priority */
-		wsm->flags |= (((priority) & 0x7) << 1);
-	}
-
-	return 0;
 }
 
-/* ******************************************************************** */
-
-void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
+static bool
+cw1200_tx_h_pm_state(struct cw1200_common *priv,
+			struct cw1200_txinfo *t)
 {
-	struct cw1200_common *priv = dev->priv;
-	unsigned queue = skb_get_queue_mapping(skb);
-	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
-	struct ieee80211_hdr *hdr =
-		(struct ieee80211_hdr *)skb->data;
-	int was_buffered = 0;
-	const u8 *da = ieee80211_get_DA(hdr);
-	struct cw1200_sta_priv *sta_priv =
-		(struct cw1200_sta_priv *)&tx_info->control.sta->drv_priv;
-	int link_id, raw_link_id;
-	int ret;
-	struct __cw1200_txpriv txpriv = {
-		.super.tid = CW1200_MAX_TID,
-	};
+	int was_buffered = 1;
 
-	if (likely(tx_info->control.sta && sta_priv->link_id))
-		raw_link_id = link_id = sta_priv->link_id;
-	else if (priv->mode != NL80211_IFTYPE_AP)
-		raw_link_id = link_id = 0;
-	else if (is_multicast_ether_addr(da)) {
-		if (priv->enable_beacon) {
-			raw_link_id = 0;
-			link_id = CW1200_LINK_ID_AFTER_DTIM;
-		} else {
-			raw_link_id = link_id = 0;
-		}
-	} else {
-		raw_link_id = cw1200_find_link_id(priv, da);
-		if (!raw_link_id)
-			raw_link_id = cw1200_alloc_link_id(priv, da);
-		if (!raw_link_id) {
-			wiphy_err(priv->hw->wiphy,
-				"%s: No more link IDs available.\n",
-				__func__);
-			goto err;
-		}
-		link_id = raw_link_id;
-	}
-	if (raw_link_id)
-		priv->link_id_db[raw_link_id - 1].timestamp = jiffies;
-
-	if (tx_info->control.sta &&
-			(tx_info->control.sta->uapsd_queues & BIT(queue)))
-		link_id = CW1200_LINK_ID_UAPSD;
-
-	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d (%d)).\n",
-			skb->len, queue, link_id, raw_link_id);
-
-	if (WARN_ON(queue >= 4))
-		goto err;
-
-	if (unlikely(ieee80211_is_auth(hdr->frame_control))) {
-		spin_lock_bh(&priv->ps_state_lock);
-		priv->sta_asleep_mask &= ~BIT(raw_link_id);
-		priv->pspoll_mask &= ~BIT(raw_link_id);
-		spin_unlock_bh(&priv->ps_state_lock);
-	} else if (ieee80211_is_data_qos(hdr->frame_control) ||
-			ieee80211_is_qos_nullfunc(hdr->frame_control)) {
-		u8 *qos = ieee80211_get_qos_ctl(hdr);
-		txpriv.super.tid = qos[0] & IEEE80211_QOS_CTL_TID_MASK;
-	} else if (ieee80211_is_data(hdr->frame_control) ||
-			ieee80211_is_nullfunc(hdr->frame_control)) {
-		txpriv.super.tid = 0;
-	}
-
-	/* BT Coex support related configuration */
-	if (priv->is_BT_Present) {
-		txpriv.ethertype = 0;
-
-		if (ieee80211_is_data_qos(hdr->frame_control) ||
-			ieee80211_is_data(hdr->frame_control)) {
-			unsigned int headerlen =
-				ieee80211_get_hdrlen_from_skb(skb);
-
-			/* Skip LLC SNAP header (+6) */
-			if (headerlen > 0)
-				txpriv.ethertype =
-					*((u16 *)(skb->data + headerlen + 6));
-		}
-		else if (ieee80211_is_assoc_req(hdr->frame_control) ||
-			ieee80211_is_reassoc_req(hdr->frame_control)) {
-			struct ieee80211_mgmt *mgt_frame =
-					(struct ieee80211_mgmt *)skb->data;
-
-			if (mgt_frame->u.assoc_req.listen_interval <
-							priv->listen_interval) {
-				txrx_printk(KERN_DEBUG
-				"Modified Listen Interval to %x from %x\n",
-				priv->listen_interval,
-				mgt_frame->u.assoc_req.listen_interval);
-				/* Replace listen interval derieved from
-				the one read from SDD */
-				mgt_frame->u.assoc_req.listen_interval =
-					priv->listen_interval;
-			}
-		}
-	}
-
-	/* IV/ICV injection. */
-	/* TODO: Quite unoptimal. It's better co modify mac80211
-	 * to reserve space for IV */
-	if (tx_info->control.hw_key &&
-	    (hdr->frame_control &
-	     __cpu_to_le32(IEEE80211_FCTL_PROTECTED))) {
-		size_t hdrlen = ieee80211_hdrlen(hdr->frame_control);
-		size_t iv_len = tx_info->control.hw_key->iv_len;
-		size_t icv_len = tx_info->control.hw_key->icv_len;
-		u8 *icv;
-		u8 *newhdr;
-
-		if (tx_info->control.hw_key->cipher == WLAN_CIPHER_SUITE_TKIP) {
-			icv_len += 8; /* MIC */
-		}
-
-		if ((skb_headroom(skb) + skb_tailroom(skb) <
-			iv_len + icv_len + WSM_TX_EXTRA_HEADROOM) ||
-			(skb_headroom(skb) < iv_len + WSM_TX_EXTRA_HEADROOM)) {
-			wiphy_err(priv->hw->wiphy,
-				"Bug: no space allocated "
-				"for crypto headers.\n"
-				"headroom: %d, tailroom: %d, "
-				"req_headroom: %d, req_tailroom: %d\n"
-				"Please fix it in cw1200_get_skb().\n",
-				skb_headroom(skb), skb_tailroom(skb),
-				iv_len + WSM_TX_EXTRA_HEADROOM, icv_len);
-			goto err;
-		} else if (skb_tailroom(skb) < icv_len) {
-			size_t offset = icv_len - skb_tailroom(skb);
-			u8 *p;
-			wiphy_warn(priv->hw->wiphy,
-				"Slowpath: tailroom is not big enough. "
-				"Req: %d, got: %d.\n",
-				icv_len, skb_tailroom(skb));
-
-			p = skb_push(skb, offset);
-			memmove(p, &p[offset], skb->len - offset);
-			skb_trim(skb, skb->len - offset);
-		}
-
-		newhdr = skb_push(skb, iv_len);
-		memmove(newhdr, newhdr + iv_len, hdrlen);
-		memset(&newhdr[hdrlen], 0, iv_len);
-		icv = skb_put(skb, icv_len);
-		memset(icv, 0, icv_len);
-	}
-
-	if ((size_t)skb->data & 3) {
-		size_t offset = (size_t)skb->data & 3;
-		u8 *p;
-		if (skb_headroom(skb) < 4) {
-			wiphy_err(priv->hw->wiphy,
-					"Bug: no space allocated "
-					"for DMA alignment.\n"
-					"headroom: %d\n",
-					skb_headroom(skb));
-			goto err;
-		}
-		p = skb_push(skb, offset);
-		memmove(p, &p[offset], skb->len - offset);
-		skb_trim(skb, skb->len - offset);
-		cw1200_debug_tx_copy(priv);
-	}
-
-	if (ieee80211_is_action(hdr->frame_control))
-		if (cw1200_handle_action_tx(priv, skb))
-			goto drop;
-
-	spin_lock_bh(&priv->ps_state_lock);
-
-	if (link_id == CW1200_LINK_ID_AFTER_DTIM &&
+	if (t->txpriv.link_id == CW1200_LINK_ID_AFTER_DTIM &&
 			!priv->buffered_multicasts) {
 		priv->buffered_multicasts = true;
 		if (priv->sta_asleep_mask)
@@ -628,53 +674,88 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 				&priv->multicast_start_work);
 	}
 
-	if (raw_link_id && txpriv.super.tid < CW1200_MAX_TID)
-		was_buffered = priv->link_id_db[raw_link_id - 1]
-				.buffered[txpriv.super.tid]++;
+	if (t->txpriv.raw_link_id && t->txpriv.tid < CW1200_MAX_TID)
+		was_buffered = priv->link_id_db[t->txpriv.raw_link_id - 1]
+				.buffered[t->txpriv.tid]++;
 
-	txpriv.super.link_id = link_id;
-	txpriv.super.raw_link_id = raw_link_id;
-	ret = cw1200_queue_put(&priv->tx_queue[queue], priv, skb,
-			&txpriv.super);
+	return !was_buffered;
+}
 
+/* ******************************************************************** */
+
+void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
+{
+	struct cw1200_common *priv = dev->priv;
+	struct cw1200_txinfo t = {
+		.skb = skb,
+		.queue = skb_get_queue_mapping(skb),
+		.tx_info = IEEE80211_SKB_CB(skb),
+		.hdr = (struct ieee80211_hdr *)skb->data,
+		.txpriv.tid = CW1200_MAX_TID,
+		.txpriv.rate_id = CW1200_INVALID_RATE_ID,
+	};
+	struct wsm_tx *wsm;
+	bool tid_update = 0;
+	int ret;
+
+	t.rate = cw1200_get_tx_rate(priv,
+		&t.tx_info->control.rates[0]),
+	t.hdrlen = ieee80211_hdrlen(t.hdr->frame_control);
+	t.da = ieee80211_get_DA(t.hdr);
+	t.sta_priv =
+		(struct cw1200_sta_priv *)&t.tx_info->control.sta->drv_priv;
+
+	if (WARN_ON(t.queue >= 4 || !t.rate))
+		goto drop;
+
+	if ((ret = cw1200_tx_h_calc_link_ids(priv, &t)))
+		goto drop;
+
+	txrx_printk(KERN_DEBUG "[TX] TX %d bytes "
+			"(queue: %d, link_id: %d (%d)).\n",
+			skb->len, t.queue, t.txpriv.link_id,
+			t.txpriv.raw_link_id);
+
+	cw1200_tx_h_pm(priv, &t);
+	cw1200_tx_h_calc_tid(priv, &t);
+	if ((ret = cw1200_tx_h_crypt(priv, &t)))
+		goto drop;
+	if ((ret = cw1200_tx_h_align(priv, &t)))
+		goto drop;
+	if ((ret = cw1200_tx_h_action(priv, &t)))
+		goto drop;
+	wsm = cw1200_tx_h_wsm(priv, &t);
+	if (!wsm) {
+		ret = -ENOMEM;
+		goto drop;
+	}
+	cw1200_tx_h_bt(priv, &t, wsm);
+	cw1200_tx_h_rate_policy(priv, &t, wsm);
+
+	spin_lock_bh(&priv->ps_state_lock);
+	{
+		tid_update = cw1200_tx_h_pm_state(priv, &t);
+		BUG_ON(cw1200_queue_put(&priv->tx_queue[t.queue],
+				t.skb, &t.txpriv));
+	}
 	spin_unlock_bh(&priv->ps_state_lock);
 
-	if (raw_link_id && !was_buffered && txpriv.super.tid < CW1200_MAX_TID)
-		ieee80211_sta_set_buffered(tx_info->control.sta,
-				txpriv.super.tid, true);
+	if (tid_update)
+		ieee80211_sta_set_buffered(t.tx_info->control.sta,
+				t.txpriv.tid, true);
 
-	if (!WARN_ON(ret))
-		cw1200_bh_wakeup(priv);
-	else
-		goto err;
+	cw1200_bh_wakeup(priv);
 
-	return;
-
-err:
-	/* TODO: Update TX failure counters */
-	dev_kfree_skb_any(skb);
 	return;
 
 drop:
-	dev_kfree_skb_any(skb);
+	cw1200_skb_dtor(priv, skb, &t.txpriv);
 	return;
 }
 
 /* ******************************************************************** */
 
 static int cw1200_handle_action_rx(struct cw1200_common *priv,
-				   struct sk_buff *skb)
-{
-	struct ieee80211_mgmt *mgmt = (void *)skb->data;
-
-	/* Filter block ACK negotiation: fully controlled by firmware */
-	if (mgmt->u.action.category == WLAN_CATEGORY_BACK)
-		return 1;
-
-	return 0;
-}
-
-static int cw1200_handle_action_tx(struct cw1200_common *priv,
 				   struct sk_buff *skb)
 {
 	struct ieee80211_mgmt *mgmt = (void *)skb->data;
@@ -709,11 +790,6 @@ static int cw1200_handle_pspoll(struct cw1200_common *priv,
 		sta_priv = (struct cw1200_sta_priv *)&sta->drv_priv;
 		link_id = sta_priv->link_id;
 		pspoll_mask = BIT(sta_priv->link_id);
-
-		/* HACK! To be removed when accurate TX ststus
-		 * reporting for dropped frames is implemented. */
-		if (priv->pspoll_mask & pspoll_mask)
-			ieee80211_sta_eosp_irqsafe(sta);
 	}
 	rcu_read_unlock();
 	if (!link_id)
@@ -746,7 +822,6 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	u8 queue_id = cw1200_queue_get_queue_id(arg->packetID);
 	struct cw1200_queue *queue = &priv->tx_queue[queue_id];
 	struct sk_buff *skb;
-	const struct cw1200_txpriv *txpriv = NULL;
 
 	txrx_printk(KERN_DEBUG "[TX] TX confirm: %d, %d.\n",
 		arg->status, arg->ackFailures);
@@ -780,19 +855,14 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 		WARN_ON(cw1200_queue_requeue(queue,
 				arg->packetID));
 	} else if (!WARN_ON(cw1200_queue_get_skb(
-			queue, arg->packetID, &skb, &txpriv))) {
+			queue, arg->packetID, &skb))) {
 		struct ieee80211_tx_info *tx = IEEE80211_SKB_CB(skb);
-		struct wsm_tx *wsm_tx = (struct wsm_tx *)skb->data;
-		int rate_id = (wsm_tx->flags >> 4) & 0x07;
 		int tx_count = arg->ackFailures;
 		u8 ht_flags = 0;
 		int i;
 
 		if (cw1200_ht_greenfield(&priv->ht_info))
 			ht_flags |= IEEE80211_TX_RC_GREEN_FIELD;
-
-		/* Release used TX rate policy */
-		tx_policy_put(priv, rate_id);
 
 		if (likely(!arg->status)) {
 			tx->flags |= IEEE80211_TX_STAT_ACK;
@@ -833,15 +903,11 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 			tx->status.rates[i].idx = -1;
 		}
 
-		skb_pull(skb, sizeof(struct wsm_tx));
-		cw1200_notify_buffered_tx(priv, skb, arg->link_id,
-				txpriv->tid);
-		ieee80211_tx_status(priv->hw, skb);
-		WARN_ON(cw1200_queue_remove(queue, priv, arg->packetID));
+		cw1200_queue_remove(queue, arg->packetID);
 	}
 }
 
-void cw1200_notify_buffered_tx(struct cw1200_common *priv,
+static void cw1200_notify_buffered_tx(struct cw1200_common *priv,
 			       struct sk_buff *skb, int link_id, int tid)
 {
 	struct ieee80211_sta *sta;
@@ -868,6 +934,19 @@ void cw1200_notify_buffered_tx(struct cw1200_common *priv,
 		}
 	}
 
+}
+
+void cw1200_skb_dtor(struct cw1200_common *priv,
+		     struct sk_buff *skb,
+		     const struct cw1200_txpriv *txpriv)
+{
+	skb_pull(skb, txpriv->offset);
+	if (txpriv->rate_id != CW1200_INVALID_RATE_ID) {
+		cw1200_notify_buffered_tx(priv, skb,
+				txpriv->raw_link_id, txpriv->tid);
+		tx_policy_put(priv, txpriv->rate_id);
+	}
+	ieee80211_tx_status(priv->hw, skb);
 }
 
 void cw1200_rx_cb(struct cw1200_common *priv,

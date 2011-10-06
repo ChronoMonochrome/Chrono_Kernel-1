@@ -95,6 +95,7 @@ void cw1200_pm_deinit(struct cw1200_pm_state *pm)
 	wake_lock_destroy(&pm->wakelock);
 	cw1200_pm_deinit_common(pm);
 }
+
 void cw1200_pm_stay_awake(struct cw1200_pm_state *pm,
 			  unsigned long tmo)
 {
@@ -204,6 +205,10 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 	if (ret)
 		return -EAGAIN;
 #endif
+
+	/* Do not suspend when datapath is not idle */
+	if (priv->tx_queue_stats.num_queued)
+		return -EBUSY;
 
 	/* Make sure there is no configuration requests in progress. */
 	if (!mutex_trylock(&priv->conf_mutex))

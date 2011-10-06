@@ -199,6 +199,13 @@ static struct ieee80211_supported_band cw1200_band_5ghz = {
 };
 #endif /* CONFIG_CW1200_5GHZ_SUPPORT */
 
+static const unsigned long cw1200_ttl[] = {
+	1 * HZ,	/* VO */
+	2 * HZ,	/* VI */
+	5 * HZ, /* BE */
+	10 * HZ	/* BK */
+};
+
 static const struct ieee80211_ops cw1200_ops = {
 	.start			= cw1200_start,
 	.stop			= cw1200_stop,
@@ -342,17 +349,19 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	}
 
 	if (unlikely(cw1200_queue_stats_init(&priv->tx_queue_stats,
-			CW1200_LINK_ID_MAX))) {
+			CW1200_LINK_ID_MAX,
+			cw1200_skb_dtor,
+			priv))) {
 		ieee80211_free_hw(hw);
 		return NULL;
 	}
 
 	for (i = 0; i < 4; ++i) {
 		if (unlikely(cw1200_queue_init(&priv->tx_queue[i],
-				&priv->tx_queue_stats, i, 16))) {
+				&priv->tx_queue_stats, i, 16,
+				cw1200_ttl[i]))) {
 			for (; i > 0; i--)
-				cw1200_queue_deinit(&priv->tx_queue[i - 1],
-						priv);
+				cw1200_queue_deinit(&priv->tx_queue[i - 1]);
 			cw1200_queue_stats_deinit(&priv->tx_queue_stats);
 			ieee80211_free_hw(hw);
 			return NULL;
@@ -442,7 +451,7 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 	}
 
 	for (i = 0; i < 4; ++i)
-		cw1200_queue_deinit(&priv->tx_queue[i], priv);
+		cw1200_queue_deinit(&priv->tx_queue[i]);
 	cw1200_queue_stats_deinit(&priv->tx_queue_stats);
 	cw1200_pm_deinit(&priv->pm_state);
 }

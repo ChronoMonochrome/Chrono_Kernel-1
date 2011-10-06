@@ -753,11 +753,11 @@ typedef void (*wsm_tx_confirm_cb) (struct cw1200_common *priv,
 /* Note that ideology of wsm_tx struct is different against the rest of
  * WSM API. wsm_hdr is /not/ a caller-adapted struct to be used as an input
  * argument for WSM call, but a prepared bytestream to be sent to firmware.
- * It is filled partly in cw1200_skb_to_wsm, partly in low-level WSM code.
+ * It is filled partly in cw1200_tx, partly in low-level WSM code.
  * Please pay attention once again: ideology is different.
  *
  * Legend:
- * - [in]: cw1200_skb_to_wsm must fill this field.
+ * - [in]: cw1200_tx must fill this field.
  * - [wsm]: the field is filled by low-level WSM.
  */
 struct wsm_tx {

@@ -77,10 +77,6 @@ int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	if (priv->mode != NL80211_IFTYPE_AP || !sta_priv->link_id)
 		return 0;
 
-	/* HACK! To be removed when accurate TX ststus
-	 * reporting for dropped frames is implemented. */
-	ieee80211_sta_eosp_irqsafe(sta);
-
 	entry = &priv->link_id_db[sta_priv->link_id - 1];
 	spin_lock_bh(&priv->ps_state_lock);
 	entry->status = CW1200_LINK_SOFT;

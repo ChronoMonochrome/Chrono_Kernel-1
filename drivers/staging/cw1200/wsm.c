@@ -1399,8 +1399,6 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * probe responses.
 		 * The easiest way to get it back is to convert
 		 * probe request into WSM start_scan command. */
-		const struct cw1200_txpriv *txpriv;
-		int rate_id = (wsm->flags >> 4) & 0x07;
 		struct cw1200_queue *queue =
 			&priv->tx_queue[cw1200_queue_get_queue_id(
 				wsm->packetID)];
@@ -1409,12 +1407,13 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		wsm_lock_tx_async(priv);
 		BUG_ON(priv->scan.probe_skb);
 		BUG_ON(cw1200_queue_get_skb(queue,
-					wsm->packetID,
-					&priv->scan.probe_skb, &txpriv));
-		BUG_ON(cw1200_queue_remove(queue, priv,
-						wsm->packetID));
+				wsm->packetID,
+				&priv->scan.probe_skb));
+		skb_get(priv->scan.probe_skb);
+		IEEE80211_SKB_CB(priv->scan.probe_skb)->flags |=
+				IEEE80211_TX_STAT_ACK;
+		BUG_ON(cw1200_queue_remove(queue, wsm->packetID));
 		/* Release used TX rate policy */
-		tx_policy_put(priv, rate_id);
 		queue_delayed_work(priv->workqueue,
 				&priv->scan.probe_work, 0);
 		handled = true;
@@ -1424,23 +1423,11 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	{
 		/* See detailed description of "join" below.
 		 * We are dropping everything except AUTH in non-joined mode. */
-		struct sk_buff *skb;
-		int rate_id = (wsm->flags >> 4) & 0x07;
-		const struct cw1200_txpriv *txpriv = NULL;
 		struct cw1200_queue *queue =
 			&priv->tx_queue[cw1200_queue_get_queue_id(
 				wsm->packetID)];
-		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X):"
-			" not joined.\n", fctl);
-		BUG_ON(cw1200_queue_get_skb(queue, wsm->packetID,
-				&skb, &txpriv));
-		skb_pull(skb, sizeof(struct wsm_tx));
-		cw1200_notify_buffered_tx(priv, skb, link_id, txpriv->tid);
-		BUG_ON(cw1200_queue_remove(queue, priv, wsm->packetID));
-		/* Release used TX rate policy */
-		tx_policy_put(priv, rate_id);
-		/* Release SKB. TODO: report TX failure. */
-		dev_kfree_skb(skb);
+		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X).\n", fctl);
+		BUG_ON(cw1200_queue_remove(queue, wsm->packetID));
 		handled = true;
 	}
 	break;
@@ -1625,7 +1612,6 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 			if (ret)
 				break;
-
 
 			if (cw1200_queue_get(queue,
 					tx_allowed_mask,
