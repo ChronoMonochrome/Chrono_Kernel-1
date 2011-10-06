@@ -15,7 +15,6 @@
 #include <asm/mach-types.h>
 #include <video/av8100.h>
 #include <video/mcde_display.h>
-#include <video/mcde_display-generic_dsi.h>
 #include <video/mcde_display-vuib500-dpi.h>
 #include <video/mcde_display-sony_acx424akp_dsi.h>
 #include <video/mcde_display-av8100.h>
@@ -94,56 +93,20 @@ static struct mcde_display_device fictive_display = {
 #endif /* CONFIG_DISPLAY_FICTIVE */
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
-static struct mcde_port port0 = {
-	.type = MCDE_PORTTYPE_DSI,
-	.mode = MCDE_PORTMODE_CMD,
-	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
-	.ifc = 1,
+static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata0 = {
 	.link = 0,
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
-	.sync_src = MCDE_SYNCSRC_OFF,
-	.update_auto_trig = true,
-#else
-	.sync_src = MCDE_SYNCSRC_BTA,
-	.update_auto_trig = false,
-#endif
-	.phy = {
-		.dsi = {
-			.virt_id = 0,
-			.num_data_lanes = 2,
-			.ui = DSI_UNIT_INTERVAL_0,
-			.clk_cont = false,
-			.data_lanes_swap = false,
-		},
-	},
 };
 
-static struct mcde_display_generic_platform_data generic_display0_pdata = {
-	.reset_delay = 1,
-#ifdef CONFIG_REGULATOR
-	.regulator_id = "vaux12v5",
-	.min_supply_voltage = 2500000, /* 2.5V */
-	.max_supply_voltage = 2800000 /* 2.8V */
-#endif
-};
-
-static struct mcde_display_device generic_display0 = {
-	.name = "mcde_disp_generic",
+static struct mcde_display_device samsung_s6d16d0_display0 = {
+	.name = "samsung_s6d16d0",
 	.id = PRIMARY_DISPLAY_ID,
-	.port = &port0,
 	.chnl_id = MCDE_CHNL_A,
-	/*
-	 * A large fifo is needed when ddr is clocked down to 25% to not get
-	 * latency problems.
-	 */
 	.fifo = MCDE_FIFO_A,
 #ifdef CONFIG_MCDE_DISPLAY_PRIMARY_16BPP
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
 #else
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
 #endif
-	.native_x_res = 864,
-	.native_y_res = 480,
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	.synchronized_update = true,
 #else
@@ -153,7 +116,7 @@ static struct mcde_display_device generic_display0 = {
 	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,
 	.dev = {
-		.platform_data = &generic_display0_pdata,
+		.platform_data = &samsung_s6d16d0_pdata0,
 	},
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
@@ -207,56 +170,23 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 #endif /* CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY */
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
-static struct mcde_port subdisplay_port = {
-	.type = MCDE_PORTTYPE_DSI,
-	.mode = MCDE_PORTMODE_CMD,
-	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
-	.ifc = 1,
+static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata1 = {
 	.link = 1,
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY_AUTO_SYNC
-	.sync_src = MCDE_SYNCSRC_OFF,
-	.update_auto_trig = true,
-#else
-	.sync_src = MCDE_SYNCSRC_BTA,
-	.update_auto_trig = false,
-#endif
-	.phy = {
-		.dsi = {
-			.virt_id = 0,
-			.num_data_lanes = 2,
-			.ui = DSI_UNIT_INTERVAL_1,
-			.clk_cont = false,
-			.data_lanes_swap = false,
-		},
-	},
-
 };
 
-static struct mcde_display_generic_platform_data generic_subdisplay_pdata = {
-	.reset_delay = 1,
-#ifdef CONFIG_REGULATOR
-	.regulator_id = "vaux12v5",
-	.min_supply_voltage = 2500000, /* 2.5V */
-	.max_supply_voltage = 2800000 /* 2.8V */
-#endif
-};
-
-static struct mcde_display_device generic_subdisplay = {
-	.name = "mcde_disp_generic_subdisplay",
+static struct mcde_display_device samsung_s6d16d0_display1 = {
+	.name = "samsung_s6d16d0",
 	.id = SECONDARY_DISPLAY_ID,
-	.port = &subdisplay_port,
 	.chnl_id = MCDE_CHNL_C1,
 	.fifo = MCDE_FIFO_C1,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
-	.native_x_res = 864,
-	.native_y_res = 480,
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY_VSYNC
 	.synchronized_update = true,
 #else
 	.synchronized_update = false,
 #endif
 	.dev = {
-		.platform_data = &generic_subdisplay_pdata,
+		.platform_data = &samsung_s6d16d0_pdata1,
 	},
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_SECONDARY */
@@ -278,7 +208,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-static struct mcde_display_dpi_platform_data generic_display0_pdata = {0};
+static struct mcde_display_dpi_platform_data dpi_display0_pdata = {0};
 static struct ux500_pins *dpi_pins;
 
 static int dpi_display_platform_enable(struct mcde_display_device *ddev)
@@ -313,7 +243,7 @@ static int dpi_display_platform_disable(struct mcde_display_device *ddev)
 
 }
 
-static struct mcde_display_device generic_display0 = {
+static struct mcde_display_device dpi_display0 = {
 	.name = "mcde_display_dpi",
 	.id = 0,
 	.port = &port0,
@@ -328,7 +258,7 @@ static struct mcde_display_device generic_display0 = {
 	.native_y_res = 480,
 	/* .synchronized_update: Don't care: port is set to update_auto_trig */
 	.dev = {
-		.platform_data = &generic_display0_pdata,
+		.platform_data = &dpi_display0_pdata,
 	},
 	.platform_enable = dpi_display_platform_enable,
 	.platform_disable = dpi_display_platform_disable,
@@ -746,14 +676,14 @@ static void setup_primary_display(void)
 {
 	/* Display reset GPIO is different depending on reference boards */
 	if (machine_is_hrefv60())
-		generic_display0_pdata.reset_gpio = HREFV60_DISP1_RST_GPIO;
+		samsung_s6d16d0_pdata0.reset_gpio = HREFV60_DISP1_RST_GPIO;
 	else
-		generic_display0_pdata.reset_gpio = MOP500_DISP1_RST_GPIO;
+		samsung_s6d16d0_pdata0.reset_gpio = MOP500_DISP1_RST_GPIO;
 
 	/* Not all STUIB supports VSYNC, disable vsync for STUIB */
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
 	if (uib_is_stuib())
-		generic_display0.synchronized_update = false;
+		samsung_s6d16d0_display0.synchronized_update = false;
 #endif
 }
 
@@ -780,7 +710,7 @@ int __init init_display_devices(void)
 	/* Set powermode to STANDBY if startup graphics is executed */
 #ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
 	if (display_initialized_during_boot)
-		generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
+		samsung_s6d16d0_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
 #endif
 #ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 	if (display_initialized_during_boot)
@@ -797,9 +727,9 @@ int __init init_display_devices(void)
 	setup_primary_display();
 
 #ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
-	/* Launch generic display for STUIB and U8500UIB */
-	if (!uib_is_u8500uibr3())
-		ret = mcde_display_device_register(&generic_display0);
+	/* Samsung display for STUIB and U8500UIB */
+	if (uib_is_u8500uib() || uib_is_stuib())
+		ret = mcde_display_device_register(&samsung_s6d16d0_display0);
 #endif
 #ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 	/* Sony display on U8500UIBV3 */
@@ -813,12 +743,12 @@ int __init init_display_devices(void)
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
 	/* Display reset GPIO is different depending on reference boards */
 	if (machine_is_hrefv60())
-		generic_subdisplay_pdata.reset_gpio = HREFV60_DISP2_RST_GPIO;
+		samsung_s6d16d0_pdata1.reset_gpio = HREFV60_DISP2_RST_GPIO;
 	else
-		generic_subdisplay_pdata.reset_gpio = MOP500_DISP2_RST_GPIO;
-	ret = mcde_display_device_register(&generic_subdisplay);
+		samsung_s6d16d0_pdata1.reset_gpio = MOP500_DISP2_RST_GPIO;
+	ret = mcde_display_device_register(&samsung_s6d16d0_display1);
 	if (ret)
-		pr_warning("Failed to register generic sub display device\n");
+		pr_warning("Failed to register sub display device\n");
 #endif
 
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
@@ -847,15 +777,15 @@ struct mcde_display_device *mcde_get_main_display(void)
 #if defined(CONFIG_DISPLAY_GENERIC_PRIMARY) && \
 	defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
 	if (!uib_is_u8500uibr3())
-		return &generic_display0;
+		return &samsung_s6d16d0_display0;
 	else
 		return &sony_acx424akp_display0;
 #elif defined(CONFIG_DISPLAY_GENERIC_PRIMARY)
-	return &generic_display0;
+	return &samsung_s6d16d0_display0;
 #elif defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
 	return &sony_acx424akp_display0;
 #elif defined(CONFIG_DISPLAY_GENERIC_DSI_SECONDARY)
-	return &generic_subdisplay;
+	return &samsung_s6d16d0_display1;
 #elif defined(CONFIG_DISPLAY_AV8100_TERTIARY)
 	return &av8100_hdmi;
 #elif defined(CONFIG_DISPLAY_AB8500_TERTIARY)
