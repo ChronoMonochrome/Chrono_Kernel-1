@@ -454,6 +454,7 @@ void rcu_irq_enter(void)
 {
 	rcu_exit_nohz();
 }
+EXPORT_SYMBOL(rcu_is_cpu_idle);
 
 /**
  * rcu_irq_exit - inform RCU of exit from hard irq context

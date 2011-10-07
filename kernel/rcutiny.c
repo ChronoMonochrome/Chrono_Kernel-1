@@ -82,6 +82,7 @@ void rcu_exit_nohz(void)
 {
 	rcu_dynticks_nesting++;
 }
+EXPORT_SYMBOL(rcu_is_cpu_idle);
 
 #endif /* #ifdef CONFIG_NO_HZ */
 
