@@ -22,7 +22,7 @@
 #include <mach/gpio.h>
 #include <mach/devices.h>
 #include "board-u5500.h"
-#include "../drivers/staging/mmio/mmio.h"
+#include <linux/mmio.h>
 
 struct mmio_board_data{
 	int number_of_regulators;
