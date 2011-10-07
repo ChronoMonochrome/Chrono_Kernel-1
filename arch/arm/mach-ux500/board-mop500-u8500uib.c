@@ -8,6 +8,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/i2c.h>
+#include <../drivers/staging/camera_flash/adp1653_plat.h>
 #include <linux/interrupt.h>
 #include <linux/lsm303dlh.h>
 #include <linux/l3g4200d.h>
@@ -48,6 +49,10 @@ static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata_u8500 = {
 	.negative_z = 1,
 };
 
+static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
+	.irq_no = CAMERA_FLASH_INT_PIN
+};
+
 static struct i2c_board_info __initdata mop500_i2c2_devices_u8500[] = {
 	{
 		/* LSM303DLH Accelerometer */
@@ -64,6 +69,10 @@ static struct i2c_board_info __initdata mop500_i2c2_devices_u8500[] = {
 		I2C_BOARD_INFO("l3g4200d", 0x68),
 		.platform_data = &l3g4200d_pdata_u8500,
 	},
+	{
+		I2C_BOARD_INFO("adp1653", 0x30),
+		.platform_data = &adp1653_pdata_u8500_uib
+	}
 };
 
 
@@ -137,10 +146,14 @@ void __init mop500_u8500uib_init(void)
 		lsm303dlh_pdata_u8500.irq_a1 = HREFV60_ACCEL_INT1_GPIO;
 		lsm303dlh_pdata_u8500.irq_a2 = HREFV60_ACCEL_INT2_GPIO;
 		lsm303dlh_pdata_u8500.irq_m = HREFV60_MAGNET_DRDY_GPIO;
+		adp1653_pdata_u8500_uib.enable_gpio =
+					HREFV60_CAMERA_FLASH_ENABLE;
 	} else {
 		lsm303dlh_pdata_u8500.irq_a1 = GPIO_ACCEL_INT1;
 		lsm303dlh_pdata_u8500.irq_a2 = GPIO_ACCEL_INT2;
 		lsm303dlh_pdata_u8500.irq_m = GPIO_MAGNET_DRDY;
+		adp1653_pdata_u8500_uib.enable_gpio =
+					GPIO_CAMERA_FLASH_ENABLE;
 	}
 
 	mop500_uib_i2c_add(2, mop500_i2c2_devices_u8500,

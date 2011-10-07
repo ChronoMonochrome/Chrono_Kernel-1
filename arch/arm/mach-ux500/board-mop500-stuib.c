@@ -11,6 +11,7 @@
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
+#include <../drivers/staging/camera_flash/adp1653_plat.h>
 #include <linux/input/matrix_keypad.h>
 #include <asm/mach-types.h>
 
@@ -105,6 +106,20 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_stuib[] = {
 		.platform_data = &stmpe1601_data,
 		.flags = I2C_CLIENT_WAKE,
 	},
+};
+
+/*
+ *  Config data for the flash
+ */
+static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
+	.irq_no = CAMERA_FLASH_INT_PIN
+};
+
+static struct i2c_board_info __initdata mop500_i2c2_devices_stuib[] = {
+	{
+		I2C_BOARD_INFO("adp1653", 0x30),
+		.platform_data = &adp1653_pdata_u8500_uib
+	}
 };
 
 /*
@@ -247,14 +262,20 @@ void __init mop500_stuib_init(void)
 	if (machine_is_hrefv60()) {
 		tsc_plat_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
 		tsc_plat2_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
+		adp1653_pdata_u8500_uib.enable_gpio =
+					HREFV60_CAMERA_FLASH_ENABLE;
 	} else {
 		tsc_plat_device.cs_pin = GPIO_BU21013_CS;
 		tsc_plat2_device.cs_pin = GPIO_BU21013_CS;
-
+		adp1653_pdata_u8500_uib.enable_gpio =
+					GPIO_CAMERA_FLASH_ENABLE;
 	}
 
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_stuib,
 			ARRAY_SIZE(mop500_i2c0_devices_stuib));
+
+	mop500_uib_i2c_add(2, mop500_i2c2_devices_stuib,
+			ARRAY_SIZE(mop500_i2c2_devices_stuib));
 
 	mop500_uib_i2c_add(3, u8500_i2c3_devices_stuib,
 			ARRAY_SIZE(u8500_i2c3_devices_stuib));
