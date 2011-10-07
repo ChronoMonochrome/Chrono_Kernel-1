@@ -136,6 +136,44 @@ static unsigned int dbx500_cpufreq_getspeed(unsigned int cpu)
 	return freq_table[i].frequency;
 }
 
+static bool initialized;
+
+static void __init dbx500_cpufreq_early_init(void)
+{
+	if (cpu_is_u5500()) {
+		freq_table = db5500_freq_table;
+		idx2opp = db5500_idx2opp;
+
+	} else if (cpu_is_u8500()) {
+		freq_table = db8500_freq_table;
+		idx2opp = db8500_idx2opp;
+
+		if (!prcmu_is_u8400()) {
+			freq_table[1].frequency = 400000;
+			freq_table[2].frequency = 800000;
+			if (prcmu_has_arm_maxopp())
+				freq_table[3].frequency = 1000000;
+		}
+
+	} else {
+		ux500_unknown_soc();
+	}
+
+	initialized = true;
+}
+
+/*
+ * This is called from localtimer initialization, via the clk_get_rate() for
+ * the smp_twd clock.  This is way before cpufreq is initialized.
+ */
+unsigned long dbx500_cpufreq_getfreq(void)
+{
+	if (!initialized)
+		dbx500_cpufreq_early_init();
+
+	return dbx500_cpufreq_getspeed(0) * 1000;
+}
+
 int dbx500_cpufreq_get_limits(int cpu, int r,
 			      unsigned int *min, unsigned int *max)
 {
@@ -247,25 +285,8 @@ static int __init dbx500_cpufreq_register(void)
 	if (cpu_is_u8500() && !cpu_is_u8500v20_or_later())
 		return -ENODEV;
 
-
-	if (cpu_is_u5500()) {
-		freq_table = db5500_freq_table;
-		idx2opp = db5500_idx2opp;
-
-	} else if (cpu_is_u8500()) {
-		freq_table = db8500_freq_table;
-		idx2opp = db8500_idx2opp;
-
-		if (!prcmu_is_u8400()) {
-			freq_table[1].frequency = 400000;
-			freq_table[2].frequency = 800000;
-			if (prcmu_has_arm_maxopp())
-				freq_table[3].frequency = 1000000;
-		}
-
-	} else {
-		ux500_unknown_soc();
-	}
+	if (!initialized)
+		dbx500_cpufreq_early_init();
 
 	pr_info("dbx500-cpufreq : Available frequencies:\n");
 

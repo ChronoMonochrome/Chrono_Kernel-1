@@ -435,6 +435,29 @@ struct clkops prcc_kclk_rec_ops = {
 	.set_rate = clk_set_rate_rec,
 };
 
+#ifdef CONFIG_CPU_FREQ
+extern unsigned long dbx500_cpufreq_getfreq(void);
+
+unsigned long clk_smp_twd_get_rate(struct clk *clk)
+{
+	return dbx500_cpufreq_getfreq() / 2;
+}
+
+static struct clkops clk_smp_twd_ops = {
+	.get_rate = clk_smp_twd_get_rate,
+};
+
+static struct clk clk_smp_twd = {
+	.name	= "smp_twd",
+	.ops	= &clk_smp_twd_ops,
+};
+
+static struct clk_lookup clk_smp_twd_lookup = {
+	.clk	= &clk_smp_twd,
+	.dev_id	= "smp_twd",
+};
+#endif
+
 int __init clk_init(void)
 {
 	if (cpu_is_u8500()) {
@@ -450,6 +473,10 @@ int __init clk_init(void)
 		db8500_clk_init();
 	else if (cpu_is_u5500())
 		db5500_clk_init();
+
+#ifdef CONFIG_CPU_FREQ
+	clkdev_add(&clk_smp_twd_lookup);
+#endif
 
 	return 0;
 }
