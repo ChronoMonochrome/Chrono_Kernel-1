@@ -55,7 +55,7 @@ static pin_cfg_t xshutdown_disable[] = {
 	GPIO142_GPIO | PIN_OUTPUT_LOW
 };
 
-struct mmio_board_data{
+struct mmio_board_data {
 	int number_of_regulators;
 	struct regulator **mmio_regulators;
 	/* Pin configs  */
@@ -274,7 +274,7 @@ err_no_mem_reg:
 static void mmio_power_exit(struct mmio_platform_data *pdata)
 {
 	int i = 0;
-	struct mmio_board_data *extra = pdata->extra;;
+	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 	for (i = 0; i < extra->number_of_regulators; i++)
 		regulator_put(extra->mmio_regulators[i]);
@@ -382,7 +382,7 @@ static void mmio_power_disable(struct mmio_platform_data *pdata)
 	for (i = 0; i < extra->number_of_regulators; i++)
 		regulator_disable(extra->mmio_regulators[i]);
 	/* Disable Xenon Charge */
-	gpio_set_value(extra->xenon_charge, 0);
+	gpio_set_value_cansleep(extra->xenon_charge, 0);
 }
 static int mmio_clock_enable(struct mmio_platform_data *pdata)
 {
