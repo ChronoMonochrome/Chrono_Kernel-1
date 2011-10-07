@@ -9,6 +9,7 @@
 #define __MACH_UX500_PINS_H
 
 #include <linux/list.h>
+#include <plat/pincfg.h>
 
 #define PIN_LOOKUP(_name, _pins)	\
 {					\
