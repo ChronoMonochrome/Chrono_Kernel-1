@@ -17,26 +17,16 @@
 #include "flash_common.h"
 #include "adp1653.h"
 #include "camera_flash.h"
+#include "adp1653_plat.h"
 
 /* This data is platform specific for 8500 href-v1 platform,
  * Ideally this should be supplied from platform code
  */
-//#define ADAPTER_I2C2	(2)
-#define STR_GPIO		(6)
 
-static int strobe_gpio = 0; //TODO: set to 0 when it works
 static int adapter_i2c2 = 2;
-static int flash_irq = 7;
-static int enable_gpio = 272;
 static int flash_position = 0;
-module_param(strobe_gpio, int, S_IRUGO);
-MODULE_PARM_DESC(strobe_gpio, "use GPIO 6 to strobe, 0 means that someone else (sensor?) will strobe for us");
 module_param(adapter_i2c2, int, S_IRUGO);
 MODULE_PARM_DESC(adapter_i2c2, "use the given I2C adaptater to communicate with the chip");
-module_param(flash_irq, int, S_IRUGO);
-MODULE_PARM_DESC(flash_irq, "the GPIO number associated to the i2c irq line");
-module_param(enable_gpio, int, S_IRUGO);
-MODULE_PARM_DESC(enable_gpio, "use the given GPIO line to enable the chip");
 module_param(flash_position, int, S_IRUGO);
 MODULE_PARM_DESC(flash_position, "the position of the flash chip (0=PRIMARY, 1=SECONDARY)");
 
@@ -251,11 +241,6 @@ static int adp1653_strobe_still_led(struct adp1653_priv_data *priv_p,int enable)
 		goto out;
 	}
 
-	if (strobe_gpio != 0 )
-	{
-		gpio_set_value(priv_p->strobe_gpio,gpio_val);
-	}
-
 out:
 	return err;
 }
@@ -394,9 +379,10 @@ static irqreturn_t adp1653_irq_hdlr(int irq_no,void *data)
 static int __devinit adp1653_probe(struct i2c_client *client,
 				   const struct i2c_device_id *id)
 {
-	int err=0;
+	int err = 0;
 	struct flash_chip *flash_chip_p=NULL;
 	struct adp1653_priv_data *priv_p=NULL;
+	struct adp1653_platform_data *pdata = client->dev.platform_data;
 
 	DEBUG_LOG("> adp1653_probe\n");
 
@@ -404,15 +390,23 @@ static int __devinit adp1653_probe(struct i2c_client *client,
 	if(!priv_p){
 		DEBUG_LOG("Kmalloc failed for priv data\n");
 		err = ENOMEM;
-		goto out;
+		goto err_priv;
 	}
 	priv_p->i2c_client = client;
 	flash_chip_p = kzalloc(sizeof(struct flash_chip),GFP_KERNEL);
 	if(!flash_chip_p){
 		DEBUG_LOG("Kmalloc failed for flash_chip_p");
 		err = ENOMEM;
-		goto out;
+		goto err_flash_chip_alloc;
 	}
+
+	if (!pdata) {
+		dev_err(&client->dev,
+			"%s: No platform data supplied.\n", __func__);
+		err = -EINVAL;
+		goto err_pdata;
+	}
+
 	flash_chip_p->priv_data = priv_p;
 	flash_chip_p->ops = &adp1653_ops;
 	SET_FLASHCHIP_TYPE(flash_chip_p,FLASH_TYPE_HPLED);
@@ -423,98 +417,53 @@ static int __devinit adp1653_probe(struct i2c_client *client,
 	i2c_set_clientdata(client,priv_p);
 	/*Request GPIO and Register IRQ if supported by platform and flash chip*/
 
-	if(machine_is_hrefv60())
-		enable_gpio = 21;
-	else
-		enable_gpio = 272;
-
-	if(enable_gpio){
-		err = gpio_request(enable_gpio,"Camera LED flash Enable");
-		if(err){
-			DEBUG_LOG("Unable to get GPIO %d, for enable\n",enable_gpio);
-			goto out;
-		}
-		priv_p->enable_gpio = enable_gpio;
-
-		err = gpio_direction_output(priv_p->enable_gpio, 1);
-		if(err){
-			DEBUG_LOG("Unable to set GPIO %lu in output mode, err %d\n",priv_p->enable_gpio,err);
-			gpio_free(priv_p->enable_gpio);
-			goto out;
-		}
-		gpio_set_value(priv_p->enable_gpio, 1);
+	err = gpio_request(pdata->enable_gpio,"Camera LED flash Enable");
+	if(err){
+		DEBUG_LOG("Unable to get GPIO %d, for enable\n",pdata->enable_gpio);
+		goto err_pdata;
 	}
 
-	if (strobe_gpio != 0)
-	{
-		err = gpio_request(STR_GPIO,"Camera flash strobe\n");
-		if(err){
-			DEBUG_LOG("Unable to request strobe GPIO\n");
-			// somebody else requested this gpio ...
-			//goto out;
-		}
-
-		err = gpio_direction_output(STR_GPIO, 0);
-		if(err){
-			DEBUG_LOG("Unable to set GPIO %d in output mode, err %d\n",STR_GPIO,err);
-			goto out;
-		}
+	err = gpio_direction_output(pdata->enable_gpio, 1);
+	if(err){
+		DEBUG_LOG("Unable to set GPIO %u in output mode, err %d\n",pdata->enable_gpio,err);
+		gpio_free(pdata->enable_gpio);
+		goto err_gpio_set;
 	}
-	else
-	{
-		err = gpio_request(STR_GPIO,"Camera flash strobe\n");
-		if(err){
-			DEBUG_LOG("Unable to request strobe GPIO\n");
-			// somebody else requested this gpio ...
-			//goto out;
-		}
+	gpio_set_value_cansleep(pdata->enable_gpio, 1);
 
-		err = gpio_direction_input(STR_GPIO);
-		if(err){
-			DEBUG_LOG("Unable to set GPIO %d in input mode, err %d\n",STR_GPIO,err);
-			goto out;
-		}
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
-		err = nmk_gpio_set_pull(STR_GPIO, NMK_GPIO_PULL_DOWN);
-#endif
-		if(err){
-			DEBUG_LOG("Unable to set pull down on GPIO %d\n",STR_GPIO);
-			goto out;
-		}
-
+	err = request_threaded_irq(gpio_to_irq(pdata->irq_no),NULL,adp1653_irq_hdlr,
+		IRQF_ONESHOT|IRQF_TRIGGER_FALLING,
+		"Adp1653 flash",priv_p);
+	if(err){
+		DEBUG_LOG("Unable to register flash IRQ handler, irq %d, err %d\n",
+			pdata->irq_no,err);
+		goto err_irq;
 	}
 
-	priv_p->strobe_gpio = STR_GPIO;
-
-	if(client->irq){
-		err = request_threaded_irq(client->irq,NULL,adp1653_irq_hdlr,
-			IRQF_ONESHOT|IRQF_TRIGGER_FALLING,
-			"Adp1653 flash",priv_p);
-		if(err){
-			DEBUG_LOG("Unable to register flash IRQ handler, irq %d, err %d\n",
-				client->irq,err);
-			goto out;
-		}
-	}
 	err = register_flash_chip(flash_position,flash_chip_p);
 	if(err){
 		DEBUG_LOG("Failed to register Adp1653 as flash for %s camera\n",
 			(flash_position?"Primary":"Secondary"));
-		goto out;
+		goto err_register;
 	}
 	SET_FLASH_STATUS(priv_p->status,FLASH_STATUS_READY);
 	DEBUG_LOG("< adp1653_probe ok\n");
 	return err;
-out:
-	if(priv_p->irq_no)
-		free_irq(priv_p->irq_no,NULL);
-	if(priv_p->enable_gpio)
-		gpio_free(priv_p->enable_gpio);
-	if(priv_p)
-		kfree(priv_p);
+err_register:
+	if(pdata->irq_no)
+		free_irq(pdata->irq_no,NULL);
+err_irq:
+	gpio_set_value_cansleep(pdata->enable_gpio, 0);
+err_gpio_set:
+	if(pdata->enable_gpio)
+		gpio_free(pdata->enable_gpio);
+err_pdata:
 	if(flash_chip_p)
 		kfree(flash_chip_p);
+err_flash_chip_alloc:
+        if(priv_p)
+                kfree(priv_p);
+err_priv:
 	DEBUG_LOG("< adp1653_probe (%d)\n", err);
 	return err;
 }
@@ -540,16 +489,15 @@ static struct i2c_driver adp1653_i2c_driver = {
 };
 
 int adp1653_init(void){
-	int err=0;
+	int err = 0;
 	struct i2c_adapter *adap_p;
 	struct i2c_board_info info;
 
-	/*Registration of I2C flash device is platform specific code
-	*Ideally it should be done from kernel (arch/arm/mach-XXX).
-	*Do it locally till the time it gets into platform code
-	*OR This portion (registration of device) and flash chip init
-	*Routine can be moved to Flash chip module init.
-	*/
+	/* Registration of I2C flash device is platform specific code
+	 * Ideally it should be done from kernel (arch/arm/mach-XXX).
+	 * Do it locally till the time it gets into platform code
+	 * OR This portion (registration of device) and flash chip init
+	 * Routine can be moved to Flash chip module init. */
 	DEBUG_LOG("getting I2C adaptor %d\n",adapter_i2c2);
 	adap_p = i2c_get_adapter(adapter_i2c2);
 	if(!adap_p){
@@ -558,20 +506,15 @@ int adp1653_init(void){
 	}
 	memset(&info,0,sizeof( struct i2c_board_info));
 
-	info.irq	= __flash_gpio_to_irq(flash_irq);
-
 	strcpy(&info.type[0],"adp1653");
-	DEBUG_LOG("trying to register %s at position %d, GPIO enable %d, GPIO IRQ line %d\n",
+	DEBUG_LOG("trying to register %s at position %d\n",
 		info.type,
-		flash_position,
-		enable_gpio,
-		flash_irq);
+		flash_position);
 
 	/* I2C framework expects least significant 7 bits as address, not complete
 	* 8 bits with bit 0 (read/write bit)
 	*/
 	info.addr = 0x60 >> 1;
-
 
 	err = i2c_add_driver(&adp1653_i2c_driver);
 	if(err)
@@ -580,13 +523,11 @@ int adp1653_init(void){
 		goto out;
 	}
 
-
 	DEBUG_LOG("Initialized adp1653\n");
 	if(!i2c_new_device(adap_p,&info)){
 		DEBUG_LOG("Unable to add i2c dev: %s (err=%d)\n",info.type, err);
 		goto out;
 	}
-
 out:
 	return err;
 }
