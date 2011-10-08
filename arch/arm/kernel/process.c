@@ -253,7 +253,7 @@ void cpu_idle(void)
 
 	/* endless idle loop with no priority at all */
 	while (1) {
-		tick_nohz_idle_enter();
+		tick_nohz_idle_enter_norcu();
 		idle_notifier_call_chain(IDLE_START);
 		while (!need_resched()) {
 #ifdef CONFIG_HOTPLUG_CPU
@@ -290,7 +290,7 @@ void cpu_idle(void)
 				local_irq_enable();
 			}
 		}
-		tick_nohz_idle_exit();
+		tick_nohz_idle_exit_norcu();
 		idle_notifier_call_chain(IDLE_END);
 		schedule_preempt_disabled();
 	}
