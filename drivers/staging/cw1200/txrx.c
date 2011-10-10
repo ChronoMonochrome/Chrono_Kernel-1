@@ -468,9 +468,8 @@ cw1200_tx_h_crypt(struct cw1200_common *priv,
 	iv_len = t->tx_info->control.hw_key->iv_len;
 	icv_len = t->tx_info->control.hw_key->icv_len;
 
-	if (t->tx_info->control.hw_key->cipher == WLAN_CIPHER_SUITE_TKIP) {
+	if (t->tx_info->control.hw_key->cipher == WLAN_CIPHER_SUITE_TKIP)
 		icv_len += 8; /* MIC */
-	}
 
 	if ((skb_headroom(t->skb) + skb_tailroom(t->skb) <
 			 iv_len + icv_len + WSM_TX_EXTRA_HEADROOM) ||
@@ -587,8 +586,7 @@ cw1200_tx_h_bt(struct cw1200_common *priv,
 		u16 *ethertype = (u16 *) &payload[6];
 		if (unlikely(*ethertype == __be16_to_cpu(ETH_P_PAE)))
 			priority = WSM_EPTA_PRIORITY_EAPOL;
-	}
-	else if (unlikely(ieee80211_is_assoc_req(t->hdr->frame_control) ||
+	} else if (unlikely(ieee80211_is_assoc_req(t->hdr->frame_control) ||
 		ieee80211_is_reassoc_req(t->hdr->frame_control))) {
 		struct ieee80211_mgmt *mgt_frame =
 				(struct ieee80211_mgmt *)t->hdr;
@@ -708,7 +706,8 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	if (WARN_ON(t.queue >= 4 || !t.rate))
 		goto drop;
 
-	if ((ret = cw1200_tx_h_calc_link_ids(priv, &t)))
+	ret = cw1200_tx_h_calc_link_ids(priv, &t);
+	if (ret)
 		goto drop;
 
 	txrx_printk(KERN_DEBUG "[TX] TX %d bytes "
@@ -718,11 +717,14 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 
 	cw1200_tx_h_pm(priv, &t);
 	cw1200_tx_h_calc_tid(priv, &t);
-	if ((ret = cw1200_tx_h_crypt(priv, &t)))
+	ret = cw1200_tx_h_crypt(priv, &t);
+	if (ret)
 		goto drop;
-	if ((ret = cw1200_tx_h_align(priv, &t)))
+	ret = cw1200_tx_h_align(priv, &t);
+	if (ret)
 		goto drop;
-	if ((ret = cw1200_tx_h_action(priv, &t)))
+	ret = cw1200_tx_h_action(priv, &t);
+	if (ret)
 		goto drop;
 	wsm = cw1200_tx_h_wsm(priv, &t);
 	if (!wsm) {

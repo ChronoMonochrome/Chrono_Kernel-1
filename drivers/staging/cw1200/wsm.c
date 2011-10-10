@@ -422,9 +422,8 @@ static int wsm_join_confirm(struct cw1200_common *priv,
 			    struct wsm_join *arg,
 			    struct wsm_buf *buf)
 {
-	if (WARN_ON(WSM_GET32(buf) != WSM_STATUS_SUCCESS)) {
+	if (WARN_ON(WSM_GET32(buf) != WSM_STATUS_SUCCESS))
 		return -EINVAL;
-	}
 
 	arg->minPowerLevel = WSM_GET32(buf);
 	arg->maxPowerLevel = WSM_GET32(buf);
@@ -1172,7 +1171,7 @@ underflow:
 		"Firmware exception.\n");
 	print_hex_dump_bytes("Exception: ", DUMP_PREFIX_NONE,
 		data, len);
-        return -EINVAL;
+	return -EINVAL;
 }
 
 int wsm_handle_rx(struct cw1200_common *priv, int id,
@@ -1297,7 +1296,8 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 			ret = wsm_find_complete_indication(priv, &wsm_buf);
 			break;
 		case 0x080C:
-			ret = wsm_suspend_resume_indication(priv, link_id, &wsm_buf);
+			ret = wsm_suspend_resume_indication(priv,
+					link_id, &wsm_buf);
 			break;
 		default:
 			STUB();
@@ -1513,7 +1513,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 
 static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 				     struct cw1200_queue **queue_p,
-				     u32* tx_allowed_mask_p,
+				     u32 *tx_allowed_mask_p,
 				     bool *more)
 {
 	int i;

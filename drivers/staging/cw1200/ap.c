@@ -38,7 +38,7 @@ static void __cw1200_sta_notify(struct ieee80211_hw *dev,
 /* AP API								*/
 
 int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
-                   struct ieee80211_sta *sta)
+		   struct ieee80211_sta *sta)
 {
 	struct cw1200_common *priv = hw->priv;
 	struct cw1200_sta_priv *sta_priv =
@@ -67,7 +67,7 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 }
 
 int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
-                      struct ieee80211_sta *sta)
+		      struct ieee80211_sta *sta)
 {
 	struct cw1200_common *priv = hw->priv;
 	struct cw1200_sta_priv *sta_priv =
@@ -101,26 +101,26 @@ static void __cw1200_sta_notify(struct ieee80211_hw *dev,
 	u32 prev = priv->sta_asleep_mask & bit;
 
 	switch (notify_cmd) {
-		case STA_NOTIFY_SLEEP:
-			if (!prev) {
-				if (priv->buffered_multicasts &&
+	case STA_NOTIFY_SLEEP:
+		if (!prev) {
+			if (priv->buffered_multicasts &&
 					!priv->sta_asleep_mask)
 				queue_work(priv->workqueue,
 					&priv->multicast_start_work);
-				priv->sta_asleep_mask |= bit;
-			}
-			break;
-		case STA_NOTIFY_AWAKE:
-			if (prev) {
-				priv->sta_asleep_mask &= ~bit;
-				priv->pspoll_mask &= ~bit;
-				if (priv->tx_multicast &&
-						!priv->sta_asleep_mask)
-					queue_work(priv->workqueue,
-						&priv->multicast_stop_work);
-				cw1200_bh_wakeup(priv);
-			}
-			break;
+			priv->sta_asleep_mask |= bit;
+		}
+		break;
+	case STA_NOTIFY_AWAKE:
+		if (prev) {
+			priv->sta_asleep_mask &= ~bit;
+			priv->pspoll_mask &= ~bit;
+			if (priv->tx_multicast &&
+					!priv->sta_asleep_mask)
+				queue_work(priv->workqueue,
+					&priv->multicast_stop_work);
+			cw1200_bh_wakeup(priv);
+		}
+		break;
 	}
 }
 
@@ -172,7 +172,7 @@ static int cw1200_set_tim_impl(struct cw1200_common *priv, bool aid0_bit_set)
 	skb = ieee80211_beacon_get_tim(priv->hw, priv->vif,
 			&tim_offset, &tim_length);
 	if (!skb) {
-		if (!__cw1200_flush(priv, true));
+		if (!__cw1200_flush(priv, true))
 			wsm_unlock_tx(priv);
 		return -ENOENT;
 	}
@@ -295,7 +295,7 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 		 * In case of more IPs arp filtering will be disabled. */
 		if (info->arp_addr_cnt > 0 &&
 		    info->arp_addr_cnt <= WSM_MAX_ARP_IP_ADDRTABLE_ENTRIES) {
-			for(i=0; i<info->arp_addr_cnt;i++) {
+			for (i = 0; i < info->arp_addr_cnt; i++) {
 				filter.ipv4Address[i] = info->arp_addr_list[i];
 				ap_printk(KERN_DEBUG "[STA] addr[%d]: 0x%X\n",
 					  i, filter.ipv4Address[i]);
@@ -330,7 +330,7 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 	if (changed & BSS_CHANGED_BEACON_INT) {
 		ap_printk(KERN_DEBUG "CHANGED_BEACON_INT\n");
 		/* Restart AP only when connected */
-		if(priv->join_status == CW1200_JOIN_STATUS_AP)
+		if (priv->join_status == CW1200_JOIN_STATUS_AP)
 			WARN_ON(cw1200_update_beaconing(priv));
 	}
 
@@ -520,7 +520,8 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 		info->cqm_rssi_hyst = 4;
 #endif /* 0 */
 
-		ap_printk(KERN_DEBUG "[CQM] RSSI threshold subscribe: %d +- %d\n",
+		ap_printk(KERN_DEBUG "[CQM] RSSI threshold "
+			"subscribe: %d +- %d\n",
 			info->cqm_rssi_thold, info->cqm_rssi_hyst);
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 		ap_printk(KERN_DEBUG "[CQM] Beacon loss subscribe: %d\n",
@@ -590,8 +591,8 @@ void cw1200_multicast_start_work(struct work_struct *work)
 
 void cw1200_multicast_stop_work(struct work_struct *work)
 {
-        struct cw1200_common *priv =
-                container_of(work, struct cw1200_common, multicast_stop_work);
+	struct cw1200_common *priv =
+		container_of(work, struct cw1200_common, multicast_stop_work);
 
 	if (priv->aid0_bit_set) {
 		wsm_lock_tx(priv);
@@ -803,7 +804,8 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 
 	memset(&priv->link_id_db, 0, sizeof(priv->link_id_db));
 
-	ap_printk(KERN_DEBUG "[AP] ch: %d(%d), bcn: %d(%d), brt: 0x%.8X, ssid: %.*s.\n",
+	ap_printk(KERN_DEBUG "[AP] ch: %d(%d), bcn: %d(%d), "
+		"brt: 0x%.8X, ssid: %.*s.\n",
 		start.channelNumber, start.band,
 		start.beaconInterval, start.DTIMPeriod,
 		start.basicRateSet,

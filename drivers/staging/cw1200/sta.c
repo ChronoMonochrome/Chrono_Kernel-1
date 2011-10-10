@@ -140,8 +140,8 @@ void cw1200_stop(struct ieee80211_hw *dev)
 
 	/* HACK! */
 	if (atomic_xchg(&priv->tx_lock, 1) != 1)
-		sta_printk(KERN_DEBUG "[STA] TX is force-unlocked due to stop " \
-			"request.\n");
+		sta_printk(KERN_DEBUG "[STA] TX is force-unlocked "
+			"due to stop request.\n");
 
 	wsm_unlock_tx(priv);
 
@@ -255,7 +255,8 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 	/* TODO: IEEE80211_CONF_CHANGE_QOS */
 	if (changed & IEEE80211_CONF_CHANGE_POWER) {
 		priv->output_power = conf->power_level;
-		sta_printk(KERN_DEBUG "[STA] TX power: %d\n", priv->output_power);
+		sta_printk(KERN_DEBUG "[STA] TX power: %d\n",
+				priv->output_power);
 		WARN_ON(wsm_set_output_power(priv, priv->output_power * 10));
 	}
 
@@ -332,14 +333,14 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			modeinfo->oppPsCTWindow = conf->p2p_ps.ctwindow;
 
 		switch (conf->p2p_ps.opp_ps) {
-			case 0:
-				modeinfo->oppPsCTWindow &= ~(BIT(7));
-				break;
-			case 1:
-				modeinfo->oppPsCTWindow |= BIT(7);
-				break;
-			default:
-				break;
+		case 0:
+			modeinfo->oppPsCTWindow &= ~(BIT(7));
+			break;
+		case 1:
+			modeinfo->oppPsCTWindow |= BIT(7);
+			break;
+		default:
+			break;
 		}
 
 		/* Notice of Absence */
@@ -348,7 +349,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		modeinfo->duration = __cpu_to_le32(conf->p2p_ps.duration);
 		modeinfo->interval = __cpu_to_le32(conf->p2p_ps.interval);
 
-		if(conf->p2p_ps.count)
+		if (conf->p2p_ps.count)
 			modeinfo->dtimCount = 1;
 		else
 			modeinfo->dtimCount = 0;
@@ -358,7 +359,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 #if defined(CONFIG_CW1200_STA_DEBUG)
 			print_hex_dump_bytes("p2p_ps_modeinfo: ",
 					     DUMP_PREFIX_NONE,
-					     (u8*) modeinfo,
+					     (u8 *)modeinfo,
 					     sizeof(*modeinfo));
 #endif
 			WARN_ON(wsm_set_p2p_ps_modeinfo(priv, modeinfo));

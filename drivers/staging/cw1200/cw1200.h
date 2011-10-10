@@ -233,7 +233,7 @@ struct cw1200_common {
 };
 
 struct cw1200_sta_priv {
-        int link_id;
+	int link_id;
 };
 
 /* interfaces for the drivers */

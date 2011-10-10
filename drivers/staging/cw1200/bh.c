@@ -433,7 +433,7 @@ tx:
 			u8 *data;
 			int ret;
 
-	                if (priv->device_can_sleep) {
+			if (priv->device_can_sleep) {
 				ret = cw1200_device_wakeup(priv);
 				if (WARN_ON(ret < 0))
 					break;

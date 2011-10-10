@@ -286,7 +286,7 @@ static size_t cw1200_sdio_align_size(struct sbus_priv *self, size_t size)
 static int cw1200_sdio_pm(struct sbus_priv *self, bool  suspend)
 {
 	int ret;
-        const struct resource *irq = self->pdata->irq;
+	const struct resource *irq = self->pdata->irq;
 	struct sdio_func *func = self->func;
 
 	sdio_claim_host(func);

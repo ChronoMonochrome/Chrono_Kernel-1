@@ -17,7 +17,7 @@
 #include "sbus.h"
 
 static int cw1200_suspend_late(struct device *dev);
-static void cw1200_pm_release(struct device * dev);
+static void cw1200_pm_release(struct device *dev);
 static int cw1200_pm_probe(struct platform_device *pdev);
 
 /* private */
@@ -29,7 +29,7 @@ struct cw1200_suspend_state {
 	unsigned long link_id_gc;
 };
 
-static struct dev_pm_ops cw1200_pm_ops = {
+static const struct dev_pm_ops cw1200_pm_ops = {
 	.suspend_noirq = cw1200_suspend_late,
 };
 
