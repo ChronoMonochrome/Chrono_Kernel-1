@@ -453,6 +453,8 @@ static int tc3589x_suspend(struct device *dev)
 		ret = tc3589x_reg_write(tc3589x,
 					TC3589x_CLKMODE,
 					TC3589x_CLKMODE_MODCTL_SLEEP);
+	} else {
+		enable_irq_wake(client->irq);
 	}
 out:
 	return ret;
@@ -492,6 +494,8 @@ static int tc3589x_resume(struct device *dev)
 			if (ret < 0)
 				break;
 		}
+	} else {
+		disable_irq_wake(client->irq);
 	}
 out:
 	return ret;
