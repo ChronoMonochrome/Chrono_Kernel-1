@@ -494,7 +494,8 @@ int cw1200_queue_remove(struct cw1200_queue *queue, u32 packetID)
 }
 
 int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
-			 struct sk_buff **skb)
+			 struct sk_buff **skb,
+			 const struct cw1200_txpriv **txpriv)
 {
 	int ret = 0;
 	u8 queue_generation, queue_id, item_generation, item_id;
@@ -516,6 +517,7 @@ int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
 		ret = -ENOENT;
 	} else {
 		*skb = item->skb;
+		*txpriv = &item->txpriv;
 	}
 	spin_unlock_bh(&queue->lock);
 	return ret;

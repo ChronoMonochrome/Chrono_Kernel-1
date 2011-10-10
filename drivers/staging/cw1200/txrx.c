@@ -828,6 +828,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	u8 queue_id = cw1200_queue_get_queue_id(arg->packetID);
 	struct cw1200_queue *queue = &priv->tx_queue[queue_id];
 	struct sk_buff *skb;
+	const struct cw1200_txpriv *txpriv;
 
 	txrx_printk(KERN_DEBUG "[TX] TX confirm: %d, %d.\n",
 		arg->status, arg->ackFailures);
@@ -861,7 +862,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 		WARN_ON(cw1200_queue_requeue(queue,
 				arg->packetID));
 	} else if (!WARN_ON(cw1200_queue_get_skb(
-			queue, arg->packetID, &skb))) {
+			queue, arg->packetID, &skb, &txpriv))) {
 		struct ieee80211_tx_info *tx = IEEE80211_SKB_CB(skb);
 		int tx_count = arg->ackFailures;
 		u8 ht_flags = 0;

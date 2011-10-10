@@ -725,14 +725,19 @@ void cw1200_wep_key_work(struct work_struct *work)
 {
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, wep_key_work);
+	u8 queueId = cw1200_queue_get_queue_id(priv->pending_frame_id);
+	struct cw1200_queue *queue = &priv->tx_queue[queueId];
 	__le32 wep_default_key_id = __cpu_to_le32(
 		priv->wep_default_key_id);
+
+	BUG_ON(queueId >= 4);
 
 	sta_printk(KERN_DEBUG "[STA] Setting default WEP key: %d\n",
 		priv->wep_default_key_id);
 	wsm_flush_tx(priv);
 	WARN_ON(wsm_write_mib(priv, WSM_MIB_ID_DOT11_WEP_DEFAULT_KEY_ID,
 		&wep_default_key_id, sizeof(wep_default_key_id)));
+	cw1200_queue_requeue(queue, priv->pending_frame_id);
 	wsm_unlock_tx(priv);
 }
 
@@ -1096,15 +1101,22 @@ void cw1200_offchannel_work(struct work_struct *work)
 {
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, offchannel_work);
+	u8 queueId = cw1200_queue_get_queue_id(priv->pending_frame_id);
+	struct cw1200_queue *queue = &priv->tx_queue[queueId];
 
+	BUG_ON(queueId >= 4);
 	BUG_ON(!priv->channel);
 
 	mutex_lock(&priv->conf_mutex);
-	if (!priv->join_status) {
+	if (likely(!priv->join_status)) {
 		wsm_flush_tx(priv);
 		cw1200_update_listening(priv, true);
 		cw1200_update_filtering(priv);
 	}
+	if (unlikely(!priv->join_status))
+		cw1200_queue_remove(queue, priv->pending_frame_id);
+	else
+		cw1200_queue_requeue(queue, priv->pending_frame_id);
 	mutex_unlock(&priv->conf_mutex);
 	wsm_unlock_tx(priv);
 }
@@ -1113,19 +1125,30 @@ void cw1200_join_work(struct work_struct *work)
 {
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, join_work);
-	const struct wsm_tx *wsm = priv->join_pending_frame;
-	const struct ieee80211_hdr *frame = (struct ieee80211_hdr *)&wsm[1];
-	const u8 *bssid = &frame->addr1[0]; /* AP SSID in a 802.11 frame */
+	u8 queueId = cw1200_queue_get_queue_id(priv->pending_frame_id);
+	struct cw1200_queue *queue = &priv->tx_queue[queueId];
+	const struct cw1200_txpriv *txpriv = NULL;
+	struct sk_buff *skb = NULL;
+	const struct wsm_tx *wsm;
+	const struct ieee80211_hdr *frame;
+	const u8 *bssid;
 	struct cfg80211_bss *bss;
 	const u8 *ssidie;
 	const u8 *dtimie;
 	const struct ieee80211_tim_ie *tim = NULL;
-	u8 queueId;
+
+	BUG_ON(queueId >= 4);
+	if (cw1200_queue_get_skb(queue,	priv->pending_frame_id,
+			&skb, &txpriv)) {
+		wsm_unlock_tx(priv);
+		return;
+	}
+	wsm = (struct wsm_tx *)&skb->data[0];
+	frame = (struct ieee80211_hdr *)&skb->data[txpriv->offset];
+	bssid = &frame->addr1[0]; /* AP SSID in a 802.11 frame */
 
 	BUG_ON(!wsm);
 	BUG_ON(!priv->channel);
-
-	queueId = wsm_queue_id_to_linux(wsm->queueId);
 
 	if (unlikely(priv->join_status)) {
 		wsm_lock_tx(priv);
@@ -1134,11 +1157,9 @@ void cw1200_join_work(struct work_struct *work)
 
 	cancel_delayed_work_sync(&priv->join_timeout);
 
-	priv->join_pending_frame = NULL;
 	bss = cfg80211_get_bss(priv->hw->wiphy, NULL, bssid, NULL, 0, 0, 0);
 	if (!bss) {
-		cw1200_queue_remove(&priv->tx_queue[queueId],
-			__le32_to_cpu(wsm->packetID));
+		cw1200_queue_remove(queue, priv->pending_frame_id);
 		wsm_unlock_tx(priv);
 		return;
 	}
@@ -1212,16 +1233,14 @@ void cw1200_join_work(struct work_struct *work)
 		if (wsm_join(priv, &join)) {
 			memset(&priv->join_bssid[0],
 				0, sizeof(priv->join_bssid));
-			cw1200_queue_remove(&priv->tx_queue[queueId],
-				__le32_to_cpu(wsm->packetID));
+			cw1200_queue_remove(queue, priv->pending_frame_id);
 			cancel_delayed_work_sync(&priv->join_timeout);
 			cw1200_update_listening(priv, priv->listening);
 		} else {
 			/* Upload keys */
 			WARN_ON(cw1200_upload_keys(priv));
 			WARN_ON(wsm_keep_alive_period(priv, 30 /* sec */));
-			cw1200_queue_requeue(&priv->tx_queue[queueId],
-				__le32_to_cpu(wsm->packetID));
+			cw1200_queue_requeue(queue, priv->pending_frame_id);
 			priv->join_status = CW1200_JOIN_STATUS_STA;
 		}
 		WARN_ON(wsm_set_block_ack_policy(priv,

@@ -178,7 +178,7 @@ struct cw1200_common {
 	/* WSM Join */
 	enum cw1200_join_status	join_status;
 	u8			join_bssid[ETH_ALEN];
-	const struct wsm_tx	*join_pending_frame;
+	u32			pending_frame_id;
 	struct work_struct	join_work;
 	struct delayed_work	join_timeout;
 	struct work_struct	unjoin_work;

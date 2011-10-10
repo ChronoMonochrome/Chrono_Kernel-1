@@ -1313,6 +1313,7 @@ out:
 static bool wsm_handle_tx_data(struct cw1200_common *priv,
 			       const struct wsm_tx *wsm,
 			       const struct ieee80211_tx_info *tx_info,
+			       struct cw1200_queue *queue,
 			       int link_id)
 {
 	bool handled = false;
@@ -1395,24 +1396,24 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	switch (action) {
 	case doProbe:
 	{
+		const struct cw1200_txpriv *txpriv;
 		/* An interesting FW "feature". Device filters
 		 * probe responses.
 		 * The easiest way to get it back is to convert
 		 * probe request into WSM start_scan command. */
-		struct cw1200_queue *queue =
-			&priv->tx_queue[cw1200_queue_get_queue_id(
-				wsm->packetID)];
 		wsm_printk(KERN_DEBUG \
 			"[WSM] Convert probe request to scan.\n");
 		wsm_lock_tx_async(priv);
 		BUG_ON(priv->scan.probe_skb);
 		BUG_ON(cw1200_queue_get_skb(queue,
 				wsm->packetID,
-				&priv->scan.probe_skb));
+				&priv->scan.probe_skb,
+				&txpriv));
 		skb_get(priv->scan.probe_skb);
 		IEEE80211_SKB_CB(priv->scan.probe_skb)->flags |=
 				IEEE80211_TX_STAT_ACK;
-		BUG_ON(cw1200_queue_remove(queue, wsm->packetID));
+		BUG_ON(cw1200_queue_remove(queue,
+			__le32_to_cpu(wsm->packetID)));
 		/* Release used TX rate policy */
 		queue_delayed_work(priv->workqueue,
 				&priv->scan.probe_work, 0);
@@ -1423,11 +1424,9 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	{
 		/* See detailed description of "join" below.
 		 * We are dropping everything except AUTH in non-joined mode. */
-		struct cw1200_queue *queue =
-			&priv->tx_queue[cw1200_queue_get_queue_id(
-				wsm->packetID)];
 		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X).\n", fctl);
-		BUG_ON(cw1200_queue_remove(queue, wsm->packetID));
+		BUG_ON(cw1200_queue_remove(queue,
+			__le32_to_cpu(wsm->packetID)));
 		handled = true;
 	}
 	break;
@@ -1441,8 +1440,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * not require protection */
 		wsm_printk(KERN_DEBUG "[WSM] Issue join command.\n");
 		wsm_lock_tx_async(priv);
-		BUG_ON(priv->join_pending_frame);
-		priv->join_pending_frame = wsm;
+		priv->pending_frame_id = __le32_to_cpu(wsm->packetID);
 		if (queue_work(priv->workqueue, &priv->join_work) <= 0)
 			wsm_unlock_tx(priv);
 		handled = true;
@@ -1452,6 +1450,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	{
 		wsm_printk(KERN_DEBUG "[WSM] Offchannel TX request.\n");
 		wsm_lock_tx_async(priv);
+		priv->pending_frame_id = __le32_to_cpu(wsm->packetID);
 		if (queue_work(priv->workqueue, &priv->offchannel_work) <= 0)
 			wsm_unlock_tx(priv);
 		handled = true;
@@ -1462,6 +1461,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		wsm_printk(KERN_DEBUG "[WSM] Issue set_default_wep_key.\n");
 		wsm_lock_tx_async(priv);
 		priv->wep_default_key_id = tx_info->control.hw_key->keyidx;
+		priv->pending_frame_id = __le32_to_cpu(wsm->packetID);
 		if (queue_work(priv->workqueue, &priv->wep_key_work) <= 0)
 			wsm_unlock_tx(priv);
 		handled = true;
@@ -1619,7 +1619,8 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 				continue;
 
 			if (wsm_handle_tx_data(priv, wsm,
-					tx_info, txpriv->raw_link_id))
+					tx_info, queue,
+					txpriv->raw_link_id))
 				continue;  /* Handled by WSM */
 
 			wsm->hdr.id &= __cpu_to_le16(
