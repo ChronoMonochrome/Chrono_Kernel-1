@@ -39,7 +39,12 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/completion.h>
+#include <linux/workqueue.h>
+#include <linux/hrtimer.h>
+#include <linux/mfd/db5500-prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <mach/mbox-db5500.h>
+#include <mach/reboot_reasons.h>
 
 #define MBOX_NAME "mbox"
 
@@ -54,8 +59,54 @@
 #define MBOX_ENABLE_IRQ  0x0
 #define MBOX_LATCH 1
 
+struct mbox_device_info {
+	struct workqueue_struct *mbox_modem_rel_wq;
+	struct work_struct mbox_modem_rel;
+	struct completion mod_req_ack_work;
+	atomic_t ape_state;
+	atomic_t mod_req;
+};
+
 /* Global list of all mailboxes */
+struct hrtimer ape_timer;
+struct hrtimer modem_timer;
+static DEFINE_MUTEX(modem_state_mutex);
 static struct list_head mboxs = LIST_HEAD_INIT(mboxs);
+static struct mbox_device_info *mb;
+
+static enum hrtimer_restart mbox_ape_callback(struct hrtimer *hrtimer)
+{
+	queue_work(mb->mbox_modem_rel_wq, &mb->mbox_modem_rel);
+
+	return HRTIMER_NORESTART;
+}
+
+static enum hrtimer_restart mbox_mod_callback(struct hrtimer *hrtimer)
+{
+	atomic_set(&mb->ape_state, 0);
+	return HRTIMER_NORESTART;
+}
+
+static void mbox_modem_rel_work(struct work_struct *work)
+{
+	mutex_lock(&modem_state_mutex);
+	prcmu_modem_rel();
+	atomic_set(&mb->mod_req, 0);
+	mutex_unlock(&modem_state_mutex);
+}
+
+static void mbox_modem_req()
+{
+	mutex_lock(&modem_state_mutex);
+	if (!db5500_prcmu_is_modem_requested()) {
+		prcmu_modem_req();
+		if (!wait_for_completion_timeout(&mb->mod_req_ack_work,
+					msecs_to_jiffies(8000)))
+			printk(KERN_ERR "mbox:modem_req_ack timedout(8sec)\n");
+	}
+	atomic_set(&mb->mod_req, 1);
+	mutex_unlock(&modem_state_mutex);
+}
 
 static struct mbox *get_mbox_with_id(u8 id)
 {
@@ -72,14 +123,17 @@ int mbox_send(struct mbox *mbox, u32 mbox_msg, bool block)
 	int res = 0;
 	unsigned long flag;
 
-	spin_lock_irqsave(&mbox->lock, flag);
-
 	dev_dbg(&(mbox->pdev->dev),
 		"About to buffer 0x%X to mailbox 0x%X."
 		" ri = %d, wi = %d\n",
 		mbox_msg, (u32)mbox, mbox->read_index,
 		mbox->write_index);
 
+	/* Request for modem */
+	if (!db5500_prcmu_is_modem_requested())
+		mbox_modem_req();
+
+	spin_lock_irqsave(&mbox->lock, flag);
 	/* Check if write buffer is full */
 	while (((mbox->write_index + 1) % MBOX_BUF_SIZE) == mbox->read_index) {
 		if (!block) {
@@ -346,6 +400,10 @@ static irqreturn_t mbox_irq(int irq, void *arg)
 		}
 	}
 
+	/* Start timer and on timer expiry call modem_rel */
+	hrtimer_start(&ape_timer, ktime_set(0, 10*NSEC_PER_MSEC),
+			HRTIMER_MODE_REL);
+
 	/* Check if we have any incoming messages */
 	nbr_occup = readl(mbox->virtbase_local + MBOX_FIFO_STATUS) & 0x7;
 	if (nbr_occup == 0)
@@ -357,6 +415,7 @@ redo:
 			"leaving %d incoming messages in fifo!\n", nbr_occup);
 		goto exit;
 	}
+	atomic_set(&mb->ape_state, 1);
 
 	/* Read and acknowledge the message */
 	mbox_value = readl(mbox->virtbase_local + MBOX_FIFO_DATA);
@@ -372,6 +431,9 @@ redo:
 	if (nbr_occup > 0)
 		goto redo;
 
+	/* Start a timer and timer expiry will be the criteria for sleep */
+	hrtimer_start(&modem_timer, ktime_set(0, 100*MSEC_PER_SEC),
+			HRTIMER_MODE_REL);
 exit:
 	dev_dbg(&(mbox->pdev->dev), "Exit mbox IRQ. ri = %d, wi = %d\n",
 		mbox->read_index, mbox->write_index);
@@ -539,6 +601,17 @@ exit:
 }
 EXPORT_SYMBOL(mbox_setup);
 
+static irqreturn_t mbox_prcmu_mod_req_ack_handler(int irq, void *data)
+{
+	complete(&mb->mod_req_ack_work);
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t mbox_prcmu_ape_req_handler(int irq, void *data)
+{
+	prcmu_ape_ack();
+	return IRQ_HANDLED;
+}
 
 int __init mbox_probe(struct platform_device *pdev)
 {
@@ -552,7 +625,6 @@ int __init mbox_probe(struct platform_device *pdev)
 				"Could not allocate memory for struct mbox\n");
 		return -ENOMEM;
 	}
-
 
 	mbox->pdev = pdev;
 	mbox->write_index = 0;
@@ -574,6 +646,8 @@ static int __exit mbox_remove(struct platform_device *pdev)
 {
 	struct mbox *mbox = platform_get_drvdata(pdev);
 
+	hrtimer_cancel(&ape_timer);
+	hrtimer_cancel(&modem_timer);
 	mbox_shutdown(mbox);
 	list_del(&mbox->list);
 	kfree(mbox);
@@ -595,6 +669,11 @@ int mbox_suspend(struct device *dev)
 		if (mbox->client_blocked)
 			return -EBUSY;
 	}
+	dev_dbg(dev, "APE_STATE = %d\n", atomic_read(&mb->ape_state));
+	dev_dbg(dev, "MODEM_STATE = %d\n", db5500_prcmu_is_modem_requested());
+	if (atomic_read(&mb->ape_state) || db5500_prcmu_is_modem_requested() ||
+			atomic_read(&mb->mod_req))
+		return -EBUSY;
 	return 0;
 }
 
@@ -630,14 +709,70 @@ static struct platform_driver mbox_driver = {
 
 static int __init mbox_init(void)
 {
+	struct mbox_device_info *mb_di;
+	int err;
+
+	mb_di = kzalloc(sizeof(struct mbox_device_info), GFP_KERNEL);
+	if (mb_di == NULL) {
+		printk(KERN_ERR
+			"mbox:Could not allocate memory for struct mbox_device_info\n");
+		return -ENOMEM;
+	}
+
+	mb_di->mbox_modem_rel_wq = create_singlethread_workqueue(
+			"mbox_modem_rel");
+	if (!mb_di->mbox_modem_rel_wq) {
+		printk(KERN_ERR "mbox:failed to create work queue\n");
+		err = -ENOMEM;
+		goto free_mem;
+	}
+
+	INIT_WORK(&mb_di->mbox_modem_rel, mbox_modem_rel_work);
+
+	hrtimer_init(&ape_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	ape_timer.function = mbox_ape_callback;
+	hrtimer_init(&modem_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	modem_timer.function = mbox_mod_callback;
+
+	atomic_set(&mb_di->ape_state, 0);
+	atomic_set(&mb_di->mod_req, 0);
+
+	err = request_irq(IRQ_DB5500_PRCMU_APE_REQ, mbox_prcmu_ape_req_handler,
+			IRQF_NO_SUSPEND, "ape_req", NULL);
+	if (err < 0) {
+		printk(KERN_ERR "mbox:Failed alloc IRQ_DB5500_PRCMU_APE_REQ.\n");
+		goto free_wq1;
+	}
+
+	err = request_irq(IRQ_DB5500_PRCMU_AC_WAKE_ACK,
+			mbox_prcmu_mod_req_ack_handler,
+			IRQF_NO_SUSPEND, "mod_req_ack", NULL);
+	if (err < 0) {
+		printk(KERN_ERR "mbox:Failed alloc IRQ_PRCMU_CA_SLEEP.\n");
+		goto free_irq;
+	}
+
+	init_completion(&mb_di->mod_req_ack_work);
+	mb = mb_di;
 	return platform_driver_probe(&mbox_driver, mbox_probe);
+free_irq:
+	free_irq(IRQ_DB5500_PRCMU_APE_REQ, NULL);
+free_wq1:
+	destroy_workqueue(mb_di->mbox_modem_rel_wq);
+free_mem:
+	kfree(mb_di);
+	return err;
 }
 
 module_init(mbox_init);
 
 void __exit mbox_exit(void)
 {
+	free_irq(IRQ_DB5500_PRCMU_APE_REQ, NULL);
+	free_irq(IRQ_DB5500_PRCMU_AC_WAKE_ACK, NULL);
+	destroy_workqueue(mb->mbox_modem_rel_wq);
 	platform_driver_unregister(&mbox_driver);
+	kfree(mb);
 }
 
 module_exit(mbox_exit);
