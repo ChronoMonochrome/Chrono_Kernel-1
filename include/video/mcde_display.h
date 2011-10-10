@@ -20,6 +20,11 @@
 #define UPDATE_FLAG_VIDEO_MODE		0x2
 #define UPDATE_FLAG_ROTATION		0x4
 
+struct mcde_display_dsi_platform_data {
+	int reset_gpio;
+	int link;
+};
+
 #define to_mcde_display_device(__dev) \
 	container_of((__dev), struct mcde_display_device, dev)
 
