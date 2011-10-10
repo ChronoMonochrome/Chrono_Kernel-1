@@ -175,6 +175,14 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 
 static struct snd_soc_codec *ab8500_codec;
 
+/* Signed multi register array controls. */
+struct soc_smra_control {
+	unsigned int *reg;
+	const unsigned int rcount, count, invert;
+	long min, max;
+	const char **texts;
+	long *values;
+};
 
 /* Reads an arbitrary register from the ab8500 chip.
 */
@@ -278,6 +286,168 @@ static inline int ab8500_codec_update_reg_audio(struct snd_soc_codec *codec,
 		return 0;
 
 	return ab8500_codec_write_reg_audio(codec, reg, new);
+}
+
+/* Generic soc info for signed register controls. */
+int snd_soc_info_s(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_info *uinfo)
+{
+	struct soc_smra_control *smra =
+		(struct soc_smra_control *)kcontrol->private_value;
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = smra->count;
+	uinfo->value.integer.min = smra->min;
+	uinfo->value.integer.max = smra->max;
+
+	return 0;
+}
+
+/* Generic soc get for signed multi register controls. */
+int snd_soc_get_smr(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct soc_smra_control *smra =
+		(struct soc_smra_control *)kcontrol->private_value;
+	unsigned int *reg = smra->reg;
+	unsigned int rcount = smra->rcount;
+	long min = smra->min;
+	long max = smra->max;
+	unsigned int invert = smra->invert;
+	unsigned long mask = abs(min) | abs(max);
+	long value = 0;
+	int i, rvalue;
+
+	for (i = 0; i < rcount; i++) {
+		rvalue = snd_soc_read(codec, reg[i]) & REG_MASK_ALL;
+		value |= rvalue << (8 * (rcount - i - 1));
+	}
+	value &= mask;
+	if (min < 0 && value > max)
+		value |= ~mask;
+	if (invert)
+		value = ~value;
+	ucontrol->value.integer.value[0] = value;
+
+	return 0;
+}
+
+/* Generic soc put for signed multi register controls. */
+int snd_soc_put_smr(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct soc_smra_control *smra =
+		(struct soc_smra_control *)kcontrol->private_value;
+	unsigned int *reg = smra->reg;
+	unsigned int rcount = smra->rcount;
+	long min = smra->min;
+	long max = smra->max;
+	unsigned int invert = smra->invert;
+	unsigned long mask = abs(min) | abs(max);
+	long value = ucontrol->value.integer.value[0];
+	int i, rvalue, err;
+
+	if (invert)
+		value = ~value;
+	if (value > max)
+		value = max;
+	else if (value < min)
+		value = min;
+	value &= mask;
+	for (i = 0; i < rcount; i++) {
+		rvalue = (value >> (8 * (rcount - i - 1))) & REG_MASK_ALL;
+		err = snd_soc_write(codec, reg[i], rvalue);
+		if (err < 0)
+			return 0;
+	}
+
+	return 1;
+}
+
+/* Generic soc get for signed array controls. */
+static int snd_soc_get_sa(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct soc_smra_control *smra =
+		(struct soc_smra_control *)kcontrol->private_value;
+	long *values = smra->values;
+	unsigned int count = smra->count;
+	unsigned int idx;
+
+	for (idx = 0; idx < count; idx++)
+		ucontrol->value.integer.value[idx] = values[idx];
+
+	return 0;
+}
+
+/* Generic soc put for signed array controls. */
+static int snd_soc_put_sa(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	struct soc_smra_control *smra =
+			(struct soc_smra_control *) kcontrol->private_value;
+	long *values = smra->values;
+	unsigned int count = smra->count;
+	long min = smra->min;
+	long max = smra->max;
+	unsigned int idx;
+	long value;
+
+	for (idx = 0; idx < count; idx++) {
+		value = ucontrol->value.integer.value[idx];
+		if (value > max)
+			value = max;
+		else if (value < min)
+			value = min;
+		values[idx] = value;
+	}
+
+	return 0;
+}
+
+/* Generic soc get for enum strobe controls. */
+int snd_soc_get_enum_strobe(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct soc_enum *e =
+		(struct soc_enum *)kcontrol->private_value;
+	unsigned int reg = e->reg;
+	unsigned int bit = e->shift_l;
+	unsigned int invert = e->shift_r != 0;
+	unsigned int value = snd_soc_read(codec, reg) & BMASK(bit);
+
+	if (bit != 0 && value != 0)
+		value = value >> bit;
+	ucontrol->value.enumerated.item[0] = value ^ invert;
+
+	return 0;
+}
+
+/* Generic soc put for enum strobe controls. */
+int snd_soc_put_enum_strobe(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct soc_enum *e =
+		(struct soc_enum *)kcontrol->private_value;
+	unsigned int reg = e->reg;
+	unsigned int bit = e->shift_l;
+	unsigned int invert = e->shift_r != 0;
+	unsigned int strobe = ucontrol->value.enumerated.item[0] != 0;
+	unsigned int set_mask = REG_MASK_NONE;
+	unsigned int clr_mask = REG_MASK_NONE;
+	unsigned int err;
+
+	if (strobe ^ invert)
+		set_mask = BMASK(bit);
+	else
+		clr_mask = BMASK(bit);
+	err = snd_soc_update_bits_locked(codec, reg, clr_mask, set_mask);
+	if (err < 0)
+		return err;
+	return snd_soc_update_bits_locked(codec, reg, set_mask, clr_mask);
 }
 
 static const char *enum_ena_dis[] = {"Enabled", "Disabled"};

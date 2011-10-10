@@ -39,6 +39,84 @@ enum ab8500_audio_dapm_path {
 };
 bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path);
 
+#define SOC_SINGLE_VALUE_S1R(xreg0, xcount, xmin, xmax, xinvert) \
+	((unsigned long)&(struct soc_smra_control) \
+	{ .reg = ((unsigned int[]){ xreg0 }), \
+	.rcount = 1, .count = xcount, \
+	.invert = xinvert, .min = xmin, .max = xmax})
+
+#define SOC_SINGLE_VALUE_S2R(xreg0, xreg1, xcount, xmin, xmax, xinvert) \
+	((unsigned long)&(struct soc_smra_control) \
+	{.reg = ((unsigned int[]){ xreg0, xreg1 }), \
+	.rcount = 2, .count = xcount, \
+	.min = xmin, .max = xmax, .invert = xinvert})
+
+#define SOC_SINGLE_VALUE_S4R(xreg0, xreg1, xreg2, xreg3, \
+	xcount, xmin, xmax, xinvert) \
+	((unsigned long)&(struct soc_smra_control) \
+	{.reg = ((unsigned int[]){ xreg0, xreg1, xreg2, xreg3 }), \
+	.rcount = 4, .count = xcount, \
+	.min = xmin, .max = xmax, .invert = xinvert})
+
+#define SOC_SINGLE_VALUE_S8R(xreg0, xreg1, xreg2, xreg3, \
+		xreg4, xreg5, xreg6, xreg7, xcount, xmin, xmax, xinvert) \
+	((unsigned long)&(struct soc_smra_control) \
+	{.reg = ((unsigned int[]){ xreg0, xreg1, xreg2, xreg3, \
+			xreg4, xreg5, xreg6, xreg7 }), \
+	.rcount = 8, .count = xcount, \
+	.min = xmin, .max = xmax, .invert = xinvert})
+
+#define SOC_MULTIPLE_VALUE_SA(xvalues, xcount, xmin, xmax, xinvert) \
+	((unsigned long)&(struct soc_smra_control) \
+	{.values = xvalues, .rcount = 1, .count = xcount, \
+	.min = xmin, .max = xmax, .invert = xinvert})
+
+#define SOC_ENUM_STROBE_DECL(name, xreg, xbit, xinvert, xtexts) \
+	struct soc_enum name = SOC_ENUM_DOUBLE(xreg, xbit, \
+	xinvert, 2, xtexts)
+
+/* Extended SOC macros */
+
+#define SOC_SINGLE_S1R(xname, reg0, min, max, invert) \
+{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE, \
+	.info = snd_soc_info_s, .get = snd_soc_get_smr, .put = snd_soc_put_smr, \
+	.private_value =  SOC_SINGLE_VALUE_S1R(reg0, 1, min, max, invert) }
+
+#define SOC_SINGLE_S2R(xname, reg0, reg1, min, max, invert) \
+{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE, \
+	.info = snd_soc_info_s, .get = snd_soc_get_smr, .put = snd_soc_put_smr, \
+	.private_value =  SOC_SINGLE_VALUE_S2R(reg0, reg1, 1, min, max, invert) }
+
+#define SOC_SINGLE_S4R(xname, reg0, reg1, reg2, reg3, min, max, invert) \
+{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE, \
+	.info = snd_soc_info_s, .get = snd_soc_get_smr, .put = snd_soc_put_smr, \
+	.private_value =  SOC_SINGLE_VALUE_S4R(reg0, reg1, reg2, reg3, \
+	1, min, max, invert) }
+
+#define SOC_SINGLE_S8R(xname, reg0, reg1, reg2, reg3, \
+		reg4, reg5, reg6, reg7, min, max, invert) \
+{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE, \
+	.info = snd_soc_info_s, .get = snd_soc_get_smr, .put = snd_soc_put_smr, \
+	.private_value =  SOC_SINGLE_VALUE_S4R(reg0, reg1, reg2, reg3, \
+			reg4, reg5, reg6, reg7\
+	1, min, max, invert) }
+
+#define SOC_MULTIPLE_SA(xname, values, min, max, invert) \
+{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE, \
+	.info = snd_soc_info_s, .get = snd_soc_get_sa, .put = snd_soc_put_sa, \
+	.private_value = SOC_MULTIPLE_VALUE_SA(values, ARRAY_SIZE(values), \
+	min, max, invert) }
+
+#define SOC_ENUM_STROBE(xname, enum) \
+	SOC_ENUM_EXT(xname, xenum, \
+	snd_soc_get_enum_strobe, \
+	snd_soc_put_enum_strobe)
+
 /* AB8500 audio bank (0x0d) register definitions */
 
 #define REG_POWERUP		0x00
