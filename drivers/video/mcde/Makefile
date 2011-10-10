@@ -8,6 +8,7 @@ mcde-objs		+= mcde_debugfs.o
 obj-$(CONFIG_FB_MCDE)	+= mcde.o
 
 obj-$(CONFIG_MCDE_DISPLAY_GENERIC_DSI)		+= display-generic_dsi.o
+obj-$(CONFIG_MCDE_DISPLAY_SAMSUNG_S6D16D0)	+= display-samsung_s6d16d0.o
 obj-$(CONFIG_MCDE_DISPLAY_SONY_ACX424AKP_DSI)   += display-sony_acx424akp_dsi.o
 obj-$(CONFIG_MCDE_DISPLAY_VUIB500_DPI)		+= display-vuib500-dpi.o
 obj-$(CONFIG_MCDE_DISPLAY_AB8500_DENC)		+= display-ab8500.o
