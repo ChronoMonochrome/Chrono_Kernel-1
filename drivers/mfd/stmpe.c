@@ -772,7 +772,7 @@ static irqreturn_t stmpe_irq(int irq, void *data)
 	ret = stmpe_block_read(stmpe, israddr, num, isr);
 	if (ret < 0)
 		return IRQ_NONE;
-
+back:
 	for (i = 0; i < num; i++) {
 		int bank = num - i - 1;
 		u8 status = isr[i];
@@ -792,6 +792,22 @@ static irqreturn_t stmpe_irq(int irq, void *data)
 		}
 
 		stmpe_reg_write(stmpe, israddr + i, clear);
+	}
+
+	/*
+	   It may happen that on the first status read interrupt
+	   sources may not showup, so read one more time.
+	 */
+	ret = stmpe_block_read(stmpe, israddr, num, isr);
+	if (ret >= 0) {
+		for (i = 0; i < num; i++) {
+			int bank = num - i - 1;
+			u8 status = isr[i];
+
+			status &= stmpe->ier[bank];
+			if (status)
+				goto back;
+		}
 	}
 
 	return IRQ_HANDLED;
