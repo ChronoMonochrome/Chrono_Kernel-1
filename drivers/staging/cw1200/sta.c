@@ -322,6 +322,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			cw1200_set_pm(priv, &priv->powersave_mode);
 	}
 
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 	if (changed & IEEE80211_CONF_CHANGE_P2P_PS) {
 		struct wsm_p2p_ps_modeinfo *modeinfo;
 		modeinfo = &priv->p2p_ps_modeinfo;
@@ -361,10 +362,11 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 					     DUMP_PREFIX_NONE,
 					     (u8 *)modeinfo,
 					     sizeof(*modeinfo));
-#endif
+#endif /* CONFIG_CW1200_STA_DEBUG */
 			WARN_ON(wsm_set_p2p_ps_modeinfo(priv, modeinfo));
 		}
 	}
+#endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 
 	if (changed & IEEE80211_CONF_CHANGE_MONITOR) {
 		/* TBD: It looks like it's transparent

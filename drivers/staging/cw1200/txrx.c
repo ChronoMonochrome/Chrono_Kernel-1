@@ -417,9 +417,11 @@ cw1200_tx_h_calc_link_ids(struct cw1200_common *priv,
 		priv->link_id_db[t->txpriv.raw_link_id - 1].timestamp =
 				jiffies;
 
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 	if (t->tx_info->control.sta &&
 			(t->tx_info->control.sta->uapsd_queues & BIT(t->queue)))
 		t->txpriv.link_id = CW1200_LINK_ID_UAPSD;
+#endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 	return 0;
 }
 
@@ -742,9 +744,11 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	}
 	spin_unlock_bh(&priv->ps_state_lock);
 
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 	if (tid_update)
 		ieee80211_sta_set_buffered(t.tx_info->control.sta,
 				t.txpriv.tid, true);
+#endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 
 	cw1200_bh_wakeup(priv);
 
@@ -912,6 +916,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 static void cw1200_notify_buffered_tx(struct cw1200_common *priv,
 			       struct sk_buff *skb, int link_id, int tid)
 {
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 	struct ieee80211_sta *sta;
 	struct ieee80211_hdr *hdr;
 	u8 *buffered;
@@ -935,7 +940,7 @@ static void cw1200_notify_buffered_tx(struct cw1200_common *priv,
 			rcu_read_unlock();
 		}
 	}
-
+#endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 }
 
 void cw1200_skb_dtor(struct cw1200_common *priv,

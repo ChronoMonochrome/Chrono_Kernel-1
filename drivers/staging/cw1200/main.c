@@ -264,8 +264,8 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 		    /* Aggregation is fully controlled by firmware.
 		     * Do not need any support from the mac80211 stack */
 		    /* IEEE80211_HW_AMPDU_AGGREGATION | */
-		    IEEE80211_HW_SUPPORTS_P2P_PS |
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+		    IEEE80211_HW_SUPPORTS_P2P_PS |
 		    IEEE80211_HW_SUPPORTS_CQM_BEACON_MISS |
 		    IEEE80211_HW_SUPPORTS_CQM_TX_FAIL |
 #endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
@@ -283,7 +283,9 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 					  WIPHY_WOWLAN_DISCONNECT;
 	hw->wiphy->wowlan.n_patterns = 0;
 
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 	hw->wiphy->flags |= WIPHY_FLAG_AP_UAPSD;
+#endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 
 	hw->channel_change_time = 1000;	/* TODO: find actual value */
 	/* priv->beacon_req_id = cpu_to_le32(0); */

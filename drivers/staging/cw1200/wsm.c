@@ -1565,7 +1565,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 {
 	struct wsm_tx *wsm = NULL;
 	struct ieee80211_tx_info *tx_info;
-	struct cw1200_queue *queue;
+	struct cw1200_queue *queue = NULL;
 	u32 tx_allowed_mask = 0;
 	const struct cw1200_txpriv *txpriv = NULL;
 	/*
@@ -1577,7 +1577,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 	int count = 0;
 
 	/* More is used only for broadcasts. */
-	bool more;
+	bool more = false;
 
 	if (priv->wsm_cmd.ptr) {
 		++count;

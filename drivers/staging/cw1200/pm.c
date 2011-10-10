@@ -79,7 +79,7 @@ static void cw1200_pm_deinit_common(struct cw1200_pm_state *pm)
 #ifdef CONFIG_WAKELOCK
 
 int cw1200_pm_init(struct cw1200_pm_state *pm,
-		    struct cw1200_common *priv)
+		   struct cw1200_common *priv)
 {
 	int ret = cw1200_pm_init_common(pm, priv);
 	if (!ret)
@@ -110,14 +110,15 @@ void cw1200_pm_stay_awake(struct cw1200_pm_state *pm,
 
 #else /* CONFIG_WAKELOCK */
 
-static void cw1200_pm_stay_awake_tmo(unsigned long)
+static void cw1200_pm_stay_awake_tmo(unsigned long arg)
 {
 }
 
-int cw1200_pm_init(struct cw1200_pm_state *pm)
+int cw1200_pm_init(struct cw1200_pm_state *pm,
+		   struct cw1200_common *priv)
 {
-	int ret = cw1200_pm_init_common(pm);
-	if (!ret)
+	int ret = cw1200_pm_init_common(pm, priv);
+	if (!ret) {
 		init_timer(&pm->stay_awake);
 		pm->stay_awake.data = (unsigned long)pm;
 		pm->stay_awake.function = cw1200_pm_stay_awake_tmo;
@@ -128,6 +129,7 @@ int cw1200_pm_init(struct cw1200_pm_state *pm)
 void cw1200_pm_deinit(struct cw1200_pm_state *pm)
 {
 	del_timer_sync(&pm->stay_awake);
+	cw1200_pm_deinit_common(pm);
 }
 
 void cw1200_pm_stay_awake(struct cw1200_pm_state *pm,
@@ -199,9 +201,9 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 	int ret;
 
 #ifndef CONFIG_WAKELOCK
-	spin_lock_bh(&pm->lock);
-	ret = timer_pending(&pm->stay_awake);
-	spin_unlock_bh(&pm->lock);
+	spin_lock_bh(&pm_state->lock);
+	ret = timer_pending(&pm_state->stay_awake);
+	spin_unlock_bh(&pm_state->lock);
 	if (ret)
 		return -EAGAIN;
 #endif
