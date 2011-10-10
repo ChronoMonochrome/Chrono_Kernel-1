@@ -59,6 +59,19 @@ static struct clk *clk_ptr_sysclk;
 static struct clk *clk_ptr_ulpclk;
 static struct clk *clk_ptr_gpio1;
 
+/* ANC States */
+static const char *enum_anc_state[] = {
+	"Unconfigured",
+	"Configure FIR+IIR",
+	"FIR+IIR Configured",
+	"Configure FIR",
+	"FIR Configured",
+	"Configure IIR",
+	"IIR Configured",
+	"Error"
+};
+static SOC_ENUM_SINGLE_EXT_DECL(soc_enum_ancstate, enum_anc_state);
+
 /* Regulators */
 enum regulator_idx {
 	REGULATOR_AUDIO,
@@ -283,6 +296,48 @@ static const struct snd_kcontrol_new mclk_input_control = {
 	.get = mclk_input_control_get,
 	.put = mclk_input_control_put,
 	.private_value = 1 /* ULPCLK */
+};
+
+static int anc_status_control_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = ab8500_audio_anc_status();
+
+	return 0;
+}
+
+static int anc_status_control_put(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	int ret;
+	int req_state = ucontrol->value.integer.value[0];
+
+	ret = ux500_ab8500_power_control_inc();
+	if (ret)
+		goto cleanup;
+
+	ret = ab8500_audio_anc_configure(req_state);
+
+	ux500_ab8500_power_control_dec();
+
+cleanup:
+	if (ret) {
+		pr_err("%s: Unable to configure ANC! (ret = %d)\n",
+				__func__, ret);
+		return 0;
+	}
+
+	return 1;
+}
+
+static const struct snd_kcontrol_new anc_status_control = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "ANC Status",
+	.index = 0,
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.info = snd_soc_info_enum_ext,
+	.get = anc_status_control_get, .put = anc_status_control_put,
+	.private_value = (unsigned long) &soc_enum_ancstate
 };
 
 /* DAPM-events */
@@ -573,6 +628,7 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 
 	/* Add controls */
 	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&mclk_input_control, codec));
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&anc_status_control, codec));
 
 	/* Get references to clock-nodes */
 	clk_ptr_sysclk = NULL;

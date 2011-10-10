@@ -55,6 +55,23 @@
 #define AB8500_GPIO_DIR5_REG			0x1014
 #define AB8500_GPIO_OUT5_REG			0x1024
 
+/* Nr of FIR/IIR-coeff banks in ANC-block */
+#define AB8500_NR_OF_ANC_COEFF_BANKS		2
+
+/* Macros to simplify implementation of register write sequences and error handling */
+#define AB8500_SET_BIT_LOCKED(xreg, xbit, xerr, xerr_hdl) { \
+	xerr = snd_soc_update_bits_locked(ab8500_codec, xreg, REG_MASK_NONE, BMASK(xbit)); \
+	if (xerr < 0) \
+		goto xerr_hdl; }
+#define AB8500_CLEAR_BIT_LOCKED(xreg, xbit, xerr, xerr_hdl) { \
+	xerr = snd_soc_update_bits_locked(ab8500_codec, xreg, BMASK(xbit), REG_MASK_NONE); \
+	if (xerr < 0) \
+		goto xerr_hdl; }
+#define AB8500_WRITE(xreg, xvalue, xerr, xerr_hdl) { \
+	xerr = snd_soc_write(ab8500_codec, xreg, xvalue); \
+	if (xerr < 0) \
+		goto xerr_hdl; }
+
 /*
  * AB8500 register cache & default register settings
  */
@@ -183,6 +200,26 @@ struct soc_smra_control {
 	const char **texts;
 	long *values;
 };
+
+/* ANC FIR- & IIR-coeff caches */
+static int ab8500_anc_fir_coeff_cache[REG_ANC_FIR_COEFFS];
+static int ab8500_anc_iir_coeff_cache[REG_ANC_IIR_COEFFS];
+
+/* ANC states */
+enum anc_states {
+	ANC_UNCONFIGURED = 0,
+	ANC_CONFIGURE_FIR_IIR = 1,
+	ANC_FIR_IIR_CONFIGURED = 2,
+	ANC_CONFIGURE_FIR = 3,
+	ANC_FIR_CONFIGURED = 4,
+	ANC_CONFIGURE_IIR = 5,
+	ANC_IIR_CONFIGURED = 6,
+	ANC_ERROR = 7
+};
+static int ab8500_anc_status = ANC_UNCONFIGURED;
+
+/* ANC configuration lock */
+static DEFINE_MUTEX(ab8500_anc_conf_lock);
 
 /* Reads an arbitrary register from the ab8500 chip.
 */
@@ -1933,6 +1970,38 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_SIDFIRADR_ADDRESS_SHIFT,
 		REG_SIDFIRADR_ADDRESS_MAX,
 		NORMAL),
+
+	/* ANC */
+	SOC_SINGLE_S1R("ANC Warp Delay Shift",
+		REG_ANCCONF2,
+		REG_ANCCONF2_VALUE_MIN,
+		REG_ANCCONF2_VALUE_MAX,
+		NORMAL),
+	SOC_SINGLE_S1R("ANC FIR Output Shift",
+		REG_ANCCONF3,
+		REG_ANCCONF3_VALUE_MIN,
+		REG_ANCCONF3_VALUE_MAX,
+		NORMAL),
+	SOC_SINGLE_S1R("ANC IIR Output Shift",
+		REG_ANCCONF4,
+		REG_ANCCONF4_VALUE_MIN,
+		REG_ANCCONF4_VALUE_MAX,
+		NORMAL),
+	SOC_SINGLE_S2R("ANC Warp Delay",
+		REG_ANCCONF9, REG_ANCCONF10,
+		REG_ANC_WARP_DELAY_MIN,
+		REG_ANC_WARP_DELAY_MAX,
+		NORMAL),
+	SOC_MULTIPLE_SA("ANC FIR Coefficients",
+		ab8500_anc_fir_coeff_cache,
+		REG_ANC_FIR_COEFF_MIN,
+		REG_ANC_FIR_COEFF_MAX,
+		NORMAL),
+	SOC_MULTIPLE_SA("ANC IIR Coefficients",
+		ab8500_anc_iir_coeff_cache,
+		REG_ANC_IIR_COEFF_MIN,
+		REG_ANC_IIR_COEFF_MAX,
+		NORMAL),
 };
 
 static int ab8500_codec_set_format_if1(struct snd_soc_codec *codec, unsigned int fmt)
@@ -2234,6 +2303,103 @@ int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
 		return -1;
 
 	return 0;
+}
+
+/* ANC block current configuration status */
+unsigned int ab8500_audio_anc_status(void)
+{
+	return ab8500_anc_status;
+}
+
+/* ANC IIR-/FIR-coefficients configuration sequence */
+int ab8500_audio_anc_configure(unsigned int req_state)
+{
+	bool configure_fir = req_state == ANC_CONFIGURE_FIR || req_state == ANC_CONFIGURE_FIR_IIR;
+	bool configure_iir = req_state == ANC_CONFIGURE_IIR || req_state == ANC_CONFIGURE_FIR_IIR;
+	unsigned int bank, param;
+	int ret;
+
+	if (req_state == ANC_UNCONFIGURED
+		|| req_state == ANC_FIR_IIR_CONFIGURED
+		|| req_state == ANC_FIR_CONFIGURED
+		|| req_state == ANC_IIR_CONFIGURED
+		|| req_state == ANC_ERROR)
+		return -1;
+
+	mutex_lock(&ab8500_anc_conf_lock);
+
+	if (configure_fir)
+		AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ENANC, ret, cleanup)
+
+	AB8500_SET_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ENANC, ret, cleanup)
+
+	if (configure_fir) {
+		for (bank = 0; bank < AB8500_NR_OF_ANC_COEFF_BANKS; bank++) {
+			for (param = 0; param < REG_ANC_FIR_COEFFS; param++) {
+				if (param == 0 && bank == 0)
+					AB8500_SET_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCFIRUPDATE, ret, cleanup)
+
+				AB8500_WRITE(REG_ANCCONF5, ab8500_anc_fir_coeff_cache[param] >> 8 & REG_MASK_ALL, ret, cleanup)
+				AB8500_WRITE(REG_ANCCONF6, ab8500_anc_fir_coeff_cache[param] & REG_MASK_ALL, ret, cleanup)
+
+				if (param == REG_ANC_FIR_COEFFS - 1 && bank == 1)
+					AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCFIRUPDATE, ret, cleanup)
+			}
+		}
+		if (ab8500_anc_status == ANC_IIR_CONFIGURED)
+			ab8500_anc_status = ANC_FIR_IIR_CONFIGURED;
+		else if (ab8500_anc_status != ANC_FIR_IIR_CONFIGURED)
+			ab8500_anc_status =  ANC_FIR_CONFIGURED;
+	}
+
+	if (configure_iir) {
+		for (bank = 0; bank < AB8500_NR_OF_ANC_COEFF_BANKS; bank++) {
+			for (param = 0; param < REG_ANC_IIR_COEFFS; param++) {
+				if (param == 0) {
+					if (bank == 0) {
+						AB8500_SET_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCIIRINIT, ret, cleanup)
+						udelay(2000);
+						AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCIIRINIT, ret, cleanup)
+						udelay(2000);
+					} else {
+						AB8500_SET_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCIIRUPDATE, ret, cleanup)
+					}
+				} else if (param > 3) {
+					AB8500_WRITE(REG_ANCCONF7, REG_MASK_NONE, ret, cleanup)
+					AB8500_WRITE(REG_ANCCONF8, ab8500_anc_iir_coeff_cache[param] >> 16 & REG_MASK_ALL, ret, cleanup)
+				}
+
+				AB8500_WRITE(REG_ANCCONF7, ab8500_anc_iir_coeff_cache[param] >> 8 & REG_MASK_ALL, ret, cleanup)
+				AB8500_WRITE(REG_ANCCONF8, ab8500_anc_iir_coeff_cache[param] & REG_MASK_ALL, ret, cleanup)
+
+				if (param == REG_ANC_IIR_COEFFS - 1 && bank == 1)
+					AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCIIRUPDATE, ret, cleanup)
+			}
+		}
+		if (ab8500_anc_status == ANC_FIR_CONFIGURED)
+			ab8500_anc_status = ANC_FIR_IIR_CONFIGURED;
+		else if (ab8500_anc_status != ANC_FIR_IIR_CONFIGURED)
+			ab8500_anc_status =  ANC_IIR_CONFIGURED;
+	}
+
+	mutex_unlock(&ab8500_anc_conf_lock);
+
+	return 0;
+
+cleanup:
+	ret |= snd_soc_update_bits_locked(ab8500_codec
+			, REG_ANCCONF1
+			, BMASK(REG_ANCCONF1_ENANC)
+			| BMASK(REG_ANCCONF1_ANCIIRINIT)
+			| BMASK(REG_ANCCONF1_ANCIIRUPDATE)
+			| BMASK(REG_ANCCONF1_ANCFIRUPDATE)
+			, REG_MASK_NONE);
+
+	ab8500_anc_status = ANC_ERROR;
+
+	mutex_unlock(&ab8500_anc_conf_lock);
+
+	return ret;
 }
 
 bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path)

@@ -31,6 +31,8 @@ int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
 			unsigned int fmt,
 			unsigned int wl,
 			unsigned int delay);
+unsigned int ab8500_audio_anc_status();
+int ab8500_audio_anc_configure(unsigned int req_state);
 
 enum ab8500_audio_dapm_path {
 	AB8500_AUDIO_DAPM_PATH_DMIC,
@@ -588,14 +590,25 @@ bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path);
 #define REG_ANCCONF1_ANCFIRUPDATE		0
 
 /* REG_ANCCONF2 */
+#define REG_ANCCONF2_VALUE_MIN			-0x10
+#define REG_ANCCONF2_VALUE_MAX			0x0F
 /* REG_ANCCONF3 */
+#define REG_ANCCONF3_VALUE_MIN			-0x10
+#define REG_ANCCONF3_VALUE_MAX			0x0F
 /* REG_ANCCONF4 */
-/* REG_ANCCONF5 */
-/* REG_ANCCONF6 */
-/* REG_ANCCONF7 */
-/* REG_ANCCONF8 */
-/* REG_ANCCONF9 */
-/* REG_ANCCONF10 */
+#define REG_ANCCONF4_VALUE_MIN			-0x10
+#define REG_ANCCONF4_VALUE_MAX			0x0F
+/* REG_ANC_FIR_COEFFS */
+#define REG_ANC_FIR_COEFF_MIN			-0x8000
+#define REG_ANC_FIR_COEFF_MAX			0x7FFF
+#define REG_ANC_FIR_COEFFS			0xF
+/* REG_ANC_IIR_COEFFS */
+#define REG_ANC_IIR_COEFF_MIN			-0x800000
+#define REG_ANC_IIR_COEFF_MAX			0x7FFFFF
+#define REG_ANC_IIR_COEFFS			0x18
+/* REG_ANC_WARP_DELAY */
+#define REG_ANC_WARP_DELAY_MIN			0x0000
+#define REG_ANC_WARP_DELAY_MAX			0xFFFF
 /* REG_ANCCONF11 */
 /* REG_ANCCONF12 */
 /* REG_ANCCONF13 */
