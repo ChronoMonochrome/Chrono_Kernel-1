@@ -77,6 +77,7 @@
  * @shm_ca_wake_req:		work to send cmt-ape wake request
  * @shm_ca_sleep_req:		work to send cmt-ape sleep request
  * @shm_ac_sleep_req:		work to send ape-cmt sleep request
+ * @shm_mod_reset_req:		work to send a reset request to modem
  */
 struct shrm_dev {
 	u8 ca_wake_irq;
@@ -127,6 +128,7 @@ struct shrm_dev {
 	struct work_struct shm_ca_wake_req;
 	struct work_struct shm_ca_sleep_req;
 	struct work_struct shm_ac_sleep_req;
+	struct work_struct shm_mod_reset_req;
 };
 
 /**

@@ -11,6 +11,7 @@
 #include <linux/modem/shrm/shrm_driver.h>
 #include <linux/modem/shrm/shrm_private.h>
 #include <linux/modem/shrm/shrm_net.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #define L1_BOOT_INFO_REQ	1
 #define L1_BOOT_INFO_RESP	2
@@ -109,7 +110,10 @@ u8 read_boot_info_req(struct shrm_dev *shrm,
 	if (msgtype != L1_BOOT_INFO_REQ) {
 		dev_err(shrm->dev, "Read_Boot_Info_Req Fatal ERROR\n");
 		dev_err(shrm->dev, "Received msgtype is %d\n", msgtype);
-		BUG();
+		dev_info(shrm->dev, "Initiating a modem reset\n");
+		queue_work(shrm->shm_ac_wake_wq,
+				&shrm->shm_mod_reset_req);
+		return 0;
 	}
 	*config = (header >> CONFIG_OFFSET) & MASK_0_15_BIT;
 	*version = header & MASK_0_15_BIT;
@@ -416,7 +420,9 @@ u8 read_one_l2msg_common(struct shrm_dev *shrm,
 						fifo->end_addr_fifo);
 		/* Fatal ERROR - should never happens */
 		dev_crit(shrm->dev, "Fatal ERROR - should never happen\n");
-		BUG();
+		dev_info(shrm->dev, "Initiating a modem reset\n");
+		queue_work(shrm->shm_ac_wake_wq,
+				&shrm->shm_mod_reset_req);
 	 }
 	if (fifo->reader_local_rptr == (fifo->end_addr_fifo-1)) {
 		l2_header = (*((u32 *)fifo->fifo_virtual_addr));
@@ -522,7 +528,9 @@ u8 read_one_l2msg_audio(struct shrm_dev *shrm,
 		dev_info(shrm->dev, "Received msgtype is %d\n", msgtype);
 		/* Fatal ERROR - should never happens */
 		dev_crit(shrm->dev, "Fatal ERROR - should never happen\n");
-		BUG();
+		dev_info(shrm->dev, "Initiating a modem reset\n");
+		queue_work(shrm->shm_ac_wake_wq,
+				&shrm->shm_mod_reset_req);
 	 }
 	if (fifo->reader_local_rptr == (fifo->end_addr_fifo-1)) {
 		l2_header = (*((u32 *)fifo->fifo_virtual_addr));

@@ -70,6 +70,11 @@ enum shrm_nl {
 	SHRM_NL_STATUS_MOD_OFFLINE,
 };
 
+void shm_mod_reset_req_work(struct work_struct *work)
+{
+	prcmu_modem_reset();
+}
+
 static void shm_ac_sleep_req_work(struct work_struct *work)
 {
 	mutex_lock(&ac_state_mutex);
@@ -264,7 +269,7 @@ void shm_ca_msgpending_0_tasklet(unsigned long tasklet_data)
 			if (!read_boot_info_req(shrm, &config, &version)) {
 				dev_err(shrm->dev,
 						"Unable to read boot state\n");
-				BUG();
+				return;
 			}
 			/* SendReadNotification */
 			ca_msg_read_notification_0(shrm);
@@ -468,8 +473,11 @@ void shm_ca_wake_req_work(struct work_struct *work)
 	mutex_unlock(&ac_state_mutex);
 
 	/* send ca_wake_ack_interrupt to CMU */
-	if (!get_host_accessport_val())
-		BUG();
+	if (!get_host_accessport_val()) {
+		dev_crit(shrm->dev, "get_host_accessport failed\n");
+		dev_info(shrm->dev, "Initiating a modem reset\n");
+		prcmu_modem_reset();
+	}
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 			shm_dev->intr_base + GOP_SET_REGISTER_BASE);
 }
@@ -611,8 +619,11 @@ static void send_ac_msg_pend_notify_0_work(struct work_struct *work)
 	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
-	if (!get_host_accessport_val())
-		BUG();
+	if (!get_host_accessport_val()) {
+		dev_crit(shrm->dev, "get_host_accessport failed\n");
+		dev_info(shrm->dev, "Initiating a modem reset\n");
+		prcmu_modem_reset();
+	}
 
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_COMMON_AC_MSG_PENDING_NOTIFICATION_BIT),
@@ -638,8 +649,11 @@ static void send_ac_msg_pend_notify_1_work(struct work_struct *work)
 	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
-	if (!get_host_accessport_val())
-		BUG();
+	if (!get_host_accessport_val()) {
+		dev_crit(shrm->dev, "get_host_accessport failed\n");
+		dev_info(shrm->dev, "Initiating a modem reset\n");
+		prcmu_modem_reset();
+	}
 
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_AUDIO_AC_MSG_PENDING_NOTIFICATION_BIT),
@@ -734,6 +748,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 	INIT_WORK(&shrm->shm_ca_sleep_req, shm_ca_sleep_req_work);
 	INIT_WORK(&shrm->shm_ac_sleep_req, shm_ac_sleep_req_work);
 	INIT_WORK(&shrm->shm_ac_wake_req, shm_ac_wake_req_work);
+	INIT_WORK(&shrm->shm_mod_reset_req, shm_mod_reset_req_work);
 
 	/* set tasklet data */
 	shm_ca_0_tasklet.data = (unsigned long)shrm;
