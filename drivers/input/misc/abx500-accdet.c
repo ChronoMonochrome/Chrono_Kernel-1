@@ -53,9 +53,9 @@
 #define ACCESSORY_CVIDEO_DET_VOL_MAX	105
 #define ACCESSORY_CARKIT_DET_VOL_MIN	1100
 #define ACCESSORY_CARKIT_DET_VOL_MAX	1300
-#define ACCESSORY_HEADSET_DET_VOL_MIN	0
-#define ACCESSORY_HEADSET_DET_VOL_MAX	200
-#define ACCESSORY_OPENCABLE_DET_VOL_MIN	1730
+#define ACCESSORY_HEADSET_DET_VOL_MIN	1301
+#define ACCESSORY_HEADSET_DET_VOL_MAX	2000
+#define ACCESSORY_OPENCABLE_DET_VOL_MIN	2001
 #define ACCESSORY_OPENCABLE_DET_VOL_MAX	2150
 
 
@@ -516,8 +516,6 @@ static int detect_hw(struct abx500_ad *dd,
 		status = dd->detect_plugged_in(dd);
 		break;
 	case JACK_TYPE_CARKIT:
-		dd->config_hw_test_basic_carkit(dd, 1);
-		/* flow through.. */
 	case JACK_TYPE_HEADPHONE:
 	case JACK_TYPE_CVIDEO:
 	case JACK_TYPE_HEADSET:
@@ -544,6 +542,8 @@ static enum accessory_jack_type detect(struct abx500_ad *dd,
 	int i;
 
 	accessory_regulator_enable(dd, REGULATOR_VAUDIO | REGULATOR_AVSWITCH);
+	/* enable the VAMIC1 regulator */
+	dd->config_hw_test_basic_carkit(dd, 0);
 
 	for (i = 0; i < ARRAY_SIZE(detect_ops); ++i) {
 		if (detect_hw(dd, &detect_ops[i])) {
@@ -553,7 +553,6 @@ static enum accessory_jack_type detect(struct abx500_ad *dd,
 		}
 	}
 
-	dd->config_hw_test_basic_carkit(dd, 0);
 	dd->config_hw_test_plug_connected(dd, 0);
 
 	if (jack_supports_buttons(type))
