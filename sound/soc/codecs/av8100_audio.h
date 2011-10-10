@@ -33,15 +33,17 @@ enum hdmi_audio_coding_type {
 	AV8100_CODEC_CT_REFER,
 	AV8100_CODEC_CT_IEC60958_PCM,
 	AV8100_CODEC_CT_AC3,
+	AV8100_CODEC_CT_MPEG1,
 	AV8100_CODEC_CT_MP3,
 	AV8100_CODEC_CT_MPEG2,
 	AV8100_CODEC_CT_AAC,
-	AV8100_CODEC_CT_DTS_ATRAC,
+	AV8100_CODEC_CT_DTS,
+	AV8100_CODEC_CT_ATRAC,
 	AV8100_CODEC_CT_ONE_BIT_AUDIO,
 	AV8100_CODEC_CT_DOLBY_DIGITAL,
 	AV8100_CODEC_CT_DTS_HD,
 	AV8100_CODEC_CT_MAT,
-	AV8100_CODEC_CT_DTS,
+	AV8100_CODEC_CT_DST,
 	AV8100_CODEC_CT_WMA_PRO
 };
 
@@ -143,7 +145,6 @@ enum hdmi_level_shift_value {
 };
 
 struct hdmi_audio_settings {
-	enum hdmi_audio_coding_type	audio_coding_type;
 	enum hdmi_audio_channel_count	audio_channel_count;
 	enum hdmi_sampling_frequency	sampling_frequency;
 	enum hdmi_sample_size		sample_size;

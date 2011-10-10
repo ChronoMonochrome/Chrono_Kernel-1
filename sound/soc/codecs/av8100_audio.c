@@ -45,6 +45,76 @@ static struct av8100_codec_dai_data *get_dai_data(struct snd_soc_dai *codec_dai)
 	return get_dai_data_codec(codec_dai->codec, codec_dai->id);
 }
 
+/* Controls - Non-DAPM Non-ASoC */
+
+/* Coding Type */
+
+static const char *hdmi_coding_type_str[] = {"AV8100_CODEC_CT_REFER",
+					"AV8100_CODEC_CT_IEC60958_PCM",
+					"AV8100_CODEC_CT_AC3",
+					"AV8100_CODEC_CT_MPEG1",
+					"AV8100_CODEC_CT_MP3",
+					"AV8100_CODEC_CT_MPEG2",
+					"AV8100_CODEC_CT_AAC",
+					"AV8100_CODEC_CT_DTS",
+					"AV8100_CODEC_CT_ATRAC",
+					"AV8100_CODEC_CT_ONE_BIT_AUDIO",
+					"AV8100_CODEC_CT_DOLBY_DIGITAL",
+					"AV8100_CODEC_CT_DTS_HD",
+					"AV8100_CODEC_CT_MAT",
+					"AV8100_CODEC_CT_DST",
+					"AV8100_CODEC_CT_WMA_PRO"};
+
+enum hdmi_audio_coding_type audio_coding_type;
+
+static int hdmi_coding_type_control_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
+{
+	int items = ARRAY_SIZE(hdmi_coding_type_str);
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = items;
+
+	if (uinfo->value.enumerated.item > items - 1)
+		uinfo->value.enumerated.item = items - 1;
+
+	strcpy(uinfo->value.enumerated.name,
+		hdmi_coding_type_str[uinfo->value.enumerated.item]);
+
+	return 0;
+}
+
+static int hdmi_coding_type_control_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.enumerated.item[0] = audio_coding_type;
+
+	return 0;
+}
+
+static int hdmi_coding_type_control_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	int items = ARRAY_SIZE(hdmi_coding_type_str);
+
+	if (ucontrol->value.enumerated.item[0] > items - 1)
+		ucontrol->value.enumerated.item[0] = items - 1;
+
+	audio_coding_type = ucontrol->value.enumerated.item[0];
+
+	return 1;
+}
+
+static const struct snd_kcontrol_new hdmi_coding_type_control = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "HDMI Coding Type",
+	.index = 0,
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.info = hdmi_coding_type_control_info,
+	.get = hdmi_coding_type_control_get,
+	.put = hdmi_coding_type_control_put,
+};
+
 /* Extended interface for codec-driver */
 
 int av8100_audio_change_hdmi_audio_settings(struct snd_soc_dai *codec_dai,
@@ -54,7 +124,6 @@ int av8100_audio_change_hdmi_audio_settings(struct snd_soc_dai *codec_dai,
 
 	pr_debug("%s: Enter.\n", __func__);
 
-	dai_data->as.audio_coding_type = as->audio_coding_type;
 	dai_data->as.audio_channel_count = as->audio_channel_count;
 	dai_data->as.sampling_frequency = as->sampling_frequency;
 	dai_data->as.sample_size = as->sample_size;
@@ -149,7 +218,7 @@ static int av8100_codec_send_audio_infoframe(struct hdmi_audio_settings *as)
 	pr_debug("%s: Enter.\n", __func__);
 
 	pr_debug("%s: HDMI-settings:\n", __func__);
-	pr_debug("%s:	audio_coding_type = %d\n", __func__, as->audio_coding_type);
+	pr_debug("%s:	audio_coding_type = %d\n", __func__, audio_coding_type);
 	pr_debug("%s:	audio_channel_count = %d\n", __func__, as->audio_channel_count);
 	pr_debug("%s:	sampling_frequency = %d\n", __func__, as->sampling_frequency);
 	pr_debug("%s:	sample_size = %d\n", __func__, as->sample_size);
@@ -162,7 +231,7 @@ static int av8100_codec_send_audio_infoframe(struct hdmi_audio_settings *as)
 	info_fr.type = 0x84;
 	info_fr.version = 0x01;
 	info_fr.length = 0x0a;
-	info_fr.data[0] = (as->audio_coding_type << 4) | as->audio_channel_count;
+	info_fr.data[0] = (audio_coding_type << 4) | as->audio_channel_count;
 	info_fr.data[1] = (as->sampling_frequency << 2) | as->sample_size;
 	info_fr.data[2] = 0;
 	info_fr.data[3] = as->channel_allocation;
@@ -337,6 +406,11 @@ static int av8100_codec_probe(struct snd_soc_codec *codec)
 {
 	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 
+	audio_coding_type = AV8100_CODEC_CT_IEC60958_PCM;
+
+	/* Add controls with events */
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&hdmi_coding_type_control, codec));
+
 	return 0;
 }
 
@@ -381,7 +455,6 @@ static __devinit int av8100_codec_drv_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	/* Setup hdmi_audio_settings default values */
-	dai_data[0].as.audio_coding_type = AV8100_CODEC_CT_IEC60958_PCM;
 	dai_data[0].as.audio_channel_count = AV8100_CODEC_CC_2CH;
 	dai_data[0].as.sampling_frequency = AV8100_CODEC_SF_48KHZ;
 	dai_data[0].as.sample_size = AV8100_CODEC_SS_16BIT;
