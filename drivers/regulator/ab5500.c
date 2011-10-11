@@ -60,6 +60,7 @@ struct ab5500_regulator {
 	bool pwrctrl;
 	bool enabled;
 	int enable_time;
+	int load_lp_uA;
 	u8 bank;
 	u8 reg;
 	u8 mode;
@@ -125,6 +126,22 @@ static unsigned int ab5500_regulator_get_mode(struct regulator_dev *rdev)
 		return REGULATOR_MODE_IDLE;
 
 	return REGULATOR_MODE_NORMAL;
+}
+
+static unsigned int
+ab5500_regulator_get_optimum_mode(struct regulator_dev *rdev,
+				  int input_uV, int output_uV, int load_uA)
+{
+	struct ab5500_regulators *ab5500 = rdev_get_drvdata(rdev);
+	struct ab5500_regulator *r = ab5500->regulator[rdev_get_id(rdev)];
+	unsigned int mode;
+
+	if (load_uA <= r->load_lp_uA)
+		mode = REGULATOR_MODE_IDLE;
+	else
+		mode = REGULATOR_MODE_NORMAL;
+
+	return mode;
 }
 
 static int ab5500_regulator_set_mode(struct regulator_dev *rdev,
@@ -303,6 +320,7 @@ static struct regulator_ops ab5500_regulator_variable_ops = {
 	.list_voltage	= ab5500_regulator_list_voltage,
 	.set_mode	= ab5500_regulator_set_mode,
 	.get_mode	= ab5500_regulator_get_mode,
+	.get_optimum_mode = ab5500_regulator_get_optimum_mode,
 };
 
 static struct regulator_ops ab5500_regulator_fixed_ops = {
@@ -314,6 +332,7 @@ static struct regulator_ops ab5500_regulator_fixed_ops = {
 	.list_voltage	= ab5500_regulator_list_voltage,
 	.set_mode	= ab5500_regulator_set_mode,
 	.get_mode	= ab5500_regulator_get_mode,
+	.get_optimum_mode = ab5500_regulator_get_optimum_mode,
 };
 
 static const int ab5500_ldo_lg_voltages[] = {
@@ -369,6 +388,7 @@ static struct ab5500_regulator ab5500_regulators[] = {
 		.voltages		= ab5500_ldo_lg_voltages,
 		.num_holes		= 2, /* 2 register values unused */
 		.enable_time		= 400,
+		.load_lp_uA		= 20000,
 		.mode			= AB5500_LDO_MODE_FULLPOWER,
 		.update_mask		= AB5500_LDO_MODE_MASK,
 		.update_val_normal	= AB5500_LDO_MODE_FULLPOWER,
@@ -390,6 +410,7 @@ static struct ab5500_regulator ab5500_regulators[] = {
 		.voltages		= ab5500_ldo_lg_voltages,
 		.num_holes		= 2, /* 2 register values unused */
 		.enable_time		= 400,
+		.load_lp_uA		= 20000,
 		.mode			= AB5500_LDO_MODE_FULLPOWER,
 		.update_mask		= AB5500_LDO_MODE_MASK,
 		.update_val_normal	= AB5500_LDO_MODE_FULLPOWER,
@@ -409,6 +430,7 @@ static struct ab5500_regulator ab5500_regulators[] = {
 		.reg			= AB5500_LDO_K_ST,
 		.voltages		= ab5500_ldo_kh_voltages,
 		.enable_time		= 400,
+		.load_lp_uA		= 20000,
 		.mode			= AB5500_LDO_MODE_FULLPOWER,
 		.update_mask		= AB5500_LDO_MODE_MASK,
 		.update_val_normal	= AB5500_LDO_MODE_FULLPOWER,
@@ -428,6 +450,7 @@ static struct ab5500_regulator ab5500_regulators[] = {
 		.reg			= AB5500_LDO_H_ST,
 		.voltages		= ab5500_ldo_kh_voltages,
 		.enable_time		= 400,
+		.load_lp_uA		= 20000,
 		.mode			= AB5500_LDO_MODE_FULLPOWER,
 		.update_mask		= AB5500_LDO_MODE_MASK,
 		.update_val_normal	= AB5500_LDO_MODE_FULLPOWER,
