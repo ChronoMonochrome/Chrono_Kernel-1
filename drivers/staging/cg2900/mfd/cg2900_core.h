@@ -38,6 +38,7 @@
 
 /* Bluetooth error codes */
 #define HCI_BT_ERROR_NO_ERROR			0x00
+#define HCI_BT_WRONG_SEQ_ERROR			0xF1
 
 /* Bluetooth lengths */
 #define HCI_BT_SEND_FILE_MAX_CHUNK_SIZE		254

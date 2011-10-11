@@ -6,6 +6,7 @@
  * Josef Kindberg (josef.kindberg@stericsson.com) for ST-Ericsson.
  * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
  * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
+ * Hemant Gupta (hemant.gupta@stericsson.com) for ST-Ericsson.
  * License terms:  GNU General Public License (GPL), version 2
  *
  * Linux Bluetooth HCI H:4 Driver for ST-Ericsson CG2900 GPS/BT/FM controller.
@@ -81,6 +82,11 @@
  */
 #define CHANNEL_BT_EVT				0x04
 
+/** CHANNEL_NFC - Bluetooth HCI H:4 channel
+ * for NFC in the ST-Ericsson connectivity controller.
+ */
+#define CHANNEL_NFC			0x05
+
 /** CHANNEL_FM_RADIO - Bluetooth HCI H:4 channel
  * for FM radio in the ST-Ericsson connectivity controller.
  */
@@ -127,6 +133,10 @@
 /** CG2900_BT_EVT - Bluetooth HCI H4 channel for Bluetooth events.
  */
 #define CG2900_BT_EVT				"cg2900_bt_evt"
+
+/** CG2900_NFC - Bluetooth HCI H4 channel for NFC.
+ */
+#define CG2900_NFC				"cg2900_nfc"
 
 /** CG2900_FM_RADIO - Bluetooth HCI H4 channel for FM radio.
  */
@@ -386,7 +396,9 @@ struct cg2900_chip_info {
 	int				nbr_of_polls;
 	bool				startup;
 	int				mfd_size;
+	int				mfd_extra_size;
 	int				mfd_char_size;
+	int				mfd_extra_char_size;
 };
 
 /**
@@ -417,6 +429,8 @@ static DECLARE_WAIT_QUEUE_HEAD(clk_user_wait_queue);
 
 static struct mfd_cell cg2900_devs[];
 static struct mfd_cell cg2900_char_devs[];
+static struct mfd_cell cg2910_extra_devs[];
+static struct mfd_cell cg2910_extra_char_devs[];
 
 static void chip_startup_finished(struct cg2900_chip_info *info, int err);
 static void chip_shutdown(struct cg2900_user_data *user);
@@ -1031,7 +1045,7 @@ static void send_patch_file(struct cg2900_chip_dev *dev)
 	int err;
 	int bytes_sent;
 	struct cg2900_chip_info *info = dev->c_data;
-	int file_name_size = strlen("CG2900_XXXX_XXXX_settings.fw");
+	int file_name_size = strlen("CG29XX_XXXX_XXXX_settings.fw");
 
 	bytes_sent = cg2900_read_and_send_file_part(info->user_in_charge,
 						    info->logger,
@@ -1059,7 +1073,7 @@ static void send_patch_file(struct cg2900_chip_dev *dev)
 	 * so add 1.
 	 */
 	err = snprintf(info->settings_file_name, file_name_size + 1,
-			"CG2900_%04X_%04X_settings.fw", dev->chip.hci_revision,
+			"CG29XX_%04X_%04X_settings.fw", dev->chip.hci_revision,
 			dev->chip.hci_sub_version);
 	if (err == file_name_size) {
 		dev_dbg(BOOT_DEV, "Downloading settings file %s\n",
@@ -1178,16 +1192,16 @@ shut_down_chip:
 		int err;
 
 		err = mfd_add_devices(dev->dev, main_info->cell_base_id,
-				      cg2900_devs, info->mfd_size, NULL, 0);
+				cg2900_devs, info->mfd_size, NULL, 0);
 		if (err) {
 			dev_err(dev->dev, "Failed to add cg2900_devs (%d)\n",
-				err);
+					err);
 			goto finished;
 		}
 
 		err = mfd_add_devices(dev->dev, main_info->cell_base_id,
-				      cg2900_char_devs, info->mfd_char_size,
-				      NULL, 0);
+				cg2900_char_devs, info->mfd_char_size,
+				NULL, 0);
 		if (err) {
 			dev_err(dev->dev, "Failed to add cg2900_char_devs (%d)"
 					"\n", err);
@@ -1199,8 +1213,39 @@ shut_down_chip:
 		 * Increase base ID so next connected transport will not get the
 		 * same device IDs.
 		 */
-		main_info->cell_base_id += MAX(info->mfd_size,
-					       info->mfd_char_size);
+		main_info->cell_base_id +=
+				MAX(info->mfd_size, info->mfd_char_size);
+
+		if (dev->chip.hci_revision == CG2910_PG1_REV ||
+				dev->chip.hci_revision == CG2910_PG2_REV) {
+			err = mfd_add_devices(dev->dev, main_info->cell_base_id,
+					cg2910_extra_devs,
+					info->mfd_extra_size, NULL, 0);
+			if (err) {
+				dev_err(dev->dev, "Failed to add cg2910_extra_devs "
+						"(%d)\n", err);
+				goto finished;
+			}
+
+			err = mfd_add_devices(dev->dev, main_info->cell_base_id,
+					cg2910_extra_char_devs,
+					info->mfd_extra_char_size, NULL, 0);
+			if (err) {
+				dev_err(dev->dev, "Failed to add cg2910_extra_char_devs "
+						"(%d)\n", err);
+				mfd_remove_devices(dev->dev);
+				goto finished;
+			}
+
+			/*
+			 * Increase base ID so next connected transport
+			 * will not get the same device IDs.
+			 */
+			main_info->cell_base_id +=
+					MAX(info->mfd_extra_size,
+						info->mfd_extra_char_size);
+		}
+
 		info->startup = false;
 	}
 
@@ -1266,7 +1311,7 @@ static void work_load_patch_and_settings(struct work_struct *work)
 	struct cg2900_work *my_work;
 	struct cg2900_chip_dev *dev;
 	struct cg2900_chip_info *info;
-	int file_name_size = strlen("CG2900_XXXX_XXXX_patch.fw");
+	int file_name_size = strlen("CG29XX_XXXX_XXXX_patch.fw");
 
 	if (!work) {
 		dev_err(MAIN_DEV,
@@ -1288,7 +1333,7 @@ static void work_load_patch_and_settings(struct work_struct *work)
 	 * so add 1.
 	 */
 	err = snprintf(info->patch_file_name, file_name_size + 1,
-			"CG2900_%04X_%04X_patch.fw", dev->chip.hci_revision,
+			"CG29XX_%04X_%04X_patch.fw", dev->chip.hci_revision,
 			dev->chip.hci_sub_version);
 	if (err == file_name_size) {
 		dev_dbg(BOOT_DEV, "Downloading patch file %s\n",
@@ -1602,7 +1647,10 @@ static bool handle_vs_system_reset_cmd_complete(struct cg2900_chip_dev *dev,
 		status);
 
 	if (HCI_BT_ERROR_NO_ERROR == status) {
-		if (dev->chip.hci_revision == CG2900_PG2_REV) {
+		if (dev->chip.hci_revision == CG2900_PG2_REV &&
+				dev->chip.hci_revision == CG2905_PG1_1_REV &&
+				dev->chip.hci_revision == CG2910_PG1_REV &&
+				dev->chip.hci_revision == CG2910_PG2_REV) {
 			/*
 			 * We must now wait for the selftest results. They will
 			 * take a certain amount of time to finish so start a
@@ -1859,6 +1907,29 @@ static bool handle_rx_data_bt_evt(struct cg2900_chip_dev *dev,
 		else if (op_code == CG2900_BT_OP_VS_BT_ENABLE)
 			pkt_handled = handle_vs_bt_enable_cmd_status
 				(dev, cmd_status->status);
+	} else if (HCI_EV_VENDOR_SPECIFIC == evt->evt) {
+		/*
+		 * In the new versions of CG29xx i.e. after CG2900 we
+		 * will recieve HCI_Event_VS_Write_File_Block_Complete
+		 * instead of Command Complete while downloading
+		 * the patches/settings file
+		 */
+		struct bt_vs_evt *cmd_evt;
+		cmd_evt = (struct bt_vs_evt *)data;
+
+		if (cmd_evt->evt_id == CG2900_EV_VS_WRITE_FILE_BLOCK_COMPLETE) {
+			struct bt_vs_write_file_block_evt *write_block_evt;
+			write_block_evt =
+				(struct bt_vs_write_file_block_evt *)
+				cmd_evt->data;
+			dev_dbg(dev->dev, "Received VS write file block complete\n");
+			pkt_handled = handle_vs_write_file_block_cmd_complete(
+				dev, &write_block_evt->status);
+		} else {
+			dev_err(dev->dev, "Vendor Specific Event 0x%x"
+					"Not Supported\n", cmd_evt->evt_id);
+			return false;
+		}
 	} else if (HCI_EV_HW_ERROR == evt->evt) {
 		struct hci_ev_hw_error *hw_error;
 
@@ -3128,6 +3199,9 @@ static struct cg2900_user_data btacl_data = {
 static struct cg2900_user_data btevt_data = {
 	.h4_channel = CHANNEL_BT_EVT,
 };
+static struct cg2900_user_data nfc_data = {
+	.h4_channel = CHANNEL_NFC,
+};
 static struct cg2900_user_data fm_data = {
 	.h4_channel = CHANNEL_FM_RADIO,
 };
@@ -3232,6 +3306,14 @@ static struct mfd_cell cg2900_devs[] = {
 	},
 };
 
+static struct mfd_cell cg2910_extra_devs[] = {
+	{
+		.name = "cg2900-nfc",
+		.platform_data = &nfc_data,
+		.pdata_size = sizeof(nfc_data)
+	}
+};
+
 static struct cg2900_user_data char_btcmd_data = {
 	.channel_data = {
 		.char_dev_name = CG2900_BT_CMD,
@@ -3249,6 +3331,12 @@ static struct cg2900_user_data char_btevt_data = {
 		.char_dev_name = CG2900_BT_EVT,
 	},
 	.h4_channel = CHANNEL_BT_EVT,
+};
+static struct cg2900_user_data char_nfc_data = {
+	.channel_data = {
+		.char_dev_name = CG2900_NFC,
+	},
+	.h4_channel = CHANNEL_NFC,
 };
 static struct cg2900_user_data char_fm_data = {
 	.channel_data = {
@@ -3390,6 +3478,15 @@ static struct mfd_cell cg2900_char_devs[] = {
 	},
 };
 
+static struct mfd_cell cg2910_extra_char_devs[] = {
+	{
+		.name = "cg2900-chardev",
+		.id = 12,
+		.platform_data = &char_nfc_data,
+		.pdata_size = sizeof(char_nfc_data)
+	}
+};
+
 /**
  * set_plat_data() - Initializes data for an MFD cell.
  * @cell:	MFD cell.
@@ -3438,20 +3535,14 @@ static bool check_chip_support(struct cg2900_chip_dev *dev)
 	dev_dbg(dev->dev, "check_chip_support\n");
 
 	/*
-	 * Check if this is a CG2900 revision.
+	 * Check if this is a CG29XX revision.
 	 * We do not care about the sub-version at the moment. Change this if
 	 * necessary.
 	 */
-	if ((dev->chip.manufacturer != CG2900_SUPP_MANUFACTURER) ||
-	    (dev->chip.hci_revision != CG2900_PG1_SPECIAL_REV &&
-	     (dev->chip.hci_revision < CG2900_SUPP_REVISION_MIN ||
-	      dev->chip.hci_revision > CG2900_SUPP_REVISION_MAX))) {
-		dev_dbg(dev->dev, "Chip not supported by CG2900 driver\n"
-			"\tMan: 0x%02X\n"
-			"\tRev: 0x%04X\n"
-			"\tSub: 0x%04X\n",
-			dev->chip.manufacturer, dev->chip.hci_revision,
-			dev->chip.hci_sub_version);
+	if (dev->chip.manufacturer != CG2900_SUPP_MANUFACTURER
+		|| !(check_chip_revision_support(dev->chip.hci_revision))) {
+		dev_err(dev->dev, "Unsupported Chip revision:0x%x\n",
+				dev->chip.hci_revision);
 		return false;
 	}
 
@@ -3516,14 +3607,26 @@ static bool check_chip_support(struct cg2900_chip_dev *dev)
 	btacl_data.channel_data.bt_bus = pf_data->bus;
 	btevt_data.channel_data.bt_bus = pf_data->bus;
 
+	/* Set the Platform data based on supported chip */
 	for (i = 0; i < ARRAY_SIZE(cg2900_devs); i++)
 		set_plat_data(&cg2900_devs[i], dev);
 	for (i = 0; i < ARRAY_SIZE(cg2900_char_devs); i++)
 		set_plat_data(&cg2900_char_devs[i], dev);
-
-	info->startup = true;
 	info->mfd_size = ARRAY_SIZE(cg2900_devs);
 	info->mfd_char_size = ARRAY_SIZE(cg2900_char_devs);
+
+	if (dev->chip.hci_revision == CG2910_PG1_REV ||
+			dev->chip.hci_revision == CG2910_PG2_REV) {
+		for (i = 0; i < ARRAY_SIZE(cg2910_extra_devs); i++)
+			set_plat_data(&cg2910_extra_devs[i], dev);
+		for (i = 0; i < ARRAY_SIZE(cg2910_extra_char_devs); i++)
+			set_plat_data(&cg2910_extra_char_devs[i], dev);
+		info->mfd_extra_size = ARRAY_SIZE(cg2910_extra_devs);
+		info->mfd_extra_char_size = ARRAY_SIZE(cg2910_extra_char_devs);
+	}
+
+
+	info->startup = true;
 
 	/*
 	 * The devices will be registered when chip has been powered down, i.e.
@@ -3532,7 +3635,7 @@ static bool check_chip_support(struct cg2900_chip_dev *dev)
 
 	mutex_unlock(&main_info->man_mutex);
 
-	dev_info(dev->dev, "Chip supported by the CG2900 chip driver\n");
+	dev_info(dev->dev, "Chip supported by the CG2900 driver\n");
 
 	/* Finish by turning off the chip */
 	cg2900_create_work_item(info->wq, work_power_off_chip, dev);

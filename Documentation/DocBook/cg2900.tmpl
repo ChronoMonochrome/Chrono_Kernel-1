@@ -263,7 +263,7 @@
          <term>Writing to a channel</term>
          <listitem>
          <para>
-           When a stack (Bluetooth, FM, or GNSS) wants to send a packet it shall perform a write operation.
+           When a stack (Bluetooth, FM, GNSS or NFC) wants to send a packet it shall perform a write operation.
            The packet shall not contain the H:4 header since this is added by the CG2900 driver.
            All other data in the packet shall however exist in the packet in the format correct for that HCI channel.
            The CG2900 users need to perform flow control over channels so any ticket handling
@@ -320,7 +320,7 @@
          <term>Reading from a channel</term>
          <listitem>
          <para>
-           When a stack (Bluetooth, FM, or GNSS) wants to receive a packet it shall perform a receive operation.
+           When a stack (Bluetooth, FM, GNSS or NFC) wants to receive a packet it shall perform a receive operation.
            The packet returned does not contain the H:4 header since this is removed by the CG2900 driver.
            All other data in the packet in the packet is in the format correct for that HCI channel.
            The CG2900 driver does not perform any flow control over the H:4 channel so any ticket handling
@@ -542,6 +542,7 @@
          <listitem>
          <para>
            This example will open the GNSS channel, write a packet, read a packet and then close the channel.
+           The same example is applicable for all other user space access for eg. NFC driver.
            In this example all functions are performed in the same thread.
            It is however adviced to perform <function>read</function> and <function>ioctl</function> read through a separate thread,
            preferrably using <function>poll</function>.
@@ -1280,6 +1281,24 @@
              <term>Description</term>
              <listitem>
              <para>The cg2900_hci_raw is the device for raw access to HCI interface.</para>
+             </listitem>
+           </varlistentry>
+         </variablelist>
+       </listitem>
+     </varlistentry>
+
+     <varlistentry>
+       <term>NFC</term>
+       <listitem>
+         <variablelist>
+           <varlistentry>
+             <term>File</term>
+             <listitem><para><filename>/dev/cg2900_nfc</filename></para></listitem>
+           </varlistentry>
+           <varlistentry>
+             <term>Description</term>
+             <listitem>
+             <para>The cg2900_nfc is the device for the HCI NFC channel.</para>
              </listitem>
            </varlistentry>
          </variablelist>

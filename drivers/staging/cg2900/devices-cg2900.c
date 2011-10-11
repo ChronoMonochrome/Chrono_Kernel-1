@@ -40,11 +40,6 @@
 #define H4_HEADER_LENGTH		0x01
 #define BT_HEADER_LENGTH		0x03
 
-#define STLC2690_HCI_REV		0x0600
-#define CG2900_PG1_HCI_REV		0x0101
-#define CG2900_PG2_HCI_REV		0x0200
-#define CG2900_PG1_SPECIAL_HCI_REV	0x0700
-
 struct vs_power_sw_off_cmd {
 	__le16	op_code;
 	u8	len;
@@ -65,9 +60,7 @@ static struct sk_buff *dcg2900_get_power_switch_off_cmd
 	int i;
 
 	/* If connected chip does not support the command return NULL */
-	if (CG2900_PG1_SPECIAL_HCI_REV != dev->chip.hci_revision &&
-	    CG2900_PG1_HCI_REV != dev->chip.hci_revision &&
-	    CG2900_PG2_HCI_REV != dev->chip.hci_revision)
+	if (!check_chip_revision_support(dev->chip.hci_revision))
 		return NULL;
 
 	dev_dbg(dev->dev, "Generating PowerSwitchOff command\n");

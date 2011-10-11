@@ -7,6 +7,7 @@
  * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
  * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
  * Lukasz Rymanowski (lukasz.rymanowski@tieto.com) for ST-Ericsson.
+ * Hemant Gupta (hemant.gupta@stericsson.com) for ST-Ericsson.
  * License terms:  GNU General Public License (GPL), version 2
  *
  * Linux Bluetooth UART Driver for ST-Ericsson CG2900 connectivity controller.
@@ -79,6 +80,7 @@
 /* Size of the header in the different packets */
 #define HCI_BT_EVT_HDR_SIZE	2
 #define HCI_BT_ACL_HDR_SIZE	4
+#define HCI_NFC_HDR_SIZE	3
 #define HCI_FM_RADIO_HDR_SIZE	1
 #define HCI_GNSS_HDR_SIZE	3
 
@@ -109,6 +111,7 @@
 #define CG2900_SKB_RESERVE			HCI_H4_SIZE
 
 /* Default H4 channels which may change depending on connected controller */
+#define HCI_NFC_H4_CHANNEL			0x05
 #define HCI_FM_RADIO_H4_CHANNEL			0x08
 #define HCI_GNSS_H4_CHANNEL			0x09
 
@@ -125,6 +128,15 @@
 #define CG2900_BAUD_RATE_3000000			0x27
 #define CG2900_BAUD_RATE_3250000			0x28
 #define CG2900_BAUD_RATE_4000000			0x2B
+
+/* NFC: 1byte extra is recieved for checksum */
+#define NFC_CHECKSUM_DATA_LEN			0x01
+
+/* NFC */
+struct nfc_hci_hdr {
+	__u8	op_code;
+	__le16	plen;
+} __packed;
 
 /**
  * enum sleep_allowed_bits - bits indicating if sleep is allowed.
@@ -207,6 +219,7 @@ struct bt_vs_set_baud_rate_cmd {
  * @W4_PACKET_TYPE:	Waiting for packet type.
  * @W4_EVENT_HDR:	Waiting for BT event header.
  * @W4_ACL_HDR:		Waiting for BT ACL header.
+ * @W4_NFC_HDR:		Waiting for NFC header.
  * @W4_FM_RADIO_HDR:	Waiting for FM header.
  * @W4_GNSS_HDR:	Waiting for GNSS header.
  * @W4_DATA:		Waiting for data in rest of the packet (after header).
@@ -215,6 +228,7 @@ enum uart_rx_state {
 	W4_PACKET_TYPE,
 	W4_EVENT_HDR,
 	W4_ACL_HDR,
+	W4_NFC_HDR,
 	W4_FM_RADIO_HDR,
 	W4_GNSS_HDR,
 	W4_DATA
@@ -1719,6 +1733,7 @@ static int cg2900_hu_receive(struct hci_uart *hu,
 	int len;
 	struct hci_event_hdr	*evt;
 	struct hci_acl_hdr	*acl;
+	struct nfc_hci_hdr	*nfc;
 	union fm_leg_evt_or_irq	*fm;
 	struct gnss_hci_hdr	*gnss;
 	struct uart_info *uart_info = dev_get_drvdata(hu->proto->dev);
@@ -1790,6 +1805,20 @@ static int cg2900_hu_receive(struct hci_uart *hu,
 			/* Header read. Continue with next bytes */
 			continue;
 
+		case W4_NFC_HDR:
+			nfc = (struct nfc_hci_hdr *)tmp;
+			/*
+			 * NFC Packet(s) have 1 extra byte for checksum.
+			 * This is not indicated by the byte length determined
+			 * from the received NFC Packet over HCI. So
+			 * length of received NFC packet should be updated
+			 * accordingly.
+			 */
+			check_data_len(uart_info, le16_to_cpu(nfc->plen) +
+					NFC_CHECKSUM_DATA_LEN);
+			/* Header read. Continue with next bytes */
+			continue;
+
 		case W4_FM_RADIO_HDR:
 			fm = (union fm_leg_evt_or_irq *)tmp;
 			check_data_len(uart_info, fm->param_length);
@@ -1817,6 +1846,9 @@ check_h4_header:
 		} else if (*r_ptr == HCI_BT_ACL_H4_CHANNEL) {
 			uart_info->rx_state = W4_ACL_HDR;
 			uart_info->rx_count = HCI_BT_ACL_HDR_SIZE;
+		} else if (*r_ptr == HCI_NFC_H4_CHANNEL) {
+			uart_info->rx_state = W4_NFC_HDR;
+			uart_info->rx_count = HCI_NFC_HDR_SIZE;
 		} else if (*r_ptr == HCI_FM_RADIO_H4_CHANNEL) {
 			uart_info->rx_state = W4_FM_RADIO_HDR;
 			uart_info->rx_count = HCI_FM_RADIO_HDR_SIZE;

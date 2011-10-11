@@ -28,6 +28,15 @@
 #define CG2900_CHAR_DEV_IOCTL_EVENT_IDLE	0
 #define CG2900_CHAR_DEV_IOCTL_EVENT_RESET	1
 
+/* Specific chip version data */
+#define STLC2690_REV			0x0600
+#define CG2900_PG1_REV			0x0101
+#define CG2900_PG2_REV			0x0200
+#define CG2900_PG1_SPECIAL_REV	0x0700
+#define CG2905_PG1_1_REV		0x1805
+#define CG2910_PG1_REV			0x1004
+#define CG2910_PG2_REV			0x1008
+
 /**
  * struct cg2900_rev_data - Contains revision data for the local controller.
  * @revision:		Revision of the controller, e.g. to indicate that it is
@@ -39,8 +48,8 @@
  * the manufacturer.
  */
 struct cg2900_rev_data {
-	int revision;
-	int sub_version;
+	u16 revision;
+	u16 sub_version;
 };
 
 #ifdef __KERNEL__
@@ -271,6 +280,19 @@ static inline void cg2900_set_prv(struct cg2900_user_data *dev, void *data)
 {
 	if (dev)
 		dev->private_data = data;
+}
+
+static inline bool check_chip_revision_support(u16 hci_revision)
+{
+	if (hci_revision != CG2900_PG1_SPECIAL_REV &&
+			hci_revision != CG2900_PG1_REV &&
+			hci_revision != CG2900_PG2_REV &&
+			hci_revision != CG2905_PG1_1_REV &&
+			hci_revision != CG2910_PG1_REV &&
+			hci_revision != CG2910_PG2_REV)
+		return false;
+
+	return true;
 }
 
 extern int cg2900_register_chip_driver(struct cg2900_id_callbacks *cb);

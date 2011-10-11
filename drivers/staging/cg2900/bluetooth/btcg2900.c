@@ -35,11 +35,6 @@
 
 #define BT_HEADER_LENGTH		0x03
 
-#define STLC2690_HCI_REV		0x0600
-#define CG2900_PG1_HCI_REV		0x0101
-#define CG2900_PG2_HCI_REV		0x0200
-#define CG2900_PG1_SPECIAL_HCI_REV	0x0700
-
 #define NAME				"BTCG2900 "
 
 /* Wait for 5 seconds for a response to our requests */
@@ -204,10 +199,11 @@ static struct sk_buff *get_bt_enable_cmd(struct btcg2900_info *info,
 	}
 
 	/* If connected chip does not support the command return NULL */
-	if (CG2900_PG1_SPECIAL_HCI_REV != rev_data.revision &&
-	    CG2900_PG1_HCI_REV != rev_data.revision &&
-	    CG2900_PG2_HCI_REV != rev_data.revision)
+	if (!check_chip_revision_support(rev_data.revision)) {
+		BT_ERR(NAME "Unsupported Chip revision:0x%x\n",
+				rev_data.revision);
 		return NULL;
+	}
 
 	/* CG2900 used */
 	skb = pf_data->alloc_skb(sizeof(*cmd), GFP_KERNEL);
