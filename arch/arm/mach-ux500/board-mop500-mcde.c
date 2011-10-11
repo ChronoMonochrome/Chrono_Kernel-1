@@ -144,7 +144,7 @@ static struct mcde_port sony_port0 = {
 struct mcde_display_sony_acx424akp_platform_data
 			sony_acx424akp_display0_pdata = {
 	.reset_gpio = HREFV60_DISP2_RST_GPIO,
-	.regulator_id = "vaux12v5",
+	.regulator_id = "vddi",
 };
 
 static struct mcde_display_device sony_acx424akp_display0 = {

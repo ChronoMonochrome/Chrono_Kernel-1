@@ -174,7 +174,7 @@ struct mcde_display_sony_acx424akp_platform_data \
 	.reset_low_delay = 1,
 	.sleep_out_delay = 140,
 #ifdef CONFIG_REGULATOR
-	.regulator_id = "v-display",
+	.regulator_id = "vddi",
 	.min_supply_voltage = 2800000, /* 2.8V */
 	.max_supply_voltage = 2800000 /* 2.8V */
 #endif
