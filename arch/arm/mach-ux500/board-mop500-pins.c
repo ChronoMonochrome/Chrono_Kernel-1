@@ -337,6 +337,232 @@ static pin_cfg_t snowball_pins[] = {
 	GPIO216_GPIO		| PIN_INPUT_PULLUP,/* WLAN_IRQ */
 };
 
+/*
+ * This function is called to force gpio power save
+ * settings during suspend.
+ * This is a temporary solution until all drivers are
+ * controlling their pin settings when in inactive mode.
+ */
+void mop500_pins_suspend_force(void)
+{
+	u32 bankaddr;
+	u32 w_imsc;
+	u32 imsc;
+
+	/*
+	 * Apply HSI GPIO Config for DeepSleep
+	 *
+	 * Bank0
+	 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK0_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x409C702A & ~w_imsc, bankaddr + NMK_GPIO_DIR);
+	writel(0x001C002A & ~w_imsc, bankaddr + NMK_GPIO_DATS);
+	writel(0x807000 & ~w_imsc, bankaddr + NMK_GPIO_DATC);
+	writel(0x5FFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+
+	/* Bank1 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK1_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x3        & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+	writel(0x1C      , bankaddr + NMK_GPIO_DIRC);
+	writel(0x2        & ~w_imsc, bankaddr + NMK_GPIO_DATC);
+	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+
+	/* Bank2 */
+
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK2_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x3D7C0    & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+	writel(0x803C2830, bankaddr + NMK_GPIO_DIRC);
+	writel(0x3D7C0    & ~w_imsc  , bankaddr + NMK_GPIO_DATC);
+	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+
+	/* Bank3 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK3_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x3        & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+	writel(0x3        & ~w_imsc, bankaddr + NMK_GPIO_DATC);
+	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+
+	/* Bank4 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK4_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x5E000    & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+	writel(0xFFDA1800 , bankaddr + NMK_GPIO_DIRC);
+	writel(0x4E000    & ~w_imsc, bankaddr + NMK_GPIO_DATC);
+	writel(0x10000    & ~w_imsc, bankaddr + NMK_GPIO_DATS);
+	writel(0xFFFFFFF9 & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+
+	/* Bank5 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK5_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x3FF     , bankaddr + NMK_GPIO_DIRC);
+	writel(0xC00      & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+	writel(0xC00      & ~w_imsc, bankaddr + NMK_GPIO_DATC);
+	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+
+	/* Bank6 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK6_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x8810810  & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+	writel(0xF57EF7EF, bankaddr + NMK_GPIO_DIRC);
+	writel(0x8810810  & ~w_imsc, bankaddr + NMK_GPIO_DATC);
+	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+
+
+	/* Bank7 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK7_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x1C       & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+	writel(0x63      , bankaddr + NMK_GPIO_DIRC);
+	writel(0x18       & ~w_imsc, bankaddr + NMK_GPIO_DATC);
+	writel(0xFFFFFFFF & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+
+	/* Bank8 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK8_BASE);
+
+	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
+		readl(bankaddr + NMK_GPIO_FWIMSC);
+
+	imsc = readl(bankaddr + NMK_GPIO_RIMSC) |
+		readl(bankaddr + NMK_GPIO_FIMSC);
+
+	writel(0x2        & ~w_imsc, bankaddr + NMK_GPIO_DIRS);
+	writel(0xFF0     , bankaddr + NMK_GPIO_DIRC);
+	writel(0x2        & ~w_imsc, bankaddr + NMK_GPIO_DATS);
+	writel(0x2        & ~w_imsc & ~imsc, bankaddr + NMK_GPIO_PDIS);
+	writel(0         , bankaddr + NMK_GPIO_SLPC);
+}
+
+/*
+ * This function is called to force gpio power save
+ * mux settings during suspend.
+ * This is a temporary solution until all drivers are
+ * controlling their pin settings when in inactive mode.
+ */
+void mop500_pins_suspend_force_mux(void)
+{
+	u32 bankaddr;
+
+
+	/*
+	 * Apply HSI GPIO Config for DeepSleep
+	 *
+	 * Bank0
+	 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK0_BASE);
+
+	writel(0xE0000000, bankaddr + NMK_GPIO_AFSLA);
+	writel(0xE0000000, bankaddr + NMK_GPIO_AFSLB);
+
+	/* Bank1 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK1_BASE);
+
+	writel(0x1       , bankaddr + NMK_GPIO_AFSLA);
+	writel(0x1       , bankaddr + NMK_GPIO_AFSLB);
+
+	/* Bank2 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK2_BASE);
+
+	writel(0         , bankaddr + NMK_GPIO_AFSLA);
+	writel(0         , bankaddr + NMK_GPIO_AFSLB);
+
+	/* Bank3 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK3_BASE);
+
+	writel(0         , bankaddr + NMK_GPIO_AFSLA);
+	writel(0         , bankaddr + NMK_GPIO_AFSLB);
+
+	/* Bank4 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK4_BASE);
+
+	writel(0x7FF     , bankaddr + NMK_GPIO_AFSLA);
+	writel(0         , bankaddr + NMK_GPIO_AFSLB);
+
+	/* Bank5 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK5_BASE);
+
+	writel(0         , bankaddr + NMK_GPIO_AFSLA);
+	writel(0         , bankaddr + NMK_GPIO_AFSLB);
+
+	/* Bank6 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK6_BASE);
+
+	writel(0         , bankaddr + NMK_GPIO_AFSLA);
+	writel(0         , bankaddr + NMK_GPIO_AFSLB);
+
+	/* Bank7 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK7_BASE);
+
+	writel(0         , bankaddr + NMK_GPIO_AFSLA);
+	writel(0         , bankaddr + NMK_GPIO_AFSLB);
+
+	/* Bank8 */
+	bankaddr = IO_ADDRESS(U8500_GPIOBANK8_BASE);
+
+	writel(0         , bankaddr + NMK_GPIO_AFSLA);
+	writel(0         , bankaddr + NMK_GPIO_AFSLB);
+
+
+}
+
 void __init mop500_pins_init(void)
 {
 	nmk_config_pins(mop500_pins_common,
