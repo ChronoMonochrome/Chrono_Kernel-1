@@ -26,6 +26,7 @@ struct mcde_display_hdmi_platform_data {
 	int reset_gpio;
 	bool reset_high;
 	const char *regulator_id;
+	const char *cvbs_regulator_id;
 	int reset_delay; /* ms */
 	u32 ddb_id;
 	struct mcde_col_convert rgb_2_yCbCr_transform;

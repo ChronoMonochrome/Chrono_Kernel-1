@@ -12,13 +12,20 @@
 #include <linux/kernel.h>
 #include <linux/device.h>
 #include <linux/delay.h>
+#include <linux/err.h>
 #include <linux/gpio.h>
 #include <linux/io.h>
+#include <linux/slab.h>
 
 #include <video/mcde_display.h>
 #include <video/mcde_display-av8100.h>
 #include <video/av8100.h>
 #include <video/hdmi.h>
+
+struct display_driver_data {
+	struct regulator *cvbs_regulator;
+	bool cvbs_regulator_enabled;
+};
 
 static int hdmi_try_video_mode(
 	struct mcde_display_device *ddev, struct mcde_video_mode *video_mode);
@@ -734,6 +741,7 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 	enum mcde_display_power_mode power_mode)
 {
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
 	int ret = 0;
 
 	/* OFF -> STANDBY */
@@ -743,6 +751,17 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 			ret = ddev->platform_enable(ddev);
 			if (ret)
 				return ret;
+		}
+		/*
+		 * the regulator for analog TV out is only enabled here,
+		 * this means that one needs to switch to the OFF state
+		 * to be able to switch from HDMI to CVBS.
+		 */
+		if (ddev->port->hdmi_sdtv_switch == SDTV_SWITCH) {
+			ret = regulator_enable(driver_data->cvbs_regulator);
+			if (ret)
+				return ret;
+			driver_data->cvbs_regulator_enabled = true;
 		}
 		ddev->power_mode = MCDE_DISPLAY_PM_STANDBY;
 	}
@@ -771,6 +790,12 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 			if (ret)
 				return ret;
 		}
+		if (driver_data->cvbs_regulator_enabled) {
+			ret = regulator_disable(driver_data->cvbs_regulator);
+			if (ret)
+				return ret;
+			driver_data->cvbs_regulator_enabled = false;
+		}
 		ddev->power_mode = MCDE_DISPLAY_PM_OFF;
 	}
 
@@ -782,6 +807,8 @@ set_power_and_exit:
 
 static int __devinit hdmi_probe(struct mcde_display_device *dev)
 {
+	int ret = 0;
+	struct display_driver_data *driver_data;
 	struct mcde_display_hdmi_platform_data *pdata =
 		dev->dev.platform_data;
 
@@ -794,6 +821,13 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 		dev_err(&dev->dev, "%s:Invalid port type %d\n",
 			__func__, dev->port->type);
 		return -EINVAL;
+	}
+
+	driver_data = (struct display_driver_data *)
+		kzalloc(sizeof(struct display_driver_data), GFP_KERNEL);
+	if (!driver_data) {
+		dev_err(&dev->dev, "Failed to allocate driver data\n");
+		return -ENOMEM;
 	}
 
 	/* DSI use clock continous mode if AV8100_CHIPVER_1 > 1 */
@@ -813,13 +847,31 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 		dev_info(&dev->dev,
 			"Unable to create hdmisdtvswitch attr\n");
 
+	if (pdata->cvbs_regulator_id) {
+		driver_data->cvbs_regulator = regulator_get(&dev->dev,
+						pdata->cvbs_regulator_id);
+		if (IS_ERR(driver_data->cvbs_regulator)) {
+			ret = PTR_ERR(driver_data->cvbs_regulator);
+			dev_warn(&dev->dev, "%s:Failed to get regulator %s\n",
+				__func__, pdata->cvbs_regulator_id);
+			driver_data->cvbs_regulator = NULL;
+			goto av_regulator_get_failed;
+		}
+	}
+
+	dev_set_drvdata(&dev->dev, driver_data);
 	dev_info(&dev->dev, "HDMI display probed\n");
 
 	return 0;
+
+av_regulator_get_failed:
+	kfree(driver_data);
+	return ret;
 }
 
 static int __devexit hdmi_remove(struct mcde_display_device *dev)
 {
+	struct display_driver_data *driver_data = dev_get_drvdata(&dev->dev);
 	struct mcde_display_hdmi_platform_data *pdata =
 		dev->dev.platform_data;
 
@@ -828,6 +880,9 @@ static int __devexit hdmi_remove(struct mcde_display_device *dev)
 
 	dev->set_power_mode(dev, MCDE_DISPLAY_PM_OFF);
 
+	if (driver_data->cvbs_regulator)
+		regulator_put(driver_data->cvbs_regulator);
+	kfree(driver_data);
 	if (pdata->hdmi_platform_enable) {
 		if (pdata->regulator)
 			regulator_put(pdata->regulator);

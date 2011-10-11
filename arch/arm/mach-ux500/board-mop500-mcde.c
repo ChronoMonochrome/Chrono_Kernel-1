@@ -270,7 +270,8 @@ static struct mcde_port port_tvout1 = {
 };
 
 static struct ab8500_display_platform_data ab8500_display_pdata = {
-	.denc_regulator_id = "v-tvout",
+	.nr_regulators = 2,
+	.regulator_id  = {"v-tvout", "v-ab8500-AV-switch"},
 	.rgb_2_yCbCr_transform = {
 		.matrix = {
 			{0x42, 0x81, 0x19},
@@ -321,7 +322,7 @@ failed:
 	return res;
 }
 
-static struct mcde_display_device tvout_ab8500_display = {
+struct mcde_display_device tvout_ab8500_display = {
 	.name = "mcde_tv_ab8500",
 	.id = TERTIARY_DISPLAY_ID,
 	.port = &port_tvout1,
@@ -381,6 +382,7 @@ struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	.reset_gpio = 0,
 	.reset_delay = 1,
 	.regulator_id = NULL, /* TODO: "display_main" */
+	.cvbs_regulator_id = "v-av8100-AV-switch",
 	.ddb_id = 1,
 	.rgb_2_yCbCr_transform = {
 		.matrix = {
@@ -392,7 +394,7 @@ struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	}
 };
 
-static struct mcde_display_device av8100_hdmi = {
+struct mcde_display_device av8100_hdmi = {
 	.name = "av8100_hdmi",
 	.id = TERTIARY_DISPLAY_ID,
 	.port = &port2,

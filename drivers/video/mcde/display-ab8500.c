@@ -23,7 +23,8 @@
 struct display_driver_data {
 	struct ab8500_denc_conf denc_conf;
 	struct platform_device *denc_dev;
-	struct regulator *denc_regulator;
+	int nr_regulators;
+	struct regulator **regulator;
 };
 
 static int try_video_mode(struct mcde_display_device *ddev,
@@ -38,6 +39,7 @@ static int display_update(struct mcde_display_device *ddev);
 static int __devinit ab8500_probe(struct mcde_display_device *ddev)
 {
 	int ret = 0;
+	int i;
 	struct ab8500_display_platform_data *pdata = ddev->dev.platform_data;
 	struct display_driver_data *driver_data;
 
@@ -66,17 +68,24 @@ static int __devinit ab8500_probe(struct mcde_display_device *ddev)
 		goto dev_get_failed;
 	}
 
-	if (pdata->denc_regulator_id) {
-		driver_data->denc_regulator = regulator_get(&ddev->dev,
-						pdata->denc_regulator_id);
-		if (IS_ERR(driver_data->denc_regulator)) {
-			ret = PTR_ERR(driver_data->denc_regulator);
+	driver_data->regulator = kzalloc(pdata->nr_regulators *
+					sizeof(struct regulator *), GFP_KERNEL);
+	if (!driver_data->regulator) {
+		dev_err(&ddev->dev, "Failed to allocate regulator list\n");
+		ret = -ENOMEM;
+		goto reg_alloc_failed;
+	}
+	for (i = 0; i < pdata->nr_regulators; i++) {
+		driver_data->regulator[i] = regulator_get(&ddev->dev,
+						pdata->regulator_id[i]);
+		if (IS_ERR(driver_data->regulator[i])) {
+			ret = PTR_ERR(driver_data->regulator[i]);
 			dev_warn(&ddev->dev, "%s:Failed to get regulator %s\n",
-					__func__, pdata->denc_regulator_id);
-			driver_data->denc_regulator = NULL;
+					__func__, pdata->regulator_id[i]);
 			goto regulator_get_failed;
 		}
 	}
+	driver_data->nr_regulators = pdata->nr_regulators;
 
 	dev_set_drvdata(&ddev->dev, driver_data);
 
@@ -90,9 +99,14 @@ static int __devinit ab8500_probe(struct mcde_display_device *ddev)
 	return 0;
 
 regulator_get_failed:
+	for (i--; i >= 0; i--)
+		regulator_put(driver_data->regulator[i]);
+	kfree(driver_data->regulator);
+	driver_data->regulator = NULL;
+reg_alloc_failed:
 	ab8500_denc_put_device(driver_data->denc_dev);
 dev_get_failed:
-	kzfree(driver_data);
+	kfree(driver_data);
 	return ret;
 }
 
@@ -103,10 +117,16 @@ static int __devexit ab8500_remove(struct mcde_display_device *ddev)
 
 	ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);
 
-	if (driver_data->denc_regulator)
-		regulator_put(driver_data->denc_regulator);
+	if (driver_data->regulator) {
+		int i;
+		for (i = driver_data->nr_regulators - 1; i >= 0; i--)
+			regulator_put(driver_data->regulator[i]);
+		kfree(driver_data->regulator);
+		driver_data->regulator = NULL;
+		driver_data->nr_regulators = 0;
+	}
 	ab8500_denc_put_device(driver_data->denc_dev);
-	kzfree(driver_data);
+	kfree(driver_data);
 	return 0;
 }
 
@@ -306,6 +326,7 @@ static int set_power_mode(struct mcde_display_device *ddev,
 	enum mcde_display_power_mode power_mode)
 {
 	int ret;
+	int i;
 	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
 	AB8500_DISP_TRACE;
 
@@ -318,10 +339,14 @@ static int set_power_mode(struct mcde_display_device *ddev,
 			if (ret)
 				goto error;
 		}
-		if (driver_data->denc_regulator) {
-			ret = regulator_enable(driver_data->denc_regulator);
-			if (ret != 0)
-				goto error;
+		if (driver_data->regulator) {
+			for (i = 0; i < driver_data->nr_regulators; i++) {
+				ret = regulator_enable(
+						driver_data->regulator[i]);
+				if (ret)
+					goto off_to_standby_failed;
+				dev_dbg(&ddev->dev, "regulator %d on\n", i);
+			}
 		}
 		ab8500_denc_power_up(driver_data->denc_dev);
 		ab8500_denc_reset(driver_data->denc_dev, true);
@@ -343,23 +368,38 @@ static int set_power_mode(struct mcde_display_device *ddev,
 	/* STANDBY -> OFF */
 	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
 					power_mode == MCDE_DISPLAY_PM_OFF) {
+		bool error = false;
 		dev_dbg(&ddev->dev, "standby -> off\n");
-		memset(&(ddev->video_mode), 0, sizeof(struct mcde_video_mode));
-		if (driver_data->denc_regulator) {
-			ret = regulator_disable(driver_data->denc_regulator);
-			if (ret != 0)
-				goto error;
+		if (driver_data->regulator) {
+			for (i = 0; i < driver_data->nr_regulators; i++) {
+				ret = regulator_disable(
+						driver_data->regulator[i]);
+				/* continue in case of an error */
+				error |= (ret != 0);
+				dev_dbg(&ddev->dev, "regulator %d off\n", i);
+			}
 		}
 		if (ddev->platform_disable) {
 			ret = ddev->platform_disable(ddev);
-			if (ret)
-				goto error;
+			error |= (ret != 0);
 		}
+		if (error) {
+			/* the latest error code is returned */
+			goto error;
+		}
+		memset(&(ddev->video_mode), 0, sizeof(struct mcde_video_mode));
 		ab8500_denc_power_down(driver_data->denc_dev);
 		ddev->power_mode = MCDE_DISPLAY_PM_OFF;
 	}
 
 	return 0;
+
+	/* In case of an error, try to leave in off-state */
+off_to_standby_failed:
+	for (i--; i >= 0; i--)
+		regulator_disable(driver_data->regulator[i]);
+	ddev->platform_disable(ddev);
+
 error:
 	dev_err(&ddev->dev, "Failed to set power mode");
 	return ret;

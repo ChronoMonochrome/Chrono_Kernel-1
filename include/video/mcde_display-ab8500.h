@@ -15,8 +15,9 @@
 
 struct ab8500_display_platform_data {
 	/* Platform info */
-	const char *denc_regulator_id;
 	struct mcde_col_convert rgb_2_yCbCr_transform;
+	int nr_regulators;
+	const char *regulator_id[];
 };
 
 #endif /* __DISPLAY_AB8500__H__*/
