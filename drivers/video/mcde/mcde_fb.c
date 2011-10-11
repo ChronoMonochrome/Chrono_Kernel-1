@@ -209,9 +209,10 @@ static int init_var_fmt(struct fb_var_screeninfo *var,
 static int reallocate_fb_mem(struct fb_info *fbi, u32 size)
 {
 	struct mcde_fb *mfb = to_mcde_fb(fbi);
-	dma_addr_t paddr;
 	void *vaddr;
 	struct hwmem_alloc *alloc;
+	struct hwmem_mem_chunk mem_chunk;
+	size_t num_mem_chunks = 1;
 	int name;
 
 	size = PAGE_ALIGN(size);
@@ -228,7 +229,7 @@ static int reallocate_fb_mem(struct fb_info *fbi, u32 size)
 			MCDE_FB_VYRES_MAX;
 #endif
 
-		alloc = hwmem_alloc(size, HWMEM_ALLOC_BUFFERED,
+		alloc = hwmem_alloc(size, HWMEM_ALLOC_HINT_WRITE_COMBINE,
 				(HWMEM_ACCESS_READ  | HWMEM_ACCESS_WRITE |
 					HWMEM_ACCESS_IMPORT),
 				HWMEM_MEM_CONTIGUOUS_SYS);
@@ -247,7 +248,7 @@ static int reallocate_fb_mem(struct fb_info *fbi, u32 size)
 			hwmem_release(mfb->alloc);
 		}
 
-		(void)hwmem_pin(alloc, &paddr, NULL);
+		(void)hwmem_pin(alloc, &mem_chunk, &num_mem_chunks);
 
 		vaddr = hwmem_kmap(alloc);
 		if (vaddr == NULL) {
@@ -260,7 +261,7 @@ static int reallocate_fb_mem(struct fb_info *fbi, u32 size)
 		mfb->alloc_name = name;
 
 		fbi->screen_base = vaddr;
-		fbi->fix.smem_start = paddr;
+		fbi->fix.smem_start = mem_chunk.paddr;
 
 #ifdef CONFIG_MCDE_FB_AVOID_REALLOC
 		size = old_size;

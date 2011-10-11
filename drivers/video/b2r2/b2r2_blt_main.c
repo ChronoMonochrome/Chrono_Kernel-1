@@ -2241,11 +2241,11 @@ static void set_up_hwmem_region(struct b2r2_blt_img *img,
 		int img_fmt_bpp = b2r2_get_fmt_bpp(img->fmt);
 		u32 img_pitch = b2r2_get_img_pitch(img);
 
-		region->offset = (uint32_t)(img->buf.offset + (rect->y *
+		region->offset = (u32)(img->buf.offset + (rect->y *
 								img_pitch));
-		region->count = (uint32_t)rect->height;
-		region->start = (uint32_t)((rect->x * img_fmt_bpp) / 8);
-		region->end = (uint32_t)b2r2_div_round_up(
+		region->count = (u32)rect->height;
+		region->start = (u32)((rect->x * img_fmt_bpp) / 8);
+		region->end = (u32)b2r2_div_round_up(
 				(rect->x + rect->width) * img_fmt_bpp, 8);
 		region->size = img_pitch;
 	} else {
@@ -2255,11 +2255,11 @@ static void set_up_hwmem_region(struct b2r2_blt_img *img,
 		 * synching. Pixel interleaved YCbCr formats should be quite
 		 * easy, just align start and stop points on 2.
 		 */
-		region->offset = (uint32_t)img->buf.offset;
+		region->offset = (u32)img->buf.offset;
 		region->count = 1;
 		region->start = 0;
-		region->end = (uint32_t)img_size;
-		region->size = (uint32_t)img_size;
+		region->end = (u32)img_size;
+		region->size = (u32)img_size;
 	}
 }
 
@@ -2272,6 +2272,8 @@ static int resolve_hwmem(struct b2r2_blt_img *img,
 	enum hwmem_mem_type mem_type;
 	enum hwmem_access access;
 	enum hwmem_access required_access;
+	struct hwmem_mem_chunk mem_chunk;
+	size_t mem_chunk_length = 1;
 	struct hwmem_region region;
 
 	resolved_buf->hwmem_alloc =
@@ -2308,13 +2310,14 @@ static int resolve_hwmem(struct b2r2_blt_img *img,
 		goto size_check_failed;
 	}
 
-	return_value = hwmem_pin(resolved_buf->hwmem_alloc,
-				&resolved_buf->file_physical_start, NULL);
+	return_value = hwmem_pin(resolved_buf->hwmem_alloc, &mem_chunk,
+							 &mem_chunk_length);
 	if (return_value < 0) {
 		b2r2_log_info("%s: hwmem_pin failed, "
 				"error code: %i\n", __func__, return_value);
 		goto pin_failed;
 	}
+	resolved_buf->file_physical_start = mem_chunk.paddr;
 
 	set_up_hwmem_region(img, rect_2b_used, &region);
 	return_value = hwmem_set_domain(resolved_buf->hwmem_alloc,
