@@ -51,7 +51,7 @@ u16 reboot_reason_code(const char *cmd)
 	}
 
 	/* No valid reboot reason found */
-	return SW_RESET_CRASH;
+	return SW_RESET_NO_ARGUMENT;
 }
 
 /*
