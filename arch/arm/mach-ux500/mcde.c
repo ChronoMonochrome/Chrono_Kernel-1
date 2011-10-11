@@ -53,12 +53,12 @@ static struct resource mcde_resources[] = {
 
 static int mcde_platform_enable(void)
 {
-	return prcmu_enable_mcde();
+	return prcmu_enable_dsipll();
 }
 
 static int mcde_platform_disable(void)
 {
-	return prcmu_disable_mcde();
+	return prcmu_disable_dsipll();
 }
 
 static void dev_release_noop(struct device *dev)
