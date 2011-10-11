@@ -83,8 +83,6 @@ static const u32 outer_clean_breakpoint = 68041 + (347363 - 68041) * 0.666;
 /* 485414 */
 static const u32 outer_flush_breakpoint = 68041 + (694727 - 68041) * 0.666;
 
-static bool is_wt(enum hwmem_alloc_flags cache_settings);
-
 static void __clean_inner_dcache_all(void *param);
 static void clean_inner_dcache_all(void);
 
@@ -96,15 +94,48 @@ static bool is_cache_exclusive(void);
 enum hwmem_alloc_flags cachi_get_cache_settings(
 			enum hwmem_alloc_flags requested_cache_settings)
 {
-	enum hwmem_alloc_flags cache_settings =
-		requested_cache_settings & ~HWMEM_ALLOC_CACHE_HINT_MASK;
+	static const u32 CACHE_ON_FLAGS_MASK = HWMEM_ALLOC_HINT_CACHED |
+		HWMEM_ALLOC_HINT_CACHE_WB | HWMEM_ALLOC_HINT_CACHE_WT |
+		HWMEM_ALLOC_HINT_CACHE_NAOW | HWMEM_ALLOC_HINT_CACHE_AOW |
+				HWMEM_ALLOC_HINT_INNER_AND_OUTER_CACHE |
+					HWMEM_ALLOC_HINT_INNER_CACHE_ONLY;
 
-	if ((cache_settings & HWMEM_ALLOC_CACHED) == HWMEM_ALLOC_CACHED) {
-		if (is_wt(requested_cache_settings))
-			cache_settings |= HWMEM_ALLOC_CACHE_HINT_WT;
-		else
-			cache_settings |= HWMEM_ALLOC_CACHE_HINT_WB;
-	}
+	enum hwmem_alloc_flags cache_settings;
+
+	if (!(requested_cache_settings & CACHE_ON_FLAGS_MASK) &&
+		requested_cache_settings & (HWMEM_ALLOC_HINT_NO_WRITE_COMBINE |
+		HWMEM_ALLOC_HINT_UNCACHED | HWMEM_ALLOC_HINT_WRITE_COMBINE))
+		/*
+		 * We never use uncached as it's extremely slow and there is
+		 * no scenario where it would be better than buffered memory.
+		 */
+		return HWMEM_ALLOC_HINT_WRITE_COMBINE;
+
+	/*
+	 * The user has specified cached or nothing at all, both are treated as
+	 * cached.
+	 */
+	cache_settings = (requested_cache_settings &
+		 ~(HWMEM_ALLOC_HINT_UNCACHED |
+		HWMEM_ALLOC_HINT_NO_WRITE_COMBINE |
+		HWMEM_ALLOC_HINT_INNER_CACHE_ONLY |
+		HWMEM_ALLOC_HINT_CACHE_NAOW)) |
+		HWMEM_ALLOC_HINT_WRITE_COMBINE | HWMEM_ALLOC_HINT_CACHED |
+		HWMEM_ALLOC_HINT_CACHE_AOW |
+		HWMEM_ALLOC_HINT_INNER_AND_OUTER_CACHE;
+	if (!(cache_settings & (HWMEM_ALLOC_HINT_CACHE_WB |
+						HWMEM_ALLOC_HINT_CACHE_WT)))
+		cache_settings |= HWMEM_ALLOC_HINT_CACHE_WB;
+	/*
+	 * On ARMv7 "alloc on write" is just a hint so we need to assume the
+	 * worst case ie "alloc on write". We would however like to remember
+	 * the requested "alloc on write" setting so that we can pass it on to
+	 * the hardware, we use the reserved bit in the alloc flags to do that.
+	 */
+	if (requested_cache_settings & HWMEM_ALLOC_HINT_CACHE_AOW)
+		cache_settings |= HWMEM_ALLOC_RESERVED_CHI;
+	else
+		cache_settings &= ~HWMEM_ALLOC_RESERVED_CHI;
 
 	return cache_settings;
 }
@@ -112,17 +143,21 @@ enum hwmem_alloc_flags cachi_get_cache_settings(
 void cachi_set_pgprot_cache_options(enum hwmem_alloc_flags cache_settings,
 							pgprot_t *pgprot)
 {
-	if ((cache_settings & HWMEM_ALLOC_CACHED) == HWMEM_ALLOC_CACHED) {
-		if (is_wt(cache_settings))
+	if (cache_settings & HWMEM_ALLOC_HINT_CACHED) {
+		if (cache_settings & HWMEM_ALLOC_HINT_CACHE_WT)
 			*pgprot = __pgprot_modify(*pgprot, L_PTE_MT_MASK,
 							L_PTE_MT_WRITETHROUGH);
-		else
-			*pgprot = __pgprot_modify(*pgprot, L_PTE_MT_MASK,
-							L_PTE_MT_WRITEBACK);
-	} else if (cache_settings & HWMEM_ALLOC_BUFFERED)
+		else {
+			if (cache_settings & HWMEM_ALLOC_RESERVED_CHI)
+				*pgprot = __pgprot_modify(*pgprot,
+					L_PTE_MT_MASK, L_PTE_MT_WRITEALLOC);
+			else
+				*pgprot = __pgprot_modify(*pgprot,
+					L_PTE_MT_MASK, L_PTE_MT_WRITEBACK);
+		}
+	} else {
 		*pgprot = pgprot_writecombine(*pgprot);
-	else
-		*pgprot = pgprot_noncached(*pgprot);
+	}
 }
 
 void drain_cpu_write_buf(void)
@@ -147,8 +182,9 @@ void clean_cpu_dcache(void *vaddr, u32 paddr, u32 length, bool inner_only,
 		/* Inner clean range */
 		dmac_map_area(vaddr, length, DMA_TO_DEVICE);
 		*cleaned_everything = false;
-	} else
+	} else {
 		clean_inner_dcache_all();
+	}
 
 	if (!inner_only) {
 		/*
@@ -160,8 +196,9 @@ void clean_cpu_dcache(void *vaddr, u32 paddr, u32 length, bool inner_only,
 		if (length < outer_flush_breakpoint) {
 			outer_cache.clean_range(paddr, paddr + length);
 			*cleaned_everything = false;
-		} else
+		} else {
 			outer_cache.flush_all();
+		}
 	}
 }
 
@@ -214,22 +251,25 @@ void flush_cpu_dcache(void *vaddr, u32 paddr, u32 length, bool inner_only,
 			/* Inner clean range */
 			dmac_map_area(vaddr, length, DMA_TO_DEVICE);
 			*flushed_everything = false;
-		} else
+		} else {
 			clean_inner_dcache_all();
+		}
 
 		if (length < outer_flush_breakpoint) {
 			outer_cache.flush_range(paddr, paddr + length);
 			*flushed_everything = false;
-		} else
+		} else {
 			outer_cache.flush_all();
+		}
 	}
 
 	if (length < inner_flush_breakpoint) {
 		/* Inner flush range */
 		dmac_flush_range(vaddr, (void *)((u32)vaddr + length));
 		*flushed_everything = false;
-	} else
+	} else {
 		flush_inner_dcache_all();
+	}
 }
 
 bool speculative_data_prefetch(void)
@@ -245,16 +285,6 @@ u32 get_dcache_granularity(void)
 /*
  * Local functions
  */
-
-static bool is_wt(enum hwmem_alloc_flags cache_settings)
-{
-	u32 cache_hints = cache_settings & HWMEM_ALLOC_CACHE_HINT_MASK;
-	if (cache_hints == HWMEM_ALLOC_CACHE_HINT_WT ||
-		cache_hints == HWMEM_ALLOC_CACHE_HINT_WT_INNER)
-		return true;
-	else
-		return false;
-}
 
 static void __clean_inner_dcache_all(void *param)
 {

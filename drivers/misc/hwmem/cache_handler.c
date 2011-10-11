@@ -65,9 +65,6 @@ static u32 offset_2_paddr(struct cach_buf *buf, u32 offset);
 static u32 align_up(u32 value, u32 alignment);
 static u32 align_down(u32 value, u32 alignment);
 
-static bool is_wb(enum hwmem_alloc_flags cache_settings);
-static bool is_inner_only(enum hwmem_alloc_flags cache_settings);
-
 /*
  * Exported functions
  */
@@ -89,7 +86,7 @@ void cach_set_buf_addrs(struct cach_buf *buf, void* vaddr, u32 paddr)
 	buf->vstart = vaddr;
 	buf->pstart = paddr;
 
-	if (buf->cache_settings & HWMEM_ALLOC_CACHED) {
+	if (buf->cache_settings & HWMEM_ALLOC_HINT_CACHED) {
 		/*
 		 * Keep whatever is in the cache. This way we avoid an
 		 * unnecessary synch if CPU is the first user.
@@ -124,9 +121,9 @@ void cach_set_domain(struct cach_buf *buf, enum hwmem_access access,
 	struct hwmem_region *__region;
 	struct hwmem_region full_region;
 
-	if (region != NULL)
+	if (region != NULL) {
 		__region = region;
-	else {
+	} else {
 		full_region.offset = 0;
 		full_region.count = 1;
 		full_region.start = 0;
@@ -156,27 +153,39 @@ void cach_set_domain(struct cach_buf *buf, enum hwmem_access access,
 enum hwmem_alloc_flags __attribute__((weak)) cachi_get_cache_settings(
 			enum hwmem_alloc_flags requested_cache_settings)
 {
-	enum hwmem_alloc_flags cache_settings =
-		requested_cache_settings & ~HWMEM_ALLOC_CACHE_HINT_MASK;
+	static const u32 CACHE_ON_FLAGS_MASK = HWMEM_ALLOC_HINT_CACHED |
+		HWMEM_ALLOC_HINT_CACHE_WB | HWMEM_ALLOC_HINT_CACHE_WT |
+		HWMEM_ALLOC_HINT_CACHE_NAOW | HWMEM_ALLOC_HINT_CACHE_AOW |
+				HWMEM_ALLOC_HINT_INNER_AND_OUTER_CACHE |
+					HWMEM_ALLOC_HINT_INNER_CACHE_ONLY;
+	/* We don't know the cache setting so we assume worst case. */
+	static const u32 CACHE_SETTING = HWMEM_ALLOC_HINT_WRITE_COMBINE |
+			HWMEM_ALLOC_HINT_CACHED | HWMEM_ALLOC_HINT_CACHE_WB |
+						HWMEM_ALLOC_HINT_CACHE_AOW |
+					HWMEM_ALLOC_HINT_INNER_AND_OUTER_CACHE;
 
-	if ((cache_settings & HWMEM_ALLOC_CACHED) == HWMEM_ALLOC_CACHED) {
-		/*
-		 * If the alloc is cached we'll use the default setting. We
-		 * don't know what this setting is so we have to assume the
-		 * worst case, ie write back inner and outer.
-		 */
-		cache_settings |= HWMEM_ALLOC_CACHE_HINT_WB;
-	}
-
-	return cache_settings;
+	if (requested_cache_settings & CACHE_ON_FLAGS_MASK)
+		return CACHE_SETTING;
+	else if (requested_cache_settings & HWMEM_ALLOC_HINT_WRITE_COMBINE ||
+		(requested_cache_settings & HWMEM_ALLOC_HINT_UNCACHED &&
+		 !(requested_cache_settings &
+					HWMEM_ALLOC_HINT_NO_WRITE_COMBINE)))
+		return HWMEM_ALLOC_HINT_WRITE_COMBINE;
+	else if (requested_cache_settings &
+					(HWMEM_ALLOC_HINT_NO_WRITE_COMBINE |
+						HWMEM_ALLOC_HINT_UNCACHED))
+		return 0;
+	else
+		/* Nothing specified, use cached */
+		return CACHE_SETTING;
 }
 
 void __attribute__((weak)) cachi_set_pgprot_cache_options(
 		enum hwmem_alloc_flags cache_settings, pgprot_t *pgprot)
 {
-	if ((cache_settings & HWMEM_ALLOC_CACHED) == HWMEM_ALLOC_CACHED)
+	if (cache_settings & HWMEM_ALLOC_HINT_CACHED)
 		*pgprot = *pgprot; /* To silence compiler and checkpatch */
-	else if (cache_settings & HWMEM_ALLOC_BUFFERED)
+	else if (cache_settings & HWMEM_ALLOC_HINT_WRITE_COMBINE)
 		*pgprot = pgprot_writecombine(*pgprot);
 	else
 		*pgprot = pgprot_noncached(*pgprot);
@@ -197,23 +206,32 @@ static void sync_buf_pre_cpu(struct cach_buf *buf, enum hwmem_access access,
 	if (!write && !read)
 		return;
 
-	if ((buf->cache_settings & HWMEM_ALLOC_CACHED) == HWMEM_ALLOC_CACHED) {
+	if (buf->cache_settings & HWMEM_ALLOC_HINT_CACHED) {
 		struct cach_range region_range;
 
 		region_2_range(region, buf->size, &region_range);
 
-		if (read || (write && is_wb(buf->cache_settings)))
+		if (read || (write && buf->cache_settings &
+						HWMEM_ALLOC_HINT_CACHE_WB))
 			/* Perform defered invalidates */
 			invalidate_cpu_cache(buf, &region_range);
-		if (read)
+		if (read || (write && buf->cache_settings &
+						HWMEM_ALLOC_HINT_CACHE_AOW))
 			expand_range(&buf->range_in_cpu_cache, &region_range);
-		if (write && is_wb(buf->cache_settings)) {
-			expand_range(&buf->range_in_cpu_cache, &region_range);
+		if (write && buf->cache_settings & HWMEM_ALLOC_HINT_CACHE_WB) {
+			struct cach_range dirty_range_addition;
+
+			if (buf->cache_settings & HWMEM_ALLOC_HINT_CACHE_AOW)
+				dirty_range_addition = region_range;
+			else
+				intersect_range(&buf->range_in_cpu_cache,
+					&region_range, &dirty_range_addition);
+
 			expand_range(&buf->range_dirty_in_cpu_cache,
-								&region_range);
+							&dirty_range_addition);
 		}
 	}
-	if (buf->cache_settings & HWMEM_ALLOC_BUFFERED) {
+	if (buf->cache_settings & HWMEM_ALLOC_HINT_WRITE_COMBINE) {
 		if (write)
 			buf->in_cpu_write_buf = true;
 	}
@@ -243,8 +261,9 @@ static void sync_buf_post_cpu(struct cach_buf *buf,
 								&intersection);
 
 			clean_cpu_cache(buf, &region_range);
-		} else
+		} else {
 			flush_cpu_cache(buf, &region_range);
+		}
 	}
 	if (read)
 		clean_cpu_cache(buf, &region_range);
@@ -277,13 +296,14 @@ static void invalidate_cpu_cache(struct cach_buf *buf, struct cach_range *range)
 				offset_2_vaddr(buf, intersection.start),
 				offset_2_paddr(buf, intersection.start),
 				range_length(&intersection),
-				is_inner_only(buf->cache_settings),
+				buf->cache_settings &
+					HWMEM_ALLOC_HINT_INNER_CACHE_ONLY,
 							&flushed_everything);
 
 		if (flushed_everything) {
 			null_range(&buf->range_invalid_in_cpu_cache);
 			null_range(&buf->range_dirty_in_cpu_cache);
-		} else
+		} else {
 			/*
 			 * No need to shrink range_in_cpu_cache as invalidate
 			 * is only used when we can't keep track of what's in
@@ -291,6 +311,7 @@ static void invalidate_cpu_cache(struct cach_buf *buf, struct cach_range *range)
 			 */
 			shrink_range(&buf->range_invalid_in_cpu_cache,
 								&intersection);
+		}
 	}
 }
 
@@ -309,7 +330,8 @@ static void clean_cpu_cache(struct cach_buf *buf, struct cach_range *range)
 				offset_2_vaddr(buf, intersection.start),
 				offset_2_paddr(buf, intersection.start),
 				range_length(&intersection),
-				is_inner_only(buf->cache_settings),
+				buf->cache_settings &
+					HWMEM_ALLOC_HINT_INNER_CACHE_ONLY,
 							&cleaned_everything);
 
 		if (cleaned_everything)
@@ -334,7 +356,8 @@ static void flush_cpu_cache(struct cach_buf *buf, struct cach_range *range)
 				offset_2_vaddr(buf, intersection.start),
 				offset_2_paddr(buf, intersection.start),
 				range_length(&intersection),
-				is_inner_only(buf->cache_settings),
+				buf->cache_settings &
+					HWMEM_ALLOC_HINT_INNER_CACHE_ONLY,
 							&flushed_everything);
 
 		if (flushed_everything) {
@@ -484,24 +507,4 @@ static u32 align_down(u32 value, u32 alignment)
 		return value;
 
 	return value - remainder;
-}
-
-static bool is_wb(enum hwmem_alloc_flags cache_settings)
-{
-	u32 cache_hints = cache_settings & HWMEM_ALLOC_CACHE_HINT_MASK;
-	if (cache_hints == HWMEM_ALLOC_CACHE_HINT_WB ||
-		cache_hints == HWMEM_ALLOC_CACHE_HINT_WB_INNER)
-		return true;
-	else
-		return false;
-}
-
-static bool is_inner_only(enum hwmem_alloc_flags cache_settings)
-{
-	u32 cache_hints = cache_settings & HWMEM_ALLOC_CACHE_HINT_MASK;
-	if (cache_hints == HWMEM_ALLOC_CACHE_HINT_WT_INNER ||
-		cache_hints == HWMEM_ALLOC_CACHE_HINT_WB_INNER)
-		return true;
-	else
-		return false;
 }

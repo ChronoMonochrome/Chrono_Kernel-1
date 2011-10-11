@@ -1,10 +1,10 @@
 /*
- * Copyright (C) ST-Ericsson AB 2010
+ * Copyright (C) ST-Ericsson SA 2010
  *
  * Hardware memory driver, hwmem
  *
- * Author: Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>
- * for ST-Ericsson.
+ * Author: Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+ * Johan Mossberg <johan.xx.mossberg@stericsson.com> for ST-Ericsson.
  *
  * License terms: GNU General Public License (GPL), version 2.
  */
@@ -46,7 +46,7 @@ struct hwmem_alloc {
 	u32 paddr;
 	void *kaddr;
 	u32 size;
-	u32 name;
+	s32 name;
 
 	/* Access control */
 	enum hwmem_access default_access;
@@ -446,12 +446,19 @@ int hwmem_set_domain(struct hwmem_alloc *alloc, enum hwmem_access access,
 }
 EXPORT_SYMBOL(hwmem_set_domain);
 
-int hwmem_pin(struct hwmem_alloc *alloc, uint32_t *phys_addr,
-					uint32_t *scattered_phys_addrs)
+int hwmem_pin(struct hwmem_alloc *alloc, struct hwmem_mem_chunk *mem_chunks,
+						u32 *mem_chunks_length)
 {
+	if (*mem_chunks_length < 1) {
+		*mem_chunks_length = 1;
+		return -ENOSPC;
+	}
+
 	mutex_lock(&lock);
 
-	*phys_addr = alloc->paddr;
+	mem_chunks[0].paddr = alloc->paddr;
+	mem_chunks[0].size = alloc->size;
+	*mem_chunks_length = 1;
 
 	mutex_unlock(&lock);
 
@@ -492,7 +499,7 @@ int hwmem_mmap(struct hwmem_alloc *alloc, struct vm_area_struct *vma)
 		goto illegal_access;
 	}
 
-	if (vma_size > (unsigned long)alloc->size) {
+	if (vma_size > alloc->size) {
 		ret = -EINVAL;
 		goto illegal_size;
 	}
@@ -590,14 +597,17 @@ error_get_pid:
 }
 EXPORT_SYMBOL(hwmem_set_access);
 
-void hwmem_get_info(struct hwmem_alloc *alloc, uint32_t *size,
+void hwmem_get_info(struct hwmem_alloc *alloc, u32 *size,
 	enum hwmem_mem_type *mem_type, enum hwmem_access *access)
 {
 	mutex_lock(&lock);
 
-	*size = alloc->size;
-	*mem_type = HWMEM_MEM_CONTIGUOUS_SYS;
-	*access = get_access(alloc);
+	if (size != NULL)
+		*size = alloc->size;
+	if (mem_type != NULL)
+		*mem_type = HWMEM_MEM_CONTIGUOUS_SYS;
+	if (access != NULL)
+		*access = get_access(alloc);
 
 	mutex_unlock(&lock);
 }
@@ -765,6 +775,14 @@ static int __devinit hwmem_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct hwmem_platform_data *platform_data = pdev->dev.platform_data;
+
+	if (sizeof(int) != 4 || sizeof(phys_addr_t) < 4 ||
+				sizeof(void *) < 4 || sizeof(size_t) != 4) {
+		dev_err(&pdev->dev, "sizeof(int) != 4 || sizeof(phys_addr_t)"
+			" < 4 || sizeof(void *) < 4 || sizeof(size_t) !="
+								" 4\n");
+		return -ENOMSG;
+	}
 
 	if (hwdev || platform_data->size == 0 ||
 		platform_data->start != PAGE_ALIGN(platform_data->start) ||

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) ST-Ericsson AB 2010
+ * Copyright (C) ST-Ericsson SA 2010
  *
  * Hardware memory driver, hwmem
  *
@@ -20,12 +20,6 @@
 #include <linux/hwmem.h>
 #include <linux/device.h>
 #include <linux/sched.h>
-
-/*
- * TODO:
- * Count pin unpin at this level to ensure applications can't interfer
- * with each other.
- */
 
 static int hwmem_open(struct inode *inode, struct file *file);
 static int hwmem_ioctl_mmap(struct file *file, struct vm_area_struct *vma);
@@ -56,7 +50,7 @@ struct hwmem_file {
 	struct hwmem_alloc *fd_alloc; /* Ref counted */
 };
 
-static int create_id(struct hwmem_file *hwfile, struct hwmem_alloc *alloc)
+static s32 create_id(struct hwmem_file *hwfile, struct hwmem_alloc *alloc)
 {
 	int id, ret;
 
@@ -72,42 +66,42 @@ static int create_id(struct hwmem_file *hwfile, struct hwmem_alloc *alloc)
 	}
 
 	/*
-	 * IDR always returns the lowest free id so the only way we can fail
-	 * here is if hwfile has 2^19 - 1 (524287) allocations.
+	 * IDR always returns the lowest free id so there is no wrapping issue
+	 * because of this.
 	 */
-	if (id >= 1 << (31 - PAGE_SHIFT)) {
+	if (id >= (s32)1 << (31 - PAGE_SHIFT)) {
 		dev_err(hwmem_device.this_device, "Out of IDs!\n");
 		idr_remove(&hwfile->idr, id);
 		return -ENOMSG;
 	}
 
-	return id << PAGE_SHIFT;
+	return (s32)id << PAGE_SHIFT;
 }
 
-static void remove_id(struct hwmem_file *hwfile, int id)
+static void remove_id(struct hwmem_file *hwfile, s32 id)
 {
 	idr_remove(&hwfile->idr, id >> PAGE_SHIFT);
 }
 
-static struct hwmem_alloc *resolve_id(struct hwmem_file *hwfile, int id)
+static struct hwmem_alloc *resolve_id(struct hwmem_file *hwfile, s32 id)
 {
 	struct hwmem_alloc *alloc;
 
 	alloc = id ? idr_find(&hwfile->idr, id >> PAGE_SHIFT) :
-			hwfile->fd_alloc;
+							hwfile->fd_alloc;
 	if (alloc == NULL)
 		alloc = ERR_PTR(-EINVAL);
 
 	return alloc;
 }
 
-static int alloc(struct hwmem_file *hwfile, struct hwmem_alloc_request *req)
+static s32 alloc(struct hwmem_file *hwfile, struct hwmem_alloc_request *req)
 {
-	int ret = 0;
+	s32 ret = 0;
 	struct hwmem_alloc *alloc;
 
 	alloc = hwmem_alloc(req->size, req->flags, req->default_access,
-			req->mem_type);
+								req->mem_type);
 	if (IS_ERR(alloc))
 		return PTR_ERR(alloc);
 
@@ -123,10 +117,10 @@ static int alloc_fd(struct hwmem_file *hwfile, struct hwmem_alloc_request *req)
 	struct hwmem_alloc *alloc;
 
 	if (hwfile->fd_alloc)
-		return -EBUSY;
+		return -EINVAL;
 
 	alloc = hwmem_alloc(req->size, req->flags, req->default_access,
-			req->mem_type);
+								req->mem_type);
 	if (IS_ERR(alloc))
 		return PTR_ERR(alloc);
 
@@ -139,6 +133,9 @@ static int release(struct hwmem_file *hwfile, s32 id)
 {
 	struct hwmem_alloc *alloc;
 
+	if (id == 0)
+		return -EINVAL;
+
 	alloc = resolve_id(hwfile, id);
 	if (IS_ERR(alloc))
 		return PTR_ERR(alloc);
@@ -149,7 +146,7 @@ static int release(struct hwmem_file *hwfile, s32 id)
 	return 0;
 }
 
-static int hwmem_ioctl_set_domain(struct hwmem_file *hwfile,
+static int set_cpu_domain(struct hwmem_file *hwfile,
 					struct hwmem_set_domain_request *req)
 {
 	struct hwmem_alloc *alloc;
@@ -158,10 +155,12 @@ static int hwmem_ioctl_set_domain(struct hwmem_file *hwfile,
 	if (IS_ERR(alloc))
 		return PTR_ERR(alloc);
 
-	return hwmem_set_domain(alloc, req->access, req->domain, &req->region);
+	return hwmem_set_domain(alloc, req->access, HWMEM_DOMAIN_CPU,
+					(struct hwmem_region *)&req->region);
 }
 
-static int pin(struct hwmem_file *hwfile, struct hwmem_pin_request *req)
+static int set_sync_domain(struct hwmem_file *hwfile,
+					struct hwmem_set_domain_request *req)
 {
 	struct hwmem_alloc *alloc;
 
@@ -169,7 +168,33 @@ static int pin(struct hwmem_file *hwfile, struct hwmem_pin_request *req)
 	if (IS_ERR(alloc))
 		return PTR_ERR(alloc);
 
-	return hwmem_pin(alloc, &req->phys_addr, req->scattered_addrs);
+	return hwmem_set_domain(alloc, req->access, HWMEM_DOMAIN_SYNC,
+					(struct hwmem_region *)&req->region);
+}
+
+static int pin(struct hwmem_file *hwfile, struct hwmem_pin_request *req)
+{
+	int ret;
+	struct hwmem_alloc *alloc;
+	enum hwmem_mem_type mem_type;
+	struct hwmem_mem_chunk mem_chunk;
+	size_t mem_chunk_length = 1;
+
+	alloc = resolve_id(hwfile, req->id);
+	if (IS_ERR(alloc))
+		return PTR_ERR(alloc);
+
+	hwmem_get_info(alloc, NULL, &mem_type, NULL);
+	if (mem_type != HWMEM_MEM_CONTIGUOUS_SYS)
+		return -EINVAL;
+
+	ret = hwmem_pin(alloc, &mem_chunk, &mem_chunk_length);
+	if (ret < 0)
+		return ret;
+
+	req->phys_addr = mem_chunk.paddr;
+
+	return 0;
 }
 
 static int unpin(struct hwmem_file *hwfile, s32 id)
@@ -211,13 +236,10 @@ static int get_info(struct hwmem_file *hwfile,
 	return 0;
 }
 
-static int export(struct hwmem_file *hwfile, s32 id)
+static s32 export(struct hwmem_file *hwfile, s32 id)
 {
-	int ret;
+	s32 ret;
 	struct hwmem_alloc *alloc;
-
-	uint32_t size;
-	enum hwmem_mem_type mem_type;
 	enum hwmem_access access;
 
 	alloc = resolve_id(hwfile, id);
@@ -234,26 +256,20 @@ static int export(struct hwmem_file *hwfile, s32 id)
 	 * security as the process already has access to the buffer (otherwise
 	 * it would not be able to get here).
 	 */
-	hwmem_get_info(alloc, &size, &mem_type, &access);
+	hwmem_get_info(alloc, NULL, NULL, &access);
 
 	ret = hwmem_set_access(alloc, (access | HWMEM_ACCESS_IMPORT),
-			task_tgid_nr(current));
+							task_tgid_nr(current));
 	if (ret < 0)
-		goto error;
+		return ret;
 
 	return hwmem_get_name(alloc);
-
-error:
-	return ret;
 }
 
-static int import(struct hwmem_file *hwfile, s32 name)
+static s32 import(struct hwmem_file *hwfile, s32 name)
 {
-	int ret = 0;
+	s32 ret = 0;
 	struct hwmem_alloc *alloc;
-
-	uint32_t size;
-	enum hwmem_mem_type mem_type;
 	enum hwmem_access access;
 
 	alloc = hwmem_resolve_by_name(name);
@@ -261,8 +277,7 @@ static int import(struct hwmem_file *hwfile, s32 name)
 		return PTR_ERR(alloc);
 
 	/* Check access permissions for process */
-	hwmem_get_info(alloc, &size, &mem_type, &access);
-
+	hwmem_get_info(alloc, NULL, NULL, &access);
 	if (!(access & HWMEM_ACCESS_IMPORT)) {
 		ret = -EPERM;
 		goto error;
@@ -270,26 +285,44 @@ static int import(struct hwmem_file *hwfile, s32 name)
 
 	ret = create_id(hwfile, alloc);
 	if (ret < 0)
-		hwmem_release(alloc);
+		goto error;
+
+	return ret;
 
 error:
+	hwmem_release(alloc);
+
 	return ret;
 }
 
 static int import_fd(struct hwmem_file *hwfile, s32 name)
 {
+	int ret;
 	struct hwmem_alloc *alloc;
+	enum hwmem_access access;
 
 	if (hwfile->fd_alloc)
-		return -EBUSY;
+		return -EINVAL;
 
 	alloc = hwmem_resolve_by_name(name);
 	if (IS_ERR(alloc))
 		return PTR_ERR(alloc);
 
+	/* Check access permissions for process */
+	hwmem_get_info(alloc, NULL, NULL, &access);
+	if (!(access & HWMEM_ACCESS_IMPORT)) {
+		ret = -EPERM;
+		goto error;
+	}
+
 	hwfile->fd_alloc = alloc;
 
 	return 0;
+
+error:
+	hwmem_release(alloc);
+
+	return ret;
 }
 
 static int hwmem_open(struct inode *inode, struct file *file)
@@ -315,7 +348,7 @@ static int hwmem_ioctl_mmap(struct file *file, struct vm_area_struct *vma)
 
 	mutex_lock(&hwfile->lock);
 
-	alloc = resolve_id(hwfile, vma->vm_pgoff << PAGE_SHIFT);
+	alloc = resolve_id(hwfile, (s32)vma->vm_pgoff << PAGE_SHIFT);
 	if (IS_ERR(alloc)) {
 		ret = PTR_ERR(alloc);
 		goto out;
@@ -385,23 +418,29 @@ static long hwmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case HWMEM_RELEASE_IOC:
 		ret = release(hwfile, (s32)arg);
 		break;
-	case HWMEM_SET_DOMAIN_IOC:
+	case HWMEM_SET_CPU_DOMAIN_IOC:
 		{
 			struct hwmem_set_domain_request req;
 			if (copy_from_user(&req, (void __user *)arg,
 				sizeof(struct hwmem_set_domain_request)))
 				ret = -EFAULT;
 			else
-				ret = hwmem_ioctl_set_domain(hwfile, &req);
+				ret = set_cpu_domain(hwfile, &req);
+		}
+		break;
+	case HWMEM_SET_SYNC_DOMAIN_IOC:
+		{
+			struct hwmem_set_domain_request req;
+			if (copy_from_user(&req, (void __user *)arg,
+				sizeof(struct hwmem_set_domain_request)))
+				ret = -EFAULT;
+			else
+				ret = set_sync_domain(hwfile, &req);
 		}
 		break;
 	case HWMEM_PIN_IOC:
 		{
 			struct hwmem_pin_request req;
-			/*
-			 * TODO: Validate and copy scattered_addrs. Not a
-			 * problem right now as it's never used.
-			 */
 			if (copy_from_user(&req, (void __user *)arg,
 				sizeof(struct hwmem_pin_request)))
 				ret = -EFAULT;
@@ -468,6 +507,22 @@ static unsigned long hwmem_get_unmapped_area(struct file *file,
 
 int __init hwmem_ioctl_init(void)
 {
+	if (PAGE_SHIFT < 1 || PAGE_SHIFT > 30 || sizeof(size_t) != 4 ||
+		sizeof(int) > 4 || sizeof(enum hwmem_alloc_flags) != 4 ||
+					sizeof(enum hwmem_access) != 4 ||
+					 sizeof(enum hwmem_mem_type) != 4) {
+		dev_err(hwmem_device.this_device, "PAGE_SHIFT < 1 || PAGE_SHIFT"
+			" > 30 || sizeof(size_t) != 4 || sizeof(int) > 4 ||"
+			" sizeof(enum hwmem_alloc_flags) != 4 || sizeof(enum"
+			" hwmem_access) != 4 || sizeof(enum hwmem_mem_type)"
+								" != 4\n");
+		return -ENOMSG;
+	}
+	if (PAGE_SHIFT > 15)
+		dev_warn(hwmem_device.this_device, "Due to the page size only"
+				" %u id:s per file instance are available\n",
+					((u32)1 << (31 - PAGE_SHIFT)) - 1);
+
 	return misc_register(&hwmem_device);
 }
 

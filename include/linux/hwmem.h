@@ -1,7 +1,7 @@
 /*
- * Copyright (C) ST-Ericsson AB 2010
+ * Copyright (C) ST-Ericsson SA 2010
  *
- * ST-Ericsson HW memory driver
+ * Hardware memory driver, hwmem
  *
  * Author: Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>
  * for ST-Ericsson.
@@ -27,36 +27,49 @@
  */
 enum hwmem_alloc_flags {
 	/**
-	 * @brief Buffer will not be cached and not buffered
+	 * @brief Buffered
 	 */
-	HWMEM_ALLOC_UNCACHED             = (0 << 0),
+	HWMEM_ALLOC_HINT_WRITE_COMBINE         = (1 << 0),
 	/**
-	 * @brief Buffer will be buffered, but not cached
+	 * @brief Non-buffered
 	 */
-	HWMEM_ALLOC_BUFFERED             = (1 << 0),
+	HWMEM_ALLOC_HINT_NO_WRITE_COMBINE      = (1 << 1),
 	/**
-	 * @brief Buffer will be cached and buffered, use cache hints to be
-	 * more specific
+	 * @brief Cached
 	 */
-	HWMEM_ALLOC_CACHED               = (3 << 0),
+	HWMEM_ALLOC_HINT_CACHED                = (1 << 2),
 	/**
-	 * @brief Buffer should be cached write-back in both level 1 and 2 cache
+	 * @brief Uncached
 	 */
-	HWMEM_ALLOC_CACHE_HINT_WB        = (1 << 2),
+	HWMEM_ALLOC_HINT_UNCACHED              = (1 << 3),
 	/**
-	 * @brief Buffer should be cached write-through in both level 1 and
-	 * 2 cache
+	 * @brief Write back
 	 */
-	HWMEM_ALLOC_CACHE_HINT_WT        = (2 << 2),
+	HWMEM_ALLOC_HINT_CACHE_WB              = (1 << 4),
 	/**
-	 * @brief Buffer should be cached write-back in level 1 cache
+	 * @brief Write through
 	 */
-	HWMEM_ALLOC_CACHE_HINT_WB_INNER  = (3 << 2),
+	HWMEM_ALLOC_HINT_CACHE_WT              = (1 << 5),
 	/**
-	 * @brief Buffer should be cached write-through in level 1 cache
+	 * @brief No alloc on write
 	 */
-	HWMEM_ALLOC_CACHE_HINT_WT_INNER  = (4 << 2),
-	HWMEM_ALLOC_CACHE_HINT_MASK      = 0x1C,
+	HWMEM_ALLOC_HINT_CACHE_NAOW            = (1 << 6),
+	/**
+	 * @brief Alloc on write
+	 */
+	HWMEM_ALLOC_HINT_CACHE_AOW             = (1 << 7),
+	/**
+	 * @brief Inner and outer cache
+	 */
+	HWMEM_ALLOC_HINT_INNER_AND_OUTER_CACHE = (1 << 8),
+	/**
+	 * @brief Inner cache only
+	 */
+	HWMEM_ALLOC_HINT_INNER_CACHE_ONLY      = (1 << 9),
+	/**
+	 * @brief Reserved for use by the cache handler integration
+	 */
+	HWMEM_ALLOC_RESERVED_CHI               = (1 << 31),
 };
 
 /**
@@ -78,81 +91,31 @@ enum hwmem_access {
 };
 
 /**
- * @brief Flags defining memory type.
+ * @brief Values defining memory types.
  */
 enum hwmem_mem_type {
 	/**
-	 * @brief Scattered system memory. Currently not supported!
+	 * @brief Scattered system memory.
 	 */
-	HWMEM_MEM_SCATTERED_SYS  = (1 << 0),
+	HWMEM_MEM_SCATTERED_SYS,
 	/**
 	 * @brief Contiguous system memory.
 	 */
-	HWMEM_MEM_CONTIGUOUS_SYS = (1 << 1),
-};
-
-/**
- * @brief Values defining memory domain.
- */
-enum hwmem_domain {
-	/**
-	 * @brief This value specifies the neutral memory domain. Setting this
-	 * domain will syncronize all supported memory domains (currently CPU).
-	 */
-	HWMEM_DOMAIN_SYNC = 0,
-	/**
-	 * @brief This value specifies the CPU memory domain.
-	 */
-	HWMEM_DOMAIN_CPU  = 1,
-};
-
-/**
- * @brief Structure defining a region of a memory buffer.
- *
- * A buffer is defined to contain a number of equally sized blocks. Each block
- * has a part of it included in the region [<start>-<end>). That is
- * <end>-<start> bytes. Each block is <size> bytes long. Total number of bytes
- * in the region is (<end> - <start>) * <count>. First byte of the region is
- * <offset> + <start> bytes into the buffer.
- *
- * Here's an example of a region in a graphics buffer (X = buffer, R = region):
- *
- * XXXXXXXXXXXXXXXXXXXX \
- * XXXXXXXXXXXXXXXXXXXX |-- offset = 60
- * XXXXXXXXXXXXXXXXXXXX /
- * XXRRRRRRRRXXXXXXXXXX \
- * XXRRRRRRRRXXXXXXXXXX |-- count = 4
- * XXRRRRRRRRXXXXXXXXXX |
- * XXRRRRRRRRXXXXXXXXXX /
- * XXXXXXXXXXXXXXXXXXXX
- * --| start = 2
- * ----------| end = 10
- * --------------------| size = 20
- */
-struct hwmem_region {
-	/**
-	 * @brief The first block's offset from beginning of buffer.
-	 */
-	uint32_t offset;
-	/**
-	 * @brief The number of blocks included in this region.
-	 */
-	uint32_t count;
-	/**
-	 * @brief The index of the first byte included in this block.
-	 */
-	uint32_t start;
-	/**
-	 * @brief The index of the last byte included in this block plus one.
-	 */
-	uint32_t end;
-	/**
-	 * @brief The size in bytes of each block.
-	 */
-	uint32_t size;
+	HWMEM_MEM_CONTIGUOUS_SYS,
 };
 
 /* User space API */
+
+/**
+ * @see struct hwmem_region.
+ */
+struct hwmem_region_us {
+	__u32 offset;
+	__u32 count;
+	__u32 start;
+	__u32 end;
+	__u32 size;
+};
 
 /**
  * @brief Alloc request data.
@@ -162,19 +125,19 @@ struct hwmem_alloc_request {
 	 * @brief [in] Size of requested allocation in bytes. Size will be
 	 * aligned to PAGE_SIZE bytes.
 	 */
-	uint32_t size;
+	__u32 size;
 	/**
 	 * @brief [in] Flags describing requested allocation options.
 	 */
-	uint32_t flags; /* enum hwmem_alloc_flags */
+	__u32 flags; /* enum hwmem_alloc_flags */
 	/**
 	 * @brief [in] Default access rights for buffer.
 	 */
-	uint32_t default_access; /* enum hwmem_access */
+	__u32 default_access; /* enum hwmem_access */
 	/**
 	 * @brief [in] Memory type of the buffer.
 	 */
-	uint32_t mem_type; /* enum hwmem_mem_type */
+	__u32 mem_type; /* enum hwmem_mem_type */
 };
 
 /**
@@ -185,24 +148,20 @@ struct hwmem_set_domain_request {
 	 * @brief [in] Identifier of buffer to be prepared. If 0 is specified
 	 * the buffer associated with the current file instance will be used.
 	 */
-	int32_t id;
-	/**
-	 * @brief [in] Value specifying the new memory domain.
-	 */
-	uint32_t domain; /* enum hwmem_domain */
+	__s32 id;
 	/**
 	 * @brief [in] Flags specifying access mode of the operation.
 	 *
 	 * One of HWMEM_ACCESS_READ and HWMEM_ACCESS_WRITE is required.
 	 * For details, @see enum hwmem_access.
 	 */
-	uint32_t access; /* enum hwmem_access */
+	__u32 access; /* enum hwmem_access */
 	/**
 	 * @brief [in] The region of bytes to be prepared.
 	 *
 	 * For details, @see struct hwmem_region.
 	 */
-	struct hwmem_region region;
+	struct hwmem_region_us region;
 };
 
 /**
@@ -213,18 +172,11 @@ struct hwmem_pin_request {
 	 * @brief [in] Identifier of buffer to be pinned. If 0 is specified,
 	 * the buffer associated with the current file instance will be used.
 	 */
-	int32_t id;
+	__s32 id;
 	/**
 	 * @brief [out] Physical address of first word in buffer.
 	 */
-	uint32_t phys_addr;
-	/**
-	 * @brief [in] Pointer to buffer for physical addresses of pinned
-	 * scattered buffer. Buffer must be (buffer_size / page_size) *
-	 * sizeof(uint32_t) bytes.
-	 * This field can be NULL for physically contiguos buffers.
-	 */
-	uint32_t *scattered_addrs;
+	__u32 phys_addr;
 };
 
 /**
@@ -232,14 +184,15 @@ struct hwmem_pin_request {
  */
 struct hwmem_set_access_request {
 	/**
-	 * @brief [in] Identifier of buffer to be pinned. If 0 is specified,
-	 * the buffer associated with the current file instance will be used.
+	 * @brief [in] Identifier of buffer to set access rights for. If 0 is
+	 * specified, the buffer associated with the current file instance will
+	 * be used.
 	 */
-	int32_t id;
+	__s32 id;
 	/**
 	 * @param access Access value indicating what is allowed.
 	 */
-	uint32_t access; /* enum hwmem_access */
+	__u32 access; /* enum hwmem_access */
 	/**
 	 * @param pid Process ID to set rights for.
 	 */
@@ -254,19 +207,19 @@ struct hwmem_get_info_request {
 	 * @brief [in] Identifier of buffer to get info about. If 0 is specified,
 	 * the buffer associated with the current file instance will be used.
 	 */
-	int32_t id;
+	__s32 id;
 	/**
 	 * @brief [out] Size in bytes of buffer.
 	 */
-	uint32_t size;
+	__u32 size;
 	/**
 	 * @brief [out] Memory type of buffer.
 	 */
-	uint32_t mem_type; /* enum hwmem_mem_type */
+	__u32 mem_type; /* enum hwmem_mem_type */
 	/**
 	 * @brief [out] Access rights for buffer.
 	 */
-	uint32_t access; /* enum hwmem_access */
+	__u32 access; /* enum hwmem_access */
 };
 
 /**
@@ -296,7 +249,8 @@ struct hwmem_get_info_request {
  * @brief Releases buffer.
  *
  * Buffers are reference counted and will not be destroyed until the last
- * reference is released. Bufferes allocated with ALLOC_FD_IOC not allowed.
+ * reference is released. Buffers allocated with ALLOC_FD_IOC shall not be
+ * released with this IOC, @see HWMEM_ALLOC_FD_IOC.
  *
  * Input is the buffer identifier.
  *
@@ -305,44 +259,72 @@ struct hwmem_get_info_request {
 #define HWMEM_RELEASE_IOC _IO('W', 3)
 
 /**
- * @brief Set the buffer's memory domain and prepares it for access.
+ * Memory Mapping
+ *
+ * To map a hwmem buffer mmap the hwmem fd and supply the buffer identifier as
+ * the offset. If the buffer is linked to the fd and thus have no buffer
+ * identifier supply 0 as the offset. Note that the offset feature of mmap is
+ * disabled in both cases, you can only mmap starting a position 0.
+ */
+
+/**
+ * @brief Prepares the buffer for CPU access.
  *
  * Input is a pointer to a hwmem_set_domain_request struct.
  *
  * @return Zero on success, or a negative error code.
  */
-#define HWMEM_SET_DOMAIN_IOC _IOR('W', 4, struct hwmem_set_domain_request)
+#define HWMEM_SET_CPU_DOMAIN_IOC _IOW('W', 4, struct hwmem_set_domain_request)
 
 /**
- * @brief Pins the buffer and returns the physical address of the buffer.
+ * DEPRECATED: Set sync domain from driver instead!
+ *
+ * @brief Prepares the buffer for access by any DMA hardware.
+ *
+ * Input is a pointer to a hwmem_set_domain_request struct.
  *
  * @return Zero on success, or a negative error code.
  */
-#define HWMEM_PIN_IOC _IOWR('W', 5, struct hwmem_pin_request)
+#define HWMEM_SET_SYNC_DOMAIN_IOC _IOW('W', 5, struct hwmem_set_domain_request)
 
 /**
+ * DEPRECATED: Pin from driver instead!
+ *
+ * @brief Pins the buffer.
+ *
+ * Input is a pointer to a hwmem_pin_request struct. Only contiguous buffers
+ * can be pinned from user space.
+ *
+ * @return Zero on success, or a negative error code.
+ */
+#define HWMEM_PIN_IOC _IOWR('W', 6, struct hwmem_pin_request)
+
+/**
+ * DEPRECATED: Unpin from driver instead!
+ *
  * @brief Unpins the buffer.
  *
  * @return Zero on success, or a negative error code.
  */
-#define HWMEM_UNPIN_IOC _IO('W', 6)
+#define HWMEM_UNPIN_IOC _IO('W', 7)
 
 /**
  * @brief Set access rights for buffer.
  *
+ * Input is a pointer to a hwmem_set_access_request struct.
+ *
  * @return Zero on success, or a negative error code.
  */
-#define HWMEM_SET_ACCESS_IOC _IOW('W', 7, struct hwmem_set_access_request)
+#define HWMEM_SET_ACCESS_IOC _IOW('W', 8, struct hwmem_set_access_request)
 
 /**
  * @brief Get buffer information.
  *
- * Input is the buffer identifier. If 0 is specified the buffer associated
- * with the current file instance will be used.
+ * Input is a pointer to a hwmem_get_info_request struct.
  *
  * @return Zero on success, or a negative error code.
  */
-#define HWMEM_GET_INFO_IOC _IOWR('W', 8, struct hwmem_get_info_request)
+#define HWMEM_GET_INFO_IOC _IOWR('W', 9, struct hwmem_get_info_request)
 
 /**
  * @brief Export the buffer identifier for use in another process.
@@ -355,31 +337,99 @@ struct hwmem_get_info_request {
  *
  * @return A global buffer name on success, or a negative error code.
  */
-#define HWMEM_EXPORT_IOC _IO('W', 9)
+#define HWMEM_EXPORT_IOC _IO('W', 10)
 
 /**
  * @brief Import a buffer to allow local access to the buffer.
  *
  * Input is the buffer's global name.
  *
- * @return The imported buffer's identifier on success, or a negative error code.
+ * @return The imported buffer's identifier on success, or a negative error
+ * code.
  */
-#define HWMEM_IMPORT_IOC _IO('W', 10)
+#define HWMEM_IMPORT_IOC _IO('W', 11)
 
 /**
- * @brief Import a buffer to allow local access to the buffer using fd.
+ * @brief Import a buffer to allow local access to the buffer using the current
+ * fd.
  *
  * Input is the buffer's global name.
  *
  * @return Zero on success, or a negative error code.
  */
-#define HWMEM_IMPORT_FD_IOC _IO('W', 11)
+#define HWMEM_IMPORT_FD_IOC _IO('W', 12)
 
 #ifdef __KERNEL__
 
 /* Kernel API */
 
+/**
+ * @brief Values defining memory domain.
+ */
+enum hwmem_domain {
+	/**
+	 * @brief This value specifies the neutral memory domain. Setting this
+	 * domain will syncronize all supported memory domains.
+	 */
+	HWMEM_DOMAIN_SYNC = 0,
+	/**
+	 * @brief This value specifies the CPU memory domain.
+	 */
+	HWMEM_DOMAIN_CPU,
+};
+
 struct hwmem_alloc;
+
+/**
+ * @brief Structure defining a region of a memory buffer.
+ *
+ * A buffer is defined to contain a number of equally sized blocks. Each block
+ * has a part of it included in the region [<start>-<end>). That is
+ * <end>-<start> bytes. Each block is <size> bytes long. Total number of bytes
+ * in the region is (<end> - <start>) * <count>. First byte of the region is
+ * <offset> + <start> bytes into the buffer.
+ *
+ * Here's an example of a region in a graphics buffer (X = buffer, R = region):
+ *
+ * XXXXXXXXXXXXXXXXXXXX \
+ * XXXXXXXXXXXXXXXXXXXX |-- offset = 60
+ * XXXXXXXXXXXXXXXXXXXX /
+ * XXRRRRRRRRXXXXXXXXXX \
+ * XXRRRRRRRRXXXXXXXXXX |-- count = 4
+ * XXRRRRRRRRXXXXXXXXXX |
+ * XXRRRRRRRRXXXXXXXXXX /
+ * XXXXXXXXXXXXXXXXXXXX
+ * --| start = 2
+ * ----------| end = 10
+ * --------------------| size = 20
+ */
+struct hwmem_region {
+	/**
+	 * @brief The first block's offset from beginning of buffer.
+	 */
+	size_t offset;
+	/**
+	 * @brief The number of blocks included in this region.
+	 */
+	size_t count;
+	/**
+	 * @brief The index of the first byte included in this block.
+	 */
+	size_t start;
+	/**
+	 * @brief The index of the last byte included in this block plus one.
+	 */
+	size_t end;
+	/**
+	 * @brief The size in bytes of each block.
+	 */
+	size_t size;
+};
+
+struct hwmem_mem_chunk {
+	phys_addr_t paddr;
+	size_t size;
+};
 
 /**
  * @brief Allocates <size> number of bytes.
@@ -391,7 +441,7 @@ struct hwmem_alloc;
  *
  * @return Pointer to allocation, or a negative error code.
  */
-struct hwmem_alloc *hwmem_alloc(u32 size, enum hwmem_alloc_flags flags,
+struct hwmem_alloc *hwmem_alloc(size_t size, enum hwmem_alloc_flags flags,
 		enum hwmem_access def_access, enum hwmem_mem_type mem_type);
 
 /**
@@ -419,14 +469,26 @@ int hwmem_set_domain(struct hwmem_alloc *alloc, enum hwmem_access access,
 /**
  * @brief Pins the buffer.
  *
+ * Notice that the number of mem chunks a buffer consists of can change at any
+ * time if the buffer is not pinned. Because of this one can not assume that
+ * pin will succeed if <mem_chunks> has the length specified by a previous call
+ * to pin as the buffer layout may have changed between the calls. There are
+ * two ways of handling this situation, keep redoing the pin procedure till it
+ * succeeds or allocate enough mem chunks for the worst case ("buffer size" /
+ * "page size" mem chunks). Contiguous buffers always require only one mem
+ * chunk.
+ *
  * @param alloc Buffer to be pinned.
- * @param phys_addr Reference to variable to receive physical address.
- * @param scattered_phys_addrs Pointer to buffer to receive physical addresses
- * of all pages in the scattered buffer. Can be NULL if buffer is contigous.
- * Buffer size must be (buffer_size / page_size) * sizeof(uint32_t) bytes.
+ * @param mem_chunks Pointer to array of mem chunks.
+ * @param mem_chunks_length Pointer to variable that contains the length of
+ * <mem_chunks> array. On success the number of written mem chunks will be
+ * stored in this variable. If the call fails with -ENOSPC the required length
+ * of <mem_chunks> will be stored in this variable.
+ *
+ * @return Zero on success, or a negative error code.
  */
-int hwmem_pin(struct hwmem_alloc *alloc, uint32_t *phys_addr,
-					uint32_t *scattered_phys_addrs);
+int hwmem_pin(struct hwmem_alloc *alloc, struct hwmem_mem_chunk *mem_chunks,
+						size_t *mem_chunks_length);
 
 /**
  * @brief Unpins the buffer.
@@ -438,7 +500,9 @@ void hwmem_unpin(struct hwmem_alloc *alloc);
 /**
  * @brief Map the buffer to user space.
  *
- * @param alloc Buffer to be unpinned.
+ * @param alloc Buffer to be mapped.
+ *
+ * @return Zero on success, or a negative error code.
  */
 int hwmem_mmap(struct hwmem_alloc *alloc, struct vm_area_struct *vma);
 
@@ -476,12 +540,12 @@ int hwmem_set_access(struct hwmem_alloc *alloc, enum hwmem_access access,
  * @brief Get buffer information.
  *
  * @param alloc Buffer to get information about.
- * @param size Pointer to size output variable.
- * @param size Pointer to memory type output variable.
- * @param size Pointer to access rights output variable.
+ * @param size Pointer to size output variable. Can be NULL.
+ * @param size Pointer to memory type output variable. Can be NULL.
+ * @param size Pointer to access rights output variable. Can be NULL.
  */
-void hwmem_get_info(struct hwmem_alloc *alloc, uint32_t *size,
-	enum hwmem_mem_type *mem_type, enum hwmem_access *access);
+void hwmem_get_info(struct hwmem_alloc *alloc, size_t *size,
+		enum hwmem_mem_type *mem_type, enum hwmem_access *access);
 
 /**
  * @brief Allocate a global buffer name.
@@ -492,7 +556,7 @@ void hwmem_get_info(struct hwmem_alloc *alloc, uint32_t *size,
  *
  * @return Positive global name on success, or a negative error code.
  */
-int hwmem_get_name(struct hwmem_alloc *alloc);
+s32 hwmem_get_name(struct hwmem_alloc *alloc);
 
 /**
  * @brief Import the global buffer name to allow local access to the buffer.
@@ -508,10 +572,10 @@ struct hwmem_alloc *hwmem_resolve_by_name(s32 name);
 /* Internal */
 
 struct hwmem_platform_data {
-	/* Starting physical address of memory region */
-	unsigned long start;
+	/* Physical address of memory region */
+	u32 start;
 	/* Size of memory region */
-	unsigned long size;
+	u32 size;
 };
 
 #endif
