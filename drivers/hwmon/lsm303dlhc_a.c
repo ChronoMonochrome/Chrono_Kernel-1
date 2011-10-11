@@ -518,6 +518,11 @@ static int __devinit lsm303dlhc_a_probe(struct i2c_client *client,
 	}
 
 	if (adata->regulator) {
+		/*
+		 * 130 microamps typical with magnetic sensor setting ODR = 7.5
+		 * Hz, Accelerometer sensor ODR = 50 Hz.  Double for safety.
+		 */
+		regulator_set_optimum_mode(adata->regulator, 130 * 2);
 		regulator_enable(adata->regulator);
 		adata->device_status = DEVICE_ON;
 	}
