@@ -1450,8 +1450,8 @@ static int configure_sub_rot(struct b2r2_node *node,
 	struct b2r2_blt_rect src_win;
 	struct b2r2_blt_rect dst_win;
 
-	u32 y_pixels;
-	u32 x_pixels;
+	u32 y_pixels = 0;
+	u32 x_pixels = 0;
 
 	memcpy(&src_win, &src->win, sizeof(src_win));
 	memcpy(&dst_win, &dst->win, sizeof(dst_win));
