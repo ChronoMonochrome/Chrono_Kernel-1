@@ -12,11 +12,11 @@
 #ifndef _HWMEM_H_
 #define _HWMEM_H_
 
+#include <linux/types.h>
+
 #if !defined(__KERNEL__) && !defined(_KERNEL)
-#include <stdint.h>
 #include <sys/types.h>
 #else
-#include <linux/types.h>
 #include <linux/mm_types.h>
 #endif
 
