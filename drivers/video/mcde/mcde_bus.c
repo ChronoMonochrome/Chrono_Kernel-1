@@ -109,7 +109,11 @@ static int mcde_drv_suspend(struct device *_dev, pm_message_t state)
 	if (drv->suspend)
 		return drv->suspend(dev, state);
 	else
+#if !defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM)
 		return dev->set_power_mode(dev, MCDE_DISPLAY_PM_OFF);
+#else
+		return 0;
+#endif
 }
 
 static int mcde_drv_resume(struct device *_dev)
@@ -120,7 +124,11 @@ static int mcde_drv_resume(struct device *_dev)
 	if (drv->resume)
 		return drv->resume(dev);
 	else
+#if !defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM)
 		return dev->set_power_mode(dev, MCDE_DISPLAY_PM_STANDBY);
+#else
+		return 0;
+#endif
 }
 
 /* Bus device */
