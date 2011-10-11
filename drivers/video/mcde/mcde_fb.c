@@ -229,9 +229,10 @@ static int reallocate_fb_mem(struct fb_info *fbi, u32 size)
 			MCDE_FB_VYRES_MAX;
 #endif
 
-		alloc = hwmem_alloc(size, HWMEM_ALLOC_HINT_WRITE_COMBINE,
+		alloc = hwmem_alloc(size, HWMEM_ALLOC_HINT_WRITE_COMBINE |
+				HWMEM_ALLOC_HINT_UNCACHED,
 				(HWMEM_ACCESS_READ  | HWMEM_ACCESS_WRITE |
-					HWMEM_ACCESS_IMPORT),
+				HWMEM_ACCESS_IMPORT),
 				HWMEM_MEM_CONTIGUOUS_SYS);
 		if (IS_ERR(alloc))
 			return PTR_ERR(alloc);
