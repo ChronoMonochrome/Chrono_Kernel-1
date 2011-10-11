@@ -46,7 +46,10 @@
  */
 #define PERF_MMC_RESCAN_CYCLES 10
 
+#ifdef CONFIG_MMC_BLOCK
 static struct delayed_work work_mmc;
+#endif
+
 static struct delayed_work work_wlan_workaround;
 static struct pm_qos_request_list wlan_pm_qos_latency;
 static bool wlan_pm_qos_is_latency_0;
@@ -94,6 +97,7 @@ static void wlan_load(struct work_struct *work)
 				 msecs_to_jiffies(WLAN_PROBE_DELAY));
 }
 
+#ifdef CONFIG_MMC_BLOCK
 /*
  * Loop through every CONFIG_MMC_BLOCK_MINORS'th minor device for
  * MMC_BLOCK_MAJOR, get the struct gendisk for each device. Returns
@@ -184,18 +188,16 @@ static void mmc_load(struct work_struct *work)
 				 msecs_to_jiffies(PERF_MMC_PROBE_DELAY));
 
 }
+#endif /* CONFIG_MMC_BLOCK */
 
 static int __init performance_register(void)
 {
 	int ret;
 
+#ifdef CONFIG_MMC_BLOCK
 	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "mmc", 25);
-	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "wlan", 25);
 
-	INIT_DELAYED_WORK_DEFERRABLE(&work_wlan_workaround,
-				     wlan_load);
 	INIT_DELAYED_WORK_DEFERRABLE(&work_mmc, mmc_load);
-
 
 	ret = schedule_delayed_work(&work_mmc,
 				 msecs_to_jiffies(PERF_MMC_PROBE_DELAY));
@@ -203,12 +205,20 @@ static int __init performance_register(void)
 		pr_err("ux500: performance: Fail to schedudle mmc work\n");
 		goto out;
 	}
+#endif
+
+	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "wlan", 25);
+
+	INIT_DELAYED_WORK_DEFERRABLE(&work_wlan_workaround,
+				     wlan_load);
 
 	ret = schedule_delayed_work_on(0,
 				       &work_wlan_workaround,
 				       msecs_to_jiffies(WLAN_PROBE_DELAY));
-	if (ret)
+	if (ret) {
 		pr_err("ux500: performance: Fail to schedudle wlan work\n");
+		goto out;
+	}
 out:
 	return ret;
 }
