@@ -41,7 +41,7 @@
 #include <asm/smp_twd.h>
 
 struct mpcore_wdt {
-	unsigned long	timer_alive;
+	cpumask_t	timer_alive;
 	struct device	*dev;
 	void __iomem	*base;
 	int		irq;
