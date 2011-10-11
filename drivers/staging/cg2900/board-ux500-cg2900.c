@@ -1,7 +1,8 @@
 /*
- * Copyright (C) 2008-2011 ST-Ericsson
+ * Copyright (C) ST-Ericsson SA 2011
  *
  * Author: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+ * Author: Hemant Gupta <hemant.gupta@stericsson.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2, as
@@ -10,32 +11,32 @@
  */
 
 #include <asm/mach-types.h>
-
 #include <linux/gpio.h>
 #include <linux/gpio/nomadik.h>
 #include <linux/ioport.h>
-#include <linux/platform_device.h>
 #include <linux/mfd/ab8500/gpio.h>
-
+#include <linux/platform_device.h>
+#include <mach/gpio.h>
+#include <mach/id.h>
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci.h>
-
 #include <plat/pincfg.h>
-#include <mach/gpio.h>
 
+#include "board-mop500.h"
 #include "cg2900.h"
 #include "devices-cg2900.h"
+#include "pins-db5500.h"
 #include "pins-db8500.h"
 #include "pins.h"
-#include "board-mop500.h"
 
 #define CG2900_BT_ENABLE_GPIO		170
 #define CG2900_GBF_ENA_RESET_GPIO	171
 #define WLAN_PMU_EN_GPIO		226
 #define WLAN_PMU_EN_GPIO_U9500		AB8500_PIN_GPIO11
-#define CG2900_BT_CTS_GPIO		0
+#define CG2900_UX500_BT_CTS_GPIO		0
+#define CG2900_U5500_BT_CTS_GPIO		168
 
-enum cg2900_gpio_pull_sleep cg2900_sleep_gpio[21] = {
+enum cg2900_gpio_pull_sleep ux500_cg2900_sleep_gpio[21] = {
 	CG2900_NO_PULL,		/* GPIO 0:  PTA_CONFX */
 	CG2900_PULL_DN,		/* GPIO 1:  PTA_STATUS */
 	CG2900_NO_PULL,		/* GPIO 2:  UART_CTSN */
@@ -77,16 +78,16 @@ static struct platform_device ux500_stlc2690_chip_device = {
 	},
 };
 
-static struct cg2900_platform_data cg2900_test_platform_data = {
+static struct cg2900_platform_data ux500_cg2900_test_platform_data = {
 	.bus = HCI_VIRTUAL,
-	.gpio_sleep = cg2900_sleep_gpio,
+	.gpio_sleep = ux500_cg2900_sleep_gpio,
 };
 
 static struct platform_device ux500_cg2900_test_device = {
 	.name = "cg2900-test",
 	.dev = {
 		.parent = &ux500_cg2900_device.dev,
-		.platform_data = &cg2900_test_platform_data,
+		.platform_data = &ux500_cg2900_test_platform_data,
 	},
 };
 
@@ -104,20 +105,35 @@ static struct resource cg2900_uart_resources_pre_v60[] = {
 		.name = "bt_enable",
 	},
 	{
-		.start = CG2900_BT_CTS_GPIO,
-		.end = CG2900_BT_CTS_GPIO,
+		.start = CG2900_UX500_BT_CTS_GPIO,
+		.end = CG2900_UX500_BT_CTS_GPIO,
 		.flags = IORESOURCE_IO,
 		.name = "cts_gpio",
 	},
 	{
-		.start = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
-		.end = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
+		.start = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
+		.end = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
 		.flags = IORESOURCE_IRQ,
 		.name = "cts_irq",
 	},
 };
 
-static struct resource cg2900_uart_resources[] = {
+static struct resource cg2900_uart_resources_u5500[] = {
+	{
+		.start = CG2900_U5500_BT_CTS_GPIO,
+		.end = CG2900_U5500_BT_CTS_GPIO,
+		.flags = IORESOURCE_IO,
+		.name = "cts_gpio",
+	},
+	{
+		.start = NOMADIK_GPIO_TO_IRQ(CG2900_U5500_BT_CTS_GPIO),
+		.end = NOMADIK_GPIO_TO_IRQ(CG2900_U5500_BT_CTS_GPIO),
+		.flags = IORESOURCE_IRQ,
+		.name = "cts_irq",
+	},
+};
+
+static struct resource cg2900_uart_resources_u8500[] = {
 	{
 		.start = CG2900_GBF_ENA_RESET_GPIO,
 		.end = CG2900_GBF_ENA_RESET_GPIO,
@@ -131,14 +147,14 @@ static struct resource cg2900_uart_resources[] = {
 		.name = "pmu_en",
 	},
 	{
-		.start = CG2900_BT_CTS_GPIO,
-		.end = CG2900_BT_CTS_GPIO,
+		.start = CG2900_UX500_BT_CTS_GPIO,
+		.end = CG2900_UX500_BT_CTS_GPIO,
 		.flags = IORESOURCE_IO,
 		.name = "cts_gpio",
 	},
 	{
-		.start = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
-		.end = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
+		.start = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
+		.end = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
 		.flags = IORESOURCE_IRQ,
 		.name = "cts_irq",
 	},
@@ -158,48 +174,59 @@ static struct resource cg2900_uart_resources_u9500[] = {
 		.name = "pmu_en",
 	},
 	{
-		.start = CG2900_BT_CTS_GPIO,
-		.end = CG2900_BT_CTS_GPIO,
+		.start = CG2900_UX500_BT_CTS_GPIO,
+		.end = CG2900_UX500_BT_CTS_GPIO,
 		.flags = IORESOURCE_IO,
 		.name = "cts_gpio",
 	},
 	{
-		.start = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
-		.end = NOMADIK_GPIO_TO_IRQ(CG2900_BT_CTS_GPIO),
+		.start = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
+		.end = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
 		.flags = IORESOURCE_IRQ,
 		.name = "cts_irq",
 	},
 };
 
-static pin_cfg_t cg2900_uart_enabled[] = {
+static pin_cfg_t u5500_cg2900_uart_enabled[] = {
+	GPIO165_U3_RXD    | PIN_INPUT_PULLUP,
+	GPIO166_U3_TXD    | PIN_OUTPUT_HIGH,
+	GPIO167_U3_RTSn   | PIN_OUTPUT_HIGH,
+	GPIO168_U3_CTSn   | PIN_INPUT_PULLUP,
+};
+
+static pin_cfg_t u5500_cg2900_uart_disabled[] = {
+	GPIO165_GPIO   | PIN_INPUT_PULLUP,	/* RX pull down. */
+	GPIO166_GPIO   | PIN_OUTPUT_LOW,	/* TX low - break on. */
+	GPIO167_GPIO   | PIN_OUTPUT_HIGH,	/* RTS high-flow off. */
+	GPIO168_GPIO   | PIN_INPUT_PULLUP,	/* CTS pull up. */
+};
+
+static pin_cfg_t ux500_cg2900_uart_enabled[] = {
 	GPIO0_U0_CTSn   | PIN_INPUT_PULLUP,
 	GPIO1_U0_RTSn   | PIN_OUTPUT_HIGH,
 	GPIO2_U0_RXD    | PIN_INPUT_PULLUP,
 	GPIO3_U0_TXD    | PIN_OUTPUT_HIGH
 };
 
-static pin_cfg_t cg2900_uart_disabled[] = {
+static pin_cfg_t ux500_cg2900_uart_disabled[] = {
 	GPIO0_GPIO   | PIN_INPUT_PULLUP,	/* CTS pull up. */
 	GPIO1_GPIO   | PIN_OUTPUT_HIGH,		/* RTS high-flow off. */
 	GPIO2_GPIO   | PIN_INPUT_PULLUP,	/* RX pull down. */
 	GPIO3_GPIO   | PIN_OUTPUT_LOW		/* TX low - break on. */
 };
 
-static struct cg2900_platform_data cg2900_uart_platform_data = {
+static struct cg2900_platform_data ux500_cg2900_uart_platform_data = {
 	.bus = HCI_UART,
-	.gpio_sleep = cg2900_sleep_gpio,
+	.gpio_sleep = ux500_cg2900_sleep_gpio,
 	.uart = {
 		.n_uart_gpios = 4,
-		.uart_enabled = cg2900_uart_enabled,
-		.uart_disabled = cg2900_uart_disabled,
 	},
-	.regulator_id =	"vdd",
 };
 
 static struct platform_device ux500_cg2900_uart_device = {
 	.name = "cg2900-uart",
 	.dev = {
-		.platform_data = &cg2900_uart_platform_data,
+		.platform_data = &ux500_cg2900_uart_platform_data,
 		.parent = &ux500_cg2900_device.dev,
 	},
 };
@@ -223,24 +250,47 @@ static int __init board_cg2900_init(void)
 	if (!mach_supported())
 		return 0;
 
-	dcg2900_init_platdata(&cg2900_test_platform_data);
-	dcg2900_init_platdata(&cg2900_uart_platform_data);
+	dcg2900_init_platdata(&ux500_cg2900_test_platform_data);
+	if (machine_is_u5500()) {
+		ux500_cg2900_uart_platform_data.uart.uart_enabled =
+						u5500_cg2900_uart_enabled;
+		ux500_cg2900_uart_platform_data.uart.uart_disabled =
+						u5500_cg2900_uart_disabled;
+	} else {
+		ux500_cg2900_uart_platform_data.uart.uart_enabled =
+						ux500_cg2900_uart_enabled;
+		ux500_cg2900_uart_platform_data.uart.uart_disabled =
+						ux500_cg2900_uart_disabled;
+		ux500_cg2900_uart_platform_data.regulator_id = "vdd";
+	}
+	dcg2900_init_platdata(&ux500_cg2900_uart_platform_data);
 
-	if (pins_for_u9500()) {
+	if (cpu_is_u8500()) {
+		if (machine_is_hrefv60()) {
+			/* u8500 */
+			ux500_cg2900_uart_device.num_resources =
+					ARRAY_SIZE(cg2900_uart_resources_u8500);
+			ux500_cg2900_uart_device.resource =
+					cg2900_uart_resources_u8500;
+		} else {
+			/* u8500 pre v60*/
+			ux500_cg2900_uart_device.num_resources =
+					ARRAY_SIZE(cg2900_uart_resources_pre_v60);
+			ux500_cg2900_uart_device.resource =
+					cg2900_uart_resources_pre_v60;
+		}
+	} else if (cpu_is_u5500()) {
+		/* u5500 */
+		ux500_cg2900_uart_device.num_resources =
+				ARRAY_SIZE(cg2900_uart_resources_u5500);
+		ux500_cg2900_uart_device.resource =
+				cg2900_uart_resources_u5500;
+	} else {
+		/* u9500 */
 		ux500_cg2900_uart_device.num_resources =
 				ARRAY_SIZE(cg2900_uart_resources_u9500);
 		ux500_cg2900_uart_device.resource =
 				cg2900_uart_resources_u9500;
-	} else if (machine_is_hrefv60()) {
-		ux500_cg2900_uart_device.num_resources =
-				ARRAY_SIZE(cg2900_uart_resources);
-		ux500_cg2900_uart_device.resource =
-				cg2900_uart_resources;
-	} else {
-		ux500_cg2900_uart_device.num_resources =
-				ARRAY_SIZE(cg2900_uart_resources_pre_v60);
-		ux500_cg2900_uart_device.resource =
-				cg2900_uart_resources_pre_v60;
 	}
 
 	err = platform_device_register(&ux500_cg2900_device);

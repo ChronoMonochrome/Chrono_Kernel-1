@@ -6,6 +6,7 @@
  * Josef Kindberg (josef.kindberg@stericsson.com) for ST-Ericsson.
  * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
  * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
+ * Hemant Gupta (hemant.gupta@stericsson.com) for ST-Ericsson.
  * License terms:  GNU General Public License (GPL), version 2
  *
  * Board specific device support for the Linux Bluetooth HCI H:4 Driver
@@ -17,6 +18,7 @@
 
 #include <asm/byteorder.h>
 #include <asm-generic/errno-base.h>
+#include <asm/mach-types.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
@@ -27,12 +29,10 @@
 #include <linux/skbuff.h>
 #include <linux/string.h>
 #include <linux/types.h>
-#include <plat/pincfg.h>
-#include <asm/mach-types.h>
-#include <mach/id.h>
 #include <linux/mfd/ab8500.h>
 #include <linux/regulator/consumer.h>
-
+#include <mach/id.h>
+#include <plat/pincfg.h>
 #include "cg2900.h"
 #include "devices-cg2900.h"
 
@@ -158,10 +158,11 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 		dev_dbg(dev->dev, "No resources available\n");
 		goto finished;
 	}
-	if (cpu_is_u8500())
-		err = dcg2900_setup(dev, info);
-	else
+
+	if (cpu_is_u5500())
 		err = dcg2900_u5500_setup(dev, info);
+	else
+		err = dcg2900_u8500_setup(dev, info);
 
 	if (err)
 		goto err_handling;
@@ -217,7 +218,11 @@ static void dcg2900_exit(struct cg2900_chip_dev *dev)
 		}
 	}
 
-	dcg2900_disable_chip(dev);
+	if (cpu_is_u5500())
+		dcg2900_u5500_disable_chip(dev);
+	else
+		dcg2900_u8500_disable_chip(dev);
+
 	if (info->bt_gpio != -1)
 		gpio_free(info->bt_gpio);
 	if (info->pmuen_gpio != -1)
@@ -273,14 +278,13 @@ void dcg2900_init_platdata(struct cg2900_platform_data *data)
 	data->init = dcg2900_init;
 	data->exit = dcg2900_exit;
 
-	if (cpu_is_u8500()) {
-		data->enable_chip = dcg2900_enable_chip;
-		data->disable_chip = dcg2900_disable_chip;
-	} else {
+	if (cpu_is_u5500()) {
 		data->enable_chip = dcg2900_u5500_enable_chip;
 		data->disable_chip = dcg2900_u5500_disable_chip;
+	} else {
+		data->enable_chip = dcg2900_u8500_enable_chip;
+		data->disable_chip = dcg2900_u8500_disable_chip;
 	}
-
 	data->get_power_switch_off_cmd = dcg2900_get_power_switch_off_cmd;
 
 	data->uart.enable_uart = dcg2900_enable_uart;
