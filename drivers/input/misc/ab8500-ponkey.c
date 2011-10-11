@@ -6,7 +6,6 @@
  *
  * AB8500 Power-On Key handler
  */
-
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -16,13 +15,13 @@
 #include <linux/slab.h>
 
 /**
- * struct ab8500_ponkey - ab8500 ponkey information
+ * struct ab8500_ponkey_info - ab8500 ponkey information
  * @input_dev: pointer to input device
  * @ab8500: ab8500 parent
  * @irq_dbf: irq number for falling transition
  * @irq_dbr: irq number for rising transition
  */
-struct ab8500_ponkey {
+struct ab8500_ponkey_info {
 	struct input_dev	*idev;
 	struct ab8500		*ab8500;
 	int			irq_dbf;
@@ -32,14 +31,14 @@ struct ab8500_ponkey {
 /* AB8500 gives us an interrupt when ONKEY is held */
 static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 {
-	struct ab8500_ponkey *ponkey = data;
+	struct ab8500_ponkey_info *info = data;
 
-	if (irq == ponkey->irq_dbf)
-		input_report_key(ponkey->idev, KEY_POWER, true);
-	else if (irq == ponkey->irq_dbr)
-		input_report_key(ponkey->idev, KEY_POWER, false);
+	if (irq == info->irq_dbf)
+		input_report_key(info->idev, KEY_POWER, true);
+	else if (irq == info->irq_dbr)
+		input_report_key(info->idev, KEY_POWER, false);
 
-	input_sync(ponkey->idev);
+	input_sync(info->idev);
 
 	return IRQ_HANDLED;
 }
@@ -47,87 +46,89 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 {
 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
-	struct ab8500_ponkey *ponkey;
-	struct input_dev *input;
-	int irq_dbf, irq_dbr;
-	int error;
+	struct ab8500_ponkey_info *info;
+	int irq_dbf, irq_dbr, ret;
 
 	irq_dbf = platform_get_irq_byname(pdev, "ONKEY_DBF");
 	if (irq_dbf < 0) {
-		dev_err(&pdev->dev, "No IRQ for ONKEY_DBF, error=%d\n", irq_dbf);
+		dev_err(&pdev->dev, "No IRQ for ONKEY_DBF,error=%d\n", irq_dbf);
 		return irq_dbf;
 	}
 
 	irq_dbr = platform_get_irq_byname(pdev, "ONKEY_DBR");
 	if (irq_dbr < 0) {
-		dev_err(&pdev->dev, "No IRQ for ONKEY_DBR, error=%d\n", irq_dbr);
+		dev_err(&pdev->dev, "No IRQ for ONKEY_DBR,error=%d\n", irq_dbr);
 		return irq_dbr;
 	}
 
-	ponkey = kzalloc(sizeof(struct ab8500_ponkey), GFP_KERNEL);
-	input = input_allocate_device();
-	if (!ponkey || !input) {
-		error = -ENOMEM;
-		goto err_free_mem;
+	info = kzalloc(sizeof(struct ab8500_ponkey_info), GFP_KERNEL);
+	if (!info)
+		return -ENOMEM;
+
+	info->ab8500 = ab8500;
+	info->irq_dbf = irq_dbf;
+	info->irq_dbr = irq_dbr;
+
+	info->idev = input_allocate_device();
+	if (!info->idev) {
+		dev_err(ab8500->dev, "Failed to allocate input dev\n");
+		ret = -ENOMEM;
+		goto out;
 	}
 
-	ponkey->idev = input;
-	ponkey->ab8500 = ab8500;
-	ponkey->irq_dbf = irq_dbf;
-	ponkey->irq_dbr = irq_dbr;
+	info->idev->name = "AB8500 POn(PowerOn) Key";
+	info->idev->dev.parent = &pdev->dev;
+	info->idev->evbit[0] = BIT_MASK(EV_KEY);
+	info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
 
-	input->name = "AB8500 POn(PowerOn) Key";
-	input->dev.parent = &pdev->dev;
+	ret = input_register_device(info->idev);
+	if (ret) {
+		dev_err(ab8500->dev, "Can't register input device: %d\n", ret);
+		goto out_unfreedevice;
+	}
 
-	input_set_capability(input, EV_KEY, KEY_POWER);
-
-	error = request_any_context_irq(ponkey->irq_dbf, ab8500_ponkey_handler,
-					0, "ab8500-ponkey-dbf", ponkey);
-	if (error < 0) {
+	ret = request_threaded_irq(info->irq_dbf, NULL, ab8500_ponkey_handler,
+					IRQF_NO_SUSPEND, "ab8500-ponkey-dbf",
+					info);
+	if (ret < 0) {
 		dev_err(ab8500->dev, "Failed to request dbf IRQ#%d: %d\n",
-			ponkey->irq_dbf, error);
-		goto err_free_mem;
+				info->irq_dbf, ret);
+		goto out_unregisterdevice;
 	}
 
-	error = request_any_context_irq(ponkey->irq_dbr, ab8500_ponkey_handler,
-					0, "ab8500-ponkey-dbr", ponkey);
-	if (error < 0) {
+	ret = request_threaded_irq(info->irq_dbr, NULL, ab8500_ponkey_handler,
+					IRQF_NO_SUSPEND, "ab8500-ponkey-dbr",
+					info);
+	if (ret < 0) {
 		dev_err(ab8500->dev, "Failed to request dbr IRQ#%d: %d\n",
-			ponkey->irq_dbr, error);
-		goto err_free_dbf_irq;
+				info->irq_dbr, ret);
+		goto out_irq_dbf;
 	}
 
-	error = input_register_device(ponkey->idev);
-	if (error) {
-		dev_err(ab8500->dev, "Can't register input device: %d\n", error);
-		goto err_free_dbr_irq;
-	}
+	platform_set_drvdata(pdev, info);
 
-	platform_set_drvdata(pdev, ponkey);
 	return 0;
 
-err_free_dbr_irq:
-	free_irq(ponkey->irq_dbr, ponkey);
-err_free_dbf_irq:
-	free_irq(ponkey->irq_dbf, ponkey);
-err_free_mem:
-	input_free_device(input);
-	kfree(ponkey);
-
-	return error;
+out_irq_dbf:
+	free_irq(info->irq_dbf, info);
+out_unregisterdevice:
+	input_unregister_device(info->idev);
+	info->idev = NULL;
+out_unfreedevice:
+	input_free_device(info->idev);
+out:
+	kfree(info);
+	return ret;
 }
 
 static int __devexit ab8500_ponkey_remove(struct platform_device *pdev)
 {
-	struct ab8500_ponkey *ponkey = platform_get_drvdata(pdev);
+	struct ab8500_ponkey_info *info = platform_get_drvdata(pdev);
 
-	free_irq(ponkey->irq_dbf, ponkey);
-	free_irq(ponkey->irq_dbr, ponkey);
-	input_unregister_device(ponkey->idev);
-	kfree(ponkey);
-
-	platform_set_drvdata(pdev, NULL);
-
+	free_irq(info->irq_dbf, info);
+	free_irq(info->irq_dbr, info);
+	input_unregister_device(info->idev);
+	kfree(info);
 	return 0;
 }
 
