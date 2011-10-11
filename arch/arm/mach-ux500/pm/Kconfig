@@ -13,7 +13,7 @@ config UX500_CONTEXT
 
 config UX500_PM_PERFORMANCE
 	bool "Performance supervision"
-	depends on UX500_PRCMU_QOS_POWER
+	depends on DBX500_PRCMU_QOS_POWER
 	default y
 	help
 	  Enable supervision of events which may require a boost
