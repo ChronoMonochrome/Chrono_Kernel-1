@@ -193,13 +193,15 @@ static int mmio_pin_cfg_init(struct mmio_platform_data *pdata)
 		extra->xenon_charge = HREFV60_MMIO_XENON_CHARGE;
 		xshutdown_host[SECONDARY_CAMERA] = GPIO140_GPIO;
 		xshutdown_fw[SECONDARY_CAMERA] = GPIO140_IP_GPIO7;
-		xshutdown_disable[SECONDARY_CAMERA] = GPIO140_GPIO;
+		xshutdown_disable[SECONDARY_CAMERA] =
+						GPIO140_GPIO  | PIN_OUTPUT_LOW;
 		extra->xshutdown_pins[SECONDARY_CAMERA].gpio = 140;
 	} else {
 		extra->xenon_charge = GPIO_MMIO_XENON_CHARGE;
 		xshutdown_host[SECONDARY_CAMERA] = GPIO142_GPIO;
 		xshutdown_fw[SECONDARY_CAMERA] = GPIO142_IP_GPIO3;
-		xshutdown_disable[SECONDARY_CAMERA] = GPIO142_GPIO;
+		xshutdown_disable[SECONDARY_CAMERA] =
+						GPIO142_GPIO | PIN_OUTPUT_LOW;
 		extra->xshutdown_pins[SECONDARY_CAMERA].gpio = 142;
 	}
 	/* Setup Xenon Charge */
@@ -271,6 +273,7 @@ err_regulator:
 err_no_mem_reg:
 	return err;
 }
+
 static void mmio_power_exit(struct mmio_platform_data *pdata)
 {
 	int i = 0;
