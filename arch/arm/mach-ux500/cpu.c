@@ -18,6 +18,7 @@
 #include <linux/stat.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
+#include <linux/delay.h>
 
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
@@ -34,6 +35,15 @@ static const struct of_device_id ux500_dt_irq_match[] = {
 	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
 	{},
 };
+
+static void ux500_restart(char mode, const char *cmd)
+{
+	prcmu_system_reset();
+
+	mdelay(1000);
+	printk("Reboot via PRCMU failed -- System halted\n");
+	while (1);
+}
 
 void __init ux500_init_irq(void)
 {
@@ -64,6 +74,8 @@ void __init ux500_init_irq(void)
 		db5500_prcmu_early_init();
 	if (cpu_is_u8500())
 		db8500_prcmu_early_init();
+
+	arm_pm_restart = ux500_restart;
 	clk_init();
 }
 

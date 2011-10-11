@@ -12,8 +12,10 @@
 #include <linux/slab.h>
 #include <linux/platform_device.h>
 #include <linux/amba/bus.h>
+#include <linux/pm.h>
 
 #include <plat/gpio-nomadik.h>
+extern struct dev_power_domain ux500_dev_power_domain;
 
 #include <mach/hardware.h>
 
@@ -33,6 +35,7 @@ dbx500_add_amba_device(struct device *parent, const char *name,
 
 	dev->dma_mask = DMA_BIT_MASK(32);
 	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+	dev->dev.pwr_domain = &ux500_dev_power_domain;
 
 	dev->irq[0] = irq;
 
