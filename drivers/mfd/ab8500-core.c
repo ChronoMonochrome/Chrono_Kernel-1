@@ -768,6 +768,9 @@ static struct mfd_cell __devinitdata abx500_common_devs[] = {
 		.name = "ab8500-regulator",
 	},
 	{
+		.name = "ab8500-regulator-debug",
+	},
+	{
 		.name = "ab8500-gpadc",
 		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
 		.resources = ab8500_gpadc_resources,

@@ -57,7 +57,7 @@
 #define SW_AVG_16			0x60
 #define ADC_SW_CONV			0x04
 #define EN_ICHAR			0x80
-#define BTEMP_PULL_UP			0x08
+#define BATTEMP_PULL_UP			0x04
 #define EN_BUF				0x40
 #define DIS_ZERO			0x00
 #define GPADC_BUSY			0x01
@@ -130,16 +130,12 @@ static LIST_HEAD(ab8500_gpadc_list);
  * ab8500_gpadc_get() - returns a reference to the primary AB8500 GPADC
  * (i.e. the first GPADC in the instance list)
  */
-struct ab8500_gpadc *ab8500_gpadc_get(char *name)
+struct ab8500_gpadc *ab8500_gpadc_get(void)
 {
 	struct ab8500_gpadc *gpadc;
+	gpadc = list_first_entry(&ab8500_gpadc_list, struct ab8500_gpadc, node);
 
-	list_for_each_entry(gpadc, &ab8500_gpadc_list, node) {
-		if (!strcmp(name, dev_name(gpadc->dev)))
-		    return gpadc;
-	}
-
-	return ERR_PTR(-ENOENT);
+	return gpadc;
 }
 EXPORT_SYMBOL(ab8500_gpadc_get);
 

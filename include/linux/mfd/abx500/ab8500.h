@@ -211,6 +211,9 @@ enum ab8500_version {
 #define AB8500_NUM_IRQ_REGS		14
 #define AB9540_NUM_IRQ_REGS		17
 
+/* Forward declaration */
+struct ab8500_charger;
+
 /**
  * struct ab8500 - ab8500 internal structure
  * @dev: parent device
@@ -229,12 +232,12 @@ enum ab8500_version {
  * @mask_size: Actual number of valid entries in mask[], oldmask[] and
  * irq_reg_offset
  * @irq_reg_offset: Array of offsets into IRQ registers
+ * @charger: pointer to the charger driver device information.
  */
 struct ab8500 {
 	struct device	*dev;
 	struct mutex	lock;
 	struct mutex	irq_lock;
-
 	int		irq_base;
 	int		irq;
 	enum ab8500_version version;
@@ -251,10 +254,14 @@ struct ab8500 {
 	u8 *oldmask;
 	int mask_size;
 	const int *irq_reg_offset;
+
+	struct ab8500_charger *charger;
 };
 
 struct regulator_reg_init;
 struct regulator_init_data;
+struct ab8500_denc_platform_data;
+struct ab8500_audio_platform_data;
 struct ab8500_gpio_platform_data;
 
 /**
@@ -265,14 +272,25 @@ struct ab8500_gpio_platform_data;
  * @regulator_reg_init: regulator init registers
  * @num_regulator: number of regulators
  * @regulator: machine-specific constraints for regulators
+ * @battery: machine-specific battery management data
+ * @charger: machine-specific charger data
+ * @btemp: machine-specific battery temp data
  */
 struct ab8500_platform_data {
 	int irq_base;
+	bool pm_power_off;
 	void (*init) (struct ab8500 *);
 	int num_regulator_reg_init;
 	struct ab8500_regulator_reg_init *regulator_reg_init;
 	int num_regulator;
 	struct regulator_init_data *regulator;
+	struct ab8500_bm_data *battery;
+	struct ab8500_denc_platform_data *denc;
+	struct ab8500_audio_platform_data *audio;
+	struct ab8500_charger_platform_data *charger;
+	struct ab8500_btemp_platform_data *btemp;
+	struct ab8500_fg_platform_data *fg;
+	struct ab8500_chargalg_platform_data *chargalg;
 	struct ab8500_gpio_platform_data *gpio;
 };
 

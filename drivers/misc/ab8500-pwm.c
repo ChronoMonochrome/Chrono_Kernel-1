@@ -8,6 +8,7 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/pwm.h>
+#include <linux/clk.h>
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab8500.h>
 #include <linux/module.h>
@@ -27,8 +28,10 @@
 struct pwm_device {
 	struct device *dev;
 	struct list_head node;
+	struct clk *clk;
 	const char *label;
 	unsigned int pwm_id;
+	bool clk_enabled;
 };
 
 static LIST_HEAD(pwm_list);
@@ -67,9 +70,17 @@ int pwm_enable(struct pwm_device *pwm)
 {
 	int ret;
 
+	if (!pwm->clk_enabled) {
+		ret = clk_enable(pwm->clk);
+		if (ret < 0) {
+			dev_err(pwm->dev, "failed to enable sysclk\n");
+			return ret;
+		}
+		pwm->clk_enabled = true;
+	}
 	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
 				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
-				1 << (pwm->pwm_id-1), ENABLE_PWM);
+				1 << (pwm->pwm_id-1), 1 << (pwm->pwm_id-1));
 	if (ret < 0)
 		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
 							pwm->label, ret);
@@ -84,9 +95,27 @@ void pwm_disable(struct pwm_device *pwm)
 	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
 				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
 				1 << (pwm->pwm_id-1), DISABLE_PWM);
+	/*
+	 * Workaround to set PWM in disable.
+	 * If enable bit is not toggled the PWM might output 50/50 duty cycle
+	 * even though it should be disabled
+	 */
+	ret &= abx500_mask_and_set_register_interruptible(pwm->dev,
+				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
+				1 << (pwm->pwm_id-1),
+				ENABLE_PWM << (pwm->pwm_id-1));
+	ret &= abx500_mask_and_set_register_interruptible(pwm->dev,
+				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
+				1 << (pwm->pwm_id-1), DISABLE_PWM);
+
 	if (ret < 0)
 		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
 							pwm->label, ret);
+	if (pwm->clk_enabled) {
+		clk_disable(pwm->clk);
+		pwm->clk_enabled = false;
+	}
+
 	return;
 }
 EXPORT_SYMBOL(pwm_disable);
@@ -116,6 +145,8 @@ EXPORT_SYMBOL(pwm_free);
 static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
 {
 	struct pwm_device *pwm;
+	int ret = 0;
+
 	/*
 	 * Nothing to be done in probe, this is required to get the
 	 * device which is required for ab8500 read and write
@@ -129,14 +160,24 @@ static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
 	pwm->pwm_id = pdev->id;
 	list_add_tail(&pwm->node, &pwm_list);
 	platform_set_drvdata(pdev, pwm);
+
+	pwm->clk = clk_get(pwm->dev, "sysclk");
+	if (IS_ERR(pwm->clk)) {
+		dev_err(pwm->dev, "clock request failed\n");
+		ret = PTR_ERR(pwm->clk);
+		kfree(pwm);
+		return ret;
+	}
+	pwm->clk_enabled = false;
 	dev_dbg(pwm->dev, "pwm probe successful\n");
-	return 0;
+	return ret;
 }
 
 static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
 {
 	struct pwm_device *pwm = platform_get_drvdata(pdev);
 	list_del(&pwm->node);
+	clk_put(pwm->clk);
 	dev_dbg(&pdev->dev, "pwm driver removed\n");
 	kfree(pwm);
 	return 0;
