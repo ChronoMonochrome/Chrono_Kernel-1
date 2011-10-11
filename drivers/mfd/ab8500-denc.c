@@ -434,6 +434,20 @@ static int debugfs_ab8500_open_file(struct inode *inode, struct file *file)
 
 #define DEBUG_BUF_SIZE 900
 
+#define AB8500_GPIO_DIR5                0x1014
+#define AB8500_GPIO_DIR5_35_SHIFT       2
+#define AB8500_GPIO_DIR5_35_MASK        (1 << AB8500_GPIO_DIR5_35_SHIFT)
+#define AB8500_GPIO_OUT5                0x1024
+#define AB8500_GPIO_OUT5_35_SHIFT       2
+#define AB8500_GPIO_OUT5_35_MASK        (1 << AB8500_GPIO_OUT5_35_SHIFT)
+#define AB8500_GPIO_OUT5_35_VIDEO       0
+#define AB8500_GPIO_OUT5_35_AUDIO       1
+#define AB8500_GPIO_NPUD5                0x1034
+#define AB8500_GPIO_NPUD5_35_SHIFT       2
+#define AB8500_GPIO_NPUD5_35_MASK        (1 << AB8500_GPIO_NPUD5_35_SHIFT)
+#define AB8500_GPIO_NPUD5_35_ACTIVE      0
+#define AB8500_GPIO_NPUD5_35_INACTIVE    1
+
 static ssize_t debugfs_ab8500_dump_regs(struct file *file, char __user *buf,
 						size_t count, loff_t *f_pos)
 {
@@ -444,12 +458,14 @@ static ssize_t debugfs_ab8500_dump_regs(struct file *file, char __user *buf,
 
 	data_size += sprintf(buffer + data_size,
 		"AB8500 DENC registers:\n"
+		"------Regulators etc ----------\n"
 		"CTRL3         : 0x%04x = 0x%02x\n"
 		"SYSULPCLK_CONF: 0x%04x = 0x%02x\n"
 		"SYSCLK_CTRL   : 0x%04x = 0x%02x\n"
 		"REGU_MISC1    : 0x%04x = 0x%02x\n"
 		"VAUX12_REGU   : 0x%04x = 0x%02x\n"
 		"VAUX1_SEL1    : 0x%04x = 0x%02x\n"
+		"------TVout only --------------\n"
 		"DENC_CONF0    : 0x%04x = 0x%02x\n"
 		"DENC_CONF1    : 0x%04x = 0x%02x\n"
 		"DENC_CONF2    : 0x%04x = 0x%02x\n"
@@ -458,6 +474,10 @@ static ssize_t debugfs_ab8500_dump_regs(struct file *file, char __user *buf,
 		"TVOUT_CTRL    : 0x%04x = 0x%02x\n"
 		"TVOUT_CTRL2   : 0x%04x = 0x%02x\n"
 		"IT_MASK1      : 0x%04x = 0x%02x\n"
+		"------AV connector-------------\n"
+		"GPIO_DIR5     : 0x%04x = 0x%02x\n"
+		"GPIO_OUT5     : 0x%04x = 0x%02x\n"
+		"GPIO_NPUD5    : 0x%04x = 0x%02x\n"
 		,
 		AB8500_CTRL3,            ab8500_rreg(dev, AB8500_CTRL3),
 		AB8500_SYS_ULP_CLK_CONF, ab8500_rreg(dev,
@@ -473,7 +493,10 @@ static ssize_t debugfs_ab8500_dump_regs(struct file *file, char __user *buf,
 		AB8500_DENC_CONF8,       ab8500_rreg(dev, AB8500_DENC_CONF8),
 		AB8500_TVOUT_CTRL,       ab8500_rreg(dev, AB8500_TVOUT_CTRL),
 		AB8500_TVOUT_CTRL2,      ab8500_rreg(dev, AB8500_TVOUT_CTRL2),
-		AB8500_IT_MASK1,         ab8500_rreg(dev, AB8500_IT_MASK1)
+		AB8500_IT_MASK1,         ab8500_rreg(dev, AB8500_IT_MASK1),
+		AB8500_GPIO_DIR5,        ab8500_rreg(dev, AB8500_GPIO_DIR5),
+		AB8500_GPIO_OUT5,        ab8500_rreg(dev, AB8500_GPIO_OUT5),
+		AB8500_GPIO_NPUD5,       ab8500_rreg(dev, AB8500_GPIO_NPUD5)
 	);
 	if (data_size >= DEBUG_BUF_SIZE) {
 		printk(KERN_EMERG "AB8500 DENC: Buffer overrun\n");
