@@ -106,5 +106,11 @@ config U5500_MBOX
 	help
 	  Add support for U5500 mailbox communication with modem side
 
+config UX500_DEBUG_NO_LAUTERBACH
+       bool "Disable clocks needed for Lauterbach debugging"
+       help
+	  Disable clocks needed for Lauterbach debugging at boot.
+	  If yes, you will reduce the power consumption.
+
 source "arch/arm/mach-ux500/Kconfig-arch"
 endif
