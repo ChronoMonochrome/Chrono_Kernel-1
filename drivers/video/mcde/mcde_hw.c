@@ -74,6 +74,8 @@ static struct clk *clock_dsi_lp;
 static u8 mcde_is_enabled;
 static struct mutex mcde_hw_lock;
 static struct delayed_work hw_timeout_work;
+static u8 enable_dsi;
+static u8 dsi_is_enabled;
 
 static u8 mcde_dynamic_power_management = true;
 
@@ -414,47 +416,13 @@ static int enable_clocks_and_power(struct platform_device *pdev)
 		dev_warn(&pdev->dev, "%s: esram_epod regulator is null\n"
 						, __func__);
 	}
-
-	if (regulator_vana) {
-		ret = regulator_enable(regulator_vana);
-		if (ret < 0) {
-			dev_warn(&pdev->dev, "%s: regulator_enable failed\n",
-			__func__);
-			goto regulator_vana_err;
-		}
-	} else {
-		dev_warn(&pdev->dev, "%s: vana regulator is null\n"
-						, __func__);
-		goto regulator_vana_err;
-	}
 #endif
-
-	ret = pdata->platform_enable();
-	if (ret < 0) {
-		dev_warn(&pdev->dev, "%s: "
-			"platform_enable failed ret = %d\n", __func__, ret);
-		goto prcmu_err;
+	pdata->platform_set_clocks();
+	if (enable_dsi > 0) {
+		pdata->platform_enable_dsipll();
+		dsi_is_enabled = true;
 	}
 
-	ret = clk_enable(clock_dpi);
-	if (ret < 0) {
-		dev_warn(&pdev->dev, "%s: "
-			"clk_enable dpi failed ret = %d\n", __func__, ret);
-		goto clk_dpi_err;
-	}
-
-	ret = clk_enable(clock_dsi);
-	if (ret < 0) {
-		dev_warn(&pdev->dev, "%s: "
-			"clk_enable dsi failed ret = %d\n", __func__, ret);
-		goto clk_dsi_err;
-	}
-	ret = clk_enable(clock_dsi_lp);
-	if (ret < 0) {
-		dev_warn(&pdev->dev, "%s: "
-			"clk_enable dsi_lp failed ret = %d\n", __func__, ret);
-		goto clk_dsi_lp_err;
-	}
 	ret = clk_enable(clock_mcde);
 	if (ret < 0) {
 		dev_warn(&pdev->dev, "%s: "
@@ -465,18 +433,7 @@ static int enable_clocks_and_power(struct platform_device *pdev)
 	return ret;
 
 clk_mcde_err:
-	clk_disable(clock_dsi_lp);
-clk_dsi_lp_err:
-	clk_disable(clock_dsi);
-clk_dsi_err:
-	clk_disable(clock_dpi);
-clk_dpi_err:
-	pdata->platform_disable();
-prcmu_err:
 #ifdef CONFIG_REGULATOR
-	if (regulator_vana)
-		regulator_disable(regulator_vana);
-regulator_vana_err:
 	if (regulator_esram_epod)
 		regulator_disable(regulator_esram_epod);
 regulator_esram_err:
@@ -493,27 +450,13 @@ static int disable_clocks_and_power(struct platform_device *pdev)
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	clk_disable(clock_dpi);
-	clk_disable(clock_dsi_lp);
 	clk_disable(clock_mcde);
-	clk_disable(clock_dsi);
-
-	pdata->platform_disable();
-
-#ifdef CONFIG_REGULATOR
-	if (regulator_vana) {
-		ret = regulator_disable(regulator_vana);
-		if (ret < 0) {
-			dev_warn(&pdev->dev, "%s: regulator_disable failed\n"
-					, __func__);
-			goto regulator_vana_err;
-		}
-	} else {
-		dev_warn(&pdev->dev, "%s: vana regulator is null\n"
-					, __func__);
-		goto regulator_vana_err;
+	if (enable_dsi > 0) {
+		pdata->platform_disable_dsipll();
+		dsi_is_enabled = false;
 	}
 
+#ifdef CONFIG_REGULATOR
 	if (regulator_mcde_epod) {
 		ret = regulator_disable(regulator_mcde_epod);
 		if (ret < 0) {
@@ -543,12 +486,7 @@ static int disable_clocks_and_power(struct platform_device *pdev)
 regulator_esram_epod_err:
 	regulator_enable(regulator_mcde_epod);
 regulator_mcde_epod_err:
-	regulator_enable(regulator_vana);
-regulator_vana_err:
-	clk_enable(clock_dpi);
-	clk_enable(clock_dsi_lp);
 	clk_enable(clock_mcde);
-	clk_enable(clock_dsi);
 #endif
 	return ret;
 }
@@ -607,6 +545,22 @@ static void update_mcde_registers(void)
 		MCDE_VSCRC1_VSPMAX(0xff));
 }
 
+static void disable_formatter(struct mcde_port *port)
+{
+	if (port->type == MCDE_PORTTYPE_DSI) {
+		if (port->phy.dsi.clk_dsi)
+			clk_disable(port->phy.dsi.clk_dsi);
+		if (port->phy.dsi.clk_dsi_lp)
+			clk_disable(port->phy.dsi.clk_dsi_lp);
+		if (port->phy.dsi.reg_vana)
+			regulator_disable(port->phy.dsi.reg_vana);
+	}
+	if (port->type == MCDE_PORTTYPE_DPI) {
+		if (port->phy.dpi.clk_dpi)
+			clk_disable(port->phy.dpi.clk_dpi);
+	}
+}
+
 static int disable_mcde_hw(bool force_disable)
 {
 	int i;
@@ -635,6 +589,10 @@ static int disable_mcde_hw(bool force_disable)
 					cpu_relax();
 					udelay(100);
 				}
+			if (chnl->formatter_updated) {
+				disable_formatter(&chnl->port);
+				chnl->formatter_updated = false;
+			}
 		} else if (chnl->enabled && chnl->continous_running) {
 			mcde_up = true;
 		}
@@ -1291,6 +1249,36 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 		int i = 0;
 		u8 idx;
 		u8 lnk = port->link;
+		int ret;
+
+		if (port->phy.dsi.reg_vana) {
+			ret = regulator_enable(port->phy.dsi.reg_vana);
+			if (ret < 0) {
+				dev_warn(&mcde_dev->dev,
+					"%s: regulator_enable failed\n",
+								__func__);
+				goto regulator_vana_err;
+			}
+		}
+
+		if (port->phy.dsi.clk_dsi) {
+			ret = clk_enable(port->phy.dsi.clk_dsi);
+			if (ret < 0) {
+				dev_warn(&mcde_dev->dev, "%s: "
+					"clk_enable dsi failed ret = %d\n",
+								__func__, ret);
+				goto clk_dsi_err;
+			}
+		}
+		if (port->phy.dsi.clk_dsi_lp) {
+			ret = clk_enable(port->phy.dsi.clk_dsi_lp);
+			if (ret < 0) {
+				dev_warn(&mcde_dev->dev, "%s: "
+					"clk_enable dsi_lp failed ret = %d\n",
+								__func__, ret);
+				goto clk_dsi_lp_err;
+			}
+		}
 
 		if (hardware_version == MCDE_CHIP_VERSION_1_0_4)
 			idx = chnl->id;
@@ -1304,7 +1292,7 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			if (hardware_version == MCDE_CHIP_VERSION_3_0_5) {
 				dev_err(&mcde_dev->dev,
 				"DSI TE polling is not supported on this HW\n");
-				return -EINVAL;
+				goto dsi_link_error;
 			}
 
 			/* Enable DSI TE polling */
@@ -1324,7 +1312,7 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 				dev_warn(&mcde_dev->dev,
 				"DSI %d data lane remap not available!\n",
 				lnk);
-				return -EINVAL;
+				goto dsi_link_error;
 			}
 		} else
 			dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, DLX_REMAP_EN,
@@ -1365,7 +1353,7 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			if (i++ == 10) {
 				dev_warn(&mcde_dev->dev,
 					"DSI lane not ready (link=%d)!\n", lnk);
-				return -EINVAL;
+				goto dsi_link_error;
 			}
 		}
 
@@ -1389,12 +1377,40 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 		}
 	}
 
+	if (port->type == MCDE_PORTTYPE_DPI) {
+		if (port->phy.dpi.clk_dpi) {
+			int ret;
+			ret = clk_enable(port->phy.dpi.clk_dpi);
+			if (ret < 0) {
+				dev_warn(&mcde_dev->dev, "%s: "
+					"clk_enable dsi_lp failed ret = %d\n",
+								__func__, ret);
+				goto clk_dpi_err;
+			}
+		}
+	}
+
 	mcde_wfld(MCDE_CR, MCDEEN, true);
 	chnl->formatter_updated = true;
 
 	dev_vdbg(&mcde_dev->dev, "Static registers setup, chnl=%d\n", chnl->id);
 
 	return 0;
+dsi_link_error:
+	if (port->phy.dsi.clk_dsi_lp)
+		clk_disable(port->phy.dsi.clk_dsi_lp);
+clk_dsi_lp_err:
+	if (port->phy.dsi.clk_dsi)
+		clk_disable(port->phy.dsi.clk_dsi);
+clk_dsi_err:
+	if (port->phy.dsi.reg_vana) {
+		regulator_disable(port->phy.dsi.reg_vana);
+		chnl->port.phy.dsi.reg_vana = NULL;
+	}
+regulator_vana_err:
+clk_dpi_err:
+	return -EINVAL;
+
 }
 
 /* REVIEW: Make update_* an mcde_rectangle? */
@@ -2294,6 +2310,25 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 	_mcde_chnl_apply(chnl);
 	chnl->reserved = true;
 
+	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+#ifdef CONFIG_REGULATOR
+		chnl->port.phy.dsi.reg_vana = regulator_vana;
+#else
+		chnl->port.phy.dsi.reg_vana = NULL;
+#endif
+		chnl->port.phy.dsi.clk_dsi = clock_dsi;
+		chnl->port.phy.dsi.clk_dsi_lp = clock_dsi_lp;
+		enable_dsi++;
+		if (!dsi_is_enabled && mcde_is_enabled) {
+			struct mcde_platform_data *pdata =
+					mcde_dev->dev.platform_data;
+			pdata->platform_enable_dsipll();
+			dsi_is_enabled = true;
+		}
+	} else if (chnl->port.type == MCDE_PORTTYPE_DPI) {
+		chnl->port.phy.dpi.clk_dpi = clock_dpi;
+	}
+
 	return chnl;
 }
 
@@ -2681,6 +2716,20 @@ void mcde_chnl_put(struct mcde_chnl_state *chnl)
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
 	chnl->reserved = false;
+	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+		chnl->port.phy.dsi.reg_vana = NULL;
+		chnl->port.phy.dsi.clk_dsi = NULL;
+		chnl->port.phy.dsi.clk_dsi_lp = NULL;
+		enable_dsi--;
+		if (dsi_is_enabled && enable_dsi == 0) {
+			struct mcde_platform_data *pdata =
+					mcde_dev->dev.platform_data;
+			pdata->platform_disable_dsipll();
+			dsi_is_enabled = false;
+		}
+	} else if (chnl->port.type == MCDE_PORTTYPE_DPI) {
+		chnl->port.phy.dpi.clk_dpi = NULL;
+	}
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
@@ -2729,6 +2778,12 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 			udelay(100);
 		}
 	}
+	if (chnl->formatter_updated) {
+		disable_formatter(&chnl->port);
+		chnl->formatter_updated = false;
+	}
+	del_timer(&chnl->dsi_te_timer);
+	del_timer(&chnl->auto_sync_timer);
 	(void)disable_mcde_hw(false);
 	mutex_unlock(&mcde_hw_lock);
 

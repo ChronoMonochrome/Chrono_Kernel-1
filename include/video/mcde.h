@@ -170,6 +170,9 @@ struct mcde_port {
 			u8 num_data_lanes;
 			u8 ui;
 			bool clk_cont;
+			struct clk *clk_dsi;
+			struct clk *clk_dsi_lp;
+			struct regulator *reg_vana;
 
 			/* DSI data lanes are swapped if true */
 			bool data_lanes_swap;
@@ -179,6 +182,7 @@ struct mcde_port {
 			bool tv_mode;
 			u16 clock_div; /* use 0 or 1 for no clock divider */
 			u32 polarity;    /* see DPI_ACT_LOW_* definitions */
+			struct clk *clk_dpi;
 		} dpi;
 	} phy;
 };
@@ -424,8 +428,9 @@ struct mcde_platform_data {
 	const char *clock_dpi_id;
 	const char *clock_mcde_id;
 
-	int (*platform_enable)(void);
-	int (*platform_disable)(void);
+	int (*platform_set_clocks)(void);
+	int (*platform_enable_dsipll)(void);
+	int (*platform_disable_dsipll)(void);
 };
 
 int mcde_init(void);
