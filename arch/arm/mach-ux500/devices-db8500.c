@@ -330,14 +330,19 @@ static struct resource mcde_resources[] = {
 	},
 };
 
-static int mcde_platform_enable(void)
+static int mcde_platform_enable_dsipll(void)
 {
 	return prcmu_enable_dsipll();
 }
 
-static int mcde_platform_disable(void)
+static int mcde_platform_disable_dsipll(void)
 {
 	return prcmu_disable_dsipll();
+}
+
+static int mcde_platform_set_display_clocks(void)
+{
+	return prcmu_set_display_clocks();
 }
 
 static struct mcde_platform_data mcde_pdata = {
@@ -362,8 +367,9 @@ static struct mcde_platform_data mcde_pdata = {
 	.clock_dsi_lp_id = "tv",
 	.clock_dpi_id = "lcd",
 	.clock_mcde_id = "mcde",
-	.platform_enable = mcde_platform_enable,
-	.platform_disable = mcde_platform_disable,
+	.platform_set_clocks = mcde_platform_set_display_clocks,
+	.platform_enable_dsipll = mcde_platform_enable_dsipll,
+	.platform_disable_dsipll = mcde_platform_disable_dsipll,
 };
 
 struct platform_device u8500_mcde_device = {
