@@ -81,6 +81,7 @@ extern void hrefv60_sdi_init(struct device *parent);
 extern void mop500_sdi_tc35892_init(struct device *parent);
 void __init mop500_u8500uib_init(void);
 void __init mop500_stuib_init(void);
+void __init mop500_msp_init(void);
 void __init mop500_pins_init(void);
 void __init hrefv60_pins_init(void);
 void __init snowball_pins_init(void);
