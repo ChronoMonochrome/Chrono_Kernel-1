@@ -366,9 +366,13 @@ static void ske_keypad_scan_work(struct work_struct *work)
 	}
 
 	if (keypad->key_pressed) {
-		/* Key still pressed, schedule work to poll changes in 50 ms */
+		/*
+		 * Key still pressed, schedule work to poll changes in 100 ms
+		 * After increasing the delay from 50 to 100 it is taking
+		 * 2% to 3% load on average.
+		 */
 		schedule_delayed_work(&keypad->scan_work,
-				      msecs_to_jiffies(50));
+				      msecs_to_jiffies(100));
 	} else {
 		/* For safty measure, clear interrupt once more */
 		ske_keypad_set_bits(keypad, SKE_ICR, 0x0, SKE_KPICA);
