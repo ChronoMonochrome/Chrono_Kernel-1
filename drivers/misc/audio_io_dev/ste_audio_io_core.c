@@ -90,11 +90,11 @@ int ste_audio_io_core_api_init_data(struct platform_device *pdev)
 		goto free_regulator_vdmic_vamic1_vamic2;
 	}
 	regulator_avsource = regulator_get(ptr_audio_codec_cnxt->dev,
-								"vcc-N2158");
+								"vcc-avswitch");
 	if (IS_ERR(regulator_avsource)) {
 		status = PTR_ERR(regulator_avsource);
 		dev_err(ptr_audio_codec_cnxt->dev,
-				"Register error for vcc-N2158=%d", status);
+				"Register error for vcc-avswitch=%d", status);
 		goto free_regulator_vdmic_vamic1_vamic2_vaudio;
 	}
 

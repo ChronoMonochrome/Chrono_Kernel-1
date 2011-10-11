@@ -20,13 +20,13 @@
 #include <sound/soc.h>
 #include <linux/regulator/consumer.h>
 #include <sound/pcm.h>
+#include <sound/jack.h>
 #include <sound/pcm_params.h>
 #include <sound/soc-dapm.h>
 #include <mach/hardware.h>
 #include "ux500_pcm.h"
 #include "ux500_msp_dai.h"
 #include "../codecs/ab8500.h"
-#include "ux500_ab8500_accessory.h"
 
 #define AB8500_DAIFMT_TDM_MASTER \
 		(SND_SOC_DAIFMT_DSP_B | \
@@ -41,6 +41,8 @@
 
 #define DEF_TX_SLOTS	TX_SLOT_STEREO
 #define DEF_RX_SLOTS	RX_SLOT_MONO
+
+static struct snd_soc_jack jack;
 
 /* Slot configuration */
 static unsigned int tx_slots = DEF_TX_SLOTS;
@@ -247,6 +249,26 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 	{"DMIC6", NULL, "v-dmic"},
 };
 
+static int create_jack(struct snd_soc_codec *codec)
+{
+	return snd_soc_jack_new(codec,
+	"AB8500 Hs Status",
+	SND_JACK_HEADPHONE     |
+	SND_JACK_MICROPHONE    |
+	SND_JACK_HEADSET       |
+	SND_JACK_LINEOUT       |
+	SND_JACK_MECHANICAL    |
+	SND_JACK_VIDEOOUT,
+	&jack);
+}
+
+void ux500_ab8500_jack_report(int value)
+{
+	if (jack.jack)
+		snd_soc_jack_report(&jack, value, 0xFF);
+}
+EXPORT_SYMBOL_GPL(ux500_ab8500_jack_report);
+
 int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
@@ -261,14 +283,11 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		return status;
 	}
 
-	/*
-	status = ab8500_accessory_init(rtd->codec);
+	status = create_jack(codec);
 	if (status < 0) {
-		pr_err("%s: Failed to initialize accessories (%d).\n",
-				__func__, status);
+		pr_err("%s: Failed to create Jack (%d).\n", __func__, status);
 		return status;
 	}
-	*/
 
 	snd_soc_dapm_new_controls(codec, dapm_widgets,
 			ARRAY_SIZE(dapm_widgets));
@@ -283,9 +302,6 @@ void ux500_ab8500_soc_machine_drv_cleanup(void)
 {
 	pr_info("%s: Enter.\n", __func__);
 
-	/*
-	ab8500_accessory_cleanup();
-	*/
 
 	regulator_bulk_free(ARRAY_SIZE(ab8500_regus), ab8500_regus);
 }

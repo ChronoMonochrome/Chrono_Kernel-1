@@ -23,4 +23,6 @@ void ux500_ab8500_soc_machine_drv_cleanup(void);
 int enable_regulator(const char *name);
 void disable_regulator(const char *name);
 
+extern void ux500_ab8500_jack_report(int);
+
 #endif

@@ -21,7 +21,7 @@ endif
 
 ifdef CONFIG_SND_SOC_UX500_AB8500
 snd-soc-ux500-ab8500-objs := ux500_ab8500.o
-obj-$(CONFIG_SND_SOC_UX500_AB8500) += ux500_ab8500_accessory.o ux500_ab8500.o
+obj-$(CONFIG_SND_SOC_UX500_AB8500) += ux500_ab8500.o
 endif
 
 ifdef CONFIG_SND_SOC_UX500_AV8100

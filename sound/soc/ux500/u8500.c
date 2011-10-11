@@ -25,7 +25,7 @@
 #endif
 
 #ifdef CONFIG_SND_SOC_UX500_AB8500
-#include "ux500_ab8500.h"
+#include <sound/ux500_ab8500.h>
 #endif
 
 #ifdef CONFIG_SND_SOC_UX500_AV8100
