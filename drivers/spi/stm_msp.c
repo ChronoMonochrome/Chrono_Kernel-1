@@ -1669,7 +1669,7 @@ err_first_setup:
 	return status;
 }
 
-static int __init stm_msp_probe(struct amba_device *adev, struct amba_id *id)
+static int __init stm_msp_probe(struct amba_device *adev, const struct amba_id *id)
 {
 	struct device *dev = &adev->dev;
 	struct stm_msp_controller *platform_info = adev->dev.platform_data;
@@ -1900,7 +1900,7 @@ static struct amba_id stm_msp_ids[] = {
 	},
 };
 
-static struct amba_driver stm_msp_driver = {
+static struct amba_driver __refdata stm_msp_driver = {
 	.drv = {
 		.name	= "MSP",
 	},
