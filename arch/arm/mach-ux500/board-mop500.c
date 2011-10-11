@@ -517,6 +517,7 @@ static struct platform_device ux500_backlight_device[] = {
 
 /* add any platform devices here - TODO */
 static struct platform_device *mop500_platform_devs[] __initdata = {
+	&ux500_hwmem_device,
 	&mop500_gpio_keys_device,
 	&ab8500_device,
 #ifdef CONFIG_LEDS_PWM
@@ -708,6 +709,7 @@ static void __init mop500_uart_init(struct device *parent)
 }
 
 static struct platform_device *snowball_platform_devs[] __initdata = {
+	&ux500_hwmem_device,
 	&snowball_led_dev,
 	&snowball_key_dev,
 	&snowball_sbnet_dev,
