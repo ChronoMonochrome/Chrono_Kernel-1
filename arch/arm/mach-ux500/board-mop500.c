@@ -274,53 +274,62 @@ static struct tc3589x_platform_data mop500_tc35892_data = {
 };
 
 static struct lp5521_led_config lp5521_pri_led[] = {
-       [0] = {
-	       .chan_nr = 0,
-	       .led_current = 0x2f,
-	       .max_current = 0x5f,
-       },
-       [1] = {
-	       .chan_nr = 1,
-	       .led_current = 0x2f,
-	       .max_current = 0x5f,
-       },
-       [2] = {
-	       .chan_nr = 2,
-	       .led_current = 0x2f,
-	       .max_current = 0x5f,
-       },
+	[0] = {
+		.chan_nr = 0,
+		.led_current = 0x2f,
+		.max_current = 0x5f,
+	},
+	[1] = {
+		.chan_nr = 1,
+		.led_current = 0x2f,
+		.max_current = 0x5f,
+	},
+	[2] = {
+		.chan_nr = 2,
+		.led_current = 0x2f,
+		.max_current = 0x5f,
+	},
 };
 
+static struct av8100_platform_data av8100_plat_data = {
+	.irq			= NOMADIK_GPIO_TO_IRQ(192),
+	.reset			= MOP500_HDMI_RST_GPIO,
+	.inputclk_id		= "sysclk2",
+	.regulator_pwr_id	= "hdmi_1v8",
+	.alt_powerupseq		= true,
+};
+
+
 static struct lp5521_platform_data __initdata lp5521_pri_data = {
-       .label = "lp5521_pri",
-       .led_config     = &lp5521_pri_led[0],
-       .num_channels   = 3,
-       .clock_mode     = LP5521_CLOCK_EXT,
+	.label		= "lp5521_pri",
+	.led_config	= &lp5521_pri_led[0],
+	.num_channels	= 3,
+	.clock_mode	= LP5521_CLOCK_EXT,
 };
 
 static struct lp5521_led_config lp5521_sec_led[] = {
-       [0] = {
-	       .chan_nr = 0,
-	       .led_current = 0x2f,
-	       .max_current = 0x5f,
-       },
-       [1] = {
-	       .chan_nr = 1,
-	       .led_current = 0x2f,
-	       .max_current = 0x5f,
-       },
-       [2] = {
-	       .chan_nr = 2,
-	       .led_current = 0x2f,
-	       .max_current = 0x5f,
-       },
+	[0] = {
+		.chan_nr = 0,
+		.led_current = 0x2f,
+		.max_current = 0x5f,
+	},
+	[1] = {
+		.chan_nr = 1,
+		.led_current = 0x2f,
+		.max_current = 0x5f,
+	},
+	[2] = {
+		.chan_nr = 2,
+		.led_current = 0x2f,
+		.max_current = 0x5f,
+	},
 };
 
 static struct lp5521_platform_data __initdata lp5521_sec_data = {
-       .label = "lp5521_sec",
-       .led_config     = &lp5521_sec_led[0],
-       .num_channels   = 3,
-       .clock_mode     = LP5521_CLOCK_EXT,
+	.label		= "lp5521_sec",
+	.led_config	= &lp5521_sec_led[0],
+	.num_channels	= 3,
+	.clock_mode	= LP5521_CLOCK_EXT,
 };
 
 static struct i2c_board_info __initdata mop500_i2c0_devices[] = {
