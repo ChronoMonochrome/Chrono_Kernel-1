@@ -2,7 +2,7 @@
 # Makefile for multifunction miscellaneous devices
 #
 
-obj-$(CONFIG_AB5500_CORE)	+= ab5500-core.o
+obj-$(CONFIG_AB5500_CORE)	+= ab5500-core.o ab5500-power.o
 88pm860x-objs			:= 88pm860x-core.o 88pm860x-i2c.o
 obj-$(CONFIG_MFD_88PM860X)	+= 88pm860x.o
 obj-$(CONFIG_MFD_SM501)		+= sm501.o
