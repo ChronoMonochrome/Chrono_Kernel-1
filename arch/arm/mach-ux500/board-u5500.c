@@ -13,6 +13,8 @@
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/amba/pl022.h>
 #include <linux/i2s/i2s.h>
+#include <linux/led-lm3530.h>
+#include <linux/input/synaptics_i2c_rmi4.h>
 
 #include <asm/hardware/gic.h>
 #include <asm/mach/arch.h>
@@ -30,7 +32,6 @@
 
 #include "pins-db5500.h"
 #include "devices-db5500.h"
-#include <linux/led-lm3530.h>
 
 /*
  * GPIO
@@ -38,14 +39,61 @@
 
 static pin_cfg_t u5500_pins[] = {
 	/* I2C */
-	GPIO218_I2C2_SCL        | PIN_INPUT_PULLUP,
-	GPIO219_I2C2_SDA        | PIN_INPUT_PULLUP,
+	GPIO3_I2C1_SCL	| PIN_INPUT_PULLUP,
+	GPIO4_I2C1_SDA	| PIN_INPUT_PULLUP,
+	GPIO218_I2C2_SCL	| PIN_INPUT_PULLUP,
+	GPIO219_I2C2_SDA	| PIN_INPUT_PULLUP,
+
+	/* Keypad */
+	GPIO128_KP_I0	| PIN_INPUT_PULLUP,
+	GPIO130_KP_I1	| PIN_INPUT_PULLUP,
+	GPIO132_KP_I2	| PIN_INPUT_PULLUP,
+	GPIO134_KP_I3	| PIN_INPUT_PULLUP,
+	GPIO137_KP_O4	| PIN_INPUT_PULLUP,
+	GPIO139_KP_O5	| PIN_INPUT_PULLUP,
+
+	/* MSP */
+	GPIO32_MSP0_TCK		| PIN_INPUT_PULLDOWN,
+	GPIO33_MSP0_TFS		| PIN_INPUT_PULLDOWN,
+	GPIO34_MSP0_TXD		| PIN_INPUT_PULLDOWN,
+	GPIO35_MSP0_RXD		| PIN_INPUT_PULLDOWN,
+	GPIO96_MSP1_TCK		| PIN_INPUT_PULLDOWN,
+	GPIO97_MSP1_TFS		| PIN_INPUT_PULLDOWN,
+	GPIO98_MSP1_TXD		| PIN_INPUT_PULLDOWN,
+	GPIO99_MSP1_RXD		| PIN_INPUT_PULLDOWN,
+	GPIO220_MSP2_TCK	| PIN_OUTPUT_LOW,
+	GPIO221_MSP2_TFS	| PIN_OUTPUT_LOW,
+	GPIO222_MSP2_TXD	| PIN_OUTPUT_LOW,
 
 	/* DISPLAY_ENABLE */
 	GPIO226_GPIO        | PIN_OUTPUT_LOW,
 
-	/* Backlight Enbale */
+	/* Backlight Enable */
 	GPIO224_GPIO        | PIN_OUTPUT_HIGH,
+
+	/* MMC0 (POP eMMC) */
+	GPIO5_MC0_DAT0		| PIN_INPUT_PULLUP,
+	GPIO6_MC0_DAT1		| PIN_INPUT_PULLUP,
+	GPIO7_MC0_DAT2		| PIN_INPUT_PULLUP,
+	GPIO8_MC0_DAT3		| PIN_INPUT_PULLUP,
+	GPIO9_MC0_DAT4		| PIN_INPUT_PULLUP,
+	GPIO10_MC0_DAT5		| PIN_INPUT_PULLUP,
+	GPIO11_MC0_DAT6		| PIN_INPUT_PULLUP,
+	GPIO12_MC0_DAT7		| PIN_INPUT_PULLUP,
+	GPIO13_MC0_CMD		| PIN_INPUT_PULLUP,
+	GPIO14_MC0_CLK		| PIN_OUTPUT_LOW,
+
+	/* SPI */
+	GPIO167_SPI1_CS0n	| PIN_OUTPUT_HIGH,
+	GPIO168_SPI1_RXD	| PIN_INPUT_PULLDOWN,
+	GPIO169_SPI1_TXD	| PIN_OUTPUT_LOW,
+	GPIO170_SPI1_CLK	| PIN_OUTPUT_LOW,
+
+	/* AB5500 */
+	GPIO78_IRQn,
+
+	/* TOUCH_IRQ */
+	GPIO179_GPIO	| PIN_INPUT_PULLUP,
 };
 
 /*
@@ -142,12 +190,6 @@ static struct ab5500_platform_data ab5500_plf_data = {
 		.base = IRQ_AB5500_BASE,
 		.count = AB5500_NR_IRQS,
 	},
-	.dev_data = {
-	},
-	.dev_data_sz = {
-	},
-	.init_settings = NULL,
-	.init_settings_sz = 0,
 };
 
 static struct platform_device u5500_ab5500_device = {
@@ -302,7 +344,7 @@ MACHINE_START(U5500, "ST-Ericsson U5500 Platform")
 MACHINE_END
 
 MACHINE_START(B5500, "ST-Ericsson U5500 Big Board")
-	.boot_params	= 0x00000100,
+	.atag_offset	= 0x00000100,
 	.map_io		= u5500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
