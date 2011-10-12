@@ -19,6 +19,11 @@ struct ab8500_ponkey_variant {
 	const char *irq_rising;
 };
 
+static const struct ab8500_ponkey_variant ab5500_onswa = {
+	.irq_falling	= "ONSWAn_falling",
+	.irq_rising	= "ONSWAn_rising",
+};
+
 static const struct ab8500_ponkey_variant ab8500_ponkey = {
 	.irq_falling	= "ONKEY_DBF",
 	.irq_rising	= "ONKEY_DBR",
@@ -145,6 +150,7 @@ static int __devexit ab8500_ponkey_remove(struct platform_device *pdev)
 }
 
 static struct platform_device_id ab8500_ponkey_id_table[] = {
+	{ "ab5500-onswa", (kernel_ulong_t)&ab5500_onswa, },
 	{ "ab8500-poweron-key", (kernel_ulong_t)&ab8500_ponkey, },
 	{ },
 };
