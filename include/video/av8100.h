@@ -24,6 +24,7 @@ struct av8100_platform_data {
 	int		reset;
 	const char	*inputclk_id;
 	const char	*regulator_pwr_id;
+	bool		alt_powerupseq;
 };
 
 enum av8100_error {
@@ -441,7 +442,8 @@ int av8100_reg_stby_int_mask_w(
 int av8100_reg_stby_pend_int_w(
 		unsigned char hpdi,
 		unsigned char cpdi,
-		unsigned char oni);
+		unsigned char oni,
+		unsigned char bpdig);
 int av8100_reg_gen_int_mask_w(
 		unsigned char eocm,
 		unsigned char vsim,

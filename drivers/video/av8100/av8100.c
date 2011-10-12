@@ -41,9 +41,9 @@
 #define AV8100_PLUGSTARTUP_TIME 100
 
 /* Standby search time */
-#define AV8100_ON_TIME 1	/* 20 ms step */
-#define AV8100_DENC_OFF_TIME 3	/* 640 ms step if > V1. Not used if V1 */
-#define AV8100_HDMI_OFF_TIME 2	/* 320 ms step if V2. 80 ms step if V1 */
+#define AV8100_ON_TIME 1	/* 9 ms step */
+#define AV8100_DENC_OFF_TIME 3	/* 275 ms step if > V1. Not used if V1 */
+#define AV8100_HDMI_OFF_TIME 2	/* 140 ms step if V2. 80 ms step if V1 */
 
 /* Command offsets */
 #define AV8100_COMMAND_OFFSET		0x10
@@ -93,12 +93,12 @@
 #define REG_10_8_MSB(p)		((u8)((p & 0x300)>>8))
 #define REG_12_8_MSB(p)		((u8)((p & 0xf00)>>8))
 
-#define AV8100_POWERON_WAITTIME1_MS 1
-#define AV8100_POWERON_WAITTIME2_MS 1
-#define AV8100_CMD_RET_WAITTIME_MS 1
+#define AV8100_WAITTIME_1MS 1
+#define AV8100_WAITTIME_5MS 5
+#define AV8100_WAITTIME_10MS 10
+#define AV8100_WAITTIME_50MS 50
+#define AV8100_WATTIME_100US 100
 #define AV8100_CMD_RET_TRIES 10
-#define AV8100_FWDL_WAITTIME1 10
-#define AV8100_FWDL_WAITTIME2 1
 #define AV8100_FWDL_TRIES 10
 
 /* Master clock timing */
@@ -516,7 +516,7 @@ static int av8100_int_event_handle(void)
 	/* Plug event */
 	if (hpdi | cpdi) {
 		/* Clear pending interrupts */
-		(void)av8100_reg_stby_pend_int_w(1, 1, 1);
+		(void)av8100_reg_stby_pend_int_w(1, 1, 1, 0);
 
 		/* STANDBY reg */
 		if (av8100_reg_stby_r(NULL, NULL, &hpds, &cpds, NULL)) {
@@ -1795,7 +1795,74 @@ static int av8100_powerup1(void)
 	gpio_set_value(pdata->reset, 1);
 
 	/* Need to wait before proceeding */
-	mdelay(AV8100_POWERON_WAITTIME1_MS);
+	msleep(AV8100_WAITTIME_1MS);
+
+	if (pdata->alt_powerupseq) {
+		u8 denc_off_time;
+		u8 hdmi_off_time;
+		u8 on_time;
+
+		/* Save the cycle values */
+		denc_off_time = av8100_globals->denc_off_time;
+		hdmi_off_time = av8100_globals->hdmi_off_time;
+		on_time = av8100_globals->on_time;
+
+		dev_dbg(av8100dev, "powerup seq alt\n");
+		retval = av8100_reg_hdmi_5_volt_time_w(0, 0, AV8100_ON_TIME);
+		if (retval) {
+			dev_err(av8100dev, "%s reg_wr err 1\n", __func__);
+			goto av8100_powerup1_err;
+		}
+
+		udelay(AV8100_WATTIME_100US);
+
+		/* Get the cycle values */
+		av8100_globals->denc_off_time = denc_off_time;
+		av8100_globals->hdmi_off_time = hdmi_off_time;
+		av8100_globals->on_time = on_time;
+
+		retval = av8100_reg_stby_pend_int_w(
+				AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_CPDI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_HIGH);
+		if (retval) {
+			dev_err(av8100dev, "%s reg_wr err 2\n", __func__);
+			goto av8100_powerup1_err;
+		}
+
+		udelay(AV8100_WATTIME_100US);
+
+		retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
+				AV8100_STANDBY_STBY_HIGH, MCLK_FREQ);
+		if (retval) {
+			dev_err(av8100dev, "%s reg_wr err 3\n", __func__);
+			goto av8100_powerup1_err;
+		}
+
+		msleep(AV8100_WAITTIME_1MS);
+
+		retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
+				AV8100_STANDBY_STBY_LOW, MCLK_FREQ);
+		if (retval) {
+			dev_err(av8100dev, "%s reg_wr err 4\n", __func__);
+			goto av8100_powerup1_err;
+		}
+
+		msleep(AV8100_WAITTIME_1MS);
+
+		retval = av8100_reg_stby_pend_int_w(
+				AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_CPDI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_LOW);
+		if (retval) {
+			dev_err(av8100dev, "%s reg_wr err 5\n", __func__);
+			goto av8100_powerup1_err;
+		}
+
+		msleep(AV8100_WAITTIME_1MS);
+	}
 
 	av8100_set_state(AV8100_OPMODE_STANDBY);
 
@@ -1803,7 +1870,7 @@ static int av8100_powerup1(void)
 	retval = av8100_reg_stby_pend_int_r(NULL, NULL, NULL, &chip_version);
 	if (retval) {
 		dev_err(av8100dev, "Failed to read chip version\n");
-		return -EFAULT;
+		goto av8100_powerup1_err;
 	}
 
 	dev_info(av8100dev, "chip version:%d\n", chip_version);
@@ -1816,11 +1883,15 @@ static int av8100_powerup1(void)
 	default:
 		dev_err(av8100dev, "Unsupported chip version:%d\n",
 			chip_version);
-		return -EFAULT;
+		goto av8100_powerup1_err;
 		break;
 	}
 
 	return 0;
+
+av8100_powerup1_err:
+	av8100_powerdown();
+	return -EFAULT;
 }
 
 static int av8100_powerup2(void)
@@ -1833,8 +1904,10 @@ static int av8100_powerup2(void)
 	if (retval) {
 		dev_err(av8100dev,
 			"Failed to write the value to av8100 register\n");
-		return -EFAULT;
+		return retval;
 	}
+
+	msleep(AV8100_WAITTIME_1MS);
 
 	/* ON time & OFF time on 5v HDMI plug detect */
 	retval = av8100_reg_hdmi_5_volt_time_w(
@@ -1844,11 +1917,10 @@ static int av8100_powerup2(void)
 	if (retval) {
 		dev_err(av8100dev,
 			"Failed to write the value to av8100 register\n");
-		return -EFAULT;
+		return retval;
 	}
 
-	/* Need to wait before proceeding */
-	mdelay(AV8100_POWERON_WAITTIME2_MS);
+	msleep(AV8100_WAITTIME_1MS);
 
 	av8100_set_state(AV8100_OPMODE_SCAN);
 
@@ -1871,7 +1943,21 @@ EXPORT_SYMBOL(av8100_powerup);
 
 int av8100_powerdown(void)
 {
+	int retval = 0;
+
 	struct av8100_platform_data *pdata = av8100dev->platform_data;
+
+	if (pdata->alt_powerupseq) {
+		retval = av8100_reg_stby_pend_int_w(
+				AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_CPDI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
+				AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_HIGH);
+
+		if (retval)
+			dev_err(av8100dev, "%s reg_wr err\n", __func__);
+		msleep(AV8100_WAITTIME_50MS);
+	}
 
 	if (gpio_get_value(pdata->reset) == 0)
 		return 0;
@@ -1898,9 +1984,13 @@ int av8100_powerdown(void)
 	}
 
 	gpio_set_value(pdata->reset, 0);
+
+	if (pdata->alt_powerupseq)
+		msleep(AV8100_WAITTIME_5MS);
+
 	av8100_set_state(AV8100_OPMODE_SHUTDOWN);
 
-	return 0;
+	return retval;
 }
 EXPORT_SYMBOL(av8100_powerdown);
 
@@ -1951,7 +2041,7 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 		av8100_globals->opp_requested = true;
 	}
 
-	msleep(AV8100_FWDL_WAITTIME1);
+	msleep(AV8100_WAITTIME_10MS);
 
 	fw_buff = av8100_fw_buff;
 	nbytes = AV8100_FW_SIZE;
@@ -2077,7 +2167,7 @@ int av8100_download_firmware(char *fw_buff, int nbytes,
 	retval = av8100_reg_gen_status_r(NULL, NULL, NULL, &uc,
 		NULL, NULL);
 	while ((retval == 0) && (uc != 0x1) && (cnt-- > 0)) {
-		mdelay(AV8100_FWDL_WAITTIME2);
+		msleep(AV8100_WAITTIME_1MS);
 		retval = av8100_reg_gen_status_r(NULL, NULL, NULL,
 			&uc, NULL, NULL);
 	}
@@ -2116,7 +2206,8 @@ int av8100_disable_interrupt(void)
 	retval = av8100_reg_stby_pend_int_w(
 			AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
 			AV8100_STANDBY_PENDING_INTERRUPT_CPDI_LOW,
-			AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW);
+			AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
+			AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_LOW);
 	if (retval) {
 		dev_dbg(av8100dev,
 			"Failed to write the value to av8100 register\n");
@@ -2178,7 +2269,8 @@ int av8100_enable_interrupt(void)
 	retval = av8100_reg_stby_pend_int_w(
 			AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
 			AV8100_STANDBY_PENDING_INTERRUPT_CPDI_LOW,
-			AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW);
+			AV8100_STANDBY_PENDING_INTERRUPT_ONI_LOW,
+			AV8100_STANDBY_PENDING_INTERRUPT_BPDIG_LOW);
 	if (retval) {
 		dev_dbg(av8100dev,
 			"Failed to write the value to av8100 register\n");
@@ -2323,7 +2415,7 @@ int av8100_reg_stby_int_mask_w(
 EXPORT_SYMBOL(av8100_reg_stby_int_mask_w);
 
 int av8100_reg_stby_pend_int_w(
-		u8 hpdi, u8 cpdi, u8 oni)
+		u8 hpdi, u8 cpdi, u8 oni, u8 bpdig)
 {
 	int retval;
 	u8 val;
@@ -2336,7 +2428,8 @@ int av8100_reg_stby_pend_int_w(
 	/* Set register value */
 	val = AV8100_STANDBY_PENDING_INTERRUPT_HPDI(hpdi) |
 		AV8100_STANDBY_PENDING_INTERRUPT_CPDI(cpdi) |
-		AV8100_STANDBY_PENDING_INTERRUPT_ONI(oni);
+		AV8100_STANDBY_PENDING_INTERRUPT_ONI(oni) |
+		AV8100_STANDBY_PENDING_INTERRUPT_BPDIG(bpdig);
 
 	/* Write to register */
 	retval = register_write_internal(AV8100_STANDBY_PENDING_INTERRUPT, val);
@@ -2347,7 +2440,7 @@ int av8100_reg_stby_pend_int_w(
 EXPORT_SYMBOL(av8100_reg_stby_pend_int_w);
 
 int av8100_reg_gen_int_mask_w(
-		u8 eocm, u8 vsim, u8 vsom, u8 cecm, u8 hdcpm, u8 uovbm,	u8 tem)
+		u8 eocm, u8 vsim, u8 vsom, u8 cecm, u8 hdcpm, u8 uovbm, u8 tem)
 {
 	int retval;
 	u8 val;
@@ -3270,11 +3363,11 @@ int av8100_conf_w(enum av8100_command_type command_type,
 
 
 		/* Get the first return byte */
-		mdelay(AV8100_CMD_RET_WAITTIME_MS);
+		msleep(AV8100_WAITTIME_1MS);
 		cnt = AV8100_CMD_RET_TRIES;
 		retval = get_command_return_first(i2c, command_type);
 		while (retval && (cnt-- > 0)) {
-			mdelay(AV8100_CMD_RET_WAITTIME_MS);
+			msleep(AV8100_WAITTIME_1MS);
 			retval = get_command_return_first(i2c, command_type);
 		}
 		dev_dbg(av8100dev, "first return cnt:%d\n", cnt);
@@ -3343,11 +3436,11 @@ int av8100_conf_w_raw(enum av8100_command_type command_type,
 
 
 	/* Get the first return byte */
-	mdelay(AV8100_CMD_RET_WAITTIME_MS);
+	msleep(AV8100_WAITTIME_1MS);
 	cnt = AV8100_CMD_RET_TRIES;
 	retval = get_command_return_first(i2c, command_type);
 	while (retval && (cnt-- > 0)) {
-		mdelay(AV8100_CMD_RET_WAITTIME_MS);
+		msleep(AV8100_WAITTIME_1MS);
 		retval = get_command_return_first(i2c, command_type);
 	}
 	dev_dbg(av8100dev, "first return cnt:%d\n", cnt);
@@ -3559,8 +3652,12 @@ static int __devinit av8100_probe(struct i2c_client *i2cClient,
 	av8100_set_state(AV8100_OPMODE_SHUTDOWN);
 
 	/* Obtain the chip version */
-	av8100_powerup1();
-	av8100_powerdown();
+	if (av8100_powerup1()) {
+		dev_err(av8100dev, "av8100_powerup1 fail\n");
+		return -EFAULT;
+	}
+
+	ret = av8100_powerdown();
 
 err:
 	return ret;
