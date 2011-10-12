@@ -50,6 +50,14 @@ config LEDS_LM3530
 	  controlled manually or using PWM input or using ambient
 	  light automatically.
 
+config LEDS_AB5500
+	tristate "HVLED driver for AB5500"
+	depends on AB5500_CORE
+	help
+	  This option enables support for the HVLED in AB5500
+	  multi function device. Currently Ab5500 v1.0 chip leds
+	  are supported.
+
 config LEDS_LOCOMO
 	tristate "LED Support for Locomo device"
 	depends on LEDS_CLASS
