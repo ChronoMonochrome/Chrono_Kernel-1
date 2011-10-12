@@ -15,6 +15,7 @@
 #include <linux/led-lm3530.h>
 #include <../../../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
 #include <linux/lsm303dlh.h>
+#include <linux/leds-ab5500.h>
 
 #include <video/av8100.h>
 
@@ -76,6 +77,49 @@ static struct av8100_platform_data av8100_plat_data = {
 
 
 /*
+ * leds LM3530
+ */
+static struct lm3530_platform_data u5500_als_platform_data = {
+	.mode = LM3530_BL_MODE_MANUAL,
+	.als_input_mode = LM3530_INPUT_ALS1,
+	.max_current = LM3530_FS_CURR_26mA,
+	.pwm_pol_hi = true,
+	.als_avrg_time = LM3530_ALS_AVRG_TIME_512ms,
+	.brt_ramp_law = 1,	/* Linear */
+	.brt_ramp_fall = LM3530_RAMP_TIME_1ms,
+	.brt_ramp_rise = LM3530_RAMP_TIME_1ms,
+	.als1_resistor_sel = LM3530_ALS_IMPD_2_27kOhm,
+	.als2_resistor_sel = LM3530_ALS_IMPD_2_27kOhm,
+	.brt_val = 0x7F,	/* Max brightness */
+};
+
+
+/* leds-ab5500 */
+static struct ab5500_hvleds_platform_data ab5500_hvleds_data = {
+	.hw_blink = false,
+	.leds = {
+		[0] = {
+			.name = "ab5500-hvled:channel-0:",
+			.led_id = 0,
+			.status = AB5500_LED_ON,
+			.max_current = 10, /* wrong value may damage h/w */
+		},
+		[1] = {
+			.name = "ab5500-hvled:channel-1:",
+			.led_id = 1,
+			.status = AB5500_LED_ON,
+			.max_current = 10, /* wrong value may damage h/w */
+		},
+		[2] {
+			.name = "ab5500-hvled:channel-2:",
+			.led_id = 2,
+			.status = AB5500_LED_ON,
+			.max_current = 10, /* wrong value may damage h/w */
+		},
+	},
+};
+
+/*
  * I2C
  */
 
@@ -109,22 +153,6 @@ static struct nmk_i2c_controller u5500_i2c##id##_data = { \
 U5500_I2C_CONTROLLER(1,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
 U5500_I2C_CONTROLLER(2,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
 U5500_I2C_CONTROLLER(3,	0xe, 1, 1, 400000, 200, I2C_FREQ_MODE_FAST);
-
-static struct lm3530_platform_data u5500_als_platform_data = {
-	.mode = LM3530_BL_MODE_MANUAL,
-	.als_input_mode = LM3530_INPUT_ALS1,
-	.max_current = LM3530_FS_CURR_26mA,
-	.pwm_pol_hi = true,
-	.als_avrg_time = LM3530_ALS_AVRG_TIME_512ms,
-	.brt_ramp_law = 1,      /* Linear */
-	.brt_ramp_fall = LM3530_RAMP_TIME_8s,
-	.brt_ramp_rise = LM3530_RAMP_TIME_8s,
-	.als1_resistor_sel = LM3530_ALS_IMPD_13_53kOhm,
-	.als2_resistor_sel = LM3530_ALS_IMPD_Z,
-	.als_vmin = 730,	/* mV */
-	.als_vmax = 1020,	/* mV */
-	.brt_val = 0x7F,	/* Max brightness */
-};
 
 static struct i2c_board_info __initdata u5500_i2c1_devices[] = {
 	{
@@ -257,6 +285,8 @@ static struct ab5500_platform_data ab5500_plf_data = {
 	},
 	.pm_power_off	= true,
 	.regulator	= &u5500_ab5500_regulator_data,
+	.dev_data[AB5500_DEVID_LEDS] = &ab5500_hvleds_data,
+	.dev_data_sz[AB5500_DEVID_LEDS] = sizeof(ab5500_hvleds_data),
 };
 
 static struct platform_device u5500_ab5500_device = {
