@@ -775,9 +775,9 @@ static ssize_t hwreg_common_write(char *b, struct hwreg_cfg *cfg,
 	/* args are ok, update target cfg (mainly for read) */
 	*cfg = loc;
 
-#if ABB_HWREG_DEBUG
-	pr_warn("HWREG request: %s, %s, addr=0x%08X, mask=0x%X, shift=%d
-			value=0x%X\n", (write) ? "write" : "read",
+#ifdef ABB_HWREG_DEBUG
+	pr_warn("HWREG request: %s, %s, addr=0x%08X, mask=0x%X, shift=%d"
+			"value=0x%X\n", (write) ? "write" : "read",
 			REG_FMT_DEC(cfg) ? "decimal" : "hexa",
 			cfg->addr, cfg->mask, cfg->shift, val);
 #endif
