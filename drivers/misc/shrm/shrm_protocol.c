@@ -19,6 +19,7 @@
 #include <mach/prcmu-fw-api.h>
 #include <mach/prcmu-regs.h>
 #include <mach/suspend.h>
+#include <mach/reboot_reasons.h>
 
 #define L2_HEADER_ISI		0x0
 #define L2_HEADER_RPC		0x1
@@ -557,8 +558,9 @@ static void shrm_modem_reset_callback(unsigned long irq)
 	}
 #else
 	dev_info(shm_dev->dev, "Modem in reset loop, doing System reset\n");
+
 	/* Call the PRCMU reset API */
-	prcmu_system_reset();
+	prcmu_system_reset(SW_RESET_NO_ARGUMENT);
 #endif
 }
 
