@@ -22,11 +22,11 @@ static struct cpufreq_frequency_table db8500_freq_table[] = {
 	},
 	[1] = {
 		.index = 1,
-		.frequency = 300000,
+		.frequency = 400000,
 	},
 	[2] = {
 		.index = 2,
-		.frequency = 600000,
+		.frequency = 800000,
 	},
 	[3] = {
 		/* Used for MAX_OPP, if available */
@@ -147,13 +147,8 @@ static void __init dbx500_cpufreq_early_init(void)
 	} else if (cpu_is_u8500()) {
 		freq_table = db8500_freq_table;
 		idx2opp = db8500_idx2opp;
-
-		if (!prcmu_is_u8400()) {
-			freq_table[1].frequency = 400000;
-			freq_table[2].frequency = 800000;
-			if (prcmu_has_arm_maxopp())
-				freq_table[3].frequency = 1000000;
-		}
+		if (prcmu_has_arm_maxopp())
+			freq_table[3].frequency = 1000000;
 
 	} else {
 		ux500_unknown_soc();
