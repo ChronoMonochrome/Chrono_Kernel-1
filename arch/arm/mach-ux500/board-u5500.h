@@ -15,5 +15,6 @@ struct ab5500_regulator_platform_data;
 extern struct ab5500_regulator_platform_data u5500_ab5500_regulator_data;
 
 extern void u5500_pins_init(void);
+extern void __init u5500_regulators_init(void);
 
 #endif
