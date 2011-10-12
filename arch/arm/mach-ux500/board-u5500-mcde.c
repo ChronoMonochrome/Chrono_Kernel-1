@@ -16,13 +16,10 @@
 #include <video/mcde_fb.h>
 #include <video/mcde_dss.h>
 
-#define DSI_UNIT_INTERVAL_0	0xB
-
+#define DSI_UNIT_INTERVAL_0	0xA
 #define PRIMARY_DISPLAY_ID	0
 
 #ifdef CONFIG_FB_MCDE
-
-
 static struct fb_info *fbs[2] = { NULL, NULL };
 static struct mcde_display_device *displays[2] = { NULL, NULL };
 static int display_initialized_during_boot;
