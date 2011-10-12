@@ -329,11 +329,12 @@ void cw1200_probe_work(struct work_struct *work)
 {
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, scan.probe_work.work);
-	struct wsm_tx *wsm = (struct wsm_tx *)
-		priv->scan.probe_skb->data;
+	u8 queueId = cw1200_queue_get_queue_id(priv->pending_frame_id);
+	struct cw1200_queue *queue = &priv->tx_queue[queueId];
+	const struct cw1200_txpriv *txpriv;
+	struct wsm_tx *wsm;
 	struct wsm_template_frame frame = {
 		.frame_type = WSM_FRAME_TYPE_PROBE_REQUEST,
-		.skb = priv->scan.probe_skb,
 	};
 	struct wsm_ssid ssids[1] = {{
 		.length = 0,
@@ -344,7 +345,6 @@ void cw1200_probe_work(struct work_struct *work)
 	} };
 	struct wsm_scan scan = {
 		.scanType = WSM_SCAN_TYPE_FOREGROUND,
-		.maxTransmitRate = wsm->maxTxRate,
 		.numOfProbeRequests = 1,
 		.probeDelay = 0,
 		.numOfChannels = 1,
@@ -357,12 +357,8 @@ void cw1200_probe_work(struct work_struct *work)
 
 	wiphy_dbg(priv->hw->wiphy, "[SCAN] Direct probe work.\n");
 
-	if (!priv->channel) {
-		dev_kfree_skb(priv->scan.probe_skb);
-		priv->scan.probe_skb = NULL;
-		wsm_unlock_tx(priv);
-		return;
-	}
+	BUG_ON(queueId >= 4);
+	BUG_ON(!priv->channel);
 
 	mutex_lock(&priv->conf_mutex);
 	if (unlikely(down_trylock(&priv->scan.lock))) {
@@ -374,13 +370,20 @@ void cw1200_probe_work(struct work_struct *work)
 		return;
 	}
 
+	if (cw1200_queue_get_skb(queue,	priv->pending_frame_id,
+			&frame.skb, &txpriv)) {
+		wsm_unlock_tx(priv);
+		return;
+	}
+	wsm = (struct wsm_tx *)frame.skb->data;
+	scan.maxTransmitRate = wsm->maxTxRate;
 	scan.band = (priv->channel->band == IEEE80211_BAND_5GHZ) ?
 		WSM_PHY_BAND_5G : WSM_PHY_BAND_2_4G;
 	if (priv->join_status == CW1200_JOIN_STATUS_STA)
 		scan.scanType = WSM_SCAN_TYPE_BACKGROUND;
 	ch[0].number = priv->channel->hw_value;
 
-	skb_pull(frame.skb, sizeof(struct wsm_tx));
+	skb_pull(frame.skb, txpriv->offset);
 
 	ies = &frame.skb->data[sizeof(struct ieee80211_hdr_3addr)];
 	ies_len = frame.skb->len - sizeof(struct ieee80211_hdr_3addr);
@@ -416,9 +419,10 @@ void cw1200_probe_work(struct work_struct *work)
 	}
 	mutex_unlock(&priv->conf_mutex);
 
-	/* TODO: Report TX status to ieee80211 layer */
-	dev_kfree_skb(priv->scan.probe_skb);
-	priv->scan.probe_skb = NULL;
+	skb_push(frame.skb, txpriv->offset);
+	if (!ret)
+		IEEE80211_SKB_CB(frame.skb)->flags |= IEEE80211_TX_STAT_ACK;
+	BUG_ON(cw1200_queue_remove(queue, priv->pending_frame_id));
 
 	if (ret) {
 		priv->scan.direct_probe = 0;

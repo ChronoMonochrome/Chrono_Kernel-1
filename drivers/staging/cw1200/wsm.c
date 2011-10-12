@@ -1404,17 +1404,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		wsm_printk(KERN_DEBUG \
 			"[WSM] Convert probe request to scan.\n");
 		wsm_lock_tx_async(priv);
-		BUG_ON(priv->scan.probe_skb);
-		BUG_ON(cw1200_queue_get_skb(queue,
-				wsm->packetID,
-				&priv->scan.probe_skb,
-				&txpriv));
-		skb_get(priv->scan.probe_skb);
-		IEEE80211_SKB_CB(priv->scan.probe_skb)->flags |=
-				IEEE80211_TX_STAT_ACK;
-		BUG_ON(cw1200_queue_remove(queue,
-			__le32_to_cpu(wsm->packetID)));
-		/* Release used TX rate policy */
+		priv->pending_frame_id = __le32_to_cpu(wsm->packetID);
 		queue_delayed_work(priv->workqueue,
 				&priv->scan.probe_work, 0);
 		handled = true;

@@ -38,7 +38,6 @@ struct cw1200_scan {
 	atomic_t in_progress;
 	/* Direct probe requests workaround */
 	struct delayed_work probe_work;
-	struct sk_buff *probe_skb;
 	int direct_probe;
 };
 
