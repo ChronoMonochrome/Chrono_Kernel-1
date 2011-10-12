@@ -16,6 +16,8 @@
 #include <linux/led-lm3530.h>
 #include <linux/input/synaptics_i2c_rmi4.h>
 
+#include <video/av8100.h>
+
 #include <asm/hardware/gic.h>
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
@@ -131,6 +133,14 @@ static struct synaptics_rmi4_platform_data rmi4_i2c_platformdata = {
 	.regulator_en	= true,
 };
 
+static struct av8100_platform_data av8100_plat_data = {
+	.irq = NOMADIK_GPIO_TO_IRQ(223),
+	.reset = 225,
+	.alt_powerupseq = true,
+	.mclk_freq = 1, /* MCLK_RNG_22_27 */
+};
+
+
 /*
  * I2C
  */
@@ -192,6 +202,10 @@ static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
 		/* Backlight */
 		I2C_BOARD_INFO("lm3530-led", 0x36),
 		.platform_data = &u5500_als_platform_data,
+	},
+	{
+		I2C_BOARD_INFO("av8100", 0x70),
+		.platform_data = &av8100_plat_data,
 	},
 };
 

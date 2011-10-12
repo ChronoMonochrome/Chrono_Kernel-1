@@ -297,6 +297,7 @@ static struct av8100_platform_data av8100_plat_data = {
 	.inputclk_id		= "sysclk2",
 	.regulator_pwr_id	= "hdmi_1v8",
 	.alt_powerupseq		= true,
+	.mclk_freq		= 3, /* MCLK_RNG_31_38 */
 };
 
 
