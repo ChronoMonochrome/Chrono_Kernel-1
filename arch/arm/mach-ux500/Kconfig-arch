@@ -89,13 +89,6 @@ config DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	help
 	  Say yes to enable v-sync for primary display
 
-config DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
-	bool "Enable auto sync for primary display"
-	depends on DISPLAY_GENERIC_DSI_PRIMARY
-	default n
-	help
-	  Say yes to enable auto sync for primary display
-
 config DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 	bool "Sony acx424akp DSI display"
 	select MCDE_DISPLAY_SONY_ACX424AKP_DSI
@@ -116,12 +109,6 @@ config DISPLAY_GENERIC_DSI_SECONDARY_VSYNC
 	depends on DISPLAY_GENERIC_DSI_SECONDARY
 	help
 	  Say yes to enable v-sync for secondary display
-
-config DISPLAY_GENERIC_DSI_SECONDARY_AUTO_SYNC
-	bool "Enable auto sync for secondary display"
-	depends on DISPLAY_GENERIC_DSI_SECONDARY
-	help
-	  Say yes to enable auto sync for secondary display
 
 config DISPLAY_AB8500_TERTIARY
 	bool "AB8500 TVout display support"

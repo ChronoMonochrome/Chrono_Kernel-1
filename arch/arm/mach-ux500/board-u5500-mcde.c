@@ -84,14 +84,7 @@ static struct mcde_port port0 = {
 	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
 	.ifc = DSI_VIDEO_MODE,
 	.link = 0,
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) &&	\
-			defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
-	.sync_src = MCDE_SYNCSRC_OFF,
-	.update_auto_trig = true,
-#else
 	.sync_src = MCDE_SYNCSRC_BTA,
-	.update_auto_trig = false,
-#endif
 	.phy = {
 		.dsi = {
 			.virt_id = 0,
@@ -292,13 +285,6 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	virtual_width = width;
 	virtual_height = height * 2;
 
-#if (defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
-		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)) &&	\
-			defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
-	if (ddev->id == PRIMARY_DISPLAY_ID)
-		virtual_height = height;
-#endif
-
 #ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
 	if (ddev->id == AV8100_DISPLAY_ID)
 		virtual_height = height * 3;
@@ -358,59 +344,6 @@ static struct notifier_block display_nb = {
 * The main display will not be updated if startup graphics is displayed
 * from u-boot.
 */
-#if (defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
-		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY))  && \
-		defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
-static int framebuffer_postregistered_callback(struct notifier_block *nb,
-	unsigned long event, void *data)
-{
-	int ret = 0;
-	struct fb_event *event_data = data;
-	struct fb_info *info;
-	struct fb_var_screeninfo var;
-	struct fb_fix_screeninfo fix;
-	struct mcde_fb *mfb;
-	int i;
-
-	if (event != FB_EVENT_FB_REGISTERED)
-		return 0;
-
-	if (!event_data)
-		return 0;
-
-	info = event_data->info;
-	mfb = to_mcde_fb(info);
-	var = info->var;
-	fix = info->fix;
-
-	/* Apply overlay info */
-	for (i = 0; i < mfb->num_ovlys; i++) {
-		struct mcde_overlay *ovly = mfb->ovlys[i];
-		struct mcde_overlay_info ovly_info;
-		struct mcde_fb *mfb = to_mcde_fb(info);
-		int num_buffers;
-		memset(&ovly_info, 0, sizeof(ovly_info));
-		ovly_info.paddr = fix.smem_start +
-			fix.line_length * var.yoffset;
-		if (ovly_info.paddr + fix.line_length * var.yres
-			 > fix.smem_start + fix.smem_len)
-			ovly_info.paddr = fix.smem_start;
-		ovly_info.fmt = mfb->pix_fmt;
-		ovly_info.stride = fix.line_length;
-		ovly_info.w = var.xres;
-		ovly_info.h = var.yres;
-		ovly_info.dirty.w = var.xres;
-		ovly_info.dirty.h = var.yres;
-		(void) mcde_dss_apply_overlay(ovly, &ovly_info);
-		num_buffers = var.yres_virtual / var.yres;
-		ret = mcde_dss_update_overlay(ovly, num_buffers == 3);
-		if (ret)
-			break;
-	}
-
-	return ret;
-}
-#else
 static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	unsigned long event, void *data)
 {
@@ -440,8 +373,6 @@ static int framebuffer_postregistered_callback(struct notifier_block *nb,
 out:
 	return ret;
 }
-#endif
-
 
 static struct notifier_block framebuffer_nb = {
 	.notifier_call = framebuffer_postregistered_callback,
