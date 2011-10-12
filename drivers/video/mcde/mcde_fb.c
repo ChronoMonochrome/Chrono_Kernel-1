@@ -307,7 +307,7 @@ static void init_fb(struct fb_info *fbi)
 
 	strlcpy(fbi->fix.id, "mcde_fb", sizeof(fbi->fix.id));
 	fbi->fix.type = FB_TYPE_PACKED_PIXELS;
-	fbi->fix.visual = FB_VISUAL_TRUECOLOR;
+	fbi->fix.visual = FB_VISUAL_DIRECTCOLOR;
 	fbi->fix.xpanstep = 1;
 	fbi->fix.ypanstep = 1;
 	fbi->flags = FBINFO_HWACCEL_DISABLED;
@@ -641,6 +641,51 @@ static int mcde_fb_ioctl(struct fb_info *fbi, unsigned int cmd,
 	return -EINVAL;
 }
 
+static int mcde_fb_setcolreg(unsigned int regno, unsigned int red,
+		unsigned int green, unsigned int blue, unsigned int transp,
+		struct fb_info *fbi)
+{
+	dev_vdbg(fbi->dev, "%s\n", __func__);
+
+	if (regno >= 256)
+		return 1;
+
+	if (regno < 17) {
+		u32 pseudo_val;
+		u32 r, g, b;
+
+		if (fbi->var.bits_per_pixel > 16) {
+			r = red >> 8;
+			g = green >> 8;
+			b = blue >> 8;
+		} else if (fbi->var.bits_per_pixel == 16) {
+			r = red >> (3 + 8);
+			g = green >> (2 + 8);
+			b = blue >> (3 + 8);
+		} else if (fbi->var.bits_per_pixel == 15) {
+			r = red >> (3 + 8);
+			g = green >> (3 + 8);
+			b = blue >> (3 + 8);
+		} else
+			r = b = g = (regno & 15);
+		pseudo_val  = r << fbi->var.red.offset;
+		pseudo_val |= g << fbi->var.green.offset;
+		pseudo_val |= b << fbi->var.blue.offset;
+
+		((u32 *)fbi->pseudo_palette)[regno] = pseudo_val;
+	}
+
+	return 0;
+}
+
+static int mcde_fb_setcmap(struct fb_cmap *cmap, struct fb_info *fbi)
+{
+	dev_vdbg(fbi->dev, "%s\n", __func__);
+
+	/*Nothing to see here, move along*/
+	return 0;
+}
+
 static struct fb_ops fb_ops = {
 	/* creg, cmap */
 	.owner          = THIS_MODULE,
@@ -657,6 +702,8 @@ static struct fb_ops fb_ops = {
 	.fb_pan_display = mcde_fb_pan_display,
 	.fb_rotate      = mcde_fb_rotate,
 	.fb_ioctl       = mcde_fb_ioctl,
+	.fb_setcolreg   = mcde_fb_setcolreg,
+	.fb_setcmap     = mcde_fb_setcmap,
 };
 
 /* FB driver */
@@ -729,6 +776,11 @@ struct fb_info *mcde_fb_create(struct mcde_display_device *ddev,
 	if (ret)
 		goto fb_register_failed;
 
+	ret = fb_alloc_cmap(&fbi->cmap, 256, 0);
+	if (ret)
+		dev_warn(&ddev->dev, "%s: Allocate color map memory failed!\n",
+				__func__);
+
 	ddev->fbi = fbi;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -789,6 +841,8 @@ void mcde_fb_destroy(struct mcde_display_device *dev)
 	if (dev->fictive == false)
 		unregister_early_suspend(&mfb->early_suspend);
 #endif
+	fb_dealloc_cmap(&dev->fbi->cmap);
+
 	unregister_framebuffer(dev->fbi);
 	free_fb_mem(dev->fbi);
 	framebuffer_release(dev->fbi);
