@@ -95,7 +95,9 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 * register. This is the array of 7 configuration settings.
 	 * One has to compile time decide these settings. Below is the
 	 * explaination of these setting
-	 * GpioSel1 = 0x02 => Pin GPIO2 (SysClkReq3) is configured as GPIO
+	 * GpioSel1 = 0x07 => Pin GPIO1 (SysClkReq2)
+	 *                    Pin GPIO2 (SysClkReq3)
+	 *                    Pin GPIO3 (SysClkReq4) are configured as GPIO
 	 * GpioSel2 = 0x9E => Pins GPIO10..13 & GPIO16 are configured as GPIO
 	 * GpioSel3 = 0x80 => Pin GPIO24 is configured as GPIO
 	 * GpioSel4 = 0x01 => Pin GPIo25 is configured as GPIO
@@ -104,7 +106,7 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 * AlternaFunction = 0x00 => If Pins GPIO10 to 13 are not configured
 	 * as GPIO then this register selectes the alternate fucntions
 	 */
-	.config_reg		= {0x02, 0x9E, 0x80, 0x01,
+	.config_reg		= {0x07, 0x9E, 0x80, 0x01,
 					0x7A, 0x02, 0x00},
 };
 
