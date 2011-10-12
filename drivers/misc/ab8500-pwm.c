@@ -73,7 +73,7 @@ int pwm_enable(struct pwm_device *pwm)
 	if (!pwm->clk_enabled) {
 		ret = clk_enable(pwm->clk);
 		if (ret < 0) {
-			dev_err(pwm->dev, "failed to enable sysclk\n");
+			dev_err(pwm->dev, "failed to enable clock\n");
 			return ret;
 		}
 		pwm->clk_enabled = true;
@@ -161,7 +161,7 @@ static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
 	list_add_tail(&pwm->node, &pwm_list);
 	platform_set_drvdata(pdev, pwm);
 
-	pwm->clk = clk_get(pwm->dev, "sysclk");
+	pwm->clk = clk_get(pwm->dev, NULL);
 	if (IS_ERR(pwm->clk)) {
 		dev_err(pwm->dev, "clock request failed\n");
 		ret = PTR_ERR(pwm->clk);
