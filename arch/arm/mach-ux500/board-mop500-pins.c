@@ -445,7 +445,6 @@ static void mop500_pins_suspend_force(void)
 	writel(0         , bankaddr + NMK_GPIO_SLPC);
 
 	/* Bank2 */
-
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK2_BASE);
 
 	w_imsc = readl(bankaddr + NMK_GPIO_RWIMSC) |
@@ -463,7 +462,12 @@ static void mop500_pins_suspend_force(void)
 	writel(0x803C2830 & ~mask, bankaddr + NMK_GPIO_DIRC);
 	writel(0x3D7C0    & ~w_imsc  & ~mask, bankaddr + NMK_GPIO_DATC);
 	writel(0xFFFFFFFF & ~w_imsc & ~imsc & ~mask, bankaddr + NMK_GPIO_PDIS);
-	writel(0         , bankaddr + NMK_GPIO_SLPC);
+	/*
+	 * No need to set SLPC (SLPM) register. This can break modem STM
+	 * settings on pins (70-76) because modem is special and needs to
+	 * have its mux connected even in suspend because modem could still
+	 * be on and might send interesting STM debugging data.
+	 */
 
 	/* Bank3 */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK3_BASE);
@@ -601,11 +605,7 @@ static void mop500_pins_suspend_force_mux(void)
 	writel(0x1       , bankaddr + NMK_GPIO_AFSLA);
 	writel(0x1       , bankaddr + NMK_GPIO_AFSLB);
 
-	/* Bank2 */
-	bankaddr = IO_ADDRESS(U8500_GPIOBANK2_BASE);
-
-	writel(0         , bankaddr + NMK_GPIO_AFSLA);
-	writel(0         , bankaddr + NMK_GPIO_AFSLB);
+	/* Bank2 (Nothing needs to be done) */
 
 	/* Bank3 */
 	bankaddr = IO_ADDRESS(U8500_GPIOBANK3_BASE);
