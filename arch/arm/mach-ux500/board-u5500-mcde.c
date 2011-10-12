@@ -496,20 +496,5 @@ int __init init_u5500_display_devices(void)
 	return ret;
 }
 
-struct mcde_display_device *mcde_u5500_get_main_display(void)
-{
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
-		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
-	if (cpu_is_u5500v1())
-		return &generic_display0;
-	if (cpu_is_u5500v2())
-		return &sony_acx424akp_display0;
-#elif defined(CONFIG_DISPLAY_AV8100_TERTIARY)
-	return &av8100_hdmi;
-#endif
-	return NULL;
-}
-EXPORT_SYMBOL(mcde_u5500_get_main_display);
-
-module_init(init_u5500_display_devices);
+module_init(init_display_devices);
 #endif

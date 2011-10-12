@@ -754,30 +754,6 @@ int __init init_display_devices(void)
 	return ret;
 }
 
-struct mcde_display_device *mcde_get_main_display(void)
-{
-#if defined(CONFIG_DISPLAY_GENERIC_PRIMARY) && \
-	defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
-	if (!uib_is_u8500uibr3())
-		return &samsung_s6d16d0_display0;
-	else
-		return &sony_acx424akp_display0;
-#elif defined(CONFIG_DISPLAY_GENERIC_PRIMARY)
-	return &samsung_s6d16d0_display0;
-#elif defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
-	return &sony_acx424akp_display0;
-#elif defined(CONFIG_DISPLAY_GENERIC_DSI_SECONDARY)
-	return &samsung_s6d16d0_display1;
-#elif defined(CONFIG_DISPLAY_AV8100_TERTIARY)
-	return &av8100_hdmi;
-#elif defined(CONFIG_DISPLAY_AB8500_TERTIARY)
-	return &tvout_ab8500_display;
-#else
-	return NULL;
-#endif
-}
-EXPORT_SYMBOL(mcde_get_main_display);
-
 module_init(init_display_devices);
 
 #endif
