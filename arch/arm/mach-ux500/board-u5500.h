@@ -11,4 +11,7 @@
 #define GPIO_MMC_CARD_CTRL     227
 #define GPIO_MMC_CARD_VSEL     185
 
+struct ab5500_regulator_platform_data;
+extern struct ab5500_regulator_platform_data u5500_ab5500_regulator_data;
+
 #endif

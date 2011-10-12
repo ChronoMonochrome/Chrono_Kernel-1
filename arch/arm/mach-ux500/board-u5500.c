@@ -32,6 +32,7 @@
 
 #include "pins-db5500.h"
 #include "devices-db5500.h"
+#include "board-u5500.h"
 
 /*
  * GPIO
@@ -127,7 +128,7 @@ static struct synaptics_rmi4_platform_data rmi4_i2c_platformdata = {
 	.x_flip		= false,
 	.y_flip		= true,
 #endif
-	.regulator_en	= false,
+	.regulator_en	= true,
 };
 
 /*
@@ -194,49 +195,6 @@ static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
 	},
 };
 
-static struct resource ab5500_resources[] = {
-	[0] = {
-		/*TODO Change this when prcmu driver arrives */
-		.start = IRQ_DB5500_AB5500,
-		.end = IRQ_DB5500_AB5500,
-		.flags = IORESOURCE_IRQ
-	}
-};
-
-static struct ab5500_platform_data ab5500_plf_data = {
-	.irq = {
-		.base = IRQ_AB5500_BASE,
-		.count = AB5500_NR_IRQS,
-	},
-};
-
-static struct platform_device u5500_ab5500_device = {
-	.name = "ab5500-core",
-	.id = 0,
-	.dev = {
-		.platform_data = &ab5500_plf_data,
-	},
-	.num_resources = 1,
-	.resource = ab5500_resources,
-};
-
-static struct platform_device *u5500_platform_devices[] __initdata = {
-	&u5500_ab5500_device,
-	&u5500_mcde_device,
-	&ux500_hwmem_device,
-	&u5500_b2r2_device,
-};
-
-static void __init u5500_i2c_init(struct device *parent)
-{
-	db5500_add_i2c1(parent, &u5500_i2c1_data);
-	db5500_add_i2c2(parent, &u5500_i2c2_data);
-	db5500_add_i2c3(parent, &u5500_i2c3_data);
-
-	i2c_register_board_info(1, ARRAY_AND_SIZE(u5500_i2c1_devices));
-	i2c_register_board_info(2, ARRAY_AND_SIZE(u5500_i2c2_devices));
-}
-
 /*
  * MSP
  */
@@ -300,6 +258,15 @@ static struct i2s_board_info stm_i2s_board_info[] __initdata = {
 	},
 };
 
+static void __init u5500_msp_init(void)
+{
+	db5500_add_msp0_i2s(&u5500_msp0_data);
+	db5500_add_msp1_i2s(&u5500_msp1_data);
+	db5500_add_msp2_i2s(&u5500_msp2_data);
+
+	i2s_register_board_info(ARRAY_AND_SIZE(stm_i2s_board_info));
+}
+
 /*
  * SPI
  */
@@ -314,13 +281,48 @@ static void __init u5500_spi_init(void)
 	db5500_add_spi1(&u5500_spi1_data);
 }
 
-static void __init u5500_msp_init(void)
-{
-	db5500_add_msp0_i2s(&u5500_msp0_data);
-	db5500_add_msp1_i2s(&u5500_msp1_data);
-	db5500_add_msp2_i2s(&u5500_msp2_data);
+static struct resource ab5500_resources[] = {
+	[0] = {
+		/*TODO Change this when prcmu driver arrives */
+		.start = IRQ_DB5500_AB5500,
+		.end = IRQ_DB5500_AB5500,
+		.flags = IORESOURCE_IRQ
+	}
+};
 
-	i2s_register_board_info(ARRAY_AND_SIZE(stm_i2s_board_info));
+static struct ab5500_platform_data ab5500_plf_data = {
+	.irq = {
+		.base = IRQ_AB5500_BASE,
+		.count = AB5500_NR_IRQS,
+	},
+	.regulator	= &u5500_ab5500_regulator_data,
+};
+
+static struct platform_device u5500_ab5500_device = {
+	.name = "ab5500-core",
+	.id = 0,
+	.dev = {
+		.platform_data = &ab5500_plf_data,
+	},
+	.num_resources = 1,
+	.resource = ab5500_resources,
+};
+
+static struct platform_device *u5500_platform_devices[] __initdata = {
+	&u5500_ab5500_device,
+	&u5500_mcde_device,
+	&ux500_hwmem_device,
+	&u5500_b2r2_device,
+};
+
+static void __init u5500_i2c_init(struct device *parent)
+{
+	db5500_add_i2c1(pareent, &u5500_i2c1_data);
+	db5500_add_i2c2(pareent, &u5500_i2c2_data);
+	db5500_add_i2c3(pareent, &u5500_i2c3_data);
+
+	i2c_register_board_info(1, ARRAY_AND_SIZE(u5500_i2c1_devices));
+	i2c_register_board_info(2, ARRAY_AND_SIZE(u5500_i2c2_devices));
 }
 
 static void __init u5500_uart_init(struct device *parent)
