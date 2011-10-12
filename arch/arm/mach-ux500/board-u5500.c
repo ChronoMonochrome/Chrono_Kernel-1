@@ -341,6 +341,7 @@ MACHINE_START(U5500, "ST-Ericsson U5500 Platform")
 	.timer		= &ux500_timer,
 	.handle_irq	= gic_handle_irq,
 	.init_machine	= u5500_init_machine,
+	.restart	= ux500_restart,
 MACHINE_END
 
 MACHINE_START(B5500, "ST-Ericsson U5500 Big Board")
@@ -349,4 +350,5 @@ MACHINE_START(B5500, "ST-Ericsson U5500 Big Board")
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
 	.init_machine	= u5500_init_machine,
+	.restart	= ux500_restart,
 MACHINE_END

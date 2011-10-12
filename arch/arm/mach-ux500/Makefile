@@ -4,7 +4,7 @@
 
 obj-y				:= clock.o cpu.o devices.o \
 				   devices-common.o \
-				   id.o pins.o usb.o timer.o
+				   id.o pins.o usb.o timer.o reboot_reasons.o
 obj-y				+= pm/
 obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o
 obj-$(CONFIG_UX500_SOC_DB5500)	+= cpu-db5500.o dma-db5500.o prcmu-db5500.o \
