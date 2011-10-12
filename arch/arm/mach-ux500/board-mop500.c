@@ -760,6 +760,18 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 	&ab8500_device,
 };
 
+/*
+ *  On boards hrefpv60 and later, the accessory insertion/removal,
+ *  button press/release are inverted.
+*/
+static void accessory_detect_config(void)
+{
+	if (machine_is_hrefv60())
+		ab8500_accdet_pdata.is_detection_inverted = true;
+	else
+		ab8500_accdet_pdata.is_detection_inverted = false;
+}
+
 static void __init mop500_init_machine(void)
 {
 	struct device *parent = NULL;
@@ -837,6 +849,8 @@ static void __init hrefv60_init_machine(void)
 	 * instead.
 	 */
 	mop500_gpio_keys[0].gpio = HREFV60_PROX_SENSE_GPIO;
+
+	accessory_detect_config();
 
 	parent = u8500_init_devices();
 
