@@ -58,6 +58,7 @@
 #include "board-mop500.h"
 #include "board-mop500-regulators.h"
 #include "board-mop500-bm.h"
+#include "board-mop500-wlan.h"
 
 #ifdef CONFIG_AB8500_DENC
 static struct ab8500_denc_platform_data ab8500_denc_pdata = {
@@ -796,6 +797,7 @@ static void __init mop500_init_machine(void)
 	mop500_msp_init();
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
+	mop500_wlan_init();
 
 	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
 
