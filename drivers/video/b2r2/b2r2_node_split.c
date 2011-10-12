@@ -179,11 +179,12 @@ static int analyze_scale_factors(struct b2r2_node_split_job *this);
 
 static void configure_src(struct b2r2_node *node,
 		struct b2r2_node_split_buf *src, const u32 *ivmx);
+static void configure_bg(struct b2r2_node *node,
+		struct b2r2_node_split_buf *bg, bool swap_fg_bg);
 static int configure_dst(struct b2r2_node *node,
 		struct b2r2_node_split_buf *dst, const u32 *ivmx,
 		struct b2r2_node **next);
-static void configure_blend(struct b2r2_node *node, u32 flags, u32 global_alpha,
-		bool swap_fg_bg);
+static void configure_blend(struct b2r2_node *node, u32 flags, u32 global_alpha);
 static void configure_clip(struct b2r2_node *node,
 		struct b2r2_blt_rect *clip_rect);
 
@@ -263,6 +264,8 @@ static void set_ivmx(struct b2r2_node *node, const u32 *vmx_values);
 
 static void reset_nodes(struct b2r2_node *node);
 
+static bool bg_format_require_ivmx(enum b2r2_blt_fmt bg_fmt, enum b2r2_blt_fmt dst_fmt);
+
 /*
  * Public functions
  */
@@ -324,6 +327,22 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 		break;
 	}
 
+	/* Unsupported formats on bg */
+	if (this->flags & B2R2_BLT_FLAG_BG_BLEND) {
+		/*
+		 * There are no ivmx on source 1, so check that there is no such requirement
+		 * on the background to destination format conversion. This check is sufficient
+		 * since the node splitter currently does not support destination ivmx. That
+		 * fact also removes the source format as a parameter when checking the
+		 * background format.
+		 */
+		if (bg_format_require_ivmx(req->user_req.bg_img.fmt,
+				req->user_req.dst_img.fmt)) {
+			ret = -ENOSYS;
+			goto unsupported;
+		}
+	}
+
 	if ((this->flags & B2R2_BLT_FLAG_SOURCE_COLOR_KEY) &&
 			(is_yuv_fmt(req->user_req.src_img.fmt) ||
 			req->user_req.src_img.fmt == B2R2_BLT_FMT_1_BIT_A1 ||
@@ -361,16 +380,24 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 			&req->user_req.src_img, &req->user_req.src_rect,
 			color_fill, req->user_req.src_color);
 
+	if (this->flags & B2R2_BLT_FLAG_BG_BLEND) {
+		set_buf(&this->bg, req->bg_resolved.physical_address,
+				&req->user_req.bg_img, &req->user_req.bg_rect,
+				false, 0);
+	}
+
 	set_buf(&this->dst, req->dst_resolved.physical_address,
 			&req->user_req.dst_img, &req->user_req.dst_rect, false,
 			0);
 
 	b2r2_log_info("%s:\n"
 		"\t\tsrc.rect=(%4d, %4d, %4d, %4d)\t"
+		"bg.rect=(%4d, %4d, %4d, %4d)\t"
 		"dst.rect=(%4d, %4d, %4d, %4d)\n", __func__, this->src.rect.x,
 		this->src.rect.y, this->src.rect.width, this->src.rect.height,
-		this->dst.rect.x, this->dst.rect.y, this->dst.rect.width,
-		this->dst.rect.height);
+		this->bg.rect.x, this->bg.rect.y, this->bg.rect.width,
+		this->bg.rect.height, this->dst.rect.x, this->dst.rect.y,
+		this->dst.rect.width, this->dst.rect.height);
 
 	if (this->flags & B2R2_BLT_FLAG_DITHER)
 		this->dst.dither = B2R2_TTY_RGB_ROUND_DITHER;
@@ -385,6 +412,8 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	else if (this->flags & B2R2_BLT_FLAG_PER_PIXEL_ALPHA_BLEND)
 		this->blend = (color_fill && fmt_has_alpha(this->dst.fmt)) ||
 				fmt_has_alpha(this->src.fmt);
+	else if (this->flags & B2R2_BLT_FLAG_BG_BLEND)
+		this->blend = true;
 
 	if (this->blend && this->src.type == B2R2_FMT_TYPE_PLANAR) {
 		b2r2_log_warn("%s: Unsupported: blend with planar source\n",
@@ -434,6 +463,14 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	if (!color_fill) {
 		ret = check_rect(&req->user_req.src_img,
 					&req->user_req.src_rect, NULL);
+		if (ret < 0)
+			goto error;
+	}
+
+	/* Validate the background source */
+	if (this->flags & B2R2_BLT_FLAG_BG_BLEND) {
+		ret = check_rect(&req->user_req.bg_img,
+					&req->user_req.bg_rect, NULL);
 		if (ret < 0)
 			goto error;
 	}
@@ -714,6 +751,87 @@ error:
 }
 
 /**
+ * bg_format_require_ivmx()
+ *
+ * Check if there are any color space conversion needed for the
+ * background to the destination format.
+ */
+static bool bg_format_require_ivmx(enum b2r2_blt_fmt bg_fmt, enum b2r2_blt_fmt dst_fmt)
+{
+	if (is_rgb_fmt(bg_fmt)) {
+		if (is_yvu_fmt(dst_fmt))
+			return true;
+		else if (dst_fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+				dst_fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+				dst_fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+				dst_fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+			return true;
+		else if (is_yuv_fmt(dst_fmt))
+			return true;
+		else if (is_bgr_fmt(dst_fmt))
+			return true;
+	} else if (is_yvu_fmt(bg_fmt)) {
+		if (is_rgb_fmt(dst_fmt))
+			return true;
+		else if (is_bgr_fmt(dst_fmt))
+			return true;
+		else if (dst_fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+				dst_fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+				dst_fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+				dst_fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+			return true;
+		else if (is_yuv_fmt(dst_fmt) &&
+				!is_yvu_fmt(dst_fmt))
+			return true;
+	} else if (bg_fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+			bg_fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+			bg_fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+			bg_fmt == B2R2_BLT_FMT_32_BIT_VUYA8888) {
+		if (is_rgb_fmt(dst_fmt)) {
+			return true;
+		} else if (is_yvu_fmt(dst_fmt)) {
+			return true;
+		} else if (is_yuv_fmt(dst_fmt)) {
+			switch (dst_fmt) {
+			case B2R2_BLT_FMT_24_BIT_YUV888:
+			case B2R2_BLT_FMT_32_BIT_AYUV8888:
+			case B2R2_BLT_FMT_24_BIT_VUY888:
+			case B2R2_BLT_FMT_32_BIT_VUYA8888:
+				break;
+			default:
+				return true;
+			}
+		}
+	} else if (is_yuv_fmt(bg_fmt)) {
+		if (is_rgb_fmt(dst_fmt))
+			return true;
+		else if (is_bgr_fmt(dst_fmt))
+			return true;
+		else if (dst_fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+				dst_fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+				dst_fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+				dst_fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+			return true;
+		else if (is_yvu_fmt(dst_fmt))
+			return true;
+	} else if (is_bgr_fmt(bg_fmt)) {
+		if (is_rgb_fmt(dst_fmt))
+			return true;
+		else if (is_yvu_fmt(dst_fmt))
+			return true;
+		else if (dst_fmt == B2R2_BLT_FMT_24_BIT_YUV888 ||
+				dst_fmt == B2R2_BLT_FMT_32_BIT_AYUV8888 ||
+				dst_fmt == B2R2_BLT_FMT_24_BIT_VUY888 ||
+				dst_fmt == B2R2_BLT_FMT_32_BIT_VUYA8888)
+			return true;
+		else if (is_yuv_fmt(dst_fmt))
+			return true;
+	}
+
+	return false;
+}
+
+/**
  * analyze_fmt_conv() - analyze the format conversions needed for a job
  */
 static int analyze_fmt_conv(struct b2r2_node_split_buf *src,
@@ -888,7 +1006,7 @@ static int analyze_color_fill(struct b2r2_node_split_job *this,
 			this->global_alpha = (u8)new_global;
 
 			/* Set the pixel alpha to full opaque so we don't get
-			   any nasty suprises */
+			   any nasty surprises */
 			this->src.color = set_alpha(this->src.fmt, 0xFF,
 						this->src.color);
 		}
@@ -1424,9 +1542,11 @@ static int configure_tile(struct b2r2_node_split_job *this,
 	struct b2r2_node *last;
 	struct b2r2_node_split_buf *src = &this->src;
 	struct b2r2_node_split_buf *dst = &this->dst;
+	struct b2r2_node_split_buf *bg = &this->bg;
 
 	struct b2r2_blt_rect dst_norm;
 	struct b2r2_blt_rect src_norm;
+	struct b2r2_blt_rect bg_norm;
 
 	/* Normalize the dest coords to the dest rect coordinate space  */
 	dst_norm.x = dst->win.x - dst->rect.x;
@@ -1461,6 +1581,20 @@ static int configure_tile(struct b2r2_node_split_job *this,
 	src->win.y = src_norm.y + src->rect.y;
 	src->win.width = src_norm.width;
 	src->win.height = src_norm.height;
+
+	/* Set bg norm */
+	bg_norm.x = dst->win.x - dst->rect.x;
+	bg_norm.y = dst->win.y - dst->rect.y;
+	bg_norm.width = dst->win.width;
+	bg_norm.height = dst->win.height;
+
+	/* Convert to bg coordinate space */
+	bg->win.x = bg_norm.x + bg->rect.x;
+	bg->win.y = bg_norm.y + bg->rect.y;
+	bg->win.width = bg_norm.width;
+	bg->win.height = bg_norm.height;
+	bg->vso = dst->vso;
+	bg->hso = dst->hso;
 
 	/* Do the configuration depending on operation type */
 	switch (this->type) {
@@ -1545,10 +1679,14 @@ static int configure_tile(struct b2r2_node_split_job *this,
 				goto error;
 			}
 
-			if (this->blend)
+			if (this->blend) {
+				if (this->flags & B2R2_BLT_FLAG_BG_BLEND)
+					configure_bg(node, bg, this->swap_fg_bg);
+				else
+					configure_bg(node, dst, this->swap_fg_bg);
 				configure_blend(node, this->flags,
-						this->global_alpha,
-						this->swap_fg_bg);
+						this->global_alpha);
+			}
 			if (this->clip)
 				configure_clip(node, &this->clip_rect);
 
@@ -2367,6 +2505,51 @@ static void configure_src(struct b2r2_node *node,
 }
 
 /**
+ * configure_bg() - configures a background for the given node
+ *
+ * @node         - the node to configure
+ * @bg           - the background buffer
+ * @swap_fg_bg   - if true, fg will be on s1 instead of s2
+ *
+ * This operation will not consume any nodes.
+ *
+ * NOTE: This method should be called _AFTER_ the destination has been
+ *       configured.
+ *
+ * WARNING: Take care when using this with semi-planar or planar sources since
+ *          either S1 or S2 will be overwritten!
+ */
+static void configure_bg(struct b2r2_node *node,
+		struct b2r2_node_split_buf *bg, bool swap_fg_bg)
+{
+	b2r2_log_info("%s: bg.win=(%d, %d, %d, %d)\n", __func__,
+			bg->win.x, bg->win.y, bg->win.width,
+			bg->win.height);
+
+	/* Configure S1 */
+	switch (bg->type) {
+	case B2R2_FMT_TYPE_RASTER:
+		if (swap_fg_bg) {
+			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_SOURCE_2;
+			node->node.GROUP0.B2R2_INS |= B2R2_INS_SOURCE_2_FETCH_FROM_MEM;
+			node->node.GROUP0.B2R2_ACK |= B2R2_ACK_SWAP_FG_BG;
+
+			set_src(&node->node.GROUP4, bg->addr, bg);
+		} else {
+			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_SOURCE_1;
+			node->node.GROUP0.B2R2_INS |= B2R2_INS_SOURCE_1_FETCH_FROM_MEM;
+
+			set_src(&node->node.GROUP3, bg->addr, bg);
+		}
+		break;
+	default:
+		/* Should never, ever happen */
+		BUG_ON(1);
+		break;
+	}
+}
+
+/**
  * configure_dst() - configures the destination registers of the given node
  *
  * @node - the node to configure
@@ -2513,7 +2696,6 @@ error:
  * @node         - the node to configure
  * @flags        - the flags passed in the blt_request
  * @global_alpha - the global alpha to use (if enabled in flags)
- * @swap_fg_bg   - if true, fg will be on s1 instead of s2
  *
  * This operation will not consume any nodes.
  *
@@ -2523,8 +2705,7 @@ error:
  * WARNING: Take care when using this with semi-planar or planar sources since
  *          either S1 or S2 will be overwritten!
  */
-static void configure_blend(struct b2r2_node *node, u32 flags, u32 global_alpha,
-		bool swap_fg_bg)
+static void configure_blend(struct b2r2_node *node, u32 flags, u32 global_alpha)
 {
 	node->node.GROUP0.B2R2_ACK &= ~(B2R2_ACK_MODE_BYPASS_S2_S3);
 
@@ -2534,9 +2715,8 @@ static void configure_blend(struct b2r2_node *node, u32 flags, u32 global_alpha,
 	else
 		node->node.GROUP0.B2R2_ACK |= B2R2_ACK_MODE_BLEND_PREMULT;
 
-
 	/* Check if global alpha blend should be enabled */
-	if ((flags & B2R2_BLT_FLAG_GLOBAL_ALPHA_BLEND) != 0) {
+	if (flags & B2R2_BLT_FLAG_GLOBAL_ALPHA_BLEND) {
 
 		/* B2R2 expects the global alpha to be in 0...128 range */
 		global_alpha = (global_alpha*128)/255;
@@ -2546,34 +2726,6 @@ static void configure_blend(struct b2r2_node *node, u32 flags, u32 global_alpha,
 	} else {
 		node->node.GROUP0.B2R2_ACK |=
 			(128 << B2R2_ACK_GALPHA_ROPID_SHIFT);
-	}
-
-	/* Copy the destination config to the appropriate source and clear any
-	   clashing flags */
-	if (swap_fg_bg) {
-		/* S1 will be foreground, S2 background */
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_SOURCE_2;
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_SOURCE_2_FETCH_FROM_MEM;
-		node->node.GROUP0.B2R2_ACK |= B2R2_ACK_SWAP_FG_BG;
-
-		node->node.GROUP4.B2R2_SBA = node->node.GROUP1.B2R2_TBA;
-		node->node.GROUP4.B2R2_STY = node->node.GROUP1.B2R2_TTY;
-		node->node.GROUP4.B2R2_SXY = node->node.GROUP1.B2R2_TXY;
-		node->node.GROUP4.B2R2_SSZ = node->node.GROUP1.B2R2_TSZ;
-
-		node->node.GROUP4.B2R2_STY &= ~(B2R2_S2TY_A1_SUBST_KEY_MODE |
-				B2R2_S2TY_CHROMA_LEFT_EXT_AVERAGE);
-	} else {
-		/* S1 will be background, S2 foreground */
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_SOURCE_1;
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_SOURCE_1_FETCH_FROM_MEM;
-
-		node->node.GROUP3.B2R2_SBA = node->node.GROUP1.B2R2_TBA;
-		node->node.GROUP3.B2R2_STY |= node->node.GROUP1.B2R2_TTY;
-		node->node.GROUP3.B2R2_SXY = node->node.GROUP1.B2R2_TXY;
-
-		node->node.GROUP3.B2R2_STY &= ~(B2R2_S1TY_A1_SUBST_KEY_MODE);
-
 	}
 }
 
@@ -3060,13 +3212,13 @@ static int fmt_byte_pitch(enum b2r2_blt_fmt fmt, u32 width)
 
 	case B2R2_BLT_FMT_24_BIT_RGB888:   /* Fall through */
 	case B2R2_BLT_FMT_24_BIT_ARGB8565: /* Fall through */
-	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_YUV888:   /* Fall through */
 	case B2R2_BLT_FMT_24_BIT_VUY888:
 		return width * 3;
 
 	case B2R2_BLT_FMT_32_BIT_ARGB8888: /* Fall through */
 	case B2R2_BLT_FMT_32_BIT_ABGR8888: /* Fall through */
-	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888: /* Fall through */
 	case B2R2_BLT_FMT_32_BIT_VUYA8888:
 		return width << 2;
 

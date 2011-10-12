@@ -234,6 +234,7 @@ struct b2r2_node_split_buf {
  * @vert_rescale  - determines if vertical rescale is enabled
  * @vert_sf       - the vertical scale factor
  * @src           - the incoming source buffer
+ * @bg            - the incoming background buffer
  * @dst           - the outgoing destination buffer
  * @work_bufs     - work buffer specifications
  * @tmp_bufs      - temporary buffers
@@ -268,6 +269,7 @@ struct b2r2_node_split_job {
 	u16 v_rsf;
 
 	struct b2r2_node_split_buf src;
+	struct b2r2_node_split_buf bg;
 	struct b2r2_node_split_buf dst;
 
 	struct b2r2_work_buf work_bufs[MAX_TMP_BUFS_NEEDED];
@@ -292,6 +294,7 @@ struct b2r2_node_split_job {
  * @node_split_handle: Handle of the node split
  * @src_resolved: Calculated info about the source buffer
  * @src_mask_resolved: Calculated info about the source mask buffer
+ * @bg_resolved: Calculated info about the background buffer
  * @dst_resolved: Calculated info about the destination buffer
  * @profile: True if the blit shall be profiled, false otherwise
  */
@@ -307,6 +310,7 @@ struct b2r2_blt_request {
 	/* Resolved buffer addresses */
 	struct b2r2_resolved_buf src_resolved;
 	struct b2r2_resolved_buf src_mask_resolved;
+	struct b2r2_resolved_buf bg_resolved;
 	struct b2r2_resolved_buf dst_resolved;
 
 	/* TBD: Info about SRAM usage & needs */

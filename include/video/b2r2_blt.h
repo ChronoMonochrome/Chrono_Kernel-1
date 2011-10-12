@@ -302,6 +302,21 @@ enum b2r2_blt_transform {
  *    Enable destination clip rectangle
  * @B2R2_BLT_FLAG_INHERIT_PRIO
  *    Inherit process priority
+ * @B2R2_BLT_FLAG_SRC_NO_CACHE_FLUSH
+ *    Skip cache flush of source image buffer
+ * @B2R2_BLT_FLAG_SRC_MASK_NO_CACHE_FLUSH
+ *    Skip cache flush of source mask buffer
+ * @B2R2_BLT_FLAG_DST_NO_CACHE_FLUSH
+ *    Skip cache flush of destination image buffer
+ * @B2R2_BLT_FLAG_BG_BLEND
+ *    Indicate that a background buffer is supplied
+ *    to the blit operation. B2R2_BLT_FLAG_PER_PIXEL_ALPHA_BLEND,
+ *    B2R2_BLT_FLAG_SRC_IS_NOT_PREMULT, and
+ *    B2R2_BLT_FLAG_GLOBAL_ALPHA_BLEND will control the blend operation.
+ *    The destination blending is in this case disabled and the destination
+ *    buffer will be overwritten with the source and background blend result.
+ * @B2R2_BLT_FLAG_BG_NO_CACHE_FLUSH
+ *    Skip cache flush of background image buffer
  * @B2R2_BLT_FLAG_REPORT_WHEN_DONE
  *    Report through b2r2_blt file when done. A b2r2_blt_report structure is
  *    read. Use poll() or select() if anything to read. (i.e. to help user space
@@ -355,6 +370,8 @@ enum b2r2_blt_flag {
 	B2R2_BLT_FLAG_SRC_NO_CACHE_FLUSH    = BIT(14),/*0x4000*/
 	B2R2_BLT_FLAG_SRC_MASK_NO_CACHE_FLUSH = BIT(15),/*0x8000*/
 	B2R2_BLT_FLAG_DST_NO_CACHE_FLUSH    = BIT(16),/*0x10000*/
+	B2R2_BLT_FLAG_BG_BLEND              = BIT(17),/*0x20000*/
+	B2R2_BLT_FLAG_BG_NO_CACHE_FLUSH     = BIT(18),/*0x40000*/
 	B2R2_BLT_FLAG_REPORT_WHEN_DONE      = BIT(29),/*0x20000000*/
 	B2R2_BLT_FLAG_REPORT_PERFORMANCE    = BIT(30),/*0x40000000*/
 	B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION = BIT(31),/*0x80000000*/
@@ -375,6 +392,8 @@ enum b2r2_blt_flag {
  * @src_mask: Source mask. Not used if source fill.
  * @src_rect: Source area to be blitted.
  * @src_color: Source fill color or color key
+ * @bg_img: Background image.
+ * @bg_rect: Background area to blend with.
  * @dst_img: Destination image.
  * @dst_rect: Destination area to be blitted to.
  * @dst_color: Destination color key
@@ -396,6 +415,8 @@ struct b2r2_blt_req {
 	struct b2r2_blt_img       src_mask;
 	struct b2r2_blt_rect      src_rect;
 	__u32                     src_color;
+	struct b2r2_blt_img       bg_img;
+	struct b2r2_blt_rect      bg_rect;
 	struct b2r2_blt_img       dst_img;
 	struct b2r2_blt_rect      dst_rect;
 	struct b2r2_blt_rect      dst_clip_rect;

@@ -21,6 +21,8 @@ void b2r2_get_img_bounding_rect(struct b2r2_blt_img *img,
 bool b2r2_is_zero_area_rect(struct b2r2_blt_rect *rect);
 bool b2r2_is_rect_inside_rect(struct b2r2_blt_rect *rect1,
 		struct b2r2_blt_rect *rect2);
+bool b2r2_is_rect_gte_rect(struct b2r2_blt_rect *rect1,
+		struct b2r2_blt_rect *rect2);
 void b2r2_intersect_rects(struct b2r2_blt_rect *rect1,
 		struct b2r2_blt_rect *rect2, struct b2r2_blt_rect *intersection);
 

@@ -480,6 +480,14 @@ static long b2r2_blt_ioctl(struct file *file,
 		/* Fall back to generic path if operation was not supported */
 		if (ret == -ENOSYS) {
 			struct b2r2_blt_request *request_gen;
+
+			if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
+				/* No support for BG BLEND in generic implementation yet */
+				b2r2_log_warn("%s: Unsupported: Background blend in b2r2_generic_blt \n",
+					__func__);
+				return ret;
+			}
+
 			b2r2_log_info("b2r2_blt=%d Going generic.\n", ret);
 			request_gen = kmalloc(sizeof(*request_gen), GFP_KERNEL);
 			if (!request_gen) {
@@ -594,7 +602,7 @@ static long b2r2_blt_ioctl(struct file *file,
 		b2r2_log_err(
 			"%s: Unknown cmd %d\n", __func__, cmd);
 		ret = -EINVAL;
-	break;
+		break;
 
 	}
 
@@ -795,6 +803,23 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		request->user_req.src_rect.y,
 		request->user_req.src_rect.width,
 		request->user_req.src_rect.height);
+
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
+		b2r2_log_info(
+				"bg.fmt=%#010x bg.buf={%d,%d,%d} "
+				"bg.w,h={%d,%d} bg.rect={%d,%d,%d,%d}\n",
+				request->user_req.bg_img.fmt,
+				request->user_req.bg_img.buf.type,
+				request->user_req.bg_img.buf.fd,
+				request->user_req.bg_img.buf.offset,
+				request->user_req.bg_img.width,
+				request->user_req.bg_img.height,
+				request->user_req.bg_rect.x,
+				request->user_req.bg_rect.y,
+				request->user_req.bg_rect.width,
+				request->user_req.bg_rect.height);
+	}
+
 	b2r2_log_info(
 		"dst.fmt=%#010x dst.buf={%d,%d,%d} "
 		"dst.w,h={%d,%d} dst.rect={%d,%d,%d,%d}\n",
@@ -838,6 +863,19 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		goto resolve_src_buf_failed;
 	}
 
+	/* Background buffer */
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
+		ret = resolve_buf(&request->user_req.bg_img,
+				&request->user_req.bg_rect, false, &request->bg_resolved);
+		if (ret < 0) {
+			b2r2_log_warn(
+				"%s: Resolve bg buf failed, %d\n",
+				__func__, ret);
+			ret = -EAGAIN;
+			goto resolve_bg_buf_failed;
+		}
+	}
+
 	/* Source mask buffer */
 	ret = resolve_buf(&request->user_req.src_mask,
 			&request->user_req.src_rect, false,
@@ -871,6 +909,17 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		request->src_resolved.file_physical_start,
 		request->src_resolved.file_virtual_start,
 		request->src_resolved.file_len);
+
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
+		b2r2_log_info("bg.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
+			request->bg_resolved.physical_address,
+			request->bg_resolved.virtual_address,
+			request->bg_resolved.is_pmem,
+			request->bg_resolved.filep,
+			request->bg_resolved.file_physical_start,
+			request->bg_resolved.file_virtual_start,
+			request->bg_resolved.file_len);
+	}
 
 	b2r2_log_info("dst.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
 		request->dst_resolved.physical_address,
@@ -979,6 +1028,20 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 			false, /*is_dst*/
 			&request->user_req.src_rect);
 
+	/* Background buffer */
+	if ((request->user_req.flags &
+				B2R2_BLT_FLAG_BG_BLEND) &&
+			!(request->user_req.flags &
+				B2R2_BLT_FLAG_BG_NO_CACHE_FLUSH) &&
+			(request->user_req.bg_img.buf.type !=
+				B2R2_BLT_PTR_PHYSICAL) &&
+			!b2r2_is_mb_fmt(request->user_req.bg_img.fmt))
+				/* MB formats are never touched by SW */
+		sync_buf(&request->user_req.bg_img,
+			&request->bg_resolved,
+			false, /*is_dst*/
+			&request->user_req.bg_rect);
+
 	/* Source mask buffer */
 	if (!(request->user_req.flags &
 				B2R2_BLT_FLAG_SRC_MASK_NO_CACHE_FLUSH) &&
@@ -1080,6 +1143,11 @@ resolve_dst_buf_failed:
 	unresolve_buf(&request->user_req.src_mask.buf,
 		&request->src_mask_resolved);
 resolve_src_mask_buf_failed:
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
+		unresolve_buf(&request->user_req.bg_img.buf,
+				&request->bg_resolved);
+	}
+resolve_bg_buf_failed:
 	unresolve_buf(&request->user_req.src_img.buf,
 		&request->src_resolved);
 resolve_src_buf_failed:
@@ -1118,6 +1186,10 @@ static void job_callback(struct b2r2_core_job *job)
 		&request->src_mask_resolved);
 	unresolve_buf(&request->user_req.dst_img.buf,
 		&request->dst_resolved);
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
+		unresolve_buf(&request->user_req.bg_img.buf,
+			&request->bg_resolved);
+	}
 
 	/* Move to report list if the job shall be reported */
 	/* FIXME: Use a smaller struct? */
@@ -2333,7 +2405,9 @@ static int resolve_hwmem(struct b2r2_blt_img *img,
 
 	if (resolved_buf->file_len <
 			img->buf.offset + (__u32)b2r2_get_img_size(img)) {
-		b2r2_log_info("%s: Hwmem buffer too small.\n", __func__);
+		b2r2_log_info("%s: Hwmem buffer too small. (%d < %d) \n", __func__,
+				resolved_buf->file_len,
+				img->buf.offset + (__u32)b2r2_get_img_size(img));
 		return_value = -EINVAL;
 		goto size_check_failed;
 	}
@@ -2400,6 +2474,48 @@ static void unresolve_buf(struct b2r2_blt_buf *buf,
 }
 
 /**
+ * get_fb_info() - Fill buf with framebuffer info
+ *
+ * @file: The framebuffer file
+ * @buf: Gathered information about the buffer
+ * @img_offset: Image offset info frame buffer
+ *
+ * Returns 0 if OK else negative error code
+ */
+static int get_fb_info(struct file *file,
+		struct b2r2_resolved_buf *buf,
+		__u32 img_offset)
+{
+#ifdef CONFIG_FB
+	if (file && buf &&
+			MAJOR(file->f_dentry->d_inode->i_rdev) == FB_MAJOR) {
+		int i;
+		/*
+		 * (OK to do it like this, no locking???)
+		 */
+		for (i = 0; i < num_registered_fb; i++) {
+			struct fb_info *info = registered_fb[i];
+
+			if (info && info->dev &&
+					MINOR(info->dev->devt) ==
+					MINOR(file->f_dentry->d_inode->i_rdev)) {
+				buf->file_physical_start = info->fix.smem_start;
+				buf->file_virtual_start = (u32)info->screen_base;
+				buf->file_len = info->fix.smem_len;
+				buf->physical_address = buf->file_physical_start +
+						img_offset;
+				buf->virtual_address =
+						(void *) (buf->file_virtual_start +
+						img_offset);
+				return 0;
+			}
+		}
+	}
+#endif
+	return -EINVAL;
+}
+
+/**
  * resolve_buf() - Returns the physical & virtual addresses of a B2R2 blt buffer
  *
  * @img: The image specification as supplied from user space
@@ -2433,17 +2549,13 @@ static int resolve_buf(struct b2r2_blt_img *img,
 		 * TODO: Do we need to check if the process is allowed to
 		 * read/write (depending on if it's dst or src) to the file?
 		 */
-		struct file *file;
-		int put_needed;
-		int i;
-
 #ifdef CONFIG_ANDROID_PMEM
 		if (!get_pmem_file(
-			img->buf.fd,
-			(unsigned long *) &resolved->file_physical_start,
-			(unsigned long *) &resolved->file_virtual_start,
-			(unsigned long *) &resolved->file_len,
-			&resolved->filep)) {
+				img->buf.fd,
+				(unsigned long *) &resolved->file_physical_start,
+				(unsigned long *) &resolved->file_virtual_start,
+				(unsigned long *) &resolved->file_len,
+				&resolved->filep)) {
 			resolved->physical_address =
 				resolved->file_physical_start +
 				img->buf.offset;
@@ -2454,54 +2566,22 @@ static int resolve_buf(struct b2r2_blt_img *img,
 		} else
 #endif
 		{
-			/* Will be set to 0 if a matching dev is found */
-			ret = -EINVAL;
+			int fput_needed;
+			struct file *file;
 
-			file = fget_light(img->buf.fd, &put_needed);
+			file = fget_light(img->buf.fd, &fput_needed);
 			if (file == NULL)
 				return -EINVAL;
-#ifdef CONFIG_FB
-			if (MAJOR(file->f_dentry->d_inode->i_rdev) ==
-					FB_MAJOR) {
-				/*
-				 * This is a frame buffer device, find fb_info
-				 * (OK to do it like this, no locking???)
-				 */
 
-				for (i = 0; i < num_registered_fb; i++) {
-					struct fb_info *info = registered_fb[i];
-
-					if (info && info->dev &&
-							MINOR(info->dev->devt) ==
-						MINOR(file->f_dentry->
-							d_inode->i_rdev)) {
-						resolved->file_physical_start =
-							info->fix.smem_start;
-						resolved->file_virtual_start =
-							(u32)info->screen_base;
-						resolved->file_len =
-							info->fix.smem_len;
-
-						resolved->physical_address =
-							resolved->file_physical_start +
-							img->buf.offset;
-						resolved->virtual_address =
-						(void *) (resolved->
-							file_virtual_start +
-							img->buf.offset);
-
-						ret = 0;
-						break;
-					}
-				}
-			}
-#endif
-
-			fput_light(file, put_needed);
+			ret = get_fb_info(file, resolved,
+					img->buf.offset);
+			fput_light(file, fput_needed);
+			if (ret < 0)
+				return ret;
 		}
 
 		/* Check bounds */
-		if (ret >= 0 && img->buf.offset + img->buf.len >
+		if (img->buf.offset + img->buf.len >
 				resolved->file_len) {
 			ret = -ESPIPE;
 			unresolve_buf(&img->buf, resolved);

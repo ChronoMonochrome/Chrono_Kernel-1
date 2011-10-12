@@ -45,6 +45,13 @@ bool b2r2_is_rect_inside_rect(struct b2r2_blt_rect *rect1,
 		rect1->y + rect1->height <= rect2->y + rect2->height;
 }
 
+bool b2r2_is_rect_gte_rect(struct b2r2_blt_rect *rect1,
+		struct b2r2_blt_rect *rect2)
+{
+	return rect1->width >= rect2->width &&
+			rect1->height >= rect2->height;
+}
+
 void b2r2_intersect_rects(struct b2r2_blt_rect *rect1,
 	struct b2r2_blt_rect *rect2, struct b2r2_blt_rect *intersection)
 {
