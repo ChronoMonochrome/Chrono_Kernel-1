@@ -120,10 +120,9 @@ static void show_pin(struct seq_file *s, pin_cfg_t pin)
 	int slpm_pull = PIN_SLPM_PULL(pin);
 	int slpm_dir = PIN_SLPM_DIR(pin);
 	int slpm_val = PIN_SLPM_VAL(pin);
-	int slpm_pdis = PIN_SLPM_PDIS(pin);
 
 	seq_printf(s,
-		   "  pin %d [%#lx]: af %s, pull %s (%s%s) - slpm: %s%s%s%s%s\n",
+		   "  pin %d [%#lx]: af %s, pull %s (%s%s) - slpm: %s%s%s%s\n",
 		   pin_num, pin, afnames[af],
 		   pullnames[pull],
 		   output ? "output " : "input",
@@ -133,9 +132,7 @@ static void show_pin(struct seq_file *s, pin_cfg_t pin)
 		   slpm_dir == 1 ? (slpm_pull == 0 ? "pull: none ":
 				    (slpm_pull == NMK_GPIO_PULL_UP ?
 				     "pull: up " : "pull: down ") ): "",
-		   slpm_dir == 2 ? (slpm_val == 1 ? "low " : "high " ) : "",
-		   slpm_pdis ? (slpm_pdis == 1 ? "pdis: dis" : "pdis: en") :
-		   "pdis: no change");
+		   slpm_dir == 2 ? (slpm_val == 1 ? "low " : "high " ) : "");
 }
 
 static int pins_dbg_show(struct seq_file *s, void *iter)
