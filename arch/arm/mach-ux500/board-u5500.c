@@ -311,6 +311,7 @@ static struct ab5500_platform_data ab5500_plf_data = {
 		.base = IRQ_AB5500_BASE,
 		.count = AB5500_NR_IRQS,
 	},
+	.pm_power_off	= true,
 	.regulator	= &u5500_ab5500_regulator_data,
 };
 
