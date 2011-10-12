@@ -594,6 +594,7 @@ static int mcde_fb_blank(int blank, struct fb_info *fbi)
 
 	switch (blank) {
 	case FB_BLANK_NORMAL:
+	break;
 	case FB_BLANK_VSYNC_SUSPEND:
 	case FB_BLANK_HSYNC_SUSPEND:
 	case FB_BLANK_POWERDOWN:
