@@ -379,7 +379,7 @@ static struct accessory_regu_descriptor regu_desc[3] = {
 	},
 };
 
-static struct accessory_irq_descriptor irq_desc[] = {
+static struct accessory_irq_descriptor irq_desc_norm[] = {
 	{
 		.irq = PLUG_IRQ,
 		.name = "ACC_DETECT_1DB_F",
@@ -401,6 +401,31 @@ static struct accessory_irq_descriptor irq_desc[] = {
 		.isr = button_release_irq_handler,
 	},
 };
+
+static struct accessory_irq_descriptor irq_desc_inverted[] = {
+	{
+		.irq = PLUG_IRQ,
+		.name = "ACC_DETECT_1DB_R",
+		.isr = plug_irq_handler,
+	},
+	{
+		.irq = UNPLUG_IRQ,
+		.name = "ACC_DETECT_1DB_F",
+		.isr = unplug_irq_handler,
+	},
+	{
+		.irq = BUTTON_PRESS_IRQ,
+		.name = "ACC_DETECT_22DB_R",
+		.isr = button_press_irq_handler,
+	},
+	{
+		.irq = BUTTON_RELEASE_IRQ,
+		.name = "ACC_DETECT_22DB_F",
+		.isr = button_release_irq_handler,
+	},
+};
+
+static struct accessory_irq_descriptor *irq_desc;
 
 /*
  * textual represenation of the accessory type
@@ -642,6 +667,7 @@ out: return;
 static int detect_plugged_in(struct ab8500_ad *dd)
 {
 	u8 value = 0;
+
 	int status = abx500_get_register_interruptible(
 				&dd->pdev->dev,
 				AB8500_INTERRUPT,
@@ -653,7 +679,10 @@ static int detect_plugged_in(struct ab8500_ad *dd)
 		return 0;
 	}
 
-	return value & BIT_ITSOURCE5_ACCDET1 ? 0 : 1;
+	if (dd->pdata->is_detection_inverted)
+		return value & BIT_ITSOURCE5_ACCDET1 ? 1 : 0;
+	else
+		return value & BIT_ITSOURCE5_ACCDET1 ? 0 : 1;
 }
 
 /*
@@ -1022,6 +1051,11 @@ static void claim_irq(struct ab8500_ad *dd, enum accessory_irq irq_id)
 	int ret;
 	int irq;
 
+	if (dd->pdata->is_detection_inverted)
+		irq_desc = irq_desc_inverted;
+	else
+		irq_desc = irq_desc_norm;
+
 	if (irq_desc[irq_id].registered)
 		return;
 
@@ -1060,6 +1094,11 @@ static void claim_irq(struct ab8500_ad *dd, enum accessory_irq irq_id)
 static void release_irq(struct ab8500_ad *dd, enum accessory_irq irq_id)
 {
 	int irq;
+
+	if (dd->pdata->is_detection_inverted)
+		irq_desc = irq_desc_inverted;
+	else
+		irq_desc = irq_desc_norm;
 
 	if (!irq_desc[irq_id].registered)
 		return;

@@ -82,12 +82,15 @@
  * @btn_keycode		Keycode to be sent when accessory button is pressed.
  * @accdet1_dbth	Debounce time + voltage threshold for accdet 1 input.
  * @accdet2122_th	Voltage thresholds for accdet21 and accdet22 inputs.
+ * @is_detection_inverted	Whether the accessory insert/removal, button
+ * press/release irq's are inverted.
  */
 struct ab8500_accdet_platform_data {
 	int btn_keycode;
 	u8 accdet1_dbth;
 	u8 accdet2122_th;
 	unsigned int video_ctrl_gpio;
+	bool is_detection_inverted;
 };
 
 #endif /* _AB8500_ACCDET_H */
