@@ -106,7 +106,7 @@ static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
 	/* Ambient light sensor device */
 	REGULATOR_SUPPLY("vdd", "3-0029"),
 	/* Cypress TrueTouch Touchscreen device */
-	REGULATOR_SUPPLY("vdd", "spi8.0"),
+	REGULATOR_SUPPLY("vcpin", "spi8.0"),
 	/* Camera device */
 	REGULATOR_SUPPLY("vaux12v5", "mmio_camera"),
 };
