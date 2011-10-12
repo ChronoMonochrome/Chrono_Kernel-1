@@ -12,6 +12,7 @@
 
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
+#include <linux/workqueue.h>
 #include <linux/spinlock.h>
 #include <linux/io.h>
 #include <linux/delay.h>
@@ -21,6 +22,7 @@
 #include <linux/regulator/consumer.h>
 
 #include <plat/ske.h>
+#include <plat/gpio.h>
 
 /* SKE_CR bits */
 #define SKE_KPMLT	(0x1 << 6)
@@ -60,6 +62,14 @@
  * @clk:	clock structure pointer
  * @enable:	flag to enable the driver event
  * @regulator:	pointer to the regulator used for ske kyepad
+ * @gpio_input_irq: array for gpio irqs
+ * @key_pressed: hold the key state
+ * @work: delayed work variable for gpio switch
+ * @ske_rows: rows gpio array for ske
+ * @ske_cols: columns gpio array for ske
+ * @gpio_row: gpio row
+ * @gpio_col: gpio column
+ * @gpio_work: delayed work variable for release gpio key
  */
 struct ske_keypad {
 	int irq;
@@ -71,6 +81,14 @@ struct ske_keypad {
 	spinlock_t ske_keypad_lock;
 	bool enable;
 	struct regulator *regulator;
+	int gpio_input_irq[SKE_KPD_MAX_ROWS];
+	int key_pressed;
+	struct delayed_work work;
+	int ske_rows[SKE_KPD_MAX_ROWS];
+	int ske_cols[SKE_KPD_MAX_COLS];
+	int gpio_row;
+	int gpio_col;
+	struct delayed_work gpio_work;
 };
 
 static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
@@ -139,18 +157,41 @@ static int __devinit ske_keypad_chip_init(struct ske_keypad *keypad)
 	return 0;
 }
 
-static void ske_enable(struct ske_keypad *keypad)
+static void ske_mode_enable(struct ske_keypad *keypad, bool enable)
 {
-	if (keypad->enable) {
-		regulator_enable(keypad->regulator);
-		clk_enable(keypad->clk);
-		enable_irq(keypad->irq);
-		ske_keypad_chip_init(keypad);
-	} else {
-		disable_irq(keypad->irq);
-		ske_keypad_set_bits(keypad, SKE_IMSC, ~SKE_KPIMA, 0x0);
+	int i;
+
+	if (!enable) {
+		writel(0, keypad->reg_base + SKE_CR);
+		if (keypad->board->exit)
+			keypad->board->exit();
+		for (i = 0; i < keypad->board->krow; i++) {
+			enable_irq(keypad->gpio_input_irq[i]);
+			enable_irq_wake(keypad->gpio_input_irq[i]);
+		}
 		clk_disable(keypad->clk);
 		regulator_disable(keypad->regulator);
+	} else {
+		regulator_enable(keypad->regulator);
+		clk_enable(keypad->clk);
+		for (i = 0; i < keypad->board->krow; i++) {
+			disable_irq_nosync(keypad->gpio_input_irq[i]);
+			disable_irq_wake(keypad->gpio_input_irq[i]);
+		}
+		if (keypad->board->init)
+			keypad->board->init();
+		ske_keypad_chip_init(keypad);
+	}
+}
+static void ske_enable(struct ske_keypad *keypad, bool enable)
+{
+	keypad->enable = enable;
+	if (keypad->enable) {
+		enable_irq(keypad->irq);
+		ske_mode_enable(keypad, true);
+	} else {
+		ske_mode_enable(keypad, false);
+		disable_irq(keypad->irq);
 	}
 }
 
@@ -177,7 +218,7 @@ static ssize_t ske_store_attr_enable(struct device *dev,
 
 	if (keypad->enable != val) {
 		keypad->enable = val ? true : false;
-		ske_enable(keypad);
+		ske_enable(keypad, keypad->enable);
 	}
 	return count;
 }
@@ -199,7 +240,6 @@ static void ske_keypad_report(struct ske_keypad *keypad, u8 status, int col)
 	int row = 0, code, pos;
 	struct input_dev *input = keypad->input;
 	u32 ske_ris;
-	int key_pressed;
 	int num_of_rows;
 
 	/* find out the row */
@@ -211,10 +251,11 @@ static void ske_keypad_report(struct ske_keypad *keypad, u8 status, int col)
 
 		code = MATRIX_SCAN_CODE(row, col, SKE_KEYPAD_ROW_SHIFT);
 		ske_ris = readl(keypad->reg_base + SKE_RIS);
-		key_pressed = ske_ris & SKE_KPRISA;
+		keypad->key_pressed = ske_ris & SKE_KPRISA;
 
 		input_event(input, EV_MSC, MSC_SCAN, code);
-		input_report_key(input, keypad->keymap[code], key_pressed);
+		input_report_key(input, keypad->keymap[code],
+						keypad->key_pressed);
 		input_sync(input);
 		num_of_rows--;
 	} while (num_of_rows);
@@ -251,10 +292,8 @@ static void ske_keypad_read_data(struct ske_keypad *keypad)
 		}
 	}
 }
-
-static irqreturn_t ske_keypad_irq(int irq, void *dev_id)
+static void ske_keypad_scan(struct ske_keypad *keypad)
 {
-	struct ske_keypad *keypad = dev_id;
 	int timeout = keypad->board->debounce_ms;
 
 	/* disable auto scan interrupt; mask the interrupt generated */
@@ -273,6 +312,139 @@ static irqreturn_t ske_keypad_irq(int irq, void *dev_id)
 
 	/* enable auto scan interrupts */
 	ske_keypad_set_bits(keypad, SKE_IMSC, 0x0, SKE_KPIMA);
+}
+
+static void ske_gpio_switch_work(struct work_struct *work)
+{
+	struct ske_keypad *keypad = container_of(work,
+					struct ske_keypad, work.work);
+
+	ske_mode_enable(keypad, false);
+	keypad->enable = false;
+}
+
+static void ske_gpio_release_work(struct work_struct *work)
+{
+	int code;
+	struct ske_keypad *keypad = container_of(work,
+					struct ske_keypad, gpio_work.work);
+	struct input_dev *input = keypad->input;
+
+	code = MATRIX_SCAN_CODE(keypad->gpio_row, keypad->gpio_col,
+						SKE_KEYPAD_ROW_SHIFT);
+	input_event(input, EV_MSC, MSC_SCAN, code);
+	input_report_key(input, keypad->keymap[code], 1);
+	input_sync(input);
+	input_report_key(input, keypad->keymap[code], 0);
+	input_sync(input);
+}
+
+static int ske_read_get_gpio_row(struct ske_keypad *keypad)
+{
+	int row;
+	int value = 0;
+	int ret;
+
+	/* read all rows GPIO data register values */
+	for (row = 0; row < SKE_KPD_MAX_ROWS ; row++) {
+		ret  = gpio_get_value(keypad->ske_rows[row]);
+		value += (1 << row) *  ret;
+	}
+
+	/* get the exact row */
+	for (row = 0; row < keypad->board->krow; row++) {
+		if (((1 << row) & value) == 0)
+			return row;
+	}
+
+	return -1;
+}
+
+static void ske_set_cols(struct ske_keypad *keypad, int col)
+{
+	int i ;
+	int value;
+
+	/*
+	 * Set all columns except the requested column
+	 * output pin as high
+	 */
+	for (i = 0; i < SKE_KPD_MAX_COLS; i++) {
+		if (i == col)
+			value = 0;
+		else
+			value = 1;
+		gpio_request(keypad->ske_cols[i], "ske-kp");
+		gpio_direction_output(keypad->ske_cols[i], value);
+		gpio_free(keypad->ske_cols[i]);
+	}
+}
+
+static void ske_free_cols(struct ske_keypad *keypad)
+{
+	int i ;
+
+	for (i = 0; i < SKE_KPD_MAX_COLS; i++) {
+		gpio_request(keypad->ske_cols[i], "ske-kp");
+		gpio_direction_output(keypad->ske_cols[i], 0);
+		gpio_free(keypad->ske_cols[i]);
+	}
+}
+
+static void ske_manual_scan(struct ske_keypad *keypad)
+{
+	int row;
+	int col;
+
+	for (col = 0; col < keypad->board->kcol; col++) {
+		ske_set_cols(keypad, col);
+		row = ske_read_get_gpio_row(keypad);
+		if (row >= 0) {
+			keypad->key_pressed = 1;
+			keypad->gpio_row = row;
+			keypad->gpio_col = col;
+			break;
+		}
+	}
+	ske_free_cols(keypad);
+}
+
+static irqreturn_t ske_keypad_gpio_irq(int irq, void *dev_id)
+{
+	struct ske_keypad *keypad = dev_id;
+
+	if (!gpio_get_value(NOMADIK_IRQ_TO_GPIO(irq))) {
+		ske_manual_scan(keypad);
+		if (!keypad->enable) {
+			keypad->enable = true;
+			ske_mode_enable(keypad, true);
+		}
+		/*
+		 * Schedule the work queue to change it to
+		 * report the key pressed, if it is not detected in SKE mode.
+		 */
+		if (keypad->key_pressed)
+			schedule_delayed_work(&keypad->gpio_work,
+						KEY_PRESSED_DELAY);
+	}
+
+	return IRQ_HANDLED;
+}
+static irqreturn_t ske_keypad_irq(int irq, void *dev_id)
+{
+	struct ske_keypad *keypad = dev_id;
+
+	cancel_delayed_work_sync(&keypad->gpio_work);
+	cancel_delayed_work_sync(&keypad->work);
+	ske_keypad_scan(keypad);
+
+	/*
+	 * Schedule the work queue to change it to
+	 * GPIO mode, if there is no activity in SKE mode
+	 */
+	if (!keypad->key_pressed && keypad->enable)
+		schedule_delayed_work(&keypad->work,
+				keypad->board->switch_delay);
 
 	return IRQ_HANDLED;
 }
@@ -286,6 +458,7 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 	void __iomem *reg_base;
 	int ret = 0;
 	int irq;
+	int i;
 	struct ske_keypad_platform_data *plat = pdev->dev.platform_data;
 
 	if (!plat) {
@@ -338,7 +511,6 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 		ret = -ENOMEM;
 		goto out_freekeypad;
 	}
-
 	keypad->regulator = regulator_get(&pdev->dev, "v-ape");
 	if (IS_ERR(keypad->regulator)) {
 		dev_err(&pdev->dev, "regulator_get failed\n");
@@ -382,27 +554,55 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 	keypad->input	= input;
 	keypad->reg_base = reg_base;
 	keypad->clk	= clk;
-	keypad->enable	= true;
+	INIT_DELAYED_WORK(&keypad->work, ske_gpio_switch_work);
+	INIT_DELAYED_WORK(&keypad->gpio_work, ske_gpio_release_work);
 
 	/* allocations are sane, we begin HW initialization */
 	clk_enable(keypad->clk);
 
 	if (!keypad->board->init) {
-		dev_err(&pdev->dev, "NULL board initialization helper\n");
+		dev_err(&pdev->dev, "init funtion not defined\n");
 		ret = -EINVAL;
 		goto out_unregisterinput;
 	}
 
 	if (keypad->board->init() < 0) {
-		dev_err(&pdev->dev, "unable to set keypad board config\n");
+		dev_err(&pdev->dev, "keyboard init config failed\n");
 		ret = -EINVAL;
 		goto out_unregisterinput;
 	}
 
-	ret = ske_keypad_chip_init(keypad);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "unable to init keypad hardware\n");
+	if (!keypad->board->exit) {
+		dev_err(&pdev->dev, "exit funtion not defined\n");
+		ret = -EINVAL;
 		goto out_unregisterinput;
+	}
+
+	if (keypad->board->exit() < 0) {
+		dev_err(&pdev->dev,  "keyboard exit config failed\n");
+		ret = -EINVAL;
+		goto out_unregisterinput;
+	}
+	for (i = 0; i < SKE_KPD_MAX_ROWS; i++) {
+		keypad->ske_rows[i] = *plat->gpio_input_pins;
+		keypad->ske_cols[i] = *plat->gpio_output_pins;
+		keypad->gpio_input_irq[i] =
+				NOMADIK_GPIO_TO_IRQ(keypad->ske_rows[i]);
+		plat->gpio_input_pins++;
+		plat->gpio_output_pins++;
+	}
+
+	for (i = 0; i < keypad->board->krow; i++) {
+		ret =  request_threaded_irq(keypad->gpio_input_irq[i],
+				NULL, ske_keypad_gpio_irq,
+				IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND,
+				"ske-keypad-gpio", keypad);
+		if (ret) {
+			dev_err(&pdev->dev, "allocate gpio irq %d failed\n",
+						keypad->gpio_input_irq[i]);
+			goto out_unregisterinput;
+		}
+		enable_irq_wake(keypad->gpio_input_irq[i]);
 	}
 
 	ret =  request_threaded_irq(keypad->irq, NULL, ske_keypad_irq,
@@ -423,6 +623,9 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 		device_init_wakeup(&pdev->dev, true);
 
 	platform_set_drvdata(pdev, keypad);
+
+	clk_disable(keypad->clk);
+	regulator_disable(keypad->regulator);
 
 	return 0;
 
@@ -454,6 +657,8 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 	struct ske_keypad *keypad = platform_get_drvdata(pdev);
 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
+	cancel_delayed_work_sync(&keypad->gpio_work);
+	cancel_delayed_work_sync(&keypad->work);
 	free_irq(keypad->irq, keypad);
 
 	input_unregister_device(keypad->input);
@@ -465,7 +670,6 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 	if (keypad->board->exit)
 		keypad->board->exit();
 
-	regulator_disable(keypad->regulator);
 	regulator_put(keypad->regulator);
 
 	iounmap(keypad->reg_base);
@@ -484,9 +688,14 @@ static int ske_keypad_suspend(struct device *dev)
 
 	if (device_may_wakeup(dev))
 		enable_irq_wake(irq);
-	else if (keypad->enable) {
-		keypad->enable = false;
-		ske_enable(keypad);
+	else {
+		cancel_delayed_work_sync(&keypad->gpio_work);
+		cancel_delayed_work_sync(&keypad->work);
+		disable_irq(irq);
+		if (keypad->enable) {
+			ske_mode_enable(keypad, false);
+			keypad->enable = false;
+		}
 	}
 
 	return 0;
@@ -500,9 +709,12 @@ static int ske_keypad_resume(struct device *dev)
 
 	if (device_may_wakeup(dev))
 		disable_irq_wake(irq);
-	else if (!keypad->enable) {
-		keypad->enable = true;
-		ske_enable(keypad);
+	else {
+		if (!keypad->enable) {
+			keypad->enable = true;
+			ske_mode_enable(keypad, true);
+		}
+		enable_irq(irq);
 	}
 
 	return 0;
@@ -539,6 +751,6 @@ static void __exit ske_keypad_exit(void)
 module_exit(ske_keypad_exit);
 
 MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("Naveen Kumar <naveen.gaddipati@stericsson.com> / Sundar Iyer <sundar.iyer@stericsson.com>");
+MODULE_AUTHOR("Naveen Kumar <naveen.gaddipati@stericsson.com>");
 MODULE_DESCRIPTION("Nomadik Scroll-Key-Encoder Keypad Driver");
 MODULE_ALIAS("platform:nomadik-ske-keypad");
