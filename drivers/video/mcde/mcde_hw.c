@@ -58,7 +58,6 @@ static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
 static int set_channel_state_sync(struct mcde_chnl_state *chnl,
 							enum chnl_state state);
 static void stop_channel(struct mcde_chnl_state *chnl);
-static void watchdog_auto_sync_timer_function(unsigned long arg);
 static int _mcde_chnl_enable(struct mcde_chnl_state *chnl);
 static int _mcde_chnl_apply(struct mcde_chnl_state *chnl);
 static void disable_flow(struct mcde_chnl_state *chnl);
@@ -327,11 +326,7 @@ struct mcde_chnl_state {
 	wait_queue_head_t state_waitq;
 	wait_queue_head_t vcmp_waitq;
 	atomic_t vcmp_cnt;
-
-	/* Used as watchdog timer for auto sync feature */
-	struct timer_list auto_sync_timer;
 	struct timer_list dsi_te_timer;
-
 	enum mcde_display_power_mode power_mode;
 
 	/* Staged settings */
@@ -909,22 +904,11 @@ static struct mcde_chnl_state *find_channel_by_dsilink(int link)
 static inline void mcde_handle_vcmp(struct mcde_chnl_state *chnl)
 {
 	if (!chnl->vcmp_per_field ||
-			(chnl->vcmp_per_field && chnl->even_vcmp)) {
+				(chnl->vcmp_per_field && chnl->even_vcmp)) {
 		atomic_inc(&chnl->vcmp_cnt);
 		if (chnl->state == CHNLSTATE_STOPPING)
 			set_channel_state_atomic(chnl, CHNLSTATE_STOPPED);
 		wake_up_all(&chnl->vcmp_waitq);
-
-		if (chnl->port.update_auto_trig &&
-				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
-				chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->state == CHNLSTATE_RUNNING) {
-			do_softwaretrig(chnl);
-			mod_timer(&chnl->auto_sync_timer,
-				jiffies +
-				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
-								* 1000));
-		}
 	}
 	chnl->even_vcmp = !chnl->even_vcmp;
 }
@@ -1627,11 +1611,6 @@ static void stop_channel(struct mcde_chnl_state *chnl)
 	if (chnl->state != CHNLSTATE_RUNNING)
 		return;
 
-	if (chnl->port.update_auto_trig &&
-			chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
-			chnl->port.type == MCDE_PORTTYPE_DSI)
-		del_timer(&chnl->auto_sync_timer);
-
 	if (port->type == MCDE_PORTTYPE_DSI) {
 		dsi_wfld(port->link, DSI_MCTL_MAIN_PHY_CTL, CLK_CONTINUOUS,
 			false);
@@ -1739,24 +1718,6 @@ static void enable_flow(struct mcde_chnl_state *chnl)
 	}
 
 	set_channel_state_atomic(chnl, CHNLSTATE_RUNNING);
-}
-
-static void watchdog_auto_sync_timer_function(unsigned long arg)
-{
-	int i;
-	for (i = 0; i < num_channels; i++) {
-		struct mcde_chnl_state *chnl = &channels[i];
-		if (chnl->port.update_auto_trig &&
-				chnl->port.sync_src == MCDE_SYNCSRC_OFF &&
-				chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->state == CHNLSTATE_RUNNING) {
-			do_softwaretrig(chnl);
-			mod_timer(&chnl->auto_sync_timer,
-				jiffies +
-				msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG
-								* 1000));
-		}
-	}
 }
 
 static void work_sleep_function(struct work_struct *ptr)
@@ -2614,13 +2575,7 @@ static void chnl_update_continous(struct mcde_chnl_state *chnl,
 		}
 	}
 
-	if (chnl->port.type == MCDE_PORTTYPE_DSI &&
-				chnl->port.sync_src == MCDE_SYNCSRC_OFF) {
-		do_softwaretrig(chnl);
-		mod_timer(&chnl->auto_sync_timer, jiffies +
-			msecs_to_jiffies(MCDE_AUTO_SYNC_WATCHDOG * 1000));
-	} else
-		enable_flow(chnl);
+	enable_flow(chnl);
 }
 
 static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
@@ -3352,10 +3307,6 @@ static void probe_hw(void)
 
 		init_waitqueue_head(&channels[i].state_waitq);
 		init_waitqueue_head(&channels[i].vcmp_waitq);
-		init_timer(&channels[i].auto_sync_timer);
-		channels[i].auto_sync_timer.function =
-					watchdog_auto_sync_timer_function;
-
 		init_timer(&channels[i].dsi_te_timer);
 		channels[i].dsi_te_timer.function =
 					dsi_te_timer_function;
@@ -3493,10 +3444,6 @@ static int __devexit mcde_remove(struct platform_device *pdev)
 	struct mcde_chnl_state *chnl = &channels[0];
 
 	for (; chnl < &channels[num_channels]; chnl++) {
-		if (del_timer(&chnl->auto_sync_timer))
-			dev_vdbg(&mcde_dev->dev,
-				"%s timer could not be stopped\n"
-				, __func__);
 		if (del_timer(&chnl->dsi_te_timer))
 			dev_vdbg(&mcde_dev->dev,
 				"%s dsi timer could not be stopped\n"
