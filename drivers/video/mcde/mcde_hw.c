@@ -2329,13 +2329,16 @@ static void chnl_update_continous(struct mcde_chnl_state *chnl)
 	if (!chnl->continous_running) {
 		if (chnl->transactionid_regs < chnl->transactionid)
 			chnl_update_registers(chnl);
-		if (chnl->port.sync_src == MCDE_SYNCSRC_TE0)
+		if (chnl->port.sync_src == MCDE_SYNCSRC_TE0) {
 			mcde_wfld(MCDE_CRC, SYCEN0, true);
-		else if (chnl->port.sync_src == MCDE_SYNCSRC_TE1) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+		 } else if (chnl->port.sync_src == MCDE_SYNCSRC_TE1) {
+			if (hardware_version == MCDE_CHIP_VERSION_3_0_8) {
 				mcde_wfld(MCDE_VSCRC1, VSSEL, 1);
-
-			mcde_wfld(MCDE_CRC, SYCEN1, true);
+				mcde_wfld(MCDE_CRC, SYCEN1, true);
+			} else {
+				mcde_wfld(MCDE_VSCRC1, VSSEL, 0);
+				mcde_wfld(MCDE_CRC, SYCEN0, true);
+			}
 		}
 		chnl->continous_running = true;
 

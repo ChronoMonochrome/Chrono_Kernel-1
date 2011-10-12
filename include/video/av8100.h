@@ -25,6 +25,7 @@ struct av8100_platform_data {
 	const char	*inputclk_id;
 	const char	*regulator_pwr_id;
 	bool		alt_powerupseq;
+	unsigned char	mclk_freq;
 };
 
 enum av8100_error {

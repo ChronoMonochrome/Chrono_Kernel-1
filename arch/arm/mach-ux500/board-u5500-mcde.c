@@ -10,18 +10,30 @@
 #include <linux/kernel.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
+#include <video/av8100.h>
 #include <asm/mach-types.h>
 #include <video/mcde_display.h>
 #include <video/mcde_display-generic_dsi.h>
+#include <video/mcde_display-av8100.h>
 #include <video/mcde_fb.h>
 #include <video/mcde_dss.h>
 
 #define DSI_UNIT_INTERVAL_0	0xA
+#define DSI_UNIT_INTERVAL_2	0x5
+
 #define PRIMARY_DISPLAY_ID	0
+#define TERTIARY_DISPLAY_ID	1
 
 #ifdef CONFIG_FB_MCDE
-static struct fb_info *fbs[2] = { NULL, NULL };
-static struct mcde_display_device *displays[2] = { NULL, NULL };
+
+/* The initialization of hdmi disp driver must be delayed in order to
+ * ensure that inputclk will be available (needed by hdmi hw) */
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+static struct delayed_work work_dispreg_hdmi;
+#define DISPREG_HDMI_DELAY 6000
+#endif
+
+#define MCDE_NR_OF_DISPLAYS 2
 static int display_initialized_during_boot;
 
 static int __init startup_graphics_setup(char *str)
@@ -74,7 +86,7 @@ struct mcde_display_generic_platform_data u5500_generic_display0_pdata = {
 	.reset_delay = 10,
 	.sleep_out_delay = 140,
 #ifdef CONFIG_REGULATOR
-	.regulator_id = "ldo-h",
+	.regulator_id = "v-display",
 	.min_supply_voltage = 2500000, /* 2.5V */
 	.max_supply_voltage = 2700000 /* 2.7V */
 #endif
@@ -107,6 +119,78 @@ struct mcde_display_device u5500_generic_display0 = {
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
 
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+static struct mcde_port port2 = {
+	.type = MCDE_PORTTYPE_DSI,
+	.mode = MCDE_PORTMODE_CMD,
+	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
+	.ifc = DSI_VIDEO_MODE,
+	.link = 1,
+#ifdef CONFIG_AV8100_HWTRIG_INT
+	.sync_src = MCDE_SYNCSRC_TE0,
+#endif
+#ifdef CONFIG_AV8100_HWTRIG_I2SDAT3
+	.sync_src = MCDE_SYNCSRC_TE1,
+#endif
+#ifdef CONFIG_AV8100_HWTRIG_DSI_TE
+	.sync_src = MCDE_SYNCSRC_TE_POLLING,
+#endif
+#ifdef CONFIG_AV8100_HWTRIG_NONE
+	.sync_src = MCDE_SYNCSRC_OFF,
+#endif
+	.update_auto_trig = true,
+	.phy = {
+		.dsi = {
+			.virt_id = 0,
+			.num_data_lanes = 2,
+			.ui = DSI_UNIT_INTERVAL_2,
+			.clk_cont = false,
+			.data_lanes_swap = false,
+		},
+	},
+	.hdmi_sdtv_switch = HDMI_SWITCH,
+};
+
+struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
+	.reset_gpio = 0,
+	.reset_delay = 1,
+	.regulator_id = NULL,
+	.cvbs_regulator_id = "v-av8100-AV-switch",
+	.ddb_id = 1,
+	.rgb_2_yCbCr_transform = {
+		.matrix = {
+			{0x42, 0x81, 0x19},
+			{0xffda, 0xffb6, 0x70},
+			{0x70, 0xffa2, 0xffee},
+		},
+		.offset = {0x80, 0x10, 0x80},
+	}
+};
+
+struct mcde_display_device av8100_hdmi = {
+	.name = "av8100_hdmi",
+	.id = TERTIARY_DISPLAY_ID,
+	.port = &port2,
+	.chnl_id = MCDE_CHNL_B,
+	.fifo = MCDE_FIFO_B,
+	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
+	.native_x_res = 1280,
+	.native_y_res = 720,
+	.synchronized_update = false,
+	.dev = {
+		.platform_data = &av8100_hdmi_pdata,
+	},
+	.platform_enable = NULL,
+	.platform_disable = NULL,
+};
+
+static void delayed_work_dispreg_hdmi(struct work_struct *ptr)
+{
+	if (mcde_display_device_register(&av8100_hdmi))
+		pr_warning("Failed to register av8100_hdmi\n");
+}
+#endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
+
 /*
 * This function will create the framebuffer for the display that is registered.
 */
@@ -117,11 +201,12 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	u16 width, height;
 	u16 virtual_width, virtual_height;
 	u32 rotate = FB_ROTATE_UR;
+	struct fb_info *fbi;
 
 	if (event != MCDE_DSS_EVENT_DISPLAY_REGISTERED)
 		return 0;
 
-	if (ddev->id < PRIMARY_DISPLAY_ID || ddev->id >= ARRAY_SIZE(fbs))
+	if (ddev->id < PRIMARY_DISPLAY_ID || ddev->id >= MCDE_NR_OF_DISPLAYS)
 		return 0;
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
@@ -154,18 +239,26 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		virtual_height = height;
 #endif
 
-	/* Create frame buffer */
-	fbs[ddev->id] = mcde_fb_create(ddev,
-		width, height,
-		virtual_width, virtual_height,
-		ddev->default_pixel_format,
-		rotate);
+	if (ddev->id == TERTIARY_DISPLAY_ID) {
+#ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
+		hdmi_fb_onoff(ddev, 1, 0, 0);
+#endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
+	} else {
+		/* Create frame buffer */
+		fbi = mcde_fb_create(ddev,
+			width, height,
+			virtual_width, virtual_height,
+			ddev->default_pixel_format,
+			rotate);
 
-	if (IS_ERR(fbs[ddev->id]))
-		dev_warn(&ddev->dev, "Failed to create fb for display %s\n",
-								ddev->name);
-	else
-		dev_info(&ddev->dev, "Framebuffer created (%s)\n", ddev->name);
+		if (IS_ERR(fbi))
+			dev_warn(&ddev->dev,
+				"Failed to create fb for display %s\n",
+						ddev->name);
+		else
+			dev_info(&ddev->dev, "Framebuffer created (%s)\n",
+						ddev->name);
+	}
 
 	return 0;
 }
@@ -286,10 +379,79 @@ int __init init_display_devices_u5500(void)
 	ret = mcde_display_device_register(&u5500_generic_display0);
 	if (ret)
 		pr_warning("Failed to register generic display device 0\n");
-	displays[0] = &u5500_generic_display0;
 #endif
+
+#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+	INIT_DELAYED_WORK_DEFERRABLE(&work_dispreg_hdmi,
+			delayed_work_dispreg_hdmi);
+
+	schedule_delayed_work(&work_dispreg_hdmi,
+			msecs_to_jiffies(DISPREG_HDMI_DELAY));
+#endif
+
 	return ret;
 }
 
-module_init(init_display_devices_u5500);
+void hdmi_fb_onoff(struct mcde_display_device *ddev,
+		bool enable, u8 cea, u8 vesa_cea_nr)
+{
+	struct fb_info *fbi;
+	u16 w, h;
+	u16 vw, vh;
+	u32 rotate = FB_ROTATE_UR;
+	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
+
+	dev_dbg(&ddev->dev, "%s\n", __func__);
+	dev_dbg(&ddev->dev, "en:%d cea:%d nr:%d\n", enable, cea, vesa_cea_nr);
+
+	if (enable) {
+		if (ddev->enabled) {
+			dev_dbg(&ddev->dev, "Display is already enabled.\n");
+			return;
+		}
+
+		/* Create fb */
+		if (ddev->fbi == NULL) {
+			/* Note: change when dynamic buffering is available */
+			int buffering = 2;
+
+			/* Get default values */
+			mcde_dss_get_native_resolution(ddev, &w, &h);
+			vw = w;
+			vh = h * buffering;
+
+			if (vesa_cea_nr != 0)
+				ddev->ceanr_convert(ddev, cea, vesa_cea_nr,
+						buffering, &w, &h, &vw, &vh);
+
+			fbi = mcde_fb_create(ddev, w, h, vw, vh,
+				ddev->default_pixel_format, rotate);
+
+			if (IS_ERR(fbi)) {
+				dev_warn(&ddev->dev,
+					"Failed to create fb for display %s\n",
+							ddev->name);
+				goto hdmi_fb_onoff_end;
+			} else {
+				dev_info(&ddev->dev,
+					"Framebuffer created (%s)\n",
+							ddev->name);
+			}
+			driver_data->fbdevname = (char *)dev_name(fbi->dev);
+		}
+	} else {
+		if (!ddev->enabled) {
+			dev_dbg(&ddev->dev, "Display %s is already disabled.\n",
+					ddev->name);
+			return;
+		}
+		mcde_fb_destroy(ddev);
+	}
+
+hdmi_fb_onoff_end:
+	return;
+}
+EXPORT_SYMBOL(hdmi_fb_onoff);
+
+module_init(init_display_devices);
 #endif

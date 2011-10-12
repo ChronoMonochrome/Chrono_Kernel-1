@@ -118,11 +118,6 @@
 #define MCLK_RNG_76_93	13
 #define MCLK_RNG_85_104	14
 #define MCLK_RNG_94_115	15
-/*
- *  Until there is an API for obtaining the input master clock
- *  frequency, the register value is hard coded.
- */
-#define MCLK_FREQ	MCLK_RNG_31_38
 
 DEFINE_MUTEX(av8100_hw_mutex);
 #define LOCK_AV8100_HW mutex_lock(&av8100_hw_mutex)
@@ -1831,7 +1826,7 @@ static int av8100_powerup1(void)
 		udelay(AV8100_WATTIME_100US);
 
 		retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
-				AV8100_STANDBY_STBY_HIGH, MCLK_FREQ);
+				AV8100_STANDBY_STBY_HIGH, pdata->mclk_freq);
 		if (retval) {
 			dev_err(av8100dev, "%s reg_wr err 3\n", __func__);
 			goto av8100_powerup1_err;
@@ -1840,7 +1835,7 @@ static int av8100_powerup1(void)
 		msleep(AV8100_WAITTIME_1MS);
 
 		retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_LOW,
-				AV8100_STANDBY_STBY_LOW, MCLK_FREQ);
+				AV8100_STANDBY_STBY_LOW, pdata->mclk_freq);
 		if (retval) {
 			dev_err(av8100dev, "%s reg_wr err 4\n", __func__);
 			goto av8100_powerup1_err;
@@ -1894,10 +1889,11 @@ av8100_powerup1_err:
 static int av8100_powerup2(void)
 {
 	int retval;
+	struct av8100_platform_data *pdata = av8100dev->platform_data;
 
 	/* Master clock timing, running, search for plug */
 	retval = av8100_reg_stby_w(AV8100_STANDBY_CPD_HIGH,
-		AV8100_STANDBY_STBY_HIGH, MCLK_FREQ);
+		AV8100_STANDBY_STBY_HIGH, pdata->mclk_freq);
 	if (retval) {
 		dev_err(av8100dev,
 			"Failed to write the value to av8100 register\n");
