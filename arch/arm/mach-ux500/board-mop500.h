@@ -7,6 +7,9 @@
 #ifndef __BOARD_MOP500_H
 #define __BOARD_MOP500_H
 
+/* This defines the NOMADIK_NR_GPIO */
+#include <mach/gpio.h>
+
 /* Snowball specific GPIO assignments, this board has no GPIO expander */
 #define SNOWBALL_ACCEL_INT1_GPIO	163
 #define SNOWBALL_ACCEL_INT2_GPIO	164
