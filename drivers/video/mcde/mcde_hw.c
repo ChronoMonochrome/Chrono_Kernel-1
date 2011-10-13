@@ -89,6 +89,7 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define DSI_READ_NBR_OF_RETRIES 2
 #define MCDE_FLOWEN_MAX_TRIAL 60
 
+#define MCDE_VERSION_4_1_3 0x04010300
 #define MCDE_VERSION_4_0_4 0x04000400
 #define MCDE_VERSION_3_0_8 0x03000800
 #define MCDE_VERSION_3_0_5 0x03000500
@@ -2994,6 +2995,14 @@ static int probe_hw(struct platform_device *pdev)
 		input_fifo_size = 80;
 		dsi_ifc_is_supported = false;
 		dev_info(&mcde_dev->dev, "db5500 V2 HW\n");
+		break;
+	case MCDE_VERSION_4_1_3:
+		num_dsilinks = 3;
+		num_channels = 4;
+		num_overlays = 6;
+		dsi_ifc_is_supported = true;
+		input_fifo_size = 192;
+		dev_info(&mcde_dev->dev, "db9540 V1 HW\n");
 		break;
 	case MCDE_VERSION_3_0_5:
 		/* Intentional */
