@@ -388,6 +388,12 @@ static int __init cw1200_sdio_init(void)
 	if (ret)
 		goto err_reg;
 
+	if (pdata->clk_ctrl) {
+		ret = pdata->clk_ctrl(pdata, true);
+		if (ret)
+			goto err_clk;
+	}
+
 	if (pdata->power_ctrl) {
 		ret = pdata->power_ctrl(pdata, true);
 		if (ret)
@@ -404,6 +410,9 @@ err_on:
 	if (pdata->power_ctrl)
 		pdata->power_ctrl(pdata, false);
 err_power:
+	if (pdata->clk_ctrl)
+		pdata->clk_ctrl(pdata, false);
+err_clk:
 	sdio_unregister_driver(&sdio_driver);
 err_reg:
 	return ret;
@@ -418,6 +427,8 @@ static void __exit cw1200_sdio_exit(void)
 	cw1200_sdio_off(pdata);
 	if (pdata->power_ctrl)
 		pdata->power_ctrl(pdata, false);
+	if (pdata->clk_ctrl)
+		pdata->clk_ctrl(pdata, false);
 }
 
 
