@@ -16,7 +16,7 @@
 #include <linux/irqreturn.h>
 #include <linux/bitops.h>
 #include <plat/ste_dma40.h>
-#include <mach/gpio.h>
+#include <linux/gpio.h>
 #include <linux/spi/stm_msp.h>
 
 /* Generic config struct. Use the actual values defined below for global
