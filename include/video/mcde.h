@@ -345,9 +345,6 @@ int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl);
 #define MCDE_IO_AREA "MCDE I/O Area"
 
 struct mcde_platform_data {
-	/* DSI */
-	int num_dsilinks;
-
 	/* DPI */
 	u8 outmux[5]; /* MCDE_CONF0.OUTMUXx */
 	u8 syncmux;   /* MCDE_CONF0.SYNCMUXx */
@@ -355,8 +352,6 @@ struct mcde_platform_data {
 	const char *regulator_vana_id;
 	const char *regulator_mcde_epod_id;
 	const char *regulator_esram_epod_id;
-	int num_channels;
-	int num_overlays;
 	const char *clock_dsi_id;
 	const char *clock_dsi_lp_id;
 	const char *clock_dpi_id;
