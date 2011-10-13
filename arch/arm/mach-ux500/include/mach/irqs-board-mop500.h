@@ -10,6 +10,7 @@
 
 /* Number of AB8500 irqs is taken from header file */
 #include <linux/mfd/abx500/ab8500.h>
+#include <linux/gpio.h>
 
 #define IRQ_LOCALTIMER			29
 #define IRQ_LOCALWDOG			30
@@ -26,7 +27,6 @@
 #define DBX500_NR_INTERNAL_IRQS		160
 
 /* After chip-specific IRQ numbers we have the GPIO ones */
-#define NOMADIK_NR_GPIO			288
 #define NOMADIK_GPIO_TO_IRQ(gpio)	((gpio) + DBX500_NR_INTERNAL_IRQS)
 #define NOMADIK_IRQ_TO_GPIO(irq)	((irq) - DBX500_NR_INTERNAL_IRQS)
 #define IRQ_GPIO_END			NOMADIK_GPIO_TO_IRQ(NOMADIK_NR_GPIO)

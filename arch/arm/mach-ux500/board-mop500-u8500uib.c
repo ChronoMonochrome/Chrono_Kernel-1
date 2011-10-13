@@ -15,7 +15,7 @@
 #include <linux/input/matrix_keypad.h>
 
 #include <asm/mach-types.h>
-#include <mach/gpio.h>
+#include <linux/gpio.h>
 #include <mach/irqs.h>
 
 #include "board-mop500.h"
