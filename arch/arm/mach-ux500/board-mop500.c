@@ -221,6 +221,12 @@ static struct ab8500_platform_data ab8500_platdata = {
 	.fg		= &ab8500_fg_plat_data,
 	.chargalg	= &ab8500_chargalg_plat_data,
 	.gpio		= &ab8500_gpio_pdata,
+#ifdef CONFIG_INPUT_AB8500_ACCDET
+	.accdet = &ab8500_accdet_pdata,
+#endif
+#ifdef CONFIG_PM
+       .pm_power_off = true,
+#endif
 };
 
 static struct resource ab8500_resources[] = {
