@@ -16,8 +16,10 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
+#include <linux/mutex.h>
 #include <linux/workqueue.h>
 #include <linux/mfd/dbx500-prcmu.h>
+#include <linux/ratelimit.h>
 #include "mmio.h"
 
 #define ISP_REGION_IO				(0xE0000000)
@@ -103,6 +105,7 @@ struct mmio_info {
 	struct mmio_trace *trace_buffer;
 	struct delayed_work trace_work;
 	int trace_allowed;
+	struct mutex lock;
 };
 
 /*
@@ -507,6 +510,7 @@ static int mmio_set_trace_buffer(struct mmio_info *info,
 		goto out;
 	}
 
+	mutex_lock(&info->lock);
 	if (info->trace_buffer) {
 		dev_info(info->dev, "unmap old buffer");
 		iounmap(info->trace_buffer);
@@ -518,7 +522,7 @@ static int mmio_set_trace_buffer(struct mmio_info *info,
 	if (!info->trace_buffer) {
 		dev_err(info->dev, "failed to map trace buffer\n");
 		ret = -ENOMEM;
-		goto out;
+		goto out_unlock;
 	}
 
 	dev_info(info->dev, "xp70 overwrite_cnt=%d (0x%x) blk_id=%d (0x%x)",
@@ -544,6 +548,8 @@ static int mmio_set_trace_buffer(struct mmio_info *info,
 				   msecs_to_jiffies(XP70_TIMEOUT_MSEC)))
 		dev_err(info->dev, "failed to schedule work\n");
 
+out_unlock:
+	mutex_unlock(&info->lock);
 out:
 	return ret;
 }
@@ -763,12 +769,13 @@ static int mmio_release(struct inode *node, struct file *filp)
 	info->pdata->config_xshutdown_pins(info->pdata, MMIO_DISABLE_XSHUTDOWN,
 					   -1);
 
+	mutex_lock(&info->lock);
 	if (info->trace_buffer) {
+		flush_delayed_work_sync(&info->trace_work);
 		iounmap(info->trace_buffer);
 		info->trace_buffer = NULL;
 	}
-
-	flush_delayed_work(&info->trace_work);
+	mutex_unlock(&info->lock);
 	return 0;
 }
 
@@ -794,6 +801,7 @@ static ssize_t xp70_data_show(struct device *device,
 	int size = 0;
 	int count = 0;
 	int first_index;
+	mutex_lock(&info->lock);
 	first_index = info->trace_status.prev_block_id + 1;
 
 	if (!info->trace_buffer || info->trace_buffer->block_id ==
@@ -859,6 +867,7 @@ static ssize_t xp70_data_show(struct device *device,
 	}
 
 out_unlock:
+	mutex_unlock(&info->lock);
 	return size;
 }
 
@@ -903,6 +912,7 @@ static void xp70_buffer_wqtask(struct work_struct *data)
 	int i;
 	int first_index = info->trace_status.prev_block_id + 1;
 	int count;
+	mutex_lock(&info->lock);
 
 	if (!info->trace_buffer)
 		goto out_err;
@@ -929,8 +939,7 @@ static void xp70_buffer_wqtask(struct work_struct *data)
 		first_index = info->trace_buffer->block_id + 1;
 		count = XP70_NB_BLOCK;
 
-		if (printk_ratelimit())
-			dev_info(info->dev, "XP70 trace overflow\n");
+		pr_info_ratelimited("XP70 trace overflow\n");
 	} else if (info->trace_buffer->block_id
 			>= info->trace_status.prev_block_id) {
 		count = info->trace_buffer->block_id -
@@ -945,8 +954,7 @@ static void xp70_buffer_wqtask(struct work_struct *data)
 
 	for (i = first_index; count; count--) {
 		if (i < 0 || i >= XP70_NB_BLOCK || count > XP70_NB_BLOCK) {
-			if (printk_ratelimit())
-				dev_info(info->dev, "trace index out-of-bounds"
+				pr_info_ratelimited("trace index out-of-bounds"
 					 "i=%d count=%d XP70_NB_BLOCK=%d\n",
 					 i, count, XP70_NB_BLOCK);
 
@@ -978,13 +986,13 @@ static void xp70_buffer_wqtask(struct work_struct *data)
 		info->trace_buffer->overwrite_count;
 	info->trace_status.prev_block_id = info->trace_buffer->block_id;
 out:
-
 	/* Schedule work */
 	if (!schedule_delayed_work(&info->trace_work,
 				   msecs_to_jiffies(XP70_TIMEOUT_MSEC)))
 		dev_info(info->dev, "failed to schedule work\n");
 
 out_err:
+	mutex_unlock(&info->lock);
 	return;
 }
 
@@ -1023,6 +1031,7 @@ static int __devinit mmio_probe(struct platform_device *pdev)
 	info->misc_dev.name = MMIO_NAME;
 	info->misc_dev.fops = &mmio_fops;
 	info->misc_dev.parent = pdev->dev.parent;
+	mutex_init(&info->lock);
 	info->xshutdown_enabled = 0;
 	info->xshutdown_is_active_high = 0;
 	info->trace_allowed = 0;
@@ -1119,6 +1128,7 @@ static int __devexit mmio_remove(struct platform_device *pdev)
 	info->pdata->platform_exit(info->pdata);
 	iounmap(info->siabase);
 	iounmap(info->crbase);
+	mutex_destroy(&info->lock);
 	kfree(info);
 	info = NULL;
 	return 0;
