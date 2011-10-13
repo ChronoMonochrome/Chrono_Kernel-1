@@ -14,7 +14,6 @@
 #include <linux/platform_device.h>
 #include <linux/input.h>
 #include <linux/mfd/abx500.h>
-#include <linux/mfd/abx500/ab5500.h>
 #include <linux/leds-ab5500.h>
 #include <linux/types.h>
 

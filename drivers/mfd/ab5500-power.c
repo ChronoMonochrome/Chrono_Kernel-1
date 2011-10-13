@@ -10,7 +10,6 @@
 #include <linux/platform_device.h>
 
 #include <linux/mfd/abx500.h>
-#include <linux/mfd/abx500/ab5500.h>
 
 static struct device *dev;
 
