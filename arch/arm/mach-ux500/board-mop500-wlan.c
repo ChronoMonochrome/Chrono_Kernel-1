@@ -16,6 +16,9 @@
 #include <mach/cw1200_plat.h>
 
 static void cw1200_release(struct device *dev);
+static int cw1200_power_ctrl(const struct cw1200_platform_data *pdata,
+		bool enable);
+
 
 static struct resource cw1200_href_resources[] = {
 	{
@@ -92,11 +95,45 @@ static int cw1200_pins_enable(bool enable)
 	return ret;
 }
 
+static int cw1200_power_ctrl(const struct cw1200_platform_data *pdata,
+		bool enable)
+{
+	static const char *vdd_name = "vdd";
+	struct regulator *vdd;
+	int ret = 0;
+
+	vdd = regulator_get(&cw1200_device.dev, vdd_name);
+	if (IS_ERR(vdd)) {
+		ret = PTR_ERR(vdd);
+		dev_warn(&cw1200_device.dev,
+				"%s: Failed to get regulator '%s': %d\n",
+				__func__, vdd_name, ret);
+	} else {
+		if (enable)
+			ret = regulator_enable(vdd);
+		else
+			ret = regulator_disable(vdd);
+
+		if (ret) {
+			dev_warn(&cw1200_device.dev,
+					"%s: Failed to %s regulator '%s': %d\n",
+					__func__, enable ? "enable" : "disable",
+					vdd_name, ret);
+		}
+		regulator_put(vdd);
+	}
+	return  ret;
+}
+
+
+
 int __init mop500_wlan_init(void)
 {
 	int ret;
 
-	if (machine_is_u8500() || machine_is_nomadik()) {
+	if (machine_is_u8500() ||
+			machine_is_nomadik() ||
+			machine_is_snowball()) {
 		cw1200_device.num_resources = ARRAY_SIZE(cw1200_href_resources);
 		cw1200_device.resource = cw1200_href_resources;
 	} else if (machine_is_hrefv60()) {
@@ -111,12 +148,18 @@ int __init mop500_wlan_init(void)
 		return -ENOTSUPP;
 	}
 
-	cw1200_platform_data.mmc_id = "mmc3";
+	if (machine_is_snowball())
+		cw1200_platform_data.mmc_id = "mmc2";
+	else
+		cw1200_platform_data.mmc_id = "mmc3";
 
 	cw1200_platform_data.reset = &cw1200_device.resource[0];
 	cw1200_platform_data.irq = &cw1200_device.resource[1];
 
 	cw1200_device.dev.release = cw1200_release;
+
+	if (machine_is_snowball())
+		cw1200_platform_data.power_ctrl = cw1200_power_ctrl;
 
 	ret = cw1200_pins_enable(true);
 	if (WARN_ON(ret))
