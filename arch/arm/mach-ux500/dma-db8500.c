@@ -236,7 +236,7 @@ static struct stedma40_platform_data dma40_plat_data = {
 	.memcpy_conf_log = &dma40_memcpy_conf_log,
 	/* Audio is using physical channel 2 from MMDSP */
 	.disabled_channels = {2, -1},
-	.use_esram_lcla = false,
+	.use_esram_lcla = true,
 };
 
 #ifdef CONFIG_UX500_CONTEXT
