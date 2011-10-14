@@ -36,6 +36,7 @@
 #include "pins-db5500.h"
 #include "devices-db5500.h"
 #include "board-u5500.h"
+#include "board-u5500-bm.h"
 
 /*
  * LSM303DLH
@@ -302,6 +303,16 @@ static struct ab5500_platform_data ab5500_plf_data = {
 			},
 	},
 	.init_settings_sz = 2,
+#if defined(CONFIG_AB5500_BM)
+	.dev_data[AB5500_DEVID_CHARGALG] = &abx500_bm_pt_data,
+	.dev_data_sz[AB5500_DEVID_CHARGALG] = sizeof(abx500_bm_pt_data),
+	.dev_data[AB5500_DEVID_CHARGER] = &abx500_bm_pt_data,
+	.dev_data_sz[AB5500_DEVID_CHARGER] = sizeof(abx500_bm_pt_data),
+	.dev_data[AB5500_DEVID_FG] = &abx500_bm_pt_data,
+	.dev_data_sz[AB5500_DEVID_FG] = sizeof(abx500_bm_pt_data),
+	.dev_data[AB5500_DEVID_BTEMP] = &abx500_bm_pt_data,
+	.dev_data_sz[AB5500_DEVID_BTEMP] = sizeof(abx500_bm_pt_data),
+#endif
 };
 
 static struct platform_device u5500_ab5500_device = {
