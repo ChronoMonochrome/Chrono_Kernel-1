@@ -500,6 +500,7 @@ cw1200_tx_h_crypt(struct cw1200_common *priv,
 
 	newhdr = skb_push(t->skb, iv_len);
 	memmove(newhdr, newhdr + iv_len, t->hdrlen);
+	t->hdr = (struct ieee80211_hdr *) newhdr;
 	t->hdrlen += iv_len;
 	icv = skb_put(t->skb, icv_len);
 
