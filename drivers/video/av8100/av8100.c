@@ -27,7 +27,7 @@
 #include <linux/slab.h>
 #include <linux/clk.h>
 #include <linux/regulator/consumer.h>
-#include <mach/prcmu-fw-api.h>
+#include <mach/prcmu.h>
 
 #include "av8100_regs.h"
 #include <video/av8100.h>
