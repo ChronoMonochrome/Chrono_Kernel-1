@@ -10,7 +10,7 @@
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <asm/mach-types.h>
-#include <mach/irqs-board-mop500.h>
+#include <mach/irqs.h>
 #include <plat/pincfg.h>
 #include "pins.h"
 #include "../drivers/staging/cw1200/cw1200_plat.h"
