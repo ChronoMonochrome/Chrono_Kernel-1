@@ -13,7 +13,7 @@
 #include <linux/amba/pl022.h>
 #include <linux/i2s/i2s.h>
 #include <linux/led-lm3530.h>
-#include <../../../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
+#include <../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
 #include <linux/lsm303dlh.h>
 #include <linux/leds-ab5500.h>
 
