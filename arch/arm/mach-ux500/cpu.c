@@ -26,6 +26,7 @@
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/devices.h>
+#include <mach/prcmu.h>
 #include <mach/reboot_reasons.h>
 
 #include "clock.h"
