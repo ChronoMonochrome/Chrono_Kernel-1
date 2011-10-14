@@ -549,7 +549,7 @@ static int __devinit cg2900_char_probe(struct platform_device *pdev)
 
 	dev_dbg(&pdev->dev, "cg2900_char_probe\n");
 
-	user = mfd_get_data(pdev);
+	user = mfd_get_cell(pdev)->platform_data;
 	user->dev = dev;
 	user->read_cb = char_dev_read_cb;
 	user->reset_cb = char_dev_reset_cb;

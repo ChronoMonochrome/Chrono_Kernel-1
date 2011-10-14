@@ -2937,47 +2937,47 @@ static struct cg2900_user_data audio_fm_data = {
 static struct mfd_cell cg2900_devs[] = {
 	{
 		.name = "cg2900-btcmd",
-		.mfd_data = &btcmd_data,
+		.platform_data = &btcmd_data,
 	},
 	{
 		.name = "cg2900-btacl",
-		.mfd_data = &btacl_data,
+		.platform_data = &btacl_data,
 	},
 	{
 		.name = "cg2900-btevt",
-		.mfd_data = &btevt_data,
+		.platform_data = &btevt_data,
 	},
 	{
 		.name = "cg2900-fm",
-		.mfd_data = &fm_data,
+		.platform_data = &fm_data,
 	},
 	{
 		.name = "cg2900-gnss",
-		.mfd_data = &gnss_data,
+		.platform_data = &gnss_data,
 	},
 	{
 		.name = "cg2900-debug",
-		.mfd_data = &debug_data,
+		.platform_data = &debug_data,
 	},
 	{
 		.name = "cg2900-stetools",
-		.mfd_data = &ste_tools_data,
+		.platform_data = &ste_tools_data,
 	},
 	{
 		.name = "cg2900-hcilogger",
-		.mfd_data = &hci_logger_data,
+		.platform_data = &hci_logger_data,
 	},
 	{
 		.name = "cg2900-core",
-		.mfd_data = &core_data,
+		.platform_data = &core_data,
 	},
 	{
 		.name = "cg2900-audiobt",
-		.mfd_data = &audio_bt_data,
+		.platform_data = &audio_bt_data,
 	},
 	{
 		.name = "cg2900-audiofm",
-		.mfd_data = &audio_fm_data,
+		.platform_data = &audio_fm_data,
 	},
 };
 
@@ -3059,57 +3059,57 @@ static struct mfd_cell cg2900_char_devs[] = {
 	{
 		.name = "cg2900-chardev",
 		.id = 0,
-		.mfd_data = &char_btcmd_data,
+		.platform_data = &char_btcmd_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 1,
-		.mfd_data = &char_btacl_data,
+		.platform_data = &char_btacl_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 2,
-		.mfd_data = &char_btevt_data,
+		.platform_data = &char_btevt_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 3,
-		.mfd_data = &char_fm_data,
+		.platform_data = &char_fm_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 4,
-		.mfd_data = &char_gnss_data,
+		.platform_data = &char_gnss_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 5,
-		.mfd_data = &char_debug_data,
+		.platform_data = &char_debug_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 6,
-		.mfd_data = &char_ste_tools_data,
+		.platform_data = &char_ste_tools_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 7,
-		.mfd_data = &char_hci_logger_data,
+		.platform_data = &char_hci_logger_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 8,
-		.mfd_data = &char_core_data,
+		.platform_data = &char_core_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 9,
-		.mfd_data = &char_audio_bt_data,
+		.platform_data = &char_audio_bt_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 10,
-		.mfd_data = &char_audio_fm_data,
+		.platform_data = &char_audio_fm_data,
 	},
 };
 
@@ -3122,7 +3122,7 @@ static struct mfd_cell cg2900_char_devs[] = {
  */
 static void set_plat_data(struct mfd_cell *cell, struct cg2900_chip_dev *dev)
 {
-	struct cg2900_user_data *pf_data = cell->mfd_data;
+	struct cg2900_user_data *pf_data = cell->platform_data;
 
 	if (!pf_data->open)
 		pf_data->open = cg2900_open;

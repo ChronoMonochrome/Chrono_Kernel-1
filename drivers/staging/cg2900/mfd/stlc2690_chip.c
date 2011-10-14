@@ -1293,23 +1293,23 @@ static struct cg2900_user_data core_data = {
 static struct mfd_cell stlc2690_devs[] = {
 	{
 		.name = "cg2900-btcmd",
-		.mfd_data = &btcmd_data,
+		.platform_data = &btcmd_data,
 	},
 	{
 		.name = "cg2900-btacl",
-		.mfd_data = &btacl_data,
+		.platform_data = &btacl_data,
 	},
 	{
 		.name = "cg2900-btevt",
-		.mfd_data = &btevt_data,
+		.platform_data = &btevt_data,
 	},
 	{
 		.name = "cg2900-hcilogger",
-		.mfd_data = &hci_logger_data,
+		.platform_data = &hci_logger_data,
 	},
 	{
 		.name = "cg2900-core",
-		.mfd_data = &core_data,
+		.platform_data = &core_data,
 	},
 };
 
@@ -1353,27 +1353,27 @@ static struct mfd_cell stlc2690_char_devs[] = {
 	{
 		.name = "cg2900-chardev",
 		.id = 0,
-		.mfd_data = &char_btcmd_data,
+		.platform_data = &char_btcmd_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 1,
-		.mfd_data = &char_btacl_data,
+		.platform_data = &char_btacl_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 2,
-		.mfd_data = &char_btevt_data,
+		.platform_data = &char_btevt_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 7,
-		.mfd_data = &char_hci_logger_data,
+		.platform_data = &char_hci_logger_data,
 	},
 	{
 		.name = "cg2900-chardev",
 		.id = 8,
-		.mfd_data = &char_core_data,
+		.platform_data = &char_core_data,
 	},
 };
 
@@ -1386,7 +1386,7 @@ static struct mfd_cell stlc2690_char_devs[] = {
  */
 static void set_plat_data(struct mfd_cell *cell, struct cg2900_chip_dev *dev)
 {
-	struct cg2900_user_data *user = cell->mfd_data;
+	struct cg2900_user_data *user = cell->platform_data;
 
 	if (!user->open)
 		user->open = stlc2690_open;

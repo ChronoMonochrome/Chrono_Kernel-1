@@ -206,7 +206,7 @@ int cg2900_hci_uart_tiocmget(struct hci_uart *hu)
 	if (!tty->ops->tiocmget ||  !hu->fd)
 		return -EOPNOTSUPP;
 
-	return tty->ops->tiocmget(tty, hu->fd);
+	return tty->ops->tiocmget(tty);
 }
 
 void cg2900_hci_uart_flush_buffer(struct hci_uart *hu)
