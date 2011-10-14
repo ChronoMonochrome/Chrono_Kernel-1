@@ -61,6 +61,7 @@ typedef void (*MSG_PENDING_NOTIF)(const u32 Wptr);
  * @availablesize:	available memory in fifo
  * @end_addr_fifo:	fifo end addr
  * @fifo_virtual_addr:	fifo virtual addr
+ * @fifo_update_lock:	spin lock to update fifo.
  *
  * On writting a message to FIFO the same has to be read by the modem before
  * writing the next message to the FIFO. In oder to over come this a local

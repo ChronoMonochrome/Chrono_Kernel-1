@@ -173,6 +173,7 @@ struct message_queue {
  * struct isadev_context - shrm char interface context
  * @dl_queue:	structre to store the queue related info
  * @device_id:	message id(ISI, RPC, AUDIO, SECURITY)
+ * @addr:	device addresses.
  */
 struct isadev_context {
 	struct message_queue dl_queue;
