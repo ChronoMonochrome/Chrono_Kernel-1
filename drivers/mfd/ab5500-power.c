@@ -13,7 +13,28 @@
 
 static struct device *dev;
 
+/* STARTUP */
 #define AB5500_SYSPOR_CONTROL	0x30
+
+/* VINT IO I2C CLOCK */
+#define AB5500_RTC_VINT		0x01
+
+int ab5500_clock_rtc_enable(int num, bool enable)
+{
+	/* RTC_CLK{0,1,2} are bits {4,3,2}, active low */
+	u8 mask = BIT(4 - num);
+	u8 value = enable ? 0 : mask;
+
+	/* Don't allow RTC_CLK0 to be controlled. */
+	if (num < 1 || num > 2)
+		return -EINVAL;
+
+	if (!dev)
+		return -EAGAIN;
+
+	return abx500_mask_and_set(dev, AB5500_BANK_VIT_IO_I2C_CLK_TST_OTP,
+				   AB5500_RTC_VINT, mask, value);
+}
 
 static void ab5500_power_off(void)
 {
@@ -34,18 +55,20 @@ static int __devinit ab5500_power_probe(struct platform_device *pdev)
 {
 	struct ab5500_platform_data *plat = dev_get_platdata(pdev->dev.parent);
 
-	if (!plat->pm_power_off)
-		return -ENODEV;
-
 	dev = &pdev->dev;
-	pm_power_off = ab5500_power_off;
+
+	if (plat->pm_power_off)
+		pm_power_off = ab5500_power_off;
 
 	return 0;
 }
 
 static int __devexit ab5500_power_remove(struct platform_device *pdev)
 {
-	pm_power_off = NULL;
+	struct ab5500_platform_data *plat = dev_get_platdata(pdev->dev.parent);
+
+	if (plat->pm_power_off)
+		pm_power_off = NULL;
 	dev = NULL;
 
 	return 0;
