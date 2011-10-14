@@ -523,6 +523,7 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
 	struct dma_chan *chan;
 	struct dma_device *device;
 	struct dma_async_tx_descriptor *desc;
+	enum dma_data_direction buffer_dirn;
 	int nr_sg;
 
 	/* Check if next job is already prepared */
@@ -536,10 +537,12 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
 	}
 
 	if (data->flags & MMC_DATA_READ) {
-		conf.direction = DMA_FROM_DEVICE;
+		conf.direction = DMA_DEV_TO_MEM;
+		buffer_dirn = DMA_FROM_DEVICE;
 		chan = host->dma_rx_channel;
 	} else {
-		conf.direction = DMA_TO_DEVICE;
+		conf.direction = DMA_MEM_TO_DEV;
+		buffer_dirn = DMA_TO_DEVICE;
 		chan = host->dma_tx_channel;
 	}
 
@@ -552,7 +555,7 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
 		return -EINVAL;
 
 	device = chan->device;
-	nr_sg = dma_map_sg(device->dev, data->sg, data->sg_len, conf.direction);
+	nr_sg = dma_map_sg(device->dev, data->sg, data->sg_len, buffer_dirn);
 	if (nr_sg == 0)
 		return -EINVAL;
 
@@ -575,7 +578,7 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
  unmap_exit:
 	if (!next)
 		dmaengine_terminate_all(chan);
-	dma_unmap_sg(device->dev, data->sg, data->sg_len, conf.direction);
+	dma_unmap_sg(device->dev, data->sg, data->sg_len, buffer_dirn);
 	return -ENOMEM;
 }
 
