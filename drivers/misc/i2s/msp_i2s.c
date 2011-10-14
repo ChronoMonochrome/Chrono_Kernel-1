@@ -24,7 +24,7 @@
 #include <linux/pfn.h>
 
 #include <linux/regulator/consumer.h>
-#include <mach/prcmu-fw-api.h>
+#include <mach/prcmu.h>
 #include <mach/hardware.h>
 #include <asm/io.h>
 #include <asm/delay.h>
