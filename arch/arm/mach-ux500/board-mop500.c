@@ -219,6 +219,16 @@ static struct platform_device snowball_sbnet_dev = {
 	},
 };
 
+#ifdef CONFIG_MODEM_U8500
+static struct platform_device u8500_modem_dev = {
+	.name = "u8500-modem",
+	.id   = 0,
+	.dev  = {
+		.platform_data = NULL,
+	},
+};
+#endif
+
 static struct ab8500_platform_data ab8500_platdata = {
 	.irq_base	= MOP500_AB8500_IRQ_BASE,
 	.regulator_reg_init = ab8500_regulator_reg_init,
@@ -596,6 +606,9 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 #endif
 #ifdef CONFIG_DB8500_MLOADER
 	&mloader_fw_device,
+#endif
+#ifdef CONFIG_MODEM_U8500
+	&u8500_modem_dev,
 #endif
 };
 
