@@ -20,7 +20,7 @@
 #include <linux/klist.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <mach/regulator.h>
+#include <linux/regulator/dbx500-prcmu.h>
 #include <linux/semaphore.h>
 
 #include <crypto/aes.h>

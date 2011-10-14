@@ -21,7 +21,7 @@
 #include <linux/platform_device.h>
 #include <linux/crypto.h>
 
-#include <mach/regulator.h>
+#include <linux/regulator/dbx500-prcmu.h>
 #include <linux/bitops.h>
 
 #include <crypto/internal/hash.h>
