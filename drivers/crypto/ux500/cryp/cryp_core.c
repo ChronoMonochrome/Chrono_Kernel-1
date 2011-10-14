@@ -20,7 +20,7 @@
 #include <linux/klist.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/regulator/consumer.h>
+#include <mach/regulator.h>
 #include <linux/semaphore.h>
 
 #include <crypto/aes.h>
@@ -43,15 +43,13 @@
 
 static int cryp_mode;
 
-static DEFINE_KLIST(cryp_device_list, NULL, NULL);
-
 static struct stedma40_chan_cfg *mem_to_engine;
 static struct stedma40_chan_cfg *engine_to_mem;
 
 /**
  * struct cryp_driver_data - data specific to the driver.
  *
- * @cryp_device_list: A list of registered devices to choose from.
+ * @device_list: A list of registered devices to choose from.
  * @device_allocation: A semaphore initialized with number of devices.
  */
 struct cryp_driver_data {
@@ -101,34 +99,6 @@ static inline u32 uint8p_to_uint32_be(u8 *in)
 		((u32)in[1]<<16) |
 		((u32)in[2]<<8) |
 		((u32)in[3]);
-}
-
-/**
- * uint8p_to_uint32_le - 4*uint8 to uint32 little endian
- * @in: Data to convert.
- */
-static inline u32 uint8p_to_uint32_le(u8 *in)
-{
-	return (u32)in[3]<<24 |
-		((u32)in[2]<<16) |
-		((u32)in[1]<<8) |
-		((u32)in[0]);
-}
-
-static inline void uint32_to_uint8p_be(u32 in, u8 *out)
-{
-	out[0] = (u8)(in>>24);
-	out[1] = (u8)(in>>16);
-	out[2] = (u8)(in>>8);
-	out[3] = (u8) in;
-}
-
-static inline void uint32_to_uint8p_le(u32 in, u8 *out)
-{
-	out[3] = (u8)(in>>24);
-	out[2] = (u8)(in>>16);
-	out[1] = (u8)(in>>8);
-	out[0] = (u8) in;
 }
 
 /**
@@ -206,13 +176,6 @@ static inline void swap_words_in_key_and_bits_in_byte(const u8 *in,
 	}
 }
 
-static inline void swap_4bits_in_bytes(const u8 *in, u8 *out, u32 len)
-{
-	unsigned int i;
-	for (i = 0; i < len; i++)
-		out[i] = swap_bits_in_byte(in[i]);
-}
-
 static irqreturn_t cryp_interrupt_handler(int irq, void *param)
 {
 	struct cryp_ctx *ctx;
@@ -224,6 +187,7 @@ static irqreturn_t cryp_interrupt_handler(int irq, void *param)
 		return IRQ_HANDLED;
 	}
 
+	/* The device is coming from the one found in hw_crypt_noxts. */
 	device_data = (struct cryp_device_data *)param;
 
 	ctx = device_data->current_ctx;
@@ -232,6 +196,10 @@ static irqreturn_t cryp_interrupt_handler(int irq, void *param)
 		BUG_ON(!ctx);
 		return IRQ_HANDLED;
 	}
+
+	dev_dbg(ctx->device->dev, "[%s] (len: %d) %s, ", __func__, ctx->outlen,
+		cryp_pending_irq_src(device_data, CRYP_IRQ_SRC_OUTPUT_FIFO) ?
+		"out" : "in");
 
 	if (cryp_pending_irq_src(device_data,
 				 CRYP_IRQ_SRC_OUTPUT_FIFO)) {
@@ -246,7 +214,6 @@ static irqreturn_t cryp_interrupt_handler(int irq, void *param)
 			if (ctx->outlen == 0) {
 				cryp_disable_irq_src(device_data,
 						     CRYP_IRQ_SRC_OUTPUT_FIFO);
-				complete(&ctx->device->cryp_irq_complete);
 			}
 		}
 	} else if (cryp_pending_irq_src(device_data,
@@ -263,8 +230,12 @@ static irqreturn_t cryp_interrupt_handler(int irq, void *param)
 				cryp_disable_irq_src(device_data,
 						   CRYP_IRQ_SRC_INPUT_FIFO);
 
-			if (ctx->config.algo_mode == CRYP_ALGO_AES_XTS) {
-				cryp_start(device_data);
+			if (ctx->config.algomode == CRYP_ALGO_AES_XTS) {
+				CRYP_PUT_BITS(&device_data->base->cr,
+					      CRYP_START_ENABLE,
+					      CRYP_CR_START_POS,
+					      CRYP_CR_START_MASK);
+
 				cryp_wait_until_done(device_data);
 			}
 		}
@@ -360,7 +331,7 @@ static int cfg_keys(struct cryp_ctx *ctx)
 
 	dev_dbg(ctx->device->dev, "[%s]", __func__);
 
-	if (mode_is_aes(ctx->config.algo_mode)) {
+	if (mode_is_aes(ctx->config.algomode)) {
 		swap_words_in_key_and_bits_in_byte((u8 *)ctx->key,
 						   (u8 *)swapped_key,
 						   ctx->keylen);
@@ -387,11 +358,29 @@ static int cfg_keys(struct cryp_ctx *ctx)
 static int cryp_setup_context(struct cryp_ctx *ctx,
 			      struct cryp_device_data *device_data)
 {
+	cryp_flush_inoutfifo(device_data);
+
+	CRYP_PUT_BITS(&device_data->base->cr,
+		      ctx->config.datatype,
+		      CRYP_CR_DATATYPE_POS,
+		      CRYP_CR_DATATYPE_MASK);
+
+	switch (cryp_mode) {
+	case CRYP_MODE_INTERRUPT:
+		writel(CRYP_IMSC_DEFAULT,  &device_data->base->imsc);
+		break;
+
+	case CRYP_MODE_DMA:
+		writel(CRYP_DMACR_DEFAULT, &device_data->base->dmacr);
+		break;
+
+	default:
+		break;
+	}
+
 	if (ctx->updated)
 		cryp_restore_device_context(device_data, &ctx->dev_ctx);
 	else {
-		cryp_activity(device_data, CRYP_CRYPEN_DISABLE);
-
 		if (cfg_keys(ctx) != 0) {
 			dev_err(ctx->device->dev, "[%s]: cfg_keys failed!",
 				__func__);
@@ -399,9 +388,9 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 		}
 
 		if ((ctx->iv) &&
-		    (CRYP_ALGO_AES_ECB != ctx->config.algo_mode) &&
-		    (CRYP_ALGO_DES_ECB != ctx->config.algo_mode) &&
-		    (CRYP_ALGO_TDES_ECB != ctx->config.algo_mode)) {
+		    (CRYP_ALGO_AES_ECB != ctx->config.algomode) &&
+		    (CRYP_ALGO_DES_ECB != ctx->config.algomode) &&
+		    (CRYP_ALGO_TDES_ECB != ctx->config.algomode)) {
 			if (cfg_ivs(device_data, ctx) != 0)
 				return -EPERM;
 		}
@@ -409,9 +398,10 @@ static int cryp_setup_context(struct cryp_ctx *ctx,
 		cryp_set_configuration(device_data, &ctx->config);
 	}
 
+	cryp_activity(device_data, CRYP_CRYPEN_ENABLE);
+
 	return 0;
 }
-
 
 static int cryp_get_device_data(struct cryp_ctx *ctx,
 				struct cryp_device_data **device_data)
@@ -505,6 +495,12 @@ static int cryp_set_dma_transfer(struct cryp_ctx *ctx,
 
 	dev_dbg(ctx->device->dev, "[%s]: ", __func__);
 
+	if (unlikely(!IS_ALIGNED((u32)sg, 4))) {
+		dev_err(ctx->device->dev, "[%s]: Data in sg list isn't "
+			"aligned! Addr: 0x%08x", __func__, (u32)sg);
+		return -EFAULT;
+	}
+
 	switch (direction) {
 	case DMA_TO_DEVICE:
 		channel = ctx->device->dma.chan_mem2cryp;
@@ -534,7 +530,6 @@ static int cryp_set_dma_transfer(struct cryp_ctx *ctx,
 	case DMA_FROM_DEVICE:
 		channel = ctx->device->dma.chan_cryp2mem;
 		ctx->device->dma.sg_dst = sg;
-
 		ctx->device->dma.sg_dst_len = dma_map_sg(channel->device->dev,
 						 ctx->device->dma.sg_dst,
 						 ctx->device->dma.nents_dst,
@@ -618,7 +613,7 @@ static int cryp_dma_read(struct cryp_ctx *ctx, struct scatterlist *sg, int len)
 }
 
 static int cryp_polling_mode(struct cryp_ctx *ctx,
-		struct cryp_device_data *device_data)
+			     struct cryp_device_data *device_data)
 {
 	int i;
 	int ret = 0;
@@ -650,16 +645,15 @@ out:
 	return ret;
 }
 
-static int cryp_disable_power(
-		struct device *dev,
-		struct cryp_device_data *device_data,
-		bool save_device_context)
+static int cryp_disable_power(struct device *dev,
+			      struct cryp_device_data *device_data,
+			      bool save_device_context)
 {
 	int ret = 0;
 
 	dev_dbg(dev, "[%s]", __func__);
 
-	mutex_lock(&device_data->power_state_mutex);
+	spin_lock(&device_data->power_state_spinlock);
 	if (!device_data->power_state)
 		goto out;
 
@@ -672,7 +666,7 @@ static int cryp_disable_power(
 	spin_unlock(&device_data->ctx_lock);
 
 	clk_disable(device_data->clk);
-	ret = regulator_disable(device_data->pwr_regulator);
+	ret = ux500_regulator_atomic_disable(device_data->pwr_regulator);
 	if (ret)
 		dev_err(dev, "[%s]: "
 				"regulator_disable() failed!",
@@ -681,7 +675,7 @@ static int cryp_disable_power(
 	device_data->power_state = false;
 
 out:
-	mutex_unlock(&device_data->power_state_mutex);
+	spin_unlock(&device_data->power_state_spinlock);
 
 	return ret;
 }
@@ -695,9 +689,9 @@ static int cryp_enable_power(
 
 	dev_dbg(dev, "[%s]", __func__);
 
-	mutex_lock(&device_data->power_state_mutex);
+	spin_lock(&device_data->power_state_spinlock);
 	if (!device_data->power_state) {
-		ret = regulator_enable(device_data->pwr_regulator);
+		ret = ux500_regulator_atomic_enable(device_data->pwr_regulator);
 		if (ret) {
 			dev_err(dev, "[%s]: regulator_enable() failed!",
 					__func__);
@@ -708,7 +702,8 @@ static int cryp_enable_power(
 		if (ret) {
 			dev_err(dev, "[%s]: clk_enable() failed!",
 					__func__);
-			regulator_disable(device_data->pwr_regulator);
+			ux500_regulator_atomic_disable(
+					       device_data->pwr_regulator);
 			goto out;
 		}
 		device_data->power_state = true;
@@ -724,13 +719,13 @@ static int cryp_enable_power(
 		spin_unlock(&device_data->ctx_lock);
 	}
 out:
-	mutex_unlock(&device_data->power_state_mutex);
+	spin_unlock(&device_data->power_state_spinlock);
 
 	return ret;
 }
 
 static int hw_crypt_noxts(struct cryp_ctx *ctx,
-		struct cryp_device_data *device_data)
+			  struct cryp_device_data *device_data)
 {
 	int ret;
 
@@ -742,26 +737,30 @@ static int hw_crypt_noxts(struct cryp_ctx *ctx,
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
 	ctx->outlen = ctx->datalen;
-	ctx->config.key_access = CRYP_STATE_ENABLE;
-	ctx->config.data_type = CRYP_DATA_TYPE_8BIT_SWAP;
+	ctx->config.keyrden = CRYP_STATE_ENABLE;
+	ctx->config.datatype = CRYP_DATA_TYPE_8BIT_SWAP;
 
-	cryp_reset(device_data);
+	if (unlikely(!IS_ALIGNED((u32)indata, 4))) {
+		pr_debug(DEV_DBG_NAME " [%s]: Data isn't aligned! Addr: "
+			 "0x%08x", __func__, (u32)indata);
+		return -EINVAL;
+	}
 
 	ret = cryp_setup_context(ctx, device_data);
 	if (ret)
 		goto out;
 
-	cryp_flush_inoutfifo(device_data);
-
 	if (cryp_mode == CRYP_MODE_INTERRUPT) {
-		INIT_COMPLETION(ctx->device->cryp_irq_complete);
+		cryp_enable_irq_src(device_data, CRYP_IRQ_SRC_INPUT_FIFO |
+				    CRYP_IRQ_SRC_OUTPUT_FIFO);
 
-		cryp_enable_irq_src(device_data, CRYP_IRQ_SRC_INPUT_FIFO);
-		cryp_enable_irq_src(device_data, CRYP_IRQ_SRC_OUTPUT_FIFO);
-
-		cryp_activity(device_data, CRYP_CRYPEN_ENABLE);
-
-		wait_for_completion(&ctx->device->cryp_irq_complete);
+		/*
+		 * ctx->outlen is decremented in the cryp_interrupt_handler
+		 * function. We had to add cpu_relax() (barrier) to make sure
+		 * that gcc didn't optimze away this variable.
+		 */
+		while (ctx->outlen > 0)
+			cpu_relax();
 	} else if (cryp_mode == CRYP_MODE_POLLING ||
 		   cryp_mode == CRYP_MODE_DMA) {
 		/*
@@ -821,8 +820,8 @@ static int ablk_dma_crypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.key_access = CRYP_STATE_ENABLE;
-	ctx->config.data_type = CRYP_DATA_TYPE_8BIT_SWAP;
+	ctx->config.keyrden = CRYP_STATE_ENABLE;
+	ctx->config.datatype = CRYP_DATA_TYPE_8BIT_SWAP;
 	ctx->datalen = areq->nbytes;
 	ctx->outlen = areq->nbytes;
 
@@ -836,8 +835,6 @@ static int ablk_dma_crypt(struct ablkcipher_request *areq)
 			"cryp_enable_power() failed!", __func__);
 		goto out;
 	}
-
-	cryp_reset(device_data);
 
 	ret = cryp_setup_context(ctx, device_data);
 	if (ret)
@@ -884,14 +881,16 @@ out:
 
 static int ablk_crypt(struct ablkcipher_request *areq)
 {
+	struct ablkcipher_walk walk;
 	struct crypto_ablkcipher *cipher = crypto_ablkcipher_reqtfm(areq);
 	struct cryp_ctx *ctx = crypto_ablkcipher_ctx(cipher);
-	struct ablkcipher_walk walk;
+	struct cryp_device_data *device_data;
 	unsigned long src_paddr;
 	unsigned long dst_paddr;
 	int ret;
 	int nbytes;
-	struct cryp_device_data *device_data;
+
+	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
 	ret = cryp_get_device_data(ctx, &device_data);
 	if (ret)
@@ -955,7 +954,7 @@ out:
 }
 
 static int aes_ablkcipher_setkey(struct crypto_ablkcipher *cipher,
-			     const u8 *key, unsigned int keylen)
+				 const u8 *key, unsigned int keylen)
 {
 	struct cryp_ctx *ctx = crypto_ablkcipher_ctx(cipher);
 	u32 *flags = &cipher->base.crt_flags;
@@ -964,15 +963,15 @@ static int aes_ablkcipher_setkey(struct crypto_ablkcipher *cipher,
 
 	switch (keylen) {
 	case AES_KEYSIZE_128:
-		ctx->config.key_size = CRYP_KEY_SIZE_128;
+		ctx->config.keysize = CRYP_KEY_SIZE_128;
 		break;
 
 	case AES_KEYSIZE_192:
-		ctx->config.key_size = CRYP_KEY_SIZE_192;
+		ctx->config.keysize = CRYP_KEY_SIZE_192;
 		break;
 
 	case AES_KEYSIZE_256:
-		ctx->config.key_size = CRYP_KEY_SIZE_256;
+		ctx->config.keysize = CRYP_KEY_SIZE_256;
 		break;
 
 	default:
@@ -997,6 +996,12 @@ static int aes_setkey(struct crypto_tfm *tfm, const u8 *key,
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
+	if (unlikely(!IS_ALIGNED((u32)key, 4))) {
+		dev_err(ctx->device->dev, "[%s]: key isn't aligned! Addr: "
+			"0x%08x", __func__, (u32)key);
+		return -EFAULT;
+	}
+
 	/* For CTR mode */
 	if (keylen != AES_KEYSIZE_128 &&
 	    keylen != AES_KEYSIZE_192 &&
@@ -1008,11 +1013,11 @@ static int aes_setkey(struct crypto_tfm *tfm, const u8 *key,
 	}
 
 	if (keylen == AES_KEYSIZE_128)
-		ctx->config.key_size = CRYP_KEY_SIZE_128;
+		ctx->config.keysize = CRYP_KEY_SIZE_128;
 	else if (keylen == AES_KEYSIZE_192)
-		ctx->config.key_size = CRYP_KEY_SIZE_192;
+		ctx->config.keysize = CRYP_KEY_SIZE_192;
 	else if (keylen == AES_KEYSIZE_256)
-		ctx->config.key_size = CRYP_KEY_SIZE_256;
+		ctx->config.keysize = CRYP_KEY_SIZE_256;
 
 	memcpy(ctx->key, key, keylen);
 	ctx->keylen = keylen;
@@ -1022,7 +1027,7 @@ static int aes_setkey(struct crypto_tfm *tfm, const u8 *key,
 }
 
 static int des_ablkcipher_setkey(struct crypto_ablkcipher *cipher,
-		const u8 *key, unsigned int keylen)
+				 const u8 *key, unsigned int keylen)
 {
 	struct cryp_ctx *ctx = crypto_ablkcipher_ctx(cipher);
 	u32 *flags = &cipher->base.crt_flags;
@@ -1085,7 +1090,7 @@ static int des_setkey(struct crypto_tfm *tfm, const u8 *key,
 }
 
 static int des3_ablkcipher_setkey(struct crypto_ablkcipher *cipher,
-		const u8 *key, unsigned int keylen)
+				  const u8 *key, unsigned int keylen)
 {
 	struct cryp_ctx *ctx = crypto_ablkcipher_ctx(cipher);
 	u32 *flags = &cipher->base.crt_flags;
@@ -1218,8 +1223,8 @@ static void aes_encrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 
 	ctx->blocksize = crypto_tfm_alg_blocksize(tfm);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_AES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_AES_ECB;
 
 	ctx->indata = in;
 	ctx->outdata = out;
@@ -1238,8 +1243,8 @@ static void aes_decrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 
 	ctx->blocksize = crypto_tfm_alg_blocksize(tfm);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_AES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_AES_ECB;
 
 	ctx->indata = in;
 	ctx->outdata = out;
@@ -1258,8 +1263,8 @@ static void des_encrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 
 	ctx->blocksize = crypto_tfm_alg_blocksize(tfm);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_DES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_DES_ECB;
 
 	ctx->indata = in;
 	ctx->outdata = out;
@@ -1278,8 +1283,8 @@ static void des_decrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 
 	ctx->blocksize = crypto_tfm_alg_blocksize(tfm);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_DES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_DES_ECB;
 
 	ctx->indata = in;
 	ctx->outdata = out;
@@ -1298,8 +1303,8 @@ static void des3_encrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 
 	ctx->blocksize = crypto_tfm_alg_blocksize(tfm);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_TDES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_TDES_ECB;
 
 	ctx->indata = in;
 	ctx->outdata = out;
@@ -1318,8 +1323,8 @@ static void des3_decrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 
 	ctx->blocksize = crypto_tfm_alg_blocksize(tfm);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_TDES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_TDES_ECB;
 
 	ctx->indata = in;
 	ctx->outdata = out;
@@ -1330,7 +1335,6 @@ static void des3_decrypt(struct crypto_tfm *tfm, u8 *out, const u8 *in)
 				__func__);
 }
 
-
 static int aes_ecb_encrypt(struct ablkcipher_request *areq)
 {
 	struct crypto_ablkcipher *cipher = crypto_ablkcipher_reqtfm(areq);
@@ -1338,8 +1342,8 @@ static int aes_ecb_encrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_AES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_AES_ECB;
 	ctx->blocksize = AES_BLOCK_SIZE;
 
 	if (cryp_mode == CRYP_MODE_DMA)
@@ -1356,8 +1360,8 @@ static int aes_ecb_decrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_AES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_AES_ECB;
 	ctx->blocksize = AES_BLOCK_SIZE;
 
 	if (cryp_mode == CRYP_MODE_DMA)
@@ -1375,8 +1379,8 @@ static int aes_cbc_encrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_AES_CBC;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_AES_CBC;
 	ctx->blocksize = AES_BLOCK_SIZE;
 
 	/* Only DMA for ablkcipher, since givcipher not yet supported */
@@ -1396,8 +1400,8 @@ static int aes_cbc_decrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_AES_CBC;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_AES_CBC;
 	ctx->blocksize = AES_BLOCK_SIZE;
 
 	/* Only DMA for ablkcipher, since givcipher not yet supported */
@@ -1417,8 +1421,8 @@ static int aes_ctr_encrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_AES_CTR;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_AES_CTR;
 	ctx->blocksize = AES_BLOCK_SIZE;
 
 	/* Only DMA for ablkcipher, since givcipher not yet supported */
@@ -1438,8 +1442,8 @@ static int aes_ctr_decrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_AES_CTR;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_AES_CTR;
 	ctx->blocksize = AES_BLOCK_SIZE;
 
 	/* Only DMA for ablkcipher, since givcipher not yet supported */
@@ -1458,11 +1462,11 @@ static int des_ecb_encrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_DES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_DES_ECB;
 	ctx->blocksize = DES_BLOCK_SIZE;
 
-	/**
+	/*
 	 * Run the non DMA version also for DMA, since DMA is currently not
 	 * working for DES.
 	 */
@@ -1476,11 +1480,11 @@ static int des_ecb_decrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_DES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_DES_ECB;
 	ctx->blocksize = DES_BLOCK_SIZE;
 
-	/**
+	/*
 	 * Run the non DMA version also for DMA, since DMA is currently not
 	 * working for DES.
 	 */
@@ -1491,20 +1495,14 @@ static int des_cbc_encrypt(struct ablkcipher_request *areq)
 {
 	struct crypto_ablkcipher *cipher = crypto_ablkcipher_reqtfm(areq);
 	struct cryp_ctx *ctx = crypto_ablkcipher_ctx(cipher);
-	u32 *flags = &cipher->base.crt_flags;
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_DES_CBC;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_DES_CBC;
 	ctx->blocksize = DES_BLOCK_SIZE;
 
-	/* Only DMA for ablkcipher, since givcipher not yet supported */
-	if ((cryp_mode == CRYP_MODE_DMA) &&
-			(*flags & CRYPTO_ALG_TYPE_ABLKCIPHER))
-		return ablk_dma_crypt(areq);
-
-	/**
+	/*
 	 * Run the non DMA version also for DMA, since DMA is currently not
 	 * working for DES.
 	 */
@@ -1515,20 +1513,14 @@ static int des_cbc_decrypt(struct ablkcipher_request *areq)
 {
 	struct crypto_ablkcipher *cipher = crypto_ablkcipher_reqtfm(areq);
 	struct cryp_ctx *ctx = crypto_ablkcipher_ctx(cipher);
-	u32 *flags = &cipher->base.crt_flags;
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_DES_CBC;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_DES_CBC;
 	ctx->blocksize = DES_BLOCK_SIZE;
 
-	/* Only DMA for ablkcipher, since givcipher not yet supported */
-	if ((cryp_mode == CRYP_MODE_DMA) &&
-			(*flags & CRYPTO_ALG_TYPE_ABLKCIPHER))
-		return ablk_dma_crypt(areq);
-
-	/**
+	/*
 	 * Run the non DMA version also for DMA, since DMA is currently not
 	 * working for DES.
 	 */
@@ -1542,11 +1534,11 @@ static int des3_ecb_encrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_TDES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_TDES_ECB;
 	ctx->blocksize = DES3_EDE_BLOCK_SIZE;
 
-	/**
+	/*
 	 * Run the non DMA version also for DMA, since DMA is currently not
 	 * working for DES.
 	 */
@@ -1560,11 +1552,11 @@ static int des3_ecb_decrypt(struct ablkcipher_request *areq)
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_TDES_ECB;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_TDES_ECB;
 	ctx->blocksize = DES3_EDE_BLOCK_SIZE;
 
-	/**
+	/*
 	 * Run the non DMA version also for DMA, since DMA is currently not
 	 * working for DES.
 	 */
@@ -1575,20 +1567,14 @@ static int des3_cbc_encrypt(struct ablkcipher_request *areq)
 {
 	struct crypto_ablkcipher *cipher = crypto_ablkcipher_reqtfm(areq);
 	struct cryp_ctx *ctx = crypto_ablkcipher_ctx(cipher);
-	u32 *flags = &cipher->base.crt_flags;
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_ENCRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_TDES_CBC;
+	ctx->config.algodir = CRYP_ALGORITHM_ENCRYPT;
+	ctx->config.algomode = CRYP_ALGO_TDES_CBC;
 	ctx->blocksize = DES3_EDE_BLOCK_SIZE;
 
-	/* Only DMA for ablkcipher, since givcipher not yet supported */
-	if ((cryp_mode == CRYP_MODE_DMA) &&
-			(*flags & CRYPTO_ALG_TYPE_ABLKCIPHER))
-		return ablk_dma_crypt(areq);
-
-	/**
+	/*
 	 * Run the non DMA version also for DMA, since DMA is currently not
 	 * working for DES.
 	 */
@@ -1599,20 +1585,14 @@ static int des3_cbc_decrypt(struct ablkcipher_request *areq)
 {
 	struct crypto_ablkcipher *cipher = crypto_ablkcipher_reqtfm(areq);
 	struct cryp_ctx *ctx = crypto_ablkcipher_ctx(cipher);
-	u32 *flags = &cipher->base.crt_flags;
 
 	pr_debug(DEV_DBG_NAME " [%s]", __func__);
 
-	ctx->config.encrypt_or_decrypt = CRYP_ALGORITHM_DECRYPT;
-	ctx->config.algo_mode = CRYP_ALGO_TDES_CBC;
+	ctx->config.algodir = CRYP_ALGORITHM_DECRYPT;
+	ctx->config.algomode = CRYP_ALGO_TDES_CBC;
 	ctx->blocksize = DES3_EDE_BLOCK_SIZE;
 
-	/* Only DMA for ablkcipher, since givcipher not yet supported */
-	if ((cryp_mode == CRYP_MODE_DMA) &&
-			(*flags & CRYPTO_ALG_TYPE_ABLKCIPHER))
-		return ablk_dma_crypt(areq);
-
-	/**
+	/*
 	 * Run the non DMA version also for DMA, since DMA is currently not
 	 * working for DES.
 	 */
@@ -1890,7 +1870,7 @@ static struct crypto_alg *u8500_cryp_algs[] = {
 	&des_ecb_alg,
 	&des_cbc_alg,
 	&des3_ecb_alg,
-	&des3_cbc_alg
+	&des3_cbc_alg,
 };
 
 /**
@@ -1946,7 +1926,7 @@ static int u8500_cryp_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 
 	dev_dbg(dev, "[%s]", __func__);
-	device_data = kzalloc(sizeof(struct cryp_device_data), GFP_KERNEL);
+	device_data = kzalloc(sizeof(struct cryp_device_data), GFP_ATOMIC);
 	if (!device_data) {
 		dev_err(dev, "[%s]: kzalloc() failed!", __func__);
 		ret = -ENOMEM;
@@ -1986,10 +1966,10 @@ static int u8500_cryp_probe(struct platform_device *pdev)
 	}
 
 	spin_lock_init(&device_data->ctx_lock);
-	mutex_init(&device_data->power_state_mutex);
+	spin_lock_init(&device_data->power_state_spinlock);
 
 	/* Enable power for CRYP hardware block */
-	device_data->pwr_regulator = regulator_get(&pdev->dev, "v-ape");
+	device_data->pwr_regulator = ux500_regulator_get(&pdev->dev);
 	if (IS_ERR(device_data->pwr_regulator)) {
 		dev_err(dev, "[%s]: could not get cryp regulator", __func__);
 		ret = PTR_ERR(device_data->pwr_regulator);
@@ -2044,8 +2024,6 @@ static int u8500_cryp_probe(struct platform_device *pdev)
 		goto out_power;
 	}
 
-	init_completion(&device_data->cryp_irq_complete);
-
 	if (cryp_mode == CRYP_MODE_DMA)
 		cryp_dma_setup_channel(device_data, dev);
 
@@ -2076,7 +2054,7 @@ out_clk:
 	clk_put(device_data->clk);
 
 out_regulator:
-	regulator_put(device_data->pwr_regulator);
+	ux500_regulator_put(device_data->pwr_regulator);
 
 out_unmap:
 	iounmap(device_data->base);
@@ -2143,7 +2121,7 @@ static int u8500_cryp_remove(struct platform_device *pdev)
 			__func__);
 
 	clk_put(device_data->clk);
-	regulator_put(device_data->pwr_regulator);
+	ux500_regulator_put(device_data->pwr_regulator);
 
 	iounmap(device_data->base);
 
@@ -2327,5 +2305,7 @@ module_exit(u8500_cryp_mod_fini);
 module_param(cryp_mode, int, 0);
 
 MODULE_DESCRIPTION("Driver for ST-Ericsson U8500 CRYP crypto engine.");
+MODULE_ALIAS("aes-all");
+MODULE_ALIAS("des-all");
 
 MODULE_LICENSE("GPL");

@@ -51,7 +51,6 @@
  */
 #define MAX_DEVICE_SUPPORT		2
 #define CRYP_CR_DEFAULT			0x0002
-#define CRYP_CR_FFLUSH			BIT(14)
 #define CRYP_DMACR_DEFAULT		0x0
 #define CRYP_IMSC_DEFAULT		0x0
 #define CRYP_DIN_DEFAULT		0x0
@@ -62,40 +61,47 @@
 /**
  * CRYP Control register specific mask
  */
-#define CRYP_SECURE_MASK		BIT(0)
-#define CRYP_PRLG_MASK			BIT(1)
-#define CRYP_ENC_DEC_MASK		BIT(2)
+#define CRYP_CR_SECURE_MASK		BIT(0)
+#define CRYP_CR_PRLG_MASK		BIT(1)
+#define CRYP_CR_ALGODIR_MASK		BIT(2)
+#define CRYP_CR_ALGOMODE_MASK		(BIT(5) | BIT(4) | BIT(3))
+#define CRYP_CR_DATATYPE_MASK		(BIT(7) | BIT(6))
+#define CRYP_CR_KEYSIZE_MASK		(BIT(9) | BIT(8))
+#define CRYP_CR_KEYRDEN_MASK		BIT(10)
+#define CRYP_CR_KSE_MASK		BIT(11)
+#define CRYP_CR_START_MASK		BIT(12)
+#define CRYP_CR_INIT_MASK		BIT(13)
+#define CRYP_CR_FFLUSH_MASK		BIT(14)
+#define CRYP_CR_CRYPEN_MASK		BIT(15)
+#define CRYP_CR_CONTEXT_SAVE_MASK	(CRYP_CR_SECURE_MASK |\
+					 CRYP_CR_PRLG_MASK |\
+					 CRYP_CR_ALGODIR_MASK |\
+					 CRYP_CR_ALGOMODE_MASK |\
+					 CRYP_CR_DATATYPE_MASK |\
+					 CRYP_CR_KEYSIZE_MASK |\
+					 CRYP_CR_KEYRDEN_MASK |\
+					 CRYP_CR_DATATYPE_MASK)
+
+
+#define CRYP_SR_INFIFO_READY_MASK	(BIT(0) | BIT(1))
+#define CRYP_SR_IFEM_MASK		BIT(0)
 #define CRYP_SR_BUSY_MASK		BIT(4)
-#define CRYP_KEY_ACCESS_MASK		BIT(10)
-#define CRYP_KSE_MASK			BIT(11)
-#define CRYP_START_MASK			BIT(12)
-#define CRYP_INIT_MASK			BIT(13)
-#define CRYP_FIFO_FLUSH_MASK		BIT(14)
-#define CRYP_CRYPEN_MASK		BIT(15)
-#define CRYP_INFIFO_READY_MASK		(BIT(0) | BIT(1))
-#define CRYP_ALGOMODE_MASK		(BIT(5) | BIT(4) | BIT(3))
-#define CRYP_DATA_TYPE_MASK		(BIT(7) | BIT(6))
-#define CRYP_KEY_SIZE_MASK		(BIT(9) | BIT(8))
 
 /**
  * Bit position used while setting bits in register
  */
-#define CRYP_PRLG_POS			1
-#define CRYP_ENC_DEC_POS		2
-#define CRYP_ALGOMODE_POS		3
-#define CRYP_SR_BUSY_POS		4
-#define CRYP_DATA_TYPE_POS		6
-#define CRYP_KEY_SIZE_POS		8
-#define CRYP_KEY_ACCESS_POS		10
-#define CRYP_KSE_POS			11
-#define CRYP_START_POS			12
-#define CRYP_INIT_POS			13
-#define CRYP_CRYPEN_POS			15
+#define CRYP_CR_PRLG_POS		1
+#define CRYP_CR_ALGODIR_POS		2
+#define CRYP_CR_ALGOMODE_POS		3
+#define CRYP_CR_DATATYPE_POS		6
+#define CRYP_CR_KEYSIZE_POS		8
+#define CRYP_CR_KEYRDEN_POS		10
+#define CRYP_CR_KSE_POS			11
+#define CRYP_CR_START_POS		12
+#define CRYP_CR_INIT_POS		13
+#define CRYP_CR_CRYPEN_POS		15
 
-/**
- * CRYP Status register
- */
-#define CRYP_BUSY_STATUS_MASK  BIT(4)
+#define CRYP_SR_BUSY_POS		4
 
 /**
  * CRYP PCRs------PC_NAND control register

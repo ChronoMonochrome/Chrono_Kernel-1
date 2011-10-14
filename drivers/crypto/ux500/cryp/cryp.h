@@ -16,9 +16,6 @@
 #include <linux/klist.h>
 #include <linux/mutex.h>
 
-/* Module Defines */
-#define CRYP_MODULE_NAME	"CRYP HCL Module"
-
 #define DEV_DBG_NAME "crypX crypX:"
 
 /* CRYP enable/disable */
@@ -47,11 +44,11 @@ enum cryp_state {
 
 /* Key preparation bit enable */
 enum cryp_key_prep {
-	KSE_DISABLED,
-	KSE_ENABLED
+	KSE_DISABLED = 0,
+	KSE_ENABLED = 1
 };
 
-/* Key size for AES*/
+/* Key size for AES */
 #define	CRYP_KEY_SIZE_128 (0)
 #define	CRYP_KEY_SIZE_192 (1)
 #define	CRYP_KEY_SIZE_256 (2)
@@ -89,20 +86,20 @@ enum cryp_mode {
 
 /**
  * struct cryp_config -
- * @key_access: Cryp state enable/disable
- * @key_size: Key size for AES
- * @data_type: Data type Swap
- * @algo_mode: AES modes
- * @encrypt_or_decrypt: Cryp Encryption or Decryption
+ * @keyrden: Cryp state enable/disable
+ * @keysize: Key size for AES
+ * @datatype: Data type Swap
+ * @algomode: AES modes
+ * @algodir: Cryp Encryption or Decryption
  *
  * CRYP configuration structure to be passed to set configuration
  */
 struct cryp_config {
-	enum cryp_state key_access;
-	int key_size;
-	int data_type;
-	enum cryp_algo_mode algo_mode;
-	enum cryp_algorithm_dir encrypt_or_decrypt;
+	enum cryp_state keyrden;
+	int keysize;
+	int datatype;
+	enum cryp_algo_mode algomode;
+	enum cryp_algorithm_dir algodir;
 };
 
 /**
@@ -232,7 +229,6 @@ struct cryp_dma {
  * struct cryp_device_data - structure for a cryp device.
  * @base: Pointer to the hardware base address.
  * @dev: Pointer to the devices dev structure.
- * @cryp_irq_complete: Pointer to an interrupt completion structure.
  * @clk: Pointer to the device's clock control.
  * @pwr_regulator: Pointer to the device's power control.
  * @power_status: Current status of the power.
@@ -241,22 +237,21 @@ struct cryp_dma {
  * @list_node: For inclusion into a klist.
  * @dma: The dma structure holding channel configuration.
  * @power_state: TRUE = power state on, FALSE = power state off.
- * @power_state_mutex: Mutex for power_state.
+ * @power_state_spinlock: Spinlock for power_state.
  * @restore_dev_ctx: TRUE = saved ctx, FALSE = no saved ctx.
  */
 struct cryp_device_data {
 	struct cryp_register __iomem *base;
 	struct device *dev;
-	struct completion cryp_irq_complete;
 	struct clk *clk;
-	struct regulator *pwr_regulator;
+	struct ux500_regulator *pwr_regulator;
 	int power_status;
 	struct spinlock ctx_lock;
 	struct cryp_ctx *current_ctx;
 	struct klist_node list_node;
 	struct cryp_dma dma;
 	bool power_state;
-	struct mutex power_state_mutex;
+	struct spinlock power_state_spinlock;
 	bool restore_dev_ctx;
 };
 
@@ -266,29 +261,12 @@ void cryp_wait_until_done(struct cryp_device_data *device_data);
 
 int cryp_check(struct cryp_device_data *device_data);
 
-void cryp_reset(struct cryp_device_data *device_data);
-
 void cryp_activity(struct cryp_device_data *device_data,
 		   enum cryp_crypen cryp_crypen);
 
-void cryp_start(struct cryp_device_data *device_data);
-
-void cryp_init_signal(struct cryp_device_data *device_data,
-		      enum cryp_init cryp_init);
-
-void cryp_key_preparation(struct cryp_device_data *device_data,
-			  enum cryp_key_prep cryp_key_prep);
-
 void cryp_flush_inoutfifo(struct cryp_device_data *device_data);
 
-void cryp_cen_flush(struct cryp_device_data *device_data);
-
-void cryp_set_dir(struct cryp_device_data *device_data, int dir);
-
 int cryp_set_configuration(struct cryp_device_data *device_data,
-			   struct cryp_config *p_cryp_config);
-
-int cryp_get_configuration(struct cryp_device_data *device_data,
 			   struct cryp_config *p_cryp_config);
 
 void cryp_configure_for_dma(struct cryp_device_data *device_data,

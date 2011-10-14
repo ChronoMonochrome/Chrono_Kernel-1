@@ -81,7 +81,7 @@
  */
 struct cryp_register {
 	u32 cr;			/* Configuration register   */
-	u32 status;		/* Status register          */
+	u32 sr;			/* Status register          */
 	u32 din;		/* Data input register      */
 	u32 din_size;		/* Data input size register */
 	u32 dout;		/* Data output register     */
