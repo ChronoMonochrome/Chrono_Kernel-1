@@ -61,11 +61,19 @@ struct db5500_keypad {
 	u8 previous_set[KEYPAD_MAX_ROWS];
 };
 
-/*
+/**
+ * db5500_keypad_report() - reports the keypad event
+ * @keypad: pointer to device structure
+ * @row: row value of keypad
+ * @curr: current event
+ * @previous: previous event
+ *
+ * This function uses to reports the event of the keypad
+ * and returns NONE.
+ *
  * By default all column reads are 1111 1111b.  Any press will pull the column
  * down, leading to a 0 in any of these locations.  We invert these values so
- * that a 1 means means "column pressed".
- *
+ * that a 1 means means "column pressed". *
  * If curr changes from the previous from 0 to 1, we report it as a key press.
  * If curr changes from the previous from 1 to 0, we report it as a key
  * release.
@@ -89,6 +97,14 @@ static void db5500_keypad_report(struct db5500_keypad *keypad, int row,
 	}
 }
 
+/**
+ * db5500_keypad_irq() - irq handler for keypad
+ * @irq: irq value for keypad
+ * @dev_id: pointer for device id
+ *
+ * This function uses to handle the interrupt of the keypad
+ * and returns irqreturn.
+ */
 static irqreturn_t db5500_keypad_irq(int irq, void *dev_id)
 {
 	struct db5500_keypad *keypad = dev_id;
@@ -161,6 +177,15 @@ again:
 	return IRQ_HANDLED;
 }
 
+/**
+ * db5500_keypad_writel() - write into keypad registers
+ * @keypad: pointer to device structure
+ * @val: value to write into register
+ * @reg: register offset
+ *
+ * This function uses to write into the keypad registers
+ * and returns NONE.
+ */
 static void db5500_keypad_writel(struct db5500_keypad *keypad, u32 val, u32 reg)
 {
 	int timeout = 4;
@@ -192,6 +217,13 @@ static void db5500_keypad_writel(struct db5500_keypad *keypad, u32 val, u32 reg)
 	writel(val, keypad->base + reg);
 }
 
+/**
+ * db5500_keypad_chip_init() - initialize the keypad chip
+ * @keypad: pointer to device structure
+ *
+ * This function uses to initializes the keypad controller
+ * and returns integer.
+ */
 static int db5500_keypad_chip_init(struct db5500_keypad *keypad)
 {
 	int debounce = keypad->board->debounce_ms;
@@ -222,6 +254,13 @@ static int db5500_keypad_chip_init(struct db5500_keypad *keypad)
 	return 0;
 }
 
+/**
+ * db5500_keypad_close() - stops the keypad driver
+ * @keypad: pointer to device structure
+ *
+ * This function uses to stop the keypad
+ * driver and returns integer.
+ */
 static void db5500_keypad_close(struct db5500_keypad *keypad)
 {
 	db5500_keypad_writel(keypad, 0, KEYPAD_CTR);
@@ -230,6 +269,13 @@ static void db5500_keypad_close(struct db5500_keypad *keypad)
 	clk_disable(keypad->clk);
 }
 
+/**
+ * db5500_keypad_probe() - Initialze the the keypad driver
+ * @pdev: pointer to platform device structure
+ *
+ * This function will allocate and initialize the instance
+ * data and request the irq and register to input subsystem driver.
+ */
 static int __devinit db5500_keypad_probe(struct platform_device *pdev)
 {
 	const struct db5500_keypad_platform_data *plat;
@@ -362,6 +408,13 @@ out_ret:
 	return ret;
 }
 
+/**
+ * db5500_keypad_remove() - Removes the keypad driver
+ * @pdev: pointer to platform device structure
+ *
+ * This function uses to remove the keypad
+ * driver and returns integer.
+ */
 static int __devexit db5500_keypad_remove(struct platform_device *pdev)
 {
 	struct db5500_keypad *keypad = platform_get_drvdata(pdev);
@@ -381,6 +434,13 @@ static int __devexit db5500_keypad_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
+/**
+ * db5500_keypad_suspend() - suspend the keypad controller
+ * @dev: pointer to device structure
+ *
+ * This function is used to suspend the
+ * keypad controller and returns integer
+ */
 static int db5500_keypad_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -397,6 +457,13 @@ static int db5500_keypad_suspend(struct device *dev)
 	return 0;
 }
 
+/**
+ * db5500_keypad_resume() - resume the keypad controller
+ * @dev: pointer to device structure
+ *
+ * This function is used to resume the keypad
+ * controller and returns integer.
+ */
 static int db5500_keypad_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -431,12 +498,24 @@ static struct platform_driver db5500_keypad_driver = {
 	.remove	= __devexit_p(db5500_keypad_remove),
 };
 
+/**
+ * db5500_keypad_init() - Initialize the keypad driver
+ *
+ * This function uses to initializes the db5500
+ * keypad driver and returns integer.
+ */
 static int __init db5500_keypad_init(void)
 {
 	return platform_driver_register(&db5500_keypad_driver);
 }
 module_init(db5500_keypad_init);
 
+/**
+ * db5500_keypad_exit() - De-initialize the keypad driver
+ *
+ * This function uses to de-initialize the db5500
+ * keypad driver and returns none.
+ */
 static void __exit db5500_keypad_exit(void)
 {
 	platform_driver_unregister(&db5500_keypad_driver);

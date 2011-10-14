@@ -1053,8 +1053,8 @@ static void synaptics_rmi4_resume_handler(struct work_struct *work)
 
 /**
  * synaptics_rmi4_probe() - Initialze the i2c-client touchscreen driver
- * @i2c: i2c client structure pointer
- * @id:i2c device id pointer
+ * @client: i2c client structure pointer
+ * @dev_id:i2c device id pointer
  *
  * This function will allocate and initialize the instance
  * data and request the irq and set the instance data as the clients
