@@ -118,5 +118,14 @@ config UX500_DEBUG_NO_LAUTERBACH
 	  Disable clocks needed for Lauterbach debugging at boot.
 	  If yes, you will reduce the power consumption.
 
+config UX500_L2X0_PREFETCH_CTRL
+	bool "PL310 prefetch control"
+	depends on (UX500_SOC_DB8500 || UX500_SOC_DB5500) && \
+			(TEE_UX500 && CACHE_L2X0)
+	default y
+	help
+	  Adds interface to control instruction and data prefetch.
+	  Communication with Trustzone is done through TEE driver.
+
 source "arch/arm/mach-ux500/Kconfig-arch"
 endif
