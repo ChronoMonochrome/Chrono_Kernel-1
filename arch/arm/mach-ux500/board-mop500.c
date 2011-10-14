@@ -98,7 +98,7 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 * on value present in GpioSel1 to GpioSel6 and AlternatFunction
 	 * register. This is the array of 7 configuration settings.
 	 * One has to compile time decide these settings. Below is the
-	 * explaination of these setting
+	 * explanation of these setting
 	 * GpioSel1 = 0x0F => Pin GPIO1 (SysClkReq2)
 	 *                    Pin GPIO2 (SysClkReq3)
 	 *                    Pin GPIO3 (SysClkReq4)
@@ -587,7 +587,6 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 	&u8500_trace_modem,
 #endif
 	&mop500_gpio_keys_device,
-	&ab8500_device,
 #ifdef CONFIG_LEDS_PWM
 	&ux500_leds_device,
 #endif
@@ -803,7 +802,6 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 	&snowball_led_dev,
 	&snowball_key_dev,
 	&snowball_sbnet_dev,
-	&ab8500_device,
 	&snowball_gpio_wlan_vbat_regulator_device,
 	&u8500_mcde_device,
 	&u8500_b2r2_device,
@@ -920,6 +918,8 @@ static void __init hrefv60_init_machine(void)
 	hrefv60_sdi_init(parent);
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
+
+	platform_device_register(&ab8500_device);
 
 	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
 
