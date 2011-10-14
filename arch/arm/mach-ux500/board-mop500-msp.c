@@ -8,6 +8,7 @@
 #include <linux/i2s/i2s.h>
 #include <linux/init.h>
 #include <linux/gpio.h>
+#include <linux/gpio/nomadik.h>
 
 #include <plat/ste_dma40.h>
 #include <plat/pincfg.h>
