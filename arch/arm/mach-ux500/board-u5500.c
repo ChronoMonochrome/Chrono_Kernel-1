@@ -272,9 +272,8 @@ static void __init u5500_spi_init(void)
 
 static struct resource ab5500_resources[] = {
 	[0] = {
-		/*TODO Change this when prcmu driver arrives */
-		.start = IRQ_DB5500_AB5500,
-		.end = IRQ_DB5500_AB5500,
+		.start = IRQ_DB5500_PRCMU_ABB,
+		.end = IRQ_DB5500_PRCMU_ABB,
 		.flags = IORESOURCE_IRQ
 	}
 };

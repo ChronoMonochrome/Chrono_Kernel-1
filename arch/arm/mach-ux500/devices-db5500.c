@@ -40,6 +40,11 @@
 		.start	= IRQ_DB5500_GPIO##block,			\
 		.end	= IRQ_DB5500_GPIO##block,			\
 		.flags	= IORESOURCE_IRQ,				\
+	},								\
+	{								\
+		.start	= IRQ_DB5500_PRCMU_GPIO##block,			\
+		.end	= IRQ_DB5500_PRCMU_GPIO##block,			\
+		.flags	= IORESOURCE_IRQ,				\
 	}
 
 #define GPIO_DEVICE(block)						\
