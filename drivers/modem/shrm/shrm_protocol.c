@@ -714,20 +714,22 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 		dev_err(shrm->dev, "failed to create work queue\n");
 		return -ENOMEM;
 	}
-	shrm->shm_audio_ch_wr_wq = create_singlethread_workqueue
-		("shm_audio_channel_irq");
+	shrm->shm_audio_ch_wr_wq = alloc_workqueue("shm_audio_channel_irq",
+			WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
 	if (!shrm->shm_audio_ch_wr_wq) {
 		dev_err(shrm->dev, "failed to create work queue\n");
 		err = -ENOMEM;
 		goto free_wq1;
 	}
-	shrm->shm_ac_wake_wq = create_singlethread_workqueue("shm_ac_wake_req");
+	shrm->shm_ac_wake_wq = alloc_workqueue("shm_ac_wake_req",
+			WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
 	if (!shrm->shm_ac_wake_wq) {
 		dev_err(shrm->dev, "failed to create work queue\n");
 		err = -ENOMEM;
 		goto free_wq2;
 	}
-	shrm->shm_ca_wake_wq = create_singlethread_workqueue("shm_ca_wake_req");
+	shrm->shm_ca_wake_wq = alloc_workqueue("shm_ca_wake_req",
+			WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
 	if (!shrm->shm_ca_wake_wq) {
 		dev_err(shrm->dev, "failed to create work queue\n");
 		err = -ENOMEM;
