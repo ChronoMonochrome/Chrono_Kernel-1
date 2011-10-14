@@ -11,7 +11,8 @@
 
 #include <asm/mach-types.h>
 #include <plat/pincfg.h>
-#include <plat/gpio-nomadik.h>
+#include <linux/gpio/nomadik.h>
+
 #include <mach/hardware.h>
 #include <mach/suspend.h>
 
