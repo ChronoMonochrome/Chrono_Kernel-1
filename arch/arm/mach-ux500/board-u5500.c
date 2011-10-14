@@ -299,11 +299,18 @@ static struct platform_device u5500_ab5500_device = {
 	.resource = ab5500_resources,
 };
 
+static struct platform_device u5500_mloader_device = {
+	.name = "db5500_mloader",
+	.id = -1,
+	.num_resources = 0,
+};
+
 static struct platform_device *u5500_platform_devices[] __initdata = {
 	&u5500_ab5500_device,
 	&u5500_mcde_device,
 	&ux500_hwmem_device,
 	&u5500_b2r2_device,
+	&u5500_mloader_device,
 };
 
 static void __init u5500_i2c_init(struct device *parent)
