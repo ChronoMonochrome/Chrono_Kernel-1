@@ -58,7 +58,8 @@ static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
 static struct synaptics_rmi4_platform_data rmi4_i2c_platformdata = {
 	.irq_number	= NOMADIK_GPIO_TO_IRQ(179),
 	.irq_type	= (IRQF_TRIGGER_FALLING | IRQF_SHARED),
-#if CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&      \
+			CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
 	.x_flip		= true,
 	.y_flip		= false,
 #else

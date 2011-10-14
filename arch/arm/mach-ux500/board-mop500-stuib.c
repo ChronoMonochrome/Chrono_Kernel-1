@@ -247,8 +247,14 @@ static struct bu21013_platform_device tsc_plat_device = {
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
 	.has_ext_clk = false,
-	.x_flip = false,
-	.y_flip = true,
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
+		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
+	.x_flip		= true,
+	.y_flip		= false,
+#else
+	.x_flip		= false,
+	.y_flip		= true,
+#endif
 };
 
 static struct bu21013_platform_device tsc_plat2_device = {
@@ -259,8 +265,14 @@ static struct bu21013_platform_device tsc_plat2_device = {
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
 	.has_ext_clk = false,
-	.x_flip = false,
-	.y_flip = true,
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
+		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
+	.x_flip		= true,
+	.y_flip		= false,
+#else
+	.x_flip		= false,
+	.y_flip		= true,
+#endif
 };
 
 static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
