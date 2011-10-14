@@ -16,7 +16,7 @@
 #include <mach/shrm_driver.h>
 #include <mach/shrm_private.h>
 #include <mach/shrm_net.h>
-#include <mach/prcmu-fw-api.h>
+#include <mach/prcmu.h>
 #include <mach/prcmu-regs.h>
 #include <mach/suspend.h>
 #include <mach/reboot_reasons.h>
