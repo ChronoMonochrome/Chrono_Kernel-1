@@ -34,7 +34,7 @@
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab8500.h>
 #include <linux/regulator/consumer.h>
-#include <mach/prcmu-fw-api.h>
+#include <mach/prcmu.h>
 
 #define AB8500_MAIN_WD_CTRL_REG 0x01
 #define AB8500_USB_LINE_STAT_REG 0x80
