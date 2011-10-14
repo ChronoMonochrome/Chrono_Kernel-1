@@ -12,7 +12,7 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
-#include <linux/gpio.h>
+#include <linux/gpio/nomadik.h>
 
 #include <mach/hardware.h>
 #include <mach/devices.h>

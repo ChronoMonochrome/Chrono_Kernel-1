@@ -7,8 +7,8 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/gpio.h>
+#include <linux/gpio/nomadik.h>
 #include <plat/pincfg.h>
-#include <plat/gpio.h>
 
 #include "pins-db5500.h"
 #include "pins.h"
