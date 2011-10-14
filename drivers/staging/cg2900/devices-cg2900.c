@@ -163,7 +163,6 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 	else
 		err = dcg2900_u5500_setup(dev, info);
 
-	err = dcg2900_setup(dev, info);
 	if (err)
 		goto err_handling;
 
@@ -181,7 +180,7 @@ static int dcg2900_init(struct cg2900_chip_dev *dev)
 					"%s: Failed to get regulator '%s'\n",
 					__func__, pdata->regulator_id);
 				info->regulator_wlan = NULL;
-				goto err_handling_free_gpio_bt;
+				goto err_handling;
 			}
 			/* Enable it also */
 			err = regulator_enable(info->regulator_wlan);
@@ -201,10 +200,6 @@ finished:
 	return 0;
 err_handling_put_reg:
 	regulator_put(info->regulator_wlan);
-err_handling_free_gpio_bt:
-	gpio_free(info->bt_gpio);
-err_handling_free_gpio_gbf:
-	gpio_free(info->gbf_gpio);
 err_handling:
 	kfree(info);
 	return err;
