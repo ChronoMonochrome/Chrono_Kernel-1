@@ -12,13 +12,16 @@
 #include <asm/mach-types.h>
 #include <mach/irqs.h>
 #include <plat/pincfg.h>
-#include "pins.h"
+#include <linux/clk.h>
 #include <mach/cw1200_plat.h>
+
+#include "pins.h"
 
 static void cw1200_release(struct device *dev);
 static int cw1200_power_ctrl(const struct cw1200_platform_data *pdata,
+			     bool enable);
+static int cw1200_clk_ctrl(const struct cw1200_platform_data *pdata,
 		bool enable);
-
 
 static struct resource cw1200_href_resources[] = {
 	{
@@ -50,7 +53,9 @@ static struct resource cw1200_href60_resources[] = {
 	},
 };
 
-static struct cw1200_platform_data cw1200_platform_data = { 0 };
+static struct cw1200_platform_data cw1200_platform_data = {
+	.clk_ctrl = cw1200_clk_ctrl,
+};
 
 static struct platform_device cw1200_device = {
 	.name = "cw1200_wlan",
@@ -125,7 +130,37 @@ static int cw1200_power_ctrl(const struct cw1200_platform_data *pdata,
 	return  ret;
 }
 
+static int cw1200_clk_ctrl(const struct cw1200_platform_data *pdata,
+		bool enable)
+{
+	static const char *clock_name = "sys_clk_out";
+	struct clk *clk_dev;
+	int ret = 0;
 
+	clk_dev = clk_get(&cw1200_device.dev, clock_name);
+
+	if (IS_ERR(clk_dev)) {
+		ret = PTR_ERR(clk_dev);
+		dev_warn(&cw1200_device.dev,
+				"%s: Failed to get clk '%s': %d\n",
+				__func__, clock_name, ret);
+
+	} else {
+
+		if (enable)
+			ret = clk_enable(clk_dev);
+		else
+			clk_disable(clk_dev);
+
+		if (ret) {
+			dev_warn(&cw1200_device.dev,
+					"%s: Failed to %s clk enable: %d\n",
+					__func__, clock_name, ret);
+		}
+	}
+
+	return ret;
+}
 
 int __init mop500_wlan_init(void)
 {
