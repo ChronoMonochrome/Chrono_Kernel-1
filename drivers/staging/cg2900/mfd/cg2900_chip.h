@@ -109,6 +109,7 @@ struct bt_vs_bt_enable_cmd {
 #define CG2900_BAUD_RATE_921600				0x20
 #define CG2900_BAUD_RATE_2000000			0x25
 #define CG2900_BAUD_RATE_3000000			0x27
+#define CG2900_BAUD_RATE_3250000			0x28
 #define CG2900_BAUD_RATE_4000000			0x2B
 
 /* BT VS SetBaudRate command */
