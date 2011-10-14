@@ -579,6 +579,17 @@ static void mbox_cb(u32 mbox_msg, void *priv)
 	}
 }
 
+/**
+ * mbox_channel_register() - Registers for a channel
+ * @channel:	Channel Number.
+ * @cb:		Pointer to function pointer mbox_channel_cb_t
+ * @priv:	Pointer to private data
+ *
+ * This routine is used to register for a logical channel.
+ * It first does sanity check on the requested channel availability
+ * and parameters. Then it prepares internal entry for the channel.
+ * And send a OPEN request for that channel.
+ */
 int mbox_channel_register(u16 channel, mbox_channel_cb_t *cb, void *priv)
 {
 	struct channel_status *rx_chan;
@@ -668,6 +679,17 @@ exit:
 }
 EXPORT_SYMBOL(mbox_channel_register);
 
+/**
+ * mbox_channel_send() - Send messages
+ * @msg:	Pointer to mbox_channel_msg data structure.
+ *
+ * This routine is used to send messages over the registered logical
+ * TX channel. It first does sanity check on the message paramenters.
+ * It registered channel is not found then it just registers for that
+ * channel. If channel found, it puts the message to the pending list.
+ * If channel is OPEN, it then pushes the message to the mailbox in
+ * FIFO manner from the pending list.
+ */
 int mbox_channel_send(struct mbox_channel_msg *msg)
 {
 	struct list_head *pos, *tx_list;
@@ -773,7 +795,15 @@ static void revoke_pending_msgs(struct channel_status *tx_chan)
 	}
 }
 
-/* Clear all pending messages from TX channel */
+/**
+ * mbox_channel_revoke_messages() - Revoke pending messages
+ * @channel:	Channel on which action to be taken.
+ *
+ * This routine Clear all pending messages from TX channel
+ * It searches for the channel.Checks if there is pending
+ * messages.Calls if tehre is any registered function. And
+ * deletes the messages for the pending list.
+ */
 int mbox_channel_revoke_messages(u16 channel)
 {
 	struct list_head *pos, *tx_list;
@@ -837,14 +867,14 @@ static int registration_done;
  * struct mboxtest_data - mbox test via debugfs information
  * @rx_buff:		Buffer for incomming data
  * @rx_pointer:		Ptr to actual RX data buff
- * @tx_buff		Buffer for outgoing data
+ * @tx_buff:		Buffer for outgoing data
  * @tx_pointer:		Ptr to actual TX data buff
  * @tx_done:		TX Transfer done indicator
  * @rx_done:		RX Transfer done indicator
- * @received		Received words
+ * @received:		Received words
  * @xfer_words:		Num of bytes in actual trf
  * @xfers:		Number of transfers
- * @words		Number of total words
+ * @words:		Number of total words
  * @channel:		Channel test number
  */
 struct mboxtest_data {
