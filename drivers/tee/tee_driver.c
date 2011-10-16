@@ -636,7 +636,7 @@ static void __exit tee_exit(void)
 	misc_deregister(&tee_dev);
 }
 
-module_init(tee_init);
+subsys_initcall(tee_init);
 module_exit(tee_exit);
 
 MODULE_LICENSE("Dual BSD/GPL");

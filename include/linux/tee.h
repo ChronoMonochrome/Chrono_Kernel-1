@@ -74,7 +74,43 @@
 /*
  * Exposed functions (command_id) in the static TA
  */
+#define TEE_STA_GET_PRODUCT_CONFIG		10
 #define TEE_STA_SET_L2CC_PREFETCH_CTRL_REGISTER 11
+
+/* Flags indicating run-time environment */
+#define TEE_RT_FLAGS_NORMAL		0x00000000
+#define TEE_RT_FLAGS_MASK_ITP_PROD      0x00000001
+#define TEE_RT_FLAGS_MODEM_DEBUG	0x00000002
+#define TEE_RT_FLAGS_RNG_REG_PUBLIC     0x00000004
+#define TEE_RT_FLAGS_JTAG_ENABLED       0x00000008
+
+/*
+ * Product id numbers
+ */
+#define TEE_PRODUCT_ID_UNKNOWN 0
+#define TEE_PRODUCT_ID_8400    1
+#define TEE_PRODUCT_ID_8500    2
+#define TEE_PRODUCT_ID_9500    3
+#define TEE_PRODUCT_ID_5500    4
+#define TEE_PRODUCT_ID_7400    5
+#define TEE_PRODUCT_ID_8500C   6
+
+/* Flags indicating fuses */
+#define TEE_FUSE_FLAGS_MODEM_DISABLE    0x00000001
+
+/**
+ * struct tee_product_config - System configuration structure.
+ *
+ * @product_id: Product identification.
+ * @rt_flags: Runtime configuration flags.
+ * @fuse_flags: Fuse flags.
+ *
+ */
+struct tee_product_config {
+	uint32_t product_id;
+	uint32_t rt_flags;
+	uint32_t fuse_flags;
+};
 
 /**
  * struct tee_uuid - Structure that represent an uuid.
