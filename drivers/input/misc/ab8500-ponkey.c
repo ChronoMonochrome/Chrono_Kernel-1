@@ -14,6 +14,7 @@
 #include <linux/mfd/ab8500.h>
 #include <linux/slab.h>
 #include <linux/mfd/abx500.h>
+#include <linux/mfd/abx500/ab5500.h>
 
 /* Ponkey time control bits */
 #define AB5500_MCB		0x2F
