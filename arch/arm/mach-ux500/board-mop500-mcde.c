@@ -113,7 +113,7 @@ static struct mcde_display_device samsung_s6d16d0_display0 = {
 	.synchronized_update = false,
 #endif
 	/* TODO: Remove rotation buffers once ESRAM driver is completed */
-	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4,
+	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x2000,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,
 	.dev = {
 		.platform_data = &samsung_s6d16d0_pdata0,
@@ -143,7 +143,7 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 	.fifo = MCDE_FIFO_A,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
 	.synchronized_update = true,
-	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4,
+	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x2000,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,
 	.dev = {
 		.platform_data = &sony_acx424akp_display0_pdata,
