@@ -21,6 +21,7 @@
 #include <mach/db5500-regs.h>
 
 #include <mach/prcmu.h>
+#include <mach/pm.h>
 
 #define GPIO_DATA(_name, first, num)					\
 	{								\
@@ -28,6 +29,8 @@
 		.first_gpio	= first,				\
 		.first_irq	= NOMADIK_GPIO_TO_IRQ(first),		\
 		.num_gpio	= num,					\
+		.get_secondary_status = ux500_pm_gpio_read_wake_up_status, \
+		.set_ioforce	= ux500_pm_prcmu_set_ioforce,		\
 	}
 
 #define GPIO_RESOURCE(block)						\

@@ -15,8 +15,10 @@
 #include <mach/hsi.h>
 #include <mach/setup.h>
 #include <mach/ste-dma40-db8500.h>
+#include <mach/pm.h>
+#include <mach/context.h>
 
-#include "pm/pm.h"
+
 
 static struct resource dma40_resources[] = {
 	[0] = {
@@ -231,6 +233,54 @@ static struct stedma40_platform_data dma40_plat_data = {
 	.use_esram_lcla = false,
 };
 
+#ifdef CONFIG_UX500_CONTEXT
+#define D40_DREG_GCC		0x000
+#define D40_DREG_LCPA		0x020
+#define D40_DREG_LCLA		0x024
+
+static void __iomem *base;
+
+static int dma_context_notifier_call(struct notifier_block *this,
+				     unsigned long event, void *data)
+{
+	static unsigned long lcpa;
+	static unsigned long lcla;
+	static unsigned long gcc;
+
+	switch (event) {
+	case CONTEXT_APE_SAVE:
+		lcla = readl(base + D40_DREG_LCLA);
+		lcpa = readl(base + D40_DREG_LCPA);
+		gcc = readl(base + D40_DREG_GCC);
+		break;
+
+	case CONTEXT_APE_RESTORE:
+		writel(gcc, base + D40_DREG_GCC);
+		writel(lcpa, base + D40_DREG_LCPA);
+		writel(lcla, base + D40_DREG_LCLA);
+		break;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block dma_context_notifier = {
+	.notifier_call = dma_context_notifier_call,
+};
+
+static void dma_context_notifier_init(void)
+{
+	base = ioremap(dma40_resources[0].start, resource_size(&dma40_resources[0]));
+	if (WARN_ON(!base))
+		return;
+
+	WARN_ON(context_ape_notifier_register(&dma_context_notifier));
+}
+#else
+static void dma_context_notifier_init(void)
+{
+}
+#endif
+
 static struct platform_device dma40_device = {
 	.dev = {
 		.platform_data = &dma40_plat_data,
@@ -252,4 +302,5 @@ void __init db8500_dma_init(void)
 	if (ret)
 		dev_err(&dma40_device.dev, "unable to register device: %d\n", ret);
 
+	dma_context_notifier_init();
 }

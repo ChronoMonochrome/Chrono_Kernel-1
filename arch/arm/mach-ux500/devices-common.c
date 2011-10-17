@@ -17,8 +17,8 @@
 #include <plat/gpio-nomadik.h>
 
 #include <mach/hardware.h>
+#include <mach/pm.h>
 
-#include "pm/pm.h"
 #include "devices-common.h"
 
 struct amba_device *
