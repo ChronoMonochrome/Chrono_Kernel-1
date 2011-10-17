@@ -70,7 +70,6 @@
 #include "devices-db8500.h"
 #include "board-mop500.h"
 #include "board-mop500-regulators.h"
-#include "regulator-u8500.h"
 #include "board-mop500-bm.h"
 #include "board-mop500-wlan.h"
 
@@ -104,7 +103,7 @@ static struct platform_device snowball_led_dev = {
 static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	.gpio_base		= MOP500_AB8500_PIN_GPIO(1),
 	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
-	/* initial_pin_config is the initial configuration of ab8500 pins.
+	/* config_reg is the initial configuration of ab8500 pins.
 	 * The pins can be configured as GPIO or alt functions based
 	 * on value present in GpioSel1 to GpioSel6 and AlternatFunction
 	 * register. This is the array of 7 configuration settings.
@@ -125,18 +124,18 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 * AlternaFunction = 0x00 => If Pins GPIO10 to 13 are not configured
 	 * as GPIO then this register selectes the alternate fucntions
 	 */
-	.initial_pin_config     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x02, 0x00},
+	.config_reg     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x02, 0x00},
 
-	/* initial_pin_direction allows for the initial GPIO direction to
+	/* config_direction allows for the initial GPIO direction to
 	 * be set. For Snowball we set GPIO26 to output.
 	 */
-	.initial_pin_direction  = {0x00, 0x00, 0x00, 0x02, 0x00, 0x00},
+	.config_direction  = {0x00, 0x00, 0x00, 0x02, 0x00, 0x00},
 
 	/*
-	 * initial_pin_pullups allows for the intial configuration of the
+	 * config_pullups allows for the intial configuration of the
 	 * GPIO pullup/pulldown configuration.
 	 */
-	.initial_pin_pullups    = {0xE0, 0x01, 0x00, 0x00, 0x00, 0x00},
+	.config_pullups    = {0xE0, 0x01, 0x00, 0x00, 0x00, 0x00},
 };
 
 #ifdef CONFIG_INPUT_AB8500_ACCDET
@@ -238,38 +237,6 @@ static struct platform_device snowball_sbnet_dev = {
 		.platform_data = &snowball_sbnet_cfg,
 	},
 };
-
-static struct regulator_init_data *u8500_regulators[U8500_NUM_REGULATORS] = {
-	[U8500_REGULATOR_VAPE]			= &u8500_vape_regulator,
-	[U8500_REGULATOR_VARM]			= &u8500_varm_regulator,
-	[U8500_REGULATOR_VMODEM]		= &u8500_vmodem_regulator,
-	[U8500_REGULATOR_VPLL]			= &u8500_vpll_regulator,
-	[U8500_REGULATOR_VSMPS1]		= &u8500_vsmps1_regulator,
-	[U8500_REGULATOR_VSMPS2]		= &u8500_vsmps2_regulator,
-	[U8500_REGULATOR_VSMPS3]		= &u8500_vsmps3_regulator,
-	[U8500_REGULATOR_VRF1]			= &u8500_vrf1_regulator,
-	[U8500_REGULATOR_SWITCH_SVAMMDSP]	= &u8500_svammdsp_regulator,
-	[U8500_REGULATOR_SWITCH_SVAMMDSPRET]	= &u8500_svammdspret_regulator,
-	[U8500_REGULATOR_SWITCH_SVAPIPE]	= &u8500_svapipe_regulator,
-	[U8500_REGULATOR_SWITCH_SIAMMDSP]	= &u8500_siammdsp_regulator,
-	[U8500_REGULATOR_SWITCH_SIAMMDSPRET]	= &u8500_siammdspret_regulator,
-	[U8500_REGULATOR_SWITCH_SIAPIPE]	= &u8500_siapipe_regulator,
-	[U8500_REGULATOR_SWITCH_SGA]		= &u8500_sga_regulator,
-	[U8500_REGULATOR_SWITCH_B2R2_MCDE]	= &u8500_b2r2_mcde_regulator,
-	[U8500_REGULATOR_SWITCH_ESRAM12]	= &u8500_esram12_regulator,
-	[U8500_REGULATOR_SWITCH_ESRAM12RET]	= &u8500_esram12ret_regulator,
-	[U8500_REGULATOR_SWITCH_ESRAM34]	= &u8500_esram34_regulator,
-	[U8500_REGULATOR_SWITCH_ESRAM34RET]	= &u8500_esram34ret_regulator,
-};
-
-static struct platform_device u8500_regulator_dev = {
-	.name = "u8500-regulators",
-	.id   = 0,
-	.dev  = {
-		.platform_data = u8500_regulators,
-	},
-};
-
 
 #ifdef CONFIG_MODEM_U8500
 static struct platform_device u8500_modem_dev = {
@@ -1202,10 +1169,6 @@ static void __init hrefv60_init_machine(void)
 	struct device *parent = NULL;
 	int i2c0_devs;
 	int i;
-
-#ifdef CONFIG_REGULATOR
-	platform_device_register(&u8500_regulator_dev);
-#endif
 
 	/*
 	 * The HREFv60 board removed a GPIO expander and routed
