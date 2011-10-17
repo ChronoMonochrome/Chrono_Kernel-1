@@ -17,6 +17,7 @@
 #include <linux/platform_device.h>
 #include <linux/kobject.h>
 #include <linux/mfd/abx500.h>
+#include <linux/mfd/abx500/ab5500.h>
 #include <linux/io.h>
 #include <linux/err.h>
 
