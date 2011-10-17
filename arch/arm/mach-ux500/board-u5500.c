@@ -34,13 +34,14 @@
 #include <mach/devices.h>
 #include <mach/setup.h>
 #include <mach/crypto-ux500.h>
+#include <mach/abx500-accdet.h>
 
 #include "pins-db5500.h"
 #include "pins.h"
 #include "devices-db5500.h"
 #include "board-u5500.h"
 #include "board-u5500-bm.h"
-#include "board-mop500-wlan.h"
+#include "board-u5500-wlan.h"
 
 /*
  * LSM303DLH
@@ -417,6 +418,16 @@ static struct resource ab5500_resources[] = {
 	}
 };
 
+
+#ifdef CONFIG_INPUT_AB5500_ACCDET
+static struct abx500_accdet_platform_data ab5500_accdet_pdata = {
+	       .btn_keycode = KEY_MEDIA,
+	       .accdet1_dbth = ACCDET1_TH_300mV | ACCDET1_DB_10ms,
+	       .accdet2122_th = ACCDET21_TH_300mV | ACCDET22_TH_300mV,
+	       .is_detection_inverted = false,
+	};
+#endif
+
 static struct ab5500_platform_data ab5500_plf_data = {
 	.irq = {
 		.base = IRQ_AB5500_BASE,
@@ -424,6 +435,10 @@ static struct ab5500_platform_data ab5500_plf_data = {
 	},
 	.pm_power_off	= true,
 	.regulator	= &u5500_ab5500_regulator_data,
+#ifdef CONFIG_INPUT_AB5500_ACCDET
+	.dev_data[AB5500_DEVID_ACCDET] = &ab5500_accdet_pdata,
+	.dev_data_sz[AB5500_DEVID_ACCDET] = sizeof(ab5500_accdet_pdata),
+#endif
 	.dev_data[AB5500_DEVID_LEDS] = &ab5500_hvleds_data,
 	.dev_data_sz[AB5500_DEVID_LEDS] = sizeof(ab5500_hvleds_data),
 	.init_settings = (struct abx500_init_settings[]){

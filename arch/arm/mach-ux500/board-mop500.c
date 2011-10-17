@@ -53,7 +53,7 @@
 #include <mach/setup.h>
 #include <mach/devices.h>
 #include <mach/sensors1p.h>
-#include <mach/ab8500-accdet.h>
+#include <mach/abx500-accdet.h>
 #include <mach/irqs.h>
 #include <mach/ste-dma40-db8500.h>
 #ifdef CONFIG_U8500_SIM_DETECT
@@ -140,7 +140,7 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 };
 
 #ifdef CONFIG_INPUT_AB8500_ACCDET
-static struct ab8500_accdet_platform_data ab8500_accdet_pdata = {
+static struct abx500_accdet_platform_data ab8500_accdet_pdata = {
 	.btn_keycode = KEY_MEDIA,
 	.accdet1_dbth = ACCDET1_TH_1200mV | ACCDET1_DB_70ms,
 	.accdet2122_th = ACCDET21_TH_1000mV | ACCDET22_TH_1000mV,
