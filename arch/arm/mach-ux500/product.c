@@ -30,13 +30,12 @@ static struct tee_product_config product_config;
 bool ux500_jtag_enabled(void)
 {
 #ifdef CONFIG_UX500_DEBUG_NO_LAUTERBACH
-        return false;
+	return false;
 #else
-        if (cpu_is_u5500())
-                return readl_relaxed(__io_address(U5500_PRCMU_DBG_PWRCTRL))
-                        & PRCMU_DBG_PWRCTRL_A9DBGCLKEN;
-
-        if (cpu_is_u8500())
+	if (cpu_is_u5500())
+		return readl_relaxed(__io_address(U5500_PRCMU_DBG_PWRCTRL))
+			& PRCMU_DBG_PWRCTRL_A9DBGCLKEN;
+	if (cpu_is_u8500())
 		return (product_config.rt_flags & TEE_RT_FLAGS_JTAG_ENABLED) ==
 			TEE_RT_FLAGS_JTAG_ENABLED;
 
@@ -96,8 +95,35 @@ static int __init product_detect(void)
 		goto error1;
 	}
 
+	switch(product_config.product_id) {
+	case TEE_PRODUCT_ID_8400:
+		pr_info("ux500-product: u8400 detected\n");
+		break;
+	case TEE_PRODUCT_ID_8500:
+		pr_info("ux500-product: u8500 detected\n");
+		break;
+	case TEE_PRODUCT_ID_9500:
+		pr_info("ux500-product: u9500 detected\n");
+		break;
+	case TEE_PRODUCT_ID_5500:
+		pr_info("ux500-product: u5500 detected\n");
+		break;
+	case TEE_PRODUCT_ID_7400:
+		pr_info("ux500-product: u7400 detected\n");
+		break;
+	case TEE_PRODUCT_ID_8500C:
+		pr_info("ux500-product: u8500C detected\n");
+		break;
+	case TEE_PRODUCT_ID_UNKNOWN:
+	default:
+		pr_info("ux500-product: UNKNOWN! (0x%x) detected\n",
+			product_config.product_id);
+		break;
+	}
 	pr_info("ux500-product: JTAG is %s\n",
 		ux500_jtag_enabled()? "enabled" : "disabled");
+
+
 error1:
 	(void) teec_finalize_context(&context);
 error0:
