@@ -154,6 +154,7 @@ struct ab5500_platform_data {
 	unsigned int init_settings_sz;
 	bool pm_power_off;
 	struct ab5500_regulator_platform_data *regulator;
+	struct ab5500_usbgpio_platform_data *usb;
 };
 
 struct ab5500_ponkey_platform_data {
