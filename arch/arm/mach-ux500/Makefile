@@ -1,5 +1,5 @@
 #
-# Makefile for the linux kernel, U8500 machine.
+# Makefile for the linux kernel, UX500 machine.
 #
 
 obj-y				:= clock.o cpu.o devices.o \
@@ -8,13 +8,13 @@ obj-y				:= clock.o cpu.o devices.o \
 obj-y				+= pm/
 obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o
 ifeq ($(CONFIG_UX500_SOC_DB5500), y)
-obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db5500.o dma-db5500.o prcmu-db5500.o \
+obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db5500.o dma-db5500.o \
 				   devices-db5500.o
 obj-$(CONFIG_TOUCHSCREEN_CYTTSP_SPI)    += board-u5500-cyttsp.o
 endif
 ifeq ($(CONFIG_UX500_SOC_DB8500), y)
 obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db8500.o devices-db8500.o \
-				   prcmu-db8500.o clock-db8500.o \
+				   clock-db8500.o \
 				   regulator-db8500.o dma-db8500.o
 endif
 
