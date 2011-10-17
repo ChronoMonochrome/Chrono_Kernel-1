@@ -16,8 +16,7 @@
 #include <linux/modem/shrm/shrm_private.h>
 #include <linux/modem/shrm/shrm_net.h>
 #include <linux/modem/modem_client.h>
-#include <mach/prcmu.h>
-#include <mach/prcmu-regs.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <mach/reboot_reasons.h>
 
 #define L2_HEADER_ISI		0x0
@@ -30,6 +29,8 @@
 #define L2_HEADER_AUDIO_ADVANCED_LOOPBACK	0x81
 #define L2_HEADER_CIQ		0xC3
 #define MAX_PAYLOAD 1024
+
+#define PRCM_HOSTACCESS_REQ   (_PRCMU_BASE + 0x334)
 
 static u8 boot_state = BOOT_INIT;
 static u8 recieve_common_msg[8*1024];

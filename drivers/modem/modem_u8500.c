@@ -11,7 +11,7 @@
 #include <linux/modem/modem.h>
 #include <linux/platform_device.h>
 #include <linux/err.h>
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 static void u8500_modem_request(struct modem_dev *mdev)
 {
