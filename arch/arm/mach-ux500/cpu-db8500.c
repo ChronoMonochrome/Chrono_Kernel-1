@@ -134,7 +134,6 @@ static struct platform_device *platform_devs[] __initdata = {
 	&u8500_gpio_devs[7],
 	&u8500_gpio_devs[8],
 	&db8500_pmu_device,
-	&ux500_prcmu_wdt_device,
 	&db8500_prcmu_device,
 };
 

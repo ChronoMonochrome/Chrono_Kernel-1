@@ -265,35 +265,6 @@ struct platform_device ux500_b2r2_device = {
 };
 
 /*
- * WATCHDOG
- */
-
-static struct resource ux500_wdt_resources[] = {
-	[0] = {
-		.start  = U8500_TWD_BASE,
-		.end    = U8500_TWD_BASE+0x37,
-		.flags  = IORESOURCE_MEM,
-	},
-	[1] = {
-		.start  = IRQ_LOCALWDOG,
-		.end  = IRQ_LOCALWDOG,
-		.flags  = IORESOURCE_IRQ,
-	}
-};
-
-struct platform_device ux500_wdt_device = {
-	.name           = "mpcore_wdt",
-	.id             = -1,
-	.resource       = ux500_wdt_resources,
-	.num_resources  = ARRAY_SIZE(ux500_wdt_resources),
-};
-
-struct platform_device ux500_prcmu_wdt_device = {
-	.name		= "ux500_wdt",
-	.id		= -1,
-};
-
-/*
  * Thermal Sensor
  */
 

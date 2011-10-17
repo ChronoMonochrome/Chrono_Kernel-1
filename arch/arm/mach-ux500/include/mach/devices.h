@@ -21,9 +21,6 @@ extern struct platform_device ux500_b2r2_device;
 extern struct platform_device u8500_trace_modem;
 extern struct platform_device ux500_hwmem_device;
 extern struct amba_device ux500_pl031_device;
-
-extern struct platform_device ux500_wdt_device;
-extern struct platform_device ux500_prcmu_wdt_device;
 extern struct platform_device mloader_fw_device;
 extern struct platform_device ux500_thsens_device;
 extern struct platform_device ux500_ske_keypad_device;
