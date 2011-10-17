@@ -17,7 +17,7 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 #include <linux/workqueue.h>
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include "mmio.h"
 
 #define ISP_REGION_IO				(0xE0000000)

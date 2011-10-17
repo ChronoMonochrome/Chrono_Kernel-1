@@ -14,7 +14,7 @@
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
 #endif
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <cm/engine/api/channel_engine.h>
 #include <cm/engine/api/control/configuration_engine.h>
 #include <cm/engine/api/perfmeter_engine.h>
