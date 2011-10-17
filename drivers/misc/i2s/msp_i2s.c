@@ -22,9 +22,9 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/pfn.h>
-
 #include <linux/regulator/consumer.h>
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
+
 #include <mach/hardware.h>
 #include <asm/io.h>
 #include <asm/delay.h>
