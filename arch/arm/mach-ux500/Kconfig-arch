@@ -13,6 +13,7 @@ menu "Display selection"
 config DISPLAY_GENERIC_PRIMARY
 	bool "Generic primary display support"
 	depends on (MACH_U8500 || MACH_U5500)
+	select MCDE_DISPLAY_DSI
 	default y
 
 choice
@@ -98,6 +99,7 @@ config DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
 config DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 	bool "Sony acx424akp DSI display"
 	select MCDE_DISPLAY_SONY_ACX424AKP_DSI
+	select MCDE_DISPLAY_DSI
 	help
 	  Say yes here when using a sony acx424akp DSI display
 
@@ -105,6 +107,7 @@ config DISPLAY_GENERIC_DSI_SECONDARY
 	bool "Sub display support"
 	depends on MACH_U8500
 	select MCDE_DISPLAY_GENERIC_DSI
+	select MCDE_DISPLAY_DSI
 	help
 	  Say yes here if sub display exists
 
@@ -131,6 +134,7 @@ config DISPLAY_AV8100_TERTIARY
 	bool "AV8100 HDMI/CVBS display support"
 	depends on (MACH_U8500 || MACH_U5500)
 	select MCDE_DISPLAY_AV8100
+	select MCDE_DISPLAY_DSI
 	help
 	  Say yes here if HDMI output support
 
