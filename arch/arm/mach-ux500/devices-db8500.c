@@ -213,7 +213,7 @@ static struct mcde_platform_data mcde_pdata = {
 	.num_channels = 4,
 	.num_overlays = 6,
 #ifdef CONFIG_MCDE_DISPLAY_DSI
-	.regulator_vana_id = "v-ana",
+	.regulator_vana_id = "vdddsi1v2",
 #endif
 	.regulator_mcde_epod_id = "vsupply",
 	.regulator_esram_epod_id = "v-esram34",
