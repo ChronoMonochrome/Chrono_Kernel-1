@@ -10,6 +10,7 @@ obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o
 ifeq ($(CONFIG_UX500_SOC_DB5500), y)
 obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db5500.o dma-db5500.o prcmu-db5500.o \
 				   devices-db5500.o
+obj-$(CONFIG_TOUCHSCREEN_CYTTSP_SPI)    += board-u5500-cyttsp.o
 endif
 ifeq ($(CONFIG_UX500_SOC_DB8500), y)
 obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db8500.o devices-db8500.o \
@@ -24,7 +25,8 @@ obj-$(CONFIG_MACH_MOP500)	+= board-mop500.o board-mop500-sdi.o \
 				board-mop500-mcde.o \
 				board-mop500-msp.o \
 				board-pins-sleep-force.o \
-				board-mop500-wlan.o
+				board-mop500-wlan.o \
+				board-mop500-cyttsp.o
 obj-$(CONFIG_SENSORS1P_MOP)	+= sensors1p.o
 obj-$(CONFIG_MACH_U5500)	+= board-u5500.o board-u5500-sdi.o \
 				   board-u5500-pins.o

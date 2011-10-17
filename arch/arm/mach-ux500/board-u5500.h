@@ -12,6 +12,9 @@
 #define GPIO_MMC_CARD_VSEL     185
 #define GPIO_PRIMARY_CAM_XSHUTDOWN  1
 #define GPIO_SECONDARY_CAM_XSHUTDOWN  2
+#define CYPRESS_TOUCH_INT_PIN 179
+#define CYPRESS_TOUCH_RST_GPIO 135
+#define CYPRESS_SLAVE_SELECT_GPIO 186
 
 
 struct ab5500_regulator_platform_data;
@@ -19,5 +22,6 @@ extern struct ab5500_regulator_platform_data u5500_ab5500_regulator_data;
 
 extern void u5500_pins_init(void);
 extern void __init u5500_regulators_init(void);
+void u5500_cyttsp_init(void);
 
 #endif
