@@ -83,7 +83,7 @@ config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE
 
 config DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	bool "Enable v-sync for primary display"
-	depends on DISPLAY_GENERIC_DSI_PRIMARY || DISPLAY_SONY_SY35560_DSI_PRIMARY
+	depends on DISPLAY_GENERIC_DSI_PRIMARY
 	default n
 	help
 	  Say yes to enable v-sync for primary display
@@ -100,13 +100,6 @@ config DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 	select MCDE_DISPLAY_SONY_ACX424AKP_DSI
 	help
 	  Say yes here when using a sony acx424akp DSI display
-
-config SONY_SY35560_ENABLE_ESD_CHECK
-	bool "Enable esd status check for primary display"
-	depends on DISPLAY_SONY_SY35560_DSI_PRIMARY
-	default n
-	help
-	  Say yes to enable esd status check for primary display
 
 config DISPLAY_GENERIC_DSI_SECONDARY
 	bool "Sub display support"
