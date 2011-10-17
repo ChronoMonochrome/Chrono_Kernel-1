@@ -21,7 +21,7 @@
 #include <linux/types.h>
 #include <linux/mfd/abx500/ab5500.h>
 
-#include <mach/prcmu-db5500.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #include "devices-cg2900.h"
 
