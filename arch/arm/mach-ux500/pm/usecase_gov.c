@@ -81,8 +81,8 @@ static unsigned int cpuidle_deepest_state;
 
 struct usecase_config {
 	char *name;
-	unsigned long max_freq;
-	unsigned long min_freq; /* if no requirement set 0 */
+	/* Minimum required ARM OPP. if no requirement set 25 */
+	unsigned int  min_arm_opp;
 	unsigned long cpuidle_multiplier;
 	bool second_cpu_online;
 	bool l2_prefetch_en;
@@ -94,8 +94,7 @@ struct usecase_config {
 static struct usecase_config usecase_conf[UX500_UC_MAX] = {
 	[UX500_UC_NORMAL] = {
 		.name			= "normal",
-		.max_freq		= 1000000,
-		.min_freq		= 200000,
+		.min_arm_opp		= 25,
 		.cpuidle_multiplier	= 1024,
 		.second_cpu_online	= true,
 		.l2_prefetch_en		= true,
@@ -105,8 +104,7 @@ static struct usecase_config usecase_conf[UX500_UC_MAX] = {
 	},
 	[UX500_UC_AUTO] = {
 		.name			= "auto",
-		.max_freq		= 400000,
-		.min_freq		= 200000,
+		.min_arm_opp		= 25,
 		.cpuidle_multiplier	= 0,
 		.second_cpu_online	= false,
 		.l2_prefetch_en		= true,
@@ -116,8 +114,7 @@ static struct usecase_config usecase_conf[UX500_UC_MAX] = {
 	},
 	[UX500_UC_VC] = {
 		.name			= "voice-call",
-		.max_freq		= 400000,
-		.min_freq		= 400000,
+		.min_arm_opp		= 50,
 		.cpuidle_multiplier	= 0,
 		.second_cpu_online	= false,
 		.l2_prefetch_en		= false,
@@ -127,8 +124,7 @@ static struct usecase_config usecase_conf[UX500_UC_MAX] = {
 	},
 	[UX500_UC_LPA] = {
 		.name			= "low-power-audio",
-		.max_freq		= 400000,
-		.min_freq		= 400000,
+		.min_arm_opp		= 50,
 		.cpuidle_multiplier	= 0,
 		.second_cpu_online	= false,
 		.l2_prefetch_en		= false,
@@ -329,10 +325,7 @@ static u32 get_num_interrupts_per_s(void)
 
 static void set_cpu_config(enum ux500_uc new_uc)
 {
-	struct cpufreq_policy policy;
-	int err;
 	bool update = false;
-	u32 min_freq, max_freq;
 
 	if (new_uc != current_uc)
 		update = true;
@@ -353,38 +346,8 @@ static void set_cpu_config(enum ux500_uc new_uc)
 		 (num_online_cpus() < 2))
 		cpu_up(1);
 
-	/* Cpu freq */
-	err = cpufreq_get_policy(&policy, 0);
-	if (err)
-		pr_err("usecase-gov: get cpufreq policy failed\n");
-
-	/* If requirement is 0, use current policy value */
-	min_freq = usecase_conf[new_uc].min_freq ?
-		usecase_conf[new_uc].min_freq : policy.min;
-
-	max_freq = usecase_conf[new_uc].max_freq ?
-		usecase_conf[new_uc].max_freq : policy.max;
-
-	/*
-	 * cpufreq fw does not allow frequency change if
-	 * "current min freq" > "new max freq" or
-	 * "current max freq" < "new min freq".
-	 * Thus the intermediate steps below.
-	 */
-	if (policy.min > max_freq) {
-		err = cpufreq_update_freq(0, min_freq, policy.max);
-		if (err)
-			pr_err("usecase-gov: update min cpufreq failed\n");
-	}
-	if (policy.max < min_freq) {
-		err = cpufreq_update_freq(0, policy.min, max_freq);
-		if (err)
-			pr_err("usecase-gov: update max cpufreq failed\n");
-	}
-
-	err = cpufreq_update_freq(0, min_freq, max_freq);
-	if (err)
-		pr_err("usecase-gov: update min/max cpufreq failed\n");
+	prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
+			    "usecase", usecase_conf[new_uc].min_arm_opp);
 
 	/* Cpu idle */
 	cpuidle_set_multiplier(usecase_conf[new_uc].cpuidle_multiplier);
@@ -687,8 +650,7 @@ static void usecase_update_user_config(void)
 
 	mutex_lock(&usecase_mutex);
 
-	user_conf->max_freq = 0;
-	user_conf->min_freq = 0;
+	user_conf->min_arm_opp = 25;
 	user_conf->cpuidle_multiplier = 0;
 	user_conf->second_cpu_online = false;
 	user_conf->l2_prefetch_en = false;
@@ -702,11 +664,9 @@ static void usecase_update_user_config(void)
 
 		config_enable = true;
 
-		if (usecase_conf[i].max_freq > user_conf->max_freq)
-			user_conf->max_freq = usecase_conf[i].max_freq;
-		/* It's the highest min freq requirement that should be used */
-		if (usecase_conf[i].min_freq > user_conf->min_freq)
-			user_conf->min_freq = usecase_conf[i].min_freq;
+		/* It's the highest arm opp requirement that should be used */
+		if (usecase_conf[i].min_arm_opp > user_conf->min_arm_opp)
+			user_conf->min_arm_opp = usecase_conf[i].min_arm_opp;
 
 		if (usecase_conf[i].cpuidle_multiplier >
 					user_conf->cpuidle_multiplier)
@@ -761,15 +721,13 @@ static ssize_t show_current(struct sysdev_class *class,
 	enum ux500_uc display_uc = (current_uc == UX500_UC_MAX) ?
 					UX500_UC_NORMAL : current_uc;
 
-	return sprintf(buf, "max_freq: %ld\n"
-		"min_freq: %ld\n"
+	return sprintf(buf, "min_arm_opp: %d\n"
 		"cpuidle_multiplier: %ld\n"
 		"second_cpu_online: %s\n"
 		"l2_prefetch_en: %s\n"
 		"forced_state: %d\n"
 		"vc_override: %s\n",
-		usecase_conf[display_uc].max_freq,
-		usecase_conf[display_uc].min_freq,
+		usecase_conf[display_uc].min_arm_opp,
 		usecase_conf[display_uc].cpuidle_multiplier,
 		usecase_conf[display_uc].second_cpu_online ? "true" : "false",
 		usecase_conf[display_uc].l2_prefetch_en ? "true" : "false",
@@ -931,6 +889,8 @@ static int __init init_usecase_devices(void)
 		goto error2;
 
 	usecase_cpuidle_init();
+
+	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "usecase", 25);
 
 	return 0;
 error2:
