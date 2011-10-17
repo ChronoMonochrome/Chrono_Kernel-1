@@ -205,8 +205,8 @@ static int mcde_platform_set_display_clocks(void)
 static struct mcde_platform_data mcde_pdata = {
 	.num_dsilinks = 2,
 	.syncmux = 0x01,
-	.num_channels = 4,
-	.num_overlays = 6,
+	.num_channels = 2,
+	.num_overlays = 3,
 	.regulator_mcde_epod_id = "vsupply",
 	.regulator_esram_epod_id = "v-esram12",
 	.clock_dsi_id = "hdmi",
