@@ -36,6 +36,12 @@ static struct resource dma40_resources[] = {
 		.start = IRQ_DB8500_DMA,
 		.end   = IRQ_DB8500_DMA,
 		.flags = IORESOURCE_IRQ
+	},
+	[3] = {
+		.start = U8500_DMA_LCLA_BASE,
+		.end   = U8500_DMA_LCLA_BASE + SZ_8K - 1,
+		.flags = IORESOURCE_MEM,
+		.name  = "lcla_esram",
 	}
 };
 
@@ -223,6 +229,7 @@ static struct stedma40_platform_data dma40_plat_data = {
 	.memcpy_conf_log = &dma40_memcpy_conf_log,
 	/* Audio is using physical channel 2 from MMDSP */
 	.disabled_channels = {2, -1},
+	.use_esram_lcla = false,
 };
 
 #ifdef CONFIG_UX500_CONTEXT
