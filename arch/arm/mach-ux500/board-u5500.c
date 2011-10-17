@@ -574,7 +574,7 @@ static void __init u5500_init_machine(void)
 	for (i = 0; i < ARRAY_SIZE(u5500_platform_devices); i++)
 		u5500_platform_devices[i]->dev.parent = parent;
 
-	mop500_wlan_init();
+	u5500_wlan_init();
 
 	u5500_cryp1_hash1_init();
 

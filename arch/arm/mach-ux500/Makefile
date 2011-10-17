@@ -30,7 +30,7 @@ obj-$(CONFIG_MACH_MOP500)	+= board-mop500.o board-mop500-sdi.o \
 obj-$(CONFIG_SENSORS1P_MOP)	+= sensors1p.o
 obj-$(CONFIG_MACH_U5500)	+= board-u5500.o board-u5500-sdi.o \
 				   board-u5500-pins.o \
-				   board-mop500-wlan.o
+				   board-u5500-wlan.o
 obj-$(CONFIG_U5500_MMIO)	+= board-u5500-mmio.o
 obj-$(CONFIG_U8500_MMIO)	+= board-mop500-mmio.o
 obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
