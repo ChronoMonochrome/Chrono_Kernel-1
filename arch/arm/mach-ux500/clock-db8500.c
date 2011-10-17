@@ -38,6 +38,7 @@ static DEFINE_MUTEX(sysclk_mutex);
 static DEFINE_MUTEX(ab_ulpclk_mutex);
 static DEFINE_MUTEX(ab_intclk_mutex);
 static DEFINE_MUTEX(clkout0_mutex);
+static DEFINE_MUTEX(dsi_pll_mutex);
 
 static struct delayed_work sysclk_disable_work;
 
@@ -528,6 +529,30 @@ static DEF_PRCMU_CLK(rngclk, PRCMU_RNGCLK, 19200000);
 static DEF_PRCMU_CLK(uiccclk, PRCMU_UICCCLK, 48000000);
 static DEF_PRCMU_CLK(timclk, PRCMU_TIMCLK, 2400000);
 static DEF_PRCMU_CLK(sdmmcclk, PRCMU_SDMMCCLK, 50000000);
+
+static struct clk dsi_pll = {
+	.name = "dsi_pll",
+	.ops = &prcmu_scalable_clk_ops,
+	.cg_sel = PRCMU_PLLDSI,
+	.parent = &hdmiclk,
+	.mutex = &dsi_pll_mutex,
+};
+
+static struct clk dsi0clk = {
+	.name = "dsi0clk",
+	.ops = &prcmu_scalable_clk_ops,
+	.cg_sel = PRCMU_DSI0CLK,
+	.parent = &dsi_pll,
+	.mutex = &dsi_pll_mutex,
+};
+
+static struct clk dsi1clk = {
+	.name = "dsi1clk",
+	.ops = &prcmu_scalable_clk_ops,
+	.cg_sel = PRCMU_DSI1CLK,
+	.parent = &dsi_pll,
+	.mutex = &dsi_pll_mutex,
+};
 
 static struct clk dsi0escclk = {
 	.name = "dsi0escclk",
