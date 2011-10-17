@@ -26,10 +26,12 @@
 #include "devices-cg2900.h"
 #include "pins-db8500.h"
 #include "pins.h"
+#include "board-mop500.h"
 
 #define CG2900_BT_ENABLE_GPIO		170
 #define CG2900_GBF_ENA_RESET_GPIO	171
 #define WLAN_PMU_EN_GPIO		226
+#define WLAN_PMU_EN_GPIO_U9500		MOP500_AB8500_GPIO(10)
 #define CG2900_BT_CTS_GPIO		0
 
 enum cg2900_gpio_pull_sleep cg2900_sleep_gpio[21] = {
@@ -147,6 +149,12 @@ static struct resource cg2900_uart_resources_u9500[] = {
 		.end = CG2900_GBF_ENA_RESET_GPIO,
 		.flags = IORESOURCE_IO,
 		.name = "gbf_ena_reset",
+	},
+	{
+		.start = WLAN_PMU_EN_GPIO_U9500,
+		.end = WLAN_PMU_EN_GPIO_U9500,
+		.flags = IORESOURCE_IO,
+		.name = "pmu_en",
 	},
 	{
 		.start = CG2900_BT_CTS_GPIO,
