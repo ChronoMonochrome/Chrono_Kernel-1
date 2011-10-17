@@ -28,7 +28,7 @@
 #include <linux/clk.h>
 #include <linux/list.h>
 #include <linux/regulator/consumer.h>
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #include "av8100_regs.h"
 #include <video/av8100.h>
