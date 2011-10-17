@@ -27,6 +27,7 @@ enum ab5500_devid {
 	AB5500_DEVID_CHARGALG,
 	AB5500_DEVID_BTEMP,
 	AB5500_DEVID_TEMPMON,
+	AB5500_DEVID_ACCDET,
 	AB5500_NUM_DEVICES,
 };
 
@@ -155,6 +156,7 @@ struct ab5500_platform_data {
 	bool pm_power_off;
 	struct ab5500_regulator_platform_data *regulator;
 	struct ab5500_usbgpio_platform_data *usb;
+	struct abx500_accdet_platform_data *accdet;
 };
 
 struct ab5500_ponkey_platform_data {
