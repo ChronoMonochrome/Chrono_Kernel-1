@@ -16,7 +16,7 @@
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/mfd/abx500.h>
 #include <linux/regulator/consumer.h>
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <mach/usb.h>
 #include <linux/kernel_stat.h>
 #include <mach/gpio.h>
