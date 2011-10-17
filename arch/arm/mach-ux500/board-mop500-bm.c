@@ -326,6 +326,7 @@ static char *ab8500_btemp_supplied_to[] = {
 
 static char *ab8500_fg_supplied_to[] = {
 	"ab8500_chargalg",
+	"ab8500_usb",
 };
 
 static char *ab8500_chargalg_supplied_to[] = {
