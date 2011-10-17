@@ -17,8 +17,7 @@
 #include <linux/miscdevice.h>
 #include <linux/watchdog.h>
 #include <linux/platform_device.h>
-
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #define WATCHDOG_TIMEOUT 600 /* 10 minutes */
 
