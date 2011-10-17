@@ -19,6 +19,10 @@ dbx500_add_amba_device(struct device *parent, const char *name,
 		       resource_size_t base, int irq, void *pdata,
 		       unsigned int periphid);
 
+extern struct platform_device *
+dbx500_add_platform_device_noirq(const char *name, int id,
+				  resource_size_t base, void *pdata);
+
 struct stm_msp_controller;
 
 static inline struct amba_device *
@@ -89,6 +93,25 @@ static inline struct amba_device *
 dbx500_add_rtc(struct device *parent, resource_size_t base, int irq)
 {
 	return dbx500_add_amba_device(parent, "rtc-pl031", base, irq, NULL, 0);
+}
+
+struct cryp_platform_data;
+
+static inline struct platform_device *
+dbx500_add_cryp1(int id, resource_size_t base, int irq,
+		  struct cryp_platform_data *pdata)
+{
+	return dbx500_add_platform_device_4k1irq("cryp1", id, base, irq,
+						 pdata);
+}
+
+struct hash_platform_data;
+
+static inline struct platform_device *
+dbx500_add_hash1(int id, resource_size_t base,
+		struct hash_platform_data *pdata)
+{
+	return dbx500_add_platform_device_noirq("hash1", id, base, pdata);
 }
 
 struct nmk_gpio_platform_data;

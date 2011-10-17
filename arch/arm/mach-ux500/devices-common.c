@@ -54,6 +54,44 @@ dbx500_add_amba_device(struct device *parent, const char *name,
 	return dev;
 }
 
+struct platform_device *
+dbx500_add_platform_device_4k1irq(const char *name, int id,
+				  resource_size_t base,
+				  int irq, void *pdata)
+{
+	struct resource resources[] = {
+		[0] = {
+			.start	= base,
+			.end	= base + SZ_4K - 1,
+			.flags	= IORESOURCE_MEM,
+		},
+		[1] = {
+			.start	= irq,
+			.end	= irq,
+			.flags	= IORESOURCE_IRQ,
+		}
+	};
+
+	return dbx500_add_platform_device(name, id, pdata, resources,
+					  ARRAY_SIZE(resources));
+}
+
+struct platform_device *
+dbx500_add_platform_device_noirq(const char *name, int id,
+				  resource_size_t base, void *pdata)
+{
+	struct resource resources[] = {
+		[0] = {
+			.start  = base,
+			.end    = base + SZ_4K - 1,
+			.flags  = IORESOURCE_MEM,
+		}
+	};
+
+	return dbx500_add_platform_device(name, id, pdata, resources,
+					  ARRAY_SIZE(resources));
+}
+
 static struct platform_device *
 dbx500_add_gpio(struct device *parent, int id, resource_size_t addr, int irq,
 		struct nmk_gpio_platform_data *pdata)

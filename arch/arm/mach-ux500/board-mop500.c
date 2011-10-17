@@ -58,6 +58,7 @@
 #ifdef CONFIG_U8500_SIM_DETECT
 #include <mach/sim_detect.h>
 #endif
+#include <mach/crypto-ux500.h>
 
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
 #include <plat/ske.h>
@@ -799,6 +800,42 @@ struct platform_device sensors1p_device = {
 };
 #endif
 
+static struct cryp_platform_data u8500_cryp1_platform_data = {
+	.mem_to_engine = {
+		.dir = STEDMA40_MEM_TO_PERIPH,
+		.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
+		.dst_dev_type = DB8500_DMA_DEV48_CAC1_TX,
+		.src_info.data_width = STEDMA40_WORD_WIDTH,
+		.dst_info.data_width = STEDMA40_WORD_WIDTH,
+		.mode = STEDMA40_MODE_LOGICAL,
+		.src_info.psize = STEDMA40_PSIZE_LOG_4,
+		.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+	},
+	.engine_to_mem = {
+		.dir = STEDMA40_PERIPH_TO_MEM,
+		.src_dev_type = DB8500_DMA_DEV48_CAC1_RX,
+		.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
+		.src_info.data_width = STEDMA40_WORD_WIDTH,
+		.dst_info.data_width = STEDMA40_WORD_WIDTH,
+		.mode = STEDMA40_MODE_LOGICAL,
+		.src_info.psize = STEDMA40_PSIZE_LOG_4,
+		.dst_info.psize = STEDMA40_PSIZE_LOG_4,
+	}
+};
+
+static struct hash_platform_data u8500_hash1_platform_data = {
+	.mem_to_engine = {
+		.dir = STEDMA40_MEM_TO_PERIPH,
+		.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
+		.dst_dev_type = DB8500_DMA_DEV50_HAC1_TX,
+		.src_info.data_width = STEDMA40_WORD_WIDTH,
+		.dst_info.data_width = STEDMA40_WORD_WIDTH,
+		.mode = STEDMA40_MODE_LOGICAL,
+		.src_info.psize = STEDMA40_PSIZE_LOG_16,
+		.dst_info.psize = STEDMA40_PSIZE_LOG_16,
+	},
+};
+
 /* add any platform devices here - TODO */
 static struct platform_device *mop500_platform_devs[] __initdata = {
 #ifdef CONFIG_SENSORS1P_MOP
@@ -1036,6 +1073,12 @@ static void __init mop500_uart_init(struct device *parent)
 	db8500_add_uart2(parent, &uart2_plat);
 }
 
+static void __init u8500_cryp1_hash1_init(void)
+{
+	db8500_add_cryp1(&u8500_cryp1_platform_data);
+	db8500_add_hash1(&u8500_hash1_platform_data);
+}
+
 static struct platform_device *snowball_platform_devs[] __initdata = {
 	&ux500_hwmem_device,
 	&snowball_led_dev,
@@ -1075,6 +1118,8 @@ static void __init mop500_init_machine(void)
 	parent = u8500_init_devices();
 
 	mop500_pins_init();
+
+	u8500_cryp1_hash1_init();
 
 	/* FIXME: parent of ab8500 should be prcmu */
 	for (i = 0; i < ARRAY_SIZE(mop500_platform_devs); i++)
@@ -1119,6 +1164,8 @@ ifdef CONFIG_REGULATOR
 
 	snowball_pins_init();
 
+	u8500_cryp1_hash1_init();
+
 	for (i = 0; i < ARRAY_SIZE(snowball_platform_devs); i++)
 		snowball_platform_devs[i]->dev.parent = parent;
 
@@ -1162,6 +1209,8 @@ static void __init hrefv60_init_machine(void)
 	parent = u8500_init_devices();
 
 	hrefv60_pins_init();
+
+	u8500_cryp1_hash1_init();
 
 	for (i = 0; i < ARRAY_SIZE(mop500_platform_devs); i++)
 		mop500_platform_devs[i]->dev.parent = parent;
