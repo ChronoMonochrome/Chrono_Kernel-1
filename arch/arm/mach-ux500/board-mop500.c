@@ -293,6 +293,7 @@ static struct ab8500_platform_data ab8500_platdata = {
 #ifdef CONFIG_PM
        .pm_power_off = true,
 #endif
+	.thermal_time_out = 20, /* seconds */
 };
 
 static struct resource ab8500_resources[] = {
