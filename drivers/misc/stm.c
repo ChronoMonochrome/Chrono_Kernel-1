@@ -73,6 +73,33 @@ static u64 stm_printk_buf[1024/sizeof(u64)];
 static arch_spinlock_t stm_buf_lock =
 		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
 
+static char *mipi60 = "none";
+module_param(mipi60, charp, S_IRUGO);
+MODULE_PARM_DESC(mipi60, "STM Trace to output on probe2 of mipi60 "
+		 "('none' or 'ape' or 'modem')");
+
+static char *mipi34 = "none";
+module_param(mipi34, charp, S_IRUGO);
+MODULE_PARM_DESC(mipi34, "STM Trace to output on mipi34 "
+		 "('none' or 'ape' or 'modem')");
+
+static char *microsd = "none";
+module_param(microsd, charp, S_IRUGO);
+MODULE_PARM_DESC(microsd, "STM Trace to output on SD card connector "
+		 "('none' or 'ape' or 'modem')");
+
+static unsigned int stm_ter;
+module_param(stm_ter, uint, 0);
+MODULE_PARM_DESC(stm_ter, "Value for STM_TER (trace control register). "
+		 "Should be set by user as environment variable stm.stm_ter");
+
+#define IS_APE_ON_MIPI34 (mipi34 && !strcmp(mipi34, "ape"))
+#define IS_APE_ON_MIPI60 (mipi60 && !strcmp(mipi60, "ape"))
+#define IS_APE_ON_MICROSD (microsd && !strcmp(microsd, "ape"))
+#define IS_MODEM_ON_MICROSD (microsd && !strcmp(microsd, "modem"))
+
+static int stm_connection_set(void *data, u64 val);
+
 int stm_alloc_channel(int offset)
 {
 	int channel;
@@ -251,6 +278,7 @@ EXPORT_SYMBOL(stm_trace_buffer_onchannel);
 static int stm_open(struct inode *inode, struct file *file)
 {
 	struct channel_data *channel_data;
+	int retval = 0;
 
 	channel_data = kzalloc(sizeof(struct channel_data), GFP_KERNEL);
 	if (channel_data == NULL)
@@ -260,7 +288,19 @@ static int stm_open(struct inode *inode, struct file *file)
 	channel_data->numero = -1;   /*  Channel not yet allocated */
 	file->private_data = channel_data;
 
-	return 0;
+	/*
+	 * Check if microsd is selected as trace interface
+	 * and enable corresponding pins muxing.
+	 */
+	if (IS_MODEM_ON_MICROSD)
+		retval = stm_connection_set(NULL, STM_STE_MODEM_ON_MICROSD);
+	else if (IS_APE_ON_MICROSD)
+		retval = stm_connection_set(NULL, STM_STE_APE_ON_MICROSD);
+
+	if (retval)
+		pr_alert("stm_open: failed to connect STM output\n");
+
+	return retval;
 }
 
 static int stm_release(struct inode *inode, struct file *file)
@@ -338,6 +378,11 @@ static void stm_enable_src(unsigned int v)
 	cr_val = readl(STM_CR);
 	cr_val &= ~STM_CLOCK_MASK;
 	writel(cr_val|(stm_clockdiv<<STM_CLOCK_SHIFT), STM_CR);
+	/*
+	 * If the kernel argument stm_ter has been set by the boot loader
+	 * all calls to stm_enable_src will be ignored
+	 */
+	v = stm_ter ? stm_ter : v;
 	writel(v, STM_TER);
 	spin_unlock(&lock);
 }
@@ -594,6 +639,13 @@ static int __devinit stm_probe(struct platform_device *pdev)
 	set_bit(CONFIG_STM_TRACE_BPRINTK_CHANNEL, stm.ch_bitmap);
 #endif
 
+	/* Check kernel's environment parameters first */
+	if (IS_APE_ON_MIPI34)
+		stm_connection = STM_STE_APE_ON_MIPI34_NONE_ON_MIPI60;
+	else if (IS_APE_ON_MIPI60)
+		stm_connection = STM_STE_MODEM_ON_MIPI34_APE_ON_MIPI60;
+
+	/* Apply parameters to driver */
 	if (stm.pdata->stm_connection) {
 		retval = stm.pdata->stm_connection(stm_connection);
 		if (retval) {
@@ -661,11 +713,13 @@ static int stm_connection_show(void *data, u64 *val)
 
 static int stm_connection_set(void *data, u64 val)
 {
+	int retval = 0;
+
 	if (stm.pdata->stm_connection) {
 		stm_connection = val;
-		stm.pdata->stm_connection(val);
+		retval = stm.pdata->stm_connection(val);
 	}
-	return 0;
+	return retval;
 }
 
 DEFINE_SIMPLE_ATTRIBUTE(stm_connection_fops, stm_connection_show,
