@@ -98,6 +98,20 @@ static int ux500_pd_runtime_idle(struct device *dev)
 	return pm_runtime_suspend(dev);
 }
 
+static void ux500_pd_disable(struct pm_runtime_data *prd)
+{
+	if (prd && test_bit(BIT_ACTIVE, &prd->flags)) {
+
+		if (prd->pins)
+			ux500_pins_disable(prd->pins);
+
+		if (prd->regulator)
+			ux500_regulator_atomic_disable(prd->regulator);
+
+		clear_bit(BIT_ENABLED, &prd->flags);
+	}
+}
+
 static int ux500_pd_runtime_suspend(struct device *dev)
 {
 	int ret;
@@ -111,18 +125,22 @@ static int ux500_pd_runtime_suspend(struct device *dev)
 	if (ret)
 		return ret;
 
-	if (prd && test_bit(BIT_ACTIVE, &prd->flags)) {
-
-		if (prd->pins)
-			ux500_pins_disable(prd->pins);
-
-		if (prd->regulator)
-			ux500_regulator_atomic_disable(prd->regulator);
-
-		clear_bit(BIT_ENABLED, &prd->flags);
-	}
+	ux500_pd_disable(prd);
 
 	return 0;
+}
+
+static void ux500_pd_enable(struct pm_runtime_data *prd)
+{
+	if (prd && test_bit(BIT_ACTIVE, &prd->flags)) {
+		if (prd->pins)
+			ux500_pins_enable(prd->pins);
+
+		if (prd->regulator)
+			ux500_regulator_atomic_enable(prd->regulator);
+
+		set_bit(BIT_ENABLED, &prd->flags);
+	}
 }
 
 static int ux500_pd_runtime_resume(struct device *dev)
@@ -132,17 +150,8 @@ static int ux500_pd_runtime_resume(struct device *dev)
 	dev_vdbg(dev, "%s()\n", __func__);
 
 	platform_pm_runtime_used(dev, prd);
+	ux500_pd_enable(prd);
 
-	if (prd && test_bit(BIT_ACTIVE, &prd->flags)) {
-		if (prd->pins)
-			ux500_pins_enable(prd->pins);
-
-		if (prd->regulator)
-			ux500_regulator_atomic_enable(prd->regulator);
-
-		set_bit(BIT_ENABLED, &prd->flags);
-
-	}
 	return pm_generic_runtime_resume(dev);
 }
 
@@ -193,8 +202,86 @@ static int ux500_pd_resume_noirq(struct device *dev)
 	return ux500_pd_runtime_resume(dev);
 }
 
+static int ux500_pd_amba_runtime_suspend(struct device *dev)
+{
+	struct pm_runtime_data *prd = __to_prd(dev);
+	int (*callback)(struct device *) = NULL;
+	int ret;
+
+	dev_vdbg(dev, "%s()\n", __func__);
+
+	/*
+	 * Do not bypass AMBA bus runtime functions by calling generic runtime
+	 * directly. A future fix could be to implement a
+	 * "pm_bus_generic_runtime_*" API which we can use instead.
+	 */
+	if (dev->bus && dev->bus->pm)
+		callback = dev->bus->pm->runtime_suspend;
+
+	if (callback)
+		ret = callback(dev);
+	else
+		ret = pm_generic_runtime_suspend(dev);
+
+	if (!ret)
+		ux500_pd_disable(prd);
+
+	return ret;
+}
+
+static int ux500_pd_amba_runtime_resume(struct device *dev)
+{
+	struct pm_runtime_data *prd = __to_prd(dev);
+	int (*callback)(struct device *) = NULL;
+	int ret;
+
+	dev_vdbg(dev, "%s()\n", __func__);
+
+	ux500_pd_enable(prd);
+
+	/*
+	 * Do not bypass AMBA bus runtime functions by calling generic runtime
+	 * directly. A future fix could be to implement a
+	 * "pm_bus_generic_runtime_*" API which we can use instead.
+	 */
+	if (dev->bus && dev->bus->pm)
+		callback = dev->bus->pm->runtime_resume;
+
+	if (callback)
+		ret = callback(dev);
+	else
+		ret = pm_generic_runtime_resume(dev);
+
+	return ret;
+}
+
+static int ux500_pd_amba_runtime_idle(struct device *dev)
+{
+	int (*callback)(struct device *) = NULL;
+	int ret;
+
+	dev_vdbg(dev, "%s()\n", __func__);
+
+	/*
+	 * Do not bypass AMBA bus runtime functions by calling generic runtime
+	 * directly. A future fix could be to implement a
+	 * "pm_bus_generic_runtime_*" API which we can use instead.
+	 */
+	if (dev->bus && dev->bus->pm)
+		callback = dev->bus->pm->runtime_idle;
+
+	if (callback)
+		ret = callback(dev);
+	else
+		ret = pm_generic_runtime_idle(dev);
+
+	return ret;
+}
+
 static int ux500_pd_bus_notify(struct notifier_block *nb,
-			       unsigned long action, void *data)
+				unsigned long action,
+				void *data,
+				bool enable)
 {
 	struct device *dev = data;
 	struct pm_runtime_data *prd;
@@ -206,11 +293,25 @@ static int ux500_pd_bus_notify(struct notifier_block *nb,
 		if (prd) {
 			devres_add(dev, prd);
 			platform_pm_runtime_init(dev, prd);
+			if (enable)
+				ux500_pd_enable(prd);
 		} else
 			dev_err(dev, "unable to alloc memory for runtime pm\n");
 	}
 
 	return 0;
+}
+
+static int ux500_pd_plat_bus_notify(struct notifier_block *nb,
+				    unsigned long action, void *data)
+{
+	return ux500_pd_bus_notify(nb, action, data, false);
+}
+
+static int ux500_pd_amba_bus_notify(struct notifier_block *nb,
+				    unsigned long action, void *data)
+{
+	return ux500_pd_bus_notify(nb, action, data, true);
 }
 
 #else /* CONFIG_PM_RUNTIME */
@@ -282,25 +383,10 @@ static int ux500_pd_bus_notify(struct notifier_block *nb,
 
 struct dev_pm_domain ux500_amba_dev_power_domain = {
 	.ops = {
-		/* USE_AMBA_PM_SLEEP_OPS minus the two we replace */
-		.prepare = amba_pm_prepare,
-		.complete = amba_pm_complete,
-		.suspend = amba_pm_suspend,
-		.resume = amba_pm_resume,
-		.freeze = amba_pm_freeze,
-		.thaw = amba_pm_thaw,
-		.poweroff = amba_pm_poweroff,
-		.restore = amba_pm_restore,
-		.freeze_noirq = amba_pm_freeze_noirq,
-		.thaw_noirq = amba_pm_thaw_noirq,
-		.poweroff_noirq = amba_pm_poweroff_noirq,
-		.restore_noirq = amba_pm_restore_noirq,
-
-		.suspend_noirq		= ux500_pd_suspend_noirq,
-		.resume_noirq		= ux500_pd_resume_noirq,
-		.runtime_idle		= ux500_pd_runtime_idle,
-		.runtime_suspend	= ux500_pd_runtime_suspend,
-		.runtime_resume		= ux500_pd_runtime_resume,
+		USE_AMBA_PM_SLEEP_OPS
+		SET_RUNTIME_PM_OPS(ux500_pd_amba_runtime_suspend,
+				   ux500_pd_amba_runtime_resume,
+				   ux500_pd_amba_runtime_idle)
 	},
 };
 
@@ -329,11 +415,11 @@ struct dev_pm_domain ux500_dev_power_domain = {
 };
 
 static struct notifier_block ux500_pd_platform_notifier = {
-	.notifier_call = ux500_pd_bus_notify,
+	.notifier_call = ux500_pd_plat_bus_notify,
 };
 
 static struct notifier_block ux500_pd_amba_notifier = {
-	.notifier_call = ux500_pd_bus_notify,
+	.notifier_call = ux500_pd_amba_bus_notify,
 };
 
 static int __init ux500_pm_runtime_platform_init(void)
