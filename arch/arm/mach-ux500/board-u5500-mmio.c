@@ -40,7 +40,7 @@ struct mmio_board_data{
  * Fill names of regulators required for powering up the
  * camera sensor in below array
  */
-static char *regulator_names[] = {"v-mmio-camera"};
+static char *regulator_names[] = {"v-mmio-camera", "v-ana"};
 
 static int mmio_clock_init(struct mmio_platform_data *pdata)
 {
@@ -231,6 +231,28 @@ static int mmio_power_enable(struct mmio_platform_data *pdata)
 			goto err_regulator;
 		}
 	}
+
+	err = gpio_request(GPIO_CAMERA_PMIC_EN, "Camera PMIC GPIO");
+	if (err) {
+		dev_err(pdata->dev, "Error %d while requesting"
+				"Camera PMIC GPIO\n",
+				err);
+		return err;
+	}
+
+	err = gpio_direction_output(GPIO_CAMERA_PMIC_EN, 0);
+	if (err) {
+		dev_err(pdata->dev, "Error %d while setting"
+				"Camera PMIC GPIO"
+				"output mode\n", err);
+		return err;
+	}
+
+	if (!(is_s5500_board()))
+		gpio_set_value(GPIO_CAMERA_PMIC_EN, 1);
+	else
+		gpio_set_value(GPIO_CAMERA_PMIC_EN, 0);
+
 	dev_dbg(pdata->dev , "Board %s() Exit\n", __func__);
 	return 0;
 err_regulator:
@@ -251,6 +273,13 @@ static void mmio_power_disable(struct mmio_platform_data *pdata)
 	 */
 	for (i = 0; i < extra->number_of_regulators; i++)
 		regulator_disable(extra->mmio_regulators[i]);
+
+	if (!(is_s5500_board()))
+		gpio_set_value(GPIO_CAMERA_PMIC_EN, 0);
+	else
+		gpio_set_value(GPIO_CAMERA_PMIC_EN, 1);
+
+	gpio_free(GPIO_CAMERA_PMIC_EN);
 }
 
 static int mmio_clock_enable(struct mmio_platform_data *pdata)
