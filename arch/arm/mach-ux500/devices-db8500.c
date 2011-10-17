@@ -19,7 +19,7 @@
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <video/mcde.h>
-#include <mach/prcmu-fw-api.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <mach/ste-dma40-db8500.h>
 #include "pm/pm.h"
 
