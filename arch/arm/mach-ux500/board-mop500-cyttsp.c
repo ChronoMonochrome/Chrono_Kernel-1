@@ -11,8 +11,10 @@
 #include <linux/delay.h>
 #include <linux/amba/pl022.h>
 #include <plat/pincfg.h>
+#include <mach/hardware.h>
+#include <mach/irqs.h>
+#include <mach/irqs-db8500.h>
 #include "include/mach/prcmu-db8500.h"
-
 #include "pins-db8500.h"
 #include "board-mop500.h"
 #include "devices-db8500.h"
