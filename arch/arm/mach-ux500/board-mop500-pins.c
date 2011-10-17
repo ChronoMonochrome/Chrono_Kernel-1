@@ -23,10 +23,10 @@
 
 enum custom_pin_cfg_t {
 	PINS_FOR_DEFAULT,
-	PINS_FOR_U9500_21,
+	PINS_FOR_U9500,
 };
 
-static enum custom_pin_cfg_t pinsfor = PINS_FOR_DEFAULT;
+static enum custom_pin_cfg_t pinsfor;
 
 static pin_cfg_t mop500_pins_common[] = {
 	/* MSP0 */
@@ -94,7 +94,6 @@ static pin_cfg_t mop500_pins_default[] = {
 
 static pin_cfg_t hrefv60_pins[] = {
 	/* WLAN */
-	GPIO4_GPIO		| PIN_INPUT_PULLUP,/* WLAN_IRQ */
 	GPIO85_GPIO		| PIN_OUTPUT_LOW,/* WLAN_ENA */
 
 	/* XENON Flashgun INTERFACE */
@@ -175,9 +174,16 @@ static pin_cfg_t hrefv60_pins[] = {
 	GPIO95_GPIO	| PIN_INPUT_PULLUP,
 };
 
-static pin_cfg_t u9500_21_pins[] = {
+static pin_cfg_t u9500_pins[] = {
 	GPIO4_U1_RXD    | PIN_INPUT_PULLUP,
 	GPIO5_U1_TXD    | PIN_OUTPUT_HIGH,
+	GPIO144_GPIO	| PIN_INPUT_PULLUP,/* WLAN_IRQ */
+	GPIO226_GPIO	| PIN_OUTPUT_HIGH, /* HSI AC_WAKE0 */
+};
+
+static pin_cfg_t u8500_pins[] = {
+	GPIO226_GPIO	| PIN_OUTPUT_LOW, /* WLAN_PMU_EN */
+	GPIO4_GPIO		| PIN_INPUT_PULLUP,/* WLAN_IRQ */
 };
 
 static pin_cfg_t snowball_pins[] = {
@@ -886,11 +892,19 @@ static int __init early_pinsfor(char *p)
 	pinsfor = PINS_FOR_DEFAULT;
 
 	if (strcmp(p, "u9500-21") == 0)
-		pinsfor = PINS_FOR_U9500_21;
+		pinsfor = PINS_FOR_U9500;
 
 	return 0;
 }
 early_param("pinsfor", early_pinsfor);
+
+int pins_for_u9500(void)
+{
+	if (pinsfor == PINS_FOR_U9500)
+		return 1;
+
+	return 0;
+}
 
 void __init mop500_pins_init(void)
 {
@@ -903,11 +917,12 @@ void __init mop500_pins_init(void)
 	ux500_pins_add(mop500_pins, ARRAY_SIZE(mop500_pins));
 
 	switch (pinsfor) {
-	case PINS_FOR_U9500_21:
-		nmk_config_pins(u9500_21_pins, ARRAY_SIZE(u9500_21_pins));
+	case PINS_FOR_U9500:
+		nmk_config_pins(u9500_pins, ARRAY_SIZE(u9500_pins));
 		break;
 
 	case PINS_FOR_DEFAULT:
+		nmk_config_pins(u8500_pins, ARRAY_SIZE(u8500_pins));
 	default:
 		break;
 	}
