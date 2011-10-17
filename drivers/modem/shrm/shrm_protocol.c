@@ -18,7 +18,6 @@
 #include <linux/modem/modem_client.h>
 #include <mach/prcmu.h>
 #include <mach/prcmu-regs.h>
-#include <mach/suspend.h>
 #include <mach/reboot_reasons.h>
 
 #define L2_HEADER_ISI		0x0
@@ -449,9 +448,6 @@ void shm_ca_sleep_req_work(struct work_struct *work)
 
 	hrtimer_start(&timer, ktime_set(0, 10*NSEC_PER_MSEC),
 			HRTIMER_MODE_REL);
-#ifdef CONFIG_UX500_SUSPEND
-	suspend_unblock_sleep();
-#endif
 	atomic_dec(&ac_sleep_disable_count);
 }
 
@@ -559,9 +555,6 @@ static irqreturn_t shrm_prcmu_irq_handler(int irq, void *data)
 
 	switch (irq) {
 	case IRQ_PRCMU_CA_WAKE:
-#ifdef CONFIG_UX500_SUSPEND
-		suspend_block_sleep();
-#endif
 		if (shrm->msr_flag)
 			atomic_set(&ac_sleep_disable_count, 0);
 		atomic_inc(&ac_sleep_disable_count);
