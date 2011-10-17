@@ -101,7 +101,7 @@ static struct platform_device snowball_led_dev = {
 };
 
 static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
-	.gpio_base		= MOP500_AB8500_PIN_GPIO(1),
+	.gpio_base		= AB8500_PIN_GPIO1,
 	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
 	/* config_reg is the initial configuration of ab8500 pins.
 	 * The pins can be configured as GPIO or alt functions based
@@ -143,7 +143,7 @@ static struct abx500_accdet_platform_data ab8500_accdet_pdata = {
 	.btn_keycode = KEY_MEDIA,
 	.accdet1_dbth = ACCDET1_TH_1200mV | ACCDET1_DB_70ms,
 	.accdet2122_th = ACCDET21_TH_1000mV | ACCDET22_TH_1000mV,
-	.video_ctrl_gpio = MOP500_AB8500_GPIO(34),
+	.video_ctrl_gpio = AB8500_PIN_GPIO35,
 };
 #endif
 

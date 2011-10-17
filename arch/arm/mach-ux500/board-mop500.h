@@ -8,6 +8,7 @@
 #define __BOARD_MOP500_H
 
 /* This defines the NOMADIK_NR_GPIO */
+#include <linux/mfd/abx500/ab8500-gpio.h>
 #include <mach/gpio.h>
 
 /* Snowball specific GPIO assignments, this board has no GPIO expander */
