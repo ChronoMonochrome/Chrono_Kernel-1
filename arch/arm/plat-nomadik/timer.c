@@ -197,6 +197,11 @@ void nmdk_clksrc_reset(void)
 	       mtu_base + MTU_CR(0));
 }
 
+struct clock_event_device *nmdk_clkevt_get(void)
+{
+	return &nmdk_clkevt;
+}
+
 void __init nmdk_timer_init(void __iomem *base)
 {
 	unsigned long rate;
