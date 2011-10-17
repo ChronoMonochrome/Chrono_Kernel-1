@@ -20,7 +20,7 @@
 #include <video/mcde.h>
 #include <mach/db5500-regs.h>
 
-#include <mach/prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <mach/pm.h>
 
 #define GPIO_DATA(_name, first, num)					\
