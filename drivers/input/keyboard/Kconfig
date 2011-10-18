@@ -151,6 +151,16 @@ config KEYBOARD_BFIN
 	  To compile this driver as a module, choose M here: the
 	  module will be called bf54x-keys.
 
+config KEYBOARD_DB5500
+	tristate "DB5500 keyboard"
+	depends on UX500_SOC_DB5500
+	help
+	  Say Y here to enable the on-chip keypad controller on the
+	  ST-Ericsson U5500 platform.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called db5500_keypad.
+
 config KEYBOARD_LKKBD
 	tristate "DECstation/VAXstation LK201/LK401 keyboard"
 	select SERIO
