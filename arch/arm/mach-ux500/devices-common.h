@@ -11,6 +11,7 @@
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
 #include <linux/sys_soc.h>
+#include <linux/amba/serial.h>
 #include <plat/i2c.h>
 
 extern struct amba_device *

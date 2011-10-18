@@ -961,6 +961,7 @@ static pin_cfg_t mop500_pins_uart0[] = {
 
 #define PRCC_K_SOFTRST_SET      0x18
 #define PRCC_K_SOFTRST_CLEAR    0x1C
+/* pl011 reset */
 static void ux500_uart0_reset(void)
 {
 	void __iomem *prcc_rst_set, *prcc_rst_clr;
