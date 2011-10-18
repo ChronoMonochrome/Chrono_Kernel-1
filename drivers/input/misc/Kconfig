@@ -22,6 +22,13 @@ config INPUT_88PM860X_ONKEY
 	  To compile this driver as a module, choose M here: the module
 	  will be called 88pm860x_onkey.
 
+config INPUT_AB8500_ACCDET
+       bool "AB8500 AV Accessory detection"
+       depends on AB8500_CORE && AB8500_GPADC && AB8500_GPIO
+       help
+       Say Y here to enable AV accessory detection features for ST-Ericsson's
+       AB8500 Mix-Sig PMIC.
+
 config INPUT_AB8500_PONKEY
 	tristate "AB8500 Pon (PowerOn) Key"
 	depends on AB8500_CORE
