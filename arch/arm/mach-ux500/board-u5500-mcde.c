@@ -24,8 +24,7 @@
 #define DSI_UNIT_INTERVAL_2	0x5
 
 enum {
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
-		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
+#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 	PRIMARY_DISPLAY_ID,
 #endif
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
@@ -77,63 +76,7 @@ static struct mcde_col_transform rgb_2_yCbCr_transform = {
 };
 #endif
 
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
-static struct mcde_port port0 = {
-	.type = MCDE_PORTTYPE_DSI,
-	.mode = MCDE_PORTMODE_CMD,
-	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
-	.ifc = DSI_VIDEO_MODE,
-	.link = 0,
-	.sync_src = MCDE_SYNCSRC_BTA,
-	.phy = {
-		.dsi = {
-			.virt_id = 0,
-			.num_data_lanes = 2,
-			.ui = DSI_UNIT_INTERVAL_0,
-			.clk_cont = false,
-			.data_lanes_swap = false,
-		},
-	},
-};
-
-struct mcde_display_generic_platform_data generic_display0_pdata = {
-	.reset_gpio = 226,
-	.reset_delay = 10,
-	.sleep_out_delay = 140,
-#ifdef CONFIG_REGULATOR
-	.regulator_id = "v-display",
-	.min_supply_voltage = 2500000, /* 2.5V */
-	.max_supply_voltage = 2700000 /* 2.7V */
-#endif
-};
-
-struct mcde_display_device generic_display0 = {
-	.name = "mcde_disp_generic",
-	.id = PRIMARY_DISPLAY_ID,
-	.port = &port0,
-	.chnl_id = MCDE_CHNL_A,
-	.fifo = MCDE_FIFO_A,
-#ifdef CONFIG_MCDE_DISPLAY_PRIMARY_16BPP
-	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
-#else
-	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-#endif
-	.native_x_res = 864,
-	.native_y_res = 480,
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
-	.synchronized_update = true,
-#else
-	.synchronized_update = false,
-#endif
-	/* TODO: Remove rotation buffers once ESRAM driver is completed */
-	.rotbuf1 = U5500_ESRAM_BASE + 0x20000 * 2,
-	.rotbuf2 = U5500_ESRAM_BASE + 0x20000 * 2 + 0x10000,
-	.dev = {
-		.platform_data = &generic_display0_pdata,
-	},
-};
-#endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
-
+#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 static struct mcde_port port1 = {
 	.link = 0,
 };
@@ -166,6 +109,7 @@ struct mcde_display_device sony_acx424akp_display0 = {
 		.platform_data = &sony_acx424akp_display0_pdata,
 	},
 };
+#endif /* CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY */
 
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 static struct mcde_port port2 = {
@@ -237,14 +181,10 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	u16 width, height;
 	u16 virtual_width, virtual_height;
 	u32 rotate = FB_ROTATE_UR;
-	u32 rotate_angle = 0;
 	struct fb_info *fbi;
 #ifdef CONFIG_DISPDEV
 	struct mcde_fb *mfb;
 #endif
-
-	struct mcde_display_sony_acx424akp_platform_data *pdata =
-					ddev->dev.platform_data;
 
 	if (event != MCDE_DSS_EVENT_DISPLAY_REGISTERED)
 		return 0;
@@ -254,33 +194,6 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
 
-	if (pdata->disp_panel == DISPLAY_SONY_ACX424AKP)
-		rotate_angle = 0;
-	else
-		rotate_angle = \
-			CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE;
-
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
-		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
-	if (ddev->id == PRIMARY_DISPLAY_ID) {
-		switch (rotate_angle) {
-		case 0:
-			rotate = FB_ROTATE_UR;
-			break;
-		case 90:
-			rotate = FB_ROTATE_CW;
-			swap(width, height);
-			break;
-		case 180:
-			rotate = FB_ROTATE_UD;
-			break;
-		case 270:
-			rotate = FB_ROTATE_CCW;
-			swap(width, height);
-			break;
-		}
-	}
-#endif
 
 	virtual_width = width;
 	virtual_height = height * 2;
@@ -348,17 +261,6 @@ int __init init_u5500_display_devices(void)
 	ret = mcde_dss_register_notifier(&display_nb);
 	if (ret)
 		pr_warning("Failed to register dss notifier\n");
-
-#ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
-	if (cpu_is_u5500v1()) {
-		if (display_initialized_during_boot)
-			generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
-		ret = mcde_display_device_register(&generic_display0);
-		if (ret)
-			pr_warning("Failed to register generic \
-							display device 0\n");
-	}
-#endif
 
 #ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 	if (cpu_is_u5500v2()) {
