@@ -213,6 +213,14 @@ static int bu21013_enable(struct bu21013_ts_data *pdata)
 	if (pdata->regulator)
 		regulator_enable(pdata->regulator);
 
+	if (pdata->chip->cs_en) {
+		retval = pdata->chip->cs_en(pdata->chip->cs_pin);
+		if (retval < 0) {
+			dev_err(&pdata->client->dev, "enable hw failed\n");
+			return retval;
+		}
+	}
+
 	if (pdata->ext_clk_state)
 		retval = bu21013_ext_clk(pdata, true, true);
 	else
@@ -242,6 +250,8 @@ static void bu21013_disable(struct bu21013_ts_data *pdata)
 	(void) bu21013_ext_clk(pdata, false, false);
 
 	disable_irq(pdata->chip->irq);
+	if (pdata->chip->cs_dis)
+		pdata->chip->cs_dis(pdata->chip->cs_pin);
 	if (pdata->regulator)
 		regulator_disable(pdata->regulator);
 }
