@@ -15,7 +15,10 @@ DOCBOOKS := z8530book.xml mcabook.xml device-drivers.xml \
 	    80211.xml debugobjects.xml sh.xml regulator.xml \
 	    alsa-driver-api.xml writing-an-alsa-driver.xml \
 	    tracepoint.xml drm.xml media_api.xml \
-	    stmpe.xml
+	    stmpe.xml \
+	    touchp.xml tc_keypad.xml \
+	    synaptics_rmi4_touchp.xml db5500_keypad.xml \
+	    ste_ff_vibra.xml
 
 include $(srctree)/Documentation/DocBook/media/Makefile
 
