@@ -449,7 +449,7 @@ static const struct dev_pm_ops stmpe_keypad_dev_pm_ops = {
 static struct platform_driver stmpe_keypad_driver = {
 	.driver.name	= "stmpe-keypad",
 	.driver.owner	= THIS_MODULE,
-#if CONFIG_PM
+#ifdef CONFIG_PM
 	.driver.pm	= &stmpe_keypad_dev_pm_ops,
 #endif
 	.probe		= stmpe_keypad_probe,
