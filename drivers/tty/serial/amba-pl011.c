@@ -1253,7 +1253,7 @@ static irqreturn_t pl011_int(int irq, void *dev_id)
 		do {
 			writew(status & ~(UART011_TXIS|UART011_RTIS|
 					  UART011_RXIS),
-			       uap->port.membase + UART011_ICR);
+				uap->port.membase + UART011_ICR);
 
 			if (status & (UART011_RTIS|UART011_RXIS)) {
 				if (pl011_dma_rx_running(uap))
@@ -1760,8 +1760,6 @@ static struct uart_ops amba_pl011_pops = {
 #endif
 };
 
-static struct uart_amba_port *amba_ports[UART_NR];
-
 #ifdef CONFIG_SERIAL_AMBA_PL011_CONSOLE
 
 static void pl011_console_putchar(struct uart_port *port, int ch)
@@ -2022,7 +2020,12 @@ static int pl011_suspend(struct amba_device *dev, pm_message_t state)
 
 	if (!uap)
 		return -EINVAL;
+#ifdef CONFIG_SERIAL_AMBA_PL011_CLOCK_CONTROL
+    cancel_delayed_work_sync(&uap->clk_off_work);
 
+    if (uap->clk_state == PL011_CLK_OFF)
+       return 0;
+#endif
 	return uart_suspend_port(&amba_reg, &uap->port);
 }
 
@@ -2032,6 +2035,10 @@ static int pl011_resume(struct amba_device *dev)
 
 	if (!uap)
 		return -EINVAL;
+#ifdef CONFIG_SERIAL_AMBA_PL011_CLOCK_CONTROL
+    if (uap->clk_state == PL011_CLK_OFF)
+        return 0;
+#endif
 
 	return uart_resume_port(&amba_reg, &uap->port);
 }
