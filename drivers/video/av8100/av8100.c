@@ -534,16 +534,16 @@ static int adev_to_devnr(struct av8100_device *adev)
 }
 
 #ifdef CONFIG_PM
-static int av8100_suspend(struct i2c_client *i2c_client, pm_message_t state)
+static int av8100_suspend(struct device *dev)
 {
 	int ret = 0;
 	struct av8100_device *adev;
 
-	adev = dev_to_adev(&i2c_client->dev);
+	adev = dev_to_adev(dev);
 	if (!adev)
 		return -EFAULT;
 
-	dev_dbg(adev->dev, "%s\n", __func__);
+	dev_dbg(dev, "%s\n", __func__);
 
 	adev->params.pre_suspend_power =
 		(av8100_status_get().av8100_state > AV8100_OPMODE_SHUTDOWN);
@@ -551,34 +551,34 @@ static int av8100_suspend(struct i2c_client *i2c_client, pm_message_t state)
 	if (adev->params.pre_suspend_power) {
 		ret = av8100_powerdown();
 		if (ret)
-			dev_err(adev->dev, "av8100_powerdown failed\n");
+			dev_err(dev, "av8100_powerdown failed\n");
 	}
 
 	return ret;
 }
 
-static int av8100_resume(struct i2c_client *i2c_client)
+static int av8100_resume(struct device *dev)
 {
 	int ret;
 	u8 hpds = 0;
 	struct av8100_device *adev;
 
-	adev = dev_to_adev(&i2c_client->dev);
+	adev = dev_to_adev(dev);
 	if (!adev)
 		return -EFAULT;
 
-	dev_dbg(adev->dev, "%s\n", __func__);
+	dev_dbg(dev, "%s\n", __func__);
 
 	if (adev->params.pre_suspend_power) {
 		ret = av8100_powerup();
 		if (ret) {
-			dev_err(adev->dev, "av8100_powerup failed\n");
+			dev_err(dev, "av8100_powerup failed\n");
 			return ret;
 		}
 
 		/* Check HDMI plug status */
 		if (av8100_reg_stby_r(NULL, NULL, &hpds, NULL, NULL)) {
-			dev_warn(adev->dev, "av8100_reg_stby_r failed\n");
+			dev_warn(dev, "av8100_reg_stby_r failed\n");
 			goto av8100_resume_end;
 		}
 
@@ -595,18 +595,21 @@ static int av8100_resume(struct i2c_client *i2c_client)
 av8100_resume_end:
 	return 0;
 }
-#else
-#define av8100_suspend NULL
-#define av8100_resume NULL
+
+static const struct dev_pm_ops av8100_dev_pm_ops = {
+	.suspend = av8100_suspend,
+	.resume = av8100_resume,
+};
 #endif
 
 static struct i2c_driver av8100_driver = {
 	.probe	= av8100_probe,
 	.remove = av8100_remove,
-	.suspend = av8100_suspend,
-	.resume = av8100_resume,
 	.driver = {
 		.name	= "av8100",
+#ifdef CONFIG_PM
+		.pm	= &av8100_dev_pm_ops,
+#endif
 	},
 	.id_table	= av8100_id,
 };
