@@ -195,30 +195,29 @@ static int __init performance_register(void)
 	int ret;
 
 #ifdef CONFIG_MMC_BLOCK
-	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "mmc", 25);
+	ret = prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "mmc", 25);
+	if (ret) {
+		pr_err("%s: Failed to add PRCMU req for mmc\n", __func__);
+		goto out;
+	}
 
 	INIT_DELAYED_WORK_DEFERRABLE(&work_mmc, mmc_load);
 
-	ret = schedule_delayed_work(&work_mmc,
+	schedule_delayed_work(&work_mmc,
 				 msecs_to_jiffies(PERF_MMC_PROBE_DELAY));
-	if (ret) {
-		pr_err("ux500: performance: Fail to schedudle mmc work\n");
-		goto out;
-	}
 #endif
 
-	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "wlan", 25);
+	ret = prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "wlan", 25);
+	if (ret) {
+		pr_err("%s: Failed to add PRCMU req for wlan\n", __func__);
+		goto out;
+	}
 
 	INIT_DELAYED_WORK_DEFERRABLE(&work_wlan_workaround,
 				     wlan_load);
 
-	ret = schedule_delayed_work_on(0,
-				       &work_wlan_workaround,
-				       msecs_to_jiffies(WLAN_PROBE_DELAY));
-	if (ret) {
-		pr_err("ux500: performance: Fail to schedudle wlan work\n");
-		goto out;
-	}
+	schedule_delayed_work_on(0, &work_wlan_workaround,
+			       msecs_to_jiffies(WLAN_PROBE_DELAY));
 out:
 	return ret;
 }
