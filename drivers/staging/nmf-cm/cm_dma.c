@@ -94,8 +94,6 @@ int cmdma_setup_relink_area( unsigned int mem_addr,
 
     relink[3] = (((dst_addr >> 16)  & 0xFFFFUL) << 16 ) |
         0x8201UL | ((LOS+1) << 1) | (burst_size<<10);
-
-    (void) dma_map_single(NULL, relink, 16, DMA_TO_DEVICE);
 }
 
 static void cmdma_write_relink_params_per2mem (
@@ -117,8 +115,6 @@ static void cmdma_write_relink_params_per2mem (
 
     relink[3] = (((dst_addr >> 16)  & 0xFFFFUL) << 16 ) |
         0x1200UL | ((LOS+1) << 1) | (burst_size<<10);
-
-    (void) dma_map_single(NULL, relink, 16, DMA_TO_DEVICE);
 }
 
 static int cmdma_write_cyclic_list_mem2per(
@@ -134,7 +130,7 @@ static int cmdma_write_cyclic_list_mem2per(
     j = LOS;
 
     for ( i = 0; i < segments; i++) {
-        relink = phys_to_virt (cmdma_getlcla() + 1024 * CMDMA_LIDX + 8 * j);
+        relink = ioremap_nocache (cmdma_getlcla() + 1024 * CMDMA_LIDX + 8 * j, 4 * sizeof(int));
 
         if (i == (segments-1))
                 j = LOS;
@@ -148,6 +144,8 @@ static int cmdma_write_cyclic_list_mem2per(
             from_addr,
             to_addr,
             0x2);
+
+	iounmap(relink);
 
         from_addr += segmentsize;
 	}
@@ -167,7 +165,7 @@ static int cmdma_write_cyclic_list_per2mem(
     j = LOS;
 
     for ( i = 0; i < segments; i++) {
-        relink = phys_to_virt (cmdma_getlcla() + 1024 * CMDMA_LIDX + 8 * j);
+        relink = ioremap_nocache (cmdma_getlcla() + 1024 * CMDMA_LIDX + 8 * j, 4 * sizeof(int));
 
         if (i == (segments-1))
             j = LOS;
@@ -181,6 +179,8 @@ static int cmdma_write_cyclic_list_per2mem(
             from_addr,
             to_addr,
             0x2);
+
+	iounmap(relink);
 
         to_addr += segmentsize;
     }
