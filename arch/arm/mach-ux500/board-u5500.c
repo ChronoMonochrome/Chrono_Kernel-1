@@ -87,10 +87,12 @@ static struct lm3530_platform_data u5500_als_platform_data = {
 	.pwm_pol_hi = true,
 	.als_avrg_time = LM3530_ALS_AVRG_TIME_512ms,
 	.brt_ramp_law = 1,	/* Linear */
-	.brt_ramp_fall = LM3530_RAMP_TIME_1ms,
-	.brt_ramp_rise = LM3530_RAMP_TIME_1ms,
-	.als1_resistor_sel = LM3530_ALS_IMPD_2_27kOhm,
-	.als2_resistor_sel = LM3530_ALS_IMPD_2_27kOhm,
+	.brt_ramp_fall = LM3530_RAMP_TIME_8s,
+	.brt_ramp_rise = LM3530_RAMP_TIME_8s,
+	.als1_resistor_sel = LM3530_ALS_IMPD_13_53kOhm,
+	.als2_resistor_sel = LM3530_ALS_IMPD_Z,
+	.als_vmin = 730,	/* mV */
+	.als_vmax = 1020,	/* mV */
 	.brt_val = 0x7F,	/* Max brightness */
 };
 
