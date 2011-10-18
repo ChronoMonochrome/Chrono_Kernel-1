@@ -29,13 +29,6 @@ config DISPLAY_GENERIC_DSI_PRIMARY
 	help
 	  Say yes here when using a DSI display
 
-config MCDE_DISPLAY_DPI_PRIMARY
-	bool "DPI display"
-	select MCDE_DISPLAY_DPI
-	depends on MACH_U8500
-	help
-	  Say yes here when using a DPI display
-
 endchoice
 
 choice
