@@ -23,6 +23,7 @@ extern struct platform_device ux500_hwmem_device;
 extern struct amba_device ux500_pl031_device;
 
 extern struct platform_device ux500_wdt_device;
+extern struct platform_device ux500_prcmu_wdt_device;
 extern struct platform_device mloader_fw_device;
 extern struct platform_device u8500_thsens_device;
 

@@ -126,6 +126,7 @@ static struct platform_device db8500_prcmu_device = {
 static struct platform_device *platform_devs[] __initdata = {
 	&u8500_dma40_device,
 	&db8500_pmu_device,
+	&ux500_prcmu_wdt_device,
 	&db8500_prcmu_device,
 };
 
