@@ -1154,6 +1154,8 @@ static int fmd_rds_thread(
 		/* Give 100 ms for context switching */
 		schedule_timeout_interruptible(msecs_to_jiffies(100));
 	}
+	/* Always signal the rds_sem semaphore before exiting */
+	fmd_set_rds_sem();
 	FM_DEBUG_REPORT("fmd_rds_thread Exiting!!!");
 	return 0;
 }
@@ -4667,6 +4669,9 @@ void fmd_stop_rds_thread(void)
 	sema_init(&rds_sem, 0);
 	cb_rds_func = NULL;
 	rds_thread_required = false;
+	/* Wait for RDS thread to exit gracefully */
+	fmd_get_rds_sem();
+
 	if (rds_thread_task)
 		rds_thread_task = NULL;
 }

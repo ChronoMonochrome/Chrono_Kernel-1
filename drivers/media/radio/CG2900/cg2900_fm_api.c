@@ -585,6 +585,24 @@ error:
 }
 
 /**
+ * cg2900_fm_check_rds_status()- Checks whether RDS was On previously
+ *
+ * This method is called on receiving interrupt for Seek Completion,
+ * Scan completion and Block Scan completion. It will check whether RDS
+ * was forcefully disabled before the above operations started and if the
+ * previous RDS state was true, then RDS will be enabled back
+ */
+static void cg2900_fm_check_rds_status(void)
+{
+	FM_INFO_REPORT("cg2900_fm_check_rds_status");
+	if (fm_prev_rds_status) {
+		/* Restart RDS if it was active previously */
+		cg2900_fm_rds_on();
+		fm_prev_rds_status = false;
+	}
+}
+
+/**
  * cg2900_fm_driver_callback()- Callback function indicating the event.
  *
  * This callback function is called on receiving irpt_CommandSucceeded,
@@ -631,6 +649,7 @@ static void cg2900_fm_driver_callback(
 		break;
 	case FMD_EVENT_SEEK_COMPLETED:
 		FM_DEBUG_REPORT("FMD_EVENT_SEEK_COMPLETED");
+		cg2900_fm_check_rds_status();
 		skb = alloc_skb(SKB_FM_INTERRUPT_DATA,
 			GFP_KERNEL);
 		if (!skb) {
@@ -645,6 +664,7 @@ static void cg2900_fm_driver_callback(
 		break;
 	case FMD_EVENT_SCAN_BAND_COMPLETED:
 		FM_DEBUG_REPORT("FMD_EVENT_SCAN_BAND_COMPLETED");
+		cg2900_fm_check_rds_status();
 		skb = alloc_skb(SKB_FM_INTERRUPT_DATA,
 			GFP_KERNEL);
 		if (!skb) {
@@ -659,6 +679,7 @@ static void cg2900_fm_driver_callback(
 		break;
 	case FMD_EVENT_BLOCK_SCAN_COMPLETED:
 		FM_DEBUG_REPORT("FMD_EVENT_BLOCK_SCAN_COMPLETED");
+		cg2900_fm_check_rds_status();
 		skb = alloc_skb(SKB_FM_INTERRUPT_DATA,
 			GFP_KERNEL);
 		if (!skb) {
@@ -830,6 +851,7 @@ int cg2900_fm_init(void)
 	fm_event = CG2900_EVENT_NO_EVENT;
 	fm_state = CG2900_FM_STATE_INITIALIZED;
 	fm_mode = CG2900_FM_IDLE_MODE;
+	fm_prev_rds_status = false;
 
 error:
 	FM_DEBUG_REPORT("cg2900_fm_init: returning %d",
@@ -1473,6 +1495,7 @@ int cg2900_fm_search_up_freq(void)
 	if (0 != result) {
 		FM_ERR_REPORT("cg2900_fm_search_up_freq: "
 			      "Error Code %d", (unsigned int)result);
+		cg2900_fm_check_rds_status();
 		result = -EINVAL;
 		goto error;
 	}
@@ -1513,6 +1536,7 @@ int cg2900_fm_search_down_freq(void)
 	if (0 != result) {
 		FM_ERR_REPORT("cg2900_fm_search_down_freq: "
 			      "Error Code %d", (unsigned int)result);
+		cg2900_fm_check_rds_status();
 		result = -EINVAL;
 		goto error;
 	}
@@ -1553,6 +1577,7 @@ int cg2900_fm_start_band_scan(void)
 	if (0 != result) {
 		FM_ERR_REPORT("cg2900_fm_start_band_scan: "
 			      "Error Code %d", (unsigned int)result);
+		cg2900_fm_check_rds_status();
 		result = -EINVAL;
 		goto error;
 	}
@@ -1685,11 +1710,6 @@ int cg2900_fm_get_scan_result(
 			}
 		}
 	}
-	if (fm_prev_rds_status) {
-		/* Restart RDS if it was active earlier */
-		result = cg2900_fm_rds_on();
-		fm_prev_rds_status = false;
-	}
 
 error:
 	FM_DEBUG_REPORT("cg2900_fm_get_scan_result: returning %d",
@@ -1739,6 +1759,7 @@ int cg2900_fm_start_block_scan(
 	if (0 != result) {
 		FM_ERR_REPORT("cg2900_fm_start_block_scan: "
 			"Error Code %d", (unsigned int)result);
+		cg2900_fm_check_rds_status();
 		result = -EINVAL;
 		goto error;
 	}
@@ -1791,13 +1812,7 @@ int cg2900_fm_get_block_scan_result(
 			    = rssi[5];
 		}
 	}
-	if (CG2900_FM_RX_MODE == fm_mode) {
-		if (fm_prev_rds_status) {
-			/* Restart RDS if it was active earlier*/
-			result = cg2900_fm_rds_on();
-			fm_prev_rds_status = false;
-		}
-	} else if (CG2900_FM_TX_MODE == fm_mode) {
+	if (CG2900_FM_TX_MODE == fm_mode) {
 		FM_DEBUG_REPORT("cg2900_fm_get_block_scan_result:"
 				" Sending Set fmd_tx_set_pa");
 
@@ -2441,7 +2456,12 @@ int cg2900_fm_rds_on(void)
 	int result;
 
 	FM_INFO_REPORT("cg2900_fm_rds_on");
-
+	if (fm_rds_status) {
+		result = 0;
+		FM_DEBUG_REPORT("cg2900_fm_rds_on: rds is on "
+			"return result = %d", result);
+		return result;
+	}
 	if (CG2900_FM_STATE_SWITCHED_ON != fm_state) {
 		FM_ERR_REPORT("cg2900_fm_rds_on: "
 			"Invalid state of FM Driver = %d", fm_state);
@@ -2635,11 +2655,6 @@ int cg2900_fm_get_frequency(
 	*freq = currentFreq * FREQUENCY_CONVERTOR_KHZ_HZ;
 	FM_DEBUG_REPORT("cg2900_fm_get_frequency: "
 			"Current Frequency = %d Hz", *freq);
-	if (fm_prev_rds_status) {
-		/* Restart RDS if it was active earlier */
-		cg2900_fm_rds_on();
-		fm_prev_rds_status = false;
-	}
 
 error:
 	FM_DEBUG_REPORT("cg2900_fm_get_frequency: returning %d",
@@ -2688,18 +2703,17 @@ int cg2900_fm_set_frequency(
 		result = fmd_tx_set_frequency(
 				new_freq / FREQUENCY_CONVERTOR_KHZ_HZ);
 	}
+	if (fm_prev_rds_status) {
+		/* Restart RDS if it was active earlier */
+		cg2900_fm_rds_on();
+		fm_prev_rds_status = false;
+	}
 	if (result != 0) {
 		FM_ERR_REPORT("cg2900_fm_set_frequency: "
 			      "fmd_rx_set_frequency failed %x",
 			      (unsigned int)result);
 		result = -EINVAL;
 		goto error;
-	} else {
-		if (fm_prev_rds_status) {
-			/* Restart RDS if it was active earlier */
-			cg2900_fm_rds_on();
-			fm_prev_rds_status = false;
-		}
 	}
 
 	if (CG2900_FM_TX_MODE == fm_mode) {
