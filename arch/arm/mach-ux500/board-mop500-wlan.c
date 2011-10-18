@@ -54,6 +54,21 @@ static struct resource cw1200_href60_resources[] = {
 	},
 };
 
+static struct resource cw1200_u9500_resources[] = {
+	{
+		.start = 85,
+		.end = 85,
+		.flags = IORESOURCE_IO,
+		.name = "cw1200_reset",
+	},
+	{
+		.start = NOMADIK_GPIO_TO_IRQ(144),
+		.end = NOMADIK_GPIO_TO_IRQ(144),
+		.flags = IORESOURCE_IRQ,
+		.name = "cw1200_irq",
+	},
+};
+
 static struct cw1200_platform_data cw1200_platform_data = {
 	.clk_ctrl = cw1200_clk_ctrl,
 };
@@ -167,9 +182,10 @@ int __init mop500_wlan_init(void)
 {
 	int ret;
 
-	if (machine_is_u8500() ||
-			machine_is_nomadik() ||
-			machine_is_snowball()) {
+	if (pins_for_u9500()) {
+		cw1200_device.num_resources = ARRAY_SIZE(cw1200_u9500_resources);
+		cw1200_device.resource = cw1200_u9500_resources;
+	} else if (machine_is_u8500() || machine_is_nomadik() || machine_is_snowball()) {
 		cw1200_device.num_resources = ARRAY_SIZE(cw1200_href_resources);
 		cw1200_device.resource = cw1200_href_resources;
 	} else if (machine_is_hrefv60()) {
