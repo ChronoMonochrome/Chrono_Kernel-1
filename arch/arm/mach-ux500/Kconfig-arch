@@ -138,7 +138,7 @@ config DISPLAY_AB8500_TERTIARY
 
 config DISPLAY_AV8100_TERTIARY
 	bool "AV8100 HDMI/CVBS display support"
-	depends on (MACH_U8500_MOP || MACH_U5500)
+	depends on (MACH_U8500 || MACH_U5500)
 	select MCDE_DISPLAY_AV8100
 	help
 	  Say yes here if HDMI output support

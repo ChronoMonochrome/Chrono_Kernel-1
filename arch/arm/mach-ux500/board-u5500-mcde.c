@@ -22,7 +22,7 @@
 #define DSI_UNIT_INTERVAL_2	0x5
 
 #define PRIMARY_DISPLAY_ID	0
-#define TERTIARY_DISPLAY_ID	1
+#define AV8100_DISPLAY_ID	2
 
 #ifdef CONFIG_FB_MCDE
 
@@ -63,7 +63,8 @@ static struct mcde_port port0 = {
 	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
 	.ifc = DSI_VIDEO_MODE,
 	.link = 0,
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) &&	\
+			defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
 	.sync_src = MCDE_SYNCSRC_OFF,
 	.update_auto_trig = true,
 #else
@@ -169,7 +170,7 @@ static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 
 static struct mcde_display_device av8100_hdmi = {
 	.name = "av8100_hdmi",
-	.id = TERTIARY_DISPLAY_ID,
+	.id = AV8100_DISPLAY_ID,
 	.port = &port2,
 	.chnl_id = MCDE_CHNL_B,
 	.fifo = MCDE_FIFO_B,
@@ -235,17 +236,18 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	virtual_width = width;
 	virtual_height = height * 2;
 
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) &&	\
+			defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
 	if (ddev->id == PRIMARY_DISPLAY_ID)
 		virtual_height = height;
 #endif
 
 #ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
-	if (ddev->id == TERTIARY_DISPLAY_ID)
+	if (ddev->id == AV8100_DISPLAY_ID)
 		virtual_height = height * 3;
 #endif
 
-	if (ddev->id == TERTIARY_DISPLAY_ID) {
+	if (ddev->id == AV8100_DISPLAY_ID) {
 #ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
 		hdmi_fb_onoff(ddev, 1, 0, 0);
 #endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
@@ -283,7 +285,8 @@ static struct notifier_block display_nb = {
 * The main display will not be updated if startup graphics is displayed
 * from u-boot.
 */
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) &&	\
+			defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
 static int framebuffer_postregistered_callback(struct notifier_block *nb,
 	unsigned long event, void *data)
 {

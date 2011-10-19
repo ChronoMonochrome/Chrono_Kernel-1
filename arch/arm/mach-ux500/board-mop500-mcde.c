@@ -29,10 +29,6 @@
 #define DSI_UNIT_INTERVAL_1	0x9
 #define DSI_UNIT_INTERVAL_2	0x5
 
-#define PRIMARY_DISPLAY_ID	0
-#define SECONDARY_DISPLAY_ID	1
-#define TERTIARY_DISPLAY_ID	2
-
 #ifdef CONFIG_FB_MCDE
 
 /* The initialization of hdmi disp driver must be delayed in order to
@@ -42,7 +38,13 @@ static struct delayed_work work_dispreg_hdmi;
 #define DISPREG_HDMI_DELAY 6000
 #endif
 
-#define MCDE_NR_OF_DISPLAYS 3
+enum {
+	PRIMARY_DISPLAY_ID,
+	SECONDARY_DISPLAY_ID,
+	AV8100_DISPLAY_ID,
+	AB8500_DISPLAY_ID,
+	MCDE_NR_OF_DISPLAYS
+};
 static int display_initialized_during_boot;
 
 static int __init startup_graphics_setup(char *str)
@@ -327,7 +329,7 @@ failed:
 
 struct mcde_display_device tvout_ab8500_display = {
 	.name = "mcde_tv_ab8500",
-	.id = TERTIARY_DISPLAY_ID,
+	.id = AB8500_DISPLAY_ID,
 	.port = &port_tvout1,
 	.chnl_id = MCDE_CHNL_B,
 	.fifo = MCDE_FIFO_B,
@@ -399,7 +401,7 @@ static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 
 static struct mcde_display_device av8100_hdmi = {
 	.name = "av8100_hdmi",
-	.id = TERTIARY_DISPLAY_ID,
+	.id = AV8100_DISPLAY_ID,
 	.port = &port2,
 	.chnl_id = MCDE_CHNL_B,
 	.fifo = MCDE_FIFO_B,
@@ -465,22 +467,24 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	virtual_width = width;
 	virtual_height = height * 2;
 
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) &&	\
+			defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_AUTO_SYNC)
 	if (ddev->id == PRIMARY_DISPLAY_ID)
 		virtual_height = height;
 #endif
 
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY_AUTO_SYNC
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_SECONDARY) &&	\
+			defined(CONFIG_DISPLAY_GENERIC_DSI_SECONDARY_AUTO_SYNC)
 	if (ddev->id == SECONDARY_DISPLAY_ID)
 		virtual_height = height;
 #endif
 
 #ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
-	if (ddev->id == TERTIARY_DISPLAY_ID)
+	if (ddev->id == AV8100_DISPLAY_ID)
 		virtual_height = height * 3;
 #endif
 
-	if (ddev->id == TERTIARY_DISPLAY_ID) {
+	if (ddev->id == AV8100_DISPLAY_ID) {
 #ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
 		hdmi_fb_onoff(ddev, 1, 0, 0);
 #endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
