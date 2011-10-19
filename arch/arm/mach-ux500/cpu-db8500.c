@@ -185,6 +185,10 @@ struct device * __init u8500_init_devices(void)
 	struct device *parent;
 	int i;
 
+#ifdef CONFIG_STM_TRACE
+	/* Early init for STM tracing */
+	platform_device_register(&u8500_stm_device);
+#endif
 	parent = db8500_soc_device_init();
 
 	db8500_dma_init();

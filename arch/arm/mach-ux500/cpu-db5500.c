@@ -279,6 +279,10 @@ struct device * __init u5500_init_devices(void)
 	struct device *parent;
 	int i;
 
+#ifdef CONFIG_STM_TRACE
+	/* Early init for STM tracing */
+	/* platform_device_register(&u5500_stm_device); */
+#endif
 	parent = db5500_soc_device_init();
 
 	db5500_add_gpios(parent);
