@@ -2196,6 +2196,13 @@ static struct console amba_console = {
 	.data		= &amba_reg,
 };
 
+static int __init pl011_console_init(void)
+{
+	register_console(&amba_console);
+	return 0;
+}
+console_initcall(pl011_console_init);
+
 #define AMBA_CONSOLE	(&amba_console)
 #else
 #define AMBA_CONSOLE	NULL
