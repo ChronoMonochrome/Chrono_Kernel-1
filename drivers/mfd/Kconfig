@@ -710,7 +710,7 @@ config AB8500_CORE
 
 config AB8500_I2C_CORE
 	bool "AB8500 register access via PRCMU I2C"
-	depends on AB8500_CORE && MFD_DB8500_PRCMU
+	depends on AB8500_CORE
 	default y
 	help
 	  This enables register access to the AB8500 chip via PRCMU I2C.
