@@ -191,6 +191,7 @@ struct av8100_params {
 	bool regulator_requested;
 	bool pre_suspend_power;
 	bool ints_enabled;
+	bool irq_requested;
 };
 
 /**
@@ -1076,6 +1077,8 @@ static int av8100_params_init(struct av8100_device *adev)
 {
 	dev_dbg(adev->dev, "%s\n", __func__);
 
+	memset(&adev->params, 0, sizeof(struct av8100_params));
+
 	adev->params.denc_off_time = AV8100_DENC_OFF_TIME;
 	adev->params.hdmi_off_time = AV8100_HDMI_OFF_TIME;
 	adev->params.on_time = AV8100_ON_TIME;
@@ -1085,12 +1088,6 @@ static int av8100_params_init(struct av8100_device *adev)
 	adev->params.hdcpm = AV8100_GENERAL_INTERRUPT_MASK_HDCPM_HIGH;
 	adev->params.cecm = AV8100_GENERAL_INTERRUPT_MASK_CECM_HIGH;
 	adev->params.uovbm = AV8100_GENERAL_INTERRUPT_MASK_UOVBM_HIGH;
-
-	adev->params.plug_state = AV8100_UNPLUGGED;
-	adev->params.inputclk = NULL;
-	adev->params.inputclk_requested = false;
-	adev->params.opp_requested = false;
-	adev->params.regulator_requested = false;
 
 	return 0;
 }
@@ -2053,7 +2050,15 @@ static int av8100_powerup1(struct av8100_device *adev)
 		break;
 	}
 
-	return 0;
+	retval = request_irq(pdata->irq, av8100_intr_handler,
+			IRQF_TRIGGER_RISING, "av8100", adev);
+	if (retval == 0)
+		adev->params.irq_requested = true;
+	else
+		dev_err(adev->dev, "request_irq %d failed %d\n",
+				pdata->irq, retval);
+
+	return retval;
 
 av8100_powerup1_err:
 	av8100_powerdown();
@@ -2231,6 +2236,10 @@ int av8100_powerdown(void)
 
 	av8100_disable_interrupt();
 
+	if (adev->params.irq_requested)
+		free_irq(pdata->irq, adev);
+	adev->params.irq_requested = false;
+
 	if (pdata->alt_powerupseq) {
 		retval = av8100_reg_stby_pend_int_w(
 				AV8100_STANDBY_PENDING_INTERRUPT_HPDI_LOW,
@@ -2258,6 +2267,10 @@ int av8100_powerdown(void)
 		adev->params.inputclk_requested = false;
 	}
 
+	av8100_set_state(adev, AV8100_OPMODE_SHUTDOWN);
+
+	gpio_set_value_cansleep(pdata->reset, 0);
+
 	/* Regulator disable */
 	if ((adev->params.regulator_pwr) &&
 			(adev->params.regulator_requested)) {
@@ -2266,12 +2279,8 @@ int av8100_powerdown(void)
 		adev->params.regulator_requested = false;
 	}
 
-	gpio_set_value_cansleep(pdata->reset, 0);
-
 	if (pdata->alt_powerupseq)
 		mdelay(AV8100_WAITTIME_5MS);
-
-	av8100_set_state(adev, AV8100_OPMODE_SHUTDOWN);
 
 av8100_powerdown_end:
 	return retval;
@@ -4063,15 +4072,6 @@ static int __devinit av8100_probe(struct i2c_client *i2c_client,
 	i2c_set_clientdata(i2c_client, &adev->config);
 
 	kthread_run(av8100_thread, adev, "av8100_thread");
-
-	ret = request_irq(pdata->irq, av8100_intr_handler,
-			IRQF_TRIGGER_RISING, "av8100", adev);
-	if (ret) {
-		dev_err(dev, "av8100_hw request_irq %d failed %d\n",
-			pdata->irq, ret);
-		gpio_free(pdata->irq);
-		goto err;
-	}
 
 	/* Get regulator resource */
 	if (pdata->regulator_pwr_id) {
