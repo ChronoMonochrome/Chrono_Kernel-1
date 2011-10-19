@@ -17,6 +17,16 @@
 #define db5500_add_i2c3(parent, pdata) \
 	dbx500_add_i2c(parent, 3, U5500_I2C3_BASE, IRQ_DB5500_I2C3, pdata)
 
+struct db5500_keypad_platform_data;
+
+static inline struct platform_device *
+db5500_add_keypad(struct db5500_keypad_platform_data *pdata)
+{
+	return dbx500_add_platform_device_4k1irq("db5500-keypad", -1,
+						 U5500_KEYPAD_BASE,
+						 IRQ_DB5500_KBD, pdata);
+}
+
 #define db5500_add_msp0_spi(parent, pdata) \
 	dbx500_add_msp_spi(parent, "msp0", U5500_MSP0_BASE, \
 			   IRQ_DB5500_MSP0, pdata)

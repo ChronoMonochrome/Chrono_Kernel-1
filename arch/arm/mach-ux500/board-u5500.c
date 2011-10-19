@@ -14,6 +14,7 @@
 #include <linux/i2s/i2s.h>
 #include <linux/led-lm3530.h>
 #include <../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
+#include <linux/input/matrix_keypad.h>
 #include <linux/lsm303dlh.h>
 #include <linux/leds-ab5500.h>
 #include <linux/cyttsp.h>
@@ -33,6 +34,7 @@
 #include <mach/msp.h>
 #include <mach/devices.h>
 #include <mach/setup.h>
+#include <mach/db5500-keypad.h>
 #include <mach/crypto-ux500.h>
 #include <mach/abx500-accdet.h>
 
@@ -620,6 +622,7 @@ static void __init u5500_init_machine(void)
 
 	u5500_wlan_init();
 
+	db5500_add_keypad(&u5500_keypad_board);
 	u5500_cryp1_hash1_init();
 
 #ifdef CONFIG_TOUCHSCREEN_CYTTSP_SPI
