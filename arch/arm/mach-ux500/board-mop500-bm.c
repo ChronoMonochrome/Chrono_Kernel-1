@@ -14,7 +14,7 @@
 #include <linux/mfd/ab8500/bm.h>
 #include "board-mop500-bm.h"
 
-#ifdef AB8500_BATTERY_THERM_ON_BATCTRL
+#ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
 /*
  * These are the defined batteries that uses a NTC and ID resistor placed
  * inside of the battery pack.
@@ -176,7 +176,7 @@ static const struct battery_type bat_type[] = {
 		.v_to_cap_tbl = cap_tbl,
 	},
 
-#ifdef AB8500_BATTERY_THERM_ON_BATCTRL
+#ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
 	{
 		.name = POWER_SUPPLY_TECHNOLOGY_LIPO,
 		.resis_high = 53407,
@@ -390,7 +390,7 @@ struct ab8500_bm_data ab8500_bm_data = {
 	.usb_safety_tmr_h	= 4,
 	.bkup_bat_v		= BUP_VCH_SEL_2P6V,
 	.bkup_bat_i		= BUP_ICH_SEL_150UA,
-#ifdef AB8500_BATTERY_THERM_ON_BATCTRL
+#ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
 	.adc_therm		= ADC_THERM_BATCTRL,
 #else
 	.adc_therm		= ADC_THERM_BATTEMP,
