@@ -20,9 +20,9 @@
 #include <mach/setup.h>
 #include <mach/irqs.h>
 #include <mach/usb.h>
+#include <mach/ste-dma40-db5500.h>
 
 #include "devices-db5500.h"
-#include "ste-dma40-db5500.h"
 
 static struct map_desc u5500_uart_io_desc[] __initdata = {
 	__IO_DEV_DESC(U5500_UART0_BASE, SZ_4K),

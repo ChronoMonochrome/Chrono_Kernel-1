@@ -14,8 +14,7 @@
 #include <plat/ste_dma40.h>
 #include <mach/setup.h>
 #include <mach/hardware.h>
-
-#include "ste-dma40-db5500.h"
+#include <mach/ste-dma40-db5500.h>
 
 static struct resource dma40_resources[] = {
 	[0] = {

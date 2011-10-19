@@ -19,8 +19,7 @@
 #include <mach/setup.h>
 #include <video/mcde.h>
 #include <mach/prcmu-fw-api.h>
-
-#include "ste-dma40-db8500.h"
+#include <mach/ste-dma40-db8500.h>
 
 static struct resource dma40_resources[] = {
 	[0] = {
