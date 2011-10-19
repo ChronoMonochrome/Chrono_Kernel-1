@@ -119,6 +119,97 @@ static const struct file_operations ux500_regulator_power_state_cnt_fops = {
 	.owner = THIS_MODULE,
 };
 
+struct ux500_regulator {
+	char *name;
+	void (*enable)(void);
+	int (*disable)(void);
+};
+static struct ux500_regulator ux500_atomic_regulators[] = {
+	{
+		.name    = "dma40.0",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+	{
+		.name = "ssp0",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+	{
+		.name = "ssp1",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+	{
+		.name = "spi0",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+	{
+		.name = "spi1",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+	{
+		.name = "spi2",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+	{
+		.name = "spi3",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+	{
+		.name = "cryp1",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+	{
+		.name = "hash1",
+		.enable  = power_state_active_enable,
+		.disable = power_state_active_disable,
+	},
+};
+
+struct ux500_regulator *__must_check ux500_regulator_get(struct device *dev)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(ux500_atomic_regulators); i++) {
+		if (!strcmp(dev_name(dev), ux500_atomic_regulators[i].name))
+			return &ux500_atomic_regulators[i];
+	}
+
+	return  ERR_PTR(-EINVAL);
+}
+EXPORT_SYMBOL_GPL(ux500_regulator_get);
+
+int ux500_regulator_atomic_enable(struct ux500_regulator *regulator)
+{
+	if (regulator) {
+		regulator->enable();
+		return 0;
+	}
+	return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(ux500_regulator_atomic_enable);
+
+int ux500_regulator_atomic_disable(struct ux500_regulator *regulator)
+{
+	if (regulator)
+		return regulator->disable();
+	else
+		return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(ux500_regulator_atomic_disable);
+
+void ux500_regulator_put(struct ux500_regulator *regulator)
+{
+	/* Here for symetric reasons and for possible future use */
+}
+EXPORT_SYMBOL_GPL(ux500_regulator_put);
+
 static int ux500_regulator_status_print(struct seq_file *s, void *p)
 {
 	struct device *dev = s->private;

@@ -11,6 +11,8 @@
 #ifndef __DB5500_REGULATOR_H__
 #define __DB5500_REGULATOR_H__
 
+#include <linux/regulator/dbx500-prcmu.h>
+
 /* Number of DB5500 regulators and regulator enumeration */
 enum db5500_regulator_id {
 	DB5500_REGULATOR_VAPE,
