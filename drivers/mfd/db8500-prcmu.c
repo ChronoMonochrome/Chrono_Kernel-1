@@ -35,6 +35,7 @@
 #include <mach/irqs.h>
 #include <mach/db8500-regs.h>
 #include <mach/id.h>
+#include <mach/prcmu-debug.h>
 #include "dbx500-prcmu-regs.h"
 
 /* Offset for the firmware version within the TCPM */
