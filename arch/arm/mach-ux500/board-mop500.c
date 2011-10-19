@@ -61,6 +61,7 @@
 #include <mach/sim_detect.h>
 #endif
 #include <mach/crypto-ux500.h>
+#include <video/av8100.h>
 
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
 #include <plat/ske.h>
@@ -574,6 +575,10 @@ static struct i2c_board_info __initdata mop500_i2c0_devices[] = {
 		I2C_BOARD_INFO("tc3589x", 0x42),
 		.irq		= NOMADIK_GPIO_TO_IRQ(217),
 		.platform_data  = &mop500_tc35892_data,
+	},
+	{
+		I2C_BOARD_INFO("av8100", 0x70),
+		.platform_data = &av8100_plat_data,
 	},
 	/* I2C0 devices only available prior to HREFv60 */
 };

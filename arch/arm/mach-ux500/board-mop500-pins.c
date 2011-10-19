@@ -41,6 +41,9 @@ static pin_cfg_t mop500_pins_common[] = {
 	GPIO195_MSP2_TFS,
 	GPIO196_MSP2_RXD | PIN_OUTPUT_LOW,
 
+	/* LCD TE0 */
+	GPIO68_LCD_VSI0	| PIN_INPUT_PULLUP,
+
 	/* Touch screen INTERFACE */
 	GPIO84_GPIO	| PIN_INPUT_PULLUP, /* TOUCH_INT1 */
 
@@ -116,7 +119,7 @@ static pin_cfg_t hrefv60_pins[] = {
 	GPIO32_GPIO | PIN_INPUT_PULLDOWN, /* Magnetometer DRDY */
 
 	/* Display Interface */
-	GPIO65_GPIO		| PIN_OUTPUT_LOW, /* DISP1 RST */
+	GPIO65_GPIO		| PIN_OUTPUT_HIGH, /* DISP1 NO RST */
 	GPIO66_GPIO		| PIN_OUTPUT_LOW, /* DISP2 RST */
 
 	/* Touch screen INTERFACE */
