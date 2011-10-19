@@ -213,7 +213,7 @@ static void ux500_suspend_wake(void)
 static int ux500_suspend_begin(suspend_state_t state)
 {
 	(void) prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
-					    "suspend", 100);
+					    "suspend", 125);
 	return ux500_suspend_dbg_begin(state);
 }
 
