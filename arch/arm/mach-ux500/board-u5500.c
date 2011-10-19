@@ -14,7 +14,8 @@
 #include <linux/amba/pl022.h>
 #include <linux/i2s/i2s.h>
 #include <linux/led-lm3530.h>
-#include <linux/input/synaptics_i2c_rmi4.h>
+#include <../../../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
+#include <linux/lsm303dlh.h>
 
 #include <video/av8100.h>
 
@@ -118,6 +119,21 @@ static pin_cfg_t u5500_pins[] = {
 };
 
 /*
+ * LSM303DLH
+ */
+
+static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
+	.name_a = "lsm303dlh.0",
+	.name_m = "lsm303dlh.1",
+	.axis_map_x = 1,
+	.axis_map_y = 0,
+	.axis_map_z = 2,
+	.negative_x = 1,
+	.negative_y = 1,
+	.negative_z = 1,
+};
+
+/*
  * Touchscreen
  */
 static struct synaptics_rmi4_platform_data rmi4_i2c_platformdata = {
@@ -200,6 +216,16 @@ static struct i2c_board_info __initdata u5500_i2c1_devices[] = {
 };
 
 static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
+	{
+		/* LSM303DLH Accelerometer */
+		I2C_BOARD_INFO("lsm303dlh_a", 0x19),
+		.platform_data = &lsm303dlh_pdata,
+	},
+	{
+		/* LSM303DLH Magnetometer */
+		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
+		.platform_data = &lsm303dlh_pdata,
+	},
 	{
 		/* Backlight */
 		I2C_BOARD_INFO("lm3530-led", 0x36),
