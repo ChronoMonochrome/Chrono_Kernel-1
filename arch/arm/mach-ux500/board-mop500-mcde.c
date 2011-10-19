@@ -11,6 +11,7 @@
 #include <linux/gpio.h>
 #include <linux/mfd/ab8500/denc.h>
 #include <linux/workqueue.h>
+#include <asm/mach-types.h>
 #include <video/av8100.h>
 #include <video/mcde_display.h>
 #include <video/mcde_display-generic_dsi.h>
@@ -23,8 +24,6 @@
 #include "pins-db8500.h"
 #include "pins.h"
 #include "board-mop500.h"
-#include "asm/mach-types.h"
-
 
 #define DSI_UNIT_INTERVAL_0	0x9
 #define DSI_UNIT_INTERVAL_1	0x9
@@ -595,11 +594,14 @@ static struct notifier_block framebuffer_nb = {
 
 int __init init_display_devices(void)
 {
-	int ret;
+	int ret = 0;
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	struct i2c_adapter *i2c0;
 #endif
+
+	if (!(machine_is_u8500() || machine_is_snowball()))
+		return ret;
 
 	ret = fb_register_client(&framebuffer_nb);
 	if (ret)
@@ -613,7 +615,7 @@ int __init init_display_devices(void)
 	if (machine_is_hrefv60())
 		mop500_generic_display0_pdata.reset_gpio = HREFV60_DISP1_RST_GPIO;
 	else
-		mop500_generic_display0_pdata.reset_gpio = GPIO_MCDE_RESET;
+		mop500_generic_display0_pdata.reset_gpio = MOP500_DISP1_RST_GPIO;
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	i2c0 = i2c_get_adapter(0);
@@ -643,7 +645,7 @@ int __init init_display_devices(void)
 	if (machine_is_hrefv60())
 		generic_subdisplay_pdata.reset_gpio = HREFV60_DISP2_RST_GPIO;
 	else
-		generic_subdisplay_pdata.reset_gpio = EGPIO_PIN_14;
+		generic_subdisplay_pdata.reset_gpio = MOP500_DISP2_RST_GPIO;
 	ret = mcde_display_device_register(&generic_subdisplay);
 	if (ret)
 		pr_warning("Failed to register generic sub display device\n");

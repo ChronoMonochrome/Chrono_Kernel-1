@@ -10,6 +10,7 @@
 #include <linux/kernel.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
+#include <asm/mach-types.h>
 #include <video/mcde_display.h>
 #include <video/mcde_display-generic_dsi.h>
 #include <video/mcde_fb.h>
@@ -253,7 +254,10 @@ static struct notifier_block framebuffer_nb = {
 
 int __init init_display_devices_u5500(void)
 {
-	int ret;
+	int ret = 0;
+
+	if (!machine_is_u5500())
+		return ret;
 
 	ret = fb_register_client(&framebuffer_nb);
 	if (ret)
