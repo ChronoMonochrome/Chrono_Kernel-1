@@ -67,7 +67,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-struct mcde_display_generic_platform_data generic_display0_pdata = {
+struct mcde_display_generic_platform_data u5500_generic_display0_pdata = {
 	.reset_gpio = 226,
 	.reset_delay = 10,
 	.sleep_out_delay = 140,
@@ -78,7 +78,7 @@ struct mcde_display_generic_platform_data generic_display0_pdata = {
 #endif
 };
 
-struct mcde_display_device generic_display0 = {
+struct mcde_display_device u5500_generic_display0 = {
 	.name = "mcde_disp_generic",
 	.id = PRIMARY_DISPLAY_ID,
 	.port = &port0,
@@ -96,7 +96,7 @@ struct mcde_display_device generic_display0 = {
 	.rotbuf1 = U5500_ESRAM_BASE,
 	.rotbuf2 = U5500_ESRAM_BASE + 0x10000,
 	.dev = {
-		.platform_data = &generic_display0_pdata,
+		.platform_data = &u5500_generic_display0_pdata,
 	},
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
@@ -265,11 +265,11 @@ int __init init_display_devices_u5500(void)
 
 #ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
 	if (display_initialized_during_boot)
-		generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
-	ret = mcde_display_device_register(&generic_display0);
+		u5500_generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
+	ret = mcde_display_device_register(&u5500_generic_display0);
 	if (ret)
 		pr_warning("Failed to register generic display device 0\n");
-	displays[0] = &generic_display0;
+	displays[0] = &u5500_generic_display0;
 #endif
 	return ret;
 }

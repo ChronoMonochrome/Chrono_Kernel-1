@@ -164,7 +164,7 @@ static int __devinit generic_probe(struct mcde_display_device *dev)
 				!pdata->reset_high);
 		}
 		if (pdata->regulator_id) {
-			pdata->regulator = regulator_get(NULL,
+			pdata->regulator = regulator_get(&dev->dev,
 				pdata->regulator_id);
 			if (IS_ERR(pdata->regulator)) {
 				ret = PTR_ERR(pdata->regulator);

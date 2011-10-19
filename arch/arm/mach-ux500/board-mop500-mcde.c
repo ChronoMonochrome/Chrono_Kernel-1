@@ -23,6 +23,7 @@
 #include "pins-db8500.h"
 #include "pins.h"
 #include "board-mop500.h"
+#include "asm/mach-types.h"
 
 
 #define DSI_UNIT_INTERVAL_0	0x9
@@ -91,16 +92,16 @@ static struct mcde_port port0 = {
 	},
 };
 
-struct mcde_display_generic_platform_data generic_display0_pdata = {
+struct mcde_display_generic_platform_data mop500_generic_display0_pdata = {
 	.reset_delay = 1,
 #ifdef CONFIG_REGULATOR
-	.regulator_id = "v-display",
+	.regulator_id = "vaux12v5",
 	.min_supply_voltage = 2500000, /* 2.5V */
 	.max_supply_voltage = 2700000 /* 2.7V */
 #endif
 };
 
-struct mcde_display_device generic_display0 = {
+struct mcde_display_device mop500_generic_display0 = {
 	.name = "mcde_disp_generic",
 	.id = PRIMARY_DISPLAY_ID,
 	.port = &port0,
@@ -118,7 +119,7 @@ struct mcde_display_device generic_display0 = {
 	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,
 	.dev = {
-		.platform_data = &generic_display0_pdata,
+		.platform_data = &mop500_generic_display0_pdata,
 	},
 };
 #endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
@@ -195,7 +196,7 @@ static struct mcde_port port0 = {
 	},
 };
 
-struct mcde_display_dpi_platform_data generic_display0_pdata = {0};
+struct mcde_display_dpi_platform_data mop500_generic_display0_pdata = {0};
 static struct ux500_pins *dpi_pins;
 
 static int dpi_display_platform_enable(struct mcde_display_device *ddev)
@@ -230,7 +231,7 @@ static int dpi_display_platform_disable(struct mcde_display_device *ddev)
 
 }
 
-struct mcde_display_device generic_display0 = {
+struct mcde_display_device mop500_generic_display0 = {
 	.name = "mcde_display_dpi",
 	.id = 0,
 	.port = &port0,
@@ -245,7 +246,7 @@ struct mcde_display_device generic_display0 = {
 	.native_y_res = 480,
 	/* .synchronized_update: Don't care: port is set to update_auto_trig */
 	.dev = {
-		.platform_data = &generic_display0_pdata,
+		.platform_data = &mop500_generic_display0_pdata,
 	},
 	.platform_enable = dpi_display_platform_enable,
 	.platform_disable = dpi_display_platform_disable,
@@ -610,9 +611,9 @@ int __init init_display_devices(void)
 
 #ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
 	if (machine_is_hrefv60())
-		generic_display0_pdata.reset_gpio = HREFV60_DISP1_RST_GPIO;
+		mop500_generic_display0_pdata.reset_gpio = HREFV60_DISP1_RST_GPIO;
 	else
-		generic_display0_pdata.reset_gpio = EGPIO_PIN_15;
+		mop500_generic_display0_pdata.reset_gpio = GPIO_MCDE_RESET;
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	i2c0 = i2c_get_adapter(0);
@@ -626,16 +627,16 @@ int __init init_display_devices(void)
 		i2c_put_adapter(i2c0);
 
 		/* ret == 0 => U8500 UIB connected */
-		generic_display0.synchronized_update = (ret == 0);
+		mop500_generic_display0.synchronized_update = (ret == 0);
 	}
 #endif
 
 	if (display_initialized_during_boot)
-		generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
-	ret = mcde_display_device_register(&generic_display0);
+		mop500_generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
+	ret = mcde_display_device_register(&mop500_generic_display0);
 	if (ret)
 		pr_warning("Failed to register generic display device 0\n");
-	displays[0] = &generic_display0;
+	displays[0] = &mop500_generic_display0;
 #endif
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
