@@ -866,6 +866,7 @@ int prcmu_qos_add_notifier(int prcmu_qos_class,
 			   struct notifier_block *notifier);
 int prcmu_qos_remove_notifier(int prcmu_qos_class,
 			      struct notifier_block *notifier);
+void prcmu_qos_voice_call_override(bool enable);
 
 #else
 
@@ -909,7 +910,7 @@ static inline int prcmu_qos_remove_notifier(int prcmu_qos_class,
 {
 	return 0;
 }
-
+static inline void prcmu_qos_voice_call_override(bool enable) {}
 #endif
 
 #endif /* __MACH_PRCMU_H */

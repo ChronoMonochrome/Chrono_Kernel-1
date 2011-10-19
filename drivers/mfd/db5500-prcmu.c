@@ -28,8 +28,9 @@
 #include <mach/hardware.h>
 #include <mach/irqs.h>
 #include <mach/db5500-regs.h>
-#include "dbx500-prcmu-regs.h"
+#include "db5500-prcmu-regs.h"
 
+#define PRCMU_FW_VERSION_OFFSET 0xA4
 #define PRCM_SW_RST_REASON (tcdm_base + 0xFF8) /* 2 bytes */
 
 #define _PRCM_MB_HEADER (tcdm_base + 0xFE8)
@@ -178,6 +179,14 @@ enum db5500_prcmu_pll {
 	DB5500_NUM_PLL_ID,
 };
 
+enum db5500_prcmu_clk {
+	DB5500_MSP1CLK,
+	DB5500_CDCLK,
+	DB5500_IRDACLK,
+	DB5500_TVCLK,
+	DB5500_NUM_CLK_CLIENTS,
+};
+
 enum on_off_ret {
 	OFF_ST,
 	RET_ST,
@@ -248,9 +257,10 @@ enum db5500_ap_pwr_state {
 #define WAKEUP_BIT_USB BIT(6)
 #define WAKEUP_BIT_ABB BIT(7)
 #define WAKEUP_BIT_LOW_POWER_AUDIO BIT(8)
-#define WAKEUP_BIT_TEMP_SENSOR BIT(9)
+#define WAKEUP_BIT_TEMP_SENSOR_LOW BIT(9)
 #define WAKEUP_BIT_ARM BIT(10)
 #define WAKEUP_BIT_AC_WAKE_ACK BIT(11)
+#define WAKEUP_BIT_TEMP_SENSOR_HIGH BIT(12)
 #define WAKEUP_BIT_MODEM_SW_RESET_REQ BIT(20)
 #define WAKEUP_BIT_GPIO0 BIT(23)
 #define WAKEUP_BIT_GPIO1 BIT(24)
@@ -282,7 +292,8 @@ static u32 prcmu_irq_bit[NUM_DB5500_PRCMU_WAKEUPS] = {
 	IRQ_ENTRY(USB),
 	IRQ_ENTRY(ABB),
 	IRQ_ENTRY(LOW_POWER_AUDIO),
-	IRQ_ENTRY(TEMP_SENSOR),
+	IRQ_ENTRY(TEMP_SENSOR_LOW),
+	IRQ_ENTRY(TEMP_SENSOR_HIGH),
 	IRQ_ENTRY(ARM),
 	IRQ_ENTRY(AC_WAKE_ACK),
 	IRQ_ENTRY(MODEM_SW_RESET_REQ),
@@ -403,6 +414,9 @@ static struct {
 	} ack;
 } mb5_transfer;
 
+/* Spinlocks */
+static DEFINE_SPINLOCK(clkout_lock);
+
 /* PRCMU TCDM base IO address. */
 static __iomem void *tcdm_base;
 
@@ -411,10 +425,17 @@ struct clk_mgt {
 	u32 pllsw;
 };
 
+/* PRCMU Firmware Details */
+static struct {
+	u16 board;
+	u8 fw_version;
+	u8 api_version;
+} prcmu_version;
+
 static DEFINE_SPINLOCK(clk_mgt_lock);
 
 #define CLK_MGT_ENTRY(_name)[PRCMU_##_name] = {	\
-	(PRCM_##_name##_MGT_OFF), 0			\
+	(DB5500_PRCM_##_name##_MGT), 0			\
 }
 static struct clk_mgt clk_mgt[PRCMU_NUM_REG_CLOCKS] = {
 	CLK_MGT_ENTRY(SGACLK),
@@ -422,6 +443,7 @@ static struct clk_mgt clk_mgt[PRCMU_NUM_REG_CLOCKS] = {
 	CLK_MGT_ENTRY(MSP02CLK),
 	CLK_MGT_ENTRY(I2CCLK),
 	CLK_MGT_ENTRY(SDMMCCLK),
+	CLK_MGT_ENTRY(SPARE1CLK),
 	CLK_MGT_ENTRY(PER1CLK),
 	CLK_MGT_ENTRY(PER2CLK),
 	CLK_MGT_ENTRY(PER3CLK),
@@ -448,6 +470,116 @@ bool db5500_prcmu_is_ac_wake_requested(void)
 	return false;
 }
 
+/**
+ * prcmu_config_clkout - Configure one of the programmable clock outputs.
+ * @clkout:	The CLKOUT number (0 or 1).
+ * @source:	Clock source.
+ * @div:	The divider to be applied.
+ *
+ * Configures one of the programmable clock outputs (CLKOUTs).
+ */
+int prcmu_config_clkout(u8 clkout, u8 source, u8 div)
+{
+	static bool configured[2] = {false, false};
+	int r = 0;
+	unsigned long flags;
+	u32 sel_val;
+	u32 div_val;
+	u32 sel_bits;
+	u32 div_bits;
+	u32 sel_mask;
+	u32 div_mask;
+	u8 sel0 = CLKOUT_SEL0_SEL_CLK;
+	u16 sel = 0;
+
+	BUG_ON(clkout > DB5500_CLKOUT1);
+	BUG_ON(source > DB5500_CLKOUT_IRDACLK);
+	BUG_ON(div > 7);
+
+	switch (source) {
+	case DB5500_CLKOUT_REF_CLK_SEL0:
+		sel0 = CLKOUT_SEL0_REF_CLK;
+		break;
+	case DB5500_CLKOUT_RTC_CLK0_SEL0:
+		sel0 = CLKOUT_SEL0_RTC_CLK0;
+		break;
+	case DB5500_CLKOUT_ULP_CLK_SEL0:
+		sel0 = CLKOUT_SEL0_ULP_CLK;
+		break;
+	case DB5500_CLKOUT_STATIC0:
+		sel = CLKOUT_SEL_STATIC0;
+		break;
+	case DB5500_CLKOUT_REFCLK:
+		sel = CLKOUT_SEL_REFCLK;
+		break;
+	case DB5500_CLKOUT_ULPCLK:
+		sel = CLKOUT_SEL_ULPCLK;
+		break;
+	case DB5500_CLKOUT_ARMCLK:
+		sel = CLKOUT_SEL_ARMCLK;
+		break;
+	case DB5500_CLKOUT_SYSACC0CLK:
+		sel = CLKOUT_SEL_SYSACC0CLK;
+		break;
+	case DB5500_CLKOUT_SOC0PLLCLK:
+		sel = CLKOUT_SEL_SOC0PLLCLK;
+		break;
+	case DB5500_CLKOUT_SOC1PLLCLK:
+		sel = CLKOUT_SEL_SOC1PLLCLK;
+		break;
+	case DB5500_CLKOUT_DDRPLLCLK:
+		sel = CLKOUT_SEL_DDRPLLCLK;
+		break;
+	case DB5500_CLKOUT_TVCLK:
+		sel = CLKOUT_SEL_TVCLK;
+		break;
+	case DB5500_CLKOUT_IRDACLK:
+		sel = CLKOUT_SEL_IRDACLK;
+		break;
+	}
+
+	switch (clkout) {
+	case DB5500_CLKOUT0:
+		sel_mask = PRCM_CLKOCR_CLKOUT0_SEL0_MASK |
+			PRCM_CLKOCR_CLKOUT0_SEL_MASK;
+		sel_bits = ((sel0 << PRCM_CLKOCR_CLKOUT0_SEL0_SHIFT) |
+			(sel << PRCM_CLKOCR_CLKOUT0_SEL_SHIFT));
+		div_mask = PRCM_CLKODIV_CLKOUT0_DIV_MASK;
+		div_bits = div << PRCM_CLKODIV_CLKOUT0_DIV_SHIFT;
+		break;
+	case DB5500_CLKOUT1:
+		sel_mask = PRCM_CLKOCR_CLKOUT1_SEL0_MASK |
+			PRCM_CLKOCR_CLKOUT1_SEL_MASK;
+		sel_bits = ((sel0 << PRCM_CLKOCR_CLKOUT1_SEL0_SHIFT) |
+			(sel << PRCM_CLKOCR_CLKOUT1_SEL_SHIFT));
+		div_mask = PRCM_CLKODIV_CLKOUT1_DIV_MASK;
+		div_bits = div << PRCM_CLKODIV_CLKOUT1_DIV_SHIFT;
+		break;
+	}
+
+	spin_lock_irqsave(&clkout_lock, flags);
+
+	if (configured[clkout]) {
+		r = -EINVAL;
+		goto unlock_and_return;
+	}
+
+	sel_val = readl(_PRCMU_BASE + PRCM_CLKOCR);
+	writel((sel_bits | (sel_val & ~sel_mask)),
+		(_PRCMU_BASE + PRCM_CLKOCR));
+
+	div_val = readl(_PRCMU_BASE + PRCM_CLKODIV);
+	writel((div_bits | (div_val & ~div_mask)),
+		(_PRCMU_BASE + PRCM_CLKODIV));
+
+	configured[clkout] = true;
+
+unlock_and_return:
+	spin_unlock_irqrestore(&clkout_lock, flags);
+
+	return r;
+}
+
 static int request_sysclk(bool enable)
 {
 	int r;
@@ -455,7 +587,7 @@ static int request_sysclk(bool enable)
 	r = 0;
 	mutex_lock(&mb3_transfer.sysclk_lock);
 
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(3))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(3))
 		cpu_relax();
 
 	if (enable)
@@ -466,7 +598,7 @@ static int request_sysclk(bool enable)
 	writeb(mb3_transfer.req_st, (PRCM_REQ_MB3_REFCLK_MGT));
 
 	writeb(MB3H_REFCLK_REQUEST, (PRCM_REQ_MB3_HEADER));
-	writel(MBOX_BIT(3), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(3), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 
 	/*
 	 * The firmware only sends an ACK if we want to enable the
@@ -498,9 +630,43 @@ static int request_timclk(bool enable)
 
 	if (!enable)
 		val |= PRCM_TCR_STOP_TIMERS;
-	writel(val, PRCM_TCR);
+	writel(val, _PRCMU_BASE + PRCM_TCR);
 
 	return 0;
+}
+
+static int request_clk(u8 clock, bool enable)
+{
+	int r = 0;
+
+	BUG_ON(clock >= DB5500_NUM_CLK_CLIENTS);
+
+	mutex_lock(&mb2_transfer.lock);
+
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(2))
+		cpu_relax();
+
+	/* fill in mailbox */
+	writeb(clock, PRCM_REQ_MB2_CLK_CLIENT);
+	writeb(enable, PRCM_REQ_MB2_CLK_STATE);
+
+	writeb(MB2H_CLK_REQUEST, PRCM_REQ_MB2_HEADER);
+
+	writel(MBOX_BIT(2), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
+	if (!wait_for_completion_timeout(&mb2_transfer.work,
+		msecs_to_jiffies(500))) {
+		pr_err("prcmu: request_clk() failed.\n");
+		r = -EIO;
+		WARN(1, "Failed in request_clk");
+		goto unlock_and_return;
+	}
+	if (mb2_transfer.ack.status != RC_SUCCESS ||
+		mb2_transfer.ack.header != MB2H_CLK_REQUEST)
+		r = -EIO;
+
+unlock_and_return:
+	mutex_unlock(&mb2_transfer.lock);
+	return r;
 }
 
 static int request_reg_clock(u8 clock, bool enable)
@@ -513,7 +679,7 @@ static int request_reg_clock(u8 clock, bool enable)
 	spin_lock_irqsave(&clk_mgt_lock, flags);
 
 	/* Grab the HW semaphore. */
-	while ((readl(PRCM_SEM) & PRCM_SEM_PRCM_SEM) != 0)
+	while ((readl(_PRCMU_BASE + PRCM_SEM) & PRCM_SEM_PRCM_SEM) != 0)
 		cpu_relax();
 
 	val = readl(_PRCMU_BASE + clk_mgt[clock].offset);
@@ -526,7 +692,7 @@ static int request_reg_clock(u8 clock, bool enable)
 	writel(val, (_PRCMU_BASE + clk_mgt[clock].offset));
 
 	/* Release the HW semaphore. */
-	writel(0, PRCM_SEM);
+	writel(0, _PRCMU_BASE + PRCM_SEM);
 
 	spin_unlock_irqrestore(&clk_mgt_lock, flags);
 
@@ -548,7 +714,7 @@ static int request_pll(u8 pll, bool enable)
 	BUG_ON(pll >= DB5500_NUM_PLL_ID);
 	mutex_lock(&mb2_transfer.lock);
 
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(2))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(2))
 		cpu_relax();
 
 	mb2_transfer.req.pll_st[pll] = enable;
@@ -559,7 +725,7 @@ static int request_pll(u8 pll, bool enable)
 
 	writeb(MB2H_PLL_REQUEST, PRCM_REQ_MB2_HEADER);
 
-	writel(MBOX_BIT(2), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(2), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 	if (!wait_for_completion_timeout(&mb2_transfer.work,
 		msecs_to_jiffies(500))) {
 		pr_err("prcmu: set_pll() failed.\n"
@@ -588,7 +754,12 @@ unlock_and_return:
  */
 int db5500_prcmu_request_clock(u8 clock, bool enable)
 {
-	if (clock < PRCMU_NUM_REG_CLOCKS)
+	/* MSP1 & CD clocks are handled by FW */
+	if (clock == PRCMU_MSP1CLK)
+		return request_clk(DB5500_MSP1CLK, enable);
+	else if (clock == PRCMU_CDCLK)
+		return request_clk(DB5500_CDCLK, enable);
+	else if (clock < PRCMU_NUM_REG_CLOCKS)
 		return request_reg_clock(clock, enable);
 	else if (clock == PRCMU_TIMCLK)
 		return request_timclk(enable);
@@ -619,13 +790,13 @@ static void config_wakeups(void)
 	if ((dbb_events == last_dbb_events) && (abb_events == last_abb_events))
 		return;
 
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
 		cpu_relax();
 
 	writel(dbb_events, PRCM_REQ_MB0_WAKEUP_DBB);
 	writel(abb_events, PRCM_REQ_MB0_WAKEUP_ABB);
 	writeb(MB0H_WAKE_UP_CFG, PRCM_REQ_MB0_HEADER);
-	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(0), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 
 	last_dbb_events = dbb_events;
 	last_abb_events = abb_events;
@@ -661,7 +832,7 @@ int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk, bool keep_ap_pll)
 
 	spin_lock_irqsave(&mb0_transfer.lock, flags);
 
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
 		cpu_relax();
 
 	switch (state) {
@@ -684,7 +855,7 @@ int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk, bool keep_ap_pll)
 	writeb((keep_ulp_clk ? 1 : 0), PRCM_REQ_MB0_ULP_CLOCK_STATE);
 
 	writeb(MB0H_PWR_STATE_TRANS, PRCM_REQ_MB0_HEADER);
-	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(0), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 
 unlock_return:
 	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
@@ -756,14 +927,14 @@ int db5500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
 
 	mutex_lock(&mb5_transfer.lock);
 
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(5))
 		cpu_relax();
 	writeb(slave, PRCM_REQ_MB5_I2C_SLAVE);
 	writeb(reg, PRCM_REQ_MB5_I2C_REG);
 	writeb(size, PRCM_REQ_MB5_I2C_SIZE);
 	writeb(MB5H_I2C_READ, PRCM_REQ_MB5_HEADER);
 
-	writel(MBOX_BIT(5), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(5), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb5_transfer.work);
 
 	r = 0;
@@ -797,7 +968,7 @@ int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
 
 	mutex_lock(&mb5_transfer.lock);
 
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(5))
 		cpu_relax();
 	writeb(slave, PRCM_REQ_MB5_I2C_SLAVE);
 	writeb(reg, PRCM_REQ_MB5_I2C_REG);
@@ -805,7 +976,7 @@ int db5500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
 	memcpy_toio(PRCM_REQ_MB5_I2C_DATA, value, size);
 	writeb(MB5H_I2C_WRITE, PRCM_REQ_MB5_HEADER);
 
-	writel(MBOX_BIT(5), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(5), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb5_transfer.work);
 
 	if ((mb5_transfer.ack.header == MB5H_I2C_WRITE) &&
@@ -852,13 +1023,13 @@ int db5500_prcmu_set_arm_opp(u8 opp)
 
 	mutex_lock(&mb1_transfer.lock);
 
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(1))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(1))
 		cpu_relax();
 
 	writeb(MB1H_ARM_OPP, PRCM_REQ_MB1_HEADER);
 
 	writeb(db5500_opp, PRCM_REQ_MB1_ARM_OPP);
-	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(1), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 
 	if (!wait_for_completion_timeout(&mb1_transfer.work,
 		msecs_to_jiffies(500))) {
@@ -885,12 +1056,28 @@ bailout:
  */
 int db5500_prcmu_get_arm_opp(void)
 {
-	return readb(PRCM_ACK_MB1_CURRENT_ARM_OPP);
+	u8 opp = readb(PRCM_ACK_MB1_CURRENT_ARM_OPP);
+
+	switch (opp) {
+	case DB5500_ARM_EXT_OPP:
+		return ARM_EXTCLK;
+	case DB5500_ARM_50_OPP:
+		return ARM_50_OPP;
+	case DB5500_ARM_100_OPP:
+		return ARM_100_OPP;
+	default:
+		pr_err("prcmu: %s() read unknown opp value: %d\n",
+				__func__, opp);
+		return ARM_100_OPP;
+	}
 }
 
 int prcmu_resetout(u8 resoutn, u8 state)
 {
+	int offset;
 	int pin = -1;
+
+	offset = state > 0 ? PRCM_RESOUTN_SET_OFFSET : PRCM_RESOUTN_CLR_OFFSET;
 
 	switch (resoutn) {
 	case 0:
@@ -906,7 +1093,7 @@ int prcmu_resetout(u8 resoutn, u8 state)
 	}
 
 	if (pin > 0)
-		writel(pin, state > 0 ? PRCM_RESOUTN_SET : PRCM_RESOUTN_CLR);
+		writel(pin, _PRCMU_BASE + offset);
 	else
 		return -EINVAL;
 
@@ -918,37 +1105,37 @@ int db5500_prcmu_enable_dsipll(void)
 	int i;
 
 	/* Enable DSIPLL_RESETN resets */
-	writel(PRCMU_RESET_DSIPLL, PRCM_APE_RESETN_CLR);
+	writel(PRCMU_RESET_DSIPLL, _PRCMU_BASE + PRCM_APE_RESETN_CLR);
 	/* Unclamp DSIPLL in/out */
-	writel(PRCMU_UNCLAMP_DSIPLL, PRCM_MMIP_LS_CLAMP_CLR);
+	writel(PRCMU_UNCLAMP_DSIPLL, _PRCMU_BASE + PRCM_MMIP_LS_CLAMP_CLR);
 	/* Set DSI PLL FREQ */
-	writel(PRCMU_PLLDSI_FREQ_SETTING, PRCM_PLLDSI_FREQ);
+	writel(PRCMU_PLLDSI_FREQ_SETTING, _PRCMU_BASE + PRCM_PLLDSI_FREQ);
 	writel(PRCMU_DSI_PLLOUT_SEL_SETTING,
-		PRCM_DSI_PLLOUT_SEL);
+		_PRCMU_BASE + PRCM_DSI_PLLOUT_SEL);
 	/* Enable Escape clocks */
-	writel(PRCMU_ENABLE_ESCAPE_CLOCK_DIV, PRCM_DSITVCLK_DIV);
+	writel(PRCMU_ENABLE_ESCAPE_CLOCK_DIV, _PRCMU_BASE + PRCM_DSITVCLK_DIV);
 
 	/* Start DSI PLL */
-	writel(PRCMU_ENABLE_PLLDSI, PRCM_PLLDSI_ENABLE);
+	writel(PRCMU_ENABLE_PLLDSI, _PRCMU_BASE + PRCM_PLLDSI_ENABLE);
 	/* Reset DSI PLL */
-	writel(PRCMU_DSI_RESET_SW, PRCM_DSI_SW_RESET);
+	writel(PRCMU_DSI_RESET_SW, _PRCMU_BASE + PRCM_DSI_SW_RESET);
 	for (i = 0; i < 10; i++) {
-		if ((readl(PRCM_PLLDSI_LOCKP) &
+		if ((readl(_PRCMU_BASE + PRCM_PLLDSI_LOCKP) &
 			PRCMU_PLLDSI_LOCKP_LOCKED) == PRCMU_PLLDSI_LOCKP_LOCKED)
 			break;
 		udelay(100);
 	}
 	/* Release DSIPLL_RESETN */
-	writel(PRCMU_RESET_DSIPLL, PRCM_APE_RESETN_SET);
+	writel(PRCMU_RESET_DSIPLL, _PRCMU_BASE + PRCM_APE_RESETN_SET);
 	return 0;
 }
 
 int db5500_prcmu_disable_dsipll(void)
 {
 	/* Disable dsi pll */
-	writel(PRCMU_DISABLE_PLLDSI, PRCM_PLLDSI_ENABLE);
+	writel(PRCMU_DISABLE_PLLDSI, _PRCMU_BASE + PRCM_PLLDSI_ENABLE);
 	/* Disable  escapeclock */
-	writel(PRCMU_DISABLE_ESCAPE_CLOCK_DIV, PRCM_DSITVCLK_DIV);
+	writel(PRCMU_DISABLE_ESCAPE_CLOCK_DIV, _PRCMU_BASE + PRCM_DSITVCLK_DIV);
 	return 0;
 }
 
@@ -956,9 +1143,9 @@ int db5500_prcmu_set_display_clocks(void)
 {
 	/* HDMI and TVCLK Should be handled somewhere else */
 	/* PLLDIV=8, PLLSW=2, CLKEN=1 */
-	writel(PRCMU_DSI_CLOCK_SETTING, PRCM_HDMICLK_MGT);
+	writel(PRCMU_DSI_CLOCK_SETTING, _PRCMU_BASE + DB5500_PRCM_HDMICLK_MGT);
 	/* PLLDIV=14, PLLSW=2, CLKEN=1 */
-	writel(PRCMU_DSI_LP_CLOCK_SETTING, PRCM_TVCLK_MGT);
+	writel(PRCMU_DSI_LP_CLOCK_SETTING, _PRCMU_BASE + DB5500_PRCM_TVCLK_MGT);
 	return 0;
 }
 
@@ -971,7 +1158,7 @@ int db5500_prcmu_set_display_clocks(void)
 void db5500_prcmu_system_reset(u16 reset_code)
 {
 	writew(reset_code, PRCM_SW_RST_REASON);
-	writel(1, PRCM_APE_SOFTRST);
+	writel(1, _PRCMU_BASE + PRCM_APE_SOFTRST);
 }
 
 /**
@@ -991,11 +1178,11 @@ static void ack_dbb_wakeup(void)
 
 	spin_lock_irqsave(&mb0_transfer.lock, flags);
 
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
 		cpu_relax();
 
 	writeb(MB0H_RD_WAKE_UP_ACK, PRCM_REQ_MB0_HEADER);
-	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(0), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 
 	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
 }
@@ -1020,7 +1207,7 @@ int db5500_prcmu_set_epod(u16 epod, u8 epod_state)
 	mutex_lock(&mb2_transfer.lock);
 
 	/* wait for mailbox */
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(2))
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(2))
 		cpu_relax();
 
 	/* Retention is allowed only for ESRAM12 */
@@ -1062,7 +1249,7 @@ int db5500_prcmu_set_epod(u16 epod, u8 epod_state)
 
 	writeb(MB2H_EPOD_REQUEST, PRCM_REQ_MB2_HEADER);
 
-	writel(MBOX_BIT(2), PRCM_MBOX_CPU_SET);
+	writel(MBOX_BIT(2), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 
 	if (!wait_for_completion_timeout(&mb2_transfer.work,
 		msecs_to_jiffies(500))) {
@@ -1117,7 +1304,7 @@ static bool read_mailbox_0(void)
 		r = false;
 		break;
 	}
-	writel(MBOX_BIT(0), PRCM_ARM_IT1_CLR);
+	writel(MBOX_BIT(0), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 	return r;
 }
 
@@ -1145,7 +1332,7 @@ static bool read_mailbox_1(void)
 		break;
 	}
 
-	writel(MBOX_BIT(1), PRCM_ARM_IT1_CLR);
+	writel(MBOX_BIT(1), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 
 	if (do_complete)
 		complete(&mb1_transfer.work);
@@ -1170,12 +1357,12 @@ static bool read_mailbox_2(void)
 		mb2_transfer.ack.status = readb(PRCM_ACK_MB2_PLL_STATUS);
 		break;
 	default:
-		writel(MBOX_BIT(2), PRCM_ARM_IT1_CLR);
+		writel(MBOX_BIT(2), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 		pr_err("prcmu: Wrong ACK received for MB2 request \n");
 		return false;
 		break;
 	}
-	writel(MBOX_BIT(2), PRCM_ARM_IT1_CLR);
+	writel(MBOX_BIT(2), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 	complete(&mb2_transfer.work);
 	return false;
 }
@@ -1189,11 +1376,11 @@ static bool read_mailbox_3(void)
 	switch (header) {
 	case MB3H_REFCLK_REQUEST:
 		mb3_transfer.ack.status = readb(PRCM_ACK_MB3_REFCLK_REQ);
-		writel(MBOX_BIT(3), PRCM_ARM_IT1_CLR);
+		writel(MBOX_BIT(3), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 		complete(&mb3_transfer.sysclk_work);
 		break;
 	default:
-		writel(MBOX_BIT(3), PRCM_ARM_IT1_CLR);
+		writel(MBOX_BIT(3), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 		pr_err("prcmu: wrong MB3 header\n");
 		break;
 	}
@@ -1203,7 +1390,7 @@ static bool read_mailbox_3(void)
 
 static bool read_mailbox_4(void)
 {
-	writel(MBOX_BIT(4), PRCM_ARM_IT1_CLR);
+	writel(MBOX_BIT(4), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 	return false;
 }
 
@@ -1224,19 +1411,19 @@ static bool read_mailbox_5(void)
 		print_unknown_header_warning(5, header);
 		break;
 	}
-	writel(MBOX_BIT(5), PRCM_ARM_IT1_CLR);
+	writel(MBOX_BIT(5), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 	return false;
 }
 
 static bool read_mailbox_6(void)
 {
-	writel(MBOX_BIT(6), PRCM_ARM_IT1_CLR);
+	writel(MBOX_BIT(6), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 	return false;
 }
 
 static bool read_mailbox_7(void)
 {
-	writel(MBOX_BIT(7), PRCM_ARM_IT1_CLR);
+	writel(MBOX_BIT(7), _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 	return false;
 }
 
@@ -1257,7 +1444,7 @@ static irqreturn_t prcmu_irq_handler(int irq, void *data)
 	u8 n;
 	irqreturn_t r;
 
-	bits = (readl(PRCM_ARM_IT1_VAL) & ALL_MBOX_BITS);
+	bits = (readl(_PRCMU_BASE + PRCM_ARM_IT1_VAL) & ALL_MBOX_BITS);
 	if (unlikely(!bits))
 		return IRQ_NONE;
 
@@ -1328,6 +1515,24 @@ static struct irq_chip prcmu_irq_chip = {
 void __init db5500_prcmu_early_init(void)
 {
 	unsigned int i;
+	void *tcpm_base = ioremap_nocache(U5500_PRCMU_TCPM_BASE, SZ_4K);
+
+	if (tcpm_base != NULL) {
+		int version_high, version_low;
+
+		version_high = readl(tcpm_base + PRCMU_FW_VERSION_OFFSET);
+		version_low = readl(tcpm_base + PRCMU_FW_VERSION_OFFSET + 4);
+		prcmu_version.board = (version_high >> 24) & 0xFF;
+		prcmu_version.fw_version = version_high & 0xFF;
+		prcmu_version.api_version = version_low & 0xFF;
+
+		pr_info("PRCMU Firmware Version: 0x%x\n",
+			prcmu_version.fw_version);
+		pr_info("PRCMU API Version: 0x%x\n",
+			prcmu_version.api_version);
+
+		iounmap(tcpm_base);
+	}
 
 	tcdm_base = __io_address(U5500_PRCMU_TCDM_BASE);
 	spin_lock_init(&mb0_transfer.lock);
@@ -1368,32 +1573,38 @@ static struct regulator_consumer_supply db5500_vape_consumers[] = {
 	REGULATOR_SUPPLY("vcore", "sdi2"),
 	REGULATOR_SUPPLY("vcore", "sdi3"),
 	REGULATOR_SUPPLY("vcore", "sdi4"),
-	REGULATOR_SUPPLY("vcore", "uart0"),
-	REGULATOR_SUPPLY("vcore", "uart1"),
-	REGULATOR_SUPPLY("vcore", "uart2"),
-	REGULATOR_SUPPLY("vcore", "uart3"),
+	REGULATOR_SUPPLY("v-uart", "uart0"),
+	REGULATOR_SUPPLY("v-uart", "uart1"),
+	REGULATOR_SUPPLY("v-uart", "uart2"),
+	REGULATOR_SUPPLY("v-uart", "uart3"),
+	REGULATOR_SUPPLY("v-ape", "db5500-keypad"),
 };
 
 static struct regulator_consumer_supply db5500_sga_consumers[] = {
+	REGULATOR_SUPPLY("debug", "reg-virt-consumer.0"),
 	REGULATOR_SUPPLY("v-mali", NULL),
 };
 
 static struct regulator_consumer_supply db5500_hva_consumers[] = {
+	REGULATOR_SUPPLY("debug", "reg-virt-consumer.1"),
 	REGULATOR_SUPPLY("v-hva", NULL),
 };
 
 static struct regulator_consumer_supply db5500_sia_consumers[] = {
+	REGULATOR_SUPPLY("debug", "reg-virt-consumer.2"),
 	REGULATOR_SUPPLY("v-sia", "mmio_camera"),
 };
 
 static struct regulator_consumer_supply db5500_disp_consumers[] = {
+	REGULATOR_SUPPLY("debug", "reg-virt-consumer.3"),
 	REGULATOR_SUPPLY("vsupply", "b2r2_bus"),
 	REGULATOR_SUPPLY("vsupply", "mcde"),
 };
 
 static struct regulator_consumer_supply db5500_esram12_consumers[] = {
+	REGULATOR_SUPPLY("debug", "reg-virt-consumer.4"),
 	REGULATOR_SUPPLY("v-esram12", "mcde"),
-	REGULATOR_SUPPLY("esram12", "cm_control"),
+	REGULATOR_SUPPLY("esram12", "hva"),
 };
 
 #define DB5500_REGULATOR_SWITCH(lower, upper)                           \
@@ -1443,7 +1654,7 @@ static int __init db5500_prcmu_probe(struct platform_device *pdev)
 		return -ENODEV;
 
 	/* Clean up the mailbox interrupts after pre-kernel code. */
-	writel(ALL_MBOX_BITS, PRCM_ARM_IT1_CLR);
+	writel(ALL_MBOX_BITS, _PRCMU_BASE + PRCM_ARM_IT1_CLEAR);
 
 	err = request_threaded_irq(IRQ_DB5500_PRCMU1, prcmu_irq_handler,
 		prcmu_irq_thread_fn, IRQF_NO_SUSPEND, "prcmu", NULL);
