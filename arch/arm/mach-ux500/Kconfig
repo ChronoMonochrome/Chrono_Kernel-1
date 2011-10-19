@@ -88,4 +88,5 @@ config U5500_MBOX
 	help
 	  Add support for U5500 mailbox communication with modem side
 
+source "arch/arm/mach-ux500/Kconfig-arch"
 endif

@@ -18,20 +18,22 @@ dbx500_add_amba_device(struct device *parent, const char *name,
 		       resource_size_t base, int irq, void *pdata,
 		       unsigned int periphid);
 
-struct spi_master_cntlr;
+struct stm_msp_controller;
 
 static inline struct amba_device *
 dbx500_add_msp_spi(struct device *parent, const char *name,
 		   resource_size_t base, int irq,
-		   struct spi_master_cntlr *pdata)
+		   struct stm_msp_controller *pdata)
 {
 	return dbx500_add_amba_device(parent, name, base, irq,
 				      pdata, 0);
 }
 
+struct pl022_ssp_controller;
+
 static inline struct amba_device *
 dbx500_add_spi(struct device *parent, const char *name, resource_size_t base,
-	       int irq, struct spi_master_cntlr *pdata,
+	       int irq, struct pl022_ssp_controller *pdata,
 	       u32 periphid)
 {
 	return dbx500_add_amba_device(parent, name, base, irq,
