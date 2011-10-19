@@ -546,10 +546,13 @@ static void update_mcde_registers(void)
 	/* Enable overlay fetch done interrupts */
 	mcde_wfld(MCDE_IMSCOVL, OVLFDIM, 0x3f);
 
-	/* Setup sync pulse length */
+	/* Setup sync pulse length
+	 * Setting VSPMAX=0 disables the filter and VSYNC
+	 * is generated after VSPMIN mcde cycles
+	 */
 	mcde_wreg(MCDE_VSCRC0,
-		MCDE_VSCRC0_VSPMIN(1) |
-		MCDE_VSCRC0_VSPMAX(0xff));
+		MCDE_VSCRC0_VSPMIN(0) |
+		MCDE_VSCRC0_VSPMAX(0));
 	mcde_wreg(MCDE_VSCRC1,
 		MCDE_VSCRC1_VSPMIN(1) |
 		MCDE_VSCRC1_VSPMAX(0xff));
@@ -1938,23 +1941,38 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 	}
 
 	/* Channel */
-	if (port->update_auto_trig && port->type == MCDE_PORTTYPE_DSI) {
-		switch (port->sync_src) {
-		case MCDE_SYNCSRC_TE0:
-			out_synch_src = MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_VSYNC0;
-			src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
-			break;
-		case MCDE_SYNCSRC_OFF:
-			src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
-			break;
-		case MCDE_SYNCSRC_TE1:
-		default:
-			out_synch_src = MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_VSYNC1;
-			src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
-			break;
-		case MCDE_SYNCSRC_TE_POLLING:
-			src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
-			break;
+	if (port->type == MCDE_PORTTYPE_DSI) {
+		if (port->update_auto_trig) {
+			switch (port->sync_src) {
+			case MCDE_SYNCSRC_TE0:
+				out_synch_src =
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_VSYNC0;
+				src_synch =
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
+				break;
+			case MCDE_SYNCSRC_OFF:
+				src_synch =
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
+				break;
+			case MCDE_SYNCSRC_TE1:
+			default:
+				out_synch_src =
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_VSYNC1;
+				src_synch =
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
+				break;
+			case MCDE_SYNCSRC_TE_POLLING:
+				src_synch =
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
+				break;
+			}
+		} else {
+			if (port->sync_src == MCDE_SYNCSRC_TE0) {
+				out_synch_src =
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_VSYNC0;
+				src_synch =
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_OUTPUT;
+			}
 		}
 	} else if (port->type == MCDE_PORTTYPE_DPI) {
 		src_synch = port->update_auto_trig ?
@@ -2722,13 +2740,17 @@ static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
 	/* TODO: look at port sync source and synched_update */
 	if (chnl->regs.synchronized_update &&
 			chnl->power_mode == MCDE_DISPLAY_PM_ON) {
-		if (chnl->port.type == MCDE_PORTTYPE_DSI &&
-			chnl->port.sync_src == MCDE_SYNCSRC_BTA) {
-			if (hardware_version == MCDE_CHIP_VERSION_3_0_8 ||
-				hardware_version == MCDE_CHIP_VERSION_4_0_4)
-				enable_channel(chnl);
-			wait_while_dsi_running(chnl->port.link);
-			dsi_te_request(chnl);
+		if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+			if (chnl->port.sync_src == MCDE_SYNCSRC_BTA) {
+				if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+					enable_channel(chnl);
+				wait_while_dsi_running(chnl->port.link);
+				dsi_te_request(chnl);
+			} else if (chnl->port.sync_src == MCDE_SYNCSRC_TE0) {
+				mcde_wfld(MCDE_CRC, SYCEN0, true);
+				if (hardware_version == MCDE_CHIP_VERSION_3_0_8)
+					enable_channel(chnl);
+			}
 		}
 	} else {
 		do_softwaretrig(chnl);
