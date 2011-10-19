@@ -16,12 +16,14 @@
 
 #include <plat/ste_dma40.h>
 
+#include <mach/devices.h>
 #include <mach/hardware.h>
 #include <mach/setup.h>
+#include <mach/pm.h>
 #include <video/mcde.h>
 #include <linux/mfd/dbx500-prcmu.h>
+#include <mach/hsi.h>
 #include <mach/ste-dma40-db8500.h>
-#include "pm/pm.h"
 
 #include "pins-db8500.h"
 
@@ -291,6 +293,123 @@ struct platform_device u8500_wdt_device = {
 struct platform_device u8500_prcmu_wdt_device = {
 	.name		= "ux500_wdt",
 	.id		= -1,
+};
+
+/*
+ * HSI
+ */
+#define HSIR_OVERRUN(num) {			    \
+	.start  = IRQ_DB8500_HSIR_CH##num##_OVRRUN, \
+	.end    = IRQ_DB8500_HSIR_CH##num##_OVRRUN, \
+	.flags  = IORESOURCE_IRQ,		    \
+	.name   = "hsi_rx_overrun_ch"#num	    \
+}
+
+#define STE_HSI_PORT0_TX_CHANNEL_CFG(n) { \
+       .dir = STEDMA40_MEM_TO_PERIPH, \
+       .high_priority = true, \
+       .mode = STEDMA40_MODE_LOGICAL, \
+       .mode_opt = STEDMA40_LCHAN_SRC_LOG_DST_LOG, \
+       .src_dev_type = STEDMA40_DEV_SRC_MEMORY, \
+       .dst_dev_type = n,\
+       .src_info.big_endian = false,\
+       .src_info.data_width = STEDMA40_WORD_WIDTH,\
+       .dst_info.big_endian = false,\
+       .dst_info.data_width = STEDMA40_WORD_WIDTH,\
+},
+
+#define STE_HSI_PORT0_RX_CHANNEL_CFG(n) { \
+       .dir = STEDMA40_PERIPH_TO_MEM, \
+       .high_priority = true, \
+       .mode = STEDMA40_MODE_LOGICAL, \
+       .mode_opt = STEDMA40_LCHAN_SRC_LOG_DST_LOG, \
+       .src_dev_type = n,\
+       .dst_dev_type = STEDMA40_DEV_DST_MEMORY, \
+       .src_info.big_endian = false,\
+       .src_info.data_width = STEDMA40_WORD_WIDTH,\
+       .dst_info.big_endian = false,\
+       .dst_info.data_width = STEDMA40_WORD_WIDTH,\
+},
+
+static struct resource u8500_hsi_resources[] = {
+       {
+	       .start  = U8500_HSIR_BASE,
+	       .end    = U8500_HSIR_BASE + SZ_4K - 1,
+	       .flags  = IORESOURCE_MEM,
+	       .name   = "hsi_rx_base"
+       },
+       {
+	       .start  = U8500_HSIT_BASE,
+	       .end    = U8500_HSIT_BASE + SZ_4K - 1,
+	       .flags  = IORESOURCE_MEM,
+	       .name   = "hsi_tx_base"
+       },
+       {
+	       .start  = IRQ_DB8500_HSIRD0,
+	       .end    = IRQ_DB8500_HSIRD0,
+	       .flags  = IORESOURCE_IRQ,
+	       .name   = "hsi_rx_irq0"
+       },
+       {
+	       .start  = IRQ_DB8500_HSITD0,
+	       .end    = IRQ_DB8500_HSITD0,
+	       .flags  = IORESOURCE_IRQ,
+	       .name   = "hsi_tx_irq0"
+       },
+       {
+	       .start  = IRQ_DB8500_HSIR_EXCEP,
+	       .end    = IRQ_DB8500_HSIR_EXCEP,
+	       .flags  = IORESOURCE_IRQ,
+	       .name   = "hsi_rx_excep0"
+       },
+       HSIR_OVERRUN(0),
+       HSIR_OVERRUN(1),
+       HSIR_OVERRUN(2),
+       HSIR_OVERRUN(3),
+       HSIR_OVERRUN(4),
+       HSIR_OVERRUN(5),
+       HSIR_OVERRUN(6),
+       HSIR_OVERRUN(7),
+};
+
+#ifdef CONFIG_STE_DMA40
+static struct stedma40_chan_cfg ste_hsi_port0_dma_tx_cfg[] = {
+       STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV20_SLIM0_CH0_TX_HSI_TX_CH0)
+       STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV21_SLIM0_CH1_TX_HSI_TX_CH1)
+       STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV22_SLIM0_CH2_TX_HSI_TX_CH2)
+       STE_HSI_PORT0_TX_CHANNEL_CFG(DB8500_DMA_DEV23_SLIM0_CH3_TX_HSI_TX_CH3)
+};
+
+static struct stedma40_chan_cfg ste_hsi_port0_dma_rx_cfg[] = {
+       STE_HSI_PORT0_RX_CHANNEL_CFG(DB8500_DMA_DEV20_SLIM0_CH0_RX_HSI_RX_CH0)
+       STE_HSI_PORT0_RX_CHANNEL_CFG(DB8500_DMA_DEV21_SLIM0_CH1_RX_HSI_RX_CH1)
+       STE_HSI_PORT0_RX_CHANNEL_CFG(DB8500_DMA_DEV22_SLIM0_CH2_RX_HSI_RX_CH2)
+       STE_HSI_PORT0_RX_CHANNEL_CFG(DB8500_DMA_DEV23_SLIM0_CH3_RX_HSI_RX_CH3)
+};
+#endif
+
+static struct ste_hsi_port_cfg ste_hsi_port0_cfg = {
+#ifdef CONFIG_STE_DMA40
+       .dma_filter = stedma40_filter,
+       .dma_tx_cfg = ste_hsi_port0_dma_tx_cfg,
+       .dma_rx_cfg = ste_hsi_port0_dma_rx_cfg
+#endif
+};
+
+struct ste_hsi_platform_data u8500_hsi_platform_data = {
+       .num_ports = 1,
+       .use_dma = 1,
+       .port_cfg = &ste_hsi_port0_cfg,
+};
+
+struct platform_device u8500_hsi_device = {
+       .dev = {
+		.platform_data = &u8500_hsi_platform_data,
+       },
+       .name = "ste_hsi",
+       .id = 0,
+       .resource = u8500_hsi_resources,
+       .num_resources = ARRAY_SIZE(u8500_hsi_resources)
 };
 
 /*

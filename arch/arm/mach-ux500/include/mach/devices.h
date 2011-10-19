@@ -26,6 +26,7 @@ extern struct platform_device u5500_thsens_device;
 extern struct platform_device u8500_thsens_device;
 extern struct platform_device ux500_ske_keypad_device;
 extern struct platform_device u8500_wdt_device;
+extern struct platform_device u8500_hsi_device;
 extern struct platform_device ux500_mmio_device;
 extern struct platform_device u5500_mmio_device;
 
