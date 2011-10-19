@@ -1,14 +1,13 @@
 /*
  * Cryptographic API.
- *
  * Support for Nomadik hardware crypto engine.
- *
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
+
+ * Copyright (C) ST-Ericsson SA 2010
+ * Author: Shujuan Chen <shujuan.chen@stericsson.com> for ST-Ericsson
+ * Author: Joakim Bech <joakim.xx.bech@stericsson.com> for ST-Ericsson
+ * Author: Berne Hebark <berne.herbark@stericsson.com> for ST-Ericsson.
+ * Author: Niklas Hernaeus <niklas.hernaeus@stericsson.com> for ST-Ericsson.
+ * License terms: GNU General Public License (GPL) version 2
  */
 
 #include <linux/clk.h>
@@ -20,84 +19,52 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
-
 #include <linux/crypto.h>
+#include <linux/regulator/consumer.h>
+#include <linux/bitops.h>
+
 #include <crypto/internal/hash.h>
 #include <crypto/sha.h>
 
-#include <mach/debug.h>
 #include <mach/hardware.h>
 
 #include "hash_alg.h"
 
 #define DRIVER_NAME            "DRIVER HASH"
-/* enables/disables debug msgs */
+/* Enable/Disables debug msgs */
 #define DRIVER_DEBUG            1
 #define DRIVER_DEBUG_PFX        DRIVER_NAME
-#define DRIVER_DBG              KERN_ERR
+#define DRIVER_DBG              KERN_DEBUG
 
 #define MAX_HASH_DIGEST_BYTE_SIZE	32
-#define HASH_BLOCK_BYTE_SIZE		64
 
-#define HASH_ACC_SYNC_CONTROL
-#ifdef HASH_ACC_SYNC_CONTROL
 static struct mutex hash_hw_acc_mutex;
-#endif
 
-int debug;
-static int mode;
-static int contextsaving;
-static struct hash_system_context g_sys_ctx;
+static int debug;
+static struct hash_system_context sys_ctx_g;
+static struct hash_driver_data *internal_drv_data;
 
 /**
  * struct hash_driver_data - IO Base and clock.
- * @base: The IO base for the block
- * @clk: FIXME, add comment
+ * @base: The IO base for the block.
+ * @clk: The clock.
+ * @regulator: The current regulator.
+ * @power_state: TRUE = power state on, FALSE = power state off.
+ * @power_state_mutex: Mutex for power_state.
+ * @restore_dev_ctx: TRUE = saved ctx, FALSE = no saved ctx.
  */
 struct hash_driver_data {
 	void __iomem *base;
+	struct device *dev;
 	struct clk *clk;
-};
-
-/**
- * struct hash_ctx - The context used for hash calculations.
- * @key: The key used in the operation
- * @keylen: The length of the key
- * @updated: Indicates if hardware is initialized for new operations
- * @state: The state of the current calculations
- * @config: The current configuration
- */
-struct hash_ctx {
-	u8 key[HASH_BLOCK_BYTE_SIZE];
-	u32 keylen;
-	u8 updated;
-	struct hash_state state;
-	struct hash_config config;
-};
-
-/**
- * struct hash_tfm_ctx - Transform context
- * @key: The key stored in the transform context
- * @keylen: The length of the key in the transform context
- */
-struct hash_tfm_ctx {
-	u8 key[HASH_BLOCK_BYTE_SIZE];
-	u32 keylen;
+	struct regulator *regulator;
+	bool power_state;
+	struct mutex power_state_mutex;
+	bool restore_dev_state;
 };
 
 /* Declaration of functions */
 static void hash_messagepad(int hid, const u32 *message, u8 index_bytes);
-
-/**
- * hexdump - Dumps buffers in hex.
- * @buf: The buffer to dump
- * @len: The length of the buffer
- */
-static void hexdump(unsigned char *buf, unsigned int len)
-{
-	print_hex_dump(KERN_CONT, "", DUMP_PREFIX_OFFSET,
-		       16, 1, buf, len, false);
-}
 
 /**
  * clear_reg_str - Clear the registry hash_str.
@@ -107,83 +74,86 @@ static void hexdump(unsigned char *buf, unsigned int len)
  */
 static inline void clear_reg_str(int hid)
 {
-	/* We will only clear the valid registers and not the reserved */
-	g_sys_ctx.registry[hid]->str &= ~HASH_STR_DCAL_MASK;
-	g_sys_ctx.registry[hid]->str &= ~HASH_STR_NBLW_MASK;
+	/*
+	 * We will only clear NBLW since writing 0 to DCAL is done by the
+	 * hardware
+	 */
+	sys_ctx_g.registry[hid]->str &= ~HASH_STR_NBLW_MASK;
 }
 
-/**
- * write_nblw - Writes the number of valid bytes to nblw.
- * @hid: Hardware device ID
- * @bytes: The number of valid bytes in last word of a message
- *
- * Note that this function only writes, i.e. it does not clear the registry
- * before it writes the new data.
- */
-static inline void write_nblw(int hid, int bytes)
+static int hash_disable_power(
+		struct device *dev,
+		struct hash_driver_data *device_data,
+		bool save_device_state)
 {
-	g_sys_ctx.registry[hid]->str |=
-		((bytes * 8) & HASH_STR_NBLW_MASK);
-}
+	int ret = 0;
 
-/**
- * write_dcal - Write/set the dcal bit.
- * @hid: Hardware device ID
- */
-static inline void write_dcal(int hid)
-{
-	g_sys_ctx.registry[hid]->str |= (1 << HASH_STR_DCAL_POS);
-}
+	dev_dbg(dev, "[%s]", __func__);
 
-/**
- * pad_message - Function that pads a message.
- * @hid: Hardware device ID
- *
- * FIXME: This function should be replaced.
- */
-static inline void pad_message(int hid)
-{
-	hash_messagepad(hid, g_sys_ctx.state[hid].buffer,
-			g_sys_ctx.state[hid].index);
-}
+	mutex_lock(&device_data->power_state_mutex);
+	if (!device_data->power_state)
+		goto out;
 
-/**
- * write_key - Writes the key to the hardware registries.
- * @hid: Hardware device ID
- * @key: The key used in the operation
- * @keylen: The length of the key
- *
- * Note that in this function we DO NOT write to the NBLW registry even though
- * the hardware reference manual says so. There must be incorrect information in
- * the manual or there must be a bug in the state machine in the hardware.
- */
-static void write_key(int hid, const u8 *key, u32 keylen)
-{
-	u32 word = 0;
-	clear_reg_str(hid);
-
-	while (keylen >= 4) {
-		word = ((u32) (key[3] & 255) << 24) |
-			((u32) (key[2] & 255) << 16) |
-			((u32) (key[1] & 255) << 8) |
-			((u32) (key[0] & 255));
-
-		HASH_SET_DIN(word);
-		keylen -= 4;
-		key += 4;
+	if (save_device_state) {
+		hash_save_state(HASH_DEVICE_ID_1,
+				&sys_ctx_g.state[HASH_DEVICE_ID_1]);
+		device_data->restore_dev_state = true;
 	}
 
-	/* This takes care of the remaining bytes on the last word */
-	if (keylen) {
-		word = 0;
-		while (keylen) {
-			word |= (key[keylen - 1] << (8 * (keylen - 1)));
-			keylen--;
+	clk_disable(device_data->clk);
+	ret = regulator_disable(device_data->regulator);
+	if (ret)
+		dev_err(dev, "[%s]: "
+				"regulator_disable() failed!",
+				__func__);
+
+	device_data->power_state = false;
+
+out:
+	mutex_unlock(&device_data->power_state_mutex);
+
+	return ret;
+}
+
+static int hash_enable_power(
+		struct device *dev,
+		struct hash_driver_data *device_data,
+		bool restore_device_state)
+{
+	int ret = 0;
+
+	dev_dbg(dev, "[%s]", __func__);
+
+	mutex_lock(&device_data->power_state_mutex);
+	if (!device_data->power_state) {
+		ret = regulator_enable(device_data->regulator);
+		if (ret) {
+			dev_err(dev, "[%s]: regulator_enable() failed!",
+					__func__);
+			goto out;
 		}
-		HASH_SET_DIN(word);
+
+		ret = clk_enable(device_data->clk);
+		if (ret) {
+			dev_err(dev, "[%s]: clk_enable() failed!",
+					__func__);
+			regulator_disable(device_data->regulator);
+			goto out;
+		}
+		device_data->power_state = true;
 	}
 
-	write_dcal(hid);
+	if (device_data->restore_dev_state) {
+		if (restore_device_state) {
+			device_data->restore_dev_state = false;
+			hash_resume_state(HASH_DEVICE_ID_1,
+				&sys_ctx_g.state[HASH_DEVICE_ID_1]);
+		}
+	}
+out:
+	mutex_unlock(&device_data->power_state_mutex);
+
+	return ret;
 }
 
 /**
@@ -196,32 +166,20 @@ static void write_key(int hid, const u8 *key, u32 keylen)
 static int init_hash_hw(struct shash_desc *desc)
 {
 	int ret = 0;
-	int hash_error = HASH_OK;
+	int hash_rv;
 	struct hash_ctx *ctx = shash_desc_ctx(desc);
 
-	stm_dbg(debug, "[init_hash_hw] (ctx=0x%x)!", (u32)ctx);
+	pr_debug("[init_hash_hw] (ctx=0x%x)!", (u32)ctx);
 
-	hash_error = hash_setconfiguration(HASH_DEVICE_ID_1, &ctx->config);
-	if (hash_error != HASH_OK) {
-		stm_error("hash_setconfiguration() failed!");
-		ret = -1;
-		goto out;
+	hash_rv = hash_setconfiguration(HASH_DEVICE_ID_1, &ctx->config);
+	if (hash_rv != HASH_OK) {
+		pr_err("hash_setconfiguration() failed!");
+		ret = -EPERM;
+		return ret;
 	}
 
-	hash_error = hash_begin(HASH_DEVICE_ID_1);
-	if (hash_error != HASH_OK) {
-		stm_error("hash_begin() failed!");
-		ret = -1;
-		goto out;
-	}
+	hash_begin(ctx);
 
-	if (ctx->config.oper_mode == HASH_OPER_MODE_HMAC) {
-		stm_dbg(debug, "[init_hash_hw] update key=0x%0x, len=%d",
-				(u32) ctx->key, ctx->keylen);
-		write_key(HASH_DEVICE_ID_1, ctx->key, ctx->keylen);
-	}
-
-out:
 	return ret;
 }
 
@@ -229,22 +187,13 @@ out:
  * hash_init - Common hash init function for SHA1/SHA2 (SHA256).
  * @desc: The hash descriptor for the job
  *
- * Initialize structures and copy the key from the transform context to the
- * descriptor context if the mode is HMAC.
+ * Initialize structures.
  */
 static int hash_init(struct shash_desc *desc)
 {
 	struct hash_ctx *ctx = shash_desc_ctx(desc);
-	struct hash_tfm_ctx *tfm_ctx = crypto_tfm_ctx(&desc->tfm->base);
 
-	stm_dbg(debug, "[hash_init]: (ctx=0x%x)!", (u32)ctx);
-
-	if (ctx->config.oper_mode == HASH_OPER_MODE_HMAC) {
-		if (tfm_ctx->key) {
-			memcpy(ctx->key, tfm_ctx->key, tfm_ctx->keylen);
-			ctx->keylen = tfm_ctx->keylen;
-		}
-	}
+	pr_debug("[hash_init]: (ctx=0x%x)!", (u32)ctx);
 
 	memset(&ctx->state, 0, sizeof(struct hash_state));
 	ctx->updated = 0;
@@ -262,60 +211,23 @@ static int hash_update(struct shash_desc *desc, const u8 *data,
 		       unsigned int len)
 {
 	int ret = 0;
-	int hash_error = HASH_OK;
-	struct hash_ctx *ctx = shash_desc_ctx(desc);
+	int hash_rv = HASH_OK;
 
-	stm_dbg(debug, "[hash_update]: (ctx=0x%x, data=0x%x, len=%d)!",
-		(u32)ctx, (u32)data, len);
+	pr_debug("[hash_update]: (data=0x%x, len=%d)!",
+		(u32)data, len);
 
-#ifdef HASH_ACC_SYNC_CONTROL
 	mutex_lock(&hash_hw_acc_mutex);
-#endif
-
-	if (!ctx->updated) {
-		ret = init_hash_hw(desc);
-		if (ret) {
-			stm_error("init_hash_hw() failed!");
-			goto out;
-		}
-	}
-
-	if (contextsaving) {
-		if (ctx->updated) {
-			hash_error =
-			    hash_resume_state(HASH_DEVICE_ID_1, &ctx->state);
-			if (hash_error != HASH_OK) {
-				stm_error("hash_resume_state() failed!");
-				ret = -1;
-				goto out;
-			}
-		}
-	}
 
 	/* NOTE: The length of the message is in the form of number of bits */
-	hash_error = hash_hw_update(HASH_DEVICE_ID_1, data, len * 8);
-	if (hash_error != HASH_OK) {
-		stm_error("hash_hw_update() failed!");
-		ret = -1;
+	hash_rv = hash_hw_update(desc, HASH_DEVICE_ID_1, data, len * 8);
+	if (hash_rv != HASH_OK) {
+		pr_err("hash_hw_update() failed!");
+		ret = -EPERM;
 		goto out;
 	}
 
-	if (contextsaving) {
-		hash_error =
-		    hash_save_state(HASH_DEVICE_ID_1, &ctx->state);
-		if (hash_error != HASH_OK) {
-			stm_error("hash_save_state() failed!");
-			ret = -1;
-			goto out;
-		}
-
-	}
-	ctx->updated = 1;
-
 out:
-#ifdef HASH_ACC_SYNC_CONTROL
 	mutex_unlock(&hash_hw_acc_mutex);
-#endif
 	return ret;
 }
 
@@ -327,96 +239,57 @@ out:
 static int hash_final(struct shash_desc *desc, u8 *out)
 {
 	int ret = 0;
-	int hash_error = HASH_OK;
+	int hash_rv = HASH_OK;
 	struct hash_ctx *ctx = shash_desc_ctx(desc);
+	struct hash_driver_data *device_data = internal_drv_data;
 
 	int digestsize = crypto_shash_digestsize(desc->tfm);
 	u8 digest[HASH_MSG_DIGEST_SIZE];
 
-	stm_dbg(debug, "[hash_final]: (ctx=0x%x)!", (u32) ctx);
+	pr_debug("[hash_final]: (ctx=0x%x)!", (u32) ctx);
 
-#ifdef HASH_ACC_SYNC_CONTROL
 	mutex_lock(&hash_hw_acc_mutex);
-#endif
 
-	if (contextsaving) {
-		hash_error = hash_resume_state(HASH_DEVICE_ID_1, &ctx->state);
+	/* Enable device power (and clock) */
+	ret = hash_enable_power(device_data->dev, device_data, false);
+	if (ret) {
+		dev_err(device_data->dev, "[%s]: "
+				"hash_enable_power() failed!", __func__);
+		goto out;
+	}
 
-		if (hash_error != HASH_OK) {
-			stm_error("hash_resume_state() failed!");
-			ret = -1;
-			goto out;
+	if (!ctx->updated) {
+		ret = init_hash_hw(desc);
+		if (ret) {
+			pr_err("init_hash_hw() failed!");
+			goto out_power;
+		}
+	} else {
+		hash_rv = hash_resume_state(HASH_DEVICE_ID_1, &ctx->state);
+
+		if (hash_rv != HASH_OK) {
+			pr_err("hash_resume_state() failed!");
+			ret = -EPERM;
+			goto out_power;
 		}
 	}
 
-	pad_message(HASH_DEVICE_ID_1);
+	hash_messagepad(HASH_DEVICE_ID_1, ctx->state.buffer,
+			ctx->state.index);
 
-	if (ctx->config.oper_mode == HASH_OPER_MODE_HMAC)
-		write_key(HASH_DEVICE_ID_1, ctx->key, ctx->keylen);
-
-	hash_error = hash_get_digest(HASH_DEVICE_ID_1, digest);
+	hash_get_digest(HASH_DEVICE_ID_1, digest, ctx->config.algorithm);
 
 	memcpy(out, digest, digestsize);
 
+out_power:
+	/* Disable power (and clock) */
+	if (hash_disable_power(device_data->dev, device_data, false))
+		dev_err(device_data->dev, "[%s]: "
+				"hash_disable_power() failed!", __func__);
+
 out:
-#ifdef HASH_ACC_SYNC_CONTROL
 	mutex_unlock(&hash_hw_acc_mutex);
-#endif
 
-	return ret;
-}
-
-/**
- * hash_setkey - The setkey function for providing the key during HMAC
- *               calculations.
- * @tfm: Pointer to the transform
- * @key: The key used in the operation
- * @keylen: The length of the key
- * @alg: The algorithm to use in the operation
- */
-static int hash_setkey(struct crypto_shash *tfm, const u8 *key,
-		       unsigned int keylen, int alg)
-{
-	int ret = 0;
-	int hash_error = HASH_OK;
-
-	struct hash_tfm_ctx *ctx_tfm = crypto_shash_ctx(tfm);
-
-	stm_dbg(debug, "[hash_setkey]: (ctx_tfm=0x%x, key=0x%x, keylen=%d)!",
-		(u32) ctx_tfm, (u32) key, keylen);
-
-	/* Truncate the key to block size */
-	if (keylen > HASH_BLOCK_BYTE_SIZE) {
-		struct hash_config config;
-		u8 digest[MAX_HASH_DIGEST_BYTE_SIZE];
-		unsigned int digestsize = crypto_shash_digestsize(tfm);
-
-		config.algorithm = alg;
-		config.data_format = HASH_DATA_8_BITS;
-		config.oper_mode = HASH_OPER_MODE_HASH;
-
-#ifdef HASH_ACC_SYNC_CONTROL
-		mutex_lock(&hash_hw_acc_mutex);
-#endif
-		hash_error = hash_compute(HASH_DEVICE_ID_1, key, keylen * 8,
-					  &config, digest);
-#ifdef HASH_ACC_SYNC_CONTROL
-		mutex_unlock(&hash_hw_acc_mutex);
-#endif
-		if (hash_error != HASH_OK) {
-			stm_error("Error: hash_compute() failed!");
-			ret = -1;
-			goto out;
-		}
-
-		memcpy(ctx_tfm->key, digest, digestsize);
-		ctx_tfm->keylen = digestsize;
-	} else {
-		memcpy(ctx_tfm->key, key, keylen);
-		ctx_tfm->keylen = keylen;
-	}
-
-out:
 	return ret;
 }
 
@@ -428,7 +301,7 @@ static int sha1_init(struct shash_desc *desc)
 {
 	struct hash_ctx *ctx = shash_desc_ctx(desc);
 
-	stm_dbg(debug, "[sha1_init]: (ctx=0x%x)!", (u32) ctx);
+	pr_debug("[sha1_init]: (ctx=0x%x)!", (u32) ctx);
 
 	ctx->config.data_format = HASH_DATA_8_BITS;
 	ctx->config.algorithm = HASH_ALGO_SHA1;
@@ -445,7 +318,7 @@ static int sha256_init(struct shash_desc *desc)
 {
 	struct hash_ctx *ctx = shash_desc_ctx(desc);
 
-	stm_dbg(debug, "[sha256_init]: (ctx=0x%x)!", (u32) ctx);
+	pr_debug("[sha256_init]: (ctx=0x%x)!", (u32) ctx);
 
 	ctx->config.data_format = HASH_DATA_8_BITS;
 	ctx->config.algorithm = HASH_ALGO_SHA2;
@@ -454,70 +327,24 @@ static int sha256_init(struct shash_desc *desc)
 	return hash_init(desc);
 }
 
-/**
- * hmac_sha1_init - SHA1 HMAC init function.
- * @desc: The hash descriptor for the job
- */
-static int hmac_sha1_init(struct shash_desc *desc)
+static int hash_export(struct shash_desc *desc, void *out)
 {
 	struct hash_ctx *ctx = shash_desc_ctx(desc);
 
-	stm_dbg(debug, "[hmac_sha1_init]: (ctx=0x%x)!", (u32) ctx);
-
-	ctx->config.data_format = HASH_DATA_8_BITS;
-	ctx->config.algorithm = HASH_ALGO_SHA1;
-	ctx->config.oper_mode = HASH_OPER_MODE_HMAC;
-	ctx->config.hmac_key = HASH_SHORT_KEY;
-
-	return hash_init(desc);
+	pr_debug("[hash_export]: (ctx=0x%X)  (out=0x%X)",
+		 (u32) ctx, (u32) out);
+	memcpy(out, ctx, sizeof(*ctx));
+	return 0;
 }
 
-/**
- * hmac_sha256_init - SHA2 (SHA256) HMAC init function.
- * @desc: The hash descriptor for the job
- */
-static int hmac_sha256_init(struct shash_desc *desc)
+static int hash_import(struct shash_desc *desc, const void *in)
 {
 	struct hash_ctx *ctx = shash_desc_ctx(desc);
 
-	stm_dbg(debug, "[hmac_sha256_init]: (ctx=0x%x)!", (u32) ctx);
-
-	ctx->config.data_format = HASH_DATA_8_BITS;
-	ctx->config.algorithm = HASH_ALGO_SHA2;
-	ctx->config.oper_mode = HASH_OPER_MODE_HMAC;
-	ctx->config.hmac_key = HASH_SHORT_KEY;
-
-	return hash_init(desc);
-}
-
-/**
- * hmac_sha1_setkey - SHA1 HMAC setkey function.
- * @tfm: Pointer to the transform
- * @key: The key used in the operation
- * @keylen: The length of the key
- */
-static int hmac_sha1_setkey(struct crypto_shash *tfm, const u8 *key,
-			    unsigned int keylen)
-{
-	stm_dbg(debug, "[hmac_sha1_setkey]: (tfm=0x%x, key=0x%x, keylen=%d)!",
-		(u32) tfm, (u32) key, keylen);
-
-	return hash_setkey(tfm, key, keylen, HASH_ALGO_SHA1);
-}
-
-/**
- * hmac_sha256_setkey - SHA2 (SHA256) HMAC setkey function.
- * @tfm: Pointer to the transform
- * @key: The key used in the operation
- * @keylen: The length of the key
- */
-static int hmac_sha256_setkey(struct crypto_shash *tfm, const u8 *key,
-			      unsigned int keylen)
-{
-	stm_dbg(debug, "[hmac_sha256_setkey]: (tfm=0x%x, key=0x%x, keylen=%d)!",
-		(u32) tfm, (u32) key, keylen);
-
-	return hash_setkey(tfm, key, keylen, HASH_ALGO_SHA2);
+	pr_debug("[hash_import]: (ctx=0x%x)  (in =0x%X)",
+		 (u32) ctx, (u32) in);
+	memcpy(ctx, in, sizeof(*ctx));
+	return 0;
 }
 
 static struct shash_alg sha1_alg = {
@@ -525,16 +352,17 @@ static struct shash_alg sha1_alg = {
 	.init       = sha1_init,
 	.update     = hash_update,
 	.final      = hash_final,
+	.export     = hash_export,
+	.import     = hash_import,
 	.descsize   = sizeof(struct hash_ctx),
+	.statesize  = sizeof(struct hash_ctx),
 	.base = {
-		 .cra_name        = "sha1",
-		 .cra_driver_name = "sha1-u8500",
-		 .cra_flags       = CRYPTO_ALG_TYPE_DIGEST |
-			 CRYPTO_ALG_TYPE_SHASH,
-		 .cra_blocksize   = SHA1_BLOCK_SIZE,
-		 .cra_ctxsize     = sizeof(struct hash_tfm_ctx),
-		 .cra_module      = THIS_MODULE,
-		 }
+			.cra_name        = "sha1",
+			.cra_driver_name = "sha1-u8500",
+			.cra_flags       = CRYPTO_ALG_TYPE_SHASH,
+			.cra_blocksize   = SHA1_BLOCK_SIZE,
+			.cra_module      = THIS_MODULE,
+		}
 };
 
 static struct shash_alg sha256_alg = {
@@ -542,52 +370,17 @@ static struct shash_alg sha256_alg = {
 	.init       = sha256_init,
 	.update     = hash_update,
 	.final      = hash_final,
+	.export     = hash_export,
+	.import     = hash_import,
 	.descsize   = sizeof(struct hash_ctx),
+	.statesize  = sizeof(struct hash_ctx),
 	.base = {
-		 .cra_name        = "sha256",
-		 .cra_driver_name = "sha256-u8500",
-		 .cra_flags       = CRYPTO_ALG_TYPE_DIGEST |
-			 CRYPTO_ALG_TYPE_SHASH,
-		 .cra_blocksize   = SHA256_BLOCK_SIZE,
-		 .cra_ctxsize     = sizeof(struct hash_tfm_ctx),
-		 .cra_module      = THIS_MODULE,
-		 }
-};
-
-static struct shash_alg hmac_sha1_alg = {
-	.digestsize = SHA1_DIGEST_SIZE,
-	.init       = hmac_sha1_init,
-	.update     = hash_update,
-	.final      = hash_final,
-	.setkey     = hmac_sha1_setkey,
-	.descsize   = sizeof(struct hash_ctx),
-	.base = {
-		 .cra_name        = "hmac(sha1)",
-		 .cra_driver_name = "hmac(sha1-u8500)",
-		 .cra_flags       = CRYPTO_ALG_TYPE_DIGEST |
-			 CRYPTO_ALG_TYPE_SHASH,
-		 .cra_blocksize   = SHA1_BLOCK_SIZE,
-		 .cra_ctxsize     = sizeof(struct hash_tfm_ctx),
-		 .cra_module      = THIS_MODULE,
-		 }
-};
-
-static struct shash_alg hmac_sha256_alg = {
-	.digestsize = SHA256_DIGEST_SIZE,
-	.init       = hmac_sha256_init,
-	.update     = hash_update,
-	.final      = hash_final,
-	.setkey     = hmac_sha256_setkey,
-	.descsize   = sizeof(struct hash_ctx),
-	.base = {
-		 .cra_name        = "hmac(sha256)",
-		 .cra_driver_name = "hmac(sha256-u8500)",
-		 .cra_flags       = CRYPTO_ALG_TYPE_DIGEST |
-			 CRYPTO_ALG_TYPE_SHASH,
-		 .cra_blocksize   = SHA256_BLOCK_SIZE,
-		 .cra_ctxsize     = sizeof(struct hash_tfm_ctx),
-		 .cra_module      = THIS_MODULE,
-		 }
+			.cra_name        = "sha256",
+			.cra_driver_name = "sha256-u8500",
+			.cra_flags       = CRYPTO_ALG_TYPE_SHASH,
+			.cra_blocksize   = SHA256_BLOCK_SIZE,
+			.cra_module      = THIS_MODULE,
+		}
 };
 
 /**
@@ -597,154 +390,128 @@ static struct shash_alg hmac_sha256_alg = {
 static int u8500_hash_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	int hash_error = HASH_OK;
+	int hash_rv = HASH_OK;
 	struct resource *res = NULL;
 	struct hash_driver_data *hash_drv_data;
 
-	stm_dbg(debug, "[u8500_hash_probe]: (pdev=0x%x)", (u32) pdev);
+	pr_debug("[u8500_hash_probe]: (pdev=0x%x)", (u32) pdev);
 
-	stm_dbg(debug, "[u8500_hash_probe]: Calling kzalloc()!");
+	pr_debug("[u8500_hash_probe]: Calling kzalloc()!");
 	hash_drv_data = kzalloc(sizeof(struct hash_driver_data), GFP_KERNEL);
 	if (!hash_drv_data) {
-		stm_dbg(debug, "kzalloc() failed!");
+		pr_debug("kzalloc() failed!");
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	stm_dbg(debug, "[u8500_hash_probe]: Calling platform_get_resource()!");
+	hash_drv_data->dev = &pdev->dev;
+
+	pr_debug("[u8500_hash_probe]: Calling platform_get_resource()!");
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
-		stm_dbg(debug, "platform_get_resource() failed");
+		pr_debug("platform_get_resource() failed");
 		ret = -ENODEV;
 		goto out_kfree;
 	}
 
-	stm_dbg(debug, "[u8500_hash_probe]: Calling request_mem_region()!");
-	res = request_mem_region(res->start, res->end - res->start + 1,
-				 pdev->name);
+	pr_debug("[u8500_hash_probe]: Calling request_mem_region()!");
+	res = request_mem_region(res->start, resource_size(res), pdev->name);
 	if (res == NULL) {
-		stm_dbg(debug, "request_mem_region() failed");
+		pr_debug("request_mem_region() failed");
 		ret = -EBUSY;
 		goto out_kfree;
 	}
 
-	stm_dbg(debug, "[u8500_hash_probe]: Calling ioremap()!");
-	hash_drv_data->base = ioremap(res->start, res->end - res->start + 1);
+	pr_debug("[u8500_hash_probe]: Calling ioremap()!");
+	hash_drv_data->base = ioremap(res->start, resource_size(res));
 	if (!hash_drv_data->base) {
-		stm_error
-		    ("[u8500_hash] ioremap of hash1 register memory failed!");
+		pr_err("[u8500_hash] "
+		       "ioremap of hash1 register memory failed!");
 		ret = -ENOMEM;
 		goto out_free_mem;
 	}
+	mutex_init(&hash_drv_data->power_state_mutex);
 
-	stm_dbg(debug, "[u8500_hash_probe]: Calling clk_get()!");
+	/* Enable power for HASH hardware block */
+	hash_drv_data->regulator = regulator_get(&pdev->dev, "v-ape");
+	if (IS_ERR(hash_drv_data->regulator)) {
+		dev_err(&pdev->dev, "[u8500_hash] "
+				    "could not get hash regulator\n");
+		ret = PTR_ERR(hash_drv_data->regulator);
+		hash_drv_data->regulator = NULL;
+		goto out_unmap;
+	}
+
+	pr_debug("[u8500_hash_probe]: Calling clk_get()!");
 	/* Enable the clk for HASH1 hardware block */
 	hash_drv_data->clk = clk_get(&pdev->dev, NULL);
 	if (IS_ERR(hash_drv_data->clk)) {
-		stm_error("clk_get() failed!");
+		pr_err("clk_get() failed!");
 		ret = PTR_ERR(hash_drv_data->clk);
-		goto out_unmap;
+		goto out_regulator;
 	}
 
-	stm_dbg(debug, "[u8500_hash_probe]: Calling clk_enable()!");
-	ret = clk_enable(hash_drv_data->clk);
+	/* Enable device power (and clock) */
+	ret = hash_enable_power(&pdev->dev, hash_drv_data, false);
 	if (ret) {
-		stm_error("clk_enable() failed!");
-		goto out_unmap;
-	}
-
-	stm_dbg(debug,
-		"[u8500_hash_probe]: Calling hash_init_base_address()->"
-		"(base=0x%x,DEVICE_ID=%d)!",
-		(u32) hash_drv_data->base, HASH_DEVICE_ID_1);
-
-	/* Setting base address */
-	hash_error =
-	    hash_init_base_address(HASH_DEVICE_ID_1,
-		      (t_logical_address) hash_drv_data->base);
-	if (hash_error != HASH_OK) {
-		stm_error("hash_init_base_address() failed!");
-		ret = -1;	/*TODO: what error code should be used here!? */
+		dev_err(&pdev->dev, "[%s]: hash_enable_power() failed!",
+				__func__);
 		goto out_clk;
 	}
-#ifdef HASH_ACC_SYNC_CONTROL
-	stm_dbg(debug, "[u8500_hash_probe]: Calling mutex_init()!");
+
+	pr_debug("[u8500_hash_probe]: Calling hash_init_base_address()->"
+		 "(base=0x%x,DEVICE_ID=%d)!",
+		 (u32) hash_drv_data->base, HASH_DEVICE_ID_1);
+
+	/* Setting base address */
+	hash_rv =
+	    hash_init_base_address(HASH_DEVICE_ID_1,
+		      (t_logical_address) hash_drv_data->base);
+	if (hash_rv != HASH_OK) {
+		pr_err("hash_init_base_address() failed!");
+		ret = -EPERM;
+		goto out_power;
+	}
+	pr_debug("[u8500_hash_probe]: Calling mutex_init()!");
 	mutex_init(&hash_hw_acc_mutex);
-#endif
 
-	if (mode == 0) {
-		stm_dbg(debug,
-			"[u8500_hash_probe]: To register all algorithms!");
+	pr_debug("[u8500_hash_probe]: To register only sha1 and sha256"
+		 " algorithms!");
+	internal_drv_data = hash_drv_data;
 
-		ret = crypto_register_shash(&sha1_alg);
-		if (ret) {
-			stm_error("Could not register sha1_alg!");
-			goto out_clk;
-		}
-		stm_dbg(debug, "[u8500_hash_probe]: sha1_alg registered!");
+	ret = crypto_register_shash(&sha1_alg);
+	if (ret) {
+		pr_err("Could not register sha1_alg!");
+		goto out_power;
+	}
+	pr_debug("[u8500_hash_probe]: sha1_alg registered!");
 
-		ret = crypto_register_shash(&sha256_alg);
-		if (ret) {
-			stm_error("Could not register sha256_alg!");
-			goto out_unreg1;
-		}
-		stm_dbg(debug, "[u8500_hash_probe]: sha256_alg registered!");
-
-		ret = crypto_register_shash(&hmac_sha1_alg);
-		if (ret) {
-			stm_error("Could not register hmac_sha1_alg!");
-			goto out_unreg2;
-		}
-		stm_dbg(debug, "[u8500_hash_probe]: hmac_sha1_alg registered!");
-
-		ret = crypto_register_shash(&hmac_sha256_alg);
-		if (ret) {
-			stm_error("Could not register hmac_sha256_alg!");
-			goto out_unreg3;
-		}
-		stm_dbg(debug,
-			"[u8500_hash_probe]: hmac_sha256_alg registered!");
+	ret = crypto_register_shash(&sha256_alg);
+	if (ret) {
+		pr_err("Could not register sha256_alg!");
+		goto out_unreg1_tmp;
 	}
 
-	if (mode == 10) {
-		stm_dbg(debug,
-			"[u8500_hash_probe]: To register only sha1 and sha256"
-			" algorithms!");
-
-		ret = crypto_register_shash(&sha1_alg);
-		if (ret) {
-			stm_error("Could not register sha1_alg!");
-			goto out_clk;
-		}
-
-		ret = crypto_register_shash(&sha256_alg);
-		if (ret) {
-			stm_error("Could not register sha256_alg!");
-			goto out_unreg1_tmp;
-		}
-	}
-
-	stm_dbg(debug, "[u8500_hash_probe]: Calling platform_set_drvdata()!");
+	pr_debug("[u8500_hash_probe]: Calling platform_set_drvdata()!");
 	platform_set_drvdata(pdev, hash_drv_data);
+
+	if (hash_disable_power(&pdev->dev, hash_drv_data, false))
+		dev_err(&pdev->dev, "[%s]: hash_disable_power()"
+				" failed!", __func__);
+
 	return 0;
 
-	if (mode == 0) {
-out_unreg1:
-		crypto_unregister_shash(&sha1_alg);
-out_unreg2:
-		crypto_unregister_shash(&sha256_alg);
-out_unreg3:
-		crypto_unregister_shash(&hmac_sha1_alg);
-	}
-
-	if (mode == 10) {
 out_unreg1_tmp:
-		crypto_unregister_shash(&sha1_alg);
-	}
+	crypto_unregister_shash(&sha1_alg);
+
+out_power:
+	hash_disable_power(&pdev->dev, hash_drv_data, false);
 
 out_clk:
-	clk_disable(hash_drv_data->clk);
 	clk_put(hash_drv_data->clk);
+
+out_regulator:
+	regulator_put(hash_drv_data->regulator);
 
 out_unmap:
 	iounmap(hash_drv_data->base);
@@ -767,60 +534,133 @@ static int u8500_hash_remove(struct platform_device *pdev)
 	struct resource *res;
 	struct hash_driver_data *hash_drv_data;
 
-	stm_dbg(debug, "[u8500_hash_remove]: (pdev=0x%x)", (u32) pdev);
+	pr_debug("[u8500_hash_remove]: (pdev=0x%x)", (u32) pdev);
 
-	stm_dbg(debug, "[u8500_hash_remove]: Calling platform_get_drvdata()!");
+	pr_debug("[u8500_hash_remove]: Calling platform_get_drvdata()!");
 	hash_drv_data = platform_get_drvdata(pdev);
 
-	if (mode == 0) {
-		stm_dbg(debug,
-			"[u8500_hash_remove]: To unregister all algorithms!");
-		crypto_unregister_shash(&sha1_alg);
-		crypto_unregister_shash(&sha256_alg);
-		crypto_unregister_shash(&hmac_sha1_alg);
-		crypto_unregister_shash(&hmac_sha256_alg);
-	}
+	pr_debug("[u8500_hash_remove]: To unregister only sha1 and "
+		 "sha256 algorithms!");
+	crypto_unregister_shash(&sha1_alg);
+	crypto_unregister_shash(&sha256_alg);
 
-	if (mode == 10) {
-		stm_dbg(debug,
-			"[u8500_hash_remove]: To unregister only sha1 and "
-			"sha256 algorithms!");
-		crypto_unregister_shash(&sha1_alg);
-		crypto_unregister_shash(&sha256_alg);
-	}
-#ifdef HASH_ACC_SYNC_CONTROL
-	stm_dbg(debug, "[u8500_hash_remove]: Calling mutex_destroy()!");
+	pr_debug("[u8500_hash_remove]: Calling mutex_destroy()!");
 	mutex_destroy(&hash_hw_acc_mutex);
-#endif
 
-	stm_dbg(debug, "[u8500_hash_remove]: Calling clk_disable()!");
+	pr_debug("[u8500_hash_remove]: Calling clk_disable()!");
 	clk_disable(hash_drv_data->clk);
 
-	stm_dbg(debug, "[u8500_hash_remove]: Calling clk_put()!");
+	pr_debug("[u8500_hash_remove]: Calling clk_put()!");
 	clk_put(hash_drv_data->clk);
 
-	stm_dbg(debug, "[u8500_hash_remove]: Calling iounmap(): base = 0x%x",
-		(u32) hash_drv_data->base);
+	pr_debug("[u8500_hash_remove]: Calling regulator_disable()!");
+	regulator_disable(hash_drv_data->regulator);
+
+	pr_debug("[u8500_hash_remove]: Calling iounmap(): base = 0x%x",
+		 (u32) hash_drv_data->base);
 	iounmap(hash_drv_data->base);
 
-	stm_dbg(debug, "[u8500_hash_remove]: Calling platform_get_resource()!");
+	pr_debug("[u8500_hash_remove]: Calling platform_get_resource()!");
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
-	stm_dbg(debug,
-		"[u8500_hash_remove]: Calling release_mem_region()"
-		"->res->start=0x%x, res->end = 0x%x!",
+	pr_debug("[u8500_hash_remove]: Calling release_mem_region()"
+		 "->res->start=0x%x, res->end = 0x%x!",
 		res->start, res->end);
 	release_mem_region(res->start, res->end - res->start + 1);
 
-	stm_dbg(debug, "[u8500_hash_remove]: Calling kfree()!");
+	pr_debug("[u8500_hash_remove]: Calling kfree()!");
 	kfree(hash_drv_data);
 
 	return 0;
 }
 
+static void u8500_hash_shutdown(struct platform_device *pdev)
+{
+	struct resource *res = NULL;
+	struct hash_driver_data *hash_drv_data;
+
+	dev_dbg(&pdev->dev, "[%s]", __func__);
+
+	hash_drv_data = platform_get_drvdata(pdev);
+	if (!hash_drv_data) {
+		dev_err(&pdev->dev, "[%s]: "
+				"platform_get_drvdata() failed!", __func__);
+		return;
+	}
+
+	crypto_unregister_shash(&sha1_alg);
+	crypto_unregister_shash(&sha256_alg);
+
+	mutex_destroy(&hash_hw_acc_mutex);
+
+	iounmap(hash_drv_data->base);
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (res)
+		release_mem_region(res->start, resource_size(res));
+
+	if (hash_disable_power(&pdev->dev, hash_drv_data, false))
+		dev_err(&pdev->dev, "[%s]: "
+				"hash_disable_power() failed", __func__);
+
+	clk_put(hash_drv_data->clk);
+	regulator_put(hash_drv_data->regulator);
+}
+
+static int u8500_hash_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	int ret;
+	struct hash_driver_data *hash_drv_data;
+
+	dev_dbg(&pdev->dev, "[%s]", __func__);
+
+	/* Handle state? */
+	hash_drv_data = platform_get_drvdata(pdev);
+	if (!hash_drv_data) {
+		dev_err(&pdev->dev, "[%s]: "
+				"platform_get_drvdata() failed!", __func__);
+		return -ENOMEM;
+	}
+
+	ret = hash_disable_power(&pdev->dev, hash_drv_data, true);
+	if (ret)
+		dev_err(&pdev->dev, "[%s]: "
+				"hash_disable_power()", __func__);
+
+	return ret;
+}
+
+static int u8500_hash_resume(struct platform_device *pdev)
+{
+	int ret = 0;
+	struct hash_driver_data *hash_drv_data;
+
+	dev_dbg(&pdev->dev, "[%s]", __func__);
+
+	hash_drv_data = platform_get_drvdata(pdev);
+	if (!hash_drv_data) {
+		dev_err(&pdev->dev, "[%s]: "
+				"platform_get_drvdata() failed!", __func__);
+		return -ENOMEM;
+	}
+
+	if (hash_drv_data->restore_dev_state) {
+		ret = hash_enable_power(&pdev->dev, hash_drv_data, true);
+		if (ret)
+			dev_err(&pdev->dev, "[%s]: "
+				"hash_enable_power() failed!", __func__);
+	}
+
+	return ret;
+}
+
+
 static struct platform_driver hash_driver = {
 	.probe  = u8500_hash_probe,
 	.remove = u8500_hash_remove,
+	.shutdown = u8500_hash_shutdown,
+	.suspend  = u8500_hash_suspend,
+	.resume   = u8500_hash_resume,
 	.driver = {
 		   .owner = THIS_MODULE,
 		   .name  = "hash1",
@@ -832,7 +672,7 @@ static struct platform_driver hash_driver = {
  */
 static int __init u8500_hash_mod_init(void)
 {
-	stm_dbg(debug, "u8500_hash_mod_init() is called!");
+	pr_debug("u8500_hash_mod_init() is called!");
 
 	return platform_driver_register(&hash_driver);
 }
@@ -842,7 +682,7 @@ static int __init u8500_hash_mod_init(void)
  */
 static void __exit u8500_hash_mod_fini(void)
 {
-	stm_dbg(debug, "u8500_hash_mod_fini() is called!");
+	pr_debug("u8500_hash_mod_fini() is called!");
 
 	platform_driver_unregister(&hash_driver);
 	return;
@@ -860,14 +700,10 @@ static void hash_processblock(int hid, const u32 *message)
 {
 	u32 count;
 
-	HCL_CLEAR_BITS(g_sys_ctx.registry[hid]->str,
-		       HASH_STR_DCAL_MASK);
-	HCL_CLEAR_BITS(g_sys_ctx.registry[hid]->str,
-		       HASH_STR_NBLW_MASK);
+	clear_bit(HASH_STR_NBLW_MASK, (void *)sys_ctx_g.registry[hid]->str);
 
 	/* Partially unrolled loop */
-	for (count = 0; count < (HASH_BLOCK_SIZE / sizeof(u32));
-	     count += 4) {
+	for (count = 0; count < (HASH_BLOCK_SIZE / sizeof(u32)); count += 4) {
 		HASH_SET_DIN(message[0]);
 		HASH_SET_DIN(message[1]);
 		HASH_SET_DIN(message[2]);
@@ -889,8 +725,8 @@ static void hash_processblock(int hid, const u32 *message)
  */
 static void hash_messagepad(int hid, const u32 *message, u8 index_bytes)
 {
-	stm_dbg(debug, "[u8500_hash_alg] hash_messagepad"
-			"(bytes in final msg=%d))", index_bytes);
+	pr_debug("[u8500_hash_alg] hash_messagepad"
+		 "(bytes in final msg=%d))", index_bytes);
 
 	clear_reg_str(hid);
 
@@ -904,34 +740,39 @@ static void hash_messagepad(int hid, const u32 *message, u8 index_bytes)
 	if (index_bytes)
 		HASH_SET_DIN(message[0]);
 
+	while (sys_ctx_g.registry[hid]->str & HASH_STR_DCAL_MASK)
+		cpu_relax();
+
 	/* num_of_bytes == 0 => NBLW <- 0 (32 bits valid in DATAIN) */
 	HASH_SET_NBLW(index_bytes * 8);
-	stm_dbg(debug, "[u8500_hash_alg] hash_messagepad -> DIN=0x%08x NBLW=%d",
-			g_sys_ctx.registry[hid]->din,
-			g_sys_ctx.registry[hid]->str);
+	pr_debug("[u8500_hash_alg] hash_messagepad -> DIN=0x%08x NBLW=%d",
+			sys_ctx_g.registry[hid]->din,
+			sys_ctx_g.registry[hid]->str);
 	HASH_SET_DCAL;
-	stm_dbg(debug, "[u8500_hash_alg] hash_messagepad d -> "
-			"DIN=0x%08x NBLW=%d",
-			g_sys_ctx.registry[hid]->din,
-			g_sys_ctx.registry[hid]->str);
+	pr_debug("[u8500_hash_alg] hash_messagepad after dcal -> "
+		 "DIN=0x%08x NBLW=%d",
+			sys_ctx_g.registry[hid]->din,
+			sys_ctx_g.registry[hid]->str);
 
+	while (sys_ctx_g.registry[hid]->str & HASH_STR_DCAL_MASK)
+		cpu_relax();
 }
 
 /**
  * hash_incrementlength - Increments the length of the current message.
- * @hid: Hardware device ID
+ * @ctx: Hash context
  * @incr: Length of message processed already
  *
  * Overflow cannot occur, because conditions for overflow are checked in
  * hash_hw_update.
  */
-static void hash_incrementlength(int hid, u32 incr)
+static void hash_incrementlength(struct hash_ctx *ctx, u32 incr)
 {
-	g_sys_ctx.state[hid].length.low_word += incr;
+	ctx->state.length.low_word += incr;
 
 	/* Check for wrap-around */
-	if (g_sys_ctx.state[hid].length.low_word < incr)
-		g_sys_ctx.state[hid].length.high_word++;
+	if (ctx->state.length.low_word < incr)
+		ctx->state.length.high_word++;
 }
 
 /**
@@ -963,60 +804,49 @@ static void hash_incrementlength(int hid, u32 incr)
  */
 int hash_setconfiguration(int hid, struct hash_config *p_config)
 {
-	int hash_error = HASH_OK;
+	int hash_rv = HASH_OK;
 
-	stm_dbg(debug, "[u8500_hash_alg] hash_setconfiguration())");
+	pr_debug("[u8500_hash_alg] hash_setconfiguration())");
 
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
-	}
+	if (p_config->algorithm != HASH_ALGO_SHA1 &&
+	    p_config->algorithm != HASH_ALGO_SHA2)
+		return HASH_INVALID_PARAMETER;
 
 	HASH_SET_DATA_FORMAT(p_config->data_format);
 
-	HCL_SET_BITS(g_sys_ctx.registry[hid]->cr,
-		     HASH_CR_EMPTYMSG_MASK);
+	HCL_SET_BITS(sys_ctx_g.registry[hid]->cr, HASH_CR_EMPTYMSG_MASK);
 
-	/* This bit selects between SHA-1 or SHA-2 algorithm */
-	if (HASH_ALGO_SHA2 == p_config->algorithm) {
-		HCL_CLEAR_BITS(g_sys_ctx.registry[hid]->cr,
-				HASH_CR_ALGO_MASK);
-	} else {		/* SHA1 algorithm */
+	switch (p_config->algorithm) {
+	case HASH_ALGO_SHA1:
+		HCL_SET_BITS(sys_ctx_g.registry[hid]->cr, HASH_CR_ALGO_MASK);
+		break;
 
-		HCL_SET_BITS(g_sys_ctx.registry[hid]->cr,
-				HASH_CR_ALGO_MASK);
+	case HASH_ALGO_SHA2:
+		HCL_CLEAR_BITS(sys_ctx_g.registry[hid]->cr, HASH_CR_ALGO_MASK);
+		break;
+
+	default:
+		pr_debug("[u8500_hash_alg] Incorrect algorithm.");
+		return HASH_INVALID_PARAMETER;
 	}
 
 	/* This bit selects between HASH or HMAC mode for the selected
 	   algorithm */
 	if (HASH_OPER_MODE_HASH == p_config->oper_mode) {
-		HCL_CLEAR_BITS(g_sys_ctx.registry
+		HCL_CLEAR_BITS(sys_ctx_g.registry
 			       [hid]->cr, HASH_CR_MODE_MASK);
-	} else {		/* HMAC mode */
-
-		HCL_SET_BITS(g_sys_ctx.registry[hid]->cr,
-				HASH_CR_MODE_MASK);
-
-		/* This bit selects between short key (<= 64 bytes) or long key
-		   (>64 bytes) in HMAC mode */
-		if (HASH_SHORT_KEY == p_config->hmac_key) {
-			HCL_CLEAR_BITS(g_sys_ctx.registry[hid]->cr,
-				       HASH_CR_LKEY_MASK);
-		} else {
-			HCL_SET_BITS(g_sys_ctx.registry[hid]->cr,
-				     HASH_CR_LKEY_MASK);
-		}
+	} else {		/* HMAC mode or wrong hash mode */
+		hash_rv = HASH_INVALID_PARAMETER;
+		pr_err("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
 	}
 
-	return hash_error;
+	return hash_rv;
 }
 
 /**
  * hash_begin - This routine resets some globals and initializes the hash
  *              hardware.
- * @hid: Hardware device ID
+ * @ctx: Hash context
  *
  * Reentrancy: Non Re-entrant
  *
@@ -1033,35 +863,20 @@ int hash_setconfiguration(int hid, struct hash_config *p_config)
  *                    So the user has to initialize the device for new
  *                    configuration to take in to effect.
  */
-int hash_begin(int hid)
+void hash_begin(struct hash_ctx *ctx)
 {
-	int hash_error = HASH_OK;
-
 	/* HW and SW initializations */
 	/* Note: there is no need to initialize buffer and digest members */
 
-	stm_dbg(debug, "[u8500_hash_alg] hash_begin())");
+	pr_debug("[u8500_hash_alg] hash_begin())");
 
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
-	}
-
-	g_sys_ctx.state[hid].index = 0;
-	g_sys_ctx.state[hid].bit_index = 0;
-	g_sys_ctx.state[hid].length.high_word = 0;
-	g_sys_ctx.state[hid].length.low_word = 0;
+	while (sys_ctx_g.registry[HASH_DEVICE_ID_1]->str & HASH_STR_DCAL_MASK)
+		cpu_relax();
 
 	HASH_INITIALIZE;
 
-	HCL_CLEAR_BITS(g_sys_ctx.registry[hid]->str,
-		       HASH_STR_DCAL_MASK);
-	HCL_CLEAR_BITS(g_sys_ctx.registry[hid]->str,
+	HCL_CLEAR_BITS(sys_ctx_g.registry[HASH_DEVICE_ID_1]->str,
 		       HASH_STR_NBLW_MASK);
-
-	return hash_error;
 }
 
 /**
@@ -1074,57 +889,62 @@ int hash_begin(int hid)
  *
  * Reentrancy: Non Re-entrant
  */
-int hash_hw_update(int hid, const u8 *p_data_buffer, u32 msg_length)
+int hash_hw_update(struct shash_desc *desc,
+		   int hid,
+		   const u8 *p_data_buffer,
+		   u32 msg_length)
 {
-	int hash_error = HASH_OK;
+	int hash_rv = HASH_OK;
 	u8 index;
 	u8 *p_buffer;
 	u32 count;
+	struct hash_ctx *ctx = shash_desc_ctx(desc);
+	struct hash_driver_data *device_data = internal_drv_data;
 
-	stm_dbg(debug, "[u8500_hash_alg] hash_hw_update(msg_length=%d / %d), "
-			"in=%d, bin=%d))",
+	pr_debug("[u8500_hash_alg] hash_hw_update(msg_length=%d / %d), "
+		 "in=%d, bin=%d))",
 			msg_length,
 			msg_length / 8,
-			g_sys_ctx.state[hid].index,
-			g_sys_ctx.state[hid].bit_index);
+			ctx->state.index,
+			ctx->state.bit_index);
 
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-	return hash_error;
-	}
+	index = ctx->state.index;
 
-	index = g_sys_ctx.state[hid].index;
-
-	p_buffer = (u8 *)g_sys_ctx.state[hid].buffer;
+	p_buffer = (u8 *)ctx->state.buffer;
 
 	/* Number of bytes in the message */
 	msg_length /= 8;
 
 	/* Check parameters */
 	if (NULL == p_data_buffer) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
+		hash_rv = HASH_INVALID_PARAMETER;
+		pr_err("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
+		return hash_rv;
 	}
 
-	/* Check if g_sys_ctx.state.length + msg_length
+	/* Check if ctx->state.length + msg_length
 	   overflows */
 	if (msg_length >
-	    (g_sys_ctx.state[hid].length.low_word + msg_length)
+	    (ctx->state.length.low_word + msg_length)
 	    && HASH_HIGH_WORD_MAX_VAL ==
-	    (g_sys_ctx.state[hid].length.high_word)) {
-		hash_error = HASH_MSG_LENGTH_OVERFLOW;
-		stm_error("[u8500_hash_alg] HASH_MSG_LENGTH_OVERFLOW!");
-		return hash_error;
+	    (ctx->state.length.high_word)) {
+		hash_rv = HASH_MSG_LENGTH_OVERFLOW;
+		pr_err("[u8500_hash_alg] HASH_MSG_LENGTH_OVERFLOW!");
+		return hash_rv;
+	}
+
+	/* Enable device power (and clock) */
+	hash_rv = hash_enable_power(device_data->dev, device_data, false);
+	if (hash_rv) {
+		dev_err(device_data->dev, "[%s]: "
+				"hash_enable_power() failed!", __func__);
+		goto out;
 	}
 
 	/* Main loop */
 	while (0 != msg_length) {
 		if ((index + msg_length) < HASH_BLOCK_SIZE) {
 			for (count = 0; count < msg_length; count++) {
-				/*TODO: memcpy? */
 				p_buffer[index + count] =
 				    *(p_data_buffer + count);
 			}
@@ -1132,7 +952,26 @@ int hash_hw_update(int hid, const u8 *p_data_buffer, u32 msg_length)
 			index += msg_length;
 			msg_length = 0;
 		} else {
-			/* if 'p_data_buffer' is four byte aligned and local
+			if (!ctx->updated) {
+				hash_rv = init_hash_hw(desc);
+				if (hash_rv != HASH_OK) {
+					pr_err("init_hash_hw() failed!");
+					goto out;
+				}
+				ctx->updated = 1;
+			} else {
+				hash_rv =
+				    hash_resume_state(HASH_DEVICE_ID_1,
+						      &ctx->state);
+				if (hash_rv != HASH_OK) {
+					pr_err("hash_resume_state()"
+					       " failed!");
+					goto out_power;
+				}
+			}
+
+			/*
+			 * If 'p_data_buffer' is four byte aligned and local
 			 * buffer does not have any data, we can write data
 			 * directly from 'p_data_buffer' to HW peripheral,
 			 * otherwise we first copy data to a local buffer
@@ -1152,60 +991,34 @@ int hash_hw_update(int hid, const u8 *p_data_buffer, u32 msg_length)
 				hash_processblock(hid, (const u32 *)p_buffer);
 			}
 
-			hash_incrementlength(hid, HASH_BLOCK_SIZE);
+			hash_incrementlength(ctx, HASH_BLOCK_SIZE);
 			p_data_buffer += (HASH_BLOCK_SIZE - index);
 			msg_length -= (HASH_BLOCK_SIZE - index);
 			index = 0;
+
+			hash_rv =
+			    hash_save_state(HASH_DEVICE_ID_1, &ctx->state);
+			if (hash_rv != HASH_OK) {
+				pr_err("hash_save_state() failed!");
+				goto out_power;
+			}
 		}
 	}
 
-	g_sys_ctx.state[hid].index = index;
+	ctx->state.index = index;
 
-	stm_dbg(debug, "[u8500_hash_alg] hash_hw_update END(msg_length=%d in "
-			"bits, in=%d, bin=%d))",
+	pr_debug("[u8500_hash_alg] hash_hw_update END(msg_length=%d in "
+		 "bits, in=%d, bin=%d))",
 			msg_length,
-			g_sys_ctx.state[hid].index,
-			g_sys_ctx.state[hid].bit_index);
-
-	return hash_error;
-}
-
-/**
- * hash_end_key - Function that ends a message, i.e. pad and triggers the last
- *                calculation.
- * @hid: Hardware device ID
- *
- * This function also clear the registries that have been involved in
- * computation.
- */
-int hash_end_key(int hid)
-{
-	int hash_error = HASH_OK;
-	u8 count = 0;
-
-	stm_dbg(debug, "[u8500_hash_alg] hash_end_key(index=%d))",
-			g_sys_ctx.state[hid].index);
-
-	hash_messagepad(hid, g_sys_ctx.state[hid].buffer,
-			     g_sys_ctx.state[hid].index);
-
-	 /* Wait till the DCAL bit get cleared, So that we get the final
-	  * message digest not intermediate value.
-	  */
-	while (g_sys_ctx.registry[hid]->str & HASH_STR_DCAL_MASK)
-		;
-
-	/* Reset the HASH state */
-	g_sys_ctx.state[hid].index = 0;
-	g_sys_ctx.state[hid].bit_index = 0;
-
-	for (count = 0; count < HASH_BLOCK_SIZE / sizeof(u32); count++)
-		g_sys_ctx.state[hid].buffer[count] = 0;
-
-	g_sys_ctx.state[hid].length.high_word = 0;
-	g_sys_ctx.state[hid].length.low_word = 0;
-
-	return hash_error;
+			ctx->state.index,
+			ctx->state.bit_index);
+out_power:
+	/* Disable power (and clock) */
+	if (hash_disable_power(device_data->dev, device_data, false))
+		dev_err(device_data->dev, "[%s]: "
+				"hash_disable_power() failed!", __func__);
+out:
+	return hash_rv;
 }
 
 /**
@@ -1218,66 +1031,53 @@ int hash_end_key(int hid)
 int hash_resume_state(int hid, const struct hash_state *device_state)
 {
 	u32 temp_cr;
-	int hash_error = HASH_OK;
+	int hash_rv = HASH_OK;
 	s32 count;
+	int hash_mode = HASH_OPER_MODE_HASH;
 
-	stm_dbg(debug, "[u8500_hash_alg] hash_resume_state(state(0x%x)))",
-		(u32) device_state);
+	pr_debug("[u8500_hash_alg] hash_resume_state(state(0x%x)))",
+		 (u32) device_state);
 
 	if (NULL == device_state) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
-	}
-
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
+		hash_rv = HASH_INVALID_PARAMETER;
+		pr_err("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
+		return hash_rv;
 	}
 
 	/* Check correctness of index and length members */
 	if (device_state->index > HASH_BLOCK_SIZE
 	    || (device_state->length.low_word % HASH_BLOCK_SIZE) != 0) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
+		hash_rv = HASH_INVALID_PARAMETER;
+		pr_err("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
+		return hash_rv;
 	}
-
-	for (count = 0; count < (s32) (HASH_BLOCK_SIZE / sizeof(u32));
-	     count++) {
-		g_sys_ctx.state[hid].buffer[count] =
-		    device_state->buffer[count];
-	}
-
-	g_sys_ctx.state[hid].index = device_state->index;
-	g_sys_ctx.state[hid].bit_index = device_state->bit_index;
-	g_sys_ctx.state[hid].length = device_state->length;
 
 	HASH_INITIALIZE;
 
 	temp_cr = device_state->temp_cr;
-	g_sys_ctx.registry[hid]->cr =
+	sys_ctx_g.registry[hid]->cr =
 	    temp_cr & HASH_CR_RESUME_MASK;
 
+	if (sys_ctx_g.registry[hid]->cr & HASH_CR_MODE_MASK)
+		hash_mode = HASH_OPER_MODE_HMAC;
+	else
+		hash_mode = HASH_OPER_MODE_HASH;
+
 	for (count = 0; count < HASH_CSR_COUNT; count++) {
-		if ((count >= 36) &&
-				!(g_sys_ctx.registry[hid]->cr &
-					HASH_CR_MODE_MASK)) {
+		if ((count >= 36) && (hash_mode == HASH_OPER_MODE_HASH))
 			break;
-		}
-		g_sys_ctx.registry[hid]->csrx[count] =
+
+		sys_ctx_g.registry[hid]->csrx[count] =
 			device_state->csr[count];
 	}
 
-	g_sys_ctx.registry[hid]->csfull = device_state->csfull;
-	g_sys_ctx.registry[hid]->csdatain = device_state->csdatain;
+	sys_ctx_g.registry[hid]->csfull = device_state->csfull;
+	sys_ctx_g.registry[hid]->csdatain = device_state->csdatain;
 
-	g_sys_ctx.registry[hid]->str = device_state->str_reg;
-	g_sys_ctx.registry[hid]->cr = temp_cr;
+	sys_ctx_g.registry[hid]->str = device_state->str_reg;
+	sys_ctx_g.registry[hid]->cr = temp_cr;
 
-	return hash_error;
+	return hash_rv;
 }
 
 /**
@@ -1291,289 +1091,50 @@ int hash_save_state(int hid, struct hash_state *device_state)
 {
 	u32 temp_cr;
 	u32 count;
-	int hash_error = HASH_OK;
+	int hash_rv = HASH_OK;
+	int hash_mode = HASH_OPER_MODE_HASH;
 
-	stm_dbg(debug, "[u8500_hash_alg] hash_save_state( state(0x%x)))",
-		(u32) device_state);
+	pr_debug("[u8500_hash_alg] hash_save_state( state(0x%x)))",
+		 (u32) device_state);
 
 	if (NULL == device_state) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
+		hash_rv = HASH_INVALID_PARAMETER;
+		pr_err("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
+		return hash_rv;
 	}
-
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
-	}
-
-	for (count = 0; count < HASH_BLOCK_SIZE / sizeof(u32); count++) {
-		device_state->buffer[count] =
-		    g_sys_ctx.state[hid].buffer[count];
-	}
-
-	device_state->index = g_sys_ctx.state[hid].index;
-	device_state->bit_index = g_sys_ctx.state[hid].bit_index;
-	device_state->length = g_sys_ctx.state[hid].length;
 
 	/* Write dummy value to force digest intermediate calculation. This
 	 * actually makes sure that there isn't any ongoing calculation in the
 	 * hardware.
 	 */
-	while (g_sys_ctx.registry[hid]->str & HASH_STR_DCAL_MASK)
-		;
+	while (sys_ctx_g.registry[hid]->str & HASH_STR_DCAL_MASK)
+		cpu_relax();
 
-	temp_cr = g_sys_ctx.registry[hid]->cr;
+	temp_cr = sys_ctx_g.registry[hid]->cr;
 
-	device_state->str_reg = g_sys_ctx.registry[hid]->str;
+	device_state->str_reg = sys_ctx_g.registry[hid]->str;
 
-	device_state->din_reg = g_sys_ctx.registry[hid]->din;
+	device_state->din_reg = sys_ctx_g.registry[hid]->din;
+
+	if (sys_ctx_g.registry[hid]->cr & HASH_CR_MODE_MASK)
+		hash_mode = HASH_OPER_MODE_HMAC;
+	else
+		hash_mode = HASH_OPER_MODE_HASH;
 
 	for (count = 0; count < HASH_CSR_COUNT; count++) {
-		if ((count >= 36)
-				&& !(g_sys_ctx.registry[hid]->cr &
-					HASH_CR_MODE_MASK)) {
+		if ((count >= 36) && (hash_mode == HASH_OPER_MODE_HASH))
 			break;
-		}
 
 		device_state->csr[count] =
-			g_sys_ctx.registry[hid]->csrx[count];
+			sys_ctx_g.registry[hid]->csrx[count];
 	}
 
-	device_state->csfull = g_sys_ctx.registry[hid]->csfull;
-	device_state->csdatain = g_sys_ctx.registry[hid]->csdatain;
+	device_state->csfull = sys_ctx_g.registry[hid]->csfull;
+	device_state->csdatain = sys_ctx_g.registry[hid]->csdatain;
 
-	/* end if */
 	device_state->temp_cr = temp_cr;
 
-	return hash_error;
-}
-
-/**
- * hash_end - Ends current HASH computation, passing back the hash to the user.
- * @hid: Hardware device ID
- * @digest: User allocated byte array for the calculated digest
- *
- * Reentrancy: Non Re-entrant
- */
-int hash_end(int hid, u8 digest[HASH_MSG_DIGEST_SIZE])
-{
-	int hash_error = HASH_OK;
-	u32 count;
-	/* Standard SHA-1 digest for null string for HASH mode */
-	u8 zero_message_hash_sha1[HASH_MSG_DIGEST_SIZE] = {
-		0xDA, 0x39, 0xA3, 0xEE,
-		0x5E, 0x6B, 0x4B, 0x0D,
-		0x32, 0x55, 0xBF, 0xEF,
-		0x95, 0x60, 0x18, 0x90,
-		0xAF, 0xD8, 0x07, 0x09,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00
-	};
-	/* Standard SHA-2 digest for null string for HASH mode */
-	u8 zero_message_hash_sha2[HASH_MSG_DIGEST_SIZE] = {
-		0xD4, 0x1D, 0x8C, 0xD9,
-		0x8F, 0x00, 0xB2, 0x04,
-		0xE9, 0x80, 0x09, 0x98,
-		0xEC, 0xF8, 0x42, 0x7E,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00
-	};
-	/* Standard SHA-1 digest for null string for HMAC mode,with no key */
-	u8 zero_message_hmac_sha1[HASH_MSG_DIGEST_SIZE] = {
-		0xFB, 0xDB, 0x1D, 0x1B,
-		0x18, 0xAA, 0x6C, 0x08,
-		0x32, 0x4B, 0x7D, 0x64,
-		0xB7, 0x1F, 0xB7, 0x63,
-		0x70, 0x69, 0x0E, 0x1D,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00
-	};
-	/* Standard SHA2 digest for null string for HMAC mode,with no key */
-	u8 zero_message_hmac_sha2[HASH_MSG_DIGEST_SIZE] = {
-		0x74, 0xE6, 0xF7, 0x29,
-		0x8A, 0x9C, 0x2D, 0x16,
-		0x89, 0x35, 0xF5, 0x8C,
-		0x00, 0x1B, 0xAD, 0x88,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00
-	};
-
-	stm_dbg(debug, "[u8500_hash_alg] hash_end(digest array (0x%x)))",
-		(u32) digest);
-
-	if (NULL == digest) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
-	}
-
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
-	}
-
-	if (0 == g_sys_ctx.state[hid].index &&
-		0 == g_sys_ctx.state[hid].length.high_word &&
-		0 == g_sys_ctx.state[hid].length.low_word) {
-		if (g_sys_ctx.registry[hid]->cr & HASH_CR_MODE_MASK) {
-			if (g_sys_ctx.registry[hid]->cr & HASH_CR_ALGO_MASK) {
-				/* hash of an empty message was requested */
-				for (count = 0; count < HASH_MSG_DIGEST_SIZE;
-				     count++) {
-					digest[count] =
-					    zero_message_hmac_sha1[count];
-				}
-			} else {	/* SHA-2 algo */
-
-				/* hash of an empty message was requested */
-				for (count = 0; count < HASH_MSG_DIGEST_SIZE;
-				     count++) {
-					digest[count] =
-					    zero_message_hmac_sha2[count];
-				}
-			}
-		} else {	/* HASH mode */
-
-			if (g_sys_ctx.registry[hid]->cr & HASH_CR_ALGO_MASK) {
-				/* hash of an empty message was requested */
-				for (count = 0; count < HASH_MSG_DIGEST_SIZE;
-				     count++) {
-					digest[count] =
-					    zero_message_hash_sha1[count];
-				}
-			} else {	/* SHA-2 algo */
-
-				/* hash of an empty message was requested */
-				for (count = 0; count < HASH_MSG_DIGEST_SIZE;
-				     count++) {
-					digest[count] =
-					    zero_message_hash_sha2[count];
-				}
-			}
-		}
-
-		HASH_SET_DCAL;
-	} else {
-		hash_messagepad(hid,
-				g_sys_ctx.state[hid].buffer,
-				g_sys_ctx.state[hid].index);
-
-		/* Wait till the DCAL bit get cleared, So that we get the final
-		 * message digest not intermediate value. */
-		while (g_sys_ctx.registry[hid]->str & HASH_STR_DCAL_MASK)
-			;
-
-		hash_error = hash_get_digest(hid, digest);
-
-		/* Reset the HASH state */
-		g_sys_ctx.state[hid].index = 0;
-		g_sys_ctx.state[hid].bit_index = 0;
-		for (count = 0; count < HASH_BLOCK_SIZE / sizeof(u32);
-		     count++) {
-			g_sys_ctx.state[hid].buffer[count]
-			    = 0;
-		}
-
-		g_sys_ctx.state[hid].length.high_word = 0;
-		g_sys_ctx.state[hid].length.low_word = 0;
-	}
-
-	if (debug)
-		hexdump(digest, HASH_MSG_DIGEST_SIZE);
-
-	return hash_error;
-}
-
-/**
- * hash_initialize_globals - Initialize global variables to their default reset
- *                           value.
- * @hid: Hardware device ID
- *
- * Reentrancy: Non Re-entrant, global structure g_sys_ctx elements are being
- * modified
- */
-static void hash_initialize_globals(int hid)
-{
-	u8 loop_count;
-
-	/* Resetting the values of global variables except the registry */
-	g_sys_ctx.state[hid].temp_cr = HASH_RESET_INDEX_VAL;
-	g_sys_ctx.state[hid].str_reg = HASH_RESET_INDEX_VAL;
-	g_sys_ctx.state[hid].din_reg = HASH_RESET_INDEX_VAL;
-
-	for (loop_count = 0; loop_count < HASH_CSR_COUNT; loop_count++) {
-		g_sys_ctx.state[hid].csr[loop_count] =
-		    HASH_RESET_CSRX_REG_VALUE;
-	}
-
-	g_sys_ctx.state[hid].csfull = HASH_RESET_CSFULL_REG_VALUE;
-	g_sys_ctx.state[hid].csdatain = HASH_RESET_CSDATAIN_REG_VALUE;
-
-	for (loop_count = 0; loop_count < (HASH_BLOCK_SIZE / sizeof(u32));
-	     loop_count++) {
-		g_sys_ctx.state[hid].buffer[loop_count] =
-		    HASH_RESET_BUFFER_VAL;
-	}
-
-	g_sys_ctx.state[hid].length.high_word = HASH_RESET_LEN_HIGH_VAL;
-	g_sys_ctx.state[hid].length.low_word = HASH_RESET_LEN_LOW_VAL;
-	g_sys_ctx.state[hid].index = HASH_RESET_INDEX_VAL;
-	g_sys_ctx.state[hid].bit_index = HASH_RESET_BIT_INDEX_VAL;
-}
-
-/**
- * hash_reset - This routine will reset the global variable to default reset
- * value and HASH registers to their power on reset values.
- * @hid: Hardware device ID
- *
- * Reentrancy: Non Re-entrant, global structure g_sys_ctx elements are being
- * modified.
- */
-int hash_reset(int hid)
-{
-	int hash_error = HASH_OK;
-	u8 loop_count;
-
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-
-		return hash_error;
-	}
-
-	/* Resetting the values of global variables except the registry */
-	hash_initialize_globals(hid);
-
-	/* Resetting HASH control register to power-on-reset values */
-	g_sys_ctx.registry[hid]->str = HASH_RESET_START_REG_VALUE;
-
-	for (loop_count = 0; loop_count < HASH_CSR_COUNT; loop_count++) {
-		g_sys_ctx.registry[hid]->csrx[loop_count] =
-		    HASH_RESET_CSRX_REG_VALUE;
-	}
-
-	g_sys_ctx.registry[hid]->csfull = HASH_RESET_CSFULL_REG_VALUE;
-	g_sys_ctx.registry[hid]->csdatain =
-	    HASH_RESET_CSDATAIN_REG_VALUE;
-
-     /* Resetting the HASH Control reg. This also reset the PRIVn and SECn
-      * bits and hence the device registers will not be accessed anymore and
-      * should be done in the last HASH register access statement.
-      */
-	g_sys_ctx.registry[hid]->cr = HASH_RESET_CONTROL_REG_VALUE;
-
-	return hash_error;
+	return hash_rv;
 }
 
 /**
@@ -1587,59 +1148,37 @@ int hash_reset(int hid)
  */
 int hash_init_base_address(int hid, t_logical_address base_address)
 {
-	int hash_error = HASH_OK;
+	int hash_rv = HASH_OK;
 
-	stm_dbg(debug, "[u8500_hash_alg] hash_init_base_address())");
-
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-
-		return hash_error;
-	}
+	pr_debug("[u8500_hash_alg] hash_init_base_address())");
 
 	if (0 != base_address) {
-		/*--------------------------------------*
-		 * Initializing the registers structure *
-		 *--------------------------------------*/
-		g_sys_ctx.registry[hid] = (struct hash_register *) base_address;
+		/* Initializing the registers structure */
+		sys_ctx_g.registry[hid] =
+			(struct hash_register *) base_address;
 
-		/*--------------------------*
-		 * Checking Peripheral Ids  *
-		 *--------------------------*/
-		if ((HASH_P_ID0 ==
-		     g_sys_ctx.registry[hid]->periphid0)
-		    && (HASH_P_ID1 ==
-			g_sys_ctx.registry[hid]->periphid1)
-		    && (HASH_P_ID2 ==
-			g_sys_ctx.registry[hid]->periphid2)
-		    && (HASH_P_ID3 ==
-			g_sys_ctx.registry[hid]->periphid3)
-		    && (HASH_CELL_ID0 ==
-			g_sys_ctx.registry[hid]->cellid0)
-		    && (HASH_CELL_ID1 ==
-			g_sys_ctx.registry[hid]->cellid1)
-		    && (HASH_CELL_ID2 ==
-			g_sys_ctx.registry[hid]->cellid2)
-		    && (HASH_CELL_ID3 ==
-			g_sys_ctx.registry[hid]->cellid3)
+		/* Checking Peripheral Ids  */
+		if ((HASH_P_ID0 == sys_ctx_g.registry[hid]->periphid0)
+		    && (HASH_P_ID1 == sys_ctx_g.registry[hid]->periphid1)
+		    && (HASH_P_ID2 == sys_ctx_g.registry[hid]->periphid2)
+		    && (HASH_P_ID3 == sys_ctx_g.registry[hid]->periphid3)
+		    && (HASH_CELL_ID0 == sys_ctx_g.registry[hid]->cellid0)
+		    && (HASH_CELL_ID1 == sys_ctx_g.registry[hid]->cellid1)
+		    && (HASH_CELL_ID2 == sys_ctx_g.registry[hid]->cellid2)
+		    && (HASH_CELL_ID3 == sys_ctx_g.registry[hid]->cellid3)
 		    ) {
-
-			/* Resetting the values of global variables except the
-			   registry */
-			hash_initialize_globals(hid);
-			hash_error = HASH_OK;
-			return hash_error;
+			hash_rv = HASH_OK;
+			return hash_rv;
 		} else {
-			hash_error = HASH_UNSUPPORTED_HW;
-			stm_error("[u8500_hash_alg] HASH_UNSUPPORTED_HW!");
-			return hash_error;
+			hash_rv = HASH_UNSUPPORTED_HW;
+			pr_err("[u8500_hash_alg] HASH_UNSUPPORTED_HW!");
+			return hash_rv;
 		}
 	} /* end if */
 	else {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
+		hash_rv = HASH_INVALID_PARAMETER;
+		pr_err("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
+		return hash_rv;
 	}
 }
 
@@ -1647,110 +1186,50 @@ int hash_init_base_address(int hid, t_logical_address base_address)
  * hash_get_digest - Gets the digest.
  * @hid: Hardware device ID
  * @digest: User allocated byte array for the calculated digest
+ * @algorithm: The algorithm in use.
  *
  * Reentrancy: Non Re-entrant, global variable registry (hash control register)
  * is being modified.
  *
- * Note that, if this is called before the final message has been handle it will
- * return the intermediate message digest.
+ * Note that, if this is called before the final message has been handle it
+ * will return the intermediate message digest.
  */
-int hash_get_digest(int hid, u8 *digest)
+void hash_get_digest(int hid, u8 *digest, int algorithm)
 {
 	u32 temp_hx_val, count;
-	int hash_error = HASH_OK;
+	int loop_ctr;
 
-	stm_dbg(debug,
-		"[u8500_hash_alg] hash_get_digest(digest array:(0x%x))",
-		(u32) digest);
-
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
+	if (algorithm != HASH_ALGO_SHA1 && algorithm != HASH_ALGO_SHA2) {
+		pr_err("[hash_get_digest] Incorrect algorithm %d", algorithm);
+		return;
 	}
 
+	if (algorithm == HASH_ALGO_SHA1)
+		loop_ctr = HASH_SHA1_DIGEST_SIZE / sizeof(u32);
+	else
+		loop_ctr = HASH_SHA2_DIGEST_SIZE / sizeof(u32);
+
+	pr_debug("[u8500_hash_alg] hash_get_digest(digest array:(0x%x))",
+		 (u32) digest);
+
 	/* Copy result into digest array */
-	for (count = 0; count < (HASH_MSG_DIGEST_SIZE / sizeof(u32));
-	     count++) {
+	for (count = 0; count < loop_ctr; count++) {
 		temp_hx_val = HASH_GET_HX(count);
 		digest[count * 4] = (u8) ((temp_hx_val >> 24) & 0xFF);
 		digest[count * 4 + 1] = (u8) ((temp_hx_val >> 16) & 0xFF);
 		digest[count * 4 + 2] = (u8) ((temp_hx_val >> 8) & 0xFF);
 		digest[count * 4 + 3] = (u8) ((temp_hx_val >> 0) & 0xFF);
 	}
-
-	return hash_error;
 }
 
-/**
- * hash_compute - Performs a complete HASH calculation on the message passed.
- * @hid: Hardware device ID
- * @p_data_buffer: Pointer to the message to be hashed
- * @msg_length: The length of the message
- * @p_hash_config: Structure with configuration data for the hash hardware
- * @digest: User allocated byte array for the calculated digest
- *
- * Reentrancy: Non Re-entrant
- */
-int hash_compute(int hid,
-		const u8 *p_data_buffer,
-		u32 msg_length,
-		struct hash_config *p_hash_config,
-		u8 digest[HASH_MSG_DIGEST_SIZE]) {
-	int hash_error = HASH_OK;
-
-	stm_dbg(debug, "[u8500_hash_alg] hash_compute())");
-
-	if (!((HASH_DEVICE_ID_0 == hid)
-	      || (HASH_DEVICE_ID_1 == hid))) {
-		hash_error = HASH_INVALID_PARAMETER;
-		stm_error("[u8500_hash_alg] HASH_INVALID_PARAMETER!");
-		return hash_error;
-	}
-
-
-	 /* WARNING: return code must be checked if
-	  * behaviour of hash_begin changes.
-	  */
-	hash_error = hash_setconfiguration(hid, p_hash_config);
-	if (HASH_OK != hash_error) {
-		stm_error("[u8500_hash_alg] hash_setconfiguration() failed!");
-		return hash_error;
-	}
-
-	hash_error = hash_begin(hid);
-	if (HASH_OK != hash_error) {
-		stm_error("[u8500_hash_alg] hash_begin() failed!");
-		return hash_error;
-	}
-
-	hash_error = hash_hw_update(hid, p_data_buffer, msg_length);
-	if (HASH_OK != hash_error) {
-		stm_error("[u8500_hash_alg] hash_hw_update() failed!");
-		return hash_error;
-	}
-
-	hash_error = hash_end(hid, digest);
-	if (HASH_OK != hash_error) {
-		stm_error("[u8500_hash_alg] hash_end() failed!");
-		return hash_error;
-	}
-
-	return hash_error;
-}
 
 module_init(u8500_hash_mod_init);
 module_exit(u8500_hash_mod_fini);
 
-module_param(mode, int, 0);
 module_param(debug, int, 0);
-module_param(contextsaving, int, 0);
 
 MODULE_DESCRIPTION("Driver for ST-Ericsson U8500 HASH engine.");
 MODULE_LICENSE("GPL");
 
 MODULE_ALIAS("sha1-u8500");
 MODULE_ALIAS("sha256-u8500");
-MODULE_ALIAS("hmac(sha1-u8500)");
-MODULE_ALIAS("hmac(sha256-u8500)");

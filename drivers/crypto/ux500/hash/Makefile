@@ -1,8 +1,10 @@
-
-ifeq ($(CONFIG_CRYPTO_DEV_UX500_DEBUG_INFO),y)
-        EXTRA_CFLAGS += -D__DEBUG
-else
-        EXTRA_CFLAGS += -D__RELEASE
+#
+# Copyright (C) ST-Ericsson SA 2010
+# Author: Shujuan Chen (shujuan.chen@stericsson.com)
+# License terms: GNU General Public License (GPL) version 2
+#
+ifdef CONFIG_CRYPTO_DEV_UX500_DEBUG
+CFLAGS_hash_core.o := -DDEBUG
 endif
 
 obj-$(CONFIG_CRYPTO_DEV_UX500_HASH) += u8500_hash.o

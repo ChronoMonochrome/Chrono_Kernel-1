@@ -1,25 +1,19 @@
+/*
+ * Copyright (C) ST-Ericsson SA 2010
+ * Author: Shujuan Chen (shujuan.chen@stericsson.com)
+ * Author: Joakim Bech (joakim.xx.bech@stericsson.com)
+ * License terms: GNU General Public License (GPL) version 2
+ */
 #ifndef _HASH_ALG_H
 #define _HASH_ALG_H
-/*
- * Copyright (C) 2010 ST-Ericsson.
- * Copyright (C) 2010 STMicroelectronics.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (at your option)
- * any later version.
- */
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <mach/hcl_defs.h>
 
 /* Number of bytes the message digest */
 #define HASH_MSG_DIGEST_SIZE    32
 #define HASH_BLOCK_SIZE         64
-
-#define __HASH_ENHANCED
+#define HASH_SHA1_DIGEST_SIZE	20
+#define HASH_SHA2_DIGEST_SIZE   32
 
 /* Version defines */
 #define HASH_HCL_VERSION_ID     1
@@ -106,42 +100,42 @@ extern "C" {
 #define HASH_CELL_ID2       0x05
 #define HASH_CELL_ID3       0xB1
 
-#define HASH_SET_DIN(val)   HCL_WRITE_REG(g_sys_ctx.registry[hid]->din, (val))
+#define HASH_SET_DIN(val)   HCL_WRITE_REG( \
+		sys_ctx_g.registry[HASH_DEVICE_ID_1]->din, (val))
 
 #define HASH_INITIALIZE \
 	HCL_WRITE_BITS( \
-		g_sys_ctx.registry[hid]->cr, \
+		sys_ctx_g.registry[HASH_DEVICE_ID_1]->cr, \
 		0x01 << HASH_CR_INIT_POS, \
 		HASH_CR_INIT_MASK)
 
 #define HASH_SET_DATA_FORMAT(data_format) \
 		HCL_WRITE_BITS( \
-			g_sys_ctx.registry[hid]->cr, \
+			sys_ctx_g.registry[HASH_DEVICE_ID_1]->cr, \
 			(u32) (data_format) << HASH_CR_DATAFORM_POS, \
 			HASH_CR_DATAFORM_MASK)
 
 #define HASH_GET_HX(pos) \
-		HCL_READ_REG(g_sys_ctx.registry[hid]->hx[pos])
-
-#define HASH_SET_HX(pos, val) \
-		HCL_WRITE_REG(g_sys_ctx.registry[hid]->hx[pos], (val));
+		HCL_READ_REG(sys_ctx_g.registry[HASH_DEVICE_ID_1]->hx[pos])
 
 #define HASH_SET_NBLW(val) \
 		HCL_WRITE_BITS( \
-			g_sys_ctx.registry[hid]->str, \
+			sys_ctx_g.registry[HASH_DEVICE_ID_1]->str, \
 			(u32) (val) << HASH_STR_NBLW_POS, \
 			HASH_STR_NBLW_MASK)
 
 #define HASH_SET_DCAL \
 		HCL_WRITE_BITS( \
-			g_sys_ctx.registry[hid]->str, \
+			sys_ctx_g.registry[HASH_DEVICE_ID_1]->str, \
 			0x01 << HASH_STR_DCAL_POS, \
 			HASH_STR_DCAL_MASK)
+
+#define HASH_BLOCK_BYTE_SIZE		64
 
 /**
  * struct uint64 - Structure to handle 64 bits integers.
  * @high_word: Most significant bits
- * @high_word: Least significant bits
+ * @low_word: Least significant bits
  *
  * Used to handle 64 bits integers.
  */
@@ -184,19 +178,19 @@ struct hash_register {
 	u32 str;
 	u32 hx[8];
 
-	u32 padding0[(0x080 - 0x02C) >> 2];
+	u32 padding0[(0x080 - 0x02C) / sizeof(u32)];
 
 	u32 itcr;
 	u32 itip;
 	u32 itop;
 
-	u32 padding1[(0x0F8 - 0x08C) >> 2];
+	u32 padding1[(0x0F8 - 0x08C) / sizeof(u32)];
 
 	u32 csfull;
 	u32 csdatain;
 	u32 csrx[HASH_CSR_COUNT];
 
-	u32 padding2[(0xFE0 - 0x1D0) >> 2];
+	u32 padding2[(0xFE0 - 0x1D0) / sizeof(u32)];
 
 	u32 periphid0;
 	u32 periphid1;
@@ -249,7 +243,14 @@ struct hash_state {
  * @state: State of the hash device
  */
 struct hash_system_context {
-	/* Pointer to HASH registers structure */
+	/*
+	 * Pointer to HASH registers structure. We know that this gives a
+	 * checkpatch warning and in the current design it needs to be a
+	 * volatile. We will change it when we will rewrite the driver similar
+	 * to how we have done in cryp-part. We have also read
+	 * Documentation/volatile-considered-harmful.txt as checkpatch tell
+	 * us to do.
+	 */
 	volatile struct hash_register *registry[MAX_HASH_DEVICE];
 
 	/* State of HASH device */
@@ -281,16 +282,6 @@ enum hash_data_format {
 };
 
 /**
- * enum hash_device_state - Device state
- * @DISABLE: Disable the hash hardware
- * @ENABLE: Enable the hash hardware
- */
-enum hash_device_state {
-	DISABLE = 0,
-	ENABLE = 1
-};
-
-/**
  * struct hash_protection_config - Device protection configuration.
  * @privilege_access: FIXME, add comment.
  * @secure_access: FIXME, add comment.
@@ -298,69 +289,6 @@ enum hash_device_state {
 struct hash_protection_config {
 	int privilege_access;
 	int secure_access;
-};
-
-/**
- * enum hash_input_status - Data Input flag status.
- * @HASH_DIN_EMPTY: Indicates that nothing is in data registers
- * @HASH_DIN_FULL: Indicates that data registers are full
- */
-enum hash_input_status {
-	HASH_DIN_EMPTY = 0,
-	HASH_DIN_FULL = 1
-};
-
-/**
- * Number of words already pushed
- */
-enum hash_nbw_pushed {
-	HASH_NBW_00 = 0x00,
-	HASH_NBW_01 = 0x01,
-	HASH_NBW_02 = 0x02,
-	HASH_NBW_03 = 0x03,
-	HASH_NBW_04 = 0x04,
-	HASH_NBW_05 = 0x05,
-	HASH_NBW_06 = 0x06,
-	HASH_NBW_07 = 0x07,
-	HASH_NBW_08 = 0x08,
-	HASH_NBW_09 = 0x09,
-	HASH_NBW_10 = 0x0A,
-	HASH_NBW_11 = 0x0B,
-	HASH_NBW_12 = 0x0C,
-	HASH_NBW_13 = 0x0D,
-	HASH_NBW_14 = 0x0E,
-	HASH_NBW_15 = 0x0F
-};
-
-/**
- * struct hash_device_status - Device status for DINF, NBW, and NBLW bit
- *                             fields.
- * @dinf_status: HASH data in full flag
- * @nbw_status: Number of words already pushed
- * @nblw_status: Number of Valid Bits Last Word of the Message
- */
-struct hash_device_status {
-	int dinf_status;
-	int nbw_status;
-	u8 nblw_status;
-};
-
-/**
- * enum hash_dma_request - Enumeration for HASH DMA request types.
- */
-enum hash_dma_request {
-	HASH_DISABLE_DMA_REQ = 0x0,
-	HASH_ENABLE_DMA_REQ = 0x1
-};
-
-/**
- * enum hash_digest_cal - Enumeration for digest calculation.
- * @HASH_DISABLE_DCAL: Indicates that DCAL bit is not set/used.
- * @HASH_ENABLE_DCAL: Indicates that DCAL bit is set/used.
- */
-enum hash_digest_cal {
-	HASH_DISABLE_DCAL = 0x0,
-	HASH_ENABLE_DCAL = 0x1
 };
 
 /**
@@ -384,93 +312,60 @@ enum hash_op {
 };
 
 /**
- * enum hash_key_type - Enumeration for selecting between long and short key.
- * @HASH_SHORT_KEY: Key used is shorter or equal to block size (64 bytes)
- * @HASH_LONG_KEY: Key used is greater than block size (64 bytes)
- */
-enum hash_key_type {
-	HASH_SHORT_KEY = 0x0,
-	HASH_LONG_KEY = 0x1
-};
-
-/**
  * struct hash_config - Configuration data for the hardware
  * @data_format: Format of data entered into the hash data in register
  * @algorithm: Algorithm selection bit
  * @oper_mode: Operating mode selection bit
- * @hmac_key: Long key selection bit HMAC mode
  */
 struct hash_config {
 	int data_format;
 	int algorithm;
 	int oper_mode;
-	int hmac_key;
 };
 
-
 /**
- * enum hash_error - Error codes for hash.
+ * enum hash_rv - Return values / error codes for hash.
  */
-enum hash_error {
+enum hash_rv {
 	HASH_OK = 0,
 	HASH_MSG_LENGTH_OVERFLOW,
-	HASH_INTERNAL_ERROR,
-	HASH_NOT_CONFIGURED,
-	HASH_REQUEST_PENDING,
-	HASH_REQUEST_NOT_APPLICABLE,
 	HASH_INVALID_PARAMETER,
-	HASH_UNSUPPORTED_FEATURE,
 	HASH_UNSUPPORTED_HW
+};
+
+/**
+ * struct hash_ctx - The context used for hash calculations.
+ * @key: The key used in the operation
+ * @keylen: The length of the key
+ * @updated: Indicates if hardware is initialized for new operations
+ * @state: The state of the current calculations
+ * @config: The current configuration
+ */
+struct hash_ctx {
+	u8 key[HASH_BLOCK_BYTE_SIZE];
+	u32 keylen;
+	u8 updated;
+	struct hash_state state;
+	struct hash_config config;
 };
 
 int hash_init_base_address(int hash_device_id, t_logical_address base_address);
 
-int HASH_GetVersion(t_version *p_version);
-
-int HASH_Reset(int hash_devive_id);
-
-int HASH_ConfigureDmaRequest(int hash_device_id, int request_state);
-
-int HASH_ConfigureLastValidBits(int hash_device_id, u8 nblw_val);
-
-int HASH_ConfigureDigestCal(int hash_device_id, int dcal_state);
-
-int HASH_ConfigureProtection(int hash_device_id,
-		struct hash_protection_config
-		*p_protect_config);
-
 int hash_setconfiguration(int hash_device_id, struct hash_config *p_config);
 
-int hash_begin(int hash_device_id);
+void hash_begin(struct hash_ctx *ctx);
 
-int hash_get_digest(int hash_device_id, u8 digest[HASH_MSG_DIGEST_SIZE]);
+void hash_get_digest(int hid, u8 *digest, int algorithm);
 
-int HASH_ClockGatingOff(int hash_device_id);
-
-struct hash_device_status HASH_GetDeviceStatus(int hash_device_id);
-
-t_bool HASH_IsDcalOngoing(int hash_device_id);
-
-int hash_hw_update(int hash_device_id,
+int hash_hw_update(struct shash_desc *desc,
+		int hash_device_id,
 		const u8 *p_data_buffer,
 		u32 msg_length);
 
-int hash_end(int hash_device_id, u8 digest[HASH_MSG_DIGEST_SIZE]);
-
-int hash_compute(int hash_device_id,
-		const u8 *p_data_buffer,
-		u32 msg_length,
-		struct hash_config *p_hash_config,
-		u8 digest[HASH_MSG_DIGEST_SIZE]);
-
-int hash_end_key(int hash_device_id);
+int hash_end(struct hash_ctx *ctx, u8 digest[HASH_MSG_DIGEST_SIZE]);
 
 int hash_save_state(int hash_device_id, struct hash_state *state);
 
 int hash_resume_state(int hash_device_id, const struct hash_state *state);
 
-#ifdef __cplusplus
-}
 #endif
-#endif
-
