@@ -62,63 +62,6 @@ out:
 	return ret;
 }
 
-#ifdef CONFIG_REGULATOR_DEBUG
-
-static struct ux500_regulator_debug {
-	struct dentry *dir;
-	struct dentry *status_file;
-	struct dentry *power_state_cnt_file;
-	struct dbx500_regulator_info *regulator_array;
-	int num_regulators;
-	u8 *state_before_suspend;
-	u8 *state_after_suspend;
-} rdebug;
-
-void ux500_regulator_suspend_debug(void)
-{
-	int i;
-	for (i = 0; i < rdebug.num_regulators; i++)
-		rdebug.state_before_suspend[i] =
-			rdebug.regulator_array[i].is_enabled;
-}
-
-void ux500_regulator_resume_debug(void)
-{
-	int i;
-	for (i = 0; i < rdebug.num_regulators; i++)
-		rdebug.state_after_suspend[i] =
-			rdebug.regulator_array[i].is_enabled;
-}
-
-static int ux500_regulator_power_state_cnt_print(struct seq_file *s, void *p)
-{
-	struct device *dev = s->private;
-	int err;
-
-	/* print power state count */
-	err = seq_printf(s, "ux500-regulator power state count: %i\n",
-		power_state_active_get());
-	if (err < 0)
-		dev_err(dev, "seq_printf overflow\n");
-
-	return 0;
-}
-
-static int ux500_regulator_power_state_cnt_open(struct inode *inode,
-	struct file *file)
-{
-	return single_open(file, ux500_regulator_power_state_cnt_print,
-		inode->i_private);
-}
-
-static const struct file_operations ux500_regulator_power_state_cnt_fops = {
-	.open = ux500_regulator_power_state_cnt_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.owner = THIS_MODULE,
-};
-
 struct ux500_regulator {
 	char *name;
 	void (*enable)(void);
@@ -209,6 +152,63 @@ void ux500_regulator_put(struct ux500_regulator *regulator)
 	/* Here for symetric reasons and for possible future use */
 }
 EXPORT_SYMBOL_GPL(ux500_regulator_put);
+
+#ifdef CONFIG_REGULATOR_DEBUG
+
+static struct ux500_regulator_debug {
+	struct dentry *dir;
+	struct dentry *status_file;
+	struct dentry *power_state_cnt_file;
+	struct dbx500_regulator_info *regulator_array;
+	int num_regulators;
+	u8 *state_before_suspend;
+	u8 *state_after_suspend;
+} rdebug;
+
+void ux500_regulator_suspend_debug(void)
+{
+	int i;
+	for (i = 0; i < rdebug.num_regulators; i++)
+		rdebug.state_before_suspend[i] =
+			rdebug.regulator_array[i].is_enabled;
+}
+
+void ux500_regulator_resume_debug(void)
+{
+	int i;
+	for (i = 0; i < rdebug.num_regulators; i++)
+		rdebug.state_after_suspend[i] =
+			rdebug.regulator_array[i].is_enabled;
+}
+
+static int ux500_regulator_power_state_cnt_print(struct seq_file *s, void *p)
+{
+	struct device *dev = s->private;
+	int err;
+
+	/* print power state count */
+	err = seq_printf(s, "ux500-regulator power state count: %i\n",
+		power_state_active_get());
+	if (err < 0)
+		dev_err(dev, "seq_printf overflow\n");
+
+	return 0;
+}
+
+static int ux500_regulator_power_state_cnt_open(struct inode *inode,
+	struct file *file)
+{
+	return single_open(file, ux500_regulator_power_state_cnt_print,
+		inode->i_private);
+}
+
+static const struct file_operations ux500_regulator_power_state_cnt_fops = {
+	.open = ux500_regulator_power_state_cnt_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+	.owner = THIS_MODULE,
+};
 
 static int ux500_regulator_status_print(struct seq_file *s, void *p)
 {
