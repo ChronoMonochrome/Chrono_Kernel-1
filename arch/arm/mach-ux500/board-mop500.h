@@ -88,4 +88,7 @@ void __init snowball_pins_init(void);
 void mop500_uib_i2c_add(int busnum, struct i2c_board_info *info,
 		unsigned n);
 
+int msp13_i2s_init(void);
+int msp13_i2s_exit(void);
+
 #endif
