@@ -481,6 +481,14 @@ config PCH_PHUB
 	  To compile this driver as a module, choose M here: the module will
 	  be called pch_phub.
 
+config HWMEM
+	bool "Hardware memory driver"
+	default n
+	help
+	  This driver provides a way to allocate contiguous system memory which
+	  can be used by hardware. It also enables accessing hwmem allocated
+	  memory buffers through a secure id which can be shared across processes.
+
 config USB_SWITCH_FSA9480
 	tristate "FSA9480 USB Switch"
 	depends on I2C
