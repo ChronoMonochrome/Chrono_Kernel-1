@@ -74,26 +74,6 @@ static inline bool __attribute_const__ cpu_is_u5500v21(void)
  * 8500 revisions
  */
 
-static inline bool __attribute_const__ cpu_is_u8500ed(void)
-{
-	return cpu_is_u8500() && dbx500_revision() == 0x00;
-}
-
-static inline bool __attribute_const__ cpu_is_u8500v1(void)
-{
-	return cpu_is_u8500() && (dbx500_revision() & 0xf0) == 0xA0;
-}
-
-static inline bool __attribute_const__ cpu_is_u8500v10(void)
-{
-	return cpu_is_u8500() && dbx500_revision() == 0xA0;
-}
-
-static inline bool __attribute_const__ cpu_is_u8500v11(void)
-{
-	return cpu_is_u8500() && dbx500_revision() == 0xA1;
-}
-
 static inline bool __attribute_const__ cpu_is_u8500v2(void)
 {
 	return cpu_is_u8500() && ((dbx500_revision() & 0xf0) == 0xB0);
@@ -116,7 +96,7 @@ static inline bool cpu_is_u8500v22(void)
 
 static inline bool cpu_is_u8500v20_or_later(void)
 {
-	return cpu_is_u8500() && !cpu_is_u8500v10() && !cpu_is_u8500v11();
+	return cpu_is_u8500() && ((dbx500_revision() & 0xf0) >= 0xB0);
 }
 
 static inline bool ux500_is_svp(void)
