@@ -166,16 +166,15 @@ static inline void freeChannels(struct cm_process_priv* processPriv)
 {
 	struct list_head* head, *next;
 	int warn = 0;
-			
+
+	mutex_lock(&channel_lock);
 	list_for_each_safe(head, next, &channel_list) {
 		struct cm_channel_priv *channelPriv;
 		channelPriv = list_entry(head, struct cm_channel_priv, entry);
 		/* Only channels belonging to this process are concerned */
 		if (channelPriv->proc == processPriv) {
 			tasklet_disable(&cmld_service_tasklet);
-			mutex_lock(&channel_lock);
 			list_del(&channelPriv->entry);
-			mutex_unlock(&channel_lock);
 			tasklet_enable(&cmld_service_tasklet);
 
 			/* Free all remaining messages if any
@@ -191,6 +190,8 @@ static inline void freeChannels(struct cm_process_priv* processPriv)
 		}
 		warn = 1;
 	}
+	mutex_unlock(&channel_lock);
+
 	if (warn)
 		pr_err("[CM - PID=%d]: Some remaining channel entries "
 		       "freed\n", current->tgid);
