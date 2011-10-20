@@ -146,32 +146,19 @@ static struct platform_device db5500_prcmu_device = {
 };
 
 static struct platform_device *db5500_platform_devs[] __initdata = {
+	&u5500_gpio_devs[0],
+	&u5500_gpio_devs[1],
+	&u5500_gpio_devs[2],
+	&u5500_gpio_devs[3],
+	&u5500_gpio_devs[4],
+	&u5500_gpio_devs[5],
+	&u5500_gpio_devs[6],
+	&u5500_gpio_devs[7],
 	&mbox0_device,
 	&mbox1_device,
 	&mbox2_device,
 	&db5500_prcmu_device,
 };
-
-static resource_size_t __initdata db5500_gpio_base[] = {
-	U5500_GPIOBANK0_BASE,
-	U5500_GPIOBANK1_BASE,
-	U5500_GPIOBANK2_BASE,
-	U5500_GPIOBANK3_BASE,
-	U5500_GPIOBANK4_BASE,
-	U5500_GPIOBANK5_BASE,
-	U5500_GPIOBANK6_BASE,
-	U5500_GPIOBANK7_BASE,
-};
-
-static void __init db5500_add_gpios(struct device *parent)
-{
-	struct nmk_gpio_platform_data pdata = {
-		/* No custom data yet */
-	};
-
-	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db5500_gpio_base),
-			 IRQ_DB5500_GPIO0, &pdata);
-}
 
 static u8 db5500_revision;
 
@@ -285,7 +272,6 @@ struct device * __init u5500_init_devices(void)
 #endif
 	parent = db5500_soc_device_init();
 
-	db5500_add_gpios(parent);
 	db5500_pmu_init();
 	db5500_dma_init(parent);
 	db5500_add_rtc(parent);
