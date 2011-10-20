@@ -260,6 +260,7 @@ struct ab8500 {
 
 struct regulator_reg_init;
 struct regulator_init_data;
+struct ab8500_accdet_platform_data;
 struct ab8500_denc_platform_data;
 struct ab8500_audio_platform_data;
 struct ab8500_gpio_platform_data;
@@ -276,6 +277,7 @@ struct ab8500_gpio_platform_data;
  * @regulator_reg_init: regulator init registers
  * @num_regulator: number of regulators
  * @regulator: machine-specific constraints for regulators
+ * @accdet: machine-specific Accessory detection data
  * @battery: machine-specific battery management data
  * @charger: machine-specific charger data
  * @btemp: machine-specific battery temp data
@@ -291,6 +293,7 @@ struct ab8500_platform_data {
 	struct ab8500_regulator_reg_init *regulator_reg_init;
 	int num_regulator;
 	struct regulator_init_data *regulator;
+	struct abx500_accdet_platform_data *accdet;
 	struct ab8500_bm_data *battery;
 	struct ab8500_denc_platform_data *denc;
 	struct ab8500_audio_platform_data *audio;
