@@ -120,6 +120,20 @@ config DBX500_PRCMU_DEBUG
 	help
 	  Add support for PRCMU debug
 
+config TEE_UX500
+	bool "Trusted Execution Environment (TEE) ux500 hardware support"
+	depends on TEE_SUPPORT
+	default y
+	help
+	  Adds TEE hardware support for ux500 platforms.
+
+config TEE_SVP
+	bool "Trusted Execution Environment (TEE) ux500 SVP support"
+	depends on TEE_SUPPORT && UX500_SVP
+	default y
+	help
+	  Adds TEE support for SVP in ux500 platforms.
+
 config DB8500_MLOADER
 	bool "Modem firmware upload/download support"
 	depends on UX500_SOC_DB8500
