@@ -8,6 +8,7 @@ config UX500_SOC_COMMON
 	select ARM_ERRATA_754322
 	select ARM_ERRATA_764369
 	select CACHE_L2X0
+	select HAS_MTU
 
 config UX500_SOC_DBX500
 	depends on UX500_SOC_DB5500 || UX500_SOC_DB8500
@@ -112,6 +113,12 @@ config U5500_MODEM_IRQ
 	help
 	  Add support for handling IRQ:s from modem side
 
+config DBX500_PRCMU_DEBUG
+	bool "DBX500 PRCMU debug"
+	depends on ((MFD_DB5500_PRCMU || MFD_DB8500_PRCMU) && DEBUG_FS)
+	help
+	  Add support for PRCMU debug
+
 config U5500_MBOX
 	bool "Mailbox support"
 	depends on U5500_MODEM_IRQ
@@ -135,4 +142,6 @@ config UX500_L2X0_PREFETCH_CTRL
 	  Communication with Trustzone is done through TEE driver.
 
 source "arch/arm/mach-ux500/Kconfig-arch"
+source "arch/arm/mach-ux500/pm/Kconfig"
+
 endif
