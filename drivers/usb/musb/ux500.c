@@ -35,6 +35,12 @@ struct ux500_glue {
 };
 #define glue_to_musb(g)	platform_get_drvdata(g->musb)
 
+/**
+ * ux500_musb_init() - Initialize the platform USB driver.
+ * @musb: struct musb pointer.
+ *
+ * This function initialize the USB controller and Phy.
+*/
 static int ux500_musb_init(struct musb *musb)
 {
 	musb->xceiv = usb_get_transceiver();
@@ -46,6 +52,12 @@ static int ux500_musb_init(struct musb *musb)
 	return 0;
 }
 
+/**
+ * ux500_musb_exit() - unregister the platform USB driver.
+ * @musb: struct musb pointer.
+ *
+ * This function unregisters the USB controller.
+ */
 static int ux500_musb_exit(struct musb *musb)
 {
 	usb_put_transceiver(musb->xceiv);
@@ -58,6 +70,13 @@ static const struct musb_platform_ops ux500_ops = {
 	.exit		= ux500_musb_exit,
 };
 
+/**
+ * ux500_probe() - Allocate the resources.
+ * @pdev: struct platform_device.
+ *
+ * This function allocates the required memory for the
+ * structures and initialize interrupts.
+ */
 static int __devinit ux500_probe(struct platform_device *pdev)
 {
 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
@@ -155,6 +174,13 @@ static int __devexit ux500_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
+/**
+ * ux500_suspend() - Handles the platform suspend.
+ * @dev: struct device
+ *
+ * This function gets triggered when the platform
+ * is going to suspend
+ */
 static int ux500_suspend(struct device *dev)
 {
 	struct ux500_glue	*glue = dev_get_drvdata(dev);
@@ -166,6 +192,13 @@ static int ux500_suspend(struct device *dev)
 	return 0;
 }
 
+/**
+ * ux500_resume() - Handles the platform resume.
+ * @dev: struct device
+ *
+ * This function gets triggered when the platform
+ * is going to resume
+ */
 static int ux500_resume(struct device *dev)
 {
 	struct ux500_glue	*glue = dev_get_drvdata(dev);
