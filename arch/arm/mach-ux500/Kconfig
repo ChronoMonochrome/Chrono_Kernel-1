@@ -120,12 +120,19 @@ config DBX500_PRCMU_DEBUG
 	help
 	  Add support for PRCMU debug
 
-config U5500_MBOX
-	bool "Mailbox support"
-	depends on U5500_MODEM_IRQ
-	default y
+config DB8500_MLOADER
+	bool "Modem firmware upload/download support"
+	depends on UX500_SOC_DB8500
+	select DBX500_MLOADER
 	help
-	  Add support for U5500 mailbox communication with modem side
+	  Adds Modem firmware upload/download support to DB8500.
+
+config U5500_MLOADER
+	bool "mLoader, mem config from kernel boot args exported to sysfs"
+	depends on UX500_SOC_DB5500
+	help
+	  Link between boot args and user space program that loads the modem ELF.
+	  This is used to expose the modem parameters using sysfs interface.
 
 config UX500_DEBUG_NO_LAUTERBACH
        bool "Disable clocks needed for Lauterbach debugging"
