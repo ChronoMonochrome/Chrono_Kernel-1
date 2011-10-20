@@ -45,6 +45,7 @@ obj-$(CONFIG_TEE_SVP)		+= tee_service_svp.o
 obj-$(CONFIG_TEE_SVP)		+= tee_ta_start_modem_svp.o
 obj-$(CONFIG_DB8500_MLOADER) 	+= mloader-db8500.o
 obj-$(CONFIG_U5500_MLOADER)	+= mloader-db5500.o
+obj-$(CONFIG_UX500_DEBUG_HWREG) 	+= hwreg.o
 obj-$(CONFIG_HWMEM)			+= hwmem-int.o
 obj-$(CONFIG_UX500_L2X0_PREFETCH_CTRL)	+= l2x0-prefetch.o
 obj-$(CONFIG_AB5500_BM)			+= board-u5500-bm.o

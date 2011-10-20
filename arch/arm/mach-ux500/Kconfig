@@ -148,6 +148,13 @@ config U5500_MLOADER
 	  Link between boot args and user space program that loads the modem ELF.
 	  This is used to expose the modem parameters using sysfs interface.
 
+config UX500_DEBUG_HWREG
+	bool "Debug hardware registers from userspace"
+	depends on (DEBUG_FS && UX500_SOC_DB8500)
+	help
+	  Adds various debug files to access registers.
+	  This should never ever be used for anything else than debugging.
+
 config UX500_DEBUG_NO_LAUTERBACH
        bool "Disable clocks needed for Lauterbach debugging"
        help
