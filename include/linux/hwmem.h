@@ -569,14 +569,24 @@ s32 hwmem_get_name(struct hwmem_alloc *alloc);
  */
 struct hwmem_alloc *hwmem_resolve_by_name(s32 name);
 
-/* Internal */
+/* Integration */
 
-struct hwmem_platform_data {
-	/* Physical address of memory region */
-	u32 start;
-	/* Size of memory region */
-	u32 size;
+struct hwmem_allocator_api {
+	void *(*alloc)(void *instance, size_t size);
+	void (*free)(void *instance, void *alloc);
+	phys_addr_t (*get_alloc_paddr)(void *alloc);
+	void *(*get_alloc_kaddr)(void *instance, void *alloc);
+	size_t (*get_alloc_size)(void *alloc);
 };
+
+struct hwmem_mem_type_struct {
+	enum hwmem_mem_type id;
+	struct hwmem_allocator_api allocator_api;
+	void *allocator_instance;
+};
+
+extern struct hwmem_mem_type_struct *hwmem_mem_types;
+extern unsigned int hwmem_num_mem_types;
 
 #endif
 

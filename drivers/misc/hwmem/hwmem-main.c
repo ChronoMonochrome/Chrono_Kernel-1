@@ -25,10 +25,12 @@
 #include <linux/hwmem.h>
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
-#include <linux/vmalloc.h>
 #include <linux/io.h>
-#include <asm/sizes.h>
+#include <linux/kallsyms.h>
+#include <linux/vmalloc.h>
 #include "cache_handler.h"
+
+#define S32_MAX 2147483647
 
 struct hwmem_alloc_threadg_info {
 	struct list_head list;
@@ -42,10 +44,14 @@ struct hwmem_alloc {
 	struct list_head list;
 
 	atomic_t ref_cnt;
+
 	enum hwmem_alloc_flags flags;
-	u32 paddr;
+	struct hwmem_mem_type_struct *mem_type;
+
+	void *allocator_hndl;
+	phys_addr_t paddr;
 	void *kaddr;
-	u32 size;
+	size_t size;
 	s32 name;
 
 	/* Access control */
@@ -54,13 +60,15 @@ struct hwmem_alloc {
 
 	/* Cache handling */
 	struct cach_buf cach_buf;
+
+#ifdef CONFIG_DEBUG_FS
+	/* Debug */
+	void *creator;
+	pid_t creator_tgid;
+#endif /* #ifdef CONFIG_DEBUG_FS */
 };
 
 static struct platform_device *hwdev;
-
-static u32 hwmem_paddr;
-static void *hwmem_kaddr;
-static u32 hwmem_size;
 
 static LIST_HEAD(alloc_list);
 static DEFINE_IDR(global_idr);
@@ -73,28 +81,11 @@ static struct vm_operations_struct vm_ops = {
 	.close = vm_close,
 };
 
-#ifdef CONFIG_DEBUG_FS
-
-static int debugfs_allocs_read(struct file *filp, char __user *buf,
-						size_t count, loff_t *f_pos);
-static const struct file_operations debugfs_allocs_fops = {
-	.owner = THIS_MODULE,
-	.read  = debugfs_allocs_read,
-};
-
-#endif /* #ifdef CONFIG_DEBUG_FS */
-
-static void clean_alloc_list(void);
 static void kunmap_alloc(struct hwmem_alloc *alloc);
 
 /* Helpers */
 
-static u32 get_alloc_offset(struct hwmem_alloc *alloc)
-{
-	return alloc->paddr - hwmem_paddr;
-}
-
-static void destroy_hwmem_alloc_threadg_info(
+static void destroy_alloc_threadg_info(
 		struct hwmem_alloc_threadg_info *info)
 {
 	if (info->threadg_pid)
@@ -103,14 +94,15 @@ static void destroy_hwmem_alloc_threadg_info(
 	kfree(info);
 }
 
-static void clean_hwmem_alloc_threadg_info_list(struct hwmem_alloc *alloc)
+static void clean_alloc_threadg_info_list(struct hwmem_alloc *alloc)
 {
 	struct hwmem_alloc_threadg_info *info;
 	struct hwmem_alloc_threadg_info *tmp;
 
-	list_for_each_entry_safe(info, tmp, &(alloc->threadg_info_list), list) {
+	list_for_each_entry_safe(info, tmp, &(alloc->threadg_info_list),
+									list) {
 		list_del(&info->list);
-		destroy_hwmem_alloc_threadg_info(info);
+		destroy_alloc_threadg_info(info);
 	}
 }
 
@@ -147,213 +139,45 @@ static void clear_alloc_mem(struct hwmem_alloc *alloc)
 	memset(alloc->kaddr, 0, alloc->size);
 }
 
-static void clean_alloc(struct hwmem_alloc *alloc)
+static void destroy_alloc(struct hwmem_alloc *alloc)
 {
-	if (alloc->name) {
+	list_del(&alloc->list);
+
+	if (alloc->name != 0) {
 		idr_remove(&global_idr, alloc->name);
 		alloc->name = 0;
 	}
 
-	alloc->flags = 0;
-	atomic_set(&alloc->ref_cnt, 0);
-
-	clean_hwmem_alloc_threadg_info_list(alloc);
+	clean_alloc_threadg_info_list(alloc);
 
 	kunmap_alloc(alloc);
-}
 
-static void destroy_alloc(struct hwmem_alloc *alloc)
-{
-	clean_alloc(alloc);
+	if (!IS_ERR_OR_NULL(alloc->allocator_hndl))
+		alloc->mem_type->allocator_api.free(
+					alloc->mem_type->allocator_instance,
+							alloc->allocator_hndl);
 
 	kfree(alloc);
-}
-
-static void __hwmem_release(struct hwmem_alloc *alloc)
-{
-	struct hwmem_alloc *other;
-
-	clean_alloc(alloc);
-
-	other = list_entry(alloc->list.prev, struct hwmem_alloc, list);
-	if ((alloc->list.prev != &alloc_list) &&
-			atomic_read(&other->ref_cnt) == 0) {
-		other->size += alloc->size;
-		list_del(&alloc->list);
-		destroy_alloc(alloc);
-		alloc = other;
-	}
-	other = list_entry(alloc->list.next, struct hwmem_alloc, list);
-	if ((alloc->list.next != &alloc_list) &&
-			atomic_read(&other->ref_cnt) == 0) {
-		alloc->size += other->size;
-		list_del(&other->list);
-		destroy_alloc(other);
-	}
-}
-
-static struct hwmem_alloc *find_free_alloc_bestfit(u32 size)
-{
-	u32 best_diff = ~0;
-	struct hwmem_alloc *alloc = NULL, *i;
-
-	list_for_each_entry(i, &alloc_list, list) {
-		u32 diff = i->size - size;
-		if (atomic_read(&i->ref_cnt) > 0 || i->size < size)
-			continue;
-		if (diff < best_diff) {
-			alloc = i;
-			best_diff = diff;
-		}
-	}
-
-	return alloc != NULL ? alloc : ERR_PTR(-ENOMEM);
-}
-
-static struct hwmem_alloc *split_allocation(struct hwmem_alloc *alloc,
-							u32 new_alloc_size)
-{
-	struct hwmem_alloc *new_alloc;
-
-	new_alloc = kzalloc(sizeof(struct hwmem_alloc), GFP_KERNEL);
-	if (new_alloc == NULL)
-		return ERR_PTR(-ENOMEM);
-
-	atomic_inc(&new_alloc->ref_cnt);
-	INIT_LIST_HEAD(&new_alloc->threadg_info_list);
-	new_alloc->paddr = alloc->paddr;
-	new_alloc->size = new_alloc_size;
-	alloc->size -= new_alloc_size;
-	alloc->paddr += new_alloc_size;
-
-	list_add_tail(&new_alloc->list, &alloc->list);
-
-	return new_alloc;
-}
-
-static int init_alloc_list(void)
-{
-	/*
-	 * Hack to not get any allocs that cross a 64MiB boundary as B2R2 can't
-	 * handle that.
-	 */
-	int ret;
-	u32 curr_pos = hwmem_paddr;
-	u32 hwmem_end = hwmem_paddr + hwmem_size;
-	u32 next_64mib_boundary = (curr_pos + SZ_64M) & ~(SZ_64M - 1);
-	struct hwmem_alloc *alloc;
-
-	if (PAGE_SIZE >= SZ_64M) {
-		dev_err(&hwdev->dev, "PAGE_SIZE >= SZ_64M\n");
-		return -ENOMSG;
-	}
-
-	while (next_64mib_boundary < hwmem_end) {
-		if (next_64mib_boundary - curr_pos > PAGE_SIZE) {
-			alloc = kzalloc(sizeof(struct hwmem_alloc), GFP_KERNEL);
-			if (alloc == NULL) {
-				ret = -ENOMEM;
-				goto error;
-			}
-			alloc->paddr = curr_pos;
-			alloc->size = next_64mib_boundary - curr_pos -
-								PAGE_SIZE;
-			INIT_LIST_HEAD(&alloc->threadg_info_list);
-			list_add_tail(&alloc->list, &alloc_list);
-			curr_pos = alloc->paddr + alloc->size;
-		}
-
-		alloc = kzalloc(sizeof(struct hwmem_alloc), GFP_KERNEL);
-		if (alloc == NULL) {
-			ret = -ENOMEM;
-			goto error;
-		}
-		alloc->paddr = curr_pos;
-		alloc->size = PAGE_SIZE;
-		atomic_inc(&alloc->ref_cnt);
-		INIT_LIST_HEAD(&alloc->threadg_info_list);
-		list_add_tail(&alloc->list, &alloc_list);
-		curr_pos = alloc->paddr + alloc->size;
-
-		next_64mib_boundary += SZ_64M;
-	}
-
-	alloc = kzalloc(sizeof(struct hwmem_alloc), GFP_KERNEL);
-	if (alloc == NULL) {
-		ret = -ENOMEM;
-		goto error;
-	}
-	alloc->paddr = curr_pos;
-	alloc->size = hwmem_end - curr_pos;
-	INIT_LIST_HEAD(&alloc->threadg_info_list);
-	list_add_tail(&alloc->list, &alloc_list);
-
-	return 0;
-
-error:
-	clean_alloc_list();
-
-	return ret;
-}
-
-static void clean_alloc_list(void)
-{
-	while (list_empty(&alloc_list) == 0) {
-		struct hwmem_alloc *i = list_first_entry(&alloc_list,
-						struct hwmem_alloc, list);
-
-		list_del(&i->list);
-
-		destroy_alloc(i);
-	}
-}
-
-static int alloc_kaddrs(void)
-{
-	struct vm_struct *area = get_vm_area(hwmem_size, VM_IOREMAP);
-	if (area == NULL) {
-		dev_info(&hwdev->dev, "Failed to allocate %u bytes kernel"
-						" virtual memory", hwmem_size);
-		return -ENOMSG;
-	}
-
-	hwmem_kaddr = area->addr;
-
-	return 0;
-}
-
-static void free_kaddrs(void)
-{
-	struct vm_struct *area;
-
-	if (hwmem_kaddr == NULL)
-		return;
-
-	area = remove_vm_area(hwmem_kaddr);
-	if (area == NULL)
-		dev_err(&hwdev->dev,
-				"Failed to free kernel virtual memory,"
-							" resource leak!\n");
-
-	kfree(area);
-
-	hwmem_kaddr = NULL;
 }
 
 static int kmap_alloc(struct hwmem_alloc *alloc)
 {
 	int ret;
 	pgprot_t pgprot;
-	void *alloc_kaddr = hwmem_kaddr + get_alloc_offset(alloc);
+	void *alloc_kaddr;
+
+	alloc_kaddr = alloc->mem_type->allocator_api.get_alloc_kaddr(
+		alloc->mem_type->allocator_instance, alloc->allocator_hndl);
+	if (IS_ERR(alloc_kaddr))
+		return PTR_ERR(alloc_kaddr);
 
 	pgprot = PAGE_KERNEL;
 	cach_set_pgprot_cache_options(&alloc->cach_buf, &pgprot);
 
 	ret = ioremap_page_range((unsigned long)alloc_kaddr,
-		(unsigned long)alloc_kaddr + alloc->size, alloc->paddr,
-								pgprot);
+		(unsigned long)alloc_kaddr + alloc->size, alloc->paddr, pgprot);
 	if (ret < 0) {
-		dev_info(&hwdev->dev, "Failed to map %#x - %#x", alloc->paddr,
+		dev_warn(&hwdev->dev, "Failed to map %#x - %#x", alloc->paddr,
 						alloc->paddr + alloc->size);
 		return ret;
 	}
@@ -369,20 +193,33 @@ static void kunmap_alloc(struct hwmem_alloc *alloc)
 		return;
 
 	unmap_kernel_range((unsigned long)alloc->kaddr, alloc->size);
+
 	alloc->kaddr = NULL;
+}
+
+static struct hwmem_mem_type_struct *resolve_mem_type(
+						enum hwmem_mem_type mem_type)
+{
+	unsigned int i;
+	for (i = 0; i < hwmem_num_mem_types; i++) {
+		if (hwmem_mem_types[i].id == mem_type)
+			return &hwmem_mem_types[i];
+	}
+
+	return ERR_PTR(-ENOENT);
 }
 
 /* HWMEM API */
 
-struct hwmem_alloc *hwmem_alloc(u32 size, enum hwmem_alloc_flags flags,
+struct hwmem_alloc *hwmem_alloc(size_t size, enum hwmem_alloc_flags flags,
 		enum hwmem_access def_access, enum hwmem_mem_type mem_type)
 {
-	struct hwmem_alloc *alloc;
 	int ret;
+	struct hwmem_alloc *alloc;
 
-	if (!hwdev) {
-		printk(KERN_ERR "hwmem: Badly configured\n");
-		return ERR_PTR(-EINVAL);
+	if (hwdev == NULL) {
+		printk(KERN_ERR "HWMEM: Badly configured\n");
+		return ERR_PTR(-ENOMSG);
 	}
 
 	if (size == 0)
@@ -392,38 +229,56 @@ struct hwmem_alloc *hwmem_alloc(u32 size, enum hwmem_alloc_flags flags,
 
 	size = PAGE_ALIGN(size);
 
-	alloc = find_free_alloc_bestfit(size);
-	if (IS_ERR(alloc)) {
-		dev_info(&hwdev->dev, "Could not find slot for %u bytes"
-							" allocation\n", size);
-		goto no_slot;
+	alloc = kzalloc(sizeof(struct hwmem_alloc), GFP_KERNEL);
+	if (alloc == NULL) {
+		ret = -ENOMEM;
+		goto alloc_alloc_failed;
 	}
 
-	if (size < alloc->size) {
-		alloc = split_allocation(alloc, size);
-		if (IS_ERR(alloc))
-			goto split_alloc_failed;
-	} else {
-		atomic_inc(&alloc->ref_cnt);
-	}
-
+	INIT_LIST_HEAD(&alloc->list);
+	atomic_inc(&alloc->ref_cnt);
 	alloc->flags = flags;
 	alloc->default_access = def_access;
+	INIT_LIST_HEAD(&alloc->threadg_info_list);
+	alloc->creator = __builtin_return_address(0);
+	alloc->creator_tgid = task_tgid_nr(current);
+
+	alloc->mem_type = resolve_mem_type(mem_type);
+	if (IS_ERR(alloc->mem_type)) {
+		ret = PTR_ERR(alloc->mem_type);
+		goto resolve_mem_type_failed;
+	}
+
+	alloc->allocator_hndl = alloc->mem_type->allocator_api.alloc(
+				alloc->mem_type->allocator_instance, size);
+	if (IS_ERR(alloc->allocator_hndl)) {
+		ret = PTR_ERR(alloc->allocator_hndl);
+		goto allocator_failed;
+	}
+
+	alloc->paddr = alloc->mem_type->allocator_api.get_alloc_paddr(
+							alloc->allocator_hndl);
+	alloc->size = alloc->mem_type->allocator_api.get_alloc_size(
+							alloc->allocator_hndl);
+
 	cach_init_buf(&alloc->cach_buf, alloc->flags, alloc->size);
 	ret = kmap_alloc(alloc);
 	if (ret < 0)
 		goto kmap_alloc_failed;
 	cach_set_buf_addrs(&alloc->cach_buf, alloc->kaddr, alloc->paddr);
 
+	list_add_tail(&alloc->list, &alloc_list);
+
 	clear_alloc_mem(alloc);
 
 	goto out;
 
 kmap_alloc_failed:
-	__hwmem_release(alloc);
+allocator_failed:
+resolve_mem_type_failed:
+	destroy_alloc(alloc);
+alloc_alloc_failed:
 	alloc = ERR_PTR(ret);
-split_alloc_failed:
-no_slot:
 
 out:
 	mutex_unlock(&lock);
@@ -437,7 +292,7 @@ void hwmem_release(struct hwmem_alloc *alloc)
 	mutex_lock(&lock);
 
 	if (atomic_dec_and_test(&alloc->ref_cnt))
-		__hwmem_release(alloc);
+		destroy_alloc(alloc);
 
 	mutex_unlock(&lock);
 }
@@ -457,7 +312,7 @@ int hwmem_set_domain(struct hwmem_alloc *alloc, enum hwmem_access access,
 EXPORT_SYMBOL(hwmem_set_domain);
 
 int hwmem_pin(struct hwmem_alloc *alloc, struct hwmem_mem_chunk *mem_chunks,
-						u32 *mem_chunks_length)
+							u32 *mem_chunks_length)
 {
 	if (*mem_chunks_length < 1) {
 		*mem_chunks_length = 1;
@@ -615,7 +470,7 @@ void hwmem_get_info(struct hwmem_alloc *alloc, u32 *size,
 	if (size != NULL)
 		*size = alloc->size;
 	if (mem_type != NULL)
-		*mem_type = HWMEM_MEM_CONTIGUOUS_SYS;
+		*mem_type = alloc->mem_type->id;
 	if (access != NULL)
 		*access = get_access(alloc);
 
@@ -623,7 +478,7 @@ void hwmem_get_info(struct hwmem_alloc *alloc, u32 *size,
 }
 EXPORT_SYMBOL(hwmem_get_info);
 
-int hwmem_get_name(struct hwmem_alloc *alloc)
+s32 hwmem_get_name(struct hwmem_alloc *alloc)
 {
 	int ret = 0, name;
 
@@ -647,11 +502,18 @@ int hwmem_get_name(struct hwmem_alloc *alloc)
 			goto get_id_failed;
 	}
 
+	if (name > S32_MAX) {
+		ret = -ENOMSG;
+		goto overflow;
+	}
+
 	alloc->name = name;
 
 	ret = name;
 	goto out;
 
+overflow:
+	idr_remove(&global_idr, name);
 get_id_failed:
 pre_get_id_failed:
 
@@ -688,28 +550,61 @@ EXPORT_SYMBOL(hwmem_resolve_by_name);
 
 /* Debug */
 
+#ifdef CONFIG_DEBUG_FS
+
+static int debugfs_allocs_read(struct file *filp, char __user *buf,
+						size_t count, loff_t *f_pos);
+
+static const struct file_operations debugfs_allocs_fops = {
+	.owner = THIS_MODULE,
+	.read  = debugfs_allocs_read,
+};
+
 static int print_alloc(struct hwmem_alloc *alloc, char **buf, size_t buf_size)
 {
 	int ret;
+	char creator[KSYM_SYMBOL_LEN];
+	int i;
 
-	if (buf_size < 134)
-		return -EINVAL;
+	if (sprint_symbol(creator, (unsigned long)alloc->creator) < 0)
+		creator[0] = '\0';
 
-	ret = sprintf(*buf, "paddr: %#10x\tsize: %10u\tref cnt: %2i\t"
-				"name: %#10x\tflags: %#4x\t$ settings: %#4x\t"
-				"def acc: %#3x\n", alloc->paddr, alloc->size,
-				atomic_read(&alloc->ref_cnt), alloc->name,
-				alloc->flags, alloc->cach_buf.cache_settings,
-							alloc->default_access);
-	if (ret < 0)
-		return -ENOMSG;
+	for (i = 0; i < 2; i++) {
+		size_t buf_size_l;
+		if (i == 0)
+			buf_size_l = 0;
+		else
+			buf_size_l = buf_size;
+
+		ret = snprintf(*buf, buf_size_l,
+			"%#x\n"
+				"\tSize: %u\n"
+				"\tMemory type: %u\n"
+				"\tName: %#x\n"
+				"\tReference count: %i\n"
+				"\tAllocation flags: %#x\n"
+				"\t$ settings: %#x\n"
+				"\tDefault access: %#x\n"
+				"\tPhysical address: %#x\n"
+				"\tKernel virtual address: %#x\n"
+				"\tCreator: %s\n"
+				"\tCreator thread group id: %u\n",
+			(unsigned int)alloc, alloc->size, alloc->mem_type->id,
+			alloc->name, atomic_read(&alloc->ref_cnt),
+			alloc->flags, alloc->cach_buf.cache_settings,
+			alloc->default_access, alloc->paddr,
+			(unsigned int)alloc->kaddr, creator,
+			alloc->creator_tgid);
+		if (ret < 0)
+			return -ENOMSG;
+		else if (ret + 1 > buf_size)
+			return -EINVAL;
+	}
 
 	*buf += ret;
 
 	return 0;
 }
-
-#ifdef CONFIG_DEBUG_FS
 
 static int debugfs_allocs_read(struct file *file, char __user *buf,
 						size_t count, loff_t *f_pos)
@@ -721,12 +616,13 @@ static int debugfs_allocs_read(struct file *file, char __user *buf,
 	 */
 
 	int ret;
+	size_t i = 0;
 	struct hwmem_alloc *curr_alloc;
 	char *local_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
 	char *local_buf_pos = local_buf;
 	size_t available_space = min((size_t)PAGE_SIZE, count);
 	/* private_data is intialized to NULL in open which I assume is 0. */
-	u32 *curr_pos = (u32 *)&file->private_data;
+	void **curr_pos = &file->private_data;
 	size_t bytes_read;
 
 	if (local_buf == NULL)
@@ -735,9 +631,7 @@ static int debugfs_allocs_read(struct file *file, char __user *buf,
 	mutex_lock(&lock);
 
 	list_for_each_entry(curr_alloc, &alloc_list, list) {
-		u32 alloc_offset = get_alloc_offset(curr_alloc);
-
-		if (alloc_offset < *curr_pos)
+		if (i++ < (size_t)*curr_pos)
 			continue;
 
 		ret = print_alloc(curr_alloc, &local_buf_pos, available_space -
@@ -747,7 +641,7 @@ static int debugfs_allocs_read(struct file *file, char __user *buf,
 		else if (ret < 0)
 			goto out;
 
-		*curr_pos = alloc_offset + 1;
+		*curr_pos = (void *)i;
 	}
 
 	bytes_read = (size_t)(local_buf_pos - local_buf);
@@ -779,39 +673,17 @@ static void init_debugfs(void)
 /* Module */
 
 extern int hwmem_ioctl_init(void);
-extern void hwmem_ioctl_exit(void);
 
 static int __devinit hwmem_probe(struct platform_device *pdev)
 {
-	int ret = 0;
-	struct hwmem_platform_data *platform_data = pdev->dev.platform_data;
+	int ret;
 
-	if (sizeof(int) != 4 || sizeof(phys_addr_t) < 4 ||
-				sizeof(void *) < 4 || sizeof(size_t) != 4) {
-		dev_err(&pdev->dev, "sizeof(int) != 4 || sizeof(phys_addr_t)"
-			" < 4 || sizeof(void *) < 4 || sizeof(size_t) !="
-								" 4\n");
-		return -ENOMSG;
-	}
-
-	if (hwdev || platform_data->size == 0 ||
-		platform_data->start != PAGE_ALIGN(platform_data->start) ||
-		platform_data->size != PAGE_ALIGN(platform_data->size)) {
-		dev_err(&pdev->dev, "hwdev || platform_data->size == 0 ||"
-					"platform_data->start !="
-					" PAGE_ALIGN(platform_data->start) ||"
-					"platform_data->size !="
-					" PAGE_ALIGN(platform_data->size)\n");
+	if (hwdev) {
+		dev_err(&pdev->dev, "Probed multiple times\n");
 		return -EINVAL;
 	}
 
 	hwdev = pdev;
-	hwmem_paddr = platform_data->start;
-	hwmem_size = platform_data->size;
-
-	ret = alloc_kaddrs();
-	if (ret < 0)
-		goto alloc_kaddrs_failed;
 
 	/*
 	 * No need to flush the caches here. If we can keep track of the cache
@@ -820,32 +692,18 @@ static int __devinit hwmem_probe(struct platform_device *pdev)
 	 * in the caches.
 	 */
 
-	ret = init_alloc_list();
-	if (ret < 0)
-		goto init_alloc_list_failed;
-
 	ret = hwmem_ioctl_init();
-	if (ret)
-		goto ioctl_init_failed;
+	if (ret < 0)
+		dev_warn(&pdev->dev, "Failed to start hwmem-ioctl, continuing"
+								" anyway\n");
 
 #ifdef CONFIG_DEBUG_FS
 	init_debugfs();
 #endif
 
-	dev_info(&pdev->dev, "Hwmem probed, device contains %#x bytes\n",
-			hwmem_size);
+	dev_info(&pdev->dev, "Probed OK\n");
 
-	goto out;
-
-ioctl_init_failed:
-	clean_alloc_list();
-init_alloc_list_failed:
-	free_kaddrs();
-alloc_kaddrs_failed:
-	hwdev = NULL;
-
-out:
-	return ret;
+	return 0;
 }
 
 static struct platform_driver hwmem_driver = {
