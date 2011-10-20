@@ -229,6 +229,8 @@ struct musb_platform_ops {
 	int	(*adjust_channel_params)(struct dma_channel *channel,
 				u16 packet_sz, u8 *mode,
 				dma_addr_t *dma_addr, u32 *len);
+	struct usb_ep* (*configure_endpoints)(struct musb *musb, u8 type,
+				struct usb_endpoint_descriptor  *desc);
 };
 
 /*
@@ -603,4 +605,13 @@ static inline int musb_platform_exit(struct musb *musb)
 	return musb->ops->exit(musb);
 }
 
+static inline struct usb_ep *musb_platform_configure_ep(struct musb *musb,
+		u8 type, struct usb_endpoint_descriptor  *desc)
+{
+	struct usb_ep *ep = NULL;
+
+	if (musb->ops->configure_endpoints)
+		ep = musb->ops->configure_endpoints(musb, type, desc);
+	return ep;
+}
 #endif	/* __MUSB_CORE_H__ */

@@ -476,6 +476,8 @@ struct usb_gadget_ops {
 	int	(*start)(struct usb_gadget_driver *,
 			int (*bind)(struct usb_gadget *));
 	int	(*stop)(struct usb_gadget_driver *);
+	struct usb_ep* (*configure_ep)(struct usb_gadget *, u8 type,
+				struct usb_endpoint_descriptor *);
 };
 
 /**

@@ -369,10 +369,34 @@ static void ux500_musb_try_idle(struct musb *musb, unsigned long timeout)
 		(unsigned long)jiffies_to_msecs(timeout - jiffies));
 	mod_timer(&notify_timer, timeout);
 }
+
 static void ux500_musb_enable(struct musb *musb)
 {
 	ux500_store_context(musb);
 }
+
+static struct usb_ep *ux500_musb_configure_endpoints(struct musb *musb,
+		u8 type, struct usb_endpoint_descriptor  *desc)
+{
+	struct usb_ep *ep = NULL;
+	struct usb_gadget *gadget = &musb->g;
+	char name[4];
+
+	if (USB_ENDPOINT_XFER_INT == type) {
+		list_for_each_entry(ep, &gadget->ep_list, ep_list) {
+			if (ep->maxpacket == 512)
+				continue;
+			if (NULL == ep->driver_data) {
+				strncpy(name, (ep->name + 3), 4);
+				if (USB_DIR_IN & desc->bEndpointAddress)
+					if (strcmp("in", name) == 0)
+						return ep;
+			}
+		}
+	}
+	return ep;
+}
+
 static int ux500_musb_init(struct musb *musb)
 {
 	int status;
@@ -418,6 +442,7 @@ static const struct musb_platform_ops ux500_ops = {
 	.try_idle	= ux500_musb_try_idle,
 
 	.enable		= ux500_musb_enable,
+	.configure_endpoints	= ux500_musb_configure_endpoints,
 };
 
 /**
