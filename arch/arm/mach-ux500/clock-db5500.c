@@ -236,8 +236,8 @@ static DEF_PRCMU_CLK(msp02clk, PRCMU_MSP02CLK, 13000000);
 static DEF_PRCMU_CLIENT_CLK(msp1clk, PRCMU_MSP1CLK, 26000000);
 static DEF_PRCMU_CLIENT_CLK(cdclk, PRCMU_CDCLK, 26000000);
 static DEF_PRCMU_CLK(i2cclk, PRCMU_I2CCLK, 24000000);
-static DEF_PRCMU_CLK(irdaclk, PRCMU_IRDACLK, 48000000);
-static DEF_PRCMU_CLK(irrcclk, PRCMU_IRRCCLK, 48000000);
+static DEF_PRCMU_CLK_PARENT(irdaclk, PRCMU_IRDACLK, 48000000, &soc1_pll);
+static DEF_PRCMU_CLK_PARENT(irrcclk, PRCMU_IRRCCLK, 48000000, &soc1_pll);
 static DEF_PRCMU_CLK(rngclk, PRCMU_RNGCLK, 26000000);
 static DEF_PRCMU_CLK(pwmclk, PRCMU_PWMCLK, 26000000);
 static DEF_PRCMU_CLK(sdmmcclk, PRCMU_SDMMCCLK, 50000000);
@@ -640,8 +640,6 @@ static struct clk *db5500_clks_tobe_disabled[] __initdata = {
 	&p5_sdi3_clk,
 	&p5_sdi4_clk,
 	&p5_i2c3_clk,
-	&p5_irrc_clk,
-	&p5_irda_clk,
 };
 
 static int __init init_clock_states(void)

@@ -825,6 +825,8 @@ int db5500_prcmu_request_clock(u8 clock, bool enable)
 		return request_clk(DB5500_MSP1CLK, enable);
 	else if (clock == PRCMU_CDCLK)
 		return request_clk(DB5500_CDCLK, enable);
+	else if (clock == PRCMU_IRDACLK)
+		return request_clk(DB5500_IRDACLK, enable);
 	else if (clock < PRCMU_NUM_REG_CLOCKS)
 		return request_reg_clock(clock, enable);
 	else if (clock == PRCMU_TIMCLK)
