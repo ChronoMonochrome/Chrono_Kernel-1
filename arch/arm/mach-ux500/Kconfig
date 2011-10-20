@@ -4,6 +4,7 @@ config UX500_SOC_COMMON
 	bool
 	default y
 	select ARM_GIC
+	select NOMADIK_GPIO
 	select PL310_ERRATA_753970
 	select ARM_ERRATA_754322
 	select ARM_ERRATA_764369
