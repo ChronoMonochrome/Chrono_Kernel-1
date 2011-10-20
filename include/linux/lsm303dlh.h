@@ -29,27 +29,32 @@
 #include <linux/ioctl.h>
 
 #ifdef __KERNEL__
+/**
+ * struct lsm303dlh_platform_data - platform datastructure for lsm303dlh
+ * @name_a: accelerometer name
+ * @name_m: magnetometer name
+ * @irq_a1: interrupt line 1 of accelerometer
+ * @irq_a2: interrupt line 2 of accelerometer
+ * @irq_m: interrupt line of magnetometer
+ * @axis_map_x: x axis position on the hardware, 0 1 or 2
+ * @axis_map_y: y axis position on the hardware, 0 1 or 2
+ * @axis_map_z: z axis position on the hardware, 0 1 or 2
+ * @negative_x: x axis is orientation, 0 or 1
+ * @negative_y: y axis is orientation, 0 or 1
+ * @negative_z: z axis is orientation, 0 or 1
+ */
 struct lsm303dlh_platform_data {
-
-	/* name of device for regulator */
-
-	const char *name_a; /* acelerometer name */
-	const char *name_m; /* magnetometer name */
-
-	/*  interrupt data */
-	u32  irq_a1;      /* interrupt line 1 of accelrometer*/
-	u32  irq_a2;      /* interrupt line 2 of accelrometer*/
-	u32  irq_m;       /* interrupt line of magnetometer*/
-
-	/* position of x,y and z axis */
-	u8  axis_map_x; /* [0-2] */
-	u8  axis_map_y; /* [0-2] */
-	u8  axis_map_z; /* [0-2] */
-
-	/* orientation of x,y and z axis */
-	u8  negative_x; /* [0-1] */
-	u8  negative_y; /* [0-1] */
-	u8  negative_z; /* [0-1] */
+	const char *name_a;
+	const char *name_m;
+	u32  irq_a1;
+	u32  irq_a2;
+	u32  irq_m;
+	u8  axis_map_x;
+	u8  axis_map_y;
+	u8  axis_map_z;
+	u8  negative_x;
+	u8  negative_y;
+	u8  negative_z;
 };
 #endif /* __KERNEL__ */
 

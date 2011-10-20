@@ -149,8 +149,27 @@ struct lsm303dlh_a_t {
 	short	z;
 };
 
-/*
- * accelerometer local data
+/**
+ * struct lsm303dlh_a_data - data structure used by lsm303dlh_a driver
+ * @client: i2c client
+ * @lock: mutex lock for sysfs operations
+ * @data: lsm303dlh_a_t struct containing x, y and z values
+ * @input_dev: input device
+ * @input_dev2: input device
+ * @pdata: lsm303dlh platform data
+ * @regulator: regulator
+ * @range: current range value of accelerometer
+ * @mode: current mode of operation
+ * @rate: current sampling rate
+ * @sleep_wake: sleep wake setting
+ * @shift_adjust: current shift adjust value set according to range
+ * @interrupt_control: interrupt control settings
+ * @interrupt_channel: interrupt channel 0 or 1
+ * @interrupt_configure: interrupt configurations for two channels
+ * @interrupt_duration: interrupt duration for two channels
+ * @interrupt_threshold: interrupt threshold for two channels
+ * @early_suspend: early suspend structure
+ * @device_status: device is ON, OFF or SUSPENDED
  */
 struct lsm303dlh_a_data {
 	struct i2c_client *client;

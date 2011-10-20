@@ -125,8 +125,20 @@
 #define DEVICE_ON 1
 #define DEVICE_SUSPENDED 2
 
-/*
- * magnetometer local data
+/**
+ * struct lsm303dlh_m_data - data structure used by lsm303dlh_m driver
+ * @client: i2c client
+ * @lock: mutex lock for sysfs operations
+ * @input_dev: input device
+ * @regulator: regulator
+ * @pdata: lsm303dlh platform data
+ * @gain: x, y and z axes gain
+ * @data: Magnetic field values of x, y and z axes
+ * @mode: current mode of operation
+ * @rate: current sampling rate
+ * @range: current range value of magnetometer
+ * @early_suspend: early suspend structure
+ * @device_status: device is ON, OFF or SUSPENDED
  */
 struct lsm303dlh_m_data {
 	struct i2c_client *client;
