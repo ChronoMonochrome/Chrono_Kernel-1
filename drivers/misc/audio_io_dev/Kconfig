@@ -1,0 +1,11 @@
+#
+# AB8500 Audio IO Device Driver configuration
+#
+config STE_AUDIO_IO_DEV
+	bool "AB8500 Audio IO device driver"
+	depends on ARCH_U8500 && AB8500_CORE && STM_MSP_I2S
+	default y
+	---help---
+	  If you say Y here, you will enable the AB8500 Audio IO device driver.
+
+	  If unsure, say N.
