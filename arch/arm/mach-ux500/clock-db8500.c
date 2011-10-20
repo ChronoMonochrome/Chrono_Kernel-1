@@ -19,6 +19,7 @@
 #include <linux/debugfs.h>
 #include <linux/module.h>
 #include <linux/gpio.h>
+#include <linux/gpio/nomadik.h>
 #include <linux/mfd/abx500/ab8500-sysctrl.h>
 #include <linux/workqueue.h>
 #include <linux/regulator/consumer.h>
