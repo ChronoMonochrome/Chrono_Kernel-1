@@ -1,0 +1,24 @@
+/*
+ * Copyright (C) ST-Ericsson SA 2010. All rights reserved.
+ * This code is ST-Ericsson proprietary and confidential.
+ * Any use of the code for whatever purpose is subject to
+ * specific written permission of ST-Ericsson SA.
+ */
+ 
+#ifndef PRIORITY_IDT
+#define PRIORITY_IDT
+
+/**
+ * 0 : background
+ * 1 : normal
+ * 2 : urgent
+ * 3 :
+ * 4 : CScall
+ * 5 : CScall
+ * 6 : IO (not linked with priority ordering)
+ */
+#define MAX_SCHEDULER_PRIORITY_NUMBER                       7
+#define MAX_SCHEDULER_SUBPRIORITY_NUMBER					4
+
+#endif
+
