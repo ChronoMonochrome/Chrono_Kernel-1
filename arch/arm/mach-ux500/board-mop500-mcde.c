@@ -6,6 +6,7 @@
  *
  * License terms: GNU General Public License (GPL), version 2.
  */
+
 #include <linux/platform_device.h>
 #include <linux/kernel.h>
 #include <linux/gpio.h>
@@ -30,11 +31,9 @@
 #define DSI_UNIT_INTERVAL_1	0x9
 #define DSI_UNIT_INTERVAL_2	0x5
 
-#ifdef CONFIG_FB_MCDE
-
+#ifdef CONFIG_U8500_TV_OUTPUT_AV8100
 /* The initialization of hdmi disp driver must be delayed in order to
  * ensure that inputclk will be available (needed by hdmi hw) */
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 static struct delayed_work work_dispreg_hdmi;
 #define DISPREG_HDMI_DELAY 6000
 #endif
@@ -47,6 +46,7 @@ enum {
 	AB8500_DISPLAY_ID,
 	MCDE_NR_OF_DISPLAYS
 };
+
 static int display_initialized_during_boot;
 
 static int __init startup_graphics_setup(char *str)
@@ -69,8 +69,8 @@ static int __init startup_graphics_setup(char *str)
 }
 __setup("startup_graphics=", startup_graphics_setup);
 
-#if defined(CONFIG_DISPLAY_AB8500_TERTIARY) ||\
-					defined(CONFIG_DISPLAY_AV8100_TERTIARY)
+#if defined(CONFIG_U8500_TV_OUTPUT_AV8100) || \
+    defined(CONFIG_U8500_TV_OUTPUT_AB8500)
 static struct mcde_col_transform rgb_2_yCbCr_transform = {
 	.matrix = {
 		{0x0042, 0x0081, 0x0019},
@@ -81,18 +81,6 @@ static struct mcde_col_transform rgb_2_yCbCr_transform = {
 };
 #endif
 
-#ifdef CONFIG_DISPLAY_FICTIVE
-static struct mcde_display_device fictive_display = {
-	.name = "mcde_disp_fictive",
-	.id = FICTIVE_DISPLAY_ID,
-	.fictive = true,
-	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
-	.native_x_res = 1280,
-	.native_y_res = 720,
-};
-#endif /* CONFIG_DISPLAY_FICTIVE */
-
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
 static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata0 = {
 	.link = 0,
 };
@@ -102,11 +90,7 @@ static struct mcde_display_device samsung_s6d16d0_display0 = {
 	.id = PRIMARY_DISPLAY_ID,
 	.chnl_id = MCDE_CHNL_A,
 	.fifo = MCDE_FIFO_A,
-#ifdef CONFIG_MCDE_DISPLAY_PRIMARY_16BPP
-	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
-#else
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-#endif
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	.synchronized_update = true,
 #else
@@ -119,14 +103,12 @@ static struct mcde_display_device samsung_s6d16d0_display0 = {
 		.platform_data = &samsung_s6d16d0_pdata0,
 	},
 };
-#endif /* CONFIG_DISPLAY_GENERIC_DSI_PRIMARY */
 
-#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
 static struct mcde_port sony_port0 = {
 	.link = 0,
 };
 
-struct mcde_display_sony_acx424akp_platform_data
+static struct mcde_display_sony_acx424akp_platform_data
 			sony_acx424akp_display0_pdata = {
 	.reset_gpio = HREFV60_DISP2_RST_GPIO,
 };
@@ -136,22 +118,20 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 	.id = PRIMARY_DISPLAY_ID,
 	.port = &sony_port0,
 	.chnl_id = MCDE_CHNL_A,
-	/*
-	 * A large fifo is needed when ddr is clocked down to 25% to not get
-	 * latency problems.
-	 */
 	.fifo = MCDE_FIFO_A,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
+#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	.synchronized_update = true,
+#else
+	.synchronized_update = false,
+#endif
 	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x2000,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x10000,
 	.dev = {
 		.platform_data = &sony_acx424akp_display0_pdata,
 	},
 };
-#endif /* CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY */
 
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
 static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata1 = {
 	.link = 1,
 };
@@ -162,22 +142,16 @@ static struct mcde_display_device samsung_s6d16d0_display1 = {
 	.chnl_id = MCDE_CHNL_C1,
 	.fifo = MCDE_FIFO_C1,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY_VSYNC
-	.synchronized_update = true,
-#else
 	.synchronized_update = false,
-#endif
 	.dev = {
 		.platform_data = &samsung_s6d16d0_pdata1,
 	},
 };
-#endif /* CONFIG_DISPLAY_GENERIC_DSI_SECONDARY */
 
-#ifdef CONFIG_DISPLAY_AB8500_TERTIARY
+#ifdef CONFIG_U8500_TV_OUTPUT_AB8500
 static struct mcde_port port_tvout1 = {
 	.type = MCDE_PORTTYPE_DPI,
 	.pixel_format = MCDE_PORTPIXFMT_DPI_24BPP,
-	.ifc = 0,
 	.link = 1,			/* channel B */
 	.sync_src = MCDE_SYNCSRC_OFF,
 	.update_auto_trig = true,
@@ -236,7 +210,7 @@ failed:
 	return res;
 }
 
-struct mcde_display_device tvout_ab8500_display = {
+static struct mcde_display_device tvout_ab8500_display = {
 	.name = "mcde_tv_ab8500",
 	.id = AB8500_DISPLAY_ID,
 	.port = &port_tvout1,
@@ -245,7 +219,6 @@ struct mcde_display_device tvout_ab8500_display = {
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
 	.native_x_res = 720,
 	.native_y_res = 576,
-	/* .synchronized_update: Don't care: port is set to update_auto_trig */
 	.dev = {
 		.platform_data = &ab8500_display_pdata,
 	},
@@ -258,46 +231,38 @@ struct mcde_display_device tvout_ab8500_display = {
 	.platform_enable = ab8500_platform_enable,
 	.platform_disable = ab8500_platform_disable,
 };
-#endif /* CONFIG_DISPLAY_AB8500_TERTIARY */
+#endif
 
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
-static struct mcde_port port2 = {
+#ifdef CONFIG_U8500_TV_OUTPUT_AV8100
+
+#if defined(CONFIG_AV8100_HWTRIG_INT)
+	#define AV8100_SYNC_SRC MCDE_SYNCSRC_TE0
+#elif defined(CONFIG_AV8100_HWTRIG_I2SDAT3)
+	#define AV8100_SYNC_SRC MCDE_SYNCSRC_TE1
+#elif defined(CONFIG_AV8100_HWTRIG_DSI_TE)
+	#define AV8100_SYNC_SRC MCDE_SYNCSRC_TE_POLLING
+#else
+	#define AV8100_SYNC_SRC MCDE_SYNCSRC_OFF
+#endif
+static struct mcde_port av8100_port2 = {
 	.type = MCDE_PORTTYPE_DSI,
 	.mode = MCDE_PORTMODE_CMD,
 	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
 	.ifc = 1,
 	.link = 2,
-#ifdef CONFIG_AV8100_HWTRIG_INT
-	.sync_src = MCDE_SYNCSRC_TE0,
-#endif
-#ifdef CONFIG_AV8100_HWTRIG_I2SDAT3
-	.sync_src = MCDE_SYNCSRC_TE1,
-#endif
-#ifdef CONFIG_AV8100_HWTRIG_DSI_TE
-	.sync_src = MCDE_SYNCSRC_TE_POLLING,
-#endif
-#ifdef CONFIG_AV8100_HWTRIG_NONE
-	.sync_src = MCDE_SYNCSRC_OFF,
-#endif
+	.sync_src = AV8100_SYNC_SRC,
 	.update_auto_trig = true,
 	.phy = {
 		.dsi = {
-			.virt_id = 0,
 			.num_data_lanes = 2,
 			.ui = DSI_UNIT_INTERVAL_2,
-			.clk_cont = false,
-			.data_lanes_swap = false,
 		},
 	},
 	.hdmi_sdtv_switch = HDMI_SWITCH,
 };
 
 static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
-	.reset_gpio = 0,
-	.reset_delay = 1,
-	.regulator_id = NULL, /* TODO: "display_main" */
 	.cvbs_regulator_id = "vcc-N2158",
-	.ddb_id = 1,
 	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
@@ -342,10 +307,10 @@ failed:
 	return res;
 }
 
-struct mcde_display_device av8100_hdmi = {
+static struct mcde_display_device av8100_hdmi = {
 	.name = "av8100_hdmi",
 	.id = AV8100_DISPLAY_ID,
-	.port = &port2,
+	.port = &av8100_port2,
 	.chnl_id = MCDE_CHNL_B,
 	.fifo = MCDE_FIFO_B,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
@@ -363,7 +328,7 @@ static void delayed_work_dispreg_hdmi(struct work_struct *ptr)
 	if (mcde_display_device_register(&av8100_hdmi))
 		pr_warning("Failed to register av8100_hdmi\n");
 }
-#endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
+#endif /* CONFIG_U8500_TV_OUTPUT_AV8100 */
 
 /*
 * This function will create the framebuffer for the display that is registered.
@@ -373,9 +338,8 @@ static int display_postregistered_callback(struct notifier_block *nb,
 {
 	struct mcde_display_device *ddev = dev;
 	u16 width, height;
-	u16 virtual_width, virtual_height;
+	u16 virtual_height;
 	u32 rotate = FB_ROTATE_UR;
-	u32 rotate_angle = 0;
 	struct fb_info *fbi;
 #ifdef CONFIG_DISPDEV
 	struct mcde_fb *mfb;
@@ -389,61 +353,33 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
 
-	if (uib_is_u8500uibr3())
-		rotate_angle = 0;
-	else
-		rotate_angle = \
-			CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE;
-
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY) || \
-		defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
-	if (ddev->id == PRIMARY_DISPLAY_ID) {
-		switch (rotate_angle) {
-		case 0:
-			rotate = FB_ROTATE_UR;
-			break;
-		case 90:
-			rotate = FB_ROTATE_CW;
-			swap(width, height);
-			break;
-		case 180:
-			rotate = FB_ROTATE_UD;
-			break;
-		case 270:
-			rotate = FB_ROTATE_CCW;
-			swap(width, height);
-			break;
-		}
+	if ((uib_is_u8500uib() || uib_is_stuib()) &&
+					ddev->id == PRIMARY_DISPLAY_ID) {
+		rotate = FB_ROTATE_CW;
+		swap(width, height);
 	}
-#endif
 
-	virtual_width = width;
 	virtual_height = height * 2;
 
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 	if (ddev->id == AV8100_DISPLAY_ID) {
+#ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
+		virtual_height = height * 3;
+#endif
 #ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
 		hdmi_fb_onoff(ddev, 1, 0, 0);
 #endif
-		goto display_postregistered_callback_end;
+		goto out;
 	}
-#endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
 
 	/* Create frame buffer */
-	fbi = mcde_fb_create(ddev,
-		width, height,
-		virtual_width, virtual_height,
-		ddev->default_pixel_format,
-		rotate);
-
+	fbi = mcde_fb_create(ddev, width, height, width, virtual_height,
+					ddev->default_pixel_format, rotate);
 	if (IS_ERR(fbi)) {
 		dev_warn(&ddev->dev,
-			"Failed to create fb for display %s\n",
-					ddev->name);
+			"Failed to create fb for display %s\n", ddev->name);
 		goto display_postregistered_callback_err;
 	} else {
-		dev_info(&ddev->dev, "Framebuffer created (%s)\n",
-					ddev->name);
+		dev_info(&ddev->dev, "Framebuffer created (%s)\n", ddev->name);
 	}
 
 #ifdef CONFIG_DISPDEV
@@ -452,18 +388,14 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	/* Create a dispdev overlay for this display */
 	if (dispdev_create(ddev, true, mfb->ovlys[0]) < 0) {
 		dev_warn(&ddev->dev,
-			"Failed to create disp for display %s\n",
-					ddev->name);
+			"Failed to create disp for display %s\n", ddev->name);
 		goto display_postregistered_callback_err;
 	} else {
-		dev_info(&ddev->dev, "Disp dev created for (%s)\n",
-					ddev->name);
+		dev_info(&ddev->dev, "Disp dev created for (%s)\n", ddev->name);
 	}
 #endif
 
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
-display_postregistered_callback_end:
-#endif
+out:
 	return 0;
 
 display_postregistered_callback_err:
@@ -474,102 +406,56 @@ static struct notifier_block display_nb = {
 	.notifier_call = display_postregistered_callback,
 };
 
-static void setup_primary_display(void)
+static int __init init_display_devices(void)
 {
-	/* Display reset GPIO is different depending on reference boards */
-	if (machine_is_hrefv60())
-		samsung_s6d16d0_pdata0.reset_gpio = HREFV60_DISP1_RST_GPIO;
-	else
-		samsung_s6d16d0_pdata0.reset_gpio = MOP500_DISP1_RST_GPIO;
-
-	/* Not all STUIB supports VSYNC, disable vsync for STUIB */
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY
-	if (uib_is_stuib())
-		samsung_s6d16d0_display0.synchronized_update = false;
-#endif
-}
-
-int __init init_display_devices(void)
-{
-	int ret = 0;
-
 	if (!cpu_is_u8500())
-		return ret;
+		return 0;
 
-	ret = mcde_dss_register_notifier(&display_nb);
-	if (ret)
-		pr_warning("Failed to register dss notifier\n");
-#ifdef CONFIG_DISPLAY_FICTIVE
-	ret = mcde_display_device_register(&fictive_display);
-	if (ret)
-		pr_warning("Failed to register fictive display device\n");
-#endif
+	(void)mcde_dss_register_notifier(&display_nb);
 
 	/* Set powermode to STANDBY if startup graphics is executed */
-#ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
-	if (display_initialized_during_boot)
+	if (display_initialized_during_boot) {
 		samsung_s6d16d0_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
-#endif
-#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
-	if (display_initialized_during_boot)
 		sony_acx424akp_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
-#endif
-
-#if defined(CONFIG_DISPLAY_GENERIC_PRIMARY) || \
-	defined(CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY)
-	/*
-	 * For reference platforms different panels are used
-	 * depending on UIB
-	 * UIB = User Interface Board
-	 */
-	setup_primary_display();
-
-#ifdef CONFIG_DISPLAY_GENERIC_PRIMARY
-	/* Samsung display for STUIB and U8500UIB */
-	if (uib_is_u8500uib() || uib_is_stuib())
-		ret = mcde_display_device_register(&samsung_s6d16d0_display0);
-#endif
-#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
-	/* Sony display on U8500UIBV3 */
-	if (uib_is_u8500uibr3())
-		ret = mcde_display_device_register(&sony_acx424akp_display0);
-#endif
-	if (ret)
-		pr_warning("Failed to register primary display device\n");
-#endif
-
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_SECONDARY
-	/* Display reset GPIO is different depending on reference boards */
-	if (machine_is_hrefv60())
-		samsung_s6d16d0_pdata1.reset_gpio = HREFV60_DISP2_RST_GPIO;
-	else
-		samsung_s6d16d0_pdata1.reset_gpio = MOP500_DISP2_RST_GPIO;
-	ret = mcde_display_device_register(&samsung_s6d16d0_display1);
-	if (ret)
-		pr_warning("Failed to register sub display device\n");
-#endif
-
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
-	/* Snowball dont need this delay at all */
-	if (machine_is_snowball())
-		delayed_work_dispreg_hdmi(NULL);
-	else {
-		INIT_DELAYED_WORK_DEFERRABLE(&work_dispreg_hdmi,
-				delayed_work_dispreg_hdmi);
-
-		schedule_delayed_work(&work_dispreg_hdmi,
-				msecs_to_jiffies(DISPREG_HDMI_DELAY));
 	}
-#endif
-#ifdef CONFIG_DISPLAY_AB8500_TERTIARY
-	ret = mcde_display_device_register(&tvout_ab8500_display);
-	if (ret)
-		pr_warning("Failed to register ab8500 tvout device\n");
+
+	/* Display reset GPIO is different depending on reference boards */
+	if (machine_is_hrefv60()) {
+		samsung_s6d16d0_pdata0.reset_gpio = HREFV60_DISP1_RST_GPIO;
+		samsung_s6d16d0_pdata1.reset_gpio = HREFV60_DISP2_RST_GPIO;
+	}
+	else {
+		samsung_s6d16d0_pdata0.reset_gpio = MOP500_DISP1_RST_GPIO;
+		samsung_s6d16d0_pdata1.reset_gpio = MOP500_DISP2_RST_GPIO;
+	}
+
+	/* Not all STUIBs supports VSYNC, disable vsync for STUIB */
+	if (uib_is_stuib())
+		samsung_s6d16d0_display0.synchronized_update = false;
+
+	if (uib_is_u8500uib() || uib_is_stuib())
+		/* Samsung display on U8500 and ST UIB */
+		(void)mcde_display_device_register(&samsung_s6d16d0_display0);
+	else if (uib_is_u8500uibr3())
+		/* Sony display on U8500UIBV3 */
+		(void)mcde_display_device_register(&sony_acx424akp_display0);
+	else
+		WARN_ON("Unknown UI board");
+
+	/* Display reset GPIO is different depending on reference boards */
+	if (uib_is_stuib())
+		(void)mcde_display_device_register(&samsung_s6d16d0_display1);
+
+#if defined(CONFIG_U8500_TV_OUTPUT_AV8100)
+	INIT_DELAYED_WORK_DEFERRABLE(&work_dispreg_hdmi,
+			delayed_work_dispreg_hdmi);
+	schedule_delayed_work(&work_dispreg_hdmi,
+			msecs_to_jiffies(DISPREG_HDMI_DELAY));
+#elif defined(CONFIG_U8500_TV_OUTPUT_AB8500)
+	(void)mcde_display_device_register(&tvout_ab8500_display);
 #endif
 
-	return ret;
+	return 0;
 }
-
 module_init(init_display_devices);
 
-#endif

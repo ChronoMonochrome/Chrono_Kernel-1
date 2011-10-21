@@ -6,6 +6,7 @@
  *
  * License terms: GNU General Public License (GPL), version 2.
  */
+
 #include <linux/platform_device.h>
 #include <linux/kernel.h>
 #include <linux/gpio.h>
@@ -23,25 +24,16 @@
 #define DSI_UNIT_INTERVAL_0	0xA
 #define DSI_UNIT_INTERVAL_2	0x5
 
-enum {
-#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
-	PRIMARY_DISPLAY_ID,
-#endif
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
-	AV8100_DISPLAY_ID,
-#endif
-	MCDE_NR_OF_DISPLAYS
-};
-
-
-#ifdef CONFIG_FB_MCDE
-
 /* The initialization of hdmi disp driver must be delayed in order to
  * ensure that inputclk will be available (needed by hdmi hw) */
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 static struct delayed_work work_dispreg_hdmi;
 #define DISPREG_HDMI_DELAY 6000
-#endif
+
+enum {
+	PRIMARY_DISPLAY_ID,
+	AV8100_DISPLAY_ID,
+	MCDE_NR_OF_DISPLAYS
+};
 
 static int display_initialized_during_boot;
 
@@ -65,7 +57,6 @@ static int __init startup_graphics_setup(char *str)
 }
 __setup("startup_graphics=", startup_graphics_setup);
 
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 static struct mcde_col_transform rgb_2_yCbCr_transform = {
 	.matrix = {
 		{0x0042, 0x0081, 0x0019},
@@ -74,94 +65,76 @@ static struct mcde_col_transform rgb_2_yCbCr_transform = {
 	},
 	.offset = {0x10, 0x80, 0x80},
 };
-#endif
 
-#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
-static struct mcde_port port1 = {
+static struct mcde_port sony_port0 = {
 	.link = 0,
 };
 
-struct mcde_display_sony_acx424akp_platform_data \
+static struct mcde_display_sony_acx424akp_platform_data \
 			sony_acx424akp_display0_pdata = {
 	.reset_gpio = 226,
 };
 
-struct mcde_display_device sony_acx424akp_display0 = {
+static struct mcde_display_device sony_acx424akp_display0 = {
 	.name = "mcde_disp_sony_acx424akp",
 	.id = PRIMARY_DISPLAY_ID,
-	.port = &port1,
+	.port = &sony_port0,
 	.chnl_id = MCDE_CHNL_A,
 	.fifo = MCDE_FIFO_A,
-#ifdef CONFIG_MCDE_DISPLAY_PRIMARY_16BPP
-	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
-#else
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-#endif
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	.synchronized_update = true,
 #else
 	.synchronized_update = false,
 #endif
-	/* TODO: Remove rotation buffers once ESRAM driver is completed */
 	.rotbuf1 = U5500_ESRAM_BASE + 0x20000 * 2,
 	.rotbuf2 = U5500_ESRAM_BASE + 0x20000 * 2 + 0x10000,
 	.dev = {
 		.platform_data = &sony_acx424akp_display0_pdata,
 	},
 };
-#endif /* CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY */
 
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
-static struct mcde_port port2 = {
+#if defined(CONFIG_AV8100_HWTRIG_INT)
+	#define AV8100_SYNC_SRC MCDE_SYNCSRC_TE0
+#elif defined(CONFIG_AV8100_HWTRIG_I2SDAT3)
+	#define AV8100_SYNC_SRC MCDE_SYNCSRC_TE1
+#elif defined(CONFIG_AV8100_HWTRIG_DSI_TE)
+	#define AV8100_SYNC_SRC MCDE_SYNCSRC_TE_POLLING
+#else
+	#define AV8100_SYNC_SRC MCDE_SYNCSRC_OFF
+#endif
+static struct mcde_port av8100_port2 = {
 	.type = MCDE_PORTTYPE_DSI,
 	.mode = MCDE_PORTMODE_CMD,
 	.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP,
-	.ifc = DSI_VIDEO_MODE,
 	.link = 1,
-#ifdef CONFIG_AV8100_HWTRIG_INT
-	.sync_src = MCDE_SYNCSRC_TE0,
-#endif
-#ifdef CONFIG_AV8100_HWTRIG_I2SDAT3
-	.sync_src = MCDE_SYNCSRC_TE1,
-#endif
-#ifdef CONFIG_AV8100_HWTRIG_DSI_TE
-	.sync_src = MCDE_SYNCSRC_TE_POLLING,
-#endif
-#ifdef CONFIG_AV8100_HWTRIG_NONE
-	.sync_src = MCDE_SYNCSRC_OFF,
-#endif
+	.sync_src = AV8100_SYNC_SRC,
 	.update_auto_trig = true,
 	.phy = {
 		.dsi = {
-			.virt_id = 0,
 			.num_data_lanes = 2,
 			.ui = DSI_UNIT_INTERVAL_2,
-			.clk_cont = false,
-			.data_lanes_swap = false,
 		},
 	},
 	.hdmi_sdtv_switch = HDMI_SWITCH,
 };
 
-struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
+static struct mcde_display_hdmi_platform_data av8100_hdmi_pdata = {
 	.rgb_2_yCbCr_transform = &rgb_2_yCbCr_transform,
 };
 
 static struct mcde_display_device av8100_hdmi = {
 	.name = "av8100_hdmi",
 	.id = AV8100_DISPLAY_ID,
-	.port = &port2,
+	.port = &av8100_port2,
 	.chnl_id = MCDE_CHNL_B,
 	.fifo = MCDE_FIFO_B,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB888,
 	.native_x_res = 1280,
 	.native_y_res = 720,
-	.synchronized_update = false,
 	.dev = {
 		.platform_data = &av8100_hdmi_pdata,
 	},
-	.platform_enable = NULL,
-	.platform_disable = NULL,
 };
 
 static void delayed_work_dispreg_hdmi(struct work_struct *ptr)
@@ -169,7 +142,6 @@ static void delayed_work_dispreg_hdmi(struct work_struct *ptr)
 	if (mcde_display_device_register(&av8100_hdmi))
 		pr_warning("Failed to register av8100_hdmi\n");
 }
-#endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
 
 /*
 * This function will create the framebuffer for the display that is registered.
@@ -179,7 +151,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 {
 	struct mcde_display_device *ddev = dev;
 	u16 width, height;
-	u16 virtual_width, virtual_height;
+	u16 virtual_height;
 	u32 rotate = FB_ROTATE_UR;
 	struct fb_info *fbi;
 #ifdef CONFIG_DISPDEV
@@ -194,30 +166,21 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
 
-
-	virtual_width = width;
 	virtual_height = height * 2;
 
+	if (ddev->id == AV8100_DISPLAY_ID) {
 #ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
-	if (ddev->id == AV8100_DISPLAY_ID)
 		virtual_height = height * 3;
 #endif
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
-	if (ddev->id == AV8100_DISPLAY_ID) {
 #ifdef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
 		hdmi_fb_onoff(ddev, 1, 0, 0);
-#endif /* CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE */
+#endif
 		goto out;
 	}
-#endif /* CONFIG_DISPLAY_AV8100_TERTIARY */
 
 	/* Create frame buffer */
-	fbi = mcde_fb_create(ddev,
-		width, height,
-		virtual_width, virtual_height,
-		ddev->default_pixel_format,
-		rotate);
-
+	fbi = mcde_fb_create(ddev, width, height, width, virtual_height,
+					ddev->default_pixel_format, rotate);
 	if (IS_ERR(fbi)) {
 		dev_warn(&ddev->dev,
 			"Failed to create fb for display %s\n", ddev->name);
@@ -228,6 +191,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 #ifdef CONFIG_DISPDEV
 	mfb = to_mcde_fb(fbi);
+
 	/* Create a dispdev overlay for this display */
 	if (dispdev_create(ddev, true, mfb->ovlys[0]) < 0) {
 		dev_warn(&ddev->dev,
@@ -238,9 +202,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	}
 #endif
 
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
 out:
-#endif
 	return 0;
 
 display_postregistered_callback_err:
@@ -253,37 +215,22 @@ static struct notifier_block display_nb = {
 
 int __init init_u5500_display_devices(void)
 {
-	int ret = 0;
-
 	if (!cpu_is_u5500())
-		return ret;
+		return 0;
 
-	ret = mcde_dss_register_notifier(&display_nb);
-	if (ret)
-		pr_warning("Failed to register dss notifier\n");
+	(void)mcde_dss_register_notifier(&display_nb);
 
-#ifdef CONFIG_DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
-	if (cpu_is_u5500v2()) {
-		if (display_initialized_during_boot)
-			sony_acx424akp_display0.power_mode = \
-						 MCDE_DISPLAY_PM_STANDBY;
-		ret = mcde_display_device_register(&sony_acx424akp_display0);
-		if (ret)
-			pr_warning("Failed to register sony acx424akp \
-							display device 0\n");
-	}
-#endif
+	if (display_initialized_during_boot)
+		sony_acx424akp_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
 
-#ifdef CONFIG_DISPLAY_AV8100_TERTIARY
+	(void)mcde_display_device_register(&sony_acx424akp_display0);
+
 	INIT_DELAYED_WORK_DEFERRABLE(&work_dispreg_hdmi,
 			delayed_work_dispreg_hdmi);
-
 	schedule_delayed_work(&work_dispreg_hdmi,
 			msecs_to_jiffies(DISPREG_HDMI_DELAY));
-#endif
 
-	return ret;
+	return 0;
 }
+module_init(init_u5500_display_devices);
 
-module_init(init_display_devices);
-#endif

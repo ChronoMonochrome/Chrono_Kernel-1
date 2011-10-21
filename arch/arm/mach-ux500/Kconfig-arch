@@ -8,26 +8,21 @@ config U8500_SECURE
 
 if FB_MCDE
 
-menu "Display selection"
-
-config DISPLAY_GENERIC_PRIMARY
-	bool "Generic primary display support"
-	depends on (MACH_U8500 || MACH_U5500)
-	select MCDE_DISPLAY_DSI
-	default y
+menu "Display setup"
 
 choice
-	prompt "Display port type"
-	depends on DISPLAY_GENERIC_PRIMARY
-	default DISPLAY_GENERIC_DSI_PRIMARY
+	prompt "TV output type"
+	default U8500_TV_OUTPUT_AV8100
 	help
-	  Select the kind of display port used for the primary display
+	  Select the source of TV output to use
 
-config DISPLAY_GENERIC_DSI_PRIMARY
-	bool "DSI display"
-	select MCDE_DISPLAY_GENERIC_DSI
-	help
-	  Say yes here when using a DSI display
+config U8500_TV_OUTPUT_AV8100
+	bool "AV8100 (HDMI/CVBS)"
+	depends on MCDE_DISPLAY_AV8100
+
+config U8500_TV_OUTPUT_AB8500
+	bool "AB8500 (CVBS)"
+	depends on MCDE_DISPLAY_AB8500_DENC
 
 endchoice
 
@@ -52,7 +47,6 @@ endchoice
 
 choice DISPLAY_GENERIC_DSI_PRIMARY_ROTATION
 	prompt "Enable main display rotation"
-	depends on DISPLAY_GENERIC_DSI_PRIMARY
 	default DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_90
 	help
 	  Set rotation of main display
@@ -69,7 +63,6 @@ endchoice
 
 config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE
 	int
-	depends on DISPLAY_GENERIC_DSI_PRIMARY
 	default "0" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_0
 	default "90" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_90
 	default "180" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_180
@@ -77,58 +70,15 @@ config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE
 
 config DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	bool "Enable v-sync for primary display"
-	depends on DISPLAY_GENERIC_DSI_PRIMARY
 	default n
 	help
 	  Say yes to enable v-sync for primary display
 
-config DISPLAY_SONY_ACX424AKP_DSI_PRIMARY
-	bool "Sony acx424akp DSI display"
-	select MCDE_DISPLAY_SONY_ACX424AKP_DSI
-	select MCDE_DISPLAY_DSI
-	help
-	  Say yes here when using a sony acx424akp DSI display
-
-config DISPLAY_GENERIC_DSI_SECONDARY
-	bool "Sub display support"
-	depends on MACH_U8500
-	select MCDE_DISPLAY_GENERIC_DSI
-	select MCDE_DISPLAY_DSI
-	help
-	  Say yes here if sub display exists
-
-config DISPLAY_GENERIC_DSI_SECONDARY_VSYNC
-	bool "Enable v-sync for secondary display"
-	depends on DISPLAY_GENERIC_DSI_SECONDARY
-	help
-	  Say yes to enable v-sync for secondary display
-
-config DISPLAY_AB8500_TERTIARY
-	bool "AB8500 TVout display support"
-	depends on MACH_U8500 && !AV8100_SDTV
-	select MCDE_DISPLAY_AB8500_DENC
-	help
-	  Say yes here if tv out support
-
-config DISPLAY_AV8100_TERTIARY
-	bool "AV8100 HDMI/CVBS display support"
-	depends on (MACH_U8500 || MACH_U5500)
-	select MCDE_DISPLAY_AV8100
-	select MCDE_DISPLAY_DSI
-	help
-	  Say yes here if HDMI output support
-
 config DISPLAY_AV8100_TRIPPLE_BUFFER
 	bool "Enable tripple buffer for HDMI display"
-	depends on DISPLAY_AV8100_TERTIARY
+	depends on MCDE_DISPLAY_AV8100
 	help
 	  Say yes to enable tripple buffer. You'll get double buffer otherwise
-
-config DISPLAY_FICTIVE
-	bool "DISPLAY fictive"
-	default n
-	---help---
-	  Say Y if you want a fictive display that doesn't access hardware
 
 endmenu
 
