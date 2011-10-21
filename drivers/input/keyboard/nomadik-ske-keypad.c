@@ -66,6 +66,7 @@
  * @keymap:		matrix scan code table for keycodes
  * @clk:		clock structure pointer
  * @enable:		flag to enable the driver event
+ * @enable_on_resume:   set if keypad should be enabled on resume
  * @regulator:		pointer to the regulator used for ske kyepad
  * @gpio_input_irq:	array for gpio irqs
  * @key_pressed:	hold the key state
@@ -88,6 +89,7 @@ struct ske_keypad {
 	struct clk *clk;
 	spinlock_t ske_keypad_lock;
 	bool enable;
+	bool enable_on_resume;
 	struct regulator *regulator;
 	int gpio_input_irq[SKE_KPD_MAX_ROWS];
 	int key_pressed;
@@ -789,6 +791,9 @@ static int ske_keypad_suspend(struct device *dev)
 		cancel_delayed_work_sync(&keypad->work);
 		cancel_delayed_work_sync(&keypad->scan_work);
 		disable_irq(irq);
+
+		keypad->enable_on_resume = keypad->enable;
+
 		if (keypad->enable) {
 			ske_mode_enable(keypad, false);
 			keypad->enable = false;
@@ -807,7 +812,7 @@ static int ske_keypad_resume(struct device *dev)
 	if (device_may_wakeup(dev))
 		disable_irq_wake(irq);
 	else {
-		if (!keypad->enable) {
+		if (keypad->enable_on_resume) {
 			keypad->enable = true;
 			ske_mode_enable(keypad, true);
 		}
