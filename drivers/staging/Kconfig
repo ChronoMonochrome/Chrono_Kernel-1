@@ -136,4 +136,6 @@ source "drivers/staging/mmio/Kconfig"
 
 source "drivers/staging/nmf-cm/Kconfig"
 
+source "drivers/staging/camera_flash/Kconfig"
+
 endif # STAGING
