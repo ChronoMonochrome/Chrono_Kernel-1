@@ -189,6 +189,7 @@ void ux500_restore_context(void)
 		context.index_regs[i].rxhubport);
 		}
 	}
+	musb_writeb(musb_base, MUSB_INDEX, context.index);
 #endif
 }
 
