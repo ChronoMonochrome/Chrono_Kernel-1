@@ -259,6 +259,10 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 		event = USB_EVENT_ID;
 
 		break;
+	case USB_LINK_DEDICATED_CHG:
+		/* TODO: vbus_draw */
+		event = USB_EVENT_CHARGER;
+		break;
 	default:
 		break;
 	}
