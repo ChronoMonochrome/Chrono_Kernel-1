@@ -272,6 +272,7 @@ struct uart_delayed_work_struct {
  * @rx_count:		Number of bytes left to receive.
  * @rx_skb:		SK_buffer to store the received data into.
  * @tx_queue:		TX queue for sending data to chip.
+ * @rx_skb_lock	Spin lock to protect rx_skb.
  * @hu:			Hci uart structure.
  * @wq:			UART work queue.
  * @baud_rate_state:	UART baud rate change state.
@@ -299,6 +300,7 @@ struct uart_info {
 	unsigned long			rx_count;
 	struct sk_buff			*rx_skb;
 	struct sk_buff_head		tx_queue;
+	spinlock_t			rx_skb_lock;
 
 	struct hci_uart			*hu;
 
@@ -1433,21 +1435,28 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 			uart_info->sleep_state = CHIP_POWERED_DOWN;
 		}
 
-		/*
-		 * Reset the uart_info state so that
-		 * next packet can be handled
-		 * correctly by driver.
-		 */
-		uart_info->rx_state = W4_PACKET_TYPE;
-		uart_info->rx_count = 0;
-		kfree_skb(uart_info->rx_skb);
-		uart_info->rx_skb = NULL;
 		cg2900_disable_regulator(uart_info);
 		/*
 		 * Setting baud rate to 0 will tell UART driver to shut off its
 		 * clocks.
 		 */
 		(void)hci_uart_set_baudrate(uart_info->hu, ZERO_BAUD_RATE);
+
+		spin_lock_bh(&uart_info->rx_skb_lock);
+		if (uart_info->rx_skb) {
+			/*
+			 * Reset the uart_info state so that
+			 * next packet can be handled
+			 * correctly by driver.
+			 */
+			dev_dbg(MAIN_DEV, "Power off in the middle of data receiving?"
+							"Reseting state machine.\n");
+			kfree_skb(uart_info->rx_skb);
+			uart_info->rx_skb = NULL;
+			uart_info->rx_state = W4_PACKET_TYPE;
+			uart_info->rx_count = 0;
+		}
+		spin_unlock_bh(&uart_info->rx_skb_lock);
 	}
 
 unlock:
@@ -1687,6 +1696,8 @@ static int cg2900_hu_receive(struct hci_uart *hu,
 		print_hex_dump_bytes(NAME " RX:\t", DUMP_PREFIX_NONE,
 				     data, count);
 
+	spin_lock_bh(&uart_info->rx_skb_lock);
+
 	/* Continue while there is data left to handle */
 	while (count) {
 		/*
@@ -1792,6 +1803,8 @@ check_h4_header:
 			spin_lock_bh(&(uart_info->transmission_lock));
 			uart_info->rx_in_progress = false;
 			spin_unlock_bh(&(uart_info->transmission_lock));
+
+			spin_unlock_bh(&uart_info->rx_skb_lock);
 			return 0;
 		}
 
@@ -1806,6 +1819,7 @@ check_h4_header:
 
 	(void)queue_work(uart_info->wq, &uart_info->restart_sleep_work.work);
 
+	spin_unlock_bh(&uart_info->rx_skb_lock);
 	return count;
 }
 
@@ -1866,10 +1880,13 @@ static int cg2900_hu_close(struct hci_uart *hu)
 
 	/* Purge any stored sk_buffers */
 	skb_queue_purge(&uart_info->tx_queue);
+
+	spin_lock_bh(&uart_info->rx_skb_lock);
 	if (uart_info->rx_skb) {
 		kfree_skb(uart_info->rx_skb);
 		uart_info->rx_skb = NULL;
 	}
+	spin_unlock_bh(&uart_info->rx_skb_lock);
 
 	dev_info(MAIN_DEV, "UART closed\n");
 	err = create_work_item(uart_info, work_hw_deregistered);
@@ -1977,6 +1994,7 @@ static int __devinit cg2900_uart_probe(struct platform_device *pdev)
 	mutex_init(&(uart_info->sleep_state_lock));
 
 	spin_lock_init(&(uart_info->transmission_lock));
+	spin_lock_init(&(uart_info->rx_skb_lock));
 
 	uart_info->chip_dev.t_cb.open = uart_open;
 	uart_info->chip_dev.t_cb.close = uart_close;
