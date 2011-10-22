@@ -6769,10 +6769,7 @@ void nl80211_send_reg_change_event(struct regulatory_request *request)
 	if (wiphy_idx_valid(request->wiphy_idx))
 		NLA_PUT_U32(msg, NL80211_ATTR_WIPHY, request->wiphy_idx);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	rcu_read_lock();
 	genlmsg_multicast_allns(msg, 0, nl80211_regulatory_mcgrp.id,
@@ -6808,10 +6805,7 @@ static void nl80211_send_mlme_event(struct cfg80211_registered_device *rdev,
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, netdev->ifindex);
 	NLA_PUT(msg, NL80211_ATTR_FRAME, len, buf);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -6892,10 +6886,7 @@ static void nl80211_send_mlme_timeout(struct cfg80211_registered_device *rdev,
 	NLA_PUT_FLAG(msg, NL80211_ATTR_TIMED_OUT);
 	NLA_PUT(msg, NL80211_ATTR_MAC, ETH_ALEN, addr);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -6951,10 +6942,7 @@ void nl80211_send_connect_result(struct cfg80211_registered_device *rdev,
 	if (resp_ie)
 		NLA_PUT(msg, NL80211_ATTR_RESP_IE, resp_ie_len, resp_ie);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -6992,10 +6980,7 @@ void nl80211_send_roamed(struct cfg80211_registered_device *rdev,
 	if (resp_ie)
 		NLA_PUT(msg, NL80211_ATTR_RESP_IE, resp_ie_len, resp_ie);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7033,10 +7018,7 @@ void nl80211_send_disconnected(struct cfg80211_registered_device *rdev,
 	if (ie)
 		NLA_PUT(msg, NL80211_ATTR_IE, ie_len, ie);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, GFP_KERNEL);
@@ -7069,10 +7051,7 @@ void nl80211_send_ibss_bssid(struct cfg80211_registered_device *rdev,
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, netdev->ifindex);
 	NLA_PUT(msg, NL80211_ATTR_MAC, ETH_ALEN, bssid);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7107,10 +7086,7 @@ void nl80211_send_new_peer_candidate(struct cfg80211_registered_device *rdev,
 	if (ie_len && ie)
 		NLA_PUT(msg, NL80211_ATTR_IE, ie_len , ie);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7149,10 +7125,7 @@ void nl80211_michael_mic_failure(struct cfg80211_registered_device *rdev,
 	if (tsc)
 		NLA_PUT(msg, NL80211_ATTR_KEY_SEQ, 6, tsc);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7203,10 +7176,7 @@ void nl80211_send_beacon_hint_event(struct wiphy *wiphy,
 		goto nla_put_failure;
 	nla_nest_end(msg, nl_freq);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	rcu_read_lock();
 	genlmsg_multicast_allns(msg, 0, nl80211_regulatory_mcgrp.id,
@@ -7249,10 +7219,7 @@ static void nl80211_send_remain_on_chan_event(
 	if (cmd == NL80211_CMD_REMAIN_ON_CHANNEL)
 		NLA_PUT_U32(msg, NL80211_ATTR_DURATION, duration);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7323,10 +7290,7 @@ void nl80211_send_sta_del_event(struct cfg80211_registered_device *rdev,
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, dev->ifindex);
 	NLA_PUT(msg, NL80211_ATTR_MAC, ETH_ALEN, mac_addr);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7399,7 +7363,6 @@ int nl80211_send_mgmt(struct cfg80211_registered_device *rdev,
 {
 	struct sk_buff *msg;
 	void *hdr;
-	int err;
 
 	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, gfp);
 	if (!msg)
@@ -7416,16 +7379,9 @@ int nl80211_send_mgmt(struct cfg80211_registered_device *rdev,
 	NLA_PUT_U32(msg, NL80211_ATTR_WIPHY_FREQ, freq);
 	NLA_PUT(msg, NL80211_ATTR_FRAME, len, buf);
 
-	err = genlmsg_end(msg, hdr);
-	if (err < 0) {
-		nlmsg_free(msg);
-		return err;
-	}
+	genlmsg_end(msg, hdr);
 
-	err = genlmsg_unicast(wiphy_net(&rdev->wiphy), msg, nlpid);
-	if (err < 0)
-		return err;
-	return 0;
+	return genlmsg_unicast(wiphy_net(&rdev->wiphy), msg, nlpid);
 
  nla_put_failure:
 	genlmsg_cancel(msg, hdr);
@@ -7458,10 +7414,7 @@ void nl80211_send_mgmt_tx_status(struct cfg80211_registered_device *rdev,
 	if (ack)
 		NLA_PUT_FLAG(msg, NL80211_ATTR_ACK);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7504,10 +7457,7 @@ nl80211_send_cqm_rssi_notify(struct cfg80211_registered_device *rdev,
 
 	nla_nest_end(msg, pinfoattr);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7549,10 +7499,7 @@ void nl80211_gtk_rekey_notify(struct cfg80211_registered_device *rdev,
 
 	nla_nest_end(msg, rekey_attr);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7595,10 +7542,7 @@ void nl80211_pmksa_candidate_notify(struct cfg80211_registered_device *rdev,
 
 	nla_nest_end(msg, attr);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
@@ -7640,10 +7584,7 @@ nl80211_send_cqm_pktloss_notify(struct cfg80211_registered_device *rdev,
 
 	nla_nest_end(msg, pinfoattr);
 
-	if (genlmsg_end(msg, hdr) < 0) {
-		nlmsg_free(msg);
-		return;
-	}
+	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
 				nl80211_mlme_mcgrp.id, gfp);
