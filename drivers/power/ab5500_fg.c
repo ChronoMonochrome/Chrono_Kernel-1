@@ -218,6 +218,9 @@ static enum power_supply_property ab5500_fg_props[] = {
 	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
 };
 
+/* Function Prototype */
+static int ab5500_fg_bat_v_trig(int mux);
+
 struct ab5500_fg *ab5500_fg_get(void)
 {
 	struct ab5500_fg *di;
@@ -1319,9 +1322,11 @@ static void ab5500_fg_low_bat_work(struct work_struct *work)
 		 */
 		queue_delayed_work(di->fg_wq, &di->fg_low_bat_work,
 			round_jiffies(LOW_BAT_CHECK_INTERVAL));
+		power_supply_changed(&di->fg_psy);
 	} else {
 		di->flags.low_bat = false;
 		dev_warn(di->dev, "Battery voltage OK again\n");
+		power_supply_changed(&di->fg_psy);
 	}
 
 	/* This is needed to dispatch LOW_BAT */
@@ -1541,33 +1546,6 @@ static int ab5500_fg_get_ext_psy_data(struct device *dev, void *data)
 	return 0;
 }
 
-static int ab5500_fg_bat_v_trig(int mux)
-{
-	struct ab5500_fg *di = ab5500_fg_get();
-
-	/* check if the battery voltage is below low threshold */
-	if (di->vbat < 2700) {
-		dev_warn(di->dev, "Battery voltage is below LOW threshold\n");
-		di->flags.low_bat_delay = true;
-		/*
-		 * Start a timer to check LOW_BAT again after some time
-		 * This is done to avoid shutdown on single voltage dips
-		 */
-		queue_delayed_work(di->fg_wq, &di->fg_low_bat_work,
-			round_jiffies(LOW_BAT_CHECK_INTERVAL));
-	}
-	/* check if battery votlage is above OVV */
-	else if (di->vbat > 4200) {
-		dev_dbg(di->dev, "Battery OVV\n");
-		di->flags.bat_ovv = true;
-
-		power_supply_changed(&di->fg_psy);
-	} else
-		return -EINVAL;
-
-	return 0;
-}
-
 /**
  * ab5500_fg_init_hw_registers() - Set up FG related registers
  * @di:		pointer to the ab5500_fg structure
@@ -1587,8 +1565,8 @@ static int ab5500_fg_init_hw_registers(struct ab5500_fg *di)
 
 	auto_ip->mux = MAIN_BAT_V;
 	auto_ip->freq = MS500;
-	auto_ip->min = 2700;
-	auto_ip->max = 4200;
+	auto_ip->min = 3560;
+	auto_ip->max = 4500;
 	auto_ip->auto_adc_callback = ab5500_fg_bat_v_trig;
 	di->gpadc_auto = auto_ip;
 	ret = ab5500_gpadc_convert_auto(di->gpadc, di->gpadc_auto);
@@ -1599,6 +1577,37 @@ static int ab5500_fg_init_hw_registers(struct ab5500_fg *di)
 	ret = abx500_set_register_interruptible(di->dev,
 			AB5500_BANK_FG_BATTCOM_ACC, AB5500_FG_EOC, EOC_52_mA);
 	return ret;
+}
+
+static int ab5500_fg_bat_v_trig(int mux)
+{
+	struct ab5500_fg *di = ab5500_fg_get();
+
+	di->vbat = ab5500_gpadc_convert(di->gpadc, MAIN_BAT_V);
+
+	/* check if the battery voltage is below low threshold */
+	if (di->vbat < 3560) {
+		dev_warn(di->dev, "Battery voltage is below LOW threshold\n");
+		di->flags.low_bat_delay = true;
+		/*
+		 * Start a timer to check LOW_BAT again after some time
+		 * This is done to avoid shutdown on single voltage dips
+		 */
+		queue_delayed_work(di->fg_wq, &di->fg_low_bat_work,
+			round_jiffies(LOW_BAT_CHECK_INTERVAL));
+		power_supply_changed(&di->fg_psy);
+	}
+	/* check if battery votlage is above OVV */
+	else if (di->vbat > 4500) {
+		dev_warn(di->dev, "Battery OVV\n");
+		di->flags.bat_ovv = true;
+
+		power_supply_changed(&di->fg_psy);
+	} else
+		return -EINVAL;
+	kfree(di->gpadc_auto);
+	ab5500_fg_init_hw_registers(di);
+	return 0;
 }
 
 /**
