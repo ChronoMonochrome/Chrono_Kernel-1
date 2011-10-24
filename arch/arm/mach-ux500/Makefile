@@ -44,6 +44,7 @@ obj-$(CONFIG_HWMEM)			+= hwmem-int.o
 obj-$(CONFIG_UX500_L2X0_PREFETCH_CTRL)	+= l2x0-prefetch.o
 obj-$(CONFIG_AB5500_BM)			+= board-u5500-bm.o
 obj-$(CONFIG_DBX500_PRCMU_DEBUG)	+= prcmu-debug.o
+obj-$(CONFIG_UX500_DB_DUMP)		+= dbx500_dump.o
 
 obj-$(CONFIG_HWMEM) 		+= dcache.o
 
