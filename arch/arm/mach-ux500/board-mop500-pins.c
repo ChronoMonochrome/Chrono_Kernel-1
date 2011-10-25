@@ -887,22 +887,22 @@ static void mop500_pins_suspend_force(void)
 		sleep_pins_config_pm(mop500_pins_common_power_save_bank5,
 			ARRAY_SIZE(mop500_pins_common_power_save_bank5));
 
-	if (machine_is_hrefv60())
-		sleep_pins_config_pm(mop500_pins_common_power_save_bank6_href60,
-			ARRAY_SIZE(mop500_pins_common_power_save_bank6_href60));
-	else if (pins_for_u9500())
+	if (pins_for_u9500())
 		sleep_pins_config_pm(mop500_pins_common_power_save_bank6_u9500,
 			ARRAY_SIZE(mop500_pins_common_power_save_bank6_u9500));
+	else if (machine_is_hrefv60())
+		sleep_pins_config_pm(mop500_pins_common_power_save_bank6_href60,
+			ARRAY_SIZE(mop500_pins_common_power_save_bank6_href60));
 	else
 		sleep_pins_config_pm(mop500_pins_common_power_save_bank6,
 			ARRAY_SIZE(mop500_pins_common_power_save_bank6));
 
-	if (machine_is_hrefv60())
-		sleep_pins_config_pm(mop500_pins_common_power_save_bank7_href60,
-			ARRAY_SIZE(mop500_pins_common_power_save_bank7_href60));
-	else if (pins_for_u9500())
+	if (pins_for_u9500())
 		sleep_pins_config_pm(mop500_pins_common_power_save_bank7_u9500,
 			ARRAY_SIZE(mop500_pins_common_power_save_bank7_u9500));
+	else if (machine_is_hrefv60())
+		sleep_pins_config_pm(mop500_pins_common_power_save_bank7_href60,
+			ARRAY_SIZE(mop500_pins_common_power_save_bank7_href60));
 	else
 		sleep_pins_config_pm(mop500_pins_common_power_save_bank7,
 			ARRAY_SIZE(mop500_pins_common_power_save_bank7));
