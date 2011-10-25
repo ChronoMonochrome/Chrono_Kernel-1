@@ -1173,11 +1173,10 @@ int hash_hw_update(struct ahash_request *req)
 
 	/* Check if ctx->state.length + msg_length
 	   overflows */
-	if (msg_length >
-	    (ctx->state.length.low_word + msg_length)
-	    && HASH_HIGH_WORD_MAX_VAL ==
-	    (ctx->state.length.high_word)) {
-		dev_err(device_data->dev, "[%s] HASH_MSG_LENGTH_OVERFLOW!",
+	if (msg_length > (ctx->state.length.low_word + msg_length) &&
+			HASH_HIGH_WORD_MAX_VAL ==
+			ctx->state.length.high_word) {
+		pr_err(DEV_DBG_NAME " [%s] HASH_MSG_LENGTH_OVERFLOW!",
 				__func__);
 		return -EPERM;
 	}
@@ -1349,7 +1348,7 @@ int hash_check_hw(struct hash_device_data *device_data)
 
 	if (NULL == device_data) {
 		ret = -EPERM;
-		dev_err(device_data->dev, "[%s] HASH_INVALID_PARAMETER!",
+		pr_err(DEV_DBG_NAME " [%s] HASH_INVALID_PARAMETER!",
 			__func__);
 		goto out;
 	}
