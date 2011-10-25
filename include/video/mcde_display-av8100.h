@@ -43,7 +43,7 @@ struct display_driver_data {
 	struct regulator *cvbs_regulator;
 	bool cvbs_regulator_enabled;
 	bool update_port_pixel_format;
-	char *fbdevname;
+	const char *fbdevname;
 	struct mcde_video_mode *video_mode;
 };
 

@@ -18,6 +18,7 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 
+#include <video/mcde_fb.h>
 #include <video/mcde_display.h>
 #include <video/mcde_display-av8100.h>
 #include <video/av8100.h>
@@ -31,6 +32,12 @@
 #define AVI_INFOFRAME_VERSION	0x02
 #define AVI_INFOFRAME_DB1	0x10	/* Active Information present */
 #define AVI_INFOFRAME_DB2	0x08	/* Active Portion Aspect ratio */
+
+#ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
+#define NUM_FB_BUFFERS 3
+#else
+#define NUM_FB_BUFFERS 2
+#endif
 
 struct cea_vesa_video_mode {
 	u32 cea;
@@ -46,6 +53,8 @@ static int hdmi_set_pixel_format(
 	struct mcde_display_device *ddev, enum mcde_ovly_pix_fmt format);
 static struct mcde_video_mode *video_mode_get(struct mcde_display_device *ddev,
 		u8 cea, u8 vesa_cea_nr);
+static int ceanr_convert(struct mcde_display_device *ddev,
+					u8 cea, u8 vesa_cea_nr, u16 *w, u16 *h);
 
 static ssize_t show_hdmisdtvswitch(struct device *dev,
 		struct device_attribute *attr, char *buf);
@@ -199,7 +208,24 @@ static ssize_t store_disponoff(struct device *dev,
 	vesa_cea_nr = (hex_to_bin(buf[4]) << 4) + hex_to_bin(buf[5]);
 	dev_dbg(dev, "enable:%d cea:%d nr:%d\n", enable, cea, vesa_cea_nr);
 
-	hdmi_fb_onoff(mdev, enable, cea, vesa_cea_nr);
+	if (enable && !mdev->enabled && mdev->fbi == NULL) {
+		struct display_driver_data *driver_data = dev_get_drvdata(dev);
+		u16 w = mdev->native_x_res;
+		u16 h = mdev->native_y_res, vh;
+		int buffering = NUM_FB_BUFFERS;
+		struct fb_info *fbi;
+
+		ceanr_convert(mdev, cea, vesa_cea_nr, &w, &h);
+		vh = h * buffering;
+		fbi = mcde_fb_create(mdev, w, h, w, vh,
+				mdev->default_pixel_format, FB_ROTATE_UR);
+		if (IS_ERR(fbi))
+			dev_warn(dev, "fb create failed\n");
+		else
+			driver_data->fbdevname = dev_name(fbi->dev);
+	} else if (!enable && mdev->enabled) {
+		mcde_fb_destroy(mdev);
+	}
 
 	return count;
 }
@@ -272,8 +298,7 @@ static ssize_t store_stayalive(struct device *dev,
 }
 
 static int ceanr_convert(struct mcde_display_device *ddev,
-		u8 cea, u8 vesa_cea_nr, int buffering,
-		u16 *w, u16 *h, u16 *vw, u16 *vh)
+			u8 cea, u8 vesa_cea_nr, u16 *w, u16 *h)
 {
 	struct mcde_video_mode *video_mode;
 
@@ -282,8 +307,6 @@ static int ceanr_convert(struct mcde_display_device *ddev,
 	if (video_mode) {
 		*w = video_mode->xres;
 		*h = video_mode->yres;
-		*vw = video_mode->xres;
-		*vh = video_mode->yres * buffering;
 		dev_dbg(&ddev->dev, "cea:%d nr:%d found\n",
 				cea, vesa_cea_nr);
 		return 0;
@@ -1430,7 +1453,6 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	dev->apply_config = hdmi_apply_config;
 	dev->set_pixel_format = hdmi_set_pixel_format;
 	dev->set_power_mode = hdmi_set_power_mode;
-	dev->ceanr_convert = ceanr_convert;
 
 	/* Create sysfs files */
 	if (device_create_file(&dev->dev, &dev_attr_hdmisdtvswitch))
