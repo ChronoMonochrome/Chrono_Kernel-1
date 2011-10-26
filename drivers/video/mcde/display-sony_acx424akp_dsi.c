@@ -252,6 +252,7 @@ static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 	di->port.sync_src = MCDE_SYNCSRC_BTA;
 	di->port.phy.dsi.num_data_lanes = 2;
 	di->port.link = port->link;
+	di->port.phy.dsi.host_eot_gen = true;
 	/* TODO: Move UI to mcde_hw.c when clk_get_rate(dsi) is done */
 	di->port.phy.dsi.ui = 9;
 

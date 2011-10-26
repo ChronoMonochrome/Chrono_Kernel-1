@@ -1024,6 +1024,9 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, REG_TE_EN, true);
 		}
 
+		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, HOST_EOT_GEN,
+						port->phy.dsi.host_eot_gen);
+
 		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, DLX_REMAP_EN,
 					port->phy.dsi.data_lanes_swap);
 
@@ -2086,7 +2089,6 @@ static void dsi_te_poll_req(struct mcde_chnl_state *chnl)
 		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, IF2_TE_EN, true);
 	dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
 	dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, READ_EN, true);
-	dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, HOST_EOT_GEN, true);
 	dsi_wfld(lnk, DSI_CMD_MODE_CTL, TE_TIMEOUT, 0x3FF);
 	dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, TE_POLLING_EN, true);
 }

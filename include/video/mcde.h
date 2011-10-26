@@ -115,6 +115,7 @@ struct mcde_port {
 			u8 num_data_lanes;
 			u8 ui;
 			bool clk_cont;
+			bool host_eot_gen;
 
 			/* DSI data lanes are swapped if true */
 			bool data_lanes_swap;

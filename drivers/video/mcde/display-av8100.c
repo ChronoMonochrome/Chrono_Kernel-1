@@ -1454,6 +1454,8 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	dev->set_pixel_format = hdmi_set_pixel_format;
 	dev->set_power_mode = hdmi_set_power_mode;
 
+	dev->port->phy.dsi.host_eot_gen = true;
+
 	/* Create sysfs files */
 	if (device_create_file(&dev->dev, &dev_attr_hdmisdtvswitch))
 		dev_info(&dev->dev,
