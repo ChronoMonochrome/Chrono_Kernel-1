@@ -1,4 +1,5 @@
 /*
+
  * Copyright (C) ST-Ericsson SA 2010
  *
  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
@@ -10,8 +11,9 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/i2c.h>
-
 #include <mach/hardware.h>
+#include <asm/mach-types.h>
+
 #include "board-mop500.h"
 
 enum mop500_uib {
@@ -109,7 +111,8 @@ static int __init mop500_uib_init(void)
 	struct i2c_adapter *i2c3;
 	int ret;
 
-	if (!cpu_is_u8500())
+	/* snowball and non u8500 cpus dont have uib */
+	if (!cpu_is_u8500() || machine_is_snowball())
 		return -ENODEV;
 
 	i2c0 = i2c_get_adapter(0);
