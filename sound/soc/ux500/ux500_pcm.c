@@ -332,10 +332,10 @@ static struct snd_pcm_ops ux500_pcm_ops = {
 	.mmap		= ux500_pcm_mmap
 };
 
-int ux500_pcm_new(struct snd_card *card,
-		struct snd_soc_dai *dai,
-		struct snd_pcm *pcm)
+int ux500_pcm_new(struct snd_soc_pcm_runtime *rtd)
 {
+	struct snd_pcm *pcm = rtd->pcm;
+
 	pr_debug("%s: pcm = %d\n", __func__, (int)pcm);
 
 	pcm->info_flags = 0;
