@@ -712,18 +712,23 @@ int __init init_display_devices(void)
 		generic_display0_pdata.reset_gpio = MOP500_DISP1_RST_GPIO;
 
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
-	i2c0 = i2c_get_adapter(0);
-	if (i2c0) {
-		/*
-		* U8500-UIB has the TC35893 at 0x44 on I2C0, the
-		* ST-UIB has not.
-		*/
-		ret = i2c_smbus_xfer(i2c0, 0x44, 0, I2C_SMBUS_WRITE, 0,
-							I2C_SMBUS_QUICK, NULL);
-		i2c_put_adapter(i2c0);
+	if (!machine_is_snowball()) {
+		i2c0 = i2c_get_adapter(0);
+		if (i2c0) {
+			/*
+			 * U8500-UIB has the TC35893 at 0x44 on I2C0, the
+			 * ST-UIB has not.
+			 */
+			ret = i2c_smbus_xfer(i2c0, 0x44, 0, I2C_SMBUS_WRITE, 0,
+					I2C_SMBUS_QUICK, NULL);
+			i2c_put_adapter(i2c0);
 
-		/* ret == 0 => U8500 UIB connected */
-		generic_display0.synchronized_update = (ret == 0);
+			/* ret == 0 => U8500 UIB connected */
+			generic_display0.synchronized_update = (ret == 0);
+		}
+	} else {
+		/* Snowball dont have uib */
+		generic_display0.synchronized_update = 0;
 	}
 #endif
 
