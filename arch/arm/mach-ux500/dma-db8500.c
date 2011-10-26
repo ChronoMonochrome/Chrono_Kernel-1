@@ -285,7 +285,7 @@ static struct platform_device dma40_device = {
 	.dev = {
 		.platform_data = &dma40_plat_data,
 #ifdef CONFIG_PM
-		.pwr_domain = &ux500_dev_power_domain,
+		.pm_domain = &ux500_dev_power_domain,
 #endif
 	},
 	.name		= "dma40",
