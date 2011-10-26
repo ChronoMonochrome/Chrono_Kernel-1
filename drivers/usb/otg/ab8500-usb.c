@@ -35,8 +35,11 @@
 #include <linux/mfd/abx500/ab8500.h>
 #include <linux/regulator/consumer.h>
 #include <linux/mfd/dbx500-prcmu.h>
-#include <mach/usb.h>
 #include <linux/kernel_stat.h>
+
+#include <asm/io.h>
+
+#include <mach/usb.h>
 
 #define AB8500_MAIN_WD_CTRL_REG 0x01
 #define AB8500_USB_LINE_STAT_REG 0x80
