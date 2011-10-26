@@ -97,9 +97,9 @@ bool ux500_pm_other_cpu_wfi(void);
  */
 enum prcmu_idle_stat ux500_pm_prcmu_idle_stat(void);
 
-struct dev_power_domain;
-extern struct dev_power_domain ux500_dev_power_domain;
-extern struct dev_power_domain ux500_amba_dev_power_domain;
+struct dev_pm_domain;
+extern struct dev_pm_domain ux500_dev_power_domain;
+extern struct dev_pm_domain ux500_amba_dev_power_domain;
 
 #else
 u32 ux500_pm_gpio_read_wake_up_status(unsigned int bank_number)
