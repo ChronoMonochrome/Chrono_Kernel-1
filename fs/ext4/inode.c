@@ -4813,24 +4813,25 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
         else
                 get_block = ext4_get_block;
 retry_alloc:
-        handle = ext4_journal_start(inode, ext4_writepage_trans_blocks(inode));
-        if (IS_ERR(handle)) {
-                ret = VM_FAULT_SIGBUS;
-                goto out;
-        }
-        ret = __block_page_mkwrite(vma, vmf, get_block);
-        if (!ret && ext4_should_journal_data(inode)) {
-                if (walk_page_buffers(handle, page_buffers(page), 0,
-                          PAGE_CACHE_SIZE, NULL, do_journal_get_write_access)) {
-                        unlock_page(page);
-                        ret = VM_FAULT_SIGBUS;
-                        goto out;
-                }
-                ext4_set_inode_state(inode, EXT4_STATE_JDATA);
-        }
-        ext4_journal_stop(handle);
-        if (ret == -ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
-                goto retry_alloc;
+	handle = ext4_journal_start(inode, ext4_writepage_trans_blocks(inode));
+	if (IS_ERR(handle)) {
+		ret = VM_FAULT_SIGBUS;
+		goto out;
+	}
+	ret = __block_page_mkwrite(vma, vmf, get_block);
+	if (!ret && ext4_should_journal_data(inode)) {
+		if (walk_page_buffers(handle, page_buffers(page), 0,
+			  PAGE_CACHE_SIZE, NULL, do_journal_get_write_access)) {
+			unlock_page(page);
+			ret = VM_FAULT_SIGBUS;
+			ext4_journal_stop(handle);
+			goto out;
+		}
+		ext4_set_inode_state(inode, EXT4_STATE_JDATA);
+	}
+	ext4_journal_stop(handle);
+	if (ret == -ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
+		goto retry_alloc;
 out_ret:
         ret = block_page_mkwrite_return(ret);
 out:
