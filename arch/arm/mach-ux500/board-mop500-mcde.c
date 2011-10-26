@@ -684,7 +684,6 @@ static struct notifier_block framebuffer_nb = {
 int __init init_display_devices(void)
 {
 	int ret = 0;
-
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	struct i2c_adapter *i2c0;
 #endif
@@ -750,11 +749,16 @@ int __init init_display_devices(void)
 #endif
 
 #ifdef CONFIG_DISPLAY_AV8100_TERTIARY
-	INIT_DELAYED_WORK_DEFERRABLE(&work_dispreg_hdmi,
-			delayed_work_dispreg_hdmi);
+	/* Snowball dont need this delay at all */
+	if (machine_is_snowball())
+		delayed_work_dispreg_hdmi(NULL);
+	else {
+		INIT_DELAYED_WORK_DEFERRABLE(&work_dispreg_hdmi,
+				delayed_work_dispreg_hdmi);
 
-	schedule_delayed_work(&work_dispreg_hdmi,
-			msecs_to_jiffies(DISPREG_HDMI_DELAY));
+		schedule_delayed_work(&work_dispreg_hdmi,
+				msecs_to_jiffies(DISPREG_HDMI_DELAY));
+	}
 #endif
 #ifdef CONFIG_DISPLAY_AB8500_TERTIARY
 	ret = mcde_display_device_register(&tvout_ab8500_display);
