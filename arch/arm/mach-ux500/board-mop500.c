@@ -585,6 +585,13 @@ static struct i2c_board_info __initdata mop500_i2c0_devices[] = {
 
 #define NUM_PRE_V60_I2C0_DEVICES 1
 
+static struct i2c_board_info __initdata snowball_i2c0_devices[] = {
+	{
+		I2C_BOARD_INFO("av8100", 0x70),
+		.platform_data = &av8100_plat_data,
+	},
+};
+
 static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 	{
 		/* lp5521 LED driver, 1st device */
@@ -1201,10 +1208,6 @@ static void __init mop500_init_machine(void)
 	int i2c0_devs;
 	int i;
 
-#ifdef CONFIG_REGULATOR
-	platform_device_register(&u8500_regulator_dev);
-#endif
-
 	mop500_gpio_keys[0].gpio = GPIO_PROX_SENSOR;
 	mop500_gpio_keys[1].gpio = GPIO_HAL_SENSOR;
 
@@ -1251,12 +1254,7 @@ static void __init mop500_init_machine(void)
 static void __init snowball_init_machine(void)
 {
 	struct device *parent = NULL;
-	int i2c0_devs;
 	int i;
-
-ifdef CONFIG_REGULATOR
-	platform_device_register(&u8500_regulator_dev);
-#endif
 
 	parent = u8500_init_devices();
 
@@ -1280,10 +1278,8 @@ ifdef CONFIG_REGULATOR
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
 
-	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
-	i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
-	i2c_register_board_info(2, mop500_i2c2_devices,
-				ARRAY_SIZE(mop500_i2c2_devices));
+	i2c_register_board_info(0, snowball_i2c0_devices,
+			ARRAY_SIZE(snowball_i2c0_devices));
 
 	/* This board has full regulator constraints */
 	regulator_has_full_constraints();
@@ -1292,7 +1288,6 @@ ifdef CONFIG_REGULATOR
 static void __init hrefv60_init_machine(void)
 {
 	struct device *parent = NULL;
-	int i2c0_devs;
 	int i;
 
 	/*
@@ -1334,10 +1329,10 @@ static void __init hrefv60_init_machine(void)
 
 	platform_device_register(&ab8500_device);
 
-	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
-	i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
+	i2c_register_board_info(0, mop500_i2c0_devices,
+			ARRAY_SIZE(mop500_i2c0_devices));
 	i2c_register_board_info(2, mop500_i2c2_devices,
-				ARRAY_SIZE(mop500_i2c2_devices));
+			ARRAY_SIZE(mop500_i2c2_devices));
 
 	/* This board has full regulator constraints */
 	regulator_has_full_constraints();
