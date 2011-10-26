@@ -72,7 +72,7 @@
 static void __iomem *rtc_base;
 static bool measure_latency;
 
-#ifdef CONFIG_U8500_CPUIDLE_DEBUG
+#ifdef CONFIG_UX500_CPUIDLE_DEBUG
 
 /*
  * The plan here is to be able to measure the ApSleep/ApDeepSleep exit latency
