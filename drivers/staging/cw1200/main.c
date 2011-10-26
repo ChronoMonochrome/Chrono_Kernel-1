@@ -432,7 +432,6 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 #endif /* CONFIG_CW1200_LEDS */
 
 	mutex_destroy(&priv->conf_mutex);
-	mutex_destroy(&priv->eeprom_mutex);
 
 	wsm_buf_deinit(&priv->wsm_cmd_buf);
 
