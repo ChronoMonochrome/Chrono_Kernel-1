@@ -151,7 +151,12 @@ void ux500_rtcrtt_measure_latency(bool enable)
 }
 #else
 static inline void measure_latency_start(void) { }
-static inline void ux500_rtcrtt_measure_latency(bool enable) { }
+static inline void ux500_rtcrtt_measure_latency(bool enable)
+{
+	writel(RTC_TCR_RTTSS | RTC_TCR_RTTOS, rtc_base + RTC_TCR);
+	writel(RTC_ICR_TIC, rtc_base + RTC_ICR);
+	writel(RTC_IMSC_TIMSC, rtc_base + RTC_IMSC);
+}
 #endif
 
 void ux500_rtcrtt_off(void)
