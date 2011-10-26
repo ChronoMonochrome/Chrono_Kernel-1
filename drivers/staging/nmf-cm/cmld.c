@@ -258,7 +258,7 @@ static int cmld_open(struct inode *inode, struct file *file)
 
 		/* Initialize wait_queue, lists and mutexes */
 		init_waitqueue_head(&channelPriv->waitq);
-		plist_head_init(&channelPriv->messageQueue, &channelPriv->bh_lock);
+		plist_head_init(&channelPriv->messageQueue);
 		INIT_LIST_HEAD(&channelPriv->skelList);
 		spin_lock_init(&channelPriv->bh_lock);
 		mutex_init(&channelPriv->msgQueueLock);
