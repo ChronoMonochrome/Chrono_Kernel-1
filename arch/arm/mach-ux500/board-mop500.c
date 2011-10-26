@@ -1334,6 +1334,10 @@ static void __init hrefv60_init_machine(void)
 	i2c_register_board_info(2, mop500_i2c2_devices,
 			ARRAY_SIZE(mop500_i2c2_devices));
 
+	/* Snowball want sensors, u8500 get them from stuib */
+	if (machine_is_snowball())
+		mop500_sensors_init();
+
 	/* This board has full regulator constraints */
 	regulator_has_full_constraints();
 }
