@@ -691,16 +691,15 @@ static struct gpio_keys_button mop500_gpio_keys[] = {
 	}
 };
 
-static struct regulator *sensors1p_regulator;
-struct ux500_pins *sensors1p_pins;
-static int mop500_sensors1p_activate(struct device *dev);
-static void mop500_sensors1p_deactivate(struct device *dev);
+static struct regulator *gpio_keys_regulator;
+static int mop500_gpio_keys_activate(struct device *dev);
+static void mop500_gpio_keys_deactivate(struct device *dev);
 
 static struct gpio_keys_platform_data mop500_gpio_keys_data = {
 	.buttons	= mop500_gpio_keys,
 	.nbuttons	= ARRAY_SIZE(mop500_gpio_keys),
-	.enable		= mop500_sensors1p_activate,
-	.disable	= mop500_sensors1p_deactivate,
+	.enable		= mop500_gpio_keys_activate,
+	.disable	= mop500_gpio_keys_deactivate,
 };
 
 static struct platform_device mop500_gpio_keys_device = {
@@ -711,20 +710,15 @@ static struct platform_device mop500_gpio_keys_device = {
 	},
 };
 
-static int mop500_sensors1p_activate(struct device *dev)
+static int mop500_gpio_keys_activate(struct device *dev)
 {
-	if (sensors1p_pins == NULL)
-		return -EINVAL;
-
-	ux500_pins_enable(sensors1p_pins);
-
-	sensors1p_regulator = regulator_get(&mop500_gpio_keys_device.dev,
+	gpio_keys_regulator = regulator_get(&mop500_gpio_keys_device.dev,
 						"vcc");
-	if (IS_ERR(sensors1p_regulator)) {
+	if (IS_ERR(gpio_keys_regulator)) {
 		dev_err(&mop500_gpio_keys_device.dev, "no regulator\n");
-		return PTR_ERR(sensors1p_regulator);
+		return PTR_ERR(gpio_keys_regulator);
 	}
-	regulator_enable(sensors1p_regulator);
+	regulator_enable(gpio_keys_regulator);
 
 	/*
 	 * Please be aware that the start-up time of the SFH7741 is
@@ -734,31 +728,31 @@ static int mop500_sensors1p_activate(struct device *dev)
 	return 0;
 }
 
-static void mop500_sensors1p_deactivate(struct device *dev)
+static void mop500_gpio_keys_deactivate(struct device *dev)
 {
-	if (!IS_ERR(sensors1p_regulator)) {
-		regulator_disable(sensors1p_regulator);
-		regulator_put(sensors1p_regulator);
+	if (!IS_ERR(gpio_keys_regulator)) {
+		regulator_disable(gpio_keys_regulator);
+		regulator_put(gpio_keys_regulator);
 	}
-
-	if (sensors1p_pins != NULL)
-		ux500_pins_disable(sensors1p_pins);
 }
 
-static __init void mop500_sensors1p_init(void)
+static __init void mop500_gpio_keys_init(void)
 {
-	sensors1p_pins = ux500_pins_get("gpio-keys.0");
+	struct ux500_pins *gpio_keys_pins = ux500_pins_get("gpio-keys.0");
 
-	if (sensors1p_pins == NULL) {
-		pr_err("sensors1p: Fail to get keys\n");
+	if (gpio_keys_pins == NULL) {
+		pr_err("gpio_keys: Fail to get pins\n");
 		return;
 	}
 
-	mop500_gpio_keys[0].gpio = PIN_NUM(sensors1p_pins->cfg[0]);
-	mop500_gpio_keys[1].gpio = PIN_NUM(sensors1p_pins->cfg[1]);
+	ux500_pins_enable(gpio_keys_pins);
+
+	mop500_gpio_keys[0].gpio = PIN_NUM(gpio_keys_pins->cfg[0]);
+	mop500_gpio_keys[1].gpio = PIN_NUM(gpio_keys_pins->cfg[1]);
+
 }
 #else
-static inline void mop500_sensors1p_init(void) { }
+static inline void mop500_gpio_keys_init(void) { }
 #endif
 
 #ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
@@ -1270,7 +1264,7 @@ static void __init mop500_init_machine(void)
 			sizeof(mop500_ske_keypad_data));
 #endif
 
-	mop500_sensors1p_init();
+	mop500_gpio_keys_init();
 	platform_device_register(&ab8500_device);
 
 	i2c_register_board_info(0, mop500_i2c0_devices,
@@ -1358,7 +1352,7 @@ static void __init hrefv60_init_machine(void)
 	if (uib_is_stuib())
 		u8500_leds_data.num_leds = 2;
 
-	mop500_sensors1p_init();
+	mop500_gpio_keys_init();
 
 	for (i = 0; i < ARRAY_SIZE(mop500_platform_devs); i++)
 		mop500_platform_devs[i]->dev.parent = parent;
