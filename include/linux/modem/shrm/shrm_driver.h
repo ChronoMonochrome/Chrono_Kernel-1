@@ -23,6 +23,7 @@
 #include <linux/modem/modem_client.h>
 #include <linux/modem/shrm/shrm.h>
 #include <linux/cdev.h>
+#include <linux/kthread.h>
 
 #define ISA_DEVICES 7
 
@@ -64,11 +65,16 @@
  * @dev:			pointer to the driver device
  * @ndev:			pointer to the network device structure
  * @isa_context:		pointer to t_isa_driver_sontext dtructure
- * @shm_common_ch_wr_wq:	work queue for writing to common channel
- * @shm_audio_ch_wr_wq:		workqueue for writing to audio channel
- * @shm_ac_wake_wq:		workqueue for receiving ape-cmt wake requests
- * @shm_ca_wake_wq:		workqueue for receiving cmt-ape wake requests
- * @shm_ac_sleep_wq:		workqueue for recieving ape-cmt sleep requests
+ * @shm_common_ch_wr_wk:	kthread worker for writing to common channel
+ * @shm_common_ch_wr_wk_task:	task for writing to common channel
+ * @shm_audio_ch_wr_wk:		kthread worker for writing to audio channel
+ * @shm_audio_ch_wr_wk_task:	task for writing to audio channel
+ * @shm_ac_wake_wk:		kthread worker for receiving ape-cmt wake requests
+ * @shm_ac_wake_wk_task:	task for receiving ape-cmt wake requests
+ * @shm_ca_wake_wk:		kthread worker for receiving cmt-ape wake requests
+ * @shm_ca_wake_wk_task:	task for receiving cmt-ape wake requests
+ * @shm_ac_sleep_wk:		kthread worker for recieving ape-cmt sleep requests
+ * @shm_ac_sleep_wk_task:	task for recieving ape-cmt sleep requests
  * @send_ac_msg_pend_notify_0:	work for handling pending message on common
  * channel
  * @send_ac_msg_pend_notify_1:	work for handling pending message on audio
@@ -117,18 +123,23 @@ struct shrm_dev {
 	struct net_device *ndev;
 	struct modem *modem;
 	struct isa_driver_context *isa_context;
-	struct workqueue_struct *shm_common_ch_wr_wq;
-	struct workqueue_struct *shm_audio_ch_wr_wq;
-	struct workqueue_struct *shm_ac_wake_wq;
-	struct workqueue_struct *shm_ca_wake_wq;
-	struct workqueue_struct *shm_ac_sleep_wq;
-	struct work_struct send_ac_msg_pend_notify_0;
-	struct work_struct send_ac_msg_pend_notify_1;
-	struct work_struct shm_ac_wake_req;
-	struct work_struct shm_ca_wake_req;
-	struct work_struct shm_ca_sleep_req;
-	struct work_struct shm_ac_sleep_req;
-	struct work_struct shm_mod_reset_req;
+	struct kthread_worker shm_common_ch_wr_kw;
+	struct task_struct *shm_common_ch_wr_kw_task;
+	struct kthread_worker shm_audio_ch_wr_kw;
+	struct task_struct *shm_audio_ch_wr_kw_task;
+	struct kthread_worker shm_ac_wake_kw;
+	struct task_struct *shm_ac_wake_kw_task;
+	struct kthread_worker shm_ca_wake_kw;
+	struct task_struct *shm_ca_wake_kw_task;
+	struct kthread_worker shm_ac_sleep_kw;
+	struct task_struct *shm_ac_sleep_kw_task;
+	struct kthread_work send_ac_msg_pend_notify_0;
+	struct kthread_work send_ac_msg_pend_notify_1;
+	struct kthread_work shm_ac_wake_req;
+	struct kthread_work shm_ca_wake_req;
+	struct kthread_work shm_ca_sleep_req;
+	struct kthread_work shm_ac_sleep_req;
+	struct kthread_work shm_mod_reset_req;
 };
 
 /**

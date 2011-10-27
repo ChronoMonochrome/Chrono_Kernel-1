@@ -10,7 +10,7 @@
 #include <linux/hrtimer.h>
 #include <linux/delay.h>
 #include <linux/netlink.h>
-#include <linux/workqueue.h>
+#include <linux/kthread.h>
 #include <linux/modem/shrm/shrm.h>
 #include <linux/modem/shrm/shrm_driver.h>
 #include <linux/modem/shrm/shrm_private.h>
@@ -70,12 +70,12 @@ enum shrm_nl {
 	SHRM_NL_STATUS_MOD_OFFLINE,
 };
 
-void shm_mod_reset_req_work(struct work_struct *work)
+void shm_mod_reset_req_work(struct kthread_work *work)
 {
 	prcmu_modem_reset();
 }
 
-static void shm_ac_sleep_req_work(struct work_struct *work)
+static void shm_ac_sleep_req_work(struct kthread_work *work)
 {
 	mutex_lock(&ac_state_mutex);
 	if (atomic_read(&ac_sleep_disable_count) == 0)
@@ -83,7 +83,7 @@ static void shm_ac_sleep_req_work(struct work_struct *work)
 	mutex_unlock(&ac_state_mutex);
 }
 
-static void shm_ac_wake_req_work(struct work_struct *work)
+static void shm_ac_wake_req_work(struct kthread_work *work)
 {
 	mutex_lock(&ac_state_mutex);
 	modem_request(shm_dev->modem);
@@ -119,7 +119,7 @@ static enum hrtimer_restart callback(struct hrtimer *timer)
 		shrm_common_tx_state = SHRM_SLEEP_STATE;
 		shrm_audio_tx_state = SHRM_SLEEP_STATE;
 
-		queue_work(shm_dev->shm_ac_sleep_wq,
+		queue_kthread_work(&shm_dev->shm_ac_sleep_kw,
 				&shm_dev->shm_ac_sleep_req);
 
 	}
@@ -284,7 +284,7 @@ void shm_ca_msgpending_0_tasklet(unsigned long tasklet_data)
 			boot_state = BOOT_INFO_SYNC;
 			spin_unlock_irqrestore(&boot_lock, flags);
 			dev_info(shrm->dev, "BOOT_INFO_SYNC\n");
-			queue_work(shrm->shm_common_ch_wr_wq,
+			queue_kthread_work(&shrm->shm_common_ch_wr_kw,
 					&shrm->send_ac_msg_pend_notify_0);
 		} else {
 			ca_msg_read_notification_0(shrm);
@@ -388,7 +388,7 @@ void shm_ac_read_notif_0_tasklet(unsigned long tasklet_data)
 	} else if (boot_state == BOOT_DONE) {
 		if (writer_local_rptr != writer_local_wptr) {
 			shrm_common_tx_state = SHRM_PTR_FREE;
-			queue_work(shrm->shm_common_ch_wr_wq,
+			queue_kthread_work(&shrm->shm_common_ch_wr_kw,
 					&shrm->send_ac_msg_pend_notify_0);
 		} else {
 			shrm_common_tx_state = SHRM_IDLE;
@@ -430,7 +430,7 @@ void shm_ac_read_notif_1_tasklet(unsigned long tasklet_data)
 	}
 	if (writer_local_rptr != writer_local_wptr) {
 		shrm_audio_tx_state = SHRM_PTR_FREE;
-		queue_work(shrm->shm_audio_ch_wr_wq,
+		queue_kthread_work(&shrm->shm_audio_ch_wr_kw,
 				&shrm->send_ac_msg_pend_notify_1);
 	} else {
 		shrm_audio_tx_state = SHRM_IDLE;
@@ -443,7 +443,7 @@ void shm_ac_read_notif_1_tasklet(unsigned long tasklet_data)
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 }
 
-void shm_ca_sleep_req_work(struct work_struct *work)
+void shm_ca_sleep_req_work(struct kthread_work *work)
 {
 	dev_dbg(shm_dev->dev, "%s:IRQ_PRCMU_CA_SLEEP\n", __func__);
 
@@ -459,7 +459,7 @@ void shm_ca_sleep_req_work(struct work_struct *work)
 	atomic_dec(&ac_sleep_disable_count);
 }
 
-void shm_ca_wake_req_work(struct work_struct *work)
+void shm_ca_wake_req_work(struct kthread_work *work)
 {
 	struct shrm_dev *shrm = container_of(work,
 			struct shrm_dev, shm_ca_wake_req);
@@ -496,7 +496,7 @@ static int shrm_modem_reset_sequence(void)
 	atomic_set(&ac_sleep_disable_count, 0);
 
 	/* workaround for MSR */
-	queue_work(shm_dev->shm_ac_wake_wq,
+	queue_kthread_work(&shm_dev->shm_ac_wake_kw,
 			&shm_dev->shm_ac_wake_req);
 
 	/* stop network queue */
@@ -570,10 +570,10 @@ static irqreturn_t shrm_prcmu_irq_handler(int irq, void *data)
 		if (shrm->msr_flag)
 			atomic_set(&ac_sleep_disable_count, 0);
 		atomic_inc(&ac_sleep_disable_count);
-		queue_work(shrm->shm_ca_wake_wq, &shrm->shm_ca_wake_req);
+		queue_kthread_work(&shrm->shm_ca_wake_kw, &shrm->shm_ca_wake_req);
 		break;
 	case IRQ_PRCMU_CA_SLEEP:
-		queue_work(shrm->shm_ca_wake_wq, &shrm->shm_ca_sleep_req);
+		queue_kthread_work(&shrm->shm_ca_wake_kw, &shrm->shm_ca_sleep_req);
 		break;
 	case IRQ_PRCMU_MODEM_SW_RESET_REQ:
 		/* update the boot_state */
@@ -606,7 +606,7 @@ static irqreturn_t shrm_prcmu_irq_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-static void send_ac_msg_pend_notify_0_work(struct work_struct *work)
+static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 {
 	struct shrm_dev *shrm = container_of(work, struct shrm_dev,
 			send_ac_msg_pend_notify_0);
@@ -635,7 +635,7 @@ static void send_ac_msg_pend_notify_0_work(struct work_struct *work)
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 }
 
-static void send_ac_msg_pend_notify_1_work(struct work_struct *work)
+static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 {
 	struct shrm_dev *shrm = container_of(work, struct shrm_dev,
 			send_ac_msg_pend_notify_1);
@@ -697,6 +697,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 			received_msg_handler audio_rx_handler)
 {
 	int err;
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
 	shm_dev = shrm;
 	boot_state = BOOT_INIT;
@@ -708,49 +709,70 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 	hrtimer_init(&timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	timer.function = callback;
 
-	shrm->shm_common_ch_wr_wq = create_singlethread_workqueue
-		("shm_common_channel_irq");
-	if (!shrm->shm_common_ch_wr_wq) {
-		dev_err(shrm->dev, "failed to create work queue\n");
+	init_kthread_worker(&shrm->shm_common_ch_wr_kw);
+	shrm->shm_common_ch_wr_kw_task = kthread_run(kthread_worker_fn,
+						     &shrm->shm_common_ch_wr_kw,
+						     "shm_common_channel_irq");
+	if (IS_ERR(shrm->shm_common_ch_wr_kw_task)) {
+		dev_err(shrm->dev, "failed to create work task\n");
 		return -ENOMEM;
 	}
-	shrm->shm_audio_ch_wr_wq = alloc_workqueue("shm_audio_channel_irq",
-			WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
-	if (!shrm->shm_audio_ch_wr_wq) {
-		dev_err(shrm->dev, "failed to create work queue\n");
+
+	init_kthread_worker(&shrm->shm_audio_ch_wr_kw);
+	shrm->shm_audio_ch_wr_kw_task = kthread_run(kthread_worker_fn,
+						    &shrm->shm_audio_ch_wr_kw,
+						    "shm_audio_channel_irq");
+	if (IS_ERR(shrm->shm_audio_ch_wr_kw_task)) {
+		dev_err(shrm->dev, "failed to create work task\n");
 		err = -ENOMEM;
-		goto free_wq1;
+		goto free_kw1;
 	}
-	shrm->shm_ac_wake_wq = alloc_workqueue("shm_ac_wake_req",
-			WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
-	if (!shrm->shm_ac_wake_wq) {
-		dev_err(shrm->dev, "failed to create work queue\n");
+	/* must use the FIFO scheduler as it is realtime sensitive */
+	sched_setscheduler(shrm->shm_audio_ch_wr_kw_task, SCHED_FIFO, &param);
+
+	init_kthread_worker(&shrm->shm_ac_wake_kw);
+	shrm->shm_ac_wake_kw_task = kthread_run(kthread_worker_fn,
+						&shrm->shm_ac_wake_kw,
+						"shm_ac_wake_req");
+	if (IS_ERR(shrm->shm_ac_wake_kw_task)) {
+		dev_err(shrm->dev, "failed to create work task\n");
 		err = -ENOMEM;
-		goto free_wq2;
+		goto free_kw2;
 	}
-	shrm->shm_ca_wake_wq = alloc_workqueue("shm_ca_wake_req",
-			WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
-	if (!shrm->shm_ca_wake_wq) {
-		dev_err(shrm->dev, "failed to create work queue\n");
+	/* must use the FIFO scheduler as it is realtime sensitive */
+	sched_setscheduler(shrm->shm_ac_wake_kw_task, SCHED_FIFO, &param);
+
+	init_kthread_worker(&shrm->shm_ca_wake_kw);
+	shrm->shm_ca_wake_kw_task = kthread_run(kthread_worker_fn,
+						&shrm->shm_ca_wake_kw,
+						"shm_ca_wake_req");
+	if (IS_ERR(shrm->shm_ca_wake_kw_task)) {
+		dev_err(shrm->dev, "failed to create work task\n");
 		err = -ENOMEM;
-		goto free_wq3;
+		goto free_kw3;
 	}
-	shrm->shm_ac_sleep_wq = create_singlethread_workqueue
-						("shm_ac_sleep_req");
-	if (!shrm->shm_ac_sleep_wq) {
-		dev_err(shrm->dev, "failed to create work queue\n");
+	/* must use the FIFO scheduler as it is realtime sensitive */
+	sched_setscheduler(shrm->shm_ca_wake_kw_task, SCHED_FIFO, &param);
+
+	init_kthread_worker(&shrm->shm_ac_sleep_kw);
+	shrm->shm_ac_sleep_kw_task = kthread_run(kthread_worker_fn,
+						 &shrm->shm_ac_sleep_kw,
+						 "shm_ac_sleep_req");
+	if (IS_ERR(shrm->shm_ac_sleep_kw_task)) {
+		dev_err(shrm->dev, "failed to create work task\n");
 		err = -ENOMEM;
-		goto free_wq4;
+		goto free_kw4;
 	}
-	INIT_WORK(&shrm->send_ac_msg_pend_notify_0,
-			send_ac_msg_pend_notify_0_work);
-	INIT_WORK(&shrm->send_ac_msg_pend_notify_1,
-			send_ac_msg_pend_notify_1_work);
-	INIT_WORK(&shrm->shm_ca_wake_req, shm_ca_wake_req_work);
-	INIT_WORK(&shrm->shm_ca_sleep_req, shm_ca_sleep_req_work);
-	INIT_WORK(&shrm->shm_ac_sleep_req, shm_ac_sleep_req_work);
-	INIT_WORK(&shrm->shm_ac_wake_req, shm_ac_wake_req_work);
-	INIT_WORK(&shrm->shm_mod_reset_req, shm_mod_reset_req_work);
+
+	init_kthread_work(&shrm->send_ac_msg_pend_notify_0,
+			  send_ac_msg_pend_notify_0_work);
+	init_kthread_work(&shrm->send_ac_msg_pend_notify_1,
+			  send_ac_msg_pend_notify_1_work);
+	init_kthread_work(&shrm->shm_ca_wake_req, shm_ca_wake_req_work);
+	init_kthread_work(&shrm->shm_ca_sleep_req, shm_ca_sleep_req_work);
+	init_kthread_work(&shrm->shm_ac_sleep_req, shm_ac_sleep_req_work);
+	init_kthread_work(&shrm->shm_ac_wake_req, shm_ac_wake_req_work);
+	init_kthread_work(&shrm->shm_mod_reset_req, shm_mod_reset_req_work);
 
 	/* set tasklet data */
 	shm_ca_0_tasklet.data = (unsigned long)shrm;
@@ -760,7 +782,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 			IRQF_NO_SUSPEND, "ca-sleep", shrm);
 	if (err < 0) {
 		dev_err(shm_dev->dev, "Failed alloc IRQ_PRCMU_CA_SLEEP.\n");
-		goto free_wq5;
+		goto free_kw5;
 	}
 
 	err = request_irq(IRQ_PRCMU_CA_WAKE, shrm_prcmu_irq_handler,
@@ -798,16 +820,16 @@ drop1:
 	free_irq(IRQ_PRCMU_CA_WAKE, NULL);
 drop2:
 	free_irq(IRQ_PRCMU_CA_SLEEP, NULL);
-free_wq5:
-	destroy_workqueue(shrm->shm_ac_sleep_wq);
-free_wq4:
-	destroy_workqueue(shrm->shm_ca_wake_wq);
-free_wq3:
-	destroy_workqueue(shrm->shm_ac_wake_wq);
-free_wq2:
-	destroy_workqueue(shrm->shm_audio_ch_wr_wq);
-free_wq1:
-	destroy_workqueue(shrm->shm_common_ch_wr_wq);
+free_kw5:
+	kthread_stop(shrm->shm_ac_sleep_kw_task);
+free_kw4:
+	kthread_stop(shrm->shm_ca_wake_kw_task);
+free_kw3:
+	kthread_stop(shrm->shm_ac_wake_kw_task);
+free_kw2:
+	kthread_stop(shrm->shm_audio_ch_wr_kw_task);
+free_kw1:
+	kthread_stop(shrm->shm_common_ch_wr_kw_task);
 	return err;
 }
 
@@ -816,12 +838,16 @@ void shrm_protocol_deinit(struct shrm_dev *shrm)
 	free_irq(IRQ_PRCMU_CA_SLEEP, NULL);
 	free_irq(IRQ_PRCMU_CA_WAKE, NULL);
 	free_irq(IRQ_PRCMU_MODEM_SW_RESET_REQ, NULL);
-	flush_scheduled_work();
-	destroy_workqueue(shrm->shm_common_ch_wr_wq);
-	destroy_workqueue(shrm->shm_audio_ch_wr_wq);
-	destroy_workqueue(shrm->shm_ac_wake_wq);
-	destroy_workqueue(shrm->shm_ca_wake_wq);
-	destroy_workqueue(shrm->shm_ac_sleep_wq);
+	flush_kthread_worker(&shrm->shm_common_ch_wr_kw);
+	flush_kthread_worker(&shrm->shm_audio_ch_wr_kw);
+	flush_kthread_worker(&shrm->shm_ac_wake_kw);
+	flush_kthread_worker(&shrm->shm_ca_wake_kw);
+	flush_kthread_worker(&shrm->shm_ac_sleep_kw);
+	kthread_stop(shrm->shm_common_ch_wr_kw_task);
+	kthread_stop(shrm->shm_audio_ch_wr_kw_task);
+	kthread_stop(shrm->shm_ac_wake_kw_task);
+	kthread_stop(shrm->shm_ca_wake_kw_task);
+	kthread_stop(shrm->shm_ac_sleep_kw_task);
 	modem_put(shrm->modem);
 }
 
@@ -1038,10 +1064,10 @@ int shm_write_msg(struct shrm_dev *shrm, u8 l2_header,
 
 		/* Send Message Pending Noitication to CMT */
 		if (channel == 0)
-			queue_work(shrm->shm_common_ch_wr_wq,
+			queue_kthread_work(&shrm->shm_common_ch_wr_kw,
 					&shrm->send_ac_msg_pend_notify_0);
 		else
-			queue_work(shrm->shm_audio_ch_wr_wq,
+			queue_kthread_work(&shrm->shm_audio_ch_wr_kw,
 					&shrm->send_ac_msg_pend_notify_1);
 
 	}
