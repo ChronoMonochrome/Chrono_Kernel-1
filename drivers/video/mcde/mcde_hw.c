@@ -56,6 +56,13 @@ enum chnl_state {
 	CHNLSTATE_STOPPED,   /* Stopped, after VCMP, FLOEN==0|1 */
 };
 
+enum dsi_lane_status {
+	DSI_LANE_STATE_START	= 0x00,
+	DSI_LANE_STATE_IDLE	= 0x01,
+	DSI_LANE_STATE_WRITE	= 0x02,
+	DSI_LANE_STATE_ULPM	= 0x03,
+};
+
 static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
 							enum chnl_state state);
 static int set_channel_state_sync(struct mcde_chnl_state *chnl,
@@ -85,6 +92,8 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define MCDE_SLEEP_WATCHDOG 500
 #define DSI_TE_NO_ANSWER_TIMEOUT_INIT 2500
 #define DSI_TE_NO_ANSWER_TIMEOUT 250
+#define DSI_WAIT_FOR_ULPM_STATE_MS 1
+#define DSI_ULPM_STATE_NBR_OF_RETRIES 10
 #define DSI_READ_TIMEOUT 200
 #define DSI_WRITE_CMD_TIMEOUT 1000
 #define DSI_READ_DELAY 5
@@ -463,25 +472,132 @@ static void update_mcde_registers(void)
 		MCDE_VSCRC1_VSPMAX(0xff));
 }
 
-static void disable_formatter(struct mcde_port *port)
+static void dsi_link_handle_ulpm(struct mcde_port *port, bool enter_ulpm)
 {
-	if (port->type == MCDE_PORTTYPE_DSI) {
-		wait_while_dsi_running(port->link);
-		if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
-			struct mcde_platform_data *pdata =
-				    mcde_dev->dev.platform_data;
-			dev_dbg(&mcde_dev->dev, "%s disable dsipll\n",
-								__func__);
-			pdata->platform_disable_dsipll();
+	u8 link = port->link;
+	u8 num_data_lanes = port->phy.dsi.num_data_lanes;
+	u8 nbr_of_retries = 0;
+	u8 lane_state;
+
+	/*
+	 * The D-PHY protocol specifies the time to leave the ULP mode
+	 * in ms. It will at least take 1 ms to exit ULPM.
+	 * The ULPOUT time value is using number of system clock ticks
+	 * divided by 1000. The system clock for the DSI link is the MCDE
+	 * clock.
+	 */
+	dsi_wreg(link, DSI_MCTL_ULPOUT_TIME,
+			DSI_MCTL_ULPOUT_TIME_CKLANE_ULPOUT_TIME(0x1FF) |
+			DSI_MCTL_ULPOUT_TIME_DATA_ULPOUT_TIME(0x1FF));
+
+	dsi_wfld(link, DSI_MCTL_MAIN_EN, DAT1_ULPM_REQ, enter_ulpm);
+	dsi_wfld(link, DSI_MCTL_MAIN_EN, DAT2_ULPM_REQ,
+					enter_ulpm && num_data_lanes == 2);
+
+	if (enter_ulpm)
+		lane_state = DSI_LANE_STATE_ULPM;
+	else
+		lane_state = DSI_LANE_STATE_IDLE;
+
+	/* Wait for data lanes to enter ULPM */
+	while (dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE1_STATE)
+						!= lane_state ||
+		(dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE2_STATE)
+						!= lane_state &&
+							num_data_lanes > 1)) {
+		mdelay(DSI_WAIT_FOR_ULPM_STATE_MS);
+		if (nbr_of_retries++ == DSI_ULPM_STATE_NBR_OF_RETRIES) {
+			dev_warn(&mcde_dev->dev,
+				"Could not enter correct state=%d (link=%d)!\n",
+							lane_state, link);
+			break;
 		}
-		clk_disable(clock_dsi);
-		clk_disable(clock_dsi_lp);
-	} else if (port->type == MCDE_PORTTYPE_DPI) {
-		clk_disable(clock_dpi);
+	}
+
+	dsi_wfld(link, DSI_MCTL_MAIN_EN, CLKLANE_ULPM_REQ, enter_ulpm);
+	nbr_of_retries = 0;
+
+	/* Wait for clock lane to enter ULPM */
+	while (dsi_rfld(link, DSI_MCTL_LANE_STS, CLKLANE_STATE)
+						!= lane_state) {
+		mdelay(DSI_WAIT_FOR_ULPM_STATE_MS);
+		if (nbr_of_retries++ == DSI_ULPM_STATE_NBR_OF_RETRIES) {
+			dev_warn(&mcde_dev->dev,
+				"Could not enter correct state=%d (link=%d)!\n",
+							lane_state, link);
+			break;
+		}
 	}
 }
 
-static void disable_mcde_hw(bool force_disable)
+static int dsi_link_enable(struct mcde_chnl_state *chnl)
+{
+	u8 link = chnl->port.link;
+
+	WARN_ON_ONCE(clk_enable(clock_dsi));
+	WARN_ON_ONCE(clk_enable(clock_dsi_lp));
+
+	if (!dsi_pll_is_enabled) {
+		int ret;
+		struct mcde_platform_data *pdata =
+				mcde_dev->dev.platform_data;
+		ret = pdata->platform_enable_dsipll();
+		if (ret < 0) {
+			dev_warn(&mcde_dev->dev, "%s: "
+				"enable_dsipll failed ret = %d\n",
+							__func__, ret);
+			goto enable_dsipll_err;
+		}
+		dev_dbg(&mcde_dev->dev, "%s enable dsipll\n",
+							__func__);
+	}
+	dsi_pll_is_enabled++;
+
+	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, true);
+
+	if (dsi_rfld(link, DSI_MCTL_LANE_STS, CLKLANE_STATE) ==
+						DSI_LANE_STATE_ULPM ||
+		dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE1_STATE)
+						== DSI_LANE_STATE_ULPM ||
+		dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE2_STATE)
+						== DSI_LANE_STATE_ULPM) {
+		/* Switch hs clock to sys_clk */
+		dsi_wfld(link, DSI_MCTL_PLL_CTL, PLL_OUT_SEL, 0x1);
+		dsi_link_handle_ulpm(&chnl->port, false);
+		/* Switch hs clock to tx_byte_hs_clk */
+		dsi_wfld(link, DSI_MCTL_PLL_CTL, PLL_OUT_SEL, 0x0);
+	}
+
+	dev_dbg(&mcde_dev->dev, "DSI%d LINK_EN\n", link);
+
+	return 0;
+
+enable_dsipll_err:
+	clk_disable(clock_dsi_lp);
+	clk_disable(clock_dsi);
+	return -EINVAL;
+}
+
+static void dsi_link_disable(struct mcde_chnl_state *chnl, bool suspend)
+{
+	wait_while_dsi_running(chnl->port.link);
+	/* only enter ULPM when device is suspended */
+	if (suspend)
+		dsi_link_handle_ulpm(&chnl->port, true);
+	if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
+		struct mcde_platform_data *pdata =
+			    mcde_dev->dev.platform_data;
+		dev_dbg(&mcde_dev->dev, "%s disable dsipll\n",
+							__func__);
+		pdata->platform_disable_dsipll();
+	}
+	clk_disable(clock_dsi);
+	clk_disable(clock_dsi_lp);
+
+	dsi_wfld(chnl->port.link, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, false);
+}
+
+static void disable_mcde_hw(bool force_disable, bool suspend)
 {
 	int i;
 	bool mcde_up = false;
@@ -499,7 +615,10 @@ static void disable_mcde_hw(bool force_disable)
 			set_channel_state_sync(chnl, CHNLSTATE_SUSPEND);
 
 			if (chnl->formatter_updated) {
-				disable_formatter(&chnl->port);
+				if (chnl->port.type == MCDE_PORTTYPE_DSI)
+					dsi_link_disable(chnl, suspend);
+				else if (chnl->port.type == MCDE_PORTTYPE_DPI)
+					clk_disable(clock_dpi);
 				chnl->formatter_updated = false;
 			}
 			if (chnl->esram_is_enabled) {
@@ -1072,30 +1191,11 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 		int i = 0;
 		u8 idx;
 		u8 lnk = port->link;
-		int ret;
-
-		WARN_ON_ONCE(clk_enable(clock_dsi));
-		WARN_ON_ONCE(clk_enable(clock_dsi_lp));
-
-		if (!dsi_pll_is_enabled) {
-			struct mcde_platform_data *pdata =
-					mcde_dev->dev.platform_data;
-			ret = pdata->platform_enable_dsipll();
-			if (ret < 0) {
-				dev_warn(&mcde_dev->dev, "%s: "
-					"enable_dsipll failed ret = %d\n",
-								__func__, ret);
-				goto enable_dsipll_err;
-			}
-			dev_dbg(&mcde_dev->dev, "%s enable dsipll\n",
-								__func__);
-		}
-		dsi_pll_is_enabled++;
 
 		idx = get_dsi_formatter_id(port);
 
-		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, true);
-		dev_dbg(&mcde_dev->dev, "DSI%d LINK_EN\n", lnk);
+		if (dsi_link_enable(chnl))
+			goto failed_to_enable_link;
 
 		if (port->sync_src == MCDE_SYNCSRC_TE_POLLING) {
 			/* Enable DSI TE polling */
@@ -1126,13 +1226,13 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			DSI_MCTL_DPHY_TIMEOUT_LPRX_TO_VAL(0x3fff));
 		dsi_wreg(lnk, DSI_MCTL_MAIN_PHY_CTL,
 			DSI_MCTL_MAIN_PHY_CTL_WAIT_BURST_TIME(0xf) |
+			DSI_MCTL_MAIN_PHY_CTL_CLK_ULPM_EN(true) |
+			DSI_MCTL_MAIN_PHY_CTL_DAT1_ULPM_EN(true) |
+			DSI_MCTL_MAIN_PHY_CTL_DAT2_ULPM_EN(true) |
 			DSI_MCTL_MAIN_PHY_CTL_LANE2_EN(
 				port->phy.dsi.num_data_lanes >= 2) |
 			DSI_MCTL_MAIN_PHY_CTL_CLK_CONTINUOUS(
 				port->phy.dsi.clk_cont));
-		dsi_wreg(lnk, DSI_MCTL_ULPOUT_TIME,
-			DSI_MCTL_ULPOUT_TIME_CKLANE_ULPOUT_TIME(1) |
-			DSI_MCTL_ULPOUT_TIME_DATA_ULPOUT_TIME(1));
 		/* TODO: make enum */
 		dsi_wfld(lnk, DSI_CMD_MODE_CTL, ARB_MODE, false);
 		/* TODO: make enum */
@@ -1189,15 +1289,8 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 
 	return 0;
 dsi_link_error:
-	if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
-		struct mcde_platform_data *pdata =
-				mcde_dev->dev.platform_data;
-		dev_dbg(&mcde_dev->dev, "%s le:disable dsipll\n", __func__);
-		pdata->platform_disable_dsipll();
-	}
-enable_dsipll_err:
-	clk_disable(clock_dsi_lp);
-	clk_disable(clock_dsi);
+	dsi_link_disable(chnl, true);
+failed_to_enable_link:
 	return -EINVAL;
 }
 
@@ -1578,7 +1671,7 @@ static void work_sleep_function(struct work_struct *ptr)
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 	if (mcde_trylock(__func__, __LINE__)) {
 		if (mcde_dynamic_power_management)
-			disable_mcde_hw(false);
+			disable_mcde_hw(false, false);
 		mcde_unlock(__func__, __LINE__);
 	}
 }
@@ -2891,7 +2984,7 @@ void mcde_chnl_put(struct mcde_chnl_state *chnl)
 	if (chnl->enabled) {
 		stop_channel(chnl);
 		cancel_delayed_work(&hw_timeout_work);
-		disable_mcde_hw(false);
+		disable_mcde_hw(false, true);
 		chnl->enabled = false;
 	}
 
@@ -2937,7 +3030,7 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 	cancel_delayed_work(&hw_timeout_work);
 	/* The channel must be stopped before it is disabled */
 	WARN_ON_ONCE(chnl->state == CHNLSTATE_RUNNING);
-	disable_mcde_hw(false);
+	disable_mcde_hw(false, true);
 	chnl->enabled = false;
 	mcde_unlock(__func__, __LINE__);
 
@@ -3522,7 +3615,7 @@ static int mcde_suspend(struct platform_device *pdev, pm_message_t state)
 		mcde_unlock(__func__, __LINE__);
 		return 0;
 	}
-	disable_mcde_hw(true);
+	disable_mcde_hw(true, true);
 
 	mcde_unlock(__func__, __LINE__);
 
