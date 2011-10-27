@@ -2301,6 +2301,13 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
 		kfree(uap);
 	}
  out:
+	/*
+	 * Disable the silicon block pclk and any voltage domain and just
+	 * power it up and clock it when it's needed
+	 */
+	amba_pclk_disable(dev);
+	amba_vcore_disable(dev);
+
 	return ret;
 }
 
