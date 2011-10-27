@@ -216,8 +216,7 @@ static int invoke_command(struct tee_session *ts,
 			pr_err("[%s] error, out of memory "
 			       "(op)\n", __func__);
 			set_emsg(ts, TEED_ERROR_OUT_OF_MEMORY);
-			ret = -ENOMEM;
-			goto err;
+			return -ENOMEM;
 		}
 	}
 
