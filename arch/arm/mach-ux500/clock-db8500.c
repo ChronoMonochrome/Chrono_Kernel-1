@@ -32,6 +32,7 @@
 #include "clock.h"
 #include "pins-db8500.h"
 #include "product.h"
+#include "prcc.h"
 
 static DEFINE_MUTEX(soc1_pll_mutex);
 static DEFINE_MUTEX(sysclk_mutex);
@@ -923,131 +924,162 @@ unlock_and_exit:
 }
 
 static struct clk *db8500_dbg_clks[] __initdata = {
-        /* Clock sources */
-        &soc0_pll,
-        &soc1_pll,
-        &ddr_pll,
-        &ulp38m4,
-        &sysclk,
-        &rtc32k,
-        /* PRCMU clocks */
-        &sgaclk,
-        &uartclk,
-        &msp02clk,
-        &msp1clk,
-        &i2cclk,
-        &sdmmcclk,
-        &slimclk,
-        &per1clk,
-        &per2clk,
-        &per3clk,
-        &per5clk,
-        &per6clk,
-        &per7clk,
-        &lcdclk,
-        &bmlclk,
-        &hsitxclk,
-        &hsirxclk,
-        &hdmiclk,
-        &apeatclk,
-        &apetraceclk,
-        &mcdeclk,
-        &ipi2cclk,
-        &dsialtclk,
-        &dmaclk,
-        &b2r2clk,
-        &tvclk,
-        &sspclk,
-        &rngclk,
-        &uiccclk,
-        &sysclk2,
-        &clkout0,
-        &clkout1,
-        &p1_pclk0,
-        &p1_pclk1,
-        &p1_pclk2,
-        &p1_pclk3,
-        &p1_pclk4,
-        &p1_pclk5,
-        &p1_pclk6,
-        &p1_pclk7,
-        &p1_pclk8,
-        &p1_pclk9,
-        &p1_pclk10,
-        &p1_pclk11,
-        &p2_pclk0,
-        &p2_pclk1,
-        &p2_pclk2,
-        &p2_pclk3,
-        &p2_pclk4,
-        &p2_pclk5,
-        &p2_pclk6,
-        &p2_pclk7,
-        &p2_pclk8,
-        &p2_pclk9,
-        &p2_pclk10,
-        &p2_pclk11,
-        &p3_pclk0,
-        &p3_pclk1,
-        &p3_pclk2,
-        &p3_pclk3,
-        &p3_pclk4,
-        &p3_pclk5,
-        &p3_pclk6,
-        &p3_pclk7,
-        &p3_pclk8,
-        &p5_pclk0,
-        &p5_pclk1,
-        &p6_pclk0,
-        &p6_pclk1,
-        &p6_pclk2,
-        &p6_pclk3,
-        &p6_pclk4,
-        &p6_pclk5,
-        &p6_pclk6,
-        &p6_pclk7,
+	/* Clock sources */
+	&soc0_pll,
+	&soc1_pll,
+	&ddr_pll,
+	&ulp38m4,
+	&sysclk,
+	&rtc32k,
+	/* PRCMU clocks */
+	&sgaclk,
+	&uartclk,
+	&msp02clk,
+	&msp1clk,
+	&i2cclk,
+	&sdmmcclk,
+	&slimclk,
+	&per1clk,
+	&per2clk,
+	&per3clk,
+	&per5clk,
+	&per6clk,
+	&per7clk,
+	&lcdclk,
+	&bmlclk,
+	&hsitxclk,
+	&hsirxclk,
+	&hdmiclk,
+	&apeatclk,
+	&apetraceclk,
+	&mcdeclk,
+	&ipi2cclk,
+	&dsialtclk,
+	&dmaclk,
+	&b2r2clk,
+	&tvclk,
+	&sspclk,
+	&rngclk,
+	&uiccclk,
+	&sysclk2,
+	&clkout0,
+	&clkout1,
+	&p1_pclk0,
+	&p1_pclk1,
+	&p1_pclk2,
+	&p1_pclk3,
+	&p1_pclk4,
+	&p1_pclk5,
+	&p1_pclk6,
+	&p1_pclk7,
+	&p1_pclk8,
+	&p1_pclk9,
+	&p1_pclk10,
+	&p1_pclk11,
+	&p2_pclk0,
+	&p2_pclk1,
+	&p2_pclk2,
+	&p2_pclk3,
+	&p2_pclk4,
+	&p2_pclk5,
+	&p2_pclk6,
+	&p2_pclk7,
+	&p2_pclk8,
+	&p2_pclk9,
+	&p2_pclk10,
+	&p2_pclk11,
+	&p3_pclk0,
+	&p3_pclk1,
+	&p3_pclk2,
+	&p3_pclk3,
+	&p3_pclk4,
+	&p3_pclk5,
+	&p3_pclk6,
+	&p3_pclk7,
+	&p3_pclk8,
+	&p5_pclk0,
+	&p5_pclk1,
+	&p6_pclk0,
+	&p6_pclk1,
+	&p6_pclk2,
+	&p6_pclk3,
+	&p6_pclk4,
+	&p6_pclk5,
+	&p6_pclk6,
+	&p6_pclk7,
 };
 
 /* List of clocks which might be enabled from the bootloader */
+
+/*
+ * SOC settings enable bus + kernel clocks of all periphs without
+ * properly configuring the parents of the kernel clocks for all units.
+ * Enable and Disable them all to get them into a known and working state.
+ */
 static struct clk *loader_enabled_clk[] __initdata = {
-	&p1_uart0_clk,	/* uart0 */
-	&p1_uart1_clk,	/* uart1 */
-	&p3_uart2_clk,	/* uart2 */
-	&p1_pclk9,	/* gpioblock0 */
-	&p2_pclk11,	/* gpioblock1 */
-	&p3_pclk8,	/* gpioblock2 */
-	&p5_pclk1,	/* gpioblock3 */
-	&p6_mtu0_clk,	/* mtu0 */
-	&p6_mtu1_clk,	/* mtu1 */
-	&p3_ssp0_clk,	/* ssp0 */
-	&p3_ssp1_clk,	/* ssp1 */
-	&p2_pclk8,	/* spi0 */
-	&p2_pclk2,	/* spi1 */
-	&p2_pclk1,	/* spi2 */
-	&p1_pclk7,	/* spi3 */
-	&p1_msp0_clk,	/* msp0 */
-	&p2_msp2_clk,	/* msp2 */
-	&p3_i2c0_clk,	/* nmk-i2c.0 */
-	&p1_i2c1_clk,	/* nmk-i2c.1 */
-	&p1_i2c2_clk,	/* nmk-i2c.2 */
-	&p2_i2c3_clk,	/* nmk-i2c.3 */
-	&p1_i2c4_clk,	/* nmk-i2c.4 */
-	&bmlclk,	/* bml */
-	&dsialtclk,	/* dsialt */
-	&hsirxclk,	/* hsirx */
-	&hsitxclk,	/* hsitx */
-	&ipi2cclk,	/* ipi2 */
-	&lcdclk,	/* mcde */
-	&per7clk,	/* PERIPH7 */
-	&b2r2clk,	/* b2r2_bus */
+	/* periph 1 */
+	&p1_uart0_clk,
+	&p1_uart1_clk,
+	&p1_i2c1_clk,
+	&p1_msp0_clk,
+	&p1_msp1_clk,
+	&p1_sdi0_clk,
+	&p1_i2c2_clk,
+	&p1_pclk7,		/* spi3 */
+	&p1_pclk9,		/* gpioctrl */
+	&p1_i2c4_clk,
+
+	/* periph 2 */
+	&p2_i2c3_clk,
+	&p2_pclk1,		/* spi2 */
+	&p2_pclk2,		/* spi1 */
+	/* pwl has an unknown kclk parent, ignore it */
+	&p2_sdi4_clk,
+	&p2_msp2_clk,
+	&p2_sdi1_clk,
+	&p2_sdi3_clk,
+	&p2_pclk8,		/* spi0 */
+	&p2_ssirx_kclk,		/* hsir kernel */
+	&p2_ssitx_kclk,		/* hsit kernel */
+	&p2_pclk9,		/* hsir bus */
+	&p2_pclk10,		/* hsit bus */
+	&p2_pclk11,		/* gpioctrl */
+	/* periph 3 */
+	&p3_pclk0,		/* fsmc */
+	&p3_ssp0_clk,
+	&p3_ssp1_clk,
+	&p3_i2c0_clk,
+	&p3_sdi2_clk,
+	&p3_ske_clk,
+	&p3_uart2_clk,
+	&p3_sdi5_clk,
+	&p3_pclk8,		/* gpio */
+	/* periph 5 */
+	&p5_pclk0,		/* usb */
+	&p5_pclk1,		/* gpio */
+	/* periph 6 */
+	/* Leave out rng, cryp0, hash0 and pka */
+	&p6_pclk4,		/* hash1 */
+	&p6_pclk5,		/* cr */
+	&p6_mtu0_clk,
+	&p6_mtu1_clk,
+	/* periph 7 */
+	&per7clk,		/* PERIPH7 */
+
+	&bmlclk,		/* BML */
+	&dsialtclk,		/* dsialt */
+	&hsirxclk,		/* hsirx */
+	&hsitxclk,		/* hsitx */
+	&ipi2cclk,		/* ipi2 */
+	&lcdclk,		/* mcde */
+	&b2r2clk,		/* b2r2_bus */
 };
 
 static int __init init_clock_states(void)
 {
-	unsigned int i = 0;
-
+	unsigned int i;
 	/*
-	 * Disable peripheral clocks enabled by bootloadr/defualt
+	 * Disable peripheral clocks enabled by bootloader/default
 	 * but without drivers
 	 */
 	for (i = 0; i < ARRAY_SIZE(loader_enabled_clk); i++)
@@ -1086,6 +1118,19 @@ late_initcall(init_clock_states);
 
 int __init db8500_clk_init(void)
 {
+	/*
+	 * Disable pwl's and slimbus' bus and kernel clocks without touching
+	 * any parents. Because for slimbus, the prcmu fw has not correctly
+	 * configured the clocks at boot and for pwl the kclk parent
+	 * is unknown.
+	 */
+
+	/* slimbus' bus and kernel clocks */
+	writel(1 << 8, __io_address(U8500_CLKRST1_BASE) + PRCC_PCKDIS);
+	writel(1 << 8, __io_address(U8500_CLKRST1_BASE) + PRCC_KCKDIS);
+	/* pwl's bus and kernel clocks */
+	writel(1 << 3, __io_address(U8500_CLKRST2_BASE) + PRCC_PCKDIS);
+	writel(1 << 1, __io_address(U8500_CLKRST2_BASE) + PRCC_KCKDIS);
 
 	clkdev_add_table(u8500_v2_sysclks,
 		      ARRAY_SIZE(u8500_v2_sysclks));
