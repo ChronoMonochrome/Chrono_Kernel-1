@@ -166,7 +166,7 @@ static int ux500_pd_suspend_noirq(struct device *dev)
 		return 0;
 
 	/* Already is runtime suspended?  Nothing to do. */
-	if (pm_runtime_suspended(dev))
+	if (pm_runtime_status_suspended(dev))
 		return 0;
 
 	/*
@@ -191,7 +191,7 @@ static int ux500_pd_resume_noirq(struct device *dev)
 	 * Already was runtime suspended?  No need to resume here, runtime
 	 * resume will take care of it.
 	 */
-	if (pm_runtime_suspended(dev))
+	if (pm_runtime_status_suspended(dev))
 		return 0;
 
 	/*
@@ -200,6 +200,62 @@ static int ux500_pd_resume_noirq(struct device *dev)
 	 * up since pm-runtime thinks it is not suspended.
 	 */
 	return ux500_pd_runtime_resume(dev);
+}
+
+static int ux500_pd_amba_suspend_noirq(struct device *dev)
+{
+	struct pm_runtime_data *prd = __to_prd(dev);
+	int (*callback)(struct device *) = NULL;
+	int ret = 0;
+	bool is_suspended = pm_runtime_status_suspended(dev);
+
+	dev_vdbg(dev, "%s()\n", __func__);
+
+	/*
+	 * Do not bypass AMBA bus pm functions by calling generic
+	 * pm directly. A future fix could be to implement a
+	 * "pm_bus_generic_*" API which we can use instead.
+	 */
+	if (dev->bus && dev->bus->pm)
+		callback = dev->bus->pm->suspend_noirq;
+
+	if (callback)
+		ret = callback(dev);
+	else
+		ret = pm_generic_suspend_noirq(dev);
+
+	if (!ret && !is_suspended)
+		ux500_pd_disable(prd);
+
+	return ret;
+}
+
+static int ux500_pd_amba_resume_noirq(struct device *dev)
+{
+	struct pm_runtime_data *prd = __to_prd(dev);
+	int (*callback)(struct device *) = NULL;
+	int ret = 0;
+	bool is_suspended = pm_runtime_status_suspended(dev);
+
+	dev_vdbg(dev, "%s()\n", __func__);
+
+	/*
+	 * Do not bypass AMBA bus pm functions by calling generic
+	 * pm directly. A future fix could be to implement a
+	 * "pm_bus_generic_*" API which we can use instead.
+	 */
+	if (dev->bus && dev->bus->pm)
+		callback = dev->bus->pm->resume_noirq;
+
+	if (callback)
+		ret = callback(dev);
+	else
+		ret = pm_generic_resume_noirq(dev);
+
+	if (!ret && !is_suspended)
+		ux500_pd_enable(prd);
+
+	return ret;
 }
 
 static int ux500_pd_amba_runtime_suspend(struct device *dev)
@@ -211,9 +267,9 @@ static int ux500_pd_amba_runtime_suspend(struct device *dev)
 	dev_vdbg(dev, "%s()\n", __func__);
 
 	/*
-	 * Do not bypass AMBA bus runtime functions by calling generic runtime
-	 * directly. A future fix could be to implement a
-	 * "pm_bus_generic_runtime_*" API which we can use instead.
+	 * Do not bypass AMBA bus pm functions by calling generic
+	 * pm directly. A future fix could be to implement a
+	 * "pm_bus_generic_*" API which we can use instead.
 	 */
 	if (dev->bus && dev->bus->pm)
 		callback = dev->bus->pm->runtime_suspend;
@@ -240,9 +296,9 @@ static int ux500_pd_amba_runtime_resume(struct device *dev)
 	ux500_pd_enable(prd);
 
 	/*
-	 * Do not bypass AMBA bus runtime functions by calling generic runtime
-	 * directly. A future fix could be to implement a
-	 * "pm_bus_generic_runtime_*" API which we can use instead.
+	 * Do not bypass AMBA bus pm functions by calling generic
+	 * pm directly. A future fix could be to implement a
+	 * "pm_bus_generic_*" API which we can use instead.
 	 */
 	if (dev->bus && dev->bus->pm)
 		callback = dev->bus->pm->runtime_resume;
@@ -383,7 +439,23 @@ static int ux500_pd_bus_notify(struct notifier_block *nb,
 
 struct dev_pm_domain ux500_amba_dev_power_domain = {
 	.ops = {
-		USE_AMBA_PM_SLEEP_OPS
+		/* USE_AMBA_PM_SLEEP_OPS minus the two we replace */
+		.prepare = amba_pm_prepare,
+		.complete = amba_pm_complete,
+		.suspend = amba_pm_suspend,
+		.resume = amba_pm_resume,
+		.freeze = amba_pm_freeze,
+		.thaw = amba_pm_thaw,
+		.poweroff = amba_pm_poweroff,
+		.restore = amba_pm_restore,
+		.freeze_noirq = amba_pm_freeze_noirq,
+		.thaw_noirq = amba_pm_thaw_noirq,
+		.poweroff_noirq = amba_pm_poweroff_noirq,
+		.restore_noirq = amba_pm_restore_noirq,
+
+		.suspend_noirq = ux500_pd_amba_suspend_noirq,
+		.resume_noirq = ux500_pd_amba_resume_noirq,
+
 		SET_RUNTIME_PM_OPS(ux500_pd_amba_runtime_suspend,
 				   ux500_pd_amba_runtime_resume,
 				   ux500_pd_amba_runtime_idle)
