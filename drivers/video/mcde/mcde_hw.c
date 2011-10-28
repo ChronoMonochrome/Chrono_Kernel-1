@@ -99,12 +99,16 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define DSI_READ_DELAY 5
 #define DSI_READ_NBR_OF_RETRIES 2
 #define MCDE_FLOWEN_MAX_TRIAL 60
+#define DSI_RESET_SW 0x7
 
 #define MCDE_VERSION_4_1_3 0x04010300
 #define MCDE_VERSION_4_0_4 0x04000400
 #define MCDE_VERSION_3_0_8 0x03000800
 #define MCDE_VERSION_3_0_5 0x03000500
 #define MCDE_VERSION_1_0_4 0x01000400
+
+#define CLK_MCDE	"mcde"
+#define CLK_DPI		"lcd"
 
 static u8 *mcdeio;
 static u8 **dsiio;
@@ -120,14 +124,17 @@ static u32 output_fifo_c0c1_size;
 static struct regulator *regulator_vana;
 static struct regulator *regulator_mcde_epod;
 static struct regulator *regulator_esram_epod;
-static struct clk *clock_dpi;
-static struct clk *clock_dsi;
 static struct clk *clock_mcde;
+
+/* TODO remove when all platforms support dsilp and dsihs clocks */
+static struct clk *clock_dsi;
 static struct clk *clock_dsi_lp;
+
 static u8 mcde_is_enabled;
 static struct delayed_work hw_timeout_work;
 static u8 dsi_pll_is_enabled;
 static u8 dsi_ifc_is_supported;
+static u8 dsi_use_clk_framework;
 static u32 mcde_clk_rate; /* In Hz */
 
 static struct mutex mcde_hw_lock;
@@ -348,6 +355,10 @@ struct mcde_chnl_state {
 	wait_queue_head_t vcmp_waitq;
 	atomic_t vcmp_cnt;
 	struct timer_list dsi_te_timer;
+	struct clk *clk_dsi_lp;
+	struct clk *clk_dsi_hs;
+	struct clk *clk_dpi;
+
 	enum mcde_display_power_mode power_mode;
 
 	/* Staged settings */
@@ -414,7 +425,8 @@ static void enable_clocks_and_power(struct platform_device *pdev)
 
 	WARN_ON_ONCE(regulator_enable(regulator_mcde_epod));
 
-	pdata->platform_set_clocks();
+	if (!dsi_use_clk_framework)
+		pdata->platform_set_clocks();
 
 	WARN_ON_ONCE(clk_enable(clock_mcde));
 }
@@ -532,26 +544,32 @@ static void dsi_link_handle_ulpm(struct mcde_port *port, bool enter_ulpm)
 
 static int dsi_link_enable(struct mcde_chnl_state *chnl)
 {
+	int ret = 0;
 	u8 link = chnl->port.link;
 
-	WARN_ON_ONCE(clk_enable(clock_dsi));
-	WARN_ON_ONCE(clk_enable(clock_dsi_lp));
+	if (dsi_use_clk_framework) {
+		prcmu_write(DB8500_PRCM_DSI_SW_RESET, DSI_RESET_SW);
+		WARN_ON_ONCE(clk_enable(chnl->clk_dsi_lp));
+		WARN_ON_ONCE(clk_enable(chnl->clk_dsi_hs));
+	} else {
+		WARN_ON_ONCE(clk_enable(clock_dsi));
+		WARN_ON_ONCE(clk_enable(clock_dsi_lp));
 
-	if (!dsi_pll_is_enabled) {
-		int ret;
-		struct mcde_platform_data *pdata =
-				mcde_dev->dev.platform_data;
-		ret = pdata->platform_enable_dsipll();
-		if (ret < 0) {
-			dev_warn(&mcde_dev->dev, "%s: "
-				"enable_dsipll failed ret = %d\n",
-							__func__, ret);
-			goto enable_dsipll_err;
+		if (!dsi_pll_is_enabled) {
+			struct mcde_platform_data *pdata =
+					mcde_dev->dev.platform_data;
+			ret = pdata->platform_enable_dsipll();
+			if (ret < 0) {
+				dev_warn(&mcde_dev->dev, "%s: "
+					"enable_dsipll failed ret = %d\n",
+								__func__, ret);
+				goto enable_dsipll_err;
+			}
+			dev_dbg(&mcde_dev->dev, "%s enable dsipll\n",
+								__func__);
 		}
-		dev_dbg(&mcde_dev->dev, "%s enable dsipll\n",
-							__func__);
+		dsi_pll_is_enabled++;
 	}
-	dsi_pll_is_enabled++;
 
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, true);
 
@@ -575,7 +593,7 @@ static int dsi_link_enable(struct mcde_chnl_state *chnl)
 enable_dsipll_err:
 	clk_disable(clock_dsi_lp);
 	clk_disable(clock_dsi);
-	return -EINVAL;
+	return ret;
 }
 
 static void dsi_link_disable(struct mcde_chnl_state *chnl, bool suspend)
@@ -584,15 +602,20 @@ static void dsi_link_disable(struct mcde_chnl_state *chnl, bool suspend)
 	/* only enter ULPM when device is suspended */
 	if (suspend)
 		dsi_link_handle_ulpm(&chnl->port, true);
-	if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
-		struct mcde_platform_data *pdata =
-			    mcde_dev->dev.platform_data;
-		dev_dbg(&mcde_dev->dev, "%s disable dsipll\n",
-							__func__);
-		pdata->platform_disable_dsipll();
+	if (dsi_use_clk_framework) {
+		clk_disable(chnl->clk_dsi_lp);
+		clk_disable(chnl->clk_dsi_hs);
+	} else {
+		if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
+			struct mcde_platform_data *pdata =
+				    mcde_dev->dev.platform_data;
+			dev_dbg(&mcde_dev->dev, "%s disable dsipll\n",
+								__func__);
+			pdata->platform_disable_dsipll();
+		}
+		clk_disable(clock_dsi);
+		clk_disable(clock_dsi_lp);
 	}
-	clk_disable(clock_dsi);
-	clk_disable(clock_dsi_lp);
 
 	dsi_wfld(chnl->port.link, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, false);
 }
@@ -618,7 +641,7 @@ static void disable_mcde_hw(bool force_disable, bool suspend)
 				if (chnl->port.type == MCDE_PORTTYPE_DSI)
 					dsi_link_disable(chnl, suspend);
 				else if (chnl->port.type == MCDE_PORTTYPE_DPI)
-					clk_disable(clock_dpi);
+					clk_disable(chnl->clk_dpi);
 				chnl->formatter_updated = false;
 			}
 			if (chnl->esram_is_enabled) {
@@ -1279,8 +1302,15 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 		}
 	}
 
-	if (port->type == MCDE_PORTTYPE_DPI)
-		WARN_ON_ONCE(clk_enable(clock_dpi));
+	if (port->type == MCDE_PORTTYPE_DPI) {
+		if (port->phy.dpi.lcd_freq != clk_round_rate(chnl->clk_dpi,
+							port->phy.dpi.lcd_freq))
+			dev_warn(&mcde_dev->dev, "Could not set lcd freq"
+					" to %d\n", port->phy.dpi.lcd_freq);
+		WARN_ON_ONCE(clk_set_rate(chnl->clk_dpi,
+						port->phy.dpi.lcd_freq));
+		WARN_ON_ONCE(clk_enable(chnl->clk_dpi));
+	}
 
 	mcde_wfld(MCDE_CR, MCDEEN, true);
 	chnl->formatter_updated = true;
@@ -2588,10 +2618,32 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 	chnl->reserved = true;
 
 	if (chnl->port.type == MCDE_PORTTYPE_DPI) {
+		chnl->clk_dpi = clk_get(&mcde_dev->dev, CLK_DPI);
 		if (chnl->port.phy.dpi.tv_mode)
 			chnl->vcmp_per_field = true;
-	}
+	} else if (chnl->port.type == MCDE_PORTTYPE_DSI &&
+							dsi_use_clk_framework) {
+		char dsihs_name[10];
+		char dsilp_name[10];
 
+		sprintf(dsihs_name, "dsihs%d", port->link);
+		sprintf(dsilp_name, "dsilp%d", port->link);
+
+		chnl->clk_dsi_lp = clk_get(&mcde_dev->dev, dsilp_name);
+		chnl->clk_dsi_hs = clk_get(&mcde_dev->dev, dsihs_name);
+		if (port->phy.dsi.lp_freq != clk_round_rate(chnl->clk_dsi_lp,
+							port->phy.dsi.lp_freq))
+			dev_warn(&mcde_dev->dev, "Could not set dsi lp freq"
+					" to %d\n", port->phy.dsi.lp_freq);
+		WARN_ON_ONCE(clk_set_rate(chnl->clk_dsi_lp,
+							port->phy.dsi.lp_freq));
+		if (port->phy.dsi.hs_freq != clk_round_rate(chnl->clk_dsi_hs,
+							port->phy.dsi.hs_freq))
+			dev_warn(&mcde_dev->dev, "Could not set dsi hs freq"
+					" to %d\n", port->phy.dsi.hs_freq);
+		WARN_ON_ONCE(clk_set_rate(chnl->clk_dsi_hs,
+							port->phy.dsi.hs_freq));
+	}
 	return chnl;
 }
 
@@ -2989,9 +3041,15 @@ void mcde_chnl_put(struct mcde_chnl_state *chnl)
 
 	chnl->reserved = false;
 	if (chnl->port.type == MCDE_PORTTYPE_DPI) {
+		clk_put(chnl->clk_dpi);
 		if (chnl->port.phy.dpi.tv_mode) {
 			chnl->vcmp_per_field = false;
 			chnl->even_vcmp = false;
+		}
+	} else if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+		if (dsi_use_clk_framework) {
+			clk_put(chnl->clk_dsi_lp);
+			clk_put(chnl->clk_dsi_hs);
 		}
 	}
 
@@ -3283,39 +3341,32 @@ static int init_clocks_and_power(struct platform_device *pdev)
 								__func__);
 	}
 
-    /*
-     * DSI, DSI LP and DPI clocks are not necessary to get
-     * There can be platforms that not have DSI, DPI support
-    */
-	clock_dsi = clk_get(&pdev->dev, pdata->clock_dsi_id);
-	if (IS_ERR(clock_dsi))
-		dev_dbg(&pdev->dev, "%s: Failed to get clock '%s'\n",
-					__func__, pdata->clock_dsi_id);
+	if (!dsi_use_clk_framework) {
+		clock_dsi = clk_get(&pdev->dev, pdata->clock_dsi_id);
+		if (IS_ERR(clock_dsi))
+			dev_dbg(&pdev->dev, "%s: Failed to get clock '%s'\n",
+						__func__, pdata->clock_dsi_id);
 
-	clock_dsi_lp = clk_get(&pdev->dev, pdata->clock_dsi_lp_id);
-	if (IS_ERR(clock_dsi_lp))
-		dev_dbg(&pdev->dev, "%s: Failed to get clock '%s'\n",
+		clock_dsi_lp = clk_get(&pdev->dev, pdata->clock_dsi_lp_id);
+		if (IS_ERR(clock_dsi_lp))
+			dev_dbg(&pdev->dev, "%s: Failed to get clock '%s'\n",
 					__func__, pdata->clock_dsi_lp_id);
+	}
 
-	clock_dpi = clk_get(&pdev->dev, pdata->clock_dpi_id);
-	if (IS_ERR(clock_dpi))
-		dev_dbg(&pdev->dev, "%s: Failed to get clock '%s'\n",
-					__func__, pdata->clock_dpi_id);
-
-	clock_mcde = clk_get(&pdev->dev, pdata->clock_mcde_id);
+	clock_mcde = clk_get(&pdev->dev, CLK_MCDE);
 	if (IS_ERR(clock_mcde)) {
 		ret = PTR_ERR(clock_mcde);
-		dev_warn(&pdev->dev, "%s: Failed to get clock '%s'\n",
-					__func__, pdata->clock_mcde_id);
+		dev_warn(&pdev->dev, "%s: Failed to get mcde_clk\n", __func__);
 		goto clk_mcde_err;
 	}
 
 	return ret;
 
 clk_mcde_err:
-	clk_put(clock_dpi);
-	clk_put(clock_dsi_lp);
-	clk_put(clock_dsi);
+	if (!dsi_use_clk_framework) {
+		clk_put(clock_dsi_lp);
+		clk_put(clock_dsi);
+	}
 
 	if (regulator_vana)
 		regulator_put(regulator_vana);
@@ -3331,9 +3382,10 @@ static void remove_clocks_and_power(struct platform_device *pdev)
 {
 	/* REVIEW: Release only if exist */
 	/* REVIEW: Remove make sure MCDE is done */
-	clk_put(clock_dpi);
-	clk_put(clock_dsi_lp);
-	clk_put(clock_dsi);
+	if (!dsi_use_clk_framework) {
+		clk_put(clock_dsi_lp);
+		clk_put(clock_dsi);
+	}
 	clk_put(clock_mcde);
 	if (regulator_vana)
 		regulator_put(regulator_vana);
@@ -3369,6 +3421,7 @@ static int probe_hw(struct platform_device *pdev)
 		input_fifo_size = 128;
 		output_fifo_ab_size = 640;
 		output_fifo_c0c1_size = 160;
+		dsi_use_clk_framework = true;
 		dev_info(&mcde_dev->dev, "db8500 V2 HW\n");
 		break;
 	case MCDE_VERSION_4_0_4:
@@ -3378,6 +3431,7 @@ static int probe_hw(struct platform_device *pdev)
 		input_fifo_size = 80;
 		output_fifo_ab_size = 320;
 		dsi_ifc_is_supported = false;
+		dsi_use_clk_framework = false;
 		dev_info(&mcde_dev->dev, "db5500 V2 HW\n");
 		break;
 	case MCDE_VERSION_4_1_3:
@@ -3388,6 +3442,7 @@ static int probe_hw(struct platform_device *pdev)
 		input_fifo_size = 192;
 		output_fifo_ab_size = 640;
 		output_fifo_c0c1_size = 160;
+		dsi_use_clk_framework = false;
 		dev_info(&mcde_dev->dev, "db9540 V1 HW\n");
 		break;
 	case MCDE_VERSION_3_0_5:

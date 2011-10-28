@@ -27,6 +27,9 @@
 #define IO_REGU_MIN		1650000
 #define IO_REGU_MAX		3300000
 
+#define DSI_HS_FREQ_HZ		420160000
+#define DSI_LP_FREQ_HZ		19200000
+
 struct device_info {
 	int reset_gpio;
 	struct mcde_port port;
@@ -165,6 +168,8 @@ static int __devinit samsung_s6d16d0_probe(struct mcde_display_device *ddev)
 	di->port.phy.dsi.host_eot_gen = true;
 	/* TODO: Move UI to mcde_hw.c when clk_get_rate(dsi) is done */
 	di->port.phy.dsi.ui = 9;
+	di->port.phy.dsi.hs_freq = DSI_HS_FREQ_HZ;
+	di->port.phy.dsi.lp_freq = DSI_LP_FREQ_HZ;
 
 	ret = gpio_request(di->reset_gpio, NULL);
 	if (ret)

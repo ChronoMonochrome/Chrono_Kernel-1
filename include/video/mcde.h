@@ -138,6 +138,9 @@ struct mcde_port {
 			 */
 			u32 vid_wakeup_time;
 
+			u32 hs_freq;
+			u32 lp_freq;
+
 			/* DSI data lanes are swapped if true */
 			bool data_lanes_swap;
 		} dsi;
@@ -146,6 +149,7 @@ struct mcde_port {
 			bool tv_mode;
 			u16 clock_div; /* use 0 or 1 for no clock divider */
 			u32 polarity;    /* see DPI_ACT_LOW_* definitions */
+			u32 lcd_freq;
 		} dpi;
 	} phy;
 };

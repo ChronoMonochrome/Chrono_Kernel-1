@@ -39,6 +39,9 @@
 #define NUM_FB_BUFFERS 2
 #endif
 
+#define DSI_HS_FREQ_HZ 840320000
+#define DSI_LP_FREQ_HZ 19200000
+
 struct cea_vesa_video_mode {
 	u32 cea;
 	u32 vesa_cea_nr;
@@ -1421,6 +1424,7 @@ set_power_and_exit:
 static int __devinit hdmi_probe(struct mcde_display_device *dev)
 {
 	int ret = 0;
+	struct mcde_port *port;
 	struct display_driver_data *driver_data;
 	struct mcde_display_hdmi_platform_data *pdata =
 		dev->dev.platform_data;
@@ -1454,7 +1458,12 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	dev->set_pixel_format = hdmi_set_pixel_format;
 	dev->set_power_mode = hdmi_set_power_mode;
 
-	dev->port->phy.dsi.host_eot_gen = true;
+	port = dev->port;
+
+	port->phy.dsi.host_eot_gen = true;
+	port->phy.dsi.num_data_lanes = 2;
+	port->phy.dsi.hs_freq = DSI_HS_FREQ_HZ;
+	port->phy.dsi.lp_freq = DSI_LP_FREQ_HZ;
 
 	/* Create sysfs files */
 	if (device_create_file(&dev->dev, &dev_attr_hdmisdtvswitch))
