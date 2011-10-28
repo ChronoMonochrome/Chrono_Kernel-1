@@ -212,6 +212,7 @@ static int musb_otg_notifications(struct notifier_block *nb,
 
 	switch (event) {
 	case USB_EVENT_ID:
+	case USB_EVENT_RIDA:
 		dev_dbg(musb->controller, "ID GND\n");
 		if (is_otg_enabled(musb)) {
 				ux500_musb_set_vbus(musb, 1);

@@ -314,10 +314,11 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 	lsts = (reg >> 3) & 0x0F;
 
 	switch (lsts) {
+	case USB_LINK_ACA_RID_B:
+		event = USB_EVENT_RIDB;
 	case USB_LINK_NOT_CONFIGURED:
 	case USB_LINK_RESERVED:
 	case USB_LINK_NOT_VALID_LINK:
-	case USB_LINK_ACA_RID_B:
 		if (ab->mode == USB_HOST)
 			ab8500_usb_host_phy_dis(ab);
 		else if (ab->mode == USB_PERIPHERAL)
@@ -325,18 +326,19 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 		ab->mode = USB_IDLE;
 		ab->phy.otg.default_a = false;
 		ab->vbus_draw = 0;
-		event = USB_EVENT_NONE;
+		if (event != USB_EVENT_RIDB)
+			event = USB_EVENT_NONE;
 		break;
-
+	case USB_LINK_ACA_RID_C_NM:
+	case USB_LINK_ACA_RID_C_HS:
+	case USB_LINK_ACA_RID_C_HS_CHIRP:
+		event = USB_EVENT_RIDC;
 	case USB_LINK_STD_HOST_NC:
 	case USB_LINK_STD_HOST_C_NS:
 	case USB_LINK_STD_HOST_C_S:
 	case USB_LINK_HOST_CHG_NM:
 	case USB_LINK_HOST_CHG_HS:
 	case USB_LINK_HOST_CHG_HS_CHIRP:
-	case USB_LINK_ACA_RID_C_NM:
-	case USB_LINK_ACA_RID_C_HS:
-	case USB_LINK_ACA_RID_C_HS_CHIRP:
 		if (ab->mode == USB_HOST) {
 			ab->mode = USB_PERIPHERAL;
 			ab8500_usb_host_phy_dis(ab);
@@ -348,11 +350,13 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 			ux500_restore_context();
 			ab8500_usb_peri_phy_en(ab);
 		}
-		event = USB_EVENT_VBUS;
+		if (event != USB_EVENT_RIDC)
+			event = USB_EVENT_VBUS;
 		break;
 
-	case USB_LINK_HM_IDGND:
 	case USB_LINK_ACA_RID_A:
+		event = USB_EVENT_RIDA;
+	case USB_LINK_HM_IDGND:
 		if (ab->mode == USB_PERIPHERAL) {
 			ab->mode = USB_HOST;
 			ab8500_usb_peri_phy_dis(ab);
@@ -365,7 +369,8 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 			ab8500_usb_host_phy_en(ab);
 		}
 		ab->phy.otg->default_a = true;
-		event = USB_EVENT_ID;
+		if (event != USB_EVENT_RIDA)
+			event = USB_EVENT_ID;
 		break;
 
 	case USB_LINK_DEDICATED_CHG:
