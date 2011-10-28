@@ -125,137 +125,139 @@ static struct {
 
 void u5500_context_save_icn(void)
 {
+	void __iomem *base = context_icn.base;
+
 	/* hibw1 */
 	context_icn.hibw1_esram_in_pri[0] =
-		readl(context_icn.base + NODE_HIBW1_ESRAM_IN_0_PRIORITY);
+		readl_relaxed(base + NODE_HIBW1_ESRAM_IN_0_PRIORITY);
 	context_icn.hibw1_esram_in_pri[1] =
-		readl(context_icn.base + NODE_HIBW1_ESRAM_IN_1_PRIORITY);
+		readl_relaxed(base + NODE_HIBW1_ESRAM_IN_1_PRIORITY);
 
 	context_icn.hibw1_esram_in0_arb[0] =
-		readl(context_icn.base + NODE_HIBW1_ESRAM_IN_0_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_ESRAM_IN_0_ARB_1_LIMIT);
 	context_icn.hibw1_esram_in0_arb[1] =
-		readl(context_icn.base + NODE_HIBW1_ESRAM_IN_0_ARB_2_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_ESRAM_IN_0_ARB_2_LIMIT);
 	context_icn.hibw1_esram_in0_arb[2] =
-		readl(context_icn.base + NODE_HIBW1_ESRAM_IN_0_ARB_3_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_ESRAM_IN_0_ARB_3_LIMIT);
 
 	context_icn.hibw1_esram_in1_arb[0] =
-		readl(context_icn.base + NODE_HIBW1_ESRAM_IN_1_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_ESRAM_IN_1_ARB_1_LIMIT);
 	context_icn.hibw1_esram_in1_arb[1] =
-		readl(context_icn.base + NODE_HIBW1_ESRAM_IN_1_ARB_2_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_ESRAM_IN_1_ARB_2_LIMIT);
 	context_icn.hibw1_esram_in1_arb[2] =
-		readl(context_icn.base + NODE_HIBW1_ESRAM_IN_1_ARB_3_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_ESRAM_IN_1_ARB_3_LIMIT);
 
 	context_icn.hibw1_ddr_in_prio[0] =
-		readl(context_icn.base + NODE_HIBW1_DDR_IN_0_PRIORITY);
+		readl_relaxed(base + NODE_HIBW1_DDR_IN_0_PRIORITY);
 	context_icn.hibw1_ddr_in_prio[1] =
-		readl(context_icn.base + NODE_HIBW1_DDR_IN_1_PRIORITY);
+		readl_relaxed(base + NODE_HIBW1_DDR_IN_1_PRIORITY);
 	context_icn.hibw1_ddr_in_prio[2] =
-		readl(context_icn.base + NODE_HIBW1_DDR_IN_2_PRIORITY);
+		readl_relaxed(base + NODE_HIBW1_DDR_IN_2_PRIORITY);
 
 	context_icn.hibw1_ddr_in_limit[0] =
-		readl(context_icn.base + NODE_HIBW1_DDR_IN_0_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_DDR_IN_0_LIMIT);
 	context_icn.hibw1_ddr_in_limit[1] =
-		readl(context_icn.base + NODE_HIBW1_DDR_IN_1_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_DDR_IN_1_LIMIT);
 	context_icn.hibw1_ddr_in_limit[2] =
-		readl(context_icn.base + NODE_HIBW1_DDR_IN_2_LIMIT);
+		readl_relaxed(base + NODE_HIBW1_DDR_IN_2_LIMIT);
 
 	context_icn.hibw1_ddr_out_prio_reg =
-		readl(context_icn.base + NODE_HIBW1_DDR_OUT_0_PRIORITY);
+		readl_relaxed(base + NODE_HIBW1_DDR_OUT_0_PRIORITY);
 
 	/* hibw2 */
 	context_icn.hibw2_esram_in_pri[0] =
-		readl(context_icn.base + NODE_HIBW2_ESRAM_IN_0_PRIORITY);
+		readl_relaxed(base + NODE_HIBW2_ESRAM_IN_0_PRIORITY);
 	context_icn.hibw2_esram_in_pri[1] =
-		readl(context_icn.base + NODE_HIBW2_ESRAM_IN_1_PRIORITY);
+		readl_relaxed(base + NODE_HIBW2_ESRAM_IN_1_PRIORITY);
 
 	context_icn.hibw2_esram_in0_arblimit[0] =
-		readl(context_icn.base + NODE_HIBW2_ESRAM_IN_0_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_ESRAM_IN_0_ARB_1_LIMIT);
 	context_icn.hibw2_esram_in0_arblimit[1] =
-		readl(context_icn.base + NODE_HIBW2_ESRAM_IN_0_ARB_2_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_ESRAM_IN_0_ARB_2_LIMIT);
 	context_icn.hibw2_esram_in0_arblimit[2] =
-		readl(context_icn.base + NODE_HIBW2_ESRAM_IN_0_ARB_3_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_ESRAM_IN_0_ARB_3_LIMIT);
 
 	context_icn.hibw2_esram_in1_arblimit[0] =
-		readl(context_icn.base + NODE_HIBW2_ESRAM_IN_1_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_ESRAM_IN_1_ARB_1_LIMIT);
 	context_icn.hibw2_esram_in1_arblimit[1] =
-		readl(context_icn.base + NODE_HIBW2_ESRAM_IN_1_ARB_2_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_ESRAM_IN_1_ARB_2_LIMIT);
 	context_icn.hibw2_esram_in1_arblimit[2] =
-		readl(context_icn.base + NODE_HIBW2_ESRAM_IN_1_ARB_3_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_ESRAM_IN_1_ARB_3_LIMIT);
 
 	context_icn.hibw2_ddr_in_prio[0] =
-		readl(context_icn.base + NODE_HIBW2_DDR_IN_0_PRIORITY);
+		readl_relaxed(base + NODE_HIBW2_DDR_IN_0_PRIORITY);
 	context_icn.hibw2_ddr_in_prio[1] =
-		readl(context_icn.base + NODE_HIBW2_DDR_IN_1_PRIORITY);
+		readl_relaxed(base + NODE_HIBW2_DDR_IN_1_PRIORITY);
 	context_icn.hibw2_ddr_in_prio[2] =
-		readl(context_icn.base + NODE_HIBW2_DDR_IN_2_PRIORITY);
+		readl_relaxed(base + NODE_HIBW2_DDR_IN_2_PRIORITY);
 	context_icn.hibw2_ddr_in_prio[3] =
-		readl(context_icn.base + NODE_HIBW2_DDR_IN_3_PRIORITY);
+		readl_relaxed(base + NODE_HIBW2_DDR_IN_3_PRIORITY);
 
 	context_icn.hibw2_ddr_in_limit[0] =
-		readl(context_icn.base + NODE_HIBW2_DDR_IN_0_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_DDR_IN_0_LIMIT);
 	context_icn.hibw2_ddr_in_limit[1] =
-		readl(context_icn.base + NODE_HIBW2_DDR_IN_1_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_DDR_IN_1_LIMIT);
 	context_icn.hibw2_ddr_in_limit[2] =
-		readl(context_icn.base + NODE_HIBW2_DDR_IN_2_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_DDR_IN_2_LIMIT);
 	context_icn.hibw2_ddr_in_limit[3] =
-		readl(context_icn.base + NODE_HIBW2_DDR_IN_3_LIMIT);
+		readl_relaxed(base + NODE_HIBW2_DDR_IN_3_LIMIT);
 
 	context_icn.hibw2_ddr_out_prio_reg =
-		readl(context_icn.base + NODE_HIBW2_DDR_OUT_0_PRIORITY);
+		readl_relaxed(base + NODE_HIBW2_DDR_OUT_0_PRIORITY);
 
 	/* ESRAM0 */
 	context_icn.esram_in_prio[0] =
-		readl(context_icn.base + NODE_ESRAM0_IN_0_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM0_IN_0_PRIORITY);
 	context_icn.esram_in_prio[1] =
-		readl(context_icn.base + NODE_ESRAM0_IN_1_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM0_IN_1_PRIORITY);
 	context_icn.esram_in_prio[2] =
-		readl(context_icn.base + NODE_ESRAM0_IN_2_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM0_IN_2_PRIORITY);
 
 	context_icn.esram_in_lim[0] =
-		readl(context_icn.base + NODE_ESRAM0_IN_0_LIMIT);
+		readl_relaxed(base + NODE_ESRAM0_IN_0_LIMIT);
 	context_icn.esram_in_lim[1] =
-		readl(context_icn.base + NODE_ESRAM0_IN_1_LIMIT);
+		readl_relaxed(base + NODE_ESRAM0_IN_1_LIMIT);
 	context_icn.esram_in_lim[2] =
-		readl(context_icn.base + NODE_ESRAM0_IN_2_LIMIT);
+		readl_relaxed(base + NODE_ESRAM0_IN_2_LIMIT);
 
 	context_icn.esram_out_prio_reg =
-		readl(context_icn.base + NODE_ESRAM0_OUT_0_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM0_OUT_0_PRIORITY);
 
 	/* ESRAM1-2 */
 	context_icn.esram12_in_prio[0] =
-		readl(context_icn.base + NODE_ESRAM1_2_IN_0_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM1_2_IN_0_PRIORITY);
 	context_icn.esram12_in_prio[1] =
-		readl(context_icn.base + NODE_ESRAM1_2_IN_1_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM1_2_IN_1_PRIORITY);
 	context_icn.esram12_in_prio[2] =
-		readl(context_icn.base + NODE_ESRAM1_2_IN_2_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM1_2_IN_2_PRIORITY);
 
 	context_icn.esram12_in_arb_lim[0] =
-		readl(context_icn.base + NODE_ESRAM1_2_IN_0_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_ESRAM1_2_IN_0_ARB_1_LIMIT);
 	context_icn.esram12_in_arb_lim[1] =
-		readl(context_icn.base + NODE_ESRAM1_2_IN_1_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_ESRAM1_2_IN_1_ARB_1_LIMIT);
 	context_icn.esram12_in_arb_lim[2] =
-		readl(context_icn.base + NODE_ESRAM1_2_IN_2_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_ESRAM1_2_IN_2_ARB_1_LIMIT);
 
 	context_icn.esram12_out_prio_reg =
-		readl(context_icn.base + NODE_ESRAM1_2_OUT_0_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM1_2_OUT_0_PRIORITY);
 
 	/* ESRAM3-4 */
 	context_icn.esram34_in_prio[0] =
-		readl(context_icn.base + NODE_ESRAM3_4_IN_0_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM3_4_IN_0_PRIORITY);
 	context_icn.esram34_in_prio[1] =
-		readl(context_icn.base + NODE_ESRAM3_4_IN_1_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM3_4_IN_1_PRIORITY);
 	context_icn.esram34_in_prio[2] =
-		readl(context_icn.base + NODE_ESRAM3_4_IN_2_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM3_4_IN_2_PRIORITY);
 
 	context_icn.esram34_in_arb_lim[0] =
-		readl(context_icn.base + NODE_ESRAM3_4_IN_0_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_ESRAM3_4_IN_0_ARB_1_LIMIT);
 	context_icn.esram34_in_arb_lim[1] =
-		readl(context_icn.base + NODE_ESRAM3_4_IN_1_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_ESRAM3_4_IN_1_ARB_1_LIMIT);
 	context_icn.esram34_in_arb_lim[2] =
-		readl(context_icn.base + NODE_ESRAM3_4_IN_2_ARB_1_LIMIT);
+		readl_relaxed(base + NODE_ESRAM3_4_IN_2_ARB_1_LIMIT);
 
 	context_icn.esram34_out_prio =
-		readl(context_icn.base + NODE_ESRAM3_4_OUT_0_PRIORITY);
+		readl_relaxed(base + NODE_ESRAM3_4_OUT_0_PRIORITY);
 }
 
 /*
@@ -263,138 +265,139 @@ void u5500_context_save_icn(void)
  */
 void u5500_context_restore_icn(void)
 {
+	void __iomem *base = context_icn.base;
 
 	/* hibw1 */
-	writel(context_icn.hibw1_esram_in_pri[0],
-	       context_icn.base + NODE_HIBW1_ESRAM_IN_0_PRIORITY);
-	writel(context_icn.hibw1_esram_in_pri[1],
-	       context_icn.base + NODE_HIBW1_ESRAM_IN_1_PRIORITY);
+	writel_relaxed(context_icn.hibw1_esram_in_pri[0],
+	       base + NODE_HIBW1_ESRAM_IN_0_PRIORITY);
+	writel_relaxed(context_icn.hibw1_esram_in_pri[1],
+	       base + NODE_HIBW1_ESRAM_IN_1_PRIORITY);
 
-	writel(context_icn.hibw1_esram_in0_arb[0],
-	       context_icn.base + NODE_HIBW1_ESRAM_IN_0_ARB_1_LIMIT);
-	writel(context_icn.hibw1_esram_in0_arb[1],
-	       context_icn.base + NODE_HIBW1_ESRAM_IN_0_ARB_2_LIMIT);
-	writel(context_icn.hibw1_esram_in0_arb[2],
-	       context_icn.base + NODE_HIBW1_ESRAM_IN_0_ARB_3_LIMIT);
+	writel_relaxed(context_icn.hibw1_esram_in0_arb[0],
+	       base + NODE_HIBW1_ESRAM_IN_0_ARB_1_LIMIT);
+	writel_relaxed(context_icn.hibw1_esram_in0_arb[1],
+	       base + NODE_HIBW1_ESRAM_IN_0_ARB_2_LIMIT);
+	writel_relaxed(context_icn.hibw1_esram_in0_arb[2],
+	       base + NODE_HIBW1_ESRAM_IN_0_ARB_3_LIMIT);
 
-	writel(context_icn.hibw1_esram_in1_arb[0],
-	       context_icn.base + NODE_HIBW1_ESRAM_IN_1_ARB_1_LIMIT);
-	writel(context_icn.hibw1_esram_in1_arb[1],
-	       context_icn.base + NODE_HIBW1_ESRAM_IN_1_ARB_2_LIMIT);
-	writel(context_icn.hibw1_esram_in1_arb[2],
-	       context_icn.base + NODE_HIBW1_ESRAM_IN_1_ARB_3_LIMIT);
+	writel_relaxed(context_icn.hibw1_esram_in1_arb[0],
+	       base + NODE_HIBW1_ESRAM_IN_1_ARB_1_LIMIT);
+	writel_relaxed(context_icn.hibw1_esram_in1_arb[1],
+	       base + NODE_HIBW1_ESRAM_IN_1_ARB_2_LIMIT);
+	writel_relaxed(context_icn.hibw1_esram_in1_arb[2],
+	       base + NODE_HIBW1_ESRAM_IN_1_ARB_3_LIMIT);
 
-	writel(context_icn.hibw1_ddr_in_prio[0],
-	       context_icn.base + NODE_HIBW1_DDR_IN_0_PRIORITY);
-	writel(context_icn.hibw1_ddr_in_prio[1],
-	       context_icn.base + NODE_HIBW1_DDR_IN_1_PRIORITY);
-	writel(context_icn.hibw1_ddr_in_prio[2],
-	       context_icn.base + NODE_HIBW1_DDR_IN_2_PRIORITY);
+	writel_relaxed(context_icn.hibw1_ddr_in_prio[0],
+	       base + NODE_HIBW1_DDR_IN_0_PRIORITY);
+	writel_relaxed(context_icn.hibw1_ddr_in_prio[1],
+	       base + NODE_HIBW1_DDR_IN_1_PRIORITY);
+	writel_relaxed(context_icn.hibw1_ddr_in_prio[2],
+	       base + NODE_HIBW1_DDR_IN_2_PRIORITY);
 
-	writel(context_icn.hibw1_ddr_in_limit[0],
-	       context_icn.base + NODE_HIBW1_DDR_IN_0_LIMIT);
-	writel(context_icn.hibw1_ddr_in_limit[1],
-	       context_icn.base + NODE_HIBW1_DDR_IN_1_LIMIT);
-	writel(context_icn.hibw1_ddr_in_limit[2],
-	       context_icn.base + NODE_HIBW1_DDR_IN_2_LIMIT);
+	writel_relaxed(context_icn.hibw1_ddr_in_limit[0],
+	       base + NODE_HIBW1_DDR_IN_0_LIMIT);
+	writel_relaxed(context_icn.hibw1_ddr_in_limit[1],
+	       base + NODE_HIBW1_DDR_IN_1_LIMIT);
+	writel_relaxed(context_icn.hibw1_ddr_in_limit[2],
+	       base + NODE_HIBW1_DDR_IN_2_LIMIT);
 
-	writel(context_icn.hibw1_ddr_out_prio_reg,
-	       context_icn.base + NODE_HIBW1_DDR_OUT_0_PRIORITY);
+	writel_relaxed(context_icn.hibw1_ddr_out_prio_reg,
+	       base + NODE_HIBW1_DDR_OUT_0_PRIORITY);
 
 	/* hibw2 */
-	writel(context_icn.hibw2_esram_in_pri[0],
-	       context_icn.base + NODE_HIBW2_ESRAM_IN_0_PRIORITY);
-	writel(context_icn.hibw2_esram_in_pri[1],
-	       context_icn.base + NODE_HIBW2_ESRAM_IN_1_PRIORITY);
+	writel_relaxed(context_icn.hibw2_esram_in_pri[0],
+	       base + NODE_HIBW2_ESRAM_IN_0_PRIORITY);
+	writel_relaxed(context_icn.hibw2_esram_in_pri[1],
+	       base + NODE_HIBW2_ESRAM_IN_1_PRIORITY);
 
-	writel(context_icn.hibw2_esram_in0_arblimit[0],
-	       context_icn.base + NODE_HIBW2_ESRAM_IN_0_ARB_1_LIMIT);
-	writel(context_icn.hibw2_esram_in0_arblimit[1],
-	       context_icn.base + NODE_HIBW2_ESRAM_IN_0_ARB_2_LIMIT);
-	writel(context_icn.hibw2_esram_in0_arblimit[2],
-	       context_icn.base + NODE_HIBW2_ESRAM_IN_0_ARB_3_LIMIT);
+	writel_relaxed(context_icn.hibw2_esram_in0_arblimit[0],
+	       base + NODE_HIBW2_ESRAM_IN_0_ARB_1_LIMIT);
+	writel_relaxed(context_icn.hibw2_esram_in0_arblimit[1],
+	       base + NODE_HIBW2_ESRAM_IN_0_ARB_2_LIMIT);
+	writel_relaxed(context_icn.hibw2_esram_in0_arblimit[2],
+	       base + NODE_HIBW2_ESRAM_IN_0_ARB_3_LIMIT);
 
-	writel(context_icn.hibw2_esram_in1_arblimit[0],
-	       context_icn.base + NODE_HIBW2_ESRAM_IN_1_ARB_1_LIMIT);
-	writel(context_icn.hibw2_esram_in1_arblimit[1],
-	       context_icn.base + NODE_HIBW2_ESRAM_IN_1_ARB_2_LIMIT);
-	writel(context_icn.hibw2_esram_in1_arblimit[2],
-	       context_icn.base + NODE_HIBW2_ESRAM_IN_1_ARB_3_LIMIT);
+	writel_relaxed(context_icn.hibw2_esram_in1_arblimit[0],
+	       base + NODE_HIBW2_ESRAM_IN_1_ARB_1_LIMIT);
+	writel_relaxed(context_icn.hibw2_esram_in1_arblimit[1],
+	       base + NODE_HIBW2_ESRAM_IN_1_ARB_2_LIMIT);
+	writel_relaxed(context_icn.hibw2_esram_in1_arblimit[2],
+	       base + NODE_HIBW2_ESRAM_IN_1_ARB_3_LIMIT);
 
-	writel(context_icn.hibw2_ddr_in_prio[0],
-	       context_icn.base + NODE_HIBW2_DDR_IN_0_PRIORITY);
-	writel(context_icn.hibw2_ddr_in_prio[1],
-	       context_icn.base + NODE_HIBW2_DDR_IN_1_PRIORITY);
-	writel(context_icn.hibw2_ddr_in_prio[2],
-	       context_icn.base + NODE_HIBW2_DDR_IN_2_PRIORITY);
-	writel(context_icn.hibw2_ddr_in_prio[3],
-	       context_icn.base + NODE_HIBW2_DDR_IN_3_PRIORITY);
+	writel_relaxed(context_icn.hibw2_ddr_in_prio[0],
+	       base + NODE_HIBW2_DDR_IN_0_PRIORITY);
+	writel_relaxed(context_icn.hibw2_ddr_in_prio[1],
+	       base + NODE_HIBW2_DDR_IN_1_PRIORITY);
+	writel_relaxed(context_icn.hibw2_ddr_in_prio[2],
+	       base + NODE_HIBW2_DDR_IN_2_PRIORITY);
+	writel_relaxed(context_icn.hibw2_ddr_in_prio[3],
+	       base + NODE_HIBW2_DDR_IN_3_PRIORITY);
 
-	writel(context_icn.hibw2_ddr_in_limit[0],
-	       context_icn.base + NODE_HIBW2_DDR_IN_0_LIMIT);
-	writel(context_icn.hibw2_ddr_in_limit[1],
-	       context_icn.base + NODE_HIBW2_DDR_IN_1_LIMIT);
-	writel(context_icn.hibw2_ddr_in_limit[2],
-	       context_icn.base + NODE_HIBW2_DDR_IN_2_LIMIT);
-	writel(context_icn.hibw2_ddr_in_limit[3],
-	       context_icn.base + NODE_HIBW2_DDR_IN_3_LIMIT);
+	writel_relaxed(context_icn.hibw2_ddr_in_limit[0],
+	       base + NODE_HIBW2_DDR_IN_0_LIMIT);
+	writel_relaxed(context_icn.hibw2_ddr_in_limit[1],
+	       base + NODE_HIBW2_DDR_IN_1_LIMIT);
+	writel_relaxed(context_icn.hibw2_ddr_in_limit[2],
+	       base + NODE_HIBW2_DDR_IN_2_LIMIT);
+	writel_relaxed(context_icn.hibw2_ddr_in_limit[3],
+	       base + NODE_HIBW2_DDR_IN_3_LIMIT);
 
-	writel(context_icn.hibw2_ddr_out_prio_reg,
-	       context_icn.base + NODE_HIBW2_DDR_OUT_0_PRIORITY);
+	writel_relaxed(context_icn.hibw2_ddr_out_prio_reg,
+	       base + NODE_HIBW2_DDR_OUT_0_PRIORITY);
 
 	/* ESRAM0 */
-	writel(context_icn.esram_in_prio[0],
-	       context_icn.base + NODE_ESRAM0_IN_0_PRIORITY);
-	writel(context_icn.esram_in_prio[1],
-	       context_icn.base + NODE_ESRAM0_IN_1_PRIORITY);
-	writel(context_icn.esram_in_prio[2],
-	       context_icn.base + NODE_ESRAM0_IN_2_PRIORITY);
+	writel_relaxed(context_icn.esram_in_prio[0],
+	       base + NODE_ESRAM0_IN_0_PRIORITY);
+	writel_relaxed(context_icn.esram_in_prio[1],
+	       base + NODE_ESRAM0_IN_1_PRIORITY);
+	writel_relaxed(context_icn.esram_in_prio[2],
+	       base + NODE_ESRAM0_IN_2_PRIORITY);
 
-	writel(context_icn.esram_in_lim[0],
-	       context_icn.base + NODE_ESRAM0_IN_0_LIMIT);
-	writel(context_icn.esram_in_lim[1],
-	       context_icn.base + NODE_ESRAM0_IN_1_LIMIT);
-	writel(context_icn.esram_in_lim[2],
-	       context_icn.base + NODE_ESRAM0_IN_2_LIMIT);
+	writel_relaxed(context_icn.esram_in_lim[0],
+	       base + NODE_ESRAM0_IN_0_LIMIT);
+	writel_relaxed(context_icn.esram_in_lim[1],
+	       base + NODE_ESRAM0_IN_1_LIMIT);
+	writel_relaxed(context_icn.esram_in_lim[2],
+	       base + NODE_ESRAM0_IN_2_LIMIT);
 
-	writel(context_icn.esram_out_prio_reg,
-	       context_icn.base + NODE_ESRAM0_OUT_0_PRIORITY);
+	writel_relaxed(context_icn.esram_out_prio_reg,
+	       base + NODE_ESRAM0_OUT_0_PRIORITY);
 
 	/* ESRAM1-2 */
-	writel(context_icn.esram12_in_prio[0],
-	       context_icn.base + NODE_ESRAM1_2_IN_0_PRIORITY);
-	writel(context_icn.esram12_in_prio[1],
-	       context_icn.base + NODE_ESRAM1_2_IN_1_PRIORITY);
-	writel(context_icn.esram12_in_prio[2],
-	       context_icn.base + NODE_ESRAM1_2_IN_2_PRIORITY);
+	writel_relaxed(context_icn.esram12_in_prio[0],
+	       base + NODE_ESRAM1_2_IN_0_PRIORITY);
+	writel_relaxed(context_icn.esram12_in_prio[1],
+	       base + NODE_ESRAM1_2_IN_1_PRIORITY);
+	writel_relaxed(context_icn.esram12_in_prio[2],
+	       base + NODE_ESRAM1_2_IN_2_PRIORITY);
 
-	writel(context_icn.esram12_in_arb_lim[0],
-	       context_icn.base + NODE_ESRAM1_2_IN_0_ARB_1_LIMIT);
-	writel(context_icn.esram12_in_arb_lim[1],
-	       context_icn.base + NODE_ESRAM1_2_IN_1_ARB_1_LIMIT);
-	writel(context_icn.esram12_in_arb_lim[2],
-	       context_icn.base + NODE_ESRAM1_2_IN_2_ARB_1_LIMIT);
+	writel_relaxed(context_icn.esram12_in_arb_lim[0],
+	       base + NODE_ESRAM1_2_IN_0_ARB_1_LIMIT);
+	writel_relaxed(context_icn.esram12_in_arb_lim[1],
+	       base + NODE_ESRAM1_2_IN_1_ARB_1_LIMIT);
+	writel_relaxed(context_icn.esram12_in_arb_lim[2],
+	       base + NODE_ESRAM1_2_IN_2_ARB_1_LIMIT);
 
-	writel(context_icn.esram12_out_prio_reg,
-	       context_icn.base + NODE_ESRAM1_2_OUT_0_PRIORITY);
+	writel_relaxed(context_icn.esram12_out_prio_reg,
+	       base + NODE_ESRAM1_2_OUT_0_PRIORITY);
 
 	/* ESRAM3-4 */
-	writel(context_icn.esram34_in_prio[0],
-	       context_icn.base + NODE_ESRAM3_4_IN_0_PRIORITY);
-	writel(context_icn.esram34_in_prio[1],
-	       context_icn.base + NODE_ESRAM3_4_IN_1_PRIORITY);
-	writel(context_icn.esram34_in_prio[2],
-	       context_icn.base + NODE_ESRAM3_4_IN_2_PRIORITY);
+	writel_relaxed(context_icn.esram34_in_prio[0],
+	       base + NODE_ESRAM3_4_IN_0_PRIORITY);
+	writel_relaxed(context_icn.esram34_in_prio[1],
+	       base + NODE_ESRAM3_4_IN_1_PRIORITY);
+	writel_relaxed(context_icn.esram34_in_prio[2],
+	       base + NODE_ESRAM3_4_IN_2_PRIORITY);
 
-	writel(context_icn.esram34_in_arb_lim[0],
-	       context_icn.base + NODE_ESRAM3_4_IN_0_ARB_1_LIMIT);
-	writel(context_icn.esram34_in_arb_lim[1],
-	       context_icn.base + NODE_ESRAM3_4_IN_1_ARB_1_LIMIT);
-	writel(context_icn.esram34_in_arb_lim[2],
-	       context_icn.base + NODE_ESRAM3_4_IN_2_ARB_1_LIMIT);
+	writel_relaxed(context_icn.esram34_in_arb_lim[0],
+	       base + NODE_ESRAM3_4_IN_0_ARB_1_LIMIT);
+	writel_relaxed(context_icn.esram34_in_arb_lim[1],
+	       base + NODE_ESRAM3_4_IN_1_ARB_1_LIMIT);
+	writel_relaxed(context_icn.esram34_in_arb_lim[2],
+	       base + NODE_ESRAM3_4_IN_2_ARB_1_LIMIT);
 
-	writel(context_icn.esram34_out_prio,
-	       context_icn.base + NODE_ESRAM3_4_OUT_0_PRIORITY);
+	writel_relaxed(context_icn.esram34_out_prio,
+	       base + NODE_ESRAM3_4_OUT_0_PRIORITY);
 
 }
 
