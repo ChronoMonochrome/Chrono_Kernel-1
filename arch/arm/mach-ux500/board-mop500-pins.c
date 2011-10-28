@@ -12,6 +12,7 @@
 #include <asm/mach-types.h>
 #include <plat/pincfg.h>
 #include <linux/gpio/nomadik.h>
+#include <linux/mfd/abx500/ab8500-gpio.h>
 
 #include <mach/hardware.h>
 #include <mach/suspend.h>
@@ -987,6 +988,15 @@ int pins_for_u9500(void)
 	return 0;
 }
 
+static UX500_PINS(mop500_offchip_gpio_cfg,
+	/*
+	 * Workaround for auto shutdown of 3.2MHz oscillator during
+	 * deep sleep. APESPICSn/GPIO37 must be floating on the board
+	 * to use this fix.
+	 */
+	AB8500_PIN_GPIO37 | PIN_OUTPUT_HIGH,
+);
+
 void __init mop500_pins_init(void)
 {
 	nmk_config_pins(mop500_pins_common,
@@ -1061,3 +1071,13 @@ void __init hrefv60_pins_init(void)
 	suspend_set_pins_force_fn(mop500_pins_suspend_force,
 				  mop500_pins_suspend_force_mux);
 }
+
+static int __init mop500_offchip_gpio_init(void)
+{
+	if (machine_is_hrefv60())
+                ux500_offchip_gpio_init(&mop500_offchip_gpio_cfg);
+
+	return 0;
+}
+/* Let gpio chip drivers initialize. */
+late_initcall(mop500_offchip_gpio_init);
