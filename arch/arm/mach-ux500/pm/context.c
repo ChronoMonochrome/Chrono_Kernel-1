@@ -7,7 +7,6 @@
  * License terms: GNU General Public License (GPL) version 2
  *
  */
-
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/io.h>
@@ -113,7 +112,9 @@
  * Periph clock cluster context
  */
 #define PRCC_BCK_EN		0x00
+#define PRCC_BCK_DIS		0x04
 #define PRCC_KCK_EN		0x08
+#define PRCC_KCK_DIS		0x08
 #define PRCC_BCK_STATUS		0x10
 #define PRCC_KCK_STATUS		0x14
 
@@ -207,7 +208,6 @@ static DEFINE_PER_CPU(u32 *, varm_registers_pointer);
 static DEFINE_PER_CPU(u32[128], varm_cp15_backup_stack);
 static DEFINE_PER_CPU(u32 *, varm_cp15_pointer);
 
-
 static ATOMIC_NOTIFIER_HEAD(context_ape_notifier_list);
 static ATOMIC_NOTIFIER_HEAD(context_arm_notifier_list);
 
@@ -272,10 +272,19 @@ static void restore_prcc(void)
 	for (i = 0; i < UX500_NR_PRCC_BANKS; i++) {
 		clk_enable(context_prcc[i].clk);
 
+		writel(~context_prcc[i].bus_clk,
+		       context_prcc[i].base + PRCC_BCK_DIS);
+		writel(~context_prcc[i].kern_clk,
+		       context_prcc[i].base + PRCC_KCK_DIS);
+
 		writel(context_prcc[i].bus_clk,
 		       context_prcc[i].base + PRCC_BCK_EN);
 		writel(context_prcc[i].kern_clk,
 		       context_prcc[i].base + PRCC_KCK_EN);
+		/*
+		 * Consider having a while over KCK/BCK_STATUS
+		 * to check that all clocks get disabled/enabled
+		 */
 
 		clk_disable(context_prcc[i].clk);
 	}
@@ -373,7 +382,6 @@ static void restore_tpiu(void)
  *
  * This is per cpu so it needs to be called for each one.
  */
-
 static void save_gic_if_cpu(struct context_gic_cpu *c_gic_cpu)
 {
 	c_gic_cpu->ctrl     = readl_relaxed(c_gic_cpu->base + GIC_CPU_CTRL);
@@ -400,7 +408,6 @@ static void restore_gic_if_cpu(struct context_gic_cpu *c_gic_cpu)
  *
  * Save SPI (Shared Peripheral Interrupt) settings, IRQ 32-159.
  */
-
 static void save_gic_dist_common(void)
 {
 	int i;
@@ -438,7 +445,6 @@ static void save_gic_dist_common(void)
  */
 static void restore_gic_dist_common(void)
 {
-
 	int i;
 
 	for (i = 0; i < GIC_DIST_CONFIG_COMMON_NUM; i++)
@@ -464,8 +470,6 @@ static void restore_gic_dist_common(void)
 	writel_relaxed(context_gic_dist_common.ns,
 	       context_gic_dist_common.base + GIC_DIST_ENABLE_NS);
 }
-
-
 
 /*
  * Save GIC Dist CPU registers
@@ -508,7 +512,6 @@ static void save_gic_dist_cpu(struct context_gic_dist_cpu *c_gic)
  */
 static void restore_gic_dist_cpu(struct context_gic_dist_cpu *c_gic)
 {
-
 	int i;
 
 	for (i = 0; i < GIC_DIST_CONFIG_CPU_NUM; i++)
@@ -538,7 +541,6 @@ static void restore_gic_dist_cpu(struct context_gic_dist_cpu *c_gic)
  */
 void context_gic_dist_disable_unneeded_irqs(void)
 {
-
 	writel(0xffffffff,
 	       context_gic_dist_common.base +
 	       GIC_DIST_ENABLE_CLEAR_0);
@@ -559,7 +561,6 @@ void context_gic_dist_disable_unneeded_irqs(void)
 	writel(0xffffffff,
 	       context_gic_dist_common.base +
 	       GIC_DIST_ENABLE_CLEAR_128);
-
 }
 
 static void save_scu(void)
@@ -612,7 +613,6 @@ void context_vape_save(void)
 	save_tpiu();
 
 	save_prcc();
-
 }
 
 /*
@@ -701,7 +701,6 @@ void context_gpio_restore(void)
 		writel(gpio_save[i][6], gpio_bankaddr[i] + NMK_GPIO_SLPC);
 
 	}
-
 }
 
 /*
@@ -760,9 +759,7 @@ void context_gpio_mux_safe_switch(bool begin)
 			writel(rwimsc[i], gpio_bankaddr[i] + NMK_GPIO_RWIMSC);
 			writel(fwimsc[i], gpio_bankaddr[i] + NMK_GPIO_FWIMSC);
 		}
-
 	}
-
 }
 
 /*
@@ -804,7 +801,6 @@ void context_varm_restore_common(void)
  */
 void context_varm_save_core(void)
 {
-
 	int cpu = smp_processor_id();
 
 	atomic_notifier_call_chain(&context_arm_notifier_list,
@@ -817,7 +813,6 @@ void context_varm_save_core(void)
 	save_gic_if_cpu(&per_cpu(context_gic_cpu, cpu));
 	save_gic_dist_cpu(&per_cpu(context_gic_dist_cpu, cpu));
 	context_save_cp15_registers(&per_cpu(varm_cp15_pointer, cpu));
-
 }
 
 /*
@@ -838,7 +833,6 @@ void context_varm_restore_core(void)
 
 	atomic_notifier_call_chain(&context_arm_notifier_list,
 				   CONTEXT_ARM_CORE_RESTORE, NULL);
-
 }
 
 /*
@@ -901,7 +895,6 @@ static int __init context_init(void)
 	 */
 	writel(virt_to_phys(ux500_backup_ptr),
 	       IO_ADDRESS(U8500_EXT_RAM_LOC_BACKUPRAM_ADDR));
-
 
 	if (cpu_is_u5500()) {
 		writel(IO_ADDRESS(U5500_PUBLIC_BOOT_ROM_BASE),
