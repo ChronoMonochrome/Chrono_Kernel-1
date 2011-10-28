@@ -14,6 +14,8 @@
 #include <linux/workqueue.h>
 #include <linux/dispdev.h>
 #include <asm/mach-types.h>
+#include <linux/clk.h>
+#include <mach/devices.h>
 #include <video/av8100.h>
 #include <video/mcde_display.h>
 #include <video/mcde_display-vuib500-dpi.h>
@@ -30,6 +32,11 @@
 #define DSI_UNIT_INTERVAL_0	0x9
 #define DSI_UNIT_INTERVAL_1	0x9
 #define DSI_UNIT_INTERVAL_2	0x5
+
+#define DSI_PLL_FREQ_HZ		840320000
+/* Based on PLL DDR Freq at 798,72 MHz */
+#define HDMI_FREQ_HZ		33280000
+#define TV_FREQ_HZ		38400000
 
 #ifdef CONFIG_U8500_TV_OUTPUT_AV8100
 /* The initialization of hdmi disp driver must be delayed in order to
@@ -426,6 +433,47 @@ static int __init init_display_devices(void)
 	/* Not all STUIBs supports VSYNC, disable vsync for STUIB */
 	if (uib_is_stuib())
 		samsung_s6d16d0_display0.synchronized_update = false;
+
+	/* Initialize all needed clocks*/
+	if (!display_initialized_during_boot) {
+		struct clk *clk_dsi_pll;
+		struct clk *clk_hdmi;
+		struct clk *clk_tv;
+
+		/*
+		 * The TV CLK is used as parent for the
+		 * DSI LP clock.
+		 */
+		clk_tv = clk_get(&u8500_mcde_device.dev, "tv");
+		if (TV_FREQ_HZ != clk_round_rate(clk_tv, TV_FREQ_HZ))
+			pr_warning("%s: TV_CLK freq differs %ld\n", __func__,
+					clk_round_rate(clk_tv, TV_FREQ_HZ));
+		clk_set_rate(clk_tv, TV_FREQ_HZ);
+		clk_put(clk_tv);
+
+		/*
+		 * The HDMI CLK is used as parent for the
+		 * DSI HS clock.
+		 */
+		clk_hdmi = clk_get(&u8500_mcde_device.dev, "hdmi");
+		if (HDMI_FREQ_HZ != clk_round_rate(clk_hdmi, HDMI_FREQ_HZ))
+			pr_warning("%s: HDMI freq differs %ld\n", __func__,
+					clk_round_rate(clk_hdmi, HDMI_FREQ_HZ));
+		clk_set_rate(clk_hdmi, HDMI_FREQ_HZ);
+		clk_put(clk_hdmi);
+
+		/*
+		 * The DSI PLL CLK is used as DSI PLL for direct freq for
+		 * link 2. Link 0/1 is then divided with 1/2/4 from this freq.
+		 */
+		clk_dsi_pll = clk_get(&u8500_mcde_device.dev, "dsihs2");
+		if (DSI_PLL_FREQ_HZ != clk_round_rate(clk_dsi_pll,
+							DSI_PLL_FREQ_HZ))
+			pr_warning("%s: DSI_PLL freq differs %ld\n", __func__,
+				clk_round_rate(clk_dsi_pll, DSI_PLL_FREQ_HZ));
+		clk_set_rate(clk_dsi_pll, DSI_PLL_FREQ_HZ);
+		clk_put(clk_dsi_pll);
+	}
 
 	if (uib_is_u8500uib() || uib_is_stuib())
 		/* Samsung display on U8500 and ST UIB */
