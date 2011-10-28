@@ -280,7 +280,7 @@ affs_create(struct inode *dir, struct dentry *dentry, umode_t mode, struct namei
 	inode->i_mapping->a_ops = (AFFS_SB(sb)->s_flags & SF_OFS) ? &affs_aops_ofs : &affs_aops;
 	error = affs_add_entry(dir, inode, dentry, ST_FILE);
 	if (error) {
-		inode->i_nlink = 0;
+		clear_nlink(inode);
 		iput(inode);
 		return error;
 	}
@@ -308,7 +308,7 @@ affs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 
 	error = affs_add_entry(dir, inode, dentry, ST_USERDIR);
 	if (error) {
-		inode->i_nlink = 0;
+		clear_nlink(inode);
 		mark_inode_dirty(inode);
 		iput(inode);
 		return error;
@@ -395,7 +395,7 @@ affs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
 	return 0;
 
 err:
-	inode->i_nlink = 0;
+	clear_nlink(inode);
 	mark_inode_dirty(inode);
 	iput(inode);
 	return error;
