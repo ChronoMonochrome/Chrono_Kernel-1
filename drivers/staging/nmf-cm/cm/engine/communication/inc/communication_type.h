@@ -5,7 +5,6 @@
  * user space exemption described in the top-level COPYING file in
  * the Linux kernel source tree.
  */
- 
 /*!
  * \brief Communication Component Manager API type.
  */

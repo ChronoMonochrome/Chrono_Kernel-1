@@ -11,6 +11,8 @@
 #include <linux/interrupt.h>
 #include <linux/hwmem.h>
 #include <linux/regulator/consumer.h>
+#include <linux/plist.h>
+#include <linux/version.h>
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
 #endif
@@ -24,7 +26,6 @@
  */
 #define _CM_ELF_H
 #include <cm/engine/os_adaptation_layer/inc/os_adaptation_layer.h>
-#include <linux/plist.h>
 
 #include "configuration.h"
 
@@ -56,6 +57,9 @@ struct mpcConfig {
 #endif
 	struct task_struct *monitor_tsk; /**< task to monitor the dsp load; */
 	t_cm_mpc_load_counter oldLoadCounter; /**< previous load counter of the DSP */
+	atomic_t trace_read_count;       /**< number of trace reader */
+	spinlock_t trace_reader_lock;
+	struct task_struct *trace_reader;/**< current reader task */
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *dir;              /**< debugfs dir entry */
 	struct dentry *comp_dir;         /**< debugfs component dir entry */

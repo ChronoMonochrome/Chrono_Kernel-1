@@ -39,4 +39,12 @@ void cm_TRC_traceMemAlloc(t_nmfTraceAllocatorCommandDescription command, t_uint8
 
 void cm_TRC_traceMem(t_nmfTraceAllocCommandDescription command, t_uint8 allocId, t_uint32 startAddress, t_uint32 memorySize);
 
+/*************************/
+/* MMDSP trace buffer    */
+/*************************/
+PUBLIC t_cm_error cm_SRV_allocateTraceBufferMemory(t_nmf_core_id coreId, t_cm_domain_id domainId);
+PUBLIC void cm_SRV_deallocateTraceBufferMemory(t_nmf_core_id coreId);
+
+
+
 #endif /* __INC_CM_TRACE_H */

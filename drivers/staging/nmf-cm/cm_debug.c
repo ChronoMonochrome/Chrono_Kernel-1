@@ -5,12 +5,12 @@
  */
 
 #include <linux/proc_fs.h>
-#include <linux/sched.h>
 
 #include "osal-kernel.h"
 #include "cm_debug.h"
 
 #ifdef CONFIG_DEBUG_FS
+#include <linux/sched.h>
 
 static struct dentry *cm_dir;        /* nmf-cm/            */
 static struct dentry *proc_dir;      /* nmf-cm/proc/       */

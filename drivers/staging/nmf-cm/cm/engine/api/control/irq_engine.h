@@ -14,6 +14,7 @@
 #include <share/inc/nmf.h>
 #include <cm/inc/cm_type.h>
 #include <nmf/inc/service_type.h>
+#include <ee/api/trace.idt>
 
 /*!
  * \brief MPCs -> HOST communication handler
@@ -49,7 +50,8 @@ PUBLIC IMPORT_SHARED void CM_ProcessMpcEvent(t_nmf_core_id coreId);
 typedef enum { // Allowed since i
         CM_MPC_SERVICE_NONE = 0,                                //!< No service found
         CM_MPC_SERVICE_PANIC = 1,                               //!< Panic service found
-        CM_MPC_SERVICE_PRINT = 2                                //!< Print service found
+        CM_MPC_SERVICE_PRINT = 2,                               //!< Print service found
+        CM_MPC_SERVICE_TRACE = 3                                //!< Trace service found
 } t_cm_service_type;
                                           //!< Service description type
 /*!
@@ -104,5 +106,15 @@ PUBLIC IMPORT_SHARED t_cm_error CM_ReadMPCString(
         t_uint32                    dspAddress,
         char *                      buffer,
         t_uint32                    bufferSize);
+
+typedef enum {
+        CM_MPC_TRACE_NONE = 0,
+        CM_MPC_TRACE_READ = 1,
+        CM_MPC_TRACE_READ_OVERRUN = 2
+} t_cm_trace_type;
+
+PUBLIC IMPORT_SHARED t_cm_trace_type CM_ENGINE_GetNextTrace(
+        t_nmf_core_id               coreId,
+        struct t_nmf_trace          *trace);
 
 #endif /* CONTROL_IRQ_ENGINE_H */

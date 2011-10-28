@@ -29,9 +29,11 @@ enum cmdma_type {
     CMDMA_PER_2_MEM
 };
 
-#define CMLD_DEV_NAME \
-	{ "cm_control", \
-	  "cm_channel"	\
+#define CMLD_DEV_NAME     \
+	{ "cm_control",   \
+	  "cm_channel",	  \
+	  "cm_sia_trace", \
+	  "cm_sva_trace", \
 	}
 
 /*

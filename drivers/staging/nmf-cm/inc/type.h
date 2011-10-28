@@ -5,7 +5,6 @@
  * user space exemption described in the top-level COPYING file in
  * the Linux kernel source tree.
  */
- 
 /* inc/type.h - Programming Model.
  *
  * Copyright (c) 2006, 2007, 2008 STMicroelectronics.

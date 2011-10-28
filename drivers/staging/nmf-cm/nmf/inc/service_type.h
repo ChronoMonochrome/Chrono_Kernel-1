@@ -5,7 +5,6 @@
  * user space exemption described in the top-level COPYING file in
  * the Linux kernel source tree.
  */
- 
 /*!
  * \brief Service type and data used through service callback.
  * \defgroup NMF_SERVICE NMF Service Callback types and data definition

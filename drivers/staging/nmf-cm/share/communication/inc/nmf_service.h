@@ -12,5 +12,6 @@
 #define MPC_SERVICE_NONE                    0
 #define MPC_SERVICE_BOOT                    0xB001
 #define MPC_SERVICE_PRINT                   0x1234
+#define MPC_SERVICE_TRACE                   0x789
 
 #endif
