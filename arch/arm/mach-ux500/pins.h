@@ -36,6 +36,7 @@ struct ux500_pin_lookup {
 };
 
 void __init ux500_pins_add(struct ux500_pin_lookup *pl, size_t num);
+void __init ux500_offchip_gpio_init(struct ux500_pins *pins);
 struct ux500_pins *ux500_pins_get(const char *name);
 int ux500_pins_enable(struct ux500_pins *pins);
 int ux500_pins_disable(struct ux500_pins *pins);
