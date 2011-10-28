@@ -46,6 +46,7 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/device.h>
+#include <linux/regulator/consumer.h>
 
 #include <linux/input/lps001wp.h>
 
@@ -163,6 +164,8 @@ struct lps001wp_prs_data {
 	int on_before_suspend;
 
 	u8 resume_state[RESUME_ENTRIES];
+
+	struct regulator *regulator;
 
 #ifdef DEBUG
 	u8 reg_addr;
@@ -380,10 +383,13 @@ static void lps001wp_prs_device_power_off(struct lps001wp_prs_data *prs)
 	if (err < 0)
 		dev_err(&prs->client->dev, "soft power off failed: %d\n", err);
 
-	if (prs->pdata->power_off) {
-		prs->pdata->power_off();
-		prs->hw_initialized = 0;
+	/* disable regulator */
+	if (prs->regulator) {
+		err = regulator_disable(prs->regulator);
+		if (err < 0)
+			dev_err(&prs->client->dev, "failed to disable regulator\n");
 	}
+
 	if (prs->hw_initialized) {
 		prs->hw_initialized = 0;
 	}
@@ -394,13 +400,21 @@ static int lps001wp_prs_device_power_on(struct lps001wp_prs_data *prs)
 {
 	int err = -1;
 
-	if (prs->pdata->power_on) {
-		err = prs->pdata->power_on();
-		if (err < 0) {
-			dev_err(&prs->client->dev,
-					"power_on failed: %d\n", err);
-			return err;
+	/* get the regulator the first time */
+	if (!prs->regulator) {
+		prs->regulator = regulator_get(&prs->client->dev, "vdd");
+		if (IS_ERR(prs->regulator)) {
+			dev_err(&prs->client->dev, "failed to get regulator\n");
+			prs->regulator = NULL;
+			return PTR_ERR(prs->regulator);
 		}
+	}
+
+	/* enable it also */
+	err = regulator_enable(prs->regulator);
+	if (err < 0) {
+		dev_err(&prs->client->dev, "failed to enable regulator\n");
+		return err;
 	}
 
 	if (!prs->hw_initialized) {
@@ -1210,6 +1224,10 @@ static int __devexit lps001wp_prs_remove(struct i2c_client *client)
 
 	if (prs->pdata->exit)
 		prs->pdata->exit();
+
+	if (prs->regulator)
+		regulator_put(prs->regulator);
+
 	kfree(prs->pdata);
 	kfree(prs);
 
