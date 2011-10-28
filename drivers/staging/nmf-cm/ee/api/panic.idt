@@ -55,7 +55,8 @@ typedef enum {
     INTERFACE_NOT_BINDED =           8,
     USER_PANIC =                     9,
     UNBIND_INTERRUPT =               10,
-    EVENT_FIFO_IN_USE =              11
+    EVENT_FIFO_IN_USE =              11,
+    RESERVED_PANIC =                 2 //for COMPATIBILITY with previous versions of NMF, to be deprecated
 } t_panic_reasonDescription;
 
 /*!

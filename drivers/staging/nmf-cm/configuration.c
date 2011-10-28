@@ -21,28 +21,30 @@ struct OsalEnvironment osalEnv =
 {
 	.mpc = {
 		{
-			.coreId          = SVA_CORE_ID,
-			.name            = "sva",
-			.base_phys       = (void*)U8500_SVA_BASE,
-			.interrupt0      = IRQ_DB8500_SVA,
-			.interrupt1      = IRQ_DB8500_SVA2,
-			.mmdsp_regulator = NULL,
-			.pipe_regulator  = NULL,
-			.monitor_tsk     = NULL,
-			.hwmem_code      = NULL,
-			.hwmem_data      = NULL,
+			.coreId           = SVA_CORE_ID,
+			.name             = "sva",
+			.base_phys        = (void*)U8500_SVA_BASE,
+			.interrupt0       = IRQ_DB8500_SVA,
+			.interrupt1       = IRQ_DB8500_SVA2,
+			.mmdsp_regulator  = NULL,
+			.pipe_regulator   = NULL,
+			.monitor_tsk      = NULL,
+			.hwmem_code       = NULL,
+			.hwmem_data       = NULL,
+			.trace_read_count = ATOMIC_INIT(0),
 		},
 		{
-			.coreId          = SIA_CORE_ID,
-			.name            = "sia",
-			.base_phys       = (void*)U8500_SIA_BASE,
-			.interrupt0      = IRQ_DB8500_SIA,
-			.interrupt1      = IRQ_DB8500_SIA2,
-			.mmdsp_regulator = NULL,
-			.pipe_regulator  = NULL,
-			.monitor_tsk     = NULL,
-			.hwmem_code      = NULL,
-			.hwmem_data      = NULL,
+			.coreId           = SIA_CORE_ID,
+			.name             = "sia",
+			.base_phys        = (void*)U8500_SIA_BASE,
+			.interrupt0       = IRQ_DB8500_SIA,
+			.interrupt1       = IRQ_DB8500_SIA2,
+			.mmdsp_regulator  = NULL,
+			.pipe_regulator   = NULL,
+			.monitor_tsk      = NULL,
+			.hwmem_code       = NULL,
+			.hwmem_data       = NULL,
+			.trace_read_count = ATOMIC_INIT(0),
 		}
 	},
 	.esram_regulator = { NULL, NULL},
@@ -125,16 +127,20 @@ int init_config(void)
 		pr_err("SDRAM data size for SVA must be greater than 0\n");
 		return -EINVAL;
 	}
+
 	osalEnv.mpc[SVA].nbYramBanks     = cfgMpcYBanks_SVA;
 	osalEnv.mpc[SVA].eeId            = cfgSchedulerTypeHybrid_SVA ? HYBRID_EXECUTIVE_ENGINE : SYNCHRONOUS_EXECUTIVE_ENGINE;
 	osalEnv.mpc[SVA].sdram_code.size = cfgMpcSDRAMCodeSize_SVA * ONE_KB;
 	osalEnv.mpc[SVA].sdram_data.size = cfgMpcSDRAMDataSize_SVA * ONE_KB;
 	osalEnv.mpc[SVA].base.size       = 128*ONE_KB; //we expose only TCM24
+	spin_lock_init(&osalEnv.mpc[SVA].trace_reader_lock);
+
 	osalEnv.mpc[SIA].nbYramBanks     = cfgMpcYBanks_SIA;
 	osalEnv.mpc[SIA].eeId            = cfgSchedulerTypeHybrid_SIA ? HYBRID_EXECUTIVE_ENGINE : SYNCHRONOUS_EXECUTIVE_ENGINE;
 	osalEnv.mpc[SIA].sdram_code.size = cfgMpcSDRAMCodeSize_SIA * ONE_KB;
 	osalEnv.mpc[SIA].sdram_data.size = cfgMpcSDRAMDataSize_SIA * ONE_KB;
 	osalEnv.mpc[SIA].base.size       = 128*ONE_KB; //we expose only TCM24
+	spin_lock_init(&osalEnv.mpc[SIA].trace_reader_lock);
 
 	return 0;
 }
