@@ -19,6 +19,7 @@
 
 #include <mach/context.h>
 #include <mach/pm.h>
+#include <mach/id.h>
 
 #include "suspend_dbg.h"
 
@@ -67,7 +68,10 @@ static int suspend(bool do_deepsleep)
 	nmk_gpio_wakeups_suspend();
 
 	/* configure the prcm for a sleep wakeup */
-	prcmu_enable_wakeups(PRCMU_WAKEUP(ABB));
+	if (cpu_is_u9500())
+		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(HSI0));
+	else
+		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB));
 
 	context_vape_save();
 
@@ -151,8 +155,12 @@ exit:
 	}
 
 	/* This is what cpuidle wants */
-	prcmu_enable_wakeups(PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) |
-			     PRCMU_WAKEUP(ABB));
+	if (cpu_is_u9500())
+		prcmu_enable_wakeups(PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) |
+				     PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(HSI0));
+	else
+		prcmu_enable_wakeups(PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) |
+				     PRCMU_WAKEUP(ABB));
 
 	nmk_gpio_wakeups_resume();
 
