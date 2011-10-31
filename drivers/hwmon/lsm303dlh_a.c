@@ -835,10 +835,15 @@ static ssize_t lsm303dlh_a_store_mode(struct device *dev,
 
 	data = lsm303dlh_a_read(ddata, CTRL_REG1, "CTRL_REG1");
 
+	/*
+	 * If chip doesn't get reset during suspend/resume,
+	 * x,y and z axis bits are getting cleared,so set
+	 * these bits to get x,y,z axis data.
+	 */
+	data |= LSM303DLH_A_CR1_AXIS_ENABLE;
 	data &= ~LSM303DLH_A_CR1_PM_MASK;
 
 	ddata->mode = val;
-
 	data |= ((val << LSM303DLH_A_CR1_PM_BIT) & LSM303DLH_A_CR1_PM_MASK);
 
 	error = lsm303dlh_a_write(ddata, CTRL_REG1, data, "CTRL_REG1");
