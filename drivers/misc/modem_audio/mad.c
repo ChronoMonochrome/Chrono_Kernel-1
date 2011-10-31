@@ -459,19 +459,15 @@ static int mad_close(struct inode *ino, struct file *filp)
 {
 	dev_dbg(mad_dev.this_device, "%s", __func__);
 
-	if (mad->dsp_shm_write_ptr != NULL) {
-		iounmap(mad->dsp_shm_write_ptr);
-		mad->dsp_shm_write_ptr = NULL;
+	if (mbox_channel_deregister(CHANNEL_NUM_RX)) {
+		dev_err(mad_dev.this_device, "%s:deregister err", __func__);
+		return -EFAULT;
 	}
-
-	if (mad->dsp_shm_read_ptr != NULL) {
-		iounmap(mad->dsp_shm_read_ptr);
-		mad->dsp_shm_read_ptr = NULL;
-	}
-
 	kfree(mad->rx_buff);
 	kfree(mad->tx_buff);
 	mad->data_written = 0;
+	mad->rx_buffer_num = 0;
+	mad->rx_buffer_read = 0;
 	mad->open_check = false;
 
 	return 0;
@@ -495,7 +491,16 @@ static void  __exit mad_exit(void)
 {
 	dev_dbg(mad_dev.this_device, "%s", __func__);
 
-	kfree(mad);
+	 if (mad->dsp_shm_write_ptr != NULL) {
+		 iounmap(mad->dsp_shm_write_ptr);
+		 mad->dsp_shm_write_ptr = NULL;
+	 }
 
-	misc_deregister(&mad_dev);
+	 if (mad->dsp_shm_read_ptr != NULL) {
+		 iounmap(mad->dsp_shm_read_ptr);
+		 mad->dsp_shm_read_ptr = NULL;
+	 }
+
+	 kfree(mad);
+	 misc_deregister(&mad_dev);
 }

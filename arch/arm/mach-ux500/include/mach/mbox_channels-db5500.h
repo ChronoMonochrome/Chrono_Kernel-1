@@ -68,5 +68,13 @@ int mbox_channel_send(struct mbox_channel_msg *msg);
  */
 int mbox_channel_revoke_messages(u16 channel);
 
+/**
+ * mbox_channel_deregister - de-register given mailbox channel.
+ * @channel:    Mailbox channel number.
+ *
+ * Returns 0 on success or a negative error code on error.
+ */
+int mbox_channel_deregister(u16 channel);
+
 #endif /*INC_STE_MBOX_H*/
 
