@@ -95,6 +95,7 @@ static int u5500_sdi1_ios_handler(struct device *dev, struct mmc_ios *ios)
 	return 0;
 }
 
+#ifdef CONFIG_STE_DMA40
 static struct stedma40_chan_cfg sdi1_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
@@ -112,6 +113,7 @@ static struct stedma40_chan_cfg sdi1_dma_cfg_tx = {
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
 };
+#endif
 
 static struct mmci_platform_data u5500_sdi1_data = {
 	.ios_handler    = u5500_sdi1_ios_handler,
