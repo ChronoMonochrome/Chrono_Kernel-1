@@ -184,7 +184,8 @@ static void configure_bg(struct b2r2_node *node,
 static int configure_dst(struct b2r2_node *node,
 		struct b2r2_node_split_buf *dst, const u32 *ivmx,
 		struct b2r2_node **next);
-static void configure_blend(struct b2r2_node *node, u32 flags, u32 global_alpha);
+static void configure_blend(struct b2r2_node *node, u32 flags,
+		u32 global_alpha);
 static void configure_clip(struct b2r2_node *node,
 		struct b2r2_blt_rect *clip_rect);
 
@@ -264,7 +265,8 @@ static void set_ivmx(struct b2r2_node *node, const u32 *vmx_values);
 
 static void reset_nodes(struct b2r2_node *node);
 
-static bool bg_format_require_ivmx(enum b2r2_blt_fmt bg_fmt, enum b2r2_blt_fmt dst_fmt);
+static bool bg_format_require_ivmx(enum b2r2_blt_fmt bg_fmt,
+		enum b2r2_blt_fmt dst_fmt);
 
 /*
  * Public functions
@@ -330,10 +332,12 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	/* Unsupported formats on bg */
 	if (this->flags & B2R2_BLT_FLAG_BG_BLEND) {
 		/*
-		 * There are no ivmx on source 1, so check that there is no such requirement
-		 * on the background to destination format conversion. This check is sufficient
-		 * since the node splitter currently does not support destination ivmx. That
-		 * fact also removes the source format as a parameter when checking the
+		 * There are no ivmx on source 1, so check that
+		 * there is no such requirement on the background
+		 * to destination format conversion. This check is sufficient
+		 * since the node splitter currently does not support
+		 * destination ivmx. That fact also removes
+		 * the source format as a parameter when checking the
 		 * background format.
 		 */
 		if (bg_format_require_ivmx(req->user_req.bg_img.fmt,
@@ -756,7 +760,8 @@ error:
  * Check if there are any color space conversion needed for the
  * background to the destination format.
  */
-static bool bg_format_require_ivmx(enum b2r2_blt_fmt bg_fmt, enum b2r2_blt_fmt dst_fmt)
+static bool bg_format_require_ivmx(enum b2r2_blt_fmt bg_fmt,
+				enum b2r2_blt_fmt dst_fmt)
 {
 	if (is_rgb_fmt(bg_fmt)) {
 		if (is_yvu_fmt(dst_fmt))
@@ -1680,10 +1685,13 @@ static int configure_tile(struct b2r2_node_split_job *this,
 			}
 
 			if (this->blend) {
-				if (this->flags & B2R2_BLT_FLAG_BG_BLEND)
-					configure_bg(node, bg, this->swap_fg_bg);
-				else
-					configure_bg(node, dst, this->swap_fg_bg);
+				if (this->flags & B2R2_BLT_FLAG_BG_BLEND) {
+					configure_bg(node, bg,
+							this->swap_fg_bg);
+				} else {
+					configure_bg(node, dst,
+							this->swap_fg_bg);
+				}
 				configure_blend(node, this->flags,
 						this->global_alpha);
 			}
@@ -2387,6 +2395,30 @@ static int configure_scale(struct b2r2_node *node,
 			node->node.GROUP10.B2R2_RZI = luma_rzi;
 			node->node.GROUP10.B2R2_HFP = luma_hfp;
 			node->node.GROUP10.B2R2_VFP = luma_vfp;
+			/*
+			 * Scaling operation from raster to a multi-buffer
+			 * format, requires the raster input to be scaled
+			 * before luminance information can be extracted.
+			 * Raster input is scaled by the chroma resizer.
+			 * Luma resizer only handles luminance data which
+			 * exists in a separate buffer in source image,
+			 * as is the case with YUV planar/semi-planar formats.
+			 */
+			if (src_raster) {
+				/* Activate chroma scaling */
+				node->node.GROUP0.B2R2_CIC |=
+					B2R2_CIC_RESIZE_CHROMA;
+				node->node.GROUP8.B2R2_FCTL |= fctl;
+				/*
+				 * Color data must be scaled
+				 * to the same size as luma.
+				 * Use luma scaling parameters.
+				 */
+				node->node.GROUP9.B2R2_RSF = luma_rsf;
+				node->node.GROUP9.B2R2_RZI = luma_rzi;
+				node->node.GROUP9.B2R2_HFP = luma_hfp;
+				node->node.GROUP9.B2R2_VFP = luma_vfp;
+			}
 		}
 
 		b2r2_log_info("%s:\n"
@@ -2531,13 +2563,15 @@ static void configure_bg(struct b2r2_node *node,
 	case B2R2_FMT_TYPE_RASTER:
 		if (swap_fg_bg) {
 			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_SOURCE_2;
-			node->node.GROUP0.B2R2_INS |= B2R2_INS_SOURCE_2_FETCH_FROM_MEM;
+			node->node.GROUP0.B2R2_INS |=
+				B2R2_INS_SOURCE_2_FETCH_FROM_MEM;
 			node->node.GROUP0.B2R2_ACK |= B2R2_ACK_SWAP_FG_BG;
 
 			set_src(&node->node.GROUP4, bg->addr, bg);
 		} else {
 			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_SOURCE_1;
-			node->node.GROUP0.B2R2_INS |= B2R2_INS_SOURCE_1_FETCH_FROM_MEM;
+			node->node.GROUP0.B2R2_INS |=
+				B2R2_INS_SOURCE_1_FETCH_FROM_MEM;
 
 			set_src(&node->node.GROUP3, bg->addr, bg);
 		}
