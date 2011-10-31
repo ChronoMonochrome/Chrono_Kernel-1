@@ -11,6 +11,7 @@
 #include <linux/kernel.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/ab8500.h>
+#include <mach/id.h> /* to identify older boards for fixes */
 #include "board-mop500-regulators.h"
 
 #ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
@@ -337,13 +338,13 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
 	 */
 	INIT_REGULATOR_REGISTER(AB8500_VREFDDR,                0x03, 0x00),
 	/*
-	 * VextSupply1Regu          = HW control
+	 * VextSupply1Regu          = force LP
 	 * VextSupply2Regu          = HW control
 	 * VextSupply3Regu          = force HP (-> STBB2=LP and TPS=LP)
 	 * ExtSupply2Bypass         = ExtSupply12LPn ball is 0 when Ena is 0
 	 * ExtSupply3Bypass         = ExtSupply3LPn ball is 0 when Ena is 0
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU,          0xff, 0x1a),
+	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU,          0xff, 0x1b),
 	/*
 	 * Vaux1Regu                = force HP
 	 * Vaux2Regu                = force off
@@ -549,6 +550,17 @@ static struct regulator_consumer_supply ab8500_ext_supply3_consumers[] = {
  * AB8500 external regulators
  */
 static struct regulator_init_data ab8500_ext_regulators[] = {
+	/* fixed Vbat supplies VSMPS1_EXT_1V8 */
+	[AB8500_EXT_SUPPLY1] = {
+		.constraints = {
+			.name = "ab8500-ext-supply1",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.initial_mode = REGULATOR_MODE_IDLE,
+			.boot_on = 1,
+			.always_on = 1,
+		},
+	},
 	/* fixed Vbat supplies VSMPS3_EXT_3V4 and VSMPS4_EXT_3V4 */
 	[AB8500_EXT_SUPPLY3] = {
 		.constraints = {
@@ -572,3 +584,19 @@ struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
 	.ext_regulator          = ab8500_ext_regulators,
 	.num_ext_regulator      = ARRAY_SIZE(ab8500_ext_regulators),
 };
+
+void mop500_regulator_init(void)
+{
+	struct regulator_init_data *regulator;
+
+	/*
+	 * Handle VextSupply1 on older boards than HREFP_V22_V1x
+	 * (turn off in suspend)
+	 */
+	if (cpu_is_u8500v20() || cpu_is_u8500v21()) {
+		/* disable VextSupply1 in suspend */
+		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY1];
+		regulator->constraints.state_mem.disabled = 1;
+		regulator->constraints.state_standby.disabled = 1;
+	}
+}

@@ -300,6 +300,24 @@ static struct regulator_ops ab8500_ext_regulator_ops = {
 
 static struct ab8500_ext_regulator_info
 		ab8500_ext_regulator_info[AB8500_NUM_EXT_REGULATORS] = {
+	[AB8500_EXT_SUPPLY1] = {
+		.desc = {
+			.name		= "VEXTSUPPLY1",
+			.ops		= &ab8500_ext_regulator_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8500_EXT_SUPPLY1,
+			.owner		= THIS_MODULE,
+			.n_voltages	= 1,
+		},
+		.fixed_uV		= 1800000,
+		.update_bank		= 0x04,
+		.update_reg		= 0x08,
+		.update_mask		= 0x03,
+		.update_val		= 0x01,
+		.update_val_hp		= 0x01,
+		.update_val_lp		= 0x03,
+		.update_val_hw		= 0x02,
+	},
 	[AB8500_EXT_SUPPLY3] = {
 		.desc = {
 			.name		= "VEXTSUPPLY3",
