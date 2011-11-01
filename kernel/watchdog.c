@@ -493,6 +493,8 @@ static void watchdog_disable(int cpu)
 	}
 }
 
+/* sysctl functions */
+#ifdef CONFIG_SYSCTL
 static void watchdog_enable_all_cpus(void)
 {
 	int cpu;
@@ -522,8 +524,6 @@ static void watchdog_disable_all_cpus(void)
 }
 
 
-/* sysctl functions */
-#ifdef CONFIG_SYSCTL
 /*
  * proc handler for /proc/sys/kernel/nmi_watchdog,watchdog_thresh
  */
