@@ -703,6 +703,7 @@ const char * const vmstat_text[] = {
 	"nr_bounce",
 	"nr_vmscan_write",
 	"nr_vmscan_immediate_reclaim",
+	"nr_vmscan_write_skip",
 	"nr_writeback_temp",
 	"nr_isolated_anon",
 	"nr_isolated_file",
