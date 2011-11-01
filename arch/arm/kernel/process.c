@@ -136,7 +136,7 @@ void arm_machine_flush_console(void)
 }
 #endif
 
-void arm_machine_restart(char mode, const char *cmd)
+void soft_restart(unsigned long addr)
 {
 
 #ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
@@ -180,7 +180,16 @@ void arm_machine_restart(char mode, const char *cmd)
 	/* Push out any further dirty data, and ensure cache is empty */
 	flush_cache_all();
 
-	/* Now call the architecture specific reboot code. */
+	cpu_reset(addr);
+}
+
+void arm_machine_restart(char mode, const char *cmd)
+{
+	/* Disable interrupts first */
+	local_irq_disable();
+	local_fiq_disable();
+
+	/* Call the architecture specific reboot code. */
 	arch_reset(mode, cmd);
 }
 
