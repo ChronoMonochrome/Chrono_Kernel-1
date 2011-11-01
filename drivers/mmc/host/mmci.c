@@ -789,6 +789,14 @@ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
 	if (/*interrupt*/0)
 		c |= MCI_CPSM_INTERRUPT;
 
+	/*
+	 * For levelshifters we must not use more than 25MHz when
+	 * sending commands.
+	 */
+	host->cclk_desired = host->cclk;
+	if (host->plat->ios_handler && (host->cclk_desired > 25000000))
+		mmci_set_clkreg(host, 25000000);
+
 	host->cmd = cmd;
 
 	writel(cmd->arg, base + MMCIARGUMENT);
@@ -880,6 +888,13 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
 		cmd->resp[2] = readl(base + MMCIRESPONSE2);
 		cmd->resp[3] = readl(base + MMCIRESPONSE3);
 	}
+
+	/*
+	 * For levelshifters we might have decreased cclk to 25MHz when
+	 * sending commands, then we restore the frequency here.
+	 */
+	if (host->plat->ios_handler && (host->cclk_desired > host->cclk))
+		mmci_set_clkreg(host, host->cclk_desired);
 
 	if (!cmd->data || cmd->error) {
 		/* Terminate the DMA transfer */
