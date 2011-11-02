@@ -1309,7 +1309,8 @@ static irqreturn_t ab5500_charger_usblinkstatus_handler(int irq, void *_di)
 
 	dev_dbg(di->dev, "USB link status changed\n");
 
-	queue_work(di->charger_wq, &di->usb_link_status_work);
+	if (!di->usb.charger_online)
+		queue_work(di->charger_wq, &di->usb_link_status_work);
 
 	return IRQ_HANDLED;
 }
