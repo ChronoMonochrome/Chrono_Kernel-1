@@ -1349,8 +1349,10 @@ static void __init hrefv60_init_machine(void)
 	hsi_register_board_info(u8500_hsi_devices,
 				ARRAY_SIZE(u8500_hsi_devices));
 #endif
+#ifdef CONFIG_LEDS_PWM
 	if (uib_is_stuib())
 		u8500_leds_data.num_leds = 2;
+#endif
 
 	mop500_gpio_keys_init();
 
