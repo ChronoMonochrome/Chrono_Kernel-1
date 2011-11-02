@@ -22,6 +22,7 @@ static struct synaptics_rmi4_platform_data rmi4_i2c_dev_platformdata = {
 	.irq_type       = (IRQF_TRIGGER_FALLING | IRQF_SHARED),
 	.x_flip		= false,
 	.y_flip		= true,
+	.regulator_en   = true,
 };
 
 struct i2c_board_info __initdata mop500_i2c3_devices_u8500[] = {
