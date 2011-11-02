@@ -59,6 +59,7 @@ void ux500_store_context(struct musb *musb)
 	if (is_host_enabled(musb)) {
 		context.frame = musb_readw(musb_base, MUSB_FRAME);
 		context.testmode = musb_readb(musb_base, MUSB_TESTMODE);
+		context.busctl = musb_read_ulpi_buscontrol(musb->mregs);
 	}
 	context.power = musb_readb(musb_base, MUSB_POWER);
 	context.intrtxe = musb_readw(musb_base, MUSB_INTRTXE);
@@ -66,8 +67,19 @@ void ux500_store_context(struct musb *musb)
 	context.intrusbe = musb_readb(musb_base, MUSB_INTRUSBE);
 	context.index = musb_readb(musb_base, MUSB_INDEX);
 	context.devctl = DEFAULT_DEVCTL;
+
 	for (i = 0; i < musb->config->num_eps; ++i) {
-		epio = musb->endpoints[i].regs;
+		struct musb_hw_ep       *hw_ep;
+
+		musb_writeb(musb_base, MUSB_INDEX, i);
+		hw_ep = &musb->endpoints[i];
+		if (!hw_ep)
+			continue;
+
+		epio = hw_ep->regs;
+		if (!epio)
+			continue;
+
 		context.index_regs[i].txmaxp =
 				musb_readw(epio, MUSB_TXMAXP);
 		context.index_regs[i].txcsr =
@@ -132,6 +144,7 @@ void ux500_restore_context(void)
 	if (is_host_enabled(musb)) {
 		musb_writew(musb_base, MUSB_FRAME, context.frame);
 		musb_writeb(musb_base, MUSB_TESTMODE, context.testmode);
+		musb_write_ulpi_buscontrol(musb->mregs, context.busctl);
 	 }
 	musb_writeb(musb_base, MUSB_POWER, context.power);
 	musb_writew(musb_base, MUSB_INTRTXE, context.intrtxe);
@@ -140,7 +153,17 @@ void ux500_restore_context(void)
 	musb_writeb(musb_base, MUSB_DEVCTL, context.devctl);
 
 	for (i = 0; i < musb->config->num_eps; ++i) {
-		epio = musb->endpoints[i].regs;
+		struct musb_hw_ep       *hw_ep;
+
+		musb_writeb(musb_base, MUSB_INDEX, i);
+		hw_ep = &musb->endpoints[i];
+		if (!hw_ep)
+			continue;
+
+		epio = hw_ep->regs;
+		if (!epio)
+			continue;
+
 		musb_writew(epio, MUSB_TXMAXP,
 			context.index_regs[i].txmaxp);
 		musb_writew(epio, MUSB_TXCSR,
