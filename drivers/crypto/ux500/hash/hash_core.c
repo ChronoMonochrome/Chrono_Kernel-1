@@ -442,15 +442,17 @@ static void hash_hw_write_key(struct hash_device_data *device_data,
 		const u8 *key, unsigned int keylen)
 {
 	u32 word = 0;
+	int nwords = 1;
 
 	HASH_CLEAR_BITS(&device_data->base->str, HASH_STR_NBLW_MASK);
+
 	while (keylen >= 4) {
 		word = ((u32) (key[3] & 0xff) << 24) |
 			((u32) (key[2] & 0xff) << 16) |
 			((u32) (key[1] & 0xff) << 8) |
 			((u32) (key[0] & 0xff));
 
-		HASH_SET_DIN(word);
+		HASH_SET_DIN(&word, nwords);
 		keylen -= 4;
 		key += 4;
 	}
@@ -462,8 +464,10 @@ static void hash_hw_write_key(struct hash_device_data *device_data,
 			word |= (key[keylen - 1] << (8 * (keylen - 1)));
 			keylen--;
 		}
-		HASH_SET_DIN(word);
+
+		HASH_SET_DIN(&word, nwords);
 	}
+
 	while (device_data->base->str & HASH_STR_DCAL_MASK)
 		cpu_relax();
 
@@ -520,9 +524,9 @@ static int hash_get_nents(struct scatterlist *sg, int size, bool *aligned)
 		size -= sg->length;
 
 		/* hash_set_dma_transfer will align last nent */
-		if (aligned && !IS_ALIGNED(sg->offset, HASH_DMA_ALIGN_SIZE) ||
-			(!IS_ALIGNED(sg->length, HASH_DMA_ALIGN_SIZE) &&
-			 size > 0))
+		if ((aligned && !IS_ALIGNED(sg->offset, HASH_DMA_ALIGN_SIZE))
+			|| (!IS_ALIGNED(sg->length, HASH_DMA_ALIGN_SIZE) &&
+				size > 0))
 			aligned_data = false;
 
 		sg = sg_next(sg);
@@ -589,13 +593,17 @@ static int hash_init(struct ahash_request *req)
 					"to CPU mode for data size < %d",
 					__func__, HASH_DMA_ALIGN_SIZE);
 		} else {
-			if (hash_dma_valid_data(req->src, req->nbytes)) {
+			if (req->nbytes >= HASH_DMA_PERFORMANCE_MIN_SIZE &&
+					hash_dma_valid_data(req->src,
+						req->nbytes)) {
 				ctx->dma_mode = true;
 			} else {
 				ctx->dma_mode = false;
-				pr_debug(DEV_DBG_NAME " [%s] DMA mode, but "
-						"direct to CPU mode for "
-						"non-aligned data", __func__);
+				pr_debug(DEV_DBG_NAME " [%s] DMA mode, but use"
+						" CPU mode for datalength < %d"
+						" or non-aligned data, except "
+						"in last nent", __func__,
+						HASH_DMA_PERFORMANCE_MIN_SIZE);
 			}
 		}
 	}
@@ -614,10 +622,9 @@ out:
  */
 static void hash_processblock(
 		struct hash_device_data *device_data,
-		const u32 *message)
+		const u32 *message, int length)
 {
-	u32 count;
-
+	int len = length / HASH_BYTES_PER_WORD;
 	/*
 	 * NBLW bits. Reset the number of bits in last word (NBLW).
 	 */
@@ -626,13 +633,7 @@ static void hash_processblock(
 	/*
 	 * Write message data to the HASH_DIN register.
 	 */
-	for (count = 0; count < (HASH_BLOCK_SIZE / sizeof(u32)); count += 4) {
-		HASH_SET_DIN(message[0]);
-		HASH_SET_DIN(message[1]);
-		HASH_SET_DIN(message[2]);
-		HASH_SET_DIN(message[3]);
-		message += 4;
-	}
+	HASH_SET_DIN(message, len);
 }
 
 /**
@@ -649,22 +650,23 @@ static void hash_processblock(
 static void hash_messagepad(struct hash_device_data *device_data,
 		const u32 *message, u8 index_bytes)
 {
+	int nwords = 1;
+
 	/*
 	 * Clear hash str register, only clear NBLW
 	 * since DCAL will be reset by hardware.
 	 */
-	writel((readl(&device_data->base->str) & ~HASH_STR_NBLW_MASK),
-			&device_data->base->str);
+	HASH_CLEAR_BITS(&device_data->base->str, HASH_STR_NBLW_MASK);
 
 	/* Main loop */
 	while (index_bytes >= 4) {
-		HASH_SET_DIN(message[0]);
+		HASH_SET_DIN(message, nwords);
 		index_bytes -= 4;
 		message++;
 	}
 
 	if (index_bytes)
-		HASH_SET_DIN(message[0]);
+		HASH_SET_DIN(message, nwords);
 
 	while (device_data->base->str & HASH_STR_DCAL_MASK)
 		cpu_relax();
@@ -672,13 +674,13 @@ static void hash_messagepad(struct hash_device_data *device_data,
 	/* num_of_bytes == 0 => NBLW <- 0 (32 bits valid in DATAIN) */
 	HASH_SET_NBLW(index_bytes * 8);
 	dev_dbg(device_data->dev, "[%s] DIN=0x%08x NBLW=%d", __func__,
-			readl(&device_data->base->din),
-			(int)(readl(&device_data->base->str) &
+			readl_relaxed(&device_data->base->din),
+			(int)(readl_relaxed(&device_data->base->str) &
 				HASH_STR_NBLW_MASK));
 	HASH_SET_DCAL;
 	dev_dbg(device_data->dev, "[%s] after dcal -> DIN=0x%08x NBLW=%d",
-			__func__, readl(&device_data->base->din),
-			(int)(readl(&device_data->base->str) &
+			__func__, readl_relaxed(&device_data->base->din),
+			(int)(readl_relaxed(&device_data->base->str) &
 				HASH_STR_NBLW_MASK));
 
 	while (device_data->base->str & HASH_STR_DCAL_MASK)
@@ -881,7 +883,7 @@ int hash_process_data(
 					&& (0 == *index))
 				hash_processblock(device_data,
 						(const u32 *)
-						data_buffer);
+						data_buffer, HASH_BLOCK_SIZE);
 			else {
 				for (count = 0; count <
 						(u32)(HASH_BLOCK_SIZE -
@@ -891,7 +893,8 @@ int hash_process_data(
 						*(data_buffer + count);
 				}
 				hash_processblock(device_data,
-						(const u32 *)buffer);
+						(const u32 *)buffer,
+						HASH_BLOCK_SIZE);
 			}
 			hash_incrementlength(ctx, HASH_BLOCK_SIZE);
 			data_buffer += (HASH_BLOCK_SIZE - *index);
@@ -1155,7 +1158,7 @@ out:
 int hash_hw_update(struct ahash_request *req)
 {
 	int ret = 0;
-	u8 index;
+	u8 index = 0;
 	u8 *buffer;
 	struct hash_device_data *device_data;
 	u8 *data_buffer;
@@ -1259,7 +1262,7 @@ int hash_resume_state(struct hash_device_data *device_data,
 	HASH_INITIALIZE;
 
 	temp_cr = device_state->temp_cr;
-	writel(temp_cr & HASH_CR_RESUME_MASK, &device_data->base->cr);
+	writel_relaxed(temp_cr & HASH_CR_RESUME_MASK, &device_data->base->cr);
 
 	if (device_data->base->cr & HASH_CR_MODE_MASK)
 		hash_mode = HASH_OPER_MODE_HMAC;
@@ -1270,15 +1273,15 @@ int hash_resume_state(struct hash_device_data *device_data,
 		if ((count >= 36) && (hash_mode == HASH_OPER_MODE_HASH))
 			break;
 
-		writel(device_state->csr[count],
+		writel_relaxed(device_state->csr[count],
 				&device_data->base->csrx[count]);
 	}
 
-	writel(device_state->csfull, &device_data->base->csfull);
-	writel(device_state->csdatain, &device_data->base->csdatain);
+	writel_relaxed(device_state->csfull, &device_data->base->csfull);
+	writel_relaxed(device_state->csdatain, &device_data->base->csdatain);
 
-	writel(device_state->str_reg, &device_data->base->str);
-	writel(temp_cr, &device_data->base->cr);
+	writel_relaxed(device_state->str_reg, &device_data->base->str);
+	writel_relaxed(temp_cr, &device_data->base->cr);
 
 	return 0;
 }
@@ -1310,11 +1313,11 @@ int hash_save_state(struct hash_device_data *device_data,
 	while (device_data->base->str & HASH_STR_DCAL_MASK)
 		cpu_relax();
 
-	temp_cr = readl(&device_data->base->cr);
+	temp_cr = readl_relaxed(&device_data->base->cr);
 
-	device_state->str_reg = readl(&device_data->base->str);
+	device_state->str_reg = readl_relaxed(&device_data->base->str);
 
-	device_state->din_reg = readl(&device_data->base->din);
+	device_state->din_reg = readl_relaxed(&device_data->base->din);
 
 	if (device_data->base->cr & HASH_CR_MODE_MASK)
 		hash_mode = HASH_OPER_MODE_HMAC;
@@ -1326,11 +1329,11 @@ int hash_save_state(struct hash_device_data *device_data,
 			break;
 
 		device_state->csr[count] =
-			readl(&device_data->base->csrx[count]);
+			readl_relaxed(&device_data->base->csrx[count]);
 	}
 
-	device_state->csfull = readl(&device_data->base->csfull);
-	device_state->csdatain = readl(&device_data->base->csdatain);
+	device_state->csfull = readl_relaxed(&device_data->base->csfull);
+	device_state->csdatain = readl_relaxed(&device_data->base->csdatain);
 
 	device_state->temp_cr = temp_cr;
 
@@ -1354,14 +1357,14 @@ int hash_check_hw(struct hash_device_data *device_data)
 	}
 
 	/* Checking Peripheral Ids  */
-	if ((HASH_P_ID0 == readl(&device_data->base->periphid0))
-		&& (HASH_P_ID1 == readl(&device_data->base->periphid1))
-		&& (HASH_P_ID2 == readl(&device_data->base->periphid2))
-		&& (HASH_P_ID3 == readl(&device_data->base->periphid3))
-		&& (HASH_CELL_ID0 == readl(&device_data->base->cellid0))
-		&& (HASH_CELL_ID1 == readl(&device_data->base->cellid1))
-		&& (HASH_CELL_ID2 == readl(&device_data->base->cellid2))
-		&& (HASH_CELL_ID3 == readl(&device_data->base->cellid3))
+	if ((HASH_P_ID0 == readl_relaxed(&device_data->base->periphid0))
+		&& (HASH_P_ID1 == readl_relaxed(&device_data->base->periphid1))
+		&& (HASH_P_ID2 == readl_relaxed(&device_data->base->periphid2))
+		&& (HASH_P_ID3 == readl_relaxed(&device_data->base->periphid3))
+		&& (HASH_CELL_ID0 == readl_relaxed(&device_data->base->cellid0))
+		&& (HASH_CELL_ID1 == readl_relaxed(&device_data->base->cellid1))
+		&& (HASH_CELL_ID2 == readl_relaxed(&device_data->base->cellid2))
+		&& (HASH_CELL_ID3 == readl_relaxed(&device_data->base->cellid3))
 	   ) {
 		ret = 0;
 		goto out;;
@@ -1409,7 +1412,7 @@ void hash_get_digest(struct hash_device_data *device_data,
 
 	/* Copy result into digest array */
 	for (count = 0; count < loop_ctr; count++) {
-		temp_hx_val = readl(&device_data->base->hx[count]);
+		temp_hx_val = readl_relaxed(&device_data->base->hx[count]);
 		digest[count * 4] = (u8) ((temp_hx_val >> 24) & 0xFF);
 		digest[count * 4 + 1] = (u8) ((temp_hx_val >> 16) & 0xFF);
 		digest[count * 4 + 2] = (u8) ((temp_hx_val >> 8) & 0xFF);

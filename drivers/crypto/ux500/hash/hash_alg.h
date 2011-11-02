@@ -12,6 +12,8 @@
 
 #define HASH_BLOCK_SIZE			64
 #define HASH_DMA_ALIGN_SIZE		4
+#define HASH_DMA_PERFORMANCE_MIN_SIZE	1024
+#define HASH_BYTES_PER_WORD		4
 
 /* Maximum value of the length's high word */
 #define HASH_HIGH_WORD_MAX_VAL		0xFFFFFFFFUL
@@ -93,16 +95,16 @@
 #define HASH_CELL_ID3		0xB1
 
 #define HASH_SET_BITS(reg_name, mask)	\
-	writel((readl(reg_name) | mask), reg_name)
+	writel_relaxed((readl_relaxed(reg_name) | mask), reg_name)
 
 #define HASH_CLEAR_BITS(reg_name, mask)	\
-	writel((readl(reg_name) & ~mask), reg_name)
+	writel_relaxed((readl_relaxed(reg_name) & ~mask), reg_name)
 
 #define HASH_PUT_BITS(reg, val, shift, mask)	\
-	writel(((readl(reg) & ~(mask)) |	\
+	writel_relaxed(((readl(reg) & ~(mask)) |	\
 		(((u32)val << shift) & (mask))), reg)
 
-#define HASH_SET_DIN(val)	writel((val), &device_data->base->din)
+#define HASH_SET_DIN(val, len)	writesl(&device_data->base->din, (val), (len))
 
 #define HASH_INITIALIZE			\
 	HASH_PUT_BITS(			\
