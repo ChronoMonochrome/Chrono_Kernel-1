@@ -379,7 +379,7 @@ rcv_msg:
 		dev_err(&channels.pdev->dev,
 				"%s no callback provided\n", __func__);
 	}
-	if (atomic_dec_and_test(&rx_chan->rcv_counter) > 0)
+	if (!atomic_dec_and_test(&rx_chan->rcv_counter))
 		goto rcv_msg;
 
 }
