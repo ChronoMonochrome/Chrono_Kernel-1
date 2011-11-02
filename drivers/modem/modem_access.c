@@ -194,7 +194,7 @@ static struct modem *_modem_get(struct device *dev, const char *id,
 			goto found;
 	}
 
-	return ERR_PTR(-ENODEV);
+	goto out;
 
 found:
 	if (!try_module_get(mdev_ptr->owner))
