@@ -38,6 +38,11 @@ static int sdi0_vsel = -1;
 
 static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
 {
+	static int power_mode = -1;
+
+	if (power_mode == ios->power_mode)
+		return 0;
+
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
 	case MMC_POWER_ON:
@@ -59,6 +64,7 @@ static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
 		break;
 	}
 
+	power_mode = ios->power_mode;
 	return 0;
 }
 
