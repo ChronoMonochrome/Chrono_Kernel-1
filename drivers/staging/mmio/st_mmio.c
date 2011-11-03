@@ -245,7 +245,7 @@ static int copy_user_buffer(void __iomem **dest_buf,
 
 	*dest_buf = kmalloc(size, GFP_KERNEL);
 
-	if (!dest_buf) {
+	if (!*dest_buf) {
 		err = -ENOMEM;
 		goto nomem;
 	}
