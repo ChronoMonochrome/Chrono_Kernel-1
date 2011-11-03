@@ -384,14 +384,14 @@ static UX500_PINS(mop500_pins_spi2,
 	GPIO217_SPI2_CLK        | PIN_OUTPUT_LOW,
 );
 
-static UX500_PINS(mop500_pins_sensors1p,
+static UX500_PINS(mop500_pins_sensors1p_v60,
 	GPIO217_GPIO| PIN_INPUT_PULLUP |
 		  PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
 	GPIO145_GPIO | PIN_INPUT_PULLDOWN |
 		  PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
 );
 
-static UX500_PINS(mop500_pins_sensors1p_old,
+static UX500_PINS(mop500_pins_sensors1p,
 	PIN_CFG_INPUT(GPIO_PROX_SENSOR, GPIO, NOPULL),
 	PIN_CFG_INPUT(GPIO_HAL_SENSOR, GPIO, NOPULL),
 );
@@ -413,11 +413,11 @@ static struct ux500_pin_lookup mop500_runtime_pins[] = {
 };
 
 static struct ux500_pin_lookup mop500_runtime_pins_v60[] = {
-	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p),
+	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p_v60),
 };
 
-static struct ux500_pin_lookup mop500_runtime_pins_old[] = {
-	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p_old),
+static struct ux500_pin_lookup mop500_runtime_pins_pre_v60[] = {
+	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p),
 };
 
 /*
@@ -1004,8 +1004,8 @@ void __init mop500_pins_init(void)
 
 	ux500_pins_add(mop500_runtime_pins, ARRAY_SIZE(mop500_runtime_pins));
 
-	ux500_pins_add(mop500_runtime_pins_old,
-		       ARRAY_SIZE(mop500_runtime_pins_old));
+	ux500_pins_add(mop500_runtime_pins_pre_v60,
+		       ARRAY_SIZE(mop500_runtime_pins_pre_v60));
 
 	switch (pinsfor) {
 	case PINS_FOR_U9500:
@@ -1032,13 +1032,9 @@ void __init snowball_pins_init(void)
 
 	ux500_pins_add(mop500_runtime_pins, ARRAY_SIZE(mop500_runtime_pins));
 
-	ux500_pins_add(mop500_runtime_pins_old,
-		       ARRAY_SIZE(mop500_runtime_pins_old));
-
 	nmk_config_pins(u8500_pins, ARRAY_SIZE(u8500_pins));
 
-	nmk_config_pins(snowball_pins,
-			ARRAY_SIZE(snowball_pins));
+	nmk_config_pins(snowball_pins, ARRAY_SIZE(snowball_pins));
 
 	suspend_set_pins_force_fn(mop500_pins_suspend_force,
 				  mop500_pins_suspend_force_mux);
