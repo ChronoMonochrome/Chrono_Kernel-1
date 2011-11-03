@@ -33,6 +33,7 @@
 #define MAIN_BAT_V_TXON_TRIG_MIN	13
 /* VBAT with TX off only min trigger */
 #define MAIN_BAT_V_TRIG_MIN		14
+#define GPADC0_V		15
 
 /*
  * Frequency of auto adc conversion

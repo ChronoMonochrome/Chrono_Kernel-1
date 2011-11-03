@@ -67,6 +67,7 @@
 #define GPADC_MANUAL_ADOUT1_MASK	0xC0
 #define GPADC_MANUAL_ADOUT0_ON		0x10
 #define GPADC_MANUAL_ADOUT1_ON		0x40
+#define MUX_SCALE_GPADC0_MASK		0x08
 #define MUX_SCALE_VBAT_MASK		0x02
 #define MUX_SCALE_45			0x02
 #define MUX_SCALE_BDATA_MASK		0x01
@@ -74,6 +75,8 @@
 #define MUX_SCALE_BDATA18		0x01
 #define MUX_SCALE_ACCDET2_MASK		0x01
 #define MUX_SCALE_ACCDET3_MASK		0x02
+#define GPADC0_SCALE_VOL27		0x00
+#define GPADC0_SCALE_VOL18		0x01
 #define ACCDET2_SCALE_VOL27		0x00
 #define ACCDET3_SCALE_VOL27		0x00
 #define TRIGX_FREQ_MASK			0x07
@@ -98,6 +101,8 @@
 #define CTRL_INDEX			0x01
 
 /* GPADC constants from AB5500 spec  */
+#define GPADC0_MIN		0
+#define GPADC0_MAX		1800
 #define BTEMP_MIN		0
 #define BTEMP_MAX		1800
 #define BDATA_MIN		0
@@ -229,6 +234,7 @@ struct adc_data {
 	}
 
 struct adc_data adc_tab[] = {
+	ADC_DATA(GPADC0_V, 0x00, GPADC0_MIN, GPADC0_MAX, 0),
 	ADC_DATA(BTEMP_BALL, 0x0D, BTEMP_MIN, BTEMP_MAX, ADOUT0),
 	ADC_DATA(BAT_CTRL, 0x0D, BDATA_MIN, BDATA_MAX, 0),
 	ADC_DATA(MAIN_BAT_V, 0x0C, VBAT_MIN, VBAT_MAX, 0),
@@ -270,6 +276,7 @@ static int ab5500_gpadc_ad_to_voltage(struct ab5500_gpadc *gpadc,
 	int res;
 
 	switch (in) {
+	case GPADC0_V:
 	case PCB_TEMP:
 	case BTEMP_BALL:
 	case MAIN_BAT_V:
@@ -364,6 +371,15 @@ int ab5500_gpadc_convert(struct ab5500_gpadc *gpadc, u8 input)
 			ADC_XTAL_FORCE_MASK, ADC_XTAL_FORCE_EN);
 		if (ret < 0) {
 			dev_err(gpadc->dev, "gpadc: fail to set xtaltemp\n");
+			goto out;
+		}
+		break;
+	case GPADC0_V:
+		ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
+				AB5500_BANK_ADC, AB5500_GPADC_MANUAL_MODE_CTRL,
+				MUX_SCALE_GPADC0_MASK, GPADC0_SCALE_VOL18);
+		if (ret < 0) {
+			dev_err(gpadc->dev, "gpadc: fail to set gpadc0\n");
 			goto out;
 		}
 		break;
@@ -775,6 +791,19 @@ out:
 }
 EXPORT_SYMBOL(ab5500_gpadc_convert_auto);
 
+/* sysfs interface for GPADC0 */
+static ssize_t ab5500_gpadc0_get(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	int voltage;
+	struct ab5500_gpadc *gpadc = dev_get_drvdata(dev);
+
+	voltage = ab5500_gpadc_convert(gpadc, GPADC0_V);
+
+	return sprintf(buf, "%d\n", voltage);
+}
+static DEVICE_ATTR(adc0volt, 0644, ab5500_gpadc0_get, NULL);
+
 static void ab5500_gpadc_trigx_work(struct ab5500_gpadc *gp, int trig)
 {
 	unsigned long flags;
@@ -1114,9 +1143,19 @@ static int __devinit ab5500_gpadc_probe(struct platform_device *pdev)
 		dev_err(gpadc->dev, "gpadc: configuration failed\n");
 		goto free_wq;
 	}
+
+	ret = device_create_file(gpadc->dev, &dev_attr_adc0volt);
+	if (ret < 0) {
+		dev_err(gpadc->dev, "File device creation failed: %d\n", ret);
+		ret = -ENODEV;
+		goto fail_sysfs;
+	}
 	list_add_tail(&gpadc->node, &ab5500_gpadc_list);
 
+	platform_set_drvdata(pdev, gpadc);
+
 	return 0;
+fail_sysfs:
 free_wq:
 	destroy_workqueue(gpadc->gpadc_wq);
 fail_irq:
@@ -1133,6 +1172,8 @@ static int __devexit ab5500_gpadc_remove(struct platform_device *pdev)
 {
 	int i, irq;
 	struct ab5500_gpadc *gpadc = platform_get_drvdata(pdev);
+
+	device_remove_file(gpadc->dev, &dev_attr_adc0volt);
 
 	/* remove this gpadc entry from the list */
 	list_del(&gpadc->node);
