@@ -91,6 +91,15 @@ struct mcde_col_transform {
 	u16 offset[3];
 };
 
+/* DSI video mode */
+enum mcde_dsi_vid_mode {
+	NON_BURST_MODE_WITH_SYNC_EVENT = 0,
+	/* enables tvg, test video generator */
+	NON_BURST_MODE_WITH_SYNC_EVENT_TVG_ENABLED = 1,
+	BURST_MODE_WITH_SYNC_EVENT  = 2,
+	BURST_MODE_WITH_SYNC_PULSE  = 3,
+};
+
 #define MCDE_PORT_DPI_NO_CLOCK_DIV	0
 
 #define DPI_ACT_HIGH_ALL	0 /* all signals are active high	  */
@@ -105,6 +114,7 @@ struct mcde_port {
 	enum mcde_port_type type;
 	enum mcde_port_mode mode;
 	enum mcde_port_pix_fmt pixel_format;
+	u8 refresh_rate;	/* display refresh rate given in Hz */
 	u8 ifc;
 	u8 link;
 	enum mcde_sync_src sync_src;
@@ -117,6 +127,16 @@ struct mcde_port {
 			u8 ui;
 			bool clk_cont;
 			bool host_eot_gen;
+
+			/* DSI video mode operating modes */
+			enum mcde_dsi_vid_mode vid_mode;
+
+			/*
+			 * wakeup_time is the time to perform
+			 * LP->HS on D-PHY. Given in clock
+			 * cycles of byte clock frequency.
+			 */
+			u32 vid_wakeup_time;
 
 			/* DSI data lanes are swapped if true */
 			bool data_lanes_swap;

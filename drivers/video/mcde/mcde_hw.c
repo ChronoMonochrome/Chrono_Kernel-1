@@ -921,6 +921,87 @@ static int wait_for_vcmp(struct mcde_chnl_state *chnl)
 	return ret;
 }
 
+static void get_vid_operating_mode(const struct mcde_port *port,
+		bool *burst_mode, bool *sync_is_pulse, bool *tvg_enable)
+{
+	switch (port->phy.dsi.vid_mode) {
+	case NON_BURST_MODE_WITH_SYNC_EVENT:
+		*burst_mode = false;
+		*sync_is_pulse = false;
+		*tvg_enable = false;
+		break;
+	case NON_BURST_MODE_WITH_SYNC_EVENT_TVG_ENABLED:
+		*burst_mode = false;
+		*sync_is_pulse = false;
+		*tvg_enable = true;
+		break;
+	case BURST_MODE_WITH_SYNC_EVENT:
+		*burst_mode = true;
+		*sync_is_pulse = false;
+		*tvg_enable = false;
+		break;
+	case BURST_MODE_WITH_SYNC_PULSE:
+		*burst_mode = true;
+		*sync_is_pulse = true;
+		*tvg_enable = false;
+		break;
+	default:
+		dev_err(&mcde_dev->dev, "Unsupported video mode");
+		break;
+	}
+}
+
+static void update_vid_static_registers(const struct mcde_port *port)
+{
+	u8 link = port->link;
+	bool burst_mode, sync_is_pulse, tvg_enable;
+
+	get_vid_operating_mode(port, &burst_mode, &sync_is_pulse, &tvg_enable);
+
+	/* burst mode or non-burst mode */
+	dsi_wfld(link, DSI_VID_MAIN_CTL, BURST_MODE, burst_mode);
+
+	/* sync is pulse or event */
+	dsi_wfld(link, DSI_VID_MAIN_CTL, SYNC_PULSE_ACTIVE, sync_is_pulse);
+	dsi_wfld(link, DSI_VID_MAIN_CTL, SYNC_PULSE_HORIZONTAL, sync_is_pulse);
+
+	/* disable video stream when using TVG */
+	if (tvg_enable) {
+		dsi_wfld(link, DSI_MCTL_MAIN_EN, IF1_EN, false);
+		dsi_wfld(link, DSI_MCTL_MAIN_EN, IF2_EN, false);
+	}
+
+	/*
+	 * behavior during blanking time
+	 * 00: NULL packet 1x:LP 01:blanking-packet
+	 */
+	dsi_wfld(link, DSI_VID_MAIN_CTL, REG_BLKLINE_MODE, 1);
+
+	/*
+	 * behavior during eol
+	 * 00: NULL packet 1x:LP 01:blanking-packet
+	 */
+	dsi_wfld(link, DSI_VID_MAIN_CTL, REG_BLKEOL_MODE, 2);
+
+	/* time to perform LP->HS on D-PHY */
+	dsi_wfld(link, DSI_VID_DPHY_TIME, REG_WAKEUP_TIME,
+						port->phy.dsi.vid_wakeup_time);
+
+	/*
+	 * video stream starts on VSYNC packet
+	 * and stops at the end of a frame
+	 */
+	dsi_wfld(link, DSI_VID_MAIN_CTL, VID_ID, port->phy.dsi.virt_id);
+	dsi_wfld(link, DSI_VID_MAIN_CTL, START_MODE, 0);
+	dsi_wfld(link, DSI_VID_MAIN_CTL, STOP_MODE, 0);
+
+	/* 1: if1 in video mode, 0: if1 in command mode */
+	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, IF1_MODE, 1);
+
+	/* 1: enables the link, 0: disables the link */
+	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, VID_EN, 1);
+}
+
 static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 {
 	const struct mcde_port *port = &chnl->port;
@@ -1081,7 +1162,9 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			MCDE_DSIVID0CONF0_BYTE_SWAP(false) |
 			MCDE_DSIVID0CONF0_DCSVID_NOTGEN(true));
 
-		if (port->mode == MCDE_PORTMODE_CMD) {
+		if (port->mode == MCDE_PORTMODE_VID) {
+			update_vid_static_registers(port);
+		} else {
 			if (port->ifc == 0)
 				dsi_wfld(port->link, DSI_CMD_MODE_CTL, IF1_ID,
 					port->phy.dsi.virt_id);
@@ -1529,6 +1612,192 @@ static u32 get_pkt_div(u32 disp_ppl,
 	return 1;
 }
 
+static void update_vid_horizontal_blanking(struct mcde_port *port,
+		struct mcde_video_mode *vmode, bool sync_is_pulse, u8 bpp)
+{
+	int hfp, hbp, hsa;
+	u8 link = port->link;
+
+	/*
+	 * vmode->hfp, vmode->hbp and vmode->hsw are given in pixels
+	 * and must be re-calculated into bytes
+	 *
+	 * 6 + 2 is HFP header + checksum
+	 */
+	hfp = vmode->hfp * bpp - 6 - 2;
+	if (sync_is_pulse) {
+		/*
+		 * 6 is HBP header + checksum
+		 * 4 is RGB header + checksum
+		 */
+		hbp = vmode->hbp * bpp - 4 - 6;
+		/*
+		 * 6 is HBP header + checksum
+		 * 4 is HSW packet bytes
+		 * 4 is RGB header + checksum
+		 */
+		hsa = vmode->hsw * bpp - 4 - 4 - 6;
+	} else {
+		/*
+		 * 6 is HBP header + checksum
+		 * 4 is HSW packet bytes
+		 * 4 is RGB header + checksum
+		 */
+		hbp = (vmode->hbp + vmode->hsw) * bpp - 4 - 4 - 6;
+		/* HSA is not considered in this mode and set to 0 */
+		hsa = 0;
+	}
+	if (hfp < 0) {
+		hfp = 0;
+		dev_warn(&mcde_dev->dev,
+			"%s: negative calc for hfp, set to 0\n", __func__);
+	}
+	if (hbp < 0) {
+		hbp = 0;
+		dev_warn(&mcde_dev->dev,
+			"%s: negative calc for hbp, set to 0\n", __func__);
+	}
+	if (hsa < 0) {
+		hsa = 0;
+		dev_warn(&mcde_dev->dev,
+			"%s: negative calc for hsa, set to 0\n", __func__);
+	}
+
+	dsi_wfld(link, DSI_VID_HSIZE1, HFP_LENGTH, hfp);
+	dsi_wfld(link, DSI_VID_HSIZE1, HBP_LENGTH, hbp);
+	dsi_wfld(link, DSI_VID_HSIZE1, HSA_LENGTH, hsa);
+}
+
+static void update_vid_frame_parameters(struct mcde_port *port,
+				struct mcde_video_mode *vmode, u8 bpp)
+{
+	u8 link = port->link;
+	bool burst_mode, sync_is_pulse, tvg_enable;
+	u32 hs_byte_clk, pck_len, blkline_pck, line_duration;
+	u32 blkeol_pck, blkeol_duration;
+	u8 pixel_mode;
+	u8 rgb_header;
+
+	get_vid_operating_mode(port, &burst_mode, &sync_is_pulse, &tvg_enable);
+
+	dsi_wfld(link, DSI_VID_VSIZE, VFP_LENGTH, vmode->vfp);
+	dsi_wfld(link, DSI_VID_VSIZE, VBP_LENGTH, vmode->vbp);
+	dsi_wfld(link, DSI_VID_VSIZE, VSA_LENGTH, vmode->vsw);
+	update_vid_horizontal_blanking(port, vmode, sync_is_pulse, bpp);
+
+	dsi_wfld(link, DSI_VID_VSIZE, VACT_LENGTH, vmode->yres);
+	dsi_wfld(link, DSI_VID_HSIZE2, RGB_SIZE, vmode->xres * bpp);
+
+	/*
+	 * The rgb_header identifies the pixel stream format,
+	 * as described in the MIPI DSI Specification:
+	 *
+	 * 0x0E: Packed pixel stream, 16-bit RGB, 565 format
+	 * 0x1E: Packed pixel stream, 18-bit RGB, 666 format
+	 * 0x2E: Loosely Packed pixel stream, 18-bit RGB, 666 format
+	 * 0x3E: Packed pixel stream, 24-bit RGB, 888 format
+	 */
+	switch (port->pixel_format) {
+	case MCDE_PORTPIXFMT_DSI_16BPP:
+		pixel_mode = 0;
+		rgb_header = 0x0E;
+		break;
+	case MCDE_PORTPIXFMT_DSI_18BPP:
+		pixel_mode = 2;
+		rgb_header = 0x2E;
+		break;
+	case MCDE_PORTPIXFMT_DSI_18BPP_PACKED:
+		pixel_mode = 1;
+		rgb_header = 0x1E;
+		break;
+	case MCDE_PORTPIXFMT_DSI_24BPP:
+		pixel_mode = 3;
+		rgb_header = 0x3E;
+		break;
+	default:
+		pixel_mode = 3;
+		rgb_header = 0x3E;
+		dev_warn(&mcde_dev->dev,
+			"%s: invalid pixel format %d\n",
+			__func__, port->pixel_format);
+		break;
+	}
+
+	dsi_wfld(link, DSI_VID_MAIN_CTL, VID_PIXEL_MODE, pixel_mode);
+	dsi_wfld(link, DSI_VID_MAIN_CTL, HEADER, rgb_header);
+
+	if (tvg_enable) {
+		/*
+		 * with these settings, expect to see 64 pixels wide
+		 * red and green vertical stripes on the screen when
+		 * tvg_enable = 1
+		 */
+		dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, TVG_SEL, 1);
+
+		dsi_wfld(link, DSI_TVG_CTL, TVG_STRIPE_SIZE, 6);
+		dsi_wfld(link, DSI_TVG_CTL, TVG_MODE, 2);
+		dsi_wfld(link, DSI_TVG_CTL, TVG_STOPMODE, 2);
+		dsi_wfld(link, DSI_TVG_CTL, TVG_RUN, 1);
+
+		dsi_wfld(link, DSI_TVG_IMG_SIZE, TVG_NBLINE, vmode->yres);
+		dsi_wfld(link, DSI_TVG_IMG_SIZE, TVG_LINE_SIZE,
+							vmode->xres * bpp);
+
+		dsi_wfld(link, DSI_TVG_COLOR1, COL1_BLUE, 0);
+		dsi_wfld(link, DSI_TVG_COLOR1, COL1_GREEN, 0);
+		dsi_wfld(link, DSI_TVG_COLOR1, COL1_RED, 0xFF);
+
+		dsi_wfld(link, DSI_TVG_COLOR2, COL2_BLUE, 0);
+		dsi_wfld(link, DSI_TVG_COLOR2, COL2_GREEN, 0xFF);
+		dsi_wfld(link, DSI_TVG_COLOR2, COL2_RED, 0);
+	}
+
+	/*
+	 * vid->pixclock is the time between two pixels (in picoseconds)
+	 *
+	 * hs_byte_clk is the amount of transferred bytes per lane and
+	 * second (in MHz)
+	 */
+	hs_byte_clk = 1000000 / vmode->pixclock / 8;
+	pck_len = 1000000 * hs_byte_clk / port->refresh_rate /
+			(vmode->vsw + vmode->vbp + vmode->yres + vmode->vfp) *
+						port->phy.dsi.num_data_lanes;
+
+	/*
+	 * 6 is header + checksum, header = 4 bytes, checksum = 2 bytes
+	 * 4 is short packet for vsync/hsync
+	 */
+	if (sync_is_pulse)
+		blkline_pck = pck_len - vmode->hsw - 6;
+	else
+		blkline_pck = pck_len - 4 - 6;
+
+	line_duration = (blkline_pck + 6) / port->phy.dsi.num_data_lanes;
+	blkeol_pck = pck_len -
+		(vmode->hsw + vmode->hbp + vmode->xres + vmode->hfp) * bpp - 6;
+	blkeol_duration = (blkeol_pck + 6) / port->phy.dsi.num_data_lanes;
+
+	if (sync_is_pulse)
+		dsi_wfld(link, DSI_VID_BLKSIZE2, BLKLINE_PULSE_PCK,
+								blkline_pck);
+	else
+		dsi_wfld(link, DSI_VID_BLKSIZE1, BLKLINE_EVENT_PCK,
+								blkline_pck);
+	dsi_wfld(link, DSI_VID_DPHY_TIME, REG_LINE_DURATION, line_duration);
+	if (burst_mode) {
+		dsi_wfld(link, DSI_VID_BLKSIZE1, BLKEOL_PCK, blkeol_pck);
+		dsi_wfld(link, DSI_VID_PCK_TIME, BLKEOL_DURATION,
+							blkeol_duration);
+		dsi_wfld(link, DSI_VID_VCA_SETTING1, MAX_BURST_LIMIT,
+							blkeol_pck - 6);
+		dsi_wfld(link, DSI_VID_VCA_SETTING2, EXACT_BURST_LIMIT,
+								blkeol_pck);
+	}
+	if (sync_is_pulse)
+		dsi_wfld(link, DSI_VID_VCA_SETTING2, MAX_LINE_LIMIT,
+							blkline_pck - 6);
+}
+
 void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 				struct mcde_port *port, enum mcde_fifo fifo,
 				struct mcde_video_mode *video_mode)
@@ -1699,8 +1968,11 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 			fidx * MCDE_DSIVID0CONF0_GROUPOFFSET,
 			(temp & ~MCDE_DSIVID0CONF0_PACKING_MASK) |
 			MCDE_DSIVID0CONF0_PACKING(regs->dsipacking));
-		/* 1==CMD8 */
-		packet = ((screen_ppl / pkt_div * regs->bpp) >> 3) + 1;
+		/* no extra command byte in video mode */
+		if (port->mode == MCDE_PORTMODE_CMD)
+			packet = ((screen_ppl / pkt_div * regs->bpp) >> 3) + 1;
+		else
+			packet = ((screen_ppl / pkt_div * regs->bpp) >> 3);
 		mcde_wreg(MCDE_DSIVID0FRAME +
 			fidx * MCDE_DSIVID0FRAME_GROUPOFFSET,
 			MCDE_DSIVID0FRAME_FRAME(packet * pkt_div * screen_lpf));
@@ -1721,6 +1993,10 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 			fidx * MCDE_DSIVID0DELAY1_GROUPOFFSET,
 			MCDE_DSIVID0DELAY1_TEREQDEL(0) |
 			MCDE_DSIVID0DELAY1_FRAMESTARTDEL(0));
+
+		if (port->mode == MCDE_PORTMODE_VID)
+			update_vid_frame_parameters(port, video_mode,
+								regs->bpp / 8);
 	} else if (port->type == MCDE_PORTTYPE_DPI &&
 						!port->phy.dpi.tv_mode) {
 		/* DPI LCD Mode */

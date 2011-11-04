@@ -122,7 +122,28 @@ static inline int mcde_display_try_video_mode_default(
 	struct mcde_display_device *ddev,
 	struct mcde_video_mode *video_mode)
 {
-	/* TODO Check if inside native_xres and native_yres */
+	/*
+	 * DSI video mode:
+	 * This function is intended for configuring supported video mode(s).
+	 * Overload it into the panel driver file and set up blanking
+	 * intervals and pixel clock according to below recommendations.
+	 *
+	 * vertical blanking parameters vbp, vfp, vsw are given in lines
+	 * horizontal blanking parameters hbp, hfp, hsw are given in pixels
+	 *
+	 * video_mode->pixclock is the time between two pixels (in picoseconds)
+	 * The source of the pixel clock is DSI PLL and it shall be set to
+	 * meet the requirement
+	 *
+	 * non-burst mode:
+	 * pixel clock (Hz) = (VACT+VBP+VFP+VSA) * (HACT+HBP+HFP+HSA) *
+	 *                    framerate * bpp / num_data_lanes
+	 *
+	 * burst mode:
+	 * pixel clock (Hz) > (VACT+VBP+VFP+VSA) * (HACT+HBP+HFP+HSA) *
+	 *                    framerate * bpp / num_data_lanes * 1.1
+	 * (1.1 is a 10% margin needed for burst mode calculations)
+	 */
 	return 0;
 }
 
