@@ -362,6 +362,15 @@ static void ux500_msp_dai_setup_clocking(unsigned int fmt,
 		msp_config->tx_clock_sel = 0;
 		msp_config->rx_clock_sel = 0;
 		msp_config->srg_clock_sel = 0x2 << SCKSEL_SHIFT;
+
+		msp_config->iodelay = 0x20;
+		msp_config->protocol_desc.tx_clock_pol = 1;
+		msp_config->tx_fifo_config =  1 << TFFEN_SHIFT;
+		msp_config->tx_frame_sync_pol = 1 << TFSPOL_SHIFT;
+		msp_config->protocol_desc.rx_clock_pol = 1;
+		msp_config->rx_fifo_config = 1 << RFFEN_SHIFT;
+		msp_config->rx_frame_sync_pol = 1 << RFSPOL_SHIFT;
+
 	} else {
 		pr_debug("%s: Codec is SLAVE.\n",
 			__func__);

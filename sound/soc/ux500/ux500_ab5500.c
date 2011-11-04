@@ -14,6 +14,8 @@
 
 #include <sound/soc.h>
 #include "../codecs/ab5500.h"
+#include "ux500_msp_dai.h"
+
 int ux500_ab5500_startup(struct snd_pcm_substream *substream)
 {
 	return 0;
@@ -44,14 +46,15 @@ int ux500_ab5500_hw_params(struct snd_pcm_substream *substream,
 	printk(KERN_DEBUG "%s: DAI-index (Platform): %d\n", __func__, cpu_dai->id);
 
 	ret = snd_soc_dai_set_fmt(codec_dai,
-		SND_SOC_DAIFMT_I2S |  SND_SOC_DAIFMT_CBS_CFS);
+		SND_SOC_DAIFMT_I2S |  SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0)
 		return ret;
 
 	ret = snd_soc_dai_set_fmt(cpu_dai,
-		SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS);
+		SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0)
 		return ret;
+	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);
 
 	return ret;
 }
