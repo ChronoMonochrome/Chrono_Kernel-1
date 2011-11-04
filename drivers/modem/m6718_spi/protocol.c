@@ -79,12 +79,12 @@ bool modem_protocol_channel_is_open(u8 channel)
 
 void modem_comms_timeout(unsigned long data)
 {
-	/* TODO: statemachine will be kicked here */
+	ipc_sm_kick(IPC_SM_RUN_COMMS_TMO, (struct ipc_link_context *)data);
 }
 
 void slave_stable_timeout(unsigned long data)
 {
-	/* TODO: statemachine will be kicked here */
+	ipc_sm_kick(IPC_SM_RUN_STABLE_TMO, (struct ipc_link_context *)data);
 }
 
 /**
@@ -150,7 +150,7 @@ int modem_m6718_spi_send(struct modem_spi_dev *modem_spi_dev, u8 channel,
 	if (ipc_util_link_is_idle(context)) {
 		dev_dbg(modem_spi_dev->dev,
 			"link %d is idle, kicking\n", channels[channel].link);
-		/* TODO: statemachine will be kicked here */
+		ipc_sm_kick(IPC_SM_RUN_TX_REQ, context);
 	} else {
 		dev_dbg(modem_spi_dev->dev,
 			"link %d is already running\n", channels[channel].link);
@@ -198,7 +198,8 @@ bool modem_protocol_is_busy(struct spi_device *sdev)
 
 static void spi_tfr_complete(void *context)
 {
-	/* TODO: statemachine will be kicked here */
+	ipc_sm_kick(IPC_SM_RUN_TFR_COMPLETE,
+		(struct ipc_link_context *)context);
 }
 
 static irqreturn_t slave_ready_irq(int irq, void *dev)
@@ -221,7 +222,7 @@ static irqreturn_t slave_ready_irq(int irq, void *dev)
 		return IRQ_HANDLED;
 	}
 #endif
-	/* TODO: statemachine will be kicked here */
+	ipc_sm_kick(IPC_SM_RUN_SLAVE_IRQ, context);
 	return IRQ_HANDLED;
 }
 
@@ -243,12 +244,14 @@ static int modem_state_callback(unsigned long unused)
 		 */
 		for (i = 0; i < IPC_NBR_SUPPORTED_SPI_LINKS; i++)
 			ipc_util_link_gpio_config(&contexts[i]);
-		/* TODO: statemachine will be kicked here */
+		ipc_sm_kick(IPC_SM_RUN_INIT, &contexts[0]);
 		break;
 	case MODEM_STATE_OFF:
 	case MODEM_STATE_RESET:
 	case MODEM_STATE_CRASH:
-		/* TODO: statemachine will be kicked here */
+		/* force all links to reset */
+		for (i = 0; i < IPC_NBR_SUPPORTED_SPI_LINKS; i++)
+			ipc_sm_kick(IPC_SM_RUN_RESET, &contexts[i]);
 		break;
 	default:
 		break;
@@ -307,6 +310,7 @@ int modem_protocol_probe(struct spi_device *sdev)
 	atomic_set(&context->state_int,
 		ipc_util_int_level_inactive(context));
 	spin_lock_init(&context->sm_lock);
+	context->state = ipc_sm_init_state(context);
 	ipc_util_spi_message_init(context, spi_tfr_complete);
 	init_timer(&context->comms_timer);
 	context->comms_timer.function = modem_comms_timeout;
@@ -333,7 +337,8 @@ int modem_protocol_probe(struct spi_device *sdev)
 	 * For link0 (the handshake link) we force a state transition now so
 	 * that it prepares for boot sync.
 	 */
-	/* TODO: statemachine will be kicked here */
+	if (link->id == 0)
+		ipc_sm_kick(IPC_SM_RUN_INIT, context);
 
 	/*
 	 * unlikely but possible: for links other than 0, check if handshake is
@@ -345,7 +350,7 @@ int modem_protocol_probe(struct spi_device *sdev)
 		dev_dbg(&sdev->dev,
 			"link %d: boot sync is done, kicking state machine\n",
 			link->id);
-		/* TODO: statemachine will be kicked here */
+		ipc_sm_kick(IPC_SM_RUN_INIT, context);
 	}
 	return 0;
 }

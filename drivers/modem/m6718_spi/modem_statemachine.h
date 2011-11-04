@@ -71,4 +71,11 @@ struct ipc_sm_state {
 	u8 events;
 };
 
+const struct ipc_sm_state *ipc_sm_idle_state(struct ipc_link_context *context);
+const struct ipc_sm_state *ipc_sm_init_state(struct ipc_link_context *context);
+const struct ipc_sm_state *ipc_sm_state(u8 id);
+bool ipc_sm_valid_for_state(u8 event, const struct ipc_sm_state *state);
+
+void ipc_sm_kick(u8 event, struct ipc_link_context *context);
+
 #endif /* _MODEM_STATEMACHINE_H_ */
