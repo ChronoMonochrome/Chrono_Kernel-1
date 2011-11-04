@@ -13,8 +13,14 @@
 #include <linux/spi/spi.h>
 #include <linux/modem/modem_client.h>
 #include <linux/modem/m6718_spi/modem_driver.h>
+#include <linux/modem/m6718_spi/modem_net.h>
 #include <linux/modem/m6718_spi/modem_char.h>
 #include "modem_protocol.h"
+
+#ifdef CONFIG_PHONET
+static void phonet_rcv_tasklet_func(unsigned long);
+static struct tasklet_struct phonet_rcv_tasklet;
+#endif
 
 static struct modem_spi_dev modem_driver_data = {
 	.dev = NULL,
@@ -37,6 +43,10 @@ static struct modem_spi_dev modem_driver_data = {
  *
  * Special handling is given to slave-loopback channels where the data is simply
  * sent back to the modem on the same channel.
+ *
+ * Special handling is given to the ISI channel when PHONET is enabled - the
+ * phonet tasklet is scheduled in order to pump the received data through the
+ * net device interface.
  */
 int modem_m6718_spi_receive(struct spi_device *sdev, u8 channel,
 	u32 len, void *data)
@@ -95,9 +105,36 @@ int modem_m6718_spi_receive(struct spi_device *sdev, u8 channel,
 		dev_err(&sdev->dev, "failed to queue frame!");
 		return ret;
 	}
+
+#ifdef CONFIG_PHONET
+	if (channel == MODEM_M6718_SPI_CHN_ISI &&
+		modem_driver_data.netdev_flag_up)
+		tasklet_schedule(&phonet_rcv_tasklet);
+#endif
 	return ret;
 }
 EXPORT_SYMBOL_GPL(modem_m6718_spi_receive);
+
+static void phonet_rcv_tasklet_func(unsigned long unused)
+{
+	ssize_t result;
+
+	dev_dbg(modem_driver_data.dev, "receiving frames for phonet\n");
+	/* continue receiving while there are frames in the queue */
+	for (;;) {
+		result = modem_net_receive(modem_driver_data.ndev);
+		if (result == 0) {
+			dev_dbg(modem_driver_data.dev,
+				"queue is empty, finished receiving\n");
+			break;
+		}
+		if (result < 0) {
+			dev_err(modem_driver_data.dev,
+				"failed to receive frame from queue!\n");
+			break;
+		}
+	}
+}
 
 static int spi_probe(struct spi_device *sdev)
 {
@@ -133,9 +170,22 @@ static int spi_probe(struct spi_device *sdev)
 				"failed to initialise char interface\n");
 			goto rollback_modem_get;
 		}
+
+		result = modem_net_init(&modem_driver_data);
+		if (result < 0) {
+			dev_err(&sdev->dev,
+				"failed to initialse net interface\n");
+			goto rollback_isa_init;
+		}
+
+#ifdef CONFIG_PHONET
+		tasklet_init(&phonet_rcv_tasklet, phonet_rcv_tasklet_func, 0);
+#endif
 	}
 	return result;
 
+rollback_isa_init:
+	modem_isa_exit(&modem_driver_data);
 rollback_modem_get:
 	modem_put(modem_driver_data.modem);
 rollback_protocol_init:
@@ -147,6 +197,7 @@ rollback:
 static int __exit spi_remove(struct spi_device *sdev)
 {
 	modem_protocol_exit();
+	modem_net_exit(&modem_driver_data);
 	modem_isa_exit(&modem_driver_data);
 	return 0;
 }
@@ -167,7 +218,7 @@ static int spi_suspend(struct spi_device *sdev, pm_message_t mesg)
 	busy = modem_protocol_is_busy(sdev);
 	dev_dbg(&sdev->dev, "suspend called, protocol busy:%d\n", busy);
 	if (!busy)
-		return 0;
+		return modem_net_suspend(modem_driver_data.ndev);
 	else
 		return -EBUSY;
 }
@@ -179,7 +230,7 @@ static int spi_suspend(struct spi_device *sdev, pm_message_t mesg)
 static int spi_resume(struct spi_device *sdev)
 {
 	dev_dbg(&sdev->dev, "resume called\n");
-	return 0;
+	return modem_net_resume(modem_driver_data.ndev);
 }
 #endif /* CONFIG_PM */
 
