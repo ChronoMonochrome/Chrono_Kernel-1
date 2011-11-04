@@ -25,8 +25,8 @@
 
 
 #define NAME "IPC_ISA"
-/* L2 header for ciq device is 0xc3 and hence 0xc3+1 = 196*/
-#define MAX_L2_HEADERS 196
+/* L2 header for rtc_calibration device is 0xC8 and hence 0xC8 + 1 = 201 */
+#define MAX_L2_HEADERS 201
 
 #define SIZE_OF_FIFO (512*1024)
 
@@ -35,6 +35,7 @@ static u8 message_fifo[ISA_DEVICES][SIZE_OF_FIFO];
 static u8 wr_rpc_msg[10*1024];
 static u8 wr_sec_msg[10*1024];
 static u8 wr_audio_msg[10*1024];
+static u8 wr_rtc_cal_msg[100];
 
 struct map_device {
 	u8 l2_header;
@@ -50,6 +51,7 @@ static struct map_device map_dev[] = {
 	{COMMON_LOOPBACK_MESSAGING, 4, "common_loopback"},
 	{AUDIO_LOOPBACK_MESSAGING, 5, "audio_loopback"},
 	{CIQ_MESSAGING, 6, "ciq"},
+	{RTC_CAL_MESSAGING, 7, "rtc_calibration"},
 };
 
 /*
@@ -488,6 +490,10 @@ ssize_t isa_write(struct file *filp, const char __user *buf,
 		dev_dbg(shrm->dev, "CIQ\n");
 		addr = isadev->addr;
 		break;
+	case RTC_CAL_MESSAGING:
+		dev_dbg(shrm->dev, "isa_write(): RTC Calibration\n");
+		addr = (void *)wr_rtc_cal_msg;
+		break;
 	default:
 		dev_dbg(shrm->dev, "Wrong device\n");
 		return -EFAULT;
@@ -612,6 +618,7 @@ static int isa_close(struct inode *inode, struct file *filp)
 	idx = shrm_get_cdev_index(m);
 	if (idx < 0) {
 		dev_err(shrm->dev, "failed to get index\n");
+		mutex_unlock(&isa_lock);
 		return idx;
 	}
 	dev_dbg(shrm->dev, "isa_close %d", m);
@@ -645,6 +652,9 @@ static int isa_close(struct inode *inode, struct file *filp)
 	case CIQ_MESSAGING:
 		kfree(isadev->addr);
 		dev_info(shrm->dev, "Close CIQ_MESSAGING Device\n");
+		break;
+	case RTC_CAL_MESSAGING:
+		dev_info(shrm->dev, "Close RTC_CAL_MESSAGING Device\n");
 		break;
 	default:
 		dev_info(shrm->dev, "No such device present\n");
@@ -693,7 +703,8 @@ static int isa_open(struct inode *inode, struct file *filp)
 				(m != COMMON_LOOPBACK_MESSAGING) &&
 				(m != AUDIO_MESSAGING) &&
 				(m != SECURITY_MESSAGING) &&
-				(m != CIQ_MESSAGING)) {
+				(m != CIQ_MESSAGING) &&
+				(m != RTC_CAL_MESSAGING)) {
 		dev_err(shrm->dev, "No such device present\n");
 		mutex_unlock(&isa_lock);
 		return -ENODEV;
@@ -701,6 +712,7 @@ static int isa_open(struct inode *inode, struct file *filp)
 	idx = shrm_get_cdev_index(m);
 	if (idx < 0) {
 		dev_err(shrm->dev, "failed to get index\n");
+		mutex_unlock(&isa_lock);
 		return idx;
 	}
 	if (!atomic_dec_and_test(&isa_context->is_open[idx])) {
@@ -746,6 +758,9 @@ static int isa_open(struct inode *inode, struct file *filp)
 			return -ENOMEM;
 		}
 		dev_info(shrm->dev, "Open CIQ_MESSAGING Device\n");
+		break;
+	case RTC_CAL_MESSAGING:
+		dev_info(shrm->dev, "Open RTC_CAL_MESSAGING Device\n");
 		break;
 	};
 

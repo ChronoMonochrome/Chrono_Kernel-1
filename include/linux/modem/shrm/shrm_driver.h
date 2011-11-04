@@ -25,7 +25,7 @@
 #include <linux/cdev.h>
 #include <linux/kthread.h>
 
-#define ISA_DEVICES 7
+#define ISA_DEVICES 8
 
 #define BOOT_INIT  (0)
 #define BOOT_INFO_SYNC  (1)
