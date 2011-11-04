@@ -1592,6 +1592,12 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 				src_synch =
 				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
 				break;
+			case MCDE_SYNCSRC_FORMATTER:
+				out_synch_src =
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
+				src_synch =
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
+				break;
 			}
 		} else {
 			if (port->sync_src == MCDE_SYNCSRC_TE0) {

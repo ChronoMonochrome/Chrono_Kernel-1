@@ -46,6 +46,7 @@ enum mcde_sync_src {
 	MCDE_SYNCSRC_TE1 = 2, /* MCDE ext TE1 */
 	MCDE_SYNCSRC_BTA = 3, /* DSI BTA */
 	MCDE_SYNCSRC_TE_POLLING = 4, /* DSI TE_POLLING */
+	MCDE_SYNCSRC_FORMATTER = 5, /* Sync from formatter */
 };
 
 /* Interface pixel formats (output) */
