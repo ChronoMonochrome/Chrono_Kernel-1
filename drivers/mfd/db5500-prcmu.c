@@ -1644,8 +1644,10 @@ static bool read_mailbox_0(void)
 		ev &= mb0_transfer.req.dbb_irqs;
 
 		for (n = 0; n < NUM_DB5500_PRCMU_WAKEUPS; n++) {
-			if (ev & prcmu_irq_bit[n])
-				generic_handle_irq(IRQ_DB5500_PRCMU_BASE + n);
+			if (ev & prcmu_irq_bit[n]) {
+				if (n != IRQ_INDEX(ABB))
+					generic_handle_irq(IRQ_DB5500_PRCMU_BASE + n);
+			}
 		}
 		r = true;
 		break;
@@ -1837,7 +1839,24 @@ static irqreturn_t prcmu_irq_handler(int irq, void *data)
 
 static irqreturn_t prcmu_irq_thread_fn(int irq, void *data)
 {
+	u32 ev;
+
+	/*
+	 * ABB needs to be handled before the wakeup because
+	 * the ping/pong buffers for ABB events could change
+	 * after we acknowledge the wakeup.
+	 */
+	if (readb(PRCM_ACK_MB0_READ_POINTER) & 1)
+		ev = readl(PRCM_ACK_MB0_WAKEUP_1_DBB);
+	else
+		ev = readl(PRCM_ACK_MB0_WAKEUP_0_DBB);
+
+	ev &= mb0_transfer.req.dbb_irqs;
+	if (ev & WAKEUP_BIT_ABB)
+		handle_nested_irq(IRQ_DB5500_PRCMU_ABB);
+
 	ack_dbb_wakeup();
+
 	return IRQ_HANDLED;
 }
 
@@ -1933,6 +1952,8 @@ void __init db5500_prcmu_early_init(void)
 		irq = IRQ_DB5500_PRCMU_BASE + i;
 		irq_set_chip_and_handler(irq, &prcmu_irq_chip,
 					 handle_simple_irq);
+		if (irq == IRQ_DB5500_PRCMU_ABB)
+			irq_set_nested_thread(irq, true);
 		set_irq_flags(irq, IRQF_VALID);
 	}
 	prcmu_ape_clocks_init();
