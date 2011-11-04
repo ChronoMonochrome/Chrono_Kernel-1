@@ -267,6 +267,13 @@ static int ux500_pd_amba_runtime_suspend(struct device *dev)
 	dev_vdbg(dev, "%s()\n", __func__);
 
 	/*
+	 * Do this first, to make sure pins is not in undefined state after
+	 * drivers has run their runtime suspend. This also means that drivers
+	 * are not able to use their pins/regulators during runtime suspend.
+	 */
+	ux500_pd_disable(prd);
+
+	/*
 	 * Do not bypass AMBA bus pm functions by calling generic
 	 * pm directly. A future fix could be to implement a
 	 * "pm_bus_generic_*" API which we can use instead.
@@ -279,8 +286,8 @@ static int ux500_pd_amba_runtime_suspend(struct device *dev)
 	else
 		ret = pm_generic_runtime_suspend(dev);
 
-	if (!ret)
-		ux500_pd_disable(prd);
+	if (ret)
+		ux500_pd_enable(prd);
 
 	return ret;
 }
@@ -292,8 +299,6 @@ static int ux500_pd_amba_runtime_resume(struct device *dev)
 	int ret;
 
 	dev_vdbg(dev, "%s()\n", __func__);
-
-	ux500_pd_enable(prd);
 
 	/*
 	 * Do not bypass AMBA bus pm functions by calling generic
@@ -307,6 +312,15 @@ static int ux500_pd_amba_runtime_resume(struct device *dev)
 		ret = callback(dev);
 	else
 		ret = pm_generic_runtime_resume(dev);
+
+	/*
+	 * Restore pins/regulator after drivers has runtime resumed, due
+	 * to that we must not have pins in undefined state. This also means
+	 * that drivers are not able to use their pins/regulators during
+	 * runtime resume.
+	 */
+	if (!ret)
+		ux500_pd_enable(prd);
 
 	return ret;
 }
