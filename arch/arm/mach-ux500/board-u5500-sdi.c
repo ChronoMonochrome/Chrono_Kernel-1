@@ -73,6 +73,7 @@ static int u5500_sdi1_ios_handler(struct device *dev, struct mmc_ios *ios)
 
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
+		break;
 	case MMC_POWER_ON:
 		/*
 		 * Level shifter voltage should depend on vdd to when deciding
