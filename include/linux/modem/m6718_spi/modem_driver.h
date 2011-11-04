@@ -128,8 +128,38 @@ struct modem_spi_dev {
 	bool msr_flag;
 };
 
-/* function exported for L1 to call with received frames */
+/**
+ * struct modem_m6718_spi_link_gpio - gpio configuration for an IPC link
+ * @ss_pin:	pins to use for slave-select
+ * @ss_active:	active level for slave-select pin
+ * @int_pin:	pin to use for slave-int (ready)
+ * @int_active:	active level for slave-int
+ */
+struct modem_m6718_spi_link_gpio {
+	int ss_pin;
+	int ss_active;
+	int int_pin;
+	int int_active;
+};
+
+/**
+ * struct modem_m6718_spi_link_platform_data - IPC link data
+ * @id:		link id
+ * @gpio:	link gpio configuration
+ * @name:	link name (to appear in debugfs)
+ */
+struct modem_m6718_spi_link_platform_data {
+	int id;
+	struct modem_m6718_spi_link_gpio gpio;
+#ifdef CONFIG_DEBUG_FS
+	const char *name;
+#endif
+};
+
 int modem_m6718_spi_receive(struct spi_device *sdev, u8 channel,
 	u32 len, void *data);
+int modem_m6718_spi_send(struct modem_spi_dev *modem_spi_dev, u8 channel,
+	u32 len, void *data);
+bool modem_m6718_spi_is_boot_done(void);
 
 #endif /* _MODEM_DRIVER_H_ */

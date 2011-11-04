@@ -13,7 +13,6 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/wait.h>
-#include <linux/modem/m6718_spi/modem_state.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/ioport.h>
@@ -30,6 +29,7 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include "modem_state.h"
 
 /*
  * To enable this driver add a struct platform_device in the board

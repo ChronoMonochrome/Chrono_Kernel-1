@@ -13,6 +13,7 @@
 #include <linux/spi/spi.h>
 #include <linux/modem/modem_client.h>
 #include <linux/modem/m6718_spi/modem_driver.h>
+#include "modem_protocol.h"
 
 static struct modem_spi_dev modem_driver_data = {
 	.dev = NULL,
@@ -53,6 +54,13 @@ static int spi_probe(struct spi_device *sdev)
 
 	spi_set_drvdata(sdev, &modem_driver_data);
 
+	if (modem_protocol_probe(sdev) != 0) {
+		dev_err(&sdev->dev,
+			"failed to initialise link protocol\n");
+		result = -ENODEV;
+		goto rollback;
+	}
+
 	/*
 	 * Since we can have multiple spi links for the same modem, only
 	 * initialise the modem data and char/net interfaces once.
@@ -65,13 +73,20 @@ static int spi_probe(struct spi_device *sdev)
 			dev_err(&sdev->dev,
 				"failed to retrieve modem description\n");
 			result = -ENODEV;
+			goto rollback_protocol_init;
 		}
 	}
+	return result;
+
+rollback_protocol_init:
+	modem_protocol_exit();
+rollback:
 	return result;
 }
 
 static int __exit spi_remove(struct spi_device *sdev)
 {
+	modem_protocol_exit();
 	return 0;
 }
 
@@ -86,8 +101,14 @@ static int __exit spi_remove(struct spi_device *sdev)
  */
 static int spi_suspend(struct spi_device *sdev, pm_message_t mesg)
 {
-	dev_dbg(&sdev->dev, "suspend called\n");
-	return 0;
+	bool busy;
+
+	busy = modem_protocol_is_busy(sdev);
+	dev_dbg(&sdev->dev, "suspend called, protocol busy:%d\n", busy);
+	if (!busy)
+		return 0;
+	else
+		return -EBUSY;
 }
 
 /**
@@ -118,6 +139,7 @@ static struct spi_driver spi_driver = {
 static int __init m6718_spi_driver_init(void)
 {
 	pr_info("M6718 modem driver initialising\n");
+	modem_protocol_init();
 	return spi_register_driver(&spi_driver);
 }
 module_init(m6718_spi_driver_init);

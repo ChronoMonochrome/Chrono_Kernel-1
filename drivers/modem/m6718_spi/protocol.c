@@ -1,0 +1,287 @@
+/*
+ * Copyright (C) ST-Ericsson SA 2010,2011
+ *
+ * Author: Chris Blair <chris.blair@stericsson.com> for ST-Ericsson
+ *
+ * License terms: GNU General Public License (GPL) version 2
+ *
+ * U9500 <-> M6718 IPC protocol implementation using SPI.
+ */
+#include <linux/modem/m6718_spi/modem_driver.h>
+#include "modem_protocol.h"
+#include "modem_private.h"
+
+#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
+#include <linux/workqueue.h>
+#include "modem_state.h"
+
+#define MODEM_STATE_REGISTER_TMO_MS  (500)
+#endif
+
+#ifdef WORKAROUND_DUPLICATED_IRQ
+#include <linux/amba/pl022.h>
+#endif
+
+struct l2mux_channel {
+	u8 open:1;
+	u8 link:7;
+};
+
+/* valid open L2 mux channels */
+static const struct l2mux_channel channels[255] = {
+	[MODEM_M6718_SPI_CHN_ISI] = {
+		.open = true,
+		.link = IPC_LINK_COMMON
+	},
+	[MODEM_M6718_SPI_CHN_AUDIO] = {
+		.open = true,
+		.link = IPC_LINK_AUDIO
+	},
+	[MODEM_M6718_SPI_CHN_MASTER_LOOPBACK0] = {
+		.open = true,
+		.link = IPC_LINK_COMMON
+	},
+	[MODEM_M6718_SPI_CHN_SLAVE_LOOPBACK0] = {
+		.open = true,
+		.link = IPC_LINK_COMMON
+	},
+	[MODEM_M6718_SPI_CHN_MASTER_LOOPBACK1] = {
+		.open = true,
+		.link = IPC_LINK_AUDIO
+	},
+	[MODEM_M6718_SPI_CHN_SLAVE_LOOPBACK1] = {
+		.open = true,
+		.link = IPC_LINK_AUDIO
+	}
+};
+
+#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
+static void modem_state_reg_wq(struct work_struct *work);
+static DECLARE_DELAYED_WORK(modem_state_reg_work, modem_state_reg_wq);
+#endif
+
+/* the spi driver context */
+struct ipc_l1_context l1_context = {
+#ifdef CONFIG_DEBUG_FS
+	.msr_disable = false,
+#endif
+	.init_done = false
+};
+
+bool modem_protocol_channel_is_open(u8 channel)
+{
+	return channels[channel].open;
+}
+
+void modem_comms_timeout(unsigned long data)
+{
+	/* TODO: statemachine will be kicked here */
+}
+
+void slave_stable_timeout(unsigned long data)
+{
+	/* TODO: statemachine will be kicked here */
+}
+
+/**
+ * modem_protocol_init() - initialise the IPC protocol
+ *
+ * Initialises the IPC protocol in preparation for use. After this is called
+ * the protocol is ready to be probed for each link to be supported.
+ */
+void modem_protocol_init(void)
+{
+	pr_info("M6718 IPC protocol initialising version %02x\n",
+		IPC_DRIVER_VERSION);
+
+	atomic_set(&l1_context.boot_sync_done, 0);
+	l1_context.init_done = true;
+#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
+	schedule_delayed_work(&modem_state_reg_work, 0);
+#endif
+}
+
+/**
+ * modem_m6718_spi_send() - send a frame using the IPC protocol
+ * @modem_spi_dev: pointer to modem driver information structure
+ * @channel:       L2 channel to send on
+ * @len:           length of data to send
+ * @data:          pointer to buffer containing data
+ *
+ * Check that the requested channel is supported and open, queue a frame
+ * containing the data on the appropriate link and ensure the state machine
+ * is running to start the transfer.
+ */
+int modem_m6718_spi_send(struct modem_spi_dev *modem_spi_dev, u8 channel,
+	u32 len, void *data)
+{
+	struct ipc_link_context *context;
+
+	if (!channels[channel].open) {
+		dev_err(modem_spi_dev->dev,
+			"error: invalid channel (%d), discarding frame\n",
+			channel);
+		return -EINVAL;
+	}
+
+	context = &l1_context.device_context[channels[channel].link];
+	if (context->state == NULL || context->state->id == IPC_SM_HALT) {
+		static unsigned long linkfail_warn_time;
+		if (printk_timed_ratelimit(&linkfail_warn_time, 60 * 1000))
+			dev_err(modem_spi_dev->dev,
+				"error: link %d for ch %d is not available, "
+				"discarding frames\n",
+				channels[channel].link, channel);
+		return -ENODEV;
+	}
+
+	/* TODO: statemachine will be kicked here */
+	return 0;
+}
+EXPORT_SYMBOL_GPL(modem_m6718_spi_send);
+
+/**
+ * modem_m6718_spi_is_boot_done() - check if boot handshake with modem is done
+ */
+bool modem_m6718_spi_is_boot_done(void)
+{
+	return atomic_read(&l1_context.boot_sync_done);
+}
+EXPORT_SYMBOL_GPL(modem_m6718_spi_is_boot_done);
+
+/**
+ * modem_protocol_is_busy() - check if the protocol is currently active
+ * @sdev: pointer to spi_device for link to check
+ *
+ * Checks each of the IPC links to see if they are inactive: this means they
+ * can be in either IDLE or INIT states. If any of the links are not idle then
+ * true is returned to indicate that the protocol is busy.
+ */
+bool modem_protocol_is_busy(struct spi_device *sdev)
+{
+	int i;
+
+	for (i = 0; i < IPC_NBR_SUPPORTED_SPI_LINKS; i++)
+		switch (l1_context.device_context[i].state->id) {
+		case IPC_SM_IDL:
+		case IPC_SM_IDL_AUD:
+		case IPC_SM_INIT:
+		case IPC_SM_INIT_AUD:
+		case IPC_SM_WAIT_SLAVE_STABLE:
+			/* not busy; continue checking */
+			break;
+		default:
+			dev_info(&sdev->dev, "link %d is busy\n", i);
+			return true;
+		}
+	return false;
+}
+
+#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
+static int modem_state_callback(unsigned long unused)
+{
+	int modem_state = modem_state_get_state();
+
+	pr_info("M6718 IPC protocol modemstate reports modem is %s\n",
+		modem_state_to_str(modem_state));
+
+	switch (modem_state) {
+	case MODEM_STATE_ON:
+		/* TODO: statemachine will be kicked here */
+		break;
+	case MODEM_STATE_OFF:
+	case MODEM_STATE_RESET:
+	case MODEM_STATE_CRASH:
+		/* TODO: statemachine will be kicked here */
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+static void modem_state_reg_wq(struct work_struct *work)
+{
+	if (modem_state_register_callback(modem_state_callback, 0) == -EAGAIN) {
+		pr_info("M6718 IPC protocol failed to register with "
+			"modemstate, will retry\n");
+		schedule_delayed_work(&modem_state_reg_work,
+			(MODEM_STATE_REGISTER_TMO_MS * HZ) / 1000);
+	} else {
+		pr_info("M6718 IPC protocol registered with modemstate\n");
+	}
+}
+#endif
+
+int modem_protocol_probe(struct spi_device *sdev)
+{
+	struct modem_m6718_spi_link_platform_data *link =
+		sdev->dev.platform_data;
+	struct ipc_link_context *context;
+	int link_id;
+
+	if (link == NULL) {
+		/* platform data missing in board config? */
+		dev_err(&sdev->dev, "error: no platform data for link!\n");
+		return -ENODEV;
+	}
+
+	link_id = link->id;
+	context = &l1_context.device_context[link_id];
+
+	if (link_id >= IPC_NBR_SUPPORTED_SPI_LINKS) {
+		dev_err(&sdev->dev,
+			"link %d error: too many links! (max %d)\n",
+			link->id, IPC_NBR_SUPPORTED_SPI_LINKS);
+		return -ENODEV;
+	}
+
+	dev_info(&sdev->dev,
+		"link %d: registering SPI link bus:%d cs:%d\n",
+		link->id, sdev->master->bus_num, sdev->chip_select);
+
+	/* update spi device with correct word size for our device */
+	sdev->bits_per_word = 16;
+	spi_setup(sdev);
+
+	/* init link context */
+	context->link = link;
+	context->sdev = sdev;
+	atomic_set(&context->gpio_configured, 0);
+	spin_lock_init(&context->sm_lock);
+	init_timer(&context->comms_timer);
+	context->comms_timer.function = modem_comms_timeout;
+	context->comms_timer.data = (unsigned long)context;
+	init_timer(&context->slave_stable_timer);
+	context->slave_stable_timer.function = slave_stable_timeout;
+	context->slave_stable_timer.data = (unsigned long)context;
+
+#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_VERIFY_FRAMES
+	context->last_frame = NULL;
+#endif
+
+	/*
+	 * For link0 (the handshake link) we force a state transition now so
+	 * that it prepares for boot sync.
+	 */
+	/* TODO: statemachine will be kicked here */
+
+	/*
+	 * unlikely but possible: for links other than 0, check if handshake is
+	 * already complete by the time this link is probed - if so we force a
+	 * state transition since the one issued by the handshake exit actions
+	 * will have been ignored.
+	 */
+	if (link->id > 0 && atomic_read(&l1_context.boot_sync_done)) {
+		dev_dbg(&sdev->dev,
+			"link %d: boot sync is done, kicking state machine\n",
+			link->id);
+		/* TODO: statemachine will be kicked here */
+	}
+	return 0;
+}
+
+void modem_protocol_exit(void)
+{
+	pr_info("M6718 IPC protocol exit\n");
+}
