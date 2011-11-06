@@ -1465,30 +1465,6 @@ static struct ab8500_force_reg ab8500_force_reg[] = {
 	},
 	{
 		/*
-		 * ReguSysClkReq1HPValid2
-		 * OTP: 0x03, HSI: 0x40, suspend: 0x60/0x70 (value/mask)
-		 * [  5] VextSupply2SysClkReq1HPValid = Vext2 set by SysClkReq1
-		 */
-		.name = "ReguSysClkReq1HPValid2",
-		.bank = 0x03,
-		.addr = 0x08,
-		.mask = 0x20, /* test and compare with 0x7f */
-		.val  = 0x20,
-	},
-	{
-		/*
-		 * ReguRequestCtrl3
-		 * OTP: 0x00, HSI: 0x00, suspend: 0x05/0x0f (value/mask)
-		 * [1:0] VExtSupply2RequestCtrl[1:0] = VExt2 set in HP/OFF mode
-		 */
-		.name = "ReguRequestCtrl3",
-		.bank = 0x03,
-		.addr = 0x05,
-		.mask = 0x03, /* test and compare with 0xff */
-		.val  = 0x01,
-	},
-	{
-		/*
 		 * VsimSysClkCtrl
 		 * OTP: 0x01, HSI: 0x21, suspend: 0x01/0xff (value/mask)
 		 * [  7] VsimSysClkReq8Valid = no connection
@@ -1520,18 +1496,6 @@ static struct ab8500_force_reg ab8500_force_reg[] = {
 		.addr = 0x0b,
 		.mask = 0x0f,
 		.val  = 0x00,
-	},
-	{
-		/*
-		 * ExtSupplyRegu (HSI: 0x2a on v2-v40?)
-		 * OTP: 0x15, HSI: 0x28, suspend: 0x28/0x3f (value/mask)
-		 * [3:2] VExtSupply2Regu[1:0] = 10 = Vext2 in HW control
-		 */
-		.name = "ExtSupplyRegu",
-		.bank = 0x04,
-		.addr = 0x08,
-		.mask = 0x0c,
-		.val  = 0x08,
 	},
 	{
 		/*
@@ -1720,7 +1684,7 @@ static struct dentry *ab8500_regulator_suspend_force_file;
 static int __devinit ab8500_regulator_debug_probe(struct platform_device *plf)
 {
 	void __iomem *boot_info_backupram;
-	int ret, i;
+	int ret;
 
 	/* setup dev pointers */
 	dev = &plf->dev;
@@ -1730,24 +1694,6 @@ static int __devinit ab8500_regulator_debug_probe(struct platform_device *plf)
 	ret = ab8500_regulator_record_state(AB8500_REGULATOR_STATE_INIT);
 	if (ret < 0)
 		dev_err(&plf->dev, "Failed to record init state.\n");
-
-	/* remove force of external regulators if AB8500 3.0 and DB8500 v2.2 */
-	if ((abx500_get_chip_id(&pdev->dev) >= 0x30) && cpu_is_u8500v22()) {
-		/*
-		 * find ExtSupplyRegu register (bank 0x04, addr 0x08)
-		 * and update value (Vext2 off).
-		 */
-		for (i = 0; i < ARRAY_SIZE(ab8500_force_reg); i++) {
-			if (ab8500_force_reg[i].bank == 0x04 &&
-			    ab8500_force_reg[i].addr == 0x08) {
-				u8 val, val_mask = 0x0c;
-
-				val = ab8500_force_reg[i].val;
-				val = (val & ~val_mask) | (0x00 & val_mask);
-				ab8500_force_reg[i].val = val;
-			}
-		}
-	}
 
 	/* make suspend-force default if board profile is v5x-power */
 	boot_info_backupram = ioremap(BOOT_INFO_BACKUPRAM1, 0x4);

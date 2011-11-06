@@ -339,12 +339,12 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
 	INIT_REGULATOR_REGISTER(AB8500_VREFDDR,                0x03, 0x00),
 	/*
 	 * VextSupply1Regu          = force LP
-	 * VextSupply2Regu          = HW control
+	 * VextSupply2Regu          = force OFF
 	 * VextSupply3Regu          = force HP (-> STBB2=LP and TPS=LP)
 	 * ExtSupply2Bypass         = ExtSupply12LPn ball is 0 when Ena is 0
 	 * ExtSupply3Bypass         = ExtSupply3LPn ball is 0 when Ena is 0
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU,          0xff, 0x1b),
+	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU,          0xff, 0x13),
 	/*
 	 * Vaux1Regu                = force HP
 	 * Vaux2Regu                = force off
@@ -546,6 +546,11 @@ static struct regulator_consumer_supply ab8500_ext_supply3_consumers[] = {
 	REGULATOR_SUPPLY("vinvsim", "sim-detect.0"),
 };
 
+/* extended configuration for VextSupply2, only used for HREFP_V20 boards */
+static struct ab8500_ext_regulator_cfg ab8500_ext_supply2 = {
+	.hwreq = true,
+};
+
 /*
  * AB8500 external regulators
  */
@@ -559,6 +564,14 @@ static struct regulator_init_data ab8500_ext_regulators[] = {
 			.initial_mode = REGULATOR_MODE_IDLE,
 			.boot_on = 1,
 			.always_on = 1,
+		},
+	},
+	/* fixed Vbat supplies VSMPS2_EXT_1V36 and VSMPS5_EXT_1V15 */
+	[AB8500_EXT_SUPPLY2] = {
+		.constraints = {
+			.name = "ab8500-ext-supply2",
+			.min_uV = 1360000,
+			.max_uV = 1360000,
 		},
 	},
 	/* fixed Vbat supplies VSMPS3_EXT_3V4 and VSMPS4_EXT_3V4 */
@@ -585,6 +598,24 @@ struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
 	.num_ext_regulator      = ARRAY_SIZE(ab8500_ext_regulators),
 };
 
+static void ab8500_modify_reg_init(int id, u8 mask, u8 value)
+{
+	int i;
+
+	for (i = ARRAY_SIZE(ab8500_reg_init) - 1; i >= 0; i--) {
+		if (ab8500_reg_init[i].id == id) {
+			u8 initval = ab8500_reg_init[i].value;
+			initval = (initval & ~mask) | (value & mask);
+			ab8500_reg_init[i].value = initval;
+
+			BUG_ON(mask & ~ab8500_reg_init[i].mask);
+			return;
+		}
+	}
+
+	BUG_ON(1);
+}
+
 void mop500_regulator_init(void)
 {
 	struct regulator_init_data *regulator;
@@ -598,5 +629,33 @@ void mop500_regulator_init(void)
 		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY1];
 		regulator->constraints.state_mem.disabled = 1;
 		regulator->constraints.state_standby.disabled = 1;
+	}
+
+	/*
+	 * Handle AB8500_EXT_SUPPLY2 on HREFP_V20_V50 boards (do it for
+	 * all HREFP_V20 boards)
+	 */
+	if (cpu_is_u8500v20()) {
+		/* VextSupply2RequestCtrl =  HP/OFF depending on VxRequest */
+		ab8500_modify_reg_init(AB8500_REGUREQUESTCTRL3, 0x01, 0x01);
+
+		/* VextSupply2SysClkReq1HPValid = SysClkReq1 controlled */
+		ab8500_modify_reg_init(AB8500_REGUSYSCLKREQ1HPVALID2,
+			0x20, 0x20);
+
+		/* VextSupply2 = force HP at initialization */
+		ab8500_modify_reg_init(AB8500_EXTSUPPLYREGU, 0x0c, 0x04);
+
+		/* enable VextSupply2 during platform active */
+		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
+		regulator->constraints.always_on = 1;
+
+		/* disable VextSupply2 in suspend */
+		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
+		regulator->constraints.state_mem.disabled = 1;
+		regulator->constraints.state_standby.disabled = 1;
+
+		/* enable VextSupply2 HW control (used in suspend) */
+		regulator->driver_data = (void *)&ab8500_ext_supply2;
 	}
 }

@@ -163,6 +163,7 @@ struct ab8500_ext_regulator_cfg {
 
 enum ab8500_ext_regulator_id {
 	AB8500_EXT_SUPPLY1,
+	AB8500_EXT_SUPPLY2,
 	AB8500_EXT_SUPPLY3,
 	AB8500_NUM_EXT_REGULATORS,
 };
