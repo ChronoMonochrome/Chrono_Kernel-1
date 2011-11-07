@@ -29,3 +29,5 @@ config MODEM_M6718
 	 Add support for the modem access driver for the M6718 modem.
 
 	 If unsure, say N.
+
+source "drivers/modem/m6718_spi/Kconfig"
