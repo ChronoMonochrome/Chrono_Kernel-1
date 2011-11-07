@@ -539,6 +539,11 @@ static int prcmu_qos_ddr_power_open(struct inode *inode, struct file *filp)
 	return prcmu_qos_power_open(inode, filp, PRCMU_QOS_DDR_OPP);
 }
 
+static int prcmu_qos_arm_power_open(struct inode *inode, struct file *filp)
+{
+	return prcmu_qos_power_open(inode, filp, PRCMU_QOS_ARM_OPP);
+}
+
 static int prcmu_qos_power_release(struct inode *inode, struct file *filp)
 {
 	int prcmu_qos_class;
@@ -580,6 +585,12 @@ static const struct file_operations prcmu_qos_ape_power_fops = {
 static const struct file_operations prcmu_qos_ddr_power_fops = {
 	.write = prcmu_qos_power_write,
 	.open = prcmu_qos_ddr_power_open,
+	.release = prcmu_qos_power_release,
+};
+
+static const struct file_operations prcmu_qos_arm_power_fops = {
+	.write = prcmu_qos_power_write,
+	.open = prcmu_qos_arm_power_open,
 	.release = prcmu_qos_power_release,
 };
 
@@ -683,6 +694,12 @@ static int __init prcmu_qos_power_init(void)
 	ret = register_prcmu_qos_misc(&ddr_opp_qos, &prcmu_qos_ddr_power_fops);
 	if (ret < 0) {
 		pr_err("prcmu ddr qos: setup failed\n");
+		return ret;
+	}
+
+	ret = register_prcmu_qos_misc(&arm_opp_qos, &prcmu_qos_arm_power_fops);
+	if (ret < 0) {
+		pr_err("prcmu arm qos: setup failed\n");
 		return ret;
 	}
 
