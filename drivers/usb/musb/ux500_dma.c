@@ -32,6 +32,11 @@
 #include <linux/pfn.h>
 #include <mach/usb.h>
 #include "musb_core.h"
+#undef DBG
+#undef WARNING
+#undef INFO
+#include <linux/usb/composite.h>
+#define U8500_USB_DMA_MIN_TRANSFER_SIZE	512
 
 struct ux500_dma_channel {
 	struct dma_channel channel;
@@ -205,13 +210,44 @@ static void ux500_dma_channel_release(struct dma_channel *channel)
 static int ux500_dma_is_compatible(struct dma_channel *channel,
 		u16 maxpacket, void *buf, u32 length)
 {
-	if ((maxpacket & 0x3)		||
-		((int)buf & 0x3)	||
-		(length < 512)		||
-		(length & 0x3))
-		return false;
-	else
-		return true;
+	struct ux500_dma_channel *ux500_channel = channel->private_data;
+	struct musb_hw_ep       *hw_ep = ux500_channel->hw_ep;
+	struct musb *musb = hw_ep->musb;
+	struct usb_descriptor_header **descriptors;
+	struct usb_function		*f;
+	struct usb_gadget		*gadget = &musb->g;
+	struct usb_composite_dev	*cdev = get_gadget_data(gadget);
+
+	if (length < U8500_USB_DMA_MIN_TRANSFER_SIZE)
+		return 0;
+
+	list_for_each_entry(f, &cdev->config->functions, list) {
+		if (!strcmp(f->name, "cdc_ethernet") ||
+			!strcmp(f->name, "rndis") ||
+			!strcmp(f->name, "phonet") ||
+			!strcmp(f->name, "adb")) {
+			if (gadget->speed == USB_SPEED_HIGH)
+				descriptors = f->hs_descriptors;
+			else
+				descriptors = f->descriptors;
+
+			for (; *descriptors; ++descriptors) {
+				struct usb_endpoint_descriptor *ep;
+
+				if ((*descriptors)->bDescriptorType !=
+					USB_DT_ENDPOINT)
+					continue;
+
+				ep = (struct usb_endpoint_descriptor *)
+					*descriptors;
+				if (ep->bEndpointAddress ==
+					ux500_channel->hw_ep->epnum)
+					return 0;
+			}
+		}
+	}
+
+	return 1;
 }
 
 /**
