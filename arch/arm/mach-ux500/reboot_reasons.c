@@ -34,9 +34,15 @@ u16 reboot_reason_code(const char *cmd)
 {
 	int i;
 
-	if (cmd == NULL)
-		/* normal reboot w/o argument */
-		return SW_RESET_NO_ARGUMENT;
+	if (cmd == NULL) {
+		if (oops_in_progress) {
+			/* if we're in an oops assume it's a crash */
+			return SW_RESET_CRASH;
+		} else {
+			/* normal reboot w/o argument */
+			return SW_RESET_NO_ARGUMENT;
+		}
+	}
 
 	/* Search through reboot reason list */
 	for (i = 0; i < reboot_reasons_size; i++) {
