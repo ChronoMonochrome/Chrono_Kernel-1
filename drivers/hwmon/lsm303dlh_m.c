@@ -130,6 +130,9 @@
 #define DEVICE_ON 1
 #define DEVICE_SUSPENDED 2
 
+/* device CHIP ID defines */
+#define LSM303DLHC_CHIP_ID 51
+
 /**
  * struct lsm303dlh_m_data - data structure used by lsm303dlh_m driver
  * @client: i2c client
@@ -334,16 +337,16 @@ static int lsm303dlh_m_xyz_read(struct lsm303dlh_m_data *ddata)
 	ddata->data[2] = (short)
 		(((xyz_data[4]) << 8) | xyz_data[5]);
 
-#ifdef SENSORS_LSM303DLHC
-	/*
-	 * the out registers are in x, z and y order
-	 * so swap y and z values
-	 */
-	temp = ddata->data[1];
-	ddata->data[1] = ddata->data[2];
-	ddata->data[2] = temp;
-#endif
-
+	/* check if chip is DHLC */
+	if (ddata->pdata.chip_id == LSM303DLHC_CHIP_ID) {
+		/*
+		 * the out registers are in x, z and y order
+		 * so swap y and z values
+		 */
+		temp = ddata->data[1];
+		ddata->data[1] = ddata->data[2];
+		ddata->data[2] = temp;
+	}
 	/* taking orientation of x,y,z axis into account*/
 
 	ddata->data[ddata->pdata.axis_map_x] = ddata->pdata.negative_x ?

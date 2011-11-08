@@ -42,6 +42,7 @@
  * @negative_x: x axis is orientation, 0 or 1
  * @negative_y: y axis is orientation, 0 or 1
  * @negative_z: z axis is orientation, 0 or 1
+ * @chip_id: to store ID of the LSM chip
  */
 struct lsm303dlh_platform_data {
 	const char *name_a;
@@ -55,6 +56,7 @@ struct lsm303dlh_platform_data {
 	u8  negative_x;
 	u8  negative_y;
 	u8  negative_z;
+	u32 chip_id;
 };
 #endif /* __KERNEL__ */
 
