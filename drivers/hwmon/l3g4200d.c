@@ -30,6 +30,7 @@
 #define CTRL_REG3				0x22    /* CTRL_REG3 */
 #define CTRL_REG4				0x23    /* CTRL_REG4 */
 #define CTRL_REG5				0x24    /* CTRL_REG5 */
+#define OUT_TEMP				0x26    /* OUT_TEMP */
 
 #define AXISDATA_REG			0x28
 
@@ -401,6 +402,24 @@ static ssize_t l3g4200d_store_powermode(struct device *dev,
 	return count;
 }
 
+static ssize_t l3g4200d_show_gyrotemp(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct l3g4200d_data *ddata = platform_get_drvdata(pdev);
+	int ret;
+
+	if (ddata->powermode == PM_OFF ||
+			ddata->device_status == DEVICE_SUSPENDED)
+		return -EINVAL;
+
+	ret = l3g4200d_read(ddata, OUT_TEMP, "OUT_TEMP");
+	if (ret < 0)
+		return ret;
+
+	return sprintf(buf, "%d\n", ret);
+}
+
 static DEVICE_ATTR(gyrodata, S_IRUGO, l3g4200d_show_gyrodata, NULL);
 
 static DEVICE_ATTR(range, S_IRUGO | S_IWUGO,
@@ -412,11 +431,14 @@ static DEVICE_ATTR(datarate, S_IRUGO | S_IWUGO,
 static DEVICE_ATTR(powermode, S_IRUGO | S_IWUGO,
 		l3g4200d_show_powermode, l3g4200d_store_powermode);
 
+static DEVICE_ATTR(gyrotemp, S_IRUGO, l3g4200d_show_gyrotemp, NULL);
+
 static struct attribute *l3g4200d_attributes[] = {
 	&dev_attr_gyrodata.attr,
 	&dev_attr_range.attr,
 	&dev_attr_datarate.attr,
 	&dev_attr_powermode.attr,
+	&dev_attr_gyrotemp.attr,
 	NULL
 };
 
