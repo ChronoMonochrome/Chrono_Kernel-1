@@ -15,6 +15,7 @@
 
 extern const s32 b2r2_s32_max;
 
+int calculate_scale_factor(u32 from, u32 to, u16 *sf_out);
 void b2r2_get_img_bounding_rect(struct b2r2_blt_img *img,
 		struct b2r2_blt_rect *bounding_rect);
 
@@ -24,7 +25,12 @@ bool b2r2_is_rect_inside_rect(struct b2r2_blt_rect *rect1,
 bool b2r2_is_rect_gte_rect(struct b2r2_blt_rect *rect1,
 		struct b2r2_blt_rect *rect2);
 void b2r2_intersect_rects(struct b2r2_blt_rect *rect1,
-		struct b2r2_blt_rect *rect2, struct b2r2_blt_rect *intersection);
+		struct b2r2_blt_rect *rect2,
+		struct b2r2_blt_rect *intersection);
+void b2r2_trim_rects(const struct b2r2_blt_req *req,
+			struct b2r2_blt_rect *new_bg_rect,
+			struct b2r2_blt_rect *new_dst_rect,
+			struct b2r2_blt_rect *new_src_rect);
 
 int b2r2_get_fmt_bpp(enum b2r2_blt_fmt fmt);
 int b2r2_get_fmt_y_bpp(enum b2r2_blt_fmt fmt);

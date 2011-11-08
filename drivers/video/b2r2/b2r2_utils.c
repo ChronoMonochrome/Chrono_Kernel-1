@@ -21,6 +21,51 @@
 const s32 b2r2_s32_max = 2147483647;
 
 
+/**
+ * calculate_scale_factor() - calculates the scale factor between the given
+ *                            values
+ */
+int calculate_scale_factor(u32 from, u32 to, u16 *sf_out)
+{
+	int ret;
+	u32 sf;
+
+	b2r2_log_info("%s\n", __func__);
+
+	if (to == from) {
+		*sf_out = 1 << 10;
+		return 0;
+	} else if (to == 0) {
+		b2r2_log_err("%s: To is 0!\n", __func__);
+		BUG_ON(1);
+	}
+
+	sf = (from << 10) / to;
+
+	if ((sf & 0xffff0000) != 0) {
+		/* Overflow error */
+		b2r2_log_warn("%s: "
+			"Scale factor too large\n", __func__);
+		ret = -EINVAL;
+		goto error;
+	} else if (sf == 0) {
+		b2r2_log_warn("%s: "
+			"Scale factor too small\n", __func__);
+		ret = -EINVAL;
+		goto error;
+	}
+
+	*sf_out = (u16)sf;
+
+	b2r2_log_info("%s exit\n", __func__);
+
+	return 0;
+
+error:
+	b2r2_log_warn("%s: Exit...\n", __func__);
+	return ret;
+}
+
 void b2r2_get_img_bounding_rect(struct b2r2_blt_img *img,
 					struct b2r2_blt_rect *bounding_rect)
 {
@@ -72,6 +117,186 @@ void b2r2_intersect_rects(struct b2r2_blt_rect *rect1,
 	*intersection = tmp_rect;
 }
 
+/*
+ * Calculate new rectangles for the supplied
+ * request, so that clipping to destination imaage
+ * can be avoided.
+ * Essentially, the new destination rectangle is
+ * defined inside the old one. Given the transform
+ * and scaling, one has to calculate which part of
+ * the old source rectangle corresponds to
+ * to the new part of old destination rectangle.
+ */
+void b2r2_trim_rects(const struct b2r2_blt_req *req,
+			struct b2r2_blt_rect *new_bg_rect,
+			struct b2r2_blt_rect *new_dst_rect,
+			struct b2r2_blt_rect *new_src_rect)
+{
+	enum b2r2_blt_transform transform = req->transform;
+	struct b2r2_blt_rect *old_src_rect =
+		(struct b2r2_blt_rect *) &req->src_rect;
+	struct b2r2_blt_rect *old_dst_rect =
+		(struct b2r2_blt_rect *) &req->dst_rect;
+	struct b2r2_blt_rect *old_bg_rect =
+		(struct b2r2_blt_rect *) &req->bg_rect;
+	struct b2r2_blt_rect dst_img_bounds;
+	s32 src_x = 0;
+	s32 src_y = 0;
+	s32 src_w = 0;
+	s32 src_h = 0;
+	s32 dx = 0;
+	s32 dy = 0;
+	s16 hsf;
+	s16 vsf;
+
+	b2r2_log_info("%s\nold_dst_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
+		old_dst_rect->x, old_dst_rect->y,
+		old_dst_rect->width, old_dst_rect->height);
+	b2r2_log_info("%s\nold_src_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
+		old_src_rect->x, old_src_rect->y,
+		old_src_rect->width, old_src_rect->height);
+
+	b2r2_get_img_bounding_rect((struct b2r2_blt_img *) &req->dst_img,
+		&dst_img_bounds);
+
+	/* dst_rect inside dst_img, no clipping necessary */
+	if (b2r2_is_rect_inside_rect(old_dst_rect, &dst_img_bounds))
+		goto keep_rects;
+
+	b2r2_intersect_rects(old_dst_rect, &dst_img_bounds, new_dst_rect);
+	b2r2_log_info("%s\nnew_dst_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
+		new_dst_rect->x, new_dst_rect->y,
+		new_dst_rect->width, new_dst_rect->height);
+
+	/* dst_rect completely outside, leave it to validation */
+	if (new_dst_rect->width == 0 || new_dst_rect->height == 0)
+		goto keep_rects;
+
+	dx = new_dst_rect->x - old_dst_rect->x;
+	dy = new_dst_rect->y - old_dst_rect->y;
+
+	if (transform & B2R2_BLT_TRANSFORM_CCW_ROT_90) {
+		int res = 0;
+		res = calculate_scale_factor(old_src_rect->width,
+			old_dst_rect->height, &hsf);
+		/* invalid dimensions, leave them to validation */
+		if (res < 0)
+			goto keep_rects;
+
+		res = calculate_scale_factor(old_src_rect->height,
+			old_dst_rect->width, &vsf);
+		if (res < 0)
+			goto keep_rects;
+
+		/*
+		 * After applying the inverse transform
+		 * for 90 degree rotation, the top-left corner
+		 * becomes top-right.
+		 * src_rect origin is defined as top-left,
+		 * so a translation between dst and src
+		 * coordinate spaces is necessary.
+		 */
+		src_x = (old_src_rect->width << 10) -
+			hsf * (dy + new_dst_rect->height);
+		src_y = dx * vsf;
+		src_w = new_dst_rect->height * hsf;
+		src_h = new_dst_rect->width * vsf;
+	} else {
+		int res = 0;
+		res = calculate_scale_factor(old_src_rect->width,
+			old_dst_rect->width, &hsf);
+		if (res < 0)
+			goto keep_rects;
+
+		res = calculate_scale_factor(old_src_rect->height,
+			old_dst_rect->height, &vsf);
+		if (res < 0)
+			goto keep_rects;
+
+		src_x = dx * hsf;
+		src_y = dy * vsf;
+		src_w = new_dst_rect->width * hsf;
+		src_h = new_dst_rect->height * vsf;
+	}
+
+	/*
+	 * src_w must contain all the pixels that contribute
+	 * to a particular destination rectangle.
+	 * ((x + 0x3ff) >> 10) is equivalent to ceiling(x),
+	 * expressed in 6.10 fixed point format.
+	 * Every destination rectangle, maps to a certain area in the source
+	 * rectangle. The area in source will most likely not be a rectangle
+	 * with exact integer dimensions whenever arbitrary scaling is involved.
+	 * Consider the following example.
+	 * Suppose, that width of the current destination rectangle maps
+	 * to 1.7 pixels in source, starting at x == 5.4, as calculated
+	 * using the scaling factor.
+	 * This means that while the destination rectangle is written,
+	 * the source should be read from x == 5.4 up to x == 5.4 + 1.7 == 7.1
+	 * Consequently, color from 3 pixels (x == 5, 6 and 7)
+	 * needs to be read from source.
+	 * The formula below the comment yields:
+	 * ceil(0.4 + 1.7) == ceil(2.1) == 3
+	 * (src_x & 0x3ff) is the fractional part of src_x,
+	 * which is expressed in 6.10 fixed point format.
+	 * Thus, width of the source area should be 3 pixels wide,
+	 * starting at x == 5.
+	 */
+	src_w = ((src_x & 0x3ff) + src_w + 0x3ff) >> 10;
+	src_h = ((src_y & 0x3ff) + src_h + 0x3ff) >> 10;
+
+	src_x >>= 10;
+	src_y >>= 10;
+
+	if (transform & B2R2_BLT_TRANSFORM_FLIP_H)
+		src_x = old_src_rect->width - src_x - src_w;
+
+	if (transform & B2R2_BLT_TRANSFORM_FLIP_V)
+		src_y = old_src_rect->height - src_y - src_h;
+
+	/*
+	 * Translate the src_rect coordinates into true
+	 * src_buffer coordinates.
+	 */
+	src_x += old_src_rect->x;
+	src_y += old_src_rect->y;
+
+	new_src_rect->x = src_x;
+	new_src_rect->y = src_y;
+	new_src_rect->width = src_w;
+	new_src_rect->height = src_h;
+
+	b2r2_log_info("%s\nnew_src_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
+		new_src_rect->x, new_src_rect->y,
+		new_src_rect->width, new_src_rect->height);
+
+	if (req->flags & B2R2_BLT_FLAG_BG_BLEND) {
+		/* Modify bg_rect in the same way as dst_rect */
+		s32 dw = new_dst_rect->width - old_dst_rect->width;
+		s32 dh = new_dst_rect->height - old_dst_rect->height;
+		b2r2_log_info("%s\nold bg_rect(x,y,w,h)=(%d, %d, %d, %d)\n",
+			__func__, old_bg_rect->x, old_bg_rect->y,
+			old_bg_rect->width, old_bg_rect->height);
+		new_bg_rect->x = old_bg_rect->x + dx;
+		new_bg_rect->y = old_bg_rect->y + dy;
+		new_bg_rect->width = old_bg_rect->width + dw;
+		new_bg_rect->height = old_bg_rect->height + dh;
+		b2r2_log_info("%s\nnew bg_rect(x,y,w,h)=(%d, %d, %d, %d)\n",
+			__func__, new_bg_rect->x, new_bg_rect->y,
+			new_bg_rect->width, new_bg_rect->height);
+	}
+	return;
+keep_rects:
+	/*
+	 * Recalculation was not possible, or not necessary.
+	 * Do not change anything, leave it to validation.
+	 */
+	*new_src_rect = *old_src_rect;
+	*new_dst_rect = *old_dst_rect;
+	*new_bg_rect = *old_bg_rect;
+	b2r2_log_info("%s original rectangles preserved.\n", __func__);
+	return;
+}
 
 int b2r2_get_fmt_bpp(enum b2r2_blt_fmt fmt)
 {

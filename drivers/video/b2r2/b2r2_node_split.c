@@ -14,6 +14,7 @@
 #include "b2r2_internal.h"
 #include "b2r2_hw.h"
 #include "b2r2_filters.h"
+#include "b2r2_utils.h"
 
 #include <linux/kernel.h>
 
@@ -217,6 +218,7 @@ static int configure_scale(struct b2r2_node *node,
 static int configure_rot_scale(struct b2r2_node_split_job *this,
 		struct b2r2_node *node, struct b2r2_node **next);
 
+static void recalculate_rects(struct b2r2_blt_req *req);
 static int check_rect(const struct b2r2_blt_img *img,
 		const struct b2r2_blt_rect *rect,
 		const struct b2r2_blt_rect *clip);
@@ -247,7 +249,6 @@ static u32 to_RGB888(u32 color, const enum b2r2_blt_fmt fmt);
 static enum b2r2_fmt_type get_fmt_type(enum b2r2_blt_fmt fmt);
 
 static bool is_transform(const struct b2r2_blt_request *req);
-static int calculate_scale_factor(u32 from, u32 to, u16 *sf_out);
 static s32 rescale(s32 dim, u16 sf);
 static s32 inv_rescale(s32 dim, u16 sf);
 
@@ -378,6 +379,13 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	/* Check for color fill */
 	color_fill = (this->flags & (B2R2_BLT_FLAG_SOURCE_FILL |
 				B2R2_BLT_FLAG_SOURCE_FILL_RAW)) != 0;
+
+	/*
+	 * B2R2 cannot handle destination clipping on buffers
+	 * allocated close to 64MiB bank boundaries.
+	 * recalculate src_ and dst_rect to avoid clipping.
+	 */
+	recalculate_rects((struct b2r2_blt_req *) &req->user_req);
 
 	/* Configure the source and destination buffers */
 	set_buf(&this->src, req->src_resolved.physical_address,
@@ -692,6 +700,19 @@ void b2r2_node_split_cancel(struct b2r2_node_split_job *this)
 /*
  * Private functions
  */
+
+static void recalculate_rects(struct b2r2_blt_req *req)
+{
+	struct b2r2_blt_rect new_dst_rect;
+	struct b2r2_blt_rect new_src_rect;
+	struct b2r2_blt_rect new_bg_rect;
+
+	b2r2_trim_rects(req, &new_bg_rect, &new_dst_rect, &new_src_rect);
+
+	req->dst_rect = new_dst_rect;
+	req->src_rect = new_src_rect;
+	req->bg_rect = new_bg_rect;
+}
 
 static int check_rect(const struct b2r2_blt_img *img,
 		const struct b2r2_blt_rect *rect,
@@ -3421,51 +3442,6 @@ static bool is_transform(const struct b2r2_blt_request *req)
 				req->user_req.dst_rect.width) ||
 			(req->user_req.src_rect.height !=
 				req->user_req.dst_rect.height);
-}
-
-/**
- * calculate_scale_factor() - calculates the scale factor between the given
- *                            values
- */
-static int calculate_scale_factor(u32 from, u32 to, u16 *sf_out)
-{
-	int ret;
-	u32 sf;
-
-	b2r2_log_info("%s\n", __func__);
-
-	if (to == from) {
-		*sf_out = 1 << 10;
-		return 0;
-	} else if (to == 0) {
-		b2r2_log_err("%s: To is 0!\n", __func__);
-		BUG_ON(1);
-	}
-
-	sf = (from << 10) / to;
-
-	if ((sf & 0xffff0000) != 0) {
-		/* Overflow error */
-		b2r2_log_warn("%s: "
-			"Scale factor too large\n", __func__);
-		ret = -EINVAL;
-		goto error;
-	} else if (sf == 0) {
-		b2r2_log_warn("%s: "
-			"Scale factor too small\n", __func__);
-		ret = -EINVAL;
-		goto error;
-	}
-
-	*sf_out = (u16)sf;
-
-	b2r2_log_info("%s exit\n", __func__);
-
-	return 0;
-
-error:
-	b2r2_log_warn("%s: Exit...\n", __func__);
-	return ret;
 }
 
 /**
