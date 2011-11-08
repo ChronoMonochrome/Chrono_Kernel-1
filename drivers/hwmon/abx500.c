@@ -506,14 +506,14 @@ static SENSOR_DEVICE_ATTR(temp4_max_hyst_alarm, S_IRUGO,
 /* GPADC - SENSOR5 */
 static SENSOR_DEVICE_ATTR(temp5_label, S_IRUGO, show_label, NULL, 5);
 static SENSOR_DEVICE_ATTR(temp5_input, S_IRUGO, show_input, NULL, 5);
-static SENSOR_DEVICE_ATTR(temp5_min, S_IWUSR | S_IRUGO, show_min, set_min, 4);
-static SENSOR_DEVICE_ATTR(temp5_max, S_IWUSR | S_IRUGO, show_max, set_max, 4);
+static SENSOR_DEVICE_ATTR(temp5_min, S_IWUSR | S_IRUGO, show_min, set_min, 5);
+static SENSOR_DEVICE_ATTR(temp5_max, S_IWUSR | S_IRUGO, show_max, set_max, 5);
 static SENSOR_DEVICE_ATTR(temp5_max_hyst, S_IWUSR | S_IRUGO,
-			  show_max_hyst, set_max_hyst, 4);
-static SENSOR_DEVICE_ATTR(temp5_min_alarm, S_IRUGO, show_min_alarm, NULL, 4);
-static SENSOR_DEVICE_ATTR(temp5_max_alarm, S_IRUGO, show_max_alarm, NULL, 4);
+			  show_max_hyst, set_max_hyst, 5);
+static SENSOR_DEVICE_ATTR(temp5_min_alarm, S_IRUGO, show_min_alarm, NULL, 5);
+static SENSOR_DEVICE_ATTR(temp5_max_alarm, S_IRUGO, show_max_alarm, NULL, 5);
 static SENSOR_DEVICE_ATTR(temp5_max_hyst_alarm, S_IRUGO,
-			  show_max_hyst_alarm, NULL, 4);
+			  show_max_hyst_alarm, NULL, 5);
 static SENSOR_DEVICE_ATTR(temp5_crit_alarm, S_IRUGO,
 			  show_crit_alarm, NULL, 5);
 
