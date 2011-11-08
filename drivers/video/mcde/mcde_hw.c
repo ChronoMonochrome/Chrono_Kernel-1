@@ -27,6 +27,8 @@
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
 
+#include <linux/mfd/dbx500-prcmu.h>
+
 #include <video/mcde.h>
 #include "dsilink_regs.h"
 #include "mcde_regs.h"
@@ -117,6 +119,7 @@ static u8 mcde_is_enabled;
 static struct delayed_work hw_timeout_work;
 static u8 dsi_pll_is_enabled;
 static u8 dsi_ifc_is_supported;
+static u32 mcde_clk_rate; /* In Hz */
 
 static struct mutex mcde_hw_lock;
 static inline void mcde_lock(const char *func, int line)
@@ -1953,10 +1956,10 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 
 		/* pkt_delay_progressive = pixelclock * htot /
 		 * (1E12 / 160E6) / pkt_div */
-		dsi_delay0 = (video_mode->pixclock + 1) *
+		dsi_delay0 = (video_mode->pixclock) *
 			(video_mode->xres + video_mode->hbp +
 				video_mode->hfp) /
-			(1000000 / MCDE_CLK_FREQ_MHZ) / pkt_div;
+			(100000000 / ((mcde_clk_rate / 10000))) / pkt_div;
 
 		if ((screen_ppl == SCREEN_PPL_CEA2) &&
 				(screen_lpf == SCREEN_LPF_CEA2))
@@ -3377,6 +3380,11 @@ static int probe_hw(struct platform_device *pdev)
 		if (channels[i].ovly1)
 			mcde_debugfs_overlay_create(i, 1);
 	}
+        (void) prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "mcde", 100);
+        mcde_clk_rate = clk_get_rate(clock_mcde);
+        dev_info(&mcde_dev->dev, "MCDE_CLK is %d MHz\n", mcde_clk_rate);
+        prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "mcde");
+
 	return 0;
 
 failed_map_dsi_io:
