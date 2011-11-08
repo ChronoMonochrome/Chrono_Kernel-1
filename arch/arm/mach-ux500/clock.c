@@ -14,13 +14,7 @@
 #include <linux/mfd/dbx500-prcmu.h>
 
 #include "clock.h"
-
-#define PRCC_PCKEN 0x0
-#define PRCC_PCKDIS 0x4
-#define PRCC_KCKEN 0x8
-#define PRCC_KCKDIS 0xC
-#define PRCC_PCKSR 0x10
-#define PRCC_KCKSR 0x14
+#include "prcc.h"
 
 DEFINE_MUTEX(clk_opp100_mutex);
 static DEFINE_SPINLOCK(clk_spin_lock);

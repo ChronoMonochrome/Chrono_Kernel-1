@@ -30,6 +30,7 @@
 
 #include "scu.h"
 #include "../product.h"
+#include "../prcc.h"
 
 #define GPIO_NUM_BANKS 9
 #define GPIO_NUM_SAVE_REGISTERS 7
@@ -107,16 +108,6 @@
 #define SCU_FILTER_STARTADDR	0x40
 #define SCU_FILTER_ENDADDR	0x44
 #define SCU_ACCESS_CTRL_SAC	0x50
-
-/*
- * Periph clock cluster context
- */
-#define PRCC_BCK_EN		0x00
-#define PRCC_BCK_DIS		0x04
-#define PRCC_KCK_EN		0x08
-#define PRCC_KCK_DIS		0x08
-#define PRCC_BCK_STATUS		0x10
-#define PRCC_KCK_STATUS		0x14
 
 /* The context of the Trace Port Interface Unit (TPIU) */
 static struct {
@@ -257,9 +248,9 @@ static void save_prcc(void)
 		clk_enable(context_prcc[i].clk);
 
 		context_prcc[i].bus_clk =
-			readl(context_prcc[i].base + PRCC_BCK_STATUS);
+			readl(context_prcc[i].base + PRCC_PCKSR);
 		context_prcc[i].kern_clk =
-			readl(context_prcc[i].base + PRCC_KCK_STATUS);
+			readl(context_prcc[i].base + PRCC_KCKSR);
 
 		clk_disable(context_prcc[i].clk);
 	}
@@ -273,14 +264,14 @@ static void restore_prcc(void)
 		clk_enable(context_prcc[i].clk);
 
 		writel(~context_prcc[i].bus_clk,
-		       context_prcc[i].base + PRCC_BCK_DIS);
+		       context_prcc[i].base + PRCC_PCKDIS);
 		writel(~context_prcc[i].kern_clk,
-		       context_prcc[i].base + PRCC_KCK_DIS);
+		       context_prcc[i].base + PRCC_KCKDIS);
 
 		writel(context_prcc[i].bus_clk,
-		       context_prcc[i].base + PRCC_BCK_EN);
+		       context_prcc[i].base + PRCC_PCKEN);
 		writel(context_prcc[i].kern_clk,
-		       context_prcc[i].base + PRCC_KCK_EN);
+		       context_prcc[i].base + PRCC_KCKEN);
 		/*
 		 * Consider having a while over KCK/BCK_STATUS
 		 * to check that all clocks get disabled/enabled
