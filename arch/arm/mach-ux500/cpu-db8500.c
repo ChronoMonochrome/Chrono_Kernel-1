@@ -19,8 +19,8 @@
 #include <linux/io.h>
 #include <linux/dma-mapping.h>
 
-#include <asm/mach/map.h>
 #include <asm/pmu.h>
+#include <asm/mach/map.h>
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/devices.h>

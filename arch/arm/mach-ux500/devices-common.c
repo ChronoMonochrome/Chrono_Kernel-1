@@ -134,4 +134,3 @@ void dbx500_add_gpios(struct device *parent, resource_size_t *base, int num,
 		dbx500_add_gpio(parent, i, base[i], irq, pdata);
 	}
 }
-

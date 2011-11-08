@@ -30,7 +30,7 @@ enum custom_pin_cfg_t {
 static enum custom_pin_cfg_t pinsfor;
 
 static pin_cfg_t mop500_pins_common[] = {
-	/* MSP0 */
+	/* uMSP0 */
 	GPIO12_MSP0_TXD,
 	GPIO13_MSP0_TFS,
 	GPIO14_MSP0_TCK,
@@ -1075,7 +1075,7 @@ void __init hrefv60_pins_init(void)
 static int __init mop500_offchip_gpio_init(void)
 {
 	if (machine_is_hrefv60())
-                ux500_offchip_gpio_init(&mop500_offchip_gpio_cfg);
+		ux500_offchip_gpio_init(&mop500_offchip_gpio_cfg);
 
 	return 0;
 }

@@ -56,7 +56,7 @@
 	{								\
 		.name		= "gpio",				\
 		.id		= block,				\
-		.num_resources 	= 3,					\
+		.num_resources	= 3,					\
 		.resource	= &u5500_gpio_resources[block * 3],	\
 		.dev = {						\
 			.platform_data = &u5500_gpio_data[block],	\

@@ -168,8 +168,7 @@ static int __init mop500_uib_init(void)
 			uib = &mop500_uibs[U8500UIB];
 		else
 			uib = &mop500_uibs[U8500UIB_R3];
-	}
-	else {
+	} else {
 		ret = i2c_smbus_xfer(i2c3, 0x5C, 0, I2C_SMBUS_WRITE, 0,
 				I2C_SMBUS_QUICK, NULL);
 		i2c_put_adapter(i2c3);

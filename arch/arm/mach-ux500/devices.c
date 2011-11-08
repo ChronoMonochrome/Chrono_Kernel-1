@@ -48,7 +48,7 @@ static int __init early_trace_modem(char *p)
 	u32 size = memparse(p, &p);
 	if (*p == '@')
 		data->start = memparse(p + 1, &p);
-	data->end = data->start + size -1;
+	data->end = data->start + size - 1;
 	return 0;
 }
 

@@ -98,7 +98,7 @@ void __init ux500_offchip_gpio_init(struct ux500_pins *pins)
 	int value;
 	pin_cfg_t cfg;
 
-	for (i=0; i < pins->num; i++) {
+	for (i = 0; i < pins->num; i++) {
 		cfg = pins->cfg[i];
 		gpio = PIN_NUM(cfg);
 		output = PIN_DIR(cfg);
@@ -137,13 +137,13 @@ void __init ux500_offchip_gpio_init(struct ux500_pins *pins)
 
 static void show_pin(struct seq_file *s, pin_cfg_t pin)
 {
-	static const char *afnames[] = {
+	static char *afnames[] = {
 		[NMK_GPIO_ALT_GPIO]	= "GPIO",
 		[NMK_GPIO_ALT_A]	= "A",
 		[NMK_GPIO_ALT_B]	= "B",
 		[NMK_GPIO_ALT_C]	= "C"
 	};
-	static const char *pullnames[] = {
+	static char *pullnames[] = {
 		[NMK_GPIO_PULL_NONE]	= "none",
 		[NMK_GPIO_PULL_UP]	= "up",
 		[NMK_GPIO_PULL_DOWN]	= "down",
@@ -167,11 +167,11 @@ static void show_pin(struct seq_file *s, pin_cfg_t pin)
 		   output ? "output " : "input",
 		   output ? (val ? "high" : "low") : "",
 		   slpm ? "no-change/no-wakeup " : "input/wakeup ",
-		   slpm_dir ? (slpm_dir == 1 ? "input " : "output " ) : "",
-		   slpm_dir == 1 ? (slpm_pull == 0 ? "pull: none ":
+		   slpm_dir ? (slpm_dir == 1 ? "input " : "output ") : "",
+		   slpm_dir == 1 ? (slpm_pull == 0 ? "pull: none " :
 				    (slpm_pull == NMK_GPIO_PULL_UP ?
 				     "pull: up " : "pull: down ") ): "",
-		   slpm_dir == 2 ? (slpm_val == 1 ? "low " : "high " ) : "");
+		   slpm_dir == 2 ? (slpm_val == 1 ? "low " : "high ") : "");
 }
 
 static int pins_dbg_show(struct seq_file *s, void *iter)

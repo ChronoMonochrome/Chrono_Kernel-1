@@ -248,5 +248,3 @@ typedef struct {
 #endif /* _HCL_DEFS_H */
 
 /* End of file hcl_defs.h */
-
-

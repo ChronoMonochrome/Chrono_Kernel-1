@@ -62,9 +62,9 @@
 
 #define GPIO_DEVICE(block)						\
 	{								\
-		.name 		= "gpio",				\
+		.name		= "gpio",				\
 		.id		= block,				\
-		.num_resources 	= 3,					\
+		.num_resources	= 3,					\
 		.resource	= &u8500_gpio_resources[block * 3],	\
 		.dev = {						\
 			.platform_data = &u8500_gpio_data[block],	\
@@ -293,61 +293,61 @@ struct platform_device u8500_wdt_device = {
 }
 
 #define STE_HSI_PORT0_TX_CHANNEL_CFG(n) { \
-       .dir = STEDMA40_MEM_TO_PERIPH, \
-       .high_priority = true, \
-       .mode = STEDMA40_MODE_LOGICAL, \
-       .mode_opt = STEDMA40_LCHAN_SRC_LOG_DST_LOG, \
-       .src_dev_type = STEDMA40_DEV_SRC_MEMORY, \
-       .dst_dev_type = n,\
-       .src_info.big_endian = false,\
-       .src_info.data_width = STEDMA40_WORD_WIDTH,\
-       .dst_info.big_endian = false,\
-       .dst_info.data_width = STEDMA40_WORD_WIDTH,\
+	.dir = STEDMA40_MEM_TO_PERIPH,	\
+	.high_priority = true,	\
+	.mode = STEDMA40_MODE_LOGICAL, \
+	.mode_opt = STEDMA40_LCHAN_SRC_LOG_DST_LOG, \
+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY, \
+	.dst_dev_type = n,\
+	.src_info.big_endian = false,\
+	.src_info.data_width = STEDMA40_WORD_WIDTH,\
+	.dst_info.big_endian = false,\
+	.dst_info.data_width = STEDMA40_WORD_WIDTH,\
 },
 
 #define STE_HSI_PORT0_RX_CHANNEL_CFG(n) { \
-       .dir = STEDMA40_PERIPH_TO_MEM, \
-       .high_priority = true, \
-       .mode = STEDMA40_MODE_LOGICAL, \
-       .mode_opt = STEDMA40_LCHAN_SRC_LOG_DST_LOG, \
-       .src_dev_type = n,\
-       .dst_dev_type = STEDMA40_DEV_DST_MEMORY, \
-       .src_info.big_endian = false,\
-       .src_info.data_width = STEDMA40_WORD_WIDTH,\
-       .dst_info.big_endian = false,\
-       .dst_info.data_width = STEDMA40_WORD_WIDTH,\
+	.dir = STEDMA40_PERIPH_TO_MEM, \
+	.high_priority = true, \
+	.mode = STEDMA40_MODE_LOGICAL, \
+	.mode_opt = STEDMA40_LCHAN_SRC_LOG_DST_LOG, \
+	.src_dev_type = n,\
+	.dst_dev_type = STEDMA40_DEV_DST_MEMORY, \
+	.src_info.big_endian = false,\
+	.src_info.data_width = STEDMA40_WORD_WIDTH,\
+	.dst_info.big_endian = false,\
+	.dst_info.data_width = STEDMA40_WORD_WIDTH,\
 },
 
 static struct resource u8500_hsi_resources[] = {
        {
-	       .start  = U8500_HSIR_BASE,
-	       .end    = U8500_HSIR_BASE + SZ_4K - 1,
-	       .flags  = IORESOURCE_MEM,
-	       .name   = "hsi_rx_base"
+		.start  = U8500_HSIR_BASE,
+		.end    = U8500_HSIR_BASE + SZ_4K - 1,
+		.flags  = IORESOURCE_MEM,
+		.name   = "hsi_rx_base"
        },
        {
-	       .start  = U8500_HSIT_BASE,
-	       .end    = U8500_HSIT_BASE + SZ_4K - 1,
-	       .flags  = IORESOURCE_MEM,
-	       .name   = "hsi_tx_base"
+		.start  = U8500_HSIT_BASE,
+		.end    = U8500_HSIT_BASE + SZ_4K - 1,
+		.flags  = IORESOURCE_MEM,
+		.name   = "hsi_tx_base"
        },
        {
-	       .start  = IRQ_DB8500_HSIRD0,
-	       .end    = IRQ_DB8500_HSIRD0,
-	       .flags  = IORESOURCE_IRQ,
-	       .name   = "hsi_rx_irq0"
+		.start  = IRQ_DB8500_HSIRD0,
+		.end    = IRQ_DB8500_HSIRD0,
+		.flags  = IORESOURCE_IRQ,
+		.name   = "hsi_rx_irq0"
        },
        {
-	       .start  = IRQ_DB8500_HSITD0,
-	       .end    = IRQ_DB8500_HSITD0,
-	       .flags  = IORESOURCE_IRQ,
-	       .name   = "hsi_tx_irq0"
+		.start  = IRQ_DB8500_HSITD0,
+		.end    = IRQ_DB8500_HSITD0,
+		.flags  = IORESOURCE_IRQ,
+		.name   = "hsi_tx_irq0"
        },
        {
-	       .start  = IRQ_DB8500_HSIR_EXCEP,
-	       .end    = IRQ_DB8500_HSIR_EXCEP,
-	       .flags  = IORESOURCE_IRQ,
-	       .name   = "hsi_rx_excep0"
+		.start  = IRQ_DB8500_HSIR_EXCEP,
+		.end    = IRQ_DB8500_HSIR_EXCEP,
+		.flags  = IORESOURCE_IRQ,
+		.name   = "hsi_rx_excep0"
        },
        HSIR_OVERRUN(0),
        HSIR_OVERRUN(1),
@@ -377,26 +377,26 @@ static struct stedma40_chan_cfg ste_hsi_port0_dma_rx_cfg[] = {
 
 static struct ste_hsi_port_cfg ste_hsi_port0_cfg = {
 #ifdef CONFIG_STE_DMA40
-       .dma_filter = stedma40_filter,
-       .dma_tx_cfg = ste_hsi_port0_dma_tx_cfg,
-       .dma_rx_cfg = ste_hsi_port0_dma_rx_cfg
+	.dma_filter = stedma40_filter,
+	.dma_tx_cfg = ste_hsi_port0_dma_tx_cfg,
+	.dma_rx_cfg = ste_hsi_port0_dma_rx_cfg
 #endif
 };
 
 struct ste_hsi_platform_data u8500_hsi_platform_data = {
-       .num_ports = 1,
-       .use_dma = 1,
-       .port_cfg = &ste_hsi_port0_cfg,
+	.num_ports = 1,
+	.use_dma = 1,
+	.port_cfg = &ste_hsi_port0_cfg,
 };
 
 struct platform_device u8500_hsi_device = {
-       .dev = {
+	.dev = {
 		.platform_data = &u8500_hsi_platform_data,
-       },
-       .name = "ste_hsi",
-       .id = 0,
-       .resource = u8500_hsi_resources,
-       .num_resources = ARRAY_SIZE(u8500_hsi_resources)
+	},
+	.name = "ste_hsi",
+	.id = 0,
+	.resource = u8500_hsi_resources,
+	.num_resources = ARRAY_SIZE(u8500_hsi_resources)
 };
 #endif /* CONFIG_HSI */
 

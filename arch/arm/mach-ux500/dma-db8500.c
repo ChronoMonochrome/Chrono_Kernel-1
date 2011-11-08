@@ -275,7 +275,8 @@ static struct notifier_block dma_context_notifier = {
 
 static void dma_context_notifier_init(void)
 {
-	base = ioremap(dma40_resources[0].start, resource_size(&dma40_resources[0]));
+	base = ioremap(dma40_resources[0].start,
+		       resource_size(&dma40_resources[0]));
 	if (WARN_ON(!base))
 		return;
 
@@ -306,7 +307,8 @@ void __init db8500_dma_init(void)
 
 	ret = platform_device_register(&dma40_device);
 	if (ret)
-		dev_err(&dma40_device.dev, "unable to register device: %d\n", ret);
+		dev_err(&dma40_device.dev, "unable to register device: %d\n",
+			ret);
 
 	dma_context_notifier_init();
 }

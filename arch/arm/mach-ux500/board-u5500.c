@@ -199,11 +199,11 @@ static struct i2c_board_info __initdata u5500_i2c1_devices[] = {
 
 static struct i2c_board_info __initdata u5500v1_i2c2_sensor_devices[] = {
 #ifdef CONFIG_SENSORS_LSM303DLH
- 	{
- 		/* LSM303DLH Accelerometer */
- 		I2C_BOARD_INFO("lsm303dlh_a", 0x19),
- 		.platform_data = &lsm303dlh_pdata,
- 	},
+	{
+		/* LSM303DLH Accelerometer */
+		I2C_BOARD_INFO("lsm303dlh_a", 0x19),
+		.platform_data = &lsm303dlh_pdata,
+	},
  	{
 		/* LSM303DLH Magnetometer */
 		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),

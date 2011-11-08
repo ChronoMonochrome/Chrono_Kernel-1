@@ -142,4 +142,3 @@ void u5500_cyttsp_init(void)
 	spi_register_board_info(cypress_spi_devices,
 			ARRAY_SIZE(cypress_spi_devices));
 }
-

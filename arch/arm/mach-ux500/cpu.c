@@ -72,8 +72,9 @@ void ux500_restart(char mode, const char *cmd)
 	prcmu_system_reset(reset_code);
 
 	mdelay(1000);
-	printk("Reboot via PRCMU failed -- System halted\n");
-	while (1);
+	printk(KERN_ERR "Reboot via PRCMU failed -- System halted\n");
+	while (1)
+		;
 }
 
 void __init ux500_init_irq(void)

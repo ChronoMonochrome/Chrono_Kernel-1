@@ -284,12 +284,12 @@ static struct ab8500_platform_data ab8500_platdata = {
 	.fg		= &ab8500_fg_plat_data,
 	.chargalg	= &ab8500_chargalg_plat_data,
 	.gpio		= &ab8500_gpio_pdata,
-	.sysctrl 	= &ab8500_sysctrl_pdata,
+	.sysctrl	= &ab8500_sysctrl_pdata,
 #ifdef CONFIG_INPUT_AB8500_ACCDET
 	.accdet = &ab8500_accdet_pdata,
 #endif
 #ifdef CONFIG_PM
-       .pm_power_off = true,
+	.pm_power_off = true,
 #endif
 	.thermal_time_out = 20, /* seconds */
 };
@@ -456,22 +456,22 @@ static const unsigned int mop500_ske_keymap[] = {
 };
 
 static struct matrix_keymap_data mop500_ske_keymap_data = {
-        .keymap         = mop500_ske_keymap,
-        .keymap_size    = ARRAY_SIZE(mop500_ske_keymap),
+	.keymap		= mop500_ske_keymap,
+	.keymap_size    = ARRAY_SIZE(mop500_ske_keymap),
 };
 
 
 
 static struct ske_keypad_platform_data mop500_ske_keypad_data = {
-	.init           = ske_kp_init,
-	.exit           = ske_kp_exit,
+	.init		= ske_kp_init,
+	.exit		= ske_kp_exit,
 	.gpio_input_pins = ske_kp_rows,
 	.gpio_output_pins = ske_kp_cols,
 	.keymap_data    = &mop500_ske_keymap_data,
 	.no_autorepeat  = true,
-	.krow           = SKE_KPD_MAX_ROWS,     /* 8x8 matrix */
-	.kcol           = SKE_KPD_MAX_COLS,
-	.debounce_ms    = 20,                   /* in timeout period */
+	.krow		= SKE_KPD_MAX_ROWS,     /* 8x8 matrix */
+	.kcol		= SKE_KPD_MAX_COLS,
+	.debounce_ms    = 20,			/* in timeout period */
 	.switch_delay	= 200,			/* in jiffies */
 };
 
