@@ -60,6 +60,13 @@
 #define MCI_ST_DPSM_RWMOD	(1 << 10)
 #define MCI_ST_DPSM_SDIOEN	(1 << 11)
 /* Control register extensions in the ST Micro Ux500 versions */
+/*
+ * DMA request control is required for write
+ * if transfer size is not 32 byte aligned.
+ * DMA request control is also needed if the total
+ * transfer size is 32 byte aligned but any of the
+ * sg element lengths are not aligned with 32 byte.
+ */
 #define MCI_ST_DPSM_DMAREQCTL	(1 << 12)
 #define MCI_ST_DPSM_DBOOTMODEEN	(1 << 13)
 #define MCI_ST_DPSM_BUSYMODE	(1 << 14)

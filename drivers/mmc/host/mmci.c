@@ -46,6 +46,7 @@ static unsigned int fmax = 515633;
  * struct variant_data - MMCI variant-specific quirks
  * @clkreg: default value for MCICLOCK register
  * @clkreg_enable: enable value for MMCICLOCK register
+ * @dma_sdio_req_ctrl: enable value for DMAREQCTL register for SDIO write
  * @datalength_bits: number of bits in the MMCIDATALENGTH register
  * @fifosize: number of bytes that can be written when MMCI_TXFIFOEMPTY
  *	      is asserted (likewise for RX)
@@ -61,6 +62,7 @@ static unsigned int fmax = 515633;
 struct variant_data {
 	unsigned int		clkreg;
 	unsigned int		clkreg_enable;
+	unsigned int		dma_sdio_req_ctrl;
 	unsigned int		datalength_bits;
 	unsigned int		fifosize;
 	unsigned int		fifohalfsize;
@@ -101,6 +103,7 @@ static struct variant_data variant_ux500 = {
 	.fifohalfsize		= 8 * 4,
 	.clkreg			= MCI_CLK_ENABLE,
 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
+	.dma_sdio_req_ctrl	= MCI_ST_DPSM_DMAREQCTL,
 	.datalength_bits	= 24,
 	.sdio			= true,
 	.st_clkdiv		= true,
@@ -113,6 +116,7 @@ static struct variant_data variant_ux500v2 = {
 	.fifohalfsize		= 8 * 4,
 	.clkreg			= MCI_CLK_ENABLE,
 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
+	.dma_sdio_req_ctrl	= MCI_ST_DPSM_DMAREQCTL,
 	.datalength_bits	= 24,
 	.sdio			= true,
 	.st_clkdiv		= true,
@@ -121,6 +125,31 @@ static struct variant_data variant_ux500v2 = {
 	.signal_direction	= true,
 	.non_power_of_2_blksize	= true,
 };
+
+/*
+ * Validate mmc prerequisites
+ */
+static int mmci_validate_data(struct mmci_host *host,
+			      struct mmc_data *data)
+{
+	if (!data)
+		return 0;
+
+	if (!host->variant->non_power_of_2_blksize &&
+	    !is_power_of_2(data->blksz)) {
+		dev_err(mmc_dev(host->mmc),
+			"unsupported block size (%d bytes)\n", data->blksz);
+		return -EINVAL;
+	}
+
+	if (data->sg->offset & 3) {
+		dev_err(mmc_dev(host->mmc),
+			"unsupported alginment (0x%x)\n", data->sg->offset);
+		return -EINVAL;
+	}
+
+	return 0;
+}
 
 /*
  * This must be called with host->lock held
@@ -436,8 +465,12 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
 	if (!chan)
 		return -EINVAL;
 
-	/* If less than or equal to the fifo size, don't bother with DMA */
-	if (data->blksz * data->blocks <= variant->fifosize)
+	/*
+	 * If less than or equal to the fifo size, don't bother with DMA
+	 * SDIO transfers may not be 4 bytes aligned, fall back to PIO
+	 */
+	if (data->blksz * data->blocks <= variant->fifosize ||
+	    (data->blksz * data->blocks) & 3)
 		return -EINVAL;
 
 	device = chan->device;
@@ -472,6 +505,7 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
 {
 	int ret;
 	struct mmc_data *data = host->data;
+	struct variant_data *variant = host->variant;
 
 	ret = mmci_dma_prep_data(host, host->data, NULL);
 	if (ret)
@@ -485,6 +519,11 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
 	dma_async_issue_pending(host->dma_current);
 
 	datactrl |= MCI_DPSM_DMAENABLE;
+
+	/* Some hardware versions need special flags for SDIO DMA write */
+	if (variant->sdio && host->mmc->card && mmc_card_sdio(host->mmc->card)
+	    && (data->flags & MMC_DATA_WRITE))
+		datactrl |= variant->dma_sdio_req_ctrl;
 
 	/* Trigger the DMA transfer */
 	writel(datactrl, host->base + MMCIDATACTRL);
@@ -528,6 +567,9 @@ static void mmci_pre_request(struct mmc_host *mmc, struct mmc_request *mrq,
 	struct mmci_host_next *nd = &host->next_data;
 
 	if (!data)
+		return;
+
+	if (mmci_validate_data(host, mrq->data))
 		return;
 
 	if (data->host_cookie) {
@@ -1040,17 +1082,12 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 static void mmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct mmci_host *host = mmc_priv(mmc);
-	struct variant_data *variant = host->variant;
 	unsigned long flags;
 
 	WARN_ON(host->mrq != NULL);
 
-	if (mrq->data &&
-	    !variant->non_power_of_2_blksize &&
-	    !is_power_of_2(mrq->data->blksz)) {
-		dev_err(mmc_dev(mmc), "unsupported block size (%d bytes)\n",
-			mrq->data->blksz);
-		mrq->cmd->error = -EINVAL;
+	mrq->cmd->error = mmci_validate_data(host, mrq->data);
+	if (mrq->cmd->error) {
 		mmc_request_done(mmc, mrq);
 		return;
 	}
