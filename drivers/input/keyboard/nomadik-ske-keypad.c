@@ -815,6 +815,13 @@ static int ske_keypad_resume(struct device *dev)
 		if (keypad->enable_on_resume) {
 			keypad->enable = true;
 			ske_mode_enable(keypad, true);
+			/*
+			 * Schedule the work queue to change it to GPIO mode
+			 * if there is no activity in SKE mode
+			 */
+			if (!keypad->key_pressed)
+				schedule_delayed_work(&keypad->work,
+						keypad->board->switch_delay);
 		}
 		enable_irq(irq);
 	}
