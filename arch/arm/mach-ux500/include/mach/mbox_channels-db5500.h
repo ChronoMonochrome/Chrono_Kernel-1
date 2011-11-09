@@ -11,6 +11,9 @@
 /* Maximum number of datawords which can be send in one PDU */
 #define MAILBOX_NR_OF_DATAWORDS	3
 
+/* Number of buffers */
+#define NUM_DSP_BUFFER		16
+
 /**
  * mbox_channel_cb_t - Definition of the mailbox channel callback.
  * @data:	Pointer to the data.

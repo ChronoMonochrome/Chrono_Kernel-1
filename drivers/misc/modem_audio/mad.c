@@ -55,8 +55,8 @@ MODULE_LICENSE("GPLv2");
  * Maximum number of datawords which can be sent
  * in the mailbox each word is 32 bits
  */
-#define MAX_NR_OF_DATAWORDS	3
-#define MAX_NUM_RX_BUFF		4
+#define MAX_NR_OF_DATAWORDS	MAILBOX_NR_OF_DATAWORDS
+#define MAX_NUM_RX_BUFF		NUM_DSP_BUFFER
 #define NR_OF_DATAWORDS_REQD_FOR_ACK	1
 
 /**

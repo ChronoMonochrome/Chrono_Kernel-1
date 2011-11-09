@@ -51,9 +51,6 @@
 /* Returns sequence number from mbox message header */
 #define GET_SEQ_NUMBER(mbox_msg)		(((mbox_msg) >> 24)
 
-/* Number of buffers */
-#define NUM_DSP_BUFFER	4
-
 enum mbox_msg{
 	MBOX_CLOSE,
 	MBOX_OPEN,
@@ -379,7 +376,7 @@ rcv_msg:
 		dev_err(&channels.pdev->dev,
 				"%s no callback provided\n", __func__);
 	}
-	if (!atomic_dec_and_test(&rx_chan->rcv_counter))
+	if (atomic_dec_return(&rx_chan->rcv_counter) > 0)
 		goto rcv_msg;
 
 }
