@@ -36,7 +36,7 @@
 #undef WARNING
 #undef INFO
 #include <linux/usb/composite.h>
-#define U8500_USB_DMA_MIN_TRANSFER_SIZE	512
+#define Ux500_USB_DMA_MIN_TRANSFER_SIZE	512
 
 struct ux500_dma_channel {
 	struct dma_channel channel;
@@ -218,7 +218,7 @@ static int ux500_dma_is_compatible(struct dma_channel *channel,
 	struct usb_gadget		*gadget = &musb->g;
 	struct usb_composite_dev	*cdev = get_gadget_data(gadget);
 
-	if (length < U8500_USB_DMA_MIN_TRANSFER_SIZE)
+	if (length < Ux500_USB_DMA_MIN_TRANSFER_SIZE)
 		return 0;
 
 	list_for_each_entry(f, &cdev->config->functions, list) {
@@ -265,12 +265,15 @@ static int ux500_dma_channel_program(struct dma_channel *channel,
 				dma_addr_t dma_addr, u32 len)
 {
 	int ret;
+	struct ux500_dma_channel *ux500_dma_channel = channel->private_data;
 
 	BUG_ON(channel->status == MUSB_DMA_STATUS_UNKNOWN ||
 		channel->status == MUSB_DMA_STATUS_BUSY);
 
-	if (!ux500_dma_is_compatible(channel, packet_sz, (void *)dma_addr, len))
-		return false;
+	if (len < Ux500_USB_DMA_MIN_TRANSFER_SIZE)
+		return 0;
+	if (!ux500_dma_channel->is_tx && len < packet_sz)
+		return 0;
 
 	channel->status = MUSB_DMA_STATUS_BUSY;
 	channel->actual_len = 0;
