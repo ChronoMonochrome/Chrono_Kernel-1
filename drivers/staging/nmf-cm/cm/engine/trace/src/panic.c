@@ -13,111 +13,6 @@
 #include <cm/engine/utils/inc/convert.h>
 #include <share/communication/inc/nmf_service.h>
 
-PUBLIC t_cm_error cm_SRV_allocateTraceBufferMemory(t_nmf_core_id coreId, t_cm_domain_id domainId)
-{
-    t_ee_state *state = cm_EEM_getExecutiveEngine(coreId);
-
-    state->traceDataHandle = cm_DM_Alloc(domainId, SDRAM_EXT16,
-            TRACE_BUFFER_SIZE * sizeof(struct t_nmf_trace) / 2, CM_MM_ALIGN_WORD, TRUE);
-    if (state->traceDataHandle == INVALID_MEMORY_HANDLE)
-        return CM_NO_MORE_MEMORY;
-    else
-    {
-        t_uint32 mmdspAddr;
-        int i;
-
-        state->traceDataAddr = (struct t_nmf_trace*)cm_DSP_GetHostLogicalAddress(state->traceDataHandle);
-        cm_DSP_GetDspAddress(state->traceDataHandle, &mmdspAddr);
-        cm_writeAttribute(state->instance, "rtos/commonpart/traceDataAddr", mmdspAddr);
-
-        eeState[coreId].readTracePointer = 0;
-        eeState[coreId].lastReadedTraceRevision = 0;
-
-        for(i = 0; i < TRACE_BUFFER_SIZE; i++)
-            state->traceDataAddr[i].revision = 0;
-
-        return CM_OK;
-    }
-}
-
-PUBLIC void cm_SRV_deallocateTraceBufferMemory(t_nmf_core_id coreId)
-{
-    t_ee_state *state = cm_EEM_getExecutiveEngine(coreId);
-
-    state->traceDataAddr = 0;
-    cm_DM_Free(state->traceDataHandle, TRUE);
-}
-
-static t_uint32 swapHalfWord(t_uint32 word)
-{
-    return (word >> 16) | (word << 16);
-}
-
-PUBLIC EXPORT_SHARED t_cm_trace_type CM_ENGINE_GetNextTrace(
-        t_nmf_core_id               coreId,
-        struct t_nmf_trace          *trace)
-{
-    t_ee_state *state = cm_EEM_getExecutiveEngine(coreId);
-    t_uint32 foundRevision;
-    t_cm_trace_type type;
-
-    OSAL_LOCK_API();
-    if (state->traceDataAddr == NULL) {
-        type = CM_MPC_TRACE_NONE;
-	goto out;
-    }
-
-    foundRevision = swapHalfWord(state->traceDataAddr[state->readTracePointer].revision);
-
-    if(foundRevision <= state->lastReadedTraceRevision)
-    {
-        // It's an old trace forgot it
-        type = CM_MPC_TRACE_NONE;
-    }
-    else
-    {
-        struct t_nmf_trace          *traceRaw;
-
-        if(foundRevision == state->lastReadedTraceRevision + 1)
-        {
-            type = CM_MPC_TRACE_READ;
-        }
-        else
-        {
-            type = CM_MPC_TRACE_READ_OVERRUN;
-            /*
-             * If we find that revision is bigger, thus we are in overrun, then we take the writePointer + 1 which
-             * correspond to the older one.
-             * => Here there is a window where the MMDSP could update writePointer just after
-             */
-            state->readTracePointer = (cm_readAttributeNoError(state->instance, "rtos/commonpart/writePointer") + 1) % TRACE_BUFFER_SIZE;
-        }
-
-        traceRaw = &state->traceDataAddr[state->readTracePointer];
-
-        trace->timeStamp = swapHalfWord(traceRaw->timeStamp);
-        trace->componentId = swapHalfWord(traceRaw->componentId);
-        trace->traceId = swapHalfWord(traceRaw->traceId);
-        trace->paramOpt = swapHalfWord(traceRaw->paramOpt);
-        trace->componentHandle = swapHalfWord(traceRaw->componentHandle);
-        trace->parentHandle = swapHalfWord(traceRaw->parentHandle);
-
-        trace->params[0] = swapHalfWord(traceRaw->params[0]);
-        trace->params[1] = swapHalfWord(traceRaw->params[1]);
-        trace->params[2] = swapHalfWord(traceRaw->params[2]);
-        trace->params[3] = swapHalfWord(traceRaw->params[3]);
-
-        state->readTracePointer = (state->readTracePointer + 1) % TRACE_BUFFER_SIZE;
-        state->lastReadedTraceRevision = swapHalfWord(traceRaw->revision);
-        trace->revision = state->lastReadedTraceRevision;
-    }
-
-out:
-    OSAL_UNLOCK_API();
-
-    return type;
-}
-
 
 /*
  * Panic
@@ -243,10 +138,6 @@ PUBLIC EXPORT_SHARED t_cm_error CM_getServiceDescription(
         srcDescr->u.print.dspAddress = cm_readAttributeNoError(ee, "rtos/commonpart/serviceInfo0");
         srcDescr->u.print.value1 = cm_readAttributeNoError(ee, "rtos/commonpart/serviceInfo1");
         srcDescr->u.print.value2 = cm_readAttributeNoError(ee, "rtos/commonpart/serviceInfo2");
-    }
-    else if(serviceReason == MPC_SERVICE_TRACE)
-    {
-        *srcType = CM_MPC_SERVICE_TRACE;
     }
     else if(serviceReason != MPC_SERVICE_NONE)
     {

@@ -353,7 +353,7 @@ void OSAL_PostDfc(t_nmf_mpc2host_handle upLayerTHIS, t_uint32 methodIndex, t_eve
 	spin_unlock_bh(&skelwrapper->channelPriv->bh_lock);
 	
 	/* Wake up process' wait queue */
-	wake_up(&skelwrapper->channelPriv->waitq);
+	wake_up_interruptible(&skelwrapper->channelPriv->waitq);
 }
 
 
@@ -755,8 +755,8 @@ static int dspload_monitor(void *idx)
 	/* init counter */
 	if (CM_GetMpcLoadCounter(mpc->coreId,
 				 &mpc->oldLoadCounter) != CM_OK)
-		pr_warn("CM Driver: Failed to init load counter for %s\n",
-			mpc->name);
+		pr_err("CM Driver: Failed to init load counter for %s\n",
+		       mpc->name);
 
 	while (!kthread_should_stop()) {
 		t_cm_mpc_load_counter loadCounter;
@@ -919,7 +919,7 @@ void OSAL_DisablePwrRessource(t_nmf_power_resource resource, t_uint32 firstParam
 
 		/* Compute the relative end address of the range,
 		   relative to base address of BANK1 */
-		secondParam = (firstParam+secondParam-U8500_ESRAM_BANK1-1);
+		secondParam = (firstParam+secondParam-(U8500_ESRAM_BASE+0x20000)-1);
 
 		/* if end is below base address of BANK1, it means that full
 		   range of addresses is on Bank0 */
@@ -927,16 +927,16 @@ void OSAL_DisablePwrRessource(t_nmf_power_resource resource, t_uint32 firstParam
 			break;
 		/* Compute the index of the last bank accessed among
 		   esram 1+2 and esram 3+4 banks */
-		secondParam /= (2*U8500_ESRAM_BANK_SIZE);
+		secondParam /= 0x40000;
 		WARN_ON(secondParam > 1);
 
 		/* Compute the index of the first bank accessed among esram 1+2
 		   and esram 3+4 banks
 		   Do not manage Bank 0 (secured, must be always ON) */
-		if (firstParam < U8500_ESRAM_BANK1)
+		if (firstParam < (U8500_ESRAM_BASE+0x20000))
 			firstParam  = 0;
 		else
-			firstParam  = (firstParam-U8500_ESRAM_BANK1)/(2*U8500_ESRAM_BANK_SIZE);
+			firstParam  = (firstParam-(U8500_ESRAM_BASE+0x20000))/0x40000;
 
 		/* power off the banks 1+2 and 3+4 if accessed. */
 		for (i=firstParam; i<=secondParam; i++) {
@@ -1032,7 +1032,7 @@ t_cm_error OSAL_EnablePwrRessource(t_nmf_power_resource resource, t_uint32 first
 
 		/* Compute the relative end address of the range, relative
 		   to base address of BANK1 */
-		secondParam = (firstParam+secondParam-U8500_ESRAM_BANK1-1);
+		secondParam = (firstParam+secondParam-(U8500_ESRAM_BASE+0x20000)-1);
 
 		/* if end is below base address of BANK1, it means that full
 		   range of addresses is on Bank0 */
@@ -1040,16 +1040,16 @@ t_cm_error OSAL_EnablePwrRessource(t_nmf_power_resource resource, t_uint32 first
 			break;
 		/* Compute the index of the last bank accessed among esram 1+2
 		   and esram 3+4 banks */
-		secondParam /= (2*U8500_ESRAM_BANK_SIZE);
+		secondParam /= 0x40000;
 		WARN_ON(secondParam > 1);
 
 		/* Compute the index of the first bank accessed among esram 1+2
 		   and esram 3+4 banks
 		   Do not manage Bank 0 (secured, must be always ON) */
-		if (firstParam < U8500_ESRAM_BANK1)
+		if (firstParam < (U8500_ESRAM_BASE+0x20000))
 			firstParam  = 0;
 		else
-			firstParam  = (firstParam-U8500_ESRAM_BANK1)/(2*U8500_ESRAM_BANK_SIZE);
+			firstParam  = (firstParam-(U8500_ESRAM_BASE+0x20000))/0x40000;
 
 		/* power on the banks 1+2 and 3+4 if accessed. */
 		for (i=firstParam; i<=secondParam; i++) {

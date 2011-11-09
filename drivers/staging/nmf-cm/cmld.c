@@ -14,9 +14,9 @@
 #include <linux/cdev.h>
 #include <linux/io.h>
 #include <linux/mm.h>
-#include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/sched.h>
 
 #include <cm/inc/cm_def.h>
 #include <cm/engine/api/cm_engine.h>
@@ -29,7 +29,7 @@
 #include "cm_service.h"
 #include "cm_dma.h"
 
-#define CMDRIVER_PATCH_VERSION 121
+#define CMDRIVER_PATCH_VERSION 117
 #define O_FLUSH 0x1000000
 
 static int cmld_major;
@@ -233,6 +233,111 @@ static void freeProcessPriv(struct kref *ref)
 	OSAL_Free(entry);
 }
 
+/** Driver's open method
+ * Allocates per-process resources: private data, wait queue,
+ * memory area descriptors linked list, message queue.
+ *
+ * \return POSIX error code
+ */
+static int cmld_open(struct inode *inode, struct file *file)
+{
+	struct cm_process_priv *procPriv = getProcessPriv();
+
+	if (IS_ERR(procPriv))
+		return PTR_ERR(procPriv);		
+
+	if (iminor(inode) == 0)
+		file->private_data = procPriv;
+	else {
+		struct cm_channel_priv *channelPriv = (struct cm_channel_priv*)OSAL_Alloc(sizeof(*channelPriv));
+		if (channelPriv == NULL) {
+			kref_put(&procPriv->ref, freeProcessPriv);
+			return -ENOMEM;
+		}
+
+		channelPriv->proc = procPriv;
+		channelPriv->state = CHANNEL_OPEN;
+
+		/* Initialize wait_queue, lists and mutexes */
+		init_waitqueue_head(&channelPriv->waitq);
+		plist_head_init(&channelPriv->messageQueue);
+		INIT_LIST_HEAD(&channelPriv->skelList);
+		spin_lock_init(&channelPriv->bh_lock);
+		mutex_init(&channelPriv->msgQueueLock);
+		mutex_init(&channelPriv->skelListLock);
+
+		tasklet_disable(&cmld_service_tasklet);
+		mutex_lock(&channel_lock);
+		list_add(&channelPriv->entry, &channel_list);
+		mutex_unlock(&channel_lock);
+		tasklet_enable(&cmld_service_tasklet);
+
+		file->private_data = channelPriv; // store channel private struct in file descriptor
+	}
+	return 0;
+}
+
+/** Driver's release method.
+ * Frees any per-process pending resource: components, bindings, memory areas.
+ *
+ * \return POSIX error code
+ */
+static int cmld_release(struct inode *inode, struct file *file)
+{
+	struct cm_process_priv* procPriv;
+
+	/* The driver must guarantee that all related resources are released.
+	   Thus all these checks below are necessary to release all remaining
+	   resources still linked to this 'client', in case of abnormal process
+	   exit.
+	   => These are error cases !
+	   In the usual case, nothing should be done except the free of
+	   the cmPriv itself
+	*/
+
+	if (iminor(inode) != 0) {
+		struct cm_channel_priv* channelPriv;
+		channelPriv = file->private_data;
+		procPriv = channelPriv->proc;
+
+		/* We don't need to synchronize here by using the skelListLock:
+		   the list is only accessed during ioctl() and we can't be here
+		   if an ioctl() is on-going */		   
+		if (list_empty(&channelPriv->skelList)) {
+			/* There is no pending MPC->HOST binding
+			   => we can quietly delete the channel */
+			tasklet_disable(&cmld_service_tasklet);
+			mutex_lock(&channel_lock);
+			list_del(&channelPriv->entry);
+			mutex_unlock(&channel_lock);
+			tasklet_enable(&cmld_service_tasklet);
+
+			/* Free all remaining messages if any */
+			freeMessages(channelPriv);
+
+			/* Free the per-channel descriptor */
+			OSAL_Free(channelPriv);
+		} else {
+			/* Uh: there are still some MPC->HOST binding but we don't have the
+			   required info to unbind them.
+			   => we must keep all skel structures because possibly used in OSAL_PostDfc
+			   (incoming callback msg) */
+			/* We flag the channel as closed to discard any new msg that will never be read anyway */
+			channelPriv->state = CHANNEL_CLOSED;
+
+			/* Already Free all remaining messages if any,
+			   they will never be read anyway */
+			freeMessages(channelPriv);
+		}
+	} else
+		procPriv = file->private_data;
+
+	kref_put(&procPriv->ref, freeProcessPriv);
+	file->private_data = NULL;				
+
+	return 0;
+}
+
 /** Reads Component Manager messages destinated to this process.
  * The message is composed by three fields:
  * 1) mpc2host handle (distinguishes interfaces)
@@ -242,16 +347,19 @@ static void freeProcessPriv(struct kref *ref)
  * \note cfr GetEvent()
  * \return POSIX error code
  */
-static ssize_t cmld_channel_read(struct file *file, char *buf, size_t count, loff_t *ppos)
+static ssize_t cmld_read(struct file *file, char *buf, size_t count, loff_t *ppos)
 {
 	int err = 0;
-	struct cm_channel_priv* channelPriv = file->private_data;
+	struct cm_channel_priv* channelPriv = (struct cm_channel_priv*)(file->private_data);
 	int msgSize = 0;
 	struct plist_head* messageQueue;
 	struct osal_msg* msg;
 	t_os_message *os_msg = (t_os_message *)buf;
 	int block = !(file->f_flags & O_NONBLOCK);
 
+	if (iminor(file->f_dentry->d_inode) == 0)
+		return -ENOSYS;
+	
 	messageQueue = &channelPriv->messageQueue;
  
 	if (mutex_lock_killable(&channelPriv->msgQueueLock))
@@ -263,7 +371,7 @@ wait:
 		if (block == 0)
 			return -EAGAIN;
 		/* Wait until there is a message to ferry up */
-		if (wait_event_killable(channelPriv->waitq, ((!plist_head_empty(messageQueue)) || (file->f_flags & O_FLUSH))))
+		if (wait_event_interruptible(channelPriv->waitq, ((!plist_head_empty(messageQueue)) || (file->f_flags & O_FLUSH))))
 			return -ERESTARTSYS;
 		if (file->f_flags & O_FLUSH) {
 			file->f_flags &= ~O_FLUSH;
@@ -351,21 +459,19 @@ out:
  *
  * \return POSIX error code
  */
-static int cmld_channel_flush(struct file *file, fl_owner_t id)
+static int cmld_flush(struct file *file, fl_owner_t id)
 {
-	struct cm_channel_priv* channelPriv = file->private_data;
-	file->f_flags |= O_FLUSH;
-	wake_up(&channelPriv->waitq);
+	if (iminor(file->f_dentry->d_inode) != 0) {
+		struct cm_channel_priv* channelPriv = (struct cm_channel_priv*)(file->private_data);
+		file->f_flags |= O_FLUSH;
+		wake_up_interruptible(&channelPriv->waitq);
+	}
 	return 0;
 }
 
-static long cmld_channel_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long cmld_channel_ctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct cm_channel_priv *channelPriv = file->private_data;
-#ifdef CONFIG_DEBUG_FS
-	if (wait_event_killable(dump_waitq, (!cmld_dump_ongoing)))
-		return -ERESTARTSYS;
-#endif
 
 	switch(cmd) {
 		/*
@@ -374,7 +480,7 @@ static long cmld_channel_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	case CM_BINDCOMPONENTTOCMCORE:
 		return cmld_BindComponentToCMCore(channelPriv, (CM_BindComponentToCMCore_t *)arg);
 	case CM_FLUSHCHANNEL:
-		return cmld_channel_flush(file, 0);
+		return cmld_flush(file, 0);
 	default:
 		pr_err("CM(%s): unsupported command %i\n", __func__, cmd);
 		return -EINVAL;
@@ -382,18 +488,9 @@ static long cmld_channel_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	return 0;
 }
 
-static long cmld_control_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long cmld_control_ctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct cm_process_priv* procPriv = file->private_data;
-#ifdef CONFIG_DEBUG_FS
-	if (cmd == CM_PRIV_DEBUGFS_DUMP_DONE) {
-		cmld_dump_ongoing = false;
-		wake_up(&dump_waitq);
-		return 0;
-	} else if (wait_event_killable(dump_waitq, (!cmld_dump_ongoing)))
-		return -ERESTARTSYS;
-#endif
-
 	switch(cmd) {
 		/*
 		 * All wrapped CM SYSCALL
@@ -598,6 +695,7 @@ static long cmld_control_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		cmld_user_has_debugfs = true;
 #endif
 		return 0;
+	case CM_PRIV_DEBUGFS_DUMP_DONE:
 	case CM_PRIV_DEBUGFS_WAIT_DUMP:
 		return 0;
 	default:
@@ -606,6 +704,29 @@ static long cmld_control_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	}
 
 	return 0;
+}
+
+/** Driver's ioctl method
+ * Implements user/kernel crossing for SYSCALL API.
+ *
+ * \return POSIX error code
+ */
+static long cmld_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+#ifdef CONFIG_DEBUG_FS
+	if (cmd == CM_PRIV_DEBUGFS_DUMP_DONE) {
+		cmld_dump_ongoing = false;
+		wake_up_interruptible(&dump_waitq);
+		return 0;
+	} else if (wait_event_interruptible(dump_waitq, (!cmld_dump_ongoing)))
+		return -ERESTARTSYS;
+#endif
+
+	if (iminor(filp->f_dentry->d_inode) == 0) {
+		return cmld_control_ctl(filp, cmd, arg);
+	} else {
+		return cmld_channel_ctl(filp, cmd, arg);
+	}
 }
 
 /** VMA open callback function
@@ -634,7 +755,7 @@ static struct vm_operations_struct cmld_remap_vm_ops = {
  * 
  * \return POSIX error code
  */
-static int cmld_control_mmap(struct file *file, struct vm_area_struct *vma)
+static int cmld_mmap(struct file* file, struct vm_area_struct* vma)
 {
 	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
 	struct list_head* listHead;
@@ -706,278 +827,6 @@ static int cmld_control_mmap(struct file *file, struct vm_area_struct *vma)
 	return 0;
 }
 
-/* Driver's release method for /dev/cm_channel */
-static int cmld_channel_release(struct inode *inode, struct file *file)
-{
-	struct cm_channel_priv* channelPriv = file->private_data;
-	struct cm_process_priv* procPriv = channelPriv->proc;
-
-	/*
-	 * The driver must guarantee that all related resources are released.
-	 * Thus all these checks below are necessary to release all remaining
-	 * resources still linked to this 'client', in case of abnormal process
-	 * exit.
-	 * => These are error cases !
-	 * In the usual case, nothing should be done except the free of
-	 * the cmPriv itself
-	 */
-
-	/* We don't need to synchronize here by using the skelListLock:
-	   the list is only accessed during ioctl() and we can't be here
-	   if an ioctl() is on-going */
-	if (list_empty(&channelPriv->skelList)) {
-		/* There is no pending MPC->HOST binding
-		   => we can quietly delete the channel */
-		tasklet_disable(&cmld_service_tasklet);
-		mutex_lock(&channel_lock);
-		list_del(&channelPriv->entry);
-		mutex_unlock(&channel_lock);
-		tasklet_enable(&cmld_service_tasklet);
-
-		/* Free all remaining messages if any */
-		freeMessages(channelPriv);
-
-		/* Free the per-channel descriptor */
-		OSAL_Free(channelPriv);
-	} else {
-		/*
-		 * Uh: there are still some MPC->HOST binding but we don't have
-		 * the required info to unbind them.
-		 * => we must keep all skel structures because possibly used in
-		 * OSAL_PostDfc (incoming callback msg). We flag the channel as
-		 * closed to discard any new msg that will never be read anyway
-		 */
-		channelPriv->state = CHANNEL_CLOSED;
-
-		/* Already Free all remaining messages if any,
-		   they will never be read anyway */
-		freeMessages(channelPriv);
-	}
-
-	kref_put(&procPriv->ref, freeProcessPriv);
-	file->private_data = NULL;
-
-	return 0;
-}
-
-/* Driver's release method for /dev/cm_control */
-static int cmld_control_release(struct inode *inode, struct file *file)
-{
-	struct cm_process_priv* procPriv = file->private_data;
-
-	kref_put(&procPriv->ref, freeProcessPriv);
-	file->private_data = NULL;
-
-	return 0;
-}
-
-static struct file_operations cmld_control_fops = {
-	.owner		=	THIS_MODULE,
-	.unlocked_ioctl	=	cmld_control_ioctl,
-	.mmap		=	cmld_control_mmap,
-	.release	=	cmld_control_release,
-};
-
-static int cmld_control_open(struct file *file)
-{
-	struct cm_process_priv *procPriv = getProcessPriv();
-	if (IS_ERR(procPriv))
-		return PTR_ERR(procPriv);
-	file->private_data = procPriv;
-	file->f_op = &cmld_control_fops;
-	return 0;
-}
-
-static struct file_operations cmld_channel_fops = {
-	.owner		=	THIS_MODULE,
-	.read		=	cmld_channel_read,
-	.unlocked_ioctl	=	cmld_channel_ioctl,
-	.flush		=	cmld_channel_flush,
-	.release	=	cmld_channel_release,
-};
-
-static int cmld_channel_open(struct file *file)
-{
-	struct cm_process_priv *procPriv = getProcessPriv();
-	struct cm_channel_priv *channelPriv;
-
-	if (IS_ERR(procPriv))
-		return PTR_ERR(procPriv);
-
-	channelPriv = (struct cm_channel_priv*)OSAL_Alloc(sizeof(*channelPriv));
-	if (channelPriv == NULL) {
-		kref_put(&procPriv->ref, freeProcessPriv);
-		return -ENOMEM;
-	}
-
-	channelPriv->proc = procPriv;
-	channelPriv->state = CHANNEL_OPEN;
-
-	/* Initialize wait_queue, lists and mutexes */
-	init_waitqueue_head(&channelPriv->waitq);
-	plist_head_init(&channelPriv->messageQueue);
-	INIT_LIST_HEAD(&channelPriv->skelList);
-	spin_lock_init(&channelPriv->bh_lock);
-	mutex_init(&channelPriv->msgQueueLock);
-	mutex_init(&channelPriv->skelListLock);
-
-	tasklet_disable(&cmld_service_tasklet);
-	mutex_lock(&channel_lock);
-	list_add(&channelPriv->entry, &channel_list);
-	mutex_unlock(&channel_lock);
-	tasklet_enable(&cmld_service_tasklet);
-
-	file->private_data = channelPriv;
-	file->f_op = &cmld_channel_fops;
-	return 0;
-}
-
-static ssize_t cmld_sxa_trace_read(struct file *file, char *buf, size_t count, loff_t *ppos)
-{
-	struct mpcConfig *mpc = file->private_data;
-	size_t written = 0;
-	struct t_nmf_trace trace;
-	t_cm_trace_type traceType;
-	struct mmdsp_trace mmdsp_tr = {
-		.media = TB_MEDIA_FILE,
-		.receiver_dev = TB_DEV_PC,
-		.sender_dev = TB_DEV_TRACEBOX,
-		.unused = TB_TRACEBOX,
-		.receiver_obj = DEFAULT_RECEIVERR_OBJ,
-		.sender_obj = DEFAULT_SENDER_OBJ,
-		.transaction_id = 0,
-		.message_id = TB_TRACE_MSG,
-		.master_id = mpc->coreId+1,
-		.channel_id = 0,
-		.ost_version = OST_VERSION,
-		.entity = ENTITY,
-		.protocol_id = PROTOCOL_ID,
-		.btrace_hdr_flag = 0,
-		.btrace_hdr_subcategory = 0,
-	};
-
-	while ((count - written) >= sizeof(mmdsp_tr)) {
-		traceType = CM_ENGINE_GetNextTrace(mpc->coreId, &trace);
-
-		switch (traceType) {
-		case CM_MPC_TRACE_READ_OVERRUN:
-			mmdsp_tr.size =
-				cpu_to_be16(offsetof(struct mmdsp_trace,
-						     ost_version)
-					    -offsetof(struct mmdsp_trace,
-						      receiver_obj));
-			mmdsp_tr.message_id = TB_TRACE_EXCEPTION_MSG;
-			mmdsp_tr.ost_master_id = TB_EXCEPTION_LONG_OVRF_PACKET;
-			if (copy_to_user(&buf[written], &mmdsp_tr,
-					 offsetof(struct mmdsp_trace,
-						  ost_version)))
-				return -EFAULT;
-			written += offsetof(struct mmdsp_trace, ost_version);
-			if ((count - written) < sizeof(mmdsp_tr))
-				break;
-		case CM_MPC_TRACE_READ: {
-			u16 param_nr = (u16)trace.paramOpt;
-			u16 handle_valid = (u16)(trace.paramOpt >> 16);
-			u32 to_write = offsetof(struct mmdsp_trace,
-						parent_handle);
-			mmdsp_tr.transaction_id = trace.revision%256;
-			mmdsp_tr.message_id = TB_TRACE_MSG;
-			mmdsp_tr.ost_master_id = OST_MASTERID;
-			mmdsp_tr.timestamp = cpu_to_be64(trace.timeStamp);
-			mmdsp_tr.timestamp2 = cpu_to_be64(trace.timeStamp);
-			mmdsp_tr.component_id = cpu_to_be32(trace.componentId);
-			mmdsp_tr.trace_id = cpu_to_be32(trace.traceId);
-			mmdsp_tr.btrace_hdr_category = (trace.traceId>>16)&0xFF;
-			mmdsp_tr.btrace_hdr_size = BTRACE_HEADER_SIZE
-				+ sizeof(trace.params[0]) * param_nr;
-			if (handle_valid) {
-				mmdsp_tr.parent_handle = trace.parentHandle;
-				mmdsp_tr.component_handle =
-					trace.componentHandle;
-				to_write += sizeof(trace.parentHandle)
-					+ sizeof(trace.componentHandle);
-				mmdsp_tr.btrace_hdr_size +=
-					sizeof(trace.parentHandle)
-					+ sizeof(trace.componentHandle);
-			}
-			mmdsp_tr.size =
-				cpu_to_be16(to_write
-					    + (sizeof(trace.params[0])*param_nr)
-					    - offsetof(struct mmdsp_trace,
-						       receiver_obj));
-			mmdsp_tr.length = to_write
-				+ (sizeof(trace.params[0])*param_nr)
-				- offsetof(struct mmdsp_trace,
-					   timestamp2);
-			if (copy_to_user(&buf[written], &mmdsp_tr, to_write))
-				return -EFAULT;
-			written += to_write;
-			/* write param */
-			to_write = sizeof(trace.params[0]) * param_nr;
-			if (copy_to_user(&buf[written], trace.params, to_write))
-				return -EFAULT;
-			written += to_write;
-			break;
-		}
-		case CM_MPC_TRACE_NONE:
-		default:
-			if ((file->f_flags & O_NONBLOCK) || written)
-				return written;
-			spin_lock_bh(&mpc->trace_reader_lock);
-			mpc->trace_reader = current;
-			spin_unlock_bh(&mpc->trace_reader_lock);
-			schedule_timeout_killable(msecs_to_jiffies(200));
-			spin_lock_bh(&mpc->trace_reader_lock);
-			mpc->trace_reader = NULL;
-			spin_unlock_bh(&mpc->trace_reader_lock);
-			if (signal_pending(current))
-				return -ERESTARTSYS;
-		}
-	}
-	return written;
-}
-
-/* Driver's release method for /dev/cm_sxa_trace */
-static int cmld_sxa_trace_release(struct inode *inode, struct file *file)
-{
-	struct mpcConfig *mpc = file->private_data;
-	atomic_dec(&mpc->trace_read_count);
-	return 0;
-}
-
-static struct file_operations cmld_sxa_trace_fops = {
-	.owner		=	THIS_MODULE,
-	.read		=	cmld_sxa_trace_read,
-	.release	=	cmld_sxa_trace_release,
-};
-
-static int cmld_sxa_trace_open(struct file *file, struct mpcConfig *mpc)
-{
-	if (atomic_add_unless(&mpc->trace_read_count, 1, 1) == 0)
-		return -EBUSY;
-
-	file->private_data = mpc;
-	file->f_op = &cmld_sxa_trace_fops;
-	return 0;
-}
-
-/* driver open() call: specific */
-static int cmld_open(struct inode *inode, struct file *file)
-{
-	switch (iminor(inode)) {
-	case 0:
-		return cmld_control_open(file);
-	case 1:
-		return cmld_channel_open(file);
-	case 2:
-		return cmld_sxa_trace_open(file, &osalEnv.mpc[SIA]);
-	case 3:
-		return cmld_sxa_trace_open(file, &osalEnv.mpc[SVA]);
-	default:
-		return -ENOSYS;
-	}
-}
-
 /** MPC Events tasklet
  *  The parameter is used to know from which interrupts we're comming
  *  and which core to pass to CM_ProcessMpcEvent():
@@ -1033,7 +882,12 @@ static irqreturn_t panic_handler(int irq, void *idx)
  */
 static struct file_operations cmld_fops = {
 	.owner		=	THIS_MODULE,
+	.read		=	cmld_read,
+	.unlocked_ioctl	=	cmld_ioctl,
+	.mmap		=	cmld_mmap,
 	.open		=	cmld_open,
+	.flush		=	cmld_flush,
+	.release	=	cmld_release,
 };
 
 /**

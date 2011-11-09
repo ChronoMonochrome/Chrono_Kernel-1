@@ -12,9 +12,9 @@
 
 #include <linux/module.h>
 #include <linux/plist.h>
-#include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/spinlock_types.h>
+#include <linux/sched.h>
 
 #include <cm/engine/api/control/irq_engine.h>
 
@@ -71,7 +71,7 @@ void dispatch_service_msg(struct osal_msg *msg)
 		spin_lock_bh(&channelPriv->bh_lock);
 		plist_add(&new_msg->msg_entry, &channelPriv->messageQueue);
 		spin_unlock_bh(&channelPriv->bh_lock);
-		wake_up(&channelPriv->waitq);
+		wake_up_interruptible(&channelPriv->waitq);
 	}
 }
 
@@ -113,12 +113,6 @@ static void service_tasklet_func(unsigned long unused)
 					       desc.u.print.value2);
 				break;
 			}
-			case CM_MPC_SERVICE_TRACE:
-				spin_lock_bh(&osalEnv.mpc[i].trace_reader_lock);
-				if (osalEnv.mpc[i].trace_reader)
-					wake_up_process(osalEnv.mpc[i].trace_reader);
-				spin_unlock_bh(&osalEnv.mpc[i].trace_reader_lock);
-				break;
 			default:
 				pr_err("[CM] %s: MPC Service Type %d not supported\n", __func__, type);
 			}

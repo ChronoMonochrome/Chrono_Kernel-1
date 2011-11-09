@@ -44,10 +44,6 @@ typedef t_uint8 t_nmf_osal_sync_error;
 #define SEM_TIMEOUT_NORMAL      3000
 #define SEM_TIMEOUT_DEBUG       300000
 
-/*!
- * \brief Operations used to support additionnal OS-specific debug feature
- * \ingroup CM_ENGINE_OSAL_API
- */
 struct osal_debug_operations {
 	void (*component_create)(t_component_instance *component);
 	void (*component_destroy)(t_component_instance *component);

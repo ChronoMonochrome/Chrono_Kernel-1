@@ -20,14 +20,12 @@
 #endif
 
 /* Embedded Static RAM base address */
-/* config: 0-64k: secure */
-#define ESRAM_BASE (U8500_ESRAM_BASE + U8500_ESRAM_DMA_LCPA_OFFSET)
+#define ESRAM_BASE (U8500_ESRAM_BASE + 0x10000) // V1/V2 config: 0-64k: secure;
 
 /*
  * Embedded ram size for CM (in Kb)
  * 5 banks of 128k: skip the first half bank (secure) and the last
  * one (used for MCDE/B2R2), but include DMA part (4k after the secure part)
- * to give access from DSP side
  */
 #define ESRAM_SIZE 448
 enum {

@@ -24,12 +24,6 @@ typedef struct {
         t_memory_handle         handle;
         t_cm_logical_address    addr;
     } panicArea;
-
-    // Trace Management
-    t_uint32                    readTracePointer;
-    t_uint32                    lastReadedTraceRevision;
-    t_memory_handle             traceDataHandle;
-    struct t_nmf_trace          *traceDataAddr;
 } t_ee_state;
 
 //TODO, juraj, this should be done more properly, like accessor method, instead making this global variable..

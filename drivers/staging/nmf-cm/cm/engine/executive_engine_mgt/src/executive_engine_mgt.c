@@ -21,8 +21,6 @@
 #include <cm/engine/power_mgt/inc/power.h>
 #include <cm/engine/perfmeter/inc/mpcload.h>
 
-#include <cm/engine/trace/inc/xtitrace.h>
-
 #include <share/communication/inc/nmf_service.h>
 
 t_ee_state eeState[NB_CORE_IDS];
@@ -132,16 +130,6 @@ PUBLIC t_cm_error cm_EEM_Init(
         return error;
     }
 
-    if((error = cm_SRV_allocateTraceBufferMemory(coreId, cm_DSP_GetState(coreId)->domainEE)) != CM_OK)
-    {
-        cm_PFM_deallocatePerfmeterDataMemory(coreId);
-        cm_EEM_freePanicArea(coreId);
-        cm_delayedDestroyComponent(eeState[coreId].instance);
-        eeState[coreId].instance = (t_component_instance *)0;
-        cm_DSP_Shutdown(coreId);
-        return error;
-    }
-
     /* set initial stack value */
     cm_writeAttribute(eeState[coreId].instance, "rtos/scheduler/topOfStack", cm_DSP_getStackAddr(coreId));
 
@@ -191,7 +179,6 @@ PUBLIC void cm_EEM_Close(t_nmf_core_id coreId)
     cm_DSP_setStackSize(coreId, 0);
     cm_delayedDestroyComponent(eeState[coreId].instance);
     eeState[coreId].instance = (t_component_instance *)0;
-    cm_SRV_deallocateTraceBufferMemory(coreId);
     cm_PFM_deallocatePerfmeterDataMemory(coreId);
     cm_EEM_freePanicArea(coreId);
     cm_DSP_Shutdown(coreId);

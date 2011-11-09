@@ -5,11 +5,11 @@
  */
 
 #include <linux/interrupt.h>
-#include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 #include <cm/engine/api/cm_engine.h>
+#include <linux/sched.h>
 #include "cmioctl.h"
 #include "osal-kernel.h"
 #include "cmld.h"
@@ -1397,9 +1397,9 @@ int cmld_PrivReserveMemory(struct cm_process_priv *procPriv, unsigned int physAd
 			/* Mark this memory area reserved for a mapping for this thread ID */
 			/* It must not be already reserved but this should not happen */
 			if (curr->tid) {
-				pr_err("%s: thread %d can't reseveved memory %x already "
+				/*pr_err("%s: thread %d can't reseveved memory %x already "
 				       "reserved for %d\n",
-				       __func__, current->pid, physAddr, curr->tid);
+				       __func__, current->pid, physAddr, (int)curr->tid);*/
 				err = -EBUSY;
 			} else {
 				curr->tid = current->pid;
