@@ -75,7 +75,7 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define OVLY_TIMEOUT 100
 #define CHNL_TIMEOUT 100
 #define FLOW_STOP_TIMEOUT 20
-#define SCREEN_PPL_HIGH 1920
+#define SCREEN_PPL_HIGH 1280
 #define SCREEN_PPL_CEA2 720
 #define SCREEN_LPF_CEA2 480
 #define DSI_DELAY0_CEA2_ADD 10
@@ -103,6 +103,8 @@ static u8 num_channels;
 static u8 num_overlays;
 static int mcde_irq;
 static u32 input_fifo_size;
+static u32 output_fifo_ab_size;
+static u32 output_fifo_c0c1_size;
 
 static struct regulator *regulator_vana;
 static struct regulator *regulator_mcde_epod;
@@ -718,11 +720,11 @@ static u32 get_output_fifo_size(enum mcde_fifo fifo)
 	switch (fifo) {
 	case MCDE_FIFO_A:
 	case MCDE_FIFO_B:
-		ret = MCDE_FIFO_AB_SIZE;
+		ret = output_fifo_ab_size;
 		break;
 	case MCDE_FIFO_C0:
 	case MCDE_FIFO_C1:
-		ret = MCDE_FIFO_C0C1_SIZE;
+		ret = output_fifo_c0c1_size;
 		break;
 	default:
 		dev_warn(&mcde_dev->dev, "Unsupported fifo");
@@ -1318,10 +1320,8 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 		ljinc *= 2;
 	}
 
-	fifo_size = get_output_fifo_size(fifo);
-
 	if ((fifo == MCDE_FIFO_A || fifo == MCDE_FIFO_B) &&
-			regs->ppl >= fifo_size * 2)
+			regs->ppl >= SCREEN_PPL_HIGH)
 		pixelfetchwtrmrklevel = input_fifo_size * 2;
 	else
 		pixelfetchwtrmrklevel = input_fifo_size / 2;
@@ -3272,6 +3272,8 @@ static int probe_hw(struct platform_device *pdev)
 		num_overlays = 6;
 		dsi_ifc_is_supported = true;
 		input_fifo_size = 128;
+		output_fifo_ab_size = 640;
+		output_fifo_c0c1_size = 160;
 		dev_info(&mcde_dev->dev, "db8500 V2 HW\n");
 		break;
 	case MCDE_VERSION_4_0_4:
@@ -3279,6 +3281,7 @@ static int probe_hw(struct platform_device *pdev)
 		num_channels = 2;
 		num_overlays = 3;
 		input_fifo_size = 80;
+		output_fifo_ab_size = 320;
 		dsi_ifc_is_supported = false;
 		dev_info(&mcde_dev->dev, "db5500 V2 HW\n");
 		break;
@@ -3288,6 +3291,8 @@ static int probe_hw(struct platform_device *pdev)
 		num_overlays = 6;
 		dsi_ifc_is_supported = true;
 		input_fifo_size = 192;
+		output_fifo_ab_size = 640;
+		output_fifo_c0c1_size = 160;
 		dev_info(&mcde_dev->dev, "db9540 V1 HW\n");
 		break;
 	case MCDE_VERSION_3_0_5:
