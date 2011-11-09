@@ -883,7 +883,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	/* DA/AD */
 
 	SND_SOC_DAPM_INPUT("ADC Input"),
-	SND_SOC_DAPM_DAC("ADC", "ab8500_0c", SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_ADC("ADC", "ab8500_0c", SND_SOC_NOPM, 0, 0),
 
 	SND_SOC_DAPM_DAC("DAC", "ab8500_0p", SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_OUTPUT("DAC Output"),
@@ -905,9 +905,9 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	SND_SOC_DAPM_SUPPLY("Charge Pump", REG_ANACONF5, REG_ANACONF5_ENCPHS, 0, NULL, 0),
 
-	SND_SOC_DAPM_DAC("DA1 Enable", "ab8500_0c",
+	SND_SOC_DAPM_DAC("DA1 Enable", "ab8500_0p",
 			REG_DAPATHENA, REG_DAPATHENA_ENDA1, 0),
-	SND_SOC_DAPM_DAC("DA2 Enable", "ab8500_0c",
+	SND_SOC_DAPM_DAC("DA2 Enable", "ab8500_0p",
 			REG_DAPATHENA, REG_DAPATHENA_ENDA2, 0),
 
 	SND_SOC_DAPM_SWITCH("Headset Left", SND_SOC_NOPM, 0, 0, dapm_hsl_mute),
@@ -916,17 +916,17 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_PGA("HSL Digital Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_PGA("HSR Digital Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 
-	SND_SOC_DAPM_DAC("HSL DAC", "ab8500_0c",
+	SND_SOC_DAPM_DAC("HSL DAC", "ab8500_0p",
 			REG_DAPATHCONF, REG_DAPATHCONF_ENDACHSL, 0),
-	SND_SOC_DAPM_DAC("HSR DAC", "ab8500_0c",
+	SND_SOC_DAPM_DAC("HSR DAC", "ab8500_0p",
 			REG_DAPATHCONF, REG_DAPATHCONF_ENDACHSR, 0),
 	SND_SOC_DAPM_MIXER("HSL DAC Mute", REG_MUTECONF, REG_MUTECONF_MUTDACHSL,
 			INVERT, NULL, 0),
 	SND_SOC_DAPM_MIXER("HSR DAC Mute", REG_MUTECONF, REG_MUTECONF_MUTDACHSR,
 			INVERT, NULL, 0),
-	SND_SOC_DAPM_DAC("HSL DAC Driver", "ab8500_0c",
+	SND_SOC_DAPM_DAC("HSL DAC Driver", "ab8500_0p",
 			REG_ANACONF3, REG_ANACONF3_ENDRVHSL, 0),
-	SND_SOC_DAPM_DAC("HSR DAC Driver", "ab8500_0c",
+	SND_SOC_DAPM_DAC("HSR DAC Driver", "ab8500_0p",
 			REG_ANACONF3, REG_ANACONF3_ENDRVHSR, 0),
 
 	SND_SOC_DAPM_MIXER("HSL Mute", REG_MUTECONF, REG_MUTECONF_MUTHSL,
@@ -1131,8 +1131,6 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	SND_SOC_DAPM_MIXER("AD4 Enable", REG_ADPATHENA,
 			REG_ADPATHENA_ENAD34, 0, NULL, 0),
-
-	SND_SOC_DAPM_AIF_OUT("AD_OUT4", "ab8500_0c", 0, SND_SOC_NOPM, 0, 0),
 
 	/* LineIn Bypass path */
 
