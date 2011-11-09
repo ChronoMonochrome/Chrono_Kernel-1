@@ -226,7 +226,8 @@ int pm_clk_suspend(struct device *dev)
 			pm_clk_acquire(dev, ce);
 
 		if (ce->status < PCE_STATUS_ERROR) {
-			clk_disable(ce->clk);
+			if (ce->status == PCE_STATUS_ENABLED)
+				clk_disable(ce->clk);
 			ce->status = PCE_STATUS_ACQUIRED;
 		}
 	}
