@@ -593,7 +593,12 @@ static void mmci_pre_request(struct mmc_host *mmc, struct mmc_request *mrq,
 	if (mmci_validate_data(host, data))
 		return;
 
-	if (!mmci_dma_prep_next(host, data))
+	/*
+	 * Don't prepare DMA if there is no previous request,
+	 * is_first_req is set. Instead, prepare DMA while
+	 * start command is being issued.
+	 */
+	if (!is_first_req && !mmci_dma_prep_next(host, data))
 		data->host_cookie = ++nd->cookie < 0 ? 1 : nd->cookie;
 }
 
