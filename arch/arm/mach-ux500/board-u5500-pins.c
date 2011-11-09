@@ -77,6 +77,7 @@ static pin_cfg_t u5500_pins_default[] = {
 
 	/* Board Id Identification B5500 or S5500 */
 	GPIO0_GPIO		| PIN_INPUT_PULLUP,
+	GPIO214_GPIO		| PIN_OUTPUT_LOW,	/* SW_CRASH_INDICATOR */
 
 };
 

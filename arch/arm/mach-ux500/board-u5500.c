@@ -596,6 +596,12 @@ bool is_s5500_board()
 	return (val == 1);
 }
 
+static long u5500_panic_blink(int state)
+{
+	gpio_direction_output(GPIO_SW_CRASH_INDICATOR, state);
+	return 0;
+}
+
 static void __init u5500_i2c_init(struct device *parent)
 {
 	db5500_add_i2c1(pareent, &u5500_i2c1_data);
@@ -664,6 +670,10 @@ static void __init u5500_init_machine(void)
 
 	platform_add_devices(u5500_platform_devices,
 		ARRAY_SIZE(u5500_platform_devices));
+
+	if (!gpio_request_one(GPIO_SW_CRASH_INDICATOR, GPIOF_OUT_INIT_LOW,
+			      "SW_CRASH_INDICATOR"))
+		panic_blink = u5500_panic_blink;
 }
 
 MACHINE_START(U5500, "ST-Ericsson U5500 Platform")
