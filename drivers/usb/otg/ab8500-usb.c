@@ -36,6 +36,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/kernel_stat.h>
+#include <linux/pm_qos.h>
 
 #include <asm/io.h>
 
@@ -71,6 +72,8 @@
 #define AB8500_USB_PHY_TUNE2	0x06
 #define AB8500_USB_PHY_TUNE3	0x07
 
+static struct pm_qos_request usb_pm_qos_latency;
+static bool usb_pm_qos_is_latency_0;
 
 #define USB_PROBE_DELAY 1000 /* 1 seconds */
 #define USB_LIMIT (200) /* If we have more than 200 irqs per second */
@@ -170,13 +173,27 @@ static void ab8500_usb_load(struct work_struct *work)
 	num_irqs += kstat_irqs_cpu(IRQ_DB8500_USBOTG, cpu);
 
 	if ((num_irqs > old_num_irqs) &&
-		(num_irqs - old_num_irqs) > USB_LIMIT)
-			prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
-							"usb", 125);
-	else
-			prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
-							"usb", 25);
+		(num_irqs - old_num_irqs) > USB_LIMIT) {
 
+		prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
+							"usb", 125);
+		if (!usb_pm_qos_is_latency_0) {
+
+			pm_qos_add_request(&usb_pm_qos_latency,
+						PM_QOS_CPU_DMA_LATENCY, 0);
+			usb_pm_qos_is_latency_0 = true;
+		}
+	} else {
+
+		if (usb_pm_qos_is_latency_0) {
+
+				pm_qos_remove_request(&usb_pm_qos_latency);
+				usb_pm_qos_is_latency_0 = false;
+		}
+
+		prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
+							"usb", 25);
+	}
 	old_num_irqs = num_irqs;
 
 	schedule_delayed_work_on(0,
@@ -221,6 +238,7 @@ static void ab8500_usb_regulator_ctrl(struct ab8500_usb *ab, bool sel_host,
 	}
 }
 
+
 static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 {
 	u8 bit;
@@ -234,11 +252,10 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 
 	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
 				(char *)dev_name(ab->dev), 100);
-	if (!sel_host) {
-		schedule_delayed_work_on(0,
+
+	schedule_delayed_work_on(0,
 					&ab->work_usb_workaround,
 					msecs_to_jiffies(USB_PROBE_DELAY));
-	}
 
 	abx500_mask_and_set_register_interruptible(ab->dev,
 				AB8500_USB,
