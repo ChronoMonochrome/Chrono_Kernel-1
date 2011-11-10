@@ -1604,7 +1604,9 @@ static int ab5500_fg_bat_v_trig(int mux)
 
 		power_supply_changed(&di->fg_psy);
 	} else
-		return -EINVAL;
+		dev_err(di->dev,
+			"Invalid gpadc auto trigger for battery voltage\n");
+
 	kfree(di->gpadc_auto);
 	ab5500_fg_init_hw_registers(di);
 	return 0;
