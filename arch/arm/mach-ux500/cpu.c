@@ -72,6 +72,14 @@ void ux500_restart(char mode, const char *cmd)
 	prcmu_system_reset(reset_code);
 
 	mdelay(1000);
+
+	/*
+	 * On 5500, the PRCMU firmware waits for up to 2 seconds for the modem
+	 * to respond.
+	 */
+	if (cpu_is_u5500())
+		mdelay(2000);
+
 	printk(KERN_ERR "Reboot via PRCMU failed -- System halted\n");
 	while (1)
 		;
