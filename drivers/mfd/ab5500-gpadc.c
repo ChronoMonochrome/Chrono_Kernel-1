@@ -295,10 +295,10 @@ static int ab5500_gpadc_ad_to_voltage(struct ab5500_gpadc *gpadc,
 		/*
 		 * From the AB5500 product specification
 		 * T(deg cel) = 27 - ((ADCode - 709)/2.4213)
-		 * 27 + 709/2.4213 - ADCode/2.4123
-		 * (320 - ADCode)/2.4213
+		 * 27 + 709/2.4213 - ADCode/2.4213
+		 * 320 - (ADCode/2.4213)
 		 */
-		res = 320 - (((unsigned long)ad_val * 1000000) / 242130) / 10;
+		res = 320 - (((unsigned long)ad_val * 10000) / 24213);
 		break;
 	default:
 		dev_err(gpadc->dev,
@@ -747,13 +747,16 @@ int ab5500_gpadc_convert_auto(struct ab5500_gpadc *gpadc,
 		case DIE_TEMP:
 			/*
 			 * From the AB5500 product specification
-			 * T(deg_cel) = 27 -(ADCode - 709)/2.4123)
-			 * adc min and max values are based on the above formula.
+			 * T(deg_cel) = 27 - (ADCode - 709)/2.4213)
+			 * ADCode = 709 + (2.4213 * (27 - T))
+			 * Auto trigger min/max level is of 8bit precision.
+			 * Hence use AB5500_GPADC_MANDATAH_REG value
+			 * obtained by 2 bit right shift of ADCode.
 			 */
 			gpadc->adc_trig[trig].trig_min =
-				709 - (22413 * (in->min - 27))/10000;
+				(709 + ((24213 * (27 - in->min))/10000))>>2;
 			gpadc->adc_trig[trig].trig_max =
-				709 - (22413 * (in->max - 27))/10000;
+				(709 + ((24213 * (27 - in->max))/10000))>>2;
 			gpadc->adc_trig[trig].adout =
 				adc_tab[in->mux].adout;
 			break;
