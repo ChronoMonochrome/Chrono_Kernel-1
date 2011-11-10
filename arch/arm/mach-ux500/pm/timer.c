@@ -65,9 +65,8 @@
 /* Just a value bigger than any reason able scheduled timeout. */
 #define MEASURE_VAL_LIMIT 0xf0000000
 
-
-#define TICKS_TO_NS(x) ((s64)x * 30512)
-#define US_TO_TICKS(x) ((u32)((1000 * x) / 30512))
+#define TICKS_TO_NS(x) ((s64)x * 30518)
+#define US_TO_TICKS(x) ((u32)((1000 * x) / 30518))
 
 static void __iomem *rtc_base;
 static bool measure_latency;
