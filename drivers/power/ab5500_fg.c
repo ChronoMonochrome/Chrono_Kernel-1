@@ -1565,8 +1565,8 @@ static int ab5500_fg_init_hw_registers(struct ab5500_fg *di)
 
 	auto_ip->mux = MAIN_BAT_V;
 	auto_ip->freq = MS500;
-	auto_ip->min = 3560;
-	auto_ip->max = 4500;
+	auto_ip->min = di->bat->fg_params->lowbat_threshold;
+	auto_ip->max = di->bat->fg_params->overbat_threshold;
 	auto_ip->auto_adc_callback = ab5500_fg_bat_v_trig;
 	di->gpadc_auto = auto_ip;
 	ret = ab5500_gpadc_convert_auto(di->gpadc, di->gpadc_auto);
@@ -1586,7 +1586,7 @@ static int ab5500_fg_bat_v_trig(int mux)
 	di->vbat = ab5500_gpadc_convert(di->gpadc, MAIN_BAT_V);
 
 	/* check if the battery voltage is below low threshold */
-	if (di->vbat < 3560) {
+	if (di->vbat < di->bat->fg_params->lowbat_threshold) {
 		dev_warn(di->dev, "Battery voltage is below LOW threshold\n");
 		di->flags.low_bat_delay = true;
 		/*
@@ -1598,7 +1598,7 @@ static int ab5500_fg_bat_v_trig(int mux)
 		power_supply_changed(&di->fg_psy);
 	}
 	/* check if battery votlage is above OVV */
-	else if (di->vbat > 4500) {
+	else if (di->vbat > di->bat->fg_params->overbat_threshold) {
 		dev_warn(di->dev, "Battery OVV\n");
 		di->flags.bat_ovv = true;
 

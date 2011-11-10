@@ -437,7 +437,8 @@ static const struct abx500_fg_parameters fg = {
 	.accu_charging = 30,
 	.accu_high_curr = 30,
 	.high_curr_threshold = 50,
-	.lowbat_threshold = 3100,
+	.lowbat_threshold = 3560,
+	.overbat_threshold = 4400,
 };
 
 static const struct abx500_maxim_parameters maxi_params = {
