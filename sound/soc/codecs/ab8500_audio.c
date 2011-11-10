@@ -628,12 +628,12 @@ static const char * const enum_ear_lineout_source[] = {"Headset Left", "IHF Left
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ear_lineout_source, REG_DMICFILTCONF,
 			REG_DMICFILTCONF_DA3TOEAR, enum_ear_lineout_source);
 static const struct snd_kcontrol_new dapm_ear_lineout_source[] = {
-	SOC_DAPM_ENUM("Earpiece or Lineout Mono Source", dapm_enum_ear_lineout_source),
+	SOC_DAPM_ENUM("Earpiece or LineOut Mono Source", dapm_enum_ear_lineout_source),
 };
 
-/* Lineout */
+/* LineOut */
 
-/* Lineout source selector */
+/* LineOut source selector */
 static const char * const enum_lineout_source[] = {"Mono Path", "Stereo Path"};
 static SOC_ENUM_DOUBLE_DECL(dapm_enum_lineout_source, REG_ANACONF5,
 			REG_ANACONF5_HSLDACTOLOL, REG_ANACONF5_HSRDACTOLOR, enum_lineout_source);
@@ -641,23 +641,23 @@ static const struct snd_kcontrol_new dapm_lineout_source[] = {
 	SOC_DAPM_ENUM("LineOut Source", dapm_enum_lineout_source),
 };
 
-/* Lineout */
+/* LineOut */
 
-/* Lineout Left - Enable/Disable */
+/* LineOut Left - Enable/Disable */
 static const struct soc_enum enum_lineout_left = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
 static const struct snd_kcontrol_new dapm_lineout_left_mux =
 				SOC_DAPM_ENUM_VIRT("LineOut Left", enum_lineout_left);
 
-/* Lineout Right - Enable/Disable */
+/* LineOut Right - Enable/Disable */
 static const struct soc_enum enum_lineout_right = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
 static const struct snd_kcontrol_new dapm_lineout_right_mux =
 				SOC_DAPM_ENUM_VIRT("LineOut Right", enum_lineout_right);
 
-/* Lineout/IHF - Select */
+/* LineOut/IHF - Select */
 static const char * const enum_ihf_or_lineout_select_sel[] = {"IHF", "LineOut"};
 static const struct soc_enum enum_ihf_or_lineout_select = SOC_ENUM_SINGLE(0, 0, 2, enum_ihf_or_lineout_select_sel);
 static const struct snd_kcontrol_new dapm_ihf_or_lineout_select_mux =
-				SOC_DAPM_ENUM_VIRT("IHF or Lineout Select", enum_ihf_or_lineout_select);
+				SOC_DAPM_ENUM_VIRT("IHF or LineOut Select", enum_ihf_or_lineout_select);
 
 
 /* IHF */
@@ -945,7 +945,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_OUTPUT("HSL"),
 	SND_SOC_DAPM_OUTPUT("HSR"),
 
-	/* Lineout path */
+	/* LineOut path */
 
 	SND_SOC_DAPM_MUX("LineOut Source Playback Route",
 			SND_SOC_NOPM, 0, 0, dapm_lineout_source),
@@ -963,7 +963,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Earpiece path */
 
-	SND_SOC_DAPM_MUX("Earpiece or Lineout Mono Source",
+	SND_SOC_DAPM_MUX("Earpiece or LineOut Mono Source",
 			SND_SOC_NOPM, 0, 0, &dapm_ear_lineout_source),
 
 	SND_SOC_DAPM_MIXER("EAR DAC", REG_DAPATHCONF,
@@ -991,7 +991,7 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MUX("IHF Left", SND_SOC_NOPM, 0, 0, &dapm_ihf_left_mux),
 	SND_SOC_DAPM_MUX("IHF Right", SND_SOC_NOPM, 0, 0, &dapm_ihf_right_mux),
 
-	SND_SOC_DAPM_MUX("IHF or Lineout Select", SND_SOC_NOPM,
+	SND_SOC_DAPM_MUX("IHF or LineOut Select", SND_SOC_NOPM,
 			0, 0, &dapm_ihf_or_lineout_select_mux),
 
 	SND_SOC_DAPM_MIXER("IHFL DAC", REG_DAPATHCONF,
@@ -1205,7 +1205,7 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 	{"HSL", NULL, "HSL Gain"},
 	{"HSR", NULL, "HSR Gain"},
 
-	/* IHF or Lineout path */
+	/* IHF or LineOut path */
 
 	{"DA3 Channel Gain", NULL, "DA_IN3"},
 	{"DA4 Channel Gain", NULL, "DA_IN4"},
@@ -1227,15 +1227,15 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 	{"IHFL Enable", NULL, "IHFL DAC"},
 	{"IHFR Enable", NULL, "IHFR DAC"},
 
-	{"IHF or Lineout Select", "IHF", "IHFL Enable"},
-	{"IHF or Lineout Select", "IHF", "IHFR Enable"},
+	{"IHF or LineOut Select", "IHF", "IHFL Enable"},
+	{"IHF or LineOut Select", "IHF", "IHFR Enable"},
 
 	/* Earpiece path */
 
-	{"Earpiece or Lineout Mono Source", "Headset Left", "HSL Digital Gain"},
-	{"Earpiece or Lineout Mono Source", "IHF Left", "DA3 or ANC path to HfL"},
+	{"Earpiece or LineOut Mono Source", "Headset Left", "HSL Digital Gain"},
+	{"Earpiece or LineOut Mono Source", "IHF Left", "DA3 or ANC path to HfL"},
 
-	{"EAR DAC", NULL, "Earpiece or Lineout Mono Source"},
+	{"EAR DAC", NULL, "Earpiece or LineOut Mono Source"},
 
 	{"Earpiece", "Playback Switch", "EAR DAC"},
 
@@ -1243,16 +1243,16 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 
 	{"EAR", NULL, "EAR Enable"},
 
-	/* Lineout path stereo */
+	/* LineOut path stereo */
 
 	{"LineOut Source Playback Route", "Stereo Path", "HSL DAC Driver"},
 	{"LineOut Source Playback Route", "Stereo Path", "HSR DAC Driver"},
 
-	/* Lineout path mono */
+	/* LineOut path mono */
 
 	{"LineOut Source Playback Route", "Mono Path", "EAR DAC"},
 
-	/* Lineout path */
+	/* LineOut path */
 
 	{"LineOut Left", "Enabled", "LineOut Source Playback Route"},
 	{"LineOut Right", "Enabled", "LineOut Source Playback Route"},
@@ -1260,13 +1260,13 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 	{"LOL Enable", NULL, "LineOut Left"},
 	{"LOR Enable", NULL, "LineOut Right"},
 
-	{"IHF or Lineout Select", "LineOut", "LOL Enable"},
-	{"IHF or Lineout Select", "LineOut", "LOR Enable"},
+	{"IHF or LineOut Select", "LineOut", "LOL Enable"},
+	{"IHF or LineOut Select", "LineOut", "LOR Enable"},
 
 	/* IHF path */
 
-	{"IHFL", NULL, "IHF or Lineout Select"},
-	{"IHFR", NULL, "IHF or Lineout Select"},
+	{"IHFL", NULL, "IHF or LineOut Select"},
+	{"IHFR", NULL, "IHF or LineOut Select"},
 
 	/* Vibrator path */
 
