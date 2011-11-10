@@ -160,7 +160,7 @@ static int bu21013_gpio_board_init(int reset_pin)
 					__func__);
 			return retval;
 		}
-		gpio_set_value(reset_pin, 1);
+		gpio_set_value_cansleep(reset_pin, 1);
 	}
 
 	return retval;
@@ -183,7 +183,7 @@ static int bu21013_gpio_board_exit(int reset_pin)
 					__func__);
 			return retval;
 		}
-		gpio_set_value(reset_pin, 0);
+		gpio_set_value_cansleep(reset_pin, 0);
 		gpio_free(reset_pin);
 	}
 	bu21013_devices--;
