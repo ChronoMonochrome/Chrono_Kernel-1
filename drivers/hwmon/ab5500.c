@@ -128,8 +128,13 @@ static int ab5500_temp_shutdown_auto(struct abx500_temp *data)
 
 	auto_ip->mux = DIE_TEMP;
 	auto_ip->freq = MS500;
-	auto_ip->min = SHUTDOWN_AUTO_MIN_LIMIT;
-	auto_ip->max = SHUTDOWN_AUTO_MAX_LIMIT;
+	/*
+	 * As per product specification, voltage decreases as
+	 * temperature increases. Hence the min and max values
+	 * should be passed in reverse order.
+	 */
+	auto_ip->min = SHUTDOWN_AUTO_MAX_LIMIT;
+	auto_ip->max = SHUTDOWN_AUTO_MIN_LIMIT;
 	auto_ip->auto_adc_callback = temp_shutdown_trig;
 	data->gpadc_auto = auto_ip;
 	ret = ab5500_gpadc_convert_auto(data->ab5500_gpadc,
