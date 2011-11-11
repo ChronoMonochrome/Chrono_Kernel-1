@@ -19,6 +19,7 @@ struct reboot_reason reboot_reasons[] = {
 	{"charging", SW_RESET_CHARGING},
 	{"coldstart", SW_RESET_COLDSTART},
 	{"none", SW_RESET_NO_ARGUMENT}, /* Normal Boot */
+	{"chgonly-exit", SW_RESET_CHGONLY_EXIT}, /* Exit Charge Only Mode */
 };
 
 unsigned int reboot_reasons_size = ARRAY_SIZE(reboot_reasons);
