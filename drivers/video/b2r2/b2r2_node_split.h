@@ -54,8 +54,8 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req, u32 max_buf_size
  * Returns:
  *   A negative value if an error occurred, 0 otherwise.
  */
-int b2r2_node_split_configure(struct b2r2_node_split_job *job,
-		struct b2r2_node *first);
+int b2r2_node_split_configure(struct b2r2_control *cont,
+		struct b2r2_node_split_job *job, struct b2r2_node *first);
 
 /**
  * b2r2_node_split_assign_buffers() - Assignes physical addresses
@@ -74,7 +74,8 @@ int b2r2_node_split_configure(struct b2r2_node_split_job *job,
  * Returns:
  *   A negative value if an error occurred, 0 otherwise.
  */
-int b2r2_node_split_assign_buffers(struct b2r2_node_split_job *job,
+int b2r2_node_split_assign_buffers(struct b2r2_control *cont,
+		struct b2r2_node_split_job *job,
 		struct b2r2_node *first, struct b2r2_work_buf *bufs,
 		u32 buf_count);
 
@@ -89,7 +90,8 @@ int b2r2_node_split_assign_buffers(struct b2r2_node_split_job *job,
  * This makes it possible to reuse the node list with new buffers by calling
  * b2r2_node_split_assign_buffers again. Useful for caching node lists.
  */
-void b2r2_node_split_unassign_buffers(struct b2r2_node_split_job *job,
+void b2r2_node_split_unassign_buffers(struct b2r2_control *cont,
+		struct b2r2_node_split_job *job,
 		struct b2r2_node *first);
 
 /**
@@ -102,20 +104,21 @@ void b2r2_node_split_unassign_buffers(struct b2r2_node_split_job *job,
  * This should always be called once b2r2_node_split_analyze has been called
  * in order to release any resources allocated while analyzing.
  */
-void b2r2_node_split_cancel(struct b2r2_node_split_job *job);
+void b2r2_node_split_cancel(struct b2r2_control *cont,
+		struct b2r2_node_split_job *job);
 
 /**
  * b2r2_node_split_init() - Initializes the node split module
  *
  * Initializes the node split module and creates debugfs files.
  */
-int b2r2_node_split_init(void);
+int b2r2_node_split_init(struct b2r2_control *cont);
 
 /**
  * b2r2_node_split_exit() - Deinitializes the node split module
  *
  * Releases all resources for the node split module.
  */
-void b2r2_node_split_exit(void);
+void b2r2_node_split_exit(struct b2r2_control *cont);
 
 #endif

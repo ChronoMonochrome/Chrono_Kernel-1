@@ -44,6 +44,8 @@
 #include "b2r2_debug.h"
 #include "b2r2_utils.h"
 #include "b2r2_input_validation.h"
+#include "b2r2_core.h"
+#include "b2r2_filters.h"
 
 #define B2R2_HEAP_SIZE (4 * PAGE_SIZE)
 #define MAX_TMP_BUF_SIZE (128 * PAGE_SIZE)
@@ -59,93 +61,22 @@
  */
 
 /**
- * b2r2_blt_dev - Our device, /dev/b2r2_blt
+ * b2r2_blt_dev - Our device(s), /dev/b2r2_blt
  */
-static struct miscdevice *b2r2_blt_dev;
-
-static struct {
-	struct b2r2_work_buf buf;
-	bool in_use;
-} tmp_bufs[MAX_TMP_BUFS_NEEDED];
-
-/* Statistics */
-
-/**
- * stat_lock - Spin lock protecting the statistics
- */
-static struct mutex   stat_lock;
-/**
- * stat_n_jobs_added - Number of jobs added to b2r2_core
- */
-static unsigned long stat_n_jobs_added;
-/**
- * stat_n_jobs_released - Number of jobs released (job_release called)
- */
-static unsigned long stat_n_jobs_released;
-/**
- * stat_n_jobs_in_report_list - Number of jobs currently in the report list
- */
-static unsigned long stat_n_jobs_in_report_list;
-/**
- * stat_n_in_blt - Number of client threads currently exec inside b2r2_blt()
- */
-static unsigned long stat_n_in_blt;
-/**
- * stat_n_in_blt_synch - Nunmber of client threads currently waiting for synch
- */
-static unsigned long stat_n_in_blt_synch;
-/**
- * stat_n_in_blt_add - Number of client threads currenlty adding in b2r2_blt
- */
-static unsigned long stat_n_in_blt_add;
-/**
- * stat_n_in_blt_wait - Number of client threads currently waiting in b2r2_blt
- */
-static unsigned long stat_n_in_blt_wait;
-/**
- * stat_n_in_sync_0 - Number of client threads currently in b2r2_blt_sync
- *                    waiting for all client jobs to finish
- */
-static unsigned long stat_n_in_synch_0;
-/**
- * stat_n_in_sync_job - Number of client threads currently in b2r2_blt_sync
- *                      waiting specific job to finish
- */
-static unsigned long stat_n_in_synch_job;
-/**
- * stat_n_in_query_cap - Number of clients currently in query cap
- */
-static unsigned long stat_n_in_query_cap;
-/**
- * stat_n_in_open - Number of clients currently in b2r2_blt_open
- */
-static unsigned long stat_n_in_open;
-/**
- * stat_n_in_release - Number of clients currently in b2r2_blt_release
- */
-static unsigned long stat_n_in_release;
+static struct b2r2_control *b2r2_ctl[B2R2_MAX_NBR_DEVICES];
 
 /* Debug file system support */
 #ifdef CONFIG_DEBUG_FS
-/**
- * debugfs_latest_request - Copy of the latest request issued
- */
-struct b2r2_blt_request debugfs_latest_request;
-/**
- * debugfs_root_dir - The debugfs root directory, i.e. /debugfs/b2r2
- */
-static struct dentry *debugfs_root_dir;
-
 static int sprintf_req(struct b2r2_blt_request *request, char *buf, int size);
 #endif
 
 /* Local functions */
-static void inc_stat(unsigned long *stat);
-static void dec_stat(unsigned long *stat);
+static void inc_stat(struct b2r2_control *cont, unsigned long *stat);
+static void dec_stat(struct b2r2_control *cont, unsigned long *stat);
 static int b2r2_blt_synch(struct b2r2_blt_instance *instance,
-			int request_id);
+		int request_id);
 static int b2r2_blt_query_cap(struct b2r2_blt_instance *instance,
-			struct b2r2_blt_query_cap *query_cap);
+		struct b2r2_blt_query_cap *query_cap);
 
 #ifndef CONFIG_B2R2_GENERIC_ONLY
 static int b2r2_blt(struct b2r2_blt_instance *instance,
@@ -170,25 +101,24 @@ static void tile_job_release_gen(struct b2r2_core_job *job);
 #endif
 
 
-static int resolve_buf(struct b2r2_blt_img *img,
-			struct b2r2_blt_rect *rect_2b_used,
-			bool is_dst,
-		struct b2r2_resolved_buf *resolved);
-static void unresolve_buf(struct b2r2_blt_buf *buf,
-			struct b2r2_resolved_buf *resolved);
-static void sync_buf(struct b2r2_blt_img *img,
-		struct b2r2_resolved_buf *resolved,
-		bool is_dst,
+static int resolve_buf(struct b2r2_control *cont,
+		struct b2r2_blt_img *img, struct b2r2_blt_rect *rect_2b_used,
+		bool is_dst, struct b2r2_resolved_buf *resolved);
+static void unresolve_buf(struct b2r2_control *cont,
+		struct b2r2_blt_buf *buf, struct b2r2_resolved_buf *resolved);
+static void sync_buf(struct b2r2_control *cont, struct b2r2_blt_img *img,
+		struct b2r2_resolved_buf *resolved, bool is_dst,
 		struct b2r2_blt_rect *rect);
 static bool is_report_list_empty(struct b2r2_blt_instance *instance);
 static bool is_synching(struct b2r2_blt_instance *instance);
 static void get_actual_dst_rect(struct b2r2_blt_req *req,
-					struct b2r2_blt_rect *actual_dst_rect);
-static void set_up_hwmem_region(struct b2r2_blt_img *img,
-		struct b2r2_blt_rect *rect, struct hwmem_region *region);
-static int resolve_hwmem(struct b2r2_blt_img *img,
-			struct b2r2_blt_rect *rect_2b_used, bool is_dst,
-				struct b2r2_resolved_buf *resolved_buf);
+		struct b2r2_blt_rect *actual_dst_rect);
+static void set_up_hwmem_region(struct b2r2_control *cont,
+		struct b2r2_blt_img *img, struct b2r2_blt_rect *rect,
+		struct hwmem_region *region);
+static int resolve_hwmem(struct b2r2_control *cont, struct b2r2_blt_img *img,
+		struct b2r2_blt_rect *rect_2b_used, bool is_dst,
+		struct b2r2_resolved_buf *resolved_buf);
 static void unresolve_hwmem(struct b2r2_resolved_buf *resolved_buf);
 
 /**
@@ -202,7 +132,8 @@ struct sync_args {
 	unsigned long end;
 };
 /**
- * flush_l1_cache_range_curr_cpu() - Cleans and invalidates L1 cache on the current CPU
+ * flush_l1_cache_range_curr_cpu() - Cleans and invalidates L1 cache on the
+ * current CPU
  *
  * @arg: Pointer to sync_args structure
  */
@@ -269,16 +200,17 @@ static int b2r2_blt_open(struct inode *inode, struct file *filp)
 {
 	int ret = 0;
 	struct b2r2_blt_instance *instance;
+	struct b2r2_control *cont = filp->private_data;
 
-	b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
-	inc_stat(&stat_n_in_open);
+	inc_stat(cont, &cont->stat_n_in_open);
 
 	/* Allocate and initialize the instance */
 	instance = (struct b2r2_blt_instance *)
 		kmalloc(sizeof(*instance), GFP_KERNEL);
 	if (!instance) {
-		b2r2_log_err("%s: Failed to alloc\n", __func__);
+		b2r2_log_err(cont->dev, "%s: Failed to alloc\n", __func__);
 		goto instance_alloc_failed;
 	}
 	memset(instance, 0, sizeof(*instance));
@@ -286,6 +218,7 @@ static int b2r2_blt_open(struct inode *inode, struct file *filp)
 	mutex_init(&instance->lock);
 	init_waitqueue_head(&instance->report_list_waitq);
 	init_waitqueue_head(&instance->synch_done_waitq);
+	instance->control = cont;
 
 	/*
 	 * Remember the instance so that we can retrieve it in
@@ -296,7 +229,7 @@ static int b2r2_blt_open(struct inode *inode, struct file *filp)
 
 instance_alloc_failed:
 out:
-	dec_stat(&stat_n_in_open);
+	dec_stat(cont, &cont->stat_n_in_open);
 
 	return ret;
 }
@@ -314,39 +247,40 @@ out:
 static int b2r2_blt_release(struct inode *inode, struct file *filp)
 {
 	int ret;
-	struct b2r2_blt_instance *instance;
+	struct b2r2_blt_instance *instance =
+			(struct b2r2_blt_instance *) filp->private_data;
+	struct b2r2_control *cont = instance->control;
 
-	b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
-	inc_stat(&stat_n_in_release);
-
-	instance = (struct b2r2_blt_instance *) filp->private_data;
+	inc_stat(cont, &cont->stat_n_in_release);
 
 	/* Finish all outstanding requests */
 	ret = b2r2_blt_synch(instance, 0);
 	if (ret < 0)
-		b2r2_log_warn(
-			"%s: b2r2_blt_sync failed with %d\n", __func__, ret);
+		b2r2_log_warn(cont->dev, "%s: b2r2_blt_sync failed with %d\n",
+			__func__, ret);
 
 	/* Now cancel any remaining outstanding request */
 	if (instance->no_of_active_requests) {
 		struct b2r2_core_job *job;
 
-		b2r2_log_warn("%s: %d active requests\n",
-			__func__, instance->no_of_active_requests);
+		b2r2_log_warn(cont->dev, "%s: %d active requests\n", __func__,
+			instance->no_of_active_requests);
 
 		/* Find and cancel all jobs belonging to us */
-		job = b2r2_core_job_find_first_with_tag((int) instance);
+		job = b2r2_core_job_find_first_with_tag(cont,
+			(int) instance);
 		while (job) {
 			b2r2_core_job_cancel(job);
 			/* Matches addref in b2r2_core_job_find... */
 			b2r2_core_job_release(job, __func__);
-			job = b2r2_core_job_find_first_with_tag((int) instance);
+			job = b2r2_core_job_find_first_with_tag(cont,
+				(int) instance);
 		}
 
-		b2r2_log_warn(
-			"%s: %d active requests after cancel\n",
-			__func__, instance->no_of_active_requests);
+		b2r2_log_warn(cont->dev, "%s: %d active requests after "
+			"cancel\n", __func__, instance->no_of_active_requests);
 	}
 
 	/* Release jobs in report list */
@@ -370,7 +304,7 @@ static int b2r2_blt_release(struct inode *inode, struct file *filp)
 	/* Release our instance */
 	kfree(instance);
 
-	dec_stat(&stat_n_in_release);
+	dec_stat(cont, &cont->stat_n_in_release);
 
 	return 0;
 }
@@ -388,15 +322,14 @@ static long b2r2_blt_ioctl(struct file *file,
 		unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-	struct b2r2_blt_instance *instance;
+	struct b2r2_blt_instance *instance =
+			(struct b2r2_blt_instance *) file->private_data;
+	struct b2r2_control *cont = instance->control;
 
 	/** Process actual ioctl */
-
-	b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	/* Get the instance from the file structure */
-	instance = (struct b2r2_blt_instance *) file->private_data;
-
 	switch (cmd) {
 	case B2R2_BLT_IOC: {
 		/* This is the "blit" command */
@@ -405,7 +338,7 @@ static long b2r2_blt_ioctl(struct file *file,
 		struct b2r2_blt_request *request =
 			kmalloc(sizeof(*request), GFP_KERNEL);
 		if (!request) {
-			b2r2_log_err("%s: Failed to alloc mem\n",
+			b2r2_log_err(cont->dev, "%s: Failed to alloc mem\n",
 				__func__);
 			return -ENOMEM;
 		}
@@ -423,14 +356,13 @@ static long b2r2_blt_ioctl(struct file *file,
 		/* Get the user data */
 		if (copy_from_user(&request->user_req, (void *)arg,
 				sizeof(request->user_req))) {
-			b2r2_log_err(
-				"%s: copy_from_user failed\n",
+			b2r2_log_err(cont->dev, "%s: copy_from_user failed\n",
 				__func__);
 			kfree(request);
 			return -EFAULT;
 		}
 
-		if (!b2r2_validate_user_req(&request->user_req)) {
+		if (!b2r2_validate_user_req(cont, &request->user_req)) {
 			kfree(request);
 			return -EINVAL;
 		}
@@ -443,22 +375,24 @@ static long b2r2_blt_ioctl(struct file *file,
 		 */
 		if ((request->user_req.flags &
 				B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION) != 0) {
-			request->clut = dma_alloc_coherent(b2r2_blt_device(),
+			request->clut = dma_alloc_coherent(cont->dev,
 				CLUT_SIZE, &(request->clut_phys_addr),
 				GFP_DMA | GFP_KERNEL);
 			if (request->clut == NULL) {
-				b2r2_log_err("%s CLUT allocation failed.\n",
-					__func__);
+				b2r2_log_err(cont->dev, "%s CLUT allocation "
+					"failed.\n", __func__);
 				kfree(request);
 				return -ENOMEM;
 			}
 
 			if (copy_from_user(request->clut,
 					request->user_req.clut, CLUT_SIZE)) {
-				b2r2_log_err("%s: CLUT copy_from_user failed\n",
+				b2r2_log_err(cont->dev, "%s: CLUT "
+					"copy_from_user failed\n",
 					__func__);
-				dma_free_coherent(b2r2_blt_device(), CLUT_SIZE,
-					request->clut, request->clut_phys_addr);
+				dma_free_coherent(cont->dev, CLUT_SIZE,
+					request->clut,
+					request->clut_phys_addr);
 				request->clut = NULL;
 				request->clut_phys_addr = 0;
 				kfree(request);
@@ -482,16 +416,20 @@ static long b2r2_blt_ioctl(struct file *file,
 			struct b2r2_blt_request *request_gen;
 
 			if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
-				/* No support for BG BLEND in generic implementation yet */
-				b2r2_log_warn("%s: Unsupported: Background blend in b2r2_generic_blt \n",
+				/* No support for BG BLEND in generic
+				 * implementation yet */
+				b2r2_log_warn(cont->dev, "%s: Unsupported: "
+					"Background blend in b2r2_generic_blt\n",
 					__func__);
 				return ret;
 			}
 
-			b2r2_log_info("b2r2_blt=%d Going generic.\n", ret);
+			b2r2_log_info(cont->dev,
+				"b2r2_blt=%d Going generic.\n", ret);
 			request_gen = kmalloc(sizeof(*request_gen), GFP_KERNEL);
 			if (!request_gen) {
-				b2r2_log_err("%s: Failed to alloc mem for "
+				b2r2_log_err(cont->dev,
+					"%s: Failed to alloc mem for "
 					"request_gen\n", __func__);
 				return -ENOMEM;
 			}
@@ -508,12 +446,11 @@ static long b2r2_blt_ioctl(struct file *file,
 
 			/* Get the user data */
 			if (copy_from_user(&request_gen->user_req, (void *)arg,
-				sizeof(request_gen->user_req))) {
-					b2r2_log_err(
-						"%s: copy_from_user failed\n",
-						__func__);
-					kfree(request_gen);
-					return -EFAULT;
+					sizeof(request_gen->user_req))) {
+				b2r2_log_err(cont->dev, "%s: copy_from_user "
+					"failed\n", __func__);
+				kfree(request_gen);
+				return -EFAULT;
 			}
 
 			/*
@@ -523,14 +460,14 @@ static long b2r2_blt_ioctl(struct file *file,
 			if ((request_gen->user_req.flags &
 					B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION)
 					!= 0) {
-				request_gen->clut =
-					dma_alloc_coherent(b2r2_blt_device(),
-					CLUT_SIZE,
+				request_gen->clut = dma_alloc_coherent(
+					cont->dev, CLUT_SIZE,
 					&(request_gen->clut_phys_addr),
 					GFP_DMA | GFP_KERNEL);
 				if (request_gen->clut == NULL) {
-					b2r2_log_err("%s CLUT allocation "
-						"failed.\n", __func__);
+					b2r2_log_err(cont->dev, "%s CLUT "
+						"allocation failed.\n",
+						__func__);
 					kfree(request_gen);
 					return -ENOMEM;
 				}
@@ -538,10 +475,11 @@ static long b2r2_blt_ioctl(struct file *file,
 				if (copy_from_user(request_gen->clut,
 						request_gen->user_req.clut,
 						CLUT_SIZE)) {
-					b2r2_log_err("%s: CLUT copy_from_user "
-						"failed\n", __func__);
-					dma_free_coherent(b2r2_blt_device(),
-						CLUT_SIZE, request_gen->clut,
+					b2r2_log_err(cont->dev, "%s: CLUT"
+						" copy_from_user failed\n",
+						__func__);
+					dma_free_coherent(cont->dev, CLUT_SIZE,
+						request_gen->clut,
 						request_gen->clut_phys_addr);
 					request_gen->clut = NULL;
 					request_gen->clut_phys_addr = 0;
@@ -553,8 +491,8 @@ static long b2r2_blt_ioctl(struct file *file,
 			request_gen->profile = is_profiler_registered_approx();
 
 			ret = b2r2_generic_blt(instance, request_gen);
-			b2r2_log_info("\nb2r2_generic_blt=%d Generic done.\n",
-				ret);
+			b2r2_log_info(cont->dev, "\nb2r2_generic_blt=%d "
+				"Generic done.\n", ret);
 		}
 #endif /* CONFIG_B2R2_GENERIC_FALLBACK */
 
@@ -562,24 +500,19 @@ static long b2r2_blt_ioctl(struct file *file,
 	}
 
 	case B2R2_BLT_SYNCH_IOC:
-		/* This is the "synch" command */
-
 		/* arg is request_id */
 		ret = b2r2_blt_synch(instance, (int) arg);
 		break;
 
 	case B2R2_BLT_QUERY_CAP_IOC:
 	{
-		/* This is the "query capabilities" command */
-
 		/* Arg is struct b2r2_blt_query_cap */
 		struct b2r2_blt_query_cap query_cap;
 
 		/* Get the user data */
 		if (copy_from_user(&query_cap, (void *)arg,
 				sizeof(query_cap))) {
-			b2r2_log_err(
-				"%s: copy_from_user failed\n",
+			b2r2_log_err(cont->dev, "%s: copy_from_user failed\n",
 				__func__);
 			return -EFAULT;
 		}
@@ -590,7 +523,7 @@ static long b2r2_blt_ioctl(struct file *file,
 		/* Return data to user */
 		if (copy_to_user((void *)arg, &query_cap,
 				sizeof(query_cap))) {
-			b2r2_log_err("%s: copy_to_user failed\n",
+			b2r2_log_err(cont->dev, "%s: copy_to_user failed\n",
 				__func__);
 			return -EFAULT;
 		}
@@ -599,15 +532,14 @@ static long b2r2_blt_ioctl(struct file *file,
 
 	default:
 		/* Unknown command */
-		b2r2_log_err(
-			"%s: Unknown cmd %d\n", __func__, cmd);
+		b2r2_log_err(cont->dev, "%s: Unknown cmd %d\n", __func__, cmd);
 		ret = -EINVAL;
 		break;
 
 	}
 
 	if (ret < 0)
-		b2r2_log_err("EC %d OK!\n", -ret);
+		b2r2_log_err(cont->dev, "EC %d OK!\n", -ret);
 
 	return ret;
 }
@@ -623,13 +555,14 @@ static long b2r2_blt_ioctl(struct file *file,
  */
 static unsigned b2r2_blt_poll(struct file *filp, poll_table *wait)
 {
-	struct b2r2_blt_instance *instance;
+	struct b2r2_blt_instance *instance =
+			(struct b2r2_blt_instance *) filp->private_data;
 	unsigned int mask = 0;
+#ifdef CONFIG_B2R2_DEBUG
+	struct b2r2_control *cont = instance->control;
+#endif
 
-	b2r2_log_info("%s\n", __func__);
-
-	/* Get the instance from the file structure */
-	instance = (struct b2r2_blt_instance *) filp->private_data;
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	poll_wait(filp, &instance->report_list_waitq, wait);
 	mutex_lock(&instance->lock);
@@ -654,14 +587,15 @@ static ssize_t b2r2_blt_read(struct file *filp, char __user *buf, size_t count,
 			loff_t *f_pos)
 {
 	int ret = 0;
-	struct b2r2_blt_instance *instance;
-	struct b2r2_blt_request *request;
+	struct b2r2_blt_request *request = NULL;
 	struct b2r2_blt_report report;
+	struct b2r2_blt_instance *instance =
+		(struct b2r2_blt_instance *) filp->private_data;
+#ifdef CONFIG_B2R2_DEBUG
+	struct b2r2_control *cont = instance->control;
+#endif
 
-	b2r2_log_info("%s\n", __func__);
-
-	/* Get the instance from the file structure */
-	instance = (struct b2r2_blt_instance *) filp->private_data;
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	/*
 	 * We return only complete report records, one at a time.
@@ -686,10 +620,10 @@ static ssize_t b2r2_blt_read(struct file *filp, char __user *buf, size_t count,
 		if (filp->f_flags & O_NONBLOCK)
 			return -EAGAIN;
 
-		b2r2_log_info("%s - Going to sleep\n", __func__);
+		b2r2_log_info(cont->dev, "%s - Going to sleep\n", __func__);
 		if (wait_event_interruptible(
-			instance->report_list_waitq,
-			!is_report_list_empty(instance)))
+				instance->report_list_waitq,
+				!is_report_list_empty(instance)))
 			/* signal: tell the fs layer to handle it */
 			return -ERESTARTSYS;
 
@@ -697,10 +631,6 @@ static ssize_t b2r2_blt_read(struct file *filp, char __user *buf, size_t count,
 		mutex_lock(&instance->lock);
 	}
 
-	/* Ok, we have something to return */
-
-	/* Return */
-	request = NULL;
 	if (!list_empty(&instance->report_list))
 		request = list_first_entry(
 			&instance->report_list, struct b2r2_blt_request, list);
@@ -715,16 +645,14 @@ static ssize_t b2r2_blt_read(struct file *filp, char __user *buf, size_t count,
 		report.usec_elapsed = 0; /* TBD */
 
 		mutex_unlock(&instance->lock);
-		if (copy_to_user(buf,
-				&report,
-				sizeof(report)))
+		if (copy_to_user(buf, &report, sizeof(report)))
 			ret = -EFAULT;
 		mutex_lock(&instance->lock);
 
-		if (ret) {
+		if (ret < 0) {
 			/* copy to user failed, re-insert into list */
 			list_add(&request->list,
-				&request->instance->report_list);
+					&request->instance->report_list);
 			request = NULL;
 		}
 	}
@@ -752,16 +680,6 @@ static const struct file_operations b2r2_blt_fops = {
 	.read  =          b2r2_blt_read,
 };
 
-/**
- * b2r2_blt_misc_dev - Misc device config for b2r2_blt
- */
-static struct miscdevice b2r2_blt_misc_dev = {
-	MISC_DYNAMIC_MINOR,
-	"b2r2_blt",
-	&b2r2_blt_fops
-};
-
-
 #ifndef CONFIG_B2R2_GENERIC_ONLY
 /**
  * b2r2_blt - Implementation of the B2R2 blit request
@@ -777,6 +695,7 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 	int request_id = 0;
 	struct b2r2_node *last_node = request->first_node;
 	int node_count;
+	struct b2r2_control *cont = instance->control;
 
 	u32 thread_runtime_at_start = 0;
 
@@ -785,12 +704,12 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		thread_runtime_at_start = (u32)task_sched_runtime(current);
 	}
 
-	b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
-	inc_stat(&stat_n_in_blt);
+	inc_stat(cont, &cont->stat_n_in_blt);
 
 	/* Debug prints of incoming request */
-	b2r2_log_info(
+	b2r2_log_info(cont->dev,
 		"src.fmt=%#010x src.buf={%d,%d,%d} "
 		"src.w,h={%d,%d} src.rect={%d,%d,%d,%d}\n",
 		request->user_req.src_img.fmt,
@@ -804,23 +723,22 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		request->user_req.src_rect.width,
 		request->user_req.src_rect.height);
 
-	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
-		b2r2_log_info(
-				"bg.fmt=%#010x bg.buf={%d,%d,%d} "
-				"bg.w,h={%d,%d} bg.rect={%d,%d,%d,%d}\n",
-				request->user_req.bg_img.fmt,
-				request->user_req.bg_img.buf.type,
-				request->user_req.bg_img.buf.fd,
-				request->user_req.bg_img.buf.offset,
-				request->user_req.bg_img.width,
-				request->user_req.bg_img.height,
-				request->user_req.bg_rect.x,
-				request->user_req.bg_rect.y,
-				request->user_req.bg_rect.width,
-				request->user_req.bg_rect.height);
-	}
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND)
+		b2r2_log_info(cont->dev,
+			"bg.fmt=%#010x bg.buf={%d,%d,%d} "
+			"bg.w,h={%d,%d} bg.rect={%d,%d,%d,%d}\n",
+			request->user_req.bg_img.fmt,
+			request->user_req.bg_img.buf.type,
+			request->user_req.bg_img.buf.fd,
+			request->user_req.bg_img.buf.offset,
+			request->user_req.bg_img.width,
+			request->user_req.bg_img.height,
+			request->user_req.bg_rect.x,
+			request->user_req.bg_rect.y,
+			request->user_req.bg_rect.width,
+			request->user_req.bg_rect.height);
 
-	b2r2_log_info(
+	b2r2_log_info(cont->dev,
 		"dst.fmt=%#010x dst.buf={%d,%d,%d} "
 		"dst.w,h={%d,%d} dst.rect={%d,%d,%d,%d}\n",
 		request->user_req.dst_img.fmt,
@@ -834,74 +752,71 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		request->user_req.dst_rect.width,
 		request->user_req.dst_rect.height);
 
-	inc_stat(&stat_n_in_blt_synch);
+	inc_stat(cont, &cont->stat_n_in_blt_synch);
 
 	/* Wait here if synch is ongoing */
 	ret = wait_event_interruptible(instance->synch_done_waitq,
-				!is_synching(instance));
+			!is_synching(instance));
 	if (ret) {
-		b2r2_log_warn(
-			"%s: Sync wait interrupted, %d\n",
+		b2r2_log_warn(cont->dev, "%s: Sync wait interrupted, %d\n",
 			__func__, ret);
 		ret = -EAGAIN;
-		dec_stat(&stat_n_in_blt_synch);
+		dec_stat(cont, &cont->stat_n_in_blt_synch);
 		goto synch_interrupted;
 	}
 
-	dec_stat(&stat_n_in_blt_synch);
+	dec_stat(cont, &cont->stat_n_in_blt_synch);
 
 	/* Resolve the buffers */
 
 	/* Source buffer */
-	ret = resolve_buf(&request->user_req.src_img,
-		&request->user_req.src_rect, false, &request->src_resolved);
+	ret = resolve_buf(cont, &request->user_req.src_img,
+		&request->user_req.src_rect,
+		false, &request->src_resolved);
 	if (ret < 0) {
-		b2r2_log_warn(
-			"%s: Resolve src buf failed, %d\n",
-			__func__, ret);
+		b2r2_log_warn(cont->dev, "%s: Resolve src buf failed, %d\n",
+				__func__, ret);
 		ret = -EAGAIN;
 		goto resolve_src_buf_failed;
 	}
 
 	/* Background buffer */
 	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
-		ret = resolve_buf(&request->user_req.bg_img,
-				&request->user_req.bg_rect, false, &request->bg_resolved);
+		ret = resolve_buf(cont, &request->user_req.bg_img,
+			&request->user_req.bg_rect,
+			false, &request->bg_resolved);
 		if (ret < 0) {
-			b2r2_log_warn(
-				"%s: Resolve bg buf failed, %d\n",
-				__func__, ret);
+			b2r2_log_warn(cont->dev, "%s: Resolve bg buf failed,"
+				" %d\n", __func__, ret);
 			ret = -EAGAIN;
 			goto resolve_bg_buf_failed;
 		}
 	}
 
 	/* Source mask buffer */
-	ret = resolve_buf(&request->user_req.src_mask,
+	ret = resolve_buf(cont, &request->user_req.src_mask,
 			&request->user_req.src_rect, false,
 			&request->src_mask_resolved);
 	if (ret < 0) {
-		b2r2_log_warn(
-			"%s: Resolve src mask buf failed, %d\n",
-			__func__, ret);
+		b2r2_log_warn(cont->dev, "%s: Resolve src mask buf failed,"
+			" %d\n", __func__, ret);
 		ret = -EAGAIN;
 		goto resolve_src_mask_buf_failed;
 	}
 
 	/* Destination buffer */
 	get_actual_dst_rect(&request->user_req, &actual_dst_rect);
-	ret = resolve_buf(&request->user_req.dst_img, &actual_dst_rect,
-			true, &request->dst_resolved);
+	ret = resolve_buf(cont, &request->user_req.dst_img, &actual_dst_rect,
+		true, &request->dst_resolved);
 	if (ret < 0) {
-		b2r2_log_warn(
-			"%s: Resolve dst buf failed, %d\n",
+		b2r2_log_warn(cont->dev, "%s: Resolve dst buf failed, %d\n",
 			__func__, ret);
 		ret = -EAGAIN;
 		goto resolve_dst_buf_failed;
 	}
 
 	/* Debug prints of resolved buffers */
-	b2r2_log_info("src.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
+	b2r2_log_info(cont->dev, "src.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
 		request->src_resolved.physical_address,
 		request->src_resolved.virtual_address,
 		request->src_resolved.is_pmem,
@@ -910,8 +825,8 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		request->src_resolved.file_virtual_start,
 		request->src_resolved.file_len);
 
-	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
-		b2r2_log_info("bg.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND)
+		b2r2_log_info(cont->dev, "bg.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
 			request->bg_resolved.physical_address,
 			request->bg_resolved.virtual_address,
 			request->bg_resolved.is_pmem,
@@ -919,9 +834,8 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 			request->bg_resolved.file_physical_start,
 			request->bg_resolved.file_virtual_start,
 			request->bg_resolved.file_len);
-	}
 
-	b2r2_log_info("dst.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
+	b2r2_log_info(cont->dev, "dst.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
 		request->dst_resolved.physical_address,
 		request->dst_resolved.virtual_address,
 		request->dst_resolved.is_pmem,
@@ -931,33 +845,33 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		request->dst_resolved.file_len);
 
 	/* Calculate the number of nodes (and resources) needed for this job */
-	ret = b2r2_node_split_analyze(request, MAX_TMP_BUF_SIZE,
-			&node_count, &request->bufs, &request->buf_count,
-			&request->node_split_job);
+	ret = b2r2_node_split_analyze(request, MAX_TMP_BUF_SIZE, &node_count,
+		&request->bufs, &request->buf_count,
+		&request->node_split_job);
 	if (ret == -ENOSYS) {
 		/* There was no optimized path for this request */
-		b2r2_log_info(
-			"%s: No optimized path for request\n", __func__);
+		b2r2_log_info(cont->dev, "%s: No optimized path for request\n",
+			__func__);
 		goto no_optimized_path;
 
 	} else if (ret < 0) {
-		b2r2_log_warn(
-			"%s: Failed to analyze request, ret = %d\n",
-			__func__, ret);
+		b2r2_log_warn(cont->dev, "%s: Failed to analyze request,"
+			" ret = %d\n", __func__, ret);
 #ifdef CONFIG_DEBUG_FS
 		{
 			/* Failed, dump job to dmesg */
 			char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
 
-			b2r2_log_info(
-				"%s: Analyze failed for:\n", __func__);
+			b2r2_log_info(cont->dev, "%s: Analyze failed for:\n",
+				__func__);
 			if (Buf != NULL) {
 				sprintf_req(request, Buf, sizeof(char) * 4096);
-				b2r2_log_info("%s", Buf);
+				b2r2_log_info(cont->dev, "%s", Buf);
 				kfree(Buf);
 			} else {
-				b2r2_log_info("Unable to print the request. "
-					"Message buffer allocation failed.\n");
+				b2r2_log_info(cont->dev, "Unable to print the"
+					" request. Message buffer"
+					" allocation failed.\n");
 			}
 		}
 #endif
@@ -966,17 +880,17 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 
 	/* Allocate the nodes needed */
 #ifdef B2R2_USE_NODE_GEN
-	request->first_node = b2r2_blt_alloc_nodes(node_count);
+	request->first_node = b2r2_blt_alloc_nodes(cont,
+		node_count);
 	if (request->first_node == NULL) {
-		b2r2_log_warn(
-			"%s: Failed to allocate nodes, ret = %d\n",
-			__func__, ret);
+		b2r2_log_warn(cont->dev, "%s: Failed to allocate nodes,"
+			" ret = %d\n", __func__, ret);
 		goto generate_nodes_failed;
 	}
 #else
-	ret = b2r2_node_alloc(node_count, &(request->first_node));
+	ret = b2r2_node_alloc(cont, node_count, &(request->first_node));
 	if (ret < 0 || request->first_node == NULL) {
-		b2r2_log_warn(
+		b2r2_log_warn(cont->dev,
 			"%s: Failed to allocate nodes, ret = %d\n",
 			__func__, ret);
 		goto generate_nodes_failed;
@@ -984,12 +898,12 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 #endif
 
 	/* Build the B2R2 node list */
-	ret = b2r2_node_split_configure(&request->node_split_job,
+	ret = b2r2_node_split_configure(cont, &request->node_split_job,
 			request->first_node);
 
 	if (ret < 0) {
-		b2r2_log_warn(
-			"%s: Failed to perform node split, ret = %d\n",
+		b2r2_log_warn(cont->dev, "%s:"
+			" Failed to perform node split, ret = %d\n",
 			__func__, ret);
 		goto generate_nodes_failed;
 	}
@@ -1022,24 +936,21 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 			(request->user_req.src_img.buf.type !=
 				B2R2_BLT_PTR_PHYSICAL) &&
 			!b2r2_is_mb_fmt(request->user_req.src_img.fmt))
-			/* MB formats are never touched by SW */
-		sync_buf(&request->user_req.src_img,
-			&request->src_resolved,
-			false, /*is_dst*/
+		/* MB formats are never touched by SW */
+		sync_buf(cont, &request->user_req.src_img,
+			&request->src_resolved, false,
 			&request->user_req.src_rect);
 
 	/* Background buffer */
-	if ((request->user_req.flags &
-				B2R2_BLT_FLAG_BG_BLEND) &&
+	if ((request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) &&
 			!(request->user_req.flags &
 				B2R2_BLT_FLAG_BG_NO_CACHE_FLUSH) &&
 			(request->user_req.bg_img.buf.type !=
 				B2R2_BLT_PTR_PHYSICAL) &&
 			!b2r2_is_mb_fmt(request->user_req.bg_img.fmt))
-				/* MB formats are never touched by SW */
-		sync_buf(&request->user_req.bg_img,
-			&request->bg_resolved,
-			false, /*is_dst*/
+		/* MB formats are never touched by SW */
+		sync_buf(cont, &request->user_req.bg_img,
+			&request->bg_resolved, false,
 			&request->user_req.bg_rect);
 
 	/* Source mask buffer */
@@ -1048,11 +959,9 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 			(request->user_req.src_mask.buf.type !=
 				B2R2_BLT_PTR_PHYSICAL) &&
 			!b2r2_is_mb_fmt(request->user_req.src_mask.fmt))
-			/* MB formats are never touched by SW */
-		sync_buf(&request->user_req.src_mask,
-			&request->src_mask_resolved,
-			false, /*is_dst*/
-			NULL);
+		/* MB formats are never touched by SW */
+		sync_buf(cont, &request->user_req.src_mask,
+			&request->src_mask_resolved, false, NULL);
 
 	/* Destination buffer */
 	if (!(request->user_req.flags &
@@ -1060,21 +969,20 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 			(request->user_req.dst_img.buf.type !=
 				B2R2_BLT_PTR_PHYSICAL) &&
 			!b2r2_is_mb_fmt(request->user_req.dst_img.fmt))
-			/* MB formats are never touched by SW */
-		sync_buf(&request->user_req.dst_img,
-			&request->dst_resolved,
-			true, /*is_dst*/
+		/* MB formats are never touched by SW */
+		sync_buf(cont, &request->user_req.dst_img,
+			&request->dst_resolved, true,
 			&request->user_req.dst_rect);
 
 #ifdef CONFIG_DEBUG_FS
 	/* Remember latest request for debugfs */
-	debugfs_latest_request = *request;
+	cont->debugfs_latest_request = *request;
 #endif
 
 	/* Submit the job */
-	b2r2_log_info("%s: Submitting job\n", __func__);
+	b2r2_log_info(cont->dev, "%s: Submitting job\n", __func__);
 
-	inc_stat(&stat_n_in_blt_add);
+	inc_stat(cont, &cont->stat_n_in_blt_add);
 
 	if (request->profile)
 		request->nsec_active_in_cpu =
@@ -1084,42 +992,41 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 	mutex_lock(&instance->lock);
 
 	/* Add the job to b2r2_core */
-	request_id = b2r2_core_job_add(&request->job);
+	request_id = b2r2_core_job_add(cont, &request->job);
 	request->request_id = request_id;
 
-	dec_stat(&stat_n_in_blt_add);
+	dec_stat(cont, &cont->stat_n_in_blt_add);
 
 	if (request_id < 0) {
-		b2r2_log_warn("%s: Failed to add job, ret = %d\n",
+		b2r2_log_warn(cont->dev, "%s: Failed to add job, ret = %d\n",
 			__func__, request_id);
 		ret = request_id;
 		mutex_unlock(&instance->lock);
 		goto job_add_failed;
 	}
 
-	inc_stat(&stat_n_jobs_added);
+	inc_stat(cont, &cont->stat_n_jobs_added);
 
 	instance->no_of_active_requests++;
 	mutex_unlock(&instance->lock);
 
 	/* Wait for the job to be done if synchronous */
 	if ((request->user_req.flags & B2R2_BLT_FLAG_ASYNCH) == 0) {
-		b2r2_log_info("%s: Synchronous, waiting\n",
+		b2r2_log_info(cont->dev, "%s: Synchronous, waiting\n",
 			__func__);
 
-		inc_stat(&stat_n_in_blt_wait);
+		inc_stat(cont, &cont->stat_n_in_blt_wait);
 
 		ret = b2r2_core_job_wait(&request->job);
 
-		dec_stat(&stat_n_in_blt_wait);
+		dec_stat(cont, &cont->stat_n_in_blt_wait);
 
 		if (ret < 0 && ret != -ENOENT)
-			b2r2_log_warn(
-				"%s: Failed to wait job, ret = %d\n",
-				__func__, ret);
+			b2r2_log_warn(cont->dev, "%s: Failed to wait job,"
+				" ret = %d\n", __func__, ret);
 		else
-			b2r2_log_info(
-				"%s: Synchronous wait done\n", __func__);
+			b2r2_log_info(cont->dev, "%s: Synchronous wait done\n",
+				__func__);
 		ret = 0;
 	}
 
@@ -1128,8 +1035,7 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 	 * the request must not be accessed after this call
 	 */
 	b2r2_core_job_release(&request->job, __func__);
-
-	dec_stat(&stat_n_in_blt);
+	dec_stat(cont, &cont->stat_n_in_blt);
 
 	return ret >= 0 ? request_id : ret;
 
@@ -1137,28 +1043,27 @@ job_add_failed:
 exit_dry_run:
 no_optimized_path:
 generate_nodes_failed:
-	unresolve_buf(&request->user_req.dst_img.buf,
+	unresolve_buf(cont, &request->user_req.dst_img.buf,
 		&request->dst_resolved);
 resolve_dst_buf_failed:
-	unresolve_buf(&request->user_req.src_mask.buf,
+	unresolve_buf(cont, &request->user_req.src_mask.buf,
 		&request->src_mask_resolved);
 resolve_src_mask_buf_failed:
-	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
-		unresolve_buf(&request->user_req.bg_img.buf,
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND)
+		unresolve_buf(cont, &request->user_req.bg_img.buf,
 				&request->bg_resolved);
-	}
 resolve_bg_buf_failed:
-	unresolve_buf(&request->user_req.src_img.buf,
+	unresolve_buf(cont, &request->user_req.src_img.buf,
 		&request->src_resolved);
 resolve_src_buf_failed:
 synch_interrupted:
 	job_release(&request->job);
-	dec_stat(&stat_n_jobs_released);
+	dec_stat(cont, &cont->stat_n_jobs_released);
 	if ((request->user_req.flags & B2R2_BLT_FLAG_DRY_RUN) == 0 || ret)
-		b2r2_log_warn(
-			"%s returns with error %d\n", __func__, ret);
+		b2r2_log_warn(cont->dev, "%s returns with error %d\n",
+			__func__, ret);
 
-	dec_stat(&stat_n_in_blt);
+	dec_stat(cont, &cont->stat_n_in_blt);
 
 	return ret;
 }
@@ -1172,24 +1077,24 @@ static void job_callback(struct b2r2_core_job *job)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
+	struct b2r2_control *cont = request->instance->control;
 
-	if (b2r2_blt_device())
-		b2r2_log_info("%s\n", __func__);
+	if (cont->dev)
+		b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	/* Local addref / release within this func */
 	b2r2_core_job_addref(job, __func__);
 
 	/* Unresolve the buffers */
-	unresolve_buf(&request->user_req.src_img.buf,
+	unresolve_buf(cont, &request->user_req.src_img.buf,
 		&request->src_resolved);
-	unresolve_buf(&request->user_req.src_mask.buf,
+	unresolve_buf(cont, &request->user_req.src_mask.buf,
 		&request->src_mask_resolved);
-	unresolve_buf(&request->user_req.dst_img.buf,
+	unresolve_buf(cont, &request->user_req.dst_img.buf,
 		&request->dst_resolved);
-	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
-		unresolve_buf(&request->user_req.bg_img.buf,
+	if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND)
+		unresolve_buf(cont, &request->user_req.bg_img.buf,
 			&request->bg_resolved);
-	}
 
 	/* Move to report list if the job shall be reported */
 	/* FIXME: Use a smaller struct? */
@@ -1198,7 +1103,7 @@ static void job_callback(struct b2r2_core_job *job)
 		/* Move job to report list */
 		list_add_tail(&request->list,
 			&request->instance->report_list);
-		inc_stat(&stat_n_jobs_in_report_list);
+		inc_stat(cont, &cont->stat_n_jobs_in_report_list);
 
 		/* Wake up poll */
 		wake_up_interruptible(
@@ -1215,7 +1120,7 @@ static void job_callback(struct b2r2_core_job *job)
 	BUG_ON(request->instance->no_of_active_requests == 0);
 	request->instance->no_of_active_requests--;
 	if (request->instance->synching &&
-	request->instance->no_of_active_requests == 0) {
+			request->instance->no_of_active_requests == 0) {
 		request->instance->synching = false;
 		/* Wake up all syncing */
 
@@ -1229,14 +1134,14 @@ static void job_callback(struct b2r2_core_job *job)
 	if (job->job_state == B2R2_CORE_JOB_CANCELED) {
 		char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
 
-		b2r2_log_info("%s: Job cancelled:\n", __func__);
+		b2r2_log_info(cont->dev, "%s: Job cancelled:\n", __func__);
 		if (Buf != NULL) {
 			sprintf_req(request, Buf, sizeof(char) * 4096);
-			b2r2_log_info("%s", Buf);
+			b2r2_log_info(cont->dev, "%s", Buf);
 			kfree(Buf);
 		} else {
-			b2r2_log_info("Unable to print the request. "
-					"Message buffer allocation failed.\n");
+			b2r2_log_info(cont->dev, "Unable to print the request."
+				" Message buffer allocation failed.\n");
 		}
 	}
 #endif
@@ -1260,26 +1165,27 @@ static void job_release(struct b2r2_core_job *job)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
+	struct b2r2_control *cont = request->instance->control;
 
-	inc_stat(&stat_n_jobs_released);
+	inc_stat(cont, &cont->stat_n_jobs_released);
 
-	b2r2_log_info("%s, first_node=%p, ref_count=%d\n",
+	b2r2_log_info(cont->dev, "%s, first_node=%p, ref_count=%d\n",
 		__func__, request->first_node, request->job.ref_count);
 
-	b2r2_node_split_cancel(&request->node_split_job);
+	b2r2_node_split_cancel(cont, &request->node_split_job);
 
 	if (request->first_node) {
-		b2r2_debug_job_done(request->first_node);
+		b2r2_debug_job_done(cont, request->first_node);
 #ifdef B2R2_USE_NODE_GEN
-		b2r2_blt_free_nodes(request->first_node);
+		b2r2_blt_free_nodes(cont, request->first_node);
 #else
-		b2r2_node_free(request->first_node);
+		b2r2_node_free(cont, request->first_node);
 #endif
 	}
 
 	/* Release memory for the request */
 	if (request->clut != NULL) {
-		dma_free_coherent(b2r2_blt_device(), CLUT_SIZE, request->clut,
+		dma_free_coherent(cont->dev, CLUT_SIZE, request->clut,
 				request->clut_phys_addr);
 		request->clut = NULL;
 		request->clut_phys_addr = 0;
@@ -1300,17 +1206,19 @@ static int job_acquire_resources(struct b2r2_core_job *job, bool atomic)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
+	struct b2r2_control *cont = request->instance->control;
 	int ret;
 	int i;
 
-	b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	if (request->buf_count == 0)
 		return 0;
 
 	if (request->buf_count > MAX_TMP_BUFS_NEEDED) {
-		b2r2_log_err("%s: request->buf_count > MAX_TMP_BUFS_NEEDED\n",
-								__func__);
+		b2r2_log_err(cont->dev,
+				"%s: request->buf_count > MAX_TMP_BUFS_NEEDED\n",
+				__func__);
 		return -ENOMSG;
 	}
 
@@ -1322,29 +1230,30 @@ static int job_acquire_resources(struct b2r2_core_job *job, bool atomic)
 	 * usage but we avoid get into a situation where lower prio jobs can
 	 * delay higher prio jobs that require more temp buffers.
 	 */
-	if (tmp_bufs[0].in_use)
+	if (cont->tmp_bufs[0].in_use)
 		return -EAGAIN;
 
 	for (i = 0; i < request->buf_count; i++) {
-		if (tmp_bufs[i].buf.size < request->bufs[i].size) {
-			b2r2_log_err("%s: tmp_bufs[i].buf.size < "
-					"request->bufs[i].size\n",
-								__func__);
+		if (cont->tmp_bufs[i].buf.size < request->bufs[i].size) {
+			b2r2_log_err(cont->dev, "%s: "
+					"cont->tmp_bufs[i].buf.size < "
+					"request->bufs[i].size\n", __func__);
 			ret = -ENOMSG;
 			goto error;
 		}
 
-		tmp_bufs[i].in_use = true;
-		request->bufs[i].phys_addr = tmp_bufs[i].buf.phys_addr;
-		request->bufs[i].virt_addr = tmp_bufs[i].buf.virt_addr;
+		cont->tmp_bufs[i].in_use = true;
+		request->bufs[i].phys_addr = cont->tmp_bufs[i].buf.phys_addr;
+		request->bufs[i].virt_addr = cont->tmp_bufs[i].buf.virt_addr;
 
-		b2r2_log_info("%s: phys=%p, virt=%p\n",
-			__func__, (void *)request->bufs[i].phys_addr,
-			request->bufs[i].virt_addr);
+		b2r2_log_info(cont->dev, "%s: phys=%p, virt=%p\n",
+				__func__, (void *)request->bufs[i].phys_addr,
+				request->bufs[i].virt_addr);
 
-		ret = b2r2_node_split_assign_buffers(&request->node_split_job,
-					request->first_node, request->bufs,
-					request->buf_count);
+		ret = b2r2_node_split_assign_buffers(cont,
+				&request->node_split_job,
+				request->first_node, request->bufs,
+				request->buf_count);
 		if (ret < 0)
 			goto error;
 	}
@@ -1353,7 +1262,7 @@ static int job_acquire_resources(struct b2r2_core_job *job, bool atomic)
 
 error:
 	for (i = 0; i < request->buf_count; i++)
-		tmp_bufs[i].in_use = false;
+		cont->tmp_bufs[i].in_use = false;
 
 	return ret;
 }
@@ -1371,16 +1280,17 @@ static void job_release_resources(struct b2r2_core_job *job, bool atomic)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
+	struct b2r2_control *cont = request->instance->control;
 	int i;
 
-	b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	/* Free any temporary buffers */
 	for (i = 0; i < request->buf_count; i++) {
 
-		b2r2_log_info("%s: freeing %d bytes\n",
-			__func__, request->bufs[i].size);
-		tmp_bufs[i].in_use = false;
+		b2r2_log_info(cont->dev, "%s: freeing %d bytes\n",
+				__func__, request->bufs[i].size);
+		cont->tmp_bufs[i].in_use = false;
 		memset(&request->bufs[i], 0, sizeof(request->bufs[i]));
 	}
 	request->buf_count = 0;
@@ -1390,12 +1300,12 @@ static void job_release_resources(struct b2r2_core_job *job, bool atomic)
 	 * FIXME: If nodes are to be reused we don't want to release here
 	 */
 	if (!atomic && request->first_node) {
-		b2r2_debug_job_done(request->first_node);
+		b2r2_debug_job_done(cont, request->first_node);
 
 #ifdef B2R2_USE_NODE_GEN
-		b2r2_blt_free_nodes(request->first_node);
+		b2r2_blt_free_nodes(cont, request->first_node);
 #else
-		b2r2_node_free(request->first_node);
+		b2r2_node_free(cont, request->first_node);
 #endif
 		request->first_node = NULL;
 	}
@@ -1412,8 +1322,13 @@ static void job_release_resources(struct b2r2_core_job *job, bool atomic)
  */
 static void tile_job_callback_gen(struct b2r2_core_job *job)
 {
-	if (b2r2_blt_device())
-		b2r2_log_info("%s\n", __func__);
+#ifdef CONFIG_B2R2_DEBUG
+	struct b2r2_blt_instance *instance =
+			(struct b2r2_blt_instance *) job->tag;
+	struct b2r2_control *cont = instance->control;
+#endif
+
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	/* Local addref / release within this func */
 	b2r2_core_job_addref(job, __func__);
@@ -1421,7 +1336,8 @@ static void tile_job_callback_gen(struct b2r2_core_job *job)
 #ifdef CONFIG_DEBUG_FS
 	/* Notify if a tile job is cancelled */
 	if (job->job_state == B2R2_CORE_JOB_CANCELED)
-		b2r2_log_info("%s: Tile job cancelled:\n", __func__);
+		b2r2_log_info(cont->dev, "%s: Tile job cancelled:\n",
+				__func__);
 #endif
 
 	/* Local addref / release within this func */
@@ -1439,19 +1355,19 @@ static void job_callback_gen(struct b2r2_core_job *job)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
+	struct b2r2_control *cont = request->instance->control;
 
-	if (b2r2_blt_device())
-		b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	/* Local addref / release within this func */
 	b2r2_core_job_addref(job, __func__);
 
 	/* Unresolve the buffers */
-	unresolve_buf(&request->user_req.src_img.buf,
+	unresolve_buf(cont, &request->user_req.src_img.buf,
 		&request->src_resolved);
-	unresolve_buf(&request->user_req.src_mask.buf,
+	unresolve_buf(cont, &request->user_req.src_mask.buf,
 		&request->src_mask_resolved);
-	unresolve_buf(&request->user_req.dst_img.buf,
+	unresolve_buf(cont, &request->user_req.dst_img.buf,
 		&request->dst_resolved);
 
 	/* Move to report list if the job shall be reported */
@@ -1462,7 +1378,7 @@ static void job_callback_gen(struct b2r2_core_job *job)
 		/* Move job to report list */
 		list_add_tail(&request->list,
 			&request->instance->report_list);
-		inc_stat(&stat_n_jobs_in_report_list);
+		inc_stat(cont, &cont->stat_n_jobs_in_report_list);
 
 		/* Wake up poll */
 		wake_up_interruptible(
@@ -1496,14 +1412,14 @@ static void job_callback_gen(struct b2r2_core_job *job)
 	if (job->job_state == B2R2_CORE_JOB_CANCELED) {
 		char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
 
-		b2r2_log_info("%s: Job cancelled:\n", __func__);
+		b2r2_log_info(cont->dev, "%s: Job cancelled:\n", __func__);
 		if (Buf != NULL) {
 			sprintf_req(request, Buf, sizeof(char) * 4096);
-			b2r2_log_info("%s", Buf);
+			b2r2_log_info(cont->dev, "%s", Buf);
 			kfree(Buf);
 		} else {
-			b2r2_log_info("Unable to print the request. "
-					"Message buffer allocation failed.\n");
+			b2r2_log_info(cont->dev, "Unable to print the request."
+				" Message buffer allocation failed.\n");
 		}
 	}
 #endif
@@ -1522,10 +1438,15 @@ static void job_callback_gen(struct b2r2_core_job *job)
 
 static void tile_job_release_gen(struct b2r2_core_job *job)
 {
-	inc_stat(&stat_n_jobs_released);
+	struct b2r2_blt_instance *instance =
+			(struct b2r2_blt_instance *) job->tag;
+	struct b2r2_control *cont = instance->control;
 
-	b2r2_log_info("%s, first_node_address=0x%.8x, ref_count=%d\n",
-		__func__, job->first_node_address, job->ref_count);
+	inc_stat(cont, &cont->stat_n_jobs_released);
+
+	b2r2_log_info(cont->dev, "%s, first_node_address=0x%.8x, ref_count="
+		"%d\n", __func__, job->first_node_address,
+		job->ref_count);
 
 	/* Release memory for the job */
 	kfree(job);
@@ -1541,26 +1462,27 @@ static void job_release_gen(struct b2r2_core_job *job)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
+	struct b2r2_control *cont = request->instance->control;
 
-	inc_stat(&stat_n_jobs_released);
+	inc_stat(cont, &cont->stat_n_jobs_released);
 
-	b2r2_log_info("%s, first_node=%p, ref_count=%d\n",
-		__func__, request->first_node, request->job.ref_count);
+	b2r2_log_info(cont->dev, "%s, first_node=%p, ref_count=%d\n",
+			__func__, request->first_node, request->job.ref_count);
 
 	if (request->first_node) {
-		b2r2_debug_job_done(request->first_node);
+		b2r2_debug_job_done(cont, request->first_node);
 
 		/* Free nodes */
 #ifdef B2R2_USE_NODE_GEN
-		b2r2_blt_free_nodes(request->first_node);
+		b2r2_blt_free_nodes(cont, request->first_node);
 #else
-		b2r2_node_free(request->first_node);
+		b2r2_node_free(cont, request->first_node);
 #endif
 	}
 
 	/* Release memory for the request */
 	if (request->clut != NULL) {
-		dma_free_coherent(b2r2_blt_device(), CLUT_SIZE, request->clut,
+		dma_free_coherent(cont->dev, CLUT_SIZE, request->clut,
 				request->clut_phys_addr);
 		request->clut = NULL;
 		request->clut_phys_addr = 0;
@@ -1605,6 +1527,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 	struct b2r2_work_buf work_bufs[4];
 	struct b2r2_blt_rect dst_rect_tile;
 	int i;
+	struct b2r2_control *cont = instance->control;
 
 	u32 thread_runtime_at_start = 0;
 	s32 nsec_active_in_b2r2 = 0;
@@ -1635,12 +1558,12 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 
 	memset(work_bufs, 0, sizeof(work_bufs));
 
-	b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
-	inc_stat(&stat_n_in_blt);
+	inc_stat(cont, &cont->stat_n_in_blt);
 
 	/* Debug prints of incoming request */
-	b2r2_log_info(
+	b2r2_log_info(cont->dev,
 		"src.fmt=%#010x flags=0x%.8x src.buf={%d,%d,0x%.8x}\n"
 		"src.w,h={%d,%d} src.rect={%d,%d,%d,%d}\n",
 		request->user_req.src_img.fmt,
@@ -1654,7 +1577,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		request->user_req.src_rect.y,
 		request->user_req.src_rect.width,
 		request->user_req.src_rect.height);
-	b2r2_log_info(
+	b2r2_log_info(cont->dev,
 		"dst.fmt=%#010x dst.buf={%d,%d,0x%.8x}\n"
 		"dst.w,h={%d,%d} dst.rect={%d,%d,%d,%d}\n"
 		"dst_clip_rect={%d,%d,%d,%d}\n",
@@ -1673,41 +1596,39 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		request->user_req.dst_clip_rect.width,
 		request->user_req.dst_clip_rect.height);
 
-	inc_stat(&stat_n_in_blt_synch);
+	inc_stat(cont, &cont->stat_n_in_blt_synch);
 
 	/* Wait here if synch is ongoing */
 	ret = wait_event_interruptible(instance->synch_done_waitq,
 				!is_synching(instance));
 	if (ret) {
-		b2r2_log_warn(
-			"%s: Sync wait interrupted, %d\n",
+		b2r2_log_warn(cont->dev, "%s: Sync wait interrupted, %d\n",
 			__func__, ret);
 		ret = -EAGAIN;
-		dec_stat(&stat_n_in_blt_synch);
+		dec_stat(cont, &cont->stat_n_in_blt_synch);
 		goto synch_interrupted;
 	}
 
-	dec_stat(&stat_n_in_blt_synch);
+	dec_stat(cont, &cont->stat_n_in_blt_synch);
 
 	/* Resolve the buffers */
 
 	/* Source buffer */
-	ret = resolve_buf(&request->user_req.src_img,
+	ret = resolve_buf(cont, &request->user_req.src_img,
 		&request->user_req.src_rect, false, &request->src_resolved);
 	if (ret < 0) {
-		b2r2_log_warn(
-			"%s: Resolve src buf failed, %d\n",
+		b2r2_log_warn(cont->dev, "%s: Resolve src buf failed, %d\n",
 			__func__, ret);
 		ret = -EAGAIN;
 		goto resolve_src_buf_failed;
 	}
 
 	/* Source mask buffer */
-	ret = resolve_buf(&request->user_req.src_mask,
+	ret = resolve_buf(cont, &request->user_req.src_mask,
 					&request->user_req.src_rect, false,
 						&request->src_mask_resolved);
 	if (ret < 0) {
-		b2r2_log_warn(
+		b2r2_log_warn(cont->dev,
 			"%s: Resolve src mask buf failed, %d\n",
 			__func__, ret);
 		ret = -EAGAIN;
@@ -1716,18 +1637,17 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 
 	/* Destination buffer */
 	get_actual_dst_rect(&request->user_req, &actual_dst_rect);
-	ret = resolve_buf(&request->user_req.dst_img, &actual_dst_rect,
+	ret = resolve_buf(cont, &request->user_req.dst_img, &actual_dst_rect,
 						true, &request->dst_resolved);
 	if (ret < 0) {
-		b2r2_log_warn(
-			"%s: Resolve dst buf failed, %d\n",
+		b2r2_log_warn(cont->dev, "%s: Resolve dst buf failed, %d\n",
 			__func__, ret);
 		ret = -EAGAIN;
 		goto resolve_dst_buf_failed;
 	}
 
 	/* Debug prints of resolved buffers */
-	b2r2_log_info("src.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
+	b2r2_log_info(cont->dev, "src.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
 		request->src_resolved.physical_address,
 		request->src_resolved.virtual_address,
 		request->src_resolved.is_pmem,
@@ -1736,7 +1656,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		request->src_resolved.file_virtual_start,
 		request->src_resolved.file_len);
 
-	b2r2_log_info("dst.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
+	b2r2_log_info(cont->dev, "dst.rbuf={%X,%p,%d} {%p,%X,%X,%d}\n",
 		request->dst_resolved.physical_address,
 		request->dst_resolved.virtual_address,
 		request->dst_resolved.is_pmem,
@@ -1749,7 +1669,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 	ret = b2r2_generic_analyze(request, &tmp_buf_width,
 			&tmp_buf_height, &tmp_buf_count, &node_count);
 	if (ret < 0) {
-		b2r2_log_warn(
+		b2r2_log_warn(cont->dev,
 			"%s: Failed to analyze request, ret = %d\n",
 			__func__, ret);
 #ifdef CONFIG_DEBUG_FS
@@ -1757,14 +1677,15 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			/* Failed, dump job to dmesg */
 			char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
 
-			b2r2_log_info(
+			b2r2_log_info(cont->dev,
 				"%s: Analyze failed for:\n", __func__);
 			if (Buf != NULL) {
 				sprintf_req(request, Buf, sizeof(char) * 4096);
-				b2r2_log_info("%s", Buf);
+				b2r2_log_info(cont->dev, "%s", Buf);
 				kfree(Buf);
 			} else {
-				b2r2_log_info("Unable to print the request. "
+				b2r2_log_info(cont->dev,
+					"Unable to print the request. "
 					"Message buffer allocation failed.\n");
 			}
 		}
@@ -1774,17 +1695,17 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 
 	/* Allocate the nodes needed */
 #ifdef B2R2_USE_NODE_GEN
-	request->first_node = b2r2_blt_alloc_nodes(node_count);
+	request->first_node = b2r2_blt_alloc_nodes(cont, node_count);
 	if (request->first_node == NULL) {
-		b2r2_log_warn(
+		b2r2_log_warn(cont->dev,
 			"%s: Failed to allocate nodes, ret = %d\n",
 			__func__, ret);
 		goto generate_nodes_failed;
 	}
 #else
-	ret = b2r2_node_alloc(node_count, &(request->first_node));
+	ret = b2r2_node_alloc(cont, node_count, &(request->first_node));
 	if (ret < 0 || request->first_node == NULL) {
-		b2r2_log_warn(
+		b2r2_log_warn(cont->dev,
 			"%s: Failed to allocate nodes, ret = %d\n",
 			__func__, ret);
 		goto generate_nodes_failed;
@@ -1796,7 +1717,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		void *virt;
 		work_bufs[i].size = tmp_buf_width * tmp_buf_height * 4;
 
-		virt = dma_alloc_coherent(b2r2_blt_device(),
+		virt = dma_alloc_coherent(cont->dev,
 				work_bufs[i].size,
 				&(work_bufs[i].phys_addr),
 				GFP_DMA | GFP_KERNEL);
@@ -1812,7 +1733,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			request->first_node, &work_bufs[0], tmp_buf_count);
 
 	if (ret < 0) {
-		b2r2_log_warn(
+		b2r2_log_warn(cont->dev,
 			"%s: Failed to perform generic configure, ret = %d\n",
 			__func__, ret);
 		goto generic_conf_failed;
@@ -1851,8 +1772,8 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			(request->user_req.src_img.buf.type !=
 				B2R2_BLT_PTR_PHYSICAL) &&
 			!b2r2_is_mb_fmt(request->user_req.src_img.fmt))
-			/* MB formats are never touched by SW */
-		sync_buf(&request->user_req.src_img,
+		/* MB formats are never touched by SW */
+		sync_buf(cont, &request->user_req.src_img,
 			&request->src_resolved,
 			false, /*is_dst*/
 			&request->user_req.src_rect);
@@ -1862,8 +1783,8 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			(request->user_req.src_mask.buf.type !=
 				B2R2_BLT_PTR_PHYSICAL) &&
 			!b2r2_is_mb_fmt(request->user_req.src_mask.fmt))
-			/* MB formats are never touched by SW */
-		sync_buf(&request->user_req.src_mask,
+		/* MB formats are never touched by SW */
+		sync_buf(cont, &request->user_req.src_mask,
 			&request->src_mask_resolved,
 			false, /*is_dst*/
 			NULL);
@@ -1873,15 +1794,15 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			(request->user_req.dst_img.buf.type !=
 				B2R2_BLT_PTR_PHYSICAL) &&
 			!b2r2_is_mb_fmt(request->user_req.dst_img.fmt))
-			/* MB formats are never touched by SW */
-		sync_buf(&request->user_req.dst_img,
+		/* MB formats are never touched by SW */
+		sync_buf(cont, &request->user_req.dst_img,
 			&request->dst_resolved,
 			true, /*is_dst*/
 			&request->user_req.dst_rect);
 
 #ifdef CONFIG_DEBUG_FS
 	/* Remember latest request */
-	debugfs_latest_request = *request;
+	cont->debugfs_latest_request = *request;
 #endif
 
 	/*
@@ -1919,8 +1840,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		if (dst_rect->x < 0)
 			x = -dst_rect->x;
 
-		for (; x < dst_rect->width &&
-				x + dst_rect->x < dst_img_width;
+		for (; x < dst_rect->width && x + dst_rect->x < dst_img_width;
 				x += tmp_buf_width) {
 			/*
 			 * Tile jobs are freed by the supplied release function
@@ -1935,9 +1855,9 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 				 * with rest of the tiles.
 				 * Memory might become available.
 				 */
-				b2r2_log_info("%s: Failed to alloc job. "
-					"Skipping tile at (x, y)=(%d, %d)\n",
-					__func__, x, y);
+				b2r2_log_info(cont->dev, "%s: Failed to alloc "
+						"job. Skipping tile at (x, y)="
+						"(%d, %d)\n", __func__, x, y);
 				continue;
 			}
 			tile_job->tag = request->job.tag;
@@ -1949,8 +1869,10 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			tile_job->callback = tile_job_callback_gen;
 			tile_job->release = tile_job_release_gen;
 			/* Work buffers and nodes are pre-allocated */
-			tile_job->acquire_resources = job_acquire_resources_gen;
-			tile_job->release_resources = job_release_resources_gen;
+			tile_job->acquire_resources =
+				job_acquire_resources_gen;
+			tile_job->release_resources =
+				job_release_resources_gen;
 
 			dst_rect_tile.x = x;
 			if (x + dst_rect->x + tmp_buf_width > dst_img_width) {
@@ -1978,18 +1900,19 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			b2r2_generic_set_areas(request,
 				request->first_node, &dst_rect_tile);
 			/* Submit the job */
-			b2r2_log_info("%s: Submitting job\n", __func__);
+			b2r2_log_info(cont->dev,
+				"%s: Submitting job\n", __func__);
 
-			inc_stat(&stat_n_in_blt_add);
+			inc_stat(cont, &cont->stat_n_in_blt_add);
 
 			mutex_lock(&instance->lock);
 
-			request_id = b2r2_core_job_add(tile_job);
+			request_id = b2r2_core_job_add(cont, tile_job);
 
-			dec_stat(&stat_n_in_blt_add);
+			dec_stat(cont, &cont->stat_n_in_blt_add);
 
 			if (request_id < 0) {
-				b2r2_log_warn("%s: "
+				b2r2_log_warn(cont->dev, "%s: "
 					"Failed to add tile job, ret = %d\n",
 					__func__, request_id);
 				ret = request_id;
@@ -1997,26 +1920,26 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 				goto job_add_failed;
 			}
 
-			inc_stat(&stat_n_jobs_added);
+			inc_stat(cont, &cont->stat_n_jobs_added);
 
 			mutex_unlock(&instance->lock);
 
 			/* Wait for the job to be done */
-			b2r2_log_info("%s: Synchronous, waiting\n",
+			b2r2_log_info(cont->dev, "%s: Synchronous, waiting\n",
 				__func__);
 
-			inc_stat(&stat_n_in_blt_wait);
+			inc_stat(cont, &cont->stat_n_in_blt_wait);
 
 			ret = b2r2_core_job_wait(tile_job);
 
-			dec_stat(&stat_n_in_blt_wait);
+			dec_stat(cont, &cont->stat_n_in_blt_wait);
 
 			if (ret < 0 && ret != -ENOENT)
-				b2r2_log_warn(
+				b2r2_log_warn(cont->dev,
 					"%s: Failed to wait job, ret = %d\n",
 					__func__, ret);
 			else {
-				b2r2_log_info(
+				b2r2_log_info(cont->dev,
 					"%s: Synchronous wait done\n",
 					__func__);
 
@@ -2048,9 +1971,9 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			 */
 			tile_job = kmalloc(sizeof(*tile_job), GFP_KERNEL);
 			if (tile_job == NULL) {
-				b2r2_log_info("%s: Failed to alloc job. "
-					"Skipping tile at (x, y)=(%d, %d)\n",
-					__func__, x, y);
+				b2r2_log_info(cont->dev, "%s: Failed to alloc "
+					"job. Skipping tile at (x, y)="
+					"(%d, %d)\n", __func__, x, y);
 				continue;
 			}
 			tile_job->tag = request->job.tag;
@@ -2061,8 +1984,10 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 				request->job.last_node_address;
 			tile_job->callback = tile_job_callback_gen;
 			tile_job->release = tile_job_release_gen;
-			tile_job->acquire_resources = job_acquire_resources_gen;
-			tile_job->release_resources = job_release_resources_gen;
+			tile_job->acquire_resources =
+				job_acquire_resources_gen;
+			tile_job->release_resources =
+				job_release_resources_gen;
 		}
 
 		dst_rect_tile.x = x;
@@ -2100,27 +2025,27 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		b2r2_generic_set_areas(request,
 			request->first_node, &dst_rect_tile);
 
-		b2r2_log_info("%s: Submitting job\n", __func__);
-		inc_stat(&stat_n_in_blt_add);
+		b2r2_log_info(cont->dev, "%s: Submitting job\n", __func__);
+		inc_stat(cont, &cont->stat_n_in_blt_add);
 
 		mutex_lock(&instance->lock);
 		if (x + tmp_buf_width < dst_rect->width &&
 				x + dst_rect->x + tmp_buf_width <
 				dst_img_width) {
-			request_id = b2r2_core_job_add(tile_job);
+			request_id = b2r2_core_job_add(cont, tile_job);
 		} else {
 			/*
 			 * Last tile. Send the job-struct from the request.
 			 * Clients will be notified once it completes.
 			 */
-			request_id = b2r2_core_job_add(&request->job);
+			request_id = b2r2_core_job_add(cont, &request->job);
 		}
 
-		dec_stat(&stat_n_in_blt_add);
+		dec_stat(cont, &cont->stat_n_in_blt_add);
 
 		if (request_id < 0) {
-			b2r2_log_warn("%s: Failed to add tile job, ret = %d\n",
-				__func__, request_id);
+			b2r2_log_warn(cont->dev, "%s: Failed to add tile job, "
+				"ret = %d\n", __func__, request_id);
 			ret = request_id;
 			mutex_unlock(&instance->lock);
 			if (tile_job != NULL)
@@ -2128,13 +2053,13 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			goto job_add_failed;
 		}
 
-		inc_stat(&stat_n_jobs_added);
+		inc_stat(cont, &cont->stat_n_jobs_added);
 		mutex_unlock(&instance->lock);
 
-		b2r2_log_info("%s: Synchronous, waiting\n",
+		b2r2_log_info(cont->dev, "%s: Synchronous, waiting\n",
 			__func__);
 
-		inc_stat(&stat_n_in_blt_wait);
+		inc_stat(cont, &cont->stat_n_in_blt_wait);
 		if (x + tmp_buf_width < dst_rect->width &&
 				x + dst_rect->x + tmp_buf_width <
 				dst_img_width) {
@@ -2146,14 +2071,14 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 			 */
 			ret = b2r2_core_job_wait(&request->job);
 		}
-		dec_stat(&stat_n_in_blt_wait);
+		dec_stat(cont, &cont->stat_n_in_blt_wait);
 
 		if (ret < 0 && ret != -ENOENT)
-			b2r2_log_warn(
+			b2r2_log_warn(cont->dev,
 				"%s: Failed to wait job, ret = %d\n",
 				__func__, ret);
 		else {
-			b2r2_log_info(
+			b2r2_log_info(cont->dev,
 				"%s: Synchronous wait done\n", __func__);
 
 			if (x + tmp_buf_width < dst_rect->width &&
@@ -2198,10 +2123,10 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		}
 	}
 
-	dec_stat(&stat_n_in_blt);
+	dec_stat(cont, &cont->stat_n_in_blt);
 
 	for (i = 0; i < tmp_buf_count; i++) {
-		dma_free_coherent(b2r2_blt_device(),
+		dma_free_coherent(cont->dev,
 			work_bufs[i].size,
 			work_bufs[i].virt_addr,
 			work_bufs[i].phys_addr);
@@ -2216,7 +2141,7 @@ generic_conf_failed:
 alloc_work_bufs_failed:
 	for (i = 0; i < 4; i++) {
 		if (work_bufs[i].virt_addr != 0) {
-			dma_free_coherent(b2r2_blt_device(),
+			dma_free_coherent(cont->dev,
 				work_bufs[i].size,
 				work_bufs[i].virt_addr,
 				work_bufs[i].phys_addr);
@@ -2225,22 +2150,22 @@ alloc_work_bufs_failed:
 	}
 
 generate_nodes_failed:
-	unresolve_buf(&request->user_req.dst_img.buf,
+	unresolve_buf(cont, &request->user_req.dst_img.buf,
 		&request->dst_resolved);
 resolve_dst_buf_failed:
-	unresolve_buf(&request->user_req.src_mask.buf,
+	unresolve_buf(cont, &request->user_req.src_mask.buf,
 		&request->src_mask_resolved);
 resolve_src_mask_buf_failed:
-	unresolve_buf(&request->user_req.src_img.buf,
+	unresolve_buf(cont, &request->user_req.src_img.buf,
 		&request->src_resolved);
 resolve_src_buf_failed:
 synch_interrupted:
 zero_blt:
 	job_release_gen(&request->job);
-	dec_stat(&stat_n_jobs_released);
-	dec_stat(&stat_n_in_blt);
+	dec_stat(cont, &cont->stat_n_jobs_released);
+	dec_stat(cont, &cont->stat_n_in_blt);
 
-	b2r2_log_info("b2r2:%s ret=%d", __func__, ret);
+	b2r2_log_info(cont->dev, "b2r2:%s ret=%d", __func__, ret);
 	return ret;
 }
 #endif /* CONFIG_B2R2_GENERIC */
@@ -2256,11 +2181,13 @@ static int b2r2_blt_synch(struct b2r2_blt_instance *instance,
 			int request_id)
 {
 	int ret = 0;
-	b2r2_log_info("%s, request_id=%d\n", __func__, request_id);
+	struct b2r2_control *cont = instance->control;
+
+	b2r2_log_info(cont->dev, "%s, request_id=%d\n", __func__, request_id);
 
 	if (request_id == 0) {
 		/* Wait for all requests */
-		inc_stat(&stat_n_in_synch_0);
+		inc_stat(cont, &cont->stat_n_in_synch_0);
 
 		/* Enter state "synching" if we have any active request */
 		mutex_lock(&instance->lock);
@@ -2270,15 +2197,15 @@ static int b2r2_blt_synch(struct b2r2_blt_instance *instance,
 
 		/* Wait until no longer in state synching */
 		ret = wait_event_interruptible(instance->synch_done_waitq,
-					!is_synching(instance));
-		dec_stat(&stat_n_in_synch_0);
+				!is_synching(instance));
+		dec_stat(cont, &cont->stat_n_in_synch_0);
 	} else {
 		struct b2r2_core_job *job;
 
-		inc_stat(&stat_n_in_synch_job);
+		inc_stat(cont, &cont->stat_n_in_synch_job);
 
 		/* Wait for specific job */
-		job = b2r2_core_job_find(request_id);
+		job = b2r2_core_job_find(cont, request_id);
 		if (job) {
 			/* Wait on find job */
 			ret = b2r2_core_job_wait(job);
@@ -2287,11 +2214,10 @@ static int b2r2_blt_synch(struct b2r2_blt_instance *instance,
 		}
 
 		/* If job not found we assume that is has been run */
-
-		dec_stat(&stat_n_in_synch_job);
+		dec_stat(cont, &cont->stat_n_in_synch_job);
 	}
 
-	b2r2_log_info(
+	b2r2_log_info(cont->dev,
 		"%s, request_id=%d, returns %d\n", __func__, request_id, ret);
 
 	return ret;
@@ -2321,11 +2247,12 @@ static void get_actual_dst_rect(struct b2r2_blt_req *req,
 
 	if (req->flags & B2R2_BLT_FLAG_DESTINATION_CLIP)
 		b2r2_intersect_rects(actual_dst_rect, &req->dst_clip_rect,
-							actual_dst_rect);
+				actual_dst_rect);
 }
 
-static void set_up_hwmem_region(struct b2r2_blt_img *img,
-		struct b2r2_blt_rect *rect, struct hwmem_region *region)
+static void set_up_hwmem_region(struct b2r2_control *cont,
+		struct b2r2_blt_img *img, struct b2r2_blt_rect *rect,
+		struct hwmem_region *region)
 {
 	s32 img_size;
 
@@ -2334,15 +2261,15 @@ static void set_up_hwmem_region(struct b2r2_blt_img *img,
 	if (b2r2_is_zero_area_rect(rect))
 		return;
 
-	img_size = b2r2_get_img_size(img);
+	img_size = b2r2_get_img_size(cont, img);
 
 	if (b2r2_is_single_plane_fmt(img->fmt) &&
-				b2r2_is_independent_pixel_fmt(img->fmt)) {
-		int img_fmt_bpp = b2r2_get_fmt_bpp(img->fmt);
-		u32 img_pitch = b2r2_get_img_pitch(img);
+			b2r2_is_independent_pixel_fmt(img->fmt)) {
+		int img_fmt_bpp = b2r2_get_fmt_bpp(cont, img->fmt);
+		u32 img_pitch = b2r2_get_img_pitch(cont, img);
 
 		region->offset = (u32)(img->buf.offset + (rect->y *
-								img_pitch));
+				img_pitch));
 		region->count = (u32)rect->height;
 		region->start = (u32)((rect->x * img_fmt_bpp) / 8);
 		region->end = (u32)b2r2_div_round_up(
@@ -2363,7 +2290,8 @@ static void set_up_hwmem_region(struct b2r2_blt_img *img,
 	}
 }
 
-static int resolve_hwmem(struct b2r2_blt_img *img,
+static int resolve_hwmem(struct b2r2_control *cont,
+		struct b2r2_blt_img *img,
 		struct b2r2_blt_rect *rect_2b_used,
 		bool is_dst,
 		struct b2r2_resolved_buf *resolved_buf)
@@ -2380,8 +2308,8 @@ static int resolve_hwmem(struct b2r2_blt_img *img,
 			hwmem_resolve_by_name(img->buf.hwmem_buf_name);
 	if (IS_ERR(resolved_buf->hwmem_alloc)) {
 		return_value = PTR_ERR(resolved_buf->hwmem_alloc);
-		b2r2_log_info("%s: hwmem_resolve_by_name failed, "
-				"error code: %i\n", __func__, return_value);
+		b2r2_log_info(cont->dev, "%s: hwmem_resolve_by_name failed, "
+			"error code: %i\n", __func__, return_value);
 		goto resolve_failed;
 	}
 
@@ -2389,25 +2317,27 @@ static int resolve_hwmem(struct b2r2_blt_img *img,
 			&mem_type, &access);
 
 	required_access = (is_dst ? HWMEM_ACCESS_WRITE : HWMEM_ACCESS_READ) |
-							HWMEM_ACCESS_IMPORT;
+			HWMEM_ACCESS_IMPORT;
 	if ((required_access & access) != required_access) {
-		b2r2_log_info("%s: Insufficient access to hwmem buffer.\n",
-				__func__);
+		b2r2_log_info(cont->dev, "%s: Insufficient access to hwmem "
+			"buffer.\n", __func__);
 		return_value = -EACCES;
 		goto access_check_failed;
 	}
 
 	if (mem_type != HWMEM_MEM_CONTIGUOUS_SYS) {
-		b2r2_log_info("%s: Hwmem buffer is scattered.\n", __func__);
+		b2r2_log_info(cont->dev, "%s: Hwmem buffer is scattered.\n",
+			__func__);
 		return_value = -EINVAL;
 		goto buf_scattered;
 	}
 
 	if (resolved_buf->file_len <
-			img->buf.offset + (__u32)b2r2_get_img_size(img)) {
-		b2r2_log_info("%s: Hwmem buffer too small. (%d < %d) \n", __func__,
-				resolved_buf->file_len,
-				img->buf.offset + (__u32)b2r2_get_img_size(img));
+			img->buf.offset + (__u32)b2r2_get_img_size(cont, img)) {
+		b2r2_log_info(cont->dev, "%s: Hwmem buffer too small. (%d < "
+			"%d)\n", __func__, resolved_buf->file_len,
+			img->buf.offset +
+			(__u32)b2r2_get_img_size(cont, img));
 		return_value = -EINVAL;
 		goto size_check_failed;
 	}
@@ -2415,18 +2345,18 @@ static int resolve_hwmem(struct b2r2_blt_img *img,
 	return_value = hwmem_pin(resolved_buf->hwmem_alloc, &mem_chunk,
 							 &mem_chunk_length);
 	if (return_value < 0) {
-		b2r2_log_info("%s: hwmem_pin failed, "
-				"error code: %i\n", __func__, return_value);
+		b2r2_log_info(cont->dev, "%s: hwmem_pin failed, "
+			"error code: %i\n", __func__, return_value);
 		goto pin_failed;
 	}
 	resolved_buf->file_physical_start = mem_chunk.paddr;
 
-	set_up_hwmem_region(img, rect_2b_used, &region);
+	set_up_hwmem_region(cont, img, rect_2b_used, &region);
 	return_value = hwmem_set_domain(resolved_buf->hwmem_alloc,
-				required_access, HWMEM_DOMAIN_SYNC, &region);
+		required_access, HWMEM_DOMAIN_SYNC, &region);
 	if (return_value < 0) {
-		b2r2_log_info("%s: hwmem_set_domain failed, "
-				"error code: %i\n", __func__, return_value);
+		b2r2_log_info(cont->dev, "%s: hwmem_set_domain failed, "
+			"error code: %i\n", __func__, return_value);
 		goto set_domain_failed;
 	}
 
@@ -2462,8 +2392,9 @@ static void unresolve_hwmem(struct b2r2_resolved_buf *resolved_buf)
  *
  * Returns 0 if OK else negative error code
  */
-static void unresolve_buf(struct b2r2_blt_buf *buf,
-			struct b2r2_resolved_buf *resolved)
+static void unresolve_buf(struct b2r2_control *cont,
+		struct b2r2_blt_buf *buf,
+		struct b2r2_resolved_buf *resolved)
 {
 #ifdef CONFIG_ANDROID_PMEM
 	if (resolved->is_pmem && resolved->filep)
@@ -2525,7 +2456,8 @@ static int get_fb_info(struct file *file,
  *
  * Returns 0 if OK else negative error code
  */
-static int resolve_buf(struct b2r2_blt_img *img,
+static int resolve_buf(struct b2r2_control *cont,
+		struct b2r2_blt_img *img,
 		struct b2r2_blt_rect *rect_2b_used,
 		bool is_dst,
 		struct b2r2_resolved_buf *resolved)
@@ -2584,19 +2516,18 @@ static int resolve_buf(struct b2r2_blt_img *img,
 		if (img->buf.offset + img->buf.len >
 				resolved->file_len) {
 			ret = -ESPIPE;
-			unresolve_buf(&img->buf, resolved);
+			unresolve_buf(cont, &img->buf, resolved);
 		}
 
 		break;
 	}
 
 	case B2R2_BLT_PTR_HWMEM_BUF_NAME_OFFSET:
-		ret = resolve_hwmem(img, rect_2b_used, is_dst, resolved);
+		ret = resolve_hwmem(cont, img, rect_2b_used, is_dst, resolved);
 		break;
 
 	default:
-		b2r2_log_warn(
-			"%s: Failed to resolve buf type %d\n",
+		b2r2_log_warn(cont->dev, "%s: Failed to resolve buf type %d\n",
 			__func__, img->buf.type);
 
 		ret = -EINVAL;
@@ -2619,7 +2550,8 @@ static int resolve_buf(struct b2r2_blt_img *img,
  * @img_width: width of the complete image buffer
  * @fmt: buffer format
 */
-static void sync_buf(struct b2r2_blt_img *img,
+static void sync_buf(struct b2r2_control *cont,
+		struct b2r2_blt_img *img,
 		struct b2r2_resolved_buf *resolved,
 		bool is_dst,
 		struct b2r2_blt_rect *rect)
@@ -2810,23 +2742,15 @@ static bool is_synching(struct b2r2_blt_instance *instance)
 }
 
 /**
- * b2r2_blt_devide() - Returns the B2R2 blt device for logging
- */
-struct device *b2r2_blt_device(void)
-{
-	return b2r2_blt_dev ? b2r2_blt_dev->this_device : NULL;
-}
-
-/**
  * inc_stat() - Spin lock protected increment of statistics variable
  *
  * @stat: Pointer to statistics variable that should be incremented
  */
-static void inc_stat(unsigned long *stat)
+static void inc_stat(struct b2r2_control *cont, unsigned long *stat)
 {
-	mutex_lock(&stat_lock);
+	mutex_lock(&cont->stat_lock);
 	(*stat)++;
-	mutex_unlock(&stat_lock);
+	mutex_unlock(&cont->stat_lock);
 }
 
 /**
@@ -2834,11 +2758,11 @@ static void inc_stat(unsigned long *stat)
  *
  * @stat: Pointer to statistics variable that should be decremented
  */
-static void dec_stat(unsigned long *stat)
+static void dec_stat(struct b2r2_control *cont, unsigned long *stat)
 {
-	mutex_lock(&stat_lock);
+	mutex_lock(&cont->stat_lock);
 	(*stat)--;
-	mutex_unlock(&stat_lock);
+	mutex_unlock(&cont->stat_lock);
 }
 
 
@@ -2856,172 +2780,196 @@ static int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
 {
 	size_t dev_size = 0;
 
+	/* generic request info */
 	dev_size += sprintf(buf + dev_size,
-			"instance: %p\n\n",
-			request->instance);
+		"instance      : 0x%08lX\n",
+		(unsigned long) request->instance);
+	dev_size += sprintf(buf + dev_size,
+		"size          : %d bytes\n", request->user_req.size);
+	dev_size += sprintf(buf + dev_size,
+		"flags         : 0x%08lX\n",
+		(unsigned long) request->user_req.flags);
+	dev_size += sprintf(buf + dev_size,
+		"transform     : %d\n",
+		(int) request->user_req.transform);
+	dev_size += sprintf(buf + dev_size,
+		"prio          : %d\n", request->user_req.transform);
+	dev_size += sprintf(buf + dev_size,
+		"global_alpha  : %d\n",
+		(int) request->user_req.global_alpha);
+	dev_size += sprintf(buf + dev_size,
+		"report1       : 0x%08lX\n",
+		(unsigned long) request->user_req.report1);
+	dev_size += sprintf(buf + dev_size,
+		"report2       : 0x%08lX\n",
+		(unsigned long) request->user_req.report2);
+	dev_size += sprintf(buf + dev_size,
+		"request_id    : 0x%08lX\n\n",
+		(unsigned long) request->request_id);
+
+	/* src info */
+	dev_size += sprintf(buf + dev_size,
+		"src_img.fmt   : %#010x\n",
+		request->user_req.src_img.fmt);
+	dev_size += sprintf(buf + dev_size,
+		"src_img.buf   : {type=%d, hwmem_buf_name=%d, fd=%d, "
+		"offset=%d, len=%d}\n",
+		request->user_req.src_img.buf.type,
+		request->user_req.src_img.buf.hwmem_buf_name,
+		request->user_req.src_img.buf.fd,
+		request->user_req.src_img.buf.offset,
+		request->user_req.src_img.buf.len);
+	dev_size += sprintf(buf + dev_size,
+		"src_img       : {width=%d, height=%d, pitch=%d}\n",
+		request->user_req.src_img.width,
+		request->user_req.src_img.height,
+		request->user_req.src_img.pitch);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask.fmt  : %#010x\n",
+		request->user_req.src_mask.fmt);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask.buf  : {type=%d, hwmem_buf_name=%d, fd=%d,"
+		" offset=%d, len=%d}\n",
+		request->user_req.src_mask.buf.type,
+		request->user_req.src_mask.buf.hwmem_buf_name,
+		request->user_req.src_mask.buf.fd,
+		request->user_req.src_mask.buf.offset,
+		request->user_req.src_mask.buf.len);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask      : {width=%d, height=%d, pitch=%d}\n",
+		request->user_req.src_mask.width,
+		request->user_req.src_mask.height,
+		request->user_req.src_mask.pitch);
+	dev_size += sprintf(buf + dev_size,
+		"src_rect      : {x=%d, y=%d, width=%d, height=%d}\n",
+		request->user_req.src_rect.x,
+		request->user_req.src_rect.y,
+		request->user_req.src_rect.width,
+		request->user_req.src_rect.height);
+	dev_size += sprintf(buf + dev_size,
+		"src_color     : 0x%08lX\n\n",
+		(unsigned long) request->user_req.src_color);
+
+	/* bg info */
+	dev_size += sprintf(buf + dev_size,
+		"bg_img.fmt    : %#010x\n",
+		request->user_req.bg_img.fmt);
+	dev_size += sprintf(buf + dev_size,
+		"bg_img.buf    : {type=%d, hwmem_buf_name=%d, fd=%d,"
+		" offset=%d, len=%d}\n",
+		request->user_req.bg_img.buf.type,
+		request->user_req.bg_img.buf.hwmem_buf_name,
+		request->user_req.bg_img.buf.fd,
+		request->user_req.bg_img.buf.offset,
+		request->user_req.bg_img.buf.len);
+	dev_size += sprintf(buf + dev_size,
+		"bg_img        : {width=%d, height=%d, pitch=%d}\n",
+		request->user_req.bg_img.width,
+		request->user_req.bg_img.height,
+		request->user_req.bg_img.pitch);
+	dev_size += sprintf(buf + dev_size,
+		"bg_rect       : {x=%d, y=%d, width=%d, height=%d}\n\n",
+		request->user_req.bg_rect.x,
+		request->user_req.bg_rect.y,
+		request->user_req.bg_rect.width,
+		request->user_req.bg_rect.height);
+
+	/* dst info */
+	dev_size += sprintf(buf + dev_size,
+		"dst_img.fmt   : %#010x\n",
+		request->user_req.dst_img.fmt);
+	dev_size += sprintf(buf + dev_size,
+		"dst_img.buf   : {type=%d, hwmem_buf_name=%d, fd=%d,"
+		" offset=%d, len=%d}\n",
+		request->user_req.dst_img.buf.type,
+		request->user_req.dst_img.buf.hwmem_buf_name,
+		request->user_req.dst_img.buf.fd,
+		request->user_req.dst_img.buf.offset,
+		request->user_req.dst_img.buf.len);
+	dev_size += sprintf(buf + dev_size,
+		"dst_img       : {width=%d, height=%d, pitch=%d}\n",
+		request->user_req.dst_img.width,
+		request->user_req.dst_img.height,
+		request->user_req.dst_img.pitch);
+	dev_size += sprintf(buf + dev_size,
+		"dst_rect      : {x=%d, y=%d, width=%d, height=%d}\n",
+		request->user_req.dst_rect.x,
+		request->user_req.dst_rect.y,
+		request->user_req.dst_rect.width,
+		request->user_req.dst_rect.height);
+	dev_size += sprintf(buf + dev_size,
+		"dst_clip_rect : {x=%d, y=%d, width=%d, height=%d}\n",
+		request->user_req.dst_clip_rect.x,
+		request->user_req.dst_clip_rect.y,
+		request->user_req.dst_clip_rect.width,
+		request->user_req.dst_clip_rect.height);
+	dev_size += sprintf(buf + dev_size,
+		"dst_color     : 0x%08lX\n\n",
+		(unsigned long) request->user_req.dst_color);
 
 	dev_size += sprintf(buf + dev_size,
-			"size: %d bytes\n",
-			request->user_req.size);
+		"src_resolved.physical                  : 0x%08lX\n",
+		(unsigned long) request->src_resolved.
+		physical_address);
 	dev_size += sprintf(buf + dev_size,
-			"flags: %8lX\n",
-			(unsigned long) request->user_req.flags);
+		"src_resolved.virtual                   : 0x%08lX\n",
+		(unsigned long) request->src_resolved.virtual_address);
 	dev_size += sprintf(buf + dev_size,
-			"transform: %3lX\n",
-			(unsigned long) request->user_req.transform);
+		"src_resolved.filep                     : 0x%08lX\n",
+		(unsigned long) request->src_resolved.filep);
 	dev_size += sprintf(buf + dev_size,
-			"prio: %d\n",
-			request->user_req.transform);
+		"src_resolved.filep_physical_start      : 0x%08lX\n",
+		(unsigned long) request->src_resolved.
+		file_physical_start);
 	dev_size += sprintf(buf + dev_size,
-			"src_img.fmt: %#010x\n",
-			request->user_req.src_img.fmt);
+		"src_resolved.filep_virtual_start       : 0x%08lX\n",
+		(unsigned long) request->src_resolved.file_virtual_start);
 	dev_size += sprintf(buf + dev_size,
-			"src_img.buf: {type=%d,hwmem_buf_name=%d,fd=%d,"
-				"offset=%d,len=%d}\n",
-			request->user_req.src_img.buf.type,
-			request->user_req.src_img.buf.hwmem_buf_name,
-			request->user_req.src_img.buf.fd,
-			request->user_req.src_img.buf.offset,
-			request->user_req.src_img.buf.len);
-	dev_size += sprintf(buf + dev_size,
-			"src_img.{width=%d,height=%d,pitch=%d}\n",
-			request->user_req.src_img.width,
-			request->user_req.src_img.height,
-			request->user_req.src_img.pitch);
-	dev_size += sprintf(buf + dev_size,
-			"src_mask.fmt: %#010x\n",
-			request->user_req.src_mask.fmt);
-	dev_size += sprintf(buf + dev_size,
-			"src_mask.buf: {type=%d,hwmem_buf_name=%d,fd=%d,"
-				"offset=%d,len=%d}\n",
-			request->user_req.src_mask.buf.type,
-			request->user_req.src_mask.buf.hwmem_buf_name,
-			request->user_req.src_mask.buf.fd,
-			request->user_req.src_mask.buf.offset,
-			request->user_req.src_mask.buf.len);
-	dev_size += sprintf(buf + dev_size,
-			"src_mask.{width=%d,height=%d,pitch=%d}\n",
-			request->user_req.src_mask.width,
-			request->user_req.src_mask.height,
-			request->user_req.src_mask.pitch);
-	dev_size += sprintf(buf + dev_size,
-			"src_rect.{x=%d,y=%d,width=%d,height=%d}\n",
-			request->user_req.src_rect.x,
-			request->user_req.src_rect.y,
-			request->user_req.src_rect.width,
-			request->user_req.src_rect.height);
-	dev_size += sprintf(buf + dev_size,
-			"src_color=%08lX\n",
-			(unsigned long) request->user_req.src_color);
+		"src_resolved.file_len                  : %d\n\n",
+		request->src_resolved.file_len);
 
 	dev_size += sprintf(buf + dev_size,
-			"dst_img.fmt: %#010x\n",
-			request->user_req.dst_img.fmt);
+		"src_mask_resolved.physical             : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.
+		physical_address);
 	dev_size += sprintf(buf + dev_size,
-			"dst_img.buf: {type=%d,hwmem_buf_name=%d,fd=%d,"
-				"offset=%d,len=%d}\n",
-			request->user_req.dst_img.buf.type,
-			request->user_req.dst_img.buf.hwmem_buf_name,
-			request->user_req.dst_img.buf.fd,
-			request->user_req.dst_img.buf.offset,
-			request->user_req.dst_img.buf.len);
+		"src_mask_resolved.virtual              : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.virtual_address);
 	dev_size += sprintf(buf + dev_size,
-			"dst_img.{width=%d,height=%d,pitch=%d}\n",
-			request->user_req.dst_img.width,
-			request->user_req.dst_img.height,
-			request->user_req.dst_img.pitch);
+		"src_mask_resolved.filep                : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.filep);
 	dev_size += sprintf(buf + dev_size,
-			"dst_rect.{x=%d,y=%d,width=%d,height=%d}\n",
-			request->user_req.dst_rect.x,
-			request->user_req.dst_rect.y,
-			request->user_req.dst_rect.width,
-			request->user_req.dst_rect.height);
+		"src_mask_resolved.filep_physical_start : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.
+		file_physical_start);
 	dev_size += sprintf(buf + dev_size,
-			"dst_clip_rect.{x=%d,y=%d,width=%d,height=%d}\n",
-			request->user_req.dst_clip_rect.x,
-			request->user_req.dst_clip_rect.y,
-			request->user_req.dst_clip_rect.width,
-			request->user_req.dst_clip_rect.height);
+		"src_mask_resolved.filep_virtual_start  : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.
+		file_virtual_start);
 	dev_size += sprintf(buf + dev_size,
-			"dst_color=%08lX\n",
-			(unsigned long) request->user_req.dst_color);
-	dev_size += sprintf(buf + dev_size,
-			"global_alpha=%d\n",
-			(int) request->user_req.global_alpha);
-	dev_size += sprintf(buf + dev_size,
-			"report1=%08lX\n",
-			(unsigned long) request->user_req.report1);
-	dev_size += sprintf(buf + dev_size,
-			"report2=%08lX\n",
-			(unsigned long) request->user_req.report2);
+		"src_mask_resolved.file_len             : %d\n\n",
+		request->src_mask_resolved.file_len);
 
 	dev_size += sprintf(buf + dev_size,
-			"request_id: %d\n",
-			request->request_id);
-
+		"dst_resolved.physical                  : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.
+		physical_address);
 	dev_size += sprintf(buf + dev_size,
-			"src_resolved.physical: %lX\n",
-			(unsigned long) request->src_resolved.
-			physical_address);
+		"dst_resolved.virtual                   : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.virtual_address);
 	dev_size += sprintf(buf + dev_size,
-			"src_resolved.virtual: %p\n",
-			request->src_resolved.virtual_address);
+		"dst_resolved.filep                     : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.filep);
 	dev_size += sprintf(buf + dev_size,
-			"src_resolved.filep: %p\n",
-			request->src_resolved.filep);
+		"dst_resolved.filep_physical_start      : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.
+		file_physical_start);
 	dev_size += sprintf(buf + dev_size,
-			"src_resolved.filep_physical_start: %lX\n",
-			(unsigned long) request->src_resolved.
-			file_physical_start);
+		"dst_resolved.filep_virtual_start       : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.file_virtual_start);
 	dev_size += sprintf(buf + dev_size,
-			"src_resolved.filep_virtual_start: %p\n",
-			(void *) request->src_resolved.file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
-			"src_resolved.file_len: %d\n",
-			request->src_resolved.file_len);
-
-	dev_size += sprintf(buf + dev_size,
-			"src_mask_resolved.physical: %lX\n",
-			(unsigned long) request->src_mask_resolved.
-			physical_address);
-	dev_size += sprintf(buf + dev_size,
-			"src_mask_resolved.virtual: %p\n",
-			request->src_mask_resolved.virtual_address);
-	dev_size += sprintf(buf + dev_size,
-			"src_mask_resolved.filep: %p\n",
-			request->src_mask_resolved.filep);
-	dev_size += sprintf(buf + dev_size,
-			"src_mask_resolved.filep_physical_start: %lX\n",
-			(unsigned long) request->src_mask_resolved.
-			file_physical_start);
-	dev_size += sprintf(buf + dev_size,
-			"src_mask_resolved.filep_virtual_start: %p\n",
-			(void *) request->src_mask_resolved.
-			file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
-			"src_mask_resolved.file_len: %d\n",
-			request->src_mask_resolved.file_len);
-
-	dev_size += sprintf(buf + dev_size,
-			"dst_resolved.physical: %lX\n",
-			(unsigned long) request->dst_resolved.
-			physical_address);
-	dev_size += sprintf(buf + dev_size,
-			"dst_resolved.virtual: %p\n",
-			request->dst_resolved.virtual_address);
-	dev_size += sprintf(buf + dev_size,
-			"dst_resolved.filep: %p\n",
-			request->dst_resolved.filep);
-	dev_size += sprintf(buf + dev_size,
-			"dst_resolved.filep_physical_start: %lX\n",
-			(unsigned long) request->dst_resolved.
-			file_physical_start);
-	dev_size += sprintf(buf + dev_size,
-			"dst_resolved.filep_virtual_start: %p\n",
-			(void *) request->dst_resolved.file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
-			"dst_resolved.file_len: %d\n",
-			request->dst_resolved.file_len);
+		"dst_resolved.file_len                  : %d\n\n",
+		request->dst_resolved.file_len);
 
 	return dev_size;
 }
@@ -3042,13 +2990,14 @@ static int debugfs_b2r2_blt_request_read(struct file *filp, char __user *buf,
 	size_t dev_size = 0;
 	int ret = 0;
 	char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
 
 	if (Buf == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	dev_size = sprintf_req(&debugfs_latest_request, Buf,
+	dev_size = sprintf_req(&cont->debugfs_latest_request, Buf,
 		sizeof(char) * 4096);
 
 	/* No more to read if offset != 0 */
@@ -3195,38 +3144,39 @@ static int debugfs_b2r2_blt_stat_read(struct file *filp, char __user *buf,
 	size_t dev_size = 0;
 	int ret = 0;
 	char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
 
 	if (Buf == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	mutex_lock(&stat_lock);
-	dev_size += sprintf(Buf + dev_size, "Added jobs: %lu\n",
-			stat_n_jobs_added);
-	dev_size += sprintf(Buf + dev_size, "Released jobs: %lu\n",
-			stat_n_jobs_released);
-	dev_size += sprintf(Buf + dev_size, "Jobs in report list: %lu\n",
-			stat_n_jobs_in_report_list);
-	dev_size += sprintf(Buf + dev_size, "Clients in open: %lu\n",
-			stat_n_in_open);
-	dev_size += sprintf(Buf + dev_size, "Clients in release: %lu\n",
-			stat_n_in_release);
-	dev_size += sprintf(Buf + dev_size, "Clients in blt: %lu\n",
-			stat_n_in_blt);
-	dev_size += sprintf(Buf + dev_size, "              synch: %lu\n",
-			stat_n_in_blt_synch);
-	dev_size += sprintf(Buf + dev_size, "              add: %lu\n",
-			stat_n_in_blt_add);
-	dev_size += sprintf(Buf + dev_size, "              wait: %lu\n",
-			stat_n_in_blt_wait);
-	dev_size += sprintf(Buf + dev_size, "Clients in synch 0: %lu\n",
-			stat_n_in_synch_0);
-	dev_size += sprintf(Buf + dev_size, "Clients in synch job: %lu\n",
-			stat_n_in_synch_job);
-	dev_size += sprintf(Buf + dev_size, "Clients in query_cap: %lu\n",
-			stat_n_in_query_cap);
-	mutex_unlock(&stat_lock);
+	mutex_lock(&cont->stat_lock);
+	dev_size += sprintf(Buf + dev_size, "Added jobs           : %lu\n",
+		cont->stat_n_jobs_added);
+	dev_size += sprintf(Buf + dev_size, "Released jobs        : %lu\n",
+		cont->stat_n_jobs_released);
+	dev_size += sprintf(Buf + dev_size, "Jobs in report list  : %lu\n",
+		cont->stat_n_jobs_in_report_list);
+	dev_size += sprintf(Buf + dev_size, "Clients in open      : %lu\n",
+		cont->stat_n_in_open);
+	dev_size += sprintf(Buf + dev_size, "Clients in release   : %lu\n",
+		cont->stat_n_in_release);
+	dev_size += sprintf(Buf + dev_size, "Clients in blt       : %lu\n",
+		cont->stat_n_in_blt);
+	dev_size += sprintf(Buf + dev_size, "         synch       : %lu\n",
+		cont->stat_n_in_blt_synch);
+	dev_size += sprintf(Buf + dev_size, "           add       : %lu\n",
+		cont->stat_n_in_blt_add);
+	dev_size += sprintf(Buf + dev_size, "          wait       : %lu\n",
+		cont->stat_n_in_blt_wait);
+	dev_size += sprintf(Buf + dev_size, "Clients in synch 0   : %lu\n",
+		cont->stat_n_in_synch_0);
+	dev_size += sprintf(Buf + dev_size, "Clients in synch job : %lu\n",
+		cont->stat_n_in_synch_job);
+	dev_size += sprintf(Buf + dev_size, "Clients in query_cap : %lu\n",
+		cont->stat_n_in_query_cap);
+	mutex_unlock(&cont->stat_lock);
 
 	/* No more to read if offset != 0 */
 	if (*f_pos > dev_size)
@@ -3256,37 +3206,37 @@ static const struct file_operations debugfs_b2r2_blt_stat_fops = {
 };
 #endif
 
-static void init_tmp_bufs(void)
+static void init_tmp_bufs(struct b2r2_control *cont)
 {
 	int i = 0;
 
-	for (i = 0; i < MAX_TMP_BUFS_NEEDED; i++) {
-		tmp_bufs[i].buf.virt_addr = dma_alloc_coherent(
-			b2r2_blt_device(), MAX_TMP_BUF_SIZE,
-			&tmp_bufs[i].buf.phys_addr, GFP_DMA);
-		if (tmp_bufs[i].buf.virt_addr != NULL)
-			tmp_bufs[i].buf.size = MAX_TMP_BUF_SIZE;
+	for (i = 0; i < (sizeof(cont->tmp_bufs) / sizeof(struct tmp_buf));
+			i++) {
+		cont->tmp_bufs[i].buf.virt_addr = dma_alloc_coherent(
+			cont->dev, MAX_TMP_BUF_SIZE,
+			&cont->tmp_bufs[i].buf.phys_addr, GFP_DMA);
+		if (cont->tmp_bufs[i].buf.virt_addr != NULL)
+			cont->tmp_bufs[i].buf.size = MAX_TMP_BUF_SIZE;
 		else {
-			b2r2_log_err("%s: Failed to allocate temp buffer %i\n",
-								__func__, i);
-
-			tmp_bufs[i].buf.size = 0;
+			b2r2_log_err(cont->dev, "%s: Failed to allocate temp "
+				"buffer %i\n", __func__, i);
+			cont->tmp_bufs[i].buf.size = 0;
 		}
 	}
 }
 
-static void destroy_tmp_bufs(void)
+static void destroy_tmp_bufs(struct b2r2_control *cont)
 {
 	int i = 0;
 
 	for (i = 0; i < MAX_TMP_BUFS_NEEDED; i++) {
-		if (tmp_bufs[i].buf.size != 0) {
-			dma_free_coherent(b2r2_blt_device(),
-						tmp_bufs[i].buf.size,
-						tmp_bufs[i].buf.virt_addr,
-						tmp_bufs[i].buf.phys_addr);
+		if (cont->tmp_bufs[i].buf.size != 0) {
+			dma_free_coherent(cont->dev,
+					cont->tmp_bufs[i].buf.size,
+					cont->tmp_bufs[i].buf.virt_addr,
+					cont->tmp_bufs[i].buf.phys_addr);
 
-			tmp_bufs[i].buf.size = 0;
+			cont->tmp_bufs[i].buf.size = 0;
 		}
 	}
 }
@@ -3296,105 +3246,116 @@ static void destroy_tmp_bufs(void)
  *
  * Returns 0 if OK else negative error code
  */
-int b2r2_blt_module_init(void)
+int b2r2_blt_module_init(struct b2r2_control *cont)
 {
 	int ret;
 
-	mutex_init(&stat_lock);
-
-#ifdef CONFIG_B2R2_GENERIC
-	/* Initialize generic path */
-	b2r2_generic_init();
-#endif
-
-	/* Initialize node splitter */
-	ret = b2r2_node_split_init();
-	if (ret) {
-		printk(KERN_WARNING "%s: node split init fails\n",
-			__func__);
-		goto b2r2_node_split_init_fail;
-	}
+	mutex_init(&cont->stat_lock);
 
 	/* Register b2r2 driver */
-	ret = misc_register(&b2r2_blt_misc_dev);
+	cont->miscdev.minor = MISC_DYNAMIC_MINOR;
+	cont->miscdev.name = cont->name;
+	cont->miscdev.fops = &b2r2_blt_fops;
+
+	ret = misc_register(&cont->miscdev);
 	if (ret) {
 		printk(KERN_WARNING "%s: registering misc device fails\n",
-			__func__);
+				__func__);
 		goto b2r2_misc_register_fail;
 	}
 
-	b2r2_blt_misc_dev.this_device->coherent_dma_mask = 0xFFFFFFFF;
-	b2r2_blt_dev = &b2r2_blt_misc_dev;
-	b2r2_log_info("%s\n", __func__);
+	cont->dev = cont->miscdev.this_device;
+	dev_set_drvdata(cont->dev, cont);
+
+#ifdef CONFIG_B2R2_GENERIC
+	/* Initialize generic path */
+	b2r2_generic_init(cont);
+#endif
+	/* Initialize node splitter */
+	ret = b2r2_node_split_init(cont);
+	if (ret) {
+		printk(KERN_WARNING "%s: node split init fails\n", __func__);
+		goto b2r2_node_split_init_fail;
+	}
+
+	b2r2_log_info(cont->dev, "%s: device registered\n", __func__);
 
 	/*
 	 * FIXME: This stuff should be done before the first requests i.e.
 	 * before misc_register, but they need the device which is not
 	 * available until after misc_register.
 	 */
-	init_tmp_bufs();
+	cont->dev->coherent_dma_mask = 0xFFFFFFFF;
+	init_tmp_bufs(cont);
+	ret = b2r2_filters_init(cont);
+	if (ret) {
+		b2r2_log_warn(cont->dev, "%s: failed to init filters\n",
+			__func__);
+		goto b2r2_filter_init_fail;
+	}
 
 	/* Initialize memory allocator */
-	ret = b2r2_mem_init(b2r2_blt_device(), B2R2_HEAP_SIZE,
+	ret = b2r2_mem_init(cont, B2R2_HEAP_SIZE,
 			4, sizeof(struct b2r2_node));
 	if (ret) {
 		printk(KERN_WARNING "%s: initializing B2R2 memhandler fails\n",
-			__func__);
+				__func__);
 		goto b2r2_mem_init_fail;
 	}
 
 #ifdef CONFIG_DEBUG_FS
 	/* Register debug fs */
-	if (!debugfs_root_dir) {
-		debugfs_root_dir = debugfs_create_dir("b2r2_blt", NULL);
-		debugfs_create_file("latest_request",
-				0666, debugfs_root_dir,
-				0,
-				&debugfs_b2r2_blt_request_fops);
-		debugfs_create_file("stat",
-				0666, debugfs_root_dir,
-				0,
-				&debugfs_b2r2_blt_stat_fops);
+	if (cont->debugfs_root_dir) {
+		debugfs_create_file("last_request", 0666,
+			cont->debugfs_root_dir,
+			cont, &debugfs_b2r2_blt_request_fops);
+		debugfs_create_file("stats", 0666,
+			cont->debugfs_root_dir,
+			cont, &debugfs_b2r2_blt_stat_fops);
 	}
 #endif
-	goto out;
 
-b2r2_misc_register_fail:
+	b2r2_ctl[cont->id] = cont;
+	b2r2_log_info(cont->dev, "%s: done\n", __func__);
+
+	return ret;
+
 b2r2_mem_init_fail:
-	b2r2_node_split_exit();
-
+	b2r2_filters_exit(cont);
+b2r2_filter_init_fail:
+	b2r2_node_split_exit(cont);
 b2r2_node_split_init_fail:
 #ifdef CONFIG_B2R2_GENERIC
-	b2r2_generic_exit();
+	b2r2_generic_exit(cont);
 #endif
-out:
+	misc_deregister(&cont->miscdev);
+b2r2_misc_register_fail:
 	return ret;
 }
 
 /**
  * b2r2_module_exit() - Module exit function
  */
-void b2r2_blt_module_exit(void)
+void b2r2_blt_module_exit(struct b2r2_control *cont)
 {
+	if (cont) {
+		b2r2_log_info(cont->dev, "%s\n", __func__);
 #ifdef CONFIG_DEBUG_FS
-	if (debugfs_root_dir) {
-		debugfs_remove_recursive(debugfs_root_dir);
-		debugfs_root_dir = NULL;
-	}
+		if (cont->debugfs_root_dir) {
+			debugfs_remove_recursive(cont->debugfs_root_dir);
+			cont->debugfs_root_dir = NULL;
+		}
 #endif
-	if (b2r2_blt_dev) {
-		b2r2_log_info("%s\n", __func__);
-		b2r2_mem_exit();
-		destroy_tmp_bufs();
-		b2r2_blt_dev = NULL;
-		misc_deregister(&b2r2_blt_misc_dev);
-	}
-
-	b2r2_node_split_exit();
-
+		b2r2_mem_exit(cont);
+		destroy_tmp_bufs(cont);
+		b2r2_ctl[cont->id] = NULL;
+		misc_deregister(&cont->miscdev);
+		b2r2_node_split_exit(cont);
 #if defined(CONFIG_B2R2_GENERIC)
-	b2r2_generic_exit();
+		b2r2_generic_exit(cont);
 #endif
+		b2r2_filters_exit(cont);
+	}
 }
 
 MODULE_AUTHOR("Robert Fekete <robert.fekete@stericsson.com>");

@@ -24,56 +24,12 @@
 #include "b2r2_internal.h"
 #include "b2r2_mem_alloc.h"
 
-
-/* Represents one block of b2r2 physical memory, free or allocated */
-struct b2r2_mem_block {
-	struct list_head list; /* For membership in list */
-
-	u32 offset;        /* Offset in b2r2 physical memory area (aligned) */
-	u32 size;          /* Size of the object (requested size if busy,
-			      else actual) */
-	bool free;         /* True if the block is free */
-
-	u32 lock_count;    /* Lock count */
-
-#ifdef CONFIG_DEBUG_FS
-	char          debugfs_fname[80]; /* debugfs file name */
-	struct dentry *debugfs_block;	 /* debugfs dir entry for the block */
-#endif
-};
-
-/* The memory heap */
-struct b2r2_mem_heap {
-	struct device *dev;        /* Device pointer for memory allocation  */
-	dma_addr_t start_phys_addr;/* Physical memory start address         */
-	void *start_virt_ptr;      /* Virtual pointer to start              */
-	u32 size;                  /* Memory size                           */
-	u32 align;                 /* Alignment                             */
-
-	struct list_head blocks;   /* List of all blocks                    */
-
-	spinlock_t heap_lock;      /* Protection for the heap               */
-
-	u32 node_size;             /* Size of each B2R2 node                */
-	struct dma_pool *node_heap;/* Heap for B2R2 node allocations        */
-
-#ifdef CONFIG_DEBUG_FS
-	struct dentry *debugfs_sub_root_dir; /* debugfs: B2R2 MEM root dir  */
-	struct dentry *debugfs_heap_stats;   /* debugfs: B2R2 memory status */
-	struct dentry *debugfs_dir_blocks;   /* debugfs: Free blocks dir    */
-#endif
-};
-
-static struct b2r2_mem_heap *mem_heap;
-
-#ifdef CONFIG_DEBUG_FS
-static struct dentry *debugfs_root_dir;      /* debugfs: B2R2 MEM root dir */
-#endif
-
 /* Forward declarations */
 static struct b2r2_mem_block *b2r2_mem_block_alloc(
-	u32 offset, u32 size, bool free);
-static void   b2r2_mem_block_free(struct b2r2_mem_block *mem_block);
+		struct b2r2_control *cont, u32 offset, u32 size, bool free);
+static void b2r2_mem_block_free(struct b2r2_mem_block *mem_block);
+static int b2r2_mem_heap_status(struct b2r2_mem_heap *mem_heap,
+		struct b2r2_mem_heap_status *mem_heap_status);
 
 /* Align value down to specified alignment */
 static inline u32 align_down(u32 align, u32 value)
@@ -95,10 +51,10 @@ static inline u32 align_up(u32 align, u32 value)
  *  Mount like this:
  *  mkdir /debug
  *  mount -t debugfs none /debug
- *  ls /debug/b2r2_mem
+ *  ls /debug/b2r2/mem
  *
- *  ls -al /debug/b2r2_mem/blocks
- *  cat /debug/b2r2_mem/stats
+ *  ls -al /debug/b2r2/mem/blocks
+ *  cat /debug/b2r2/mem/stats
  */
 
 
@@ -107,41 +63,41 @@ static char *get_b2r2_mem_stats(struct b2r2_mem_heap *mem_heap, char *buf)
 {
 	struct b2r2_mem_heap_status mem_heap_status;
 
-	if (b2r2_mem_heap_status(&mem_heap_status) != 0) {
+	if (b2r2_mem_heap_status(mem_heap, &mem_heap_status) != 0) {
 		strcpy(buf, "Error, failed to get status\n");
 		return buf;
 	}
 
 	sprintf(buf,
-		"Handle                 : 0x%lX\n"
-		"Physical start address : 0x%lX\n"
-		"Size                   : %lu\n"
-		"Align                  : %lu\n"
-		"No of blocks allocated : %lu\n"
-		"Allocated size         : %lu\n"
-		"No of free blocks      : %lu\n"
-		"Free size              : %lu\n"
-		"No of locks            : %lu\n"
-		"No of locked           : %lu\n"
-		"No of nodes            : %lu\n",
-		(unsigned long) mem_heap,
-		(unsigned long) mem_heap_status.start_phys_addr,
-		(unsigned long) mem_heap_status.size,
-		(unsigned long) mem_heap_status.align,
-		(unsigned long) mem_heap_status.num_alloc,
-		(unsigned long) mem_heap_status.allocated_size,
-		(unsigned long) mem_heap_status.num_free,
-		(unsigned long) mem_heap_status.free_size,
-		(unsigned long) mem_heap_status.num_locks,
-		(unsigned long) mem_heap_status.num_locked,
-		(unsigned long) mem_heap_status.num_nodes);
+			"Handle                 : 0x%lX\n"
+			"Physical start address : 0x%lX\n"
+			"Size                   : %lu\n"
+			"Align                  : %lu\n"
+			"No of blocks allocated : %lu\n"
+			"Allocated size         : %lu\n"
+			"No of free blocks      : %lu\n"
+			"Free size              : %lu\n"
+			"No of locks            : %lu\n"
+			"No of locked           : %lu\n"
+			"No of nodes            : %lu\n",
+			(unsigned long) mem_heap,
+			(unsigned long) mem_heap_status.start_phys_addr,
+			(unsigned long) mem_heap_status.size,
+			(unsigned long) mem_heap_status.align,
+			(unsigned long) mem_heap_status.num_alloc,
+			(unsigned long) mem_heap_status.allocated_size,
+			(unsigned long) mem_heap_status.num_free,
+			(unsigned long) mem_heap_status.free_size,
+			(unsigned long) mem_heap_status.num_locks,
+			(unsigned long) mem_heap_status.num_locked,
+			(unsigned long) mem_heap_status.num_nodes);
 
 	return buf;
 }
 
 /*
  * Print memory heap status on file
- * (Use like "cat /debug/b2r2_mem/igram/stats")
+ * (Use like "cat /debug/b2r2/mem/stats")
  */
 static int debugfs_b2r2_mem_stats_read(struct file *filp, char __user *buf,
 				       size_t count, loff_t *f_pos)
@@ -186,11 +142,11 @@ static int debugfs_b2r2_mem_block_read(struct file *filp, char __user *buf,
 	int ret = 0;
 
 	dev_size = sprintf(Buf, "offset: %08lX %s size: %8d "
-			   "lock_count: %2d\n",
-			   (unsigned long) mem_block->offset,
-			   mem_block->free ? "free" : "allc",
-			   mem_block->size,
-			   mem_block->lock_count);
+			"lock_count: %2d\n",
+			(unsigned long) mem_block->offset,
+			mem_block->free ? "free" : "allc",
+			mem_block->size,
+			mem_block->lock_count);
 
 	/* No more to read if offset != 0 */
 	if (*f_pos > dev_size)
@@ -235,13 +191,13 @@ void debugfs_create_mem_block_entry(struct b2r2_mem_block *mem_block,
 	/* Add the block in debugfs */
 	if (mem_block->free)
 		sprintf(mem_block->debugfs_fname, "%08lX free",
-			(unsigned long) mem_block->offset);
+				(unsigned long) mem_block->offset);
 	else {
 		sprintf(mem_block->debugfs_fname, "%08lX allc h:%08lX "
-			"lck:%d ",
-			(unsigned long) mem_block->offset,
-			(unsigned long) mem_block,
-			mem_block->lock_count);
+				"lck:%d ",
+				(unsigned long) mem_block->offset,
+				(unsigned long) mem_block,
+				mem_block->lock_count);
 	}
 
 	mem_block->debugfs_block = debugfs_create_file(
@@ -258,75 +214,66 @@ void debugfs_create_mem_block_entry(struct b2r2_mem_block *mem_block,
 #endif   /* CONFIG_DEBUG_FS */
 
 /* Module initialization function */
-int b2r2_mem_init(struct device *dev, u32 heap_size, u32 align, u32 node_size)
+int b2r2_mem_init(struct b2r2_control *cont,
+		u32 heap_size, u32 align, u32 node_size)
 {
 	struct b2r2_mem_block *mem_block;
 	u32 aligned_size;
 
-	printk(KERN_INFO "B2R2_MEM: Creating heap for size %d bytes\n",
-		(int) heap_size);
+	dev_info(cont->dev, "%s: Creating heap for size %d bytes\n",
+		__func__, (int) heap_size);
 
 	/* Align size */
 	aligned_size = align_down(align, heap_size);
 	if (aligned_size == 0)
 		return -EINVAL;
 
-	mem_heap = kcalloc(sizeof(struct b2r2_mem_heap), 1, GFP_KERNEL);
-	if (!mem_heap)
-		return -ENOMEM;
-
-	mem_heap->start_virt_ptr = dma_alloc_coherent(dev,
-		aligned_size, &(mem_heap->start_phys_addr), GFP_KERNEL);
-	if (!mem_heap->start_phys_addr || !mem_heap->start_virt_ptr) {
+	cont->mem_heap.start_virt_ptr = dma_alloc_coherent(cont->dev,
+		aligned_size, &(cont->mem_heap.start_phys_addr), GFP_KERNEL);
+	if (!cont->mem_heap.start_phys_addr || !cont->mem_heap.start_virt_ptr) {
 		printk(KERN_ERR "B2R2_MEM: Failed to allocate memory\n");
 		return -ENOMEM;
 	}
 
 	/* Initialize the heap */
-	mem_heap->dev   = dev;
-	mem_heap->size  = aligned_size;
-	mem_heap->align = align;
+	cont->mem_heap.size  = aligned_size;
+	cont->mem_heap.align = align;
 
-	INIT_LIST_HEAD(&mem_heap->blocks);
+	INIT_LIST_HEAD(&cont->mem_heap.blocks);
 
 #ifdef CONFIG_DEBUG_FS
 	/* Register debugfs */
-
-	debugfs_root_dir = debugfs_create_dir("b2r2_mem", NULL);
-
-	mem_heap->debugfs_sub_root_dir = debugfs_create_dir("b2r2_mem",
-		debugfs_root_dir);
-	mem_heap->debugfs_heap_stats = debugfs_create_file(
-		"stats", 0444, mem_heap->debugfs_sub_root_dir, mem_heap,
-		&debugfs_b2r2_mem_stats_fops);
-	mem_heap->debugfs_dir_blocks = debugfs_create_dir(
-		"blocks", mem_heap->debugfs_sub_root_dir);
+	if (cont->mem_heap.debugfs_root_dir) {
+		cont->mem_heap.debugfs_heap_stats = debugfs_create_file(
+			"stats", 0444, cont->mem_heap.debugfs_root_dir,
+			&cont->mem_heap, &debugfs_b2r2_mem_stats_fops);
+		cont->mem_heap.debugfs_dir_blocks = debugfs_create_dir(
+			"blocks", cont->mem_heap.debugfs_root_dir);
+	}
 #endif
 
 	/* Create the first _free_ memory block */
-	mem_block = b2r2_mem_block_alloc(0, aligned_size, true);
+	mem_block = b2r2_mem_block_alloc(cont, 0, aligned_size, true);
 	if (!mem_block) {
-		dma_free_coherent(dev, aligned_size,
-			mem_heap->start_virt_ptr,
-			mem_heap->start_phys_addr);
-		kfree(mem_heap);
+		dma_free_coherent(cont->dev, aligned_size,
+			cont->mem_heap.start_virt_ptr,
+			cont->mem_heap.start_phys_addr);
 		printk(KERN_ERR "B2R2_MEM: Failed to allocate memory\n");
 		return -ENOMEM;
 	}
 
 	/* Add the free block to the blocks list */
-	list_add(&mem_block->list, &mem_heap->blocks);
+	list_add(&mem_block->list, &cont->mem_heap.blocks);
 
 	/* Allocate separate heap for B2R2 nodes */
-	mem_heap->node_size = node_size;
-	mem_heap->node_heap = dma_pool_create("b2r2_node_cache",
-		dev, node_size, align, 4096);
-	if (!mem_heap->node_heap) {
+	cont->mem_heap.node_size = node_size;
+	cont->mem_heap.node_heap = dma_pool_create("b2r2_node_cache",
+		cont->dev, node_size, align, 4096);
+	if (!cont->mem_heap.node_heap) {
 		b2r2_mem_block_free(mem_block);
-		dma_free_coherent(dev, aligned_size,
-			mem_heap->start_virt_ptr,
-			mem_heap->start_phys_addr);
-		kfree(mem_heap);
+		dma_free_coherent(cont->dev, aligned_size,
+			cont->mem_heap.start_virt_ptr,
+			cont->mem_heap.start_phys_addr);
 		printk(KERN_ERR "B2R2_MEM: Failed to allocate memory\n");
 		return -ENOMEM;
 	}
@@ -336,53 +283,45 @@ int b2r2_mem_init(struct device *dev, u32 heap_size, u32 align, u32 node_size)
 EXPORT_SYMBOL(b2r2_mem_init);
 
 /* Module exit function */
-void b2r2_mem_exit(void)
+void b2r2_mem_exit(struct b2r2_control *cont)
 {
 	struct list_head *ptr;
 
 	/* Free B2R2 node heap */
-	dma_pool_destroy(mem_heap->node_heap);
+	dma_pool_destroy(cont->mem_heap.node_heap);
 
-#ifdef CONFIG_DEBUG_FS
-	/* debugfs root dir */
-	if (debugfs_root_dir) {
-		debugfs_remove_recursive(debugfs_root_dir);
-		debugfs_root_dir = NULL;
-	}
-#endif
-
-	list_for_each(ptr, &mem_heap->blocks) {
+	list_for_each(ptr, &cont->mem_heap.blocks) {
 		struct b2r2_mem_block *mem_block =
 			list_entry(ptr, struct b2r2_mem_block, list);
 
 		b2r2_mem_block_free(mem_block);
 	}
 
-	dma_free_coherent(mem_heap->dev, mem_heap->size,
-		mem_heap->start_virt_ptr,
-		mem_heap->start_phys_addr);
-	kfree(mem_heap);
+	dma_free_coherent(cont->dev, cont->mem_heap.size,
+		cont->mem_heap.start_virt_ptr,
+		cont->mem_heap.start_phys_addr);
 }
 EXPORT_SYMBOL(b2r2_mem_exit);
 
 /* Return status of the heap */
-int b2r2_mem_heap_status(struct b2r2_mem_heap_status *mem_heap_status)
+static int b2r2_mem_heap_status(struct b2r2_mem_heap *mheap,
+		struct b2r2_mem_heap_status *mem_heap_status)
 {
 	struct list_head *ptr;
 
-	if (!mem_heap || !mem_heap_status)
+	if (!mheap || !mem_heap_status)
 		return -EINVAL;
 	memset(mem_heap_status, 0, sizeof(*mem_heap_status));
 
 	/* Lock the heap */
-	spin_lock(&mem_heap->heap_lock);
+	spin_lock(&mheap->heap_lock);
 
 	/* Fill in static info */
-	mem_heap_status->start_phys_addr = mem_heap->start_phys_addr;
-	mem_heap_status->size = mem_heap->size;
-	mem_heap_status->align = mem_heap->align;
+	mem_heap_status->start_phys_addr = mheap->start_phys_addr;
+	mem_heap_status->size = mheap->size;
+	mem_heap_status->align = mheap->align;
 
-	list_for_each(ptr, &mem_heap->blocks) {
+	list_for_each(ptr, &mheap->blocks) {
 		struct b2r2_mem_block *mem_block =
 			list_entry(ptr, struct b2r2_mem_block, list);
 
@@ -400,7 +339,7 @@ int b2r2_mem_heap_status(struct b2r2_mem_heap_status *mem_heap_status)
 		}
 	}
 
-	spin_unlock(&mem_heap->heap_lock);
+	spin_unlock(&mheap->heap_lock);
 
 	return 0;
 }
@@ -410,7 +349,7 @@ EXPORT_SYMBOL(b2r2_mem_heap_status);
  * for an allocated or free memory block
  */
 static struct b2r2_mem_block *b2r2_mem_block_alloc(
-	u32 offset, u32 size, bool free)
+		struct b2r2_control *cont, u32 offset, u32 size, bool free)
 {
 	struct b2r2_mem_block *mem_block = kmalloc(
 		sizeof(struct b2r2_mem_block), GFP_KERNEL);
@@ -427,7 +366,7 @@ static struct b2r2_mem_block *b2r2_mem_block_alloc(
 		mem_block->debugfs_block  = NULL;
 		/* Add the block in debugfs */
 		debugfs_create_mem_block_entry(mem_block,
-			mem_heap->debugfs_dir_blocks);
+			cont->mem_heap.debugfs_dir_blocks);
 #endif
 	}
 
@@ -446,7 +385,8 @@ static void b2r2_mem_block_free(struct b2r2_mem_block *mem_block)
 }
 
 /* Allocate a block from the heap */
-int b2r2_mem_alloc(u32 requested_size, u32 *returned_size, u32 *mem_handle)
+int b2r2_mem_alloc(struct b2r2_control *cont, u32 requested_size,
+		u32 *returned_size, u32 *mem_handle)
 {
 	int ret = 0;
 	struct list_head *ptr;
@@ -459,21 +399,19 @@ int b2r2_mem_alloc(u32 requested_size, u32 *returned_size, u32 *mem_handle)
 	printk(KERN_INFO "%s: size=%d\n", __func__, requested_size);
 
 	*mem_handle = 0;
-	if (!mem_heap)
-		return -EINVAL;
 
 	/* Lock the heap */
-	spin_lock(&mem_heap->heap_lock);
+	spin_lock(&cont->mem_heap.heap_lock);
 
-	aligned_size = align_up(mem_heap->align, requested_size);
+	aligned_size = align_up(cont->mem_heap.align, requested_size);
 	/* Try to find the best matching free block of suitable size */
-	list_for_each(ptr, &mem_heap->blocks) {
+	list_for_each(ptr, &cont->mem_heap.blocks) {
 		struct b2r2_mem_block *mem_block =
 			list_entry(ptr, struct b2r2_mem_block, list);
 
 		if (mem_block->free && mem_block->size >= aligned_size &&
-			(!found_mem_block ||
-			 mem_block->size < found_mem_block->size)) {
+				(!found_mem_block ||
+				mem_block->size < found_mem_block->size)) {
 			found_mem_block = mem_block;
 			if (found_mem_block->size == aligned_size)
 				break;
@@ -482,7 +420,8 @@ int b2r2_mem_alloc(u32 requested_size, u32 *returned_size, u32 *mem_handle)
 
 	if (found_mem_block) {
 		struct b2r2_mem_block *new_block
-			= b2r2_mem_block_alloc(found_mem_block->offset,
+			= b2r2_mem_block_alloc(cont,
+				found_mem_block->offset,
 				requested_size, false);
 
 		if (new_block) {
@@ -500,7 +439,7 @@ int b2r2_mem_alloc(u32 requested_size, u32 *returned_size, u32 *mem_handle)
 #ifdef CONFIG_DEBUG_FS
 				debugfs_create_mem_block_entry(
 					found_mem_block,
-					mem_heap->debugfs_dir_blocks);
+					cont->mem_heap.debugfs_dir_blocks);
 #endif
 			}
 
@@ -518,14 +457,14 @@ int b2r2_mem_alloc(u32 requested_size, u32 *returned_size, u32 *mem_handle)
 	}
 
 	/* Unlock */
-	spin_unlock(&mem_heap->heap_lock);
+	spin_unlock(&cont->mem_heap.heap_lock);
 
 	return ret;
 }
 EXPORT_SYMBOL(b2r2_mem_alloc);
 
 /* Free the allocated block */
-int b2r2_mem_free(u32 mem_handle)
+int b2r2_mem_free(struct b2r2_control *cont, u32 mem_handle)
 {
 	int ret = 0;
 	struct b2r2_mem_block *mem_block = (struct b2r2_mem_block *) mem_handle;
@@ -534,7 +473,7 @@ int b2r2_mem_free(u32 mem_handle)
 		return -EINVAL;
 
 	/* Lock the heap */
-	spin_lock(&mem_heap->heap_lock);
+	spin_lock(&cont->mem_heap.heap_lock);
 
 	if (!ret && mem_block->free)
 		ret = -EINVAL;
@@ -544,18 +483,18 @@ int b2r2_mem_free(u32 mem_handle)
 		/* Release the block */
 
 		mem_block->free = true;
-		mem_block->size = align_up(mem_heap->align,
+		mem_block->size = align_up(cont->mem_heap.align,
 					   mem_block->size);
 
 		/* Join with previous block if possible */
-		if (mem_block->list.prev != &mem_heap->blocks) {
+		if (mem_block->list.prev != &cont->mem_heap.blocks) {
 			struct b2r2_mem_block *prev_block =
 				list_entry(mem_block->list.prev,
 					struct b2r2_mem_block, list);
 
 			if (prev_block->free &&
-			    (prev_block->offset + prev_block->size) ==
-			    mem_block->offset) {
+				(prev_block->offset + prev_block->size) ==
+				mem_block->offset) {
 				mem_block->offset = prev_block->offset;
 				mem_block->size   += prev_block->size;
 
@@ -564,15 +503,15 @@ int b2r2_mem_free(u32 mem_handle)
 		}
 
 		/* Join with next block if possible */
-		if (mem_block->list.next != &mem_heap->blocks) {
+		if (mem_block->list.next != &cont->mem_heap.blocks) {
 			struct b2r2_mem_block *next_block
 				= list_entry(mem_block->list.next,
-						 struct b2r2_mem_block,
-						 list);
+						struct b2r2_mem_block,
+						list);
 
 			if (next_block->free &&
-			    (mem_block->offset + mem_block->size) ==
-			    next_block->offset) {
+				(mem_block->offset + mem_block->size) ==
+				next_block->offset) {
 				mem_block->size   += next_block->size;
 
 				b2r2_mem_block_free(next_block);
@@ -580,19 +519,20 @@ int b2r2_mem_free(u32 mem_handle)
 		}
 #ifdef CONFIG_DEBUG_FS
 		debugfs_create_mem_block_entry(mem_block,
-			mem_heap->debugfs_dir_blocks);
+				cont->mem_heap.debugfs_dir_blocks);
 #endif
 	}
 
 	/* Unlock */
-	spin_unlock(&mem_heap->heap_lock);
+	spin_unlock(&cont->mem_heap.heap_lock);
 
 	return ret;
 }
 EXPORT_SYMBOL(b2r2_mem_free);
 
 /* Lock the allocated block in memory */
-int b2r2_mem_lock(u32 mem_handle, u32 *phys_addr, void **virt_ptr, u32 *size)
+int b2r2_mem_lock(struct b2r2_control *cont, u32 mem_handle,
+		u32 *phys_addr, void **virt_ptr, u32 *size)
 {
 	struct b2r2_mem_block *mem_block =
 		(struct b2r2_mem_block *) mem_handle;
@@ -601,30 +541,30 @@ int b2r2_mem_lock(u32 mem_handle, u32 *phys_addr, void **virt_ptr, u32 *size)
 		return -EINVAL;
 
 	/* Lock the heap */
-	spin_lock(&mem_heap->heap_lock);
+	spin_lock(&cont->mem_heap.heap_lock);
 
 	mem_block->lock_count++;
 
 	if (phys_addr)
-		*phys_addr = mem_heap->start_phys_addr + mem_block->offset;
+		*phys_addr = cont->mem_heap.start_phys_addr + mem_block->offset;
 	if (virt_ptr)
-		*virt_ptr = (char *) mem_heap->start_virt_ptr +
+		*virt_ptr = (char *) cont->mem_heap.start_virt_ptr +
 			mem_block->offset;
 	if (size)
-		*size = align_up(mem_heap->align, mem_block->size);
+		*size = align_up(cont->mem_heap.align, mem_block->size);
 #ifdef CONFIG_DEBUG_FS
 	debugfs_create_mem_block_entry(mem_block,
-		mem_heap->debugfs_dir_blocks);
+		cont->mem_heap.debugfs_dir_blocks);
 #endif
 
-	spin_unlock(&mem_heap->heap_lock);
+	spin_unlock(&cont->mem_heap.heap_lock);
 
 	return 0;
 }
 EXPORT_SYMBOL(b2r2_mem_lock);
 
 /* Unlock the allocated block in memory */
-int b2r2_mem_unlock(u32 mem_handle)
+int b2r2_mem_unlock(struct b2r2_control *cont, u32 mem_handle)
 {
 	struct b2r2_mem_block *mem_block =
 		(struct b2r2_mem_block *) mem_handle;
@@ -633,11 +573,11 @@ int b2r2_mem_unlock(u32 mem_handle)
 		return -EINVAL;
 
 	/* Lock the heap */
-	spin_lock(&mem_heap->heap_lock);
+	spin_lock(&cont->mem_heap.heap_lock);
 
 	mem_block->lock_count--;
 
-	spin_unlock(&mem_heap->heap_lock);
+	spin_unlock(&cont->mem_heap.heap_lock);
 
 	/* debugfs will be updated in release */
 	return 0;
@@ -646,7 +586,8 @@ int b2r2_mem_unlock(u32 mem_handle)
 EXPORT_SYMBOL(b2r2_mem_unlock);
 
 /* Allocate one or more b2r2 nodes from DMA pool */
-int b2r2_node_alloc(u32 num_nodes, struct b2r2_node **first_node)
+int b2r2_node_alloc(struct b2r2_control *cont, u32 num_nodes,
+		struct b2r2_node **first_node)
 {
 	int i;
 	int ret = 0;
@@ -656,7 +597,7 @@ int b2r2_node_alloc(u32 num_nodes, struct b2r2_node **first_node)
 
 	/* Check input parameters */
 	if ((num_nodes <= 0) || !first_node) {
-		printk(KERN_ERR
+		dev_err(cont->dev,
 			"B2R2_MEM: Invalid parameter for b2r2_node_alloc, "
 			"num_nodes=%d, first_node=%ld\n",
 			(int) num_nodes, (long) first_node);
@@ -664,48 +605,49 @@ int b2r2_node_alloc(u32 num_nodes, struct b2r2_node **first_node)
 	}
 
 	/* Allocate the first node */
-	first_node_ptr = dma_pool_alloc(mem_heap->node_heap,
+	first_node_ptr = dma_pool_alloc(cont->mem_heap.node_heap,
 		GFP_DMA | GFP_KERNEL, &physical_address);
-	if (first_node_ptr) {
-		/* Initialize first node */
-		first_node_ptr->next = NULL;
-		first_node_ptr->physical_address = physical_address +
+	if (!first_node_ptr) {
+		dev_err(cont->dev,
+			"B2R2_MEM: Failed to allocate memory for node\n");
+		return -ENOMEM;
+	}
+
+	/* Initialize first node */
+	first_node_ptr->next = NULL;
+	first_node_ptr->physical_address = physical_address +
 			offsetof(struct b2r2_node, node);
 
-		/* Allocate and initialize remaining nodes, */
-		/* and link them into a list                */
-		for (i = 1, node_ptr = first_node_ptr; i < num_nodes; i++) {
-			node_ptr->next = dma_pool_alloc(mem_heap->node_heap,
+	/* Allocate and initialize remaining nodes, */
+	/* and link them into a list                */
+	for (i = 1, node_ptr = first_node_ptr; i < num_nodes; i++) {
+		node_ptr->next = dma_pool_alloc(cont->mem_heap.node_heap,
 				GFP_DMA | GFP_KERNEL, &physical_address);
-			if (node_ptr->next) {
-				node_ptr = node_ptr->next;
-				node_ptr->next = NULL;
-				node_ptr->physical_address = physical_address +
+		if (node_ptr->next) {
+			node_ptr = node_ptr->next;
+			node_ptr->next = NULL;
+			node_ptr->physical_address = physical_address +
 					offsetof(struct b2r2_node, node);
-			} else {
-				printk(KERN_ERR "B2R2_MEM: Failed to allocate memory for node\n");
-				ret = -ENOMEM;
-				break;
-			}
+		} else {
+			printk(KERN_ERR "B2R2_MEM: Failed to allocate memory for node\n");
+			ret = -ENOMEM;
+			break;
 		}
-
-		/* If all nodes were allocated successfully, */
-		/* return the first node                     */
-		if (!ret)
-			*first_node = first_node_ptr;
-		else
-			b2r2_node_free(first_node_ptr);
-	} else {
-		printk(KERN_ERR "B2R2_MEM: Failed to allocate memory for node\n");
-		ret = -ENOMEM;
 	}
+
+	/* If all nodes were allocated successfully, */
+	/* return the first node                     */
+	if (!ret)
+		*first_node = first_node_ptr;
+	else
+		b2r2_node_free(cont, first_node_ptr);
 
 	return ret;
 }
 EXPORT_SYMBOL(b2r2_node_alloc);
 
 /* Free a linked list of b2r2 nodes */
-void b2r2_node_free(struct b2r2_node *first_node)
+void b2r2_node_free(struct b2r2_control *cont, struct b2r2_node *first_node)
 {
 	struct b2r2_node *current_node = first_node;
 	struct b2r2_node *next_node = NULL;
@@ -713,9 +655,9 @@ void b2r2_node_free(struct b2r2_node *first_node)
 	/* Traverse the linked list and free the nodes */
 	while (current_node != NULL) {
 		next_node = current_node->next;
-		dma_pool_free(mem_heap->node_heap, current_node,
-			current_node->physical_address -
-			offsetof(struct b2r2_node, node));
+		dma_pool_free(cont->mem_heap.node_heap, current_node,
+				current_node->physical_address -
+				offsetof(struct b2r2_node, node));
 		current_node = next_node;
 	}
 }

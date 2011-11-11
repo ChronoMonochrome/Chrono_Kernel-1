@@ -236,49 +236,49 @@ static struct b2r2_filter_spec blur_filter = {
 };
 
 /* Private function declarations */
-static int alloc_filter_coeffs(struct b2r2_filter_spec *filter);
-static void free_filter_coeffs(struct b2r2_filter_spec *filter);
+static int alloc_filter_coeffs(struct device *dev,
+		struct b2r2_filter_spec *filter);
+static void free_filter_coeffs(struct device *dev,
+		struct b2r2_filter_spec *filter);
 
 /* Public functions */
 
-static int filters_initialized;
-
-int b2r2_filters_init()
+int b2r2_filters_init(struct b2r2_control *cont)
 {
 	int i;
 
-	if (filters_initialized)
+	if (cont->filters_initialized)
 		return 0;
 
 	for (i = 0; i < filters_size; i++) {
-		alloc_filter_coeffs(&filters[i]);
+		alloc_filter_coeffs(cont->dev, &filters[i]);
 	}
 
-	alloc_filter_coeffs(&bilinear_filter);
-	alloc_filter_coeffs(&default_downscale_filter);
-	alloc_filter_coeffs(&blur_filter);
+	alloc_filter_coeffs(cont->dev, &bilinear_filter);
+	alloc_filter_coeffs(cont->dev, &default_downscale_filter);
+	alloc_filter_coeffs(cont->dev, &blur_filter);
 
-	filters_initialized = 1;
+	cont->filters_initialized = 1;
 
 	return 0;
 }
 
-void b2r2_filters_exit()
+void b2r2_filters_exit(struct b2r2_control *cont)
 {
 	int i;
 
-	if (!filters_initialized)
+	if (!cont->filters_initialized)
 		return;
 
 	for (i = 0; i < filters_size; i++) {
-		free_filter_coeffs(&filters[i]);
+		free_filter_coeffs(cont->dev, &filters[i]);
 	}
 
-	free_filter_coeffs(&bilinear_filter);
-	free_filter_coeffs(&default_downscale_filter);
-	free_filter_coeffs(&blur_filter);
+	free_filter_coeffs(cont->dev, &bilinear_filter);
+	free_filter_coeffs(cont->dev, &default_downscale_filter);
+	free_filter_coeffs(cont->dev, &blur_filter);
 
-	filters_initialized = 0;
+	cont->filters_initialized = 0;
 }
 
 struct b2r2_filter_spec *b2r2_filter_find(u16 scale_factor)
@@ -323,11 +323,12 @@ struct b2r2_filter_spec *b2r2_filter_blur()
 }
 
 /* Private functions */
-static int alloc_filter_coeffs(struct b2r2_filter_spec *filter)
+static int alloc_filter_coeffs(struct device *dev,
+		struct b2r2_filter_spec *filter)
 {
 	int ret;
 
-	filter->h_coeffs_dma_addr = dma_alloc_coherent(b2r2_blt_device(),
+	filter->h_coeffs_dma_addr = dma_alloc_coherent(dev,
 			B2R2_HF_TABLE_SIZE, &(filter->h_coeffs_phys_addr),
 			GFP_DMA | GFP_KERNEL);
 	if (filter->h_coeffs_dma_addr == NULL) {
@@ -335,7 +336,7 @@ static int alloc_filter_coeffs(struct b2r2_filter_spec *filter)
 		goto error;
 	}
 
-	filter->v_coeffs_dma_addr = dma_alloc_coherent(b2r2_blt_device(),
+	filter->v_coeffs_dma_addr = dma_alloc_coherent(dev,
 			B2R2_VF_TABLE_SIZE, &(filter->v_coeffs_phys_addr),
 			GFP_DMA | GFP_KERNEL);
 	if (filter->v_coeffs_dma_addr == NULL) {
@@ -343,25 +344,28 @@ static int alloc_filter_coeffs(struct b2r2_filter_spec *filter)
 		goto error;
 	}
 
-	memcpy(filter->h_coeffs_dma_addr, filter->h_coeffs, B2R2_HF_TABLE_SIZE);
-	memcpy(filter->v_coeffs_dma_addr, filter->v_coeffs, B2R2_VF_TABLE_SIZE);
+	memcpy(filter->h_coeffs_dma_addr, filter->h_coeffs,
+			B2R2_HF_TABLE_SIZE);
+	memcpy(filter->v_coeffs_dma_addr, filter->v_coeffs,
+			B2R2_VF_TABLE_SIZE);
 
 	return 0;
 
 error:
-	free_filter_coeffs(filter);
+	free_filter_coeffs(dev, filter);
 	return ret;
 
 }
 
-static void free_filter_coeffs(struct b2r2_filter_spec *filter)
+static void free_filter_coeffs(struct device *dev,
+		struct b2r2_filter_spec *filter)
 {
 	if (filter->h_coeffs_dma_addr != NULL)
-		dma_free_coherent(b2r2_blt_device(), B2R2_HF_TABLE_SIZE,
+		dma_free_coherent(dev, B2R2_HF_TABLE_SIZE,
 				filter->h_coeffs_dma_addr,
 				filter->h_coeffs_phys_addr);
 	if (filter->v_coeffs_dma_addr != NULL)
-		dma_free_coherent(b2r2_blt_device(), B2R2_VF_TABLE_SIZE,
+		dma_free_coherent(dev, B2R2_VF_TABLE_SIZE,
 				filter->v_coeffs_dma_addr,
 				filter->v_coeffs_phys_addr);
 

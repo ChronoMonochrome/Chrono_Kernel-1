@@ -23,6 +23,9 @@
 
 #include <video/b2r2_blt.h>
 
-bool b2r2_validate_user_req(struct b2r2_blt_req *req);
+#include "b2r2_internal.h"
+
+bool b2r2_validate_user_req(struct b2r2_control *cont,
+		struct b2r2_blt_req *req);
 
 #endif

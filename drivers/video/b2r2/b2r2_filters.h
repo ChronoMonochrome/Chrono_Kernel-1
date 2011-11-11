@@ -13,6 +13,8 @@
 
 #include <linux/kernel.h>
 
+#include "b2r2_internal.h"
+
 #define B2R2_HF_TABLE_SIZE 64
 #define B2R2_VF_TABLE_SIZE 40
 
@@ -45,12 +47,12 @@ struct b2r2_filter_spec {
 /**
  * b2r2_filters_init() - Initilizes the B2R2 filters
  */
-int b2r2_filters_init(void);
+int b2r2_filters_init(struct b2r2_control *control);
 
 /**
  * b2r2_filters_init() - De-initilizes the B2R2 filters
  */
-void b2r2_filters_exit(void);
+void b2r2_filters_exit(struct b2r2_control *control);
 
 /**
  * b2r2_filter_find() - Find a filter matching the given scale factor

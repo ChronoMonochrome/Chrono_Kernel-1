@@ -16,15 +16,11 @@
 #include <linux/uaccess.h>
 
 int b2r2_log_levels[B2R2_LOG_LEVEL_COUNT];
-struct device *b2r2_log_dev;
-
-static struct dentry *root_dir;
 static struct dentry *log_lvl_dir;
-static struct dentry *stats_dir;
+static int module_init;
 
 #define CHARS_IN_NODE_DUMP 1544
-
-static const size_t dumped_node_size = CHARS_IN_NODE_DUMP * sizeof(char) + 1;
+#define DUMPED_NODE_SIZE (CHARS_IN_NODE_DUMP * sizeof(char) + 1)
 
 static void dump_node(char *dst, struct b2r2_node *node)
 {
@@ -175,11 +171,8 @@ static void dump_node(char *dst, struct b2r2_node *node)
 
 }
 
-struct mutex last_job_lock;
-
-static struct b2r2_node *last_job;
-
-void b2r2_debug_job_done(struct b2r2_node *first_node)
+void b2r2_debug_job_done(struct b2r2_control *cont,
+		struct b2r2_node *first_node)
 {
 	struct b2r2_node *node = first_node;
 	struct b2r2_node **dst_node;
@@ -190,20 +183,20 @@ void b2r2_debug_job_done(struct b2r2_node *first_node)
 		node = node->next;
 	}
 
-	mutex_lock(&last_job_lock);
+	mutex_lock(&cont->last_job_lock);
 
-	if (last_job) {
-		node = last_job;
+	if (cont->last_job) {
+		node = cont->last_job;
 		while (node != NULL) {
 			struct b2r2_node *tmp = node->next;
 			kfree(node);
 			node = tmp;
 		}
-		last_job = NULL;
+		cont->last_job = NULL;
 	}
 
 	node = first_node;
-	dst_node = &last_job;
+	dst_node = &cont->last_job;
 	while (node != NULL) {
 		*dst_node = kzalloc(sizeof(**dst_node), GFP_KERNEL);
 		if (!(*dst_node))
@@ -215,29 +208,27 @@ void b2r2_debug_job_done(struct b2r2_node *first_node)
 		node = node->next;
 	}
 
-	mutex_unlock(&last_job_lock);
+	mutex_unlock(&cont->last_job_lock);
 
 	return;
 
 last_job_alloc_failed:
-	mutex_unlock(&last_job_lock);
+	mutex_unlock(&cont->last_job_lock);
 
-	while (last_job != NULL) {
-		struct b2r2_node *tmp = last_job->next;
-		kfree(last_job);
-		last_job = tmp;
+	while (cont->last_job != NULL) {
+		struct b2r2_node *tmp = cont->last_job->next;
+		kfree(cont->last_job);
+		cont->last_job = tmp;
 	}
 
 	return;
 }
 
-static char *last_job_chars;
-static int prev_node_count;
-
-static ssize_t last_job_read(struct file *filep, char __user *buf,
+static ssize_t last_job_read(struct file *filp, char __user *buf,
 		size_t bytes, loff_t *off)
 {
-	struct b2r2_node *node = last_job;
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
+	struct b2r2_node *node = cont->last_job;
 	int node_count = 0;
 	int i;
 
@@ -248,26 +239,27 @@ static ssize_t last_job_read(struct file *filep, char __user *buf,
 	for (; node != NULL; node = node->next)
 		node_count++;
 
-	size = node_count * dumped_node_size;
+	size = node_count * DUMPED_NODE_SIZE;
 
-	if (node_count != prev_node_count) {
-		kfree(last_job_chars);
+	if (node_count != cont->prev_node_count) {
+		kfree(cont->last_job_chars);
 
-		last_job_chars = kzalloc(size, GFP_KERNEL);
-		if (!last_job_chars)
+		cont->last_job_chars = kzalloc(size, GFP_KERNEL);
+		if (!cont->last_job_chars)
 			return 0;
-		prev_node_count = node_count;
+		cont->prev_node_count = node_count;
 	}
 
-	mutex_lock(&last_job_lock);
-	node = last_job;
+	mutex_lock(&cont->last_job_lock);
+	node = cont->last_job;
 	for (i = 0; i < node_count; i++) {
 		BUG_ON(node == NULL);
-		dump_node(last_job_chars + i * dumped_node_size/sizeof(char),
-				node);
+		dump_node(cont->last_job_chars +
+			i * DUMPED_NODE_SIZE/sizeof(char),
+			node);
 		node = node->next;
 	}
-	mutex_unlock(&last_job_lock);
+	mutex_unlock(&cont->last_job_lock);
 
 	if (offs > size)
 		return 0;
@@ -277,7 +269,7 @@ static ssize_t last_job_read(struct file *filep, char __user *buf,
 	else
 		count = bytes;
 
-	if (copy_to_user(buf, last_job_chars + offs, count))
+	if (copy_to_user(buf, cont->last_job_chars + offs, count))
 		return -EFAULT;
 
 	*off = offs + count;
@@ -288,48 +280,48 @@ static const struct file_operations last_job_fops = {
 	.read = last_job_read,
 };
 
-int b2r2_debug_init(struct device *log_dev)
+int b2r2_debug_init(struct b2r2_control *cont)
 {
 	int i;
 
-	b2r2_log_dev = log_dev;
-
-	for (i = 0; i < B2R2_LOG_LEVEL_COUNT; i++)
-		b2r2_log_levels[i] = 0;
-
-	root_dir = debugfs_create_dir("b2r2_debug", NULL);
-	if (!root_dir) {
-		b2r2_log_warn("%s: could not create root dir\n", __func__);
-		return -ENODEV;
-	}
+	if (!module_init) {
+		for (i = 0; i < B2R2_LOG_LEVEL_COUNT; i++)
+			b2r2_log_levels[i] = 0;
 
 #if !defined(CONFIG_DYNAMIC_DEBUG) && defined(CONFIG_DEBUG_FS)
-	/*
-	 * If dynamic debug is disabled we need some other way to control the
-	 * log prints
-	 */
-	log_lvl_dir = debugfs_create_dir("logs", root_dir);
+		/*
+		 * If dynamic debug is disabled we need some other way to
+		 * control the log prints
+		 */
+		log_lvl_dir = debugfs_create_dir("b2r2_log", NULL);
 
-	/* No need to save the files, they will be removed recursively */
-	(void)debugfs_create_bool("warnings", 0644, log_lvl_dir,
-				&b2r2_log_levels[B2R2_LOG_LEVEL_WARN]);
-	(void)debugfs_create_bool("info", 0644, log_lvl_dir,
-				&b2r2_log_levels[B2R2_LOG_LEVEL_INFO]);
-	(void)debugfs_create_bool("debug", 0644, log_lvl_dir,
-				&b2r2_log_levels[B2R2_LOG_LEVEL_DEBUG]);
-	(void)debugfs_create_bool("regdumps", 0644, log_lvl_dir,
-				&b2r2_log_levels[B2R2_LOG_LEVEL_REGDUMP]);
+		/* No need to save the files,
+		 * they will be removed recursively */
+		(void)debugfs_create_bool("warnings", 0644, log_lvl_dir,
+			&b2r2_log_levels[B2R2_LOG_LEVEL_WARN]);
+		(void)debugfs_create_bool("info", 0644, log_lvl_dir,
+			&b2r2_log_levels[B2R2_LOG_LEVEL_INFO]);
+		(void)debugfs_create_bool("debug", 0644, log_lvl_dir,
+			&b2r2_log_levels[B2R2_LOG_LEVEL_DEBUG]);
+		(void)debugfs_create_bool("regdumps", 0644, log_lvl_dir,
+			&b2r2_log_levels[B2R2_LOG_LEVEL_REGDUMP]);
 
 #elif defined(CONFIG_DYNAMIC_DEBUG)
-	/* log_lvl_dir is never used */
-	(void)log_lvl_dir;
+		/* log_lvl_dir is never used */
+		(void)log_lvl_dir;
 #endif
+		module_init++;
+	}
 
-	stats_dir = debugfs_create_dir("stats", root_dir);
-	(void)debugfs_create_file("last_job", 0444, stats_dir, NULL,
-			&last_job_fops);
+	if (cont->debugfs_debug_root_dir) {
+		/* No need to save the file,
+		 * it will be removed recursively */
+		(void)debugfs_create_file("last_job", 0444,
+				cont->debugfs_debug_root_dir, cont,
+				&last_job_fops);
+	}
 
-	mutex_init(&last_job_lock);
+	mutex_init(&cont->last_job_lock);
 
 	return 0;
 }
@@ -337,7 +329,10 @@ int b2r2_debug_init(struct device *log_dev)
 void b2r2_debug_exit(void)
 {
 #if !defined(CONFIG_DYNAMIC_DEBUG) && defined(CONFIG_DEBUG_FS)
-	if (root_dir)
-		debugfs_remove_recursive(root_dir);
+	module_init--;
+	if (!module_init && log_lvl_dir) {
+		debugfs_remove_recursive(log_lvl_dir);
+		log_lvl_dir = NULL;
+	}
 #endif
 }

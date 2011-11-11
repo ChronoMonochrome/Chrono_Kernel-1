@@ -19,8 +19,8 @@
  */
 
 
+#include "b2r2_internal.h"
 #include "b2r2_input_validation.h"
-
 #include "b2r2_debug.h"
 #include "b2r2_utils.h"
 
@@ -32,16 +32,18 @@
 static bool is_valid_format(enum b2r2_blt_fmt fmt);
 static bool is_valid_bg_format(enum b2r2_blt_fmt fmt);
 
-static bool is_valid_pitch_for_fmt(u32 pitch, s32 width,
-		enum b2r2_blt_fmt fmt);
+static bool is_valid_pitch_for_fmt(struct b2r2_control *cont,
+		u32 pitch, s32 width, enum b2r2_blt_fmt fmt);
 
 static bool is_aligned_width_for_fmt(s32 width, enum b2r2_blt_fmt fmt);
 static s32 width_2_complete_width(s32 width, enum b2r2_blt_fmt fmt);
 static bool is_complete_width_for_fmt(s32 width, enum b2r2_blt_fmt fmt);
 static bool is_valid_height_for_fmt(s32 height, enum b2r2_blt_fmt fmt);
 
-static bool validate_img(struct b2r2_blt_img *img);
-static bool validate_rect(struct b2r2_blt_rect *rect);
+static bool validate_img(struct b2r2_control *cont,
+		struct b2r2_blt_img *img);
+static bool validate_rect(struct b2r2_control *cont,
+		struct b2r2_blt_rect *rect);
 
 
 static bool is_valid_format(enum b2r2_blt_fmt fmt)
@@ -101,15 +103,16 @@ static bool is_valid_bg_format(enum b2r2_blt_fmt fmt)
 }
 
 
-static bool is_valid_pitch_for_fmt(u32 pitch, s32 width, enum b2r2_blt_fmt fmt)
+static bool is_valid_pitch_for_fmt(struct b2r2_control *cont,
+		u32 pitch, s32 width, enum b2r2_blt_fmt fmt)
 {
 	s32 complete_width;
 	u32 pitch_derived_from_width;
 
 	complete_width =  width_2_complete_width(width, fmt);
 
-	pitch_derived_from_width =
-			b2r2_calc_pitch_from_width(complete_width, fmt);
+	pitch_derived_from_width = b2r2_calc_pitch_from_width(cont,
+			complete_width, fmt);
 
 	if (pitch < pitch_derived_from_width)
 		return false;
@@ -260,7 +263,8 @@ static bool is_valid_height_for_fmt(s32 height, enum b2r2_blt_fmt fmt)
 	return true;
 }
 
-static bool validate_img(struct b2r2_blt_img *img)
+static bool validate_img(struct b2r2_control *cont,
+		struct b2r2_blt_img *img)
 {
 	/*
 	 * So that we always can do width * height * bpp without overflowing a
@@ -272,13 +276,14 @@ static bool validate_img(struct b2r2_blt_img *img)
 	s32 img_size;
 
 	if (!is_valid_format(img->fmt)) {
-		b2r2_log_info("Validation Error: !is_valid_format(img->fmt)\n");
+		b2r2_log_info(cont->dev, "Validation Error: "
+				"!is_valid_format(img->fmt)\n");
 		return false;
 	}
 
 	if (img->width < 0 || img->width > max_img_width_height ||
 		img->height < 0 || img->height > max_img_width_height) {
-		b2r2_log_info("Validation Error: "
+		b2r2_log_info(cont->dev, "Validation Error: "
 				"img->width < 0 || "
 				"img->width > max_img_width_height || "
 				"img->height < 0 || "
@@ -288,7 +293,7 @@ static bool validate_img(struct b2r2_blt_img *img)
 
 	if (b2r2_is_mb_fmt(img->fmt)) {
 		if (!is_complete_width_for_fmt(img->width, img->fmt)) {
-			b2r2_log_info("Validation Error: "
+			b2r2_log_info(cont->dev, "Validation Error: "
 					"!is_complete_width_for_fmt(img->width,"
 					" img->fmt)\n");
 			return false;
@@ -297,7 +302,8 @@ static bool validate_img(struct b2r2_blt_img *img)
 		if (0 == img->pitch &&
 			(!is_aligned_width_for_fmt(img->width, img->fmt) ||
 			!is_complete_width_for_fmt(img->width, img->fmt))) {
-			b2r2_log_info("Validation Error: "
+			b2r2_log_info(cont->dev,
+					"Validation Error: "
 					"0 == img->pitch && "
 					"(!is_aligned_width_for_fmt(img->width,"
 					" img->fmt) || "
@@ -307,24 +313,24 @@ static bool validate_img(struct b2r2_blt_img *img)
 		}
 
 		if (img->pitch != 0 &&
-			!is_valid_pitch_for_fmt(img->pitch, img->width,
-					img->fmt)) {
-			b2r2_log_info("Validation Error: "
-					"img->pitch != 0 && "
-					"!is_valid_pitch_for_fmt(img->pitch, "
-					"img->width, img->fmt)\n");
+			!is_valid_pitch_for_fmt(cont, img->pitch, img->width,
+				img->fmt)) {
+			b2r2_log_info(cont->dev,
+				"Validation Error: "
+				"img->pitch != 0 && "
+				"!is_valid_pitch_for_fmt(cont, "
+				"img->pitch, img->width, img->fmt)\n");
 			return false;
 		}
 	}
 
 	if (!is_valid_height_for_fmt(img->width, img->fmt)) {
-		b2r2_log_info("Validation Error: "
-				"!is_valid_height_for_fmt(img->width, "
-				"img->fmt)\n");
+		b2r2_log_info(cont->dev, "Validation Error: "
+				"!is_valid_height_for_fmt(img->width, img->fmt)\n");
 		return false;
 	}
 
-	img_size = b2r2_get_img_size(img);
+	img_size = b2r2_get_img_size(cont, img);
 
 	/*
 	 * To keep the entire image inside s32 range.
@@ -332,7 +338,7 @@ static bool validate_img(struct b2r2_blt_img *img)
 	if ((B2R2_BLT_PTR_HWMEM_BUF_NAME_OFFSET == img->buf.type ||
 				B2R2_BLT_PTR_FD_OFFSET == img->buf.type) &&
 			img->buf.offset > (u32)b2r2_s32_max - (u32)img_size) {
-		b2r2_log_info("Validation Error: "
+		b2r2_log_info(cont->dev, "Validation Error: "
 				"(B2R2_BLT_PTR_HWMEM_BUF_NAME_OFFSET == "
 				"img->buf.type || B2R2_BLT_PTR_FD_OFFSET == "
 				"img->buf.type) && img->buf.offset > "
@@ -343,10 +349,11 @@ static bool validate_img(struct b2r2_blt_img *img)
 	return true;
 }
 
-static bool validate_rect(struct b2r2_blt_rect *rect)
+static bool validate_rect(struct b2r2_control *cont,
+		struct b2r2_blt_rect *rect)
 {
 	if (rect->width < 0 || rect->height < 0) {
-		b2r2_log_info("Validation Error: "
+		b2r2_log_info(cont->dev, "Validation Error: "
 				"rect->width < 0 || rect->height < 0\n");
 		return false;
 	}
@@ -354,7 +361,8 @@ static bool validate_rect(struct b2r2_blt_rect *rect)
 	return true;
 }
 
-bool b2r2_validate_user_req(struct b2r2_blt_req *req)
+bool b2r2_validate_user_req(struct b2r2_control *cont,
+		struct b2r2_blt_req *req)
 {
 	bool is_src_img_used;
 	bool is_bg_img_used;
@@ -362,43 +370,43 @@ bool b2r2_validate_user_req(struct b2r2_blt_req *req)
 	bool is_dst_clip_rect_used;
 
 	if (req->size != sizeof(struct b2r2_blt_req)) {
-		b2r2_log_err("Validation Error: "
+		b2r2_log_err(cont->dev, "Validation Error: "
 				"req->size != sizeof(struct b2r2_blt_req)\n");
 		return false;
 	}
 
 	is_src_img_used = !(req->flags & B2R2_BLT_FLAG_SOURCE_FILL ||
-				req->flags & B2R2_BLT_FLAG_SOURCE_FILL_RAW);
+		req->flags & B2R2_BLT_FLAG_SOURCE_FILL_RAW);
 	is_bg_img_used = (req->flags & B2R2_BLT_FLAG_BG_BLEND);
 	is_src_mask_used = req->flags & B2R2_BLT_FLAG_SOURCE_MASK;
 	is_dst_clip_rect_used = req->flags & B2R2_BLT_FLAG_DESTINATION_CLIP;
 
 	if (is_src_img_used || is_src_mask_used) {
-		if (!validate_rect(&req->src_rect)) {
-			b2r2_log_info("Validation Error: "
-					"!validate_rect(&req->src_rect)\n");
+		if (!validate_rect(cont, &req->src_rect)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
+				"!validate_rect(cont, &req->src_rect)\n");
 			return false;
 		}
 	}
 
-	if (!validate_rect(&req->dst_rect)) {
-		b2r2_log_info("Validation Error: "
-				"!validate_rect(&req->dst_rect)\n");
+	if (!validate_rect(cont, &req->dst_rect)) {
+		b2r2_log_info(cont->dev, "Validation Error: "
+			"!validate_rect(cont, &req->dst_rect)\n");
 		return false;
 	}
 
 	if (is_bg_img_used)	{
-		if (!validate_rect(&req->bg_rect)) {
-			b2r2_log_info("Validation Error: "
-					"!validate_rect(&req->bg_rect)\n");
+		if (!validate_rect(cont, &req->bg_rect)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
+				"!validate_rect(cont, &req->bg_rect)\n");
 			return false;
 		}
 	}
 
 	if (is_dst_clip_rect_used) {
-		if (!validate_rect(&req->dst_clip_rect)) {
-			b2r2_log_info("Validation Error: "
-				"!validate_rect(&req->dst_clip_rect)\n");
+		if (!validate_rect(cont, &req->dst_clip_rect)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
+				"!validate_rect(cont, &req->dst_clip_rect)\n");
 			return false;
 		}
 	}
@@ -406,17 +414,17 @@ bool b2r2_validate_user_req(struct b2r2_blt_req *req)
 	if (is_src_img_used) {
 		struct b2r2_blt_rect src_img_bounding_rect;
 
-		if (!validate_img(&req->src_img)) {
-			b2r2_log_info("Validation Error: "
-					"!validate_img(&req->src_img)\n");
+		if (!validate_img(cont, &req->src_img)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
+					"!validate_img(cont, &req->src_img)\n");
 			return false;
 		}
 
 		b2r2_get_img_bounding_rect(&req->src_img,
 				&src_img_bounding_rect);
 		if (!b2r2_is_rect_inside_rect(&req->src_rect,
-					&src_img_bounding_rect)) {
-			b2r2_log_info("Validation Error: "
+				&src_img_bounding_rect)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
 				"!b2r2_is_rect_inside_rect(&req->src_rect, "
 				"&src_img_bounding_rect)\n");
 			return false;
@@ -426,23 +434,23 @@ bool b2r2_validate_user_req(struct b2r2_blt_req *req)
 	if (is_bg_img_used) {
 		struct b2r2_blt_rect bg_img_bounding_rect;
 
-		if (!validate_img(&req->bg_img)) {
-			b2r2_log_info("Validation Error: "
-					"!validate_img(&req->bg_img)\n");
+		if (!validate_img(cont, &req->bg_img)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
+				"!validate_img(cont, &req->bg_img)\n");
 			return false;
 		}
 
 		if (!is_valid_bg_format(req->bg_img.fmt)) {
-			b2r2_log_info("Validation Error: "
-					"!is_valid_bg_format(req->bg_img->fmt)\n");
+			b2r2_log_info(cont->dev, "Validation Error: "
+				"!is_valid_bg_format(req->bg_img->fmt)\n");
 			return false;
 		}
 
 		b2r2_get_img_bounding_rect(&req->bg_img,
-				&bg_img_bounding_rect);
+			&bg_img_bounding_rect);
 		if (!b2r2_is_rect_inside_rect(&req->bg_rect,
-					&bg_img_bounding_rect)) {
-			b2r2_log_info("Validation Error: "
+				&bg_img_bounding_rect)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
 				"!b2r2_is_rect_inside_rect(&req->bg_rect, "
 				"&bg_img_bounding_rect)\n");
 			return false;
@@ -452,33 +460,32 @@ bool b2r2_validate_user_req(struct b2r2_blt_req *req)
 	if (is_src_mask_used) {
 		struct b2r2_blt_rect src_mask_bounding_rect;
 
-		if (!validate_img(&req->src_mask)) {
-			b2r2_log_info("Validation Error: "
-					"!validate_img(&req->src_mask)\n");
+		if (!validate_img(cont, &req->src_mask)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
+				"!validate_img(cont, &req->src_mask)\n");
 			return false;
 		}
 
 		b2r2_get_img_bounding_rect(&req->src_mask,
-				&src_mask_bounding_rect);
+			&src_mask_bounding_rect);
 		if (!b2r2_is_rect_inside_rect(&req->src_rect,
 					&src_mask_bounding_rect)) {
-			b2r2_log_info("Validation Error: "
+			b2r2_log_info(cont->dev, "Validation Error: "
 				"!b2r2_is_rect_inside_rect(&req->src_rect, "
-					"&src_mask_bounding_rect)\n");
+				"&src_mask_bounding_rect)\n");
 			return false;
 		}
 	}
 
-	if (!validate_img(&req->dst_img)) {
-		b2r2_log_info("Validation Error: "
-				"!validate_img(&req->dst_img)\n");
+	if (!validate_img(cont, &req->dst_img)) {
+		b2r2_log_info(cont->dev, "Validation Error: "
+			"!validate_img(cont, &req->dst_img)\n");
 		return false;
 	}
 
 	if (is_bg_img_used)	{
-		if (!b2r2_is_rect_gte_rect(&req->bg_rect,
-					&req->dst_rect)) {
-			b2r2_log_info("Validation Error: "
+		if (!b2r2_is_rect_gte_rect(&req->bg_rect, &req->dst_rect)) {
+			b2r2_log_info(cont->dev, "Validation Error: "
 				"!b2r2_is_rect_gte_rect(&req->bg_rect, "
 				"&req->dst_rect)\n");
 			return false;

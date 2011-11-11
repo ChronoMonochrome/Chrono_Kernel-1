@@ -33,50 +33,47 @@ enum b2r2_log_levels {
  */
 extern int b2r2_log_levels[B2R2_LOG_LEVEL_COUNT];
 
-extern struct device *b2r2_log_dev;
-
-#define b2r2_log_err(...) do { \
+#define b2r2_log_err(b2r2_log_dev, ...) do { \
 		dev_err(b2r2_log_dev, __VA_ARGS__); \
 	} while (0)
 
 /* If dynamic debug is enabled it should be used instead of loglevels */
 #ifdef CONFIG_DYNAMIC_DEBUG
-#  define b2r2_log_warn(...) do { \
+#  define b2r2_log_warn(b2r2_log_dev, ...) do { \
 		dev_dbg(b2r2_log_dev, "WARN " __VA_ARGS__); \
 	} while (0)
-#  define b2r2_log_info(...) do { \
+#  define b2r2_log_info(b2r2_log_dev, ...) do { \
 		dev_dbg(b2r2_log_dev, "INFO " __VA_ARGS__); \
 	} while (0)
-#  define b2r2_log_debug(...) do { \
+#  define b2r2_log_debug(b2r2_log_dev, ...) do { \
 		dev_dbg(b2r2_log_dev, "DEBUG " __VA_ARGS__); \
 	} while (0)
-#  define b2r2_log_regdump(...) do { \
+#  define b2r2_log_regdump(b2r2_log_dev, ...) do { \
 		dev_dbg(b2r2_log_dev, "REGD " __VA_ARGS__); \
 	} while (0)
 #else
-#  define b2r2_log_warn(...) do { \
+#  define b2r2_log_warn(b2r2_log_dev, ...) do { \
 		if (b2r2_log_levels[B2R2_LOG_LEVEL_WARN]) \
 			dev_warn(b2r2_log_dev, "WARN " __VA_ARGS__); \
 	} while (0)
-#  define b2r2_log_info(...) do { \
+#  define b2r2_log_info(b2r2_log_dev, ...) do { \
 		if (b2r2_log_levels[B2R2_LOG_LEVEL_INFO]) \
 			dev_info(b2r2_log_dev, "INFO " __VA_ARGS__); \
 	} while (0)
-#  define b2r2_log_debug(...) do { \
+#  define b2r2_log_debug(b2r2_log_dev, ...) do { \
 		if (b2r2_log_levels[B2R2_LOG_LEVEL_DEBUG]) \
 			dev_dbg(b2r2_log_dev, "DEBUG " __VA_ARGS__); \
 	} while (0)
-#  define b2r2_log_regdump(...) do { \
+#  define b2r2_log_regdump(b2r2_log_dev, ...) do { \
 		if (b2r2_log_levels[B2R2_LOG_LEVEL_REGDUMP]) \
 			dev_vdbg(b2r2_log_dev, "REGD " __VA_ARGS__); \
 	} while (0)
 #endif
 
-
-int b2r2_debug_init(struct device *log_dev);
+int b2r2_debug_init(struct b2r2_control *cont);
 void b2r2_debug_exit(void);
-
-void b2r2_debug_job_done(struct b2r2_node *node);
+void b2r2_debug_job_done(struct b2r2_control *cont,
+		struct b2r2_node *node);
 
 #else
 
@@ -86,7 +83,7 @@ void b2r2_debug_job_done(struct b2r2_node *node);
 #define b2r2_log_debug(...)
 #define b2r2_log_regdump(...)
 
-static inline int b2r2_debug_init(struct device *log_dev)
+static inline int b2r2_debug_init(struct b2r2_control *cont)
 {
 	return 0;
 }
@@ -94,7 +91,8 @@ static inline void b2r2_debug_exit(void)
 {
 	return;
 }
-static inline void b2r2_debug_job_done(struct b2r2_node *node)
+static inline void b2r2_debug_job_done(struct b2r2_control *cont,
+		struct b2r2_node *node)
 {
 	return;
 }

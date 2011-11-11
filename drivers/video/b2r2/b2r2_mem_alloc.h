@@ -17,6 +17,7 @@
 
 /**
  * struct b2r2_mem_heap_status - Information about current state of the heap
+ *
  * @start_phys_addr: Physical address of the the memory area
  * @size: Size of the memory area
  * @align: Alignment of start and allocation sizes (in bytes).
@@ -42,6 +43,30 @@ struct b2r2_mem_heap_status {
 	u32 num_nodes;
 };
 
+/**
+ * struct b2r2_mem_block - Represents one block of b2r2
+ *                         physical memory, free or allocated
+ *
+ * @list: For membership in list
+ * @offset: Offset in b2r2 physical memory area (aligned)
+ * @size: Size of the object (requested size if busy, else actual)
+ * @free: True if the block is free
+ * @lock_count: Lock count
+ * @debugfs_fname: Debugfs file name
+ * @debugfs_block: Debugfs dir entry for the block
+ */
+struct b2r2_mem_block {
+	struct list_head	list;
+	u32					offset;
+	u32					size;
+	bool				free;
+	u32					lock_count;
+#ifdef CONFIG_DEBUG_FS
+	char				debugfs_fname[80];
+	struct dentry		*debugfs_block;
+#endif
+};
+
 
 /* B2R2 memory API (kernel) */
 
@@ -54,21 +79,14 @@ struct b2r2_mem_heap_status {
  *
  * Returns 0 if success, else negative error code
  **/
-int b2r2_mem_init(struct device *dev, u32 heap_size, u32 align, u32 node_size);
+int b2r2_mem_init(struct b2r2_control *cont,
+		u32 heap_size, u32 align, u32 node_size);
 
 /**
  * b2r2_mem_exit() - Cleans up the B2R2 memory manager
  *
  **/
-void b2r2_mem_exit(void);
-
-/**
- * b2r2_mem_heap_status() - Get information about the current heap state
- * @mem_heap_status: Struct containing status info on succesful return
- *
- * Returns 0 if success, else negative error code
- **/
-int b2r2_mem_heap_status(struct b2r2_mem_heap_status *mem_heap_status);
+void b2r2_mem_exit(struct b2r2_control *cont);
 
 /**
  * b2r2_mem_alloc() - Allocates memory block from physical memory heap
@@ -81,7 +99,8 @@ int b2r2_mem_heap_status(struct b2r2_mem_heap_status *mem_heap_status);
  * All memory allocations are movable when not locked.
  * Returns 0 if OK else negative error value
  **/
-int b2r2_mem_alloc(u32 requested_size, u32 *returned_size, u32 *mem_handle);
+int b2r2_mem_alloc(struct b2r2_control *cont, u32 requested_size,
+		u32 *returned_size, u32 *mem_handle);
 
 /**
  * b2r2_mem_free() - Frees an allocation
@@ -89,7 +108,7 @@ int b2r2_mem_alloc(u32 requested_size, u32 *returned_size, u32 *mem_handle);
  *
  * Returns 0 if OK else negative error value
  **/
-int b2r2_mem_free(u32 mem_handle);
+int b2r2_mem_free(struct b2r2_control *cont, u32 mem_handle);
 
 /**
  * b2r2_mem_lock() - Lock memory in memory and return physical address
@@ -107,7 +126,8 @@ int b2r2_mem_free(u32 mem_handle);
  * b2r2_mem_lock.
  * Returns 0 if OK else negative error value
  **/
-int b2r2_mem_lock(u32 mem_handle, u32 *phys_addr, void **virt_ptr, u32 *size);
+int b2r2_mem_lock(struct b2r2_control *cont, u32 mem_handle,
+		u32 *phys_addr, void **virt_ptr, u32 *size);
 
 /**
  * b2r2_mem_unlock() - Unlock previously locked memory
@@ -117,7 +137,7 @@ int b2r2_mem_lock(u32 mem_handle, u32 *phys_addr, void **virt_ptr, u32 *size);
  * memory area is movable again.
  * Returns 0 if OK else negative error value
  **/
-int b2r2_mem_unlock(u32 mem_handle);
+int b2r2_mem_unlock(struct b2r2_control *cont, u32 mem_handle);
 
 /**
  * b2r2_node_alloc() - Allocates B2R2 node from physical memory heap
@@ -126,7 +146,8 @@ int b2r2_mem_unlock(u32 mem_handle);
  *
  * Returns 0 if OK else negative error value
  **/
-int b2r2_node_alloc(u32 num_nodes, struct b2r2_node **first_node);
+int b2r2_node_alloc(struct b2r2_control *cont, u32 num_nodes,
+		struct b2r2_node **first_node);
 
 /**
  * b2r2_node_free() - Frees a linked list of allocated B2R2 nodes
@@ -134,7 +155,7 @@ int b2r2_node_alloc(u32 num_nodes, struct b2r2_node **first_node);
  *
  * Returns 0 if OK else negative error value
  **/
-void b2r2_node_free(struct b2r2_node *first_node);
+void b2r2_node_free(struct b2r2_control *cont, struct b2r2_node *first_node);
 
 
 #endif /* __B2R2_MEM_ALLOC_H */

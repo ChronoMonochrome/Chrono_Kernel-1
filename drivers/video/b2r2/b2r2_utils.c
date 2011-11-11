@@ -8,15 +8,14 @@
  * License terms: GNU General Public License (GPL), version 2.
  */
 
-#include "b2r2_utils.h"
-
-#include "b2r2_debug.h"
-
-#include <video/b2r2_blt.h>
-
 #include <linux/kernel.h>
 #include <linux/errno.h>
 
+#include <video/b2r2_blt.h>
+
+#include "b2r2_utils.h"
+#include "b2r2_debug.h"
+#include "b2r2_internal.h"
 
 const s32 b2r2_s32_max = 2147483647;
 
@@ -25,18 +24,19 @@ const s32 b2r2_s32_max = 2147483647;
  * calculate_scale_factor() - calculates the scale factor between the given
  *                            values
  */
-int calculate_scale_factor(u32 from, u32 to, u16 *sf_out)
+int calculate_scale_factor(struct b2r2_control *cont,
+			u32 from, u32 to, u16 *sf_out)
 {
 	int ret;
 	u32 sf;
 
-	b2r2_log_info("%s\n", __func__);
+	b2r2_log_info(cont->dev, "%s\n", __func__);
 
 	if (to == from) {
 		*sf_out = 1 << 10;
 		return 0;
 	} else if (to == 0) {
-		b2r2_log_err("%s: To is 0!\n", __func__);
+		b2r2_log_err(cont->dev, "%s: To is 0!\n", __func__);
 		BUG_ON(1);
 	}
 
@@ -44,12 +44,12 @@ int calculate_scale_factor(u32 from, u32 to, u16 *sf_out)
 
 	if ((sf & 0xffff0000) != 0) {
 		/* Overflow error */
-		b2r2_log_warn("%s: "
+		b2r2_log_warn(cont->dev, "%s: "
 			"Scale factor too large\n", __func__);
 		ret = -EINVAL;
 		goto error;
 	} else if (sf == 0) {
-		b2r2_log_warn("%s: "
+		b2r2_log_warn(cont->dev, "%s: "
 			"Scale factor too small\n", __func__);
 		ret = -EINVAL;
 		goto error;
@@ -57,12 +57,12 @@ int calculate_scale_factor(u32 from, u32 to, u16 *sf_out)
 
 	*sf_out = (u16)sf;
 
-	b2r2_log_info("%s exit\n", __func__);
+	b2r2_log_info(cont->dev, "%s exit\n", __func__);
 
 	return 0;
 
 error:
-	b2r2_log_warn("%s: Exit...\n", __func__);
+	b2r2_log_warn(cont->dev, "%s: Exit...\n", __func__);
 	return ret;
 }
 
@@ -127,7 +127,8 @@ void b2r2_intersect_rects(struct b2r2_blt_rect *rect1,
  * the old source rectangle corresponds to
  * to the new part of old destination rectangle.
  */
-void b2r2_trim_rects(const struct b2r2_blt_req *req,
+void b2r2_trim_rects(struct b2r2_control *cont,
+			const struct b2r2_blt_req *req,
 			struct b2r2_blt_rect *new_bg_rect,
 			struct b2r2_blt_rect *new_dst_rect,
 			struct b2r2_blt_rect *new_src_rect)
@@ -149,10 +150,12 @@ void b2r2_trim_rects(const struct b2r2_blt_req *req,
 	s16 hsf;
 	s16 vsf;
 
-	b2r2_log_info("%s\nold_dst_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
+	b2r2_log_info(cont->dev,
+		"%s\nold_dst_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
 		old_dst_rect->x, old_dst_rect->y,
 		old_dst_rect->width, old_dst_rect->height);
-	b2r2_log_info("%s\nold_src_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
+	b2r2_log_info(cont->dev,
+		"%s\nold_src_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
 		old_src_rect->x, old_src_rect->y,
 		old_src_rect->width, old_src_rect->height);
 
@@ -164,7 +167,8 @@ void b2r2_trim_rects(const struct b2r2_blt_req *req,
 		goto keep_rects;
 
 	b2r2_intersect_rects(old_dst_rect, &dst_img_bounds, new_dst_rect);
-	b2r2_log_info("%s\nnew_dst_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
+	b2r2_log_info(cont->dev,
+		"%s\nnew_dst_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
 		new_dst_rect->x, new_dst_rect->y,
 		new_dst_rect->width, new_dst_rect->height);
 
@@ -177,13 +181,13 @@ void b2r2_trim_rects(const struct b2r2_blt_req *req,
 
 	if (transform & B2R2_BLT_TRANSFORM_CCW_ROT_90) {
 		int res = 0;
-		res = calculate_scale_factor(old_src_rect->width,
+		res = calculate_scale_factor(cont, old_src_rect->width,
 			old_dst_rect->height, &hsf);
 		/* invalid dimensions, leave them to validation */
 		if (res < 0)
 			goto keep_rects;
 
-		res = calculate_scale_factor(old_src_rect->height,
+		res = calculate_scale_factor(cont, old_src_rect->height,
 			old_dst_rect->width, &vsf);
 		if (res < 0)
 			goto keep_rects;
@@ -203,12 +207,12 @@ void b2r2_trim_rects(const struct b2r2_blt_req *req,
 		src_h = new_dst_rect->width * vsf;
 	} else {
 		int res = 0;
-		res = calculate_scale_factor(old_src_rect->width,
+		res = calculate_scale_factor(cont, old_src_rect->width,
 			old_dst_rect->width, &hsf);
 		if (res < 0)
 			goto keep_rects;
 
-		res = calculate_scale_factor(old_src_rect->height,
+		res = calculate_scale_factor(cont, old_src_rect->height,
 			old_dst_rect->height, &vsf);
 		if (res < 0)
 			goto keep_rects;
@@ -266,7 +270,8 @@ void b2r2_trim_rects(const struct b2r2_blt_req *req,
 	new_src_rect->width = src_w;
 	new_src_rect->height = src_h;
 
-	b2r2_log_info("%s\nnew_src_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
+	b2r2_log_info(cont->dev,
+		"%s\nnew_src_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
 		new_src_rect->x, new_src_rect->y,
 		new_src_rect->width, new_src_rect->height);
 
@@ -274,14 +279,16 @@ void b2r2_trim_rects(const struct b2r2_blt_req *req,
 		/* Modify bg_rect in the same way as dst_rect */
 		s32 dw = new_dst_rect->width - old_dst_rect->width;
 		s32 dh = new_dst_rect->height - old_dst_rect->height;
-		b2r2_log_info("%s\nold bg_rect(x,y,w,h)=(%d, %d, %d, %d)\n",
+		b2r2_log_info(cont->dev,
+			"%s\nold bg_rect(x,y,w,h)=(%d, %d, %d, %d)\n",
 			__func__, old_bg_rect->x, old_bg_rect->y,
 			old_bg_rect->width, old_bg_rect->height);
 		new_bg_rect->x = old_bg_rect->x + dx;
 		new_bg_rect->y = old_bg_rect->y + dy;
 		new_bg_rect->width = old_bg_rect->width + dw;
 		new_bg_rect->height = old_bg_rect->height + dh;
-		b2r2_log_info("%s\nnew bg_rect(x,y,w,h)=(%d, %d, %d, %d)\n",
+		b2r2_log_info(cont->dev,
+			"%s\nnew bg_rect(x,y,w,h)=(%d, %d, %d, %d)\n",
 			__func__, new_bg_rect->x, new_bg_rect->y,
 			new_bg_rect->width, new_bg_rect->height);
 	}
@@ -294,11 +301,11 @@ keep_rects:
 	*new_src_rect = *old_src_rect;
 	*new_dst_rect = *old_dst_rect;
 	*new_bg_rect = *old_bg_rect;
-	b2r2_log_info("%s original rectangles preserved.\n", __func__);
+	b2r2_log_info(cont->dev, "%s original rectangles preserved.\n", __func__);
 	return;
 }
 
-int b2r2_get_fmt_bpp(enum b2r2_blt_fmt fmt)
+int b2r2_get_fmt_bpp(struct b2r2_control *cont, enum b2r2_blt_fmt fmt)
 {
 	/*
 	 * Currently this function is not used that often but if that changes a
@@ -344,13 +351,14 @@ int b2r2_get_fmt_bpp(enum b2r2_blt_fmt fmt)
 		return 32;
 
 	default:
-		b2r2_log_err("%s: Internal error! Format %#x not recognized.\n",
+		b2r2_log_err(cont->dev,
+			"%s: Internal error! Format %#x not recognized.\n",
 			__func__, fmt);
 		return 32;
 	}
 }
 
-int b2r2_get_fmt_y_bpp(enum b2r2_blt_fmt fmt)
+int b2r2_get_fmt_y_bpp(struct b2r2_control *cont, enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
@@ -373,7 +381,8 @@ int b2r2_get_fmt_y_bpp(enum b2r2_blt_fmt fmt)
 		return 8;
 
 	default:
-		b2r2_log_err("%s: Internal error! Non YCbCr format supplied.\n",
+		b2r2_log_err(cont->dev,
+			"%s: Internal error! Non YCbCr format supplied.\n",
 			__func__);
 		return 8;
 	}
@@ -533,39 +542,40 @@ bool b2r2_is_mb_fmt(enum b2r2_blt_fmt fmt)
 	}
 }
 
-u32 b2r2_calc_pitch_from_width(s32 width, enum b2r2_blt_fmt fmt)
+u32 b2r2_calc_pitch_from_width(struct b2r2_control *cont,
+		s32 width, enum b2r2_blt_fmt fmt)
 {
 	if (b2r2_is_single_plane_fmt(fmt)) {
 		return (u32)b2r2_div_round_up(width *
-				b2r2_get_fmt_bpp(fmt), 8);
+			b2r2_get_fmt_bpp(cont, fmt), 8);
 	} else if (b2r2_is_ycbcrsp_fmt(fmt) || b2r2_is_ycbcrp_fmt(fmt)) {
 		return (u32)b2r2_div_round_up(width *
-				b2r2_get_fmt_y_bpp(fmt), 8);
+			b2r2_get_fmt_y_bpp(cont, fmt), 8);
 	} else {
-		b2r2_log_err("%s: Internal error! "
-				"Pitchless format supplied.\n",
-				__func__);
+		b2r2_log_err(cont->dev, "%s: Internal error! "
+			"Pitchless format supplied.\n",
+			__func__);
 		return 0;
 	}
 }
 
-u32 b2r2_get_img_pitch(struct b2r2_blt_img *img)
+u32 b2r2_get_img_pitch(struct b2r2_control *cont, struct b2r2_blt_img *img)
 {
 	if (img->pitch != 0)
 		return img->pitch;
 	else
-		return b2r2_calc_pitch_from_width(img->width, img->fmt);
+		return b2r2_calc_pitch_from_width(cont, img->width, img->fmt);
 }
 
-s32 b2r2_get_img_size(struct b2r2_blt_img *img)
+s32 b2r2_get_img_size(struct b2r2_control *cont, struct b2r2_blt_img *img)
 {
 	if (b2r2_is_single_plane_fmt(img->fmt)) {
-		return (s32)b2r2_get_img_pitch(img) * img->height;
+		return (s32)b2r2_get_img_pitch(cont, img) * img->height;
 	} else if (b2r2_is_ycbcrsp_fmt(img->fmt) ||
 			b2r2_is_ycbcrp_fmt(img->fmt)) {
 		s32 y_plane_size;
 
-		y_plane_size = (s32)b2r2_get_img_pitch(img) * img->height;
+		y_plane_size = (s32)b2r2_get_img_pitch(cont, img) * img->height;
 
 		if (b2r2_is_ycbcr420_fmt(img->fmt)) {
 			return y_plane_size + y_plane_size / 2;
@@ -574,18 +584,18 @@ s32 b2r2_get_img_size(struct b2r2_blt_img *img)
 		} else if (b2r2_is_ycbcr444_fmt(img->fmt)) {
 			return y_plane_size * 3;
 		} else {
-			b2r2_log_err("%s: Internal error! "
-					"Format %#x not recognized.\n",
-					__func__, img->fmt);
+			b2r2_log_err(cont->dev,	"%s: Internal error!"
+				" Format %#x not recognized.\n",
+				__func__, img->fmt);
 			return 0;
 		}
 	} else if (b2r2_is_mb_fmt(img->fmt)) {
 		return (img->width * img->height *
-				b2r2_get_fmt_bpp(img->fmt)) / 8;
+			b2r2_get_fmt_bpp(cont, img->fmt)) / 8;
 	} else {
-		b2r2_log_err("%s: Internal error! "
-				"Format %#x not recognized.\n",
-				__func__, img->fmt);
+		b2r2_log_err(cont->dev, "%s: Internal error! "
+			"Format %#x not recognized.\n",
+			__func__, img->fmt);
 		return 0;
 	}
 }

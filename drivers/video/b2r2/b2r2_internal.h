@@ -13,13 +13,17 @@
 #ifndef _LINUX_DRIVERS_VIDEO_B2R2_INTERNAL_H_
 #define _LINUX_DRIVERS_VIDEO_B2R2_INTERNAL_H_
 
-
+#include <linux/device.h>
+#include <linux/miscdevice.h>
 #include <video/b2r2_blt.h>
 
-#include "b2r2_core.h"
 #include "b2r2_global.h"
-
 #include "b2r2_hw.h"
+
+/**
+ * B2R2_MAX_NBR_DEVICES - The maximum number of B2R2s handled
+ */
+#define B2R2_MAX_NBR_DEVICES 1
 
 /* The maximum possible number of temporary buffers needed */
 #define MAX_TMP_BUFS_NEEDED 2
@@ -28,12 +32,99 @@
 #define CLUT_SIZE 1024
 
 /**
- * b2r2_blt_device() - Returns the device associated with B2R2 BLT.
- *                     Mainly for debugging with dev_... functions.
- *
- * Returns the device pointer or NULL
+ * b2r2_op_type - the type of B2R2 operation to configure
  */
-struct device *b2r2_blt_device(void);
+enum b2r2_op_type {
+	B2R2_DIRECT_COPY,
+	B2R2_DIRECT_FILL,
+	B2R2_COPY,
+	B2R2_FILL,
+	B2R2_SCALE,
+	B2R2_ROTATE,
+	B2R2_SCALE_AND_ROTATE,
+	B2R2_FLIP,
+};
+
+/**
+ * b2r2_fmt_type - the type of buffer for a given format
+ */
+enum b2r2_fmt_type {
+	B2R2_FMT_TYPE_RASTER,
+	B2R2_FMT_TYPE_SEMI_PLANAR,
+	B2R2_FMT_TYPE_PLANAR,
+};
+
+/**
+ * b2r2_fmt_conv - the type of format conversion to do
+ */
+enum b2r2_fmt_conv {
+	B2R2_FMT_CONV_NONE,
+	B2R2_FMT_CONV_RGB_TO_YUV,
+	B2R2_FMT_CONV_YUV_TO_RGB,
+	B2R2_FMT_CONV_YUV_TO_YUV,
+	B2R2_FMT_CONV_RGB_TO_BGR,
+	B2R2_FMT_CONV_BGR_TO_RGB,
+	B2R2_FMT_CONV_YUV_TO_BGR,
+	B2R2_FMT_CONV_BGR_TO_YUV,
+};
+
+/**
+ * enum b2r2_core_queue - Indicates the B2R2 queue that the job belongs to
+ *
+ * @B2R2_CORE_QUEUE_AQ1: Application queue 1
+ * @B2R2_CORE_QUEUE_AQ2: Application queue 2
+ * @B2R2_CORE_QUEUE_AQ3: Application queue 3
+ * @B2R2_CORE_QUEUE_AQ4: Application queue 4
+ * @B2R2_CORE_QUEUE_CQ1: Composition queue 1
+ * @B2R2_CORE_QUEUE_CQ2: Composition queue 2
+ * @B2R2_CORE_QUEUE_NO_OF: Number of queues
+ */
+enum b2r2_core_queue {
+	B2R2_CORE_QUEUE_AQ1 = 0,
+	B2R2_CORE_QUEUE_AQ2,
+	B2R2_CORE_QUEUE_AQ3,
+	B2R2_CORE_QUEUE_AQ4,
+	B2R2_CORE_QUEUE_CQ1,
+	B2R2_CORE_QUEUE_CQ2,
+	B2R2_CORE_QUEUE_NO_OF,
+};
+
+#define B2R2_NUM_APPLICATIONS_QUEUES 4
+
+/**
+ * enum b2r2_core_job_state - Indicates the current state of the job
+ *
+ * @B2R2_CORE_JOB_IDLE: Never queued
+ * @B2R2_CORE_JOB_QUEUED: In queue but not started yet
+ * @B2R2_CORE_JOB_RUNNING: Running, executed by B2R2
+ * @B2R2_CORE_JOB_DONE: Completed
+ * @B2R2_CORE_JOB_CANCELED: Canceled
+ */
+enum b2r2_core_job_state {
+	B2R2_CORE_JOB_IDLE = 0,
+	B2R2_CORE_JOB_QUEUED,
+	B2R2_CORE_JOB_RUNNING,
+	B2R2_CORE_JOB_DONE,
+	B2R2_CORE_JOB_CANCELED,
+};
+
+/**
+ * b2r2_work_buf - specification for a temporary work buffer
+ *
+ * @size      - the size of the buffer (set by b2r2_node_split)
+ * @phys_addr - the physical address of the buffer (set by b2r2_blt_main)
+ */
+struct b2r2_work_buf {
+	u32 size;
+	u32 phys_addr;
+	void *virt_addr;
+	u32 mem_handle;
+};
+
+struct tmp_buf {
+	struct b2r2_work_buf buf;
+	bool in_use;
+};
 
 /**
  * struct b2r2_blt_instance - Represents the B2R2 instance (one per open)
@@ -46,6 +137,7 @@ struct device *b2r2_blt_device(void);
  *                         in callback.
  * @synching: true if any client is waiting for b2r2_blt_synch(0)
  * @synch_done_waitq: Wait queue to handle synching on request_id 0
+ * @control: The b2r2 control entity
  */
 struct b2r2_blt_instance {
 	struct mutex lock;
@@ -58,6 +150,8 @@ struct b2r2_blt_instance {
 	u32 no_of_active_requests;
 	bool synching;
 	wait_queue_head_t synch_done_waitq;
+
+	struct b2r2_control *control;
 };
 
 /**
@@ -109,58 +203,6 @@ struct b2r2_resolved_buf {
 	u32                   file_physical_start;
 	u32                   file_virtual_start;
 	u32                   file_len;
-};
-
-
-/**
- * b2r2_work_buf - specification for a temporary work buffer
- *
- * @size      - the size of the buffer (set by b2r2_node_split)
- * @phys_addr - the physical address of the buffer (set by b2r2_blt_main)
- */
-struct b2r2_work_buf {
-	u32 size;
-	u32 phys_addr;
-	void *virt_addr;
-	u32 mem_handle;
-};
-
-
-/**
- * b2r2_op_type - the type of B2R2 operation to configure
- */
-enum b2r2_op_type {
-	B2R2_DIRECT_COPY,
-	B2R2_DIRECT_FILL,
-	B2R2_COPY,
-	B2R2_FILL,
-	B2R2_SCALE,
-	B2R2_ROTATE,
-	B2R2_SCALE_AND_ROTATE,
-	B2R2_FLIP,
-};
-
-/**
- * b2r2_fmt_type - the type of buffer for a given format
- */
-enum b2r2_fmt_type {
-	B2R2_FMT_TYPE_RASTER,
-	B2R2_FMT_TYPE_SEMI_PLANAR,
-	B2R2_FMT_TYPE_PLANAR,
-};
-
-/**
- * b2r2_fmt_conv - the type of format conversion to do
- */
-enum b2r2_fmt_conv {
-	B2R2_FMT_CONV_NONE,
-	B2R2_FMT_CONV_RGB_TO_YUV,
-	B2R2_FMT_CONV_YUV_TO_RGB,
-	B2R2_FMT_CONV_YUV_TO_YUV,
-	B2R2_FMT_CONV_RGB_TO_BGR,
-	B2R2_FMT_CONV_BGR_TO_RGB,
-	B2R2_FMT_CONV_YUV_TO_BGR,
-	B2R2_FMT_CONV_BGR_TO_YUV,
 };
 
 /**
@@ -281,6 +323,89 @@ struct b2r2_node_split_job {
 };
 
 /**
+ * struct b2r2_core_job - Represents a B2R2 core job
+ *
+ * @start_sentinel: Memory overwrite guard
+ *
+ * @tag: Client value. Used by b2r2_core_job_find_first_with_tag().
+ * @prio: Job priority, from -19 up to 20. Mapped to the
+ *        B2R2 application queues. Filled in by the client.
+ * @first_node_address: Physical address of the first node. Filled
+ *                      in by the client.
+ * @last_node_address: Physical address of the last node. Filled
+ *                     in by the client.
+ *
+ * @callback: Function that will be called when the job is done.
+ * @acquire_resources: Function that allocates the resources needed
+ *                     to execute the job (i.e. SRAM alloc). Must not
+ *                     sleep if atomic, should fail with negative error code
+ *                     if resources not available.
+ * @release_resources: Function that releases the resources previously
+ *                     allocated by acquire_resources (i.e. SRAM alloc).
+ * @release: Function that will be called when the reference count reaches
+ *           zero.
+ *
+ * @job_id: Unique id for this job, assigned by B2R2 core
+ * @job_state: The current state of the job
+ * @jiffies: Number of jiffies needed for this request
+ *
+ * @list: List entry element for internal list management
+ * @event: Wait queue event to wait for job done
+ * @work: Work queue structure, for callback implementation
+ *
+ * @queue: The queue that this job shall be submitted to
+ * @control: B2R2 Queue control
+ * @pace_control: For composition queue only
+ * @interrupt_context: Context for interrupt
+ * @hw_start_time: The point when the b2r2 HW queue is activated for this job
+ * @nsec_active_in_hw: Time spent on the b2r2 HW queue for this job
+ *
+ * @end_sentinel: Memory overwrite guard
+ */
+struct b2r2_core_job {
+	u32 start_sentinel;
+
+	/* Data to be filled in by client */
+	int tag;
+	int prio;
+	u32 first_node_address;
+	u32 last_node_address;
+	void (*callback)(struct b2r2_core_job *);
+	int (*acquire_resources)(struct b2r2_core_job *,
+		bool atomic);
+	void (*release_resources)(struct b2r2_core_job *,
+		bool atomic);
+	void (*release)(struct b2r2_core_job *);
+
+	/* Output data, do not modify */
+	int  job_id;
+	enum b2r2_core_job_state job_state;
+	unsigned long jiffies;
+
+	/* Data below is internal to b2r2_core, do not modify */
+
+	/* Reference counting */
+	u32 ref_count;
+
+	/* Internal data */
+	struct list_head  list;
+	wait_queue_head_t event;
+	struct work_struct work;
+
+	/* B2R2 HW data */
+	enum b2r2_core_queue queue;
+	u32 control;
+	u32 pace_control;
+	u32 interrupt_context;
+
+	/* Timing data */
+	u32 hw_start_time;
+	s32 nsec_active_in_hw;
+
+	u32 end_sentinel;
+};
+
+/**
  * struct b2r2_blt_request - Represents one B2R2 blit request
  *
  * @instance: Back pointer to the instance structure
@@ -330,6 +455,105 @@ struct b2r2_blt_request {
 	s32 total_time_nsec;
 };
 
+/**
+ * struct b2r2_mem_heap - The memory heap
+ *
+ * @start_phys_addr: Physical memory start address
+ * @start_virt_ptr: Virtual pointer to start
+ * @size: Memory size
+ * @align: Alignment
+ * @blocks: List of all blocks
+ * @heap_lock: Protection for the heap
+ * @node_size: Size of each B2R2 node
+ * @node_heap: Heap for B2R2 node allocations
+ * @debugfs_root_dir: Debugfs B2R2 mem root dir
+ * @debugfs_heap_stats: Debugfs B2R2 memory status
+ * @debugfs_dir_blocks: Debugfs B2R2 free blocks dir
+ */
+struct b2r2_mem_heap {
+	dma_addr_t       start_phys_addr;
+	void             *start_virt_ptr;
+	u32              size;
+	u32              align;
+	struct list_head blocks;
+	spinlock_t       heap_lock;
+	u32              node_size;
+	struct dma_pool *node_heap;
+#ifdef CONFIG_DEBUG_FS
+	struct dentry   *debugfs_root_dir;
+	struct dentry   *debugfs_heap_stats;
+	struct dentry   *debugfs_dir_blocks;
+#endif
+};
+
+/**
+ *
+ * @miscdev: The miscdev presenting b2r2 to the system
+ * @dev: The device handle of the b2r2 instance
+ * @id: The id of the b2r2 instance
+ * @name: The name of the b2r2 instance
+ * @data: Used to store a reference to b2r2_core
+ * @tmp_bufs: Temporary buffers needed in the node splitter
+ * @filters_initialized: Indicating of filters has been
+ *                       initialized for this b2r2 instance
+ * @mem_heap: The b2r2 heap, e.g. used to allocate nodes
+ * @debugfs_latest_request: Copy of the latest request issued
+ * @debugfs_root_dir: The debugfs root directory, e.g. /debugfs/b2r2
+ * @debugfs_debug_root_dir: The b2r2 debug root directory,
+ *                          e.g. /debugfs/b2r2/debug
+ * @stat_lock: Spin lock protecting the statistics
+ * @stat_n_jobs_added: Number of jobs added to b2r2_core
+ * @stat_n_jobs_released: Number of jobs released (job_release called)
+ * @stat_n_jobs_in_report_list: Number of jobs currently in the report list
+ * @stat_n_in_blt: Number of client threads currently exec inside b2r2_blt()
+ * @stat_n_in_blt_synch: Number of client threads currently waiting for synch
+ * @stat_n_in_blt_add: Number of client threads currenlty adding in b2r2_blt
+ * @stat_n_in_blt_wait: Number of client threads currently waiting in b2r2_blt
+ * @stat_n_in_synch_0: Number of client threads currently in b2r2_blt_sync
+ *                     waiting for all client jobs to finish
+ * @stat_n_in_synch_job: Number of client threads currently in b2r2_blt_sync
+ *                       waiting specific job to finish
+ * @stat_n_in_query_cap: Number of clients currently in query cap
+ * @stat_n_in_open: Number of clients currently in b2r2_blt_open
+ * @stat_n_in_release: Number of clients currently in b2r2_blt_release
+ * @last_job_lock: Mutex protecting last_job
+ * @last_job: The last running job on this b2r2 instance
+ * @last_job_chars: Temporary buffer used in printing last_job
+ * @prev_node_count: Node cound of last_job
+ */
+struct b2r2_control {
+	struct miscdevice		miscdev;
+	struct device			*dev;
+	int						id;
+	char					name[16];
+	void					*data;
+	struct tmp_buf			tmp_bufs[MAX_TMP_BUFS_NEEDED];
+	int						filters_initialized;
+	struct b2r2_mem_heap	mem_heap;
+#ifdef CONFIG_DEBUG_FS
+	struct b2r2_blt_request	debugfs_latest_request;
+	struct dentry			*debugfs_root_dir;
+	struct dentry			*debugfs_debug_root_dir;
+#endif
+	struct mutex			stat_lock;
+	unsigned long			stat_n_jobs_added;
+	unsigned long			stat_n_jobs_released;
+	unsigned long			stat_n_jobs_in_report_list;
+	unsigned long			stat_n_in_blt;
+	unsigned long			stat_n_in_blt_synch;
+	unsigned long			stat_n_in_blt_add;
+	unsigned long			stat_n_in_blt_wait;
+	unsigned long			stat_n_in_synch_0;
+	unsigned long			stat_n_in_synch_job;
+	unsigned long			stat_n_in_query_cap;
+	unsigned long			stat_n_in_open;
+	unsigned long			stat_n_in_release;
+	struct mutex			last_job_lock;
+	struct b2r2_node		*last_job;
+	char					*last_job_chars;
+	int						prev_node_count;
+};
+
 /* FIXME: The functions below should be removed when we are
    switching to the new Robert Lind allocator */
 
@@ -341,7 +565,8 @@ struct b2r2_blt_request {
  * Return:
  *   Returns a pointer to the first node in the node list.
  */
-struct b2r2_node *b2r2_blt_alloc_nodes(int node_count);
+struct b2r2_node *b2r2_blt_alloc_nodes(struct b2r2_control *cont,
+		int node_count);
 
 /**
  * b2r2_blt_free_nodes() - Release nodes previously allocated via
@@ -349,16 +574,17 @@ struct b2r2_node *b2r2_blt_alloc_nodes(int node_count);
  *
  * @first_node: First node in linked list of nodes
  */
-void b2r2_blt_free_nodes(struct b2r2_node *first_node);
+void b2r2_blt_free_nodes(struct b2r2_control *cont,
+		struct b2r2_node *first_node);
 
 /**
  * b2r2_blt_module_init() - Initialize the B2R2 blt module
  */
-int b2r2_blt_module_init(void);
+int b2r2_blt_module_init(struct b2r2_control *cont);
 
 /**
  * b2r2_blt_module_exit() - Un-initialize the B2R2 blt module
  */
-void b2r2_blt_module_exit(void);
+void b2r2_blt_module_exit(struct b2r2_control *cont);
 
 #endif

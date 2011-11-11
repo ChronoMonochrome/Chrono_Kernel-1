@@ -20,12 +20,12 @@
 /**
  * b2r2_generic_init()
  */
-void b2r2_generic_init(void);
+void b2r2_generic_init(struct b2r2_control *cont);
 
 /**
  * b2r2_generic_exit()
  */
-void b2r2_generic_exit(void);
+void b2r2_generic_exit(struct b2r2_control *cont);
 
 /**
  * b2r2_generic_analyze()

@@ -37,9 +37,10 @@
 /**
  * reset_nodes() - clears the node list
  */
-static void reset_nodes(struct b2r2_node *node)
+static void reset_nodes(struct b2r2_control *cont,
+		struct b2r2_node *node)
 {
-	b2r2_log_info("%s ENTRY\n", __func__);
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
 	while (node != NULL) {
 		memset(&(node->node), 0, sizeof(node->node));
@@ -54,113 +55,115 @@ static void reset_nodes(struct b2r2_node *node)
 
 		node = node->next;
 	}
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }
 
 /**
  * dump_nodes() - prints the node list
  */
-static void dump_nodes(struct b2r2_node *first, bool dump_all)
+static void dump_nodes(struct b2r2_control *cont,
+		struct b2r2_node *first, bool dump_all)
 {
 	struct b2r2_node *node = first;
-	b2r2_log_info("%s ENTRY\n", __func__);
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 	do {
-		b2r2_log_debug("\nNODE START:\n=============\n");
-		b2r2_log_debug("B2R2_ACK: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "\nNODE START:\n=============\n");
+		b2r2_log_debug(cont->dev, "B2R2_ACK: \t0x%.8x\n",
 				node->node.GROUP0.B2R2_ACK);
-		b2r2_log_debug("B2R2_INS: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_INS: \t0x%.8x\n",
 				node->node.GROUP0.B2R2_INS);
-		b2r2_log_debug("B2R2_CIC: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_CIC: \t0x%.8x\n",
 				node->node.GROUP0.B2R2_CIC);
-		b2r2_log_debug("B2R2_NIP: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_NIP: \t0x%.8x\n",
 				node->node.GROUP0.B2R2_NIP);
 
-		b2r2_log_debug("B2R2_TSZ: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_TSZ: \t0x%.8x\n",
 				node->node.GROUP1.B2R2_TSZ);
-		b2r2_log_debug("B2R2_TXY: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_TXY: \t0x%.8x\n",
 				node->node.GROUP1.B2R2_TXY);
-		b2r2_log_debug("B2R2_TTY: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_TTY: \t0x%.8x\n",
 				node->node.GROUP1.B2R2_TTY);
-		b2r2_log_debug("B2R2_TBA: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_TBA: \t0x%.8x\n",
 				node->node.GROUP1.B2R2_TBA);
 
-		b2r2_log_debug("B2R2_S2CF: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S2CF: \t0x%.8x\n",
 				node->node.GROUP2.B2R2_S2CF);
-		b2r2_log_debug("B2R2_S1CF: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S1CF: \t0x%.8x\n",
 				node->node.GROUP2.B2R2_S1CF);
 
-		b2r2_log_debug("B2R2_S1SZ: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S1SZ: \t0x%.8x\n",
 				node->node.GROUP3.B2R2_SSZ);
-		b2r2_log_debug("B2R2_S1XY: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S1XY: \t0x%.8x\n",
 				node->node.GROUP3.B2R2_SXY);
-		b2r2_log_debug("B2R2_S1TY: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S1TY: \t0x%.8x\n",
 				node->node.GROUP3.B2R2_STY);
-		b2r2_log_debug("B2R2_S1BA: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S1BA: \t0x%.8x\n",
 				node->node.GROUP3.B2R2_SBA);
 
-		b2r2_log_debug("B2R2_S2SZ: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S2SZ: \t0x%.8x\n",
 				node->node.GROUP4.B2R2_SSZ);
-		b2r2_log_debug("B2R2_S2XY: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S2XY: \t0x%.8x\n",
 				node->node.GROUP4.B2R2_SXY);
-		b2r2_log_debug("B2R2_S2TY: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S2TY: \t0x%.8x\n",
 				node->node.GROUP4.B2R2_STY);
-		b2r2_log_debug("B2R2_S2BA: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S2BA: \t0x%.8x\n",
 				node->node.GROUP4.B2R2_SBA);
 
-		b2r2_log_debug("B2R2_S3SZ: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S3SZ: \t0x%.8x\n",
 				node->node.GROUP5.B2R2_SSZ);
-		b2r2_log_debug("B2R2_S3XY: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S3XY: \t0x%.8x\n",
 				node->node.GROUP5.B2R2_SXY);
-		b2r2_log_debug("B2R2_S3TY: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S3TY: \t0x%.8x\n",
 				node->node.GROUP5.B2R2_STY);
-		b2r2_log_debug("B2R2_S3BA: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_S3BA: \t0x%.8x\n",
 				node->node.GROUP5.B2R2_SBA);
 
-		b2r2_log_debug("B2R2_CWS: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_CWS: \t0x%.8x\n",
 				node->node.GROUP6.B2R2_CWS);
-		b2r2_log_debug("B2R2_CWO: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_CWO: \t0x%.8x\n",
 				node->node.GROUP6.B2R2_CWO);
 
-		b2r2_log_debug("B2R2_FCTL: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_FCTL: \t0x%.8x\n",
 				node->node.GROUP8.B2R2_FCTL);
-		b2r2_log_debug("B2R2_RSF: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_RSF: \t0x%.8x\n",
 				node->node.GROUP9.B2R2_RSF);
-		b2r2_log_debug("B2R2_RZI: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_RZI: \t0x%.8x\n",
 				node->node.GROUP9.B2R2_RZI);
-		b2r2_log_debug("B2R2_HFP: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_HFP: \t0x%.8x\n",
 				node->node.GROUP9.B2R2_HFP);
-		b2r2_log_debug("B2R2_VFP: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_VFP: \t0x%.8x\n",
 				node->node.GROUP9.B2R2_VFP);
-		b2r2_log_debug("B2R2_LUMA_RSF: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_LUMA_RSF: \t0x%.8x\n",
 				node->node.GROUP10.B2R2_RSF);
-		b2r2_log_debug("B2R2_LUMA_RZI: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_LUMA_RZI: \t0x%.8x\n",
 				node->node.GROUP10.B2R2_RZI);
-		b2r2_log_debug("B2R2_LUMA_HFP: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_LUMA_HFP: \t0x%.8x\n",
 				node->node.GROUP10.B2R2_HFP);
-		b2r2_log_debug("B2R2_LUMA_VFP: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_LUMA_VFP: \t0x%.8x\n",
 				node->node.GROUP10.B2R2_VFP);
 
 
-		b2r2_log_debug("B2R2_IVMX0: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_IVMX0: \t0x%.8x\n",
 				node->node.GROUP15.B2R2_VMX0);
-		b2r2_log_debug("B2R2_IVMX1: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_IVMX1: \t0x%.8x\n",
 				node->node.GROUP15.B2R2_VMX1);
-		b2r2_log_debug("B2R2_IVMX2: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_IVMX2: \t0x%.8x\n",
 				node->node.GROUP15.B2R2_VMX2);
-		b2r2_log_debug("B2R2_IVMX3: \t0x%.8x\n",
+		b2r2_log_debug(cont->dev, "B2R2_IVMX3: \t0x%.8x\n",
 				node->node.GROUP15.B2R2_VMX3);
-		b2r2_log_debug("\n=============\nNODE END\n");
+		b2r2_log_debug(cont->dev, "\n=============\nNODE END\n");
 
 		node = node->next;
 	} while (node != NULL && dump_all);
 
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }
 
 /**
  * to_native_fmt() - returns the native B2R2 format
  */
-static inline enum b2r2_native_fmt to_native_fmt(enum b2r2_blt_fmt fmt)
+static inline enum b2r2_native_fmt to_native_fmt(struct b2r2_control *cont,
+		enum b2r2_blt_fmt fmt)
 {
 
 	switch (fmt) {
@@ -216,7 +219,8 @@ static inline enum b2r2_native_fmt to_native_fmt(enum b2r2_blt_fmt fmt)
 /**
  * get_alpha_range() - returns the alpha range of the given format
  */
-static inline enum b2r2_ty get_alpha_range(enum b2r2_blt_fmt fmt)
+static inline enum b2r2_ty get_alpha_range(struct b2r2_control *cont,
+		enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
@@ -234,7 +238,8 @@ static inline enum b2r2_ty get_alpha_range(enum b2r2_blt_fmt fmt)
 	return B2R2_TY_ALPHA_RANGE_128; /* 0 - 128 */
 }
 
-static unsigned int get_pitch(enum b2r2_blt_fmt format, u32 width)
+static unsigned int get_pitch(struct b2r2_control *cont,
+		enum b2r2_blt_fmt format, u32 width)
 {
 	switch (format) {
 	case B2R2_BLT_FMT_1_BIT_A1: {
@@ -269,7 +274,7 @@ static unsigned int get_pitch(enum b2r2_blt_fmt format, u32 width)
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 		/* width of the buffer must be a multiple of 4 */
 		if (width & 3) {
-			b2r2_log_warn("%s: Illegal width "
+			b2r2_log_warn(cont->dev, "%s: Illegal width "
 				"for fmt=%#010x width=%d\n", __func__,
 				format, width);
 			return 0;
@@ -290,7 +295,7 @@ static unsigned int get_pitch(enum b2r2_blt_fmt format, u32 width)
 	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 		/* width of the buffer must be a multiple of 2 */
 		if (width & 1) {
-			b2r2_log_warn("%s: Illegal width "
+			b2r2_log_warn(cont->dev, "%s: Illegal width "
 				"for fmt=%#010x width=%d\n", __func__,
 				format, width);
 			return 0;
@@ -305,7 +310,7 @@ static unsigned int get_pitch(enum b2r2_blt_fmt format, u32 width)
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		/* width of the buffer must be a multiple of 16. */
 		if (width & 15) {
-			b2r2_log_warn("%s: Illegal width "
+			b2r2_log_warn(cont->dev, "%s: Illegal width "
 				"for fmt=%#010x width=%d\n", __func__,
 				format, width);
 			return 0;
@@ -317,35 +322,36 @@ static unsigned int get_pitch(enum b2r2_blt_fmt format, u32 width)
 		return width;
 		break;
 	default:
-		b2r2_log_warn("%s: Unable to determine pitch "
+		b2r2_log_warn(cont->dev, "%s: Unable to determine pitch "
 			"for fmt=%#010x width=%d\n", __func__,
 			format, width);
 		return 0;
 	}
 }
 
-static s32 validate_buf(const struct b2r2_blt_img *image,
-			const struct b2r2_resolved_buf *buf)
+static s32 validate_buf(struct b2r2_control *cont,
+		const struct b2r2_blt_img *image,
+		const struct b2r2_resolved_buf *buf)
 {
 	u32 expect_buf_size;
 	u32 pitch;
 
 	if (image->width <= 0 || image->height <= 0) {
-		b2r2_log_warn("%s: width=%d or height=%d negative.\n", __func__,
-			image->width, image->height);
+		b2r2_log_warn(cont->dev, "%s: width=%d or height=%d negative"
+				".\n", __func__, image->width, image->height);
 		return -EINVAL;
 	}
 
 	if (image->pitch == 0) {
 		/* autodetect pitch based on format and width */
-		pitch = get_pitch(image->fmt, image->width);
+		pitch = get_pitch(cont, image->fmt, image->width);
 	} else
 		pitch = image->pitch;
 
 	expect_buf_size = pitch * image->height;
 
 	if (pitch == 0) {
-		b2r2_log_warn("%s: Unable to detect pitch. "
+		b2r2_log_warn(cont->dev, "%s: Unable to detect pitch. "
 			"fmt=%#010x, width=%d\n",
 			__func__,
 			image->fmt, image->width);
@@ -393,7 +399,7 @@ static s32 validate_buf(const struct b2r2_blt_img *image,
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 		/* Height must be a multiple of 16 for macro-block format.*/
 		if (image->height & 15) {
-			b2r2_log_warn("%s: Illegal height "
+			b2r2_log_warn(cont->dev, "%s: Illegal height "
 				"for fmt=%#010x height=%d\n", __func__,
 				image->fmt, image->height);
 			return -EINVAL;
@@ -403,7 +409,7 @@ static s32 validate_buf(const struct b2r2_blt_img *image,
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		/* Height must be a multiple of 16 for macro-block format.*/
 		if (image->height & 15) {
-			b2r2_log_warn("%s: Illegal height "
+			b2r2_log_warn(cont->dev, "%s: Illegal height "
 				"for fmt=%#010x height=%d\n", __func__,
 				image->fmt, image->height);
 			return -EINVAL;
@@ -415,7 +421,7 @@ static s32 validate_buf(const struct b2r2_blt_img *image,
 	}
 
 	if (buf->file_len < expect_buf_size) {
-		b2r2_log_warn("%s: Invalid buffer size:\n"
+		b2r2_log_warn(cont->dev, "%s: Invalid buffer size:\n"
 			"fmt=%#010x w=%d h=%d buf.len=%d expect_buf_size=%d\n",
 			__func__,
 			image->fmt, image->width, image->height, buf->file_len,
@@ -424,8 +430,8 @@ static s32 validate_buf(const struct b2r2_blt_img *image,
 	}
 
 	if (image->buf.type == B2R2_BLT_PTR_VIRTUAL) {
-		b2r2_log_warn("%s: Virtual pointers not supported yet.\n",
-			__func__);
+		b2r2_log_warn(cont->dev, "%s: Virtual pointers not supported"
+				" yet.\n", __func__);
 		return -EINVAL;
 	}
 	return 0;
@@ -435,7 +441,8 @@ static s32 validate_buf(const struct b2r2_blt_img *image,
  * Bit-expand the color from fmt to RGB888 with blue at LSB.
  * Copy MSBs into missing LSBs.
  */
-static u32 to_RGB888(u32 color, const enum b2r2_blt_fmt fmt)
+static u32 to_RGB888(struct b2r2_control *cont, u32 color,
+		const enum b2r2_blt_fmt fmt)
 {
 	u32 out_color = 0;
 	u32 r = 0;
@@ -491,7 +498,9 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 	enum b2r2_native_fmt fill_fmt = 0;
 	u32 src_color = req->user_req.src_color;
 	const struct b2r2_blt_img *dst_img = &(req->user_req.dst_img);
-	b2r2_log_info("%s ENTRY\n", __func__);
+	struct b2r2_control *cont = req->instance->control;
+
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
 	/* Determine format in src_color */
 	switch (dst_img->fmt) {
@@ -509,7 +518,7 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 			fill_fmt = B2R2_NATIVE_ARGB8888;
 		} else {
 			/* SOURCE_FILL_RAW */
-			fill_fmt = to_native_fmt(dst_img->fmt);
+			fill_fmt = to_native_fmt(cont, dst_img->fmt);
 			if (dst_img->fmt == B2R2_BLT_FMT_32_BIT_ABGR8888) {
 				/*
 				 * Color is read from a register,
@@ -606,7 +615,7 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 				 */
 				fill_fmt = B2R2_NATIVE_AYCBCR8888;
 			} else {
-				fill_fmt = to_native_fmt(dst_img->fmt);
+				fill_fmt = to_native_fmt(cont, dst_img->fmt);
 			}
 
 			switch (dst_img->fmt) {
@@ -704,7 +713,7 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 	node->node.GROUP4.B2R2_STY =
 		(0 << B2R2_TY_BITMAP_PITCH_SHIFT) |
 		fill_fmt |
-		get_alpha_range(dst_img->fmt) |
+		get_alpha_range(cont, dst_img->fmt) |
 		B2R2_TY_HSO_LEFT_TO_RIGHT |
 		B2R2_TY_VSO_TOP_TO_BOTTOM;
 
@@ -714,7 +723,7 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 	node->node.GROUP2.B2R2_S2CF = src_color;
 
 	node->node.GROUP0.B2R2_ACK |= B2R2_ACK_MODE_BYPASS_S2_S3;
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }
 
 static void setup_input_stage(const struct b2r2_blt_request *req,
@@ -756,23 +765,25 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 	bool use_h_filter = false;
 	bool use_v_filter = false;
 
-	b2r2_log_info("%s ENTRY\n", __func__);
+	struct b2r2_control *cont = req->instance->control;
+
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
 	if (((B2R2_BLT_FLAG_SOURCE_FILL | B2R2_BLT_FLAG_SOURCE_FILL_RAW) &
 			req->user_req.flags) != 0) {
 		setup_fill_input_stage(req, node, out_buf);
-		b2r2_log_info("%s DONE\n", __func__);
+		b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 		return;
 	}
 
 	if (src_img->pitch == 0) {
 		/* Determine pitch based on format and width of the image. */
-		src_pitch = get_pitch(src_img->fmt, src_img->width);
+		src_pitch = get_pitch(cont, src_img->fmt, src_img->width);
 	} else {
 		src_pitch = src_img->pitch;
 	}
 
-	b2r2_log_info("%s transform=%#010x\n",
+	b2r2_log_info(cont->dev, "%s transform=%#010x\n",
 			__func__, req->user_req.transform);
 	if (req->user_req.transform & B2R2_BLT_TRANSFORM_CCW_ROT_90) {
 		h_scf = (src_rect->width << 10) / dst_rect->height;
@@ -798,7 +809,7 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 
 	/* Configure horizontal rescale */
 	if (h_scf != (1 << 10)) {
-		b2r2_log_info("%s: Scaling horizontally by 0x%.8x"
+		b2r2_log_info(cont->dev, "%s: Scaling horizontally by 0x%.8x"
 			"\ns(%d, %d)->d(%d, %d)\n", __func__,
 			h_scf, src_rect->width, src_rect->height,
 			dst_rect->width, dst_rect->height);
@@ -810,7 +821,7 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 
 	/* Configure vertical rescale */
 	if (v_scf != (1 << 10)) {
-		b2r2_log_info("%s: Scaling vertically by 0x%.8x"
+		b2r2_log_info(cont->dev, "%s: Scaling vertically by 0x%.8x"
 			"\ns(%d, %d)->d(%d, %d)\n", __func__,
 			v_scf, src_rect->width, src_rect->height,
 			dst_rect->width, dst_rect->height);
@@ -1095,7 +1106,8 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 		bool swapped_chroma =
 			src_img->fmt == B2R2_BLT_FMT_YVU420_PACKED_PLANAR ||
 			src_img->fmt == B2R2_BLT_FMT_YVU422_PACKED_PLANAR;
-		enum b2r2_native_fmt src_fmt = to_native_fmt(src_img->fmt);
+		enum b2r2_native_fmt src_fmt =
+			to_native_fmt(cont, src_img->fmt);
 
 		if (swapped_chroma)
 			cr_addr = req->src_resolved.physical_address +
@@ -1173,7 +1185,8 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 			src_pitch * src_img->height;
 		u32 chroma_pitch = src_pitch;
 
-		enum b2r2_native_fmt src_fmt = to_native_fmt(src_img->fmt);
+		enum b2r2_native_fmt src_fmt =
+			to_native_fmt(cont, src_img->fmt);
 
 		node->node.GROUP4.B2R2_SBA = chroma_addr;
 		node->node.GROUP4.B2R2_STY =
@@ -1199,8 +1212,8 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 		node->node.GROUP4.B2R2_SBA = req->src_resolved.physical_address;
 		node->node.GROUP4.B2R2_STY =
 			(src_pitch << B2R2_TY_BITMAP_PITCH_SHIFT) |
-			to_native_fmt(src_img->fmt) |
-			get_alpha_range(src_img->fmt) |
+			to_native_fmt(cont, src_img->fmt) |
+			get_alpha_range(cont, src_img->fmt) |
 			B2R2_TY_HSO_LEFT_TO_RIGHT |
 			B2R2_TY_VSO_TOP_TO_BOTTOM |
 			endianness;
@@ -1220,7 +1233,7 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 
 	node->node.GROUP0.B2R2_ACK |= B2R2_ACK_MODE_BYPASS_S2_S3;
 
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }
 
 static void setup_transform_stage(const struct b2r2_blt_request *req,
@@ -1231,8 +1244,11 @@ static void setup_transform_stage(const struct b2r2_blt_request *req,
 	/* vertical scan order for out_buf */
 	enum b2r2_ty dst_vso = B2R2_TY_VSO_TOP_TO_BOTTOM;
 	enum b2r2_blt_transform transform = req->user_req.transform;
+#ifdef CONFIG_B2R2_DEBUG
+	struct b2r2_control *cont = req->instance->control;
+#endif
 
-	b2r2_log_info("%s ENTRY\n", __func__);
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
 	if (transform & B2R2_BLT_TRANSFORM_CCW_ROT_90) {
 		/*
@@ -1265,7 +1281,7 @@ static void setup_transform_stage(const struct b2r2_blt_request *req,
 	node->node.GROUP0.B2R2_CIC |= B2R2_CIC_SOURCE_2;
 	node->node.GROUP0.B2R2_ACK |= B2R2_ACK_MODE_BYPASS_S2_S3;
 
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }
 
 /*
@@ -1299,14 +1315,16 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 		dst_img->fmt == B2R2_BLT_FMT_YUV444_PACKED_PLANAR;
 
 	u32 dst_pitch = 0;
+	struct b2r2_control *cont = req->instance->control;
+
 	if (dst_img->pitch == 0) {
 		/* Determine pitch based on format and width of the image. */
-		dst_pitch = get_pitch(dst_img->fmt, dst_img->width);
+		dst_pitch = get_pitch(cont, dst_img->fmt, dst_img->width);
 	} else {
 		dst_pitch = dst_img->pitch;
 	}
 
-	b2r2_log_info("%s ENTRY\n", __func__);
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
 	/* Adjustments that depend on the destination format */
 	switch (dst_img->fmt) {
@@ -1497,7 +1515,7 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 			dst_img->fmt == B2R2_BLT_FMT_YVU420_PACKED_PLANAR ||
 			dst_img->fmt == B2R2_BLT_FMT_YVU422_PACKED_PLANAR;
 		enum b2r2_native_fmt dst_native_fmt =
-				to_native_fmt(dst_img->fmt);
+				to_native_fmt(cont, dst_img->fmt);
 
 		if (swapped_chroma)
 			cr_addr = req->dst_resolved.physical_address +
@@ -1573,7 +1591,7 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 		u32 chroma_pitch = dst_pitch;
 
 		enum b2r2_native_fmt dst_native_fmt =
-				to_native_fmt(dst_img->fmt);
+				to_native_fmt(cont, dst_img->fmt);
 
 		node->node.GROUP4.B2R2_SBA = chroma_addr;
 		node->node.GROUP4.B2R2_STY =
@@ -1599,8 +1617,8 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 		node->node.GROUP4.B2R2_SBA = req->dst_resolved.physical_address;
 		node->node.GROUP4.B2R2_STY =
 			(dst_pitch << B2R2_TY_BITMAP_PITCH_SHIFT) |
-			to_native_fmt(dst_img->fmt) |
-			get_alpha_range(dst_img->fmt) |
+			to_native_fmt(cont, dst_img->fmt) |
+			get_alpha_range(cont, dst_img->fmt) |
 			B2R2_TY_HSO_LEFT_TO_RIGHT |
 			B2R2_TY_VSO_TOP_TO_BOTTOM |
 			endianness;
@@ -1612,7 +1630,7 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 
 	node->node.GROUP0.B2R2_ACK |= B2R2_ACK_MODE_BYPASS_S2_S3;
 
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }
 
 static void setup_blend_stage(const struct b2r2_blt_request *req,
@@ -1621,7 +1639,11 @@ static void setup_blend_stage(const struct b2r2_blt_request *req,
 			      struct b2r2_work_buf *fg_buf)
 {
 	u32 global_alpha = req->user_req.global_alpha;
-	b2r2_log_info("%s ENTRY\n", __func__);
+#ifdef CONFIG_B2R2_DEBUG
+	struct b2r2_control *cont = req->instance->control;
+#endif
+
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
 	node->node.GROUP0.B2R2_ACK = 0;
 
@@ -1723,7 +1745,7 @@ static void setup_blend_stage(const struct b2r2_blt_request *req,
 			B2R2_TY_VSO_TOP_TO_BOTTOM;
 	}
 
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }
 
 static void setup_writeback_stage(const struct b2r2_blt_request *req,
@@ -1758,11 +1780,13 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 	u32 dst_pitch = 0;
 	u32 endianness = 0;
 
-	b2r2_log_info("%s ENTRY\n", __func__);
+	struct b2r2_control *cont = req->instance->control;
+
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
 	if (dst_img->pitch == 0) {
 		/* Determine pitch based on format and width of the image. */
-		dst_pitch = get_pitch(dst_img->fmt, dst_img->width);
+		dst_pitch = get_pitch(cont, dst_img->fmt, dst_img->width);
 	} else
 		dst_pitch = dst_img->pitch;
 
@@ -1793,8 +1817,8 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 			dst_fmt == B2R2_BLT_FMT_YVU420_PACKED_PLANAR ||
 			dst_fmt == B2R2_BLT_FMT_YVU422_PACKED_PLANAR;
 		enum b2r2_native_fmt dst_native_fmt =
-				to_native_fmt(dst_img->fmt);
-		enum b2r2_ty alpha_range = get_alpha_range(dst_img->fmt);
+				to_native_fmt(cont, dst_img->fmt);
+		enum b2r2_ty alpha_range = get_alpha_range(cont, dst_img->fmt);
 
 		if (swapped_chroma)
 			cr_addr = req->dst_resolved.physical_address +
@@ -1980,8 +2004,8 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 			dst_pitch * dst_img->height;
 		u32 chroma_pitch = dst_pitch;
 		enum b2r2_native_fmt dst_native_fmt =
-				to_native_fmt(dst_img->fmt);
-		enum b2r2_ty alpha_range = get_alpha_range(dst_img->fmt);
+				to_native_fmt(cont, dst_img->fmt);
+		enum b2r2_ty alpha_range = get_alpha_range(cont, dst_img->fmt);
 
 		if (dst_fmt == B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR ||
 			dst_fmt ==
@@ -2154,8 +2178,8 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 		node->node.GROUP1.B2R2_TBA = req->dst_resolved.physical_address;
 		node->node.GROUP1.B2R2_TTY =
 			(dst_pitch << B2R2_TY_BITMAP_PITCH_SHIFT) |
-			to_native_fmt(dst_img->fmt) |
-			get_alpha_range(dst_img->fmt) |
+			to_native_fmt(cont, dst_img->fmt) |
+			get_alpha_range(cont, dst_img->fmt) |
 			B2R2_TY_HSO_LEFT_TO_RIGHT |
 			B2R2_TY_VSO_TOP_TO_BOTTOM |
 			dst_dither |
@@ -2179,7 +2203,7 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 			node->node.GROUP0.B2R2_INS |= B2R2_INS_CKEY_ENABLED;
 			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_COLOR_KEY;
 
-			key_color = to_RGB888(req->user_req.src_color,
+			key_color = to_RGB888(cont, req->user_req.src_color,
 				req->user_req.src_img.fmt);
 			node->node.GROUP12.B2R2_KEY1 = key_color;
 			node->node.GROUP12.B2R2_KEY2 = key_color;
@@ -2195,20 +2219,20 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 	 */
 	node->node.GROUP0.B2R2_NIP = 0;
 
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }
 
 /*
  * Public functions
  */
-void b2r2_generic_init()
+void b2r2_generic_init(struct b2r2_control *cont)
 {
-	b2r2_filters_init();
+
 }
 
-void b2r2_generic_exit(void)
+void b2r2_generic_exit(struct b2r2_control *cont)
 {
-	b2r2_filters_exit();
+
 }
 
 int b2r2_generic_analyze(const struct b2r2_blt_request *req,
@@ -2230,13 +2254,13 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 	bool is_src_fill = false;
 	bool yuv_planar_dst;
 	bool yuv_semi_planar_dst;
-
 	struct b2r2_blt_rect src_rect;
 	struct b2r2_blt_rect dst_rect;
+	struct b2r2_control *cont = req->instance->control;
 
 	if (req == NULL || work_buf_width == NULL || work_buf_height == NULL ||
 			work_buf_count == NULL || node_count == NULL) {
-		b2r2_log_warn("%s: Invalid in or out pointers:\n"
+		b2r2_log_warn(cont->dev, "%s: Invalid in or out pointers:\n"
 			"req=0x%p\n"
 			"work_buf_width=0x%p work_buf_height=0x%p "
 			"work_buf_count=0x%p\n"
@@ -2281,7 +2305,8 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 
 	if ((yuv_planar_dst || yuv_semi_planar_dst) &&
 			(req->user_req.flags & B2R2_BLT_FLAG_SOURCE_FILL_RAW)) {
-		b2r2_log_warn("%s: Invalid combination: source_fill_raw"
+		b2r2_log_warn(cont->dev,
+			"%s: Invalid combination: source_fill_raw"
 			" and multi-buffer destination.\n",
 			__func__);
 		return -EINVAL;
@@ -2289,7 +2314,8 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 
 	if ((req->user_req.flags & B2R2_BLT_FLAG_SOURCE_COLOR_KEY) != 0 &&
 			(req->user_req.flags & B2R2_BLT_FLAG_DEST_COLOR_KEY)) {
-		b2r2_log_warn("%s: Invalid combination: source and "
+		b2r2_log_warn(cont->dev,
+			"%s: Invalid combination: source and "
 			"destination color keying.\n", __func__);
 		return -EINVAL;
 	}
@@ -2300,7 +2326,7 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 			(req->user_req.flags &
 			(B2R2_BLT_FLAG_SOURCE_COLOR_KEY |
 			B2R2_BLT_FLAG_DEST_COLOR_KEY))) {
-		b2r2_log_warn("%s: Invalid combination: "
+		b2r2_log_warn(cont->dev, "%s: Invalid combination: "
 			"source_fill and color keying.\n",
 			__func__);
 		return -EINVAL;
@@ -2312,7 +2338,7 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 			(req->user_req.flags &
 			(B2R2_BLT_FLAG_DEST_COLOR_KEY |
 			B2R2_BLT_FLAG_SOURCE_COLOR_KEY))) {
-		b2r2_log_warn("%s: Invalid combination: "
+		b2r2_log_warn(cont->dev, "%s: Invalid combination: "
 			"blending and color keying.\n",
 			__func__);
 		return -EINVAL;
@@ -2322,8 +2348,8 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 			(req->user_req.flags &
 			(B2R2_BLT_FLAG_DEST_COLOR_KEY |
 			B2R2_BLT_FLAG_SOURCE_COLOR_KEY))) {
-		b2r2_log_warn("%s: Invalid combination: source mask and "
-			"color keying.\n",
+		b2r2_log_warn(cont->dev, "%s: Invalid combination: source mask"
+				"and color keying.\n",
 			__func__);
 		return -EINVAL;
 	}
@@ -2331,7 +2357,7 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 	if (req->user_req.flags &
 			(B2R2_BLT_FLAG_DEST_COLOR_KEY |
 			B2R2_BLT_FLAG_SOURCE_MASK)) {
-		b2r2_log_warn("%s: Unsupported: source mask, "
+		b2r2_log_warn(cont->dev, "%s: Unsupported: source mask, "
 			"destination color keying.\n",
 			__func__);
 		return -ENOSYS;
@@ -2355,9 +2381,9 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 			src_fmt == B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE;
 		if (yuv_src || src_fmt == B2R2_BLT_FMT_1_BIT_A1 ||
 				src_fmt == B2R2_BLT_FMT_8_BIT_A8) {
-			b2r2_log_warn("%s: Unsupported: source color keying "
-					"with YUV or pure alpha formats.\n",
-					__func__);
+			b2r2_log_warn(cont->dev, "%s: Unsupported: source "
+				"color keying with YUV or pure alpha "
+				"formats.\n", __func__);
 			return -ENOSYS;
 		}
 	}
@@ -2369,7 +2395,7 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 	if (!is_src_fill && (src_rect.x < 0 || src_rect.y < 0 ||
 		src_rect.x + src_rect.width > req->user_req.src_img.width ||
 		src_rect.y + src_rect.height > req->user_req.src_img.height)) {
-		b2r2_log_warn("%s: src_rect outside src_img:\n"
+		b2r2_log_warn(cont->dev, "%s: src_rect outside src_img:\n"
 			"src(x,y,w,h)=(%d, %d, %d, %d) "
 			"src_img(w,h)=(%d, %d).\n",
 			__func__,
@@ -2380,7 +2406,7 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 	}
 
 	if (!is_src_fill && (src_rect.width <= 0 || src_rect.height <= 0)) {
-		b2r2_log_warn("%s: Invalid source dimensions:\n"
+		b2r2_log_warn(cont->dev, "%s: Invalid source dimensions:\n"
 			"src(w,h)=(%d, %d).\n",
 			__func__,
 			src_rect.width, src_rect.height);
@@ -2388,7 +2414,7 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 	}
 
 	if (dst_rect.width <= 0 || dst_rect.height <= 0) {
-		b2r2_log_warn("%s: Invalid dest dimensions:\n"
+		b2r2_log_warn(cont->dev, "%s: Invalid dest dimensions:\n"
 			"dst(w,h)=(%d, %d).\n",
 			__func__,
 			dst_rect.width, dst_rect.height);
@@ -2397,18 +2423,18 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 
 	if ((req->user_req.flags & B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION) &&
 			req->user_req.clut == NULL) {
-		b2r2_log_warn("%s: Invalid request: no table specified "
-			"for CLUT color correction.\n",
+		b2r2_log_warn(cont->dev, "%s: Invalid request: no table "
+				"specified for CLUT color correction.\n",
 			__func__);
 		return -EINVAL;
 	}
 
 	/* Check for invalid image params */
-	if (!is_src_fill && validate_buf(&(req->user_req.src_img),
+	if (!is_src_fill && validate_buf(cont, &(req->user_req.src_img),
 			&(req->src_resolved)))
 		return -EINVAL;
 
-	if (validate_buf(&(req->user_req.dst_img), &(req->dst_resolved)))
+	if (validate_buf(cont, &(req->user_req.dst_img), &(req->dst_resolved)))
 		return -EINVAL;
 
 	if (is_src_fill) {
@@ -2425,9 +2451,8 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 		*work_buf_height = B2R2_GENERIC_WORK_BUF_HEIGHT;
 		*work_buf_count = n_work_bufs;
 		*node_count = n_nodes;
-		b2r2_log_info("%s DONE buf_w=%d buf_h=%d buf_count=%d "
-			"node_count=%d\n",
-			__func__,
+		b2r2_log_info(cont->dev, "%s DONE buf_w=%d buf_h=%d "
+				"buf_count=%d node_count=%d\n", __func__,
 			*work_buf_width, *work_buf_height,
 			*work_buf_count, *node_count);
 		return 0;
@@ -2447,7 +2472,8 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 
 	/* Check for degenerate/out_of_range scaling factors. */
 	if (h_scf <= 0 || v_scf <= 0 || h_scf > 0x7C00 || v_scf > 0x7C00) {
-		b2r2_log_warn("%s: Dimensions result in degenerate or "
+		b2r2_log_warn(cont->dev,
+			"%s: Dimensions result in degenerate or "
 			"out of range scaling:\n"
 			"src(w,h)=(%d, %d) "
 			"dst(w,h)=(%d,%d).\n"
@@ -2468,10 +2494,9 @@ int b2r2_generic_analyze(const struct b2r2_blt_request *req,
 	*work_buf_height = B2R2_GENERIC_WORK_BUF_HEIGHT;
 	*work_buf_count = n_work_bufs;
 	*node_count = n_nodes;
-	b2r2_log_info("%s DONE buf_w=%d buf_h=%d buf_count=%d node_count=%d\n",
-		__func__,
-		*work_buf_width, *work_buf_height, *work_buf_count,
-		*node_count);
+	b2r2_log_info(cont->dev, "%s DONE buf_w=%d buf_h=%d buf_count=%d "
+		"node_count=%d\n", __func__, *work_buf_width,
+		*work_buf_height, *work_buf_count, *node_count);
 	return 0;
 }
 
@@ -2487,6 +2512,7 @@ int b2r2_generic_configure(const struct b2r2_blt_request *req,
 	struct b2r2_work_buf *in_buf = NULL;
 	struct b2r2_work_buf *out_buf = NULL;
 	struct b2r2_work_buf *empty_buf = NULL;
+	struct b2r2_control *cont = req->instance->control;
 
 #ifdef B2R2_GENERIC_DEBUG
 	u32 needed_bufs = 0;
@@ -2498,7 +2524,8 @@ int b2r2_generic_configure(const struct b2r2_blt_request *req,
 					       &work_buf_height, &needed_bufs,
 					       &needed_nodes);
 	if (invalid_req < 0) {
-		b2r2_log_warn("%s: Invalid request supplied, ec=%d\n",
+		b2r2_log_warn(cont->dev,
+			"%s: Invalid request supplied, ec=%d\n",
 			__func__, invalid_req);
 		return -EINVAL;
 	}
@@ -2510,20 +2537,20 @@ int b2r2_generic_configure(const struct b2r2_blt_request *req,
 		node = node->next;
 	}
 	if (n_nodes < needed_nodes) {
-		b2r2_log_warn("%s: Not enough nodes %d < %d.\n",
+		b2r2_log_warn(cont->dev, "%s: Not enough nodes %d < %d.\n",
 			      __func__, n_nodes, needed_nodes);
 		return -EINVAL;
 	}
 
 	if (buf_count < needed_bufs) {
-		b2r2_log_warn("%s: Not enough buffers %d < %d.\n",
+		b2r2_log_warn(cont->dev, "%s: Not enough buffers %d < %d.\n",
 			      __func__, buf_count, needed_bufs);
 		return -EINVAL;
 	}
 
 #endif
 
-	reset_nodes(first);
+	reset_nodes(cont, first);
 	node = first;
 	empty_buf = tmp_bufs;
 	out_buf = empty_buf;
@@ -2611,8 +2638,9 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 	/* Dst coords inside the dst_rect, not the buffer */
 	s32 dst_x = dst_rect_area->x;
 	s32 dst_y = dst_rect_area->y;
+	struct b2r2_control *cont = req->instance->control;
 
-	b2r2_log_info("%s ENTRY\n", __func__);
+	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
 	if (req->user_req.transform & B2R2_BLT_TRANSFORM_CCW_ROT_90) {
 		h_scf = (src_rect->width << 10) / dst_rect->height;
@@ -2907,8 +2935,8 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 
 	if (B2R2_GENERIC_DEBUG_AREAS && dst_rect_area->x == 0 &&
 			dst_rect_area->y == 0) {
-		dump_nodes(node, false);
-		b2r2_log_debug("%s Input node done.\n", __func__);
+		dump_nodes(cont, node, false);
+		b2r2_log_debug(cont->dev, "%s Input node done.\n", __func__);
 	}
 
 	/* Transform */
@@ -2945,8 +2973,9 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 
 		if (B2R2_GENERIC_DEBUG_AREAS && dst_rect_area->x == 0 &&
 				dst_rect_area->y == 0) {
-			dump_nodes(node, false);
-			b2r2_log_debug("%s Tranform node done.\n", __func__);
+			dump_nodes(cont, node, false);
+			b2r2_log_debug(cont->dev,
+				"%s Tranform node done.\n", __func__);
 		}
 	}
 
@@ -2962,8 +2991,9 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 		 */
 		if (B2R2_GENERIC_DEBUG_AREAS && dst_rect_area->x == 0 &&
 				dst_rect_area->y == 0) {
-			dump_nodes(node, false);
-			b2r2_log_debug("%s Source mask node done.\n", __func__);
+			dump_nodes(cont, node, false);
+			b2r2_log_debug(cont->dev,
+				"%s Source mask node done.\n", __func__);
 		}
 	}
 
@@ -3079,8 +3109,8 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 
 	if (B2R2_GENERIC_DEBUG_AREAS && dst_rect_area->x == 0 &&
 			dst_rect_area->y == 0) {
-		dump_nodes(node, false);
-		b2r2_log_debug("%s dst_read node done.\n", __func__);
+		dump_nodes(cont, node, false);
+		b2r2_log_debug(cont->dev, "%s dst_read node done.\n", __func__);
 	}
 
 	/* blend */
@@ -3102,8 +3132,8 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 
 	if (B2R2_GENERIC_DEBUG_AREAS && dst_rect_area->x == 0 &&
 			dst_rect_area->y == 0) {
-		dump_nodes(node, false);
-		b2r2_log_debug("%s Blend node done.\n", __func__);
+		dump_nodes(cont, node, false);
+		b2r2_log_debug(cont->dev, "%s Blend node done.\n", __func__);
 	}
 
 	/* writeback */
@@ -3177,9 +3207,9 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 
 		if (B2R2_GENERIC_DEBUG_AREAS && dst_rect_area->x == 0 &&
 				dst_rect_area->y == 0) {
-			dump_nodes(node, false);
-			b2r2_log_debug("%s Writeback luma node done.\n",
-				__func__);
+			dump_nodes(cont, node, false);
+			b2r2_log_debug(cont->dev,
+				"%s Writeback luma node done.\n", __func__);
 		}
 
 		node = node->next;
@@ -3268,9 +3298,9 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 
 			if (B2R2_GENERIC_DEBUG_AREAS && dst_rect_area->x == 0 &&
 					dst_rect_area->y == 0) {
-				dump_nodes(node, false);
-				b2r2_log_debug("%s Writeback chroma node "
-					"%d of %d done.\n",
+				dump_nodes(cont, node, false);
+				b2r2_log_debug(cont->dev, "%s Writeback chroma "
+						"node %d of %d done.\n",
 					__func__, i + 1, n_nodes);
 			}
 
@@ -3294,10 +3324,11 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 
 		if (B2R2_GENERIC_DEBUG_AREAS && dst_rect_area->x == 0 &&
 				dst_rect_area->y == 0) {
-			dump_nodes(node, false);
-			b2r2_log_debug("%s Writeback node done.\n", __func__);
+			dump_nodes(cont, node, false);
+			b2r2_log_debug(cont->dev, "%s Writeback node done.\n",
+					__func__);
 		}
 	}
 
-	b2r2_log_info("%s DONE\n", __func__);
+	b2r2_log_info(cont->dev, "%s DONE\n", __func__);
 }

@@ -32,10 +32,10 @@ module_param(print_blts_on, bool, S_IRUGO | S_IWUSR);
 static int use_mpix_per_second_in_print_blts = 1;
 module_param(use_mpix_per_second_in_print_blts, bool, S_IRUGO | S_IWUSR);
 
-static int min_avg_max_mpix_per_second_on = 1;
-module_param(min_avg_max_mpix_per_second_on, bool, S_IRUGO | S_IWUSR);
+static int profiler_stats_on = 1;
+module_param(profiler_stats_on, bool, S_IRUGO | S_IWUSR);
 
-static const unsigned int min_avg_max_mpix_per_second_num_blts_used = 400;
+static const unsigned int profiler_stats_blts_used = 400;
 static struct {
 	unsigned long sampling_start_time_jiffies;
 
@@ -51,22 +51,27 @@ static struct {
 	s32 accumulated_num_usecs;
 
 	u32 num_blts_done;
-} min_avg_max_mpix_per_second_state;
+} profiler_stats;
 
 
 static s32 nsec_2_usec(const s32 nsec);
 
 static int is_scale_blt(const struct b2r2_blt_req * const request);
-static s32 get_blt_mpix_per_second(const struct b2r2_blt_req * const request, const struct b2r2_blt_profiling_info * const blt_profiling_info);
-static void print_blt(const struct b2r2_blt_req * const request, const struct b2r2_blt_profiling_info * const blt_profiling_info);
+static s32 get_blt_mpix_per_second(const struct b2r2_blt_req * const request,
+	const struct b2r2_blt_profiling_info * const blt_profiling_info);
+static void print_blt(const struct b2r2_blt_req * const request,
+	const struct b2r2_blt_profiling_info * const blt_profiling_info);
 
 static s32 get_num_pixels_in_blt(const struct b2r2_blt_req * const request);
 static s32 get_mpix_per_second(const s32 num_pixels, const s32 num_usecs);
-static void print_min_avg_max_mpix_per_second_state(void);
-static void reset_min_avg_max_mpix_per_second_state(void);
-static void do_min_avg_max_mpix_per_second(const struct b2r2_blt_req * const request, const struct b2r2_blt_profiling_info * const blt_profiling_info);
+static void print_profiler_stats(void);
+static void reset_profiler_stats(void);
+static void do_profiler_stats(const struct b2r2_blt_req * const request,
+	const struct b2r2_blt_profiling_info * const blt_profiling_info);
 
-static void blt_done(const struct b2r2_blt_req * const blt, const s32 request_id, const struct b2r2_blt_profiling_info * const blt_profiling_info);
+static void blt_done(const struct b2r2_blt_req * const blt,
+	const s32 request_id,
+	const struct b2r2_blt_profiling_info * const blt_profiling_info);
 
 
 static struct b2r2_profiler this = {
@@ -83,23 +88,30 @@ static s32 nsec_2_usec(const s32 nsec)
 static int is_scale_blt(const struct b2r2_blt_req * const request)
 {
 	if ((request->transform & B2R2_BLT_TRANSFORM_CCW_ROT_90 &&
-		(request->src_rect.width != request->dst_rect.height ||
-		request->src_rect.height != request->dst_rect.width)) ||
+			(request->src_rect.width !=
+				request->dst_rect.height ||
+			request->src_rect.height !=
+				request->dst_rect.width)) ||
 		(!(request->transform & B2R2_BLT_TRANSFORM_CCW_ROT_90) &&
-		(request->src_rect.width != request->dst_rect.width ||
-		request->src_rect.height != request->dst_rect.height)))
+			(request->src_rect.width !=
+				request->dst_rect.width ||
+			request->src_rect.height !=
+				request->dst_rect.height)))
 		return 1;
 	else
 		return 0;
 }
 
-static s32 get_blt_mpix_per_second(const struct b2r2_blt_req * const request, const struct b2r2_blt_profiling_info * const blt_profiling_info)
+static s32 get_blt_mpix_per_second(const struct b2r2_blt_req * const request,
+	const struct b2r2_blt_profiling_info * const blt_profiling_info)
 {
 	return get_mpix_per_second(get_num_pixels_in_blt(request),
-		nsec_2_usec(blt_profiling_info->nsec_active_in_cpu + blt_profiling_info->nsec_active_in_b2r2));
+			nsec_2_usec(blt_profiling_info->nsec_active_in_cpu +
+			blt_profiling_info->nsec_active_in_b2r2));
 }
 
-static void print_blt(const struct b2r2_blt_req * const request, const struct b2r2_blt_profiling_info * const blt_profiling_info)
+static void print_blt(const struct b2r2_blt_req * const request,
+	const struct b2r2_blt_profiling_info * const blt_profiling_info)
 {
 	char tmp_str[128];
 	sprintf(tmp_str, "SF: %#10x, DF: %#10x, F: %#10x, T: %#3x, S: %1i, P: %7i",
@@ -110,13 +122,11 @@ static void print_blt(const struct b2r2_blt_req * const request, const struct b2
 		is_scale_blt(request),
 		get_num_pixels_in_blt(request));
 	if (use_mpix_per_second_in_print_blts)
-		printk(KERN_ALERT "%s, MPix/s: %3i\n",
-			tmp_str,
+		printk(KERN_ALERT "%s, MPix/s: %3i\n", tmp_str,
 			get_blt_mpix_per_second(request, blt_profiling_info));
 	else
 		printk(KERN_ALERT "%s, CPU: %10i, B2R2: %10i, Tot: %10i ns\n",
-			tmp_str,
-			blt_profiling_info->nsec_active_in_cpu,
+			tmp_str, blt_profiling_info->nsec_active_in_cpu,
 			blt_profiling_info->nsec_active_in_b2r2,
 			blt_profiling_info->total_time_nsec);
 }
@@ -135,8 +145,10 @@ static s32 get_num_pixels_in_blt(const struct b2r2_blt_req * const request)
 
 static s32 get_mpix_per_second(const s32 num_pixels, const s32 num_usecs)
 {
-	s32 num_pixels_scale_factor = num_pixels != 0 ? S32_MAX / num_pixels : S32_MAX;
-	s32 num_usecs_scale_factor = num_usecs != 0 ? S32_MAX / num_usecs : S32_MAX;
+	s32 num_pixels_scale_factor = num_pixels != 0 ?
+		S32_MAX / num_pixels : S32_MAX;
+	s32 num_usecs_scale_factor = num_usecs != 0 ?
+		S32_MAX / num_usecs : S32_MAX;
 	s32 scale_factor = min(num_pixels_scale_factor, num_usecs_scale_factor);
 
 	s32 num_pixels_scaled = num_pixels * scale_factor;
@@ -148,82 +160,82 @@ static s32 get_mpix_per_second(const s32 num_pixels, const s32 num_usecs)
 	return (num_pixels_scaled / 1000000) / (num_usecs_scaled / 1000000);
 }
 
-static void print_min_avg_max_mpix_per_second_state(void)
+static void print_profiler_stats(void)
 {
 	printk(KERN_ALERT "Min: %3i, Avg: %3i, Max: %3i MPix/s\n",
-		min_avg_max_mpix_per_second_state.min_mpix_per_second,
-		get_mpix_per_second(min_avg_max_mpix_per_second_state.accumulated_num_pixels,
-		min_avg_max_mpix_per_second_state.accumulated_num_usecs),
-		min_avg_max_mpix_per_second_state.max_mpix_per_second);
+		profiler_stats.min_mpix_per_second,
+		get_mpix_per_second(
+			profiler_stats.accumulated_num_pixels,
+			profiler_stats.accumulated_num_usecs),
+			profiler_stats.max_mpix_per_second);
 	printk(KERN_ALERT "Min blit:\n");
-	print_blt(&min_avg_max_mpix_per_second_state.min_blt_request,
-		&min_avg_max_mpix_per_second_state.min_blt_profiling_info);
+	print_blt(&profiler_stats.min_blt_request,
+		&profiler_stats.min_blt_profiling_info);
 	printk(KERN_ALERT "Max blit:\n");
-	print_blt(&min_avg_max_mpix_per_second_state.max_blt_request,
-		&min_avg_max_mpix_per_second_state.max_blt_profiling_info);
+	print_blt(&profiler_stats.max_blt_request,
+		&profiler_stats.max_blt_profiling_info);
 }
 
-static void reset_min_avg_max_mpix_per_second_state(void)
+static void reset_profiler_stats(void)
 {
-	min_avg_max_mpix_per_second_state.sampling_start_time_jiffies =
-		jiffies;
-	min_avg_max_mpix_per_second_state.min_mpix_per_second = S32_MAX;
-	min_avg_max_mpix_per_second_state.max_mpix_per_second = 0;
-	min_avg_max_mpix_per_second_state.accumulated_num_pixels = 0;
-	min_avg_max_mpix_per_second_state.accumulated_num_usecs = 0;
-	min_avg_max_mpix_per_second_state.num_blts_done = 0;
+	profiler_stats.sampling_start_time_jiffies = jiffies;
+	profiler_stats.min_mpix_per_second = S32_MAX;
+	profiler_stats.max_mpix_per_second = 0;
+	profiler_stats.accumulated_num_pixels = 0;
+	profiler_stats.accumulated_num_usecs = 0;
+	profiler_stats.num_blts_done = 0;
 }
 
-static void do_min_avg_max_mpix_per_second(const struct b2r2_blt_req * const request, const struct b2r2_blt_profiling_info * const blt_profiling_info)
+static void do_profiler_stats(const struct b2r2_blt_req * const request,
+	const struct b2r2_blt_profiling_info * const blt_profiling_info)
 {
 	s32 num_pixels_in_blt;
 	s32 num_usec_blt_took;
 	s32 blt_mpix_per_second;
 
-	if (time_before(jiffies, min_avg_max_mpix_per_second_state.sampling_start_time_jiffies))
+	if (time_before(jiffies, profiler_stats.sampling_start_time_jiffies))
 		return;
 
 	num_pixels_in_blt = get_num_pixels_in_blt(request);
-	num_usec_blt_took = nsec_2_usec(blt_profiling_info->nsec_active_in_cpu + blt_profiling_info->nsec_active_in_b2r2);
+	num_usec_blt_took = nsec_2_usec(blt_profiling_info->nsec_active_in_cpu +
+		blt_profiling_info->nsec_active_in_b2r2);
 	blt_mpix_per_second = get_mpix_per_second(num_pixels_in_blt,
 		num_usec_blt_took);
 
-	if (blt_mpix_per_second <= min_avg_max_mpix_per_second_state.min_mpix_per_second) {
-		min_avg_max_mpix_per_second_state.min_mpix_per_second =
-			blt_mpix_per_second;
-		memcpy(&min_avg_max_mpix_per_second_state.min_blt_request,
+	if (blt_mpix_per_second <=
+			profiler_stats.min_mpix_per_second) {
+		profiler_stats.min_mpix_per_second = blt_mpix_per_second;
+		memcpy(&profiler_stats.min_blt_request,
 			request, sizeof(struct b2r2_blt_req));
-		memcpy(&min_avg_max_mpix_per_second_state.min_blt_profiling_info,
+		memcpy(&profiler_stats.min_blt_profiling_info,
+			blt_profiling_info,
+			sizeof(struct b2r2_blt_profiling_info));
+	}
+
+	if (blt_mpix_per_second >= profiler_stats.max_mpix_per_second) {
+		profiler_stats.max_mpix_per_second = blt_mpix_per_second;
+		memcpy(&profiler_stats.max_blt_request, request,
+			sizeof(struct b2r2_blt_req));
+		memcpy(&profiler_stats.max_blt_profiling_info,
 			blt_profiling_info, sizeof(struct b2r2_blt_profiling_info));
 	}
 
-	if (blt_mpix_per_second >= min_avg_max_mpix_per_second_state.max_mpix_per_second) {
-		min_avg_max_mpix_per_second_state.max_mpix_per_second =
-			blt_mpix_per_second;
-		memcpy(&min_avg_max_mpix_per_second_state.max_blt_request,
-			request, sizeof(struct b2r2_blt_req));
-		memcpy(&min_avg_max_mpix_per_second_state.max_blt_profiling_info,
-			blt_profiling_info, sizeof(struct b2r2_blt_profiling_info));
-	}
+	profiler_stats.accumulated_num_pixels += num_pixels_in_blt;
+	profiler_stats.accumulated_num_usecs += num_usec_blt_took;
+	profiler_stats.num_blts_done++;
 
-	min_avg_max_mpix_per_second_state.accumulated_num_pixels +=
-		num_pixels_in_blt;
-	min_avg_max_mpix_per_second_state.accumulated_num_usecs +=
-		num_usec_blt_took;
-
-	min_avg_max_mpix_per_second_state.num_blts_done++;
-
-	if (min_avg_max_mpix_per_second_state.num_blts_done >= min_avg_max_mpix_per_second_num_blts_used) {
-		print_min_avg_max_mpix_per_second_state();
-		reset_min_avg_max_mpix_per_second_state();
+	if (profiler_stats.num_blts_done >= profiler_stats_blts_used) {
+		print_profiler_stats();
+		reset_profiler_stats();
 		/* The printouts initiated above can disturb the next measurement
 		so we delay it two seconds to give the printouts a chance to finish. */
-		min_avg_max_mpix_per_second_state.sampling_start_time_jiffies =
-			jiffies + (2 * HZ);
+		profiler_stats.sampling_start_time_jiffies = jiffies + (2 * HZ);
 	}
 }
 
-static void blt_done(const struct b2r2_blt_req * const request, const s32 request_id, const struct b2r2_blt_profiling_info * const blt_profiling_info)
+static void blt_done(const struct b2r2_blt_req * const request,
+		const s32 request_id,
+		const struct b2r2_blt_profiling_info * const blt_profiling_info)
 {
 	/* Filters */
 	if (src_format_filter_on && request->src_img.fmt != src_format_filter)
@@ -233,14 +245,14 @@ static void blt_done(const struct b2r2_blt_req * const request, const s32 reques
 	if (print_blts_on)
 		print_blt(request, blt_profiling_info);
 
-	if (min_avg_max_mpix_per_second_on)
-		do_min_avg_max_mpix_per_second(request, blt_profiling_info);
+	if (profiler_stats_on)
+		do_profiler_stats(request, blt_profiling_info);
 }
 
 
 static int __init b2r2_profiler_init(void)
 {
-	reset_min_avg_max_mpix_per_second_state();
+	reset_profiler_stats();
 
 	return b2r2_register_profiler(&this);
 }
