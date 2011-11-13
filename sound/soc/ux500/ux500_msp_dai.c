@@ -351,6 +351,7 @@ static void ux500_msp_dai_setup_clocking(unsigned int fmt,
 		msp_config->rx_frame_sync_pol =
 			MSP_FRAME_SYNC_POL_ACTIVE_LOW << RFSPOL_SHIFT;
 		break;
+
 	}
 
 	if ((fmt & SND_SOC_DAIFMT_MASTER_MASK) == SND_SOC_DAIFMT_CBM_CFM) {
@@ -362,7 +363,6 @@ static void ux500_msp_dai_setup_clocking(unsigned int fmt,
 		msp_config->tx_clock_sel = 0;
 		msp_config->rx_clock_sel = 0;
 		msp_config->srg_clock_sel = 0x2 << SCKSEL_SHIFT;
-		msp_config->iodelay = 0x20;
 
 	} else {
 		pr_debug("%s: Codec is SLAVE.\n",
@@ -427,8 +427,8 @@ static void ux500_msp_dai_compile_prot_desc_i2s(struct msp_protocol_desc *prot_d
 	prot_desc->tx_element_length_1 = MSP_ELEM_LENGTH_16;
 	prot_desc->tx_element_length_2 = MSP_ELEM_LENGTH_16;
 
-	prot_desc->rx_clock_pol = MSP_FALLING_EDGE;
-	prot_desc->tx_clock_pol = MSP_FALLING_EDGE;
+	prot_desc->rx_clock_pol = MSP_RISING_EDGE;
+	prot_desc->tx_clock_pol = MSP_RISING_EDGE;
 
 	prot_desc->tx_half_word_swap = MSP_HWS_NO_SWAP;
 	prot_desc->rx_half_word_swap = MSP_HWS_NO_SWAP;
