@@ -352,6 +352,13 @@ static void ux500_msp_dai_setup_clocking(unsigned int fmt,
 			MSP_FRAME_SYNC_POL_ACTIVE_LOW << RFSPOL_SHIFT;
 		break;
 
+	case SND_SOC_DAIFMT_IB_IF:
+		msp_config->iodelay = 0x20;
+		msp_config->protocol_desc.tx_clock_pol = 1;
+		msp_config->tx_frame_sync_pol = 1 << TFSPOL_SHIFT;
+		msp_config->protocol_desc.rx_clock_pol = 1;
+		msp_config->rx_frame_sync_pol = 1 << RFSPOL_SHIFT;
+		break;
 	}
 
 	if ((fmt & SND_SOC_DAIFMT_MASTER_MASK) == SND_SOC_DAIFMT_CBM_CFM) {
@@ -665,6 +672,7 @@ static int ux500_msp_dai_set_dai_fmt(struct snd_soc_dai *dai,
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF:
 	case SND_SOC_DAIFMT_NB_IF:
+	case SND_SOC_DAIFMT_IB_IF:
 		break;
 
 	default:
