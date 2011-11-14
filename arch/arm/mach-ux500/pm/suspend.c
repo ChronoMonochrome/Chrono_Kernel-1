@@ -12,6 +12,7 @@
 #include <linux/suspend.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/gpio/nomadik.h>
+#include <linux/regulator/machine.h>
 #include <linux/regulator/ab8500-debug.h>
 #include <linux/regulator/dbx500-prcmu.h>
 #include <linux/mfd/dbx500-prcmu.h>
@@ -23,6 +24,8 @@
 
 static void (*pins_suspend_force)(void);
 static void (*pins_suspend_force_mux)(void);
+
+static suspend_state_t suspend_state = PM_SUSPEND_ON;
 
 void suspend_set_pins_force_fn(void (*force)(void), void (*force_mux)(void))
 {
@@ -194,10 +197,22 @@ static int ux500_suspend_valid(suspend_state_t state)
 	return state == PM_SUSPEND_MEM || state == PM_SUSPEND_STANDBY;
 }
 
+static int ux500_suspend_prepare(void)
+{
+	int ret;
+
+	ret = regulator_suspend_prepare(suspend_state);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
+
 static int ux500_suspend_prepare_late(void)
 {
 	/* ESRAM to retention instead of OFF until ROM is fixed */
 	(void) prcmu_config_esram0_deep_sleep(ESRAM0_DEEP_SLEEP_STATE_RET);
+
 	ab8500_regulator_debug_force();
 	ux500_regulator_suspend_debug();
 	return 0;
@@ -210,10 +225,16 @@ static void ux500_suspend_wake(void)
 	(void) prcmu_config_esram0_deep_sleep(ESRAM0_DEEP_SLEEP_STATE_RET);
 }
 
+static void ux500_suspend_finish(void)
+{
+	(void)regulator_suspend_finish();
+}
+
 static int ux500_suspend_begin(suspend_state_t state)
 {
 	(void) prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
 					    "suspend", 125);
+	suspend_state = state;
 	return ux500_suspend_dbg_begin(state);
 }
 
@@ -221,13 +242,16 @@ static void ux500_suspend_end(void)
 {
 	(void) prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
 					    "suspend", 25);
+	suspend_state = PM_SUSPEND_ON;
 }
 
 static struct platform_suspend_ops ux500_suspend_ops = {
 	.enter	      = ux500_suspend_enter,
 	.valid	      = ux500_suspend_valid,
+	.prepare      = ux500_suspend_prepare,
 	.prepare_late = ux500_suspend_prepare_late,
 	.wake	      = ux500_suspend_wake,
+	.finish       = ux500_suspend_finish,
 	.begin	      = ux500_suspend_begin,
 	.end	      = ux500_suspend_end,
 };
