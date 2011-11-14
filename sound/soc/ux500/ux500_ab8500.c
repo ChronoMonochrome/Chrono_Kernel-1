@@ -178,7 +178,7 @@ err_get:
 
 static int ux500_ab8500_power_control_inc(void)
 {
-	int ret;
+	int ret = 0;
 
 	mutex_lock(&power_lock);
 
@@ -192,6 +192,9 @@ static int ux500_ab8500_power_control_inc(void)
 		/* Turn on audio-regulator */
 		ret = enable_regulator(REGULATOR_AUDIO);
 
+		if (ret)
+			goto out;
+
 		/* Enable audio-clock */
 		ret = clk_set_parent(clk_ptr_intclk,
 				(master_clock_sel == 0) ? clk_ptr_sysclk : clk_ptr_ulpclk);
@@ -200,7 +203,7 @@ static int ux500_ab8500_power_control_inc(void)
 				__func__,
 				(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK",
 				ret);
-			return ret;
+			goto clk_err;
 		}
 		pr_debug("%s: Enabling master-clock (%s).",
 			__func__,
@@ -209,16 +212,20 @@ static int ux500_ab8500_power_control_inc(void)
 		if (ret) {
 			pr_err("%s: ERROR: clk_enable failed (ret = %d)!", __func__, ret);
 			ab8500_power_count = 0;
-			return ret;
+			goto clk_err;
 		}
 
 		/* Power on audio-parts of AB8500 */
 		ab8500_audio_power_control(true);
 	}
 
+clk_err:
+	disable_regulator(REGULATOR_AUDIO);
+
+out:
 	mutex_unlock(&power_lock);
 
-	return 0;
+	return ret;
 }
 
 static void ux500_ab8500_power_control_dec(void)
