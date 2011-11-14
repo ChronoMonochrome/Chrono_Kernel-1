@@ -6,7 +6,7 @@ obj-y				:= clock.o cpu.o devices.o \
 				   devices-common.o id.o pins.o \
 				   usb.o reboot_reasons.o timer.o \
 				   uart-db8500.o clock-debug.o
-obj-y				+= pm/
+obj-y				+= pm/ test/
 obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o
 
 

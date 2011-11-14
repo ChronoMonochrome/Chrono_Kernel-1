@@ -204,5 +204,6 @@ config UX500_DB_DUMP
 	  and saves it.
 
 source "arch/arm/mach-ux500/pm/Kconfig"
+source "arch/arm/mach-ux500/test/Kconfig"
 
 endif
