@@ -1564,6 +1564,7 @@ static int __devinit mmci_probe(struct amba_device *dev,
 	if (host->vcc == NULL)
 		mmc->ocr_avail = plat->ocr_mask;
 	mmc->caps = plat->capabilities;
+	mmc->caps2 = plat->capabilities2;
 
 	/* We support these PM capabilities. */
 	mmc->pm_caps = MMC_PM_KEEP_POWER;
