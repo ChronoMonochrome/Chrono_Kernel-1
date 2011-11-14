@@ -127,6 +127,7 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 	.port = &sony_port0,
 	.chnl_id = MCDE_CHNL_A,
 	.fifo = MCDE_FIFO_A,
+	.orientation = MCDE_DISPLAY_ROT_180_CW,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
 #ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	.synchronized_update = true,
@@ -149,6 +150,7 @@ static struct mcde_display_device samsung_s6d16d0_display1 = {
 	.id = SECONDARY_DISPLAY_ID,
 	.chnl_id = MCDE_CHNL_C1,
 	.fifo = MCDE_FIFO_C1,
+	.orientation = MCDE_DISPLAY_ROT_90_CCW,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
 	.synchronized_update = false,
 	.dev = {
@@ -347,7 +349,6 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	struct mcde_display_device *ddev = dev;
 	u16 width, height;
 	u16 virtual_height;
-	u32 rotate = FB_ROTATE_UR;
 	struct fb_info *fbi;
 #if defined(CONFIG_DISPDEV) || defined(CONFIG_COMPDEV)
 	struct mcde_fb *mfb;
@@ -360,13 +361,6 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		return 0;
 
 	mcde_dss_get_native_resolution(ddev, &width, &height);
-
-	if ((uib_is_u8500uib() || uib_is_stuib()) &&
-					ddev->id == PRIMARY_DISPLAY_ID) {
-		rotate = FB_ROTATE_CW;
-		swap(width, height);
-	}
-
 	virtual_height = height * 2;
 
 #ifndef CONFIG_MCDE_DISPLAY_HDMI_FB_AUTO_CREATE
@@ -376,7 +370,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 
 	/* Create frame buffer */
 	fbi = mcde_fb_create(ddev, width, height, width, virtual_height,
-					ddev->default_pixel_format, rotate);
+				ddev->default_pixel_format, FB_ROTATE_UR);
 	if (IS_ERR(fbi)) {
 		dev_warn(&ddev->dev,
 			"Failed to create fb for display %s\n", ddev->name);
@@ -445,10 +439,6 @@ static int __init init_display_devices(void)
 		samsung_s6d16d0_pdata1.reset_gpio = MOP500_DISP2_RST_GPIO;
 	}
 
-	/* Not all STUIBs supports VSYNC, disable vsync for STUIB */
-	if (uib_is_stuib())
-		samsung_s6d16d0_display0.synchronized_update = false;
-
 	/* Initialize all needed clocks*/
 	if (!display_initialized_during_boot) {
 		struct clk *clk_dsi_pll;
@@ -490,12 +480,20 @@ static int __init init_display_devices(void)
 		clk_put(clk_dsi_pll);
 	}
 
-	if (uib_is_u8500uib() || uib_is_stuib())
-		/* Samsung display on U8500 and ST UIB */
+	/* Not all STUIBs supports VSYNC, disable vsync for STUIB */
+	if (uib_is_stuib()) {
+		/* Samsung display on STUIB */
+		samsung_s6d16d0_display0.synchronized_update = false;
+		samsung_s6d16d0_display0.orientation = MCDE_DISPLAY_ROT_90_CCW;
 		(void)mcde_display_device_register(&samsung_s6d16d0_display0);
-	else if (uib_is_u8500uibr3())
+	} else if (uib_is_u8500uib()) {
+		/* Samsung display on U8500UIB */
+		samsung_s6d16d0_display0.orientation = MCDE_DISPLAY_ROT_90_CW;
+		(void)mcde_display_device_register(&samsung_s6d16d0_display0);
+	} else if (uib_is_u8500uibr3()) {
 		/* Sony display on U8500UIBV3 */
 		(void)mcde_display_device_register(&sony_acx424akp_display0);
+	}
 	else
 		pr_warning("Unknown UI board\n");
 
