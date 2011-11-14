@@ -45,29 +45,6 @@ config MCDE_DISPLAY_PRIMARY_32BPP
 
 endchoice
 
-choice DISPLAY_GENERIC_DSI_PRIMARY_ROTATION
-	prompt "Enable main display rotation"
-	default DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_90
-	help
-	  Set rotation of main display
-
-config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_0
-	bool "0 degrees"
-config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_90
-	bool "90 degrees"
-config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_180
-	bool "180 degrees"
-config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_270
-	bool "270 degrees"
-endchoice
-
-config DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE
-	int
-	default "0" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_0
-	default "90" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_90
-	default "180" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_180
-	default "270" if DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_270
-
 config DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
 	bool "Enable v-sync for primary display"
 	default n
