@@ -1087,16 +1087,6 @@ static int __init init_clock_states(void)
 			clk_disable(loader_enabled_clk[i]);
 
 	/*
-	 * The following clks are shared with secure world.
-	 * Currently this leads to a limitation where we need to
-	 * enable them at all times.
-	 */
-	clk_enable(&p6_pclk1);
-	clk_enable(&p6_pclk2);
-	clk_enable(&p6_pclk3);
-	clk_enable(&p6_rng_clk);
-
-	/*
 	 * APEATCLK and APETRACECLK are enabled at boot and needed
 	 * in order to debug with Lauterbach
 	 */
