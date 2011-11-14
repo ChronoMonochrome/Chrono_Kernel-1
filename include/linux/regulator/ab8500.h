@@ -162,6 +162,7 @@ enum ab8500_ext_regulator_id {
 	AB8500_NUM_EXT_REGULATORS,
 };
 
+/* AB8500 regulator platform data */
 struct ab8500_regulator_platform_data {
 	int num_reg_init;
 	struct ab8500_regulator_reg_init *reg_init;
@@ -171,6 +172,7 @@ struct ab8500_regulator_platform_data {
 	struct regulator_init_data *ext_regulator;
 };
 
+/* AB8500 external regulator functions (internal) */
 #ifdef CONFIG_REGULATOR_AB8500_EXT
 __devinit int ab8500_ext_regulator_init(struct platform_device *pdev);
 __devexit int ab8500_ext_regulator_exit(struct platform_device *pdev);

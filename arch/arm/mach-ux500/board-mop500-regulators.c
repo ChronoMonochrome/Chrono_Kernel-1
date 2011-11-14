@@ -339,7 +339,7 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
 	/*
 	 * VextSupply1Regu          = HW control
 	 * VextSupply2Regu          = HW control
-	 * VextSupply3Regu          = Low Power mode
+	 * VextSupply3Regu          = force HP (-> STBB2=LP and TPS=LP)
 	 * ExtSupply2Bypass         = ExtSupply12LPn ball is 0 when Ena is 0
 	 * ExtSupply3Bypass         = ExtSupply3LPn ball is 0 when Ena is 0
 	 */

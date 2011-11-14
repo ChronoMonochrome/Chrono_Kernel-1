@@ -28,7 +28,7 @@
  * struct ab8500_ext_regulator_info - ab8500 regulator information
  * @dev: device pointer
  * @desc: regulator description
- * @regulator_dev: regulator device
+ * @rdev: regulator device
  * @is_enabled: status of regulator (on/off)
  * @fixed_uV: typical voltage (for fixed voltage supplies)
  * @update_bank: bank to control on/off
@@ -44,7 +44,7 @@
 struct ab8500_ext_regulator_info {
 	struct device *dev;
 	struct regulator_desc desc;
-	struct regulator_dev *regulator;
+	struct regulator_dev *rdev;
 	bool is_enabled;
 	int fixed_uV;
 	u8 update_bank;
@@ -69,7 +69,7 @@ static int ab8500_ext_regulator_enable(struct regulator_dev *rdev)
 		info->update_bank, info->update_reg,
 		info->update_mask, info->update_val);
 	if (ret < 0)
-		dev_err(rdev_get_dev(rdev),
+		dev_err(rdev_get_dev(info->rdev),
 			"couldn't set enable bits for regulator\n");
 
 	info->is_enabled = true;
@@ -96,7 +96,7 @@ static int ab8500_ext_regulator_disable(struct regulator_dev *rdev)
 		info->update_bank, info->update_reg,
 		info->update_mask, 0x0);
 	if (ret < 0)
-		dev_err(rdev_get_dev(rdev),
+		dev_err(rdev_get_dev(info->rdev),
 			"couldn't set disable bits for regulator\n");
 
 	info->is_enabled = false;
@@ -249,21 +249,21 @@ __devinit int ab8500_ext_regulator_init(struct platform_device *pdev)
 		info->dev = &pdev->dev;
 
 		/* register regulator with framework */
-		info->regulator = regulator_register(&info->desc, &pdev->dev,
+		info->rdev = regulator_register(&info->desc, &pdev->dev,
 				&pdata->ext_regulator[i], info, NULL);
-		if (IS_ERR(info->regulator)) {
-			err = PTR_ERR(info->regulator);
+		if (IS_ERR(info->rdev)) {
+			err = PTR_ERR(info->rdev);
 			dev_err(&pdev->dev, "failed to register regulator %s\n",
 					info->desc.name);
 			/* when we fail, un-register all earlier regulators */
 			while (--i >= 0) {
 				info = &ab8500_ext_regulator_info[i];
-				regulator_unregister(info->regulator);
+				regulator_unregister(info->rdev);
 			}
 			return err;
 		}
 
-		dev_dbg(rdev_get_dev(info->regulator),
+		dev_dbg(rdev_get_dev(info->rdev),
 			"%s-probed\n", info->desc.name);
 	}
 
@@ -278,10 +278,10 @@ __devexit int ab8500_ext_regulator_exit(struct platform_device *pdev)
 		struct ab8500_ext_regulator_info *info = NULL;
 		info = &ab8500_ext_regulator_info[i];
 
-		dev_vdbg(rdev_get_dev(info->regulator),
+		dev_vdbg(rdev_get_dev(info->rdev),
 			"%s-remove\n", info->desc.name);
 
-		regulator_unregister(info->regulator);
+		regulator_unregister(info->rdev);
 	}
 
 	return 0;
