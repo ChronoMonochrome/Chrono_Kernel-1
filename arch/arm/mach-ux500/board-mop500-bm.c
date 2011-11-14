@@ -409,7 +409,7 @@ struct ab8500_bm_data ab8500_bm_data = {
 #endif
 	.chg_unknown_bat	= false,
 	.enable_overshoot	= false,
-	.fg_res			= 10,
+	.fg_res			= 100,
 	.cap_levels		= &cap_levels,
 	.bat_type		= bat_type,
 	.n_btypes		= ARRAY_SIZE(bat_type),
