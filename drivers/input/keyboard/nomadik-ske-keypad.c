@@ -812,7 +812,7 @@ static int ske_keypad_resume(struct device *dev)
 	if (device_may_wakeup(dev))
 		disable_irq_wake(irq);
 	else {
-		if (keypad->enable_on_resume) {
+		if (keypad->enable_on_resume && !keypad->enable) {
 			keypad->enable = true;
 			ske_mode_enable(keypad, true);
 			/*
