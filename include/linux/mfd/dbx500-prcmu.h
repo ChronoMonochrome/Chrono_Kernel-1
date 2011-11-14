@@ -452,7 +452,7 @@ void prcmu_ac_sleep_req(void);
 static inline void prcmu_modem_reset(void)
 {
 	if (cpu_is_u5500())
-		return;
+		return db5500_prcmu_modem_reset();
 	else
 		return db8500_prcmu_modem_reset();
 }

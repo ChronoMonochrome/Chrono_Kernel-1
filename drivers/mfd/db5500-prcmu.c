@@ -163,6 +163,7 @@ enum mb4_header {
 	MB4H_CFG_HOTDOG = 7,
 	MB4H_CFG_HOTMON = 8,
 	MB4H_CFG_HOTPERIOD = 10,
+	MB4H_CGF_MODEM_RESET = 13,
 };
 
 /* Mailbox 4 ACK headers */
@@ -170,6 +171,7 @@ enum mb4_ack_header {
 	MB4H_ACK_CFG_HOTDOG = 5,
 	MB4H_ACK_CFG_HOTMON = 6,
 	MB4H_ACK_CFG_HOTPERIOD = 8,
+	MB4H_ACK_CFG_MODEM_RESET = 11,
 };
 
 /* Mailbox 5 headers. */
@@ -601,6 +603,31 @@ unlock_and_return:
 void prcmu_ape_ack(void)
 {
 	writel(PRCM_APE_ACK_BIT, (_PRCMU_BASE + PRCM_APE_ACK));
+}
+
+/**
+ * db5500_prcmu_modem_reset - Assert a Reset on modem
+ *
+ * This function will assert a reset request to the modem. Prior to that
+ * PRCM_HOSTACCESS_REQ must be '0'.
+ */
+void db5500_prcmu_modem_reset(void)
+{
+	mutex_lock(&mb4_transfer.lock);
+
+	/* PRCM_HOSTACCESS_REQ = 0, before asserting a reset */
+	prcmu_modem_rel();
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(4))
+		cpu_relax();
+
+	writeb(MB4H_CGF_MODEM_RESET, PRCM_REQ_MB4_HEADER);
+	writel(MBOX_BIT(4), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
+	wait_for_completion(&mb4_transfer.work);
+	if (mb4_transfer.ack.status != RC_SUCCESS ||
+			mb4_transfer.ack.header != MB4H_CGF_MODEM_RESET)
+		printk(KERN_ERR,
+				"ACK not received for modem reset interrupt\n");
+	mutex_unlock(&mb4_transfer.lock);
 }
 
 /**
@@ -1823,6 +1850,7 @@ static bool read_mailbox_4(void)
 	case MB4H_ACK_CFG_HOTDOG:
 	case MB4H_ACK_CFG_HOTMON:
 	case MB4H_ACK_CFG_HOTPERIOD:
+	case MB4H_ACK_CFG_MODEM_RESET:
 		mb4_transfer.ack.status = readb(PRCM_ACK_MB4_REQUESTS);
 		break;
 	default:

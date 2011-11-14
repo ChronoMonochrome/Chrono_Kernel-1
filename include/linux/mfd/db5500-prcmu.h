@@ -33,6 +33,7 @@ void prcmu_modem_rel(void);
 void prcmu_ape_ack(void);
 #endif
 bool db5500_prcmu_is_modem_requested(void);
+void db5500_prcmu_modem_reset(void);
 int db5500_prcmu_set_arm_opp(u8 opp);
 int db5500_prcmu_get_arm_opp(void);
 int db5500_prcmu_set_ape_opp(u8 opp);
@@ -141,6 +142,7 @@ static inline u16 db5500_prcmu_get_reset_code(void)
 	return 0;
 }
 
+static inline void db5500_prcmu_modem_reset(void) {}
 static inline bool db5500_prcmu_is_modem_requested(void)
 {
 	return 0;
