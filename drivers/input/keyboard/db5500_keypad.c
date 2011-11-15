@@ -54,6 +54,7 @@
  * @gpio_work : delayed work variable for reporting key event in gpio mode
  * @previous_set: previous set of registers
  * @enable : flag to enable the driver event
+ * @enable_on_resume:   set if keypad should be enabled on resume
  * @valid_key : hold the state of valid key press
  * @db5500_rows : rows gpio array for db5500 keypad
  * @db5500_cols : cols gpio array for db5500 keypad
@@ -73,6 +74,7 @@ struct db5500_keypad {
 	struct delayed_work gpio_work;
 	u8 previous_set[KEYPAD_MAX_ROWS];
 	bool enable;
+	bool enable_on_resume;
 	bool valid_key;
 	int db5500_rows[KEYPAD_MAX_ROWS];
 	int db5500_cols[KEYPAD_MAX_COLS];
@@ -707,6 +709,7 @@ static int db5500_keypad_suspend(struct device *dev)
 		cancel_delayed_work_sync(&keypad->gpio_work);
 		cancel_delayed_work_sync(&keypad->switch_work);
 		disable_irq(irq);
+		keypad->enable_on_resume = keypad->enable;
 		if (keypad->enable) {
 			db5500_mode_enable(keypad, false);
 			keypad->enable = false;
@@ -732,9 +735,15 @@ static int db5500_keypad_resume(struct device *dev)
 	if (device_may_wakeup(dev))
 		disable_irq_wake(irq);
 	else {
-		if (!keypad->enable) {
+		if (keypad->enable_on_resume && !keypad->enable) {
 			keypad->enable = true;
 			db5500_mode_enable(keypad, true);
+			/*
+			 * Schedule the work queue to change it to GPIO mode
+			 * if there is no activity keypad mode
+			 */
+			 schedule_delayed_work(&keypad->switch_work,
+				 keypad->board->switch_delay);
 		}
 		enable_irq(irq);
 	}
