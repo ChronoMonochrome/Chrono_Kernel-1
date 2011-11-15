@@ -1411,6 +1411,14 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 	struct mmc_blk_data *md = mq->data;
 	struct mmc_card *card = md->queue.card;
 
+	/*
+	 * We must make sure we have not claimed the host before
+	 * doing a flush to prevent deadlock, thus we check if
+	 * the host needs a resume first.
+	 */
+	if (mmc_host_needs_resume(card->host))
+		mmc_resume_host_sync(card->host);
+
 	if (req && !mq->mqrq_prev->req)
 		/* claim host only for the first request */
 		mmc_claim_host(card->host);

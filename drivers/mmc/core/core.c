@@ -2010,7 +2010,7 @@ void mmc_rescan(struct work_struct *work)
 		container_of(work, struct mmc_host, detect.work);
 	int i;
 
-	if (host->rescan_disable)
+	if (host->rescan_disable || mmc_host_needs_resume(host))
 		return;
 
 	mmc_bus_get(host);
@@ -2273,7 +2273,12 @@ int mmc_suspend_host(struct mmc_host *host)
 	int err = 0;
 
 	cancel_delayed_work(&host->detect);
+	cancel_delayed_work_sync(&host->resume);
 	mmc_flush_scheduled_work();
+
+	/* Skip suspend, if deferred resume were scheduled but not completed. */
+	if (mmc_host_needs_resume(host))
+		return 0;
 
 	err = mmc_cache_ctrl(host, 0);
 	if (err)
@@ -2300,6 +2305,10 @@ int mmc_suspend_host(struct mmc_host *host)
 			mmc_release_host(host);
 			host->pm_flags = 0;
 			err = 0;
+		} else if (mmc_card_mmc(host->card) ||
+			   mmc_card_sd(host->card)) {
+			host->pm_state |= MMC_HOST_DEFERRED_RESUME |
+					  MMC_HOST_NEEDS_RESUME;
 		}
 	}
 	mmc_bus_put(host);
@@ -2320,6 +2329,12 @@ EXPORT_SYMBOL(mmc_suspend_host);
 int mmc_resume_host(struct mmc_host *host)
 {
 	int err = 0;
+
+	if (mmc_host_deferred_resume(host)) {
+		mmc_schedule_delayed_work(&host->resume,
+					  msecs_to_jiffies(3000));
+		return 0;
+	}
 
 	mmc_bus_get(host);
 	if (host->bus_ops && !host->bus_dead) {
@@ -2354,6 +2369,24 @@ int mmc_resume_host(struct mmc_host *host)
 	return err;
 }
 EXPORT_SYMBOL(mmc_resume_host);
+
+void mmc_resume_work(struct work_struct *work)
+{
+	struct mmc_host *host =
+		container_of(work, struct mmc_host, resume.work);
+
+	host->pm_state &= ~MMC_HOST_DEFERRED_RESUME;
+	mmc_resume_host(host);
+	host->pm_state &= ~MMC_HOST_NEEDS_RESUME;
+
+	mmc_detect_change(host, 0);
+}
+
+void mmc_resume_host_sync(struct mmc_host *host)
+{
+	flush_delayed_work_sync(&host->resume);
+}
+EXPORT_SYMBOL(mmc_resume_host_sync);
 
 /* Do the card removal on suspend if card is assumed removeable
  * Do that in pm notifier while userspace isn't yet frozen, so we will be able
