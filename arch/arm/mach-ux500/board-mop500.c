@@ -117,7 +117,8 @@ static struct platform_device snowball_led_dev = {
 static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	.gpio_base		= AB8500_PIN_GPIO1,
 	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
-	/* config_reg is the initial configuration of ab8500 pins.
+	/*
+	 * config_reg is the initial configuration of ab8500 pins.
 	 * The pins can be configured as GPIO or alt functions based
 	 * on value present in GpioSel1 to GpioSel6 and AlternatFunction
 	 * register. This is the array of 7 configuration settings.
@@ -131,16 +132,17 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 * GpioSel3 = 0x80 => Pin GPIO24 (SysClkReq7) is configured as GPIO
 	 * GpioSel4 = 0x01 => Pin GPIO25 (SysClkReq8) is configured as GPIO
 	 * GpioSel5 = 0x78 => Pin GPIO36 (ApeSpiClk)
-			      Pin GPIO37 (ApeSpiCSn)
-			      Pin GPIO38 (ApeSpiDout)
-			      Pin GPIO39 (ApeSpiDin) are configured as GPIO
+	 *		      Pin GPIO37 (ApeSpiCSn)
+	 *		      Pin GPIO38 (ApeSpiDout)
+	 *		      Pin GPIO39 (ApeSpiDin) are configured as GPIO
 	 * GpioSel6 = 0x02 => Pin GPIO42 (SysClkReq5) is configured as GPIO
 	 * AlternaFunction = 0x00 => If Pins GPIO10 to 13 are not configured
 	 * as GPIO then this register selectes the alternate fucntions
 	 */
 	.config_reg     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x02, 0x00},
 
-	/* config_direction allows for the initial GPIO direction to
+	/*
+	 * config_direction allows for the initial GPIO direction to
 	 * be set. For Snowball we set GPIO26 to output.
 	 */
 	.config_direction  = {0x00, 0x00, 0x00, 0x02, 0x00, 0x00},
@@ -173,61 +175,61 @@ static struct abx500_accdet_platform_data ab8500_accdet_pdata = {
 
 static struct gpio_keys_button snowball_key_array[] = {
 	{
-		.gpio           = 32,
-		.type           = EV_KEY,
-		.code           = KEY_1,
-		.desc           = "userpb",
+		.gpio		= 32,
+		.type		= EV_KEY,
+		.code		= KEY_1,
+		.desc		= "userpb",
 		.active_low     = 1,
 		.debounce_interval = 50,
-		.wakeup         = 1,
+		.wakeup		= 1,
 	},
 	{
-		.gpio           = 151,
-		.type           = EV_KEY,
-		.code           = KEY_2,
-		.desc           = "extkb1",
+		.gpio		= 151,
+		.type		= EV_KEY,
+		.code		= KEY_2,
+		.desc		= "extkb1",
 		.active_low     = 1,
 		.debounce_interval = 50,
-		.wakeup         = 1,
+		.wakeup		= 1,
 	},
 	{
-		.gpio           = 152,
-		.type           = EV_KEY,
-		.code           = KEY_3,
-		.desc           = "extkb2",
+		.gpio		= 152,
+		.type		= EV_KEY,
+		.code		= KEY_3,
+		.desc		= "extkb2",
 		.active_low     = 1,
 		.debounce_interval = 50,
-		.wakeup         = 1,
+		.wakeup		= 1,
 	},
 	{
-		.gpio           = 161,
-		.type           = EV_KEY,
-		.code           = KEY_4,
-		.desc           = "extkb3",
+		.gpio		= 161,
+		.type		= EV_KEY,
+		.code		= KEY_4,
+		.desc		= "extkb3",
 		.active_low     = 1,
 		.debounce_interval = 50,
-		.wakeup         = 1,
+		.wakeup		= 1,
 	},
 	{
-		.gpio           = 162,
-		.type           = EV_KEY,
-		.code           = KEY_5,
-		.desc           = "extkb4",
+		.gpio		= 162,
+		.type		= EV_KEY,
+		.code		= KEY_5,
+		.desc		= "extkb4",
 		.active_low     = 1,
 		.debounce_interval = 50,
-		.wakeup         = 1,
+		.wakeup		= 1,
 	},
 };
 
 static struct gpio_keys_platform_data snowball_key_data = {
-	.buttons        = snowball_key_array,
+	.buttons	= snowball_key_array,
 	.nbuttons       = ARRAY_SIZE(snowball_key_array),
 };
 
 static struct platform_device snowball_key_dev = {
-	.name           = "gpio-keys",
-	.id             = -1,
-	.dev            = {
+	.name		= "gpio-keys",
+	.id		= -1,
+	.dev		= {
 		.platform_data  = &snowball_key_data,
 	}
 };
@@ -254,10 +256,10 @@ static struct resource sbnet_res[] = {
 };
 
 static struct platform_device snowball_sbnet_dev = {
-	.name           = "smsc911x",
+	.name		= "smsc911x",
 	.num_resources  = ARRAY_SIZE(sbnet_res),
 	.resource       = sbnet_res,
-	.dev            = {
+	.dev		= {
 		.platform_data = &snowball_sbnet_cfg,
 	},
 };
@@ -311,8 +313,6 @@ struct platform_device ab8500_device = {
 	.num_resources = 1,
 	.resource = ab8500_resources,
 };
-
-
 
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
 
@@ -405,7 +405,6 @@ static int ske_kp_exit(void)
 
 	return 0;
 }
-
 
 static const unsigned int mop500_ske_keymap[] = {
 #if defined(CONFIG_KEYLAYOUT_LAYOUT1)
