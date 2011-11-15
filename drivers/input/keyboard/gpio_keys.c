@@ -29,6 +29,7 @@
 #include <linux/of_platform.h>
 #include <linux/of_gpio.h>
 #include <linux/spinlock.h>
+#include <linux/pm_runtime.h>
 
 struct gpio_button_data {
 	const struct gpio_keys_button *button;
@@ -526,6 +527,7 @@ static int gpio_keys_open(struct input_dev *input)
 {
 	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
 
+	pm_runtime_get_sync(input->dev.parent);
 	ddata->enabled = true;
 	return ddata->enable ? ddata->enable(input->dev.parent) : 0;
 }
@@ -537,6 +539,7 @@ static void gpio_keys_close(struct input_dev *input)
 	if (ddata->disable)
 		ddata->disable(input->dev.parent);
 	ddata->enabled = false;
+	pm_runtime_put(input->dev.parent);
 }
 
 /*
@@ -696,6 +699,8 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	input->id.product = 0x0001;
 	input->id.version = 0x0100;
 
+	pm_runtime_enable(&pdev->dev);
+
 	/* Enable auto repeat feature of Linux input subsystem */
 	if (pdata->rep)
 		__set_bit(EV_REP, input->evbit);
@@ -761,6 +766,8 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
 	struct input_dev *input = ddata->input;
 	int i;
 
+	pm_runtime_disable(&pdev->dev);
+
 	sysfs_remove_group(&pdev->dev.kobj, &gpio_keys_attr_group);
 
 	device_init_wakeup(&pdev->dev, 0);
@@ -797,8 +804,8 @@ static int gpio_keys_suspend(struct device *dev)
 		}
 	} else {
 		ddata->enable_after_suspend = ddata->enabled;
-		if (ddata->enabled)
-			gpio_keys_close(ddata->input);
+		if (ddata->enabled && ddata->disable)
+			ddata->disable(dev);
 	}
 
 	return 0;
@@ -818,8 +825,9 @@ static int gpio_keys_resume(struct device *dev)
 			gpio_keys_gpio_report_event(bdata);
 	}
 
-	if (!device_may_wakeup(dev) && ddata->enable_after_suspend)
-		gpio_keys_open(ddata->input);
+	if (!device_may_wakeup(dev) && ddata->enable_after_suspend
+	    && ddata->enable)
+		ddata->enable(dev);
 
 	input_sync(ddata->input);
 
