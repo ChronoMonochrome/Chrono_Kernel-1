@@ -744,11 +744,8 @@ static __init void mop500_gpio_keys_init(void)
 		return;
 	}
 
-	ux500_pins_enable(gpio_keys_pins);
-
 	mop500_gpio_keys[0].gpio = PIN_NUM(gpio_keys_pins->cfg[0]);
 	mop500_gpio_keys[1].gpio = PIN_NUM(gpio_keys_pins->cfg[1]);
-
 }
 #else
 static inline void mop500_gpio_keys_init(void) { }
