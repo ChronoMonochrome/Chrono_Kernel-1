@@ -1,5 +1,5 @@
 /*
- * kernel/time/sched_debug.c
+ * kernel/sched/debug.c
  *
  * Print the CFS rbtree
  *
@@ -29,11 +29,7 @@ static DEFINE_SPINLOCK(sched_debug_lock);
 	if (m)					\
 		seq_printf(m, x);		\
 	else					\
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(x);			\
-#else
-		;
-#endif
  } while (0)
 
 /*

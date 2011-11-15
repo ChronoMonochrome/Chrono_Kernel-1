@@ -101,12 +101,8 @@ out_free:
 	kfree(ag);
 out_fail:
 	if (printk_ratelimit()) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "autogroup_create: %s failure.\n",
 			ag ? "sched_create_group()" : "kmalloc()");
-#else
-		;
-#endif
 	}
 
 	return autogroup_kref_get(&autogroup_default);
@@ -147,11 +143,15 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
 
 	p->signal->autogroup = autogroup_kref_get(ag);
 
+	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+		goto out;
+
 	t = p;
 	do {
 		sched_move_task(t);
 	} while_each_thread(p, t);
 
+out:
 	unlock_task_sighand(p, &flags);
 	autogroup_kref_put(prev);
 }

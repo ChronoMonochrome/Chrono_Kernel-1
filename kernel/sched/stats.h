@@ -179,10 +179,10 @@ static inline void account_group_user_time(struct task_struct *tsk,
 	if (!cputimer->running)
 		return;
 
-	spin_lock(&cputimer->lock);
+	raw_spin_lock(&cputimer->lock);
 	cputimer->cputime.utime =
 		cputime_add(cputimer->cputime.utime, cputime);
-	spin_unlock(&cputimer->lock);
+	raw_spin_unlock(&cputimer->lock);
 }
 
 /**
@@ -203,10 +203,10 @@ static inline void account_group_system_time(struct task_struct *tsk,
 	if (!cputimer->running)
 		return;
 
-	spin_lock(&cputimer->lock);
+	raw_spin_lock(&cputimer->lock);
 	cputimer->cputime.stime =
 		cputime_add(cputimer->cputime.stime, cputime);
-	spin_unlock(&cputimer->lock);
+	raw_spin_unlock(&cputimer->lock);
 }
 
 /**
@@ -227,7 +227,7 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
 	if (!cputimer->running)
 		return;
 
-	spin_lock(&cputimer->lock);
+	raw_spin_lock(&cputimer->lock);
 	cputimer->cputime.sum_exec_runtime += ns;
-	spin_unlock(&cputimer->lock);
+	raw_spin_unlock(&cputimer->lock);
 }
