@@ -2944,7 +2944,9 @@ int mcde_chnl_set_rotation(struct mcde_chnl_state *chnl,
 	if (!chnl->reserved)
 		return -EINVAL;
 
-	if (chnl->id != MCDE_CHNL_A && chnl->id != MCDE_CHNL_B)
+	if ((rotation == MCDE_DISPLAY_ROT_90_CW ||
+			rotation == MCDE_DISPLAY_ROT_90_CCW) &&
+			(chnl->id != MCDE_CHNL_A && chnl->id != MCDE_CHNL_B))
 		return -EINVAL;
 
 	chnl->rotation = rotation;

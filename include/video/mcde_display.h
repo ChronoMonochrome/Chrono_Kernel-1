@@ -61,6 +61,7 @@ struct mcde_display_device {
 	enum mcde_ovly_pix_fmt default_pixel_format;
 	enum mcde_ovly_pix_fmt pixel_format;
 	enum mcde_display_rotation rotation;
+	enum mcde_display_rotation orientation;
 	bool synchronized_update;
 	struct mcde_video_mode video_mode;
 	int update_flags;

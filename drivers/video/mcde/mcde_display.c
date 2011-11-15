@@ -210,25 +210,19 @@ static int mcde_display_set_rotation_default(struct mcde_display_device *ddev,
 	enum mcde_display_rotation rotation)
 {
 	int ret;
+	u8 param = 0;
+	enum mcde_display_rotation final;
 
-	ret = mcde_chnl_set_rotation(ddev->chnl_state, rotation,
-		ddev->rotbuf1, ddev->rotbuf2);
-	if (ret < 0) {
-		dev_warn(&ddev->dev, "%s:Failed to set rotation = %d\n",
-							__func__, rotation);
+	final = (360 + rotation - ddev->orientation) % 360;
+	ret = mcde_chnl_set_rotation(ddev->chnl_state, final,
+						ddev->rotbuf1, ddev->rotbuf2);
+	if (WARN_ON(ret))
 		return ret;
-	}
 
-	if (rotation == MCDE_DISPLAY_ROT_180_CCW) {
-		u8 param = 0x40;
-		(void) mcde_dsi_dcs_write(ddev->chnl_state,
-				DCS_CMD_SET_ADDRESS_MODE, &param, 1);
-	} else if (ddev->rotation == MCDE_DISPLAY_ROT_180_CCW &&
-			rotation != MCDE_DISPLAY_ROT_180_CCW) {
-		u8 param = 0;
-		(void) mcde_dsi_dcs_write(ddev->chnl_state,
-				DCS_CMD_SET_ADDRESS_MODE, &param, 1);
-	}
+	if (final == MCDE_DISPLAY_ROT_180_CW)
+		param = 0x40; /* Horizontal flip */
+	(void)mcde_dsi_dcs_write(ddev->chnl_state, DCS_CMD_SET_ADDRESS_MODE,
+								&param, 1);
 
 	ddev->rotation = rotation;
 	ddev->update_flags |= UPDATE_FLAG_ROTATION;

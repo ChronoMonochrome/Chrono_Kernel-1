@@ -121,6 +121,10 @@ int mcde_dss_enable_display(struct mcde_display_device *ddev)
 	if (ret < 0)
 		dev_warn(&ddev->dev, "Failed to set sync\n");
 
+	ret = ddev->set_rotation(ddev, ddev->get_rotation(ddev));
+	if (ret < 0)
+		dev_warn(&ddev->dev, "Failed to set rotation\n");
+
 	ret = mcde_chnl_enable_synchronized_update(ddev->chnl_state,
 		ddev->synchronized_update);
 	if (ret < 0) {
@@ -301,8 +305,17 @@ EXPORT_SYMBOL(mcde_dss_get_overlay_info);
 void mcde_dss_get_native_resolution(struct mcde_display_device *ddev,
 	u16 *x_res, u16 *y_res)
 {
+	u16 x_tmp, y_tmp;
 	mutex_lock(&ddev->display_lock);
-	ddev->get_native_resolution(ddev, x_res, y_res);
+	ddev->get_native_resolution(ddev, &x_tmp, &y_tmp);
+	if (ddev->orientation == MCDE_DISPLAY_ROT_90_CW ||
+				ddev->orientation == MCDE_DISPLAY_ROT_90_CCW) {
+		*x_res = y_tmp;
+		*y_res = x_tmp;
+	} else {
+		*x_res = x_tmp;
+		*y_res = y_tmp;
+	}
 	mutex_unlock(&ddev->display_lock);
 }
 EXPORT_SYMBOL(mcde_dss_get_native_resolution);
