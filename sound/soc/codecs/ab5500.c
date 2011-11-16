@@ -267,8 +267,7 @@ static struct widget_pm widget_pm_array[] = {
 	{.widget = widget_auxo3, .reg = AUXO3, .shift = AUXOx_PWR_SHIFT},
 	{.widget = widget_auxo4, .reg = AUXO4, .shift = AUXOx_PWR_SHIFT},
 
-	{.widget = widget_spkr1, .reg = AB5500_VIRTUAL_REG3,
-	 .shift = SPKR1_PWR_SHIFT},
+	{.widget = widget_spkr1, .reg = DUMMY_REG,  .shift = 0},
 	{.widget = widget_spkr2, .reg = AB5500_VIRTUAL_REG3,
 	 .shift = SPKR2_PWR_SHIFT},
 
@@ -437,7 +436,7 @@ static const char *enum_tx2_input_select[] = {
 };
 static const char *enum_signal_inversion[] = {"normal", "inverted"};
 static const char *enum_spkr1_mode[] = {
-	"Vibra PWM", "class D amplifier", "class AB amplifier"
+	"SPKR1 power down", "Vibra PWM", "class D amplifier", "class AB amplifier"
 };
 static const char *enum_spkr2_mode[] = {
 	"Vibra PWM", "class D amplifier",
@@ -695,7 +694,7 @@ static struct soc_enum soc_enum_auxo2_pulldown_resistor =
 			enum_optional_resistor);
 
 static struct soc_enum soc_enum_spkr1_mode =
-	SOC_ENUM_SINGLE(AB5500_VIRTUAL_REG3, SPKR1_MODE_SHIFT,
+	SOC_ENUM_SINGLE(SPKR1, SPKRx_PWR_SHIFT,
 			ARRAY_SIZE(enum_spkr1_mode),
 			enum_spkr1_mode);
 
@@ -1435,12 +1434,8 @@ static int ab5500_codec_write_reg(struct snd_soc_codec *codec,
 		break;
 	}
 
-	case EAR_ADDER:
-	case AUXO1_ADDER:
-	case AUXO2_ADDER:
 	case AUXO3_ADDER:
 	case AUXO4_ADDER:
-	case SPKR1_ADDER:
 	case SPKR2_ADDER:
 	case LINE1_ADDER:
 	case LINE2_ADDER: {
@@ -1536,72 +1531,42 @@ EXPORT_SYMBOL_GPL(ab5500_codec_drv);
 static inline void init_playback_route(void)
 {
 	/* if0_dld_l -> rx1 -> dac1 -> auxo1 */
-	update_widgets_link(LINK, widget_if0_dld_l, widget_rx1,
-			    RX1, RXx_DATA_MASK, 0x03 << RXx_DATA_SHIFT);
+	update_widgets_link(LINK, widget_if0_dld_l, widget_rx1, 0, 0, 0);
 	update_widgets_link(LINK, widget_rx1, widget_dac1, 0, 0, 0);
-	update_widgets_link(LINK, widget_dac1, widget_auxo1,
-			    AUXO1_ADDER, DAC1_TO_X_MASK, 0xff);
+	update_widgets_link(LINK, widget_dac1, widget_auxo1, 0, 0, 0);
 
 	/* if0_dld_r -> rx2 -> dac2 -> auxo2 */
-	update_widgets_link(LINK, widget_if0_dld_r, widget_rx2,
-			    RX2, RXx_DATA_MASK, 0x04 << RXx_DATA_SHIFT);
+	update_widgets_link(LINK, widget_if0_dld_r, widget_rx2, 0, 0, 0);
 	update_widgets_link(LINK, widget_rx2, widget_dac2, 0, 0, 0);
-	update_widgets_link(LINK, widget_dac2, widget_auxo2,
-			    AUXO2_ADDER, DAC2_TO_X_MASK, 0xff);
+	update_widgets_link(LINK, widget_dac2, widget_auxo2, 0, 0, 0);
+
+	/*  Earpiece */
+	update_widgets_link(LINK, widget_dac1, widget_ear, 0, 0, 0);
 
 	/* if1_dld_l -> rx3 -> dac3 -> spkr1 */
-	update_widgets_link(LINK, widget_if1_dld_l, widget_rx3, RX3,
-				RXx_DATA_MASK, 0x05 << RXx_DATA_SHIFT);
+	update_widgets_link(LINK, widget_if1_dld_l, widget_rx3, 0, 0, 0);
 	update_widgets_link(LINK, widget_rx3, widget_dac3, 0, 0, 0);
-	update_widgets_link(LINK, widget_dac3, widget_spkr1, SPKR1_ADDER,
-				DAC3_TO_X_MASK, 0xff);
+	update_widgets_link(LINK, widget_dac3, widget_spkr1, 0, 0, 0);
+
 }
 
 static inline void init_capture_route(void)
 {
 	/* mic bias - > mic2 inputs */
-	update_widgets_link(LINK, widget_micbias1, widget_mic2p2,
-			    0, 0, 0);
-	update_widgets_link(LINK, widget_micbias1, widget_mic2n2,
-			    0, 0, 0);
-	update_widgets_link(LINK, widget_micbias2, widget_mic2p2,
-			    0, 0, 0);
-	update_widgets_link(LINK, widget_micbias2, widget_mic2n2,
-			    0, 0, 0);
-
+	update_widgets_link(LINK, widget_micbias1, widget_mic2p2, 0, 0, 0);
+	update_widgets_link(LINK, widget_micbias1, widget_mic2n2, 0, 0, 0);
 
 	/* mic2 inputs -> mic2 */
-	update_widgets_link(LINK, widget_mic2p2, widget_mic2,
-			    MIC2_INPUT_SELECT, MICxP2_SEL_MASK, 0xff);
-	update_widgets_link(LINK, widget_mic2n2, widget_mic2,
-			    MIC2_INPUT_SELECT, MICxN2_SEL_MASK, 0xff);
+	update_widgets_link(LINK, widget_mic2p2, widget_mic2, 0, 0, 0);
+	update_widgets_link(LINK, widget_mic2n2, widget_mic2, 0, 0, 0);
 
 	/* mic2 -> adc2 -> tx2 */
-	update_widgets_link(LINK, widget_mic2, widget_adc2,
-			    0, 0, 0);
-	update_widgets_link(LINK, widget_adc2, widget_tx2,
-			    TX2, TXx_MUX_MASK, 0);
+	update_widgets_link(LINK, widget_mic2, widget_adc2, 0, 0, 0);
+	update_widgets_link(LINK, widget_adc2, widget_tx2, 0, 0, 0);
 
 	/* tx2 -> if0_uld_l & if0_uld_r */
-	update_widgets_link(LINK, widget_tx2, widget_if0_uld_l,
-			    INTERFACE0_ULD, I2Sx_ULD_L_MASK,
-			    0x02 << I2Sx_ULD_L_SHIFT);
-	update_widgets_link(LINK, widget_tx2, widget_if0_uld_r,
-			    INTERFACE0_ULD, I2Sx_ULD_R_MASK,
-			    0x02 << I2Sx_ULD_R_SHIFT);
-
-	/* mic2 -> apga2 */
-	update_widgets_link(LINK, widget_mic2, widget_apga2,
-			    ANALOG_LOOP_PGA2, APGAx_MUX_MIC2_MASK,
-			    1 << APGAx_MUX_MIC2_SHIFT);
-
-	/* apga2 -> auxo1 & auxo2 */
-	update_widgets_link(LINK, widget_apga2, widget_auxo1,
-			    AUXO1_ADDER, APGA2_TO_X_MASK,
-			    1 << APGA2_TO_X_SHIFT);
-	update_widgets_link(LINK, widget_apga2, widget_auxo2,
-			    AUXO2_ADDER, APGA2_TO_X_MASK,
-			    1 << APGA2_TO_X_SHIFT);
+	update_widgets_link(LINK, widget_tx2, widget_if0_uld_l, 0, 0, 0);
+	update_widgets_link(LINK, widget_tx2, widget_if0_uld_r, 0, 0, 0);
 }
 
 static int __devinit ab5500_platform_probe(struct platform_device *pdev)
