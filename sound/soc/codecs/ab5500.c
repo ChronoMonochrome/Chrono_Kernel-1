@@ -1104,18 +1104,14 @@ static void power_for_playback(enum enum_power onoff, int ifsel)
 		return;
 	}
 	mask_set_reg(ENV_THR, ENV_THR_HIGH_MASK, 0x0F << ENV_THR_HIGH_SHIFT);
-	mask_set_reg(ENV_THR, ENV_THR_LOW_MASK, 0x0F << ENV_THR_LOW_SHIFT);
+	mask_set_reg(ENV_THR, ENV_THR_LOW_MASK, 0x00 << ENV_THR_LOW_SHIFT);
+	mask_set_reg(DC_CANCEL, DC_CANCEL_AUXO12_MASK,
+		0x01 << DC_CANCEL_AUXO12_SHIFT);
 
 	power_widget_unlocked(onoff, ifsel == 0 ?
 			      widget_if0_dld_l : widget_if1_dld_l);
 	power_widget_unlocked(onoff, ifsel == 0 ?
-			      widget_if0_dld_r : widget_if1_dld_r);
-
-	mask_set_reg(SPKR1, SPKRx_PWR_MASK, 0x03 << SPKRx_PWR_SHIFT);
-	mask_set_reg(SPKR1, SPKRx_GAIN_MASK, 0x12 << SPKRx_GAIN_SHIFT);
-	mask_set_reg(RX3_DPGA, RXx_DPGA_MASK, 0x3F << RXx_DPGA_SHIFT);
-	mask_set_reg(DC_CANCEL, DC_CANCEL_AUXO12_MASK,
-			0x01 << DC_CANCEL_AUXO12_SHIFT);
+			widget_if0_dld_r : widget_if1_dld_r);
 
 	mutex_unlock(&ab5500_pm_mutex);
 }
