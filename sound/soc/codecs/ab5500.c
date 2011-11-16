@@ -753,7 +753,7 @@ static struct snd_kcontrol_new ab5500_snd_controls[] = {
 	SOC_ENUM("DAC2 Side Tone",		soc_enum_dac2_side_tone),
 	/* RX Volume Control */
 	SOC_SINGLE("RX-DPGA1 Gain",		RX1_DPGA, 0, 0x43, 0),
-	SOC_SINGLE("RX-DPGA2 Gain",		RX1_DPGA, 0, 0x43, 0),
+	SOC_SINGLE("RX-DPGA2 Gain",		RX2_DPGA, 0, 0x43, 0),
 	SOC_SINGLE("RX-DPGA3 Gain",		RX3_DPGA, 0, 0x43, 0),
 	SOC_SINGLE("LINE1 Gain", LINE1, LINEx_GAIN_SHIFT, 0x0a, 0),
 	SOC_SINGLE("LINE2 Gain", LINE2, LINEx_GAIN_SHIFT, 0x0a, 0),
