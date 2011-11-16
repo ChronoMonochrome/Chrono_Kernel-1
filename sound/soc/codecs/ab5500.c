@@ -1604,26 +1604,6 @@ static inline void init_capture_route(void)
 			    1 << APGA2_TO_X_SHIFT);
 }
 
-static inline void init_playback_gain(void)
-{
-	/* 0x43, 0x0C: pure gain values */
-	mask_set_reg(RX1_DPGA, RXx_DPGA_MASK,
-		     0x2C << RXx_DPGA_SHIFT);
-	mask_set_reg(RX2_DPGA, RXx_DPGA_MASK,
-		     0x2C << RXx_DPGA_SHIFT);
-	mask_set_reg(AUXO1, AUXOx_GAIN_MASK, 0x0A << AUXOx_GAIN_SHIFT);
-	mask_set_reg(AUXO2, AUXOx_GAIN_MASK, 0x0A << AUXOx_GAIN_SHIFT);
-}
-
-static inline void init_capture_gain(void)
-{
-	/* 0x06, 0x0f: pure gain values */
-	mask_set_reg(MIC1_GAIN, MICx_GAIN_MASK, 0x08 << MICx_GAIN_SHIFT);
-	mask_set_reg(TX_DPGA1, TX_DPGAx_MASK, 0x0f << TX_DPGAx_SHIFT);
-	mask_set_reg(MIC2_GAIN, MICx_GAIN_MASK, 0x08 << MICx_GAIN_SHIFT);
-	mask_set_reg(TX_DPGA2, TX_DPGAx_MASK, 0x0f << TX_DPGAx_SHIFT);
-}
-
 static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -1656,9 +1636,7 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 
 	printk(KERN_ERR "Clock Setting ab5500\n");
 	init_playback_route();
-	init_playback_gain();
 	init_capture_route();
-	init_capture_gain();
 	memset(&pm_stack, 0, sizeof(pm_stack));
 	return ret;
 }
