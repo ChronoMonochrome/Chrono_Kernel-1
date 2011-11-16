@@ -640,6 +640,8 @@ static struct clk *db5500_clks_tobe_disabled[] __initdata = {
 	&p5_sdi3_clk,
 	&p5_sdi4_clk,
 	&p5_i2c3_clk,
+	&pwmclk,
+	&svaclk,
 };
 
 static int __init init_clock_states(void)
