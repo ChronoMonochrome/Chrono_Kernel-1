@@ -9,6 +9,7 @@
 #define __DEVICES_CG2900_H
 
 #include "cg2900.h"
+#include "mfd/cg2900_chip.h"
 #include <linux/clk.h>
 
 #define CHIP_ENABLE_PDB_LOW_TIMEOUT     100 /* ms */

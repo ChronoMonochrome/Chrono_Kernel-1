@@ -55,8 +55,8 @@
 #define HCI_BT_CMD_COMPLETE_LEN	(sizeof(struct hci_ev_cmd_complete) + 1)
 
 /* Timers used in milliseconds */
-#define UART_TX_TIMEOUT		100
-#define UART_RX_TIMEOUT		20
+#define UART_TX_TIMEOUT		10
+#define UART_RX_TIMEOUT		10
 #define UART_RESP_TIMEOUT	1000
 #define UART_RESUME_TIMEOUT	20
 

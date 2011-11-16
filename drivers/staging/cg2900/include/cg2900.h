@@ -196,6 +196,8 @@ struct cg2900_platform_data {
  * @h4_channel:		H4 channel. Set by CG2900 driver.
  * @is_audio:		True if this channel is an audio channel. Set by CG2900
  *			driver.
+ * @is_clk_user:	whether enabling CG29XX was started external entity
+ *			for eg. WLAN.
  * @chip_independent:	True if this channel does not require chip to be
  *			powered. Set by CG2900 driver.
  * @bt_bus:		Transport used, see @include/net/bluetooth/hci.h.
@@ -224,6 +226,7 @@ struct cg2900_user_data {
 
 	int	h4_channel;
 	bool	is_audio;
+	bool	is_clk_user;
 	bool	chip_independent;
 
 	union {

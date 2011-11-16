@@ -41,9 +41,10 @@ static struct clk_lookup *cg2900_clk_lookup;
 static int cg2900_clk_enable(struct clk *clk)
 {
 	int err = -EINVAL;
-	if (pf_data)
+	if (pf_data) {
+		pf_data->is_clk_user = true;
 		err = pf_data->open(pf_data);
-
+	}
 	return err;
 }
 

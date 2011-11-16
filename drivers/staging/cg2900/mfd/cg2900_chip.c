@@ -180,6 +180,8 @@
  * @CG2900_CLOSING:	CG2900 closing after last user has deregistered.
  * @CG2900_RESETING:	CG2900 reset requested.
  * @CG2900_ACTIVE:	CG2900 up and running with at least one user.
+ * @CG2900_ACTIVE_BEFORE_SELFTEST: CG2900 up and running before
+ *		BT self test is run.
  */
 enum main_state {
 	CG2900_INIT,
@@ -187,7 +189,8 @@ enum main_state {
 	CG2900_BOOTING,
 	CG2900_CLOSING,
 	CG2900_RESETING,
-	CG2900_ACTIVE
+	CG2900_ACTIVE,
+	CG2900_ACTIVE_BEFORE_SELFTEST
 };
 
 /**
@@ -404,6 +407,13 @@ static struct main_info *main_info;
  * main_wait_queue - Main Wait Queue in CG2900 driver.
  */
 static DECLARE_WAIT_QUEUE_HEAD(main_wait_queue);
+/*
+ * Clock enabler should be released earlier
+ * before running read self test
+ * as that is not required for clock enabler
+ * as is the case for WLAN
+ */
+static DECLARE_WAIT_QUEUE_HEAD(clk_user_wait_queue);
 
 static struct mfd_cell cg2900_devs[];
 static struct mfd_cell cg2900_char_devs[];
@@ -1814,10 +1824,20 @@ static bool handle_rx_data_bt_evt(struct cg2900_chip_dev *dev,
 			pkt_handled =
 				handle_vs_power_switch_off_cmd_complete(dev,
 									data);
-		else if (op_code == CG2900_BT_OP_VS_SYSTEM_RESET)
-			pkt_handled = handle_vs_system_reset_cmd_complete(dev,
-									  data);
-		else if (op_code == CG2900_BT_OP_VS_BT_ENABLE)
+		else if (op_code == CG2900_BT_OP_VS_SYSTEM_RESET) {
+			struct cg2900_chip_info *info = dev->c_data;
+			/*
+			 * Don't wait till READ_SELFTESTS_RESULT is complete
+			 * for clock users
+			 */
+			dev_dbg(dev->dev,
+				"New main_state: CG2900_ACTIVE_BEFORE_SELFTEST\n");
+			info->main_state = CG2900_ACTIVE_BEFORE_SELFTEST;
+			wake_up_all(&clk_user_wait_queue);
+
+			pkt_handled =
+				handle_vs_system_reset_cmd_complete(dev, data);
+		} else if (op_code == CG2900_BT_OP_VS_BT_ENABLE)
 			pkt_handled = handle_vs_bt_enable_cmd_complete(dev,
 								       data);
 		else if (op_code == CG2900_BT_OP_VS_READ_SELTESTS_RESULT)
@@ -2296,8 +2316,14 @@ static void chip_startup_finished(struct cg2900_chip_info *info, int err)
 
 	wake_up_all(&main_wait_queue);
 
-	if (err)
+	if (err) {
+		/*
+		 * This will wakeup clock user too
+		 * if it started the initialization process
+		 */
+		wake_up_all(&clk_user_wait_queue);
 		return;
+	}
 
 	if (!info->chip_dev->t_cb.chip_startup_finished)
 		dev_dbg(BOOT_DEV, "chip_startup_finished callback not found\n");
@@ -2328,6 +2354,7 @@ static int cg2900_open(struct cg2900_user_data *user)
 	struct cg2900_chip_info *info;
 	struct list_head *cursor;
 	struct cg2900_channel_item *tmp;
+	enum main_state state_to_check = CG2900_ACTIVE;
 
 	BUG_ON(!main_info);
 
@@ -2427,18 +2454,30 @@ static int cg2900_open(struct cg2900_user_data *user)
 		cg2900_create_work_item(info->wq, work_load_patch_and_settings,
 					dev);
 
-		dev_dbg(user->dev, "Wait up to 15 seconds for chip to start\n");
-		wait_event_timeout(main_wait_queue,
-			(CG2900_ACTIVE == info->main_state ||
-			 CG2900_IDLE   == info->main_state),
-			msecs_to_jiffies(CHIP_STARTUP_TIMEOUT));
-		if (CG2900_ACTIVE != info->main_state) {
-			dev_err(user->dev, "CG2900 driver failed to start\n");
+		dev_dbg(user->dev, "Wait 15sec for chip to start\n");
+		if (user->is_clk_user) {
+			dev_dbg(user->dev, "Clock user is Waiting here\n");
+			wait_event_timeout(clk_user_wait_queue,
+				CG2900_ACTIVE_BEFORE_SELFTEST
+				== info->main_state,
+				msecs_to_jiffies(CHIP_STARTUP_TIMEOUT));
+
+			state_to_check = CG2900_ACTIVE_BEFORE_SELFTEST;
+		} else {
+			dev_dbg(user->dev, "Not a Clock user\n");
+			wait_event_timeout(main_wait_queue,
+				(CG2900_ACTIVE == info->main_state ||
+				 CG2900_IDLE   == info->main_state),
+				msecs_to_jiffies(CHIP_STARTUP_TIMEOUT));
+		}
+
+		if (state_to_check != info->main_state) {
+			dev_err(user->dev, "CG2900 init failed\n");
 
 			if (dev->t_cb.close)
 				dev->t_cb.close(dev);
 
-			dev_dbg(user->dev, "New main_state: CG2900_IDLE\n");
+			dev_dbg(user->dev, "main_state: CG2900_IDLE\n");
 			info->main_state = CG2900_IDLE;
 			err = -EIO;
 			goto err_free_list_item;

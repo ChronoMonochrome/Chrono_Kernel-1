@@ -354,9 +354,6 @@ static void work_hw_registered(struct work_struct *work)
 	if (dev->t_cb.set_chip_power)
 		dev->t_cb.set_chip_power(dev, true);
 
-	/* Wait 100ms before continuing to be sure that the chip is ready */
-	schedule_timeout_killable(msecs_to_jiffies(CHIP_READY_TIMEOUT));
-
 	/* Set our function to receive data from chip */
 	dev->c_cb.data_from_chip = cg2900_data_from_chip;
 

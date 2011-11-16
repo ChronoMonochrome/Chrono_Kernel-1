@@ -37,16 +37,10 @@ void dcg2900_u8500_enable_chip(struct cg2900_chip_dev *dev)
 		return;
 
 	/*
-	 * Due to a bug in CG2900 we cannot just set GPIO high to enable
-	 * the chip. We must wait more than 100 msecs before enabling the
-	 * chip.
-	 * - Set PDB to low.
-	 * - Wait for 100 msecs
+	 * - SET PMU_EN to high
+	 * - Wait for 300usec
 	 * - Set PDB to high.
 	 */
-	gpio_set_value(info->gbf_gpio, 0);
-	schedule_timeout_uninterruptible(msecs_to_jiffies(
-					CHIP_ENABLE_PDB_LOW_TIMEOUT));
 
 	if (info->pmuen_gpio != -1) {
 		/*
@@ -186,16 +180,8 @@ void dcg2900_u5500_enable_chip(struct cg2900_chip_dev *dev)
 
 	clk_enable(info->lpoclk);
 	/*
-	 * Due to a bug in CG2900 we cannot just set GPIO high to enable
-	 * the chip. We must wait more than 100 msecs before enbling the
-	 * chip.
-	 * - Set PDB to low.
-	 * - Wait for 100 msecs
 	 * - Set PDB to high.
 	 */
-	prcmu_resetout(1, 0);
-	schedule_timeout_uninterruptible(msecs_to_jiffies(
-					CHIP_ENABLE_PDB_LOW_TIMEOUT));
 	prcmu_resetout(1, 1);
 }
 
