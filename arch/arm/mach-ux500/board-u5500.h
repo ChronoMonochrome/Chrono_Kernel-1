@@ -28,6 +28,6 @@ extern struct ab5500_regulator_platform_data u5500_ab5500_regulator_data;
 extern void u5500_pins_init(void);
 extern void __init u5500_regulators_init(void);
 void u5500_cyttsp_init(void);
-bool is_s5500_board();
+bool u5500_board_is_s5500(void);
 
 #endif

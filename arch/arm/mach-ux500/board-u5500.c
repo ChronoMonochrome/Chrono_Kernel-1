@@ -572,9 +572,14 @@ static struct platform_device *u5500_platform_devices[] __initdata = {
  * This function check whether it is Small S5500 board
  * GPIO0 is HIGH for S5500
  */
-bool is_s5500_board()
+bool u5500_board_is_s5500(void)
 {
-	int err , val ;
+	static bool s5500;
+	static bool once;
+	int err, val;
+
+	if (once)
+		return s5500;
 
 	err = gpio_request(GPIO_BOARD_VERSION, "Board Version");
 	if (err) {
@@ -594,7 +599,10 @@ bool is_s5500_board()
 
 	gpio_free(GPIO_BOARD_VERSION);
 
-	return (val == 1);
+	s5500 = val;
+	once = true;
+
+	return val;
 }
 
 static long u5500_panic_blink(int state)
