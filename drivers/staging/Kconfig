@@ -24,6 +24,16 @@ menuconfig STAGING
 
 if STAGING
 
+config AB5500_SIM
+        bool "ST-Ericsson AB5500 SIM Interface driver"
+        depends on AB5500_CORE
+        help
+          SIM Interface driver provides interface to configure
+          various parameters of AB5550 SIM Level Shifter.Support provided are:
+          Configure Pull up on sim lines
+          Configure Operation Mode
+          Notify Sim Insert/Extract Interrupt
+
 source "drivers/staging/serial/Kconfig"
 
 source "drivers/staging/et131x/Kconfig"
