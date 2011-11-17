@@ -15,6 +15,7 @@
 #ifdef CONFIG_STM_I2S
 #include <linux/i2s/i2s.h>
 #endif
+#include <linux/delay.h>
 #include <linux/led-lm3530.h>
 #include <../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
 #include <linux/input/matrix_keypad.h>
@@ -648,6 +649,38 @@ static long u5500_panic_blink(int state)
 	return 0;
 }
 
+#define PRCC_K_SOFTRST_SET      0x18
+#define PRCC_K_SOFTRST_CLEAR    0x1C
+/* pl011 reset */
+static void ux500_uart3_reset(void)
+{
+	void __iomem *prcc_rst_set, *prcc_rst_clr;
+
+	prcc_rst_set = __io_address(U5500_CLKRST5_BASE +
+			PRCC_K_SOFTRST_SET);
+	prcc_rst_clr = __io_address(U5500_CLKRST5_BASE +
+			PRCC_K_SOFTRST_CLEAR);
+
+	/*
+	 * Activate soft reset PRCC_K_SOFTRST_CLEAR
+	 *
+	 * As we are dealing with IP register lockup
+	 * so to make double sure that IP gets reset
+	 * and reset pulse remains for more than one
+	 * clock cycle a delay is added.
+	 */
+	writel((readl(prcc_rst_clr) | 0x08), prcc_rst_clr);
+	udelay(1);
+
+	/* Release soft reset PRCC_K_SOFTRST_SET */
+	writel((readl(prcc_rst_set) | 0x08), prcc_rst_set);
+	udelay(1);
+}
+
+static struct amba_pl011_data uart3_plat = {
+	.reset = ux500_uart3_reset,
+};
+
 static void __init u5500_i2c_init(struct device *parent)
 {
 	db5500_add_i2c1(pareent, &u5500_i2c1_data);
@@ -677,7 +710,7 @@ static void __init u5500_uart_init(struct device *parent)
 	db5500_add_uart0(parent, NULL);
 	db5500_add_uart1(parent, NULL);
 	db5500_add_uart2(parent, NULL);
-	db5500_add_uart3(parent, NULL);
+	db5500_add_uart3(parent, &uart3_plat);
 }
 
 static void __init u5500_cryp1_hash1_init(void)
