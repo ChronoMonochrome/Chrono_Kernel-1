@@ -81,6 +81,9 @@ static pin_cfg_t u5500_pins_default[] = {
 
 	/* Touchscreen chip select */
 	GPIO186_GPIO		| PIN_OUTPUT_HIGH | PIN_LOWEMI_ENABLED,
+
+	GPIO133_GPIO		| PIN_OUTPUT_LOW,	/* DUALSIMRESETn */
+	GPIO187_GPIO		| PIN_OUTPUT_HIGH,	/* Dual SIM CS */
 };
 
 static UX500_PINS(db5500_kp_pins,
