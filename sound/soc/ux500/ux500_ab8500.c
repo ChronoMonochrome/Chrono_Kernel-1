@@ -219,6 +219,8 @@ static int ux500_ab8500_power_control_inc(void)
 		ab8500_audio_power_control(true);
 	}
 
+	goto out;
+
 clk_err:
 	disable_regulator(REGULATOR_AUDIO);
 
