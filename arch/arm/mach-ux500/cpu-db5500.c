@@ -170,7 +170,17 @@ bool cpu_is_u5500v1()
 
 bool cpu_is_u5500v2()
 {
+	return (db5500_revision & 0xf0) == 0xB0;
+}
+
+bool cpu_is_u5500v20()
+{
 	return db5500_revision == 0xB0;
+}
+
+bool cpu_is_u5500v21()
+{
+	return db5500_revision == 0xB1;
 }
 
 static void db5500_rev_init(void)

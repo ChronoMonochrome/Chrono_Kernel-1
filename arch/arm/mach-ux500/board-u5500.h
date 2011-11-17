@@ -29,5 +29,7 @@ extern void u5500_pins_init(void);
 extern void __init u5500_regulators_init(void);
 void u5500_cyttsp_init(void);
 bool u5500_board_is_s5500(void);
+int u5500_get_boot_mmc(void);
+bool u5500_board_is_pre_r3a(void);
 
 #endif

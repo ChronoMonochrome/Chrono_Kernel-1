@@ -568,6 +568,43 @@ static struct platform_device *u5500_platform_devices[] __initdata = {
 	&u5500_thsens_device,
 };
 
+#define BACKUPRAM_ROM_DEBUG_ADDR	0xFFC
+#define MMC_BLOCK_ID			0x20
+
+int u5500_get_boot_mmc(void)
+{
+	unsigned int mmcblk;
+
+	mmcblk = readl(__io_address(U5500_BACKUPRAM1_BASE) +
+		       BACKUPRAM_ROM_DEBUG_ADDR);
+
+	if (mmcblk & MMC_BLOCK_ID)
+		return 2;
+
+	return 0;
+}
+
+/*
+ * R3A (and presumably, future) S5500 boards have different regulator
+ * assignments from the earlier boards.  Since there's no clean way to identify
+ * the board revision from hardware, we use the fact that R2A boots from MMC0
+ * (via peripheral boot) and R3A boots from MMC2 to distinguish them.
+ */
+bool u5500_board_is_pre_r3a(void)
+{
+	if (!cpu_is_u5500v20())
+		return false;
+
+	if (!u5500_board_is_s5500())
+		return true;
+
+	if (u5500_get_boot_mmc() == 2)
+		return false;
+
+	return true;
+}
+
+
 /*
  * This function check whether it is Small S5500 board
  * GPIO0 is HIGH for S5500
