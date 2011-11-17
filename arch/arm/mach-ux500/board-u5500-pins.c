@@ -84,6 +84,8 @@ static pin_cfg_t u5500_pins_default[] = {
 
 	GPIO133_GPIO		| PIN_OUTPUT_LOW,	/* DUALSIMRESETn */
 	GPIO187_GPIO		| PIN_OUTPUT_HIGH,	/* Dual SIM CS */
+
+	GPIO163_GPIO		| PIN_INPUT_PULLUP,	/* SERVICEn */
 };
 
 static UX500_PINS(db5500_kp_pins,
