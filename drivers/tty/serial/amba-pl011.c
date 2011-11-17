@@ -122,7 +122,9 @@ static const u32 uart_wa_reg[UART_WA_SAVE_NR] = {
 };
 
 static u32 uart_wa_regdata[UART_WA_SAVE_NR];
-static DECLARE_TASKLET(pl011_lockup_tlet, pl011_lockup_wa, 0);
+static unsigned int uart_wa_tlet_line;
+static DECLARE_TASKLET(pl011_lockup_tlet, pl011_lockup_wa,
+		(unsigned long) &uart_wa_tlet_line);
 
 /* There is by now at least one vendor with differing details, so handle it */
 struct vendor_data {
@@ -1111,7 +1113,7 @@ static inline bool pl011_dma_rx_running(struct uart_amba_port *uap)
  */
 static void pl011_lockup_wa(unsigned long data)
 {
-	struct uart_amba_port *uap = amba_ports[0];
+	struct uart_amba_port *uap = amba_ports[*(unsigned int *)data];
 	void __iomem *base = uap->port.membase;
 	struct circ_buf *xmit = &uap->port.state->xmit;
 	struct tty_struct *tty = uap->port.state->port.tty;
@@ -1566,8 +1568,10 @@ static irqreturn_t pl011_int(int irq, void *dev_id)
 				pl011_tx_chars(uap);
 
 			if (pass_counter-- == 0) {
-				if (uap->interrupt_may_hang)
+				if (uap->interrupt_may_hang) {
+					uart_wa_tlet_line = uap->port.line;
 					tasklet_schedule(&pl011_lockup_tlet);
+				}
 				break;
 			}
 
