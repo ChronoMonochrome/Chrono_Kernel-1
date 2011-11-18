@@ -16,7 +16,7 @@
 #include <plat/pincfg.h>
 #include <mach/devices.h>
 #include <linux/mfd/dbx500-prcmu.h>
-#include <mach/hsi.h>
+#include <asm/io.h>
 #include <trace/stm.h>
 #include "pins-db8500.h"
 
