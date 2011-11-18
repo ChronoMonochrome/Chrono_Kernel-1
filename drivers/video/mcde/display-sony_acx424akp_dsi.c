@@ -298,7 +298,8 @@ static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 
 	switch (id) {
 	case DISPLAY_SONY_ACX424AKP:
-		pdata->disp_panel = DISPLAY_SONY_ACX424AKP;
+	case DISPLAY_SONY_ACX424AKP_ID2:
+		pdata->disp_panel = id;
 		dev_info(&dev->dev,
 			"Sony ACX424AKP display (ID 0x%.4X) probed\n", id);
 		break;
