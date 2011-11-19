@@ -11,6 +11,7 @@
 #include "modem_protocol.h"
 #include "modem_private.h"
 #include "modem_util.h"
+#include "modem_queue.h"
 
 #ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
 #include <linux/workqueue.h>
@@ -116,6 +117,7 @@ void modem_protocol_init(void)
 int modem_m6718_spi_send(struct modem_spi_dev *modem_spi_dev, u8 channel,
 	u32 len, void *data)
 {
+	int err;
 	struct ipc_link_context *context;
 
 	if (!channels[channel].open) {
@@ -136,7 +138,18 @@ int modem_m6718_spi_send(struct modem_spi_dev *modem_spi_dev, u8 channel,
 		return -ENODEV;
 	}
 
-	/* TODO: statemachine will be kicked here */
+	err = ipc_queue_push_frame(context, channel, len, data);
+	if (err < 0)
+		return err;
+
+	if (ipc_util_link_is_idle(context)) {
+		dev_dbg(modem_spi_dev->dev,
+			"link %d is idle, kicking\n", channels[channel].link);
+		/* TODO: statemachine will be kicked here */
+	} else {
+		dev_dbg(modem_spi_dev->dev,
+			"link %d is already running\n", channels[channel].link);
+	}
 	return 0;
 }
 EXPORT_SYMBOL_GPL(modem_m6718_spi_send);
@@ -305,6 +318,8 @@ int modem_protocol_probe(struct spi_device *sdev)
 #ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_VERIFY_FRAMES
 	context->last_frame = NULL;
 #endif
+
+	ipc_queue_init(context);
 
 	/*
 	 * For link0 (the handshake link) we force a state transition now so
