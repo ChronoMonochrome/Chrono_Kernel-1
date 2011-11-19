@@ -13,6 +13,7 @@
 #include "modem_util.h"
 #include "modem_queue.h"
 #include "modem_debug.h"
+#include "modem_netlink.h"
 
 #ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
 #include <linux/workqueue.h>
@@ -326,6 +327,7 @@ int modem_protocol_probe(struct spi_device *sdev)
 	ipc_queue_init(context);
 	ipc_dbg_debugfs_link_init(context);
 	ipc_dbg_throughput_link_init(context);
+	ipc_create_netlink_socket(context);
 
 	/*
 	 * For link0 (the handshake link) we force a state transition now so
