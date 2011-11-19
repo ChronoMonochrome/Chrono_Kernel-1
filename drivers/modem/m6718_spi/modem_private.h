@@ -100,4 +100,6 @@ struct ipc_l1_context {
 #endif
 };
 
+extern struct ipc_l1_context l1_context;
+
 #endif /* _MODEM_PRIVATE_H_ */

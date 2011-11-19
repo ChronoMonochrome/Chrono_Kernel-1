@@ -12,6 +12,7 @@
 #include "modem_private.h"
 #include "modem_util.h"
 #include "modem_queue.h"
+#include "modem_debug.h"
 
 #ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
 #include <linux/workqueue.h>
@@ -97,7 +98,10 @@ void modem_protocol_init(void)
 		IPC_DRIVER_VERSION);
 
 	atomic_set(&l1_context.boot_sync_done, 0);
+	ipc_dbg_debugfs_init();
+	ipc_dbg_throughput_init();
 	l1_context.init_done = true;
+	ipc_dbg_measure_throughput(0);
 #ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
 	schedule_delayed_work(&modem_state_reg_work, 0);
 #endif
@@ -320,6 +324,8 @@ int modem_protocol_probe(struct spi_device *sdev)
 #endif
 
 	ipc_queue_init(context);
+	ipc_dbg_debugfs_link_init(context);
+	ipc_dbg_throughput_link_init(context);
 
 	/*
 	 * For link0 (the handshake link) we force a state transition now so
