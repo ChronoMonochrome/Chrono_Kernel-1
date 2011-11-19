@@ -13,6 +13,7 @@
 #include <linux/spi/spi.h>
 #include <linux/modem/modem_client.h>
 #include <linux/modem/m6718_spi/modem_driver.h>
+#include <linux/modem/m6718_spi/modem_char.h>
 #include "modem_protocol.h"
 
 static struct modem_spi_dev modem_driver_data = {
@@ -31,20 +32,70 @@ static struct modem_spi_dev modem_driver_data = {
  * @data:	pointer to frame data
  *
  * This function is called from the driver L1 physical transport layer. It
- * copied the frame data to the receive queue for the channel on which the data
+ * copies the frame data to the receive queue for the channel on which the data
  * was received.
  *
  * Special handling is given to slave-loopback channels where the data is simply
  * sent back to the modem on the same channel.
- *
- * Special handling is given to the ISI channel when PHONET is enabled - the
- * phonet tasklet is scheduled in order to pump the received data through the
- * net device interface.
  */
 int modem_m6718_spi_receive(struct spi_device *sdev, u8 channel,
 	u32 len, void *data)
 {
-	return -ENODEV;
+	u32 size = 0;
+	int ret = 0;
+	int idx;
+	u8 *psrc;
+	u32 writeptr;
+	struct message_queue *q;
+	struct isa_device_context *isadev;
+
+	dev_dbg(&sdev->dev, "L2 received frame from L1: channel %d len %d\n",
+		channel, len);
+
+#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_LOOPBACK
+	if (channel == MODEM_M6718_SPI_CHN_SLAVE_LOOPBACK0 ||
+		channel == MODEM_M6718_SPI_CHN_SLAVE_LOOPBACK1) {
+		/* data received on slave loopback channel - loop it back */
+		modem_m6718_spi_send(&modem_driver_data, channel, len, data);
+		return 0;
+	}
+#endif
+
+	/* find the isa device index for this L2 channel */
+	idx = modem_get_cdev_index(channel);
+	if (idx < 0) {
+		dev_err(&sdev->dev, "failed to get isa device index\n");
+		return idx;
+	}
+	isadev = &modem_driver_data.isa_context->isadev[idx];
+	q = &isadev->dl_queue;
+
+	spin_lock(&q->update_lock);
+
+	/* verify message can be contained in buffer */
+	writeptr = q->writeptr;
+	ret = modem_isa_queue_msg(q, len);
+	if (ret >= 0) {
+		/* memcopy RX data */
+		if ((writeptr + len) >= q->size) {
+			psrc = (u8 *)data;
+			size = q->size - writeptr;
+			/* copy first part of msg */
+			memcpy((q->fifo_base + writeptr), psrc, size);
+			psrc += size;
+			/* copy second part of msg at the top of fifo */
+			memcpy(q->fifo_base, psrc, (len - size));
+		} else {
+			memcpy((q->fifo_base + writeptr), data, len);
+		}
+	}
+	spin_unlock(&q->update_lock);
+
+	if (ret < 0) {
+		dev_err(&sdev->dev, "failed to queue frame!");
+		return ret;
+	}
+	return ret;
 }
 EXPORT_SYMBOL_GPL(modem_m6718_spi_receive);
 
@@ -75,9 +126,18 @@ static int spi_probe(struct spi_device *sdev)
 			result = -ENODEV;
 			goto rollback_protocol_init;
 		}
+
+		result = modem_isa_init(&modem_driver_data);
+		if (result < 0) {
+			dev_err(&sdev->dev,
+				"failed to initialise char interface\n");
+			goto rollback_modem_get;
+		}
 	}
 	return result;
 
+rollback_modem_get:
+	modem_put(modem_driver_data.modem);
 rollback_protocol_init:
 	modem_protocol_exit();
 rollback:
@@ -87,6 +147,7 @@ rollback:
 static int __exit spi_remove(struct spi_device *sdev)
 {
 	modem_protocol_exit();
+	modem_isa_exit(&modem_driver_data);
 	return 0;
 }
 

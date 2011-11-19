@@ -51,6 +51,7 @@ obj-$(CONFIG_TELCLOCK)		+= tlclk.o
 
 ifdef CONFIG_PHONET
 obj-$(CONFIG_U8500_SHRM)	+= shrm_char.o
+obj-$(CONFIG_MODEM_M6718_SPI)	+= m6718_modem_char.o
 endif
 
 obj-$(CONFIG_MWAVE)		+= mwave/
