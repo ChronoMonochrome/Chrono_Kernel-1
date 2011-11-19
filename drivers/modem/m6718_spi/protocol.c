@@ -10,6 +10,7 @@
 #include <linux/modem/m6718_spi/modem_driver.h>
 #include "modem_protocol.h"
 #include "modem_private.h"
+#include "modem_util.h"
 
 #ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
 #include <linux/workqueue.h>
@@ -177,16 +178,53 @@ bool modem_protocol_is_busy(struct spi_device *sdev)
 	return false;
 }
 
+static void spi_tfr_complete(void *context)
+{
+	/* TODO: statemachine will be kicked here */
+}
+
+static irqreturn_t slave_ready_irq(int irq, void *dev)
+{
+	struct ipc_link_context *context = (struct ipc_link_context *)dev;
+	struct modem_m6718_spi_link_platform_data *link = context->link;
+	struct spi_device *sdev = context->sdev;
+
+	if (irq != GPIO_TO_IRQ(link->gpio.int_pin)) {
+		dev_err(&sdev->dev,
+			"link %d error: spurious slave irq!", link->id);
+		return IRQ_NONE;
+	}
+
+#ifdef WORKAROUND_DUPLICATED_IRQ
+	if (link->id != IPC_LINK_AUDIO && pl022_tfr_in_progress(sdev)) {
+		dev_warn(&sdev->dev,
+			"link %d warning: slave irq while transfer "
+			"is active! discarding event\n", link->id);
+		return IRQ_HANDLED;
+	}
+#endif
+	/* TODO: statemachine will be kicked here */
+	return IRQ_HANDLED;
+}
+
 #ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_MODEM_STATE
 static int modem_state_callback(unsigned long unused)
 {
 	int modem_state = modem_state_get_state();
+	struct ipc_link_context *contexts = l1_context.device_context;
+	u8 i;
 
 	pr_info("M6718 IPC protocol modemstate reports modem is %s\n",
 		modem_state_to_str(modem_state));
 
 	switch (modem_state) {
 	case MODEM_STATE_ON:
+		/*
+		 * Modem is on, ensure each link is configured and trigger
+		 * a state change on link0 to begin handshake.
+		 */
+		for (i = 0; i < IPC_NBR_SUPPORTED_SPI_LINKS; i++)
+			ipc_util_link_gpio_config(&contexts[i]);
 		/* TODO: statemachine will be kicked here */
 		break;
 	case MODEM_STATE_OFF:
@@ -248,13 +286,21 @@ int modem_protocol_probe(struct spi_device *sdev)
 	context->link = link;
 	context->sdev = sdev;
 	atomic_set(&context->gpio_configured, 0);
+	atomic_set(&context->state_int,
+		ipc_util_int_level_inactive(context));
 	spin_lock_init(&context->sm_lock);
+	ipc_util_spi_message_init(context, spi_tfr_complete);
 	init_timer(&context->comms_timer);
 	context->comms_timer.function = modem_comms_timeout;
 	context->comms_timer.data = (unsigned long)context;
 	init_timer(&context->slave_stable_timer);
 	context->slave_stable_timer.function = slave_stable_timeout;
 	context->slave_stable_timer.data = (unsigned long)context;
+
+	if (!ipc_util_link_gpio_request(context, slave_ready_irq))
+		return -ENODEV;
+	if (!ipc_util_link_gpio_config(context))
+		return -ENODEV;
 
 #ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_VERIFY_FRAMES
 	context->last_frame = NULL;
@@ -283,5 +329,9 @@ int modem_protocol_probe(struct spi_device *sdev)
 
 void modem_protocol_exit(void)
 {
+	int i;
+
 	pr_info("M6718 IPC protocol exit\n");
+	for (i = 0; i < IPC_NBR_SUPPORTED_SPI_LINKS; i++)
+		ipc_util_link_gpio_unconfig(&l1_context.device_context[i]);
 }
