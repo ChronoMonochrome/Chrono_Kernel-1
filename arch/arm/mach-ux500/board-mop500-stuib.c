@@ -269,8 +269,4 @@ void __init mop500_stuib_init(void)
 
 	mop500_uib_i2c_add(3, u8500_i2c3_devices_stuib,
 			ARRAY_SIZE(u8500_i2c3_devices_stuib));
-
-#ifdef CONFIG_SENSORS_LSM303DLH
-	mop500_sensors_init();
-#endif
 }
