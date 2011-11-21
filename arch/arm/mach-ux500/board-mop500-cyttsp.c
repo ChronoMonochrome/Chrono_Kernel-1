@@ -37,8 +37,8 @@ static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata_u8500_r3 = {
 	.axis_map_x = 1,
 	.axis_map_y = 0,
 	.axis_map_z = 2,
-	.negative_x = 1,
-	.negative_y = 1,
+	.negative_x = 0,
+	.negative_y = 0,
 	.negative_z = 1,
 };
 
@@ -47,8 +47,8 @@ static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata_u8500_r3 = {
 	.axis_map_x = 0,
 	.axis_map_y = 1,
 	.axis_map_z = 2,
-	.negative_x = 0,
-	.negative_y = 1,
+	.negative_x = 1,
+	.negative_y = 0,
 	.negative_z = 1,
 };
 static struct i2c_board_info __initdata mop500_i2c2_devices_u8500_r3[] = {
