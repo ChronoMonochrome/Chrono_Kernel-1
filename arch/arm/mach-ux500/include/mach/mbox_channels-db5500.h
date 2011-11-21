@@ -12,7 +12,7 @@
 #define MAILBOX_NR_OF_DATAWORDS	3
 
 /* Number of buffers */
-#define NUM_DSP_BUFFER		16
+#define NUM_DSP_BUFFER		32
 
 /**
  * mbox_channel_cb_t - Definition of the mailbox channel callback.
