@@ -733,10 +733,6 @@ if (!god_mode_enabled) {
 			retval = sb_prepare_remount_readonly(sb);
 			if (retval)
 				return retval;
-
-			retval = -EBUSY;
-			if (!fs_may_remount_ro(sb))
-				goto cancel_readonly;
 		}
 	}
 
