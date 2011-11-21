@@ -410,6 +410,8 @@ static int __devinit ab_rtc_probe(struct platform_device *pdev)
 			return err;
 	}
 
+	device_init_wakeup(&pdev->dev, true);
+
 	rtc = rtc_device_register("ab8500-rtc", &pdev->dev, &ab_rtc_ops,
 			THIS_MODULE);
 	if (IS_ERR(rtc)) {
