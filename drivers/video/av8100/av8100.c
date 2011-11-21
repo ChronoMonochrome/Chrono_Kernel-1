@@ -2028,28 +2028,6 @@ static int av8100_powerup1(struct av8100_device *adev)
 		mdelay(AV8100_WAITTIME_1MS);
 	}
 
-	/* Get chip version */
-	retval = av8100_reg_stby_pend_int_r(NULL, NULL, NULL,
-					&adev->chip_version);
-	if (retval) {
-		dev_err(adev->dev, "Failed to read chip version\n");
-		goto av8100_powerup1_err;
-	}
-
-	dev_info(adev->dev, "chip version:%d\n", adev->chip_version);
-
-	switch (adev->chip_version) {
-	case AV8100_CHIPVER_1:
-	case AV8100_CHIPVER_2:
-		break;
-
-	default:
-		dev_err(adev->dev, "Unsupported chip version:%d\n",
-				adev->chip_version);
-		goto av8100_powerup1_err;
-		break;
-	}
-
 	retval = request_irq(pdata->irq, av8100_intr_handler,
 			IRQF_TRIGGER_RISING, "av8100", adev);
 	if (retval == 0)
@@ -4062,7 +4040,7 @@ static int __devinit av8100_probe(struct i2c_client *i2c_client,
 			I2C_FUNC_SMBUS_READ_WORD_DATA)) {
 		ret = -ENODEV;
 		dev_info(dev, "av8100 i2c_check_functionality failed\n");
-		goto err;
+		goto err1;
 	}
 
 	init_waitqueue_head(&adev->event);
@@ -4083,7 +4061,7 @@ static int __devinit av8100_probe(struct i2c_client *i2c_client,
 				"%s: Failed to get regulator '%s'\n",
 				__func__, pdata->regulator_pwr_id);
 			adev->params.regulator_pwr = NULL;
-			return ret;
+			goto err1;
 		}
 	}
 
@@ -4099,15 +4077,38 @@ static int __devinit av8100_probe(struct i2c_client *i2c_client,
 
 	av8100_set_state(adev, AV8100_OPMODE_SHUTDOWN);
 
-	/* Obtain the chip version */
+
 	if (av8100_powerup1(adev)) {
 		dev_err(adev->dev, "av8100_powerup1 fail\n");
-		return -EFAULT;
+		ret = -EFAULT;
+		goto err1;
 	}
 
-	ret = av8100_powerdown();
+	/* Obtain the chip version */
+	ret = av8100_reg_stby_pend_int_r(NULL, NULL, NULL,
+					 &adev->chip_version);
+	if (ret) {
+		dev_err(adev->dev, "Failed to read chip version\n");
+		goto err2;
+	}
 
-err:
+	dev_info(adev->dev, "chip version:%d\n", adev->chip_version);
+
+	switch (adev->chip_version) {
+	case AV8100_CHIPVER_1:
+	case AV8100_CHIPVER_2:
+		break;
+
+	default:
+		dev_err(adev->dev, "Unsupported chip version:%d\n",
+				adev->chip_version);
+		ret = -EINVAL;
+		goto err2;
+		break;
+	}
+err2:
+	(void) av8100_powerdown();
+err1:
 	return ret;
 }
 
