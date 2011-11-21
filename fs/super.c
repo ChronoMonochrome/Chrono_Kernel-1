@@ -144,6 +144,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
 		INIT_LIST_HEAD(&s->s_inodes);
 		INIT_LIST_HEAD(&s->s_dentry_lru);
 		INIT_LIST_HEAD(&s->s_inode_lru);
+		INIT_LIST_HEAD(&s->s_mounts);
 		spin_lock_init(&s->s_inode_lru_lock);
 		init_rwsem(&s->s_umount);
 		mutex_init(&s->s_lock);
@@ -203,6 +204,7 @@ static inline void destroy_super(struct super_block *s)
 	free_percpu(s->s_files);
 #endif
 	security_sb_free(s);
+	WARN_ON(!list_empty(&s->s_mounts));
 	kfree(s->s_subtype);
 	kfree(s->s_options);
 	kfree(s);
