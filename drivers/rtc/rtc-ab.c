@@ -370,7 +370,7 @@ static int ab_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 			return err;
 	}
 
-	return ab_rtc_alarm_enable(dev, true);
+	return alarm->enabled ? ab_rtc_alarm_enable(dev, true) : 0;
 }
 
 static const struct rtc_class_ops ab_rtc_ops = {
