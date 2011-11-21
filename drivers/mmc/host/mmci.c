@@ -696,14 +696,11 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 			datactrl |= MCI_ST_DPSM_SDIOEN;
 
 			/*
-			 * The ST Micro variant for SDIO transfer sizes
-			 * less then or equal to 8 bytes needs to have clock
-			 * H/W flow control disabled. Since flow control is
-			 * not really needed for anything that fits in the
-			 * FIFO, we can disable it for any write smaller
-			 * than the FIFO size.
+			 * The ST Micro variant for SDIO write transfer sizes
+			 * less then 8 bytes needs to have clock H/W flow
+			 * control disabled.
 			 */
-			if ((host->size <= variant->fifosize) &&
+			if ((host->size < 8) &&
 			    (data->flags & MMC_DATA_WRITE))
 				clk = host->clk_reg & ~variant->clkreg_enable;
 			else
