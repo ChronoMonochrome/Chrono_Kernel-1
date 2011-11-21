@@ -17,7 +17,9 @@
 #include <mach/hardware.h>
 #include <mach/devices.h>
 
+#ifdef CONFIG_FB_MCDE
 #include <video/mcde.h>
+#endif
 #include <mach/db5500-regs.h>
 
 #include <linux/mfd/dbx500-prcmu.h>
@@ -159,6 +161,7 @@ struct platform_device u5500_pwm3_device = {
 	.num_resources = ARRAY_SIZE(u5500_pwm3_resource),
 };
 
+#ifdef CONFIG_FB_MCDE
 static struct resource mcde_resources[] = {
 	[0] = {
 		.name  = MCDE_IO_AREA,
@@ -227,6 +230,7 @@ struct platform_device u5500_mcde_device = {
 	.num_resources = ARRAY_SIZE(mcde_resources),
 	.resource = mcde_resources,
 };
+#endif
 
 static struct resource b2r2_resources[] = {
 	[0] = {

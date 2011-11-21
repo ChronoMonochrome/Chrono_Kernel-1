@@ -21,9 +21,13 @@
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/pm.h>
+#ifdef CONFIG_FB_MCDE
 #include <video/mcde.h>
+#endif
 #include <linux/mfd/dbx500-prcmu.h>
+#ifdef CONFIG_HSI
 #include <mach/hsi.h>
+#endif
 #include <mach/ste-dma40-db8500.h>
 
 #include "pins-db8500.h"
@@ -154,6 +158,7 @@ struct platform_device u8500_shrm_device = {
 	.resource = u8500_shrm_resources
 };
 
+#ifdef CONFIG_FB_MCDE
 static struct resource mcde_resources[] = {
 	[0] = {
 		.name  = MCDE_IO_AREA,
@@ -242,6 +247,7 @@ struct platform_device u8500_mcde_device = {
 	.num_resources = ARRAY_SIZE(mcde_resources),
 	.resource = mcde_resources,
 };
+#endif /*  CONFIG_FB_MCDE */
 
 static struct resource b2r2_resources[] = {
 	[0] = {
@@ -298,6 +304,7 @@ struct platform_device u8500_prcmu_wdt_device = {
 	.id		= -1,
 };
 
+#ifdef CONFIG_HSI
 /*
  * HSI
  */
@@ -414,6 +421,7 @@ struct platform_device u8500_hsi_device = {
        .resource = u8500_hsi_resources,
        .num_resources = ARRAY_SIZE(u8500_hsi_resources)
 };
+#endif /* CONFIG_HSI */
 
 /*
  * Thermal Sensor
