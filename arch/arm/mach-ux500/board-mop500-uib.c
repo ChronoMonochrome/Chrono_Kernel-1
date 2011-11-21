@@ -42,11 +42,13 @@ static struct uib __initdata mop500_uibs[] = {
 		.option	= "u8500uib",
 		.init	= mop500_u8500uib_init,
 	},
+#ifdef CONFIG_TOUCHSCREEN_CYTTSP_SPI
 	[U8500UIB_R3] = {
 		.name   = "U8500-UIBR3",
 		.option = "u8500uibr3",
 		.init   = mop500_u8500uib_r3_init,
 	},
+#endif
 };
 
 static struct uib __initdata *mop500_uib;

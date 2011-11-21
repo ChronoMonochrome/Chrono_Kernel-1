@@ -11,7 +11,9 @@
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
+#ifdef CONFIG_U8500_FLASH
 #include <../drivers/staging/camera_flash/adp1653_plat.h>
+#endif
 #include <linux/input/matrix_keypad.h>
 #include <asm/mach-types.h>
 
@@ -108,18 +110,22 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_stuib[] = {
 	},
 };
 
+#ifdef CONFIG_U8500_FLASH
 /*
  *  Config data for the flash
  */
 static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
 	.irq_no = CAMERA_FLASH_INT_PIN
 };
+#endif
 
 static struct i2c_board_info __initdata mop500_i2c2_devices_stuib[] = {
+#ifdef CONFIG_U8500_FLASH
 	{
 		I2C_BOARD_INFO("adp1653", 0x30),
 		.platform_data = &adp1653_pdata_u8500_uib
 	}
+#endif
 };
 
 /*
@@ -208,19 +214,9 @@ static struct bu21013_platform_device tsc_plat_device = {
 	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
-	.x_max_res = 480,
-	.y_max_res = 864,
-	.portrait = true,
-	.has_ext_clk = true,
-	.enable_ext_clk = false,
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
-		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
-	.x_flip		= true,
-	.y_flip		= false,
-#else
-	.x_flip		= false,
-	.y_flip		= true,
-#endif
+	.ext_clk = false,
+	.x_flip = false,
+	.y_flip = true,
 };
 
 static struct bu21013_platform_device tsc_plat2_device = {
@@ -230,19 +226,9 @@ static struct bu21013_platform_device tsc_plat2_device = {
 	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
-	.x_max_res = 480,
-	.y_max_res = 864,
-	.portrait = true,
-	.has_ext_clk = true,
-	.enable_ext_clk = false,
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
-		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
-	.x_flip		= true,
-	.y_flip		= false,
-#else
-	.x_flip		= false,
-	.y_flip		= true,
-#endif
+	.ext_clk = false,
+	.x_flip = false,
+	.y_flip = true,
 };
 
 static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
@@ -262,13 +248,17 @@ void __init mop500_stuib_init(void)
 	if (machine_is_hrefv60()) {
 		tsc_plat_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
 		tsc_plat2_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
+#ifdef CONFIG_U8500_FLASH
 		adp1653_pdata_u8500_uib.enable_gpio =
 					HREFV60_CAMERA_FLASH_ENABLE;
+#endif
 	} else {
 		tsc_plat_device.cs_pin = GPIO_BU21013_CS;
 		tsc_plat2_device.cs_pin = GPIO_BU21013_CS;
+#ifdef CONFIG_U8500_FLASH
 		adp1653_pdata_u8500_uib.enable_gpio =
 					GPIO_CAMERA_FLASH_ENABLE;
+#endif
 	}
 
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_stuib,
@@ -280,5 +270,7 @@ void __init mop500_stuib_init(void)
 	mop500_uib_i2c_add(3, u8500_i2c3_devices_stuib,
 			ARRAY_SIZE(u8500_i2c3_devices_stuib));
 
+#ifdef CONFIG_SENSORS_LSM303DLH
 	mop500_sensors_init();
+#endif
 }
