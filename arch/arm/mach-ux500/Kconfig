@@ -134,20 +134,6 @@ config TEE_SVP
 	help
 	  Adds TEE support for SVP in ux500 platforms.
 
-config DB8500_MLOADER
-	bool "Modem firmware upload/download support"
-	depends on UX500_SOC_DB8500
-	select DBX500_MLOADER
-	help
-	  Adds Modem firmware upload/download support to DB8500.
-
-config U5500_MLOADER
-	bool "mLoader, mem config from kernel boot args exported to sysfs"
-	depends on UX500_SOC_DB5500
-	help
-	  Link between boot args and user space program that loads the modem ELF.
-	  This is used to expose the modem parameters using sysfs interface.
-
 config UX500_DEBUG_HWREG
 	bool "Debug hardware registers from userspace"
 	depends on (DEBUG_FS && UX500_SOC_DB8500)
@@ -170,7 +156,6 @@ config UX500_L2X0_PREFETCH_CTRL
 	  Adds interface to control instruction and data prefetch.
 	  Communication with Trustzone is done through TEE driver.
 
-source "arch/arm/mach-ux500/Kconfig-arch"
 source "arch/arm/mach-ux500/pm/Kconfig"
 
 endif
