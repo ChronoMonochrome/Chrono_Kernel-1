@@ -1457,6 +1457,8 @@ struct super_block {
 	int cleancache_poolid;
 
 	struct shrinker s_shrink;	/* per-sb shrinker handle */
+	/* Being remounted read-only */
+	int s_readonly_remount;
 };
 
 /* superblock cache pruning functions */
