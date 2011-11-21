@@ -19,7 +19,9 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 
+#ifdef CONFIG_STM_TRACE
 #include <trace/stm.h>
+#endif
 
 #include <cm/engine/configuration/inc/configuration_status.h>
 
