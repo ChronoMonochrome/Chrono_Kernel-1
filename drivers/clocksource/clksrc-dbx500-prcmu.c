@@ -14,7 +14,9 @@
  */
 #include <linux/clockchips.h>
 #include <linux/clksrc-dbx500-prcmu.h>
+#ifdef CONFIG_BOOTTIME
 #include <linux/boottime.h>
+#endif
 
 #include <asm/sched_clock.h>
 
@@ -108,6 +110,7 @@ void __init clksrc_dbx500_prcmu_init(void __iomem *base)
 			 32, RATE_32K);
 #endif
 	clocksource_register_hz(&clocksource_dbx500_prcmu, RATE_32K);
-
+#ifdef CONFIG_BOOTTIME
 	boottime_activate(&boottime_timer);
+#endif
 }
