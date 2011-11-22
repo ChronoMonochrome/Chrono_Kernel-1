@@ -516,6 +516,7 @@ static ssize_t lsm303dlh_m_store_range(struct device *dev,
 		z_gain = Z_GAIN_8_1;
 		break;
 	default:
+		mutex_unlock(&ddata->lock);
 		return -EINVAL;
 	}
 

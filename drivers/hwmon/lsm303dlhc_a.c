@@ -314,8 +314,10 @@ static ssize_t lsm303dlhc_a_store_range(struct device *dev,
 
 	error = lsm303dlhc_a_write(ddata, CTRL_REG4, ddata->range,
 	"CTRL_REG4");
-	if (error < 0)
+	if (error < 0) {
+		mutex_unlock(&ddata->lock);
 		return error;
+	}
 
 	switch (val) {
 	case LSM303DLHC_A_RANGE_2G:
@@ -331,6 +333,7 @@ static ssize_t lsm303dlhc_a_store_range(struct device *dev,
 		ddata->shift_adjust = SHIFT_ADJ_16G;
 		break;
 	default:
+		mutex_unlock(&ddata->lock);
 		return -EINVAL;
 	}
 

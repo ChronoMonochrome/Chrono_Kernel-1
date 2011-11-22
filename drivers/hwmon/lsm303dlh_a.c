@@ -762,6 +762,7 @@ static ssize_t lsm303dlh_a_store_range(struct device *dev,
 		ddata->shift_adjust = SHIFT_ADJ_8G;
 		break;
 	default:
+		mutex_unlock(&ddata->lock);
 		return -EINVAL;
 	}
 
