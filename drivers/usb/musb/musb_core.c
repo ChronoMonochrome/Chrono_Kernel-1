@@ -2375,7 +2375,7 @@ static const struct dev_pm_ops musb_dev_pm_ops = {
 	.runtime_resume = musb_runtime_resume,
 };
 
-#define MUSB_DEV_PM_OPS (&musb_dev_pm_ops)
+#define MUSB_DEV_PM_OPS NULL
 #else
 #define	MUSB_DEV_PM_OPS	NULL
 #endif
