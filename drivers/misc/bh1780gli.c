@@ -146,7 +146,7 @@ static ssize_t bh1780_store_power_state(struct device *dev,
 	if (val == BH1780_POFF)
 		regulator_disable(ddata->regulator);
 
-	msleep(BH1780_PON_DELAY);
+	mdelay(BH1780_PON_DELAY);
 	ddata->power_state = val;
 	mutex_unlock(&ddata->lock);
 
@@ -202,7 +202,7 @@ static int __devinit bh1780_probe(struct i2c_client *client,
 	ret = bh1780_read(ddata, BH1780_REG_PARTID, "PART ID");
 	if (ret < 0) {
 		dev_err(&client->dev, "failed to read part ID\n");
-		goto put_regulator;
+		goto disable_regulator;
 	}
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	ddata->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
@@ -220,13 +220,15 @@ static int __devinit bh1780_probe(struct i2c_client *client,
 	mutex_init(&ddata->lock);
 
 	ret = sysfs_create_group(&client->dev.kobj, &bh1780_attr_group);
-	if (ret)
+	if (ret) {
+		dev_err(&client->dev, "failed to create sysfs group\n");
 		goto put_regulator;
+	}
 
 	return 0;
-
-put_regulator:
+disable_regulator:
 	regulator_disable(ddata->regulator);
+put_regulator:
 	regulator_put(ddata->regulator);
 free_ddata:
 	kfree(ddata);
