@@ -65,6 +65,13 @@ static pin_cfg_t u5500_pins_default[] = {
 	/* Display & HDMI HW sync */
 	GPIO204_LCD_VSI1	| PIN_INPUT_PULLUP,
 
+	/* TVOUT (connected, but unused) */
+	GPIO205_GPIO		| PIN_OUTPUT_LOW,
+	GPIO206_GPIO		| PIN_OUTPUT_LOW,
+	GPIO207_GPIO		| PIN_OUTPUT_LOW,
+	GPIO208_GPIO		| PIN_OUTPUT_LOW,
+	GPIO209_GPIO		| PIN_INPUT_PULLDOWN,
+
 	/* Camera & MMIO XshutDown*/
 	GPIO1_GPIO		| PIN_OUTPUT_LOW,
 	GPIO2_GPIO		| PIN_OUTPUT_LOW,
