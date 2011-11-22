@@ -530,8 +530,8 @@ static int ab5500_usb_boot_detect(struct ab5500_usb *ab)
 		 */
 		if ((!(ab5500_get_turn_on_status() &
 					(P_ON_KEY1_EVENT | P_ON_KEY2_EVENT))) &&
-					(prcmu_get_reset_code() !=
-					SW_RESET_CHGONLY_EXIT)) {
+					(prcmu_get_reset_code() ==
+					SW_RESET_COLDSTART)) {
 			dev_dbg(ab->dev, "USB entered charge only mode");
 			return 0;
 		}
