@@ -93,6 +93,9 @@ static pin_cfg_t u5500_pins_default[] = {
 	GPIO187_GPIO		| PIN_OUTPUT_HIGH,	/* Dual SIM CS */
 
 	GPIO163_GPIO		| PIN_INPUT_PULLUP,	/* SERVICEn */
+
+	GPIO223_GPIO		| PIN_INPUT_PULLDOWN,	/* HDMI_INT */
+	GPIO225_GPIO		| PIN_OUTPUT_LOW,	/* HDMI_ENABLE */
 };
 
 static UX500_PINS(db5500_kp_pins,
