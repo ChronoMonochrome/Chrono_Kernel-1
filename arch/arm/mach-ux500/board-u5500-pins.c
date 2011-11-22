@@ -72,6 +72,9 @@ static pin_cfg_t u5500_pins_default[] = {
 	GPIO208_GPIO		| PIN_OUTPUT_LOW,
 	GPIO209_GPIO		| PIN_INPUT_PULLDOWN,
 
+	/* Display (connected to NT35560 / TE, but unused) */
+	GPIO211_GPIO		| PIN_INPUT_PULLDOWN,
+
 	/* Camera & MMIO XshutDown*/
 	GPIO1_GPIO		| PIN_OUTPUT_LOW,
 	GPIO2_GPIO		| PIN_OUTPUT_LOW,
