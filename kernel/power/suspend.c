@@ -38,6 +38,10 @@ const char *const pm_states[PM_SUSPEND_MAX] = {
 
 static const struct platform_suspend_ops *suspend_ops;
 
+static struct completion second_cpu_complete = {1,
+	__WAIT_QUEUE_HEAD_INITIALIZER((second_cpu_complete).wait)
+};
+
 /**
  *	suspend_set_ops - Set the global suspend method table.
  *	@ops:	Pointer to ops structure.
@@ -261,6 +265,9 @@ static int plug_secondary_cpus(void *data)
 	      suspend_test(TEST_DEVICES) ||
 	      suspend_test(TEST_PLATFORM)))
 		enable_nonboot_cpus();
+
+	complete(&second_cpu_complete);
+
 	return 0;
 }
 
@@ -284,6 +291,14 @@ int enter_state(suspend_state_t state)
 
 	if (!mutex_trylock(&pm_mutex))
 		return -EBUSY;
+
+	/*
+	 * Assure that previous started thread is completed before
+	 * attempting to suspend again.
+	 */
+	error = wait_for_completion_timeout(&second_cpu_complete,
+					    msecs_to_jiffies(500));
+	WARN_ON(error == 0);
 
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	sys_sync();
