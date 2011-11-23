@@ -1108,8 +1108,16 @@ static int __init init_clock_states(void)
 }
 late_initcall(init_clock_states);
 
+static void __init configure_c2_clocks(void)
+{
+	sgaclk.parent = &soc0_pll;
+	sgaclk.mutex = &soc0_pll_mutex;
+}
+
 int __init db8500_clk_init(void)
 {
+	struct prcmu_fw_version *fw_version;
+
 	/*
 	 * Disable pwl's and slimbus' bus and kernel clocks without touching
 	 * any parents. Because for slimbus, the prcmu fw has not correctly
@@ -1124,11 +1132,20 @@ int __init db8500_clk_init(void)
 	writel(1 << 3, __io_address(U8500_CLKRST2_BASE) + PRCC_PCKDIS);
 	writel(1 << 1, __io_address(U8500_CLKRST2_BASE) + PRCC_KCKDIS);
 
+	fw_version = prcmu_get_fw_version();
+	if (fw_version != NULL)
+		switch (fw_version->project) {
+		case PRCMU_FW_PROJECT_U8500_C2:
+		case PRCMU_FW_PROJECT_U9500_C2:
+			configure_c2_clocks();
+			break;
+		default:
+			break;
+		}
 	clkdev_add_table(u8500_v2_sysclks,
 		      ARRAY_SIZE(u8500_v2_sysclks));
 	clkdev_add_table(u8500_clocks,
 		      ARRAY_SIZE(u8500_clocks));
-
 	return 0;
 }
 
