@@ -34,6 +34,7 @@
 #include "product.h"
 #include "prcc.h"
 
+static DEFINE_MUTEX(soc0_pll_mutex);
 static DEFINE_MUTEX(soc1_pll_mutex);
 static DEFINE_MUTEX(sysclk_mutex);
 static DEFINE_MUTEX(ab_ulpclk_mutex);
@@ -397,8 +398,9 @@ static struct clkops clkout1_ops = {
 
 static struct clk soc0_pll = {
 	.name = "soc0_pll",
-	.ops = &pll_ops,
+	.ops = &prcmu_clk_ops,
 	.cg_sel = PRCMU_PLLSOC0,
+	.mutex = &soc0_pll_mutex,
 };
 
 static struct clk soc1_pll = {
