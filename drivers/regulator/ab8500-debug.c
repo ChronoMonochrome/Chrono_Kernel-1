@@ -1172,7 +1172,7 @@ static struct ab8500_regulator ab8500_regulator[AB8500_NUM_REGULATORS] = {
 	},
 };
 
-static int status_state;
+static int status_state = AB8500_REGULATOR_STATE_CURRENT;
 
 static int _get_voltage(struct regulator_volt_range const *volt_range,
 	u8 value, int *volt)
@@ -1242,10 +1242,16 @@ static int ab8500_regulator_status_print(struct seq_file *s, void *p)
 		dev_err(dev, "seq_printf overflow\n");
 
 	/* print state */
-	err = seq_printf(s, "%12s\n",
-		regulator_state_name[status_state]);
-	if (err < 0)
-		dev_err(dev, "seq_printf overflow\n");
+	for (i = 0; i < NUM_REGULATOR_STATE; i++) {
+		if (i == status_state)
+			err = seq_printf(s, "-> %i. %12s\n",
+				i, regulator_state_name[i]);
+		else
+			err = seq_printf(s, "   %i. %12s\n",
+				i, regulator_state_name[i]);
+		if (err < 0)
+			dev_err(dev, "seq_printf overflow\n");
+	}
 
 	/* print labels */
 	err = seq_printf(s,
