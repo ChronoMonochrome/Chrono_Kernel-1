@@ -2386,6 +2386,8 @@ int mmc_suspend_host(struct mmc_host *host)
 				mmc_poweroff_notify(host);
 				err = host->bus_ops->suspend(host);
 			}
+			mmc_do_release_host(host);
+
 			if (err == -ENOSYS || !host->bus_ops->resume) {
 				/*
 				 * We simply "remove" the card in this case.
@@ -2400,7 +2402,6 @@ int mmc_suspend_host(struct mmc_host *host)
 				host->pm_flags = 0;
 				err = 0;
 			}
-			mmc_do_release_host(host);
 		} else {
 			err = -EBUSY;
 		}
