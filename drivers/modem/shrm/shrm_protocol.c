@@ -499,9 +499,6 @@ static int shrm_modem_reset_sequence(void)
 	queue_kthread_work(&shm_dev->shm_ac_wake_kw,
 			&shm_dev->shm_ac_wake_req);
 
-	/* stop network queue */
-	shrm_stop_netdev(shm_dev->ndev);
-
 	/* reset char device queues */
 	shrm_char_reset_queues(shm_dev);
 
@@ -596,6 +593,9 @@ static irqreturn_t shrm_prcmu_irq_handler(int irq, void *data)
 		disable_irq_nosync(shrm->ca_msg_pending_notif_1_irq);
 		disable_irq_nosync(IRQ_PRCMU_CA_WAKE);
 		disable_irq_nosync(IRQ_PRCMU_CA_SLEEP);
+
+		/* stop network queue */
+		shrm_stop_netdev(shm_dev->ndev);
 
 		tasklet_schedule(&shrm_sw_reset_callback);
 		break;
