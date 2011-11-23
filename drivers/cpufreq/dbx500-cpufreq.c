@@ -136,6 +136,27 @@ static unsigned int dbx500_cpufreq_getspeed(unsigned int cpu)
 	return freq_table[i].frequency;
 }
 
+static void __init dbx500_cpufreq_init_maxopp_freq(void)
+{
+	struct prcmu_fw_version *fw_version = prcmu_get_fw_version();
+
+	if ((fw_version == NULL) || !prcmu_has_arm_maxopp())
+		return;
+
+	switch (fw_version->project) {
+	case PRCMU_FW_PROJECT_U8500:
+	case PRCMU_FW_PROJECT_U9500:
+		freq_table[3].frequency = 1000000;
+		break;
+	case PRCMU_FW_PROJECT_U8500_C2:
+	case PRCMU_FW_PROJECT_U9500_C2:
+		freq_table[3].frequency = 1150000;
+		break;
+	default:
+		break;
+	}
+}
+
 static bool initialized;
 
 static void __init dbx500_cpufreq_early_init(void)
@@ -143,17 +164,13 @@ static void __init dbx500_cpufreq_early_init(void)
 	if (cpu_is_u5500()) {
 		freq_table = db5500_freq_table;
 		idx2opp = db5500_idx2opp;
-
 	} else if (cpu_is_u8500()) {
 		freq_table = db8500_freq_table;
 		idx2opp = db8500_idx2opp;
-		if (prcmu_has_arm_maxopp())
-			freq_table[3].frequency = 1000000;
-
+		dbx500_cpufreq_init_maxopp_freq();
 	} else {
 		ux500_unknown_soc();
 	}
-
 	initialized = true;
 }
 
