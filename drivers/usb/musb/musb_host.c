@@ -1173,7 +1173,6 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 		} while ((tx_csr & MUSB_TXCSR_TXPKTRDY) != 0);
 		dev_dbg(musb->controller, "TXPKTRDY Cleared. Continue...\n");
 
-		return;
 	} else if (tx_csr & MUSB_TXCSR_H_NAKTIMEOUT) {
 		dev_dbg(musb->controller, "TX end=%d device not responding\n", epnum);
 
