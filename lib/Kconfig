@@ -25,6 +25,13 @@ config GENERIC_STRNLEN_USER
 config GENERIC_FIND_FIRST_BIT
 	bool
 
+config GENERIC_PCI_IOMAP
+	bool
+
+config GENERIC_IOMAP
+	bool
+	select GENERIC_PCI_IOMAP
+
 config BENCH
 	tristate "Benchmark"
 	default n
