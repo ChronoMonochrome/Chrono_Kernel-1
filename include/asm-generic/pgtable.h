@@ -5,6 +5,7 @@
 #ifdef CONFIG_MMU
 
 #include <linux/mm_types.h>
+#include <linux/bug.h>
 
 /*
  * On almost all architectures and configurations, 0 can be used as the

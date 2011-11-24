@@ -1,5 +1,8 @@
 #ifndef _LINUX_PTRACE_H
 #define _LINUX_PTRACE_H
+
+#include <linux/bug.h>			/* For BUG_ON.  */
+
 /* ptrace.h */
 /* structs and defines to help the user use the ptrace system call. */
 
