@@ -450,6 +450,12 @@ void shm_ca_sleep_req_work(struct kthread_work *work)
 	shrm_common_rx_state = SHRM_IDLE;
 	shrm_audio_rx_state =  SHRM_IDLE;
 
+	if (check_modem_in_reset()) {
+		dev_err(shm_dev->dev, "%s:Modem state reset or unknown\n",
+				__func__);
+		return;
+	}
+
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 		shm_dev->intr_base + GOP_SET_REGISTER_BASE);
 
@@ -478,6 +484,13 @@ void shm_ca_wake_req_work(struct kthread_work *work)
 		dev_info(shrm->dev, "Initiating a modem reset\n");
 		prcmu_modem_reset();
 	}
+
+	if (check_modem_in_reset()) {
+		dev_err(shrm->dev, "%s:Modem state reset or unknown\n",
+			__func__);
+		return;
+	}
+
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 			shm_dev->intr_base + GOP_SET_REGISTER_BASE);
 }
@@ -625,6 +638,12 @@ static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 		prcmu_modem_reset();
 	}
 
+	if (check_modem_in_reset()) {
+		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
+				__func__);
+		return;
+	}
+
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_COMMON_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -653,6 +672,12 @@ static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 		dev_crit(shrm->dev, "get_host_accessport failed\n");
 		dev_info(shrm->dev, "Initiating a modem reset\n");
 		prcmu_modem_reset();
+	}
+
+	if (check_modem_in_reset()) {
+		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
+				__func__);
+		return;
 	}
 
 	/* Trigger AcMsgPendingNotification to CMU */
