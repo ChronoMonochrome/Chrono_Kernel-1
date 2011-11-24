@@ -24,8 +24,6 @@
 
 /* typesafe io address */
 #define __io_address(n)		IOMEM(IO_ADDRESS(n))
-/* Used by some plat-nomadik code */
-#define io_p2v(n)		__io_address(n)
 
 #include <mach/db8500-regs.h>
 #include <mach/db5500-regs.h>
