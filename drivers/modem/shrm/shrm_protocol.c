@@ -31,7 +31,7 @@
 #define L2_HEADER_CIQ		0xC3
 #define MAX_PAYLOAD 1024
 
-#define PRCM_HOSTACCESS_REQ   (_PRCMU_BASE + 0x334)
+#define PRCM_HOSTACCESS_REQ   0x334
 
 static u8 boot_state = BOOT_INIT;
 static u8 recieve_common_msg[8*1024];
@@ -94,7 +94,7 @@ static u32 get_host_accessport_val(void)
 {
 	u32 prcm_hostaccess;
 
-	prcm_hostaccess = readl(PRCM_HOSTACCESS_REQ);
+	prcm_hostaccess = prcmu_read(PRCM_HOSTACCESS_REQ);
 	wmb();
 	prcm_hostaccess = prcm_hostaccess & 0x01;
 
