@@ -1198,7 +1198,7 @@ void release_mounts(struct list_head *head)
 	while (!list_empty(head)) {
 		mnt = list_first_entry(head, struct mount, mnt_hash);
 		list_del_init(&mnt->mnt_hash);
-		if (mnt_has_parent(&mnt->mnt)) {
+		if (mnt_has_parent(mnt)) {
 			struct dentry *dentry;
 			struct vfsmount *m;
 
@@ -1239,7 +1239,7 @@ void umount_tree(struct mount *mnt, int propagate, struct list_head *kill)
 			__mnt_make_shortterm(&p->mnt);
 		p->mnt.mnt_ns = NULL;
 		list_del_init(&p->mnt.mnt_child);
-		if (mnt_has_parent(&p->mnt)) {
+		if (mnt_has_parent(p)) {
 			p->mnt.mnt_parent->mnt_ghosts++;
 			dentry_reset_mounted(p->mnt.mnt_mountpoint);
 		}
@@ -1919,7 +1919,7 @@ static inline int tree_contains_unbindable(struct mount *mnt)
 static int do_move_mount(struct path *path, char *old_name)
 {
 	struct path old_path, parent_path;
-	struct vfsmount *p;
+	struct mount *p;
 	struct mount *old;
 	int err = 0;
 	if (!capable(CAP_SYS_ADMIN))
@@ -1955,7 +1955,7 @@ return -EPERM;
 
 	old = real_mount(old_path.mnt);
 
-	if (!mnt_has_parent(old_path.mnt))
+	if (!mnt_has_parent(old))
 		goto out1;
 
 	if (S_ISDIR(path->dentry->d_inode->i_mode) !=
@@ -1974,8 +1974,8 @@ return -EPERM;
 	    tree_contains_unbindable(old))
 		goto out1;
 	err = -ELOOP;
-	for (p = path->mnt; mnt_has_parent(p); p = p->mnt_parent)
-		if (p == old_path.mnt)
+	for (p = real_mount(path->mnt); mnt_has_parent(p); p = real_mount(p->mnt.mnt_parent))
+		if (p == old)
 			goto out1;
 
 	err = attach_recursive_mnt(old, path, &parent_path);
@@ -2636,7 +2636,7 @@ out_type:
 bool is_path_reachable(struct vfsmount *mnt, struct dentry *dentry,
 			 const struct path *root)
 {
-	while (mnt != root->mnt && mnt_has_parent(mnt)) {
+	while (mnt != root->mnt && mnt_has_parent(real_mount(mnt))) {
 		dentry = mnt->mnt_mountpoint;
 		mnt = mnt->mnt_parent;
 	}
@@ -2734,11 +2734,11 @@ return -EPERM;
 	error = -EINVAL;
 	if (root.mnt->mnt_root != root.dentry)
 		goto out4; /* not a mountpoint */
-	if (!mnt_has_parent(root.mnt))
+	if (!mnt_has_parent(root_mnt))
 		goto out4; /* not attached */
 	if (new.mnt->mnt_root != new.dentry)
 		goto out4; /* not a mountpoint */
-	if (!mnt_has_parent(new.mnt))
+	if (!mnt_has_parent(new_mnt))
 		goto out4; /* not attached */
 	/* make sure we can reach put_old from new_root */
 	if (!is_path_reachable(old.mnt, old.dentry, &new))
