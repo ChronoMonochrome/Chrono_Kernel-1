@@ -1018,17 +1018,10 @@ static int stm_msp_configure_enable(struct i2s_controller *i2s_cont,
 	}
 	if (config->loopback_enable & 0x80)
 		msp->loopback_enable = 1;
-	/*Sometimes FIFO doesn't gets empty hence limit is provided */
-	flush_tx_fifo(msp);
-	/*This has been added in order to fix fifo flush problem
-	   When last xfer occurs some data remains in fifo. In order to
-	   flush that data delay is needed */
-	msleep(10);
-	/* wait for fifo to flush */
-	flush_rx_fifo(msp);
 
-	/* RX_BUSY take a while to clear */
-	msleep(10);
+	/* Flush MSP-FIFOs */
+	flush_tx_fifo(msp);
+	flush_rx_fifo(msp);
 
 	msp->msp_state = MSP_STATE_CONFIGURED;
 	up(&msp->lock);
@@ -1695,10 +1688,7 @@ static int stm_msp_disable(struct msp *msp, int direction, i2s_flag flag)
 		stm_msp_write((stm_msp_read(msp->registers + MSP_GCR) &
 			       (~(RX_ENABLE | LOOPBACK_MASK))),
 			      msp->registers + MSP_GCR);
-		/*This has been added in order to fix fifo flush problem
-		   When last xfer occurs some data remains in fifo. In order to
-		   flush that data delay is needed */
-		msleep(10);
+
 		msp_disable_transmit(msp);
 		msp_disable_receive(msp);
 
