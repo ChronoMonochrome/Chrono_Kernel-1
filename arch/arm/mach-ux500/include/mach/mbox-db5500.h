@@ -89,5 +89,5 @@ struct mbox *mbox_setup(u8 mbox_id, mbox_recv_cb_t *mbox_cb, void *priv);
   * specify "block" in order to block until send is possible).
   */
 int mbox_send(struct mbox *mbox, u32 mbox_msg, bool block);
-
+void mbox_state_reset(void);
 #endif /*INC_STE_MBOX_H*/
