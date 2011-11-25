@@ -85,7 +85,7 @@ static int do_make_slave(struct mount *mnt)
 		if (peer_mnt == mnt)
 			peer_mnt = NULL;
 	}
-	if (IS_MNT_SHARED(&mnt->mnt) && list_empty(&mnt->mnt_share))
+	if (IS_MNT_SHARED(mnt) && list_empty(&mnt->mnt_share))
 		mnt_release_group_id(mnt);
 
 	list_del_init(&mnt->mnt_share);
@@ -110,7 +110,7 @@ static int do_make_slave(struct mount *mnt)
 		}
 	}
 	mnt->mnt_master = master;
-	CLEAR_MNT_SHARED(&mnt->mnt);
+	CLEAR_MNT_SHARED(mnt);
 	return 0;
 }
 
@@ -202,7 +202,7 @@ static struct mount *get_source(struct mount *dest,
 	/* slave of the earlier, then */
 	*type = CL_SLAVE;
 	/* beginning of peer group among the slaves? */
-	if (IS_MNT_SHARED(&dest->mnt))
+	if (IS_MNT_SHARED(dest))
 		*type |= CL_MAKE_SHARED;
 	return last_src;
 }
