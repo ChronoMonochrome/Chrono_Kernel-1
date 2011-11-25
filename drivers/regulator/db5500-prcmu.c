@@ -30,9 +30,11 @@ static int db5500_regulator_enable(struct regulator_dev *rdev)
 	dev_vdbg(rdev_get_dev(rdev), "regulator-%s-enable\n",
 		info->desc.name);
 
-	info->is_enabled = true;
-	if (!info->exclude_from_power_state)
-		power_state_active_enable();
+	if (!info->is_enabled) {
+		info->is_enabled = true;
+		if (!info->exclude_from_power_state)
+			power_state_active_enable();
+	}
 
 	return 0;
 }
@@ -48,9 +50,11 @@ static int db5500_regulator_disable(struct regulator_dev *rdev)
 	dev_vdbg(rdev_get_dev(rdev), "regulator-%s-disable\n",
 		info->desc.name);
 
-	info->is_enabled = false;
-	if (!info->exclude_from_power_state)
-		ret = power_state_active_disable();
+	if (info->is_enabled) {
+		info->is_enabled = false;
+		if (!info->exclude_from_power_state)
+			ret = power_state_active_disable();
+	}
 
 	return ret;
 }
