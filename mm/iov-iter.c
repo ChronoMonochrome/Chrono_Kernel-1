@@ -42,7 +42,7 @@ size_t ii_iovec_copy_to_user_atomic(struct page *page,
 	size_t copied;
 
 	BUG_ON(!in_atomic());
-	kaddr = kmap_atomic(page, KM_USER0);
+	kaddr = kmap_atomic(page);
 	if (likely(i->nr_segs == 1)) {
 		int left;
 		char __user *buf = iov->iov_base + i->iov_offset;
@@ -52,7 +52,7 @@ size_t ii_iovec_copy_to_user_atomic(struct page *page,
 		copied = __iovec_copy_to_user_inatomic(kaddr + offset,
 						iov, i->iov_offset, bytes);
 	}
-	kunmap_atomic(kaddr, KM_USER0);
+	kunmap_atomic(kaddr);
 
 	return copied;
 }
