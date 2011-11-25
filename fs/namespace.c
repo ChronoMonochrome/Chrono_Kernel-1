@@ -717,9 +717,9 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
 		if (flag & CL_SLAVE) {
 			list_add(&mnt->mnt_slave, &old->mnt_slave_list);
 			mnt->mnt_master = old;
-			CLEAR_MNT_SHARED(&mnt->mnt);
+			CLEAR_MNT_SHARED(mnt);
 		} else if (!(flag & CL_PRIVATE)) {
-			if ((flag & CL_MAKE_SHARED) || IS_MNT_SHARED(&old->mnt))
+			if ((flag & CL_MAKE_SHARED) || IS_MNT_SHARED(old))
 				list_add(&mnt->mnt_share, &old->mnt_share);
 			if (IS_MNT_SLAVE(old))
 				list_add(&mnt->mnt_slave, &old->mnt_slave);
@@ -1051,7 +1051,7 @@ static int show_mountinfo(struct seq_file *m, void *v)
 	show_mnt_opts(m, mnt);
 
 	/* Tagged fields ("foo:X" or "bar") */
-	if (IS_MNT_SHARED(mnt))
+	if (IS_MNT_SHARED(r))
 		seq_printf(m, " shared:%i", r->mnt_group_id);
 	if (IS_MNT_SLAVE(r)) {
 		int master = r->mnt_master->mnt_group_id;
@@ -1060,7 +1060,7 @@ static int show_mountinfo(struct seq_file *m, void *v)
 		if (dom && dom != master)
 			seq_printf(m, " propagate_from:%i", dom);
 	}
-	if (IS_MNT_UNBINDABLE(mnt))
+	if (IS_MNT_UNBINDABLE(r))
 		seq_puts(m, " unbindable");
 
 	/* Filesystem specific data */
@@ -1430,7 +1430,7 @@ struct mount *copy_tree(struct mount *mnt, struct dentry *dentry,
 	struct mount *res, *p, *q, *r;
 	struct path path;
 
-	if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(&mnt->mnt))
+	if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(mnt))
 		return NULL;
 
 	res = q = clone_mnt(mnt, dentry, flag);
@@ -1445,7 +1445,7 @@ struct mount *copy_tree(struct mount *mnt, struct dentry *dentry,
 			continue;
 
 		for (s = r; s; s = next_mnt(s, &r->mnt)) {
-			if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(&s->mnt)) {
+			if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(s)) {
 				s = skip_mnt_tree(s);
 				continue;
 			}
@@ -1518,7 +1518,7 @@ static void cleanup_group_ids(struct mount *mnt, struct mount *end)
 	struct mount *p;
 
 	for (p = mnt; p != end; p = next_mnt(p, &mnt->mnt)) {
-		if (p->mnt_group_id && !IS_MNT_SHARED(&p->mnt))
+		if (p->mnt_group_id && !IS_MNT_SHARED(p))
 			mnt_release_group_id(p);
 	}
 }
@@ -1528,7 +1528,7 @@ static int invent_group_ids(struct mount *mnt, bool recurse)
 	struct mount *p;
 
 	for (p = mnt; p; p = recurse ? next_mnt(p, &mnt->mnt) : NULL) {
-		if (!p->mnt_group_id && !IS_MNT_SHARED(&p->mnt)) {
+		if (!p->mnt_group_id && !IS_MNT_SHARED(p)) {
 			int err = mnt_alloc_group_id(p);
 			if (err) {
 				cleanup_group_ids(mnt, p);
@@ -1612,7 +1612,7 @@ static int attach_recursive_mnt(struct mount *source_mnt,
 	struct mount *child, *p;
 	int err;
 
-	if (IS_MNT_SHARED(&dest_mnt->mnt)) {
+	if (IS_MNT_SHARED(dest_mnt)) {
 		err = invent_group_ids(source_mnt, true);
 		if (err)
 			goto out;
@@ -1623,7 +1623,7 @@ static int attach_recursive_mnt(struct mount *source_mnt,
 
 	br_write_lock(vfsmount_lock);
 
-	if (IS_MNT_SHARED(&dest_mnt->mnt)) {
+	if (IS_MNT_SHARED(dest_mnt)) {
 		for (p = source_mnt; p; p = next_mnt(p, &source_mnt->mnt))
 			set_mnt_shared(p);
 	}
@@ -1645,7 +1645,7 @@ static int attach_recursive_mnt(struct mount *source_mnt,
 	return 0;
 
  out_cleanup_ids:
-	if (IS_MNT_SHARED(&dest_mnt->mnt))
+	if (IS_MNT_SHARED(dest_mnt))
 		cleanup_group_ids(source_mnt, NULL);
  out:
 	return err;
@@ -1781,7 +1781,7 @@ static int do_loopback(struct path *path, char *old_name,
 	old = real_mount(old_path.mnt);
 
 	err = -EINVAL;
-	if (IS_MNT_UNBINDABLE(old_path.mnt))
+	if (IS_MNT_UNBINDABLE(old))
 		goto out2;
 
 	if (!check_mnt(real_mount(path->mnt)) || !check_mnt(old))
@@ -1884,7 +1884,7 @@ static inline int tree_contains_unbindable(struct mount *mnt)
 {
 	struct mount *p;
 	for (p = mnt; p; p = next_mnt(p, &mnt->mnt)) {
-		if (IS_MNT_UNBINDABLE(&p->mnt))
+		if (IS_MNT_UNBINDABLE(p))
 			return 1;
 	}
 	return 0;
@@ -1917,9 +1917,10 @@ return -EPERM;
 		goto out;
 
 	old = real_mount(old_path.mnt);
+	p = real_mount(path->mnt);
 
 	err = -EINVAL;
-	if (!check_mnt(real_mount(path->mnt)) || !check_mnt(old))
+	if (!check_mnt(p) || !check_mnt(old))
 		goto out1;
 
 	if (d_unlinked(path->dentry))
@@ -1938,17 +1939,16 @@ return -EPERM;
 	/*
 	 * Don't move a mount residing in a shared parent.
 	 */
-	if (IS_MNT_SHARED(&old->mnt_parent->mnt))
+	if (IS_MNT_SHARED(old->mnt_parent))
 		goto out1;
 	/*
 	 * Don't move a mount tree containing unbindable mounts to a destination
 	 * mount which is shared.
 	 */
-	if (IS_MNT_SHARED(path->mnt) &&
-	    tree_contains_unbindable(old))
+	if (IS_MNT_SHARED(p) && tree_contains_unbindable(old))
 		goto out1;
 	err = -ELOOP;
-	for (p = real_mount(path->mnt); mnt_has_parent(p); p = p->mnt_parent)
+	for (; mnt_has_parent(p); p = p->mnt_parent)
 		if (p == old)
 			goto out1;
 
@@ -2692,9 +2692,9 @@ return -EPERM;
 	error = -EINVAL;
 	new_mnt = real_mount(new.mnt);
 	root_mnt = real_mount(root.mnt);
-	if (IS_MNT_SHARED(old.mnt) ||
-		IS_MNT_SHARED(&new_mnt->mnt_parent->mnt) ||
-		IS_MNT_SHARED(&root_mnt->mnt_parent->mnt))
+	if (IS_MNT_SHARED(real_mount(old.mnt)) ||
+		IS_MNT_SHARED(new_mnt->mnt_parent) ||
+		IS_MNT_SHARED(root_mnt->mnt_parent))
 		goto out4;
 	if (!check_mnt(root_mnt) || !check_mnt(new_mnt))
 		goto out4;
