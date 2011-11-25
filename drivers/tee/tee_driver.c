@@ -110,6 +110,18 @@ static inline void memrefs_phys_to_virt(struct tee_session *ts)
 	}
 }
 
+static inline void memrefs_virt_to_phys(struct tee_session *ts)
+{
+	int i;
+
+	for (i = 0; i < 4; ++i) {
+		if (ts->op->flags & (1 << i)) {
+			ts->op->shm[i].buffer =
+				(void *)virt_to_phys(ts->op->shm[i].buffer);
+		}
+	}
+}
+
 static int copy_memref_to_user(struct tee_operation *op,
 			       struct tee_operation *ubuf_op,
 			       int memref)
@@ -169,9 +181,6 @@ static int copy_memref_to_kernel(struct tee_operation *op,
 
 	op->shm[memref].size = kbuf_op->shm[memref].size;
 	op->shm[memref].flags = kbuf_op->shm[memref].flags;
-
-	/* Secure world expects physical addresses. */
-	op->shm[memref].buffer = (void *)virt_to_phys(op->shm[memref].buffer);
 
 	return 0;
 }
@@ -238,7 +247,9 @@ static int invoke_command(struct tee_session *ts,
 		}
 	}
 
-	/* To call secure world */
+	/* Secure world expects physical addresses. */
+	memrefs_virt_to_phys(ts);
+
 	if (call_sec_world(ts, TEED_INVOKE)) {
 		ret = -EINVAL;
 		goto err;
