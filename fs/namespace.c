@@ -690,7 +690,7 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void 
 }
 EXPORT_SYMBOL_GPL(vfs_kern_mount);
 
-static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
+static struct mount *clone_mnt(struct vfsmount *old, struct dentry *root,
 					int flag)
 {
 	struct super_block *sb = old->mnt_sb;
@@ -736,7 +736,7 @@ static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
 				list_add(&mnt->mnt.mnt_expire, &old->mnt_expire);
 		}
 	}
-	return &mnt->mnt;
+	return mnt;
 
  out_free:
 	free_vfsmnt(mnt);
@@ -1450,10 +1450,11 @@ return -EPERM;
 #endif
 }
 
-struct vfsmount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
+struct mount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
 					int flag)
 {
-	struct vfsmount *res, *p, *q, *r;
+	struct mount *res, *q;
+	struct vfsmount *p, *r;
 	struct path path;
 
 	if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(mnt))
@@ -1462,7 +1463,7 @@ struct vfsmount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
 	res = q = clone_mnt(mnt, dentry, flag);
 	if (!q)
 		goto Enomem;
-	q->mnt_mountpoint = mnt->mnt_mountpoint;
+	q->mnt.mnt_mountpoint = mnt->mnt_mountpoint;
 
 	p = mnt;
 	list_for_each_entry(r, &mnt->mnt_mounts, mnt_child) {
@@ -1477,17 +1478,17 @@ struct vfsmount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
 			}
 			while (p != s->mnt.mnt_parent) {
 				p = p->mnt_parent;
-				q = q->mnt_parent;
+				q = real_mount(q->mnt.mnt_parent);
 			}
 			p = &s->mnt;
-			path.mnt = q;
+			path.mnt = &q->mnt;
 			path.dentry = p->mnt_mountpoint;
 			q = clone_mnt(p, p->mnt_root, flag);
 			if (!q)
 				goto Enomem;
 			br_write_lock(vfsmount_lock);
-			list_add_tail(&q->mnt_list, &res->mnt_list);
-			attach_mnt(real_mount(q), &path);
+			list_add_tail(&q->mnt.mnt_list, &res->mnt.mnt_list);
+			attach_mnt(q, &path);
 			br_write_unlock(vfsmount_lock);
 		}
 	}
@@ -1496,7 +1497,7 @@ Enomem:
 	if (res) {
 		LIST_HEAD(umount_list);
 		br_write_lock(vfsmount_lock);
-		umount_tree(res, 0, &umount_list);
+		umount_tree(&res->mnt, 0, &umount_list);
 		br_write_unlock(vfsmount_lock);
 		release_mounts(&umount_list);
 	}
@@ -1505,11 +1506,11 @@ Enomem:
 
 struct vfsmount *collect_mounts(struct path *path)
 {
-	struct vfsmount *tree;
+	struct mount *tree;
 	down_write(&namespace_sem);
 	tree = copy_tree(path->mnt, path->dentry, CL_COPY_ALL | CL_PRIVATE);
 	up_write(&namespace_sem);
-	return tree;
+	return tree ? &tree->mnt : NULL;
 }
 
 void drop_collected_mounts(struct vfsmount *mnt)
@@ -1789,7 +1790,7 @@ static int do_loopback(struct path *path, char *old_name,
 {
 	LIST_HEAD(umount_list);
 	struct path old_path;
-	struct vfsmount *mnt = NULL;
+	struct mount *mnt = NULL;
 	int err = mount_is_safe(path);
 	if (err)
 		return err;
@@ -1819,10 +1820,10 @@ static int do_loopback(struct path *path, char *old_name,
 	if (!mnt)
 		goto out2;
 
-	err = graft_tree(mnt, path);
+	err = graft_tree(&mnt->mnt, path);
 	if (err) {
 		br_write_lock(vfsmount_lock);
-		umount_tree(mnt, 0, &umount_list);
+		umount_tree(&mnt->mnt, 0, &umount_list);
 		br_write_unlock(vfsmount_lock);
 	}
 out2:
@@ -2459,6 +2460,7 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
 	struct mnt_namespace *new_ns;
 	struct vfsmount *rootmnt = NULL, *pwdmnt = NULL;
 	struct mount *p, *q;
+	struct mount *new;
 
 	new_ns = alloc_mnt_ns();
 	if (IS_ERR(new_ns))
@@ -2466,13 +2468,14 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
 
 	down_write(&namespace_sem);
 	/* First pass: copy the tree topology */
-	new_ns->root = copy_tree(mnt_ns->root, mnt_ns->root->mnt_root,
+	new = copy_tree(mnt_ns->root, mnt_ns->root->mnt_root,
 					CL_COPY_ALL | CL_EXPIRE);
-	if (!new_ns->root) {
+	if (!new) {
 		up_write(&namespace_sem);
 		kfree(new_ns);
 		return ERR_PTR(-ENOMEM);
 	}
+	new_ns->root = &new->mnt;
 	br_write_lock(vfsmount_lock);
 	list_add_tail(&new_ns->list, &new_ns->root->mnt_list);
 	br_write_unlock(vfsmount_lock);
@@ -2483,7 +2486,7 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
 	 * fs_struct, so tsk->fs->lock is not needed.
 	 */
 	p = real_mount(mnt_ns->root);
-	q = real_mount(new_ns->root);
+	q = new;
 	while (p) {
 		q->mnt.mnt_ns = new_ns;
 		__mnt_make_longterm(&q->mnt);
