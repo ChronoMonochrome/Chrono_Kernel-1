@@ -32,7 +32,7 @@
 #define STM_CLOCK_MASK  0x1C0
 
 /* Hardware mode for all sources */
-#define STM_MMC_DEFAULT            0xFFFFFFFF
+#define STM_MMC_DEFAULT            CONFIG_STM_DEFAULT_MASTERS_MODES
 
 /* Max number of channels (multiple of 256) */
 #define STM_NUMBER_OF_CHANNEL      CONFIG_STM_NUMBER_OF_CHANNEL
@@ -657,7 +657,6 @@ static int __devinit stm_probe(struct platform_device *pdev)
 	/* Enable STM Masters given in pdata */
 	if (stm.pdata->masters_enabled)
 		stm_enable_src(stm.pdata->masters_enabled);
-
 	stm_set_modes(STM_MMC_DEFAULT); /* Set all sources in HW mode */
 
 	dev_info(&pdev->dev, "STM-Trace driver probed successfully\n");
