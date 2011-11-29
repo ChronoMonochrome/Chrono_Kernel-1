@@ -532,7 +532,7 @@ static inline int prcmu_stop_temp_sense(void)
 static inline u32 prcmu_read(unsigned int reg)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_read(reg);
 	else
 		return db8500_prcmu_read(reg);
 }
@@ -540,7 +540,7 @@ static inline u32 prcmu_read(unsigned int reg)
 static inline void prcmu_write(unsigned int reg, u32 value)
 {
 	if (cpu_is_u5500())
-		return;
+		db5500_prcmu_write(reg, value);
 	else
 		db8500_prcmu_write(reg, value);
 }
@@ -548,7 +548,7 @@ static inline void prcmu_write(unsigned int reg, u32 value)
 static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
 {
 	if (cpu_is_u5500())
-		return;
+		db5500_prcmu_write_masked(reg, mask, value);
 	else
 		db8500_prcmu_write_masked(reg, mask, value);
 }

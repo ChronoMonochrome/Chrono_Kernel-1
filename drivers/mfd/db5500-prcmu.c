@@ -1593,6 +1593,25 @@ int db5500_prcmu_set_display_clocks(void)
 	return 0;
 }
 
+u32 db5500_prcmu_read(unsigned int reg)
+{
+	return readl_relaxed(_PRCMU_BASE + reg);
+}
+
+void db5500_prcmu_write(unsigned int reg, u32 value)
+{
+	writel_relaxed(value, _PRCMU_BASE + reg);
+}
+
+void db5500_prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
+{
+	u32 val;
+
+	val = readl_relaxed(_PRCMU_BASE + reg);
+	val = (val & ~mask) | (value & mask);
+	writel_relaxed(val, _PRCMU_BASE + reg);
+}
+
 /**
  * db5500_prcmu_system_reset - System reset
  *

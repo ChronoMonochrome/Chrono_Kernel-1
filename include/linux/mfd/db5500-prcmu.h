@@ -41,6 +41,10 @@ int db5500_prcmu_get_ape_opp(void);
 int db5500_prcmu_set_ddr_opp(u8 opp);
 int db5500_prcmu_get_ddr_opp(void);
 
+u32 db5500_prcmu_read(unsigned int reg);
+void db5500_prcmu_write(unsigned int reg, u32 value);
+void db5500_prcmu_write_masked(unsigned int reg, u32 mask, u32 value);
+
 static inline unsigned long prcmu_clock_rate(u8 clock)
 {
 	return 0;
@@ -183,6 +187,16 @@ static inline int db5500_prcmu_get_ddr_opp(void)
 {
 	return 0;
 }
+
+static inline u32 db5500_prcmu_read(unsigned int reg)
+{
+	return 0;
+}
+
+static inline void db5500_prcmu_write(unsigned int reg, u32 value) {}
+
+static inline void db5500_prcmu_write_masked(unsigned int reg, u32 mask,
+	u32 value) {}
 
 static inline int db5500_prcmu_get_hotdog(void)
 {
