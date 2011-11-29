@@ -413,10 +413,17 @@ static void ab8500_usb_delayed_work(struct work_struct *work)
 static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
 {
 	struct ab8500_usb *ab = (struct ab8500_usb *) data;
+	enum usb_xceiv_events event;
 
 	/* Link status will not be updated till phy is disabled. */
-	if (ab->mode == USB_HOST)
+	if (ab->mode == USB_HOST) {
+		event = USB_EVENT_NONE;
+		ab->otg.default_a = false;
+		ab->vbus_draw = 0;
+		atomic_notifier_call_chain(&ab->otg.notifier,
+					event, &ab->vbus_draw);
 		ab8500_usb_host_phy_dis(ab);
+	}
 	else if (ab->mode == USB_PERIPHERAL)
 		ab8500_usb_peri_phy_dis(ab);
 	else if (ab->mode == USB_DEDICATED_CHG && ab->rev == 0x20) {

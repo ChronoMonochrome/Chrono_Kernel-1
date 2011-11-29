@@ -192,11 +192,15 @@ static void musb_notify_idle(unsigned long _musb)
 
 	switch (musb->xceiv->state) {
 	case OTG_STATE_A_WAIT_BCON:
-		devctl &= ~MUSB_DEVCTL_SESSION;
-		musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
-		musb->xceiv->state = OTG_STATE_B_IDLE;
-		MUSB_DEV_MODE(musb);
+		if (devctl & MUSB_DEVCTL_BDEVICE) {
+			musb->xceiv->state = OTG_STATE_B_IDLE;
+			MUSB_DEV_MODE(musb);
+		} else {
+			musb->xceiv->state = OTG_STATE_A_IDLE;
+			MUSB_HST_MODE(musb);
+		}
 		break;
+
 	case OTG_STATE_A_SUSPEND:
 	default:
 		break;
@@ -226,6 +230,8 @@ static int musb_otg_notifications(struct notifier_block *nb,
 
 	case USB_EVENT_NONE:
 		dev_dbg(musb->controller, "VBUS Disconnect\n");
+		if (is_otg_enabled(musb))
+			ux500_musb_set_vbus(musb, 0);
 
 		break;
 	default:
