@@ -130,15 +130,10 @@ static struct platform_device mbox2_device = {
 	.num_resources = ARRAY_SIZE(mbox2_resources),
 };
 
-static struct platform_device db5500_prcmu_device = {
-	.name			= "db5500-prcmu",
-};
-
 static struct platform_device *db5500_platform_devs[] __initdata = {
 	&mbox0_device,
 	&mbox1_device,
 	&mbox2_device,
-	&db5500_prcmu_device,
 };
 
 static resource_size_t __initdata db5500_gpio_base[] = {
