@@ -19,6 +19,7 @@
 #include <linux/amba/bus.h>
 #include <linux/regulator/dbx500-prcmu.h>
 #include <linux/clk.h>
+#include <linux/gfp.h>
 #include <plat/pincfg.h>
 
 #include "../pins.h"
