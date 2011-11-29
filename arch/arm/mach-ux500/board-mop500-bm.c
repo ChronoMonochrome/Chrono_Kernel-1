@@ -374,6 +374,8 @@ static const struct ab8500_fg_parameters fg = {
 	.lowbat_threshold = 3100,
 	.battok_falling_th_sel0 = 2860,
 	.battok_raising_th_sel1 = 2860,
+	.user_cap_limit = 15,
+	.maint_thres = 97,
 };
 
 static const struct ab8500_maxim_parameters maxi_params = {
