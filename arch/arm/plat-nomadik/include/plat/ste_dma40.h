@@ -106,7 +106,7 @@ struct stedma40_half_channel_info {
  * @dst_dev_type: Dst device type
  * @src_info: Parameters for dst half channel
  * @dst_info: Parameters for dst half channel
- * @use_fixed_channel: if true, use the physical channel specified by phy_channel
+ * @use_fixed_channel: if true, use physical channel specified by phy_channel
  * @phy_channel: physical channel to use, only if use_fixed_channel is true
  *
  * This structure has to be filled by the client drivers.
