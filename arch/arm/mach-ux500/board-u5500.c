@@ -743,6 +743,28 @@ static void __init u5500_cryp1_hash1_init(void)
 	db5500_add_hash1(&u5500_hash1_platform_data);
 }
 
+static int __init u5500_accel_sensor_init(void)
+{
+	int status;
+	union i2c_smbus_data data;
+	struct i2c_adapter *i2c2;
+
+	i2c2 = i2c_get_adapter(2);
+	if (!i2c2) {
+		pr_err("failed to get i2c adapter\n");
+		return;
+	}
+	status = i2c_smbus_xfer(i2c2, 0x19 , 0,
+				I2C_SMBUS_READ, 0x0F ,
+				I2C_SMBUS_BYTE_DATA, &data);
+	if (status < 0)
+		lsm303dlh_pdata.chip_id = 0;
+	else
+	lsm303dlh_pdata.chip_id = data.byte;
+	i2c_put_adapter(i2c2);
+}
+module_init(u5500_accel_sensor_init);
+
 static void __init u5500_init_machine(void)
 {
 	struct device *parent = NULL;
