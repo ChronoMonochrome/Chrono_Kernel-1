@@ -217,6 +217,7 @@ static int ux500_pd_bus_notify(struct notifier_block *nb,
 
 #define ux500_pd_suspend_noirq	NULL
 #define ux500_pd_resume_noirq	NULL
+#define ux500_pd_runtime_idle	NULL
 #define ux500_pd_runtime_suspend	NULL
 #define ux500_pd_runtime_resume	NULL
 
