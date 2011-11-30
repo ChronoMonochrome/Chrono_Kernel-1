@@ -16,6 +16,7 @@
 #include <linux/irq.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
+#include <linux/dma-mapping.h>
 
 #include <asm/mach/map.h>
 #include <asm/pmu.h>
@@ -63,6 +64,13 @@ void __init u8500_map_io(void)
 	 * Map the UARTs early so that the DEBUG_LL stuff continues to work.
 	 */
 	iotable_init(u8500_uart_io_desc, ARRAY_SIZE(u8500_uart_io_desc));
+
+	/*
+	 * STE NMF CM driver only used on the U8500 allocate using
+	 * dma_alloc_coherent:
+	 *    8M for SIA and SVA data + 2M for SIA code + 2M for SVA code
+	 */
+	init_consistent_dma_size(SZ_16M);
 
 	ux500_map_io();
 
