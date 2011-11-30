@@ -37,11 +37,13 @@ static LIST_HEAD(ab5500_fg_list);
 #define FG_ACC_RESET_ON_READ		0x08
 #define EN_READOUT_MASK			0x01
 #define EN_READOUT			0x01
+#define EN_ACC_RESET_ON_READ		0x08
+#define ACC_RESET_ON_READ		0x08
 #define RESET				0x00
 #define EOC_52_mA			0x04
 #define MILLI_TO_MICRO			1000
 #define FG_LSB_IN_MA			770
-#define QLSB_NANO_AMP_HOURS_X10		1129
+#define QLSB_NANO_AMP_HOURS_X100	5353
 #define SEC_TO_SAMPLE(S)		(S * 4)
 #define NBR_AVG_SAMPLES			20
 #define LOW_BAT_CHECK_INTERVAL		(2 * HZ)
@@ -444,6 +446,7 @@ static void ab5500_fg_acc_cur_timer_expired(unsigned long data)
 	queue_delayed_work(di->fg_wq, &di->fg_acc_cur_work, 0);
 }
 
+static int prev_samples, prev_val;
 /**
  * ab5500_fg_acc_cur_work() - average battery current
  * @work:	pointer to the work_struct structure
@@ -453,7 +456,7 @@ static void ab5500_fg_acc_cur_timer_expired(unsigned long data)
  */
 static void ab5500_fg_acc_cur_work(struct work_struct *work)
 {
-	int val;
+	int val, raw_val, sample;
 	int ret;
 	u8 low, med, high, cnt_low, cnt_high;
 
@@ -473,6 +476,11 @@ static void ab5500_fg_acc_cur_work(struct work_struct *work)
 		goto exit;
 	/* If charging read charging registers for accumulated values */
 	if (di->flags.charging) {
+		ret = abx500_mask_and_set_register_interruptible(di->dev,
+			AB5500_BANK_FG_BATTCOM_ACC, AB5500_FG_CONTROL_A,
+			ACC_RESET_ON_READ, EN_ACC_RESET_ON_READ);
+		if (ret < 0)
+			goto exit;
 		/* Read CC Sample conversion value Low and high */
 		ret = abx500_get_register_interruptible(di->dev,
 			AB5500_BANK_FG_BATTCOM_ACC,
@@ -500,9 +508,19 @@ static void ab5500_fg_acc_cur_work(struct work_struct *work)
 			AB5500_FG_VAL_COUNT1, &cnt_high);
 		if (ret < 0)
 			goto exit;
+		ret = abx500_mask_and_set_register_interruptible(di->dev,
+			AB5500_BANK_FG_BATTCOM_ACC, AB5500_FG_CONTROL_A,
+			ACC_RESET_ON_READ, RESET);
+		if (ret < 0)
+			goto exit;
 		queue_delayed_work(di->fg_wq, &di->fg_acc_cur_work,
 				di->bat->interval_charging * HZ);
 	} else { /* discharging */
+		ret = abx500_mask_and_set_register_interruptible(di->dev,
+			AB5500_BANK_FG_BATTCOM_ACC, AB5500_FG_CONTROL_A,
+			ACC_RESET_ON_READ, EN_ACC_RESET_ON_READ);
+		if (ret < 0)
+			goto exit;
 		/* Read CC Sample conversion value Low and high */
 		ret = abx500_get_register_interruptible(di->dev,
 			AB5500_BANK_FG_BATTCOM_ACC,
@@ -530,19 +548,48 @@ static void ab5500_fg_acc_cur_work(struct work_struct *work)
 			AB5500_FG_VAL_COUNT1, &cnt_high);
 		if (ret < 0)
 			goto exit;
+		ret = abx500_mask_and_set_register_interruptible(di->dev,
+			AB5500_BANK_FG_BATTCOM_ACC, AB5500_FG_CONTROL_A,
+			ACC_RESET_ON_READ, RESET);
+		if (ret < 0)
+			goto exit;
 		queue_delayed_work(di->fg_wq, &di->fg_acc_cur_work,
 				di->bat->interval_not_charging * HZ);
 	}
 	di->fg_samples = (cnt_low | (cnt_high << 8));
+	/*
+	 * TODO: Workaround due to the hardware issue that accumulator is not
+	 * reset after setting reset_on_read bit and reading the accumulator
+	 * Registers.
+	 */
+	if (prev_samples > di->fg_samples) {
+		/* overflow has occured */
+		sample = (0xFFFF - prev_samples) + di->fg_samples;
+	} else
+		sample = di->fg_samples - prev_samples;
+	prev_samples = di->fg_samples;
+	di->fg_samples = sample;
 	val = (low | (med << 8) | (high << 16));
+	/*
+	 * TODO: Workaround due to the hardware issue that accumulator is not
+	 * reset after setting reset_on_read bit and reading the accumulator
+	 * Registers.
+	 */
+	if (prev_val > val)
+		raw_val = (0xFFFFFF - prev_val) + val;
+	else
+		raw_val = val - prev_val;
+	prev_val = val;
+	val = raw_val;
 
 	if (di->fg_samples) {
-		di->accu_charge = (val * QLSB_NANO_AMP_HOURS_X10)/10000;
+		di->accu_charge = (val * QLSB_NANO_AMP_HOURS_X100)/100000;
 		di->avg_curr = (val * FG_LSB_IN_MA) / (di->fg_samples * 1000);
 	} else
 		dev_err(di->dev,
 			"samples is zero, using previous calculated average current\n");
 	di->flags.conv_done = true;
+	di->calib_state = AB5500_FG_CALIB_END;
 
 	mutex_unlock(&di->cc_lock);
 
@@ -1372,8 +1419,6 @@ static int ab5500_fg_get_property(struct power_supply *psy,
 	union power_supply_propval *val)
 {
 	struct ab5500_fg *di;
-	int i, tbl_size;
-	struct abx500_v_to_cap *tbl;
 
 	di = to_ab5500_fg_device_info(psy);
 
@@ -1432,20 +1477,7 @@ static int ab5500_fg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CAPACITY:
 		if (di->flags.batt_unknown && !di->bat->chg_unknown_bat)
 			val->intval = 100;
-		else if (di->bat->bat_type[di->bat->batt_id].v_to_cap_tbl) {
-			tbl = di->bat->bat_type[di->bat->batt_id].v_to_cap_tbl,
-			tbl_size = di->bat->bat_type[
-				di->bat->batt_id].n_v_cap_tbl_elements;
-
-			for (i = 0; i < tbl_size; ++i) {
-				if (di->vbat < tbl[i].voltage &&
-						di->vbat > tbl[i+1].voltage) {
-					di->v_to_cap = tbl[i].capacity;
-					break;
-				}
-			}
-			val->intval = di->v_to_cap;
-		} else
+		else
 			val->intval = di->bat_cap.prev_percent;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY_LEVEL:
