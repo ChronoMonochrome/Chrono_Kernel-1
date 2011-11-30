@@ -97,9 +97,8 @@
 /* Barometer and Termometer output data rate ODR */
 #define	LPS001WP_PRS_ODR_MASK	0x30	/* Mask to access odr bits only	*/
 #define	LPS001WP_PRS_ODR_7_1	0x00	/* 7Hz baro and 1Hz term ODR	*/
-#define	LPS001WP_PRS_ODR_7_7	0x01	/* 7Hz baro and 7Hz term ODR	*/
-#define	LPS001WP_PRS_ODR_12_12	0x11	/* 12.5Hz baro and 12.5Hz term ODR */
-
+#define	LPS001WP_PRS_ODR_7_7	0x10	/* 7Hz baro and 7Hz term ODR	*/
+#define	LPS001WP_PRS_ODR_12_12	0x30	/* 12.5Hz baro and 12.5Hz term ODR */
 
 #define	LPS001WP_PRS_ENABLE_MASK	0x40	/*  */
 #define	LPS001WP_PRS_DIFF_MASK		0x08
@@ -150,9 +149,10 @@ struct lps001wp_prs_data {
 	struct lps001wp_prs_platform_data *pdata;
 
 	struct mutex lock;
+#ifdef CONFIG_LPS001WP_INPUT_DEVICE
 	struct delayed_work input_work;
-
 	struct input_dev *input_dev;
+#endif
 
 	int hw_initialized;
 	/* hw_working=-1 means not tested yet */
@@ -245,26 +245,6 @@ static int lps001wp_prs_i2c_write(struct lps001wp_prs_data *prs,
 
 	return err;
 }
-
-static int lps001wp_prs_i2c_update(struct lps001wp_prs_data *prs,
-			u8 reg_address, u8 mask, u8 new_bit_values)
-{
-	int err = -1;
-	u8 rdbuf[1] = { reg_address };
-	u8 wrbuf[2] = { reg_address , 0x00 };
-
-	u8 init_val;
-	u8 updated_val;
-	err = lps001wp_prs_i2c_read(prs, rdbuf, 1);
-	if (!(err < 0)) {
-		init_val = rdbuf[0];
-		updated_val = ((mask & new_bit_values) | ((~mask) & init_val));
-		wrbuf[1] = updated_val;
-		err = lps001wp_prs_i2c_write(prs, wrbuf, 2);
-	}
-	return err;
-}
-/* */
 
 static int lps001wp_prs_register_write(struct lps001wp_prs_data *prs, u8 *buf,
 		u8 reg_address, u8 new_value)
@@ -618,6 +598,7 @@ static int lps001wp_prs_get_presstemp_data(struct lps001wp_prs_data *prs,
 	return err;
 }
 
+#ifdef  CONFIG_LPS001WP_INPUT_DEVICE
 static void lps001wp_prs_report_values(struct lps001wp_prs_data *prs,
 					struct outputdata *out)
 {
@@ -626,6 +607,7 @@ static void lps001wp_prs_report_values(struct lps001wp_prs_data *prs,
 	input_report_abs(prs->input_dev, ABS_DLTPR, out->deltapress);
 	input_sync(prs->input_dev);
 }
+#endif
 
 static int lps001wp_prs_enable(struct lps001wp_prs_data *prs)
 {
@@ -637,8 +619,10 @@ static int lps001wp_prs_enable(struct lps001wp_prs_data *prs)
 			atomic_set(&prs->enabled, 0);
 			return err;
 		}
+#ifdef CONFIG_LPS001WP_INPUT_DEVICE
 		schedule_delayed_work(&prs->input_work,
 			msecs_to_jiffies(prs->pdata->poll_interval));
+#endif
 	}
 
 	return 0;
@@ -647,42 +631,13 @@ static int lps001wp_prs_enable(struct lps001wp_prs_data *prs)
 static int lps001wp_prs_disable(struct lps001wp_prs_data *prs)
 {
 	if (atomic_cmpxchg(&prs->enabled, 1, 0)) {
+#ifdef CONFIG_LPS001WP_INPUT_DEVICE
 		cancel_delayed_work_sync(&prs->input_work);
+#endif
 		lps001wp_prs_device_power_off(prs);
 	}
 
 	return 0;
-}
-
-static ssize_t read_single_reg(struct device *dev, char *buf, u8 reg)
-{
-	ssize_t ret;
-	struct lps001wp_prs_data *prs = dev_get_drvdata(dev);
-	int rc = 0;
-
-	u8 data = reg;
-	rc = lps001wp_prs_i2c_read(prs, &data, 1);
-	/*TODO: error need to be managed */
-	ret = sprintf(buf, "0x%02x\n", data);
-	return ret;
-
-}
-
-static int write_reg(struct device *dev, const char *buf, u8 reg)
-{
-	int rc = 0;
-	struct lps001wp_prs_data *prs = dev_get_drvdata(dev);
-	u8 x[2];
-	unsigned long val;
-
-	if (strict_strtoul(buf, 16, &val))
-		return -EINVAL;
-
-	x[0] = reg;
-	x[1] = val;
-	rc = lps001wp_prs_i2c_write(prs, x, 1);
-	/*TODO: error need to be managed */
-	return rc;
 }
 
 static ssize_t attr_get_polling_rate(struct device *dev,
@@ -927,7 +882,7 @@ static int remove_sysfs_interfaces(struct device *dev)
 	return 0;
 }
 
-
+#ifdef CONFIG_LPS001WP_INPUT_DEVICE
 static void lps001wp_prs_input_work_func(struct work_struct *work)
 {
 	struct lps001wp_prs_data *prs;
@@ -964,7 +919,7 @@ void lps001wp_prs_input_close(struct input_dev *dev)
 
 	lps001wp_prs_disable(prs);
 }
-
+#endif
 
 static int lps001wp_prs_validate_pdata(struct lps001wp_prs_data *prs)
 {
@@ -979,11 +934,10 @@ static int lps001wp_prs_validate_pdata(struct lps001wp_prs_data *prs)
 
 	return 0;
 }
-
+#ifdef CONFIG_LPS001WP_INPUT_DEVICE
 static int lps001wp_prs_input_init(struct lps001wp_prs_data *prs)
 {
 	int err;
-
 	INIT_DELAYED_WORK(&prs->input_work, lps001wp_prs_input_work_func);
 	prs->input_dev = input_allocate_device();
 	if (!prs->input_dev) {
@@ -1033,7 +987,7 @@ static void lps001wp_prs_input_cleanup(struct lps001wp_prs_data *prs)
 	input_unregister_device(prs->input_dev);
 	input_free_device(prs->input_dev);
 }
-
+#endif
 static int lps001wp_prs_probe(struct i2c_client *client,
 					const struct i2c_device_id *id)
 {
@@ -1163,13 +1117,13 @@ static int lps001wp_prs_probe(struct i2c_client *client,
 		dev_err(&client->dev, "update_odr failed\n");
 		goto err_power_off;
 	}
-
+#ifdef CONFIG_LPS001WP_INPUT_DEVICE
 	err = lps001wp_prs_input_init(prs);
 	if (err < 0) {
 		dev_err(&client->dev, "input init failed\n");
 		goto err_power_off;
 	}
-
+#endif
 
 	err = create_sysfs_interfaces(&client->dev);
 	if (err < 0) {
@@ -1196,7 +1150,9 @@ remove_sysfs_int:
 	remove_sysfs_interfaces(&client->dev);
 */
 err_input_cleanup:
+#ifdef CONFIG_LPS001WP_INPUT_DEVICE
 	lps001wp_prs_input_cleanup(prs);
+#endif
 err_power_off:
 	lps001wp_prs_device_power_off(prs);
 err2:
@@ -1218,7 +1174,9 @@ static int __devexit lps001wp_prs_remove(struct i2c_client *client)
 {
 	struct lps001wp_prs_data *prs = i2c_get_clientdata(client);
 
+#ifdef CONFIG_LPS001WP_INPUT_DEVICE
 	lps001wp_prs_input_cleanup(prs);
+#endif
 	lps001wp_prs_device_power_off(prs);
 	remove_sysfs_interfaces(&client->dev);
 

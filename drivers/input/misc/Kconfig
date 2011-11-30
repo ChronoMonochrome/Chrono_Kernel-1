@@ -319,6 +319,15 @@ config INPUT_LPS001WP
 	  This is a pressure sensor connected to I2C, mounted on the
 	  snowball and other ST-E boards
 
+config LPS001WP_INPUT_DEVICE
+         bool "ST LPS001WP INPUT DEVICE"
+         depends on INPUT_LPS001WP
+         default n
+         help
+	   This driver allows device to be used as an input device
+	   need to be enabled only when input device support
+	   is required.
+
 config INPUT_POWERMATE
 	tristate "Griffin PowerMate and Contour Jog support"
 	depends on USB_ARCH_HAS_HCD
