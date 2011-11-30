@@ -959,6 +959,9 @@ void __init snowball_pins_init(void)
 
 	nmk_config_pins(snowball_pins,
 			ARRAY_SIZE(snowball_pins));
+
+	suspend_set_pins_force_fn(mop500_pins_suspend_force,
+				  mop500_pins_suspend_force_mux);
 }
 
 void __init hrefv60_pins_init(void)
@@ -970,4 +973,18 @@ void __init hrefv60_pins_init(void)
 
 	nmk_config_pins(hrefv60_pins,
 			ARRAY_SIZE(hrefv60_pins));
+
+	switch (pinsfor) {
+	case PINS_FOR_U9500:
+		nmk_config_pins(u9500_pins, ARRAY_SIZE(u9500_pins));
+		break;
+
+	case PINS_FOR_DEFAULT:
+		nmk_config_pins(u8500_pins, ARRAY_SIZE(u8500_pins));
+	default:
+		break;
+	}
+
+	suspend_set_pins_force_fn(mop500_pins_suspend_force,
+				  mop500_pins_suspend_force_mux);
 }
