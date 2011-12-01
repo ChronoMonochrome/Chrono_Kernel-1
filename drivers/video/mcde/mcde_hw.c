@@ -1398,7 +1398,6 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 	s32 ljinc = stride;
 	u32 pixelfetchwtrmrklevel;
 	u8  nr_of_bufs = 1;
-	u32 fifo_size;
 	u32 sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
 
 	if (rotation == MCDE_DISPLAY_ROT_180_CCW) {
