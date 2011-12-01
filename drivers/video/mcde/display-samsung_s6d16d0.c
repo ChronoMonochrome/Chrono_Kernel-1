@@ -180,7 +180,7 @@ static int __devinit samsung_s6d16d0_probe(struct mcde_display_device *ddev)
 		goto regulator_voltage_failed;
 
 	/* Get in sync with u-boot */
-	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY)
+	if (ddev->power_mode != MCDE_DISPLAY_PM_OFF)
 		(void)regulator_enable(di->regulator);
 
 	ddev->set_power_mode = set_power_mode;

@@ -285,9 +285,9 @@ static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 	* This is the case here, the display driver has to
 	* enable the regulator for the display.
 	*/
-	if (dev->power_mode == MCDE_DISPLAY_PM_STANDBY) {
+	if (dev->power_mode != MCDE_DISPLAY_PM_OFF) {
 		(void) regulator_enable(di->regulator);
-	} else if (dev->power_mode == MCDE_DISPLAY_PM_OFF) {
+	} else {
 		power_on(dev);
 		dev->power_mode = MCDE_DISPLAY_PM_STANDBY;
 	}
