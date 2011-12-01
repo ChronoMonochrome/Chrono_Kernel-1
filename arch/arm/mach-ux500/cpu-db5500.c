@@ -9,6 +9,7 @@
 #include <linux/amba/bus.h>
 #include <linux/io.h>
 #include <linux/irq.h>
+#include <linux/gpio/nomadik.h>
 
 #include <asm/pmu.h>
 #include <asm/mach/map.h>
@@ -49,7 +50,6 @@ static struct map_desc u5500_io_desc[] __initdata = {
 	__IO_DEV_DESC(U5500_GPIO4_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_PRCMU_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_PRCMU_TCDM_BASE, SZ_4K),
-
 	__IO_DEV_DESC(U5500_CLKRST1_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_CLKRST2_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_CLKRST3_BASE, SZ_4K),

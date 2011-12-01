@@ -8,6 +8,7 @@
 #include <linux/platform_device.h>
 #include <linux/amba/bus.h>
 #include <linux/irq.h>
+#include <linux/gpio/nomadik.h>
 #include <linux/i2c.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/amba/pl022.h>
@@ -27,7 +28,6 @@
 
 #include <plat/pincfg.h>
 #include <plat/i2c.h>
-#include <plat/gpio-nomadik.h>
 
 #include <mach/hardware.h>
 #include <mach/ste-dma40-db5500.h>
