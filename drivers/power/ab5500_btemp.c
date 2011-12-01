@@ -262,7 +262,7 @@ static int ab5500_btemp_get_batctrl_res(struct ab5500_btemp *di)
 
 	ret = ab5500_btemp_curr_source_enable(di, true);
 	/* TODO: This delay has to be optimised */
-	mdelay(1000);
+	msleep(100);
 	if (ret) {
 		dev_err(di->dev, "%s curr source enable failed\n", __func__);
 		return ret;
