@@ -268,7 +268,8 @@ static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 	di->port.type = MCDE_PORTTYPE_DSI;
 	di->port.mode = MCDE_PORTMODE_CMD;
 	di->port.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP;
-	di->port.sync_src = MCDE_SYNCSRC_BTA;
+	di->port.sync_src = dev->port->sync_src;
+	di->port.frame_trig = dev->port->frame_trig;
 	di->port.phy.dsi.num_data_lanes = 2;
 	di->port.link = port->link;
 	di->port.phy.dsi.host_eot_gen = true;

@@ -46,7 +46,12 @@ enum mcde_sync_src {
 	MCDE_SYNCSRC_TE1 = 2, /* MCDE ext TE1 */
 	MCDE_SYNCSRC_BTA = 3, /* DSI BTA */
 	MCDE_SYNCSRC_TE_POLLING = 4, /* DSI TE_POLLING */
-	MCDE_SYNCSRC_FORMATTER = 5, /* Sync from formatter */
+};
+
+/* Frame trig method */
+enum mcde_trig_method {
+	MCDE_TRIG_HW = 0, /* frame trig from MCDE formatter */
+	MCDE_TRIG_SW = 1, /* frame trig from software */
 };
 
 /* Interface pixel formats (output) */
@@ -118,6 +123,7 @@ struct mcde_port {
 	u8 ifc;
 	u8 link;
 	enum mcde_sync_src sync_src;
+	enum mcde_trig_method frame_trig;
 	bool update_auto_trig;
 	enum mcde_hdmi_sdtv_switch hdmi_sdtv_switch;
 	union {

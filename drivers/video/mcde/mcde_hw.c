@@ -975,7 +975,8 @@ static void handle_dsi_irq(struct mcde_chnl_state *chnl, int i)
 		dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
 				DSI_DIRECT_CMD_STS_CLR_TE_RECEIVED_CLR(true));
 		dev_vdbg(&mcde_dev->dev, "BTA TE DSI%d\n", i);
-		do_softwaretrig(chnl);
+		if (chnl->port.frame_trig == MCDE_TRIG_SW)
+			do_softwaretrig(chnl);
 	}
 
 	irq_status = dsi_rfld(i, DSI_CMD_MODE_STS_FLAG, ERR_NO_TE_FLAG);
@@ -1984,13 +1985,94 @@ static void update_vid_frame_parameters(struct mcde_port *port,
 							blkline_pck - 6);
 }
 
+static void set_vsync_method(u8 idx, struct mcde_port *port)
+{
+	u32 out_synch_src;
+	u32 src_synch;
+
+	if (port->type == MCDE_PORTTYPE_DSI) {
+		switch (port->frame_trig) {
+		case MCDE_TRIG_HW:
+			src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
+			break;
+		case MCDE_TRIG_SW:
+			src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
+			break;
+		default:
+			src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
+			break;
+		}
+
+		switch (port->sync_src) {
+		case MCDE_SYNCSRC_OFF:
+			out_synch_src =
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
+			break;
+		case MCDE_SYNCSRC_TE0:
+			out_synch_src = MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_TE0;
+			if (src_synch ==
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE) {
+				dev_dbg(&mcde_dev->dev, "%s: badly configured "
+						"frame sync, TE0 defaulting "
+						"to hw frame trig\n", __func__);
+				src_synch =
+					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
+			}
+			break;
+		case MCDE_SYNCSRC_TE1:
+			out_synch_src = MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_TE1;
+			if (src_synch ==
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE) {
+				dev_dbg(&mcde_dev->dev, "%s: badly configured "
+						"frame sync, TE1 defaulting "
+						"to hw frame trig\n", __func__);
+				src_synch =
+					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
+			}
+			break;
+		case MCDE_SYNCSRC_BTA:
+			out_synch_src =
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
+			break;
+		case MCDE_SYNCSRC_TE_POLLING:
+			out_synch_src =
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
+			if (src_synch ==
+				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE) {
+				dev_dbg(&mcde_dev->dev, "%s: badly configured "
+					"frame sync, TE_POLLING defaulting "
+						"to hw frame trig\n", __func__);
+				src_synch =
+					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
+			}
+			break;
+		default:
+			out_synch_src =
+				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
+			src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
+			dev_dbg(&mcde_dev->dev, "%s: no sync src selected, "
+						"defaulting to DSI BTA with "
+						"hw frame trig\n", __func__);
+			break;
+		}
+	} else if (port->type == MCDE_PORTTYPE_DPI) {
+		out_synch_src = MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
+		src_synch = port->update_auto_trig ?
+					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE :
+					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
+	}
+
+	mcde_wreg(MCDE_CHNL0SYNCHMOD +
+		idx * MCDE_CHNL0SYNCHMOD_GROUPOFFSET,
+		MCDE_CHNL0SYNCHMOD_SRC_SYNCH(src_synch) |
+		MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC(out_synch_src));
+}
+
 void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 				struct mcde_port *port, enum mcde_fifo fifo,
 				struct mcde_video_mode *video_mode)
 {
 	u8 idx = chnl_id;
-	u32 out_synch_src = MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
-	u32 src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
 	u32 fifo_wtrmrk = 0;
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
@@ -2022,51 +2104,7 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		break;
 	}
 
-	/* Channel */
-	if (port->type == MCDE_PORTTYPE_DSI) {
-		if (port->update_auto_trig) {
-			switch (port->sync_src) {
-			case MCDE_SYNCSRC_TE0:
-				out_synch_src =
-				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_TE0;
-				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
-				break;
-			case MCDE_SYNCSRC_OFF:
-				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
-				break;
-			case MCDE_SYNCSRC_TE1:
-			default:
-				out_synch_src =
-				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_TE1;
-				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
-				break;
-			case MCDE_SYNCSRC_TE_POLLING:
-				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
-				break;
-			case MCDE_SYNCSRC_FORMATTER:
-				out_synch_src =
-				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
-				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
-				break;
-			}
-		} else {
-			if (port->sync_src == MCDE_SYNCSRC_TE0) {
-				out_synch_src =
-				MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_TE0;
-				src_synch =
-				MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
-			}
-		}
-	} else if (port->type == MCDE_PORTTYPE_DPI) {
-		src_synch = port->update_auto_trig ?
-					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE :
-					MCDE_CHNL0SYNCHMOD_SRC_SYNCH_SOFTWARE;
-	}
+	set_vsync_method(idx, port);
 
 	mcde_wreg(MCDE_CHNL0CONF + idx * MCDE_CHNL0CONF_GROUPOFFSET,
 		MCDE_CHNL0CONF_PPL(regs->ppl-1) |
@@ -2074,10 +2112,6 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 	mcde_wreg(MCDE_CHNL0STAT + idx * MCDE_CHNL0STAT_GROUPOFFSET,
 		MCDE_CHNL0STAT_CHNLBLBCKGND_EN(false) |
 		MCDE_CHNL0STAT_CHNLRD(true));
-	mcde_wreg(MCDE_CHNL0SYNCHMOD +
-		idx * MCDE_CHNL0SYNCHMOD_GROUPOFFSET,
-		MCDE_CHNL0SYNCHMOD_SRC_SYNCH(src_synch) |
-		MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC(out_synch_src));
 	mcde_wreg(MCDE_CHNL0BCKGNDCOL + idx * MCDE_CHNL0BCKGNDCOL_GROUPOFFSET,
 		MCDE_CHNL0BCKGNDCOL_B(0) |
 		MCDE_CHNL0BCKGNDCOL_G(0) |
@@ -2807,14 +2841,30 @@ static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
 
 	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
 		if (chnl->port.sync_src == MCDE_SYNCSRC_OFF) {
-			do_softwaretrig(chnl);
+			if (chnl->port.frame_trig == MCDE_TRIG_SW) {
+				do_softwaretrig(chnl);
+			} else {
+				enable_flow(chnl);
+				disable_flow(chnl);
+			}
 			dev_vdbg(&mcde_dev->dev, "Channel update (no sync), "
 							"chnl=%d\n", chnl->id);
 		} else if (chnl->port.sync_src == MCDE_SYNCSRC_BTA) {
-			if (chnl->power_mode == MCDE_DISPLAY_PM_ON)
+			if (chnl->power_mode == MCDE_DISPLAY_PM_ON) {
 				dsi_te_request(chnl);
-			else
-				do_softwaretrig(chnl);
+			} else {
+				if (chnl->port.frame_trig == MCDE_TRIG_SW)
+					do_softwaretrig(chnl);
+			}
+			if (chnl->port.frame_trig == MCDE_TRIG_HW) {
+				/*
+				 * During BTA TE the MCDE block will be stalled,
+				 * once the TE is received the DMA trig will
+				 * happen
+				 */
+				enable_flow(chnl);
+				disable_flow(chnl);
+			}
 		}
 	}
 }
