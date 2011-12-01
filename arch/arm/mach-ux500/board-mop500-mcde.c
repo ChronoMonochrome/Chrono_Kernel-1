@@ -91,6 +91,7 @@ static struct mcde_col_transform rgb_2_yCbCr_transform = {
 
 static struct mcde_port samsung_s6d16d0_port0 = {
 	.sync_src = MCDE_SYNCSRC_BTA,
+	.frame_trig = MCDE_TRIG_SW,
 };
 
 static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata0 = {
@@ -112,6 +113,7 @@ static struct mcde_display_device samsung_s6d16d0_display0 = {
 static struct mcde_port sony_port0 = {
 	.link = 0,
 	.sync_src = MCDE_SYNCSRC_BTA,
+	.frame_trig = MCDE_TRIG_HW,
 };
 
 static struct mcde_display_sony_acx424akp_platform_data
@@ -134,6 +136,7 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 
 static struct mcde_port samsung_s6d16d0_port1 = {
 	.sync_src = MCDE_SYNCSRC_BTA,
+	.frame_trig = MCDE_TRIG_SW,
 };
 
 static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata1 = {

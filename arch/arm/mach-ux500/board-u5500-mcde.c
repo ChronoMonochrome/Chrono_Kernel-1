@@ -69,6 +69,7 @@ static struct mcde_col_transform rgb_2_yCbCr_transform = {
 static struct mcde_port sony_port0 = {
 	.link = 0,
 	.sync_src = MCDE_SYNCSRC_BTA,
+	.frame_trig = MCDE_TRIG_SW,
 };
 
 static struct mcde_display_sony_acx424akp_platform_data \
