@@ -54,7 +54,7 @@ enum {
 
 static int hibernation_mode = HIBERNATION_SHUTDOWN;
 
-static bool freezer_test_done;
+bool freezer_test_done;
 
 static const struct platform_hibernation_ops *hibernation_ops;
 
