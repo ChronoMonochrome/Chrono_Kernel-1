@@ -118,6 +118,26 @@ static struct clkops clkout1_ops = {
 	.disable = clkout1_disable,
 };
 
+#define PRCM_CLKOCR2		0x58C
+#define PRCM_CLKOCR2_REFCLK	(1 << 0)
+#define PRCM_CLKOCR2_STATIC0	(1 << 2)
+
+static int clkout2_enable(struct clk *clk)
+{
+	prcmu_write(PRCM_CLKOCR2, PRCM_CLKOCR2_REFCLK);
+	return 0;
+}
+
+static void clkout2_disable(struct clk *clk)
+{
+	prcmu_write(PRCM_CLKOCR2, PRCM_CLKOCR2_STATIC0);
+}
+
+static struct clkops clkout2_ops = {
+	.enable = clkout2_enable,
+	.disable = clkout2_disable,
+};
+
 #define DEF_PER1_PCLK(_cg_bit, _name) \
 	DEF_PRCC_PCLK(_name, U5500_CLKRST1_BASE, _cg_bit, &per1clk)
 #define DEF_PER2_PCLK(_cg_bit, _name) \
@@ -201,6 +221,13 @@ static struct clk clkout0 = {
 static struct clk clkout1 = {
 	.name = "clkout1",
 	.ops = &clkout1_ops,
+	.parent = &sysclk,
+	.mutex = &sysclk_mutex,
+};
+
+static struct clk clkout2 = {
+	.name = "clkout2",
+	.ops = &clkout2_ops,
 	.parent = &sysclk,
 	.mutex = &sysclk_mutex,
 };
@@ -466,6 +493,7 @@ static struct clk *db5500_dbg_clks[] __initdata = {
 	/* Clock sources */
 	&clkout0,
 	&clkout1,
+	&clkout2,
 	&rtc_clk1,
 };
 
@@ -560,6 +588,8 @@ static struct clk_lookup db5500_prcc_clocks[] = {
 static struct clk_lookup db5500_clkouts[] = {
 	CLK_LOOKUP(clkout1, "mmio_camera", "primary-cam"),
 	CLK_LOOKUP(clkout1, "mmio_camera", "secondary-cam"),
+	CLK_LOOKUP(clkout2, "ab5500-usb.0", "sysclk"),
+	CLK_LOOKUP(clkout2, "ab5500-codec.0", "sysclk"),
 };
 
 static struct clk_lookup u5500_clocks[] = {
@@ -642,6 +672,7 @@ static struct clk *db5500_clks_tobe_disabled[] __initdata = {
 	&p5_i2c3_clk,
 	&pwmclk,
 	&svaclk,
+	&clkout2,
 };
 
 static int __init init_clock_states(void)
