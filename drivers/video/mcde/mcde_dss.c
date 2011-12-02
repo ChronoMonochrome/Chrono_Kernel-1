@@ -341,15 +341,17 @@ EXPORT_SYMBOL(mcde_dss_try_video_mode);
 int mcde_dss_set_video_mode(struct mcde_display_device *ddev,
 	struct mcde_video_mode *vmode)
 {
-	int ret;
+	int ret = 0;
 	struct mcde_video_mode old_vmode;
 
 	mutex_lock(&ddev->display_lock);
+	/* Do not perform set_video_mode if power mode is off */
+	if (ddev->get_power_mode(ddev) == MCDE_DISPLAY_PM_OFF)
+		goto power_mode_off;
+
 	ddev->get_video_mode(ddev, &old_vmode);
-	if (memcmp(vmode, &old_vmode, sizeof(old_vmode)) == 0) {
-		ret = 0;
+	if (memcmp(vmode, &old_vmode, sizeof(old_vmode)) == 0)
 		goto same_video_mode;
-	}
 
 	ret = ddev->set_video_mode(ddev, vmode);
 	if (ret)
@@ -357,6 +359,7 @@ int mcde_dss_set_video_mode(struct mcde_display_device *ddev,
 
 	if (ddev->invalidate_area)
 		ret = ddev->invalidate_area(ddev, NULL);
+power_mode_off:
 same_video_mode:
 set_video_mode_failed:
 	mutex_unlock(&ddev->display_lock);
