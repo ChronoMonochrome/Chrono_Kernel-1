@@ -12,6 +12,7 @@
  * @file mali_drv.c
  * Implementation of the Linux device driver entrypoints for Mali DRM
  */
+#include <linux/module.h>
 #include <linux/vermagic.h>
 #include <drm/drmP.h>
 #include "mali_drv.h"
