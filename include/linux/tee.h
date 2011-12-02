@@ -160,6 +160,7 @@ struct tee_context {};
  * @err: Error code (as in Global Platform TEE Client API spec)
  * @origin: Origin for the error code (also from spec).
  * @id: Implementation defined type, 0 if not used.
+ * @vaddr: Virtual address for the memrefs.
  * @ta: The trusted application.
  * @uuid: The uuid for the trusted application.
  * @cmd: The command to be executed in the trusted application.
@@ -179,6 +180,7 @@ struct tee_session {
 	uint32_t err;
 	uint32_t origin;
 	uint32_t id;
+	uint32_t *vaddr[TEEC_CONFIG_PAYLOAD_REF_COUNT];
 	void *ta;
 	struct tee_uuid *uuid;
 	unsigned int cmd;
