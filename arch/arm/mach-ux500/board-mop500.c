@@ -674,86 +674,6 @@ static void __init mop500_i2c_init(struct device *parent)
 	db8500_add_i2c3(parent, &u8500_i2c3_data);
 }
 
-#ifdef CONFIG_UX500_GPIO_KEYS
-static struct gpio_keys_button mop500_gpio_keys[] = {
-	{
-		.desc			= "SFH7741 Proximity Sensor",
-		.type			= EV_SW,
-		.code			= SW_FRONT_PROXIMITY,
-		.active_low		= 0,
-		.can_disable		= 1,
-	},
-	{
-		.desc			= "HED54XXU11 Hall Effect Sensor",
-		.type			= EV_SW,
-		.code			= SW_LID, /* FIXME arbitrary usage */
-		.active_low		= 0,
-		.can_disable		= 1,
-	}
-};
-
-static struct regulator *gpio_keys_regulator;
-static int mop500_gpio_keys_activate(struct device *dev);
-static void mop500_gpio_keys_deactivate(struct device *dev);
-
-static struct gpio_keys_platform_data mop500_gpio_keys_data = {
-	.buttons	= mop500_gpio_keys,
-	.nbuttons	= ARRAY_SIZE(mop500_gpio_keys),
-	.enable		= mop500_gpio_keys_activate,
-	.disable	= mop500_gpio_keys_deactivate,
-};
-
-static struct platform_device mop500_gpio_keys_device = {
-	.name	= "gpio-keys",
-	.id	= 0,
-	.dev	= {
-		.platform_data	= &mop500_gpio_keys_data,
-		.pwr_domain	= &ux500_dev_power_domain,
-	},
-};
-
-static int mop500_gpio_keys_activate(struct device *dev)
-{
-	gpio_keys_regulator = regulator_get(&mop500_gpio_keys_device.dev,
-						"vcc");
-	if (IS_ERR(gpio_keys_regulator)) {
-		dev_err(&mop500_gpio_keys_device.dev, "no regulator\n");
-		return PTR_ERR(gpio_keys_regulator);
-	}
-	regulator_enable(gpio_keys_regulator);
-
-	/*
-	 * Please be aware that the start-up time of the SFH7741 is
-	 * 120 ms and during that time the output is undefined.
-	 */
-
-	return 0;
-}
-
-static void mop500_gpio_keys_deactivate(struct device *dev)
-{
-	if (!IS_ERR(gpio_keys_regulator)) {
-		regulator_disable(gpio_keys_regulator);
-		regulator_put(gpio_keys_regulator);
-	}
-}
-
-static __init void mop500_gpio_keys_init(void)
-{
-	struct ux500_pins *gpio_keys_pins = ux500_pins_get("gpio-keys.0");
-
-	if (gpio_keys_pins == NULL) {
-		pr_err("gpio_keys: Fail to get pins\n");
-		return;
-	}
-
-	mop500_gpio_keys[0].gpio = PIN_NUM(gpio_keys_pins->cfg[0]);
-	mop500_gpio_keys[1].gpio = PIN_NUM(gpio_keys_pins->cfg[1]);
-}
-#else
-static inline void mop500_gpio_keys_init(void) { }
-#endif
-
 #ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
 static struct platform_device snowball_gpio_wlan_vbat_regulator_device = {
 	.name	= "reg-fixed-voltage",
@@ -972,9 +892,6 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 	&u8500_thsens_device,
 #ifdef CONFIG_STE_TRACE_MODEM
 	&u8500_trace_modem,
-#endif
-#ifdef CONFIG_UX500_GPIO_KEYS
-	&mop500_gpio_keys_device,
 #endif
 #ifdef CONFIG_LEDS_PWM
 	&ux500_leds_device,
@@ -1229,9 +1146,6 @@ static void __init mop500_init_machine(void)
 	struct device *parent = NULL;
 	int i;
 
-	mop500_gpio_keys[0].gpio = GPIO_PROX_SENSOR;
-	mop500_gpio_keys[1].gpio = GPIO_HAL_SENSOR;
-
 	parent = u8500_init_devices();
 
 	mop500_pins_init();
@@ -1268,7 +1182,6 @@ static void __init mop500_init_machine(void)
 			sizeof(mop500_ske_keypad_data));
 #endif
 
-	mop500_gpio_keys_init();
 	platform_device_register(&ab8500_device);
 
 	i2c_register_board_info(0, mop500_i2c0_devices,
@@ -1334,8 +1247,6 @@ static void __init hrefv60_init_machine(void)
 	 * all these GPIO pins to the internal GPIO controller
 	 * instead.
 	 */
-	mop500_gpio_keys[0].gpio = HREFV60_PROX_SENSE_GPIO;
-	mop500_gpio_keys[1].gpio = HREFV60_HAL_SW_GPIO;
 
 #ifdef CONFIG_INPUT_AB8500_ACCDET
 	/*
@@ -1361,8 +1272,6 @@ static void __init hrefv60_init_machine(void)
 	if (uib_is_stuib())
 		u8500_leds_data.num_leds = 2;
 #endif
-
-	mop500_gpio_keys_init();
 
 	for (i = 0; i < ARRAY_SIZE(mop500_platform_devs); i++)
 		mop500_platform_devs[i]->dev.parent = parent;
