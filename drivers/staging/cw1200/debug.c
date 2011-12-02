@@ -10,6 +10,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/module.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include "cw1200.h"
