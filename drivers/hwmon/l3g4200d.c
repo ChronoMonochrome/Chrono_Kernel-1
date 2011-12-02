@@ -6,6 +6,7 @@
  * Licence terms: GNU General Public Licence (GPL) version 2
  */
 
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/mutex.h>
 #include <linux/slab.h>
