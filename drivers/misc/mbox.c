@@ -102,9 +102,10 @@ static void mbox_modem_req(void)
 	mutex_lock(&modem_state_mutex);
 	if (!db5500_prcmu_is_modem_requested()) {
 		prcmu_modem_req();
+		/* TODO: optimize this timeout */
 		if (!wait_for_completion_timeout(&mb->mod_req_ack_work,
-					msecs_to_jiffies(8000)))
-			printk(KERN_ERR "mbox:modem_req_ack timedout(8sec)\n");
+					msecs_to_jiffies(2000)))
+			printk(KERN_ERR "mbox:modem_req_ack timedout(2sec)\n");
 	}
 	atomic_set(&mb->mod_req, 1);
 	mutex_unlock(&modem_state_mutex);
@@ -170,7 +171,7 @@ int mbox_send(struct mbox *mbox, u32 mbox_msg, bool block)
 	if (atomic_read(&mb->mod_reset)) {
 		dev_err(&mbox->pdev->dev,
 				"modem is in reset state, cannot proceed\n");
-		res -EINVAL;
+		res  = -EINVAL;
 		goto exit;
 	}
 	writel(MBOX_ENABLE_IRQ, mbox->virtbase_peer + MBOX_FIFO_THRES_FREE);
