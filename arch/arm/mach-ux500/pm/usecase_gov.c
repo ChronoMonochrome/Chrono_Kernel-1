@@ -19,6 +19,7 @@
 #include <linux/ktime.h>
 #include <linux/cpufreq.h>
 #include <linux/mfd/dbx500-prcmu.h>
+#include <linux/cpufreq-dbx500.h>
 
 #include "../../../../drivers/cpuidle/cpuidle-dbx500.h"
 
@@ -82,7 +83,9 @@ static unsigned int cpuidle_deepest_state;
 struct usecase_config {
 	char *name;
 	/* Minimum required ARM OPP. if no requirement set 25 */
-	unsigned int  min_arm_opp;
+	unsigned int min_arm_opp;
+	/* Only use max_arm_opp if you know what you're doing */
+	unsigned int max_arm_opp;
 	unsigned long cpuidle_multiplier;
 	bool second_cpu_online;
 	bool l2_prefetch_en;
@@ -323,9 +326,41 @@ static u32 get_num_interrupts_per_s(void)
 	return irqs;
 }
 
+static int set_cpufreq(int cpu, int min_freq, int max_freq)
+{
+	int ret;
+	struct cpufreq_policy policy;
+
+	ret = cpufreq_get_policy(&policy, cpu);
+	if (ret < 0) {
+		pr_err("usecase-gov: failed to read policy\n");
+		return ret;
+	}
+
+	if (policy.min > max_freq) {
+		ret = cpufreq_update_freq(cpu, min_freq, policy.max);
+		if (ret)
+			pr_err("usecase-gov: update min cpufreq failed (1)\n");
+	}
+	if (policy.max < min_freq) {
+		ret = cpufreq_update_freq(cpu, policy.min, max_freq);
+		if (ret)
+			pr_err("usecase-gov: update max cpufreq failed (2)\n");
+	}
+
+	ret = cpufreq_update_freq(cpu, min_freq, max_freq);
+	if (ret)
+		pr_err("usecase-gov: update min-max cpufreq failed\n");
+
+	return ret;
+}
+
 static void set_cpu_config(enum ux500_uc new_uc)
 {
 	bool update = false;
+	int ret;
+	int cpu;
+	static struct cpufreq_policy  original_cpufreq_policy;
 
 	if (new_uc != current_uc)
 		update = true;
@@ -333,7 +368,7 @@ static void set_cpu_config(enum ux500_uc new_uc)
 		update = true;
 
 	pr_debug("%s: new_usecase=%d, current_usecase=%d, update=%d\n",
-			__func__, new_uc, current_uc, update);
+		__func__, new_uc, current_uc, update);
 
 	if (!update)
 		goto exit;
@@ -345,6 +380,35 @@ static void set_cpu_config(enum ux500_uc new_uc)
 	else if ((usecase_conf[new_uc].second_cpu_online) &&
 		 (num_online_cpus() < 2))
 		cpu_up(1);
+
+	if (usecase_conf[new_uc].max_arm_opp) {
+		int max_freq;
+
+		max_freq = dbx500_cpufreq_percent2freq(usecase_conf[new_uc].max_arm_opp);
+
+		ret = cpufreq_get_policy(&original_cpufreq_policy, 0);
+		if (ret < 0)
+			pr_err("usecase-gov: fail to get cpufreq policy\n");
+
+		for_each_online_cpu(cpu) {
+			set_cpufreq(cpu,
+				    original_cpufreq_policy.min,
+				    max_freq);
+		}
+	}
+
+	if (new_uc == UX500_UC_NORMAL &&
+	    usecase_conf[current_uc].max_arm_opp) {
+		/*
+		 * Reset cpufreq limits to what is was before. Yes, overwrite
+		 *  any changes done outside usecase governors control.
+		 */
+		for_each_online_cpu(cpu) {
+			set_cpufreq(cpu,
+				    original_cpufreq_policy.min,
+				    original_cpufreq_policy.max);
+		}
+	}
 
 	prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
 			    "usecase", usecase_conf[new_uc].min_arm_opp);
@@ -651,6 +715,7 @@ static void usecase_update_user_config(void)
 	mutex_lock(&usecase_mutex);
 
 	user_conf->min_arm_opp = 25;
+	user_conf->max_arm_opp = 0;
 	user_conf->cpuidle_multiplier = 0;
 	user_conf->second_cpu_online = false;
 	user_conf->l2_prefetch_en = false;
@@ -667,6 +732,9 @@ static void usecase_update_user_config(void)
 		/* It's the highest arm opp requirement that should be used */
 		if (usecase_conf[i].min_arm_opp > user_conf->min_arm_opp)
 			user_conf->min_arm_opp = usecase_conf[i].min_arm_opp;
+
+		if (usecase_conf[i].max_arm_opp > user_conf->max_arm_opp)
+			user_conf->max_arm_opp = usecase_conf[i].max_arm_opp;
 
 		if (usecase_conf[i].cpuidle_multiplier >
 					user_conf->cpuidle_multiplier)
@@ -722,12 +790,14 @@ static ssize_t show_current(struct sysdev_class *class,
 					UX500_UC_NORMAL : current_uc;
 
 	return sprintf(buf, "min_arm_opp: %d\n"
+		"max_arm_opp: %d\n"
 		"cpuidle_multiplier: %ld\n"
 		"second_cpu_online: %s\n"
 		"l2_prefetch_en: %s\n"
 		"forced_state: %d\n"
 		"vc_override: %s\n",
 		usecase_conf[display_uc].min_arm_opp,
+		usecase_conf[display_uc].max_arm_opp,
 		usecase_conf[display_uc].cpuidle_multiplier,
 		usecase_conf[display_uc].second_cpu_online ? "true" : "false",
 		usecase_conf[display_uc].l2_prefetch_en ? "true" : "false",
