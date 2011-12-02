@@ -10,6 +10,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/idr.h>
 #include <linux/err.h>
