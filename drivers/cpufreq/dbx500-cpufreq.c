@@ -59,6 +59,7 @@ static struct cpufreq_frequency_table db5500_freq_table[] = {
 };
 
 static struct cpufreq_frequency_table *freq_table;
+static int freq_table_len;
 
 static enum arm_opp db8500_idx2opp[] = {
 	ARM_EXTCLK,
@@ -164,10 +165,12 @@ static void __init dbx500_cpufreq_early_init(void)
 	if (cpu_is_u5500()) {
 		freq_table = db5500_freq_table;
 		idx2opp = db5500_idx2opp;
+		freq_table_len = ARRAY_SIZE(db5500_freq_table);
 	} else if (cpu_is_u8500()) {
 		freq_table = db8500_freq_table;
 		idx2opp = db8500_idx2opp;
 		dbx500_cpufreq_init_maxopp_freq();
+		freq_table_len = ARRAY_SIZE(db8500_freq_table);
 	} else {
 		ux500_unknown_soc();
 	}
@@ -186,16 +189,12 @@ unsigned long dbx500_cpufreq_getfreq(void)
 	return dbx500_cpufreq_getspeed(0) * 1000;
 }
 
-int dbx500_cpufreq_get_limits(int cpu, int r,
-			      unsigned int *min, unsigned int *max)
+int dbx500_cpufreq_percent2freq(int percent)
 {
 	int op;
 	int i;
-	int ret;
-	static int old_freq;
-	struct cpufreq_policy p;
 
-	switch (r) {
+	switch (percent) {
 	case 0:
 		/* Fall through */
 	case 25:
@@ -215,24 +214,40 @@ int dbx500_cpufreq_get_limits(int cpu, int r,
 		break;
 	default:
 		pr_err("cpufreq-dbx500: Incorrect arm target value (%d).\n",
-		       r);
-		BUG();
+		       percent);;
+		return -EINVAL;
 		break;
 	}
 
-	for (i = 0; idx2opp[i] != op; i++)
+	for (i = 0; idx2opp[i] != op && i < freq_table_len; i++)
 		;
 
 	if (freq_table[i].frequency == CPUFREQ_TABLE_END) {
-		pr_err("cpufreq-dbx500: Minimum frequency does not exist!\n");
-		BUG();
+		pr_err("cpufreq-dbx500: Matching frequency does not exist!\n");
+		return -EINVAL;
 	}
 
-	if (freq_table[i].frequency != old_freq)
-		pr_debug("cpufreq-dbx500: set min arm freq to %d\n",
-			 freq_table[i].frequency);
+	return freq_table[i].frequency;
+}
 
-	(*min) = freq_table[i].frequency;
+int dbx500_cpufreq_get_limits(int cpu, int r,
+			      unsigned int *min, unsigned int *max)
+{
+	int freq;
+	int ret;
+	static int old_freq;
+	struct cpufreq_policy p;
+
+	freq = dbx500_cpufreq_percent2freq(r);
+
+	if (freq < 0)
+		return -EINVAL;
+
+	if (freq != old_freq)
+		pr_debug("cpufreq-dbx500: set min arm freq to %d\n",
+			 freq);
+
+	(*min) = freq;
 
 	ret = cpufreq_get_policy(&p, cpu);
 	if (ret) {

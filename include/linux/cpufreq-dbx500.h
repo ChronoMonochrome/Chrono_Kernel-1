@@ -11,4 +11,6 @@
 int dbx500_cpufreq_get_limits(int cpu, int r,
 			      unsigned int *min, unsigned int *max);
 
+int dbx500_cpufreq_percent2freq(int percent);
+
 #endif
