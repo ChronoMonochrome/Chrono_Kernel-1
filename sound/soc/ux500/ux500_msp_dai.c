@@ -12,6 +12,7 @@
  * by the Free Software Foundation.
  */
 
+#include <linux/module.h>
 #include <linux/slab.h>
 #include <asm/dma.h>
 #include <linux/bitops.h>

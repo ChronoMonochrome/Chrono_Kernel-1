@@ -11,6 +11,7 @@
  * by the Free Software Foundation.
  */
 
+#include <linux/module.h>
 #include <linux/io.h>
 #include <sound/soc.h>
 #include <asm/mach-types.h>

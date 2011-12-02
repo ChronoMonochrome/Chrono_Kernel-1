@@ -17,6 +17,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/dmaengine.h>
 #include <linux/dma-mapping.h>
+#include <linux/module.h>
 #include <linux/slab.h>
 
 #include <sound/pcm.h>
