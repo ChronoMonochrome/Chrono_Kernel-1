@@ -18,6 +18,7 @@
 #include <linux/delay.h>
 #include <linux/pm.h>
 #include <linux/platform_device.h>
+#include <linux/regulator/consumer.h>
 #include <linux/spi/spi.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -46,6 +47,7 @@ struct ab5500_codec_dai_data {
 };
 
 static struct device *ab5500_dev;
+static struct regulator *ab5500_vdigmic_reg;
 
 static u8 virtual_regs[] = {
 	0, 0, 0, 0, 0
@@ -1118,6 +1120,8 @@ static void power_for_playback(enum enum_power onoff, int ifsel)
 
 static void power_for_capture(enum enum_power onoff, int ifsel)
 {
+	int err;
+
 	dev_info(ab5500_dev, "%s: interface %d power %s", __func__,
 		ifsel, onoff == POWER_ON ? "on" : "off");
 	if (mutex_lock_interruptible(&ab5500_pm_mutex)) {
@@ -1131,6 +1135,14 @@ static void power_for_capture(enum enum_power onoff, int ifsel)
 	power_widget_unlocked(onoff, ifsel == 0 ?
 			      widget_if0_uld_r : widget_if1_uld_r);
 	mutex_unlock(&ab5500_pm_mutex);
+
+	if (onoff)
+		err = regulator_enable(ab5500_vdigmic_reg);
+	else
+		err = regulator_disable(ab5500_vdigmic_reg);
+	if (err)
+		dev_err(ab5500_dev, "unabled to %s VDIGMIC %d\n",
+			onoff ? "enable" : "disable", err);
 }
 
 static int ab5500_add_controls(struct snd_soc_codec *codec)
@@ -1573,6 +1585,14 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 
 	pr_info("%s invoked with pdev = %p.\n", __func__, pdev);
 	ab5500_dev = &pdev->dev;
+
+	ab5500_vdigmic_reg = regulator_get(&pdev->dev, "vdigmic");
+	if (IS_ERR(ab5500_vdigmic_reg)) {
+		dev_err(&pdev->dev, "could not get vdigmic regulator %ld\n",
+			PTR_ERR(ab5500_vdigmic_reg));
+		return PTR_ERR(ab5500_vdigmic_reg);
+	}
+
 	codec_drvdata = kzalloc(sizeof(struct ab5500_codec_dai_data),
 				GFP_KERNEL);
 	if (codec_drvdata == NULL)
