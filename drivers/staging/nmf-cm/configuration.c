@@ -10,6 +10,7 @@
  *
  */
 
+#include <linux/module.h>
 #include <cm/engine/api/configuration_engine.h>
 #include <cm/engine/configuration/inc/configuration_status.h>
 #include <cm/engine/power_mgt/inc/power.h>
