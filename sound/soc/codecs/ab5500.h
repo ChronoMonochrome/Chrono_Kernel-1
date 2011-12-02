@@ -264,7 +264,7 @@
 #define TX1 0x36
 #define TX2 0x37
 #define TXx_MUX_MASK 0x60
-#define TXx_MUX_SHIFT 6
+#define TXx_MUX_SHIFT 5
 #define TXx_FS_MASK 0x10
 #define TXx_FS_SHIFT 4
 #define TXx_HP_FILTER_MASK 0x0C
