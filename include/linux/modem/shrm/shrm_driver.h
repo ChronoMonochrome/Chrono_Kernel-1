@@ -64,17 +64,18 @@
  * @ca_audio_shared_rptr:	cmt-ape audio channel read pointer
  * @dev:			pointer to the driver device
  * @ndev:			pointer to the network device structure
+ * @modem:			poiner to struct modem
  * @isa_context:		pointer to t_isa_driver_sontext dtructure
- * @shm_common_ch_wr_wk:	kthread worker for writing to common channel
- * @shm_common_ch_wr_wk_task:	task for writing to common channel
- * @shm_audio_ch_wr_wk:		kthread worker for writing to audio channel
- * @shm_audio_ch_wr_wk_task:	task for writing to audio channel
- * @shm_ac_wake_wk:		kthread worker for receiving ape-cmt wake requests
- * @shm_ac_wake_wk_task:	task for receiving ape-cmt wake requests
- * @shm_ca_wake_wk:		kthread worker for receiving cmt-ape wake requests
- * @shm_ca_wake_wk_task:	task for receiving cmt-ape wake requests
- * @shm_ac_sleep_wk:		kthread worker for recieving ape-cmt sleep requests
- * @shm_ac_sleep_wk_task:	task for recieving ape-cmt sleep requests
+ * @shm_common_ch_wr_kw:	kthread worker for writing to common channel
+ * @shm_common_ch_wr_kw_task:	task for writing to common channel
+ * @shm_audio_ch_wr_kw:		kthread worker for writing to audio channel
+ * @shm_audio_ch_wr_kw_task:	task for writing to audio channel
+ * @shm_ac_wake_kw:		kthread worker for receiving ape-cmt wake requests
+ * @shm_ac_wake_kw_task:	task for receiving ape-cmt wake requests
+ * @shm_ca_wake_kw:		kthread worker for receiving cmt-ape wake requests
+ * @shm_ca_wake_kw_task:	task for receiving cmt-ape wake requests
+ * @shm_ac_sleep_kw:		kthread worker for recieving ape-cmt sleep requests
+ * @shm_ac_sleep_kw_task:	task for recieving ape-cmt sleep requests
  * @send_ac_msg_pend_notify_0:	work for handling pending message on common
  * channel
  * @send_ac_msg_pend_notify_1:	work for handling pending message on audio
