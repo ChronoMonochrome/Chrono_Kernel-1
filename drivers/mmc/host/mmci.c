@@ -1562,9 +1562,21 @@ static int mmci_save(struct amba_device *dev)
 {
 	struct mmc_host *mmc = amba_get_drvdata(dev);
 	unsigned long flags;
+	struct mmc_ios ios;
+	int ret = 0;
 
 	if (mmc) {
 		struct mmci_host *host = mmc_priv(mmc);
+
+		/* Let the ios_handler act on a POWER_OFF to save power. */
+		if (host->plat->ios_handler) {
+			memcpy(&ios, &mmc->ios, sizeof(struct mmc_ios));
+			ios.power_mode = MMC_POWER_OFF;
+			ret = host->plat->ios_handler(mmc_dev(mmc),
+						      &ios);
+			if (ret)
+				return ret;
+		}
 
 		spin_lock_irqsave(&host->lock, flags);
 
@@ -1583,7 +1595,7 @@ static int mmci_save(struct amba_device *dev)
 		amba_vcore_disable(dev);
 	}
 
-	return 0;
+	return ret;
 }
 
 static int mmci_restore(struct amba_device *dev)
@@ -1605,6 +1617,11 @@ static int mmci_restore(struct amba_device *dev)
 		writel(MCI_IRQENABLE, host->base + MMCIMASK0);
 
 		spin_unlock_irqrestore(&host->lock, flags);
+
+		/* Restore settings done by the ios_handler. */
+		if (host->plat->ios_handler)
+			host->plat->ios_handler(mmc_dev(mmc),
+						&mmc->ios);
 	}
 
 	return 0;
