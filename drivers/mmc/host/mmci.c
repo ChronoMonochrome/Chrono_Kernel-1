@@ -1554,6 +1554,58 @@ static int __devexit mmci_remove(struct amba_device *dev)
 }
 
 #ifdef CONFIG_SUSPEND
+static int mmci_save(struct amba_device *dev)
+{
+	struct mmc_host *mmc = amba_get_drvdata(dev);
+	unsigned long flags;
+
+	if (mmc) {
+		struct mmci_host *host = mmc_priv(mmc);
+
+		spin_lock_irqsave(&host->lock, flags);
+
+		/*
+		 * Make sure we do not get any interrupts when we disabled the
+		 * clock and the regulator and as well make sure to clear the
+		 * registers for clock and power.
+		 */
+		writel(0, host->base + MMCIMASK0);
+		writel(0, host->base + MMCIPOWER);
+		writel(0, host->base + MMCICLOCK);
+
+		spin_unlock_irqrestore(&host->lock, flags);
+
+		clk_disable(host->clk);
+		amba_vcore_disable(dev);
+	}
+
+	return 0;
+}
+
+static int mmci_restore(struct amba_device *dev)
+{
+	struct mmc_host *mmc = amba_get_drvdata(dev);
+	unsigned long flags;
+
+	if (mmc) {
+		struct mmci_host *host = mmc_priv(mmc);
+
+		amba_vcore_enable(dev);
+		clk_enable(host->clk);
+
+		spin_lock_irqsave(&host->lock, flags);
+
+		/* Restore registers and re-enable interrupts. */
+		writel(host->clk_reg, host->base + MMCICLOCK);
+		writel(host->pwr_reg, host->base + MMCIPOWER);
+		writel(MCI_IRQENABLE, host->base + MMCIMASK0);
+
+		spin_unlock_irqrestore(&host->lock, flags);
+	}
+
+	return 0;
+}
+
 static int mmci_suspend(struct device *dev)
 {
 	struct amba_device *adev = to_amba_device(dev);
@@ -1561,12 +1613,11 @@ static int mmci_suspend(struct device *dev)
 	int ret = 0;
 
 	if (mmc) {
-		struct mmci_host *host = mmc_priv(mmc);
-
 		ret = mmc_suspend_host(mmc);
 		if (ret == 0) {
 			pm_runtime_get_sync(dev);
-			writel(0, host->base + MMCIMASK0);
+			mmci_save(adev);
+			amba_pclk_disable(adev);
 		}
 	}
 
@@ -1580,9 +1631,8 @@ static int mmci_resume(struct device *dev)
 	int ret = 0;
 
 	if (mmc) {
-		struct mmci_host *host = mmc_priv(mmc);
-
-		writel(MCI_IRQENABLE, host->base + MMCIMASK0);
+		amba_pclk_enable(adev);
+		mmci_restore(adev);
 		pm_runtime_put(dev);
 
 		ret = mmc_resume_host(mmc);
