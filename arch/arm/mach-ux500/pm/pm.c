@@ -215,24 +215,3 @@ bool ux500_pm_other_cpu_wfi(void)
 
 	return false;
 }
-
-/* PRCM_ACK_MB0_AP_PWRSTTR_STATUS */
-#define DB8500_PRCMU_STATUS_REGISTER	0x801b8e08
-#define DB5500_PRCMU_STATUS_REGISTER	0x80168f38
-
-enum prcmu_idle_stat ux500_pm_prcmu_idle_stat(void)
-{
-	u32 val;
-	void __iomem *prcmu_status_reg;
-
-	if (cpu_is_u8500())
-		prcmu_status_reg = __io_address(DB8500_PRCMU_STATUS_REGISTER);
-	else if (cpu_is_u5500())
-		prcmu_status_reg = __io_address(DB5500_PRCMU_STATUS_REGISTER);
-	else
-		ux500_unknown_soc();
-
-	val = readl(prcmu_status_reg) & 0xff;
-
-	return (enum prcmu_idle_stat)val;
-}
