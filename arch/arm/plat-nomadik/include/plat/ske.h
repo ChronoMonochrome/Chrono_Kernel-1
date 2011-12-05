@@ -38,6 +38,8 @@
  * @keymap_data: matrix scan code table for keycodes
  * @krow:	maximum number of rows
  * @kcol:	maximum number of columns
+ * @kconnected_rows: number of rows actually connected
+ * @kconnected_cols: number of columns actually connected
  * @debounce_ms: platform specific debounce time
  * @no_autorepeat: flag for auto repetition
  * @wakeup_enable: allow waking up the system
@@ -51,6 +53,8 @@ struct ske_keypad_platform_data {
 	const struct matrix_keymap_data *keymap_data;
 	u8 krow;
 	u8 kcol;
+	u8 kconnected_rows;
+	u8 kconnected_cols;
 	u8 debounce_ms;
 	bool no_autorepeat;
 	bool wakeup_enable;
