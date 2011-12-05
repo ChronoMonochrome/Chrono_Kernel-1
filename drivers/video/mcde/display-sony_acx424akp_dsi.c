@@ -87,6 +87,8 @@ static int power_on(struct mcde_display_device *dev)
 	dev_dbg(&dev->dev, "%s: Reset & power on sony display\n", __func__);
 
 	regulator_enable(di->regulator);
+	gpio_set_value_cansleep(di->reset_gpio, 1);
+	msleep(RESET_DELAY_MS);
 	gpio_set_value_cansleep(di->reset_gpio, 0);
 	udelay(RESET_LOW_DELAY_US);
 	gpio_set_value_cansleep(di->reset_gpio, 1);
@@ -101,6 +103,8 @@ static int power_off(struct mcde_display_device *dev)
 
 	dev_dbg(&dev->dev, "%s:Reset & power off sony display\n", __func__);
 
+	gpio_set_value_cansleep(di->reset_gpio, 0);
+	msleep(RESET_DELAY_MS);
 	regulator_disable(di->regulator);
 
 	return 0;
