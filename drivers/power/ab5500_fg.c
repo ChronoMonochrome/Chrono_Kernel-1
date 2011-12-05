@@ -163,6 +163,7 @@ struct ab5500_fg_flags {
  * @fg_wq:		Work queue for running the FG algorithm
  * @fg_periodic_work:	Work to run the FG algorithm periodically
  * @fg_low_bat_work:	Work to check low bat condition
+ * @fg_reinit_work:	Work to reset and re-initialize fuel gauge
  * @fg_work:		Work to run the FG algorithm instantly
  * @fg_acc_cur_work:	Work to read the FG accumulator
  * @cc_lock:		Mutex for locking the CC
@@ -198,6 +199,7 @@ struct ab5500_fg {
 	struct workqueue_struct *fg_wq;
 	struct delayed_work fg_periodic_work;
 	struct delayed_work fg_low_bat_work;
+	struct delayed_work fg_reinit_work;
 	struct work_struct fg_work;
 	struct delayed_work fg_acc_cur_work;
 	struct mutex cc_lock;
@@ -222,6 +224,8 @@ static enum power_supply_property ab5500_fg_props[] = {
 
 /* Function Prototype */
 static int ab5500_fg_bat_v_trig(int mux);
+
+static int prev_samples, prev_val;
 
 struct ab5500_fg *ab5500_fg_get(void)
 {
@@ -286,6 +290,29 @@ static int ab5500_fg_add_cap_sample(struct ab5500_fg *di, int sample)
 
 	return avg->avg;
 }
+
+/**
+ * ab5500_fg_clear_cap_samples() - Clear average filter
+ * @di:                pointer to the ab5500_fg structure
+ *
+ * The capacity filter is is reset to zero.
+ */
+static void ab5500_fg_clear_cap_samples(struct ab5500_fg *di)
+{
+	int i;
+	struct ab5500_fg_avg_cap *avg = &di->avg_cap;
+
+	avg->pos = 0;
+	avg->nbr_samples = 0;
+	avg->sum = 0;
+	avg->avg = 0;
+
+	for (i = 0; i < NBR_AVG_SAMPLES; i++) {
+		avg->samples[i] = 0;
+		avg->time_stamps[i] = 0;
+	}
+}
+
 
 /**
  * ab5500_fg_fill_cap_sample() - Fill average filter
@@ -446,7 +473,6 @@ static void ab5500_fg_acc_cur_timer_expired(unsigned long data)
 	queue_delayed_work(di->fg_wq, &di->fg_acc_cur_work, 0);
 }
 
-static int prev_samples, prev_val;
 /**
  * ab5500_fg_acc_cur_work() - average battery current
  * @work:	pointer to the work_struct structure
@@ -1661,6 +1687,50 @@ static void ab5500_fg_external_power_changed(struct power_supply *psy)
 		&di->fg_psy, ab5500_fg_get_ext_psy_data);
 }
 
+/**
+ * abab5500_fg_reinit_work() - work to reset the FG algorithm
+ * @work:      pointer to the work_struct structure
+ *
+ * Used to reset the current battery capacity to be able to
+ * retrigger a new voltage base capacity calculation. For
+ * test and verification purpose.
+ */
+static void ab5500_fg_reinit_work(struct work_struct *work)
+{
+	struct ab5500_fg *di = container_of(work, struct ab5500_fg,
+			fg_reinit_work.work);
+
+	if (di->flags.calibrate == false) {
+		dev_dbg(di->dev, "Resetting FG state machine to init.\n");
+		ab5500_fg_clear_cap_samples(di);
+		ab5500_fg_calc_cap_discharge_voltage(di, true);
+		ab5500_fg_charge_state_to(di, AB5500_FG_CHARGE_INIT);
+		ab5500_fg_discharge_state_to(di, AB5500_FG_DISCHARGE_INIT);
+		queue_delayed_work(di->fg_wq, &di->fg_periodic_work, 0);
+
+	} else {
+		dev_err(di->dev,
+			"Residual offset calibration ongoing retrying..\n");
+		/* Wait one second until next try*/
+		queue_delayed_work(di->fg_wq, &di->fg_reinit_work,
+							round_jiffies(1));
+	}
+}
+
+/**
+ * ab5500_fg_reinit() - forces FG algorithm to reinitialize with current values
+ *
+ * This function can be used to force the FG algorithm to recalculate a new
+ * voltage based battery capacity.
+ */
+void ab5500_fg_reinit(void)
+{
+	struct ab5500_fg *di = ab5500_fg_get();
+	/* User won't be notified if a null pointer returned. */
+	if (di != NULL)
+		queue_delayed_work(di->fg_wq, &di->fg_reinit_work, 0);
+}
+
 #if defined(CONFIG_PM)
 static int ab5500_fg_resume(struct platform_device *pdev)
 {
@@ -1789,6 +1859,10 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK_DEFERRABLE(&di->fg_acc_cur_work,
 			ab5500_fg_acc_cur_work);
 
+	/* Init work for reinitialising the fg algorithm */
+	INIT_DELAYED_WORK_DEFERRABLE(&di->fg_reinit_work,
+			ab5500_fg_reinit_work);
+
 	/* Work delayed Queue to run the state machine */
 	INIT_DELAYED_WORK_DEFERRABLE(&di->fg_periodic_work,
 		ab5500_fg_periodic_work);
@@ -1823,7 +1897,7 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 	init_timer(&di->avg_current_timer);
 	di->avg_current_timer.function = ab5500_fg_acc_cur_timer_expired;
 	di->avg_current_timer.data = (unsigned long) di;
-	di->avg_current_timer.expires = 60 * HZ;;
+	di->avg_current_timer.expires = 60 * HZ;
 	if (!timer_pending(&di->avg_current_timer))
 		add_timer(&di->avg_current_timer);
 	else

@@ -101,6 +101,7 @@
 #ifdef CONFIG_AB5500_BM
 struct ab5500_btemp *ab5500_btemp_get(void);
 int ab5500_btemp_get_batctrl_temp(struct ab5500_btemp *btemp);
+void ab5500_fg_reinit(void);
 #else
 static inline struct ab5500_btemp *ab5500_btemp_get(void)
 {
@@ -110,5 +111,6 @@ static inline int ab5500_btemp_get_batctrl_temp(struct ab5500_btemp *btemp)
 {
 	return 0;
 }
+static inline void ab5500_fg_reinit(void) {}
 #endif
 #endif /* _AB5500_BM_H */
