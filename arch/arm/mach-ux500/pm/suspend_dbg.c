@@ -15,6 +15,7 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #include <mach/pm.h>
 
@@ -69,23 +70,24 @@ bool ux500_suspend_deepsleep_enabled(void)
 
 void ux500_suspend_dbg_sleep_status(bool is_deepsleep)
 {
-	enum prcmu_idle_stat prcmu_status;
+	enum prcmu_power_status prcmu_status;
 
-	prcmu_status = ux500_pm_prcmu_idle_stat();
+	prcmu_status = prcmu_get_power_state_result();
 
 	if (is_deepsleep) {
 		pr_info("Returning from ApDeepSleep. PRCMU ret: 0x%x - %s\n",
 			prcmu_status,
-			prcmu_status == DEEP_SLEEP_OK ? "Success" : "Fail!");
-		if (prcmu_status == DEEP_SLEEP_OK)
+			prcmu_status == PRCMU_DEEP_SLEEP_OK ?
+			"Success" : "Fail!");
+		if (prcmu_status == PRCMU_DEEP_SLEEP_OK)
 			deepsleeps_done++;
 		else
 			deepsleeps_failed++;
 	} else {
 		pr_info("Returning from ApSleep. PRCMU ret: 0x%x - %s\n",
 			prcmu_status,
-			prcmu_status == SLEEP_OK ? "Success" : "Fail!");
-		if (prcmu_status == SLEEP_OK)
+			prcmu_status == PRCMU_SLEEP_OK ? "Success" : "Fail!");
+		if (prcmu_status == PRCMU_SLEEP_OK)
 			sleeps_done++;
 		else
 			sleeps_failed++;
