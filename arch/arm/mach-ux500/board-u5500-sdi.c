@@ -99,7 +99,7 @@ static int u5500_sdi1_ios_handler(struct device *dev, struct mmc_ios *ios)
 static struct stedma40_chan_cfg sdi1_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
-	.src_dev_type = DB5500_DMA_DEV25_SDMMC1_RX,
+	.src_dev_type = DB5500_DMA_DEV34_SDMMC1_RX,
 	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
@@ -109,7 +109,7 @@ static struct stedma40_chan_cfg sdi1_dma_cfg_tx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_MEM_TO_PERIPH,
 	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-	.dst_dev_type = DB5500_DMA_DEV25_SDMMC1_TX,
+	.dst_dev_type = DB5500_DMA_DEV34_SDMMC1_TX,
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
 };
