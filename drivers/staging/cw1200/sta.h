@@ -26,8 +26,8 @@ void cw1200_configure_filter(struct ieee80211_hw *dev,
 			     unsigned int changed_flags,
 			     unsigned int *total_flags,
 			     u64 multicast);
-int cw1200_conf_tx(struct ieee80211_hw *dev, u16 queue,
-		   const struct ieee80211_tx_queue_params *params);
+int cw1200_conf_tx(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
+		   u16 queue, const struct ieee80211_tx_queue_params *params);
 int cw1200_get_stats(struct ieee80211_hw *dev,
 		     struct ieee80211_low_level_stats *stats);
 /* Not more a part of interface?
