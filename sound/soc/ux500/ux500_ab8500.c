@@ -60,7 +60,7 @@ static struct clk *clk_ptr_ulpclk;
 static struct clk *clk_ptr_gpio1;
 
 /* Regulators */
-static enum regulator_idx {
+enum regulator_idx {
 	REGULATOR_AUDIO,
 	REGULATOR_DMIC,
 	REGULATOR_AMIC1,
