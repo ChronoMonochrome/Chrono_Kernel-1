@@ -146,7 +146,7 @@ void mop500_sensors_probe_add_lsm303dlh_a(void)
 	i2c_put_adapter(adap);
 }
 
-static int mop500_sensors_init(void)
+static int __init mop500_sensors_init(void)
 {
 
 	if (!machine_is_snowball() && !uib_is_stuib())
