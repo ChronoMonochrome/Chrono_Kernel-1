@@ -112,7 +112,7 @@ static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/* Set format for codec-DAI */
-	fmt = SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_CBM_CFM;
+	fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBM_CFM;
 	pr_debug("%s: Setting format for codec-DAI (fmt = %d).\n",
 		__func__,
 		fmt);
@@ -139,7 +139,7 @@ static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/* Set format for CPU-DAI */
-	fmt = SND_SOC_DAIFMT_DSP_B |
+	fmt = SND_SOC_DAIFMT_DSP_A |
 		SND_SOC_DAIFMT_CBM_CFM |
 		SND_SOC_DAIFMT_NB_IF;
 	pr_debug("%s: Setting DAI-format for Ux500-platform (fmt = %d).\n",
@@ -153,8 +153,6 @@ static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 			ret);
 		return ret;
 	}
-
-	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);
 
 	return ret;
 }

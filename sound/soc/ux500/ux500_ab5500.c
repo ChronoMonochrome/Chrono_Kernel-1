@@ -53,7 +53,7 @@ int ux500_ab5500_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_set_fmt(cpu_dai,
 		SND_SOC_DAIFMT_I2S |
 		SND_SOC_DAIFMT_CBM_CFM |
-		SND_SOC_DAIFMT_IB_IF);
+		SND_SOC_DAIFMT_NB_NF);
 	if (ret < 0)
 		return ret;
 	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);

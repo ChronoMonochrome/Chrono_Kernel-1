@@ -339,32 +339,18 @@ static void ux500_msp_dai_setup_clocking(unsigned int fmt,
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	default:
 	case SND_SOC_DAIFMT_NB_NF:
-		msp_config->tx_frame_sync_pol =
-			MSP_FRAME_SYNC_POL(MSP_FRAME_SYNC_POL_ACTIVE_HIGH);
-		msp_config->rx_frame_sync_pol =
-			MSP_FRAME_SYNC_POL_ACTIVE_HIGH << RFSPOL_SHIFT;
 		break;
 
 	case SND_SOC_DAIFMT_NB_IF:
-		msp_config->tx_frame_sync_pol =
-			MSP_FRAME_SYNC_POL(MSP_FRAME_SYNC_POL_ACTIVE_LOW);
-		msp_config->rx_frame_sync_pol =
-			MSP_FRAME_SYNC_POL_ACTIVE_LOW << RFSPOL_SHIFT;
-		break;
-
-	case SND_SOC_DAIFMT_IB_IF:
-		msp_config->iodelay = 0x20;
-		msp_config->protocol_desc.tx_clock_pol = 1;
-		msp_config->tx_frame_sync_pol = 1 << TFSPOL_SHIFT;
-		msp_config->protocol_desc.rx_clock_pol = 1;
-		msp_config->rx_frame_sync_pol = 1 << RFSPOL_SHIFT;
+		msp_config->tx_frame_sync_pol ^= 1 << TFSPOL_SHIFT;
+		msp_config->rx_frame_sync_pol ^= 1 << RFSPOL_SHIFT;
 		break;
 	}
 
 	if ((fmt & SND_SOC_DAIFMT_MASTER_MASK) == SND_SOC_DAIFMT_CBM_CFM) {
 		pr_debug("%s: Codec is MASTER.\n",
 			__func__);
-
+		msp_config->iodelay = 0x20;
 		msp_config->rx_frame_sync_sel = 0;
 		msp_config->tx_frame_sync_sel = 1 << TFSSEL_SHIFT;
 		msp_config->tx_clock_sel = 0;
@@ -392,17 +378,19 @@ static void ux500_msp_dai_compile_prot_desc_pcm(unsigned int fmt,
 	prot_desc->tx_phase2_start_mode = MSP_PHASE2_START_MODE_IMEDIATE;
 	prot_desc->rx_bit_transfer_format = MSP_BTF_MS_BIT_FIRST;
 	prot_desc->tx_bit_transfer_format = MSP_BTF_MS_BIT_FIRST;
+	prot_desc->tx_frame_sync_pol = MSP_FRAME_SYNC_POL(MSP_FRAME_SYNC_POL_ACTIVE_HIGH);
+	prot_desc->rx_frame_sync_pol = MSP_FRAME_SYNC_POL_ACTIVE_HIGH << RFSPOL_SHIFT;
 
 	if ((fmt & SND_SOC_DAIFMT_FORMAT_MASK) == SND_SOC_DAIFMT_DSP_A) {
 		pr_debug("%s: DSP_A.\n",
 			__func__);
+		prot_desc->rx_clock_pol = MSP_RISING_EDGE;
 		prot_desc->tx_clock_pol = MSP_FALLING_EDGE;
-		prot_desc->rx_clock_pol = MSP_FALLING_EDGE;
 	} else {
 		pr_debug("%s: DSP_B.\n",
 			__func__);
+		prot_desc->rx_clock_pol = MSP_FALLING_EDGE;
 		prot_desc->tx_clock_pol = MSP_RISING_EDGE;
-		prot_desc->rx_clock_pol = MSP_RISING_EDGE;
 	}
 
 	prot_desc->rx_half_word_swap = MSP_HWS_NO_SWAP;
@@ -424,6 +412,8 @@ static void ux500_msp_dai_compile_prot_desc_i2s(struct msp_protocol_desc *prot_d
 		MSP_PHASE2_START_MODE_FRAME_SYNC;
 	prot_desc->rx_bit_transfer_format = MSP_BTF_MS_BIT_FIRST;
 	prot_desc->tx_bit_transfer_format = MSP_BTF_MS_BIT_FIRST;
+	prot_desc->tx_frame_sync_pol = MSP_FRAME_SYNC_POL(MSP_FRAME_SYNC_POL_ACTIVE_LOW);
+	prot_desc->rx_frame_sync_pol = MSP_FRAME_SYNC_POL_ACTIVE_LOW << RFSPOL_SHIFT;
 
 	prot_desc->rx_frame_length_1 = MSP_FRAME_LENGTH_1;
 	prot_desc->rx_frame_length_2 = MSP_FRAME_LENGTH_1;
@@ -435,7 +425,7 @@ static void ux500_msp_dai_compile_prot_desc_i2s(struct msp_protocol_desc *prot_d
 	prot_desc->tx_element_length_2 = MSP_ELEM_LENGTH_16;
 
 	prot_desc->rx_clock_pol = MSP_RISING_EDGE;
-	prot_desc->tx_clock_pol = MSP_RISING_EDGE;
+	prot_desc->tx_clock_pol = MSP_FALLING_EDGE;
 
 	prot_desc->tx_half_word_swap = MSP_HWS_NO_SWAP;
 	prot_desc->rx_half_word_swap = MSP_HWS_NO_SWAP;

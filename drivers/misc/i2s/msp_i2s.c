@@ -368,7 +368,7 @@ static int configure_protocol(struct msp *msp,
 	 * them.
 	 */
 	temp_reg = stm_msp_read(msp->registers + MSP_GCR) & ~TX_CLK_POL_RISING;
-	temp_reg |= MSP_TX_CLKPOL_BIT(protocol_desc->tx_clock_pol);
+	temp_reg |= MSP_TX_CLKPOL_BIT(~protocol_desc->tx_clock_pol);
 	stm_msp_write(temp_reg, msp->registers + MSP_GCR);
 	temp_reg = stm_msp_read(msp->registers + MSP_GCR) & ~RX_CLK_POL_RISING;
 	temp_reg |= MSP_RX_CLKPOL_BIT(protocol_desc->rx_clock_pol);

@@ -2589,7 +2589,7 @@ static int ab8500_codec_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		break;
 	case SND_SOC_DAIFMT_DSP_A: /* L data MSB after FRM LRC */
 		pr_debug("%s: IF0 Protocol: DSP A (TDM)\n", __func__);
-		set_mask |= BMASK(REG_DIGIFCONF2_IF0FORMAT1);
+		set_mask |= BMASK(REG_DIGIFCONF2_IF0FORMAT0);
 		break;
 	case SND_SOC_DAIFMT_DSP_B: /* L data MSB during FRM LRC */
 		pr_debug("%s: IF0 Protocol: DSP B (TDM)\n", __func__);

@@ -525,17 +525,18 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 	pr_debug("%s: Driver-mode: %s.\n",
 		__func__,
 		(driver_mode == DRIVERMODE_NORMAL) ? "NORMAL" : "CODEC_ONLY");
+
+	ab8500_audio_set_bit_delay(codec_dai, 1);
+
 	if (driver_mode == DRIVERMODE_NORMAL) {
-		ab8500_audio_set_bit_delay(codec_dai, 0);
 		ab8500_audio_set_word_length(codec_dai, 16);
-		fmt = SND_SOC_DAIFMT_DSP_B |
+		fmt = SND_SOC_DAIFMT_DSP_A |
 			SND_SOC_DAIFMT_CBM_CFM |
 			SND_SOC_DAIFMT_NB_NF |
 			SND_SOC_DAIFMT_CONT;
 	} else {
-		ab8500_audio_set_bit_delay(codec_dai, 1);
 		ab8500_audio_set_word_length(codec_dai, 20);
-		fmt = SND_SOC_DAIFMT_DSP_B |
+		fmt = SND_SOC_DAIFMT_DSP_A |
 			SND_SOC_DAIFMT_CBM_CFM |
 			SND_SOC_DAIFMT_NB_NF |
 			SND_SOC_DAIFMT_GATED;
@@ -556,6 +557,8 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 			ret);
 		return ret;
 	}
+
+	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);
 
 	/* Setup TDM-slots */
 

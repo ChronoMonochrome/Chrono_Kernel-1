@@ -215,7 +215,7 @@ static int cg29xx_set_dai_fmt(struct snd_soc_dai *codec_dai,
 			dai_data->config.conf.i2s.mode = DAI_MODE_SLAVE;
 		break;
 
-	case SND_SOC_DAIFMT_DSP_A:
+	case SND_SOC_DAIFMT_DSP_B:
 		if (dai_data->config.port != PORT_1_I2S_PCM ||
 			msel == SND_SOC_DAIFMT_CBM_CFM) {
 			pr_err("cg29xx_dai: unsupported DAI format 0x%x port=%d,msel=%d\n",

@@ -342,7 +342,7 @@ static int av8100_codec_set_dai_fmt(struct snd_soc_dai *codec_dai,
 
 	/* Set the audio input format of AV8100 */
 	config.audio_input_format.audio_input_if_format	=
-		((fmt & SND_SOC_DAIFMT_FORMAT_MASK) == SND_SOC_DAIFMT_DSP_B) ?
+		((fmt & SND_SOC_DAIFMT_FORMAT_MASK) == SND_SOC_DAIFMT_DSP_A) ?
 		AV8100_AUDIO_TDM_MODE : AV8100_AUDIO_I2SDELAYED_MODE;
 	config.audio_input_format.audio_if_mode	=
 		((fmt & SND_SOC_DAIFMT_MASTER_MASK) == SND_SOC_DAIFMT_CBM_CFM) ?
