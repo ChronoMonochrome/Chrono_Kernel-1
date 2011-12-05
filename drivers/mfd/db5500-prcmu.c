@@ -1025,6 +1025,11 @@ unlock_return:
 	return r;
 }
 
+u8 db5500_prcmu_get_power_state_result(void)
+{
+	return readb(PRCM_REQ_MB0_AP_POWER_STATE);
+}
+
 void db5500_prcmu_enable_wakeups(u32 wakeups)
 {
 	unsigned long flags;

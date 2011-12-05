@@ -24,6 +24,7 @@ void db5500_prcmu_get_abb_event_buffer(void __iomem **buf);
 int prcmu_resetout(u8 resoutn, u8 state);
 int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk,
 	bool keep_ap_pll);
+u8 db5500_prcmu_get_power_state_result(void);
 int db5500_prcmu_config_esram0_deep_sleep(u8 state);
 void db5500_prcmu_system_reset(u16 reset_code);
 u16 db5500_prcmu_get_reset_code(void);
@@ -135,6 +136,11 @@ static inline void db5500_prcmu_config_abb_event_readout(u32 abb_events) {}
 
 static inline int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk,
 	bool keep_ap_pll)
+{
+	return 0;
+}
+
+static inline u8 db5500_prcmu_get_power_state_result(void)
 {
 	return 0;
 }

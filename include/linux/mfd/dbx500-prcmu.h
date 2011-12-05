@@ -276,7 +276,7 @@ static inline int prcmu_set_power_state(u8 state, bool keep_ulp_clk,
 static inline u8 prcmu_get_power_state_result(void)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_get_power_state_result();
 	else
 		return db8500_prcmu_get_power_state_result();
 }
