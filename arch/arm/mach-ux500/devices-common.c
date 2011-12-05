@@ -6,6 +6,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/dma-mapping.h>
 #include <linux/err.h>
 #include <linux/irq.h>
