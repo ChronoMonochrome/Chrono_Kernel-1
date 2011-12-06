@@ -344,6 +344,7 @@ static ssize_t cpufreq_delay_write(struct file *file,
 #define AVS_VMOD_100_OPP	0xA
 #define AVS_VMOD_50_OPP		0xB
 #define AVS_VSAFE		0xC
+#define AVS_VSAFE_RET		0xD
 #define AVS_SIZE		14
 
 static int avs_read(struct seq_file *s, void *p)
@@ -357,19 +358,20 @@ static int avs_read(struct seq_file *s, void *p)
 
 		memcpy_fromio(avs, tcdm_base + PRCM_AVS_BASE, AVS_SIZE);
 
-		seq_printf(s, "VBB_RET      : 0x%2x\n", avs[AVS_VBB_RET]);
-		seq_printf(s, "VBB_MAX_OPP  : 0x%2x\n", avs[AVS_VBB_MAX_OPP]);
-		seq_printf(s, "VBB_100_OPP  : 0x%2x\n", avs[AVS_VBB_100_OPP]);
-		seq_printf(s, "VBB_50_OPP   : 0x%2x\n", avs[AVS_VBB_50_OPP]);
-		seq_printf(s, "VARM_MAX_OPP : 0x%2x\n", avs[AVS_VARM_MAX_OPP]);
-		seq_printf(s, "VARM_100_OPP : 0x%2x\n", avs[AVS_VARM_100_OPP]);
-		seq_printf(s, "VARM_50_OPP  : 0x%2x\n", avs[AVS_VARM_50_OPP]);
-		seq_printf(s, "VARM_RET     : 0x%2x\n", avs[AVS_VARM_RET]);
-		seq_printf(s, "VAPE_100_OPP : 0x%2x\n", avs[AVS_VAPE_100_OPP]);
-		seq_printf(s, "VAPE_50_OPP  : 0x%2x\n", avs[AVS_VAPE_50_OPP]);
-		seq_printf(s, "VMOD_100_OPP : 0x%2x\n", avs[AVS_VMOD_100_OPP]);
-		seq_printf(s, "VMOD_50_OPP  : 0x%2x\n", avs[AVS_VMOD_50_OPP]);
-		seq_printf(s, "VSAFE        : 0x%2x\n", avs[AVS_VSAFE]);
+		seq_printf(s, "VBB_RET      : 0x%02x\n", avs[AVS_VBB_RET]);
+		seq_printf(s, "VBB_MAX_OPP  : 0x%02x\n", avs[AVS_VBB_MAX_OPP]);
+		seq_printf(s, "VBB_100_OPP  : 0x%02x\n", avs[AVS_VBB_100_OPP]);
+		seq_printf(s, "VBB_50_OPP   : 0x%02x\n", avs[AVS_VBB_50_OPP]);
+		seq_printf(s, "VARM_MAX_OPP : 0x%02x\n", avs[AVS_VARM_MAX_OPP]);
+		seq_printf(s, "VARM_100_OPP : 0x%02x\n", avs[AVS_VARM_100_OPP]);
+		seq_printf(s, "VARM_50_OPP  : 0x%02x\n", avs[AVS_VARM_50_OPP]);
+		seq_printf(s, "VARM_RET     : 0x%02x\n", avs[AVS_VARM_RET]);
+		seq_printf(s, "VAPE_100_OPP : 0x%02x\n", avs[AVS_VAPE_100_OPP]);
+		seq_printf(s, "VAPE_50_OPP  : 0x%02x\n", avs[AVS_VAPE_50_OPP]);
+		seq_printf(s, "VMOD_100_OPP : 0x%02x\n", avs[AVS_VMOD_100_OPP]);
+		seq_printf(s, "VMOD_50_OPP  : 0x%02x\n", avs[AVS_VMOD_50_OPP]);
+		seq_printf(s, "VSAFE        : 0x%02x\n", avs[AVS_VSAFE]);
+		seq_printf(s, "VSAFE_RET    : 0x%02x\n", avs[AVS_VSAFE_RET]);
 	} else {
 		seq_printf(s, "Only u8500 supported.\n");
 	}
