@@ -401,7 +401,21 @@ static void txstate(struct musb *musb, struct musb_request *req)
 					csr |= (MUSB_TXCSR_DMAENAB
 							| MUSB_TXCSR_DMAMODE
 							| MUSB_TXCSR_MODE);
-					if (!musb_ep->hb_mult)
+					/*
+					 * Enable Autoset according to table
+					 * below
+					 * ************************************
+					 * bulk_split hb_mult	Autoset_Enable
+					 * ************************************
+					 *	0	0	Yes(Normal)
+					 *	0	>0	No(High BW ISO)
+					 *	1	0	Yes(HS bulk)
+					 *	1	>0	Yes(FS bulk)
+					 */
+					if (!musb_ep->hb_mult ||
+						(musb_ep->hb_mult &&
+						 can_bulk_split(musb,
+						    musb_ep->type)))
 						csr |= MUSB_TXCSR_AUTOSET;
 				}
 				csr &= ~MUSB_TXCSR_P_UNDERRUN;
@@ -1097,6 +1111,12 @@ static int musb_gadget_enable(struct usb_ep *ep,
 		/* REVISIT if can_bulk_split(), use by updating "tmp";
 		 * likewise high bandwidth periodic tx
 		 */
+		/* Set the TXMAXP register correctly for Bulk IN
+		 * endpoints in device mode
+		 */
+		if (can_bulk_split(musb, musb_ep->type))
+			musb_ep->hb_mult = (hw_ep->max_packet_sz_tx /
+						musb_ep->packet_sz) - 1;
 		/* Set TXMAXP with the FIFO size of the endpoint
 		 * to disable double buffering mode.
 		 */
