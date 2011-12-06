@@ -1063,6 +1063,19 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
 	REG_INIT(AB8500_REGUCTRLDISCH2,		0x04, 0x44, 0x1f),
 };
 
+/* Possibility to add debug */
+int __attribute__((weak)) ab8500_regulator_debug_init(
+	struct platform_device *pdev)
+{
+	return 0;
+}
+
+int __attribute__((weak)) ab8500_regulator_debug_exit(
+	struct platform_device *pdev)
+{
+	return 0;
+}
+
 static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
 {
 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
@@ -1092,6 +1105,11 @@ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Configuration error: size mismatch.\n");
 		return -EINVAL;
 	}
+
+	/* initialize debug (initial state is recorded with this call) */
+	err = ab8500_regulator_debug_init(pdev);
+	if (err)
+		return err;
 
 	/* initialize registers */
 	for (i = 0; i < pdata->num_reg_init; i++) {
@@ -1207,6 +1225,11 @@ static __devexit int ab8500_regulator_remove(struct platform_device *pdev)
 
 	/* remove external regulators (after Vaux1, 2 and 3) */
 	err = ab8500_ext_regulator_exit(pdev);
+	if (err)
+		return err;
+
+	/* remove regulator debug */
+	err = ab8500_regulator_debug_exit(pdev);
 	if (err)
 		return err;
 

@@ -1687,7 +1687,7 @@ static struct dentry *ab8500_regulator_dump_file;
 static struct dentry *ab8500_regulator_status_file;
 static struct dentry *ab8500_regulator_suspend_force_file;
 
-static int __devinit ab8500_regulator_debug_probe(struct platform_device *plf)
+int __devinit ab8500_regulator_debug_init(struct platform_device *plf)
 {
 	void __iomem *boot_info_backupram;
 	int ret;
@@ -1761,7 +1761,7 @@ exit_no_debugfs:
 	return -ENOMEM;
 }
 
-static int __devexit ab8500_regulator_debug_remove(struct platform_device *plf)
+int __devexit ab8500_regulator_debug_exit(struct platform_device *plf)
 {
 	debugfs_remove(ab8500_regulator_suspend_force_file);
 	debugfs_remove(ab8500_regulator_status_file);
@@ -1770,33 +1770,6 @@ static int __devexit ab8500_regulator_debug_remove(struct platform_device *plf)
 
 	return 0;
 }
-
-static struct platform_driver ab8500_regulator_debug_driver = {
-	.driver = {
-		.name = "ab8500-regulator-debug",
-		.owner = THIS_MODULE,
-	},
-	.probe	= ab8500_regulator_debug_probe,
-	.remove	= __devexit_p(ab8500_regulator_debug_remove),
-};
-
-static int __init ab8500_regulator_debug_init(void)
-{
-	int ret;
-
-	ret = platform_driver_register(&ab8500_regulator_debug_driver);
-	if (ret)
-		pr_err("Failed to register ab8500 regulator: %d\n", ret);
-
-	return ret;
-}
-subsys_initcall(ab8500_regulator_debug_init);
-
-static void __exit ab8500_regulator_debug_exit(void)
-{
-	platform_driver_unregister(&ab8500_regulator_debug_driver);
-}
-module_exit(ab8500_regulator_debug_exit);
 
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Bengt Jonsson <bengt.g.jonsson@stericsson.com");
