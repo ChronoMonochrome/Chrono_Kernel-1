@@ -14,6 +14,7 @@
 
 #include <mach/hardware.h>
 #include <mach/db8500-regs.h>
+#include <mach/db5500-regs.h>
 
 struct dbx500_dump_info {
 	char *name;
@@ -57,7 +58,31 @@ static struct dbx500_dump_info db8500_dump[] = {
 };
 
 static struct dbx500_dump_info db5500_dump[] = {
-	{},
+	{
+		.name     = "prcmu_tcdm",
+		.phy_addr = U5500_PRCMU_TCDM_BASE,
+		.size     = 0x5000,
+	},
+	{
+		.name     = "prcmu_gpio",
+		.phy_addr = U5500_GPIO2_BASE,
+		.size     = 0x1000,
+	},
+	{
+		.name     = "prcmu_msp1",
+		.phy_addr = U5500_MSP1_BASE,
+		.size     = 0x1000,
+	},
+	{
+		.name     = "prcmu_sec",
+		.phy_addr = (U5500_PRCMU_BASE + 0x1000),
+		.size     = 0x1000,
+	},
+	{
+		.name     = "prcmu_unsec",
+		.phy_addr = U5500_PRCMU_BASE,
+		.size     = 0x1000,
+	},
 };
 
 static struct dbx500_dump_info *dbx500_dump;
@@ -83,7 +108,8 @@ static void __init init_io_addresses(void)
 	int i;
 
 	for (i = 0; i < dbx500_dump_size; i++)
-		dbx500_dump[i].io_addr = __io_address(dbx500_dump[i].phy_addr);
+		dbx500_dump[i].io_addr = ioremap(dbx500_dump[i].phy_addr,
+			dbx500_dump[i].size);
 }
 
 static struct notifier_block die_notifier = {
