@@ -128,7 +128,7 @@ struct ab8500_usb {
 	struct regulator *v_ulpi;
 	struct abx500_usbgpio_platform_data *usb_gpio;
 	struct delayed_work work_usb_workaround;
-	struct kobject *serial_number_kobj;
+	bool sysfs_flag;
 };
 
 static inline struct ab8500_usb *phy_to_ab(struct usb_phy *x)
@@ -330,74 +330,76 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 
 	lsts = (reg >> 3) & 0x0F;
 
-	switch (lsts) {
-	case USB_LINK_ACA_RID_B:
-		event = USB_EVENT_RIDB;
-	case USB_LINK_NOT_CONFIGURED:
-	case USB_LINK_RESERVED:
-	case USB_LINK_NOT_VALID_LINK:
-		if (ab->mode == USB_HOST)
-			ab8500_usb_host_phy_dis(ab);
-		else if (ab->mode == USB_PERIPHERAL)
-			ab8500_usb_peri_phy_dis(ab);
-		ab->mode = USB_IDLE;
-		ab->phy.otg.default_a = false;
-		ab->vbus_draw = 0;
-		if (event != USB_EVENT_RIDB)
-			event = USB_EVENT_NONE;
-		break;
-	case USB_LINK_ACA_RID_C_NM:
-	case USB_LINK_ACA_RID_C_HS:
-	case USB_LINK_ACA_RID_C_HS_CHIRP:
-		event = USB_EVENT_RIDC;
-	case USB_LINK_STD_HOST_NC:
-	case USB_LINK_STD_HOST_C_NS:
-	case USB_LINK_STD_HOST_C_S:
-	case USB_LINK_HOST_CHG_NM:
-	case USB_LINK_HOST_CHG_HS:
-	case USB_LINK_HOST_CHG_HS_CHIRP:
-		if (ab->mode == USB_HOST) {
-			ab->mode = USB_PERIPHERAL;
-			ab8500_usb_host_phy_dis(ab);
-			ux500_restore_context();
-			ab8500_usb_peri_phy_en(ab);
-		}
-		if (ab->mode == USB_IDLE) {
-			ab->mode = USB_PERIPHERAL;
-			ux500_restore_context();
-			ab8500_usb_peri_phy_en(ab);
-		}
-		if (event != USB_EVENT_RIDC)
-			event = USB_EVENT_VBUS;
-		break;
+	if (!(ab->sysfs_flag)) {
+		switch (lsts) {
+		case USB_LINK_ACA_RID_B:
+			event = USB_EVENT_RIDB;
+		case USB_LINK_NOT_CONFIGURED:
+		case USB_LINK_RESERVED:
+		case USB_LINK_NOT_VALID_LINK:
+			if (ab->mode == USB_HOST)
+				ab8500_usb_host_phy_dis(ab);
+			else if (ab->mode == USB_PERIPHERAL)
+				ab8500_usb_peri_phy_dis(ab);
+			ab->mode = USB_IDLE;
+			ab->phy.otg.default_a = false;
+			ab->vbus_draw = 0;
+			if (event != USB_EVENT_RIDB)
+				event = USB_EVENT_NONE;
+			break;
+		case USB_LINK_ACA_RID_C_NM:
+		case USB_LINK_ACA_RID_C_HS:
+		case USB_LINK_ACA_RID_C_HS_CHIRP:
+			event = USB_EVENT_RIDC;
+		case USB_LINK_STD_HOST_NC:
+		case USB_LINK_STD_HOST_C_NS:
+		case USB_LINK_STD_HOST_C_S:
+		case USB_LINK_HOST_CHG_NM:
+		case USB_LINK_HOST_CHG_HS:
+		case USB_LINK_HOST_CHG_HS_CHIRP:
+			if (ab->mode == USB_HOST) {
+				ab->mode = USB_PERIPHERAL;
+				ab8500_usb_host_phy_dis(ab);
+				ux500_restore_context();
+				ab8500_usb_peri_phy_en(ab);
+			}
+			if (ab->mode == USB_IDLE) {
+				ab->mode = USB_PERIPHERAL;
+				ux500_restore_context();
+				ab8500_usb_peri_phy_en(ab);
+			}
+			if (event != USB_EVENT_RIDC)
+				event = USB_EVENT_VBUS;
+			break;
 
-	case USB_LINK_ACA_RID_A:
-		event = USB_EVENT_RIDA;
-	case USB_LINK_HM_IDGND:
-		if (ab->mode == USB_PERIPHERAL) {
-			ab->mode = USB_HOST;
-			ab8500_usb_peri_phy_dis(ab);
-			ux500_restore_context();
-			ab8500_usb_host_phy_en(ab);
+		case USB_LINK_ACA_RID_A:
+			event = USB_EVENT_RIDA;
+		case USB_LINK_HM_IDGND:
+			if (ab->mode == USB_PERIPHERAL) {
+				ab->mode = USB_HOST;
+				ab8500_usb_peri_phy_dis(ab);
+				ux500_restore_context();
+				ab8500_usb_host_phy_en(ab);
+			}
+			if (ab->mode == USB_IDLE) {
+				ab->mode = USB_HOST;
+				ux500_restore_context();
+				ab8500_usb_host_phy_en(ab);
+			}
+			ab->phy.otg->default_a = true;
+			if (event != USB_EVENT_RIDA)
+				event = USB_EVENT_ID;
+			break;
+	
+		case USB_LINK_DEDICATED_CHG:
+			/* TODO: vbus_draw */
+			ab->mode = USB_DEDICATED_CHG;
+			event = USB_EVENT_CHARGER;
+			break;
 		}
-		if (ab->mode == USB_IDLE) {
-			ab->mode = USB_HOST;
-			ux500_restore_context();
-			ab8500_usb_host_phy_en(ab);
-		}
-		ab->phy.otg->default_a = true;
-		if (event != USB_EVENT_RIDA)
-			event = USB_EVENT_ID;
-		break;
-
-	case USB_LINK_DEDICATED_CHG:
-		/* TODO: vbus_draw */
-		ab->mode = USB_DEDICATED_CHG;
-		event = USB_EVENT_CHARGER;
-		break;
+		atomic_notifier_call_chain(&ab->phy.notifier, event,
+						&ab->vbus_draw);
 	}
-
-	atomic_notifier_call_chain(&ab->phy.notifier, event, &ab->vbus_draw);
 
 	return 0;
 }
@@ -579,8 +581,6 @@ static int ab8500_usb_boot_detect(struct ab8500_usb *ab)
 				AB8500_BIT_PHY_CTRL_HOST_EN,
 				0);
 
-	ab8500_usb_link_status_update(ab);
-
 	return 0;
 }
 
@@ -713,8 +713,9 @@ irq_fail:
 }
 
 /* Sys interfaces */
-static ssize_t usb_serial_number
-		(struct kobject *kobj, struct attribute *attr, char *buf)
+static ssize_t
+serial_number_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
 {
 	u32 bufer[5];
 	void __iomem *backup_ram = NULL;
@@ -734,27 +735,60 @@ static ssize_t usb_serial_number
 
 		iounmap(backup_ram);
 	} else
-			printk(KERN_ERR "$$ ioremap failed\n");
+			dev_err(dev, "$$\n");
 
 	return strlen(buf);
 }
 
-static struct attribute usb_serial_number_attribute = \
-			{.name = "serial_number", .mode = S_IRUGO};
+static DEVICE_ATTR(serial_number, 0644, serial_number_show, NULL);
 
-static struct attribute *serial_number[] = {
-	&usb_serial_number_attribute,
+static ssize_t
+boot_time_device_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct ab8500_usb *ab = dev_get_drvdata(dev);
+	u8 val = ab->sysfs_flag;
+
+	snprintf(buf, 2, "%d", val);
+
+	return strlen(buf);
+}
+
+static ssize_t
+boot_time_device_store(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t n)
+{
+	struct ab8500_usb *ab = dev_get_drvdata(dev);
+
+	ab->sysfs_flag = false;
+
+	ab8500_usb_link_status_update(ab);
+
+	return n;
+}
+static DEVICE_ATTR(boot_time_device, 0644,
+			boot_time_device_show, boot_time_device_store);
+
+
+static struct attribute *ab8500_usb_attributes[] = {
+	&dev_attr_serial_number.attr,
+	&dev_attr_boot_time_device.attr,
 	NULL
 };
-
-const struct sysfs_ops usb_sysfs_ops = {
-	.show  = usb_serial_number,
+static const struct attribute_group ab8500_attr_group = {
+	.attrs = ab8500_usb_attributes,
 };
 
-static struct kobj_type ktype_serial_number = {
-	.sysfs_ops = &usb_sysfs_ops,
-	.default_attrs = serial_number,
-};
+static int ab8500_create_sysfsentries(struct ab8500_usb *ab)
+{
+	int err;
+
+	err = sysfs_create_group(&ab->dev->kobj, &ab8500_attr_group);
+	if (err)
+		sysfs_remove_group(&ab->dev->kobj, &ab8500_attr_group);
+
+	return err;
+}
 
 static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 {
@@ -798,9 +832,10 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	otg->set_host		= ab8500_usb_set_host;
 	otg->set_peripheral	= ab8500_usb_set_peripheral;
 	ab->usb_gpio		= ab8500_pdata->usb;
+	ab->sysfs_flag		= true;
 
 	platform_set_drvdata(pdev, ab);
-
+	dev_set_drvdata(ab->dev, ab);
 	ATOMIC_INIT_NOTIFIER_HEAD(&ab->phy.notifier);
 
 	/* v1: Wait for link status to become stable.
@@ -882,22 +917,6 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	/* Needed to enable ID detection. */
 	ab8500_usb_wd_workaround(ab);
 
-	ab->serial_number_kobj = kzalloc(sizeof(struct kobject), GFP_KERNEL);
-
-	if (ab->serial_number_kobj == NULL)
-		ret = -ENOMEM;
-	ab->serial_number_kobj->ktype = &ktype_serial_number;
-	kobject_init(ab->serial_number_kobj, ab->serial_number_kobj->ktype);
-
-	ret = kobject_set_name(ab->serial_number_kobj, "usb_serial_number");
-	if (ret)
-		kfree(ab->serial_number_kobj);
-
-	ret = kobject_add(ab->serial_number_kobj, NULL, "usb_serial_number");
-	if (ret)
-		kfree(ab->serial_number_kobj);
-
-
 	err = ab->usb_gpio->get(ab->dev);
 	if (err < 0)
 		goto fail3;
@@ -910,6 +929,10 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 
 	err = ab8500_usb_boot_detect(ab);
 	if (err < 0)
+		goto fail3;
+
+	err = ab8500_create_sysfsentries(ab);
+	if (err)
 		goto fail3;
 
 	return 0;
