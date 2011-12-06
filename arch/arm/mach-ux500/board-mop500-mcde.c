@@ -13,6 +13,7 @@
 #include <linux/mfd/ab8500/denc.h>
 #include <linux/workqueue.h>
 #include <linux/dispdev.h>
+#include <linux/compdev.h>
 #include <asm/mach-types.h>
 #include <linux/clk.h>
 #include <mach/devices.h>
@@ -348,7 +349,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 	u16 virtual_height;
 	u32 rotate = FB_ROTATE_UR;
 	struct fb_info *fbi;
-#ifdef CONFIG_DISPDEV
+#if defined(CONFIG_DISPDEV) || defined(CONFIG_COMPDEV)
 	struct mcde_fb *mfb;
 #endif
 
@@ -394,6 +395,20 @@ static int display_postregistered_callback(struct notifier_block *nb,
 		goto display_postregistered_callback_err;
 	} else {
 		dev_info(&ddev->dev, "Disp dev created for (%s)\n", ddev->name);
+	}
+#endif
+
+#ifdef CONFIG_COMPDEV
+	mfb = to_mcde_fb(fbi);
+	/* Create a compdev overlay for this display */
+	if (compdev_create(ddev, mfb->ovlys[0]) < 0) {
+		dev_warn(&ddev->dev,
+			"Failed to create compdev for display %s\n",
+					ddev->name);
+		goto display_postregistered_callback_err;
+	} else {
+		dev_info(&ddev->dev, "compdev created for (%s)\n",
+					ddev->name);
 	}
 #endif
 

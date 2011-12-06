@@ -470,6 +470,15 @@ config DISPDEV
 	  addition to the framebuffer). The device allows for registration of
 	  userspace buffers to be used with the overlay.
 
+config COMPDEV
+	bool "Display composition device"
+	depends on FB_MCDE && HWMEM
+	default n
+	help
+	  This driver provides a way to use several overlays for a display.
+	  This driver replaces the use of the framebuffer The device allows
+	  for posting userspace buffers to be used with the overlays.
+
 config PCH_PHUB
 	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) PHUB"
 	depends on PCI
