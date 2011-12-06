@@ -46,8 +46,21 @@ struct ab5500_codec_dai_data {
 
 };
 
+enum regulator_idx {
+	REGULATOR_DMIC,
+	REGULATOR_AMIC
+};
+
 static struct device *ab5500_dev;
-static struct regulator *ab5500_vdigmic_reg;
+static struct regulator_bulk_data reg_info[2] = {
+	{	.supply = "vdigmic"	},
+	{	.supply = "v-amic"	}
+};
+
+static bool reg_enabled[2] = {
+	false,
+	false
+};
 
 static u8 virtual_regs[] = {
 	0, 0, 0, 0, 0
@@ -1121,9 +1134,48 @@ static void power_for_playback(enum enum_power onoff, int ifsel)
 	mutex_unlock(&ab5500_pm_mutex);
 }
 
+static int enable_regulator(enum regulator_idx idx)
+{
+	int ret;
+
+	if (reg_enabled[idx])
+		return 0;
+
+	ret = regulator_enable(reg_info[idx].consumer);
+	if (ret != 0) {
+		pr_err("%s: Failure to enable regulator '%s' (ret = %d)\n",
+			__func__, reg_info[idx].supply, ret);
+		return ret;
+	};
+
+	reg_enabled[idx] = true;
+	pr_debug("%s: Enabled regulator '%s', status: %d, %d\n",
+		__func__,
+		reg_info[idx].supply,
+		(int)reg_enabled[0],
+		(int)reg_enabled[1]);
+	return 0;
+}
+
+static void disable_regulator(enum regulator_idx idx)
+{
+	if (!reg_enabled[idx])
+		return;
+
+	regulator_disable(reg_info[idx].consumer);
+
+	reg_enabled[idx] = false;
+	pr_debug("%s: Disabled regulator '%s', status: %d, %d\n",
+		__func__,
+		reg_info[idx].supply,
+		(int)reg_enabled[0],
+		(int)reg_enabled[1]);
+}
+
 static void power_for_capture(enum enum_power onoff, int ifsel)
 {
 	int err;
+	int mask;
 
 	dev_info(ab5500_dev, "%s: interface %d power %s", __func__,
 		ifsel, onoff == POWER_ON ? "on" : "off");
@@ -1137,15 +1189,35 @@ static void power_for_capture(enum enum_power onoff, int ifsel)
 			      widget_if0_uld_l : widget_if1_uld_l);
 	power_widget_unlocked(onoff, ifsel == 0 ?
 			      widget_if0_uld_r : widget_if1_uld_r);
-	mutex_unlock(&ab5500_pm_mutex);
 
-	if (onoff)
-		err = regulator_enable(ab5500_vdigmic_reg);
-	else
-		err = regulator_disable(ab5500_vdigmic_reg);
-	if (err)
-		dev_err(ab5500_dev, "unabled to %s VDIGMIC %d\n",
-			onoff ? "enable" : "disable", err);
+	mask = (read_reg(TX2) & TXx_MUX_MASK) >> TXx_MUX_SHIFT;
+
+		switch (onoff << 2 | mask) {
+		case 0: /* Power off : Amic */
+			disable_regulator(REGULATOR_AMIC);
+		break;
+		case 1: /* Power off : Dmic */
+		case 2:
+			disable_regulator(REGULATOR_DMIC);
+		break;
+		case 4: /* Power on : Amic */
+			err = enable_regulator(REGULATOR_AMIC);
+			if (err < 0)
+				goto unlock;
+		break;
+		case 5: /* Power on : Dmic */
+		case 6:
+			err = enable_regulator(REGULATOR_DMIC);
+			if (err < 0)
+				goto unlock;
+		break;
+		default:
+			pr_debug("%s : Not a valid regulator combination\n",
+					__func__);
+		break;
+		}
+unlock:
+	mutex_unlock(&ab5500_pm_mutex);
 }
 
 static int ab5500_add_controls(struct snd_soc_codec *codec)
@@ -1592,22 +1664,57 @@ static inline void init_capture_route(void)
 	update_widgets_link(LINK, widget_tx2, widget_if0_uld_r, 0, 0, 0);
 }
 
+static int create_regulators(void)
+{
+	int i, status = 0;
+
+	pr_debug("%s: Enter.\n", __func__);
+
+	for (i = 0; i < ARRAY_SIZE(reg_info); ++i)
+		reg_info[i].consumer = NULL;
+
+	for (i = 0; i < ARRAY_SIZE(reg_info); ++i) {
+		reg_info[i].consumer = regulator_get(ab5500_dev,
+							reg_info[i].supply);
+		if (IS_ERR(reg_info[i].consumer)) {
+			status = PTR_ERR(reg_info[i].consumer);
+			pr_err("%s: ERROR: Failed to get regulator '%s' (ret = %d)!\n",
+				__func__, reg_info[i].supply, status);
+			reg_info[i].consumer = NULL;
+			goto err_get;
+		}
+	}
+
+	return 0;
+
+err_get:
+
+	for (i = 0; i < ARRAY_SIZE(reg_info); ++i) {
+		if (reg_info[i].consumer) {
+			regulator_put(reg_info[i].consumer);
+			reg_info[i].consumer = NULL;
+		}
+	}
+
+	return status;
+}
+
 static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	u8 reg;
 	struct ab5500_codec_dai_data *codec_drvdata;
+	int status;
 
 	pr_info("%s invoked with pdev = %p.\n", __func__, pdev);
 	ab5500_dev = &pdev->dev;
 
-	ab5500_vdigmic_reg = regulator_get(&pdev->dev, "vdigmic");
-	if (IS_ERR(ab5500_vdigmic_reg)) {
-		dev_err(&pdev->dev, "could not get vdigmic regulator %ld\n",
-			PTR_ERR(ab5500_vdigmic_reg));
-		return PTR_ERR(ab5500_vdigmic_reg);
+	status = create_regulators();
+	if (status < 0) {
+		pr_err("%s: ERROR: Failed to instantiate regulators (ret = %d)!\n",
+			__func__, status);
+		return status;
 	}
-
 	codec_drvdata = kzalloc(sizeof(struct ab5500_codec_dai_data),
 				GFP_KERNEL);
 	if (codec_drvdata == NULL)
@@ -1639,6 +1746,7 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 static int __devexit ab5500_platform_remove(struct platform_device *pdev)
 {
 	pr_info("%s called.\n", __func__);
+	regulator_bulk_free(ARRAY_SIZE(reg_info), reg_info);
 	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0);
 	snd_soc_unregister_codec(ab5500_dev);
 	kfree(platform_get_drvdata(pdev));
