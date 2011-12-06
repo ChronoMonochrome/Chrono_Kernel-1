@@ -1,5 +1,4 @@
-/**
- *
+/*
  * Synaptics Register Mapped Interface (RMI4) I2C Physical Layer Driver.
  * Copyright (c) 2007-2010, Synaptics Incorporated
  *
