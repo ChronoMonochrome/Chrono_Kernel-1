@@ -12,7 +12,6 @@
 #include <linux/regulator/consumer.h>
 #include <asm/mach-types.h>
 #include <mach/irqs.h>
-#include <plat/pincfg.h>
 #include "pins.h"
 #include <mach/cw1200_plat.h>
 
@@ -44,38 +43,8 @@ const struct cw1200_platform_data *cw1200_u5500_get_platform_data(void)
 }
 EXPORT_SYMBOL_GPL(cw1200_u5500_get_platform_data);
 
-static int cw1200_pins_enable(bool enable)
-{
-	struct ux500_pins *pins = NULL;
-	int ret = 0;
-
-	pins = ux500_pins_get("sdi3");
-
-	if (!pins) {
-		printk(KERN_ERR "cw1200: Pins are not found. "
-				"Check platform data.\n");
-		return -ENOENT;
-	}
-
-	if (enable)
-		ret = ux500_pins_enable(pins);
-	else
-		ret = ux500_pins_disable(pins);
-
-	if (ret)
-		printk(KERN_ERR "cw1200: Pins can not be %s: %d.\n",
-				enable ? "enabled" : "disabled",
-				ret);
-
-	ux500_pins_put(pins);
-
-	return ret;
-}
-
 int __init u5500_wlan_init(void)
 {
-	int ret;
-
 	if (machine_is_u5500()) {
 		cw1200_device.num_resources = ARRAY_SIZE(cw1200_u5500_resources);
 		cw1200_device.resource = cw1200_u5500_resources;
@@ -92,18 +61,10 @@ int __init u5500_wlan_init(void)
 
 	cw1200_device.dev.release = cw1200_release;
 
-	ret = cw1200_pins_enable(true);
-	if (WARN_ON(ret))
-		return ret;
-
-	ret = platform_device_register(&cw1200_device);
-	if (ret)
-		cw1200_pins_enable(false);
-
-	return ret;
+	return platform_device_register(&cw1200_device);
 }
 
 static void cw1200_release(struct device *dev)
 {
-	cw1200_pins_enable(false);
+
 }
