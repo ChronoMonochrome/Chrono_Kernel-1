@@ -42,6 +42,13 @@ config CW1200_WAPI_SUPPORT
         Say Y if your compat-wireless support WAPI.
         If unsure, say N.
 
+config CW1200_U5500_SUPPORT
+      bool "Enable U5500 support"
+      depends on CW1200
+      help
+        Say Y if you want to enable wlan on u5500 platform support.
+        If unsure, say N.
+
 menu "Driver debug features"
       depends on CW1200
 
