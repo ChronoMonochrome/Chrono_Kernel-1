@@ -154,7 +154,7 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
 	u8 als_imp_sel = 0;
 	u8 brightness;
 	u8 reg_val[LM3530_REG_MAX];
-	u8 zones[LM3530_ALS_ZB_MAX];
+	u8 zones[LM3530_ALS_ZB_MAX] = {0};
 	u32 als_vmin, als_vmax, als_vstep;
 	struct lm3530_platform_data *pdata = drvdata->pdata;
 	struct i2c_client *client = drvdata->client;
