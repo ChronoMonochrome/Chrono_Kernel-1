@@ -162,7 +162,7 @@ static int create_by_name(const char *name, umode_t mode,
 	 * have around.
 	 */
 	if (!parent)
-		parent = mount->mnt_sb->s_root;
+		parent = mount->mnt_root;
 
 	mutex_lock(&parent->d_inode->i_mutex);
 	*dentry = lookup_one_len(name, parent, strlen(name));
