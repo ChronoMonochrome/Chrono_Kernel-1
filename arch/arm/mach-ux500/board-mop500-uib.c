@@ -252,12 +252,13 @@ static int __init mop500_uib_init(void)
 			I2C_SMBUS_QUICK, NULL);
 	i2c_put_adapter(i2c0);
 	i2c3 = i2c_get_adapter(3);
+	if (!i2c3) {
+		__mop500_uib_init(&mop500_uibs[STUIB],
+				"fallback, could not get i2c3");
+		return -ENODEV;
+	}
+
 	if (ret == 0) {
-		if (!i2c3) {
-			__mop500_uib_init(&mop500_uibs[STUIB],
-					"fallback, could not get i2c3");
-			return -ENODEV;
-		}
 		ret = i2c_smbus_xfer(i2c3, 0x4B, 0, I2C_SMBUS_WRITE, 0,
 				I2C_SMBUS_QUICK, NULL);
 		i2c_put_adapter(i2c3);
