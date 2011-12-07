@@ -336,6 +336,7 @@ static char *ab8500_chargalg_supplied_to[] = {
 struct ab8500_charger_platform_data ab8500_charger_plat_data = {
 	.supplied_to = ab8500_charger_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_charger_supplied_to),
+	.autopower_cfg		= false,
 };
 
 struct ab8500_btemp_platform_data ab8500_btemp_plat_data = {
