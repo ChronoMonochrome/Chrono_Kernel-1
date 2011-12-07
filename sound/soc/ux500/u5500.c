@@ -66,7 +66,7 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 	{
 		.name = "ab5500_0",
 		.stream_name = "ab5500_0",
-		.cpu_dai_name = "i2s.0",
+		.cpu_dai_name = "ux500-msp-i2s.0",
 		.codec_dai_name = "ab5500-codec-dai.0",
 		.platform_name = "ux500-pcm.0",
 		.codec_name = "ab5500-codec.0",
@@ -83,7 +83,7 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 	{
 		.name = "cg29xx_0",
 		.stream_name = "cg29xx_0",
-		.cpu_dai_name = "i2s.1",
+		.cpu_dai_name = "ux500-msp-i2s.1",
 		.codec_dai_name = "cg29xx-codec-dai.0",
 		.platform_name = "ux500-pcm.0",
 		.codec_name = "cg29xx-codec.0",
@@ -93,7 +93,7 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 	{
 		.name = "cg29xx_1",
 		.stream_name = "cg29xx_1",
-		.cpu_dai_name = "i2s.0",
+		.cpu_dai_name = "ux500-msp-i2s.0",
 		.codec_dai_name = "cg29xx-codec-dai.1",
 		.platform_name = "ux500-pcm.0",
 		.codec_name = "cg29xx-codec.0",
@@ -104,7 +104,7 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 	{
 		.name = "ab5500_1",
 		.stream_name = "ab5500_1",
-		.cpu_dai_name = "i2s.1",
+		.cpu_dai_name = "ux500-msp-i2s.1",
 		.codec_dai_name = "ab5500-codec-dai.1",
 		.platform_name = "ux500-pcm.0",
 		.codec_name = "ab5500-codec.0",
@@ -121,7 +121,7 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 	{
 		.name = "hdmi",
 		.stream_name = "hdmi",
-		.cpu_dai_name = "i2s.2",
+		.cpu_dai_name = "ux500-msp-i2s.2",
 		.codec_dai_name = "av8100-codec-dai",
 		.platform_name = "ux500-pcm.0",
 		.codec_name = "av8100-codec.0",

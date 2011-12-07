@@ -272,7 +272,7 @@ static int ux500_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 				private->msp_id,
 				stream_id);
 		if (ret) {
-			pr_err("%s: Failed to configure sg-list!\n", __func__);
+			pr_err("%s: Failed to configure I2S!\n", __func__);
 			return -EINVAL;
 		}
 		break;

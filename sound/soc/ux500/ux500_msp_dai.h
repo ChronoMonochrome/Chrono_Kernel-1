@@ -1,5 +1,5 @@
 /*
- * Copyright (C) ST-Ericsson SA 2010
+ * Copyright (C) ST-Ericsson SA 2011
  *
  * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
  *         Roger Nilsson <roger.xr.nilsson@stericsson.com>
@@ -17,7 +17,6 @@
 
 #include <linux/types.h>
 #include <linux/spinlock.h>
-#include <linux/i2s/i2s.h>
 #include <mach/msp.h>
 
 #define UX500_NBR_OF_DAI	4
@@ -54,7 +53,7 @@ enum ux500_msp_clock_id {
 };
 
 struct ux500_platform_drvdata {
-	struct i2s_device *i2s;
+	struct ux500_msp_i2s_drvdata *msp_i2s_drvdata;
 	unsigned int fmt;
 	unsigned int tx_mask;
 	unsigned int rx_mask;

@@ -12,7 +12,6 @@
 #include <linux/spinlock.h>
 #include <linux/semaphore.h>
 #include <linux/dmaengine.h>
-#include <linux/i2s/i2s.h>
 #include <linux/irqreturn.h>
 #include <linux/bitops.h>
 #include <plat/ste_dma40.h>
@@ -130,6 +129,53 @@ struct msp_protocol_desc {
 	u32 frame_width;
 	u32 total_clocks_for_one_frame;
 };
+
+enum i2s_direction_t {
+	I2S_DIRECTION_TX = 0,
+	I2S_DIRECTION_RX = 1,
+	I2S_DIRECTION_BOTH = 2
+};
+
+enum i2s_transfer_mode_t {
+	I2S_TRANSFER_MODE_SINGLE_DMA = 0,
+	I2S_TRANSFER_MODE_CYCLIC_DMA = 1,
+	I2S_TRANSFER_MODE_INF_LOOPBACK = 2,
+	I2S_TRANSFER_MODE_NON_DMA = 4,
+};
+
+struct i2s_message {
+	enum i2s_direction_t i2s_direction;
+	void *txdata;
+	void *rxdata;
+	size_t txbytes;
+	size_t rxbytes;
+	int dma_flag;
+	int tx_offset;
+	int rx_offset;
+	/* cyclic dma */
+	bool cyclic_dma;
+	dma_addr_t buf_addr;
+	size_t buf_len;
+	size_t period_len;
+};
+
+enum i2s_flag {
+	DISABLE_ALL = 0,
+	DISABLE_TRANSMIT = 1,
+	DISABLE_RECEIVE = 2,
+};
+
+struct i2s_controller {
+	struct module *owner;
+	unsigned int id;
+	unsigned int class;
+	const struct i2s_algorithm *algo; /* the algorithm to access the bus */
+	void *data;
+	struct mutex bus_lock;
+	struct device dev; /* the controller device */
+	char name[48];
+};
+#define to_i2s_controller(d) container_of(d, struct i2s_controller, dev)
 
 /**
  * struct trans_data - MSP transfer data structure used during xfer.
@@ -645,15 +691,19 @@ enum msp_expand_mode {
 #define TDMAE_SHIFT		1
 
 /* Interrupt Register */
-#define RECEIVE_SERVICE_INT         BIT(0)
-#define RECEIVE_OVERRUN_ERROR_INT   BIT(1)
-#define RECEIVE_FRAME_SYNC_ERR_INT  BIT(2)
-#define RECEIVE_FRAME_SYNC_INT      BIT(3)
-#define TRANSMIT_SERVICE_INT        BIT(4)
-#define TRANSMIT_UNDERRUN_ERR_INT   BIT(5)
-#define TRANSMIT_FRAME_SYNC_ERR_INT BIT(6)
-#define TRANSMIT_FRAME_SYNC_INT     BIT(7)
-#define ALL_INT                     0x000000ff
+#define RECEIVE_SERVICE_INT		BIT(0)
+#define RECEIVE_OVERRUN_ERROR_INT	BIT(1)
+#define RECEIVE_FRAME_SYNC_ERR_INT	BIT(2)
+#define RECEIVE_FRAME_SYNC_INT		BIT(3)
+#define TRANSMIT_SERVICE_INT		BIT(4)
+#define TRANSMIT_UNDERRUN_ERR_INT	BIT(5)
+#define TRANSMIT_FRAME_SYNC_ERR_INT	BIT(6)
+#define TRANSMIT_FRAME_SYNC_INT		BIT(7)
+#define ALL_INT				0x000000ff
+
+/* MSP test control register */
+#define MSP_ITCR_ITEN			BIT(0)
+#define MSP_ITCR_TESTFIFO		BIT(1)
 
 /*
  *  Protocol configuration values I2S:
@@ -879,7 +929,7 @@ enum msp_expand_mode {
 #define MAX_MSP_BACKUP_REGS 36
 
 enum enum_i2s_controller {
-	MSP_0_I2S_CONTROLLER = 1,
+	MSP_0_I2S_CONTROLLER = 0,
 	MSP_1_I2S_CONTROLLER,
 	MSP_2_I2S_CONTROLLER,
 	MSP_3_I2S_CONTROLLER,
@@ -923,6 +973,7 @@ struct msp {
 	int msp_io_error;
 	void __iomem *registers;
 	enum msp_data_size actual_data_size;
+	struct device *dev;
 	int irq;
 	struct i2s_controller *i2s_cont;
 	struct semaphore lock;

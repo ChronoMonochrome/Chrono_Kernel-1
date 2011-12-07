@@ -5,7 +5,6 @@
  */
 
 #include <linux/platform_device.h>
-#include <linux/i2s/i2s.h>
 #include <linux/init.h>
 #include <linux/gpio.h>
 #include <linux/gpio/nomadik.h>
@@ -185,36 +184,10 @@ static struct msp_i2s_platform_data msp3_platform_data = {
 	.msp_i2s_exit = msp13_i2s_exit,
 };
 
-static struct i2s_board_info stm_i2s_board_info[] __initdata = {
-	{
-		.modalias	= "i2s_device.0",
-		.id		= 0,
-		.chip_select	= 0,
-	},
-	{
-		.modalias	= "i2s_device.1",
-		.id		= 1,
-		.chip_select	= 1,
-	},
-	{
-		.modalias	= "i2s_device.2",
-		.id		= 2,
-		.chip_select	= 2,
-	},
-	{
-		.modalias	= "i2s_device.3",
-		.id		= 3,
-		.chip_select	= 3,
-	},
-};
-
 void __init mop500_msp_init(void)
 {
 	db8500_add_msp0_i2s(&msp0_platform_data);
 	db8500_add_msp1_i2s(&msp1_platform_data);
 	db8500_add_msp2_i2s(&msp2_platform_data);
 	db8500_add_msp3_i2s(&msp3_platform_data);
-
-	i2s_register_board_info(stm_i2s_board_info,
-				ARRAY_SIZE(stm_i2s_board_info));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) ST-Ericsson SA 2010
+ * Copyright (C) ST-Ericsson SA 2011
  *
  * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
  *         Roger Nilsson <roger.xr.nilsson@stericsson.com>
@@ -14,21 +14,22 @@
 
 #include <linux/module.h>
 #include <linux/slab.h>
-#include <asm/dma.h>
 #include <linux/bitops.h>
+#include <linux/platform_device.h>
+
 #include <mach/hardware.h>
 #include <mach/msp.h>
-#include <linux/i2s/i2s.h>
-#include <asm/mach-types.h>
 
 #include <sound/soc.h>
 #include <sound/soc-dai.h>
+
+#include "ux500_msp_i2s.h"
 #include "ux500_msp_dai.h"
 #include "ux500_pcm.h"
 
 static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 	{
-		.i2s = NULL,
+		.msp_i2s_drvdata = NULL,
 		.fmt = 0,
 		.slots = 1,
 		.tx_mask = 0x01,
@@ -41,7 +42,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.master_clk = UX500_MSP_INTERNAL_CLOCK_FREQ,
 	},
 	{
-		.i2s = NULL,
+		.msp_i2s_drvdata = NULL,
 		.fmt = 0,
 		.slots = 1,
 		.tx_mask = 0x01,
@@ -54,7 +55,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.master_clk = UX500_MSP1_INTERNAL_CLOCK_FREQ,
 	},
 	{
-		.i2s = NULL,
+		.msp_i2s_drvdata = NULL,
 		.fmt = 0,
 		.slots = 1,
 		.tx_mask = 0x01,
@@ -67,7 +68,7 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 		.master_clk = UX500_MSP_INTERNAL_CLOCK_FREQ,
 	},
 	{
-		.i2s = NULL,
+		.msp_i2s_drvdata = NULL,
 		.fmt = 0,
 		.slots = 1,
 		.tx_mask = 0x01,
@@ -84,14 +85,14 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 bool ux500_msp_dai_i2s_get_underrun_status(int dai_idx)
 {
 	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
-	int status = i2s_hw_status(drvdata->i2s->controller);
+	int status = ux500_msp_i2s_hw_status(drvdata->msp_i2s_drvdata);
 	return (bool)(status & TRANSMIT_UNDERRUN_ERR_INT);
 }
 
 dma_addr_t ux500_msp_dai_i2s_get_pointer(int dai_idx, int stream_id)
 {
 	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
-	return i2s_get_pointer(drvdata->i2s->controller,
+	return ux500_msp_i2s_get_pointer(drvdata->msp_i2s_drvdata,
 			(stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
 				I2S_DIRECTION_TX :
 				I2S_DIRECTION_RX);
@@ -105,7 +106,6 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 {
 	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
 	struct i2s_message message;
-	struct i2s_device *i2s_dev;
 	int ret = 0;
 	bool playback_req_valid =
 		(drvdata->playback_active &&
@@ -128,9 +128,6 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 		return ret;
 	}
 
-	i2s_dev = drvdata->i2s;
-
-	message.i2s_transfer_mode = I2S_TRANSFER_MODE_CYCLIC_DMA;
 	message.i2s_direction = (stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
 					I2S_DIRECTION_TX :
 					I2S_DIRECTION_RX;
@@ -138,7 +135,7 @@ int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
 	message.buf_len = period_cnt * period_len;
 	message.period_len = period_len;
 
-	ret = i2s_transfer(i2s_dev->controller, &message);
+	ret = ux500_msp_i2s_transfer(drvdata->msp_i2s_drvdata, &message);
 	if (ret < 0) {
 		pr_err("%s: Error: i2s_transfer failed. MSP index: %d\n",
 			__func__,
@@ -197,7 +194,7 @@ static void ux500_msp_dai_shutdown(struct snd_pcm_substream *substream,
 	else
 		drvdata->capture_active = false;
 
-	if (i2s_cleanup(drvdata->i2s->controller,
+	if (ux500_msp_i2s_close(drvdata->msp_i2s_drvdata,
 			mode_playback ? DISABLE_TRANSMIT : DISABLE_RECEIVE)) {
 			pr_err("%s: Error: MSP %d (%s): Unable to close i2s.\n",
 				__func__,
@@ -468,7 +465,7 @@ static void ux500_msp_dai_compile_msp_config(struct snd_pcm_substream *substream
 	msp_config->work_mode = MSP_DMA_MODE;
 	msp_config->frame_freq = rate;
 
-	printk(KERN_INFO "%s: input_clock_freq = %u, frame_freq = %u.\n",
+	pr_debug("%s: input_clock_freq = %u, frame_freq = %u.\n",
 	       __func__, msp_config->input_clock_freq, msp_config->frame_freq);
 	/* To avoid division by zero in I2S-driver (i2s_setup) */
 	prot_desc->total_clocks_for_one_frame = 1;
@@ -548,9 +545,9 @@ static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
 					runtime->rate,
 					&msp_config);
 
-	ret = i2s_setup(drvdata->i2s->controller, &msp_config);
+	ret = ux500_msp_i2s_open(drvdata->msp_i2s_drvdata, &msp_config);
 	if (ret < 0) {
-		pr_err("%s: Error: i2s_setup failed (ret = %d)!\n", __func__, ret);
+		pr_err("%s: Error: msp_setup failed (ret = %d)!\n", __func__, ret);
 		goto cleanup;
 	}
 
@@ -764,11 +761,11 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 	int ret = 0;
 	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
 
-	pr_debug("%s: MSP %d (%s): Enter (chip_select = %d, cmd = %d).\n",
+	pr_debug("%s: MSP %d (%s): Enter (msp->id = %d, cmd = %d).\n",
 		__func__,
 		dai->id,
 		stream_str(substream),
-		(int)drvdata->i2s->chip_select,
+		(int)drvdata->msp_i2s_drvdata->id,
 		cmd);
 
 	switch (cmd) {
@@ -796,7 +793,7 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 
 static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 	{
-		.name = "ux500-msp.0",
+		.name = "ux500-msp-i2s.0",
 		.id = 0,
 		.suspend = NULL,
 		.resume = NULL,
@@ -826,7 +823,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 		},
 	},
 	{
-		.name = "ux500-msp.1",
+		.name = "ux500-msp-i2s.1",
 		.id = 1,
 		.suspend = NULL,
 		.resume = NULL,
@@ -856,7 +853,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 		},
 	},
 	{
-		.name = "ux500-msp.2",
+		.name = "ux500-msp-i2s.2",
 		.id = 2,
 		.suspend = NULL,
 		.resume = NULL,
@@ -886,7 +883,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 		},
 	},
 	{
-		.name = "ux500-msp.3",
+		.name = "ux500-msp-i2s.3",
 		.id = 3,
 		.suspend = NULL,
 		.resume = NULL,
@@ -918,84 +915,90 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 };
 EXPORT_SYMBOL(ux500_msp_dai_drv);
 
-static int ux500_msp_drv_probe(struct i2s_device *i2s_dev)
+static int ux500_msp_drv_probe(struct platform_device *pdev)
 {
-	int ret = 0;
+	struct ux500_msp_i2s_drvdata *msp_i2s_drvdata;
 	struct ux500_platform_drvdata *drvdata;
-	int msp_idx = i2s_dev->chip_select;
+	struct msp_i2s_platform_data *platform_data;
+	int id;
+	int ret = 0;
 
-	pr_info("%s: Enter (idx: %d, dev-name: %s, drv-name: %s).\n",
-		__func__,
-		msp_idx,
-		dev_name(&i2s_dev->dev),
-		i2s_dev->dev.driver->name);
+	pr_err("%s: Enter (pdev->name = %s).\n", __func__, pdev->name);
 
-	drvdata = &platform_drvdata[msp_idx];
-	drvdata->i2s = i2s_dev;
+	platform_data = (struct msp_i2s_platform_data *)pdev->dev.platform_data;
+	msp_i2s_drvdata = ux500_msp_i2s_init(pdev, platform_data);
+	if (!msp_i2s_drvdata) {
+		pr_err("%s: ERROR: ux500_msp_i2s_init failed!", __func__);
+		return -EINVAL;
+	}
 
-	try_module_get(i2s_dev->controller->dev.parent->driver->owner);
-	i2s_set_drvdata(i2s_dev, drvdata);
+	id = msp_i2s_drvdata->id;
+	drvdata = &platform_drvdata[id];
+	drvdata->msp_i2s_drvdata = msp_i2s_drvdata;
 
-	pr_debug("%s: Register MSP %d.\n", __func__, msp_idx);
-	ret = snd_soc_register_dai(&i2s_dev->dev, &ux500_msp_dai_drv[msp_idx]);
+	pr_info("%s: Registering ux500-msp-dai SoC CPU-DAI.\n", __func__);
+	ret = snd_soc_register_dai(&pdev->dev, &ux500_msp_dai_drv[id]);
 	if (ret < 0) {
-		pr_err("Error: %s: Failed to register MSP %d.\n", __func__, msp_idx);
+		pr_err("Error: %s: Failed to register MSP %d.\n", __func__, id);
 		return ret;
 	}
 
 	return ret;
 }
 
-static int ux500_msp_drv_remove(struct i2s_device *i2s_dev)
+static int ux500_msp_drv_remove(struct platform_device *pdev)
 {
-	struct ux500_platform_drvdata *drvdata = i2s_get_drvdata(i2s_dev);
-	int msp_idx = i2s_dev->chip_select;
+	struct ux500_msp_i2s_drvdata *msp_i2s_drvdata = dev_get_drvdata(&pdev->dev);
+	struct ux500_platform_drvdata *drvdata = &platform_drvdata[msp_i2s_drvdata->id];
 
-	pr_info("%s: Enter (idx: %d, dev-name: %s, drv-name: %s).\n",
-		__func__,
-		msp_idx,
-		dev_name(&i2s_dev->dev),
-		i2s_dev->dev.driver->name);
+	pr_info("%s: Unregister ux500-msp-dai ASoC CPU-DAI.\n", __func__);
+	snd_soc_unregister_dais(&pdev->dev, ARRAY_SIZE(ux500_msp_dai_drv));
 
-	drvdata->i2s = NULL;
-	i2s_set_drvdata(i2s_dev, NULL);
-
-	pr_debug("%s: Calling module_put.\n", __func__);
-	module_put(i2s_dev->controller->dev.parent->driver->owner);
-
-	pr_debug("%s: Unregister ux500-pcm SoC platform driver.\n", __func__);
-	snd_soc_unregister_dais(&i2s_dev->dev, ARRAY_SIZE(ux500_msp_dai_drv));
+	ux500_msp_i2s_exit(msp_i2s_drvdata);
+	drvdata->msp_i2s_drvdata = NULL;
 
 	return 0;
 }
 
-static const struct i2s_device_id dev_id_table[] = {
-	{ "i2s_device.0", 0, 0 },
-	{ "i2s_device.1", 1, 0 },
-	{ "i2s_device.2", 2, 0 },
-	{ "i2s_device.3", 3, 0 },
-	{ },
-};
-MODULE_DEVICE_TABLE(i2s, dev_id_table);
+int ux500_msp_drv_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	struct ux500_msp_i2s_drvdata *msp_i2s_drvdata = dev_get_drvdata(&pdev->dev);
 
-static struct i2s_driver i2sdrv_i2s = {
+	pr_debug("%s: Enter (pdev->name = %s).\n", __func__, pdev->name);
+
+	return ux500_msp_i2s_suspend(msp_i2s_drvdata);
+}
+
+int ux500_msp_drv_resume(struct platform_device *pdev)
+{
+	struct ux500_msp_i2s_drvdata *msp_i2s_drvdata = dev_get_drvdata(&pdev->dev);
+
+	pr_debug("%s: Enter (pdev->name = %s).\n", __func__, pdev->name);
+
+	return ux500_msp_i2s_resume(msp_i2s_drvdata);
+}
+
+static struct platform_driver msp_i2s_driver = {
 	.driver = {
-		.name = "i2s",
+		.name = "ux500-msp-i2s",
 		.owner = THIS_MODULE,
 	},
 	.probe = ux500_msp_drv_probe,
-	.remove = __devexit_p(ux500_msp_drv_remove),
-	.id_table = dev_id_table,
+	.remove = ux500_msp_drv_remove,
+	.suspend = ux500_msp_drv_suspend,
+	.resume = ux500_msp_drv_resume,
 };
 
 static int __init ux500_msp_init(void)
 {
-	return i2s_register_driver(&i2sdrv_i2s);
+	pr_info("%s: Register ux500-msp-dai platform driver.\n", __func__);
+	return platform_driver_register(&msp_i2s_driver);
 }
 
 static void __exit ux500_msp_exit(void)
 {
-	i2s_unregister_driver(&i2sdrv_i2s);
+	pr_info("%s: Unregister ux500-msp-dai platform driver.\n", __func__);
+	platform_driver_unregister(&msp_i2s_driver);
 }
 
 module_init(ux500_msp_init);
