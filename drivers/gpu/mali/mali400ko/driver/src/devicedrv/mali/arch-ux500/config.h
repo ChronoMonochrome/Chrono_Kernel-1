@@ -88,7 +88,7 @@ static _mali_osk_resource_t arch_configuration [] =
 		.type = OS_MEMORY,
 		.description = "Linux kernel memory",
 		.alloc_order = 5, /* Medium preference for this memory */
-		.size = OS_MEM_SIZE,
+		.size = 2047 * MEGABYTE,
 		.flags = _MALI_CPU_WRITEABLE | _MALI_CPU_READABLE | _MALI_MMU_READABLE | _MALI_MMU_WRITEABLE
 	},
 #endif

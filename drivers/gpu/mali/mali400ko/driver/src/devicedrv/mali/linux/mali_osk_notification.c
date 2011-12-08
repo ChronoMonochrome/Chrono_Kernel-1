@@ -20,7 +20,6 @@
 #include <linux/version.h>
 
 #include <linux/sched.h>
-#include <linux/mm.h>
 #include <linux/slab.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26)
 #include <linux/semaphore.h>
