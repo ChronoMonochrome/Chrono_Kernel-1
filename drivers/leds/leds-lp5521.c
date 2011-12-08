@@ -792,6 +792,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
 	ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
 	if (buf != LP5521_REG_R_CURR_DEFAULT) {
 		dev_err(&client->dev, "error in resetting chip\n");
+		ret = -EIO;
 		goto fail2;
 	}
 	usleep_range(10000, 20000);
