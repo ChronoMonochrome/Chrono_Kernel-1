@@ -154,6 +154,8 @@ static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
+	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);
+
 	return ret;
 }
 
