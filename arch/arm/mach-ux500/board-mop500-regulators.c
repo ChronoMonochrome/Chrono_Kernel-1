@@ -314,12 +314,6 @@ static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
 	 */
 	INIT_REGULATOR_REGISTER(AB8500_VSMPS2REGU,             0x0f, 0x06),
 	/*
-	 * Vsmps3Regu               = HW control
-	 * Vsmps3SelCtrl            = Vsmps3 voltage defined by Vsmps3Sel2
-	 * NOTE! PRCMU register
-	 */
-	INIT_REGULATOR_REGISTER(AB8500_VSMPS3REGU,             0x0f, 0x06),
-	/*
 	 * VPll                     = Hw controlled
 	 * VanaRegu                 = force off
 	 */
