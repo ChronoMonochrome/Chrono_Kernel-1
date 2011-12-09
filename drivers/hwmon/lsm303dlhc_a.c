@@ -479,10 +479,10 @@ static DEVICE_ATTR(id, S_IRUGO, lsm303dlhc_a_show_id, NULL);
 
 static DEVICE_ATTR(data, S_IRUGO, lsm303dlhc_a_show_data, NULL);
 
-static DEVICE_ATTR(range, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(range, S_IWUSR | S_IRUGO,
 		lsm303dlhc_a_show_range, lsm303dlhc_a_store_range);
 
-static DEVICE_ATTR(mode, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(mode, S_IWUSR | S_IRUGO,
 		lsm303dlhc_a_show_mode, lsm303dlhc_a_store_mode);
 
 static struct attribute *lsm303dlhc_a_attributes[] = {

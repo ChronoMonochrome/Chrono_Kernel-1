@@ -1013,16 +1013,16 @@ static DEVICE_ATTR(id, S_IRUGO, lsm303dlh_a_show_id, NULL);
 
 static DEVICE_ATTR(data, S_IRUGO, lsm303dlh_a_show_data, NULL);
 
-static DEVICE_ATTR(range, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(range, S_IWUSR | S_IRUGO,
 		lsm303dlh_a_show_range, lsm303dlh_a_store_range);
 
-static DEVICE_ATTR(mode, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(mode, S_IWUSR | S_IRUGO,
 		lsm303dlh_a_show_mode, lsm303dlh_a_store_mode);
 
-static DEVICE_ATTR(rate, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(rate, S_IWUSR | S_IRUGO,
 		lsm303dlh_a_show_rate, lsm303dlh_a_store_rate);
 
-static DEVICE_ATTR(sleep_wake, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(sleep_wake, S_IWUSR | S_IRUGO,
 		lsm303dlh_a_show_sleepwake, lsm303dlh_a_store_sleepwake);
 
 #ifdef CONFIG_SENSORS_LSM303DLH_INPUT_DEVICE

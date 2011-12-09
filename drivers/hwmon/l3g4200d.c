@@ -422,13 +422,13 @@ static ssize_t l3g4200d_show_gyrotemp(struct device *dev,
 
 static DEVICE_ATTR(gyrodata, S_IRUGO, l3g4200d_show_gyrodata, NULL);
 
-static DEVICE_ATTR(range, S_IRUGO | S_IWUGO,
+static DEVICE_ATTR(range, S_IRUGO | S_IWUSR,
 		l3g4200d_show_range, l3g4200d_store_range);
 
-static DEVICE_ATTR(datarate, S_IRUGO | S_IWUGO,
+static DEVICE_ATTR(datarate, S_IRUGO | S_IWUSR,
 		l3g4200d_show_datarate, l3g4200d_store_datarate);
 
-static DEVICE_ATTR(powermode, S_IRUGO | S_IWUGO,
+static DEVICE_ATTR(powermode, S_IRUGO | S_IWUSR,
 		l3g4200d_show_powermode, l3g4200d_store_powermode);
 
 static DEVICE_ATTR(gyrotemp, S_IRUGO, l3g4200d_show_gyrotemp, NULL);

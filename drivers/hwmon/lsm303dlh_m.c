@@ -634,13 +634,13 @@ static DEVICE_ATTR(gain, S_IRUGO, lsm303dlh_m_gain, NULL);
 
 static DEVICE_ATTR(data, S_IRUGO, lsm303dlh_m_values, NULL);
 
-static DEVICE_ATTR(mode, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(mode, S_IWUSR | S_IRUGO,
 		lsm303dlh_m_show_mode, lsm303dlh_m_store_mode);
 
-static DEVICE_ATTR(range, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(range, S_IWUSR | S_IRUGO,
 		lsm303dlh_m_show_range, lsm303dlh_m_store_range);
 
-static DEVICE_ATTR(rate, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(rate, S_IWUSR | S_IRUGO,
 		lsm303dlh_m_show_rate, lsm303dlh_m_store_rate);
 
 static struct attribute *lsm303dlh_m_attributes[] = {
