@@ -673,6 +673,7 @@ static struct clk *db5500_clks_tobe_disabled[] __initdata = {
 	&p5_i2c3_clk,
 	&pwmclk,
 	&svaclk,
+	&cdclk,
 	&clkout2,
 };
 
