@@ -621,17 +621,6 @@ void mop500_regulator_init(void)
 	struct regulator_init_data *regulator;
 
 	/*
-	 * Handle VextSupply1 on older boards than HREFP_V22_V1x
-	 * (turn off in suspend)
-	 */
-	if (cpu_is_u8500v20() || cpu_is_u8500v21()) {
-		/* disable VextSupply1 in suspend */
-		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY1];
-		regulator->constraints.state_mem.disabled = 1;
-		regulator->constraints.state_standby.disabled = 1;
-	}
-
-	/*
 	 * Handle AB8500_EXT_SUPPLY2 on HREFP_V20_V50 boards (do it for
 	 * all HREFP_V20 boards)
 	 */
