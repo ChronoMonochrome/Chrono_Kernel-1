@@ -1205,8 +1205,6 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 	&snowball_key_dev,
 #ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
 	&snowball_gpio_en_3v3_regulator_device,
-#endif
-#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
 	&snowball_gpio_wlan_vbat_regulator_device,
 #endif
 	&snowball_sbnet_dev,
@@ -1215,20 +1213,6 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 #endif
 	&u8500_b2r2_device,
 };
-
-/*
- *  On boards hrefpv60 and later, the accessory insertion/removal,
- *  button press/release are inverted.
-*/
-static void accessory_detect_config(void)
-{
-#ifdef CONFIG_INPUT_AB8500_ACCDET
-	if (machine_is_hrefv60())
-		ab8500_accdet_pdata.is_detection_inverted = true;
-	else
-		ab8500_accdet_pdata.is_detection_inverted = false;
-#endif
-}
 
 static void __init mop500_init_machine(void)
 {
@@ -1272,6 +1256,8 @@ static void __init mop500_init_machine(void)
 			sizeof(mop500_ske_keypad_data));
 #endif
 
+	platform_device_register(&ab8500_device);
+
 	i2c_register_board_info(0, mop500_i2c0_devices,
 			ARRAY_SIZE(mop500_i2c0_devices));
 	i2c_register_board_info(2, mop500_i2c2_devices,
@@ -1307,6 +1293,14 @@ static void __init snowball_init_machine(void)
 	snowball_sdi_init(parent);
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
+#ifdef CONFIG_STM_MSP_I2S
+	mop500_msp_init();
+#endif
+#if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
+	mop500_wlan_init();
+#endif
+
+	platform_device_register(&ab8500_device);
 
 	i2c_register_board_info(0, snowball_i2c0_devices,
 			ARRAY_SIZE(snowball_i2c0_devices));
@@ -1328,7 +1322,13 @@ static void __init hrefv60_init_machine(void)
 	mop500_gpio_keys[0].gpio = HREFV60_PROX_SENSE_GPIO;
 	mop500_gpio_keys[1].gpio = HREFV60_HAL_SW_GPIO;
 
-	accessory_detect_config();
+#ifdef CONFIG_INPUT_AB8500_ACCDET
+	/*
+	 *  On boards hrefpv60 and later, the accessory insertion/removal,
+	 *  button press/release are inverted.
+	 */
+	ab8500_accdet_pdata.is_detection_inverted = true;
+#endif
 
 	parent = u8500_init_devices();
 
