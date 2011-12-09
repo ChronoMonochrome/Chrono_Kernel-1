@@ -26,6 +26,7 @@
 #include <linux/sched.h>
 #include <linux/delay.h>
 #include <linux/list.h>
+#include <linux/switch.h>
 
 #define SYSFS_EVENT_FILENAME "evread"
 #define HDMI_DEVNR_DEFAULT	0
@@ -45,6 +46,7 @@ struct hdmi_device {
 	wait_queue_head_t	event_wq;
 	bool			events_received;
 	int			devnr;
+	struct switch_dev switch_hdmi_detection;
 };
 
 /* List of devices */
@@ -2341,12 +2343,14 @@ void hdmi_event(enum av8100_hdmi_event ev)
 	case AV8100_HDMI_EVENT_HDMI_PLUGIN:
 		hdev->events &= ~HDMI_EVENT_HDMI_PLUGOUT;
 		hdev->events |= HDMI_EVENT_HDMI_PLUGIN;
+		switch_set_state(&hdev->switch_hdmi_detection, 1);
 		break;
 
 	case AV8100_HDMI_EVENT_HDMI_PLUGOUT:
 		hdev->events &= ~HDMI_EVENT_HDMI_PLUGIN;
 		hdev->events |= HDMI_EVENT_HDMI_PLUGOUT;
 		cec_tx_status(hdev, CEC_TX_SET_FREE);
+		switch_set_state(&hdev->switch_hdmi_detection, 0);
 		break;
 
 	case AV8100_HDMI_EVENT_CEC:
@@ -2444,6 +2448,9 @@ int __init hdmi_init(void)
 				hdmi_sysfs_attrs[i].attr.name, ret);
 	}
 
+	hdev->switch_hdmi_detection.name = "hdmi";
+	switch_dev_register(&hdev->switch_hdmi_detection);
+
 	/* Register event callback */
 	av8100_hdmi_event_cb_set(hdmi_event);
 
@@ -2464,6 +2471,8 @@ void hdmi_exit(void)
 
 	/* Deregister event callback */
 	av8100_hdmi_event_cb_set(NULL);
+
+	switch_dev_unregister(&hdev->switch_hdmi_detection);
 
 	/* Remove sysfs attrs */
 	for (i = 0; attr_name(hdmi_sysfs_attrs[i]); i++)
