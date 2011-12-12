@@ -26,6 +26,8 @@ config UX500_CONSOLE_UART_GPIO_PIN
 	help
 	  GPIO pin number of the GPIO pin connected to the console UART RX line.
 
+	  Board-specific code can change this.
+
 config UX500_SUSPEND
 	bool "Suspend to mem and standby support"
 	depends on (UX500_SOC_DB8500 || UX500_SOC_DB5500) && PM && SUSPEND

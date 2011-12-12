@@ -104,4 +104,6 @@ static inline void ux500_pm_prcmu_set_ioforce(bool enable) { }
 
 #endif
 
+extern int ux500_console_uart_gpio_pin;
+
 #endif
