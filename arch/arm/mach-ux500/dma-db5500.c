@@ -14,6 +14,7 @@
 #include <plat/ste_dma40.h>
 #include <mach/setup.h>
 #include <mach/hardware.h>
+#include <mach/pm.h>
 #include <mach/ste-dma40-db5500.h>
 
 static struct resource dma40_resources[] = {
@@ -217,6 +218,9 @@ static struct stedma40_platform_data dma40_plat_data = {
 static struct platform_device dma40_device = {
 	.dev = {
 		.platform_data = &dma40_plat_data,
+#ifdef CONFIG_PM
+		.pm_domain = &ux500_dev_power_domain,
+#endif
 	},
 	.name		= "dma40",
 	.id		= 0,
