@@ -1027,7 +1027,16 @@ unlock_return:
 
 u8 db5500_prcmu_get_power_state_result(void)
 {
-	return readb(PRCM_REQ_MB0_AP_POWER_STATE);
+	u8 status = readb_relaxed(PRCM_ACK_MB0_AP_PWRSTTR_STATUS);
+
+	/*
+	 * Callers expect all the status values to match 8500.  Adjust for
+	 * PendingReq_Er (0x2b).
+	 */
+	if (status == 0x2b)
+		status = PRCMU_PRCMU2ARMPENDINGIT_ER;
+
+	return status;
 }
 
 void db5500_prcmu_enable_wakeups(u32 wakeups)
