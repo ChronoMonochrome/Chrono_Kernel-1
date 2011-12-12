@@ -1005,7 +1005,7 @@ config ALIGNMENT_TRAP
 
 config ALLOW_CPU_ALIGNMENT
 	bool "Allow CPU-based alignment handling"
-	default y if ARCH_MSM_SCORPION || ARCH_MSM_SCORPIONMP
+	default y if ARCH_U8500
 	help
 	  Advanced ARM processors, such as the Cortex series and ARMv7-based
 	  CPUS are capable of performing unaligned accesses for many types of
