@@ -106,9 +106,12 @@ struct shmdrv_layer {
 
 	struct workqueue_struct *pshm_tx_workqueue;
 	struct workqueue_struct *pshm_rx_workqueue;
+	struct workqueue_struct *pshm_flow_ctrl_workqueue;
 
 	struct work_struct shm_tx_work;
 	struct work_struct shm_rx_work;
+	struct work_struct shm_flow_on_work;
+	struct work_struct shm_flow_off_work;
 
 	struct sk_buff_head sk_qhead;
 	struct shmdev_layer *pshm_dev;
@@ -124,6 +127,24 @@ static int shm_netdev_close(struct net_device *shm_netdev)
 {
 	netif_stop_queue(shm_netdev);
 	return 0;
+}
+
+static void shm_flow_on_work_func(struct work_struct *work)
+{
+	struct shmdrv_layer *pshm_drv = container_of(work, struct shmdrv_layer, shm_flow_on_work);
+
+	pshm_drv->cfdev.flowctrl
+			(pshm_drv->pshm_dev->pshm_netdev,
+			CAIF_FLOW_ON);
+}
+
+static void shm_flow_off_work_func(struct work_struct *work)
+{
+	struct shmdrv_layer *pshm_drv = container_of(work, struct shmdrv_layer, shm_flow_off_work);
+
+	pshm_drv->cfdev.flowctrl
+			(pshm_drv->pshm_dev->pshm_netdev,
+			CAIF_FLOW_OFF);
 }
 
 int caif_shmdrv_rx_cb(u32 mbx_msg, void *priv)
@@ -238,11 +259,9 @@ int caif_shmdrv_rx_cb(u32 mbx_msg, void *priv)
 		if ((avail_emptybuff > HIGH_WATERMARK) &&
 					(!pshm_drv->tx_empty_available)) {
 			pshm_drv->tx_empty_available = 1;
+			queue_work(pshm_drv->pshm_flow_ctrl_workqueue,
+					&pshm_drv->shm_flow_on_work);
 			spin_unlock_irqrestore(&pshm_drv->lock, flags);
-			pshm_drv->cfdev.flowctrl
-					(pshm_drv->pshm_dev->pshm_netdev,
-								CAIF_FLOW_ON);
-
 
 			/* Schedule the work queue. if required */
 			if (!work_pending(&pshm_drv->shm_tx_work))
@@ -426,11 +445,8 @@ static void shm_tx_work_func(struct work_struct *tx_work)
 					pshm_drv->tx_empty_available) {
 			/* Update blocking condition. */
 			pshm_drv->tx_empty_available = 0;
-			spin_unlock_irqrestore(&pshm_drv->lock, flags);
-			pshm_drv->cfdev.flowctrl
-					(pshm_drv->pshm_dev->pshm_netdev,
-					CAIF_FLOW_OFF);
-			spin_lock_irqsave(&pshm_drv->lock, flags);
+			queue_work(pshm_drv->pshm_flow_ctrl_workqueue,
+					&pshm_drv->shm_flow_off_work);
 		}
 		/*
 		 * We simply return back to the caller if we do not have space
@@ -621,11 +637,16 @@ int caif_shmcore_probe(struct shmdev_layer *pshm_dev)
 
 	INIT_WORK(&pshm_drv->shm_tx_work, shm_tx_work_func);
 	INIT_WORK(&pshm_drv->shm_rx_work, shm_rx_work_func);
+	INIT_WORK(&pshm_drv->shm_flow_on_work, shm_flow_on_work_func);
+	INIT_WORK(&pshm_drv->shm_flow_off_work, shm_flow_off_work_func);
 
 	pshm_drv->pshm_tx_workqueue =
 				create_singlethread_workqueue("shm_tx_work");
 	pshm_drv->pshm_rx_workqueue =
 				create_singlethread_workqueue("shm_rx_work");
+	pshm_drv->pshm_flow_ctrl_workqueue =
+				create_singlethread_workqueue(
+						"shm_caif_flow_ctrl_work");
 
 	for (j = 0; j < NR_TX_BUF; j++) {
 		struct buf_list *tx_buf =
@@ -744,6 +765,7 @@ void caif_shmcore_remove(struct net_device *pshm_netdev)
 	/* Destroy work queues. */
 	destroy_workqueue(pshm_drv->pshm_tx_workqueue);
 	destroy_workqueue(pshm_drv->pshm_rx_workqueue);
+	destroy_workqueue(pshm_drv->pshm_flow_ctrl_workqueue);
 
 	unregister_netdev(pshm_netdev);
 }
