@@ -139,7 +139,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
 		INIT_LIST_HEAD(&s->s_files);
 #endif
 		s->s_bdi = &default_backing_dev_info;
-		INIT_LIST_HEAD(&s->s_instances);
+		INIT_HLIST_NODE(&s->s_instances);
 		INIT_HLIST_BL_HEAD(&s->s_anon);
 		INIT_LIST_HEAD(&s->s_inodes);
 		INIT_LIST_HEAD(&s->s_dentry_lru);
@@ -331,7 +331,7 @@ static int grab_super(struct super_block *s) __releases(sb_lock)
 bool grab_super_passive(struct super_block *sb)
 {
 	spin_lock(&sb_lock);
-	if (list_empty(&sb->s_instances)) {
+	if (hlist_unhashed(&sb->s_instances)) {
 		spin_unlock(&sb_lock);
 		return false;
 	}
@@ -403,7 +403,7 @@ void generic_shutdown_super(struct super_block *sb)
 	}
 	spin_lock(&sb_lock);
 	/* should be initialized for __put_super_and_need_restart() */
-	list_del_init(&sb->s_instances);
+	hlist_del_init(&sb->s_instances);
 	spin_unlock(&sb_lock);
 	up_write(&sb->s_umount);
 }
@@ -423,13 +423,14 @@ struct super_block *sget(struct file_system_type *type,
 			void *data)
 {
 	struct super_block *s = NULL;
+	struct hlist_node *node;
 	struct super_block *old;
 	int err;
 
 retry:
 	spin_lock(&sb_lock);
 	if (test) {
-		list_for_each_entry(old, &type->fs_supers, s_instances) {
+		hlist_for_each_entry(old, node, &type->fs_supers, s_instances) {
 			if (!test(old, data))
 				continue;
 			if (!grab_super(old))
@@ -460,7 +461,7 @@ retry:
 	s->s_type = type;
 	strlcpy(s->s_id, type->name, sizeof(s->s_id));
 	list_add_tail(&s->s_list, &super_blocks);
-	list_add(&s->s_instances, &type->fs_supers);
+	hlist_add_head(&s->s_instances, &type->fs_supers);
 	spin_unlock(&sb_lock);
 	get_filesystem(type);
 	register_shrinker(&s->s_shrink);
@@ -495,7 +496,7 @@ void sync_supers(void)
 
 	spin_lock(&sb_lock);
 	list_for_each_entry(sb, &super_blocks, s_list) {
-		if (list_empty(&sb->s_instances))
+		if (hlist_unhashed(&sb->s_instances))
 			continue;
 		if (sb->s_op->write_super && sb->s_dirt) {
 			sb->s_count++;
@@ -531,7 +532,7 @@ void iterate_supers(void (*f)(struct super_block *, void *), void *arg)
 
 	spin_lock(&sb_lock);
 	list_for_each_entry(sb, &super_blocks, s_list) {
-		if (list_empty(&sb->s_instances))
+		if (hlist_unhashed(&sb->s_instances))
 			continue;
 		sb->s_count++;
 		spin_unlock(&sb_lock);
@@ -564,9 +565,10 @@ void iterate_supers_type(struct file_system_type *type,
 	void (*f)(struct super_block *, void *), void *arg)
 {
 	struct super_block *sb, *p = NULL;
+	struct hlist_node *node;
 
 	spin_lock(&sb_lock);
-	list_for_each_entry(sb, &type->fs_supers, s_instances) {
+	hlist_for_each_entry(sb, node, &type->fs_supers, s_instances) {
 		sb->s_count++;
 		spin_unlock(&sb_lock);
 
@@ -605,7 +607,7 @@ struct super_block *get_super(struct block_device *bdev)
 	spin_lock(&sb_lock);
 rescan:
 	list_for_each_entry(sb, &super_blocks, s_list) {
-		if (list_empty(&sb->s_instances))
+		if (hlist_unhashed(&sb->s_instances))
 			continue;
 		if (sb->s_bdev == bdev) {
 			sb->s_count++;
@@ -645,7 +647,7 @@ struct super_block *get_active_super(struct block_device *bdev)
 restart:
 	spin_lock(&sb_lock);
 	list_for_each_entry(sb, &super_blocks, s_list) {
-		if (list_empty(&sb->s_instances))
+		if (hlist_unhashed(&sb->s_instances))
 			continue;
 		if (sb->s_bdev == bdev) {
 			if (!grab_super(sb))
@@ -665,7 +667,7 @@ struct super_block *user_get_super(dev_t dev)
 	spin_lock(&sb_lock);
 rescan:
 	list_for_each_entry(sb, &super_blocks, s_list) {
-		if (list_empty(&sb->s_instances))
+		if (hlist_unhashed(&sb->s_instances))
 			continue;
 		if (sb->s_dev ==  dev) {
 			sb->s_count++;
@@ -760,7 +762,7 @@ static void do_emergency_remount(struct work_struct *work)
 
 	spin_lock(&sb_lock);
 	list_for_each_entry(sb, &super_blocks, s_list) {
-		if (list_empty(&sb->s_instances))
+		if (hlist_unhashed(&sb->s_instances))
 			continue;
 		sb->s_count++;
 		spin_unlock(&sb_lock);
