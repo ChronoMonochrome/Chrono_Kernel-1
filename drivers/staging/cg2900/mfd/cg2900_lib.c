@@ -11,6 +11,7 @@
 
 #include <linux/kernel.h>
 #include <linux/limits.h>
+#include <linux/module.h>
 #include <linux/skbuff.h>
 #include <linux/types.h>
 

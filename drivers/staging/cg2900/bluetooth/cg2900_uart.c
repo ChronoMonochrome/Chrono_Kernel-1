@@ -24,7 +24,7 @@
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/pm.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 #include <linux/poll.h>
 #include <linux/sched.h>
 #include <linux/skbuff.h>
@@ -321,7 +321,7 @@ struct uart_info {
 	int				cts_irq;
 	int				cts_gpio;
 	bool				suspend_blocked;
-	struct pm_qos_request_list	pm_qos_latency;
+	struct pm_qos_request		pm_qos_latency;
 };
 
 /* Module parameters */
