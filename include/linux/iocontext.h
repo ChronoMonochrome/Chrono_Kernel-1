@@ -13,6 +13,11 @@ enum {
 	ICQ_CHANGED_MASK	= ICQ_IOPRIO_CHANGED | ICQ_CGROUP_CHANGED,
 };
 
+enum {
+	CIC_IOPRIO_CHANGED,
+	CIC_CGROUP_CHANGED,
+};
+
 /*
  * An io_cq (icq) is association between an io_context (ioc) and a
  * request_queue (q).  This is used by elevators which need to track
@@ -116,6 +121,8 @@ struct io_context {
 	struct radix_tree_root	icq_tree;
 	struct io_cq __rcu	*icq_hint;
 	struct hlist_head	icq_list;
+	
+	unsigned long changed;
 
 	struct work_struct release_work;
 };
