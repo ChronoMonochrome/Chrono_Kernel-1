@@ -162,6 +162,7 @@ static void ab5500_usb_phy_enable(struct ab5500_usb *ab, bool sel_host)
 					msecs_to_jiffies(USB_PROBE_DELAY));
 	}
 
+	ux500_restore_context();
 	abx500_mask_and_set_register_interruptible(ab->dev,
 			AB5500_BANK_USB,
 			AB5500_USB_PHY_CTRL_REG,
@@ -219,6 +220,9 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 	case USB_LINK_HOST_CHG_NM:
 	case USB_LINK_HOST_CHG_HS:
 	case USB_LINK_HOST_CHG_HS_CHIRP:
+
+		ab5500_usb_peri_phy_en(ab);
+
 		break;
 
 	case USB_LINK_HM_IDGND:
@@ -302,8 +306,6 @@ static irqreturn_t ab5500_usb_device_insert_irq(int irq, void *data)
 
 	ab->mode = USB_DEVICE;
 
-	ab5500_usb_peri_phy_en(ab);
-
 	/* enable usb chip Select */
 	event = USB_EVENT_VBUS;
 	ret = gpio_direction_output(ab->usb_cs_gpio, val);
@@ -313,8 +315,6 @@ static irqreturn_t ab5500_usb_device_insert_irq(int irq, void *data)
 		return ret;
 	}
 	gpio_set_value(ab->usb_cs_gpio, 1);
-
-	atomic_notifier_call_chain(&ab->otg.notifier, event, &ab->vbus_draw);
 
 	return IRQ_HANDLED;
 }
