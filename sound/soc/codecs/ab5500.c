@@ -53,6 +53,9 @@ static u8 virtual_regs[] = {
 	0, 0, 0, 0, 0
 };
 
+static int ab5500_clk_request;
+static DEFINE_MUTEX(ab5500_clk_mutex);
+
 #define set_reg(reg, val) mask_set_reg((reg), 0xff, (val))
 
 static void mask_set_reg(u8 reg, u8 mask, u8 val)
@@ -1237,6 +1240,11 @@ static int ab5500_pcm_prepare(struct snd_pcm_substream *substream,
 						0 << I2Sx_TRISTATE_SHIFT);
 
 	}
+	mutex_lock(&ab5500_clk_mutex);
+	ab5500_clk_request++;
+	if (ab5500_clk_request == 1)
+		mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 1 << CLOCK_ENABLE_SHIFT);
+	mutex_unlock(&ab5500_clk_mutex);
 
 	dump_registers(__func__, RX1, AUXO1_ADDER, RX2,
 			AUXO2_ADDER, RX1_DPGA, RX2_DPGA, AUXO1, AUXO2, -1);
@@ -1262,6 +1270,11 @@ static void ab5500_pcm_shutdown(struct snd_pcm_substream *substream,
 					1 << I2Sx_TRISTATE_SHIFT);
 		mask_set_reg(iface, MASTER_GENx_PWR_MASK, 0);
 		}
+	mutex_lock(&ab5500_clk_mutex);
+	ab5500_clk_request--;
+	if (ab5500_clk_request == 0)
+		mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0 << CLOCK_ENABLE_SHIFT);
+	mutex_unlock(&ab5500_clk_mutex);
 }
 
 static int ab5500_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
@@ -1386,13 +1399,15 @@ static int ab5500_codec_remove(struct snd_soc_codec *codec)
 static int ab5500_codec_suspend(struct snd_soc_codec *codec,
 				pm_message_t state)
 {
-	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0);
+	if (!ab5500_clk_request)
+		mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0);
 	return 0;
 }
 
 static int ab5500_codec_resume(struct snd_soc_codec *codec)
 {
-	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0xff);
+	if (ab5500_clk_request)
+		mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 0xff);
 	return 0;
 }
 #else
@@ -1611,7 +1626,6 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 	for (reg = AB5500_FIRST_REG; reg <= AB5500_LAST_REG; reg++)
 		set_reg(reg, 0);
 
-	mask_set_reg(CLOCK, CLOCK_ENABLE_MASK, 1 << CLOCK_ENABLE_SHIFT);
 	mask_set_reg(INTERFACE0, I2Sx_TRISTATE_MASK, 1 << I2Sx_TRISTATE_SHIFT);
 	mask_set_reg(INTERFACE1, I2Sx_TRISTATE_MASK, 1 << I2Sx_TRISTATE_SHIFT);
 
