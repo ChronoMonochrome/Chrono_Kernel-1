@@ -534,6 +534,7 @@ static struct clk_mgt clk_mgt[PRCMU_NUM_REG_CLOCKS] = {
 	CLK_MGT_ENTRY(RNGCLK, false),
 	CLK_MGT_ENTRY(SIACLK, false),
 	CLK_MGT_ENTRY(SVACLK, false),
+	CLK_MGT_ENTRY(ACLK, true),
 };
 
 static atomic_t modem_req_state = ATOMIC_INIT(0);
