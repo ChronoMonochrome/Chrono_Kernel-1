@@ -70,7 +70,7 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 		.codec_dai_name = "ab5500-codec-dai.0",
 		.platform_name = "ux500-pcm.0",
 		.codec_name = "ab5500-codec.0",
-		.init = NULL,
+		.init = ux500_ab5500_machine_codec_init,
 		.ops = (struct snd_soc_ops[]) {
 			{
 				.startup = ux500_ab5500_startup,
@@ -108,7 +108,7 @@ struct snd_soc_dai_link u5500_dai_links[] = {
 		.codec_dai_name = "ab5500-codec-dai.1",
 		.platform_name = "ux500-pcm.0",
 		.codec_name = "ab5500-codec.0",
-		.init = NULL,
+		.init = ux500_ab5500_machine_codec_init,
 		.ops = (struct snd_soc_ops[]) {
 			{
 				.startup = ux500_ab5500_startup,
