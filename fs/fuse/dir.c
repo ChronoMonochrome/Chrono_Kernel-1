@@ -1185,6 +1185,30 @@ static int fuse_dir_fsync(struct file *file, int datasync)
 	return fuse_fsync_common(file, datasync, 1);
 }
 
+static long fuse_dir_ioctl(struct file *file, unsigned int cmd,
+			    unsigned long arg)
+{
+	struct fuse_conn *fc = get_fuse_conn(file->f_mapping->host);
+
+	/* FUSE_IOCTL_DIR only supported for API version >= 7.18 */
+	if (fc->minor < 18)
+		return -ENOTTY;
+
+	return fuse_ioctl_common(file, cmd, arg, FUSE_IOCTL_DIR);
+}
+
+static long fuse_dir_compat_ioctl(struct file *file, unsigned int cmd,
+				   unsigned long arg)
+{
+	struct fuse_conn *fc = get_fuse_conn(file->f_mapping->host);
+
+	if (fc->minor < 18)
+		return -ENOTTY;
+
+	return fuse_ioctl_common(file, cmd, arg,
+				 FUSE_IOCTL_COMPAT | FUSE_IOCTL_DIR);
+}
+
 static bool update_mtime(unsigned ivalid)
 {
 	/* Always update if mtime is explicitly set  */
@@ -1603,6 +1627,8 @@ static const struct file_operations fuse_dir_operations = {
 	.open		= fuse_dir_open,
 	.release	= fuse_dir_release,
 	.fsync		= fuse_dir_fsync,
+	.unlocked_ioctl	= fuse_dir_ioctl,
+	.compat_ioctl	= fuse_dir_compat_ioctl,
 };
 
 static const struct inode_operations fuse_common_inode_operations = {
