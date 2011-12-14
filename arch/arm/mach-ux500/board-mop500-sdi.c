@@ -11,15 +11,16 @@
 #include <linux/amba/mmci.h>
 #include <linux/mmc/host.h>
 #include <linux/platform_device.h>
+#include <linux/delay.h>
 
 #include <asm/mach-types.h>
 #include <plat/ste_dma40.h>
 #include <mach/devices.h>
 #include <mach/hardware.h>
+#include <mach/ste-dma40-db8500.h>
 
 #include "devices-db8500.h"
 #include "board-mop500.h"
-#include "ste-dma40-db8500.h"
 
 /*
  * v2 has a new version of this block that need to be forced, the number found
@@ -50,6 +51,7 @@ static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
 		 */
 		gpio_direction_output(sdi0_vsel, 0);
 		gpio_direction_output(sdi0_en, 1);
+		udelay(100);
 		break;
 	case MMC_POWER_OFF:
 		gpio_direction_output(sdi0_vsel, 0);
@@ -64,19 +66,23 @@ static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
 struct stedma40_chan_cfg mop500_sdi0_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
-	.src_dev_type = DB8500_DMA_DEV29_SD_MM0_RX,
+	.src_dev_type = DB8500_DMA_DEV1_SD_MMC0_RX,
 	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
+	.use_fixed_channel = true,
+	.phy_channel = 0,
 };
 
 static struct stedma40_chan_cfg mop500_sdi0_dma_cfg_tx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_MEM_TO_PERIPH,
 	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-	.dst_dev_type = DB8500_DMA_DEV29_SD_MM0_TX,
+	.dst_dev_type = DB8500_DMA_DEV1_SD_MMC0_TX,
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
+	.use_fixed_channel = true,
+	.phy_channel = 0,
 };
 #endif
 
@@ -119,14 +125,6 @@ static void sdi0_configure(struct device *parent)
 
 	/* Add the device, force v2 to subrevision 1 */
 	db8500_add_sdi0(parent, &mop500_sdi0_data, U8500_SDI_V2_PERIPHID);
-}
-
-void mop500_sdi_tc35892_init(struct device *parent)
-{
-	mop500_sdi0_data.gpio_cd = GPIO_SDMMC_CD;
-	sdi0_en = GPIO_SDMMC_EN;
-	sdi0_vsel = GPIO_SDMMC_1V8_3V_SEL;
-	sdi0_configure(parent);
 }
 
 /*
@@ -241,6 +239,16 @@ static struct mmci_platform_data mop500_sdi4_data = {
 #endif
 };
 
+void mop500_sdi_tc35892_init(struct device *parent)
+{
+	mop500_sdi0_data.gpio_cd = GPIO_SDMMC_CD;
+	sdi0_en = GPIO_SDMMC_EN;
+	sdi0_vsel = GPIO_SDMMC_1V8_3V_SEL;
+	sdi0_configure(parent);
+	/* WLAN SDIO channel */
+	db8500_add_sdi1(parent, &mop500_sdi1_data, U8500_SDI_V2_PERIPHID);
+}
+
 void __init mop500_sdi_init(struct device *parent)
 {
 	/* PoP:ed eMMC */
@@ -267,6 +275,8 @@ void __init snowball_sdi_init(struct device *parent)
 	sdi0_en = SNOWBALL_SDMMC_EN_GPIO;
 	sdi0_vsel = SNOWBALL_SDMMC_1V8_3V_GPIO;
 	sdi0_configure(parent);
+	/* WLAN SDIO channel */
+	db8500_add_sdi1(parent, &mop500_sdi1_data, U8500_SDI_V2_PERIPHID);
 }
 
 void __init hrefv60_sdi_init(struct device *parent)
