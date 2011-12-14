@@ -16,10 +16,10 @@
 #include <plat/ste_dma40.h>
 #include <mach/devices.h>
 #include <mach/hardware.h>
+#include <mach/ste-dma40-db8500.h>
 
 #include "devices-db8500.h"
 #include "board-mop500.h"
-#include "ste-dma40-db8500.h"
 
 /*
  * v2 has a new version of this block that need to be forced, the number found
