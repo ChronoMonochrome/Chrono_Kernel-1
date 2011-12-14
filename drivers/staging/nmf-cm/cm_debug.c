@@ -679,7 +679,7 @@ static const struct file_operations esram_fops = {
 void cm_debug_create_tcm_file(unsigned mpc_index)
 {
 	osalEnv.mpc[mpc_index].tcm_file = debugfs_create_blob(
-		"tcm24", S_IRUSR|S_IRGRP,
+		"tcm24", S_IRUSR|S_IRGRP|S_IROTH,
 		osalEnv.mpc[mpc_index].snapshot_dir,
 		&osalEnv.mpc[mpc_index].base);
 	if (IS_ERR(osalEnv.mpc[mpc_index].tcm_file)) {
@@ -801,14 +801,14 @@ void cm_debug_init(void)
 						PTR_ERR(osalEnv.mpc[i].snapshot_dir));
 				osalEnv.mpc[i].snapshot_dir = NULL;
 			} else {
-				debugfs_create_file("esram", S_IRUSR|S_IRGRP,
+				debugfs_create_file("esram", S_IRUSR|S_IRGRP|S_IROTH,
 						    osalEnv.mpc[i].snapshot_dir,
 						    &osalEnv.esram_base,
 						    &esram_fops);
-				debugfs_create_blob("sdram_data", S_IRUSR|S_IRGRP,
+				debugfs_create_blob("sdram_data", S_IRUSR|S_IRGRP|S_IROTH,
 						    osalEnv.mpc[i].snapshot_dir,
 						    &osalEnv.mpc[i].sdram_data);
-				debugfs_create_blob("sdram_code", S_IRUSR|S_IRGRP,
+				debugfs_create_blob("sdram_code", S_IRUSR|S_IRGRP|S_IROTH,
 						    osalEnv.mpc[i].snapshot_dir,
 						    &osalEnv.mpc[i].sdram_code);
 			}
