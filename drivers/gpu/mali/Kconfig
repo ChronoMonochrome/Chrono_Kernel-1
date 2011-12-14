@@ -13,3 +13,10 @@ config GPU_MALI_DEBUG
        ---help---
        This enables debug prints in the mali device driver. Debug mode must be
        enabled in order to use the intrumentation feature of the mali libraries.
+
+config MALI_DRM
+       boolean "DRM driver for Mali"
+       default n
+       depends on GPU_MALI
+       ---help---
+       This enables the DRM driver for Mali GPU.
