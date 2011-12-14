@@ -647,6 +647,137 @@ static int prcmu_debugfs_regs_read(struct seq_file *s, void *p)
 	return 0;
 }
 
+/* Interrupt debugging */
+
+/* There are eight mailboxes */
+#define NUM_MAILBOXES 8
+#define NUM_MAILBOX0_EVENTS 32
+static u32 num_mailbox_interrupts[NUM_MAILBOXES];
+static u32 num_mailbox0_events[NUM_MAILBOX0_EVENTS];
+static u32 num_mailbox0_events_garbage[NUM_MAILBOX0_EVENTS];
+
+void prcmu_debug_register_interrupt(u32 mailbox)
+{
+	if (mailbox < NUM_MAILBOXES)
+		num_mailbox_interrupts[mailbox]++;
+}
+
+void prcmu_debug_register_mbox0_event(u32 ev, u32 mask)
+{
+	int i;
+
+	for (i = 0 ; i < NUM_MAILBOX0_EVENTS; i++)
+		if (ev & (1 << i)) {
+			if (mask & (1 << i))
+			    num_mailbox0_events[i]++;
+			else
+			    num_mailbox0_events_garbage[i]++;
+		}
+}
+
+static int interrupt_read(struct seq_file *s, void *p)
+{
+	int i;
+	char **mbox0names;
+
+	static char *mbox0names_u8500[] = {
+		"RTC",
+		"RTT0",
+		"RTT1",
+		"HSI0",
+		"HSI1",
+		"CA_WAKE",
+		"USB",
+		"ABB",
+		"ABB_FIFO",
+		"SYSCLK_OK",
+		"CA_SLEE",
+		"AC_WAKE_ACK",
+		"SIDE_TONE_OK",
+		"ANC_OK",
+		"SW_ERROR",
+		"AC_SLEEP_ACK",
+		NULL,
+		"ARM",
+		"HOTMON_LOW",
+		"HOTMON_HIGH",
+		"MODEM_SW_RESET_REQ",
+		NULL,
+		NULL,
+		"GPIO0",
+		"GPIO1",
+		"GPIO2",
+		"GPIO3",
+		"GPIO4",
+		"GPIO5",
+		"GPIO6",
+		"GPIO7",
+		"GPIO8"};
+	static char *mbox0names_u5500[] = {
+		"RTC",
+		"RTT0",
+		"RTT1",
+		"CD_IRQ",
+		"SRP_TIM",
+		"APE_REQ",
+		"USB",
+		"ABB",
+		"LOW_POWER_AUDIO",
+		"TEMP_SENSOR_LOW",
+		"ARM",
+		"AC_WAKE_ACK",
+		NULL,
+		"TEMP_SENSOR_HIGH",
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		"MODEM_SW_RESET_REQ",
+		NULL,
+		NULL,
+		"GPIO0",
+		"GPIO1",
+		"GPIO2",
+		"GPIO3",
+		"GPIO4",
+		"GPIO5",
+		"GPIO6",
+		"GPIO7",
+		"AC_REL_ACK"};
+
+	if (cpu_is_u8500()) {
+		mbox0names = mbox0names_u8500;
+	} else if (cpu_is_u5500()) {
+		mbox0names = mbox0names_u5500;
+	} else {
+		seq_printf(s, "Unknown ASIC!\n");
+		return 0;
+	}
+
+	seq_printf(s, "mailbox0: %d\n", num_mailbox_interrupts[0]);
+
+	for (i = 0; i < NUM_MAILBOX0_EVENTS; i++)
+		if (mbox0names[i]) {
+			seq_printf(s, " %20s %d ", mbox0names[i],
+				   num_mailbox0_events[i]
+				   );
+			if (num_mailbox0_events_garbage[i])
+				seq_printf(s, "unwanted: %d",
+					   num_mailbox0_events_garbage[i]);
+			seq_printf(s, "\n");
+		} else if (num_mailbox0_events[i]) {
+			seq_printf(s, "         unknown (%d) %d\n",
+				   i, num_mailbox0_events[i]);
+		}
+
+	for (i = 1 ; i < NUM_MAILBOXES; i++)
+		seq_printf(s, "mailbox%d: %d\n", i, num_mailbox_interrupts[i]);
+	return 0;
+}
+
 static int opp_open_file(struct inode *inode, struct file *file)
 {
 	return single_open(file, opp_read, inode->i_private);
@@ -718,6 +849,11 @@ static int prcmu_regs_open_file(struct inode *inode, struct file *file)
 		}
 	}
 	return err;
+}
+
+static int interrupt_open_file(struct inode *inode, struct file *file)
+{
+	return single_open(file, interrupt_read, inode->i_private);
 }
 
 static const struct file_operations opp_fops = {
@@ -798,6 +934,14 @@ static const struct file_operations prcmu_regs_fops = {
 	.owner = THIS_MODULE,
 };
 
+static const struct file_operations interrupts_fops = {
+	.open = interrupt_open_file,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+	.owner = THIS_MODULE,
+};
+
 static int setup_debugfs(void)
 {
 	struct dentry *dir;
@@ -865,6 +1009,12 @@ static int setup_debugfs(void)
 	file = debugfs_create_file("regs", (S_IRUGO),
 				   dir, NULL,
 				   &prcmu_regs_fops);
+	if (IS_ERR_OR_NULL(file))
+		goto fail;
+
+	file = debugfs_create_file("interrupts",
+				   (S_IRUGO),
+				   dir, NULL, &interrupts_fops);
 	if (IS_ERR_OR_NULL(file))
 		goto fail;
 

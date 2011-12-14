@@ -1929,6 +1929,10 @@ static bool read_mailbox_0(void)
 		else
 			ev = readl(PRCM_ACK_MB0_WAKEUP_0_DBB);
 
+		prcmu_debug_register_mbox0_event(ev,
+						 (mb0_transfer.req.dbb_irqs |
+						  mb0_transfer.req.dbb_wakeups));
+
 		ev &= mb0_transfer.req.dbb_irqs;
 
 		for (n = 0; n < NUM_DB5500_PRCMU_WAKEUPS; n++) {
@@ -2124,6 +2128,7 @@ static irqreturn_t prcmu_irq_handler(int irq, void *data)
 			bits -= MBOX_BIT(n);
 			if (read_mailbox[n]())
 				r = IRQ_WAKE_THREAD;
+			prcmu_debug_register_interrupt(n);
 		}
 	}
 	return r;
