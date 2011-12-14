@@ -164,6 +164,9 @@ enum mb4_header {
 	MB4H_CFG_HOTMON = 8,
 	MB4H_CFG_HOTPERIOD = 10,
 	MB4H_CGF_MODEM_RESET = 13,
+	MB4H_CGF_A9WDOG_EN_PREBARK = 14,
+	MB4H_CGF_A9WDOG_EN_NOPREBARK = 15,
+	MB4H_CGF_A9WDOG_DIS = 16,
 };
 
 /* Mailbox 4 ACK headers */
@@ -172,6 +175,9 @@ enum mb4_ack_header {
 	MB4H_ACK_CFG_HOTMON = 6,
 	MB4H_ACK_CFG_HOTPERIOD = 8,
 	MB4H_ACK_CFG_MODEM_RESET = 11,
+	MB4H_ACK_CGF_A9WDOG_EN_PREBARK = 12,
+	MB4H_ACK_CGF_A9WDOG_EN_NOPREBARK = 13,
+	MB4H_ACK_CGF_A9WDOG_DIS = 14,
 };
 
 /* Mailbox 5 headers. */
@@ -473,8 +479,11 @@ static struct {
 /* Spinlocks */
 static DEFINE_SPINLOCK(clkout_lock);
 
-/* PRCMU TCDM base IO address. */
+/* PRCMU TCDM base IO address */
 static __iomem void *tcdm_base;
+
+/* PRCMU MTIMER base IO address */
+static __iomem void *mtimer_base;
 
 struct clk_mgt {
 	unsigned int offset;
@@ -490,6 +499,11 @@ static struct {
 	u8 fw_version;
 	u8 api_version;
 } prcmu_version;
+
+static struct {
+	u32 timeout;
+	bool enabled;
+} a9wdog_timer;
 
 static DEFINE_SPINLOCK(clk_mgt_lock);
 
@@ -1180,6 +1194,106 @@ int db5500_prcmu_start_temp_sense(u16 period)
 int db5500_prcmu_stop_temp_sense(void)
 {
 	return config_hot_period(0xFFFF);
+}
+
+static int prcmu_a9wdog(u8 req, u8 ack)
+{
+	int r = 0;
+
+	mutex_lock(&mb4_transfer.lock);
+
+	while (readl(_PRCMU_BASE + PRCM_MBOX_CPU_VAL) & MBOX_BIT(4))
+		cpu_relax();
+
+	r = mailbox4_request(req, ack);
+
+	mutex_unlock(&mb4_transfer.lock);
+
+	return r;
+}
+
+static void prcmu_a9wdog_set_interrupt(bool enable)
+{
+	if (enable) {
+		writel(PRCM_TIMER0_IRQ_RTOS1_SET,
+			(mtimer_base + PRCM_TIMER0_IRQ_EN_SET_OFFSET));
+	} else {
+		writel(PRCM_TIMER0_IRQ_RTOS1_CLR,
+			(mtimer_base + PRCM_TIMER0_IRQ_EN_CLR_OFFSET));
+	}
+}
+
+static void prcmu_a9wdog_set_timeout(u32 timeout)
+{
+	u32 comp_timeout;
+
+	comp_timeout = readl(mtimer_base + PRCM_TIMER0_RTOS_COUNTER_OFFSET) +
+			timeout;
+	writel(comp_timeout, mtimer_base + PRCM_TIMER0_RTOS_COMP1_OFFSET);
+}
+
+int db5500_prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
+{
+	/*
+	 * Sleep auto off feature is not supported. Resume and
+	 * suspend will be handled by watchdog driver.
+         */
+	return 0;
+}
+
+int db5500_prcmu_enable_a9wdog(u8 id)
+{
+	int r = 0;
+
+	if (a9wdog_timer.enabled)
+		return -EPERM;
+
+	prcmu_a9wdog_set_interrupt(true);
+
+	r = prcmu_a9wdog(MB4H_CGF_A9WDOG_EN_PREBARK,
+			MB4H_ACK_CGF_A9WDOG_EN_PREBARK);
+	if (!r)
+		a9wdog_timer.enabled = true;
+	else
+		prcmu_a9wdog_set_interrupt(false);
+
+	return r;
+}
+
+int db5500_prcmu_disable_a9wdog(u8 id)
+{
+	if (!a9wdog_timer.enabled)
+		return -EPERM;
+
+	prcmu_a9wdog_set_interrupt(false);
+
+	a9wdog_timer.enabled = false;
+
+	return prcmu_a9wdog(MB4H_CGF_A9WDOG_DIS,
+			MB4H_ACK_CGF_A9WDOG_DIS);
+}
+
+int db5500_prcmu_kick_a9wdog(u8 id)
+{
+	int r = 0;
+
+	if (a9wdog_timer.enabled)
+		prcmu_a9wdog_set_timeout(a9wdog_timer.timeout);
+	else
+		r = -EPERM;
+
+	return r;
+}
+
+int db5500_prcmu_load_a9wdog(u8 id, u32 timeout)
+{
+	if (a9wdog_timer.enabled)
+		return -EPERM;
+
+	prcmu_a9wdog_set_timeout(timeout);
+	a9wdog_timer.timeout = timeout;
+
+	return 0;
 }
 
 /**
@@ -1885,6 +1999,9 @@ static bool read_mailbox_4(void)
 	case MB4H_ACK_CFG_HOTMON:
 	case MB4H_ACK_CFG_HOTPERIOD:
 	case MB4H_ACK_CFG_MODEM_RESET:
+	case MB4H_ACK_CGF_A9WDOG_EN_PREBARK:
+	case MB4H_ACK_CGF_A9WDOG_EN_NOPREBARK:
+	case MB4H_ACK_CGF_A9WDOG_DIS:
 		mb4_transfer.ack.status = readb(PRCM_ACK_MB4_REQUESTS);
 		break;
 	default:
@@ -2059,6 +2176,7 @@ void __init db5500_prcmu_early_init(void)
 	}
 
 	tcdm_base = __io_address(U5500_PRCMU_TCDM_BASE);
+	mtimer_base = __io_address(U5500_MTIMER_BASE);
 	spin_lock_init(&mb0_transfer.lock);
 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);
 	mutex_init(&mb0_transfer.ac_wake_lock);
