@@ -4,7 +4,8 @@
  * Author: Mikko J. Lehto <mikko.lehto@symbio.com>,
  *         Mikko Sarmanne <mikko.sarmanne@symbio.com>,
  *         Jarmo K. Kuronen <jarmo.kuronen@symbio.com>.
- *         Ola Lilja <ola.o.lilja@stericsson.com>
+ *         Ola Lilja <ola.o.lilja@stericsson.com>,
+ *         Kristoffer Karlsson <kristoffer.karlsson@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -15,11 +16,13 @@
  */
 
 #include <linux/clk.h>
+#include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/device.h>
 #include <linux/io.h>
 #include <linux/regulator/consumer.h>
+#include <linux/mfd/ab8500/gpadc.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>
@@ -50,6 +53,13 @@ static struct snd_soc_jack jack;
 static DEFINE_MUTEX(power_lock);
 static int ab8500_power_count;
 
+/* ADCM-control */
+static DEFINE_MUTEX(adcm_lock);
+#define GPADC_MIN_DELTA_DELAY	500
+#define GPADC_MAX_DELTA_DELAY	1000
+#define GPADC_MAX_VOLT_DIFF	20
+#define GPADC_MAX_ITERATIONS	4
+
 /* Clocks */
 /* audioclk -> intclk -> sysclk/ulpclk */
 static int master_clock_sel;
@@ -59,8 +69,14 @@ static struct clk *clk_ptr_sysclk;
 static struct clk *clk_ptr_ulpclk;
 static struct clk *clk_ptr_gpio1;
 
+static const char * const enum_mclk[] = {
+	"SYSCLK",
+	"ULPCLK"
+};
+static SOC_ENUM_SINGLE_EXT_DECL(soc_enum_mclk, enum_mclk);
+
 /* ANC States */
-static const char *enum_anc_state[] = {
+static const char * const enum_anc_state[] = {
 	"Unconfigured",
 	"Configure FIR+IIR",
 	"FIR+IIR Configured",
@@ -80,10 +96,10 @@ enum regulator_idx {
 	REGULATOR_AMIC2
 };
 static struct regulator_bulk_data reg_info[4] = {
-	{	.supply = "v-audio"	},
-	{	.supply = "v-dmic"	},
-	{	.supply = "v-amic1"	},
-	{	.supply = "v-amic2"	}
+	{	.consumer = NULL, .supply = "v-audio"	},
+	{	.consumer = NULL, .supply = "v-dmic"	},
+	{	.consumer = NULL, .supply = "v-amic1"	},
+	{	.consumer = NULL, .supply = "v-amic2"	}
 };
 static bool reg_enabled[4] =  {
 	false,
@@ -101,6 +117,12 @@ static unsigned int rx_slots = DEF_RX_SLOTS;
 static int enable_regulator(enum regulator_idx idx)
 {
 	int ret;
+
+	if (reg_info[idx].consumer == NULL) {
+		pr_err("%s: Failure to enable regulator '%s'\n",
+			__func__, reg_info[idx].supply);
+		return -EIO;
+	}
 
 	if (reg_enabled[idx])
 		return 0;
@@ -125,6 +147,12 @@ static int enable_regulator(enum regulator_idx idx)
 
 static void disable_regulator(enum regulator_idx idx)
 {
+	if (reg_info[idx].consumer == NULL) {
+		pr_err("%s: Failure to disable regulator '%s'\n",
+			__func__, reg_info[idx].supply);
+		return;
+	}
+
 	if (!reg_enabled[idx])
 		return;
 
@@ -191,9 +219,10 @@ static int ux500_ab8500_power_control_inc(void)
 	if (ab8500_power_count == 1) {
 		/* Turn on audio-regulator */
 		ret = enable_regulator(REGULATOR_AUDIO);
-
-		if (ret)
+		if (ret) {
+			ret = -EIO;
 			goto out;
+		}
 
 		/* Enable audio-clock */
 		ret = clk_set_parent(clk_ptr_intclk,
@@ -203,6 +232,7 @@ static int ux500_ab8500_power_control_inc(void)
 				__func__,
 				(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK",
 				ret);
+			ret = -EIO;
 			goto clk_err;
 		}
 		pr_debug("%s: Enabling master-clock (%s).",
@@ -211,12 +241,13 @@ static int ux500_ab8500_power_control_inc(void)
 		ret = clk_enable(clk_ptr_audioclk);
 		if (ret) {
 			pr_err("%s: ERROR: clk_enable failed (ret = %d)!", __func__, ret);
+			ret = -EIO;
 			ab8500_power_count = 0;
 			goto clk_err;
 		}
 
 		/* Power on audio-parts of AB8500 */
-		ab8500_audio_power_control(true);
+		ret = ab8500_audio_power_control(true);
 	}
 
 	goto out;
@@ -260,25 +291,11 @@ static void ux500_ab8500_power_control_dec(void)
 
 /* Controls - Non-DAPM Non-ASoC */
 
-static int mclk_input_control_info(struct snd_kcontrol *kcontrol,
-			    struct snd_ctl_elem_info *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-	uinfo->count = 1;
-	uinfo->value.enumerated.items = 2;
-	if (uinfo->value.enumerated.item) {
-		uinfo->value.enumerated.item = 1;
-		strcpy(uinfo->value.enumerated.name, "ULPCLK");
-	} else {
-		strcpy(uinfo->value.enumerated.name, "SYSCLK");
-	}
-	return 0;
-}
-
 static int mclk_input_control_get(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.enumerated.item[0] = master_clock_sel;
+
 	return 0;
 }
 
@@ -296,16 +313,9 @@ static int mclk_input_control_put(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
-static const struct snd_kcontrol_new mclk_input_control = {
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-	.name = "Master Clock Select",
-	.index = 0,
-	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
-	.info = mclk_input_control_info,
-	.get = mclk_input_control_get,
-	.put = mclk_input_control_put,
-	.private_value = 1 /* ULPCLK */
-};
+static const struct snd_kcontrol_new mclk_input_control = \
+	SOC_ENUM_EXT("Master Clock Select", soc_enum_mclk,
+		mclk_input_control_get, mclk_input_control_put);
 
 static int anc_status_control_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
@@ -318,11 +328,10 @@ static int anc_status_control_get(struct snd_kcontrol *kcontrol,
 static int anc_status_control_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	int ret;
 	int req_state = ucontrol->value.integer.value[0];
 
-	ret = ux500_ab8500_power_control_inc();
-	if (ret)
+	int ret = ux500_ab8500_power_control_inc();
+	if (ret < 0)
 		goto cleanup;
 
 	ret = ab8500_audio_anc_configure(req_state);
@@ -330,7 +339,7 @@ static int anc_status_control_put(struct snd_kcontrol *kcontrol,
 	ux500_ab8500_power_control_dec();
 
 cleanup:
-	if (ret) {
+	if (ret < 0) {
 		pr_err("%s: Unable to configure ANC! (ret = %d)\n",
 				__func__, ret);
 		return 0;
@@ -339,15 +348,9 @@ cleanup:
 	return 1;
 }
 
-static const struct snd_kcontrol_new anc_status_control = {
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-	.name = "ANC Status",
-	.index = 0,
-	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
-	.info = snd_soc_info_enum_ext,
-	.get = anc_status_control_get, .put = anc_status_control_put,
-	.private_value = (unsigned long) &soc_enum_ancstate
-};
+static const struct snd_kcontrol_new anc_status_control = \
+	SOC_ENUM_EXT("ANC Status", soc_enum_ancstate,
+		anc_status_control_get, anc_status_control_put);
 
 /* DAPM-events */
 
@@ -731,7 +734,69 @@ void ux500_ab8500_soc_machine_drv_cleanup(void)
 		clk_put(clk_ptr_gpio1);
 }
 
+/*
+ * Measures a relative stable voltage from spec. input on spec channel
+ */
+static int gpadc_convert_stable(struct ab8500_gpadc *gpadc,
+			u8 channel, int *value)
+{
+	int i = GPADC_MAX_ITERATIONS;
+	int mv1, mv2, dmv;
+
+	mv1 = ab8500_gpadc_convert(gpadc, channel);
+	do {
+		i--;
+		usleep_range(GPADC_MIN_DELTA_DELAY, GPADC_MAX_DELTA_DELAY);
+		mv2 = ab8500_gpadc_convert(gpadc, channel);
+		dmv = abs(mv2 - mv1);
+		mv1 = mv2;
+	} while (i > 0 && dmv > GPADC_MAX_VOLT_DIFF);
+
+	if (mv1 < 0 || dmv > GPADC_MAX_VOLT_DIFF)
+		return -EIO;
+
+	*value = mv1;
+
+	return 0;
+}
+
 /* Extended interface */
+
+int ux500_ab8500_audio_gpadc_measure(struct ab8500_gpadc *gpadc,
+		u8 channel, bool mode, int *value)
+{
+	int ret = 0;
+	int adcm = (mode) ?
+		AB8500_AUDIO_ADCM_FORCE_UP :
+		AB8500_AUDIO_ADCM_FORCE_DOWN;
+
+	mutex_lock(&adcm_lock);
+
+	ret = ux500_ab8500_power_control_inc();
+	if (ret < 0) {
+		pr_err("%s: ERROR: Failed to enable power (ret = %d)!\n",
+			__func__, ret);
+		goto power_failure;
+	}
+
+	ret = ab8500_audio_set_adcm(adcm);
+	if (ret < 0) {
+		pr_err("%s: ERROR: Failed to force adcm %s (ret = %d)!\n",
+			__func__, (mode) ? "UP" : "DOWN", ret);
+		goto adcm_failure;
+	}
+
+	ret = gpadc_convert_stable(gpadc, channel, value);
+	ret |= ab8500_audio_set_adcm(AB8500_AUDIO_ADCM_NORMAL);
+
+adcm_failure:
+	ux500_ab8500_power_control_dec();
+
+power_failure:
+	mutex_unlock(&adcm_lock);
+
+	return ret;
+}
 
 void ux500_ab8500_jack_report(int value)
 {

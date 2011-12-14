@@ -4,7 +4,8 @@
  * Author: Mikko J. Lehto <mikko.lehto@symbio.com>,
  *         Mikko Sarmanne <mikko.sarmanne@symbio.com>,
  *         Jarmo K. Kuronen <jarmo.kuronen@symbio.com>,
- *         Ola Lilja <ola.o.lilja@stericsson.com>
+ *         Ola Lilja <ola.o.lilja@stericsson.com>,
+ *         Kristoffer Karlsson <kristoffer.karlsson@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -60,15 +61,17 @@
 
 /* Macros to simplify implementation of register write sequences and error handling */
 #define AB8500_SET_BIT_LOCKED(xreg, xbit, xerr, xerr_hdl) { \
-	xerr = snd_soc_update_bits_locked(ab8500_codec, xreg, REG_MASK_NONE, BMASK(xbit)); \
+	xerr = ab8500_codec_update_reg_audio_locked(ab8500_codec, \
+		xreg, REG_MASK_NONE, BMASK(xbit)); \
 	if (xerr < 0) \
 		goto xerr_hdl; }
 #define AB8500_CLEAR_BIT_LOCKED(xreg, xbit, xerr, xerr_hdl) { \
-	xerr = snd_soc_update_bits_locked(ab8500_codec, xreg, BMASK(xbit), REG_MASK_NONE); \
+	xerr = ab8500_codec_update_reg_audio_locked(ab8500_codec, \
+		xreg, BMASK(xbit), REG_MASK_NONE); \
 	if (xerr < 0) \
 		goto xerr_hdl; }
 #define AB8500_WRITE(xreg, xvalue, xerr, xerr_hdl) { \
-	xerr = snd_soc_write(ab8500_codec, xreg, xvalue); \
+	xerr = ab8500_codec_write_reg_audio(ab8500_codec, xreg, xvalue); \
 	if (xerr < 0) \
 		goto xerr_hdl; }
 
@@ -192,6 +195,15 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 
 static struct snd_soc_codec *ab8500_codec;
 
+/* ADCM */
+static const u8 ADCM_ANACONF5_MASK = BMASK(REG_ANACONF5_ENCPHS);
+static const u8 ADCM_MUTECONF_MASK = BMASK(REG_MUTECONF_MUTHSL) |
+		BMASK(REG_MUTECONF_MUTHSR);
+static const u8 ADCM_ANACONF4_MASK = BMASK(REG_ANACONF4_ENHSL) |
+		BMASK(REG_ANACONF4_ENHSR);
+static unsigned int adcm_anaconf5, adcm_muteconf, adcm_anaconf4;
+static int adcm = AB8500_AUDIO_ADCM_NORMAL;
+
 /* Signed multi register array controls. */
 struct soc_smra_control {
 	unsigned int *reg;
@@ -202,8 +214,8 @@ struct soc_smra_control {
 };
 
 /* ANC FIR- & IIR-coeff caches */
-static int ab8500_anc_fir_coeff_cache[REG_ANC_FIR_COEFFS];
-static int ab8500_anc_iir_coeff_cache[REG_ANC_IIR_COEFFS];
+static long anc_fir_cache[REG_ANC_FIR_COEFFS];
+static long anc_iir_cache[REG_ANC_IIR_COEFFS];
 
 /* ANC states */
 enum anc_states {
@@ -310,19 +322,42 @@ static inline void ab8500_codec_dump_all_reg(struct snd_soc_codec *codec)
 		ab8500_codec_read_reg_audio_nocache(codec, i);
 }
 
-/* Updates an audio register.
+/*
+ * Updates an audio register.
+ *
+ * Returns 1 for change, 0 for no change, or negative error code.
  */
 static inline int ab8500_codec_update_reg_audio(struct snd_soc_codec *codec,
 		unsigned int reg, unsigned int clr, unsigned int ins)
 {
 	unsigned int new, old;
+	int ret;
 
 	old = ab8500_codec_read_reg_audio(codec, reg);
 	new = (old & ~clr) | ins;
 	if (old == new)
 		return 0;
 
-	return ab8500_codec_write_reg_audio(codec, reg, new);
+	ret = ab8500_codec_write_reg_audio(codec, reg, new);
+
+	return (ret < 0) ? ret : 1;
+}
+
+/*
+ * Updates an audio register, and takes the codec mutex.
+ *
+ * Returns 1 for change, 0 for no change, or negative error code.
+ */
+static int ab8500_codec_update_reg_audio_locked(struct snd_soc_codec *codec,
+		unsigned int reg, unsigned int clr, unsigned int ins)
+{
+	int ret;
+
+	mutex_lock(&codec->mutex);
+	ret = ab8500_codec_update_reg_audio(codec, reg, clr, ins);
+	mutex_unlock(&codec->mutex);
+
+	return ret;
 }
 
 /* Generic soc info for signed register controls. */
@@ -448,8 +483,7 @@ int snd_soc_get_enum_strobe(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-	struct soc_enum *e =
-		(struct soc_enum *)kcontrol->private_value;
+	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	unsigned int reg = e->reg;
 	unsigned int bit = e->shift_l;
 	unsigned int invert = e->shift_r != 0;
@@ -467,134 +501,22 @@ int snd_soc_put_enum_strobe(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-	struct soc_enum *e =
-		(struct soc_enum *)kcontrol->private_value;
+	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	unsigned int reg = e->reg;
 	unsigned int bit = e->shift_l;
 	unsigned int invert = e->shift_r != 0;
 	unsigned int strobe = ucontrol->value.enumerated.item[0] != 0;
-	unsigned int set_mask = REG_MASK_NONE;
-	unsigned int clr_mask = REG_MASK_NONE;
-	unsigned int err;
+	unsigned int clear_mask = (strobe ^ invert) ? REG_MASK_NONE : BMASK(bit);
+	unsigned int set_mask = (strobe ^ invert) ? BMASK(bit) : REG_MASK_NONE;
 
-	if (strobe ^ invert)
-		set_mask = BMASK(bit);
-	else
-		clr_mask = BMASK(bit);
-	err = snd_soc_update_bits_locked(codec, reg, clr_mask, set_mask);
-	if (err < 0)
-		return err;
-	return snd_soc_update_bits_locked(codec, reg, set_mask, clr_mask);
-}
-
-static const char *enum_ena_dis[] = {"Enabled", "Disabled"};
-static const char *enum_dis_ena[] = {"Disabled", "Enabled"};
-
-/* Controls - Non-DAPM Non-ASoC */
-
-/* Sidetone */
-
-static int st_fir_value_control_info(struct snd_kcontrol *kcontrol,
-			    struct snd_ctl_elem_info *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = 1;
-	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = (REG_MASK_ALL+1) * (REG_MASK_ALL+1) - 1;
-
-	return 0;
-}
-
-static int st_fir_value_control_get(struct snd_kcontrol *kcontrol,
-			   struct snd_ctl_elem_value *ucontrol)
-{
-	return 0;
-}
-
-static int st_fir_value_control_put(struct snd_kcontrol *kcontrol,
-			   struct snd_ctl_elem_value *ucontrol)
-{
-	int ret;
-	unsigned int val_msb = (int)ucontrol->value.integer.value[0] / (REG_MASK_ALL+1);
-	unsigned int val_lsb = (int)ucontrol->value.integer.value[0] -
-			val_msb * (REG_MASK_ALL+1);
-	ret = ab8500_codec_write_reg_audio(ab8500_codec, REG_SIDFIRCOEF1, val_msb);
-	ret |= ab8500_codec_write_reg_audio(ab8500_codec, REG_SIDFIRCOEF2, val_lsb);
-	if (ret < 0) {
-		pr_err("%s: ERROR: Failed to write FIR-coeffecient!\n", __func__);
+	if (snd_soc_update_bits(codec, reg, clear_mask, set_mask) == 0)
 		return 0;
-	}
-	return 1;
+	return snd_soc_update_bits(codec, reg, set_mask, clear_mask);
 }
 
-static const struct snd_kcontrol_new st_fir_value_control = {
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-	.name = "Sidetone FIR Coeffecient Value",
-	.index = 0,
-	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
-	.info = st_fir_value_control_info,
-	.get = st_fir_value_control_get,
-	.put = st_fir_value_control_put,
-	.private_value = 1 /* ULPCLK */
-};
-
-static int st_fir_apply_control_info(struct snd_kcontrol *kcontrol,
-			    struct snd_ctl_elem_info *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-	uinfo->count = 1;
-	uinfo->value.enumerated.items = 2;
-	if (uinfo->value.enumerated.item) {
-		uinfo->value.enumerated.item = 1;
-		strcpy(uinfo->value.enumerated.name, "Apply");
-	} else {
-		strcpy(uinfo->value.enumerated.name, "Ready");
-	}
-	return 0;
-}
-
-static int st_fir_apply_control_get(struct snd_kcontrol *kcontrol,
-			   struct snd_ctl_elem_value *ucontrol)
-{
-	int reg = ab8500_codec_read_reg_audio(ab8500_codec, REG_SIDFIRADR);
-	ucontrol->value.enumerated.item[0] = reg & BMASK(REG_SIDFIRADR_FIRSIDSET);
-
-	return 0;
-}
-
-static int st_fir_apply_control_put(struct snd_kcontrol *kcontrol,
-			   struct snd_ctl_elem_value *ucontrol)
-{
-	int ret;
-
-	if (ucontrol->value.enumerated.item[0] != 0) {
-		ret = ab8500_codec_write_reg_audio(ab8500_codec,
-						REG_SIDFIRADR,
-						BMASK(REG_SIDFIRADR_FIRSIDSET));
-		if (ret < 0) {
-			pr_err("%s: ERROR: Failed to apply FIR-coeffecients!\n", __func__);
-			return 0;
-		}
-		pr_debug("%s: FIR-coeffecients applied.\n", __func__);
-	}
-
-	ret = ab8500_codec_write_reg_audio(ab8500_codec, REG_SIDFIRADR, 0);
-	if (ret < 0)
-		pr_err("%s: ERROR: Going to ready failed!\n", __func__);
-
-	return 1;
-}
-
-static const struct snd_kcontrol_new st_fir_apply_control = {
-	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-	.name = "Sidetone FIR Apply Coeffecients",
-	.index = 0,
-	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
-	.info = st_fir_apply_control_info,
-	.get = st_fir_apply_control_get,
-	.put = st_fir_apply_control_put,
-	.private_value = 0 /* Ready */
-};
+static const char * const enum_ena_dis[] = {"Enabled", "Disabled"};
+static const char * const enum_dis_ena[] = {"Disabled", "Enabled"};
+static const char * const enum_rdy_apl[] = {"Ready", "Apply"};
 
 /* Controls - DAPM */
 
@@ -606,15 +528,15 @@ enum control_inversion {
 
 /* Headset */
 
-/* Headset left - Mute */
-static const struct snd_kcontrol_new dapm_hsl_mute[] = {
-	SOC_DAPM_SINGLE("Playback Switch", REG_MUTECONF, REG_MUTECONF_MUTHSL, 1, INVERT),
-};
+/* Headset Left - Enable/Disable */
+static const struct soc_enum enum_headset_left = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_headset_left_mux =
+				SOC_DAPM_ENUM_VIRT("Headset Left", enum_headset_left);
 
-/* Headset right - Mute */
-static const struct snd_kcontrol_new dapm_hsr_mute[] = {
-	SOC_DAPM_SINGLE("Playback Switch", REG_MUTECONF, REG_MUTECONF_MUTHSR, 1, INVERT),
-};
+/* Headsett Right - Enable/Disable */
+static const struct soc_enum enum_headset_right = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_headset_right_mux =
+				SOC_DAPM_ENUM_VIRT("Headset Right", enum_headset_right);
 
 /* Earpiece */
 
@@ -694,7 +616,7 @@ static const struct snd_kcontrol_new dapm_mic1_mute[] = {
 };
 
 /* Mic 1 - Mic 1A or 1B selector */
-static const char *enum_mic1ab_sel[] = {"Mic 1A", "Mic 1B"};
+static const char * const enum_mic1ab_sel[] = {"Mic 1A", "Mic 1B"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_mic1ab_sel, REG_ANACONF3,
 			REG_ANACONF3_MIC1SEL, enum_mic1ab_sel);
 static const struct snd_kcontrol_new dapm_mic1ab_select[] = {
@@ -702,7 +624,7 @@ static const struct snd_kcontrol_new dapm_mic1ab_select[] = {
 };
 
 /* Mic 1 - AD3 - Mic 1 or DMic 3 selector */
-static const char *enum_ad3_sel[] = {"Mic 1", "DMic 3"};
+static const char * const enum_ad3_sel[] = {"Mic 1", "DMic 3"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ad3_sel, REG_DIGMULTCONF1,
 			REG_DIGMULTCONF1_AD3SEL, enum_ad3_sel);
 static const struct snd_kcontrol_new dapm_ad3_select[] = {
@@ -710,7 +632,7 @@ static const struct snd_kcontrol_new dapm_ad3_select[] = {
 };
 
 /* Mic 1 - AD6 - Mic 1 or DMic 6 selector */
-static const char *enum_ad6_sel[] = {"Mic 1", "DMic 6"};
+static const char * const enum_ad6_sel[] = {"Mic 1", "DMic 6"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ad6_sel, REG_DIGMULTCONF1,
 			REG_DIGMULTCONF1_AD6SEL, enum_ad6_sel);
 static const struct snd_kcontrol_new dapm_ad6_select[] = {
@@ -725,7 +647,7 @@ static const struct snd_kcontrol_new dapm_mic2_mute[] = {
 };
 
 /* Mic 2 - AD5 - Mic 2 or DMic 5 selector */
-static const char *enum_ad5_sel[] = {"Mic 2", "DMic 5"};
+static const char * const enum_ad5_sel[] = {"Mic 2", "DMic 5"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ad5_sel, REG_DIGMULTCONF1,
 			REG_DIGMULTCONF1_AD5SEL, enum_ad5_sel);
 static const struct snd_kcontrol_new dapm_ad5_select[] = {
@@ -740,7 +662,7 @@ static const struct snd_kcontrol_new dapm_linl_mute[] = {
 };
 
 /* LineIn left - AD1 - LineIn Left or DMic 1 selector */
-static const char *enum_ad1_sel[] = {"LineIn Left", "DMic 1"};
+static const char * const enum_ad1_sel[] = {"LineIn Left", "DMic 1"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ad1_sel, REG_DIGMULTCONF1,
 			REG_DIGMULTCONF1_AD1SEL, enum_ad1_sel);
 static const struct snd_kcontrol_new dapm_ad1_select[] = {
@@ -753,7 +675,7 @@ static const struct snd_kcontrol_new dapm_linr_mute[] = {
 };
 
 /* LineIn right - Mic 2 or LineIn Right selector */
-static const char *enum_mic2lr_sel[] = {"Mic 2", "LineIn Right"};
+static const char * const enum_mic2lr_sel[] = {"Mic 2", "LineIn Right"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_mic2lr_sel, REG_ANACONF3,
 			REG_ANACONF3_LINRSEL, enum_mic2lr_sel);
 static const struct snd_kcontrol_new dapm_mic2lr_select[] = {
@@ -761,7 +683,7 @@ static const struct snd_kcontrol_new dapm_mic2lr_select[] = {
 };
 
 /* LineIn right - AD2 - LineIn Right or DMic2 selector */
-static const char *enum_ad2_sel[] = {"LineIn Right", "DMic 2"};
+static const char * const enum_ad2_sel[] = {"LineIn Right", "DMic 2"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_ad2_sel, REG_DIGMULTCONF1,
 			REG_DIGMULTCONF1_AD2SEL, enum_ad2_sel);
 static const struct snd_kcontrol_new dapm_ad2_select[] = {
@@ -808,7 +730,7 @@ static const struct snd_kcontrol_new dapm_dmic6_mute[] = {
 
 /* ANC */
 
-static const char *enum_anc_in_sel[] = {"Mic 1 / DMic 6", "Mic 2 / DMic 5"};
+static const char * const enum_anc_in_sel[] = {"Mic 1 / DMic 6", "Mic 2 / DMic 5"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_anc_in_sel, REG_DMICFILTCONF,
 			REG_DMICFILTCONF_ANCINSEL, enum_anc_in_sel);
 static const struct snd_kcontrol_new dapm_anc_in_select[] = {
@@ -831,7 +753,7 @@ static const struct snd_kcontrol_new dapm_anc_ear_mute[] = {
 /* Sidetone left */
 
 /* Sidetone left - Input selector */
-static const char *enum_stfir1_in_sel[] = {
+static const char * const enum_stfir1_in_sel[] = {
 	"LineIn Left", "LineIn Right", "Mic 1", "Headset Left"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_stfir1_in_sel, REG_DIGMULTCONF2,
 			REG_DIGMULTCONF2_FIRSID1SEL, enum_stfir1_in_sel);
@@ -842,7 +764,7 @@ static const struct snd_kcontrol_new dapm_stfir1_in_select[] = {
 /* Sidetone right path */
 
 /* Sidetone right - Input selector */
-static const char *enum_stfir2_in_sel[] = {
+static const char * const enum_stfir2_in_sel[] = {
 	"LineIn Right", "Mic 1", "DMic 4", "Headset Right"};
 static SOC_ENUM_SINGLE_DECL(dapm_enum_stfir2_in_sel, REG_DIGMULTCONF2,
 			REG_DIGMULTCONF2_FIRSID2SEL, enum_stfir2_in_sel);
@@ -862,7 +784,7 @@ static const struct soc_enum enum_vibra2 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena
 static const struct snd_kcontrol_new dapm_vibra2_mux =
 				SOC_DAPM_ENUM_VIRT("Vibra 2", enum_vibra2);
 
-static const char *enum_pwm2vibx[] = {"Audio Path", "PWM Generator"};
+static const char * const enum_pwm2vibx[] = {"Audio Path", "PWM Generator"};
 
 static SOC_ENUM_SINGLE_DECL(dapm_enum_pwm2vib1, REG_PWMGENCONF1,
 			REG_PWMGENCONF1_PWMTOVIB1, enum_pwm2vibx);
@@ -903,15 +825,18 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Headset path */
 
-	SND_SOC_DAPM_SUPPLY("Charge Pump", REG_ANACONF5, REG_ANACONF5_ENCPHS, 0, NULL, 0),
+	SND_SOC_DAPM_SUPPLY("Charge Pump", REG_ANACONF5, REG_ANACONF5_ENCPHS,
+			NORMAL, NULL, 0),
 
 	SND_SOC_DAPM_DAC("DA1 Enable", "ab8500_0p",
 			REG_DAPATHENA, REG_DAPATHENA_ENDA1, 0),
 	SND_SOC_DAPM_DAC("DA2 Enable", "ab8500_0p",
 			REG_DAPATHENA, REG_DAPATHENA_ENDA2, 0),
 
-	SND_SOC_DAPM_SWITCH("Headset Left", SND_SOC_NOPM, 0, 0, dapm_hsl_mute),
-	SND_SOC_DAPM_SWITCH("Headset Right", SND_SOC_NOPM, 0, 0, dapm_hsr_mute),
+	SND_SOC_DAPM_MUX("Headset Left",
+			SND_SOC_NOPM, 0, 0, &dapm_headset_left_mux),
+	SND_SOC_DAPM_MUX("Headset Right",
+			SND_SOC_NOPM, 0, 0, &dapm_headset_right_mux),
 
 	SND_SOC_DAPM_PGA("HSL Digital Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_PGA("HSR Digital Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
@@ -1193,8 +1118,8 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 	{"HSL Mute", NULL, "HSL DAC Driver"},
 	{"HSR Mute", NULL, "HSR DAC Driver"},
 
-	{"Headset Left", "Playback Switch", "HSL Mute"},
-	{"Headset Right", "Playback Switch", "HSR Mute"},
+	{"Headset Left", "Enabled", "HSL Mute"},
+	{"Headset Right", "Enabled", "HSR Mute"},
 
 	{"HSL Enable", NULL, "Headset Left"},
 	{"HSR Enable", NULL, "Headset Right"},
@@ -1457,15 +1382,15 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_eardaclowpow,
 static SOC_ENUM_SINGLE_DECL(soc_enum_eardrvlowpow,
 	REG_ANACONF1, REG_ANACONF1_EARDRVLOWPOW, enum_dis_ena);
 
-static const char *enum_earselcm[] = {"0.95V", "1.10V", "1.27V", "1.58V"};
+static const char * const enum_earselcm[] = {"0.95V", "1.10V", "1.27V", "1.58V"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_earselcm,
 	REG_ANACONF1, REG_ANACONF1_EARSELCM, enum_earselcm);
 
-static const char *enum_hsfadspeed[] = {"2ms", "0.5ms", "10.6ms", "5ms"};
+static const char * const enum_hsfadspeed[] = {"2ms", "0.5ms", "10.6ms", "5ms"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_hsfadspeed,
 	REG_DIGMICCONF, REG_DIGMICCONF_HSFADSPEED, enum_hsfadspeed);
 
-static const char *enum_envdetthre[] = {
+static const char * const enum_envdetthre[] = {
 	"250mV", "300mV", "350mV", "400mV",
 	"450mV", "500mV", "550mV", "600mV",
 	"650mV", "700mV", "750mV", "800mV",
@@ -1477,7 +1402,7 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_envdeththre,
 static SOC_ENUM_SINGLE_DECL(soc_enum_envdetlthre,
 	REG_ENVCPCONF, REG_ENVCPCONF_ENVDETLTHRE, enum_envdetthre);
 
-static const char* enum_envdettime[] = {
+static const char * const enum_envdettime[] = {
 	"26.6us", "53.2us", "106us",  "213us",
 	"426us",  "851us",  "1.70ms", "3.40ms",
 	"6.81ms", "13.6ms", "27.2ms", "54.5ms",
@@ -1485,7 +1410,7 @@ static const char* enum_envdettime[] = {
 static SOC_ENUM_SINGLE_DECL(soc_enum_envdettime,
 	REG_SIGENVCONF, REG_SIGENVCONF_ENVDETTIME, enum_envdettime);
 
-static const char *enum_ensemicx[] = {"Differential", "Single Ended"};
+static const char * const enum_ensemicx[] = {"Differential", "Single Ended"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_ensemic1,
 	REG_ANAGAIN1, REG_ANAGAINX_ENSEMICX, enum_ensemicx);
 static SOC_ENUM_SINGLE_DECL(soc_enum_ensemic2,
@@ -1500,7 +1425,7 @@ static SOC_ENUM_DOUBLE_DECL(soc_enum_ad12nh, REG_ADFILTCONF,
 static SOC_ENUM_DOUBLE_DECL(soc_enum_ad34nh, REG_ADFILTCONF,
 	REG_ADFILTCONF_AD3NH, REG_ADFILTCONF_AD4NH, enum_ena_dis);
 
-static const char *enum_av_mode[] = {"Audio", "Voice"};
+static const char * const enum_av_mode[] = {"Audio", "Voice"};
 static SOC_ENUM_DOUBLE_DECL(soc_enum_ad12voice, REG_ADFILTCONF,
 	REG_ADFILTCONF_AD1VOICE, REG_ADFILTCONF_AD2VOICE, enum_av_mode);
 static SOC_ENUM_DOUBLE_DECL(soc_enum_ad34voice, REG_ADFILTCONF,
@@ -1530,7 +1455,7 @@ static SOC_ENUM_DOUBLE_DECL(soc_enum_highvol01, REG_CLASSDCONF2,
 static SOC_ENUM_DOUBLE_DECL(soc_enum_highvol23, REG_CLASSDCONF2,
 	REG_CLASSDCONF2_HIGHVOLEN2, REG_CLASSDCONF2_HIGHVOLEN3, enum_dis_ena);
 
-static const char *enum_sinc53[] = {"Sinc 5", "Sinc 3"};
+static const char * const enum_sinc53[] = {"Sinc 5", "Sinc 3"};
 static SOC_ENUM_DOUBLE_DECL(soc_enum_dmic12sinc, REG_DMICFILTCONF,
 	REG_DMICFILTCONF_DMIC1SINC3, REG_DMICFILTCONF_DMIC2SINC3, enum_sinc53);
 static SOC_ENUM_DOUBLE_DECL(soc_enum_dmic34sinc, REG_DMICFILTCONF,
@@ -1538,15 +1463,15 @@ static SOC_ENUM_DOUBLE_DECL(soc_enum_dmic34sinc, REG_DMICFILTCONF,
 static SOC_ENUM_DOUBLE_DECL(soc_enum_dmic56sinc, REG_DMICFILTCONF,
 	REG_DMICFILTCONF_DMIC5SINC3, REG_DMICFILTCONF_DMIC6SINC3, enum_sinc53);
 
-static const char *enum_da2hslr[] = {"Sidetone", "Audio Path"};
+static const char * const enum_da2hslr[] = {"Sidetone", "Audio Path"};
 static SOC_ENUM_DOUBLE_DECL(soc_enum_da2hslr, REG_DIGMULTCONF1,
 	REG_DIGMULTCONF1_DATOHSLEN, REG_DIGMULTCONF1_DATOHSREN,	enum_da2hslr);
 
-static const char *enum_sinc31[] = {"Sinc 3", "Sinc 1"};
+static const char * const enum_sinc31[] = {"Sinc 3", "Sinc 1"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_hsesinc,
 		REG_HSLEARDIGGAIN, REG_HSLEARDIGGAIN_HSSINC1, enum_sinc31);
 
-static const char *enum_fadespeed[] = {"1ms", "4ms", "8ms", "16ms"};
+static const char * const enum_fadespeed[] = {"1ms", "4ms", "8ms", "16ms"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_fadespeed,
 	REG_HSRDIGGAIN, REG_HSRDIGGAIN_FADESPEED, enum_fadespeed);
 
@@ -1559,7 +1484,7 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_fsbitclk1,
 	REG_DIGIFCONF1, REG_DIGIFCONF1_ENFSBITCLK1, enum_dis_ena);
 
 /* Digital interface - DA from slot mapping */
-static const char *enum_da_from_slot_map[] = {"SLOT0",
+static const char * const enum_da_from_slot_map[] = {"SLOT0",
 					"SLOT1",
 					"SLOT2",
 					"SLOT3",
@@ -1609,7 +1534,7 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_da8slotmap,
 	REG_DASLOTCONF8, REG_DASLOTCONFX_SLTODAX_SHIFT, enum_da_from_slot_map);
 
 /* Digital interface - AD to slot mapping */
-static const char *enum_ad_to_slot_map[] = {"AD_OUT1",
+static const char * const enum_ad_to_slot_map[] = {"AD_OUT1",
 					"AD_OUT2",
 					"AD_OUT3",
 					"AD_OUT4",
@@ -1705,13 +1630,13 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_ad8loop,
 /* Digital interface - Burst mode */
 static SOC_ENUM_SINGLE_DECL(soc_enum_if0fifoen,
 	REG_DIGIFCONF3, REG_DIGIFCONF3_IF0BFIFOEN, enum_dis_ena);
-static const char *enum_mask[] = {"Unmasked", "Masked"};
+static const char * const enum_mask[] = {"Unmasked", "Masked"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifomask,
 	REG_FIFOCONF1, REG_FIFOCONF1_BFIFOMASK, enum_mask);
-static const char *enum_bitclk0[] = {"19_2_MHz", "38_4_MHz"};
+static const char * const enum_bitclk0[] = {"19_2_MHz", "38_4_MHz"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifo19m2,
 	REG_FIFOCONF1, REG_FIFOCONF1_BFIFO19M2, enum_bitclk0);
-static const char *enum_slavemaster[] = {"Slave", "Master"};
+static const char * const enum_slavemaster[] = {"Slave", "Master"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifomast,
 	REG_FIFOCONF3, REG_FIFOCONF3_BFIFOMAST_SHIFT, enum_slavemaster);
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifoint,
@@ -1724,6 +1649,8 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_parlhf,
 	REG_CLASSDCONF1, REG_CLASSDCONF1_PARLHF, enum_dis_ena);
 static SOC_ENUM_SINGLE_DECL(soc_enum_parlvib,
 	REG_CLASSDCONF1, REG_CLASSDCONF1_PARLVIB, enum_dis_ena);
+static SOC_ENUM_STROBE_DECL(soc_enum_applysidetone,
+	REG_SIDFIRADR, REG_SIDFIRADR_FIRSIDSET, NORMAL, enum_rdy_apl);
 
 static struct snd_kcontrol_new ab8500_snd_controls[] = {
 	SOC_ENUM("Headset High Pass Playback Switch", soc_enum_hshpen),
@@ -1963,11 +1890,18 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		NORMAL),
 
 	/* Sidetone */
-	SOC_SINGLE("Sidetone FIR Coeffecient Index",
+	SOC_SINGLE("Sidetone FIR Coefficient Index",
 		REG_SIDFIRADR,
 		REG_SIDFIRADR_ADDRESS_SHIFT,
 		REG_SIDFIRADR_ADDRESS_MAX,
 		NORMAL),
+	SOC_SINGLE_S2R("Sidetone FIR Coefficient Value",
+		REG_SIDFIRCOEF1, REG_SIDFIRCOEF2,
+		REG_SIDFIRCOEFX_VALUE_SHIFT,
+		REG_SIDFIRCOEFX_VALUE_MAX,
+		NORMAL),
+	SOC_ENUM_STROBE("Sidetone FIR Apply Coefficients",
+		soc_enum_applysidetone),
 
 	/* ANC */
 	SOC_SINGLE_S1R("ANC Warp Delay Shift",
@@ -1991,12 +1925,12 @@ static struct snd_kcontrol_new ab8500_snd_controls[] = {
 		REG_ANC_WARP_DELAY_MAX,
 		NORMAL),
 	SOC_MULTIPLE_SA("ANC FIR Coefficients",
-		ab8500_anc_fir_coeff_cache,
+		anc_fir_cache,
 		REG_ANC_FIR_COEFF_MIN,
 		REG_ANC_FIR_COEFF_MAX,
 		NORMAL),
 	SOC_MULTIPLE_SA("ANC IIR Coefficients",
-		ab8500_anc_iir_coeff_cache,
+		anc_iir_cache,
 		REG_ANC_IIR_COEFF_MIN,
 		REG_ANC_IIR_COEFF_MAX,
 		NORMAL),
@@ -2024,7 +1958,7 @@ static int ab8500_codec_set_format_if1(struct snd_soc_codec *codec, unsigned int
 		pr_err("%s: ERROR: The device is either a master or a slave.\n",
 			__func__);
 	default:
-		pr_err("%s: ERROR: Unsupporter master mask 0x%x\n",
+		pr_err("%s: ERROR: Unsupported master mask 0x%x\n",
 			__func__,
 			fmt & SND_SOC_DAIFMT_MASTER_MASK);
 		return -EINVAL;
@@ -2137,24 +2071,19 @@ static void ab8500_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
 
 /* Extended interface for codec-driver */
 
-void ab8500_audio_power_control(bool power_on)
+int ab8500_audio_power_control(bool power_on)
 {
+	int pwr_mask = BMASK(REG_POWERUP_POWERUP) | BMASK(REG_POWERUP_ENANA);
+
 	if (ab8500_codec == NULL) {
 		pr_err("%s: ERROR: AB8500 ASoC-driver not yet probed!\n", __func__);
-		return;
+		return -EIO;
 	}
 
-	if (power_on) {
-		unsigned int set_mask;
-		pr_debug("Enabling AB8500.");
-		set_mask = BMASK(REG_POWERUP_POWERUP) | BMASK(REG_POWERUP_ENANA);
-		ab8500_codec_update_reg_audio(ab8500_codec, REG_POWERUP, 0x00, set_mask);
-	} else {
-		unsigned int clear_mask;
-		pr_debug("Disabling AB8500.");
-		clear_mask = BMASK(REG_POWERUP_POWERUP) | BMASK(REG_POWERUP_ENANA);
-		ab8500_codec_update_reg_audio(ab8500_codec, REG_POWERUP, clear_mask, 0x00);
-	}
+	pr_debug("%s AB8500.", (power_on) ? "Enabling" : "Disabling");
+
+	return ab8500_codec_update_reg_audio(ab8500_codec, REG_POWERUP,
+		pwr_mask, (power_on) ? pwr_mask : REG_MASK_NONE);
 }
 
 void ab8500_audio_pwm_vibra(unsigned char speed_left_pos,
@@ -2243,7 +2172,7 @@ int ab8500_audio_set_word_length(struct snd_soc_dai *dai, unsigned int wl)
 			BMASK(REG_DIGIFCONF2_IF0WL0);
 		break;
 	default:
-		pr_err("%s: Unsupporter word-length 0x%x\n", __func__, wl);
+		pr_err("%s: Unsupported word-length 0x%x\n", __func__, wl);
 		return -EINVAL;
 	}
 
@@ -2312,17 +2241,19 @@ unsigned int ab8500_audio_anc_status(void)
 /* ANC IIR-/FIR-coefficients configuration sequence */
 int ab8500_audio_anc_configure(unsigned int req_state)
 {
-	bool configure_fir = req_state == ANC_CONFIGURE_FIR || req_state == ANC_CONFIGURE_FIR_IIR;
-	bool configure_iir = req_state == ANC_CONFIGURE_IIR || req_state == ANC_CONFIGURE_FIR_IIR;
+	bool configure_fir = req_state == ANC_CONFIGURE_FIR ||
+		req_state == ANC_CONFIGURE_FIR_IIR;
+	bool configure_iir = req_state == ANC_CONFIGURE_IIR ||
+		req_state == ANC_CONFIGURE_FIR_IIR;
 	unsigned int bank, param;
 	int ret;
 
-	if (req_state == ANC_UNCONFIGURED
-		|| req_state == ANC_FIR_IIR_CONFIGURED
-		|| req_state == ANC_FIR_CONFIGURED
-		|| req_state == ANC_IIR_CONFIGURED
-		|| req_state == ANC_ERROR)
-		return -1;
+	if (req_state == ANC_UNCONFIGURED ||
+		req_state == ANC_FIR_IIR_CONFIGURED ||
+		req_state == ANC_FIR_CONFIGURED ||
+		req_state == ANC_IIR_CONFIGURED ||
+		req_state == ANC_ERROR)
+		return -EINVAL;
 
 	mutex_lock(&ab8500_anc_conf_lock);
 
@@ -2335,13 +2266,19 @@ int ab8500_audio_anc_configure(unsigned int req_state)
 		for (bank = 0; bank < AB8500_NR_OF_ANC_COEFF_BANKS; bank++) {
 			for (param = 0; param < REG_ANC_FIR_COEFFS; param++) {
 				if (param == 0 && bank == 0)
-					AB8500_SET_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCFIRUPDATE, ret, cleanup)
+					AB8500_SET_BIT_LOCKED(REG_ANCCONF1,
+						REG_ANCCONF1_ANCFIRUPDATE, ret, cleanup)
 
-				AB8500_WRITE(REG_ANCCONF5, ab8500_anc_fir_coeff_cache[param] >> 8 & REG_MASK_ALL, ret, cleanup)
-				AB8500_WRITE(REG_ANCCONF6, ab8500_anc_fir_coeff_cache[param] & REG_MASK_ALL, ret, cleanup)
+				AB8500_WRITE(REG_ANCCONF5,
+					anc_fir_cache[param] >> 8 & REG_MASK_ALL,
+					ret, cleanup)
+				AB8500_WRITE(REG_ANCCONF6,
+					anc_fir_cache[param] & REG_MASK_ALL,
+					ret, cleanup)
 
 				if (param == REG_ANC_FIR_COEFFS - 1 && bank == 1)
-					AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCFIRUPDATE, ret, cleanup)
+					AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1,
+						REG_ANCCONF1_ANCFIRUPDATE, ret, cleanup)
 			}
 		}
 		if (ab8500_anc_status == ANC_IIR_CONFIGURED)
@@ -2355,23 +2292,38 @@ int ab8500_audio_anc_configure(unsigned int req_state)
 			for (param = 0; param < REG_ANC_IIR_COEFFS; param++) {
 				if (param == 0) {
 					if (bank == 0) {
-						AB8500_SET_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCIIRINIT, ret, cleanup)
+						AB8500_SET_BIT_LOCKED(REG_ANCCONF1,
+							REG_ANCCONF1_ANCIIRINIT,
+							ret, cleanup)
 						udelay(2000);
-						AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCIIRINIT, ret, cleanup)
+						AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1,
+							REG_ANCCONF1_ANCIIRINIT,
+							ret, cleanup)
 						udelay(2000);
 					} else {
-						AB8500_SET_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCIIRUPDATE, ret, cleanup)
+						AB8500_SET_BIT_LOCKED(REG_ANCCONF1,
+							REG_ANCCONF1_ANCIIRUPDATE,
+							ret, cleanup)
 					}
 				} else if (param > 3) {
-					AB8500_WRITE(REG_ANCCONF7, REG_MASK_NONE, ret, cleanup)
-					AB8500_WRITE(REG_ANCCONF8, ab8500_anc_iir_coeff_cache[param] >> 16 & REG_MASK_ALL, ret, cleanup)
+					AB8500_WRITE(REG_ANCCONF7,
+						REG_MASK_NONE, ret, cleanup)
+					AB8500_WRITE(REG_ANCCONF8,
+						anc_iir_cache[param] >> 16 & REG_MASK_ALL,
+						ret, cleanup)
 				}
 
-				AB8500_WRITE(REG_ANCCONF7, ab8500_anc_iir_coeff_cache[param] >> 8 & REG_MASK_ALL, ret, cleanup)
-				AB8500_WRITE(REG_ANCCONF8, ab8500_anc_iir_coeff_cache[param] & REG_MASK_ALL, ret, cleanup)
+				AB8500_WRITE(REG_ANCCONF7,
+					anc_iir_cache[param] >> 8 & REG_MASK_ALL,
+					ret, cleanup)
+				AB8500_WRITE(REG_ANCCONF8,
+					anc_iir_cache[param] & REG_MASK_ALL,
+					ret, cleanup)
 
 				if (param == REG_ANC_IIR_COEFFS - 1 && bank == 1)
-					AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1, REG_ANCCONF1_ANCIIRUPDATE, ret, cleanup)
+					AB8500_CLEAR_BIT_LOCKED(REG_ANCCONF1,
+						REG_ANCCONF1_ANCIIRUPDATE,
+						ret, cleanup)
 			}
 		}
 		if (ab8500_anc_status == ANC_FIR_CONFIGURED)
@@ -2385,13 +2337,13 @@ int ab8500_audio_anc_configure(unsigned int req_state)
 	return 0;
 
 cleanup:
-	ret |= snd_soc_update_bits_locked(ab8500_codec
-			, REG_ANCCONF1
-			, BMASK(REG_ANCCONF1_ENANC)
-			| BMASK(REG_ANCCONF1_ANCIIRINIT)
-			| BMASK(REG_ANCCONF1_ANCIIRUPDATE)
-			| BMASK(REG_ANCCONF1_ANCFIRUPDATE)
-			, REG_MASK_NONE);
+	ret |= ab8500_codec_update_reg_audio_locked(ab8500_codec,
+			REG_ANCCONF1,
+			BMASK(REG_ANCCONF1_ENANC) |
+			BMASK(REG_ANCCONF1_ANCIIRINIT) |
+			BMASK(REG_ANCCONF1_ANCIIRUPDATE) |
+			BMASK(REG_ANCCONF1_ANCFIRUPDATE),
+			REG_MASK_NONE);
 
 	ab8500_anc_status = ANC_ERROR;
 
@@ -2428,6 +2380,82 @@ bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path)
 	default:
 		return false;
 	}
+}
+
+int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm)
+{
+	int ret = 0;
+
+	if (ab8500_codec == NULL) {
+		pr_err("%s: ERROR: AB8500 ASoC-driver not yet probed!\n", __func__);
+		return -EIO;
+	}
+
+	if (adcm == req_adcm)
+		return ret;
+
+	if (AB8500_AUDIO_ADCM_FORCE_UP == req_adcm ||
+			AB8500_AUDIO_ADCM_FORCE_DOWN == req_adcm) {
+
+		mutex_lock(&ab8500_codec->mutex);
+
+		adcm_anaconf5 = ab8500_codec_read_reg_audio(ab8500_codec, REG_ANACONF5);
+		adcm_muteconf = ab8500_codec_read_reg_audio(ab8500_codec, REG_MUTECONF);
+		adcm_anaconf4 = ab8500_codec_read_reg_audio(ab8500_codec, REG_ANACONF4);
+
+		if (AB8500_AUDIO_ADCM_FORCE_UP == req_adcm) {
+			ret |= ab8500_codec_update_reg_audio(ab8500_codec,
+					REG_ANACONF5, REG_MASK_NONE, ADCM_ANACONF5_MASK);
+			if (ret < 0)
+				goto cleanup;
+			ret |= ab8500_codec_update_reg_audio(ab8500_codec,
+					REG_MUTECONF, REG_MASK_NONE, ADCM_MUTECONF_MASK);
+			if (ret < 0)
+				goto cleanup;
+			ret |= ab8500_codec_update_reg_audio(ab8500_codec,
+					REG_ANACONF4, REG_MASK_NONE, ADCM_ANACONF4_MASK);
+			if (ret < 0)
+				goto cleanup;
+		} else {
+			ret |= ab8500_codec_update_reg_audio(ab8500_codec,
+					REG_ANACONF5, ADCM_ANACONF5_MASK, REG_MASK_NONE);
+			if (ret < 0)
+				goto cleanup;
+		}
+	} else if (AB8500_AUDIO_ADCM_NORMAL == req_adcm) {
+
+		if (AB8500_AUDIO_ADCM_FORCE_UP == adcm) {
+			ret |= ab8500_codec_update_reg_audio(ab8500_codec,
+					REG_ANACONF5, ~adcm_anaconf5 & ADCM_ANACONF5_MASK,
+					adcm_anaconf5 & ADCM_ANACONF5_MASK);
+			if (ret < 0)
+				goto cleanup;
+			ret |= ab8500_codec_update_reg_audio(ab8500_codec,
+					REG_MUTECONF, ~adcm_muteconf & ADCM_MUTECONF_MASK,
+					adcm_muteconf & ADCM_MUTECONF_MASK);
+			if (ret < 0)
+				goto cleanup;
+			ret |= ab8500_codec_update_reg_audio(ab8500_codec,
+					REG_ANACONF4, ~adcm_anaconf4 & ADCM_ANACONF4_MASK,
+					adcm_anaconf4 & ADCM_ANACONF4_MASK);
+			if (ret < 0)
+				goto cleanup;
+		} else {
+			ret |= ab8500_codec_update_reg_audio(ab8500_codec,
+					REG_ANACONF5, ~adcm_anaconf5 & ADCM_ANACONF5_MASK,
+					adcm_anaconf5 & ADCM_ANACONF5_MASK);
+			if (ret < 0)
+				goto cleanup;
+		}
+	}
+
+cleanup:
+	adcm = (ret < 0) ? AB8500_AUDIO_ADCM_NORMAL : req_adcm;
+
+	if (AB8500_AUDIO_ADCM_NORMAL == adcm)
+		mutex_unlock(&ab8500_codec->mutex);
+
+	return ret;
 }
 
 static int ab8500_codec_add_widgets(struct snd_soc_codec *codec)
@@ -2508,14 +2536,14 @@ static int ab8500_codec_set_dai_clock_gate(struct snd_soc_codec *codec, unsigned
 
 	switch (fmt & SND_SOC_DAIFMT_CLOCK_MASK) {
 	case SND_SOC_DAIFMT_CONT: /* continuous clock */
-		pr_debug("%s: IF0 Clock is continous.\n", __func__);
+		pr_debug("%s: IF0 Clock is continuous.\n", __func__);
 		set_mask |= BMASK(REG_DIGIFCONF1_ENFSBITCLK0);
 		break;
 	case SND_SOC_DAIFMT_GATED: /* clock is gated */
 		pr_debug("%s: IF0 Clock is gated.\n", __func__);
 		break;
 	default:
-		pr_err("%s: ERROR: Unsupporter clock mask (0x%x)!\n",
+		pr_err("%s: ERROR: Unsupported clock mask (0x%x)!\n",
 			__func__,
 			fmt & SND_SOC_DAIFMT_CLOCK_MASK);
 		return -EINVAL;
@@ -2596,7 +2624,7 @@ static int ab8500_codec_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		set_mask |= BMASK(REG_DIGIFCONF2_IF0FORMAT0);
 		break;
 	default:
-		pr_err("%s: ERROR: Unsupporter format (0x%x)!\n",
+		pr_err("%s: ERROR: Unsupported format (0x%x)!\n",
 				__func__,
 				fmt & SND_SOC_DAIFMT_FORMAT_MASK);
 		return -EINVAL;
@@ -2798,10 +2826,6 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 				__func__, ret);
 		return ret;
 	}
-
-	/* Add controls with events */
-	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&st_fir_value_control, codec));
-	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&st_fir_apply_control, codec));
 
 	/* Add DAPM-widgets */
 	ret = ab8500_codec_add_widgets(codec);

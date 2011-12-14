@@ -24,14 +24,14 @@ extern struct snd_soc_codec_driver soc_codec_dev_ab8500;
 
 /* Extended interface for codec-driver */
 
-void ab8500_audio_power_control(bool power_on);
+int ab8500_audio_power_control(bool power_on);
 int ab8500_audio_set_word_length(struct snd_soc_dai *dai, unsigned int wl);
 int ab8500_audio_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay);
 int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
 			unsigned int fmt,
 			unsigned int wl,
 			unsigned int delay);
-unsigned int ab8500_audio_anc_status();
+unsigned int ab8500_audio_anc_status(void);
 int ab8500_audio_anc_configure(unsigned int req_state);
 
 enum ab8500_audio_dapm_path {
@@ -40,6 +40,13 @@ enum ab8500_audio_dapm_path {
 	AB8500_AUDIO_DAPM_PATH_AMIC2
 };
 bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path);
+
+enum ab8500_audio_adcm {
+	AB8500_AUDIO_ADCM_NORMAL,
+	AB8500_AUDIO_ADCM_FORCE_UP,
+	AB8500_AUDIO_ADCM_FORCE_DOWN
+};
+int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm);
 
 #define SOC_SINGLE_VALUE_S1R(xreg0, xcount, xmin, xmax, xinvert) \
 	((unsigned long)&(struct soc_smra_control) \
@@ -114,7 +121,7 @@ bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path);
 	.private_value = SOC_MULTIPLE_VALUE_SA(values, ARRAY_SIZE(values), \
 	min, max, invert) }
 
-#define SOC_ENUM_STROBE(xname, enum) \
+#define SOC_ENUM_STROBE(xname, xenum) \
 	SOC_ENUM_EXT(xname, xenum, \
 	snd_soc_get_enum_strobe, \
 	snd_soc_put_enum_strobe)
@@ -622,7 +629,7 @@ bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path);
 /* REG_SIDFIRCOEF1 */
 /* REG_SIDFIRCOEF2 */
 #define REG_SIDFIRCOEFX_VALUE_SHIFT		0
-#define REG_SIDFIRCOEFX_VALUE_MAX		0xFF
+#define REG_SIDFIRCOEFX_VALUE_MAX		0xFFFF
 
 /* REG_SIDFIRCONF */
 #define REG_SIDFIRCONF_ENFIRSIDS		2
