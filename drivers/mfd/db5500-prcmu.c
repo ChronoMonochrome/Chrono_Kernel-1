@@ -1527,14 +1527,57 @@ static void prcmu_ape_clocks_scale(u8 opp)
 
 	spin_unlock_irqrestore(&clk_mgt_lock, irqflags);
 }
+/* Divide the frequency of certain clocks by 2 for APE_50_PARTLY_25_OPP. */
+static void request_even_slower_clocks(bool enable)
+{
+	void __iomem *clock_reg[] = {
+		(_PRCMU_BASE + DB5500_PRCM_ACLK_MGT),
+		(_PRCMU_BASE + DB5500_PRCM_DMACLK_MGT)
+	};
+	unsigned long flags;
+	unsigned int i;
 
+	spin_lock_irqsave(&clk_mgt_lock, flags);
+
+	/* Grab the HW semaphore. */
+	while ((readl(_PRCMU_BASE + PRCM_SEM) & PRCM_SEM_PRCM_SEM) != 0)
+		cpu_relax();
+
+	for (i = 0; i < ARRAY_SIZE(clock_reg); i++) {
+		u32 val;
+		u32 div;
+
+		val = readl(clock_reg[i]);
+		div = (val & PRCM_CLK_MGT_CLKPLLDIV_MASK);
+		if (enable) {
+			if ((div <= 1) || (div > 15)) {
+				pr_err("prcmu: Bad clock divider %d in %s\n",
+					div, __func__);
+				goto unlock_and_return;
+			}
+			div <<= 1;
+		} else {
+			if (div <= 2)
+				goto unlock_and_return;
+			div >>= 1;
+		}
+		val = ((val & ~PRCM_CLK_MGT_CLKPLLDIV_MASK) |
+			(div & PRCM_CLK_MGT_CLKPLLDIV_MASK));
+		writel(val, clock_reg[i]);
+	}
+
+unlock_and_return:
+	/* Release the HW semaphore. */
+	writel(0, _PRCMU_BASE + PRCM_SEM);
+
+	spin_unlock_irqrestore(&clk_mgt_lock, flags);
+}
 int db5500_prcmu_set_ape_opp(u8 opp)
 {
 	int ret = 0;
 	u8 db5500_opp;
-
-	if (opp == db5500_prcmu_get_ape_opp())
-		return ret;
+	if (opp == mb1_transfer.req_ape_opp)
+		return 0;
 
 	if (cpu_is_u5500v1())
 		return -EINVAL;
@@ -1544,6 +1587,7 @@ int db5500_prcmu_set_ape_opp(u8 opp)
 		db5500_opp = DB5500_APE_100_OPP;
 		break;
 	case APE_50_OPP:
+	case APE_50_PARTLY_25_OPP:
 		db5500_opp = DB5500_APE_50_OPP;
 		break;
 	default:
@@ -1554,6 +1598,10 @@ int db5500_prcmu_set_ape_opp(u8 opp)
 	}
 
 	mutex_lock(&mb1_transfer.lock);
+	if (mb1_transfer.req_ape_opp == APE_50_PARTLY_25_OPP)
+		request_even_slower_clocks(false);
+	if ((opp != APE_100_OPP) && (mb1_transfer.req_ape_opp != APE_100_OPP))
+		goto skip_message;
 
 	prcmu_ape_clocks_scale(db5500_opp);
 
@@ -1576,6 +1624,12 @@ int db5500_prcmu_set_ape_opp(u8 opp)
 		(mb1_transfer.ack.arm_voltage_st != RC_SUCCESS))
 		ret = -EIO;
 
+skip_message:
+	if ((!ret && (opp == APE_50_PARTLY_25_OPP)) ||
+		(ret && (mb1_transfer.req_ape_opp == APE_50_PARTLY_25_OPP)))
+			request_even_slower_clocks(true);
+	if (!ret)
+		mb1_transfer.req_ape_opp = opp;
 unlock_and_return:
 	mutex_unlock(&mb1_transfer.lock);
 bailout:
