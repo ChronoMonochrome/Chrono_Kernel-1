@@ -74,7 +74,7 @@ static struct prcmu_qos_object ape_opp_qos = {
 	/* Target value in % APE OPP */
 	.default_value = 50,
 	.force_value = 0,
-	.target_value = ATOMIC_INIT(0),
+	.target_value = ATOMIC_INIT(50),
 	.comparitor = max_compare
 };
 
@@ -87,7 +87,7 @@ static struct prcmu_qos_object ddr_opp_qos = {
 	/* Target value in % DDR OPP */
 	.default_value = 25,
 	.force_value = 0,
-	.target_value = ATOMIC_INIT(0),
+	.target_value = ATOMIC_INIT(25),
 	.comparitor = max_compare
 };
 
@@ -103,7 +103,7 @@ static struct prcmu_qos_object arm_opp_qos = {
 	/* Target value in % ARM OPP, note can be 125% */
 	.default_value = 25,
 	.force_value = 0,
-	.target_value = ATOMIC_INIT(0),
+	.target_value = ATOMIC_INIT(25),
 	.comparitor = max_compare
 };
 
@@ -233,6 +233,7 @@ static void update_target(int target)
 					 ));
 		}
 	}
+
 	spin_unlock_irqrestore(&prcmu_qos_lock, flags);
 
 	if (!update)
@@ -682,8 +683,10 @@ static int __init prcmu_qos_power_init(void)
 	int ret;
 
 	/* 25% DDR OPP is not supported on u5500 */
-	if (cpu_is_u5500())
+	if (cpu_is_u5500()) {
 		ddr_opp_qos.default_value = 50;
+		atomic_set(&ddr_opp_qos.target_value, 50);
+	}
 
 	ret = register_prcmu_qos_misc(&ape_opp_qos, &prcmu_qos_ape_power_fops);
 	if (ret < 0) {
