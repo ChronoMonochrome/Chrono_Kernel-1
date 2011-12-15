@@ -45,6 +45,8 @@ struct compdev {
 	struct mcde_overlay *ovly[NUM_COMPDEV_BUFS];
 	struct compdev_buffer ovly_buffer[NUM_COMPDEV_BUFS];
 	struct compdev_size phy_size;
+	enum mcde_display_rotation display_rotation;
+	enum compdev_rotation current_buffer_rotation;
 };
 
 static int compdev_open(struct inode *inode, struct file *file)
@@ -218,6 +220,37 @@ resolve_failed:
 	return ret;
 }
 
+static int compdev_update_rotation(struct compdev *cd, enum compdev_rotation rotation)
+{
+	/* Set video mode */
+	struct mcde_video_mode vmode;
+	int ret = 0;
+
+	memset(&vmode, 0, sizeof(struct mcde_video_mode));
+	mcde_dss_get_video_mode(cd->ddev, &vmode);
+	if ((cd->display_rotation + rotation) % 180) {
+		vmode.xres = cd->phy_size.height;
+		vmode.yres = cd->phy_size.width;
+	} else {
+		vmode.xres = cd->phy_size.width;
+		vmode.yres = cd->phy_size.height;
+	}
+
+	ret = mcde_dss_set_video_mode(cd->ddev, &vmode);
+	if (ret != 0)
+		goto exit;
+
+	/* Set rotation */
+	ret = mcde_dss_set_rotation(cd->ddev, (cd->display_rotation + rotation) % 360);
+	if (ret != 0)
+		goto exit;
+
+	/* Apply */
+	ret = mcde_dss_apply_channel(cd->ddev);
+exit:
+	return ret;
+}
+
 static int release_prev_frame(struct compdev *cd)
 {
 	int ret = 0;
@@ -265,11 +298,22 @@ static int compdev_post_buffers(struct compdev *cd,
 	release_prev_frame(cd);
 
 	/* Validate buffer count */
-	if (req->buffer_count > NUM_COMPDEV_BUFS || req->buffer_count == 0)	{
+	if (req->buffer_count > NUM_COMPDEV_BUFS || req->buffer_count == 0) {
 		dev_warn(cd->mdev.this_device,
 			"Illegal buffer count, will be clamped to %d\n",
 			NUM_COMPDEV_BUFS);
 		req->buffer_count = NUM_COMPDEV_BUFS;
+	}
+
+	/* Set channel rotation */
+	if (req->buffer_count > 0 &&
+			(cd->current_buffer_rotation != req->rotation)) {
+		if (compdev_update_rotation(cd, req->rotation) != 0)
+			dev_warn(cd->mdev.this_device,
+				"Failed to update MCDE rotation (req->rotation = %d), %d\n",
+				req->rotation, ret);
+		else
+			cd->current_buffer_rotation = req->rotation;
 	}
 
 	/* Handle buffers */
@@ -305,10 +349,20 @@ static long compdev_ioctl(struct file *file,
 
 	switch (cmd) {
 	case COMPDEV_GET_SIZE_IOC:
-		ret = copy_to_user((void __user *)arg, &cd->phy_size,
-				sizeof(cd->phy_size));
-		if (ret)
-			ret = -EFAULT;
+		{
+			struct compdev_size tmp;
+			if ((cd->display_rotation) % 180) {
+				tmp.height = cd->phy_size.width;
+				tmp.width = cd->phy_size.height;
+			} else {
+				tmp.height = cd->phy_size.height;
+				tmp.width = cd->phy_size.width;
+			}
+			ret = copy_to_user((void __user *)arg, &tmp,
+								sizeof(tmp));
+			if (ret)
+				ret = -EFAULT;
+		}
 		break;
 	case COMPDEV_POST_BUFFERS_IOC:
 		/* arg is user pointer to struct compdev_post_buffers_req */
@@ -398,6 +452,9 @@ int compdev_create(struct mcde_display_device *ddev,
 
 	mcde_dss_get_native_resolution(ddev, &cd->phy_size.width,
 			&cd->phy_size.height);
+
+	cd->display_rotation = mcde_dss_get_rotation(ddev);
+	cd->current_buffer_rotation = 0;
 
 	ret = misc_register(&cd->mdev);
 	if (ret)
