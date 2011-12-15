@@ -127,17 +127,13 @@ t_cm_error cm_DSPABI_AddLoadMap(
                 if(((t_uint32)curItem->pNextItem < SDRAMMEM16_BASE_ADDR) || ((t_uint32)curItem->pNextItem > endSegmentAddr))
                 {
 			if (prevItem == NULL)
-				ERROR("AddLoadMap: Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n"
-				      "Previou (first) component name %s<%s>\n",
+				ERROR("AddLoadMap: Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n",
 				      curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
-				      curItem->pARMThis ? (char*)(((t_component_instance *)&curItem->pARMThis)->pathname) : "<null>",
-				      curItem->pARMThis ? (char*)(((t_component_instance *)&curItem->pARMThis)->Template->name) : "<null>", 0, 0);
+				      0, 0, 0, 0);
 			else
-				ERROR("AddLoadMap: Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n"
-				      "Previous valid component name %s<%s>",
+				ERROR("AddLoadMap: Memory corruption in MMDSP: at data DSP address=%x or ARM address=%x\n",
 				      curItemDspAdress + myoffsetof(struct LoadMapItem, pNextItem), &curItem->pNextItem,
-				      prevItem->pARMThis ? (char*)(((t_component_instance *)&prevItem->pARMThis)->pathname) : "<null>",
-				      prevItem->pARMThis ? (char*)(((t_component_instance *)&prevItem->pARMThis)->Template->name) : "<null>", 0, 0);
+				      0, 0, 0, 0);
 			return CM_INVALID_DATA;
                 }
                 curItemDspAdress = (t_uint32)curItem->pNextItem;
