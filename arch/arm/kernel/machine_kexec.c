@@ -84,6 +84,8 @@ void machine_crash_shutdown(struct pt_regs *regs)
 
 	local_irq_disable();
 
+	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
+
 	atomic_set(&waiting_for_crash_ipi, num_online_cpus() - 1);
 	smp_call_function(machine_crash_nonpanic_core, NULL, false);
 	msecs = 1000; /* Wait at most a second for the other cpus to stop */
