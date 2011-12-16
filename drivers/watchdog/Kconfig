@@ -351,7 +351,7 @@ config IMX2_WDT
 
 config UX500_WATCHDOG
 	bool "ST-Ericsson Ux500 watchdog"
-	depends on UX500_SOC_DB8500
+	depends on UX500_SOC_DB8500 || UX500_SOC_DB5500
 	default y
 	help
 	  Say Y here to include Watchdog timer support for the
@@ -361,7 +361,7 @@ config UX500_WATCHDOG
 
 config UX500_WATCHDOG_DEBUG
 	bool "ST-Ericsson Ux500 watchdog DEBUG"
-	depends on UX500_SOC_DB8500 && DEBUG_FS
+	depends on (UX500_SOC_DB8500 || UX500_SOC_DB5500) && DEBUG_FS
 	help
 	  Say Y here to add various debugfs entries in wdog/
 

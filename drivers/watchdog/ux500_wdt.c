@@ -152,9 +152,17 @@ static long ux500_wdt_ioctl(struct file *file, unsigned int cmd,
 		if (get_user(interval, p))
 			return -EFAULT;
 
-		/* 28 bit resolution in ms, becomes 268435.455 s */
-		if (interval > 268435 || interval < 0)
+		if (cpu_is_u8500()) {
+			/* 28 bit resolution in ms, becomes 268435.455 s */
+			if (interval > 268435 || interval < 0)
+				return -EINVAL;
+		} else if (cpu_is_u5500()) {
+			/* 32 bit resolution in ms, becomes 4294967.295 s */
+			if (interval > 4294967 || interval < 0)
+				return -EINVAL;
+		} else
 			return -EINVAL;
+
 		timeout = interval;
 		prcmu_disable_a9wdog(wdog_id);
 		prcmu_load_a9wdog(wdog_id, timeout * 1000);
@@ -384,6 +392,11 @@ static int __exit ux500_wdt_remove(struct platform_device *dev)
 static int ux500_wdt_suspend(struct platform_device *pdev,
 			     pm_message_t state)
 {
+	if (wdt_en && cpu_is_u5500()) {
+		prcmu_disable_a9wdog(wdog_id);
+		return 0;
+	}
+
 	if (wdt_en && !wdt_auto_off) {
 		prcmu_disable_a9wdog(wdog_id);
 		prcmu_config_a9wdog(1, true);
@@ -396,6 +409,12 @@ static int ux500_wdt_suspend(struct platform_device *pdev,
 
 static int ux500_wdt_resume(struct platform_device *pdev)
 {
+	if (wdt_en && cpu_is_u5500()) {
+		prcmu_load_a9wdog(wdog_id, timeout * 1000);
+		prcmu_enable_a9wdog(wdog_id);
+		return 0;
+	}
+
 	if (wdt_en && !wdt_auto_off) {
 		prcmu_disable_a9wdog(wdog_id);
 		prcmu_config_a9wdog(1, wdt_auto_off);
