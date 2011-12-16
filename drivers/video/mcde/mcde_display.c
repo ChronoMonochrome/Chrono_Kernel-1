@@ -236,48 +236,9 @@ static inline enum mcde_display_rotation mcde_display_get_rotation_default(
 	return ddev->rotation;
 }
 
-static int mcde_display_set_synchronized_update_default(
-	struct mcde_display_device *ddev, bool enable)
-{
-	if (ddev->port->type == MCDE_PORTTYPE_DSI && enable) {
-		int ret;
-		u8 m = 0;
-
-		if (ddev->port->sync_src == MCDE_SYNCSRC_OFF)
-			return -EINVAL;
-
-		ret = mcde_dsi_dcs_write(ddev->chnl_state,
-						DCS_CMD_SET_TEAR_ON, &m, 1);
-		if (ret < 0) {
-			dev_warn(&ddev->dev,
-				"%s:Failed to set synchornized update = %d\n",
-				__func__, enable);
-			return ret;
-		}
-	}
-	ddev->synchronized_update = enable;
-	return 0;
-}
-
-static inline bool mcde_display_get_synchronized_update_default(
-	struct mcde_display_device *ddev)
-{
-	return ddev->synchronized_update;
-}
-
 static int mcde_display_apply_config_default(struct mcde_display_device *ddev)
 {
 	int ret;
-
-	ret = mcde_chnl_enable_synchronized_update(ddev->chnl_state,
-		ddev->synchronized_update);
-
-	if (ret < 0) {
-		dev_warn(&ddev->dev,
-			"%s:Failed to enable synchronized update\n",
-			__func__);
-		return ret;
-	}
 
 	if (!ddev->update_flags)
 		return 0;
@@ -396,10 +357,6 @@ void mcde_display_init_device(struct mcde_display_device *ddev)
 	ddev->get_pixel_format = mcde_display_get_pixel_format_default;
 	ddev->set_rotation = mcde_display_set_rotation_default;
 	ddev->get_rotation = mcde_display_get_rotation_default;
-	ddev->set_synchronized_update =
-				mcde_display_set_synchronized_update_default;
-	ddev->get_synchronized_update =
-				mcde_display_get_synchronized_update_default;
 	ddev->apply_config = mcde_display_apply_config_default;
 	ddev->invalidate_area = mcde_display_invalidate_area_default;
 	ddev->update = mcde_display_update_default;

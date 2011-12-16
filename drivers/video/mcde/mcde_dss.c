@@ -116,24 +116,9 @@ int mcde_dss_enable_display(struct mcde_display_device *ddev)
 		goto display_failed;
 	}
 
-	ret = ddev->set_synchronized_update(ddev,
-					ddev->get_synchronized_update(ddev));
-	if (ret < 0)
-		dev_warn(&ddev->dev, "Failed to set sync\n");
-
 	ret = ddev->set_rotation(ddev, ddev->get_rotation(ddev));
 	if (ret < 0)
 		dev_warn(&ddev->dev, "Failed to set rotation\n");
-
-	ret = mcde_chnl_enable_synchronized_update(ddev->chnl_state,
-		ddev->synchronized_update);
-	if (ret < 0) {
-		dev_warn(&ddev->dev,
-			"%s:Failed to enable synchronized update\n",
-			__func__);
-		goto enable_sync_failed;
-	}
-	/* TODO: call driver for all defaults like sync_update above */
 
 	dev_dbg(&ddev->dev, "Display enabled, chnl=%d\n",
 					ddev->chnl_id);
@@ -142,8 +127,6 @@ int mcde_dss_enable_display(struct mcde_display_device *ddev)
 
 	return 0;
 
-enable_sync_failed:
-	ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);
 display_failed:
 	mcde_chnl_disable(ddev->chnl_state);
 	mutex_unlock(&ddev->display_lock);
@@ -450,36 +433,6 @@ enum mcde_display_rotation mcde_dss_get_rotation(
 	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_get_rotation);
-
-int mcde_dss_set_synchronized_update(struct mcde_display_device *ddev,
-	bool enable)
-{
-	int ret;
-	mutex_lock(&ddev->display_lock);
-	ret = ddev->set_synchronized_update(ddev, enable);
-	if (ret)
-		goto sync_update_failed;
-
-	if (ddev->chnl_state)
-		mcde_chnl_enable_synchronized_update(ddev->chnl_state, enable);
-	mutex_unlock(&ddev->display_lock);
-	return 0;
-
-sync_update_failed:
-	mutex_unlock(&ddev->display_lock);
-	return ret;
-}
-EXPORT_SYMBOL(mcde_dss_set_synchronized_update);
-
-bool mcde_dss_get_synchronized_update(struct mcde_display_device *ddev)
-{
-	int ret;
-	mutex_lock(&ddev->display_lock);
-	ret = ddev->get_synchronized_update(ddev);
-	mutex_unlock(&ddev->display_lock);
-	return ret;
-}
-EXPORT_SYMBOL(mcde_dss_get_synchronized_update);
 
 int __init mcde_dss_init(void)
 {

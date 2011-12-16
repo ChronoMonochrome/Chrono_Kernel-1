@@ -62,7 +62,6 @@ struct mcde_display_device {
 	enum mcde_ovly_pix_fmt pixel_format;
 	enum mcde_display_rotation rotation;
 	enum mcde_display_rotation orientation;
-	bool synchronized_update;
 	struct mcde_video_mode video_mode;
 	int update_flags;
 	bool stay_alive;
@@ -98,10 +97,6 @@ struct mcde_display_device {
 		enum mcde_display_rotation rotation);
 	enum mcde_display_rotation (*get_rotation)(
 		struct mcde_display_device *dev);
-
-	int (*set_synchronized_update)(struct mcde_display_device *dev,
-		bool enable);
-	bool (*get_synchronized_update)(struct mcde_display_device *dev);
 
 	int (*apply_config)(struct mcde_display_device *dev);
 	int (*invalidate_area)(struct mcde_display_device *dev,

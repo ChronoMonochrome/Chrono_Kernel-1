@@ -368,8 +368,6 @@ static int sony_acx424akp_resume(struct mcde_display_device *ddev)
 	if (ret < 0)
 		dev_warn(&ddev->dev, "%s:Failed to resume display\n"
 			, __func__);
-	ddev->set_synchronized_update(ddev,
-					ddev->get_synchronized_update(ddev));
 	return ret;
 }
 

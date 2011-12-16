@@ -283,7 +283,6 @@ struct chnl_regs {
 	u16 (*map_b)(u8);
 	bool palette_enable;
 	bool bcd;
-	bool synchronized_update;
 	bool roten;
 	u8   rotdir;
 	u32  rotbuf1;
@@ -365,7 +364,6 @@ struct mcde_chnl_state {
 	u16 (*map_g)(u8);
 	u16 (*map_b)(u8);
 	bool palette_enable;
-	bool synchronized_update;
 	struct mcde_video_mode vmode;
 	enum mcde_display_rotation rotation;
 	u32 rotbuf1;
@@ -2725,7 +2723,6 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	/* REVIEW: 180 deg? */
 
 	chnl->regs.bpp = portfmt2bpp(chnl->port.pixel_format);
-	chnl->regs.synchronized_update = chnl->synchronized_update;
 	chnl->regs.roten = roten;
 	chnl->regs.rotdir = rotdir;
 	chnl->regs.rotbuf1 = chnl->rotbuf1;
@@ -2808,15 +2805,17 @@ static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
 	/* Commit settings to registers */
 	setup_channel(chnl);
 
-	if (chnl->regs.synchronized_update &&
-				chnl->power_mode == MCDE_DISPLAY_PM_ON) {
-		if (chnl->port.type == MCDE_PORTTYPE_DSI &&
-					chnl->port.sync_src == MCDE_SYNCSRC_BTA)
-			dsi_te_request(chnl);
-	} else {
-		do_softwaretrig(chnl);
-		dev_vdbg(&mcde_dev->dev, "Channel update (no sync), chnl=%d\n",
-			chnl->id);
+	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+		if (chnl->port.sync_src == MCDE_SYNCSRC_OFF) {
+			do_softwaretrig(chnl);
+			dev_vdbg(&mcde_dev->dev, "Channel update (no sync), "
+							"chnl=%d\n", chnl->id);
+		} else if (chnl->port.sync_src == MCDE_SYNCSRC_BTA) {
+			if (chnl->power_mode == MCDE_DISPLAY_PM_ON)
+				dsi_te_request(chnl);
+			else
+				do_softwaretrig(chnl);
+		}
 	}
 }
 
@@ -3015,20 +3014,6 @@ int mcde_chnl_set_rotation(struct mcde_chnl_state *chnl,
 	chnl->rotation = rotation;
 	chnl->rotbuf1  = rotbuf1;
 	chnl->rotbuf2  = rotbuf2;
-
-	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
-
-	return 0;
-}
-
-int mcde_chnl_enable_synchronized_update(struct mcde_chnl_state *chnl,
-								bool enable)
-{
-	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
-	if (!chnl->reserved)
-		return -EINVAL;
-
-	chnl->synchronized_update = enable;
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 
