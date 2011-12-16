@@ -70,8 +70,15 @@ static int power_off(struct mcde_display_device *ddev)
 static int display_on(struct mcde_display_device *ddev)
 {
 	int ret;
+	u8 val = 0;
 
 	dev_dbg(&ddev->dev, "Display on s6d16d0\n");
+
+	ret = mcde_dsi_dcs_write(ddev->chnl_state,
+						DCS_CMD_SET_TEAR_ON, &val, 1);
+	if (ret)
+		dev_warn(&ddev->dev,
+			"%s:Failed to enable synchronized update\n", __func__);
 
 	ret = mcde_dsi_dcs_write(ddev->chnl_state, DCS_CMD_EXIT_SLEEP_MODE,
 								NULL, 0);
