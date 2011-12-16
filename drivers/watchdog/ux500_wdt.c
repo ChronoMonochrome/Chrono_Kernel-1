@@ -42,7 +42,7 @@ static bool wdt_en;
 static bool wdt_auto_off = false;
 static bool safe_close;
 
-static int u8500_wdt_open(struct inode *inode, struct file *file)
+static int ux500_wdt_open(struct inode *inode, struct file *file)
 {
 	if (test_and_set_bit(WDT_FLAGS_OPEN, &wdt_flags))
 		return -EBUSY;
@@ -56,7 +56,7 @@ static int u8500_wdt_open(struct inode *inode, struct file *file)
 	return nonseekable_open(inode, file);
 }
 
-static int u8500_wdt_release(struct inode *inode, struct file *file)
+static int ux500_wdt_release(struct inode *inode, struct file *file)
 {
 	if (safe_close) {
 		prcmu_disable_a9wdog(wdog_id);
@@ -73,7 +73,7 @@ static int u8500_wdt_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static ssize_t u8500_wdt_write(struct file *file, const char __user *data,
+static ssize_t ux500_wdt_write(struct file *file, const char __user *data,
 			       size_t len, loff_t *ppos)
 {
 	if (!len)
@@ -99,7 +99,7 @@ static ssize_t u8500_wdt_write(struct file *file, const char __user *data,
 	return len;
 }
 
-static long u8500_wdt_ioctl(struct file *file, unsigned int cmd,
+static long ux500_wdt_ioctl(struct file *file, unsigned int cmd,
 			   unsigned long arg)
 {
 	void __user *argp = (void __user *)arg;
@@ -111,7 +111,7 @@ static long u8500_wdt_ioctl(struct file *file, unsigned int cmd,
 				WDIOF_KEEPALIVEPING |
 				WDIOF_MAGICCLOSE,
 		.firmware_version =     1,
-		.identity	= "U8500 WDT",
+		.identity	= "Ux500 WDT",
 	};
 
 	switch (cmd) {
@@ -171,23 +171,22 @@ static long u8500_wdt_ioctl(struct file *file, unsigned int cmd,
 	return 0;
 }
 
-static const struct file_operations u8500_wdt_fops = {
+static const struct file_operations ux500_wdt_fops = {
 	.owner		= THIS_MODULE,
 	.llseek		= no_llseek,
-	.write		= u8500_wdt_write,
-	.unlocked_ioctl = u8500_wdt_ioctl,
-	.open		= u8500_wdt_open,
-	.release	= u8500_wdt_release,
+	.write		= ux500_wdt_write,
+	.unlocked_ioctl = ux500_wdt_ioctl,
+	.open		= ux500_wdt_open,
+	.release	= ux500_wdt_release,
 };
 
-static struct miscdevice u8500_wdt_miscdev = {
+static struct miscdevice ux500_wdt_miscdev = {
 	.minor = WATCHDOG_MINOR,
 	.name = "watchdog",
-	.fops = &u8500_wdt_fops,
+	.fops = &ux500_wdt_fops,
 };
 
-#ifdef CONFIG_U8500_WATCHDOG_DEBUG
-
+#ifdef CONFIG_UX500_WATCHDOG_DEBUG
 enum wdog_dbg {
 	WDOG_DBG_CONFIG,
 	WDOG_DBG_LOAD,
@@ -215,7 +214,7 @@ static ssize_t wdog_dbg_write(struct file *file,
 						 wdt_auto_off);
 		}
 		else {
-			pr_err("u8500_wdt:dbg: unknown value\n");
+			pr_err("ux500_wdt:dbg: unknown value\n");
 		}
 		break;
 	case WDOG_DBG_LOAD:
@@ -229,7 +228,7 @@ static ssize_t wdog_dbg_write(struct file *file,
 			prcmu_enable_a9wdog(wdog_id);
 		}
 		else {
-			pr_err("u8500_wdt:dbg: unknown value\n");
+			pr_err("ux500_wdt:dbg: unknown value\n");
 		}
 		break;
 	case WDOG_DBG_KICK:
@@ -334,7 +333,7 @@ static int __init wdog_dbg_init(void)
 
 	return 0;
 fail:
-	pr_err("u8500:wdog: Failed to initialize wdog dbg\n");
+	pr_err("ux500:wdog: Failed to initialize wdog dbg\n");
 	debugfs_remove_recursive(wdog_dir);
 
 	return -EFAULT;
@@ -347,7 +346,7 @@ static inline int __init wdog_dbg_init(void)
 }
 #endif
 
-static int __init u8500_wdt_probe(struct platform_device *pdev)
+static int __init ux500_wdt_probe(struct platform_device *pdev)
 {
 	int ret;
 
@@ -356,7 +355,7 @@ static int __init u8500_wdt_probe(struct platform_device *pdev)
 	/* convert to ms */
 	prcmu_load_a9wdog(wdog_id, timeout * 1000);
 
-	ret = misc_register(&u8500_wdt_miscdev);
+	ret = misc_register(&ux500_wdt_miscdev);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed to register misc\n");
 		return ret;
@@ -370,19 +369,19 @@ static int __init u8500_wdt_probe(struct platform_device *pdev)
 
 	return 0;
 fail:
-	misc_deregister(&u8500_wdt_miscdev);
+	misc_deregister(&ux500_wdt_miscdev);
 	return ret;
 }
 
-static int __exit u8500_wdt_remove(struct platform_device *dev)
+static int __exit ux500_wdt_remove(struct platform_device *dev)
 {
 	prcmu_disable_a9wdog(wdog_id);
 	wdt_en = false;
-	misc_deregister(&u8500_wdt_miscdev);
+	misc_deregister(&ux500_wdt_miscdev);
 	return 0;
 }
 #ifdef CONFIG_PM
-static int u8500_wdt_suspend(struct platform_device *pdev,
+static int ux500_wdt_suspend(struct platform_device *pdev,
 			     pm_message_t state)
 {
 	if (wdt_en && !wdt_auto_off) {
@@ -395,7 +394,7 @@ static int u8500_wdt_suspend(struct platform_device *pdev,
 	return 0;
 }
 
-static int u8500_wdt_resume(struct platform_device *pdev)
+static int ux500_wdt_resume(struct platform_device *pdev)
 {
 	if (wdt_en && !wdt_auto_off) {
 		prcmu_disable_a9wdog(wdog_id);
@@ -408,26 +407,26 @@ static int u8500_wdt_resume(struct platform_device *pdev)
 }
 
 #else
-#define u8500_wdt_suspend NULL
-#define u8500_wdt_resume NULL
+#define ux500_wdt_suspend NULL
+#define ux500_wdt_resume NULL
 #endif
-static struct platform_driver u8500_wdt_driver = {
-	.remove		= __exit_p(u8500_wdt_remove),
+static struct platform_driver ux500_wdt_driver = {
+	.remove		= __exit_p(ux500_wdt_remove),
 	.driver		= {
 		.owner	= THIS_MODULE,
-		.name	= "u8500_wdt",
+		.name	= "ux500_wdt",
 	},
-	.suspend	= u8500_wdt_suspend,
-	.resume		= u8500_wdt_resume,
+	.suspend	= ux500_wdt_suspend,
+	.resume		= ux500_wdt_resume,
 };
 
-static int __init u8500_wdt_init(void)
+static int __init ux500_wdt_init(void)
 {
-	return platform_driver_probe(&u8500_wdt_driver, u8500_wdt_probe);
+	return platform_driver_probe(&ux500_wdt_driver, ux500_wdt_probe);
 }
-module_init(u8500_wdt_init);
+module_init(ux500_wdt_init);
 
 MODULE_AUTHOR("Jonas Aaberg <jonas.aberg@stericsson.com>");
-MODULE_DESCRIPTION("U8500 Watchdog Driver");
+MODULE_DESCRIPTION("Ux500 Watchdog Driver");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
