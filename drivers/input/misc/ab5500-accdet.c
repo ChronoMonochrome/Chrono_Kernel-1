@@ -187,6 +187,14 @@ static int ab5500_meas_voltage_stable(struct abx500_ad *dd)
 }
 
 /*
+ * not implemented
+ */
+static int ab5500_meas_alt_voltage_stable(struct abx500_ad *dd)
+{
+	return -1;
+}
+
+/*
  * configures HW so that it is possible to make decision whether
  * accessory is connected or not.
  */
@@ -262,6 +270,7 @@ struct abx500_ad ab5500_accessory_det_callbacks = {
 	.config_accdetect1_hw		= ab5500_config_accdetect1_hw,
 	.detect_plugged_in		= ab5500_detect_plugged_in,
 	.meas_voltage_stable		= ab5500_meas_voltage_stable,
+	.meas_alt_voltage_stable	= ab5500_meas_alt_voltage_stable,
 	.config_hw_test_basic_carkit	= ab5500_config_hw_test_basic_carkit,
 	.turn_off_accdet_comparator	= ab5500_turn_off_accdet_comparator,
 	.turn_on_accdet_comparator	= ab5500_turn_on_accdet_comparator,

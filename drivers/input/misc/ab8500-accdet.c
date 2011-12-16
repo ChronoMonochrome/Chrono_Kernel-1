@@ -21,6 +21,9 @@
 #include <linux/gpio.h>
 #include <linux/err.h>
 #include <mach/abx500-accdet.h>
+#ifdef CONFIG_SND_SOC_UX500_AB8500
+#include <sound/ux500_ab8500_ext.h>
+#endif
 
 #define MAX_DET_COUNT			10
 #define MAX_VOLT_DIFF			30
@@ -228,8 +231,38 @@ static int ab8500_detect_plugged_in(struct abx500_ad *dd)
 		return value & BIT_ITSOURCE5_ACCDET1 ? 0 : 1;
 }
 
+#ifdef CONFIG_SND_SOC_UX500_AB8500
+
 /*
- * mic_line_voltage_stable - measures a relative stable voltage from spec. input
+ * meas_voltage_stable - measures relative stable voltage from spec. input
+ */
+static int ab8500_meas_voltage_stable(struct abx500_ad *dd)
+{
+	int ret, mv;
+
+	ret = ux500_ab8500_audio_gpadc_measure((struct ab8500_gpadc *)dd->gpadc,
+			ACC_DETECT2, false, &mv);
+
+	return (ret < 0) ? ret : mv;
+}
+
+/*
+ * meas_alt_voltage_stable - measures relative stable voltage from spec. input
+ */
+static int ab8500_meas_alt_voltage_stable(struct abx500_ad *dd)
+{
+	int ret, mv;
+
+	ret = ux500_ab8500_audio_gpadc_measure((struct ab8500_gpadc *)dd->gpadc,
+			ACC_DETECT2, true, &mv);
+
+	return (ret < 0) ? ret : mv;
+}
+
+#else
+
+/*
+ * meas_voltage_stable - measures relative stable voltage from spec. input
  */
 static int ab8500_meas_voltage_stable(struct abx500_ad *dd)
 {
@@ -249,6 +282,16 @@ static int ab8500_meas_voltage_stable(struct abx500_ad *dd)
 
 	return v1;
 }
+
+/*
+ * not implemented for non soc setups
+ */
+static int ab8500_meas_alt_voltage_stable(struct abx500_ad *dd)
+{
+	return -1;
+}
+
+#endif
 
 /*
  * configures HW so that it is possible to make decision whether
@@ -392,6 +435,7 @@ struct abx500_ad ab8500_accessory_det_callbacks = {
 	.config_accdetect1_hw		= ab8500_config_accdetect1_hw,
 	.detect_plugged_in		= ab8500_detect_plugged_in,
 	.meas_voltage_stable		= ab8500_meas_voltage_stable,
+	.meas_alt_voltage_stable	= ab8500_meas_alt_voltage_stable,
 	.config_hw_test_basic_carkit	= ab8500_config_hw_test_basic_carkit,
 	.turn_off_accdet_comparator	= ab8500_turn_off_accdet_comparator,
 	.turn_on_accdet_comparator	= ab8500_turn_on_accdet_comparator,

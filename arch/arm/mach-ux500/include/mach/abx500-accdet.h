@@ -119,6 +119,7 @@ struct abx500_accdet_platform_data {
  * detect the actual type. In this mode, possible button events are reported.
  * @JACK_TYPE_HEADPHONE Headphone type of accessory (spkrs only) connected
  * @JACK_TYPE_HEADSET Headset type of accessory (mic+spkrs) connected
+ * @JACK_TYPE_UNSUPPORTED_HEADSET Unsupported headset of type accessory connected
  * @JACK_TYPE_CARKIT Carkit type of accessory connected
  * @JACK_TYPE_OPENCABLE Open cable connected
  * @JACK_TYPE_CVIDEO CVideo type of accessory connected.
@@ -129,6 +130,7 @@ enum accessory_jack_type {
 	JACK_TYPE_CONNECTED,
 	JACK_TYPE_HEADPHONE,
 	JACK_TYPE_HEADSET,
+	JACK_TYPE_UNSUPPORTED_HEADSET,
 	JACK_TYPE_CARKIT,
 	JACK_TYPE_OPENCABLE,
 	JACK_TYPE_CVIDEO
@@ -225,6 +227,8 @@ struct accessory_regu_descriptor {
  * making the decision or can cached voltage be used instead.
  * @minvol minimum voltage (mV) for decision
  * @maxvol maximum voltage (mV) for decision
+ * @alt_minvol minimum alternative voltage (mV) for decision
+ * @alt_maxvol maximum alternative voltage (mV) for decision
  */
 struct accessory_detect_task {
 	const char *typename;
@@ -233,6 +237,8 @@ struct accessory_detect_task {
 	int meas_mv;
 	int minvol;
 	int maxvol;
+	int alt_minvol;
+	int alt_maxvol;
 };
 
 /**
@@ -271,6 +277,7 @@ struct accessory_detect_task {
  * @config_accdetect1_hw: Callback for configuring accdet1 comparator.
  * @detect_plugged_in: Callback to detect type of accessory connected.
  * @meas_voltage_stable: Callback to read present accdet voltage.
+ * @meas_alt_voltage_stable: Callback to read present alt accdet voltage.
  * @config_hw_test_basic_carkit: Callback to configure hw for carkit
  *	detect.
  * @turn_of_accdet_comparator: Call back to turn off comparators.
@@ -319,6 +326,7 @@ struct abx500_ad {
 	void (*config_accdetect1_hw)(struct abx500_ad *, int);
 	int (*detect_plugged_in)(struct abx500_ad *);
 	int (*meas_voltage_stable)(struct abx500_ad *);
+	int (*meas_alt_voltage_stable)(struct abx500_ad *);
 	void (*config_hw_test_basic_carkit)(struct abx500_ad *, int);
 	void (*turn_off_accdet_comparator)(struct platform_device *pdev);
 	void (*turn_on_accdet_comparator)(struct platform_device *pdev);
