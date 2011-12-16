@@ -63,6 +63,15 @@
 
 
 #ifdef __KERNEL__
+/**
+ * struct lps001wp_prs_platform_data - platform datastructure for lps001wp_prs
+ * @poll_interval: maximum polling interval
+ * @min_interval:  minimum polling interval
+ * @init: pointer to init function
+ * @exit: pointer to deinitialisation function
+ * @power_on: pointer to device enable function
+ * @power_off: pointer to device disable function
+ */
 struct lps001wp_prs_platform_data {
 
 	int poll_interval;
