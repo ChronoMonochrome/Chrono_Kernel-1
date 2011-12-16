@@ -279,29 +279,9 @@ struct platform_device u8500_b2r2_device = {
  * WATCHDOG
  */
 
-static struct resource u8500_wdt_resources[] = {
-	[0] = {
-		.start  = U8500_TWD_BASE,
-		.end    = U8500_TWD_BASE+0x37,
-		.flags  = IORESOURCE_MEM,
-	},
-	[1] = {
-		.start  = IRQ_LOCALWDOG,
-		.end  = IRQ_LOCALWDOG,
-		.flags  = IORESOURCE_IRQ,
-	}
-};
-
 struct platform_device u8500_wdt_device = {
-	.name           = "mpcore_wdt",
+	.name           = "u8500_wdt",
 	.id             = -1,
-	.resource       = u8500_wdt_resources,
-	.num_resources  = ARRAY_SIZE(u8500_wdt_resources),
-};
-
-struct platform_device u8500_prcmu_wdt_device = {
-	.name		= "ux500_wdt",
-	.id		= -1,
 };
 
 #ifdef CONFIG_HSI
