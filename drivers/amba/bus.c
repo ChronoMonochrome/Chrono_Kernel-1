@@ -690,9 +690,9 @@ int amba_device_register(struct amba_device *dev, struct resource *parent)
 	if (ret)
 		goto err_release;
 
-	if (dev->irq[0] != NO_IRQ)
+	if (dev->irq[0] && dev->irq[0] != NO_IRQ)
 		ret = device_create_file(&dev->dev, &dev_attr_irq0);
-	if (ret == 0 && dev->irq[1] != NO_IRQ)
+	if (ret == 0 && dev->irq[1] && dev->irq[1] != NO_IRQ)
 		ret = device_create_file(&dev->dev, &dev_attr_irq1);
 	if (ret == 0)
 		return ret;
