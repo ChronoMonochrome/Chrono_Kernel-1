@@ -49,6 +49,9 @@ MODULE_PARM_DESC(dspLoadHighThreshold, "Threshold above which 100 APE OPP is req
 static unsigned int dspLoadLowThreshold = 35;
 module_param(dspLoadLowThreshold, uint, S_IWUSR|S_IRUGO);
 MODULE_PARM_DESC(dspLoadLowThreshold, "Threshold below which 100 APE OPP request is removed");
+static bool cm_use_ftrace;
+module_param(cm_use_ftrace, bool, S_IWUSR|S_IRUGO);
+MODULE_PARM_DESC(cm_use_ftrace, "Whether all CM debug traces goes through ftrace or normal kernel output");
 
 /** \defgroup ENVIRONMENT_INITIALIZATION Environment initialization
  * Includes functions that initialize the Linux OSAL itself plus functions that
@@ -680,7 +683,11 @@ void OSAL_Write64(t_nmf_trace_channel channel, t_uint8 isTimestamped, t_uint64 v
  */
 void OSAL_Log(const char *format, int param1, int param2, int param3, int param4, int param5, int param6)
 {
-	printk(format, param1, param2, param3, param4, param5, param6);
+	if (cm_use_ftrace)
+		trace_printk(format,
+			     param1, param2, param3, param4, param5, param6);
+	else
+		printk(format, param1, param2, param3, param4, param5, param6);
 }
 
 /**
