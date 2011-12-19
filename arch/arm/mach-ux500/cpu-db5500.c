@@ -185,7 +185,6 @@ bool cpu_is_u5500v21()
 
 static void db5500_rev_init(void)
 {
-	const char *version = "UNKNOWN";
 	unsigned int asicid;
 
 	/* As in devicemaps_init() */
@@ -194,13 +193,6 @@ static void db5500_rev_init(void)
 
 	asicid = readl_relaxed(__io_address(U5500_ASIC_ID_ADDRESS));
 	db5500_revision = asicid & 0xff;
-
-	if (cpu_is_u5500v1())
-		version = "1.0";
-	else if (cpu_is_u5500v2())
-		version = "2.0";
-
-	pr_info("DB5500 v%s [%#010x]\n", version, asicid);
 }
 
 void __init u5500_map_io(void)
