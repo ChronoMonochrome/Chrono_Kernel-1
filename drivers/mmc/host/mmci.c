@@ -1515,7 +1515,8 @@ static int __devinit mmci_probe(struct amba_device *dev,
 	}
 
 	if ((host->plat->status || host->gpio_cd != -ENOSYS)
-	    && host->gpio_cd_irq < 0)
+		&& host->gpio_cd_irq < 0
+		&& !(mmc->caps & MMC_CAP_NONREMOVABLE))
 		mmc->caps |= MMC_CAP_NEEDS_POLL;
 
 	ret = request_irq(dev->irq[0], mmci_irq, IRQF_SHARED, DRIVER_NAME " (cmd)", host);
