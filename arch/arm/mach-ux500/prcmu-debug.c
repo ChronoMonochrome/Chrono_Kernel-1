@@ -551,7 +551,13 @@ static __init int prcmu_debug_init(void)
 	ape_sh.start = ktime_get();
 	ddr_sh.start = ktime_get();
 	arm_sh.start = ktime_get();
+	return 0;
+}
+arch_initcall(prcmu_debug_init);
+
+static __init int prcmu_debug_debugfs_init(void)
+{
 	setup_debugfs();
 	return 0;
 }
-late_initcall(prcmu_debug_init);
+late_initcall(prcmu_debug_debugfs_init);
