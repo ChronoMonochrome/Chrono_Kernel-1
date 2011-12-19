@@ -83,7 +83,6 @@ struct usecase_config {
 	char *name;
 	/* Minimum required ARM OPP. if no requirement set 25 */
 	unsigned int min_arm_opp;
-	/* Only use max_arm_opp if you know what you're doing */
 	unsigned int max_arm_opp;
 	unsigned long cpuidle_multiplier;
 	bool second_cpu_online;
@@ -317,6 +316,8 @@ static int set_cpufreq(int cpu, int min_freq, int max_freq)
 	int ret;
 	struct cpufreq_policy policy;
 
+	pr_debug("set cpu freq: min %d max: %d\n", min_freq, max_freq);
+
 	ret = cpufreq_get_policy(&policy, cpu);
 	if (ret < 0) {
 		pr_err("usecase-gov: failed to read policy\n");
@@ -344,9 +345,8 @@ static int set_cpufreq(int cpu, int min_freq, int max_freq)
 static void set_cpu_config(enum ux500_uc new_uc)
 {
 	bool update = false;
-	int ret;
 	int cpu;
-	static struct cpufreq_policy  original_cpufreq_policy;
+	int max_freq, min_freq;
 
 	if (new_uc != current_uc)
 		update = true;
@@ -367,35 +367,21 @@ static void set_cpu_config(enum ux500_uc new_uc)
 		 (num_online_cpus() < 2))
 		cpu_up(1);
 
-	if (usecase_conf[new_uc].max_arm_opp) {
-		int max_freq;
-
+	if(usecase_conf[new_uc].max_arm_opp)
 		max_freq = dbx500_cpufreq_percent2freq(usecase_conf[new_uc].max_arm_opp);
+	else
+		/* Maximum OPP is 125% */
+		max_freq = dbx500_cpufreq_percent2freq(125);
 
-		ret = cpufreq_get_policy(&original_cpufreq_policy, 0);
-		if (ret < 0)
-			pr_err("usecase-gov: fail to get cpufreq policy\n");
+	min_freq = dbx500_cpufreq_percent2freq(usecase_conf[new_uc].min_arm_opp);
 
-		for_each_online_cpu(cpu) {
-			set_cpufreq(cpu,
-				    original_cpufreq_policy.min,
-				    max_freq);
-		}
+	for_each_online_cpu(cpu) {
+		set_cpufreq(cpu,
+			    min_freq,
+			    max_freq);
 	}
 
-	if (new_uc == UX500_UC_NORMAL &&
-	    usecase_conf[current_uc].max_arm_opp) {
-		/*
-		 * Reset cpufreq limits to what is was before. Yes, overwrite
-		 *  any changes done outside usecase governors control.
-		 */
-		for_each_online_cpu(cpu) {
-			set_cpufreq(cpu,
-				    original_cpufreq_policy.min,
-				    original_cpufreq_policy.max);
-		}
-	}
-
+	/* Kinda doing the job twice, but this is needed for reference keeping */
 	prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
 			    "usecase", usecase_conf[new_uc].min_arm_opp);
 
