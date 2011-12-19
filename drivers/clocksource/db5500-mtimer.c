@@ -9,6 +9,7 @@
 #include <linux/sched.h>
 #include <linux/clockchips.h>
 #include <linux/clksrc-db5500-mtimer.h>
+#include <linux/boottime.h>
 
 #include <asm/sched_clock.h>
 
@@ -38,6 +39,19 @@ static void notrace db5500_mtimer_update_sched_clock(void)
 }
 #endif
 
+#ifdef CONFIG_BOOTTIME
+static unsigned long __init boottime_get_time(void)
+{
+	return sched_clock();
+}
+
+static struct boottime_timer __initdata boottime_timer = {
+	.init     = NULL,
+	.get_time = boottime_get_time,
+	.finalize = NULL,
+};
+#endif
+
 void __init db5500_mtimer_init(void __iomem *base)
 {
 	db5500_mtimer_base = base;
@@ -49,4 +63,5 @@ void __init db5500_mtimer_init(void __iomem *base)
 	init_sched_clock(&cd, db5500_mtimer_update_sched_clock,
 			 32, 32768);
 #endif
+	boottime_activate(&boottime_timer);
 }
