@@ -524,7 +524,6 @@ void mbox_state_reset(void)
 	atomic_set(&mb->mod_reset, 1);
 
 	/* Disable IRQ */
-	disable_irq_nosync(IRQ_DB5500_PRCMU_APE_REQ);
 	disable_irq_nosync(IRQ_DB5500_PRCMU_AC_WAKE_ACK);
 
 	/* Cancel sleep_req timers */
@@ -541,7 +540,6 @@ void mbox_state_reset(void)
 	atomic_set(&mb->ape_state, 0);
 
 	/* Enable irq */
-	enable_irq(IRQ_DB5500_PRCMU_APE_REQ);
 	enable_irq(IRQ_DB5500_PRCMU_AC_WAKE_ACK);
 }
 
@@ -709,12 +707,6 @@ static irqreturn_t mbox_prcmu_mod_req_ack_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-static irqreturn_t mbox_prcmu_ape_req_handler(int irq, void *data)
-{
-	prcmu_ape_ack();
-	return IRQ_HANDLED;
-}
-
 int __init mbox_probe(struct platform_device *pdev)
 {
 	struct mbox *mbox;
@@ -841,13 +833,6 @@ static int __init mbox_init(void)
 	atomic_set(&mb_di->mod_req, 0);
 	atomic_set(&mb_di->mod_reset, 0);
 
-	err = request_irq(IRQ_DB5500_PRCMU_APE_REQ, mbox_prcmu_ape_req_handler,
-			IRQF_NO_SUSPEND, "ape_req", NULL);
-	if (err < 0) {
-		printk(KERN_ERR "mbox:Failed alloc IRQ_DB5500_PRCMU_APE_REQ.\n");
-		goto free_wq1;
-	}
-
 	err = request_irq(IRQ_DB5500_PRCMU_AC_WAKE_ACK,
 			mbox_prcmu_mod_req_ack_handler,
 			IRQF_NO_SUSPEND, "mod_req_ack", NULL);
@@ -860,8 +845,6 @@ static int __init mbox_init(void)
 	mb = mb_di;
 	return platform_driver_probe(&mbox_driver, mbox_probe);
 free_irq:
-	free_irq(IRQ_DB5500_PRCMU_APE_REQ, NULL);
-free_wq1:
 	destroy_workqueue(mb_di->mbox_modem_rel_wq);
 free_mem:
 	kfree(mb_di);
@@ -872,7 +855,6 @@ module_init(mbox_init);
 
 void __exit mbox_exit(void)
 {
-	free_irq(IRQ_DB5500_PRCMU_APE_REQ, NULL);
 	free_irq(IRQ_DB5500_PRCMU_AC_WAKE_ACK, NULL);
 	destroy_workqueue(mb->mbox_modem_rel_wq);
 	platform_driver_unregister(&mbox_driver);
