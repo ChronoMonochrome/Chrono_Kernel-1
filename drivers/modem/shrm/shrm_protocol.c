@@ -448,16 +448,22 @@ void shm_ac_read_notif_1_tasklet(unsigned long tasklet_data)
 
 void shm_ca_sleep_req_work(struct kthread_work *work)
 {
+	u8 bt_state;
+	unsigned long flags;
+
 	dev_dbg(shm_dev->dev, "%s:IRQ_PRCMU_CA_SLEEP\n", __func__);
 
-	shrm_common_rx_state = SHRM_IDLE;
-	shrm_audio_rx_state =  SHRM_IDLE;
+	spin_lock_irqsave(&boot_lock, flags);
+	bt_state = boot_state;
+	spin_unlock_irqrestore(&boot_lock, flags);
 
-	if (check_modem_in_reset()) {
+	if (bt_state != BOOT_DONE) {
 		dev_err(shm_dev->dev, "%s:Modem state reset or unknown\n",
 				__func__);
 		return;
 	}
+	shrm_common_rx_state = SHRM_IDLE;
+	shrm_audio_rx_state =  SHRM_IDLE;
 
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 		shm_dev->intr_base + GOP_SET_REGISTER_BASE);
@@ -504,6 +510,10 @@ static int shrm_modem_reset_sequence(void)
 	unsigned long flags;
 
 	hrtimer_cancel(&timer);
+	tasklet_disable_nosync(&shm_ac_read_0_tasklet);
+	tasklet_disable_nosync(&shm_ac_read_1_tasklet);
+	tasklet_disable_nosync(&shm_ca_0_tasklet);
+	tasklet_disable_nosync(&shm_ca_1_tasklet);
 
 	/*
 	 * keep the count to 0 so that we can bring down the line
@@ -536,6 +546,10 @@ static int shrm_modem_reset_sequence(void)
 	boot_state = BOOT_INIT;
 	spin_unlock_irqrestore(&boot_lock, flags);
 
+	tasklet_enable(&shm_ac_read_0_tasklet);
+	tasklet_enable(&shm_ac_read_1_tasklet);
+	tasklet_enable(&shm_ca_0_tasklet);
+	tasklet_enable(&shm_ca_1_tasklet);
 	/* re-enable irqs */
 	enable_irq(shm_dev->ac_read_notif_0_irq);
 	enable_irq(shm_dev->ac_read_notif_1_irq);
