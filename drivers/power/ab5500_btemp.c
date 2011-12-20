@@ -38,9 +38,6 @@
 #define RESET				0x00
 #define ADOUT_10K_PULL_UP		0x07
 
-/* Enable battery temp monitoring manual mode */
-#define BTEMP_MANUAL_MONITORING
-
 #define to_ab5500_btemp_device_info(x) container_of((x), \
 	struct ab5500_btemp, btemp_psy);
 
@@ -335,7 +332,7 @@ static int ab5500_btemp_measure_temp(struct ab5500_btemp *di)
 
 	id = di->bat->batt_id;
 	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL &&
-			id != BATTERY_UNKNOWN) {
+			id != BATTERY_UNKNOWN && !di->bat->auto_trig) {
 		rbat = ab5500_btemp_get_batctrl_res(di);
 		if (rbat < 0) {
 			dev_err(di->dev, "%s get batctrl res failed\n",
@@ -456,25 +453,26 @@ static void ab5500_btemp_periodic_work(struct work_struct *work)
 		power_supply_changed(&di->btemp_psy);
 	}
 	di->bat->temp_now = di->bat_temp;
-#if defined(BTEMP_MANUAL_MONITORING)
-	/* Check for temperature limits */
-	ab5500_btemp_bat_temp_trig(0);
 
-	/* Schedule a new measurement */
-	if (di->events.usb_conn)
+	if (!di->bat->auto_trig) {
+		/* Check for temperature limits */
+		ab5500_btemp_bat_temp_trig(0);
+
+		/* Schedule a new measurement */
+		if (di->events.usb_conn)
+			queue_delayed_work(di->btemp_wq,
+				&di->btemp_periodic_work,
+				round_jiffies(di->bat->interval_charging * HZ));
+		else
+			queue_delayed_work(di->btemp_wq,
+				&di->btemp_periodic_work,
+				round_jiffies(di->bat->interval_not_charging * HZ));
+	} else {
+		/* Schedule a new measurement */
 		queue_delayed_work(di->btemp_wq,
 			&di->btemp_periodic_work,
 			round_jiffies(di->bat->interval_charging * HZ));
-	else
-		queue_delayed_work(di->btemp_wq,
-			&di->btemp_periodic_work,
-			round_jiffies(di->bat->interval_not_charging * HZ));
-#else
-	/* Schedule a new measurement */
-	queue_delayed_work(di->btemp_wq,
-		&di->btemp_periodic_work,
-		round_jiffies(di->bat->interval_charging * HZ));
-#endif
+	}
 }
 
 /**
@@ -623,18 +621,15 @@ static int ab5500_btemp_get_ext_psy_data(struct device *dev, void *data)
 				/* USB disconnected */
 				if (!ret.intval && di->events.usb_conn) {
 					di->events.usb_conn = false;
-#if !defined(BTEMP_MANUAL_MONITORING)
+					if (di->bat->auto_trig)
 						ab5500_btemp_periodic(di,
 							false);
-#endif
 				}
 				/* USB connected */
 				else if (ret.intval && !di->events.usb_conn) {
 					di->events.usb_conn = true;
-
-#if !defined(BTEMP_MANUAL_MONITORING)
+					if (di->bat->auto_trig)
 						ab5500_btemp_periodic(di, true);
-#endif
 				}
 				break;
 			default:
@@ -686,7 +681,6 @@ static int ab5500_btemp_bat_temp_trig(int mux)
 	return 0;;
 }
 
-#if !defined(BTEMP_MANUAL_MONITORING)
 static int ab5500_btemp_auto_temp(struct ab5500_btemp *di)
 {
 	struct adc_auto_input *auto_ip;
@@ -710,7 +704,6 @@ static int ab5500_btemp_auto_temp(struct ab5500_btemp *di)
 			"failed to set auto trigger for battery temp\n");
 	return ret;
 }
-#endif
 
 #if defined(CONFIG_PM)
 static int ab5500_btemp_resume(struct platform_device *pdev)
@@ -858,18 +851,19 @@ static int __devinit ab5500_btemp_probe(struct platform_device *pdev)
 		dev_dbg(di->dev, "Requested %s IRQ %d: %d\n",
 			ab5500_btemp_irq[i].name, irq, ret);
 	}
-#if defined(BTEMP_MANUAL_MONITORING)
-	/* Schedule monitoring work only if battery type is known */
-	if (di->bat->batt_id != BATTERY_UNKNOWN)
-		queue_delayed_work(di->btemp_wq, &di->btemp_periodic_work, 0);
-#else
-	ret = ab5500_btemp_auto_temp(di);
-	if (ret) {
-		dev_err(di->dev,
-			"failed to register auto trigger for battery temp\n");
-		goto free_irq;
+
+	if (!di->bat->auto_trig) {
+		/* Schedule monitoring work only if battery type is known */
+		if (di->bat->batt_id != BATTERY_UNKNOWN)
+			queue_delayed_work(di->btemp_wq, &di->btemp_periodic_work, 0);
+	} else {
+		ret = ab5500_btemp_auto_temp(di);
+		if (ret) {
+			dev_err(di->dev,
+				"failed to register auto trigger for battery temp\n");
+			goto free_irq;
+		}
 	}
-#endif
 
 	platform_set_drvdata(pdev, di);
 	list_add_tail(&di->node, &ab5500_btemp_list);

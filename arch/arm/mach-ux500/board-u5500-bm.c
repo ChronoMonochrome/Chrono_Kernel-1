@@ -473,6 +473,7 @@ struct abx500_bm_data ab5500_bm_data = {
 #endif
 	.chg_unknown_bat	= false,
 	.enable_overshoot	= false,
+	.auto_trig		= false,
 	.fg_res			= 200,
 	.cap_levels		= &cap_levels,
 	.bat_type		= bat_type,
