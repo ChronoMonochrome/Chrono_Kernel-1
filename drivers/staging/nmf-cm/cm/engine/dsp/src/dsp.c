@@ -513,6 +513,8 @@ PUBLIC void cm_DSP_GetDspAddress(t_memory_handle memHandle, t_uint32 *pDspAddres
 PUBLIC t_cm_error cm_DSP_GetDspBaseAddress(t_nmf_core_id coreId, t_dsp_memory_type_id memType, t_cm_system_address *pAddr)
 {
     cm_migration_check_state(coreId, STATE_NORMAL);
+    if (mpcDesc[coreId].allocator[memType] == NULL)
+	    return CM_INVALID_PARAMETER;
     *pAddr = mpcDesc[coreId].allocator[memType]->baseAddress;
     return CM_OK;
 }

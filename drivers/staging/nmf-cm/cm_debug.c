@@ -306,9 +306,10 @@ static ssize_t domain_read(struct file *file, char __user *userbuf,
 				"address     Size     Free     Used\n"
 				"---------------------------------------"
 				"-----------------------------------\n");
-			if (domain->domain.esramCode.size) {
-				cm_DSP_GetDspBaseAddress(ARM_CORE_ID,
-							 ESRAM_CODE, &addr);
+			if (domain->domain.esramCode.size &&
+			    cm_DSP_GetDspBaseAddress(ARM_CORE_ID,
+						     ESRAM_CODE,
+						     &addr) == CM_OK) {
 				cm_DSP_GetInternalMemoriesInfo(id, ESRAM_CODE,
 							       &dOffset,
 							       &dSize);
@@ -330,9 +331,10 @@ static ssize_t domain_read(struct file *file, char __user *userbuf,
 					status.global.accumulate_free_memory,
 					status.global.accumulate_used_memory);
 			}
-			if (domain->domain.esramData.size) {
-				cm_DSP_GetDspBaseAddress(ARM_CORE_ID,
-							 ESRAM_EXT24, &addr);
+			if (domain->domain.esramData.size &&
+			    cm_DSP_GetDspBaseAddress(ARM_CORE_ID,
+						     ESRAM_EXT24,
+						     &addr) == CM_OK) {
 				cm_DSP_GetInternalMemoriesInfo(id, ESRAM_EXT24,
 							       &dOffset,
 							       &dSize);
@@ -354,9 +356,10 @@ static ssize_t domain_read(struct file *file, char __user *userbuf,
 					status.global.accumulate_free_memory,
 					status.global.accumulate_used_memory);
 			}
-			if (domain->domain.sdramCode.size) {
-				cm_DSP_GetDspBaseAddress(ARM_CORE_ID,
-							 SDRAM_CODE, &addr);
+			if (domain->domain.sdramCode.size &&
+			    cm_DSP_GetDspBaseAddress(ARM_CORE_ID,
+						     SDRAM_CODE,
+						     &addr) == CM_OK) {
 				cm_DSP_GetInternalMemoriesInfo(id, SDRAM_CODE,
 							       &dOffset,
 							       &dSize);
@@ -378,9 +381,10 @@ static ssize_t domain_read(struct file *file, char __user *userbuf,
 					status.global.accumulate_free_memory,
 					status.global.accumulate_used_memory);
 			}
-			if (domain->domain.sdramData.size) {
-				cm_DSP_GetDspBaseAddress(ARM_CORE_ID,
-							 SDRAM_EXT24, &addr);
+			if (domain->domain.sdramData.size &&
+			    cm_DSP_GetDspBaseAddress(ARM_CORE_ID,
+						     SDRAM_EXT24,
+						     &addr) == CM_OK) {
 				cm_DSP_GetInternalMemoriesInfo(id, SDRAM_EXT24,
 							       &dOffset,
 							       &dSize);
