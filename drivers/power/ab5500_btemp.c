@@ -312,6 +312,66 @@ static int ab5500_btemp_get_btemp_ball_res(struct ab5500_btemp *di)
 }
 
 /**
+ * ab5500_btemp_temp_to_res() - temperature to resistance
+ * @di:		pointer to the ab5500_btemp structure
+ * @tbl:	pointer to the resiatance to temperature table
+ * @tbl_size:	size of the resistance to temperature table
+ * @temp:	temperature to calculate the resistance from
+ *
+ * This function returns the battery resistance in ohms
+ * based on temperature.
+ */
+static int ab5500_btemp_temp_to_res(struct ab5500_btemp *di,
+	const struct abx500_res_to_temp *tbl, int tbl_size, int temp)
+{
+	int i, res;
+	/*
+	 * Calculate the formula for the straight line
+	 * Simple interpolation if we are within
+	 * the resistance table limits, extrapolate
+	 * if resistance is outside the limits.
+	 */
+	if (temp < tbl[0].temp)
+		i = 0;
+	else if (temp >= tbl[tbl_size - 1].temp)
+		i = tbl_size - 2;
+	else {
+		i = 0;
+		while (!(temp >= tbl[i].temp &&
+			temp < tbl[i + 1].temp))
+			i++;
+	}
+
+	res = tbl[i].resist + ((tbl[i + 1].resist - tbl[i].resist) *
+		(temp - tbl[i].temp)) / (tbl[i + 1].temp - tbl[i].temp);
+	return res;
+}
+
+/**
+ * ab5500_btemp_temp_to_volt() - temperature to adc voltage
+ * @di:		pointer to the ab5500_btemp structure
+ * @temp:	temperature to calculate the voltage from
+ *
+ * This function returns the adc voltage in millivolts
+ * based on temperature.
+ */
+static int ab5500_btemp_temp_to_volt(struct ab5500_btemp *di, int temp)
+{
+	int res, id;
+
+	id = di->bat->batt_id;
+	res = ab5500_btemp_temp_to_res(di,
+		di->bat->bat_type[id].r_to_t_tbl,
+                di->bat->bat_type[id].n_temp_tbl_elements,
+		temp);
+	/*
+	 * BTEMP_BALL is internally connected to 1.8V
+	 * through a 10k resistor
+	 */
+	return((1800 * res) / (10000 + res));
+}
+
+/**
  * ab5500_btemp_res_to_temp() - resistance to temperature
  * @di:		pointer to the ab5500_btemp structure
  * @tbl:	pointer to the resiatance to temperature table
@@ -377,8 +437,8 @@ static int ab5500_btemp_measure_temp(struct ab5500_btemp *di)
 	temp = ab5500_btemp_res_to_temp(di,
 		di->bat->bat_type[id].r_to_t_tbl,
 		di->bat->bat_type[id].n_temp_tbl_elements, rbat);
-
 	dev_dbg(di->dev, "Battery temperature is %d\n", temp);
+
 	return temp;
 }
 
@@ -461,7 +521,15 @@ static void ab5500_btemp_periodic_work(struct work_struct *work)
 
 	if (!di->bat->auto_trig) {
 		/* Check for temperature limits */
-		ab5500_btemp_bat_temp_trig(0);
+		if (di->bat_temp <= BTEMP_THERMAL_LOW_LIMIT) {
+			dev_err(di->dev,
+				"battery temp less than lower threshold\n");
+			power_supply_changed(&di->btemp_psy);
+		} else if (di->bat_temp >= BTEMP_THERMAL_HIGH_LIMIT_62) {
+			dev_err(di->dev,
+				"battery temp greater them max threshold\n");
+			power_supply_changed(&di->btemp_psy);
+		}
 
 		/* Schedule a new measurement */
 		if (di->events.usb_conn)
@@ -674,16 +742,18 @@ static struct ab5500_btemp_interrupts ab5500_btemp_irq[] = {
 static int ab5500_btemp_bat_temp_trig(int mux)
 {
 	struct ab5500_btemp *di = ab5500_btemp_get();
+	int temp = ab5500_btemp_measure_temp(di);
 
-	if (di->bat_temp < BTEMP_THERMAL_LOW_LIMIT) {
+	if (temp < (BTEMP_THERMAL_LOW_LIMIT+1)) {
 		dev_err(di->dev,
 			"battery temp less than lower threshold (-10 deg cel)\n");
 		power_supply_changed(&di->btemp_psy);
-	} else if (di->bat_temp > BTEMP_THERMAL_HIGH_LIMIT_62) {
+	} else if (temp > (BTEMP_THERMAL_HIGH_LIMIT_62-1)) {
 		dev_err(di->dev, "battery temp greater them max threshold\n");
 		power_supply_changed(&di->btemp_psy);
 	}
-	return 0;;
+
+	return 0;
 }
 
 static int ab5500_btemp_auto_temp(struct ab5500_btemp *di)
@@ -699,8 +769,10 @@ static int ab5500_btemp_auto_temp(struct ab5500_btemp *di)
 
 	auto_ip->mux = BTEMP_BALL;
 	auto_ip->freq = MS500;
-	auto_ip->min = BTEMP_THERMAL_LOW_LIMIT;
-	auto_ip->max = BTEMP_THERMAL_HIGH_LIMIT_62;
+	auto_ip->min = ab5500_btemp_temp_to_volt(di,
+				BTEMP_THERMAL_HIGH_LIMIT_62);
+	auto_ip->max = ab5500_btemp_temp_to_volt(di,
+				BTEMP_THERMAL_LOW_LIMIT);
 	auto_ip->auto_adc_callback = ab5500_btemp_bat_temp_trig;
 	di->gpadc_auto = auto_ip;
 	ret = ab5500_gpadc_convert_auto(di->gpadc, di->gpadc_auto);
