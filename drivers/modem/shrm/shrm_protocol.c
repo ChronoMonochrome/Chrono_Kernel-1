@@ -48,6 +48,7 @@ static char shrm_audio_tx_state = SHRM_SLEEP_STATE;
 static char shrm_audio_rx_state = SHRM_SLEEP_STATE;
 
 static atomic_t ac_sleep_disable_count = ATOMIC_INIT(0);
+static atomic_t ac_msg_pend_1 = ATOMIC_INIT(0);
 static struct shrm_dev *shm_dev;
 
 /* Spin lock and tasklet declaration */
@@ -440,6 +441,7 @@ void shm_ac_read_notif_1_tasklet(unsigned long tasklet_data)
 	hrtimer_start(&timer, ktime_set(0, 10*NSEC_PER_MSEC),
 			HRTIMER_MODE_REL);
 	atomic_dec(&ac_sleep_disable_count);
+	atomic_dec(&ac_msg_pend_1);
 
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 }
@@ -508,6 +510,7 @@ static int shrm_modem_reset_sequence(void)
 	 * for normal ac-wake and ac-sleep logic
 	 */
 	atomic_set(&ac_sleep_disable_count, 0);
+	atomic_set(&ac_msg_pend_1, 0);
 
 	/* workaround for MSR */
 	queue_kthread_work(&shm_dev->shm_ac_wake_kw,
@@ -665,7 +668,10 @@ static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 	update_ac_audio_shared_wptr(shrm);
 
 	mutex_lock(&ac_state_mutex);
-	atomic_inc(&ac_sleep_disable_count);
+	if (!atomic_read(&ac_msg_pend_1)) {
+		atomic_inc(&ac_sleep_disable_count);
+		atomic_inc(&ac_msg_pend_1);
+	}
 	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
