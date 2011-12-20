@@ -58,7 +58,7 @@ static pin_cfg_t u5500_pins_default[] = {
 	GPIO179_GPIO	| PIN_INPUT_PULLUP,
 
 	/* SD-CARD detect/levelshifter pins */
-	GPIO180_GPIO		| PIN_INPUT_PULLUP,	/* SD_CARD_DETn */
+	GPIO180_GPIO		| PIN_INPUT_NOPULL,	/* SD_CARD_DETn */
 	GPIO227_GPIO		| PIN_OUTPUT_LOW,	/* SD_CARD_CTRL */
 	GPIO185_GPIO		| PIN_OUTPUT_LOW,	/* SD_CARD_VSEL */
 
