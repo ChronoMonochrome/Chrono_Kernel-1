@@ -34,7 +34,7 @@ static pin_cfg_t u5500_pins_default[] = {
 	GPIO222_MSP2_TXD	| PIN_OUTPUT_LOW,
 
 	/* DISPLAY_ENABLE */
-	GPIO226_GPIO        | PIN_OUTPUT_LOW,
+	GPIO226_GPIO        | PIN_OUTPUT_HIGH,
 
 	/* Backlight Enable */
 	GPIO224_GPIO		| PIN_OUTPUT_HIGH,
