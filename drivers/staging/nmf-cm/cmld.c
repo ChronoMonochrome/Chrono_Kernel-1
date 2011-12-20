@@ -582,12 +582,10 @@ static long cmld_control_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		t_uint32 nmfversion = NMF_VERSION;
 		return copy_to_user((void*)arg, &nmfversion, sizeof(nmfversion));
 	}
-	case CM_PRIV_GETBOARDVERSION:
-		if (cpu_is_u8500v20_or_later()) {
-			enum board_version v = U8500_V2;
-			return copy_to_user((void*)arg, &v, sizeof(v));
-		} else
-			return -EINVAL;
+	case CM_PRIV_GETBOARDVERSION: {
+		enum board_version v = U8500_V2;
+		return copy_to_user((void*)arg, &v, sizeof(v));
+	}
 	case CM_PRIV_ISCOMPONENTCACHEEMPTY:
 		if (CM_ENGINE_IsComponentCacheEmpty())
 			return 0;
@@ -1207,14 +1205,10 @@ static int __init cmld_init_module(void)
 
 	err = -EIO;
 	prcmu_base = __io_address(U8500_PRCMU_BASE);
-	if (cpu_is_u8500v20_or_later()) {
-		/* power on a clock/timer 90KHz used on SVA */
-		htim_base = ioremap_nocache(U8500_CR_BASE /*0xA03C8000*/, SZ_4K);
-                prcmu_tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
-        } else {
-                pr_err("CM: Unsupported chip version\n");
-		goto out;
-        }
+
+	/* power on a clock/timer 90KHz used on SVA */
+	htim_base = ioremap_nocache(U8500_CR_BASE /*0xA03C8000*/, SZ_4K);
+	prcmu_tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
 
 	/* Activate SVA 90 KHz timer */
 	if (htim_base == NULL)
