@@ -202,7 +202,7 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 	int ret = 0;
 	int gpioval = 0;
 	enum ab8500_usb_link_status lsts;
-	enum usb_xceiv_events event = USB_IDLE;
+	enum usb_xceiv_events event = USB_EVENT_NONE;
 
 	(void)abx500_get_register_interruptible(ab->dev,
 			AB5500_BANK_USB, AB5500_USB_LINE_STAT_REG, &val);
@@ -227,7 +227,7 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 
 	case USB_LINK_HM_IDGND:
 		if (ab->rev >= AB5500_2_0)
-			break;
+			return -1;
 
 		/* enable usb chip Select */
 		ret = gpio_direction_output(ab->usb_cs_gpio, gpioval);
@@ -247,7 +247,7 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 
 	case USB_LINK_HM_IDGND_V2:
 		if (!(ab->rev >= AB5500_2_0))
-			break;
+			return -1;
 
 		/* enable usb chip Select */
 		ret = gpio_direction_output(ab->usb_cs_gpio, gpioval);
