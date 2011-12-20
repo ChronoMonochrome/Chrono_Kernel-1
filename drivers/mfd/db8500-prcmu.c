@@ -215,10 +215,8 @@
 #define PRCM_REQ_MB5_I2C_HW_BITS	(PRCM_REQ_MB5 + 0x1)
 #define PRCM_REQ_MB5_I2C_REG		(PRCM_REQ_MB5 + 0x2)
 #define PRCM_REQ_MB5_I2C_VAL		(PRCM_REQ_MB5 + 0x3)
-#define PRCMU_I2C_WRITE(slave) \
-	(((slave) << 1) | (cpu_is_u8500v2() ? BIT(6) : 0))
-#define PRCMU_I2C_READ(slave) \
-	(((slave) << 1) | BIT(0) | (cpu_is_u8500v2() ? BIT(6) : 0))
+#define PRCMU_I2C_WRITE(slave) (((slave) << 1) | BIT(6))
+#define PRCMU_I2C_READ(slave) (((slave) << 1) | BIT(0) | BIT(6))
 #define PRCMU_I2C_STOP_EN		BIT(3)
 
 /* Mailbox 5 ACKs */
@@ -1050,7 +1048,7 @@ int db8500_prcmu_set_ddr_opp(u8 opp)
 	if (opp < DDR_100_OPP || opp > DDR_25_OPP)
 		return -EINVAL;
 	/* Changing the DDR OPP can hang the hardware pre-v21 */
-	if (cpu_is_u8500v20_or_later() && !cpu_is_u8500v20())
+	if (!cpu_is_u8500v20())
 		writeb(opp, PRCM_DDR_SUBSYS_APE_MINBW);
 
 	return 0;
@@ -2647,29 +2645,24 @@ static char *fw_project_name(u8 project)
 void __init db8500_prcmu_early_init(void)
 {
 	unsigned int i;
-	if (cpu_is_u8500v2()) {
-		void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
+	void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
 
-		if (tcpm_base != NULL) {
-			u32 version;
-			version = readl(tcpm_base + PRCMU_FW_VERSION_OFFSET);
-			fw_info.version.project = version & 0xFF;
-			fw_info.version.api_version = (version >> 8) & 0xFF;
-			fw_info.version.func_version = (version >> 16) & 0xFF;
-			fw_info.version.errata = (version >> 24) & 0xFF;
-			fw_info.valid = true;
-			pr_info("PRCMU firmware: %s, version %d.%d.%d\n",
-				fw_project_name(fw_info.version.project),
-				(version >> 8) & 0xFF, (version >> 16) & 0xFF,
-				(version >> 24) & 0xFF);
-			iounmap(tcpm_base);
-		}
-
-		tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
-	} else {
-		pr_err("prcmu: Unsupported chip version\n");
-		BUG();
+	if (tcpm_base != NULL) {
+		u32 version;
+		version = readl(tcpm_base + PRCMU_FW_VERSION_OFFSET);
+		fw_info.version.project = version & 0xFF;
+		fw_info.version.api_version = (version >> 8) & 0xFF;
+		fw_info.version.func_version = (version >> 16) & 0xFF;
+		fw_info.version.errata = (version >> 24) & 0xFF;
+		fw_info.valid = true;
+		pr_info("PRCMU firmware: %s, version %d.%d.%d\n",
+			fw_project_name(fw_info.version.project),
+			(version >> 8) & 0xFF, (version >> 16) & 0xFF,
+			(version >> 24) & 0xFF);
+		iounmap(tcpm_base);
 	}
+
+	tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
 
 	spin_lock_init(&mb0_transfer.lock);
 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);
@@ -2964,9 +2957,6 @@ static int __init db8500_prcmu_probe(struct platform_device *pdev)
 {
 	int err = 0;
 
-	if (ux500_is_svp())
-		return -ENODEV;
-
 	init_prcm_registers();
 
 	/* Clean up the mailbox interrupts after pre-kernel code. */
@@ -2980,8 +2970,7 @@ static int __init db8500_prcmu_probe(struct platform_device *pdev)
 		goto no_irq_return;
 	}
 
-	if (cpu_is_u8500v20_or_later())
-		prcmu_config_esram0_deep_sleep(ESRAM0_DEEP_SLEEP_STATE_RET);
+	prcmu_config_esram0_deep_sleep(ESRAM0_DEEP_SLEEP_STATE_RET);
 
 	err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
 			      ARRAY_SIZE(db8500_prcmu_devs), NULL,
