@@ -134,6 +134,9 @@
 #define ADC_RESOLUTION			1023
 #define AUTO_ADC_RESOLUTION		255
 
+/* ADOUT prestart time */
+#define ADOUT0_TRIGX_PRESTART		0x18
+
 enum adc_auto_channels {
 	ADC_INPUT_TRIG0 = 0,
 	ADC_INPUT_TRIG1,
@@ -350,7 +353,7 @@ int ab5500_gpadc_convert(struct ab5500_gpadc *gpadc, u8 input)
 	case BTEMP_BALL:
 		ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
 				AB5500_BANK_ADC, AB5500_GPADC_MANUAL_MODE_CTRL,
-				MUX_SCALE_BDATA_MASK, MUX_SCALE_BDATA27);
+				MUX_SCALE_BDATA_MASK, MUX_SCALE_BDATA18);
 		if (ret < 0) {
 			dev_err(gpadc->dev, "gpadc: fail to set mux scale\n");
 			goto out;
@@ -425,6 +428,8 @@ int ab5500_gpadc_convert(struct ab5500_gpadc *gpadc, u8 input)
 			dev_err(gpadc->dev, "gpadc: fail to set ADOUT\n");
 			goto out;
 		}
+		/* delay required to ramp up voltage on BDATA node */
+		usleep_range(10000, 12000);
 	}
 	ret = abx500_set_register_interruptible(gpadc->dev, AB5500_BANK_ADC,
 			AB5500_GPADC_MANUAL_MUX_CTRL, adc_tab[input].mux);
@@ -533,6 +538,7 @@ static int ab5500_gpadc_program_auto(struct ab5500_gpadc *gpadc, int trig)
 #define MIN_INDEX	0x02
 #define MAX_INDEX	0x03
 #define CTRL_INDEX	0x01
+
 	ret = abx500_set_register_interruptible(gpadc->dev, AB5500_BANK_ADC,
 			AB5500_GPADC_AUTO_TRIG_INDEX + (trig << 2) + MIN_INDEX,
 			gpadc->adc_trig[trig].trig_min);
@@ -709,7 +715,6 @@ int ab5500_gpadc_convert_auto(struct ab5500_gpadc *gpadc,
 			goto out;
 		}
 		switch (in->mux) {
-		case BTEMP_BALL:
 		case MAIN_BAT_V:
 			/*
 			 * The value of mux scale volatage depends
@@ -727,6 +732,18 @@ int ab5500_gpadc_convert_auto(struct ab5500_gpadc *gpadc,
 					"gpadc: failed to read status\n");
 				goto out;
 			}
+
+		case BTEMP_BALL:
+			ret = abx500_set_register_interruptible(
+				gpadc->dev, AB5500_BANK_ADC,
+				AB5500_GPADC_AUTO_TRIG_ADOUT0_CTRL,
+				ADOUT0_TRIGX_PRESTART);
+			if (ret < 0) {
+				dev_err(gpadc->dev,
+					"gpadc: failed to set prestart\n");
+				goto out;
+			}
+
 		case ACC_DETECT2:
 		case ACC_DETECT3:
 		case VBUS_V:

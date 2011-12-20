@@ -124,31 +124,32 @@ int ab5500_btemp_get_batctrl_temp(struct ab5500_btemp *di)
 }
 
 /**
- * ab5500_btemp_batctrl_volt_to_res() - convert batctrl voltage to resistance
+ * ab5500_btemp_volt_to_res() - convert batctrl voltage to resistance
  * @di:		pointer to the ab5500_btemp structure
- * @v_batctrl:	measured batctrl voltage
+ * @volt:	measured batctrl/btemp_ball voltage
+ * @batcrtl:	batctrl/btemp_ball node
  *
  * This function returns the battery resistance that is
- * derived from the BATCTRL voltage.
+ * derived from the BATCTRL/BTEMP_BALL voltage.
  * Returns value in Ohms.
  */
-static int ab5500_btemp_batctrl_volt_to_res(struct ab5500_btemp *di,
-	int v_batctrl)
+static int ab5500_btemp_volt_to_res(struct ab5500_btemp *di,
+	int volt, bool batctrl)
 {
 	int rbs;
 
-	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL) {
+	if (batctrl) {
 		/*
 		 * If the battery has internal NTC, we use the current
 		 * source to calculate the resistance, 7uA or 20uA
 		 */
-		rbs = v_batctrl * 1000 / di->curr_source;
+		rbs = volt * 1000 / di->curr_source;
 	} else {
 		/*
-		 * BAT_CTRL is internally
+		 * BTEMP_BALL is internally
 		 * connected to 1.8V through a 10k resistor
 		 */
-		rbs = (10000 * (v_batctrl)) / (1800 - v_batctrl);
+		rbs = (10000 * volt) / (1800 - volt);
 	}
 	return rbs;
 }
@@ -266,7 +267,7 @@ static int ab5500_btemp_get_batctrl_res(struct ab5500_btemp *di)
 	}
 
 	batctrl = ab5500_btemp_read_batctrl_voltage(di);
-	res = ab5500_btemp_batctrl_volt_to_res(di, batctrl);
+	res = ab5500_btemp_volt_to_res(di, batctrl, true);
 
 	ret = ab5500_btemp_curr_source_enable(di, false);
 	if (ret) {
@@ -278,6 +279,36 @@ static int ab5500_btemp_get_batctrl_res(struct ab5500_btemp *di)
 		__func__, batctrl, res);
 
 	return res;
+}
+
+/**
+ * ab5500_btemp_get_btemp_ball_res() - get battery resistance
+ * @di:		pointer to the ab5500_btemp structure
+ *
+ * This function returns the battery pack identification
+ * resistance using resistor pull-up mode. Returns value in Ohms.
+ */
+static int ab5500_btemp_get_btemp_ball_res(struct ab5500_btemp *di)
+{
+	int ret, vntc;
+
+	ret = abx500_mask_and_set_register_interruptible(di->dev,
+		AB5500_BANK_FG_BATTCOM_ACC, AB5500_UART,
+		UART_MODE, ADOUT_10K_PULL_UP);
+	if (ret) {
+		dev_err(di->dev,
+			"failed to enable 10k pull up to Vadout\n");
+			return ret;
+	}
+
+	vntc = ab5500_gpadc_convert(di->gpadc, BTEMP_BALL);
+	if (vntc < 0) {
+		dev_err(di->dev, "%s gpadc conversion failed,"
+				" using previous value\n", __func__);
+		return vntc;
+	}
+
+	return ab5500_btemp_volt_to_res(di, vntc, false);
 }
 
 /**
@@ -324,55 +355,29 @@ static int ab5500_btemp_res_to_temp(struct ab5500_btemp *di,
  */
 static int ab5500_btemp_measure_temp(struct ab5500_btemp *di)
 {
-	int temp, ret;
-	static int prev;
-	int rbat, vntc;
-	int rntc = 0;
+	int temp, rbat;
 	u8 id;
 
 	id = di->bat->batt_id;
 	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL &&
-			id != BATTERY_UNKNOWN && !di->bat->auto_trig) {
+			id != BATTERY_UNKNOWN && !di->bat->auto_trig)
 		rbat = ab5500_btemp_get_batctrl_res(di);
-		if (rbat < 0) {
-			dev_err(di->dev, "%s get batctrl res failed\n",
-				__func__);
-			/*
-			 * Return out-of-range temperature so that
-			 * charging is stopped
-			 */
-			return BTEMP_THERMAL_LOW_LIMIT;
-		}
+	else
+		rbat = ab5500_btemp_get_btemp_ball_res(di);
 
-		temp = ab5500_btemp_res_to_temp(di,
-			di->bat->bat_type[id].r_to_t_tbl,
-			di->bat->bat_type[id].n_temp_tbl_elements, rbat);
-	} else {
-		ret = abx500_mask_and_set_register_interruptible(di->dev,
-			AB5500_BANK_FG_BATTCOM_ACC, AB5500_UART,
-			UART_MODE, ADOUT_10K_PULL_UP);
-		if (ret) {
-			dev_err(di->dev,
-				"failed to enable 10k pull up to Vadout\n");
-		}
-		vntc = ab5500_gpadc_convert(di->gpadc, BTEMP_BALL);
-		if (vntc < 0) {
-			dev_err(di->dev,
-				"%s gpadc conversion failed,"
-				" using previous value\n", __func__);
-			return prev;
-		}
+	if (rbat < 0) {
+		dev_err(di->dev, "%s failed to get resistance\n", __func__);
 		/*
-		 * The PCB NTC is sourced from 2.75v via a 10kOhm
-		 * resistor.
+		 * Return out-of-range temperature so that
+		 * charging is stopped
 		 */
-		rntc = 10000 * vntc / (27500 - vntc);
-
-		temp = ab5500_btemp_res_to_temp(di,
-			di->bat->bat_type[id].r_to_t_tbl,
-			di->bat->bat_type[id].n_temp_tbl_elements, rntc);
-		prev = temp;
+		return BTEMP_THERMAL_LOW_LIMIT;
 	}
+
+	temp = ab5500_btemp_res_to_temp(di,
+		di->bat->bat_type[id].r_to_t_tbl,
+		di->bat->bat_type[id].n_temp_tbl_elements, rbat);
+
 	dev_dbg(di->dev, "Battery temperature is %d\n", temp);
 	return temp;
 }
