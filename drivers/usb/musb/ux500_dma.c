@@ -224,6 +224,7 @@ static int ux500_dma_is_compatible(struct dma_channel *channel,
 	list_for_each_entry(f, &cdev->config->functions, list) {
 		if (!strcmp(f->name, "cdc_ethernet") ||
 			!strcmp(f->name, "rndis") ||
+			!strcmp(f->name, "mtp") ||
 			!strcmp(f->name, "phonet") ||
 			!strcmp(f->name, "adb")) {
 			if (gadget->speed == USB_SPEED_HIGH)
