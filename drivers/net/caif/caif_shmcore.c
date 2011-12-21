@@ -522,7 +522,8 @@ static void shm_tx_work_func(struct work_struct *tx_work)
 			pbuf->frames++;
 			pbuf->frm_ofs += frmlen + (frmlen % 32);
 
-		} while (pbuf->frames < SHM_MAX_FRMS_PER_BUF);
+		} while (pbuf->frames < SHM_MAX_FRMS_PER_BUF &&
+				pbuf->frm_ofs < pbuf->len);
 
 		/* Assign buffer as full. */
 		list_add_tail(&pbuf->list, &pshm_drv->tx_full_list);
