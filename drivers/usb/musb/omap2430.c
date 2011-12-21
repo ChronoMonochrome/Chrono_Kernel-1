@@ -242,15 +242,7 @@ static int musb_otg_notifications(struct notifier_block *nb,
 	case USB_EVENT_ID:
 		dev_dbg(musb->controller, "ID GND\n");
 
-		if (is_otg_enabled(musb)) {
-#ifdef CONFIG_USB_GADGET_MUSB_HDRC
-			if (musb->gadget_driver) {
-				pm_runtime_get_sync(musb->controller);
-				otg_init(musb->xceiv);
-				omap2430_musb_set_vbus(musb, 1);
-			}
-#endif
-		} else {
+		if (!is_otg_enabled(musb) || musb->gadget_driver) {
 			pm_runtime_get_sync(musb->controller);
 			otg_init(musb->xceiv);
 			omap2430_musb_set_vbus(musb, 1);
