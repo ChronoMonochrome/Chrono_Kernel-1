@@ -115,6 +115,8 @@ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
 	for_each_cpu(freqs.cpu, policy->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
 
+	BUG_ON(idx >= freq_table_len);
+
 	/* request the PRCM unit for opp change */
 	if (prcmu_set_arm_opp(idx2opp[idx])) {
 		pr_err("ux500-cpufreq:  Failed to set OPP level\n");
@@ -131,10 +133,25 @@ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
 static unsigned int dbx500_cpufreq_getspeed(unsigned int cpu)
 {
 	int i;
+	enum arm_opp current_opp;
+
+	current_opp = prcmu_get_arm_opp();
+
 	/* request the prcm to get the current ARM opp */
-	for (i = 0; prcmu_get_arm_opp() != idx2opp[i]; i++)
-		;
-	return freq_table[i].frequency;
+	for (i = 0;  i < freq_table_len; i++) {
+		if (current_opp == idx2opp[i])
+			return freq_table[i].frequency;
+	}
+
+	pr_err("cpufreq: ERROR: unknown opp %d given from prcmufw!\n",
+	       current_opp);
+	BUG_ON(1);
+
+	/*
+	 * Better to return something that might be correct than
+	 * errno or zero, since clk_get_rate() won't do well with an errno.
+	 */
+	return freq_table[0].frequency;
 }
 
 static void __init dbx500_cpufreq_init_maxopp_freq(void)
@@ -171,6 +188,8 @@ static void __init dbx500_cpufreq_early_init(void)
 		idx2opp = db8500_idx2opp;
 		dbx500_cpufreq_init_maxopp_freq();
 		freq_table_len = ARRAY_SIZE(db8500_freq_table);
+		if (!prcmu_has_arm_maxopp())
+			freq_table_len--;
 	} else {
 		ux500_unknown_soc();
 	}
