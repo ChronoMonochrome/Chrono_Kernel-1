@@ -206,9 +206,9 @@ int u5500_cg29xx_hw_params(struct snd_pcm_substream *substream,
 				err);
 			goto out_err;
 		}
-		ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_0);
 
 	}
+	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_0);
 out_err:
 	return err;
 }
