@@ -53,8 +53,6 @@
 #define ACCESSORY_U_HEADSET_DET_VOL_MAX	732
 #define ACCESSORY_U_HEADSET_ALT_DET_VOL_MIN	25
 #define ACCESSORY_U_HEADSET_ALT_DET_VOL_MAX	50
-#define ACCESSORY_CVIDEO_DET_VOL_MIN	41
-#define ACCESSORY_CVIDEO_DET_VOL_MAX	105
 #define ACCESSORY_CARKIT_DET_VOL_MIN	1100
 #define ACCESSORY_CARKIT_DET_VOL_MAX	1300
 #define ACCESSORY_HEADSET_DET_VOL_MIN	1301
@@ -114,16 +112,6 @@ static struct accessory_detect_task detect_ops[] = {
 		.maxvol = ACCESSORY_U_HEADSET_DET_VOL_MAX,
 		.alt_minvol = ACCESSORY_U_HEADSET_ALT_DET_VOL_MIN,
 		.alt_maxvol = ACCESSORY_U_HEADSET_ALT_DET_VOL_MAX
-	},
-	{
-		.type = JACK_TYPE_CVIDEO,
-		.typename = "CVIDEO",
-		.meas_mv = 0,
-		.req_det_count = 4,
-		.minvol = ACCESSORY_CVIDEO_DET_VOL_MIN,
-		.maxvol = ACCESSORY_CVIDEO_DET_VOL_MAX,
-		.alt_minvol = ACCESSORY_DET_VOL_DONTCARE,
-		.alt_maxvol = ACCESSORY_DET_VOL_DONTCARE
 	},
 	{
 		.type = JACK_TYPE_OPENCABLE,
@@ -327,11 +315,6 @@ void report_jack_status(struct abx500_ad *dd)
 		value |= SND_JACK_MICROPHONE;
 	if (jack_supports_spkr(dd->jack_type))
 		value |= (SND_JACK_HEADPHONE | SND_JACK_LINEOUT);
-	if (dd->jack_type == JACK_TYPE_CVIDEO) {
-		value |= SND_JACK_VIDEOOUT;
-		if (dd->set_av_switch)
-			dd->set_av_switch(dd, VIDEO_OUT);
-	}
 	ux500_ab8500_jack_report(value);
 
 out: return;
@@ -563,7 +546,6 @@ static int detect_hw(struct abx500_ad *dd,
 		break;
 	case JACK_TYPE_CARKIT:
 	case JACK_TYPE_HEADPHONE:
-	case JACK_TYPE_CVIDEO:
 	case JACK_TYPE_HEADSET:
 	case JACK_TYPE_UNSUPPORTED_HEADSET:
 	case JACK_TYPE_OPENCABLE:
@@ -714,7 +696,6 @@ static void config_accdetect(struct abx500_ad *dd)
 	if (dd->set_av_switch)
 		dd->set_av_switch(dd, NOT_SET);
 	case JACK_TYPE_HEADPHONE:
-	case JACK_TYPE_CVIDEO:
 		dd->config_accdetect1_hw(dd, 1);
 		dd->config_accdetect2_hw(dd, 0);
 
