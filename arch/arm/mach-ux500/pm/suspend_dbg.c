@@ -14,10 +14,16 @@
 #include <linux/suspend.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
+#include <linux/delay.h>
 #include <linux/uaccess.h>
 #include <linux/mfd/dbx500-prcmu.h>
+#include <linux/wakelock.h>
 
 #include <mach/pm.h>
+#include <mach/pm-timer.h>
+
+/* To reach main_wake_lock */
+#include "../../../../kernel/power/power.h"
 
 #ifdef CONFIG_UX500_SUSPEND_STANDBY
 static u32 sleep_enabled = 1;
@@ -100,6 +106,79 @@ int ux500_suspend_dbg_begin(suspend_state_t state)
 	return 0;
 }
 
+/* The number of failed suspend attempts in a row before giving up */
+#define TEST_FAILS 10
+
+static int suspend_test_count;
+static int suspend_test_current;
+static int suspend_test_fail_count;
+
+void ux500_suspend_dbg_test_set_wakeup(void)
+{
+	if (suspend_test_count == 0)
+		return;
+
+	ux500_rtcrtt_off();
+
+	/* Make sure the rtc writes have been accepted */
+	udelay(120);
+
+	if (cpu_is_u9500())
+		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(RTC) |
+				     PRCMU_WAKEUP(HSI0));
+	else
+		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(RTC));
+
+	/* Program RTC to generate an interrupt 1s later */
+	ux500_rtcrtt_next(1000000);
+}
+
+void ux500_suspend_dbg_test_start(int num)
+{
+	suspend_test_count = num;
+	suspend_test_current = deepsleeps_done;
+	suspend_test_fail_count = 0;
+}
+
+bool ux500_suspend_test_success(bool *ongoing)
+{
+	(*ongoing) = ((suspend_test_fail_count < TEST_FAILS) &&
+		      (suspend_test_count > 0));
+	return suspend_test_fail_count < TEST_FAILS;
+}
+
+void ux500_suspend_dbg_end(void)
+{
+	static int attempts;
+
+	if (suspend_test_count > 0) {
+		attempts++;
+		pr_info("Suspend test: %d done\n", attempts);
+		suspend_test_count--;
+		wake_lock(&main_wake_lock);
+
+		if (suspend_test_current < deepsleeps_done) {
+			suspend_test_current = deepsleeps_done;
+			suspend_test_fail_count = 0;
+		} else {
+			suspend_test_fail_count++;
+		}
+
+		if (suspend_test_fail_count > TEST_FAILS) {
+			suspend_test_count = 0;
+			pr_err("suspend: Aborting after %d "
+			       "failed suspend in a row\n",
+			       TEST_FAILS);
+		} else if (suspend_test_count > 0) {
+			msleep(100);
+			wake_unlock(&main_wake_lock);
+		}
+
+		if (suspend_test_count == 0)
+			attempts = 0;
+	}
+}
+
 void ux500_suspend_dbg_init(void)
 {
 	struct dentry *suspend_dir;
@@ -144,7 +223,6 @@ void ux500_suspend_dbg_init(void)
 				  &deepsleeps_done);
 	if (IS_ERR_OR_NULL(file))
 		goto error;
-
 
 	file = debugfs_create_u32("sleep_failed", S_IRUGO,
 				  suspend_dir,

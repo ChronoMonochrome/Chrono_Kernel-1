@@ -28,6 +28,10 @@ bool ux500_suspend_deepsleep_enabled(void);
 void ux500_suspend_dbg_sleep_status(bool is_deepsleep);
 void ux500_suspend_dbg_init(void);
 int ux500_suspend_dbg_begin(suspend_state_t state);
+void ux500_suspend_dbg_end(void);
+void ux500_suspend_dbg_test_set_wakeup(void);
+void ux500_suspend_dbg_test_start(int num);
+bool ux500_suspend_test_success(bool *ongoing);
 
 #else
 static inline bool ux500_suspend_enabled(void)
@@ -56,6 +60,15 @@ static inline void ux500_suspend_dbg_init(void) { }
 static inline int ux500_suspend_dbg_begin(suspend_state_t state)
 {
 	return 0;
+}
+static inline void ux500_suspend_dbg_end(void) { }
+static inline void ux500_suspend_dbg_test_set_wakeup(void) { }
+static inline void ux500_suspend_dbg_test_start(int num)
+{ }
+static inline bool ux500_suspend_test_success(bool *ongoing)
+{
+	(*ongoing) = false;
+	return false;
 }
 
 #endif

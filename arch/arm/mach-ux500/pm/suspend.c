@@ -76,6 +76,8 @@ static int suspend(bool do_deepsleep)
 		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB));
 #endif
 
+	ux500_suspend_dbg_test_set_wakeup();
+
 	context_vape_save();
 
 	context_fsmc_save();
@@ -258,6 +260,8 @@ static void ux500_suspend_end(void)
 	(void) prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
 					    "suspend", 25);
 	suspend_state = PM_SUSPEND_ON;
+
+	ux500_suspend_dbg_end();
 }
 
 static struct platform_suspend_ops ux500_suspend_ops = {

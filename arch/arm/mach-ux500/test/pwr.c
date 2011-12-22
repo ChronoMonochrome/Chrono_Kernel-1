@@ -19,12 +19,17 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/db8500-prcmu.h>
+#include <linux/wakelock.h>
 
 #include <mach/hardware.h>
 #include <mach/pm.h>
 
+#include "../pm/suspend_dbg.h"
 #include "../../../drivers/regulator/dbx500-prcmu.h"
 #include "../../../drivers/regulator/ab8500-debug.h"
+
+/* To reach main_wake_lock */
+#include "../../../../kernel/power/power.h"
 
 #define PRCC_PCKSR		0x010
 #define PRCC_KCKSR		0x014
@@ -777,6 +782,50 @@ static int pwr_test_idle(struct seq_file *s, void *data)
 	return 0;
 }
 
+static bool suspend_testing;
+static int suspend_test_length;
+
+static ssize_t pm_test_suspend_set(struct file *file,
+				   const char __user *user_buf,
+				   size_t count, loff_t *ppos)
+{
+	long unsigned val;
+	int err;
+
+	err = kstrtoul_from_user(user_buf, count, 0, &val);
+
+	if (err)
+		return err;
+
+	suspend_test_length = (int)val;
+
+	ux500_suspend_dbg_test_start(suspend_test_length);
+
+	suspend_testing = true;
+	wake_unlock(&main_wake_lock);
+
+	pr_info("Will do suspend %d times.\n", suspend_test_length);
+	return count;
+}
+
+static int pwr_test_suspend_status(struct seq_file *s, void *data)
+{
+	bool ongoing = true;
+	bool success;
+
+	if (!suspend_testing) {
+		pr_info("Suspend test not started\n");
+		seq_printf(s, "FAIL\n");
+		return 0;
+	}
+
+	success = ux500_suspend_test_success(&ongoing);
+
+	seq_printf(s,
+		   "%s\n", ongoing ? "ONGOING" : (success ? "PASS" : "FAIL"));
+
+	return 0;
+}
 
 int dbx500_regulator_testcase(struct dbx500_regulator_info *regulator_info,
 			      int num_regulators)
@@ -794,9 +843,25 @@ static int pwr_test_debugfs_open(struct inode *inode,
 			   NULL);
 }
 
+static int pwr_test_suspend_debugfs_open(struct inode *inode,
+				 struct file *file)
+{
+	return single_open(file,
+			   pwr_test_suspend_status,
+			   inode->i_private);
+}
+
 static const struct file_operations pwr_test_debugfs_ops = {
 	.open		= pwr_test_debugfs_open,
 	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static const struct file_operations pwr_test_suspend_debugfs_ops = {
+	.open		= pwr_test_suspend_debugfs_open,
+	.read		= seq_read,
+	.write		= pm_test_suspend_set,
 	.llseek		= seq_lseek,
 	.release	= single_release,
 };
@@ -820,6 +885,16 @@ static int __init pwr_test_init(void)
 		err = PTR_ERR(err_ptr);
 		goto out;
 	}
+
+	err_ptr = debugfs_create_file("suspend",
+				      S_IWUSR | S_IFREG | S_IRUGO,
+				      debugfs_dir, NULL,
+				      &pwr_test_suspend_debugfs_ops);
+	if (IS_ERR(err_ptr)) {
+		err = PTR_ERR(err_ptr);
+		goto out;
+	}
+
 	return 0;
 out:
 	debugfs_remove_recursive(debugfs_dir);
