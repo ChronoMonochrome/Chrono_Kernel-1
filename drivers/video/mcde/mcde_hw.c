@@ -2764,10 +2764,14 @@ static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 		return;
 
 	if (ovly->regs.dirty_buf) {
+		if (!chnl->port.update_auto_trig)
+			set_channel_state_sync(chnl, CHNLSTATE_SETUP);
 		update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs);
 		mcde_debugfs_overlay_update(chnl->id, ovly != chnl->ovly0);
 	}
 	if (ovly->regs.dirty) {
+		if (!chnl->port.update_auto_trig)
+			set_channel_state_sync(chnl, CHNLSTATE_SETUP);
 		chnl_ovly_pixel_format_apply(chnl, ovly);
 		update_overlay_registers(ovly->idx, &ovly->regs, &chnl->port,
 			chnl->fifo, chnl->regs.x, chnl->regs.y,
