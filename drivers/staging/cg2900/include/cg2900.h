@@ -277,7 +277,7 @@ extern int cg2900_register_chip_driver(struct cg2900_id_callbacks *cb);
 extern void cg2900_deregister_chip_driver(struct cg2900_id_callbacks *cb);
 extern int cg2900_register_trans_driver(struct cg2900_chip_dev *dev);
 extern int cg2900_deregister_trans_driver(struct cg2900_chip_dev *dev);
-extern unsigned long cg2900_get_sleep_timeout(void);
+extern unsigned long cg2900_get_sleep_timeout(bool check_sleep);
 
 #endif /* __KERNEL__ */
 #endif /* _CG2900_H_ */

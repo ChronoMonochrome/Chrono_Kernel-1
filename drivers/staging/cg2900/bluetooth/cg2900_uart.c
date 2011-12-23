@@ -126,6 +126,16 @@
 #define CG2900_BAUD_RATE_3250000			0x28
 #define CG2900_BAUD_RATE_4000000			0x2B
 
+/**
+ * enum sleep_allowed_bits - bits indicating if sleep is allowed.
+ * @SLEEP_TTY_READY:	Bit for checking if break can be applied using tty.
+ * @SLEEP_CORE_READY:	Bit for checking if core is ready for sleep or not.
+ */
+enum sleep_allowed_bits {
+	SLEEP_TTY_READY,
+	SLEEP_CORE_READY
+};
+
 /* GNSS */
 struct gnss_hci_hdr {
 	__u8	op_code;
@@ -290,7 +300,7 @@ struct uart_delayed_work_struct {
  * @wakeup_work:	Wake-up work struct.
  * @restart_sleep_work:	Reschedule sleep_work and wake-up work struct.
  * @sleep_state_lock:	Used to protect chip state.
- * @sleep_allowed:	Indicates if tty has functions needed for sleep mode.
+ * @sleep_flags:	Indicates whether sleep mode is allowed.
  * @tx_in_progress:	Indicates data sending in progress.
  * @rx_in_progress:	Indicates data receiving in progress.
  * @transmission_lock:	Spin_lock to protect tx/rx_in_progress.
@@ -320,7 +330,7 @@ struct uart_info {
 	struct uart_work_struct		wakeup_work;
 	struct uart_work_struct		restart_sleep_work;
 	struct mutex			sleep_state_lock;
-	bool				sleep_allowed;
+	unsigned long			sleep_flags;
 	bool				tx_in_progress;
 	bool				rx_in_progress;
 	spinlock_t			transmission_lock;
@@ -559,16 +569,22 @@ static void unset_cts_irq(struct uart_info *uart_info)
  * Check all conditions for sleep and return sleep timeout.
  * Return:
  *	0: sleep not allowed.
- *	other: Timeout value in ms.
+ *	other: Timeout value in jiffies.
  */
 static unsigned long get_sleep_timeout(struct uart_info *uart_info)
 {
-	unsigned long timeout_jiffies = cg2900_get_sleep_timeout();
+	unsigned long timeout_jiffies = 0;
+	bool check_sleep = false;
+	if (uart_info->sleep_state == CHIP_FALLING_ASLEEP)
+		check_sleep = true;
+
+	timeout_jiffies = cg2900_get_sleep_timeout(check_sleep);
 
 	if (timeout_jiffies &&
 		uart_info->hu &&
 		uart_info->hu->fd &&
-		uart_info->sleep_allowed)
+		test_bit(SLEEP_TTY_READY, &uart_info->sleep_flags) &&
+		test_bit(SLEEP_CORE_READY, &uart_info->sleep_flags))
 		return timeout_jiffies;
 
 	return 0;
@@ -789,7 +805,7 @@ schedule_sleep_work:
 error:
 	/* Disable sleep mode.*/
 	dev_err(MAIN_DEV, "Disable sleep mode\n");
-	uart_info->sleep_allowed = false;
+	clear_bit(SLEEP_CORE_READY, &uart_info->sleep_flags);
 	mutex_unlock(&(uart_info->sleep_state_lock));
 }
 
@@ -1448,6 +1464,12 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 			dev_dbg(MAIN_DEV,
 				"New sleep_state: CHIP_POWERED_DOWN\n");
 			uart_info->sleep_state = CHIP_POWERED_DOWN;
+			/*
+			 * This is to ensure when chip is switched
+			 * on next time sleep_flags is again set with
+			 * SLEEP_CORE_READY when startup is done properly
+			 */
+			clear_bit(SLEEP_CORE_READY, &uart_info->sleep_flags);
 		}
 
 		cg2900_disable_regulator(uart_info);
@@ -1487,6 +1509,11 @@ static void uart_chip_startup_finished(struct cg2900_chip_dev *dev)
 	struct uart_info *uart_info = dev_get_drvdata(dev->dev);
 	unsigned long timeout_jiffies = get_sleep_timeout(uart_info);
 
+	/*
+	 * Chip startup is done, now chip is allowed
+	 * to go to sleep
+	 */
+	set_bit(SLEEP_CORE_READY, &uart_info->sleep_flags);
 	/* Schedule work to put the chip and transport to sleep. */
 	if (timeout_jiffies)
 		queue_delayed_work(uart_info->wq, &uart_info->sleep_work.work,
@@ -1867,10 +1894,10 @@ static int cg2900_hu_open(struct hci_uart *hu)
 			err);
 
 	if (hu->tty->ops->tiocmget && hu->tty->ops->break_ctl)
-		uart_info->sleep_allowed = true;
+		set_bit(SLEEP_TTY_READY, &uart_info->sleep_flags);
 	else {
 		dev_err(MAIN_DEV, "Sleep mode not available\n");
-		uart_info->sleep_allowed = false;
+		clear_bit(SLEEP_TTY_READY, &uart_info->sleep_flags);
 	}
 
 	return err;
@@ -1892,6 +1919,8 @@ static int cg2900_hu_close(struct hci_uart *hu)
 
 	BUG_ON(!uart_info);
 	BUG_ON(!uart_info->wq);
+
+	clear_bit(SLEEP_TTY_READY, &uart_info->sleep_flags);
 
 	/* Purge any stored sk_buffers */
 	skb_queue_purge(&uart_info->tx_queue);
