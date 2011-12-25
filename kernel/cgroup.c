@@ -58,7 +58,6 @@
 #include <linux/eventfd.h>
 #include <linux/poll.h>
 #include <linux/flex_array.h> /* used in cgroup_attach_proc */
-#include <linux/capability.h>
 
 #include <asm/atomic.h>
 
@@ -1844,15 +1843,6 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
 				failed_ss = ss;
 				goto out;
 			}
-		} else if (!capable(CAP_SYS_ADMIN)) {
-			const struct cred *cred = current_cred(), *tcred;
-
-			/* No can_attach() - check perms generically */
-			tcred = __task_cred(tsk);
-			if (cred->euid != tcred->uid &&
-			    cred->euid != tcred->suid) {
-				return -EACCES;
-			}
 		}
 		if (ss->can_attach_task) {
 			retval = ss->can_attach_task(cgrp, tsk);
@@ -2109,11 +2099,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
 			continue;
 		/* get old css_set pointer */
 		task_lock(tsk);
-		if (tsk->flags & PF_EXITING) {
-			/* ignore this task if it's going away */
-			task_unlock(tsk);
-			continue;
-		}
 		oldcg = tsk->cgroups;
 		get_css_set(oldcg);
 		task_unlock(tsk);
@@ -2203,6 +2188,24 @@ out_free_group_list:
 	return retval;
 }
 
+static int cgroup_allow_attach(struct cgroup *cgrp, struct task_struct *tsk)
+{
+	struct cgroup_subsys *ss;
+	int ret;
+
+	for_each_subsys(cgrp->root, ss) {
+		if (ss->allow_attach) {
+			ret = ss->allow_attach(cgrp, tsk);
+			if (ret)
+				return ret;
+		} else {
+			return -EACCES;
+		}
+	}
+
+	return 0;
+}
+
 /*
  * Find the task_struct of the task to attach by vpid and pass it along to the
  * function to attach either it or all tasks in its threadgroup. Will take
@@ -2214,15 +2217,11 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
 	const struct cred *cred = current_cred(), *tcred;
 	int ret;
 
-	if (!cgroup_lock_live_group(cgrp))
-		return -ENODEV;
-
 	if (pid) {
 		rcu_read_lock();
 		tsk = find_task_by_vpid(pid);
 		if (!tsk) {
 			rcu_read_unlock();
-			cgroup_unlock();
 			return -ESRCH;
 		}
 		if (threadgroup) {
@@ -2236,7 +2235,6 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
 		} else if (tsk->flags & PF_EXITING) {
 			/* optimization for the single-task-only case */
 			rcu_read_unlock();
-			cgroup_unlock();
 			return -ESRCH;
 		}
 
@@ -2248,9 +2246,15 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
 		if (cred->euid &&
 		    cred->euid != tcred->uid &&
 		    cred->euid != tcred->suid) {
-			rcu_read_unlock();
-			cgroup_unlock();
-			return -EACCES;
+			/*
+			 * if the default permission check fails, give each
+			 * cgroup a chance to extend the permission check
+			 */
+			ret = cgroup_allow_attach(cgrp, tsk);
+			if (ret) {
+				rcu_read_unlock();
+				return ret;
+			}
 		}
 		get_task_struct(tsk);
 		rcu_read_unlock();
@@ -2262,15 +2266,19 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
 		get_task_struct(tsk);
 	}
 
-	if (threadgroup) {
+	if (threadgroup)
 		threadgroup_fork_write_lock(tsk);
-		ret = cgroup_attach_proc(cgrp, tsk);
-		threadgroup_fork_write_unlock(tsk);
-	} else {
-		ret = cgroup_attach_task(cgrp, tsk);
+	ret = -ENODEV;
+	if (cgroup_lock_live_group(cgrp)) {
+		if (threadgroup)
+			ret = cgroup_attach_proc(cgrp, tsk);
+		else
+			ret = cgroup_attach_task(cgrp, tsk);
+		cgroup_unlock();
 	}
+	if (threadgroup)
+		threadgroup_fork_write_unlock(tsk);
 	put_task_struct(tsk);
-	cgroup_unlock();
 	return ret;
 }
 
