@@ -1317,11 +1317,11 @@ exit_kfree_pdata:
 
 err_mutexunlockfreedata:
 	mutex_unlock(&prs->lock);
-	kfree(prs);
 	if (prs->regulator) {
 		regulator_disable(prs->regulator);
 		regulator_put(prs->regulator);
 	}
+	kfree(prs);
 exit_alloc_data_failed:
 exit_check_functionality_failed:
 	dev_err(&client->dev, "%s: Driver Init failed\n",
