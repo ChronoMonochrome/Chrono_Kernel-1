@@ -124,6 +124,7 @@ struct cg2900_trans_callbacks {
 	int (*write)(struct cg2900_chip_dev *dev, struct sk_buff *skb);
 	void (*set_chip_power)(struct cg2900_chip_dev *dev, bool chip_on);
 	void (*chip_startup_finished)(struct cg2900_chip_dev *dev);
+	void (*set_baud_rate)(struct cg2900_chip_dev *dev, bool low_baud);
 };
 
 /**

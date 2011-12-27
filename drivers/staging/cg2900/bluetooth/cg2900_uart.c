@@ -1289,6 +1289,44 @@ static int set_baud_rate(struct hci_uart *hu, int baud)
 }
 
 /**
+ * uart_set_baud_rate() - External Interface for setting baud rate
+ * @dev:		Transport device information.
+ * @low_baud:	whether switch to low_baud or high.
+ *
+ * Returns:
+ *   none
+ */
+static void uart_set_baud_rate(struct cg2900_chip_dev *dev, bool low_baud)
+{
+	struct uart_info *uart_info = dev_get_drvdata(dev->dev);
+
+	if (!uart_info->hu) {
+		dev_err(MAIN_DEV, "uart_set_baud_rate: UART not open\n");
+		return;
+	}
+
+	if (low_baud) {
+		if (uart_info->baud_rate != uart_default_baud) {
+			dev_dbg(MAIN_DEV, "Changing BAUD now to : %d",
+					uart_default_baud);
+			set_baud_rate(uart_info->hu, uart_default_baud);
+		} else {
+			dev_dbg(MAIN_DEV, "BAUD is already set to :%d",
+					uart_default_baud);
+		}
+	} else {
+		if (uart_info->baud_rate != uart_high_baud) {
+			dev_dbg(MAIN_DEV, "Changing BAUD now to : %d",
+					uart_high_baud);
+			set_baud_rate(uart_info->hu, uart_high_baud);
+		} else {
+			dev_dbg(MAIN_DEV, "BAUD is already set to :%d",
+					uart_high_baud);
+		}
+	}
+}
+
+/**
  * uart_write() - Transmit data to CG2900 over UART.
  * @dev:	Transport device information.
  * @skb:	SK buffer to transmit.
@@ -1341,6 +1379,7 @@ static int uart_open(struct cg2900_chip_dev *dev)
 		return -EACCES;
 	}
 
+	uart_info->baud_rate = uart_default_baud;
 	/*
 	 * Chip has just been started up. It has a system to autodetect
 	 * exact baud rate and transport to use. There are only a few commands
@@ -1390,10 +1429,21 @@ static int uart_open(struct cg2900_chip_dev *dev)
 	}
 
 	/* Just return if there will be no change of baud rate */
-	if (uart_default_baud != uart_high_baud)
-		return set_baud_rate(uart_info->hu, uart_high_baud);
-	else
-		return 0;
+	if (uart_default_baud != uart_high_baud) {
+
+		/*
+		 * Don't change to high baud yet
+		 * as there is bug CG2905/10 PG1 that firmware d/l
+		 * has to take place at lower baud
+		 * after firmware d/l UART will be switched
+		 * to higher baud.
+		 */
+		if (CG2905_PG1_1_REV != dev->chip.hci_revision &&
+				CG2910_PG1_REV != dev->chip.hci_revision)
+			return set_baud_rate(uart_info->hu, uart_high_baud);
+	}
+
+	return 0;
 }
 
 /**
@@ -2078,6 +2128,8 @@ static int __devinit cg2900_uart_probe(struct platform_device *pdev)
 	uart_info->chip_dev.t_cb.set_chip_power = uart_set_chip_power;
 	uart_info->chip_dev.t_cb.chip_startup_finished =
 			uart_chip_startup_finished;
+	uart_info->chip_dev.t_cb.set_baud_rate =
+			uart_set_baud_rate;
 	uart_info->chip_dev.pdev = pdev;
 	uart_info->chip_dev.dev = &pdev->dev;
 	uart_info->chip_dev.t_data = uart_info;

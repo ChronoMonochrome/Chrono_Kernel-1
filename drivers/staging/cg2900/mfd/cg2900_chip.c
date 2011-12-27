@@ -2570,6 +2570,20 @@ static int cg2900_open(struct cg2900_user_data *user)
 			err = -EIO;
 			goto err_free_list_item;
 		}
+
+		if (CG2905_PG1_1_REV == dev->chip.hci_revision ||
+				CG2910_PG1_REV == dev->chip.hci_revision) {
+			/*
+			 * Switch to higher baud rate
+			 * Because of bug in CG2905/CG2910 PG1 H/W,
+			 * We have to download the ptc/ssf files
+			 * at lower baud and then switch to Higher Baud
+			 */
+			if (info->chip_dev->t_cb.set_baud_rate)
+				info->chip_dev->t_cb.set_baud_rate(
+						info->chip_dev, false);
+		}
+
 	}
 
 	list_add_tail(&tmp->list, &info->open_channels);
