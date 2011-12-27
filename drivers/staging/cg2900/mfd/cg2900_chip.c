@@ -1535,6 +1535,23 @@ static bool handle_vs_write_file_block_cmd_complete(struct cg2900_chip_dev *dev,
 	    info->download_state != DOWNLOAD_PENDING)
 		return false;
 
+	if (HCI_BT_WRONG_SEQ_ERROR == status && info->file_info.chunk_id == 1 &&
+			(CG2905_PG1_1_REV == dev->chip.hci_revision ||
+			CG2910_PG1_REV == dev->chip.hci_revision)) {
+		/*
+		 * Because of bug in CG2905/CG2910 PG1 H/W, the first chunk
+		 * will return an error of wrong sequence number. As a
+		 * workaround the first chunk needs to be sent again.
+		 */
+		info->file_info.chunk_id = 0;
+		info->file_info.file_offset = 0;
+		/*
+		 * Set the status back to success so that it continues on the
+		 * success path rather than failure.
+		 */
+		status = HCI_BT_ERROR_NO_ERROR;
+	}
+
 	if (HCI_BT_ERROR_NO_ERROR == status)
 		cg2900_create_work_item(info->wq, work_cont_file_download, dev);
 	else {
