@@ -1005,7 +1005,8 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	/* Microphone 1 path */
 
-	SND_SOC_DAPM_INPUT("MIC1 Input"),
+	SND_SOC_DAPM_INPUT("MIC1A Input"),
+	SND_SOC_DAPM_INPUT("MIC1B Input"),
 
 	SND_SOC_DAPM_MUX("Mic 1A or 1B Select Capture Route",
 			SND_SOC_NOPM, 0, 0, dapm_mic1ab_select),
@@ -1245,8 +1246,8 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 
 	/* Microphone 1 path */
 
-	{"Mic 1A or 1B Select Capture Route", "Mic 1A", "MIC1 Input"},
-	{"Mic 1A or 1B Select Capture Route", "Mic 1B", "MIC1 Input"},
+	{"Mic 1A or 1B Select Capture Route", "Mic 1A", "MIC1A Input"},
+	{"Mic 1A or 1B Select Capture Route", "Mic 1B", "MIC1B Input"},
 
 	{"Mic 1", "Capture Switch", "Mic 1A or 1B Select Capture Route"},
 

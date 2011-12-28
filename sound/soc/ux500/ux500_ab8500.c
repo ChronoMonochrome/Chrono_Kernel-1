@@ -107,6 +107,22 @@ static bool reg_enabled[4] =  {
 	false,
 	false
 };
+static int reg_claim[4];
+enum amic_idx { AMIC_1A, AMIC_1B, AMIC_2 };
+struct amic_conf {
+	enum regulator_idx reg_id;
+	bool enabled;
+	char *name;
+};
+static struct amic_conf amic_info[3] = {
+	{ REGULATOR_AMIC1, false, "amic1a" },
+	{ REGULATOR_AMIC1, false, "amic1b" },
+	{ REGULATOR_AMIC2, false, "amic2" }
+};
+static DEFINE_MUTEX(amic_conf_lock);
+
+static const char *enum_amic_reg_conf[2] = { "v-amic1", "v-amic2" };
+static SOC_ENUM_SINGLE_EXT_DECL(soc_enum_amicconf, enum_amic_reg_conf);
 
 /* Slot configuration */
 static unsigned int tx_slots = DEF_TX_SLOTS;
@@ -131,7 +147,7 @@ static int enable_regulator(enum regulator_idx idx)
 	if (ret != 0) {
 		pr_err("%s: Failure to enable regulator '%s' (ret = %d)\n",
 			__func__, reg_info[idx].supply, ret);
-		return ret;
+		return -EIO;
 	};
 
 	reg_enabled[idx] = true;
@@ -202,6 +218,42 @@ err_get:
 	return status;
 }
 
+static int claim_amic_regulator(enum amic_idx amic_id)
+{
+	enum regulator_idx reg_id = amic_info[amic_id].reg_id;
+	int ret = 0;
+
+	reg_claim[reg_id]++;
+	if (reg_claim[reg_id] > 1)
+		goto cleanup;
+
+	ret = enable_regulator(reg_id);
+	if (ret < 0) {
+		pr_err("%s: Failed to claim %s for %s (ret = %d)!",
+			__func__, reg_info[reg_id].supply,
+			amic_info[amic_id].name, ret);
+		reg_claim[reg_id]--;
+	}
+
+cleanup:
+	amic_info[amic_id].enabled = (ret == 0);
+
+	return ret;
+}
+
+static void release_amic_regulator(enum amic_idx amic_id)
+{
+	enum regulator_idx reg_id = amic_info[amic_id].reg_id;
+
+	reg_claim[reg_id]--;
+	if (reg_claim[reg_id] <= 0) {
+		disable_regulator(reg_id);
+		reg_claim[reg_id] = 0;
+	}
+
+	amic_info[amic_id].enabled = false;
+}
+
 /* Power/clock control */
 
 static int ux500_ab8500_power_control_inc(void)
@@ -219,15 +271,13 @@ static int ux500_ab8500_power_control_inc(void)
 	if (ab8500_power_count == 1) {
 		/* Turn on audio-regulator */
 		ret = enable_regulator(REGULATOR_AUDIO);
-		if (ret) {
-			ret = -EIO;
+		if (ret < 0)
 			goto out;
-		}
 
 		/* Enable audio-clock */
 		ret = clk_set_parent(clk_ptr_intclk,
 				(master_clock_sel == 0) ? clk_ptr_sysclk : clk_ptr_ulpclk);
-		if (ret) {
+		if (ret != 0) {
 			pr_err("%s: ERROR: Setting master-clock to %s failed (ret = %d)!",
 				__func__,
 				(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK",
@@ -239,7 +289,7 @@ static int ux500_ab8500_power_control_inc(void)
 			__func__,
 			(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK");
 		ret = clk_enable(clk_ptr_audioclk);
-		if (ret) {
+		if (ret != 0) {
 			pr_err("%s: ERROR: clk_enable failed (ret = %d)!", __func__, ret);
 			ret = -EIO;
 			ab8500_power_count = 0;
@@ -339,18 +389,103 @@ static int anc_status_control_put(struct snd_kcontrol *kcontrol,
 	ux500_ab8500_power_control_dec();
 
 cleanup:
-	if (ret < 0) {
+	if (ret < 0)
 		pr_err("%s: Unable to configure ANC! (ret = %d)\n",
-				__func__, ret);
-		return 0;
-	}
+			__func__, ret);
 
-	return 1;
+	return (ret < 0) ? 0 : 1;
 }
 
 static const struct snd_kcontrol_new anc_status_control = \
 	SOC_ENUM_EXT("ANC Status", soc_enum_ancstate,
 		anc_status_control_get, anc_status_control_put);
+
+static int amic_reg_control_get(struct snd_ctl_elem_value *ucontrol,
+		enum amic_idx amic_id)
+{
+	ucontrol->value.integer.value[0] =
+		(amic_info[amic_id].reg_id == REGULATOR_AMIC2);
+
+	return 0;
+}
+
+static int amic_reg_control_put(struct snd_ctl_elem_value *ucontrol,
+		enum amic_idx amic_id)
+{
+	enum regulator_idx old_reg_id, new_reg_id;
+	int ret = 0;
+
+	if (ucontrol->value.integer.value[0] == 0)
+		new_reg_id = REGULATOR_AMIC1;
+	else
+		new_reg_id = REGULATOR_AMIC2;
+
+	mutex_lock(&amic_conf_lock);
+
+	old_reg_id = amic_info[amic_id].reg_id;
+	if (old_reg_id == new_reg_id)
+		goto cleanup;
+
+	if (!amic_info[amic_id].enabled) {
+		amic_info[amic_id].reg_id = new_reg_id;
+		goto cleanup;
+	}
+
+	release_amic_regulator(amic_id);
+	amic_info[amic_id].reg_id = new_reg_id;
+	ret = claim_amic_regulator(amic_id);
+
+cleanup:
+	mutex_unlock(&amic_conf_lock);
+
+	return (ret < 0) ? 0 : 1;
+}
+
+static int amic1a_reg_control_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	return amic_reg_control_get(ucontrol, AMIC_1A);
+}
+
+static int amic1a_reg_control_put(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	return amic_reg_control_put(ucontrol, AMIC_1A);
+}
+
+static int amic1b_reg_control_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	return amic_reg_control_get(ucontrol, AMIC_1B);
+}
+
+static int amic1b_reg_control_put(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	return amic_reg_control_put(ucontrol, AMIC_1B);
+}
+
+static int amic2_reg_control_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	return amic_reg_control_get(ucontrol, AMIC_2);
+}
+
+static int amic2_reg_control_put(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	return amic_reg_control_put(ucontrol, AMIC_2);
+}
+
+static const struct snd_kcontrol_new mic1a_regulator_control = \
+	SOC_ENUM_EXT("Mic 1A Regulator", soc_enum_amicconf,
+		amic1a_reg_control_get, amic1a_reg_control_put);
+static const struct snd_kcontrol_new mic1b_regulator_control = \
+	SOC_ENUM_EXT("Mic 1B Regulator", soc_enum_amicconf,
+		amic1b_reg_control_get, amic1b_reg_control_put);
+static const struct snd_kcontrol_new mic2_regulator_control = \
+	SOC_ENUM_EXT("Mic 2 Regulator", soc_enum_amicconf,
+		amic2_reg_control_get, amic2_reg_control_put);
 
 /* DAPM-events */
 
@@ -365,31 +500,38 @@ static int dapm_audioreg_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
-
-static int dapm_mic1reg_event(struct snd_soc_dapm_widget *w,
-			struct snd_kcontrol *k, int event)
+static int dapm_amicreg_event(enum amic_idx amic_id, int event)
 {
 	int ret = 0;
 
+	mutex_lock(&amic_conf_lock);
+
 	if (SND_SOC_DAPM_EVENT_ON(event))
-		ret = enable_regulator(REGULATOR_AMIC1);
-	else
-		disable_regulator(REGULATOR_AMIC1);
+		ret = claim_amic_regulator(amic_id);
+	else if (amic_info[amic_id].enabled)
+		release_amic_regulator(amic_id);
+
+	mutex_unlock(&amic_conf_lock);
 
 	return ret;
 }
 
-static int dapm_mic2reg_event(struct snd_soc_dapm_widget *w,
+static int dapm_amic1areg_event(struct snd_soc_dapm_widget *w,
 			struct snd_kcontrol *k, int event)
 {
-	int ret = 0;
+	return dapm_amicreg_event(AMIC_1A, event);
+}
 
-	if (SND_SOC_DAPM_EVENT_ON(event))
-		ret = enable_regulator(REGULATOR_AMIC2);
-	else
-		disable_regulator(REGULATOR_AMIC2);
+static int dapm_amic1breg_event(struct snd_soc_dapm_widget *w,
+			struct snd_kcontrol *k, int event)
+{
+	return dapm_amicreg_event(AMIC_1B, event);
+}
 
-	return ret;
+static int dapm_amic2reg_event(struct snd_soc_dapm_widget *w,
+			struct snd_kcontrol *k, int event)
+{
+	return dapm_amicreg_event(AMIC_2, event);
 }
 
 static int dapm_dmicreg_event(struct snd_soc_dapm_widget *w,
@@ -408,13 +550,20 @@ static int dapm_dmicreg_event(struct snd_soc_dapm_widget *w,
 /* DAPM-widgets */
 
 static const struct snd_soc_dapm_widget ux500_ab8500_dapm_widgets[] = {
-	SND_SOC_DAPM_SUPPLY("AUDIO Regulator", SND_SOC_NOPM, 0, 0, dapm_audioreg_event,
+	SND_SOC_DAPM_SUPPLY("AUDIO Regulator",
+			SND_SOC_NOPM, 0, 0, dapm_audioreg_event,
 			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
-	SND_SOC_DAPM_SUPPLY("AMIC1 Regulator", SND_SOC_NOPM, 0, 0, dapm_mic1reg_event,
+	SND_SOC_DAPM_SUPPLY("AMIC1A Regulator",
+			SND_SOC_NOPM, 0, 0, dapm_amic1areg_event,
 			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
-	SND_SOC_DAPM_SUPPLY("AMIC2 Regulator", SND_SOC_NOPM, 0, 0, dapm_mic2reg_event,
+	SND_SOC_DAPM_SUPPLY("AMIC1B Regulator",
+			SND_SOC_NOPM, 0, 0, dapm_amic1breg_event,
 			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
-	SND_SOC_DAPM_SUPPLY("DMIC Regulator", SND_SOC_NOPM, 0, 0, dapm_dmicreg_event,
+	SND_SOC_DAPM_SUPPLY("AMIC2 Regulator",
+			SND_SOC_NOPM, 0, 0, dapm_amic2reg_event,
+			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+	SND_SOC_DAPM_SUPPLY("DMIC Regulator",
+			SND_SOC_NOPM, 0, 0, dapm_dmicreg_event,
 			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 };
 
@@ -426,11 +575,10 @@ static const struct snd_soc_dapm_route ux500_ab8500_dapm_intercon[] = {
 	{"DAC", NULL, "AUDIO Regulator"},
 	{"ADC", NULL, "AUDIO Regulator"},
 
-	/* Power AMIC1-regulator when MIC1 is enabled */
-	{"MIC1 Enable", NULL, "AMIC1 Regulator"},
-
-	/* Power AMIC2-regulator when MIC1 is enabled */
-	{"MIC2 Enable", NULL, "AMIC2 Regulator"},
+	/* Power configured regulator when an analog mic is enabled */
+	{"MIC1A Input", NULL, "AMIC1A Regulator"},
+	{"MIC1B Input", NULL, "AMIC1B Regulator"},
+	{"MIC2 Input", NULL, "AMIC2 Regulator"},
 
 	/* Power DMIC-regulator when any digital mic is enabled */
 	{"DMic 1", NULL, "DMIC Regulator"},
@@ -642,8 +790,16 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	}
 
 	/* Add controls */
-	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&mclk_input_control, codec));
-	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&anc_status_control, codec));
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
+		&mclk_input_control, codec));
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
+		&anc_status_control, codec));
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
+		&mic1a_regulator_control, codec));
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
+		&mic1b_regulator_control, codec));
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
+		&mic2_regulator_control, codec));
 
 	/* Get references to clock-nodes */
 	clk_ptr_sysclk = NULL;
@@ -689,6 +845,9 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	master_clock_sel = 1;
 
 	ab8500_power_count = 0;
+
+	reg_claim[REGULATOR_AMIC1] = 0;
+	reg_claim[REGULATOR_AMIC2] = 0;
 
 	/* Add DAPM-widgets */
 	ret = add_widgets(codec);
