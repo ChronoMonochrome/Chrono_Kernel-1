@@ -142,7 +142,7 @@ t_cm_error cm_writeAttribute(
             attribute->memory.offset * attribute->memory.memory->memEntSize;
 
     if(attribute->memory.memory->memEntSize != 2)
-        *((t_uint32 *)hostAddr)  = value & ~MASK_BYTE3;
+        *((t_uint32 *)hostAddr) = value & ~MASK_BYTE3;
     else
         *((t_uint16 *)hostAddr) = value;
 

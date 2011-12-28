@@ -175,6 +175,7 @@ int cmld_GetComponentPropertyNumber(struct cm_process_priv *,
 int cmld_GetComponentPropertyName(struct cm_process_priv *, CM_GetComponentPropertyName_t __user *);
 int cmld_GetComponentPropertyValue(struct cm_process_priv *, CM_GetComponentPropertyValue_t __user *);
 int cmld_ReadComponentAttribute(struct cm_process_priv *, CM_ReadComponentAttribute_t __user *);
+int cmld_WriteComponentAttribute(struct cm_process_priv *, CM_WriteComponentAttribute_t __user *);
 int cmld_GetExecutiveEngineHandle(struct cm_process_priv *, CM_GetExecutiveEngineHandle_t __user *);
 int cmld_SetMode(CM_SetMode_t __user *);
 int cmld_GetRequiredComponentFiles(struct cm_process_priv *cmPriv,

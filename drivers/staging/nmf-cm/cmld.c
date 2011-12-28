@@ -602,6 +602,11 @@ static long cmld_control_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		return 0;
 	case CM_PRIV_DEBUGFS_WAIT_DUMP:
 		return 0;
+
+	case CM_WRITECOMPONENTATTRIBUTE:
+		return cmld_WriteComponentAttribute(procPriv,
+            (CM_WriteComponentAttribute_t *)arg);
+
 	default:
 		pr_err("CM(%s): unsupported command %i\n", __func__, cmd);
 		return -EINVAL;

@@ -459,6 +459,17 @@ typedef struct {
 
 typedef struct {
 	struct {
+		t_cm_instance_handle component;
+		const char *attrName;
+		t_uint32 value; /** < In parameter */
+	} in;
+	struct {
+		t_cm_error error; /** < Out parameter */
+	} out;
+} CM_WriteComponentAttribute_t;
+
+typedef struct{
+	struct {
 		t_cm_domain_id domainId;
 	} in;
 	struct {
@@ -580,6 +591,7 @@ typedef struct{
 #define CM_GETCOMPONENTPROPERTYNAME 		_IOWR('c', 32, CM_GetComponentPropertyName_t)
 #define CM_GETCOMPONENTPROPERTYVALUE 		_IOWR('c', 33, CM_GetComponentPropertyValue_t)
 #define CM_READCOMPONENTATTRIBUTE 		_IOWR('c', 34, CM_ReadComponentAttribute_t)
+#define CM_WRITECOMPONENTATTRIBUTE 		_IOWR('c', 44, CM_WriteComponentAttribute_t)
 #define CM_GETEXECUTIVEENGINEHANDLE 		_IOWR('c', 35, CM_GetExecutiveEngineHandle_t)
 #define CM_SETMODE 				_IOWR('c', 36, CM_SetMode_t)
 #define CM_GETREQUIREDCOMPONENTFILES 		_IOWR('c', 37, CM_GetRequiredComponentFiles_t)

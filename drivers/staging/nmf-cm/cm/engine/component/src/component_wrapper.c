@@ -906,6 +906,39 @@ out:
     return error;
 }
 
+/*
+ * Get a reference on a given attribute of a given component
+ */
+
+PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_WriteComponentAttribute(
+        const t_cm_instance_handle instance,
+        const char* attrName,
+        t_uint24 attrValue)
+{
+    t_cm_error error;
+    t_component_instance* component;
+
+    OSAL_LOCK_API();
+
+    component = cm_lookupComponent(instance);
+    if (NULL == component)
+        error = CM_INVALID_COMPONENT_HANDLE;
+    else
+    {
+        if ((error = cm_EEM_ForceWakeup(component->Template->dspId)) != CM_OK)
+            goto out;
+
+        //t_uint24 -> t_uint32 possible since we know it same size
+        error = cm_writeAttribute(component, attrName, attrValue);
+
+        cm_EEM_AllowSleep(component->Template->dspId);
+    }
+
+out:
+    OSAL_UNLOCK_API();
+    return error;
+}
+
 /*===============================================================================
  * Introspection API
  *===============================================================================*/

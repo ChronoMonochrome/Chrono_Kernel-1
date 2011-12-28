@@ -223,6 +223,21 @@ PUBLIC IMPORT_SHARED t_cm_error CM_ENGINE_ReadComponentAttribute(
     t_uint24 *value);
 
 /*!
+ * \brief Write a value on an attribute exported by a component instance.
+ *
+ * \param[in] component
+ * \param[in] attrName  Null terminated string (Max size=\ref MAX_ATTRIBUTE_NAME_LENGTH).
+ * \param[out] value
+ *
+ * \ingroup CM_ENGINE_API
+ */
+PUBLIC IMPORT_SHARED t_cm_error CM_ENGINE_WriteComponentAttribute(
+    const t_cm_instance_handle component,
+    const char* attrName,
+    t_uint24 value);
+
+
+/*!
  * \brief Get the older component.
  *
  * \param[in] client
