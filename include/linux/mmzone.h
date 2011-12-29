@@ -35,11 +35,12 @@
  */
 #define PAGE_ALLOC_COSTLY_ORDER 3
 
-#define MIGRATE_UNMOVABLE     0
-#define MIGRATE_RECLAIMABLE   1
-#define MIGRATE_MOVABLE       2
-#define MIGRATE_PCPTYPES      3 /* the number of types on the pcp lists */
-#define MIGRATE_RESERVE       3
+enum {
+	MIGRATE_UNMOVABLE,
+	MIGRATE_RECLAIMABLE,
+	MIGRATE_MOVABLE,
+	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
+	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
 #ifdef CONFIG_CMA
 	/*
 	 * MIGRATE_CMA migration type is designed to mimic the way
@@ -54,14 +55,11 @@
 	 * MAX_ORDER_NR_PAGES should biggest page be bigger then
 	 * a single pageblock.
 	 */
-	#define	MIGRATE_CMA	      4
-	#define MIGRATE_ISOLATE       5 /* can't allocate from here */
-	#define MIGRATE_TYPES         6
-#else
-	#define MIGRATE_ISOLATE       4 /* can't allocate from here */
-	#define MIGRATE_TYPES         5
+	MIGRATE_CMA,
 #endif
-
+	MIGRATE_ISOLATE,       /* can't allocate from here */
+	MIGRATE_TYPES
+}
 
 /*
  * Returns a list which contains the migrate types on to which
@@ -79,6 +77,18 @@ bool is_cma_pageblock(struct page *page);
 #  define is_cma_pageblock(page) false
 #  define is_migrate_cma(migratetype) false
 #  define cma_wmark_pages(zone) 0
+=======
+	MIGRATE_CMA,
+#endif
+	MIGRATE_ISOLATE,	/* can't allocate from here */
+	MIGRATE_TYPES
+};
+
+#ifdef CONFIG_CMA
+#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
+#else
+#  define is_migrate_cma(migratetype) false
+>>>>>>> 269a4c9... mm: mmzone: MIGRATE_CMA migration type added
 #endif
 
 #define for_each_migratetype_order(order, type) \
