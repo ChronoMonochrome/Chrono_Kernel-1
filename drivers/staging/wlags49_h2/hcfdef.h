@@ -4,6 +4,7 @@
 #define HCFDEFC_H 1
 
 /*************************************************************************************************
+<<<<<<< HEAD
 *
 * FILE	 : HCFDEF.H
 *
@@ -73,6 +74,77 @@
 *
 *
 *************************************************************************************************/
+=======
+ *
+ * FILE   : HCFDEF.H
+ *
+ * DATE   : $Date: 2004/08/05 11:47:10 $   $Revision: 1.8 $
+ * Original: 2004/05/28 14:05:35    Revision: 1.59      Tag: hcf7_t20040602_01
+ * Original: 2004/05/13 15:31:45    Revision: 1.53      Tag: hcf7_t7_20040513_01
+ * Original: 2004/04/15 09:24:42    Revision: 1.44      Tag: hcf7_t7_20040415_01
+ * Original: 2004/04/13 14:22:45    Revision: 1.43      Tag: t7_20040413_01
+ * Original: 2004/04/01 15:32:55    Revision: 1.40      Tag: t7_20040401_01
+ * Original: 2004/03/10 15:39:28    Revision: 1.36      Tag: t20040310_01
+ * Original: 2004/03/03 14:10:12    Revision: 1.34      Tag: t20040304_01
+ * Original: 2004/03/02 09:27:12    Revision: 1.32      Tag: t20040302_03
+ * Original: 2004/02/24 13:00:29    Revision: 1.29      Tag: t20040224_01
+ * Original: 2004/02/18 17:13:57    Revision: 1.26      Tag: t20040219_01
+ *
+ * AUTHOR : Nico Valster
+ *
+ * SPECIFICATION: ...........
+ *
+ * DESC   : Definitions and Prototypes for HCF only
+ *
+ **************************************************************************************************
+ *
+ *
+ * SOFTWARE LICENSE
+ *
+ * This software is provided subject to the following terms and conditions,
+ * which you should read carefully before using the software.  Using this
+ * software indicates your acceptance of these terms and conditions.  If you do
+ * not agree with these terms and conditions, do not use the software.
+ *
+ * COPYRIGHT © 1994 - 1995   by AT&T.                All Rights Reserved
+ * COPYRIGHT © 1996 - 2000 by Lucent Technologies.   All Rights Reserved
+ * COPYRIGHT © 2001 - 2004   by Agere Systems Inc.   All Rights Reserved
+ * All rights reserved.
+ *
+ * Redistribution and use in source or binary forms, with or without
+ * modifications, are permitted provided that the following conditions are met:
+ *
+ * . Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following Disclaimer as comments in the code as
+ *    well as in the documentation and/or other materials provided with the
+ *    distribution.
+ *
+ * . Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following Disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * . Neither the name of Agere Systems Inc. nor the names of the contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * Disclaimer
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, INFRINGEMENT AND THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  ANY
+ * USE, MODIFICATION OR DISTRIBUTION OF THIS SOFTWARE IS SOLELY AT THE USERS OWN
+ * RISK. IN NO EVENT SHALL AGERE SYSTEMS INC. OR CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, INCLUDING, BUT NOT LIMITED TO, CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+ * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
+ *
+ *
+ *************************************************************************************************/
+>>>>>>> d36b691... misc latin1 to utf8 conversions
 
 
 /************************************************************************************************/
