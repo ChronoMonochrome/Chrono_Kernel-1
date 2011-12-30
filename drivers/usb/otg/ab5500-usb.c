@@ -47,6 +47,9 @@
 
 #define USB_PROBE_DELAY 1000 /* 1 seconds */
 
+#define PUBLIC_ID_BACKUPRAM1 (U5500_BACKUPRAM1_BASE + 0x0FC0)
+#define MAX_USB_SERIAL_NUMBER_LEN 31
+
 /* UsbLineStatus register - usb types */
 enum ab8500_usb_link_status {
 	USB_LINK_NOT_CONFIGURED,
@@ -466,6 +469,55 @@ irq_fail:
 	return err;
 }
 
+/* Sys interfaces */
+static ssize_t
+serial_number_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	u32 bufer[5];
+	void __iomem *backup_ram = NULL;
+	backup_ram = ioremap(PUBLIC_ID_BACKUPRAM1, 0x14);
+
+	if (backup_ram) {
+		bufer[0] = readl(backup_ram);
+		bufer[1] = readl(backup_ram + 4);
+		bufer[2] = readl(backup_ram + 8);
+		bufer[3] = readl(backup_ram + 0x0c);
+		bufer[4] = readl(backup_ram + 0x10);
+
+		snprintf(buf, MAX_USB_SERIAL_NUMBER_LEN+1,
+				"%.8X%.8X%.8X%.8X%.8X",
+			bufer[0], bufer[1], bufer[2], bufer[3], bufer[4]);
+
+		iounmap(backup_ram);
+	} else
+			dev_err(dev, "$$\n");
+
+	return strlen(buf);
+}
+
+
+static DEVICE_ATTR(serial_number, 0644, serial_number_show, NULL);
+
+static struct attribute *ab5500_usb_attributes[] = {
+	&dev_attr_serial_number.attr,
+	NULL
+};
+static const struct attribute_group ab5500_attr_group = {
+	.attrs = ab5500_usb_attributes,
+};
+
+static int ab5500_create_sysfsentries(struct ab5500_usb *ab)
+{
+	int err;
+
+	err = sysfs_create_group(&ab->dev->kobj, &ab5500_attr_group);
+	if (err)
+		sysfs_remove_group(&ab->dev->kobj, &ab5500_attr_group);
+
+	return err;
+}
+
 /**
  * ab5500_usb_boot_detect : detect the USB cable during boot time.
  * @mode: value for mode.
@@ -707,6 +759,10 @@ static int __devinit ab5500_usb_probe(struct platform_device *pdev)
 	err = ab5500_usb_boot_detect(ab);
 	if (err < 0)
 		goto fail1;
+
+	err = ab5500_create_sysfsentries(ab);
+	if (err < 0)
+		dev_err(ab->dev, "usb create sysfs entries failed\n");
 
 	return 0;
 
