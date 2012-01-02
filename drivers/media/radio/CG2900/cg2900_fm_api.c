@@ -17,6 +17,12 @@
 #include <linux/mutex.h>
 #include "cg2900_fm_driver.h"
 
+#define CG2910_FM_LUT_INFO_FILE "FM_FW_CG2910_1_0_P1_4_lut_info.fw"
+#define CG2910_FM_PROG_INFO_FILE "FM_FW_CG2910_1_0_P1_4_prog_info.fw"
+#define CG2910_LUT_IDX		0
+#define CG2910_PROG_IDX		1
+#define CG2910_MAX_FILES_DL	2
+
 #define CG2900_FM_BT_SRC_COEFF_INFO_FILE "cg2900_fm_bt_src_coeff_info.fw"
 #define CG2900_FM_EXT_SRC_COEFF_INFO_FILE "cg2900_fm_ext_src_coeff_info.fw"
 #define CG2900_FM_FM_COEFF_INFO_FILE	"cg2900_fm_fm_coeff_info.fw"
@@ -28,6 +34,14 @@
 #define OTHER_MUSIC			15
 #define DEFAULT_AUDIO_DEVIATION 0x1AA9
 #define DEFAULT_NOTIFICATION_HOLD_OFF_TIME 0x000A
+
+/* Specific chip version data */
+#define CG2900_PG1_REV			0x0101
+#define CG2900_PG2_REV			0x0200
+#define CG2900_PG1_SPECIAL_REV  0x0700
+#define CG2905_PG1_1_REV		0x1805
+#define CG2910_PG1_REV			0x1004
+#define CG2910_PG2_REV			0x1008
 
 static bool fm_rds_status;
 static bool fm_prev_rds_status;
@@ -190,9 +204,131 @@ error:
 	return file_found;
 }
 
+
+/**
+ * cg2910_fm_load_firmware() - Loads the FM lut and
+ * Program firmware files for CG2910
+ *
+ * @device: Pointer to char device requesting the operation.
+ *
+ * Returns:
+ *  0, if firmware download is successful
+ *  -ENOENT, file not found.
+ *  -ENOMEM, out of memory
+ */
+static int cg2910_fm_load_firmware(
+			struct device *device
+			)
+{
+	int err;
+	bool file_found;
+	int result = 0;
+	const struct firmware *fm_fw_info[2];
+	const struct firmware *fm_firmware[2];
+	char *fm_fw_file_name = NULL;
+	int loopi = 0;
+
+	FM_INFO_REPORT("+cg2910_fm_load_firmware");
+	fm_fw_info[CG2910_LUT_IDX] = NULL;
+	fm_fw_info[CG2910_PROG_IDX] = NULL;
+	fm_firmware[CG2910_LUT_IDX] = NULL;
+	fm_firmware[CG2910_PROG_IDX] = NULL;
+
+	/* Open fm_fw_info lut file. */
+	err = request_firmware(&fm_fw_info[CG2910_LUT_IDX],
+			CG2910_FM_LUT_INFO_FILE, device);
+	if (err) {
+		FM_ERR_REPORT("cg2910_fm_load_firmware: "
+				"Couldn't get fm_fw_info lut file");
+		result = -ENOENT;
+		goto error;
+	}
+
+	/* Open fm_fw_info prog file. */
+	err = request_firmware(&fm_fw_info[CG2910_PROG_IDX],
+			CG2910_FM_PROG_INFO_FILE, device);
+	if (err) {
+		FM_ERR_REPORT("cg2910_fm_load_firmware: "
+				"Couldn't get fm_fw_info prog file");
+		result = -ENOENT;
+		goto error;
+	}
+
+	fm_fw_file_name = kmalloc(CG2900_FM_FILENAME_MAX,
+			GFP_KERNEL);
+	if (fm_fw_file_name == NULL) {
+		FM_ERR_REPORT("cg2910_fm_load_firmware: "
+				"Couldn't allocate memory for "
+				"fm_fw_file_name");
+		result = -ENOMEM;
+		goto error;
+	}
+
+	/* Put a loop for downloading lut and prog */
+	for (loopi = 0; loopi < CG2910_MAX_FILES_DL; loopi++) {
+		/*
+		 * Now we have the fm_fw_info file. See if we can
+		 * find the right fm_fw_file_name file as well
+		 */
+		file_found = cg2900_fm_get_file_to_load(fm_fw_info[loopi],
+				&fm_fw_file_name);
+
+		if (!file_found) {
+			FM_ERR_REPORT("cg2910_fm_load_firmware: "
+					"Couldn't find fm_fw_file_name file!! "
+					"Major error!!!");
+			result = -ENOENT;
+			goto error;
+		}
+
+		/*
+		 * OK. Now it is time to download the firmware
+		 * First download lut file & then prog
+		 */
+		err = request_firmware(&fm_firmware[loopi],
+				fm_fw_file_name, device);
+		if (err < 0) {
+			FM_ERR_REPORT("cg2910_fm_load_firmware: "
+					"Couldn't get fm_firmware"
+					" file, err = %d", err);
+			result = -ENOENT;
+			goto error;
+		}
+
+		FM_INFO_REPORT("cg2910_fm_load_firmware: "
+				"Downloading %s of %d bytes",
+				fm_fw_file_name, fm_firmware[loopi]->size);
+		if (fmd_send_fm_firmware((u8 *) fm_firmware[loopi]->data,
+				fm_firmware[loopi]->size)) {
+			FM_ERR_REPORT("cg2910_fm_load_firmware: Error in "
+					"downloading %s", fm_fw_file_name);
+			result = -ENOENT;
+			goto error;
+		}
+	}
+
+error:
+	/* Release fm_fw_info lut and prog file */
+	if (fm_fw_info[CG2910_LUT_IDX])
+		release_firmware(fm_fw_info[CG2910_LUT_IDX]);
+	if (fm_fw_info[CG2910_PROG_IDX])
+		release_firmware(fm_fw_info[CG2910_PROG_IDX]);
+
+	if (fm_firmware[CG2910_LUT_IDX])
+		release_firmware(fm_firmware[CG2910_LUT_IDX]);
+	if (fm_firmware[CG2910_PROG_IDX])
+		release_firmware(fm_firmware[CG2910_PROG_IDX]);
+
+	/* Free Allocated memory */
+	kfree(fm_fw_file_name);
+	FM_DEBUG_REPORT("-cg2910_fm_load_firmware: returning %d",
+			result);
+	return result;
+}
+
 /**
  * cg2900_fm_load_firmware() - Loads the FM Coeffecients and F/W file(s)
- *
+ * for CG2900
  * @device: Pointer to char device requesting the operation.
  *
  * Returns:
@@ -906,10 +1042,29 @@ int cg2900_fm_switch_on(
 		goto error;
 	}
 
-	/* Now Download the Coefficient Files and FM Firmware */
-	if (cg2900_fm_load_firmware(device) != 0) {
+	if (version_info.revision == CG2910_PG1_REV
+			|| version_info.revision == CG2910_PG2_REV
+			|| version_info.revision == CG2905_PG1_1_REV) {
+		/* Now Download CG2910 lut and program Firmware files */
+		if (cg2910_fm_load_firmware(device) != 0) {
+			FM_ERR_REPORT("cg2900_fm_switch_on: "
+				"Error in downloading firmware for CG2910/05");
+			result = -EINVAL;
+			goto error;
+		}
+	} else if (version_info.revision == CG2900_PG1_REV
+			|| version_info.revision == CG2900_PG2_REV
+			|| version_info.revision == CG2900_PG1_SPECIAL_REV) {
+		/* Now Download the Coefficient Files and FM Firmware */
+		if (cg2900_fm_load_firmware(device) != 0) {
+			FM_ERR_REPORT("cg2900_fm_switch_on: "
+					"Error in downloading firmware for CG2900");
+			result = -EINVAL;
+			goto error;
+		}
+	} else {
 		FM_ERR_REPORT("cg2900_fm_switch_on: "
-			"Error in downloading firmware");
+				"Unsupported Chip revision");
 		result = -EINVAL;
 		goto error;
 	}
