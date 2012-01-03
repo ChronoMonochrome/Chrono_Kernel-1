@@ -417,7 +417,7 @@ if (god_mode_enabled)
 		BUG();
 	}
 
-	if (security_capable(current_cred(), ns, cap) == 0) {
+	if (has_ns_capability(current, ns, cap)) {
 		current->flags |= PF_SUPERPRIV;
 		return true;
 	}
