@@ -150,8 +150,20 @@ ab5500_regulator_init_data[AB5500_NUM_REGULATORS] = {
 	},
 };
 
+static struct ab5500_regulator_data
+ab5500_regulator_data[AB5500_NUM_REGULATORS] = {
+	[AB5500_LDO_H] = {
+		/*
+		 * The sub camera on the dev boards needs both supplies to be
+		 * on to avoid high leakage.
+		 */
+		.off_is_lowpower = true,
+	},
+};
+
 struct ab5500_regulator_platform_data u5500_ab5500_regulator_data = {
 	.regulator	= ab5500_regulator_init_data,
+	.data		= ab5500_regulator_data,
 	.num_regulator	= ARRAY_SIZE(ab5500_regulator_init_data),
 };
 

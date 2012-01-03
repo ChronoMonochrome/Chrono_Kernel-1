@@ -57,7 +57,7 @@ struct ab5500_regulator {
 	struct regulator_desc desc;
 	const int *voltages;
 	int num_holes;
-	bool pwrctrl;
+	bool off_is_lowpower;
 	bool enabled;
 	int enable_time;
 	int load_lp_uA;
@@ -104,8 +104,13 @@ static int ab5500_regulator_disable(struct regulator_dev *rdev)
 {
 	struct ab5500_regulators *ab5500 = rdev_get_drvdata(rdev);
 	struct ab5500_regulator *r = ab5500->regulator[rdev_get_id(rdev)];
-	u8 regval = r->pwrctrl ? AB5500_LDO_MODE_PWRCTRL : AB5500_LDO_MODE_OFF;
+	u8 regval;
 	int ret;
+
+	if (r->off_is_lowpower)
+		regval = AB5500_LDO_MODE_LOWPOWER;
+	else
+		regval = AB5500_LDO_MODE_OFF;
 
 	ret = abx500_mask_and_set(ab5500->dev, r->bank, r->reg,
 				  r->update_mask, regval);
@@ -187,6 +192,12 @@ static int ab5500_regulator_is_enabled(struct regulator_dev *rdev)
 	case AB5500_LDO_MODE_OFF:
 		r->enabled = false;
 		break;
+	case AB5500_LDO_MODE_LOWPOWER:
+		if (r->off_is_lowpower) {
+			r->enabled = false;
+			break;
+		}
+		/* fall through */
 	default:
 		r->enabled = true;
 		break;
@@ -522,6 +533,7 @@ static int __devinit ab5500_regulator_probe(struct platform_device *pdev)
 {
 	struct ab5500_platform_data *ppdata = pdev->dev.parent->platform_data;
 	struct ab5500_regulator_platform_data *pdata = ppdata->regulator;
+	struct ab5500_regulator_data *regdata;
 	struct ab5500_regulators *ab5500;
 	int err = 0;
 	int i;
@@ -534,12 +546,16 @@ static int __devinit ab5500_regulator_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	ab5500->dev = &pdev->dev;
+	regdata = pdata->data;
 
 	platform_set_drvdata(pdev, ab5500);
 
 	for (i = 0; i < AB5500_NUM_REGULATORS; i++) {
 		struct ab5500_regulator *regulator = &ab5500_regulators[i];
 		struct regulator_dev *rdev;
+
+		if (regdata)
+			regulator->off_is_lowpower = regdata[i].off_is_lowpower;
 
 		ab5500->regulator[i] = regulator;
 

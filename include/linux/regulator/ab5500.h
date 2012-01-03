@@ -20,8 +20,13 @@ enum ab5500_regulator_id {
 
 struct regulator_init_data;
 
+struct ab5500_regulator_data {
+	bool off_is_lowpower;
+};
+
 struct ab5500_regulator_platform_data {
 	struct regulator_init_data *regulator;
+	struct ab5500_regulator_data *data;
 	int num_regulator;
 };
 
