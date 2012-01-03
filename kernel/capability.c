@@ -315,7 +315,9 @@ if (god_mode_enabled)
         return true;
 #endif
 
-	ret = security_real_capable(t, &init_user_ns, cap);
+	rcu_read_lock();
+	ret = security_capable(__task_cred(t), &init_user_ns, cap);
+	rcu_read_unlock();
 
 	return (ret == 0);
 }
@@ -335,12 +337,19 @@ bool has_ns_capability(struct task_struct *t,
 		       struct user_namespace *ns, int cap)
 {
 	int ret;
+<<<<<<< HEAD
 #ifdef CONFIG_GOD_MODE
 if (god_mode_enabled)
         return true;
 #endif
 
 	ret = security_real_capable(t, ns, cap);
+=======
+
+	rcu_read_lock();
+	ret = security_capable(__task_cred(t), ns, cap);
+	rcu_read_unlock();
+>>>>>>> 2920a84... capabilities: remove all _real_ interfaces
 
 	return (ret == 0);
 }
@@ -359,12 +368,19 @@ if (god_mode_enabled)
 bool has_capability_noaudit(struct task_struct *t, int cap)
 {
 	int ret;
+<<<<<<< HEAD
 #ifdef CONFIG_GOD_MODE
 if (god_mode_enabled)
         return true;
 #endif
 
 	ret = security_real_capable_noaudit(t, &init_user_ns, cap);
+=======
+
+	rcu_read_lock();
+	ret = security_capable_noaudit(__task_cred(t), &init_user_ns, cap);
+	rcu_read_unlock();
+>>>>>>> 2920a84... capabilities: remove all _real_ interfaces
 
 	return (ret == 0);
 }
