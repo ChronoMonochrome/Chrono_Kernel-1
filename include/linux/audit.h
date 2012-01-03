@@ -417,9 +417,9 @@ extern int audit_classify_arch(int arch);
 				/* Public API */
 extern int  audit_alloc(struct task_struct *task);
 extern void audit_free(struct task_struct *task);
-extern void audit_syscall_entry(int arch,
-				int major, unsigned long a0, unsigned long a1,
-				unsigned long a2, unsigned long a3);
+extern void __audit_syscall_entry(int arch,
+				  int major, unsigned long a0, unsigned long a1,
+				  unsigned long a2, unsigned long a3);
 extern void __audit_syscall_exit(int ret_success, long ret_value);
 extern void __audit_getname(const char *name);
 extern void audit_putname(const char *name);
@@ -432,6 +432,13 @@ static inline int audit_dummy_context(void)
 {
 	void *p = current->audit_context;
 	return !p || *(int *)p;
+}
+static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
+				       unsigned long a1, unsigned long a2,
+				       unsigned long a3)
+{
+	if (unlikely(!audit_dummy_context()))
+		__audit_syscall_entry(arch, major, a0, a1, a2, a3);
 }
 static inline void audit_syscall_exit(void *pt_regs)
 {
