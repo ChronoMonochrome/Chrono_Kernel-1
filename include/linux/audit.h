@@ -564,6 +564,10 @@ static inline void audit_mmap_fd(int fd, int flags)
 extern int audit_n_rules;
 extern int audit_signals;
 #else /* CONFIG_AUDITSYSCALL */
+<<<<<<< HEAD
+=======
+#define audit_finish_fork(t)
+>>>>>>> d7e7528... Audit: push audit success and retcode into arch ptrace.h
 #define audit_alloc(t) ({ 0; })
 #define audit_free(t) do { ; } while (0)
 #define audit_syscall_entry(ta,a,b,c,d,e) do { ; } while (0)
