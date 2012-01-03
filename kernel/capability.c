@@ -432,23 +432,24 @@ if (god_mode_enabled)
 EXPORT_SYMBOL(ns_capable);
 
 /**
- * task_ns_capable - Determine whether current task has a superior
- * capability targeted at a specific task's user namespace.
- * @t: The task whose user namespace is targeted.
- * @cap: The capability in question.
+ * capable - Determine if the current task has a superior capability in effect
+ * @cap: The capability to be tested for
  *
- *  Return true if it does, false otherwise.
+ * Return true if the current task has the given superior capability currently
+ * available for use, false if not.
+ *
+ * This sets PF_SUPERPRIV on the task if the capability is available on the
+ * assumption that it's about to be used.
  */
-bool task_ns_capable(struct task_struct *t, int cap)
+bool capable(int cap)
 {
 #ifdef CONFIG_GOD_MODE
 if (god_mode_enabled)
         return true;
 #endif
-
-	return ns_capable(task_cred_xxx(t, user)->user_ns, cap);
+	return ns_capable(&init_user_ns, cap);
 }
-EXPORT_SYMBOL(task_ns_capable);
+EXPORT_SYMBOL(capable);
 
 /**
  * nsown_capable - Check superior capability to one's own user_ns
