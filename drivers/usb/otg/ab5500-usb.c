@@ -224,6 +224,7 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 	case USB_LINK_HOST_CHG_HS:
 	case USB_LINK_HOST_CHG_HS_CHIRP:
 
+		event = USB_EVENT_VBUS;
 		ab5500_usb_peri_phy_en(ab);
 
 		break;
