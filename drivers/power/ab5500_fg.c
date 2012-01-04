@@ -47,6 +47,7 @@ static LIST_HEAD(ab5500_fg_list);
 #define SEC_TO_SAMPLE(S)		(S * 4)
 #define NBR_AVG_SAMPLES			20
 #define LOW_BAT_CHECK_INTERVAL		(2 * HZ)
+#define FG_PERIODIC_START_INTERVAL	(250 * HZ)/1000 /* 250 msec */
 
 #define VALID_CAPACITY_SEC		(45 * 60) /* 45 minutes */
 
@@ -405,11 +406,6 @@ static int ab5500_fg_inst_curr(struct ab5500_fg *di)
 	}
 
 	mutex_lock(&di->cc_lock);
-	/*
-	 * Since there is no interrupt for this, just wait for 250ms
-	 * 250ms is one sample conversion time with 32.768 Khz RTC clock
-	 */
-	msleep(250);
 
 	/* Enable read request */
 	ret = abx500_mask_and_set_register_interruptible(di->dev,
@@ -1823,6 +1819,8 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto free_device_info;
 	}
+	/* powerup fg to start sampling */
+	ab5500_fg_coulomb_counter(di, true);
 
 	di->fg_psy.name = "ab5500_fg";
 	di->fg_psy.type = POWER_SUPPLY_TYPE_BATTERY;
@@ -1891,7 +1889,6 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 	}
 
 	di->fg_samples = SEC_TO_SAMPLE(di->bat->fg_params->init_timer);
-	ab5500_fg_coulomb_counter(di, true);
 
 	/* Initilialize avg current timer */
 	init_timer(&di->avg_current_timer);
@@ -1909,8 +1906,10 @@ static int __devinit ab5500_fg_probe(struct platform_device *pdev)
 	di->flags.calibrate = true;
 	di->calib_state = AB5500_FG_CALIB_INIT;
 	/* Run the FG algorithm */
-	queue_delayed_work(di->fg_wq, &di->fg_periodic_work, 0);
-	queue_delayed_work(di->fg_wq, &di->fg_acc_cur_work, 0);
+	queue_delayed_work(di->fg_wq, &di->fg_periodic_work,
+			FG_PERIODIC_START_INTERVAL);
+	queue_delayed_work(di->fg_wq, &di->fg_acc_cur_work,
+			FG_PERIODIC_START_INTERVAL);
 
 	dev_info(di->dev, "probe success\n");
 	return ret;
