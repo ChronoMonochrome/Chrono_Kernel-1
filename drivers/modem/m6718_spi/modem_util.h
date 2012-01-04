@@ -50,4 +50,8 @@ bool ipc_util_link_gpio_request(struct ipc_link_context *context,
 bool ipc_util_link_gpio_config(struct ipc_link_context *context);
 bool ipc_util_link_gpio_unconfig(struct ipc_link_context *context);
 
+bool ipc_util_link_is_suspended(struct ipc_link_context *context);
+void ipc_util_suspend_link(struct ipc_link_context *context);
+void ipc_util_resume_link(struct ipc_link_context *context);
+
 #endif /* _MODEM_UTIL_H_ */

@@ -266,3 +266,17 @@ bool ipc_util_link_gpio_unconfig(struct ipc_link_context *context)
 	return true;
 }
 
+bool ipc_util_link_is_suspended(struct ipc_link_context *context)
+{
+	return atomic_read(&context->suspended) == 1;
+}
+
+void ipc_util_suspend_link(struct ipc_link_context *context)
+{
+	atomic_set(&context->suspended, 1);
+}
+
+void ipc_util_resume_link(struct ipc_link_context *context)
+{
+	atomic_set(&context->suspended, 0);
+}

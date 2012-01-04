@@ -18,5 +18,7 @@ int modem_protocol_probe(struct spi_device *sdev);
 void modem_protocol_exit(void);
 bool modem_protocol_is_busy(struct spi_device *sdev);
 bool modem_protocol_channel_is_open(u8 channel);
+int modem_protocol_suspend(struct spi_device *sdev);
+int modem_protocol_resume(struct spi_device *sdev);
 
 #endif /* _MODEM_PROTOCOL_H_ */

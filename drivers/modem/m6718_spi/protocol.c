@@ -196,6 +196,71 @@ bool modem_protocol_is_busy(struct spi_device *sdev)
 	return false;
 }
 
+int modem_protocol_suspend(struct spi_device *sdev)
+{
+	struct modem_m6718_spi_link_platform_data *link =
+		sdev->dev.platform_data;
+	struct ipc_link_context *context;
+	int link_id;
+
+	if (link == NULL) {
+		/* platform data missing in board config? */
+		dev_err(&sdev->dev, "error: no platform data for link!\n");
+		return -ENODEV;
+	}
+
+	link_id = link->id;
+	context = &l1_context.device_context[link_id];
+
+	if (link_id >= IPC_NBR_SUPPORTED_SPI_LINKS) {
+		dev_err(&sdev->dev,
+			"link %d error: too many links! (max %d)\n",
+			link->id, IPC_NBR_SUPPORTED_SPI_LINKS);
+		return -ENODEV;
+	}
+
+	ipc_util_suspend_link(context);
+	return 0;
+}
+
+int modem_protocol_resume(struct spi_device *sdev)
+{
+	struct modem_m6718_spi_link_platform_data *link =
+		sdev->dev.platform_data;
+	struct ipc_link_context *context;
+	int link_id;
+
+	if (link == NULL) {
+		/* platform data missing in board config? */
+		dev_err(&sdev->dev, "error: no platform data for link!\n");
+		return -ENODEV;
+	}
+
+	link_id = link->id;
+	context = &l1_context.device_context[link_id];
+
+	if (link_id >= IPC_NBR_SUPPORTED_SPI_LINKS) {
+		dev_err(&sdev->dev,
+			"link %d error: too many links! (max %d)\n",
+			link->id, IPC_NBR_SUPPORTED_SPI_LINKS);
+		return -ENODEV;
+	}
+
+	ipc_util_resume_link(context);
+
+	/*
+	 * If the resume event was an interrupt from the slave then the event
+	 * is pending and we need to service it now.
+	 */
+	if (ipc_util_int_is_active(context)) {
+		dev_dbg(&sdev->dev,
+			"link %d: slave-ready is pending after resume\n",
+			link_id);
+		ipc_sm_kick(IPC_SM_RUN_SLAVE_IRQ, context);
+	}
+	return 0;
+}
+
 static void spi_tfr_complete(void *context)
 {
 	ipc_sm_kick(IPC_SM_RUN_TFR_COMPLETE,
@@ -306,6 +371,7 @@ int modem_protocol_probe(struct spi_device *sdev)
 	/* init link context */
 	context->link = link;
 	context->sdev = sdev;
+	ipc_util_resume_link(context);
 	atomic_set(&context->gpio_configured, 0);
 	atomic_set(&context->state_int,
 		ipc_util_int_level_inactive(context));

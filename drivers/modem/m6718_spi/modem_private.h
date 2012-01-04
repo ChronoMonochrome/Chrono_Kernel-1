@@ -49,6 +49,7 @@ struct ipc_tx_queue {
 struct ipc_link_context {
 	struct modem_m6718_spi_link_platform_data *link;
 	struct spi_device *sdev;
+	atomic_t suspended;
 	atomic_t gpio_configured;
 	atomic_t state_int;
 	spinlock_t sm_lock;

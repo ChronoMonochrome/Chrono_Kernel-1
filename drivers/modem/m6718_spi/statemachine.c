@@ -1396,7 +1396,11 @@ void ipc_sm_kick(u8 event, struct ipc_link_context *context)
 		break;
 	}
 
-	state_machine_run(context, event);
+	if (!ipc_util_link_is_suspended(context))
+		state_machine_run(context, event);
+	else
+		dev_dbg(&sdev->dev,
+			"link %d is suspended, waiting for resume\n", link->id);
 	spin_unlock_irqrestore(&context->sm_lock, flags);
 }
 

@@ -214,13 +214,25 @@ static int __exit spi_remove(struct spi_device *sdev)
 static int spi_suspend(struct spi_device *sdev, pm_message_t mesg)
 {
 	bool busy;
+	int ret = -EBUSY;
 
+	dev_dbg(&sdev->dev, "suspend called\n");
 	busy = modem_protocol_is_busy(sdev);
-	dev_dbg(&sdev->dev, "suspend called, protocol busy:%d\n", busy);
-	if (!busy)
-		return modem_net_suspend(modem_driver_data.ndev);
-	else
+	if (busy) {
+		dev_warn(&sdev->dev, "suspend failed (protocol busy)\n");
 		return -EBUSY;
+	}
+	ret = modem_protocol_suspend(sdev);
+	if (ret) {
+		dev_warn(&sdev->dev, "suspend failed, (protocol suspend))\n");
+		return ret;
+	}
+	ret = modem_net_suspend(modem_driver_data.ndev);
+	if (ret) {
+		dev_warn(&sdev->dev, "suspend failed, (netdev suspend)\n");
+		return ret;
+	}
+	return 0;
 }
 
 /**
@@ -229,8 +241,20 @@ static int spi_suspend(struct spi_device *sdev, pm_message_t mesg)
  */
 static int spi_resume(struct spi_device *sdev)
 {
+	int ret;
+
 	dev_dbg(&sdev->dev, "resume called\n");
-	return modem_net_resume(modem_driver_data.ndev);
+	ret = modem_protocol_resume(sdev);
+	if (ret) {
+		dev_warn(&sdev->dev, "resume failed, (protocol resume))\n");
+		return ret;
+	}
+	ret = modem_net_resume(modem_driver_data.ndev);
+	if (ret) {
+		dev_warn(&sdev->dev, "resume failed, (netdev resume))\n");
+		return ret;
+	}
+	return 0;
 }
 #endif /* CONFIG_PM */
 
