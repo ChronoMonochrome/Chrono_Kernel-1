@@ -829,7 +829,7 @@ static int request_clk(u8 clock, bool enable)
 
 	writel(MBOX_BIT(2), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 	if (!wait_for_completion_timeout(&mb2_transfer.work,
-		msecs_to_jiffies(500))) {
+		msecs_to_jiffies(20000))) {
 		pr_err("prcmu: request_clk() failed.\n");
 		r = -EIO;
 		WARN(1, "Failed in request_clk");
@@ -902,9 +902,8 @@ static int request_pll(u8 pll, bool enable)
 
 	writel(MBOX_BIT(2), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 	if (!wait_for_completion_timeout(&mb2_transfer.work,
-		msecs_to_jiffies(500))) {
-		pr_err("prcmu: set_pll() failed.\n"
-			"prcmu: Please check your firmware version.\n");
+		msecs_to_jiffies(20000))) {
+		pr_err("prcmu: set_pll() failed.\n");
 		r = -EIO;
 		WARN(1, "Failed to set pll");
 		goto unlock_and_return;
@@ -1108,7 +1107,7 @@ static int mailbox4_request(u8 mb4_request, u8 ack_request)
 	writel(MBOX_BIT(4), (_PRCMU_BASE + PRCM_MBOX_CPU_SET));
 
 	if (!wait_for_completion_timeout(&mb4_transfer.work,
-		msecs_to_jiffies(500))) {
+		msecs_to_jiffies(20000))) {
 		pr_err("prcmu: MB4 request %d failed", mb4_request);
 		ret = -EIO;
 		WARN(1, "prcmu: failed mb4 request");
@@ -1420,7 +1419,7 @@ int db5500_prcmu_set_arm_opp(u8 opp)
 	writel(MBOX_BIT(1), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 
 	if (!wait_for_completion_timeout(&mb1_transfer.work,
-		msecs_to_jiffies(500))) {
+		msecs_to_jiffies(20000))) {
 		r = -EIO;
 		WARN(1, "prcmu: failed to set arm opp");
 		goto unlock_and_return;
@@ -1610,7 +1609,7 @@ int db5500_prcmu_set_ape_opp(u8 opp)
 	writel(MBOX_BIT(1), (_PRCMU_BASE + PRCM_MBOX_CPU_SET));
 
 	if (!wait_for_completion_timeout(&mb1_transfer.work,
-		msecs_to_jiffies(500))) {
+		msecs_to_jiffies(20000))) {
 		ret = -EIO;
 		WARN(1, "prcmu: failed to set ape opp to %u", opp);
 		goto unlock_and_return;
@@ -1892,9 +1891,8 @@ int db5500_prcmu_set_epod(u16 epod, u8 epod_state)
 	writel(MBOX_BIT(2), _PRCMU_BASE + PRCM_MBOX_CPU_SET);
 
 	if (!wait_for_completion_timeout(&mb2_transfer.work,
-		msecs_to_jiffies(500))) {
-		pr_err("prcmu: set_epod() failed.\n"
-			"prcmu: Please check your firmware version.\n");
+		msecs_to_jiffies(20000))) {
+		pr_err("prcmu: set_epod() failed.\n");
 		r = -EIO;
 		WARN(1, "Failed to set epod");
 		goto unlock_and_return;
