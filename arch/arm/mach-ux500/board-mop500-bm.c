@@ -149,6 +149,40 @@ static struct res_to_temp temp_tbl[] = {
 	{65,   9425},
 };
 
+#ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
+/*
+ * Note that the batres_vs_temp table must be strictly sorted by falling
+ * temperature values to work.
+ */
+static struct batres_vs_temp temp_to_batres_tbl[] = {
+	{ 40, 120},
+	{ 30, 135},
+	{ 20, 165},
+	{ 10, 230},
+	{ 00, 325},
+	{-10, 445},
+	{-20, 595},
+};
+#else
+/*
+ * Note that the batres_vs_temp table must be strictly sorted by falling
+ * temperature values to work.
+ */
+#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
+#define BATRES 		180
+#else
+#define BATRES 		300
+#endif
+static struct batres_vs_temp temp_to_batres_tbl[] = {
+	{ 60, BATRES},
+	{ 30, BATRES},
+	{ 20, BATRES},
+	{ 10, BATRES},
+	{ 00, BATRES},
+	{-10, BATRES},
+	{-20, BATRES},
+};
+#endif
 static const struct battery_type bat_type[] = {
 	[BATTERY_UNKNOWN] = {
 		/* First element always represent the UNKNOWN battery */
@@ -156,13 +190,27 @@ static const struct battery_type bat_type[] = {
 		.resis_high = 0,
 		.resis_low = 0,
 		.battery_resistance = 300,
+#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
+		.charge_full_design = 2600,
+#else
 		.charge_full_design = 612,
+#endif
 		.nominal_voltage = 3700,
+#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
+		.termination_vol = 4150,
+#else
 		.termination_vol = 4050,
+#endif
 		.termination_curr = 200,
+#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
+		.recharge_vol = 4130,
+		.normal_cur_lvl = 520,
+		.normal_vol_lvl = 4200,
+#else
 		.recharge_vol = 3990,
 		.normal_cur_lvl = 400,
 		.normal_vol_lvl = 4100,
+#endif
 		.maint_a_cur_lvl = 400,
 		.maint_a_vol_lvl = 4050,
 		.maint_a_chg_timer_h = 60,
@@ -404,13 +452,21 @@ struct ab8500_bm_data ab8500_bm_data = {
 	.usb_safety_tmr_h	= 4,
 	.bkup_bat_v		= BUP_VCH_SEL_2P6V,
 	.bkup_bat_i		= BUP_ICH_SEL_150UA,
+#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
+	.no_maintenance		= true,
+#else
 	.no_maintenance		= false,
+#endif
 #ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
 	.adc_therm		= ADC_THERM_BATCTRL,
 #else
 	.adc_therm		= ADC_THERM_BATTEMP,
 #endif
+#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
+	.chg_unknown_bat	= true,
+#else
 	.chg_unknown_bat	= false,
+#endif
 	.enable_overshoot	= false,
 	.fg_res			= 100,
 	.cap_levels		= &cap_levels,

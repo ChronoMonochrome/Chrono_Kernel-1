@@ -29,6 +29,7 @@
 #include <linux/mfd/abx500/ab8500-gpadc.h>
 #include <linux/mfd/abx500/ux500_chargalg.h>
 #include <linux/usb/otg.h>
+#include <asm/mach-types.h>
 
 /* Charger constants */
 #define NO_PW_CONN			0
@@ -2354,11 +2355,18 @@ static int ab8500_charger_init_hw_registers(struct ab8500_charger *di)
 	}
 
 	/* Backup battery voltage and current */
-	ret = abx500_set_register_interruptible(di->dev,
-		AB8500_RTC,
-		AB8500_RTC_BACKUP_CHG_REG,
-		di->bat->bkup_bat_v |
-		di->bat->bkup_bat_i);
+	if (machine_is_snowball())
+		ret = abx500_set_register_interruptible(di->dev,
+			AB8500_RTC,
+			AB8500_RTC_BACKUP_CHG_REG,
+			BUP_VCH_SEL_3P1V |
+			BUP_ICH_SEL_150UA);
+	else
+		ret = abx500_set_register_interruptible(di->dev,
+			AB8500_RTC,
+			AB8500_RTC_BACKUP_CHG_REG,
+			di->bat->bkup_bat_v |
+			di->bat->bkup_bat_i);
 	if (ret) {
 		dev_err(di->dev, "failed to setup backup battery charging\n");
 		goto out;
