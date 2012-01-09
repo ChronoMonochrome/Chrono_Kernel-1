@@ -416,6 +416,69 @@ static struct abx500_accdet_platform_data ab5500_accdet_pdata = {
 	};
 #endif
 
+static struct abx500_init_settings ab5500_init_settings[] = {
+	{
+		.bank = AB5500_BANK_SIM_USBSIM,
+		.reg = 0x17,
+		.setting = 0x0F,
+	},
+	/* SIMOFF_N is not connected and is set to GPIO.
+	   Set SIMOFF_N in invert mode */
+	{
+		.bank = AB5500_BANK_SIM_USBSIM,
+		.reg = 0x13,
+		.setting = 0x4,
+	},
+	{
+		.bank = AB5500_BANK_SIM_USBSIM,
+		.reg = 0x18,
+		.setting = 0x10,
+	},
+	/* Set unused PWRCTRL0 & PWRCTRL1 as GPIOs */
+	{
+		.bank = AB5500_BANK_VIT_IO_I2C_CLK_TST_OTP,
+		.reg = 0x30,
+		.setting = 0x30,
+	},
+	/* Set unused EXTBST1/CLK/SLP,RTCCLK2 as GPIOs */
+	{
+		.bank = AB5500_BANK_VIT_IO_I2C_CLK_TST_OTP,
+		.reg = 0x31,
+		.setting = 0x74,
+	},
+	/* Set unused AVCTRL,EXTBST2/CLK/SLP,RTCCLK2 as GPIO */
+	{
+		.bank = AB5500_BANK_VIT_IO_I2C_CLK_TST_OTP,
+		.reg = 0x33,
+		.setting = 0x3C,
+	},
+	/* Set unused EXT32CLK as GPIO */
+	{
+		.bank = AB5500_BANK_VIT_IO_I2C_CLK_TST_OTP,
+		.reg = 0x35,
+		.setting = 0x1,
+	},
+	/* Set unused SIMOFF_N as GPIO */
+	{
+		.bank = AB5500_BANK_VDDDIG_IO_I2C_CLK_TST,
+		.reg = 0x31,
+		.setting = 0x80,
+	},
+	/* Set unused YcBcR2 & YcBcR1 as GPIO */
+	{
+		.bank = AB5500_BANK_VDDDIG_IO_I2C_CLK_TST,
+		.reg = 0x33,
+		.setting = 0xC0,
+	},
+	/* Set unused USBUICCPD/SE0/DATA,
+		YcBcR0,YcBcR3 as GPIO */
+	{
+		.bank = AB5500_BANK_VDDDIG_IO_I2C_CLK_TST,
+		.reg = 0x34,
+		.setting = 0x1F,
+	},
+};
+
 static struct ab5500_platform_data ab5500_plf_data = {
 	.irq = {
 		.base = IRQ_AB5500_BASE,
@@ -429,19 +492,8 @@ static struct ab5500_platform_data ab5500_plf_data = {
 #endif
 	.dev_data[AB5500_DEVID_LEDS] = &ab5500_hvleds_data,
 	.dev_data_sz[AB5500_DEVID_LEDS] = sizeof(ab5500_hvleds_data),
-	.init_settings = (struct abx500_init_settings[]){
-			{
-				.bank = 0x3,
-				.reg = 0x17,
-				.setting = 0x0F,
-			},
-			{
-				.bank = 0x3,
-				.reg = 0x18,
-				.setting = 0x10,
-			},
-	},
-	.init_settings_sz = 2,
+	.init_settings = &ab5500_init_settings,
+	.init_settings_sz = ARRAY_SIZE(ab5500_init_settings),
 #if defined(CONFIG_AB5500_BM)
 	.dev_data[AB5500_DEVID_CHARGALG] = &abx500_bm_pt_data,
 	.dev_data_sz[AB5500_DEVID_CHARGALG] = sizeof(abx500_bm_pt_data),
