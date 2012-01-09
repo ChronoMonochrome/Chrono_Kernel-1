@@ -4426,6 +4426,8 @@ static ssize_t remote_node_defrag_ratio_store(struct kmem_cache *s,
 	err = strict_strtoul(buf, 10, &ratio);
 	if (err)
 		return err;
+	if (objects && kmem_cache_debug(s))
+		return -EINVAL;
 
 	if (ratio <= 100)
 		s->remote_node_defrag_ratio = ratio * 10;
