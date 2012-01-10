@@ -242,10 +242,10 @@ struct workqueue_struct {
 	struct worker		*rescuer;	/* I: rescue worker */
 
 	int			saved_max_active; /* W: saved cwq max_active */
-	const char		*name;		/* I: workqueue name */
 #ifdef CONFIG_LOCKDEP
 	struct lockdep_map	lockdep_map;
 #endif
+	char			name[];		/* I: workqueue name */
 };
 
 /* see the comment above the definition of WQ_POWER_EFFICIENT */
@@ -2926,14 +2926,29 @@ static int wq_clamp_max_active(int max_active, unsigned int flags,
 	return clamp_val(max_active, 1, lim);
 }
 
-struct workqueue_struct *__alloc_workqueue_key(const char *name,
+struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
 					       unsigned int flags,
 					       int max_active,
 					       struct lock_class_key *key,
-					       const char *lock_name)
+					       const char *lock_name, ...)
 {
+	va_list args, args1;
 	struct workqueue_struct *wq;
 	unsigned int cpu;
+	size_t namelen;
+
+	/* determine namelen, allocate wq and format name */
+	va_start(args, lock_name);
+	va_copy(args1, args);
+	namelen = vsnprintf(NULL, 0, fmt, args) + 1;
+
+	wq = kzalloc(sizeof(*wq) + namelen, GFP_KERNEL);
+	if (!wq)
+		goto err;
+
+	vsnprintf(wq->name, namelen, fmt, args1);
+	va_end(args);
+	va_end(args1);
 
 	/* see the comment above the definition of WQ_POWER_EFFICIENT */
 	if ((flags & WQ_POWER_EFFICIENT) && wq_power_efficient)
@@ -2954,12 +2969,9 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
 		flags |= WQ_HIGHPRI;
 
 	max_active = max_active ?: WQ_DFL_ACTIVE;
-	max_active = wq_clamp_max_active(max_active, flags, name);
+	max_active = wq_clamp_max_active(max_active, flags, wq->name);
 
-	wq = kzalloc(sizeof(*wq), GFP_KERNEL);
-	if (!wq)
-		goto err;
-
+	/* init wq */
 	wq->flags = flags;
 	wq->saved_max_active = max_active;
 	mutex_init(&wq->flush_mutex);
@@ -2967,7 +2979,6 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
 	INIT_LIST_HEAD(&wq->flusher_queue);
 	INIT_LIST_HEAD(&wq->flusher_overflow);
 
-	wq->name = name;
 	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
 	INIT_LIST_HEAD(&wq->list);
 
@@ -2996,7 +3007,8 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
 		if (!rescuer)
 			goto err;
 
-		rescuer->task = kthread_create(rescuer_thread, wq, "%s", name);
+		rescuer->task = kthread_create(rescuer_thread, wq, "%s",
+					       wq->name);
 		if (IS_ERR(rescuer->task))
 			goto err;
 
