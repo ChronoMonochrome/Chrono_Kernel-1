@@ -36,14 +36,6 @@ static const char * const sm_state_id_str[] = {
 	"IPC_SLW_RX_WR_CMD",
 	"IPC_ACT_RX_WR_CMD",
 	"IPC_ACT_RX_WR_DAT",
-	"IPC_INIT_AUD",
-	"IPC_HALT_AUD",
-	"IPC_RESET_AUD",
-	"IPC_IDL_AUD",
-	"IPC_SLW_TX_WR_DAT_AUD",
-	"IPC_ACT_TX_WR_DAT_AUD",
-	"IPC_SLW_RX_WR_DAT_AUD",
-	"IPC_ACT_RX_WR_DAT_AUD",
 };
 
 /* name of each state machine run cause */

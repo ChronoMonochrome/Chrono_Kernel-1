@@ -15,7 +15,6 @@
 
 /* valid states for the driver state machine */
 enum ipc_sm_state_id {
-	/* common link and shared states below */
 	IPC_SM_INIT,
 	IPC_SM_HALT,
 	IPC_SM_RESET,
@@ -35,15 +34,6 @@ enum ipc_sm_state_id {
 	IPC_SM_SLW_RX_WR_CMD,
 	IPC_SM_ACT_RX_WR_CMD,
 	IPC_SM_ACT_RX_WR_DAT,
-	/* audio link states below */
-	IPC_SM_INIT_AUD,
-	IPC_SM_HALT_AUD,
-	IPC_SM_RESET_AUD,
-	IPC_SM_IDL_AUD,
-	IPC_SM_SLW_TX_WR_DAT_AUD,
-	IPC_SM_ACT_TX_WR_DAT_AUD,
-	IPC_SM_SLW_RX_WR_DAT_AUD,
-	IPC_SM_ACT_RX_WR_DAT_AUD,
 	IPC_SM_STATE_ID_NBR
 };
 

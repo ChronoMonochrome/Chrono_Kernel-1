@@ -183,9 +183,7 @@ bool modem_protocol_is_busy(struct spi_device *sdev)
 	for (i = 0; i < IPC_NBR_SUPPORTED_SPI_LINKS; i++)
 		switch (l1_context.device_context[i].state->id) {
 		case IPC_SM_IDL:
-		case IPC_SM_IDL_AUD:
 		case IPC_SM_INIT:
-		case IPC_SM_INIT_AUD:
 		case IPC_SM_WAIT_SLAVE_STABLE:
 			/* not busy; continue checking */
 			break;
@@ -280,7 +278,7 @@ static irqreturn_t slave_ready_irq(int irq, void *dev)
 	}
 
 #ifdef WORKAROUND_DUPLICATED_IRQ
-	if (link->id != IPC_LINK_AUDIO && pl022_tfr_in_progress(sdev)) {
+	if (pl022_tfr_in_progress(sdev)) {
 		dev_warn(&sdev->dev,
 			"link %d warning: slave irq while transfer "
 			"is active! discarding event\n", link->id);

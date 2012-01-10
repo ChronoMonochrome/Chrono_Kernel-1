@@ -84,35 +84,6 @@ static const struct ipc_sm_state *sm_init_exit(u8 event,
 	}
 }
 
-static const struct ipc_sm_state *sm_init_aud_exit(u8 event,
-	struct ipc_link_context *context)
-{
-	bool int_active = false;
-
-	/*
-	 * For reset event just re-enter init in case the modem has
-	 * powered off - we need to reconfigure our GPIO pins
-	 */
-	if (event == IPC_SM_RUN_RESET)
-		return ipc_sm_state(IPC_SM_INIT_AUD);
-
-	/* re-sample link INT pin */
-	int_active = ipc_util_int_is_active(context);
-	atomic_set(&context->state_int, int_active);
-
-	dev_info(&context->sdev->dev,
-		"link %d: link initialised; SS:INACTIVE(%d) INT:%s(%d)\n",
-		context->link->id,
-		ipc_util_ss_level_inactive(context),
-		int_active ? "ACTIVE" : "INACTIVE",
-		int_active ? ipc_util_int_level_active(context) :
-				ipc_util_int_level_inactive(context));
-	dev_info(&context->sdev->dev,
-		"link %d: boot sync not needed, going idle\n",
-		context->link->id);
-	return ipc_sm_state(IPC_SM_IDL_AUD);
-}
-
 static u8 sm_wait_slave_stable_enter(u8 event, struct ipc_link_context *context)
 {
 	static unsigned long printk_warn_time;
@@ -219,17 +190,6 @@ static const struct ipc_sm_state *sm_idl_exit(u8 event,
 		return ipc_sm_state(IPC_SM_HALT);
 }
 
-static const struct ipc_sm_state *sm_idl_aud_exit(u8 event,
-	struct ipc_link_context *context)
-{
-	ipc_dbg_exit_idle(context);
-	if (event == IPC_SM_RUN_RESET)
-		return ipc_sm_state(IPC_SM_RESET_AUD);
-
-	/* always transmit data first */
-	return ipc_sm_state(IPC_SM_SLW_TX_WR_DAT_AUD);
-}
-
 static u8 sm_slw_tx_wr_cmd_enter(u8 event, struct ipc_link_context *context)
 {
 	struct ipc_tx_queue *frame;
@@ -328,43 +288,6 @@ static u8 sm_slw_tx_wr_dat_enter(u8 event, struct ipc_link_context *context)
 	}
 }
 
-static u8 sm_slw_tx_wr_dat_aud_enter(u8 event, struct ipc_link_context *context)
-{
-	struct ipc_tx_queue *frame = NULL;
-
-	/* check if there is a frame to be sent */
-	if (!ipc_queue_is_empty(context)) {
-		frame = ipc_queue_get_frame(context);
-	} else {
-		/* no frame to send, create an empty one */
-		dev_dbg(&context->sdev->dev,
-			"link %d: no frame to send, allocating dummy\n",
-			context->link->id);
-		frame = ipc_queue_new_frame(context, 0);
-		if (frame == NULL)
-			return IPC_SM_RUN_ABORT;
-	}
-
-	ipc_dbg_dump_frame(&context->sdev->dev, context->link->id, frame, true);
-
-	/* prepare to transfer the frame tx data */
-	context->frame = frame;
-	ipc_util_spi_message_prepare(context, context->frame->data,
-		NULL, context->frame->len);
-
-	/* slave might already have signalled ready to transmit */
-	if (event == IPC_SM_RUN_SLAVE_IRQ || atomic_read(&context->state_int)) {
-		dev_dbg(&context->sdev->dev,
-			"link %d: slave has already signalled ready\n",
-			context->link->id);
-		ipc_util_activate_ss(context);
-		return IPC_SM_RUN_SLAVE_IRQ;
-	} else {
-		ipc_util_activate_ss_with_tmo(context);
-		return IPC_SM_RUN_NONE;
-	}
-}
-
 static const struct ipc_sm_state *sm_slw_tx_wr_dat_exit(u8 event,
 	struct ipc_link_context *context)
 {
@@ -374,17 +297,6 @@ static const struct ipc_sm_state *sm_slw_tx_wr_dat_exit(u8 event,
 		return ipc_sm_state(IPC_SM_HALT);
 	else
 		return ipc_sm_state(IPC_SM_ACT_TX_WR_DAT);
-}
-
-static const struct ipc_sm_state *sm_slw_tx_wr_dat_aud_exit(u8 event,
-	struct ipc_link_context *context)
-{
-	if (event == IPC_SM_RUN_RESET)
-		return ipc_sm_state(IPC_SM_RESET_AUD);
-	else if (event == IPC_SM_RUN_COMMS_TMO)
-		return ipc_sm_state(IPC_SM_HALT_AUD);
-	else
-		return ipc_sm_state(IPC_SM_ACT_TX_WR_DAT_AUD);
 }
 
 static u8 sm_act_tx_wr_dat_enter(u8 event, struct ipc_link_context *context)
@@ -432,34 +344,6 @@ static const struct ipc_sm_state *sm_act_tx_wr_dat_exit(u8 event,
 	context->frame = NULL;
 #endif
 	return ipc_sm_state(IPC_SM_SLW_TX_RD_CMD);
-}
-
-static const struct ipc_sm_state *sm_act_tx_wr_dat_aud_exit(u8 event,
-	struct ipc_link_context *context)
-{
-	if (event == IPC_SM_RUN_RESET)
-		return ipc_sm_state(IPC_SM_RESET_AUD);
-
-#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_THROUGHPUT_MEASUREMENT
-	/* frame is sent, increment link tx counter */
-	context->tx_bytes += context->frame->actual_len;
-#endif
-#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_VERIFY_FRAMES
-	{
-		u8 channel;
-
-		channel = ipc_util_get_l2_channel(*(u32 *)context->frame->data);
-		if (ipc_util_channel_is_loopback(channel)) {
-			/* create a copy of the frame */
-			context->last_frame = ipc_queue_new_frame(context,
-						context->frame->actual_len);
-			memcpy(context->last_frame->data,
-				context->frame->data,
-				context->frame->actual_len);
-		}
-	}
-#endif
-	return ipc_sm_state(IPC_SM_SLW_RX_WR_DAT_AUD);
 }
 
 static u8 sm_slw_tx_rd_cmd_enter(u8 event, struct ipc_link_context *context)
@@ -626,39 +510,6 @@ static const struct ipc_sm_state *sm_act_rx_wr_cmd_exit(u8 event,
 	}
 }
 
-static u8 sm_slw_rx_wr_dat_aud_enter(u8 event, struct ipc_link_context *context)
-{
-	/*
-	 * We're using the same frame buffer we just sent, so no need for a
-	 * new allocation here, just prepare the spi message
-	 */
-	ipc_util_spi_message_prepare(context, NULL,
-		context->frame->data, context->frame->len);
-
-	/* slave might already have signalled ready to transmit */
-	if (atomic_read(&context->state_int)) {
-		dev_dbg(&context->sdev->dev,
-			"link %d: slave has already signalled ready\n",
-			context->link->id);
-		ipc_util_activate_ss(context);
-		return IPC_SM_RUN_SLAVE_IRQ;
-	} else {
-		ipc_util_activate_ss_with_tmo(context);
-		return IPC_SM_RUN_NONE;
-	}
-}
-
-static const struct ipc_sm_state *sm_slw_rx_wr_dat_aud_exit(u8 event,
-	struct ipc_link_context *context)
-{
-	if (event == IPC_SM_RUN_RESET)
-		return ipc_sm_state(IPC_SM_RESET_AUD);
-	else if (event == IPC_SM_RUN_COMMS_TMO)
-		return ipc_sm_state(IPC_SM_HALT_AUD);
-	else
-		return ipc_sm_state(IPC_SM_ACT_RX_WR_DAT_AUD);
-}
-
 static u8 sm_act_rx_wr_dat_enter(u8 event, struct ipc_link_context *context)
 {
 	int err;
@@ -666,22 +517,6 @@ static u8 sm_act_rx_wr_dat_enter(u8 event, struct ipc_link_context *context)
 	/* assume slave is still ready - prepare and start the spi transfer */
 	ipc_util_spi_message_prepare(context, NULL,
 		context->frame->data, context->frame->len);
-
-	dev_dbg(&context->sdev->dev,
-		"link %d: starting spi tfr\n", context->link->id);
-	err = spi_async(context->sdev, &context->spi_message);
-	if (err < 0) {
-		dev_err(&context->sdev->dev,
-			"link %d error: spi tfr start failed, error %d\n",
-			context->link->id, err);
-		return IPC_SM_RUN_ABORT;
-	}
-	return IPC_SM_RUN_NONE;
-}
-
-static u8 sm_act_rx_wr_dat_aud_enter(u8 event, struct ipc_link_context *context)
-{
-	int err;
 
 	dev_dbg(&context->sdev->dev,
 		"link %d: starting spi tfr\n", context->link->id);
@@ -774,86 +609,6 @@ static const struct ipc_sm_state *sm_act_rx_wr_dat_exit(u8 event,
 	}
 }
 
-static const struct ipc_sm_state *sm_act_rx_wr_dat_aud_exit(u8 event,
-	struct ipc_link_context *context)
-{
-	u32           frame_hdr;
-	unsigned char l2_header;
-	unsigned int  l2_length;
-	u8            *l2_data;
-
-	if (event == IPC_SM_RUN_RESET)
-		return ipc_sm_state(IPC_SM_RESET_AUD);
-
-	dev_dbg(&context->sdev->dev,
-		"link %d: RX PAYLOAD %d bytes\n",
-		context->link->id, context->frame->len);
-
-	/* decode L2 header */
-	frame_hdr = *(u32 *)context->frame->data;
-	l2_header = ipc_util_get_l2_channel(frame_hdr);
-	l2_length = ipc_util_get_l2_length(frame_hdr);
-	l2_data   = (u8 *)context->frame->data + IPC_L2_HDR_SIZE;
-
-#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_THROUGHPUT_MEASUREMENT
-	/* frame is received, increment link rx counter */
-	context->rx_bytes += l2_length;
-#endif
-	if (frame_hdr != 0)
-		context->frame->actual_len = l2_length + IPC_L2_HDR_SIZE;
-	else
-		context->frame->actual_len = 0;
-	ipc_dbg_dump_frame(&context->sdev->dev, context->link->id,
-		context->frame, false);
-
-	if (l2_length > (context->frame->len - 4))
-		dev_err(&context->sdev->dev,
-			"link %d: suspicious frame: L1 len %d L2 len %d\n",
-			context->link->id, context->frame->len, l2_length);
-
-	dev_dbg(&context->sdev->dev,
-		"link %d: L2 PDU decode: header 0x%08x channel %d length %d "
-		"data[%02x%02x%02x...]\n",
-		context->link->id, frame_hdr, l2_header, l2_length,
-		l2_data[0], l2_data[1], l2_data[2]);
-
-	if (ipc_util_channel_is_loopback(l2_header))
-		ipc_dbg_verify_rx_frame(context);
-
-	/* did the slave actually have anything to send? */
-	if (frame_hdr != 0) {
-		/* pass received frame up to L2mux layer */
-		if (!modem_protocol_channel_is_open(l2_header)) {
-			dev_err(&context->sdev->dev,
-				"link %d error: received frame on invalid "
-				"channel %d, frame discarded\n",
-				context->link->id, l2_header);
-		} else {
-#ifdef CONFIG_MODEM_M6718_SPI_ENABLE_FEATURE_THROUGHPUT_MEASUREMENT
-			/*
-			 * Discard loopback frames if we are taking throughput
-			 * measurements - we'll be loading the links and so will
-			 * likely overload the buffers.
-			 */
-			if (!ipc_util_channel_is_loopback(l2_header))
-#endif
-				modem_m6718_spi_receive(context->sdev,
-					l2_header, l2_length, l2_data);
-		}
-	} else {
-		dev_dbg(&context->sdev->dev,
-			"link %d: received dummy frame, discarding\n",
-			context->link->id);
-	}
-
-	/* data is copied by L2mux so free the frame here */
-	ipc_queue_delete_frame(context->frame);
-	context->frame = NULL;
-
-	/* audio link goes idle ready for next transaction */
-	return ipc_sm_state(IPC_SM_IDL_AUD);
-}
-
 static u8 sm_halt_enter(u8 event, struct ipc_link_context *context)
 {
 	dev_err(&context->sdev->dev,
@@ -882,12 +637,6 @@ static const struct ipc_sm_state *sm_halt_exit(u8 event,
 	struct ipc_link_context *context)
 {
 	return ipc_sm_state(IPC_SM_RESET);
-}
-
-static const struct ipc_sm_state *sm_halt_aud_exit(u8 event,
-	struct ipc_link_context *context)
-{
-	return ipc_sm_state(IPC_SM_RESET_AUD);
 }
 
 static u8 sm_reset_enter(u8 event, struct ipc_link_context *context)
@@ -920,12 +669,6 @@ static const struct ipc_sm_state *sm_reset_exit(u8 event,
 	struct ipc_link_context *context)
 {
 	return ipc_sm_state(IPC_SM_INIT);
-}
-
-static const struct ipc_sm_state *sm_reset_aud_exit(u8 event,
-	struct ipc_link_context *context)
-{
-	return ipc_sm_state(IPC_SM_INIT_AUD);
 }
 
 static u8 sm_slw_tx_bootreq_enter(u8 event, struct ipc_link_context *context)
@@ -1047,10 +790,10 @@ static const struct ipc_sm_state *sm_act_rx_bootresp_exit(u8 event,
 			context->link->id, IPC_DRIVER_VERSION, modem_ver);
 
 		/* check for minimum required modem version */
-		if (modem_ver < IPC_DRIVER_MODEM_MIN_VER) {
+		if (modem_ver != IPC_DRIVER_MODEM_MIN_VER) {
 			dev_warn(&context->sdev->dev,
 				"link %d warning: modem version mismatch! "
-				"minimum required version is %02x\n",
+				"required version is %02x\n",
 				context->link->id,
 				IPC_DRIVER_MODEM_MIN_VER);
 		}
@@ -1188,75 +931,16 @@ static const struct ipc_sm_state state_machine[IPC_SM_STATE_ID_NBR] = {
 		.exit   = sm_act_rx_wr_dat_exit,
 		.events = IPC_SM_RUN_TFR_COMPLETE | IPC_SM_RUN_RESET
 	},
-	/* audio link states below */
-	[IPC_SM_INIT_AUD] = {
-		.id     = IPC_SM_INIT_AUD,
-		.enter  = sm_init_enter,
-		.exit   = sm_init_aud_exit,
-		.events = IPC_SM_RUN_INIT | IPC_SM_RUN_RESET
-	},
-	[IPC_SM_HALT_AUD] = {
-		.id     = IPC_SM_HALT_AUD,
-		.enter  = sm_halt_enter,
-		.exit   = sm_halt_aud_exit,
-		.events = IPC_SM_RUN_RESET
-	},
-	[IPC_SM_RESET_AUD] = {
-		.id     = IPC_SM_RESET_AUD,
-		.enter  = sm_reset_enter,
-		.exit   = sm_reset_aud_exit,
-		.events = IPC_SM_RUN_RESET
-	},
-	[IPC_SM_IDL_AUD] = {
-		.id     = IPC_SM_IDL_AUD,
-		.enter  = sm_idl_enter,
-		.exit   = sm_idl_aud_exit,
-		.events = IPC_SM_RUN_SLAVE_IRQ | IPC_SM_RUN_TX_REQ |
-				IPC_SM_RUN_RESET
-	},
-	[IPC_SM_SLW_TX_WR_DAT_AUD] = {
-		.id     = IPC_SM_SLW_TX_WR_DAT_AUD,
-		.enter  = sm_slw_tx_wr_dat_aud_enter,
-		.exit   = sm_slw_tx_wr_dat_aud_exit,
-		.events = IPC_SM_RUN_SLAVE_IRQ | IPC_SM_RUN_COMMS_TMO |
-				IPC_SM_RUN_RESET
-	},
-	[IPC_SM_ACT_TX_WR_DAT_AUD] = {
-		.id     = IPC_SM_ACT_TX_WR_DAT_AUD,
-		.enter  = sm_act_tx_wr_dat_enter,
-		.exit   = sm_act_tx_wr_dat_aud_exit,
-		.events = IPC_SM_RUN_TFR_COMPLETE | IPC_SM_RUN_RESET
-	},
-	[IPC_SM_SLW_RX_WR_DAT_AUD] = {
-		.id     = IPC_SM_SLW_RX_WR_DAT_AUD,
-		.enter  = sm_slw_rx_wr_dat_aud_enter,
-		.exit   = sm_slw_rx_wr_dat_aud_exit,
-		.events = IPC_SM_RUN_SLAVE_IRQ | IPC_SM_RUN_COMMS_TMO |
-			IPC_SM_RUN_RESET
-	},
-	[IPC_SM_ACT_RX_WR_DAT_AUD] = {
-		.id     = IPC_SM_ACT_RX_WR_DAT_AUD,
-		.enter  = sm_act_rx_wr_dat_aud_enter,
-		.exit   = sm_act_rx_wr_dat_aud_exit,
-		.events = IPC_SM_RUN_TFR_COMPLETE | IPC_SM_RUN_RESET
-	}
 };
-
 
 const struct ipc_sm_state *ipc_sm_idle_state(struct ipc_link_context *context)
 {
-	if (context->link->id == IPC_LINK_AUDIO)
-		return ipc_sm_state(IPC_SM_IDL_AUD);
-	else
-		return ipc_sm_state(IPC_SM_IDL);
+	return ipc_sm_state(IPC_SM_IDL);
 }
 
 const struct ipc_sm_state *ipc_sm_init_state(struct ipc_link_context *context)
 {
-	if (context->link->id == IPC_LINK_AUDIO)
-		return ipc_sm_state(IPC_SM_INIT_AUD);
-	else
-		return ipc_sm_state(IPC_SM_INIT);
+	return ipc_sm_state(IPC_SM_INIT);
 }
 
 const struct ipc_sm_state *ipc_sm_state(u8 id)
@@ -1403,4 +1087,3 @@ void ipc_sm_kick(u8 event, struct ipc_link_context *context)
 			"link %d is suspended, waiting for resume\n", link->id);
 	spin_unlock_irqrestore(&context->sm_lock, flags);
 }
-

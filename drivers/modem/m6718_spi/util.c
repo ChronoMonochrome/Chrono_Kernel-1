@@ -136,7 +136,6 @@ bool ipc_util_link_is_idle(struct ipc_link_context *context)
 
 	switch (context->state->id) {
 	case IPC_SM_IDL:
-	case IPC_SM_IDL_AUD:
 		return true;
 	default:
 		return false;

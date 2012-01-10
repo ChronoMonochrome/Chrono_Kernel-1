@@ -14,9 +14,6 @@
 #define FRAME_LENGTH_ALIGN (4)
 #define MAX_FRAME_COUNTER (256)
 
-/* fixed L1 frame size for audio link: 4 byte L2 header + 664 byte L2 payload */
-#define FRAME_SIZE_AUDIO (668)
-
 void ipc_queue_init(struct ipc_link_context *context)
 {
 	spin_lock_init(&context->tx_q_update_lock);
@@ -37,24 +34,10 @@ struct ipc_tx_queue *ipc_queue_new_frame(struct ipc_link_context *link_context,
 	struct ipc_tx_queue *frame;
 	u32 padded_len = l2_length;
 
-	/* audio link frames are always a fixed size */
-	if (link_context->link->id == IPC_LINK_AUDIO) {
-		if (l2_length > FRAME_SIZE_AUDIO) {
-			dev_err(&link_context->sdev->dev,
-				"link %d error: invalid frame size %d "
-				"requested, max is %d\n",
-				link_context->link->id,
-				l2_length,
-				FRAME_SIZE_AUDIO);
-			return NULL;
-		}
-		padded_len = FRAME_SIZE_AUDIO;
-	} else {
-		/* frame length padded to alignment boundary */
-		if (padded_len % FRAME_LENGTH_ALIGN)
-			padded_len += (FRAME_LENGTH_ALIGN -
-					(padded_len % FRAME_LENGTH_ALIGN));
-	}
+	/* frame length padded to alignment boundary */
+	if (padded_len % FRAME_LENGTH_ALIGN)
+		padded_len += (FRAME_LENGTH_ALIGN -
+				(padded_len % FRAME_LENGTH_ALIGN));
 
 	dev_dbg(&link_context->sdev->dev,
 		"link %d: new frame: length %d, padded to %d\n",

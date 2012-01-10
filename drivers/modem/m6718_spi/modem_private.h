@@ -24,8 +24,8 @@
 #include "modem_protocol.h"
 #include "modem_statemachine.h"
 
-#define IPC_DRIVER_VERSION       (0x03) /* APE protocol version */
-#define IPC_DRIVER_MODEM_MIN_VER (0x03) /* version required from modem */
+#define IPC_DRIVER_VERSION       (0x02) /* APE protocol version */
+#define IPC_DRIVER_MODEM_MIN_VER (0x02) /* version required from modem */
 
 #define IPC_NBR_SUPPORTED_SPI_LINKS (2)
 #define IPC_LINK_COMMON (0)
