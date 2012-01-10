@@ -45,12 +45,6 @@ config MCDE_DISPLAY_PRIMARY_32BPP
 
 endchoice
 
-config DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
-	bool "Enable v-sync for primary display"
-	default n
-	help
-	  Say yes to enable v-sync for primary display
-
 config DISPLAY_AV8100_TRIPPLE_BUFFER
 	bool "Enable tripple buffer for HDMI display"
 	depends on MCDE_DISPLAY_AV8100

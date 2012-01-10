@@ -89,6 +89,10 @@ static struct mcde_col_transform rgb_2_yCbCr_transform = {
 };
 #endif
 
+static struct mcde_port samsung_s6d16d0_port0 = {
+	.sync_src = MCDE_SYNCSRC_BTA,
+};
+
 static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata0 = {
 	.link = 0,
 };
@@ -96,14 +100,10 @@ static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata0 = {
 static struct mcde_display_device samsung_s6d16d0_display0 = {
 	.name = "samsung_s6d16d0",
 	.id = PRIMARY_DISPLAY_ID,
+	.port = &samsung_s6d16d0_port0,
 	.chnl_id = MCDE_CHNL_A,
 	.fifo = MCDE_FIFO_A,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
-	.synchronized_update = true,
-#else
-	.synchronized_update = false,
-#endif
 	.dev = {
 		.platform_data = &samsung_s6d16d0_pdata0,
 	},
@@ -111,6 +111,7 @@ static struct mcde_display_device samsung_s6d16d0_display0 = {
 
 static struct mcde_port sony_port0 = {
 	.link = 0,
+	.sync_src = MCDE_SYNCSRC_BTA,
 };
 
 static struct mcde_display_sony_acx424akp_platform_data
@@ -126,14 +127,13 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 	.fifo = MCDE_FIFO_A,
 	.orientation = MCDE_DISPLAY_ROT_180_CW,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
-	.synchronized_update = true,
-#else
-	.synchronized_update = false,
-#endif
 	.dev = {
 		.platform_data = &sony_acx424akp_display0_pdata,
 	},
+};
+
+static struct mcde_port samsung_s6d16d0_port1 = {
+	.sync_src = MCDE_SYNCSRC_BTA,
 };
 
 static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata1 = {
@@ -143,11 +143,11 @@ static struct mcde_display_dsi_platform_data samsung_s6d16d0_pdata1 = {
 static struct mcde_display_device samsung_s6d16d0_display1 = {
 	.name = "samsung_s6d16d0",
 	.id = SECONDARY_DISPLAY_ID,
+	.port = &samsung_s6d16d0_port1,
 	.chnl_id = MCDE_CHNL_C1,
 	.fifo = MCDE_FIFO_C1,
 	.orientation = MCDE_DISPLAY_ROT_90_CCW,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
-	.synchronized_update = false,
 	.dev = {
 		.platform_data = &samsung_s6d16d0_pdata1,
 	},
@@ -478,7 +478,7 @@ static int __init init_display_devices(void)
 	/* Not all STUIBs supports VSYNC, disable vsync for STUIB */
 	if (uib_is_stuib()) {
 		/* Samsung display on STUIB */
-		samsung_s6d16d0_display0.synchronized_update = false;
+		samsung_s6d16d0_display0.port->sync_src = MCDE_SYNCSRC_OFF;
 		samsung_s6d16d0_display0.orientation = MCDE_DISPLAY_ROT_90_CCW;
 		(void)mcde_display_device_register(&samsung_s6d16d0_display0);
 	} else if (uib_is_u8500uib()) {

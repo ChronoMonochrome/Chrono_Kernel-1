@@ -68,6 +68,7 @@ static struct mcde_col_transform rgb_2_yCbCr_transform = {
 
 static struct mcde_port sony_port0 = {
 	.link = 0,
+	.sync_src = MCDE_SYNCSRC_BTA,
 };
 
 static struct mcde_display_sony_acx424akp_platform_data \
@@ -82,11 +83,6 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 	.chnl_id = MCDE_CHNL_A,
 	.fifo = MCDE_FIFO_A,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-#ifdef CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_VSYNC
-	.synchronized_update = true,
-#else
-	.synchronized_update = false,
-#endif
 	.dev = {
 		.platform_data = &sony_acx424akp_display0_pdata,
 	},
