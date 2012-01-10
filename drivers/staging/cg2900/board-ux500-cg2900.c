@@ -237,7 +237,8 @@ static bool mach_supported(void)
 	    machine_is_u5500() ||
 	    machine_is_hrefv60() ||
 	    machine_is_nomadik() ||
-	    machine_is_snowball())
+	    machine_is_snowball() ||
+	    machine_is_u9540())
 		return true;
 
 	return false;
