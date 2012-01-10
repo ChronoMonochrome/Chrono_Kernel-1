@@ -45,6 +45,7 @@
 #include <linux/of_platform.h>
 
 #include <linux/leds.h>
+#include <linux/mfd/abx500/ab8500-sysctrl.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -150,6 +151,16 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 * GPIO pullup/pulldown configuration.
 	 */
 	.config_pullups    = {0xE0, 0x01, 0x00, 0x00, 0x00, 0x00},
+};
+
+static struct ab8500_sysctrl_platform_data ab8500_sysctrl_pdata = {
+	/*
+	 * SysClkReq1RfClkBuf - SysClkReq8RfClkBuf
+	 * The initial values should not be changed because of the way
+	 * the system works today
+	 */
+	.initial_req_buf_config
+			= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 };
 
 #ifdef CONFIG_INPUT_AB8500_ACCDET
@@ -274,6 +285,7 @@ static struct ab8500_platform_data ab8500_platdata = {
 	.fg		= &ab8500_fg_plat_data,
 	.chargalg	= &ab8500_chargalg_plat_data,
 	.gpio		= &ab8500_gpio_pdata,
+	.sysctrl 	= &ab8500_sysctrl_pdata,
 #ifdef CONFIG_INPUT_AB8500_ACCDET
 	.accdet = &ab8500_accdet_pdata,
 #endif
