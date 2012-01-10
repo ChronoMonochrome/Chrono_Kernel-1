@@ -30,8 +30,8 @@
 #define MASK_8_16_BIT           0x0000FF00
 #define MSG_LEN_OFFSET          16
 #define SHRM_VER                2
-#define ca_ist_inactivity_timer 100 /*100ms */
-#define ca_csc_inactivity_timer 100 /*100ms */
+#define ca_ist_inactivity_timer 25 /*25ms */
+#define ca_csc_inactivity_timer 25 /*25ms */
 
 static u8 msg_audio_counter;
 static u8 msg_common_counter;
