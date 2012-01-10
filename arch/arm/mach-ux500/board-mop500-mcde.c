@@ -429,7 +429,7 @@ static int __init init_display_devices(void)
 	}
 
 	/* Display reset GPIO is different depending on reference boards */
-	if (machine_is_hrefv60()) {
+	if (machine_is_hrefv60() || machine_is_u9540()) {
 		samsung_s6d16d0_pdata0.reset_gpio = HREFV60_DISP1_RST_GPIO;
 		samsung_s6d16d0_pdata1.reset_gpio = HREFV60_DISP2_RST_GPIO;
 	} else {
