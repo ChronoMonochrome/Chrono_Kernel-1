@@ -59,6 +59,13 @@ config MACH_U5500
 	help
 	  Include support for the U5500 development platform.
 
+config MACH_U9540
+	bool "U9540 Development platform"
+	depends on UX500_SOC_DB8500
+	select MACH_U8500
+	help
+	  Include support for the U9540 development platform.
+
 config UX500_AUTO_PLATFORM
 	def_bool y
 	depends on !MACH_U5500
