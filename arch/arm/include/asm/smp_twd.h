@@ -23,7 +23,6 @@ struct clock_event_device;
 extern void __iomem *twd_base;
 
 void twd_timer_setup(struct clock_event_device *);
-void twd_timer_stop(struct clock_event_device *);
 
 #if defined(CONFIG_HOTPLUG) || defined(CONFIG_CPU_IDLE)
 void twd_save(void);
