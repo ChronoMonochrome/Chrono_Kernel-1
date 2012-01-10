@@ -188,7 +188,7 @@ int __init mop500_wlan_init(void)
 	} else if (machine_is_u8500() || machine_is_nomadik() || machine_is_snowball()) {
 		cw1200_device.num_resources = ARRAY_SIZE(cw1200_href_resources);
 		cw1200_device.resource = cw1200_href_resources;
-	} else if (machine_is_hrefv60()) {
+	} else if (machine_is_hrefv60() || machine_is_u9540()) {
 		cw1200_device.num_resources =
 				ARRAY_SIZE(cw1200_href60_resources);
 		cw1200_device.resource = cw1200_href60_resources;
