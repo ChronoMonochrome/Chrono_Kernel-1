@@ -13,10 +13,12 @@ obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o
 ifeq ($(CONFIG_UX500_SOC_DB5500), y)
 obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db5500.o dma-db5500.o \
 				   devices-db5500.o clock-db5500.o
+board-mcde-objs			+= board-u5500-mcde.o
 endif
 ifeq ($(CONFIG_UX500_SOC_DB8500), y)
 obj-$(CONFIG_UX500_SOC_DBX500)	+= cpu-db8500.o devices-db8500.o \
 				   clock-db8500.o dma-db8500.o
+board-mcde-objs			+= board-mop500-mcde.o
 endif
 obj-$(CONFIG_MACH_MOP500)	+= board-mop500.o board-mop500-sdi.o \
 				board-mop500-regulators.o \
@@ -51,10 +53,7 @@ endif
 ifdef CONFIG_SENSORS_LSM303DLH
 obj-$(CONFIG_MACH_MOP500)	+= board-mop500-sensors.o
 endif
-ifdef CONFIG_FB_MCDE
-obj-$(CONFIG_MACH_MOP8500) 	+= board-mop500-mcde.o
-obj-$(CONFIG_MACH_U5500)	+= board-u5500-mcde.o
-endif
+obj-$(CONFIG_FB_MCDE)		+= board-mcde.o
 ifdef CONFIG_STM_MSP_I2S
 obj-$(CONFIG_MACH_MOP500) 	+= board-mop500-msp.o
 endif
