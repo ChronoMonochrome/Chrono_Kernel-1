@@ -77,15 +77,9 @@ static int stm_ste_disable_ape_on_mipi60(void)
 /*
  * Manage STM output pins connection (MIP34/MIPI60 connectors)
  */
-#define PRCM_GPIOCR	(_PRCMU_BASE + 0x138)
-#define PRCM_GPIOCR_DBG_STM_MOD_CMD1 0x800
-#define PRCM_GPIOCR_DBG_UARTMOD_CMD0 0x1
-
-
 static int stm_ste_connection(enum stm_connection_type con_type)
 {
 	int retval = -EINVAL;
-	u32 gpiocr = readl(PRCM_GPIOCR);
 
 	if (con_type != STM_DISCONNECT) {
 		/*  Always enable MIPI34 GPIO pins */
@@ -101,26 +95,19 @@ static int stm_ste_connection(enum stm_connection_type con_type)
 	case STM_DEFAULT_CONNECTION:
 	case STM_STE_MODEM_ON_MIPI34_NONE_ON_MIPI60:
 		/* Enable altC3 on GPIO70-74 (STMMOD) & GPIO75-76 (UARTMOD) */
-		gpiocr |= (PRCM_GPIOCR_DBG_STM_MOD_CMD1
-				| PRCM_GPIOCR_DBG_UARTMOD_CMD0);
-		writel(gpiocr, PRCM_GPIOCR);
+		prcmu_enable_stm_mod_uart();
 		retval = stm_ste_disable_ape_on_mipi60();
 		break;
 
 	case STM_STE_APE_ON_MIPI34_NONE_ON_MIPI60:
 		/* Disable altC3 on GPIO70-74 (STMMOD) & GPIO75-76 (UARTMOD) */
-		gpiocr &= ~(PRCM_GPIOCR_DBG_STM_MOD_CMD1
-				| PRCM_GPIOCR_DBG_UARTMOD_CMD0);
-		writel(gpiocr, PRCM_GPIOCR);
+		prcmu_disable_stm_mod_uart();
 		retval = stm_ste_disable_ape_on_mipi60();
 		break;
 
 	case STM_STE_MODEM_ON_MIPI34_APE_ON_MIPI60:
 		/* Enable altC3 on GPIO70-74 (STMMOD) and GPIO75-76 (UARTMOD) */
-		gpiocr |= (PRCM_GPIOCR_DBG_STM_MOD_CMD1
-				| PRCM_GPIOCR_DBG_UARTMOD_CMD0);
-		writel(gpiocr, PRCM_GPIOCR);
-
+		prcmu_enable_stm_mod_uart();
 		/* Enable APE on MIPI60 */
 		retval = nmk_config_pins_sleep(ARRAY_AND_SIZE(mop500_ske_pins));
 		if (retval)
