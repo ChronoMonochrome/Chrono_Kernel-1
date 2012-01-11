@@ -265,7 +265,13 @@ static int __init board_cg2900_init(void)
 	}
 	dcg2900_init_platdata(&ux500_cg2900_uart_platform_data);
 
-	if (cpu_is_u8500()) {
+	if (pins_for_u9500()) {
+		/* u9500 */
+		ux500_cg2900_uart_device.num_resources =
+				ARRAY_SIZE(cg2900_uart_resources_u9500);
+		ux500_cg2900_uart_device.resource =
+				cg2900_uart_resources_u9500;
+	} else if (cpu_is_u8500()) {
 		if (machine_is_hrefv60()) {
 			/* u8500 */
 			ux500_cg2900_uart_device.num_resources =
@@ -285,12 +291,6 @@ static int __init board_cg2900_init(void)
 				ARRAY_SIZE(cg2900_uart_resources_u5500);
 		ux500_cg2900_uart_device.resource =
 				cg2900_uart_resources_u5500;
-	} else {
-		/* u9500 */
-		ux500_cg2900_uart_device.num_resources =
-				ARRAY_SIZE(cg2900_uart_resources_u9500);
-		ux500_cg2900_uart_device.resource =
-				cg2900_uart_resources_u9500;
 	}
 
 	err = platform_device_register(&ux500_cg2900_device);
