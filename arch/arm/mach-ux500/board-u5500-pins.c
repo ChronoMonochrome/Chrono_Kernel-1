@@ -191,3 +191,9 @@ void __init u5500_pins_init(void)
 	nmk_config_pins(u5500_pins_default, ARRAY_SIZE(u5500_pins_default));
 	ux500_pins_add(u5500_pins, ARRAY_SIZE(u5500_pins));
 }
+
+/* Stub function to make board-ux500-cg2900.c compile within a U5500 configuration */
+int pins_for_u9500(void)
+{
+	return 0;
+}
