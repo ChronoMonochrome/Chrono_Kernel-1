@@ -11,6 +11,8 @@
 #ifndef STM_H
 #define STM_H
 
+#include <linux/types.h>
+
 #define STM_DEV_NAME "stm"
 
 /* One single channel mapping */
