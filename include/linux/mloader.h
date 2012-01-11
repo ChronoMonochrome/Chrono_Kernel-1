@@ -13,6 +13,7 @@
 #define ML_UPLOAD _IO(ML_IO_NUMBER, 1)
 #define ML_GET_NBIMAGES _IOR(ML_IO_NUMBER, 2, int)
 #define ML_GET_DUMPINFO _IOR(ML_IO_NUMBER, 3, struct dump_image*)
+#define ML_GET_FUSEINFO _IOR(ML_IO_NUMBER, 4, char*)
 
 #define MAX_NAME 16
 

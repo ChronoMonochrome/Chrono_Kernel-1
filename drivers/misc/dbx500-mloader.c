@@ -22,6 +22,7 @@
 
 #include <mach/mloader-dbx500.h>
 #include <linux/mloader.h>
+#include <mach/hardware.h>
 
 #define DEVICE_NAME "dbx500_mloader_fw"
 
@@ -30,6 +31,8 @@ struct mloader_priv {
 	struct dbx500_mloader_pdata *pdata;
 	struct miscdevice misc_dev;
 	u32 aeras_size;
+	void __iomem *uid_base;
+	u8 size;
 };
 
 static struct mloader_priv *mloader_priv;
@@ -165,6 +168,11 @@ static long mloader_fw_ioctl(struct file *filp, unsigned int cmd,
 		kfree(dump_images);
 		break;
 	}
+	case ML_GET_FUSEINFO: {
+		ret = copy_to_user(argp, (void *) mloader_priv->uid_base,
+				mloader_priv->size) ? -EFAULT : 0;
+		break;
+	}
 	default:
 		ret = -EPERM;
 		break;
@@ -183,6 +191,7 @@ static int __devinit mloader_fw_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	int i;
+	struct resource *res = NULL;
 
 	mloader_priv = kzalloc(sizeof(*mloader_priv), GFP_ATOMIC);
 	if (!mloader_priv) {
@@ -196,6 +205,16 @@ static int __devinit mloader_fw_probe(struct platform_device *pdev)
 	mloader_priv->misc_dev.minor = MISC_DYNAMIC_MINOR;
 	mloader_priv->misc_dev.name = DEVICE_NAME;
 	mloader_priv->misc_dev.fops = &modem_fw_fops;
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	mloader_priv->size = resource_size(res);
+	mloader_priv->uid_base = ioremap(res->start, mloader_priv->size);
+
+	if (!mloader_priv->uid_base) {
+		   ret = -ENOMEM;
+		   goto err_free_priv;
+	}
+
 	ret = misc_register(&mloader_priv->misc_dev);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "can't misc_register\n");
