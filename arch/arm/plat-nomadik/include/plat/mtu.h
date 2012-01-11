@@ -11,9 +11,6 @@ void nmdk_clksrc_reset(void);
  */
 #define MTU_MIN_RANGE 4
 
-/* should be set by the platform code */
-extern void __iomem *mtu_base;
-
 struct clock_event_device *nmdk_clkevt_get(void);
 
 #endif /* __PLAT_MTU_H */

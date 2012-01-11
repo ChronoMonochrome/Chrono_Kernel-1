@@ -182,11 +182,12 @@ void nmdk_clksrc_reset(void)
 	       mtu_base + MTU_CR(0));
 }
 
-void __init nmdk_timer_init(void)
+void __init nmdk_timer_init(void __iomem *base)
 {
 	unsigned long rate;
 	struct clk *clk0;
 
+	mtu_base = base;
 	clk0 = clk_get_sys("mtu0", NULL);
 	BUG_ON(IS_ERR(clk0));
 
