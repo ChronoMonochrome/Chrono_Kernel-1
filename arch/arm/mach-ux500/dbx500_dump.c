@@ -55,6 +55,11 @@ static struct dbx500_dump_info db8500_dump[] = {
 		.phy_addr = (U8500_PRCMU_BASE + 0xE00),
 		.size     = 0x118,
 	},
+	{
+		.name	  = "db8500_fuses",
+		.phy_addr = (U8500_BACKUPRAM1_BASE + 0xF70),
+		.size	  = 0xc,
+	},
 };
 
 static struct dbx500_dump_info db5500_dump[] = {
