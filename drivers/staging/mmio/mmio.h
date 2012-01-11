@@ -3,6 +3,7 @@
  *
  * Author: Joakim Axelsson <joakim.axelsson@stericsson.com> for ST-Ericsson
  * Author: Rajat Verma <rajat.verma@stericsson.com> for ST-Ericsson
+ * Author: Vincent Abriou <vincent.abriou@stericsson.com> for ST-Ericsson.
  * License Terms: GNU General Public License v2
  */
 
@@ -11,7 +12,10 @@
 
 #include <linux/ioctl.h>
 
-#define MMIO_NAME "mmio_camera"
+#define MMIO_NAME     "mmio_camera"      /* kept for backward compatibility */
+#define MMIO_RAW_NAME "mmio_camera_raw"
+#define MMIO_YUV_NAME "mmio_camera_yuv"
+
 #define SRA_SUPPORT 1
 
 #ifdef SRA_SUPPORT
@@ -25,14 +29,44 @@ enum camera_slot_t {
 	SECONDARY_CAMERA,
 	CAMERA_SLOT_END
 };
-struct mmio_gpio {
-	int gpio;	/* Set to zero if not in use */
-	int active_high;/* Set if pin is active high */
-	int udelay;	/* Time to wait when activating the pin, in usec */
+
+enum camera_type_t {
+	RAW_CAMERA = 0,
+	YUV_CAMERA,
+	CAMERA_TYPE_END
 };
+
+struct mmio_gpio {
+	/* Name of the gpio */
+	const char *name;
+	/* Gpio number */
+	int gpio;
+	/* pin configuration when feature is enabled */
+	unsigned long cfg_ena;
+	/* pin configuration when feature is disabled */
+	unsigned long cfg_disa;
+	/* Set if pin is active high */
+	/* kept for backward compatibility */
+	int active_high;
+	/* Time to wait when activating the pin, in usec */
+	/* kept for backward compatibility */
+	int udelay;
+};
+
+struct mmio_clk {
+	const char *name;          /* Name of the clock */
+	struct clk *clk_ptr;       /* Pointer on the allocated clock */
+};
+
+struct mmio_regulator {
+	const char *name;          /* Name of the clock */
+	struct regulator *reg_ptr; /* Pointer on the allocated regulator */
+};
+
 enum mmio_select_i2c_t {
-	MMIO_ACTIVATE_IPI2C2 = 0,
-	MMIO_ACTIVATE_I2C_HOST,
+	MMIO_ACTIVATE_IPI2C2 = 0, /* kept for backward compatibility */
+	MMIO_ACTIVATE_I2C_HOST,   /* kept for backward compatibility */
+	MMIO_ACTIVATE_I2C,
 	MMIO_DEACTIVATE_I2C
 };
 
@@ -55,12 +89,14 @@ struct mmio_platform_data {
 	void (*platform_exit)(struct mmio_platform_data *pdata);
 	int (*power_enable)(struct mmio_platform_data *pdata);
 	void (*power_disable)(struct mmio_platform_data *pdata);
+	/* kept for backward compatibility */
 	int (*config_xshutdown_pins)(struct mmio_platform_data *pdata,
 		enum mmio_select_xshutdown_t select, int is_active_high);
 	int (*config_i2c_pins)(struct mmio_platform_data *pdata,
 		enum mmio_select_i2c_t select);
 	int (*clock_enable)(struct mmio_platform_data *pdata);
 	void (*clock_disable)(struct mmio_platform_data *pdata);
+	/* kept for backward compatibility */
 	void (*set_xshutdown)(struct mmio_platform_data *pdata);
 };
 
@@ -133,9 +169,10 @@ struct mmio_input_output_t {
 #define MMIO_INVALID	(~0)
 
 /*Xshutdown from host takes two arguments*/
+/* kept for backward compatibility */
 #define MMIO_XSHUTDOWN_ENABLE			(0x1)
+/* kept for backward compatibility */
 #define MMIO_XSHUTDOWN_ACTIVE_HIGH		(0x2)
-
 #define MMIO_MAGIC_NUMBER 0x15
 
 #define MMIO_CAM_INITBOARD	_IOW(MMIO_MAGIC_NUMBER, 1,\
@@ -144,14 +181,18 @@ struct mmio_input_output_t*)
 struct mmio_input_output_t*)
 #define MMIO_CAM_SET_EXT_CLK	_IOW(MMIO_MAGIC_NUMBER, 3,\
 struct mmio_input_output_t*)
+/* kept for backward compatibility */
 #define MMIO_CAM_SET_PRI_HWIF	_IO(MMIO_MAGIC_NUMBER, 4)
+/* kept for backward compatibility */
 #define MMIO_CAM_SET_SEC_HWIF	_IO(MMIO_MAGIC_NUMBER, 5)
 #define MMIO_CAM_INITMMDSPTIMER	_IO(MMIO_MAGIC_NUMBER, 6)
 #define MMIO_CAM_LOAD_XP70_FW	_IOW(MMIO_MAGIC_NUMBER, 7,\
 struct mmio_input_output_t*)
 #define MMIO_CAM_MAP_STATS_AREA	_IOWR(MMIO_MAGIC_NUMBER, 8,\
 struct mmio_input_output_t*)
+/* kept for backward compatibility */
 #define MMIO_ACTIVATE_I2C2	_IOW(MMIO_MAGIC_NUMBER, 9, int*)
+/* kept for backward compatibility */
 #define MMIO_ENABLE_XSHUTDOWN_FROM_HOST _IOW(MMIO_MAGIC_NUMBER, 10, int*)
 #define MMIO_CAM_ISP_WRITE	_IOW(MMIO_MAGIC_NUMBER, 11,\
 struct mmio_input_output_t*)
