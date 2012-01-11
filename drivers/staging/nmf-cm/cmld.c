@@ -52,8 +52,8 @@ static DEFINE_MUTEX(channel_lock); /* lock used to protect previous list */
 #ifdef CONFIG_DEBUG_FS
 /* Debugfs support */
 bool cmld_user_has_debugfs = false;
-bool cmld_dump_ongoing = false;
-module_param(cmld_dump_ongoing, bool, S_IWUSR|S_IRUGO);
+pid_t cmld_dump_ongoing = 0;
+module_param(cmld_dump_ongoing, uint, S_IWUSR|S_IRUGO);
 static DECLARE_WAIT_QUEUE_HEAD(dump_waitq);
 #endif
 
@@ -227,6 +227,10 @@ static void freeProcessPriv(struct kref *ref)
 
 #ifdef CONFIG_DEBUG_FS
 	debugfs_remove_recursive(entry->dir);
+	if (cmld_dump_ongoing == entry->pid) {
+		cmld_dump_ongoing = 0;
+		wake_up(&dump_waitq);
+	}
 #endif
 
 	/* Free the per-process descriptor */
@@ -387,7 +391,7 @@ static long cmld_control_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	struct cm_process_priv* procPriv = file->private_data;
 #ifdef CONFIG_DEBUG_FS
 	if (cmd == CM_PRIV_DEBUGFS_DUMP_DONE) {
-		cmld_dump_ongoing = false;
+		cmld_dump_ongoing = 0;
 		wake_up(&dump_waitq);
 		return 0;
 	} else if (wait_event_interruptible(dump_waitq, (!cmld_dump_ongoing)))

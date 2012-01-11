@@ -65,7 +65,7 @@ void dispatch_service_msg(struct osal_msg *msg)
 			new_msg->d.srv.srvData.panic.panicSource
 				|= DEBUGFS_DUMP_FLAG;
 			dump_flag_to_set = false;
-			cmld_dump_ongoing = true;
+			cmld_dump_ongoing = channelPriv->proc->pid;
 		}
 #endif
 		spin_lock_bh(&channelPriv->bh_lock);

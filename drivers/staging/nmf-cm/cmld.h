@@ -76,7 +76,7 @@ extern struct list_head channel_list; /**< List of all allocated channel structu
 extern struct list_head process_list; /**< List of all allocated process private structure */
 #ifdef CONFIG_DEBUG_FS
 extern bool cmld_user_has_debugfs; /**< Whether user side has proper support of debugfs to take a dump */
-extern bool cmld_dump_ongoing; /**< Whether a dump is on-going */
+extern pid_t cmld_dump_ongoing; /**< If a dump is on-going, store pid of process doing the dump */
 #endif
 
 /* Structure used to embed DSP traces */
