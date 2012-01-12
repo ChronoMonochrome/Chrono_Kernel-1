@@ -20,8 +20,8 @@
 /*
  * These are the defined batteries that uses a NTC and ID resistor placed
  * inside of the battery pack.
- * Note that the abx500_res_to_temp table must be strictly sorted by falling resistance
- * values to work.
+ * Note that the abx500_res_to_temp table must be strictly sorted by falling
+ * resistance values to work.
  */
 static struct abx500_res_to_temp temp_tbl_type1[] = {
 	{-20, 67400},
