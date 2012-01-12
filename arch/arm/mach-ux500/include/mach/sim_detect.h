@@ -13,4 +13,3 @@ struct sim_detect_platform_data {
 };
 
 #endif
-

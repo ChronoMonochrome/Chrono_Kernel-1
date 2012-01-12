@@ -80,4 +80,3 @@ int mbox_channel_revoke_messages(u16 channel);
 int mbox_channel_deregister(u16 channel);
 
 #endif /*INC_STE_MBOX_H*/
-

@@ -79,4 +79,3 @@ static int __init early_modem_trace(char *p)
 	return 0;
 }
 early_param("mem_mtrace", early_modem_trace);
-
