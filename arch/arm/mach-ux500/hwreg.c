@@ -1,4 +1,4 @@
-/*
+%/*
  * Copyright (C) 2011 ST-Ericsson SA
  *
  * Author: Etienne CARRIERE <etienne.carriere@stericsson.com> for ST-Ericsson
@@ -98,9 +98,8 @@
 #include <linux/seq_file.h>
 #include <linux/string.h>
 #include <linux/ctype.h>
-
-#include <asm/uaccess.h>
-#include <asm/io.h>
+#include <linux/uaccess.h>
+#include <linux/io.h>
 
 #include <mach/hardware.h>
 
@@ -138,9 +137,9 @@ struct hwreg_cfg {
 };
 #define REG_FMT_DEC(c) ((c)->fmt & 0x1)		/* bit 0: 0=hexa, 1=dec */
 #define REG_FMT_HEX(c) (!REG_FMT_DEC(c))	/* bit 0: 0=hexa, 1=dec */
-#define REG_FMT_32B(c) (((c)->fmt & 0x6)==0x0)	/* bit[2:1]=0 => 32b access */
-#define REG_FMT_16B(c) (((c)->fmt & 0x6)==0x2)	/* bit[2:1]=1 => 16b access */
-#define REG_FMT_8B(c)  (((c)->fmt & 0x6)==0x4)	/* bit[2:1]=2 => 8b access */
+#define REG_FMT_32B(c) (((c)->fmt & 0x6) == 0x0)	/* bit[2:1]=0 => 32b access */
+#define REG_FMT_16B(c) (((c)->fmt & 0x6) == 0x2)	/* bit[2:1]=1 => 16b access */
+#define REG_FMT_8B(c)  (((c)->fmt & 0x6) == 0x4)	/* bit[2:1]=2 => 8b access */
 
 static struct hwreg_cfg hwreg_cfg = {
 	.addr = 0,			/* default: invalid phys addr */
@@ -308,7 +307,7 @@ static ssize_t hwreg_address_write(struct file *file,
 	if (err)
 		return err;
 
-	if (hwreg_io_ptov(user_address)==NULL)
+	if (hwreg_io_ptov(user_address) == NULL)
 		return -EADDRNOTAVAIL;
 
 	debug_address = user_address;
@@ -398,15 +397,15 @@ static const struct file_operations hwreg_map_fops = {
 
 static int hwreg_print(struct seq_file *s, void *d)
 {
-	struct hwreg_cfg *c = (struct hwreg_cfg*) s->private;
+	struct hwreg_cfg *c = (struct hwreg_cfg *) s->private;
 	void *p;
 	uint  v;
 
-	if ((c==NULL) || ((p = hwreg_io_ptov(c->addr))==NULL))
+	if ((c == NULL) || ((p = hwreg_io_ptov(c->addr)) == NULL))
 		return -EADDRNOTAVAIL;
 
 	v = (uint) (REG_FMT_32B(c) ? readl(p) : REG_FMT_16B(c) ? readw(p) : readb(p));
-	v = (c->shift>=0) ? v >> c->shift : v << (-c->shift);
+	v = (c->shift >= 0) ? v >> c->shift : v << (-c->shift);
 	v = v & c->mask;
 
 	if (REG_FMT_DEC(c))
@@ -434,16 +433,16 @@ static int hwreg_open(struct inode *inode, struct file *file)
 static int strval_len(char *b)
 {
 	char *s = b;
-	if((*s=='0') && ((*(s+1)=='x') || (*(s+1)=='X'))) {
+	if ((*s == '0') && ((*(s+1) == 'x') || (*(s+1) == 'X'))) {
 		s += 2;
-		for (; *s && (*s!=' ') && (*s!='\n'); s++) {
+		for (; *s && (*s != ' ') && (*s != '\n'); s++) {
 			if (!isxdigit(*s))
 				return 0;
 		}
 	} else {
-		if (*s=='-')
+		if (*s == '-')
 			s++;
-		for (; *s && (*s!=' ') && (*s!='\n'); s++) {
+		for (; *s && (*s != ' ') && (*s != '\n'); s++) {
 			if (!isdigit(*s))
 				return 0;
 		}
@@ -457,7 +456,7 @@ static int strval_len(char *b)
  */
 static ssize_t hwreg_common_write(char *b, struct hwreg_cfg *cfg)
 {
-	uint write, val=0, offset=0;
+	uint write, val = 0, offset = 0;
 	struct hwreg_cfg loc = {
 		.addr = 0,		/* default: invalid phys addr */
 		.fmt = 0,		/* default: 32bit access, hex output */
@@ -466,7 +465,7 @@ static ssize_t hwreg_common_write(char *b, struct hwreg_cfg *cfg)
 	};
 
 	/* read or write ? */
-	if(!strncmp(b, "read ", 5)) {
+	if (!strncmp(b, "read ", 5)) {
 		write = 0;
 		b += 5;
 	} else if (!strncmp(b, "write ", 6)) {
@@ -477,31 +476,31 @@ static ssize_t hwreg_common_write(char *b, struct hwreg_cfg *cfg)
 	}
 
 	/* OPTIONS -l|-w|-b -s -m -o */
-	while((*b==' ') || (*b=='-')) {
-		if (*(b-1)!=' ') {
+	while ((*b == ' ') || (*b == '-')) {
+		if (*(b-1) != ' ') {
 			b++;
 			continue;
 		}
 		if ((!strncmp(b, "-d ", 3)) || (!strncmp(b, "-dec ", 5))) {
-			b += (*(b+2)==' ') ? 3 : 5;
+			b += (*(b+2) == ' ') ? 3 : 5;
 			loc.fmt |= (1<<0);
 		} else if ((!strncmp(b, "-h ", 3)) || (!strncmp(b, "-hex ", 5))) {
-			b += (*(b+2)==' ') ? 3 : 5;
+			b += (*(b+2) == ' ') ? 3 : 5;
 			loc.fmt &= ~(1<<0);
 		} else if ((!strncmp(b, "-m ", 3)) || (!strncmp(b, "-mask ", 6))) {
-			b += (*(b+2)==' ') ? 3 : 6;
-			if (strval_len(b)==0)
+			b += (*(b+2) == ' ') ? 3 : 6;
+			if (strval_len(b) == 0)
 				return -EINVAL;
 			loc.mask = simple_strtoul(b, &b, 0);
-		} else if ((!strncmp(b, "-s ", 3)) || (!strncmp(b,"-shift ", 7))) {
-			b += (*(b+2)==' ') ? 3 : 7;
-			if (strval_len(b)==0)
+		} else if ((!strncmp(b, "-s ", 3)) || (!strncmp(b, "-shift ", 7))) {
+			b += (*(b+2) == ' ') ? 3 : 7;
+			if (strval_len(b) == 0)
 				return -EINVAL;
 			loc.shift = simple_strtol(b, &b, 0);
 
-		} else if ((!strncmp(b, "-o ", 3)) || (!strncmp(b,"-offset ", 8))) {
-			b += (*(b+2)==' ') ? 3 : 8;
-			if (strval_len(b)==0)
+		} else if ((!strncmp(b, "-o ", 3)) || (!strncmp(b, "-offset ", 8))) {
+			b += (*(b+2) == ' ') ? 3 : 8;
+			if (strval_len(b) == 0)
 				return -EINVAL;
 			offset = simple_strtol(b, &b, 0);
 		} else if (!strncmp(b, "-l ", 3)) {
@@ -518,7 +517,7 @@ static ssize_t hwreg_common_write(char *b, struct hwreg_cfg *cfg)
 		}
 	}
 	/* get arg ADDRESS */
-	if (strval_len(b)==0)
+	if (strval_len(b) == 0)
 		return -EINVAL;
 	loc.addr = simple_strtoul(b, &b, 0);
 	loc.addr += offset;
@@ -526,8 +525,9 @@ static ssize_t hwreg_common_write(char *b, struct hwreg_cfg *cfg)
 		return -EINVAL;
 
 	if (write) {
-		while(*b==' ') b++; /* skip spaces up to arg VALUE */
-		if (strval_len(b)==0)
+		while (*b == ' ')
+			b++; /* skip spaces up to arg VALUE */
+		if (strval_len(b) == 0)
 			return -EINVAL;
 		val = simple_strtoul(b, &b, 0);
 	}
@@ -538,9 +538,9 @@ static ssize_t hwreg_common_write(char *b, struct hwreg_cfg *cfg)
 #ifdef DEBUG
 	printk(KERN_INFO "HWREG request: %s %d-bit reg, %s, addr=0x%08X, "
 	       "mask=0x%X, shift=%d value=0x%X\n",
-	       (write)?"write":"read",
-	       REG_FMT_32B(cfg)?32:REG_FMT_16B(cfg)?16:8,
-	       REG_FMT_DEC(cfg)?"decimal":"hexa",
+	       (write) ? "write" : "read",
+	       REG_FMT_32B(cfg) ? 32 : REG_FMT_16B(cfg) ? 16 : 8,
+	       REG_FMT_DEC(cfg) ? "decimal" : "hexa",
 	       cfg->addr, cfg->mask, cfg->shift, val);
 #endif
 
