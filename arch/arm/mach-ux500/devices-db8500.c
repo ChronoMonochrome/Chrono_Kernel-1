@@ -285,6 +285,20 @@ struct platform_device u8500_wdt_device = {
 /*
  * HSI
  */
+#define HSI0_CAWAKE { \
+	.start = IRQ_PRCMU_HSI0, \
+	.end   = IRQ_PRCMU_HSI0, \
+	.flags = IORESOURCE_IRQ, \
+	.name = "hsi0_cawake" \
+}
+
+#define HSI0_ACWAKE { \
+	.start = 226, \
+	.end   = 226, \
+	.flags = IORESOURCE_IO, \
+	.name = "hsi0_acwake" \
+}
+
 #define HSIR_OVERRUN(num) {			    \
 	.start  = IRQ_DB8500_HSIR_CH##num##_OVRRUN, \
 	.end    = IRQ_DB8500_HSIR_CH##num##_OVRRUN, \
@@ -357,6 +371,8 @@ static struct resource u8500_hsi_resources[] = {
        HSIR_OVERRUN(5),
        HSIR_OVERRUN(6),
        HSIR_OVERRUN(7),
+       HSI0_CAWAKE,
+       HSI0_ACWAKE,
 };
 
 #ifdef CONFIG_STE_DMA40
