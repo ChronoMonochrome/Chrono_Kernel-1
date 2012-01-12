@@ -24,7 +24,7 @@
 #include "board-u5500.h"
 #include <linux/mmio.h>
 
-struct mmio_board_data{
+struct mmio_board_data {
 	int number_of_regulators;
 	struct regulator **mmio_regulators;
 	/* * Pin configs */
@@ -150,7 +150,7 @@ err_no_mem_reg:
 static void mmio_power_exit(struct mmio_platform_data *pdata)
 {
 	int i = 0;
-	struct mmio_board_data *extra = pdata->extra;;
+	struct mmio_board_data *extra = pdata->extra;
 
 	for (i = 0; i < extra->number_of_regulators; i++)
 		regulator_put(extra->mmio_regulators[i]);
