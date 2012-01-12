@@ -322,6 +322,11 @@ void ux500_msp_i2s_configure_dma(struct msp *msp, struct msp_config *config)
 		msp->tx_pipeid = NULL;
 	}
 
+	if (msp->rx_pipeid != NULL) {
+		dma_release_channel(msp->rx_pipeid);
+		msp->rx_pipeid = NULL;
+	}
+
 	switch (config->data_size) {
 	case MSP_DATA_BITS_32:
 		word_width = STEDMA40_WORD_WIDTH;
