@@ -124,14 +124,14 @@ struct abx500_accdet_platform_data {
  * @JACK_TYPE_CVIDEO CVideo type of accessory connected.
  */
 enum accessory_jack_type {
-       JACK_TYPE_UNSPECIFIED,
-       JACK_TYPE_DISCONNECTED,
-       JACK_TYPE_CONNECTED,
-       JACK_TYPE_HEADPHONE,
-       JACK_TYPE_HEADSET,
-       JACK_TYPE_CARKIT,
-       JACK_TYPE_OPENCABLE,
-       JACK_TYPE_CVIDEO
+	JACK_TYPE_UNSPECIFIED,
+	JACK_TYPE_DISCONNECTED,
+	JACK_TYPE_CONNECTED,
+	JACK_TYPE_HEADPHONE,
+	JACK_TYPE_HEADSET,
+	JACK_TYPE_CARKIT,
+	JACK_TYPE_OPENCABLE,
+	JACK_TYPE_CVIDEO
 };
 
 /**
@@ -350,4 +350,3 @@ extern struct abx500_ad ab8500_accessory_det_callbacks;
 #endif
 
 #endif /* _ABx500_ACCDET_H */
-
