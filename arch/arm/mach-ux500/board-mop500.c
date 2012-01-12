@@ -347,20 +347,16 @@ static int ske_kp_cols[] = {
 	COL_PIN_O4, COL_PIN_O5, COL_PIN_O6, COL_PIN_O7,
 };
 
-static bool ske_config;
 /*
  * ske_set_gpio_row: request and set gpio rows
  */
 static int ske_set_gpio_row(int gpio)
 {
 	int ret;
-
-	if (!ske_config) {
-		ret = gpio_request(gpio, "ske-kp");
-		if (ret < 0) {
-			pr_err("ske_set_gpio_row: gpio request failed\n");
-			return ret;
-		}
+	ret = gpio_request(gpio, "ske-kp");
+	if (ret < 0) {
+		pr_err("ske_set_gpio_row: gpio request failed\n");
+		return ret;
 	}
 
 	ret = gpio_direction_output(gpio, 1);
@@ -391,8 +387,6 @@ static int ske_kp_init(void)
 			return ret;
 		}
 	}
-	if (!ske_config)
-		ske_config = true;
 
 	return 0;
 }
@@ -400,10 +394,14 @@ static int ske_kp_init(void)
 static int ske_kp_exit(void)
 {
 	struct ux500_pins *pins;
+	int i;
 
 	pins = ux500_pins_get("ske");
 	if (pins)
 		ux500_pins_disable(pins);
+
+	for (i = 0; i < SKE_KPD_MAX_ROWS; i++)
+		gpio_free(ske_kp_rows[i]);
 
 	return 0;
 }
