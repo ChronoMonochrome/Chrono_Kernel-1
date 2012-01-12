@@ -682,12 +682,10 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 		goto out_unregisterinput;
 	}
 	for (i = 0; i < SKE_KPD_MAX_ROWS; i++) {
-		keypad->ske_rows[i] = *plat->gpio_input_pins;
-		keypad->ske_cols[i] = *plat->gpio_output_pins;
+		keypad->ske_rows[i] = plat->gpio_input_pins[i];
+		keypad->ske_cols[i] = plat->gpio_output_pins[i];
 		keypad->gpio_input_irq[i] =
 				NOMADIK_GPIO_TO_IRQ(keypad->ske_rows[i]);
-		plat->gpio_input_pins++;
-		plat->gpio_output_pins++;
 	}
 
 	for (i = 0; i < keypad->board->krow; i++) {
@@ -754,21 +752,33 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 {
 	struct ske_keypad *keypad = platform_get_drvdata(pdev);
 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	int i;
 
 	cancel_delayed_work_sync(&keypad->gpio_work);
 	cancel_delayed_work_sync(&keypad->work);
 	cancel_delayed_work_sync(&keypad->scan_work);
-	free_irq(keypad->irq, keypad);
 
 	input_unregister_device(keypad->input);
-
 	sysfs_remove_group(&pdev->dev.kobj, &ske_attr_group);
-	clk_disable(keypad->clk);
+	if (keypad->enable)
+		clk_disable(keypad->clk);
 	clk_put(keypad->clk);
 
-	if (keypad->board->exit)
+	if (keypad->enable && keypad->board->exit)
 		keypad->board->exit();
+	else {
+		for (i = 0; i < keypad->board->krow; i++) {
+			disable_irq_nosync(keypad->gpio_input_irq[i]);
+			disable_irq_wake(keypad->gpio_input_irq[i]);
+		}
+	}
+	for (i = 0; i < keypad->board->krow; i++)
+		free_irq(keypad->gpio_input_irq[i], keypad);
 
+	for (i = 0; i < SKE_KPD_MAX_ROWS; i++)
+		gpio_free(keypad->ske_rows[i]);
+
+	free_irq(keypad->irq, keypad);
 	regulator_put(keypad->regulator);
 
 	iounmap(keypad->reg_base);
