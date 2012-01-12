@@ -1083,8 +1083,9 @@ static int __devinit lsm303dlh_a_probe(struct i2c_client *client,
 
 	ddata = kzalloc(sizeof(struct lsm303dlh_a_data), GFP_KERNEL);
 	if (ddata == NULL) {
+		dev_err(&client->dev, "memory alocation failed\n");
 		ret = -ENOMEM;
-		goto err_op_failed;
+		goto err_alloc;
 	}
 
 	ddata->client = client;
@@ -1105,6 +1106,7 @@ static int __devinit lsm303dlh_a_probe(struct i2c_client *client,
 		dev_err(&client->dev, "failed to get regulator\n");
 		ret = PTR_ERR(ddata->regulator);
 		ddata->regulator = NULL;
+		goto err_op_failed;
 	}
 
 	if (ddata->regulator) {
@@ -1237,8 +1239,10 @@ exit_free_regulator:
 		regulator_put(ddata->regulator);
 		ddata->device_status = DEVICE_OFF;
 	}
+
 err_op_failed:
 	kfree(ddata);
+err_alloc:
 	dev_err(&client->dev, "probe function fails %x", ret);
 	return ret;
 }

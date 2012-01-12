@@ -458,8 +458,9 @@ static int __devinit l3g4200d_probe(struct i2c_client *client,
 
 	ddata = kzalloc(sizeof(struct l3g4200d_data), GFP_KERNEL);
 	if (ddata == NULL) {
+		dev_err(&client->dev, "memory alocation failed\n");
 		ret = -ENOMEM;
-		goto error_op_failed;
+		goto exit;
 	}
 
 	ddata->client = client;
@@ -479,6 +480,7 @@ static int __devinit l3g4200d_probe(struct i2c_client *client,
 		dev_err(&client->dev, "failed to get regulator\n");
 		ret = PTR_ERR(ddata->regulator);
 		ddata->regulator = NULL;
+		goto error_op_failed;
 	}
 
 	if (ddata->regulator) {
