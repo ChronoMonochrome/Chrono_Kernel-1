@@ -360,7 +360,7 @@ enum msp_mode {
 #define MSP_FRAME_SIZE_AUTO -1
 
 
-#define MSP_DR 		0x00
+#define MSP_DR		0x00
 #define MSP_GCR		0x04
 #define MSP_TCF		0x08
 #define MSP_RCF		0x0c
@@ -370,21 +370,21 @@ enum msp_mode {
 
 #define MSP_IMSC	0x20
 #define MSP_RIS		0x24
-#define MSP_MIS 	0x28
+#define MSP_MIS		0x28
 #define MSP_ICR		0x2c
 #define MSP_MCR		0x30
-#define MSP_RCV 	0x34
-#define MSP_RCM 	0x38
+#define MSP_RCV		0x34
+#define MSP_RCM		0x38
 
 #define MSP_TCE0	0x40
 #define MSP_TCE1	0x44
-#define MSP_TCE2 	0x48
-#define MSP_TCE3 	0x4c
+#define MSP_TCE2	0x48
+#define MSP_TCE3	0x4c
 
 #define MSP_RCE0	0x60
 #define MSP_RCE1	0x64
 #define MSP_RCE2	0x68
-#define MSP_RCE3 	0x6c
+#define MSP_RCE3	0x6c
 #define MSP_IODLY	0x70
 
 #define MSP_ITCR	0x80
@@ -394,13 +394,13 @@ enum msp_mode {
 
 #define MSP_PID0	0xfe0
 #define MSP_PID1	0xfe4
-#define MSP_PID2 	0xfe8
+#define MSP_PID2	0xfe8
 #define MSP_PID3	0xfec
 
 #define MSP_CID0	0xff0
-#define MSP_CID1 	0xff4
+#define MSP_CID1	0xff4
 #define MSP_CID2	0xff8
-#define MSP_CID3 	0xffc
+#define MSP_CID3	0xffc
 
 /* Single or dual phase mode */
 enum msp_phase_mode {
@@ -663,8 +663,8 @@ enum msp_expand_mode {
 {							\
 	MSP_SINGLE_PHASE,				\
 	MSP_SINGLE_PHASE,				\
-	MSP_PHASE2_START_MODE_IMEDIATE, 		\
-	MSP_PHASE2_START_MODE_IMEDIATE, 		\
+	MSP_PHASE2_START_MODE_IMEDIATE,			\
+	MSP_PHASE2_START_MODE_IMEDIATE,			\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_FRAME_LENGTH_1,				\
@@ -697,8 +697,8 @@ enum msp_expand_mode {
 {							\
 	MSP_DUAL_PHASE,				\
 	MSP_DUAL_PHASE,				\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_FRAME_LENGTH_1,				\
@@ -732,8 +732,8 @@ enum msp_expand_mode {
 {							\
 	MSP_SINGLE_PHASE,				\
 	MSP_SINGLE_PHASE,				\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_FRAME_LENGTH_1,				\
@@ -770,8 +770,8 @@ enum msp_expand_mode {
 {							\
 	MSP_DUAL_PHASE,				\
 	MSP_DUAL_PHASE,				\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_FRAME_LENGTH_1,				\
@@ -804,8 +804,8 @@ enum msp_expand_mode {
 {							\
 	MSP_SINGLE_PHASE,				\
 	MSP_SINGLE_PHASE,				\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_FRAME_LENGTH_1,				\
@@ -838,8 +838,8 @@ enum msp_expand_mode {
 {							\
 	MSP_SINGLE_PHASE,				\
 	MSP_SINGLE_PHASE,				\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
-	MSP_PHASE2_START_MODE_FRAME_SYNC, 		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
+	MSP_PHASE2_START_MODE_FRAME_SYNC,		\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_BTF_MS_BIT_FIRST,				\
 	MSP_FRAME_LENGTH_1,				\
