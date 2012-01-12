@@ -555,6 +555,29 @@ static struct hash_platform_data u5500_hash1_platform_data = {
 	.dma_filter = stedma40_filter,
 };
 
+/* modem crash dump detection driver data */
+static struct resource mcdd_resources[] = {
+	{
+		.name = "mcdd_intreset_addr",
+		.start = U5500_INTCON_MBOX1_INT_RESET_ADDR,
+		.end = U5500_INTCON_MBOX1_INT_RESET_ADDR,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.name = "mcdd_mbox_irq",
+		.start = MBOX_PAIR1_VIRT_IRQ,
+		.end = MBOX_PAIR1_VIRT_IRQ,
+		.flags = IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device u5500_mcdd_device = {
+	.name	= "u5500-mcdd-modem",
+	.id = 0,
+	.resource = mcdd_resources,
+	.num_resources = ARRAY_SIZE(mcdd_resources),
+};
+
 static struct platform_device *u5500_platform_devices[] __initdata = {
 	&u5500_ab5500_device,
 #ifdef CONFIG_FB_MCDE
@@ -567,6 +590,7 @@ static struct platform_device *u5500_platform_devices[] __initdata = {
 	&u5500_mmio_device,
 #endif
 	&u5500_thsens_device,
+	&u5500_mcdd_device,
 };
 
 #define BACKUPRAM_ROM_DEBUG_ADDR	0xFFC
