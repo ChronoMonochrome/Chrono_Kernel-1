@@ -1,4 +1,4 @@
-%/*
+/*
  * Copyright (C) 2011 ST-Ericsson SA
  *
  * Author: Etienne CARRIERE <etienne.carriere@stericsson.com> for ST-Ericsson
@@ -156,10 +156,12 @@ struct hwreg_io_range {
 	u8 *addr;
 };
 
+static struct hwreg_io_range *hwreg_io_current_map;
+
 /*
  * HWREG guts: mapping table
  */
-static struct hwreg_io_range hwreg_io_map[] = {
+static struct hwreg_io_range hwreg_u8500_io_map[] = {
 	/* Periph1 Peripherals */
 	{.base = U8500_PER1_BASE,	.size = 0x10000},
 	/* Periph2 Peripherals */
@@ -237,17 +239,89 @@ static struct hwreg_io_range hwreg_io_map[] = {
 
 };
 
+static struct hwreg_io_range hwreg_u9540_io_map[] = {
+	/* Periph1 Peripherals */
+	{.base = U8500_PER1_BASE,	.size = 0x10000},
+	/* Periph2 Peripherals */
+	{.base = U8500_PER2_BASE,	.size = 0x10000},
+	/* Periph3 Peripherals */
+	{.base = U8500_PER3_BASE,	.size = 0x10000},
+	/* Periph4 Peripherals */
+	{.base = U8500_PER4_BASE,	.size = 0x70000},
+	/* Periph5 Periphals */
+	{.base = U8500_PER5_BASE,	.size = 0x20000},
+	/* Periph6 Peripherals */
+	{.base = U8500_PER6_BASE,	.size = 0x10000},
+	/*
+	 * Snoop Control Unit, A9 Private interrupt IF,
+	 * A9 private peripherals, Level-2 Cache Configuration registers,
+	 * and some reserved area
+	 */
+	{.base = U8500_SCU_BASE,	.size = 0x4000},
+
+	/* DISPLAY Ctrl. configuration registers */
+	{.base = U8500_MCDE_BASE,	.size = SZ_4K},
+
+	/* DSI1 link registers */
+	{.base = U8500_DSI_LINK1_BASE,	.size = SZ_4K},
+
+	/* DSI2 link registers */
+	{.base = U8500_DSI_LINK2_BASE,	.size = SZ_4K},
+
+	/* DSI3 link registers */
+	{.base = U8500_DSI_LINK3_BASE,	.size = SZ_4K},
+
+	/* DMA Ctrl. configuration registers (base address changed in V1) */
+	{.base = U8500_DMA_BASE,	.size = SZ_4K},
+
+	/* 0xB7A00000 -> 0xB7E04000: Modem I2C */
+	{.base = U8500_MODEM_I2C,	.size = 0x404000},
+
+	/* 0xA0390000 -> 0xA039FFFF: SBAG configuration registers */
+	{.base = U8500_SBAG_BASE,	.size = SZ_4K},
+
+	/* 0xA0300000 -> 0xA031FFFF: SGA configuration registers */
+	{.base = U8500_SGA_BASE,	.size = 0x10000},
+
+	/* 0xA0200000 -> 0xA02FFFFF: Smart Imaging Acc. Data Memory space (SIA)
+	 */
+	{.base = U8500_SIA_BASE,	.size = 0x60000},
+
+	/* 0xA0100000 -> 0xA01FFFFF: Smart Video Acc. Data Memory space (SVA) */
+	{.base = U8500_SVA_BASE,	.size = 0x60000},
+
+	/* 0x81000000 -> 0x8103FFFF: Main ICN Crossbar configuration registers
+	 */
+	{.base = U8500_ICN_BASE,	.size = 0x2000},
+
+	/* 0x80140000 -> 0x8014FFFF: HSEM (Semaphores) configuration  */
+	{.base = U8500_HSEM_BASE,	.size = SZ_4K},
+
+	/* 0x80130000 -> 0x8013FFFF: B2R2 configuration registers */
+	{.base = U8500_B2R2_BASE,	.size = SZ_4K},
+
+	/* 0x80100000 -> 0x8010FFFF: STM */
+	{.base = U8500_STM_BASE,	.size = 0x10000},
+
+	/* High part of embedded boot ROM */
+	{.base = U9540_ASIC_ID_BASE,	.size = SZ_4K},
+
+	{.base = 0, .size = 0, },
+
+};
+
 static void hwreg_io_init(void)
 {
 	int i;
 
-	for (i = 0; hwreg_io_map[i].base; ++i) {
-		hwreg_io_map[i].addr = ioremap(hwreg_io_map[i].base,
-						 hwreg_io_map[i].size);
-		if (!hwreg_io_map[i].addr)
+	for (i = 0; hwreg_io_current_map[i].base; ++i) {
+		hwreg_io_current_map[i].addr =
+			ioremap(hwreg_io_current_map[i].base,
+				hwreg_io_current_map[i].size);
+		if (!hwreg_io_current_map[i].addr)
 			printk(KERN_WARNING
 				"%s: ioremap for %d (%08x) failed\n",
-				__func__, i, hwreg_io_map[i].base);
+				__func__, i, hwreg_io_current_map[i].base);
 	}
 }
 
@@ -255,19 +329,19 @@ static void hwreg_io_exit(void)
 {
 	int i;
 
-	for (i = 0; hwreg_io_map[i].base; ++i)
-		if (hwreg_io_map[i].addr)
-			iounmap(hwreg_io_map[i].addr);
+	for (i = 0; hwreg_io_current_map[i].base; ++i)
+		if (hwreg_io_current_map[i].addr)
+			iounmap(hwreg_io_current_map[i].addr);
 }
 
 static void *hwreg_io_ptov(u32 phys)
 {
 	int i;
 
-	for (i = 0; hwreg_io_map[i].base; ++i) {
-		u32 base = hwreg_io_map[i].base;
-		u32 size = hwreg_io_map[i].size;
-		u8 *addr = hwreg_io_map[i].addr;
+	for (i = 0; hwreg_io_current_map[i].base; ++i) {
+		u32 base = hwreg_io_current_map[i].base;
+		u32 size = hwreg_io_current_map[i].size;
+		u8 *addr = hwreg_io_current_map[i].addr;
 
 		if (phys < base || phys >= base + size)
 			continue;
@@ -369,10 +443,12 @@ static const struct file_operations hwreg_value_fops = {
 static int hwreg_map_print(struct seq_file *s, void *p)
 {
 	int err, i;
-	for (i = 0; hwreg_io_map[i].base; ++i) {
+
+	for (i = 0; hwreg_io_current_map[i].base; ++i) {
 		err = seq_printf(s, "%d: 0x%08X => 0x%08X\n",
-				 i, hwreg_io_map[i].base,
-				 hwreg_io_map[i].base+hwreg_io_map[i].size);
+			i, hwreg_io_current_map[i].base,
+			hwreg_io_current_map[i].base +
+			hwreg_io_current_map[i].size);
 		if (err < 0)
 			return -ENOMEM;
 	}
@@ -602,6 +678,15 @@ static const struct file_operations hwreg_fops = {
 static int __init hwreg_initialize(void)
 {
 	static struct dentry *file;
+
+	if (cpu_is_u9540()) {
+		printk(KERN_INFO "hwreg: cpu is U9540\n");
+		hwreg_io_current_map = hwreg_u9540_io_map;
+	} else {
+		printk(KERN_INFO "hwreg: cpu is U8500\n");
+		hwreg_io_current_map = hwreg_u8500_io_map;
+	}
+
 	hwreg_io_init();
 
 	hwreg_debugfs_dir = debugfs_create_dir("mem", NULL);
