@@ -724,8 +724,8 @@ static void __init u5500_init_machine(void)
 	struct device *parent = NULL;
 	int i;
 
-	u5500_regulators_init();
 	parent = u5500_init_devices();
+	u5500_regulators_init();
 	u5500_pins_init();
 
 	u5500_i2c_init(parent);
