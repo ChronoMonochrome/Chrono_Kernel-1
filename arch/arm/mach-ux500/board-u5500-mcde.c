@@ -87,8 +87,6 @@ static struct mcde_display_device sony_acx424akp_display0 = {
 #else
 	.synchronized_update = false,
 #endif
-	.rotbuf1 = U5500_ESRAM_BASE + 0x20000 * 2,
-	.rotbuf2 = U5500_ESRAM_BASE + 0x20000 * 2 + 0x10000,
 	.dev = {
 		.platform_data = &sony_acx424akp_display0_pdata,
 	},

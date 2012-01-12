@@ -372,6 +372,11 @@ struct mcde_platform_data {
 	u8 outmux[5]; /* MCDE_CONF0.OUTMUXx */
 	u8 syncmux;   /* MCDE_CONF0.SYNCMUXx */
 
+	/* TODO: Remove once ESRAM allocator is done */
+	u32 rotbuf1;
+	u32 rotbuf2;
+	u32 rotbufsize;
+
 	const char *regulator_vana_id;
 	const char *regulator_mcde_epod_id;
 	const char *regulator_esram_epod_id;
