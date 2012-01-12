@@ -1236,6 +1236,8 @@ static void __init mop500_init_machine(void)
 
 	mop500_pins_init();
 
+	mop500_regulator_init();
+
 	u8500_cryp1_hash1_init();
 
 #ifdef CONFIG_HSI
@@ -1286,6 +1288,8 @@ static void __init snowball_init_machine(void)
 	parent = u8500_init_devices();
 
 	snowball_pins_init();
+
+	mop500_regulator_init();
 
 	u8500_cryp1_hash1_init();
 
@@ -1344,6 +1348,8 @@ static void __init hrefv60_init_machine(void)
 	parent = u8500_init_devices();
 
 	hrefv60_pins_init();
+
+	mop500_regulator_init();
 
 	u8500_cryp1_hash1_init();
 
