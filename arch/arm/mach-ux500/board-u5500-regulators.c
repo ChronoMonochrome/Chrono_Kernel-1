@@ -56,6 +56,7 @@ static struct regulator_consumer_supply ab5500_ldo_l_consumers[] = {
 };
 
 static struct regulator_consumer_supply ab5500_ldo_vdigmic_consumers[] = {
+	REGULATOR_SUPPLY("vdigmic", "ab5500-codec.0"),
 };
 
 static struct regulator_consumer_supply ab5500_ldo_sim_consumers[] = {
