@@ -45,4 +45,3 @@ struct tee_ta_start_modem {
 int tee_ta_start_modem(struct tee_ta_start_modem *data);
 
 #endif
-
