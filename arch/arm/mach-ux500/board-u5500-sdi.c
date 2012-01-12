@@ -233,31 +233,24 @@ static void sdi1_configure(void)
 
 #define SDI_PID_V1 0x00480180
 #define SDI_PID_V2 0x10480180
-#define BACKUPRAM_ROM_DEBUG_ADDR 0xFFC
-#define MMC_BLOCK_ID	0x20
 void __init u5500_sdi_init(struct device *parent)
 {
 	u32 periphid = 0;
-	int mmc_blk = 0;
 
 	if (cpu_is_u5500v1())
 		periphid = SDI_PID_V1;
 	else
 		periphid = SDI_PID_V2;
 
-	if (cpu_is_u5500v2())
-		/*
-		 * Fix me in 5500 v2.1
-		 * Dynamic detection of booting device by reading
-		 * ROM debug register from BACKUP RAM and register the
-		 * corresponding EMMC.
-		 * This is done due to wrong configuration of MMC0 clock
-		 * in ROM code for u5500 v2.
-		 */
-		mmc_blk = readl(__io_address(U5500_BACKUPRAM1_BASE) +
-					BACKUPRAM_ROM_DEBUG_ADDR);
-
-	if (mmc_blk & MMC_BLOCK_ID)
+	/*
+	 * Fix me in 5500 v2.1
+	 * Dynamic detection of booting device by reading
+	 * ROM debug register from BACKUP RAM and register the
+	 * corresponding EMMC.
+	 * This is done due to wrong configuration of MMC0 clock
+	 * in ROM code for u5500 v2.
+	 */
+	if (u5500_get_boot_mmc() == 2)
 		db5500_add_sdi2(parent, &u5500_sdi2_data, periphid);
 	else
 		db5500_add_sdi0(parent, &u5500_sdi0_data, periphid);
