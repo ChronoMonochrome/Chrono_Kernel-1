@@ -21,6 +21,7 @@
 #include <linux/kernel_stat.h>
 #include <mach/gpio.h>
 #include <mach/reboot_reasons.h>
+#include <linux/pm_qos_params.h>
 
 /* AB5500 USB macros
  */
@@ -46,6 +47,10 @@
 #define AB5500_USB_LINK_STATUS_MASK_V2		0xF8
 
 #define USB_PROBE_DELAY 1000 /* 1 seconds */
+#define USB_LIMIT (200) /* If we have more than 200 irqs per second */
+
+static struct pm_qos_request_list usb_pm_qos_latency;
+static bool usb_pm_qos_is_latency_0;
 
 #define PUBLIC_ID_BACKUPRAM1 (U5500_BACKUPRAM1_BASE + 0x0FC0)
 #define MAX_USB_SERIAL_NUMBER_LEN 31
@@ -145,6 +150,42 @@ static void ab5500_usb_wd_workaround(struct ab5500_usb *ab)
 		udelay(AB5500_WATCHDOG_DELAY_US);
 }
 
+static void ab5500_usb_load(struct work_struct *work)
+{
+	int cpu;
+	unsigned int num_irqs = 0;
+	static unsigned int old_num_irqs = UINT_MAX;
+	struct delayed_work *work_usb_workaround = to_delayed_work(work);
+	struct ab5500_usb *ab = container_of(work_usb_workaround,
+				struct ab5500_usb, work_usb_workaround);
+
+	for_each_online_cpu(cpu)
+	num_irqs += kstat_irqs_cpu(IRQ_DB5500_USBOTG, cpu);
+
+	if ((num_irqs > old_num_irqs) &&
+		(num_irqs - old_num_irqs) > USB_LIMIT) {
+
+		if (!usb_pm_qos_is_latency_0) {
+
+			pm_qos_add_request(&usb_pm_qos_latency,
+						PM_QOS_CPU_DMA_LATENCY, 0);
+			usb_pm_qos_is_latency_0 = true;
+		}
+	} else {
+
+		if (usb_pm_qos_is_latency_0) {
+
+				pm_qos_remove_request(&usb_pm_qos_latency);
+				usb_pm_qos_is_latency_0 = false;
+		}
+	}
+	old_num_irqs = num_irqs;
+
+	schedule_delayed_work_on(0,
+				&ab->work_usb_workaround,
+				msecs_to_jiffies(USB_PROBE_DELAY));
+}
+
 static void ab5500_usb_phy_enable(struct ab5500_usb *ab, bool sel_host)
 {
 	u8 bit;
@@ -166,6 +207,11 @@ static void ab5500_usb_phy_enable(struct ab5500_usb *ab, bool sel_host)
 	}
 
 	ux500_restore_context();
+	if (sel_host) {
+		schedule_delayed_work_on(0,
+					&ab->work_usb_workaround,
+					msecs_to_jiffies(USB_PROBE_DELAY));
+	}
 	abx500_mask_and_set_register_interruptible(ab->dev,
 			AB5500_BANK_USB,
 			AB5500_USB_PHY_CTRL_REG,
@@ -191,6 +237,15 @@ static void ab5500_usb_phy_disable(struct ab5500_usb *ab, bool sel_host)
 	clk_disable(ab->sysclk);
 	regulator_disable(ab->v_ape);
 	ab->usb_gpio->disable();
+
+	if (sel_host) {
+		if (usb_pm_qos_is_latency_0) {
+
+				pm_qos_remove_request(&usb_pm_qos_latency);
+				usb_pm_qos_is_latency_0 = false;
+		}
+		cancel_delayed_work_sync(&ab->work_usb_workaround);
+	}
 }
 
 #define ab5500_usb_peri_phy_en(ab)	ab5500_usb_phy_enable(ab, false)
@@ -723,6 +778,9 @@ static int __devinit ab5500_usb_probe(struct platform_device *pdev)
 	 * all: Updates form set_host and set_peripheral as they are atomic.
 	 */
 	INIT_DELAYED_WORK(&ab->dwork, ab5500_usb_delayed_work);
+
+	INIT_DELAYED_WORK_DEFERRABLE(&ab->work_usb_workaround,
+							ab5500_usb_load);
 
 	err = otg_set_transceiver(&ab->otg);
 	if (err)
