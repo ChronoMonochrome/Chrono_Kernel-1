@@ -418,8 +418,7 @@ static int __init init_display_devices(void)
 	if (machine_is_hrefv60()) {
 		samsung_s6d16d0_pdata0.reset_gpio = HREFV60_DISP1_RST_GPIO;
 		samsung_s6d16d0_pdata1.reset_gpio = HREFV60_DISP2_RST_GPIO;
-	}
-	else {
+	} else {
 		samsung_s6d16d0_pdata0.reset_gpio = MOP500_DISP1_RST_GPIO;
 		samsung_s6d16d0_pdata1.reset_gpio = MOP500_DISP2_RST_GPIO;
 	}
@@ -453,4 +452,3 @@ static int __init init_display_devices(void)
 	return 0;
 }
 module_init(init_display_devices);
-
