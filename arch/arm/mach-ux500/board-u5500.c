@@ -537,17 +537,20 @@ static struct cryp_platform_data u5500_cryp1_platform_data = {
 	}
 };
 
+static struct stedma40_chan_cfg u5500_hash_dma_cfg_tx = {
+	.dir = STEDMA40_MEM_TO_PERIPH,
+	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
+	.dst_dev_type = DB5500_DMA_DEV50_HASH1_TX,
+	.src_info.data_width = STEDMA40_WORD_WIDTH,
+	.dst_info.data_width = STEDMA40_WORD_WIDTH,
+	.mode = STEDMA40_MODE_LOGICAL,
+	.src_info.psize = STEDMA40_PSIZE_LOG_16,
+	.dst_info.psize = STEDMA40_PSIZE_LOG_16,
+};
+
 static struct hash_platform_data u5500_hash1_platform_data = {
-	.mem_to_engine = {
-.dir = STEDMA40_MEM_TO_PERIPH,
-.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-.dst_dev_type = DB5500_DMA_DEV50_HASH1_TX,
-.src_info.data_width = STEDMA40_WORD_WIDTH,
-.dst_info.data_width = STEDMA40_WORD_WIDTH,
-.mode = STEDMA40_MODE_LOGICAL,
-.src_info.psize = STEDMA40_PSIZE_LOG_16,
-.dst_info.psize = STEDMA40_PSIZE_LOG_16,
-},
+	.mem_to_engine = &u5500_hash_dma_cfg_tx,
+	.dma_filter = stedma40_filter,
 };
 
 static struct platform_device *u5500_platform_devices[] __initdata = {
