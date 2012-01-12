@@ -113,6 +113,7 @@ static struct lm3530_platform_data u5500_als_platform_data = {
 	.als_vmin = 730,	/* mV */
 	.als_vmax = 1020,	/* mV */
 	.brt_val = 0x7F,	/* Max brightness */
+	.hw_en_gpio = LM3530_BL_ENABLE_GPIO,
 };
 
 

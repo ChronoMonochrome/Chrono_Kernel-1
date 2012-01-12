@@ -37,7 +37,7 @@ static pin_cfg_t u5500_pins_default[] = {
 	GPIO226_GPIO        | PIN_OUTPUT_LOW,
 
 	/* Backlight Enable */
-	GPIO224_GPIO        | PIN_OUTPUT_HIGH,
+	GPIO224_GPIO		| PIN_OUTPUT_HIGH,
 
 	/* UART0 */
 	GPIO28_U0_TXD           | PIN_OUTPUT_HIGH,

@@ -20,6 +20,7 @@
 #define CYPRESS_TOUCH_RST_GPIO 135
 #define CYPRESS_SLAVE_SELECT_GPIO 186
 
+#define LM3530_BL_ENABLE_GPIO  224
 
 struct ab5500_regulator_platform_data;
 extern struct ab5500_regulator_platform_data u5500_ab5500_regulator_data;
