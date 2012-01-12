@@ -44,6 +44,9 @@ static bool safe_close;
 
 static int ux500_wdt_open(struct inode *inode, struct file *file)
 {
+	if (!timeout)
+		return -ENODEV;
+
 	if (test_and_set_bit(WDT_FLAGS_OPEN, &wdt_flags))
 		return -EBUSY;
 
