@@ -353,10 +353,10 @@ static int request_ape_opp100(bool enable)
 	static unsigned int requests;
 
 	if (enable) {
-	       if (0 == requests++) {
-		       return prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			       "clock", 100);
-	       }
+		if (0 == requests++) {
+			return prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+							 "clock", 100);
+		}
 	} else if (1 == requests--) {
 		prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "clock");
 	}

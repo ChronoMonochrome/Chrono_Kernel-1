@@ -95,7 +95,7 @@ static int __init product_detect(void)
 		goto error1;
 	}
 
-	switch(product_config.product_id) {
+	switch (product_config.product_id) {
 	case TEE_PRODUCT_ID_8400:
 		pr_info("ux500-product: u8400 detected\n");
 		break;
@@ -121,13 +121,10 @@ static int __init product_detect(void)
 		break;
 	}
 	pr_info("ux500-product: JTAG is %s\n",
-		ux500_jtag_enabled()? "enabled" : "disabled");
-
-
+		ux500_jtag_enabled() ? "enabled" : "disabled");
 error1:
 	(void) teec_finalize_context(&context);
 error0:
 	return err;
 }
 device_initcall(product_detect);
-

@@ -168,7 +168,7 @@ int __init db8500_clk_init(void);
 int __init db8500_clk_debug_init(void);
 #else
 static inline int db8500_clk_init(void) { return 0; }
-static inline int db8500_clk_debug_init(void) { return 0;}
+static inline int db8500_clk_debug_init(void) { return 0; }
 #endif
 
 #ifdef CONFIG_UX500_SOC_DB5500
@@ -176,7 +176,7 @@ int __init db5500_clk_init(void);
 int __init db5500_clk_debug_init(void);
 #else
 static inline int db5500_clk_init(void) { return 0; }
-static inline int db5500_clk_debug_init(void) { return 0;}
+static inline int db5500_clk_debug_init(void) { return 0; }
 #endif
 
 #endif
