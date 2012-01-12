@@ -248,7 +248,7 @@ static int mmio_power_enable(struct mmio_platform_data *pdata)
 		return err;
 	}
 
-	if (!(is_s5500_board()))
+	if (!(u5500_board_is_s5500()))
 		gpio_set_value(GPIO_CAMERA_PMIC_EN, 1);
 	else
 		gpio_set_value(GPIO_CAMERA_PMIC_EN, 0);
@@ -274,7 +274,7 @@ static void mmio_power_disable(struct mmio_platform_data *pdata)
 	for (i = 0; i < extra->number_of_regulators; i++)
 		regulator_disable(extra->mmio_regulators[i]);
 
-	if (!(is_s5500_board()))
+	if (!(u5500_board_is_s5500()))
 		gpio_set_value(GPIO_CAMERA_PMIC_EN, 0);
 	else
 		gpio_set_value(GPIO_CAMERA_PMIC_EN, 1);
