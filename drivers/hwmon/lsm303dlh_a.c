@@ -171,6 +171,7 @@ struct lsm303dlh_a_t {
  * @interrupt_threshold: interrupt threshold for two channels
  * @early_suspend: early suspend structure
  * @device_status: device is ON, OFF or SUSPENDED
+ * @id: accelerometer device id
  */
 struct lsm303dlh_a_data {
 	struct i2c_client *client;
