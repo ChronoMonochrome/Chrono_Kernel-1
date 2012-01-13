@@ -9,6 +9,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/io.h>
+#include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/kdebug.h>
 
@@ -92,11 +93,23 @@ static struct dbx500_dump_info db5500_dump[] = {
 
 static struct dbx500_dump_info *dbx500_dump;
 static int dbx500_dump_size;
+static bool dbx500_dump_done;
+
+static DEFINE_SPINLOCK(dbx500_dump_lock);
 
 static int crash_notifier(struct notifier_block *nb, unsigned long val,
 		void *data)
 {
 	int i;
+	unsigned long flags;
+
+	/*
+        * Since there are two ways into this function (die and panic) we have
+        * to make sure we only dump the DB registers once
+        */
+	spin_lock_irqsave(&dbx500_dump_lock, flags);
+	if (dbx500_dump_done)
+		return NOTIFY_DONE;
 
 	pr_info("dbx500_dump notified of crash\n");
 
@@ -105,7 +118,10 @@ static int crash_notifier(struct notifier_block *nb, unsigned long val,
 			dbx500_dump[i].size);
 	}
 
-	return 0;
+	dbx500_dump_done = true;
+	spin_unlock_irqrestore(&dbx500_dump_lock, flags);
+
+	return NOTIFY_DONE;
 }
 
 static void __init init_io_addresses(void)
@@ -119,7 +135,10 @@ static void __init init_io_addresses(void)
 
 static struct notifier_block die_notifier = {
 	.notifier_call = crash_notifier,
-	.priority = 0,
+};
+
+static struct notifier_block panic_notifier = {
+	.notifier_call = crash_notifier,
 };
 
 int __init dbx500_dump_init(void)
@@ -148,14 +167,26 @@ int __init dbx500_dump_init(void)
 
 	init_io_addresses();
 
+	err = atomic_notifier_chain_register(&panic_notifier_list,
+					     &panic_notifier);
+	if (err != 0) {
+		pr_err("dbx500_dump: Unable to register a panic notifier %d\n",
+			err);
+		goto free_mem;
+	}
+
 	err = register_die_notifier(&die_notifier);
 	if (err != 0) {
 		pr_err("dbx500_dump: Unable to register a die notifier %d\n",
 			err);
-		goto free_mem;
+		goto free_panic_notifier;
 	}
 	pr_info("dbx500_dump: driver initialized\n");
 	return err;
+
+free_panic_notifier:
+	atomic_notifier_chain_unregister(&panic_notifier_list,
+					 &panic_notifier);
 
 free_mem:
 	for (i = i - 1; i >= 0; i--)
