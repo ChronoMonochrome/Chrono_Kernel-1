@@ -317,7 +317,8 @@ void ux500_msp_i2s_configure_dma(struct msp *msp, struct msp_config *config)
 	u16 word_width;
 	bool rx_active, tx_active;
 
-	if (msp->tx_pipeid != NULL) {
+	if ((msp->tx_pipeid != NULL) &&
+	(config->direction == MSP_TRANSMIT_MODE)) {
 		dma_release_channel(msp->tx_pipeid);
 		msp->tx_pipeid = NULL;
 	}

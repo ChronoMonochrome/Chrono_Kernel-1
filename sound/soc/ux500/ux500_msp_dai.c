@@ -189,11 +189,6 @@ static void ux500_msp_dai_shutdown(struct snd_pcm_substream *substream,
 	if (drvdata == NULL)
 		return;
 
-	if (mode_playback)
-		drvdata->playback_active = false;
-	else
-		drvdata->capture_active = false;
-
 	if (ux500_msp_i2s_close(drvdata->msp_i2s_drvdata,
 			mode_playback ? DISABLE_TRANSMIT : DISABLE_RECEIVE)) {
 			pr_err("%s: Error: MSP %d (%s): Unable to close i2s.\n",
@@ -202,10 +197,13 @@ static void ux500_msp_dai_shutdown(struct snd_pcm_substream *substream,
 				stream_str(substream));
 	}
 
-	if (mode_playback)
+	if (mode_playback) {
+		drvdata->playback_active = false;
 		drvdata->configured &= ~PLAYBACK_CONFIGURED;
-	else
+	} else {
+		drvdata->capture_active = false;
 		drvdata->configured &= ~CAPTURE_CONFIGURED;
+	}
 }
 
 static void ux500_msp_dai_setup_multichannel(struct ux500_platform_drvdata *private,
