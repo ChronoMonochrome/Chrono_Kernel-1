@@ -810,6 +810,12 @@ static struct clk_lookup u8500_clocks[] = {
 	CLK_LOOKUP(sspclk, "SSP", NULL),
 	CLK_LOOKUP(rngclk, "rngclk", NULL),
 	CLK_LOOKUP(uiccclk, "uicc", NULL),
+	CLK_LOOKUP(dsi0clk, "mcde", "dsihs0"),
+	CLK_LOOKUP(dsi1clk, "mcde", "dsihs1"),
+	CLK_LOOKUP(dsi_pll, "mcde", "dsihs2"),
+	CLK_LOOKUP(dsi0escclk, "mcde", "dsilp0"),
+	CLK_LOOKUP(dsi1escclk, "mcde", "dsilp1"),
+	CLK_LOOKUP(dsi2escclk, "mcde", "dsilp2"),
 
 	/* PERIPH 1 */
 	CLK_LOOKUP(p1_msp3_clk, "msp3", NULL),
