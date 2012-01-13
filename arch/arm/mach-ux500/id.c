@@ -18,6 +18,7 @@
 #include <mach/setup.h>
 
 struct dbx500_asic_id dbx500_id;
+EXPORT_SYMBOL(dbx500_id);
 
 static unsigned int ux500_read_asicid(phys_addr_t addr)
 {
