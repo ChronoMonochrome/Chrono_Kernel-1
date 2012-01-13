@@ -2246,6 +2246,23 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 	}
 
 	if (regs->roten) {
+		u32 stripwidth;
+		u32 stripwidth_val;
+
+		/* calc strip width, 32 bits used internally */
+		stripwidth = regs->rotbufsize / (video_mode->yres * 4);
+		if (stripwidth >= 32)
+			stripwidth_val = MCDE_ROTACONF_STRIP_WIDTH_32PIX;
+		else if (stripwidth >= 16)
+			stripwidth_val = MCDE_ROTACONF_STRIP_WIDTH_16PIX;
+		else if (stripwidth >= 8)
+			stripwidth_val = MCDE_ROTACONF_STRIP_WIDTH_8PIX;
+		else if (stripwidth >= 4)
+			stripwidth_val = MCDE_ROTACONF_STRIP_WIDTH_4PIX;
+		else
+			stripwidth_val = MCDE_ROTACONF_STRIP_WIDTH_2PIX;
+		dev_vdbg(&mcde_dev->dev, "%s stripwidth=%d\n", __func__,
+						1 << (stripwidth_val + 1));
 		mcde_wreg(MCDE_ROTADD0A + chnl_id * MCDE_ROTADD0A_GROUPOFFSET,
 			regs->rotbuf1);
 		mcde_wreg(MCDE_ROTADD1A + chnl_id * MCDE_ROTADD1A_GROUPOFFSET,
@@ -2253,7 +2270,7 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		mcde_wreg(MCDE_ROTACONF + chnl_id * MCDE_ROTACONF_GROUPOFFSET,
 			MCDE_ROTACONF_ROTBURSTSIZE_ENUM(HW_8W) |
 			MCDE_ROTACONF_ROTDIR(regs->rotdir) |
-			MCDE_ROTACONF_STRIP_WIDTH_ENUM(16PIX) |
+			MCDE_ROTACONF_STRIP_WIDTH(stripwidth_val) |
 			MCDE_ROTACONF_RD_MAXOUT_ENUM(4_REQ) |
 			MCDE_ROTACONF_WR_MAXOUT_ENUM(8_REQ));
 	}
