@@ -101,6 +101,8 @@ void panic(const char *fmt, ...)
 		dump_stack();
 #endif
 
+	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
+
 	/*
 	 * If we have crashed and we have a crash kernel loaded let it handle
 	 * everything else.
@@ -116,8 +118,6 @@ void panic(const char *fmt, ...)
 	 * situation.
 	 */
 	smp_send_stop();
-
-	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
 
 	bust_spinlocks(0);
 
