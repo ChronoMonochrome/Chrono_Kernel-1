@@ -117,7 +117,7 @@ out_unlock:
 	return count;
 }
 
-static DEVICE_ATTR(voltage, 0666, show_voltage, write_voltage);
+static DEVICE_ATTR(voltage, S_IWUSR | S_IRUGO, show_voltage, write_voltage);
 
 static struct attribute *sim_attributes[] = {
 	&dev_attr_voltage.attr,
