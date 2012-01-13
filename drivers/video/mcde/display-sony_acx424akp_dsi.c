@@ -25,6 +25,7 @@
 #define RESET_DELAY_MS		11
 #define RESET_LOW_DELAY_US	20
 #define SLEEP_OUT_DELAY_MS	140
+#define SLEEP_IN_DELAY_MS	85	/* Assume 60 Hz 5 frames */
 #define IO_REGU			"vddi"
 #define IO_REGU_MIN		1600000
 #define IO_REGU_MAX		3300000
@@ -139,8 +140,12 @@ static int display_off(struct mcde_display_device *ddev)
 	if (ret)
 		return ret;
 
-	return mcde_dsi_dcs_write(ddev->chnl_state, DCS_CMD_ENTER_SLEEP_MODE,
+	ret = mcde_dsi_dcs_write(ddev->chnl_state, DCS_CMD_ENTER_SLEEP_MODE,
 								NULL, 0);
+	/* Wait for 4 frames or more */
+	msleep(SLEEP_IN_DELAY_MS);
+
+	return ret;
 }
 
 static int sony_acx424akp_set_scan_mode(struct mcde_display_device *ddev,
