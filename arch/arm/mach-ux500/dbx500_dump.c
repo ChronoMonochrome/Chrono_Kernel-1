@@ -54,7 +54,7 @@ static struct dbx500_dump_info db8500_dump[] = {
 	{
 		.name     = "prcmu_icn_pmu",
 		.phy_addr = (U8500_PRCMU_BASE + 0xE00),
-		.size     = 0x118,
+		.size     = 0x90,
 	},
 	{
 		.name	  = "db8500_fuses",
