@@ -1,8 +1,8 @@
-/**
+/*
  * Copyright (C) ST-Ericsson SA 2010
  *
  * Author: Naveen Kumar G <naveen.gaddipati@stericsson.com> for ST-Ericsson
- * Author: Sundar Iyer <sundar.iyer@stericsson.com> for ST-Ericsson
+ * co-Author: Sundar Iyer <sundar.iyer@stericsson.com> for ST-Ericsson
  *
  * License terms:GNU General Public License (GPL) version 2
  *
@@ -65,6 +65,7 @@
  * @board:		keypad platform device
  * @keymap:		matrix scan code table for keycodes
  * @clk:		clock structure pointer
+ * @ske_keypad_lock:    lock used while writting into registers
  * @enable:		flag to enable the driver event
  * @enable_on_resume:   set if keypad should be enabled on resume
  * @regulator:		pointer to the regulator used for ske kyepad
@@ -120,7 +121,7 @@ static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
 
 /**
  * ske_keypad_chip_init: init keypad controller configuration
- *
+ * @keypad: pointer to device structure
  * Enable Multi key press detection, auto scan mode
  */
 static int __devinit ske_keypad_chip_init(struct ske_keypad *keypad)
