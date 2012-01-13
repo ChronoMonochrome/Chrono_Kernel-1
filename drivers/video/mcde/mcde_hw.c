@@ -99,7 +99,6 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define DSI_READ_DELAY 5
 #define DSI_READ_NBR_OF_RETRIES 2
 #define MCDE_FLOWEN_MAX_TRIAL 60
-#define DSI_RESET_SW 0x7
 
 #define MCDE_VERSION_4_1_3 0x04010300
 #define MCDE_VERSION_4_0_4 0x04000400
@@ -484,6 +483,82 @@ static void update_mcde_registers(void)
 		MCDE_VSCRC1_VSPMAX(0xff));
 }
 
+static void dsi_link_handle_reset(u8 link, bool release)
+{
+	u32 value;
+
+	value = prcmu_read(DB8500_PRCM_DSI_SW_RESET);
+	if (release) {
+		switch (link) {
+		case 0:
+			value |= DB8500_PRCM_DSI_SW_RESET_DSI0_SW_RESETN;
+			break;
+		case 1:
+			value |= DB8500_PRCM_DSI_SW_RESET_DSI1_SW_RESETN;
+			break;
+		case 2:
+			value |= DB8500_PRCM_DSI_SW_RESET_DSI2_SW_RESETN;
+			break;
+		default:
+			break;
+		}
+	} else {
+		switch (link) {
+		case 0:
+			value &= ~DB8500_PRCM_DSI_SW_RESET_DSI0_SW_RESETN;
+			break;
+		case 1:
+			value &= ~DB8500_PRCM_DSI_SW_RESET_DSI1_SW_RESETN;
+			break;
+		case 2:
+			value &= ~DB8500_PRCM_DSI_SW_RESET_DSI2_SW_RESETN;
+			break;
+		default:
+			break;
+		}
+	}
+	prcmu_write(DB8500_PRCM_DSI_SW_RESET, value);
+}
+
+static void dsi_link_switch_byte_clk(u8 link, bool to_system_clock)
+{
+	u32 value;
+
+	value = prcmu_read(DB8500_PRCM_DSI_GLITCHFREE_EN);
+	if (to_system_clock) {
+		switch (link) {
+		case 0:
+			value |= DB8500_PRCM_DSI_GLITCHFREE_EN_DSI0_BYTE_CLK;
+			break;
+		case 1:
+			value |= DB8500_PRCM_DSI_GLITCHFREE_EN_DSI1_BYTE_CLK;
+			break;
+		case 2:
+			value |= DB8500_PRCM_DSI_GLITCHFREE_EN_DSI2_BYTE_CLK;
+			break;
+		default:
+			break;
+		}
+	} else {
+		switch (link) {
+		case 0:
+			value &= ~DB8500_PRCM_DSI_GLITCHFREE_EN_DSI0_BYTE_CLK;
+			break;
+		case 1:
+			value &= ~DB8500_PRCM_DSI_GLITCHFREE_EN_DSI1_BYTE_CLK;
+			break;
+		case 2:
+			value &= ~DB8500_PRCM_DSI_GLITCHFREE_EN_DSI2_BYTE_CLK;
+			break;
+		default:
+			break;
+		}
+
+	}
+	prcmu_write(DB8500_PRCM_DSI_GLITCHFREE_EN, value);
+	dsi_wfld(link, DSI_MCTL_PLL_CTL, PLL_OUT_SEL, to_system_clock);
+}
+
 static void dsi_link_handle_ulpm(struct mcde_port *port, bool enter_ulpm)
 {
 	u8 link = port->link;
@@ -502,14 +577,20 @@ static void dsi_link_handle_ulpm(struct mcde_port *port, bool enter_ulpm)
 			DSI_MCTL_ULPOUT_TIME_CKLANE_ULPOUT_TIME(0x1FF) |
 			DSI_MCTL_ULPOUT_TIME_DATA_ULPOUT_TIME(0x1FF));
 
+	if (enter_ulpm) {
+		lane_state = DSI_LANE_STATE_ULPM;
+		dsi_link_switch_byte_clk(link, true);
+	}
+
 	dsi_wfld(link, DSI_MCTL_MAIN_EN, DAT1_ULPM_REQ, enter_ulpm);
 	dsi_wfld(link, DSI_MCTL_MAIN_EN, DAT2_ULPM_REQ,
 					enter_ulpm && num_data_lanes == 2);
+	dsi_wfld(link, DSI_MCTL_MAIN_EN, CLKLANE_ULPM_REQ, enter_ulpm);
 
-	if (enter_ulpm)
-		lane_state = DSI_LANE_STATE_ULPM;
-	else
+	if (!enter_ulpm) {
 		lane_state = DSI_LANE_STATE_IDLE;
+		dsi_link_switch_byte_clk(link, false);
+	}
 
 	/* Wait for data lanes to enter ULPM */
 	while (dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE1_STATE)
@@ -519,22 +600,20 @@ static void dsi_link_handle_ulpm(struct mcde_port *port, bool enter_ulpm)
 							num_data_lanes > 1)) {
 		mdelay(DSI_WAIT_FOR_ULPM_STATE_MS);
 		if (nbr_of_retries++ == DSI_ULPM_STATE_NBR_OF_RETRIES) {
-			dev_warn(&mcde_dev->dev,
+			dev_dbg(&mcde_dev->dev,
 				"Could not enter correct state=%d (link=%d)!\n",
 							lane_state, link);
 			break;
 		}
 	}
 
-	dsi_wfld(link, DSI_MCTL_MAIN_EN, CLKLANE_ULPM_REQ, enter_ulpm);
 	nbr_of_retries = 0;
-
 	/* Wait for clock lane to enter ULPM */
 	while (dsi_rfld(link, DSI_MCTL_LANE_STS, CLKLANE_STATE)
 						!= lane_state) {
 		mdelay(DSI_WAIT_FOR_ULPM_STATE_MS);
 		if (nbr_of_retries++ == DSI_ULPM_STATE_NBR_OF_RETRIES) {
-			dev_warn(&mcde_dev->dev,
+			dev_dbg(&mcde_dev->dev,
 				"Could not enter correct state=%d (link=%d)!\n",
 							lane_state, link);
 			break;
@@ -548,9 +627,9 @@ static int dsi_link_enable(struct mcde_chnl_state *chnl)
 	u8 link = chnl->port.link;
 
 	if (dsi_use_clk_framework) {
-		prcmu_write(DB8500_PRCM_DSI_SW_RESET, DSI_RESET_SW);
 		WARN_ON_ONCE(clk_enable(chnl->clk_dsi_lp));
 		WARN_ON_ONCE(clk_enable(chnl->clk_dsi_hs));
+		dsi_link_handle_reset(link, true);
 	} else {
 		WARN_ON_ONCE(clk_enable(clock_dsi));
 		WARN_ON_ONCE(clk_enable(clock_dsi_lp));
@@ -572,19 +651,6 @@ static int dsi_link_enable(struct mcde_chnl_state *chnl)
 	}
 
 	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, true);
-
-	if (dsi_rfld(link, DSI_MCTL_LANE_STS, CLKLANE_STATE) ==
-						DSI_LANE_STATE_ULPM ||
-		dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE1_STATE)
-						== DSI_LANE_STATE_ULPM ||
-		dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE2_STATE)
-						== DSI_LANE_STATE_ULPM) {
-		/* Switch hs clock to sys_clk */
-		dsi_wfld(link, DSI_MCTL_PLL_CTL, PLL_OUT_SEL, 0x1);
-		dsi_link_handle_ulpm(&chnl->port, false);
-		/* Switch hs clock to tx_byte_hs_clk */
-		dsi_wfld(link, DSI_MCTL_PLL_CTL, PLL_OUT_SEL, 0x0);
-	}
 
 	dev_dbg(&mcde_dev->dev, "DSI%d LINK_EN\n", link);
 
@@ -616,8 +682,6 @@ static void dsi_link_disable(struct mcde_chnl_state *chnl, bool suspend)
 		clk_disable(clock_dsi);
 		clk_disable(clock_dsi_lp);
 	}
-
-	dsi_wfld(chnl->port.link, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, false);
 }
 
 static void disable_mcde_hw(bool force_disable, bool suspend)
@@ -1280,6 +1344,7 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			}
 		}
 
+		dsi_link_handle_ulpm(&chnl->port, false);
 		mcde_wreg(MCDE_DSIVID0CONF0 +
 			idx * MCDE_DSIVID0CONF0_GROUPOFFSET,
 			MCDE_DSIVID0CONF0_BLANKING(0) |
