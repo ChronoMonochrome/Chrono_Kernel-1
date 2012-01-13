@@ -371,6 +371,9 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
 			continue;
 		}
 
+		if (!cc->sync)
+			mode |= ISOLATE_ASYNC_MIGRATE;
+
 		/* Try isolate the page */
 		if (__isolate_lru_page(page,
 				ISOLATE_ACTIVE|ISOLATE_INACTIVE, 0) != 0)
