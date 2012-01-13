@@ -869,8 +869,9 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
 		if (unlikely(split_huge_page(page)))
 			goto out;
 
-	rc = __unmap_and_move(page, newpage, force, offlining, mode);
-out:
+move_newpage:
+	mem_cgroup_reset_owner(newpage);
+
 	if (rc != -EAGAIN) {
 		/*
 		 * A page that has been migrated has all references
