@@ -3305,7 +3305,7 @@ int b2r2_blt_module_init(struct b2r2_control *cont)
 
 #ifdef CONFIG_DEBUG_FS
 	/* Register debug fs */
-	if (cont->debugfs_root_dir) {
+	if (!IS_ERR_OR_NULL(cont->debugfs_root_dir)) {
 		debugfs_create_file("last_request", 0666,
 			cont->debugfs_root_dir,
 			cont, &debugfs_b2r2_blt_request_fops);
@@ -3341,7 +3341,7 @@ void b2r2_blt_module_exit(struct b2r2_control *cont)
 	if (cont) {
 		b2r2_log_info(cont->dev, "%s\n", __func__);
 #ifdef CONFIG_DEBUG_FS
-		if (cont->debugfs_root_dir) {
+		if (!IS_ERR_OR_NULL(cont->debugfs_root_dir)) {
 			debugfs_remove_recursive(cont->debugfs_root_dir);
 			cont->debugfs_root_dir = NULL;
 		}

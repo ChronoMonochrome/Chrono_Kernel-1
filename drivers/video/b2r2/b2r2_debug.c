@@ -297,14 +297,16 @@ int b2r2_debug_init(struct b2r2_control *cont)
 
 		/* No need to save the files,
 		 * they will be removed recursively */
-		(void)debugfs_create_bool("warnings", 0644, log_lvl_dir,
-			&b2r2_log_levels[B2R2_LOG_LEVEL_WARN]);
-		(void)debugfs_create_bool("info", 0644, log_lvl_dir,
-			&b2r2_log_levels[B2R2_LOG_LEVEL_INFO]);
-		(void)debugfs_create_bool("debug", 0644, log_lvl_dir,
-			&b2r2_log_levels[B2R2_LOG_LEVEL_DEBUG]);
-		(void)debugfs_create_bool("regdumps", 0644, log_lvl_dir,
-			&b2r2_log_levels[B2R2_LOG_LEVEL_REGDUMP]);
+		if (!IS_ERR_OR_NULL(log_lvl_dir)) {
+			(void)debugfs_create_bool("warnings", 0644, log_lvl_dir,
+				&b2r2_log_levels[B2R2_LOG_LEVEL_WARN]);
+			(void)debugfs_create_bool("info", 0644, log_lvl_dir,
+				&b2r2_log_levels[B2R2_LOG_LEVEL_INFO]);
+			(void)debugfs_create_bool("debug", 0644, log_lvl_dir,
+				&b2r2_log_levels[B2R2_LOG_LEVEL_DEBUG]);
+			(void)debugfs_create_bool("regdumps", 0644, log_lvl_dir,
+				&b2r2_log_levels[B2R2_LOG_LEVEL_REGDUMP]);
+		}
 
 #elif defined(CONFIG_DYNAMIC_DEBUG)
 		/* log_lvl_dir is never used */
@@ -313,7 +315,7 @@ int b2r2_debug_init(struct b2r2_control *cont)
 		module_init++;
 	}
 
-	if (cont->debugfs_debug_root_dir) {
+	if (!IS_ERR_OR_NULL(cont->debugfs_debug_root_dir)) {
 		/* No need to save the file,
 		 * it will be removed recursively */
 		(void)debugfs_create_file("last_job", 0444,
@@ -330,7 +332,7 @@ void b2r2_debug_exit(void)
 {
 #if !defined(CONFIG_DYNAMIC_DEBUG) && defined(CONFIG_DEBUG_FS)
 	module_init--;
-	if (!module_init && log_lvl_dir) {
+	if (!module_init && !IS_ERR_OR_NULL(log_lvl_dir)) {
 		debugfs_remove_recursive(log_lvl_dir);
 		log_lvl_dir = NULL;
 	}

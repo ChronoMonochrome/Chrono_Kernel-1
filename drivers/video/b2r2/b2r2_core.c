@@ -2386,10 +2386,13 @@ static int init_hw(struct b2r2_core *core)
 
 #ifdef CONFIG_DEBUG_FS
 	/* Register debug fs files for register access */
-	if (core->debugfs_core_root_dir && !core->debugfs_regs_dir) {
-		int i;
+	if (!IS_ERR_OR_NULL(core->debugfs_core_root_dir) &&
+			IS_ERR_OR_NULL(core->debugfs_regs_dir)) {
 		core->debugfs_regs_dir = debugfs_create_dir("regs",
 				core->debugfs_core_root_dir);
+	}
+	if (!IS_ERR_OR_NULL(core->debugfs_regs_dir)) {
+		int i;
 		debugfs_create_file("all", 0666, core->debugfs_regs_dir,
 				(void *)core->hw, &debugfs_b2r2_regs_fops);
 		/* Create debugfs entries for all static registers */
@@ -2397,7 +2400,7 @@ static int init_hw(struct b2r2_core *core)
 			debugfs_create_file(debugfs_regs[i].name, 0666,
 					core->debugfs_regs_dir,
 					(void *)(((u8 *) core->hw) +
-							debugfs_regs[i].offset),
+						debugfs_regs[i].offset),
 					&debugfs_b2r2_reg_fops);
 	}
 #endif
@@ -2432,7 +2435,7 @@ static void exit_hw(struct b2r2_core *core)
 
 #ifdef CONFIG_DEBUG_FS
 	/* Unregister our debugfs entries */
-	if (core->debugfs_regs_dir) {
+	if (!IS_ERR_OR_NULL(core->debugfs_regs_dir)) {
 		debugfs_remove_recursive(core->debugfs_regs_dir);
 		core->debugfs_regs_dir = NULL;
 	}
@@ -2579,29 +2582,33 @@ static int b2r2_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_DEBUG_FS
 	core->debugfs_root_dir = debugfs_create_dir(core->name, NULL);
-	core->debugfs_core_root_dir = debugfs_create_dir("core",
-			core->debugfs_root_dir);
-	debugfs_create_file("stats", 0666, core->debugfs_core_root_dir,
-			core, &debugfs_b2r2_stat_fops);
-	debugfs_create_file("clock", 0666, core->debugfs_core_root_dir,
-			core, &debugfs_b2r2_clock_fops);
-	debugfs_create_u8("op_size", 0666, core->debugfs_core_root_dir,
-			&core->op_size);
-	debugfs_create_u8("ch_size", 0666, core->debugfs_core_root_dir,
-			&core->ch_size);
-	debugfs_create_u8("pg_size", 0666, core->debugfs_core_root_dir,
-			&core->pg_size);
-	debugfs_create_u8("mg_size", 0666, core->debugfs_core_root_dir,
-			&core->mg_size);
-	debugfs_create_u16("min_req_time", 0666, core->debugfs_core_root_dir,
-			&core->min_req_time);
+	if (!IS_ERR_OR_NULL(core->debugfs_root_dir)) {
+		core->debugfs_core_root_dir = debugfs_create_dir("core",
+				core->debugfs_root_dir);
+		control->debugfs_debug_root_dir = debugfs_create_dir("debug",
+				core->debugfs_root_dir);
+		control->mem_heap.debugfs_root_dir = debugfs_create_dir("mem",
+				core->debugfs_root_dir);
+		control->debugfs_root_dir = debugfs_create_dir("blt",
+				core->debugfs_root_dir);
+	}
 
-	control->debugfs_debug_root_dir = debugfs_create_dir("debug",
-			core->debugfs_root_dir);
-	control->mem_heap.debugfs_root_dir = debugfs_create_dir("mem",
-			core->debugfs_root_dir);
-	control->debugfs_root_dir = debugfs_create_dir("blt",
-			core->debugfs_root_dir);
+	if (!IS_ERR_OR_NULL(core->debugfs_core_root_dir)) {
+		debugfs_create_file("stats", 0666, core->debugfs_core_root_dir,
+				core, &debugfs_b2r2_stat_fops);
+		debugfs_create_file("clock", 0666, core->debugfs_core_root_dir,
+				core, &debugfs_b2r2_clock_fops);
+		debugfs_create_u8("op_size", 0666, core->debugfs_core_root_dir,
+				&core->op_size);
+		debugfs_create_u8("ch_size", 0666, core->debugfs_core_root_dir,
+				&core->ch_size);
+		debugfs_create_u8("pg_size", 0666, core->debugfs_core_root_dir,
+				&core->pg_size);
+		debugfs_create_u8("mg_size", 0666, core->debugfs_core_root_dir,
+				&core->mg_size);
+		debugfs_create_u16("min_req_time", 0666,
+			core->debugfs_core_root_dir, &core->min_req_time);
+	}
 #endif
 
 	ret = b2r2_debug_init(control);
@@ -2641,7 +2648,10 @@ b2r2_probe_no_work_queue:
 	b2r2_debug_exit();
 b2r2_probe_debug_init_failed:
 #ifdef CONFIG_DEBUG_FS
-	debugfs_remove_recursive(core->debugfs_root_dir);
+	if (!IS_ERR_OR_NULL(core->debugfs_root_dir)) {
+		debugfs_remove_recursive(core->debugfs_root_dir);
+		core->debugfs_root_dir = NULL;
+	}
 #endif
 	kfree(core);
 b2r2_probe_core_alloc_fail:
@@ -2669,7 +2679,10 @@ static int b2r2_remove(struct platform_device *pdev)
 	b2r2_log_info(&pdev->dev, "%s: Started\n", __func__);
 
 #ifdef CONFIG_DEBUG_FS
-	debugfs_remove_recursive(core->debugfs_root_dir);
+	if (!IS_ERR_OR_NULL(core->debugfs_root_dir)) {
+		debugfs_remove_recursive(core->debugfs_root_dir);
+		core->debugfs_root_dir = NULL;
+	}
 #endif
 
 	/* Flush B2R2 work queue (call all callbacks) */

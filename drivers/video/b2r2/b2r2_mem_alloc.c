@@ -182,10 +182,11 @@ void debugfs_create_mem_block_entry(struct b2r2_mem_block *mem_block,
 	struct timespec mtime = tm;
 	struct timespec ctime = tm;
 
-	if (mem_block->debugfs_block) {
+	if (!IS_ERR_OR_NULL(mem_block->debugfs_block)) {
 		atime = mem_block->debugfs_block->d_inode->i_atime;
 		ctime = mem_block->debugfs_block->d_inode->i_ctime;
 		debugfs_remove(mem_block->debugfs_block);
+		mem_block->debugfs_block = NULL;
 	}
 
 	/* Add the block in debugfs */
@@ -204,7 +205,7 @@ void debugfs_create_mem_block_entry(struct b2r2_mem_block *mem_block,
 		mem_block->debugfs_fname,
 		0444, parent, mem_block,
 		&debugfs_b2r2_mem_block_fops);
-	if (mem_block->debugfs_block) {
+	if (!IS_ERR_OR_NULL(mem_block->debugfs_block)) {
 		mem_block->debugfs_block->d_inode->i_size = mem_block->size;
 		mem_block->debugfs_block->d_inode->i_atime = atime;
 		mem_block->debugfs_block->d_inode->i_mtime = mtime;
@@ -243,7 +244,7 @@ int b2r2_mem_init(struct b2r2_control *cont,
 
 #ifdef CONFIG_DEBUG_FS
 	/* Register debugfs */
-	if (cont->mem_heap.debugfs_root_dir) {
+	if (!IS_ERR_OR_NULL(cont->mem_heap.debugfs_root_dir)) {
 		cont->mem_heap.debugfs_heap_stats = debugfs_create_file(
 			"stats", 0444, cont->mem_heap.debugfs_root_dir,
 			&cont->mem_heap, &debugfs_b2r2_mem_stats_fops);
