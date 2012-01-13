@@ -317,6 +317,16 @@ struct platform_device ab8500_device = {
 	.resource = ab8500_resources,
 };
 
+struct platform_device ab8505_device = {
+	.name = "ab8505-i2c",
+	.id = 0,
+	.dev = {
+		.platform_data = &ab8500_platdata,
+	},
+	.num_resources = 1,
+	.resource = ab8500_resources,
+};
+
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
 
 /*
@@ -1307,7 +1317,10 @@ static void __init hrefv60_init_machine(void)
 				sizeof(mop500_ske_keypad_data));
 #endif
 
-	platform_device_register(&ab8500_device);
+	if (machine_is_u8520())
+		platform_device_register(&ab8505_device);
+	else
+		platform_device_register(&ab8500_device);
 
 	i2c_register_board_info(0, mop500_i2c0_devices,
 			ARRAY_SIZE(mop500_i2c0_devices));
