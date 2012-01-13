@@ -206,7 +206,7 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 	(void)abx500_get_register_interruptible(ab->dev,
 			AB5500_BANK_USB, AB5500_USB_LINE_STAT_REG, &val);
 
-	if (ab->rev == AB5500_2_0)
+	if (ab->rev >= AB5500_2_0)
 		lsts = (val & AB5500_USB_LINK_STATUS_MASK_V2) >> 3;
 	else
 		lsts = (val & AB5500_USB_LINK_STATUS_MASK_V1) >> 3;
@@ -222,7 +222,7 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 		break;
 
 	case USB_LINK_HM_IDGND:
-		if (ab->rev == AB5500_2_0)
+		if (ab->rev >= AB5500_2_0)
 			break;
 
 		/* enable usb chip Select */
@@ -242,7 +242,7 @@ static int ab5500_usb_link_status_update(struct ab5500_usb *ab)
 		break;
 
 	case USB_LINK_HM_IDGND_V2:
-		if (!(ab->rev == AB5500_2_0))
+		if (!(ab->rev >= AB5500_2_0))
 			break;
 
 		/* enable usb chip Select */
@@ -511,7 +511,7 @@ static int ab5500_usb_boot_detect(struct ab5500_usb *ab)
 	(void)abx500_get_register_interruptible(ab->dev,
 			AB5500_BANK_USB, AB5500_USB_LINE_STAT_REG, &usb_status);
 
-	if (ab->rev == AB5500_2_0)
+	if (ab->rev >= AB5500_2_0)
 		lsts = (usb_status & AB5500_USB_LINK_STATUS_MASK_V2) >> 3;
 	else
 		lsts = (usb_status & AB5500_USB_LINK_STATUS_MASK_V1) >> 3;
