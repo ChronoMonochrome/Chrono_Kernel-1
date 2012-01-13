@@ -146,10 +146,38 @@ void mop500_sensors_probe_add_lsm303dlh_a(void)
 	i2c_put_adapter(adap);
 }
 
+/*
+ * Check which accelerometer chip is mounted on UIB and
+ * read the chip ID to detect whether chip is LSM303DHL/LSM303DHLC.
+ */
+static int mop500_get_acc_id(void)
+{
+	int status;
+	union i2c_smbus_data data;
+	struct i2c_adapter *i2c2;
+
+	i2c2 = i2c_get_adapter(2);
+	if (!i2c2) {
+		pr_err("failed to get i2c adapter\n");
+		return -1;
+	}
+	status = i2c_smbus_xfer(i2c2, 0x18 , 0 ,
+			I2C_SMBUS_READ, 0x0F ,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (status < 0) {
+		status = i2c_smbus_xfer(i2c2, 0x19 , 0 ,
+				I2C_SMBUS_READ, 0x0F ,
+				I2C_SMBUS_BYTE_DATA, &data);
+	}
+	i2c_put_adapter(i2c2);
+	return (status < 0) ? status : data.byte;
+}
+
 static int __init mop500_sensors_init(void)
 {
+	int ret;
 
-	if (!machine_is_snowball() && !uib_is_stuib())
+	if (!machine_is_snowball() && !uib_is_stuib() && !uib_is_u8500uibr3())
 		return 0;
 
 	if (machine_is_hrefv60()) {
@@ -165,6 +193,12 @@ static int __init mop500_sensors_init(void)
 		lsm303dlh_pdata.irq_a2 = GPIO_ACCEL_INT2;
 		lsm303dlh_pdata.irq_m = GPIO_MAGNET_DRDY;
 	}
+
+	ret = mop500_get_acc_id();
+	if (ret < 0)
+		printk(KERN_ERR " Failed to get Accelerometer chip ID\n");
+	else
+		lsm303dlh_pdata.chip_id = ret;
 
 	mop500_sensors_i2c_add(2, mop500_i2c2_devices,
 			ARRAY_SIZE(mop500_i2c2_devices));
