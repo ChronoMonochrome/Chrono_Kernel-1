@@ -35,7 +35,7 @@
 #define	LPS001WP_PRS_I2C_SADROOT	0x2E
 #define	LPS001WP_PRS_I2C_SAD_L		((LPS001WP_PRS_I2C_SADROOT<<1)|SAD0L)
 #define	LPS001WP_PRS_I2C_SAD_H		((LPS001WP_PRS_I2C_SADROOT<<1)|SAD0H)
-#define	LPS001WP_PRS_DEV_NAME		"lps001wp_prs_sysfs"
+#define	LPS001WP_PRS_DEV_NAME		"lps001wp_prs"
 
 /* input define mappings */
 #define ABS_PR		ABS_PRESSURE

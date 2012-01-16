@@ -39,7 +39,7 @@ static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata_u8500 = {
 };
 
 static struct lps001wp_prs_platform_data __initdata lps001wp_pdata = {
-	.poll_interval = 500,
+	.poll_interval = 1000,
 	.min_interval = 10,
 };
 
@@ -56,7 +56,7 @@ static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 	},
 	{
 		/* LSP001WM Barometer */
-		I2C_BOARD_INFO("lps001wp_prs_sysfs", 0x5C),
+		I2C_BOARD_INFO("lps001wp_prs", 0x5C),
 		.platform_data = &lps001wp_pdata,
 	},
 };
