@@ -12,9 +12,6 @@
 #include <linux/i2c.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/amba/pl022.h>
-#ifdef CONFIG_STM_I2S
-#include <linux/i2s/i2s.h>
-#endif
 #include <linux/delay.h>
 #include <linux/led-lm3530.h>
 #include <../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
@@ -40,7 +37,7 @@
 
 #include <mach/hardware.h>
 #include <mach/ste-dma40-db5500.h>
-#ifdef CONFIG_STM_I2S
+#ifdef CONFIG_UX500_SOC_DBX500
 #include <mach/msp.h>
 #endif
 #include <mach/devices.h>
@@ -350,7 +347,7 @@ static struct db5500_keypad_platform_data u5500_keypad_board = {
 	.switch_delay	= 200, /* in jiffies */
 };
 
-#ifdef CONFIG_STM_I2S
+#ifdef CONFIG_UX500_SOC_DBX500
 /*
  * MSP
  */
@@ -396,31 +393,11 @@ static struct msp_i2s_platform_data u5500_msp2_data = {
 	.msp_i2s_dma_tx	= &msp2_dma_tx,
 };
 
-static struct i2s_board_info stm_i2s_board_info[] __initdata = {
-	{
-		.modalias	= "i2s_device.0",
-		.id		= 0,
-		.chip_select	= 0,
-	},
-	{
-		.modalias	= "i2s_device.1",
-		.id		= 1,
-		.chip_select	= 1,
-	},
-	{
-		.modalias	= "i2s_device.2",
-		.id		= 2,
-		.chip_select	= 2,
-	},
-};
-
 static void __init u5500_msp_init(void)
 {
 	db5500_add_msp0_i2s(&u5500_msp0_data);
 	db5500_add_msp1_i2s(&u5500_msp1_data);
 	db5500_add_msp2_i2s(&u5500_msp2_data);
-
-	i2s_register_board_info(ARRAY_AND_SIZE(stm_i2s_board_info));
 }
 #else
 static void __init u5500_msp_init(void)

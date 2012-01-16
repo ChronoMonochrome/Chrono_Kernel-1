@@ -89,6 +89,16 @@ dbx500_add_i2c(struct device *parent, int id, resource_size_t base, int irq,
 	return platform_device_register_full(&pdevinfo);
 }
 
+struct msp_i2s_platform_data;
+
+static inline struct platform_device *
+dbx500_add_msp_i2s(int id, resource_size_t base, int irq,
+		   struct msp_i2s_platform_data *pdata)
+{
+	return dbx500_add_platform_device_4k1irq("ux500-msp-i2s", id, base, irq,
+						 pdata);
+}
+
 static inline struct amba_device *
 dbx500_add_rtc(struct device *parent, resource_size_t base, int irq)
 {
