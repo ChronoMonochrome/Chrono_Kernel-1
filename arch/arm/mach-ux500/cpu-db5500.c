@@ -159,6 +159,7 @@ static struct platform_device *db5500_platform_devs[] __initdata = {
 	&mbox1_device,
 	&mbox2_device,
 	&db5500_prcmu_device,
+	&u5500_wdt_device,
 };
 
 static u8 db5500_revision;

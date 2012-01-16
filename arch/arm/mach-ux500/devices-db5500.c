@@ -275,3 +275,8 @@ struct platform_device u5500_thsens_device = {
 	.resource       = u5500_thsens_resources,
 	.num_resources  = ARRAY_SIZE(u5500_thsens_resources),
 };
+
+struct platform_device u5500_wdt_device = {
+	.name		= "ux500_wdt",
+	.id		= -1,
+};
