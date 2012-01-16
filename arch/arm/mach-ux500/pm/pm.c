@@ -83,8 +83,7 @@ void ux500_pm_gic_decouple(void)
 			   PRCM_A9_MASK_REQ_PRCM_A9_MASK_REQ,
 			   PRCM_A9_MASK_REQ_PRCM_A9_MASK_REQ);
 
-	while (!prcmu_read(PRCM_A9_MASK_REQ))
-		cpu_relax();
+	(void)prcmu_read(PRCM_A9_MASK_REQ);
 
 	/* TODO: Use the ack bit when possible */
 	udelay(GIC_FREEZE_DELAY); /* Wait for the GIC to freeze */
