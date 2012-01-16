@@ -1579,9 +1579,6 @@ int db5500_prcmu_set_ape_opp(u8 opp)
 	if (opp == mb1_transfer.req_ape_opp)
 		return 0;
 
-	if (cpu_is_u5500v1())
-		return -EINVAL;
-
 	switch (opp) {
 	case APE_100_OPP:
 		db5500_opp = DB5500_APE_100_OPP;
@@ -1659,9 +1656,6 @@ int db5500_prcmu_get_ddr_opp(void)
 
 int db5500_prcmu_set_ddr_opp(u8 opp)
 {
-	if (cpu_is_u5500v1())
-		return -EINVAL;
-
 	if (opp != DDR_100_OPP && opp != DDR_50_OPP)
 		return -EINVAL;
 

@@ -306,9 +306,6 @@ static int __init dbx500_cpufreq_register(void)
 {
 	int i;
 
-	if (cpu_is_u5500() && cpu_is_u5500v1())
-		return -ENODEV;
-
 	if (!initialized)
 		dbx500_cpufreq_early_init();
 
