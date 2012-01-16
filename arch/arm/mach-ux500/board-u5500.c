@@ -64,8 +64,9 @@ static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
 	.axis_map_x = 1,
 	.axis_map_y = 0,
 	.axis_map_z = 2,
-	.negative_x = 0,
-	.negative_y = 0,
+/* display is mounted reverse in the hardware */
+	.negative_x = 1,
+	.negative_y = 1,
 	.negative_z = 1,
 };
 #endif
@@ -189,29 +190,7 @@ U5500_I2C_CONTROLLER(1,	0xe, 1, 10, 400000, 200, I2C_FREQ_MODE_FAST);
 U5500_I2C_CONTROLLER(2,	0xe, 1, 10, 400000, 200, I2C_FREQ_MODE_FAST);
 U5500_I2C_CONTROLLER(3,	0xe, 1, 10, 400000, 200, I2C_FREQ_MODE_FAST);
 
-static struct i2c_board_info __initdata u5500_i2c1_devices[] = {
-	{
-		I2C_BOARD_INFO("synaptics_rmi4_i2c", 0x4B),
-		.platform_data = &rmi4_i2c_platformdata,
-	},
-};
-
-static struct i2c_board_info __initdata u5500v1_i2c2_sensor_devices[] = {
-#ifdef CONFIG_SENSORS_LSM303DLH
-	{
-		/* LSM303DLH Accelerometer */
-		I2C_BOARD_INFO("lsm303dlh_a", 0x19),
-		.platform_data = &lsm303dlh_pdata,
-	},
- 	{
-		/* LSM303DLH Magnetometer */
-		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
-		.platform_data = &lsm303dlh_pdata,
-	},
-#endif
-};
-
-static struct i2c_board_info __initdata u5500v2_i2c2_sensor_devices[] = {
+static struct i2c_board_info __initdata u5500_i2c2_sensor_devices[] = {
 #ifdef CONFIG_SENSORS_LSM303DLH
 	{
 		/* LSM303DLHC Accelerometer */
@@ -688,22 +667,8 @@ static void __init u5500_i2c_init(struct device *parent)
 	db5500_add_i2c2(pareent, &u5500_i2c2_data);
 	db5500_add_i2c3(pareent, &u5500_i2c3_data);
 
-	i2c_register_board_info(1, ARRAY_AND_SIZE(u5500_i2c1_devices));
 	i2c_register_board_info(2, ARRAY_AND_SIZE(u5500_i2c2_devices));
-
-	if (cpu_is_u5500v1())
-		i2c_register_board_info(2, ARRAY_AND_SIZE(u5500v1_i2c2_sensor_devices));
-
-	if (cpu_is_u5500v2()) {
-		/*
-		 * In V2 display is mounted in reverse direction,
-		 * so need to change the intial
-		 * settings of Accelerometer and Magnetometer
-		 */
-		lsm303dlh_pdata.negative_x = 1;
-		lsm303dlh_pdata.negative_y = 1;
-		i2c_register_board_info(2, ARRAY_AND_SIZE(u5500v2_i2c2_sensor_devices));
-	}
+	i2c_register_board_info(2, ARRAY_AND_SIZE(u5500_i2c2_sensor_devices));
 }
 
 static void __init u5500_uart_init(struct device *parent)
