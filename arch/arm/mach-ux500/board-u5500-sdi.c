@@ -233,16 +233,9 @@ static void sdi1_configure(void)
 	gpio_direction_output(pin[1], 0);
 }
 
-#define SDI_PID_V1 0x00480180
-#define SDI_PID_V2 0x10480180
 void __init u5500_sdi_init(struct device *parent)
 {
-	u32 periphid = 0;
-
-	if (cpu_is_u5500v1())
-		periphid = SDI_PID_V1;
-	else
-		periphid = SDI_PID_V2;
+	u32 periphid = 0x10480180;
 
 	/*
 	 * Fix me in 5500 v2.1
