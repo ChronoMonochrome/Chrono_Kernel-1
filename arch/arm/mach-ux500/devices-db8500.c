@@ -277,8 +277,8 @@ struct platform_device u8500_b2r2_device = {
  */
 
 struct platform_device u8500_wdt_device = {
-	.name           = "u8500_wdt",
-	.id             = -1,
+	.name		= "ux500_wdt",
+	.id		= -1,
 };
 
 #ifdef CONFIG_HSI
