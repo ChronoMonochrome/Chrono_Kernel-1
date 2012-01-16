@@ -511,7 +511,7 @@ static struct clk_lookup db5500_prcmu_clocks[] = {
 	CLK_LOOKUP(svaclk, "hva", NULL),
 	CLK_LOOKUP(uartclk, "UART", NULL),
 	CLK_LOOKUP(msp02clk, "MSP02", NULL),
-	CLK_LOOKUP(msp1clk, "MSP_I2S.1", NULL),
+	CLK_LOOKUP(msp1clk, "ux500-msp-i2s.1", NULL),
 	CLK_LOOKUP(cdclk, "cable_detect.0", NULL),
 	CLK_LOOKUP(i2cclk, "I2C", NULL),
 	CLK_LOOKUP(sdmmcclk, "sdmmc", NULL),
@@ -534,7 +534,7 @@ static struct clk_lookup db5500_prcmu_clocks[] = {
 };
 
 static struct clk_lookup db5500_prcc_clocks[] = {
-	CLK_LOOKUP(p1_msp0_clk, "MSP_I2S.0", NULL),
+	CLK_LOOKUP(p1_msp0_clk, "ux500-msp-i2s.0", NULL),
 	CLK_LOOKUP(p1_sdi0_clk, "sdi0", NULL),
 	CLK_LOOKUP(p1_sdi2_clk, "sdi2", NULL),
 	CLK_LOOKUP(p1_uart0_clk, "uart0", NULL),
@@ -550,7 +550,7 @@ static struct clk_lookup db5500_prcc_clocks[] = {
 	CLK_LOOKUP(p3_pwm_clk, "pwm", NULL),
 	CLK_LOOKUP(p3_pclk2, "gpio.4", NULL),
 
-	CLK_LOOKUP(p5_msp2_clk, "MSP_I2S.2", NULL),
+	CLK_LOOKUP(p5_msp2_clk, "ux500-msp-i2s.2", NULL),
 	CLK_LOOKUP(p5_uart1_clk, "uart1", NULL),
 	CLK_LOOKUP(p5_uart2_clk, "uart2", NULL),
 	CLK_LOOKUP(p5_uart3_clk, "uart3", NULL),
