@@ -59,6 +59,14 @@
 #define UART_RX_TIMEOUT		10
 #define UART_RESP_TIMEOUT	1000
 #define UART_RESUME_TIMEOUT	20
+/* Minimum time host should maintain the break */
+#define UART_MIN_BREAK_ON_TIME 5
+
+/* Timers used in microseconds */
+/* Minimum time required after sending the last data to apply break */
+#define UART_MIN_TIME_BEFORE_APPLYING_BREAK 900
+/* Minimum time required after exiting break condition */
+#define UART_MIN_BREAK_OFF_TIME 200
 
 /* Max latency in microseconds for PM QoS to achieve max throughput */
 #define CG2900_PM_QOS_LATENCY	30
@@ -647,6 +655,7 @@ static void wake_up_chip(struct uart_info *uart_info)
 	/* Unset BREAK. */
 	dev_dbg(MAIN_DEV, "wake_up_chip: Clear break\n");
 	hci_uart_set_break(uart_info->hu, BREAK_OFF);
+	udelay(UART_MIN_BREAK_OFF_TIME);
 
 	dev_dbg(MAIN_DEV, "New sleep_state: CHIP_AWAKE\n");
 	uart_info->sleep_state = CHIP_AWAKE;
@@ -714,6 +723,7 @@ static void set_chip_sleep_mode(struct work_struct *work)
 						uart_info->baud_rate);
 			hci_uart_flow_ctrl(uart_info->hu, FLOW_ON);
 			hci_uart_set_break(uart_info->hu, BREAK_OFF);
+			udelay(UART_MIN_BREAK_OFF_TIME);
 
 			dev_dbg(MAIN_DEV, "New sleep_state: CHIP_AWAKE\n");
 			uart_info->sleep_state = CHIP_AWAKE;
@@ -745,7 +755,10 @@ static void set_chip_sleep_mode(struct work_struct *work)
 		}
 
 		dev_dbg(MAIN_DEV, "sleep_timer_expired: Set break\n");
+		udelay(UART_MIN_TIME_BEFORE_APPLYING_BREAK);
 		hci_uart_set_break(uart_info->hu, BREAK_ON);
+		schedule_timeout_killable(
+				msecs_to_jiffies(UART_MIN_BREAK_ON_TIME));
 
 		dev_dbg(MAIN_DEV, "New sleep_state: CHIP_FALLING_ASLEEP\n");
 		uart_info->sleep_state = CHIP_FALLING_ASLEEP;
@@ -1405,6 +1418,7 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 
 		hci_uart_flow_ctrl(uart_info->hu, FLOW_ON);
 		hci_uart_set_break(uart_info->hu, BREAK_OFF);
+		udelay(UART_MIN_BREAK_OFF_TIME);
 	} else {
 		/* Turn off the chip.*/
 		switch (uart_info->sleep_state) {
@@ -1412,6 +1426,7 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 			break;
 		case CHIP_FALLING_ASLEEP:
 			hci_uart_set_break(uart_info->hu, BREAK_OFF);
+			udelay(UART_MIN_BREAK_OFF_TIME);
 			break;
 		case CHIP_SUSPENDED:
 		case CHIP_ASLEEP:
