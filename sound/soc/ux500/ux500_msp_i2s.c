@@ -12,6 +12,7 @@
  * by the Free Software Foundation.
  */
 
+#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
