@@ -44,6 +44,8 @@ enum usb_phy_events {
 	USB_EVENT_RIDA,
 	USB_EVENT_RIDB,
 	USB_EVENT_RIDC,
+	USB_EVENT_PREPARE,	/* restore context and clocks */
+	USB_EVENT_CLEAN,	/* disable clocks */
 };
 
 struct usb_phy;
