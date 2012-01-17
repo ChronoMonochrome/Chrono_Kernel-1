@@ -31,34 +31,6 @@
 struct i2c_board_info __initdata __weak mop500_i2c3_devices_u8500[] = {
 };
 
-#ifdef CONFIG_SENSORS_LSM303DLH
-/*
- * LSM303DLH accelerometer + magnetometer & L3G4200D Gyroscope sensors
- */
-static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata_u8500 = {
-	.name_a = "lsm303dlh.0",
-	.name_m = "lsm303dlh.1",
-	.axis_map_x = 1,
-	.axis_map_y = 0,
-	.axis_map_z = 2,
-	.negative_x = 0,
-	.negative_y = 0,
-	.negative_z = 1,
-};
-#endif
-
-#ifdef CONFIG_SENSORS_L3G4200D
-static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata_u8500 = {
-	.name_gyr = "l3g4200d",
-	.axis_map_x = 0,
-	.axis_map_y = 1,
-	.axis_map_z = 2,
-	.negative_x = 1,
-	.negative_y = 0,
-	.negative_z = 1,
-};
-#endif
-
 #ifdef CONFIG_U8500_FLASH
 static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
 	.irq_no = CAMERA_FLASH_INT_PIN
@@ -66,25 +38,6 @@ static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
 #endif
 
 static struct i2c_board_info __initdata mop500_i2c2_devices_u8500[] = {
-#ifdef CONFIG_SENSORS_LSM303DLH
-	{
-		/* LSM303DLH Accelerometer */
-		I2C_BOARD_INFO("lsm303dlh_a", 0x18),
-		.platform_data = &lsm303dlh_pdata_u8500,
-	},
-	{
-		/* LSM303DLH Magnetometer */
-		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
-		.platform_data = &lsm303dlh_pdata_u8500,
-	},
-#endif
-#ifdef CONFIG_SENSORS_L3G4200D
-	{
-		/* L3G4200D Gyroscope */
-		I2C_BOARD_INFO("l3g4200d", 0x68),
-		.platform_data = &l3g4200d_pdata_u8500,
-	},
-#endif
 #ifdef CONFIG_U8500_FLASH
 	{
 		I2C_BOARD_INFO("adp1653", 0x30),
@@ -160,27 +113,14 @@ void __init mop500_u8500uib_init(void)
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_u8500,
 			ARRAY_SIZE(mop500_i2c0_devices_u8500));
 
-	if (machine_is_hrefv60()) {
-#ifdef CONFIG_SENSORS_LSM303DLH
-		lsm303dlh_pdata_u8500.irq_a1 = HREFV60_ACCEL_INT1_GPIO;
-		lsm303dlh_pdata_u8500.irq_a2 = HREFV60_ACCEL_INT2_GPIO;
-		lsm303dlh_pdata_u8500.irq_m = HREFV60_MAGNET_DRDY_GPIO;
-#endif
 #ifdef CONFIG_U8500_FLASH
+	if (machine_is_hrefv60())
 		adp1653_pdata_u8500_uib.enable_gpio =
 					HREFV60_CAMERA_FLASH_ENABLE;
-#endif
-	} else {
-#ifdef CONFIG_SENSORS_LSM303DLH
-		lsm303dlh_pdata_u8500.irq_a1 = GPIO_ACCEL_INT1;
-		lsm303dlh_pdata_u8500.irq_a2 = GPIO_ACCEL_INT2;
-		lsm303dlh_pdata_u8500.irq_m = GPIO_MAGNET_DRDY;
-#endif
-#ifdef CONFIG_U8500_FLASH
+	else
 		adp1653_pdata_u8500_uib.enable_gpio =
 					GPIO_CAMERA_FLASH_ENABLE;
 #endif
-	}
 
 	mop500_uib_i2c_add(2, mop500_i2c2_devices_u8500,
 			ARRAY_SIZE(mop500_i2c2_devices_u8500));
