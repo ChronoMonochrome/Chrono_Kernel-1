@@ -665,9 +665,7 @@ enable_dsipll_err:
 static void dsi_link_disable(struct mcde_chnl_state *chnl, bool suspend)
 {
 	wait_while_dsi_running(chnl->port.link);
-	/* only enter ULPM when device is suspended */
-	if (suspend)
-		dsi_link_handle_ulpm(&chnl->port, true);
+	dsi_link_handle_ulpm(&chnl->port, true);
 	if (dsi_use_clk_framework) {
 		clk_disable(chnl->clk_dsi_lp);
 		clk_disable(chnl->clk_dsi_hs);
