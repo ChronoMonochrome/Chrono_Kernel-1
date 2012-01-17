@@ -339,7 +339,7 @@ t_cm_error cm_EEM_ForceWakeup(t_nmf_core_id coreId)
     {
         t_cm_error error;
 
-        LOG_INTERNAL(2, "ARM: Try to wake up\n", 0, 0, 0, 0, 0, 0);
+        LOG_INTERNAL(1, "ARM: Try to wake up on core id : %d\n", coreId, 0, 0, 0, 0, 0);
 
         if (cm_DSP_GetState(coreId)->state != MPC_STATE_BOOTED)
         {
@@ -359,6 +359,9 @@ t_cm_error cm_EEM_ForceWakeup(t_nmf_core_id coreId)
             return error;
         }
     }
+    else
+        LOG_INTERNAL(1, "ARM: Not Try to wake up on core id : %d (nbOfForceWakeup = %d)\n", coreId, eeState[coreId].nbOfForceWakeup, 0, 0, 0, 0);
+
     return CM_OK;
 }
 
@@ -366,7 +369,7 @@ void cm_EEM_AllowSleep(t_nmf_core_id coreId)
 {
     if(--eeState[coreId].nbOfForceWakeup == 0)
     {
-        LOG_INTERNAL(2, "ARM: Allow sleep\n", 0, 0, 0, 0, 0, 0);
+        LOG_INTERNAL(1, "ARM: Allow sleep on core id : %d\n", coreId, 0, 0, 0, 0, 0);
 
         if (cm_DSP_GetState(coreId)->state != MPC_STATE_BOOTED)
         {
@@ -376,6 +379,8 @@ void cm_EEM_AllowSleep(t_nmf_core_id coreId)
             ERROR("CM_MPC_NOT_RESPONDING: DSP %s can't be allow sleep'ed\n", cm_getDspName(coreId), 0, 0, 0, 0, 0);
         }
     }
+    else
+        LOG_INTERNAL(1, "ARM: Not Allow sleep on core id : %d (nbOfForceWakeup = %d)\n", coreId, eeState[coreId].nbOfForceWakeup, 0, 0, 0, 0);
 }
 
 /* internal api */

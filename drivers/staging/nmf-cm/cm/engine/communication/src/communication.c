@@ -170,11 +170,17 @@ PUBLIC void cm_COM_InitMpc(t_nmf_core_id coreId)
         if (localCoreId == coreId) continue; /* no coms fifo with itself ;) */
         if(cm_DSP_GetState(localCoreId)->state != MPC_STATE_BOOTED) continue;/* no coms fifo initialisation with not booted MPC */
 
-        toNeighborsComsFifoIdSharedVar[coreId][localCoreId] = mpc2mpcComsFifoId[coreId][localCoreId]->dspAdress;
-        fromNeighborsComsFifoIdSharedVar[localCoreId][coreId] = mpc2mpcComsFifoId[coreId][localCoreId]->dspAdress;
-
         fromNeighborsComsFifoIdSharedVar[coreId][localCoreId] = mpc2mpcComsFifoId[localCoreId][coreId]->dspAdress;
+        toNeighborsComsFifoIdSharedVar[coreId][localCoreId] = mpc2mpcComsFifoId[coreId][localCoreId]->dspAdress;
+
+        LOG_INTERNAL(1, "ARM: Force Try to wake up on core id : %d\n", localCoreId, 0, 0, 0, 0, 0);
+        cm_EEM_ForceWakeup(localCoreId);
+
+        fromNeighborsComsFifoIdSharedVar[localCoreId][coreId] = mpc2mpcComsFifoId[coreId][localCoreId]->dspAdress;
         toNeighborsComsFifoIdSharedVar[localCoreId][coreId] = mpc2mpcComsFifoId[localCoreId][coreId]->dspAdress;
+
+        LOG_INTERNAL(1, "ARM: Force Allow sleep on core id : %d\n", localCoreId, 0, 0, 0, 0, 0);
+        cm_EEM_AllowSleep(localCoreId);
     }
 }
 
