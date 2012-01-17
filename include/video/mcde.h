@@ -282,7 +282,7 @@ int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
 					struct mcde_video_mode *vmode);
 /* TODO: Remove rotbuf* parameters when ESRAM allocator is implemented*/
 int mcde_chnl_set_rotation(struct mcde_chnl_state *chnl,
-		enum mcde_display_rotation rotation, u32 rotbuf1, u32 rotbuf2);
+					enum mcde_display_rotation rotation);
 int mcde_chnl_set_power_mode(struct mcde_chnl_state *chnl,
 				enum mcde_display_power_mode power_mode);
 

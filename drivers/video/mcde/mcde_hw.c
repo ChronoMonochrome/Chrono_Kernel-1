@@ -287,6 +287,7 @@ struct chnl_regs {
 	u8   rotdir;
 	u32  rotbuf1;
 	u32  rotbuf2;
+	u32  rotbufsize;
 
 	/* Blending */
 	u8 blend_ctrl;
@@ -368,6 +369,7 @@ struct mcde_chnl_state {
 	enum mcde_display_rotation rotation;
 	u32 rotbuf1;
 	u32 rotbuf2;
+	u32 rotbufsize;
 
 	struct mcde_col_transform rgb_2_ycbcr;
 	struct mcde_col_transform ycbcr_2_rgb;
@@ -2665,6 +2667,7 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 {
 	int i;
 	struct mcde_chnl_state *chnl = NULL;
+	struct mcde_platform_data *pdata = mcde_dev->dev.platform_data;
 
 	static struct mcde_col_transform ycbcr_2_rgb = {
 		/* Note that in MCDE YUV 422 pixels come as VYU pixels */
@@ -2708,6 +2711,9 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 	chnl->blend_en = true;
 	chnl->blend_ctrl = MCDE_CRA0_BLENDCTRL_SOURCE;
 	chnl->alpha_blend = 0xFF;
+	chnl->rotbuf1 = pdata->rotbuf1;
+	chnl->rotbuf2 = pdata->rotbuf2;
+	chnl->rotbufsize = pdata->rotbufsize;
 
 	_mcde_chnl_apply(chnl);
 	chnl->reserved = true;
@@ -2761,6 +2767,7 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	chnl->regs.rotdir = rotdir;
 	chnl->regs.rotbuf1 = chnl->rotbuf1;
 	chnl->regs.rotbuf2 = chnl->rotbuf2;
+	chnl->regs.rotbufsize = chnl->rotbufsize;
 	chnl->regs.palette_enable = chnl->palette_enable;
 	chnl->regs.map_r = chnl->map_r;
 	chnl->regs.map_g = chnl->map_g;
@@ -3049,7 +3056,7 @@ int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
 EXPORT_SYMBOL(mcde_chnl_set_video_mode);
 
 int mcde_chnl_set_rotation(struct mcde_chnl_state *chnl,
-		enum mcde_display_rotation rotation, u32 rotbuf1, u32 rotbuf2)
+					enum mcde_display_rotation rotation)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
@@ -3062,8 +3069,6 @@ int mcde_chnl_set_rotation(struct mcde_chnl_state *chnl,
 		return -EINVAL;
 
 	chnl->rotation = rotation;
-	chnl->rotbuf1  = rotbuf1;
-	chnl->rotbuf2  = rotbuf2;
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 

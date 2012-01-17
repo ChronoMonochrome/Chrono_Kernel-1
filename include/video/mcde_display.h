@@ -48,9 +48,7 @@ struct mcde_display_device {
 	struct mcde_chnl_state *chnl_state;
 	struct list_head ovlys;
 	struct mcde_rectangle update_area;
-	/* TODO: Remove once ESRAM allocator is done */
-	u32 rotbuf1;
-	u32 rotbuf2;
+
 
 	/* Display driver internal */
 	u16 native_x_res;

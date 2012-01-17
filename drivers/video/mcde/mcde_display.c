@@ -214,8 +214,7 @@ static int mcde_display_set_rotation_default(struct mcde_display_device *ddev,
 	enum mcde_display_rotation final;
 
 	final = (360 + rotation - ddev->orientation) % 360;
-	ret = mcde_chnl_set_rotation(ddev->chnl_state, final,
-						ddev->rotbuf1, ddev->rotbuf2);
+	ret = mcde_chnl_set_rotation(ddev->chnl_state, final);
 	if (WARN_ON(ret))
 		return ret;
 
