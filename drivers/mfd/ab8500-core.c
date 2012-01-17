@@ -803,14 +803,6 @@ static struct mfd_cell __devinitdata abx500_common_devs[] = {
 		.name = "ab8500-pwm",
 		.id = 1,
 	},
-	{
-		.name = "ab8500-pwm",
-		.id = 2,
-	},
-	{
-		.name = "ab8500-pwm",
-		.id = 3,
-	},
 	{ .name = "ab8500-leds", },
 	{
 		.name = "ab8500-denc",

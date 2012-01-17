@@ -278,6 +278,7 @@ struct ab8500_sysctrl_platform_data;
  * @battery: machine-specific battery management data
  * @charger: machine-specific charger data
  * @btemp: machine-specific battery temp data
+ * @pwmled: machine-specific pwmled data
  */
 struct ab8500_platform_data {
 	int irq_base;
@@ -297,6 +298,7 @@ struct ab8500_platform_data {
 	struct ab8500_chargalg_platform_data *chargalg;
 	struct ab8500_gpio_platform_data *gpio;
 	struct ab8500_sysctrl_platform_data *sysctrl;
+	struct ab8500_pwmled_platform_data *pwmled;
 };
 
 extern int __devinit ab8500_init(struct ab8500 *ab8500,

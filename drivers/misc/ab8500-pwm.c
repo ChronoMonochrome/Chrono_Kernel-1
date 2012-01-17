@@ -12,7 +12,7 @@
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab8500.h>
 #include <linux/module.h>
-
+#include <linux/mfd/ab8500/pwmleds.h>
 /*
  * PWM Out generators
  * Bank: 0x10
@@ -20,6 +20,11 @@
 #define AB8500_PWM_OUT_CTRL1_REG	0x60
 #define AB8500_PWM_OUT_CTRL2_REG	0x61
 #define AB8500_PWM_OUT_CTRL7_REG	0x66
+#define AB8505_PWM_OUT_BLINK_CTRL1_REG  0x68
+#define AB8505_PWM_OUT_BLINK_CTRL4_REG  0x6B
+#define AB8505_PWM_OUT_BLINK_CTRL_DUTYBIT 4
+#define AB8505_PWM_OUT_BLINK_DUTYMASK (0x0F << AB8505_PWM_OUT_BLINK_CTRL_DUTYBIT)
+
 
 /* backlight driver constants */
 #define ENABLE_PWM			1
@@ -31,10 +36,66 @@ struct pwm_device {
 	struct clk *clk;
 	const char *label;
 	unsigned int pwm_id;
+	unsigned int blink_en;
+	struct ab8500 *parent;
 	bool clk_enabled;
 };
 
 static LIST_HEAD(pwm_list);
+
+int pwm_config_blink(struct pwm_device *pwm, int duty_ns, int period_ns)
+{
+	int ret;
+	unsigned int value;
+	u8 reg;
+	if ((!is_ab8505(pwm->parent)) || (!pwm->blink_en)) {
+		dev_err(pwm->dev, "setting blinking for this "
+					"device not supported\n");
+		return -EINVAL;
+	}
+	/*
+	 * get the period value that is to be written to
+	 * AB8500_PWM_OUT_BLINK_CTRL1 REGS[0:2]
+	 */
+	value = period_ns & 0x07;
+	/*
+	 * get blink duty value to be written to
+	 * AB8500_PWM_OUT_BLINK_CTRL REGS[7:4]
+	 */
+	value |= ((duty_ns << AB8505_PWM_OUT_BLINK_CTRL_DUTYBIT) &
+					AB8505_PWM_OUT_BLINK_DUTYMASK);
+
+	reg = AB8505_PWM_OUT_BLINK_CTRL1_REG + (pwm->pwm_id - 1);
+
+	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
+			reg, (u8)value);
+	if (ret < 0)
+		dev_err(pwm->dev, "%s: Failed to config PWM blink,Error %d\n",
+							pwm->label, ret);
+	return ret;
+}
+
+int pwm_blink_ctrl(struct pwm_device *pwm , int enable)
+{
+	int ret;
+
+	if ((!is_ab8505(pwm->parent)) || (!pwm->blink_en)) {
+		dev_err(pwm->dev, "setting blinking for this "
+					"device not supported\n");
+		return -EINVAL;
+	}
+	/*
+	 * Enable/disable blinking feature for corresponding PWMOUT
+	 * channel depending on value of enable.
+	 */
+	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
+			AB8500_MISC, AB8505_PWM_OUT_BLINK_CTRL4_REG,
+			1 << (pwm->pwm_id-1), enable << (pwm->pwm_id-1));
+	if (ret < 0)
+		dev_err(pwm->dev, "%s: Failed to control PWM blink,Error %d\n",
+							pwm->label, ret);
+	return ret;
+}
 
 int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 {
@@ -82,7 +143,7 @@ int pwm_enable(struct pwm_device *pwm)
 				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
 				1 << (pwm->pwm_id-1), 1 << (pwm->pwm_id-1));
 	if (ret < 0)
-		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
+		dev_err(pwm->dev, "%s: Failed to enable PWM, Error %d\n",
 							pwm->label, ret);
 	return ret;
 }
@@ -123,7 +184,6 @@ EXPORT_SYMBOL(pwm_disable);
 struct pwm_device *pwm_request(int pwm_id, const char *label)
 {
 	struct pwm_device *pwm;
-
 	list_for_each_entry(pwm, &pwm_list, node) {
 		if (pwm->pwm_id == pwm_id) {
 			pwm->label = label;
@@ -144,38 +204,50 @@ EXPORT_SYMBOL(pwm_free);
 
 static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
 {
+	struct ab8500 *parent = dev_get_drvdata(pdev->dev.parent);
+	struct ab8500_platform_data *plat = dev_get_platdata(parent->dev);
+	struct ab8500_pwmled_platform_data *pdata = plat->pwmled;
 	struct pwm_device *pwm;
-	int ret = 0;
+	int ret = 0 , i;
 
 	/*
 	 * Nothing to be done in probe, this is required to get the
 	 * device which is required for ab8500 read and write
 	 */
-	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
+	pwm = kzalloc(((sizeof(struct pwm_device)) * pdata->num_pwm),
+						 GFP_KERNEL);
 	if (pwm == NULL) {
 		dev_err(&pdev->dev, "failed to allocate memory\n");
 		return -ENOMEM;
 	}
-	pwm->dev = &pdev->dev;
-	pwm->pwm_id = pdev->id;
-	list_add_tail(&pwm->node, &pwm_list);
-	platform_set_drvdata(pdev, pwm);
-
+	for (i = 0; i < pdata->num_pwm; i++) {
+		pwm[i].dev = &pdev->dev;
+		pwm[i].parent = parent;
+		pwm[i].blink_en = pdata->leds[i].blink_en;
+		pwm[i].pwm_id = pdata->leds[i].pwm_id;
+		list_add_tail(&pwm[i].node, &pwm_list);
+	}
 	pwm->clk = clk_get(pwm->dev, NULL);
 	if (IS_ERR(pwm->clk)) {
 		dev_err(pwm->dev, "clock request failed\n");
 		ret = PTR_ERR(pwm->clk);
-		kfree(pwm);
-		return ret;
+		goto fail;
 	}
+	platform_set_drvdata(pdev, pwm);
 	pwm->clk_enabled = false;
 	dev_dbg(pwm->dev, "pwm probe successful\n");
+	return ret;
+
+fail:
+	list_del(&pwm->node);
+	kfree(pwm);
 	return ret;
 }
 
 static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
 {
 	struct pwm_device *pwm = platform_get_drvdata(pdev);
+
 	list_del(&pwm->node);
 	clk_put(pwm->clk);
 	dev_dbg(&pdev->dev, "pwm driver removed\n");
