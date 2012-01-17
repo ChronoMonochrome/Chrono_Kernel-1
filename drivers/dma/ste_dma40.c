@@ -2660,6 +2660,56 @@ static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 	return -ENXIO;
 }
 
+dma_addr_t stedma40_get_src_addr(struct dma_chan *chan)
+{
+	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
+	dma_addr_t addr;
+
+	if (chan_is_physical(d40c))
+		addr = readl(d40c->base->virtbase + D40_DREG_PCBASE +
+			     d40c->phy_chan->num * D40_DREG_PCDELTA +
+			     D40_CHAN_REG_SSPTR);
+	else {
+		unsigned long lower;
+		unsigned long upper;
+
+		/*
+		 * There is a potential for overflow between the time the two
+		 * halves of the pointer are read.
+		 */
+		lower = d40c->lcpa->lcsp0 & D40_MEM_LCSP0_SPTR_MASK;
+		upper = d40c->lcpa->lcsp1 & D40_MEM_LCSP1_SPTR_MASK;
+
+		addr = upper | lower;
+	}
+
+	return addr;
+}
+EXPORT_SYMBOL(stedma40_get_src_addr);
+
+dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan)
+{
+	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
+	dma_addr_t addr;
+
+	if (chan_is_physical(d40c))
+		addr = readl(d40c->base->virtbase + D40_DREG_PCBASE +
+			     d40c->phy_chan->num * D40_DREG_PCDELTA +
+			     D40_CHAN_REG_SDPTR);
+	else {
+		unsigned long lower;
+		unsigned long upper;
+
+		lower = d40c->lcpa->lcsp2 & D40_MEM_LCSP2_DPTR_MASK;
+		upper = d40c->lcpa->lcsp3 & D40_MEM_LCSP3_DPTR_MASK;
+
+		addr = upper | lower;
+	}
+
+	return addr;
+}
+EXPORT_SYMBOL(stedma40_get_dst_addr);
+
 /* Initialization functions */
 
 static void __init d40_chan_init(struct d40_base *base, struct dma_device *dma,

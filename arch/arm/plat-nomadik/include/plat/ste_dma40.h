@@ -197,6 +197,24 @@ dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan);
  */
 u32 stedma40_residue(struct dma_chan *chan);
 
+/*
+ * stedma40_get_src_addr - get current source address
+ * @chan: the DMA channel
+ *
+ * Returns the physical address of the current source element to be read by the
+ * DMA.
+ */
+dma_addr_t stedma40_get_src_addr(struct dma_chan *chan);
+
+/*
+ * stedma40_get_dst_addr - get current destination address
+ * @chan: the DMA channel
+ *
+ * Returns the physical address of the current destination element to be
+ * written by the DMA.
+ */
+dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan);
+
 /**
  * stedma40_filter() - Provides stedma40_chan_cfg to the
  * ste_dma40 dma driver via the dmaengine framework.
