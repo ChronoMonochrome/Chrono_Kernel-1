@@ -871,7 +871,6 @@ static void abx500_accessory_cleanup(struct abx500_ad *dd)
 	flush_workqueue(dd->irq_work_queue);
 	destroy_workqueue(dd->irq_work_queue);
 
-	kfree(dd);
 }
 
 static int __devinit abx500_acc_detect_probe(struct platform_device *pdev)
