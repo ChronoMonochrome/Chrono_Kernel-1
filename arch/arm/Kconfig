@@ -281,7 +281,6 @@ choice
 	prompt "ARM system type"
 	default ARCH_U8500
 
-
 config ARCH_U8500
 	bool "ST-Ericsson U8500 Series"
 	select CPU_V7
