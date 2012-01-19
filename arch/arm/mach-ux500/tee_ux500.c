@@ -24,7 +24,11 @@ static u32 call_sec_rom_bridge(u32 service_id, u32 cfg, ...)
 	va_list ap;
 	u32 ret;
 
-	if (cpu_is_u8500v20_or_later())
+	if (cpu_is_u9540())
+		hw_sec_rom_pub_bridge = (bridge_func)
+			((u32)IO_ADDRESS_DB9540_ROM
+			 (U9540_BOOT_ROM_BASE + 0x17300));
+	else if (cpu_is_u8500v20_or_later())
 		hw_sec_rom_pub_bridge = (bridge_func)
 			((u32)IO_ADDRESS(U8500_BOOT_ROM_BASE + 0x17300));
 	else if (cpu_is_u5500())

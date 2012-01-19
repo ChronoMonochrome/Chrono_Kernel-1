@@ -37,7 +37,7 @@ int cryp_check(struct cryp_device_data *device_data)
 	if (NULL == device_data)
 		return -EINVAL;
 
-	if (cpu_is_u8500())
+	if (cpu_is_u8500() || cpu_is_u9540())
 		peripheralID2 = CRYP_PERIPHERAL_ID2_DB8500;
 	else if (cpu_is_u5500())
 		peripheralID2 = CRYP_PERIPHERAL_ID2_DB5500;
