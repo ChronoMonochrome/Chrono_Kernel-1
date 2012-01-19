@@ -740,7 +740,7 @@ out_regulator_get:
 out_freekeypad:
 	kfree(keypad);
 out_freeclk:
-	clk_put(keypad->clk);
+	clk_put(clk);
 out_freeioremap:
 	iounmap(reg_base);
 out_freerequest_memregions:
@@ -774,9 +774,6 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 	}
 	for (i = 0; i < keypad->board->krow; i++)
 		free_irq(keypad->gpio_input_irq[i], keypad);
-
-	for (i = 0; i < SKE_KPD_MAX_ROWS; i++)
-		gpio_free(keypad->ske_rows[i]);
 
 	free_irq(keypad->irq, keypad);
 	regulator_put(keypad->regulator);
