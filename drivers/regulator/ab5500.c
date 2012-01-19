@@ -40,6 +40,7 @@
 /* In SIM bank */
 #define AB5500_SIM_SUP		0x14
 
+#define AB5500_MBIAS1		0x00
 #define AB5500_MBIAS2		0x01
 
 #define AB5500_LDO_MODE_MASK		(0x3 << 4)
@@ -49,6 +50,8 @@
 #define AB5500_LDO_MODE_OFF		(0x0 << 4)
 #define AB5500_LDO_VOLT_MASK		0x07
 
+#define AB5500_MBIAS1_ENABLE		(0x1 << 1)
+#define AB5500_MBIAS1_MODE_MASK		(0x1 << 1)
 #define AB5500_MBIAS2_ENABLE		(0x1 << 1)
 #define AB5500_MBIAS2_VOLT_MASK		(0x1 << 2)
 #define AB5500_MBIAS2_MODE_MASK		(0x1 << 1)
@@ -383,6 +386,10 @@ static const int ab5500_bias2_voltages[] = {
 	[0x01] = 2200000,
 };
 
+static const int ab5500_bias1_voltages[] = {
+	[0x00] = 2000000,
+};
+
 static struct ab5500_regulator ab5500_regulators[] = {
 	[AB5500_LDO_L] = {
 		.desc = {
@@ -509,7 +516,7 @@ static struct ab5500_regulator ab5500_regulators[] = {
 	},
 	[AB5500_BIAS2] = {
 		.desc = {
-			.name		= "BIAS2",
+			.name		= "MBIAS2",
 			.id		= AB5500_BIAS2,
 			.ops		= &ab5500_regulator_variable_ops,
 			.type		= REGULATOR_VOLTAGE,
@@ -525,6 +532,24 @@ static struct ab5500_regulator ab5500_regulators[] = {
 		.update_val_normal	= AB5500_MBIAS2_ENABLE,
 		.update_val_idle	= AB5500_MBIAS2_ENABLE,
 		.voltage_mask		= AB5500_MBIAS2_VOLT_MASK,
+	},
+	[AB5500_BIAS1] = {
+		.desc = {
+			.name		= "MBIAS1",
+			.id		= AB5500_BIAS1,
+			.ops		= &ab5500_regulator_fixed_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ab5500_bias1_voltages),
+		},
+		.bank			= AB5500_BANK_AUDIO_HEADSETUSB,
+		.reg			= AB5500_MBIAS1,
+		.voltages		= ab5500_bias1_voltages,
+		.enable_time		= 1000,
+		.mode			= AB5500_MBIAS1_ENABLE,
+		.update_mask		= AB5500_MBIAS1_MODE_MASK,
+		.update_val_normal	= AB5500_MBIAS1_ENABLE,
+		.update_val_idle	= AB5500_MBIAS1_ENABLE,
 	},
 };
 
