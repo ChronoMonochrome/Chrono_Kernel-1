@@ -79,6 +79,7 @@
 #include "pins.h"
 #endif
 
+#include "cpu-db8500.h"
 #include "pins-db8500.h"
 #include "devices-db8500.h"
 #include "board-mop500.h"
@@ -1045,27 +1046,6 @@ static pin_cfg_t mop500_pins_uart0[] = {
 	GPIO3_U0_TXD    | PIN_OUTPUT_HIGH,
 };
 
-#define PRCC_K_SOFTRST_SET      0x18
-#define PRCC_K_SOFTRST_CLEAR    0x1C
-/* pl011 reset */
-static void ux500_uart0_reset(void)
-{
-	void __iomem *prcc_rst_set, *prcc_rst_clr;
-
-	prcc_rst_set = (void __iomem *)IO_ADDRESS(U8500_CLKRST1_BASE +
-			PRCC_K_SOFTRST_SET);
-	prcc_rst_clr = (void __iomem *)IO_ADDRESS(U8500_CLKRST1_BASE +
-			PRCC_K_SOFTRST_CLEAR);
-
-	/* Activate soft reset PRCC_K_SOFTRST_CLEAR */
-	writel((readl(prcc_rst_clr) | 0x1), prcc_rst_clr);
-	udelay(1);
-
-	/* Release soft reset PRCC_K_SOFTRST_SET */
-	writel((readl(prcc_rst_set) | 0x1), prcc_rst_set);
-	udelay(1);
-}
-
 static void ux500_uart0_init(void)
 {
 	int ret;
@@ -1086,7 +1066,23 @@ static void ux500_uart0_exit(void)
 		pr_err("pl011: uart pins_disable failed\n");
 }
 
+static void u8500_uart0_reset(void)
+{
+	/* UART0 lies in PER1 */
+	return u8500_reset_ip(1, PRCC_K_SOFTRST_UART0_MASK);
+}
 
+static void u8500_uart1_reset(void)
+{
+	/* UART1 lies in PER1 */
+	return u8500_reset_ip(1, PRCC_K_SOFTRST_UART1_MASK);
+}
+
+static void u8500_uart2_reset(void)
+{
+	/* UART2 lies in PER3 */
+	return u8500_reset_ip(3, PRCC_K_SOFTRST_UART2_MASK);
+}
 
 static struct amba_pl011_data uart0_plat = {
 #ifdef CONFIG_STE_DMA40_REMOVE
@@ -1096,7 +1092,7 @@ static struct amba_pl011_data uart0_plat = {
 #endif
 	.init = ux500_uart0_init,
 	.exit = ux500_uart0_exit,
-	.reset = ux500_uart0_reset,
+	.reset = u8500_uart0_reset,
 };
 
 static struct amba_pl011_data uart1_plat = {
@@ -1105,6 +1101,7 @@ static struct amba_pl011_data uart1_plat = {
 	.dma_rx_param = &uart1_dma_cfg_rx,
 	.dma_tx_param = &uart1_dma_cfg_tx,
 #endif
+	.reset = u8500_uart1_reset,
 };
 
 static struct amba_pl011_data uart2_plat = {
@@ -1113,6 +1110,7 @@ static struct amba_pl011_data uart2_plat = {
 	.dma_rx_param = &uart2_dma_cfg_rx,
 	.dma_tx_param = &uart2_dma_cfg_tx,
 #endif
+	.reset = u8500_uart2_reset,
 };
 
 static void __init mop500_uart_init(struct device *parent)

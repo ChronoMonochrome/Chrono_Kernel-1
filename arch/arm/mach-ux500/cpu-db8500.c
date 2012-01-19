@@ -18,6 +18,7 @@
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/dma-mapping.h>
+#include <linux/delay.h>
 
 #include <asm/pmu.h>
 #include <asm/mach/map.h>
@@ -29,6 +30,7 @@
 #include <mach/ste-dma40-db8500.h>
 
 #include "devices-db8500.h"
+#include "prcc.h"
 
 /* minimum static i/o mapping required to boot U8500 platforms */
 static struct map_desc u8500_uart_io_desc[] __initdata = {
@@ -130,6 +132,35 @@ static struct platform_device db8500_pmu_device = {
 static struct platform_device db8500_prcmu_device = {
 	.name			= "db8500-prcmu",
 };
+
+static unsigned int per_clkrst_base[7] = {
+	0,
+	U8500_CLKRST1_BASE,
+	U8500_CLKRST2_BASE,
+	U8500_CLKRST3_BASE,
+	0,
+	0,
+	U8500_CLKRST6_BASE,
+};
+
+void u8500_reset_ip(unsigned char per, unsigned int ip_mask)
+{
+	void __iomem *prcc_rst_set, *prcc_rst_clr;
+
+	if (per == 0 || per == 4 || per == 5 || per > 6)
+		return;
+
+	prcc_rst_set = __io_address(per_clkrst_base[per] + PRCC_K_SOFTRST_SET);
+	prcc_rst_clr = __io_address(per_clkrst_base[per] + PRCC_K_SOFTRST_CLR);
+
+	/* Activate soft reset PRCC_K_SOFTRST_CLR */
+	writel(ip_mask, prcc_rst_clr);
+	udelay(1);
+
+	/* Release soft reset PRCC_K_SOFTRST_SET */
+	writel(ip_mask, prcc_rst_set);
+	udelay(1);
+}
 
 static struct platform_device *platform_devs[] __initdata = {
 	&u8500_gpio_devs[0],
