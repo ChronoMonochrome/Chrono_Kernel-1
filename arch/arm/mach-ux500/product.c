@@ -38,7 +38,8 @@ bool ux500_jtag_enabled(void)
 	if (cpu_is_u5500())
 		return readl_relaxed(__io_address(U5500_PRCMU_DBG_PWRCTRL))
 			& PRCMU_DBG_PWRCTRL_A9DBGCLKEN;
-	if (cpu_is_u8500())
+
+	if (cpu_is_u8500() || cpu_is_u9540())
 		return (product_config.rt_flags & TEE_RT_FLAGS_JTAG_ENABLED) ==
 			TEE_RT_FLAGS_JTAG_ENABLED;
 

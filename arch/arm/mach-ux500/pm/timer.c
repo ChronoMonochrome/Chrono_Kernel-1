@@ -179,7 +179,7 @@ void ux500_rtcrtt_next(u32 time_us)
 
 static int __init ux500_rtcrtt_init(void)
 {
-	if (cpu_is_u8500()) {
+	if (cpu_is_u8500() || cpu_is_u9540()) {
 		rtc_base  = __io_address(U8500_RTC_BASE);
 	} else if (cpu_is_u5500()) {
 		rtc_base  = __io_address(U5500_RTC_BASE);
