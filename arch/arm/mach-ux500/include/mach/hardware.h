@@ -22,8 +22,20 @@
 #define IO_ADDRESS(x)           \
 	(((x) & 0x0fffffff) + (((x) >> 4) & 0x0f000000) + U8500_IO_VIRTUAL)
 
+/*
+ * For 9540, ROM code is at address 0xFFFE0000
+ * The previous macro cannot be used
+ * Or else its virtual address would be above 0xFFFFFFFF
+ */
+#define IO_ADDRESS_DB9540_ROM(x)           \
+	(((x) & 0x0001ffff) + U8500_IO_VIRTUAL + 0x0B000000)
+
 /* typesafe io address */
 #define __io_address(n)		IOMEM(IO_ADDRESS(n))
+
+#define __io_address_db9540_rom(n)	__io(IO_ADDRESS_DB9540_ROM(n))
+/* Used by some plat-nomadik code */
+#define io_p2v(n)		__io_address(n)
 
 #include <mach/db8500-regs.h>
 #include <mach/db5500-regs.h>

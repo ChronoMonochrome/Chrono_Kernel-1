@@ -72,6 +72,14 @@ static inline bool cpu_is_u9500(void)
 	return false;
 }
 #endif
+static inline bool __attribute_const__ cpu_is_u9540(void)
+{
+#ifdef CONFIG_UX500_SOC_DB8500
+	return dbx500_partnumber() == 0x9540;
+#else
+	return false;
+#endif
+}
 
 /*
  * 5500 revisions
@@ -123,7 +131,8 @@ static inline bool cpu_is_u8500v22(void)
 
 static inline bool cpu_is_u8500v20_or_later(void)
 {
-	return cpu_is_u8500() && ((dbx500_revision() & 0xf0) >= 0xB0);
+	return cpu_is_u9540() ||
+		(cpu_is_u8500() && ((dbx500_revision() & 0xf0) >= 0xB0));
 }
 
 static inline bool ux500_is_svp(void)

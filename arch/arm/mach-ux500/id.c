@@ -39,6 +39,25 @@ static unsigned int ux500_read_asicid(phys_addr_t addr)
 	return readl(__io_address(addr));
 }
 
+static unsigned int u9540_read_asicid(phys_addr_t addr)
+{
+	phys_addr_t base = addr & ~0xfff;
+	struct map_desc desc = {
+		.virtual	= IO_ADDRESS_DB9540_ROM(base),
+		.pfn		= __phys_to_pfn(base),
+		.length		= SZ_16K,
+		.type		= MT_DEVICE,
+	};
+
+	iotable_init(&desc, 1);
+
+	/* As in devicemaps_init() */
+	local_flush_tlb_all();
+	flush_cache_all();
+
+	return readl(__io_address_db9540_rom(addr));
+}
+
 static void ux500_print_soc_info(unsigned int asicid)
 {
 	unsigned int rev = dbx500_revision();
@@ -69,6 +88,7 @@ static unsigned int partnumber(unsigned int asicid)
  * DB8520v2.2	0x412fc091	0x9001DBF4		0x008500B2
  * AP9500	0x412fc091	0x9001DBF4		0x008500B2
  * DB5500v1	0x412fc091	0x9001FFF4		0x005500A0
+ * DB9540	0x413fc090	0xFFFFDBF4		0x009540xx
  */
 
 void __init ux500_map_io(void)
@@ -92,6 +112,12 @@ void __init ux500_map_io(void)
 
 		/* DB5500v1 */
 		addr = 0x9001FFF4;
+		break;
+
+	case 0x413fc090: /* DB9540 */
+		addr = 0xFFFFDBF4;
+		asicid = u9540_read_asicid(addr);
+		addr = 0;
 		break;
 	}
 

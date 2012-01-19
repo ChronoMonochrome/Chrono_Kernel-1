@@ -27,7 +27,7 @@
 
 /*********************************************************************/
 
-#define DBX500_NR_INTERNAL_IRQS		160
+#define DBX500_NR_INTERNAL_IRQS		166
 
 /* After chip-specific IRQ numbers we have the GPIO ones */
 #define NOMADIK_GPIO_TO_IRQ(gpio)	((gpio) + DBX500_NR_INTERNAL_IRQS)
@@ -47,6 +47,8 @@
 
 #include <mach/irqs-db5500.h>
 #include <mach/irqs-db8500.h>
+#include <mach/irqs-db9540.h>
+
 
 #ifdef CONFIG_MACH_MOP500
 #include <mach/irqs-board-mop500.h>

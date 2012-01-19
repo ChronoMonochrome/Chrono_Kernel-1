@@ -38,7 +38,8 @@ static struct map_desc u8500_uart_io_desc[] __initdata = {
 	__IO_DEV_DESC(U8500_UART2_BASE, SZ_4K),
 };
 
-static struct map_desc u8500_io_desc[] __initdata = {
+/*  U8500 and U9540 common io_desc */
+static struct map_desc u8500_common_io_desc[] __initdata = {
 	/* SCU base also covers GIC CPU BASE and TWD with its 4K page */
 	__IO_DEV_DESC(U8500_SCU_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GIC_DIST_BASE, SZ_4K),
@@ -47,12 +48,6 @@ static struct map_desc u8500_io_desc[] __initdata = {
 	__IO_DEV_DESC(U8500_MTU1_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_RTC_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_BACKUPRAM0_BASE, SZ_8K),
-
-	/* Map U8500_PUBLIC_BOOT_ROM_BASE (base+17000) only
-	 * for TEE security driver
-	 * and avoid overlap with asic ID at base+1D000 */
-	__MEM_DEV_DESC(U8500_BOOT_ROM_BASE+0x17000, 6*SZ_4K),
-
 	__IO_DEV_DESC(U8500_CLKRST1_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST2_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST3_BASE, SZ_4K),
@@ -65,6 +60,19 @@ static struct map_desc u8500_io_desc[] __initdata = {
 	__IO_DEV_DESC(U8500_GPIO2_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO3_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_PRCMU_TCDM_BASE, SZ_4K),
+};
+
+/* U8500 IO map specific description */
+static struct map_desc u8500_io_desc[] __initdata = {
+	/* Map U8500_PUBLIC_BOOT_ROM_BASE (base+17000) only
+	 * for TEE security driver
+	 * and avoid overlap with asic ID at base+1D000 */
+	__MEM_DEV_DESC(U8500_BOOT_ROM_BASE+0x17000, 6*SZ_4K),
+};
+
+/* U9540 IO map specific description */
+static struct map_desc u9540_io_desc[] __initdata = {
+	__MEM_DEV_DESC_DB9540_ROM(U9540_BOOT_ROM_BASE, SZ_1M),
 };
 
 void __init u8500_map_io(void)
@@ -84,7 +92,12 @@ void __init u8500_map_io(void)
 
 	ux500_map_io();
 
-	iotable_init(u8500_io_desc, ARRAY_SIZE(u8500_io_desc));
+	iotable_init(u8500_common_io_desc, ARRAY_SIZE(u8500_common_io_desc));
+
+	if (cpu_is_u9540())
+		iotable_init(u9540_io_desc, ARRAY_SIZE(u9540_io_desc));
+	else
+		iotable_init(u8500_io_desc, ARRAY_SIZE(u8500_io_desc));
 
 	_PRCMU_BASE = __io_address(U8500_PRCMU_BASE);
 }

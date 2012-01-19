@@ -107,7 +107,7 @@ static int __init prefetch_ctrl_init(void)
 	/* Get PL310 base address. It will be used as readonly. */
 	if (cpu_is_u5500())
 		l2x0_base = __io_address(U5500_L2CC_BASE);
-	else if (cpu_is_u8500())
+	else if (cpu_is_u8500() || cpu_is_u9540())
 		l2x0_base = __io_address(U8500_L2CC_BASE);
 	else
 		ux500_unknown_soc();

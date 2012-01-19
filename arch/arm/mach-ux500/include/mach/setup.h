@@ -52,4 +52,11 @@ extern struct sys_timer ux500_timer;
 	.type		= MT_MEMORY,		\
 }
 
+#define __MEM_DEV_DESC_DB9540_ROM(x, sz) {		\
+	.virtual	= IO_ADDRESS_DB9540_ROM(x),	\
+	.pfn		= __phys_to_pfn(x),		\
+	.length		= sz,				\
+	.type		= MT_MEMORY,			\
+}
+
 #endif /*  __ASM_ARCH_SETUP_H */
