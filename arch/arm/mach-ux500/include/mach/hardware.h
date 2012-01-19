@@ -37,6 +37,10 @@
 /* Used by some plat-nomadik code */
 #define io_p2v(n)		__io_address(n)
 
+#define __io_address_db9540_rom(n)	__io(IO_ADDRESS_DB9540_ROM(n))
+/* Used by some plat-nomadik code */
+#define io_p2v(n)		__io_address(n)
+
 #include <mach/db8500-regs.h>
 #include <mach/db5500-regs.h>
 
