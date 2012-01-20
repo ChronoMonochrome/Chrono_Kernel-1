@@ -97,8 +97,8 @@ static int ux500_av8100_hw_params(struct snd_pcm_substream *substream,
 	/* Change HDMI audio-settings for codec-DAI. */
 	pr_debug("%s: Change HDMI audio-settings for codec-DAI.\n", __func__);
 	as.audio_channel_count = hdmi_cc;
-	as.sampling_frequency = AV8100_CODEC_SF_48KHZ;
-	as.sample_size = AV8100_CODEC_SS_16BIT;
+	as.sampling_frequency = AV8100_CODEC_SF_REFER;
+	as.sample_size = AV8100_CODEC_SS_REFER;
 	as.channel_allocation = hdmi_ca;
 	as.level_shift_value = AV8100_CODEC_LSV_0DB;
 	as.downmix_inhibit = false;

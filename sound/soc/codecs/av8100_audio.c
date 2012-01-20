@@ -242,12 +242,13 @@ static int av8100_codec_send_audio_infoframe(struct hdmi_audio_settings *as)
 	info_fr.data[7] = 0;
 	info_fr.data[8] = 0;
 	info_fr.data[9] = 0;
-	info_fr.crc = info_fr.version +
+	info_fr.crc = 0x100 - (info_fr.type +
+		info_fr.version +
 		info_fr.length +
 		info_fr.data[0] +
 		info_fr.data[1] +
 		info_fr.data[3] +
-		info_fr.data[4];
+		info_fr.data[4]);
 	config.infoframes_format.type = info_fr.type;
 	config.infoframes_format.version = info_fr.version;
 	config.infoframes_format.crc = info_fr.crc;
@@ -406,7 +407,7 @@ static int av8100_codec_probe(struct snd_soc_codec *codec)
 {
 	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 
-	audio_coding_type = AV8100_CODEC_CT_IEC60958_PCM;
+	audio_coding_type = AV8100_CODEC_CT_REFER;
 
 	/* Add controls with events */
 	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(&hdmi_coding_type_control, codec));
