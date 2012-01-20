@@ -813,12 +813,12 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		return -EFAULT;
 	}
 	clk_ptr_ulpclk = clk_get(codec->dev, "ulpclk");
-	if (IS_ERR(clk_ptr_sysclk)) {
+	if (IS_ERR(clk_ptr_ulpclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
 		return -EFAULT;
 	}
 	clk_ptr_intclk = clk_get(codec->dev, "intclk");
-	if (IS_ERR(clk_ptr_audioclk)) {
+	if (IS_ERR(clk_ptr_intclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
 		return -EFAULT;
 	}
