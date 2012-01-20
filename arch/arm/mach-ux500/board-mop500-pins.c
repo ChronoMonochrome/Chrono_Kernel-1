@@ -18,7 +18,7 @@
 
 #include "pins-db8500.h"
 #include "pins.h"
-
+#include "board-mop500.h"
 #include "board-pins-sleep-force.h"
 
 enum custom_pin_cfg_t {
@@ -152,9 +152,6 @@ static pin_cfg_t hrefv60_pins[] = {
 	/* DiPro Sensor Interface */
 	GPIO139_GPIO	| PIN_INPUT_PULLUP, /* DIPRO_INT */
 
-	/* HAL SWITCH INTERFACE */
-	GPIO145_GPIO	| PIN_INPUT_PULLDOWN,/* HAL_SW */
-
 	/* Audio Amplifier Interface */
 	GPIO149_GPIO	| PIN_OUTPUT_HIGH, /* VAUDIO_HF_EN, enable MAX8968 */
 
@@ -167,9 +164,6 @@ static pin_cfg_t hrefv60_pins[] = {
 	/* ACCELEROMETER_INTERFACE */
 	GPIO82_GPIO		| PIN_INPUT_PULLUP, /* ACC_INT1 */
 	GPIO83_GPIO		| PIN_INPUT_PULLUP, /* ACC_INT2 */
-
-	/* Proximity Sensor */
-	GPIO217_GPIO		| PIN_INPUT_PULLUP,
 
 	/* SD card detect */
 	GPIO95_GPIO	| PIN_INPUT_PULLUP,
@@ -412,7 +406,19 @@ static UX500_PINS(mop500_pins_spi2,
 	GPIO217_SPI2_CLK        | PIN_OUTPUT_LOW,
 );
 
-static struct ux500_pin_lookup mop500_pins[] = {
+static UX500_PINS(mop500_pins_sensors1p,
+	GPIO217_GPIO| PIN_INPUT_PULLUP |
+		  PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
+	GPIO145_GPIO | PIN_INPUT_PULLDOWN |
+		  PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
+);
+
+static UX500_PINS(mop500_pins_sensors1p_old,
+	PIN_CFG_INPUT(GPIO_PROX_SENSOR, GPIO, NOPULL),
+	PIN_CFG_INPUT(GPIO_HAL_SENSOR, GPIO, NOPULL),
+);
+
+static struct ux500_pin_lookup mop500_runtime_pins[] = {
 	PIN_LOOKUP("mcde-dpi", &mop500_pins_mcde_dpi),
 	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout),
 	PIN_LOOKUP("av8100-hdmi", &mop500_pins_mcde_hdmi),
@@ -427,6 +433,14 @@ static struct ux500_pin_lookup mop500_pins[] = {
 	PIN_LOOKUP("sdi4", &mop500_pins_sdi4),
 	PIN_LOOKUP("ab8500-usb.0", &mop500_pins_usb),
 	PIN_LOOKUP("spi2", &mop500_pins_spi2),
+};
+
+static struct ux500_pin_lookup mop500_runtime_pins_v60[] = {
+	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p),
+};
+
+static struct ux500_pin_lookup mop500_runtime_pins_old[] = {
+	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p_old),
 };
 
 /*
@@ -639,7 +653,9 @@ static pin_cfg_t mop500_pins_common_power_save_bank4[] = {
 	GPIO143_GPIO | PIN_SLPM_OUTPUT_LOW | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
 
 	GPIO144_GPIO | PIN_SLPM_OUTPUT_HIGH | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+	/* 145 - HAL sensor (on v60 and later) */
 	GPIO145_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+
 	GPIO146_GPIO | PIN_SLPM_OUTPUT_LOW | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
 	GPIO147_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
 
@@ -767,7 +783,9 @@ static pin_cfg_t mop500_pins_common_power_save_bank6_href60[] = {
 	GPIO215_GPIO | PIN_SLPM_OUTPUT_LOW | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
 
 	GPIO216_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+	/* 217 - Proximity */
 	GPIO217_GPIO | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
+
 	GPIO218_GPIO | PIN_SLPM_DIR_INPUT | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
 	GPIO219_GPIO | PIN_SLPM_OUTPUT_LOW | PIN_SLPM_WAKEUP_ENABLE | PIN_SLPM_PDIS_DISABLED,
 
@@ -989,7 +1007,10 @@ void __init mop500_pins_init(void)
 	nmk_config_pins(mop500_pins_common,
 			ARRAY_SIZE(mop500_pins_common));
 
-	ux500_pins_add(mop500_pins, ARRAY_SIZE(mop500_pins));
+	ux500_pins_add(mop500_runtime_pins, ARRAY_SIZE(mop500_runtime_pins));
+
+	ux500_pins_add(mop500_runtime_pins_old,
+		       ARRAY_SIZE(mop500_runtime_pins_old));
 
 	switch (pinsfor) {
 	case PINS_FOR_U9500:
@@ -1014,7 +1035,10 @@ void __init snowball_pins_init(void)
 	nmk_config_pins(mop500_pins_common,
 			ARRAY_SIZE(mop500_pins_common));
 
-	ux500_pins_add(mop500_pins, ARRAY_SIZE(mop500_pins));
+	ux500_pins_add(mop500_runtime_pins, ARRAY_SIZE(mop500_runtime_pins));
+
+	ux500_pins_add(mop500_runtime_pins_old,
+		       ARRAY_SIZE(mop500_runtime_pins_old));
 
 	nmk_config_pins(u8500_pins, ARRAY_SIZE(u8500_pins));
 
@@ -1030,7 +1054,10 @@ void __init hrefv60_pins_init(void)
 	nmk_config_pins(mop500_pins_common,
 			ARRAY_SIZE(mop500_pins_common));
 
-	ux500_pins_add(mop500_pins, ARRAY_SIZE(mop500_pins));
+	ux500_pins_add(mop500_runtime_pins, ARRAY_SIZE(mop500_runtime_pins));
+
+	ux500_pins_add(mop500_runtime_pins_v60,
+		       ARRAY_SIZE(mop500_runtime_pins_v60));
 
 	nmk_config_pins(hrefv60_pins,
 			ARRAY_SIZE(hrefv60_pins));
