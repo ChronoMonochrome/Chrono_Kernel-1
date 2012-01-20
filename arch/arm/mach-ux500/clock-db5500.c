@@ -583,6 +583,7 @@ static struct clk_lookup db5500_prcc_clocks[] = {
 	 * Dummy clock sets up the GPIOs.
 	 */
 	CLK_LOOKUP(clk_dummy, "gpio.3", NULL),
+	CLK_LOOKUP(rtc32k, "rtc-pl031", NULL),
 };
 
 static struct clk_lookup db5500_clkouts[] = {
