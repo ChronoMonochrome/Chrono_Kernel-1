@@ -497,7 +497,7 @@ static int __init init_display_devices(void)
 		/* Sony display on U8500UIBV3 */
 		(void)mcde_display_device_register(&sony_acx424akp_display0);
 	else
-		WARN_ON("Unknown UI board");
+		pr_warning("Unknown UI board\n");
 
 	/* Display reset GPIO is different depending on reference boards */
 	if (uib_is_stuib())
