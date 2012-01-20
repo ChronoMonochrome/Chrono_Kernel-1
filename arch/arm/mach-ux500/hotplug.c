@@ -15,6 +15,7 @@
 #include <mach/suspend.h>
 
 #include <asm/cacheflush.h>
+#include <asm/smp_plat.h>
 
 #include <mach/context.h>
 
