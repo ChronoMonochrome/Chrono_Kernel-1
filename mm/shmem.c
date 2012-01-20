@@ -529,21 +529,49 @@ static int shmem_map_and_free_swp(struct page *subdir, int offset,
 	return freed;
 }
 
-static void shmem_free_pages(struct list_head *next)
+/*
+ * Pagevec may contain swap entries, so shuffle up pages before releasing.
+ */
+static void shmem_deswap_pagevec(struct pagevec *pvec)
 {
-	struct page *page;
-	int freed = 0;
+	int i, j;
 
-	do {
-		page = container_of(next, struct page, lru);
-		next = next->next;
-		shmem_dir_free(page);
-		freed++;
-		if (freed >= LATENCY_LIMIT) {
-			cond_resched();
-			freed = 0;
-		}
-	} while (next);
+	for (i = 0, j = 0; i < pagevec_count(pvec); i++) {
+		struct page *page = pvec->pages[i];
+		if (!radix_tree_exceptional_entry(page))
+			pvec->pages[j++] = page;
+	}
+	pvec->nr = j;
+}
+
+/*
+ * SysV IPC SHM_UNLOCK restore Unevictable pages to their evictable lists.
+ */
+void shmem_unlock_mapping(struct address_space *mapping)
+{
+	struct pagevec pvec;
+	pgoff_t indices[PAGEVEC_SIZE];
+	pgoff_t index = 0;
+
+	pagevec_init(&pvec, 0);
+	/*
+	 * Minor point, but we might as well stop if someone else SHM_LOCKs it.
+	 */
+	while (!mapping_unevictable(mapping)) {
+		/*
+		 * Avoid pagevec_lookup(): find_get_pages() returns 0 as if it
+		 * has finished, if it hits a row of PAGEVEC_SIZE swap entries.
+		 */
+		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+					PAGEVEC_SIZE, pvec.pages, indices);
+		if (!pvec.nr)
+			break;
+		index = indices[pvec.nr - 1] + 1;
+		shmem_deswap_pagevec(&pvec);
+		check_move_unevictable_pages(pvec.pages, pvec.nr);
+		pagevec_release(&pvec);
+		cond_resched();
+	}
 }
 
 void shmem_truncate_range(struct inode *inode, loff_t start, loff_t end)
@@ -593,8 +621,11 @@ void shmem_truncate_range(struct inode *inode, loff_t start, loff_t end)
 			limit = (end + 1) >> PAGE_CACHE_SHIFT;
 			upper_limit = limit;
 		}
-		needs_lock = &info->lock;
-		punch_hole = 1;
+		shmem_deswap_pagevec(&pvec);
+		pagevec_release(&pvec);
+		mem_cgroup_uncharge_end();
+		cond_resched();
+		index++;
 	}
 
 	topdir = info->i_indirect;
@@ -605,13 +636,27 @@ void shmem_truncate_range(struct inode *inode, loff_t start, loff_t end)
 	}
 	spin_unlock(&info->lock);
 
-	if (info->swapped && idx < SHMEM_NR_DIRECT) {
-		ptr = info->i_direct;
-		size = limit;
-		if (size > SHMEM_NR_DIRECT)
-			size = SHMEM_NR_DIRECT;
-		nr_swaps_freed = shmem_free_swp(ptr+idx, ptr+size, needs_lock);
-	}
+	index = start;
+	for ( ; ; ) {
+		cond_resched();
+		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
+							pvec.pages, indices);
+		if (!pvec.nr) {
+			if (index == start)
+				break;
+			index = start;
+			continue;
+		}
+		if (index == start && indices[0] > end) {
+			shmem_deswap_pagevec(&pvec);
+			pagevec_release(&pvec);
+			break;
+		}
+		mem_cgroup_uncharge_start();
+		for (i = 0; i < pagevec_count(&pvec); i++) {
+			struct page *page = pvec.pages[i];
+>>>>>>> 18aacef... SHM_UNLOCK: fix Unevictable pages stranded after swap
 
 	/*
 	 * If there are no indirect blocks or we are punching a hole
@@ -717,38 +762,10 @@ void shmem_truncate_range(struct inode *inode, loff_t start, loff_t end)
 			nr_pages_to_free++;
 			list_add(&subdir->lru, &pages_to_free);
 		}
-		if (subdir && page_private(subdir) /* has swap entries */) {
-			size = limit - idx;
-			if (size > ENTRIES_PER_PAGE)
-				size = ENTRIES_PER_PAGE;
-			freed = shmem_map_and_free_swp(subdir,
-					offset, size, &dir, punch_lock);
-			if (!dir)
-				dir = shmem_dir_map(middir);
-			nr_swaps_freed += freed;
-			if (offset || punch_lock) {
-				spin_lock(&info->lock);
-				set_page_private(subdir,
-					page_private(subdir) - freed);
-				spin_unlock(&info->lock);
-			} else
-				BUG_ON(page_private(subdir) != freed);
-		}
-		offset = 0;
-	}
-done1:
-	shmem_dir_unmap(dir);
-done2:
-	if (inode->i_mapping->nrpages && (info->flags & SHMEM_PAGEIN)) {
-		/*
-		 * Call truncate_inode_pages again: racing shmem_unuse_inode
-		 * may have swizzled a page in from swap since
-		 * truncate_pagecache or generic_delete_inode did it, before we
-		 * lowered next_index.  Also, though shmem_getpage checks
-		 * i_size before adding to cache, no recheck after: so fix the
-		 * narrow window there too.
-		 */
-		truncate_inode_pages_range(inode->i_mapping, start, end);
+		shmem_deswap_pagevec(&pvec);
+		pagevec_release(&pvec);
+		mem_cgroup_uncharge_end();
+		index++;
 	}
 
 	spin_lock(&info->lock);
@@ -2873,11 +2890,15 @@ int shmem_lock(struct file *file, int lock, struct user_struct *user)
 	return 0;
 }
 
-void shmem_truncate_range(struct inode *inode, loff_t start, loff_t end)
+void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 {
 	truncate_inode_pages_range(inode->i_mapping, start, end);
 }
 EXPORT_SYMBOL_GPL(shmem_truncate_range);
+
+void shmem_unlock_mapping(struct address_space *mapping)
+{
+}
 
 #ifdef CONFIG_CGROUP_MEM_RES_CTLR
 /**
