@@ -358,7 +358,7 @@ static int ram_console_driver_probe(struct platform_device *pdev)
 ;
 		return -ENXIO;
 	}
-	buffer_size = res->end - res->start + 1;
+	buffer_size = resource_size(res);
 	start = res->start;
 //	printk(KERN_INFO "ram_console: got buffer at %zx, size %zx\n",
 ;
