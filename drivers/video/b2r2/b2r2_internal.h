@@ -264,6 +264,8 @@ struct b2r2_node_split_buf {
  * @ivmx          - the ivmx matrix to use for color conversion
  * @blend         - determines if blending is enabled
  * @clip          - determines if destination clipping is enabled
+ * @rotation      - determines if rotation is requested
+ * @fullrange     - determines YUV<->RGB conversion matrix (iVMx)
  * @swap_fg_bg    - determines if FG and BG should be swapped when blending
  * @flags         - the flags passed in the blt request
  * @flag_param    - parameter required by certain flags,
@@ -294,6 +296,7 @@ struct b2r2_node_split_job {
 	bool blend;
 	bool clip;
 	bool rotation;
+	bool fullrange;
 
 	bool swap_fg_bg;
 

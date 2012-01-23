@@ -18,6 +18,7 @@
 #include "b2r2_global.h"
 #include "b2r2_debug.h"
 #include "b2r2_filters.h"
+#include "b2r2_hw_convert.h"
 
 /*
  * Debug printing
@@ -499,6 +500,8 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 	u32 src_color = req->user_req.src_color;
 	const struct b2r2_blt_img *dst_img = &(req->user_req.dst_img);
 	struct b2r2_control *cont = req->instance->control;
+	bool fullrange = (req->user_req.flags &
+		B2R2_BLT_FLAG_FULL_RANGE_YUV) != 0;
 
 	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
@@ -525,17 +528,7 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 				 * where it is stored in ABGR format.
 				 * Set up IVMX.
 				 */
-				node->node.GROUP0.B2R2_INS |=
-						B2R2_INS_IVMX_ENABLED;
-				node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-				node->node.GROUP15.B2R2_VMX0 =
-						B2R2_VMX0_RGB_TO_BGR;
-				node->node.GROUP15.B2R2_VMX1 =
-						B2R2_VMX1_RGB_TO_BGR;
-				node->node.GROUP15.B2R2_VMX2 =
-						B2R2_VMX2_RGB_TO_BGR;
-				node->node.GROUP15.B2R2_VMX3 =
-						B2R2_VMX3_RGB_TO_BGR;
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_BGR);
 			}
 		}
 		break;
@@ -568,16 +561,10 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 			 * Format of the supplied src_color is
 			 * B2R2_BLT_FMT_32_BIT_AYUV8888.
 			 */
-			node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-			node->node.GROUP15.B2R2_VMX0 =
-					B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-					B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-					B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-					B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_BLT_YUV888_FULL_TO_RGB);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_BLT_YUV888_TO_RGB);
 		} else {
 			/* SOURCE_FILL_RAW */
 			bool dst_yuv_planar =
@@ -623,17 +610,12 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 			case B2R2_BLT_FMT_32_BIT_AYUV8888:
 			case B2R2_BLT_FMT_24_BIT_VUY888:
 			case B2R2_BLT_FMT_32_BIT_VUYA8888:
-				node->node.GROUP0.B2R2_INS |=
-					B2R2_INS_IVMX_ENABLED;
-				node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-				node->node.GROUP15.B2R2_VMX0 =
-					B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX1 =
-					B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX2 =
-					B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX3 =
-					B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO;
+				if (fullrange)
+					b2r2_setup_ivmx(node,
+						B2R2_CC_BLT_YUV888_FULL_TO_RGB);
+				else
+					b2r2_setup_ivmx(node,
+						B2R2_CC_BLT_YUV888_TO_RGB);
 				/*
 				 * Re-arrange the color components from
 				 * VUY(A) to (A)YUV
@@ -663,14 +645,11 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 				 * Chroma components are swapped so
 				 * it is YVU and not YUV.
 				 */
-				node->node.GROUP15.B2R2_VMX0 =
-					B2R2_VMX0_YVU_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX1 =
-					B2R2_VMX1_YVU_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX2 =
-					B2R2_VMX2_YVU_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX3 =
-					B2R2_VMX3_YVU_TO_RGB_601_VIDEO;
+				if (fullrange)
+					b2r2_setup_ivmx(node,
+						B2R2_CC_YVU_FULL_TO_RGB);
+				else
+					b2r2_setup_ivmx(node, B2R2_CC_YVU_TO_RGB);
 				break;
 			default:
 				/*
@@ -680,17 +659,11 @@ static void setup_fill_input_stage(const struct b2r2_blt_request *req,
 				 * an intermediate buffer which is RGB.
 				 * Hence the conversion from YUV to RGB.
 				 */
-				node->node.GROUP0.B2R2_INS |=
-					B2R2_INS_IVMX_ENABLED;
-				node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-				node->node.GROUP15.B2R2_VMX0 =
-					B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX1 =
-					B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX2 =
-					B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
-				node->node.GROUP15.B2R2_VMX3 =
-					B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
+				if (fullrange)
+					b2r2_setup_ivmx(node,
+						B2R2_CC_YUV_FULL_TO_RGB);
+				else
+					b2r2_setup_ivmx(node, B2R2_CC_YUV_TO_RGB);
 				break;
 			}
 		}
@@ -766,6 +739,8 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 	bool use_v_filter = false;
 
 	struct b2r2_control *cont = req->instance->control;
+	bool fullrange = (req->user_req.flags &
+		B2R2_BLT_FLAG_FULL_RANGE_YUV) != 0;
 
 	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
@@ -837,14 +812,7 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 	/* Adjustments that depend on the source format */
 	switch (src_img->fmt) {
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
-		/* Set up IVMX */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-
-		node->node.GROUP15.B2R2_VMX0 = B2R2_VMX0_RGB_TO_BGR;
-		node->node.GROUP15.B2R2_VMX1 = B2R2_VMX1_RGB_TO_BGR;
-		node->node.GROUP15.B2R2_VMX2 = B2R2_VMX2_RGB_TO_BGR;
-		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_RGB_TO_BGR;
+		b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_BGR);
 		break;
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
 		/*
@@ -852,29 +820,16 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 		 * Chroma components are swapped so
 		 * it is YVU and not YUV.
 		 */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-		node->node.GROUP15.B2R2_VMX0 =
-			B2R2_VMX0_YVU_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 =
-			B2R2_VMX1_YVU_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 =
-			B2R2_VMX2_YVU_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 =
-			B2R2_VMX3_YVU_TO_RGB_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_YVU_FULL_TO_RGB);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_YVU_TO_RGB);
 		break;
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
-		/* Set up IVMX */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-		node->node.GROUP15.B2R2_VMX0 =
-			B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 =
-			B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 =
-			B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 =
-			B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_YUV_FULL_TO_RGB);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_YUV_TO_RGB);
 		break;
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
@@ -889,16 +844,10 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 		 * B2R2 expects them to be as U, Y, V, (A)
 		 * with U at the first byte.
 		 */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-		node->node.GROUP15.B2R2_VMX0 =
-			B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 =
-			B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 =
-			B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 =
-			B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_BLT_YUV888_FULL_TO_RGB);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_BLT_YUV888_TO_RGB);
 
 		/*
 		 * Re-arrange color components from VUY(A) to (A)YUV
@@ -927,32 +876,21 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 		u32 rsf_luma = 0;
 		u32 rzi_luma = 0;
 
-		/* Set up IVMX */
-		node->node.GROUP0.B2R2_INS |=
-			B2R2_INS_IVMX_ENABLED | B2R2_INS_RESCALE2D_ENABLED;
-		node->node.GROUP0.B2R2_CIC |=
-			B2R2_CIC_IVMX | B2R2_CIC_RESIZE_LUMA;
+		node->node.GROUP0.B2R2_INS |= B2R2_INS_RESCALE2D_ENABLED;
+		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_RESIZE_LUMA;
 
 		if (src_img->fmt == B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR ||
 			src_img->fmt ==
 				B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR) {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_YVU_TO_RGB_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_YVU_FULL_TO_RGB);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_YVU_TO_RGB);
 		} else {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_YUV_FULL_TO_RGB);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_YUV_TO_RGB);
 		}
 
 		fctl |= B2R2_FCTL_LUMA_HF2D_MODE_ENABLE_RESIZER |
@@ -1316,6 +1254,8 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 
 	u32 dst_pitch = 0;
 	struct b2r2_control *cont = req->instance->control;
+	bool fullrange = (req->user_req.flags &
+		B2R2_BLT_FLAG_FULL_RANGE_YUV) != 0;
 
 	if (dst_img->pitch == 0) {
 		/* Determine pitch based on format and width of the image. */
@@ -1329,37 +1269,24 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 	/* Adjustments that depend on the destination format */
 	switch (dst_img->fmt) {
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
-		/* Set up IVMX */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-
-		node->node.GROUP15.B2R2_VMX0 = B2R2_VMX0_RGB_TO_BGR;
-		node->node.GROUP15.B2R2_VMX1 = B2R2_VMX1_RGB_TO_BGR;
-		node->node.GROUP15.B2R2_VMX2 = B2R2_VMX2_RGB_TO_BGR;
-		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_RGB_TO_BGR;
+		b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_BGR);
 		break;
 	case B2R2_BLT_FMT_Y_CB_Y_CR:
-		/* Set up IVMX */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
 		/*
 		 * Setup input VMX to convert YVU to RGB 601 VIDEO
 		 * Chroma components are swapped
 		 * so it is YVU and not YUV.
 		 */
-		node->node.GROUP15.B2R2_VMX0 = B2R2_VMX0_YVU_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 = B2R2_VMX1_YVU_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 = B2R2_VMX2_YVU_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_YVU_TO_RGB_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_YVU_FULL_TO_RGB);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_YVU_TO_RGB);
 		break;
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
-		/* Set up IVMX */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-		node->node.GROUP15.B2R2_VMX0 = B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 = B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 = B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_YUV_FULL_TO_RGB);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_YUV_TO_RGB);
 		break;
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
@@ -1374,16 +1301,10 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 		 * B2R2 expects them to be as U, Y, V, (A)
 		 * with U at the first byte.
 		 */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-		node->node.GROUP15.B2R2_VMX0 =
-			B2R2_VMX0_BLT_YUV888_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 =
-			B2R2_VMX1_BLT_YUV888_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 =
-			B2R2_VMX2_BLT_YUV888_TO_RGB_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 =
-			B2R2_VMX3_BLT_YUV888_TO_RGB_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_BLT_YUV888_FULL_TO_RGB);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_BLT_YUV888_TO_RGB);
 
 		/*
 		 * Re-arrange color components from VUY(A) to (A)YUV
@@ -1404,30 +1325,18 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE: {
-		/* Set up IVMX */
-		node->node.GROUP0.B2R2_INS |= B2R2_INS_IVMX_ENABLED;
-		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_IVMX;
-
 		if (dst_img->fmt == B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR ||
 			dst_img->fmt ==
 				B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR) {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_YVU_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_YVU_TO_RGB_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_YVU_FULL_TO_RGB);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_YVU_TO_RGB);
 		} else {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_YUV_TO_RGB_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_YUV_TO_RGB_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_YUV_FULL_TO_RGB);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_YUV_TO_RGB);
 		}
 
 		switch (dst_img->fmt) {
@@ -1781,6 +1690,8 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 	u32 endianness = 0;
 
 	struct b2r2_control *cont = req->instance->control;
+	bool fullrange = (req->user_req.flags &
+		B2R2_BLT_FLAG_FULL_RANGE_YUV) != 0;
 
 	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
@@ -1803,12 +1714,10 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 		u32 rsf = 0;
 		const u32 group0_b2r2_ins =
 			B2R2_INS_SOURCE_2_FETCH_FROM_MEM |
-			B2R2_INS_RECT_CLIP_ENABLED |
-			B2R2_INS_IVMX_ENABLED;
+			B2R2_INS_RECT_CLIP_ENABLED;
 		const u32 group0_b2r2_cic =
 			B2R2_CIC_SOURCE_2 |
-			B2R2_CIC_CLIP_WINDOW |
-			B2R2_CIC_IVMX;
+			B2R2_CIC_CLIP_WINDOW;
 
 		u32 cb_addr = 0;
 		u32 cr_addr = 0;
@@ -1891,10 +1800,10 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 			B2R2_TY_VSO_TOP_TO_BOTTOM |
 			dst_dither;
 
-		node->node.GROUP15.B2R2_VMX0 = B2R2_VMX0_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 = B2R2_VMX1_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 = B2R2_VMX2_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_RGB_TO_YUV_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV_FULL);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV);
 
 		 /* bypass ALU, no blending here. Handled in its own stage. */
 		node->node.GROUP0.B2R2_ACK = B2R2_ACK_MODE_BYPASS_S2_S3;
@@ -1916,10 +1825,10 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 			dst_dither |
 			B2R2_TTY_CHROMA_NOT_LUMA;
 
-		node->node.GROUP15.B2R2_VMX0 = B2R2_VMX0_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 = B2R2_VMX1_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 = B2R2_VMX2_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_RGB_TO_YUV_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV_FULL);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV);
 
 		node->node.GROUP0.B2R2_ACK = B2R2_ACK_MODE_BYPASS_S2_S3;
 		node->node.GROUP0.B2R2_INS = group0_b2r2_ins;
@@ -1959,10 +1868,10 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 			dst_dither |
 			B2R2_TTY_CHROMA_NOT_LUMA;
 
-		node->node.GROUP15.B2R2_VMX0 = B2R2_VMX0_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX1 = B2R2_VMX1_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX2 = B2R2_VMX2_RGB_TO_YUV_601_VIDEO;
-		node->node.GROUP15.B2R2_VMX3 = B2R2_VMX3_RGB_TO_YUV_601_VIDEO;
+		if (fullrange)
+			b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV_FULL);
+		else
+			b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV);
 
 		node->node.GROUP0.B2R2_ACK = B2R2_ACK_MODE_BYPASS_S2_S3;
 		node->node.GROUP0.B2R2_INS = group0_b2r2_ins;
@@ -1993,12 +1902,10 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 		u32 rsf = 0;
 		const u32 group0_b2r2_ins =
 			B2R2_INS_SOURCE_2_FETCH_FROM_MEM |
-			B2R2_INS_RECT_CLIP_ENABLED |
-			B2R2_INS_IVMX_ENABLED;
+			B2R2_INS_RECT_CLIP_ENABLED;
 		const u32 group0_b2r2_cic =
 			B2R2_CIC_SOURCE_2 |
-			B2R2_CIC_CLIP_WINDOW |
-			B2R2_CIC_IVMX;
+			B2R2_CIC_CLIP_WINDOW;
 
 		u32 chroma_addr = req->dst_resolved.physical_address +
 			dst_pitch * dst_img->height;
@@ -2047,23 +1954,15 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 
 		if (dst_fmt == B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR ||
 			dst_fmt == B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR) {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_RGB_TO_YVU_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YVU_FULL);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YVU);
 		} else {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_RGB_TO_YUV_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_RGB_TO_YUV_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_RGB_TO_YUV_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_RGB_TO_YUV_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV_FULL);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV);
 		}
 
 		 /* bypass ALU, no blending here. Handled in its own stage. */
@@ -2088,23 +1987,15 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 
 		if (dst_fmt == B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR ||
 			dst_fmt == B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR) {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_RGB_TO_YVU_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YVU_FULL);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YVU);
 		} else {
-			node->node.GROUP15.B2R2_VMX0 =
-				B2R2_VMX0_RGB_TO_YUV_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX1 =
-				B2R2_VMX1_RGB_TO_YUV_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX2 =
-				B2R2_VMX2_RGB_TO_YUV_601_VIDEO;
-			node->node.GROUP15.B2R2_VMX3 =
-				B2R2_VMX3_RGB_TO_YUV_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV_FULL);
+			else
+				b2r2_setup_ivmx(node, B2R2_CC_RGB_TO_YUV);
 		}
 
 		node->node.GROUP0.B2R2_ACK = B2R2_ACK_MODE_BYPASS_S2_S3;
@@ -2126,43 +2017,24 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 	} else {
 		/* single buffer target */
 
-		/* Set up OVMX */
 		switch (dst_fmt) {
 		case B2R2_BLT_FMT_32_BIT_ABGR8888:
-			node->node.GROUP0.B2R2_INS |= B2R2_INS_OVMX_ENABLED;
-			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_OVMX;
-			node->node.GROUP16.B2R2_VMX0 = B2R2_VMX0_RGB_TO_BGR;
-			node->node.GROUP16.B2R2_VMX1 = B2R2_VMX1_RGB_TO_BGR;
-			node->node.GROUP16.B2R2_VMX2 = B2R2_VMX2_RGB_TO_BGR;
-			node->node.GROUP16.B2R2_VMX3 = B2R2_VMX3_RGB_TO_BGR;
+			b2r2_setup_ovmx(node, B2R2_CC_RGB_TO_BGR);
 			break;
 		case B2R2_BLT_FMT_Y_CB_Y_CR:
-			node->node.GROUP0.B2R2_INS |= B2R2_INS_OVMX_ENABLED;
-			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_OVMX;
-			node->node.GROUP16.B2R2_VMX0 =
-				B2R2_VMX0_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP16.B2R2_VMX1 =
-				B2R2_VMX1_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP16.B2R2_VMX2 =
-				B2R2_VMX2_RGB_TO_YVU_601_VIDEO;
-			node->node.GROUP16.B2R2_VMX3 =
-				B2R2_VMX3_RGB_TO_YVU_601_VIDEO;
+			if (fullrange)
+				b2r2_setup_ovmx(node, B2R2_CC_RGB_TO_YVU_FULL);
+			else
+				b2r2_setup_ovmx(node, B2R2_CC_RGB_TO_YVU);
 			break;
 		case B2R2_BLT_FMT_24_BIT_YUV888: /* fall through */
 		case B2R2_BLT_FMT_32_BIT_AYUV8888: /* fall through */
 		case B2R2_BLT_FMT_24_BIT_VUY888: /* fall through */
 		case B2R2_BLT_FMT_32_BIT_VUYA8888:
-			node->node.GROUP0.B2R2_INS |= B2R2_INS_OVMX_ENABLED;
-			node->node.GROUP0.B2R2_CIC |= B2R2_CIC_OVMX;
-			node->node.GROUP16.B2R2_VMX0 =
-				B2R2_VMX0_RGB_TO_BLT_YUV888_601_VIDEO;
-			node->node.GROUP16.B2R2_VMX1 =
-				B2R2_VMX1_RGB_TO_BLT_YUV888_601_VIDEO;
-			node->node.GROUP16.B2R2_VMX2 =
-				B2R2_VMX2_RGB_TO_BLT_YUV888_601_VIDEO;
-			node->node.GROUP16.B2R2_VMX3 =
-				B2R2_VMX3_RGB_TO_BLT_YUV888_601_VIDEO;
-
+			if (fullrange)
+				b2r2_setup_ovmx(node, B2R2_CC_RGB_TO_BLT_YUV888_FULL);
+			else
+				b2r2_setup_ovmx(node, B2R2_CC_RGB_TO_BLT_YUV888);
 			/*
 			 * Re-arrange color components from (A)YUV to VUY(A)
 			 * when bytes are stored in memory.

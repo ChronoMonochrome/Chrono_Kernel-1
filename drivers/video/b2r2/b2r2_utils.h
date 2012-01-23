@@ -63,4 +63,22 @@ s32 b2r2_div_round_up(s32 dividend, s32 divisor);
 bool b2r2_is_aligned(s32 value, s32 alignment);
 s32 b2r2_align_up(s32 value, s32 alignment);
 
+enum b2r2_ty b2r2_get_alpha_range(enum b2r2_blt_fmt fmt);
+u8 b2r2_get_alpha(enum b2r2_blt_fmt fmt, u32 pixel);
+u32 b2r2_set_alpha(enum b2r2_blt_fmt fmt, u8 alpha, u32 color);
+bool b2r2_fmt_has_alpha(enum b2r2_blt_fmt fmt);
+bool b2r2_is_rgb_fmt(enum b2r2_blt_fmt fmt);
+bool b2r2_is_bgr_fmt(enum b2r2_blt_fmt fmt);
+bool b2r2_is_yuv_fmt(enum b2r2_blt_fmt fmt);
+bool b2r2_is_yvu_fmt(enum b2r2_blt_fmt fmt);
+bool b2r2_is_yuv420_fmt(enum b2r2_blt_fmt fmt);
+bool b2r2_is_yuv422_fmt(enum b2r2_blt_fmt fmt);
+bool b2r2_is_yvu420_fmt(enum b2r2_blt_fmt fmt);
+bool b2r2_is_yvu422_fmt(enum b2r2_blt_fmt fmt);
+bool b2r2_is_yuv444_fmt(enum b2r2_blt_fmt fmt);
+int b2r2_fmt_byte_pitch(enum b2r2_blt_fmt fmt, u32 width);
+enum b2r2_native_fmt b2r2_to_native_fmt(enum b2r2_blt_fmt fmt);
+u32 b2r2_to_RGB888(u32 color, const enum b2r2_blt_fmt fmt);
+enum b2r2_fmt_type b2r2_get_fmt_type(enum b2r2_blt_fmt fmt);
+
 #endif

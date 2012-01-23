@@ -631,3 +631,469 @@ s32 b2r2_align_up(s32 value, s32 alignment)
 
 	return value + value_to_add;
 }
+
+/**
+ * b2r2_get_alpha_range() - returns the alpha range of the given format
+ */
+enum b2r2_ty b2r2_get_alpha_range(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+	case B2R2_BLT_FMT_8_BIT_A8:
+	case B2R2_BLT_FMT_32_BIT_ABGR8888:
+		return B2R2_TY_ALPHA_RANGE_255; /* 0 - 255 */
+	default:
+		return B2R2_TY_ALPHA_RANGE_128; /* 0 - 128 */
+	}
+}
+
+/**
+ * b2r2_get_alpha() - returns the pixel alpha in 0...255 range
+ */
+u8 b2r2_get_alpha(enum b2r2_blt_fmt fmt, u32 pixel)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+	case B2R2_BLT_FMT_32_BIT_ABGR8888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+		return (pixel >> 24) & 0xff;
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+		return pixel & 0xff;
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+		return (pixel & 0xfff) >> 16;
+	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+		return (((pixel >> 12) & 0xf) * 255) / 15;
+	case B2R2_BLT_FMT_16_BIT_ARGB1555:
+		return (pixel >> 15) * 255;
+	case B2R2_BLT_FMT_1_BIT_A1:
+		return pixel * 255;
+	case B2R2_BLT_FMT_8_BIT_A8:
+		return pixel;
+	default:
+		return 255;
+	}
+}
+
+/**
+ * b2r2_set_alpha() - returns a color value with the alpha component set
+ */
+u32 b2r2_set_alpha(enum b2r2_blt_fmt fmt, u8 alpha, u32 color)
+{
+	u32 alpha_mask;
+
+	switch (fmt) {
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+	case B2R2_BLT_FMT_32_BIT_ABGR8888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+		color &= 0x00ffffff;
+		alpha_mask = alpha << 24;
+		break;
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+		color &= 0xffffff00;
+		alpha_mask = alpha;
+		break;
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+		color &= 0x00ffff;
+		alpha_mask = alpha << 16;
+		break;
+	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+		color &= 0x0fff;
+		alpha_mask = (alpha << 8) & 0xF000;
+		break;
+	case B2R2_BLT_FMT_16_BIT_ARGB1555:
+		color &= 0x7fff;
+		alpha_mask = (alpha / 255) << 15 ;
+		break;
+	case B2R2_BLT_FMT_1_BIT_A1:
+		color = 0;
+		alpha_mask = (alpha / 255);
+		break;
+	case B2R2_BLT_FMT_8_BIT_A8:
+		color = 0;
+		alpha_mask = alpha;
+		break;
+	default:
+		alpha_mask = 0;
+	}
+
+	return color | alpha_mask;
+}
+
+/**
+ * b2r2_fmt_has_alpha() - returns whether the given format carries an alpha value
+ */
+bool b2r2_fmt_has_alpha(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ARGB1555:
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+	case B2R2_BLT_FMT_32_BIT_ABGR8888:
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+	case B2R2_BLT_FMT_1_BIT_A1:
+	case B2R2_BLT_FMT_8_BIT_A8:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * b2r2_is_rgb_fmt() - returns whether the given format is a rgb format
+ */
+bool b2r2_is_rgb_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ARGB1555:
+	case B2R2_BLT_FMT_16_BIT_RGB565:
+	case B2R2_BLT_FMT_24_BIT_RGB888:
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+	case B2R2_BLT_FMT_1_BIT_A1:
+	case B2R2_BLT_FMT_8_BIT_A8:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * b2r2_is_bgr_fmt() - returns whether the given format is a bgr format
+ */
+bool b2r2_is_bgr_fmt(enum b2r2_blt_fmt fmt)
+{
+	return (fmt == B2R2_BLT_FMT_32_BIT_ABGR8888);
+}
+
+/**
+ * b2r2_is_yuv_fmt() - returns whether the given format is a yuv format
+ */
+bool b2r2_is_yuv_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+	case B2R2_BLT_FMT_Y_CB_Y_CR:
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * b2r2_is_yvu_fmt() - returns whether the given format is a yvu format
+ */
+bool b2r2_is_yvu_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_Y_CB_Y_CR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * b2r2_is_yuv420_fmt() - returns whether the given format is a yuv420 format
+ */
+bool b2r2_is_yuv420_fmt(enum b2r2_blt_fmt fmt)
+{
+
+	switch (fmt) {
+	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool b2r2_is_yuv422_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_Y_CB_Y_CR:
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * b2r2_is_yvu420_fmt() - returns whether the given format is a yvu420 format
+ */
+bool b2r2_is_yvu420_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool b2r2_is_yvu422_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+
+/**
+ * b2r2_is_yuv444_fmt() - returns whether the given format is a yuv444 format
+ */
+bool b2r2_is_yuv444_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * b2r2_fmt_byte_pitch() - returns the pitch of a pixmap with the given width
+ */
+int b2r2_fmt_byte_pitch(enum b2r2_blt_fmt fmt, u32 width)
+{
+	int pitch;
+
+	switch (fmt) {
+
+	case B2R2_BLT_FMT_1_BIT_A1:
+		pitch = width >> 3; /* Shift is faster than division */
+		if ((width & 0x3) != 0) /* Check for remainder */
+			pitch++;
+		return pitch;
+
+	case B2R2_BLT_FMT_8_BIT_A8:                        /* Fall through */
+	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:            /* Fall through */
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:            /* Fall through */
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE: /* Fall through */
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:       /* Fall through */
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:       /* Fall through */
+	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:            /* Fall through */
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:            /* Fall through */
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE: /* Fall through */
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:       /* Fall through */
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:       /* Fall through */
+	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+		return width;
+
+	case B2R2_BLT_FMT_16_BIT_ARGB4444: /* Fall through */
+	case B2R2_BLT_FMT_16_BIT_ARGB1555: /* Fall through */
+	case B2R2_BLT_FMT_16_BIT_RGB565:   /* Fall through */
+	case B2R2_BLT_FMT_Y_CB_Y_CR:       /* Fall through */
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+		return width << 1;
+
+	case B2R2_BLT_FMT_24_BIT_RGB888:   /* Fall through */
+	case B2R2_BLT_FMT_24_BIT_ARGB8565: /* Fall through */
+	case B2R2_BLT_FMT_24_BIT_YUV888:   /* Fall through */
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+		return width * 3;
+
+	case B2R2_BLT_FMT_32_BIT_ARGB8888: /* Fall through */
+	case B2R2_BLT_FMT_32_BIT_ABGR8888: /* Fall through */
+	case B2R2_BLT_FMT_32_BIT_AYUV8888: /* Fall through */
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+		return width << 2;
+
+	default:
+		/* Should never, ever happen */
+		BUG_ON(1);
+		return 0;
+	}
+}
+
+/**
+ * b2r2_to_native_fmt() - returns the native B2R2 format
+ */
+enum b2r2_native_fmt b2r2_to_native_fmt(enum b2r2_blt_fmt fmt)
+{
+
+	switch (fmt) {
+	case B2R2_BLT_FMT_UNUSED:
+		return B2R2_NATIVE_RGB565;
+	case B2R2_BLT_FMT_1_BIT_A1:
+		return B2R2_NATIVE_A1;
+	case B2R2_BLT_FMT_8_BIT_A8:
+		return B2R2_NATIVE_A8;
+	case B2R2_BLT_FMT_16_BIT_RGB565:
+		return B2R2_NATIVE_RGB565;
+	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+		return B2R2_NATIVE_ARGB4444;
+	case B2R2_BLT_FMT_16_BIT_ARGB1555:
+		return B2R2_NATIVE_ARGB1555;
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+		return B2R2_NATIVE_ARGB8565;
+	case B2R2_BLT_FMT_24_BIT_RGB888:
+		return B2R2_NATIVE_RGB888;
+	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_24_BIT_VUY888: /* Not actually supported by HW */
+		return B2R2_NATIVE_YCBCR888;
+	case B2R2_BLT_FMT_32_BIT_ABGR8888: /* Not actually supported by HW */
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+		return B2R2_NATIVE_ARGB8888;
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888: /* Not actually supported by HW */
+		return B2R2_NATIVE_AYCBCR8888;
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+		return B2R2_NATIVE_YCBCR422R;
+	case B2R2_BLT_FMT_Y_CB_Y_CR:
+		return B2R2_NATIVE_YCBCR422R;
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+		return B2R2_NATIVE_YCBCR42X_R2B;
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+		return B2R2_NATIVE_YCBCR42X_MBN;
+	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+		return B2R2_NATIVE_YUV;
+	default:
+		/* Should never ever happen */
+		return B2R2_NATIVE_BYTE;
+	}
+}
+
+/**
+ * Bit-expand the color from fmt to RGB888 with blue at LSB.
+ * Copy MSBs into missing LSBs.
+ */
+u32 b2r2_to_RGB888(u32 color, const enum b2r2_blt_fmt fmt)
+{
+	u32 out_color = 0;
+	u32 r = 0;
+	u32 g = 0;
+	u32 b = 0;
+	switch (fmt) {
+	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+		r = ((color & 0xf00) << 12) | ((color & 0xf00) << 8);
+		g = ((color & 0xf0) << 8) | ((color & 0xf0) << 4);
+		b = ((color & 0xf) << 4) | (color & 0xf);
+		out_color = r | g | b;
+		break;
+	case B2R2_BLT_FMT_16_BIT_ARGB1555:
+		r = ((color & 0x7c00) << 9) | ((color & 0x7000) << 4);
+		g = ((color & 0x3e0) << 6) | ((color & 0x380) << 1);
+		b = ((color & 0x1f) << 3) | ((color & 0x1c) >> 2);
+		out_color = r | g | b;
+		break;
+	case B2R2_BLT_FMT_16_BIT_RGB565:
+		r = ((color & 0xf800) << 8) | ((color & 0xe000) << 3);
+		g = ((color & 0x7e0) << 5) | ((color & 0x600) >> 1);
+		b = ((color & 0x1f) << 3) | ((color & 0x1c) >> 2);
+		out_color = r | g | b;
+		break;
+	case B2R2_BLT_FMT_24_BIT_RGB888:
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+		out_color = color & 0xffffff;
+		break;
+	case B2R2_BLT_FMT_32_BIT_ABGR8888:
+		r = (color & 0xff) << 16;
+		g = color & 0xff00;
+		b = (color & 0xff0000) >> 16;
+		out_color = r | g | b;
+		break;
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+		r = ((color & 0xf800) << 8) | ((color & 0xe000) << 3);
+		g = ((color & 0x7e0) << 5) | ((color & 0x600) >> 1);
+		b = ((color & 0x1f) << 3) | ((color & 0x1c) >> 2);
+		out_color = r | g | b;
+		break;
+	default:
+		break;
+	}
+
+	return out_color;
+}
+
+/**
+ * b2r2_get_fmt_type() - returns the type of the given format (raster, planar, etc.)
+ */
+enum b2r2_fmt_type b2r2_get_fmt_type(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ARGB1555:
+	case B2R2_BLT_FMT_16_BIT_RGB565:
+	case B2R2_BLT_FMT_24_BIT_RGB888:
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+	case B2R2_BLT_FMT_Y_CB_Y_CR:
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+	case B2R2_BLT_FMT_32_BIT_ABGR8888:
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+	case B2R2_BLT_FMT_24_BIT_YUV888:
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+	case B2R2_BLT_FMT_1_BIT_A1:
+	case B2R2_BLT_FMT_8_BIT_A8:
+		return B2R2_FMT_TYPE_RASTER;
+	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+		return B2R2_FMT_TYPE_PLANAR;
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+		return B2R2_FMT_TYPE_SEMI_PLANAR;
+	default:
+		return B2R2_FMT_TYPE_RASTER;
+	}
+}
