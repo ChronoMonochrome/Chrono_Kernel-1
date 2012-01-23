@@ -34,7 +34,7 @@
 #include <linux/gpio_keys.h>
 #include <linux/delay.h>
 #include <linux/mfd/ab8500/denc.h>
-#ifdef CONFIG_STM_MSP_I2S
+#ifdef CONFIG_STM_MSP_SPI
 #include <linux/spi/stm_msp.h>
 #endif
 #include <linux/leds_pwm.h>
@@ -917,7 +917,7 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 #endif
 };
 
-#ifdef CONFIG_STM_MSP_I2S
+#ifdef CONFIG_STM_MSP_SPI
 /*
  * MSP-SPI
  */
@@ -981,7 +981,7 @@ static void __init mop500_spi_init(struct device *parent)
 static void __init mop500_spi_init(struct device *parent)
 {
 }
-#endif /* CONFIG_STM_MSP_I2S */
+#endif /* CONFIG_STM_MSP_SPI */
 
 #ifdef CONFIG_STE_DMA40_REMOVE
 static struct stedma40_chan_cfg uart0_dma_cfg_rx = {
@@ -1176,7 +1176,7 @@ static void __init mop500_init_machine(void)
 	mop500_sdi_init(parent);
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
-#ifdef CONFIG_STM_MSP_I2S
+#ifdef CONFIG_STM_MSP_SPI
 	mop500_msp_init();
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
@@ -1227,7 +1227,7 @@ static void __init snowball_init_machine(void)
 	snowball_sdi_init(parent);
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
-#ifdef CONFIG_STM_MSP_I2S
+#ifdef CONFIG_STM_MSP_SPI
 	mop500_msp_init();
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
@@ -1289,7 +1289,7 @@ static void __init hrefv60_init_machine(void)
 	hrefv60_sdi_init(parent);
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
-#ifdef CONFIG_STM_MSP_I2S
+#ifdef CONFIG_STM_MSP_SPI
 	mop500_msp_init();
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
