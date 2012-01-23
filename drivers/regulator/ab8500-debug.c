@@ -120,7 +120,6 @@ enum ab8500_register_id {
 	AB8500_OTHER_SYSCLK_CTRL, /* Other */
 	AB8500_OTHER_VSIM_SYSCLK_CTRL, /* Other */
 	AB8500_OTHER_SYSULPCLK_CTRL1, /* Other */
-	AB8500_OTHER_TVOUT_CTRL, /* Other */
 	NUM_AB8500_REGISTER
 };
 
@@ -427,11 +426,6 @@ static struct ab8500_register
 		.name = "SysUlpClkCtrl1",
 		.bank = 0x02,
 		.addr = 0x0b,
-	},
-	[AB8500_OTHER_TVOUT_CTRL] = {
-		.name = "TVoutCtrl",
-		.bank = 0x06,
-		.addr = 0x80,
 	},
 };
 
