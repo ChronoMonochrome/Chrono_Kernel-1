@@ -31,6 +31,7 @@
 #define L2_HEADER_CIQ		0xC3
 #define L2_HEADER_RTC_CALIBRATION		0xC8
 #define MAX_PAYLOAD 1024
+#define MOD_STUCK_TIMEOUT	6
 
 #define PRCM_HOSTACCESS_REQ   0x334
 
@@ -40,6 +41,8 @@ static u8 recieve_audio_msg[8*1024];
 static received_msg_handler rx_common_handler;
 static received_msg_handler rx_audio_handler;
 static struct hrtimer timer;
+static struct hrtimer mod_stuck_timer_0;
+static struct hrtimer mod_stuck_timer_1;
 struct sock *shrm_nl_sk;
 
 static char shrm_common_tx_state = SHRM_SLEEP_STATE;
@@ -49,6 +52,7 @@ static char shrm_audio_rx_state = SHRM_SLEEP_STATE;
 
 static atomic_t ac_sleep_disable_count = ATOMIC_INIT(0);
 static atomic_t ac_msg_pend_1 = ATOMIC_INIT(0);
+static atomic_t mod_stuck = ATOMIC_INIT(0);
 static struct shrm_dev *shm_dev;
 
 /* Spin lock and tasklet declaration */
@@ -63,6 +67,7 @@ static DEFINE_SPINLOCK(ca_common_lock);
 static DEFINE_SPINLOCK(ca_audio_lock);
 static DEFINE_SPINLOCK(ca_wake_req_lock);
 static DEFINE_SPINLOCK(boot_lock);
+static DEFINE_SPINLOCK(mod_stuck_lock);
 
 enum shrm_nl {
 	SHRM_NL_MOD_RESET = 1,
@@ -102,6 +107,28 @@ static u32 get_host_accessport_val(void)
 
 	return prcm_hostaccess;
 }
+
+static enum hrtimer_restart shm_mod_stuck_timeout(struct hrtimer *timer)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&mod_stuck_lock, flags);
+	/* Check MSR is already in progress */
+	if (shm_dev->msr_flag || boot_state == BOOT_UNKNOWN ||
+			atomic_read(&mod_stuck)) {
+		spin_unlock_irqrestore(&mod_stuck_lock, flags);
+		return HRTIMER_NORESTART;
+	}
+	atomic_set(&mod_stuck, 1);
+	spin_unlock_irqrestore(&mod_stuck_lock, flags);
+	dev_err(shm_dev->dev, "No response from modem, timeout %dsec\n",
+			MOD_STUCK_TIMEOUT);
+	dev_err(shm_dev->dev, "APE initiating MSR\n");
+	queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+					&shm_dev->shm_mod_reset_req);
+	return HRTIMER_NORESTART;
+}
+
 static enum hrtimer_restart callback(struct hrtimer *timer)
 {
 	unsigned long flags;
@@ -510,6 +537,9 @@ static int shrm_modem_reset_sequence(void)
 	unsigned long flags;
 
 	hrtimer_cancel(&timer);
+	hrtimer_cancel(&mod_stuck_timer_0);
+	hrtimer_cancel(&mod_stuck_timer_1);
+	atomic_set(&mod_stuck, 0);
 	tasklet_disable_nosync(&shm_ac_read_0_tasklet);
 	tasklet_disable_nosync(&shm_ac_read_1_tasklet);
 	tasklet_disable_nosync(&shm_ca_0_tasklet);
@@ -666,6 +696,9 @@ static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 	writel((1<<GOP_COMMON_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
 
+	/* timer to detect modem stuck or hang */
+	hrtimer_start(&mod_stuck_timer_0, ktime_set(MOD_STUCK_TIMEOUT, 0),
+			HRTIMER_MODE_REL);
 	if (shrm_common_tx_state == SHRM_PTR_FREE)
 		shrm_common_tx_state = SHRM_PTR_BUSY;
 
@@ -705,6 +738,9 @@ static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 	writel((1<<GOP_AUDIO_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
 
+	/* timer to detect modem stuck or hang */
+	hrtimer_start(&mod_stuck_timer_1, ktime_set(MOD_STUCK_TIMEOUT, 0),
+			HRTIMER_MODE_REL);
 	if (shrm_audio_tx_state == SHRM_PTR_FREE)
 		shrm_audio_tx_state = SHRM_PTR_BUSY;
 
@@ -729,7 +765,14 @@ void shm_nl_receive(struct sk_buff *skb)
 	case SHRM_NL_USER_MOD_RESET:
 		dev_info(shm_dev->dev, "user-space inited mod-reset-req\n");
 		dev_info(shm_dev->dev, "PCRMU resets modem\n");
-		prcmu_modem_reset();
+		if (atomic_read(&mod_stuck)) {
+			dev_info(shm_dev->dev,
+					"Modem reset already in progress\n");
+			break;
+		}
+		atomic_set(&mod_stuck, 1);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+					&shm_dev->shm_mod_reset_req);
 		break;
 
 	default:
@@ -754,6 +797,10 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 
 	hrtimer_init(&timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	timer.function = callback;
+	hrtimer_init(&mod_stuck_timer_0, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	mod_stuck_timer_0.function = shm_mod_stuck_timeout;
+	hrtimer_init(&mod_stuck_timer_1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	mod_stuck_timer_1.function = shm_mod_stuck_timeout;
 
 	init_kthread_worker(&shrm->shm_common_ch_wr_kw);
 	shrm->shm_common_ch_wr_kw_task = kthread_run(kthread_worker_fn,
@@ -809,6 +856,15 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 		err = -ENOMEM;
 		goto free_kw4;
 	}
+	init_kthread_worker(&shrm->shm_mod_stuck_kw);
+	shrm->shm_mod_stuck_kw_task = kthread_run(kthread_worker_fn,
+						     &shrm->shm_mod_stuck_kw,
+						     "shm_mod_reset_req");
+	if (IS_ERR(shrm->shm_mod_stuck_kw_task)) {
+		dev_err(shrm->dev, "failed to create work task\n");
+		return -ENOMEM;
+		goto free_kw5;
+	}
 
 	init_kthread_work(&shrm->send_ac_msg_pend_notify_0,
 			  send_ac_msg_pend_notify_0_work);
@@ -828,7 +884,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 			IRQF_NO_SUSPEND, "ca-sleep", shrm);
 	if (err < 0) {
 		dev_err(shm_dev->dev, "Failed alloc IRQ_PRCMU_CA_SLEEP.\n");
-		goto free_kw5;
+		goto free_kw6;
 	}
 
 	err = request_irq(IRQ_PRCMU_CA_WAKE, shrm_prcmu_irq_handler,
@@ -866,6 +922,8 @@ drop1:
 	free_irq(IRQ_PRCMU_CA_WAKE, NULL);
 drop2:
 	free_irq(IRQ_PRCMU_CA_SLEEP, NULL);
+free_kw6:
+	kthread_stop(shrm->shm_mod_stuck_kw_task);
 free_kw5:
 	kthread_stop(shrm->shm_ac_sleep_kw_task);
 free_kw4:
@@ -889,11 +947,13 @@ void shrm_protocol_deinit(struct shrm_dev *shrm)
 	flush_kthread_worker(&shrm->shm_ac_wake_kw);
 	flush_kthread_worker(&shrm->shm_ca_wake_kw);
 	flush_kthread_worker(&shrm->shm_ac_sleep_kw);
+	flush_kthread_worker(&shrm->shm_mod_stuck_kw);
 	kthread_stop(shrm->shm_common_ch_wr_kw_task);
 	kthread_stop(shrm->shm_audio_ch_wr_kw_task);
 	kthread_stop(shrm->shm_ac_wake_kw_task);
 	kthread_stop(shrm->shm_ca_wake_kw_task);
 	kthread_stop(shrm->shm_ac_sleep_kw_task);
+	kthread_stop(shrm->shm_mod_stuck_kw_task);
 	modem_put(shrm->modem);
 }
 
@@ -933,6 +993,8 @@ irqreturn_t ac_read_notif_0_irq_handler(int irq, void *ctrlr)
 	struct shrm_dev *shrm = ctrlr;
 
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
+	/* Cancel the modem stuck timer */
+	hrtimer_cancel(&mod_stuck_timer_0);
 
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
@@ -962,6 +1024,8 @@ irqreturn_t ac_read_notif_1_irq_handler(int irq, void *ctrlr)
 	struct shrm_dev *shrm = ctrlr;
 
 	dev_dbg(shrm->dev, "%s IN+\n", __func__);
+	/* Cancel the modem stuck timer */
+	hrtimer_cancel(&mod_stuck_timer_1);
 
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",

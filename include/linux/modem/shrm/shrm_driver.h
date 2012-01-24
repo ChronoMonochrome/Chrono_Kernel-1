@@ -76,6 +76,8 @@
  * @shm_ca_wake_kw_task:	task for receiving cmt-ape wake requests
  * @shm_ac_sleep_kw:		kthread worker for recieving ape-cmt sleep requests
  * @shm_ac_sleep_kw_task:	task for recieving ape-cmt sleep requests
+ * @shm_mod_stuck_kw:		kthread worker to reset the modem
+ * &shm_mod_stuck_kw_task:	task for sending modem reset request
  * @send_ac_msg_pend_notify_0:	work for handling pending message on common
  * channel
  * @send_ac_msg_pend_notify_1:	work for handling pending message on audio
@@ -134,6 +136,8 @@ struct shrm_dev {
 	struct task_struct *shm_ca_wake_kw_task;
 	struct kthread_worker shm_ac_sleep_kw;
 	struct task_struct *shm_ac_sleep_kw_task;
+	struct kthread_worker shm_mod_stuck_kw;
+	struct task_struct *shm_mod_stuck_kw_task;
 	struct kthread_work send_ac_msg_pend_notify_0;
 	struct kthread_work send_ac_msg_pend_notify_1;
 	struct kthread_work shm_ac_wake_req;
