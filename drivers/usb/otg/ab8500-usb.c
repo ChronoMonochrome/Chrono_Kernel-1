@@ -322,6 +322,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 
 	lsts = (reg >> 3) & 0x0F;
 
+	dev_dbg(ab->dev, "ab8500_usb_link_status_update %d\n", lsts);
 	if (!(ab->sysfs_flag)) {
 		switch (lsts) {
 		case USB_LINK_ACA_RID_B:
@@ -329,10 +330,10 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 		case USB_LINK_NOT_CONFIGURED:
 		case USB_LINK_RESERVED:
 		case USB_LINK_NOT_VALID_LINK:
-			if (ab->mode == USB_HOST)
-				ab8500_usb_host_phy_dis(ab);
-			else if (ab->mode == USB_PERIPHERAL)
-				ab8500_usb_peri_phy_dis(ab);
+			if (ab->mode == USB_PERIPHERAL)
+				atomic_notifier_call_chain(&ab->phy.notifier,
+						   USB_EVENT_CLEAN,
+						   &ab->vbus_draw);
 			ab->mode = USB_IDLE;
 			ab->phy.otg.default_a = false;
 			ab->vbus_draw = 0;
@@ -352,14 +353,14 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 			if (ab->mode == USB_HOST) {
 				ab->mode = USB_PERIPHERAL;
 				ab8500_usb_host_phy_dis(ab);
-				atomic_notifier_call_chain(&ab->otg.notifier,
+				atomic_notifier_call_chain(&ab->phy.notifier,
 							   USB_EVENT_PREPARE,
 							   &ab->vbus_draw);
 				ab8500_usb_peri_phy_en(ab);
 			}
 			if (ab->mode == USB_IDLE) {
 				ab->mode = USB_PERIPHERAL;
-				atomic_notifier_call_chain(&ab->otg.notifier,
+				atomic_notifier_call_chain(&ab->phy.notifier,
 							   USB_EVENT_PREPARE,
 							   &ab->vbus_draw);
 				ab8500_usb_peri_phy_en(ab);
@@ -374,14 +375,14 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 			if (ab->mode == USB_PERIPHERAL) {
 				ab->mode = USB_HOST;
 				ab8500_usb_peri_phy_dis(ab);
-				atomic_notifier_call_chain(&ab->otg.notifier,
+				atomic_notifier_call_chain(&ab->phy.notifier,
 							   USB_EVENT_PREPARE,
 							   &ab->vbus_draw);
 				ab8500_usb_host_phy_en(ab);
 			}
 			if (ab->mode == USB_IDLE) {
 				ab->mode = USB_HOST;
-				atomic_notifier_call_chain(&ab->otg.notifier,
+				atomic_notifier_call_chain(&ab->phy.notifier,
 							   USB_EVENT_PREPARE,
 							   &ab->vbus_draw);
 				ab8500_usb_host_phy_en(ab);
@@ -389,16 +390,20 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
 			ab->phy.otg->default_a = true;
 			if (event != USB_EVENT_RIDA)
 				event = USB_EVENT_ID;
+			atomic_notifier_call_chain(&ab->phy.notifier,
+					event,
+					&ab->vbus_draw);
 			break;
 	
 		case USB_LINK_DEDICATED_CHG:
 			/* TODO: vbus_draw */
 			ab->mode = USB_DEDICATED_CHG;
 			event = USB_EVENT_CHARGER;
+			atomic_notifier_call_chain(&ab->phy.notifier,
+					event,
+					&ab->vbus_draw);
 			break;
 		}
-		atomic_notifier_call_chain(&ab->phy.notifier, event,
-						&ab->vbus_draw);
 	}
 
 	return 0;
@@ -415,20 +420,22 @@ static void ab8500_usb_delayed_work(struct work_struct *work)
 static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
 {
 	struct ab8500_usb *ab = (struct ab8500_usb *) data;
-	enum usb_xceiv_events event;
+	enum usb_xceiv_events event = USB_EVENT_NONE;
 
 	/* Link status will not be updated till phy is disabled. */
 	if (ab->mode == USB_HOST) {
-		event = USB_EVENT_NONE;
 		ab->otg.default_a = false;
 		ab->vbus_draw = 0;
 		atomic_notifier_call_chain(&ab->otg.notifier,
 					event, &ab->vbus_draw);
 		ab8500_usb_host_phy_dis(ab);
 	}
-	else if (ab->mode == USB_PERIPHERAL)
+	if (ab->mode == USB_PERIPHERAL) {
+		atomic_notifier_call_chain(&ab->phy.notifier,
+				event, &ab->vbus_draw);
 		ab8500_usb_peri_phy_dis(ab);
-	else if (ab->mode == USB_DEDICATED_CHG && ab->rev == 0x20) {
+	}
+	if (ab->mode == USB_DEDICATED_CHG && ab->rev == 0x20) {
 		ab8500_usb_wd_linkstatus(ab,AB8500_BIT_PHY_CTRL_DEVICE_EN);
 		abx500_mask_and_set_register_interruptible(ab->dev,
 				AB8500_USB,
@@ -436,7 +443,6 @@ static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
 				AB8500_BIT_PHY_CTRL_DEVICE_EN,
 				0);
 	}
-	ab->mode = USB_IDLE;
 
 	return IRQ_HANDLED;
 }
