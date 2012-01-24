@@ -2371,8 +2371,12 @@ static const struct dev_pm_ops musb_dev_pm_ops = {
 	.runtime_suspend = musb_runtime_suspend,
 	.runtime_resume = musb_runtime_resume,
 };
-
+#ifdef CONFIG_UX500_SOC_DB8500
+#define MUSB_DEV_PM_OPS (&musb_dev_pm_ops)
+#else
 #define MUSB_DEV_PM_OPS NULL
+#endif
+
 #else
 #define	MUSB_DEV_PM_OPS	NULL
 #endif

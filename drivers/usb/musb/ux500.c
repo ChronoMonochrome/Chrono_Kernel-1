@@ -25,6 +25,8 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
+#include <linux/pm_runtime.h>
+#include <mach/id.h>
 #include <mach/usb.h>
 
 #include "musb_core.h"
@@ -40,19 +42,23 @@ struct ux500_glue {
 #define glue_to_musb(g)	platform_get_drvdata(g->musb)
 
 static struct timer_list notify_timer;
-struct musb_context_registers context;
+static struct musb_context_registers context;
+static bool context_stored;
 struct musb *_musb;
-void ux500_store_context(struct musb *musb)
+
+static void ux500_store_context(struct musb *musb)
 {
 #ifdef CONFIG_PM
 	int i;
 	void __iomem *musb_base;
 	void __iomem *epio;
 
-	if (musb != NULL)
-		_musb = musb;
-	else
-		return;
+	if (cpu_is_u5500()) {
+		if (musb != NULL)
+			_musb = musb;
+		else
+			return;
+	}
 
 	musb_base = musb->mregs;
 
@@ -124,16 +130,20 @@ void ux500_store_context(struct musb *musb)
 				musb_read_rxhubport(musb_base, i);
 		}
 	}
+	context_stored = true;
 #endif
 }
-void ux500_restore_context(void)
+
+void ux500_restore_context(struct musb *musb)
 {
 #ifdef CONFIG_PM
 	int i;
-	struct musb *musb;
 	void __iomem *musb_base;
 	void __iomem *ep_target_regs;
 	void __iomem *epio;
+
+	if (!context_stored)
+		return;
 
 	if (_musb != NULL)
 		musb = _musb;
@@ -222,7 +232,8 @@ static void musb_notify_idle(unsigned long _musb)
 	unsigned long	flags;
 
 	u8	devctl;
-
+	dev_dbg(musb->controller, "musb_notify_idle %s",
+				otg_state_string(musb->xceiv->state));
 	spin_lock_irqsave(&musb->lock, flags);
 	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
 
@@ -234,6 +245,10 @@ static void musb_notify_idle(unsigned long _musb)
 		} else {
 			musb->xceiv->state = OTG_STATE_A_IDLE;
 			MUSB_HST_MODE(musb);
+		}
+		if (cpu_is_u8500()) {
+			pm_runtime_mark_last_busy(musb->controller);
+			pm_runtime_put_autosuspend(musb->controller);
 		}
 		break;
 
@@ -250,7 +265,14 @@ static int musb_otg_notifications(struct notifier_block *nb,
 {
 	struct musb	*musb = container_of(nb, struct musb, nb);
 
+	dev_dbg(musb->controller, "musb_otg_notifications %ld %s\n",
+				event, otg_state_string(musb->xceiv->state));
 	switch (event) {
+
+	case USB_EVENT_PREPARE:
+		pm_runtime_get_sync(musb->controller);
+		ux500_restore_context(musb);
+		break;
 	case USB_EVENT_ID:
 	case USB_EVENT_RIDA:
 		dev_dbg(musb->controller, "ID GND\n");
@@ -263,12 +285,17 @@ static int musb_otg_notifications(struct notifier_block *nb,
 		dev_dbg(musb->controller, "VBUS Connect\n");
 
 		break;
-
+/* 	case USB_EVENT_RIDB: FIXME, not yet managed */
 	case USB_EVENT_NONE:
 		dev_dbg(musb->controller, "VBUS Disconnect\n");
-		if (is_otg_enabled(musb))
+		if (is_otg_enabled(musb) && musb->is_host)
 			ux500_musb_set_vbus(musb, 0);
-
+		else
+			musb->xceiv->state = OTG_STATE_B_IDLE;
+		break;
+	case USB_EVENT_CLEAN:
+		pm_runtime_mark_last_busy(musb->controller);
+		pm_runtime_put_autosuspend(musb->controller);
 		break;
 	default:
 		dev_dbg(musb->controller, "ID float\n");
@@ -321,11 +348,9 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 		/* NOTE:  we're skipping A_WAIT_VFALL -> A_IDLE and
 		 * jumping right to B_IDLE...
 		 */
-
 		musb->xceiv->default_a = 0;
 		musb->xceiv->state = OTG_STATE_B_IDLE;
 		devctl &= ~MUSB_DEVCTL_SESSION;
-
 		MUSB_DEV_MODE(musb);
 	}
 	musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
@@ -400,12 +425,13 @@ static struct usb_ep *ux500_musb_configure_endpoints(struct musb *musb,
 static int ux500_musb_init(struct musb *musb)
 {
 	int status;
+
 	musb->xceiv = usb_get_transceiver();
 	if (!musb->xceiv) {
 		pr_err("HS USB OTG: no transceiver configured\n");
 		return -ENODEV;
 	}
-
+	pm_runtime_get_noresume(musb->controller);
 	musb->nb.notifier_call = musb_otg_notifications;
 	status = otg_register_notifier(musb->xceiv, &musb->nb);
 
@@ -418,6 +444,7 @@ static int ux500_musb_init(struct musb *musb)
 
 	return 0;
 err1:
+	pm_runtime_disable(musb->controller);
 	return status;
 }
 
@@ -516,12 +543,12 @@ static int __devinit ux500_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to register musb device\n");
 		goto err4;
 	}
+	pm_runtime_enable(&pdev->dev);
 
 	return 0;
-
 err4:
-	clk_disable(clk);
-
+	if (cpu_is_u5500())
+		clk_disable(clk);
 err3:
 	clk_put(clk);
 
@@ -541,8 +568,12 @@ static int __devexit ux500_remove(struct platform_device *pdev)
 
 	platform_device_del(glue->musb);
 	platform_device_put(glue->musb);
-	clk_disable(glue->clk);
+	if (cpu_is_u5500())
+		clk_disable(glue->clk);
 	clk_put(glue->clk);
+	pm_runtime_put(&pdev->dev);
+	pm_runtime_disable(&pdev->dev);
+
 	kfree(glue);
 
 	return 0;
@@ -562,8 +593,15 @@ static int ux500_suspend(struct device *dev)
 	struct musb		*musb = glue_to_musb(glue);
 
 	usb_phy_set_suspend(musb->xceiv, 1);
-	clk_disable(glue->clk);
 
+	if (cpu_is_u5500())
+		/*
+		 * Since this clock is in the APE domain, it will
+		 * automatically be disabled on suspend.
+		 * (And enabled on resume automatically.)
+		 */
+		clk_disable(glue->clk);
+	dev_dbg(dev, "ux500_suspend\n");
 	return 0;
 }
 
@@ -578,20 +616,51 @@ static int ux500_resume(struct device *dev)
 {
 	struct ux500_glue	*glue = dev_get_drvdata(dev);
 	struct musb		*musb = glue_to_musb(glue);
-	int			ret;
 
-	ret = clk_enable(glue->clk);
-	if (ret) {
-		dev_err(dev, "failed to enable clock\n");
-		return ret;
-	}
+	if (cpu_is_u5500())
+		/* No point in propagating errors on resume */
+		(void) clk_enable(glue->clk);
+	dev_dbg(dev, "ux500_resume\n");
 
 	usb_phy_set_suspend(musb->xceiv, 0);
 
 	return 0;
 }
+#ifdef CONFIG_UX500_SOC_DB8500
+static int ux500_musb_runtime_resume(struct device *dev)
+{
+	struct ux500_glue	*glue = dev_get_drvdata(dev);
+	int ret;
 
+	if (cpu_is_u5500())
+		return 0;
+
+	ret = clk_enable(glue->clk);
+	if (ret) {
+		dev_dbg(dev, "Unable to enable clk\n");
+		return ret;
+	}
+	dev_dbg(dev, "ux500_musb_runtime_resume\n");
+	return 0;
+}
+
+static int ux500_musb_runtime_suspend(struct device *dev)
+{
+	struct ux500_glue	*glue = dev_get_drvdata(dev);
+
+	if (cpu_is_u5500())
+		return 0;
+
+	clk_disable(glue->clk);
+	dev_dbg(dev, "ux500_musb_runtime_suspend\n");
+	return 0;
+}
+#endif
 static const struct dev_pm_ops ux500_pm_ops = {
+#ifdef CONFIG_UX500_SOC_DB8500
+	SET_RUNTIME_PM_OPS(ux500_musb_runtime_suspend,
+			   ux500_musb_runtime_resume, NULL)
+#endif
 	.suspend	= ux500_suspend,
 	.resume		= ux500_resume,
 };

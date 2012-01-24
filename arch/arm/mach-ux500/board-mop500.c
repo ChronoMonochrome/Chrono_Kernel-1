@@ -53,7 +53,6 @@
 #include "devices-db8500.h"
 #include "board-mop500.h"
 #include "board-mop500-regulators.h"
-#include "board-ux500-usb.h"
 
 static struct gpio_led snowball_led_array[] = {
 	{
@@ -195,7 +194,6 @@ static struct ab8500_platform_data ab8500_platdata = {
 	.regulator	= ab8500_regulators,
 	.num_regulator	= ARRAY_SIZE(ab8500_regulators),
 	.gpio		= &ab8500_gpio_pdata,
-	.usb		= &abx500_usbgpio_plat_data,
 };
 
 static struct resource ab8500_resources[] = {

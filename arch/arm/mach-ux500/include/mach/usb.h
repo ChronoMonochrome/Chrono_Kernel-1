@@ -12,6 +12,8 @@
 #define UX500_MUSB_DMA_NUM_RX_CHANNELS 8
 #define UX500_MUSB_DMA_NUM_TX_CHANNELS 8
 
+struct musb;
+
 struct ux500_musb_board_data {
 	void	**dma_rx_param_array;
 	void	**dma_tx_param_array;
@@ -23,6 +25,7 @@ struct ux500_musb_board_data {
 void ux500_add_usb(struct device *parent, resource_size_t base,
 		   int irq, int *dma_rx_cfg, int *dma_tx_cfg);
 
+/* Only used for u5500 */
 struct abx500_usbgpio_platform_data {
 	int (*get)(struct device *device);
 	void (*enable)(void);
@@ -30,6 +33,5 @@ struct abx500_usbgpio_platform_data {
 	void (*put)(void);
 	int usb_cs;
 };
-
-void ux500_restore_context(void);
+void ux500_restore_context(struct musb *musb);
 #endif
