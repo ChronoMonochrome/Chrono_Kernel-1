@@ -70,7 +70,11 @@ static int suspend(bool do_deepsleep)
 	if (cpu_is_u9500())
 		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(HSI0));
 	else
+#if defined(CONFIG_RTC_DRV_PL031)
+		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(RTC));
+#else
 		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB));
+#endif
 
 	context_vape_save();
 
