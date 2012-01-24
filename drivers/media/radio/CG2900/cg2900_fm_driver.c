@@ -106,6 +106,15 @@
  */
 #define MAX_RESPONSE_TIME_IN_MS	5000
 
+/* Byte per word */
+#define WORD_LENGTH				2
+
+/* Byte Offset Counter */
+#define COUNTER					1
+
+/* Binary shift offset for one byte */
+#define SHIFT_OFFSET			8
+
 /*
  * enum fmd_gocmd_t - FM Driver Command state.
  *
@@ -229,7 +238,7 @@ struct fmd_states_info {
 struct fmd_data {
 	u32 cmd_id;
 	u16 num_parameters;
-	u8 *parameters;
+	u8 parameters[MAX_RESP_SIZE];
 };
 
 static struct fmd_states_info fmd_state_info;
@@ -872,11 +881,6 @@ static int fmd_rx_channel_to_frequency(
 	 * frequency in kHz for all FM Bands
 	 */
 	*frequency = min_freq + (channel_number * CHANNEL_FREQ_CONVERTER_MHZ);
-
-	if (*frequency > max_freq)
-		*frequency = max_freq;
-	else if (*frequency < min_freq)
-		*frequency = min_freq;
 
 error:
 	return result;
@@ -1621,6 +1625,8 @@ static int fmd_read_resp(
 			)
 {
 	int err;
+	int param_offset = 0;
+	int byte_offset = 0;
 	FM_INFO_REPORT("fmd_read_resp");
 
 	/* Wait till response of the command is received */
@@ -1640,10 +1646,17 @@ static int fmd_read_resp(
 	*cmd_id = fmd_data.cmd_id;
 	if (fmd_data.num_parameters) {
 		*num_parameters = fmd_data.num_parameters;
-		memcpy(
-			parameters,
-			fmd_data.parameters,
-			(*num_parameters * sizeof(u16)));
+		while (param_offset <
+				(*num_parameters * sizeof(u16)) / WORD_LENGTH) {
+			parameters[param_offset] =
+				(u16)(fmd_data.parameters[byte_offset])
+						& 0x00ff;
+			parameters[param_offset] |=
+				((u16)(fmd_data.parameters[byte_offset + COUNTER])
+						& 0x00ff) << SHIFT_OFFSET;
+			byte_offset = byte_offset + WORD_LENGTH;
+			param_offset++;
+		}
 	}
 
 	err = 0;
@@ -1668,6 +1681,7 @@ static void fmd_process_fm_function(
 {
 	u8 fm_function_id;
 	u8 block_id;
+	int count = 0;
 
 	if (packet_buffer == NULL)
 		return;
@@ -1700,12 +1714,14 @@ static void fmd_process_fm_function(
 			fmd_data.cmd_id, fmd_data.num_parameters);
 
 		if (fmd_data.num_parameters) {
-			fmd_data.parameters =
-				FM_GET_RSP_BUFFER_ADDR(packet_buffer);
-			memcpy(fmd_data.parameters,
-				FM_GET_RSP_BUFFER_ADDR(packet_buffer),
-				fmd_data.num_parameters * sizeof(u16));
+			while (count <
+				(fmd_data.num_parameters * sizeof(u16))) {
+				fmd_data.parameters[count] =
+				*(FM_GET_RSP_BUFFER_ADDR(packet_buffer) + count);
+				count++;
+			}
 		}
+
 		/* Release the semaphore since response is received */
 		fmd_set_cmd_sem();
 		break;

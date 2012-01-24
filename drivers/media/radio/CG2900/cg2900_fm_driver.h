@@ -86,6 +86,8 @@ enum fmd_debug_levels {
 #define MAX_COUNT_OF_IRQS				16
 #define MAX_BUFFER_SIZE					512
 #define MAX_NAME_SIZE					100
+/* Maximum size of parsable data in bytes, received from CG2900 FM IP */
+#define MAX_RESP_SIZE					20
 /* Minimum Power level for CG2900. The value is in units of dBuV */
 #define MIN_POWER_LEVEL					88
 /* Maximum Power level for CG2900. The value is in units of dBuV */
