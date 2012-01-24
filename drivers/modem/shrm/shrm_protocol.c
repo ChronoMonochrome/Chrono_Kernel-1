@@ -32,6 +32,7 @@
 #define L2_HEADER_RTC_CALIBRATION		0xC8
 #define MAX_PAYLOAD 1024
 #define MOD_STUCK_TIMEOUT	6
+#define FIFO_FULL_TIMEOUT	1
 
 #define PRCM_HOSTACCESS_REQ   0x334
 
@@ -43,6 +44,7 @@ static received_msg_handler rx_audio_handler;
 static struct hrtimer timer;
 static struct hrtimer mod_stuck_timer_0;
 static struct hrtimer mod_stuck_timer_1;
+static struct hrtimer fifo_full_timer;
 struct sock *shrm_nl_sk;
 
 static char shrm_common_tx_state = SHRM_SLEEP_STATE;
@@ -53,6 +55,7 @@ static char shrm_audio_rx_state = SHRM_SLEEP_STATE;
 static atomic_t ac_sleep_disable_count = ATOMIC_INIT(0);
 static atomic_t ac_msg_pend_1 = ATOMIC_INIT(0);
 static atomic_t mod_stuck = ATOMIC_INIT(0);
+static atomic_t fifo_full = ATOMIC_INIT(0);
 static struct shrm_dev *shm_dev;
 
 /* Spin lock and tasklet declaration */
@@ -108,6 +111,13 @@ static u32 get_host_accessport_val(void)
 	return prcm_hostaccess;
 }
 
+static enum hrtimer_restart shm_fifo_full_timeout(struct hrtimer *timer)
+{
+	queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+					&shm_dev->shm_mod_reset_req);
+	return HRTIMER_NORESTART;
+}
+
 static enum hrtimer_restart shm_mod_stuck_timeout(struct hrtimer *timer)
 {
 	unsigned long flags;
@@ -115,7 +125,7 @@ static enum hrtimer_restart shm_mod_stuck_timeout(struct hrtimer *timer)
 	spin_lock_irqsave(&mod_stuck_lock, flags);
 	/* Check MSR is already in progress */
 	if (shm_dev->msr_flag || boot_state == BOOT_UNKNOWN ||
-			atomic_read(&mod_stuck)) {
+			atomic_read(&mod_stuck) || atomic_read(&fifo_full)) {
 		spin_unlock_irqrestore(&mod_stuck_lock, flags);
 		return HRTIMER_NORESTART;
 	}
@@ -539,7 +549,9 @@ static int shrm_modem_reset_sequence(void)
 	hrtimer_cancel(&timer);
 	hrtimer_cancel(&mod_stuck_timer_0);
 	hrtimer_cancel(&mod_stuck_timer_1);
+	hrtimer_cancel(&fifo_full_timer);
 	atomic_set(&mod_stuck, 0);
+	atomic_set(&fifo_full, 0);
 	tasklet_disable_nosync(&shm_ac_read_0_tasklet);
 	tasklet_disable_nosync(&shm_ac_read_1_tasklet);
 	tasklet_disable_nosync(&shm_ca_0_tasklet);
@@ -801,6 +813,8 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 	mod_stuck_timer_0.function = shm_mod_stuck_timeout;
 	hrtimer_init(&mod_stuck_timer_1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	mod_stuck_timer_1.function = shm_mod_stuck_timeout;
+	hrtimer_init(&fifo_full_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	fifo_full_timer.function = shm_fifo_full_timeout;
 
 	init_kthread_worker(&shrm->shm_common_ch_wr_kw);
 	shrm->shm_common_ch_wr_kw_task = kthread_run(kthread_worker_fn,
@@ -995,6 +1009,8 @@ irqreturn_t ac_read_notif_0_irq_handler(int irq, void *ctrlr)
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
 	/* Cancel the modem stuck timer */
 	hrtimer_cancel(&mod_stuck_timer_0);
+	if(atomic_read(&fifo_full))
+		hrtimer_cancel(&fifo_full_timer);
 
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
@@ -1026,6 +1042,8 @@ irqreturn_t ac_read_notif_1_irq_handler(int irq, void *ctrlr)
 	dev_dbg(shrm->dev, "%s IN+\n", __func__);
 	/* Cancel the modem stuck timer */
 	hrtimer_cancel(&mod_stuck_timer_1);
+	if(atomic_read(&fifo_full))
+		hrtimer_cancel(&fifo_full_timer);
 
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
@@ -1165,6 +1183,15 @@ int shm_write_msg(struct shrm_dev *shrm, u8 l2_header,
 	ret = shm_write_msg_to_fifo(shrm, channel, l2_header, addr, length);
 	if (ret < 0) {
 		dev_err(shrm->dev, "write message to fifo failed\n");
+		if (ret == -EAGAIN) {
+			if(!atomic_read(&fifo_full)) {
+				/* Start a timer so as to handle this gently */
+				atomic_set(&fifo_full, 1);
+				hrtimer_start(&fifo_full_timer, ktime_set(
+						FIFO_FULL_TIMEOUT, 0),
+						HRTIMER_MODE_REL);
+			}
+		}
 		return ret;
 	}
 	/*
