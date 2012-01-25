@@ -33,6 +33,7 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/crc32.h>
+#include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/errno.h>
 #include <linux/etherdevice.h>
@@ -144,6 +145,9 @@ struct smsc911x_data {
 
 	/* regulators */
 	struct regulator_bulk_data supplies[SMSC911X_NUM_SUPPLIES];
+
+	/* clock */
+	struct clk *fsmc_clk;
 };
 
 /* Easy access to information */
@@ -369,7 +373,7 @@ out:
 }
 
 /*
- * enable resources, currently just regulators.
+ * enable resources, regulators & clocks.
  */
 static int smsc911x_enable_resources(struct platform_device *pdev)
 {
@@ -379,9 +383,17 @@ static int smsc911x_enable_resources(struct platform_device *pdev)
 
 	ret = regulator_bulk_enable(ARRAY_SIZE(pdata->supplies),
 			pdata->supplies);
-	if (ret)
+	if (ret) {
 		netdev_err(ndev, "failed to enable regulators %d\n",
 				ret);
+		return ret;
+	}
+
+	if (pdata->fsmc_clk) {
+		ret = clk_enable(pdata->fsmc_clk);
+		if (ret < 0)
+			netdev_err(ndev, "failed to enable clock %d\n", ret);
+	}
 	return ret;
 }
 
@@ -396,6 +408,8 @@ static int smsc911x_disable_resources(struct platform_device *pdev)
 
 	ret = regulator_bulk_disable(ARRAY_SIZE(pdata->supplies),
 			pdata->supplies);
+	if (pdata->fsmc_clk)
+		clk_disable(pdata->fsmc_clk);
 	return ret;
 }
 
@@ -418,9 +432,17 @@ static int smsc911x_request_resources(struct platform_device *pdev)
 	ret = regulator_bulk_get(&pdev->dev,
 			ARRAY_SIZE(pdata->supplies),
 			pdata->supplies);
-	if (ret)
-		netdev_err(ndev, "couldn't get regulators %d\n",
-				ret);
+	if (ret) {
+		netdev_err(ndev, "couldn't get regulators %d\n", ret);
+		return ret;
+	}
+
+	/* Request clock, ignore if not here */
+	pdata->fsmc_clk = clk_get(NULL, "fsmc");
+	if (IS_ERR(pdata->fsmc_clk)) {
+		netdev_warn(ndev, "couldn't get clock %d\n", ret);
+		pdata->fsmc_clk = NULL;
+	}
 	return ret;
 }
 
@@ -436,6 +458,12 @@ static void smsc911x_free_resources(struct platform_device *pdev)
 	/* Free regulators */
 	regulator_bulk_free(ARRAY_SIZE(pdata->supplies),
 			pdata->supplies);
+
+	/* Free clock */
+	if (pdata->fsmc_clk) {
+		clk_put(pdata->fsmc_clk);
+		pdata->fsmc_clk = NULL;
+	}
 }
 
 /* waits for MAC not busy, with timeout.  Only called by smsc911x_mac_read
