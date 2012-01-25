@@ -145,10 +145,12 @@ void ux500_restore_context(struct musb *musb)
 	if (!context_stored)
 		return;
 
-	if (_musb != NULL)
-		musb = _musb;
-	else
-		return;
+	if (cpu_is_u5500()) {
+		if (_musb != NULL)
+			musb = _musb;
+		else
+			return;
+	}
 
 	musb_base = musb->mregs;
 	if (is_host_enabled(musb)) {

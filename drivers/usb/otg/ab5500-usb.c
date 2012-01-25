@@ -201,7 +201,8 @@ static void ab5500_usb_phy_enable(struct ab5500_usb *ab, bool sel_host)
 	clk_enable(ab->sysclk);
 	regulator_enable(ab->v_ape);
 
-	ux500_restore_context();
+	/* TODO: Remove ux500_resotore_context and handle similar to ab8500 */
+	ux500_restore_context(NULL);
 	ret = gpio_direction_output(ab->usb_cs_gpio, 0);
 	if (ret < 0) {
 		dev_err(ab->dev, "usb_cs_gpio: gpio direction failed\n");
