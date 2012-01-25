@@ -163,12 +163,12 @@ void ux500_rtcrtt_off(void)
 	if (measure_latency) {
 		measure_latency_start();
 	} else {
+		/* Disable, self start and oneshot mode */
+		writel(RTC_TCR_RTTSS | RTC_TCR_RTTOS, rtc_base + RTC_TCR);
+
 		/* Clear eventual interrupts */
 		if (readl(rtc_base + RTC_MIS) & RTC_MIS_RTCTMIS)
 			writel(RTC_ICR_TIC, rtc_base + RTC_ICR);
-
-		/* Disable, self start and oneshot mode */
-		writel(RTC_TCR_RTTSS | RTC_TCR_RTTOS, rtc_base + RTC_TCR);
 	}
 }
 
