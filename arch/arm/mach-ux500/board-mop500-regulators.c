@@ -12,6 +12,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/regulator/ab8500.h>
 #include <mach/id.h> /* to identify older boards for fixes */
+#include <asm/mach-types.h>
 #include "board-mop500-regulators.h"
 
 #ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
@@ -585,6 +586,18 @@ static void ab8500_modify_reg_init(int id, u8 mask, u8 value)
 void mop500_regulator_init(void)
 {
 	struct regulator_init_data *regulator;
+
+	/*
+	 * Temporarily turn on Vaux2 on 8520 machine
+	 */
+	if (machine_is_u8520()) {
+		/* Vaux2 initialized to be on */
+		ab8500_modify_reg_init(AB8500_VAUX12REGU, 0x0f, 0x05);
+
+		/* Vaux2 always on */
+		regulator = &ab8500_ext_regulators[AB8500_LDO_AUX2];
+		regulator->constraints.always_on = 1;
+	}
 
 	/*
 	 * Handle AB8500_EXT_SUPPLY2 on HREFP_V20_V50 boards (do it for
