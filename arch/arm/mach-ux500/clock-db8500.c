@@ -858,7 +858,7 @@ static struct clk_lookup u8500_clocks[] = {
 	CLK_LOOKUP(p2_pclk11, "gpioblock1", NULL),
 
 	/* PERIPH 3 */
-	CLK_LOOKUP(p3_pclk0, "fsmc", NULL),
+	CLK_LOOKUP(p3_pclk0, NULL, "fsmc"),
 	CLK_LOOKUP(p3_i2c0_clk, "nmk-i2c.0", NULL),
 	CLK_LOOKUP(p3_sdi2_clk, "sdi2", NULL),
 	CLK_LOOKUP(p3_ske_clk, "ske", NULL),
