@@ -77,7 +77,7 @@
  * @shm_ac_sleep_kw:		kthread worker for recieving ape-cmt sleep requests
  * @shm_ac_sleep_kw_task:	task for recieving ape-cmt sleep requests
  * @shm_mod_stuck_kw:		kthread worker to reset the modem
- * &shm_mod_stuck_kw_task:	task for sending modem reset request
+ * @shm_mod_stuck_kw_task:	task for sending modem reset request
  * @send_ac_msg_pend_notify_0:	work for handling pending message on common
  * channel
  * @send_ac_msg_pend_notify_1:	work for handling pending message on audio
