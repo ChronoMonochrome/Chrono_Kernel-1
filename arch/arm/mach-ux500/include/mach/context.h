@@ -73,6 +73,9 @@ void u5500_context_save_icn(void);
 void u5500_context_restore_icn(void);
 void u5500_context_init(void);
 
+void u9540_context_save_icn(void);
+void u9540_context_restore_icn(void);
+void u9540_context_init(void);
 #else
 
 static inline void context_varm_save_core(void) {}

@@ -43,6 +43,7 @@
 #define U8500_BACKUPRAM_SIZE SZ_64K
 
 #define U8500_PUBLIC_BOOT_ROM_BASE (U8500_BOOT_ROM_BASE + 0x17000)
+#define U9540_PUBLIC_BOOT_ROM_BASE (U9540_BOOT_ROM_BASE + 0x17000)
 #define U5500_PUBLIC_BOOT_ROM_BASE (U5500_BOOT_ROM_BASE + 0x18000)
 
 /*
@@ -598,6 +599,8 @@ void context_vape_save(void)
 		u5500_context_save_icn();
 	if (cpu_is_u8500())
 		u8500_context_save_icn();
+	if (cpu_is_u9540())
+		u9540_context_save_icn();
 
 	save_stm_ape();
 
@@ -621,6 +624,8 @@ void context_vape_restore(void)
 		u5500_context_restore_icn();
 	if (cpu_is_u8500())
 		u8500_context_restore_icn();
+	if (cpu_is_u9540())
+		u9540_context_restore_icn();
 
 	atomic_notifier_call_chain(&context_ape_notifier_list,
 				   CONTEXT_APE_RESTORE, NULL);
@@ -906,13 +911,21 @@ static int __init context_init(void)
 
 		context_gic_dist_common.base = ioremap(U5500_GIC_DIST_BASE, SZ_4K);
 		per_cpu(context_gic_cpu, 0).base = ioremap(U5500_GIC_CPU_BASE, SZ_4K);
-	} else if (cpu_is_u8500()) {
+	} else if (cpu_is_u8500() || cpu_is_u9540()) {
 		/* Give logical address to backup RAM. For both CPUs */
-		writel(IO_ADDRESS(U8500_PUBLIC_BOOT_ROM_BASE),
-		       IO_ADDRESS(U8500_CPU0_BACKUPRAM_ADDR_PUBLIC_BOOT_ROM_LOG_ADDR));
+		if (cpu_is_u9540()) {
+			writel(IO_ADDRESS_DB9540_ROM(U9540_PUBLIC_BOOT_ROM_BASE),
+					IO_ADDRESS(U8500_CPU0_BACKUPRAM_ADDR_PUBLIC_BOOT_ROM_LOG_ADDR));
 
-		writel(IO_ADDRESS(U8500_PUBLIC_BOOT_ROM_BASE),
-		       IO_ADDRESS(U8500_CPU1_BACKUPRAM_ADDR_PUBLIC_BOOT_ROM_LOG_ADDR));
+			writel(IO_ADDRESS_DB9540_ROM(U9540_PUBLIC_BOOT_ROM_BASE),
+					IO_ADDRESS(U8500_CPU1_BACKUPRAM_ADDR_PUBLIC_BOOT_ROM_LOG_ADDR));
+		} else {
+			writel(IO_ADDRESS(U8500_PUBLIC_BOOT_ROM_BASE),
+					IO_ADDRESS(U8500_CPU0_BACKUPRAM_ADDR_PUBLIC_BOOT_ROM_LOG_ADDR));
+
+			writel(IO_ADDRESS(U8500_PUBLIC_BOOT_ROM_BASE),
+					IO_ADDRESS(U8500_CPU1_BACKUPRAM_ADDR_PUBLIC_BOOT_ROM_LOG_ADDR));
+		}
 
 		context_tpiu.base = ioremap(U8500_TPIU_BASE, SZ_4K);
 		context_stm_ape.base = ioremap(U8500_STM_REG_BASE, SZ_4K);
@@ -952,6 +965,8 @@ static int __init context_init(void)
 		u8500_context_init();
 	} else if (cpu_is_u5500()) {
 		u5500_context_init();
+	} else if (cpu_is_u9540()) {
+		u9540_context_init();
 	} else {
 		printk(KERN_ERR "context: unknown hardware!\n");
 		return -EINVAL;
