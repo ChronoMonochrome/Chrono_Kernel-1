@@ -63,6 +63,39 @@ static struct dbx500_dump_info db8500_dump[] = {
 	},
 };
 
+static struct dbx500_dump_info db9540_dump[] = {
+	{
+		.name     = "prcmu_tcdm",
+		.phy_addr = U9540_PRCMU_TCDM_BASE,
+		.size     = 0x1000,
+	},
+	{
+		.name     = "prcmu_non_sec_1",
+		.phy_addr = U8500_PRCMU_BASE,
+		.size     = 0x340,
+	},
+	{
+		.name     = "prcmu_pmb",
+		.phy_addr = (U8500_PRCMU_BASE + 0x344),
+		.size     = 0xC,
+	},
+	{
+		.name     = "prcmu_thermal",
+		.phy_addr = (U8500_PRCMU_BASE + 0x3C0),
+		.size     = 0x40,
+	},
+	{
+		.name     = "prcmu_non_sec_2",
+		.phy_addr = (U8500_PRCMU_BASE + 0x404),
+		.size     = 0x1FC,
+	},
+	{
+		.name     = "prcmu_icn_pmu",
+		.phy_addr = (U8500_PRCMU_BASE + 0xE00),
+		.size     = 0x118,
+	},
+};
+
 static struct dbx500_dump_info db5500_dump[] = {
 	{
 		.name     = "prcmu_tcdm",
@@ -151,7 +184,10 @@ int __init dbx500_dump_init(void)
 	} else if (cpu_is_u8500()) {
 		dbx500_dump = db8500_dump;
 		dbx500_dump_size = ARRAY_SIZE(db8500_dump);
-	} else {
+	} else if (cpu_is_u9540()) {
+		dbx500_dump = db9540_dump;
+		dbx500_dump_size = ARRAY_SIZE(db9540_dump);
+	}  else {
 		ux500_unknown_soc();
 	}
 
@@ -159,7 +195,7 @@ int __init dbx500_dump_init(void)
 		dbx500_dump[i].data = kmalloc(dbx500_dump[i].size, GFP_KERNEL);
 		if (!dbx500_dump[i].data) {
 			pr_err("dbx500_dump: Could not allocate memory for "
-				"%s\n", dbx500_dump[i].name);
+					"%s\n", dbx500_dump[i].name);
 			err = -ENOMEM;
 			goto free_mem;
 		}
