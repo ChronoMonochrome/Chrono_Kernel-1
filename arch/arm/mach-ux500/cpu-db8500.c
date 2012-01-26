@@ -54,25 +54,27 @@ static struct map_desc u8500_common_io_desc[] __initdata = {
 	__IO_DEV_DESC(U8500_CLKRST5_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST6_BASE, SZ_4K),
 
-	__IO_DEV_DESC(U8500_PRCMU_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO0_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO1_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO2_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO3_BASE, SZ_4K),
-	__IO_DEV_DESC(U8500_PRCMU_TCDM_BASE, SZ_4K),
 };
 
 /* U8500 IO map specific description */
 static struct map_desc u8500_io_desc[] __initdata = {
+	__IO_DEV_DESC(U8500_PRCMU_BASE, SZ_4K),
 	/* Map U8500_PUBLIC_BOOT_ROM_BASE (base+17000) only
 	 * for TEE security driver
 	 * and avoid overlap with asic ID at base+1D000 */
 	__MEM_DEV_DESC(U8500_BOOT_ROM_BASE+0x17000, 6*SZ_4K),
+	__IO_DEV_DESC(U8500_PRCMU_TCDM_BASE, SZ_4K),
 };
 
 /* U9540 IO map specific description */
 static struct map_desc u9540_io_desc[] __initdata = {
+	__IO_DEV_DESC(U8500_PRCMU_BASE, SZ_4K + SZ_8K),
 	__MEM_DEV_DESC_DB9540_ROM(U9540_BOOT_ROM_BASE, SZ_1M),
+	__IO_DEV_DESC(U8500_PRCMU_TCDM_BASE, SZ_4K + SZ_8K),
 };
 
 void __init u8500_map_io(void)
