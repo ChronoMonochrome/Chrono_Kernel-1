@@ -527,7 +527,7 @@ void* OSAL_Alloc(t_cm_size size)
 	if (size == 0)
 		return NULL;
 
-	entry = kmalloc(size + sizeof(*entry), GFP_KERNEL);
+	entry = kmalloc(size + sizeof(*entry), GFP_KERNEL | __GFP_NOWARN);
 
 	if (entry == NULL) {
 		entry = vmalloc(size + sizeof(*entry));
@@ -553,7 +553,7 @@ void* OSAL_Alloc(t_cm_size size)
 
 	if (size == 0)
 		return NULL;
-	mem = kmalloc(size, GFP_KERNEL);
+	mem = kmalloc(size, GFP_KERNEL | __GFP_NOWARN);
 	if (mem == NULL) {
 		mem = vmalloc(size);
 		if (mem == NULL)
@@ -576,7 +576,7 @@ void* OSAL_Alloc_Zero(t_cm_size size)
 	if (size == 0)
 		return NULL;
 
-	entry = kzalloc(size + sizeof(*entry), GFP_KERNEL);
+	entry = kzalloc(size + sizeof(*entry), GFP_KERNEL | __GFP_NOWARN);
 	if (entry == NULL) {
 		entry = vmalloc(size + sizeof(*entry));
 		if (entry == NULL) {
@@ -603,7 +603,7 @@ void* OSAL_Alloc_Zero(t_cm_size size)
 
 	if (size == 0)
 		return NULL;
-	mem = kzalloc(size, GFP_KERNEL);
+	mem = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
 	if (mem == NULL) {
 		mem = vmalloc(size);
 		if (mem == NULL)
