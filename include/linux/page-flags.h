@@ -51,6 +51,9 @@
  * PG_hwpoison indicates that a page got corrupted in hardware and contains
  * data with incorrect ECC bits that triggered a machine check. Accessing is
  * not safe since it may cause another machine check. Don't touch!
+ *
+ * PG_wasactive reflects that a page previously was promoted to active status.
+ * Such pages should be considered higher priority for cleancache backends.
  */
 
 /*
@@ -109,6 +112,9 @@ enum pageflags {
 #endif
 #ifdef CONFIG_KSM_CHECK_PAGE
 	PG_ksm_scan0,           /* page has been scanned by even KSM cycle */
+#endif
+#ifdef CONFIG_CLEANCACHE
+	PG_was_active,
 #endif
 	__NR_PAGEFLAGS,
 
@@ -218,6 +224,10 @@ __PAGEFLAG(SlobFree, slob_free)
 #ifdef CONFIG_KSM_CHECK_PAGE
 CLEARPAGEFLAG(KsmScan0, ksm_scan0) TESTSETFLAG(KsmScan0, ksm_scan0)
 CLEARPAGEFLAG(KsmScan1, ksm_scan1) TESTSETFLAG(KsmScan1, ksm_scan1)
+#endif
+
+#ifdef CONFIG_CLEANCACHE
+PAGEFLAG(WasActive, was_active)
 #endif
 
 /*
