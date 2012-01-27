@@ -292,23 +292,17 @@ int shrm_start_netdev(struct net_device *dev)
 
 int shrm_suspend_netdev(struct net_device *dev)
 {
-	if (netif_running(dev)) {
+	if (netif_running(dev))
 		netif_stop_queue(dev);
-		netif_carrier_off(dev);
-	}
 	netif_device_detach(dev);
-
 	return 0;
 }
 
 int shrm_resume_netdev(struct net_device *dev)
 {
 	netif_device_attach(dev);
-	if (netif_running(dev)) {
-		netif_carrier_on(dev);
+	if (netif_running(dev))
 		netif_wake_queue(dev);
-	}
-
 	return 0;
 }
 
