@@ -17,8 +17,10 @@
 #include <linux/modem/shrm/shrm_net.h>
 #include <linux/modem/modem_client.h>
 #include <linux/mfd/dbx500-prcmu.h>
+#include <linux/mfd/abx500.h>
 #include <mach/reboot_reasons.h>
 #include <mach/suspend.h>
+#include <mach/prcmu-debug.h>
 
 #define L2_HEADER_ISI		0x0
 #define L2_HEADER_RPC		0x1
@@ -80,6 +82,13 @@ enum shrm_nl {
 	SHRM_NL_STATUS_MOD_OFFLINE,
 };
 
+void shm_print_dbg_info_work(struct kthread_work *work)
+{
+	abx500_dump_all_banks();
+	prcmu_debug_dump_regs();
+	prcmu_debug_dump_data_mem();
+}
+
 void shm_mod_reset_req_work(struct kthread_work *work)
 {
 	prcmu_modem_reset();
@@ -115,6 +124,8 @@ static enum hrtimer_restart shm_fifo_full_timeout(struct hrtimer *timer)
 {
 	queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
 					&shm_dev->shm_mod_reset_req);
+	queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+					&shm_dev->shm_print_dbg_info);
 	return HRTIMER_NORESTART;
 }
 
@@ -136,6 +147,8 @@ static enum hrtimer_restart shm_mod_stuck_timeout(struct hrtimer *timer)
 	dev_err(shm_dev->dev, "APE initiating MSR\n");
 	queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
 					&shm_dev->shm_mod_reset_req);
+	queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+					&shm_dev->shm_print_dbg_info);
 	return HRTIMER_NORESTART;
 }
 
@@ -889,6 +902,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 	init_kthread_work(&shrm->shm_ac_sleep_req, shm_ac_sleep_req_work);
 	init_kthread_work(&shrm->shm_ac_wake_req, shm_ac_wake_req_work);
 	init_kthread_work(&shrm->shm_mod_reset_req, shm_mod_reset_req_work);
+	init_kthread_work(&shrm->shm_print_dbg_info, shm_print_dbg_info_work);
 
 	/* set tasklet data */
 	shm_ca_0_tasklet.data = (unsigned long)shrm;

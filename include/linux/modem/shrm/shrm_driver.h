@@ -87,6 +87,7 @@
  * @shm_ca_sleep_req:		work to send cmt-ape sleep request
  * @shm_ac_sleep_req:		work to send ape-cmt sleep request
  * @shm_mod_reset_req:		work to send a reset request to modem
+ * @shm_print_dbg_info:		work function to print all prcmu/abb registers
  */
 struct shrm_dev {
 	u8 ca_wake_irq;
@@ -145,6 +146,7 @@ struct shrm_dev {
 	struct kthread_work shm_ca_sleep_req;
 	struct kthread_work shm_ac_sleep_req;
 	struct kthread_work shm_mod_reset_req;
+	struct kthread_work shm_print_dbg_info;
 };
 
 /**
