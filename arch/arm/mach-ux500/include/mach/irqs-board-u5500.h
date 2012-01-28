@@ -13,7 +13,12 @@
 
 #define U5500_IRQ_END		IRQ_AB5500_END
 
-#if IRQ_BOARD_END < U5500_IRQ_END
+/*
+ * We may have several boards, but only one will run at a
+ * time, so the one with most IRQs will bump this ahead,
+ * but the IRQ_BOARD_START remains the same for either board.
+ */
+#if U5500_IRQ_END > IRQ_BOARD_END
 #undef IRQ_BOARD_END
 #define IRQ_BOARD_END		U5500_IRQ_END
 #endif
