@@ -46,7 +46,6 @@
 #include <linux/dma-mapping.h>
 #include <linux/ioport.h>
 #include <linux/io.h>
-#include <linux/of.h>
 
 #include "core.h"
 #include "io.h"
@@ -197,99 +196,91 @@ static irqreturn_t dwc3_omap_interrupt(int irq, void *_omap)
 static int __devinit dwc3_omap_probe(struct platform_device *pdev)
 {
 	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
-	struct device_node	*node = pdev->dev.of_node;
-
 	struct platform_device	*dwc3;
 	struct dwc3_omap	*omap;
 	struct resource		*res;
-	struct device		*dev = &pdev->dev;
 
 	int			devid;
-	int			size;
 	int			ret = -ENOMEM;
 	int			irq;
 
-	const u32		*utmi_mode;
 	u32			reg;
 
 	void __iomem		*base;
 	void			*context;
 
-	omap = devm_kzalloc(dev, sizeof(*omap), GFP_KERNEL);
+	omap = kzalloc(sizeof(*omap), GFP_KERNEL);
 	if (!omap) {
-		dev_err(dev, "not enough memory\n");
-		return -ENOMEM;
+		dev_err(&pdev->dev, "not enough memory\n");
+		goto err0;
 	}
 
 	platform_set_drvdata(pdev, omap);
 
 	irq = platform_get_irq(pdev, 1);
 	if (irq < 0) {
-		dev_err(dev, "missing IRQ resource\n");
-		return -EINVAL;
+		dev_err(&pdev->dev, "missing IRQ resource\n");
+		ret = -EINVAL;
+		goto err1;
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (!res) {
-		dev_err(dev, "missing memory base resource\n");
-		return -EINVAL;
+		dev_err(&pdev->dev, "missing memory base resource\n");
+		ret = -EINVAL;
+		goto err1;
 	}
 
-	base = devm_ioremap_nocache(dev, res->start, resource_size(res));
+	base = ioremap_nocache(res->start, resource_size(res));
 	if (!base) {
-		dev_err(dev, "ioremap failed\n");
-		return -ENOMEM;
+		dev_err(&pdev->dev, "ioremap failed\n");
+		goto err1;
 	}
 
 	devid = dwc3_get_device_id();
 	if (devid < 0)
-		return -ENODEV;
+		goto err2;
 
 	dwc3 = platform_device_alloc("dwc3", devid);
 	if (!dwc3) {
-		dev_err(dev, "couldn't allocate dwc3 device\n");
-		goto err1;
+		dev_err(&pdev->dev, "couldn't allocate dwc3 device\n");
+		goto err3;
 	}
 
-	context = devm_kzalloc(dev, resource_size(res), GFP_KERNEL);
+	context = kzalloc(resource_size(res), GFP_KERNEL);
 	if (!context) {
-		dev_err(dev, "couldn't allocate dwc3 context memory\n");
-		goto err2;
+		dev_err(&pdev->dev, "couldn't allocate dwc3 context memory\n");
+		goto err4;
 	}
 
 	spin_lock_init(&omap->lock);
-	dma_set_coherent_mask(&dwc3->dev, dev->coherent_dma_mask);
+	dma_set_coherent_mask(&dwc3->dev, pdev->dev.coherent_dma_mask);
 
-	dwc3->dev.parent = dev;
-	dwc3->dev.dma_mask = dev->dma_mask;
-	dwc3->dev.dma_parms = dev->dma_parms;
+	dwc3->dev.parent = &pdev->dev;
+	dwc3->dev.dma_mask = pdev->dev.dma_mask;
+	dwc3->dev.dma_parms = pdev->dev.dma_parms;
 	omap->resource_size = resource_size(res);
 	omap->context	= context;
-	omap->dev	= dev;
+	omap->dev	= &pdev->dev;
 	omap->irq	= irq;
 	omap->base	= base;
 	omap->dwc3	= dwc3;
 
 	reg = dwc3_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
 
-	utmi_mode = of_get_property(node, "utmi-mode", &size);
-	if (utmi_mode && size == sizeof(*utmi_mode)) {
-		reg |= *utmi_mode;
+	if (!pdata) {
+		dev_dbg(&pdev->dev, "missing platform data\n");
 	} else {
-		if (!pdata) {
-			dev_dbg(dev, "missing platform data\n");
-		} else {
-			switch (pdata->utmi_mode) {
-			case DWC3_OMAP_UTMI_MODE_SW:
-				reg |= USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
-				break;
-			case DWC3_OMAP_UTMI_MODE_HW:
-				reg &= ~USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
-				break;
-			default:
-				dev_dbg(dev, "UNKNOWN utmi mode %d\n",
-						pdata->utmi_mode);
-			}
+		switch (pdata->utmi_mode) {
+		case DWC3_OMAP_UTMI_MODE_SW:
+			reg |= USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
+			break;
+		case DWC3_OMAP_UTMI_MODE_HW:
+			reg &= ~USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
+			break;
+		default:
+			dev_dbg(&pdev->dev, "UNKNOWN utmi mode %d\n",
+					pdata->utmi_mode);
 		}
 	}
 
@@ -308,12 +299,12 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
 
 	dwc3_writel(omap->base, USBOTGSS_SYSCONFIG, reg);
 
-	ret = devm_request_irq(dev, omap->irq, dwc3_omap_interrupt, 0,
+	ret = request_irq(omap->irq, dwc3_omap_interrupt, 0,
 			"dwc3-omap", omap);
 	if (ret) {
-		dev_err(dev, "failed to request IRQ #%d --> %d\n",
+		dev_err(&pdev->dev, "failed to request IRQ #%d --> %d\n",
 				omap->irq, ret);
-		goto err2;
+		goto err5;
 	}
 
 	/* enable all IRQs */
@@ -335,24 +326,37 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
 	ret = platform_device_add_resources(dwc3, pdev->resource,
 			pdev->num_resources);
 	if (ret) {
-		dev_err(dev, "couldn't add resources to dwc3 device\n");
-		goto err2;
+		dev_err(&pdev->dev, "couldn't add resources to dwc3 device\n");
+		goto err6;
 	}
 
 	ret = platform_device_add(dwc3);
 	if (ret) {
-		dev_err(dev, "failed to register dwc3 device\n");
-		goto err2;
+		dev_err(&pdev->dev, "failed to register dwc3 device\n");
+		goto err6;
 	}
 
 	return 0;
 
-err2:
+err6:
+	free_irq(omap->irq, omap);
+
+err5:
+	kfree(omap->context);
+
+err4:
 	platform_device_put(dwc3);
 
-err1:
+err3:
 	dwc3_put_device_id(devid);
 
+err2:
+	iounmap(base);
+
+err1:
+	kfree(omap);
+
+err0:
 	return ret;
 }
 
@@ -363,6 +367,11 @@ static int __devexit dwc3_omap_remove(struct platform_device *pdev)
 	platform_device_unregister(omap->dwc3);
 
 	dwc3_put_device_id(omap->dwc3->id);
+	free_irq(omap->irq, omap);
+	iounmap(omap->base);
+
+	kfree(omap->context);
+	kfree(omap);
 
 	return 0;
 }
