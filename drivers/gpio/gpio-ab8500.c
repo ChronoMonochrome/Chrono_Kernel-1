@@ -18,9 +18,9 @@
 #include <linux/gpio.h>
 #include <linux/irq.h>
 #include <linux/interrupt.h>
-#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
-#include <linux/mfd/ab8500/gpio.h>
+#include <linux/mfd/abx500/ab8500-gpio.h>
+
 
 /*
  * GPIO registers offset
