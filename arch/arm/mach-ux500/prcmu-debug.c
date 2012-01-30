@@ -22,6 +22,7 @@
 
 #define MAX_STATES 5
 #define MAX_NAMELEN 16
+#define U8500_PRCMU_TCDM_SIZE 4096
 
 struct state_history {
 	ktime_t start;
@@ -59,6 +60,129 @@ static struct state_history arm_sh = {
 	.opps = {ARM_EXTCLK, ARM_50_OPP, ARM_100_OPP, ARM_MAX_OPP},
 	.state_names = {25, 50, 100, 125},
 	.max_states = 4,
+};
+
+static const u16 u8500_prcmu_dump_regs[] = {
+	/*ARMCLKFIX_MGT*/ 0x0,			/*ACLK_MGT*/ 0x4,
+	/*SVAMMDSPCLK_MGT*/ 0x8,		/*SIAMMDSPCLK_MGT*/ 0xc,
+	/*SGACLK_MGT*/ 0x14,			/*UARTCLK_MGT*/ 0x18,
+	/*MSP02CLK_MGT*/ 0x1c,			/*I2CCLK_MGT*/ 0x20,
+	/*SDMMCCLK_MGT*/ 0x24,			/*SLIMCLK_MGT*/ 0x28,
+	/*PER1CLK_MGT*/ 0x2c,			/*PER2CLK_MGT*/ 0x30,
+	/*PER3CLK_MGT*/ 0x34,			/*PER5CLK_MGT*/ 0x38,
+	/*PER6CLK_MGT*/ 0x3c,			/*PER7CLK_MGT*/ 0x40,
+	/*LCDCLK_MGT*/ 0x44,			/*SPARE1CLK_MGT*/ 0x48,
+	/*BMLCLK_MGT*/ 0x4c,			/*HSITXCLK_MGT*/ 0x50,
+	/*HSIRXCLK_MGT*/ 0x54,			/*HDMICLK_MGT*/ 0x58,
+	/*APEATCLK_MGT*/ 0x5c,			/*APETRACECLK_MGT*/ 0x60,
+	/*MCDECLK_MGT*/ 0x64,			/*IPI2CCLK_MGT*/ 0x68,
+	/*DSIALTCLK_MGT*/ 0x6c,			/*SPARE2CLK_MGT*/ 0x70,
+	/*DMACLK_MGT*/ 0x74,			/*B2R2CLK_MGT*/ 0x78,
+	/*TVCLK_MGT*/ 0x7c,			/*PLLSOC0_FREQ*/ 0x80,
+	/*PLLSOC1_FREQ*/ 0x84,			/*PLLARM_FREQ*/ 0x88,
+	/*PLLDDR_FREQ*/ 0x8c,			/*PLLSOC0_ENABLE*/ 0x90,
+	/*PLLSOC1_ENABLE*/ 0x94,		/*PLLARM_ENABLE*/ 0x98,
+	/*PLLDDR_ENABLE*/ 0x9c,			/*PLLSOC0_LOCKP*/ 0xa0,
+	/*PLLSOC1_LOCKP*/ 0xa4,			/*PLLARM_LOCKP*/ 0xa8,
+	/*PLLDDR_LOCKP*/ 0xac,			/*XP70CLK_MGT*/ 0xb0,
+	/*TIMER_0_REF*/ 0xb4,			/*TIMER_0_DOWNCOUNT*/ 0xb8,
+	/*TIMER_0_MODE*/ 0xbc,			/*TIMER_1_REF*/ 0xc0,
+	/*TIMER_1_DOWNCOUNT*/ 0xc4,		/*TIMER_1_MODE*/ 0xc8,
+	/*TIMER_2_REF*/ 0xcc,			/*TIMER_2_DOWNCOUNT*/ 0xd0,
+	/*TIMER_2_MODE*/ 0xd4,			/*CLK009_MGT*/ 0xe4,
+	/*MODECLK*/ 0xe8,			/*ARM_IT_SET*/ 0xf0,
+	/*4500_CLK_REQ*/ 0xf8,			/*MBOX_CPU_VAL*/ 0xfc,
+	/*PLL32K_ENABLE*/ 0x10c,		/*PLL32K_LOCKP*/ 0x110,
+	/*ARM_CHGCLKREQ*/ 0x114,		/*ARM_PLLDIVPS*/ 0x118,
+	/*ARMITMSK31TO0*/ 0x11c,		/*ARMITMSK63TO32*/ 0x120,
+	/*ARMITMSK95TO64*/ 0x124,		/*ARMITMSK127TO96*/ 0x128,
+	/*ARMSTANDBY_STATUS*/ 0x130,		/*CGATING_BYPASS*/ 0x134,
+	/*GPIOCR*/ 0x138,			/*LEMI*/ 0x13c,
+	/*COMPCR*/ 0x140,			/*COMPSTA*/ 0x144,
+	/*ITSTATUS0*/ 0x148,			/*ITSTATUS1*/ 0x150,
+	/*ITSTATUS2*/ 0x158,			/*ITSTATUS3*/ 0x160,
+	/*ITSTATUS4*/ 0x168,			/*LINE_VALUE*/ 0x170,
+	/*HOLD_EVT*/ 0x174,			/*EDGE_SENS_L*/ 0x178,
+	/*EDGE_SENS_H*/ 0x17c,			/*DEBUG_CTRL_VAL*/ 0x190,
+	/*DEBUG_NOPWRDOWN_VAL*/ 0x194,		/*DEBUG_CTRL_ACK*/ 0x198,
+	/*A9PL_FORCE_CLKEN*/ 0x19c,		/*TPIU_FLUSHIN_REQ*/ 0x1a0,
+	/*TPIU_FLUSHIN_ACK*/ 0x1a4,		/*STP_FLUSHIN_REQ*/ 0x1a8,
+	/*STP_FLUSHIN_ACK*/ 0x1ac,		/*HWI2C_DIV*/ 0x1b0,
+	/*HWI2C_GO*/ 0x1b4,			/*HWI2C_CMD*/ 0x1b8,
+	/*HWI2C_DATA123*/ 0x1bc,		/*HWI2C_SR*/ 0x1c0,
+	/*REMAPCR*/ 0x1c4,			/*TCR*/ 0x1c8,
+	/*CLKOCR*/ 0x1cc,			/*ITSTATUS_DBG*/ 0x1d0,
+	/*LINE_VALUE_DBG*/ 0x1d8,		/*DBG_HOLD*/ 0x1dc,
+	/*EDGE_SENS_DBG*/ 0x1e0,		/*APE_RESETN_SET*/ 0x1e4,
+	/*APE_RESETN_VAL*/ 0x1ec,		/*A9_RESETN_SET*/ 0x1f0,
+	/*A9_RESETN_VAL*/ 0x1f8,		/*MOD_RESETN_SET*/ 0x1fc,
+	/*MOD_RESETN_VAL*/ 0x204,		/*GPIO_RESETN_SET*/ 0x208,
+	/*GPIO_RESETN_VAL*/ 0x210,		/*4500_RESETN_SET*/ 0x214,
+	/*4500_RESETN_VAL*/ 0x21c,		/*HSI_SOFTRST*/ 0x224,
+	/*APE_SOFTRST*/ 0x228,			/*SWD_RST_TEMPO*/ 0x238,
+	/*RST_4500_TEMPO*/ 0x23c,		/*SVAMMDSP_IT*/ 0x240,
+	/*SIAMMDSP_IT*/ 0x248,			/*POWER_STATE_SET*/ 0x254,
+	/*POWER_STATE_VAL*/ 0x25c,		/*ARMITVALUE31TO0*/ 0x260,
+	/*ARMITVALUE63TO32*/ 0x264,		/*ARMITVALUE95TO64*/ 0x268,
+	/*ARMITVALUE127TO96*/ 0x26c,		/*REDUN_LOAD*/ 0x270,
+	/*REDUN_STATUS*/ 0x274,			/*UNIPROCLK_MGT*/ 0x278,
+	/*UICCCLK_MGT*/ 0x27c,			/*SSPCLK_MGT*/ 0x280,
+	/*RNGCLK_MGT*/ 0x284,			/*MSP1CLK_MGT*/ 0x288,
+	/*DAP_RESETN_SET*/ 0x2a0,		/*DAP_RESETN_VAL*/ 0x2a8,
+	/*SRAM_DEDCSTOV*/ 0x300,		/*SRAM_LS_SLEEP*/ 0x304,
+	/*SRAM_A9*/ 0x308,			/*ARM_LS_CLAMP*/ 0x30c,
+	/*IOCR*/ 0x310,				/*MODEM_SYSCLKOK*/ 0x314,
+	/*SYSCLKOK_DELAY*/ 0x318,		/*SYSCLKSTATUS*/ 0x31c,
+	/*DSI_SW_RESET*/ 0x324,			/*A9_MASK_REQ*/ 0x328,
+	/*A9_MASK_ACK*/ 0x32c,			/*HOSTACCESS_REQ*/ 0x334,
+	/*TIMER_3_REF*/ 0x338,			/*TIMER_3_DOWNCOUNT*/ 0x33c,
+	/*TIMER_3_MODE*/ 0x340,			/*PMB_SENS_CTRL*/ 0x344,
+	/*PMB_REF_COUNTER*/ 0x348,		/*PMB_SENSOR_STATUS*/ 0x34c,
+	/*APE_EPOD_CFG*/ 0x404,			/*DDR_EPOD_CFG*/ 0x408,
+	/*EPOD_C_SET*/ 0x410,			/*EPOD_C_VAL*/ 0x418,
+	/*EPOD_VOK*/ 0x41c,			/*MMIP_LS_CLAMP_SET*/ 0x420,
+	/*MMIP_LS_CLAMP_VAL*/ 0x428,		/*VSAFE_LS_CLAMP_SET*/ 0x42c,
+	/*VSAFE_LS_CLAMP_VAL*/ 0x434,		/*DDRSUBSYS_APE_MINBW*/ 0x438,
+	/*DDRSUBSYS_STATUS*/ 0x43c,		/*DDRSUBSYS_CONTROL*/ 0x440,
+	/*DDRSUBSYS_HIGH_LEAK_COND*/ 0x444,	/*DDRSUBSYS_CONFIG*/ 0x448,
+	/*DDRSUBSYS_CONFIG_ACK*/ 0x44c,		/*TIMER_4_REF*/ 0x450,
+	/*TIMER_4_DOWNCOUNT*/ 0x454,		/*TIMER_4_MODE*/ 0x458,
+	/*TIMER_5_REF*/ 0x45c,			/*TIMER_5_DOWNCOUNT*/ 0x460,
+	/*TIMER_5_MODE*/ 0x464,			/*APE_MEM_REQ*/ 0x470,
+	/*DBG_FORCES_APE_MEM_REQ*/ 0x474,	/*APE_MEM_WFX_EN*/ 0x478,
+	/*APE_MEM_LATENCY*/ 0x47c,		/*APE_MEM_ACK*/ 0x480,
+	/*ITSTATUS5*/ 0x484,			/*ARM_IT1_SET*/ 0x490,
+	/*ARM_IT1_VAL*/ 0x494,			/*MOD_PWR_OK*/ 0x498,
+	/*MOD_AUXCLKOK*/ 0x49c,			/*MOD_AWAKE_STATUS*/ 0x4a0,
+	/*MOD_SWRESET_IRQ_ACK*/ 0x4a4,		/*MOD_SWRESET_ACK*/ 0x4a8,
+	/*DBG_PWRCTL*/ 0x4ac,			/*HWOBS_H*/ 0x4b0,
+	/*HWOBS_L*/ 0x4b4,			/*PLLDSI_FREQ*/ 0x500,
+	/*PLLDSI_ENABLE*/ 0x504,		/*PLLDSI_LOCKP*/ 0x508,
+	/*RNG_ENABLE*/ 0x50c,			/*YYCLKEN0_MGT_SET*/ 0x510,
+	/*YYCLKEN1_MGT_SET*/ 0x514,		/*YYCLKEN0_MGT_VAL*/ 0x520,
+	/*YYCLKEN1_MGT_VAL*/ 0x524,		/*XP70CLK_MGT2*/ 0x528,
+	/*DSITVCLK_DIV*/ 0x52c,			/*DSI_PLLOUT_SEL*/ 0x530,
+	/*DSI_GLITCHFREE_EN*/ 0x534,		/*CLKACTIV*/ 0x538,
+	/*SIA_MMDSP_MEM_MGT*/ 0x53c,		/*SVA_MMDSP_MEM_MGT*/ 0x540,
+	/*SXAMMDSP_FORCE_CLKEN*/ 0x544,		/*UICC_NANDTREE*/ 0x570,
+	/*GPIOCR2*/ 0x574,			/*MDM_ACWAKE*/ 0x578,
+	/*MOD_MEM_REQ*/ 0x5a4,			/*MOD_MEM_ACK*/ 0x5a8,
+	/*ARM_PLLDIVPS_REQ*/ 0x5b0,		/*ARM_PLLDIVPS_ACK*/ 0x5b4,
+	/*SRPTIMER_VAL*/ 0x5d0,
+};
+
+/* Offsets from secure base which is U8500_PRCMU_BASE + SZ_4K */
+static const u16 u8500_prcmu_dump_secure_regs[] = {
+	/*SECNONSEWM*/ 0x00,		/*ESRAM0_INITN*/ 0x04,
+	/*ARMITMSKSEC_31TO0*/ 0x08,	/*ARMITMSKSEC_63TO32*/ 0x0C,
+	/*ARMITMSKSEC_95TO64*/ 0x10,	/*ARMITMSKSEC_127TO96*/ 0x14,
+	/*ARMIT_MASKXP70_IT*/ 0x18,	/*ESRAM0_EPOD_CFG*/ 0x1C,
+	/*ESRAM0_EPOD_C_VAL*/ 0x20,	/*ESRAM0_EPOD_C_SET*/ 0x24,
+	/*ESRAM0_EPOD_VOK*/ 0x2C,	/*ESRAM0_LS_SLEEP*/ 0x30,
+	/*SECURE_ONGOING*/ 0x34,	/*I2C_SECURE*/ 0x38,
+	/*RESET_STATUS*/ 0x3C,		/*PERIPH4_RESETN_SET*/ 0x40,
+	/*PERIPH4_RESETN_VAL*/ 0x48,	/*SPAREOUT_SEC*/ 0x4C,
+	/*PIPELINEDCR*/ 0xD8,
 };
 
 static int ape_voltage_count;
@@ -379,6 +503,150 @@ static int avs_read(struct seq_file *s, void *p)
 	return 0;
 }
 
+static void prcmu_data_mem_print(struct seq_file *s)
+{
+	int i;
+	int err;
+	void __iomem *tcdm_base;
+	u32 dmem[4];
+
+	if (cpu_is_u8500()) {
+		tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
+
+		for (i = 0; i < U8500_PRCMU_TCDM_SIZE; i += 16) {
+			dmem[0] = readl(tcdm_base + i +  0);
+			dmem[1] = readl(tcdm_base + i +  4);
+			dmem[2] = readl(tcdm_base + i +  8);
+			dmem[3] = readl(tcdm_base + i + 12);
+
+			if (s) {
+				err = seq_printf(s,
+					"0x%x: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+					((int)tcdm_base) + i, dmem[0],
+					dmem[1], dmem[2], dmem[3]);
+				if (err < 0) {
+					pr_err("%s: seq_printf overflow, addr=%x\n",
+						__func__, ((int)tcdm_base) + i);
+					/* Can't do much here */
+					return;
+				}
+			} else {
+				printk(KERN_INFO
+					"0x%x: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+					((int)tcdm_base) + i, dmem[0],
+					dmem[1], dmem[2], dmem[3]);
+			}
+		}
+	}
+}
+
+void prcmu_debug_dump_data_mem(void)
+{
+	printk(KERN_INFO "PRCMU data memory dump:\n");
+	prcmu_data_mem_print(NULL);
+}
+
+static int prcmu_debugfs_data_mem_read(struct seq_file *s, void *p)
+{
+	seq_printf(s, "PRCMU data memory:\n");
+	prcmu_data_mem_print(s);
+
+	return 0;
+}
+
+static void prcmu_regs_print(struct seq_file *s)
+{
+	int i;
+	int err;
+	void __iomem *prcmu_base;
+	u32 reg_val;
+
+	if (cpu_is_u8500()) {
+		prcmu_base = __io_address(U8500_PRCMU_BASE);
+
+		for (i = 0; i < ARRAY_SIZE(u8500_prcmu_dump_regs); i++) {
+			reg_val = readl(prcmu_base +
+				u8500_prcmu_dump_regs[i]);
+
+			if (s) {
+				err = seq_printf(s, "0x%04x: 0x%08x\n",
+					u8500_prcmu_dump_regs[i], reg_val);
+				if (err < 0) {
+					pr_err("%s: seq_printf overflow,"
+						"offset=%x\n", __func__,
+						u8500_prcmu_dump_regs[i]);
+					/* Can't do much here */
+					return;
+				}
+			} else {
+				printk(KERN_INFO
+					"0x%04x: 0x%08x\n",
+					u8500_prcmu_dump_regs[i], reg_val);
+			}
+		}
+	}
+}
+
+static void prcmu_secure_regs_print(struct seq_file *s)
+{
+	int i;
+	int err;
+	void __iomem *prcmu_sec_base;
+	u32 reg_val;
+
+	if (cpu_is_u8500()) {
+		/* PRCMU secure base starts after SZ_4K */
+		prcmu_sec_base = ioremap(U8500_PRCMU_BASE + SZ_4K, SZ_4K);
+		if (!prcmu_sec_base) {
+			pr_err("%s: ioremap faild\n", __func__);
+			return;
+		}
+
+		for (i = 0; i < ARRAY_SIZE(u8500_prcmu_dump_secure_regs); i++) {
+			reg_val = readl(prcmu_sec_base +
+				u8500_prcmu_dump_secure_regs[i]);
+
+			if (s) {
+				err = seq_printf(s, "0x%04x: 0x%08x\n",
+					u8500_prcmu_dump_secure_regs[i] +
+					SZ_4K,
+					reg_val);
+				if (err < 0) {
+					pr_err("%s: seq_printf overflow,"
+					"offset=%x\n", __func__,
+					u8500_prcmu_dump_secure_regs[i] +
+					SZ_4K);
+					/* Can't do much here */
+					break;
+				}
+			} else {
+				printk(KERN_INFO
+					"0x%04x: 0x%08x\n",
+					u8500_prcmu_dump_secure_regs[i] +
+					SZ_4K,
+					reg_val);
+			}
+		}
+
+		iounmap(prcmu_sec_base);
+	}
+}
+
+void prcmu_debug_dump_regs(void)
+{
+	printk(KERN_INFO "PRCMU registers dump:\n");
+	prcmu_regs_print(NULL);
+	prcmu_secure_regs_print(NULL);
+}
+
+static int prcmu_debugfs_regs_read(struct seq_file *s, void *p)
+{
+	seq_printf(s, "PRCMU registers:\n");
+	prcmu_regs_print(s);
+	prcmu_secure_regs_print(s);
+	return 0;
+}
+
 static int opp_open_file(struct inode *inode, struct file *file)
 {
 	return single_open(file, opp_read, inode->i_private);
@@ -412,6 +680,44 @@ static int ape_voltage_open_file(struct inode *inode, struct file *file)
 static int avs_open_file(struct inode *inode, struct file *file)
 {
 	return single_open(file, avs_read, inode->i_private);
+}
+
+static int prcmu_data_mem_open_file(struct inode *inode, struct file *file)
+{
+	int err;
+	struct seq_file *s;
+
+	err = single_open(file, prcmu_debugfs_data_mem_read, inode->i_private);
+	if (!err) {
+		/* Default buf size in seq_read is not enough */
+		s = (struct seq_file *)file->private_data;
+		s->size = (PAGE_SIZE * 4);
+		s->buf = kmalloc(s->size, GFP_KERNEL);
+		if (!s->buf) {
+			single_release(inode, file);
+			err = -ENOMEM;
+		}
+	}
+	return err;
+}
+
+static int prcmu_regs_open_file(struct inode *inode, struct file *file)
+{
+	int err;
+	struct seq_file *s;
+
+	err = single_open(file, prcmu_debugfs_regs_read, inode->i_private);
+	if (!err) {
+		/* Default buf size in seq_read is not enough */
+		s = (struct seq_file *)file->private_data;
+		s->size = (PAGE_SIZE * 2);
+		s->buf = kmalloc(s->size, GFP_KERNEL);
+		if (!s->buf) {
+			single_release(inode, file);
+			err = -ENOMEM;
+		}
+	}
+	return err;
 }
 
 static const struct file_operations opp_fops = {
@@ -476,6 +782,22 @@ static const struct file_operations avs_fops = {
 	.owner = THIS_MODULE,
 };
 
+static const struct file_operations prcmu_data_mem_fops = {
+	.open = prcmu_data_mem_open_file,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+	.owner = THIS_MODULE,
+};
+
+static const struct file_operations prcmu_regs_fops = {
+	.open = prcmu_regs_open_file,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+	.owner = THIS_MODULE,
+};
+
 static int setup_debugfs(void)
 {
 	struct dentry *dir;
@@ -531,6 +853,18 @@ static int setup_debugfs(void)
 	file = debugfs_create_file("avs",
 				   (S_IRUGO),
 				   dir, NULL, &avs_fops);
+	if (IS_ERR_OR_NULL(file))
+		goto fail;
+
+	file = debugfs_create_file("data_mem", (S_IRUGO),
+				   dir, NULL,
+				   &prcmu_data_mem_fops);
+	if (IS_ERR_OR_NULL(file))
+		goto fail;
+
+	file = debugfs_create_file("regs", (S_IRUGO),
+				   dir, NULL,
+				   &prcmu_regs_fops);
 	if (IS_ERR_OR_NULL(file))
 		goto fail;
 

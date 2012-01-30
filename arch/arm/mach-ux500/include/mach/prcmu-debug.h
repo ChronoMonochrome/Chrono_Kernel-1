@@ -15,9 +15,13 @@
 void prcmu_debug_ape_opp_log(u8 opp);
 void prcmu_debug_ddr_opp_log(u8 opp);
 void prcmu_debug_arm_opp_log(u8 opp);
+void prcmu_debug_dump_data_mem(void);
+void prcmu_debug_dump_regs(void);
 #else
 static inline void prcmu_debug_ape_opp_log(u8 opp) {}
 static inline void prcmu_debug_ddr_opp_log(u8 opp) {}
 static inline void prcmu_debug_arm_opp_log(u8 opp) {}
+static inline void prcmu_debug_dump_data_mem(void) {}
+static inline void prcmu_debug_dump_regs(void) {}
 #endif
 #endif
