@@ -29,7 +29,6 @@
 #include <linux/skbuff.h>
 #include <linux/string.h>
 #include <linux/types.h>
-#include <linux/mfd/ab8500.h>
 #include <linux/regulator/consumer.h>
 #include <mach/id.h>
 #include <plat/pincfg.h>

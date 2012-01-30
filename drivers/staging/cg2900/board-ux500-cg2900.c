@@ -14,7 +14,7 @@
 #include <linux/gpio.h>
 #include <linux/gpio/nomadik.h>
 #include <linux/ioport.h>
-#include <linux/mfd/ab8500/gpio.h>
+#include <linux/mfd/abx500/ab8500-gpio.h>
 #include <linux/platform_device.h>
 #include <mach/gpio.h>
 #include <mach/id.h>

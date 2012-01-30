@@ -434,13 +434,7 @@ static void hci_reset_cb(struct cg2900_user_data *dev)
 	 * in turn be called by BlueZ.
 	 */
 	BT_DBG("Deregister HCI device");
-	err = hci_unregister_dev(info->hdev);
-	if (err)
-		BT_ERR(NAME "Can not deregister HCI device! (%d)", err);
-		/*
-		 * Now we are in trouble. Try to register a new hdev
-		 * anyway even though this will cost some memory.
-		 */
+	hci_unregister_dev(info->hdev);
 
 	wait_event_timeout(hci_wait_queue,
 			(RESET_UNREGISTERED == info->reset_state),
@@ -1059,9 +1053,7 @@ static int remove_common(struct platform_device *pdev,
 
 	BT_INFO("Unregistering CG2900");
 	info->hdev->driver_data = NULL;
-	err = hci_unregister_dev(info->hdev);
-	if (err)
-		BT_ERR("Can not unregister HCI device (%d)", err);
+	hci_unregister_dev(info->hdev);
 	hci_free_dev(info->hdev);
 	info->hdev = NULL;
 

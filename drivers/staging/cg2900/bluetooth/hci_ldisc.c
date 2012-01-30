@@ -41,7 +41,7 @@
 #define TTY_BREAK_ON		(-1)
 #define TTY_BREAK_OFF		(0)
 
-static int reset;
+static bool reset;
 
 static struct hci_uart_proto *hup[HCI_UART_MAX_PROTO];
 
