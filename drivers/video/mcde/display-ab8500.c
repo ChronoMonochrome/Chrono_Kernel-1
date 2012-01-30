@@ -10,6 +10,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/device.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
@@ -357,7 +358,7 @@ static int set_video_mode(
 static int set_power_mode(struct mcde_display_device *ddev,
 	enum mcde_display_power_mode power_mode)
 {
-	int ret;
+	int ret = 0;
 	int i;
 	struct display_driver_data *driver_data = dev_get_drvdata(&ddev->dev);
 	AB8500_DISP_TRACE;
