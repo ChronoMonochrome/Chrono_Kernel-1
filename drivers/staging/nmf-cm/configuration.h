@@ -60,7 +60,7 @@ int init_config(void);
 	module_param(cfgMpcYBanks_##mpc, uint, S_IRUGO);		\
 	MODULE_PARM_DESC(cfgMpcYBanks_##mpc, "Nb of Y-Ram banks used on " #mpc); \
 									\
-	static int          cfgSchedulerTypeHybrid_##mpc = 1;		\
+	static bool         cfgSchedulerTypeHybrid_##mpc = 1;		\
 	module_param(cfgSchedulerTypeHybrid_##mpc, bool, S_IRUGO);	\
 	MODULE_PARM_DESC(cfgSchedulerTypeHybrid_##mpc, "Scheduler used on " #mpc " (Hybrid or Synchronous)"); \
 									\
