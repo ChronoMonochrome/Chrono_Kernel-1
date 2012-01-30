@@ -740,7 +740,7 @@ static int __init u5500_accel_sensor_init(void)
 	i2c2 = i2c_get_adapter(2);
 	if (!i2c2) {
 		pr_err("failed to get i2c adapter\n");
-		return;
+		return -ENODEV;
 	}
 	status = i2c_smbus_xfer(i2c2, 0x19 , 0,
 				I2C_SMBUS_READ, 0x0F ,
@@ -748,8 +748,11 @@ static int __init u5500_accel_sensor_init(void)
 	if (status < 0)
 		lsm303dlh_pdata.chip_id = 0;
 	else
-	lsm303dlh_pdata.chip_id = data.byte;
+		lsm303dlh_pdata.chip_id = data.byte;
+
 	i2c_put_adapter(i2c2);
+
+	return status;
 }
 module_init(u5500_accel_sensor_init);
 
