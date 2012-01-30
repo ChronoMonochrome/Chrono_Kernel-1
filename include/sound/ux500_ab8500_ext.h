@@ -14,7 +14,7 @@
 #ifndef UX500_AB8500_EXT_H
 #define UX500_AB8500_EXT_H
 
-#include <linux/mfd/ab8500/gpadc.h>
+#include <linux/mfd/abx500/ab8500-gpadc.h>
 
 int ux500_ab8500_audio_gpadc_measure(struct ab8500_gpadc *gpadc,
 			u8 channel, bool mode, int *value);

@@ -22,7 +22,7 @@
 #include <linux/device.h>
 #include <linux/io.h>
 #include <linux/regulator/consumer.h>
-#include <linux/mfd/ab8500/gpadc.h>
+#include <linux/mfd/abx500/ab8500-gpadc.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>

@@ -31,10 +31,9 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/tlv.h>
-#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab5500.h>
-#include <linux/mfd/ab8500/sysctrl.h>
+#include <linux/mfd/abx500/ab8500-sysctrl.h>
 #include "ab8500_audio.h"
 
 /* To convert register definition shifts to masks */
