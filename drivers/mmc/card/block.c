@@ -1815,6 +1815,7 @@ static int mmc_add_disk(struct mmc_blk_data *md)
 
 		md->power_ro_lock_legacy.show = boot_partition_ro_lock_show;
 		md->power_ro_lock_legacy.store = boot_partition_ro_lock_store;
+		sysfs_attr_init(&md->power_ro_lock_legacy.attr);
 		md->power_ro_lock_legacy.attr.mode = mode;
 		md->power_ro_lock_legacy.attr.name = "ro_lock";
 		ret = device_create_file(disk_to_dev(md->disk),
