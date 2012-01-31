@@ -16,6 +16,7 @@
 
 #include <linux/fs.h>
 #include <linux/device.h>
+#include <linux/module.h>
 #include "mali_kernel_license.h"
 #include "mali_kernel_linux.h"
 #include "mali_ukk.h"
