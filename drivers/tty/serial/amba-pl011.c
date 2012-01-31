@@ -2308,6 +2308,8 @@ static int pl011_probe(struct amba_device *dev, const struct amba_id *id)
 
 	amba_set_drvdata(dev, uap);
 
+	pm_runtime_irq_safe(&dev->dev);
+
 	pl011_clock_control_init(uap);
 
 	ret = uart_add_one_port(&amba_reg, &uap->port);
