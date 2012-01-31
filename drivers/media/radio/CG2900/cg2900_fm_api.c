@@ -1362,17 +1362,22 @@ int cg2900_fm_set_rx_default_settings(
 		goto error;
 	}
 
-	/* Set the Analog Out Volume to Max */
-	vol_in_percentage = (u8)
-	    (((u16) (MAX_ANALOG_VOLUME) * 100)
-	     / MAX_ANALOG_VOLUME);
-	result = fmd_set_volume(vol_in_percentage);
-	if (0 != result) {
-		FM_ERR_REPORT("cg2900_fm_switch_on: "
-			      "FMRSetVolume failed %x",
-			      (unsigned int)result);
-		result = -EINVAL;
-		goto error;
+	/* Currently, not supported for CG2905/10 */
+	if (version_info.revision == CG2900_PG1_REV
+			|| version_info.revision == CG2900_PG2_REV
+			|| version_info.revision == CG2900_PG1_SPECIAL_REV) {
+		/* Set the Analog Out Volume to Max */
+		vol_in_percentage = (u8)
+			(((u16) (MAX_ANALOG_VOLUME) * 100)
+			/ MAX_ANALOG_VOLUME);
+		result = fmd_set_volume(vol_in_percentage);
+		if (0 != result) {
+			FM_ERR_REPORT("cg2900_fm_switch_on: "
+					"FMRSetVolume failed %x",
+					(unsigned int)result);
+			result = -EINVAL;
+			goto error;
+		}
 	}
 
 error:
