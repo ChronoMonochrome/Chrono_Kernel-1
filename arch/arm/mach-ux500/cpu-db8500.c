@@ -45,7 +45,11 @@ static struct map_desc u8500_io_desc[] __initdata = {
 	__IO_DEV_DESC(U8500_MTU1_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_RTC_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_BACKUPRAM0_BASE, SZ_8K),
-	__MEM_DEV_DESC(U8500_BOOT_ROM_BASE, SZ_1M),
+
+	/* Map U8500_PUBLIC_BOOT_ROM_BASE (base+17000) only
+	 * for TEE security driver
+	 * and avoid overlap with asic ID at base+1D000 */
+	__MEM_DEV_DESC(U8500_BOOT_ROM_BASE+0x17000, 6*SZ_4K),
 
 	__IO_DEV_DESC(U8500_CLKRST1_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST2_BASE, SZ_4K),
@@ -72,8 +76,9 @@ void __init u8500_map_io(void)
 	 * STE NMF CM driver only used on the U8500 allocate using
 	 * dma_alloc_coherent:
 	 *    8M for SIA and SVA data + 2M for SIA code + 2M for SVA code
+	 *    Can't be higher than 14M with VMALLOC_END at 0xFF000000
 	 */
-	init_consistent_dma_size(SZ_16M);
+	init_consistent_dma_size(14*SZ_1M);
 
 	ux500_map_io();
 
