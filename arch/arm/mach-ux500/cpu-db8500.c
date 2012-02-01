@@ -55,6 +55,12 @@ static struct map_desc u8500_common_io_desc[] __initdata = {
 	__IO_DEV_DESC(U8500_RTC_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_SCU_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_BACKUPRAM0_BASE, SZ_8K),
+
+	/* Map U8500_PUBLIC_BOOT_ROM_BASE (base+17000) only
+	 * for TEE security driver
+	 * and avoid overlap with asic ID at base+1D000 */
+	__MEM_DEV_DESC(U8500_BOOT_ROM_BASE+0x17000, 6*SZ_4K),
+
 	__IO_DEV_DESC(U8500_CLKRST1_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST2_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST3_BASE, SZ_4K),
@@ -70,7 +76,6 @@ static struct map_desc u8500_common_io_desc[] __initdata = {
 /* U8500 IO map specific description */
 static struct map_desc u8500_io_desc[] __initdata = {
 	__IO_DEV_DESC(U8500_PRCMU_BASE, SZ_4K),
-	__MEM_DEV_DESC(U8500_BOOT_ROM_BASE, SZ_1M),
 	__IO_DEV_DESC(U8500_PRCMU_TCDM_BASE, SZ_4K),
 
 };
