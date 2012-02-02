@@ -49,7 +49,6 @@ struct hotplug_cpu_info {
 	cputime64_t prev_cpu_idle;
 	cputime64_t prev_cpu_io;
 	unsigned int load[LOAD_MONITOR];
-	unsigned int io[LOAD_MONITOR];
 	unsigned int idx;
 };
 
@@ -167,16 +166,15 @@ static unsigned long determine_cpu_load(void)
 
 	/* get cpu load of each cpu */
 	for_each_online_cpu(i) {
-		unsigned int load, iowait;
+		unsigned int load;
 		unsigned int idle_time, iowait_time, wall_time;
-		cputime64_t cur_wall_time, cur_idle_time, cur_iowait_time;
+		cputime64_t cur_wall_time, cur_idle_time;
 		struct hotplug_cpu_info *info;
 
 		info = &per_cpu(hotplug_info, i);
 
 		/* update both cur_idle_time and cur_wall_time */
 		cur_idle_time = get_cpu_idle_time_us(i, &cur_wall_time);
-		cur_iowait_time = get_cpu_iowait_time_us(i, &cur_wall_time);
 
 		/* how much wall time has passed since last iteration? */
 		wall_time = (unsigned int) cputime64_sub(cur_wall_time,
@@ -188,26 +186,16 @@ static unsigned long determine_cpu_load(void)
 							info->prev_cpu_idle);
 		info->prev_cpu_idle = cur_idle_time;
 
-		/* how much io wait time has passed since last iteration? */
-		iowait_time = (unsigned int) cputime64_sub(cur_iowait_time,
-							info->prev_cpu_io);
-		info->prev_cpu_io = cur_iowait_time;
-
 		if (unlikely(!wall_time || wall_time < idle_time))
 			continue;
 
 		/* load is the percentage of time not spent in idle */
 		load = 100 * (wall_time - idle_time) / wall_time;
-		info->load[info->idx] = load;
-		hp_printk("cpu %d load %u ", i, load);
-
-		/* iowait is the percentage of time not spent in io wait */
-		iowait = 100 * (iowait_time) / wall_time;
-		info->io[info->idx++] = load;
-		hp_printk("iowait %u\n", iowait);
-
+		info->load[info->idx++] = load;
 		if (info->idx >= LOAD_MONITOR)
 			info->idx = 0;
+
+		hp_printk("cpu %d load %u ", i, load);
 
 		total_load += load;
 	}
@@ -217,7 +205,7 @@ static unsigned long determine_cpu_load(void)
 
 static unsigned long determine_cpu_load_trend(void)
 {
-	int i, j, k;
+	int i, k;
 	unsigned long total_load = 0;
 
 	/* Get cpu load of each cpu */
@@ -227,8 +215,8 @@ static unsigned long determine_cpu_load_trend(void)
 
 		info = &per_cpu(hotplug_info, i);
 
-		for (k = 0, j = info->idx; k < LOAD_MONITOR; k++, j++)
-			load +=	info->load[j];
+		for (k = 0; k < LOAD_MONITOR; k++)
+			load +=	info->load[k];
 
 		load /= LOAD_MONITOR;
 
@@ -242,7 +230,7 @@ static unsigned long determine_cpu_load_trend(void)
 
 static unsigned long determine_cpu_balance_trend(void)
 {
-	int i, j, k;
+	int i, k;
 	unsigned long total_load = 0;
 	unsigned long min_load = (unsigned long) (-1);
 
@@ -250,11 +238,10 @@ static unsigned long determine_cpu_balance_trend(void)
 	for_each_online_cpu(i) {
 		unsigned int load = 0;
 		struct hotplug_cpu_info *info;
+		info = &per_cpu(hotplug_info, i);
 
-	info = &per_cpu(hotplug_info, i);
-
-		for (k = 0, j = info->idx; k < LOAD_MONITOR; k++, j++)
-			load +=	info->load[j];
+		for (k = 0; k < LOAD_MONITOR; k++)
+			load +=	info->load[k];
 
 		load /= LOAD_MONITOR;
 
@@ -288,7 +275,6 @@ static void init_cpu_load_trend(void)
 
 		for (j = 0; j < LOAD_MONITOR; j++) {
 			info->load[j] = 100;
-			info->io[j] = 100;
 		}
 		info->idx = 0;
 	}
