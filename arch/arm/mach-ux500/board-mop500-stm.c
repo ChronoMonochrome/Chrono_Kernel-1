@@ -203,7 +203,7 @@ static void control_level_shifter_for_microsd(int gpio_dir)
 {
 	int gpio[2];
 
-	if (machine_is_hrefv60() || machine_is_u9540()) {
+	if (machine_is_hrefv60() || machine_is_u8520() || machine_is_u9540()) {
 		gpio[0] = HREFV60_SDMMC_EN_GPIO;
 		gpio[1] = HREFV60_SDMMC_1V8_3V_GPIO;
 	} else	{
