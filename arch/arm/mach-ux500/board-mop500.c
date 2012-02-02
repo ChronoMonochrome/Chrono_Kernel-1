@@ -1330,6 +1330,20 @@ MACHINE_START(U8500, "ST-Ericsson MOP500 platform")
 	.restart	= ux500_restart,
 MACHINE_END
 
+/*
+ * NOTE! 8520 machine reports as a HREFV60 until user space updates has been
+ * done for 8520.
+ */
+MACHINE_START(U8520, "ST-Ericsson U8500 Platform HREFv60+")
+	.atag_offset	= 0x100,
+	.map_io		= u8500_map_io,
+	.init_irq	= ux500_init_irq,
+	.timer		= &ux500_timer,
+	.handle_irq	= gic_handle_irq,
+	.init_machine	= hrefv60_init_machine,
+	.restart	= ux500_restart,
+MACHINE_END
+
 MACHINE_START(HREFV60, "ST-Ericsson U8500 Platform HREFv60+")
 	.atag_offset	= 0x100,
 	.map_io		= u8500_map_io,
@@ -1351,7 +1365,7 @@ MACHINE_START(SNOWBALL, "ST-Ericsson Snowball platform")
 	.restart	= ux500_restart,
 MACHINE_END
 
-/* Tempoary reuse hrefv60 machine */
+/* Temporary reuse hrefv60 machine */
 MACHINE_START(U9540, "ST-Ericsson 9540 platform")
 	.atag_offset	= 0x100,
 	.map_io		= u8500_map_io,

@@ -245,7 +245,7 @@ static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
 
 void __init mop500_stuib_init(void)
 {
-	if (machine_is_hrefv60()) {
+	if (machine_is_hrefv60() || machine_is_u8520()) {
 		tsc_plat_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
 		tsc_plat2_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
 #ifdef CONFIG_U8500_FLASH

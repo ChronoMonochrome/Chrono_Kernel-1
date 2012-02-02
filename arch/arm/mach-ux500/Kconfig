@@ -47,6 +47,13 @@ config MACH_HREFV60
 	  Include support for the HREFv60 new development platform.
 	  Includes HREFv70, v71 etc.
 
+config MACH_U8520
+       bool "U8520 Development platform"
+       depends on UX500_SOC_DB8500
+	select MACH_U8500
+       help
+         Include support for the 8520 development platform.
+
 config MACH_SNOWBALL
 	bool "U8500 Snowball platform"
 	select MACH_MOP500

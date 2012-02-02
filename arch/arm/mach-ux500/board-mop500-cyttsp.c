@@ -232,7 +232,7 @@ void __init mop500_u8500uib_r3_init(void)
 	mop500_cyttsp_init();
 	db8500_add_spi2(&mop500_spi2_data);
 	nmk_config_pin((GPIO64_GPIO     | PIN_INPUT_PULLUP), false);
-	if (machine_is_hrefv60()) {
+	if (machine_is_hrefv60() || machine_is_u8520()) {
 		adp1653_pdata_u8500_uib.enable_gpio =
 					HREFV60_CAMERA_FLASH_ENABLE;
 	} else {

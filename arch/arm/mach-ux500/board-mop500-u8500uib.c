@@ -114,7 +114,7 @@ void __init mop500_u8500uib_init(void)
 			ARRAY_SIZE(mop500_i2c0_devices_u8500));
 
 #ifdef CONFIG_U8500_FLASH
-	if (machine_is_hrefv60())
+	if (machine_is_hrefv60() || machine_is_u8520())
 		adp1653_pdata_u8500_uib.enable_gpio =
 					HREFV60_CAMERA_FLASH_ENABLE;
 	else
