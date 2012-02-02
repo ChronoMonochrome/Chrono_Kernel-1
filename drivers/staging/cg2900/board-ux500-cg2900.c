@@ -236,6 +236,7 @@ static bool mach_supported(void)
 	if (machine_is_u8500() ||
 	    machine_is_u5500() ||
 	    machine_is_hrefv60() ||
+	    machine_is_u8520() ||
 	    machine_is_nomadik() ||
 	    machine_is_snowball() ||
 	    machine_is_u9540())
@@ -273,7 +274,7 @@ static int __init board_cg2900_init(void)
 		ux500_cg2900_uart_device.resource =
 				cg2900_uart_resources_u9500;
 	} else if (cpu_is_u8500()) {
-		if (machine_is_hrefv60()) {
+		if (machine_is_hrefv60() || machine_is_u8520()) {
 			/* u8500 */
 			ux500_cg2900_uart_device.num_resources =
 					ARRAY_SIZE(cg2900_uart_resources_u8500);
