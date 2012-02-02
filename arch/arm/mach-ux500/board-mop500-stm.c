@@ -26,6 +26,9 @@
 #define HREFV60_SDMMC_EN_GPIO 169
 #define HREFV60_SDMMC_1V8_3V_GPIO 5
 
+#define U8520_SDMMC_EN_GPIO 78
+#define U8520_SDMMC_1V8_3V_GPIO 5
+
 #define STM_DEVICE (&u8500_stm_device.dev)
 #define STM_ERR(msg) dev_err(STM_DEVICE, msg)
 #define STM_WARN(msg) dev_warn(STM_DEVICE, msg)
@@ -203,9 +206,12 @@ static void control_level_shifter_for_microsd(int gpio_dir)
 {
 	int gpio[2];
 
-	if (machine_is_hrefv60() || machine_is_u8520() || machine_is_u9540()) {
+	if (machine_is_hrefv60() || machine_is_u9540()) {
 		gpio[0] = HREFV60_SDMMC_EN_GPIO;
 		gpio[1] = HREFV60_SDMMC_1V8_3V_GPIO;
+	} else if (machine_is_u8520()) {
+		gpio[0] = U8520_SDMMC_EN_GPIO;
+		gpio[1] = U8520_SDMMC_1V8_3V_GPIO;
 	} else	{
 		gpio[0] = MOP500_EGPIO(17);
 		gpio[1] = MOP500_EGPIO(18);
