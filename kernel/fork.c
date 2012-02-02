@@ -650,22 +650,22 @@ EXPORT_SYMBOL_GPL(get_task_mm);
 
 struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
 {
-        struct mm_struct *mm;
-        int err;
+	struct mm_struct *mm;
+	int err;
 
-        err =  mutex_lock_killable(&task->signal->cred_guard_mutex);
-        if (err)
-                return ERR_PTR(err);
+	err =  mutex_lock_killable(&task->signal->cred_guard_mutex);
+	if (err)
+		return ERR_PTR(err);
 
-        mm = get_task_mm(task);
-        if (mm && mm != current->mm &&
-                        !ptrace_may_access(task, mode)) {
-                mmput(mm);
-                mm = ERR_PTR(-EACCES);
-        }
-        mutex_unlock(&task->signal->cred_guard_mutex);
+	mm = get_task_mm(task);
+	if (mm && mm != current->mm &&
+			!ptrace_may_access(task, mode)) {
+		mmput(mm);
+		mm = ERR_PTR(-EACCES);
+	}
+	mutex_unlock(&task->signal->cred_guard_mutex);
 
-        return mm;
+	return mm;
 }
 
 /* Please note the differences between mmput and mm_release.
