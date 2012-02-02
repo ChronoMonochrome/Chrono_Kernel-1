@@ -47,9 +47,9 @@
 /* IO force */
 #define PRCM_IOCR		0x310
 #define PRCM_IOCR_IOFORCE			0x1
-
+#ifdef CONFIG_UX500_SUSPEND_DBG_WAKE_ON_UART
 int ux500_console_uart_gpio_pin = CONFIG_UX500_CONSOLE_UART_GPIO_PIN;
-
+#endif
 static u32 u8500_gpio_banks[] = {U8500_GPIOBANK0_BASE,
 				 U8500_GPIOBANK1_BASE,
 				 U8500_GPIOBANK2_BASE,
