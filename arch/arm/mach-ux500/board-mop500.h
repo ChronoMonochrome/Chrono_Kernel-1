@@ -44,6 +44,11 @@
 #define MOP500_HDMI_RST_GPIO		196
 #define CYPRESS_SLAVE_SELECT_GPIO	216
 
+/* U8520-specific GPIO assignments */
+#define U8520_SDMMC_EN_GPIO             78
+#define U8520_SDMMC_1V8_3V_GPIO         5
+#define U8520_SDMMC_CD_GPIO		95
+
 /* GPIOs on the TC35892 expander */
 #define GPIO_MAGNET_DRDY		MOP500_EGPIO(1)
 #define GPIO_SDMMC_CD			MOP500_EGPIO(3)
@@ -80,6 +85,7 @@ struct i2c_board_info;
 extern void mop500_sdi_init(struct device *parent);
 extern void snowball_sdi_init(struct device *parent);
 extern void hrefv60_sdi_init(struct device *parent);
+extern void mach_u8520_sdi_init(struct device *parent);
 extern void mop500_sdi_tc35892_init(struct device *parent);
 void __init mop500_u8500uib_init(void);
 void __init mop500_stuib_init(void);
