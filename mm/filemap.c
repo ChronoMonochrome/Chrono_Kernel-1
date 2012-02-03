@@ -1456,6 +1456,11 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
 	size_t count = iov_iter_count(iter);
 	loff_t *ppos = &iocb->ki_pos;
 
+	count = 0;
+	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+	if (retval)
+		return retval;
+
 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
 	if (filp->f_flags & O_DIRECT) {
 		loff_t size;
@@ -1474,8 +1479,8 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
 				struct blk_plug plug;
 
 				blk_start_plug(&plug);
-				retval = mapping_direct_IO(mapping, READ,
-							   iocb, iter, pos);
+				retval = mapping->a_ops->direct_IO(READ, iocb,
+							iov, pos, nr_segs);
 				blk_finish_plug(&plug);
 			}
 			if (retval > 0) {
