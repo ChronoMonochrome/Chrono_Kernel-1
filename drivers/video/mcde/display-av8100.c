@@ -1421,6 +1421,13 @@ set_power_and_exit:
 	return ret;
 }
 
+static int hdmi_set_rotation(struct mcde_display_device *ddev,
+				enum mcde_display_rotation rotation)
+{
+	/* Not possible to rotate HDMI */
+	return 0;
+}
+
 static int __devinit hdmi_probe(struct mcde_display_device *dev)
 {
 	int ret = 0;
@@ -1457,6 +1464,7 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	dev->apply_config = hdmi_apply_config;
 	dev->set_pixel_format = hdmi_set_pixel_format;
 	dev->set_power_mode = hdmi_set_power_mode;
+	dev->set_rotation = hdmi_set_rotation;
 
 	port = dev->port;
 
