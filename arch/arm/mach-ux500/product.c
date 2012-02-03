@@ -15,6 +15,7 @@
 #include <linux/tee.h>
 #include <linux/module.h>
 #include <mach/hardware.h>
+#include <asm/mach-types.h>
 
 #define STATIC_TEE_TA_START_LOW	0xBC765EDE
 #define STATIC_TEE_TA_START_MID	0x6724
@@ -32,6 +33,8 @@ bool ux500_jtag_enabled(void)
 #ifdef CONFIG_UX500_DEBUG_NO_LAUTERBACH
 	return false;
 #else
+	if (machine_is_snowball())
+		return true;
 	if (cpu_is_u5500())
 		return readl_relaxed(__io_address(U5500_PRCMU_DBG_PWRCTRL))
 			& PRCMU_DBG_PWRCTRL_A9DBGCLKEN;
