@@ -33,6 +33,7 @@ struct device;
 #define AB5500_1_0	0x20
 #define AB5500_1_1	0x21
 #define AB5500_2_0	0x24
+#define AB5500_2_1	0x25
 
 /*
  * AB3100, EVENTA1, A2 and A3 event register flags
