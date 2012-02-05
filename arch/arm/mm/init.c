@@ -31,7 +31,6 @@
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
-#include <asm/memblock.h>
 
 #include "mm.h"
 
