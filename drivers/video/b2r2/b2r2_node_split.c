@@ -21,9 +21,6 @@
 /*
  * Macros and constants
  */
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #define INSTANCES_DEFAULT_SIZE 10
 #define INSTANCES_GROW_SIZE 5
@@ -110,9 +107,6 @@ static int configure_scale(struct b2r2_control *cont,
 static int configure_rot_scale(struct b2r2_control *cont,
 		struct b2r2_node_split_job *this, struct b2r2_node *node,
 		struct b2r2_node **next);
-
-static void recalculate_rects(struct b2r2_control *cont,
-		struct b2r2_blt_req *req);
 
 static int check_rect(struct b2r2_control *cont,
 		const struct b2r2_blt_img *img,
@@ -254,13 +248,6 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 	/* Check for color fill */
 	color_fill = (this->flags & (B2R2_BLT_FLAG_SOURCE_FILL |
 		B2R2_BLT_FLAG_SOURCE_FILL_RAW)) != 0;
-
-	/*
-	 * B2R2 cannot handle destination clipping on buffers
-	 * allocated close to 64MiB bank boundaries.
-	 * recalculate src_ and dst_rect to avoid clipping.
-	 */
-	recalculate_rects(cont, (struct b2r2_blt_req *) &req->user_req);
 
 	/* Configure the source and destination buffers */
 	set_buf(cont, &this->src, req->src_resolved.physical_address,
@@ -579,25 +566,6 @@ void b2r2_node_split_cancel(struct b2r2_control *cont,
 	return;
 }
 
-/*
- * Private functions
- */
-
-static void recalculate_rects(struct b2r2_control *cont,
-		struct b2r2_blt_req *req)
-{
-	struct b2r2_blt_rect new_dst_rect;
-	struct b2r2_blt_rect new_src_rect;
-	struct b2r2_blt_rect new_bg_rect;
-
-	b2r2_trim_rects(cont,
-		req, &new_bg_rect, &new_dst_rect, &new_src_rect);
-
-	req->dst_rect = new_dst_rect;
-	req->src_rect = new_src_rect;
-	req->bg_rect = new_bg_rect;
-}
-
 static int check_rect(struct b2r2_control *cont,
 		const struct b2r2_blt_img *img,
 		const struct b2r2_blt_rect *rect,
@@ -619,10 +587,10 @@ static int check_rect(struct b2r2_control *cont,
 	/* If we are using clip we should only look at the intersection of the
 	   rects */
 	if (clip) {
-		l = MAX(rect->x, clip->x);
-		t = MAX(rect->y, clip->y);
-		r = MIN(rect->x + rect->width, clip->x + clip->width);
-		b = MIN(rect->y + rect->height, clip->y + clip->height);
+		l = max(rect->x, clip->x);
+		t = max(rect->y, clip->y);
+		r = min(rect->x + rect->width, clip->x + clip->width);
+		b = min(rect->y + rect->height, clip->y + clip->height);
 	} else {
 		l = rect->x;
 		t = rect->y;
@@ -1338,22 +1306,22 @@ static int analyze_scale_factors(struct b2r2_control *cont,
 	u16 vsf;
 
 	if (this->rotation) {
-		ret = calculate_scale_factor(cont, this->src.rect.width,
+		ret = calculate_scale_factor(cont->dev, this->src.rect.width,
 					this->dst.rect.height, &hsf);
 		if (ret < 0)
 			goto error;
 
-		ret = calculate_scale_factor(cont, this->src.rect.height,
+		ret = calculate_scale_factor(cont->dev, this->src.rect.height,
 					this->dst.rect.width, &vsf);
 		if (ret < 0)
 			goto error;
 	} else {
-		ret = calculate_scale_factor(cont, this->src.rect.width,
+		ret = calculate_scale_factor(cont->dev, this->src.rect.width,
 					this->dst.rect.width, &hsf);
 		if (ret < 0)
 			goto error;
 
-		ret = calculate_scale_factor(cont, this->src.rect.height,
+		ret = calculate_scale_factor(cont->dev, this->src.rect.height,
 					this->dst.rect.height, &vsf);
 		if (ret < 0)
 			goto error;
@@ -2791,9 +2759,9 @@ static int setup_tmp_buf(struct b2r2_control *cont,
 
 	if (size > max_size) {
 		/* We need to limit the size, so we choose a different width */
-		width = MIN(width, B2R2_RESCALE_MAX_WIDTH);
+		width = min(width, (u32) B2R2_RESCALE_MAX_WIDTH);
 		pitch = b2r2_fmt_byte_pitch(fmt, width);
-		height = MIN(height, max_size / pitch);
+		height = min(height, max_size / pitch);
 		size = pitch * height;
 	}
 
@@ -2918,10 +2886,10 @@ static void set_target(struct b2r2_node *node, u32 addr,
 	/* Clip to the destination buffer to prevent memory overwrites */
 	if ((l < 0) || (r > buf->width) || (t < 0) || (b > buf->height)) {
 		/* The clip rectangle is including the borders */
-		l = MAX(l, 0);
-		r = MIN(r, buf->width) - 1;
-		t = MAX(t, 0);
-		b = MIN(b, buf->height) - 1;
+		l = max(l, 0);
+		r = min(r, (s32) buf->width) - 1;
+		t = max(t, 0);
+		b = min(b, (s32) buf->height) - 1;
 
 		node->node.GROUP0.B2R2_CIC |= B2R2_CIC_CLIP_WINDOW;
 		node->node.GROUP0.B2R2_INS |= B2R2_INS_RECT_CLIP_ENABLED;

@@ -25,7 +25,7 @@
 
 #include "b2r2_internal.h"
 
-bool b2r2_validate_user_req(struct b2r2_control *cont,
+bool b2r2_validate_user_req(struct device *dev,
 		struct b2r2_blt_req *req);
 
 #endif

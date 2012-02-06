@@ -17,7 +17,7 @@
 
 extern const s32 b2r2_s32_max;
 
-int calculate_scale_factor(struct b2r2_control *cont,
+int calculate_scale_factor(struct device *dev,
 		u32 from, u32 to, u16 *sf_out);
 void b2r2_get_img_bounding_rect(struct b2r2_blt_img *img,
 		struct b2r2_blt_rect *bounding_rect);
@@ -30,14 +30,14 @@ bool b2r2_is_rect_gte_rect(struct b2r2_blt_rect *rect1,
 void b2r2_intersect_rects(struct b2r2_blt_rect *rect1,
 		struct b2r2_blt_rect *rect2,
 		struct b2r2_blt_rect *intersection);
-void b2r2_trim_rects(struct b2r2_control *cont,
+void b2r2_trim_rects(struct device *dev,
 			const struct b2r2_blt_req *req,
 			struct b2r2_blt_rect *new_bg_rect,
 			struct b2r2_blt_rect *new_dst_rect,
 			struct b2r2_blt_rect *new_src_rect);
 
-int b2r2_get_fmt_bpp(struct b2r2_control *cont, enum b2r2_blt_fmt fmt);
-int b2r2_get_fmt_y_bpp(struct b2r2_control *cont, enum b2r2_blt_fmt fmt);
+int b2r2_get_fmt_bpp(struct device *dev, enum b2r2_blt_fmt fmt);
+int b2r2_get_fmt_y_bpp(struct device *dev, enum b2r2_blt_fmt fmt);
 
 bool b2r2_is_single_plane_fmt(enum b2r2_blt_fmt fmt);
 bool b2r2_is_independent_pixel_fmt(enum b2r2_blt_fmt fmt);
@@ -52,11 +52,11 @@ bool b2r2_is_mb_fmt(enum b2r2_blt_fmt fmt);
 /*
  * Rounds up if an invalid width causes the pitch to be non byte aligned.
  */
-u32 b2r2_calc_pitch_from_width(struct b2r2_control *cont,
+u32 b2r2_calc_pitch_from_width(struct device *dev,
 		s32 width, enum b2r2_blt_fmt fmt);
-u32 b2r2_get_img_pitch(struct b2r2_control *cont,
+u32 b2r2_get_img_pitch(struct device *dev,
 		struct b2r2_blt_img *img);
-s32 b2r2_get_img_size(struct b2r2_control *cont,
+s32 b2r2_get_img_size(struct device *dev,
 		struct b2r2_blt_img *img);
 
 s32 b2r2_div_round_up(s32 dividend, s32 divisor);
@@ -80,5 +80,10 @@ int b2r2_fmt_byte_pitch(enum b2r2_blt_fmt fmt, u32 width);
 enum b2r2_native_fmt b2r2_to_native_fmt(enum b2r2_blt_fmt fmt);
 u32 b2r2_to_RGB888(u32 color, const enum b2r2_blt_fmt fmt);
 enum b2r2_fmt_type b2r2_get_fmt_type(enum b2r2_blt_fmt fmt);
+#ifdef CONFIG_DEBUG_FS
+int sprintf_req(struct b2r2_blt_request *request, char *buf, int size);
+#endif
+void b2r2_recalculate_rects(struct device *dev,
+		struct b2r2_blt_req *req);
 
 #endif

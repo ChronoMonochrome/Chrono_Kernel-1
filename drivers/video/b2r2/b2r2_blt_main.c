@@ -36,6 +36,7 @@
 #include <linux/hwmem.h>
 
 #include "b2r2_internal.h"
+#include "b2r2_control.h"
 #include "b2r2_node_split.h"
 #include "b2r2_generic.h"
 #include "b2r2_mem_alloc.h"
@@ -60,28 +61,11 @@
  * Support read of many report records at once.
  */
 
-/**
- * b2r2_blt_dev - Our device(s), /dev/b2r2_blt
- */
-static struct b2r2_control *b2r2_ctl[B2R2_MAX_NBR_DEVICES];
-
-/* Debug file system support */
-#ifdef CONFIG_DEBUG_FS
-static int sprintf_req(struct b2r2_blt_request *request, char *buf, int size);
-#endif
-
 /* Local functions */
 static void inc_stat(struct b2r2_control *cont, unsigned long *stat);
 static void dec_stat(struct b2r2_control *cont, unsigned long *stat);
-static int b2r2_blt_synch(struct b2r2_blt_instance *instance,
-		int request_id);
-static int b2r2_blt_query_cap(struct b2r2_blt_instance *instance,
-		struct b2r2_blt_query_cap *query_cap);
 
 #ifndef CONFIG_B2R2_GENERIC_ONLY
-static int b2r2_blt(struct b2r2_blt_instance *instance,
-		struct b2r2_blt_request *request);
-
 static void job_callback(struct b2r2_core_job *job);
 static void job_release(struct b2r2_core_job *job);
 static int job_acquire_resources(struct b2r2_core_job *job, bool atomic);
@@ -89,9 +73,6 @@ static void job_release_resources(struct b2r2_core_job *job, bool atomic);
 #endif
 
 #ifdef CONFIG_B2R2_GENERIC
-static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
-		struct b2r2_blt_request *request);
-
 static void job_callback_gen(struct b2r2_core_job *job);
 static void job_release_gen(struct b2r2_core_job *job);
 static int job_acquire_resources_gen(struct b2r2_core_job *job, bool atomic);
@@ -109,8 +90,8 @@ static void unresolve_buf(struct b2r2_control *cont,
 static void sync_buf(struct b2r2_control *cont, struct b2r2_blt_img *img,
 		struct b2r2_resolved_buf *resolved, bool is_dst,
 		struct b2r2_blt_rect *rect);
-static bool is_report_list_empty(struct b2r2_blt_instance *instance);
-static bool is_synching(struct b2r2_blt_instance *instance);
+static bool is_report_list_empty(struct b2r2_control_instance *instance);
+static bool is_synching(struct b2r2_control_instance *instance);
 static void get_actual_dst_rect(struct b2r2_blt_req *req,
 		struct b2r2_blt_rect *actual_dst_rect);
 static void set_up_hwmem_region(struct b2r2_control *cont,
@@ -196,39 +177,18 @@ static void clean_l1_cache_range_all_cpus(struct sync_args *sa)
  *
  * A B2R2 BLT instance is created and stored in the file structure.
  */
-static int b2r2_blt_open(struct inode *inode, struct file *filp)
+int b2r2_control_open(struct b2r2_control_instance *instance)
 {
 	int ret = 0;
-	struct b2r2_blt_instance *instance;
-	struct b2r2_control *cont = filp->private_data;
+	struct b2r2_control *cont = instance->control;
 
 	b2r2_log_info(cont->dev, "%s\n", __func__);
-
 	inc_stat(cont, &cont->stat_n_in_open);
 
-	/* Allocate and initialize the instance */
-	instance = (struct b2r2_blt_instance *)
-		kmalloc(sizeof(*instance), GFP_KERNEL);
-	if (!instance) {
-		b2r2_log_err(cont->dev, "%s: Failed to alloc\n", __func__);
-		goto instance_alloc_failed;
-	}
-	memset(instance, 0, sizeof(*instance));
 	INIT_LIST_HEAD(&instance->report_list);
 	mutex_init(&instance->lock);
 	init_waitqueue_head(&instance->report_list_waitq);
 	init_waitqueue_head(&instance->synch_done_waitq);
-	instance->control = cont;
-
-	/*
-	 * Remember the instance so that we can retrieve it in
-	 * other functions
-	 */
-	filp->private_data = instance;
-	goto out;
-
-instance_alloc_failed:
-out:
 	dec_stat(cont, &cont->stat_n_in_open);
 
 	return ret;
@@ -244,11 +204,9 @@ out:
  * All active jobs are finished or cancelled and allocated data
  * is released.
  */
-static int b2r2_blt_release(struct inode *inode, struct file *filp)
+int b2r2_control_release(struct b2r2_control_instance *instance)
 {
 	int ret;
-	struct b2r2_blt_instance *instance =
-			(struct b2r2_blt_instance *) filp->private_data;
 	struct b2r2_control *cont = instance->control;
 
 	b2r2_log_info(cont->dev, "%s\n", __func__);
@@ -256,7 +214,7 @@ static int b2r2_blt_release(struct inode *inode, struct file *filp)
 	inc_stat(cont, &cont->stat_n_in_release);
 
 	/* Finish all outstanding requests */
-	ret = b2r2_blt_synch(instance, 0);
+	ret = b2r2_control_synch(instance, 0);
 	if (ret < 0)
 		b2r2_log_warn(cont->dev, "%s: b2r2_blt_sync failed with %d\n",
 			__func__, ret);
@@ -301,312 +259,20 @@ static int b2r2_blt_release(struct inode *inode, struct file *filp)
 	}
 	mutex_unlock(&instance->lock);
 
-	/* Release our instance */
-	kfree(instance);
-
 	dec_stat(cont, &cont->stat_n_in_release);
 
 	return 0;
 }
 
-/**
- * b2r2_blt_ioctl - This routine implements b2r2_blt ioctl interface
- *
- * @file: file pointer.
- * @cmd	:ioctl command.
- * @arg: input argument for ioctl.
- *
- * Returns 0 if OK else negative error code
- */
-static long b2r2_blt_ioctl(struct file *file,
-		unsigned int cmd, unsigned long arg)
+size_t b2r2_control_read(struct b2r2_control_instance *instance,
+		struct b2r2_blt_request **request_out, bool block)
 {
-	int ret = 0;
-	struct b2r2_blt_instance *instance =
-			(struct b2r2_blt_instance *) file->private_data;
-	struct b2r2_control *cont = instance->control;
-
-	/** Process actual ioctl */
-	b2r2_log_info(cont->dev, "%s\n", __func__);
-
-	/* Get the instance from the file structure */
-	switch (cmd) {
-	case B2R2_BLT_IOC: {
-		/* This is the "blit" command */
-
-		/* arg is user pointer to struct b2r2_blt_request */
-		struct b2r2_blt_request *request =
-			kmalloc(sizeof(*request), GFP_KERNEL);
-		if (!request) {
-			b2r2_log_err(cont->dev, "%s: Failed to alloc mem\n",
-				__func__);
-			return -ENOMEM;
-		}
-
-		/* Initialize the structure */
-		memset(request, 0, sizeof(*request));
-		INIT_LIST_HEAD(&request->list);
-		request->instance = instance;
-
-		/*
-		 * The user request is a sub structure of the
-		 * kernel request structure.
-		 */
-
-		/* Get the user data */
-		if (copy_from_user(&request->user_req, (void *)arg,
-				sizeof(request->user_req))) {
-			b2r2_log_err(cont->dev, "%s: copy_from_user failed\n",
-				__func__);
-			kfree(request);
-			return -EFAULT;
-		}
-
-		if (!b2r2_validate_user_req(cont, &request->user_req)) {
-			kfree(request);
-			return -EINVAL;
-		}
-
-		request->profile = is_profiler_registered_approx();
-
-		/*
-		 * If the user specified a color look-up table,
-		 * make a copy that the HW can use.
-		 */
-		if ((request->user_req.flags &
-				B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION) != 0) {
-			request->clut = dma_alloc_coherent(cont->dev,
-				CLUT_SIZE, &(request->clut_phys_addr),
-				GFP_DMA | GFP_KERNEL);
-			if (request->clut == NULL) {
-				b2r2_log_err(cont->dev, "%s CLUT allocation "
-					"failed.\n", __func__);
-				kfree(request);
-				return -ENOMEM;
-			}
-
-			if (copy_from_user(request->clut,
-					request->user_req.clut, CLUT_SIZE)) {
-				b2r2_log_err(cont->dev, "%s: CLUT "
-					"copy_from_user failed\n",
-					__func__);
-				dma_free_coherent(cont->dev, CLUT_SIZE,
-					request->clut,
-					request->clut_phys_addr);
-				request->clut = NULL;
-				request->clut_phys_addr = 0;
-				kfree(request);
-				return -EFAULT;
-			}
-		}
-
-		/* Perform the blit */
-
-#ifdef CONFIG_B2R2_GENERIC_ONLY
-		/* Use the generic path for all operations */
-		ret = b2r2_generic_blt(instance, request);
-#else
-		/* Use the optimized path */
-		ret = b2r2_blt(instance, request);
-#endif
-
-#ifdef CONFIG_B2R2_GENERIC_FALLBACK
-		/* Fall back to generic path if operation was not supported */
-		if (ret == -ENOSYS) {
-			struct b2r2_blt_request *request_gen;
-
-			if (request->user_req.flags & B2R2_BLT_FLAG_BG_BLEND) {
-				/* No support for BG BLEND in generic
-				 * implementation yet */
-				b2r2_log_warn(cont->dev, "%s: Unsupported: "
-					"Background blend in b2r2_generic_blt\n",
-					__func__);
-				return ret;
-			}
-
-			b2r2_log_info(cont->dev,
-				"b2r2_blt=%d Going generic.\n", ret);
-			request_gen = kmalloc(sizeof(*request_gen), GFP_KERNEL);
-			if (!request_gen) {
-				b2r2_log_err(cont->dev,
-					"%s: Failed to alloc mem for "
-					"request_gen\n", __func__);
-				return -ENOMEM;
-			}
-
-			/* Initialize the structure */
-			memset(request_gen, 0, sizeof(*request_gen));
-			INIT_LIST_HEAD(&request_gen->list);
-			request_gen->instance = instance;
-
-			/*
-			 * The user request is a sub structure of the
-			 * kernel request structure.
-			 */
-
-			/* Get the user data */
-			if (copy_from_user(&request_gen->user_req, (void *)arg,
-					sizeof(request_gen->user_req))) {
-				b2r2_log_err(cont->dev, "%s: copy_from_user "
-					"failed\n", __func__);
-				kfree(request_gen);
-				return -EFAULT;
-			}
-
-			/*
-			 * If the user specified a color look-up table,
-			 * make a copy that the HW can use.
-			 */
-			if ((request_gen->user_req.flags &
-					B2R2_BLT_FLAG_CLUT_COLOR_CORRECTION)
-					!= 0) {
-				request_gen->clut = dma_alloc_coherent(
-					cont->dev, CLUT_SIZE,
-					&(request_gen->clut_phys_addr),
-					GFP_DMA | GFP_KERNEL);
-				if (request_gen->clut == NULL) {
-					b2r2_log_err(cont->dev, "%s CLUT "
-						"allocation failed.\n",
-						__func__);
-					kfree(request_gen);
-					return -ENOMEM;
-				}
-
-				if (copy_from_user(request_gen->clut,
-						request_gen->user_req.clut,
-						CLUT_SIZE)) {
-					b2r2_log_err(cont->dev, "%s: CLUT"
-						" copy_from_user failed\n",
-						__func__);
-					dma_free_coherent(cont->dev, CLUT_SIZE,
-						request_gen->clut,
-						request_gen->clut_phys_addr);
-					request_gen->clut = NULL;
-					request_gen->clut_phys_addr = 0;
-					kfree(request_gen);
-					return -EFAULT;
-				}
-			}
-
-			request_gen->profile = is_profiler_registered_approx();
-
-			ret = b2r2_generic_blt(instance, request_gen);
-			b2r2_log_info(cont->dev, "\nb2r2_generic_blt=%d "
-				"Generic done.\n", ret);
-		}
-#endif /* CONFIG_B2R2_GENERIC_FALLBACK */
-
-		break;
-	}
-
-	case B2R2_BLT_SYNCH_IOC:
-		/* arg is request_id */
-		ret = b2r2_blt_synch(instance, (int) arg);
-		break;
-
-	case B2R2_BLT_QUERY_CAP_IOC:
-	{
-		/* Arg is struct b2r2_blt_query_cap */
-		struct b2r2_blt_query_cap query_cap;
-
-		/* Get the user data */
-		if (copy_from_user(&query_cap, (void *)arg,
-				sizeof(query_cap))) {
-			b2r2_log_err(cont->dev, "%s: copy_from_user failed\n",
-				__func__);
-			return -EFAULT;
-		}
-
-		/* Fill in our capabilities */
-		ret = b2r2_blt_query_cap(instance, &query_cap);
-
-		/* Return data to user */
-		if (copy_to_user((void *)arg, &query_cap,
-				sizeof(query_cap))) {
-			b2r2_log_err(cont->dev, "%s: copy_to_user failed\n",
-				__func__);
-			return -EFAULT;
-		}
-		break;
-	}
-
-	default:
-		/* Unknown command */
-		b2r2_log_err(cont->dev, "%s: Unknown cmd %d\n", __func__, cmd);
-		ret = -EINVAL;
-		break;
-
-	}
-
-	if (ret < 0)
-		b2r2_log_err(cont->dev, "EC %d OK!\n", -ret);
-
-	return ret;
-}
-
-/**
- * b2r2_blt_poll - Support for user-space poll, select & epoll.
- *                 Used for user-space callback
- *
- * @filp: File to poll on
- * @wait: Poll table to wait on
- *
- * This function checks if there are anything to read
- */
-static unsigned b2r2_blt_poll(struct file *filp, poll_table *wait)
-{
-	struct b2r2_blt_instance *instance =
-			(struct b2r2_blt_instance *) filp->private_data;
-	unsigned int mask = 0;
-#ifdef CONFIG_B2R2_DEBUG
-	struct b2r2_control *cont = instance->control;
-#endif
-
-	b2r2_log_info(cont->dev, "%s\n", __func__);
-
-	poll_wait(filp, &instance->report_list_waitq, wait);
-	mutex_lock(&instance->lock);
-	if (!list_empty(&instance->report_list))
-		mask |= POLLIN | POLLRDNORM;
-	mutex_unlock(&instance->lock);
-
-	return mask;
-}
-
-/**
- * b2r2_blt_read - Read report data, user for user-space callback
- *
- * @filp: File pointer
- * @buf: User space buffer
- * @count: Number of bytes to read
- * @f_pos: File position
- *
- * Returns number of bytes read or negative error code
- */
-static ssize_t b2r2_blt_read(struct file *filp, char __user *buf, size_t count,
-			loff_t *f_pos)
-{
-	int ret = 0;
 	struct b2r2_blt_request *request = NULL;
-	struct b2r2_blt_report report;
-	struct b2r2_blt_instance *instance =
-		(struct b2r2_blt_instance *) filp->private_data;
 #ifdef CONFIG_B2R2_DEBUG
 	struct b2r2_control *cont = instance->control;
 #endif
 
 	b2r2_log_info(cont->dev, "%s\n", __func__);
-
-	/*
-	 * We return only complete report records, one at a time.
-	 * Might be more efficient to support read of many.
-	 */
-	count = (count / sizeof(struct b2r2_blt_report)) *
-		sizeof(struct b2r2_blt_report);
-	if (count > sizeof(struct b2r2_blt_report))
-		count = sizeof(struct b2r2_blt_report);
-	if (count == 0)
-		return count;
 
 	/*
 	 * Loop and wait here until we have anything to return or
@@ -617,7 +283,7 @@ static ssize_t b2r2_blt_read(struct file *filp, char __user *buf, size_t count,
 		mutex_unlock(&instance->lock);
 
 		/* Return if non blocking read */
-		if (filp->f_flags & O_NONBLOCK)
+		if (!block)
 			return -EAGAIN;
 
 		b2r2_log_info(cont->dev, "%s - Going to sleep\n", __func__);
@@ -639,46 +305,72 @@ static ssize_t b2r2_blt_read(struct file *filp, char __user *buf, size_t count,
 		/* Remove from list to avoid reading twice */
 		list_del_init(&request->list);
 
-		report.request_id = request->request_id;
-		report.report1 = request->user_req.report1;
-		report.report2 = request->user_req.report2;
-		report.usec_elapsed = 0; /* TBD */
-
-		mutex_unlock(&instance->lock);
-		if (copy_to_user(buf, &report, sizeof(report)))
-			ret = -EFAULT;
-		mutex_lock(&instance->lock);
-
-		if (ret < 0) {
-			/* copy to user failed, re-insert into list */
-			list_add(&request->list,
-					&request->instance->report_list);
-			request = NULL;
-		}
+		*request_out = request;
 	}
 	mutex_unlock(&instance->lock);
 
 	if (request)
-		/*
-		 * Release matching the addref when the job was put into
-		 * the report list
-		 */
-		b2r2_core_job_release(&request->job, __func__);
+		return 1;
 
-	return count;
+	/* No report returned */
+	return 0;
 }
 
-/**
- * b2r2_blt_fops - File operations for b2r2_blt
- */
-static const struct file_operations b2r2_blt_fops = {
-	.owner =          THIS_MODULE,
-	.open =           b2r2_blt_open,
-	.release =        b2r2_blt_release,
-	.unlocked_ioctl = b2r2_blt_ioctl,
-	.poll  =          b2r2_blt_poll,
-	.read  =          b2r2_blt_read,
-};
+size_t b2r2_control_read_id(struct b2r2_control_instance *instance,
+		struct b2r2_blt_request **request_out, bool block,
+		int request_id)
+{
+	struct b2r2_blt_request *request = NULL;
+#ifdef CONFIG_B2R2_DEBUG
+	struct b2r2_control *cont = instance->control;
+#endif
+
+	b2r2_log_info(cont->dev, "%s\n", __func__);
+
+	/*
+	 * Loop and wait here until we have anything to return or
+	 * until interrupted
+	 */
+	mutex_lock(&instance->lock);
+	while (list_empty(&instance->report_list)) {
+		mutex_unlock(&instance->lock);
+
+		/* Return if non blocking read */
+		if (!block)
+			return -EAGAIN;
+
+		b2r2_log_info(cont->dev, "%s - Going to sleep\n", __func__);
+		if (wait_event_interruptible(
+				instance->report_list_waitq,
+				!is_report_list_empty(instance)))
+			/* signal: tell the fs layer to handle it */
+			return -ERESTARTSYS;
+
+		/* Otherwise loop, but first reaquire the lock */
+		mutex_lock(&instance->lock);
+	}
+
+	if (!list_empty(&instance->report_list)) {
+		struct b2r2_blt_request *pos;
+		list_for_each_entry(pos, &instance->report_list, list) {
+			if (pos->request_id)
+				request = pos;
+		}
+	}
+
+	if (request) {
+		/* Remove from list to avoid reading twice */
+		list_del_init(&request->list);
+		*request_out = request;
+	}
+	mutex_unlock(&instance->lock);
+
+	if (request)
+		return 1;
+
+	/* No report returned */
+	return 0;
+}
 
 #ifndef CONFIG_B2R2_GENERIC_ONLY
 /**
@@ -687,14 +379,14 @@ static const struct file_operations b2r2_blt_fops = {
  * @instance: The B2R2 BLT instance
  * @request; The request to perform
  */
-static int b2r2_blt(struct b2r2_blt_instance *instance,
-		struct b2r2_blt_request *request)
+int b2r2_control_blt(struct b2r2_blt_request *request)
 {
 	int ret = 0;
 	struct b2r2_blt_rect actual_dst_rect;
 	int request_id = 0;
 	struct b2r2_node *last_node = request->first_node;
 	int node_count;
+	struct b2r2_control_instance *instance = request->instance;
 	struct b2r2_control *cont = instance->control;
 
 	u32 thread_runtime_at_start = 0;
@@ -918,6 +610,7 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 		last_node = last_node->next;
 
 	request->job.tag = (int) instance;
+	request->job.data = (int) cont->data;
 	request->job.prio = request->user_req.prio;
 	request->job.first_node_address =
 		request->first_node->physical_address;
@@ -1010,33 +703,6 @@ static int b2r2_blt(struct b2r2_blt_instance *instance,
 	instance->no_of_active_requests++;
 	mutex_unlock(&instance->lock);
 
-	/* Wait for the job to be done if synchronous */
-	if ((request->user_req.flags & B2R2_BLT_FLAG_ASYNCH) == 0) {
-		b2r2_log_info(cont->dev, "%s: Synchronous, waiting\n",
-			__func__);
-
-		inc_stat(cont, &cont->stat_n_in_blt_wait);
-
-		ret = b2r2_core_job_wait(&request->job);
-
-		dec_stat(cont, &cont->stat_n_in_blt_wait);
-
-		if (ret < 0 && ret != -ENOENT)
-			b2r2_log_warn(cont->dev, "%s: Failed to wait job,"
-				" ret = %d\n", __func__, ret);
-		else
-			b2r2_log_info(cont->dev, "%s: Synchronous wait done\n",
-				__func__);
-		ret = 0;
-	}
-
-	/*
-	 * Release matching the addref in b2r2_core_job_add,
-	 * the request must not be accessed after this call
-	 */
-	b2r2_core_job_release(&request->job, __func__);
-	dec_stat(cont, &cont->stat_n_in_blt);
-
 	return ret >= 0 ? request_id : ret;
 
 job_add_failed:
@@ -1057,12 +723,47 @@ resolve_bg_buf_failed:
 		&request->src_resolved);
 resolve_src_buf_failed:
 synch_interrupted:
-	job_release(&request->job);
-	dec_stat(cont, &cont->stat_n_jobs_released);
 	if ((request->user_req.flags & B2R2_BLT_FLAG_DRY_RUN) == 0 || ret)
 		b2r2_log_warn(cont->dev, "%s returns with error %d\n",
 			__func__, ret);
+	job_release(&request->job);
+	dec_stat(cont, &cont->stat_n_jobs_released);
 
+	dec_stat(cont, &cont->stat_n_in_blt);
+
+	return ret;
+}
+
+int b2r2_control_waitjob(struct b2r2_blt_request *request)
+{
+	int ret = 0;
+	struct b2r2_control_instance *instance = request->instance;
+	struct b2r2_control *cont = instance->control;
+
+	/* Wait for the job to be done if synchronous */
+	if ((request->user_req.flags & B2R2_BLT_FLAG_ASYNCH) == 0) {
+		b2r2_log_info(cont->dev, "%s: Synchronous, waiting\n",
+			__func__);
+
+		inc_stat(cont, &cont->stat_n_in_blt_wait);
+
+		ret = b2r2_core_job_wait(&request->job);
+
+		dec_stat(cont, &cont->stat_n_in_blt_wait);
+
+		if (ret < 0 && ret != -ENOENT)
+			b2r2_log_warn(cont->dev, "%s: Failed to wait job,"
+				" ret = %d\n", __func__, ret);
+		else
+			b2r2_log_info(cont->dev, "%s: Synchronous wait done\n",
+				__func__);
+	}
+
+	/*
+	 * Release matching the addref in b2r2_core_job_add,
+	 * the request must not be accessed after this call
+	 */
+	b2r2_core_job_release(&request->job, __func__);
 	dec_stat(cont, &cont->stat_n_in_blt);
 
 	return ret;
@@ -1075,9 +776,13 @@ synch_interrupted:
  */
 static void job_callback(struct b2r2_core_job *job)
 {
-	struct b2r2_blt_request *request =
-		container_of(job, struct b2r2_blt_request, job);
-	struct b2r2_control *cont = request->instance->control;
+	struct b2r2_blt_request *request = NULL;
+	struct b2r2_core *core = NULL;
+	struct b2r2_control *cont = NULL;
+
+	request = container_of(job, struct b2r2_blt_request, job);
+	core = (struct b2r2_core *) job->data;
+	cont = core->control;
 
 	if (cont->dev)
 		b2r2_log_info(cont->dev, "%s\n", __func__);
@@ -1098,6 +803,8 @@ static void job_callback(struct b2r2_core_job *job)
 
 	/* Move to report list if the job shall be reported */
 	/* FIXME: Use a smaller struct? */
+	/* TODO: In the case of kernel API call, feed an asynch task to the
+	 * instance worker (kthread) instead of polling for a report */
 	mutex_lock(&request->instance->lock);
 	if (request->user_req.flags & B2R2_BLT_FLAG_REPORT_WHEN_DONE) {
 		/* Move job to report list */
@@ -1163,9 +870,13 @@ static void job_callback(struct b2r2_core_job *job)
  */
 static void job_release(struct b2r2_core_job *job)
 {
-	struct b2r2_blt_request *request =
-		container_of(job, struct b2r2_blt_request, job);
-	struct b2r2_control *cont = request->instance->control;
+	struct b2r2_blt_request *request = NULL;
+	struct b2r2_core *core = NULL;
+	struct b2r2_control *cont = NULL;
+
+	request = container_of(job, struct b2r2_blt_request, job);
+	core = (struct b2r2_core *) job->data;
+	cont = core->control;
 
 	inc_stat(cont, &cont->stat_n_jobs_released);
 
@@ -1206,7 +917,8 @@ static int job_acquire_resources(struct b2r2_core_job *job, bool atomic)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
-	struct b2r2_control *cont = request->instance->control;
+	struct b2r2_core *core = (struct b2r2_core *) job->data;
+	struct b2r2_control *cont = core->control;
 	int ret;
 	int i;
 
@@ -1280,7 +992,8 @@ static void job_release_resources(struct b2r2_core_job *job, bool atomic)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
-	struct b2r2_control *cont = request->instance->control;
+	struct b2r2_core *core = (struct b2r2_core *) job->data;
+	struct b2r2_control *cont = core->control;
 	int i;
 
 	b2r2_log_info(cont->dev, "%s\n", __func__);
@@ -1323,9 +1036,9 @@ static void job_release_resources(struct b2r2_core_job *job, bool atomic)
 static void tile_job_callback_gen(struct b2r2_core_job *job)
 {
 #ifdef CONFIG_B2R2_DEBUG
-	struct b2r2_blt_instance *instance =
-			(struct b2r2_blt_instance *) job->tag;
-	struct b2r2_control *cont = instance->control;
+	struct b2r2_core *core =
+			(struct b2r2_core *) job->data;
+	struct b2r2_control *cont = core->control;
 #endif
 
 	b2r2_log_info(cont->dev, "%s\n", __func__);
@@ -1355,7 +1068,8 @@ static void job_callback_gen(struct b2r2_core_job *job)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
-	struct b2r2_control *cont = request->instance->control;
+	struct b2r2_core *core = (struct b2r2_core *) job->data;
+	struct b2r2_control *cont = core->control;
 
 	b2r2_log_info(cont->dev, "%s\n", __func__);
 
@@ -1372,8 +1086,9 @@ static void job_callback_gen(struct b2r2_core_job *job)
 
 	/* Move to report list if the job shall be reported */
 	/* FIXME: Use a smaller struct? */
+	/* TODO: In the case of kernel API call, feed an asynch task to the
+	 * instance worker (kthread) instead of polling for a report */
 	mutex_lock(&request->instance->lock);
-
 	if (request->user_req.flags & B2R2_BLT_FLAG_REPORT_WHEN_DONE) {
 		/* Move job to report list */
 		list_add_tail(&request->list,
@@ -1398,7 +1113,7 @@ static void job_callback_gen(struct b2r2_core_job *job)
 	BUG_ON(request->instance->no_of_active_requests == 0);
 	request->instance->no_of_active_requests--;
 	if (request->instance->synching &&
-	request->instance->no_of_active_requests == 0) {
+			request->instance->no_of_active_requests == 0) {
 		request->instance->synching = false;
 		/* Wake up all syncing */
 
@@ -1438,9 +1153,9 @@ static void job_callback_gen(struct b2r2_core_job *job)
 
 static void tile_job_release_gen(struct b2r2_core_job *job)
 {
-	struct b2r2_blt_instance *instance =
-			(struct b2r2_blt_instance *) job->tag;
-	struct b2r2_control *cont = instance->control;
+	struct b2r2_core *core =
+			(struct b2r2_core *) job->data;
+	struct b2r2_control *cont = core->control;
 
 	inc_stat(cont, &cont->stat_n_jobs_released);
 
@@ -1462,7 +1177,8 @@ static void job_release_gen(struct b2r2_core_job *job)
 {
 	struct b2r2_blt_request *request =
 		container_of(job, struct b2r2_blt_request, job);
-	struct b2r2_control *cont = request->instance->control;
+	struct b2r2_core *core = (struct b2r2_core *) job->data;
+	struct b2r2_control *cont = core->control;
 
 	inc_stat(cont, &cont->stat_n_jobs_released);
 
@@ -1503,11 +1219,9 @@ static void job_release_resources_gen(struct b2r2_core_job *job, bool atomic)
 /**
  * b2r2_generic_blt - Generic implementation of the B2R2 blit request
  *
- * @instance: The B2R2 BLT instance
  * @request; The request to perform
  */
-static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
-		struct b2r2_blt_request *request)
+int b2r2_generic_blt(struct b2r2_blt_request *request)
 {
 	int ret = 0;
 	struct b2r2_blt_rect actual_dst_rect;
@@ -1527,6 +1241,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 	struct b2r2_work_buf work_bufs[4];
 	struct b2r2_blt_rect dst_rect_tile;
 	int i;
+	struct b2r2_control_instance *instance = request->instance;
 	struct b2r2_control *cont = instance->control;
 
 	u32 thread_runtime_at_start = 0;
@@ -1754,6 +1469,7 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 		last_node = last_node->next;
 
 	request->job.tag = (int) instance;
+	request->job.data = (int) cont->data;
 	request->job.prio = request->user_req.prio;
 	request->job.first_node_address =
 		request->first_node->physical_address;
@@ -1860,7 +1576,9 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 						"(%d, %d)\n", __func__, x, y);
 				continue;
 			}
+			tile_job->job_id = request->job.job_id;
 			tile_job->tag = request->job.tag;
+			tile_job->data = request->job.data;
 			tile_job->prio = request->job.prio;
 			tile_job->first_node_address =
 					request->job.first_node_address;
@@ -1976,7 +1694,9 @@ static int b2r2_generic_blt(struct b2r2_blt_instance *instance,
 					"(%d, %d)\n", __func__, x, y);
 				continue;
 			}
+			tile_job->job_id = request->job.job_id;
 			tile_job->tag = request->job.tag;
+			tile_job->data = request->job.data;
 			tile_job->prio = request->job.prio;
 			tile_job->first_node_address =
 				request->job.first_node_address;
@@ -2177,7 +1897,7 @@ zero_blt:
  * @request_id: If 0, wait for all requests on this instance to finish.
  *              Else wait for request with given request id to finish.
  */
-static int b2r2_blt_synch(struct b2r2_blt_instance *instance,
+int b2r2_control_synch(struct b2r2_control_instance *instance,
 			int request_id)
 {
 	int ret = 0;
@@ -2223,19 +1943,6 @@ static int b2r2_blt_synch(struct b2r2_blt_instance *instance,
 	return ret;
 }
 
-/**
- * Query B2R2 capabilities
- *
- * @instance: The B2R2 BLT instance
- * @query_cap: The structure receiving the capabilities
- */
-static int b2r2_blt_query_cap(struct b2r2_blt_instance *instance,
-		struct b2r2_blt_query_cap *query_cap)
-{
-	/* FIXME: Not implemented yet */
-	return -ENOSYS;
-}
-
 static void get_actual_dst_rect(struct b2r2_blt_req *req,
 					struct b2r2_blt_rect *actual_dst_rect)
 {
@@ -2261,12 +1968,12 @@ static void set_up_hwmem_region(struct b2r2_control *cont,
 	if (b2r2_is_zero_area_rect(rect))
 		return;
 
-	img_size = b2r2_get_img_size(cont, img);
+	img_size = b2r2_get_img_size(cont->dev, img);
 
 	if (b2r2_is_single_plane_fmt(img->fmt) &&
 			b2r2_is_independent_pixel_fmt(img->fmt)) {
-		int img_fmt_bpp = b2r2_get_fmt_bpp(cont, img->fmt);
-		u32 img_pitch = b2r2_get_img_pitch(cont, img);
+		int img_fmt_bpp = b2r2_get_fmt_bpp(cont->dev, img->fmt);
+		u32 img_pitch = b2r2_get_img_pitch(cont->dev, img);
 
 		region->offset = (u32)(img->buf.offset + (rect->y *
 				img_pitch));
@@ -2319,8 +2026,9 @@ static int resolve_hwmem(struct b2r2_control *cont,
 	required_access = (is_dst ? HWMEM_ACCESS_WRITE : HWMEM_ACCESS_READ) |
 			HWMEM_ACCESS_IMPORT;
 	if ((required_access & access) != required_access) {
-		b2r2_log_info(cont->dev, "%s: Insufficient access to hwmem "
-			"buffer.\n", __func__);
+		b2r2_log_info(cont->dev,
+			"%s: Insufficient access to hwmem (%d, requires %d)"
+			"buffer.\n", __func__, access, required_access);
 		return_value = -EACCES;
 		goto access_check_failed;
 	}
@@ -2333,11 +2041,12 @@ static int resolve_hwmem(struct b2r2_control *cont,
 	}
 
 	if (resolved_buf->file_len <
-			img->buf.offset + (__u32)b2r2_get_img_size(cont, img)) {
+			img->buf.offset +
+			(__u32)b2r2_get_img_size(cont->dev, img)) {
 		b2r2_log_info(cont->dev, "%s: Hwmem buffer too small. (%d < "
 			"%d)\n", __func__, resolved_buf->file_len,
 			img->buf.offset +
-			(__u32)b2r2_get_img_size(cont, img));
+			(__u32)b2r2_get_img_size(cont->dev, img));
 		return_value = -EINVAL;
 		goto size_check_failed;
 	}
@@ -2714,7 +2423,7 @@ static void sync_buf(struct b2r2_control *cont,
  *
  * @instance: The B2R2 BLT instance
  */
-static bool is_report_list_empty(struct b2r2_blt_instance *instance)
+static bool is_report_list_empty(struct b2r2_control_instance *instance)
 {
 	bool is_empty;
 
@@ -2730,7 +2439,7 @@ static bool is_report_list_empty(struct b2r2_blt_instance *instance)
  *
  * @instance: The B2R2 BLT instance
  */
-static bool is_synching(struct b2r2_blt_instance *instance)
+static bool is_synching(struct b2r2_control_instance *instance)
 {
 	bool is_synching;
 
@@ -2767,213 +2476,6 @@ static void dec_stat(struct b2r2_control *cont, unsigned long *stat)
 
 
 #ifdef CONFIG_DEBUG_FS
-/**
- * sprintf_req() - Builds a string representing the request, for debug
- *
- * @request:Request that should be encoded into a string
- * @buf: Receiving buffer
- * @size: Size of receiving buffer
- *
- * Returns number of characters in string, excluding null terminator
- */
-static int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
-{
-	size_t dev_size = 0;
-
-	/* generic request info */
-	dev_size += sprintf(buf + dev_size,
-		"instance      : 0x%08lX\n",
-		(unsigned long) request->instance);
-	dev_size += sprintf(buf + dev_size,
-		"size          : %d bytes\n", request->user_req.size);
-	dev_size += sprintf(buf + dev_size,
-		"flags         : 0x%08lX\n",
-		(unsigned long) request->user_req.flags);
-	dev_size += sprintf(buf + dev_size,
-		"transform     : %d\n",
-		(int) request->user_req.transform);
-	dev_size += sprintf(buf + dev_size,
-		"prio          : %d\n", request->user_req.transform);
-	dev_size += sprintf(buf + dev_size,
-		"global_alpha  : %d\n",
-		(int) request->user_req.global_alpha);
-	dev_size += sprintf(buf + dev_size,
-		"report1       : 0x%08lX\n",
-		(unsigned long) request->user_req.report1);
-	dev_size += sprintf(buf + dev_size,
-		"report2       : 0x%08lX\n",
-		(unsigned long) request->user_req.report2);
-	dev_size += sprintf(buf + dev_size,
-		"request_id    : 0x%08lX\n\n",
-		(unsigned long) request->request_id);
-
-	/* src info */
-	dev_size += sprintf(buf + dev_size,
-		"src_img.fmt   : %#010x\n",
-		request->user_req.src_img.fmt);
-	dev_size += sprintf(buf + dev_size,
-		"src_img.buf   : {type=%d, hwmem_buf_name=%d, fd=%d, "
-		"offset=%d, len=%d}\n",
-		request->user_req.src_img.buf.type,
-		request->user_req.src_img.buf.hwmem_buf_name,
-		request->user_req.src_img.buf.fd,
-		request->user_req.src_img.buf.offset,
-		request->user_req.src_img.buf.len);
-	dev_size += sprintf(buf + dev_size,
-		"src_img       : {width=%d, height=%d, pitch=%d}\n",
-		request->user_req.src_img.width,
-		request->user_req.src_img.height,
-		request->user_req.src_img.pitch);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask.fmt  : %#010x\n",
-		request->user_req.src_mask.fmt);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask.buf  : {type=%d, hwmem_buf_name=%d, fd=%d,"
-		" offset=%d, len=%d}\n",
-		request->user_req.src_mask.buf.type,
-		request->user_req.src_mask.buf.hwmem_buf_name,
-		request->user_req.src_mask.buf.fd,
-		request->user_req.src_mask.buf.offset,
-		request->user_req.src_mask.buf.len);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask      : {width=%d, height=%d, pitch=%d}\n",
-		request->user_req.src_mask.width,
-		request->user_req.src_mask.height,
-		request->user_req.src_mask.pitch);
-	dev_size += sprintf(buf + dev_size,
-		"src_rect      : {x=%d, y=%d, width=%d, height=%d}\n",
-		request->user_req.src_rect.x,
-		request->user_req.src_rect.y,
-		request->user_req.src_rect.width,
-		request->user_req.src_rect.height);
-	dev_size += sprintf(buf + dev_size,
-		"src_color     : 0x%08lX\n\n",
-		(unsigned long) request->user_req.src_color);
-
-	/* bg info */
-	dev_size += sprintf(buf + dev_size,
-		"bg_img.fmt    : %#010x\n",
-		request->user_req.bg_img.fmt);
-	dev_size += sprintf(buf + dev_size,
-		"bg_img.buf    : {type=%d, hwmem_buf_name=%d, fd=%d,"
-		" offset=%d, len=%d}\n",
-		request->user_req.bg_img.buf.type,
-		request->user_req.bg_img.buf.hwmem_buf_name,
-		request->user_req.bg_img.buf.fd,
-		request->user_req.bg_img.buf.offset,
-		request->user_req.bg_img.buf.len);
-	dev_size += sprintf(buf + dev_size,
-		"bg_img        : {width=%d, height=%d, pitch=%d}\n",
-		request->user_req.bg_img.width,
-		request->user_req.bg_img.height,
-		request->user_req.bg_img.pitch);
-	dev_size += sprintf(buf + dev_size,
-		"bg_rect       : {x=%d, y=%d, width=%d, height=%d}\n\n",
-		request->user_req.bg_rect.x,
-		request->user_req.bg_rect.y,
-		request->user_req.bg_rect.width,
-		request->user_req.bg_rect.height);
-
-	/* dst info */
-	dev_size += sprintf(buf + dev_size,
-		"dst_img.fmt   : %#010x\n",
-		request->user_req.dst_img.fmt);
-	dev_size += sprintf(buf + dev_size,
-		"dst_img.buf   : {type=%d, hwmem_buf_name=%d, fd=%d,"
-		" offset=%d, len=%d}\n",
-		request->user_req.dst_img.buf.type,
-		request->user_req.dst_img.buf.hwmem_buf_name,
-		request->user_req.dst_img.buf.fd,
-		request->user_req.dst_img.buf.offset,
-		request->user_req.dst_img.buf.len);
-	dev_size += sprintf(buf + dev_size,
-		"dst_img       : {width=%d, height=%d, pitch=%d}\n",
-		request->user_req.dst_img.width,
-		request->user_req.dst_img.height,
-		request->user_req.dst_img.pitch);
-	dev_size += sprintf(buf + dev_size,
-		"dst_rect      : {x=%d, y=%d, width=%d, height=%d}\n",
-		request->user_req.dst_rect.x,
-		request->user_req.dst_rect.y,
-		request->user_req.dst_rect.width,
-		request->user_req.dst_rect.height);
-	dev_size += sprintf(buf + dev_size,
-		"dst_clip_rect : {x=%d, y=%d, width=%d, height=%d}\n",
-		request->user_req.dst_clip_rect.x,
-		request->user_req.dst_clip_rect.y,
-		request->user_req.dst_clip_rect.width,
-		request->user_req.dst_clip_rect.height);
-	dev_size += sprintf(buf + dev_size,
-		"dst_color     : 0x%08lX\n\n",
-		(unsigned long) request->user_req.dst_color);
-
-	dev_size += sprintf(buf + dev_size,
-		"src_resolved.physical                  : 0x%08lX\n",
-		(unsigned long) request->src_resolved.
-		physical_address);
-	dev_size += sprintf(buf + dev_size,
-		"src_resolved.virtual                   : 0x%08lX\n",
-		(unsigned long) request->src_resolved.virtual_address);
-	dev_size += sprintf(buf + dev_size,
-		"src_resolved.filep                     : 0x%08lX\n",
-		(unsigned long) request->src_resolved.filep);
-	dev_size += sprintf(buf + dev_size,
-		"src_resolved.filep_physical_start      : 0x%08lX\n",
-		(unsigned long) request->src_resolved.
-		file_physical_start);
-	dev_size += sprintf(buf + dev_size,
-		"src_resolved.filep_virtual_start       : 0x%08lX\n",
-		(unsigned long) request->src_resolved.file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
-		"src_resolved.file_len                  : %d\n\n",
-		request->src_resolved.file_len);
-
-	dev_size += sprintf(buf + dev_size,
-		"src_mask_resolved.physical             : 0x%08lX\n",
-		(unsigned long) request->src_mask_resolved.
-		physical_address);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask_resolved.virtual              : 0x%08lX\n",
-		(unsigned long) request->src_mask_resolved.virtual_address);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask_resolved.filep                : 0x%08lX\n",
-		(unsigned long) request->src_mask_resolved.filep);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask_resolved.filep_physical_start : 0x%08lX\n",
-		(unsigned long) request->src_mask_resolved.
-		file_physical_start);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask_resolved.filep_virtual_start  : 0x%08lX\n",
-		(unsigned long) request->src_mask_resolved.
-		file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask_resolved.file_len             : %d\n\n",
-		request->src_mask_resolved.file_len);
-
-	dev_size += sprintf(buf + dev_size,
-		"dst_resolved.physical                  : 0x%08lX\n",
-		(unsigned long) request->dst_resolved.
-		physical_address);
-	dev_size += sprintf(buf + dev_size,
-		"dst_resolved.virtual                   : 0x%08lX\n",
-		(unsigned long) request->dst_resolved.virtual_address);
-	dev_size += sprintf(buf + dev_size,
-		"dst_resolved.filep                     : 0x%08lX\n",
-		(unsigned long) request->dst_resolved.filep);
-	dev_size += sprintf(buf + dev_size,
-		"dst_resolved.filep_physical_start      : 0x%08lX\n",
-		(unsigned long) request->dst_resolved.
-		file_physical_start);
-	dev_size += sprintf(buf + dev_size,
-		"dst_resolved.filep_virtual_start       : 0x%08lX\n",
-		(unsigned long) request->dst_resolved.file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
-		"dst_resolved.file_len                  : %d\n\n",
-		request->dst_resolved.file_len);
-
-	return dev_size;
-}
-
 /**
  * debugfs_b2r2_blt_request_read() - Implements debugfs read for B2R2 register
  *
@@ -3246,26 +2748,11 @@ static void destroy_tmp_bufs(struct b2r2_control *cont)
  *
  * Returns 0 if OK else negative error code
  */
-int b2r2_blt_module_init(struct b2r2_control *cont)
+int b2r2_control_init(struct b2r2_control *cont)
 {
 	int ret;
 
 	mutex_init(&cont->stat_lock);
-
-	/* Register b2r2 driver */
-	cont->miscdev.minor = MISC_DYNAMIC_MINOR;
-	cont->miscdev.name = cont->name;
-	cont->miscdev.fops = &b2r2_blt_fops;
-
-	ret = misc_register(&cont->miscdev);
-	if (ret) {
-		printk(KERN_WARNING "%s: registering misc device fails\n",
-				__func__);
-		goto b2r2_misc_register_fail;
-	}
-
-	cont->dev = cont->miscdev.this_device;
-	dev_set_drvdata(cont->dev, cont);
 
 #ifdef CONFIG_B2R2_GENERIC
 	/* Initialize generic path */
@@ -3280,11 +2767,6 @@ int b2r2_blt_module_init(struct b2r2_control *cont)
 
 	b2r2_log_info(cont->dev, "%s: device registered\n", __func__);
 
-	/*
-	 * FIXME: This stuff should be done before the first requests i.e.
-	 * before misc_register, but they need the device which is not
-	 * available until after misc_register.
-	 */
 	cont->dev->coherent_dma_mask = 0xFFFFFFFF;
 	init_tmp_bufs(cont);
 	ret = b2r2_filters_init(cont);
@@ -3315,7 +2797,6 @@ int b2r2_blt_module_init(struct b2r2_control *cont)
 	}
 #endif
 
-	b2r2_ctl[cont->id] = cont;
 	b2r2_log_info(cont->dev, "%s: done\n", __func__);
 
 	return ret;
@@ -3328,15 +2809,13 @@ b2r2_node_split_init_fail:
 #ifdef CONFIG_B2R2_GENERIC
 	b2r2_generic_exit(cont);
 #endif
-	misc_deregister(&cont->miscdev);
-b2r2_misc_register_fail:
 	return ret;
 }
 
 /**
- * b2r2_module_exit() - Module exit function
+ * b2r2_control_exit() - Module exit function
  */
-void b2r2_blt_module_exit(struct b2r2_control *cont)
+void b2r2_control_exit(struct b2r2_control *cont)
 {
 	if (cont) {
 		b2r2_log_info(cont->dev, "%s\n", __func__);
@@ -3348,8 +2827,6 @@ void b2r2_blt_module_exit(struct b2r2_control *cont)
 #endif
 		b2r2_mem_exit(cont);
 		destroy_tmp_bufs(cont);
-		b2r2_ctl[cont->id] = NULL;
-		misc_deregister(&cont->miscdev);
 		b2r2_node_split_exit(cont);
 #if defined(CONFIG_B2R2_GENERIC)
 		b2r2_generic_exit(cont);

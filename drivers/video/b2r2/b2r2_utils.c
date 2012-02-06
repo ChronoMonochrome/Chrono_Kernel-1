@@ -24,19 +24,19 @@ const s32 b2r2_s32_max = 2147483647;
  * calculate_scale_factor() - calculates the scale factor between the given
  *                            values
  */
-int calculate_scale_factor(struct b2r2_control *cont,
+int calculate_scale_factor(struct device *dev,
 			u32 from, u32 to, u16 *sf_out)
 {
 	int ret;
 	u32 sf;
 
-	b2r2_log_info(cont->dev, "%s\n", __func__);
+	b2r2_log_info(dev, "%s\n", __func__);
 
 	if (to == from) {
 		*sf_out = 1 << 10;
 		return 0;
 	} else if (to == 0) {
-		b2r2_log_err(cont->dev, "%s: To is 0!\n", __func__);
+		b2r2_log_err(dev, "%s: To is 0!\n", __func__);
 		BUG_ON(1);
 	}
 
@@ -44,12 +44,12 @@ int calculate_scale_factor(struct b2r2_control *cont,
 
 	if ((sf & 0xffff0000) != 0) {
 		/* Overflow error */
-		b2r2_log_warn(cont->dev, "%s: "
+		b2r2_log_warn(dev, "%s: "
 			"Scale factor too large\n", __func__);
 		ret = -EINVAL;
 		goto error;
 	} else if (sf == 0) {
-		b2r2_log_warn(cont->dev, "%s: "
+		b2r2_log_warn(dev, "%s: "
 			"Scale factor too small\n", __func__);
 		ret = -EINVAL;
 		goto error;
@@ -57,12 +57,12 @@ int calculate_scale_factor(struct b2r2_control *cont,
 
 	*sf_out = (u16)sf;
 
-	b2r2_log_info(cont->dev, "%s exit\n", __func__);
+	b2r2_log_info(dev, "%s exit\n", __func__);
 
 	return 0;
 
 error:
-	b2r2_log_warn(cont->dev, "%s: Exit...\n", __func__);
+	b2r2_log_warn(dev, "%s: Exit...\n", __func__);
 	return ret;
 }
 
@@ -127,7 +127,7 @@ void b2r2_intersect_rects(struct b2r2_blt_rect *rect1,
  * the old source rectangle corresponds to
  * to the new part of old destination rectangle.
  */
-void b2r2_trim_rects(struct b2r2_control *cont,
+void b2r2_trim_rects(struct device *dev,
 			const struct b2r2_blt_req *req,
 			struct b2r2_blt_rect *new_bg_rect,
 			struct b2r2_blt_rect *new_dst_rect,
@@ -150,11 +150,11 @@ void b2r2_trim_rects(struct b2r2_control *cont,
 	s16 hsf;
 	s16 vsf;
 
-	b2r2_log_info(cont->dev,
+	b2r2_log_info(dev,
 		"%s\nold_dst_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
 		old_dst_rect->x, old_dst_rect->y,
 		old_dst_rect->width, old_dst_rect->height);
-	b2r2_log_info(cont->dev,
+	b2r2_log_info(dev,
 		"%s\nold_src_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
 		old_src_rect->x, old_src_rect->y,
 		old_src_rect->width, old_src_rect->height);
@@ -167,7 +167,7 @@ void b2r2_trim_rects(struct b2r2_control *cont,
 		goto keep_rects;
 
 	b2r2_intersect_rects(old_dst_rect, &dst_img_bounds, new_dst_rect);
-	b2r2_log_info(cont->dev,
+	b2r2_log_info(dev,
 		"%s\nnew_dst_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
 		new_dst_rect->x, new_dst_rect->y,
 		new_dst_rect->width, new_dst_rect->height);
@@ -181,13 +181,13 @@ void b2r2_trim_rects(struct b2r2_control *cont,
 
 	if (transform & B2R2_BLT_TRANSFORM_CCW_ROT_90) {
 		int res = 0;
-		res = calculate_scale_factor(cont, old_src_rect->width,
+		res = calculate_scale_factor(dev, old_src_rect->width,
 			old_dst_rect->height, &hsf);
 		/* invalid dimensions, leave them to validation */
 		if (res < 0)
 			goto keep_rects;
 
-		res = calculate_scale_factor(cont, old_src_rect->height,
+		res = calculate_scale_factor(dev, old_src_rect->height,
 			old_dst_rect->width, &vsf);
 		if (res < 0)
 			goto keep_rects;
@@ -207,12 +207,12 @@ void b2r2_trim_rects(struct b2r2_control *cont,
 		src_h = new_dst_rect->width * vsf;
 	} else {
 		int res = 0;
-		res = calculate_scale_factor(cont, old_src_rect->width,
+		res = calculate_scale_factor(dev, old_src_rect->width,
 			old_dst_rect->width, &hsf);
 		if (res < 0)
 			goto keep_rects;
 
-		res = calculate_scale_factor(cont, old_src_rect->height,
+		res = calculate_scale_factor(dev, old_src_rect->height,
 			old_dst_rect->height, &vsf);
 		if (res < 0)
 			goto keep_rects;
@@ -270,7 +270,7 @@ void b2r2_trim_rects(struct b2r2_control *cont,
 	new_src_rect->width = src_w;
 	new_src_rect->height = src_h;
 
-	b2r2_log_info(cont->dev,
+	b2r2_log_info(dev,
 		"%s\nnew_src_rect(x,y,w,h)=(%d, %d, %d, %d)\n", __func__,
 		new_src_rect->x, new_src_rect->y,
 		new_src_rect->width, new_src_rect->height);
@@ -279,7 +279,7 @@ void b2r2_trim_rects(struct b2r2_control *cont,
 		/* Modify bg_rect in the same way as dst_rect */
 		s32 dw = new_dst_rect->width - old_dst_rect->width;
 		s32 dh = new_dst_rect->height - old_dst_rect->height;
-		b2r2_log_info(cont->dev,
+		b2r2_log_info(dev,
 			"%s\nold bg_rect(x,y,w,h)=(%d, %d, %d, %d)\n",
 			__func__, old_bg_rect->x, old_bg_rect->y,
 			old_bg_rect->width, old_bg_rect->height);
@@ -287,7 +287,7 @@ void b2r2_trim_rects(struct b2r2_control *cont,
 		new_bg_rect->y = old_bg_rect->y + dy;
 		new_bg_rect->width = old_bg_rect->width + dw;
 		new_bg_rect->height = old_bg_rect->height + dh;
-		b2r2_log_info(cont->dev,
+		b2r2_log_info(dev,
 			"%s\nnew bg_rect(x,y,w,h)=(%d, %d, %d, %d)\n",
 			__func__, new_bg_rect->x, new_bg_rect->y,
 			new_bg_rect->width, new_bg_rect->height);
@@ -301,11 +301,11 @@ keep_rects:
 	*new_src_rect = *old_src_rect;
 	*new_dst_rect = *old_dst_rect;
 	*new_bg_rect = *old_bg_rect;
-	b2r2_log_info(cont->dev, "%s original rectangles preserved.\n", __func__);
+	b2r2_log_info(dev, "%s original rectangles preserved.\n", __func__);
 	return;
 }
 
-int b2r2_get_fmt_bpp(struct b2r2_control *cont, enum b2r2_blt_fmt fmt)
+int b2r2_get_fmt_bpp(struct device *dev, enum b2r2_blt_fmt fmt)
 {
 	/*
 	 * Currently this function is not used that often but if that changes a
@@ -351,14 +351,14 @@ int b2r2_get_fmt_bpp(struct b2r2_control *cont, enum b2r2_blt_fmt fmt)
 		return 32;
 
 	default:
-		b2r2_log_err(cont->dev,
+		b2r2_log_err(dev,
 			"%s: Internal error! Format %#x not recognized.\n",
 			__func__, fmt);
 		return 32;
 	}
 }
 
-int b2r2_get_fmt_y_bpp(struct b2r2_control *cont, enum b2r2_blt_fmt fmt)
+int b2r2_get_fmt_y_bpp(struct device *dev, enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
@@ -381,7 +381,7 @@ int b2r2_get_fmt_y_bpp(struct b2r2_control *cont, enum b2r2_blt_fmt fmt)
 		return 8;
 
 	default:
-		b2r2_log_err(cont->dev,
+		b2r2_log_err(dev,
 			"%s: Internal error! Non YCbCr format supplied.\n",
 			__func__);
 		return 8;
@@ -542,40 +542,40 @@ bool b2r2_is_mb_fmt(enum b2r2_blt_fmt fmt)
 	}
 }
 
-u32 b2r2_calc_pitch_from_width(struct b2r2_control *cont,
+u32 b2r2_calc_pitch_from_width(struct device *dev,
 		s32 width, enum b2r2_blt_fmt fmt)
 {
 	if (b2r2_is_single_plane_fmt(fmt)) {
 		return (u32)b2r2_div_round_up(width *
-			b2r2_get_fmt_bpp(cont, fmt), 8);
+			b2r2_get_fmt_bpp(dev, fmt), 8);
 	} else if (b2r2_is_ycbcrsp_fmt(fmt) || b2r2_is_ycbcrp_fmt(fmt)) {
 		return (u32)b2r2_div_round_up(width *
-			b2r2_get_fmt_y_bpp(cont, fmt), 8);
+			b2r2_get_fmt_y_bpp(dev, fmt), 8);
 	} else {
-		b2r2_log_err(cont->dev, "%s: Internal error! "
+		b2r2_log_err(dev, "%s: Internal error! "
 			"Pitchless format supplied.\n",
 			__func__);
 		return 0;
 	}
 }
 
-u32 b2r2_get_img_pitch(struct b2r2_control *cont, struct b2r2_blt_img *img)
+u32 b2r2_get_img_pitch(struct device *dev, struct b2r2_blt_img *img)
 {
 	if (img->pitch != 0)
 		return img->pitch;
 	else
-		return b2r2_calc_pitch_from_width(cont, img->width, img->fmt);
+		return b2r2_calc_pitch_from_width(dev, img->width, img->fmt);
 }
 
-s32 b2r2_get_img_size(struct b2r2_control *cont, struct b2r2_blt_img *img)
+s32 b2r2_get_img_size(struct device *dev, struct b2r2_blt_img *img)
 {
 	if (b2r2_is_single_plane_fmt(img->fmt)) {
-		return (s32)b2r2_get_img_pitch(cont, img) * img->height;
+		return (s32)b2r2_get_img_pitch(dev, img) * img->height;
 	} else if (b2r2_is_ycbcrsp_fmt(img->fmt) ||
 			b2r2_is_ycbcrp_fmt(img->fmt)) {
 		s32 y_plane_size;
 
-		y_plane_size = (s32)b2r2_get_img_pitch(cont, img) * img->height;
+		y_plane_size = (s32)b2r2_get_img_pitch(dev, img) * img->height;
 
 		if (b2r2_is_ycbcr420_fmt(img->fmt)) {
 			return y_plane_size + y_plane_size / 2;
@@ -584,16 +584,16 @@ s32 b2r2_get_img_size(struct b2r2_control *cont, struct b2r2_blt_img *img)
 		} else if (b2r2_is_ycbcr444_fmt(img->fmt)) {
 			return y_plane_size * 3;
 		} else {
-			b2r2_log_err(cont->dev,	"%s: Internal error!"
+			b2r2_log_err(dev,	"%s: Internal error!"
 				" Format %#x not recognized.\n",
 				__func__, img->fmt);
 			return 0;
 		}
 	} else if (b2r2_is_mb_fmt(img->fmt)) {
 		return (img->width * img->height *
-			b2r2_get_fmt_bpp(cont, img->fmt)) / 8;
+			b2r2_get_fmt_bpp(dev, img->fmt)) / 8;
 	} else {
-		b2r2_log_err(cont->dev, "%s: Internal error! "
+		b2r2_log_err(dev, "%s: Internal error! "
 			"Format %#x not recognized.\n",
 			__func__, img->fmt);
 		return 0;
@@ -1096,4 +1096,229 @@ enum b2r2_fmt_type b2r2_get_fmt_type(enum b2r2_blt_fmt fmt)
 	default:
 		return B2R2_FMT_TYPE_RASTER;
 	}
+}
+
+#ifdef CONFIG_DEBUG_FS
+/**
+ * sprintf_req() - Builds a string representing the request, for debug
+ *
+ * @request:Request that should be encoded into a string
+ * @buf: Receiving buffer
+ * @size: Size of receiving buffer
+ *
+ * Returns number of characters in string, excluding null terminator
+ */
+int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
+{
+	size_t dev_size = 0;
+
+	/* generic request info */
+	dev_size += sprintf(buf + dev_size,
+		"instance      : 0x%08lX\n",
+		(unsigned long) request->instance);
+	dev_size += sprintf(buf + dev_size,
+		"size          : %d bytes\n", request->user_req.size);
+	dev_size += sprintf(buf + dev_size,
+		"flags         : 0x%08lX\n",
+		(unsigned long) request->user_req.flags);
+	dev_size += sprintf(buf + dev_size,
+		"transform     : %d\n",
+		(int) request->user_req.transform);
+	dev_size += sprintf(buf + dev_size,
+		"prio          : %d\n", request->user_req.transform);
+	dev_size += sprintf(buf + dev_size,
+		"global_alpha  : %d\n",
+		(int) request->user_req.global_alpha);
+	dev_size += sprintf(buf + dev_size,
+		"report1       : 0x%08lX\n",
+		(unsigned long) request->user_req.report1);
+	dev_size += sprintf(buf + dev_size,
+		"report2       : 0x%08lX\n",
+		(unsigned long) request->user_req.report2);
+	dev_size += sprintf(buf + dev_size,
+		"request_id    : 0x%08lX\n\n",
+		(unsigned long) request->request_id);
+
+	/* src info */
+	dev_size += sprintf(buf + dev_size,
+		"src_img.fmt   : %#010x\n",
+		request->user_req.src_img.fmt);
+	dev_size += sprintf(buf + dev_size,
+		"src_img.buf   : {type=%d, hwmem_buf_name=%d, fd=%d, "
+		"offset=%d, len=%d}\n",
+		request->user_req.src_img.buf.type,
+		request->user_req.src_img.buf.hwmem_buf_name,
+		request->user_req.src_img.buf.fd,
+		request->user_req.src_img.buf.offset,
+		request->user_req.src_img.buf.len);
+	dev_size += sprintf(buf + dev_size,
+		"src_img       : {width=%d, height=%d, pitch=%d}\n",
+		request->user_req.src_img.width,
+		request->user_req.src_img.height,
+		request->user_req.src_img.pitch);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask.fmt  : %#010x\n",
+		request->user_req.src_mask.fmt);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask.buf  : {type=%d, hwmem_buf_name=%d, fd=%d,"
+		" offset=%d, len=%d}\n",
+		request->user_req.src_mask.buf.type,
+		request->user_req.src_mask.buf.hwmem_buf_name,
+		request->user_req.src_mask.buf.fd,
+		request->user_req.src_mask.buf.offset,
+		request->user_req.src_mask.buf.len);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask      : {width=%d, height=%d, pitch=%d}\n",
+		request->user_req.src_mask.width,
+		request->user_req.src_mask.height,
+		request->user_req.src_mask.pitch);
+	dev_size += sprintf(buf + dev_size,
+		"src_rect      : {x=%d, y=%d, width=%d, height=%d}\n",
+		request->user_req.src_rect.x,
+		request->user_req.src_rect.y,
+		request->user_req.src_rect.width,
+		request->user_req.src_rect.height);
+	dev_size += sprintf(buf + dev_size,
+		"src_color     : 0x%08lX\n\n",
+		(unsigned long) request->user_req.src_color);
+
+	/* bg info */
+	dev_size += sprintf(buf + dev_size,
+		"bg_img.fmt    : %#010x\n",
+		request->user_req.bg_img.fmt);
+	dev_size += sprintf(buf + dev_size,
+		"bg_img.buf    : {type=%d, hwmem_buf_name=%d, fd=%d,"
+		" offset=%d, len=%d}\n",
+		request->user_req.bg_img.buf.type,
+		request->user_req.bg_img.buf.hwmem_buf_name,
+		request->user_req.bg_img.buf.fd,
+		request->user_req.bg_img.buf.offset,
+		request->user_req.bg_img.buf.len);
+	dev_size += sprintf(buf + dev_size,
+		"bg_img        : {width=%d, height=%d, pitch=%d}\n",
+		request->user_req.bg_img.width,
+		request->user_req.bg_img.height,
+		request->user_req.bg_img.pitch);
+	dev_size += sprintf(buf + dev_size,
+		"bg_rect       : {x=%d, y=%d, width=%d, height=%d}\n\n",
+		request->user_req.bg_rect.x,
+		request->user_req.bg_rect.y,
+		request->user_req.bg_rect.width,
+		request->user_req.bg_rect.height);
+
+	/* dst info */
+	dev_size += sprintf(buf + dev_size,
+		"dst_img.fmt   : %#010x\n",
+		request->user_req.dst_img.fmt);
+	dev_size += sprintf(buf + dev_size,
+		"dst_img.buf   : {type=%d, hwmem_buf_name=%d, fd=%d,"
+		" offset=%d, len=%d}\n",
+		request->user_req.dst_img.buf.type,
+		request->user_req.dst_img.buf.hwmem_buf_name,
+		request->user_req.dst_img.buf.fd,
+		request->user_req.dst_img.buf.offset,
+		request->user_req.dst_img.buf.len);
+	dev_size += sprintf(buf + dev_size,
+		"dst_img       : {width=%d, height=%d, pitch=%d}\n",
+		request->user_req.dst_img.width,
+		request->user_req.dst_img.height,
+		request->user_req.dst_img.pitch);
+	dev_size += sprintf(buf + dev_size,
+		"dst_rect      : {x=%d, y=%d, width=%d, height=%d}\n",
+		request->user_req.dst_rect.x,
+		request->user_req.dst_rect.y,
+		request->user_req.dst_rect.width,
+		request->user_req.dst_rect.height);
+	dev_size += sprintf(buf + dev_size,
+		"dst_clip_rect : {x=%d, y=%d, width=%d, height=%d}\n",
+		request->user_req.dst_clip_rect.x,
+		request->user_req.dst_clip_rect.y,
+		request->user_req.dst_clip_rect.width,
+		request->user_req.dst_clip_rect.height);
+	dev_size += sprintf(buf + dev_size,
+		"dst_color     : 0x%08lX\n\n",
+		(unsigned long) request->user_req.dst_color);
+
+	dev_size += sprintf(buf + dev_size,
+		"src_resolved.physical                  : 0x%08lX\n",
+		(unsigned long) request->src_resolved.
+		physical_address);
+	dev_size += sprintf(buf + dev_size,
+		"src_resolved.virtual                   : 0x%08lX\n",
+		(unsigned long) request->src_resolved.virtual_address);
+	dev_size += sprintf(buf + dev_size,
+		"src_resolved.filep                     : 0x%08lX\n",
+		(unsigned long) request->src_resolved.filep);
+	dev_size += sprintf(buf + dev_size,
+		"src_resolved.filep_physical_start      : 0x%08lX\n",
+		(unsigned long) request->src_resolved.
+		file_physical_start);
+	dev_size += sprintf(buf + dev_size,
+		"src_resolved.filep_virtual_start       : 0x%08lX\n",
+		(unsigned long) request->src_resolved.file_virtual_start);
+	dev_size += sprintf(buf + dev_size,
+		"src_resolved.file_len                  : %d\n\n",
+		request->src_resolved.file_len);
+
+	dev_size += sprintf(buf + dev_size,
+		"src_mask_resolved.physical             : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.
+		physical_address);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask_resolved.virtual              : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.virtual_address);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask_resolved.filep                : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.filep);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask_resolved.filep_physical_start : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.
+		file_physical_start);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask_resolved.filep_virtual_start  : 0x%08lX\n",
+		(unsigned long) request->src_mask_resolved.
+		file_virtual_start);
+	dev_size += sprintf(buf + dev_size,
+		"src_mask_resolved.file_len             : %d\n\n",
+		request->src_mask_resolved.file_len);
+
+	dev_size += sprintf(buf + dev_size,
+		"dst_resolved.physical                  : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.
+		physical_address);
+	dev_size += sprintf(buf + dev_size,
+		"dst_resolved.virtual                   : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.virtual_address);
+	dev_size += sprintf(buf + dev_size,
+		"dst_resolved.filep                     : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.filep);
+	dev_size += sprintf(buf + dev_size,
+		"dst_resolved.filep_physical_start      : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.
+		file_physical_start);
+	dev_size += sprintf(buf + dev_size,
+		"dst_resolved.filep_virtual_start       : 0x%08lX\n",
+		(unsigned long) request->dst_resolved.file_virtual_start);
+	dev_size += sprintf(buf + dev_size,
+		"dst_resolved.file_len                  : %d\n\n",
+		request->dst_resolved.file_len);
+
+	return dev_size;
+}
+#endif
+
+void b2r2_recalculate_rects(struct device *dev,
+		struct b2r2_blt_req *req)
+{
+	struct b2r2_blt_rect new_dst_rect;
+	struct b2r2_blt_rect new_src_rect;
+	struct b2r2_blt_rect new_bg_rect;
+
+	b2r2_trim_rects(dev,
+		req, &new_bg_rect, &new_dst_rect, &new_src_rect);
+
+	req->dst_rect = new_dst_rect;
+	req->src_rect = new_src_rect;
+	if (req->flags & B2R2_BLT_FLAG_BG_BLEND)
+		req->bg_rect = new_bg_rect;
 }

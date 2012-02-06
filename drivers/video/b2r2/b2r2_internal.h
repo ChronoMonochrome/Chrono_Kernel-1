@@ -23,13 +23,16 @@
 /**
  * B2R2_MAX_NBR_DEVICES - The maximum number of B2R2s handled
  */
-#define B2R2_MAX_NBR_DEVICES 1
+#define B2R2_MAX_NBR_DEVICES 2
 
 /* The maximum possible number of temporary buffers needed */
 #define MAX_TMP_BUFS_NEEDED 2
 
 /* Size of the color look-up table */
 #define CLUT_SIZE 1024
+
+/* The defined bits of the Interrupt Status Register */
+#define B2R2_ITS_MASK 0x0FFFF0FF
 
 /**
  * b2r2_op_type - the type of B2R2 operation to configure
@@ -127,9 +130,12 @@ struct tmp_buf {
 };
 
 /**
- * struct b2r2_blt_instance - Represents the B2R2 instance (one per open)
+ * struct b2r2_control_instance - Represents the B2R2 instance
+ *                                (one per open and blitter core)
  *
  * @lock: Lock to protect the instance
+ * @control_id: The b2r2 core core control identifier
+ * @control: The b2r2 core control entity
  *
  * @report_list: Ready requests that should be reported,
  * @report_list_waitq: Wait queue for report list
@@ -137,10 +143,11 @@ struct tmp_buf {
  *                         in callback.
  * @synching: true if any client is waiting for b2r2_blt_synch(0)
  * @synch_done_waitq: Wait queue to handle synching on request_id 0
- * @control: The b2r2 control entity
  */
-struct b2r2_blt_instance {
+struct b2r2_control_instance {
 	struct mutex lock;
+	int control_id;
+	struct b2r2_control *control;
 
 	/* Requests to be reported */
 	struct list_head report_list;
@@ -150,8 +157,6 @@ struct b2r2_blt_instance {
 	u32 no_of_active_requests;
 	bool synching;
 	wait_queue_head_t synch_done_waitq;
-
-	struct b2r2_control *control;
 };
 
 /**
@@ -370,6 +375,7 @@ struct b2r2_core_job {
 
 	/* Data to be filled in by client */
 	int tag;
+	int data;
 	int prio;
 	u32 first_node_address;
 	u32 last_node_address;
@@ -419,6 +425,7 @@ struct b2r2_core_job {
  * @node_split_job: The administration structure for the B2R2 node split job
  * @first_node: Pointer to the first B2R2 node
  * @request_id: Request id for this job
+ * @core_mask: Bit mask with the cores doing part of the job
  * @node_split_handle: Handle of the node split
  * @src_resolved: Calculated info about the source buffer
  * @src_mask_resolved: Calculated info about the source mask buffer
@@ -427,13 +434,14 @@ struct b2r2_core_job {
  * @profile: True if the blit shall be profiled, false otherwise
  */
 struct b2r2_blt_request {
-	struct b2r2_blt_instance   *instance;
+	struct b2r2_control_instance   *instance;
 	struct list_head           list;
 	struct b2r2_blt_req        user_req;
 	struct b2r2_core_job       job;
 	struct b2r2_node_split_job node_split_job;
 	struct b2r2_node           *first_node;
 	int                        request_id;
+	u32                        core_mask;
 
 	/* Resolved buffer addresses */
 	struct b2r2_resolved_buf src_resolved;
@@ -491,7 +499,6 @@ struct b2r2_mem_heap {
 
 /**
  *
- * @miscdev: The miscdev presenting b2r2 to the system
  * @dev: The device handle of the b2r2 instance
  * @id: The id of the b2r2 instance
  * @name: The name of the b2r2 instance
@@ -525,36 +532,36 @@ struct b2r2_mem_heap {
  * @prev_node_count: Node cound of last_job
  */
 struct b2r2_control {
-	struct miscdevice		miscdev;
-	struct device			*dev;
-	int						id;
-	char					name[16];
-	void					*data;
-	struct tmp_buf			tmp_bufs[MAX_TMP_BUFS_NEEDED];
-	int						filters_initialized;
-	struct b2r2_mem_heap	mem_heap;
+	struct device                   *dev;
+	void                            *data;
+	int                             id;
+	struct kref                     ref;
+	bool                            enabled;
+	struct tmp_buf                  tmp_bufs[MAX_TMP_BUFS_NEEDED];
+	int                             filters_initialized;
+	struct b2r2_mem_heap            mem_heap;
 #ifdef CONFIG_DEBUG_FS
-	struct b2r2_blt_request	debugfs_latest_request;
-	struct dentry			*debugfs_root_dir;
-	struct dentry			*debugfs_debug_root_dir;
+	struct b2r2_blt_request         debugfs_latest_request;
+	struct dentry                   *debugfs_root_dir;
+	struct dentry                   *debugfs_debug_root_dir;
 #endif
-	struct mutex			stat_lock;
-	unsigned long			stat_n_jobs_added;
-	unsigned long			stat_n_jobs_released;
-	unsigned long			stat_n_jobs_in_report_list;
-	unsigned long			stat_n_in_blt;
-	unsigned long			stat_n_in_blt_synch;
-	unsigned long			stat_n_in_blt_add;
-	unsigned long			stat_n_in_blt_wait;
-	unsigned long			stat_n_in_synch_0;
-	unsigned long			stat_n_in_synch_job;
-	unsigned long			stat_n_in_query_cap;
-	unsigned long			stat_n_in_open;
-	unsigned long			stat_n_in_release;
-	struct mutex			last_job_lock;
-	struct b2r2_node		*last_job;
-	char					*last_job_chars;
-	int						prev_node_count;
+	struct mutex                    stat_lock;
+	unsigned long                   stat_n_jobs_added;
+	unsigned long                   stat_n_jobs_released;
+	unsigned long                   stat_n_jobs_in_report_list;
+	unsigned long                   stat_n_in_blt;
+	unsigned long                   stat_n_in_blt_synch;
+	unsigned long                   stat_n_in_blt_add;
+	unsigned long                   stat_n_in_blt_wait;
+	unsigned long                   stat_n_in_synch_0;
+	unsigned long                   stat_n_in_synch_job;
+	unsigned long                   stat_n_in_query_cap;
+	unsigned long                   stat_n_in_open;
+	unsigned long                   stat_n_in_release;
+	struct mutex                    last_job_lock;
+	struct b2r2_node                *last_job;
+	char                            *last_job_chars;
+	int                             prev_node_count;
 };
 
 /* FIXME: The functions below should be removed when we are
@@ -589,5 +596,15 @@ int b2r2_blt_module_init(struct b2r2_control *cont);
  * b2r2_blt_module_exit() - Un-initialize the B2R2 blt module
  */
 void b2r2_blt_module_exit(struct b2r2_control *cont);
+
+/**
+ * b2r2_blt_add_control() - Add the b2r2 core control
+ */
+void b2r2_blt_add_control(struct b2r2_control *cont);
+
+/**
+ * b2r2_blt_remove_control() - Remove the b2r2 core control
+ */
+void b2r2_blt_remove_control(struct b2r2_control *cont);
 
 #endif

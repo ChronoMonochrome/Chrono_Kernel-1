@@ -636,4 +636,55 @@ struct b2r2_blt_report {
 #define B2R2_BLT_QUERY_CAP_IOC  _IOWR(B2R2_BLT_IOC_MAGIC, 3, \
 				  struct b2r2_blt_query_cap)
 
+/**
+ * struct b2r2_platform_data - The b2r2 core hardware configuration
+ *
+ * @regulator_id: The name of the b2r2 power source
+ * @clock_id: The name of the b2r2 clock
+ *
+ */
+struct b2r2_platform_data {
+	const char *regulator_id;
+	const char *clock_id;
+};
+
+/**
+ * b2r2_blt_open - Opening a handle for use with the blitter interface
+ *
+ * Returns a handle (0 or greater) to a B2R2 blitter intance on success
+ */
+int b2r2_blt_open(void);
+
+/**
+ * b2r2_blt_close - Free the blitter instance and its resources
+ *
+ * @handle: The B2R2 BLT instance handle
+ *
+ * All active jobs are finished or cancelled and allocated data
+ * is released.
+ *
+ * Returns 0 on success
+ */
+int b2r2_blt_close(int handle);
+
+/**
+ * b2r2_blt_request - Request a blit operation
+ *
+ * @handle: The B2R2 BLT instance handle
+ *
+ * Returns 0 on success
+ */
+int b2r2_blt_request(int handle, struct b2r2_blt_req *user_req);
+
+/**
+ * b2r2_blt_synch - Wait for all or a specified job
+ *
+ * @handle: The B2R2 BLT instance handle
+ * @request_id: If 0, wait for all requests on this instance to finish.
+ *              Else wait for the request with the given request id to finish.
+ *
+ * Returns 0 on success
+ */
+int b2r2_blt_synch(int handle, int request_id);
+
 #endif /* #ifdef _LINUX_VIDEO_B2R2_BLT_H */

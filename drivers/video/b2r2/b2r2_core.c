@@ -48,71 +48,16 @@
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
 #include <linux/err.h>
+#include <linux/kref.h>
 
 #include "b2r2_internal.h"
 #include "b2r2_core.h"
 #include "b2r2_global.h"
 #include "b2r2_structures.h"
-#include "b2r2_internal.h"
+#include "b2r2_control.h"
 #include "b2r2_profiler_api.h"
 #include "b2r2_timing.h"
 #include "b2r2_debug.h"
-
-/**
- * B2R2_DRIVER_TIMEOUT_VALUE - Busy loop timeout after soft reset
- */
-#define B2R2_DRIVER_TIMEOUT_VALUE (1500)
-
-/**
- * B2R2_CLK_FLAG - Value to write into clock reg to turn clock on
- */
-#define B2R2_CLK_FLAG (0x125)
-
-/**
- * DEBUG_CHECK_ADDREF_RELEASE - Define this to enable addref / release debug
- */
-#define DEBUG_CHECK_ADDREF_RELEASE 1
-
-#ifdef CONFIG_DEBUG_FS
-/**
- * HANDLE_TIMEOUTED_JOBS - Define this to check jobs for timeout and cancel them
- */
-#define HANDLE_TIMEOUTED_JOBS 1
-#endif
-
-/**
- * B2R2_CLOCK_ALWAYS_ON - Define this to disable power save clock turn off
- */
-/* #define B2R2_CLOCK_ALWAYS_ON 1 */
-
-/**
- * START_SENTINEL - Watch guard to detect job overwrites
- */
-#define START_SENTINEL 0xBABEDEEA
-
-/**
- * STOP_SENTINEL - Watch guard to detect job overwrites
- */
-#define END_SENTINEL 0xDADBDCDD
-
-/**
- * B2R2_CORE_LOWEST_PRIO - Lowest prio allowed
- */
-#define B2R2_CORE_LOWEST_PRIO -19
-/**
- * B2R2_CORE_HIGHEST_PRIO - Highest prio allowed
- */
-#define B2R2_CORE_HIGHEST_PRIO 20
-
-/**
- * B2R2_DOMAIN_DISABLE -
- */
-#define B2R2_DOMAIN_DISABLE_TIMEOUT (HZ/100)
-
-/**
- * B2R2_REGULATOR_RETRY_COUNT -
- */
-#define B2R2_REGULATOR_RETRY_COUNT 10
 
 /**
  * B2R2 Hardware defines below
@@ -179,134 +124,6 @@
 #define	B2R2BLT_STA1AccessType		(INITIAL_TEST)
 #define	B2R2BLT_STA1			(0xa08)
 
-
-#ifdef DEBUG_CHECK_ADDREF_RELEASE
-
-/**
- * struct addref_release - Represents one addref or release. Used
- *                         to debug addref / release problems
- *
- * @addref: true if this represents an addref else it represents
- *          a release.
- * @job: The job that was referenced
- * @caller: The caller of the addref or release
- * @ref_count: The job reference count after addref / release
- */
-struct addref_release {
-	bool addref;
-	struct b2r2_core_job *job;
-	const char *caller;
-	int ref_count;
-};
-
-#endif
-
-/**
- * struct b2r2_core - Administration data for B2R2 core
- *
- * @lock: Spin lock protecting the b2r2_core structure and the B2R2 HW
- * @hw: B2R2 registers memory mapped
- * @pmu_b2r2_clock: Control of B2R2 clock
- * @log_dev: Device used for logging via dev_... functions
- *
- * @prio_queue: Queue of jobs sorted in priority order
- * @active_jobs: Array containing pointer to zero or one job per queue
- * @n_active_jobs: Number of active jobs
- * @jiffies_last_active: jiffie value when adding last active job
- * @jiffies_last_irq: jiffie value when last irq occured
- * @timeout_work: Work structure for timeout work
- *
- * @next_job_id: Contains the job id that will be assigned to the next
- *               added job.
- *
- * @clock_request_count: When non-zero, clock is on
- * @clock_off_timer: Kernel timer to handle delayed turn off of clock
- *
- * @work_queue: Work queue to handle done jobs (callbacks) and timeouts in
- *              non-interrupt context.
- *
- * @stat_n_irq: Number of interrupts (statistics)
- * @stat_n_jobs_added: Number of jobs added (statistics)
- * @stat_n_jobs_removed: Number of jobs removed (statistics)
- * @stat_n_jobs_in_prio_list: Number of jobs in prio list (statistics)
- *
- * @debugfs_root_dir: Root directory for B2R2 debugfs
- *
- * @ar: Circular array of addref / release debug structs
- * @ar_write: Where next write will occur
- * @ar_read: First valid place to read. When ar_read == ar_write then
- *           the array is empty.
- */
-struct b2r2_core {
-	spinlock_t       lock;
-
-	struct b2r2_memory_map *hw;
-
-	u8 op_size;
-	u8 ch_size;
-	u8 pg_size;
-	u8 mg_size;
-	u16 min_req_time;
-	int irq;
-
-	char name[16];
-	struct device *dev;
-
-	struct list_head prio_queue;
-
-	struct b2r2_core_job *active_jobs[B2R2_CORE_QUEUE_NO_OF];
-	unsigned long    n_active_jobs;
-
-	unsigned long    jiffies_last_active;
-	unsigned long    jiffies_last_irq;
-#ifdef HANDLE_TIMEOUTED_JOBS
-	struct delayed_work     timeout_work;
-#endif
-	int              next_job_id;
-
-	unsigned long    clock_request_count;
-	struct timer_list clock_off_timer;
-
-	struct workqueue_struct *work_queue;
-
-	/* Statistics */
-	unsigned long    stat_n_irq;
-	unsigned long    stat_n_jobs_added;
-	unsigned long    stat_n_jobs_removed;
-
-	unsigned long    stat_n_jobs_in_prio_list;
-
-#ifdef CONFIG_DEBUG_FS
-	struct dentry *debugfs_root_dir;
-	struct dentry *debugfs_core_root_dir;
-	struct dentry *debugfs_regs_dir;
-#endif
-
-#ifdef DEBUG_CHECK_ADDREF_RELEASE
-	/* Tracking release bug...*/
-	struct addref_release ar[100];
-	int ar_write;
-	int ar_read;
-#endif
-
-	/* Power management variables */
-	struct mutex domain_lock;
-	struct delayed_work domain_disable_work;
-
-	/*
-	 * We need to keep track of both the number of domain_enable/disable()
-	 * calls and whether the power was actually turned off, since the
-	 * power off is done in a delayed job.
-	 */
-	bool domain_enabled;
-	int domain_request_count;
-
-	struct clk *b2r2_clock;
-	struct regulator *b2r2_reg;
-
-	struct b2r2_control *control;
-};
-
 /**
  * b2r2_core - Quick link to administration data for B2R2
  */
@@ -318,7 +135,6 @@ static void  clear_interrupts(struct b2r2_core *core);
 static void trigger_job(struct b2r2_core *core, struct b2r2_core_job *job);
 static void exit_job_list(struct b2r2_core *core,
 		struct list_head *job_list);
-static int get_next_job_id(struct b2r2_core *core);
 static void job_work_function(struct work_struct *ptr);
 static void init_job(struct b2r2_core_job *job);
 static void insert_into_prio_list(struct b2r2_core *core,
@@ -439,19 +255,21 @@ static void internal_job_addref(struct b2r2_core *core,
 {
 	u32 ref_count;
 
-	b2r2_log_info(core->dev, "%s (%p, %p) (from %s)\n",
+	/* Sanity checks */
+	BUG_ON(core == NULL);
+	BUG_ON(job == NULL);
+
+	b2r2_log_info(core->dev, "%s (core: %p, job: %p) (from %s)\n",
 		__func__, core, job, caller);
 
-	/* Sanity checks */
-	BUG_ON(job == NULL);
 
 	if (job->start_sentinel != START_SENTINEL ||
 			job->end_sentinel != END_SENTINEL ||
 			job->ref_count == 0 || job->ref_count > 10)	{
-		b2r2_log_info(core->dev, "%s: (%p, %p) start=%X end=%X "
-			"ref_count=%d\n", __func__, core, job,
-			job->start_sentinel, job->end_sentinel,
-			job->ref_count);
+		b2r2_log_info(core->dev, "%s: (core: %p, job: %p) "
+			"start=%X end=%X ref_count=%d\n",
+			__func__, core, job, job->start_sentinel,
+			job->end_sentinel, job->ref_count);
 
 	/* Something is wrong, print the addref / release array */
 #ifdef DEBUG_CHECK_ADDREF_RELEASE
@@ -471,8 +289,8 @@ static void internal_job_addref(struct b2r2_core *core,
 	ar_add(core, job, caller, true);
 #endif
 
-	b2r2_log_info(core->dev, "%s called from %s (%p, %p): Ref Count is "
-		"%d\n", __func__, caller, core, job, job->ref_count);
+	b2r2_log_info(core->dev, "%s called from %s (core: %p, job: %p): Ref "
+		"Count is %d\n", __func__, caller, core, job, job->ref_count);
 }
 
 /**
@@ -496,14 +314,14 @@ static bool internal_job_release(struct b2r2_core *core,
 	/* Sanity checks */
 	BUG_ON(job == NULL);
 
-	b2r2_log_info(core->dev, "%s (%p, %p) (from %s)\n",
+	b2r2_log_info(core->dev, "%s (core: %p, job: %p) (from %s)\n",
 		__func__, core, job, caller);
 
 	if (job->start_sentinel != START_SENTINEL ||
 			job->end_sentinel != END_SENTINEL ||
 			job->ref_count == 0 || job->ref_count > 10) {
-		b2r2_log_info(core->dev, "%s: (%p, %p) start=%X end=%X "
-			"ref_count=%d\n", __func__, core, job,
+		b2r2_log_info(core->dev, "%s: (core: %p, job: %p) start=%X "
+			"end=%X ref_count=%d\n", __func__, core, job,
 			job->start_sentinel, job->end_sentinel,
 			job->ref_count);
 
@@ -521,8 +339,8 @@ static bool internal_job_release(struct b2r2_core *core,
 #ifdef DEBUG_CHECK_ADDREF_RELEASE
 	ar_add(core, job, caller, false);
 #endif
-	b2r2_log_info(core->dev, "%s called from %s (%p, %p) Ref Count is "
-		"%d\n", __func__, caller, core, job, ref_count);
+	b2r2_log_info(core->dev, "%s called from %s (core: %p, job: %p) "
+		"Ref Count is %d\n", __func__, caller, core, job, ref_count);
 
 	if (!ref_count && job->release) {
 		call_release = true;
@@ -543,11 +361,10 @@ static bool internal_job_release(struct b2r2_core *core,
 void b2r2_core_job_addref(struct b2r2_core_job *job, const char *caller)
 {
 	unsigned long flags;
-	struct b2r2_blt_instance *instance;
 	struct b2r2_core *core;
 
-	instance = (struct b2r2_blt_instance *) job->tag;
-	core = instance->control->data;
+	BUG_ON(job == NULL || job->data == 0);
+	core = (struct b2r2_core *) job->data;
 
 	spin_lock_irqsave(&core->lock, flags);
 	internal_job_addref(core, job, caller);
@@ -561,11 +378,10 @@ void b2r2_core_job_release(struct b2r2_core_job *job, const char *caller)
 {
 	unsigned long flags;
 	bool call_release = false;
-	struct b2r2_blt_instance *instance;
 	struct b2r2_core *core;
 
-	instance = (struct b2r2_blt_instance *) job->tag;
-	core = instance->control->data;
+	BUG_ON(job == NULL || job->data == 0);
+	core = (struct b2r2_core *) job->data;
 
 	spin_lock_irqsave(&core->lock, flags);
 	call_release = internal_job_release(core, job, caller);
@@ -584,12 +400,19 @@ int b2r2_core_job_add(struct b2r2_control *control,
 	unsigned long flags;
 	struct b2r2_core *core = control->data;
 
-	b2r2_log_info(core->dev, "%s (%p, %p)\n", __func__, control, job);
+	b2r2_log_info(core->dev, "%s (core: %p, job: %p)\n",
+		__func__, core, job);
 
 	/* Enable B2R2 */
 	domain_enable(core);
 
 	spin_lock_irqsave(&core->lock, flags);
+	/* Check that we have not been powered down */
+	if (!core->domain_enabled) {
+		spin_unlock_irqrestore(&core->lock, flags);
+		return -ENOSYS;
+	}
+
 	core->stat_n_jobs_added++;
 
 	/* Initialise internal job data */
@@ -605,7 +428,7 @@ int b2r2_core_job_add(struct b2r2_control *control,
 	check_prio_list(core, false);
 	spin_unlock_irqrestore(&core->lock, flags);
 
-	return 0;
+	return job->job_id;
 }
 
 /**
@@ -618,7 +441,8 @@ struct b2r2_core_job *b2r2_core_job_find(struct b2r2_control *control,
 	struct b2r2_core_job *job;
 	struct b2r2_core *core = control->data;
 
-	b2r2_log_info(core->dev, "%s (%p, %d)\n", __func__, control, job_id);
+	b2r2_log_info(core->dev, "%s (core: %p, job_id: %d)\n",
+		__func__, core, job_id);
 
 	spin_lock_irqsave(&core->lock, flags);
 	/* Look through prio queue */
@@ -642,7 +466,8 @@ struct b2r2_core_job *b2r2_core_job_find_first_with_tag(
 	struct b2r2_core_job *job;
 	struct b2r2_core *core = control->data;
 
-	b2r2_log_info(core->dev, "%s (%p, %d)\n", __func__, control, tag);
+	b2r2_log_info(core->dev,
+		"%s (core: %p, tag: %d)\n", __func__, core, tag);
 
 	spin_lock_irqsave(&core->lock, flags);
 	/* Look through prio queue */
@@ -669,11 +494,7 @@ static bool is_job_done(struct b2r2_core_job *job)
 {
 	unsigned long flags;
 	bool job_is_done;
-	struct b2r2_blt_instance *instance;
-	struct b2r2_core *core;
-
-	instance = (struct b2r2_blt_instance *) job->tag;
-	core = instance->control->data;
+	struct b2r2_core *core = (struct b2r2_core *) job->data;
 
 	spin_lock_irqsave(&core->lock, flags);
 	job_is_done =
@@ -694,13 +515,12 @@ static bool is_job_done(struct b2r2_core_job *job)
 int b2r2_core_job_wait(struct b2r2_core_job *job)
 {
 	int ret = 0;
-	struct b2r2_blt_instance *instance;
-	struct b2r2_core *core;
+#ifdef CONFIG_B2R2_DEBUG
+	struct b2r2_core *core = (struct b2r2_core *) job->data;
+#endif
 
-	instance = (struct b2r2_blt_instance *) job->tag;
-	core = instance->control->data;
-
-	b2r2_log_info(core->dev, "%s (%p)\n", __func__, job);
+	b2r2_log_info(core->dev, "%s (core: %p, job: %p)\n",
+		__func__, core, job);
 	/* Check that we have the job */
 	if (job->job_state == B2R2_CORE_JOB_IDLE) {
 		/* Never or not queued */
@@ -779,14 +599,10 @@ int b2r2_core_job_cancel(struct b2r2_core_job *job)
 {
 	unsigned long flags;
 	int ret = 0;
-	struct b2r2_blt_instance *instance;
-	struct b2r2_core *core;
+	struct b2r2_core *core = (struct b2r2_core *) job->data;
 
-	instance = (struct b2r2_blt_instance *) job->tag;
-	core = instance->control->data;
-
-	b2r2_log_info(core->dev, "%s (%p) (%d)\n",
-		__func__, job, job->job_state);
+	b2r2_log_info(core->dev, "%s (core: %p, job: %p) (st: %d)\n",
+		__func__, core, job, job->job_state);
 	/* Check that we have the job */
 	if (job->job_state == B2R2_CORE_JOB_IDLE) {
 		/* Never or not queued */
@@ -819,6 +635,7 @@ static void domain_disable_work_function(struct work_struct *work)
 		return;
 
 	if (core->domain_request_count == 0) {
+		core->valid = false;
 		exit_hw(core);
 		clk_disable(core->b2r2_clock);
 		regulator_disable(core->b2r2_reg);
@@ -853,10 +670,16 @@ again:
 		else if (ret < 0)
 			goto regulator_enable_failed;
 
-		clk_enable(core->b2r2_clock);
+		ret = clk_enable(core->b2r2_clock);
+		if (ret < 0) {
+			b2r2_log_err(core->dev,
+				"%s: Could not enable clock\n", __func__);
+			goto enable_clk_failed;
+		}
 		if (init_hw(core) < 0)
 			goto init_hw_failed;
 		core->domain_enabled = true;
+		core->valid = true;
 	}
 
 	mutex_unlock(&core->domain_lock);
@@ -866,9 +689,9 @@ again:
 init_hw_failed:
 	b2r2_log_err(core->dev,
 		"%s: Could not initialize hardware!\n", __func__);
-
 	clk_disable(core->b2r2_clock);
 
+enable_clk_failed:
 	if (regulator_disable(core->b2r2_reg) < 0)
 		b2r2_log_err(core->dev, "%s: regulator_disable failed!\n",
 				__func__);
@@ -946,22 +769,6 @@ static void exit_job_list(struct b2r2_core *core,
 }
 
 /**
- * get_next_job_id() - Return a new job id.
- *
- * @core: The b2r2 core entity
- */
-static int get_next_job_id(struct b2r2_core *core)
-{
-	int job_id;
-
-	if (core->next_job_id < 1)
-		core->next_job_id = 1;
-	job_id = core->next_job_id++;
-
-	return job_id;
-}
-
-/**
  * job_work_function() - Work queue function that calls callback(s) and
  *                       checks if B2R2 can accept a new job
  *
@@ -972,11 +779,7 @@ static void job_work_function(struct work_struct *ptr)
 	unsigned long flags;
 	struct b2r2_core_job *job =
 			container_of(ptr, struct b2r2_core_job, work);
-	struct b2r2_blt_instance *instance;
-	struct b2r2_core *core;
-
-	instance = (struct b2r2_blt_instance *) job->tag;
-	core = instance->control->data;
+	struct b2r2_core *core = (struct b2r2_core *) job->data;
 
 	/* Disable B2R2 */
 	domain_disable(core);
@@ -1025,9 +828,11 @@ static void timeout_work_function(struct work_struct *ptr)
 	if (core->n_active_jobs > 0) {
 		unsigned long diff =
 			(long) jiffies - (long) core->jiffies_last_irq;
-		if (diff > HZ/2) {
+		if (diff > JOB_TIMEOUT) {
 			/* Active jobs and more than a second since last irq! */
 			int i;
+
+			b2r2_core_print_stats(core);
 
 			/* Look for timeout:ed jobs and put them in tmp list.
 			 * It's important that the application queues are
@@ -1077,7 +882,7 @@ static void timeout_work_function(struct work_struct *ptr)
 	if (core->n_active_jobs)
 		queue_delayed_work(
 			core->work_queue,
-			&core->timeout_work, HZ/2);
+			&core->timeout_work, JOB_TIMEOUT);
 
 	spin_unlock_irqrestore(&core->lock, flags);
 }
@@ -1194,17 +999,9 @@ static void stop_hw_timer(struct b2r2_core *core, struct b2r2_core_job *job)
  */
 static void init_job(struct b2r2_core_job *job)
 {
-	struct b2r2_blt_instance *instance;
-	struct b2r2_core *core;
-
-	instance = (struct b2r2_blt_instance *) job->tag;
-	core = instance->control->data;
 
 	job->start_sentinel = START_SENTINEL;
 	job->end_sentinel = END_SENTINEL;
-
-	/* Get a job id*/
-	job->job_id = get_next_job_id(core);
 
 	/* Job is idle, never queued */
 	job->job_state = B2R2_CORE_JOB_IDLE;
@@ -1361,7 +1158,7 @@ static void check_prio_list(struct b2r2_core *core, bool atomic)
 #ifdef HANDLE_TIMEOUTED_JOBS
 			/* Check in one half second if it hangs */
 			queue_delayed_work(core->work_queue,
-				&core->timeout_work, HZ/2);
+				&core->timeout_work, JOB_TIMEOUT);
 #endif
 		} else {
 			/* No resources */
@@ -1395,9 +1192,7 @@ static struct b2r2_core_job *find_job_in_list(int job_id,
 		struct b2r2_core_job *job = list_entry(
 				ptr, struct b2r2_core_job, list);
 		if (job->job_id == job_id) {
-			struct b2r2_blt_instance *instance =
-					(struct b2r2_blt_instance *) job->tag;
-			struct b2r2_core *core = instance->control->data;
+			struct b2r2_core *core = (struct b2r2_core *) job->data;
 			/* Increase reference count, should be released by
 			   the caller of b2r2_core_job_find */
 			internal_job_addref(core, job, __func__);
@@ -1503,7 +1298,7 @@ static struct b2r2_core_job *find_tag_in_active_jobs(struct b2r2_core *core,
  */
 static int hw_reset(struct b2r2_core *core)
 {
-	u32 uTimeOut = B2R2_DRIVER_TIMEOUT_VALUE;
+	u32 uTimeOut = B2R2_RESET_TIMEOUT_VALUE;
 
 	/* Tell B2R2 to reset */
 	writel(readl(&core->hw->BLT_CTL) | B2R2BLT_CTLGLOBAL_soft_reset,
@@ -1761,17 +1556,23 @@ static void process_events(struct b2r2_core *core, u32 status)
  * b2r2_irq_handler() - B2R2 interrupt handler
  *
  * @irq: Interrupt number (not used)
- * @x: ??? (Not used)
+ * @dev_id: A pointer to the b2r2 core entity
  */
-static irqreturn_t b2r2_irq_handler(int irq, void *x)
+static irqreturn_t b2r2_irq_handler(int irq, void *dev_id)
 {
 	unsigned long flags;
-	struct b2r2_core* core = (struct b2r2_core *) x;
+	struct b2r2_core* core = (struct b2r2_core *) dev_id;
 
 	/* Spin lock is need in irq handler (SMP) */
 	spin_lock_irqsave(&core->lock, flags);
 
-	/* Make sure that we have a clock */
+	/* Make a quick exit if this device was not interrupting */
+	if (!core->valid ||
+		((readl(&core->hw->BLT_ITS) & B2R2_ITS_MASK) == 0)) {
+		core->stat_n_irq_skipped++;
+		spin_unlock_irqrestore(&core->lock, flags);
+		return IRQ_NONE;
+	}
 
 	/* Remember time for last irq (for timeout mgmt) */
 	core->jiffies_last_irq = jiffies;
@@ -1782,6 +1583,8 @@ static irqreturn_t b2r2_irq_handler(int irq, void *x)
 
 	/* Check if we can dispatch new jobs */
 	check_prio_list(core, true);
+
+	core->stat_n_irq_exit++;
 
 	spin_unlock_irqrestore(&core->lock, flags);
 
@@ -2032,9 +1835,9 @@ static int debugfs_b2r2_reg_read(struct file *filp, char __user *buf,
 	size_t dev_size;
 	int ret = 0;
 	unsigned long value;
-	char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
+	char *tmpbuf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
 
-	if (Buf == NULL) {
+	if (tmpbuf == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -2044,7 +1847,7 @@ static int debugfs_b2r2_reg_read(struct file *filp, char __user *buf,
 		filp->f_dentry->d_inode->i_private);
 
 	/* Build the string */
-	dev_size = sprintf(Buf, "%8lX\n", value);
+	dev_size = sprintf(tmpbuf, "%8lX\n", value);
 
 	/* No more to read if offset != 0 */
 	if (*f_pos > dev_size)
@@ -2054,14 +1857,14 @@ static int debugfs_b2r2_reg_read(struct file *filp, char __user *buf,
 		count = dev_size - *f_pos;
 
 	/* Return it to user space */
-	if (copy_to_user(buf, Buf, count))
+	if (copy_to_user(buf, tmpbuf, count))
 		ret = -EINVAL;
 	*f_pos += count;
 	ret = count;
 
 out:
-	if (Buf != NULL)
-		kfree(Buf);
+	if (tmpbuf != NULL)
+		kfree(tmpbuf);
 	return ret;
 }
 
@@ -2078,19 +1881,19 @@ out:
 static int debugfs_b2r2_reg_write(struct file *filp, const char __user *buf,
 				  size_t count, loff_t *f_pos)
 {
-	char Buf[80];
+	char tmpbuf[80];
 	u32 reg_value;
 	int ret = 0;
 
 	/* Adjust count */
-	if (count >= sizeof(Buf))
-		count = sizeof(Buf) - 1;
+	if (count >= sizeof(tmpbuf))
+		count = sizeof(tmpbuf) - 1;
 	/* Get it from user space */
-	if (copy_from_user(Buf, buf, count))
+	if (copy_from_user(tmpbuf, buf, count))
 		return -EINVAL;
-	Buf[count] = 0;
+	tmpbuf[count] = 0;
 	/* Convert from hex string */
-	if (sscanf(Buf, "%8lX", (unsigned long *) &reg_value) != 1)
+	if (sscanf(tmpbuf, "%8lX", (unsigned long *) &reg_value) != 1)
 		return -EINVAL;
 
 	writel(reg_value, (u32 *)
@@ -2127,9 +1930,9 @@ static int debugfs_b2r2_regs_read(struct file *filp, char __user *buf,
 	size_t dev_size = 0;
 	int ret = 0;
 	int i;
-	char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
+	char *tmpbuf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
 
-	if (Buf == NULL) {
+	if (tmpbuf == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -2140,7 +1943,7 @@ static int debugfs_b2r2_regs_read(struct file *filp, char __user *buf,
 			readl((u32 *) (((u8 *)
 				filp->f_dentry->d_inode->i_private) +
 				debugfs_regs[i].offset));
-		dev_size += sprintf(Buf + dev_size, "%s: %08lX\n",
+		dev_size += sprintf(tmpbuf + dev_size, "%s: %08lX\n",
 			debugfs_regs[i].name,
 			value);
 	}
@@ -2152,14 +1955,14 @@ static int debugfs_b2r2_regs_read(struct file *filp, char __user *buf,
 	if (*f_pos + count > dev_size)
 		count = dev_size - *f_pos;
 
-	if (copy_to_user(buf, Buf, count))
+	if (copy_to_user(buf, tmpbuf, count))
 		ret = -EINVAL;
 	*f_pos += count;
 	ret = count;
 
 out:
-	if (Buf != NULL)
-		kfree(Buf);
+	if (tmpbuf != NULL)
+		kfree(tmpbuf);
 	return ret;
 }
 
@@ -2187,30 +1990,30 @@ static int debugfs_b2r2_stat_read(struct file *filp, char __user *buf,
 	size_t dev_size = 0;
 	int ret = 0;
 	int i = 0;
-	char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
+	char *tmpbuf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
 	struct b2r2_core *core = filp->f_dentry->d_inode->i_private;
 
-	if (Buf == NULL) {
+	if (tmpbuf == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	/* Build a string containing all statistics */
-	dev_size += sprintf(Buf + dev_size, "Interrupts        : %lu\n",
+	dev_size += sprintf(tmpbuf + dev_size, "Interrupts        : %lu\n",
 			core->stat_n_irq);
-	dev_size += sprintf(Buf + dev_size, "Added jobs        : %lu\n",
+	dev_size += sprintf(tmpbuf + dev_size, "Added jobs        : %lu\n",
 			core->stat_n_jobs_added);
-	dev_size += sprintf(Buf + dev_size, "Removed jobs      : %lu\n",
+	dev_size += sprintf(tmpbuf + dev_size, "Removed jobs      : %lu\n",
 			core->stat_n_jobs_removed);
-	dev_size += sprintf(Buf + dev_size, "Jobs in prio list : %lu\n",
+	dev_size += sprintf(tmpbuf + dev_size, "Jobs in prio list : %lu\n",
 			core->stat_n_jobs_in_prio_list);
-	dev_size += sprintf(Buf + dev_size, "Active jobs       : %lu\n",
+	dev_size += sprintf(tmpbuf + dev_size, "Active jobs       : %lu\n",
 			core->n_active_jobs);
 	for (i = 0; i < ARRAY_SIZE(core->active_jobs); i++)
-		dev_size += sprintf(Buf + dev_size,
+		dev_size += sprintf(tmpbuf + dev_size,
 				"   Job in queue %d : 0x%08lx\n",
 				i, (unsigned long) core->active_jobs[i]);
-	dev_size += sprintf(Buf + dev_size, "Clock requests    : %lu\n",
+	dev_size += sprintf(tmpbuf + dev_size, "Clock requests    : %lu\n",
 			core->clock_request_count);
 
 	/* No more to read if offset != 0 */
@@ -2220,14 +2023,14 @@ static int debugfs_b2r2_stat_read(struct file *filp, char __user *buf,
 	if (*f_pos + count > dev_size)
 		count = dev_size - *f_pos;
 
-	if (copy_to_user(buf, Buf, count))
+	if (copy_to_user(buf, tmpbuf, count))
 		ret = -EINVAL;
 	*f_pos += count;
 	ret = count;
 
 out:
-	if (Buf != NULL)
-		kfree(Buf);
+	if (tmpbuf != NULL)
+		kfree(tmpbuf);
 	return ret;
 }
 
@@ -2254,14 +2057,14 @@ static int debugfs_b2r2_clock_read(struct file *filp, char __user *buf,
 				   size_t count, loff_t *f_pos)
 {
 	/* 10 characters hex number + newline + string terminator; */
-	char Buf[10+2];
+	char tmpbuf[10+2];
 	size_t dev_size;
 	int ret = 0;
 	struct b2r2_core *core = filp->f_dentry->d_inode->i_private;
 
 	unsigned long value = clk_get_rate(core->b2r2_clock);
 
-	dev_size = sprintf(Buf, "%#010lx\n", value);
+	dev_size = sprintf(tmpbuf, "%#010lx\n", value);
 
 	/* No more to read if offset != 0 */
 	if (*f_pos > dev_size)
@@ -2270,7 +2073,7 @@ static int debugfs_b2r2_clock_read(struct file *filp, char __user *buf,
 	if (*f_pos + count > dev_size)
 		count = dev_size - *f_pos;
 
-	if (copy_to_user(buf, Buf, count))
+	if (copy_to_user(buf, tmpbuf, count))
 		ret = -EINVAL;
 	*f_pos += count;
 	ret = count;
@@ -2292,16 +2095,16 @@ out:
 static int debugfs_b2r2_clock_write(struct file *filp, const char __user *buf,
 				    size_t count, loff_t *f_pos)
 {
-	char Buf[80];
+	char tmpbuf[80];
 	u32 reg_value;
 	int ret = 0;
 
-	if (count >= sizeof(Buf))
-		count = sizeof(Buf) - 1;
-	if (copy_from_user(Buf, buf, count))
+	if (count >= sizeof(tmpbuf))
+		count = sizeof(tmpbuf) - 1;
+	if (copy_from_user(tmpbuf, buf, count))
 		return -EINVAL;
-	Buf[count] = 0;
-	if (sscanf(Buf, "%8lX", (unsigned long *) &reg_value) != 1)
+	tmpbuf[count] = 0;
+	if (sscanf(tmpbuf, "%8lX", (unsigned long *) &reg_value) != 1)
 		return -EINVAL;
 
 	/*not working yet*/
@@ -2320,6 +2123,88 @@ static const struct file_operations debugfs_b2r2_clock_fops = {
 	.owner = THIS_MODULE,
 	.read  = debugfs_b2r2_clock_read,
 	.write = debugfs_b2r2_clock_write,
+};
+
+/**
+ * debugfs_b2r2_enabled_read() - Implements debugfs read for
+ *                             B2R2 Core Enable/Disable
+ * @filp: File pointer
+ * @buf: User space buffer
+ * @count: Number of bytes to read
+ * @f_pos: File position
+ *
+ * Returns number of bytes read or negative error code
+ */
+static int debugfs_b2r2_enabled_read(struct file *filp, char __user *buf,
+				   size_t count, loff_t *f_pos)
+{
+	/* 4 characters hex number + newline + string terminator; */
+	char tmpbuf[4+2];
+	size_t dev_size;
+	int ret = 0;
+	struct b2r2_core *core = filp->f_dentry->d_inode->i_private;
+
+	dev_size = sprintf(tmpbuf, "%02X\n", core->control->enabled);
+
+	/* No more to read if offset != 0 */
+	if (*f_pos > dev_size)
+		goto out;
+
+	if (*f_pos + count > dev_size)
+		count = dev_size - *f_pos;
+
+	if (copy_to_user(buf, tmpbuf, count))
+		ret = -EINVAL;
+	*f_pos += count;
+	ret = count;
+out:
+	return ret;
+}
+
+/**
+ * debugfs_b2r2_enabled_write() - Implements debugfs write for
+ *                              B2R2 Core Enable/Disable
+ * @filp: File pointer
+ * @buf: User space buffer
+ * @count: Number of bytes to write
+ * @f_pos: File position
+ *
+ * Returns number of bytes written or negative error code
+ */
+static int debugfs_b2r2_enabled_write(struct file *filp, const char __user *buf,
+				    size_t count, loff_t *f_pos)
+{
+	char tmpbuf[80];
+	unsigned int enable;
+	int ret = 0;
+	struct b2r2_core *core = filp->f_dentry->d_inode->i_private;
+
+	if (count >= sizeof(tmpbuf))
+		count = sizeof(tmpbuf) - 1;
+	if (copy_from_user(tmpbuf, buf, count))
+		return -EINVAL;
+	tmpbuf[count] = 0;
+	if (sscanf(tmpbuf, "%02X", &enable) != 1)
+		return -EINVAL;
+
+	if (enable)
+		core->control->enabled = true;
+	else
+		core->control->enabled = false;
+
+	*f_pos += count;
+	ret = count;
+
+	return ret;
+}
+
+/**
+ * debugfs_b2r2_enabled_fops() - File operations for B2R2 Core Enable/Disable debugfs
+ */
+static const struct file_operations debugfs_b2r2_enabled_fops = {
+	.owner = THIS_MODULE,
+	.read  = debugfs_b2r2_enabled_read,
+	.write = debugfs_b2r2_enabled_write,
 };
 
 #endif
@@ -2348,7 +2233,7 @@ static const struct file_operations debugfs_b2r2_clock_fops = {
 static int init_hw(struct b2r2_core *core)
 {
 	int result = 0;
-	u32 uTimeOut = B2R2_DRIVER_TIMEOUT_VALUE;
+	u32 uTimeOut = B2R2_RESET_TIMEOUT_VALUE;
 
 	/* Put B2R2 into reset */
 	clear_interrupts(core);
@@ -2357,7 +2242,7 @@ static int init_hw(struct b2r2_core *core)
 		&core->hw->BLT_CTL);
 
 	/* Set up interrupt handler */
-	result = request_irq(core->irq, b2r2_irq_handler, 0,
+	result = request_irq(core->irq, b2r2_irq_handler, IRQF_SHARED,
 			     "b2r2-interrupt", core);
 	if (result) {
 		b2r2_log_err(core->dev,
@@ -2400,7 +2285,7 @@ static int init_hw(struct b2r2_core *core)
 			debugfs_create_file(debugfs_regs[i].name, 0666,
 					core->debugfs_regs_dir,
 					(void *)(((u8 *) core->hw) +
-						debugfs_regs[i].offset),
+							debugfs_regs[i].offset),
 					&debugfs_b2r2_reg_fops);
 	}
 #endif
@@ -2474,18 +2359,22 @@ static void exit_hw(struct b2r2_core *core)
 static int b2r2_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	struct resource *res;
-	struct b2r2_core *core;
-	struct b2r2_control *control;
+	struct resource *res = NULL;
+	struct b2r2_core *core = NULL;
+	struct b2r2_control *control = NULL;
+	struct b2r2_platform_data *pdata = NULL;
+	int debug_init = 0;
 
 	BUG_ON(pdev == NULL);
 	BUG_ON(pdev->id < 0 || pdev->id >= B2R2_MAX_NBR_DEVICES);
+
+	pdata = pdev->dev.platform_data;
 
 	core = kzalloc(sizeof(*core), GFP_KERNEL);
 	if (!core) {
 		dev_err(&pdev->dev, "b2r2 core alloc failed\n");
 		ret = -EINVAL;
-		goto b2r2_probe_core_alloc_fail;
+		goto error_exit;
 	}
 
 	core->dev = &pdev->dev;
@@ -2512,24 +2401,25 @@ static int b2r2_probe(struct platform_device *pdev)
 	core->work_queue = create_workqueue("B2R2");
 	if (!core->work_queue) {
 		ret = -ENOMEM;
-		goto b2r2_probe_no_work_queue;
+		goto error_exit;
 	}
 
 	/* Get the clock for B2R2 */
-	core->b2r2_clock = clk_get(core->dev, "b2r2");
+	core->b2r2_clock = clk_get(core->dev, pdata->clock_id);
 	if (IS_ERR(core->b2r2_clock)) {
 		ret = PTR_ERR(core->b2r2_clock);
-		dev_err(&pdev->dev, "clk_get b2r2 failed\n");
-		goto b2r2_probe_no_clk;
+		dev_err(&pdev->dev, "clk_get %s failed\n", pdata->clock_id);
+		goto error_exit;
 	}
 
 	/* Get the B2R2 regulator */
-	core->b2r2_reg = regulator_get(core->dev, "vsupply");
+	core->b2r2_reg = regulator_get(core->dev, pdata->regulator_id);
 	if (IS_ERR(core->b2r2_reg)) {
 		ret = PTR_ERR(core->b2r2_reg);
-		dev_err(&pdev->dev, "regulator_get vsupply failed "
-			"(dev_name=%s)\n", dev_name(core->dev));
-		goto b2r2_probe_no_reg;
+		dev_err(&pdev->dev, "regulator_get %s failed "
+			"(dev_name=%s)\n", pdata->regulator_id,
+			dev_name(core->dev));
+		goto error_exit;
 	}
 
 	/* Init power management */
@@ -2537,18 +2427,19 @@ static int b2r2_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK_DEFERRABLE(&core->domain_disable_work,
 			domain_disable_work_function);
 	core->domain_enabled = false;
+	core->valid = false;
 
 	/* Map B2R2 into kernel virtual memory space */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (res == NULL)
-		goto b2r2_probe_no_res;
+		goto error_exit;
 
 	/* Hook up irq */
 	core->irq = platform_get_irq(pdev, 0);
 	if (core->irq <= 0) {
 		dev_err(&pdev->dev, "%s: Failed to request irq (irq=%d)\n",
 			__func__, core->irq);
-		goto b2r2_failed_irq_get;
+		goto error_exit;
 	}
 
 	core->hw = (struct b2r2_memory_map *) ioremap(res->start,
@@ -2556,7 +2447,7 @@ static int b2r2_probe(struct platform_device *pdev)
 	if (core->hw == NULL) {
 		dev_err(&pdev->dev, "%s: ioremap failed\n", __func__);
 		ret = -ENOMEM;
-		goto b2r2_probe_ioremap_failed;
+		goto error_exit;
 	}
 
 	dev_dbg(core->dev, "b2r2 structure address %p\n", core->hw);
@@ -2565,14 +2456,12 @@ static int b2r2_probe(struct platform_device *pdev)
 	if (!control) {
 		dev_err(&pdev->dev, "b2r2 control alloc failed\n");
 		ret = -EINVAL;
-		goto b2r2_probe_control_alloc_fail;
+		goto error_exit;
 	}
 
-	control->miscdev.parent = core->dev;
 	control->data = (void *)core;
 	control->id = pdev->id;
 	control->dev = &pdev->dev; /* Temporary device */
-	snprintf(control->name, sizeof(control->name), "%s_blt", core->name);
 
 	core->op_size = B2R2_PLUG_OPCODE_SIZE_DEFAULT;
 	core->ch_size = B2R2_PLUG_CHUNK_SIZE_DEFAULT;
@@ -2598,6 +2487,9 @@ static int b2r2_probe(struct platform_device *pdev)
 				core, &debugfs_b2r2_stat_fops);
 		debugfs_create_file("clock", 0666, core->debugfs_core_root_dir,
 				core, &debugfs_b2r2_clock_fops);
+		debugfs_create_file("enabled", 0666,
+				core->debugfs_core_root_dir,
+				core, &debugfs_b2r2_enabled_fops);
 		debugfs_create_u8("op_size", 0666, core->debugfs_core_root_dir,
 				&core->op_size);
 		debugfs_create_u8("ch_size", 0666, core->debugfs_core_root_dir,
@@ -2614,39 +2506,44 @@ static int b2r2_probe(struct platform_device *pdev)
 	ret = b2r2_debug_init(control);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "b2r2_debug_init failed\n");
-		goto b2r2_probe_debug_init_failed;
+		goto error_exit;
 	}
+	debug_init = 1;
 
-	/* Initialize b2r2_blt module. FIXME: Module of it's own
-	   or perhaps a dedicated module init c file? */
-	ret = b2r2_blt_module_init(control);
+	/* Initialize b2r2_control */
+	ret = b2r2_control_init(control);
 	if (ret < 0) {
-		b2r2_log_err(&pdev->dev, "b2r2_blt_module_init failed\n");
-		goto b2r2_probe_blt_init_fail;
+		b2r2_log_err(&pdev->dev, "b2r2_control_init failed\n");
+		goto error_exit;
 	}
-
 	core->control = control;
+
+	/* Add the control to the blitter */
+	kref_init(&control->ref);
+	control->enabled = true;
+	b2r2_blt_add_control(control);
+
 	b2r2_core[pdev->id] = core;
-	dev_info(&pdev->dev, "init done.\n");
+	dev_info(&pdev->dev, "%s done.\n", __func__);
 
 	return ret;
 
 /** Recover from any error if something fails */
-b2r2_probe_blt_init_fail:
+error_exit:
 	kfree(control);
-b2r2_probe_control_alloc_fail:
-b2r2_probe_ioremap_failed:
-b2r2_failed_irq_get:
-b2r2_probe_no_res:
-	regulator_put(core->b2r2_reg);
-b2r2_probe_no_reg:
-	clk_put(core->b2r2_clock);
-b2r2_probe_no_clk:
-	destroy_workqueue(core->work_queue);
-	core->work_queue = NULL;
-b2r2_probe_no_work_queue:
-	b2r2_debug_exit();
-b2r2_probe_debug_init_failed:
+
+	if (!IS_ERR_OR_NULL(core->b2r2_reg))
+		regulator_put(core->b2r2_reg);
+
+	if (!IS_ERR_OR_NULL(core->b2r2_clock))
+		clk_put(core->b2r2_clock);
+
+	if (!IS_ERR_OR_NULL(core->work_queue))
+		destroy_workqueue(core->work_queue);
+
+	if (debug_init)
+		b2r2_debug_exit();
+
 #ifdef CONFIG_DEBUG_FS
 	if (!IS_ERR_OR_NULL(core->debugfs_root_dir)) {
 		debugfs_remove_recursive(core->debugfs_root_dir);
@@ -2654,12 +2551,64 @@ b2r2_probe_debug_init_failed:
 	}
 #endif
 	kfree(core);
-b2r2_probe_core_alloc_fail:
-	dev_info(&pdev->dev, "init done with errors.\n");
+
+	dev_info(&pdev->dev, "%s done with errors (%d).\n", __func__, ret);
 
 	return ret;
 }
 
+void b2r2_core_release(struct kref *control_ref)
+{
+	struct b2r2_control *control = container_of(
+			control_ref, struct b2r2_control, ref);
+	struct b2r2_core *core = control->data;
+	int id = control->id;
+	unsigned long flags;
+#ifdef CONFIG_B2R2_DEBUG
+	struct device *dev = core->dev;
+#endif
+
+	b2r2_log_info(dev, "%s: enter\n", __func__);
+
+	/* Exit b2r2 control module */
+	b2r2_control_exit(control);
+	kfree(control);
+	b2r2_debug_exit();
+
+#ifdef HANDLE_TIMEOUTED_JOBS
+	cancel_delayed_work(&core->timeout_work);
+#endif
+
+	/* Flush B2R2 work queue (call all callbacks for
+	   cancelled jobs) */
+	flush_workqueue(core->work_queue);
+
+	/* Make sure the power is turned off */
+	cancel_delayed_work_sync(&core->domain_disable_work);
+
+	/** Unmap B2R2 registers */
+	b2r2_log_info(dev, "%s: unmap b2r2 registers..\n", __func__);
+	if (core->hw) {
+		iounmap(core->hw);
+		core->hw = NULL;
+	}
+
+	destroy_workqueue(core->work_queue);
+
+	spin_lock_irqsave(&core->lock, flags);
+	core->work_queue = NULL;
+	spin_unlock_irqrestore(&core->lock, flags);
+
+	/* Return the clock */
+	clk_put(core->b2r2_clock);
+	regulator_put(core->b2r2_reg);
+
+	core->dev = NULL;
+	kfree(core);
+	b2r2_core[id] = NULL;
+
+	b2r2_log_info(dev, "%s: exit\n", __func__);
+}
 
 
 /**
@@ -2669,7 +2618,6 @@ b2r2_probe_core_alloc_fail:
  */
 static int b2r2_remove(struct platform_device *pdev)
 {
-	unsigned long flags;
 	struct b2r2_core *core;
 
 	BUG_ON(pdev == NULL);
@@ -2688,44 +2636,10 @@ static int b2r2_remove(struct platform_device *pdev)
 	/* Flush B2R2 work queue (call all callbacks) */
 	flush_workqueue(core->work_queue);
 
-	/* Exit b2r2 blt module */
-	b2r2_blt_module_exit(core->control);
-
-	kfree(core->control);
-
-#ifdef HANDLE_TIMEOUTED_JOBS
-	cancel_delayed_work(&core->timeout_work);
-#endif
-
-	/* Flush B2R2 work queue (call all callbacks for
-	   cancelled jobs) */
-	flush_workqueue(core->work_queue);
-
-	/* Make sure the power is turned off */
-	cancel_delayed_work_sync(&core->domain_disable_work);
-
-	/** Unmap B2R2 registers */
-	b2r2_log_info(&pdev->dev, "unmap b2r2 registers..\n");
-	if (core->hw) {
-		iounmap(core->hw);
-		core->hw = NULL;
-	}
-
-	destroy_workqueue(core->work_queue);
-
-	spin_lock_irqsave(&core->lock, flags);
-	core->work_queue = NULL;
-	spin_unlock_irqrestore(&core->lock, flags);
-
-	/* Return the clock */
-	clk_put(core->b2r2_clock);
-	regulator_put(core->b2r2_reg);
-
-	core->dev = NULL;
-	kfree(core);
-	b2r2_core[pdev->id] = NULL;
-
-	b2r2_debug_exit();
+	/* Remove control from blitter */
+	core->control->enabled = false;
+	b2r2_blt_remove_control(core->control);
+	kref_put(&core->control->ref, b2r2_core_release);
 
 	b2r2_log_info(&pdev->dev, "%s: Ended\n", __func__);
 
@@ -2783,6 +2697,23 @@ int b2r2_resume(struct platform_device *pdev)
 	b2r2_log_info(core->dev, "%s\n", __func__);
 
 	return 0;
+}
+
+void b2r2_core_print_stats(struct b2r2_core *core)
+{
+	b2r2_log_info(core->dev,
+		"%s: n_irq %ld, n_irq_exit %ld, n_irq_skipped %ld,\n"
+		"n_jobs_added %ld, n_active_jobs %ld, "
+		"n_jobs_in_prio_list %ld,\n"
+		"n_jobs_removed %ld\n",
+		__func__,
+		core->stat_n_irq,
+		core->stat_n_irq_exit,
+		core->stat_n_irq_skipped,
+		core->stat_n_jobs_added,
+		core->n_active_jobs,
+		core->stat_n_jobs_in_prio_list,
+		core->stat_n_jobs_removed);
 }
 
 /**

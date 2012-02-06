@@ -16,7 +16,7 @@
 
 #include "b2r2_profiler_api.h"
 #include "b2r2_internal.h"
-
+#include "b2r2_core.h"
 
 /*
  * TODO: Call the profiler in a seperate thread and have a circular buffer
@@ -81,7 +81,8 @@ void b2r2_call_profiler_blt_done(const struct b2r2_blt_request * const request)
 {
 	int return_value;
 	struct b2r2_blt_profiling_info blt_profiling_info;
-	struct b2r2_control *cont = request->instance->control;
+	struct b2r2_core *core = (struct b2r2_core *) request->job.data;
+	struct b2r2_control *cont = core->control;
 
 	return_value = down_interruptible(&b2r2_profiler_lock);
 	if (return_value != 0) {
