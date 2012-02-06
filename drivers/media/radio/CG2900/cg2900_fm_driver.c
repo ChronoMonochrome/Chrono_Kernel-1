@@ -2326,6 +2326,44 @@ error:
 	return err;
 }
 
+int fmd_rx_set_stereo_ctrl_blending_rssi(
+			u16 min_rssi,
+			u16 max_rssi)
+{
+	int err;
+	int io_result;
+	u16 parameters[CMD_RP_STEREO_SET_CONTROL_BLENDING_RSSI_PARAM_LEN];
+
+	if (fmd_go_cmd_busy()) {
+		err = -EBUSY;
+		goto error;
+	}
+
+	if (!fmd_state_info.fmd_initialized) {
+		err = -ENOEXEC;
+		goto error;
+	}
+
+	parameters[0] = min_rssi;
+	parameters[1] = max_rssi;
+
+	io_result = fmd_send_cmd_and_read_resp(
+			CMD_FMR_RP_STEREO_SET_CONTROL_BLENDING_RSSI,
+			CMD_RP_STEREO_SET_CONTROL_BLENDING_RSSI_PARAM_LEN,
+			parameters,
+			NULL,
+			NULL);
+
+	if (io_result != 0) {
+		err = io_result;
+		goto error;
+	}
+	err = 0;
+
+error:
+	return err;
+}
+
 int fmd_rx_get_stereo_mode(
 			u8 *mode
 			)

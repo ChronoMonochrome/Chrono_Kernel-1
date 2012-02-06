@@ -140,6 +140,12 @@ enum fmd_debug_levels {
  * This is just a hexadecimal number with no units.
  */
 #define DEFAULT_PEAK_NOISE_VALUE			0x0035
+/* Defines the RF level (at the antenna pin) at which the stereo blending
+ * function will stop limiting the channel separation */
+#define STEREO_BLENDING_MIN_RSSI			0x0005
+/* Defines the RF level (at the antenna pin) at which the stereo blending
+ * function will start limiting the channel separation */
+#define STEREO_BLENDING_MAX_RSSI			0x0100
 /*
  * Default Average Noise level for a channel to be considered valid for CG2900.
  * This is just a hexadecimal number with no units.
@@ -186,6 +192,7 @@ enum fmd_debug_levels {
 #define CMD_FMR_RP_GET_RSSI				0x0083
 #define CMD_FMR_RP_GET_STATE				0x0063
 #define CMD_FMR_RP_STEREO_SET_MODE			0x0123
+#define CMD_FMR_RP_STEREO_SET_CONTROL_BLENDING_RSSI		0x0143
 #define CMD_FMR_SET_ANTENNA				0x0663
 #define CMD_FMR_SP_AF_SWITCH_GET_RESULT			0x0603
 #define CMD_FMR_SP_AF_SWITCH_START			0x04A3
@@ -244,6 +251,7 @@ enum fmd_debug_levels {
 #define CMD_SP_TUNE_GET_CHANNEL_PARAM_LEN		0
 #define CMD_SP_TUNE_GET_CHANNEL_RSP_PARAM_LEN		1
 #define CMD_RP_STEREO_SET_MODE_PARAM_LEN		1
+#define CMD_RP_STEREO_SET_CONTROL_BLENDING_RSSI_PARAM_LEN	2
 #define CMD_RP_GET_RSSI_PARAM_LEN			0
 #define CMD_RP_GET_RSSI_RSP_PARAM_LEN			1
 #define CMD_RP_GET_STATE_PARAM_LEN			0
@@ -797,6 +805,26 @@ int fmd_rx_get_frequency(
  */
 int fmd_rx_set_stereo_mode(
 			u8 mode
+			);
+
+/**
+ * fmd_rx_set_stereo_ctrl_blending_rssi() - Sets the stereo blending control setting.
+ *
+ * @min_rssi: Defines the RF level (at the antenna pin) at which the stereo blending
+ *			function will stop limiting the channel separation
+ * @max_rssi: Defines the RF level (at the antenna pin) at which the stereo blending
+ *			function will start limiting the channel separation.
+ *
+ *  Returns:
+ *	 0,  if no error.
+ *	 -EINVAL, if parameter is invalid.
+ *	 -ENOEXEC, if preconditions are violated.
+ *	 -EBUSY, if FM Driver is not in idle state.
+ *	 -EINVAL, if wrong response received from chip.
+ */
+int fmd_rx_set_stereo_ctrl_blending_rssi(
+			u16 min_rssi,
+			u16 max_rssi
 			);
 
 /**

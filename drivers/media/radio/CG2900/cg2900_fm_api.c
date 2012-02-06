@@ -1339,6 +1339,19 @@ int cg2900_fm_set_rx_default_settings(
 		result = -EINVAL;
 		goto error;
 	}
+	if (enable_stereo) {
+		/* Set the Stereo Blending RSSI control */
+		result = fmd_rx_set_stereo_ctrl_blending_rssi(
+			STEREO_BLENDING_MIN_RSSI,
+			STEREO_BLENDING_MAX_RSSI);
+	}
+	if (0 != result) {
+		FM_ERR_REPORT("cg2900_fm_set_rx_default_settings: "
+			"fmd_rx_set_stereo_ctrl_blending_rssi "
+			"failed %d", (unsigned int)result);
+		result = -EINVAL;
+		goto error;
+	}
 
 	/* Remove all Interrupt from the queue */
 	skb_queue_purge(&fm_interrupt_queue);
