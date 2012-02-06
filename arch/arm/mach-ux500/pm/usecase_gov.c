@@ -166,7 +166,7 @@ static unsigned long determine_cpu_load(void)
 	/* get cpu load of each cpu */
 	for_each_online_cpu(i) {
 		unsigned int load;
-		unsigned int idle_time, iowait_time, wall_time;
+		unsigned int idle_time, wall_time;
 		cputime64_t cur_wall_time, cur_idle_time;
 		struct hotplug_cpu_info *info;
 
