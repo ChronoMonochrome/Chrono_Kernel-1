@@ -233,6 +233,20 @@ struct platform_device u5500_mcde_device = {
 };
 #endif
 
+struct platform_device u5500_b2r2_blt_device = {
+	.name	= "b2r2_blt",
+	.id	= 0,
+	.dev	= {
+		.init_name = "b2r2_blt_init",
+		.coherent_dma_mask = ~0,
+	},
+};
+
+static struct b2r2_platform_data b2r2_platform_data = {
+	.regulator_id = "vsupply",
+	.clock_id = "b2r2",
+};
+
 static struct resource b2r2_resources[] = {
 	[0] = {
 		.start	= U5500_B2R2_BASE,
@@ -253,6 +267,7 @@ struct platform_device u5500_b2r2_device = {
 	.id	= 0,
 	.dev	= {
 		.init_name = "b2r2_bus",
+		.platform_data = &b2r2_platform_data,
 		.coherent_dma_mask = ~0,
 	},
 	.num_resources	= ARRAY_SIZE(b2r2_resources),

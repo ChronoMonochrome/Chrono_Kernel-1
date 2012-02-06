@@ -29,6 +29,7 @@
 #include <mach/hsi.h>
 #endif
 #include <mach/ste-dma40-db8500.h>
+#include <video/b2r2_blt.h>
 
 #include "pins-db8500.h"
 
@@ -250,6 +251,20 @@ struct platform_device u8500_mcde_device = {
 };
 #endif /*  CONFIG_FB_MCDE */
 
+struct platform_device u8500_b2r2_blt_device = {
+	.name	= "b2r2_blt",
+	.id	= 0,
+	.dev	= {
+		.init_name = "b2r2_blt_init",
+		.coherent_dma_mask = ~0,
+	},
+};
+
+static struct b2r2_platform_data b2r2_platform_data = {
+	.regulator_id = "vsupply",
+	.clock_id = "b2r2",
+};
+
 static struct resource b2r2_resources[] = {
 	[0] = {
 		.start	= U8500_B2R2_BASE,
@@ -269,7 +284,8 @@ struct platform_device u8500_b2r2_device = {
 	.name	= "b2r2",
 	.id	= 0,
 	.dev	= {
-		.init_name = "b2r2_bus",
+		.init_name = "b2r2_core",
+		.platform_data = &b2r2_platform_data,
 		.coherent_dma_mask = ~0,
 	},
 	.num_resources	= ARRAY_SIZE(b2r2_resources),
