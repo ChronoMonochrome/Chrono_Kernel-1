@@ -799,7 +799,7 @@ static struct clk_lookup u8500_clocks[] = {
 	CLK_LOOKUP(ipi2cclk, "ipi2", NULL),
 	CLK_LOOKUP(dmaclk, "dma40.0", NULL),
 	CLK_LOOKUP(b2r2clk, "b2r2", NULL),
-	CLK_LOOKUP(b2r2clk, "b2r2_bus", NULL),
+	CLK_LOOKUP(b2r2clk, "b2r2_core", NULL),
 	CLK_LOOKUP(b2r2clk, "U8500-B2R2.0", NULL),
 	CLK_LOOKUP(tvclk, "tv", NULL),
 	CLK_LOOKUP(tvclk, "mcde", "tv"),

@@ -2812,7 +2812,7 @@ static struct regulator_consumer_supply db8500_vsmps2_consumers[] = {
 };
 
 static struct regulator_consumer_supply db8500_b2r2_mcde_consumers[] = {
-	REGULATOR_SUPPLY("vsupply", "b2r2_bus"),
+	REGULATOR_SUPPLY("vsupply", "b2r2_core"),
 	REGULATOR_SUPPLY("vsupply", "mcde"),
 };
 
