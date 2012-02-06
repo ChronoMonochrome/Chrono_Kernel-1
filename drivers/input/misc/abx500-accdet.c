@@ -313,7 +313,7 @@ void report_jack_status(struct abx500_ad *dd)
 		goto out;
 	dd->reported_jack_type = dd->jack_type;
 
-	dev_info(&dd->pdev->dev, "Accessory: %s\n",
+	dev_dbg(&dd->pdev->dev, "Accessory: %s\n",
 		accessory_str(dd->jack_type));
 
 	/* Never report unsupported headset */
