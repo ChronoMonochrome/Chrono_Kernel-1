@@ -4545,7 +4545,7 @@ int fmd_send_fm_firmware(
 			u16 fw_size
 			)
 {
-	int err;
+	int err = -EINVAL;
 	u16 bytes_to_write = ST_WRITE_FILE_BLK_SIZE -
 				FM_HCI_WRITE_FILE_BLK_PARAM_LEN;
 	u16 bytes_remaining = fw_size;
