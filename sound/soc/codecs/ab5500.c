@@ -1294,8 +1294,9 @@ static int ab5500_pcm_hw_params(struct snd_pcm_substream *substream,
 static int ab5500_pcm_prepare(struct snd_pcm_substream *substream,
 			      struct snd_soc_dai *dai)
 {
-	dev_info(ab5500_dev, "%s called.\n", __func__);
 	u8 value = (dai->id == 1) ? INTERFACE1 : INTERFACE0;
+
+	dev_info(ab5500_dev, "%s called.\n", __func__);
 
 	/* Configure registers for either playback or capture */
 	if ((substream->stream == SNDRV_PCM_STREAM_PLAYBACK) &&
