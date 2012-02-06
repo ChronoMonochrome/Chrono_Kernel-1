@@ -1989,8 +1989,8 @@ static void update_vid_frame_parameters(struct mcde_port *port,
 
 static void set_vsync_method(u8 idx, struct mcde_port *port)
 {
-	u32 out_synch_src;
-	u32 src_synch;
+	u32 out_synch_src = MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_FORMATTER;
+	u32 src_synch = MCDE_CHNL0SYNCHMOD_SRC_SYNCH_HARDWARE;
 
 	if (port->type == MCDE_PORTTYPE_DSI) {
 		switch (port->frame_trig) {
