@@ -190,6 +190,9 @@ config GENERIC_ISA_DMA
 config FIQ
 	bool
 
+config NEED_RET_TO_USER
+       bool
+
 config ARCH_MTD_XIP
 	bool
 
