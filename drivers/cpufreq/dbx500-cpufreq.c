@@ -168,6 +168,7 @@ static void __init dbx500_cpufreq_init_maxopp_freq(void)
 		break;
 	case PRCMU_FW_PROJECT_U8500_C2:
 	case PRCMU_FW_PROJECT_U9500_C2:
+	case PRCMU_FW_PROJECT_U8520:
 		freq_table[3].frequency = 1150000;
 		break;
 	default:
