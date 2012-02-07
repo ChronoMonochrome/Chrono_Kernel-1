@@ -1143,6 +1143,7 @@ int __init db8500_clk_init(void)
 		switch (fw_version->project) {
 		case PRCMU_FW_PROJECT_U8500_C2:
 		case PRCMU_FW_PROJECT_U9500_C2:
+		case PRCMU_FW_PROJECT_U8520:
 			configure_c2_clocks();
 			break;
 		default:
