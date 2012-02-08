@@ -73,6 +73,7 @@ static DEFINE_SPINLOCK(ca_audio_lock);
 static DEFINE_SPINLOCK(ca_wake_req_lock);
 static DEFINE_SPINLOCK(boot_lock);
 static DEFINE_SPINLOCK(mod_stuck_lock);
+static DEFINE_SPINLOCK(start_timer_lock);
 
 enum shrm_nl {
 	SHRM_NL_MOD_RESET = 1,
@@ -694,6 +695,7 @@ static irqreturn_t shrm_prcmu_irq_handler(int irq, void *data)
 
 static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 {
+	unsigned long flags;
 	struct shrm_dev *shrm = container_of(work, struct shrm_dev,
 			send_ac_msg_pend_notify_0);
 
@@ -717,6 +719,7 @@ static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 		return;
 	}
 
+	spin_lock_irqsave(&start_timer_lock, flags);
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_COMMON_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -724,6 +727,7 @@ static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 	/* timer to detect modem stuck or hang */
 	hrtimer_start(&mod_stuck_timer_0, ktime_set(MOD_STUCK_TIMEOUT, 0),
 			HRTIMER_MODE_REL);
+	spin_unlock_irqrestore(&start_timer_lock, flags);
 	if (shrm_common_tx_state == SHRM_PTR_FREE)
 		shrm_common_tx_state = SHRM_PTR_BUSY;
 
@@ -732,6 +736,7 @@ static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 
 static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 {
+	unsigned long flags;
 	struct shrm_dev *shrm = container_of(work, struct shrm_dev,
 			send_ac_msg_pend_notify_1);
 
@@ -759,6 +764,7 @@ static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 		return;
 	}
 
+	spin_lock_irqsave(&start_timer_lock, flags);
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_AUDIO_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -766,6 +772,7 @@ static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 	/* timer to detect modem stuck or hang */
 	hrtimer_start(&mod_stuck_timer_1, ktime_set(MOD_STUCK_TIMEOUT, 0),
 			HRTIMER_MODE_REL);
+	spin_unlock_irqrestore(&start_timer_lock, flags);
 	if (shrm_audio_tx_state == SHRM_PTR_FREE)
 		shrm_audio_tx_state = SHRM_PTR_BUSY;
 
@@ -1018,11 +1025,14 @@ irqreturn_t ca_wake_irq_handler(int irq, void *ctrlr)
 
 irqreturn_t ac_read_notif_0_irq_handler(int irq, void *ctrlr)
 {
+	unsigned long flags;
 	struct shrm_dev *shrm = ctrlr;
 
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
 	/* Cancel the modem stuck timer */
+	spin_lock_irqsave(&start_timer_lock, flags);
 	hrtimer_cancel(&mod_stuck_timer_0);
+	spin_unlock_irqrestore(&start_timer_lock, flags);
 	if(atomic_read(&fifo_full))
 		hrtimer_cancel(&fifo_full_timer);
 
@@ -1051,11 +1061,14 @@ irqreturn_t ac_read_notif_0_irq_handler(int irq, void *ctrlr)
 
 irqreturn_t ac_read_notif_1_irq_handler(int irq, void *ctrlr)
 {
+	unsigned long flags;
 	struct shrm_dev *shrm = ctrlr;
 
 	dev_dbg(shrm->dev, "%s IN+\n", __func__);
 	/* Cancel the modem stuck timer */
+	spin_lock_irqsave(&start_timer_lock, flags);
 	hrtimer_cancel(&mod_stuck_timer_1);
+	spin_unlock_irqrestore(&start_timer_lock, flags);
 	if(atomic_read(&fifo_full))
 		hrtimer_cancel(&fifo_full_timer);
 
