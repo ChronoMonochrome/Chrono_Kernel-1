@@ -405,7 +405,6 @@ static struct ux500_pin_lookup mop500_runtime_pins[] = {
 	PIN_LOOKUP("nmk-i2c.1", &mop500_pins_i2c1),
 	PIN_LOOKUP("nmk-i2c.2", &mop500_pins_i2c2),
 	PIN_LOOKUP("nmk-i2c.3", &mop500_pins_i2c3),
-	PIN_LOOKUP("ske", &mop500_pins_ske),
 	PIN_LOOKUP("sdi0", &mop500_pins_sdi0),
 	PIN_LOOKUP("sdi1", &mop500_pins_sdi1),
 	PIN_LOOKUP("sdi2", &mop500_pins_sdi2),
@@ -415,10 +414,12 @@ static struct ux500_pin_lookup mop500_runtime_pins[] = {
 };
 
 static struct ux500_pin_lookup mop500_runtime_pins_v60[] = {
+	PIN_LOOKUP("ske", &mop500_pins_ske),
 	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p_v60),
 };
 
 static struct ux500_pin_lookup mop500_runtime_pins_pre_v60[] = {
+	PIN_LOOKUP("ske", &mop500_pins_ske),
 	PIN_LOOKUP("gpio-keys.0", &mop500_pins_sensors1p),
 };
 
