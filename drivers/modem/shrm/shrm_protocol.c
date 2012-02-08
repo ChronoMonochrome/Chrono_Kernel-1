@@ -92,6 +92,13 @@ void shm_print_dbg_info_work(struct kthread_work *work)
 
 void shm_mod_reset_req_work(struct kthread_work *work)
 {
+	unsigned long flags;
+
+	/* update the boot_state */
+	spin_lock_irqsave(&boot_lock, flags);
+	boot_state = BOOT_UNKNOWN;
+	wmb();
+	spin_unlock_irqrestore(&boot_lock, flags);
 	prcmu_modem_reset();
 }
 
