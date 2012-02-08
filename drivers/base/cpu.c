@@ -241,6 +241,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
 	int error;
 
 	cpu->node_id = cpu_to_node(num);
+	memset(&cpu->dev, 0x00, sizeof(struct device));
 	cpu->dev.id = num;
 	cpu->dev.bus = &cpu_subsys;
 #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
