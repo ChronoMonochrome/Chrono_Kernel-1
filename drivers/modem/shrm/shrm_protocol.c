@@ -807,7 +807,7 @@ void shm_nl_receive(struct sk_buff *skb)
 	case SHRM_NL_USER_MOD_RESET:
 		dev_info(shm_dev->dev, "user-space inited mod-reset-req\n");
 		dev_info(shm_dev->dev, "PCRMU resets modem\n");
-		if (atomic_read(&mod_stuck)) {
+		if (atomic_read(&mod_stuck) || atomic_read(&fifo_full)) {
 			dev_info(shm_dev->dev,
 					"Modem reset already in progress\n");
 			break;
@@ -1043,8 +1043,10 @@ irqreturn_t ac_read_notif_0_irq_handler(int irq, void *ctrlr)
 	spin_lock_irqsave(&start_timer_lock, flags);
 	hrtimer_cancel(&mod_stuck_timer_0);
 	spin_unlock_irqrestore(&start_timer_lock, flags);
-	if(atomic_read(&fifo_full))
+	if(atomic_read(&fifo_full)) {
+		atomic_set(&fifo_full, 0);
 		hrtimer_cancel(&fifo_full_timer);
+	}
 
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
@@ -1081,8 +1083,10 @@ irqreturn_t ac_read_notif_1_irq_handler(int irq, void *ctrlr)
 	spin_lock_irqsave(&start_timer_lock, flags);
 	hrtimer_cancel(&mod_stuck_timer_1);
 	spin_unlock_irqrestore(&start_timer_lock, flags);
-	if(atomic_read(&fifo_full))
+	if(atomic_read(&fifo_full)) {
+		atomic_set(&fifo_full, 0);
 		hrtimer_cancel(&fifo_full_timer);
+	}
 
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
