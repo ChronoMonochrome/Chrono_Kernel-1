@@ -523,6 +523,8 @@ void shm_ca_sleep_req_work(struct kthread_work *work)
 	shrm_common_rx_state = SHRM_IDLE;
 	shrm_audio_rx_state =  SHRM_IDLE;
 
+	if (!get_host_accessport_val())
+		BUG();
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 		shm_dev->intr_base + GOP_SET_REGISTER_BASE);
 
@@ -558,6 +560,7 @@ void shm_ca_wake_req_work(struct kthread_work *work)
 		return;
 	}
 
+	/* send ca_wake_ack_interrupt to CMU */
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 			shm_dev->intr_base + GOP_SET_REGISTER_BASE);
 }
@@ -1058,6 +1061,8 @@ irqreturn_t ac_read_notif_0_irq_handler(int irq, void *ctrlr)
 		return IRQ_HANDLED;
 	}
 
+	if (!get_host_accessport_val())
+		BUG();
 	/* Clear the interrupt */
 	writel((1 << GOP_COMMON_AC_READ_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_CLEAR_REGISTER_BASE);
@@ -1094,6 +1099,8 @@ irqreturn_t ac_read_notif_1_irq_handler(int irq, void *ctrlr)
 		return IRQ_HANDLED;
 	}
 
+	if (!get_host_accessport_val())
+		BUG();
 	/* Clear the interrupt */
 	writel((1 << GOP_AUDIO_AC_READ_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_CLEAR_REGISTER_BASE);
@@ -1122,6 +1129,8 @@ irqreturn_t ca_msg_pending_notif_0_irq_handler(int irq, void *ctrlr)
 		return IRQ_HANDLED;
 	}
 
+	if (!get_host_accessport_val())
+		BUG();
 	/* Clear the interrupt */
 	writel((1 << GOP_COMMON_CA_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_CLEAR_REGISTER_BASE);
@@ -1150,6 +1159,8 @@ irqreturn_t ca_msg_pending_notif_1_irq_handler(int irq, void *ctrlr)
 		return IRQ_HANDLED;
 	}
 
+	if (!get_host_accessport_val())
+		BUG();
 	/* Clear the interrupt */
 	writel((1<<GOP_AUDIO_CA_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base+GOP_CLEAR_REGISTER_BASE);
@@ -1264,6 +1275,8 @@ void ca_msg_read_notification_0(struct shrm_dev *shrm)
 			return;
 		}
 
+		if (!get_host_accessport_val())
+			BUG();
 		/* Trigger CaMsgReadNotification to CMU */
 		writel((1 << GOP_COMMON_CA_READ_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -1287,6 +1300,8 @@ void ca_msg_read_notification_1(struct shrm_dev *shrm)
 			return;
 		}
 
+		if (!get_host_accessport_val())
+			BUG();
 		/* Trigger CaMsgReadNotification to CMU */
 		writel((1<<GOP_AUDIO_CA_READ_NOTIFICATION_BIT),
 			shrm->intr_base+GOP_SET_REGISTER_BASE);
