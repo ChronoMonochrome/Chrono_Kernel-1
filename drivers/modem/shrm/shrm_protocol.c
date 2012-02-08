@@ -38,9 +38,12 @@
 #define PRCM_MOD_AWAKE_STATUS_PRCM_MOD_COREPD_AWAKE	BIT(0)
 #define PRCM_MOD_AWAKE_STATUS_PRCM_MOD_AAPD_AWAKE	BIT(1)
 #define PRCM_MOD_AWAKE_STATUS_PRCM_MOD_VMODEM_OFF_ISO	BIT(2)
+#define PRCM_MOD_PURESET	BIT(0)
+#define PRCM_MOD_SW_RESET	BIT(1)
 
-#define PRCM_HOSTACCESS_REQ   0x334
-#define PRCM_MOD_AWAKE_STATUS 0x4A0
+#define PRCM_HOSTACCESS_REQ	0x334
+#define PRCM_MOD_AWAKE_STATUS	0x4A0
+#define PRCM_MOD_RESETN_VAL	0x204
 
 static u8 boot_state = BOOT_INIT;
 static u8 recieve_common_msg[8*1024];
@@ -132,13 +135,16 @@ static u32 get_host_accessport_val(void)
 {
 	u32 prcm_hostaccess;
 	u32 status;
+	u32 reset_stats;
 
 	status = (prcmu_read(PRCM_MOD_AWAKE_STATUS) & 0x03);
+	reset_stats = (prcmu_read(PRCM_MOD_RESETN_VAL) & 0x03);
 	prcm_hostaccess = prcmu_read(PRCM_HOSTACCESS_REQ);
 	wmb();
-	prcm_hostaccess = (prcm_hostaccess & 0x01) &&
+	prcm_hostaccess = ((prcm_hostaccess & 0x01) &&
 		(status == (PRCM_MOD_AWAKE_STATUS_PRCM_MOD_AAPD_AWAKE |
-			    PRCM_MOD_AWAKE_STATUS_PRCM_MOD_COREPD_AWAKE));
+			    PRCM_MOD_AWAKE_STATUS_PRCM_MOD_COREPD_AWAKE)) &&
+		(reset_stats == (PRCM_MOD_SW_RESET | PRCM_MOD_PURESET)));
 
 	return prcm_hostaccess;
 }
