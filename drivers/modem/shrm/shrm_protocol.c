@@ -83,6 +83,8 @@ enum shrm_nl {
 	SHRM_NL_STATUS_MOD_OFFLINE,
 };
 
+static int check_modem_in_reset(void);
+
 void shm_print_dbg_info_work(struct kthread_work *work)
 {
 	abx500_dump_all_banks();
@@ -96,6 +98,11 @@ void shm_mod_reset_req_work(struct kthread_work *work)
 
 	/* update the boot_state */
 	spin_lock_irqsave(&boot_lock, flags);
+	if (boot_state != BOOT_DONE) {
+		dev_info(shm_dev->dev, "Modem in reset state\n");
+		spin_unlock_irqrestore(&boot_lock, flags);
+		return;
+	}
 	boot_state = BOOT_UNKNOWN;
 	wmb();
 	spin_unlock_irqrestore(&boot_lock, flags);
@@ -515,18 +522,30 @@ void shm_ca_sleep_req_work(struct kthread_work *work)
 	bt_state = boot_state;
 	spin_unlock_irqrestore(&boot_lock, flags);
 
+	local_irq_save(flags);
+	preempt_disable();
 	if (bt_state != BOOT_DONE) {
 		dev_err(shm_dev->dev, "%s:Modem state reset or unknown\n",
 				__func__);
+		preempt_enable();
+		local_irq_restore(flags);
 		return;
 	}
 	shrm_common_rx_state = SHRM_IDLE;
 	shrm_audio_rx_state =  SHRM_IDLE;
 
-	if (!get_host_accessport_val())
-		BUG();
+	if (!get_host_accessport_val()) {
+		dev_err(shm_dev->dev, "%s: host_accessport is low\n", __func__);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+				&shm_dev->shm_mod_reset_req);
+		preempt_enable();
+		local_irq_restore(flags);
+		return;
+	}
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 		shm_dev->intr_base + GOP_SET_REGISTER_BASE);
+	preempt_enable();
+	local_irq_restore(flags);
 
 	hrtimer_start(&timer, ktime_set(0, 10*NSEC_PER_MSEC),
 			HRTIMER_MODE_REL);
@@ -536,6 +555,7 @@ void shm_ca_sleep_req_work(struct kthread_work *work)
 
 void shm_ca_wake_req_work(struct kthread_work *work)
 {
+	unsigned long flags;
 	struct shrm_dev *shrm = container_of(work,
 			struct shrm_dev, shm_ca_wake_req);
 
@@ -547,22 +567,30 @@ void shm_ca_wake_req_work(struct kthread_work *work)
 	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
+	local_irq_save(flags);
+	preempt_disable();
 	/* send ca_wake_ack_interrupt to CMU */
-	if (!get_host_accessport_val()) {
-		dev_crit(shrm->dev, "get_host_accessport failed\n");
-		dev_info(shrm->dev, "Initiating a modem reset\n");
-		prcmu_modem_reset();
-	}
-
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown\n",
 			__func__);
+		preempt_enable();
+		local_irq_restore(flags);
 		return;
+	}
+
+	if (!get_host_accessport_val()) {
+		dev_err(shrm->dev, "%s: host_accessport is low\n", __func__);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+				&shm_dev->shm_mod_reset_req);
+		preempt_enable();
+		local_irq_restore(flags);
 	}
 
 	/* send ca_wake_ack_interrupt to CMU */
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 			shm_dev->intr_base + GOP_SET_REGISTER_BASE);
+	preempt_enable();
+	local_irq_restore(flags);
 }
 #ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
 static int shrm_modem_reset_sequence(void)
@@ -717,19 +745,22 @@ static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
+	spin_lock_irqsave(&start_timer_lock, flags);
 	if (!get_host_accessport_val()) {
-		dev_crit(shrm->dev, "get_host_accessport failed\n");
-		dev_info(shrm->dev, "Initiating a modem reset\n");
-		prcmu_modem_reset();
+		dev_err(shrm->dev, "%s: host_accessport is low\n", __func__);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+				&shm_dev->shm_mod_reset_req);
+		spin_unlock_irqrestore(&start_timer_lock, flags);
+		return;
 	}
 
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
 				__func__);
+		spin_unlock_irqrestore(&start_timer_lock, flags);
 		return;
 	}
 
-	spin_lock_irqsave(&start_timer_lock, flags);
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_COMMON_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -762,19 +793,22 @@ static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 	modem_request(shrm->modem);
 	mutex_unlock(&ac_state_mutex);
 
+	spin_lock_irqsave(&start_timer_lock, flags);
 	if (!get_host_accessport_val()) {
-		dev_crit(shrm->dev, "get_host_accessport failed\n");
-		dev_info(shrm->dev, "Initiating a modem reset\n");
-		prcmu_modem_reset();
+		dev_err(shrm->dev, "%s: host_accessport is low\n", __func__);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+				&shm_dev->shm_mod_reset_req);
+		spin_unlock_irqrestore(&start_timer_lock, flags);
+		return;
 	}
 
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
 				__func__);
+		spin_unlock_irqrestore(&start_timer_lock, flags);
 		return;
 	}
 
-	spin_lock_irqsave(&start_timer_lock, flags);
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_AUDIO_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -1043,7 +1077,7 @@ irqreturn_t ac_read_notif_0_irq_handler(int irq, void *ctrlr)
 	spin_lock_irqsave(&start_timer_lock, flags);
 	hrtimer_cancel(&mod_stuck_timer_0);
 	spin_unlock_irqrestore(&start_timer_lock, flags);
-	if(atomic_read(&fifo_full)) {
+	if (atomic_read(&fifo_full)) {
 		atomic_set(&fifo_full, 0);
 		hrtimer_cancel(&fifo_full_timer);
 	}
@@ -1057,17 +1091,29 @@ irqreturn_t ac_read_notif_0_irq_handler(int irq, void *ctrlr)
 	shm_ac_read_0_tasklet.data = (unsigned long)shrm;
 	tasklet_schedule(&shm_ac_read_0_tasklet);
 
+	local_irq_save(flags);
+	preempt_disable();
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
 				__func__);
+		preempt_enable();
+		local_irq_restore(flags);
 		return IRQ_HANDLED;
 	}
 
-	if (!get_host_accessport_val())
-		BUG();
+	if (!get_host_accessport_val()) {
+		dev_err(shrm->dev, "%s: host_accessport is low\n", __func__);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+				&shm_dev->shm_mod_reset_req);
+		preempt_enable();
+		local_irq_restore(flags);
+		return IRQ_HANDLED;
+	}
 	/* Clear the interrupt */
 	writel((1 << GOP_COMMON_AC_READ_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_CLEAR_REGISTER_BASE);
+	preempt_enable();
+	local_irq_restore(flags);
 
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 	return IRQ_HANDLED;
@@ -1083,7 +1129,7 @@ irqreturn_t ac_read_notif_1_irq_handler(int irq, void *ctrlr)
 	spin_lock_irqsave(&start_timer_lock, flags);
 	hrtimer_cancel(&mod_stuck_timer_1);
 	spin_unlock_irqrestore(&start_timer_lock, flags);
-	if(atomic_read(&fifo_full)) {
+	if (atomic_read(&fifo_full)) {
 		atomic_set(&fifo_full, 0);
 		hrtimer_cancel(&fifo_full_timer);
 	}
@@ -1097,17 +1143,29 @@ irqreturn_t ac_read_notif_1_irq_handler(int irq, void *ctrlr)
 	shm_ac_read_1_tasklet.data = (unsigned long)shrm;
 	tasklet_schedule(&shm_ac_read_1_tasklet);
 
+	local_irq_save(flags);
+	preempt_disable();
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
 				__func__);
+		preempt_enable();
+		local_irq_restore(flags);
 		return IRQ_HANDLED;
 	}
 
-	if (!get_host_accessport_val())
-		BUG();
+	if (!get_host_accessport_val()) {
+		dev_err(shrm->dev, "%s: host_accessport is low\n", __func__);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+				&shm_dev->shm_mod_reset_req);
+		preempt_enable();
+		local_irq_restore(flags);
+		return IRQ_HANDLED;
+	}
 	/* Clear the interrupt */
 	writel((1 << GOP_AUDIO_AC_READ_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_CLEAR_REGISTER_BASE);
+	preempt_enable();
+	local_irq_restore(flags);
 
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 	return IRQ_HANDLED;
@@ -1115,6 +1173,7 @@ irqreturn_t ac_read_notif_1_irq_handler(int irq, void *ctrlr)
 
 irqreturn_t ca_msg_pending_notif_0_irq_handler(int irq, void *ctrlr)
 {
+	unsigned long flags;
 	struct shrm_dev *shrm = ctrlr;
 
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
@@ -1127,17 +1186,29 @@ irqreturn_t ca_msg_pending_notif_0_irq_handler(int irq, void *ctrlr)
 
 	tasklet_schedule(&shm_ca_0_tasklet);
 
+	local_irq_save(flags);
+	preempt_disable();
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
 				__func__);
+		preempt_enable();
+		local_irq_restore(flags);
 		return IRQ_HANDLED;
 	}
 
-	if (!get_host_accessport_val())
-		BUG();
+	if (!get_host_accessport_val()) {
+		dev_err(shrm->dev, "%s: host_accessport is low\n", __func__);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+				&shm_dev->shm_mod_reset_req);
+		preempt_enable();
+		local_irq_restore(flags);
+		return IRQ_HANDLED;
+	}
 	/* Clear the interrupt */
 	writel((1 << GOP_COMMON_CA_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_CLEAR_REGISTER_BASE);
+	preempt_enable();
+	local_irq_restore(flags);
 
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 	return IRQ_HANDLED;
@@ -1145,6 +1216,7 @@ irqreturn_t ca_msg_pending_notif_0_irq_handler(int irq, void *ctrlr)
 
 irqreturn_t ca_msg_pending_notif_1_irq_handler(int irq, void *ctrlr)
 {
+	unsigned long flags;
 	struct shrm_dev *shrm = ctrlr;
 
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
@@ -1157,17 +1229,29 @@ irqreturn_t ca_msg_pending_notif_1_irq_handler(int irq, void *ctrlr)
 
 	tasklet_schedule(&shm_ca_1_tasklet);
 
+	local_irq_save(flags);
+	preempt_disable();
 	if (check_modem_in_reset()) {
 		dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
 				__func__);
+		preempt_enable();
+		local_irq_restore(flags);
 		return IRQ_HANDLED;
 	}
 
-	if (!get_host_accessport_val())
-		BUG();
+	if (!get_host_accessport_val()) {
+		dev_err(shrm->dev, "%s: host_accessport is low\n", __func__);
+		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+				&shm_dev->shm_mod_reset_req);
+		preempt_enable();
+		local_irq_restore(flags);
+		return IRQ_HANDLED;
+	}
 	/* Clear the interrupt */
 	writel((1<<GOP_AUDIO_CA_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base+GOP_CLEAR_REGISTER_BASE);
+	preempt_enable();
+	local_irq_restore(flags);
 
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 	return IRQ_HANDLED;
@@ -1233,7 +1317,7 @@ int shm_write_msg(struct shrm_dev *shrm, u8 l2_header,
 	if (ret < 0) {
 		dev_err(shrm->dev, "write message to fifo failed\n");
 		if (ret == -EAGAIN) {
-			if(!atomic_read(&fifo_full)) {
+			if (!atomic_read(&fifo_full)) {
 				/* Start a timer so as to handle this gently */
 				atomic_set(&fifo_full, 1);
 				hrtimer_start(&fifo_full_timer, ktime_set(
@@ -1268,22 +1352,36 @@ out:
 
 void ca_msg_read_notification_0(struct shrm_dev *shrm)
 {
+	unsigned long flags;
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
 
 	if (get_ca_msg_0_read_notif_send() == 0) {
 		update_ca_common_shared_rptr(shrm);
 
+		local_irq_save(flags);
+		preempt_disable();
 		if (check_modem_in_reset()) {
 			dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
 					__func__);
+			preempt_enable();
+			local_irq_restore(flags);
 			return;
 		}
 
-		if (!get_host_accessport_val())
-			BUG();
+		if (!get_host_accessport_val()) {
+			dev_err(shrm->dev, "%s: host_accessport is low\n",
+					__func__);
+			queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+					&shm_dev->shm_mod_reset_req);
+			preempt_enable();
+			local_irq_restore(flags);
+			return;
+		}
 		/* Trigger CaMsgReadNotification to CMU */
 		writel((1 << GOP_COMMON_CA_READ_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
+		preempt_enable();
+		local_irq_restore(flags);
 		set_ca_msg_0_read_notif_send(1);
 		shrm_common_rx_state = SHRM_PTR_BUSY;
 	}
@@ -1293,22 +1391,36 @@ void ca_msg_read_notification_0(struct shrm_dev *shrm)
 
 void ca_msg_read_notification_1(struct shrm_dev *shrm)
 {
+	unsigned long flags;
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
 
 	if (get_ca_msg_1_read_notif_send() == 0) {
 		update_ca_audio_shared_rptr(shrm);
 
+		local_irq_save(flags);
+		preempt_disable();
 		if (check_modem_in_reset()) {
 			dev_err(shrm->dev, "%s:Modem state reset or unknown.\n",
 					__func__);
+			preempt_enable();
+			local_irq_restore(flags);
 			return;
 		}
 
-		if (!get_host_accessport_val())
-			BUG();
+		if (!get_host_accessport_val()) {
+			dev_err(shrm->dev, "%s: host_accessport is low\n",
+					__func__);
+			queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
+					&shm_dev->shm_mod_reset_req);
+			preempt_enable();
+			local_irq_restore(flags);
+			return;
+		}
 		/* Trigger CaMsgReadNotification to CMU */
 		writel((1<<GOP_AUDIO_CA_READ_NOTIFICATION_BIT),
 			shrm->intr_base+GOP_SET_REGISTER_BASE);
+		preempt_enable();
+		local_irq_restore(flags);
 		set_ca_msg_1_read_notif_send(1);
 		shrm_audio_rx_state = SHRM_PTR_BUSY;
 	}
