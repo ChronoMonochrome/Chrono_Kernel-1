@@ -1970,7 +1970,7 @@ static void atmci_configure_dma(struct atmel_mci *host)
 		dev_notice(&host->pdev->dev, "DMA not available, using PIO\n");
 	} else {
 		dev_info(&host->pdev->dev,
-					"Using %s for DMA transfers\n",
+					"using %s for DMA transfers\n",
 					dma_chan_name(host->dma.chan));
 
 		host->dma_conf.src_addr = host->mapbase + ATMCI_RDR;
