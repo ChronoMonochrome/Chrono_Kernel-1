@@ -37,7 +37,6 @@ enum android_alarm_type {
 
 #include <linux/ktime.h>
 #include <linux/rbtree.h>
-#include <linux/hrtimer.h>
 
 /*
  * The alarm interface is similar to the hrtimer interface but adds support
@@ -58,42 +57,23 @@ enum android_alarm_type {
  *
  */
 
-struct android_alarm {
+struct alarm {
 	struct rb_node		node;
 	enum android_alarm_type type;
 	ktime_t			softexpires;
 	ktime_t			expires;
-	void			(*function)(struct android_alarm *);
+	void			(*function)(struct alarm *);
 };
 
-void android_alarm_init(struct android_alarm *alarm,
-	enum android_alarm_type type, void (*function)(struct android_alarm *));
-void android_alarm_start_range(struct android_alarm *alarm, ktime_t start,
-								ktime_t end);
-int android_alarm_try_to_cancel(struct android_alarm *alarm);
-int android_alarm_cancel(struct android_alarm *alarm);
-
-static inline ktime_t alarm_get_elapsed_realtime(void)
-{
-	return ktime_get_boottime();
-}
+void alarm_init(struct alarm *alarm,
+	enum android_alarm_type type, void (*function)(struct alarm *));
+void alarm_start_range(struct alarm *alarm, ktime_t start, ktime_t end);
+int alarm_try_to_cancel(struct alarm *alarm);
+int alarm_cancel(struct alarm *alarm);
+ktime_t alarm_get_elapsed_realtime(void);
 
 /* set rtc while preserving elapsed realtime */
-int android_alarm_set_rtc(const struct timespec ts);
-
-#ifdef CONFIG_ANDROID_ALARM_OLDDRV_COMPAT
-/*
- * Some older drivers depend on the old API,
- * so provide compatability macros for now.
- */
-#define alarm android_alarm
-#define alarm_init(x, y, z) android_alarm_init(x, y, z)
-#define alarm_start_range(x, y, z) android_alarm_start_range(x, y, z)
-#define alarm_try_to_cancel(x) android_alarm_try_to_cancel(x)
-#define alarm_cancel(x) android_alarm_cancel(x)
-#define alarm_set_rtc(x) android_alarm_set_rtc(x)
-#endif
-
+int alarm_set_rtc(const struct timespec ts);
 
 #endif
 
