@@ -17,11 +17,14 @@
 
 #include <linux/platform_device.h>
 #include <mach/msp.h>
+#include "ux500_pcm.h"
 
 struct ux500_msp_i2s_drvdata {
 	int id;
 	struct msp *msp;
 	struct regulator *reg_vape;
+	struct ux500_pcm_dma_params playback_dma_data;
+	struct ux500_pcm_dma_params capture_dma_data;
 };
 
 struct ux500_msp_i2s_drvdata *ux500_msp_i2s_init(struct platform_device *pdev,
@@ -29,11 +32,7 @@ struct ux500_msp_i2s_drvdata *ux500_msp_i2s_init(struct platform_device *pdev,
 int ux500_msp_i2s_exit(struct ux500_msp_i2s_drvdata *drvdata);
 int ux500_msp_i2s_open(struct ux500_msp_i2s_drvdata *drvdata, struct msp_config *msp_config);
 int ux500_msp_i2s_close(struct ux500_msp_i2s_drvdata *drvdata, enum i2s_flag flag);
-int ux500_msp_i2s_transfer(struct ux500_msp_i2s_drvdata *drvdata, struct i2s_message *message);
-int ux500_msp_i2s_hw_status(struct ux500_msp_i2s_drvdata *drvdata);
-dma_addr_t ux500_msp_i2s_get_pointer(struct ux500_msp_i2s_drvdata *drvdata,
-				enum i2s_direction_t i2s_direction);
-
+int ux500_msp_i2s_trigger(struct ux500_msp_i2s_drvdata *drvdata, int cmd, int direction);
 int ux500_msp_i2s_suspend(struct ux500_msp_i2s_drvdata *drvdata);
 int ux500_msp_i2s_resume(struct ux500_msp_i2s_drvdata *drvdata);
 

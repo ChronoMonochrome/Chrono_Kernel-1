@@ -82,69 +82,6 @@ static struct ux500_platform_drvdata platform_drvdata[UX500_NBR_OF_DAI] = {
 	},
 };
 
-bool ux500_msp_dai_i2s_get_underrun_status(int dai_idx)
-{
-	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
-	int status = ux500_msp_i2s_hw_status(drvdata->msp_i2s_drvdata);
-	return (bool)(status & TRANSMIT_UNDERRUN_ERR_INT);
-}
-
-dma_addr_t ux500_msp_dai_i2s_get_pointer(int dai_idx, int stream_id)
-{
-	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
-	return ux500_msp_i2s_get_pointer(drvdata->msp_i2s_drvdata,
-			(stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
-				I2S_DIRECTION_TX :
-				I2S_DIRECTION_RX);
-}
-
-int ux500_msp_dai_i2s_configure_sg(dma_addr_t dma_addr,
-				int period_cnt,
-				size_t period_len,
-				int dai_idx,
-				int stream_id)
-{
-	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai_idx];
-	struct i2s_message message;
-	int ret = 0;
-	bool playback_req_valid =
-		(drvdata->playback_active &&
-			stream_id == SNDRV_PCM_STREAM_PLAYBACK);
-	bool capture_req_valid =
-		(drvdata->capture_active &&
-			stream_id == SNDRV_PCM_STREAM_CAPTURE);
-
-	pr_debug("%s: Enter (MSP Index: %u, period-cnt: %u, period-len: %u).\n",
-		__func__,
-		dai_idx,
-		period_cnt,
-		period_len);
-
-	if (!playback_req_valid && !capture_req_valid) {
-		pr_err("%s: The I2S controller is not available."
-			"MSP index:%d\n",
-			__func__,
-			dai_idx);
-		return ret;
-	}
-
-	message.i2s_direction = (stream_id == SNDRV_PCM_STREAM_PLAYBACK) ?
-					I2S_DIRECTION_TX :
-					I2S_DIRECTION_RX;
-	message.buf_addr = dma_addr;
-	message.buf_len = period_cnt * period_len;
-	message.period_len = period_len;
-
-	ret = ux500_msp_i2s_transfer(drvdata->msp_i2s_drvdata, &message);
-	if (ret < 0) {
-		pr_err("%s: Error: i2s_transfer failed. MSP index: %d\n",
-			__func__,
-			dai_idx);
-	}
-
-	return ret;
-}
-
 static const char *stream_str(struct snd_pcm_substream *substream)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
@@ -448,13 +385,6 @@ static void ux500_msp_dai_compile_msp_config(struct snd_pcm_substream *substream
 	msp_config->rx_fifo_config = RX_FIFO_ENABLE;
 	msp_config->spi_clk_mode = SPI_CLK_MODE_NORMAL;
 	msp_config->spi_burst_mode = 0;
-	msp_config->handler = ux500_pcm_dma_eot_handler;
-	msp_config->tx_callback_data =
-		substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-		substream : NULL;
-	msp_config->rx_callback_data =
-		substream->stream == SNDRV_PCM_STREAM_CAPTURE ?
-		substream : NULL;
 	msp_config->def_elem_len = 1;
 	msp_config->direction =
 		substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
@@ -523,18 +453,25 @@ static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct msp_config msp_config;
 	bool mode_playback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
+	u8 configflag = mode_playback ? PLAYBACK_CONFIGURED : CAPTURE_CONFIGURED;
 
 	pr_debug("%s: MSP %d (%s): Enter.\n", __func__, dai->id, stream_str(substream));
 
-	/* If already configured -> not errors reported */
-	if (mode_playback) {
-		if ((drvdata->configured & PLAYBACK_CONFIGURED) &&
-			(drvdata->playback_active))
+	if (configflag & drvdata->configured) {
+
+		ret = ux500_msp_i2s_close(
+			drvdata->msp_i2s_drvdata,
+			mode_playback ? DISABLE_TRANSMIT : DISABLE_RECEIVE);
+
+		if (ret) {
+			pr_err("%s: Error: MSP %d (%s): Unable to close i2s.\n",
+				__func__,
+				dai->id,
+				stream_str(substream));
 			goto cleanup;
-	} else {
-		if ((drvdata->configured & CAPTURE_CONFIGURED) &&
-			(drvdata->capture_active))
-			goto cleanup;
+		}
+
+		drvdata->configured &= ~configflag;
 	}
 
 	pr_debug("%s: Setup dai (Rate: %u).\n", __func__, runtime->rate);
@@ -549,8 +486,7 @@ static int ux500_msp_dai_prepare(struct snd_pcm_substream *substream,
 		goto cleanup;
 	}
 
-	drvdata->configured |= mode_playback ?
-			PLAYBACK_CONFIGURED : CAPTURE_CONFIGURED;
+	drvdata->configured |= configflag;
 
 cleanup:
 	return ret;
@@ -766,32 +702,35 @@ static int ux500_msp_dai_trigger(struct snd_pcm_substream *substream,
 		(int)drvdata->msp_i2s_drvdata->id,
 		cmd);
 
-	switch (cmd) {
-	case SNDRV_PCM_TRIGGER_START:
-		ret = 0;
-		break;
-	case SNDRV_PCM_TRIGGER_RESUME:
-	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		ret = 0;
-		break;
-	case SNDRV_PCM_TRIGGER_STOP:
-	case SNDRV_PCM_TRIGGER_SUSPEND:
-		ret = 0;
-		break;
-	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		ret = 0;
-		break;
-	default:
-		ret = -EINVAL;
-		break;
-	}
+	ret = ux500_msp_i2s_trigger(drvdata->msp_i2s_drvdata,
+		cmd,
+		substream->stream);
 
 	return ret;
+}
+
+static int
+ux500_msp_dai_probe(struct snd_soc_dai *dai)
+{
+	struct ux500_msp_i2s_drvdata *drvdata = snd_soc_dai_get_drvdata(dai);
+	struct ux500_platform_drvdata *private = &platform_drvdata[dai->id];
+
+	drvdata->playback_dma_data.dma_cfg = drvdata->msp->dma_cfg_tx;
+	drvdata->capture_dma_data.dma_cfg = drvdata->msp->dma_cfg_rx;
+
+	dai->playback_dma_data = &drvdata->playback_dma_data;
+	dai->capture_dma_data = &drvdata->capture_dma_data;
+
+	drvdata->playback_dma_data.data_size = private->slot_width;
+	drvdata->capture_dma_data.data_size = private->slot_width;
+
+	return 0;
 }
 
 static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 	{
 		.name = "ux500-msp-i2s.0",
+		.probe = ux500_msp_dai_probe,
 		.id = 0,
 		.suspend = NULL,
 		.resume = NULL,
@@ -822,6 +761,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 	},
 	{
 		.name = "ux500-msp-i2s.1",
+		.probe = ux500_msp_dai_probe,
 		.id = 1,
 		.suspend = NULL,
 		.resume = NULL,
@@ -853,6 +793,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 	{
 		.name = "ux500-msp-i2s.2",
 		.id = 2,
+		.probe = ux500_msp_dai_probe,
 		.suspend = NULL,
 		.resume = NULL,
 		.playback = {
@@ -882,6 +823,7 @@ static struct snd_soc_dai_driver ux500_msp_dai_drv[UX500_NBR_OF_DAI] = {
 	},
 	{
 		.name = "ux500-msp-i2s.3",
+		.probe = ux500_msp_dai_probe,
 		.id = 3,
 		.suspend = NULL,
 		.resume = NULL,

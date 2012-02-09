@@ -14,7 +14,8 @@
 #ifndef UX500_PCM_H
 #define UX500_PCM_H
 
-#include <mach/msp.h>
+#include <asm/page.h>
+#include <linux/workqueue.h>
 
 #define UX500_PLATFORM_MIN_RATE_PLAYBACK 8000
 #define UX500_PLATFORM_MAX_RATE_PLAYBACK 48000
@@ -33,12 +34,17 @@
 extern struct snd_soc_platform ux500_soc_platform;
 
 struct ux500_pcm_private {
+	struct dma_chan *pipeid;
+	struct workqueue_struct *wq;
+	struct work_struct ws_stop;
 	int msp_id;
 	int stream_id;
-	unsigned int no_of_underruns;
 	unsigned int offset;
 };
 
-void ux500_pcm_dma_eot_handler(void *data);
+struct ux500_pcm_dma_params {
+	unsigned int data_size;
+	struct stedma40_chan_cfg *dma_cfg;
+};
 
 #endif

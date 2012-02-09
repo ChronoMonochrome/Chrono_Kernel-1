@@ -233,9 +233,6 @@ struct trans_data {
  * @def_elem_len: Flag to indicate whether default element length is to be used
  * or should be changed acc to data size defined by user at run time.
  * @iodelay: value for the MSP_IODLY register
- * @handler: callback handler in case of interrupt or dma.
- * @tx_callback_data: Callback data for transmit.
- * @rx_callback_data: Callback data for receive.
  *
  * Main Msp configuration data structure used by i2s client driver to fill
  * various info like data size, frequency etc.
@@ -267,10 +264,6 @@ struct msp_config {
 	enum msp_data_size data_size;
 	unsigned int def_elem_len;
 	unsigned int iodelay;
-	void (*handler) (void *data);
-	void *tx_callback_data;
-	void *rx_callback_data;
-
 };
 
 /*** Protocols ***/
@@ -947,22 +940,13 @@ enum enum_i2s_controller {
  * @lock: semaphore lock acquired while configuring msp.
  * @dma_cfg_tx: TX DMA configuration
  * @dma_cfg_rx: RX DMA configuration
- * @tx_pipeid: TX DMA channel
- * @rx_pipeid: RX DMA channel
  * @msp_state: Current state of msp.
- * @read: Function pointer for read, u8_msp_read,u16_msp_read,u32_msp_read.
- * @write: Function pointer for write, u8_msp_write,u16_msp_write,u32_msp_write.
- * @transfer: Function pointer for type of transfer i.e dma,polling or interrupt
- * @xfer_data: MSP's transfer data structure. Contains info about current xfer.
  * @plat_init: MSP's initialization function.
  * @plat_exit: MSP's Exit function.
- * @notify_timer: Timer used in Polling mode to prevent hang.
- * @polling_flag: Flag used in error handling while polling.
  * @def_elem_len: Flag indicates whether default elem len to be used in
  * protocol_desc or not.
  * @reg_enabled: Flag indicates whether regulator has been enabled or not.
  * @vape_opp_constraint: 1 if constraint is applied to have vape at 100OPP; 0 otherwise
- * @infinite: true if an infinite transfer has been configured
  *
  * Main Msp private data structure to be used to store various info of a
  * particular MSP.Longer description
@@ -979,17 +963,9 @@ struct msp {
 	struct semaphore lock;
 	struct stedma40_chan_cfg *dma_cfg_rx;
 	struct stedma40_chan_cfg *dma_cfg_tx;
-	struct dma_chan *tx_pipeid;
-	struct dma_chan *rx_pipeid;
 	enum msp_state msp_state;
-	void (*read) (struct trans_data *xfer_data);
-	void (*write) (struct trans_data *xfer_data);
-	int (*transfer) (struct msp *msp, struct i2s_message *message);
-	struct trans_data xfer_data;
 	int (*plat_init) (void);
 	int (*plat_exit) (void);
-	struct timer_list notify_timer;
-	int polling_flag;
 	int def_elem_len;
 	struct clk *clk;
 	unsigned int direction;
@@ -998,7 +974,6 @@ struct msp {
 	int loopback_enable;
 	u32 backup_regs[MAX_MSP_BACKUP_REGS];
 	int vape_opp_constraint;
-	bool infinite;
 };
 
 /**

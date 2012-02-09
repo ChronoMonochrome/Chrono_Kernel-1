@@ -2,6 +2,7 @@
  * Copyright (C) ST-Ericsson SA 2011
  *
  * Author: Ola Lilja <ola.o.lilja@stericsson.com>,
+ *         Roger Nilsson <roger.xr.nilsson@stericsson.com>,
  *         Sandeep Kaushik <sandeep.kaushik@st.com>
  *         for ST-Ericsson.
  *
@@ -25,7 +26,12 @@
 #include <mach/hardware.h>
 #include <mach/msp.h>
 
+#include <sound/soc.h>
+
 #include "ux500_msp_i2s.h"
+
+static int
+ux500_msp_i2s_enable(struct msp *msp, struct msp_config *config);
 
  /* Protocol desciptors */
 static const struct msp_protocol_desc prot_descs[] = {
@@ -309,124 +315,6 @@ static int ux500_msp_i2s_configure_multichannel(struct msp *msp, struct msp_conf
 	return 0;
 }
 
-void ux500_msp_i2s_configure_dma(struct msp *msp, struct msp_config *config)
-{
-	struct stedma40_chan_cfg *rx_dma_info = msp->dma_cfg_rx;
-	struct stedma40_chan_cfg *tx_dma_info = msp->dma_cfg_tx;
-	dma_cap_mask_t mask;
-	u16 word_width;
-	bool rx_active, tx_active;
-
-	if ((msp->tx_pipeid != NULL) &&
-	(config->direction == MSP_TRANSMIT_MODE)) {
-		dma_release_channel(msp->tx_pipeid);
-		msp->tx_pipeid = NULL;
-	}
-
-	if (msp->rx_pipeid != NULL) {
-		dma_release_channel(msp->rx_pipeid);
-		msp->rx_pipeid = NULL;
-	}
-
-	switch (config->data_size) {
-	case MSP_DATA_BITS_32:
-		word_width = STEDMA40_WORD_WIDTH;
-		break;
-	case MSP_DATA_BITS_16:
-		word_width = STEDMA40_HALFWORD_WIDTH;
-		break;
-	case MSP_DATA_BITS_8:
-		word_width = STEDMA40_BYTE_WIDTH;
-		break;
-	default:
-		word_width = STEDMA40_WORD_WIDTH;
-		pr_warn("%s: Unknown data-size (%d)! Assuming 32 bits.\n",
-			__func__, config->data_size);
-	}
-
-	rx_active = (config->direction == MSP_RECEIVE_MODE ||
-		config->direction == MSP_BOTH_T_R_MODE);
-	tx_active = (config->direction == MSP_TRANSMIT_MODE ||
-		config->direction == MSP_BOTH_T_R_MODE);
-
-	if (rx_active) {
-		rx_dma_info->src_info.data_width = word_width;
-		rx_dma_info->dst_info.data_width = word_width;
-	}
-	if (tx_active) {
-		tx_dma_info->src_info.data_width = word_width;
-		tx_dma_info->dst_info.data_width = word_width;
-	}
-
-	dma_cap_zero(mask);
-	dma_cap_set(DMA_SLAVE, mask);
-
-	if (rx_active)
-		msp->rx_pipeid = dma_request_channel(mask, stedma40_filter, rx_dma_info);
-
-	if (tx_active)
-		msp->tx_pipeid = dma_request_channel(mask, stedma40_filter, tx_dma_info);
-}
-
-static int ux500_msp_i2s_dma_xfer(struct msp *msp, struct i2s_message *msg)
-{
-	dma_cookie_t status_submit;
-	int direction, enable_bit;
-	u32 reg_val_GCR;
-	struct dma_chan *pipeid;
-	struct dma_async_tx_descriptor *cdesc;
-
-	if (msg->i2s_direction == I2S_DIRECTION_TX) {
-		direction = DMA_TO_DEVICE;
-		pipeid = msp->tx_pipeid;
-		enable_bit = TX_ENABLE;
-		pr_debug("%s: Direction: TX\n", __func__);
-	} else {
-		direction = DMA_FROM_DEVICE;
-		pipeid = msp->rx_pipeid;
-		enable_bit = RX_ENABLE;
-		pr_debug("%s: Direction: RX\n", __func__);
-	}
-
-	pr_debug("%s: msg->buf_addr = %p\n", __func__, (void *)msg->buf_addr);
-	pr_debug("%s: buf_len = %d\n", __func__, msg->buf_len);
-	pr_debug("%s: perios_len = %d\n", __func__, msg->period_len);
-
-	/* setup the cyclic description */
-	cdesc = pipeid->device->device_prep_dma_cyclic(pipeid,
-						msg->buf_addr,
-						msg->buf_len,
-						msg->period_len,
-						direction);
-	if (IS_ERR(cdesc)) {
-		pr_err("%s: ERROR: device_prep_dma_cyclic failed (%ld)!\n",
-			__func__,
-			PTR_ERR(cdesc));
-		return -EINVAL;
-	}
-
-	/* Submit to the dma */
-	if (msg->i2s_direction == I2S_DIRECTION_TX) {
-		cdesc->callback = msp->xfer_data.tx_handler;
-		cdesc->callback_param = msp->xfer_data.tx_callback_data;
-	} else {
-		cdesc->callback = msp->xfer_data.rx_handler;
-		cdesc->callback_param = msp->xfer_data.rx_callback_data;
-	}
-	status_submit = dmaengine_submit(cdesc);
-	if (dma_submit_error(status_submit)) {
-		pr_err("%s: ERROR: dmaengine_submit failed!\n", __func__);
-		return -EINVAL;
-	}
-
-	/* Start the dma */
-	dma_async_issue_pending(pipeid);
-	reg_val_GCR = readl(msp->registers + MSP_GCR);
-	writel(reg_val_GCR | enable_bit, msp->registers + MSP_GCR);
-
-	return 0;
-}
-
 static int ux500_msp_i2s_enable(struct msp *msp, struct msp_config *config)
 {
 	int status = 0;
@@ -483,27 +371,14 @@ static int ux500_msp_i2s_enable(struct msp *msp, struct msp_config *config)
 		writel(reg_val_DMACR | TX_DMA_ENABLE,
 				msp->registers + MSP_DMACR);
 
-		msp->xfer_data.tx_handler = config->handler;
-		msp->xfer_data.tx_callback_data = config->tx_callback_data;
-
 		break;
 	case MSP_RECEIVE_MODE:
 		writel(reg_val_DMACR | RX_DMA_ENABLE,
 				msp->registers + MSP_DMACR);
-
-		msp->xfer_data.rx_handler = config->handler;
-		msp->xfer_data.rx_callback_data = config->rx_callback_data;
-
 		break;
 	case MSP_BOTH_T_R_MODE:
 		writel(reg_val_DMACR | RX_DMA_ENABLE | TX_DMA_ENABLE,
 				msp->registers + MSP_DMACR);
-
-		msp->xfer_data.tx_handler = config->handler;
-		msp->xfer_data.rx_handler = config->handler;
-		msp->xfer_data.tx_callback_data = config->tx_callback_data;
-		msp->xfer_data.rx_callback_data = config->rx_callback_data;
-
 		break;
 	default:
 		pr_err("%s: ERROR: Illegal MSP direction (config->direction = %d)!",
@@ -513,10 +388,6 @@ static int ux500_msp_i2s_enable(struct msp *msp, struct msp_config *config)
 			msp->plat_exit();
 		return -EINVAL;
 	}
-	ux500_msp_i2s_configure_dma(msp, config);
-
-	msp->transfer = ux500_msp_i2s_dma_xfer;
-
 	writel(config->iodelay, msp->registers + MSP_IODLY);
 
 	/* Enable frame generation logic */
@@ -645,40 +516,6 @@ int ux500_msp_i2s_open(struct ux500_msp_i2s_drvdata *drvdata, struct msp_config 
 	return 0;
 }
 
-static void func_notify_timer(unsigned long data)
-{
-	struct msp *msp = (struct msp *)data;
-	if (msp->polling_flag) {
-		msp->msp_io_error = 1;
-		pr_err("%s: ERROR: Polling timeout!\n", __func__);
-		del_timer(&msp->notify_timer);
-	}
-}
-
-int ux500_msp_i2s_transfer(struct ux500_msp_i2s_drvdata *drvdata, struct i2s_message *message)
-{
-	struct msp *msp = drvdata->msp;
-	int status = 0;
-
-	if (!message || (msp->msp_state == MSP_STATE_IDLE)) {
-		pr_err("%s: ERROR: i2s_message == NULL!\n", __func__);
-		return -EINVAL;
-	}
-	if (msp->msp_state == MSP_STATE_IDLE) {
-		pr_err("%s: ERROR: MSP in idle-state!\n", __func__);
-		return -EPERM;
-	}
-
-	msp->msp_state = MSP_STATE_RUN;
-	if (msp->transfer)
-		status = msp->transfer(msp, message);
-
-	if (msp->msp_state == MSP_STATE_RUN)
-		msp->msp_state = MSP_STATE_CONFIGURED;
-
-	return status;
-}
-
 static void ux500_msp_i2s_disable_rx(struct msp *msp)
 {
 	u32 reg_val_GCR, reg_val_DMACR, reg_val_IMSC;
@@ -691,10 +528,6 @@ static void ux500_msp_i2s_disable_rx(struct msp *msp)
 	writel(reg_val_IMSC &
 			~(RECEIVE_SERVICE_INT | RECEIVE_OVERRUN_ERROR_INT),
 			msp->registers + MSP_IMSC);
-	msp->xfer_data.message.rxbytes = 0;
-	msp->xfer_data.message.rx_offset = 0;
-	msp->xfer_data.message.rxdata = NULL;
-	msp->read = NULL;
 }
 
 static void ux500_msp_i2s_disable_tx(struct msp *msp)
@@ -709,10 +542,6 @@ static void ux500_msp_i2s_disable_tx(struct msp *msp)
 	writel(reg_val_IMSC &
 			~(TRANSMIT_SERVICE_INT | TRANSMIT_UNDERRUN_ERR_INT),
 			msp->registers + MSP_IMSC);
-	msp->xfer_data.message.txbytes = 0;
-	msp->xfer_data.message.tx_offset = 0;
-	msp->xfer_data.message.txdata = NULL;
-	msp->write = NULL;
 }
 
 static int ux500_msp_i2s_disable(struct msp *msp, int direction, enum i2s_flag flag)
@@ -721,23 +550,6 @@ static int ux500_msp_i2s_disable(struct msp *msp, int direction, enum i2s_flag f
 	int status = 0;
 
 	reg_val_GCR = readl(msp->registers + MSP_GCR);
-	if (!(reg_val_GCR & (TX_ENABLE | RX_ENABLE)))
-		return 0;
-
-	if (flag == DISABLE_ALL || flag == DISABLE_TRANSMIT) {
-		if (msp->tx_pipeid != NULL) {
-			dmaengine_terminate_all(msp->tx_pipeid);
-			dma_release_channel(msp->tx_pipeid);
-			msp->tx_pipeid = NULL;
-		}
-	}
-	if ((flag == DISABLE_ALL || flag == DISABLE_RECEIVE)) {
-		if (msp->rx_pipeid != NULL) {
-			dmaengine_terminate_all(msp->rx_pipeid);
-			dma_release_channel(msp->rx_pipeid);
-			msp->rx_pipeid = NULL;
-		}
-	}
 
 	if (flag == DISABLE_TRANSMIT)
 		ux500_msp_i2s_disable_tx(msp);
@@ -774,13 +586,11 @@ static int ux500_msp_i2s_disable(struct msp *msp, int direction, enum i2s_flag f
 		writel((readl(msp->registers + MSP_GCR) &
 			       (~(FRAME_GEN_ENABLE | SRG_ENABLE))),
 			      msp->registers + MSP_GCR);
-		memset(&msp->xfer_data, 0, sizeof(struct trans_data));
 		if (msp->plat_exit)
 			status = msp->plat_exit();
 			if (status)
 				pr_warn("%s: WARN: ux500_msp_i2s_exit failed (%d)!\n",
 					__func__, status);
-		msp->transfer = NULL;
 		writel(0, msp->registers + MSP_GCR);
 		writel(0, msp->registers + MSP_TCF);
 		writel(0, msp->registers + MSP_RCF);
@@ -800,6 +610,50 @@ static int ux500_msp_i2s_disable(struct msp *msp, int direction, enum i2s_flag f
 	}
 
 	return status;
+}
+
+int
+ux500_msp_i2s_trigger(
+	struct ux500_msp_i2s_drvdata *drvdata,
+	int cmd,
+	int direction)
+{
+	struct msp *msp = drvdata->msp;
+	u32 reg_val_GCR, enable_bit;
+
+	if (msp->msp_state == MSP_STATE_IDLE) {
+		pr_err("%s: ERROR: MSP is not configured!\n", __func__);
+		return -EINVAL;
+	}
+
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		if (direction == SNDRV_PCM_STREAM_PLAYBACK) {
+			enable_bit = TX_ENABLE;
+		} else {
+			enable_bit = RX_ENABLE;
+		}
+		reg_val_GCR = readl(msp->registers + MSP_GCR);
+		writel(reg_val_GCR | enable_bit, msp->registers + MSP_GCR);
+		break;
+
+	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		if (direction == SNDRV_PCM_STREAM_PLAYBACK) {
+			ux500_msp_i2s_disable_tx(msp);
+		} else {
+			ux500_msp_i2s_disable_rx(msp);
+		}
+		break;
+	default:
+		return -EINVAL;
+		break;
+	}
+
+	return 0;
 }
 
 int ux500_msp_i2s_close(struct ux500_msp_i2s_drvdata *drvdata, enum i2s_flag flag)
@@ -850,32 +704,6 @@ end:
 	up(&msp->lock);
 	return status;
 
-}
-
-int ux500_msp_i2s_hw_status(struct ux500_msp_i2s_drvdata *drvdata)
-{
-	struct msp *msp = drvdata->msp;
-	int status;
-
-	pr_debug("%s: Enter.\n", __func__);
-
-	status = readl(msp->registers + MSP_RIS) & 0xee;
-	if (status)
-		writel(status, msp->registers + MSP_ICR);
-
-	return status;
-}
-
-dma_addr_t ux500_msp_i2s_get_pointer(struct ux500_msp_i2s_drvdata *drvdata,
-				enum i2s_direction_t i2s_direction)
-{
-	struct msp *msp = drvdata->msp;
-
-	pr_debug("%s: Enter.\n", __func__);
-
-	return (i2s_direction == I2S_DIRECTION_TX) ?
-		stedma40_get_src_addr(msp->tx_pipeid) :
-		stedma40_get_dst_addr(msp->rx_pipeid);
 }
 
 struct ux500_msp_i2s_drvdata *ux500_msp_i2s_init(struct platform_device *pdev,
@@ -934,16 +762,6 @@ struct ux500_msp_i2s_drvdata *ux500_msp_i2s_init(struct platform_device *pdev,
 		goto free_irq;
 	}
 
-	init_timer(&msp->notify_timer);
-	msp->notify_timer.expires = jiffies + msecs_to_jiffies(1000);
-	msp->notify_timer.function = func_notify_timer;
-	msp->notify_timer.data = (unsigned long)msp;
-
-	msp->rx_pipeid = NULL;
-	msp->tx_pipeid = NULL;
-	msp->read = NULL;
-	msp->write = NULL;
-	msp->transfer = NULL;
 	msp->msp_state = MSP_STATE_IDLE;
 	msp->loopback_enable = 0;
 
@@ -952,7 +770,7 @@ struct ux500_msp_i2s_drvdata *ux500_msp_i2s_init(struct platform_device *pdev,
 	if (!i2s_cont) {
 		pr_err("%s: ERROR: Failed to allocate struct i2s_cont (kzalloc)!\n",
 			__func__);
-		goto del_timer;
+		goto del_clk;
 	}
 	i2s_cont->dev.parent = &pdev->dev;
 	i2s_cont->data = (void *)msp;
@@ -966,8 +784,7 @@ struct ux500_msp_i2s_drvdata *ux500_msp_i2s_init(struct platform_device *pdev,
 
 	return msp_i2s_drvdata;
 
-del_timer:
-	del_timer_sync(&msp->notify_timer);
+del_clk:
 	clk_put(msp->clk);
 free_irq:
 	iounmap(msp->registers);
@@ -984,7 +801,6 @@ int ux500_msp_i2s_exit(struct ux500_msp_i2s_drvdata *drvdata)
 	pr_debug("%s: Enter (drvdata->id = %d).\n", __func__, drvdata->id);
 
 	device_unregister(&msp->i2s_cont->dev);
-	del_timer_sync(&msp->notify_timer);
 	clk_put(msp->clk);
 	iounmap(msp->registers);
 	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "ux500_msp_i2s");
