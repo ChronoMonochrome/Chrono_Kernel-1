@@ -674,7 +674,7 @@ static struct ab8500_regulator_info
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
-		.delay			= 10000,
+		.delay			= 500,
 		.fixed_uV		= 2000000,
 		.load_lp_uA		= 1000,
 		.update_bank		= 0x03,
