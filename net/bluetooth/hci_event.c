@@ -1852,9 +1852,12 @@ static inline void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *sk
 				     &cp);
 		} else {
 			struct hci_cp_accept_sync_conn_req cp;
+			__u16 pkt_type;
+
+			pkt_type = conn->pkt_type ^ EDR_ESCO_MASK;
 
 			bacpy(&cp.bdaddr, &ev->bdaddr);
-			cp.pkt_type = cpu_to_le16(conn->pkt_type);
+			cp.pkt_type = cpu_to_le16(pkt_type);
 
 			cp.tx_bandwidth   = cpu_to_le32(0x00001f40);
 			cp.rx_bandwidth   = cpu_to_le32(0x00001f40);
