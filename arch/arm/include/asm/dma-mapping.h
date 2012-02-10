@@ -201,6 +201,8 @@ static inline void dma_free_noncoherent(struct device *dev, size_t size,
 {
 }
 
+extern int dma_supported(struct device *dev, u64 mask);
+
 /**
  * dma_alloc_coherent - allocate consistent memory for DMA
  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
@@ -273,7 +275,6 @@ int dma_mmap_writecombine(struct device *, struct vm_area_struct *,
 extern void __init init_consistent_dma_size(unsigned long size);
 
 
-#ifdef CONFIG_DMABOUNCE
 /*
  * For SA-1111, IXP425, and ADI systems  the dma-mapping functions are "magic"
  * and utilize bounce buffers as needed to work around limited DMA windows.
@@ -313,47 +314,7 @@ extern int dmabounce_register_dev(struct device *, unsigned long,
  */
 extern void dmabounce_unregister_dev(struct device *);
 
-/*
- * The DMA API, implemented by dmabounce.c.  See below for descriptions.
- */
-extern dma_addr_t __dma_map_page(struct device *, struct page *,
-		unsigned long, size_t, enum dma_data_direction);
-extern void __dma_unmap_page(struct device *, dma_addr_t, size_t,
-		enum dma_data_direction);
 
-/*
- * Private functions
- */
-int dmabounce_sync_for_cpu(struct device *, dma_addr_t, size_t, enum dma_data_direction);
-int dmabounce_sync_for_device(struct device *, dma_addr_t, size_t, enum dma_data_direction);
-#else
-static inline int dmabounce_sync_for_cpu(struct device *d, dma_addr_t addr,
-	size_t size, enum dma_data_direction dir)
-{
-	return 1;
-}
-
-static inline int dmabounce_sync_for_device(struct device *d, dma_addr_t addr,
-	size_t size, enum dma_data_direction dir)
-{
-	return 1;
-}
-
-
-static inline dma_addr_t __dma_map_page(struct device *dev, struct page *page,
-	     unsigned long offset, size_t size, enum dma_data_direction dir)
-{
-	__dma_page_cpu_to_dev(page, offset, size, dir);
-	return pfn_to_dma(dev, page_to_pfn(page)) + offset;
-}
-
-static inline void __dma_unmap_page(struct device *dev, dma_addr_t handle,
-		size_t size, enum dma_data_direction dir)
-{
-	__dma_page_dev_to_cpu(pfn_to_page(dma_to_pfn(dev, handle)),
-		handle & ~PAGE_MASK, size, dir);
-}
-#endif /* CONFIG_DMABOUNCE */
 
 /*
  * The scatter list versions of the above methods.
