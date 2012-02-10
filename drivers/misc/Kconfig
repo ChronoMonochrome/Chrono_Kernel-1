@@ -479,6 +479,22 @@ config COMPDEV
 	  This driver replaces the use of the framebuffer The device allows
 	  for posting userspace buffers to be used with the overlays.
 
+config CLONEDEV
+	bool "Display cloning device"
+	depends on FB_MCDE && HWMEM && COMPDEV
+	default n
+	help
+	  This driver provides a way to clone content between two compdev
+	  devices.
+
+config CLONEDEV_DEBUG
+	bool "Display cloning device debug"
+	depends on CLONEDEV
+	default n
+	help
+	  This driver provides a way to clone content between two compdev
+	  devices.
+
 config PCH_PHUB
 	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) PHUB"
 	depends on PCI

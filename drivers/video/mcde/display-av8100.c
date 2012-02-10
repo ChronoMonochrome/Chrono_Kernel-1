@@ -17,6 +17,8 @@
 #include <linux/gpio.h>
 #include <linux/io.h>
 #include <linux/slab.h>
+#include <linux/compdev.h>
+#include <linux/clonedev.h>
 
 #include <video/mcde_fb.h>
 #include <video/mcde_display.h>
@@ -199,6 +201,9 @@ static ssize_t store_disponoff(struct device *dev,
 	bool enable = false;
 	u8 cea = 0;
 	u8 vesa_cea_nr = 0;
+#ifdef CONFIG_COMPDEV
+	struct mcde_fb *mfb;
+#endif
 
 	dev_dbg(dev, "%s\n", __func__);
 
@@ -211,7 +216,7 @@ static ssize_t store_disponoff(struct device *dev,
 	vesa_cea_nr = (hex_to_bin(buf[4]) << 4) + hex_to_bin(buf[5]);
 	dev_dbg(dev, "enable:%d cea:%d nr:%d\n", enable, cea, vesa_cea_nr);
 
-	if (enable && !mdev->enabled && mdev->fbi == NULL) {
+	if (enable && !mdev->fbi) {
 		struct display_driver_data *driver_data = dev_get_drvdata(dev);
 		u16 w = mdev->native_x_res;
 		u16 h = mdev->native_y_res, vh;
@@ -226,7 +231,40 @@ static ssize_t store_disponoff(struct device *dev,
 			dev_warn(dev, "fb create failed\n");
 		else
 			driver_data->fbdevname = dev_name(fbi->dev);
-	} else if (!enable && mdev->enabled) {
+
+#ifdef CONFIG_COMPDEV
+		/* TODO need another way for compdev to get actual size */
+		mdev->native_x_res = w;
+		mdev->native_y_res = h;
+
+		mfb = to_mcde_fb(fbi);
+		/* Create a compdev overlay for this display */
+		if (compdev_create(mdev, mfb->ovlys[0], false) < 0) {
+			dev_warn(&mdev->dev,
+				"Failed to create compdev for display %s\n",
+						mdev->name);
+		} else {
+			dev_dbg(&mdev->dev, "compdev created for (%s)\n",
+						mdev->name);
+		}
+#ifdef CONFIG_CLONEDEV
+		if (clonedev_create()) {
+			dev_warn(&mdev->dev,
+				"Failed to create clonedev for display %s\n",
+						mdev->name);
+		} else {
+			dev_dbg(&mdev->dev, "clonedev created for (%s)\n",
+						mdev->name);
+		}
+#endif
+#endif
+	} else if (!enable && mdev->fbi) {
+#ifdef CONFIG_CLONEDEV
+		clonedev_destroy();
+#endif
+#ifdef CONFIG_COMPDEV
+		compdev_destroy(mdev);
+#endif
 		mcde_fb_destroy(mdev);
 	}
 
