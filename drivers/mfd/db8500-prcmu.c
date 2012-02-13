@@ -30,6 +30,7 @@
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/regulator/db8500-prcmu.h>
 #include <linux/regulator/machine.h>
+#include <linux/mfd/abx500.h>
 #include <asm/hardware/gic.h>
 #include <mach/hardware.h>
 #include <mach/irqs.h>
@@ -636,6 +637,26 @@ void db8500_prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
 	val = ((val & ~mask) | (value & mask));
 	writel(val, (_PRCMU_BASE + reg));
 	spin_unlock_irqrestore(&prcmu_lock, flags);
+}
+
+/*
+ * Dump AB8500 registers, PRCMU registers and PRCMU data memory
+ * on critical errors.
+ */
+static void db8500_prcmu_debug_dump(const char *func,
+				bool dump_prcmu, bool dump_abb)
+{
+	printk(KERN_DEBUG"%s: timeout\n", func);
+
+	/* Dump AB8500 registers */
+	if (dump_abb)
+		abx500_dump_all_banks();
+
+	/* Dump prcmu registers and data memory */
+	if (dump_prcmu) {
+		prcmu_debug_dump_regs();
+		prcmu_debug_dump_data_mem();
+	}
 }
 
 struct prcmu_fw_version *prcmu_get_fw_version(void)
@@ -1328,6 +1349,7 @@ int db8500_prcmu_set_epod(u16 epod_id, u8 epod_state)
 		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
 			__func__);
 		r = -EIO;
+		db8500_prcmu_debug_dump(__func__, true, true);
 		goto unlock_and_return;
 	}
 
@@ -1422,6 +1444,7 @@ static int request_sysclk(bool enable)
 		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
 			__func__);
 		r = -EIO;
+		db8500_prcmu_debug_dump(__func__, true, true);
 	}
 
 	mutex_unlock(&mb3_transfer.sysclk_lock);
@@ -2196,6 +2219,7 @@ int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
 		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
 			__func__);
 		r = -EIO;
+		db8500_prcmu_debug_dump(__func__, true, false);
 	} else {
 		r = ((mb5_transfer.ack.status == I2C_RD_OK) ? 0 : -EIO);
 	}
@@ -2246,6 +2270,7 @@ int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size)
 		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
 			__func__);
 		r = -EIO;
+		db8500_prcmu_debug_dump(__func__, true, false);
 	} else {
 		r = ((mb5_transfer.ack.status == I2C_WR_OK) ? 0 : -EIO);
 	}
@@ -2293,6 +2318,7 @@ retry:
 
 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
 			msecs_to_jiffies(5000))) {
+		db8500_prcmu_debug_dump(__func__, true, true);
 		pr_crit("prcmu: %s timed out (5 s) waiting for a reply.\n",
 			__func__);
 		goto unlock_and_return;
@@ -2315,6 +2341,7 @@ retry:
 		if (wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
 				msecs_to_jiffies(5000)))
 			goto retry;
+		db8500_prcmu_debug_dump(__func__, true, true);
 		pr_crit("prcmu: %s timed out (5 s) waiting for AC_SLEEP_ACK.\n",
 			__func__);
 	}
@@ -2341,6 +2368,7 @@ void prcmu_ac_sleep_req()
 
 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
 			msecs_to_jiffies(5000))) {
+		db8500_prcmu_debug_dump(__func__, true, true);
 		pr_crit("prcmu: %s timed out (5 s) waiting for a reply.\n",
 			__func__);
 	}
