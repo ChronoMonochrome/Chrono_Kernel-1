@@ -3569,6 +3569,101 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 		if (status)
 			dev_dbg(hub_dev, "%dmA power budget left\n", status);
 
+#ifdef CONFIG_USB_OTG_20
+
+		u16 idVendor = le16_to_cpu(udev->descriptor.idVendor);
+		if (idVendor == USB_OTG_TEST_MODE_VID) {
+			u16 wValue, typeReq, wIndex;
+			u32 set_feature = 0;
+			int err = 0;
+			struct usb_hcd *hcd = bus_to_hcd(udev->bus);
+			u16 idProduct = le16_to_cpu(
+					udev->descriptor.idProduct);
+			/* Convert the Test Mode Request
+			 * to control request
+			 */
+			wValue = USB_PORT_FEAT_TEST;
+			typeReq = SetPortFeature;
+			wIndex = 1;
+
+			switch (idProduct) {
+			case USB_OTG_TEST_SE0_NAK_PID:
+				wIndex |= USB_OTG_TEST_SE0_NAK << 8;
+				set_feature = 1;
+				break;
+			case USB_OTG_TEST_J_PID:
+				wIndex |= USB_OTG_TEST_J << 8;
+				set_feature = 1;
+				break;
+			case USB_OTG_TEST_K_PID:
+				wIndex |= USB_OTG_TEST_K << 8;
+				set_feature = 1;
+				break;
+			case USB_OTG_TEST_PACKET_PID:
+				wIndex |= USB_OTG_TEST_PACKET << 8;
+				set_feature = 1;
+				break;
+			case USB_OTG_TEST_HS_HOST_PORT_SUSPEND_RESUME_PID:
+			/* Sleep for 15 sec. Suspend
+			 * for 15 Sec, Then Resume
+			 */
+				ssleep(15);
+
+				err = usb_port_suspend(udev,
+						PMSG_SUSPEND);
+				if (err < 0) {
+					dev_err(&udev->dev, "OTG TEST_MODE:"
+						"Suspend Fail, %d\n", err);
+					goto loop_disable;
+				}
+					ssleep(15);
+				err = usb_port_resume(udev, PMSG_RESUME);
+				if (err < 0) {
+					dev_err(&udev->dev,
+					"can't resume for"
+					"OTG TEST_MODE: %d\n", err);
+					goto loop_disable;
+				}
+				break;
+			case USB_OTG_TEST_SINGLE_STEP_GET_DEV_DESC_PID:
+			/* Sleep for 15 Sec. Issue the GetDeviceDescriptor */
+				ssleep(15);
+				err = usb_get_device_descriptor(udev,
+						sizeof(udev->descriptor));
+				if (err < 0) {
+					dev_err(&udev->dev, "can't re-read"
+					"device descriptor for "
+					"OTG TEST MODE: %d\n", err);
+					goto loop_disable;
+				}
+				break;
+			case USB_OTG_TEST_SINGLE_STEP_GET_DEV_DESC_DATA_PID:
+			/* Issue GetDeviceDescriptor, Sleep for 15 Sec. */
+				err = usb_get_device_descriptor(udev,
+						sizeof(udev->descriptor));
+				if (err < 0) {
+					dev_err(&udev->dev, "can't re-read"
+					"device descriptor for "
+					"OTG TEST MODE: %d\n", err);
+					goto loop_disable;
+				}
+				ssleep(15);
+				break;
+			default:
+			/* is_targeted() will take care for wrong PID */
+				dev_dbg(&udev->dev, "OTG TEST_MODE:Wrong
+							PID %d\n" idProduct);
+				break;
+			}
+
+			if (set_feature) {
+				err = hcd->driver->hub_control(hcd,
+					typeReq, wValue, wIndex,
+					NULL, 0);
+			}
+	}
+
+#endif
 		return;
 
 loop_disable:
