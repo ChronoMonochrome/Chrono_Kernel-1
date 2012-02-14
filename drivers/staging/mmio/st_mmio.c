@@ -115,6 +115,13 @@ struct mmio_info {
 static struct mmio_info *info;
 
 /*
+ * static 1K buffer to do I/O write instead of kmalloc,
+ * no locking, caller can not have parallel use of
+ * MMIO_CAM_LOAD_XP70_FW and MMIO_CAM_ISP_WRITE ioctl's
+ */
+static u16 copybuff[512];
+
+/*
  * This function converts a given logical memory region size
  * to appropriate ISP_MCU_SYS_SIZEx register value.
  */
@@ -235,86 +242,88 @@ static u32 t1_to_arm(u32 t1_addr, void __iomem *smia_base_address,
 	return SIA_ISP_MEM + (t1_addr & FW_TO_HOST_ADDR_MASK);
 }
 
-static int copy_user_buffer(void __iomem **dest_buf,
-			    void __iomem *src_buf, u32 size)
+static int write_user_buffer(struct mmio_info *info, u32 ioaddr,
+					void __iomem *src_buf, u32 size)
 {
+	u32 i, count, offset = 0;
+	u32 itval = 0;
+	u16 mem_page = 0;
 	int err = 0;
 
-	if (!src_buf)
+	if (!src_buf || !ioaddr) {
+		dev_err(info->dev, "invalid parameters: %p, 0x%x",
+				src_buf, ioaddr);
+
 		return -EINVAL;
-
-	*dest_buf = kmalloc(size, GFP_KERNEL);
-
-	if (!*dest_buf) {
-		err = -ENOMEM;
-		goto nomem;
 	}
 
-	if (copy_from_user(*dest_buf, src_buf, size)) {
-		err = -EFAULT;
-		goto cp_failed;
+	for (offset = 0; offset < size; ) {
+
+		if ((size - offset) > sizeof(copybuff))
+			count = sizeof(copybuff);
+		else
+			count = (size - offset);
+
+		if (copy_from_user(copybuff, src_buf + offset, count)) {
+
+			dev_err(info->dev, "failed to copy user buffer"
+				" %p at offset=%d, count=%d\n",
+				src_buf, offset, count);
+
+			err = -EFAULT;
+			goto cp_failed;
+		}
+
+		for (i = 0; i < count; ) {
+			itval = t1_to_arm(ioaddr + offset,
+					info->siabase, &mem_page);
+			itval = ((u32) info->siabase) + itval;
+
+			writew(copybuff[i/2], itval);
+			offset += 2;
+			i = i + 2;
+		}
 	}
 
-	return err;
 cp_failed:
-	kfree(*dest_buf);
-nomem:
 	return err;
 }
+
 static int mmio_load_xp70_fw(struct mmio_info *info,
 			     struct xp70_fw_t *xp70_fw)
 {
-	u32 i = 0;
-	u32 offset = 0;
 	u32 itval = 0;
-	u16 mem_page = 0;
-	void __iomem *addr_split = NULL;
-	void __iomem *addr_data = NULL;
 	int err = 0;
 
 	if (xp70_fw->size_split != 0) {
-		err = copy_user_buffer(&addr_split, xp70_fw->addr_split,
-				       xp70_fw->size_split);
-
-		if (err)
+		/* if buff size is not as expected */
+		if (xp70_fw->size_split != L2_PSRAM_MEM_SIZE) {
+			dev_err(info->dev, "xp70_fw_t.size_split must be "
+				"%d bytes!\n", L2_PSRAM_MEM_SIZE);
+			err = -EINVAL;
 			goto err_exit;
+		}
 
 		writel(0x0, info->siabase + SIA_ISP_REG_ADDR);
 
 		/* Put the low 64k IRP firmware in ISP MCU L2 PSRAM */
-		for (i = PICTOR_IN_XP70_L2_MEM_BASE_ADDR;
-				i < (PICTOR_IN_XP70_L2_MEM_BASE_ADDR +
-				     L2_PSRAM_MEM_SIZE); i = i + 2) {
-			itval = t1_to_arm(i, info->siabase, &mem_page);
-			itval = ((u32) info->siabase) + itval;
-			/* Copy fw in L2 */
-			writew((*((u16 *) addr_split + offset++)), itval);
-		}
-
-		kfree(addr_split);
+		err = write_user_buffer(info, PICTOR_IN_XP70_L2_MEM_BASE_ADDR,
+					xp70_fw->addr_split,
+					L2_PSRAM_MEM_SIZE);
+		if (err)
+			goto err_exit;
 	}
 
 	if (xp70_fw->size_data != 0) {
-		mem_page = 0;
-		offset = 0;
-		err = copy_user_buffer(&addr_data, xp70_fw->addr_data,
-				       xp70_fw->size_data);
-
-		if (err)
-			goto err_exit;
 
 		writel(0x0, info->siabase + SIA_ISP_REG_ADDR);
 
-		for (i = PICTOR_IN_XP70_TCDM_MEM_BASE_ADDR;
-				i < (PICTOR_IN_XP70_TCDM_MEM_BASE_ADDR +
-				     (xp70_fw->size_data)); i = i + 2) {
-			itval = t1_to_arm(i, info->siabase, &mem_page);
-			itval = ((u32) info->siabase) + itval;
-			/* Copy fw data in TCDM */
-			writew((*((u16 *) addr_data + offset++)), itval);
-		}
+		err = write_user_buffer(info, PICTOR_IN_XP70_TCDM_MEM_BASE_ADDR,
+					xp70_fw->addr_data,
+					xp70_fw->size_data);
 
-		kfree(addr_data);
+		if (err)
+			goto err_exit;
 	}
 
 	if (xp70_fw->size_esram_ext != 0) {
@@ -464,29 +473,51 @@ static int mmio_isp_write(struct mmio_info *info,
 			  struct isp_write_t *isp_write_p)
 {
 	int err = 0, i;
-	void __iomem *data = NULL;
+	u32 __iomem *data = NULL;
 	void __iomem *addr = NULL;
 	u16 mem_page = 0;
+	u32 size, count, offset;
 
 	if (!isp_write_p->count) {
 		dev_warn(info->dev, "no data to write to isp\n");
 		return -EINVAL;
 	}
 
-	err = copy_user_buffer(&data, isp_write_p->data,
-			       isp_write_p->count * ISP_WRITE_DATA_SIZE);
+	size = isp_write_p->count * ISP_WRITE_DATA_SIZE;
+	data = (u32 *) copybuff;
 
-	if (err)
-		goto out;
+	for (offset = 0; offset < size; ) {
 
-	for (i = 0; i < isp_write_p->count; i++) {
-		addr = (void *)(info->siabase + t1_to_arm(isp_write_p->t1_dest
-				+ ISP_WRITE_DATA_SIZE * i,
-				info->siabase, &mem_page));
-		*((u32 *)addr) = *((u32 *)data + i);
+		/* 'offset' and 'size' and 'count' is in bytes */
+		if ((size - offset) > sizeof(copybuff))
+			count = sizeof(copybuff);
+		else
+			count = (size - offset);
+
+		if (copy_from_user(data, ((u8 *)isp_write_p->data) + offset,
+		    count)) {
+			dev_err(info->dev, "failed to copy user buffer"
+				" %p at offset=%d, count=%d\n",
+				isp_write_p->data, offset, count);
+
+			err = -EFAULT;
+			goto out;
+		}
+
+		/* index 'i' and 'offset' is in bytes */
+		for (i = 0; i < count; ) {
+			addr = (void *)(info->siabase + t1_to_arm(
+					isp_write_p->t1_dest
+					+ offset,
+					info->siabase, &mem_page));
+
+			*((u32 *)addr) = data[i/ISP_WRITE_DATA_SIZE];
+
+			offset += ISP_WRITE_DATA_SIZE;
+			i = i + ISP_WRITE_DATA_SIZE;
+		}
 	}
 
-	kfree(data);
 out:
 	return err;
 }
