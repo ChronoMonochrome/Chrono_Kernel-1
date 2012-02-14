@@ -39,6 +39,9 @@
 
 #include <linux/lsm303dlh.h>
 #include <linux/regulator/consumer.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
 #include <linux/kernel.h>
 
 /* lsm303dlh magnetometer registers */
@@ -164,6 +167,9 @@ struct lsm303dlh_m_data {
 	unsigned char mode;
 	unsigned char rate;
 	unsigned char range;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend early_suspend;
+#endif
 	int device_status;
 };
 
@@ -894,9 +900,9 @@ static struct i2c_driver lsm303dlh_m_driver = {
 	.id_table	= lsm303dlh_m_id,
 	.driver = {
 		.name = "lsm303dlh_m",
-	#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
 		.pm = &lsm303dlh_m_dev_pm_ops,
-	#endif
+#endif
 	},
 };
 

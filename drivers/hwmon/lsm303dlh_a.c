@@ -38,6 +38,9 @@
 #endif
 
 #include <linux/lsm303dlh.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
 #include <linux/regulator/consumer.h>
 
  /* lsm303dlh accelerometer registers */
@@ -199,6 +202,9 @@ struct lsm303dlh_a_data {
 	unsigned char interrupt_configure[2];
 	unsigned char interrupt_duration[2];
 	unsigned char interrupt_threshold[2];
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend early_suspend;
+#endif
 	int device_status;
 	int id;
 };
@@ -289,6 +295,7 @@ static int lsm303dlh_a_restore(struct lsm303dlh_a_data *ddata)
 
 	if (ddata->regulator)
 		regulator_enable(ddata->regulator);
+
 	/* BDU should be enabled by default/recommened */
 	reg = ddata->range;
 	reg |= LSM303DLH_A_CR4_BDU_MASK;
@@ -1340,9 +1347,9 @@ static struct i2c_driver lsm303dlh_a_driver = {
 	.id_table	= lsm303dlh_a_id,
 	.driver = {
 		.name = "lsm303dlh_a",
-	#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
-		.pm	=	&lsm303dlh_a_dev_pm_ops,
-	#endif
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
+		.pm = &lsm303dlh_a_dev_pm_ops,
+#endif
 	},
 };
 
