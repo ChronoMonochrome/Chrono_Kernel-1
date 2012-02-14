@@ -358,6 +358,7 @@ static irqreturn_t ab8500_irq(int irq, void *dev)
 			int line = i * 8 + bit;
 
 			handle_nested_irq(ab8500->irq_base + line);
+			ab8500_debug_register_interrupt(line);
 			value &= ~(1 << bit);
 		} while (value);
 	}
