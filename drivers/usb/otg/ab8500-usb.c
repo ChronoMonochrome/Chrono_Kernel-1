@@ -107,6 +107,7 @@ enum ab8500_usb_mode {
 struct ab8500_usb {
 	struct usb_phy phy;
 	struct device *dev;
+	struct ab8500 *ab8500;
 	int irq_num_id_rise;
 	int irq_num_id_fall;
 	int irq_num_vbus_rise;
@@ -116,7 +117,6 @@ struct ab8500_usb {
 	struct delayed_work dwork;
 	struct work_struct phy_dis_work;
 	unsigned long link_status_wait;
-	int rev;
 	enum ab8500_usb_mode mode;
 	struct clk *sysclk;
 	struct regulator *v_ape;
@@ -146,7 +146,7 @@ static void ab8500_usb_wd_workaround(struct ab8500_usb *ab)
 		(AB8500_BIT_WD_CTRL_ENABLE
 		| AB8500_BIT_WD_CTRL_KICK));
 
-	if (ab->rev > 0x10) /* v2.0 v3.0 */
+	if (!is_ab8500_1p0_or_earlier(ab->ab8500))
 		udelay(AB8500_WD_V11_DISABLE_DELAY_US);
 
 	abx500_set_register_interruptible(ab->dev,
@@ -203,7 +203,7 @@ static void ab8500_usb_regulator_ctrl(struct ab8500_usb *ab, bool sel_host,
 
 	if (enable) {
 		regulator_enable(ab->v_ape);
-		if (ab->rev >= 0x30) {
+		if (!is_ab8500_2p0_or_earlier(ab->ab8500)) {
 			ret = regulator_set_voltage(ab->v_ulpi,
 						1300000, 1350000);
 			if (ret < 0)
@@ -217,7 +217,7 @@ static void ab8500_usb_regulator_ctrl(struct ab8500_usb *ab, bool sel_host,
 
 		}
 		regulator_enable(ab->v_ulpi);
-		if (ab->rev >= 0x30) {
+		if (!is_ab8500_2p0_or_earlier(ab->ab8500)) {
 			volt = regulator_get_voltage(ab->v_ulpi);
 			if ((volt != 1300000) && (volt != 1350000))
 					dev_err(ab->dev, "Vintcore is not"
@@ -261,8 +261,8 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 
 static void ab8500_usb_wd_linkstatus(struct ab8500_usb *ab,u8 bit)
 {
-	/* Wrokaround for v2.0 bug # 31952 */
-	if (ab->rev == 0x20) {
+	/* Workaround for v2.0 bug # 31952 */
+	if (is_ab8500_2p0(ab->ab8500)) {
 		abx500_mask_and_set_register_interruptible(ab->dev,
 					AB8500_USB,
 					AB8500_USB_PHY_CTRL_REG,
@@ -435,13 +435,15 @@ static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
 				event, &ab->vbus_draw);
 		ab8500_usb_peri_phy_dis(ab);
 	}
-	if (ab->mode == USB_DEDICATED_CHG && ab->rev == 0x20) {
-		ab8500_usb_wd_linkstatus(ab,AB8500_BIT_PHY_CTRL_DEVICE_EN);
-		abx500_mask_and_set_register_interruptible(ab->dev,
+	if (is_ab8500_2p0(ab->ab8500)) {
+		if (ab->mode == USB_DEDICATED_CHG) {
+			ab8500_usb_wd_linkstatus(ab, AB8500_BIT_PHY_CTRL_DEVICE_EN);
+			abx500_mask_and_set_register_interruptible(ab->dev,
 				AB8500_USB,
 				AB8500_USB_PHY_CTRL_REG,
 				AB8500_BIT_PHY_CTRL_DEVICE_EN,
 				0);
+		}
 	}
 
 	return IRQ_HANDLED;
@@ -475,8 +477,9 @@ static unsigned ab8500_eyediagram_workaroud(struct ab8500_usb *ab, unsigned mA)
 	 * than 100mA from VBUS.So setting charging current
 	 * to 100mA in case of standard host
 	 */
-	if ((ab->rev < 0x30) && (mA > 100))
-		mA = 100;
+	if (is_ab8500_2p0_or_earlier(ab->ab8500))
+		if (mA > 100)
+			mA = 100;
 
 	return mA;
 }
@@ -659,7 +662,7 @@ static int ab8500_usb_irq_setup(struct platform_device *pdev,
 	int err;
 	int irq;
 
-	if (ab->rev > 0x10) { /* 0x20 0x30 */
+	if (!is_ab8500_1p0_or_earlier(ab->ab8500)) {
 		irq = platform_get_irq_byname(pdev, "USB_LINK_STATUS");
 		if (irq < 0) {
 			err = irq;
@@ -799,16 +802,16 @@ static int ab8500_create_sysfsentries(struct ab8500_usb *ab)
 static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 {
 	struct ab8500_usb	*ab;
+	struct ab8500 *ab8500;
 	struct usb_otg		*otg;
 	int err;
 	int rev;
 	int ret = -1;
 
+	ab8500 = dev_get_drvdata(pdev->dev.parent);
 	rev = abx500_get_chip_id(&pdev->dev);
-	if (rev < 0) {
-		dev_err(&pdev->dev, "Chip id read failed\n");
-		return rev;
-	} else if (rev < 0x20) {
+
+	if (is_ab8500_1p1_or_earlier(ab8500)) {
 		dev_err(&pdev->dev, "Unsupported AB8500 chip rev=%d\n", rev);
 		return -ENODEV;
 	}
@@ -824,7 +827,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	}
 
 	ab->dev			= &pdev->dev;
-	ab->rev			= rev;
+	ab->ab8500		= ab8500;
 	ab->phy.dev		= ab->dev;
 	ab->phy.otg		= otg;
 	ab->phy.label		= "ab8500";
@@ -872,7 +875,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	}
 
 	/* Write Phy tuning values */
-	if (ab->rev >= 0x30) {
+	if (!is_ab8500_2p0_or_earlier(ab->ab8500)) {
 		/* Enable the PBT/Bank 0x12 access */
 		ret = abx500_set_register_interruptible(ab->dev,
 							AB8500_DEVELOPMENT,
@@ -922,7 +925,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 
 	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
 			(char *)dev_name(ab->dev), 50);
-	dev_info(&pdev->dev, "revision 0x%2x driver initialized\n", ab->rev);
+	dev_info(&pdev->dev, "revision 0x%2x driver initialized\n", rev);
 
 	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "usb", 25);
 
