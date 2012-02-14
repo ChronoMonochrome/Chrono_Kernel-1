@@ -1044,15 +1044,6 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
 
 	ab8500->chip_id = value;
 
-	/*
-	 * HACK: for AB8505 until drivers are updated,
-	 * make it look like an AB8500 3.3.
-	 */
-	if (ab8500->version == AB8500_VERSION_AB8505) {
-		ab8500->version = AB8500_VERSION_AB8500;
-		ab8500->chip_id = AB8500_CUT3P3;
-	}
-
 	dev_info(ab8500->dev, "detected chip, %s rev. %1x.%1x\n",
 			ab8500_version_str[ab8500->version],
 			ab8500->chip_id >> 4,
