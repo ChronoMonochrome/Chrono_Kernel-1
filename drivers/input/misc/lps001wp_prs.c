@@ -49,11 +49,11 @@
 #include <linux/regulator/consumer.h>
 
 #include <linux/input/lps001wp.h>
-
-
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
 
 #define	DEBUG	1
-
 
 #define	PR_ABS_MAX	 0xffff
 #define	PR_ABS_MIN	 0x0000
@@ -171,6 +171,9 @@ struct lps001wp_prs_data {
 	struct delayed_work input_work;
 	struct input_dev *input_dev;
 #endif
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend early_suspend;
+#endif
 
 	int hw_initialized;
 	/* hw_working=-1 means not tested yet */
@@ -195,6 +198,11 @@ struct outputdata {
 	s16 temperature;
 	s16 deltapress;
 };
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void lps001wp_prs_early_suspend(struct early_suspend *data);
+static void lps001wp_prs_late_resume(struct early_suspend *data);
+#endif
 
 
 static int lps001wp_prs_i2c_read(struct lps001wp_prs_data *prs,
@@ -1282,6 +1290,13 @@ static int lps001wp_prs_probe(struct i2c_client *client,
 			"device LPS001WP_PRS_DEV_NAME sysfs register failed\n");
 		goto err_input_cleanup;
 	}
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	prs->early_suspend.level =
+			EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	prs->early_suspend.suspend = lps001wp_prs_early_suspend;
+	prs->early_suspend.resume = lps001wp_prs_late_resume;
+	register_early_suspend(&prs->early_suspend);
+#endif
 
 
 	lps001wp_prs_device_power_off(prs);
@@ -1356,24 +1371,44 @@ static int __devexit lps001wp_prs_remove(struct i2c_client *client)
 
 	return 0;
 }
-
-static int lps001wp_prs_resume(struct i2c_client *client)
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
+static int lps001wp_prs_resume(struct device *dev)
 {
-	struct lps001wp_prs_data *prs = i2c_get_clientdata(client);
+	struct lps001wp_prs_data *prs = dev_get_drvdata(dev);
 
 	if (prs->on_before_suspend)
 		return lps001wp_prs_enable(prs);
 	return 0;
 }
 
-static int lps001wp_prs_suspend(struct i2c_client *client, pm_message_t mesg)
+static int lps001wp_prs_suspend(struct device *dev)
 {
-	struct lps001wp_prs_data *prs = i2c_get_clientdata(client);
-
+	struct lps001wp_prs_data *prs = dev_get_drvdata(dev);
 	prs->on_before_suspend = atomic_read(&prs->enabled);
 	return lps001wp_prs_disable(prs);
 }
 
+static const struct dev_pm_ops lps001wp_prs_dev_pm_ops = {
+	.suspend = lps001wp_prs_suspend,
+	.resume  = lps001wp_prs_resume,
+};
+#else
+static void lps001wp_prs_early_suspend(struct early_suspend *data)
+{
+	struct lps001wp_prs_data *prs =
+		container_of(data, struct lps001wp_prs_data, early_suspend);
+	prs->on_before_suspend = atomic_read(&prs->enabled);
+	lps001wp_prs_disable(prs);
+}
+
+static void lps001wp_prs_late_resume(struct early_suspend *data)
+{
+	struct lps001wp_prs_data *prs =
+		container_of(data, struct lps001wp_prs_data, early_suspend);
+	if (prs->on_before_suspend)
+		lps001wp_prs_enable(prs);
+}
+#endif
 static const struct i2c_device_id lps001wp_prs_id[]
 		= { { LPS001WP_PRS_DEV_NAME, 0}, { },};
 
@@ -1383,12 +1418,13 @@ static struct i2c_driver lps001wp_prs_driver = {
 	.driver = {
 			.name = LPS001WP_PRS_DEV_NAME,
 			.owner = THIS_MODULE,
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
+			.pm = &lps001wp_prs_dev_pm_ops,
+#endif
 	},
 	.probe = lps001wp_prs_probe,
 	.remove = __devexit_p(lps001wp_prs_remove),
 	.id_table = lps001wp_prs_id,
-	.resume = lps001wp_prs_resume,
-	.suspend = lps001wp_prs_suspend,
 };
 
 static int __init lps001wp_prs_init(void)
