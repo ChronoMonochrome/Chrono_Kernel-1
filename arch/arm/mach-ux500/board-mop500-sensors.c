@@ -84,7 +84,7 @@ static struct i2c_board_info __initdata mop500_2_i2c2_devices[] = {
 static struct i2c_board_info __initdata snowball_i2c2_devices[] = {
 	{
 		/* LSM303DLH Accelerometer */
-		I2C_BOARD_INFO("lsm303dlh_a", 0x19),
+		I2C_BOARD_INFO("lsm303dlhc_a", 0x19),
 		.platform_data = &lsm303dlh_pdata,
 	},
 };
@@ -220,13 +220,9 @@ static int __init mop500_sensors_init(void)
 	else
 		lsm303dlh_pdata.chip_id = ret;
 
-	mop500_sensors_i2c_add(2, mop500_i2c2_devices,
-			ARRAY_SIZE(mop500_i2c2_devices));
-
 	if (machine_is_snowball()) {
 		if (cpu_is_u8500v21())
-			/* This is ugly but we cant know what address
-			 * to use */
+			/* This is ugly but we cant know what address to use */
 			mop500_sensors_probe_add_lsm303dlh_a();
 		else /* Add the accelerometer with new addr */
 			mop500_sensors_i2c_add(2, snowball_i2c2_devices,
@@ -234,6 +230,9 @@ static int __init mop500_sensors_init(void)
 	} else /* none snowball have the old addr */
 		mop500_sensors_i2c_add(2, mop500_2_i2c2_devices,
 				ARRAY_SIZE(mop500_2_i2c2_devices));
+
+	mop500_sensors_i2c_add(2, mop500_i2c2_devices,
+			ARRAY_SIZE(mop500_i2c2_devices));
 	return 0;
 }
 
