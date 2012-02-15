@@ -15,7 +15,7 @@
 #include "board-mop500.h"
 
 /*
- * LSM303DLH accelerometer + magnetometer sensors
+ * LSM303DLH accelerometer + magnetometer & L3G4200D Gyroscope sensors
  */
 static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
 	.name_a = "lsm303dlh.0",
@@ -28,7 +28,7 @@ static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
 	.negative_z = 0,
 };
 
-static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata_u8500 = {
+static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata = {
 	.name_gyr = "l3g4200d",
 	.axis_map_x = 1,
 	.axis_map_y = 0,
@@ -38,6 +38,10 @@ static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata_u8500 = {
 	.negative_z = 1,
 };
 
+/*
+ * Platform data for pressure sensor,
+ * poll interval and min interval in millseconds.
+ */
 static struct lps001wp_prs_platform_data __initdata lps001wp_pdata = {
 	.poll_interval = 1000,
 	.min_interval = 10,
@@ -52,7 +56,7 @@ static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 	{
 		/* L3G4200D Gyroscope */
 		I2C_BOARD_INFO("l3g4200d", 0x68),
-		.platform_data = &l3g4200d_pdata_u8500,
+		.platform_data = &l3g4200d_pdata,
 	},
 	{
 		/* LSP001WM Barometer */
@@ -177,7 +181,8 @@ static int __init mop500_sensors_init(void)
 {
 	int ret;
 
-	if (!machine_is_snowball() && !uib_is_stuib() && !uib_is_u8500uibr3())
+	if (!machine_is_snowball() && !uib_is_stuib() &&
+			!uib_is_u8500uib() && !uib_is_u8500uibr3())
 		return 0;
 
 	if (machine_is_hrefv60()) {
@@ -192,6 +197,21 @@ static int __init mop500_sensors_init(void)
 		lsm303dlh_pdata.irq_a1 = GPIO_ACCEL_INT1;
 		lsm303dlh_pdata.irq_a2 = GPIO_ACCEL_INT2;
 		lsm303dlh_pdata.irq_m = GPIO_MAGNET_DRDY;
+	}
+
+	/* Special sensors data for 8500 UIBs */
+	if (uib_is_u8500uib() || uib_is_u8500uibr3()) {
+		lsm303dlh_pdata.axis_map_x = 1;
+		lsm303dlh_pdata.axis_map_y = 0;
+		lsm303dlh_pdata.negative_x = 0;
+		lsm303dlh_pdata.negative_y = 0;
+		lsm303dlh_pdata.negative_z = 1;
+
+		l3g4200d_pdata.axis_map_x = 0;
+		l3g4200d_pdata.axis_map_y = 1;
+		l3g4200d_pdata.negative_x = 1;
+		l3g4200d_pdata.negative_y = 0;
+		l3g4200d_pdata.negative_z = 1;
 	}
 
 	ret = mop500_get_acc_id();
