@@ -241,8 +241,7 @@ static int sony_acx424akp_set_power_mode(struct mcde_display_device *ddev,
 		ddev->power_mode = MCDE_DISPLAY_PM_OFF;
 	}
 
-	mcde_chnl_set_power_mode(ddev->chnl_state, ddev->power_mode);
-	return sony_acx424akp_set_scan_mode(ddev, power_mode);
+	return mcde_chnl_set_power_mode(ddev->chnl_state, ddev->power_mode);
 }
 
 static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
