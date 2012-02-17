@@ -71,6 +71,7 @@ static u32 exit_irq_per_s = 1000;
 static u64 old_num_irqs;
 
 static DEFINE_MUTEX(usecase_mutex);
+static DEFINE_MUTEX(state_mutex);
 static bool user_config_updated;
 static enum ux500_uc current_uc = UX500_UC_MAX;
 static bool is_work_scheduled;
@@ -411,6 +412,12 @@ void usecase_update_governor_state(void)
 {
 	bool cancel_work = false;
 
+	/*
+	 * usecase_mutex will have to be unlocked to ensure safe exit of
+	 * delayed_usecase_work(). Protect this function with its own mutex
+	 * from being executed by multiple threads at that point.
+	 */
+	mutex_lock(&state_mutex);
 	mutex_lock(&usecase_mutex);
 
 	if (uc_master_enable && (usecase_conf[UX500_UC_AUTO].enable ||
@@ -434,7 +441,14 @@ void usecase_update_governor_state(void)
 	}
 
 	if (cancel_work) {
+		/*
+		 * usecase_mutex is used by delayed_usecase_work() so it must
+		 * be unlocked before we call to cacnel the work.
+		 */
+		mutex_unlock(&usecase_mutex);
 		cancel_delayed_work_sync(&work_usecase);
+		mutex_lock(&usecase_mutex);
+
 		is_work_scheduled = false;
 
 		/* Set the default settings before exiting. */
@@ -442,7 +456,7 @@ void usecase_update_governor_state(void)
 	}
 
 	mutex_unlock(&usecase_mutex);
-
+	mutex_unlock(&state_mutex);
 }
 
 /*
