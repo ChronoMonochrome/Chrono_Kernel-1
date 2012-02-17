@@ -1120,6 +1120,10 @@ static void pl011_lockup_wa(unsigned long data)
 	int buf_empty_retries = 200;
 	int loop;
 
+	/* Exit early if there is no tty */
+	if (!tty)
+		return;
+
 	/* Stop HCI layer from submitting data for tx */
 	tty->hw_stopped = 1;
 	while (!uart_circ_empty(xmit)) {
