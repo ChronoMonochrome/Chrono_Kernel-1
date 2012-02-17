@@ -866,8 +866,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
 move_newpage:
 	mem_cgroup_reset_owner(newpage);
 
-	mem_cgroup_reset_owner(newpage);
-
 	if (rc != -EAGAIN) {
 		/*
 		 * A page that has been migrated has all references
