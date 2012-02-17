@@ -181,7 +181,7 @@ t_cm_error cm_ELF_CheckFile(
         t_elfdescription        **elfhandlePtr)
 {
     t_elfdescription        *elfhandle;
-    t_tmp_elfdescription    elftmp;
+    t_tmp_elfdescription    elftmp = {0,};
     t_cm_error error;
     t_uint32 version;
     t_uint32 compatibleVersion;

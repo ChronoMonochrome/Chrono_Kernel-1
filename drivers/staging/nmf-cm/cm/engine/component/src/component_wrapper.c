@@ -657,6 +657,7 @@ PUBLIC EXPORT_SHARED t_cm_error CM_ENGINE_BindComponentFromCMCore(
         dspEventMemType = SDRAM_EXT24;
         break;
     default:
+        error = CM_INVALID_PARAMETER;
         goto out;
     }
 
