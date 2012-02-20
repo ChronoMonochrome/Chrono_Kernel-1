@@ -431,6 +431,8 @@ enum ap_pwrst prcmu_get_xp70_current_state(void);
 int prcmu_release_usb_wakeup_state(void);
 void prcmu_ac_wake_req(void);
 void prcmu_ac_sleep_req(void);
+int db8500_prcmu_gic_decouple(void);
+int db8500_prcmu_gic_recouple(void);
 int db8500_prcmu_set_display_clocks(void);
 int db8500_prcmu_disable_dsipll(void);
 int db8500_prcmu_enable_dsipll(void);
