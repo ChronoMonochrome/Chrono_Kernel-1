@@ -303,6 +303,30 @@ u8 prcmu_get_power_state_result(void);
 void prcmu_enable_wakeups(u32 wakeups);
 void prcmu_disable_wakeups(void);
 
+static inline int prcmu_gic_decouple(void)
+{
+	if (cpu_is_u5500())
+		return -EINVAL;
+	else
+		return db8500_prcmu_gic_decouple();
+}
+
+static inline int prcmu_gic_recouple(void)
+{
+	if (cpu_is_u5500())
+		return -EINVAL;
+	else
+		return db8500_prcmu_gic_recouple();
+}
+
+static inline int prcmu_set_epod(u16 epod_id, u8 epod_state)
+{
+	if (cpu_is_u5500())
+		return -EINVAL;
+	else
+		return db8500_prcmu_set_epod(epod_id, epod_state);
+}
+
 void prcmu_config_abb_event_readout(u32 abb_events);
 
 void prcmu_get_abb_event_buffer(void __iomem **buf);
