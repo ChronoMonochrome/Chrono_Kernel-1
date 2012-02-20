@@ -994,7 +994,7 @@ static ssize_t attr_addr_set(struct device *dev, struct device_attribute *attr,
 static struct device_attribute attributes[] = {
 	__ATTR(pollrate_ms, S_IWUSR | S_IRUGO, attr_get_polling_rate,
 		attr_set_polling_rate),
-	__ATTR(enable, S_IWUSR | S_IRUGO, attr_get_enable, attr_set_enable),
+	__ATTR(enable, S_IWUGO | S_IRUGO, attr_get_enable, attr_set_enable),
 	__ATTR(diff_enable, S_IWUSR | S_IRUGO, attr_get_diff_enable,
 		attr_set_diff_enable),
 	__ATTR(press_reference, S_IWUSR | S_IRUGO, attr_get_press_ref,
