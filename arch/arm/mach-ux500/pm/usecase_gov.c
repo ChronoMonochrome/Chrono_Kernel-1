@@ -829,6 +829,9 @@ static ssize_t store_dc_attr(struct sysdev_class *class,
 
 	usecase_conf[uattr->index].enable = (bool)input;
 
+	if (uattr->index == UX500_UC_VC)
+		prcmu_vc(usecase_conf[UX500_UC_VC].enable);
+
 	usecase_update_user_config();
 
 	usecase_update_governor_state();

@@ -592,6 +592,13 @@ static inline int prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
 	else
 		return db8500_prcmu_config_a9wdog(num, sleep_auto_off);
 }
+
+static inline void prcmu_vc(bool enable)
+{
+	if (cpu_is_u8500())
+		db8500_prcmu_vc(enable);
+}
+
 #else
 
 static inline void __init prcmu_early_init(void) {}
@@ -755,6 +762,8 @@ static inline u32 prcmu_read(unsigned int reg)
 static inline void prcmu_write(unsigned int reg, u32 value) {}
 
 static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 value) {}
+
+static inline void prcmu_vc(bool enable) {}
 
 #endif
 

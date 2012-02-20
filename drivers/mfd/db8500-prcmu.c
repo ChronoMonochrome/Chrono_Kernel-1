@@ -71,6 +71,8 @@
 
 #define PRCM_SW_RST_REASON 0xFF8 /* 2 bytes */
 
+#define PRCM_TCDM_VOICE_CALL_FLAG 0xDD4 /* 4 bytes */
+
 #define _PRCM_MBOX_HEADER		0xFE8 /* 16 bytes */
 #define PRCM_MBOX_HEADER_REQ_MB0	(_PRCM_MBOX_HEADER + 0x0)
 #define PRCM_MBOX_HEADER_REQ_MB1	(_PRCM_MBOX_HEADER + 0x1)
@@ -645,6 +647,11 @@ bool prcmu_has_arm_maxopp(void)
 {
 	return (readb(tcdm_base + PRCM_AVS_VARM_MAX_OPP) &
 		PRCM_AVS_ISMODEENABLE_MASK) == PRCM_AVS_ISMODEENABLE_MASK;
+}
+
+void db8500_prcmu_vc(bool enable)
+{
+	writel((enable ? 0xF : 0), (tcdm_base + PRCM_TCDM_VOICE_CALL_FLAG));
 }
 
 /**

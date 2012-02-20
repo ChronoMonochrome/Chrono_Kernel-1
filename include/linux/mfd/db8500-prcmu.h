@@ -498,6 +498,8 @@ u32 db8500_prcmu_read(unsigned int reg);
 void db8500_prcmu_write(unsigned int reg, u32 value);
 void db8500_prcmu_write_masked(unsigned int reg, u32 mask, u32 value);
 
+void db8500_prcmu_vc(bool enable);
+
 #else /* !CONFIG_MFD_DB8500_PRCMU */
 
 static inline void db8500_prcmu_early_init(void) {}
@@ -716,6 +718,8 @@ static inline void db8500_prcmu_write(unsigned int reg, u32 value) {}
 
 static inline void db8500_prcmu_write_masked(unsigned int reg, u32 mask,
 	u32 value) {}
+
+void db8500_prcmu_vc(bool enable) {}
 
 #endif /* !CONFIG_MFD_DB8500_PRCMU */
 
