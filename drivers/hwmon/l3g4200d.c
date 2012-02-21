@@ -62,7 +62,7 @@
 #define FS500					0x01
 #define FS2000					0x03
 #define BDU_ENABLE				0x80
-#define L3G4200D_FS_BIT			6
+#define L3G4200D_FS_BIT			4
 #define L3G4200D_FS_MASK		(0x3 << L3G4200D_FS_BIT)
 
 /* multiple byte transfer enable */
