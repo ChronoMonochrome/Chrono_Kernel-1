@@ -540,9 +540,9 @@ static const struct snd_kcontrol_new dapm_headset_right_mux =
 /* Earpiece */
 
 /* Earpiece - Mute */
-static const struct snd_kcontrol_new dapm_ear_mute[] = {
-	SOC_DAPM_SINGLE("Playback Switch", REG_MUTECONF, REG_MUTECONF_MUTEAR, 1, INVERT),
-};
+static const struct soc_enum enum_ear = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_ear_mux =
+				SOC_DAPM_ENUM_VIRT("Earpiece", enum_ear);
 
 /* Earpiece source selector */
 static const char * const enum_ear_lineout_source[] = {"Headset Left", "IHF Left"};
@@ -610,9 +610,9 @@ static const struct snd_kcontrol_new dapm_ihfr_select[] = {
 /* Mic 1 */
 
 /* Mic 1 - Mute */
-static const struct snd_kcontrol_new dapm_mic1_mute[] = {
-	SOC_DAPM_SINGLE("Capture Switch", REG_ANACONF2, REG_ANACONF2_MUTMIC1, 1, INVERT),
-};
+static const struct soc_enum enum_mic1 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_mic1_mux =
+				SOC_DAPM_ENUM_VIRT("Mic 1", enum_mic1);
 
 /* Mic 1 - Mic 1A or 1B selector */
 static const char * const enum_mic1ab_sel[] = {"Mic 1A", "Mic 1B"};
@@ -641,9 +641,9 @@ static const struct snd_kcontrol_new dapm_ad6_select[] = {
 /* Mic 2 */
 
 /* Mic 2 - Mute */
-static const struct snd_kcontrol_new dapm_mic2_mute[] = {
-	SOC_DAPM_SINGLE("Capture Switch", REG_ANACONF2, REG_ANACONF2_MUTMIC2, 1, INVERT),
-};
+static const struct soc_enum enum_mic2 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_mic2_mux =
+				SOC_DAPM_ENUM_VIRT("Mic 2", enum_mic2);
 
 /* Mic 2 - AD5 - Mic 2 or DMic 5 selector */
 static const char * const enum_ad5_sel[] = {"Mic 2", "DMic 5"};
@@ -656,6 +656,10 @@ static const struct snd_kcontrol_new dapm_ad5_select[] = {
 /* LineIn */
 
 /* LineIn left - Mute */
+static const struct soc_enum enum_linl = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_linl_mux =
+				SOC_DAPM_ENUM_VIRT("LineIn Left", enum_linl);
+
 static const struct snd_kcontrol_new dapm_linl_mute[] = {
 	SOC_DAPM_SINGLE("Capture Switch", REG_ANACONF2, REG_ANACONF2_MUTLINL, 1, INVERT),
 };
@@ -669,6 +673,10 @@ static const struct snd_kcontrol_new dapm_ad1_select[] = {
 };
 
 /* LineIn right - Mute */
+static const struct soc_enum enum_linr = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_linr_mux =
+				SOC_DAPM_ENUM_VIRT("LineIn Right", enum_linr);
+
 static const struct snd_kcontrol_new dapm_linr_mute[] = {
 	SOC_DAPM_SINGLE("Capture Switch", REG_ANACONF2, REG_ANACONF2_MUTLINR, 1, INVERT),
 };
@@ -689,43 +697,58 @@ static const struct snd_kcontrol_new dapm_ad2_select[] = {
 	SOC_DAPM_ENUM("AD 2 Select", dapm_enum_ad2_sel),
 };
 
+/* AD1 to DA1 (IHF Left) Switch */
+static const struct soc_enum enum_ad1_to_ihf_left = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_ad1_to_ihf_left_mux =
+	SOC_DAPM_ENUM_VIRT("AD1 to IHF Left", enum_ad1_to_ihf_left);
+
+/* AD2 to DA1 (IHF Left) Switch */
+static const struct soc_enum enum_ad2_to_ihf_right = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_ad2_to_ihf_right_mux =
+	SOC_DAPM_ENUM_VIRT("AD2 to IHF Right", enum_ad2_to_ihf_right);
+
+/* LineIn Left to Headset Left switch */
+static const struct soc_enum enum_linl_to_hs_left = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_linl_to_hs_left_mux =
+	SOC_DAPM_ENUM_VIRT("LineIn Left to Headset Left", enum_linl_to_hs_left);
+
+/* LineIn Right to Headset Right switch */
+static const struct soc_enum enum_linr_to_hs_right = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_linr_to_hs_right_mux =
+	SOC_DAPM_ENUM_VIRT("LineIn Right to Headset Right", enum_linr_to_hs_right);
+
+
 /* DMic */
 
 /* DMic 1 - Mute */
-static const struct snd_kcontrol_new dapm_dmic1_mute[] = {
-	SOC_DAPM_SINGLE("Capture Switch", REG_DIGMICCONF,
-			REG_DIGMICCONF_ENDMIC1, 1, NORMAL),
-};
+static const struct soc_enum enum_dmic1 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_dmic1_mux =
+				SOC_DAPM_ENUM_VIRT("DMic 1", enum_dmic1);
 
 /* DMic 2 - Mute */
-static const struct snd_kcontrol_new dapm_dmic2_mute[] = {
-	SOC_DAPM_SINGLE("Capture Switch", REG_DIGMICCONF,
-			REG_DIGMICCONF_ENDMIC2, 1, NORMAL),
-};
+static const struct soc_enum enum_dmic2 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_dmic2_mux =
+				SOC_DAPM_ENUM_VIRT("DMic 2", enum_dmic2);
 
 /* DMic 3 - Mute */
-static const struct snd_kcontrol_new dapm_dmic3_mute[] = {
-	SOC_DAPM_SINGLE("Capture Switch", REG_DIGMICCONF,
-			REG_DIGMICCONF_ENDMIC3, 1, NORMAL),
-};
+static const struct soc_enum enum_dmic3 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_dmic3_mux =
+				SOC_DAPM_ENUM_VIRT("DMic 3", enum_dmic3);
 
 /* DMic 4 - Mute */
-static const struct snd_kcontrol_new dapm_dmic4_mute[] = {
-	SOC_DAPM_SINGLE("Capture Switch", REG_DIGMICCONF,
-			REG_DIGMICCONF_ENDMIC4, 1, NORMAL),
-};
+static const struct soc_enum enum_dmic4 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_dmic4_mux =
+				SOC_DAPM_ENUM_VIRT("DMic 4", enum_dmic4);
 
 /* DMic 5 - Mute */
-static const struct snd_kcontrol_new dapm_dmic5_mute[] = {
-	SOC_DAPM_SINGLE("Capture Switch", REG_DIGMICCONF,
-			REG_DIGMICCONF_ENDMIC5, 1, NORMAL),
-};
+static const struct soc_enum enum_dmic5 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_dmic5_mux =
+				SOC_DAPM_ENUM_VIRT("DMic 5", enum_dmic5);
 
 /* DMic 6 - Mute */
-static const struct snd_kcontrol_new dapm_dmic6_mute[] = {
-	SOC_DAPM_SINGLE("Capture Switch", REG_DIGMICCONF,
-			REG_DIGMICCONF_ENDMIC6, 1, NORMAL),
-};
+static const struct soc_enum enum_dmic6 = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct snd_kcontrol_new dapm_dmic6_mux =
+				SOC_DAPM_ENUM_VIRT("DMic 6", enum_dmic6);
 
 /* ANC */
 
@@ -798,6 +821,19 @@ static SOC_ENUM_SINGLE_DECL(dapm_enum_pwm2vib2, REG_PWMGENCONF1,
 static const struct snd_kcontrol_new dapm_pwm2vib2[] = {
 	SOC_DAPM_ENUM("Vibra 2 Controller", dapm_enum_pwm2vib2),
 };
+
+/* Event-handlers - DAPM */
+static int linein_enable_event(struct snd_soc_dapm_widget *w,
+		struct snd_kcontrol *kcontrol, int event)
+{
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+	case SND_SOC_DAPM_POST_PMD:
+		msleep(LINEIN_RAMP_DELAY);
+		break;
+	}
+	return 0;
+}
 
 static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
@@ -888,12 +924,15 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	/* Earpiece path */
 
 	SND_SOC_DAPM_MUX("Earpiece or LineOut Mono Source",
-			SND_SOC_NOPM, 0, 0, &dapm_ear_lineout_source),
+			SND_SOC_NOPM, 0, 0, dapm_ear_lineout_source),
 
 	SND_SOC_DAPM_MIXER("EAR DAC", REG_DAPATHCONF,
 			REG_DAPATHCONF_ENDACEAR, 0, NULL, 0),
 
-	SND_SOC_DAPM_SWITCH("Earpiece", SND_SOC_NOPM, 0, 0, dapm_ear_mute),
+	SND_SOC_DAPM_MUX("Earpiece", SND_SOC_NOPM, 0, 0, &dapm_ear_mux),
+
+	SND_SOC_DAPM_MIXER("EAR Mute", REG_MUTECONF,
+			REG_MUTECONF_MUTEAR, 1, NULL, 0),
 
 	SND_SOC_DAPM_MIXER("EAR Enable", REG_ANACONF4,
 			REG_ANACONF4_ENEAR, 0, NULL, 0),
@@ -972,14 +1011,26 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("LINR"),
 	SND_SOC_DAPM_INPUT("MIC2 Input"),
 
-	SND_SOC_DAPM_SWITCH("LineIn Left", SND_SOC_NOPM, 0, 0, dapm_linl_mute),
-	SND_SOC_DAPM_SWITCH("LineIn Right", SND_SOC_NOPM, 0, 0, dapm_linr_mute),
-	SND_SOC_DAPM_SWITCH("Mic 2", SND_SOC_NOPM, 0, 0, dapm_mic2_mute),
 
-	SND_SOC_DAPM_MIXER("LINL Enable", REG_ANACONF2,
-			REG_ANACONF2_ENLINL, 0, NULL, 0),
-	SND_SOC_DAPM_MIXER("LINR Enable", REG_ANACONF2,
-			REG_ANACONF2_ENLINR, 0, NULL, 0),
+        SND_SOC_DAPM_MUX("LineIn Left", SND_SOC_NOPM, 0, 0, &dapm_linl_mux),
+	SND_SOC_DAPM_MIXER("LINL Mute", REG_ANACONF2,
+			REG_ANACONF2_MUTLINL, INVERT, NULL, 0),
+
+        SND_SOC_DAPM_MUX("LineIn Right", SND_SOC_NOPM, 0, 0, &dapm_linr_mux),
+	SND_SOC_DAPM_MIXER("LINR Mute", REG_ANACONF2,
+			REG_ANACONF2_MUTLINR, INVERT, NULL, 0),
+
+        SND_SOC_DAPM_MUX("Mic 2", SND_SOC_NOPM, 0, 0, &dapm_mic2_mux),
+	SND_SOC_DAPM_MIXER("MIC2 Mute", REG_ANACONF2,
+			REG_ANACONF2_MUTMIC2, INVERT, NULL, 0),
+
+	SND_SOC_DAPM_MIXER_E("LINL Enable", REG_ANACONF2,
+			REG_ANACONF2_ENLINL, 0, NULL, 0,
+			linein_enable_event, SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+	SND_SOC_DAPM_MIXER_E("LINR Enable", REG_ANACONF2,
+			REG_ANACONF2_ENLINR, 0, NULL, 0,
+			linein_enable_event, SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+
 	SND_SOC_DAPM_MIXER("MIC2 Enable", REG_ANACONF2,
 			REG_ANACONF2_ENMIC2, 0, NULL, 0),
 
@@ -1010,7 +1061,10 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 	SND_SOC_DAPM_MUX("Mic 1A or 1B Select Capture Route",
 			SND_SOC_NOPM, 0, 0, dapm_mic1ab_select),
 
-	SND_SOC_DAPM_SWITCH("Mic 1", SND_SOC_NOPM, 0, 0, dapm_mic1_mute),
+        SND_SOC_DAPM_MUX("Mic 1", SND_SOC_NOPM, 0, 0, &dapm_mic1_mux),
+
+	SND_SOC_DAPM_MIXER("MIC1 Mute", REG_ANACONF2,
+			REG_ANACONF2_MUTMIC1, INVERT, NULL, 0),
 
 	SND_SOC_DAPM_MIXER("MIC1 Enable", REG_ANACONF2,
 			REG_ANACONF2_ENMIC1, 0, NULL, 0),
@@ -1045,22 +1099,43 @@ static const struct snd_soc_dapm_widget ab8500_dapm_widgets[] = {
 
 	SND_SOC_DAPM_INPUT("DMIC Input"),
 
-	SND_SOC_DAPM_SWITCH("DMic 1", SND_SOC_NOPM, 0, 0, dapm_dmic1_mute),
-	SND_SOC_DAPM_SWITCH("DMic 2", SND_SOC_NOPM, 0, 0, dapm_dmic2_mute),
-	SND_SOC_DAPM_SWITCH("DMic 3", SND_SOC_NOPM, 0, 0, dapm_dmic3_mute),
-	SND_SOC_DAPM_SWITCH("DMic 4", SND_SOC_NOPM, 0, 0, dapm_dmic4_mute),
-	SND_SOC_DAPM_SWITCH("DMic 5", SND_SOC_NOPM, 0, 0, dapm_dmic5_mute),
-	SND_SOC_DAPM_SWITCH("DMic 6", SND_SOC_NOPM, 0, 0, dapm_dmic6_mute),
+        SND_SOC_DAPM_MUX("DMic 1", SND_SOC_NOPM, 0, 0, &dapm_dmic1_mux),
+        SND_SOC_DAPM_MUX("DMic 2", SND_SOC_NOPM, 0, 0, &dapm_dmic2_mux),
+        SND_SOC_DAPM_MUX("DMic 3", SND_SOC_NOPM, 0, 0, &dapm_dmic3_mux),
+        SND_SOC_DAPM_MUX("DMic 4", SND_SOC_NOPM, 0, 0, &dapm_dmic4_mux),
+        SND_SOC_DAPM_MUX("DMic 5", SND_SOC_NOPM, 0, 0, &dapm_dmic5_mux),
+        SND_SOC_DAPM_MUX("DMic 6", SND_SOC_NOPM, 0, 0, &dapm_dmic6_mux),
+
+	SND_SOC_DAPM_MIXER("DMIC1 Mute", REG_DIGMICCONF,
+			REG_DIGMICCONF_ENDMIC1, 0, NULL, 0),
+	SND_SOC_DAPM_MIXER("DMIC2 Mute", REG_DIGMICCONF,
+			REG_DIGMICCONF_ENDMIC2, 0, NULL, 0),
+	SND_SOC_DAPM_MIXER("DMIC3 Mute", REG_DIGMICCONF,
+			REG_DIGMICCONF_ENDMIC3, 0, NULL, 0),
+	SND_SOC_DAPM_MIXER("DMIC4 Mute", REG_DIGMICCONF,
+			REG_DIGMICCONF_ENDMIC4, 0, NULL, 0),
+	SND_SOC_DAPM_MIXER("DMIC5 Mute", REG_DIGMICCONF,
+			REG_DIGMICCONF_ENDMIC5, 0, NULL, 0),
+	SND_SOC_DAPM_MIXER("DMIC6 Mute", REG_DIGMICCONF,
+			REG_DIGMICCONF_ENDMIC6, 0, NULL, 0),
 
 	SND_SOC_DAPM_MIXER("AD4 Channel Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 
 	SND_SOC_DAPM_MIXER("AD4 Enable", REG_ADPATHENA,
 			REG_ADPATHENA_ENAD34, 0, NULL, 0),
 
-	/* LineIn Bypass path */
+	/* LineIn to Bypass path */
 
 	SND_SOC_DAPM_MIXER("LINL to HSL Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("LINR to HSR Gain", SND_SOC_NOPM, 0, 0, NULL, 0),
+
+	SND_SOC_DAPM_MUX("LineIn Left to Headset Left", SND_SOC_NOPM, 0, 0, &dapm_linl_to_hs_left_mux),
+	SND_SOC_DAPM_MUX("LineIn Right to Headset Right", SND_SOC_NOPM, 0, 0, &dapm_linr_to_hs_right_mux),
+
+	/* LineIn to Speaker */
+
+	SND_SOC_DAPM_MUX("AD1 to IHF Left", SND_SOC_NOPM, 0, 0, &dapm_ad1_to_ihf_left_mux),
+	SND_SOC_DAPM_MUX("AD2 to IHF Right", SND_SOC_NOPM, 0, 0, &dapm_ad2_to_ihf_right_mux),
 
 	/* Acoustical Noise Cancellation path */
 
@@ -1095,8 +1170,8 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 	{"DAC Output", NULL, "DAC"},
 
 	/* Powerup charge pump if DA1/2 is in use */
-	{"DA_IN1", NULL, "Charge Pump"},
-	{"DA_IN2", NULL, "Charge Pump"},
+	{"HSL Mute", NULL, "Charge Pump"},
+	{"HSR Mute", NULL, "Charge Pump"},
 
 	/* Headset path */
 
@@ -1162,9 +1237,11 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 
 	{"EAR DAC", NULL, "Earpiece or LineOut Mono Source"},
 
-	{"Earpiece", "Playback Switch", "EAR DAC"},
+	{"Earpiece", "Enabled", "EAR DAC"},
 
-	{"EAR Enable", NULL, "Earpiece"},
+	{"EAR Mute", NULL, "Earpiece"},
+
+	{"EAR Enable", NULL, "EAR Mute"},
 
 	{"EAR", NULL, "EAR Enable"},
 
@@ -1217,13 +1294,19 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 
 	/* LineIn & Microphone 2 path */
 
-	{"LineIn Left", "Capture Switch", "LINL"},
-	{"LineIn Right", "Capture Switch", "LINR"},
-	{"Mic 2", "Capture Switch", "MIC2 Input"},
+	{"LineIn Left", "Enabled", "LINL"},
+	{"LineIn Right", "Enabled", "LINR"},
 
-	{"LINL Enable", NULL, "LineIn Left"},
-	{"LINR Enable", NULL, "LineIn Right"},
-	{"MIC2 Enable", NULL, "Mic 2"},
+	{"LINL Mute", NULL, "LineIn Left"},
+	{"LINR Mute", NULL, "LineIn Right"},
+
+	{"Mic 2", "Enabled", "MIC2 Input"},
+
+	{"MIC2 Mute", NULL, "Mic 2"},
+
+	{"LINL Enable", NULL, "LINL Mute"},
+	{"LINR Enable", NULL, "LINR Mute"},
+	{"MIC2 Enable", NULL, "MIC2 Mute"},
 
 	{"Mic 2 or LINR Select Capture Route", "LineIn Right", "LINR Enable"},
 	{"Mic 2 or LINR Select Capture Route", "Mic 2", "MIC2 Enable"},
@@ -1248,9 +1331,11 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 	{"Mic 1A or 1B Select Capture Route", "Mic 1A", "MIC1A Input"},
 	{"Mic 1A or 1B Select Capture Route", "Mic 1B", "MIC1B Input"},
 
-	{"Mic 1", "Capture Switch", "Mic 1A or 1B Select Capture Route"},
+	{"Mic 1", "Enabled", "Mic 1A or 1B Select Capture Route"},
 
-	{"MIC1 Enable", NULL, "Mic 1"},
+	{"MIC1 Mute", NULL, "Mic 1"},
+
+	{"MIC1 Enable", NULL, "MIC1 Mute"},
 
 	{"MIC1 ADC", NULL, "MIC1 Enable"},
 
@@ -1278,32 +1363,50 @@ static const struct snd_soc_dapm_route dapm_routes[] = {
 
 	/* Digital Microphone path */
 
-	{"DMic 1", "Capture Switch", "DMIC Input"},
-	{"DMic 2", "Capture Switch", "DMIC Input"},
-	{"DMic 3", "Capture Switch", "DMIC Input"},
-	{"DMic 4", "Capture Switch", "DMIC Input"},
-	{"DMic 5", "Capture Switch", "DMIC Input"},
-	{"DMic 6", "Capture Switch", "DMIC Input"},
+	{"DMic 1", "Enabled", "DMIC Input"},
+	{"DMic 2", "Enabled", "DMIC Input"},
+	{"DMic 3", "Enabled", "DMIC Input"},
+	{"DMic 4", "Enabled", "DMIC Input"},
+	{"DMic 5", "Enabled", "DMIC Input"},
+	{"DMic 6", "Enabled", "DMIC Input"},
 
-	{"AD 1 Select Capture Route", "DMic 1", "DMic 1"},
-	{"AD 2 Select Capture Route", "DMic 2", "DMic 2"},
-	{"AD 3 Select Capture Route", "DMic 3", "DMic 3"},
-	{"AD 5 Select Capture Route", "DMic 5", "DMic 5"},
-	{"AD 6 Select Capture Route", "DMic 6", "DMic 6"},
+	{"DMIC1 Mute", NULL, "DMic 1"},
+	{"DMIC2 Mute", NULL, "DMic 2"},
+	{"DMIC3 Mute", NULL, "DMic 3"},
+	{"DMIC4 Mute", NULL, "DMic 4"},
+	{"DMIC5 Mute", NULL, "DMic 5"},
+	{"DMIC6 Mute", NULL, "DMic 6"},
 
-	{"AD4 Channel Gain", NULL, "DMic 4"},
+	{"AD 1 Select Capture Route", "DMic 1", "DMIC1 Mute"},
+	{"AD 2 Select Capture Route", "DMic 2", "DMIC2 Mute"},
+	{"AD 3 Select Capture Route", "DMic 3", "DMIC3 Mute"},
+	{"AD 5 Select Capture Route", "DMic 5", "DMIC5 Mute"},
+	{"AD 6 Select Capture Route", "DMic 6", "DMIC6 Mute"},
+
+	{"AD4 Channel Gain", NULL, "DMIC4 Mute"},
 
 	{"AD4 Enable", NULL, "AD4 Channel Gain"},
 
 	{"AD_OUT4", NULL, "AD4 Enable"},
 
-	/* LineIn Bypass path */
+	/* LineIn to Headset Bypass path */
 
 	{"LINL to HSL Gain", NULL, "LINL Enable"},
 	{"LINR to HSR Gain", NULL, "LINR Enable"},
 
-	{"HSL DAC Driver", NULL, "LINL to HSL Gain"},
-	{"HSR DAC Driver", NULL, "LINR to HSR Gain"},
+	{"LineIn Left to Headset Left", "Enabled", "LINL to HSL Gain"},
+	{"LineIn Right to Headset Right", "Enabled", "LINR to HSR Gain"},
+
+	{"HSL DAC Driver", NULL, "LineIn Left to Headset Left"},
+	{"HSR DAC Driver", NULL, "LineIn Right to Headset Right"},
+
+	/* LineIn to Speaker path */
+
+	{"AD1 to IHF Left", "Enabled", "AD 1 Select Capture Route"},
+	{"AD2 to IHF Right", "Enabled", "AD 2 Select Capture Route"},
+
+	{"IHFL DAC", NULL, "AD1 to IHF Left"},
+	{"IHFR DAC", NULL, "AD2 to IHF Right"},
 
 	/* Acoustical Noise Cancellation path */
 

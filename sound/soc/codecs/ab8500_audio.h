@@ -22,6 +22,8 @@
 extern struct snd_soc_dai_driver ab8500_codec_dai[];
 extern struct snd_soc_codec_driver soc_codec_dev_ab8500;
 
+#define LINEIN_RAMP_DELAY 50
+
 /* Extended interface for codec-driver */
 
 int ab8500_audio_power_control(bool power_on);

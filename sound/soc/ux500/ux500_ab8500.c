@@ -575,6 +575,10 @@ static const struct snd_soc_dapm_route ux500_ab8500_dapm_intercon[] = {
 	{"DAC", NULL, "AUDIO Regulator"},
 	{"ADC", NULL, "AUDIO Regulator"},
 
+	/* Power AB8500 audio-block when LineIn is active */
+	{"LINL Enable", NULL, "AUDIO Regulator"},
+	{"LINR Enable", NULL, "AUDIO Regulator"},
+
 	/* Power configured regulator when an analog mic is enabled */
 	{"MIC1A Input", NULL, "AMIC1A Regulator"},
 	{"MIC1B Input", NULL, "AMIC1B Regulator"},
