@@ -74,6 +74,7 @@ struct dispdev {
 	 * unregister_buffer as in the rotation use case.
 	 */
 	bool first_update;
+	char name[sizeof(DISPDEV_DEFAULT_DEVICE_PREFIX) + 3];
 };
 
 static int find_buf(struct dispdev *dd, enum buffer_state state)
@@ -536,14 +537,14 @@ int dispdev_create(struct mcde_display_device *ddev, bool overlay,
 	struct mcde_overlay_info info = {0};
 
 	static int counter;
-	char *name = "dispdev0";
 
 	dd = kzalloc(sizeof(struct dispdev), GFP_KERNEL);
 	if (!dd)
 		return -ENOMEM;
 
-	sprintf(name, "%s%d", DISPDEV_DEFAULT_DEVICE_PREFIX, counter++);
-	init_dispdev(dd, ddev, name, overlay);
+	snprintf(dd->name, sizeof(dd->name), "%s%d",
+		 DISPDEV_DEFAULT_DEVICE_PREFIX, counter++);
+	init_dispdev(dd, ddev, dd->name, overlay);
 
 	if (!overlay) {
 		ret = mcde_dss_enable_display(ddev);
