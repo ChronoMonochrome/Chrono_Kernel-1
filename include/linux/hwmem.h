@@ -102,6 +102,10 @@ enum hwmem_mem_type {
 	 * @brief Contiguous system memory.
 	 */
 	HWMEM_MEM_CONTIGUOUS_SYS,
+	/**
+	 * @brief Protected system memory.
+	 */
+	HWMEM_MEM_PROTECTED_SYS,
 };
 
 /* User space API */

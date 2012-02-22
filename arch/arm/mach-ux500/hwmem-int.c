@@ -29,6 +29,28 @@ unsigned int hwmem_num_mem_types;
 static phys_addr_t hwmem_paddr;
 static size_t hwmem_size;
 
+static phys_addr_t hwmem_prot_paddr;
+static size_t hwmem_prot_size;
+
+static int __init parse_hwmem_prot_param(char *p)
+{
+
+	hwmem_prot_size = memparse(p, &p);
+
+	if (*p != '@')
+		goto no_at;
+
+	hwmem_prot_paddr = memparse(p + 1, &p);
+
+	return 0;
+
+no_at:
+	hwmem_prot_size = 0;
+
+	return -EINVAL;
+}
+early_param("hwmem_prot", parse_hwmem_prot_param);
+
 static int __init parse_hwmem_param(char *p)
 {
 	hwmem_size = memparse(p, &p);
@@ -49,7 +71,7 @@ early_param("hwmem", parse_hwmem_param);
 
 static int __init setup_hwmem(void)
 {
-	static const unsigned int NUM_MEM_TYPES = 2;
+	static const unsigned int NUM_MEM_TYPES = 3;
 
 	int ret;
 
@@ -83,6 +105,18 @@ static int __init setup_hwmem(void)
 
 	hwmem_mem_types[1] = hwmem_mem_types[0];
 	hwmem_mem_types[1].id = HWMEM_MEM_CONTIGUOUS_SYS;
+
+	hwmem_mem_types[2] = hwmem_mem_types[1];
+	hwmem_mem_types[2].id = HWMEM_MEM_PROTECTED_SYS;
+
+	if (hwmem_prot_size > 0) {
+		hwmem_mem_types[2].allocator_instance = cona_create("hwmem_prot",
+							hwmem_prot_paddr, hwmem_prot_size);
+		if (IS_ERR(hwmem_mem_types[2].allocator_instance)) {
+			ret = PTR_ERR(hwmem_mem_types[2].allocator_instance);
+			goto hwmem_ima_init_failed;
+		}
+	}
 
 	hwmem_num_mem_types = NUM_MEM_TYPES;
 
