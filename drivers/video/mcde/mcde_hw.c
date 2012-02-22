@@ -3143,6 +3143,9 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 	if (chnl->regs.roten && !chnl->esram_is_enabled) {
 		WARN_ON_ONCE(regulator_enable(regulator_esram_epod));
 		chnl->esram_is_enabled = true;
+	} else if (!chnl->regs.roten && chnl->esram_is_enabled) {
+		WARN_ON_ONCE(regulator_disable(regulator_esram_epod));
+		chnl->esram_is_enabled = false;
 	}
 
 	ret = _mcde_chnl_update(chnl, update_area, tripple_buffer);
