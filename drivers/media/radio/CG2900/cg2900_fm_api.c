@@ -1353,6 +1353,17 @@ int cg2900_fm_set_rx_default_settings(
 		goto error;
 	}
 
+	/* Set RDS Group rejection Off */
+	result = fmd_rx_set_rds_group_rejection(
+		FMD_RDS_GROUP_REJECTION_OFF);
+	if (0 != result) {
+		FM_ERR_REPORT("cg2900_fm_set_rx_default_settings: "
+			"fmd_rx_set_rds_group_rejection "
+			"failed %d", (unsigned int)result);
+		result = -EINVAL;
+		goto error;
+	}
+
 	/* Remove all Interrupt from the queue */
 	skb_queue_purge(&fm_interrupt_queue);
 

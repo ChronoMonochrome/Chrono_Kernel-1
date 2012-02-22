@@ -189,6 +189,7 @@ enum fmd_debug_levels {
 #define CMD_FMR_DP_BUFFER_SET_SIZE			0x0343
 #define CMD_FMR_DP_BUFFER_SET_THRESHOLD			0x06C3
 #define CMD_FMR_DP_SET_CONTROL				0x02A3
+#define CMD_FMR_DP_SET_GROUP_REJECTION		0x0543
 #define CMD_FMR_RP_GET_RSSI				0x0083
 #define CMD_FMR_RP_GET_STATE				0x0063
 #define CMD_FMR_RP_STEREO_SET_MODE			0x0123
@@ -273,6 +274,7 @@ enum fmd_debug_levels {
 #define CMD_DP_BUFFER_SET_SIZE_PARAM_LEN		1
 #define CMD_DP_BUFFER_SET_THRESHOLD_PARAM_LEN		1
 #define CMD_DP_SET_CONTROL_PARAM_LEN			1
+#define CMD_DP_SET_GROUP_REJECTION_PARAM_LEN		1
 #define CMD_PA_SET_MODE_PARAM_LEN			1
 #define CMD_PA_SET_CONTROL_PARAM_LEN			1
 #define CMD_RP_SET_PREEMPHASIS_PARAM_LEN		1
@@ -536,6 +538,20 @@ enum fmd_rds_mode {
 	FMD_SWITCH_ON_RDS,
 	FMD_SWITCH_ON_RDS_ENHANCED_MODE,
 	FMD_SWITCH_ON_RDS_SIMULATOR
+};
+
+/**
+ * enum fmd_rds_group_rejection_mode - RDS Group Rejection
+ * to be selected for FM Rx.
+ *
+ * @FMD_RDS_GROUP_REJECTION_ON: Group rejection is enabled in FM Chip.
+ * @FMD_RDS_GROUP_REJECTION_OFF: Group rejection is disabled in FM Chip.
+ *
+ * RDS Group rejection to be selected for FM Rx.
+ */
+enum fmd_rds_group_rejection_mode {
+	FMD_RDS_GROUP_REJECTION_ON,
+	FMD_RDS_GROUP_REJECTION_OFF
 };
 
 /**
@@ -1136,7 +1152,7 @@ int fmd_rx_buffer_set_threshold(
 /**
  * fmd_rx_set_rds() - Enables or disables demodulation of RDS data.
  *
- * @on_off_state : Rx Set ON /OFF control
+ * @on_off_state : Rx Set ON/OFF control
  *
  * Returns:
  *   0,  if no error.
@@ -1145,6 +1161,23 @@ int fmd_rx_buffer_set_threshold(
  *   -EINVAL, if wrong response received from chip.
  */
 int fmd_rx_set_rds(
+			u8 on_off_state
+			);
+
+/**
+ * fmd_rx_set_rds_group_rejection() - Enables or disables group rejection
+ * in case groups with erroneous blocks are received.
+ *
+ * @on_off_state : Rx Group Rejection ON /OFF control
+ *
+ * Returns:
+ *   0,  if no error.
+ *   -ENOEXEC, if preconditions are violated.
+ *   -EBUSY, if FM Driver is not in idle state.
+ *   -EINVAL, if wrong response received from chip.
+ */
+
+int fmd_rx_set_rds_group_rejection(
 			u8 on_off_state
 			);
 
