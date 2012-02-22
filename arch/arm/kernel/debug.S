@@ -101,7 +101,7 @@
 
 #endif	/* CONFIG_CPU_V6 */
 
-#else
+#elif !defined(CONFIG_DEBUG_SEMIHOSTING)
 #include <mach/debug-macro.S>
 #endif	/* CONFIG_DEBUG_ICEDCC */
 
@@ -154,6 +154,8 @@ ENDPROC(printhex2)
 
 		.ltorg
 
+#ifndef CONFIG_DEBUG_SEMIHOSTING
+
 ENTRY(printascii)
 		addruart_current r3, r1, r2
 		b	2f
@@ -178,3 +180,23 @@ ENTRY(printch)
 ENDPROC(printch)
 
 hexbuf:		.space 16
+#else
+
+ENTRY(printascii)
+		mov	r1, r0
+		mov	r0, #0x04		@ SYS_WRITE0
+	ARM(	svc	#0x123456	)
+	THUMB(	svc	#0xab		)
+		mov	pc, lr
+ENDPROC(printascii)
+
+ENTRY(printch)
+		adr	r1, hexbuf
+		strb	r0, [r1]
+		mov	r0, #0x03		@ SYS_WRITEC
+	ARM(	svc	#0x123456	)
+	THUMB(	svc	#0xab		)
+		mov	pc, lr
+ENDPROC(printch)
+
+#endif
