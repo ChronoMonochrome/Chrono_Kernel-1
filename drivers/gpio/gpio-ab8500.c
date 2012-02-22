@@ -77,6 +77,7 @@
 #define AB9540_ALTFUN_REG_INDEX	7
 #define AB8500_NUM_GPIO		42
 #define AB9540_NUM_GPIO		54
+#define AB8505_NUM_GPIO		53
 #define AB8500_NUM_VIR_GPIO_IRQ	16
 
 enum ab8500_gpio_action {
@@ -125,6 +126,24 @@ static struct ab8500_gpio_irq_cluster ab9540_irq_clusters[] = {
 	{.start = 23, .end = 24},
 	{.start = 35, .end = 40},
 	{.start = 49, .end = 53},
+};
+
+/*
+ * For AB8505 Only some GPIOs are interrupt capable, and they are
+ * organized in discontiguous clusters:
+ *
+ *	GPIO10 to GPIO11
+ *	GPIO13
+ *	GPIO40 and GPIO41
+ *	GPIO50
+ *	GPIO52 to GPIO53
+ */
+static struct ab8500_gpio_irq_cluster ab8505_irq_clusters[] = {
+	{.start = 9,  .end = 10}, /* GPIO numbers start from 1 */
+	{.start = 12, .end = 12},
+	{.start = 39, .end = 40},
+	{.start = 49, .end = 49},
+	{.start = 51, .end = 52},
 };
 
 /**
@@ -435,6 +454,7 @@ static void ab8500_gpio_irq_remove(struct ab8500_gpio *ab8500_gpio)
 
 static int __devinit ab8500_gpio_probe(struct platform_device *pdev)
 {
+	struct ab8500 *parent = dev_get_drvdata(pdev->dev.parent);
 	struct ab8500_platform_data *ab8500_pdata =
 				dev_get_platdata(pdev->dev.parent);
 	struct ab8500_gpio_platform_data *pdata;
@@ -471,12 +491,21 @@ static int __devinit ab8500_gpio_probe(struct platform_device *pdev)
 		last_gpio_sel_reg = AB9540_GPIO_SEL7_REG;
 		altfun_reg_index = AB9540_ALTFUN_REG_INDEX;
 	} else {
-		ab8500_gpio->chip.ngpio = AB8500_NUM_GPIO;
-		ab8500_gpio->irq_cluster = ab8500_irq_clusters;
-		ab8500_gpio->irq_cluster_size =
-			ARRAY_SIZE(ab8500_irq_clusters);
-		last_gpio_sel_reg = AB8500_GPIO_SEL6_REG;
-		altfun_reg_index = AB8500_ALTFUN_REG_INDEX;
+		if (is_ab8505(parent)) {
+			ab8500_gpio->chip.ngpio = AB8505_NUM_GPIO;
+			ab8500_gpio->irq_cluster = ab8505_irq_clusters;
+			ab8500_gpio->irq_cluster_size =
+				ARRAY_SIZE(ab8505_irq_clusters);
+			last_gpio_sel_reg = AB9540_GPIO_SEL7_REG;
+			altfun_reg_index = AB9540_ALTFUN_REG_INDEX;
+		} else {
+			ab8500_gpio->chip.ngpio = AB8500_NUM_GPIO;
+			ab8500_gpio->irq_cluster = ab8500_irq_clusters;
+			ab8500_gpio->irq_cluster_size =
+				ARRAY_SIZE(ab8500_irq_clusters);
+			last_gpio_sel_reg = AB8500_GPIO_SEL6_REG;
+			altfun_reg_index = AB8500_ALTFUN_REG_INDEX;
+		}
 	}
 
 	/* initialize the lock */
