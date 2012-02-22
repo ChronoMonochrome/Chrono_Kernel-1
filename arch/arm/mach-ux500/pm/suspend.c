@@ -15,7 +15,6 @@
 #include <linux/regulator/machine.h>
 #include <linux/regulator/ab8500-debug.h>
 #include <linux/regulator/dbx500-prcmu.h>
-#include <linux/mfd/dbx500-prcmu.h>
 
 #include <mach/context.h>
 #include <mach/pm.h>
