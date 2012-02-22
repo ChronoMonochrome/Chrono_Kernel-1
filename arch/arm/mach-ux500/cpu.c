@@ -9,6 +9,7 @@
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/clk.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <linux/mfd/db8500-prcmu.h>
 #include <linux/mfd/db5500-prcmu.h>
 #include <linux/clksrc-dbx500-prcmu.h>
@@ -19,7 +20,6 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/delay.h>
-#include <linux/mfd/dbx500-prcmu.h>
 
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
