@@ -379,6 +379,8 @@ static void mmci_dma_data_error(struct mmci_host *host)
 {
 	dev_err(mmc_dev(host->mmc), "error during DMA transfer!\n");
 	dmaengine_terminate_all(host->dma_current);
+	host->dma_current = NULL;
+	host->dma_desc_current = NULL;
 	host->data->host_cookie = 0;
 }
 
@@ -418,10 +420,8 @@ static void mmci_dma_finalize(struct mmci_host *host, struct mmc_data *data)
 	 * contiguous buffers.  On TX, we'll get a FIFO underrun error.
 	 */
 	if (status & MCI_RXDATAAVLBLMASK) {
-		if (!data->error) {
-			data->error = -EIO;
-			mmci_dma_data_error(host);
-		}
+		data->error = -EIO;
+		mmci_dma_data_error(host);
 	}
 
 	if (!data->host_cookie)
@@ -435,6 +435,9 @@ static void mmci_dma_finalize(struct mmci_host *host, struct mmc_data *data)
 		dev_err(mmc_dev(host->mmc), "buggy DMA detected. Taking evasive action.\n");
 		mmci_dma_release(host);
 	}
+
+	host->dma_current = NULL;
+	host->dma_desc_current = NULL;
 }
 
 /* prepares DMA channel and DMA descriptor, returns non-zero on failure */
@@ -779,8 +782,10 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
 		u32 remain, success;
 
 		/* Terminate the DMA transfer */
-		if (dma_inprogress(host))
+		if (dma_inprogress(host)) {
 			mmci_dma_data_error(host);
+			mmci_dma_unmap(host, data);
+		}
 
 		/*
 		 * Calculate how far we are into the transfer.  Note that
