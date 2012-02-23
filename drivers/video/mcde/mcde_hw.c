@@ -3550,7 +3550,7 @@ static int probe_hw(struct platform_device *pdev)
 		input_fifo_size = 128;
 		output_fifo_ab_size = 640;
 		output_fifo_c0c1_size = 160;
-		dsi_use_clk_framework = true;
+		dsi_use_clk_framework = false;
 		dev_info(&mcde_dev->dev, "db8500 V2 HW\n");
 		break;
 	case MCDE_VERSION_4_0_4:
