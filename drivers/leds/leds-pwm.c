@@ -29,7 +29,57 @@ struct led_pwm_data {
 	unsigned int 		active_low;
 	unsigned int		lth_brightness;
 	unsigned int		period;
+	unsigned int		dutycycle_steps;
+	unsigned int		period_steps;
 };
+
+static int led_pwm_blink_set(struct led_classdev *led_cdev,
+	unsigned long *delay_on, unsigned long *delay_off)
+{
+	struct led_pwm_data *led_dat =
+		container_of(led_cdev, struct led_pwm_data, cdev);
+	int dutycycle_ms, period_sec;
+	int dutycycle, period;
+	/*
+	 * If both the delays are zero set some sensible delay
+	 */
+	if (*delay_on == 0 && *delay_off == 0) {
+		*delay_on = 500;
+		*delay_off = 500;
+	}
+	/*
+	 * calculate the duty cycle from on and off time
+	 */
+	dutycycle_ms = ((*delay_on * 1000)/(*delay_on + *delay_off));
+	/*
+	 * convert calculated value to write into the PWM out register
+	 */
+	if (led_dat->dutycycle_steps)
+		dutycycle = ((dutycycle_ms * led_dat->dutycycle_steps)/1000);
+	else
+		dutycycle = (dutycycle_ms/1000);
+	/*
+	 * calculate period from on and off time(msec)
+	 */
+	period_sec = ((*delay_on + *delay_off)/1000);
+	/*
+	 * convert calculated value to write into the PWM out register
+	 */
+	if (led_dat->period_steps) {
+		if ((*delay_on + *delay_off) == 500)
+			period = led_dat->period_steps;
+		else
+			period = led_dat->period_steps - period_sec;
+	}
+	else
+		period = period_sec;
+	/*
+	 * configure the PWM registers and enable blink functionality
+	 */
+	pwm_config_blink(led_dat->pwm, dutycycle, period);
+	pwm_blink_ctrl(led_dat->pwm, 1);
+	return 0;
+}
 
 static void led_pwm_set(struct led_classdev *led_cdev,
 	enum led_brightness brightness)
@@ -85,8 +135,11 @@ static int led_pwm_probe(struct platform_device *pdev)
 		led_dat->period = cur_led->pwm_period_ns;
 		led_dat->lth_brightness = cur_led->lth_brightness *
 		      (cur_led->pwm_period_ns / cur_led->max_brightness);
+		led_dat->dutycycle_steps = cur_led->dutycycle_steps;
+		led_dat->period_steps = cur_led->period_steps;
 		led_dat->cdev.brightness_set = led_pwm_set;
 		led_dat->cdev.brightness = LED_OFF;
+		led_dat->cdev.blink_set = led_pwm_blink_set;
 		led_dat->cdev.max_brightness = cur_led->max_brightness;
 		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
 
