@@ -293,6 +293,7 @@ static struct ab8500_platform_data ab8500_platdata = {
 	.chargalg	= &ab8500_chargalg_plat_data,
 	.gpio		= &ab8500_gpio_pdata,
 	.sysctrl	= &ab8500_sysctrl_pdata,
+	.pwmled		= &ab8500_pwmled_plat_data,
 #ifdef CONFIG_INPUT_AB8500_ACCDET
 	.accdet = &ab8500_accdet_pdata,
 #endif
@@ -712,6 +713,8 @@ static struct led_pwm pwm_leds_data[] = {
 		.max_brightness = 255,
 		.lth_brightness = 90,
 		.pwm_period_ns = 1023,
+		.dutycycle_steps = 16,
+		.period_steps = 4,
 	},
 	[1] = {
 		.name = "sec-lcd-backlight",
