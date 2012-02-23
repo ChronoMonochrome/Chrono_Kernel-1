@@ -766,8 +766,6 @@ static struct clk_lookup u8500_clocks[] = {
 	CLK_LOOKUP(ab_intclk, "ab8500-codec.0", "intclk"),
 	CLK_LOOKUP(audioclk, "ab8500-codec.0", "audioclk"),
 	CLK_LOOKUP(ab_intclk, "ab8500-pwm.1", NULL),
-	CLK_LOOKUP(ab_intclk, "ab8500-pwm.2", NULL),
-	CLK_LOOKUP(ab_intclk, "ab8500-pwm.3", NULL),
 
 	CLK_LOOKUP(clkout0, "pri-cam", NULL),
 	CLK_LOOKUP(clkout1, "3-005c", NULL),
