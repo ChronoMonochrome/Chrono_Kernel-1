@@ -89,6 +89,9 @@
 #include "board-mop500-wlan.h"
 #endif
 
+#define PRCM_DEBUG_NOPWRDOWN_VAL	0x194
+#define ARM_DEBUG_NOPOWER_DOWN_REQ	1
+
 #ifdef CONFIG_AB8500_DENC
 static struct ab8500_denc_platform_data ab8500_denc_pdata = {
 	.ddr_enable = true,
@@ -1313,7 +1316,13 @@ static void __init hrefv60_init_machine(void)
 #endif
 
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
-	db8500_add_ske_keypad(parent, &mop500_ske_keypad_data,
+	/*
+	 * If a hw debugger is detected, do not load the ske driver
+	 * since the gpio usage collides.
+	 */
+	if (!(prcmu_read(PRCM_DEBUG_NOPWRDOWN_VAL) &
+	      ARM_DEBUG_NOPOWER_DOWN_REQ))
+		db8500_add_ske_keypad(parent, &mop500_ske_keypad_data,
 				sizeof(mop500_ske_keypad_data));
 #endif
 
