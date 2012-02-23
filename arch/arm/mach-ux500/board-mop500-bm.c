@@ -12,6 +12,7 @@
 
 #include <linux/power_supply.h>
 #include <linux/mfd/ab8500/bm.h>
+#include <linux/mfd/ab8500/pwmleds.h>
 #include "board-mop500-bm.h"
 
 #ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
@@ -400,6 +401,26 @@ struct ab8500_fg_platform_data ab8500_fg_plat_data = {
 struct ab8500_chargalg_platform_data ab8500_chargalg_plat_data = {
 	.supplied_to = ab8500_chargalg_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_chargalg_supplied_to),
+};
+
+static struct ab8500_led_pwm leds_pwm_data[] = {
+	[0] = {
+		.pwm_id = 1,
+		.blink_en = 1,
+	},
+	[1] = {
+		.pwm_id = 2,
+		.blink_en = 0,
+	},
+	[2] = {
+		.pwm_id = 3,
+		.blink_en = 0,
+	},
+};
+
+struct ab8500_pwmled_platform_data ab8500_pwmled_plat_data = {
+	.num_pwm = 3,
+	.leds = leds_pwm_data,
 };
 
 static const struct ab8500_bm_capacity_levels cap_levels = {

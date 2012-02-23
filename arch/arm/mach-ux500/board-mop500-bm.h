@@ -20,5 +20,6 @@ extern struct ab8500_btemp_platform_data ab8500_btemp_plat_data;
 extern struct ab8500_fg_platform_data ab8500_fg_plat_data;
 extern struct ab8500_chargalg_platform_data ab8500_chargalg_plat_data;
 extern struct ab8500_bm_data ab8500_bm_data;
+extern struct ab8500_pwmled_platform_data ab8500_pwmled_plat_data;
 
 #endif
