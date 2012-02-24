@@ -78,15 +78,26 @@ static SOC_ENUM_SINGLE_EXT_DECL(soc_enum_mclk, enum_mclk);
 /* ANC States */
 static const char * const enum_anc_state[] = {
 	"Unconfigured",
-	"Configure FIR+IIR",
-	"FIR+IIR Configured",
-	"Configure FIR",
-	"FIR Configured",
-	"Configure IIR",
-	"IIR Configured",
+	"Apply FIR and IIR",
+	"FIR and IIR are configured",
+	"Apply FIR",
+	"FIR is configured",
+	"Apply IIR",
+	"IIR is configured",
 	"Error"
 };
 static SOC_ENUM_SINGLE_EXT_DECL(soc_enum_ancstate, enum_anc_state);
+enum anc_state {
+	ANC_UNCONFIGURED = 0,
+	ANC_APPLY_FIR_IIR = 1,
+	ANC_FIR_IIR_CONFIGURED = 2,
+	ANC_APPLY_FIR = 3,
+	ANC_FIR_CONFIGURED = 4,
+	ANC_APPLY_IIR = 5,
+	ANC_IIR_CONFIGURED = 6,
+	ANC_ERROR = 7
+};
+static enum anc_state anc_status = ANC_UNCONFIGURED;
 
 /* Regulators */
 enum regulator_idx {
@@ -260,6 +271,8 @@ static int ux500_ab8500_power_control_inc(void)
 {
 	int ret = 0;
 
+	pr_debug("%s: Enter.\n", __func__);
+
 	mutex_lock(&power_lock);
 
 	ab8500_power_count++;
@@ -308,11 +321,15 @@ clk_err:
 out:
 	mutex_unlock(&power_lock);
 
+	pr_debug("%s: Exit.\n", __func__);
+
 	return ret;
 }
 
 static void ux500_ab8500_power_control_dec(void)
 {
+	pr_debug("%s: Enter.\n", __func__);
+
 	mutex_lock(&power_lock);
 
 	ab8500_power_count--;
@@ -337,6 +354,8 @@ static void ux500_ab8500_power_control_dec(void)
 	}
 
 	mutex_unlock(&power_lock);
+
+	pr_debug("%s: Exit.\n", __func__);
 }
 
 /* Controls - Non-DAPM Non-ASoC */
@@ -370,7 +389,11 @@ static const struct snd_kcontrol_new mclk_input_control = \
 static int anc_status_control_get(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	ucontrol->value.integer.value[0] = ab8500_audio_anc_status();
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+
+	mutex_lock(&codec->mutex);
+	ucontrol->value.integer.value[0] = anc_status;
+	mutex_unlock(&codec->mutex);
 
 	return 0;
 }
@@ -378,13 +401,49 @@ static int anc_status_control_get(struct snd_kcontrol *kcontrol,
 static int anc_status_control_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	int req_state = ucontrol->value.integer.value[0];
+	struct snd_soc_codec *codec;
+	bool apply_fir, apply_iir;
+	int req, ret;
 
-	int ret = ux500_ab8500_power_control_inc();
-	if (ret < 0)
+	pr_debug("%s: Enter.\n", __func__);
+
+	req = ucontrol->value.integer.value[0];
+	if (req != ANC_APPLY_FIR_IIR && req != ANC_APPLY_FIR &&
+		req != ANC_APPLY_IIR) {
+		pr_err("%s: ERROR: Unsupported status to set '%s'!\n",
+			__func__, enum_anc_state[req]);
+		return -EINVAL;
+	}
+	apply_fir = req == ANC_APPLY_FIR || req == ANC_APPLY_FIR_IIR;
+	apply_iir = req == ANC_APPLY_IIR || req == ANC_APPLY_FIR_IIR;
+
+	codec = snd_kcontrol_chip(kcontrol);
+
+	ret = ux500_ab8500_power_control_inc();
+	if (ret < 0) {
+		pr_err("%s: ERROR: Failed to enable power (ret = %d)!\n",
+			__func__, ret);
 		goto cleanup;
+	}
 
-	ret = ab8500_audio_anc_configure(req_state);
+	mutex_lock(&codec->mutex);
+
+	ab8500_audio_anc_configure(codec, apply_fir, apply_iir);
+
+	if (apply_fir) {
+		if (anc_status == ANC_IIR_CONFIGURED)
+			anc_status = ANC_FIR_IIR_CONFIGURED;
+		else if (anc_status != ANC_FIR_IIR_CONFIGURED)
+			anc_status =  ANC_FIR_CONFIGURED;
+	}
+	if (apply_iir) {
+		if (anc_status == ANC_FIR_CONFIGURED)
+			anc_status = ANC_FIR_IIR_CONFIGURED;
+		else if (anc_status != ANC_FIR_IIR_CONFIGURED)
+			anc_status =  ANC_IIR_CONFIGURED;
+	}
+
+	mutex_unlock(&codec->mutex);
 
 	ux500_ab8500_power_control_dec();
 
@@ -393,7 +452,9 @@ cleanup:
 		pr_err("%s: Unable to configure ANC! (ret = %d)\n",
 			__func__, ret);
 
-	return (ret < 0) ? 0 : 1;
+	pr_debug("%s: Exit.\n", __func__);
+
+	return (ret < 0) ? ret : 1;
 }
 
 static const struct snd_kcontrol_new anc_status_control = \
@@ -592,7 +653,6 @@ static const struct snd_soc_dapm_route ux500_ab8500_dapm_intercon[] = {
 	{"DMic 5", NULL, "DMIC Regulator"},
 	{"DMic 6", NULL, "DMIC Regulator"},
 };
-
 
 static int add_widgets(struct snd_soc_codec *codec)
 {
@@ -933,6 +993,8 @@ int ux500_ab8500_audio_gpadc_measure(struct ab8500_gpadc *gpadc,
 		AB8500_AUDIO_ADCM_FORCE_UP :
 		AB8500_AUDIO_ADCM_FORCE_DOWN;
 
+	pr_debug("%s: Enter.\n", __func__);
+
 	mutex_lock(&adcm_lock);
 
 	ret = ux500_ab8500_power_control_inc();
@@ -957,6 +1019,8 @@ adcm_failure:
 
 power_failure:
 	mutex_unlock(&adcm_lock);
+
+	pr_debug("%s: Exit.\n", __func__);
 
 	return ret;
 }

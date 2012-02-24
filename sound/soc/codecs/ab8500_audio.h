@@ -33,15 +33,9 @@ int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
 			unsigned int fmt,
 			unsigned int wl,
 			unsigned int delay);
-unsigned int ab8500_audio_anc_status(void);
-int ab8500_audio_anc_configure(unsigned int req_state);
 
-enum ab8500_audio_dapm_path {
-	AB8500_AUDIO_DAPM_PATH_DMIC,
-	AB8500_AUDIO_DAPM_PATH_AMIC1,
-	AB8500_AUDIO_DAPM_PATH_AMIC2
-};
-bool ab8500_audio_dapm_path_active(enum ab8500_audio_dapm_path dapm_path);
+void ab8500_audio_anc_configure(struct snd_soc_codec *codec,
+			bool apply_fir, bool apply_iir);
 
 enum ab8500_audio_adcm {
 	AB8500_AUDIO_ADCM_NORMAL,
@@ -630,8 +624,9 @@ int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm);
 
 /* REG_SIDFIRCOEF1 */
 /* REG_SIDFIRCOEF2 */
-#define REG_SIDFIRCOEFX_VALUE_SHIFT		0
-#define REG_SIDFIRCOEFX_VALUE_MAX		0xFFFF
+#define REG_SID_FIR_COEFF_MIN		0
+#define REG_SID_FIR_COEFF_MAX		0xFFFF
+#define REG_SID_FIR_COEFFS		128
 
 /* REG_SIDFIRCONF */
 #define REG_SIDFIRCONF_ENFIRSIDS		2
