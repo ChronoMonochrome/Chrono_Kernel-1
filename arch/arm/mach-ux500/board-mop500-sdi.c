@@ -38,8 +38,37 @@ static int sdi0_vsel = -1;
 
 static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
 {
-	static int power_mode = -1;
+	static unsigned char power_mode = MMC_POWER_ON;
+	static unsigned char signal_voltage = MMC_SIGNAL_VOLTAGE_330;
 
+	if (signal_voltage == ios->signal_voltage)
+		goto do_power;
+
+	/*
+	 * We need to re-init the levelshifter when switching I/O voltage level.
+	 * Max discharge time according to ST6G3244ME spec is 1 ms.
+	 */
+	if (power_mode == MMC_POWER_ON) {
+		power_mode = MMC_POWER_OFF;
+		gpio_direction_output(sdi0_en, 0);
+		msleep(1);
+	}
+
+	switch (ios->signal_voltage) {
+	case MMC_SIGNAL_VOLTAGE_330:
+		gpio_direction_output(sdi0_vsel, 0);
+		break;
+	case MMC_SIGNAL_VOLTAGE_180:
+		gpio_direction_output(sdi0_vsel, 1);
+		break;
+	default:
+		pr_warning("Non supported signal voltage for levelshifter.\n");
+		break;
+	}
+
+	signal_voltage = ios->signal_voltage;
+
+do_power:
 	if (power_mode == ios->power_mode)
 		return 0;
 
@@ -47,25 +76,17 @@ static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
 	case MMC_POWER_UP:
 		break;
 	case MMC_POWER_ON:
-		/*
-		 * Level shifter voltage should depend on vdd to when deciding
-		 * on either 1.8V or 2.9V. Once the decision has been made the
-		 * level shifter must be disabled and re-enabled with a changed
-		 * select signal in order to switch the voltage. Since there is
-		 * no framework support yet for indicating 1.8V in vdd, use the
-		 * default 2.9V.
-		 */
-		gpio_direction_output(sdi0_vsel, 0);
 		gpio_direction_output(sdi0_en, 1);
+		/* Max settling time according to ST6G3244ME spec is 100 us. */
 		udelay(100);
 		break;
 	case MMC_POWER_OFF:
-		gpio_direction_output(sdi0_vsel, 0);
 		gpio_direction_output(sdi0_en, 0);
 		break;
 	}
 
 	power_mode = ios->power_mode;
+
 	return 0;
 }
 
