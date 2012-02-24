@@ -111,6 +111,7 @@
 #include <linux/init.h>
 #include <linux/highmem.h>
 #include <linux/user_namespace.h>
+#include <linux/static_key.h>
 
 #include <asm/uaccess.h>
 #include <asm/system.h>

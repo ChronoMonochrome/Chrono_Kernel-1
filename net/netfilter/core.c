@@ -54,6 +54,12 @@ EXPORT_SYMBOL_GPL(nf_unregister_afinfo);
 
 struct list_head nf_hooks[NFPROTO_NUMPROTO][NF_MAX_HOOKS] __read_mostly;
 EXPORT_SYMBOL(nf_hooks);
+
+#if defined(CONFIG_JUMP_LABEL)
+struct static_key nf_hooks_needed[NFPROTO_NUMPROTO][NF_MAX_HOOKS];
+EXPORT_SYMBOL(nf_hooks_needed);
+#endif
+
 static DEFINE_MUTEX(nf_hook_mutex);
 
 int nf_register_hook(struct nf_hook_ops *reg)
@@ -79,7 +85,6 @@ void nf_unregister_hook(struct nf_hook_ops *reg)
 	mutex_lock(&nf_hook_mutex);
 	list_del_rcu(&reg->list);
 	mutex_unlock(&nf_hook_mutex);
-
 	synchronize_net();
 }
 EXPORT_SYMBOL(nf_unregister_hook);
