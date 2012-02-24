@@ -608,12 +608,16 @@ static void mmci_post_request(struct mmc_host *mmc, struct mmc_request *mrq,
 	mmci_dma_unmap(host, data);
 
 	if (err) {
+		struct mmci_host_next *next = &host->next_data;
 		struct dma_chan *chan;
 		if (data->flags & MMC_DATA_READ)
 			chan = host->dma_rx_channel;
 		else
 			chan = host->dma_tx_channel;
 		dmaengine_terminate_all(chan);
+
+		next->dma_desc = NULL;
+		next->dma_chan = NULL;
 	}
 }
 
