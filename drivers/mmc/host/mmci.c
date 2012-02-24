@@ -1235,6 +1235,21 @@ static int mmci_get_cd(struct mmc_host *mmc)
 	return status;
 }
 
+static int mmci_sig_volt_switch(struct mmc_host *mmc, struct mmc_ios *ios)
+{
+	struct mmci_host *host = mmc_priv(mmc);
+	int ret = 0;
+
+	if (host->plat->ios_handler) {
+		pm_runtime_get_sync(mmc_dev(mmc));
+		ret = host->plat->ios_handler(mmc_dev(mmc), ios);
+		pm_runtime_mark_last_busy(mmc_dev(mmc));
+		pm_runtime_put_autosuspend(mmc_dev(mmc));
+	}
+
+	return ret;
+}
+
 static irqreturn_t mmci_cd_irq(int irq, void *dev_id)
 {
 	struct mmci_host *host = dev_id;
@@ -1251,6 +1266,7 @@ static const struct mmc_host_ops mmci_ops = {
 	.set_ios	= mmci_set_ios,
 	.get_ro		= mmci_get_ro,
 	.get_cd		= mmci_get_cd,
+	.start_signal_voltage_switch = mmci_sig_volt_switch,
 };
 
 static int __devinit mmci_probe(struct amba_device *dev,
