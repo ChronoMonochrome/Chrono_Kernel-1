@@ -36,6 +36,7 @@ struct pwm_device {
 	struct clk *clk;
 	const char *label;
 	unsigned int pwm_id;
+	unsigned int num_pwm;
 	unsigned int blink_en;
 	struct ab8500 *parent;
 	bool clk_enabled;
@@ -74,6 +75,7 @@ int pwm_config_blink(struct pwm_device *pwm, int duty_ns, int period_ns)
 							pwm->label, ret);
 	return ret;
 }
+EXPORT_SYMBOL(pwm_config_blink);
 
 int pwm_blink_ctrl(struct pwm_device *pwm , int enable)
 {
@@ -96,6 +98,7 @@ int pwm_blink_ctrl(struct pwm_device *pwm , int enable)
 							pwm->label, ret);
 	return ret;
 }
+EXPORT_SYMBOL(pwm_blink_ctrl);
 
 int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 {
@@ -202,6 +205,46 @@ void pwm_free(struct pwm_device *pwm)
 }
 EXPORT_SYMBOL(pwm_free);
 
+static ssize_t store_blink_status(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct pwm_device *pwm;
+	unsigned long val;
+
+	if (strict_strtoul(buf, 0, &val))
+		return -EINVAL;
+	list_for_each_entry(pwm, &pwm_list, node) {
+		if (pwm->pwm_id == val)
+			break;
+		else {
+			/* check if PWM ID is valid*/
+			if (val > pwm->num_pwm) {
+				dev_err(pwm->dev, "Invalid PWM ID\n");
+				return -EINVAL;
+			}
+		}
+	}
+	if ((!is_ab8505(pwm->parent)) || (!pwm->blink_en)) {
+		dev_err(pwm->dev, "setting blinking for this "
+					"device not supported\n");
+		return -EINVAL;
+	}
+	/*Disable blink functionlity */
+	pwm_blink_ctrl(pwm, 0);
+	return count;
+}
+
+static DEVICE_ATTR(disable_blink, S_IWUGO, NULL, store_blink_status);
+
+static struct attribute *pwmled_attributes[] = {
+	&dev_attr_disable_blink.attr,
+	NULL
+};
+
+static const struct attribute_group pwmled_attr_group = {
+	.attrs = pwmled_attributes,
+};
+
 static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
 {
 	struct ab8500 *parent = dev_get_drvdata(pdev->dev.parent);
@@ -231,19 +274,42 @@ static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
 		pwm[i].parent = parent;
 		pwm[i].blink_en = pdata->leds[i].blink_en;
 		pwm[i].pwm_id = pdata->leds[i].pwm_id;
+		pwm[i].num_pwm = pdata->num_pwm;
 		list_add_tail(&pwm[i].node, &pwm_list);
+	}
+	for (i = 0; i < pdata->num_pwm; i++) {
+		/*Implement sysfs only if blink is enabled*/
+		if ((is_ab8505(pwm[i].parent)) && (pwm[i].blink_en)) {
+			/* sysfs implementation to disable the blink */
+			ret = sysfs_create_group(&pdev->dev.kobj,
+							&pwmled_attr_group);
+			if (ret) {
+				dev_err(&pdev->dev, "failed to create"
+						" sysfs entries\n");
+				goto fail;
+			}
+			break;
+		}
 	}
 	pwm->clk = clk_get(pwm->dev, NULL);
 	if (IS_ERR(pwm->clk)) {
 		dev_err(pwm->dev, "clock request failed\n");
 		ret = PTR_ERR(pwm->clk);
-		goto fail;
+		goto err_clk;
 	}
 	platform_set_drvdata(pdev, pwm);
 	pwm->clk_enabled = false;
 	dev_dbg(pwm->dev, "pwm probe successful\n");
 	return ret;
 
+err_clk:
+	for (i = 0; i < pdata->num_pwm; i++) {
+		if ((is_ab8505(pwm[i].parent)) && (pwm[i].blink_en)) {
+			sysfs_remove_group(&pdev->dev.kobj,
+				&pwmled_attr_group);
+			break;
+		}
+	}
 fail:
 	list_del(&pwm->node);
 	kfree(pwm);
@@ -253,7 +319,15 @@ fail:
 static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
 {
 	struct pwm_device *pwm = platform_get_drvdata(pdev);
+	int i;
 
+	for (i = 0; i < pwm->num_pwm; i++) {
+		if ((is_ab8505(pwm[i].parent)) && (pwm[i].blink_en)) {
+			sysfs_remove_group(&pdev->dev.kobj,
+				&pwmled_attr_group);
+			break;
+		}
+	}
 	list_del(&pwm->node);
 	clk_put(pwm->clk);
 	dev_dbg(&pdev->dev, "pwm driver removed\n");
