@@ -206,10 +206,16 @@ static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
 {
 	struct ab8500 *parent = dev_get_drvdata(pdev->dev.parent);
 	struct ab8500_platform_data *plat = dev_get_platdata(parent->dev);
-	struct ab8500_pwmled_platform_data *pdata = plat->pwmled;
+	struct ab8500_pwmled_platform_data *pdata;
 	struct pwm_device *pwm;
 	int ret = 0 , i;
 
+	/* get pwmled specific platform data */
+	if (!plat->pwmled) {
+		dev_err(&pdev->dev, "no pwm platform data supplied\n");
+		return -EINVAL;
+	}
+	pdata = plat->pwmled;
 	/*
 	 * Nothing to be done in probe, this is required to get the
 	 * device which is required for ab8500 read and write
