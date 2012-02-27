@@ -447,6 +447,14 @@ static inline u16 prcmu_get_reset_code(void)
 		return db8500_prcmu_get_reset_code();
 }
 
+static inline u32 prcmu_get_reset_status(void)
+{
+	if (cpu_is_u8500())
+		return db8500_prcmu_get_reset_status();
+	else
+		return 0;
+}
+
 void prcmu_ac_wake_req(void);
 void prcmu_ac_sleep_req(void);
 static inline void prcmu_modem_reset(void)
@@ -692,6 +700,11 @@ static inline int prcmu_get_ddr_opp(void)
 static inline void prcmu_system_reset(u16 reset_code) {}
 
 static inline u16 prcmu_get_reset_code(void)
+{
+	return 0;
+}
+
+static inline u32 prcmu_get_reset_status(void)
 {
 	return 0;
 }

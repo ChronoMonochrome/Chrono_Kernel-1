@@ -426,6 +426,13 @@ static DEFINE_SPINLOCK(clkout_lock);
 /* Global var to runtime determine TCDM base for v2 or v1 */
 static __iomem void *tcdm_base;
 
+/*
+ * Copies of the startup values of the reset status register and the SW reset
+ * code.
+ */
+static u32 reset_status_copy;
+static u16 reset_code_copy;
+
 struct clk_mgt {
 	void __iomem *reg;
 	u32 pllsw;
@@ -2404,7 +2411,17 @@ void db8500_prcmu_system_reset(u16 reset_code)
  */
 u16 db8500_prcmu_get_reset_code(void)
 {
-	return readw(tcdm_base + PRCM_SW_RST_REASON);
+	return reset_code_copy;
+}
+
+/**
+ * db8500_prcmu_get_reset_status - Retrieve reset status
+ *
+ * Retrieves the value of the reset status register as read at startup.
+ */
+u32 db8500_prcmu_get_reset_status(void)
+{
+	return reset_status_copy;
 }
 
 /**
@@ -2689,6 +2706,7 @@ void __init db8500_prcmu_early_init(void)
 {
 	unsigned int i;
 	void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
+	void __iomem *sec_base;
 
 	if (tcpm_base != NULL) {
 		u32 version;
@@ -2706,6 +2724,19 @@ void __init db8500_prcmu_early_init(void)
 	}
 
 	tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
+
+	/*
+	 * Copy the value of the reset status register and if needed also
+	 * the software reset code.
+	 */
+	sec_base = ioremap_nocache(U8500_PRCMU_SEC_BASE, SZ_4K);
+	if (sec_base != NULL) {
+		reset_status_copy = readl(sec_base +
+			DB8500_SEC_PRCM_RESET_STATUS);
+		iounmap(sec_base);
+	}
+	if (reset_status_copy & DB8500_SEC_PRCM_RESET_STATUS_APE_SOFTWARE_RESET)
+		reset_code_copy = readw(tcdm_base + PRCM_SW_RST_REASON);
 
 	spin_lock_init(&mb0_transfer.lock);
 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);

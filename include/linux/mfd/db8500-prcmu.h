@@ -486,6 +486,7 @@ void db8500_prcmu_config_abb_event_readout(u32 abb_events);
 void db8500_prcmu_get_abb_event_buffer(void __iomem **buf);
 int db8500_prcmu_config_esram0_deep_sleep(u8 state);
 u16 db8500_prcmu_get_reset_code(void);
+u32 db8500_prcmu_get_reset_status(void);
 bool db8500_prcmu_is_ac_wake_requested(void);
 int db8500_prcmu_set_arm_opp(u8 opp);
 int db8500_prcmu_get_arm_opp(void);
@@ -665,6 +666,11 @@ static inline void db8500_prcmu_config_abb_event_readout(u32 abb_events) {}
 static inline void db8500_prcmu_get_abb_event_buffer(void __iomem **buf) {}
 
 static inline u16 db8500_prcmu_get_reset_code(void)
+{
+	return 0;
+}
+
+static inline u32 db8500_prcmu_get_reset_status(void)
 {
 	return 0;
 }
