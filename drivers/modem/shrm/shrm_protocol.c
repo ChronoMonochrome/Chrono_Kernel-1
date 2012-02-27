@@ -954,7 +954,7 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 						     "shm_mod_reset_req");
 	if (IS_ERR(shrm->shm_mod_stuck_kw_task)) {
 		dev_err(shrm->dev, "failed to create work task\n");
-		return -ENOMEM;
+		err = -ENOMEM;
 		goto free_kw5;
 	}
 
