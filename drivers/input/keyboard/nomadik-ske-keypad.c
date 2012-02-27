@@ -849,7 +849,6 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 	kfree(keypad->keys);
 	kfree(keypad->ske_cols);
 	kfree(keypad->ske_rows);
-	kfree(keypad->gpio_input_irq);
 
 	input_unregister_device(keypad->input);
 	sysfs_remove_group(&pdev->dev.kobj, &ske_attr_group);
@@ -868,6 +867,7 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 	for (i = 0; i < keypad->board->krow; i++)
 		free_irq(keypad->gpio_input_irq[i], keypad);
 
+	kfree(keypad->gpio_input_irq);
 	free_irq(keypad->irq, keypad);
 	regulator_put(keypad->regulator);
 
