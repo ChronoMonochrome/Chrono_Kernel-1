@@ -220,7 +220,8 @@ static struct mmci_platform_data mop500_sdi2_data = {
 	.ocr_mask	= MMC_VDD_165_195,
 	.f_max		= 50000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA |
-			  MMC_CAP_MMC_HIGHSPEED,
+			  MMC_CAP_MMC_HIGHSPEED |
+			  MMC_CAP_ERASE,
 	.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
