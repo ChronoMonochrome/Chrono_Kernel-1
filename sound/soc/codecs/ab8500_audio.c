@@ -1729,7 +1729,7 @@ static SOC_ENUM_SINGLE_DECL(soc_enum_if0fifoen,
 static const char * const enum_mask[] = {"Unmasked", "Masked"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifomask,
 	REG_FIFOCONF1, REG_FIFOCONF1_BFIFOMASK, enum_mask);
-static const char * const enum_bitclk0[] = {"19_2_MHz", "38_4_MHz"};
+static const char * const enum_bitclk0[] = {"38_4_MHz", "19_2_MHz"};
 static SOC_ENUM_SINGLE_DECL(soc_enum_bfifo19m2,
 	REG_FIFOCONF1, REG_FIFOCONF1_BFIFO19M2, enum_bitclk0);
 static const char * const enum_slavemaster[] = {"Slave", "Master"};
