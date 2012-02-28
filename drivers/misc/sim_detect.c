@@ -223,7 +223,9 @@ static int __devinit sim_detect_probe(struct platform_device *pdev)
 	/* request irq */
 	ret = request_threaded_irq(plat->irq_num,
 		       NULL, sim_activity_irq,
-		       IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+		       IRQF_TRIGGER_FALLING |
+		       IRQF_TRIGGER_RISING |
+		       IRQF_NO_SUSPEND,
 		       "sim activity", sim_detect);
 	if (ret < 0)
 		goto out_put_modem;
