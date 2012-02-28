@@ -435,6 +435,7 @@ int db8500_prcmu_gic_decouple(void);
 int db8500_prcmu_gic_recouple(void);
 int db8500_prcmu_copy_gic_settings(void);
 bool db8500_prcmu_gic_pending_irq(void);
+bool db8500_prcmu_pending_irq(void);
 int db8500_prcmu_set_display_clocks(void);
 int db8500_prcmu_disable_dsipll(void);
 int db8500_prcmu_enable_dsipll(void);
