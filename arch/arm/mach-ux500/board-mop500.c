@@ -159,6 +159,48 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	.config_pullups    = {0xE0, 0x01, 0x00, 0x00, 0x00, 0x00},
 };
 
+static struct ab8500_gpio_platform_data ab8505_gpio_pdata = {
+	.gpio_base		= AB8500_PIN_GPIO1,
+	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
+	/*
+	 * config_reg is the initial configuration of ab8500 pins.
+	 * The pins can be configured as GPIO or alt functions based
+	 * on value present in GpioSel1 to GpioSel6 and AlternatFunction
+	 * register. This is the array of 7 configuration settings.
+	 * One has to compile time decide these settings. Below is the
+	 * explanation of these setting
+	 * GpioSel1 = 0x0F => Pin GPIO1 (SysClkReq2)
+	 *                    Pin GPIO2 (SysClkReq3)
+	 *                    Pin GPIO3 (SysClkReq4)
+	 *                    Pin GPIO4 (SysClkReq6) are configured as GPIO
+	 * GpioSel2 = 0x9E => Pins GPIO10 to GPIO13 are configured as GPIO
+	 * GpioSel3 = 0x80 => Pin GPIO24 (SysClkReq7) is configured as GPIO
+	 * GpioSel4 = 0x01 => Pin GPIO25 (SysClkReq8) is configured as GPIO
+	 * GpioSel5 = 0x78 => Pin GPIO36 (ApeSpiClk)
+	 *		      Pin GPIO37 (ApeSpiCSn)
+	 *		      Pin GPIO38 (ApeSpiDout)
+	 *		      Pin GPIO39 (ApeSpiDin) are configured as GPIO
+	 * GpioSel6 = 0x02 => Pin GPIO42 (SysClkReq5) is configured as GPIO
+	 * AlternaFunction = 0x00 => If Pins GPIO10 to 13 are not configured
+	 * as GPIO then this register selectes the alternate functions
+	 * GpioSel7 = 0x22 => Pins GPIO50 to GPIO52 are configured as GPIO.
+	 */
+	.config_reg     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x02, 0x22},
+
+	/*
+	 * config_direction allows for the initial GPIO direction to
+	 * be set. For Snowball we set GPIO26 to output.
+	 */
+	.config_direction  = {0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00},
+
+	/*
+	 * config_pullups allows for the intial configuration of the
+	 * GPIO pullup/pulldown configuration.
+	 * GPIO13(GpioPud2) = 1 and GPIO50(GpioPud7) = 1.
+	 */
+	.config_pullups    = {0xE0, 0x11, 0x00, 0x00, 0x00, 0x00, 0x02},
+};
+
 static struct ab8500_sysctrl_platform_data ab8500_sysctrl_pdata = {
 	/*
 	 * SysClkReq1RfClkBuf - SysClkReq8RfClkBuf
@@ -1152,6 +1194,11 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 	&u8500_b2r2_device,
 };
 
+static void fixup_ab8505_gpio(void)
+{
+	ab8500_gpio_pdata = ab8505_gpio_pdata;
+}
+
 static void __init mop500_init_machine(void)
 {
 	struct device *parent = NULL;
@@ -1329,8 +1376,10 @@ static void __init hrefv60_init_machine(void)
 				sizeof(mop500_ske_keypad_data));
 #endif
 
-	if (machine_is_u8520())
+	if (machine_is_u8520()) {
+		fixup_ab8505_gpio();
 		platform_device_register(&ab8505_device);
+	}
 	else
 		platform_device_register(&ab8500_device);
 
