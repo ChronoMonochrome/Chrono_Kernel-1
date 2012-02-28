@@ -329,12 +329,12 @@ static void ab8500_gpio_irq_sync_unlock(struct irq_data *data)
 		if (rising)
 			ret = request_threaded_irq(irq_to_rising(irq),
 					NULL, handle_rising,
-					IRQF_TRIGGER_RISING,
+					IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,
 					"ab8500-gpio-r", ab8500_gpio);
 		if (falling)
 			ret = request_threaded_irq(irq_to_falling(irq),
 				       NULL, handle_falling,
-				       IRQF_TRIGGER_FALLING,
+				       IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND,
 				       "ab8500-gpio-f", ab8500_gpio);
 		break;
 	case SHUTDOWN:
