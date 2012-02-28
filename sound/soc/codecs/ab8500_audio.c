@@ -77,7 +77,7 @@ static const u8 ab8500_reg_cache[AB8500_CACHEREGNUM] = {
 	0x00, /* REG_ANACONF4		(0x08) */
 	0x00, /* REG_DAPATHCONF		(0x09) */
 	0x40, /* REG_MUTECONF		(0x0A) */
-	0x00, /* REG_SHORTCIRCONF	(0x0B) */
+	0x01, /* REG_SHORTCIRCONF	(0x0B) */
 	0x01, /* REG_ANACONF5		(0x0C) */
 	0x00, /* REG_ENVCPCONF		(0x0D) */
 	0x00, /* REG_SIGENVCONF		(0x0E) */
