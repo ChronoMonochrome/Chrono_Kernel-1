@@ -466,6 +466,18 @@ void cw1200_update_filtering(struct cw1200_common *priv)
 	else if (priv->join_status == CW1200_JOIN_STATUS_MONITOR)
 		bssid_filtering = false;
 
+	/*
+	* When acting as p2p client being connected to p2p GO, in order to
+	* receive frames from a different p2p device, turn off bssid filter.
+	*
+	* WARNING: FW dependency!
+	* This can only be used with FW WSM371 and its successors.
+	* In that FW version even with bssid filter turned off,
+	* device will block most of the unwanted frames.
+	*/
+	if (priv->vif->p2p)
+		bssid_filtering = false;
+
 	ret = wsm_set_rx_filter(priv, &priv->rx_filter);
 	if (!ret)
 		ret = wsm_set_beacon_filter_table(priv, &priv->bf_table);
