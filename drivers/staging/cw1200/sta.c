@@ -1150,8 +1150,7 @@ int cw1200_setup_mac(struct cw1200_common *priv)
 	* as RSSI if RSSI subscription is enabled.
 	* It's not enough to set WSM_RCPI_RSSI_USE_RSSI. */
 	struct wsm_rcpi_rssi_threshold threshold = {
-		.rssiRcpiMode = WSM_RCPI_RSSI_USE_RSSI |
-		WSM_RCPI_RSSI_THRESHOLD_ENABLE |
+		.rssiRcpiMode = WSM_RCPI_RSSI_THRESHOLD_ENABLE |
 		WSM_RCPI_RSSI_DONT_USE_UPPER |
 		WSM_RCPI_RSSI_DONT_USE_LOWER,
 		.rollingAverageCount = 16,

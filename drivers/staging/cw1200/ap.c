@@ -560,7 +560,6 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 	}
 	if (changed & (BSS_CHANGED_ASSOC | BSS_CHANGED_CQM)) {
 		struct wsm_rcpi_rssi_threshold threshold = {
-			.rssiRcpiMode = WSM_RCPI_RSSI_USE_RSSI,
 			.rollingAverageCount = 1,
 		};
 

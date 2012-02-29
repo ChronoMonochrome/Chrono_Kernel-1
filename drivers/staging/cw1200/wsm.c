@@ -866,7 +866,7 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 		rx.status = WSM_GET32(buf);
 		rx.channelNumber = WSM_GET16(buf);
 		rx.rxedRate = WSM_GET8(buf);
-		rx.rcpiRssi = WSM_GET8(buf);
+		rx.rcpiRssi = (WSM_GET8(buf) / 2 - 110);
 		rx.flags = WSM_GET32(buf);
 
 		/* FW Workaround: Drop probe resp or
