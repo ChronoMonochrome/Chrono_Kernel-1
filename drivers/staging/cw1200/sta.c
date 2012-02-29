@@ -348,6 +348,16 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		modeinfo = &priv->p2p_ps_modeinfo;
 		sta_printk(KERN_DEBUG "[STA] IEEE80211_CONF_CHANGE_P2P_PS\n");
 
+		if (conf->p2p_ps.legacy_ps >= 0) {
+			if (conf->p2p_ps.legacy_ps > 0)
+				priv->powersave_mode.pmMode = WSM_PSM_PS;
+			else
+				priv->powersave_mode.pmMode = WSM_PSM_ACTIVE;
+
+			if (priv->join_status == CW1200_JOIN_STATUS_STA)
+				cw1200_set_pm(priv, &priv->powersave_mode);
+		}
+
 		if (conf->p2p_ps.ctwindow >= 128)
 			modeinfo->oppPsCTWindow = 127;
 		else if (conf->p2p_ps.ctwindow >= 0)
