@@ -860,6 +860,10 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 		.basicRateSet = cw1200_rate_mask_to_wsm(priv,
 				conf->basic_rates),
 	};
+	struct wsm_operational_mode mode = {
+		.power_mode = wsm_power_mode_quiescent,
+		.disableMoreFlagUsage = true,
+	};
 
 	/* Get SSID */
 	skb = ieee80211_beacon_get(priv->hw, priv->vif);
@@ -911,6 +915,7 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 		priv->join_status = CW1200_JOIN_STATUS_AP;
 		cw1200_update_filtering(priv);
 	}
+	WARN_ON(wsm_set_operational_mode(priv, &mode));
 	return ret;
 }
 
