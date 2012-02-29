@@ -1095,6 +1095,8 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	 * wakelock. */
 	if (ieee80211_is_auth(frame->frame_control))
 		grace_period = 5 * HZ;
+	else if (ieee80211_is_deauth(frame->frame_control))
+		grace_period = 5 * HZ;
 	else
 		grace_period = 1 * HZ;
 	cw1200_pm_stay_awake(&priv->pm_state, grace_period);
