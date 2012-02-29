@@ -27,6 +27,8 @@ struct cw1200_debug_priv {
 	int tx_cache_miss;
 	int tx_align;
 	int tx_ttl;
+	int tx_burst;
+	int rx_burst;
 };
 
 int cw1200_debug_init(struct cw1200_common *priv);
@@ -74,6 +76,16 @@ static inline void cw1200_debug_tx_ttl(struct cw1200_common *priv)
 	++priv->debug->tx_ttl;
 }
 
+static inline void cw1200_debug_tx_burst(struct cw1200_common *priv)
+{
+	++priv->debug->tx_burst;
+}
+
+static inline void cw1200_debug_rx_burst(struct cw1200_common *priv)
+{
+	++priv->debug->rx_burst;
+}
+
 #else /* CONFIG_CW1200_DEBUGFS */
 
 static inline int cw1200_debug_init(struct cw1200_common *priv)
@@ -115,6 +127,14 @@ static inline void cw1200_debug_tx_align(struct cw1200_common *priv)
 }
 
 static inline void cw1200_debug_tx_ttl(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_tx_burst(struct cw1200_common *priv)
+{
+}
+
+static inline void cw1200_debug_rx_burst(struct cw1200_common *priv)
 {
 }
 

@@ -1548,13 +1548,15 @@ found:
 }
 
 int wsm_get_tx(struct cw1200_common *priv, u8 **data,
-	       size_t *tx_len)
+	       size_t *tx_len, int *burst)
 {
 	struct wsm_tx *wsm = NULL;
 	struct ieee80211_tx_info *tx_info;
 	struct cw1200_queue *queue = NULL;
+	int queue_num;
 	u32 tx_allowed_mask = 0;
 	const struct cw1200_txpriv *txpriv = NULL;
+	static const int trottle[] = { 0, 2, 4, 6 };
 	/*
 	 * Count was intended as an input for wsm->more flag.
 	 * During implementation it was found that wsm->more
@@ -1572,6 +1574,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 		BUG_ON(!priv->wsm_cmd.ptr);
 		*data = priv->wsm_cmd.ptr;
 		*tx_len = priv->wsm_cmd.len;
+		*burst = 1;
 		spin_unlock(&priv->wsm_cmd.lock);
 	} else {
 		for (;;) {
@@ -1584,6 +1587,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 			ret = wsm_get_tx_queue_and_mask(priv, &queue,
 					&tx_allowed_mask, &more);
+			queue_num = queue - priv->tx_queue;
 
 			if (priv->buffered_multicasts &&
 					(ret || !more) &&
@@ -1617,7 +1621,13 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 			*data = (u8 *)wsm;
 			*tx_len = __le16_to_cpu(wsm->hdr.len);
-
+			if (priv->sta_asleep_mask)
+				*burst = 1;
+			else
+				*burst = min(max(
+					*burst - trottle[queue_num], 1),
+					(int)cw1200_queue_get_num_queued(
+						queue, -1));
 
 			if (more) {
 				struct ieee80211_hdr *hdr =

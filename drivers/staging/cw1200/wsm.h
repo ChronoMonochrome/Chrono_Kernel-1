@@ -1716,8 +1716,9 @@ struct wsm_cmd {
 /* ******************************************************************** */
 /* WSM TX buffer access							*/
 
-int wsm_get_tx(struct cw1200_common *priv, u8 ** data, size_t * tx_len);
-void wsm_txed(struct cw1200_common *priv, u8 * data);
+int wsm_get_tx(struct cw1200_common *priv, u8 **data,
+	       size_t *tx_len, int *burst);
+void wsm_txed(struct cw1200_common *priv, u8 *data);
 
 /* ******************************************************************** */
 /* Queue mapping: WSM <---> linux					*/

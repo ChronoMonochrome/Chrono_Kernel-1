@@ -22,6 +22,7 @@
 #include "hwio.h"
 #include "wsm.h"
 #include "sbus.h"
+#include "debug.h"
 
 #if defined(CONFIG_CW1200_BH_DEBUG)
 #define bh_printk(...) printk(__VA_ARGS__)
@@ -261,6 +262,8 @@ static int cw1200_bh(void *arg)
 	u16 ctrl_reg = 0;
 	int tx_allowed;
 	int pending_tx = 0;
+	int tx_burst;
+	int rx_burst = 0;
 	long status;
 	u8 dummy;
 
@@ -339,8 +342,10 @@ static int cw1200_bh(void *arg)
 				break;
 rx:
 			read_len = (ctrl_reg & ST90TDS_CONT_NEXT_LEN_MASK) * 2;
-			if (!read_len)
+			if (!read_len) {
+				rx_burst = 0;
 				goto tx;
+			}
 
 			if (WARN_ON((read_len < sizeof(struct wsm_hdr)) ||
 					(read_len > EFFECTIVE_BUF_SIZE))) {
@@ -425,13 +430,19 @@ rx:
 			}
 
 			read_len = 0;
+
+			if (rx_burst) {
+				cw1200_debug_rx_burst(priv);
+				--rx_burst;
+				goto rx;
+			}
 		}
 
 tx:
 		/* HACK! One buffer is reserved for control path */
 		BUG_ON(priv->hw_bufs_used > priv->wsm_caps.numInpChBufs);
-		tx_allowed =
-			priv->hw_bufs_used < priv->wsm_caps.numInpChBufs;
+		tx_burst = priv->wsm_caps.numInpChBufs - priv->hw_bufs_used;
+		tx_allowed = tx_burst > 0;
 
 		if (tx && tx_allowed) {
 			size_t tx_len;
@@ -452,7 +463,7 @@ tx:
 			}
 
 			wsm_alloc_tx_buffer(priv);
-			ret = wsm_get_tx(priv, &data, &tx_len);
+			ret = wsm_get_tx(priv, &data, &tx_len, &tx_burst);
 			if (ret <= 0) {
 				wsm_release_tx_buffer(priv, 1);
 				if (WARN_ON(ret < 0))
@@ -503,6 +514,12 @@ tx:
 				wsm_txed(priv, data);
 				priv->wsm_tx_seq = (priv->wsm_tx_seq + 1) &
 						WSM_TX_SEQ_MAX;
+
+				if (tx_burst > 1) {
+					cw1200_debug_tx_burst(priv);
+					++rx_burst;
+					goto tx;
+				}
 			}
 		}
 

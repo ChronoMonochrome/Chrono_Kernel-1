@@ -291,6 +291,10 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 		d->tx_cache_miss);
 	seq_printf(seq, "TX align:   %d\n",
 		d->tx_align);
+	seq_printf(seq, "TX burst:   %d\n",
+		d->tx_burst);
+	seq_printf(seq, "RX burst:   %d\n",
+		d->rx_burst);
 	seq_printf(seq, "TX TTL:     %d\n",
 		d->tx_ttl);
 	seq_printf(seq, "Scan:       %s\n",
