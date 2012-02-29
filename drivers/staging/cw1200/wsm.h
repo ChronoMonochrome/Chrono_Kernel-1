@@ -1035,12 +1035,6 @@ int wsm_remove_key(struct cw1200_common *priv,
 
 /* 3.34 */
 struct wsm_set_tx_queue_params {
-	/* 0 best effort/legacy */
-	/* 1 background */
-	/* 2 video */
-	/* 3 voice */
-	u8 queueId;
-
 	/* WSM_ACK_POLICY_... */
 	u8 ackPolicy;
 
@@ -1053,8 +1047,23 @@ struct wsm_set_tx_queue_params {
 	u32 maxTransmitLifetime;
 };
 
+struct wsm_tx_queue_params {
+	/* NOTE: index is a linux queue id. */
+	struct wsm_set_tx_queue_params params[4];
+};
+
+
+#define WSM_TX_QUEUE_SET(queue_params, queue, ack_policy, allowed_time,\
+		max_life_time)	\
+do {							\
+	struct wsm_set_tx_queue_params *p = &(queue_params)->params[queue]; \
+	p->ackPolicy = (ack_policy);				\
+	p->allowedMediumTime = (allowed_time);				\
+	p->maxTransmitLifetime = (max_life_time);			\
+} while (0)
+
 int wsm_set_tx_queue_params(struct cw1200_common *priv,
-			    const struct wsm_set_tx_queue_params *arg);
+			    const struct wsm_set_tx_queue_params *arg, u8 id);
 
 /* 3.36 */
 struct wsm_edca_queue_params {
@@ -1084,13 +1093,16 @@ struct wsm_edca_params {
 	struct wsm_edca_queue_params params[4];
 };
 
-#define WSM_EDCA_SET(edca, queue, aifs, cw_min, cw_max, txop, uapsd)	\
+#define TXOP_UNIT 32
+#define WSM_EDCA_SET(edca, queue, aifs, cw_min, cw_max, txop, life_time,\
+		uapsd)	\
 	do {							\
 		struct wsm_edca_queue_params *p = &(edca)->params[queue]; \
 		p->cwMin = (cw_min);				\
 		p->cwMax = (cw_max);				\
 		p->aifns = (aifs);				\
-		p->txOpLimit = (txop);				\
+		p->txOpLimit = ((txop) * TXOP_UNIT);		\
+		p->maxReceiveLifetime = (life_time);		\
 		p->uapsdEnable = (uapsd);			\
 	} while (0)
 

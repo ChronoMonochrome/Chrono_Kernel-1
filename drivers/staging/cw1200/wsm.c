@@ -536,15 +536,15 @@ nomem:
 /* ******************************************************************** */
 
 int wsm_set_tx_queue_params(struct cw1200_common *priv,
-				const struct wsm_set_tx_queue_params *arg)
+		const struct wsm_set_tx_queue_params *arg, u8 id)
 {
 	int ret;
 	struct wsm_buf *buf = &priv->wsm_cmd_buf;
+	u8 queue_id_to_wmm_aci[] = {3, 2, 0, 1};
 
 	wsm_cmd_lock(priv);
 
-	/* TODO: verify me. */
-	WSM_PUT8(buf, arg->queueId);
+	WSM_PUT8(buf, queue_id_to_wmm_aci[id]);
 	WSM_PUT8(buf, 0);
 	WSM_PUT8(buf, arg->ackPolicy);
 	WSM_PUT8(buf, 0);
@@ -572,34 +572,32 @@ int wsm_set_edca_params(struct cw1200_common *priv,
 
 	wsm_cmd_lock(priv);
 
-	/* TODO: verify me. */
-	/* Implemented according to specification. Note that there is a
-	 * mismatch in BK and BE mapping. */
+	/* Implemented according to specification. */
 
+	WSM_PUT16(buf, arg->params[3].cwMin);
+	WSM_PUT16(buf, arg->params[2].cwMin);
 	WSM_PUT16(buf, arg->params[1].cwMin);
 	WSM_PUT16(buf, arg->params[0].cwMin);
-	WSM_PUT16(buf, arg->params[2].cwMin);
-	WSM_PUT16(buf, arg->params[3].cwMin);
 
+	WSM_PUT16(buf, arg->params[3].cwMax);
+	WSM_PUT16(buf, arg->params[2].cwMax);
 	WSM_PUT16(buf, arg->params[1].cwMax);
 	WSM_PUT16(buf, arg->params[0].cwMax);
-	WSM_PUT16(buf, arg->params[2].cwMax);
-	WSM_PUT16(buf, arg->params[3].cwMax);
 
+	WSM_PUT8(buf, arg->params[3].aifns);
+	WSM_PUT8(buf, arg->params[2].aifns);
 	WSM_PUT8(buf, arg->params[1].aifns);
 	WSM_PUT8(buf, arg->params[0].aifns);
-	WSM_PUT8(buf, arg->params[2].aifns);
-	WSM_PUT8(buf, arg->params[3].aifns);
 
+	WSM_PUT16(buf, arg->params[3].txOpLimit);
+	WSM_PUT16(buf, arg->params[2].txOpLimit);
 	WSM_PUT16(buf, arg->params[1].txOpLimit);
 	WSM_PUT16(buf, arg->params[0].txOpLimit);
-	WSM_PUT16(buf, arg->params[2].txOpLimit);
-	WSM_PUT16(buf, arg->params[3].txOpLimit);
 
+	WSM_PUT32(buf, arg->params[3].maxReceiveLifetime);
+	WSM_PUT32(buf, arg->params[2].maxReceiveLifetime);
 	WSM_PUT32(buf, arg->params[1].maxReceiveLifetime);
 	WSM_PUT32(buf, arg->params[0].maxReceiveLifetime);
-	WSM_PUT32(buf, arg->params[2].maxReceiveLifetime);
-	WSM_PUT32(buf, arg->params[3].maxReceiveLifetime);
 
 	ret = wsm_cmd_send(priv, buf, NULL, 0x0013, WSM_CMD_TIMEOUT);
 	wsm_cmd_unlock(priv);

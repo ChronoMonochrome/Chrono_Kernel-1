@@ -111,6 +111,7 @@ struct cw1200_common {
 	struct ieee80211_channel	*channel;
 	u8 bssid[ETH_ALEN];
 	struct wsm_edca_params		edca;
+	struct wsm_tx_queue_params	tx_queue_params;
 	struct wsm_association_mode	association_mode;
 	struct wsm_set_bss_params	bss_params;
 	struct cw1200_ht_info		ht_info;

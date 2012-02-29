@@ -49,11 +49,11 @@ int cw1200_start(struct ieee80211_hw *dev)
 
 	mutex_lock(&priv->conf_mutex);
 
-	/* default ECDA */
-	WSM_EDCA_SET(&priv->edca, 0, 0x0002, 0x0003, 0x0007, 47, false);
-	WSM_EDCA_SET(&priv->edca, 1, 0x0002, 0x0007, 0x000f, 94, false);
-	WSM_EDCA_SET(&priv->edca, 2, 0x0003, 0x000f, 0x03ff, 0, false);
-	WSM_EDCA_SET(&priv->edca, 3, 0x0007, 0x000f, 0x03ff, 0, false);
+	/* default EDCA */
+	WSM_EDCA_SET(&priv->edca, 0, 0x0002, 0x0003, 0x0007, 47, 0xc8, false);
+	WSM_EDCA_SET(&priv->edca, 1, 0x0002, 0x0007, 0x000f, 94, 0xc8, false);
+	WSM_EDCA_SET(&priv->edca, 2, 0x0003, 0x000f, 0x03ff, 0, 0xc8, false);
+	WSM_EDCA_SET(&priv->edca, 3, 0x0007, 0x000f, 0x03ff, 0, 0xc8, false);
 	ret = wsm_set_edca_params(priv, &priv->edca);
 	if (WARN_ON(ret))
 		goto out;
@@ -539,12 +539,24 @@ int cw1200_conf_tx(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
 	if (queue < dev->queues) {
 		old_uapsdFlags = priv->uapsd_info.uapsdFlags;
 
+		WSM_TX_QUEUE_SET(&priv->tx_queue_params, queue, 0, 0, 0);
+		ret = wsm_set_tx_queue_params(priv,
+				&priv->tx_queue_params.params[queue], queue);
+		if (ret) {
+			ret = -EINVAL;
+			goto out;
+		}
+
 		WSM_EDCA_SET(&priv->edca, queue, params->aifs,
-			params->cw_min, params->cw_max, params->txop,
+			params->cw_min, params->cw_max, params->txop, 0xc8,
 			params->uapsd);
 		ret = wsm_set_edca_params(priv, &priv->edca);
+		if (ret) {
+			ret = -EINVAL;
+			goto out;
+		}
 
-		if (!ret && (priv->mode == NL80211_IFTYPE_STATION)) {
+		if (priv->mode == NL80211_IFTYPE_STATION) {
 			ret = cw1200_set_uapsd_param(priv, &priv->edca);
 			if (!ret && priv->setbssparams_done &&
 				(priv->join_status == CW1200_JOIN_STATUS_STA) &&
@@ -554,6 +566,7 @@ int cw1200_conf_tx(struct ieee80211_hw *dev, struct ieee80211_vif *vif,
 	} else
 		ret = -EINVAL;
 
+out:
 	mutex_unlock(&priv->conf_mutex);
 	return ret;
 }
