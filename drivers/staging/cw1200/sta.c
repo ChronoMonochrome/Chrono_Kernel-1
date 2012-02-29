@@ -322,6 +322,9 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		struct wsm_p2p_ps_modeinfo *modeinfo;
 		modeinfo = &priv->p2p_ps_modeinfo;
 		sta_printk(KERN_DEBUG "[STA] IEEE80211_CONF_CHANGE_P2P_PS\n");
+		sta_printk(KERN_DEBUG "[STA] Legacy PS: %d for AID %d "
+			"in %d mode.\n", conf->p2p_ps.legacy_ps,
+			priv->bss_params.aid, priv->join_status);
 
 		if (conf->p2p_ps.legacy_ps >= 0) {
 			if (conf->p2p_ps.legacy_ps > 0)
@@ -333,11 +336,15 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 				cw1200_set_pm(priv, &priv->powersave_mode);
 		}
 
+		sta_printk(KERN_DEBUG "[STA] CTWindow: %d\n",
+			conf->p2p_ps.ctwindow);
 		if (conf->p2p_ps.ctwindow >= 128)
 			modeinfo->oppPsCTWindow = 127;
 		else if (conf->p2p_ps.ctwindow >= 0)
 			modeinfo->oppPsCTWindow = conf->p2p_ps.ctwindow;
 
+		sta_printk(KERN_DEBUG "[STA] Opportunistic: %d\n",
+			conf->p2p_ps.opp_ps);
 		switch (conf->p2p_ps.opp_ps) {
 		case 0:
 			modeinfo->oppPsCTWindow &= ~(BIT(7));
@@ -349,6 +356,11 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			break;
 		}
 
+		sta_printk(KERN_DEBUG "[STA] NOA: %d, %d, %d, %d\n",
+			conf->p2p_ps.count,
+			conf->p2p_ps.start,
+			conf->p2p_ps.duration,
+			conf->p2p_ps.interval);
 		/* Notice of Absence */
 		modeinfo->count = conf->p2p_ps.count;
 		modeinfo->startTime = __cpu_to_le32(conf->p2p_ps.start);
@@ -360,14 +372,14 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		else
 			modeinfo->dtimCount = 0;
 
+#if defined(CONFIG_CW1200_STA_DEBUG)
+		print_hex_dump_bytes("p2p_ps_modeinfo: ",
+				     DUMP_PREFIX_NONE,
+				     (u8 *)modeinfo,
+				     sizeof(*modeinfo));
+#endif /* CONFIG_CW1200_STA_DEBUG */
 		if (priv->join_status == CW1200_JOIN_STATUS_STA ||
 		    priv->join_status == CW1200_JOIN_STATUS_AP) {
-#if defined(CONFIG_CW1200_STA_DEBUG)
-			print_hex_dump_bytes("p2p_ps_modeinfo: ",
-					     DUMP_PREFIX_NONE,
-					     (u8 *)modeinfo,
-					     sizeof(*modeinfo));
-#endif /* CONFIG_CW1200_STA_DEBUG */
 			WARN_ON(wsm_set_p2p_ps_modeinfo(priv, modeinfo));
 		}
 	}

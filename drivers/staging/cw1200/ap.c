@@ -500,6 +500,13 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			}
 
 			cw1200_set_pm(priv, &priv->powersave_mode);
+			if (priv->vif->p2p) {
+				ap_printk(KERN_DEBUG
+					"[STA] Setting p2p powersave "
+					"configuration.\n");
+				WARN_ON(wsm_set_p2p_ps_modeinfo(priv,
+					&priv->p2p_ps_modeinfo));
+			}
 
 			if (priv->is_BT_Present)
 				WARN_ON(cw1200_set_btcoexinfo(priv));
@@ -864,6 +871,13 @@ static int cw1200_start_ap(struct cw1200_common *priv)
 	ret = WARN_ON(wsm_start(priv, &start));
 	if (!ret)
 		ret = WARN_ON(cw1200_upload_keys(priv));
+	if (!ret && priv->vif->p2p) {
+		ap_printk(KERN_DEBUG
+			"[AP] Setting p2p powersave "
+			"configuration.\n");
+		WARN_ON(wsm_set_p2p_ps_modeinfo(priv,
+			&priv->p2p_ps_modeinfo));
+	}
 	if (!ret) {
 		WARN_ON(wsm_set_block_ack_policy(priv,
 			0, 0));
