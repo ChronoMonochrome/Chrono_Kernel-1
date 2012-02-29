@@ -439,7 +439,6 @@ rx:
 		}
 
 tx:
-		/* HACK! One buffer is reserved for control path */
 		BUG_ON(priv->hw_bufs_used > priv->wsm_caps.numInpChBufs);
 		tx_burst = priv->wsm_caps.numInpChBufs - priv->hw_bufs_used;
 		tx_allowed = tx_burst > 0;

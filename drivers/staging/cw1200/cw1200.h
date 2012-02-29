@@ -78,6 +78,7 @@ struct cw1200_link_entry {
 struct cw1200_common {
 	struct cw1200_queue		tx_queue[4];
 	struct cw1200_queue_stats	tx_queue_stats;
+	int				tx_burst_idx;
 	struct cw1200_debug_priv	*debug;
 
 	struct ieee80211_hw		*hw;

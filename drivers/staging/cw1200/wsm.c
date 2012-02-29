@@ -15,6 +15,7 @@
 #include <linux/skbuff.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
+#include <linux/random.h>
 
 #include "cw1200.h"
 #include "wsm.h"
@@ -455,6 +456,7 @@ int wsm_join(struct cw1200_common *priv, struct wsm_join *arg)
 	WSM_PUT32(buf, arg->beaconInterval);
 	WSM_PUT32(buf, arg->basicRateSet);
 
+	priv->tx_burst_idx = -1;
 	ret = wsm_cmd_send(priv, buf, arg, 0x000B, WSM_CMD_JOIN_TIMEOUT);
 	wsm_cmd_unlock(priv);
 	return ret;
@@ -684,6 +686,7 @@ int wsm_start(struct cw1200_common *priv, const struct wsm_start *arg)
 	WSM_PUT(buf, arg->ssid, sizeof(arg->ssid));
 	WSM_PUT32(buf, arg->basicRateSet);
 
+	priv->tx_burst_idx = -1;
 	ret = wsm_cmd_send(priv, buf, NULL, 0x0017, WSM_CMD_START_TIMEOUT);
 
 	wsm_cmd_unlock(priv);
@@ -1498,52 +1501,85 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	return handled;
 }
 
+static int cw1200_get_prio_queue(struct cw1200_common *priv,
+				 u32 link_id_map, int *total)
+{
+	static const int urgent = BIT(CW1200_LINK_ID_AFTER_DTIM) |
+		BIT(CW1200_LINK_ID_UAPSD);
+	struct wsm_edca_queue_params *edca;
+	unsigned score, best = -1;
+	int winner = -1;
+	int queued;
+	int i;
+
+	/* search for a winner using edca params */
+	for (i = 0; i < 4; ++i) {
+		queued = cw1200_queue_get_num_queued(&priv->tx_queue[i],
+				link_id_map);
+		if (!queued)
+			continue;
+		*total += queued;
+		edca = &priv->edca.params[i];
+		score = ((edca->aifns + edca->cwMin) << 16) +
+				(edca->cwMax - edca->cwMin) *
+				(random32() & 0xFFFF);
+		if (score < best) {
+			best = score;
+			winner = i;
+		}
+	}
+
+	/* override winner if bursting */
+	if (winner >= 0 && priv->tx_burst_idx >= 0 &&
+			winner != priv->tx_burst_idx &&
+			!cw1200_queue_get_num_queued(
+				&priv->tx_queue[winner],
+				link_id_map & urgent) &&
+			cw1200_queue_get_num_queued(
+				&priv->tx_queue[priv->tx_burst_idx],
+				link_id_map))
+		winner = priv->tx_burst_idx;
+
+	return winner;
+}
+
 static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 				     struct cw1200_queue **queue_p,
 				     u32 *tx_allowed_mask_p,
 				     bool *more)
 {
-	int i;
-	struct cw1200_queue *queue = NULL;
+	int idx;
 	u32 tx_allowed_mask;
-	int mcasts = 0;
+	int total = 0;
 
 	/* Search for a queue with multicast frames buffered */
 	if (priv->tx_multicast) {
 		tx_allowed_mask = BIT(CW1200_LINK_ID_AFTER_DTIM);
-		for (i = 0; i < 4; ++i) {
-			mcasts += cw1200_queue_get_num_queued(
-					&priv->tx_queue[i], tx_allowed_mask);
-			if (!queue && mcasts)
-				queue = &priv->tx_queue[i];
-			if (mcasts > 1)
-				break;
-		}
-		if (mcasts)
+		idx = cw1200_get_prio_queue(priv,
+				tx_allowed_mask, &total);
+		if (idx >= 0) {
+			*more = total > 1;
 			goto found;
+		}
 	}
 
 	/* Search for unicast traffic */
-	for (i = 0; i < 4; ++i) {
-		queue = &priv->tx_queue[i];
-		tx_allowed_mask = ~priv->sta_asleep_mask;
-		tx_allowed_mask |= BIT(CW1200_LINK_ID_UAPSD);
-		if (priv->sta_asleep_mask) {
-			tx_allowed_mask |= priv->pspoll_mask;
-			tx_allowed_mask &= ~BIT(CW1200_LINK_ID_AFTER_DTIM);
-		} else {
-			tx_allowed_mask |= BIT(CW1200_LINK_ID_AFTER_DTIM);
-		}
-		if (cw1200_queue_get_num_queued(
-				queue, tx_allowed_mask))
-			goto found;
+	tx_allowed_mask = ~priv->sta_asleep_mask;
+	tx_allowed_mask |= BIT(CW1200_LINK_ID_UAPSD);
+	if (priv->sta_asleep_mask) {
+		tx_allowed_mask |= priv->pspoll_mask;
+		tx_allowed_mask &= ~BIT(CW1200_LINK_ID_AFTER_DTIM);
+	} else {
+		tx_allowed_mask |= BIT(CW1200_LINK_ID_AFTER_DTIM);
 	}
-	return -ENOENT;
+	idx = cw1200_get_prio_queue(priv,
+			tx_allowed_mask, &total);
+	if (idx < 0)
+		return -ENOENT;
 
 found:
-	*queue_p = queue;
+	*queue_p = &priv->tx_queue[idx];
 	*tx_allowed_mask_p = tx_allowed_mask;
-	*more = mcasts > 1;
 	return 0;
 }
 
@@ -1556,7 +1592,6 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 	int queue_num;
 	u32 tx_allowed_mask = 0;
 	const struct cw1200_txpriv *txpriv = NULL;
-	static const int trottle[] = { 0, 2, 4, 6 };
 	/*
 	 * Count was intended as an input for wsm->more flag.
 	 * During implementation it was found that wsm->more
@@ -1621,13 +1656,20 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 			*data = (u8 *)wsm;
 			*tx_len = __le16_to_cpu(wsm->hdr.len);
-			if (priv->sta_asleep_mask)
-				*burst = 1;
-			else
-				*burst = min(max(
-					*burst - trottle[queue_num], 1),
+
+			/* allow bursting if txop is set */
+			if (priv->edca.params[queue_num].txOpLimit)
+				*burst = min(*burst,
 					(int)cw1200_queue_get_num_queued(
-						queue, -1));
+						queue, tx_allowed_mask) + 1);
+			else
+				*burst = 1;
+
+			/* store index of bursting queue */
+			if (*burst > 1)
+				priv->tx_burst_idx = queue_num;
+			else
+				priv->tx_burst_idx = -1;
 
 			if (more) {
 				struct ieee80211_hdr *hdr =
