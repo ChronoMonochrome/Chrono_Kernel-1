@@ -12,6 +12,8 @@
 #ifndef CW1200_DEBUG_H_INCLUDED
 #define CW1200_DEBUG_H_INCLUDED
 
+#include "itp.h"
+
 struct cw200_common;
 
 #ifdef CONFIG_CW1200_DEBUGFS
@@ -31,6 +33,9 @@ struct cw1200_debug_priv {
 	int rx_burst;
 	int ba_cnt;
 	int ba_acc;
+#ifdef CONFIG_CW1200_ITP
+	struct cw1200_itp itp;
+#endif /* CONFIG_CW1200_ITP */
 };
 
 int cw1200_debug_init(struct cw1200_common *priv);
@@ -95,6 +100,8 @@ static inline void cw1200_debug_ba(struct cw1200_common *priv,
 	priv->debug->ba_acc = ba_acc;
 }
 
+int cw1200_print_fw_version(struct cw1200_common *priv, u8 *buf, size_t len);
+
 #else /* CONFIG_CW1200_DEBUGFS */
 
 static inline int cw1200_debug_init(struct cw1200_common *priv)
@@ -149,6 +156,10 @@ static inline void cw1200_debug_rx_burst(struct cw1200_common *priv)
 
 static inline void cw1200_debug_ba(struct cw1200_common *priv,
 				   int ba_cnt, int ba_acc)
+{
+}
+
+int cw1200_print_fw_version(struct cw1200_common *priv, u8 *buf, size_t len)
 {
 }
 

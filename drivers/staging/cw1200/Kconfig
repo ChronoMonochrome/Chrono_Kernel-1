@@ -42,6 +42,13 @@ config CW1200_WAPI_SUPPORT
         Say Y if your compat-wireless support WAPI.
         If unsure, say N.
 
+config CW1200_USE_STE_EXTENSIONS
+      bool "STE extensions"
+      depends on CW1200
+      help
+        Say Y if you want to include STE extensions.
+        If unsure, say N.
+
 config CW1200_DISABLE_BEACON_HINTS
       bool "Disable 11d beacon hints"
       depends on CW1200
@@ -81,5 +88,12 @@ config CW1200_STA_DEBUG
       bool "Enable STA/AP debug (DEVELOPMENT)"
 
 endmenu
+
+config CW1200_ITP
+      bool "Enable ITP DebugFS"
+      depends on CW1200
+      help
+        Say Y if you want to include ITP code.
+        If unsure, say N.
 
 endif

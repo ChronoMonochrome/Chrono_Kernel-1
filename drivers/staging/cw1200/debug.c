@@ -470,11 +470,12 @@ static const struct file_operations fops_hang = {
 
 int cw1200_debug_init(struct cw1200_common *priv)
 {
+	int ret = -ENOMEM;
 	struct cw1200_debug_priv *d = kzalloc(sizeof(struct cw1200_debug_priv),
 			GFP_KERNEL);
 	priv->debug = d;
 	if (!d)
-		return -ENOMEM;
+		return ret;
 
 	d->debugfs_phy = debugfs_create_dir("cw1200",
 			priv->hw->wiphy->debugfsdir);
@@ -511,6 +512,11 @@ err:
 void cw1200_debug_release(struct cw1200_common *priv)
 {
 	struct cw1200_debug_priv *d = priv->debug;
+	if (d) {
+		cw1200_itp_release(priv);
+		priv->debug = NULL;
+		kfree(d);
+	}
 	priv->debug = NULL;
 
 	if (d) {

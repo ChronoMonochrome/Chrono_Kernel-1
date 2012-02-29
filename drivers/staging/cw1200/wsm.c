@@ -21,6 +21,7 @@
 #include "wsm.h"
 #include "bh.h"
 #include "debug.h"
+#include "itp.h"
 
 #if defined(CONFIG_CW1200_WSM_DEBUG)
 #define wsm_printk(...) printk(__VA_ARGS__)
@@ -1643,6 +1644,10 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 	/* More is used only for broadcasts. */
 	bool more = false;
+
+	count = cw1200_itp_get_tx(priv, data, tx_len, burst);
+	if (count)
+		return count;
 
 	if (priv->wsm_cmd.ptr) {
 		++count;
