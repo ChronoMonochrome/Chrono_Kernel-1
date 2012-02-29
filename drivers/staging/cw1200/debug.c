@@ -468,6 +468,31 @@ static const struct file_operations fops_hang = {
 };
 #endif
 
+static ssize_t cw1200_wsm_dumps(struct file *file,
+	const char __user *user_buf, size_t count, loff_t *ppos)
+{
+	struct cw1200_common *priv = file->private_data;
+	char buf[1];
+
+	if (!count)
+		return -EINVAL;
+	if (copy_from_user(buf, user_buf, 1))
+		return -EFAULT;
+
+	if (buf[0] == '1')
+		priv->wsm_enable_wsm_dumps = 1;
+	else
+		priv->wsm_enable_wsm_dumps = 0;
+
+	return count;
+}
+
+static const struct file_operations fops_wsm_dumps = {
+	.open = cw1200_generic_open,
+	.write = cw1200_wsm_dumps,
+	.llseek = default_llseek,
+};
+
 int cw1200_debug_init(struct cw1200_common *priv)
 {
 	int ret = -ENOMEM;
@@ -499,6 +524,10 @@ int cw1200_debug_init(struct cw1200_common *priv)
 			priv, &fops_hang))
 		goto err;
 #endif
+
+	if (!debugfs_create_file("wsm_dumps", S_IWUSR, d->debugfs_phy,
+			priv, &fops_wsm_dumps))
+		goto err;
 
 	ret = cw1200_itp_init(priv);
 	if (ret)

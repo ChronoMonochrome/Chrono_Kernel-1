@@ -397,8 +397,10 @@ rx:
 				break;
 
 #if defined(CONFIG_CW1200_WSM_DUMPS)
-			print_hex_dump_bytes("<-- ", DUMP_PREFIX_NONE,
-				data, wsm_len);
+			if (unlikely(priv->wsm_enable_wsm_dumps))
+				print_hex_dump_bytes("<-- ",
+					DUMP_PREFIX_NONE,
+					data, wsm_len);
 #endif /* CONFIG_CW1200_WSM_DUMPS */
 
 			wsm_id  = __le32_to_cpu(wsm->id) & 0xFFF;
@@ -520,8 +522,10 @@ tx:
 				}
 
 #if defined(CONFIG_CW1200_WSM_DUMPS)
-				print_hex_dump_bytes("--> ", DUMP_PREFIX_NONE,
-					data, __le32_to_cpu(wsm->len));
+				if (unlikely(priv->wsm_enable_wsm_dumps))
+					print_hex_dump_bytes("--> ",
+						DUMP_PREFIX_NONE,
+						data, __le32_to_cpu(wsm->len));
 #endif /* CONFIG_CW1200_WSM_DUMPS */
 
 				wsm_txed(priv, data);

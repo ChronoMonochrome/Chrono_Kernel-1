@@ -206,6 +206,9 @@ struct cw1200_common {
 	struct wsm_cbc			wsm_cbc;
 	atomic_t			tx_lock;
 
+	/* WSM debug */
+	int				wsm_enable_wsm_dumps;
+
 	/* Scan status */
 	struct cw1200_scan scan;
 
