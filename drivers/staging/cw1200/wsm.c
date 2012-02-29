@@ -1532,7 +1532,7 @@ static int cw1200_get_prio_queue(struct cw1200_common *priv,
 		score = ((edca->aifns + edca->cwMin) << 16) +
 				(edca->cwMax - edca->cwMin) *
 				(random32() & 0xFFFF);
-		if (score < best) {
+		if (score < best && (winner < 0 || i != 3)) {
 			best = score;
 			winner = i;
 		}
