@@ -452,6 +452,7 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 				priv->association_mode.basicRateSet);
 			WARN_ON(wsm_set_association_mode(priv,
 				&priv->association_mode));
+			WARN_ON(wsm_keep_alive_period(priv, 30 /* sec */));
 			WARN_ON(wsm_set_bss_params(priv, &priv->bss_params));
 			priv->setbssparams_done = true;
 			WARN_ON(wsm_set_beacon_wakeup_period(priv,

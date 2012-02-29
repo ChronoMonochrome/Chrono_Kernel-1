@@ -1274,7 +1274,6 @@ void cw1200_join_work(struct work_struct *work)
 		} else {
 			/* Upload keys */
 			WARN_ON(cw1200_upload_keys(priv));
-			WARN_ON(wsm_keep_alive_period(priv, 30 /* sec */));
 			cw1200_queue_requeue(queue, priv->pending_frame_id);
 			priv->join_status = CW1200_JOIN_STATUS_STA;
 		}
@@ -1333,6 +1332,7 @@ void cw1200_unjoin_work(struct work_struct *work)
 
 		/* Unjoin is a reset. */
 		wsm_flush_tx(priv);
+		WARN_ON(wsm_keep_alive_period(priv, 0));
 		WARN_ON(wsm_reset(priv, &reset));
 		priv->join_dtim_period = 0;
 		WARN_ON(cw1200_setup_mac(priv));
