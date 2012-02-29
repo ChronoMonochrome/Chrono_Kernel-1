@@ -368,6 +368,12 @@ rx:
 				alloc_len += SDIO_BLOCK_SIZE;
 #endif /* CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES */
 
+			/* Check if not exceeding CW1200 capabilities */
+			if (WARN_ON_ONCE(alloc_len > EFFECTIVE_BUF_SIZE)) {
+				printk(KERN_DEBUG "Read aligned len: %d\n",
+					alloc_len);
+			}
+
 			skb_rx = cw1200_get_skb(priv, alloc_len);
 			if (WARN_ON(!skb_rx))
 				break;
@@ -493,6 +499,14 @@ tx:
 					tx_len += SDIO_BLOCK_SIZE;
 				}
 #endif /* CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES */
+
+				/* Check if not exceeding CW1200
+				    capabilities */
+				if (WARN_ON_ONCE(
+				    tx_len > EFFECTIVE_BUF_SIZE)) {
+					printk(KERN_DEBUG "Write aligned len:"
+					" %d\n", tx_len);
+				}
 
 				wsm->id &= __cpu_to_le32(
 						~WSM_TX_SEQ(WSM_TX_SEQ_MAX));
