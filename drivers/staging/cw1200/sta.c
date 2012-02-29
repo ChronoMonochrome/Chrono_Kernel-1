@@ -433,9 +433,12 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 void cw1200_update_filtering(struct cw1200_common *priv)
 {
 	int ret;
+	bool bssid_filtering = !priv->rx_filter.bssid;
 
 	if (priv->join_status == CW1200_JOIN_STATUS_PASSIVE)
 		return;
+	else if (priv->join_status == CW1200_JOIN_STATUS_MONITOR)
+		bssid_filtering = false;
 
 	ret = wsm_set_rx_filter(priv, &priv->rx_filter);
 	if (!ret)
@@ -443,7 +446,7 @@ void cw1200_update_filtering(struct cw1200_common *priv)
 	if (!ret)
 		ret = wsm_beacon_filter_control(priv, &priv->bf_control);
 	if (!ret)
-		ret = wsm_set_bssid_filtering(priv, !priv->rx_filter.bssid);
+		ret = wsm_set_bssid_filtering(priv, bssid_filtering);
 	if (!ret)
 		ret = wsm_set_multicast_filter(priv, &priv->multicast_filter);
 	if (ret)
