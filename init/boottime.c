@@ -36,7 +36,7 @@
  * We have a few static entries, since it is good to have measure points
  * before the system is up and running properly
  */
-#define NUM_STATIC_BOOTTIME_ENTRIES 16
+#define NUM_STATIC_BOOTTIME_ENTRIES 32
 
 struct boottime_list {
 	struct list_head list;
