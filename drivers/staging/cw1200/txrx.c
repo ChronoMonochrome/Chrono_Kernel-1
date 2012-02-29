@@ -1086,6 +1086,10 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 			goto drop;
 		}
 
+		/* Firmware strips ICV in case of MIC failure. */
+		if (arg->status == WSM_STATUS_MICFAILURE)
+			icv_len = 0;
+
 		if (skb->len < hdrlen + iv_len + icv_len) {
 			wiphy_warn(priv->hw->wiphy, "Mailformed SDU rx'ed. "
 				"Size is lesser than crypto headers.\n");
