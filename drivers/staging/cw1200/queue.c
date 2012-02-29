@@ -88,7 +88,7 @@ static void cw1200_queue_register_post_gc(struct list_head *gc_list,
 			GFP_ATOMIC);
 	BUG_ON(!gc_item);
 	memcpy(gc_item, item, sizeof(struct cw1200_queue_item));
-	list_move_tail(&gc_item->head, gc_list);
+	list_add_tail(&gc_item->head, gc_list);
 }
 
 static void __cw1200_queue_gc(struct cw1200_queue *queue,
