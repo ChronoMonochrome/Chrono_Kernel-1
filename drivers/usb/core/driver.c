@@ -1671,7 +1671,7 @@ EXPORT_SYMBOL_GPL(usb_autopm_get_interface_no_resume);
 /* Internal routine to check whether we may autosuspend a device. */
 static int autosuspend_check(struct usb_device *udev)
 {
-	int			w, i;
+	int			w, i, audio_class = 0;
 	struct usb_interface	*intf;
 
 	/* Fail if autosuspend is disabled, or any interfaces are in use, or
@@ -1705,13 +1705,28 @@ static int autosuspend_check(struct usb_device *udev)
 						intf->needs_remote_wakeup)
 					return -EOPNOTSUPP;
 			}
+
+			if (intf->cur_altsetting->desc.bInterfaceClass
+				== USB_CLASS_AUDIO) {
+				dev_dbg(&udev->dev,
+					"audio interface class present\n");
+				audio_class = 1;
+			}
 		}
+		if (audio_class) {
+			dev_dbg(&udev->dev,
+					"disabling remote wakeup for audio class\n");
+			udev->do_remote_wakeup = 0;
+		} else {
+			if (w && !device_can_wakeup(&udev->dev)) {
+				dev_dbg(&udev->dev,
+				"remote wakeup needed for autosuspend\n");
+				return -EOPNOTSUPP;
+			}
+			udev->do_remote_wakeup = w;
+		}
+
 	}
-	if (w && !device_can_wakeup(&udev->dev)) {
-		dev_dbg(&udev->dev, "remote wakeup needed for autosuspend\n");
-		return -EOPNOTSUPP;
-	}
-	udev->do_remote_wakeup = w;
 	return 0;
 }
 
