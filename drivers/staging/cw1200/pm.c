@@ -10,6 +10,7 @@
  */
 
 #include <linux/platform_device.h>
+#include <linux/if_ether.h>
 #include "cw1200.h"
 #include "pm.h"
 #include "sta.h"
@@ -17,6 +18,67 @@
 #include "sbus.h"
 
 #define CW1200_BEACON_SKIPPING_MULTIPLIER 3
+
+struct cw1200_udp_port_filter {
+	struct wsm_udp_port_filter_hdr hdr;
+	struct wsm_udp_port_filter dhcp;
+	struct wsm_udp_port_filter upnp;
+} __packed;
+
+struct cw1200_ether_type_filter {
+	struct wsm_ether_type_filter_hdr hdr;
+	struct wsm_ether_type_filter ip;
+	struct wsm_ether_type_filter pae;
+	struct wsm_ether_type_filter wapi;
+} __packed;
+
+static struct cw1200_udp_port_filter cw1200_udp_port_filter_on = {
+	.hdr.nrFilters = 2,
+	.dhcp = {
+		.filterAction = WSM_FILTER_ACTION_FILTER_OUT,
+		.portType = WSM_FILTER_PORT_TYPE_DST,
+		.udpPort = __cpu_to_le16(67),
+	},
+	.upnp = {
+		.filterAction = WSM_FILTER_ACTION_FILTER_OUT,
+		.portType = WSM_FILTER_PORT_TYPE_DST,
+		.udpPort = __cpu_to_le16(1900),
+	},
+	/* Please add other known ports to be filtered out here and
+	 * update nrFilters field in the header.
+	 * Up to 4 filters are allowed. */
+};
+
+static struct wsm_udp_port_filter_hdr cw1200_udp_port_filter_off = {
+	.nrFilters = 0,
+};
+
+#ifndef ETH_P_WAPI
+#define ETH_P_WAPI     0x88B4
+#endif
+
+static struct cw1200_ether_type_filter cw1200_ether_type_filter_on = {
+	.hdr.nrFilters = 3,
+	.ip = {
+		.filterAction = WSM_FILTER_ACTION_FILTER_IN,
+		.etherType = __cpu_to_le16(ETH_P_IP),
+	},
+	.pae = {
+		.filterAction = WSM_FILTER_ACTION_FILTER_IN,
+		.etherType = __cpu_to_le16(ETH_P_PAE),
+	},
+	.wapi = {
+		.filterAction = WSM_FILTER_ACTION_FILTER_IN,
+		.etherType = __cpu_to_le16(ETH_P_WAPI),
+	},
+	/* Please add other known ether types to be filtered out here and
+	 * update nrFilters field in the header.
+	 * Up to 4 filters are allowed. */
+};
+
+static struct wsm_ether_type_filter_hdr cw1200_ether_type_filter_off = {
+	.nrFilters = 0,
+};
 
 static int cw1200_suspend_late(struct device *dev);
 static void cw1200_pm_release(struct device *dev);
@@ -236,7 +298,13 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 	/* Lock TX. */
 	wsm_lock_tx_async(priv);
 	if (priv->hw_bufs_used)
-		goto revert3;
+		goto revert2;
+
+	/* Set UDP filter */
+	wsm_set_udp_port_filter(priv, &cw1200_udp_port_filter_on.hdr);
+
+	/* Set ethernet frame type filter */
+	wsm_set_ether_type_filter(priv, &cw1200_ether_type_filter_on.hdr);
 
 	/* Allocate state */
 	state = kzalloc(sizeof(struct cw1200_suspend_state), GFP_KERNEL);
@@ -313,6 +381,9 @@ revert4:
 			state->link_id_gc);
 	kfree(state);
 revert3:
+	wsm_set_udp_port_filter(priv, &cw1200_udp_port_filter_off);
+	wsm_set_ether_type_filter(priv, &cw1200_ether_type_filter_off);
+revert2:
 	wsm_unlock_tx(priv);
 	up(&priv->scan.lock);
 revert1:
@@ -361,6 +432,12 @@ int cw1200_wow_resume(struct ieee80211_hw *hw)
 		mod_timer(&priv->ba_timer,
 			jiffies + CW1200_BLOCK_ACK_INTERVAL);
 	spin_unlock_bh(&priv->ba_lock);
+
+	/* Remove UDP port filter */
+	wsm_set_udp_port_filter(priv, &cw1200_udp_port_filter_off);
+
+	/* Remove ethernet frame type filter */
+	wsm_set_ether_type_filter(priv, &cw1200_ether_type_filter_off);
 
 	/* Unlock datapath */
 	wsm_unlock_tx(priv);

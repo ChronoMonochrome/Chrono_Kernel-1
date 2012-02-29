@@ -572,6 +572,17 @@ struct cw1200_common;
 /* This is applicable only to Transmit */
 #define WSM_REQUEUE                     (11)
 
+/* Advanced filtering options */
+#define WSM_MAX_FILTER_ELEMENTS		(4)
+
+#define WSM_FILTER_ACTION_IGNORE	(0)
+#define WSM_FILTER_ACTION_FILTER_IN	(1)
+#define WSM_FILTER_ACTION_FILTER_OUT	(2)
+
+#define WSM_FILTER_PORT_TYPE_DST	(0)
+#define WSM_FILTER_PORT_TYPE_SRC	(1)
+
+
 
 struct wsm_hdr {
 	__le16 len;
@@ -1514,6 +1525,49 @@ static inline int wsm_set_tx_rate_retry_policy(struct cw1200_common *priv,
 	    sizeof(struct wsm_set_tx_rate_retry_policy_policy);
 	return wsm_write_mib(priv, WSM_MIB_ID_SET_TX_RATE_RETRY_POLICY, arg,
 			     size);
+}
+
+/* 4.32 SetEtherTypeDataFrameFilter */
+struct wsm_ether_type_filter_hdr {
+	u8 nrFilters;		/* Up to WSM_MAX_FILTER_ELEMENTS */
+	u8 reserved[3];
+} __packed;
+
+struct wsm_ether_type_filter {
+	u8 filterAction;	/* WSM_FILTER_ACTION_XXX */
+	u8 reserved;
+	__le16 etherType;	/* Type of ethernet frame */
+} __packed;
+
+static inline int wsm_set_ether_type_filter(struct cw1200_common *priv,
+				struct wsm_ether_type_filter_hdr *arg)
+{
+	size_t size = sizeof(struct wsm_ether_type_filter_hdr) +
+		arg->nrFilters * sizeof(struct wsm_ether_type_filter);
+	return wsm_write_mib(priv, WSM_MIB_ID_SET_ETHERTYPE_DATAFRAME_FILTER,
+		arg, size);
+}
+
+
+/* 4.33 SetUDPPortDataFrameFilter */
+struct wsm_udp_port_filter_hdr {
+	u8 nrFilters;		/* Up to WSM_MAX_FILTER_ELEMENTS */
+	u8 reserved[3];
+} __packed;
+
+struct wsm_udp_port_filter {
+	u8 filterAction;	/* WSM_FILTER_ACTION_XXX */
+	u8 portType;		/* WSM_FILTER_PORT_TYPE_XXX */
+	__le16 udpPort;		/* Port number */
+} __packed;
+
+static inline int wsm_set_udp_port_filter(struct cw1200_common *priv,
+				struct wsm_udp_port_filter_hdr *arg)
+{
+	size_t size = sizeof(struct wsm_udp_port_filter_hdr) +
+		arg->nrFilters * sizeof(struct wsm_udp_port_filter);
+	return wsm_write_mib(priv, WSM_MIB_ID_SET_UDPPORT_DATAFRAME_FILTER,
+		arg, size);
 }
 
 /* Undocumented MIBs: */
