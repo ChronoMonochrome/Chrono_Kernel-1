@@ -262,6 +262,7 @@ static int cw1200_bh(void *arg)
 	int tx_allowed;
 	int pending_tx = 0;
 	long status;
+	u8 dummy;
 
 	for (;;) {
 		if (!priv->hw_bufs_used
@@ -273,6 +274,12 @@ static int cw1200_bh(void *arg)
 			status = 1 * HZ;
 		else
 			status = MAX_SCHEDULE_TIMEOUT;
+
+		/* Dummy Read for SDIO retry mechanism*/
+		if (((atomic_read(&priv->bh_rx) == 0) &&
+				(atomic_read(&priv->bh_tx) == 0)))
+			cw1200_reg_read(priv, ST90TDS_CONFIG_REG_ID,
+					&dummy, sizeof(dummy));
 
 		status = wait_event_interruptible_timeout(priv->bh_wq, ({
 				rx = atomic_xchg(&priv->bh_rx, 0);
@@ -497,14 +504,6 @@ tx:
 				priv->wsm_tx_seq = (priv->wsm_tx_seq + 1) &
 						WSM_TX_SEQ_MAX;
 			}
-		}
-
-		/* HACK!!! Device tends not to send interrupt
-		 * if this extra check is missing */
-		if (!(ctrl_reg & ST90TDS_CONT_NEXT_LEN_MASK)) {
-			if (WARN_ON(cw1200_bh_read_ctrl_reg(
-					priv, &ctrl_reg)))
-				break;
 		}
 
 		if (ctrl_reg & ST90TDS_CONT_NEXT_LEN_MASK)
