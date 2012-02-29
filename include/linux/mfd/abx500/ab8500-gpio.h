@@ -20,8 +20,8 @@ struct ab8500_gpio_platform_data {
 	int gpio_base;
 	u32 irq_base;
 	u8  config_reg[8];
-	u8  config_direction[6];
-	u8  config_pullups[6];
+	u8  config_direction[7];
+	u8  config_pullups[7];
 };
 
 enum ab8500_pin {
@@ -67,6 +67,26 @@ enum ab8500_pin {
 	AB8500_PIN_GPIO40,
 	AB8500_PIN_GPIO41,
 	AB8500_PIN_GPIO42,
+	/* AB9540 GPIO extends support provided by AB8500 */
+	AB9540_PIN_GPIO43,
+	AB9540_PIN_GPIO44,
+	AB9540_PIN_GPIO45,
+	AB9540_PIN_GPIO46,
+	AB9540_PIN_GPIO47,
+	AB9540_PIN_GPIO48,
+	AB9540_PIN_GPIO49,
+	AB9540_PIN_GPIO50,
+	AB9540_PIN_GPIO51,
+	AB9540_PIN_GPIO52,
+	AB9540_PIN_GPIO53,
+	/*
+	 * AB9540_PIN_GPIO60 is configured, in the AB9540 GPIO registers, where
+	 * AB9540_PIN_GPIO54 would be expected. AB9540_PIN_GPIO54 to
+	 * AB9540_PIN_GPIO59 do not exist and no reserved space has been left
+	 * for them in the registers. Therefore the enum goes directly from
+	 * AB9540_PIN_GPIO53 to AB9540_PIN_GPIO60.
+	 */
+	AB9540_PIN_GPIO60,
 };
 
 int ab8500_config_pulldown(struct device *dev,
