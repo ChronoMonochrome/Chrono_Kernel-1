@@ -328,6 +328,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_WORK(&priv->offchannel_work, cw1200_offchannel_work);
 	INIT_WORK(&priv->wep_key_work, cw1200_wep_key_work);
 	INIT_WORK(&priv->tx_policy_upload_work, tx_policy_upload_work);
+	spin_lock_init(&priv->event_queue_lock);
 	INIT_LIST_HEAD(&priv->event_queue);
 	INIT_WORK(&priv->event_handler, cw1200_event_handler);
 	INIT_DELAYED_WORK(&priv->bss_loss_work, cw1200_bss_loss_work);
@@ -373,6 +374,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	init_waitqueue_head(&priv->wsm_cmd_wq);
 	init_waitqueue_head(&priv->wsm_startup_done);
 	wsm_buf_init(&priv->wsm_cmd_buf);
+	spin_lock_init(&priv->wsm_cmd.lock);
 	tx_policy_init(priv);
 
 	return hw;
