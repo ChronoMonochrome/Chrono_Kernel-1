@@ -260,24 +260,6 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		WARN_ON(wsm_set_output_power(priv, priv->output_power * 10));
 	}
 
-	if (changed & IEEE80211_CONF_CHANGE_LISTEN_INTERVAL) {
-		/* TODO: Not sure. Needs to be verified. */
-		/* TODO: DTIM skipping */
-		int dtim_interval = conf->ps_dtim_period;
-		int listen_interval = conf->listen_interval;
-		if (dtim_interval < 1)
-			dtim_interval = 1;
-		if (listen_interval < dtim_interval)
-			listen_interval = 0;
-		/* TODO: max_sleep_period is not supported
-		 * and silently skipped. */
-		sta_printk(KERN_DEBUG "[STA] DTIM %d, listen %d\n",
-			dtim_interval, listen_interval);
-		WARN_ON(wsm_set_beacon_wakeup_period(priv,
-			dtim_interval, listen_interval));
-	}
-
-
 	if ((changed & IEEE80211_CONF_CHANGE_CHANNEL) &&
 			(priv->channel != conf->channel)) {
 		struct ieee80211_channel *ch = conf->channel;

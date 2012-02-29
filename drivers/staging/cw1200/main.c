@@ -256,6 +256,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 		    IEEE80211_HW_SUPPORTS_UAPSD |
 		    IEEE80211_HW_CONNECTION_MONITOR |
 		    IEEE80211_HW_SUPPORTS_CQM_RSSI |
+		    IEEE80211_HW_NEED_DTIM_PERIOD |
 		    /* Aggregation is fully controlled by firmware.
 		     * Do not need any support from the mac80211 stack */
 		    /* IEEE80211_HW_AMPDU_AGGREGATION | */
