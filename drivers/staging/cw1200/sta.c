@@ -1580,6 +1580,9 @@ void cw1200_ba_timer(unsigned long arg)
 	spin_lock_bh(&priv->ba_lock);
 	cw1200_debug_ba(priv, priv->ba_cnt, priv->ba_acc);
 
+	if (atomic_read(&priv->scan.in_progress))
+		goto skip_statistic_update;
+
 	ba_ena = (priv->ba_cnt >= CW1200_BLOCK_ACK_CNT &&
 			priv->ba_acc / priv->ba_cnt >= CW1200_BLOCK_ACK_THLD);
 	priv->ba_cnt = 0;
@@ -1596,6 +1599,7 @@ void cw1200_ba_timer(unsigned long arg)
 	} else if (priv->ba_hist)
 		--priv->ba_hist;
 
+skip_statistic_update:
 	spin_unlock_bh(&priv->ba_lock);
 }
 
