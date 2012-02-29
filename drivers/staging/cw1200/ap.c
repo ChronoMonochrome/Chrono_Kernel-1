@@ -22,6 +22,10 @@
 
 #define CW1200_LINK_ID_GC_TIMEOUT ((unsigned long)(10 * HZ))
 
+#ifndef ERP_INFO_BYTE_OFFSET
+#define ERP_INFO_BYTE_OFFSET 2
+#endif
+
 static int cw1200_upload_beacon(struct cw1200_common *priv);
 static int cw1200_upload_pspoll(struct cw1200_common *priv);
 static int cw1200_upload_null(struct cw1200_common *priv);
@@ -223,7 +227,6 @@ void cw1200_set_cts_work(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, set_cts_work.work);
 
-	struct ieee80211_mgmt *mgmt;
 	u8 erp_ie[3] = {WLAN_EID_ERP_INFO, 0x1, 0};
 	struct wsm_update_ie update_ie = {
 		.what = WSM_UPDATE_IE_BEACON,
@@ -231,17 +234,18 @@ void cw1200_set_cts_work(struct work_struct *work)
 		.ies = erp_ie,
 		.length = 3,
 	};
-	__le32 use_cts_prot = priv->use_cts_prot ?
+	u32 erp_info;
+	__le32 use_cts_prot;
+	mutex_lock(&priv->conf_mutex);
+	erp_info = priv->erp_info;
+	mutex_unlock(&priv->conf_mutex);
+	use_cts_prot =
+		erp_info & WLAN_ERP_USE_PROTECTION ?
 		__cpu_to_le32(1) : 0;
 
-	mutex_lock(&priv->conf_mutex);
-	if (priv->use_cts_prot)
-		erp_ie[ERP_INFO_BYTE_OFFSET] |= WLAN_ERP_USE_PROTECTION;
-	else
-		erp_ie[ERP_INFO_BYTE_OFFSET] &= ~(WLAN_ERP_USE_PROTECTION);
-	mutex_unlock(&priv->conf_mutex);
+	erp_ie[ERP_INFO_BYTE_OFFSET] = erp_info;
 
-	ap_printk(KERN_DEBUG "[STA] CTS protection %d\n", use_cts_prot);
+	ap_printk(KERN_DEBUG "[STA] ERP information 0x%x\n", erp_info);
 
 	WARN_ON(wsm_write_mib(priv, WSM_MIB_ID_NON_ERP_PROTECTION,
 				&use_cts_prot, sizeof(use_cts_prot)));
@@ -542,11 +546,18 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 		}
 	}
 	if (changed & (BSS_CHANGED_ASSOC | BSS_CHANGED_ERP_CTS_PROT)) {
+		u32 prev_erp_info = priv->erp_info;
 
-		priv->use_cts_prot = info->use_cts_prot;
+		if (info->use_cts_prot)
+			priv->erp_info |= WLAN_ERP_USE_PROTECTION;
+		else if (!(prev_erp_info & WLAN_ERP_NON_ERP_PRESENT))
+			priv->erp_info &= ~WLAN_ERP_USE_PROTECTION;
 
-		queue_delayed_work(priv->workqueue, &priv->set_cts_work, 0*HZ);
+		if (prev_erp_info != priv->erp_info)
+			queue_delayed_work(priv->workqueue,
+					&priv->set_cts_work, 0*HZ);
 	}
+
 	if (changed & (BSS_CHANGED_ASSOC | BSS_CHANGED_ERP_SLOT)) {
 		__le32 slot_time = info->use_short_slot ?
 			__cpu_to_le32(9) : __cpu_to_le32(20);
@@ -736,6 +747,9 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 	struct wsm_template_frame frame = {
 		.frame_type = WSM_FRAME_TYPE_BEACON,
 	};
+	struct ieee80211_mgmt *mgmt;
+	u8 *erp_inf, *ies;
+	u32 ies_len;
 
 	if (priv->vif->p2p)
 		frame.rate = WSM_TRANSMIT_RATE_6;
@@ -743,6 +757,27 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 	frame.skb = ieee80211_beacon_get(priv->hw, priv->vif);
 	if (WARN_ON(!frame.skb))
 		return -ENOMEM;
+
+	mgmt = (void *)frame.skb->data;
+	ies = mgmt->u.beacon.variable;
+	ies_len = frame.skb->len - (u32)(ies - (u8 *)mgmt);
+	erp_inf = (u8 *)cfg80211_find_ie(WLAN_EID_ERP_INFO, ies, ies_len);
+	if (erp_inf) {
+		if (erp_inf[ERP_INFO_BYTE_OFFSET]
+				& WLAN_ERP_BARKER_PREAMBLE)
+			priv->erp_info |= WLAN_ERP_BARKER_PREAMBLE;
+		else
+			priv->erp_info &= ~WLAN_ERP_BARKER_PREAMBLE;
+
+		if (erp_inf[ERP_INFO_BYTE_OFFSET]
+				& WLAN_ERP_NON_ERP_PRESENT) {
+			priv->erp_info |= WLAN_ERP_USE_PROTECTION;
+			priv->erp_info |= WLAN_ERP_NON_ERP_PRESENT;
+		} else {
+			priv->erp_info &= ~WLAN_ERP_USE_PROTECTION;
+			priv->erp_info &= ~WLAN_ERP_NON_ERP_PRESENT;
+		}
+	}
 
 	ret = wsm_set_template_frame(priv, &frame);
 	if (!ret) {

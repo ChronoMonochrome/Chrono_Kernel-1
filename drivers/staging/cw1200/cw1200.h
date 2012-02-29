@@ -163,7 +163,7 @@ struct cw1200_common {
 	bool				is_BT_Present;
 	u8				conf_listen_interval;
 	u32				listen_interval;
-	u32				use_cts_prot;
+	u32				erp_info;
 
 	/* BH */
 	atomic_t			bh_rx;
