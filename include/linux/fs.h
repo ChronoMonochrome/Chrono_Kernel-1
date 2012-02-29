@@ -694,6 +694,8 @@ struct address_space_operations {
 	void (*freepage)(struct page *);
 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
 			loff_t offset, unsigned long nr_segs);
+	ssize_t (*direct_IO_bvec)(int, struct kiocb *, struct bio_vec *bvec,
+			loff_t offset, unsigned long bvec_len);
 	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
 						void **, unsigned long *);
 	/*
@@ -2376,6 +2378,7 @@ static inline void i_readcount_inc(struct inode *inode)
 {
 	atomic_inc(&inode->i_readcount);
 }
+
 #else
 static inline void i_readcount_dec(struct inode *inode)
 {
@@ -2552,6 +2555,30 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
 	return __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
 				    offset, nr_segs, get_block, NULL, NULL,
 				    DIO_LOCKING | DIO_SKIP_HOLES);
+}
+
+ssize_t __blockdev_direct_IO_bvec(int rw, struct kiocb *iocb,
+	struct inode *inode, struct block_device *bdev, struct bio_vec *bvec,
+	loff_t offset, unsigned long bvec_len, get_block_t get_block,
+	dio_iodone_t end_io, dio_submit_t submit_io, int flags);
+
+static inline ssize_t blockdev_direct_IO_bvec(int rw, struct kiocb *iocb,
+	struct inode *inode, struct block_device *bdev, struct bio_vec *bvec,
+	loff_t offset, unsigned long bvec_len, get_block_t get_block,
+	dio_iodone_t end_io)
+{
+	return __blockdev_direct_IO_bvec(rw, iocb, inode, bdev, bvec, offset,
+				bvec_len, get_block, end_io, NULL,
+				DIO_LOCKING | DIO_SKIP_HOLES);
+}
+
+static inline ssize_t blockdev_direct_IO_bvec_no_locking(int rw,
+	struct kiocb *iocb, struct inode *inode, struct block_device *bdev,
+	struct bio_vec *bvec, loff_t offset, unsigned long bvec_len,
+	get_block_t get_block, dio_iodone_t end_io)
+{
+	return __blockdev_direct_IO_bvec(rw, iocb, inode, bdev, bvec, offset,
+				bvec_len, get_block, end_io, NULL, 0);
 }
 #endif
 
