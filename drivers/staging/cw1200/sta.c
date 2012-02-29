@@ -1103,10 +1103,6 @@ static int cw1200_parse_SDD_file(struct cw1200_common *priv)
 
 int cw1200_setup_mac(struct cw1200_common *priv)
 {
-	/* TBD: Do you know how to assing MAC address without
-	 * annoying uploading RX data? */
-	u8 prev_mac[ETH_ALEN];
-
 	/* NOTE: There is a bug in FW: it reports signal
 	* as RSSI if RSSI subscription is enabled.
 	* It's not enough to set WSM_RCPI_RSSI_USE_RSSI. */
@@ -1119,40 +1115,37 @@ int cw1200_setup_mac(struct cw1200_common *priv)
 	};
 	int ret = 0;
 
-	if (wsm_get_station_id(priv, &prev_mac[0])
-	    || memcmp(prev_mac, priv->mac_addr, ETH_ALEN)) {
+	if (!priv->sdd) {
 		const char *sdd_path = NULL;
 		struct wsm_configuration cfg = {
 			.dot11StationId = &priv->mac_addr[0],
 		};
 
-		if (!priv->sdd) {
-			switch (priv->hw_revision) {
-			case CW1200_HW_REV_CUT10:
-				sdd_path = SDD_FILE_10;
-				break;
-			case CW1200_HW_REV_CUT11:
-				sdd_path = SDD_FILE_11;
-				break;
-			case CW1200_HW_REV_CUT20:
-				sdd_path = SDD_FILE_20;
-				break;
-			case CW1200_HW_REV_CUT22:
-				sdd_path = SDD_FILE_22;
-				break;
-			default:
-				BUG_ON(1);
-			}
+		switch (priv->hw_revision) {
+		case CW1200_HW_REV_CUT10:
+			sdd_path = SDD_FILE_10;
+			break;
+		case CW1200_HW_REV_CUT11:
+			sdd_path = SDD_FILE_11;
+			break;
+		case CW1200_HW_REV_CUT20:
+			sdd_path = SDD_FILE_20;
+			break;
+		case CW1200_HW_REV_CUT22:
+			sdd_path = SDD_FILE_22;
+			break;
+		default:
+			BUG_ON(1);
+		}
 
-			ret = request_firmware(&priv->sdd,
-				sdd_path, priv->pdev);
+		ret = request_firmware(&priv->sdd,
+			sdd_path, priv->pdev);
 
-			if (unlikely(ret)) {
-				cw1200_dbg(CW1200_DBG_ERROR,
-					"%s: can't load sdd file %s.\n",
-					__func__, sdd_path);
-				return ret;
-			}
+		if (unlikely(ret)) {
+			cw1200_dbg(CW1200_DBG_ERROR,
+				"%s: can't load sdd file %s.\n",
+				__func__, sdd_path);
+			return ret;
 		}
 
 		cfg.dpdData = priv->sdd->data;
