@@ -86,6 +86,8 @@
 /* Time in ms before disabling regulator */
 #define GPADC_AUDOSUSPEND_DELAY		1
 
+#define CONVERSION_TIME			500 /* ms */
+
 enum cal_channels {
 	ADC_INPUT_VMAIN = 0,
 	ADC_INPUT_BTEMP,
@@ -368,7 +370,8 @@ int ab8500_gpadc_read_raw(struct ab8500_gpadc *gpadc, u8 channel)
 		goto out;
 	}
 	/* wait for completion of conversion */
-	if (!wait_for_completion_timeout(&gpadc->ab8500_gpadc_complete, 2*HZ)) {
+	if (!wait_for_completion_timeout(&gpadc->ab8500_gpadc_complete,
+					 msecs_to_jiffies(CONVERSION_TIME))) {
 		dev_err(gpadc->dev,
 			"timeout: didn't receive GPADC conversion interrupt\n");
 		ret = -EINVAL;
@@ -594,8 +597,6 @@ static int ab8500_gpadc_runtime_resume(struct device *dev)
 
 static int ab8500_gpadc_runtime_idle(struct device *dev)
 {
-	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
-
 	pm_runtime_suspend(dev);
 	return 0;
 }
