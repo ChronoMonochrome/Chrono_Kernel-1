@@ -284,18 +284,10 @@ int cw1200_sdio_set_block_size(struct sbus_priv *self, size_t size)
 
 static int cw1200_sdio_pm(struct sbus_priv *self, bool  suspend)
 {
-	int ret;
+	int ret = 0;
 	const struct resource *irq = self->pdata->irq;
-	struct sdio_func *func = self->func;
 
-	sdio_claim_host(func);
-	if (suspend)
-		ret = mmc_host_disable(func->card->host);
-	else
-		ret = mmc_host_enable(func->card->host);
-	sdio_release_host(func);
-
-	if (!ret && irq)
+	if (irq)
 		ret = irq_set_irq_wake(irq->start, suspend);
 
 	return ret;
