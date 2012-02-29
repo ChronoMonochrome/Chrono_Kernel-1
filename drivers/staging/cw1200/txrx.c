@@ -513,7 +513,6 @@ cw1200_tx_h_align(struct cw1200_common *priv,
 		  u8 *flags)
 {
 	size_t offset = (size_t)t->skb->data & 3;
-	u8 *p;
 
 	if (!offset)
 		return 0;
@@ -534,8 +533,7 @@ cw1200_tx_h_align(struct cw1200_common *priv,
 			skb_headroom(t->skb));
 		return -ENOMEM;
 	}
-	p = skb_push(t->skb, offset);
-	t->hdr = (struct ieee80211_hdr *) p;
+	skb_push(t->skb, offset);
 	t->hdrlen += offset;
 	t->txpriv.offset += offset;
 	*flags |= WSM_TX_2BYTES_SHIFT;
