@@ -348,9 +348,14 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	INIT_WORK(&priv->linkid_reset_work, cw1200_link_id_reset);
 #endif
 	INIT_WORK(&priv->update_filtering_work, cw1200_update_filtering_work);
+	INIT_WORK(&priv->ba_work, cw1200_ba_work);
 	init_timer(&priv->mcast_timeout);
 	priv->mcast_timeout.data = (unsigned long)priv;
 	priv->mcast_timeout.function = cw1200_mcast_timeout;
+	spin_lock_init(&priv->ba_lock);
+	init_timer(&priv->ba_timer);
+	priv->ba_timer.data = (unsigned long)priv;
+	priv->ba_timer.function = cw1200_ba_timer;
 
 	if (unlikely(cw1200_pm_init(&priv->pm_state, priv))) {
 		ieee80211_free_hw(hw);
@@ -429,6 +434,9 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 	int i;
 
 	ieee80211_unregister_hw(dev);
+
+	del_timer_sync(&priv->mcast_timeout);
+	del_timer_sync(&priv->ba_timer);
 
 	priv->sbus_ops->irq_unsubscribe(priv->sbus_priv);
 	cw1200_unregister_bh(priv);

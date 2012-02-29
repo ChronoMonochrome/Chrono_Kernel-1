@@ -738,7 +738,7 @@ cw1200_tx_h_rate_policy(struct cw1200_common *priv,
 
 static bool
 cw1200_tx_h_pm_state(struct cw1200_common *priv,
-			struct cw1200_txinfo *t)
+		     struct cw1200_txinfo *t)
 {
 	int was_buffered = 1;
 
@@ -755,6 +755,28 @@ cw1200_tx_h_pm_state(struct cw1200_common *priv,
 				.buffered[t->txpriv.tid]++;
 
 	return !was_buffered;
+}
+
+static void
+cw1200_tx_h_ba_stat(struct cw1200_common *priv,
+		    struct cw1200_txinfo *t)
+{
+	if (priv->join_status != CW1200_JOIN_STATUS_STA)
+		return;
+	if (!cw1200_is_ht(&priv->ht_info))
+		return;
+	if (!priv->setbssparams_done)
+		return;
+	if (!ieee80211_is_data(t->hdr->frame_control))
+		return;
+
+	spin_lock_bh(&priv->ba_lock);
+	priv->ba_acc += t->skb->len - t->hdrlen;
+	if (!priv->ba_cnt++) {
+		mod_timer(&priv->ba_timer,
+			jiffies + CW1200_BLOCK_ACK_INTERVAL);
+	}
+	spin_unlock_bh(&priv->ba_lock);
 }
 
 /* ******************************************************************** */
@@ -818,6 +840,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	rcu_read_lock();
 	sta = rcu_dereference(t.tx_info->control.sta);
 
+	cw1200_tx_h_ba_stat(priv, &t);
 	spin_lock_bh(&priv->ps_state_lock);
 	{
 		tid_update = cw1200_tx_h_pm_state(priv, &t);

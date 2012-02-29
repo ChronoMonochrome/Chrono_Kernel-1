@@ -52,6 +52,11 @@
 
 #define CW1200_MAX_TID			(8)
 
+#define CW1200_BLOCK_ACK_CNT		(30)
+#define CW1200_BLOCK_ACK_THLD		(800)
+#define CW1200_BLOCK_ACK_HIST		(3)
+#define CW1200_BLOCK_ACK_INTERVAL	(1 * HZ / CW1200_BLOCK_ACK_HIST)
+
 /* Please keep order */
 enum cw1200_join_status {
 	CW1200_JOIN_STATUS_PASSIVE = 0,
@@ -156,6 +161,13 @@ struct cw1200_common {
 	bool				disable_beacon_filter;
 	struct work_struct		update_filtering_work;
 	u8				ba_tid_mask;
+	int				ba_acc;
+	int				ba_cnt;
+	int				ba_hist;
+	struct timer_list		ba_timer;
+	spinlock_t			ba_lock;
+	bool				ba_ena;
+	struct work_struct              ba_work;
 	struct cw1200_pm_state		pm_state;
 	struct wsm_p2p_ps_modeinfo	p2p_ps_modeinfo;
 	struct wsm_uapsd_info		uapsd_info;
