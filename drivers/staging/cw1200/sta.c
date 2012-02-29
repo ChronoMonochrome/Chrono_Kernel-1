@@ -334,8 +334,12 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			priv->powersave_mode.fastPsmIdlePeriod =
 					conf->dynamic_ps_timeout << 1;
 
-		if (priv->join_status == CW1200_JOIN_STATUS_STA && priv->bss_params.aid)
+		if (priv->join_status == CW1200_JOIN_STATUS_STA && priv->bss_params.aid) {
+			while (down_trylock(&priv->scan.lock))
+				msleep(100);
 			cw1200_set_pm(priv, &priv->powersave_mode);
+			up(&priv->scan.lock);
+		}
 	}
 
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
