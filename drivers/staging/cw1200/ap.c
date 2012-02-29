@@ -698,6 +698,8 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 			__cpu_to_le16(IEEE80211_FTYPE_MGMT |
 				      IEEE80211_STYPE_PROBE_RESP);
 		frame.frame_type = WSM_FRAME_TYPE_PROBE_RESPONSE;
+		if (priv->vif->p2p)
+			frame.disable = true;
 		ret = wsm_set_template_frame(priv, &frame);
 	}
 	dev_kfree_skb(frame.skb);
