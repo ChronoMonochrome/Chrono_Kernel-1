@@ -375,6 +375,8 @@ void cw1200_probe_work(struct work_struct *work)
 
 	if (cw1200_queue_get_skb(queue,	priv->pending_frame_id,
 			&frame.skb, &txpriv)) {
+		up(&priv->scan.lock);
+		mutex_unlock(&priv->conf_mutex);
 		wsm_unlock_tx(priv);
 		return;
 	}
