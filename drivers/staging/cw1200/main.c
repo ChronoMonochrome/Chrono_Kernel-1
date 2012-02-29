@@ -358,11 +358,6 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	priv->ba_timer.data = (unsigned long)priv;
 	priv->ba_timer.function = cw1200_ba_timer;
 
-	if (unlikely(cw1200_pm_init(&priv->pm_state, priv))) {
-		ieee80211_free_hw(hw);
-		return NULL;
-	}
-
 	if (unlikely(cw1200_queue_stats_init(&priv->tx_queue_stats,
 			CW1200_LINK_ID_MAX,
 			cw1200_skb_dtor,
@@ -402,17 +397,28 @@ int cw1200_register_common(struct ieee80211_hw *dev)
 	struct cw1200_common *priv = dev->priv;
 	int err;
 
+	err = cw1200_pm_init(&priv->pm_state, priv);
+	if (err) {
+		cw1200_dbg(CW1200_DBG_ERROR, "Cannot init PM. (%d).\n",
+				err);
+		return err;
+	}
+
 	err = ieee80211_register_hw(dev);
 	if (err) {
 		cw1200_dbg(CW1200_DBG_ERROR, "Cannot register device (%d).\n",
 				err);
+		cw1200_pm_deinit(&priv->pm_state);
 		return err;
 	}
 
 #ifdef CONFIG_CW1200_LEDS
 	err = cw1200_init_leds(priv);
-	if (err)
+	if (err) {
+		cw1200_pm_deinit(&priv->pm_state);
+		ieee80211_unregister_hw(dev);
 		return err;
+	}
 #endif /* CONFIG_CW1200_LEDS */
 
 	cw1200_debug_init(priv);
