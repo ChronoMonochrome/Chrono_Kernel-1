@@ -566,8 +566,13 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 				priv->cqm_beacon_loss_count ?
 				priv->cqm_beacon_loss_count :
 				priv->cqm_link_loss_count;
-			WARN_ON(wsm_set_bss_params(priv, &priv->bss_params));
-			priv->setbssparams_done = true;
+			/* Make sure we are associated before sending
+			 * set_bss_params to firmware */
+			if (priv->bss_params.aid) {
+				WARN_ON(wsm_set_bss_params(priv,
+					&priv->bss_params));
+				priv->setbssparams_done = true;
+			}
 		}
 #endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 	}
