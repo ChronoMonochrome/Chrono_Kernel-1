@@ -63,7 +63,8 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 
 	entry = &priv->link_id_db[sta_priv->link_id - 1];
 	spin_lock_bh(&priv->ps_state_lock);
-	if (sta->uapsd_queues)
+	if ((sta->uapsd_queues & IEEE80211_WMM_IE_STA_QOSINFO_AC_MASK) ==
+					IEEE80211_WMM_IE_STA_QOSINFO_AC_MASK)
 		priv->sta_asleep_mask |= BIT(sta_priv->link_id);
 	entry->status = CW1200_LINK_HARD;
 	while ((skb = skb_dequeue(&entry->rx_queue)))
