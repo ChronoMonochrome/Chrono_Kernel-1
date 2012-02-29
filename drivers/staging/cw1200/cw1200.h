@@ -116,6 +116,7 @@ struct cw1200_common {
 	struct wsm_set_bss_params	bss_params;
 	struct cw1200_ht_info		ht_info;
 	struct wsm_set_pm		powersave_mode;
+	struct wsm_set_pm		firmware_ps_mode;
 	int				cqm_rssi_thold;
 	unsigned			cqm_rssi_hyst;
 	unsigned			cqm_tx_failure_thold;

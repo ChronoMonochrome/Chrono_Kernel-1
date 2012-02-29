@@ -152,7 +152,7 @@ void cw1200_scan_work(struct work_struct *work)
 				!(priv->powersave_mode.pmMode & WSM_PSM_PS)) {
 			struct wsm_set_pm pm = priv->powersave_mode;
 			pm.pmMode = WSM_PSM_PS;
-			wsm_set_pm(priv, &pm);
+			cw1200_set_pm(priv, &pm);
 		} else if (priv->join_status == CW1200_JOIN_STATUS_MONITOR) {
 			/* FW bug: driver has to restart p2p-dev mode
 			 * after scan */
@@ -166,7 +166,7 @@ void cw1200_scan_work(struct work_struct *work)
 						priv->output_power * 10));
 		if (priv->join_status == CW1200_JOIN_STATUS_STA &&
 				!(priv->powersave_mode.pmMode & WSM_PSM_PS))
-			wsm_set_pm(priv, &priv->powersave_mode);
+			cw1200_set_pm(priv, &priv->powersave_mode);
 
 		if (priv->scan.req)
 			wiphy_dbg(priv->hw->wiphy,

@@ -389,11 +389,6 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_IDLE) {
-		struct wsm_operational_mode mode = {
-			.power_mode = wsm_power_mode_quiescent,
-			.disableMoreFlagUsage = true,
-		};
-
 		wsm_lock_tx(priv);
 		/* Disable p2p-dev mode forced by TX request */
 		if ((priv->join_status == CW1200_JOIN_STATUS_MONITOR) &&
@@ -402,7 +397,6 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			cw1200_disable_listening(priv);
 			priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 		}
-		WARN_ON(wsm_set_operational_mode(priv, &mode));
 		wsm_unlock_tx(priv);
 	}
 
@@ -597,7 +591,13 @@ int cw1200_set_pm(struct cw1200_common *priv, const struct wsm_set_pm *arg)
 	if (priv->uapsd_info.uapsdFlags != 0)
 		pm.pmMode &= ~WSM_PSM_FAST_PS_FLAG;
 
-	return wsm_set_pm(priv, &pm);
+	if (memcmp(&pm, &priv->firmware_ps_mode,
+			sizeof(struct wsm_set_pm))) {
+		priv->firmware_ps_mode = pm;
+		return wsm_set_pm(priv, &pm);
+	} else {
+		return 0;
+	}
 }
 
 int cw1200_set_key(struct ieee80211_hw *dev, enum set_key_cmd cmd,
@@ -1344,6 +1344,8 @@ void cw1200_unjoin_work(struct work_struct *work)
 		memset(&priv->association_mode, 0,
 			sizeof(priv->association_mode));
 		memset(&priv->bss_params, 0, sizeof(priv->bss_params));
+		memset(&priv->firmware_ps_mode, 0,
+			sizeof(priv->firmware_ps_mode));
 		sta_printk(KERN_DEBUG "[STA] Unjoin.\n");
 	}
 	mutex_unlock(&priv->conf_mutex);
