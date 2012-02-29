@@ -265,7 +265,7 @@ static int cw1200_bh(void *arg)
 	int tx_burst;
 	int rx_burst = 0;
 	long status;
-	u8 dummy;
+	u32 dummy;
 
 	for (;;) {
 		if (!priv->hw_bufs_used
