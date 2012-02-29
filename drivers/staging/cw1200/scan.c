@@ -237,7 +237,7 @@ void cw1200_scan_work(struct work_struct *work)
 		}
 		priv->scan.status = cw1200_scan_start(priv, &scan);
 		kfree(scan.ch);
-		if (WARN_ON(priv->scan.status))
+		if (priv->scan.status)
 			goto fail;
 		priv->scan.curr = it;
 	}
