@@ -26,9 +26,6 @@
 #define sta_printk(...)
 #endif
 
-
-static int cw1200_cancel_scan(struct cw1200_common *priv);
-
 static inline void __cw1200_free_event_queue(struct list_head *list)
 {
 	while (!list_empty(list)) {
@@ -1601,17 +1598,4 @@ void cw1200_ba_timer(unsigned long arg)
 
 skip_statistic_update:
 	spin_unlock_bh(&priv->ba_lock);
-}
-
-/* ******************************************************************** */
-/* STA privates								*/
-
-static int cw1200_cancel_scan(struct cw1200_common *priv)
-{
-	while (down_trylock(&priv->scan.lock)) {
-		priv->scan.req = NULL;
-		schedule();
-	}
-	up(&priv->scan.lock);
-	return 0;
 }

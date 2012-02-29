@@ -154,8 +154,6 @@ void cw1200_sta_notify(struct ieee80211_hw *dev,
 static void cw1200_ps_notify(struct cw1200_common *priv,
 		      int link_id, bool ps)
 {
-	struct ieee80211_sta *sta;
-
 	if (link_id > CW1200_MAX_STA_IN_AP_MODE)
 		return;
 

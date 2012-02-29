@@ -1329,7 +1329,6 @@ void cw1200_link_id_reset(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, linkid_reset_work);
 	int temp_linkid;
-	struct cw1200_link_entry *entry;
 
 	if (!priv->action_linkid) {
 		/* In GO mode we can receive ACTION frames without a linkID */
