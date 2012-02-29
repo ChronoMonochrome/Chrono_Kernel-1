@@ -1324,7 +1324,7 @@ void cw1200_join_work(struct work_struct *work)
 		cw1200_update_listening(priv, false);
 		/* BlockACK policy will be updated when assoc is done */
 		WARN_ON(wsm_set_block_ack_policy(priv,
-			0, 0));
+			0, priv->ba_tid_mask));
 
 		mgmt_policy.protectedMgmtEnable = 0;
 		mgmt_policy.unprotectedMgmtFramesAllowed = 1;
@@ -1413,7 +1413,7 @@ void cw1200_unjoin_work(struct work_struct *work)
 		cancel_delayed_work_sync(&priv->connection_loss_work);
 		cw1200_update_listening(priv, priv->listening);
 		WARN_ON(wsm_set_block_ack_policy(priv,
-			0, 0));
+			0, priv->ba_tid_mask));
 		priv->disable_beacon_filter = false;
 		cw1200_update_filtering(priv);
 		priv->setbssparams_done = false;
