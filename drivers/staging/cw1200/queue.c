@@ -321,17 +321,13 @@ int cw1200_queue_put(struct cw1200_queue *queue,
 
 		if (queue->num_queued >= queue->capacity) {
 			queue->overfull = true;
-			__cw1200_queue_gc(queue, &gc_list, false);
-			if (queue->overfull)
-				__cw1200_queue_lock(queue);
-
+			__cw1200_queue_lock(queue);
+			mod_timer(&queue->gc, jiffies);
 		}
 	} else {
 		ret = -ENOENT;
 	}
 	spin_unlock_bh(&queue->lock);
-	if (unlikely(!list_empty(&gc_list)))
-		cw1200_queue_post_gc(stats, &gc_list);
 	return ret;
 }
 
