@@ -730,15 +730,9 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	if (WARN_ON(t.queue >= 4))
 		goto drop;
 
-	/* Temporary change*/
-	if (unlikely(ieee80211_is_probe_resp(t.hdr->frame_control))) {
-		t.txpriv.raw_link_id =
-				t.txpriv.link_id = 0;
-	} else {
-		ret = cw1200_tx_h_calc_link_ids(priv, &t);
-		if (ret)
-			goto drop;
-	}
+	ret = cw1200_tx_h_calc_link_ids(priv, &t);
+	if (ret)
+		goto drop;
 
 	txrx_printk(KERN_DEBUG "[TX] TX %d bytes "
 			"(queue: %d, link_id: %d (%d)).\n",
@@ -1035,7 +1029,26 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 			&& ieee80211_is_action(frame->frame_control)
 			&& (mgmt->u.action.category == WLAN_CATEGORY_PUBLIC)) {
 		txrx_printk(KERN_DEBUG "[RX] Going to MAP&RESET link ID\n");
-		memcpy(&priv->action_frame_sa[0], ieee80211_get_SA(frame), ETH_ALEN);
+
+		if (work_pending(&priv->linkid_reset_work))
+			WARN_ON(1);
+
+		memcpy(&priv->action_frame_sa[0],
+				ieee80211_get_SA(frame), ETH_ALEN);
+		priv->action_linkid = 0;
+		schedule_work(&priv->linkid_reset_work);
+	}
+
+	if (arg->link_id && (priv->vif->p2p == WSM_START_MODE_P2P_GO)
+			&& ieee80211_is_action(frame->frame_control)
+			&& (mgmt->u.action.category == WLAN_CATEGORY_PUBLIC)) {
+		/* Link ID already exists for the ACTION frame.
+		 * Reset and Remap */
+		if (work_pending(&priv->linkid_reset_work))
+			WARN_ON(1);
+		memcpy(&priv->action_frame_sa[0],
+				ieee80211_get_SA(frame), ETH_ALEN);
+		priv->action_linkid = arg->link_id;
 		schedule_work(&priv->linkid_reset_work);
 	}
 #endif
@@ -1225,21 +1238,37 @@ void cw1200_link_id_reset(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, linkid_reset_work);
 	int temp_linkid;
+	struct cw1200_link_entry *entry;
 
-	/* In GO mode we can receive ACTION frames without a linkID */
-	temp_linkid = cw1200_alloc_link_id(priv, &priv->action_frame_sa[0]);
-	WARN_ON(!temp_linkid);
-	if (temp_linkid) {
-		/* Make sure we execute the WQ */
-		flush_workqueue(priv->workqueue);
-		/* Release the link ID */
+	if (!priv->action_linkid) {
+		/* In GO mode we can receive ACTION frames without a linkID */
+		temp_linkid = cw1200_alloc_link_id(priv,
+				&priv->action_frame_sa[0]);
+		WARN_ON(!temp_linkid);
+		if (temp_linkid) {
+			/* Make sure we execute the WQ */
+			flush_workqueue(priv->workqueue);
+			/* Release the link ID */
+			spin_lock(&priv->ps_state_lock);
+			priv->link_id_db[temp_linkid - 1].status =
+				CW1200_LINK_RESERVE;
+			spin_unlock(&priv->ps_state_lock);
+			wsm_lock_tx_async(priv);
+			if (queue_work(priv->workqueue,
+					&priv->link_id_work) <= 0)
+				wsm_unlock_tx(priv);
+		}
+	} else {
 		spin_lock(&priv->ps_state_lock);
-		priv->link_id_db[temp_linkid - 1].status =
-			CW1200_LINK_RESERVE;
-		spin_unlock(&priv->ps_state_lock);
+		entry = &priv->link_id_db[priv->action_linkid - 1];
 		wsm_lock_tx_async(priv);
 		if (queue_work(priv->workqueue, &priv->link_id_work) <= 0)
-			wsm_unlock_tx(priv);
+				wsm_unlock_tx(priv);
+		spin_unlock(&priv->ps_state_lock);
+		flush_workqueue(priv->workqueue);
+		temp_linkid = cw1200_alloc_link_id(priv,
+				&priv->action_frame_sa[0]);
+		WARN_ON(!temp_linkid);
 	}
 }
 #endif

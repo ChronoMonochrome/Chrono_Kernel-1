@@ -251,6 +251,7 @@ struct cw1200_common {
 	/* Workaround for WFD testcase 6.1.10*/
 	struct work_struct	linkid_reset_work;
 	u8			action_frame_sa[ETH_ALEN];
+	u8			action_linkid;
 #endif
 };
 
