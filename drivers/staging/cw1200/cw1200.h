@@ -231,6 +231,11 @@ struct cw1200_common {
 
 	/* statistics */
 	struct ieee80211_low_level_stats stats;
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+	/* Workaround for WFD testcase 6.1.10*/
+	struct work_struct	linkid_reset_work;
+	u8			action_frame_sa[ETH_ALEN];
+#endif
 };
 
 struct cw1200_sta_priv {

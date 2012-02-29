@@ -719,9 +719,15 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	if (WARN_ON(t.queue >= 4 || !t.rate))
 		goto drop;
 
-	ret = cw1200_tx_h_calc_link_ids(priv, &t);
-	if (ret)
-		goto drop;
+	/* Temporary change*/
+	if (unlikely(ieee80211_is_probe_resp(t.hdr->frame_control))) {
+		t.txpriv.raw_link_id =
+				t.txpriv.link_id = 0;
+	} else {
+		ret = cw1200_tx_h_calc_link_ids(priv, &t);
+		if (ret)
+			goto drop;
+	}
 
 	txrx_printk(KERN_DEBUG "[TX] TX %d bytes "
 			"(queue: %d, link_id: %d (%d)).\n",
@@ -976,6 +982,9 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 	struct sk_buff *skb = *skb_p;
 	struct ieee80211_rx_status *hdr = IEEE80211_SKB_RXCB(skb);
 	struct ieee80211_hdr *frame = (struct ieee80211_hdr *)skb->data;
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+	struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)skb->data;
+#endif
 	struct cw1200_link_entry *entry = NULL;
 	unsigned long grace_period;
 	bool early_data = false;
@@ -993,7 +1002,15 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 			early_data = true;
 		entry->timestamp = jiffies;
 	}
-
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+	else if ((priv->vif->p2p == WSM_START_MODE_P2P_GO)
+			&& ieee80211_is_action(frame->frame_control)
+			&& (mgmt->u.action.category == WLAN_CATEGORY_PUBLIC)) {
+		txrx_printk(KERN_DEBUG "[RX] Going to MAP&RESET link ID\n");
+		memcpy(&priv->action_frame_sa[0], ieee80211_get_SA(frame), ETH_ALEN);
+		schedule_work(&priv->linkid_reset_work);
+	}
+#endif
 	if (unlikely(arg->status)) {
 		if (arg->status == WSM_STATUS_MICFAILURE) {
 			txrx_printk(KERN_DEBUG "[RX] MIC failure.\n");
@@ -1161,3 +1178,28 @@ int cw1200_upload_keys(struct cw1200_common *priv)
 		}
 	return ret;
 }
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+/* Workaround for WFD test case 6.1.10 */
+void cw1200_link_id_reset(struct work_struct *work)
+{
+	struct cw1200_common *priv =
+		container_of(work, struct cw1200_common, linkid_reset_work);
+	int temp_linkid;
+
+	/* In GO mode we can receive ACTION frames without a linkID */
+	temp_linkid = cw1200_alloc_link_id(priv, &priv->action_frame_sa[0]);
+	WARN_ON(!temp_linkid);
+	if (temp_linkid) {
+		/* Make sure we execute the WQ */
+		flush_workqueue(priv->workqueue);
+		/* Release the link ID */
+		spin_lock(&priv->ps_state_lock);
+		priv->link_id_db[temp_linkid - 1].status =
+			CW1200_LINK_RESERVE;
+		spin_unlock(&priv->ps_state_lock);
+		wsm_lock_tx_async(priv);
+		if (queue_work(priv->workqueue, &priv->link_id_work) <= 0)
+			wsm_unlock_tx(priv);
+	}
+}
+#endif

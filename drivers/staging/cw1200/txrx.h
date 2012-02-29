@@ -86,4 +86,10 @@ void cw1200_free_key(struct cw1200_common *priv, int idx);
 void cw1200_free_keys(struct cw1200_common *priv);
 int cw1200_upload_keys(struct cw1200_common *priv);
 
+/* ******************************************************************** */
+/* Workaround for WFD test case 6.1.10					*/
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+void cw1200_link_id_reset(struct work_struct *work);
+#endif
+
 #endif /* CW1200_TXRX_H */
