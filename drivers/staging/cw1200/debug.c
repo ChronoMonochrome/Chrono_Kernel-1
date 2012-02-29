@@ -500,13 +500,17 @@ int cw1200_debug_init(struct cw1200_common *priv)
 		goto err;
 #endif
 
+	ret = cw1200_itp_init(priv);
+	if (ret)
+		goto err;
+
 	return 0;
 
 err:
 	priv->debug = NULL;
 	debugfs_remove_recursive(d->debugfs_phy);
 	kfree(d);
-	return -ENOMEM;
+	return ret;
 }
 
 void cw1200_debug_release(struct cw1200_common *priv)
@@ -517,10 +521,12 @@ void cw1200_debug_release(struct cw1200_common *priv)
 		priv->debug = NULL;
 		kfree(d);
 	}
-	priv->debug = NULL;
-
-	if (d) {
-		debugfs_remove_recursive(d->debugfs_phy);
-		kfree(d);
 	}
+
+int cw1200_print_fw_version(struct cw1200_common *priv, u8 *buf, size_t len)
+{
+	return snprintf(buf, len, "%s %d.%d",
+			cw1200_debug_fw_types[priv->wsm_caps.firmwareType],
+			priv->wsm_caps.firmwareVersion,
+			priv->wsm_caps.firmwareBuildNumber);
 }
