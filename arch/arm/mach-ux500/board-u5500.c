@@ -23,6 +23,7 @@
 #ifdef CONFIG_TOUCHSCREEN_CYTTSP_SPI
 #include <linux/cyttsp.h>
 #endif
+#include <linux/input/abx500-accdet.h>
 
 #ifdef CONFIG_AV8100
 #include <video/av8100.h>
@@ -44,7 +45,6 @@
 #include <mach/setup.h>
 #include <mach/db5500-keypad.h>
 #include <mach/crypto-ux500.h>
-#include <mach/abx500-accdet.h>
 
 #include "pins-db5500.h"
 #include "pins.h"
