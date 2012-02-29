@@ -18,6 +18,8 @@ struct cw1200_platform_data {
 			  bool enable);
 	int (*clk_ctrl)(const struct cw1200_platform_data *pdata,
 			  bool enable);
+	int (*prcmu_ctrl)(const struct cw1200_platform_data *pdata,
+			  bool enable);
 };
 
 /* Declaration only. Should be implemented in arch/xxx/mach-yyy */

@@ -235,15 +235,24 @@ static int cw1200_detect_card(const struct cw1200_platform_data *pdata)
 
 static int cw1200_sdio_off(const struct cw1200_platform_data *pdata)
 {
+	int ret = 0;
+#ifndef CONFIG_CW1200_U5500_SUPPORT
 	const struct resource *reset = pdata->reset;
 	gpio_set_value(reset->start, 0);
-	cw1200_detect_card(pdata);
 	gpio_free(reset->start);
-	return 0;
+#else
+	if (pdata->prcmu_ctrl)
+		ret = pdata->prcmu_ctrl(pdata, false);
+	msleep(50);
+#endif
+	cw1200_detect_card(pdata);
+	return ret;
 }
 
 static int cw1200_sdio_on(const struct cw1200_platform_data *pdata)
 {
+	int ret = 0;
+#ifndef CONFIG_CW1200_U5500_SUPPORT
 	const struct resource *reset = pdata->reset;
 	gpio_request(reset->start, reset->name);
 	gpio_direction_output(reset->start, 1);
@@ -259,8 +268,13 @@ static int cw1200_sdio_on(const struct cw1200_platform_data *pdata)
 	/* The host should wait 32 ms after the WRESETN release
 	 * for the on-chip LDO to stabilize */
 	msleep(32);
+#else
+	if (pdata->prcmu_ctrl)
+		ret = pdata->prcmu_ctrl(pdata, true);
+	msleep(50);
+#endif
 	cw1200_detect_card(pdata);
-	return 0;
+	return ret;
 }
 
 static int cw1200_sdio_reset(struct sbus_priv *self)
