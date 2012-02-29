@@ -1317,24 +1317,24 @@ void cw1200_link_id_reset(struct work_struct *work)
 			/* Make sure we execute the WQ */
 			flush_workqueue(priv->workqueue);
 			/* Release the link ID */
-			spin_lock(&priv->ps_state_lock);
+			spin_lock_bh(&priv->ps_state_lock);
 			priv->link_id_db[temp_linkid - 1].prev_status =
 				priv->link_id_db[temp_linkid - 1].status;
 			priv->link_id_db[temp_linkid - 1].status =
 				CW1200_LINK_RESET;
-			spin_unlock(&priv->ps_state_lock);
+			spin_unlock_bh(&priv->ps_state_lock);
 			wsm_lock_tx_async(priv);
 			if (queue_work(priv->workqueue,
 					&priv->link_id_work) <= 0)
 				wsm_unlock_tx(priv);
 		}
 	} else {
-		spin_lock(&priv->ps_state_lock);
+		spin_lock_bh(&priv->ps_state_lock);
 		priv->link_id_db[priv->action_linkid - 1].prev_status =
 			priv->link_id_db[priv->action_linkid - 1].status;
 		priv->link_id_db[priv->action_linkid - 1].status =
 			CW1200_LINK_RESET_REMAP;
-		spin_unlock(&priv->ps_state_lock);
+		spin_unlock_bh(&priv->ps_state_lock);
 		wsm_lock_tx_async(priv);
 		if (queue_work(priv->workqueue, &priv->link_id_work) <= 0)
 			wsm_unlock_tx(priv);
