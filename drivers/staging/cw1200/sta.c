@@ -267,7 +267,6 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		struct wsm_switch_channel channel = {
 			.newChannelNumber = ch->hw_value,
 		};
-		cw1200_cancel_scan(priv);
 		sta_printk(KERN_DEBUG "[STA] Freq %d (wsm ch: %d).\n",
 			ch->center_freq, ch->hw_value);
 
