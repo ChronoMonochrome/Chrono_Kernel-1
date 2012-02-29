@@ -235,7 +235,10 @@ static int tx_policy_get(struct cw1200_common *priv,
 	tx_policy_build(priv, &wanted, rates, count);
 
 	spin_lock_bh(&cache->lock);
-	BUG_ON(list_empty(&cache->free));
+	if (WARN_ON_ONCE(list_empty(&cache->free))) {
+		spin_unlock_bh(&cache->lock);
+		return CW1200_INVALID_RATE_ID;
+	}
 	idx = tx_policy_find(cache, &wanted);
 	if (idx >= 0) {
 		tx_policy_printk(KERN_DEBUG "[TX policy] Used TX policy: %d\n",
@@ -635,7 +638,7 @@ cw1200_tx_h_bt(struct cw1200_common *priv,
 	wsm->flags |= priority << 1;
 }
 
-static void
+static int
 cw1200_tx_h_rate_policy(struct cw1200_common *priv,
 			struct cw1200_txinfo *t,
 			struct wsm_tx *wsm)
@@ -655,7 +658,9 @@ cw1200_tx_h_rate_policy(struct cw1200_common *priv,
 	t->txpriv.rate_id = tx_policy_get(priv,
 		t->tx_info->control.rates, IEEE80211_TX_MAX_RATES,
 		&tx_policy_renew);
-	wsm->flags = t->txpriv.rate_id << 4;
+	if (t->txpriv.rate_id == CW1200_INVALID_RATE_ID)
+		return -EFAULT;
+	wsm->flags |= t->txpriv.rate_id << 4;
 
 	if (tx_policy_renew) {
 		tx_policy_printk(KERN_DEBUG "[TX] TX policy renew.\n");
@@ -668,6 +673,7 @@ cw1200_tx_h_rate_policy(struct cw1200_common *priv,
 		cw1200_tx_queues_lock(priv);
 		queue_work(priv->workqueue, &priv->tx_policy_upload_work);
 	}
+	return 0;
 }
 
 static bool
@@ -752,7 +758,9 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	}
 	wsm->flags |= flags;
 	cw1200_tx_h_bt(priv, &t, wsm);
-	cw1200_tx_h_rate_policy(priv, &t, wsm);
+	ret = cw1200_tx_h_rate_policy(priv, &t, wsm);
+	if (ret)
+		goto drop;
 
 	spin_lock_bh(&priv->ps_state_lock);
 	{
