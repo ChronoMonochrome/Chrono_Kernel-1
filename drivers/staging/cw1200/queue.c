@@ -319,7 +319,13 @@ int cw1200_queue_put(struct cw1200_queue *queue,
 		++stats->link_map_cache[txpriv->link_id];
 		spin_unlock_bh(&stats->lock);
 
-		if (queue->num_queued >= queue->capacity) {
+		/*
+		 * TX may happen in parallel sometimes.
+		 * Leave extra queue slots so we don't overflow.
+		 */
+		if (queue->overfull == false &&
+				queue->num_queued >=
+				(queue->capacity - (num_present_cpus() - 1))) {
 			queue->overfull = true;
 			__cw1200_queue_lock(queue);
 			mod_timer(&queue->gc, jiffies);
