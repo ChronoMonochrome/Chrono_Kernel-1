@@ -96,6 +96,9 @@ int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packetID,
 			 const struct cw1200_txpriv **txpriv);
 void cw1200_queue_lock(struct cw1200_queue *queue);
 void cw1200_queue_unlock(struct cw1200_queue *queue);
+bool cw1200_queue_get_xmit_timestamp(struct cw1200_queue *queue,
+				     unsigned long *timestamp);
+
 
 bool cw1200_queue_stats_is_empty(struct cw1200_queue_stats *stats,
 				 u32 link_id_map);

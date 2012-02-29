@@ -294,10 +294,10 @@ static int cw1200_bh(void *arg)
 				term = atomic_xchg(&priv->bh_term, 0);
 				suspend = pending_tx ?
 					0 : atomic_read(&priv->bh_suspend);
-				(rx || tx || term || suspend);
+				(rx || tx || term || suspend || priv->bh_error);
 			}), status);
 
-		if (status < 0 || term)
+		if (status < 0 || term || priv->bh_error)
 			break;
 
 		if (!status && priv->hw_bufs_used) {

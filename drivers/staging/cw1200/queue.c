@@ -20,7 +20,8 @@
 	struct list_head	head;
 	struct sk_buff		*skb;
 	u32			packetID;
-	unsigned long		timestamp;
+	unsigned long		queue_timestamp;
+	unsigned long		xmit_timestamp;
 	struct cw1200_txpriv	txpriv;
 	u8			generation;
 };
@@ -102,7 +103,7 @@ static void __cw1200_queue_gc(struct cw1200_queue *queue,
 	while (!list_empty(&queue->queue)) {
 		item = list_first_entry(
 			&queue->queue, struct cw1200_queue_item, head);
-		if (jiffies - item->timestamp < queue->ttl)
+		if (jiffies - item->queue_timestamp < queue->ttl)
 			break;
 		--queue->num_queued;
 		--queue->link_map_cache[item->txpriv.link_id];
@@ -126,7 +127,7 @@ static void __cw1200_queue_gc(struct cw1200_queue *queue,
 			if (unlock)
 				__cw1200_queue_unlock(queue);
 		} else {
-			unsigned long tmo = item->timestamp + queue->ttl;
+			unsigned long tmo = item->queue_timestamp + queue->ttl;
 			mod_timer(&queue->gc, tmo);
 			cw1200_pm_stay_awake(&stats->priv->pm_state,
 					tmo - jiffies);
@@ -309,7 +310,7 @@ int cw1200_queue_put(struct cw1200_queue *queue,
 		item->packetID = cw1200_queue_make_packet_id(
 			queue->generation, queue->queue_id,
 			item->generation, item - queue->pool);
-		item->timestamp = jiffies;
+		item->queue_timestamp = jiffies;
 
 		++queue->num_queued;
 		++queue->link_map_cache[txpriv->link_id];
@@ -364,6 +365,7 @@ int cw1200_queue_get(struct cw1200_queue *queue,
 		list_move_tail(&item->head, &queue->pending);
 		++queue->num_pending;
 		--queue->link_map_cache[item->txpriv.link_id];
+		item->xmit_timestamp = jiffies;
 
 		spin_lock_bh(&stats->lock);
 		--stats->num_queued;
@@ -537,6 +539,24 @@ void cw1200_queue_unlock(struct cw1200_queue *queue)
 	spin_lock_bh(&queue->lock);
 	__cw1200_queue_unlock(queue);
 	spin_unlock_bh(&queue->lock);
+}
+
+bool cw1200_queue_get_xmit_timestamp(struct cw1200_queue *queue,
+				     unsigned long *timestamp)
+{
+	struct cw1200_queue_item *item;
+	bool ret;
+
+	spin_lock_bh(&queue->lock);
+	ret = !list_empty(&queue->pending);
+	if (ret) {
+		list_for_each_entry(item, &queue->pending, head) {
+			if (time_before(item->xmit_timestamp, *timestamp))
+				*timestamp = item->xmit_timestamp;
+		}
+	}
+	spin_unlock_bh(&queue->lock);
+	return ret;
 }
 
 bool cw1200_queue_stats_is_empty(struct cw1200_queue_stats *stats,

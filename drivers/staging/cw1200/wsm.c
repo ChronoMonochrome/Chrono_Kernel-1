@@ -33,7 +33,7 @@
 #define WSM_CMD_JOIN_TIMEOUT	(7 * HZ) /* Join timeout is 5 sec. in FW   */
 #define WSM_CMD_START_TIMEOUT	(7 * HZ)
 #define WSM_CMD_RESET_TIMEOUT	(3 * HZ) /* 2 sec. timeout was observed.   */
-#define WSM_CMD_LAST_CHANCE_TIMEOUT (10 * HZ)
+#define WSM_CMD_LAST_CHANCE_TIMEOUT (HZ * 3 / 2)
 
 #define WSM_SKIP(buf, size)						\
 	do {								\
@@ -1082,6 +1082,10 @@ int wsm_cmd_send(struct cw1200_common *priv,
 					priv->wsm_cmd_wq, priv->wsm_cmd.done,
 					WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
 		}
+
+		/* Kill BH thread to report the error to the top layer. */
+		priv->bh_error = 1;
+		wake_up(&priv->bh_wq);
 		ret = -ETIMEDOUT;
 	} else {
 		spin_lock(&priv->wsm_cmd.lock);
@@ -1100,15 +1104,8 @@ void wsm_lock_tx(struct cw1200_common *priv)
 {
 	wsm_cmd_lock(priv);
 	if (atomic_add_return(1, &priv->tx_lock) == 1) {
-		if (priv->bh_error) {
-			wsm_printk(KERN_ERR "fatal error occured, "
-					"could not take lock\n");
-		} else {
-			WARN_ON(wait_event_timeout(priv->bh_evt_wq,
-				!priv->hw_bufs_used,
-				WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
+		if (wsm_flush_tx(priv))
 			wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
-		}
 	}
 	wsm_cmd_unlock(priv);
 }
@@ -1116,18 +1113,52 @@ void wsm_lock_tx(struct cw1200_common *priv)
 void wsm_lock_tx_async(struct cw1200_common *priv)
 {
 	if (atomic_add_return(1, &priv->tx_lock) == 1)
-		wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
+		wsm_printk(KERN_DEBUG "[WSM] TX is locked (async).\n");
 }
 
-void wsm_flush_tx(struct cw1200_common *priv)
+bool wsm_flush_tx(struct cw1200_common *priv)
 {
-	if (priv->bh_error)
-		wsm_printk(KERN_ERR "fatal error occured, will not flush\n");
-	else {
-		BUG_ON(!atomic_read(&priv->tx_lock));
-		WARN_ON(wait_event_timeout(priv->bh_evt_wq,
-			!priv->hw_bufs_used,
-			WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
+	unsigned long timestamp = jiffies;
+	bool pending = false;
+	long timeout;
+	int i;
+
+	/* Flush must be called with TX lock held. */
+	BUG_ON(!atomic_read(&priv->tx_lock));
+
+	/* First check if we really need to do something.
+	 * It is safe to use unprotected access, as hw_bufs_used
+	 * can only decrements. */
+	if (!priv->hw_bufs_used)
+		return true;
+
+	if (priv->bh_error) {
+		/* In case of failure do not wait for magic. */
+		wsm_printk(KERN_ERR "[WSM] Fatal error occured, "
+				"will not flush TX.\n");
+		return false;
+	} else {
+		/* Get a timestamp of "oldest" frame */
+		for (i = 0; i < 4; ++i)
+			pending |= cw1200_queue_get_xmit_timestamp(
+					&priv->tx_queue[i],
+					&timestamp);
+		/* It is allowed to lock TX with only a command in the pipe. */
+		if (!pending)
+			return true;
+
+		timeout = timestamp + WSM_CMD_LAST_CHANCE_TIMEOUT - jiffies;
+		if (timeout < 0 || wait_event_timeout(priv->bh_evt_wq,
+				!priv->hw_bufs_used,
+				timeout) <= 0) {
+			/* Hmmm... Not good. Frame had stuck in firmware. */
+			priv->bh_error = 1;
+			wake_up(&priv->bh_wq);
+			return false;
+		}
+
+		/* Ok, everything is flushed. */
+		return true;
 	}
 }
 
