@@ -495,7 +495,8 @@ struct cw1200_common;
 /* 4.37 GroupTxSequenceCounter */
 #define WSM_MIB_ID_GRP_SEQ_COUNTER		0x101F
 
-/* 1020 4.38 ProtectedMgmtPolicy */
+/* 4.38 ProtectedMgmtPolicy */
+#define WSM_MIB_ID_PROTECTED_MGMT_POLICY	0x1020
 
 /* 4.39 SetHtProtection */
 #define WSM_MID_ID_SET_HT_PROTECTION		0x1021
@@ -1425,6 +1426,29 @@ static inline int wsm_set_template_frame(struct cw1200_common *priv,
 		((u16 *) p)[1] = __cpu_to_le16(arg->skb->len - 4);
 	ret = wsm_write_mib(priv, WSM_MIB_ID_TEMPLATE_FRAME, p, arg->skb->len);
 	skb_pull(arg->skb, 4);
+	return ret;
+}
+
+
+struct wsm_protected_mgmt_policy {
+	bool protectedMgmtEnable;
+	bool unprotectedMgmtFramesAllowed;
+	bool encryptionForAuthFrame;
+};
+
+static inline int wsm_set_protected_mgmt_policy(struct cw1200_common *priv,
+		struct wsm_protected_mgmt_policy *arg)
+{
+	__le32 val = 0;
+	int ret;
+	if (arg->protectedMgmtEnable)
+		val |= __cpu_to_le32(BIT(0));
+	if (arg->unprotectedMgmtFramesAllowed)
+		val |= __cpu_to_le32(BIT(1));
+	if (arg->encryptionForAuthFrame)
+		val |= __cpu_to_le32(BIT(2));
+	ret = wsm_write_mib(priv, WSM_MIB_ID_PROTECTED_MGMT_POLICY,
+			&val, sizeof(val));
 	return ret;
 }
 

@@ -1208,6 +1208,7 @@ void cw1200_join_work(struct work_struct *work)
 	const u8 *ssidie;
 	const u8 *dtimie;
 	const struct ieee80211_tim_ie *tim = NULL;
+	struct wsm_protected_mgmt_policy mgmt_policy;
 
 	BUG_ON(queueId >= 4);
 	if (cw1200_queue_get_skb(queue,	priv->pending_frame_id,
@@ -1310,6 +1311,12 @@ void cw1200_join_work(struct work_struct *work)
 		/* BlockACK policy will be updated when assoc is done */
 		WARN_ON(wsm_set_block_ack_policy(priv,
 			0, 0));
+
+		mgmt_policy.protectedMgmtEnable = 0;
+		mgmt_policy.unprotectedMgmtFramesAllowed = 1;
+		mgmt_policy.encryptionForAuthFrame = 1;
+		wsm_set_protected_mgmt_policy(priv, &mgmt_policy);
+
 		if (wsm_join(priv, &join)) {
 			memset(&priv->join_bssid[0],
 				0, sizeof(priv->join_bssid));
