@@ -74,6 +74,15 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	mutex_lock(&priv->conf_mutex);
 	if (frame.skb) {
 		int ret = wsm_set_template_frame(priv, &frame);
+		if (0 == ret) {
+			/*
+			* set empty probe response template in order
+			* to receive probe requests from firmware
+			*/
+			frame.frame_type = WSM_FRAME_TYPE_PROBE_RESPONSE;
+			frame.disable = true;
+			ret = wsm_set_template_frame(priv, &frame);
+		}
 		if (ret) {
 			mutex_unlock(&priv->conf_mutex);
 			up(&priv->scan.lock);
