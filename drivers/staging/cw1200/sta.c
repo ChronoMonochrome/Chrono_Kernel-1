@@ -462,11 +462,18 @@ void cw1200_update_filtering_work(struct work_struct *work)
 u64 cw1200_prepare_multicast(struct ieee80211_hw *hw,
 			     struct netdev_hw_addr_list *mc_list)
 {
+	static u8 broadcast_ipv6[ETH_ALEN] = {
+		0x33, 0x33, 0x00, 0x00, 0x00, 0x01
+	};
+	static u8 broadcast_ipv4[ETH_ALEN] = {
+		0x01, 0x00, 0x5e, 0x00, 0x00, 0x01
+	};
 	struct cw1200_common *priv = hw->priv;
 	struct netdev_hw_addr *ha;
 	int count = 0;
 
 	/* Disable multicast filtering */
+	priv->has_multicast_subscription = false;
 	memset(&priv->multicast_filter, 0x00, sizeof(priv->multicast_filter));
 
 	if (netdev_hw_addr_list_count(mc_list) > WSM_MAX_GRP_ADDRTABLE_ENTRIES)
@@ -477,6 +484,9 @@ u64 cw1200_prepare_multicast(struct ieee80211_hw *hw,
 		sta_printk(KERN_DEBUG "[STA] multicast: %pM\n", ha->addr);
 		memcpy(&priv->multicast_filter.macAddress[count],
 		       ha->addr, ETH_ALEN);
+		if (memcmp(ha->addr, broadcast_ipv4, ETH_ALEN) &&
+				memcmp(ha->addr, broadcast_ipv6, ETH_ALEN))
+			priv->has_multicast_subscription = true;
 		count++;
 	}
 

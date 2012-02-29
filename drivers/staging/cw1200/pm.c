@@ -16,6 +16,8 @@
 #include "bh.h"
 #include "sbus.h"
 
+#define CW1200_BEACON_SKIPPING_MULTIPLIER 3
+
 static int cw1200_suspend_late(struct device *dev);
 static void cw1200_pm_release(struct device *dev);
 static int cw1200_pm_probe(struct platform_device *pdev);
@@ -27,6 +29,7 @@ struct cw1200_suspend_state {
 	unsigned long join_tmo;
 	unsigned long direct_probe;
 	unsigned long link_id_gc;
+	bool beacon_skipping;
 };
 
 static const struct dev_pm_ops cw1200_pm_ops = {
@@ -252,6 +255,17 @@ int cw1200_wow_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
 	state->link_id_gc =
 		cw1200_suspend_work(&priv->link_id_gc_work);
 
+	/* Enable beacon skipping */
+	if (priv->join_status == CW1200_JOIN_STATUS_STA
+			&& priv->join_dtim_period
+			&& !priv->has_multicast_subscription) {
+		state->beacon_skipping = true;
+		wsm_set_beacon_wakeup_period(priv,
+				priv->join_dtim_period,
+				CW1200_BEACON_SKIPPING_MULTIPLIER *
+				 priv->join_dtim_period);
+	}
+
 	/* Stop serving thread */
 	if (cw1200_bh_suspend(priv))
 		goto revert4;
@@ -317,6 +331,12 @@ int cw1200_wow_resume(struct ieee80211_hw *hw)
 
 	/* Resume BH thread */
 	WARN_ON(cw1200_bh_resume(priv));
+
+	if (state->beacon_skipping) {
+		wsm_set_beacon_wakeup_period(priv,
+				priv->join_dtim_period, 0);
+		state->beacon_skipping = false;
+	}
 
 	/* Resume delayed work */
 	cw1200_resume_work(priv, &priv->bss_loss_work,

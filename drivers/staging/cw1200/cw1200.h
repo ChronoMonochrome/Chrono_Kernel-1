@@ -145,6 +145,7 @@ struct cw1200_common {
 	struct wsm_beacon_filter_table	bf_table;
 	struct wsm_beacon_filter_control bf_control;
 	struct wsm_multicast_filter	multicast_filter;
+	bool				has_multicast_subscription;
 	bool				disable_beacon_filter;
 	struct work_struct		update_filtering_work;
 	u8				ba_tid_mask;
