@@ -32,7 +32,7 @@ static int cw1200_enable_beaconing(struct cw1200_common *priv,
 static void __cw1200_sta_notify(struct ieee80211_hw *dev,
 				struct ieee80211_vif *vif,
 				enum sta_notify_cmd notify_cmd,
-				struct ieee80211_sta *sta);
+				int link_id);
 
 /* ******************************************************************** */
 /* AP API								*/
@@ -94,13 +94,19 @@ int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 static void __cw1200_sta_notify(struct ieee80211_hw *dev,
 				struct ieee80211_vif *vif,
 				enum sta_notify_cmd notify_cmd,
-				struct ieee80211_sta *sta)
+				int link_id)
 {
 	struct cw1200_common *priv = dev->priv;
-	struct cw1200_sta_priv *sta_priv =
-		(struct cw1200_sta_priv *)&sta->drv_priv;
-	u32 bit = BIT(sta_priv->link_id);
-	u32 prev = priv->sta_asleep_mask & bit;
+	u32 bit, prev;
+
+	/* Zero link id means "for all link IDs" */
+	if (link_id)
+		bit = BIT(link_id);
+	else if (WARN_ON_ONCE(notify_cmd != STA_NOTIFY_AWAKE))
+		bit = 0;
+	else
+		bit = priv->link_id_map;
+	prev = priv->sta_asleep_mask & bit;
 
 	switch (notify_cmd) {
 	case STA_NOTIFY_SLEEP:
@@ -116,7 +122,7 @@ static void __cw1200_sta_notify(struct ieee80211_hw *dev,
 		if (prev) {
 			priv->sta_asleep_mask &= ~bit;
 			priv->pspoll_mask &= ~bit;
-			if (priv->tx_multicast &&
+			if (priv->tx_multicast && link_id &&
 					!priv->sta_asleep_mask)
 				queue_work(priv->workqueue,
 					&priv->multicast_stop_work);
@@ -132,8 +138,11 @@ void cw1200_sta_notify(struct ieee80211_hw *dev,
 		       struct ieee80211_sta *sta)
 {
 	struct cw1200_common *priv = dev->priv;
+	struct cw1200_sta_priv *sta_priv =
+		(struct cw1200_sta_priv *)&sta->drv_priv;
+
 	spin_lock_bh(&priv->ps_state_lock);
-	__cw1200_sta_notify(dev, vif, notify_cmd, sta);
+	__cw1200_sta_notify(dev, vif, notify_cmd, sta_priv->link_id);
 	spin_unlock_bh(&priv->ps_state_lock);
 }
 
@@ -142,21 +151,15 @@ static void cw1200_ps_notify(struct cw1200_common *priv,
 {
 	struct ieee80211_sta *sta;
 
-	if (!link_id || link_id > CW1200_MAX_STA_IN_AP_MODE)
+	if (link_id > CW1200_MAX_STA_IN_AP_MODE)
 		return;
 
 	txrx_printk(KERN_DEBUG "%s for LinkId: %d. STAs asleep: %.8X\n",
 			ps ? "Stop" : "Start",
 			link_id, priv->sta_asleep_mask);
 
-	rcu_read_lock();
-	sta = ieee80211_find_sta(priv->vif,
-			priv->link_id_db[link_id - 1].mac);
-	if (sta) {
-		__cw1200_sta_notify(priv->hw, priv->vif,
-			ps ? STA_NOTIFY_SLEEP : STA_NOTIFY_AWAKE, sta);
-	}
-	rcu_read_unlock();
+	__cw1200_sta_notify(priv->hw, priv->vif,
+		ps ? STA_NOTIFY_SLEEP : STA_NOTIFY_AWAKE, link_id);
 }
 
 static int cw1200_set_tim_impl(struct cw1200_common *priv, bool aid0_bit_set)
@@ -680,12 +683,9 @@ int cw1200_ampdu_action(struct ieee80211_hw *hw,
 void cw1200_suspend_resume(struct cw1200_common *priv,
 			  struct wsm_suspend_resume *arg)
 {
-	/* if () is intendend to protect against spam. FW sends
-	 * "start multicast" request on every DTIM. */
-	if (arg->stop || !arg->multicast || priv->buffered_multicasts)
-		ap_printk(KERN_DEBUG "[AP] %s: %s\n",
-				arg->stop ? "stop" : "start",
-				arg->multicast ? "broadcast" : "unicast");
+	ap_printk(KERN_DEBUG "[AP] %s: %s\n",
+			arg->stop ? "stop" : "start",
+			arg->multicast ? "broadcast" : "unicast");
 
 	if (arg->multicast) {
 		bool cancel_tmo = false;
