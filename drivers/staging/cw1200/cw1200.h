@@ -67,6 +67,13 @@ enum cw1200_link_status {
 	CW1200_LINK_HARD,
 };
 
+enum cw1200_bss_loss_status {
+	CW1200_BSS_LOSS_NONE,
+	CW1200_BSS_LOSS_CHECKING,
+	CW1200_BSS_LOSS_CONFIRMING,
+	CW1200_BSS_LOSS_CONFIRMED,
+};
+
 struct cw1200_link_entry {
 	unsigned long			timestamp;
 	enum cw1200_link_status		status;
@@ -223,6 +230,9 @@ struct cw1200_common {
 	struct delayed_work	connection_loss_work;
 	struct work_struct	tx_failure_work;
 	int			delayed_link_loss;
+	spinlock_t		bss_loss_lock;
+	int			bss_loss_status;
+	int			bss_loss_confirm_id;
 
 	/* TX rate policy cache */
 	struct tx_policy_cache tx_policy_cache;

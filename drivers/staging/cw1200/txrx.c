@@ -914,6 +914,20 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 				cw1200_debug_txed_agg(priv);
 			}
 		} else {
+			spin_lock(&priv->bss_loss_lock);
+			if (priv->bss_loss_status ==
+					CW1200_BSS_LOSS_CONFIRMING &&
+					priv->bss_loss_confirm_id ==
+					arg->packetID) {
+				priv->bss_loss_status =
+					CW1200_BSS_LOSS_CONFIRMED;
+				spin_unlock(&priv->bss_loss_lock);
+				cancel_delayed_work(&priv->bss_loss_work);
+				queue_delayed_work(priv->workqueue,
+						&priv->bss_loss_work, 0);
+			} else
+				spin_unlock(&priv->bss_loss_lock);
+
 			/* TODO: Update TX failure counters */
 			if (unlikely(priv->cqm_tx_failure_thold &&
 			     (++priv->cqm_tx_failure_count >
@@ -940,6 +954,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 			tx->status.rates[i].count = 0;
 			tx->status.rates[i].idx = -1;
 		}
+
 
 		cw1200_queue_remove(queue, arg->packetID);
 	}

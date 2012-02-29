@@ -891,6 +891,14 @@ void cw1200_event_handler(struct work_struct *work)
 			break;
 		case WSM_EVENT_BSS_LOST:
 		{
+			spin_lock(&priv->bss_loss_lock);
+			if (priv->bss_loss_status > CW1200_BSS_LOSS_NONE) {
+				spin_unlock(&priv->bss_loss_lock);
+				break;
+			}
+			priv->bss_loss_status = CW1200_BSS_LOSS_CHECKING;
+			spin_unlock(&priv->bss_loss_lock);
+
 			sta_printk(KERN_DEBUG "[CQM] BSS lost.\n");
 			cancel_delayed_work_sync(&priv->bss_loss_work);
 			cancel_delayed_work_sync(&priv->connection_loss_work);
@@ -913,6 +921,9 @@ void cw1200_event_handler(struct work_struct *work)
 		{
 			sta_printk(KERN_DEBUG "[CQM] BSS regained.\n");
 			priv->delayed_link_loss = 0;
+			spin_lock(&priv->bss_loss_lock);
+			priv->bss_loss_status = CW1200_BSS_LOSS_NONE;
+			spin_unlock(&priv->bss_loss_lock);
 			cancel_delayed_work_sync(&priv->bss_loss_work);
 			cancel_delayed_work_sync(&priv->connection_loss_work);
 			break;
@@ -947,9 +958,29 @@ void cw1200_bss_loss_work(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, bss_loss_work.work);
 	int timeout; /* in beacons */
+	struct sk_buff *skb;
 
 	timeout = priv->cqm_link_loss_count -
 		priv->cqm_beacon_loss_count;
+
+	spin_lock(&priv->bss_loss_lock);
+	if (priv->bss_loss_status == CW1200_BSS_LOSS_CHECKING) {
+		spin_unlock(&priv->bss_loss_lock);
+		skb = ieee80211_nullfunc_get(priv->hw, priv->vif);
+		if (!(WARN_ON(!skb))) {
+			cw1200_tx(priv->hw, skb);
+			/* Start watchdog -- if nullfunc TX doesn't fail
+			 * in 1 sec, forward event to upper layers */
+			queue_delayed_work(priv->workqueue,
+					&priv->bss_loss_work, 1 * HZ);
+		}
+		return;
+	} else if (priv->bss_loss_status == CW1200_BSS_LOSS_CONFIRMING) {
+		priv->bss_loss_status = CW1200_BSS_LOSS_NONE;
+		spin_unlock(&priv->bss_loss_lock);
+		return;
+	}
+	spin_unlock(&priv->bss_loss_lock);
 
 	if (priv->cqm_beacon_loss_count) {
 		sta_printk(KERN_DEBUG "[CQM] Beacon loss.\n");
@@ -966,6 +997,10 @@ void cw1200_bss_loss_work(struct work_struct *work)
 	queue_delayed_work(priv->workqueue,
 		&priv->connection_loss_work,
 		timeout * HZ / 10);
+
+	spin_lock(&priv->bss_loss_lock);
+	priv->bss_loss_status = CW1200_BSS_LOSS_NONE;
+	spin_unlock(&priv->bss_loss_lock);
 }
 
 void cw1200_connection_loss_work(struct work_struct *work)

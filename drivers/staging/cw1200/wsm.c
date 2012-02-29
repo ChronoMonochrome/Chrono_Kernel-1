@@ -1332,7 +1332,16 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 
 	switch (priv->mode) {
 	case NL80211_IFTYPE_STATION:
-		if (unlikely(
+		if (unlikely((priv->join_status == CW1200_JOIN_STATUS_STA) &&
+			ieee80211_is_nullfunc(fctl))) {
+			spin_lock(&priv->bss_loss_lock);
+			if (priv->bss_loss_status == CW1200_BSS_LOSS_CHECKING) {
+				priv->bss_loss_status =
+						CW1200_BSS_LOSS_CONFIRMING;
+				priv->bss_loss_confirm_id = wsm->packetID;
+			}
+			spin_unlock(&priv->bss_loss_lock);
+		} else if (unlikely(
 			(priv->join_status <= CW1200_JOIN_STATUS_MONITOR) ||
 			memcmp(frame->addr1, priv->join_bssid,
 				sizeof(priv->join_bssid)))) {
