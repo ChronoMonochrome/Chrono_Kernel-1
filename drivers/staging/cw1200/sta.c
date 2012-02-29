@@ -251,6 +251,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 	struct cw1200_common *priv = dev->priv;
 	struct ieee80211_conf *conf = &dev->conf;
 
+	down(&priv->scan.lock);
 	mutex_lock(&priv->conf_mutex);
 	/* TODO: IEEE80211_CONF_CHANGE_QOS */
 	if (changed & IEEE80211_CONF_CHANGE_POWER) {
@@ -272,12 +273,6 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 
 		ret = WARN_ON(__cw1200_flush(priv, false));
 		if (!ret) {
-			while(down_trylock(&priv->scan.lock)) {
-				sta_printk(KERN_DEBUG "[STA] waiting, "
-						      "scan in progress.\n");
-				msleep(100);
-			}
-
 			ret = WARN_ON(wsm_switch_channel(priv, &channel));
 			if (!ret) {
 				ret = wait_event_timeout(
@@ -294,8 +289,6 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 					ret = -ETIMEDOUT;
 			} else
 				wsm_unlock_tx(priv);
-
-			up(&priv->scan.lock);
 		}
 	}
 
@@ -316,12 +309,9 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			priv->powersave_mode.fastPsmIdlePeriod =
 					conf->dynamic_ps_timeout << 1;
 
-		if (priv->join_status == CW1200_JOIN_STATUS_STA && priv->bss_params.aid) {
-			while (down_trylock(&priv->scan.lock))
-				msleep(100);
+		if (priv->join_status == CW1200_JOIN_STATUS_STA &&
+				priv->bss_params.aid)
 			cw1200_set_pm(priv, &priv->powersave_mode);
-			up(&priv->scan.lock);
-		}
 	}
 
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
@@ -417,6 +407,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		/* WARN_ON(tx_policy_force_upload(priv)); */
 	}
 	mutex_unlock(&priv->conf_mutex);
+	up(&priv->scan.lock);
 	return ret;
 }
 
@@ -1438,6 +1429,10 @@ int cw1200_set_uapsd_param(struct cw1200_common *priv,
 
 static int cw1200_cancel_scan(struct cw1200_common *priv)
 {
-	/* STUB(); */
+	while (down_trylock(&priv->scan.lock)) {
+		priv->scan.req = NULL;
+		schedule();
+	}
+	up(&priv->scan.lock);
 	return 0;
 }
