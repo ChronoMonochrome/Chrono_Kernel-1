@@ -334,7 +334,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			priv->powersave_mode.fastPsmIdlePeriod =
 					conf->dynamic_ps_timeout << 1;
 
-		if (priv->join_status == CW1200_JOIN_STATUS_STA)
+		if (priv->join_status == CW1200_JOIN_STATUS_STA && priv->bss_params.aid)
 			cw1200_set_pm(priv, &priv->powersave_mode);
 	}
 
@@ -1344,7 +1344,9 @@ void cw1200_unjoin_work(struct work_struct *work)
 			priv->ba_tid_mask, priv->ba_tid_mask));
 		cw1200_update_filtering(priv);
 		priv->setbssparams_done = false;
-
+		memset(&priv->association_mode, 0,
+			sizeof(priv->association_mode));
+		memset(&priv->bss_params, 0, sizeof(priv->bss_params));
 		sta_printk(KERN_DEBUG "[STA] Unjoin.\n");
 	}
 	mutex_unlock(&priv->conf_mutex);
