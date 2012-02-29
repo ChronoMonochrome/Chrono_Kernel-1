@@ -216,6 +216,10 @@ static struct mcde_platform_data mcde_pdata = {
 	.platform_set_clocks = mcde_platform_set_display_clocks,
 	.platform_enable_dsipll = mcde_platform_enable_dsipll,
 	.platform_disable_dsipll = mcde_platform_disable_dsipll,
+	/* TODO: Remove rotation buffers once ESRAM driver is completed */
+	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x2000,
+	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x11000,
+	.rotbufsize = 0xF000,
 };
 
 struct platform_device u5500_mcde_device = {
