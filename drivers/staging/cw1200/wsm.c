@@ -1638,9 +1638,11 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 					(priv->tx_multicast ||
 					 !priv->sta_asleep_mask)) {
 				priv->buffered_multicasts = false;
-				if (priv->tx_multicast)
+				if (priv->tx_multicast) {
+					priv->tx_multicast = false;
 					queue_work(priv->workqueue,
 						&priv->multicast_stop_work);
+				}
 			}
 
 			spin_unlock_bh(&priv->ps_state_lock);

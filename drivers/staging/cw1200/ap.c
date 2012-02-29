@@ -59,6 +59,8 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 
 	entry = &priv->link_id_db[sta_priv->link_id - 1];
 	spin_lock_bh(&priv->ps_state_lock);
+	if (sta->uapsd_queues)
+		priv->sta_asleep_mask |= BIT(sta_priv->link_id);
 	entry->status = CW1200_LINK_HARD;
 	while ((skb = skb_dequeue(&entry->rx_queue)))
 		ieee80211_rx_irqsafe(priv->hw, skb);
@@ -617,11 +619,13 @@ void cw1200_multicast_start_work(struct work_struct *work)
 	long tmo = priv->join_dtim_period *
 			(priv->beacon_int + 20) * HZ / 1024;
 
+	cancel_work_sync(&priv->multicast_stop_work);
+
 	if (!priv->aid0_bit_set) {
 		wsm_lock_tx(priv);
 		cw1200_set_tim_impl(priv, true);
 		priv->aid0_bit_set = true;
-		mod_timer(&priv->mcast_timeout, tmo);
+		mod_timer(&priv->mcast_timeout, jiffies + tmo);
 		wsm_unlock_tx(priv);
 	}
 }
@@ -632,6 +636,7 @@ void cw1200_multicast_stop_work(struct work_struct *work)
 		container_of(work, struct cw1200_common, multicast_stop_work);
 
 	if (priv->aid0_bit_set) {
+		del_timer_sync(&priv->mcast_timeout);
 		wsm_lock_tx(priv);
 		priv->aid0_bit_set = false;
 		cw1200_set_tim_impl(priv, false);
@@ -644,6 +649,8 @@ void cw1200_mcast_timeout(unsigned long arg)
 	struct cw1200_common *priv =
 		(struct cw1200_common *)arg;
 
+	wiphy_warn(priv->hw->wiphy,
+		"Multicast delivery timeout.\n");
 	spin_lock_bh(&priv->ps_state_lock);
 	priv->tx_multicast = priv->aid0_bit_set &&
 			priv->buffered_multicasts;

@@ -892,6 +892,15 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 			priv->sta_asleep_mask);
 		WARN_ON(cw1200_queue_requeue(queue,
 				arg->packetID));
+		spin_lock_bh(&priv->ps_state_lock);
+		if (!arg->link_id) {
+			priv->buffered_multicasts = true;
+			if (priv->sta_asleep_mask) {
+				queue_work(priv->workqueue,
+					&priv->multicast_start_work);
+			}
+		}
+		spin_unlock_bh(&priv->ps_state_lock);
 	} else if (!WARN_ON(cw1200_queue_get_skb(
 			queue, arg->packetID, &skb, &txpriv))) {
 		struct ieee80211_tx_info *tx = IEEE80211_SKB_CB(skb);
