@@ -1015,6 +1015,10 @@ void cw1200_bss_loss_work(struct work_struct *work)
 	timeout = priv->cqm_link_loss_count -
 		priv->cqm_beacon_loss_count;
 
+	/* Skip the confimration procedure in P2P case */
+	if (priv->vif->p2p)
+		goto report;
+
 	spin_lock(&priv->bss_loss_lock);
 	if (priv->bss_loss_status == CW1200_BSS_LOSS_CHECKING) {
 		spin_unlock(&priv->bss_loss_lock);
@@ -1034,6 +1038,7 @@ void cw1200_bss_loss_work(struct work_struct *work)
 	}
 	spin_unlock(&priv->bss_loss_lock);
 
+report:
 	if (priv->cqm_beacon_loss_count) {
 		sta_printk(KERN_DEBUG "[CQM] Beacon loss.\n");
 		if (timeout <= 0)
