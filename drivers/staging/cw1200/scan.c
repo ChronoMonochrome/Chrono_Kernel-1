@@ -199,8 +199,11 @@ void cw1200_scan_work(struct work_struct *work)
 				break;
 		}
 		scan.band = first->band;
-		/* TODO: Is it optimal? */
-		scan.maxTransmitRate = WSM_TRANSMIT_RATE_1;
+
+		if (priv->scan.req->no_cck)
+			scan.maxTransmitRate = WSM_TRANSMIT_RATE_6;
+		else
+			scan.maxTransmitRate = WSM_TRANSMIT_RATE_1;
 		/* TODO: Is it optimal? */
 		scan.numOfProbeRequests =
 			(first->flags & IEEE80211_CHAN_PASSIVE_SCAN) ? 0 : 2;

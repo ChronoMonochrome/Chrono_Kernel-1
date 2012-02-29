@@ -1239,8 +1239,11 @@ void cw1200_join_work(struct work_struct *work)
 			memcpy(&join.ssid[0], &ssidie[2], join.ssidLength);
 		}
 
-		if (priv->vif->p2p)
+		if (priv->vif->p2p) {
 			join.flags |= WSM_JOIN_FLAGS_P2P_GO;
+			join.basicRateSet =
+				cw1200_rate_mask_to_wsm(priv, 0xFF0);
+		}
 
 		wsm_flush_tx(priv);
 

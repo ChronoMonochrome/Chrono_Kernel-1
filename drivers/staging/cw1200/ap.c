@@ -683,6 +683,8 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 		.frame_type = WSM_FRAME_TYPE_BEACON,
 	};
 
+	if (priv->vif->p2p)
+		frame.rate = WSM_TRANSMIT_RATE_6;
 
 	frame.skb = ieee80211_beacon_get(priv->hw, priv->vif);
 	if (WARN_ON(!frame.skb))
