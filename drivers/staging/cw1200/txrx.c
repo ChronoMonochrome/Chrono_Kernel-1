@@ -645,6 +645,16 @@ cw1200_tx_h_rate_policy(struct cw1200_common *priv,
 {
 	bool tx_policy_renew = false;
 
+	t->txpriv.rate_id = tx_policy_get(priv,
+		t->tx_info->control.rates, IEEE80211_TX_MAX_RATES,
+		&tx_policy_renew);
+	if (t->txpriv.rate_id == CW1200_INVALID_RATE_ID)
+		return -EFAULT;
+
+	wsm->flags |= t->txpriv.rate_id << 4;
+
+	t->rate = cw1200_get_tx_rate(priv,
+		&t->tx_info->control.rates[0]),
 	wsm->maxTxRate = t->rate->hw_value;
 	if (t->rate->flags & IEEE80211_TX_RC_MCS) {
 		if (cw1200_ht_greenfield(&priv->ht_info))
@@ -654,13 +664,6 @@ cw1200_tx_h_rate_policy(struct cw1200_common *priv,
 			wsm->htTxParameters |=
 				__cpu_to_le32(WSM_HT_TX_MIXED);
 	}
-
-	t->txpriv.rate_id = tx_policy_get(priv,
-		t->tx_info->control.rates, IEEE80211_TX_MAX_RATES,
-		&tx_policy_renew);
-	if (t->txpriv.rate_id == CW1200_INVALID_RATE_ID)
-		return -EFAULT;
-	wsm->flags |= t->txpriv.rate_id << 4;
 
 	if (tx_policy_renew) {
 		tx_policy_printk(KERN_DEBUG "[TX] TX policy renew.\n");
@@ -719,14 +722,12 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	u8 flags = 0;
 	int ret;
 
-	t.rate = cw1200_get_tx_rate(priv,
-		&t.tx_info->control.rates[0]),
 	t.hdrlen = ieee80211_hdrlen(t.hdr->frame_control);
 	t.da = ieee80211_get_DA(t.hdr);
 	t.sta_priv =
 		(struct cw1200_sta_priv *)&t.tx_info->control.sta->drv_priv;
 
-	if (WARN_ON(t.queue >= 4 || !t.rate))
+	if (WARN_ON(t.queue >= 4))
 		goto drop;
 
 	/* Temporary change*/
