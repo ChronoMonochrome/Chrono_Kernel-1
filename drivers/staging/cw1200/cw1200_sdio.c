@@ -363,7 +363,16 @@ static void cw1200_sdio_disconnect(struct sdio_func *func)
 
 static int cw1200_suspend(struct device *dev)
 {
-	return 0;
+	int ret;
+	struct sdio_func *func = dev_to_sdio_func(dev);
+
+	/* Notify SDIO that CW1200 will remain powered during suspend */
+	ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
+	if (ret)
+		cw1200_dbg(CW1200_DBG_ERROR,
+			   "Error setting SDIO pm flags: %i\n", ret);
+
+	return ret;
 }
 
 static int cw1200_resume(struct device *dev)
