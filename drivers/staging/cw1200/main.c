@@ -282,6 +282,10 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	hw->wiphy->flags |= WIPHY_FLAG_AP_UAPSD;
 #endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 
+#if defined(CONFIG_CW1200_DISABLE_BEACON_HINTS)
+	hw->wiphy->flags |= WIPHY_FLAG_DISABLE_BEACON_HINTS;
+#endif
+
 	hw->channel_change_time = 1000;	/* TODO: find actual value */
 	/* priv->beacon_req_id = cpu_to_le32(0); */
 	hw->queues = 4;
