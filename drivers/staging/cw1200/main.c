@@ -443,9 +443,6 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 
 	wsm_buf_deinit(&priv->wsm_cmd_buf);
 
-	kfree(priv->scan.ie);
-	priv->scan.ie = NULL;
-	priv->scan.ie_len = 0;
 	destroy_workqueue(priv->workqueue);
 	priv->workqueue = NULL;
 

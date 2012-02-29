@@ -30,8 +30,6 @@ struct cw1200_scan {
 	struct ieee80211_channel **curr;
 	struct ieee80211_channel **end;
 	struct wsm_ssid ssids[WSM_SCAN_MAX_NUM_OF_SSIDS];
-	u8 *ie;
-	size_t ie_len;
 	int output_power;
 	int n_ssids;
 	int status;

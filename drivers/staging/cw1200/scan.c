@@ -64,23 +64,10 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	if (req->n_ssids > WSM_SCAN_MAX_NUM_OF_SSIDS)
 		return -EINVAL;
 
-	if (req->ie_len != priv->scan.ie_len ||
-	    memcmp(req->ie, priv->scan.ie, req->ie_len)) {
-		frame.skb = ieee80211_probereq_get(hw, priv->vif, NULL, 0,
-			req->ie, req->ie_len);
-		if (!frame.skb)
-			return -ENOMEM;
-		kfree(priv->scan.ie);
-		priv->scan.ie = NULL;
-		priv->scan.ie_len = 0;
-		if (req->ie_len) {
-			priv->scan.ie = kmalloc(req->ie_len, GFP_KERNEL);
-			if (priv->scan.ie) {
-				memcpy(priv->scan.ie, req->ie, req->ie_len);
-				priv->scan.ie_len = req->ie_len;
-			}
-		}
-	}
+	frame.skb = ieee80211_probereq_get(hw, priv->vif, NULL, 0,
+		req->ie, req->ie_len);
+	if (!frame.skb)
+		return -ENOMEM;
 
 	/* will be unlocked in cw1200_scan_work() */
 	down(&priv->scan.lock);
