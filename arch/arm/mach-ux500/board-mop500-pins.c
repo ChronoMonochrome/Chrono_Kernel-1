@@ -409,7 +409,7 @@ static struct ux500_pin_lookup mop500_runtime_pins[] = {
 	PIN_LOOKUP("sdi1", &mop500_pins_sdi1),
 	PIN_LOOKUP("sdi2", &mop500_pins_sdi2),
 	PIN_LOOKUP("sdi4", &mop500_pins_sdi4),
-	PIN_LOOKUP("ab8500-usb.0", &mop500_pins_usb),
+	PIN_LOOKUP("musb-ux500.0", &mop500_pins_usb),
 	PIN_LOOKUP("spi2", &mop500_pins_spi2),
 };
 
