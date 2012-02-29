@@ -1249,6 +1249,8 @@ void cw1200_join_work(struct work_struct *work)
 		/* Queue unjoin if not associated in 3 sec. */
 		queue_delayed_work(priv->workqueue,
 			&priv->join_timeout, 3 * HZ);
+		/*Stay Awake for Join Timeout*/
+		cw1200_pm_stay_awake(&priv->pm_state, 3 * HZ);
 
 		cw1200_update_listening(priv, false);
 		/* BlockACK policy will be updated when assoc is done */
