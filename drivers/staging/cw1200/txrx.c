@@ -671,7 +671,11 @@ cw1200_tx_h_rate_policy(struct cw1200_common *priv,
 		/* Definetly better. TODO. */
 		wsm_lock_tx_async(priv);
 		cw1200_tx_queues_lock(priv);
-		queue_work(priv->workqueue, &priv->tx_policy_upload_work);
+		if (queue_work(priv->workqueue,
+				&priv->tx_policy_upload_work) <= 0) {
+			cw1200_tx_queues_unlock(priv);
+			wsm_unlock_tx(priv);
+		}
 	}
 	return 0;
 }
