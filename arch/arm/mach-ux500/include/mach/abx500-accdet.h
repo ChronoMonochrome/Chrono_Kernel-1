@@ -101,6 +101,7 @@
  * @accdet2122_th	Voltage thresholds for accdet21 and accdet22 inputs.
  * @is_detection_inverted	Whether the accessory insert/removal, button
  * press/release irq's are inverted.
+ * @mic_ctrl	Gpio to select between CVBS and MIC.
  */
 struct abx500_accdet_platform_data {
 	int btn_keycode;
@@ -108,6 +109,7 @@ struct abx500_accdet_platform_data {
 	u8 accdet2122_th;
 	unsigned int video_ctrl_gpio;
 	bool is_detection_inverted;
+	unsigned int mic_ctrl;
 };
 
 /* Enumerations */

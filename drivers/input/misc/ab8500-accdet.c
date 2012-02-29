@@ -351,18 +351,33 @@ static void ab8500_set_av_switch(struct abx500_ad *dd,
 		ret = gpio_direction_input(dd->pdata->video_ctrl_gpio);
 		dd->gpio35_dir_set = 0;
 		ret = gpio_direction_output(dd->pdata->video_ctrl_gpio, 0);
+		if (dd->pdata->mic_ctrl)
+			 gpio_direction_output(dd->pdata->mic_ctrl, 0);
 	} else if (!dd->gpio35_dir_set) {
 		ret = gpio_direction_output(dd->pdata->video_ctrl_gpio,
 						dir == AUDIO_IN ? 1 : 0);
 		if (ret < 0) {
 			dev_err(&dd->pdev->dev,
-				"%s: Output video ctrl signal failed (%d).\n",
+				"%s: video_ctrl pin output config failed (%d).\n",
 								__func__, ret);
-		} else {
-			dd->gpio35_dir_set = 1;
-			dev_dbg(&dd->pdev->dev, "AV-SWITCH: %s\n",
-				dir == AUDIO_IN ? "AUDIO_IN" : "VIDEO_OUT");
+			return;
 		}
+
+		if (dd->pdata->mic_ctrl) {
+			ret = gpio_direction_output(dd->pdata->mic_ctrl,
+					dir == AUDIO_IN ? 1 : 0);
+			if (ret < 0) {
+				dev_err(&dd->pdev->dev,
+						"%s: mic_ctrl pin output"
+						"config failed (%d).\n",
+						__func__, ret);
+				return;
+			}
+		}
+
+		dd->gpio35_dir_set = 1;
+		dev_dbg(&dd->pdev->dev, "AV-SWITCH: %s\n",
+			dir == AUDIO_IN ? "AUDIO_IN" : "VIDEO_OUT");
 	} else {
 		gpio_set_value(dd->pdata->video_ctrl_gpio,
 						dir == AUDIO_IN ? 1 : 0);

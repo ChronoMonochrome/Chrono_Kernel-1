@@ -786,7 +786,25 @@ static int abx500_accessory_init(struct platform_device *pdev)
 		}
 	}
 
-	(ret = create_btn_input_dev(dd));
+	if (dd->pdata->mic_ctrl) {
+		ret = gpio_is_valid(dd->pdata->mic_ctrl);
+		if (!ret) {
+			dev_err(&pdev->dev,
+				"%s: Mic ctrl GPIO invalid (%d).\n", __func__,
+						dd->pdata->mic_ctrl);
+
+			goto mic_ctrl_fail;
+		}
+		ret = gpio_request(dd->pdata->mic_ctrl,
+				"Mic Control");
+	       if (ret)	{
+			dev_err(&pdev->dev, "%s: Get mic ctrl GPIO"
+					"failed.\n", __func__);
+			goto mic_ctrl_fail;
+		}
+	}
+
+	ret = create_btn_input_dev(dd);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "%s: create_button_input_dev failed.\n",
 			__func__);
@@ -827,6 +845,9 @@ fail_no_mem_for_wq:
 fail_no_regulators:
 	input_unregister_device(dd->btn_input_dev);
 fail_no_btn_input_dev:
+	if (dd->pdata->mic_ctrl)
+		gpio_free(dd->pdata->mic_ctrl);
+mic_ctrl_fail:
 	if (dd->pdata->video_ctrl_gpio)
 		gpio_free(dd->pdata->video_ctrl_gpio);
 	return ret;
@@ -842,7 +863,12 @@ static void abx500_accessory_cleanup(struct abx500_ad *dd)
 	dd->jack_type = JACK_TYPE_UNSPECIFIED;
 	config_accdetect(dd);
 
-	gpio_free(dd->pdata->video_ctrl_gpio);
+	if (dd->pdata->mic_ctrl)
+		gpio_free(dd->pdata->mic_ctrl);
+
+	if (dd->pdata->video_ctrl_gpio)
+		gpio_free(dd->pdata->video_ctrl_gpio);
+
 	input_unregister_device(dd->btn_input_dev);
 	free_regulators(dd);
 
