@@ -414,6 +414,10 @@ void cw1200_update_filtering(struct cw1200_common *priv)
 {
 	int ret;
 	bool bssid_filtering = !priv->rx_filter.bssid;
+	static struct wsm_beacon_filter_control bf_disabled = {
+		.enabled = 0,
+		.bcn_count = 1,
+	};
 
 	if (priv->join_status == CW1200_JOIN_STATUS_PASSIVE)
 		return;
@@ -423,8 +427,14 @@ void cw1200_update_filtering(struct cw1200_common *priv)
 	ret = wsm_set_rx_filter(priv, &priv->rx_filter);
 	if (!ret)
 		ret = wsm_set_beacon_filter_table(priv, &priv->bf_table);
-	if (!ret)
-		ret = wsm_beacon_filter_control(priv, &priv->bf_control);
+	if (!ret) {
+		if (priv->disable_beacon_filter)
+			ret = wsm_beacon_filter_control(priv,
+					&bf_disabled);
+		else
+			ret = wsm_beacon_filter_control(priv,
+					&priv->bf_control);
+	}
 	if (!ret)
 		ret = wsm_set_bssid_filtering(priv, bssid_filtering);
 	if (!ret)
@@ -434,6 +444,15 @@ void cw1200_update_filtering(struct cw1200_common *priv)
 				"%s: Update filtering failed: %d.\n",
 				__func__, ret);
 	return;
+}
+
+void cw1200_update_filtering_work(struct work_struct *work)
+{
+	struct cw1200_common *priv =
+		container_of(work, struct cw1200_common,
+		update_filtering_work);
+
+	cw1200_update_filtering(priv);
 }
 
 u64 cw1200_prepare_multicast(struct ieee80211_hw *hw,
@@ -1267,6 +1286,13 @@ void cw1200_join_work(struct work_struct *work)
 			WARN_ON(cw1200_upload_keys(priv));
 			cw1200_queue_requeue(queue, priv->pending_frame_id);
 			priv->join_status = CW1200_JOIN_STATUS_STA;
+
+			/* Due to beacon filtering it is possible that the
+			 * AP's beacon is not known for the mac80211 stack.
+			 * Disable filtering temporary to make sure the stack
+			 * receives at least one */
+			priv->disable_beacon_filter = true;
+
 		}
 		cw1200_update_filtering(priv);
 	}
@@ -1316,6 +1342,7 @@ void cw1200_unjoin_work(struct work_struct *work)
 		BUG_ON(1);
 	}
 	if (priv->join_status) {
+		cancel_work_sync(&priv->update_filtering_work);
 		memset(&priv->join_bssid[0], 0, sizeof(priv->join_bssid));
 		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 
@@ -1331,6 +1358,7 @@ void cw1200_unjoin_work(struct work_struct *work)
 		cw1200_update_listening(priv, priv->listening);
 		WARN_ON(wsm_set_block_ack_policy(priv,
 			0, 0));
+		priv->disable_beacon_filter = false;
 		cw1200_update_filtering(priv);
 		priv->setbssparams_done = false;
 		memset(&priv->association_mode, 0,

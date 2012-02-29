@@ -137,8 +137,10 @@ struct cw1200_common {
 	struct wsm_rx_filter		rx_filter;
 	struct wsm_beacon_filter_table	bf_table;
 	struct wsm_beacon_filter_control bf_control;
-	u8				ba_tid_mask;
 	struct wsm_multicast_filter	multicast_filter;
+	bool				disable_beacon_filter;
+	struct work_struct		update_filtering_work;
+	u8				ba_tid_mask;
 	struct cw1200_pm_state		pm_state;
 	struct wsm_p2p_ps_modeinfo	p2p_ps_modeinfo;
 	struct wsm_uapsd_info		uapsd_info;

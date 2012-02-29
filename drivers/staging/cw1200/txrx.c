@@ -1119,9 +1119,17 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 		cw1200_debug_rxed_agg(priv);
 
 	if (ieee80211_is_action(frame->frame_control) &&
-			(arg->flags & WSM_RX_STATUS_ADDRESS1))
+			(arg->flags & WSM_RX_STATUS_ADDRESS1)) {
 		if (cw1200_handle_action_rx(priv, skb))
 			return;
+	} else if (unlikely(priv->disable_beacon_filter) &&
+			!arg->status &&
+			ieee80211_is_beacon(frame->frame_control) &&
+			!memcmp(ieee80211_get_SA(frame), priv->join_bssid,
+				ETH_ALEN)) {
+		priv->disable_beacon_filter = false;
+		queue_work(priv->workqueue, &priv->update_filtering_work);
+	}
 
 	/* Stay awake for 1sec. after frame is received to give
 	 * userspace chance to react and acquire appropriate

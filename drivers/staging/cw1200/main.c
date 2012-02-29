@@ -345,6 +345,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 	INIT_WORK(&priv->linkid_reset_work, cw1200_link_id_reset);
 #endif
+	INIT_WORK(&priv->update_filtering_work, cw1200_update_filtering_work);
 	init_timer(&priv->mcast_timeout);
 	priv->mcast_timeout.data = (unsigned long)priv;
 	priv->mcast_timeout.function = cw1200_mcast_timeout;
