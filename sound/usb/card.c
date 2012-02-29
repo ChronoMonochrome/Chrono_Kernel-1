@@ -445,6 +445,7 @@ snd_usb_audio_probe(struct usb_device *dev,
 	struct usb_host_interface *alts;
 	int ifnum;
 	u32 id;
+	struct usb_device *snd_dev;
 
 	alts = &intf->altsetting[0];
 	ifnum = get_iface_desc(alts)->bInterfaceNumber;
@@ -527,6 +528,9 @@ snd_usb_audio_probe(struct usb_device *dev,
 	usb_chip[chip->index] = chip;
 	chip->num_interfaces++;
 	chip->probing = 0;
+	snd_dev = interface_to_usbdev(intf);
+	usb_enable_autosuspend(snd_dev);
+
 	mutex_unlock(&register_mutex);
 	return chip;
 
