@@ -389,8 +389,9 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 	     BSS_CHANGED_ERP_SLOT)) {
 		ap_printk(KERN_DEBUG "BSS_CHANGED_ASSOC.\n");
 		if (info->assoc) { /* TODO: ibss_joined */
-			int dtim_interval = info->dtim_period;
 			struct ieee80211_sta *sta = NULL;
+			priv->join_dtim_period = info->dtim_period;
+			priv->beacon_int = info->beacon_int;
 
 			/* Associated: kill join timeout */
 			cancel_delayed_work_sync(&priv->join_timeout);
@@ -465,11 +466,11 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 
 			priv->bss_params.aid = info->aid;
 
-			if (dtim_interval < 1)
-				dtim_interval = 1;
+			if (priv->join_dtim_period < 1)
+				priv->join_dtim_period = 1;
 
-			ap_printk(KERN_DEBUG "[STA] DTIM %d\n",
-				dtim_interval);
+			ap_printk(KERN_DEBUG "[STA] DTIM %d, interval: %d\n",
+				priv->join_dtim_period, priv->beacon_int);
 			ap_printk(KERN_DEBUG "[STA] Preamble: %d, " \
 				"Greenfield: %d, Aid: %d, " \
 				"Rates: 0x%.8X, Basic: 0x%.8X\n",
@@ -484,7 +485,9 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			WARN_ON(wsm_set_bss_params(priv, &priv->bss_params));
 			priv->setbssparams_done = true;
 			WARN_ON(wsm_set_beacon_wakeup_period(priv,
-				dtim_interval, 0));
+				    priv->beacon_int * priv->join_dtim_period >
+				    MAX_BEACON_SKIP_TIME_MS ? 1 :
+				    priv->join_dtim_period, 0));
 			if (sta && cw1200_is_ht(&priv->ht_info)) {
 				ap_printk(KERN_DEBUG
 					"[STA] Enabling Block ACK\n");

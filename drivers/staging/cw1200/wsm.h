@@ -585,6 +585,8 @@ struct wsm_hdr {
 #define WSM_TX_LINK_ID(link_id)		\
 		((link_id & WSM_TX_LINK_ID_MAX) << 6)
 
+#define MAX_BEACON_SKIP_TIME_MS 1000
+
 /* ******************************************************************** */
 /* WSM capcbility							*/
 

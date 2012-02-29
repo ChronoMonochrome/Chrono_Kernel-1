@@ -1288,9 +1288,10 @@ void cw1200_join_work(struct work_struct *work)
 		if (tim && tim->dtim_period > 1) {
 			join.dtimPeriod = tim->dtim_period;
 			priv->join_dtim_period = tim->dtim_period;
-			sta_printk(KERN_DEBUG "[STA] Join DTIM: %d\n",
-				join.dtimPeriod);
 		}
+		priv->beacon_int = bss->beacon_interval;
+		sta_printk(KERN_DEBUG "[STA] Join DTIM: %d, interval: %d\n",
+				join.dtimPeriod, priv->beacon_int);
 
 		join.channelNumber = priv->channel->hw_value;
 		join.band = (priv->channel->band == IEEE80211_BAND_5GHZ) ?

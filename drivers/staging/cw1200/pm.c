@@ -333,7 +333,9 @@ int cw1200_wow_resume(struct ieee80211_hw *hw)
 	WARN_ON(cw1200_bh_resume(priv));
 
 	if (state->beacon_skipping) {
-		wsm_set_beacon_wakeup_period(priv,
+		wsm_set_beacon_wakeup_period(priv, priv->beacon_int *
+				priv->join_dtim_period >
+				MAX_BEACON_SKIP_TIME_MS ? 1 :
 				priv->join_dtim_period, 0);
 		state->beacon_skipping = false;
 	}
