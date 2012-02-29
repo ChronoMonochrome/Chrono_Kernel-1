@@ -107,15 +107,13 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	priv->scan.output_power = priv->output_power;
 
 	for (i = 0; i < req->n_ssids; ++i) {
-		if (req->ssids[i].ssid_len) {
-			struct wsm_ssid *dst =
-				&priv->scan.ssids[priv->scan.n_ssids];
-			BUG_ON(req->ssids[i].ssid_len > sizeof(dst->ssid));
-			memcpy(&dst->ssid[0], req->ssids[i].ssid,
-				sizeof(dst->ssid));
-			dst->length = req->ssids[i].ssid_len;
-			++priv->scan.n_ssids;
-		}
+		struct wsm_ssid *dst =
+			&priv->scan.ssids[priv->scan.n_ssids];
+		BUG_ON(req->ssids[i].ssid_len > sizeof(dst->ssid));
+		memcpy(&dst->ssid[0], req->ssids[i].ssid,
+			sizeof(dst->ssid));
+		dst->length = req->ssids[i].ssid_len;
+		++priv->scan.n_ssids;
 	}
 
 	mutex_unlock(&priv->conf_mutex);
