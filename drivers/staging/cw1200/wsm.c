@@ -1083,9 +1083,15 @@ void wsm_lock_tx(struct cw1200_common *priv)
 {
 	wsm_cmd_lock(priv);
 	if (atomic_add_return(1, &priv->tx_lock) == 1) {
-		WARN_ON(wait_event_timeout(priv->bh_evt_wq,
-			!priv->hw_bufs_used, WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
-		wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
+		if (priv->bh_error) {
+			wsm_printk(KERN_ERR "fatal error occured, "
+					"could not take lock\n");
+		} else {
+			WARN_ON(wait_event_timeout(priv->bh_evt_wq,
+				!priv->hw_bufs_used,
+				WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
+			wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
+		}
 	}
 	wsm_cmd_unlock(priv);
 }
@@ -1098,20 +1104,29 @@ void wsm_lock_tx_async(struct cw1200_common *priv)
 
 void wsm_flush_tx(struct cw1200_common *priv)
 {
-	BUG_ON(!atomic_read(&priv->tx_lock));
-	WARN_ON(wait_event_timeout(priv->bh_evt_wq,
-		!priv->hw_bufs_used, WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
+	if (priv->bh_error)
+		wsm_printk(KERN_ERR "fatal error occured, will not flush\n");
+	else {
+		BUG_ON(!atomic_read(&priv->tx_lock));
+		WARN_ON(wait_event_timeout(priv->bh_evt_wq,
+			!priv->hw_bufs_used,
+			WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
+	}
 }
 
 void wsm_unlock_tx(struct cw1200_common *priv)
 {
 	int tx_lock;
-	tx_lock = atomic_sub_return(1, &priv->tx_lock);
-	if (tx_lock < 0) {
-		BUG_ON(1);
-	} else if (tx_lock == 0) {
-		cw1200_bh_wakeup(priv);
-		wsm_printk(KERN_DEBUG "[WSM] TX is unlocked.\n");
+	if (priv->bh_error)
+		wsm_printk(KERN_ERR "fatal error occured, unlock is unsafe\n");
+	else {
+		tx_lock = atomic_sub_return(1, &priv->tx_lock);
+		if (tx_lock < 0) {
+			BUG_ON(1);
+		} else if (tx_lock == 0) {
+			cw1200_bh_wakeup(priv);
+			wsm_printk(KERN_DEBUG "[WSM] TX is unlocked.\n");
+		}
 	}
 }
 
@@ -1132,6 +1147,12 @@ int wsm_handle_exception(struct cw1200_common *priv, u8 *data, size_t len)
 		"data abort",
 		"unknown error",
 	};
+
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+	/* Send the event upwards on the FW exception */
+	cw1200_pm_stay_awake(&priv->pm_state, 3*HZ);
+	ieee80211_driver_hang_notify(priv->vif, GFP_KERNEL);
+#endif
 
 	buf.begin = buf.data = data;
 	buf.end = &buf.begin[len];

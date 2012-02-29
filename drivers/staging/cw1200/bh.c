@@ -549,6 +549,10 @@ tx:
 	if (!term) {
 		cw1200_dbg(CW1200_DBG_ERROR, "[BH] Fatal error, exitting.\n");
 		priv->bh_error = 1;
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+		ieee80211_driver_hang_notify(priv->vif, GFP_KERNEL);
+		cw1200_pm_stay_awake(&priv->pm_state, 3*HZ);
+#endif
 		/* TODO: schedule_work(recovery) */
 #ifndef HAS_PUT_TASK_STRUCT
 		/* The only reason of having this stupid code here is

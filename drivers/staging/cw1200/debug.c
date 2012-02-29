@@ -426,6 +426,34 @@ static const struct file_operations fops_11n = {
 	.llseek = default_llseek,
 };
 
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+static ssize_t cw1200_hang_write(struct file *file,
+	const char __user *user_buf, size_t count, loff_t *ppos)
+{
+	struct cw1200_common *priv = file->private_data;
+	char buf[1];
+
+	if (!count)
+		return -EINVAL;
+	if (copy_from_user(buf, user_buf, 1))
+		return -EFAULT;
+
+	if (priv->vif) {
+		cw1200_pm_stay_awake(&priv->pm_state, 3*HZ);
+		ieee80211_driver_hang_notify(priv->vif, GFP_KERNEL);
+	} else
+		return -ENODEV;
+
+	return count;
+}
+
+static const struct file_operations fops_hang = {
+	.open = cw1200_generic_open,
+	.write = cw1200_hang_write,
+	.llseek = default_llseek,
+};
+#endif
+
 int cw1200_debug_init(struct cw1200_common *priv)
 {
 	struct cw1200_debug_priv *d = kzalloc(sizeof(struct cw1200_debug_priv),
@@ -450,6 +478,12 @@ int cw1200_debug_init(struct cw1200_common *priv)
 	if (!debugfs_create_file("11n", S_IRUSR | S_IWUSR,
 			d->debugfs_phy, priv, &fops_11n))
 		goto err;
+
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+	if (!debugfs_create_file("hang", S_IWUSR, d->debugfs_phy,
+			priv, &fops_hang))
+		goto err;
+#endif
 
 	return 0;
 
