@@ -158,11 +158,8 @@ static struct ieee80211_supported_band cw1200_band_2ghz = {
 	.bitrates = cw1200_g_rates,
 	.n_bitrates = cw1200_g_rates_size,
 	.ht_cap = {
-		.cap = IEEE80211_HT_CAP_SM_PS |
-			IEEE80211_HT_CAP_GRN_FLD |
-			/* HT Rx STBC: Rx support of one spatial stream */
-			0x0100 |
-			IEEE80211_HT_CAP_DELAY_BA |
+		.cap = IEEE80211_HT_CAP_GRN_FLD |
+			(1 << IEEE80211_HT_CAP_RX_STBC_SHIFT) |
 			IEEE80211_HT_CAP_MAX_AMSDU,
 		.ht_supported = 1,
 		.ampdu_factor = IEEE80211_HT_MAX_AMPDU_8K,
@@ -182,11 +179,8 @@ static struct ieee80211_supported_band cw1200_band_5ghz = {
 	.bitrates = cw1200_a_rates,
 	.n_bitrates = cw1200_a_rates_size,
 	.ht_cap = {
-		.cap = IEEE80211_HT_CAP_SM_PS |
-			IEEE80211_HT_CAP_GRN_FLD |
-			/* HT Rx STBC: Rx support of one spatial stream */
-			0x0100 |
-			IEEE80211_HT_CAP_DELAY_BA |
+		.cap = IEEE80211_HT_CAP_GRN_FLD |
+			(1 << IEEE80211_HT_CAP_RX_STBC_SHIFT) |
 			IEEE80211_HT_CAP_MAX_AMSDU,
 		.ht_supported = 1,
 		.ampdu_factor = IEEE80211_HT_MAX_AMPDU_8K,

@@ -457,6 +457,14 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			priv->setbssparams_done = true;
 			WARN_ON(wsm_set_beacon_wakeup_period(priv,
 				dtim_interval, listen_interval));
+			if (sta && cw1200_is_ht(&priv->ht_info)) {
+				ap_printk(KERN_DEBUG
+					"[STA] Enabling Block ACK\n");
+				WARN_ON(wsm_set_block_ack_policy(priv,
+					priv->ba_tid_mask,
+					priv->ba_tid_mask));
+			}
+
 			cw1200_set_pm(priv, &priv->powersave_mode);
 
 			if (priv->is_BT_Present)
