@@ -428,9 +428,9 @@ void cw1200_unregister_common(struct ieee80211_hw *dev)
 	struct cw1200_common *priv = dev->priv;
 	int i;
 
-	ieee80211_unregister_hw(dev);
-
 	cw1200_debug_release(priv);
+
+	ieee80211_unregister_hw(dev);
 
 	priv->sbus_ops->irq_unsubscribe(priv->sbus_priv);
 	cw1200_unregister_bh(priv);
