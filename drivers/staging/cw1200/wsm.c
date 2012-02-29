@@ -33,7 +33,6 @@
 #define WSM_CMD_JOIN_TIMEOUT	(7 * HZ) /* Join timeout is 5 sec. in FW   */
 #define WSM_CMD_START_TIMEOUT	(7 * HZ)
 #define WSM_CMD_RESET_TIMEOUT	(3 * HZ) /* 2 sec. timeout was observed.   */
-#define WSM_CMD_LAST_CHANCE_TIMEOUT (HZ * 3 / 2)
 
 #define WSM_SKIP(buf, size)						\
 	do {								\

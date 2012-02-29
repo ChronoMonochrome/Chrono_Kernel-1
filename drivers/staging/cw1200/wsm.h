@@ -598,6 +598,8 @@ struct wsm_hdr {
 
 #define MAX_BEACON_SKIP_TIME_MS 1000
 
+#define WSM_CMD_LAST_CHANCE_TIMEOUT (HZ * 3 / 2)
+
 /* ******************************************************************** */
 /* WSM capcbility							*/
 

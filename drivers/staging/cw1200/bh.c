@@ -265,7 +265,9 @@ static int cw1200_bh(void *arg)
 	int tx_burst;
 	int rx_burst = 0;
 	long status;
+#if defined(CONFIG_CW1200_WSM_DUMPS)
 	size_t wsm_dump_max = -1;
+#endif
 	u32 dummy;
 
 	for (;;) {
@@ -301,8 +303,35 @@ static int cw1200_bh(void *arg)
 			break;
 
 		if (!status && priv->hw_bufs_used) {
+			unsigned long timestamp = jiffies;
+			long timeout;
+			bool pending = false;
+			int i;
+
 			wiphy_warn(priv->hw->wiphy, "Missed interrupt?\n");
 			rx = 1;
+
+			/* Get a timestamp of "oldest" frame */
+			for (i = 0; i < 4; ++i)
+				pending |= cw1200_queue_get_xmit_timestamp(
+						&priv->tx_queue[i],
+						&timestamp);
+
+			/* Check if frame transmission is timed out.
+			 * Add an extra second with respect to possible
+			 * interrupt loss. */
+			timeout = timestamp +
+					WSM_CMD_LAST_CHANCE_TIMEOUT +
+					1 * HZ  -
+					jiffies;
+
+			/* And terminate BH tread if the frame is "stuck" */
+			if (pending && timeout < 0) {
+				wiphy_warn(priv->hw->wiphy,
+					"Timeout waiting for TX confirm.\n");
+				break;
+			}
+
 #if defined(CONFIG_CW1200_DUMP_ON_ERROR)
 			BUG_ON(1);
 #endif /* CONFIG_CW1200_DUMP_ON_ERROR */
