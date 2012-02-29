@@ -1158,7 +1158,7 @@ int wsm_handle_exception(struct cw1200_common *priv, u8 *data, size_t len)
 	char fname[48];
 	size_t i;
 
-	static const char *reason_str[] = {
+	static const char * const reason_str[] = {
 		"undefined instruction",
 		"prefetch abort",
 		"data abort",

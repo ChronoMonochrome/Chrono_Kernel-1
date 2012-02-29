@@ -118,7 +118,7 @@ static int cw1200_pm_init_common(struct cw1200_pm_state *pm,
 	pm->pm_dev = platform_device_alloc("cw1200_power", 0);
 	if (!pm->pm_dev) {
 		platform_driver_unregister(&cw1200_power_driver);
-		return ENOMEM;
+		return -ENOMEM;
 	}
 
 	pm->pm_dev->dev.platform_data = priv;

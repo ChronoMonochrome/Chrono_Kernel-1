@@ -1120,13 +1120,13 @@ static int cw1200_parse_SDD_file(struct cw1200_common *priv)
 	} *pElement;
 	int parsedLength = 0;
 	#define SDD_PTA_CFG_ELT_ID 0xEB
-	#define FIELD_OFFSET(type, field) ((u8 *)&((type*)0)->field - (u8 *)0)
+	#define FIELD_OFFSET(type, field) ((u8 *)&((type *)0)->field - (u8 *)0)
 
 	priv->is_BT_Present = false;
 
 	pElement = (struct cw1200_sdd *)sdd_data;
 
-	pElement = (struct cw1200_sdd *)((u8*)pElement +
+	pElement = (struct cw1200_sdd *)((u8 *)pElement +
 		FIELD_OFFSET(struct cw1200_sdd, data) + pElement->length);
 
 	parsedLength += (FIELD_OFFSET(struct cw1200_sdd, data) +
@@ -1161,6 +1161,9 @@ static int cw1200_parse_SDD_file(struct cw1200_common *priv)
 		priv->conf_listen_interval = 0;
 	}
 	return 0;
+
+	#undef SDD_PTA_CFG_ELT_ID
+	#undef FIELD_OFFSET
 }
 
 

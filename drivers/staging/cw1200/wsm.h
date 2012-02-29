@@ -1771,7 +1771,7 @@ void wsm_unlock_tx(struct cw1200_common *priv);
 /* ******************************************************************** */
 /* WSM / BH API								*/
 
-int wsm_handle_exception(struct cw1200_common *priv, u8 * data, size_t len);
+int wsm_handle_exception(struct cw1200_common *priv, u8 *data, size_t len);
 int wsm_handle_rx(struct cw1200_common *priv, int id, struct wsm_hdr *wsm,
 		  struct sk_buff **skb_p);
 

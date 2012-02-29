@@ -263,7 +263,7 @@ static int cw1200_sdio_on(const struct cw1200_platform_data *pdata)
 	/* A valid reset shall be obtained by maintaining WRESETN
 	 * active (low) for at least two cycles of LP_CLK after VDDIO
 	 * is stable within it operating range. */
-	msleep(1);
+	usleep_range(1000, 20000);
 	gpio_set_value(reset->start, 1);
 	/* The host should wait 32 ms after the WRESETN release
 	 * for the on-chip LDO to stabilize */
