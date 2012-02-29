@@ -284,6 +284,9 @@ struct cw1200_common;
 /* Macro to fetch encryption key index. */
 #define WSM_RX_STATUS_KEY_IDX(status)	(((status >> 20)) & 0x0F)
 
+/* Frame Control field starts at Frame offset + 2 */
+#define WSM_TX_2BYTES_SHIFT		(BIT(7))
+
 /* Join mode */
 /* IBSS */
 #define WSM_JOIN_MODE_IBSS		(0)

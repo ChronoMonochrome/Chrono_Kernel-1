@@ -1313,12 +1313,12 @@ out:
 static bool wsm_handle_tx_data(struct cw1200_common *priv,
 			       const struct wsm_tx *wsm,
 			       const struct ieee80211_tx_info *tx_info,
-			       struct cw1200_queue *queue,
-			       int link_id)
+			       const struct cw1200_txpriv *txpriv,
+			       struct cw1200_queue *queue)
 {
 	bool handled = false;
 	const struct ieee80211_hdr *frame =
-		(struct ieee80211_hdr *)&wsm[1];
+		(struct ieee80211_hdr *) &((u8 *)wsm)[txpriv->offset];
 	__le16 fctl = frame->frame_control;
 	enum {
 		doProbe,
@@ -1349,7 +1349,7 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	case NL80211_IFTYPE_AP:
 		if (unlikely(!priv->join_status))
 			action = doDrop;
-		else if (unlikely(!(BIT(link_id) &
+		else if (unlikely(!(BIT(txpriv->raw_link_id) &
 				(BIT(0) | priv->link_id_map)))) {
 			wiphy_warn(priv->hw->wiphy,
 					"A frame with expired link id "
@@ -1396,7 +1396,6 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	switch (action) {
 	case doProbe:
 	{
-		const struct cw1200_txpriv *txpriv;
 		/* An interesting FW "feature". Device filters
 		 * probe responses.
 		 * The easiest way to get it back is to convert
@@ -1609,8 +1608,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 				continue;
 
 			if (wsm_handle_tx_data(priv, wsm,
-					tx_info, queue,
-					txpriv->raw_link_id))
+					tx_info, txpriv, queue))
 				continue;  /* Handled by WSM */
 
 			wsm->hdr.id &= __cpu_to_le16(
@@ -1625,7 +1623,8 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 
 			if (more) {
 				struct ieee80211_hdr *hdr =
-					(struct ieee80211_hdr *) &wsm[1];
+					(struct ieee80211_hdr *)
+					&((u8 *)wsm)[txpriv->offset];
 				/* more buffered multicast/broadcast frames
 				 *  ==> set MoreData flag in IEEE 802.11 header
 				 *  to inform PS STAs */

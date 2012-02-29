@@ -289,8 +289,8 @@ static int cw1200_status_show(struct seq_file *seq, void *v)
 		d->rx_agg);
 	seq_printf(seq, "TX miss:    %d\n",
 		d->tx_cache_miss);
-	seq_printf(seq, "TX copy:    %d\n",
-		d->tx_copy);
+	seq_printf(seq, "TX align:   %d\n",
+		d->tx_align);
 	seq_printf(seq, "TX TTL:     %d\n",
 		d->tx_ttl);
 	seq_printf(seq, "Scan:       %s\n",

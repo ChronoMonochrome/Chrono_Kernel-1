@@ -509,13 +509,22 @@ cw1200_tx_h_crypt(struct cw1200_common *priv,
 
 static int
 cw1200_tx_h_align(struct cw1200_common *priv,
-		  struct cw1200_txinfo *t)
+		  struct cw1200_txinfo *t,
+		  u8 *flags)
 {
 	size_t offset = (size_t)t->skb->data & 3;
 	u8 *p;
 
 	if (!offset)
 		return 0;
+
+	if (offset & 1) {
+		wiphy_err(priv->hw->wiphy,
+			"Bug: attempt to transmit a frame "
+			"with wrong alignment: %d\n",
+			offset);
+		return -EINVAL;
+	}
 
 	if (skb_headroom(t->skb) < offset) {
 		wiphy_err(priv->hw->wiphy,
@@ -526,9 +535,11 @@ cw1200_tx_h_align(struct cw1200_common *priv,
 		return -ENOMEM;
 	}
 	p = skb_push(t->skb, offset);
-	memmove(p, &p[offset], t->skb->len - offset);
-	skb_trim(t->skb, t->skb->len - offset);
-	cw1200_debug_tx_copy(priv);
+	t->hdr = (struct ieee80211_hdr *) p;
+	t->hdrlen += offset;
+	t->txpriv.offset += offset;
+	*flags |= WSM_TX_2BYTES_SHIFT;
+	cw1200_debug_tx_align(priv);
 	return 0;
 }
 
@@ -697,6 +708,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	};
 	struct wsm_tx *wsm;
 	bool tid_update = 0;
+	u8 flags = 0;
 	int ret;
 
 	t.rate = cw1200_get_tx_rate(priv,
@@ -723,7 +735,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	ret = cw1200_tx_h_crypt(priv, &t);
 	if (ret)
 		goto drop;
-	ret = cw1200_tx_h_align(priv, &t);
+	ret = cw1200_tx_h_align(priv, &t, &flags);
 	if (ret)
 		goto drop;
 	ret = cw1200_tx_h_action(priv, &t);
@@ -734,6 +746,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		ret = -ENOMEM;
 		goto drop;
 	}
+	wsm->flags |= flags;
 	cw1200_tx_h_bt(priv, &t, wsm);
 	cw1200_tx_h_rate_policy(priv, &t, wsm);
 
