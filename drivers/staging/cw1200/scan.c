@@ -213,8 +213,10 @@ void cw1200_scan_work(struct work_struct *work)
 		/* It is not stated in WSM specification, however
 		 * FW team says that driver may not use FG scan
 		 * when joined. */
-		if (priv->join_status == CW1200_JOIN_STATUS_STA)
+		if (priv->join_status == CW1200_JOIN_STATUS_STA) {
 			scan.scanType = WSM_SCAN_TYPE_BACKGROUND;
+			scan.scanFlags = WSM_SCAN_FLAG_FORCE_BACKGROUND;
+		}
 		scan.ch = kzalloc(
 			sizeof(struct wsm_scan_ch[it - priv->scan.curr]),
 			GFP_KERNEL);
@@ -380,8 +382,10 @@ void cw1200_probe_work(struct work_struct *work)
 	scan.maxTransmitRate = wsm->maxTxRate;
 	scan.band = (priv->channel->band == IEEE80211_BAND_5GHZ) ?
 		WSM_PHY_BAND_5G : WSM_PHY_BAND_2_4G;
-	if (priv->join_status == CW1200_JOIN_STATUS_STA)
+	if (priv->join_status == CW1200_JOIN_STATUS_STA) {
 		scan.scanType = WSM_SCAN_TYPE_BACKGROUND;
+		scan.scanFlags = WSM_SCAN_FLAG_FORCE_BACKGROUND;
+	}
 	ch[0].number = priv->channel->hw_value;
 
 	skb_pull(frame.skb, txpriv->offset);
