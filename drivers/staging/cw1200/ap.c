@@ -1025,8 +1025,30 @@ void cw1200_link_id_gc_work(struct work_struct *work)
 				WARN_ON(wsm_reset(priv, &reset));
 				spin_lock_bh(&priv->ps_state_lock);
 			} else {
-				next_gc = min(next_gc, (unsigned long)ttl);
+				next_gc = min_t(unsigned long, next_gc, ttl);
 			}
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+		} else if (priv->link_id_db[i].status == CW1200_LINK_RESET ||
+				priv->link_id_db[i].status ==
+				CW1200_LINK_RESET_REMAP) {
+			int status = priv->link_id_db[i].status;
+			priv->link_id_db[i].status =
+					priv->link_id_db[i].prev_status;
+			priv->link_id_db[i].timestamp = now;
+			reset.link_id = i + 1;
+			spin_unlock_bh(&priv->ps_state_lock);
+			WARN_ON(wsm_reset(priv, &reset));
+			if (status == CW1200_LINK_RESET_REMAP) {
+				memcpy(map_link.mac_addr,
+						priv->link_id_db[i].mac,
+						ETH_ALEN);
+				map_link.link_id = i + 1;
+				WARN_ON(wsm_map_link(priv, &map_link));
+				next_gc = min(next_gc,
+						CW1200_LINK_ID_GC_TIMEOUT);
+			}
+			spin_lock_bh(&priv->ps_state_lock);
+#endif
 		}
 		if (need_reset) {
 			skb_queue_purge(&priv->link_id_db[i].rx_queue);

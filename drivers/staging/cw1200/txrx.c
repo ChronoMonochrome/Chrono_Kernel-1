@@ -1265,8 +1265,10 @@ void cw1200_link_id_reset(struct work_struct *work)
 			flush_workqueue(priv->workqueue);
 			/* Release the link ID */
 			spin_lock(&priv->ps_state_lock);
+			priv->link_id_db[temp_linkid - 1].prev_status =
+				priv->link_id_db[temp_linkid - 1].status;
 			priv->link_id_db[temp_linkid - 1].status =
-				CW1200_LINK_RESERVE;
+				CW1200_LINK_RESET;
 			spin_unlock(&priv->ps_state_lock);
 			wsm_lock_tx_async(priv);
 			if (queue_work(priv->workqueue,
@@ -1275,15 +1277,15 @@ void cw1200_link_id_reset(struct work_struct *work)
 		}
 	} else {
 		spin_lock(&priv->ps_state_lock);
-		entry = &priv->link_id_db[priv->action_linkid - 1];
+		priv->link_id_db[priv->action_linkid - 1].prev_status =
+			priv->link_id_db[priv->action_linkid - 1].status;
+		priv->link_id_db[priv->action_linkid - 1].status =
+			CW1200_LINK_RESET_REMAP;
+		spin_unlock(&priv->ps_state_lock);
 		wsm_lock_tx_async(priv);
 		if (queue_work(priv->workqueue, &priv->link_id_work) <= 0)
-				wsm_unlock_tx(priv);
-		spin_unlock(&priv->ps_state_lock);
+			wsm_unlock_tx(priv);
 		flush_workqueue(priv->workqueue);
-		temp_linkid = cw1200_alloc_link_id(priv,
-				&priv->action_frame_sa[0]);
-		WARN_ON(!temp_linkid);
 	}
 }
 #endif

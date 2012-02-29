@@ -65,6 +65,10 @@ enum cw1200_link_status {
 	CW1200_LINK_RESERVE,
 	CW1200_LINK_SOFT,
 	CW1200_LINK_HARD,
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+	CW1200_LINK_RESET,
+	CW1200_LINK_RESET_REMAP,
+#endif
 };
 
 enum cw1200_bss_loss_status {
@@ -77,6 +81,9 @@ enum cw1200_bss_loss_status {
 struct cw1200_link_entry {
 	unsigned long			timestamp;
 	enum cw1200_link_status		status;
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+	enum cw1200_link_status		prev_status;
+#endif
 	u8				mac[ETH_ALEN];
 	u8				buffered[CW1200_MAX_TID];
 	struct sk_buff_head		rx_queue;
