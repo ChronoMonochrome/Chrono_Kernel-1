@@ -346,8 +346,6 @@ rx:
 			 * to the NEXT Message length + 2 Bytes for SKB */
 			read_len = read_len + 2;
 
-			BUG_ON(SDIO_BLOCK_SIZE & (SDIO_BLOCK_SIZE - 1));
-
 #if defined(CONFIG_CW1200_NON_POWER_OF_TWO_BLOCKSIZES)
 			alloc_len = priv->sbus_ops->align_size(
 					priv->sbus_priv, read_len);

@@ -498,6 +498,10 @@ int cw1200_core_probe(const struct sbus_ops *sbus_ops,
 	err = cw1200_load_firmware(priv);
 	if (err)
 		goto err2;
+	priv->sbus_ops->lock(priv->sbus_priv);
+	WARN_ON(priv->sbus_ops->set_block_size(priv->sbus_priv,
+			SDIO_BLOCK_SIZE));
+	priv->sbus_ops->unlock(priv->sbus_priv);
 
 	if (wait_event_interruptible_timeout(priv->wsm_startup_done,
 				priv->wsm_caps.firmwareReady, 3*HZ) <= 0) {

@@ -274,13 +274,12 @@ static int cw1200_sdio_reset(struct sbus_priv *self)
 static size_t cw1200_sdio_align_size(struct sbus_priv *self, size_t size)
 {
 	size_t aligned = sdio_align_size(self->func, size);
-	/* HACK!!! Problems with DMA size on u8500 platform  */
-	if ((aligned & 0x1F) && (aligned & ~0x1F)) {
-		aligned &= ~0x1F;
-		aligned += 0x20;
-	}
-
 	return aligned;
+}
+
+int cw1200_sdio_set_block_size(struct sbus_priv *self, size_t size)
+{
+	return sdio_set_block_size(self->func, size);
 }
 
 static int cw1200_sdio_pm(struct sbus_priv *self, bool  suspend)
@@ -312,6 +311,7 @@ static struct sbus_ops cw1200_sdio_sbus_ops = {
 	.reset			= cw1200_sdio_reset,
 	.align_size		= cw1200_sdio_align_size,
 	.power_mgmt		= cw1200_sdio_pm,
+	.set_block_size		= cw1200_sdio_set_block_size,
 };
 
 /* Probe Function to be called by SDIO stack when device is discovered */

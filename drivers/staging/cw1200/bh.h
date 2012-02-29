@@ -14,9 +14,7 @@
 
 /* extern */ struct cw1200_common;
 
-/* TODO: 512, actually. Was increased to 1024
- * for compatibility with particular FW. */
-#define SDIO_BLOCK_SIZE (1024)
+#define SDIO_BLOCK_SIZE (512)
 
 int cw1200_register_bh(struct cw1200_common *priv);
 void cw1200_unregister_bh(struct cw1200_common *priv);
