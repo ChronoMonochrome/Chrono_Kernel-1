@@ -20,7 +20,7 @@
 #include <linux/mfd/abx500/ab8500-gpio.h>
 #include <linux/gpio.h>
 #include <linux/err.h>
-#include <mach/abx500-accdet.h>
+#include <linux/input/abx500-accdet.h>
 #ifdef CONFIG_SND_SOC_UX500_AB8500
 #include <sound/ux500_ab8500_ext.h>
 #endif

@@ -18,7 +18,7 @@
 #include <linux/mfd/abx500.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
-#include <mach/abx500-accdet.h>
+#include <linux/input/abx500-accdet.h>
 
 /*
  * Register definition for accessory detection.

@@ -19,15 +19,17 @@
 #include <linux/jiffies.h>
 #include <linux/slab.h>
 #include <linux/input.h>
-#include <sound/soc.h>
-#include <sound/jack.h>
+#include <linux/interrupt.h>
+#include <linux/input/abx500-accdet.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <linux/gpio.h>
 #include <linux/mfd/abx500.h>
-#include <linux/interrupt.h>
+
 #include <sound/jack.h>
-#include <mach/abx500-accdet.h>
+#include <sound/soc.h>
+#include <sound/jack.h>
+
 #ifdef CONFIG_SND_SOC_UX500_AB8500
 #include <sound/ux500_ab8500.h>
 #else
