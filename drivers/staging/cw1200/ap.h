@@ -42,5 +42,8 @@ int cw1200_find_link_id(struct cw1200_common *priv, const u8 *mac);
 int cw1200_alloc_link_id(struct cw1200_common *priv, const u8 *mac);
 void cw1200_link_id_work(struct work_struct *work);
 void cw1200_link_id_gc_work(struct work_struct *work);
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+void cw1200_notify_noa(struct cw1200_common *priv, int delay);
+#endif
 
 #endif

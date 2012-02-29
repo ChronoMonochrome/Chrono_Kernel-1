@@ -1658,6 +1658,13 @@ static inline int wsm_set_p2p_ps_modeinfo(struct cw1200_common *priv,
 			     mi, sizeof(*mi));
 }
 
+static inline int wsm_get_p2p_ps_modeinfo(struct cw1200_common *priv,
+					  struct wsm_p2p_ps_modeinfo *mi)
+{
+	return wsm_read_mib(priv, WSM_MIB_ID_P2P_PS_MODE_INFO,
+			    mi, sizeof(*mi));
+}
+
 /* UseMultiTxConfMessage */
 
 static inline int wsm_use_multi_tx_conf(struct cw1200_common *priv,

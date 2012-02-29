@@ -1116,3 +1116,39 @@ void cw1200_link_id_gc_work(struct work_struct *work)
 	wsm_unlock_tx(priv);
 }
 
+#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
+void cw1200_notify_noa(struct cw1200_common *priv, int delay)
+{
+	struct cfg80211_p2p_ps p2p_ps = {0};
+	struct wsm_p2p_ps_modeinfo *modeinfo;
+	modeinfo = &priv->p2p_ps_modeinfo;
+
+	ap_printk(KERN_DEBUG "[AP]: %s called\n", __func__);
+
+	if (priv->join_status != CW1200_JOIN_STATUS_AP)
+		return;
+
+	if (delay)
+		msleep(delay);
+
+	if (!WARN_ON(wsm_get_p2p_ps_modeinfo(priv, modeinfo))) {
+#if defined(CONFIG_CW1200_STA_DEBUG)
+		print_hex_dump_bytes("[AP] p2p_get_ps_modeinfo: ",
+				     DUMP_PREFIX_NONE,
+				     (u8 *)modeinfo,
+				     sizeof(*modeinfo));
+#endif /* CONFIG_CW1200_STA_DEBUG */
+		p2p_ps.opp_ps = !!(modeinfo->oppPsCTWindow & BIT(7));
+		p2p_ps.ctwindow = modeinfo->oppPsCTWindow & (~BIT(7));
+		p2p_ps.count = modeinfo->count;
+		p2p_ps.start = __le32_to_cpu(modeinfo->startTime);
+		p2p_ps.duration = __le32_to_cpu(modeinfo->duration);
+		p2p_ps.interval = __le32_to_cpu(modeinfo->interval);
+		p2p_ps.index = modeinfo->reserved;
+
+		ieee80211_p2p_noa_notify(priv->vif,
+					 &p2p_ps,
+					 GFP_KERNEL);
+	}
+}
+#endif

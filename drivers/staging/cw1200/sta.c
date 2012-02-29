@@ -15,6 +15,7 @@
 
 #include "cw1200.h"
 #include "sta.h"
+#include "ap.h"
 #include "fwio.h"
 #include "bh.h"
 #include "debug.h"
@@ -363,17 +364,34 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			conf->p2p_ps.interval);
 		/* Notice of Absence */
 		modeinfo->count = conf->p2p_ps.count;
-		modeinfo->startTime = __cpu_to_le32(conf->p2p_ps.start);
-		modeinfo->duration = __cpu_to_le32(conf->p2p_ps.duration);
-		modeinfo->interval = __cpu_to_le32(conf->p2p_ps.interval);
 
-		if (conf->p2p_ps.count)
+		if (conf->p2p_ps.count) {
+			/* In case P2P_GO we need some extra time to be sure
+			 * we will update beacon/probe_resp IEs correctly */
+#define NOA_DELAY_START_MS	300
+			if (priv->join_status == CW1200_JOIN_STATUS_AP)
+				modeinfo->startTime =
+					__cpu_to_le32(conf->p2p_ps.start +
+						      NOA_DELAY_START_MS);
+			else
+				modeinfo->startTime =
+					__cpu_to_le32(conf->p2p_ps.start);
+			modeinfo->duration =
+				__cpu_to_le32(conf->p2p_ps.duration);
+			modeinfo->interval =
+				 __cpu_to_le32(conf->p2p_ps.interval);
 			modeinfo->dtimCount = 1;
-		else
+			modeinfo->reserved = 0;
+		} else {
 			modeinfo->dtimCount = 0;
+			modeinfo->startTime = 0;
+			modeinfo->reserved = 0;
+			modeinfo->duration = 0;
+			modeinfo->interval = 0;
+		}
 
 #if defined(CONFIG_CW1200_STA_DEBUG)
-		print_hex_dump_bytes("p2p_ps_modeinfo: ",
+		print_hex_dump_bytes("p2p_set_ps_modeinfo: ",
 				     DUMP_PREFIX_NONE,
 				     (u8 *)modeinfo,
 				     sizeof(*modeinfo));
@@ -382,6 +400,10 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 		    priv->join_status == CW1200_JOIN_STATUS_AP) {
 			WARN_ON(wsm_set_p2p_ps_modeinfo(priv, modeinfo));
 		}
+
+		/* Temporary solution while firmware don't support NOA change
+		 * notification yet */
+		cw1200_notify_noa(priv, 10);
 	}
 #endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
 
