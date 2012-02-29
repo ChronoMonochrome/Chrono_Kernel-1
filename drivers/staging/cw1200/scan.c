@@ -155,7 +155,11 @@ void cw1200_scan_work(struct work_struct *work)
 				!(priv->powersave_mode.pmMode & WSM_PSM_PS))
 			cw1200_set_pm(priv, &priv->powersave_mode);
 
-		if (priv->scan.req)
+		if (priv->scan.status < 0)
+			wiphy_dbg(priv->hw->wiphy,
+					"[SCAN] Scan failed (%d).\n",
+					priv->scan.status);
+		else if (priv->scan.req)
 			wiphy_dbg(priv->hw->wiphy,
 					"[SCAN] Scan completed.\n");
 		else
@@ -313,6 +317,8 @@ void cw1200_scan_timeout(struct work_struct *work)
 				"Timeout waiting for scan "
 				"complete notification.\n");
 			priv->scan.status = -ETIMEDOUT;
+			priv->scan.curr = priv->scan.end;
+			WARN_ON(wsm_stop_scan(priv));
 		}
 		cw1200_scan_complete(priv);
 	}
