@@ -717,6 +717,7 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 		.txpriv.tid = CW1200_MAX_TID,
 		.txpriv.rate_id = CW1200_INVALID_RATE_ID,
 	};
+	struct ieee80211_sta *sta;
 	struct wsm_tx *wsm;
 	bool tid_update = 0;
 	u8 flags = 0;
@@ -761,6 +762,9 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	if (ret)
 		goto drop;
 
+	rcu_read_lock();
+	sta = rcu_dereference(t.tx_info->control.sta);
+
 	spin_lock_bh(&priv->ps_state_lock);
 	{
 		tid_update = cw1200_tx_h_pm_state(priv, &t);
@@ -770,10 +774,12 @@ void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	spin_unlock_bh(&priv->ps_state_lock);
 
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
-	if (tid_update)
-		ieee80211_sta_set_buffered(t.tx_info->control.sta,
+	if (tid_update && sta)
+		ieee80211_sta_set_buffered(sta,
 				t.txpriv.tid, true);
 #endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
+
+	rcu_read_unlock();
 
 	cw1200_bh_wakeup(priv);
 
