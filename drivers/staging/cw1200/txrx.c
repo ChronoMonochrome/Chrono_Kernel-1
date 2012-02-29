@@ -127,6 +127,59 @@ static void tx_policy_build(const struct cw1200_common *priv,
 			limit -= rates[i].count;
 		}
 	}
+
+	/* HACK!!! Device has problems (at least) switching from
+	 * 54Mbps CTS to 1Mbps. This switch takes enormous amount
+	 * of time (100-200 ms), leading to valuable throughput drop.
+	 * As a workaround, additional g-rates are injected to the
+	 * policy.
+	 */
+	if (count == 2 && !(rates[0].flags & IEEE80211_TX_RC_MCS) &&
+			rates[0].idx > 4 && rates[0].count > 2 &&
+			rates[1].idx < 2) {
+		/* ">> 1" is an equivalent of "/ 2", but faster */
+		int mid_rate = (rates[0].idx + 4) >> 1;
+
+		/* Decrease number of retries for the initial rate */
+		rates[0].count -= 2;
+
+		if (mid_rate != 4) {
+			/* Keep fallback rate at 1Mbps. */
+			rates[3] = rates[1];
+
+			/* Inject 1 transmission on lowest g-rate */
+			rates[2].idx = 4;
+			rates[2].count = 1;
+			rates[2].flags = rates[1].flags;
+
+			/* Inject 1 transmission on mid-rate */
+			rates[1].idx = mid_rate;
+			rates[1].count = 1;
+
+			/* Fallback to 1 Mbps is a really bad thing,
+			 * so let's try to increase probability of
+			 * successful transmission on the lowest g rate
+			 * even more */
+			if (rates[0].count >= 3) {
+				--rates[0].count;
+				++rates[2].count;
+			}
+
+			/* Adjust amount of rates defined */
+			count += 2;
+		} else {
+			/* Keep fallback rate at 1Mbps. */
+			rates[2] = rates[1];
+
+			/* Inject 2 transmissions on lowest g-rate */
+			rates[1].idx = 4;
+			rates[1].count = 2;
+
+			/* Adjust amount of rates defined */
+			count += 1;
+		}
+	}
+
 	policy->defined = cw1200_get_tx_rate(priv, &rates[0])->hw_value + 1;
 
 	for (i = 0; i < count; ++i) {
