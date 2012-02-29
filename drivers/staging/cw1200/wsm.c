@@ -866,7 +866,7 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 		rx.status = WSM_GET32(buf);
 		rx.channelNumber = WSM_GET16(buf);
 		rx.rxedRate = WSM_GET8(buf);
-		rx.rcpiRssi = (WSM_GET8(buf) / 2 - 110);
+		rx.rcpiRssi = WSM_GET8(buf);
 		rx.flags = WSM_GET32(buf);
 
 		/* FW Workaround: Drop probe resp or
@@ -877,6 +877,11 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 		    (ieee80211_is_probe_resp(hdr->frame_control) ||
 		    ieee80211_is_beacon(hdr->frame_control)))
 			return 0;
+
+		/* If no RSSI subscription has been made,
+		* convert RCPI to RSSI here */
+		if (!priv->cqm_use_rssi)
+			rx.rcpiRssi = rx.rcpiRssi / 2 - 110;
 
 		rx.link_id = link_id;
 		fctl = *(__le16 *)buf->data;

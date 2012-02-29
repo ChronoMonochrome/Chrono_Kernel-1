@@ -997,11 +997,19 @@ void cw1200_event_handler(struct work_struct *work)
 			break;
 		case WSM_EVENT_RCPI_RSSI:
 		{
-			int rssi = (int)(s8)(event->evt.eventData & 0xFF);
-			int cqm_evt = (rssi <= priv->cqm_rssi_thold) ?
+			/* RSSI: signed Q8.0, RCPI: unsigned Q7.1
+			 * RSSI = RCPI / 2 - 110 */
+			int rcpiRssi = (int)(event->evt.eventData & 0xFF);
+			int cqm_evt;
+			if (priv->cqm_use_rssi)
+				rcpiRssi = (s8)rcpiRssi;
+			else
+				rcpiRssi =  rcpiRssi / 2 - 110;
+
+			cqm_evt = (rcpiRssi <= priv->cqm_rssi_thold) ?
 				NL80211_CQM_RSSI_THRESHOLD_EVENT_LOW :
 				NL80211_CQM_RSSI_THRESHOLD_EVENT_HIGH;
-			sta_printk(KERN_DEBUG "[CQM] RSSI event: %d", rssi);
+			sta_printk(KERN_DEBUG "[CQM] RSSI event: %d", rcpiRssi);
 			ieee80211_cqm_rssi_notify(priv->vif, cqm_evt,
 								GFP_KERNEL);
 			break;
@@ -1158,16 +1166,25 @@ static int cw1200_parse_SDD_file(struct cw1200_common *priv)
 
 int cw1200_setup_mac(struct cw1200_common *priv)
 {
+	int ret = 0;
+
 	/* NOTE: There is a bug in FW: it reports signal
 	* as RSSI if RSSI subscription is enabled.
 	* It's not enough to set WSM_RCPI_RSSI_USE_RSSI. */
+	/* NOTE2: RSSI based reports have been switched to RCPI, since
+	* FW has a bug and RSSI reported values are not stable,
+	* what can leads to signal level oscilations in user-end applications */
 	struct wsm_rcpi_rssi_threshold threshold = {
 		.rssiRcpiMode = WSM_RCPI_RSSI_THRESHOLD_ENABLE |
 		WSM_RCPI_RSSI_DONT_USE_UPPER |
 		WSM_RCPI_RSSI_DONT_USE_LOWER,
 		.rollingAverageCount = 16,
 	};
-	int ret = 0;
+
+	/* Remember the decission here to make sure, we will handle
+	 * the RCPI/RSSI value correctly on WSM_EVENT_RCPI_RSS */
+	if (threshold.rssiRcpiMode & WSM_RCPI_RSSI_USE_RSSI)
+		priv->cqm_use_rssi = true;
 
 	if (!priv->sdd) {
 		const char *sdd_path = NULL;

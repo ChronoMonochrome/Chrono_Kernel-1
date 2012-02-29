@@ -141,6 +141,7 @@ struct cw1200_common {
 	unsigned			cqm_rssi_hyst;
 	unsigned			cqm_tx_failure_thold;
 	unsigned			cqm_tx_failure_count;
+	bool				cqm_use_rssi;
 	int				cqm_link_loss_count;
 	int				cqm_beacon_loss_count;
 	int				channel_switch_in_progress;
