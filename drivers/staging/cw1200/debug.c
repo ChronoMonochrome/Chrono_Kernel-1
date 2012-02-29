@@ -493,6 +493,50 @@ static const struct file_operations fops_wsm_dumps = {
 	.llseek = default_llseek,
 };
 
+#if defined(CONFIG_CW1200_WSM_DUMPS_SHORT)
+static ssize_t cw1200_short_dump_read(struct file *file,
+	char __user *user_buf, size_t count, loff_t *ppos)
+{
+	struct cw1200_common *priv = file->private_data;
+	char buf[20];
+	size_t size = 0;
+
+	sprintf(buf, "Size: %u\n", priv->wsm_dump_max_size);
+	size = strlen(buf);
+
+	return simple_read_from_buffer(user_buf, count, ppos,
+					buf, size);
+}
+
+static ssize_t cw1200_short_dump_write(struct file *file,
+	const char __user *user_buf, size_t count, loff_t *ppos)
+{
+	struct cw1200_common *priv = file->private_data;
+	char buf[20];
+	unsigned long dump_size = 0;
+
+	if (!count || count > 20)
+		return -EINVAL;
+	if (copy_from_user(buf, user_buf, count))
+		return -EFAULT;
+
+	if (kstrtoul(buf, 10, &dump_size))
+		return -EINVAL;
+	printk(KERN_ERR "%s get %lu\n", __func__, dump_size);
+
+	priv->wsm_dump_max_size = dump_size;
+
+	return count;
+}
+
+static const struct file_operations fops_short_dump = {
+	.open = cw1200_generic_open,
+	.write = cw1200_short_dump_write,
+	.read = cw1200_short_dump_read,
+	.llseek = default_llseek,
+};
+#endif /* CONFIG_CW1200_WSM_DUMPS_SHORT */
+
 int cw1200_debug_init(struct cw1200_common *priv)
 {
 	int ret = -ENOMEM;
@@ -529,6 +573,12 @@ int cw1200_debug_init(struct cw1200_common *priv)
 			priv, &fops_wsm_dumps))
 		goto err;
 
+#if defined(CONFIG_CW1200_WSM_DUMPS_SHORT)
+	if (!debugfs_create_file("wsm_dump_size", S_IRUSR | S_IWUSR,
+			d->debugfs_phy, priv, &fops_short_dump))
+		goto err;
+#endif /* CONFIG_CW1200_WSM_DUMPS_SHORT */
+
 	ret = cw1200_itp_init(priv);
 	if (ret)
 		goto err;
@@ -550,7 +600,7 @@ void cw1200_debug_release(struct cw1200_common *priv)
 		priv->debug = NULL;
 		kfree(d);
 	}
-	}
+}
 
 int cw1200_print_fw_version(struct cw1200_common *priv, u8 *buf, size_t len)
 {

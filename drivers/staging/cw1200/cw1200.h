@@ -208,6 +208,7 @@ struct cw1200_common {
 
 	/* WSM debug */
 	int				wsm_enable_wsm_dumps;
+	u32				wsm_dump_max_size;
 
 	/* Scan status */
 	struct cw1200_scan scan;

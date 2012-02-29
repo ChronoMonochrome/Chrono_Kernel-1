@@ -389,6 +389,9 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	wsm_buf_init(&priv->wsm_cmd_buf);
 	spin_lock_init(&priv->wsm_cmd.lock);
 	tx_policy_init(priv);
+#if defined(CONFIG_CW1200_WSM_DUMPS_SHORT)
+	priv->wsm_dump_max_size = 20;
+#endif /* CONFIG_CW1200_WSM_DUMPS_SHORT */
 
 	return hw;
 }

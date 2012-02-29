@@ -78,6 +78,9 @@ config CW1200_WSM_DEBUG
 config CW1200_WSM_DUMPS
       bool "Verbose WSM API logging (DEVELOPMENT)"
 
+config CW1200_WSM_DUMPS_SHORT
+      bool "Dump only first x bytes (default 20) (DEVELOPMENT)"
+
 config CW1200_TXRX_DEBUG
       bool "Enable TX/RX debug messages (DEVELOPMENT)"
 
@@ -86,6 +89,9 @@ config CW1200_TX_POLICY_DEBUG
 
 config CW1200_STA_DEBUG
       bool "Enable STA/AP debug (DEVELOPMENT)"
+
+config CW1200_DUMP_ON_ERROR
+      bool "Dump kernel in case of critical error (DEVELOPMENT)"
 
 endmenu
 

@@ -265,6 +265,7 @@ static int cw1200_bh(void *arg)
 	int tx_burst;
 	int rx_burst = 0;
 	long status;
+	size_t wsm_dump_max = -1;
 	u32 dummy;
 
 	for (;;) {
@@ -283,6 +284,9 @@ static int cw1200_bh(void *arg)
 				(atomic_read(&priv->bh_tx) == 0)))
 			cw1200_reg_read(priv, ST90TDS_CONFIG_REG_ID,
 					&dummy, sizeof(dummy));
+#if defined(CONFIG_CW1200_WSM_DUMPS_SHORT)
+		wsm_dump_max = priv->wsm_dump_max_size;
+#endif /* CONFIG_CW1200_WSM_DUMPS_SHORT */
 
 		status = wait_event_interruptible_timeout(priv->bh_wq, ({
 				rx = atomic_xchg(&priv->bh_rx, 0);
@@ -298,6 +302,9 @@ static int cw1200_bh(void *arg)
 		if (!status && priv->hw_bufs_used) {
 			wiphy_warn(priv->hw->wiphy, "Missed interrupt?\n");
 			rx = 1;
+#if defined(CONFIG_CW1200_DUMP_ON_ERROR)
+			BUG_ON(1);
+#endif /* CONFIG_CW1200_DUMP_ON_ERROR */
 		} else if (!status) {
 			bh_printk(KERN_DEBUG "[BH] Device wakedown.\n");
 			WARN_ON(cw1200_reg_write_16(priv,
@@ -400,7 +407,7 @@ rx:
 			if (unlikely(priv->wsm_enable_wsm_dumps))
 				print_hex_dump_bytes("<-- ",
 					DUMP_PREFIX_NONE,
-					data, wsm_len);
+					data, min(wsm_len, wsm_dump_max));
 #endif /* CONFIG_CW1200_WSM_DUMPS */
 
 			wsm_id  = __le32_to_cpu(wsm->id) & 0xFFF;
@@ -414,8 +421,12 @@ rx:
 					wsm_len - sizeof(*wsm));
 				break;
 			} else if (unlikely(!rx_resync)) {
-				if (WARN_ON(wsm_seq != priv->wsm_rx_seq))
+				if (WARN_ON(wsm_seq != priv->wsm_rx_seq)) {
+#if defined(CONFIG_CW1200_DUMP_ON_ERROR)
+					BUG_ON(1);
+#endif /* CONFIG_CW1200_DUMP_ON_ERROR */
 					break;
+				}
 			}
 			priv->wsm_rx_seq = (wsm_seq + 1) & 7;
 			rx_resync = 0;
@@ -525,7 +536,9 @@ tx:
 				if (unlikely(priv->wsm_enable_wsm_dumps))
 					print_hex_dump_bytes("--> ",
 						DUMP_PREFIX_NONE,
-						data, __le32_to_cpu(wsm->len));
+						data,
+						min(__le32_to_cpu(wsm->len),
+						 wsm_dump_max));
 #endif /* CONFIG_CW1200_WSM_DUMPS */
 
 				wsm_txed(priv, data);
@@ -552,6 +565,9 @@ tx:
 
 	if (!term) {
 		cw1200_dbg(CW1200_DBG_ERROR, "[BH] Fatal error, exitting.\n");
+#if defined(CONFIG_CW1200_DUMP_ON_ERROR)
+		BUG_ON(1);
+#endif /* CONFIG_CW1200_DUMP_ON_ERROR */
 		priv->bh_error = 1;
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 		ieee80211_driver_hang_notify(priv->vif, GFP_KERNEL);
