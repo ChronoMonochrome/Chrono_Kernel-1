@@ -155,6 +155,7 @@ struct cw1200_common {
 	bool				is_BT_Present;
 	u8				conf_listen_interval;
 	u32				listen_interval;
+	u32				use_cts_prot;
 
 	/* BH */
 	atomic_t			bh_rx;
@@ -217,6 +218,7 @@ struct cw1200_common {
 	bool			buffered_multicasts;
 	bool			tx_multicast;
 	struct work_struct	set_tim_work;
+	struct delayed_work	set_cts_work;
 	struct work_struct	multicast_start_work;
 	struct work_struct	multicast_stop_work;
 	struct timer_list	mcast_timeout;

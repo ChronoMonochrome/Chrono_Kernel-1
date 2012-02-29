@@ -213,6 +213,38 @@ int cw1200_set_tim(struct ieee80211_hw *dev, struct ieee80211_sta *sta,
 	return 0;
 }
 
+void cw1200_set_cts_work(struct work_struct *work)
+{
+	struct cw1200_common *priv =
+		container_of(work, struct cw1200_common, set_cts_work.work);
+
+	struct ieee80211_mgmt *mgmt;
+	u8 erp_ie[3] = {WLAN_EID_ERP_INFO, 0x1, 0};
+	struct wsm_update_ie update_ie = {
+		.what = WSM_UPDATE_IE_BEACON,
+		.count = 1,
+		.ies = erp_ie,
+		.length = 3,
+	};
+	__le32 use_cts_prot = priv->use_cts_prot ?
+		__cpu_to_le32(1) : 0;
+
+	mutex_lock(&priv->conf_mutex);
+	if (priv->use_cts_prot)
+		erp_ie[ERP_INFO_BYTE_OFFSET] |= WLAN_ERP_USE_PROTECTION;
+	else
+		erp_ie[ERP_INFO_BYTE_OFFSET] &= ~(WLAN_ERP_USE_PROTECTION);
+	mutex_unlock(&priv->conf_mutex);
+
+	ap_printk(KERN_DEBUG "[STA] CTS protection %d\n", use_cts_prot);
+
+	WARN_ON(wsm_write_mib(priv, WSM_MIB_ID_NON_ERP_PROTECTION,
+				&use_cts_prot, sizeof(use_cts_prot)));
+	WARN_ON(wsm_update_ie(priv, &update_ie));
+
+	return;
+}
+
 static int cw1200_set_btcoexinfo(struct cw1200_common *priv)
 {
 	struct wsm_override_internal_txrate arg;
@@ -495,13 +527,10 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 		}
 	}
 	if (changed & (BSS_CHANGED_ASSOC | BSS_CHANGED_ERP_CTS_PROT)) {
-		__le32 use_cts_prot = info->use_cts_prot ?
-			__cpu_to_le32(1) : 0;
 
-		ap_printk(KERN_DEBUG "[STA] CTS protection %d\n",
-			info->use_cts_prot);
-		WARN_ON(wsm_write_mib(priv, WSM_MIB_ID_NON_ERP_PROTECTION,
-			&use_cts_prot, sizeof(use_cts_prot)));
+		priv->use_cts_prot = info->use_cts_prot;
+
+		queue_delayed_work(priv->workqueue, &priv->set_cts_work, 0*HZ);
 	}
 	if (changed & (BSS_CHANGED_ASSOC | BSS_CHANGED_ERP_SLOT)) {
 		__le32 slot_time = info->use_short_slot ?

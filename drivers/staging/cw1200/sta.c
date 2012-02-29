@@ -74,7 +74,7 @@ int cw1200_start(struct ieee80211_hw *dev)
 	priv->cqm_beacon_loss_count = 20;
 
 	/* Temporary configuration - beacon filter table */
-	priv->bf_table.numOfIEs = __cpu_to_le32(1);
+	priv->bf_table.numOfIEs = __cpu_to_le32(2);
 	priv->bf_table.entry[0].ieId = WLAN_EID_VENDOR_SPECIFIC;
 	priv->bf_table.entry[0].actionFlags = WSM_BEACON_FILTER_IE_HAS_CHANGED |
 					WSM_BEACON_FILTER_IE_NO_LONGER_PRESENT |
@@ -82,6 +82,10 @@ int cw1200_start(struct ieee80211_hw *dev)
 	priv->bf_table.entry[0].oui[0] = 0x50;
 	priv->bf_table.entry[0].oui[1] = 0x6F;
 	priv->bf_table.entry[0].oui[2] = 0x9A;
+	priv->bf_table.entry[1].ieId = WLAN_EID_ERP_INFO;
+	priv->bf_table.entry[1].actionFlags = WSM_BEACON_FILTER_IE_HAS_CHANGED |
+					WSM_BEACON_FILTER_IE_NO_LONGER_PRESENT |
+					WSM_BEACON_FILTER_IE_HAS_APPEARED;
 
 	priv->bf_control.enabled = 1;
 	ret = cw1200_setup_mac(priv);

@@ -338,6 +338,7 @@ struct ieee80211_hw *cw1200_init_common(size_t priv_data_len)
 	spin_lock_init(&priv->bss_loss_lock);
 	INIT_WORK(&priv->tx_failure_work, cw1200_tx_failure_work);
 	spin_lock_init(&priv->ps_state_lock);
+	INIT_DELAYED_WORK(&priv->set_cts_work, cw1200_set_cts_work);
 	INIT_WORK(&priv->set_tim_work, cw1200_set_tim_work);
 	INIT_WORK(&priv->multicast_start_work, cw1200_multicast_start_work);
 	INIT_WORK(&priv->multicast_stop_work, cw1200_multicast_stop_work);

@@ -34,6 +34,7 @@ int cw1200_ampdu_action(struct ieee80211_hw *hw,
 void cw1200_suspend_resume(struct cw1200_common *priv,
 			  struct wsm_suspend_resume *arg);
 void cw1200_set_tim_work(struct work_struct *work);
+void cw1200_set_cts_work(struct work_struct *work);
 void cw1200_multicast_start_work(struct work_struct *work);
 void cw1200_multicast_stop_work(struct work_struct *work);
 void cw1200_mcast_timeout(unsigned long arg);
