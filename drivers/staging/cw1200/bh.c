@@ -292,7 +292,8 @@ static int cw1200_bh(void *arg)
 				rx = atomic_xchg(&priv->bh_rx, 0);
 				tx = atomic_xchg(&priv->bh_tx, 0);
 				term = atomic_xchg(&priv->bh_term, 0);
-				suspend = atomic_read(&priv->bh_suspend);
+				suspend = pending_tx ?
+					0 : atomic_read(&priv->bh_suspend);
 				(rx || tx || term || suspend);
 			}), status);
 
