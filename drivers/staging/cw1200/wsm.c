@@ -858,6 +858,7 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 	priv->rx_timestamp = jiffies;
 	if (priv->wsm_cbc.rx) {
 		struct wsm_rx rx;
+		struct ieee80211_hdr *hdr;
 		size_t hdr_len;
 		__le16 fctl;
 
@@ -866,6 +867,16 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 		rx.rxedRate = WSM_GET8(buf);
 		rx.rcpiRssi = WSM_GET8(buf);
 		rx.flags = WSM_GET32(buf);
+
+		/* FW Workaround: Drop probe resp or
+		beacon when RSSI is 0 */
+		hdr = (struct ieee80211_hdr *) (*skb_p)->data;
+
+		if (!rx.rcpiRssi &&
+		    (ieee80211_is_probe_resp(hdr->frame_control) ||
+		    ieee80211_is_beacon(hdr->frame_control)))
+			return 0;
+
 		rx.link_id = link_id;
 		fctl = *(__le16 *)buf->data;
 		hdr_len = buf->data - buf->begin;
