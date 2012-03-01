@@ -46,6 +46,10 @@
 #define BT_DEV					(info->dev_bt)
 #define FM_DEV					(info->dev_fm)
 
+/* FM Set control conversion macros for CG2905/10 */
+#define CG2910_FM_CMD_SET_CTRL_48000_HEX	0x12C0
+#define CG2910_FM_CMD_SET_CTRL_44100_HEX	0x113A
+
 /* Bluetooth error codes */
 #define HCI_BT_ERROR_NO_ERROR			0x00
 
@@ -346,12 +350,27 @@ static u8 mc_pcm_role(enum cg2900_dai_mode mode)
  * fm_get_conversion() - Convert sample rate to convert up/down used in X_Set_Control FM commands.
  * @srate: Sample rate.
  */
-static u16 fm_get_conversion(enum cg2900_endpoint_sample_rate srate)
+static u16 fm_get_conversion(struct audio_info *info,
+		enum cg2900_endpoint_sample_rate srate)
 {
-	if (srate >= ENDPOINT_SAMPLE_RATE_44_1_KHZ)
-		return CG2900_FM_CMD_SET_CTRL_CONV_UP;
-	else
-		return CG2900_FM_CMD_SET_CTRL_CONV_DOWN;
+	/*
+	 * For CG2910, Set the external sample rate (host side)
+	 * of the digital output in units of [10Hz]
+	 */
+	if (info->revision == CG2910_CHIP_REV_PG1 ||
+			info->revision == CG2910_CHIP_REV_PG2 ||
+			info->revision == CG2905_CHIP_REV_PG1_1) {
+		if (srate > ENDPOINT_SAMPLE_RATE_44_1_KHZ)
+			return CG2910_FM_CMD_SET_CTRL_48000_HEX;
+		else
+			return CG2910_FM_CMD_SET_CTRL_44100_HEX;
+
+	} else {
+		if (srate >= ENDPOINT_SAMPLE_RATE_44_1_KHZ)
+			return CG2900_FM_CMD_SET_CTRL_CONV_UP;
+		else
+			return CG2900_FM_CMD_SET_CTRL_CONV_DOWN;
+	}
 }
 
 /**
@@ -1836,7 +1855,7 @@ static int conn_start_i2s_to_fm_rx(struct audio_user *audio_user,
 	 */
 	err = send_fm_write_1_param(
 		audio_user, CG2900_FM_CMD_ID_AUP_EXT_SET_CTRL,
-		fm_get_conversion(fm_config->fm.sample_rate));
+		fm_get_conversion(info, fm_config->fm.sample_rate));
 	if (err)
 		goto finished_unlock_mutex;
 
@@ -1945,12 +1964,15 @@ static int conn_start_i2s_to_fm_tx(struct audio_user *audio_user,
 	 * Select Audio Input Source by sending HCI_Write command with
 	 * AIP_SetMode.
 	 */
-	dev_dbg(FM_DEV, "FM: AIP_SetMode\n");
-	err = send_fm_write_1_param(audio_user, CG2900_FM_CMD_ID_AIP_SET_MODE,
-				    CG2900_FM_CMD_AIP_SET_MODE_INPUT_DIG);
-	if (err)
-		goto finished_unlock_mutex;
-
+	if (info->revision == CG2900_CHIP_REV_PG1 ||
+			info->revision == CG2900_CHIP_REV_PG2) {
+		dev_dbg(FM_DEV, "FM: AIP_SetMode\n");
+		err = send_fm_write_1_param(audio_user,
+				CG2900_FM_CMD_ID_AIP_SET_MODE,
+				CG2900_FM_CMD_AIP_SET_MODE_INPUT_DIG);
+		if (err)
+			goto finished_unlock_mutex;
+	}
 	/*
 	 * Now configure the BT sample rate converter by sending HCI_Write
 	 * command with AIP_BT_SetControl.
@@ -1958,7 +1980,7 @@ static int conn_start_i2s_to_fm_tx(struct audio_user *audio_user,
 	dev_dbg(FM_DEV, "FM: AIP_BT_SetControl\n");
 	err = send_fm_write_1_param(
 		audio_user, CG2900_FM_CMD_ID_AIP_BT_SET_CTRL,
-		fm_get_conversion(fm_config->fm.sample_rate));
+		fm_get_conversion(info, fm_config->fm.sample_rate));
 	if (err)
 		goto finished_unlock_mutex;
 
