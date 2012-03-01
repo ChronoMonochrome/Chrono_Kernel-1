@@ -119,7 +119,9 @@ static struct mmci_platform_data mop500_sdi0_data = {
 	.f_max		= 50000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA |
 				MMC_CAP_SD_HIGHSPEED |
-				MMC_CAP_MMC_HIGHSPEED,
+				MMC_CAP_MMC_HIGHSPEED |
+				MMC_CAP_UHS_SDR12 |
+				MMC_CAP_UHS_SDR25,
 	.gpio_wp	= -1,
 	.sigdir		= MCI_ST_FBCLKEN |
 				MCI_ST_CMDDIREN |
