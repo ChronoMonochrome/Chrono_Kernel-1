@@ -2360,7 +2360,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
 	.removexattr	= shmem_removexattr,
 #endif
 #ifdef CONFIG_TMPFS_POSIX_ACL
-	.setattr	= shmem_notify_change,
+	.setattr	= shmem_setattr,
 #endif
 };
 
@@ -2372,7 +2372,7 @@ static const struct inode_operations shmem_special_inode_operations = {
 	.removexattr	= shmem_removexattr,
 #endif
 #ifdef CONFIG_TMPFS_POSIX_ACL
-	.setattr	= shmem_notify_change,
+	.setattr	= shmem_setattr,
 #endif
 };
 
