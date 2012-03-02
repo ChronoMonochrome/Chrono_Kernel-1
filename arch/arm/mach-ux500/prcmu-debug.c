@@ -203,6 +203,9 @@ static void log_set(struct state_history *sh, u8 opp)
 
 void prcmu_debug_ape_opp_log(u8 opp)
 {
+	if (opp == APE_50_PARTLY_25_OPP)
+		opp = APE_50_OPP;
+
 	log_set(&ape_sh, opp);
 }
 

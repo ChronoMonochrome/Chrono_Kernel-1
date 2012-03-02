@@ -1145,12 +1145,14 @@ unlock_and_return:
 int db8500_prcmu_set_ape_opp(u8 opp)
 {
 	int r = 0;
+	u8 prcmu_opp_req;
 
 	if (opp == mb1_transfer.ape_opp)
 		return 0;
 
 	mutex_lock(&mb1_transfer.lock);
 
+	/* Exit APE_50_PARTLY_25_OPP */
 	if (mb1_transfer.ape_opp == APE_50_PARTLY_25_OPP)
 		request_even_slower_clocks(false);
 
@@ -1160,20 +1162,22 @@ int db8500_prcmu_set_ape_opp(u8 opp)
 	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(1))
 		cpu_relax();
 
+	prcmu_opp_req  = (opp == APE_50_PARTLY_25_OPP) ? APE_50_OPP : opp;
+
 	writeb(MB1H_ARM_APE_OPP, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB1));
 	writeb(ARM_NO_CHANGE, (tcdm_base + PRCM_REQ_MB1_ARM_OPP));
-	writeb(((opp == APE_50_PARTLY_25_OPP) ? APE_50_OPP : opp),
-		(tcdm_base + PRCM_REQ_MB1_APE_OPP));
+	writeb(prcmu_opp_req, (tcdm_base + PRCM_REQ_MB1_APE_OPP));
 
 	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb1_transfer.work);
 
 	if ((mb1_transfer.ack.header != MB1H_ARM_APE_OPP) ||
-		(mb1_transfer.ack.ape_opp != opp))
+		(mb1_transfer.ack.ape_opp != prcmu_opp_req))
 		r = -EIO;
 
 skip_message:
 	if ((!r && (opp == APE_50_PARTLY_25_OPP)) ||
+		/* Set APE_50_PARTLY_25_OPP back in case new opp failed */
 		(r && (mb1_transfer.ape_opp == APE_50_PARTLY_25_OPP)))
 		request_even_slower_clocks(true);
 	if (!r)
