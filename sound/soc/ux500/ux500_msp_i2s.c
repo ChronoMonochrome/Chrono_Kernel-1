@@ -754,7 +754,8 @@ struct ux500_msp_i2s_drvdata *ux500_msp_i2s_init(struct platform_device *pdev,
 	}
 	dev_set_drvdata(&pdev->dev, msp_i2s_drvdata);
 
-	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, (char *)pdev->name, 50);
+	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, (char *)pdev->name,
+				  PRCMU_QOS_DEFAULT_VALUE);
 	msp->clk = clk_get(&pdev->dev, NULL);
 	if (IS_ERR(msp->clk)) {
 		pr_err("%s: ERROR: clk_get failed (%d)!\n",
