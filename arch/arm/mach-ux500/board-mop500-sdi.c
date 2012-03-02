@@ -260,7 +260,6 @@ static struct mmci_platform_data mop500_sdi4_data = {
 	.f_max		= 50000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA |
 			  MMC_CAP_MMC_HIGHSPEED,
-	.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
 #ifdef CONFIG_STE_DMA40
