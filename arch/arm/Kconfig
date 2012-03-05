@@ -227,6 +227,13 @@ config ARM_PATCH_PHYS_VIRT_16BIT
 	  this feature (eg, building a kernel for a single machine) and
 	  you need to shrink the kernel to the minimal size.
 
+config NEED_MACH_IO_H
+        bool
+        help
+          Select this when mach/io.h is required to provide special
+          definitions for this platform.  The need for mach/io.h should
+          be avoided when possible.
+
 config NEED_MACH_MEMORY_H
 	bool
 	help
@@ -311,6 +318,7 @@ config ARCH_U8500
 	select NOMADIK_GPIO
 	select ARCH_HAS_PASR
 	select NEED_MACH_MEMORY_H
+	select NEED_MACH_IO_H
 	help
 	  Support for ST-Ericsson's Ux500 architecture
 
