@@ -1295,10 +1295,10 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
 	return addr;
 }
 
-static unsigned long unmap_page_range(struct mmu_gather *tlb,
-				struct vm_area_struct *vma,
-				unsigned long addr, unsigned long end,
-				struct zap_details *details)
+static void unmap_page_range(struct mmu_gather *tlb,
+			     struct vm_area_struct *vma,
+			     unsigned long addr, unsigned long end,
+			     struct zap_details *details)
 {
 	pgd_t *pgd;
 	unsigned long next;
@@ -1318,8 +1318,6 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
 	} while (pgd++, addr = next, addr != end);
 	tlb_end_vma(tlb, vma);
 	mem_cgroup_uncharge_end();
-
-	return addr;
 }
 
 #ifdef CONFIG_PREEMPT
@@ -1395,10 +1393,9 @@ unsigned long unmap_vmas(struct mmu_gather *tlb,
 				 */
 				if (vma->vm_file)
 					unmap_hugepage_range(vma, start, end, NULL);
-
-				start = end;
 			} else
-				start = unmap_page_range(tlb, vma, start, end, details);
+				unmap_page_range(tlb, vma, start, end, details);
+			start = end;
 		}
 	}
 
