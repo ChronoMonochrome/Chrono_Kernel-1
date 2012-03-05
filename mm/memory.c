@@ -1336,8 +1336,6 @@ static void unmap_page_range(struct mmu_gather *tlb,
  * @nr_accounted: Place number of unmapped pages in vm-accountable vma's here
  * @details: details of nonlinear truncation or shared cache invalidation
  *
- * Returns the end address of the unmapping (restart addr if interrupted).
- *
  * Unmap all pages in the vma list.
  *
  * We aim to not hold locks for too long (for scheduling latency reasons).
@@ -1353,7 +1351,7 @@ static void unmap_page_range(struct mmu_gather *tlb,
  * ensure that any thus-far unmapped pages are flushed before unmap_vmas()
  * drops the lock and schedules.
  */
-unsigned long unmap_vmas(struct mmu_gather *tlb,
+void unmap_vmas(struct mmu_gather *tlb,
 		struct vm_area_struct *vma, unsigned long start_addr,
 		unsigned long end_addr, unsigned long *nr_accounted,
 		struct zap_details *details)
@@ -1396,11 +1394,9 @@ unsigned long unmap_vmas(struct mmu_gather *tlb,
 			} else
 				unmap_page_range(tlb, vma, start, end, details);
 		}
-		start = end;
 	}
 
 	mmu_notifier_invalidate_range_end(mm, start_addr, end_addr);
-	return start;	/* which is now the end (or restart) address */
 }
 
 /**
