@@ -185,7 +185,7 @@ static int __init mop500_sensors_init(void)
 			!uib_is_u8500uib() && !uib_is_u8500uibr3())
 		return 0;
 
-	if (machine_is_hrefv60()) {
+	if (machine_is_hrefv60() || machine_is_u8520() || machine_is_u9540()) {
 		lsm303dlh_pdata.irq_a1 = HREFV60_ACCEL_INT1_GPIO;
 		lsm303dlh_pdata.irq_a2 = HREFV60_ACCEL_INT2_GPIO;
 		lsm303dlh_pdata.irq_m = HREFV60_MAGNET_DRDY_GPIO;
