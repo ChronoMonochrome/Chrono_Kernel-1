@@ -1120,8 +1120,10 @@ int compdev_create(struct mcde_display_device *ddev,
 			ret = -ENOMEM;
 			goto fail_create_ovly;
 		}
-		mcde_dss_enable_overlay(cd->dss_ctx.ovly[i]);
-		disable_overlay(cd->dss_ctx.ovly[i]);
+		if (mcde_dss_enable_overlay(cd->dss_ctx.ovly[i]))
+			goto fail_create_ovly;
+		if (disable_overlay(cd->dss_ctx.ovly[i]))
+			goto fail_create_ovly;
 	}
 
 	mcde_dss_get_native_resolution(ddev, &cd->dss_ctx.phy_size.width,
