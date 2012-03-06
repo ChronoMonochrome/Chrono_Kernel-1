@@ -164,6 +164,7 @@ static void __init dbx500_cpufreq_init_maxopp_freq(void)
 	switch (fw_version->project) {
 	case PRCMU_FW_PROJECT_U8500:
 	case PRCMU_FW_PROJECT_U9500:
+	case PRCMU_FW_PROJECT_U8420:
 		freq_table[3].frequency = 1000000;
 		break;
 	case PRCMU_FW_PROJECT_U8500_C2:
