@@ -124,34 +124,32 @@ void driver_remove_file(struct device_driver *drv,
 EXPORT_SYMBOL_GPL(driver_remove_file);
 
 /**
- * driver_add_kobj - add a kobject below the specified driver
- * @drv: requesting device driver
- * @kobj: kobject to add below this driver
- * @fmt: format string that names the kobject
- *
- * You really don't want to do this, this is only here due to one looney
- * iseries driver, go poke those developers if you are annoyed about
- * this...
+ * get_driver - increment driver reference count.
+ * @drv: driver.
  */
-int driver_add_kobj(struct device_driver *drv, struct kobject *kobj,
-		    const char *fmt, ...)
+struct device_driver *get_driver(struct device_driver *drv)
 {
-	va_list args;
-	char *name;
-	int ret;
+	if (drv) {
+		struct driver_private *priv;
+		struct kobject *kobj;
 
-	va_start(args, fmt);
-	name = kvasprintf(GFP_KERNEL, fmt, args);
-	va_end(args);
-
-	if (!name)
-		return -ENOMEM;
-
-	ret = kobject_add(kobj, &drv->p->kobj, "%s", name);
-	kfree(name);
-	return ret;
+		kobj = kobject_get(&drv->p->kobj);
+		priv = to_driver(kobj);
+		return priv->driver;
+	}
+	return NULL;
 }
-EXPORT_SYMBOL_GPL(driver_add_kobj);
+EXPORT_SYMBOL_GPL(get_driver);
+
+/**
+ * put_driver - decrement driver's refcount.
+ * @drv: driver.
+ */
+void put_driver(struct device_driver *drv)
+{
+	kobject_put(&drv->p->kobj);
+}
+EXPORT_SYMBOL_GPL(put_driver);
 
 static int driver_add_groups(struct device_driver *drv,
 			     const struct attribute_group **groups)
