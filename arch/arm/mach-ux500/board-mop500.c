@@ -950,8 +950,10 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 #ifdef CONFIG_FB_MCDE
 	&u8500_mcde_device,
 #endif
+#ifdef CONFIG_FB_B2R2
 	&u8500_b2r2_device,
 	&u8500_b2r2_blt_device,
+#endif
 	&u8500_thsens_device,
 #ifdef CONFIG_LEDS_PWM
 	&ux500_leds_device,
@@ -1192,8 +1194,10 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 #ifdef CONFIG_FB_MCDE
 	&u8500_mcde_device,
 #endif
+#ifdef CONFIG_FB_B2R2
 	&u8500_b2r2_device,
 	&u8500_b2r2_blt_device,
+#endif
 };
 
 static void fixup_ab8505_gpio(void)

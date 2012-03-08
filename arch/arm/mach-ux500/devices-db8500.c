@@ -29,7 +29,9 @@
 #include <mach/hsi.h>
 #endif
 #include <mach/ste-dma40-db8500.h>
+#ifdef CONFIG_FB_B2R2
 #include <video/b2r2_blt.h>
+#endif
 
 #include "pins-db8500.h"
 
@@ -251,6 +253,7 @@ struct platform_device u8500_mcde_device = {
 };
 #endif /*  CONFIG_FB_MCDE */
 
+#ifdef CONFIG_FB_B2R2
 struct platform_device u8500_b2r2_blt_device = {
 	.name	= "b2r2_blt",
 	.id	= 0,
@@ -291,6 +294,7 @@ struct platform_device u8500_b2r2_device = {
 	.num_resources	= ARRAY_SIZE(b2r2_resources),
 	.resource	= b2r2_resources,
 };
+#endif /* CONFIG_FB_B2R2 */
 
 /*
  * WATCHDOG
