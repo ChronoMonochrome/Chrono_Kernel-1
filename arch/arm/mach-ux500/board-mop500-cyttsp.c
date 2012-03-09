@@ -11,7 +11,9 @@
 #include <linux/delay.h>
 #include <linux/gpio/nomadik.h>
 #include <linux/i2c.h>
-#include <linux/i2c/adp1653_plat.h>
+#ifdef CONFIG_U8500_FLASH
+#include <../drivers/staging/camera_flash/adp1653_plat.h>
+#endif
 #include <linux/input/matrix_keypad.h>
 #include <linux/mfd/tc3589x.h>
 #include <linux/mfd/dbx500-prcmu.h>
@@ -27,15 +29,19 @@
 
 #define NUM_SSP_CLIENTS 10
 
+#ifdef CONFIG_U8500_FLASH
 static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
 	.irq_no = CAMERA_FLASH_INT_PIN
 };
+#endif
 
 static struct i2c_board_info __initdata mop500_i2c2_devices_u8500_r3[] = {
+#ifdef CONFIG_U8500_FLASH
 	{
 		I2C_BOARD_INFO("adp1653", 0x30),
 		.platform_data = &adp1653_pdata_u8500_uib
 	}
+#endif
 };
 
 /* cyttsp_gpio_board_init : configures the touch panel. */
@@ -232,6 +238,8 @@ void __init mop500_u8500uib_r3_init(void)
 	mop500_cyttsp_init();
 	db8500_add_spi2(&mop500_spi2_data);
 	nmk_config_pin((GPIO64_GPIO     | PIN_INPUT_PULLUP), false);
+
+#ifdef CONFIG_U8500_FLASH
 	if (machine_is_hrefv60() || machine_is_u8520()) {
 		adp1653_pdata_u8500_uib.enable_gpio =
 					HREFV60_CAMERA_FLASH_ENABLE;
@@ -239,6 +247,7 @@ void __init mop500_u8500uib_r3_init(void)
 		adp1653_pdata_u8500_uib.enable_gpio =
 					GPIO_CAMERA_FLASH_ENABLE;
 	}
+#endif
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_u8500,
 			ARRAY_SIZE(mop500_i2c0_devices_u8500));
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_u8500,
