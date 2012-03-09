@@ -323,3 +323,18 @@ void __init hrefv60_sdi_init(struct device *parent)
 	/* WLAN SDIO channel */
 	db8500_add_sdi1(parent, &mop500_sdi1_data, U8500_SDI_V2_PERIPHID);
 }
+
+void __init mach_u8520_sdi_init(struct device *parent)
+{
+	/* PoP:ed eMMC */
+	db8500_add_sdi2(parent, &mop500_sdi2_data, U8500_SDI_V2_PERIPHID);
+	/* On-board eMMC */
+	db8500_add_sdi4(parent, &mop500_sdi4_data, U8500_SDI_V2_PERIPHID);
+	/* External Micro SD slot */
+	mop500_sdi0_data.gpio_cd = U8520_SDMMC_CD_GPIO;
+	sdi0_en = U8520_SDMMC_EN_GPIO;
+	sdi0_vsel = U8520_SDMMC_1V8_3V_GPIO;
+	sdi0_configure(parent);
+	/* WLAN SDIO channel */
+	db8500_add_sdi1(parent, &mop500_sdi1_data, U8500_SDI_V2_PERIPHID);
+}
