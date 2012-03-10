@@ -16,7 +16,7 @@
 
 #include <linux/types.h>
 
-#if defined(__KERNEL__) || defined(_KERNEL)
+#if defined(__KERNEL__)
 #include <linux/mm_types.h>
 #include <linux/bitops.h>
 #else
