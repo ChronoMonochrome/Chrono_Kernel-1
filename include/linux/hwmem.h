@@ -14,7 +14,7 @@
 
 #include <linux/types.h>
 
-#if !defined(__KERNEL__) && !defined(_KERNEL)
+#if !defined(__KERNEL__)
 #include <sys/types.h>
 #else
 #include <linux/mm_types.h>
