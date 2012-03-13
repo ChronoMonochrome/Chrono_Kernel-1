@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2011 ARM Limited. All rights reserved.
+ * Copyright (C) 2010-2012 ARM Limited. All rights reserved.
  * 
  * This program is free software and is provided to you under the terms of the GNU General Public License version 2
  * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
@@ -15,8 +15,8 @@
 #include "mali_kernel_core.h"
 #include "regs/mali_200_regs.h"
 #include "mali_kernel_rendercore.h"
-#if MALI_TIMELINE_PROFILING_ENABLED
-#include "mali_kernel_profiling.h"
+#if MALI_TIMELINE_PROFILING_ENABLED 
+#include "mali_osk_profiling.h"
 #endif
 #ifdef USING_MALI400_L2_CACHE
 #include "mali_kernel_l2_cache.h"
@@ -71,8 +71,8 @@ typedef struct mali200_job
 	u32 perf_counter_l2_val1_raw;
 #endif
 
-#if MALI_TIMELINE_PROFILING_ENABLED
-	u32 pid;
+#if MALI_TIMELINE_PROFILING_ENABLED 
+    u32 pid;
 	u32 tid;
 #endif
 } mali200_job;
@@ -572,6 +572,38 @@ static _mali_osk_errcode_t subsystem_mali200_start_job(mali_core_job * job, mali
 			&(job200->user_input.wb2_registers[0]),
 			MALI200_NUM_REGS_WBx);
 
+#if MALI_TIMELINE_PROFILING_ENABLED
+     /* 
+     * If the hardware counters are not turned on, ask the external profiler 
+     * if they should be.
+     */
+    if (job200->user_input.perf_counter_flag == 0)
+    {
+        /* 
+         * Work out the correct counter offset to use. Each fragment processor
+         * has two hardware counters.
+         */
+        u32 counter0_offset = MALI_PROFILING_PP_CORE_COUNTER0_OFFSET(core->core_number); 
+        u32 counter1_offset = MALI_PROFILING_PP_CORE_COUNTER1_OFFSET(core->core_number);
+
+        mali_bool src0_enabled = _mali_osk_profiling_query_hw_counter(counter0_offset,
+            &(job200->user_input.perf_counter_src0));
+        mali_bool src1_enabled = _mali_osk_profiling_query_hw_counter(counter1_offset,
+            &(job200->user_input.perf_counter_src1));
+
+        if (src0_enabled == MALI_TRUE)
+        {
+            job200->user_input.perf_counter_flag |= 
+                _MALI_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE;
+        }
+
+        if (src1_enabled == MALI_TRUE)
+        {
+            job200->user_input.perf_counter_flag |=
+                _MALI_PERFORMANCE_COUNTER_FLAG_SRC1_ENABLE;
+        }
+    }
+#endif /* MALI_TIMELINE_PROFILING_ENABLED */
 
 	/* This selects which performance counters we are reading */
 	if ( 0 != job200->user_input.perf_counter_flag )
@@ -643,8 +675,8 @@ static _mali_osk_errcode_t subsystem_mali200_start_job(mali_core_job * job, mali
 	_mali_osk_write_mem_barrier();
 
 #if MALI_TIMELINE_PROFILING_ENABLED
-	_mali_profiling_add_event(MALI_PROFILING_EVENT_TYPE_SINGLE | MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number) | MALI_PROFILING_EVENT_REASON_SINGLE_HW_FLUSH, job200->user_input.frame_builder_id, job200->user_input.flush_id, 0, 0, 0); 
-	_mali_profiling_add_event(MALI_PROFILING_EVENT_TYPE_START|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number), job200->pid, job200->tid, 0, 0, 0);
+	_mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_SINGLE | MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number) | MALI_PROFILING_EVENT_REASON_SINGLE_HW_FLUSH, job200->user_input.frame_builder_id, job200->user_input.flush_id, 0, 0, 0); 
+	_mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_START|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number), job200->pid, job200->tid, 0, 0, 0);
 #endif
 
     MALI_SUCCESS;
@@ -665,8 +697,8 @@ static u32 subsystem_mali200_irq_handler_upper_half(mali_core_renderunit * core)
 		/* Mask out all IRQs from this core until IRQ is handled */
 		mali_core_renderunit_register_write(core, MALI200_REG_ADDR_MGMT_INT_MASK, MALI200_REG_VAL_IRQ_MASK_NONE);
 
-#if MALI_TIMELINE_PROFILING_ENABLED
-		_mali_profiling_add_event(MALI_PROFILING_EVENT_TYPE_SINGLE|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number)|MALI_PROFILING_EVENT_REASON_SINGLE_HW_INTERRUPT, irq_readout, 0, 0, 0, 0);
+#if MALI_TIMELINE_PROFILING_ENABLED 
+		_mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_SINGLE|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number)|MALI_PROFILING_EVENT_REASON_SINGLE_HW_INTERRUPT, irq_readout, 0, 0, 0, 0);
 #endif
 
 		return 1;
@@ -723,8 +755,20 @@ static int subsystem_mali200_irq_handler_bottom_half(struct mali_core_renderunit
 		{
 			if (job200->user_input.perf_counter_flag & (_MALI_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE|_MALI_PERFORMANCE_COUNTER_FLAG_SRC1_ENABLE) )
 			{
+#if MALI_TIMELINE_PROFILING_ENABLED
+                /* Work out the counter offsets for the core number */
+                u32 counter0_offset = MALI_PROFILING_PP_CORE_COUNTER0_OFFSET(core->core_number);
+                u32 counter1_offset = MALI_PROFILING_PP_CORE_COUNTER1_OFFSET(core->core_number);
+#endif /* MALI_TIMELINE_PROFILING_ENABLED */
+
 				job200->perf_counter0 = mali_core_renderunit_register_read(core, MALI200_REG_ADDR_MGMT_PERF_CNT_0_VALUE);
 				job200->perf_counter1 = mali_core_renderunit_register_read(core, MALI200_REG_ADDR_MGMT_PERF_CNT_1_VALUE);
+
+#if MALI_TIMELINE_PROFILING_ENABLED
+                /* Report the counter values */
+                _mali_osk_profiling_report_hw_counter(counter0_offset, job200->perf_counter0);
+                _mali_osk_profiling_report_hw_counter(counter1_offset, job200->perf_counter1);
+#endif /* MALI_TIMELINE_PROFILING_ENABLED */
 			}
 
 #if defined(USING_MALI400_L2_CACHE)
@@ -762,8 +806,8 @@ static int subsystem_mali200_irq_handler_bottom_half(struct mali_core_renderunit
 
 		}
 
-#if MALI_TIMELINE_PROFILING_ENABLED
-		_mali_profiling_add_event(MALI_PROFILING_EVENT_TYPE_STOP|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number),
+#if MALI_TIMELINE_PROFILING_ENABLED 
+		_mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_STOP|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number),
 				job200->perf_counter0, job200->perf_counter1,
 				job200->user_input.perf_counter_src0 | (job200->user_input.perf_counter_src1 << 8)
 #if defined(USING_MALI400_L2_CACHE)
@@ -787,8 +831,8 @@ static int subsystem_mali200_irq_handler_bottom_half(struct mali_core_renderunit
 	         ((CORE_HANG_CHECK_TIMEOUT == core->state) && (current_tile_addr == job200->last_tile_list_addr))
 	        )
 	{
-#if MALI_TIMELINE_PROFILING_ENABLED
-		_mali_profiling_add_event(MALI_PROFILING_EVENT_TYPE_STOP|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number), 0, 0, 0, 0, 0); /* add GP and L2 counters and return status */
+#if MALI_TIMELINE_PROFILING_ENABLED 
+		_mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_STOP|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number), 0, 0, 0, 0, 0); /* add GP and L2 counters and return status */
 #endif
 		/* no progress detected, killed by the watchdog */
 		MALI_DEBUG_PRINT(2, ("M200: SW-Timeout Rawstat: 0x%x Tile_addr: 0x%x Status: 0x%x.\n", irq_readout ,current_tile_addr ,core_status) );
@@ -823,8 +867,8 @@ static int subsystem_mali200_irq_handler_bottom_half(struct mali_core_renderunit
 	}
 	else
 	{
-#if MALI_TIMELINE_PROFILING_ENABLED
-		_mali_profiling_add_event(MALI_PROFILING_EVENT_TYPE_STOP|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number), 0, 0, 0, 0, 0); /* add GP and L2 counters and return status */
+#if MALI_TIMELINE_PROFILING_ENABLED 
+		_mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_STOP|MALI_PROFILING_MAKE_EVENT_CHANNEL_PP(core->core_number), 0, 0, 0, 0, 0); /* add GP and L2 counters and return status */
 #endif
 
 		MALI_DEBUG_PRINT(1, ("Mali PP: Job: 0x%08x  CRASH?  Rawstat: 0x%x Tile_addr: 0x%x Status: 0x%x\n",
@@ -902,7 +946,7 @@ static _mali_osk_errcode_t subsystem_mali200_get_new_job_from_user(struct mali_c
 	job_priority_set(job, job200->user_input.priority);
 	job_watchdog_set(job, job200->user_input.watchdog_msecs );
 
-#if MALI_TIMELINE_PROFILING_ENABLED
+#if MALI_TIMELINE_PROFILING_ENABLED 
 	job200->pid = _mali_osk_get_pid();
 	job200->tid = _mali_osk_get_tid();
 #endif
