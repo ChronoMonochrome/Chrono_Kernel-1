@@ -4,7 +4,7 @@
 
 menuconfig SND_SOC_UX500
 	bool "SoC Audio support for Ux500 platform"
-	depends on SND_SOC
+	depends on SND_SOC && STM_MSP_SPI
 	default n
 	help
 		Say Y if you want to add support for the Ux500 platform.
