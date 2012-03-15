@@ -43,7 +43,7 @@ void __init mop500_vibra_init(void)
 {
 	int ret;
 
-	if (machine_is_hrefv60())
+	if (machine_is_hrefv60() || machine_is_u8520() || machine_is_u9540())
 		ux500_vibra_device.dev.platform_data = &linear_vibra_plat_data;
 	else
 		ux500_vibra_device.dev.platform_data = &rotary_vibra_plat_data;
