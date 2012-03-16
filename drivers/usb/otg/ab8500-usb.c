@@ -76,25 +76,57 @@ static bool usb_pm_qos_is_latency_0;
 
 #define PUBLIC_ID_BACKUPRAM1 (U8500_BACKUPRAM1_BASE + 0x0FC0)
 #define MAX_USB_SERIAL_NUMBER_LEN 31
+#define AB8505_USB_LINE_STAT_REG 0x94
 
 /* Usb line status register */
 enum ab8500_usb_link_status {
-	USB_LINK_NOT_CONFIGURED = 0,
-	USB_LINK_STD_HOST_NC,
-	USB_LINK_STD_HOST_C_NS,
-	USB_LINK_STD_HOST_C_S,
-	USB_LINK_HOST_CHG_NM,
-	USB_LINK_HOST_CHG_HS,
-	USB_LINK_HOST_CHG_HS_CHIRP,
-	USB_LINK_DEDICATED_CHG,
-	USB_LINK_ACA_RID_A,
-	USB_LINK_ACA_RID_B,
-	USB_LINK_ACA_RID_C_NM,
-	USB_LINK_ACA_RID_C_HS,
-	USB_LINK_ACA_RID_C_HS_CHIRP,
-	USB_LINK_HM_IDGND,
-	USB_LINK_RESERVED,
-	USB_LINK_NOT_VALID_LINK
+	USB_LINK_NOT_CONFIGURED_8500 = 0,
+	USB_LINK_STD_HOST_NC_8500,
+	USB_LINK_STD_HOST_C_NS_8500,
+	USB_LINK_STD_HOST_C_S_8500,
+	USB_LINK_HOST_CHG_NM_8500,
+	USB_LINK_HOST_CHG_HS_8500,
+	USB_LINK_HOST_CHG_HS_CHIRP_8500,
+	USB_LINK_DEDICATED_CHG_8500,
+	USB_LINK_ACA_RID_A_8500,
+	USB_LINK_ACA_RID_B_8500,
+	USB_LINK_ACA_RID_C_NM_8500,
+	USB_LINK_ACA_RID_C_HS_8500,
+	USB_LINK_ACA_RID_C_HS_CHIRP_8500,
+	USB_LINK_HM_IDGND_8500,
+	USB_LINK_RESERVED_8500,
+	USB_LINK_NOT_VALID_LINK_8500,
+};
+
+enum ab8505_usb_link_status {
+	USB_LINK_NOT_CONFIGURED_8505 = 0,
+	USB_LINK_STD_HOST_NC_8505,
+	USB_LINK_STD_HOST_C_NS_8505,
+	USB_LINK_STD_HOST_C_S_8505,
+	USB_LINK_CDP_8505,
+	USB_LINK_RESERVED0_8505,
+	USB_LINK_RESERVED1_8505,
+	USB_LINK_DEDICATED_CHG_8505,
+	USB_LINK_ACA_RID_A_8505,
+	USB_LINK_ACA_RID_B_8505,
+	USB_LINK_ACA_RID_C_NM_8505,
+	USB_LINK_RESERVED2_8505,
+	USB_LINK_RESERVED3_8505,
+	USB_LINK_HM_IDGND_8505,
+	USB_LINK_CHARGERPORT_NOT_OK_8505,
+	USB_LINK_CHARGER_DM_HIGH_8505,
+	USB_LINK_PHYEN_NO_VBUS_NO_IDGND_8505,
+	USB_LINK_STD_UPSTREAM_NO_IDGNG_NO_VBUS_8505,
+	USB_LINK_STD_UPSTREAM_8505,
+	USB_LINK_CHARGER_SE1_8505,
+	USB_LINK_CARKIT_CHGR_1_8505,
+	USB_LINK_CARKIT_CHGR_2_8505,
+	USB_LINK_ACA_DOCK_CHGR_8505,
+	USB_LINK_SAMSUNG_BOOT_CBL_PHY_EN_8505,
+	USB_LINK_SAMSUNG_BOOT_CBL_PHY_DISB_8505,
+	USB_LINK_SAMSUNG_UART_CBL_PHY_EN_8505,
+	USB_LINK_SAMSUNG_UART_CBL_PHY_DISB_8505,
+	USB_LINK_MOTOROLA_FACTORY_CBL_PHY_EN_8505,
 };
 
 enum ab8500_usb_mode {
@@ -309,112 +341,219 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
 #define ab8500_usb_peri_phy_en(ab)	ab8500_usb_phy_enable(ab, false)
 #define ab8500_usb_peri_phy_dis(ab)	ab8500_usb_phy_disable(ab, false)
 
-static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
+static int ab8505_usb_link_status_update(struct ab8500_usb *ab,
+				enum ab8505_usb_link_status lsts)
 {
-	u8 reg;
-	enum ab8500_usb_link_status lsts;
-	enum usb_phy_events event;
+	enum usb_phy_events event=0;
 
-	abx500_get_register_interruptible(ab->dev,
-			AB8500_USB,
-			AB8500_USB_LINE_STAT_REG,
-			&reg);
+	dev_dbg(ab->dev, "ab8505_usb_link_status_update %d\n", lsts);
 
-	lsts = (reg >> 3) & 0x0F;
-
-	dev_dbg(ab->dev, "ab8500_usb_link_status_update %d\n", lsts);
-	if (!(ab->sysfs_flag)) {
-		switch (lsts) {
-		case USB_LINK_ACA_RID_B:
-			event = USB_EVENT_RIDB;
-		case USB_LINK_NOT_CONFIGURED:
-		case USB_LINK_RESERVED:
-		case USB_LINK_NOT_VALID_LINK:
-			if (ab->mode == USB_PERIPHERAL)
-				atomic_notifier_call_chain(&ab->phy.notifier,
-						   USB_EVENT_CLEAN,
-						   &ab->vbus_draw);
-			ab->mode = USB_IDLE;
-			ab->phy.otg.default_a = false;
-			ab->vbus_draw = 0;
-			if (event != USB_EVENT_RIDB)
-				event = USB_EVENT_NONE;
-			break;
-		case USB_LINK_ACA_RID_C_NM:
-		case USB_LINK_ACA_RID_C_HS:
-		case USB_LINK_ACA_RID_C_HS_CHIRP:
-			event = USB_EVENT_RIDC;
-		case USB_LINK_STD_HOST_NC:
-		case USB_LINK_STD_HOST_C_NS:
-		case USB_LINK_STD_HOST_C_S:
-		case USB_LINK_HOST_CHG_NM:
-		case USB_LINK_HOST_CHG_HS:
-		case USB_LINK_HOST_CHG_HS_CHIRP:
-			if (ab->mode == USB_HOST) {
-				ab->mode = USB_PERIPHERAL;
-				ab8500_usb_host_phy_dis(ab);
-				atomic_notifier_call_chain(&ab->phy.notifier,
-							   USB_EVENT_PREPARE,
-							   &ab->vbus_draw);
-				ab8500_usb_peri_phy_en(ab);
-			}
-			if (ab->mode == USB_IDLE) {
-				ab->mode = USB_PERIPHERAL;
-				atomic_notifier_call_chain(&ab->phy.notifier,
-							   USB_EVENT_PREPARE,
-							   &ab->vbus_draw);
-				ab8500_usb_peri_phy_en(ab);
-			}
-			if (event != USB_EVENT_RIDC)
-				event = USB_EVENT_VBUS;
-			break;
-
-		case USB_LINK_ACA_RID_A:
-			event = USB_EVENT_RIDA;
-		case USB_LINK_HM_IDGND:
-			if (ab->mode == USB_PERIPHERAL) {
-				ab->mode = USB_HOST;
-				ab8500_usb_peri_phy_dis(ab);
-				atomic_notifier_call_chain(&ab->phy.notifier,
-							   USB_EVENT_PREPARE,
-							   &ab->vbus_draw);
-				ab8500_usb_host_phy_en(ab);
-			}
-			if (ab->mode == USB_IDLE) {
-				ab->mode = USB_HOST;
-				atomic_notifier_call_chain(&ab->phy.notifier,
-							   USB_EVENT_PREPARE,
-							   &ab->vbus_draw);
-				ab8500_usb_host_phy_en(ab);
-			}
-			ab->phy.otg->default_a = true;
-			if (event != USB_EVENT_RIDA)
-				event = USB_EVENT_ID;
+	switch (lsts) {
+	case USB_LINK_ACA_RID_B_8505:
+		event = USB_EVENT_RIDB;
+	case USB_LINK_NOT_CONFIGURED_8505:
+	case USB_LINK_RESERVED0_8505:
+	case USB_LINK_RESERVED1_8505:
+	case USB_LINK_RESERVED2_8505:
+	case USB_LINK_RESERVED3_8505:
+		if (ab->mode == USB_PERIPHERAL)
 			atomic_notifier_call_chain(&ab->phy.notifier,
-					event,
-					&ab->vbus_draw);
-			break;
-	
-		case USB_LINK_DEDICATED_CHG:
-			/* TODO: vbus_draw */
+						USB_EVENT_CLEAN,
+						&ab->vbus_draw);
+		ab->mode = USB_IDLE;
+		ab->phy.otg->default_a = false;
+		ab->vbus_draw = 0;
+		if (event != USB_EVENT_RIDB)
+			event = USB_EVENT_NONE;
+		break;
+
+	case USB_LINK_ACA_RID_C_NM_8505:
+		event = USB_EVENT_RIDC;
+	case USB_LINK_STD_HOST_NC_8505:
+	case USB_LINK_STD_HOST_C_NS_8505:
+	case USB_LINK_STD_HOST_C_S_8505:
+		if (ab->mode == USB_HOST) {
+			ab->mode = USB_PERIPHERAL;
+			ab8500_usb_host_phy_dis(ab);
+			atomic_notifier_call_chain(&ab->phy.notifier,
+							USB_EVENT_CLEAN,
+							&ab->vbus_draw);
+			ab8500_usb_peri_phy_en(ab);
+		}
+		if (ab->mode == USB_IDLE) {
+			ab->mode = USB_PERIPHERAL;
+			atomic_notifier_call_chain(&ab->phy.notifier,
+						   USB_EVENT_PREPARE,
+						   &ab->vbus_draw);
+			ab8500_usb_peri_phy_en(ab);
+		}
+		if (event != USB_EVENT_RIDC)
+			event = USB_EVENT_VBUS;
+		break;
+	case USB_LINK_ACA_RID_A_8505:
+		event = USB_EVENT_RIDA;
+	case USB_LINK_HM_IDGND_8505:
+		if (ab->mode == USB_PERIPHERAL) {
+			ab->mode = USB_HOST;
+			ab8500_usb_peri_phy_dis(ab);
+			atomic_notifier_call_chain(&ab->phy.notifier,
+						   USB_EVENT_PREPARE,
+						   &ab->vbus_draw);
+			ab8500_usb_host_phy_en(ab);
+		}
+		if (ab->mode == USB_IDLE) {
+			ab->mode = USB_HOST;
+			atomic_notifier_call_chain(&ab->phy.notifier,
+						   USB_EVENT_PREPARE,
+						   &ab->vbus_draw);
+			ab8500_usb_host_phy_en(ab);
+		}
+		ab->phy.otg->default_a = true;
+		if (event != USB_EVENT_RIDA)
+			event = USB_EVENT_ID;
+			atomic_notifier_call_chain(&ab->phy.notifier,
+						event,
+						&ab->vbus_draw);
+		break;
+
+	case USB_LINK_DEDICATED_CHG_8505:
 			ab->mode = USB_DEDICATED_CHG;
 			event = USB_EVENT_CHARGER;
 			atomic_notifier_call_chain(&ab->phy.notifier,
 					event,
 					&ab->vbus_draw);
-			break;
+		break;
+
+	default:
+		break;
+	}
+	return 0;
+}
+
+static int ab8500_usb_link_status_update(struct ab8500_usb *ab,
+				enum ab8500_usb_link_status lsts)
+{
+	enum usb_phy_events event=0;
+
+	dev_dbg(ab->dev, "ab8500_usb_link_status_update %d\n", lsts);
+
+	switch (lsts) {
+	case USB_LINK_ACA_RID_B_8500:
+		event = USB_EVENT_RIDB;
+	case USB_LINK_NOT_CONFIGURED_8500:
+	case USB_LINK_RESERVED_8500:
+	case USB_LINK_NOT_VALID_LINK_8500:
+		if (ab->mode == USB_PERIPHERAL)
+			atomic_notifier_call_chain(&ab->phy.notifier,
+					   USB_EVENT_CLEAN,
+					   &ab->vbus_draw);
+		ab->mode = USB_IDLE;
+		ab->phy.otg->default_a = false;
+		ab->vbus_draw = 0;
+		if (event != USB_EVENT_RIDB)
+			event = USB_EVENT_NONE;
+		break;
+	case USB_LINK_ACA_RID_C_NM_8500:
+	case USB_LINK_ACA_RID_C_HS_8500:
+	case USB_LINK_ACA_RID_C_HS_CHIRP_8500:
+		event = USB_EVENT_RIDC;
+	case USB_LINK_STD_HOST_NC_8500:
+	case USB_LINK_STD_HOST_C_NS_8500:
+	case USB_LINK_STD_HOST_C_S_8500:
+	case USB_LINK_HOST_CHG_NM_8500:
+	case USB_LINK_HOST_CHG_HS_8500:
+	case USB_LINK_HOST_CHG_HS_CHIRP_8500:
+		if (ab->mode == USB_HOST) {
+			ab->mode = USB_PERIPHERAL;
+			ab8500_usb_host_phy_dis(ab);
+			atomic_notifier_call_chain(&ab->phy.notifier,
+						   USB_EVENT_PREPARE,
+						   &ab->vbus_draw);
+			ab8500_usb_peri_phy_en(ab);
+		}
+		if (ab->mode == USB_IDLE) {
+			ab->mode = USB_PERIPHERAL;
+			atomic_notifier_call_chain(&ab->phy.notifier,
+						   USB_EVENT_PREPARE,
+						   &ab->vbus_draw);
+			ab8500_usb_peri_phy_en(ab);
+		}
+		if (event != USB_EVENT_RIDC)
+			event = USB_EVENT_VBUS;
+		break;
+
+	case USB_LINK_ACA_RID_A_8500:
+		event = USB_EVENT_RIDA;
+	case USB_LINK_HM_IDGND_8500:
+		if (ab->mode == USB_PERIPHERAL) {
+			ab->mode = USB_HOST;
+			ab8500_usb_peri_phy_dis(ab);
+			atomic_notifier_call_chain(&ab->phy.notifier,
+							   USB_EVENT_PREPARE,
+						   &ab->vbus_draw);
+			ab8500_usb_host_phy_en(ab);
+		}
+		if (ab->mode == USB_IDLE) {
+			ab->mode = USB_HOST;
+			atomic_notifier_call_chain(&ab->phy.notifier,
+							   USB_EVENT_PREPARE,
+						   &ab->vbus_draw);
+			ab8500_usb_host_phy_en(ab);
+		}
+		ab->phy.otg->default_a = true;
+		if (event != USB_EVENT_RIDA)
+			event = USB_EVENT_ID;
+		atomic_notifier_call_chain(&ab->phy.notifier,
+				event,
+				&ab->vbus_draw);
+		break;
+
+	case USB_LINK_DEDICATED_CHG_8500:
+		ab->mode = USB_DEDICATED_CHG;
+		event = USB_EVENT_CHARGER;
+		atomic_notifier_call_chain(&ab->phy.notifier,
+				event,
+				&ab->vbus_draw);
+		break;
+	}
+	return 0;
+}
+
+static int abx500_usb_link_status_update(struct ab8500_usb *ab)
+{
+	u8 reg;
+	int ret = 0;
+
+	if (!(ab->sysfs_flag)) {
+		if (is_ab8500(ab->ab8500)) {
+			enum ab8500_usb_link_status lsts;
+
+			abx500_get_register_interruptible(ab->dev,
+				AB8500_USB,
+				AB8500_USB_LINE_STAT_REG,
+				&reg);
+			lsts = (reg >> 3) & 0x0F;
+			ret = ab8500_usb_link_status_update(ab, lsts);
+		}
+		if (is_ab8505(ab->ab8500)) {
+			enum ab8505_usb_link_status lsts;
+
+			abx500_get_register_interruptible(ab->dev,
+				AB8500_USB,
+				AB8505_USB_LINE_STAT_REG,
+				&reg);
+			lsts = (reg >> 3) & 0x1F;
+			ret = ab8505_usb_link_status_update(ab, lsts);
 		}
 	}
-
-	return 0;
+	return ret;
 }
 
 static void ab8500_usb_delayed_work(struct work_struct *work)
 {
 	struct delayed_work *dwork = to_delayed_work(work);
 	struct ab8500_usb *ab = container_of(dwork, struct ab8500_usb, dwork);
-
-	ab8500_usb_link_status_update(ab);
+	abx500_usb_link_status_update(ab);
 }
 
 static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
@@ -453,7 +592,7 @@ static irqreturn_t ab8500_usb_v20_link_status_irq(int irq, void *data)
 {
 	struct ab8500_usb *ab = (struct ab8500_usb *) data;
 
-	ab8500_usb_link_status_update(ab);
+	abx500_usb_link_status_update(ab);
 
 	return IRQ_HANDLED;
 }
@@ -634,28 +773,24 @@ static int ab8500_usb_regulator_get(struct ab8500_usb *ab)
 	if (IS_ERR(ab->v_ape)) {
 		dev_err(ab->dev, "Could not get v-ape supply\n");
 		err = PTR_ERR(ab->v_ape);
-		goto reg_error;
+		return err;
 	}
 
 	ab->v_ulpi = regulator_get(ab->dev, "vddulpivio18");
 	if (IS_ERR(ab->v_ulpi)) {
 		dev_err(ab->dev, "Could not get vddulpivio18 supply\n");
 		err = PTR_ERR(ab->v_ulpi);
-		goto reg_error;
+		return err;
 	}
 
 	ab->v_musb = regulator_get(ab->dev, "musb_1v8");
 	if (IS_ERR(ab->v_musb)) {
 		dev_err(ab->dev, "Could not get musb_1v8 supply\n");
 		err = PTR_ERR(ab->v_musb);
-		goto reg_error;
+		return err;
 	}
 
 	return 0;
-
-reg_error:
-	ab8500_usb_regulator_put(ab);
-	return err;
 }
 
 static void ab8500_usb_irq_free(struct ab8500_usb *ab)
@@ -791,7 +926,7 @@ boot_time_device_store(struct device *dev, struct device_attribute *attr,
 
 	ab->sysfs_flag = false;
 
-	ab8500_usb_link_status_update(ab);
+	abx500_usb_link_status_update(ab);
 
 	return n;
 }
