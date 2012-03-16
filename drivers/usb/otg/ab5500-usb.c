@@ -23,7 +23,7 @@
 #include <linux/kernel_stat.h>
 #include <mach/gpio.h>
 #include <mach/reboot_reasons.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 
 /* AB5500 USB macros
  */
@@ -49,7 +49,7 @@
 #define USB_PROBE_DELAY 1000 /* 1 seconds */
 #define USB_LIMIT (200) /* If we have more than 200 irqs per second */
 
-static struct pm_qos_request_list usb_pm_qos_latency;
+static struct pm_qos_request usb_pm_qos_latency;
 static bool usb_pm_qos_is_latency_0;
 
 #define PUBLIC_ID_BACKUPRAM1 (U5500_BACKUPRAM1_BASE + 0x0FC0)
