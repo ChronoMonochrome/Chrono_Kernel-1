@@ -48,6 +48,7 @@
 #include <linux/usb/audio.h>
 #include <linux/usb/audio-v2.h>
 #include <linux/module.h>
+#include <linux/switch.h>
 
 #include <sound/control.h>
 #include <sound/core.h>
@@ -86,6 +87,8 @@ static int nrpacks = 8;		/* max. number of packets per urb */
 static bool async_unlink = 1;
 static int device_setup[SNDRV_CARDS]; /* device parameter for this card */
 static bool ignore_ctl_error;
+
+struct switch_dev switch_audio_detection;
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for the USB audio adapter.");
@@ -597,6 +600,7 @@ static int usb_audio_probe(struct usb_interface *intf,
 	chip = snd_usb_audio_probe(interface_to_usbdev(intf), intf, id);
 	if (chip) {
 		usb_set_intfdata(intf, chip);
+		switch_set_state(&switch_audio_detection, 1);
 		return 0;
 	} else
 		return -EIO;
@@ -604,6 +608,7 @@ static int usb_audio_probe(struct usb_interface *intf,
 
 static void usb_audio_disconnect(struct usb_interface *intf)
 {
+	switch_set_state(&switch_audio_detection, 0);
 	snd_usb_audio_disconnect(interface_to_usbdev(intf),
 				 usb_get_intfdata(intf));
 }
@@ -721,11 +726,15 @@ static int __init snd_usb_audio_init(void)
 		printk(KERN_WARNING "invalid nrpacks value.\n");
 		return -EINVAL;
 	}
+
+	switch_audio_detection.name = "usb_audio";
+	switch_dev_register(&switch_audio_detection);
 	return usb_register(&usb_audio_driver);
 }
 
 static void __exit snd_usb_audio_cleanup(void)
 {
+	switch_dev_unregister(&switch_audio_detection);
 	usb_deregister(&usb_audio_driver);
 }
 
