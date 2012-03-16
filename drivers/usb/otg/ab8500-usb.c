@@ -37,6 +37,9 @@
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/kernel_stat.h>
 #include <linux/pm_qos.h>
+#include <linux/wakelock.h>
+
+static struct wake_lock ab8500_musb_wakelock;
 
 #define AB8500_MAIN_WD_CTRL_REG 0x01
 #define AB8500_USB_LINE_STAT_REG 0x80
@@ -272,6 +275,8 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 	bit = sel_host ? AB8500_BIT_PHY_CTRL_HOST_EN :
 			AB8500_BIT_PHY_CTRL_DEVICE_EN;
 
+	wake_lock(&ab8500_musb_wakelock);
+
 	clk_enable(ab->sysclk);
 
 	ab8500_usb_regulator_ctrl(ab, sel_host, true);
@@ -334,6 +339,8 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
 		prcmu_qos_update_requirement(PRCMU_QOS_ARM_OPP,
 			"usb", 25);
 	}
+
+	wake_unlock(&ab8500_musb_wakelock);
 }
 
 #define ab8500_usb_host_phy_en(ab)	ab8500_usb_phy_enable(ab, true)
@@ -1082,6 +1089,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "revision 0x%2x driver initialized\n", rev);
 
 	prcmu_qos_add_requirement(PRCMU_QOS_ARM_OPP, "usb", 25);
+	wake_lock_init(&ab8500_musb_wakelock, WAKE_LOCK_SUSPEND, "ab8500-usb");
 
 	err = ab8500_usb_boot_detect(ab);
 	if (err < 0)
