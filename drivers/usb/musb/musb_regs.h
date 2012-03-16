@@ -246,7 +246,9 @@
  */
 
 #define MUSB_DEVCTL		0x60	/* 8 bit */
-
+#ifdef	CONFIG_USB_OTG_20
+#define MUSB_MISC		0x61	/* 8 bit */
+#endif
 /* These are always controlled through the INDEX register */
 #define MUSB_TXFIFOSZ		0x62	/* 8-bit (see masks) */
 #define MUSB_RXFIFOSZ		0x63	/* 8-bit (see masks) */

@@ -1306,6 +1306,7 @@ void usb_hnp_polling_work(struct work_struct *work)
 	if (ret < 0) {
 		/* Peripheral may not be supporting HNP polling */
 		dev_vdbg(&udev->dev, "HNP polling failed. status %d\n", ret);
+		ret = usb_suspend_both(udev, PMSG_USER_SUSPEND);
 		goto out;
 	}
 

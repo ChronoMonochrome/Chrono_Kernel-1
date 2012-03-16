@@ -153,7 +153,10 @@ enum musb_g_ep0_state {
 #define OTG_TIME_A_WAIT_BCON	1100		/* min 1 second */
 #define OTG_TIME_A_AIDL_BDIS	200		/* min 200 msec */
 #define OTG_TIME_B_ASE0_BRST	100		/* min 3.125 ms */
-
+#ifdef CONFIG_USB_OTG_20
+#define USB_SUSP_DET_DURATION	5		/* suspend time 5ms */
+#define TTST_SRP		3000			/* max 5 sec */
+#endif
 
 /*************************** REGISTER ACCESS ********************************/
 
@@ -432,7 +435,6 @@ struct musb {
 	unsigned		set_address:1;
 	unsigned		test_mode:1;
 	unsigned		softconnect:1;
-
 	u8			address;
 	u8			test_mode_nr;
 	u16			ackpend;		/* ep0 */

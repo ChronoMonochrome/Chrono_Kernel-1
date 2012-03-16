@@ -639,7 +639,7 @@ static int hub_hub_status(struct usb_hub *hub,
 			"%s failed (err = %d)\n", __func__, ret);
 	else {
 		*status = le16_to_cpu(hub->status->hub.wHubStatus);
-		*change = le16_to_cpu(hub->status->hub.wHubChange); 
+		*change = le16_to_cpu(hub->status->hub.wHubChange);
 		ret = 0;
 	}
 	mutex_unlock(&hub->status_mutex);
@@ -1693,7 +1693,7 @@ void usb_disconnect(struct usb_device **pdev)
 	dev_info(&udev->dev, "USB disconnect, device number %d\n",
 			udev->devnum);
 
-#ifdef CONFIG_USB_OTG
+#ifdef CONFIG_USB_OTG_20
 	if (udev->bus->hnp_support && udev->portnum == udev->bus->otg_port) {
 		cancel_delayed_work_sync(&udev->bus->hnp_polling);
 		udev->bus->hnp_support = 0;
@@ -1775,11 +1775,13 @@ static inline void announce_device(struct usb_device *udev) { }
  *
  * Finish enumeration for On-The-Go devices
  */
+
+#ifdef	CONFIG_USB_OTG_20
+
 static int usb_enumerate_device_otg(struct usb_device *udev)
 {
 	int err = 0;
 
-#ifdef	CONFIG_USB_OTG
 	/*
 	 * OTG-aware devices on OTG-capable root hubs may be able to use SRP,
 	 * to wake us after we've powered off VBUS; and HNP, switching roles
@@ -1802,6 +1804,10 @@ static int usb_enumerate_device_otg(struct usb_device *udev)
 					"Dual-Role OTG device on %sHNP port\n",
 					(port1 == bus->otg_port)
 						? "" : "non-");
+
+				if (port1 != bus->otg_port)
+					goto out;
+				bus->hnp_support = 1;
 
 				err = usb_control_msg(udev,
 					usb_sndctrlpipe(udev, 0),
@@ -1832,8 +1838,6 @@ out:
 			if (err < 0)
 				dev_dbg(&udev->dev, "HNP fail, %d\n", err);
 		}
-		err = -ENOTSUPP;
-		goto fail;
 	} else if (udev->bus->hnp_support &&
 			udev->portnum == udev->bus->otg_port) {
 		/* HNP polling is introduced in OTG supplement Rev 2.0
@@ -1845,10 +1849,82 @@ out:
 			msecs_to_jiffies(THOST_REQ_POLL));
 	}
 fail:
+
+	return err;
+}
+
+#else
+
+static int usb_enumerate_device_otg(struct usb_device *udev)
+{
+	int err = 0;
+
+#ifdef	CONFIG_USB_OTG
+	/*
+	 * OTG-aware devices on OTG-capable root hubs may be able to use SRP,
+	 * to wake us after we've powered off VBUS; and HNP, switching roles
+	 * "host" to "peripheral".  The OTG descriptor helps figure this out.
+	 */
+	if (!udev->bus->is_b_host
+			&& udev->config
+			&& udev->parent == udev->bus->root_hub) {
+		struct usb_otg_descriptor	*desc = NULL;
+		struct usb_bus			*bus = udev->bus;
+
+		/* descriptor may appear anywhere in config */
+		if (__usb_get_extra_descriptor(udev->rawdescriptors[0],
+				le16_to_cpu(udev->config[0].desc.wTotalLength),
+					USB_DT_OTG, (void **) &desc) == 0) {
+			if (desc->bmAttributes & USB_OTG_HNP) {
+				unsigned		port1 = udev->portnum;
+
+				dev_info(&udev->dev,
+					"Dual-Role OTG device on %sHNP port\n",
+					(port1 == bus->otg_port)
+						? "" : "non-");
+
+				/* enable HNP before suspend, it's simpler */
+				if (port1 == bus->otg_port)
+					bus->b_hnp_enable = 1;
+				err = usb_control_msg(udev,
+					usb_sndctrlpipe(udev, 0),
+					USB_REQ_SET_FEATURE, 0,
+					bus->b_hnp_enable
+						? USB_DEVICE_B_HNP_ENABLE
+						: USB_DEVICE_A_ALT_HNP_SUPPORT,
+					0, NULL, 0, USB_CTRL_SET_TIMEOUT);
+				if (err < 0) {
+					/* OTG MESSAGE: report errors here,
+					 * customize to match your product.
+					 */
+					dev_info(&udev->dev,
+						"can't set HNP mode: %d\n",
+						err);
+					bus->b_hnp_enable = 0;
+				}
+			}
+		}
+	}
+
+	if (!is_targeted(udev)) {
+
+		/* Maybe it can talk to us, though we can't talk to it.
+		 * (Includes HNP test device.)
+		 */
+		if (udev->bus->b_hnp_enable || udev->bus->is_b_host) {
+			err = usb_port_suspend(udev, PMSG_SUSPEND);
+			if (err < 0)
+				dev_dbg(&udev->dev, "HNP fail, %d\n", err);
+		}
+		err = -ENOTSUPP;
+		goto fail;
+	}
+fail:
 #endif
 	return err;
 }
 
+#endif
 
 /**
  * usb_enumerate_device - Read device configs/intfs/otg (usbcore-internal)
@@ -2508,7 +2584,7 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
 	if (udev->usb2_hw_lpm_enabled == 1)
 		usb_set_usb2_hardware_lpm(udev, 0);
 
-#ifdef CONFIG_USB_OTG
+#ifdef CONFIG_USB_OTG_20
 	if (!udev->bus->is_b_host && udev->bus->hnp_support &&
 		udev->portnum == udev->bus->otg_port) {
 		status = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
@@ -2522,6 +2598,7 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
 			udev->bus->b_hnp_enable = 1;
 		}
 #endif
+
 	/* see 7.1.7.6 */
 	if (hub_is_superspeed(hub->hdev))
 		status = set_port_feature(hub->hdev,
@@ -2676,7 +2753,7 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 	int		status;
 	u16		portchange, portstatus;
 
-#ifdef CONFIG_USB_OTG
+#ifdef CONFIG_USB_OTG_20
 		if (!udev->bus->is_b_host && udev->bus->hnp_support &&
 					udev->portnum == udev->bus->otg_port)
 			udev->bus->b_hnp_enable = 0;
@@ -2885,7 +2962,7 @@ EXPORT_SYMBOL_GPL(usb_root_hub_lost_power);
  * Between connect detection and reset signaling there must be a delay
  * of 100ms at least for debounce and power-settling.  The corresponding
  * timer shall restart whenever the downstream port detects a disconnect.
- * 
+ *
  * Apparently there are some bluetooth and irda-dongles and a number of
  * low-speed devices for which this debounce period may last over a second.
  * Not covered by the spec - but easy to deal with.
@@ -3083,7 +3160,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 		udev->tt = &hub->tt;
 		udev->ttport = port1;
 	}
- 
+
 	/* Why interleave GET_DESCRIPTOR and SET_ADDRESS this way?
 	 * Because device hardware and firmware is sometimes buggy in
 	 * this area, and this is how Linux has done it for ages.
@@ -3243,7 +3320,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 		udev->ep0.desc.wMaxPacketSize = cpu_to_le16(i);
 		usb_ep0_reinit(udev);
 	}
-  
+
 	retval = usb_get_device_descriptor(udev, USB_DT_DEVICE_SIZE);
 	if (retval < (signed)sizeof(udev->descriptor)) {
 		dev_err(&udev->dev, "device descriptor read/all, error %d\n",
@@ -3528,7 +3605,7 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 				goto loop_disable;
 			}
 		}
- 
+
 		/* check for devices running slower than they could */
 		if (le16_to_cpu(udev->descriptor.bcdUSB) >= 0x0200
 				&& udev->speed == USB_SPEED_FULL
@@ -3570,6 +3647,20 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 			dev_dbg(hub_dev, "%dmA power budget left\n", status);
 
 #ifdef CONFIG_USB_OTG_20
+		struct usb_otg_descriptor	*desc = NULL;
+		int ret;
+		/* descriptor may appear anywhere in config */
+		__usb_get_extra_descriptor(udev->rawdescriptors[0],
+				le16_to_cpu(udev->config[0].desc.wTotalLength),
+				USB_DT_OTG, (void **) &desc);
+
+		ret = usb_control_msg(udev,
+			usb_sndctrlpipe(udev, 0),
+			USB_REQ_SET_FEATURE, 0,
+				USB_DEVICE_B_HNP_ENABLE,
+			0, NULL, 0, USB_CTRL_SET_TIMEOUT);
+		if (ret < 0)
+			dev_dbg(hub_dev, "set feature error\n");
 
 		u16 idVendor = le16_to_cpu(udev->descriptor.idVendor);
 		if (idVendor == USB_OTG_TEST_MODE_VID) {
@@ -3651,8 +3742,8 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 				break;
 			default:
 			/* is_targeted() will take care for wrong PID */
-				dev_dbg(&udev->dev, "OTG TEST_MODE:Wrong
-							PID %d\n" idProduct);
+				dev_dbg(&udev->dev, "OTG TEST_MODE:Wrong"
+							"PID %d\n", idProduct);
 				break;
 			}
 
@@ -3681,7 +3772,7 @@ loop:
 			!(hcd->driver->port_handed_over)(hcd, port1))
 		dev_err(hub_dev, "unable to enumerate USB device on port %d\n",
 				port1);
- 
+
 done:
 	hub_port_disable(hub, port1, 1);
 	if (hcd->driver->relinquish_port && !hub->hdev->parent)
@@ -3848,7 +3939,7 @@ static void hub_events(void)
 				 * EM interference sometimes causes badly
 				 * shielded USB devices to be shutdown by
 				 * the hub, this hack enables them again.
-				 * Works at least with mouse driver. 
+				 * Works at least with mouse driver.
 				 */
 				if (!(portstatus & USB_PORT_STAT_ENABLE)
 				    && !connect_change
@@ -4188,7 +4279,7 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
 
 	if (ret < 0)
 		goto re_enumerate;
- 
+
 	/* Device might have changed firmware (DFU or similar) */
 	if (descriptors_changed(udev, &descriptor)) {
 		dev_info(&udev->dev, "device firmware changed\n");
@@ -4221,6 +4312,16 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
 		goto re_enumerate;
   	}
 	mutex_unlock(hcd->bandwidth_mutex);
+
+#ifdef CONFIG_USB_OTG_20
+	ret = usb_control_msg(udev,
+		usb_sndctrlpipe(udev, 0),
+		USB_REQ_SET_FEATURE, 0,
+			USB_DEVICE_A_HNP_SUPPORT,
+		0, NULL, 0, USB_CTRL_SET_TIMEOUT);
+	if (ret < 0)
+		dev_err(&udev->dev, "set feature error\n");
+#endif
 	usb_set_device_state(udev, USB_STATE_CONFIGURED);
 
 	/* Put interfaces back into the same altsettings as before.
@@ -4261,7 +4362,7 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
 
 done:
 	return 0;
- 
+
 re_enumerate:
 	hub_port_logical_disconnect(parent_hub, port1);
 	return -ENODEV;

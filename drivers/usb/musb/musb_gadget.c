@@ -1662,7 +1662,9 @@ static int musb_gadget_wakeup(struct usb_gadget *gadget)
 		}
 
 		spin_unlock_irqrestore(&musb->lock, flags);
+#ifndef CONFIG_USB_OTG_20
 		otg_start_srp(musb->xceiv->otg);
+#endif
 		spin_lock_irqsave(&musb->lock, flags);
 
 		/* Block idling for at least 1s */

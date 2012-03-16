@@ -714,6 +714,9 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb,
 b_host:
 			musb->xceiv->state = OTG_STATE_B_HOST;
 			hcd->self.is_b_host = 1;
+#ifdef CONFIG_USB_OTG_20
+			musb->g.otg_hnp_reqd = 0;
+#endif
 			musb->ignore_disconnect = 0;
 			del_timer(&musb->otg_timer);
 			break;
@@ -1748,7 +1751,9 @@ musb_srp_store(struct device *dev, struct device_attribute *attr,
 {
 	struct musb	*musb = dev_to_musb(dev);
 	unsigned short	srp;
-
+#ifdef CONFIG_USB_OTG_20
+	musb->xceiv->start_srp(musb->xceiv);
+#endif
 	if (sscanf(buf, "%hu", &srp) != 1
 			|| (srp != 1)) {
 		dev_err(dev, "SRP: Value must be 1\n");
