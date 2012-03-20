@@ -32,9 +32,10 @@
 #define CG2900_BT_ENABLE_GPIO		170
 #define CG2900_GBF_ENA_RESET_GPIO	171
 #define WLAN_PMU_EN_GPIO		226
+#define WLAN_PMU_EN_GPIO_SNOWBALL	161
 #define WLAN_PMU_EN_GPIO_U9500		AB8500_PIN_GPIO11
-#define CG2900_UX500_BT_CTS_GPIO		0
-#define CG2900_U5500_BT_CTS_GPIO		168
+#define CG2900_UX500_BT_CTS_GPIO	0
+#define CG2900_U5500_BT_CTS_GPIO	168
 
 enum cg2900_gpio_pull_sleep ux500_cg2900_sleep_gpio[21] = {
 	CG2900_NO_PULL,		/* GPIO 0:  PTA_CONFX */
@@ -160,6 +161,34 @@ static struct resource cg2900_uart_resources_u8500[] = {
 	},
 };
 
+static struct resource cg2900_uart_resources_snowball[] = {
+	{
+		.start = CG2900_GBF_ENA_RESET_GPIO,
+		.end = CG2900_GBF_ENA_RESET_GPIO,
+		.flags = IORESOURCE_IO,
+		.name = "gbf_ena_reset",
+	},
+	{
+		.start = WLAN_PMU_EN_GPIO_SNOWBALL,
+		.end = WLAN_PMU_EN_GPIO_SNOWBALL,
+		.flags = IORESOURCE_IO,
+		.name = "pmu_en",
+	},
+	{
+		.start = CG2900_UX500_BT_CTS_GPIO,
+		.end = CG2900_UX500_BT_CTS_GPIO,
+		.flags = IORESOURCE_IO,
+		.name = "cts_gpio",
+	},
+	{
+		.start = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
+		.end = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
+		.flags = IORESOURCE_IRQ,
+		.name = "cts_irq",
+	},
+};
+
+
 static struct resource cg2900_uart_resources_u9500[] = {
 	{
 		.start = CG2900_GBF_ENA_RESET_GPIO,
@@ -277,15 +306,21 @@ static int __init board_cg2900_init(void)
 		if (machine_is_hrefv60() || machine_is_u8520()) {
 			/* u8500 */
 			ux500_cg2900_uart_device.num_resources =
-					ARRAY_SIZE(cg2900_uart_resources_u8500);
+				ARRAY_SIZE(cg2900_uart_resources_u8500);
 			ux500_cg2900_uart_device.resource =
-					cg2900_uart_resources_u8500;
+				cg2900_uart_resources_u8500;
+		} else if (machine_is_snowball()) {
+			/* snowball have diffrent PMU_EN gpio */
+			ux500_cg2900_uart_device.num_resources =
+				ARRAY_SIZE(cg2900_uart_resources_snowball);
+			ux500_cg2900_uart_device.resource =
+				cg2900_uart_resources_snowball;
 		} else {
 			/* u8500 pre v60*/
 			ux500_cg2900_uart_device.num_resources =
-					ARRAY_SIZE(cg2900_uart_resources_pre_v60);
+				ARRAY_SIZE(cg2900_uart_resources_pre_v60);
 			ux500_cg2900_uart_device.resource =
-					cg2900_uart_resources_pre_v60;
+				cg2900_uart_resources_pre_v60;
 		}
 	} else if (cpu_is_u5500()) {
 		/* u5500 */
