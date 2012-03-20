@@ -249,15 +249,6 @@ static struct gpio_keys_button snowball_key_array[] = {
 		.wakeup		= 1,
 	},
 	{
-		.gpio		= 161,
-		.type		= EV_KEY,
-		.code		= KEY_4,
-		.desc		= "extkb3",
-		.active_low     = 1,
-		.debounce_interval = 50,
-		.wakeup		= 1,
-	},
-	{
 		.gpio		= 162,
 		.type		= EV_KEY,
 		.code		= KEY_5,
