@@ -1744,7 +1744,7 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
 /*
  * try to call OOM killer. returns false if we should exit memory-reclaim loop.
  */
-bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask)
+bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
 {
 	struct oom_wait_info owait;
 	bool locked, need_to_kill;
@@ -1774,7 +1774,7 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask)
 
 	if (need_to_kill) {
 		finish_wait(&memcg_oom_waitq, &owait.wait);
-		mem_cgroup_out_of_memory(memcg, mask);
+		mem_cgroup_out_of_memory(memcg, mask, order);
 	} else {
 		schedule();
 		finish_wait(&memcg_oom_waitq, &owait.wait);
@@ -2145,7 +2145,7 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
 	if (!oom_check)
 		return CHARGE_NOMEM;
 	/* check OOM */
-	if (!mem_cgroup_handle_oom(mem_over_limit, gfp_mask))
+	if (!mem_cgroup_handle_oom(mem_over_limit, gfp_mask, get_order(csize)))
 		return CHARGE_OOM_DIE;
 
 	return CHARGE_RETRY;
