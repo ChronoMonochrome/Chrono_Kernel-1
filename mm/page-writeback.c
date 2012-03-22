@@ -93,6 +93,8 @@ int vm_dirty_ratio = 20;
  */
 unsigned long vm_dirty_bytes;
 
+EXPORT_SYMBOL_GPL(dirty_writeback_interval);
+
 /*
  * The default intervals between `kupdate'-style writebacks
  */
