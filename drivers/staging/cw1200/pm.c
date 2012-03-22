@@ -166,7 +166,7 @@ void cw1200_pm_stay_awake(struct cw1200_pm_state *pm,
 {
 	long cur_tmo;
 	spin_lock_bh(&pm->lock);
-	cur_tmo = pm->wakelock.expires - jiffies;
+	cur_tmo = pm->wakelock.ws.timer_expires - jiffies;
 	if (!wake_lock_active(&pm->wakelock) ||
 			cur_tmo < (long)tmo)
 		wake_lock_timeout(&pm->wakelock, tmo);
