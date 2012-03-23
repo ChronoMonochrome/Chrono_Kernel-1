@@ -869,13 +869,64 @@ static void timekeeping_adjust(s64 offset)
 	} else /* No adjustment needed */
 		return;
 
-	WARN_ONCE(timekeeper.clock->maxadj &&
-			(timekeeper.mult + adj > timekeeper.clock->mult +
-						timekeeper.clock->maxadj),
-			"Adjusting %s more then 11%% (%ld vs %ld)\n",
+	if (unlikely(timekeeper.clock->maxadj &&
+			(timekeeper.mult + adj >
+			timekeeper.clock->mult + timekeeper.clock->maxadj))) {
+		printk_once(KERN_WARNING
+			"Adjusting %s more than 11%% (%ld vs %ld)\n",
 			timekeeper.clock->name, (long)timekeeper.mult + adj,
 			(long)timekeeper.clock->mult +
 				timekeeper.clock->maxadj);
+	}
+	/*
+	 * So the following can be confusing.
+	 *
+	 * To keep things simple, lets assume adj == 1 for now.
+	 *
+	 * When adj != 1, remember that the interval and offset values
+	 * have been appropriately scaled so the math is the same.
+	 *
+	 * The basic idea here is that we're increasing the multiplier
+	 * by one, this causes the xtime_interval to be incremented by
+	 * one cycle_interval. This is because:
+	 *	xtime_interval = cycle_interval * mult
+	 * So if mult is being incremented by one:
+	 *	xtime_interval = cycle_interval * (mult + 1)
+	 * Its the same as:
+	 *	xtime_interval = (cycle_interval * mult) + cycle_interval
+	 * Which can be shortened to:
+	 *	xtime_interval += cycle_interval
+	 *
+	 * So offset stores the non-accumulated cycles. Thus the current
+	 * time (in shifted nanoseconds) is:
+	 *	now = (offset * adj) + xtime_nsec
+	 * Now, even though we're adjusting the clock frequency, we have
+	 * to keep time consistent. In other words, we can't jump back
+	 * in time, and we also want to avoid jumping forward in time.
+	 *
+	 * So given the same offset value, we need the time to be the same
+	 * both before and after the freq adjustment.
+	 *	now = (offset * adj_1) + xtime_nsec_1
+	 *	now = (offset * adj_2) + xtime_nsec_2
+	 * So:
+	 *	(offset * adj_1) + xtime_nsec_1 =
+	 *		(offset * adj_2) + xtime_nsec_2
+	 * And we know:
+	 *	adj_2 = adj_1 + 1
+	 * So:
+	 *	(offset * adj_1) + xtime_nsec_1 =
+	 *		(offset * (adj_1+1)) + xtime_nsec_2
+	 *	(offset * adj_1) + xtime_nsec_1 =
+	 *		(offset * adj_1) + offset + xtime_nsec_2
+	 * Canceling the sides:
+	 *	xtime_nsec_1 = offset + xtime_nsec_2
+	 * Which gives us:
+	 *	xtime_nsec_2 = xtime_nsec_1 - offset
+	 * Which simplfies to:
+	 *	xtime_nsec -= offset
+	 *
+	 * XXX - TODO: Doc ntp_error calculation.
+	 */
 	timekeeper.mult += adj;
 	timekeeper.xtime_interval += interval;
 	timekeeper.xtime_nsec -= offset;
