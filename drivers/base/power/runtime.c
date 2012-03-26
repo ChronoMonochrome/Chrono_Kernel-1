@@ -531,6 +531,8 @@ static int rpm_suspend(struct device *dev, int rpmflags)
 	dev->power.suspend_time = ktime_set(0, 0);
 	dev->power.max_time_suspended_ns = -1;
 	dev->power.deferred_resume = false;
+	wake_up_all(&dev->power.wait_queue);
+
 	if (retval == -EAGAIN || retval == -EBUSY) {
 		dev->power.runtime_error = 0;
 
@@ -546,7 +548,6 @@ static int rpm_suspend(struct device *dev, int rpmflags)
 	} else {
 		pm_runtime_cancel_pending(dev);
 	}
-	wake_up_all(&dev->power.wait_queue);
 	goto out;
 }
 
