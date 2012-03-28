@@ -838,17 +838,16 @@ EXPORT_SYMBOL(find_or_create_page);
 unsigned find_get_pages(struct address_space *mapping, pgoff_t start,
 			    unsigned int nr_pages, struct page **pages)
 {
-	unsigned int i;
-	unsigned int ret;
-	unsigned int nr_found, nr_skip;
+	struct radix_tree_iter iter;
+	void **slot;
+	unsigned ret = 0;
+
+	if (unlikely(!nr_pages))
+		return 0;
 
 	rcu_read_lock();
 restart:
-	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
-				(void ***)pages, NULL, start, nr_pages);
-	ret = 0;
-	nr_skip = 0;
-	for (i = 0; i < nr_found; i++) {
+	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
 		struct page *page;
 repeat:
 		page = radix_tree_deref_slot(slot);
@@ -862,7 +861,7 @@ repeat:
 				 * when entry at index 0 moves out of or back
 				 * to root: none yet gotten, safe to restart.
 				 */
-				WARN_ON(start | i);
+				WARN_ON(iter.index);
 				goto restart;
 			}
 			/*
@@ -870,7 +869,6 @@ repeat:
 			 * here as an exceptional entry: so skip over it -
 			 * we only reach this from invalidate_mapping_pages().
 			 */
-			nr_skip++;
 			continue;
 		}
 
@@ -888,12 +886,6 @@ repeat:
 			break;
 	}
 
-	/*
-	 * If all entries were removed before we could secure them,
-	 * try again, because callers stop trying once 0 is returned.
-	 */
-	if (unlikely(!ret && nr_found > nr_skip))
-		goto restart;
 	rcu_read_unlock();
 	return ret;
 }
