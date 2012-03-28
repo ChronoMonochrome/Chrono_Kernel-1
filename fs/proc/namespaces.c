@@ -291,14 +291,14 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
 	if (!task)
 		goto out_no_task;
 
-	last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
-	for (entry = ns_entries; entry <= last; entry++) {
+	last = &ns_entries[ARRAY_SIZE(ns_entries)];
+	for (entry = ns_entries; entry < last; entry++) {
 		if (strlen((*entry)->name) != len)
 			continue;
 		if (!memcmp(dentry->d_name.name, (*entry)->name, len))
 			break;
 	}
-	if (entry > last)
+	if (entry == last)
 		goto out;
 
 	error = proc_ns_instantiate(dir, dentry, task, *entry);
