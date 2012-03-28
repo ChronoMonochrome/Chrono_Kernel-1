@@ -37,6 +37,7 @@ struct cpuidle_state {
 	unsigned int	exit_latency; /* in US */
 	int		power_usage; /* in mW */
 	unsigned int	target_residency; /* in US */
+	unsigned int    disable;
 
 	unsigned long long	usage;
 	unsigned long long	time; /* in US */
