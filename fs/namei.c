@@ -1184,6 +1184,7 @@ retry:
 		BUG_ON(nd->inode != dir);
 
 		mutex_lock(&dir->i_mutex);
+l:
 		dentry = d_lookup(parent, name);
 		if (likely(!dentry)) {
 			dentry = d_alloc_and_lookup(parent, name, nd);
@@ -1204,11 +1205,11 @@ retry:
 			need_reval = 0;
 			status = 1;
 		}
-		mutex_unlock(&dir->i_mutex);
 		if (unlikely(dentry->d_flags & DCACHE_OP_REVALIDATE) && need_reval)
 			status = d_revalidate(dentry, nd);
 		if (unlikely(status <= 0)) {
 			if (status < 0) {
+				mutex_unlock(&dir->i_mutex);
 				dput(dentry);
 				return status;
 			}
@@ -1216,9 +1217,10 @@ retry:
 				dput(dentry);
 				dentry = NULL;
 				need_reval = 1;
-				goto retry;
+				goto l;
 			}
 		}
+		mutex_unlock(&dir->i_mutex);
 		goto done;
 	}
 	if (unlikely(dentry->d_flags & DCACHE_OP_REVALIDATE) && need_reval)
