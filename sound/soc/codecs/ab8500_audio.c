@@ -518,12 +518,12 @@ enum control_inversion {
 /* Headset */
 
 /* Headset Left - Enable/Disable */
-static const struct soc_enum enum_headset_left = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct soc_enum enum_headset_left = SOC_ENUM_SINGLE(0, 0, 2, enum_ena_dis);
 static const struct snd_kcontrol_new dapm_headset_left_mux =
 				SOC_DAPM_ENUM_VIRT("Headset Left", enum_headset_left);
 
 /* Headsett Right - Enable/Disable */
-static const struct soc_enum enum_headset_right = SOC_ENUM_SINGLE(0, 0, 2, enum_dis_ena);
+static const struct soc_enum enum_headset_right = SOC_ENUM_SINGLE(0, 0, 2, enum_ena_dis);
 static const struct snd_kcontrol_new dapm_headset_right_mux =
 				SOC_DAPM_ENUM_VIRT("Headset Right", enum_headset_right);
 
