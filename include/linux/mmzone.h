@@ -77,18 +77,6 @@ bool is_cma_pageblock(struct page *page);
 #  define is_cma_pageblock(page) false
 #  define is_migrate_cma(migratetype) false
 #  define cma_wmark_pages(zone) 0
-=======
-	MIGRATE_CMA,
-#endif
-	MIGRATE_ISOLATE,	/* can't allocate from here */
-	MIGRATE_TYPES
-};
-
-#ifdef CONFIG_CMA
-#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
-#else
-#  define is_migrate_cma(migratetype) false
->>>>>>> 269a4c9... mm: mmzone: MIGRATE_CMA migration type added
 #endif
 
 #define for_each_migratetype_order(order, type) \
