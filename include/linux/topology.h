@@ -70,7 +70,6 @@ int arch_update_cpu_topology(void);
  * Below are the 3 major initializers used in building sched_domains:
  * SD_SIBLING_INIT, for SMT domains
  * SD_CPU_INIT, for SMP domains
- * SD_NODE_INIT, for NUMA domains
  *
  * Any architecture that cares to do any tuning to these values should do so
  * by defining their own arch-specific initializer in include/asm/topology.h.
@@ -206,13 +205,6 @@ int arch_update_cpu_topology(void);
 #error Please define an appropriate SD_BOOK_INIT in include/asm/topology.h!!!
 #endif
 #endif /* CONFIG_SCHED_BOOK */
-
-#ifdef CONFIG_NUMA
-#ifndef SD_NODE_INIT
-#error Please define an appropriate SD_NODE_INIT in include/asm/topology.h!!!
-#endif
-
-#endif /* CONFIG_NUMA */
 
 #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
 DECLARE_PER_CPU(int, numa_node);
