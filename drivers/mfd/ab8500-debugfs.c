@@ -805,7 +805,7 @@ static int ab8500_gpadc_bat_ctrl_print(struct seq_file *s, void *p)
 	int bat_ctrl_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	bat_ctrl_raw = ab8500_gpadc_read_raw(gpadc, BAT_CTRL);
 	bat_ctrl_convert = ab8500_gpadc_ad_to_voltage(gpadc,
 			BAT_CTRL, bat_ctrl_raw);
@@ -833,7 +833,7 @@ static int ab8500_gpadc_btemp_ball_print(struct seq_file *s, void *p)
 	int btemp_ball_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	btemp_ball_raw = ab8500_gpadc_read_raw(gpadc, BTEMP_BALL);
 	btemp_ball_convert = ab8500_gpadc_ad_to_voltage(gpadc, BTEMP_BALL,
 			btemp_ball_raw);
@@ -862,7 +862,7 @@ static int ab8500_gpadc_main_charger_v_print(struct seq_file *s, void *p)
 	int main_charger_v_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	main_charger_v_raw = ab8500_gpadc_read_raw(gpadc, MAIN_CHARGER_V);
 	main_charger_v_convert = ab8500_gpadc_ad_to_voltage(gpadc,
 			MAIN_CHARGER_V, main_charger_v_raw);
@@ -892,7 +892,7 @@ static int ab8500_gpadc_acc_detect1_print(struct seq_file *s, void *p)
 	int acc_detect1_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	acc_detect1_raw = ab8500_gpadc_read_raw(gpadc, ACC_DETECT1);
 	acc_detect1_convert = ab8500_gpadc_ad_to_voltage(gpadc, ACC_DETECT1,
 			acc_detect1_raw);
@@ -922,7 +922,7 @@ static int ab8500_gpadc_acc_detect2_print(struct seq_file *s, void *p)
 	int acc_detect2_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	acc_detect2_raw = ab8500_gpadc_read_raw(gpadc, ACC_DETECT2);
 	acc_detect2_convert = ab8500_gpadc_ad_to_voltage(gpadc,
 	    ACC_DETECT2, acc_detect2_raw);
@@ -952,7 +952,7 @@ static int ab8500_gpadc_aux1_print(struct seq_file *s, void *p)
 	int aux1_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	aux1_raw = ab8500_gpadc_read_raw(gpadc, ADC_AUX1);
 	aux1_convert = ab8500_gpadc_ad_to_voltage(gpadc, ADC_AUX1,
 			aux1_raw);
@@ -980,7 +980,7 @@ static int ab8500_gpadc_aux2_print(struct seq_file *s, void *p)
 	int aux2_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	aux2_raw = ab8500_gpadc_read_raw(gpadc, ADC_AUX2);
 	aux2_convert = ab8500_gpadc_ad_to_voltage(gpadc, ADC_AUX2,
 			aux2_raw);
@@ -1008,7 +1008,7 @@ static int ab8500_gpadc_main_bat_v_print(struct seq_file *s, void *p)
 	int main_bat_v_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	main_bat_v_raw = ab8500_gpadc_read_raw(gpadc, MAIN_BAT_V);
 	main_bat_v_convert = ab8500_gpadc_ad_to_voltage(gpadc, MAIN_BAT_V,
 			main_bat_v_raw);
@@ -1037,7 +1037,7 @@ static int ab8500_gpadc_vbus_v_print(struct seq_file *s, void *p)
 	int vbus_v_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	vbus_v_raw = ab8500_gpadc_read_raw(gpadc, VBUS_V);
 	vbus_v_convert = ab8500_gpadc_ad_to_voltage(gpadc, VBUS_V,
 			vbus_v_raw);
@@ -1065,7 +1065,7 @@ static int ab8500_gpadc_main_charger_c_print(struct seq_file *s, void *p)
 	int main_charger_c_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	main_charger_c_raw = ab8500_gpadc_read_raw(gpadc, MAIN_CHARGER_C);
 	main_charger_c_convert = ab8500_gpadc_ad_to_voltage(gpadc,
 			MAIN_CHARGER_C, main_charger_c_raw);
@@ -1095,7 +1095,7 @@ static int ab8500_gpadc_usb_charger_c_print(struct seq_file *s, void *p)
 	int usb_charger_c_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	usb_charger_c_raw = ab8500_gpadc_read_raw(gpadc, USB_CHARGER_C);
 	usb_charger_c_convert = ab8500_gpadc_ad_to_voltage(gpadc,
 	    USB_CHARGER_C, usb_charger_c_raw);
@@ -1125,7 +1125,7 @@ static int ab8500_gpadc_bk_bat_v_print(struct seq_file *s, void *p)
 	int bk_bat_v_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	bk_bat_v_raw = ab8500_gpadc_read_raw(gpadc, BK_BAT_V);
 	bk_bat_v_convert = ab8500_gpadc_ad_to_voltage(gpadc,
 			BK_BAT_V, bk_bat_v_raw);
@@ -1153,7 +1153,7 @@ static int ab8500_gpadc_die_temp_print(struct seq_file *s, void *p)
 	int die_temp_convert;
 	struct ab8500_gpadc *gpadc;
 
-	gpadc = ab8500_gpadc_get();
+	gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	die_temp_raw = ab8500_gpadc_read_raw(gpadc, DIE_TEMP);
 	die_temp_convert = ab8500_gpadc_ad_to_voltage(gpadc, DIE_TEMP,
 			die_temp_raw);

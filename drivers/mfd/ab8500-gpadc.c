@@ -136,12 +136,16 @@ static LIST_HEAD(ab8500_gpadc_list);
  * ab8500_gpadc_get() - returns a reference to the primary AB8500 GPADC
  * (i.e. the first GPADC in the instance list)
  */
-struct ab8500_gpadc *ab8500_gpadc_get(void)
+struct ab8500_gpadc *ab8500_gpadc_get(char *name)
 {
 	struct ab8500_gpadc *gpadc;
-	gpadc = list_first_entry(&ab8500_gpadc_list, struct ab8500_gpadc, node);
 
-	return gpadc;
+	list_for_each_entry(gpadc, &ab8500_gpadc_list, node) {
+		if (!strcmp(name, dev_name(gpadc->dev)))
+		    return gpadc;
+	}
+
+	return ERR_PTR(-ENOENT);
 }
 EXPORT_SYMBOL(ab8500_gpadc_get);
 

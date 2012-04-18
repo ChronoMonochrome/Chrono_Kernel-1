@@ -139,7 +139,7 @@ static int ab8500_temp_irq_handler(int irq, struct abx500_temp *data)
 
 int __init ab8500_hwmon_init(struct abx500_temp *data)
 {
-	data->ab8500_gpadc = ab8500_gpadc_get();
+	data->ab8500_gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 	if (IS_ERR(data->ab8500_gpadc))
 		return PTR_ERR(data->ab8500_gpadc);
 
