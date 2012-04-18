@@ -55,6 +55,38 @@ dbx500_add_amba_device(struct device *parent, const char *name,
 	return dev;
 }
 
+static struct platform_device *
+dbx500_add_platform_device(const char *name, int id, void *pdata,
+			   struct resource *res, int resnum)
+{
+	struct platform_device *dev;
+	int ret;
+
+	dev = platform_device_alloc(name, id);
+	if (!dev)
+		return ERR_PTR(-ENOMEM);
+
+	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+	dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
+	dev->dev.pm_domain = &ux500_dev_power_domain;
+
+	ret = platform_device_add_resources(dev, res, resnum);
+	if (ret)
+		goto out_free;
+
+	dev->dev.platform_data = pdata;
+
+	ret = platform_device_add(dev);
+	if (ret)
+		goto out_free;
+
+	return dev;
+
+out_free:
+	platform_device_put(dev);
+	return ERR_PTR(ret);
+}
+
 struct platform_device *
 dbx500_add_platform_device_4k1irq(const char *name, int id,
 				  resource_size_t base,

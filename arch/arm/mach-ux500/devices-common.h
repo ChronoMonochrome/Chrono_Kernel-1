@@ -20,6 +20,11 @@ dbx500_add_amba_device(struct device *parent, const char *name,
 		       unsigned int periphid);
 
 extern struct platform_device *
+dbx500_add_platform_device_4k1irq(const char *name, int id,
+				  resource_size_t base,
+				  int irq, void *pdata);
+
+extern struct platform_device *
 dbx500_add_platform_device_noirq(const char *name, int id,
 				  resource_size_t base, void *pdata);
 
