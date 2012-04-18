@@ -7,7 +7,7 @@
 #include <linux/kernel.h>
 #include <linux/spi/spi.h>
 #include <linux/gpio.h>
-#include <linux/cyttsp.h>
+#include <linux/input/cyttsp.h>
 #include <linux/delay.h>
 #include <linux/gpio/nomadik.h>
 #include <linux/i2c.h>
@@ -45,7 +45,7 @@ static struct i2c_board_info __initdata mop500_i2c2_devices_u8500_r3[] = {
 };
 
 /* cyttsp_gpio_board_init : configures the touch panel. */
-static int cyttsp_plat_init(int on)
+static int cyttsp_plat_init(void)
 {
 	int ret;
 
@@ -56,6 +56,12 @@ static int cyttsp_plat_init(int on)
 		return ret;
 	}
 	return 0;
+}
+
+/* cyttsp_gpio_board_exit : deconfigures the touch panel. */
+static void cyttsp_plat_exit(void)
+{
+	gpio_direction_output(CYPRESS_SLAVE_SELECT_GPIO, 0);
 }
 
 static struct pl022_ssp_controller mop500_spi2_data = {
@@ -100,30 +106,17 @@ out:
 struct cyttsp_platform_data cyttsp_platdata = {
 	.maxx = 480,
 	.maxy = 854,
-	.flags = 0,
-	.gen = CY_GEN3,
-	.use_st = 0,
-	.use_mt = 1,
-	.use_trk_id = 0,
 	.use_hndshk = 0,
-	.use_sleep = 1,
-	.use_gestures = 0,
-	.use_load_file = 0,
-	.use_force_fw_update = 0,
-	.use_virtual_keys = 0,
-	/* activate up to 4 groups and set active distance */
-	.gest_set = CY_GEST_GRP_NONE | CY_ACT_DIST,
-	/* change scn_type to enable finger and/or stylus detection */
-	.scn_typ = 0xA5, /* autodetect finger+stylus; balanced mutual scan */
+	/* set active distance */
+	.act_dist = CY_ACT_DIST_DFLT,
 	.act_intrvl = CY_ACT_INTRVL_DFLT,  /* Active refresh interval; ms */
 	.tch_tmout = CY_TCH_TMOUT_DFLT,   /* Active touch timeout; ms */
 	.lp_intrvl = CY_LP_INTRVL_DFLT,   /* Low power refresh interval; ms */
 	.init = cyttsp_plat_init,
-	.mt_sync = input_mt_sync,
-	.wakeup = cyttsp_wakeup,
+	.exit = cyttsp_plat_exit,
 	.name = CY_SPI_NAME,
 	.irq_gpio = CYPRESS_TOUCH_INT_PIN,
-	.rst_gpio = CYPRESS_TOUCH_RST_GPIO,
+/*	.rst_gpio = CYPRESS_TOUCH_RST_GPIO, Notavailable in mainline */
 };
 
 static void cyttsp_spi_cs_control(u32 command)
@@ -217,7 +210,7 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_u8500[] = {
 	},
 };
 
-void mop500_cyttsp_init(void)
+static void mop500_cyttsp_init(void)
 {
 	int ret = 0;
 
@@ -233,10 +226,10 @@ void mop500_cyttsp_init(void)
 			ARRAY_SIZE(cypress_spi_devices));
 }
 
-void __init mop500_u8500uib_r3_init(void)
+void __init mop500_u8500uib_r3_init()
 {
 	mop500_cyttsp_init();
-	db8500_add_spi2(&mop500_spi2_data);
+	db8500_add_spi2(NULL, &mop500_spi2_data);
 	nmk_config_pin((GPIO64_GPIO     | PIN_INPUT_PULLUP), false);
 
 #ifdef CONFIG_U8500_FLASH
