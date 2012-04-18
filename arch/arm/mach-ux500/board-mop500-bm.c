@@ -11,7 +11,8 @@
  */
 
 #include <linux/power_supply.h>
-#include <linux/mfd/ab8500/bm.h>
+#include <linux/mfd/abx500.h>
+#include <linux/mfd/abx500/ab8500-bm.h>
 #include <linux/mfd/ab8500/pwmleds.h>
 #include "board-mop500-bm.h"
 
@@ -22,7 +23,7 @@
  * Note that the res_to_temp table must be strictly sorted by falling resistance
  * values to work.
  */
-static struct res_to_temp temp_tbl_A[] = {
+static struct abx500_res_to_temp temp_tbl_A[] = {
 	{-5, 53407},
 	{ 0, 48594},
 	{ 5, 43804},
@@ -39,7 +40,7 @@ static struct res_to_temp temp_tbl_A[] = {
 	{60, 13437},
 	{65, 12500},
 };
-static struct res_to_temp temp_tbl_B[] = {
+static struct abx500_res_to_temp temp_tbl_B[] = {
 	{-5, 165418},
 	{ 0, 159024},
 	{ 5, 151921},
@@ -56,7 +57,7 @@ static struct res_to_temp temp_tbl_B[] = {
 	{60,  85461},
 	{65,  82869},
 };
-static struct v_to_cap cap_tbl_A[] = {
+static struct abx500_v_to_cap cap_tbl_A[] = {
 	{4171,	100},
 	{4114,	 95},
 	{4009,	 83},
@@ -78,7 +79,7 @@ static struct v_to_cap cap_tbl_A[] = {
 	{3408,    1},
 	{3247,	  0},
 };
-static struct v_to_cap cap_tbl_B[] = {
+static struct abx500_v_to_cap cap_tbl_B[] = {
 	{4161,	100},
 	{4124,	 98},
 	{4044,	 90},
@@ -101,7 +102,7 @@ static struct v_to_cap cap_tbl_B[] = {
 	{3250,	  0},
 };
 #endif
-static struct v_to_cap cap_tbl[] = {
+static struct abx500_v_to_cap cap_tbl[] = {
 	{4186,	100},
 	{4163,	 99},
 	{4114,	 95},
@@ -132,7 +133,7 @@ static struct v_to_cap cap_tbl[] = {
  * Note that the res_to_temp table must be strictly sorted by falling
  * resistance values to work.
  */
-static struct res_to_temp temp_tbl[] = {
+static struct abx500_res_to_temp temp_tbl[] = {
 	{-5, 214834},
 	{ 0, 162943},
 	{ 5, 124820},
@@ -184,7 +185,7 @@ static struct batres_vs_temp temp_to_batres_tbl[] = {
 	{-20, BATRES},
 };
 #endif
-static const struct battery_type bat_type[] = {
+static const struct abx500_battery_type bat_type[] = {
 	[BATTERY_UNKNOWN] = {
 		/* First element always represent the UNKNOWN battery */
 		.name = POWER_SUPPLY_TECHNOLOGY_UNKNOWN,
@@ -224,6 +225,8 @@ static const struct battery_type bat_type[] = {
 		.r_to_t_tbl = temp_tbl,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl),
 		.v_to_cap_tbl = cap_tbl,
+		.n_batres_tbl_elements = ARRAY_SIZE(temp_to_batres_tbl),
+		.batres_tbl = temp_to_batres_tbl,
 	},
 
 #ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
@@ -251,6 +254,8 @@ static const struct battery_type bat_type[] = {
 		.r_to_t_tbl = temp_tbl_A,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl_A),
 		.v_to_cap_tbl = cap_tbl_A,
+		.n_batres_tbl_elements = ARRAY_SIZE(temp_to_batres_tbl),
+		.batres_tbl = temp_to_batres_tbl,
 
 	},
 	{
@@ -277,6 +282,8 @@ static const struct battery_type bat_type[] = {
 		.r_to_t_tbl = temp_tbl_B,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl_B),
 		.v_to_cap_tbl = cap_tbl_B,
+		.n_batres_tbl_elements = ARRAY_SIZE(temp_to_batres_tbl),
+		.batres_tbl = temp_to_batres_tbl,
 	},
 #else
 /*
@@ -308,6 +315,8 @@ static const struct battery_type bat_type[] = {
 		.r_to_t_tbl = temp_tbl,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl),
 		.v_to_cap_tbl = cap_tbl,
+		.n_batres_tbl_elements = ARRAY_SIZE(temp_to_batres_tbl),
+		.batres_tbl = temp_to_batres_tbl,
 	},
 	{
 		.name = POWER_SUPPLY_TECHNOLOGY_LION,
@@ -333,6 +342,8 @@ static const struct battery_type bat_type[] = {
 		.r_to_t_tbl = temp_tbl,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl),
 		.v_to_cap_tbl = cap_tbl,
+		.n_batres_tbl_elements = ARRAY_SIZE(temp_to_batres_tbl),
+		.batres_tbl = temp_to_batres_tbl,
 	},
 	{
 		.name = POWER_SUPPLY_TECHNOLOGY_LION,
@@ -358,6 +369,8 @@ static const struct battery_type bat_type[] = {
 		.r_to_t_tbl = temp_tbl,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl),
 		.v_to_cap_tbl = cap_tbl,
+		.n_batres_tbl_elements = ARRAY_SIZE(temp_to_batres_tbl),
+		.batres_tbl = temp_to_batres_tbl,
 	},
 #endif
 };
@@ -479,9 +492,9 @@ struct ab8500_bm_data ab8500_bm_data = {
 	.no_maintenance		= false,
 #endif
 #ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
-	.adc_therm		= ADC_THERM_BATCTRL,
+	.adc_therm		= ABx500_ADC_THERM_BATCTRL,
 #else
-	.adc_therm		= ADC_THERM_BATTEMP,
+	.adc_therm		= ABx500_ADC_THERM_BATTEMP,
 #endif
 #ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
 	.chg_unknown_bat	= true,
