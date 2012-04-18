@@ -1494,7 +1494,6 @@ static void __init u8500_init_machine(void)
 	of_platform_populate(NULL, u8500_soc_node, u8500_auxdata_lookup, parent);
 
 	if (of_machine_is_compatible("st-ericsson,mop500")) {
-		mop500_gpio_keys[0].gpio = GPIO_PROX_SENSOR;
 		mop500_pins_init();
 
 		platform_add_devices(mop500_platform_devs,
@@ -1513,7 +1512,6 @@ static void __init u8500_init_machine(void)
 		 * all these GPIO pins to the internal GPIO controller
 		 * instead.
 		 */
-		mop500_gpio_keys[0].gpio = HREFV60_PROX_SENSE_GPIO;
 		i2c0_devs -= NUM_PRE_V60_I2C0_DEVICES;
 		hrefv60_pins_init();
 		platform_add_devices(mop500_platform_devs,
