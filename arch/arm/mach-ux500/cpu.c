@@ -23,6 +23,7 @@
 
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
+#include <asm/system_misc.h>
 
 #include <mach/hardware.h>
 #include <mach/setup.h>
