@@ -291,22 +291,23 @@ static void update_sampling_rate(unsigned int new_rate)
 
 		mutex_lock(&dbs_info->timer_mutex);
 
-		if (!delayed_work_pending(&dbs_info->work)) {
+		if (!delayed_work_pending(&per_cpu(ondemand_work, cpu))) {
 			mutex_unlock(&dbs_info->timer_mutex);
 			continue;
 		}
 
 		next_sampling  = jiffies + usecs_to_jiffies(new_rate);
-		appointed_at = dbs_info->work.timer.expires;
+		appointed_at = per_cpu(ondemand_work, cpu).timer.expires;
 
 
 		if (time_before(next_sampling, appointed_at)) {
 
 			mutex_unlock(&dbs_info->timer_mutex);
-			cancel_delayed_work_sync(&dbs_info->work);
+			cancel_delayed_work_sync(&per_cpu(ondemand_work, cpu));
 			mutex_lock(&dbs_info->timer_mutex);
 
-			schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work,
+			schedule_delayed_work_on(dbs_info->cpu,
+						 &per_cpu(ondemand_work, cpu),
 						 usecs_to_jiffies(new_rate));
 
 		}
