@@ -2844,8 +2844,7 @@ static int ab8500_codec_remove(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static int ab8500_codec_suspend(struct snd_soc_codec *codec,
-		pm_message_t state)
+static int ab8500_codec_suspend(struct snd_soc_codec *codec)
 {
 	pr_debug("%s Enter.\n", __func__);
 
