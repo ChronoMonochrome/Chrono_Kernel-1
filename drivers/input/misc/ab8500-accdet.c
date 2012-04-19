@@ -419,7 +419,7 @@ static void ab8500_turn_on_accdet_comparator(struct platform_device *pdev)
 
 static void *ab8500_accdet_abx500_gpadc_get(void)
 {
-	return ab8500_gpadc_get();
+	return ab8500_gpadc_get("ab8500-gpadc.0");
 }
 
 struct abx500_accdet_platform_data *
