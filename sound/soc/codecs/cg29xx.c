@@ -612,7 +612,7 @@ static int cg29xx_codec_probe(struct snd_soc_codec *codec)
 {
 	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 
-	snd_soc_add_controls(
+	snd_soc_add_codec_controls(
 		codec,
 		cg29xx_snd_controls,
 		ARRAY_SIZE(cg29xx_snd_controls));
