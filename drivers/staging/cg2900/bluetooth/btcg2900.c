@@ -540,7 +540,7 @@ static int btcg2900_open(struct hci_dev *hdev)
 		return -EINVAL;
 	}
 
-	info = (struct btcg2900_info *)hdev->driver_data;
+	info = hci_get_drvdata(hdev);
 	if (!info) {
 		BT_ERR(NAME "NULL supplied for driver_data");
 		return -EINVAL;
@@ -626,7 +626,7 @@ static int btcg2900_close(struct hci_dev *hdev)
 		return -EINVAL;
 	}
 
-	info = (struct btcg2900_info *)hdev->driver_data;
+	info = hci_get_drvdata(hdev);
 	if (!info) {
 		BT_ERR(NAME "NULL supplied for driver_data");
 		return -EINVAL;
@@ -689,7 +689,7 @@ static int btcg2900_send(struct sk_buff *skb)
 		return -EINVAL;
 	}
 
-	info = (struct btcg2900_info *)hdev->driver_data;
+	info = hci_get_drvdata(hdev);
 	if (!info) {
 		BT_ERR(NAME "NULL supplied for info");
 		return -EINVAL;
@@ -733,7 +733,7 @@ static void btcg2900_destruct(struct hci_dev *hdev)
 
 	BT_DBG("btcg2900_destruct");
 
-	info = hdev->driver_data;
+	info = hci_get_drvdata(hdev);
 	if (!info) {
 		BT_ERR(NAME "NULL supplied for info");
 		return;
@@ -849,12 +849,13 @@ static int register_bluetooth(struct btcg2900_info *info)
 
 	SET_HCIDEV_DEV(info->hdev, info->parent);
 	info->hdev->bus = pf_data->channel_data.bt_bus;
-	info->hdev->driver_data = info;
-	info->hdev->owner = THIS_MODULE;
+	hci_set_drvdata(info->hdev, info);
 	info->hdev->open = btcg2900_open;
 	info->hdev->close = btcg2900_close;
 	info->hdev->send = btcg2900_send;
-	info->hdev->destruct = btcg2900_destruct;
+	/*  FIXME no more destruct move this management somewhere
+	* info->hdev->destruct = btcg2900_destruct;
+	*/
 
 	err = hci_register_dev(info->hdev);
 	if (err) {
@@ -1048,7 +1049,7 @@ static int remove_common(struct platform_device *pdev,
 		goto finished;
 
 	BT_INFO("Unregistering CG2900");
-	info->hdev->driver_data = NULL;
+	hci_set_drvdata(info->hdev, NULL);
 	hci_unregister_dev(info->hdev);
 	hci_free_dev(info->hdev);
 	info->hdev = NULL;
