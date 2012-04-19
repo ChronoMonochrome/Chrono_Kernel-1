@@ -559,13 +559,13 @@ static void ab8500_usb_delayed_work(struct work_struct *work)
 static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
 {
 	struct ab8500_usb *ab = (struct ab8500_usb *) data;
-	enum usb_xceiv_events event = USB_EVENT_NONE;
+	enum usb_phy_events event = USB_EVENT_NONE;
 
 	/* Link status will not be updated till phy is disabled. */
 	if (ab->mode == USB_HOST) {
-		ab->otg.default_a = false;
+		ab->phy.otg->default_a = false;
 		ab->vbus_draw = 0;
-		atomic_notifier_call_chain(&ab->otg.notifier,
+		atomic_notifier_call_chain(&ab->phy.notifier,
 					event, &ab->vbus_draw);
 		ab8500_usb_host_phy_dis(ab);
 	}
@@ -661,10 +661,6 @@ static int ab8500_usb_set_power(struct usb_phy *phy, unsigned mA)
 	return 0;
 }
 
-/* TODO: Implement some way for charging or other drivers to read
- * ab->vbus_draw.
- */
-
 static int ab8500_usb_set_suspend(struct usb_phy *x, int suspend)
 {
 	/* TODO */
@@ -681,7 +677,7 @@ static int ab8500_usb_set_peripheral(struct usb_otg *otg,
 
 	ab = phy_to_ab(otg->phy);
 
-	ab->otg.gadget = gadget;
+	ab->phy.otg->gadget = gadget;
 	/* Some drivers call this function in atomic context.
 	 * Do not update ab8500 registers directly till this
 	 * is fixed.
@@ -701,7 +697,7 @@ static int ab8500_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
 
 	ab = phy_to_ab(otg->phy);
 
-	ab->otg.host = host;
+	ab->phy.otg->host = host;
 
 	/* Some drivers call this function in atomic context.
 	 * Do not update ab8500 registers directly till this
