@@ -2816,7 +2816,7 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
 		ab8500_codec_write_reg_audio(codec, i, cache[i]);
 
 	/* Add controls */
-	ret = snd_soc_add_controls(codec, ab8500_snd_controls,
+	ret = snd_soc_add_codec_controls(codec, ab8500_snd_controls,
 			ARRAY_SIZE(ab8500_snd_controls));
 	if (ret < 0) {
 		pr_err("%s: failed to add soc controls (%d).\n",
