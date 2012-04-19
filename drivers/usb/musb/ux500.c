@@ -346,7 +346,7 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 
 		} else {
 			musb->is_active = 1;
-			musb->xceiv->default_a = 1;
+			musb->xceiv->otg->default_a = 1;
 			musb->xceiv->state = OTG_STATE_A_WAIT_VRISE;
 			devctl |= MUSB_DEVCTL_SESSION;
 			MUSB_HST_MODE(musb);
@@ -357,7 +357,7 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 		/* NOTE:  we're skipping A_WAIT_VFALL -> A_IDLE and
 		 * jumping right to B_IDLE...
 		 */
-		musb->xceiv->default_a = 0;
+		musb->xceiv->otg->default_a = 0;
 		devctl &= ~MUSB_DEVCTL_SESSION;
 		MUSB_DEV_MODE(musb);
 	}
@@ -441,7 +441,7 @@ static int ux500_musb_init(struct musb *musb)
 	}
 	pm_runtime_get_noresume(musb->controller);
 	musb->nb.notifier_call = musb_otg_notifications;
-	status = otg_register_notifier(musb->xceiv, &musb->nb);
+	status = usb_register_notifier(musb->xceiv, &musb->nb);
 
 	if (status < 0) {
 		dev_dbg(musb->controller, "notification register failed\n");
