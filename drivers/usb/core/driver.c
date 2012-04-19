@@ -1312,7 +1312,7 @@ void usb_hnp_polling_work(struct work_struct *work)
 
 	/* Spec says host must suspend the bus with in 2 sec. */
 	if (*status & (1 << HOST_REQUEST_FLAG)) {
-		do_unbind_rebind(udev, DO_UNBIND);
+		unbind_no_pm_drivers_interfaces(udev);
 		ret = usb_suspend_both(udev, PMSG_USER_SUSPEND);
 		if (ret)
 			dev_info(&udev->dev, "suspend failed\n");
