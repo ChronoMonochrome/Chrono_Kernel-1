@@ -1233,7 +1233,7 @@ static void __init mop500_init_machine(void)
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
 #ifdef CONFIG_STM_MSP_SPI
-	mop500_msp_init();
+	mop500_msp_init(parent);
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
 	mop500_wlan_init();
@@ -1287,7 +1287,7 @@ static void __init snowball_init_machine(void)
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
 #ifdef CONFIG_STM_MSP_SPI
-	mop500_msp_init();
+	mop500_msp_init(parent);
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
 	mop500_wlan_init();
@@ -1364,7 +1364,7 @@ static void __init hrefv60_init_machine(void)
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
 #ifdef CONFIG_STM_MSP_SPI
-	mop500_msp_init();
+	mop500_msp_init(parent);
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
 	mop500_wlan_init();
