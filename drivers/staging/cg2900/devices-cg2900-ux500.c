@@ -19,6 +19,7 @@
 #include <linux/gpio.h>
 #include <linux/ioport.h>
 #include <linux/kernel.h>
+#include <linux/mutex.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/platform_device.h>
