@@ -158,6 +158,9 @@ int cw1200_add_interface(struct ieee80211_hw *dev,
 	struct cw1200_common *priv = dev->priv;
 	/* __le32 auto_calibration_mode = __cpu_to_le32(1); */
 
+	vif->driver_flags |= IEEE80211_VIF_BEACON_FILTER |
+			     IEEE80211_VIF_SUPPORTS_CQM_RSSI;
+
 	mutex_lock(&priv->conf_mutex);
 
 	if (priv->mode != NL80211_IFTYPE_MONITOR) {
