@@ -1426,6 +1426,7 @@ extern int do_munmap(struct mm_struct *, unsigned long, size_t);
 
 /* These take the mm semaphore themselves */
 extern unsigned long vm_brk(unsigned long, unsigned long);
+extern int vm_munmap(struct mm_struct *, unsigned long, size_t);
 
 /* filemap.c */
 extern unsigned long page_unuse(struct page *);
