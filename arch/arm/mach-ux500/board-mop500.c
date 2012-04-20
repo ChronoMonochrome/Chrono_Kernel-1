@@ -102,7 +102,7 @@ static struct ab8500_denc_platform_data ab8500_denc_pdata = {
 static struct gpio_led snowball_led_array[] = {
 	{
 		.name = "user_led",
-		.default_trigger = "none",
+		.default_trigger = "heartbeat",
 		.gpio = 142,
 	},
 };
