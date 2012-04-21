@@ -1767,8 +1767,9 @@ erase_whole_vma:
 }
 EXPORT_SYMBOL(do_munmap);
 
-int vm_munmap(struct mm_struct *mm, unsigned long addr, size_t len)
+int vm_munmap(unsigned long addr, size_t len)
 {
+	struct mm_struct *mm = current->mm;
 	int ret;
 
 	down_write(&mm->mmap_sem);
@@ -1780,7 +1781,7 @@ EXPORT_SYMBOL(vm_munmap);
 
 SYSCALL_DEFINE2(munmap, unsigned long, addr, size_t, len)
 {
-	return vm_munmap(current->mm, addr, len);
+	return vm_munmap(addr, len);
 }
 
 /*

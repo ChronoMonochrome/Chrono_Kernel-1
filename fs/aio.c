@@ -93,7 +93,7 @@ static void aio_free_ring(struct kioctx *ctx)
 		put_page(info->ring_pages[i]);
 
 	if (info->mmap_size)
-		vm_munmap(ctx->mm, info->mmap_base, info->mmap_size);
+		vm_munmap(info->mmap_base, info->mmap_size);
 
 	if (info->ring_pages && info->ring_pages != info->internal_pages)
 		kfree(info->ring_pages);
