@@ -146,22 +146,22 @@ static struct regulator_consumer_supply ab8500_vtvout_consumers[] = {
 
 static struct regulator_consumer_supply ab8500_vaud_consumers[] = {
 	/* AB8500 audio-codec main supply */
-	REGULATOR_SUPPLY("vaud", "ab8500-codec.0"),
+	REGULATOR_SUPPLY("v-audio", NULL),
 };
 
 static struct regulator_consumer_supply ab8500_vamic1_consumers[] = {
 	/* AB8500 audio-codec Mic1 supply */
-	REGULATOR_SUPPLY("vamic1", "ab8500-codec.0"),
+	REGULATOR_SUPPLY("v-amic1", NULL),
 };
 
 static struct regulator_consumer_supply ab8500_vamic2_consumers[] = {
 	/* AB8500 audio-codec Mic2 supply */
-	REGULATOR_SUPPLY("vamic2", "ab8500-codec.0"),
+	REGULATOR_SUPPLY("v-amic2", NULL),
 };
 
 static struct regulator_consumer_supply ab8500_vdmic_consumers[] = {
 	/* AB8500 audio-codec DMic supply */
-	REGULATOR_SUPPLY("vdmic", "ab8500-codec.0"),
+	REGULATOR_SUPPLY("v-dmic", NULL),
 };
 
 static struct regulator_consumer_supply ab8500_vintcore_consumers[] = {
