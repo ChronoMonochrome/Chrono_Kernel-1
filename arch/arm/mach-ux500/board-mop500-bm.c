@@ -395,23 +395,23 @@ static char *ab8500_chargalg_supplied_to[] = {
 	"ab8500_fg",
 };
 
-struct ab8500_charger_platform_data ab8500_charger_plat_data = {
+struct abx500_charger_platform_data ab8500_charger_plat_data = {
 	.supplied_to = ab8500_charger_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_charger_supplied_to),
 	.autopower_cfg		= false,
 };
 
-struct ab8500_btemp_platform_data ab8500_btemp_plat_data = {
+struct abx500_btemp_platform_data ab8500_btemp_plat_data = {
 	.supplied_to = ab8500_btemp_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_btemp_supplied_to),
 };
 
-struct ab8500_fg_platform_data ab8500_fg_plat_data = {
+struct abx500_fg_platform_data ab8500_fg_plat_data = {
 	.supplied_to = ab8500_fg_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_fg_supplied_to),
 };
 
-struct ab8500_chargalg_platform_data ab8500_chargalg_plat_data = {
+struct abx500_chargalg_platform_data ab8500_chargalg_plat_data = {
 	.supplied_to = ab8500_chargalg_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_chargalg_supplied_to),
 };
@@ -436,7 +436,7 @@ struct ab8500_pwmled_platform_data ab8500_pwmled_plat_data = {
 	.leds = leds_pwm_data,
 };
 
-static const struct ab8500_bm_capacity_levels cap_levels = {
+static const struct abx500_bm_capacity_levels cap_levels = {
 	.critical	= 2,
 	.low		= 10,
 	.normal		= 70,
@@ -444,7 +444,7 @@ static const struct ab8500_bm_capacity_levels cap_levels = {
 	.full		= 100,
 };
 
-static const struct ab8500_fg_parameters fg = {
+static const struct abx500_fg_parameters fg = {
 	.recovery_sleep_timer = 10,
 	.recovery_total_time = 100,
 	.init_timer = 1,
@@ -461,21 +461,21 @@ static const struct ab8500_fg_parameters fg = {
 	.maint_thres = 97,
 };
 
-static const struct ab8500_maxim_parameters maxi_params = {
+static const struct abx500_maxim_parameters maxi_params = {
 	.ena_maxi = true,
 	.chg_curr = 910,
 	.wait_cycles = 10,
 	.charger_curr_step = 100,
 };
 
-static const struct ab8500_bm_charger_parameters chg = {
+static const struct abx500_bm_charger_parameters chg = {
 	.usb_volt_max		= 5500,
 	.usb_curr_max		= 1500,
 	.ac_volt_max		= 7500,
 	.ac_curr_max		= 1500,
 };
 
-struct ab8500_bm_data ab8500_bm_data = {
+struct abx500_bm_data ab8500_bm_data = {
 	.temp_under		= 3,
 	.temp_low		= 8,
 	.temp_high		= 43,

@@ -973,7 +973,7 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
 {
 	int irq, i, ret = 0;
 	u8 val;
-	struct abx500_bm_plat_data *plat_data;
+	struct ab8500_platform_data *plat_data;
 
 	struct ab8500_btemp *di =
 		kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
@@ -988,7 +988,7 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
 	di->initialized = false;
 
 	/* get btemp specific platform data */
-	plat_data = pdev->dev.platform_data;
+	plat_data = dev_get_platdata(di->parent->dev);
 	di->pdata = plat_data->btemp;
 	if (!di->pdata) {
 		dev_err(di->dev, "no btemp platform data supplied\n");

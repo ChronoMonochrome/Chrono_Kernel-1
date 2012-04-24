@@ -2637,7 +2637,7 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
 static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 {
 	int irq, i, charger_status, ret = 0;
-	struct abx500_bm_plat_data *plat_data;
+	struct ab8500_platform_data *plat_data;
 
 	struct ab8500_charger *di =
 		kzalloc(sizeof(struct ab8500_charger), GFP_KERNEL);
@@ -2653,7 +2653,8 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 	spin_lock_init(&di->usb_state.usb_lock);
 
 	/* get charger specific platform data */
-	plat_data = pdev->dev.platform_data;
+	plat_data = dev_get_platdata(di->parent->dev);
+
 	di->pdata = plat_data->charger;
 
 	if (!di->pdata) {

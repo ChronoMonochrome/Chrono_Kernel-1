@@ -2446,7 +2446,7 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
 {
 	int i, irq;
 	int ret = 0;
-	struct abx500_bm_plat_data *plat_data;
+	struct ab8500_platform_data *plat_data;
 
 	struct ab8500_fg *di =
 		kzalloc(sizeof(struct ab8500_fg), GFP_KERNEL);
@@ -2461,7 +2461,7 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
 	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 
 	/* get fg specific platform data */
-	plat_data = pdev->dev.platform_data;
+	plat_data = dev_get_platdata(di->parent->dev);
 	di->pdata = plat_data->fg;
 	if (!di->pdata) {
 		dev_err(di->dev, "no fg platform data supplied\n");

@@ -289,13 +289,13 @@ struct ab8500_platform_data {
 	void (*init) (struct ab8500 *);
 	struct ab8500_regulator_platform_data *regulator;
 	struct abx500_accdet_platform_data *accdet;
-	struct ab8500_bm_data *battery;
+	struct abx500_bm_data *battery;
 	struct ab8500_denc_platform_data *denc;
 	struct ab8500_audio_platform_data *audio;
-	struct ab8500_charger_platform_data *charger;
-	struct ab8500_btemp_platform_data *btemp;
-	struct ab8500_fg_platform_data *fg;
-	struct ab8500_chargalg_platform_data *chargalg;
+	struct abx500_charger_platform_data *charger;
+	struct abx500_btemp_platform_data *btemp;
+	struct abx500_fg_platform_data *fg;
+	struct abx500_chargalg_platform_data *chargalg;
 	struct ab8500_gpio_platform_data *gpio;
 	struct ab8500_sysctrl_platform_data *sysctrl;
 	struct ab8500_pwmled_platform_data *pwmled;
