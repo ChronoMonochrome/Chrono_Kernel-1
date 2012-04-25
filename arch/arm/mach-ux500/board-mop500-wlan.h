@@ -12,6 +12,6 @@
 #ifndef __BOARD_MOP500_WLAN_H
 #define __BOARD_MOP500_WLAN_H
 
-int mop500_wlan_init(void);
+int mop500_wlan_init(struct device *parent);
 
 #endif

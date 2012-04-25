@@ -178,7 +178,7 @@ static int cw1200_clk_ctrl(const struct cw1200_platform_data *pdata,
 	return ret;
 }
 
-int __init mop500_wlan_init(void)
+int __init mop500_wlan_init(struct device *parent)
 {
 	int ret;
 
@@ -218,6 +218,7 @@ int __init mop500_wlan_init(void)
 	if (WARN_ON(ret))
 		return ret;
 
+	cw1200_device.dev.parent = parent;
 	ret = platform_device_register(&cw1200_device);
 	if (ret)
 		cw1200_pins_enable(false);
