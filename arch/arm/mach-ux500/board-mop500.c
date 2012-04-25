@@ -1236,7 +1236,7 @@ static void __init mop500_init_machine(void)
 	mop500_msp_init(parent);
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
-	mop500_wlan_init();
+	mop500_wlan_init(parent);
 #endif
 
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
@@ -1290,7 +1290,7 @@ static void __init snowball_init_machine(void)
 	mop500_msp_init(parent);
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
-	mop500_wlan_init();
+	mop500_wlan_init(parent);
 #endif
 
 	platform_device_register(&ab8500_device);
@@ -1367,7 +1367,7 @@ static void __init hrefv60_init_machine(void)
 	mop500_msp_init(parent);
 #endif
 #if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
-	mop500_wlan_init();
+	mop500_wlan_init(parent);
 #endif
 
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
