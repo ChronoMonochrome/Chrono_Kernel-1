@@ -28,7 +28,7 @@ extern void __init ux500_init_irq(void);
 extern void __init u5500_sdi_init(struct device *parent);
 
 extern void __init db5500_dma_init(struct device *parent);
-extern void __init db8500_dma_init(void);
+extern void __init db8500_dma_init(struct device *parent);
 
 extern struct device *ux500_soc_device_init(const char *soc_id);
 
