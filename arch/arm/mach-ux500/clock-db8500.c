@@ -1157,6 +1157,10 @@ int __init db8500_clk_init(void)
 		      ARRAY_SIZE(u8500_v2_sysclks));
 	clkdev_add_table(u8500_clocks,
 		      ARRAY_SIZE(u8500_clocks));
+#ifdef CONFIG_DEBUG_FS
+	clk_debugfs_add_table(u8500_v2_sysclks, ARRAY_SIZE(u8500_v2_sysclks));
+	clk_debugfs_add_table(u8500_clocks, ARRAY_SIZE(u8500_clocks));
+#endif
 	return 0;
 }
 

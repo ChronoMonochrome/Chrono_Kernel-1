@@ -51,6 +51,10 @@ struct clk {
 	struct regulator *regulator;
 	struct clk *clock;
 	struct list_head list;
+#if defined(CONFIG_DEBUG_FS)
+	struct dentry		*dent;		/* For visible tree hierarchy */
+	struct dentry		*dent_bus;	/* For visible tree hierarchy */
+#endif
 };
 
 /**
@@ -156,6 +160,7 @@ int clk_set_rate_rec(struct clk *clk, unsigned long rate);
 
 #ifdef CONFIG_DEBUG_FS
 int dbx500_clk_debug_init(struct clk **clks, int num);
+void clk_debugfs_add_table(struct clk_lookup *cl, size_t num);
 #else
 static inline int dbx500_clk_debug_init(struct clk **clks, int num)
 {

@@ -13,6 +13,12 @@
 #include <linux/mfd/abx500/ab8500-sysctrl.h>
 #include <linux/mfd/dbx500-prcmu.h>
 
+#ifdef CONFIG_DEBUG_FS
+#include <linux/debugfs.h>
+#include <linux/uaccess.h>	/* for copy_from_user */
+static LIST_HEAD(clk_list);
+#endif
+
 #include "clock.h"
 #include "prcc.h"
 
@@ -502,6 +508,166 @@ static struct clk_lookup clk_smp_twd_lookup = {
 	.dev_id	= "smp_twd",
 };
 #endif
+
+#ifdef CONFIG_DEBUG_FS
+/*
+ *	debugfs support to trace clock tree hierarchy and attributes with
+ *	powerdebug
+ */
+static struct dentry *clk_debugfs_root;
+
+void __init clk_debugfs_add_table(struct clk_lookup *cl, size_t num)
+{
+	while (num--) {
+		/* Check that the clock has not been already registered */
+		if (!(cl->clk->list.prev != cl->clk->list.next))
+			list_add_tail(&cl->clk->list, &clk_list);
+
+		cl++;
+	}
+}
+
+static ssize_t usecount_dbg_read(struct file *file, char __user *buf,
+						  size_t size, loff_t *off)
+{
+	struct clk *clk = file->f_dentry->d_inode->i_private;
+	char cusecount[128];
+	unsigned int len;
+
+	len = sprintf(cusecount, "%u\n", clk->enabled);
+	return simple_read_from_buffer(buf, size, off, cusecount, len);
+}
+
+static ssize_t rate_dbg_read(struct file *file, char __user *buf,
+					  size_t size, loff_t *off)
+{
+	struct clk *clk = file->f_dentry->d_inode->i_private;
+	char crate[128];
+	unsigned int rate;
+	unsigned int len;
+
+	rate = clk_get_rate(clk);
+	len = sprintf(crate, "%u\n", rate);
+	return simple_read_from_buffer(buf, size, off, crate, len);
+}
+
+static const struct file_operations usecount_fops = {
+	.read = usecount_dbg_read,
+};
+
+static const struct file_operations set_rate_fops = {
+	.read = rate_dbg_read,
+};
+
+static struct dentry *clk_debugfs_register_dir(struct clk *c,
+						struct dentry *p_dentry)
+{
+	struct dentry *d, *clk_d;
+	const char *p = c->name;
+
+	if (!p)
+		p = "BUG";
+
+	clk_d = debugfs_create_dir(p, p_dentry);
+	if (!clk_d)
+		return NULL;
+
+	d = debugfs_create_file("usecount", S_IRUGO,
+				clk_d, c, &usecount_fops);
+	if (!d)
+		goto err_out;
+	d = debugfs_create_file("rate", S_IRUGO,
+				clk_d, c, &set_rate_fops);
+	if (!d)
+		goto err_out;
+	/*
+	 * TODO : not currently available in ux500
+	 * d = debugfs_create_x32("flags", S_IRUGO, clk_d, (u32 *)&c->flags);
+	 * if (!d)
+	 *	goto err_out;
+	 */
+
+	return clk_d;
+
+err_out:
+	debugfs_remove_recursive(clk_d);
+	return NULL;
+}
+
+static int clk_debugfs_register_one(struct clk *c)
+{
+	struct clk *pa = c->parent;
+	struct clk *bpa = c->bus_parent;
+
+	if (!(bpa && !pa)) {
+		c->dent = clk_debugfs_register_dir(c,
+				pa ? pa->dent : clk_debugfs_root);
+		if (!c->dent)
+			return -ENOMEM;
+	}
+
+	if (bpa) {
+		c->dent_bus = clk_debugfs_register_dir(c,
+				bpa->dent_bus ? bpa->dent_bus : bpa->dent);
+		if ((!c->dent_bus) &&  (c->dent)) {
+			debugfs_remove_recursive(c->dent);
+			c->dent = NULL;
+			return -ENOMEM;
+		}
+	}
+	return 0;
+}
+
+static int clk_debugfs_register(struct clk *c)
+{
+	int err;
+	struct clk *pa = c->parent;
+	struct clk *bpa = c->bus_parent;
+
+	if (pa && (!pa->dent && !pa->dent_bus)) {
+		err = clk_debugfs_register(pa);
+		if (err)
+			return err;
+	}
+
+	if (bpa && (!bpa->dent && !bpa->dent_bus)) {
+		err = clk_debugfs_register(bpa);
+		if (err)
+			return err;
+	}
+
+	if ((!c->dent) && (!c->dent_bus)) {
+		err = clk_debugfs_register_one(c);
+		if (err)
+			return err;
+	}
+	return 0;
+}
+
+static int __init clk_debugfs_init(void)
+{
+	struct clk *c;
+	struct dentry *d;
+	int err;
+
+	d = debugfs_create_dir("clock", NULL);
+	if (!d)
+		return -ENOMEM;
+	clk_debugfs_root = d;
+
+	list_for_each_entry(c, &clk_list, list) {
+		err = clk_debugfs_register(c);
+		if (err)
+			goto err_out;
+	}
+	return 0;
+err_out:
+	debugfs_remove_recursive(clk_debugfs_root);
+	return err;
+}
+
+late_initcall(clk_debugfs_init);
+#endif /* defined(CONFIG_DEBUG_FS) */
 
 int __init clk_init(void)
 {
