@@ -3289,6 +3289,7 @@ static noinline void __schedule_bug(struct task_struct *prev)
 		show_regs(regs);
 	else
 		dump_stack();
+	add_taint(TAINT_WARN);
 }
 
 /*
