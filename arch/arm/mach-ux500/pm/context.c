@@ -32,6 +32,8 @@
 #include "../product.h"
 #include "../prcc.h"
 
+#include "../board-pins-sleep-force.h"
+
 #define GPIO_NUM_BANKS 9
 #define GPIO_NUM_SAVE_REGISTERS 7
 
@@ -638,6 +640,7 @@ void context_vape_restore(void)
 void context_gpio_save(void)
 {
 	int i;
+	unsigned int rimsc, fimsc;
 
 	for (i = 0; i < GPIO_NUM_BANKS; i++) {
 		gpio_save[i][0] = readl(gpio_bankaddr[i] + NMK_GPIO_AFSLA);
@@ -647,6 +650,22 @@ void context_gpio_save(void)
 		gpio_save[i][4] = readl(gpio_bankaddr[i] + NMK_GPIO_DAT);
 		gpio_save[i][6] = readl(gpio_bankaddr[i] + NMK_GPIO_SLPC);
 	}
+	/* Mask GPIO140 and GPIO32 which gives
+	 * spurious interrupts during sleep
+	 */
+	rimsc = readl(gpio_bankaddr[4] + NMK_GPIO_RIMSC);
+	fimsc = readl(gpio_bankaddr[4] + NMK_GPIO_FIMSC);
+	rimsc &= ~(0x1 << (140 % NMK_GPIO_PER_CHIP));
+	fimsc &= ~(0x1 << (140 % NMK_GPIO_PER_CHIP));
+	writel(rimsc, gpio_bankaddr[4] + NMK_GPIO_RIMSC);
+	writel(fimsc, gpio_bankaddr[4] + NMK_GPIO_FIMSC);
+
+	rimsc = readl(gpio_bankaddr[1] + NMK_GPIO_RIMSC);
+	fimsc = readl(gpio_bankaddr[1] + NMK_GPIO_FIMSC);
+	rimsc &= ~0x1;
+	fimsc &= ~0x1;
+	writel(rimsc, gpio_bankaddr[1] + NMK_GPIO_RIMSC);
+	writel(fimsc, gpio_bankaddr[1] + NMK_GPIO_FIMSC);
 }
 
 /*
@@ -660,6 +679,7 @@ void context_gpio_restore(void)
 	u32 pull_up;
 	u32 pull_down;
 	u32 pull;
+	unsigned int rimsc, fimsc;
 
 	for (i = 0; i < GPIO_NUM_BANKS; i++) {
 		writel(gpio_save[i][2], gpio_bankaddr[i] + NMK_GPIO_PDIS);
@@ -695,8 +715,23 @@ void context_gpio_restore(void)
 		writel(pull_down, gpio_bankaddr[i] + NMK_GPIO_DATC);
 
 		writel(gpio_save[i][6], gpio_bankaddr[i] + NMK_GPIO_SLPC);
-
 	}
+	/* Restore Masks for GPIO140 and GPIO32 which gives
+	 * spurious interrupts during sleep
+	 */
+	rimsc = readl(gpio_bankaddr[4] + NMK_GPIO_RIMSC);
+	fimsc = readl(gpio_bankaddr[4] + NMK_GPIO_FIMSC);
+	rimsc |= (0x1 << 140 % NMK_GPIO_PER_CHIP);
+	fimsc |= (0x1 << 140 % NMK_GPIO_PER_CHIP);
+	writel(rimsc, gpio_bankaddr[4] + NMK_GPIO_RIMSC);
+	writel(fimsc, gpio_bankaddr[4] + NMK_GPIO_FIMSC);
+
+	rimsc = readl(gpio_bankaddr[1] + NMK_GPIO_RIMSC);
+	fimsc = readl(gpio_bankaddr[1] + NMK_GPIO_FIMSC);
+	rimsc |= 0x1;
+	fimsc |= 0x1;
+	writel(rimsc, gpio_bankaddr[1] + NMK_GPIO_RIMSC);
+	writel(fimsc, gpio_bankaddr[1] + NMK_GPIO_FIMSC);
 }
 
 /*
