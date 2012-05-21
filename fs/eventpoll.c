@@ -1696,7 +1696,7 @@ if (!god_mode_enabled) {
 
 	/* Check if EPOLLWAKEUP is allowed */
 	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_EPOLLWAKEUP))
-		goto error_tgt_fput;
+		epds.events &= ~EPOLLWAKEUP;
 
 	/*
 	 * We have to check that the file structure underneath the file descriptor
