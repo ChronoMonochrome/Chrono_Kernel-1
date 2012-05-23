@@ -193,6 +193,8 @@ static u32 gpio_bankaddr[GPIO_NUM_BANKS] = {IO_ADDRESS(U8500_GPIOBANK0_BASE),
 
 static u32 gpio_save[GPIO_NUM_BANKS][GPIO_NUM_SAVE_REGISTERS];
 
+void __iomem *fsmc_base_addr;
+static u32 fsmc_bcr0;
 /*
  * Stacks and stack pointers
  */
@@ -634,6 +636,26 @@ void context_vape_restore(void)
 }
 
 /*
+ * Save FSMC registers that will be reset
+ * during power save.
+ */
+void context_fsmc_save(void)
+{
+	fsmc_base_addr = ioremap_nocache(U8500_FSMC_BASE, 8);
+	fsmc_bcr0 = readl(fsmc_base_addr);
+}
+
+/*
+ * Restore FSMC registers that will be reset
+ * during power save.
+ */
+void context_fsmc_restore(void)
+{
+	writel(fsmc_bcr0, fsmc_base_addr);
+	iounmap(fsmc_base_addr);
+}
+
+/*
  * Save GPIO registers that might be modified
  * for power save reasons.
  */
@@ -650,6 +672,7 @@ void context_gpio_save(void)
 		gpio_save[i][4] = readl(gpio_bankaddr[i] + NMK_GPIO_DAT);
 		gpio_save[i][6] = readl(gpio_bankaddr[i] + NMK_GPIO_SLPC);
 	}
+
 	/* Mask GPIO140 and GPIO32 which gives
 	 * spurious interrupts during sleep
 	 */

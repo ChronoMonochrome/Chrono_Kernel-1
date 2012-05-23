@@ -78,6 +78,8 @@ static int suspend(bool do_deepsleep)
 
 	context_vape_save();
 
+	context_fsmc_save();
+
 	if (pins_force) {
 		/*
 		 * Save GPIO settings before applying power save
@@ -139,6 +141,8 @@ static int suspend(bool do_deepsleep)
 	}
 
 	context_vape_restore();
+
+	context_fsmc_restore();
 
 	/* If GPIO woke us up then save the pins that caused the wake up */
 	ux500_pm_gpio_save_wake_up_status();
