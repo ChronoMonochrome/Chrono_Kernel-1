@@ -318,6 +318,15 @@ config EARLY_PRINTK
 	  kernel low-level debugging functions. Add earlyprintk to your
 	  kernel parameters to enable this console.
 
+config PRINTK_LL
+	bool "Use printascii in printk"
+	depends on DEBUG_LL
+	help
+	  Say Y here if you want to have printk send its output via the
+	  kernel low-level debugging functions.  This is useful if you
+	  are debugging code that executes before the earlyprintk console
+	  is initialized.
+
 config OC_ETM
 	bool "On-chip ETM and ETB"
 	depends on ARM_AMBA

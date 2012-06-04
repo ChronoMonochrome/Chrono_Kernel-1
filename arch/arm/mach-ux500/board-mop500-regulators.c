@@ -129,6 +129,7 @@ static struct regulator_consumer_supply ab8500_vaux2_consumers[] = {
 };
 
 static struct regulator_consumer_supply ab8500_vaux3_consumers[] = {
+	REGULATOR_SUPPLY("v-SD-STM", "stm"),
 	/* External MMC slot power */
 	REGULATOR_SUPPLY("vmmc", "sdi0"),
 };

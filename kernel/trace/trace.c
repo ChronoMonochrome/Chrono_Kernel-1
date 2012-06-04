@@ -38,6 +38,7 @@
 #include <linux/poll.h>
 #include <linux/nmi.h>
 #include <linux/fs.h>
+#include <trace/stm.h>
 
 #include "trace.h"
 #include "trace_output.h"
@@ -965,7 +966,7 @@ void tracing_reset_current_online_cpus(void)
 	tracing_reset_online_cpus(&global_trace);
 }
 
-#define SAVED_CMDLINES 128
+#define SAVED_CMDLINES 2048
 #define NO_CMDLINE_MAP UINT_MAX
 static unsigned map_pid_to_cmdline[PID_MAX_DEFAULT+1];
 static unsigned map_cmdline_to_pid[SAVED_CMDLINES];
@@ -1293,6 +1294,8 @@ trace_function(struct trace_array *tr,
 
 	if (!filter_check_discard(call, entry, buffer, event))
 		ring_buffer_unlock_commit(buffer, event);
+
+	stm_ftrace(ip, parent_ip);
 }
 
 void
@@ -1386,6 +1389,8 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
 
 	if (!filter_check_discard(call, entry, buffer, event))
 		ring_buffer_unlock_commit(buffer, event);
+
+	stm_stack_trace(trace.entries);
 
  out:
 	/* Again, don't let gcc optimize things here */
@@ -1557,6 +1562,8 @@ int trace_vbprintk(unsigned long ip, const char *fmt, va_list args)
 		ftrace_trace_stack(buffer, flags, 6, pc);
 	}
 
+	stm_trace_bprintk_buf(ip, fmt, trace_buf, sizeof(u32) * len);
+
 out_unlock:
 	arch_spin_unlock(&trace_buf_lock);
 	local_irq_restore(flags);
@@ -1632,6 +1639,8 @@ int trace_array_vprintk(struct trace_array *tr,
 		ring_buffer_unlock_commit(buffer, event);
 		ftrace_trace_stack(buffer, irq_flags, 6, pc);
 	}
+
+	stm_trace_printk_buf(ip, trace_buf, len);
 
  out_unlock:
 	arch_spin_unlock(&trace_buf_lock);
