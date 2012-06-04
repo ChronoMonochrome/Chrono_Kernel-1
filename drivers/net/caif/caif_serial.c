@@ -182,6 +182,7 @@ static void ldisc_receive(struct tty_struct *tty, const u8 *data,
 	 * This is not yet handled.
 	 */
 
+	BUG_ON(ser->dev == NULL);
 
 	/*
 	 * Workaround for garbage at start of transmission,
