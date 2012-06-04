@@ -34,6 +34,7 @@
 #include <linux/tty.h>
 #include <linux/tty_ldisc.h>
 #include <linux/types.h>
+#include <linux/wakelock.h>
 #include <linux/workqueue.h>
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci.h>
@@ -324,6 +325,7 @@ struct uart_delayed_work_struct {
  * @chip_dev:		Chip device for current UART transport.
  * @cts_irq:		CTS interrupt for this UART.
  * @cts_gpio:		CTS GPIO for this UART.
+ * @wake_lock:		Wake lock for keeping user space awake (for Android).
  * @suspend_blocked:	True if suspend operation is blocked in the framework.
  * @pm_qos_latency:	PM QoS structure.
  */
@@ -354,6 +356,7 @@ struct uart_info {
 	struct cg2900_chip_dev		chip_dev;
 	int				cts_irq;
 	int				cts_gpio;
+	struct wake_lock		wake_lock;
 	bool				suspend_blocked;
 	struct pm_qos_request		pm_qos_latency;
 };
@@ -480,6 +483,10 @@ static irqreturn_t cts_interrupt(int irq, void *dev_id)
 	disable_irq_wake(irq);
 #endif
 	disable_irq_nosync(irq);
+	if (!uart_info->suspend_blocked) {
+		wake_lock(&uart_info->wake_lock);
+		uart_info->suspend_blocked = true;
+	}
 
 	/* Create work and leave IRQ context. */
 	(void)create_work_item(uart_info, handle_cts_irq);
@@ -646,6 +653,7 @@ static void wake_up_chip(struct uart_info *uart_info)
 		goto finished;
 
 	if (!uart_info->suspend_blocked) {
+		wake_lock(&uart_info->wake_lock);
 		uart_info->suspend_blocked = true;
 		pm_qos_update_request(&uart_info->pm_qos_latency,
 				      CG2900_PM_QOS_LATENCY);
@@ -770,6 +778,7 @@ static void set_chip_sleep_mode(struct work_struct *work)
 		dev_dbg(MAIN_DEV, "New sleep_state: CHIP_ASLEEP\n");
 		uart_info->sleep_state = CHIP_ASLEEP;
 		if (uart_info->suspend_blocked) {
+			wake_unlock(&uart_info->wake_lock);
 			uart_info->suspend_blocked = false;
 			pm_qos_update_request(&uart_info->pm_qos_latency,
 					      PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE);
@@ -1475,6 +1484,7 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 
 	if (chip_on) {
 		if (!uart_info->suspend_blocked) {
+			wake_lock(&uart_info->wake_lock);
 			uart_info->suspend_blocked = true;
 			pm_qos_update_request(&uart_info->pm_qos_latency,
 					      CG2900_PM_QOS_LATENCY);
@@ -1518,6 +1528,7 @@ static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
 		}
 
 		if (uart_info->suspend_blocked) {
+			wake_unlock(&uart_info->wake_lock);
 			uart_info->suspend_blocked = false;
 			pm_qos_update_request(&uart_info->pm_qos_latency,
 					      PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE);
@@ -2133,6 +2144,8 @@ static int __devinit cg2900_uart_probe(struct platform_device *pdev)
 	uart_info->chip_dev.pdev = pdev;
 	uart_info->chip_dev.dev = &pdev->dev;
 	uart_info->chip_dev.t_data = uart_info;
+	wake_lock_init(&uart_info->wake_lock, WAKE_LOCK_SUSPEND, NAME);
+	uart_info->suspend_blocked = false;
 
 	pm_qos_add_request(&uart_info->pm_qos_latency, PM_QOS_CPU_DMA_LATENCY,
 			   PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE);
@@ -2233,6 +2246,7 @@ static int __devexit cg2900_uart_remove(struct platform_device *pdev)
 		hci_uart_unregister_proto(uart_info->hu->proto);
 
 	pm_qos_remove_request(&uart_info->pm_qos_latency);
+	wake_lock_destroy(&uart_info->wake_lock);
 	destroy_workqueue(uart_info->wq);
 
 	dev_info(MAIN_DEV, "CG2900 UART removed\n");
