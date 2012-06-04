@@ -34,6 +34,8 @@ if USB_MUSB_HDRC
 
 choice
 	prompt "Platform Glue Layer"
+	bool
+	default USB_MUSB_UX500 if ARCH_U8500 || ARCH_U5500
 
 config USB_MUSB_DAVINCI
 	tristate "DaVinci"
@@ -60,7 +62,7 @@ config USB_MUSB_BLACKFIN
 
 config USB_MUSB_UX500
 	tristate "U8500 and U5500"
-	depends on (ARCH_U8500 && AB8500_USB)
+	depends on (ARCH_U8500) || (ARCH_U5500)
 
 endchoice
 
@@ -113,5 +115,14 @@ config MUSB_PIO_ONLY
 	  parameter.
 
 endchoice
+
+config	USB_MUSB_DEBUG
+	depends on USB_MUSB_HDRC
+	bool "Enable debugging messages"
+	default n
+	help
+	  This enables musb debugging. To set the logging level use the debug
+	  module parameter. Starting at level 3, per-transfer (urb, usb_request,
+	  packet, or dma transfer) tracing may kick in.
 
 endif # USB_MUSB_HDRC

@@ -297,6 +297,7 @@ struct ab8500_platform_data {
 	struct abx500_fg_platform_data *fg;
 	struct abx500_chargalg_platform_data *chargalg;
 	struct ab8500_gpio_platform_data *gpio;
+	struct abx500_usbgpio_platform_data *usb;
 	struct ab8500_sysctrl_platform_data *sysctrl;
 	struct ab8500_pwmled_platform_data *pwmled;
 };

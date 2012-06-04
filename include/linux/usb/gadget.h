@@ -476,6 +476,8 @@ struct usb_gadget_ops {
 	int	(*start)(struct usb_gadget_driver *,
 			int (*bind)(struct usb_gadget *));
 	int	(*stop)(struct usb_gadget_driver *);
+	struct usb_ep* (*configure_ep)(struct usb_gadget *, u8 type,
+				struct usb_endpoint_descriptor *);
 };
 
 /**
@@ -534,6 +536,11 @@ struct usb_gadget {
 	unsigned			b_hnp_enable:1;
 	unsigned			a_hnp_support:1;
 	unsigned			a_alt_hnp_support:1;
+#ifdef CONFIG_USB_OTG_20
+	unsigned                        host_request:1;
+	unsigned			otg_hnp_reqd:1;
+	unsigned			otg_srp_reqd:1;
+#endif
 	const char			*name;
 	struct device			dev;
 };

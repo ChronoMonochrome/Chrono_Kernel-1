@@ -401,7 +401,21 @@ static void txstate(struct musb *musb, struct musb_request *req)
 					csr |= (MUSB_TXCSR_DMAENAB
 							| MUSB_TXCSR_DMAMODE
 							| MUSB_TXCSR_MODE);
-					if (!musb_ep->hb_mult)
+					/*
+					 * Enable Autoset according to table
+					 * below
+					 * ************************************
+					 * bulk_split hb_mult	Autoset_Enable
+					 * ************************************
+					 *	0	0	Yes(Normal)
+					 *	0	>0	No(High BW ISO)
+					 *	1	0	Yes(HS bulk)
+					 *	1	>0	Yes(FS bulk)
+					 */
+					if (!musb_ep->hb_mult ||
+						(musb_ep->hb_mult &&
+						 can_bulk_split(musb,
+						    musb_ep->type)))
 						csr |= MUSB_TXCSR_AUTOSET;
 				}
 				csr &= ~MUSB_TXCSR_P_UNDERRUN;
@@ -1097,6 +1111,12 @@ static int musb_gadget_enable(struct usb_ep *ep,
 		/* REVISIT if can_bulk_split(), use by updating "tmp";
 		 * likewise high bandwidth periodic tx
 		 */
+		/* Set the TXMAXP register correctly for Bulk IN
+		 * endpoints in device mode
+		 */
+		if (can_bulk_split(musb, musb_ep->type))
+			musb_ep->hb_mult = (hw_ep->max_packet_sz_tx /
+						musb_ep->packet_sz) - 1;
 		/* Set TXMAXP with the FIFO size of the endpoint
 		 * to disable double buffering mode.
 		 */
@@ -1642,7 +1662,9 @@ static int musb_gadget_wakeup(struct usb_gadget *gadget)
 		}
 
 		spin_unlock_irqrestore(&musb->lock, flags);
+#ifndef CONFIG_USB_OTG_20
 		otg_start_srp(musb->xceiv->otg);
+#endif
 		spin_lock_irqsave(&musb->lock, flags);
 
 		/* Block idling for at least 1s */
@@ -1753,6 +1775,14 @@ static int musb_gadget_start(struct usb_gadget *g,
 static int musb_gadget_stop(struct usb_gadget *g,
 		struct usb_gadget_driver *driver);
 
+static struct usb_ep *musb_gadget_configure_ep(struct usb_gadget *gadget,
+		u8 type, struct usb_endpoint_descriptor *desc)
+{
+	struct musb	*musb = gadget_to_musb(gadget);
+
+	return musb_platform_configure_ep(musb, type, desc);
+}
+
 static const struct usb_gadget_ops musb_gadget_operations = {
 	.get_frame		= musb_gadget_get_frame,
 	.wakeup			= musb_gadget_wakeup,
@@ -1762,6 +1792,7 @@ static const struct usb_gadget_ops musb_gadget_operations = {
 	.pullup			= musb_gadget_pullup,
 	.udc_start		= musb_gadget_start,
 	.udc_stop		= musb_gadget_stop,
+	.configure_ep		= musb_gadget_configure_ep,
 };
 
 /* ----------------------------------------------------------------------- */

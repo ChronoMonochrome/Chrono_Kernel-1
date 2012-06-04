@@ -977,4 +977,15 @@ config USB_G_WEBCAM
 
 endchoice
 
+config USB_OTG_20
+	bool "OTG 2.0 USB SUPPORT"
+	select USB_OTG
+	select PM_RUNTIME
+	select USB_OTG_WHITELIST
+	select USB_SUSPEND
+	default n
+	help
+	Enabling the whitelist (Target Peripheral List-TPL) and runtime power
+	management at system level and usb level for OTG 2.0.
+
 endif # USB_GADGET

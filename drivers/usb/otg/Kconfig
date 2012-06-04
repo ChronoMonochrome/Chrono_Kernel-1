@@ -108,6 +108,15 @@ config AB8500_USB
 	  This transceiver supports high and full speed devices plus,
 	  in host mode, low speed.
 
+config AB5500_USB
+        tristate "AB5500 USB Transceiver Driver"
+        depends on AB5500_CORE
+        select USB_OTG_UTILS
+        help
+          Enable this to support the USB OTG transceiver in AB5500 chip.
+          This transceiver supports high and full speed devices plus,
+          in host mode, low speed.
+
 config FSL_USB2_OTG
 	bool "Freescale USB OTG Transceiver Driver"
 	depends on USB_EHCI_FSL && USB_GADGET_FSL_USB2 && USB_SUSPEND

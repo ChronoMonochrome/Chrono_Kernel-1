@@ -520,9 +520,8 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb,
 	/* see manual for the order of the tests */
 	if (int_usb & MUSB_INTR_SESSREQ) {
 		void __iomem *mbase = musb->mregs;
-
 		if ((devctl & MUSB_DEVCTL_VBUS) == MUSB_DEVCTL_VBUS
-				&& (devctl & MUSB_DEVCTL_BDEVICE)) {
+				|| (devctl & MUSB_DEVCTL_BDEVICE)) {
 			dev_dbg(musb->controller, "SessReq while on B state\n");
 			return IRQ_HANDLED;
 		}
@@ -715,6 +714,9 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb,
 b_host:
 			musb->xceiv->state = OTG_STATE_B_HOST;
 			hcd->self.is_b_host = 1;
+#ifdef CONFIG_USB_OTG_20
+			musb->g.otg_hnp_reqd = 0;
+#endif
 			musb->ignore_disconnect = 0;
 			del_timer(&musb->otg_timer);
 			break;
@@ -1036,9 +1038,6 @@ static void musb_shutdown(struct platform_device *pdev)
 	|| defined(CONFIG_USB_MUSB_AM35X)		\
 	|| defined(CONFIG_USB_MUSB_AM35X_MODULE)
 static ushort __devinitdata fifo_mode = 4;
-#elif defined(CONFIG_USB_MUSB_UX500)			\
-	|| defined(CONFIG_USB_MUSB_UX500_MODULE)
-static ushort __devinitdata fifo_mode = 5;
 #else
 static ushort __devinitdata fifo_mode = 2;
 #endif
@@ -1123,8 +1122,8 @@ static struct musb_fifo_cfg __devinitdata mode_4_cfg[] = {
 
 /* mode 5 - fits in 8KB */
 static struct musb_fifo_cfg __devinitdata mode_5_cfg[] = {
-{ .hw_ep_num =  1, .style = FIFO_TX,   .maxpacket = 512, },
-{ .hw_ep_num =  1, .style = FIFO_RX,   .maxpacket = 512, },
+{ .hw_ep_num =  1, .style = FIFO_TX,   .maxpacket = 512, .mode = BUF_DOUBLE, },
+{ .hw_ep_num =  1, .style = FIFO_RX,   .maxpacket = 512, .mode = BUF_DOUBLE },
 { .hw_ep_num =  2, .style = FIFO_TX,   .maxpacket = 512, },
 { .hw_ep_num =  2, .style = FIFO_RX,   .maxpacket = 512, },
 { .hw_ep_num =  3, .style = FIFO_TX,   .maxpacket = 512, },
@@ -1752,7 +1751,9 @@ musb_srp_store(struct device *dev, struct device_attribute *attr,
 {
 	struct musb	*musb = dev_to_musb(dev);
 	unsigned short	srp;
-
+#ifdef CONFIG_USB_OTG_20
+	musb->xceiv->start_srp(musb->xceiv);
+#endif
 	if (sscanf(buf, "%hu", &srp) != 1
 			|| (srp != 1)) {
 		dev_err(dev, "SRP: Value must be 1\n");
@@ -1766,10 +1767,45 @@ musb_srp_store(struct device *dev, struct device_attribute *attr,
 }
 static DEVICE_ATTR(srp, 0644, NULL, musb_srp_store);
 
+static ssize_t
+ux500_set_extvbus(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t n)
+{
+	struct musb_hdrc_platform_data *plat = dev->platform_data;
+	unsigned short	extvbus;
+
+	if (sscanf(buf, "%hu", &extvbus) != 1
+			|| ((extvbus != 1) && (extvbus != 0))) {
+		dev_err(dev, "Invalid value EXTVBUS must be 1 or 0\n");
+		return -EINVAL;
+	}
+
+	plat->extvbus = extvbus;
+
+	return n;
+}
+
+static ssize_t
+ux500_get_extvbus(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct musb_hdrc_platform_data *plat = dev->platform_data;
+	int		extvbus;
+
+	/* FIXME get_vbus_status() is normally #defined as false...
+	 * and is effectively TUSB-specific.
+	 */
+	extvbus = plat->extvbus;
+
+	return sprintf(buf, "EXTVBUS is %s\n",
+			extvbus ? "on" : "off");
+}
+static DEVICE_ATTR(extvbus, 0644, ux500_get_extvbus, ux500_set_extvbus);
+
 static struct attribute *musb_attributes[] = {
 	&dev_attr_mode.attr,
 	&dev_attr_vbus.attr,
 	&dev_attr_srp.attr,
+	&dev_attr_extvbus.attr,
 	NULL
 };
 
@@ -1886,7 +1922,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 		status = -ENODEV;
 		goto fail0;
 	}
-
 	/* allocate */
 	musb = allocate_instance(dev, plat->config, ctrl);
 	if (!musb) {
@@ -2330,7 +2365,7 @@ static int musb_suspend(struct device *dev)
 	return 0;
 }
 
-static int musb_resume_noirq(struct device *dev)
+static int musb_resume(struct device *dev)
 {
 	/* for static cmos like DaVinci, register values were preserved
 	 * unless for some reason the whole soc powered down or the USB
@@ -2371,12 +2406,16 @@ static int musb_runtime_resume(struct device *dev)
 
 static const struct dev_pm_ops musb_dev_pm_ops = {
 	.suspend	= musb_suspend,
-	.resume_noirq	= musb_resume_noirq,
+	.resume		= musb_resume,
 	.runtime_suspend = musb_runtime_suspend,
 	.runtime_resume = musb_runtime_resume,
 };
-
+#ifdef CONFIG_UX500_SOC_DB8500
 #define MUSB_DEV_PM_OPS (&musb_dev_pm_ops)
+#else
+#define MUSB_DEV_PM_OPS NULL
+#endif
+
 #else
 #define	MUSB_DEV_PM_OPS	NULL
 #endif
