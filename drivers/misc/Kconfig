@@ -451,6 +451,20 @@ config ARM_CHARLCD
 	  line and the Linux version on the second line, but that's
 	  still useful.
 
+config STE_TRACE_MODEM
+	tristate "DB8500 trace Modem"
+	depends on ARCH_U8500
+	default n
+	help
+	 Select this option to enable modem tracing by APE
+
+config DBX500_MLOADER
+	tristate "Modem firmware loader for db8500"
+	default n
+	depends on UX500_SOC_DB8500 || UX500_SOC_DB5500
+	help
+	  Provides a user interface to load modem firmware on dbx500 SOCs
+
 config BMP085
 	tristate "BMP085 digital pressure sensor"
 	depends on I2C && SYSFS
@@ -523,6 +537,22 @@ config HWMEM
 	  can be used by hardware. It also enables accessing hwmem allocated
 	  memory buffers through a secure id which can be shared across processes.
 
+config U5500_MBOX
+	bool "Mailbox support"
+	depends on (UX500_SOC_DB5500 && U5500_MODEM_IRQ)
+	default y
+	help
+	  Add support for U5500 mailbox communication with modem side
+
+config U8500_SIM_DETECT
+	bool "Sim hot swap detection support"
+	depends on (MODEM && UX500_SOC_DB8500)
+	default n
+	help
+	  Add support for sim hot swap detection support in U8500.Driver
+	  basically wakes up the modem if its sleeping when sim hot plug
+	  in/out has happened.
+
 config USB_SWITCH_FSA9480
 	tristate "FSA9480 USB Switch"
 	depends on I2C
@@ -549,4 +579,5 @@ source "drivers/misc/ti-st/Kconfig"
 source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
+source "drivers/misc/modem_audio/Kconfig"
 endmenu

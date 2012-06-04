@@ -208,4 +208,18 @@ source "arch/arm/mach-ux500/test/Kconfig"
 
 source "arch/arm/mach-ux500/Kconfig-arch"
 
+config DB8500_MLOADER
+	bool "Modem firmware upload/download support"
+	depends on UX500_SOC_DB8500
+	select DBX500_MLOADER
+	help
+	  Adds Modem firmware upload/download support to DB8500.
+
+config U5500_MLOADER
+	bool "mLoader, mem config from kernel boot args exported to sysfs"
+	depends on UX500_SOC_DB5500
+	help
+	  Link between boot args and user space program that loads the modem ELF.
+	  This is used to expose the modem parameters using sysfs interface.
+
 endif

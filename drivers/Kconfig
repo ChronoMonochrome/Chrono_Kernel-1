@@ -142,5 +142,7 @@ source "drivers/virt/Kconfig"
 
 source "drivers/devfreq/Kconfig"
 
+source "drivers/modem/Kconfig"
+
 endmenu
 

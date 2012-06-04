@@ -40,6 +40,7 @@ typedef void mbox_recv_cb_t (u32 mbox_msg, void *priv);
   * @lock:		Spinlock to protect this mailbox instance.
   * @write_index:	Index in internal buffer to write to.
   * @read_index:	Index in internal buffer to read from.
+  * @irq:		mailbox interrupt.
   * @allocated:		Indicates whether this particular mailbox
   *			id has been allocated by someone.
   */
@@ -57,7 +58,11 @@ struct mbox {
 	spinlock_t lock;
 	u8 write_index;
 	u8 read_index;
+	int irq;
 	bool allocated;
+#if defined(CONFIG_DEBUG_FS)
+	struct dentry *dentry;
+#endif
 };
 
 /**
@@ -84,5 +89,5 @@ struct mbox *mbox_setup(u8 mbox_id, mbox_recv_cb_t *mbox_cb, void *priv);
   * specify "block" in order to block until send is possible).
   */
 int mbox_send(struct mbox *mbox, u32 mbox_msg, bool block);
-
+void mbox_state_reset(void);
 #endif /*INC_STE_MBOX_H*/

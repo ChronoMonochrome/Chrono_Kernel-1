@@ -70,3 +70,8 @@ obj-$(CONFIG_USB_IPHETH)        += usb/
 obj-$(CONFIG_USB_CDC_PHONET)   += usb/
 
 obj-$(CONFIG_HYPERV_NET) += hyperv/
+
+ifdef CONFIG_PHONET
+obj-$(CONFIG_U8500_SHRM) += u8500_shrm.o
+obj-$(CONFIG_MODEM_M6718_SPI) += m6718_modem_net.o
+endif
