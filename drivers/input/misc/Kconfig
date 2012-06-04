@@ -22,12 +22,26 @@ config INPUT_88PM860X_ONKEY
 	  To compile this driver as a module, choose M here: the module
 	  will be called 88pm860x_onkey.
 
-config INPUT_AB8500_PONKEY
-	tristate "AB8500 Pon (PowerOn) Key"
-	depends on AB8500_CORE
+config INPUT_AB8500_ACCDET
+	bool "AB8500 AV Accessory detection"
+	depends on AB8500_CORE && AB8500_GPADC && GPIO_AB8500
 	help
-	  Say Y here to use the PowerOn Key for ST-Ericsson's AB8500
-	  Mix-Sig PMIC.
+	  Say Y here to enable AV accessory detection features for ST-Ericsson's
+	  AB8500 Mix-Sig PMIC.
+
+config INPUT_AB5500_ACCDET
+	bool "AB5500 AV Accessory detection"
+	depends on AB5500_CORE && AB5500_GPADC
+	help
+	  Say Y here to enable AV accessory detection features for ST-Ericsson's
+	  AB5500 Mix-Sig PMIC.
+
+config INPUT_AB8500_PONKEY
+	tristate "AB5500/AB8500 Pon (PowerOn) Key"
+	depends on AB5500_CORE || AB8500_CORE
+	help
+	  Say Y here to use the PowerOn Key for ST-Ericsson's AB5500/AB8500
+	  Mix-Sig PMICs.
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called ab8500-ponkey.
@@ -590,4 +604,14 @@ config INPUT_XEN_KBDDEV_FRONTEND
 	  To compile this driver as a module, choose M here: the
 	  module will be called xen-kbdfront.
 
+config INPUT_STE_FF_VIBRA
+	tristate "ST-Ericsson Force Feedback Vibrator"
+	depends on STE_AUDIO_IO_DEV
+	select INPUT_FF_MEMLESS
+	help
+	  This option enables support for ST-Ericsson's Vibrator which
+	  registers as an input force feedback driver.
+
+	  To compile this driver as a module, choose M here. The module will
+	  be called ste_ff_vibra.
 endif

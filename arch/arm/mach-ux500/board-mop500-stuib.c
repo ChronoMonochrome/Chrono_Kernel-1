@@ -214,9 +214,19 @@ static struct bu21013_platform_device tsc_plat_device = {
 	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
-	.ext_clk = false,
-	.x_flip = false,
-	.y_flip = true,
+	.x_max_res = 480,
+	.y_max_res = 864,
+	.portrait = true,
+	.has_ext_clk = true,
+	.enable_ext_clk = false,
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
+		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
+	.x_flip		= true,
+	.y_flip		= false,
+#else
+	.x_flip		= false,
+	.y_flip		= true,
+#endif
 };
 
 static struct bu21013_platform_device tsc_plat2_device = {
@@ -226,9 +236,19 @@ static struct bu21013_platform_device tsc_plat2_device = {
 	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
 	.touch_x_max = TOUCH_XMAX,
 	.touch_y_max = TOUCH_YMAX,
-	.ext_clk = false,
-	.x_flip = false,
-	.y_flip = true,
+	.x_max_res = 480,
+	.y_max_res = 864,
+	.portrait = true,
+	.has_ext_clk = true,
+	.enable_ext_clk = false,
+#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
+		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
+	.x_flip		= true,
+	.y_flip		= false,
+#else
+	.x_flip		= false,
+	.y_flip		= true,
+#endif
 };
 
 static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
