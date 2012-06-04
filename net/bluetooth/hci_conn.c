@@ -42,6 +42,7 @@
 
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h>
+#include <net/bluetooth/sco.h>
 
 static void hci_le_connect(struct hci_conn *conn)
 {
@@ -146,8 +147,13 @@ void hci_add_sco(struct hci_conn *conn, __u16 handle)
 {
 	struct hci_dev *hdev = conn->hdev;
 	struct hci_cp_add_sco cp;
+	struct bt_sco_parameters *p = conn->sco_parameters;
+	__u16 pkt_type;
 
 	BT_DBG("%p", conn);
+
+	/* HCI_Add_SCO_Connection uses shifted bitmask for packet type */
+	pkt_type = (p->pkt_type << 5) & conn->pkt_type;
 
 	conn->state = BT_CONNECT;
 	conn->out = true;
@@ -155,7 +161,7 @@ void hci_add_sco(struct hci_conn *conn, __u16 handle)
 	conn->attempt++;
 
 	cp.handle   = cpu_to_le16(handle);
-	cp.pkt_type = cpu_to_le16(conn->pkt_type);
+	cp.pkt_type = cpu_to_le16(pkt_type);
 
 	hci_send_cmd(hdev, HCI_OP_ADD_SCO, sizeof(cp), &cp);
 }
@@ -164,8 +170,21 @@ void hci_setup_sync(struct hci_conn *conn, __u16 handle)
 {
 	struct hci_dev *hdev = conn->hdev;
 	struct hci_cp_setup_sync_conn cp;
+	struct bt_sco_parameters *p = conn->sco_parameters;
+	__u16 voice_setting;
+	__u16 pkt_type;
 
 	BT_DBG("%p", conn);
+
+	/*
+	 * Combine voice setting using device parameters and air coding
+	 * format set by user.
+	 */
+	voice_setting = (hdev->voice_setting & 0xfffc) |
+					(p->voice_setting & 0x0003);
+
+	/* Bits for EDR packets have inverted logic in BT spec. */
+	pkt_type = (p->pkt_type & conn->pkt_type) ^ EDR_ESCO_MASK;
 
 	conn->state = BT_CONNECT;
 	conn->out = true;
@@ -173,13 +192,13 @@ void hci_setup_sync(struct hci_conn *conn, __u16 handle)
 	conn->attempt++;
 
 	cp.handle   = cpu_to_le16(handle);
-	cp.pkt_type = cpu_to_le16(conn->pkt_type);
 
-	cp.tx_bandwidth   = cpu_to_le32(0x00001f40);
-	cp.rx_bandwidth   = cpu_to_le32(0x00001f40);
-	cp.max_latency    = cpu_to_le16(0xffff);
-	cp.voice_setting  = cpu_to_le16(hdev->voice_setting);
-	cp.retrans_effort = 0xff;
+	cp.tx_bandwidth   = cpu_to_le32(p->tx_bandwidth);
+	cp.rx_bandwidth   = cpu_to_le32(p->rx_bandwidth);
+	cp.max_latency    = cpu_to_le16(p->max_latency);
+	cp.voice_setting  = cpu_to_le16(voice_setting);
+	cp.retrans_effort = p->retrans_effort;
+	cp.pkt_type       = cpu_to_le16(pkt_type);
 
 	hci_send_cmd(hdev, HCI_OP_SETUP_SYNC_CONN, sizeof(cp), &cp);
 }
@@ -360,7 +379,8 @@ static void hci_conn_auto_accept(unsigned long arg)
 								&conn->dst);
 }
 
-struct hci_conn *hci_conn_add(struct hci_dev *hdev, int type, bdaddr_t *dst)
+struct hci_conn *hci_conn_add(struct hci_dev *hdev, int type,
+					 bdaddr_t *dst)
 {
 	struct hci_conn *conn;
 
@@ -389,13 +409,12 @@ struct hci_conn *hci_conn_add(struct hci_dev *hdev, int type, bdaddr_t *dst)
 		break;
 	case SCO_LINK:
 		if (lmp_esco_capable(hdev))
-			conn->pkt_type = (hdev->esco_type & SCO_ESCO_MASK) |
-					(hdev->esco_type & EDR_ESCO_MASK);
+			conn->pkt_type = hdev->esco_type & SCO_ESCO_MASK;
 		else
 			conn->pkt_type = hdev->pkt_type & SCO_PTYPE_MASK;
 		break;
 	case ESCO_LINK:
-		conn->pkt_type = hdev->esco_type & ~EDR_ESCO_MASK;
+		conn->pkt_type = hdev->esco_type;
 		break;
 	}
 
@@ -513,7 +532,9 @@ EXPORT_SYMBOL(hci_get_route);
 
 /* Create SCO, ACL or LE connection.
  * Device _must_ be locked */
-struct hci_conn *hci_connect(struct hci_dev *hdev, int type, bdaddr_t *dst, __u8 sec_level, __u8 auth_type)
+struct hci_conn *hci_connect(struct hci_dev *hdev, int type, bdaddr_t *dst,
+				__u8 sec_level, __u8 auth_type,
+				struct bt_sco_parameters *sco_parameters)
 {
 	struct hci_conn *acl;
 	struct hci_conn *sco;
@@ -577,6 +598,8 @@ struct hci_conn *hci_connect(struct hci_dev *hdev, int type, bdaddr_t *dst, __u8
 	sco->link = acl;
 
 	hci_conn_hold(sco);
+
+	sco->sco_parameters = sco_parameters;
 
 	if (acl->state == BT_CONNECTED &&
 			(sco->state == BT_OPEN || sco->state == BT_CLOSED)) {
@@ -925,8 +948,10 @@ int hci_get_auth_info(struct hci_dev *hdev, void __user *arg)
 
 	hci_dev_lock(hdev);
 	conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, &req.bdaddr);
-	if (conn)
+	if (conn) {
 		req.type = conn->auth_type;
+		req.sec_level = max(conn->sec_level, conn->pending_sec_level);
+	}
 	hci_dev_unlock(hdev);
 
 	if (!conn)

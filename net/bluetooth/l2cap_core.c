@@ -1219,10 +1219,10 @@ int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid, bdaddr_t *d
 
 	if (chan->dcid == L2CAP_CID_LE_DATA)
 		hcon = hci_connect(hdev, LE_LINK, dst,
-					chan->sec_level, auth_type);
+					chan->sec_level, auth_type, NULL);
 	else
 		hcon = hci_connect(hdev, ACL_LINK, dst,
-					chan->sec_level, auth_type);
+					chan->sec_level, auth_type, NULL);
 
 	if (IS_ERR(hcon)) {
 		err = PTR_ERR(hcon);
