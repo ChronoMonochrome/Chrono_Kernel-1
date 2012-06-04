@@ -1,12 +1,12 @@
 #This Makefile can be called to do an out-of-kernel build of tha mali kernel module.
 #It is not used when mali is built from the kernel build system.
-
 CROSS_COMPILE ?= arm-eabi-
 
 ifeq ($(TARGET_PRODUCT),ste_u5500)
 CONFIG_UX500_SOC_DB5500=y
 export CONFIG_UX500_SOC_DB5500
 endif
+
 
 PWD:=$(shell pwd)
 

@@ -1,8 +1,6 @@
 #these are the build options for the ST-Ericsson Ux500 platforms.
 
 ifeq ($(CONFIG_UX500_SOC_DB5500),y)
-TARGET_PLATFORM = default
-USING_GPU_UTILIZATION = 0
 DEFINES += -DSOC_DB5500=1
 endif
 
@@ -25,21 +23,6 @@ endif
 
 KDIR-$(CPU)=$(srctree)
 
-#these are paths relative to the mali400ko/driver/src/devicedrv/mali folder
-#not to be confused with the drivers/gpu/mali symlink in the kernel tree
 EXTRA_CFLAGS += -I$(realpath $(DRIVER_DIR)/../../../include/ump)
 EXTRA_CFLAGS += -I$(realpath $(DRIVER_DIR)/../ump/common)
 
-#The following is duplicated from the main Makefile to ensure that the 'arch'
-#link is created even during an in-kernel build.
-
-# Validate selected config
-ifneq ($(shell [ -d $(DRIVER_DIR)/arch-$(CONFIG) ] && [ -f $(DRIVER_DIR)/arch-$(CONFIG)/config.h ] && echo "OK"), OK)
-$(warning Current directory is $(shell pwd))
-$(error No configuration found for config $(CONFIG). Check that $(DRIVER_DIR)/arch-$(CONFIG)/config.h exists)
-else
-# Link arch to the selected arch-config directory
-$(shell [ -L $(DRIVER_DIR)/arch ] && rm $(DRIVER_DIR)/arch)
-$(shell ln -sf $(DRIVER_DIR)/arch-$(CONFIG) $(DRIVER_DIR)/arch)
-$(shell touch $(DRIVER_DIR)/arch/config.h)
-endif

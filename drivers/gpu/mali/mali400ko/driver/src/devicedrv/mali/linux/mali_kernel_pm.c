@@ -12,12 +12,9 @@
  * @file mali_kernel_pm.c
  * Implementation of the Linux Power Management for Mali GPU kernel driver
  */
-#undef CONFIG_HAS_EARLYSUSPEND /*ARM will remove .early_suspend support for r2p2_rel*/
+
 #if USING_MALI_PMM
 #include <linux/sched.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 
 #ifdef CONFIG_PM_RUNTIME
 #include <linux/pm_runtime.h>
@@ -27,7 +24,6 @@
 #include <linux/platform_device.h>
 #include <linux/version.h>
 #include <asm/current.h>
-#include <asm/delay.h>
 #include <linux/suspend.h>
 
 #include "mali_platform.h" 
@@ -48,13 +44,12 @@
 #if MALI_POWER_MGMT_TEST_SUITE
 #ifdef CONFIG_PM
 #include "mali_linux_pm_testsuite.h"
+#include "mali_platform_pmu_internal_testing.h"
 unsigned int pwr_mgmt_status_reg = 0;
 #endif /* CONFIG_PM */
 #endif /* MALI_POWER_MGMT_TEST_SUITE */
 
-#if MALI_STATE_TRACKING
-	int is_os_pmm_thread_waiting = -1;
-#endif /* MALI_STATE_TRACKING */
+static int is_os_pmm_thread_waiting = 0;
 
 /* kernel should be configured with power management support */
 #ifdef CONFIG_PM
@@ -75,29 +70,19 @@ unsigned int pwr_mgmt_status_reg = 0;
 static const char* const mali_states[_MALI_MAX_DEBUG_OPERATIONS] = {
 	[_MALI_DEVICE_SUSPEND] = "suspend",
 	[_MALI_DEVICE_RESUME] = "resume",
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	[_MALI_DEVICE_EARLYSUSPEND_DISABLE_FB] = "early_suspend_level_disable_framebuffer",
-	[_MALI_DEVICE_LATERESUME] = "late_resume",
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 	[_MALI_DVFS_PAUSE_EVENT] = "dvfs_pause",
 	[_MALI_DVFS_RESUME_EVENT] = "dvfs_resume",
 };
 
 #endif /* CONFIG_PM_DEBUG */
 
-#if MALI_PMM_RUNTIME_JOB_CONTROL_ON
-extern void set_mali_parent_power_domain(struct platform_device* dev);
-#endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
-
 #ifdef CONFIG_PM_RUNTIME
 #if MALI_PMM_RUNTIME_JOB_CONTROL_ON
-#ifndef CONFIG_HAS_EARLYSUSPEND
 static int mali_pwr_suspend_notifier(struct notifier_block *nb,unsigned long event,void* dummy);
 
 static struct notifier_block mali_pwr_notif_block = {
 	.notifier_call = mali_pwr_suspend_notifier
 };
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 #endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
 #endif /* CONFIG_PM_RUNTIME */
 
@@ -147,12 +132,6 @@ static int mali_device_runtime_suspend(struct device *dev);
 static int mali_device_runtime_resume(struct device *dev);
 #endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
 #endif /* CONFIG_PM_RUNTIME */
-
-/* Early suspend functions */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void mali_pm_early_suspend(struct early_suspend *mali_dev);
-static void mali_pm_late_resume(struct early_suspend *mali_dev);
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 
 /* OS suspend and resume callbacks */
 #if !MALI_PMM_RUNTIME_JOB_CONTROL_ON
@@ -236,15 +215,6 @@ static struct platform_driver mali_plat_driver = {
 		},
 };
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-/* Early suspend hooks */
-static struct early_suspend mali_dev_early_suspend = {
-	.suspend = mali_pm_early_suspend,
-	.resume = mali_pm_late_resume,
-	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB,
-};
-#endif /* CONFIG_HAS_EARLYSUSPEND */
-
 /* Mali GPU platform device */
 struct platform_device mali_gpu_device = {
 	.name = "mali_dev",
@@ -313,13 +283,9 @@ int mali_device_suspend(unsigned int event_id, struct task_struct **pwr_mgmt_thr
 	*pwr_mgmt_thread = current;
 	MALI_DEBUG_PRINT(4, ("OSPMM: MALI device is being suspended\n" ));
 	_mali_ukk_pmm_event_message(&event);
-#if MALI_STATE_TRACKING
 	is_os_pmm_thread_waiting = 1;
-#endif /* MALI_STATE_TRACKING */
 	err = mali_wait_for_power_management_policy_event();
-#if MALI_STATE_TRACKING
 	is_os_pmm_thread_waiting = 0;
-#endif /* MALI_STATE_TRACKING */
 	return err;
 }
 
@@ -333,17 +299,11 @@ static int mali_pm_suspend(struct device *dev)
 #if MALI_GPU_UTILIZATION
 	mali_utilization_suspend();
 #endif /* MALI_GPU_UTILIZATION */
-	if ((mali_device_state == _MALI_DEVICE_SUSPEND) 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	    || mali_device_state ==  (_MALI_DEVICE_EARLYSUSPEND_DISABLE_FB))
-#else
-	)
-#endif /* CONFIG_HAS_EARLYSUSPEND */
+	if ((mali_device_state == _MALI_DEVICE_SUSPEND))
 	{
 		_mali_osk_lock_signal(lock, _MALI_OSK_LOCKMODE_RW);
 		return err;
 	}
-	mali_device_state = _MALI_DEVICE_SUSPEND_IN_PROGRESS;
 	err = mali_device_suspend(MALI_PMM_EVENT_OS_POWER_DOWN, &pm_thread);
 	mali_device_state = _MALI_DEVICE_SUSPEND;
 	_mali_osk_lock_signal(lock, _MALI_OSK_LOCKMODE_RW);
@@ -367,7 +327,6 @@ static int mali_pm_os_suspend(struct device *dev)
 
 #ifdef CONFIG_PM_RUNTIME
 #if MALI_PMM_RUNTIME_JOB_CONTROL_ON
-#ifndef CONFIG_HAS_EARLYSUSPEND
 static int mali_pwr_suspend_notifier(struct notifier_block *nb,unsigned long event,void* dummy)
 {
 	int err = 0;
@@ -385,7 +344,6 @@ static int mali_pwr_suspend_notifier(struct notifier_block *nb,unsigned long eve
 	}
 	return 0;
 }
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 #endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
 #endif /* CONFIG_PM_RUNTIME */
 
@@ -402,17 +360,9 @@ int mali_device_resume(unsigned int event_id, struct task_struct **pwr_mgmt_thre
 	MALI_DEBUG_PRINT(4, ("OSPMM: MALI device is being resumed\n" ));
 	_mali_ukk_pmm_event_message(&event);
 	MALI_DEBUG_PRINT(4, ("OSPMM: MALI Power up  event is scheduled\n" ));
-
-#if MALI_STATE_TRACKING
 	is_os_pmm_thread_waiting = 1;
-#endif /* MALI_STATE_TRACKING */
-
 	err = mali_wait_for_power_management_policy_event();
-
-#if MALI_STATE_TRACKING
 	is_os_pmm_thread_waiting = 0;
-#endif /* MALI_STATE_TRACKING */
-
 	return err;
 }
 
@@ -484,69 +434,6 @@ static int mali_device_runtime_resume(struct device *dev)
 #endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
 #endif /*  CONFIG_PM_RUNTIME */
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-
-/* This function is called from android framework.
- */
-static void mali_pm_early_suspend(struct early_suspend *mali_dev)
-{
-	switch(mali_dev->level)
-	{
-		/* Screen should be turned off but framebuffer will be accessible */
-		case EARLY_SUSPEND_LEVEL_BLANK_SCREEN:
-			MALI_DEBUG_PRINT(4, ("PMMDEBUG: Screen is off\n" ));
-		break;
-
-		case EARLY_SUSPEND_LEVEL_STOP_DRAWING:
-			MALI_DEBUG_PRINT(4, ("PMMDEBUG: Suspend level stop drawing\n" ));
-		break;
-
-		/* Turn off the framebuffer. In our case No Mali GPU operation */
-		case EARLY_SUSPEND_LEVEL_DISABLE_FB:
-			MALI_DEBUG_PRINT(4, ("PMMDEBUG: Suspend level Disable framebuffer\n" ));
-			_mali_osk_lock_wait(lock, _MALI_OSK_LOCKMODE_RW);
-#if MALI_GPU_UTILIZATION
-			mali_utilization_suspend();
-#endif /* MALI_GPU_UTILIZATION */
-			if ((mali_device_state == _MALI_DEVICE_SUSPEND) || (mali_device_state == _MALI_DEVICE_EARLYSUSPEND_DISABLE_FB))
-			{
-				_mali_osk_lock_signal(lock, _MALI_OSK_LOCKMODE_RW);
-				return;
-			}
-			mali_device_suspend(MALI_PMM_EVENT_OS_POWER_DOWN, &pm_thread);
-			mali_device_state =  _MALI_DEVICE_EARLYSUSPEND_DISABLE_FB;
-			_mali_osk_lock_signal(lock, _MALI_OSK_LOCKMODE_RW);
-		break;
-
-		default:
-			MALI_DEBUG_PRINT(4, ("PMMDEBUG: Invalid Suspend Mode\n" ));
-		break;
-	}
-}
-
-/* This function is invoked from android framework when mali device needs to be
- * resumed.
- */
-static void mali_pm_late_resume(struct early_suspend *mali_dev)
-{
-	_mali_osk_lock_wait(lock, _MALI_OSK_LOCKMODE_RW);
-	if (mali_device_state == _MALI_DEVICE_RESUME)
-	{
-		_mali_osk_lock_signal(lock, _MALI_OSK_LOCKMODE_RW);
-		return;
-	}
-	if (mali_device_state ==  _MALI_DEVICE_EARLYSUSPEND_DISABLE_FB)
-	{
-		mali_device_resume(MALI_PMM_EVENT_OS_POWER_UP, &pm_thread);
-		mali_dvfs_device_state = _MALI_DEVICE_RESUME;
-		mali_device_state =  _MALI_DEVICE_RESUME;
-	}
-	_mali_osk_lock_signal(lock, _MALI_OSK_LOCKMODE_RW);
-	
-}
-
-#endif /* CONFIG_HAS_EARLYSUSPEND */
-
 #ifdef CONFIG_PM_DEBUG
 
 /** This function is used for debugging purposes when the user want to see
@@ -578,9 +465,6 @@ static ssize_t show_file(struct device *dev, struct device_attribute *attr, char
 static ssize_t store_file(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int err = 0;
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	struct early_suspend mali_dev;
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 
 #if MALI_POWER_MGMT_TEST_SUITE
 	int test_flag_dvfs = 0;
@@ -618,19 +502,6 @@ static ssize_t store_file(struct device *dev, struct device_attribute *attr, con
 		MALI_DEBUG_PRINT(4, ("PMMDEBUG: MALI Resume Power operation is scheduled\n" ));
 		err = mali_pm_resume(NULL);
 	}
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	else if (!strncmp(buf,mali_states[_MALI_DEVICE_EARLYSUSPEND_DISABLE_FB],strlen(mali_states[_MALI_DEVICE_EARLYSUSPEND_DISABLE_FB]))) 
-	{
-		mali_dev.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
-		MALI_DEBUG_PRINT(4, ("PMMDEBUG: Android early suspend operation is scheduled\n" ));
-		mali_pm_early_suspend(&mali_dev);
-	}
-	else if (!strncmp(buf,mali_states[_MALI_DEVICE_LATERESUME],strlen(mali_states[_MALI_DEVICE_LATERESUME]))) 
-	{
-		MALI_DEBUG_PRINT(4, ("PMMDEBUG: MALI Resume Power operation is scheduled\n" ));
-		mali_pm_late_resume(NULL);
-	}
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 	else if (!strncmp(buf,mali_states[_MALI_DVFS_PAUSE_EVENT],strlen(mali_states[_MALI_DVFS_PAUSE_EVENT])))
 	{
 		MALI_DEBUG_PRINT(4, ("PMMDEBUG: MALI DVFS Pause Power operation is scheduled\n" ));
@@ -711,11 +582,10 @@ int _mali_dev_platform_register(void)
 {
 	int err;
 #if MALI_PMM_RUNTIME_JOB_CONTROL_ON	
-	set_mali_parent_power_domain(&mali_gpu_device);
+	set_mali_parent_power_domain((void *)&mali_gpu_device);
 #endif
 
 #ifdef CONFIG_PM_RUNTIME
-#ifndef CONFIG_HAS_EARLYSUSPEND
 #if MALI_PMM_RUNTIME_JOB_CONTROL_ON
 	err = register_pm_notifier(&mali_pwr_notif_block);
 	if (err)
@@ -723,28 +593,19 @@ int _mali_dev_platform_register(void)
 		return err;
 	}
 #endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 #endif /* CONFIG_PM_RUNTIME */
 	err = platform_device_register(&mali_gpu_device);
 	lock = _mali_osk_lock_init((_mali_osk_lock_flags_t)( _MALI_OSK_LOCKFLAG_READERWRITER | _MALI_OSK_LOCKFLAG_ORDERED), 0, 0);
 	if (!err) 
 	{
 		err = platform_driver_register(&mali_plat_driver);
-		if (!err)
-		{
-#ifdef CONFIG_HAS_EARLYSUSPEND
-			register_early_suspend(&mali_dev_early_suspend);
-#endif /* CONFIG_HAS_EARLYSUSPEND */
-		}
-		else
+		if (err)
 		{
 			_mali_osk_lock_term(lock);
 #ifdef CONFIG_PM_RUNTIME
-#ifndef CONFIG_HAS_EARLYSUSPEND
 #if MALI_PMM_RUNTIME_JOB_CONTROL_ON
 			unregister_pm_notifier(&mali_pwr_notif_block);
 #endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 #endif /* CONFIG_PM_RUNTIME */
 			platform_device_unregister(&mali_gpu_device);
 		}
@@ -758,29 +619,28 @@ void _mali_dev_platform_unregister(void)
 {
 	_mali_osk_lock_term(lock);
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	unregister_early_suspend(&mali_dev_early_suspend);
-#endif /* CONFIG_HAS_EARLYSUSPEND */
-
 #ifdef CONFIG_PM_RUNTIME
-#ifndef CONFIG_HAS_EARLYSUSPEND
 #if MALI_PMM_RUNTIME_JOB_CONTROL_ON
 	unregister_pm_notifier(&mali_pwr_notif_block);
 #endif /* MALI_PMM_RUNTIME_JOB_CONTROL_ON */
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 #endif /* CONFIG_PM_RUNTIME */
 
 	platform_driver_unregister(&mali_plat_driver);
 	platform_device_unregister(&mali_gpu_device);
 }
 
+int mali_get_ospmm_thread_state(void)
+{
+	return is_os_pmm_thread_waiting;
+}
+
 #endif /* MALI_LICENSE_IS_GPL */
 #endif /* CONFIG_PM */
 
 #if MALI_STATE_TRACKING
-void mali_pmm_dump_os_thread_state( void )
+u32 mali_pmm_dump_os_thread_state( char *buf, u32 size )
 {
-	MALI_PRINTF(("\nOSPMM::The OS PMM thread state is...%d",is_os_pmm_thread_waiting));
+	return snprintf(buf, size, "OSPMM: OS PMM thread is waiting: %s\n", is_os_pmm_thread_waiting ? "true" : "false");
 }
 #endif /* MALI_STATE_TRACKING */
 #endif /* USING_MALI_PMM */

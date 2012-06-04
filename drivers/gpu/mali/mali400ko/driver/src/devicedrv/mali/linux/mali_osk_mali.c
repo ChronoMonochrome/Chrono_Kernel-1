@@ -75,8 +75,7 @@ _mali_osk_errcode_t _mali_osk_resources_init( _mali_osk_resource_t **arch_config
 		if (0 < mem_size) {
 			int i;
 			for (i = 0; i < *num_resources; ++i) {
-				if ((MEMORY == arch_configuration[i].type) ||
-			            (OS_MEMORY == arch_configuration[i].type)) {
+				if (MEMORY == arch_configuration[i].type) {
 					MALI_DEBUG_PRINT( 1, ("Overriding arch resource[%d] :\n",i));
 					MALI_DEBUG_PRINT( 1, ("Type: %s, base: %x, size %x\n",
 						(OS_MEMORY==mem_type?"OS_MEMORY":"MEMORY"),mem_base,mem_size));
