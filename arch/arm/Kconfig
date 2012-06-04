@@ -1615,7 +1615,7 @@ config LOCAL_TIMERS
 config ARCH_NR_GPIO
 	int
 	default 1024 if ARCH_SHMOBILE || ARCH_TEGRA
-	default 355 if ARCH_U8500
+	default 366 if ARCH_U8500
 	default 264 if MACH_H4700
 	default 0
 	help

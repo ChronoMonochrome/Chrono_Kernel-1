@@ -23,12 +23,11 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/slab.h>
+#include <linux/gpio/nomadik.h>
 
 #include <asm/mach/irq.h>
 
 #include <plat/pincfg.h>
-#include <plat/gpio-nomadik.h>
-#include <mach/hardware.h>
 #include <asm/gpio.h>
 
 /*
@@ -58,8 +57,11 @@ struct nmk_gpio_chip {
 	u32 real_wake;
 	u32 rwimsc;
 	u32 fwimsc;
+	u32 rimsc;
+	u32 fimsc;
 	u32 slpm;
 	u32 pull_up;
+	u32 lowemi;
 };
 
 static struct nmk_gpio_chip *
@@ -124,6 +126,24 @@ static void __nmk_gpio_set_pull(struct nmk_gpio_chip *nmk_chip,
 	}
 }
 
+static void __nmk_gpio_set_lowemi(struct nmk_gpio_chip *nmk_chip,
+				  unsigned offset, bool lowemi)
+{
+	u32 bit = BIT(offset);
+	bool enabled = nmk_chip->lowemi & bit;
+
+	if (lowemi == enabled)
+		return;
+
+	if (lowemi)
+		nmk_chip->lowemi |= bit;
+	else
+		nmk_chip->lowemi &= ~bit;
+
+	writel_relaxed(nmk_chip->lowemi,
+		       nmk_chip->addr + NMK_GPIO_LOWEMI);
+}
+
 static void __nmk_gpio_make_input(struct nmk_gpio_chip *nmk_chip,
 				  unsigned offset)
 {
@@ -150,8 +170,8 @@ static void __nmk_gpio_set_mode_safe(struct nmk_gpio_chip *nmk_chip,
 				     unsigned offset, int gpio_mode,
 				     bool glitch)
 {
-	u32 rwimsc = readl(nmk_chip->addr + NMK_GPIO_RWIMSC);
-	u32 fwimsc = readl(nmk_chip->addr + NMK_GPIO_FWIMSC);
+	u32 rwimsc = nmk_chip->rwimsc;
+	u32 fwimsc = nmk_chip->fwimsc;
 
 	if (glitch && nmk_chip->set_ioforce) {
 		u32 bit = BIT(offset);
@@ -171,6 +191,36 @@ static void __nmk_gpio_set_mode_safe(struct nmk_gpio_chip *nmk_chip,
 		writel(rwimsc, nmk_chip->addr + NMK_GPIO_RWIMSC);
 		writel(fwimsc, nmk_chip->addr + NMK_GPIO_FWIMSC);
 	}
+}
+
+static void
+nmk_gpio_disable_lazy_irq(struct nmk_gpio_chip *nmk_chip, unsigned offset)
+{
+	u32 falling = nmk_chip->fimsc & BIT(offset);
+	u32 rising = nmk_chip->rimsc & BIT(offset);
+	int gpio = nmk_chip->chip.base + offset;
+	int irq = NOMADIK_GPIO_TO_IRQ(gpio);
+	struct irq_data *d = irq_get_irq_data(irq);
+
+	if (!rising && !falling)
+		return;
+
+	if (!d || !irqd_irq_disabled(d))
+		return;
+
+	if (rising) {
+		nmk_chip->rimsc &= ~BIT(offset);
+		writel_relaxed(nmk_chip->rimsc,
+			       nmk_chip->addr + NMK_GPIO_RIMSC);
+	}
+
+	if (falling) {
+		nmk_chip->fimsc &= ~BIT(offset);
+		writel_relaxed(nmk_chip->fimsc,
+			       nmk_chip->addr + NMK_GPIO_FIMSC);
+	}
+
+	dev_dbg(nmk_chip->chip.dev, "%d: clearing interrupt mask\n", gpio);
 }
 
 static void __nmk_config_pin(struct nmk_gpio_chip *nmk_chip, unsigned offset,
@@ -237,6 +287,17 @@ static void __nmk_config_pin(struct nmk_gpio_chip *nmk_chip, unsigned offset,
 		__nmk_gpio_make_input(nmk_chip, offset);
 		__nmk_gpio_set_pull(nmk_chip, offset, pull);
 	}
+
+	__nmk_gpio_set_lowemi(nmk_chip, offset, PIN_LOWEMI(cfg));
+
+	/*
+	 * If the pin is switching to altfunc, and there was an interrupt
+	 * installed on it which has been lazy disabled, actually mask the
+	 * interrupt to prevent spurious interrupts that would occur while the
+	 * pin is under control of the peripheral.  Only SKE does this.
+	 */
+	if (af != NMK_GPIO_ALT_GPIO)
+		nmk_gpio_disable_lazy_irq(nmk_chip, offset);
 
 	/*
 	 * If we've backed up the SLPM registers (glitch workaround), modify
@@ -556,27 +617,38 @@ static void __nmk_gpio_irq_modify(struct nmk_gpio_chip *nmk_chip,
 				  int gpio, enum nmk_gpio_irq_type which,
 				  bool enable)
 {
-	u32 rimsc = which == WAKE ? NMK_GPIO_RWIMSC : NMK_GPIO_RIMSC;
-	u32 fimsc = which == WAKE ? NMK_GPIO_FWIMSC : NMK_GPIO_FIMSC;
 	u32 bitmask = nmk_gpio_get_bitmask(gpio);
-	u32 reg;
+	u32 *rimscval;
+	u32 *fimscval;
+	u32 rimscreg;
+	u32 fimscreg;
+
+	if (which == NORMAL) {
+		rimscreg = NMK_GPIO_RIMSC;
+		fimscreg = NMK_GPIO_FIMSC;
+		rimscval = &nmk_chip->rimsc;
+		fimscval = &nmk_chip->fimsc;
+	} else  {
+		rimscreg = NMK_GPIO_RWIMSC;
+		fimscreg = NMK_GPIO_FWIMSC;
+		rimscval = &nmk_chip->rwimsc;
+		fimscval = &nmk_chip->fwimsc;
+	}
 
 	/* we must individually set/clear the two edges */
 	if (nmk_chip->edge_rising & bitmask) {
-		reg = readl(nmk_chip->addr + rimsc);
 		if (enable)
-			reg |= bitmask;
+			*rimscval |= bitmask;
 		else
-			reg &= ~bitmask;
-		writel(reg, nmk_chip->addr + rimsc);
+			*rimscval &= ~bitmask;
+		writel(*rimscval, nmk_chip->addr + rimscreg);
 	}
 	if (nmk_chip->edge_falling & bitmask) {
-		reg = readl(nmk_chip->addr + fimsc);
 		if (enable)
-			reg |= bitmask;
+			*fimscval |= bitmask;
 		else
-			reg &= ~bitmask;
-		writel(reg, nmk_chip->addr + fimsc);
+			*fimscval &= ~bitmask;
+		writel(*fimscval, nmk_chip->addr + fimscreg);
 	}
 }
 
@@ -1008,9 +1080,6 @@ void nmk_gpio_wakeups_suspend(void)
 
 		clk_enable(chip->clk);
 
-		chip->rwimsc = readl(chip->addr + NMK_GPIO_RWIMSC);
-		chip->fwimsc = readl(chip->addr + NMK_GPIO_FWIMSC);
-
 		writel(chip->rwimsc & chip->real_wake,
 		       chip->addr + NMK_GPIO_RWIMSC);
 		writel(chip->fwimsc & chip->real_wake,
@@ -1076,6 +1145,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
 	struct resource *res;
 	struct clk *clk;
 	int secondary_irq;
+	void __iomem *base;
 	int irq;
 	int ret;
 
@@ -1106,10 +1176,16 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
 		goto out;
 	}
 
+	base = ioremap(res->start, resource_size(res));
+	if (!base) {
+		ret = -ENOMEM;
+		goto out_release;
+	}
+
 	clk = clk_get(&dev->dev, NULL);
 	if (IS_ERR(clk)) {
 		ret = PTR_ERR(clk);
-		goto out_release;
+		goto out_unmap;
 	}
 
 	nmk_chip = kzalloc(sizeof(*nmk_chip), GFP_KERNEL);
@@ -1123,7 +1199,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
 	 */
 	nmk_chip->bank = dev->id;
 	nmk_chip->clk = clk;
-	nmk_chip->addr = io_p2v(res->start);
+	nmk_chip->addr = base;
 	nmk_chip->chip = nmk_gpio_template;
 	nmk_chip->parent_irq = irq;
 	nmk_chip->secondary_parent_irq = secondary_irq;
@@ -1138,6 +1214,10 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
 	chip->label = pdata->name ?: dev_name(&dev->dev);
 	chip->dev = &dev->dev;
 	chip->owner = THIS_MODULE;
+
+	clk_enable(nmk_chip->clk);
+	nmk_chip->lowemi = readl_relaxed(nmk_chip->addr + NMK_GPIO_LOWEMI);
+	clk_disable(nmk_chip->clk);
 
 	ret = gpiochip_add(&nmk_chip->chip);
 	if (ret)
@@ -1159,6 +1239,8 @@ out_free:
 out_clk:
 	clk_disable(clk);
 	clk_put(clk);
+out_unmap:
+	iounmap(base);
 out_release:
 	release_mem_region(res->start, resource_size(res));
 out:
