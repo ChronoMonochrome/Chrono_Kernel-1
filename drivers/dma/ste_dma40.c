@@ -345,6 +345,7 @@ struct d40_base {
 	int				  irq;
 	int				  num_phy_chans;
 	int				  num_log_chans;
+	struct device_dma_parameters	  dma_parms;
 	struct dma_device		  dma_both;
 	struct dma_device		  dma_slave;
 	struct dma_device		  dma_memcpy;
@@ -2577,6 +2578,14 @@ static int d40_set_runtime_config(struct dma_chan *chan,
 		return -EINVAL;
 	}
 
+	if (src_maxburst > 16) {
+		src_maxburst = 16;
+		dst_maxburst = src_maxburst * src_addr_width / dst_addr_width;
+	} else if (dst_maxburst > 16) {
+		dst_maxburst = 16;
+		src_maxburst = dst_maxburst * dst_addr_width / src_addr_width;
+	}
+
 	ret = dma40_config_to_halfchannel(d40c, &cfg->src_info,
 					  src_addr_width,
 					  src_maxburst);
@@ -2638,6 +2647,56 @@ static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 	/* Other commands are unimplemented */
 	return -ENXIO;
 }
+
+dma_addr_t stedma40_get_src_addr(struct dma_chan *chan)
+{
+	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
+	dma_addr_t addr;
+
+	if (chan_is_physical(d40c))
+		addr = readl(d40c->base->virtbase + D40_DREG_PCBASE +
+			     d40c->phy_chan->num * D40_DREG_PCDELTA +
+			     D40_CHAN_REG_SSPTR);
+	else {
+		unsigned long lower;
+		unsigned long upper;
+
+		/*
+		 * There is a potential for overflow between the time the two
+		 * halves of the pointer are read.
+		 */
+		lower = d40c->lcpa->lcsp0 & D40_MEM_LCSP0_SPTR_MASK;
+		upper = d40c->lcpa->lcsp1 & D40_MEM_LCSP1_SPTR_MASK;
+
+		addr = upper | lower;
+	}
+
+	return addr;
+}
+EXPORT_SYMBOL(stedma40_get_src_addr);
+
+dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan)
+{
+	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
+	dma_addr_t addr;
+
+	if (chan_is_physical(d40c))
+		addr = readl(d40c->base->virtbase + D40_DREG_PCBASE +
+			     d40c->phy_chan->num * D40_DREG_PCDELTA +
+			     D40_CHAN_REG_SDPTR);
+	else {
+		unsigned long lower;
+		unsigned long upper;
+
+		lower = d40c->lcpa->lcsp2 & D40_MEM_LCSP2_DPTR_MASK;
+		upper = d40c->lcpa->lcsp3 & D40_MEM_LCSP3_DPTR_MASK;
+
+		addr = upper | lower;
+	}
+
+	return addr;
+}
+EXPORT_SYMBOL(stedma40_get_dst_addr);
 
 /* Initialization functions */
 
@@ -2773,8 +2832,6 @@ static int dma40_pm_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct d40_base *base = platform_get_drvdata(pdev);
 	int ret = 0;
-	if (!pm_runtime_suspended(dev))
-		return -EBUSY;
 
 	if (base->lcpa_regulator)
 		ret = regulator_disable(base->lcpa_regulator);
@@ -3357,6 +3414,13 @@ static int __init d40_probe(struct platform_device *pdev)
 	err = d40_dmaengine_init(base, num_reserved_chans);
 	if (err)
 		goto failure;
+
+	base->dev->dma_parms = &base->dma_parms;
+	err = dma_set_max_seg_size(base->dev, 0xffff);
+	if (err) {
+		d40_err(&pdev->dev, "Failed to set dma max seg size\n");
+		goto failure;
+	}
 
 	d40_hw_init(base);
 
