@@ -1,0 +1,32 @@
+#symlinks created during build
+driver/src/devicedrv/mali/arch
+driver/bin
+driver/devdrv
+driver/lib
+
+#build output
+driver/build
+.tmp_versions
+*.cmd
+*.o
+*.d
+driver/src/devicedrv/linux/__mali_build_info.*
+driver/src/devicedrv/linux/modules.order
+driver/src/devicedrv/linux/Module.symvers
+driver/src/devicedrv/mali/Module.symvers
+driver/src/devicedrv/mali/__malidrv_build_info.c
+driver/src/devicedrv/mali/mali.ko
+driver/src/devicedrv/mali/mali.mod.c
+driver/src/devicedrv/mali/modules.order
+driver/out*
+driver/src/shared/essl_compiler/src/shadergen_maligp2/shader_pieces.*
+
+out
+kernel
+
+#temp files from editors and Eclipse project files
+*~
+.cproject
+.project
+.settings
+
