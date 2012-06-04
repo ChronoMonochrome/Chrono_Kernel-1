@@ -38,6 +38,8 @@ source "drivers/staging/wlan-ng/Kconfig"
 
 source "drivers/staging/echo/Kconfig"
 
+source "drivers/staging/cg2900/Kconfig"
+
 source "drivers/staging/comedi/Kconfig"
 
 source "drivers/staging/olpc_dcon/Kconfig"
