@@ -107,6 +107,7 @@ struct mmc_blk_data {
 	unsigned int	part_curr;
 	struct device_attribute force_ro;
 	struct device_attribute power_ro_lock;
+	struct device_attribute power_ro_lock_legacy;
 	int	area_type;
 };
 
@@ -165,6 +166,87 @@ static void mmc_blk_put(struct mmc_blk_data *md)
 		kfree(md);
 	}
 	mutex_unlock(&open_lock);
+}
+
+#define EXT_CSD_BOOT_WP_PWR_WP_TEXT "pwr_ro"
+#define EXT_CSD_BOOT_WP_PERM_WP_TEXT "perm_ro"
+#define EXT_CSD_BOOT_WP_WP_DISABLED_TEXT "rw"
+static ssize_t boot_partition_ro_lock_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int ret;
+	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+	struct mmc_card *card = md->queue.card;
+	const char *out_text;
+
+	if (card->ext_csd.boot_ro_lock
+			& EXT_CSD_BOOT_WP_B_PERM_WP_EN)
+		out_text = EXT_CSD_BOOT_WP_PERM_WP_TEXT;
+	else if (card->ext_csd.boot_ro_lock
+			& EXT_CSD_BOOT_WP_B_PWR_WP_EN)
+		out_text = EXT_CSD_BOOT_WP_PWR_WP_TEXT;
+	else
+		out_text = EXT_CSD_BOOT_WP_WP_DISABLED_TEXT;
+
+	ret = snprintf(buf, PAGE_SIZE, "%s\n", out_text);
+
+	return ret;
+}
+
+static ssize_t boot_partition_ro_lock_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+	struct mmc_blk_data *md, *part_md;
+	struct mmc_card *card;
+	u8 set = 0;
+
+	md = mmc_blk_get(dev_to_disk(dev));
+	card = md->queue.card;
+
+	if (!strncmp(buf, EXT_CSD_BOOT_WP_PWR_WP_TEXT,
+				strlen(EXT_CSD_BOOT_WP_PWR_WP_TEXT)))
+		set = EXT_CSD_BOOT_WP_B_PWR_WP_EN;
+	else if (!strncmp(buf, EXT_CSD_BOOT_WP_PERM_WP_TEXT,
+				strlen(EXT_CSD_BOOT_WP_PERM_WP_TEXT)))
+		set = EXT_CSD_BOOT_WP_B_PERM_WP_EN;
+
+	if (set) {
+		mmc_claim_host(card->host);
+
+		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+				EXT_CSD_BOOT_WP,
+				set,
+				card->ext_csd.part_time);
+		if (ret)
+			pr_err("Boot Partition Lock failed: %d", ret);
+		else
+			card->ext_csd.boot_ro_lock = set;
+
+		mmc_release_host(card->host);
+
+		if (!ret) {
+			pr_info("%s: Locking boot partition "
+					"%s",
+					md->disk->disk_name,
+					buf);
+			set_disk_ro(md->disk, 1);
+
+			list_for_each_entry(part_md, &md->part, part)
+				if (part_md->area_type ==
+						MMC_BLK_DATA_AREA_BOOT) {
+					pr_info("%s: Locking boot partition "
+						"%s",
+						part_md->disk->disk_name,
+						buf);
+					set_disk_ro(part_md->disk, 1);
+				}
+		}
+	}
+	ret = count;
+
+	mmc_blk_put(md);
+	return ret;
 }
 
 static ssize_t power_ro_lock_show(struct device *dev,
@@ -1411,6 +1493,14 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 	struct mmc_blk_data *md = mq->data;
 	struct mmc_card *card = md->queue.card;
 
+	/*
+	 * We must make sure we have not claimed the host before
+	 * doing a flush to prevent deadlock, thus we check if
+	 * the host needs a resume first.
+	 */
+	if (mmc_host_needs_resume(card->host))
+		mmc_resume_host_sync(card->host);
+
 	if (req && !mq->mqrq_prev->req)
 		/* claim host only for the first request */
 		mmc_claim_host(card->host);
@@ -1654,9 +1744,12 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
 		if (md->disk->flags & GENHD_FL_UP) {
 			device_remove_file(disk_to_dev(md->disk), &md->force_ro);
 			if ((md->area_type & MMC_BLK_DATA_AREA_BOOT) &&
-					card->ext_csd.boot_ro_lockable)
+					card->ext_csd.boot_ro_lockable) {
 				device_remove_file(disk_to_dev(md->disk),
 					&md->power_ro_lock);
+				device_remove_file(disk_to_dev(md->disk),
+					&md->power_ro_lock_legacy);
+			}
 
 			/* Stop new requests from getting into the queue */
 			del_gendisk(md->disk);
@@ -1716,9 +1809,24 @@ static int mmc_add_disk(struct mmc_blk_data *md)
 				&md->power_ro_lock);
 		if (ret)
 			goto power_ro_lock_fail;
+
+		/* Legacy mode */
+		mode = S_IRUGO | S_IWUSR;
+
+		md->power_ro_lock_legacy.show = boot_partition_ro_lock_show;
+		md->power_ro_lock_legacy.store = boot_partition_ro_lock_store;
+		sysfs_attr_init(&md->power_ro_lock_legacy.attr);
+		md->power_ro_lock_legacy.attr.mode = mode;
+		md->power_ro_lock_legacy.attr.name = "ro_lock";
+		ret = device_create_file(disk_to_dev(md->disk),
+				&md->power_ro_lock_legacy);
+		if (ret)
+			goto power_ro_lock_fail_legacy;
 	}
 	return ret;
 
+power_ro_lock_fail_legacy:
+	device_remove_file(disk_to_dev(md->disk), &md->power_ro_lock);
 power_ro_lock_fail:
 	device_remove_file(disk_to_dev(md->disk), &md->force_ro);
 force_ro_fail:

@@ -1360,7 +1360,10 @@ static void __init hrefv60_init_machine(void)
 	}
 
 	mop500_i2c_init(parent);
-	hrefv60_sdi_init(parent);
+	if (machine_is_u8520())
+		mach_u8520_sdi_init(parent);
+	else
+		hrefv60_sdi_init(parent);
 	mop500_spi_init(parent);
 	mop500_uart_init(parent);
 #ifdef CONFIG_STM_MSP_SPI

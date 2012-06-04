@@ -11,6 +11,7 @@
 #include <linux/amba/mmci.h>
 #include <linux/mmc/host.h>
 #include <linux/platform_device.h>
+#include <linux/delay.h>
 
 #include <asm/mach-types.h>
 #include <plat/ste_dma40.h>
@@ -37,25 +38,54 @@ static int sdi0_vsel = -1;
 
 static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
 {
+	static unsigned char power_mode = MMC_POWER_ON;
+	static unsigned char signal_voltage = MMC_SIGNAL_VOLTAGE_330;
+
+	if (signal_voltage == ios->signal_voltage)
+		goto do_power;
+
+	/*
+	 * We need to re-init the levelshifter when switching I/O voltage level.
+	 * Max discharge time according to ST6G3244ME spec is 1 ms.
+	 */
+	if (power_mode == MMC_POWER_ON) {
+		power_mode = MMC_POWER_OFF;
+		gpio_direction_output(sdi0_en, 0);
+		msleep(1);
+	}
+
+	switch (ios->signal_voltage) {
+	case MMC_SIGNAL_VOLTAGE_330:
+		gpio_direction_output(sdi0_vsel, 0);
+		break;
+	case MMC_SIGNAL_VOLTAGE_180:
+		gpio_direction_output(sdi0_vsel, 1);
+		break;
+	default:
+		pr_warning("Non supported signal voltage for levelshifter.\n");
+		break;
+	}
+
+	signal_voltage = ios->signal_voltage;
+
+do_power:
+	if (power_mode == ios->power_mode)
+		return 0;
+
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
+		break;
 	case MMC_POWER_ON:
-		/*
-		 * Level shifter voltage should depend on vdd to when deciding
-		 * on either 1.8V or 2.9V. Once the decision has been made the
-		 * level shifter must be disabled and re-enabled with a changed
-		 * select signal in order to switch the voltage. Since there is
-		 * no framework support yet for indicating 1.8V in vdd, use the
-		 * default 2.9V.
-		 */
-		gpio_direction_output(sdi0_vsel, 0);
 		gpio_direction_output(sdi0_en, 1);
+		/* Max settling time according to ST6G3244ME spec is 100 us. */
+		udelay(100);
 		break;
 	case MMC_POWER_OFF:
-		gpio_direction_output(sdi0_vsel, 0);
 		gpio_direction_output(sdi0_en, 0);
 		break;
 	}
+
+	power_mode = ios->power_mode;
 
 	return 0;
 }
@@ -64,29 +94,34 @@ static int mop500_sdi0_ios_handler(struct device *dev, struct mmc_ios *ios)
 struct stedma40_chan_cfg mop500_sdi0_dma_cfg_rx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_PERIPH_TO_MEM,
-	.src_dev_type = DB8500_DMA_DEV29_SD_MM0_RX,
+	.src_dev_type = DB8500_DMA_DEV1_SD_MMC0_RX,
 	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
+	.use_fixed_channel = true,
+	.phy_channel = 0,
 };
 
 static struct stedma40_chan_cfg mop500_sdi0_dma_cfg_tx = {
 	.mode = STEDMA40_MODE_LOGICAL,
 	.dir = STEDMA40_MEM_TO_PERIPH,
 	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
-	.dst_dev_type = DB8500_DMA_DEV29_SD_MM0_TX,
+	.dst_dev_type = DB8500_DMA_DEV1_SD_MMC0_TX,
 	.src_info.data_width = STEDMA40_WORD_WIDTH,
 	.dst_info.data_width = STEDMA40_WORD_WIDTH,
+	.use_fixed_channel = true,
+	.phy_channel = 0,
 };
 #endif
 
 static struct mmci_platform_data mop500_sdi0_data = {
 	.ios_handler	= mop500_sdi0_ios_handler,
-	.ocr_mask	= MMC_VDD_29_30,
 	.f_max		= 50000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA |
 				MMC_CAP_SD_HIGHSPEED |
-				MMC_CAP_MMC_HIGHSPEED,
+				MMC_CAP_MMC_HIGHSPEED |
+				MMC_CAP_UHS_SDR12 |
+				MMC_CAP_UHS_SDR25,
 	.gpio_wp	= -1,
 	.sigdir		= MCI_ST_FBCLKEN |
 				MCI_ST_CMDDIREN |
@@ -119,14 +154,6 @@ static void sdi0_configure(struct device *parent)
 
 	/* Add the device, force v2 to subrevision 1 */
 	db8500_add_sdi0(parent, &mop500_sdi0_data, U8500_SDI_V2_PERIPHID);
-}
-
-void mop500_sdi_tc35892_init(struct device *parent)
-{
-	mop500_sdi0_data.gpio_cd = GPIO_SDMMC_CD;
-	sdi0_en = GPIO_SDMMC_EN;
-	sdi0_vsel = GPIO_SDMMC_1V8_3V_SEL;
-	sdi0_configure(parent);
 }
 
 /*
@@ -193,7 +220,9 @@ static struct mmci_platform_data mop500_sdi2_data = {
 	.ocr_mask	= MMC_VDD_165_195,
 	.f_max		= 50000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA |
-			  MMC_CAP_MMC_HIGHSPEED,
+			  MMC_CAP_MMC_HIGHSPEED |
+			  MMC_CAP_ERASE,
+	.capabilities2	= MMC_CAP2_NO_SLEEP_CMD,
 	.gpio_cd	= -1,
 	.gpio_wp	= -1,
 #ifdef CONFIG_STE_DMA40
@@ -228,7 +257,6 @@ static struct stedma40_chan_cfg mop500_sdi4_dma_cfg_tx = {
 #endif
 
 static struct mmci_platform_data mop500_sdi4_data = {
-	.ocr_mask	= MMC_VDD_29_30,
 	.f_max		= 50000000,
 	.capabilities	= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA |
 			  MMC_CAP_MMC_HIGHSPEED,
@@ -240,6 +268,16 @@ static struct mmci_platform_data mop500_sdi4_data = {
 	.dma_tx_param	= &mop500_sdi4_dma_cfg_tx,
 #endif
 };
+
+void mop500_sdi_tc35892_init(struct device *parent)
+{
+	mop500_sdi0_data.gpio_cd = GPIO_SDMMC_CD;
+	sdi0_en = GPIO_SDMMC_EN;
+	sdi0_vsel = GPIO_SDMMC_1V8_3V_SEL;
+	sdi0_configure(parent);
+	/* WLAN SDIO channel */
+	db8500_add_sdi1(parent, &mop500_sdi1_data, U8500_SDI_V2_PERIPHID);
+}
 
 void __init mop500_sdi_init(struct device *parent)
 {
@@ -267,6 +305,8 @@ void __init snowball_sdi_init(struct device *parent)
 	sdi0_en = SNOWBALL_SDMMC_EN_GPIO;
 	sdi0_vsel = SNOWBALL_SDMMC_1V8_3V_GPIO;
 	sdi0_configure(parent);
+	/* WLAN SDIO channel */
+	db8500_add_sdi1(parent, &mop500_sdi1_data, U8500_SDI_V2_PERIPHID);
 }
 
 void __init hrefv60_sdi_init(struct device *parent)
@@ -279,6 +319,21 @@ void __init hrefv60_sdi_init(struct device *parent)
 	mop500_sdi0_data.gpio_cd = HREFV60_SDMMC_CD_GPIO;
 	sdi0_en = HREFV60_SDMMC_EN_GPIO;
 	sdi0_vsel = HREFV60_SDMMC_1V8_3V_GPIO;
+	sdi0_configure(parent);
+	/* WLAN SDIO channel */
+	db8500_add_sdi1(parent, &mop500_sdi1_data, U8500_SDI_V2_PERIPHID);
+}
+
+void __init mach_u8520_sdi_init(struct device *parent)
+{
+	/* PoP:ed eMMC */
+	db8500_add_sdi2(parent, &mop500_sdi2_data, U8500_SDI_V2_PERIPHID);
+	/* On-board eMMC */
+	db8500_add_sdi4(parent, &mop500_sdi4_data, U8500_SDI_V2_PERIPHID);
+	/* External Micro SD slot */
+	mop500_sdi0_data.gpio_cd = U8520_SDMMC_CD_GPIO;
+	sdi0_en = U8520_SDMMC_EN_GPIO;
+	sdi0_vsel = U8520_SDMMC_1V8_3V_GPIO;
 	sdi0_configure(parent);
 	/* WLAN SDIO channel */
 	db8500_add_sdi1(parent, &mop500_sdi1_data, U8500_SDI_V2_PERIPHID);

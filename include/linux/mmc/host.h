@@ -292,6 +292,11 @@ struct mmc_host {
 	int			detect_change;	/* card detect flag */
 	struct mmc_hotplug	hotplug;
 
+	struct delayed_work	resume;		/* deferred resume work */
+	unsigned int		pm_state;	/* used for deferred resume */
+#define MMC_HOST_DEFERRED_RESUME	(1 << 0)
+#define MMC_HOST_NEEDS_RESUME		(1 << 1)
+
 	const struct mmc_bus_ops *bus_ops;	/* current bus driver */
 	unsigned int		bus_refs;	/* reference counter */
 
@@ -340,6 +345,7 @@ static inline void *mmc_priv(struct mmc_host *host)
 
 extern int mmc_suspend_host(struct mmc_host *);
 extern int mmc_resume_host(struct mmc_host *);
+extern void mmc_resume_host_sync(struct mmc_host *);
 
 extern int mmc_power_save_host(struct mmc_host *host);
 extern int mmc_power_restore_host(struct mmc_host *host);
@@ -429,4 +435,15 @@ static inline unsigned int mmc_host_clk_rate(struct mmc_host *host)
 	return host->ios.clock;
 }
 #endif
+
+static inline int mmc_host_deferred_resume(struct mmc_host *host)
+{
+	return host->pm_state & MMC_HOST_DEFERRED_RESUME;
+}
+
+static inline int mmc_host_needs_resume(struct mmc_host *host)
+{
+	return host->pm_state & MMC_HOST_NEEDS_RESUME;
+}
+
 #endif /* LINUX_MMC_HOST_H */
