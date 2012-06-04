@@ -19,7 +19,8 @@ DOCBOOKS := z8530book.xml mcabook.xml device-drivers.xml \
 	    tc_keypad.xml prcmu-fw-api.xml cg2900_fm_radio.xml \
 	    synaptics_rmi4_touchp.xml db5500_keypad.xml \
 	    u5500_LogicalMailbox.xml cg2900.xml \
-	    lsm303dlh.xml ske_keypad.xml ste_ff_vibra.xml ste_timed_vibra.xml ux500_usb.xml
+	    lsm303dlh.xml ske_keypad.xml ste_ff_vibra.xml ste_timed_vibra.xml ux500_usb.xml \
+	    lps001wp_prs.xml
 
 include $(srctree)/Documentation/DocBook/media/Makefile
 

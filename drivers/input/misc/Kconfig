@@ -326,6 +326,22 @@ config INPUT_KXTJ9_POLLED_MODE
 	help
 	  Say Y here if you need accelerometer to work in polling mode.
 
+config INPUT_LPS001WP
+	tristate "LPS0001WP pressure sensor from ST Micro"
+	default y if MACH_U8500
+	help
+	  This is a pressure sensor connected to I2C, mounted on the
+	  snowball and other ST-E boards
+
+config LPS001WP_INPUT_DEVICE
+         bool "ST LPS001WP INPUT DEVICE"
+         depends on INPUT_LPS001WP
+         default n
+         help
+	   This driver allows device to be used as an input device
+	   need to be enabled only when input device support
+	   is required.
+
 config INPUT_POWERMATE
 	tristate "Griffin PowerMate and Contour Jog support"
 	depends on USB_ARCH_HAS_HCD
