@@ -17,6 +17,21 @@
 #include <mach/setup.h>
 #include <mach/hardware.h>
 #include <mach/irqs.h>
+#include <mach/context.h>
+
+#ifdef CONFIG_UX500_CONTEXT
+static int mtu_context_notifier_call(struct notifier_block *this,
+				     unsigned long event, void *data)
+{
+	if (event == CONTEXT_APE_RESTORE)
+		nmdk_clksrc_reset();
+	return NOTIFY_OK;
+}
+
+static struct notifier_block mtu_context_notifier = {
+	.notifier_call = mtu_context_notifier_call,
+};
+#endif
 
 #ifdef CONFIG_HAVE_ARM_TWD
 static DEFINE_TWD_LOCAL_TIMER(u5500_twd_local_timer,
@@ -52,7 +67,7 @@ static void __init ux500_timer_init(void)
 	if (cpu_is_u5500()) {
 		mtu_timer_base = __io_address(U5500_MTU0_BASE);
 		prcmu_timer_base = __io_address(U5500_PRCMU_TIMER_3_BASE);
-	} else if (cpu_is_u8500()) {
+	} else if (cpu_is_u8500() || cpu_is_u9540()) {
 		mtu_timer_base = __io_address(U8500_MTU0_BASE);
 		prcmu_timer_base = __io_address(U8500_PRCMU_TIMER_4_BASE);
 	} else {
@@ -85,6 +100,10 @@ static void __init ux500_timer_init(void)
 		db5500_mtimer_init(__io_address(U5500_MTIMER_BASE));
 	clksrc_dbx500_prcmu_init(prcmu_timer_base);
 	ux500_twd_init();
+
+#ifdef CONFIG_UX500_CONTEXT
+	WARN_ON(context_ape_notifier_register(&mtu_context_notifier));
+#endif
 }
 
 static void ux500_timer_reset(void)

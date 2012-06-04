@@ -8,10 +8,21 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/i2c.h>
+#ifdef CONFIG_U8500_FLASH
+#include <../drivers/staging/camera_flash/adp1653_plat.h>
+#endif
 #include <linux/interrupt.h>
+#ifdef CONFIG_SENSORS_LSM303DLH
+#include <linux/lsm303dlh.h>
+#endif
+#ifdef CONFIG_SENSORS_L3G4200D
+#include <linux/l3g4200d.h>
+#endif
 #include <linux/mfd/tc3589x.h>
 #include <linux/input/matrix_keypad.h>
 
+#include <asm/mach-types.h>
+#include <linux/gpio.h>
 #include <mach/irqs.h>
 
 #include "board-mop500.h"
@@ -20,12 +31,28 @@
 struct i2c_board_info __initdata __weak mop500_i2c3_devices_u8500[] = {
 };
 
+#ifdef CONFIG_U8500_FLASH
+static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
+	.irq_no = CAMERA_FLASH_INT_PIN
+};
+#endif
+
+static struct i2c_board_info __initdata mop500_i2c2_devices_u8500[] = {
+#ifdef CONFIG_U8500_FLASH
+	{
+		I2C_BOARD_INFO("adp1653", 0x30),
+		.platform_data = &adp1653_pdata_u8500_uib
+	}
+#endif
+};
+
+
 /*
  * TC35893
  */
 static const unsigned int u8500_keymap[] = {
 	KEY(3, 1, KEY_END),
-	KEY(4, 1, KEY_POWER),
+	KEY(4, 1, KEY_HOME),
 	KEY(6, 4, KEY_VOLUMEDOWN),
 	KEY(4, 2, KEY_EMAIL),
 	KEY(3, 3, KEY_RIGHT),
@@ -86,4 +113,15 @@ void __init mop500_u8500uib_init(void)
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_u8500,
 			ARRAY_SIZE(mop500_i2c0_devices_u8500));
 
+#ifdef CONFIG_U8500_FLASH
+	if (machine_is_hrefv60() || machine_is_u8520())
+		adp1653_pdata_u8500_uib.enable_gpio =
+					HREFV60_CAMERA_FLASH_ENABLE;
+	else
+		adp1653_pdata_u8500_uib.enable_gpio =
+					GPIO_CAMERA_FLASH_ENABLE;
+#endif
+
+	mop500_uib_i2c_add(2, mop500_i2c2_devices_u8500,
+			ARRAY_SIZE(mop500_i2c2_devices_u8500));
 }

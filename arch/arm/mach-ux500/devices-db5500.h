@@ -17,6 +17,16 @@
 #define db5500_add_i2c3(parent, pdata) \
 	dbx500_add_i2c(parent, 3, U5500_I2C3_BASE, IRQ_DB5500_I2C3, pdata)
 
+struct db5500_keypad_platform_data;
+
+static inline struct platform_device *
+db5500_add_keypad(struct db5500_keypad_platform_data *pdata)
+{
+	return dbx500_add_platform_device_4k1irq("db5500-keypad", -1,
+						 U5500_KEYPAD_BASE,
+						 IRQ_DB5500_KBD, pdata);
+}
+
 #define db5500_add_msp0_spi(parent, pdata) \
 	dbx500_add_msp_spi(parent, "msp0", U5500_MSP0_BASE, \
 			   IRQ_DB5500_MSP0, pdata)
@@ -44,26 +54,26 @@
 	ux500_add_usb(parent, U5500_USBOTG_BASE, \
 		      IRQ_DB5500_USBOTG, rx_cfg, tx_cfg)
 
-#define db5500_add_sdi0(parent, pdata) \
+#define db5500_add_sdi0(parent, pdata, pid) \
 	dbx500_add_sdi(parent, "sdi0", U5500_SDI0_BASE, \
 		       IRQ_DB5500_SDMMC0, pdata,	\
-		       0x10480180)
-#define db5500_add_sdi1(parent, pdata) \
+		       pid)
+#define db5500_add_sdi1(parent, pdata, pid) \
 	dbx500_add_sdi(parent, "sdi1", U5500_SDI1_BASE, \
 		       IRQ_DB5500_SDMMC1, pdata,	\
-		       0x10480180)
-#define db5500_add_sdi2(parent, pdata) \
+		       pid)
+#define db5500_add_sdi2(parent, pdata, pid) \
 	dbx500_add_sdi(parent, "sdi2", U5500_SDI2_BASE, \
 		       IRQ_DB5500_SDMMC2, pdata		\
-		       0x10480180)
-#define db5500_add_sdi3(parent, pdata) \
+		       pid)
+#define db5500_add_sdi3(parent, pdata, pid) \
 	dbx500_add_sdi(parent, "sdi3", U5500_SDI3_BASE, \
-		       IRQ_DB5500_SDMMC3, pdata		\
-		       0x10480180)
-#define db5500_add_sdi4(parent, pdata) \
+		       IRQ_DB5500_SDMMC3, pdata,		\
+		       pid)
+#define db5500_add_sdi4(parent, pdata, pid) \
 	dbx500_add_sdi(parent, "sdi4", U5500_SDI4_BASE, \
-		       IRQ_DB5500_SDMMC4, pdata		\
-		       0x10480180)
+		       IRQ_DB5500_SDMMC4, pdata,		\
+		       pid)
 
 /* This one has a bad peripheral ID in the U5500 silicon */
 #define db5500_add_spi0(parent, pdata) \
@@ -76,11 +86,11 @@
 		       0x10080023)
 #define db5500_add_spi2(parent, pdata) \
 	dbx500_add_spi(parent, "spi2", U5500_SPI2_BASE, \
-		       IRQ_DB5500_SPI2, pdata		\
+		       IRQ_DB5500_SPI2, pdata,		\
 		       0x10080023)
 #define db5500_add_spi3(parent, pdata) \
 	dbx500_add_spi(parent, "spi3", U5500_SPI3_BASE, \
-		       IRQ_DB5500_SPI3, pdata		\
+		       IRQ_DB5500_SPI3, pdata,		\
 		       0x10080023)
 
 #define db5500_add_uart0(parent, plat) \
@@ -95,5 +105,10 @@
 #define db5500_add_uart3(parent, plat) \
 	dbx500_add_uart(parent, "uart3", U5500_UART3_BASE, \
 			IRQ_DB5500_UART3, plat)
+
+#define db5500_add_cryp1(pdata) \
+	dbx500_add_cryp1(-1, U5500_CRYP1_BASE, IRQ_DB5500_CRYP1, pdata)
+#define db5500_add_hash1(pdata) \
+	dbx500_add_hash1(-1, U5500_HASH1_BASE, pdata)
 
 #endif

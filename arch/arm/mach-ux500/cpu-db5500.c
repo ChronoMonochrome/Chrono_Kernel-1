@@ -9,20 +9,23 @@
 #include <linux/amba/bus.h>
 #include <linux/io.h>
 #include <linux/irq.h>
+#include <linux/gpio/nomadik.h>
 
-#include <asm/mach/map.h>
 #include <asm/pmu.h>
+#include <asm/mach/map.h>
+#include <asm/cacheflush.h>
+#include <asm/tlbflush.h>
 
-#include <plat/gpio-nomadik.h>
+#include <linux/gpio.h>
 
 #include <mach/hardware.h>
 #include <mach/devices.h>
 #include <mach/setup.h>
 #include <mach/irqs.h>
 #include <mach/usb.h>
+#include <mach/ste-dma40-db5500.h>
 
 #include "devices-db5500.h"
-#include "ste-dma40-db5500.h"
 
 static struct map_desc u5500_uart_io_desc[] __initdata = {
 	__IO_DEV_DESC(U5500_UART0_BASE, SZ_4K),
@@ -35,7 +38,15 @@ static struct map_desc u5500_io_desc[] __initdata = {
 	__IO_DEV_DESC(U5500_GIC_DIST_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_L2CC_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_MTU0_BASE, SZ_4K),
+	__IO_DEV_DESC(U5500_MTU1_BASE, SZ_4K),
+	__IO_DEV_DESC(U5500_RTC_BASE, SZ_4K),
+	__IO_DEV_DESC(U5500_MTIMER_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_BACKUPRAM0_BASE, SZ_8K),
+
+	/* Map U5500_PUBLIC_BOOT_ROM_BASE (base+18000) only
+	 * for TEE security driver
+	 * and avoid overlap with asic ID at base+1D000 */
+	__MEM_DEV_DESC(U5500_BOOT_ROM_BASE+0x18000, 6*SZ_4K),
 
 	__IO_DEV_DESC(U5500_GPIO0_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_GPIO1_BASE, SZ_4K),
@@ -44,6 +55,11 @@ static struct map_desc u5500_io_desc[] __initdata = {
 	__IO_DEV_DESC(U5500_GPIO4_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_PRCMU_BASE, SZ_4K),
 	__IO_DEV_DESC(U5500_PRCMU_TCDM_BASE, SZ_4K),
+	__IO_DEV_DESC(U5500_CLKRST1_BASE, SZ_4K),
+	__IO_DEV_DESC(U5500_CLKRST2_BASE, SZ_4K),
+	__IO_DEV_DESC(U5500_CLKRST3_BASE, SZ_4K),
+	__IO_DEV_DESC(U5500_CLKRST5_BASE, SZ_4K),
+	__IO_DEV_DESC(U5500_CLKRST6_BASE, SZ_4K),
 };
 
 static struct resource mbox0_resources[] = {
@@ -130,31 +146,58 @@ static struct platform_device mbox2_device = {
 	.num_resources = ARRAY_SIZE(mbox2_resources),
 };
 
+static struct platform_device db5500_prcmu_device = {
+	.name			= "db5500-prcmu",
+};
+
 static struct platform_device *db5500_platform_devs[] __initdata = {
+	&u5500_gpio_devs[0],
+	&u5500_gpio_devs[1],
+	&u5500_gpio_devs[2],
+	&u5500_gpio_devs[3],
+	&u5500_gpio_devs[4],
+	&u5500_gpio_devs[5],
+	&u5500_gpio_devs[6],
+	&u5500_gpio_devs[7],
 	&mbox0_device,
 	&mbox1_device,
 	&mbox2_device,
+	&db5500_prcmu_device,
+	&u5500_wdt_device,
 };
 
-static resource_size_t __initdata db5500_gpio_base[] = {
-	U5500_GPIOBANK0_BASE,
-	U5500_GPIOBANK1_BASE,
-	U5500_GPIOBANK2_BASE,
-	U5500_GPIOBANK3_BASE,
-	U5500_GPIOBANK4_BASE,
-	U5500_GPIOBANK5_BASE,
-	U5500_GPIOBANK6_BASE,
-	U5500_GPIOBANK7_BASE,
-};
+static u8 db5500_revision;
 
-static void __init db5500_add_gpios(struct device *parent)
+bool cpu_is_u5500v1()
 {
-	struct nmk_gpio_platform_data pdata = {
-		/* No custom data yet */
-	};
+	return db5500_revision == 0xA0;
+}
 
-	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db5500_gpio_base),
-			 IRQ_DB5500_GPIO0, &pdata);
+bool cpu_is_u5500v2()
+{
+	return (db5500_revision & 0xf0) == 0xB0;
+}
+
+bool cpu_is_u5500v20()
+{
+	return db5500_revision == 0xB0;
+}
+
+bool cpu_is_u5500v21()
+{
+	return db5500_revision == 0xB1;
+}
+
+static void db5500_rev_init(void)
+{
+	unsigned int asicid;
+
+	/* As in devicemaps_init() */
+	local_flush_tlb_all();
+	flush_cache_all();
+
+	asicid = readl_relaxed(__io_address(U5500_ASIC_ID_ADDRESS));
+	db5500_revision = asicid & 0xff;
 }
 
 void __init u5500_map_io(void)
@@ -169,6 +212,8 @@ void __init u5500_map_io(void)
 	iotable_init(u5500_io_desc, ARRAY_SIZE(u5500_io_desc));
 
 	_PRCMU_BASE = __io_address(U5500_PRCMU_BASE);
+
+	db5500_rev_init();
 }
 
 static void __init db5500_pmu_init(void)
@@ -229,9 +274,12 @@ struct device * __init u5500_init_devices(void)
 	struct device *parent;
 	int i;
 
+#ifdef CONFIG_STM_TRACE
+	/* Early init for STM tracing */
+	/* platform_device_register(&u5500_stm_device); */
+#endif
 	parent = db5500_soc_device_init();
 
-	db5500_add_gpios(parent);
 	db5500_pmu_init();
 	db5500_dma_init(parent);
 	db5500_add_rtc(parent);

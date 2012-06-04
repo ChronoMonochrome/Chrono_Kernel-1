@@ -11,33 +11,70 @@
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
+#ifdef CONFIG_U8500_FLASH
+#include <../drivers/staging/camera_flash/adp1653_plat.h>
+#endif
 #include <linux/input/matrix_keypad.h>
 #include <asm/mach-types.h>
 
 #include "board-mop500.h"
 
-/* STMPE/SKE keypad use this key layout */
+/*
+ * ux500 keymaps
+ *
+ * Organized row-wise as on the UIB, starting at the top-left
+ *
+ * we support two key layouts, specific to requirements. The first
+ * keylayout includes controls for power/volume a few generic keys;
+ * the second key layout contains the full numeric layout, enter/back/left
+ * buttons along with a "."(dot), specifically for connectivity testing
+ */
 static const unsigned int mop500_keymap[] = {
+#if defined(CONFIG_KEYLAYOUT_LAYOUT1)
 	KEY(2, 5, KEY_END),
-	KEY(4, 1, KEY_POWER),
+	KEY(4, 1, KEY_HOME),
 	KEY(3, 5, KEY_VOLUMEDOWN),
-	KEY(1, 3, KEY_3),
+	KEY(1, 3, KEY_EMAIL),
 	KEY(5, 2, KEY_RIGHT),
-	KEY(5, 0, KEY_9),
+	KEY(5, 0, KEY_BACKSPACE),
 
 	KEY(0, 5, KEY_MENU),
 	KEY(7, 6, KEY_ENTER),
 	KEY(4, 5, KEY_0),
-	KEY(6, 7, KEY_2),
+	KEY(6, 7, KEY_DOT),
 	KEY(3, 4, KEY_UP),
 	KEY(3, 3, KEY_DOWN),
 
 	KEY(6, 4, KEY_SEND),
 	KEY(6, 2, KEY_BACK),
 	KEY(4, 2, KEY_VOLUMEUP),
-	KEY(5, 5, KEY_1),
+	KEY(5, 5, KEY_SPACE),
 	KEY(4, 3, KEY_LEFT),
+	KEY(3, 2, KEY_SEARCH),
+#elif defined(CONFIG_KEYLAYOUT_LAYOUT2)
+	KEY(2, 5, KEY_RIGHT),
+	KEY(4, 1, KEY_ENTER),
+	KEY(3, 5, KEY_MENU),
+	KEY(1, 3, KEY_3),
+	KEY(5, 2, KEY_6),
+	KEY(5, 0, KEY_9),
+
+	KEY(0, 5, KEY_UP),
+	KEY(7, 6, KEY_DOWN),
+	KEY(4, 5, KEY_0),
+	KEY(6, 7, KEY_2),
+	KEY(3, 4, KEY_5),
+	KEY(3, 3, KEY_8),
+
+	KEY(6, 4, KEY_LEFT),
+	KEY(6, 2, KEY_BACK),
+	KEY(4, 2, KEY_KPDOT),
+	KEY(5, 5, KEY_1),
+	KEY(4, 3, KEY_4),
 	KEY(3, 2, KEY_7),
+#else
+#warning "No keypad layout defined."
+#endif
 };
 
 static const struct matrix_keymap_data mop500_keymap_data = {
@@ -71,6 +108,24 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_stuib[] = {
 		.platform_data = &stmpe1601_data,
 		.flags = I2C_CLIENT_WAKE,
 	},
+};
+
+#ifdef CONFIG_U8500_FLASH
+/*
+ *  Config data for the flash
+ */
+static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
+	.irq_no = CAMERA_FLASH_INT_PIN
+};
+#endif
+
+static struct i2c_board_info __initdata mop500_i2c2_devices_stuib[] = {
+#ifdef CONFIG_U8500_FLASH
+	{
+		I2C_BOARD_INFO("adp1653", 0x30),
+		.platform_data = &adp1653_pdata_u8500_uib
+	}
+#endif
 };
 
 /*
@@ -111,6 +166,7 @@ static int bu21013_gpio_board_init(int reset_pin)
 					__func__);
 			return retval;
 		}
+		gpio_set_value_cansleep(reset_pin, 1);
 	}
 
 	return retval;
@@ -133,7 +189,8 @@ static int bu21013_gpio_board_exit(int reset_pin)
 					__func__);
 			return retval;
 		}
-		gpio_set_value(reset_pin, 0);
+		gpio_set_value_cansleep(reset_pin, 0);
+		gpio_free(reset_pin);
 	}
 	bu21013_devices--;
 
@@ -176,11 +233,11 @@ static struct bu21013_platform_device tsc_plat2_device = {
 
 static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
 	{
-		I2C_BOARD_INFO("bu21013_tp", 0x5C),
+		I2C_BOARD_INFO("bu21013_ts", 0x5C),
 		.platform_data = &tsc_plat_device,
 	},
 	{
-		I2C_BOARD_INFO("bu21013_tp", 0x5D),
+		I2C_BOARD_INFO("bu21013_ts", 0x5D),
 		.platform_data = &tsc_plat2_device,
 	},
 
@@ -188,17 +245,27 @@ static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
 
 void __init mop500_stuib_init(void)
 {
-	if (machine_is_hrefv60()) {
+	if (machine_is_hrefv60() || machine_is_u8520()) {
 		tsc_plat_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
 		tsc_plat2_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
+#ifdef CONFIG_U8500_FLASH
+		adp1653_pdata_u8500_uib.enable_gpio =
+					HREFV60_CAMERA_FLASH_ENABLE;
+#endif
 	} else {
 		tsc_plat_device.cs_pin = GPIO_BU21013_CS;
 		tsc_plat2_device.cs_pin = GPIO_BU21013_CS;
-
+#ifdef CONFIG_U8500_FLASH
+		adp1653_pdata_u8500_uib.enable_gpio =
+					GPIO_CAMERA_FLASH_ENABLE;
+#endif
 	}
 
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_stuib,
 			ARRAY_SIZE(mop500_i2c0_devices_stuib));
+
+	mop500_uib_i2c_add(2, mop500_i2c2_devices_stuib,
+			ARRAY_SIZE(mop500_i2c2_devices_stuib));
 
 	mop500_uib_i2c_add(3, u8500_i2c3_devices_stuib,
 			ARRAY_SIZE(u8500_i2c3_devices_stuib));

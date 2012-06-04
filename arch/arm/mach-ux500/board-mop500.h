@@ -7,6 +7,10 @@
 #ifndef __BOARD_MOP500_H
 #define __BOARD_MOP500_H
 
+/* This defines the NOMADIK_NR_GPIO */
+#include <linux/mfd/abx500/ab8500-gpio.h>
+#include <mach/gpio.h>
+
 /* Snowball specific GPIO assignments, this board has no GPIO expander */
 #define SNOWBALL_ACCEL_INT1_GPIO	163
 #define SNOWBALL_ACCEL_INT2_GPIO	164
@@ -40,8 +44,12 @@
 #define MOP500_HDMI_RST_GPIO		196
 #define CYPRESS_SLAVE_SELECT_GPIO	216
 
+/* U8520-specific GPIO assignments */
+#define U8520_SDMMC_EN_GPIO             78
+#define U8520_SDMMC_1V8_3V_GPIO         5
+#define U8520_SDMMC_CD_GPIO		95
+
 /* GPIOs on the TC35892 expander */
-#define MOP500_EGPIO(x)			(NOMADIK_NR_GPIO + (x))
 #define GPIO_MAGNET_DRDY		MOP500_EGPIO(1)
 #define GPIO_SDMMC_CD			MOP500_EGPIO(3)
 #define GPIO_CAMERA_FLASH_ENABLE	MOP500_EGPIO(4)
@@ -55,7 +63,6 @@
 #define MOP500_DISP1_RST_GPIO		MOP500_EGPIO(15)
 #define GPIO_SDMMC_EN			MOP500_EGPIO(17)
 #define GPIO_SDMMC_1V8_3V_SEL		MOP500_EGPIO(18)
-#define MOP500_EGPIO_END		MOP500_EGPIO(24)
 
 /*
  * GPIOs on the AB8500 mixed-signals circuit
@@ -78,14 +85,25 @@ struct i2c_board_info;
 extern void mop500_sdi_init(struct device *parent);
 extern void snowball_sdi_init(struct device *parent);
 extern void hrefv60_sdi_init(struct device *parent);
+extern void mach_u8520_sdi_init(struct device *parent);
 extern void mop500_sdi_tc35892_init(struct device *parent);
 void __init mop500_u8500uib_init(void);
 void __init mop500_stuib_init(void);
+void __init mop500_msp_init(struct device *parent);
 void __init mop500_pins_init(void);
+void __init mop500_vibra_init(void);
 void __init hrefv60_pins_init(void);
 void __init snowball_pins_init(void);
+void __init mop500_u8500uib_r3_init(void);
 
-void mop500_uib_i2c_add(int busnum, struct i2c_board_info *info,
+void mop500_uib_i2c_add(int busnum, struct i2c_board_info const *info,
 		unsigned n);
+
+int msp13_i2s_init(void);
+int msp13_i2s_exit(void);
+
+int uib_is_stuib(void);
+int uib_is_u8500uib(void);
+int uib_is_u8500uibr3(void);
 
 #endif

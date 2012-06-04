@@ -17,6 +17,7 @@
 #include <linux/clk.h>
 #include <linux/jiffies.h>
 #include <linux/err.h>
+#include <linux/delay.h>
 #include <asm/mach/time.h>
 #include <asm/sched_clock.h>
 
@@ -142,6 +143,28 @@ static struct clock_event_device nmdk_clkevt = {
 	.set_next_event	= nmdk_clkevt_next,
 };
 
+#ifdef ARCH_HAS_READ_CURRENT_TIMER
+static void nmdk_timer_delay_loop(unsigned long loops)
+{
+	unsigned long bclock, now;
+
+	bclock = ~readl(mtu_base + MTU_VAL(0));
+	do {
+		now = ~readl(mtu_base + MTU_VAL(0));
+		/* If timer have been cleared (suspend) or wrapped we exit */
+		if (unlikely(now < bclock))
+			return;
+	} while ((now - bclock) < loops);
+}
+
+/* Used to calibrate the delay */
+int read_current_timer(unsigned long *timer_val)
+{
+	*timer_val = ~readl(mtu_base + MTU_VAL(0));
+	return 0;
+}
+#endif
+
 /*
  * IRQ Handler for timer 1 of the MTU block.
  */
@@ -172,6 +195,11 @@ void nmdk_clksrc_reset(void)
 
 	writel(clk_prescale | MTU_CRn_32BITS | MTU_CRn_ENA,
 	       mtu_base + MTU_CR(0));
+}
+
+struct clock_event_device *nmdk_clkevt_get(void)
+{
+	return &nmdk_clkevt;
 }
 
 void __init nmdk_timer_init(void __iomem *base)
@@ -220,4 +248,8 @@ void __init nmdk_timer_init(void __iomem *base)
 	setup_irq(IRQ_MTU0, &nmdk_timer_irq);
 	nmdk_clkevt.cpumask = cpumask_of(0);
 	clockevents_config_and_register(&nmdk_clkevt, rate, 2, 0xffffffffU);
+#ifdef ARCH_HAS_READ_CURRENT_TIMER
+	set_delay_fn(nmdk_timer_delay_loop);
+#endif
+
 }
