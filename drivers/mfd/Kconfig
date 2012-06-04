@@ -331,6 +331,17 @@ config MFD_TC3589X
 	  additional drivers must be enabled in order to use the
 	  functionality of the device.
 
+config MFD_TC35892
+	bool "Support Toshiba TC35892"
+	depends on I2C=y && GENERIC_HARDIRQS
+	select MFD_CORE
+	help
+	  Support for the Toshiba TC35892 I/O Expander.
+
+	  This driver provides common support for accessing the device,
+	  additional drivers must be enabled in order to use the
+	  functionality of the device.
+
 config MFD_TMIO
 	bool
 	default n
@@ -358,6 +369,27 @@ config MFD_TC6393XB
 	select MFD_TMIO
 	help
 	  Support for Toshiba Mobile IO Controller TC6393XB
+
+config AB5500_CORE
+	bool "ST-Ericsson AB5500 Mixed Signal Circuit core functions"
+	select MFD_CORE
+	depends on GENERIC_HARDIRQS && ABX500_CORE
+	help
+	  Select this to enable the AB5500 Mixed Signal IC core
+	  functionality. This connects to a AB5500 chip on the I2C bus via
+	  the Power and Reset Management Unit (PRCMU). It exposes a number
+	  of symbols needed for dependent devices to read and write
+	  registers and subscribe to events from this multi-functional IC.
+	  This is needed to use other features of the AB5500 such as
+	  battery-backed RTC, charging control, Regulators, LEDs, vibrator,
+	  system power and temperature, power management and ALSA sound.
+
+config AB5500_GPADC
+	bool "AB5500 GPADC driver"
+	depends on AB5500_CORE
+	default y
+	help
+	  AB5500 GPADC driver used to convert battery/usb voltage.
 
 config PMIC_DA903X
 	bool "Dialog Semiconductor DA9030/DA9034 PMIC Support"
@@ -678,13 +710,21 @@ config AB8500_CORE
 
 config AB8500_I2C_CORE
 	bool "AB8500 register access via PRCMU I2C"
-	depends on AB8500_CORE && MFD_DB8500_PRCMU
+	depends on AB8500_CORE
 	default y
 	help
 	  This enables register access to the AB8500 chip via PRCMU I2C.
 	  The AB8500 chip can be accessed via SPI or I2C. On DB8500 hardware
 	  the I2C bus is connected to the Power Reset
 	  and Mangagement Unit, PRCMU.
+
+config AB8500_DENC
+	bool "AB8500_DENC driver support(CVBS)"
+	depends on AB8500_CORE
+	help
+	  Select this option to add driver support for analog TV out through
+	  AB8500.
+
 
 config AB8500_DEBUG
        bool "Enable debug info via debugfs"
@@ -696,10 +736,10 @@ config AB8500_DEBUG
 
 config AB8500_GPADC
 	bool "AB8500 GPADC driver"
-	depends on AB8500_CORE && REGULATOR_AB8500
+	depends on AB8500_CORE
 	default y
 	help
-	  AB8500 GPADC driver used to convert Acc and battery/ac/usb voltage
+	  AB8500 GPADC driver used to convert Acc and battery/ac/usb voltage.
 
 config MFD_DB8500_PRCMU
 	bool "ST-Ericsson DB8500 Power Reset Control Management Unit"

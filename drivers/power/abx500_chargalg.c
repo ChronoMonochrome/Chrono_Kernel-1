@@ -220,6 +220,7 @@ enum maxim_ret {
  */
 struct abx500_chargalg {
 	struct device *dev;
+	struct ab8500 *parent;
 	int charge_status;
 	int eoc_cnt;
 	int rch_cnt;
@@ -1802,7 +1803,7 @@ static int __devexit abx500_chargalg_remove(struct platform_device *pdev)
 
 static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
 {
-	struct abx500_bm_plat_data *plat_data;
+	struct ab8500_platform_data *plat_data;
 	int ret = 0;
 
 	struct abx500_chargalg *di =
@@ -1812,8 +1813,8 @@ static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
 
 	/* get device struct */
 	di->dev = &pdev->dev;
-
-	plat_data = pdev->dev.platform_data;
+	di->parent = dev_get_drvdata(pdev->dev.parent);
+	plat_data = dev_get_platdata(di->parent->dev);
 	di->pdata = plat_data->chargalg;
 	di->bat = plat_data->battery;
 

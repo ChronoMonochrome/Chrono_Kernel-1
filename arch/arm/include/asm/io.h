@@ -63,6 +63,12 @@ extern void __raw_readsl(const void __iomem *addr, void *data, int longlen);
 #define MT_DEVICE_CACHED	2
 #define MT_DEVICE_WC		3
 /*
+ * NOTE : U8500 v1.0/ED cut specific hack.
+ * look at the commit message for more details
+ */
+#define MT_BACKUP_RAM           4
+
+/*
  * types 4 onwards can be found in asm/mach/map.h and are undefined
  * for ioremap
  */

@@ -304,6 +304,8 @@ ENTRY(\name\()_cache_fns)
 	.long	\name\()_coherent_kern_range
 	.long	\name\()_coherent_user_range
 	.long	\name\()_flush_kern_dcache_area
+	.long	\name\()_clean_dcache_all
+	.long	\name\()_flush_dcache_all
 	.long	\name\()_dma_map_area
 	.long	\name\()_dma_unmap_area
 	.long	\name\()_dma_flush_range

@@ -8,6 +8,16 @@ config ANDROID
 
 if ANDROID
 
+config ANDROID_AB5500_TIMED_VIBRA
+	bool "AB5500 Timed Output Vibrator"
+	depends on AB5500_CORE
+	depends on ANDROID_TIMED_OUTPUT
+	default y
+	help
+	  Say Y here to enable linear/rotary vibrator driver using timed
+	  output class device for ST-Ericsson's based on ST-Ericsson's
+	  AB5500 Mix-Sig PMIC
+
 config ANDROID_BINDER_IPC
 	bool "Android Binder IPC Driver"
 	default n
@@ -52,6 +62,14 @@ config ANDROID_LOW_MEMORY_KILLER
 	default N
 	---help---
 	  Register processes to be killed when memory is low
+
+config ANDROID_STE_TIMED_VIBRA
+	bool "ST-Ericsson Timed Output Vibrator"
+	depends on SND_SOC_AB8500
+	depends on ANDROID_TIMED_OUTPUT
+	default y
+	help
+	  ST-Ericsson's vibrator driver using timed output class device
 
 source "drivers/staging/android/switch/Kconfig"
 

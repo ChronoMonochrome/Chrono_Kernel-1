@@ -117,7 +117,7 @@ static int amba_legacy_resume(struct device *dev)
 
 #ifdef CONFIG_SUSPEND
 
-static int amba_pm_suspend(struct device *dev)
+int amba_pm_suspend(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -135,7 +135,7 @@ static int amba_pm_suspend(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_resume(struct device *dev)
+int amba_pm_resume(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -162,7 +162,7 @@ static int amba_pm_resume(struct device *dev)
 
 #ifdef CONFIG_HIBERNATE_CALLBACKS
 
-static int amba_pm_freeze(struct device *dev)
+int amba_pm_freeze(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -180,7 +180,7 @@ static int amba_pm_freeze(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_thaw(struct device *dev)
+int amba_pm_thaw(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -198,7 +198,7 @@ static int amba_pm_thaw(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_poweroff(struct device *dev)
+int amba_pm_poweroff(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -216,7 +216,7 @@ static int amba_pm_poweroff(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_restore(struct device *dev)
+int amba_pm_restore(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;

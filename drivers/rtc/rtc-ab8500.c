@@ -88,22 +88,17 @@ static int ab8500_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	if (retval < 0)
 		return retval;
 
-	/* Early AB8500 chips will not clear the rtc read request bit */
-	if (abx500_get_chip_id(dev) == 0) {
-		usleep_range(1000, 1000);
-	} else {
-		/* Wait for some cycles after enabling the rtc read in ab8500 */
-		while (time_before(jiffies, timeout)) {
-			retval = abx500_get_register_interruptible(dev,
-				AB8500_RTC, AB8500_RTC_READ_REQ_REG, &value);
-			if (retval < 0)
-				return retval;
+	/* Wait for some cycles after enabling the rtc read in ab8500 */
+	while (time_before(jiffies, timeout)) {
+		retval = abx500_get_register_interruptible(dev,
+			AB8500_RTC, AB8500_RTC_READ_REQ_REG, &value);
+		if (retval < 0)
+			return retval;
 
-			if (!(value & RTC_READ_REQUEST))
-				break;
+		if (!(value & RTC_READ_REQUEST))
+			break;
 
-			usleep_range(1000, 5000);
-		}
+		usleep_range(1000, 5000);
 	}
 
 	/* Read the Watchtime registers */
@@ -224,8 +219,8 @@ static int ab8500_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 {
 	int retval, i;
 	unsigned char buf[ARRAY_SIZE(ab8500_rtc_alarm_regs)];
-	unsigned long mins, secs = 0;
-
+	unsigned long mins, secs = 0, cursec=0;
+	struct rtc_time curtm;
 	if (alarm->time.tm_year < (AB8500_RTC_EPOCH - 1900)) {
 		dev_dbg(dev, "year should be equal to or greater than %d\n",
 				AB8500_RTC_EPOCH);
@@ -235,14 +230,36 @@ static int ab8500_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	/* Get the number of seconds since 1970 */
 	rtc_tm_to_time(&alarm->time, &secs);
 
+	/* Check whether alarm is set less than 1min.
+	 * Since our RTC doesn't support alarm resolution less than 1min,
+	 * return -EINVAL, so UIE EMUL can take it up, incase of UIE_ON
+	 */
+	ab8500_rtc_read_time(dev, &curtm); /* Read current time */
+	rtc_tm_to_time(&curtm, &cursec);
+	if ((secs - cursec) < 59) {
+		dev_dbg(dev, "Alarm less than 1 minute not supported\n");
+		return -EINVAL;
+	}
+
 	/*
 	 * Convert it to the number of seconds since 01-01-2000 00:00:00, since
 	 * we only have a small counter in the RTC.
 	 */
 	secs -= get_elapsed_seconds(AB8500_RTC_EPOCH);
 
+#ifndef CONFIG_ANDROID
+	secs += 30; /* Round to nearest minute */
+#endif
+
 	mins = secs / 60;
 
+#ifdef CONFIG_ANDROID
+	/*
+	 * Needed due to Android believes all hw have a wake-up resolution
+	 * in seconds.
+	 */
+	mins++;
+#endif
 	buf[2] = mins & 0xFF;
 	buf[1] = (mins >> 8) & 0xFF;
 	buf[0] = (mins >> 16) & 0xFF;

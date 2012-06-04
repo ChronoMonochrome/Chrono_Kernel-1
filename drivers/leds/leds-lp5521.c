@@ -355,7 +355,12 @@ static int lp5521_do_store_load(struct lp5521_engine *engine,
 	while ((offset < len - 1) && (i < LP5521_PROGRAM_LENGTH)) {
 		/* separate sscanfs because length is working only for %s */
 		ret = sscanf(buf + offset, "%2s%n ", c, &nrchars);
-		if (ret != 2)
+		/*
+		 * Execution of a %n directive does not always
+		 * increment the assignment count returned at
+		 * completion of execution.so ret need not be 2
+		 */
+		if ((ret != 1) && (ret != 2))
 			goto fail;
 		ret = sscanf(c, "%2x", &cmd);
 		if (ret != 1)
@@ -787,6 +792,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
 	ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
 	if (buf != LP5521_REG_R_CURR_DEFAULT) {
 		dev_err(&client->dev, "error in resetting chip\n");
+		ret = -EIO;
 		goto fail2;
 	}
 	usleep_range(10000, 20000);

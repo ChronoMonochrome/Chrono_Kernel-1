@@ -853,6 +853,25 @@ static int hw_breakpoint_pending(unsigned long addr, unsigned int fsr,
 	return ret;
 }
 
+static int hw_breakpoint_undef(struct pt_regs *regs, unsigned int instr)
+{
+	int reg = (instr >> 12) & 15;
+
+	/* Fake sticky power-down cleared */
+	regs->uregs[reg] = 0;
+	regs->ARM_pc += 4;
+
+	return 0;
+}
+
+static struct undef_hook hw_breakpoint_hook = {
+	.instr_mask	= 0xffff0fff,
+	.instr_val	= 0xee110e95,
+	.cpsr_mask	= MODE_MASK,
+	.cpsr_val	= SVC_MODE,
+	.fn		= hw_breakpoint_undef,
+};
+
 /*
  * One-time initialisation.
  */
@@ -899,6 +918,10 @@ static void reset_ctrl_regs(void *unused)
 		/*
 		 * Ensure sticky power-down is clear (i.e. debug logic is
 		 * powered up).
+		 *
+		 * This could raise an undefined instruction exception.  If it
+		 * does, it is fixed up with an undef hook which constructs
+		 * a fake value with the sticky power-down bit cleared.
 		 */
 		asm volatile("mrc p14, 0, %0, c1, c5, 4" : "=r" (dbg_power));
 		if ((dbg_power & 0x1) == 0)
@@ -985,6 +1008,8 @@ static int __init arch_hw_breakpoint_init(void)
 	 * determine that.
 	 */
 	register_undef_hook(&debug_reg_hook);
+
+	register_undef_hook(&hw_breakpoint_hook);
 
 	/*
 	 * Reset the breakpoint resources. We assume that a halting

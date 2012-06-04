@@ -307,4 +307,23 @@ config AB8500_BATTERY_THERM_ON_BATCTRL
 	help
 	  Say Y to enable battery temperature measurements using
 	  thermistor connected on BATCTRL ADC.
+
+config AB8500_9100_LI_ION_BATTERY
+	bool "Enable support of the 9100 Li-ion battery charging"
+	depends on AB8500_BM
+	help
+	  Say Y to enable support of the 9100 Li-ion battery charging.
+
+config AB5500_BM
+	bool "AB5500 Battery Management Driver"
+	depends on AB5500_CORE && AB5500_GPADC && MACH_U5500
+	help
+	  Say Y to include support for AB5500 battery management.
+
+config AB5500_BATTERY_THERM_ON_BATCTRL
+	bool "Thermistor connected on BATCTRL ADC"
+	depends on AB5500_BM
+	help
+	  Say Y to enable battery temperature measurements using
+	  thermistor connected on BATCTRL ADC.
 endif # POWER_SUPPLY

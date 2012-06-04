@@ -100,6 +100,9 @@
 #define AB9540_MODEM_CTRL2_REG			0x23
 #define AB9540_MODEM_CTRL2_SWDBBRSTN_BIT	BIT(2)
 
+static bool no_bm; /* No battery management */
+module_param(no_bm, bool, S_IRUGO);
+
 /*
  * Map interrupt numbers to the LATCH and MASK register offsets, Interrupt
  * numbers are indexed into this array with (num / 8). The interupts are
@@ -257,6 +260,7 @@ static struct abx500_ops ab8500_ops = {
 	.mask_and_set_register = ab8500_mask_and_set_register,
 	.event_registers_startup_state_get = NULL,
 	.startup_irq_enabled = NULL,
+	.dump_all_banks = ab8500_dump_all_banks,
 };
 
 static void ab8500_irq_lock(struct irq_data *data)
@@ -354,6 +358,7 @@ static irqreturn_t ab8500_irq(int irq, void *dev)
 			int line = i * 8 + bit;
 
 			handle_nested_irq(ab8500->irq_base + line);
+			ab8500_debug_register_interrupt(line);
 			value &= ~(1 << bit);
 		} while (value);
 	}
@@ -746,7 +751,7 @@ static struct resource __devinitdata ab8500_usb_resources[] = {
 
 static struct resource __devinitdata ab8500_temp_resources[] = {
 	{
-		.name  = "AB8500_TEMP_WARM",
+		.name  = "ABX500_TEMP_WARM",
 		.start = AB8500_INT_TEMP_WARM,
 		.end   = AB8500_INT_TEMP_WARM,
 		.flags = IORESOURCE_IRQ,
@@ -768,6 +773,9 @@ static struct mfd_cell __devinitdata abx500_common_devs[] = {
 		.name = "ab8500-regulator",
 	},
 	{
+		.name = "ab8500-regulator-debug",
+	},
+	{
 		.name = "ab8500-gpadc",
 		.num_resources = ARRAY_SIZE(ab8500_gpadc_resources),
 		.resources = ab8500_gpadc_resources,
@@ -776,26 +784,6 @@ static struct mfd_cell __devinitdata abx500_common_devs[] = {
 		.name = "ab8500-rtc",
 		.num_resources = ARRAY_SIZE(ab8500_rtc_resources),
 		.resources = ab8500_rtc_resources,
-	},
-	{
-		.name = "ab8500-charger",
-		.num_resources = ARRAY_SIZE(ab8500_charger_resources),
-		.resources = ab8500_charger_resources,
-	},
-	{
-		.name = "ab8500-btemp",
-		.num_resources = ARRAY_SIZE(ab8500_btemp_resources),
-		.resources = ab8500_btemp_resources,
-	},
-	{
-		.name = "ab8500-fg",
-		.num_resources = ARRAY_SIZE(ab8500_fg_resources),
-		.resources = ab8500_fg_resources,
-	},
-	{
-		.name = "ab8500-chargalg",
-		.num_resources = ARRAY_SIZE(ab8500_chargalg_resources),
-		.resources = ab8500_chargalg_resources,
 	},
 	{
 		.name = "ab8500-acc-det",
@@ -815,20 +803,12 @@ static struct mfd_cell __devinitdata abx500_common_devs[] = {
 		.name = "ab8500-pwm",
 		.id = 1,
 	},
-	{
-		.name = "ab8500-pwm",
-		.id = 2,
-	},
-	{
-		.name = "ab8500-pwm",
-		.id = 3,
-	},
 	{ .name = "ab8500-leds", },
 	{
 		.name = "ab8500-denc",
 	},
 	{
-		.name = "ab8500-temp",
+		.name = "abx500-temp",
 		.num_resources = ARRAY_SIZE(ab8500_temp_resources),
 		.resources = ab8500_temp_resources,
 	},
@@ -857,6 +837,29 @@ static struct mfd_cell __devinitdata ab9540_devs[] = {
 		.name = "ab9540-usb",
 		.num_resources = ARRAY_SIZE(ab8500_usb_resources),
 		.resources = ab8500_usb_resources,
+	},
+};
+
+static struct mfd_cell __devinitdata ab8500_bm_devs[] = {
+	{
+		.name = "ab8500-charger",
+		.num_resources = ARRAY_SIZE(ab8500_charger_resources),
+		.resources = ab8500_charger_resources,
+	},
+	{
+		.name = "ab8500-btemp",
+		.num_resources = ARRAY_SIZE(ab8500_btemp_resources),
+		.resources = ab8500_btemp_resources,
+	},
+	{
+		.name = "ab8500-fg",
+		.num_resources = ARRAY_SIZE(ab8500_fg_resources),
+		.resources = ab8500_fg_resources,
+	},
+	{
+		.name = "ab8500-chargalg",
+		.num_resources = ARRAY_SIZE(ab8500_chargalg_resources),
+		.resources = ab8500_chargalg_resources,
 	},
 };
 
@@ -1129,6 +1132,15 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
 			      ab8500->irq_base);
 	if (ret)
 		goto out_freeirq;
+
+	if (!no_bm) {
+		/* Add battery management devices */
+		ret = mfd_add_devices(ab8500->dev, 0, ab8500_bm_devs,
+				      ARRAY_SIZE(ab8500_bm_devs), NULL,
+				      ab8500->irq_base);
+		if (ret)
+			dev_err(ab8500->dev, "error adding bm devices\n");
+	}
 
 	if (is_ab9540(ab8500))
 		ret = sysfs_create_group(&ab8500->dev->kobj,

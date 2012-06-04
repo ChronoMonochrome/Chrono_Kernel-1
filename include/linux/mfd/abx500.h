@@ -33,6 +33,7 @@ struct device;
 #define AB5500_1_0	0x20
 #define AB5500_1_1	0x21
 #define AB5500_2_0	0x24
+#define AB5500_2_1	0x25
 
 /*
  * AB3100, EVENTA1, A2 and A3 event register flags
@@ -444,6 +445,13 @@ int abx500_mask_and_set_register_interruptible(struct device *dev, u8 bank,
 int abx500_get_chip_id(struct device *dev);
 int abx500_event_registers_startup_state_get(struct device *dev, u8 *event);
 int abx500_startup_irq_enabled(struct device *dev, unsigned int irq);
+void abx500_dump_all_banks(void);
+
+#define abx500_get	abx500_get_register_interruptible
+#define abx500_set	abx500_set_register_interruptible
+#define abx500_get_page	abx500_get_register_page_interruptible
+#define abx500_set_page	abx500_set_register_page_interruptible
+#define abx500_mask_and_set	abx500_mask_and_set_register_interruptible
 
 struct abx500_ops {
 	int (*get_chip_id) (struct device *);
@@ -454,6 +462,7 @@ struct abx500_ops {
 	int (*mask_and_set_register) (struct device *, u8, u8, u8, u8);
 	int (*event_registers_startup_state_get) (struct device *, u8 *);
 	int (*startup_irq_enabled) (struct device *, unsigned int);
+	void (*dump_all_banks) (struct device *);
 };
 
 int abx500_register_ops(struct device *core_dev, struct abx500_ops *ops);
