@@ -23,8 +23,6 @@
 #include <../../../drivers/cpuidle/cpuidle-dbx500_dbg.h>
 #include <linux/mfd/dbx500-prcmu.h>
 
-extern volatile int pen_release;
-
 /*
  * platform-specific code to shutdown a CPU
  *
