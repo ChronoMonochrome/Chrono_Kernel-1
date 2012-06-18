@@ -2048,8 +2048,9 @@ static struct sk_buff *cg2900_hu_dequeue(struct hci_uart *hu)
 	struct sk_buff *skb;
 	struct uart_info *uart_info = dev_get_drvdata(hu->proto->dev);
 	unsigned long timeout_jiffies = get_sleep_timeout(uart_info);
+	unsigned long flags;
 
-	spin_lock_bh(&(uart_info->transmission_lock));
+	spin_lock_irqsave(&(uart_info->transmission_lock), flags);
 
 	skb = skb_dequeue(&uart_info->tx_queue);
 
@@ -2064,7 +2065,7 @@ static struct sk_buff *cg2900_hu_dequeue(struct hci_uart *hu)
 				&uart_info->sleep_work.work,
 				timeout_jiffies);
 
-	spin_unlock_bh(&(uart_info->transmission_lock));
+	spin_unlock_irqrestore(&(uart_info->transmission_lock), flags);
 
 	if (BAUD_SENDING == uart_info->baud_rate_state && !skb)
 		finish_setting_baud_rate(hu);
