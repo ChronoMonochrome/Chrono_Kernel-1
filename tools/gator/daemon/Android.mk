@@ -33,9 +33,9 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
-LOCAL_MODULE:= gatord
+#LOCAL_MODULE:= gatord
 LOCAL_MODULE_TAGS:= optional
 
 LOCAL_LDLIBS := -lz -llog
 
-include $(BUILD_EXECUTABLE)
+#include $(BUILD_EXECUTABLE)
