@@ -19,6 +19,7 @@
 
 #include <linux/device.h>
 #include <linux/kallsyms.h>
+#include <linux/export.h>
 #include <linux/mutex.h>
 #include <linux/pm.h>
 #include <linux/pm_runtime.h>
@@ -563,6 +564,7 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 	pm_callback_t callback = NULL;
 	char *info = NULL;
 	int error = 0;
+	bool put = false;
 
 	TRACE_DEVICE(dev);
 	TRACE_RESUME(0);
@@ -578,6 +580,9 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 
 	if (!dev->power.is_suspended)
 		goto Unlock;
+
+	pm_runtime_enable(dev);
+	put = true;
 
 	if (dev->pm_domain) {
 		info = "power domain ";
@@ -629,6 +634,10 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
 	complete_all(&dev->power.completion);
 
 	TRACE_RESUME(error);
+
+	if (put)
+		pm_runtime_put_sync(dev);
+
 	return error;
 }
 
@@ -880,11 +889,6 @@ static int dpm_suspend_noirq(pm_message_t state)
 		if (!list_empty(&dev->power.entry))
 			list_move(&dev->power.entry, &dpm_noirq_list);
 		put_device(dev);
-
-		if (pm_wakeup_pending()) {
-			error = -EBUSY;
-			break;
-		}
 	}
 	mutex_unlock(&dpm_list_mtx);
 	if (error)
@@ -958,11 +962,6 @@ static int dpm_suspend_late(pm_message_t state)
 		if (!list_empty(&dev->power.entry))
 			list_move(&dev->power.entry, &dpm_late_early_list);
 		put_device(dev);
-
-		if (pm_wakeup_pending()) {
-			error = -EBUSY;
-			break;
-		}
 	}
 	mutex_unlock(&dpm_list_mtx);
 	if (error)
@@ -1020,15 +1019,21 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 	int error = 0;
 
 	dpm_wait_for_children(dev, async);
-	device_lock(dev);
 
 	if (async_error)
-		goto Unlock;
+		goto Complete;
+
+	pm_runtime_get_noresume(dev);
+	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
+		pm_wakeup_event(dev, 0);
 
 	if (pm_wakeup_pending()) {
+		pm_runtime_put_sync(dev);
 		async_error = -EBUSY;
-		goto Unlock;
+		goto Complete;
 	}
+
+	device_lock(dev);
 
 	if (dev->pm_domain) {
 		info = "power domain ";
@@ -1081,12 +1086,17 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
 			dev->parent->power.wakeup_path = true;
 	}
 
- Unlock:
 	device_unlock(dev);
+
+ Complete:
 	complete_all(&dev->power.completion);
 
-	if (error)
+	if (error) {
+		pm_runtime_put_sync(dev);
 		async_error = error;
+	} else if (dev->power.is_suspended) {
+		__pm_runtime_disable(dev, false);
+	}
 
 	return error;
 }
@@ -1231,13 +1241,7 @@ int dpm_prepare(pm_message_t state)
 		get_device(dev);
 		mutex_unlock(&dpm_list_mtx);
 
-		pm_runtime_get_noresume(dev);
-		if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-			pm_wakeup_event(dev, 0);
-
-		pm_runtime_put_sync(dev);
-		error = pm_wakeup_pending() ?
-				-EBUSY : device_prepare(dev, state);
+		error = device_prepare(dev, state);
 
 		mutex_lock(&dpm_list_mtx);
 		if (error) {
