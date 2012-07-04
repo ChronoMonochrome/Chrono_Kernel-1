@@ -540,9 +540,13 @@ static struct dsiescclk dsiescclk[3] = {
 /* PLLDIV=12, PLLSW=4 (PLLDDR) */
 #define PRCMU_DSI_CLOCK_SETTING		0x0000008C
 
-/* DPI 50000000 Hz */
-#define PRCMU_DPI_CLOCK_SETTING		((1 << PRCMU_CLK_PLL_SW_SHIFT) | \
-					  (16 << PRCMU_CLK_PLL_DIV_SHIFT))
+#define PRCMU_LCDCLKEN			(1 << 17)
+/* DPI 66000000 Hz */
+/* modified as specified in the STE application note about LCD */
+#define PRCMU_CLK_EN	(1<<8)
+#define PRCMU_DPI_CLOCK_SETTING		(PRCMU_CLK_EN | (4 << PRCMU_CLK_PLL_SW_SHIFT) | \
+					  (12 << PRCMU_CLK_PLL_DIV_SHIFT))
+
 #define PRCMU_DSI_LP_CLOCK_SETTING	0x00000E00
 
 /* D=101, N=1, R=4, SELDIV2=0 */
@@ -609,6 +613,8 @@ int db8500_prcmu_set_display_clocks(void)
 		cpu_relax();
 
 	writel(PRCMU_DSI_CLOCK_SETTING, PRCM_HDMICLK_MGT);
+	/* Enable LCD Clock */
+	writel(PRCMU_LCDCLKEN, PRCM_YYCLKEN0_MGT_SET);
 	writel(PRCMU_DSI_LP_CLOCK_SETTING, PRCM_TVCLK_MGT);
 	writel(PRCMU_DPI_CLOCK_SETTING, PRCM_LCDCLK_MGT);
 

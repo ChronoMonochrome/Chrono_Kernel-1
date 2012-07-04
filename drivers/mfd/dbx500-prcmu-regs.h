@@ -154,9 +154,9 @@
 #define PRCM_PLLDSI_FREQ           (_PRCMU_BASE + 0x500)
 #define PRCM_PLLDSI_ENABLE         (_PRCMU_BASE + 0x504)
 #define PRCM_PLLDSI_LOCKP          (_PRCMU_BASE + 0x508)
+#define PRCM_YYCLKEN0_MGT_SET	   (_PRCMU_BASE + 0x510)
 #define PRCM_DSI_PLLOUT_SEL        (_PRCMU_BASE + 0x530)
 #define PRCM_DSITVCLK_DIV          (_PRCMU_BASE + 0x52C)
-#define PRCM_PLLDSI_LOCKP          (_PRCMU_BASE + 0x508)
 #define PRCM_APE_RESETN_SET        (_PRCMU_BASE + 0x1E4)
 #define PRCM_APE_RESETN_CLR        (_PRCMU_BASE + 0x1E8)
 
