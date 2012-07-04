@@ -46,7 +46,7 @@ static pin_cfg_t mop500_pins_common[] = {
 	GPIO68_LCD_VSI0	| PIN_INPUT_PULLUP,
 
 	/* Touch screen INTERFACE */
-	GPIO84_GPIO	| PIN_INPUT_PULLUP, /* TOUCH_INT1 */
+	GPIO152_GPIO	| PIN_INPUT_PULLUP, /* TOUCH_INT1 */
 
 	/* STMPE1601/tc35893 keypad  IRQ */
 	GPIO218_GPIO	| PIN_INPUT_PULLUP,
@@ -243,6 +243,10 @@ static pin_cfg_t snowball_pins[] = {
 	GPIO171_GPIO		| PIN_OUTPUT_HIGH,/* GBF_ENA */
 	GPIO215_GPIO		| PIN_OUTPUT_LOW,/* WLAN_ENA */
 	GPIO216_GPIO		| PIN_INPUT_PULLUP,/* WLAN_IRQ */
+
+	/* DAB-AVI */
+	GPIO8_GPIO		| PIN_OUTPUT_HIGH,/* NASTECH LED_EN */
+	GPIO68_GPIO		| PIN_OUTPUT_HIGH,/* LCVS TRANSCEIVER SHDN# */
 };
 
 /*
@@ -275,6 +279,37 @@ static UX500_PINS(mop500_pins_i2c3,
 		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
 	GPIO230_I2C3_SCL |
 		PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
+);
+
+static UX500_PINS(mop500_pins_mcde_dpi,
+	GPIO64_LCDB_DE,
+	GPIO65_LCDB_HSO,
+	GPIO66_LCDB_VSO,
+	GPIO67_LCDB_CLK,
+	GPIO70_LCD_D0,
+	GPIO71_LCD_D1,
+	GPIO72_LCD_D2,
+	GPIO73_LCD_D3,
+	GPIO74_LCD_D4,
+	GPIO75_LCD_D5,
+	GPIO76_LCD_D6,
+	GPIO77_LCD_D7,
+	GPIO78_LCD_D8,
+	GPIO79_LCD_D9,
+	GPIO80_LCD_D10,
+	GPIO81_LCD_D11,
+	GPIO82_LCD_D12,
+	GPIO83_LCD_D13,
+	GPIO84_LCD_D14,
+	GPIO85_LCD_D15,
+	GPIO153_LCD_D24,
+	GPIO154_LCD_D25,
+	GPIO155_LCD_D26,
+	GPIO156_LCD_D27,
+	GPIO157_LCD_D28,
+	GPIO158_LCD_D29,
+	GPIO159_LCD_D30,
+	GPIO160_LCD_D31,
 );
 
 static UX500_PINS(mop500_pins_mcde_tvout,
@@ -403,7 +438,8 @@ static UX500_PINS(mop500_pins_sensors1p,
 );
 
 static struct ux500_pin_lookup mop500_runtime_pins[] = {
-	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout),
+//	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout),
+	PIN_LOOKUP("mcde-dpi", &mop500_pins_mcde_dpi),
 	PIN_LOOKUP("av8100-hdmi", &mop500_pins_mcde_hdmi),
 	PIN_LOOKUP("nmk-i2c.0", &mop500_pins_i2c0),
 	PIN_LOOKUP("nmk-i2c.1", &mop500_pins_i2c1),
