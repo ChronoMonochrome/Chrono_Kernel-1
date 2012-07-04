@@ -52,6 +52,7 @@ enum {
 	FICTIVE_DISPLAY_ID,
 	AV8100_DISPLAY_ID,
 	AB8500_DISPLAY_ID,
+	NASTECH_DISPLAY_ID,
 	MCDE_NR_OF_DISPLAYS
 };
 
@@ -338,6 +339,77 @@ static void delayed_work_dispreg_hdmi(struct work_struct *ptr)
 }
 #endif /* CONFIG_U8500_TV_OUTPUT_AV8100 */
 
+#ifdef CONFIG_MCDE_DISPLAY_NASTEC_DPI
+static struct mcde_port port_nastech = {
+	.type = MCDE_PORTTYPE_DPI,
+	.mode = MCDE_PORTMODE_VID,
+	.pixel_format = MCDE_PORTPIXFMT_DPI_18BPP_C2,
+	.ifc = 0,
+	.link = 1,		/* DPI channel B can only be on link 1 */
+	.sync_src = MCDE_SYNCSRC_OFF,   /* sync from output formatter  */
+	.update_auto_trig = true,
+	.phy = {
+		.dpi = {
+			.tv_mode = false,
+			.clock_div = MCDE_PORT_DPI_NO_CLOCK_DIV,
+			.polarity = DPI_ACT_LOW_VSYNC | DPI_ACT_LOW_HSYNC,
+		},
+	},
+};
+
+static struct mcde_display_dpi_platform_data nastech_display_pdata = {0};
+static struct ux500_pins *dpi_pins;
+
+static int dpi_display_platform_enable(struct mcde_display_device *ddev)
+{
+	int res;
+
+	if (!dpi_pins) {
+		dpi_pins = ux500_pins_get("mcde-dpi");
+		if (!dpi_pins)
+			return -EINVAL;
+	}
+
+	dev_info(&ddev->dev, "%s\n", __func__);
+	res = ux500_pins_enable(dpi_pins);
+	if (res)
+		dev_warn(&ddev->dev, "Failure during %s\n", __func__);
+
+	return res;
+}
+
+static int dpi_display_platform_disable(struct mcde_display_device *ddev)
+{
+	int res;
+
+	dev_info(&ddev->dev, "%s\n", __func__);
+
+	res = ux500_pins_disable(dpi_pins);
+	if (res)
+		dev_warn(&ddev->dev, "Failure during %s\n", __func__);
+
+	return res;
+
+}
+
+static struct mcde_display_device nastech_display = {
+	.name = "mcde_display_dpi",
+	.id = NASTECH_DISPLAY_ID,
+	.port = &port_nastech,
+	.chnl_id = MCDE_CHNL_B,
+	.fifo = MCDE_FIFO_B,
+	.default_pixel_format = MCDE_OVLYPIXFMT_RGB565,
+	.native_x_res = 1280,
+	.native_y_res = 800,
+	/* .synchronized_update: Don't care: port is set to update_auto_trig */
+	.dev = {
+		.platform_data = &nastech_display_pdata,
+	},
+	.platform_enable = dpi_display_platform_enable,
+	.platform_disable = dpi_display_platform_disable,
+};
+#endif /* CONFIG_MCDE_DISPLAY_NASTEC_DPI */
+
 /*
 * This function will create the framebuffer for the display that is registered.
 */
@@ -553,7 +625,9 @@ static int __init init_display_devices(void)
 #elif defined(CONFIG_U8500_TV_OUTPUT_AB8500)
 	(void)mcde_display_device_register(&tvout_ab8500_display);
 #endif
-
+#ifdef CONFIG_MCDE_DISPLAY_NASTEC_DPI
+	(void)mcde_display_device_register(&nastech_display);
+#endif
 	return 0;
 }
 module_init(init_display_devices);
