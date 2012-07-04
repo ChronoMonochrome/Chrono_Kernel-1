@@ -86,6 +86,11 @@ config MCDE_DISPLAY_VUIB500_DPI
 	---help---
 	  The VUIB500 is an ST-Ericsson user interface board.
 
+config MCDE_DISPLAY_NASTEC_DPI
+	tristate "DPI display driver for the NASTEC display"
+	---help---
+	  The NASTEC display is the display used the calao AVI board.
+
 endmenu
 
 config MCDE_DISPLAY_AB8500_DENC
