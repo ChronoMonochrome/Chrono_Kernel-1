@@ -2686,7 +2686,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
 	int prev_cpu = task_cpu(p);
 	int new_cpu = cpu;
 	int want_affine = 0;
-	int want_sd = 1;
 	int sync = wake_flags & WF_SYNC;
 
 	if (p->nr_cpus_allowed == 1)
@@ -2734,21 +2733,15 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
 		if (want_affine && (tmp->flags & SD_WAKE_AFFINE) &&
 		    cpumask_test_cpu(prev_cpu, sched_domain_span(tmp))) {
 			affine_sd = tmp;
-			want_affine = 0;
+			break;
 		}
 
-		if (!want_sd && !want_affine)
-			break;
-
-		if (!(tmp->flags & sd_flag))
-			continue;
-
-		if (want_sd)
+		if (tmp->flags & sd_flag)
 			sd = tmp;
 	}
 
 	if (affine_sd) {
-		if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
 			prev_cpu = cpu;
 
 		new_cpu = select_idle_sibling(p, prev_cpu);
