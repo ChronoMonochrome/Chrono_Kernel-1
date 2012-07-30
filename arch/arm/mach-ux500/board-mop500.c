@@ -240,7 +240,6 @@ static struct gpio_keys_button snowball_key_array[] = {
 		.debounce_interval = 50,
 		.wakeup		= 1,
 	},
-*/
 	{
 		.gpio		= 152,
 		.type		= EV_KEY,
@@ -250,6 +249,7 @@ static struct gpio_keys_button snowball_key_array[] = {
 		.debounce_interval = 50,
 		.wakeup		= 1,
 	},
+*/
 	{
 		.gpio		= 162,
 		.type		= EV_KEY,
@@ -552,6 +552,59 @@ static struct fixed_voltage_config snowball_gpio_en_3v3_data = {
 	.init_data		= &gpio_en_3v3_regulator,
 	.startup_delay		= 5000, /* 1200us according to data sheet */
 };
+
+/*
+ * GPIO-regulator en 3.3 volts for snowball LCD
+ */
+
+static struct fixed_voltage_config snowball_gpio_en_lcd_3v3_data = {
+	.supply_name		= "LCD-3V3",
+	.gpio			= SNOWBALL_EN_3V3_LCD_GPIO,
+	.microvolts		= 3300000,
+	.enable_high		= 1,
+	.init_data		= &gpio_en_lcd_3v3_regulator,
+	.startup_delay		= 5000,
+};
+
+/*
+ * GPIO-regulator en 1.8 volts for snowball LCD
+ */
+
+static struct fixed_voltage_config snowball_gpio_en_lcd_1v8_data = {
+	.supply_name		= "LCD-1V8",
+	.gpio			= SNOWBALL_EN_1V8_LCD_GPIO,
+	.microvolts		= 1800000,
+	.enable_high		= 1,
+	.init_data		= &gpio_en_lcd_1v8_regulator,
+	.startup_delay		= 5000,
+};
+
+/*
+ * GPIO-regulator en 5 volts VLED boost for snowball LCD
+ */
+
+static struct fixed_voltage_config snowball_gpio_en_lcd_vled_boost_data = {
+	.supply_name		= "LCD-VLED-BOOST",
+	.gpio			= SNOWBALL_EN_VLED_BOOST_LCD_GPIO,
+	.microvolts		= 5000000,
+	.enable_high		= 1,
+	.init_data		= &gpio_en_lcd_vled_boost_regulator,
+	.startup_delay		= 5000,
+};
+
+/*
+ * GPIO-regulator en 5 volts VLED for snowball LCD
+ */
+
+static struct fixed_voltage_config snowball_gpio_en_lcd_vled_data = {
+	.supply_name		= "LCD-VLED",
+	.gpio			= SNOWBALL_EN_VLED_LCD_GPIO,
+	.microvolts		= 5000000,
+	.enable_high		= 1,
+	.init_data		= &gpio_en_lcd_vled_regulator,
+	.startup_delay		= 5000,
+};
+
 #endif
 
 /*
@@ -748,6 +801,39 @@ static struct platform_device snowball_gpio_en_3v3_regulator_device = {
 		.platform_data	= &snowball_gpio_en_3v3_data,
 	},
 };
+
+static struct platform_device snowball_gpio_en_lcd_3v3_regulator_device = {
+	.name	= "reg-fixed-voltage",
+	.id	= 2,
+	.dev	= {
+		.platform_data	= &snowball_gpio_en_lcd_3v3_data,
+	},
+};
+
+static struct platform_device snowball_gpio_en_lcd_1v8_regulator_device = {
+	.name	= "reg-fixed-voltage",
+	.id	= 3,
+	.dev	= {
+		.platform_data	= &snowball_gpio_en_lcd_1v8_data,
+	},
+};
+
+static struct platform_device snowball_gpio_en_lcd_vled_boost_regulator_device = {
+	.name	= "reg-fixed-voltage",
+	.id	= 4,
+	.dev	= {
+		.platform_data	= &snowball_gpio_en_lcd_vled_boost_data,
+	},
+};
+
+static struct platform_device snowball_gpio_en_lcd_vled_regulator_device = {
+	.name	= "reg-fixed-voltage",
+	.id	= 5,
+	.dev	= {
+		.platform_data	= &snowball_gpio_en_lcd_vled_data,
+	},
+};
+
 #endif
 
 #ifdef CONFIG_LEDS_PWM
@@ -815,6 +901,22 @@ static struct platform_device ux500_backlight_device[] = {
 		.dev = {
 			.platform_data = &u8500_backlight_data[1],
 		},
+	},
+};
+
+static struct platform_pwm_backlight_data snowball_backlight_data = {
+	.pwm_id = 1,
+	.max_brightness = 512,
+	.dft_brightness = 512,
+	.lth_brightness = 0,
+	.pwm_period_ns = 512,
+};
+
+static struct platform_device snowball_backlight_device = {
+	.name = "pwm-backlight",
+	.id = 0,
+	.dev = {
+			.platform_data = &snowball_backlight_data,
 	},
 };
 #endif
@@ -1192,6 +1294,10 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 #ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
 	&snowball_gpio_en_3v3_regulator_device,
 	&snowball_gpio_wlan_vbat_regulator_device,
+	&snowball_gpio_en_lcd_3v3_regulator_device,
+	&snowball_gpio_en_lcd_1v8_regulator_device,
+	&snowball_gpio_en_lcd_vled_boost_regulator_device,
+	&snowball_gpio_en_lcd_vled_regulator_device,
 #endif
 	&snowball_sbnet_dev,
 #ifdef CONFIG_FB_MCDE
@@ -1200,6 +1306,9 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
 #ifdef CONFIG_FB_B2R2
 	&u8500_b2r2_device,
 	&u8500_b2r2_blt_device,
+#endif
+#ifdef CONFIG_BACKLIGHT_PWM
+	&snowball_backlight_device,
 #endif
 };
 
