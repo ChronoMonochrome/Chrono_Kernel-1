@@ -19,7 +19,7 @@
 #include <mach/devices.h>
 #include <video/av8100.h>
 #include <video/mcde_display.h>
-#include <video/mcde_display-vuib500-dpi.h>
+#include <video/mcde_display-nastec-dpi.h>
 #include <video/mcde_display-sony_acx424akp_dsi.h>
 #include <video/mcde_display-av8100.h>
 #include <video/mcde_display-ab8500.h>
@@ -353,11 +353,13 @@ static struct mcde_port port_nastech = {
 			.tv_mode = false,
 			.clock_div = MCDE_PORT_DPI_NO_CLOCK_DIV,
 			.polarity = DPI_ACT_LOW_VSYNC | DPI_ACT_LOW_HSYNC,
+			.lcd_freq = 66560000, /* Nastech Pixelclock */
 		},
 	},
 };
 
 static struct mcde_display_dpi_platform_data nastech_display_pdata = {0};
+
 static struct ux500_pins *dpi_pins;
 
 static int dpi_display_platform_enable(struct mcde_display_device *ddev)
