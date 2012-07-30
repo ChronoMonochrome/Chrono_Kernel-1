@@ -18,6 +18,10 @@ extern struct ab8500_regulator_platform_data ab8500_regulator_plat_data;
 extern struct regulator_init_data tps61052_regulator;
 extern struct regulator_init_data gpio_wlan_vbat_regulator;
 extern struct regulator_init_data gpio_en_3v3_regulator;
+extern struct regulator_init_data gpio_en_lcd_3v3_regulator;
+extern struct regulator_init_data gpio_en_lcd_1v8_regulator;
+extern struct regulator_init_data gpio_en_lcd_vled_boost_regulator;
+extern struct regulator_init_data gpio_en_lcd_vled_regulator;
 
 void mop500_regulator_init(void);
 
