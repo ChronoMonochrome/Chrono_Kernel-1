@@ -47,6 +47,7 @@ static pin_cfg_t mop500_pins_common[] = {
 
 	/* Touch screen INTERFACE */
 	GPIO152_GPIO	| PIN_INPUT_PULLUP, /* TOUCH_INT1 */
+	GPIO151_GPIO	| PIN_OUTPUT_HIGH, /* Touch_screen power */
 
 	/* STMPE1601/tc35893 keypad  IRQ */
 	GPIO218_GPIO	| PIN_INPUT_PULLUP,
@@ -438,7 +439,7 @@ static UX500_PINS(mop500_pins_sensors1p,
 );
 
 static struct ux500_pin_lookup mop500_runtime_pins[] = {
-//	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout),
+/*	PIN_LOOKUP("mcde-tvout", &mop500_pins_mcde_tvout), */
 	PIN_LOOKUP("mcde-dpi", &mop500_pins_mcde_dpi),
 	PIN_LOOKUP("av8100-hdmi", &mop500_pins_mcde_hdmi),
 	PIN_LOOKUP("nmk-i2c.0", &mop500_pins_i2c0),
