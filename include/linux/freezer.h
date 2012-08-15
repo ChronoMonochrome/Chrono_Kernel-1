@@ -60,6 +60,17 @@ static inline int try_to_freeze(void)
 		return 0;
 }
 
+/*
+ * HACK: prevent sleeping while atomic warnings due to ARM signal handling
+ * disabling irqs
+ */
+static inline bool try_to_freeze_nowarn(void)
+{
+	if (likely(!freezing(current)))
+		return false;
+	return __refrigerator(false);
+}
+
 extern bool freeze_task(struct task_struct *p, bool sig_only);
 extern void cancel_freezing(struct task_struct *p);
 
