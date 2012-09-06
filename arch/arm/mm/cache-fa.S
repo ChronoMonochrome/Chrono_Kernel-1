@@ -257,6 +257,8 @@ ENDPROC(fa_clean_dcache_all)
 ENTRY(fa_flush_dcache_all)
 	mov	pc, lr
 ENDPROC(fa_flush_dcache_all)
+	.globl	fa_flush_kern_cache_louis
+	.equ	fa_flush_kern_cache_louis, fa_flush_kern_cache_all
 
 	__INITDATA
 

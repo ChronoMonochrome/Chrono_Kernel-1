@@ -156,6 +156,8 @@ ENDPROC(v4_clean_dcache_all)
 ENTRY(v4_flush_dcache_all)
 	mov	pc, lr
 ENDPROC(v4_flush_dcache_all)
+	.globl	v4_flush_kern_cache_louis
+	.equ	v4_flush_kern_cache_louis, v4_flush_kern_cache_all
 
 	__INITDATA
 

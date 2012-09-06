@@ -268,6 +268,8 @@ ENDPROC(v4wb_clean_dcache_all)
 ENTRY(v4wb_flush_dcache_all)
 	mov	pc, lr
 ENDPROC(v4wb_flush_dcache_all)
+	.globl	v4wb_flush_kern_cache_louis
+	.equ	v4wb_flush_kern_cache_louis, v4wb_flush_kern_cache_all
 
 	__INITDATA
 
