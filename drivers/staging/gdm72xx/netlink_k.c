@@ -130,7 +130,7 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
 	nlh = NLMSG_PUT(skb, 0, seq, type, len);
 	memcpy(NLMSG_DATA(nlh), msg, len);
 
-	NETLINK_CB(skb).pid = 0;
+	NETLINK_CB(skb).portid = 0;
 	NETLINK_CB(skb).dst_group = 0;
 
 	ret = netlink_broadcast(sock, skb, 0, group+1, GFP_ATOMIC);
