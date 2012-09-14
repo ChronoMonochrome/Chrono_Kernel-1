@@ -430,6 +430,9 @@ static int adb_release(struct inode *ip, struct file *fp)
 {
 	pr_info("adb_release\n");
 
+	if (!_adb_dev)
+		return -ENODEV;
+
 	adb_closed_callback();
 
 	adb_unlock(&_adb_dev->open_excl);
