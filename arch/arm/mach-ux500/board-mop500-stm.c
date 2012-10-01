@@ -121,7 +121,9 @@ static int stm_ste_disable_ape_on_mipi60(void)
 	if (retval)
 		STM_ERR("Failed to disable MIPI60\n");
 	else {
-		retval = nmk_config_pins(ARRAY_AND_SIZE(mop500_ske_pins));
+		if (!machine_is_snowball())
+			retval = nmk_config_pins(
+				ARRAY_AND_SIZE(mop500_ske_pins));
 		if (retval)
 			STM_ERR("Failed to enable SKE gpio\n");
 	}
@@ -314,7 +316,8 @@ static int stm_ste_connection(enum stm_connection_type con_type)
 		/* Enable altC3 on GPIO70-74 (STMMOD) and GPIO75-76 (UARTMOD) */
 		prcmu_enable_stm_mod_uart();
 		/* Enable APE on MIPI60 */
-		retval = nmk_config_pins_sleep(ARRAY_AND_SIZE(mop500_ske_pins));
+		if (!machine_is_snowball())
+			retval = nmk_config_pins_sleep(ARRAY_AND_SIZE(mop500_ske_pins));
 		if (retval)
 			STM_ERR("Failed to disable SKE GPIO\n");
 		else {
