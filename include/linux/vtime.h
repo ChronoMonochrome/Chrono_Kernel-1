@@ -34,14 +34,17 @@ static inline void vtime_account_irq_enter(struct task_struct *tsk)
 	 * the idle time is flushed on hardirq time already.
 	 */
 	vtime_account(tsk);
-	irqtime_account_irq(tsk);
 }
 
 static inline void vtime_account_irq_exit(struct task_struct *tsk)
 {
+#ifdef CONFIG_VIRT_CPU_ACCOUNTING
 	/* On hard|softirq exit we always account to hard|softirq cputime */
-	vtime_account_system(tsk);
-	irqtime_account_irq(tsk);
+	__vtime_account_system(tsk);
+#endif
+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+	vtime_account(tsk);
+#endif
 }
 
 #endif /* _LINUX_KERNEL_VTIME_H */
