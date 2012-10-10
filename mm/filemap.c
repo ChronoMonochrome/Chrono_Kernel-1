@@ -2293,7 +2293,7 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
 repeat:
 	page = find_lock_page(mapping, index);
 	if (page)
-		goto found;
+		return page;
 
 	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
 	if (!page)
@@ -2306,8 +2306,6 @@ repeat:
 			goto repeat;
 		return NULL;
 	}
-found:
-	wait_on_page_writeback(page);
 	return page;
 }
 EXPORT_SYMBOL(grab_cache_page_write_begin);
