@@ -2383,6 +2383,7 @@ void synchronize_sched_expedited(void)
 			 (ulong)atomic_long_read(&rsp->expedited_done) +
 			 ULONG_MAX / 8)) {
 		synchronize_sched();
+		atomic_long_inc(&rsp->expedited_wrap);
 		return;
 	}
 
@@ -2403,11 +2404,14 @@ void synchronize_sched_expedited(void)
 			     synchronize_sched_expedited_cpu_stop,
 			     NULL) == -EAGAIN) {
 		put_online_cpus();
+		atomic_long_inc(&rsp->expedited_tryfail);
 
 		/* Check to see if someone else did our work for us. */
 		s = atomic_long_read(&rsp->expedited_done);
 		if (ULONG_CMP_GE((ulong)s, (ulong)firstsnap)) {
-			smp_mb(); /* ensure test happens before caller kfree */
+			/* ensure test happens before caller kfree */
+			smp_mb__before_atomic_inc(); /* ^^^ */
+			atomic_long_inc(&rsp->expedited_workdone1);
 			return;
 		}
 
@@ -2415,14 +2419,17 @@ void synchronize_sched_expedited(void)
 		if (trycount++ < 10) {
 			udelay(trycount * num_online_cpus());
 		} else {
-			wait_rcu_gp(call_rcu_sched);
+			synchronize_sched();
+			atomic_long_inc(&rsp->expedited_normal);
 			return;
 		}
 
 		/* Recheck to see if someone else did our work for us. */
 		s = atomic_long_read(&rsp->expedited_done);
 		if (ULONG_CMP_GE((ulong)s, (ulong)firstsnap)) {
-			smp_mb(); /* ensure test happens before caller kfree */
+			/* ensure test happens before caller kfree */
+			smp_mb__before_atomic_inc(); /* ^^^ */
+			atomic_long_inc(&rsp->expedited_workdone2);
 			return;
 		}
 
@@ -2437,6 +2444,7 @@ void synchronize_sched_expedited(void)
 		snap = atomic_long_read(&rsp->expedited_start);
 		smp_mb(); /* ensure read is before try_stop_cpus(). */
 	}
+	atomic_long_inc(&rsp->expedited_stoppedcpus);
 
 	/*
 	 * Everyone up to our most recent fetch is covered by our grace
@@ -2445,12 +2453,16 @@ void synchronize_sched_expedited(void)
 	 * than we did already did their update.
 	 */
 	do {
+		atomic_long_inc(&rsp->expedited_done_tries);
 		s = atomic_long_read(&rsp->expedited_done);
 		if (ULONG_CMP_GE((ulong)s, (ulong)snap)) {
-			smp_mb(); /* ensure test happens before caller kfree */
+			/* ensure test happens before caller kfree */
+			smp_mb__before_atomic_inc(); /* ^^^ */
+			atomic_long_inc(&rsp->expedited_done_lost);
 			break;
 		}
 	} while (atomic_long_cmpxchg(&rsp->expedited_done, s, snap) != s);
+	atomic_long_inc(&rsp->expedited_done_exit);
 
 	put_online_cpus();
 }
