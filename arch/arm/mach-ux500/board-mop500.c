@@ -9,11 +9,13 @@
  *
  */
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/i2c.h>
+#include <linux/input/st-ftk.h>
 #include <linux/gpio.h>
 #include <linux/gpio/nomadik.h>
 #include <linux/amba/bus.h>
@@ -719,12 +721,26 @@ static struct i2c_board_info __initdata snowball_i2c0_devices[] = {
 #endif
 };
 
-#ifdef CONFIG_TOUCHSCREEN_STMT07
-static struct i2c_board_info __initdata snowball_i2c1_devices[] = {
+#ifdef CONFIG_TOUCHSCREEN_STMT07_MODULE
+struct ftk_platform_data ftk_platdata_snowball = {
+	.gpio_rst = -1,
+	.x_min = 0,
+	.x_max = 1280,
+	.y_min = 0,
+	.y_max = 800,
+	.p_min = 0,
+	.p_max = 256,
+	.portrait = 0,
+	.patch_file = "st-ftkt.bin",
+	.busnum = 1,
+};
+
+static struct i2c_board_info snowball_i2c1_devices[] = {
 	{
-	/* STM TS controller */
+		/* STM TS controller */
 		I2C_BOARD_INFO("ftk", 0x4B),
 		.irq		= NOMADIK_GPIO_TO_IRQ(152),
+		.platform_data = &ftk_platdata_snowball,
 	},
 };
 #endif
@@ -1075,6 +1091,14 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 #endif
 };
 
+#ifdef CONFIG_TOUCHSCREEN_STMT07_MODULE
+const struct i2c_board_info *snowball_touch_get_plat_data(void)
+{
+	return snowball_i2c1_devices;
+}
+EXPORT_SYMBOL_GPL(snowball_touch_get_plat_data);
+#endif
+
 #ifdef CONFIG_STM_MSP_SPI
 /*
  * MSP-SPI
@@ -1418,10 +1442,7 @@ static void __init snowball_init_machine(void)
 
 	i2c_register_board_info(0, snowball_i2c0_devices,
 			ARRAY_SIZE(snowball_i2c0_devices));
-#ifdef CONFIG_TOUCHSCREEN_STMT07
-	i2c_register_board_info(1, snowball_i2c1_devices,
-			ARRAY_SIZE(snowball_i2c1_devices));
-#endif
+
 	/* This board has full regulator constraints */
 	regulator_has_full_constraints();
 }
