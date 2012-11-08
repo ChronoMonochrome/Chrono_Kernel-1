@@ -33,3 +33,6 @@ obj-$(CONFIG_LIS3L02DQ)	+= lis3l02dq.o
 
 sca3000-y		:= sca3000_core.o sca3000_ring.o
 obj-$(CONFIG_SCA3000)	+= sca3000.o
+
+obj-$(CONFIG_SENSORS_LSM303DLH)		+= lsm303dlh_core.o
+obj-$(CONFIG_SENSORS_LSM303DLHC)	+= lsm303dlhc_core.o

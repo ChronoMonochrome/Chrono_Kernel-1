@@ -24,4 +24,15 @@ config SENSORS_HMC5843
 	  To compile this driver as a module, choose M here: the module
 	  will be called hmc5843
 
+config SENSORS_LSM303DLH
+	tristate "STMicroelectronics LSM303DLH 3-Axis Magnetometer"
+	depends on I2C
+	default n
+	help
+	  Say Y here to add support for the STMicroelectronics
+	  LSM303DLH 3-Axis Magnetometer.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called lsm303dlh.
+
 endmenu

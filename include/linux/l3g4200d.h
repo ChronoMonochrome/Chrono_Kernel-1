@@ -10,9 +10,16 @@
 #define __L3G4200D_H__
 
 #ifdef __KERNEL__
+/**
+ * struct l3g4200d_gyr_platform_data - platform datastructure for l3g4200d
+ * @axis_map_x: x axis position on the hardware, 0 1 or 2
+ * @axis_map_y: y axis position on the hardware, 0 1 or 2
+ * @axis_map_z: z axis position on the hardware, 0 1 or 2
+ * @negative_x: x axis is orientation, 0 or 1
+ * @negative_y: y axis is orientation, 0 or 1
+ * @negative_z: z axis is orientation, 0 or 1
+ */
 struct l3g4200d_gyr_platform_data {
-	const char *name_gyr;
-
 	u8 axis_map_x;
 	u8 axis_map_y;
 	u8 axis_map_z;

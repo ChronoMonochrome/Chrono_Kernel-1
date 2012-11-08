@@ -46,4 +46,15 @@ config ADXRS450
 	  This driver can also be built as a module.  If so, the module
 	  will be called adxrs450.
 
+config SENSORS_L3G4200D
+        tristate "STMicroelectronics L3G4200D 3-Axis Gyroscope"
+        depends on I2C
+	default n
+        help
+          Say Y here to add support for the STMicroelectronics
+          L3G4200D 3-Axis Gyroscope.
+
+          To compile this driver as a module, choose M here: the module
+          will be called l3g4200d.
+
 endmenu

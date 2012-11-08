@@ -725,20 +725,6 @@ config SENSORS_LTC4151
 	  This driver can also be built as a module. If so, the module will
 	  be called ltc4151.
 
-config SENSORS_LSM303DLH
-	tristate "ST LSM303DLH 3-axis accelerometer and 3-axis magnetometer"
-	depends on I2C
-	default n
-	help
-	  This driver provides support for the LSM303DLH chip which includes a
-	  3-axis accelerometer and a 3-axis magnetometer.
-
-	  This driver can also be built as modules.  If so, the module for
-	  accelerometer will be called lsm303dlh_a and for magnetometer it will
-	  be called lsm303dlh_m.
-
-	  Say Y here if you have a device containing lsm303dlh chip.
-
 config SENSORS_LSM303DLH_INPUT_DEVICE
 	bool "ST LSM303DLH INPUT DEVICE"
 	depends on SENSORS_LSM303DLH
@@ -747,31 +733,6 @@ config SENSORS_LSM303DLH_INPUT_DEVICE
 	  This driver allows device to be used as an input device with
 	  interrupts, need to be enabled only when input device support
 	  is required.
-
-config SENSORS_LSM303DLHC
-	tristate "ST LSM303DLHC 3-axis accelerometer and 3-axis magnetometer"
-	depends on I2C
-	default n
-	help
-	  This driver provides support for the LSM303DLHC chip which includes a
-	  3-axis accelerometer and a 3-axis magnetometer.
-
-	  This driver can also be built as modules.  If so, the module for
-	  accelerometer will be called lsm303dlhc_a and for magnetometer it will
-	  be called lsm303dlh_m.
-
-	  Say Y here if you have a device containing lsm303dlhc chip.
-
-config SENSORS_L3G4200D
-	tristate "ST L3G4200D 3-axis gyroscope"
-	depends on I2C
-	default n
-	help
-	  If you say yes here you get support for 3-axis gyroscope device
-	  L3g4200D.
-
-	  This driver can also be built as a module.  If so, the module
-	  will be called l3g4200d.
 
 config SENSORS_LTC4215
 	tristate "Linear Technology LTC4215"
