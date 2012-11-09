@@ -140,17 +140,18 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 *		      Pin GPIO37 (ApeSpiCSn)
 	 *		      Pin GPIO38 (ApeSpiDout)
 	 *		      Pin GPIO39 (ApeSpiDin) are configured as GPIO
-	 * GpioSel6 = 0x02 => Pin GPIO42 (SysClkReq5) is configured as GPIO
+	 * GpioSel6 = 0x03  => Pin GPIO41 (ModSDA) is configured as GPIO
+			      Pin GPIO42 (SysClkReq5) is configured as GPIO
 	 * AlternaFunction = 0x00 => If Pins GPIO10 to 13 are not configured
 	 * as GPIO then this register selectes the alternate fucntions
 	 */
-	.config_reg     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x02, 0x00},
+	.config_reg     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x03},
 
 	/*
 	 * config_direction allows for the initial GPIO direction to
 	 * be set. For Snowball we set GPIO26 to output.
 	 */
-	.config_direction  = {0x00, 0x00, 0x00, 0x02, 0x00, 0x00},
+	.config_direction  = {0xA, 0x00, 0x00, 0x02, 0x00, 0x03},
 
 	/*
 	 * config_pullups allows for the intial configuration of the
@@ -230,7 +231,7 @@ static struct gpio_keys_button snowball_key_array[] = {
 		.debounce_interval = 50,
 		.wakeup		= 1,
 	},
-	{
+/*	{
 		.gpio		= 151,
 		.type		= EV_KEY,
 		.code		= KEY_2,
@@ -239,6 +240,7 @@ static struct gpio_keys_button snowball_key_array[] = {
 		.debounce_interval = 50,
 		.wakeup		= 1,
 	},
+*/
 	{
 		.gpio		= 152,
 		.type		= EV_KEY,
@@ -663,6 +665,16 @@ static struct i2c_board_info __initdata snowball_i2c0_devices[] = {
 	},
 #endif
 };
+
+#ifdef CONFIG_TOUCHSCREEN_STMT07
+static struct i2c_board_info __initdata snowball_i2c1_devices[] = {
+	{
+	/* STM TS controller */
+		I2C_BOARD_INFO("ftk", 0x4B),
+		.irq		= NOMADIK_GPIO_TO_IRQ(152),
+	},
+};
+#endif
 
 static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 	{
@@ -1297,7 +1309,10 @@ static void __init snowball_init_machine(void)
 
 	i2c_register_board_info(0, snowball_i2c0_devices,
 			ARRAY_SIZE(snowball_i2c0_devices));
-
+#ifdef CONFIG_TOUCHSCREEN_STMT07
+	i2c_register_board_info(1, snowball_i2c1_devices,
+			ARRAY_SIZE(snowball_i2c1_devices));
+#endif
 	/* This board has full regulator constraints */
 	regulator_has_full_constraints();
 }

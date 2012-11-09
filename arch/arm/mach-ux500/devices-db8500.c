@@ -212,16 +212,16 @@ static int mcde_platform_set_display_clocks(void)
 
 static struct mcde_platform_data mcde_u8500_pdata = {
 	/*
-	 * [0] = 3: 24 bits DPI: connect LSB Ch B to D[0:7]
-	 * [3] = 4: 24 bits DPI: connect MID Ch B to D[24:31]
-	 * [4] = 5: 24 bits DPI: connect MSB Ch B to D[32:39]
+	 * [0] = 5: 24 bits DPI: connect MSB Ch B to D[0:7]
+	 * [3] = 4: 24 bits DPI: connect MID Ch B to D[15:8]
+	 * [4] = 3: 24 bits DPI: connect LSB Ch B to D[31:24]
 	 *
 	 * [1] = 3: TV out     : connect LSB Ch B to D[8:15]
 	 */
 #define DONT_CARE 0
-	.outmux = { 3, 3, DONT_CARE, 4, 5 },
+	.outmux = { 5, 4, DONT_CARE, 3, DONT_CARE },
 #undef DONT_CARE
-	.syncmux = 0x00,  /* DPI channel A and B on output pins A and B resp */
+	.syncmux = 0x40,
 #ifdef CONFIG_MCDE_DISPLAY_DSI
 	.regulator_vana_id = "vdddsi1v2",
 #endif
