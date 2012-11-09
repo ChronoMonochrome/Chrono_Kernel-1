@@ -17,9 +17,7 @@
 /*
  * LSM303DLH accelerometer + magnetometer & L3G4200D Gyroscope sensors
  */
-static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
-	.name_a = "lsm303dlh.0",
-	.name_m = "lsm303dlh.1",
+static struct lsm303dlh_platform_data lsm303dlh_pdata = {
 	.axis_map_x = 0,
 	.axis_map_y = 1,
 	.axis_map_z = 2,
@@ -28,8 +26,7 @@ static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
 	.negative_z = 0,
 };
 
-static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata = {
-	.name_gyr = "l3g4200d",
+static struct l3g4200d_gyr_platform_data l3g4200d_pdata = {
 	.axis_map_x = 1,
 	.axis_map_y = 0,
 	.axis_map_z = 2,
@@ -42,7 +39,7 @@ static struct l3g4200d_gyr_platform_data  __initdata l3g4200d_pdata = {
  * Platform data for pressure sensor,
  * poll interval and min interval in millseconds.
  */
-static struct lps001wp_prs_platform_data __initdata lps001wp_pdata = {
+static struct lps001wp_prs_platform_data lps001wp_pdata = {
 	.poll_interval = 1000,
 	.min_interval = 10,
 };
