@@ -242,6 +242,8 @@ static DEFINE_SPINLOCK(hierarchy_id_lock);
  */
 static int need_forkexit_callback __read_mostly;
 
+static int cgroup_destroy_locked(struct cgroup *cgrp);
+
 #ifdef CONFIG_PROVE_LOCKING
 int cgroup_lock_is_held(void)
 {
@@ -4033,6 +4035,42 @@ static void init_cgroup_css(struct cgroup_subsys_state *css,
 	INIT_WORK(&css->dput_work, css_dput_fn);
 }
 
+/* invoke ->post_create() on a new CSS and mark it online */
+static void online_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
+{
+	lockdep_assert_held(&cgroup_mutex);
+
+	if (ss->post_create)
+		ss->post_create(cgrp);
+	cgrp->subsys[ss->subsys_id]->flags |= CSS_ONLINE;
+}
+
+/* if the CSS is online, invoke ->pre_destory() on it and mark it offline */
+static void offline_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
+	__releases(&cgroup_mutex) __acquires(&cgroup_mutex)
+{
+	struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
+
+	lockdep_assert_held(&cgroup_mutex);
+
+	if (!(css->flags & CSS_ONLINE))
+		return;
+
+	/*
+	 * pre_destroy() should be called with cgroup_mutex unlocked.  See
+	 * 3fa59dfbc3 ("cgroup: fix potential deadlock in pre_destroy") for
+	 * details.  This temporary unlocking should go away once
+	 * cgroup_mutex is unexported from controllers.
+	 */
+	if (ss->pre_destroy) {
+		mutex_unlock(&cgroup_mutex);
+		ss->pre_destroy(cgrp);
+		mutex_lock(&cgroup_mutex);
+	}
+
+	cgrp->subsys[ss->subsys_id]->flags &= ~CSS_ONLINE;
+}
+
 /*
  * cgroup_create - create a cgroup
  * @parent: cgroup that will be parent of the new cgroup
@@ -4135,8 +4173,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
 		dget(dentry);
 
 		/* creation succeeded, notify subsystems */
-		if (ss->post_create)
-			ss->post_create(cgrp);
+		online_css(ss, cgrp);
 	}
 
 	err = cgroup_populate_dir(cgrp, true, root->subsys_mask);
@@ -4209,22 +4246,20 @@ static int cgroup_has_css_refs(struct cgroup *cgrp)
 	return 0;
 }
 
-static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
+static int cgroup_destroy_locked(struct cgroup *cgrp)
+	__releases(&cgroup_mutex) __acquires(&cgroup_mutex)
 {
-	struct cgroup *cgrp = dentry->d_fsdata;
-	struct dentry *d;
-	struct cgroup *parent;
+	struct dentry *d = cgrp->dentry;
+	struct cgroup *parent = cgrp->parent;
 	DEFINE_WAIT(wait);
 	struct cgroup_event *event, *tmp;
 	struct cgroup_subsys *ss;
 
-	/* the vfs holds both inode->i_mutex already */
-	mutex_lock(&cgroup_mutex);
-	parent = cgrp->parent;
-	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children)) {
-		mutex_unlock(&cgroup_mutex);
+	lockdep_assert_held(&d->d_inode->i_mutex);
+	lockdep_assert_held(&cgroup_mutex);
+
+	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children))
 		return -EBUSY;
-	}
 
 	/*
 	 * Block new css_tryget() by deactivating refcnt and mark @cgrp
@@ -4240,16 +4275,9 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
 	}
 	set_bit(CGRP_REMOVED, &cgrp->flags);
 
-	/*
-	 * Tell subsystems to initate destruction.  pre_destroy() should be
-	 * called with cgroup_mutex unlocked.  See 3fa59dfbc3 ("cgroup: fix
-	 * potential deadlock in pre_destroy") for details.
-	 */
-	mutex_unlock(&cgroup_mutex);
+	/* tell subsystems to initate destruction */
 	for_each_subsys(cgrp->root, ss)
-		if (ss->pre_destroy)
-			ss->pre_destroy(cgrp);
-	mutex_lock(&cgroup_mutex);
+		offline_css(ss, cgrp);
 
 	/*
 	 * Put all the base refs.  Each css holds an extra reference to the
@@ -4268,11 +4296,9 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
 
 	/* delete this cgroup from parent->children */
 	list_del_rcu(&cgrp->sibling);
-
 	list_del_init(&cgrp->allcg_node);
 
-	d = dget(cgrp->dentry);
-
+	dget(d);
 	cgroup_d_remove_dir(d);
 	dput(d);
 
@@ -4293,8 +4319,18 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
 	}
 	spin_unlock(&cgrp->event_list_lock);
 
-	mutex_unlock(&cgroup_mutex);
 	return 0;
+}
+
+static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
+{
+	int ret;
+
+	mutex_lock(&cgroup_mutex);
+	ret = cgroup_destroy_locked(dentry->d_fsdata);
+	mutex_unlock(&cgroup_mutex);
+
+	return ret;
 }
 
 static void __init_or_module cgroup_init_cftsets(struct cgroup_subsys *ss)
@@ -4317,6 +4353,8 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
 
 	printk(KERN_INFO "Initializing cgroup subsys %s\n", ss->name);
 
+	mutex_lock(&cgroup_mutex);
+
 	/* init base cftset */
 	cgroup_init_cftsets(ss);
 
@@ -4332,7 +4370,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
 	 * pointer to this state - since the subsystem is
 	 * newly registered, all tasks and hence the
 	 * init_css_set is in the subsystem's top cgroup. */
-	init_css_set.subsys[ss->subsys_id] = dummytop->subsys[ss->subsys_id];
+	init_css_set.subsys[ss->subsys_id] = css;
 
 	need_forkexit_callback |= ss->fork || ss->exit;
 
@@ -4342,9 +4380,9 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
 	BUG_ON(!list_empty(&init_task.tasks));
 
 	ss->active = 1;
+	online_css(ss, dummytop);
 
-	if (ss->post_create)
-		ss->post_create(&ss->root->top_cgroup);
+	mutex_unlock(&cgroup_mutex);
 
 	/* this function shouldn't be used with modular subsystems, since they
 	 * need to register a subsys_id, among other things */
@@ -4416,9 +4454,10 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
 	if (ss->use_id) {
 		int ret = cgroup_init_idr(ss, css);
 		if (ret) {
-			dummytop->subsys[ss->subsys_id] = NULL;
 			ss->destroy(dummytop);
+			dummytop->subsys[ss->subsys_id] = NULL;
 			subsys[ss->subsys_id] = NULL;
+			list_del_init(&ss->sibling);
 			mutex_unlock(&cgroup_mutex);
 			return ret;
 		}
@@ -4454,9 +4493,7 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
 	write_unlock(&css_set_lock);
 
 	ss->active = 1;
-
-	if (ss->post_create)
-		ss->post_create(&ss->root->top_cgroup);
+	online_css(ss, dummytop);
 
 	/* success! */
 	mutex_unlock(&cgroup_mutex);
@@ -4487,6 +4524,15 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
 	BUG_ON(ss->root != &rootnode);
 
 	mutex_lock(&cgroup_mutex);
+
+	offline_css(ss, dummytop);
+	ss->active = 0;
+
+	if (ss->use_id) {
+		idr_remove_all(&ss->idr);
+		idr_destroy(&ss->idr);
+	}
+
 	/* deassign the subsys_id */
 	subsys[ss->subsys_id] = NULL;
 
