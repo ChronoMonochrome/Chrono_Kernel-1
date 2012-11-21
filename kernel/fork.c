@@ -1193,7 +1193,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	p->utimescaled = cputime_zero;
 	p->stimescaled = cputime_zero;
 #ifndef CONFIG_VIRT_CPU_ACCOUNTING
-	p->prev_utime = cputime_zero;
+	p->prev_cputime.utime = p->prev_cputime.stime = 0;
 	p->prev_stime = cputime_zero;
 #endif
 #if defined(SPLIT_RSS_COUNTING)
