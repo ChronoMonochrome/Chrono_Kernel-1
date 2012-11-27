@@ -184,15 +184,76 @@ config HAVE_ARCH_MUTEX_CPU_RELAX
 config HAVE_RCU_TABLE_FREE
 	bool
 
+<<<<<<< HEAD
 config HAVE_RCU_USER_QS
+=======
+config ARCH_HAVE_NMI_SAFE_CMPXCHG
+	bool
+
+config HAVE_ALIGNED_STRUCT_PAGE
 	bool
 	help
-	  Provide kernel entry/exit hooks necessary for userspace
-	  RCU extended quiescent state. Syscalls need to be wrapped inside
-	  rcu_user_exit()-rcu_user_enter() through the slow path using
-	  TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
-	  are already protected inside rcu_irq_enter/rcu_irq_exit() but
-	  preemption or signal handling on irq exit still need to be protected.
+	  This makes sure that struct pages are double word aligned and that
+	  e.g. the SLUB allocator can perform double word atomic operations
+	  on a struct page for better performance. However selecting this
+	  might increase the size of a struct page by a word.
+
+config HAVE_CMPXCHG_LOCAL
+	bool
+
+config HAVE_CMPXCHG_DOUBLE
+	bool
+
+config ARCH_WANT_IPC_PARSE_VERSION
+	bool
+
+config ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+	bool
+
+config ARCH_WANT_OLD_COMPAT_IPC
+	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+	bool
+
+config GENERIC_KERNEL_THREAD
+	bool
+
+config GENERIC_KERNEL_EXECVE
+	bool
+
+config HAVE_ARCH_SECCOMP_FILTER
+	bool
+	help
+	  An arch should select this symbol if it provides all of these things:
+	  - syscall_get_arch()
+	  - syscall_get_arguments()
+	  - syscall_rollback()
+	  - syscall_set_return_value()
+	  - SIGSYS siginfo_t support
+	  - secure_computing is called from a ptrace_event()-safe context
+	  - secure_computing return value is checked and a return value of -1
+	    results in the system call being skipped immediately.
+
+config SECCOMP_FILTER
+	def_bool y
+	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
+	help
+	  Enable tasks to build secure computing environments defined
+	  in terms of Berkeley Packet Filter programs which implement
+	  task-defined system call filtering polices.
+
+	  See Documentation/prctl/seccomp_filter.txt for details.
+
+config HAVE_CONTEXT_TRACKING
+>>>>>>> 91d1aa43... context_tracking: New context tracking susbsystem
+	bool
+	help
+	  Provide kernel/user boundaries probes necessary for subsystems
+	  that need it, such as userspace RCU extended quiescent state.
+	  Syscalls need to be wrapped inside user_exit()-user_enter() through
+	  the slow path using TIF_NOHZ flag. Exceptions handlers must be
+	  wrapped as well. Irqs are already protected inside
+	  rcu_irq_enter/rcu_irq_exit() but preemption or signal handling on
+	  irq exit still need to be protected.
 
 config GENERIC_KERNEL_THREAD
 	bool

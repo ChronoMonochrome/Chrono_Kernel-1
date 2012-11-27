@@ -71,6 +71,7 @@
 #include <linux/ftrace.h>
 #include <linux/slab.h>
 #include <linux/init_task.h>
+#include <linux/context_tracking.h>
 
 #include <asm/tlb.h>
 #include <asm/irq_regs.h>
