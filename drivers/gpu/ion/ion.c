@@ -784,6 +784,7 @@ struct ion_client *ion_client_create(struct ion_device *dev,
 
 	return client;
 }
+EXPORT_SYMBOL(ion_client_create);
 
 static void _ion_client_destroy(struct kref *kref)
 {
