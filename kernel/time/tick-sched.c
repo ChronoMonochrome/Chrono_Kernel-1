@@ -99,6 +99,110 @@ static ktime_t tick_init_jiffy_update(void)
 	return period;
 }
 
+static void tick_sched_do_timer(ktime_t now)
+{
+	int cpu = smp_processor_id();
+
+#ifdef CONFIG_NO_HZ
+	/*
+	 * Check if the do_timer duty was dropped. We don't care about
+	 * concurrency: This happens only when the cpu in charge went
+	 * into a long sleep. If two cpus happen to assign themself to
+	 * this duty, then the jiffies update is still serialized by
+	 * jiffies_lock.
+	 */
+	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
+		tick_do_timer_cpu = cpu;
+#endif
+
+	/* Check, if the jiffies need an update */
+	if (tick_do_timer_cpu == cpu)
+		tick_do_update_jiffies64(now);
+}
+
+static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+{
+#ifdef CONFIG_NO_HZ
+	/*
+	 * When we are idle and the tick is stopped, we have to touch
+	 * the watchdog as we might not schedule for a really long
+	 * time. This happens on complete idle SMP systems while
+	 * waiting on the login prompt. We also increment the "start of
+	 * idle" jiffy stamp so the idle accounting adjustment we do
+	 * when we go busy again does not account too much ticks.
+	 */
+	if (ts->tick_stopped) {
+		touch_softlockup_watchdog();
+		if (is_idle_task(current))
+			ts->idle_jiffies++;
+	}
+#endif
+	update_process_times(user_mode(regs));
+	profile_tick(CPU_PROFILING);
+}
+
+#ifdef CONFIG_NO_HZ_EXTENDED
+static cpumask_var_t nohz_extended_mask;
+bool have_nohz_extended_mask;
+
+int tick_nohz_extended_cpu(int cpu)
+{
+	if (!have_nohz_extended_mask)
+		return 0;
+
+	return cpumask_test_cpu(cpu, nohz_extended_mask);
+}
+
+/* Parse the boot-time nohz CPU list from the kernel parameters. */
+static int __init tick_nohz_extended_setup(char *str)
+{
+	alloc_bootmem_cpumask_var(&nohz_extended_mask);
+	if (cpulist_parse(str, nohz_extended_mask) < 0)
+		pr_warning("NOHZ: Incorrect nohz_extended cpumask\n");
+	else
+		have_nohz_extended_mask = true;
+	return 1;
+}
+__setup("nohz_extended=", tick_nohz_extended_setup);
+
+static int __init init_tick_nohz_extended(void)
+{
+	cpumask_var_t online_nohz;
+	int cpu;
+
+	if (!have_nohz_extended_mask)
+		return 0;
+
+	if (!zalloc_cpumask_var(&online_nohz, GFP_KERNEL)) {
+		pr_warning("NO_HZ: Not enough memory to check extended nohz mask\n");
+		return -ENOMEM;
+	}
+
+	/*
+	 * CPUs can probably not be concurrently offlined on initcall time.
+	 * But we are paranoid, aren't we?
+	 */
+	get_online_cpus();
+
+	/* Ensure we keep a CPU outside the dynticks range for timekeeping */
+	cpumask_and(online_nohz, cpu_online_mask, nohz_extended_mask);
+	if (cpumask_equal(online_nohz, cpu_online_mask)) {
+		cpu = cpumask_any(cpu_online_mask);
+		pr_warning("NO_HZ: Must keep at least one online CPU "
+			   "out of nohz_extended range\n");
+		pr_warning("NO_HZ: Clearing %d from nohz_extended range\n", cpu);
+		cpumask_clear_cpu(cpu, nohz_extended_mask);
+	}
+	put_online_cpus();
+	free_cpumask_var(online_nohz);
+
+	return 0;
+}
+core_initcall(init_tick_nohz_extended);
+#else
+#define have_nohz_extended_mask (0)
+#endif
+
 /*
  * NOHZ - aka dynamic tick functionality
  */
