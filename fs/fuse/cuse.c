@@ -222,7 +222,7 @@ static int cuse_parse_one(char **pp, char *end, char **keyp, char **valp)
 		return 0;
 
 	if (end[-1] != '\0') {
-;
+		printk(KERN_ERR "CUSE: info not properly terminated\n");
 		return -EINVAL;
 	}
 
@@ -239,7 +239,7 @@ static int cuse_parse_one(char **pp, char *end, char **keyp, char **valp)
 		key = strstrip(key);
 
 	if (!strlen(key)) {
-;
+		printk(KERN_ERR "CUSE: zero length info key specified\n");
 		return -EINVAL;
 	}
 
@@ -279,12 +279,12 @@ static int cuse_parse_devinfo(char *p, size_t len, struct cuse_devinfo *devinfo)
 		if (strcmp(key, "DEVNAME") == 0)
 			devinfo->name = val;
 		else
-//			printk(KERN_WARNING "CUSE: unknown device info \"%s\"\n",
-;
+			printk(KERN_WARNING "CUSE: unknown device info \"%s\"\n",
+			       key);
 	}
 
 	if (!devinfo->name || !strlen(devinfo->name)) {
-;
+		printk(KERN_ERR "CUSE: DEVNAME unspecified\n");
 		return -EINVAL;
 	}
 
@@ -338,7 +338,7 @@ static void cuse_process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
 	else
 		rc = register_chrdev_region(devt, 1, devinfo.name);
 	if (rc) {
-;
+		printk(KERN_ERR "CUSE: failed to register chrdev region\n");
 		goto err;
 	}
 
