@@ -2105,6 +2105,62 @@ int fuse_notify_poll_wakeup(struct fuse_conn *fc,
 	return 0;
 }
 
+static ssize_t fuse_loop_dio(struct file *filp, const struct iovec *iov,
+			     unsigned long nr_segs, loff_t *ppos, int rw)
+{
+	const struct iovec *vector = iov;
+	ssize_t ret = 0;
+
+	while (nr_segs > 0) {
+		void __user *base;
+		size_t len;
+		ssize_t nr;
+
+		base = vector->iov_base;
+		len = vector->iov_len;
+		vector++;
+		nr_segs--;
+
+		if (rw == WRITE)
+			nr = __fuse_direct_write(filp, base, len, ppos);
+		else
+			nr = fuse_direct_read(filp, base, len, ppos);
+
+		if (nr < 0) {
+			if (!ret)
+				ret = nr;
+			break;
+		}
+		ret += nr;
+		if (nr != len)
+			break;
+	}
+
+	return ret;
+}
+
+
+static ssize_t
+fuse_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter, loff_t offset)
+{
+	ssize_t ret = 0;
+	struct file *file = NULL;
+	loff_t pos = 0;
+
+	/*
+	 * We'll eventually want to work with both iovec and bvec
+	 */
+	BUG_ON(!iov_iter_has_iovec(iter));
+
+	file = iocb->ki_filp;
+	pos = offset;
+
+	ret = fuse_loop_dio(file, iov_iter_iovec(iter), iter->nr_segs, &pos,
+			    rw);
+
+	return ret;
+}
+
 static const struct file_operations fuse_file_operations = {
 	.llseek		= fuse_file_llseek,
 	.read		= do_sync_read,
