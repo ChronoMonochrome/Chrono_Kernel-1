@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ext4/acl.c
  *
@@ -328,7 +325,7 @@ ext4_acl_chmod(struct inode *inode)
 		return error;
 retry:
 	handle = ext4_journal_start(inode, EXT4_HT_XATTR,
-				    ext4_jbd2_credits_xattr(inode));
+			EXT4_DATA_TRANS_BLOCKS(inode->i_sb));
 	if (IS_ERR(handle)) {
 		error = PTR_ERR(handle);
 		ext4_std_error(inode->i_sb, error);
@@ -410,15 +407,7 @@ ext4_xattr_set_acl(struct dentry *dentry, const char *name, const void *value,
 	if (!test_opt(inode->i_sb, POSIX_ACL))
 		return -EOPNOTSUPP;
 	if (!inode_owner_or_capable(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (value) {
 		acl = posix_acl_from_xattr(&init_user_ns, value, size);
@@ -434,7 +423,7 @@ return -EPERM;
 
 retry:
 	handle = ext4_journal_start(inode, EXT4_HT_XATTR,
-				    ext4_jbd2_credits_xattr(inode));
+				    EXT4_DATA_TRANS_BLOCKS(inode->i_sb));
 	if (IS_ERR(handle)) {
 		error = PTR_ERR(handle);
 		goto release_and_out;

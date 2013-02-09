@@ -63,18 +63,18 @@
 
 #ifdef EXT4_XATTR_DEBUG
 # define ea_idebug(inode, f...) do { \
-//		printk(KERN_DEBUG "inode %s:%lu: ", \
-;
-;
-;
+		printk(KERN_DEBUG "inode %s:%lu: ", \
+			inode->i_sb->s_id, inode->i_ino); \
+		printk(f); \
+		printk("\n"); \
 	} while (0)
 # define ea_bdebug(bh, f...) do { \
 		char b[BDEVNAME_SIZE]; \
-//		printk(KERN_DEBUG "block %s:%lu: ", \
-//			bdevname(bh->b_bdev, b), \
-;
-;
-;
+		printk(KERN_DEBUG "block %s:%lu: ", \
+			bdevname(bh->b_bdev, b), \
+			(unsigned long) bh->b_blocknr); \
+		printk(f); \
+		printk("\n"); \
 	} while (0)
 #else
 # define ea_idebug(inode, fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
@@ -122,18 +122,17 @@ static __le32 ext4_xattr_block_csum(struct inode *inode,
 				    struct ext4_xattr_header *hdr)
 {
 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-	__u32 csum;
-	__le32 save_csum;
-	__le64 dsk_block_nr = cpu_to_le64(block_nr);
+	__u32 csum, old;
 
-	save_csum = hdr->h_checksum;
+	old = hdr->h_checksum;
 	hdr->h_checksum = 0;
-	csum = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)&dsk_block_nr,
-			   sizeof(dsk_block_nr));
+	block_nr = cpu_to_le64(block_nr);
+	csum = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)&block_nr,
+			   sizeof(block_nr));
 	csum = ext4_chksum(sbi, csum, (__u8 *)hdr,
 			   EXT4_BLOCK_SIZE(inode->i_sb));
 
-	hdr->h_checksum = save_csum;
+	hdr->h_checksum = old;
 	return cpu_to_le32(csum);
 }
 
@@ -550,7 +549,7 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
 		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
 		if (IS_SYNC(inode))
 			ext4_handle_sync(handle);
-		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
+		dquot_free_block(inode, 1);
 		ea_bdebug(bh, "refcount now=%d; releasing",
 			  le32_to_cpu(BHDR(bh)->h_refcount));
 	}
@@ -833,8 +832,7 @@ inserted:
 			else {
 				/* The old block is released after updating
 				   the inode. */
-				error = dquot_alloc_block(inode,
-						EXT4_C2B(EXT4_SB(sb), 1));
+				error = dquot_alloc_block(inode, 1);
 				if (error)
 					goto cleanup;
 				error = ext4_journal_get_write_access(handle,
@@ -931,7 +929,7 @@ cleanup:
 	return error;
 
 cleanup_dquot:
-	dquot_free_block(inode, EXT4_C2B(EXT4_SB(sb), 1));
+	dquot_free_block(inode, 1);
 	goto cleanup;
 
 bad_block:
@@ -1167,9 +1165,16 @@ ext4_xattr_set(struct inode *inode, int name_index, const char *name,
 {
 	handle_t *handle;
 	int error, retries = 0;
-	int credits = ext4_jbd2_credits_xattr(inode);
+	int credits = EXT4_DATA_TRANS_BLOCKS(inode->i_sb);
 
 retry:
+	/*
+	 * In case of inline data, we may push out the data to a block,
+	 * So reserve the journal space first.
+	 */
+	if (ext4_has_inline_data(inode))
+		credits += ext4_writepage_trans_blocks(inode) + 1;
+
 	handle = ext4_journal_start(inode, EXT4_HT_XATTR, credits);
 	if (IS_ERR(handle)) {
 		error = PTR_ERR(handle);
