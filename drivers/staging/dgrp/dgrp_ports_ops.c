@@ -163,7 +163,7 @@ static int dgrp_ports_open(struct inode *inode, struct file *file)
 	rtn = seq_open(file, &ports_seq_ops);
 	if (!rtn) {
 		seq = file->private_data;
-		seq->private = PDE(inode)->data;
+		seq->private = PDE_DATA(inode);
 	}
 
 	return rtn;
