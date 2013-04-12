@@ -152,13 +152,6 @@ EXPORT_SYMBOL(snd_seq_root);
 struct snd_info_entry *snd_oss_root;
 #endif
 
-static void snd_remove_proc_entry(struct proc_dir_entry *parent,
-				  struct proc_dir_entry *de)
-{
-	if (de)
-		remove_proc_entry(de->name, parent);
-}
-
 static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
 {
 	struct snd_info_private_data *data;
@@ -585,7 +578,7 @@ int __exit snd_info_done(void)
 #ifdef CONFIG_SND_OSSEMUL
 		snd_info_free_entry(snd_oss_root);
 #endif
-		snd_remove_proc_entry(NULL, snd_proc_root);
+		proc_remove(snd_proc_root);
 	}
 	return 0;
 }
@@ -647,7 +640,7 @@ void snd_info_card_id_change(struct snd_card *card)
 {
 	mutex_lock(&info_mutex);
 	if (card->proc_root_link) {
-		snd_remove_proc_entry(snd_proc_root, card->proc_root_link);
+		proc_remove(card->proc_root_link);
 		card->proc_root_link = NULL;
 	}
 	if (strcmp(card->id, card->proc_root->name))
@@ -666,10 +659,8 @@ void snd_info_card_disconnect(struct snd_card *card)
 	if (!card)
 		return;
 	mutex_lock(&info_mutex);
-	if (card->proc_root_link) {
-		snd_remove_proc_entry(snd_proc_root, card->proc_root_link);
-		card->proc_root_link = NULL;
-	}
+	proc_remove(card->proc_root_link);
+	card->proc_root_link = NULL;
 	if (card->proc_root)
 		snd_info_disconnect(card->proc_root);
 	mutex_unlock(&info_mutex);
@@ -861,7 +852,7 @@ static void snd_info_disconnect(struct snd_info_entry *entry)
 	list_del_init(&entry->list);
 	root = entry->parent == NULL ? snd_proc_root : entry->parent->p;
 	snd_BUG_ON(!root);
-	snd_remove_proc_entry(root, entry->p);
+	proc_remove(entry->p);
 	entry->p = NULL;
 }
 
