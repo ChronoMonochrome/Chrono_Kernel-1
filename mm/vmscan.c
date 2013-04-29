@@ -19,6 +19,7 @@
 #include <linux/pagemap.h>
 #include <linux/init.h>
 #include <linux/highmem.h>
+#include <linux/vmpressure.h>
 #include <linux/vmstat.h>
 #include <linux/file.h>
 #include <linux/writeback.h>
@@ -2152,64 +2153,48 @@ static inline bool should_continue_reclaim(struct zone *zone,
 	}
 }
 
-/*
- * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
- */
 static void shrink_zone(int priority, struct zone *zone,
-				struct scan_control *sc)
+			struct scan_control *sc)
 {
-	unsigned long nr[NR_LRU_LISTS];
-	unsigned long nr_to_scan;
-	enum lru_list l;
 	unsigned long nr_reclaimed, nr_scanned;
-	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
-	struct blk_plug plug;
+	struct mem_cgroup *root = sc->target_mem_cgroup;
+	struct mem_cgroup_reclaim_cookie reclaim = {
+		.zone = zone,
+		.priority = priority,
+	};
+	struct mem_cgroup *memcg;
 
-restart:
-	nr_reclaimed = 0;
+	nr_reclaimed = sc->nr_reclaimed;
 	nr_scanned = sc->nr_scanned;
-	get_scan_count(zone, sc, nr, priority);
 
-	blk_start_plug(&plug);
-	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
-					nr[LRU_INACTIVE_FILE]) {
-		for_each_evictable_lru(l) {
-			if (nr[l]) {
-				nr_to_scan = min_t(unsigned long,
-						   nr[l], SWAP_CLUSTER_MAX);
-				nr[l] -= nr_to_scan;
+	memcg = mem_cgroup_iter(root, NULL, &reclaim);
+	do {
+		struct mem_cgroup_zone mz = {
+			.mem_cgroup = memcg,
+			.zone = zone,
+		};
 
-				nr_reclaimed += shrink_list(l, nr_to_scan,
-							    zone, sc, priority);
-			}
-		}
+		shrink_mem_cgroup_zone(priority, &mz, sc);
 		/*
-		 * On large memory systems, scan >> priority can become
-		 * really large. This is fine for the starting priority;
-		 * we want to put equal scanning pressure on each zone.
-		 * However, if the VM has a harder time of freeing pages,
-		 * with multiple processes reclaiming pages, the total
-		 * freeing target can get unreasonably large.
+		 * Limit reclaim has historically picked one memcg and
+		 * scanned it with decreasing priority levels until
+		 * nr_to_reclaim had been reclaimed.  This priority
+		 * cycle is thus over after a single memcg.
+		 *
+		 * Direct reclaim and kswapd, on the other hand, have
+		 * to scan all memory cgroups to fulfill the overall
+		 * scan target for the zone.
 		 */
-		if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
+		if (!global_reclaim(sc)) {
+			mem_cgroup_iter_break(root, memcg);
 			break;
-	}
-	blk_finish_plug(&plug);
-	sc->nr_reclaimed += nr_reclaimed;
+		}
+		memcg = mem_cgroup_iter(root, memcg, &reclaim);
+	} while (memcg);
 
-	/*
-	 * Even if we did not try to evict anon pages at all, we want to
-	 * rebalance the anon lru active/inactive ratio.
-	 */
-	if (inactive_anon_is_low(zone, sc))
-		shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
-
-	/* reclaim/compaction might need reclaim to continue */
-	if (should_continue_reclaim(zone, nr_reclaimed,
-					sc->nr_scanned - nr_scanned, sc))
-		goto restart;
-
-	throttle_vm_writeout(sc->gfp_mask);
+	vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
+		   sc->nr_scanned - nr_scanned,
+		   sc->nr_reclaimed - nr_reclaimed);
 }
 
 /* Returns true if compaction should go ahead for a high-order request */
@@ -2413,6 +2398,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 		count_vm_event(ALLOCSTALL);
 
 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
+		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup, priority);
 		sc->nr_scanned = 0;
 		if (!priority)
 			disable_swap_token(sc->mem_cgroup);
