@@ -85,6 +85,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	int tasksize;
 	int i;
 	int min_score_adj = OOM_SCORE_ADJ_MAX + 1;
+	int minfree = 0;
 	int selected_tasksize = 0;
 	int selected_oom_score_adj;
 	int array_size = ARRAY_SIZE(lowmem_adj);
@@ -102,8 +103,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		 * and/or other_file are converted to unsigned.
 		 *
 		 */
-		if (other_free < (int) lowmem_minfree[i] &&
-		    other_file < (int) lowmem_minfree[i]) {
+		minfree = lowmem_minfree[i];
+		if (other_free < minfree && other_file < minfree) {
 			min_score_adj = lowmem_adj[i];
 			break;
 		}
@@ -198,22 +199,22 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		selected = p;
 		selected_tasksize = tasksize;
 		selected_oom_score_adj = oom_score_adj;
-		lowmem_print(4, "select %d (%s), adj %d, size %d, to kill\n",
-			     p->pid, p->comm, oom_score_adj, tasksize);
+		lowmem_print(4, "select '%s' (%d), adj %hd, size %d, to kill\n",
+			     p->comm, p->pid, oom_score_adj, tasksize);
 	}
 	if (selected) {
-		lowmem_print(1, "send sigkill to %d (%s), adj %d,\n"
-				"   to free %ldkB on behalf of '%s' (%d) because\n"
-				"   cache %ldkB is below limit %ldkB for oom_score_adj %d\n"
+		lowmem_print(1, "Killing '%s' (%d), adj %hd,\n" \
+				"   to free %ldkB on behalf of '%s' (%d) because\n" \
+				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n" \
 				"   Free memory is %ldkB above reserved\n",
-				 selected->pid, selected->comm,
-				 selected_oom_score_adj,
-				 selected_tasksize * (long)(PAGE_SIZE / 1024),
-				 current->comm, current->pid,
-				 other_file * (long)(PAGE_SIZE / 1024),
-				 lowmem_minfree[i] * (long)(PAGE_SIZE / 1024),
-				 min_score_adj,
-				 other_free * (long)(PAGE_SIZE / 1024));
+			     selected->comm, selected->pid,
+			     selected_oom_score_adj,
+			     selected_tasksize * (long)(PAGE_SIZE / 1024),
+			     current->comm, current->pid,
+			     other_file * (long)(PAGE_SIZE / 1024),
+			     minfree * (long)(PAGE_SIZE / 1024),
+			     min_score_adj,
+			     other_free * (long)(PAGE_SIZE / 1024));
 		send_sig(SIGKILL, selected, 0);
 
 		lowmem_deathpending_timeout = ktime_add_ns(ktime_get(),
