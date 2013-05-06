@@ -1030,6 +1030,10 @@ NORET_TYPE void do_exit(long code)
 		kfree(current->pi_state_cache);
 #endif
 	/*
+	 * Make sure we are holding no locks:
+	 */
+	debug_check_no_locks_held();
+	/*
 	 * We can do this unlocked here. The futex code uses this flag
 	 * just to verify whether the pi state cleanup has been done
 	 * or not. In the worst case it loops once more.
