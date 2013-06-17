@@ -50,6 +50,11 @@ struct cma *dma_contiguous_default_area;
 #define CMA_SIZE_MBYTES 0
 #endif
 
+#ifdef CONFIG_CMA_RESERVE_DEFAULT_AREA
+#define CMA_RESERVE_AREA 1
+#else
+#define CMA_RESERVE_AREA 0
+#endif
 /*
  * Default global CMA area size can be defined in kernel's .config.
  * This is usefull mainly for distro maintainers to create a kernel
@@ -217,6 +222,51 @@ static int __init cma_init_reserved_areas(void)
 	return 0;
 }
 core_initcall(cma_init_reserved_areas);
+#endif
+
+/**
+ * dma_contiguous_reserve() - reserve area for contiguous memory handling
+ * @limit: End address of the reserved memory (optional, 0 for any).
+ *
+ * This function reserves memory from early allocator. It should be
+ * called by arch specific code once the early allocator (memblock or bootmem)
+ * has been activated and all other subsystems have already allocated/reserved
+ * memory. It reserves contiguous areas for global, device independent
+ * allocations and (optionally) all areas defined in device tree structures.
+ */
+void __init dma_contiguous_reserve(phys_addr_t limit)
+{
+	phys_addr_t sel_size = 0;
+
+	pr_debug("%s(limit %08lx)\n", __func__, (unsigned long)limit);
+
+	if (size_cmdline != -1) {
+		sel_size = size_cmdline;
+	} else {
+#ifdef CONFIG_CMA_SIZE_SEL_MBYTES
+		sel_size = size_bytes;
+#elif defined(CONFIG_CMA_SIZE_SEL_PERCENTAGE)
+		sel_size = cma_early_percent_memory();
+#elif defined(CONFIG_CMA_SIZE_SEL_MIN)
+		sel_size = min(size_bytes, cma_early_percent_memory());
+#elif defined(CONFIG_CMA_SIZE_SEL_MAX)
+		sel_size = max(size_bytes, cma_early_percent_memory());
+#endif
+	}
+
+	if (sel_size) {
+		phys_addr_t base = 0;
+		pr_debug("%s: reserving %ld MiB for global area\n", __func__,
+			 (unsigned long)sel_size / SZ_1M);
+
+		if (dma_contiguous_reserve_area(sel_size, &base, limit, NULL,
+		    CMA_RESERVE_AREA) == 0)
+			dma_contiguous_def_base = base;
+	}
+#ifdef CONFIG_OF
+	of_scan_flat_dt(cma_fdt_scan, NULL);
+#endif
+};
 
 /**
  * dma_declare_contiguous() - reserve area for contiguous memory handling
