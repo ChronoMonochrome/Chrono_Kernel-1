@@ -110,6 +110,7 @@ enum pageflags {
 #ifdef CONFIG_KSM_CHECK_PAGE
 	PG_ksm_scan0,           /* page has been scanned by even KSM cycle */
 #endif
+	PG_readahead,		/* page in a readahead window */
 	__NR_PAGEFLAGS,
 
 #ifdef CONFIG_KSM_CHECK_PAGE
