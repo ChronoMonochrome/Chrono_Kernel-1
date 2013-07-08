@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ashldi3.S
 font.c
 lib1funcs.S
@@ -16,3 +17,6 @@ fdt_rw.c
 fdt_wip.c
 libfdt.h
 libfdt_internal.h
+=======
+piggy.lz4
+>>>>>>> e6fb1c2... arm: add support for LZ4-compressed kernel
