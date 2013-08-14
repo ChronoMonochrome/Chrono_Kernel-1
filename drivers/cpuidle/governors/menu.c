@@ -116,7 +116,7 @@ struct menu_device {
 	u64		predicted_us;
 	unsigned int	bucket;
 	u64		correction_factor[BUCKETS];
-	u32		intervals[INTERVALS];
+	unsigned int	intervals[INTERVALS];
 	int		interval_ptr;
 };
 
