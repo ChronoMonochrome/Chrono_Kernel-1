@@ -153,7 +153,7 @@ INT32 FsLookupFile(struct inode *inode, UINT8 *path, FILE_ID_T *fid)
 	struct super_block *sb = inode->i_sb;
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
-	if ((fid == NULL) || (path == NULL) || (STRLEN(path) == 0))
+	if ((fid == NULL) || (path == NULL) || (*path == '\0'))
 		return(FFS_ERROR);
 
 	sm_P(&(fs_struct[p_fs->drv].v_sem));
@@ -171,7 +171,7 @@ INT32 FsCreateFile(struct inode *inode, UINT8 *path, UINT8 mode, FILE_ID_T *fid)
 	struct super_block *sb = inode->i_sb;
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
-	if ((fid == NULL) || (path == NULL) || (STRLEN(path) == 0))
+	if ((fid == NULL) || (path == NULL) || (*path == '\0'))
 		return(FFS_ERROR);
 
 	sm_P(&(fs_struct[p_fs->drv].v_sem));
@@ -346,7 +346,7 @@ INT32 FsCreateDir(struct inode *inode, UINT8 *path, FILE_ID_T *fid)
 	struct super_block *sb = inode->i_sb;
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
-	if ((fid == NULL) || (path == NULL) || (STRLEN(path) == 0))
+	if ((fid == NULL) || (path == NULL) || (*path == '\0'))
 		return(FFS_ERROR);
 
 	sm_P(&(fs_struct[p_fs->drv].v_sem));
