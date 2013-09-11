@@ -52,6 +52,17 @@ union vfp_state *vfp_current_hw_state[NR_CPUS];
  * After startup, holds VFP architecture
  */
 unsigned int VFP_arch;
+static void vfp_force_reload(unsigned int cpu, struct thread_info *thread)
+{
+	if (vfp_state_in_hw(cpu, thread)) {
+		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
+		vfp_current_hw_state[cpu] = NULL;
+	}
+#ifdef CONFIG_SMP
+	thread->vfpstate.hard.cpu = NR_CPUS;
+	vfp_current_hw_state[cpu] = NULL;
+#endif
+}
 
 /*
  * Used for reporting emulation statistics via /proc
