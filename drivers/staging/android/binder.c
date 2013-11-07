@@ -1791,7 +1791,7 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
 		case BC_INCREFS_DONE:
 		case BC_ACQUIRE_DONE: {
 			void __user *node_ptr;
-			void __user *cookie;
+			void *cookie;
 			struct binder_node *node;
 
 			if (get_user(node_ptr, (void * __user *)ptr))
@@ -2723,15 +2723,9 @@ static void binder_vma_close(struct vm_area_struct *vma)
 	binder_defer_work(proc, BINDER_DEFERRED_PUT_FILES);
 }
 
-static int binder_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-{
-	return VM_FAULT_SIGBUS;
-}
-
 static struct vm_operations_struct binder_vm_ops = {
 	.open = binder_vma_open,
 	.close = binder_vma_close,
-	.fault = binder_vm_fault,
 };
 
 static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
