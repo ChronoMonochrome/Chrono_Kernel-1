@@ -305,9 +305,53 @@ static int do_fsync(unsigned int fd, int datasync)
 	struct fsync_work *fwork;
 #endif
 
+<<<<<<< HEAD
 	if (f.file) {
 		ret = vfs_fsync(f.file, datasync);
 		fdput(f);
+=======
+	file = fget(fd);
+	if (file) {
+		ktime_t fsync_t, fsync_diff;
+		char pathname[256], *path;
+		path = d_path(&(file->f_path), pathname, sizeof(pathname));
+		if (IS_ERR(path))
+			path = "(unknown)";
+#ifdef CONFIG_ASYNC_FSYNC
+		else if (async_fsync(file, fd)) {
+			if (!fsync_workqueue)
+				fsync_workqueue =
+					create_singlethread_workqueue("fsync");
+			if (!fsync_workqueue)
+				goto no_async;
+
+			if (IS_ERR(path))
+				goto no_async;
+
+			fwork = kmalloc(sizeof(*fwork), GFP_KERNEL);
+			if (fwork) {
+				strncpy(fwork->pathname, path,
+					sizeof(fwork->pathname) - 1);
+				INIT_WORK(&fwork->work, do_afsync_work);
+				queue_work(fsync_workqueue, &fwork->work);
+				fput(file);
+				return 0;
+			}
+		}
+no_async:
+#endif
+		fsync_t = ktime_get();
+		ret = vfs_fsync(file, datasync);
+		fput(file);
+		fsync_diff = ktime_sub(ktime_get(), fsync_t);
+		if (ktime_to_ms(fsync_diff) >= 5000) {
+                        pr_info("VFS: %s pid:%d(%s)(parent:%d/%s)\
+				takes %lld ms to fsync %s.\n", __func__,
+				current->pid, current->comm,
+				current->parent->pid, current->parent->comm,
+				ktime_to_ms(fsync_diff), path);
+		}
+>>>>>>> b3881ba... Asynchronous Fsync: initial extraction of Async Fsync from HTC
 	}
 	return ret;
 }
