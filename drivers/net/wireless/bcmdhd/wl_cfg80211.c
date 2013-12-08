@@ -65,6 +65,12 @@
 #include <wl_cfgp2p.h>
 #include <wl_android.h>
 
+#include <linux/moduleparam.h>
+
+/* PM mode in userspace */
+static bool dhdpm_fast = true;
+module_param(dhdpm_fast, bool, 0644);
+
 #ifdef PROP_TXSTATUS
 #include <dhd_wlfc.h>
 #endif
@@ -4635,6 +4641,7 @@ wl_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *dev,
 	s32 err = 0;
 	struct bcm_cfg80211 *cfg = wiphy_priv(wiphy);
 	struct net_info *_net_info = wl_get_netinfo_by_netdev(cfg, dev);
+	dhd_pub_t *dhd = (dhd_pub_t *)(cfg->pub);
 
 	RETURN_EIO_IF_NOT_UP(cfg);
 	WL_DBG(("Enter\n"));
@@ -4646,7 +4653,14 @@ wl_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *dev,
 	/* Delete pm_enable_work */
 	wl_add_remove_pm_enable_work(cfg, FALSE, WL_HANDLER_PEND);
 
-	pm = enabled ? PM_FAST : PM_OFF;
+	/* android has special hooks to change pm when kernel suspended */
+	if (dhdpm_fast)
+		/* Use PM_FAST only instead of PM_MAX */
+		pm = enabled ? PM_FAST : PM_OFF;
+	else
+		/* Depends on suspend state */
+		pm = enabled ? ((dhd->in_suspend) ? PM_MAX : PM_FAST) : PM_OFF;
+
 	if (_net_info->pm_block) {
 		WL_ERR(("%s:Do not enable the power save for pm_block %d\n",
 			dev->name, _net_info->pm_block));
