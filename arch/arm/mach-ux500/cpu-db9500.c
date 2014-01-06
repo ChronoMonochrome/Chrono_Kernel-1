@@ -19,7 +19,7 @@
  * U9500 is currently using U8500v2 HW. Therefore, the platform detection
  * is based on the kernel cmd line setting (early_param "pinsfor").
  */
-inline bool cpu_is_u9500()
+bool cpu_is_u9500()
 {
 	if (pins_for_u9500())
 		return true;
