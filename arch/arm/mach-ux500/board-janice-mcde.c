@@ -29,7 +29,7 @@
 #include <mach/db8500-regs.h>
 	 
 
-#define PRCMU_DPI_CLK_FREQ	49920000
+#define PRCMU_DPI_CLK_FREQ	66560000
 	 
 #ifdef CONFIG_FB_MCDE
 
