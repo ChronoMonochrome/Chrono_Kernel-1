@@ -1578,6 +1578,12 @@ static void destroy_worker(struct worker *worker)
 	 */
 	get_task_struct(worker->task);
 
+	/*
+	 * Once WORKER_DIE is set, the kworker may destroy itself at any
+	 * point.  Pin to ensure the task stays until we're done with it.
+	 */
+	get_task_struct(worker->task);
+
 	list_del_init(&worker->entry);
 	worker->flags |= WORKER_DIE;
 
