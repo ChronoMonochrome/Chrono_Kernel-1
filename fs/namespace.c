@@ -1923,6 +1923,13 @@ return -EPERM;
 	err = do_add_mount(real_mount(mnt), path, mnt_flags);
 	if (err)
 		mntput(mnt);
+#ifdef CONFIG_ASYNC_FSYNC
+	if (!err && ((!strcmp(type, "ext4") &&
+	    !strcmp(path->dentry->d_name.name, "data")) ||
+	    (!strcmp(type, "fuse") &&
+	    !strcmp(path->dentry->d_name.name, "emulated"))))
+                mnt->mnt_sb->fsync_flags |= FLAG_ASYNC_FSYNC;
+#endif
 	return err;
 }
 
