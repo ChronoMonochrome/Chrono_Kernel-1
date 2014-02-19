@@ -17,3 +17,4 @@ obj-$(CONFIG_SUSPEND_TIME)	+= suspend_time.o
 
 obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
 obj-$(CONFIG_PM_SYNC_CTRL) += pm_sync_ctrl.o
+obj-$(CONFIG_SUSPEND)		+= wakeup_reason.o
