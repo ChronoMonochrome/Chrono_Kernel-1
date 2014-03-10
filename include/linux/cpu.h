@@ -222,6 +222,7 @@ extern void cpu_hotplug_enable(void);
 #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
 #define __register_hotcpu_notifier(nb)	__register_cpu_notifier(nb)
 #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
+#define __unregister_hotcpu_notifier(nb)	__unregister_cpu_notifier(nb)
 void clear_tasks_mm_cpumask(int cpu);
 #define __unregister_hotcpu_notifier(nb)	__unregister_cpu_notifier(nb)
 int cpu_down(unsigned int cpu);
