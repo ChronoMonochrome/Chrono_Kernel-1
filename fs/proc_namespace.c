@@ -107,7 +107,15 @@ static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
 	seq_path(m, &mnt_path, " \t\n\\");
 	seq_putc(m, ' ');
 	show_type(m, sb);
-	seq_puts(m, __mnt_is_readonly(mnt) ? " ro" : " rw");
+
+	//pr_err("show_vfsmnt: %s %s\n", mnt->mnt_root->d_name.name, mnt->mnt_sb->s_id);
+#ifdef CONFIG_MACH_SAMSUNG_U8500
+	if (strstr(mnt->mnt_sb->s_id, "mmcblk0p1"))
+		seq_puts(m, " ro");
+	else
+#endif
+		seq_puts(m, __mnt_is_readonly(mnt) ? " ro" : " rw");
+
 	err = show_sb_opts(m, sb);
 	if (err)
 		goto out;
