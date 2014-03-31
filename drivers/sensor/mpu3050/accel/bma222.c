@@ -36,8 +36,8 @@
 #endif
 
 #include "mpu.h"
-#include "mlos.h"
-#include "mlsl.h"
+#include "../mlos.h"
+#include "../mlsl.h"
 
 #define ACCEL_BMA222_RANGE_REG          (0x0F)
 #define ACCEL_BMA222_BW_REG             (0x10)
