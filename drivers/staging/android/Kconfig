@@ -148,6 +148,8 @@ config ANDROID_STE_TIMED_VIBRA
 	help
 	  ST-Ericsson's vibrator driver using timed output class device
 
+source "drivers/staging/android/fiq_debugger/Kconfig"
+
 endif # if ANDROID
 
 endmenu
