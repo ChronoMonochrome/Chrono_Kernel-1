@@ -139,12 +139,17 @@ static u32 parameter3_t48_addr;
 static u8 parameter3_t48_val;
 
 /* cocafe: Touch Booster Control */
+#ifdef TOUCH_BOOSTER
 #define TOUCHBOOST_FREQ_DEF		400000
+#define TOUCHBOOST_DELAY_DEF		500
 
 static bool touchboost = false;
 static bool touchboost_ape = true;
 static bool touchboost_ddr = true;
 static unsigned int touchboost_freq = TOUCHBOOST_FREQ_DEF;
+static unsigned int touchboost_delay = TOUCHBOOST_DELAY_DEF;
+
+#endif /* TOUCH_BOOSTER */
 
 /* cocafe: SweepToWake with wakelock implementation */
 #define ABS_THRESHOLD_X			120
@@ -166,9 +171,16 @@ static bool waking_up = false;
 
 static bool sweep2wake = false;
 
-/* control for pinch2wake */
-static bool pinch2wake = false;
-module_param(pinch2wake, bool, 0644);
+/* Sweep2Sleep - Original code: BOOTMGR@Github */
+/* #define TOUCH_S2S */
+#ifdef TOUCH_S2S
+/* Using 3 fingers */
+#define S2S_FINGERS_USING		2
+#define S2S_THRESHOLD			450
+
+static bool sweep2sleep = false;
+static unsigned int sweep2sleep_y;
+#endif /* TOUCH_S2S */
 
 static void mxt224e_ponkey_thread(struct work_struct *mxt224e_ponkey_work)
 {
@@ -181,7 +193,7 @@ static void mxt224e_ponkey_thread(struct work_struct *mxt224e_ponkey_work)
 	msleep(100);
 
 	ab8500_ponkey_emulator(0);	/* release */
-	
+
 	waking_up = false;
 }
 static DECLARE_WORK(mxt224e_ponkey_work, mxt224e_ponkey_thread);
@@ -1032,12 +1044,57 @@ err:
 	return ret;
 }
 
+#ifdef TOUCH_BOOSTER
+static void mxt224e_touchbooster(struct mxt224_data *data, bool enable)
+{
+	if (enable) {
+		if (touchboost_ape) {
+			prcmu_qos_update_requirement(
+				PRCMU_QOS_APE_OPP,
+				(char *)data->client->name,
+				PRCMU_QOS_APE_OPP_MAX);
+		}
+		if (touchboost_ddr) {
+			prcmu_qos_update_requirement(
+				PRCMU_QOS_DDR_OPP,
+				(char *)data->client->name,
+				PRCMU_QOS_DDR_OPP_MAX);
+		}
+		/* Allow to disable cpufreq requirement */
+		if (touchboost_freq != 0) {
+			prcmu_qos_update_requirement(
+				PRCMU_QOS_ARM_KHZ,
+				(char *)data->client->name,
+				touchboost_freq);
+		}
+	} else {
+		prcmu_qos_update_requirement(
+			PRCMU_QOS_APE_OPP,(
+			char *)data->client->name,
+			PRCMU_QOS_DEFAULT_VALUE);
+		prcmu_qos_update_requirement(
+			PRCMU_QOS_DDR_OPP,
+			(char *)data->client->name,
+			PRCMU_QOS_DEFAULT_VALUE);
+		prcmu_qos_update_requirement(
+			PRCMU_QOS_ARM_KHZ,
+			(char *)data->client->name,
+			PRCMU_QOS_DEFAULT_VALUE);
+	}
+}
+
+struct delayed_work mxt224e_touchbooster_off;
+
+static void mxt224e_touchbooster_offwork(struct work_struct *work)
+{
+	mxt224e_touchbooster(copy_data, false);
+}
+#endif
+
 static void report_input_data(struct mxt224_data *data)
 {
 	int id;
 	int count = 0;
-	int y_up;			// stores value of Y-axis when touch event is completed
-	int y_down;			// stores value of Y-axis when touch event starts
 
 	if (!valid_touch)
 		return;
@@ -1049,50 +1106,21 @@ static void report_input_data(struct mxt224_data *data)
 
 	#if defined(TOUCH_BOOSTER)
 	if (touchboost) {
-		if (!is_suspend) {
-			if (data->fingers[id].state == MXT224_STATE_PRESS) {
-				if (data->finger_cnt == 0) {
-					if (touchboost_ape) {
-						prcmu_qos_update_requirement(
-							PRCMU_QOS_APE_OPP,
-							(char *)data->client->name,
-							PRCMU_QOS_APE_OPP_MAX);
-					}
-					if (touchboost_ddr) {
-						prcmu_qos_update_requirement(
-							PRCMU_QOS_DDR_OPP,
-							(char *)data->client->name,
-							PRCMU_QOS_DDR_OPP_MAX);
-					}
-					/* Allow to disable cpufreq requirement */
-					if (touchboost_freq != 0) {
-						prcmu_qos_update_requirement(
-							PRCMU_QOS_ARM_KHZ,
-							(char *)data->client->name,
-							touchboost_freq);
-					}
-				}
+		if (data->fingers[id].state == MXT224_STATE_PRESS) {
+			if (data->finger_cnt == 0) {
+				cancel_delayed_work(&mxt224e_touchbooster_off);
+				mxt224e_touchbooster(data, true);
+			}
 
-				data->finger_cnt++;
+			data->finger_cnt++;
 
-			} else if (data->fingers[id].state == MXT224_STATE_RELEASE) {
-				if (data->finger_cnt > 0)
-					data->finger_cnt--;
-	
-				if (data->finger_cnt == 0) {
-					prcmu_qos_update_requirement(
-						PRCMU_QOS_APE_OPP,(
-						char *)data->client->name,
-						PRCMU_QOS_DEFAULT_VALUE);
-					prcmu_qos_update_requirement(
-						PRCMU_QOS_DDR_OPP,
-						(char *)data->client->name,
-						PRCMU_QOS_DEFAULT_VALUE);
-					prcmu_qos_update_requirement(
-						PRCMU_QOS_ARM_KHZ,
-						(char *)data->client->name,
-						PRCMU_QOS_DEFAULT_VALUE);
-				}
+		} else if (data->fingers[id].state == MXT224_STATE_RELEASE) {
+			if (data->finger_cnt > 0)
+				data->finger_cnt--;
+
+			if (data->finger_cnt == 0) {
+				schedule_delayed_work(&mxt224e_touchbooster_off, 
+					msecs_to_jiffies(touchboost_delay));
 			}
 		}
 	}
@@ -1140,20 +1168,19 @@ static void report_input_data(struct mxt224_data *data)
 		}
 	}
 	
-	/* pinch2wake implementation */
-	if (pinch2wake) {
-		if (data->fingers[2].state == MXT224_STATE_PRESS) {	// We are using 3 fingers
-			y_down = data->fingers[2].y;
-		}
-		if (data->fingers[2].state == MXT224_STATE_RELEASE) {
-			y_up = data->fingers[2].y;
-		}
-		if ((y_up - y_down) >= 700) {				// Threshold = 700 pixels
-			ab8500_ponkey_emulator(1);
-			msleep(250);
-			ab8500_ponkey_emulator(0);
+	#ifdef TOUCH_S2S
+	if (!is_suspend) {
+		if (sweep2sleep) {
+			if (data->fingers[S2S_FINGERS_USING].state == MXT224_STATE_PRESS) {
+				sweep2sleep_y = data->fingers[S2S_FINGERS_USING].y;
+			}
+			if (data->fingers[S2S_FINGERS_USING].state == MXT224_STATE_RELEASE) {
+				if (abs(data->fingers[S2S_FINGERS_USING].y - sweep2sleep_y) >= S2S_THRESHOLD)
+					schedule_work(&mxt224e_ponkey_work);
+			}
 		}
 	}
+	#endif /* TOUCH_S2S */
 
 	if (data->fingers[id].state == MXT224_STATE_RELEASE)
 		data->fingers[id].state = MXT224_STATE_INACTIVE;
@@ -1306,7 +1333,7 @@ static int median_err_setting(struct mxt224_data *data)
 			write_mem(copy_data, obj_address+22, 1, &value);
 			value = 38;
 			write_mem(copy_data, obj_address+25, 1, &value);
-			value = 40;
+			value = 28;
 			write_mem(copy_data, obj_address+35, 1, &value);
 			value = 81;
 			write_mem(copy_data, obj_address+39, 1, &value);
@@ -1507,19 +1534,8 @@ static int mxt224_internal_suspend(struct mxt224_data *data)
 	#if defined(TOUCH_BOOSTER)
 	if (touchboost) {
 		if (data->finger_cnt > 0) {
-			prcmu_qos_update_requirement(
-				PRCMU_QOS_APE_OPP,(
-				char *)data->client->name,
-				PRCMU_QOS_DEFAULT_VALUE);
-			prcmu_qos_update_requirement(
-				PRCMU_QOS_DDR_OPP,
-				(char *)data->client->name,
-				PRCMU_QOS_DEFAULT_VALUE);
-			prcmu_qos_update_requirement(
-				PRCMU_QOS_ARM_KHZ,
-				(char *)data->client->name,
-				PRCMU_QOS_DEFAULT_VALUE);
-	
+			mxt224e_touchbooster(data, false);
+
 			data->finger_cnt = 0;
 		}
 	}
@@ -1595,23 +1611,15 @@ static void mxt224_early_suspend(struct early_suspend *h)
 		goto out;
 
 	if (sweep2wake) {
+
+		#ifdef TOUCH_BOOSTER
 		if (data->finger_cnt > 0) {
-			prcmu_qos_update_requirement(
-				PRCMU_QOS_APE_OPP,
-				(char *)data->client->name,
-				PRCMU_QOS_DEFAULT_VALUE);
-			prcmu_qos_update_requirement(
-				PRCMU_QOS_DDR_OPP,
-				(char *)data->client->name,
-				PRCMU_QOS_DEFAULT_VALUE);
-			prcmu_qos_update_requirement(
-				PRCMU_QOS_ARM_KHZ,
-				(char *)data->client->name,
-				PRCMU_QOS_DEFAULT_VALUE);
-	
+			mxt224e_touchbooster(data, false);
+
 			data->finger_cnt = 0;
 		}
-	
+		#endif /* TOUCH_BOOSTER */
+
 		/* nmk_config_pins(janice_mxt224e_pins_wakeup, ARRAY_SIZE(janice_mxt224e_pins_wakeup)); */
 
 		goto out;
@@ -2718,7 +2726,7 @@ static ssize_t mxt224e_sweep2wake_store(struct kobject *kobj, struct kobj_attrib
 		}
 
 		x_threshold = threshold_tmp;
-		
+
 		return count;
 	}
 
@@ -2731,14 +2739,61 @@ static ssize_t mxt224e_sweep2wake_store(struct kobject *kobj, struct kobj_attrib
 		}
 
 		y_threshold = threshold_tmp;
-		
+
 		return count;
 	}
-		
+
+	#if CONFIG_HAS_WAKELOCK
+	/* For development activity */
+	if (!strncmp(&buf[0], "wakelock=", 9)) {
+		sscanf(&buf[9], "%d", &ret);
+
+		if (!ret)
+			wake_unlock(&s2w_wakelock);
+		else
+			wake_lock(&s2w_wakelock);
+
+		return count;
+	}
+	#endif
+
 	return count;
 }
 
 static struct kobj_attribute mxt224e_sweep2wake_interface = __ATTR(sweep2wake, 0644, mxt224e_sweep2wake_show, mxt224e_sweep2wake_store);
+
+#ifdef TOUCH_S2S
+static ssize_t mxt224e_sweep2sleep_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "status: %s\n", sweep2sleep ? "on" : "off");
+	sprintf(buf, "%sthreshold: %d\n", buf, S2S_THRESHOLD);
+
+	return strlen(buf);
+}
+
+static ssize_t mxt224e_sweep2sleep_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	if (!strncmp(buf, "on", 2)) {
+		sweep2sleep = true;
+
+		pr_err("[TSP] Sweep2Sleep On\n");
+
+		return count;
+	}
+
+	if (!strncmp(buf, "off", 3)) {
+		sweep2sleep = false;
+
+		pr_err("[TSP] Sweep2Sleep Off\n");
+
+		return count;
+	}
+
+	return count;
+}
+
+static struct kobj_attribute mxt224e_sweep2sleep_interface = __ATTR(sweep2sleep, 0644, mxt224e_sweep2sleep_show, mxt224e_sweep2sleep_store);
+#endif
 
 static ssize_t mxt224e_config_t48_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -2760,7 +2815,7 @@ static ssize_t mxt224e_config_t48_show(struct kobject *kobj, struct kobj_attribu
 		sprintf(buf, "%s|%-18d|%-8d|\n", buf, i, mbuf);
 	}
 	sprintf(buf, "%s+------------------+--------+\n", buf);
-	
+
 	return strlen(buf);
 }
 
@@ -2784,7 +2839,7 @@ static ssize_t mxt224e_config_t48_store(struct kobject *kobj, struct kobj_attrib
 	write_mem(copy_data, addr + addr_u, 1, &val);
 
 	pr_err("[TSP] T48 [%2d] [%d]\n", addr_u, val);
-		
+
 	return count;
 }
 
@@ -2810,7 +2865,7 @@ static ssize_t mxt224e_config_t46_show(struct kobject *kobj, struct kobj_attribu
 		sprintf(buf, "%s|%-18d|%-8d|\n", buf, i, mbuf);
 	}
 	sprintf(buf, "%s+------------------+--------+\n", buf);
-	
+
 	return strlen(buf);
 }
 
@@ -2834,7 +2889,7 @@ static ssize_t mxt224e_config_t46_store(struct kobject *kobj, struct kobj_attrib
 	write_mem(copy_data, addr + addr_u, 1, &val);
 
 	pr_err("[TSP] T46 [%2d] [%d]\n", addr_u, val);
-		
+
 	return count;
 }
 
@@ -2860,7 +2915,7 @@ static ssize_t mxt224e_config_t38_show(struct kobject *kobj, struct kobj_attribu
 		sprintf(buf, "%s|%-18d|%-8d|\n", buf, i, mbuf);
 	}
 	sprintf(buf, "%s+------------------+--------+\n", buf);
-	
+
 	return strlen(buf);
 }
 
@@ -2884,7 +2939,7 @@ static ssize_t mxt224e_config_t38_store(struct kobject *kobj, struct kobj_attrib
 	write_mem(copy_data, addr + addr_u, 1, &val);
 
 	pr_err("[TSP] T38 [%2d] [%d]\n", addr_u, val);
-		
+
 	return count;
 }
 
@@ -2910,7 +2965,7 @@ static ssize_t mxt224e_config_t19_show(struct kobject *kobj, struct kobj_attribu
 		sprintf(buf, "%s|%-18d|%-8d|\n", buf, i, mbuf);
 	}
 	sprintf(buf, "%s+------------------+--------+\n", buf);
-	
+
 	return strlen(buf);
 }
 
@@ -2934,7 +2989,7 @@ static ssize_t mxt224e_config_t19_store(struct kobject *kobj, struct kobj_attrib
 	write_mem(copy_data, addr + addr_u, 1, &val);
 
 	pr_err("[TSP] T19 [%2d] [%d]\n", addr_u, val);
-		
+
 	return count;
 }
 
@@ -2960,7 +3015,7 @@ static ssize_t mxt224e_config_t9_show(struct kobject *kobj, struct kobj_attribut
 		sprintf(buf, "%s|%-18d|%-8d|\n", buf, i, mbuf);
 	}
 	sprintf(buf, "%s+------------------+--------+\n", buf);
-	
+
 	return strlen(buf);
 }
 
@@ -2984,7 +3039,7 @@ static ssize_t mxt224e_config_t9_store(struct kobject *kobj, struct kobj_attribu
 	write_mem(copy_data, addr + addr_u, 1, &val);
 
 	pr_err("[TSP] T9 [%2d] [%d]\n", addr_u, val);
-		
+
 	return count;
 }
 
@@ -3010,7 +3065,7 @@ static ssize_t mxt224e_config_t8_show(struct kobject *kobj, struct kobj_attribut
 		sprintf(buf, "%s|%-18d|%-8d|\n", buf, i, mbuf);
 	}
 	sprintf(buf, "%s+------------------+--------+\n", buf);
-	
+
 	return strlen(buf);
 }
 
@@ -3034,7 +3089,7 @@ static ssize_t mxt224e_config_t8_store(struct kobject *kobj, struct kobj_attribu
 	write_mem(copy_data, addr + addr_u, 1, &val);
 
 	pr_err("[TSP] T8 [%2d] [%d]\n", addr_u, val);
-		
+
 	return count;
 }
 
@@ -3060,7 +3115,7 @@ static ssize_t mxt224e_config_t7_show(struct kobject *kobj, struct kobj_attribut
 		sprintf(buf, "%s|%-18d|%-8d|\n", buf, i, mbuf);
 	}
 	sprintf(buf, "%s+------------------+--------+\n", buf);
-	
+
 	return strlen(buf);
 }
 
@@ -3084,19 +3139,13 @@ static ssize_t mxt224e_config_t7_store(struct kobject *kobj, struct kobj_attribu
 	write_mem(copy_data, addr + addr_u, 1, &val);
 
 	pr_err("[TSP] T7 [%2d] [%d]\n", addr_u, val);
-		
+
 	return count;
 }
 
 static struct kobj_attribute mxt224e_config_t7_interface = __ATTR(config_t7, 0644, mxt224e_config_t7_show, mxt224e_config_t7_store);
 
 #ifdef TOUCH_BOOSTER
-static void mxt224e_touchboost_clear(void)
-{
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, (char *)copy_data->client->name, PRCMU_QOS_DEFAULT_VALUE);
-	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, (char *)copy_data->client->name, PRCMU_QOS_DEFAULT_VALUE);
-	prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ, (char *)copy_data->client->name, PRCMU_QOS_DEFAULT_VALUE);
-}
 
 static ssize_t mxt224e_touchboost_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -3125,10 +3174,10 @@ static ssize_t mxt224e_touchboost_store(struct kobject *kobj, struct kobj_attrib
 	}
 
 	if (!touchboost)
-		mxt224e_touchboost_clear();
+		mxt224e_touchbooster(copy_data, false);
 
 	pr_err("[TSP] TouchBoost %s\n", touchboost ? "enable" : "disable");
-		
+
 	return count;
 }
 
@@ -3149,26 +3198,41 @@ static ssize_t mxt224e_touchboost_freq_store(struct kobject *kobj, struct kobj_a
 	if (!ret)
 		return -EINVAL;
 
-	if (tbuf != 0 && 
-	    tbuf != 200000 && 
-	    tbuf != 400000 && 
-	    tbuf != 800000 && 
-	    tbuf != 1000000) 
-	{
-		pr_err("[TSP] passed an invalid cpufreq\n");
-		return -EINVAL;
-	}
-
 	touchboost_freq = tbuf;
 
-	mxt224e_touchboost_clear();
+	mxt224e_touchbooster(copy_data, false);
 
 	pr_err("[TSP] TouchBoost cpufreq: %d\n", touchboost_freq);
-		
+
 	return count;
 }
 
 static struct kobj_attribute mxt224e_touchboost_freq_interface = __ATTR(touchboost_freq, 0644, mxt224e_touchboost_freq_show, mxt224e_touchboost_freq_store);
+
+static ssize_t mxt224e_touchboost_delay_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", touchboost_delay);
+}
+
+static ssize_t mxt224e_touchboost_delay_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+	int tbuf;
+
+	ret = sscanf(buf, "%d", &tbuf);
+
+	if (!ret)
+		return -EINVAL;
+
+	if (tbuf < 0)
+		return -EINVAL;
+
+	touchboost_delay = tbuf;
+
+	return count;
+}
+
+static struct kobj_attribute mxt224e_touchboost_delay_interface = __ATTR(touchboost_delay, 0644, mxt224e_touchboost_delay_show, mxt224e_touchboost_delay_store);
 
 static ssize_t mxt224e_touchboost_ape_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -3193,8 +3257,8 @@ static ssize_t mxt224e_touchboost_ape_store(struct kobject *kobj, struct kobj_at
 
 	touchboost_ape = tbuf;
 
-	mxt224e_touchboost_clear();
-		
+	mxt224e_touchbooster(copy_data, false);
+
 	return count;
 }
 
@@ -3223,8 +3287,8 @@ static ssize_t mxt224e_touchboost_ddr_store(struct kobject *kobj, struct kobj_at
 
 	touchboost_ddr = tbuf;
 
-	mxt224e_touchboost_clear();
-		
+	mxt224e_touchbooster(copy_data, false);
+
 	return count;
 }
 
@@ -3242,7 +3306,7 @@ static ssize_t mxt224e_tsp_calibrate_store(struct kobject *kobj, struct kobj_att
 	calibrate_chip();
 
 	pr_err("[TSP] Calibrate now!\n");
-		
+
 	return count;
 }
 
@@ -3277,7 +3341,7 @@ static ssize_t mxt224e_movefilter_t48_store(struct kobject *kobj, struct kobj_at
 
 	if (!strncmp(buf, "on", 2)) {
 		movefilter_t48_req = true;
-		
+
 		pr_info("[TSP] movefilter_t48 %s\n", movefilter_t48_req ? "on" : "off");
 
 		if (!is_suspend) {
@@ -3319,7 +3383,7 @@ static ssize_t mxt224e_movefilter_t48_store(struct kobject *kobj, struct kobj_at
 	}
 
 	pr_err("[TSP] unknown command\n");
-		
+
 	return count;
 }
 
@@ -3354,7 +3418,7 @@ static ssize_t mxt224e_numtouch_t48_store(struct kobject *kobj, struct kobj_attr
 
 	if (!strncmp(buf, "on", 2)) {
 		numtouch_t48_req = true;
-		
+
 		pr_info("[TSP] numtouch_t48 %s\n", numtouch_t48_req ? "on" : "off");
 
 		if (!is_suspend) {
@@ -3396,7 +3460,7 @@ static ssize_t mxt224e_numtouch_t48_store(struct kobject *kobj, struct kobj_attr
 	}
 
 	pr_err("[TSP] unknown command\n");
-		
+
 	return count;
 }
 
@@ -3431,7 +3495,7 @@ static ssize_t mxt224e_threshold_t48_store(struct kobject *kobj, struct kobj_att
 
 	if (!strncmp(buf, "on", 2)) {
 		threshold_t48_req = true;
-		
+
 		pr_info("[TSP] threshold_t48 %s\n", threshold_t48_req ? "on" : "off");
 
 		if (!is_suspend) {
@@ -3474,7 +3538,7 @@ static ssize_t mxt224e_threshold_t48_store(struct kobject *kobj, struct kobj_att
 	}
 
 	pr_err("[TSP] unknown command\n");
-		
+
 	return count;
 }
 
@@ -3501,7 +3565,7 @@ static ssize_t mxt224e_parameter1_t48_store(struct kobject *kobj, struct kobj_at
 
 	if (!strncmp(buf, "on", 2)) {
 		parameter1_t48_req = true;
-		
+
 		pr_info("[TSP] parameter1_t48 %s\n", parameter1_t48_req ? "on" : "off");
 
 		if (!is_suspend) {
@@ -3552,7 +3616,7 @@ static ssize_t mxt224e_parameter1_t48_store(struct kobject *kobj, struct kobj_at
 	}
 
 	pr_err("[TSP] unknown command\n");
-		
+
 	return count;
 }
 
@@ -3579,7 +3643,7 @@ static ssize_t mxt224e_parameter2_t48_store(struct kobject *kobj, struct kobj_at
 
 	if (!strncmp(buf, "on", 2)) {
 		parameter2_t48_req = true;
-		
+
 		pr_info("[TSP] parameter2_t48 %s\n", parameter2_t48_req ? "on" : "off");
 
 		if (!is_suspend) {
@@ -3630,7 +3694,7 @@ static ssize_t mxt224e_parameter2_t48_store(struct kobject *kobj, struct kobj_at
 	}
 
 	pr_err("[TSP] unknown command\n");
-		
+
 	return count;
 }
 
@@ -3657,7 +3721,7 @@ static ssize_t mxt224e_parameter3_t48_store(struct kobject *kobj, struct kobj_at
 
 	if (!strncmp(buf, "on", 2)) {
 		parameter3_t48_req = true;
-		
+
 		pr_info("[TSP] parameter3_t48 %s\n", parameter3_t48_req ? "on" : "off");
 
 		if (!is_suspend) {
@@ -3708,7 +3772,7 @@ static ssize_t mxt224e_parameter3_t48_store(struct kobject *kobj, struct kobj_at
 	}
 
 	pr_err("[TSP] unknown command\n");
-		
+
 	return count;
 }
 
@@ -3716,6 +3780,9 @@ static struct kobj_attribute mxt224e_parameter3_t48_interface = __ATTR(parameter
 
 static struct attribute *mxt224e_attrs[] = {
 	&mxt224e_sweep2wake_interface.attr, 
+#ifdef TOUCH_S2S
+	&mxt224e_sweep2sleep_interface.attr, 
+#endif
 	&mxt224e_config_t7_interface.attr, 
 	&mxt224e_config_t8_interface.attr, 
 	&mxt224e_config_t9_interface.attr, 
@@ -3726,6 +3793,7 @@ static struct attribute *mxt224e_attrs[] = {
 #ifdef TOUCH_BOOSTER
 	&mxt224e_touchboost_interface.attr, 
 	&mxt224e_touchboost_freq_interface.attr, 
+	&mxt224e_touchboost_delay_interface.attr, 
 	&mxt224e_touchboost_ape_interface.attr, 
 	&mxt224e_touchboost_ddr_interface.attr, 
 #endif
@@ -3920,7 +3988,7 @@ static int __devinit mxt224_probe(struct i2c_client *client,
 	noise_median.t46_actvsyncsperx_for_mferr = 40;
 	noise_median.t48_mfinvlddiffthr_for_mferr = 12;
 	noise_median.t48_mferrorthr_for_mferr = 19;
-	noise_median.t48_thr_for_mferr = 35;
+	noise_median.t48_thr_for_mferr = 28;
 	noise_median.t48_movfilter_for_mferr = 0;
 #else
 	noise_median.t46_actvsyncsperx_for_mferr = 38;
@@ -3940,7 +4008,7 @@ static int __devinit mxt224_probe(struct i2c_client *client,
 				  PRCMU_QOS_DEFAULT_VALUE);
 	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name,
 				  PRCMU_QOS_DEFAULT_VALUE);
-	dev_info(&client->dev, "add_prcmu_qos is added\n");
+	INIT_DELAYED_WORK(&mxt224e_touchbooster_off, mxt224e_touchbooster_offwork);
 #endif
 
 	valid_touch = 0;
