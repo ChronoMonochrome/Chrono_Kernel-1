@@ -31,7 +31,7 @@
 #include "mali_kernel_common.h"
 #include "mali_kernel_linux.h"
 
-#include <linux/moduleparam.h> 
+#include <linux/moduleparam.h>
 
 static void mali_kernel_memory_vma_open(struct vm_area_struct * vma);
 static void mali_kernel_memory_vma_close(struct vm_area_struct * vma);
@@ -93,7 +93,7 @@ static int pre_allocated_memory_size_current  = 0;
 #endif
 
 module_param(pre_allocated_memory_size_max, int, S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP | S_IROTH);
-MODULE_PARM_DESC(pre_allocated_memory_size_max, "Mali pre-allocated kernel memory size"); 
+MODULE_PARM_DESC(pre_allocated_memory_size_max, "Mali pre-allocated kernel memory size");
 
 static struct vm_operations_struct mali_kernel_vm_ops =
 {
