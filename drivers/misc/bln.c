@@ -2,6 +2,8 @@
  *
  * Copyright 2011  Michael Richter (alias neldar)
  * Copyright 2011  Adam Kent <adam@semicircular.net>
+ * Copyright 2014  Jonathan Jason Dennis [Meticulus]
+			theonejohnnyd@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,6 +17,9 @@
 #include <linux/miscdevice.h>
 #include <linux/bln.h>
 #include <linux/mutex.h>
+#include <linux/kthread.h>
+#include <linux/sched.h>
+#include <linux/delay.h>
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
 #include <linux/wakelock.h>
 #endif
@@ -22,6 +27,7 @@
 static bool bln_enabled = true;
 static bool bln_ongoing = false; /* ongoing LED Notification */
 static int bln_blink_state = 0;
+static int bln_blink_mode = 1; /* blink by default */
 static bool bln_suspended = false; /* is system suspended */
 static struct bln_implementation *bln_imp = NULL;
 
@@ -113,6 +119,17 @@ static struct early_suspend bln_suspend_data = {
 	.resume = bln_late_resume,
 };
 
+static void blink_thread(void)
+{
+	while(bln_suspended)
+	{
+		bln_enable_backlights(get_led_mask());
+		msleep(1000);
+		bln_disable_backlights(get_led_mask());
+		msleep(1000);
+	}
+}
+
 static void enable_led_notification(void)
 {
 	if (!bln_enabled)
@@ -128,7 +145,11 @@ static void enable_led_notification(void)
 	bln_ongoing = true;
 
 	bln_power_on();
-	bln_enable_backlights(get_led_mask());
+	if(!bln_blink_mode)
+		bln_enable_backlights(get_led_mask());
+	else
+		kthread_run(&blink_thread, NULL,"bln_blink_thread");
+
 	pr_info("%s: notification led enabled\n", __FUNCTION__);
 }
 
