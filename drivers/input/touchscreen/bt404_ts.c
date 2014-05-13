@@ -439,7 +439,7 @@ static bool sweep2wake = false;
 #endif /* TOUCH_S2W */
 
 #ifdef TOUCH_DT2W
-#define DEFAULT_PRESS_TIMEOUT 500
+#define DEFAULT_PRESS_TIMEOUT 250
 static unsigned long press_time = 0;
 static unsigned int press_count = 0;
 
