@@ -1232,11 +1232,6 @@ CONFIG_HOSTAP=y
 # CONFIG_IWM is not set
 # CONFIG_LIBERTAS is not set
 # CONFIG_MWIFIEX is not set
-CONFIG_CTRL_IFACE=y
-CONFIG_WPS=y
-CONFIG_WPS2=y
-CONFIG_P2P=y
-CONFIG_AP=y
 
 #
 # Enable WiMAX (Networking options) to see the WiMAX drivers
