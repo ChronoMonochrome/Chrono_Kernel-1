@@ -1,4 +1,3 @@
-# skipped .45 as it causes BT issues, will look into it next time
 VERSION = 3
 PATCHLEVEL = 0
 SUBLEVEL = 101
