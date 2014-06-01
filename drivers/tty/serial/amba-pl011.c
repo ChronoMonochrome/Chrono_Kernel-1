@@ -1806,7 +1806,6 @@ pl011_set_termios(struct uart_port *port, struct ktermios *termios,
 	unsigned int lcr_h, old_cr;
 	unsigned long flags;
 	unsigned int baud, quot, clkdiv;
-	int fbrd_offset = 0;
 
 	if ((port->line == 0) &&
 	    ((termios->c_ispeed == 4800000) ||
@@ -1840,15 +1839,6 @@ pl011_set_termios(struct uart_port *port, struct ktermios *termios,
 		quot = DIV_ROUND_CLOSEST(port->uartclk * 8, baud);
 	else
 		quot = DIV_ROUND_CLOSEST(port->uartclk * 4, baud);
-
-	/* workaround to manipulate FBRD to avoid delayed sampling of start bit,
-	 * else causes data byte corruption
-	 */
-	if (baud == 3000000)
-		fbrd_offset = -1;
-	else if ((baud == 3250000) ||
-			 (baud == 4000000) || (baud == 4050000))
-			fbrd_offset = -2;
 
 	switch (termios->c_cflag & CSIZE) {
 	case CS5:
@@ -1947,7 +1937,7 @@ pl011_set_termios(struct uart_port *port, struct ktermios *termios,
 			quot -= 2;
 	}
 	/* Set baud rate */
-	writew((quot + fbrd_offset) & 0x3f, port->membase + UART011_FBRD);
+	writew(quot & 0x3f, port->membase + UART011_FBRD);
 	writew(quot >> 6, port->membase + UART011_IBRD);
 
 	/*
