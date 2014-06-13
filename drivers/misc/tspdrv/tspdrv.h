@@ -7,6 +7,7 @@
 **     Constants and type definitions for the TouchSense Kernel Module.
 **
 ** Portions Copyright (c) 2008-2010 Immersion Corporation. All Rights Reserved. 
+**          Copyright (c) 2014 Davide Pianca <kingbabasula@gmail.com>
 **
 ** This file contains Original Code and/or Modifications of Original Code 
 ** as defined in and that are subject to the GNU Public License v2 - 
@@ -122,5 +123,7 @@ struct isa1200_data
 };
 int immvibe_i2c_write(struct i2c_client* client, u8 reg, u8 val);
 /* isa1200 specifc end */
+
+extern unsigned long pwm_val;
 
 #endif  /* _TSPDRV_H */
