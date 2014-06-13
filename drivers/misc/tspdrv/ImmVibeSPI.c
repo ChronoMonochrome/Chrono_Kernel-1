@@ -8,6 +8,7 @@
 **     to control PWM duty cycle, amp enable/disable, save IVT file, etc...
 **
 ** Portions Copyright (c) 2008-2010 Immersion Corporation. All Rights Reserved.
+**          Copyright (c) 2014 Davide Pianca <kingbabasula@gmail.com>
 **
 ** This file contains Original Code and/or Modifications of Original Code
 ** as defined in and that are subject to the GNU Public License v2 -
@@ -42,7 +43,7 @@
 #define SCTRL         (0)     /* 0x0F, System(LDO) Register Group 0*/
 #define HCTRL0     (0x30)     /* 0x09 */ /* Haptic Motor Driver Control Register Group 0*/
 #define HCTRL1     (0x31)     /* 0x4B */ /* Haptic Motor Driver Control Register Group 1*/
-#define HCTRL2     (0x32)     /* 0x00*/ /* Haptic Motor Driver Control Register Group 2*/
+#define HCTRL2     (0x32)     /* 0x00 */ /* Haptic Motor Driver Control Register Group 2*/
 #define HCTRL3     (0x33)     /* 0x13 */ /* Haptic Motor Driver Control Register Group 3*/
 #define HCTRL4     (0x34)     /* 0x00 */ /* Haptic Motor Driver Control Register Group 4*/
 #define HCTRL5     (0x35)     /* 0x6B */ /* Haptic Motor Driver Control Register Group 5*/
@@ -266,7 +267,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
     unsigned int duty;
     VibeInt8 nForce;
 
-	switch (nOutputSignalBitDepth) {
+    switch (nOutputSignalBitDepth) {
 	case 8:
 		/* pForceOutputBuffer is expected to contain 1 byte */
 		if (nBufferSizeInBytes != 1)
@@ -289,21 +290,67 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 
     if (nForce == 0) {
 		vib_i2c_write(isa_data->client, HCTRL5, g_nPWM_Duty);
-		/*
 		if (g_bAmpEnabled == true) {
 			ImmVibeSPI_ForceOut_AmpDisable(0);
 		}
-		*/
     } else {
-		/*
 		if (g_bAmpEnabled != true) {
 			ImmVibeSPI_ForceOut_AmpEnable(0);
 		}
-		*/
 		duty = g_nPWM_Duty + ((g_nPWM_Duty-1)*nForce)/127;
 		vib_i2c_write(isa_data->client, HCTRL5, duty);
     }
     return VIBE_S_SUCCESS;
+}
+
+/*
+ * Sysfs interface for vibration intensity tweaks
+ */
+static ssize_t pwm_value_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    int count;
+
+    count = sprintf(buf, "%lu\n", pwm_val);
+    pr_debug("[VIB] pwm_val: %lu\n", pwm_val);
+
+    return count;
+}
+
+static ssize_t pwm_value_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+    if (kstrtoul(buf, 0, &pwm_val))
+        pr_err("[VIB] %s: error on storing pwm_val\n", __func__);
+
+    pr_info("[VIB] %s: pwm_val=%lu\n", __func__, pwm_val);
+
+    /* After 60 the vibration becomes again stronger, so keep it between 0 and 60 where
+     * 0 is the stronger and 60 is the weaker
+     */
+    if(pwm_val > 60)
+        pwm_val = 60;
+    else if (pwm_val < 0)
+        pwm_val = 0;
+
+    return size;
+}
+
+static DEVICE_ATTR(pwm_value, S_IRUGO | S_IWUSR, pwm_value_show, pwm_value_store);
+
+static int create_sysfs(void)
+{
+	int ret;
+	struct kobject *vibrator_kobj;
+	vibrator_kobj = kobject_create_and_add("vibrator", NULL);
+	if (unlikely(!vibrator_kobj))
+		return -ENOMEM;
+
+	ret = sysfs_create_file(vibrator_kobj, &dev_attr_pwm_value.attr);
+	if (unlikely(ret < 0)) {
+		pr_err("[VIB] sysfs_create_file failed: %d\n", ret);
+		return ret;
+	}
+
+	return 0;
 }
 
 /*
