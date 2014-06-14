@@ -722,7 +722,37 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
 	return AUDIT_BUILD_CONTEXT;
 }
 
-/* At syscall exit time, this filter is called if any audit_names[] have been
+/*
+ * Given an audit_name check the inode hash table to see if they match.
+ * Called holding the rcu read lock to protect the use of audit_inode_hash
+ */
+static int audit_filter_inode_name(struct task_struct *tsk,
+				   struct audit_names *n,
+				   struct audit_context *ctx) {
+	int word, bit;
+	int h = audit_hash_ino((u32)n->ino);
+	struct list_head *list = &audit_inode_hash[h];
+	struct audit_entry *e;
+	enum audit_state state = 0;
+
+	word = AUDIT_WORD(ctx->major);
+	bit  = AUDIT_BIT(ctx->major);
+
+	if (list_empty(list))
+		return 0;
+
+	list_for_each_entry_rcu(e, list, list) {
+		if ((e->rule.mask[word] & bit) == bit &&
+		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
+			ctx->current_state = state;
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+/* At syscall exit time, this filter is called if any audit_names have been
  * collected during syscall processing.  We only check rules in sublists at hash
  * buckets applicable to the inode numbers in audit_names[].
  * Regarding audit_state, same rules apply as for audit_filter_syscall().
