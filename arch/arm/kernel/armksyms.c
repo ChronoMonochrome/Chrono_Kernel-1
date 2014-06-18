@@ -78,8 +78,10 @@ EXPORT_SYMBOL(__raw_writesl);
 EXPORT_SYMBOL(strchr);
 EXPORT_SYMBOL(strrchr);
 EXPORT_SYMBOL(memset);
+#ifndef CONFIG_ARM_USE_GLIBC_MEMCOPY
 EXPORT_SYMBOL(memcpy);
 EXPORT_SYMBOL(memmove);
+#endif
 EXPORT_SYMBOL(memchr);
 EXPORT_SYMBOL(__memzero);
 
