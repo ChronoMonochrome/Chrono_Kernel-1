@@ -1947,6 +1947,15 @@ config ARM_FLUSH_CONSOLE_ON_RESTART
 	  released if it failed to be acquired, which will cause all the
 	  pending messages to be flushed.
 
+config ARM_USE_GLIBC_MEMCOPY
+	bool "Use the GLibC versions of memcpy and memmove"
+	default y
+	help
+	  Allows to use the GLibC versions of memcpy and memmove to improve
+	  the performance of some routines.
+
+	  If unsure, say N.
+
 endmenu
 
 menu "Boot options"
