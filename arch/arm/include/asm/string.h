@@ -12,10 +12,14 @@ extern char * strrchr(const char * s, int c);
 #define __HAVE_ARCH_STRCHR
 extern char * strchr(const char * s, int c);
 
+#ifndef CONFIG_ARM_USE_GLIBC_MEMCOPY
 #define __HAVE_ARCH_MEMCPY
+#endif
 extern void * memcpy(void *, const void *, __kernel_size_t);
 
+#ifndef CONFIG_ARM_USE_GLIBC_MEMCOPY
 #define __HAVE_ARCH_MEMMOVE
+#endif
 extern void * memmove(void *, const void *, __kernel_size_t);
 
 #define __HAVE_ARCH_MEMCHR
