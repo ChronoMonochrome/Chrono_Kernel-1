@@ -6,8 +6,14 @@
 
 lib-y		:= backtrace.o changebit.o csumipv6.o csumpartial.o   \
 		   csumpartialcopy.o csumpartialcopyuser.o clearbit.o \
-		   delay.o findbit.o memchr.o memcpy.o		      \
-		   memmove.o memset.o memzero.o setbit.o              \
+		   delay.o findbit.o memchr.o
+
+# Build memcpy and memmove only if GLibC versions are not used
+ifneq ($(CONFIG_ARM_USE_GLIBC_MEMCOPY),y)
+  lib-y		+= memcpy.o memmove.o
+endif
+
+lib-y		+= memset.o memzero.o setbit.o                        \
 		   strchr.o strrchr.o                                 \
 		   testchangebit.o testclearbit.o testsetbit.o        \
 		   ashldi3.o ashrdi3.o lshrdi3.o muldi3.o             \
