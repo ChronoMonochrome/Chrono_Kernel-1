@@ -174,7 +174,7 @@ static unsigned int sync_freq = DEFAULT_SYNC_FREQ;
 static unsigned int up_threshold_any_cpu_freq = DEFAULT_UP_THRESHOLD_ANY_CPU_FREQ;
 
 /* Maximum frequency CPUs can bump to during screen off */
-#define DEFAULT_SCREEN_OFF_MAX_FREQ 400000
+#define DEFAULT_SCREEN_OFF_MAX_FREQ 1000000
 static unsigned int screen_off_max_freq = DEFAULT_SCREEN_OFF_MAX_FREQ;
 static bool is_screen_off;
 
