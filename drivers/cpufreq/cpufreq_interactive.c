@@ -30,6 +30,7 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
+#include <asm/cputime.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
@@ -140,8 +141,8 @@ static unsigned int up_threshold_any_cpu_load = 75;
 static unsigned int sync_freq = 500000;
 static unsigned int up_threshold_any_cpu_freq = 800000;
 
-static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu,
-						  u64 *wall)
+static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
+						  cputime64_t *wall)
 {
 	u64 idle_time;
 	u64 cur_wall_time;
@@ -163,8 +164,8 @@ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu,
 	return jiffies_to_usecs(idle_time);
 }
 
-static inline u64 get_cpu_idle_time(unsigned int cpu,
-					    u64 *wall)
+static inline cputime64_t get_cpu_idle_time(unsigned int cpu,
+					    cputime64_t *wall)
 {
 	u64 idle_time = get_cpu_idle_time_us(cpu, wall);
 
