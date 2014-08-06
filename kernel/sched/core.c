@@ -2158,12 +2158,12 @@ unsigned long nr_iowait_cpu(int cpu)
 	return atomic_read(&this->nr_iowait);
 }
 
-unsigned long this_cpu_load(void)
+void get_iowait_load(unsigned long *nr_waiters, unsigned long *load)
 {
 	struct rq *this = this_rq();
-	return this->cpu_load[0];
+	*nr_waiters = atomic_read(&this->nr_iowait);
+	*load = this->cpu_load[0];
 }
-
 
 /*
  * Global load-average calculations
