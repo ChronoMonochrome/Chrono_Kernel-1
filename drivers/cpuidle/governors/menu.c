@@ -287,7 +287,7 @@ again:
  */
 static int menu_select(struct cpuidle_device *dev)
 {
-	struct menu_device *data = &__get_cpu_var(menu_devices);
+	struct menu_device *data = this_cpu_ptr(&menu_devices);
 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
 	int power_usage = INT_MAX;
 	int i;
@@ -373,7 +373,7 @@ static int menu_select(struct cpuidle_device *dev)
  */
 static void menu_reflect(struct cpuidle_device *dev)
 {
-	struct menu_device *data = &__get_cpu_var(menu_devices);
+	struct menu_device *data = this_cpu_ptr(&menu_devices);
 	data->needs_update = 1;
 }
 
@@ -383,7 +383,7 @@ static void menu_reflect(struct cpuidle_device *dev)
  */
 static void menu_update(struct cpuidle_device *dev)
 {
-	struct menu_device *data = &__get_cpu_var(menu_devices);
+	struct menu_device *data = this_cpu_ptr(&menu_devices);
 	int last_idx = data->last_state_idx;
 	unsigned int last_idle_us = cpuidle_get_last_residency(dev);
 	struct cpuidle_state *target = &dev->states[last_idx];
