@@ -130,8 +130,10 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 				if (port != 0  && ip != 0x00000000) {
 					portList[port_index++] =
 						(unsigned short)port;
+#ifdef DEBUG_PORT_INFO
 					pr_info("WHITELIST : add port %4x\n"
 						, port);
+#endif
 				}
 			}
 
@@ -189,7 +191,9 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 			if ( port != 0  && ip != 0x00000000)
 			{
 				portList[port_index++] = (unsigned short)port;
+#ifdef DEBUG_PORT_INFO
 				pr_info("WHITELIST : add port %4x\n", port);
+#endif
 			}
 
 			//clear line buffer
