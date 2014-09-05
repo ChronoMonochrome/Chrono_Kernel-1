@@ -463,7 +463,8 @@ static int cache_block_group(struct btrfs_block_group_cache *cache,
 	 * we likely hold important locks.
 	 */
 	if (trans && (!trans->transaction->in_commit) &&
-	    (root && root != root->fs_info->tree_root)) {
+	    (root && root != root->fs_info->tree_root) &&
+	    btrfs_test_opt(root, SPACE_CACHE)) {
 		spin_lock(&cache->lock);
 		if (cache->cached != BTRFS_CACHE_NO) {
 			spin_unlock(&cache->lock);
@@ -3299,11 +3300,12 @@ again:
 /*
  * shrink metadata reservation for delalloc
  */
-static int shrink_delalloc(struct btrfs_trans_handle *trans,
-			   struct btrfs_root *root, u64 to_reclaim, int sync)
+static int shrink_delalloc(struct btrfs_root *root, u64 to_reclaim,
+ 			   bool wait_ordered)
 {
 	struct btrfs_block_rsv *block_rsv;
 	struct btrfs_space_info *space_info;
+	struct btrfs_trans_handle *trans;
 	u64 reserved;
 	u64 max_reclaim;
 	u64 reclaimed = 0;
@@ -3312,6 +3314,7 @@ static int shrink_delalloc(struct btrfs_trans_handle *trans,
 	int loops = 0;
 	unsigned long progress;
 
+	trans = (struct btrfs_trans_handle *)current->journal_info;
 	block_rsv = &root->fs_info->delalloc_block_rsv;
 	space_info = block_rsv->space_info;
 
@@ -3367,24 +3370,81 @@ static int shrink_delalloc(struct btrfs_trans_handle *trans,
 	return reclaimed >= to_reclaim;
 }
 
-/*
- * Retries tells us how many times we've called reserve_metadata_bytes.  The
- * idea is if this is the first call (retries == 0) then we will add to our
- * reserved count if we can't make the allocation in order to hold our place
- * while we go and try and free up space.  That way for retries > 1 we don't try
- * and add space, we just check to see if the amount of unused space is >= the
- * total space, meaning that our reservation is valid.
+/**
+ * maybe_commit_transaction - possibly commit the transaction if its ok to
+ * @root - the root we're allocating for
+ * @bytes - the number of bytes we want to reserve
+ * @force - force the commit
  *
- * However if we don't intend to retry this reservation, pass -1 as retries so
- * that it short circuits this logic.
+ * This will check to make sure that committing the transaction will actually
+ * get us somewhere and then commit the transaction if it does.  Otherwise it
+ * will return -ENOSPC.
+ */
+static int may_commit_transaction(struct btrfs_root *root,
+				  struct btrfs_space_info *space_info,
+				  u64 bytes, int force)
+{
+	struct btrfs_block_rsv *delayed_rsv = &root->fs_info->delayed_block_rsv;
+	struct btrfs_trans_handle *trans;
+
+	trans = (struct btrfs_trans_handle *)current->journal_info;
+	if (trans)
+		return -EAGAIN;
+
+	if (force)
+		goto commit;
+
+	/* See if there is enough pinned space to make this reservation */
+	spin_lock(&space_info->lock);
+	if (space_info->bytes_pinned >= bytes) {
+		spin_unlock(&space_info->lock);
+		goto commit;
+	}
+	spin_unlock(&space_info->lock);
+
+	/*
+	 * See if there is some space in the delayed insertion reservation for
+	 * this reservation.
+	 */
+	if (space_info != delayed_rsv->space_info)
+		return -ENOSPC;
+
+	spin_lock(&delayed_rsv->lock);
+	if (delayed_rsv->size < bytes) {
+		spin_unlock(&delayed_rsv->lock);
+		return -ENOSPC;
+	}
+	spin_unlock(&delayed_rsv->lock);
+
+commit:
+	trans = btrfs_join_transaction(root);
+	if (IS_ERR(trans))
+		return -ENOSPC;
+
+	return btrfs_commit_transaction(trans, root);
+}
+
+/**
+ * reserve_metadata_bytes - try to reserve bytes from the block_rsv's space
+ * @root - the root we're allocating for
+ * @block_rsv - the block_rsv we're allocating for
+ * @orig_bytes - the number of bytes we want
+ * @flush - wether or not we can flush to make our reservation
+ *
+ * This will reserve orgi_bytes number of bytes from the space info associated
+ * with the block_rsv.  If there is not enough space it will make an attempt to
+ * flush out space to make room.  It will do this by flushing delalloc if
+ * possible or committing the transaction.  If flush is 0 then no attempts to
+ * regain reservations will be made and this will fail if there is not enough
+ * space already.
  */
 static int reserve_metadata_bytes(struct btrfs_trans_handle *trans,
 				  struct btrfs_root *root,
 				  struct btrfs_block_rsv *block_rsv,
-				  u64 orig_bytes, int flush)
+				  u64 orig_bytes, int flush, int check)
 {
 	struct btrfs_space_info *space_info = block_rsv->space_info;
-	u64 unused;
+	u64 used;
 	u64 num_bytes = orig_bytes;
 	int retries = 0;
 	int ret = 0;
@@ -3397,9 +3457,9 @@ again:
 		num_bytes = 0;
 
 	spin_lock(&space_info->lock);
-	unused = space_info->bytes_used + space_info->bytes_reserved +
-		 space_info->bytes_pinned + space_info->bytes_readonly +
-		 space_info->bytes_may_use;
+	used = space_info->bytes_used + space_info->bytes_reserved +
+		space_info->bytes_pinned + space_info->bytes_readonly +
+		space_info->bytes_may_use;
 
 	/*
 	 * The idea here is that we've not already over-reserved the block group
@@ -3408,9 +3468,8 @@ again:
 	 * lets start flushing stuff first and then come back and try to make
 	 * our reservation.
 	 */
-	if (unused <= space_info->total_bytes) {
-		unused = space_info->total_bytes - unused;
-		if (unused >= num_bytes) {
+	if (used <= space_info->total_bytes) {
+		if (used + orig_bytes <= space_info->total_bytes) {
 			if (!reserved)
 				space_info->bytes_reserved += orig_bytes;
 			ret = 0;
@@ -3428,8 +3487,41 @@ again:
 		 * amount plus the amount of bytes that we need for this
 		 * reservation.
 		 */
-		num_bytes = unused - space_info->total_bytes +
+		num_bytes = used - space_info->total_bytes +
 			(orig_bytes * (retries + 1));
+	}
+
+	if (ret && !check) {
+		u64 profile = btrfs_get_alloc_profile(root, 0);
+		u64 avail;
+
+		spin_lock(&root->fs_info->free_chunk_lock);
+		avail = root->fs_info->free_chunk_space;
+
+		/*
+		 * If we have dup, raid1 or raid10 then only half of the free
+		 * space is actually useable.
+		 */
+		if (profile & (BTRFS_BLOCK_GROUP_DUP |
+			       BTRFS_BLOCK_GROUP_RAID1 |
+			       BTRFS_BLOCK_GROUP_RAID10))
+			avail >>= 1;
+
+		/*
+		 * If we aren't flushing don't let us overcommit too much, say
+		 * 1/8th of the space.  If we can flush, let it overcommit up to
+		 * 1/2 of the space.
+		 */
+		if (flush)
+			avail >>= 3;
+		else
+			avail >>= 1;
+		 spin_unlock(&root->fs_info->free_chunk_lock);
+
+		if (used + orig_bytes < space_info->total_bytes + avail) {
+			space_info->bytes_may_use += orig_bytes;
+			ret = 0;
+		}
 	}
 
 	/*
@@ -3661,7 +3753,7 @@ int btrfs_block_rsv_add(struct btrfs_trans_handle *trans,
 	if (num_bytes == 0)
 		return 0;
 
-	ret = reserve_metadata_bytes(trans, root, block_rsv, num_bytes, 1);
+	ret = reserve_metadata_bytes(root, block_rsv, num_bytes, 1, 0);
 	if (!ret) {
 		block_rsv_add_bytes(block_rsv, num_bytes, 1);
 		return 0;
@@ -4105,7 +4197,7 @@ static int update_block_group(struct btrfs_trans_handle *trans,
 		spin_lock(&cache->space_info->lock);
 		spin_lock(&cache->lock);
 
-		if (btrfs_super_cache_generation(&info->super_copy) != 0 &&
+		if (btrfs_test_opt(root, SPACE_CACHE) &&
 		    cache->disk_cache_state < BTRFS_DC_CLEAR)
 			cache->disk_cache_state = BTRFS_DC_CLEAR;
 
@@ -6930,13 +7022,11 @@ int btrfs_read_block_groups(struct btrfs_root *root)
 	path->reada = 1;
 
 	cache_gen = btrfs_super_cache_generation(&root->fs_info->super_copy);
-	if (cache_gen != 0 &&
+	if (btrfs_test_opt(root, SPACE_CACHE) &&
 	    btrfs_super_generation(&root->fs_info->super_copy) != cache_gen)
 		need_clear = 1;
 	if (btrfs_test_opt(root, CLEAR_CACHE))
 		need_clear = 1;
-	if (!btrfs_test_opt(root, SPACE_CACHE) && cache_gen)
-		printk(KERN_INFO "btrfs: disk space caching is enabled\n");
 
 	while (1) {
 		ret = find_first_block_group(root, path, &key);
