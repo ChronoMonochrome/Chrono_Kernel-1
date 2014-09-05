@@ -168,6 +168,8 @@ struct smb_vol {
 	uid_t cred_uid;
 	uid_t linux_uid;
 	gid_t linux_gid;
+	uid_t backupuid;
+	gid_t backupgid;
 	mode_t file_mode;
 	mode_t dir_mode;
 	unsigned secFlg;
@@ -180,6 +182,8 @@ struct smb_vol {
 	bool noperm:1;
 	bool no_psx_acl:1; /* set if posix acl support should be disabled */
 	bool cifs_acl:1;
+	bool backupuid_specified; /* mount option  backupuid  is specified */
+	bool backupgid_specified; /* mount option  backupgid  is specified */
 	bool no_xattr:1;   /* set if xattr (EA) support should be disabled*/
 	bool server_ino:1; /* use inode numbers from server ie UniqueId */
 	bool direct_io:1;
@@ -220,7 +224,8 @@ struct smb_vol {
 			 CIFS_MOUNT_OVERR_GID | CIFS_MOUNT_DYNPERM | \
 			 CIFS_MOUNT_NOPOSIXBRL | CIFS_MOUNT_NOSSYNC | \
 			 CIFS_MOUNT_FSCACHE | CIFS_MOUNT_MF_SYMLINKS | \
-			 CIFS_MOUNT_MULTIUSER | CIFS_MOUNT_STRICT_IO)
+			 CIFS_MOUNT_MULTIUSER | CIFS_MOUNT_STRICT_IO | \
+			 CIFS_MOUNT_CIFS_BACKUPUID | CIFS_MOUNT_CIFS_BACKUPGID)
 
 #define CIFS_MS_MASK (MS_RDONLY | MS_MANDLOCK | MS_NOEXEC | MS_NOSUID | \
 		      MS_NODEV | MS_SYNCHRONOUS)
@@ -937,10 +942,16 @@ GLOBAL_EXTERN unsigned int cifs_max_pending; /* MAX requests at once to server*/
 /* reconnect after this many failed echo attempts */
 GLOBAL_EXTERN unsigned short echo_retries;
 
+#ifdef CONFIG_CIFS_ACL
 GLOBAL_EXTERN struct rb_root uidtree;
 GLOBAL_EXTERN struct rb_root gidtree;
 GLOBAL_EXTERN spinlock_t siduidlock;
 GLOBAL_EXTERN spinlock_t sidgidlock;
+GLOBAL_EXTERN struct rb_root siduidtree;
+GLOBAL_EXTERN struct rb_root sidgidtree;
+GLOBAL_EXTERN spinlock_t uidsidlock;
+GLOBAL_EXTERN spinlock_t gidsidlock;
+#endif /* CONFIG_CIFS_ACL */
 
 void cifs_oplock_break(struct work_struct *work);
 void cifs_oplock_break_get(struct cifsFileInfo *cfile);
