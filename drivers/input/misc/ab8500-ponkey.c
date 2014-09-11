@@ -16,6 +16,12 @@
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/ab8500-ponkey.h>
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+#include <linux/input/sweep2wake.h>
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
 
 /* Ponkey time control bits */
 #define AB5500_MCB		0x2F
@@ -354,6 +360,18 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 	if (ret) {
 		kobject_put(abb_ponkey_kobject);
 	}
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+	// This is the input device we need to register
+	// with sweep2wake!
+	sweep2wake_setdev(info->idev);
+	printk("s2w: registered input_dev\n");
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+	// This is the input device we need to register
+	// with doubletap2wake!
+	doubletap2wake_setdev(info->idev);
+	printk("dt2w: registered input_dev\n");
+#endif
 
 	return 0;
 
