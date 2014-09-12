@@ -28,7 +28,8 @@ static bool bln_enabled = true;
 static bool bln_ongoing = false; /* ongoing LED Notification */
 static int bln_blink_state = 0;
 static bool bln_blink_mode = true; /* blink by default */
-static int bln_blink_delay = 1000; /* blink with 1000msec delay by default */
+static int bln_blinkon_delay = 1000; /* blink on with 1000msec delay by default */
+static int bln_blinkoff_delay = 1000; /* blink off with 1000msec delay by default */
 static bool bln_suspended = false; /* is system suspended */
 static struct bln_implementation *bln_imp = NULL;
 
@@ -125,9 +126,9 @@ static void blink_thread(void)
 	while(bln_suspended)
 	{
 		bln_enable_backlights(get_led_mask());
-		msleep(bln_blink_delay);
+		msleep(bln_blinkon_delay);
 		bln_disable_backlights(get_led_mask());
-		msleep(bln_blink_delay);
+		msleep(bln_blinkoff_delay);
 	}
 }
 
@@ -442,8 +443,9 @@ static struct miscdevice bln_device = {
 
 static ssize_t bln_blink_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "status: %s\n", bln_blink_mode ? "on" : "off");
-	sprintf(buf, "%sdelay: %d\n", buf, bln_blink_delay);
+	sprintf(buf, "blink status: %s\n", bln_blink_mode ? "on" : "off");
+	sprintf(buf, "%sblink on delay: %d mscec\n", buf, bln_blinkon_delay);
+	sprintf(buf, "%sblink off delay: %d msec\n", buf, bln_blinkoff_delay);
 
 	return strlen(buf);
 }
@@ -452,11 +454,37 @@ static ssize_t bln_blink_store(struct kobject *kobj, struct kobj_attribute *attr
 {
 	int ret;
 	int delay_tmp;
+	
+	if (!strncmp(&buf[0], "bln_ondelay=", 12)) {
+		ret = sscanf(&buf[8], "%d", &delay_tmp);
+
+		if ((!ret) || (delay_tmp < 1)) {
+			pr_err("[BLN] invalid input - delay too short\n");
+			return -EINVAL;
+		}
+
+		bln_blinkon_delay = delay_tmp;
+
+		return count;
+	}
+
+	if (!strncmp(&buf[0], "bln_offdelay=", 13)) {
+		ret = sscanf(&buf[9], "%d", &delay_tmp);
+
+		if ((!ret) || (delay_tmp < 1)) {
+			pr_err("[BLN] invalid input - delay too short\n");
+			return -EINVAL;
+		}
+
+		bln_blinkoff_delay = delay_tmp;
+
+		return count;
+	}
 
 	if (!strncmp(buf, "on", 2)) {
 		bln_blink_mode = true;
 
-		pr_err("[TSP] BLN Blink Mode on\n");
+		pr_err("[BLN] BLN Blink Mode on\n");
 
 		return count;
 	}
@@ -464,20 +492,7 @@ static ssize_t bln_blink_store(struct kobject *kobj, struct kobj_attribute *attr
 	if (!strncmp(buf, "off", 3)) {
 		bln_blink_mode = false;
 
-		pr_err("[TSP] BLN Blink Mode off\n");
-
-		return count;
-	}
-
-	if (!strncmp(&buf[0], "delay=", 6)) {
-		ret = sscanf(&buf[6], "%d", &delay_tmp);
-
-		if ((!ret) || (delay_tmp < 1)) {
-			pr_err("[TSP] invalid input\n");
-			return -EINVAL;
-		}
-
-		bln_blink_delay = delay_tmp;
+		pr_err("[BLN] BLN Blink Mode off\n");
 
 		return count;
 	}
