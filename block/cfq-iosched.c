@@ -603,7 +603,12 @@ cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
 {
         struct cfq_rb_root *st = &cfqd->grp_service_tree;
 
-        return cfq_target_latency * cfqg->weight / st->total_weight;
+	if (st->total_weight != 0)
+		return cfq_target_latency * cfqg->weight / st->total_weight;
+	else {
+		pr_err("[CFQ] zero division error!");
+		return cfq_target_latency;
+	}
 }
 
 static inline unsigned
