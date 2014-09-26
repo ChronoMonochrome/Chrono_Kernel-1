@@ -298,7 +298,7 @@ int inode_permission(struct inode *inode, int mask)
 	}
 
 	if (inode->i_op->permission)
-		retval = inode->i_op->permission(inode, mask, 0);
+		retval = inode->i_op->permission(inode, mask);
 	else
 		retval = generic_permission(inode, mask);
 
