@@ -977,7 +977,7 @@ xfs_release(
 	if (ip->i_d.di_nlink == 0)
 		return 0;
 
-	if ((((ip->i_d.di_mode & S_IFMT) == S_IFREG) &&
+	if ((S_ISREG(ip->i_d.di_mode) &&
 	     ((ip->i_size > 0) || (VN_CACHED(VFS_I(ip)) > 0 ||
 	       ip->i_delayed_blks > 0)) &&
 	     (ip->i_df.if_flags & XFS_IFEXTENTS))  &&
@@ -1058,7 +1058,7 @@ xfs_inactive(
 	truncate = ((ip->i_d.di_nlink == 0) &&
 	    ((ip->i_d.di_size != 0) || (ip->i_size != 0) ||
 	     (ip->i_d.di_nextents > 0) || (ip->i_delayed_blks > 0)) &&
-	    ((ip->i_d.di_mode & S_IFMT) == S_IFREG));
+	    S_ISREG(ip->i_d.di_mode));
 
 	mp = ip->i_mount;
 
@@ -1069,7 +1069,7 @@ xfs_inactive(
 		goto out;
 
 	if (ip->i_d.di_nlink != 0) {
-		if ((((ip->i_d.di_mode & S_IFMT) == S_IFREG) &&
+		if ((S_ISREG(ip->i_d.di_mode) &&
                      ((ip->i_size > 0) || (VN_CACHED(VFS_I(ip)) > 0 ||
                        ip->i_delayed_blks > 0)) &&
 		      (ip->i_df.if_flags & XFS_IFEXTENTS) &&
@@ -1137,7 +1137,7 @@ xfs_inactive(
 			xfs_iunlock(ip, XFS_IOLOCK_EXCL | XFS_ILOCK_EXCL);
 			return VN_INACTIVE_CACHE;
 		}
-	} else if ((ip->i_d.di_mode & S_IFMT) == S_IFLNK) {
+	} else if (S_ISLNK(ip->i_d.di_mode)) {
 
 		/*
 		 * If we get an error while cleaning up a
