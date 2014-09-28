@@ -118,7 +118,7 @@ static int get_parent_ino(struct inode *inode, nid_t *pino)
 	return 1;
 }
 
-int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+int f2fs_sync_file(struct file *file, int datasync)
 {
 	struct inode *inode = file->f_mapping->host;
 	struct f2fs_inode_info *fi = F2FS_I(inode);
@@ -135,16 +135,9 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
 		return 0;
 
 	trace_f2fs_sync_file_enter(inode);
-	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
-	if (ret) {
-		trace_f2fs_sync_file_exit(inode, need_cp, datasync, ret);
-		return ret;
-	}
 
 	/* guarantee free sections for fsync */
 	f2fs_balance_fs(sbi);
-	
-	mutex_lock(&inode->i_mutex);
 
 	down_read(&fi->i_sem);
 
@@ -201,11 +194,9 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
 		ret = f2fs_issue_flush(F2FS_SB(inode->i_sb));
 	}
 out:
-	mutex_unlock(&inode->i_mutex);
 	trace_f2fs_sync_file_exit(inode, need_cp, datasync, ret);
 	return ret;
 }
-
 static pgoff_t __get_first_dirty_index(struct address_space *mapping,
 						pgoff_t pgofs, int whence)
 {
