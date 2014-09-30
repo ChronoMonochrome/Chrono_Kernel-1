@@ -1164,13 +1164,13 @@ static inline void liveopp_set_armvolt(struct liveopp_arm_table table)
 static inline void liveopp_set_armpll(struct liveopp_arm_table table)
 {
 	/* ARM PLL */
-	db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
+	db8500_prcmu_writel_relaxed(PRCMU_PLLARM_REG, table.pllarm_raw);
 }
 
 static inline void liveopp_set_armext(struct liveopp_arm_table table)
 {
 	/* ArmFixClk */
-	db8500_prcmu_writel(PRCMU_ARMFIX_REG, table.extarm_raw);
+	db8500_prcmu_writel_relaxed(PRCMU_ARMFIX_REG, table.extarm_raw);
 }
 
 static inline void liveopp_update_arm(struct liveopp_arm_table table, bool voltage_first)
