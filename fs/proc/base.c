@@ -87,6 +87,7 @@
 #include <asm/hardwall.h>
 #endif
 #include "internal.h"
+#include <linux/notifier.h>
 
 /* NOTE:
  *	Implementing inode permission operations in /proc is almost
@@ -1047,6 +1048,22 @@ static const struct file_operations proc_environ_operations = {
 	.llseek		= generic_file_llseek,
 };
 
+static BLOCKING_NOTIFIER_HEAD(oom_adj_notifier_list);
+
+void oom_adj_register_notify (struct notifier_block *nb)
+{
+	blocking_notifier_chain_register(&oom_adj_notifier_list, nb);
+}
+
+EXPORT_SYMBOL_GPL(oom_adj_register_notify);
+
+void oom_adj_unregister_notify (struct notifier_block *nb)
+{
+	blocking_notifier_chain_unregister(&oom_adj_notifier_list, nb);
+}
+
+EXPORT_SYMBOL_GPL(oom_adj_unregister_notify);
+
 static ssize_t oom_adjust_read(struct file *file, char __user *buf,
 				size_t count, loff_t *ppos)
 {
@@ -1135,6 +1152,9 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
 			current->comm, task_pid_nr(current),
 			task_pid_nr(task), task_pid_nr(task));
 	task->signal->oom_adj = oom_adjust;
+
+	blocking_notifier_call_chain(&oom_adj_notifier_list, oom_adjust, task);
+
 	/*
 	 * Scale /proc/pid/oom_score_adj appropriately ensuring that a maximum
 	 * value is always attainable.
