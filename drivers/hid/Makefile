@@ -10,6 +10,8 @@ endif
 obj-$(CONFIG_HID)		+= hid.o
 obj-$(CONFIG_UHID)		+= uhid.o
 
+obj-$(CONFIG_UHID)		+= uhid.o
+
 hid-$(CONFIG_HIDRAW)		+= hidraw.o
 
 hid-logitech-y		:= hid-lg.o
