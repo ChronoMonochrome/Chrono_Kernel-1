@@ -8,3 +8,4 @@ hostprogs-y := uhid-example
 always := $(hostprogs-y)
 
 HOSTCFLAGS_uhid-example.o += -I$(objtree)/usr/include
+
