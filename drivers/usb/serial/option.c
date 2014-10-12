@@ -84,6 +84,7 @@ static void option_instat_callback(struct urb *urb);
 #define HUAWEI_PRODUCT_E1750			0x1406
 #define HUAWEI_PRODUCT_K4505			0x1464
 #define HUAWEI_PRODUCT_K3765			0x1465
+#define HUAWEI_PRODUCT_K3806			0x14AE
 #define HUAWEI_PRODUCT_K4605			0x14C6
 
 #define QUANTA_VENDOR_ID			0x0408
@@ -457,6 +458,56 @@ static void option_instat_callback(struct urb *urb);
 #define CHANGHONG_VENDOR_ID			0x2077
 #define CHANGHONG_PRODUCT_CH690			0x7001
 
+/* YUGA products  www.yuga-info.com*/
+#define YUGA_VENDOR_ID				0x257A
+#define YUGA_PRODUCT_CEM600			0x1601
+#define YUGA_PRODUCT_CEM610			0x1602
+#define YUGA_PRODUCT_CEM500			0x1603
+#define YUGA_PRODUCT_CEM510			0x1604
+#define YUGA_PRODUCT_CEM800			0x1605
+#define YUGA_PRODUCT_CEM900			0x1606
+
+#define YUGA_PRODUCT_CEU818			0x1607
+#define YUGA_PRODUCT_CEU816			0x1608
+#define YUGA_PRODUCT_CEU828			0x1609
+#define YUGA_PRODUCT_CEU826			0x160A
+#define YUGA_PRODUCT_CEU518			0x160B
+#define YUGA_PRODUCT_CEU516			0x160C
+#define YUGA_PRODUCT_CEU528			0x160D
+#define YUGA_PRODUCT_CEU526			0x160F
+
+#define YUGA_PRODUCT_CWM600			0x2601
+#define YUGA_PRODUCT_CWM610			0x2602
+#define YUGA_PRODUCT_CWM500			0x2603
+#define YUGA_PRODUCT_CWM510			0x2604
+#define YUGA_PRODUCT_CWM800			0x2605
+#define YUGA_PRODUCT_CWM900			0x2606
+
+#define YUGA_PRODUCT_CWU718			0x2607
+#define YUGA_PRODUCT_CWU716			0x2608
+#define YUGA_PRODUCT_CWU728			0x2609
+#define YUGA_PRODUCT_CWU726			0x260A
+#define YUGA_PRODUCT_CWU518			0x260B
+#define YUGA_PRODUCT_CWU516			0x260C
+#define YUGA_PRODUCT_CWU528			0x260D
+#define YUGA_PRODUCT_CWU526			0x260F
+
+#define YUGA_PRODUCT_CLM600			0x2601
+#define YUGA_PRODUCT_CLM610			0x2602
+#define YUGA_PRODUCT_CLM500			0x2603
+#define YUGA_PRODUCT_CLM510			0x2604
+#define YUGA_PRODUCT_CLM800			0x2605
+#define YUGA_PRODUCT_CLM900			0x2606
+
+#define YUGA_PRODUCT_CLU718			0x2607
+#define YUGA_PRODUCT_CLU716			0x2608
+#define YUGA_PRODUCT_CLU728			0x2609
+#define YUGA_PRODUCT_CLU726			0x260A
+#define YUGA_PRODUCT_CLU518			0x260B
+#define YUGA_PRODUCT_CLU516			0x260C
+#define YUGA_PRODUCT_CLU528			0x260D
+#define YUGA_PRODUCT_CLU526			0x260F
+
 /* some devices interfaces need special handling due to a number of reasons */
 enum option_blacklist_reason {
 		OPTION_BLACKLIST_NONE = 0,
@@ -590,6 +641,7 @@ static const struct usb_device_id option_ids[] = {
 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x14ac, 0xff, 0xff, 0xff),	/* Huawei E1820 */
 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
