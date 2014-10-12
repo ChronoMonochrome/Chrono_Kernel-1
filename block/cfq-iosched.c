@@ -20,18 +20,18 @@
  * tunables
  */
 /* max queue in one round of service */
-static const int cfq_quantum = 4;
-static const int cfq_fifo_expire[2] = { 33, 8};
+static const int cfq_quantum = 8;
+static const int cfq_fifo_expire[2] = { HZ / 4, HZ / 8 };
 /* maximum backwards seek, in KiB */
-static const int cfq_back_max = 12582912;
+static const int cfq_back_max = 16 * 1024;
 /* penalty of a backwards seek */
-static const int cfq_back_penalty = 1;
-static const int cfq_slice_sync = 6;
-static int cfq_slice_async = 5;
+static const int cfq_back_penalty = 2;
+static const int cfq_slice_sync = HZ / 10;
+static int cfq_slice_async = HZ / 25;
 static const int cfq_slice_async_rq = 2;
-static int cfq_slice_idle = 0;
-static int cfq_group_idle = 0;
-static const int cfq_target_latency = 300; /* 300 ms */
+static int cfq_slice_idle = HZ / 125;
+static int cfq_group_idle = HZ / 125;
+static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
 static const int cfq_hist_divisor = 4;
 
 /*
@@ -2919,7 +2919,6 @@ static void changed_ioprio(struct io_context *ioc, struct cfq_io_context *cic)
 static void cfq_ioc_set_ioprio(struct io_context *ioc)
 {
 	call_for_each_cic(ioc, changed_ioprio);
-	ioc->ioprio_changed = 0;
 }
 
 static void cfq_init_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
@@ -3211,8 +3210,13 @@ retry:
 		goto err_free;
 
 out:
-	smp_read_barrier_depends();
-	if (unlikely(ioc->ioprio_changed))
+	/*
+	 * test_and_clear_bit() implies a memory barrier, paired with
+	 * the wmb() in fs/ioprio.c, so the value seen for ioprio is the
+	 * new one.
+	 */
+	if (unlikely(test_and_clear_bit(IOC_CFQ_IOPRIO_CHANGED,
+					ioc->ioprio_changed)))
 		cfq_ioc_set_ioprio(ioc);
 
 #ifdef CONFIG_CFQ_GROUP_IOSCHED
@@ -4247,6 +4251,20 @@ static struct blkio_policy_type blkio_policy_cfq;
 
 static int __init cfq_init(void)
 {
+	/*
+	 * could be 0 on HZ < 1000 setups
+	 */
+	if (!cfq_slice_async)
+		cfq_slice_async = 1;
+	if (!cfq_slice_idle)
+		cfq_slice_idle = 1;
+
+#ifdef CONFIG_CFQ_GROUP_IOSCHED
+	if (!cfq_group_idle)
+		cfq_group_idle = 1;
+#else
+		cfq_group_idle = 0;
+#endif
 	if (cfq_slab_setup())
 		return -ENOMEM;
 
