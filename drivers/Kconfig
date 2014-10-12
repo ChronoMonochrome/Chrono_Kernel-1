@@ -146,3 +146,5 @@ source "drivers/interceptor/Kconfig"
 
 endmenu
 
+endmenu
+

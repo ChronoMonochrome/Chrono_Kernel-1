@@ -114,7 +114,6 @@ config CPU_FREQ_DEFAULT_GOV_LIONHEART
 	select CPU_FREQ_GOV_LIONHEART
 	help
 	  Use the CPUFreq governor 'lionheart' as default.
-
 	  
 config CPU_FREQ_DEFAULT_GOV_INTERACTIVEPLUS
 	bool "interactiveplus"
@@ -161,10 +160,6 @@ config CPU_FREQ_DEFAULT_GOV_LAGFREE
           Be aware that not all cpufreq drivers support the lagfree
           governor. If unsure have a look at the help section of the
           driver. Fallback governor will be the performance governor.
-
-config CPU_FREQ_GOV_LIONHEART
-	tristate "'lionheart' cpufreq governor"
-	depends on CPU_FREQ
 
 endchoice
 
@@ -384,6 +379,11 @@ config CPU_FREQ_GOV_INTERACTIVEQ
 	  InteractiveQ will hotplug CPU1 when system goes *suspend*.
 	  If in doubt, say N.
 
+
+config CPU_FREQ_GOV_LIONHEART
+	tristate "'lionheart' cpufreq governor"
+	depends on CPU_FREQ
+	  
 config CPU_FREQ_GOV_HOTPLUG
        tristate "'hotplug' cpufreq governor"
        depends on CPU_FREQ && NO_HZ && HOTPLUG_CPU
