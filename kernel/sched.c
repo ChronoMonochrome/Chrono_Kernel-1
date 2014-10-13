@@ -84,6 +84,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 
+ATOMIC_NOTIFIER_HEAD(migration_notifier_head);
 
 #if defined(CONFIG_SAMSUNG_ADD_GAFORENSICINFO)
 #include <mach/sec_gaf.h>
@@ -8273,8 +8274,6 @@ static void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
 	rt_rq->overloaded = 0;
 	plist_head_init(&rt_rq->pushable_tasks);
 #endif
-	init_rt_rq_runtime(rt_rq);
-
 	rt_rq->rt_time = 0;
 	rt_rq->rt_throttled = 0;
 	rt_rq->rt_runtime = 0;
