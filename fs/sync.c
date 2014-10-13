@@ -495,7 +495,7 @@ static void fsync_early_suspend(struct early_suspend *h)
 	/* Do fsync */
 	if (fsync_mode == 2) {
 		pr_info("[FSYNC] Dynamic fsync syncing\n");
-		wakeup_flusher_threads(0);
+		wakeup_flusher_threads(0, WB_REASON_SYNC);
 		sync_filesystems(0);
 		sync_filesystems(1);
 	}
@@ -554,7 +554,7 @@ static int fsync_reboot_handler(struct notifier_block *this, unsigned long code,
 		if (fsync_mode >= 1) {
 			fsync_mode = 0;
 
-			wakeup_flusher_threads(0);
+			wakeup_flusher_threads(0, WB_REASON_SYNC);
 			sync_filesystems(0);
 			sync_filesystems(1);
 
