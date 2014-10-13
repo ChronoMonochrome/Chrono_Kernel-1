@@ -990,7 +990,6 @@ NORET_TYPE void do_exit(long code)
 	trace_sched_process_exit(tsk);
 
 	exit_sem(tsk);
-	exit_shm(tsk);
 	exit_files(tsk);
 	exit_fs(tsk);
 	check_stack_usage();
@@ -1384,8 +1383,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
 static int *task_stopped_code(struct task_struct *p, bool ptrace)
 {
 	if (ptrace) {
-		if (task_is_stopped_or_traced(p) &&
-		    !(p->jobctl & JOBCTL_LISTENING))
+		if (task_is_stopped_or_traced(p))
 			return &p->exit_code;
 	} else {
 		if (p->signal->flags & SIGNAL_STOP_STOPPED)
