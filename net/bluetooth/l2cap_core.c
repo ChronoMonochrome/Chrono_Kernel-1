@@ -251,7 +251,11 @@ static void l2cap_chan_timeout(unsigned long arg)
 
 	if (sock_owned_by_user(sk)) {
 		/* sk is owned by user. Try again later */
+#ifdef CONFIG_BT_MGMT
 		__set_chan_timer(chan, L2CAP_DISC_TIMEOUT);
+#else
+		__set_chan_timer(chan, 100);
+#endif
 		bh_unlock_sock(sk);
 		chan_put(chan);
 		return;
@@ -2498,7 +2502,11 @@ static inline int l2cap_connect_rsp(struct l2cap_conn *conn, struct l2cap_cmd_hd
 		if (sock_owned_by_user(sk)) {
 			l2cap_state_change(chan, BT_DISCONN);
 			__clear_chan_timer(chan);
+#ifdef CONFIG_BT_MGMT
 			__set_chan_timer(chan, L2CAP_DISC_TIMEOUT);
+#else
+			__set_chan_timer(chan, 100);
+#endif
 			break;
 		}
 
@@ -2668,7 +2676,11 @@ static inline int l2cap_config_rsp(struct l2cap_conn *conn, struct l2cap_cmd_hdr
 
 	default:
 		sk->sk_err = ECONNRESET;
+#ifdef CONFIG_BT_MGMT
 		__set_chan_timer(chan, L2CAP_DISC_REJ_TIMEOUT);
+#else
+		__set_chan_timer(chan, 5000);
+#endif
 		l2cap_send_disconn_req(conn, chan, ECONNRESET);
 		goto done;
 	}
@@ -2725,7 +2737,11 @@ static inline int l2cap_disconnect_req(struct l2cap_conn *conn, struct l2cap_cmd
 	if (sock_owned_by_user(sk)) {
 		l2cap_state_change(chan, BT_DISCONN);
 		__clear_chan_timer(chan);
+#ifdef CONFIG_BT_MGMT
 		__set_chan_timer(chan, L2CAP_DISC_TIMEOUT);
+#else
+		__set_chan_timer(chan, 100);
+#endif
 		bh_unlock_sock(sk);
 		return 0;
 	}
@@ -2759,7 +2775,11 @@ static inline int l2cap_disconnect_rsp(struct l2cap_conn *conn, struct l2cap_cmd
 	if (sock_owned_by_user(sk)) {
 		l2cap_state_change(chan,BT_DISCONN);
 		__clear_chan_timer(chan);
+#ifdef CONFIG_BT_MGMT
 		__set_chan_timer(chan, L2CAP_DISC_TIMEOUT);
+#else
+		__set_chan_timer(chan, 100);
+#endif
 		bh_unlock_sock(sk);
 		return 0;
 	}
@@ -4098,7 +4118,11 @@ static inline void l2cap_check_encryption(struct l2cap_chan *chan, u8 encrypt)
 	if (encrypt == 0x00) {
 		if (chan->sec_level == BT_SECURITY_MEDIUM) {
 			__clear_chan_timer(chan);
+#ifdef CONFIG_BT_MGMT
 			__set_chan_timer(chan, L2CAP_ENC_TIMEOUT);
+#else
+			__set_chan_timer(chan, 5000);
+#endif
 		} else if (chan->sec_level == BT_SECURITY_HIGH)
 			l2cap_chan_close(chan, ECONNREFUSED);
 	} else {
@@ -4163,7 +4187,11 @@ static int l2cap_security_cfm(struct hci_conn *hcon, u8 status, u8 encrypt)
 					L2CAP_CONN_REQ, sizeof(req), &req);
 			} else {
 				__clear_chan_timer(chan);
+#ifdef CONFIG_BT_MGMT
 				__set_chan_timer(chan, L2CAP_DISC_TIMEOUT);
+#else
+				__set_chan_timer(chan, 100);
+#endif
 			}
 		} else if (chan->state == BT_CONNECT2) {
 			struct l2cap_conn_rsp rsp;
@@ -4183,7 +4211,11 @@ static int l2cap_security_cfm(struct hci_conn *hcon, u8 status, u8 encrypt)
 				}
 			} else {
 				l2cap_state_change(chan, BT_DISCONN);
+#ifdef CONFIG_BT_MGMT
 				__set_chan_timer(chan, L2CAP_DISC_TIMEOUT);
+#else
+				__set_chan_timer(chan, 100);
+#endif
 				res = L2CAP_CR_SEC_BLOCK;
 				stat = L2CAP_CS_NO_INFO;
 			}
