@@ -93,18 +93,21 @@ static int try_to_freeze_tasks(bool user_only)
 	do_div(elapsed_msecs64, NSEC_PER_MSEC);
 	elapsed_msecs = elapsed_msecs64;
 
-	if (todo) {
+	if (wakeup) {
 		printk("\n");
-		printk(KERN_ERR "Freezing of tasks %s after %d.%03d seconds "
-		       "(%d tasks refusing to freeze, wq_busy=%d):\n",
-		       wakeup ? "aborted" : "failed",
+		printk(KERN_ERR "Freezing of tasks aborted after %d.%03d seconds",
+		       elapsed_msecs / 1000, elapsed_msecs % 1000);
+	} else if (todo) {
+		printk("\n");
+		printk(KERN_ERR "Freezing of tasks failed after %d.%03d seconds"
+		       " (%d tasks refusing to freeze, wq_busy=%d):\n",
 		       elapsed_msecs / 1000, elapsed_msecs % 1000,
 		       todo - wq_busy, wq_busy);
 
 		read_lock(&tasklist_lock);
 		do_each_thread(g, p) {
-			if (!wakeup && !freezer_should_skip(p) &&
-			    p != current && freezing(p) && !frozen(p))
+			if (p != current && !freezer_should_skip(p)
+			    && freezing(p) && !frozen(p))
 				sched_show_task(p);
 		} while_each_thread(g, p);
 		read_unlock(&tasklist_lock);
