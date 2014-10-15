@@ -4807,26 +4807,29 @@ static struct mfd_cell db8500_prcmu_devs[] = {
 static struct cpufreq_frequency_table *freq_table;
 
 
-static void  db8500_prcmu_update_freq(void *pdata)
+static void db8500_prcmu_update_freq(void *pdata)
 {
-	#ifdef CONFIG_DB8500_LIVEOPP
+#ifdef CONFIG_DB8500_LIVEOPP
 	int i, pllclk = pllarm_freq(db8500_prcmu_readl(PRCMU_PLLARM_REG));
-	#endif /* CONFIG_DB8500_LIVEOPP */
-
+#endif /* CONFIG_DB8500_LIVEOPP */
 	freq_table =
 		(struct cpufreq_frequency_table *)pdata;
-
-	#ifdef CONFIG_DB8500_LIVEOPP
+#ifdef CONFIG_DB8500_LIVEOPP
 	pr_info("[LiveOPP] Available freqs: %d\n", ARRAY_SIZE(liveopp_arm));
 	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
 		freq_table[i].frequency = liveopp_arm[i].freq_show;
 
+	if (liveopp_arm[i].arm_opp == ARM_MAX_OPP)
+		liveopp_arm[i].arm_opp = ARM_100_OPP;
 		if (liveopp_arm[i].freq_raw == pllclk) {
 			pr_info("[LiveOPP] Boot up -> [%d] %dkHz\n", i, pllclk);
 			last_arm_idx = i;
+		} else if (liveopp_arm[i].freq_show == 1000000) { // workaround for codina
+			liveopp_arm[i].set_pllarm = 1;
+			liveopp_arm[i].set_volt = 1;
 		}
 	}
-	#else /* CONFIG_DB8500_LIVEOPP */
+#else /* CONFIG_DB8500_LIVEOPP */
 	if  (!db8500_prcmu_has_arm_maxopp())
 		return;
 	switch (fw_info.version.project) {
@@ -4845,8 +4848,9 @@ static void  db8500_prcmu_update_freq(void *pdata)
 	default:
 		break;
 	}
-	#endif /* CONFIG_DB8500_LIVEOPP */
+#endif /* CONFIG_DB8500_LIVEOPP */
 }
+
 
 
 /**
