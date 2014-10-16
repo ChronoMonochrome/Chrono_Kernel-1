@@ -170,5 +170,7 @@ source "drivers/bcmdhd/Kconfig"
 
 source "drivers/reset/Kconfig"
 
+source "drivers/android/Kconfig"
+
 endmenu
 
