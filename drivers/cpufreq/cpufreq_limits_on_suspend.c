@@ -28,8 +28,8 @@ static unsigned int max_cpufreq = 400000;
 static unsigned int prev_min_cpufreq = 0;
 static unsigned int prev_max_cpufreq = 0;
 
-#ifdef CONFIG_MCDE_DISPLAY_WS2401_DPI
-extern bool ws2401_is_suspend(void);
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
+extern bool bt404_is_suspend(void);
 #endif
 
 static int cpufreq_callback(struct notifier_block *nfb,
@@ -38,8 +38,8 @@ static int cpufreq_callback(struct notifier_block *nfb,
 	if (cpu_freq_limits) {
 		struct cpufreq_policy *policy = data;
 		int new_min = 0, new_max = 0;
-#ifdef CONFIG_MCDE_DISPLAY_WS2401_DPI
-		bool is_suspend = ws2401_is_suspend();
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
+		bool is_suspend = bt404_is_suspend();
 #endif
 
 		if (event != CPUFREQ_ADJUST)
