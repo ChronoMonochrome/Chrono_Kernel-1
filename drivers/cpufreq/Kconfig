@@ -444,6 +444,10 @@ config CPU_FREQ_GOV_FANTASY
 	  For details, take a look at linux/Documentation/cpu-freq.
 	  If in doubt, say N.
 
+config CPU_FREQ_LIMITS_ON_SUSPEND
+	bool "CPUfreq limits on suspend"
+	depends on CPU_FREQ
+	default y
 		 
 menu "x86 CPU frequency scaling drivers"
 depends on X86
