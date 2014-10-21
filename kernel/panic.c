@@ -36,6 +36,7 @@ void ux500_clean_l2_cache_all(void);
 /* prcmu register dump */
 void dbx500_dump_in_panic(void);
 #endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
+#include <linux/console.h>
 
 #define PANIC_TIMER_STEP 100
 #define PANIC_BLINK_SPD 18
@@ -438,6 +439,13 @@ NORET_TYPE void panic(const char * fmt, ...)
 		mdelay(1);
 	}
 #endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
+
+	/*
+	 * Unlock the console anyway here, in case it's occupied by another
+	 * one which has no chance to unlock the console thus prevents the
+	 * panic log prints on the console.
+	 */
+	console_unlock();
 
 	bust_spinlocks(0);
 
