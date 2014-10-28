@@ -2778,6 +2778,7 @@ static void ext4_end_io_dio(struct kiocb *iocb, loff_t offset,
 			    ssize_t size, void *private, int ret,
 			    bool is_async)
 {
+	struct inode *inode = iocb->ki_filp->f_path.dentry->d_inode;
         ext4_io_end_t *io_end = iocb->private;
 	struct workqueue_struct *wq;
 	unsigned long flags;
@@ -2799,6 +2800,7 @@ static void ext4_end_io_dio(struct kiocb *iocb, loff_t offset,
 out:
 		if (is_async)
 			aio_complete(iocb, ret, 0);
+		inode_dio_done(inode);
 		return;
 	}
 
@@ -2819,6 +2821,9 @@ out:
 	/* queue the work to convert unwritten extents to written */
 	queue_work(wq, &io_end->work);
 	iocb->private = NULL;
+
+	/* XXX: probably should move into the real I/O completion handler */
+	inode_dio_done(inode);
 }
 
 static void ext4_end_io_buffer_write(struct buffer_head *bh, int uptodate)
@@ -2958,11 +2963,13 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
 			EXT4_I(inode)->cur_aio_dio = iocb->private;
 		}
 
-		ret = blockdev_direct_IO(rw, iocb, inode,
+		ret = __blockdev_direct_IO(rw, iocb, inode,
 					 inode->i_sb->s_bdev, iov,
 					 offset, nr_segs,
 					 ext4_get_block_write,
-					 ext4_end_io_dio);
+					 ext4_end_io_dio,
+					 NULL,
+					 DIO_LOCKING | DIO_SKIP_HOLES);
 		if (iocb->private)
 			EXT4_I(inode)->cur_aio_dio = NULL;
 		/*
@@ -4273,6 +4280,8 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
 	}
 
 	if (attr->ia_valid & ATTR_SIZE) {
+		inode_dio_wait(inode);
+
 		if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
 			struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
 

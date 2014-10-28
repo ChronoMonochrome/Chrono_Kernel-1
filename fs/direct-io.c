@@ -293,12 +293,12 @@ static ssize_t dio_complete(struct dio *dio, loff_t offset, ssize_t ret, bool is
 	if (dio->end_io && dio->result) {
 		dio->end_io(dio->iocb, offset, transferred,
 			    dio->map_bh.b_private, ret, is_async);
-	} else if (is_async) {
-		aio_complete(dio->iocb, ret, 0);
+	} else {
+		if (is_async)
+			aio_complete(dio->iocb, ret, 0);
+		inode_dio_done(dio->inode);
 	}
 
-	if (dio->flags & DIO_LOCKING)
-		inode_dio_done(dio->inode);
 	return ret;
 }
 
@@ -1185,14 +1185,16 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
  *    For writes this function is called under i_mutex and returns with
  *    i_mutex held, for reads, i_mutex is not held on entry, but it is
  *    taken and dropped again before returning.
- *    The i_dio_count counter keeps track of the number of outstanding
- *    direct I/O requests, and truncate waits for it to reach zero.
- *    New references to i_dio_count must only be grabbed with i_mutex
- *    held.
- *
  *  - if the flags value does NOT contain DIO_LOCKING we don't use any
  *    internal locking but rather rely on the filesystem to synchronize
  *    direct I/O reads/writes versus each other and truncate.
+ *
+ * To help with locking against truncate we incremented the i_dio_count
+ * counter before starting direct I/O, and decrement it once we are done.
+ * Truncate can wait for it to reach zero to provide exclusion.  It is
+ * expected that filesystem provide exclusion between new direct I/O
+ * and truncates.  For DIO_LOCKING filesystems this is done by i_mutex,
+ * but other filesystems need to take care of this on their own.
  */
 ssize_t
 __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
@@ -1238,6 +1240,10 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
 		}
 	}
 
+	/* watch out for a 0 len io from a tricksy fs */
+	if (rw == READ && end == offset)
+		return 0;
+
 	dio = kmalloc(sizeof(*dio), GFP_KERNEL);
 	retval = -ENOMEM;
 	if (!dio)
@@ -1251,8 +1257,7 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
 
 	dio->flags = flags;
 	if (dio->flags & DIO_LOCKING) {
-		/* watch out for a 0 len io from a tricksy fs */
-		if (rw == READ && end > offset) {
+		if (rw == READ) {
 			struct address_space *mapping =
 					iocb->ki_filp->f_mapping;
 
@@ -1267,12 +1272,12 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
 				goto out;
 			}
 		}
-
-		/*
-		 * Will be decremented at I/O completion time.
-		 */
-		atomic_inc(&inode->i_dio_count);
 	}
+
+	/*
+	 * Will be decremented at I/O completion time.
+	 */
+	atomic_inc(&inode->i_dio_count);
 
 	/*
 	 * For file extending writes updating i_size before data
