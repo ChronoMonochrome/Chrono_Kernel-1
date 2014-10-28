@@ -567,10 +567,8 @@ static void ocfs2_dio_end_io(struct kiocb *iocb,
 	/* this io's submitter should not have unlocked this before we could */
 	BUG_ON(!ocfs2_iocb_is_rw_locked(iocb));
 
-	if (ocfs2_iocb_is_sem_locked(iocb)) {
-		inode_dio_done(inode);
+	if (ocfs2_iocb_is_sem_locked(iocb))
 		ocfs2_iocb_clear_sem_locked(iocb);
-	}
 
 	ocfs2_iocb_clear_rw_locked(iocb);
 
@@ -579,6 +577,7 @@ static void ocfs2_dio_end_io(struct kiocb *iocb,
 
 	if (is_async)
 		aio_complete(iocb, ret, 0);
+	inode_dio_done(inode);
 }
 
 /*
