@@ -16,7 +16,7 @@
  *  Added change_root: Werner Almesberger & Hans Lermen, Feb '96
  *  Added options to /proc/mounts:
  *    Torbjörn Lindh (torbjorn.lindh@gopta.se), April 14, 1996.
- *  Added devfs support: Richard Gooch <rgooch@atnf.csiro.au>, 13-JAN-1998
+ *  Added devfs support: Richard Gooch <rgooch@atnf.csiro.au>, 1-JAN-1998
  *  Heavily rewritten for 'one fs - one tree' dcache architecture. AV, Mar 2000
  */
 
@@ -37,6 +37,69 @@
 
 LIST_HEAD(super_blocks);
 DEFINE_SPINLOCK(sb_lock);
+
+/*
+ * One thing we have to be careful of with a per-sb shrinker is that we don't
+ * drop the last active reference to the superblock from within the shrinker.
+ * If that happens we could trigger unregistering the shrinker from within the
+ * shrinker path and that leads to deadlock on the shrinker_rwsem. Hence we
+ * take a passive reference to the superblock to avoid this from occurring.
+ */
+static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
+{
+	struct super_block *sb;
+	int	fs_objects = 0;
+	int	total_objects;
+
+	sb = container_of(shrink, struct super_block, s_shrink);
+
+	/*
+	 * Deadlock avoidance.  We may hold various FS locks, and we don't want
+	 * to recurse into the FS that called us in clear_inode() and friends..
+	 */
+	if (sc->nr_to_scan && !(sc->gfp_mask & __GFP_FS))
+		return -1;
+
+	if (!grab_super_passive(sb))
+		return -1;
+
+	if (sb->s_op && sb->s_op->nr_cached_objects)
+		fs_objects = sb->s_op->nr_cached_objects(sb);
+
+	total_objects = sb->s_nr_dentry_unused +
+			sb->s_nr_inodes_unused + fs_objects + 1;
+
+	if (sc->nr_to_scan) {
+		int	dentries;
+		int	inodes;
+
+		/* proportion the scan between the caches */
+		dentries = (sc->nr_to_scan * sb->s_nr_dentry_unused) /
+							total_objects;
+		inodes = (sc->nr_to_scan * sb->s_nr_inodes_unused) /
+							total_objects;
+		if (fs_objects)
+			fs_objects = (sc->nr_to_scan * fs_objects) /
+							total_objects;
+		/*
+		 * prune the dcache first as the icache is pinned by it, then
+		 * prune the icache, followed by the filesystem specific caches
+		 */
+		prune_dcache_sb(sb, dentries);
+		prune_icache_sb(sb, inodes);
+
+		if (fs_objects && sb->s_op->free_cached_objects) {
+			sb->s_op->free_cached_objects(sb, fs_objects);
+			fs_objects = sb->s_op->nr_cached_objects(sb);
+		}
+		total_objects = sb->s_nr_dentry_unused +
+				sb->s_nr_inodes_unused + fs_objects;
+	}
+
+	total_objects = (total_objects / 100) * sysctl_vfs_cache_pressure;
+	drop_super(sb);
+	return total_objects;
+}
 
 /**
  *	alloc_super	-	create new superblock
@@ -77,6 +140,8 @@ static struct super_block *alloc_super(struct file_system_type *type)
 		INIT_HLIST_BL_HEAD(&s->s_anon);
 		INIT_LIST_HEAD(&s->s_inodes);
 		INIT_LIST_HEAD(&s->s_dentry_lru);
+		INIT_LIST_HEAD(&s->s_inode_lru);
+		spin_lock_init(&s->s_inode_lru_lock);
 		init_rwsem(&s->s_umount);
 		mutex_init(&s->s_lock);
 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
@@ -114,6 +179,10 @@ static struct super_block *alloc_super(struct file_system_type *type)
 		s->s_op = &default_op;
 		s->s_time_gran = 1000000000;
 		s->cleancache_poolid = -1;
+
+		s->s_shrink.seeks = DEFAULT_SEEKS;
+		s->s_shrink.shrink = prune_super;
+		s->s_shrink.batch = 1024;
 	}
 out:
 	return s;
@@ -181,6 +250,10 @@ void deactivate_locked_super(struct super_block *s)
 	if (atomic_dec_and_test(&s->s_active)) {
 		cleancache_flush_fs(s);
 		fs->kill_sb(s);
+
+		/* caches are now gone, we can safely kill the shrinker now */
+		unregister_shrinker(&s->s_shrink);
+
 		/*
 		 * We need to call rcu_barrier so all the delayed rcu free
 		 * inodes are flushed before we release the fs module.
@@ -241,6 +314,39 @@ static int grab_super(struct super_block *s) __releases(sb_lock)
 }
 
 /*
+*      grab_super_passive - acquire a passive reference
+*      @s: reference we are trying to grab
+*
+*      Tries to acquire a passive reference. This is used in places where we
+*      cannot take an active reference but we need to ensure that the
+*      superblock does not go away while we are working on it. It returns
+*      false if a reference was not gained, and returns true with the s_umount
+*      lock held in read mode if a reference is gained. On successful return,
+*      the caller must drop the s_umount lock and the passive reference when
+*      done.
+*/
+bool grab_super_passive(struct super_block *sb)
+{
+        spin_lock(&sb_lock);
+        if (list_empty(&sb->s_instances)) {
+                spin_unlock(&sb_lock);
+                return false;
+        }
+
+        sb->s_count++;
+        spin_unlock(&sb_lock);
+ 
+        if (down_read_trylock(&sb->s_umount)) {
+                if (sb->s_root)
+                        return true;
+                up_read(&sb->s_umount);
+        }
+
+        put_super(sb);
+        return false;
+}
+
+/*
  * Superblock locking.  We really ought to get rid of these two.
  */
 void lock_super(struct super_block * sb)
@@ -275,7 +381,6 @@ EXPORT_SYMBOL(unlock_super);
 void generic_shutdown_super(struct super_block *sb)
 {
 	const struct super_operations *sop = sb->s_op;
-
 
 	if (sb->s_root) {
 		shrink_dcache_for_umount(sb);
@@ -359,6 +464,7 @@ retry:
 	list_add(&s->s_instances, &type->fs_supers);
 	spin_unlock(&sb_lock);
 	get_filesystem(type);
+	register_shrinker(&s->s_shrink);
 	return s;
 }
 
