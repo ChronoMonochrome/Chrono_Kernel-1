@@ -354,7 +354,7 @@ int sysfs_permission(struct inode *inode, int mask, unsigned int flags)
 {
 	struct sysfs_dirent *sd;
 
-	if (flags & IPERM_FLAG_RCU)
+	if (flags & MAY_NOT_BLOCK)
 		return -ECHILD;
 
 	sd = inode->i_private;
