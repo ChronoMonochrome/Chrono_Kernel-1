@@ -553,6 +553,42 @@ void iterate_supers(void (*f)(struct super_block *, void *), void *arg)
 }
 
 /**
+ *	iterate_supers_type - call function for superblocks of given type
+ *	@type: fs type
+ *	@f: function to call
+ *	@arg: argument to pass to it
+ *
+ *	Scans the superblock list and calls given function, passing it
+ *	locked superblock and given argument.
+ */
+void iterate_supers_type(struct file_system_type *type,
+	void (*f)(struct super_block *, void *), void *arg)
+{
+	struct super_block *sb, *p = NULL;
+
+	spin_lock(&sb_lock);
+	list_for_each_entry(sb, &type->fs_supers, s_instances) {
+		sb->s_count++;
+		spin_unlock(&sb_lock);
+
+		down_read(&sb->s_umount);
+		if (sb->s_root)
+			f(sb, arg);
+		up_read(&sb->s_umount);
+
+		spin_lock(&sb_lock);
+		if (p)
+			__put_super(p);
+		p = sb;
+	}
+	if (p)
+		__put_super(p);
+	spin_unlock(&sb_lock);
+}
+
+EXPORT_SYMBOL(iterate_supers_type);
+
+/**
  *	get_super - get the superblock of a device
  *	@bdev: device to get the superblock for
  *	
@@ -762,7 +798,7 @@ static DEFINE_IDA(unnamed_dev_ida);
 static DEFINE_SPINLOCK(unnamed_dev_lock);/* protects the above */
 static int unnamed_dev_start = 0; /* don't bother trying below it */
 
-int set_anon_super(struct super_block *s, void *data)
+int get_anon_bdev(dev_t *p)
 {
 	int dev;
 	int error;
@@ -789,23 +825,37 @@ int set_anon_super(struct super_block *s, void *data)
 		spin_unlock(&unnamed_dev_lock);
 		return -EMFILE;
 	}
-	s->s_dev = MKDEV(0, dev & MINORMASK);
-	s->s_bdi = &noop_backing_dev_info;
+	*p = MKDEV(0, dev & MINORMASK);
 	return 0;
+}
+EXPORT_SYMBOL(get_anon_bdev);
+
+void free_anon_bdev(dev_t dev)
+{
+	int slot = MINOR(dev);
+	spin_lock(&unnamed_dev_lock);
+	ida_remove(&unnamed_dev_ida, slot);
+	if (slot < unnamed_dev_start)
+		unnamed_dev_start = slot;
+	spin_unlock(&unnamed_dev_lock);
+}
+EXPORT_SYMBOL(free_anon_bdev);
+
+int set_anon_super(struct super_block *s, void *data)
+{
+	int error = get_anon_bdev(&s->s_dev);
+	if (!error)
+		s->s_bdi = &noop_backing_dev_info;
+	return error;
 }
 
 EXPORT_SYMBOL(set_anon_super);
 
 void kill_anon_super(struct super_block *sb)
 {
-	int slot = MINOR(sb->s_dev);
-
+	dev_t dev = sb->s_dev;
 	generic_shutdown_super(sb);
-	spin_lock(&unnamed_dev_lock);
-	ida_remove(&unnamed_dev_ida, slot);
-	if (slot < unnamed_dev_start)
-		unnamed_dev_start = slot;
-	spin_unlock(&unnamed_dev_lock);
+	free_anon_bdev(dev);
 }
 
 EXPORT_SYMBOL(kill_anon_super);

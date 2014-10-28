@@ -382,7 +382,7 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry, int mode,
 	struct fuse_entry_out outentry;
 	struct fuse_file *ff;
 	struct file *file;
-	int flags = nd->intent.open.flags - 1;
+	int flags = nd->intent.open.flags;
 
 	if (fc->no_create)
 		return -ENOSYS;
@@ -576,7 +576,7 @@ static int fuse_mknod(struct inode *dir, struct dentry *entry, int mode,
 static int fuse_create(struct inode *dir, struct dentry *entry, int mode,
 		       struct nameidata *nd)
 {
-	if (nd && (nd->flags & LOOKUP_OPEN)) {
+	if (nd) {
 		int err = fuse_create_open(dir, entry, mode, nd);
 		if (err != -ENOSYS)
 			return err;
@@ -1019,7 +1019,7 @@ static int fuse_permission(struct inode *inode, int mask, unsigned int flags)
 	}
 
 	if (fc->flags & FUSE_DEFAULT_PERMISSIONS) {
-		err = generic_permission(inode, mask, flags, NULL);
+		err = generic_permission(inode, mask);
 
 		/* If permission is denied, try to refresh file
 		   attributes.  This is also needed, because the root
@@ -1027,8 +1027,7 @@ static int fuse_permission(struct inode *inode, int mask, unsigned int flags)
 		if (err == -EACCES && !refreshed) {
 			err = fuse_perm_getattr(inode, flags);
 			if (!err)
-				err = generic_permission(inode, mask,
-							flags, NULL);
+				err = generic_permission(inode, mask);
 		}
 
 		/* Note: the opposite of the above test does not

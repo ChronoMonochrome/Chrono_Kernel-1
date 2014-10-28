@@ -1481,10 +1481,8 @@ static struct dentry *jfs_lookup(struct inode *dip, struct dentry *dentry, struc
 	}
 
 	ip = jfs_iget(dip->i_sb, inum);
-	if (IS_ERR(ip)) {
+	if (IS_ERR(ip))
 		jfs_err("jfs_lookup: iget failed on inum %d", (uint) inum);
-		return ERR_CAST(ip);
-	}
 
 	return d_splice_alias(ip, dentry);
 }
@@ -1597,8 +1595,6 @@ out:
 
 static int jfs_ci_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
-	if (nd && nd->flags & LOOKUP_RCU)
-		return -ECHILD;
 	/*
 	 * This is not negative dentry. Always valid.
 	 *
@@ -1624,10 +1620,8 @@ static int jfs_ci_revalidate(struct dentry *dentry, struct nameidata *nd)
 	 * case sensitive name which is specified by user if this is
 	 * for creation.
 	 */
-	if (!(nd->flags & (LOOKUP_CONTINUE | LOOKUP_PARENT))) {
-		if (nd->flags & (LOOKUP_CREATE | LOOKUP_RENAME_TARGET))
-			return 0;
-	}
+	if (nd->flags & (LOOKUP_CREATE | LOOKUP_RENAME_TARGET))
+		return 0;
 	return 1;
 }
 
