@@ -974,7 +974,7 @@ static int fuse_access(struct inode *inode, int mask)
 
 static int fuse_perm_getattr(struct inode *inode, int flags)
 {
-	if (flags & IPERM_FLAG_RCU)
+	if (flags & MAY_NOT_BLOCK)
 		return -ECHILD;
 
 	return fuse_do_getattr(inode, NULL, NULL);
@@ -1035,7 +1035,7 @@ static int fuse_permission(struct inode *inode, int mask, unsigned int flags)
 		   noticed immediately, only after the attribute
 		   timeout has expired */
 	} else if (mask & (MAY_ACCESS | MAY_CHDIR)) {
-		if (flags & IPERM_FLAG_RCU)
+		if (flags & MAY_NOT_BLOCK)
 			return -ECHILD;
 
 		err = fuse_access(inode, mask);
