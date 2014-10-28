@@ -2810,12 +2810,6 @@ static struct dentry *nfs_follow_remote_path(struct vfsmount *root_mnt,
 	path_put(&path);
 	down_write(&s->s_umount);
 	return dentry;
-out_put_mnt_ns:
-	put_mnt_ns(ns_private);
-out_mntput:
-	mntput(root_mnt);
-out_err:
-	return ERR_PTR(ret);
 }
 
 static struct dentry *nfs4_try_mount(int flags, const char *dev_name,
