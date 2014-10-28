@@ -78,6 +78,7 @@ struct dst_entry {
 #define DST_NOHASH		0x0008
 #define DST_NOCACHE		0x0010
 #define DST_NOCOUNT		0x0020
+#define DST_NOPEER		0x0040
 #define DST_XFRM_TUNNEL		0x0100
 	union {
 		struct dst_entry	*next;

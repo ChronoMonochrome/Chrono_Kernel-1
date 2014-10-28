@@ -158,6 +158,7 @@ struct via_spec {
 	/* work to check hp jack state */
 	struct hda_codec *codec;
 	struct delayed_work vt1708_hp_work;
+	int hp_work_active;
 	int vt1708_jack_detectect;
 	int vt1708_hp_present;
 
@@ -258,15 +259,24 @@ enum {
 static void analog_low_current_mode(struct hda_codec *codec, int stream_idle);
 static int is_aa_path_mute(struct hda_codec *codec);
 
-static void vt1708_start_hp_work(struct via_spec *spec)
+#define hp_detect_with_aa(codec) \
+	(snd_hda_get_bool_hint(codec, "analog_loopback_hp_detect") == 1 && \
+	 !is_aa_path_mute(codec))
+
+static void vt1708_update_hp_work(struct via_spec *spec)
 {
 	if (spec->codec_type != VT1708 || spec->autocfg.hp_pins[0] == 0)
 		return;
-	snd_hda_codec_write(spec->codec, 0x1, 0, 0xf81,
-			    !spec->vt1708_jack_detectect);
-	if (!delayed_work_pending(&spec->vt1708_hp_work))
-		schedule_delayed_work(&spec->vt1708_hp_work,
-				      msecs_to_jiffies(100));
+	if (spec->vt1708_jack_detect &&
+	    (spec->active_streams || hp_detect_with_aa(spec->codec))) {
+		if (!spec->hp_work_active) {
+			snd_hda_codec_write(spec->codec, 0x1, 0, 0xf81, 0);
+			schedule_delayed_work(&spec->vt1708_hp_work,
+					      msecs_to_jiffies(100));
+			spec->hp_work_active = 1;
+		}
+	} else if (!hp_detect_with_aa(spec->codec))
+		vt1708_stop_hp_work(spec);
 }
 
 static void vt1708_stop_hp_work(struct via_spec *spec)
@@ -296,12 +306,7 @@ static int analog_input_switch_put(struct snd_kcontrol *kcontrol,
 
 	set_widgets_power_state(codec);
 	analog_low_current_mode(snd_kcontrol_chip(kcontrol), -1);
-	if (snd_hda_get_bool_hint(codec, "analog_loopback_hp_detect") == 1) {
-		if (is_aa_path_mute(codec))
-			vt1708_start_hp_work(codec->spec);
-		else
-			vt1708_stop_hp_work(codec->spec);
-	}
+	vt1708_update_hp_work(codec->spec);
 	return change;
 }
 
@@ -2226,7 +2231,9 @@ static void vt1708_update_hp_jack_state(struct work_struct *work)
 		spec->vt1708_hp_present ^= 1;
 		via_hp_automute(spec->codec);
 	}
-	vt1708_start_hp_work(spec);
+	if (spec->vt1708_jack_detect)
+		schedule_delayed_work(&spec->vt1708_hp_work,
+				      msecs_to_jiffies(100));
 }
 
 static int get_mux_nids(struct hda_codec *codec)

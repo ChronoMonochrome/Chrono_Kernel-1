@@ -201,7 +201,7 @@ ecryptfs_do_create(struct inode *directory_inode,
 		   struct dentry *ecryptfs_dentry, int mode,
 		   struct nameidata *nd)
 {
-	int rc;
+	int inode, rc;
 	struct dentry *lower_dentry;
 	struct dentry *lower_dir_dentry;
 
@@ -218,20 +218,19 @@ ecryptfs_do_create(struct inode *directory_inode,
 	if (rc) {
 		printk(KERN_ERR "%s: Failure to create dentry in lower fs; "
 		       "rc = [%d]\n", __func__, rc);
+		inode = ERR_PTR(rc);
 		goto out_lock;
 	}
-	rc = ecryptfs_interpose(lower_dentry, ecryptfs_dentry,
-				directory_inode->i_sb);
-	if (rc) {
-		ecryptfs_printk(KERN_ERR, "Failure in ecryptfs_interpose\n");
+	inode = __ecryptfs_get_inode(lower_dentry->d_inode,
+				     directory_inode->i_sb);
+	if (IS_ERR(inode))
 		goto out_lock;
-	}
 	fsstack_copy_attr_times(directory_inode, lower_dir_dentry->d_inode);
 	fsstack_copy_inode_size(directory_inode, lower_dir_dentry->d_inode);
 out_lock:
 	unlock_dir(lower_dir_dentry);
 out:
-	return rc;
+	return inode;
 }
 
 /**
@@ -242,26 +241,26 @@ out:
  *
  * Returns zero on success
  */
-static int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry)
+static int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
+				    struct inode *ecryptfs_inode)
 {
 	struct ecryptfs_crypt_stat *crypt_stat =
-		&ecryptfs_inode_to_private(ecryptfs_dentry->d_inode)->crypt_stat;
+		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
 	int rc = 0;
 
-	if (S_ISDIR(ecryptfs_dentry->d_inode->i_mode)) {
+	if (S_ISDIR(ecryptfs_inode->i_mode)) {
 		ecryptfs_printk(KERN_DEBUG, "This is a directory\n");
 		crypt_stat->flags &= ~(ECRYPTFS_ENCRYPTED);
 		goto out;
 	}
 	ecryptfs_printk(KERN_DEBUG, "Initializing crypto context\n");
-	rc = ecryptfs_new_file_context(ecryptfs_dentry);
+	rc = ecryptfs_new_file_context(ecryptfs_inode);
 	if (rc) {
 		ecryptfs_printk(KERN_ERR, "Error creating new file "
 				"context; rc = [%d]\n", rc);
 		goto out;
 	}
-	rc = ecryptfs_get_lower_file(ecryptfs_dentry,
-				     ecryptfs_dentry->d_inode);
+	rc = ecryptfs_get_lower_file(ecryptfs_dentry, ecryptfs_inode);
 	if (rc) {
 		printk(KERN_ERR "%s: Error attempting to initialize "
 			"the lower file for the dentry with name "
@@ -291,7 +290,7 @@ static int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry)
 					| ECRYPTFS_ENCRYPTED);
 			ecryptfs_put_lower_file(ecryptfs_dentry->d_inode);
 		} else {
-			rc = ecryptfs_write_metadata(ecryptfs_dentry);
+			rc = ecryptfs_write_metadata(ecryptfs_dentry, ecryptfs_inode);
 			if (rc)
 				printk(
 				KERN_ERR "Error writing headers; rc = [%d]\n"
@@ -323,7 +322,7 @@ out:
  */
 static int
 ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
-		int mode, struct nameidata *nd)
+		int mode, struct nameidata *nd, struct inode *ecryptfs_inode)
 {
 	int rc;
 
@@ -336,7 +335,7 @@ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
 	}
 	/* At this point, a file exists on "disk"; we need to make sure
 	 * that this on disk file is prepared to be an ecryptfs file */
-	rc = ecryptfs_initialize_file(ecryptfs_dentry);
+	rc = ecryptfs_initialize_file(ecryptfs_dentry, ecryptfs_inode);
 out:
 	return rc;
 }

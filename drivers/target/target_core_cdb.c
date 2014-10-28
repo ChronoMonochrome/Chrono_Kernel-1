@@ -485,7 +485,7 @@ target_emulate_evpd_86(struct se_cmd *cmd, unsigned char *buf)
 		return 0;
 
 	buf[1] = 0x86;
-	buf[2] = 0x3c;
+	buf[3] = 0x3c;
 	/* Set HEADSUP, ORDSUP, SIMPSUP */
 	buf[5] = 0x07;
 
