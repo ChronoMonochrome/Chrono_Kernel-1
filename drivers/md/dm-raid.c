@@ -315,22 +315,39 @@ static int parse_raid_params(struct raid_set *rs, char **argv,
 	num_raid_params--;
 
 	/*
+	 * We set each individual device as In_sync with a completed
+	 * 'recovery_offset'.  If there has been a device failure or
+	 * replacement then one of the following cases applies:
+	 *
+	 *   1) User specifies 'rebuild'.
+	 *      - Device is reset when param is read.
+	 *   2) A new device is supplied.
+	 *      - No matching superblock found, resets device.
+	 *   3) Device failure was transient and returns on reload.
+	 *      - Failure noticed, resets device for bitmap replay.
+	 *   4) Device hadn't completed recovery after previous failure.
+	 *      - Superblock is read and overrides recovery_offset.
+	 *
+	 * What is found in the superblocks of the devices is always
+	 * authoritative, unless 'rebuild' or '[no]sync' was specified.
+	 */
+	for (i = 0; i < rs->md.raid_disks; i++) {
+		set_bit(In_sync, &rs->dev[i].rdev.flags);
+		rs->dev[i].rdev.recovery_offset = MaxSector;
+	}
+
+	/*
 	 * Second, parse the unordered optional arguments
 	 */
-	for (i = 0; i < rs->md.raid_disks; i++)
-		set_bit(In_sync, &rs->dev[i].rdev.flags);
-
 	for (i = 0; i < num_raid_params; i++) {
 		if (!strcmp(argv[i], "nosync")) {
 			rs->md.recovery_cp = MaxSector;
 			rs->print_flags |= DMPF_NOSYNC;
-			rs->md.flags |= MD_SYNC_STATE_FORCED;
 			continue;
 		}
 		if (!strcmp(argv[i], "sync")) {
 			rs->md.recovery_cp = 0;
 			rs->print_flags |= DMPF_SYNC;
-			rs->md.flags |= MD_SYNC_STATE_FORCED;
 			continue;
 		}
 
@@ -347,8 +364,13 @@ static int parse_raid_params(struct raid_set *rs, char **argv,
 		}
 
 		if (!strcmp(key, "rebuild")) {
-			if (++rebuild_cnt > rs->raid_type->parity_devs) {
-				rs->ti->error = "Too many rebuild drives given";
+			rebuild_cnt++;
+			if (((rs->raid_type->level != 1) &&
+			     (rebuild_cnt > rs->raid_type->parity_devs)) ||
+			    ((rs->raid_type->level == 1) &&
+			     (rebuild_cnt > (rs->md.raid_disks - 1)))) {
+				rs->ti->error = "Too many rebuild devices specified for given RAID type";
+
 				return -EINVAL;
 			}
 			if (value > rs->md.raid_disks) {
