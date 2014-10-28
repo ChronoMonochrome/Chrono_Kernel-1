@@ -251,6 +251,7 @@ struct module_use {
 #define EXPORT_SYMBOL_GPL_FUTURE(sym)				\
 	__EXPORT_SYMBOL(sym, "_gpl_future")
 
+extern struct module_attribute module_uevent;
 
 #ifdef CONFIG_UNUSED_SYMBOLS
 #define EXPORT_UNUSED_SYMBOL(sym) __EXPORT_SYMBOL(sym, "_unused")
