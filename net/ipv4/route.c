@@ -112,7 +112,7 @@
 #include <net/secure_seq.h>
 
 #define RT_FL_TOS(oldflp4) \
-    ((u32)(oldflp4->flowi4_tos & (IPTOS_RT_MASK | RTO_ONLINK)))
+	((oldflp4)->flowi4_tos & (IPTOS_RT_MASK | RTO_ONLINK))
 
 #define IP_MAX_MTU	0xFFF0
 
@@ -132,6 +132,7 @@ static int ip_rt_mtu_expires __read_mostly	= 10 * 60 * HZ;
 static int ip_rt_min_pmtu __read_mostly		= 512 + 20 + 20;
 static int ip_rt_min_advmss __read_mostly	= 256;
 static int rt_chain_length_max __read_mostly	= 20;
+static int redirect_genid;
 
 static struct delayed_work expires_work;
 static unsigned long expires_ljiffies;
@@ -148,6 +149,7 @@ static struct dst_entry *ipv4_negative_advice(struct dst_entry *dst);
 static void		 ipv4_link_failure(struct sk_buff *skb);
 static void		 ip_rt_update_pmtu(struct dst_entry *dst, u32 mtu);
 static int rt_garbage_collect(struct dst_ops *ops);
+static void check_peer_pmtu(struct dst_entry *dst, struct inet_peer *peer);
 
 static void ipv4_dst_ifdown(struct dst_entry *dst, struct net_device *dev,
 			    int how)
@@ -933,6 +935,7 @@ static void rt_cache_invalidate(struct net *net)
 
 	get_random_bytes(&shuffle, sizeof(shuffle));
 	atomic_add(shuffle + 1U, &net->ipv4.rt_genid);
+	redirect_genid++;
 }
 
 /*
@@ -1105,6 +1108,27 @@ static int slow_chain_length(const struct rtable *head)
 		rth = rcu_dereference_protected(rth->dst.rt_next, 1);
 	}
 	return length >> FRACT_BITS;
+}
+
+static struct neighbour *ipv4_neigh_lookup(const struct dst_entry *dst, const void *daddr)
+{
+	struct neigh_table *tbl = &arp_tbl;
+	static const __be32 inaddr_any = 0;
+	struct net_device *dev = dst->dev;
+	const __be32 *pkey = daddr;
+	struct neighbour *n;
+
+#if defined(CONFIG_ATM_CLIP) || defined(CONFIG_ATM_CLIP_MODULE)
+	if (dev->type == ARPHRD_ATM)
+		tbl = clip_tbl_hook;
+#endif
+	if (dev->flags & (IFF_LOOPBACK | IFF_POINTOPOINT))
+		pkey = &inaddr_any;
+	
+	n = __ipv4_neigh_lookup(tbl, dev, *(__force u32 *)pkey);
+	if (n)
+		return n;
+	return neigh_create(tbl, pkey, dev);
 }
 
 static struct rtable *rt_intern_hash(unsigned hash, struct rtable *rt,
@@ -1371,33 +1395,58 @@ static void rt_del(unsigned hash, struct rtable *rt)
 
 static int check_peer_redir(struct dst_entry *dst, struct inet_peer *peer)
 {
+        struct rtable *rt = (struct rtable *) dst;
+        __be32 orig_gw = rt->rt_gateway;
+        struct neighbour *n, *old_n;
+
+        dst_confirm(&rt->dst);
+
+        rt->rt_gateway = peer->redirect_learned.a4;
+
+        n = ipv4_neigh_lookup(&rt->dst, &rt->rt_gateway);
+        if (IS_ERR(n))
+                return PTR_ERR(n);
+        old_n = xchg(&rt->dst._neighbour, n);
+        if (old_n)
+                neigh_release(old_n);
+        if (!n || !(n->nud_state & NUD_VALID)) {
+                if (n)
+                        neigh_event_send(n, NULL);
+                rt->rt_gateway = orig_gw;
+                return -EAGAIN;
+        } else {
+                rt->rt_flags |= RTCF_REDIRECTED;
+                call_netevent_notifiers(NETEVENT_NEIGH_UPDATE, n);
+        }
+        return 0;
+}
+
+static struct dst_entry *ipv4_dst_check(struct dst_entry *dst, u32 cookie)
+{
 	struct rtable *rt = (struct rtable *) dst;
-	__be32 orig_gw = rt->rt_gateway;
-	struct neighbour *n, *old_n;
-	struct hh_cache *old_hh;
 
-	dst_confirm(&rt->dst);
+	if (rt_is_expired(rt))
+		return NULL;
+	if (rt->rt_peer_genid != rt_peer_genid()) {
+		struct inet_peer *peer;
 
-	rt->rt_gateway = peer->redirect_learned.a4;
-	n = __arp_bind_neighbour(&rt->dst, rt->rt_gateway);
-	if (IS_ERR(n))
-		return PTR_ERR(n);
-	old_hh = xchg(&rt->dst.hh, NULL);
-	if (old_hh)
-		hh_cache_put(old_hh);
-	old_n = xchg(&rt->dst._neighbour, n);
-	if (old_n)
-		neigh_release(old_n);
-	if (!n || !(n->nud_state & NUD_VALID)) {
-		if (n)
-			neigh_event_send(n, NULL);
-		rt->rt_gateway = orig_gw;
-		return -EAGAIN;
-	} else {
-		rt->rt_flags |= RTCF_REDIRECTED;
-		call_netevent_notifiers(NETEVENT_NEIGH_UPDATE, n);
+		if (!rt->peer)
+			rt_bind_peer(rt, rt->rt_dst, 0);
+
+		peer = rt->peer;
+		if (peer) {
+			check_peer_pmtu(dst, peer);
+
+			if (peer->redirect_learned.a4 &&
+			    peer->redirect_learned.a4 != rt->rt_gateway) {
+				if (check_peer_redir(dst, peer))
+					return NULL;
+			}
+		}
+
+		rt->rt_peer_genid = rt_peer_genid();
 	}
-	return 0;
+		return dst;
 }
 
 /* called in rcu_read_lock() section */
@@ -1696,11 +1745,10 @@ unsigned short ip_rt_frag_needed(struct net *net, const struct iphdr *iph,
 			est_mtu = mtu;
 			peer->pmtu_learned = mtu;
 			peer->pmtu_expires = pmtu_expires;
+			atomic_inc(&__rt_peer_genid);
 		}
 
 		inet_putpeer(peer);
-
-		atomic_inc(&__rt_peer_genid);
 	}
 	return est_mtu ? : new_mtu;
 }
@@ -1751,34 +1799,6 @@ static void ip_rt_update_pmtu(struct dst_entry *dst, u32 mtu)
 		}
 		check_peer_pmtu(dst, peer);
 	}
-}
-
-static struct dst_entry *ipv4_dst_check(struct dst_entry *dst, u32 cookie)
-{
-	struct rtable *rt = (struct rtable *) dst;
-
-	if (rt_is_expired(rt))
-		return NULL;
-	if (rt->rt_peer_genid != rt_peer_genid()) {
-		struct inet_peer *peer;
-
-		if (!rt->peer)
-			rt_bind_peer(rt, rt->rt_dst, 0);
-
-		peer = rt->peer;
-		if (peer) {
-			check_peer_pmtu(dst, peer);
-
-			if (peer->redirect_learned.a4 &&
-			    peer->redirect_learned.a4 != rt->rt_gateway) {
-				if (check_peer_redir(dst, peer))
-					return NULL;
-			}
-		}
-
-		rt->rt_peer_genid = rt_peer_genid();
-	}
-	return dst;
 }
 
 static void ipv4_dst_destroy(struct dst_entry *dst)
@@ -1920,6 +1940,8 @@ static void rt_init_metrics(struct rtable *rt, const struct flowi4 *fl4,
 		dst_init_metrics(&rt->dst, peer->metrics, false);
 
 		check_peer_pmtu(&rt->dst, peer);
+		if (peer->redirect_genid != redirect_genid)
+			peer->redirect_learned.a4 = 0;
 		if (peer->redirect_learned.a4 &&
 		    peer->redirect_learned.a4 != rt->rt_gateway) {
 			rt->rt_gateway = peer->redirect_learned.a4;
@@ -2483,11 +2505,11 @@ EXPORT_SYMBOL(ip_route_input_common);
 static struct rtable *__mkroute_output(const struct fib_result *res,
 				       const struct flowi4 *fl4,
 				       __be32 orig_daddr, __be32 orig_saddr,
-				       int orig_oif, struct net_device *dev_out,
+				       int orig_oif, __u8 orig_rtos,
+				       struct net_device *dev_out,
 				       unsigned int flags)
 {
 	struct fib_info *fi = res->fi;
-	u32 tos = RT_FL_TOS(fl4);
 	struct in_device *in_dev;
 	u16 type = res->type;
 	struct rtable *rth;
@@ -2538,7 +2560,7 @@ static struct rtable *__mkroute_output(const struct fib_result *res,
 	rth->rt_genid = rt_genid(dev_net(dev_out));
 	rth->rt_flags	= flags;
 	rth->rt_type	= type;
-	rth->rt_key_tos	= tos;
+	rth->rt_key_tos	= orig_rtos;
 	rth->rt_dst	= fl4->daddr;
 	rth->rt_src	= fl4->saddr;
 	rth->rt_route_iif = 0;
@@ -2588,7 +2610,7 @@ static struct rtable *__mkroute_output(const struct fib_result *res,
 static struct rtable *ip_route_output_slow(struct net *net, struct flowi4 *fl4)
 {
 	struct net_device *dev_out = NULL;
-	u32 tos	= RT_FL_TOS(fl4);
+	__u8 tos = RT_FL_TOS(fl4);
 	unsigned int flags = 0;
 	struct fib_result res;
 	struct rtable *rth;
@@ -2764,7 +2786,7 @@ static struct rtable *ip_route_output_slow(struct net *net, struct flowi4 *fl4)
 
 make_route:
 	rth = __mkroute_output(&res, fl4, orig_daddr, orig_saddr, orig_oif,
-			       dev_out, flags);
+			       tos, dev_out, flags);
 	if (!IS_ERR(rth)) {
 		unsigned int hash;
 

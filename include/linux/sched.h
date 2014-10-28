@@ -1296,6 +1296,7 @@ struct task_struct {
 	int exit_code, exit_signal;
 	int pdeath_signal;  /*  The signal sent when the parent dies  */
 	unsigned int group_stop;	/* GROUP_STOP_*, siglock protected */
+	unsigned int jobctl; /* JOBCTL_*, siglock protected */
 	/* ??? */
 	unsigned int personality;
 	unsigned did_exec:1;
@@ -1828,6 +1829,12 @@ extern int task_free_unregister(struct notifier_block *n);
 #define GROUP_STOP_DEQUEUED	(1 << 19) /* stop signal dequeued */
 
 extern void task_clear_group_stop_pending(struct task_struct *task);
+
+/*
+ * task->jobctl flags
+ */
+#define JOBCTL_STOP_SIGMASK 0xffff /* signr of the last group stop */
+
 
 #ifdef CONFIG_PREEMPT_RCU
 
