@@ -88,8 +88,8 @@ struct cfq_rb_root {
 	unsigned total_weight;
 	u64 min_vdisktime;
 };
-#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
-			.count = 0, .min_vdisktime = 0, }
+#define CFQ_RB_ROOT (struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
+					  .count = 0, .min_vdisktime = 0, }
 
 /*
  * Per process-grouping structure
@@ -1964,7 +1964,7 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
 	 * Otherwise, we do only if they are the last ones
 	 * in their service tree.
 	 */
-	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
+	  if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
 		return true;
 	cfq_log_cfqq(cfqd, cfqq, "Not idling. st->count:%d",
 			service_tree->count);
@@ -3572,7 +3572,9 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
 
 	if (sync) {
+		
 		RQ_CIC(rq)->last_end_request = now;
+		
 		if (!time_after(rq->start_time + cfqd->cfq_fifo_expire[1], now))
 			cfqd->last_delayed_sync = now;
 	}
