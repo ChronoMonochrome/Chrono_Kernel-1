@@ -7,9 +7,28 @@
 #include <linux/sched.h>
 #include <linux/fs.h>
 
-struct backing_dev_info;
+/*
+ * The 1/16 region above the global dirty limit will be put to maximum pauses:
+ *
+ *	(limit, limit + limit/DIRTY_MAXPAUSE_AREA)
+ *
+ * The 1/16 region above the max-pause region, dirty exceeded bdi's will be put
+ * to loops:
+ *
+ *	(limit + limit/DIRTY_MAXPAUSE_AREA, limit + limit/DIRTY_PASSGOOD_AREA)
+ *
+ * Further beyond, all dirtier tasks will enter a loop waiting (possibly long
+ * time) for the dirty pages to drop, unless written enough pages.
+ *
+ * The global dirty threshold is normally equal to the global dirty limit,
+ * except when the system suddenly allocates a lot of anonymous memory and
+ * knocks down the global dirty threshold quickly, in which case the global
+ * dirty limit will follow down slowly to prevent livelocking all dirtier tasks.
+ */
+#define DIRTY_MAXPAUSE_AREA		16
+#define DIRTY_PASSGOOD_AREA		8
 
-extern spinlock_t inode_wb_list_lock;
+struct backing_dev_info;
 
 /*
  * fs/fs-writeback.c
@@ -96,6 +115,8 @@ static inline void laptop_sync_completion(void) { }
 #endif
 void throttle_vm_writeout(gfp_t gfp_mask);
 
+extern unsigned long global_dirty_limit;
+
 /* These are exported to sysctl. */
 extern int dirty_background_ratio;
 extern unsigned long dirty_background_bytes;
@@ -129,6 +150,13 @@ int dirty_writeback_centisecs_handler(struct ctl_table *, int,
 void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
 unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
 			       unsigned long dirty);
+
+void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+			    unsigned long thresh,
+			    unsigned long dirty,
+			    unsigned long bdi_thresh,
+			    unsigned long bdi_dirty,
+			    unsigned long start_time);
 
 void page_writeback_init(void);
 void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
