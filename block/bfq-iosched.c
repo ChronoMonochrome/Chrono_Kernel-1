@@ -635,7 +635,7 @@ static void bfq_add_request(struct request *rq)
 	struct bfq_queue *bfqq = RQ_BFQQ(rq);
 	struct bfq_entity *entity = &bfqq->entity;
 	struct bfq_data *bfqd = bfqq->bfqd;
-	struct request *__alias, *next_rq, *prev;
+	struct request *next_rq, *prev;
 	unsigned long old_wr_coeff = bfqq->wr_coeff;
 	int idle_for_long_time = 0;
 
@@ -643,14 +643,9 @@ static void bfq_add_request(struct request *rq)
 	bfqq->queued[rq_is_sync(rq)]++;
 	bfqd->queued++;
 
-	spin_lock(&bfqd->eqm_lock);
+	elv_rb_add(&bfqq->sort_list, rq);
 
-	/*
-	 * Looks a little odd, but the first insert might return an alias,
-	 * if that happens, put the alias on the dispatch list.
-	 */
-	while ((__alias = elv_rb_add(&bfqq->sort_list, rq)) != NULL)
-		bfq_dispatch_insert(bfqd->queue, __alias);
+	spin_lock(&bfqd->eqm_lock);
 
 	/*
 	 * Check if this request is a better next-serve candidate.
@@ -682,7 +677,7 @@ static void bfq_add_request(struct request *rq)
 
 		if (!bfq_bfqq_IO_bound(bfqq)) {
 			if (time_before(jiffies,
-					RQ_CIC(rq)->last_end_request +
+					RQ_CIC(rq)->ttime.last_end_request +
 					bfqd->bfq_slice_idle)) {
 				bfqq->requests_within_timer++;
 				if (bfqq->requests_within_timer >=
@@ -2690,12 +2685,6 @@ static void bfq_init_prio_data(struct bfq_queue *bfqq, struct io_context *ioc)
 
 	bfqq->entity.ioprio_changed = 1;
 
-	/*
-	 * Keep track of original prio settings in case we have to temporarily
-	 * elevate the priority of this queue.
-	 */
-	bfqq->org_ioprio = bfqq->entity.new_ioprio;
-	bfqq->org_ioprio_class = bfqq->entity.new_ioprio_class;
 	bfq_clear_bfqq_prio_changed(bfqq);
 }
 
@@ -2877,12 +2866,13 @@ static struct bfq_queue *bfq_get_queue(struct bfq_data *bfqd,
 static void bfq_update_io_thinktime(struct bfq_data *bfqd,
 				    struct cfq_io_context *cic)
 {
-	unsigned long elapsed = jiffies - cic->last_end_request;
+	unsigned long elapsed = jiffies - cic->ttime.last_end_request;
 	unsigned long ttime = min(elapsed, 2UL * bfqd->bfq_slice_idle);
 
-	cic->ttime_samples = (7*cic->ttime_samples + 256) / 8;
-	cic->ttime_total = (7*cic->ttime_total + 256*ttime) / 8;
-	cic->ttime_mean = (cic->ttime_total + 128) / cic->ttime_samples;
+	cic->ttime.ttime_samples = (7*cic->ttime.ttime_samples + 256) / 8;
+	cic->ttime.ttime_total = (7*cic->ttime.ttime_total + 256*ttime) / 8;
+	cic->ttime.ttime_mean = (cic->ttime.ttime_total + 128) /
+				cic->ttime.ttime_samples;
 }
 
 static void bfq_update_io_seektime(struct bfq_data *bfqd,
@@ -2943,8 +2933,8 @@ static void bfq_update_idle_window(struct bfq_data *bfqd,
 		(bfqd->hw_tag && BFQQ_SEEKY(bfqq) &&
 			bfqq->wr_coeff == 1))
 		enable_idle = 0;
-	else if (bfq_sample_valid(cic->ttime_samples)) {
-		if (cic->ttime_mean > bfqd->bfq_slice_idle &&
+	else if (bfq_sample_valid(cic->ttime.ttime_samples)) {
+		if (cic->ttime.ttime_mean > bfqd->bfq_slice_idle &&
 			bfqq->wr_coeff == 1)
 			enable_idle = 0;
 		else
@@ -3152,7 +3142,7 @@ static void bfq_completed_request(struct request_queue *q, struct request *rq)
 
 	if (sync) {
 		bfqd->sync_flight--;
-		RQ_CIC(rq)->last_end_request = jiffies;
+		RQ_CIC(rq)->ttime.last_end_request = jiffies;
 	}
 
 	/*
@@ -3194,30 +3184,6 @@ out:
 	return;
 }
 
-/*
- * We temporarily boost lower priority queues if they are holding fs exclusive
- * resources.  They are boosted to normal prio (CLASS_BE/4).
- */
-static void bfq_prio_boost(struct bfq_queue *bfqq)
-{
-	if (has_fs_excl()) {
-		/*
-		 * Boost idle prio on transactions that would lock out other
-		 * users of the filesystem
-		 */
-		if (bfq_class_idle(bfqq))
-			bfqq->entity.new_ioprio_class = IOPRIO_CLASS_BE;
-		if (bfqq->entity.new_ioprio > IOPRIO_NORM)
-			bfqq->entity.new_ioprio = IOPRIO_NORM;
-	} else {
-		/*
-		 * Unboost the queue (if needed)
-		 */
-		bfqq->entity.new_ioprio_class = bfqq->org_ioprio_class;
-		bfqq->entity.new_ioprio = bfqq->org_ioprio;
-	}
-}
-
 static inline int __bfq_may_queue(struct bfq_queue *bfqq)
 {
 	if (bfq_bfqq_wait_request(bfqq) && bfq_bfqq_must_alloc(bfqq)) {
@@ -3250,7 +3216,6 @@ static int bfq_may_queue(struct request_queue *q, int rw)
 	spin_unlock(&bfqd->eqm_lock);
 	if (bfqq != NULL) {
 		bfq_init_prio_data(bfqq, cic->ioc);
-		bfq_prio_boost(bfqq);
 
 		return __bfq_may_queue(bfqq);
 	}

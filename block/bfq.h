@@ -1,5 +1,5 @@
 /*
- * BFQ-v7r5 for 3.0: data structures and common functions prototypes.
+ * BFQ-v7r5 for 3.1.0: data structures and common functions prototypes.
  *
  * Based on ideas and code from CFQ:
  * Copyright (C) 2003 Jens Axboe <axboe@kernel.dk>
@@ -194,8 +194,6 @@ struct bfq_group;
  * @max_budget: maximum budget allowed from the feedback mechanism.
  * @budget_timeout: budget expiration (in jiffies).
  * @dispatched: number of requests on the dispatch list or inside driver.
- * @org_ioprio: saved ioprio during boosted periods.
- * @org_ioprio_class: saved ioprio_class during boosted periods.
  * @flags: status flags.
  * @bfqq_list: node for active/idle bfqq list inside our bfqd.
  * @seek_samples: number of seeks sampled
@@ -212,24 +210,26 @@ struct bfq_group;
  *                        the @bfq-queue is being weight-raised, otherwise
  *                        finish time of the last weight-raising period
  * @wr_cur_max_time: current max raising time for this queue
- * @soft_rt_next_start: minimum time instant such that, only if a new request
- *                      is enqueued after this time instant in an idle
- *                      @bfq_queue with no outstanding requests, then the
- *                      task associated with the queue it is deemed as soft
- *                      real-time (see the comments to the function
+ * @soft_rt_next_start: minimum time instant such that, only if a new
+ *                      request is enqueued after this time instant in an
+ *                      idle @bfq_queue with no outstanding requests, then
+ *                      the task associated with the queue it is deemed as
+ *                      soft real-time (see the comments to the function
  *                      bfq_bfqq_softrt_next_start())
  * @last_idle_bklogged: time of the last transition of the @bfq_queue from
  *                      idle to backlogged
  * @service_from_backlogged: cumulative service received from the @bfq_queue
- *                           since the last transition from idle to backlogged
+ *                           since the last transition from idle to
+ *                           backlogged
  * @cic: pointer to the cfq_io_context owning the bfq_queue, set to %NULL if the
  *	 queue is shared
  *
- * A bfq_queue is a leaf request queue; it can be associated with an io_context
- * or more, if it is async or shared between cooperating processes. @cgroup
- * holds a reference to the cgroup, to be sure that it does not disappear while
- * a bfqq still references it (mostly to avoid races between request issuing and
- * task migration followed by cgroup destruction).
+ * A bfq_queue is a leaf request queue; it can be associated with an
+ * io_context or more, if it  is  async or shared  between  cooperating
+ * processes. @cgroup holds a reference to the cgroup, to be sure that it
+ * does not disappear while a bfqq still references it (mostly to avoid
+ * races between request issuing and task migration followed by cgroup
+ * destruction).
  * All the fields are protected by the queue lock of the containing bfqd.
  */
 struct bfq_queue {
@@ -254,9 +254,6 @@ struct bfq_queue {
 	unsigned long budget_timeout;
 
 	int dispatched;
-
-	unsigned short org_ioprio;
-	unsigned short org_ioprio_class;
 
 	unsigned int flags;
 
