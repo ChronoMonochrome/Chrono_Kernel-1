@@ -35,7 +35,7 @@
 #include <linux/oom.h>
 #include <linux/sched.h>
 #include <linux/notifier.h>
-/* #define ENHANCED_LMK_ROUTINE */
+#define ENHANCED_LMK_ROUTINE
 
 #ifdef CONFIG_ZRAM_FOR_ANDROID
 #include <linux/swap.h>
@@ -97,7 +97,6 @@ static struct task_struct *lowmem_deathpending[LOWMEM_DEATHPENDING_DEPTH] = {NUL
 #else
 static struct task_struct *lowmem_deathpending;
 #endif
-static unsigned int timeout = HZ;
 static unsigned long lowmem_deathpending_timeout;
 
 #define lowmem_print(level, x...)			\
@@ -292,7 +291,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 				selected[i]->pid, selected[i]->comm,
 				selected_oom_adj[i], selected_tasksize[i]);
 			lowmem_deathpending[i] = selected[i];
-			lowmem_deathpending_timeout = jiffies + timeout;
+			lowmem_deathpending_timeout = jiffies + HZ;
 			force_sig(SIGKILL, selected[i]);
 			rem -= selected_tasksize[i];
 		}
@@ -563,7 +562,6 @@ module_param_array_named(adj, lowmem_adj, int, &lowmem_adj_size,
 module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
 			 S_IRUGO | S_IWUSR);
 module_param_named(debug_level, lowmem_debug_level, uint, S_IRUGO | S_IWUSR);
-module_param_named(timeout, timeout, uint, S_IRUGO | S_IWUSR);
 
 module_init(lowmem_init);
 module_exit(lowmem_exit);
