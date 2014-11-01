@@ -255,6 +255,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
 out:
 	rcu_read_unlock();
 }
+EXPORT_SYMBOL_GPL(thread_group_cputime);
 
 static void update_gt_cputime(struct task_cputime *a, struct task_cputime *b)
 {

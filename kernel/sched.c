@@ -4275,6 +4275,7 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
 }
 #endif
 
+EXPORT_SYMBOL_GPL(thread_group_times);
 /*
  * This function gets called by the timer code, with HZ frequency.
  * We call it with interrupts disabled.
@@ -5271,6 +5272,7 @@ int task_prio(const struct task_struct *p)
 {
 	return p->prio - MAX_RT_PRIO;
 }
+EXPORT_SYMBOL(task_prio);
 
 /**
  * task_nice - return the nice value of a given task.
