@@ -841,7 +841,7 @@ static int vape_voltage(u8 raw)
 #define VAPE_SEL2_DEFAULT 	0x16
 
 static bool lpa_mode_enabled = 0;
-static u8 lpa_vape2 = 0x16;
+static u8 lpa_vape2 = 0x18;
 
 static int abb_codec_lpa_mode(bool suspend)
 {
