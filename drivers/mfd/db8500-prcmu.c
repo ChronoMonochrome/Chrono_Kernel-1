@@ -1343,14 +1343,18 @@ static inline void liveopp_update_cpuhw(struct liveopp_arm_table table,
 	update_vbb = (table.vbbx_raw != vbb) ? 1 : 0;
 
 	if (last_idx < next_idx) {
+
 		if (update_vbb)
 			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &table.vbbx_raw, 1);
 		if (update_vdd)
 			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &table.varm_raw, 1);
 
-		udelay(70);
+		udelay(80);
+		mb();
 		db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
+
 	} else {
+		mb();
 		db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
 		udelay(40);
 
@@ -1359,7 +1363,7 @@ static inline void liveopp_update_cpuhw(struct liveopp_arm_table table,
 		if (update_vbb)
 			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &table.vbbx_raw, 1);
 
-		udelay(20);
+		udelay(40);
 	}
 
 	/*
