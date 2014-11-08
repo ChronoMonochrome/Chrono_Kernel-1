@@ -10,22 +10,20 @@ busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
 busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
-busybox cp /ramdisk/boot.cpio /stage1/boot.cpio
-busybox chmod 644 /stage1/boot.cpio
+busybox chmod 644 /ramdisk/boot.cpio
 
-load_image=/stage1/boot.cpio
+load_image=/ramdisk/boot.cpio
 
 if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
-	busybox cp /ramdisk/recovery.cpio /stage1/recovery.cpio
-	busybox chmod 644 /stage1/recovery.cpio
-	load_image=/stage1/recovery.cpio
+	busybox chmod 644 /ramdisk/recovery.cpio
+	load_image=/ramdisk/recovery.cpio
 fi
+
+busybox cpio -i < ${load_image}
 
 busybox umount /dev/block/mmcblk0p17
 busybox rm /ramdisk
-
-busybox cpio -i < ${load_image}
 
 busybox umount /sys
 busybox umount /proc
