@@ -1039,6 +1039,7 @@ static struct platform_device alps_pdata = {
 };
 #endif
 
+#if 0
 static struct i2c_board_info __initdata codina_r0_0_gpio_i2c8_devices[] = {
 #ifdef CONFIG_SENSORS_HSCD
 		{
@@ -1054,6 +1055,7 @@ static struct i2c_board_info __initdata codina_r0_0_gpio_i2c8_devices[] = {
 	},
 #endif
 };
+#endif
 
 #ifdef CONFIG_KEYBOARD_GPIO
 struct gpio_keys_button codina_r0_0_gpio_keys[] = {
