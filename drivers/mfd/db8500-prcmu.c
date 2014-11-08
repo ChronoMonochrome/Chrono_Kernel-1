@@ -1680,18 +1680,27 @@ static ssize_t ddrpll_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	u32 val;
 	val = readl(prcmu_base + PRCMU_DDRPLL_REG);
 	
-	return sprintf(buf, "DDRPLL: %#010x (%d Hz)\n", val,  pllarm_freq(val));
+	return sprintf(buf, "DDRPLL: %#010x (%d kHz)\n", val,  pllarm_freq(val));
 }
 
 static ssize_t ddrpll_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	int ret;
 	u32 i, old_val, new_val;
+	int old_divider, new_divider;
 
 	old_val = readl(prcmu_base + PRCMU_DDRPLL_REG);
 	ret = sscanf(buf, "%x", &new_val);
+		
 	if (!ret)
 		return -EINVAL;
+	
+	old_divider = (old_val & 0x00FF0000) >> 16;
+	new_divider = (new_val & 0x00FF0000) >> 16;
+	
+	if (new_divider != old_divider) {
+		return -EINVAL;
+	}
 
 	if (new_val) {
 		for (i = old_val;
