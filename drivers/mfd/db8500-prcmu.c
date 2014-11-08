@@ -65,6 +65,8 @@ static char *fw_project_name(u8 project);
 /* Offset for the firmware version within the TCPM */
 #define PRCMU_FW_VERSION_OFFSET 0xA4
 
+#define PRCMU_DDRPLL_REG 0x08C
+
 /* Index of different voltages to be used when accessing AVSData */
 #define PRCM_AVS_BASE		0x2FC
 #define PRCM_AVS_VBB_RET	(PRCM_AVS_BASE + 0x0)
@@ -1668,6 +1670,42 @@ static ssize_t liveopp_start_store(struct kobject *kobj, struct kobj_attribute *
 ATTR_RW(liveopp_start);
 #endif
 
+/* 
+ * DDRPLL Booster
+ * Increasing DDRPLL will scale up related clocks like SGACLK(Mali GPU)
+ * So it may reboot *when* increasing DDRPLL
+ */
+static ssize_t ddrpll_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	u32 val;
+	val = readl(prcmu_base + PRCMU_DDRPLL_REG);
+	
+	return sprintf(buf, "DDRPLL: %#010x (%d Hz)\n", val,  pllarm_freq(val));
+}
+
+static ssize_t ddrpll_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+	u32 i, old_val, new_val;
+
+	old_val = readl(prcmu_base + PRCMU_DDRPLL_REG);
+	ret = sscanf(buf, "%x", &new_val);
+	if (!ret)
+		return -EINVAL;
+
+	if (new_val) {
+		for (i = old_val;
+		     (new_val > old_val) ? (i <= new_val) : (i >= new_val); 
+		     (new_val > old_val) ? i++ : i--) {
+				writel_relaxed(i, prcmu_base + PRCMU_DDRPLL_REG);
+				udelay(100);
+			}
+		}
+
+	return count;
+}
+ATTR_RW(ddrpll);
+
 static struct attribute *liveopp_attrs[] = {
 #if CONFIG_LIVEOPP_DEBUG > 1
 	&liveopp_start_interface.attr, 
@@ -1705,6 +1743,7 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step23_interface.attr, 
 	&arm_step24_interface.attr, 
 	&arm_step25_interface.attr, 
+	&ddrpll_interface.attr, 
 	NULL,
 };
 
