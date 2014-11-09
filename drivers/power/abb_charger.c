@@ -345,10 +345,8 @@ extern void mxt224e_ts_change_vbus_state(bool vbus_status);
 static void (*mxt224e_ts_vbus_state)(bool vbus_status);
 #endif
 
-/* ace2nutzer: ABB Charger Control */
-/* On codina board, the max current allowed is 900mA */
-/* Current limitation on AC is 900mA and on USB is 500mA */
-/* Note: The org. AC Charger max. output current is 700mA !!! */
+/* cocafe: ABB Charger Control */
+/* On Janice board, the max current allowed is 900mA */
 
 /* Current Control */
 static bool bCurrentControl = false;
@@ -356,9 +354,8 @@ static bool bCurrentControl = false;
 /* VBUS Drop Status - When VBUS droped, input current will be changed! */
 static bool bVBUSDropped = false;
 
-/* (codina) AC and USB don't use the same current */
-/* default for AC = 600mA and for USB = 300mA */
-static unsigned int vChargeCurrent = 600;
+/* (Janice) AC and USB use the same current */
+static unsigned int vChargeCurrent = 900;
 
 static void ab8500_charger_set_usb_connected(struct ab8500_charger *di,
 	bool connected)
@@ -3182,9 +3179,9 @@ static ssize_t abb_charger_current_store(struct kobject *kobj, struct kobj_attri
 
 		/* Setup Params */
 		di->bat->ta_chg_current = vChargeCurrent;
-		di->bat->ta_chg_current_input = di->bat->chg_params->ac_curr_max;
+		di->bat->ta_chg_current_input = vChargeCurrent;
 		di->bat->usb_chg_current = vChargeCurrent;
-		di->bat->usb_chg_current_input = di->bat->chg_params->usb_curr_max;
+		di->bat->usb_chg_current_input = vChargeCurrent;
 
 		return count;
 	}
@@ -3196,9 +3193,9 @@ static ssize_t abb_charger_current_store(struct kobject *kobj, struct kobj_attri
 		bCurrentControl = false;
 
 		/* Restore Params */
-		di->bat->ta_chg_current = 600;
+		di->bat->ta_chg_current = 800;
 		di->bat->ta_chg_current_input = di->bat->chg_params->ac_curr_max;
-		di->bat->usb_chg_current = 300;
+		di->bat->usb_chg_current = 500;
 		di->bat->usb_chg_current_input = di->bat->chg_params->usb_curr_max;
 
 		return count;
@@ -3216,9 +3213,9 @@ static ssize_t abb_charger_current_store(struct kobject *kobj, struct kobj_attri
 			
 			/* Write default value first */
 			di->bat->ta_chg_current = vChargeCurrent;
-			di->bat->ta_chg_current_input = di->bat->chg_params->ac_curr_max;
+			di->bat->ta_chg_current_input = vChargeCurrent;
 			di->bat->usb_chg_current = vChargeCurrent;
-			di->bat->usb_chg_current_input = di->bat->chg_params->usb_curr_max;
+			di->bat->usb_chg_current_input = vChargeCurrent;
 
 			return count;
 		}
