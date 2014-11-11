@@ -434,7 +434,21 @@ static void bt404_ponkey_thread(struct work_struct *bt404_ponkey_work)
 	waking_up = false;
 }
 static DECLARE_WORK(bt404_ponkey_work, bt404_ponkey_thread);
+
 #endif /* TOUCH_DT2W or TOUCH_S2W */
+
+#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
+extern bool cpu_freq_limits_enabled(void);
+extern bool cpufreq_limits_update(void);
+#endif
+
+
+static void cpufreq_limits_thread(struct work_struct *cpufreq_limits_work)
+{
+	if (cpu_freq_limits_enabled())
+		cpufreq_limits_update();
+}
+static DECLARE_WORK(cpufreq_limits_work, cpufreq_limits_thread);
 
 #ifdef TOUCH_S2W
 /* cocafe: SweepToWake with wakelock implementation */
@@ -4738,10 +4752,6 @@ out:
 }
 #endif
 
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-extern bool cpu_freq_limits_enabled(void);
-extern void cpufreq_limits_update(void);
-#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void bt404_ts_late_resume(struct early_suspend *h)
@@ -4750,7 +4760,7 @@ static void bt404_ts_late_resume(struct early_suspend *h)
 			container_of(h, struct bt404_ts_data, early_suspend);
 	is_suspend = false;
 #ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-	cpufreq_limits_update();
+	schedule_work(&cpufreq_limits_work);
 	/*int cpu;
 
 	if (cpu_freq_limits_enabled()) {
@@ -4767,7 +4777,7 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
 			container_of(h, struct bt404_ts_data, early_suspend);
 	is_suspend = true;
 #ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-	cpufreq_limits_update();
+	schedule_work(&cpufreq_limits_work);
 	/*int cpu;
 
 	if (cpu_freq_limits_enabled()) {
