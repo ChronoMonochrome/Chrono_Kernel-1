@@ -1323,20 +1323,16 @@ static int pllarm_freq(u32 raw)
 	return pll;
 }
 
-static liveopp_arm_table curr_table;
+static struct liveopp_arm_table curr_table;
 
 static void requirements_update_thread(struct work_struct *requirements_update_work)
 {
-	if (curr_table) {
-		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-						"cpufreq",
-						(signed char)curr_table.ddr_opp);
-		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-						"cpufreq",
-						(signed char)curr_table.ape_opp);
-	} else {
-		pr_err("LiveOPP: null pointer dereference (curr_table)\n");
-	}
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
+					"cpufreq",
+					(signed char)curr_table.ddr_opp);
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+					"cpufreq",
+					(signed char)curr_table.ape_opp);
 }
 static DECLARE_WORK(requirements_update_work, requirements_update_thread);
 
