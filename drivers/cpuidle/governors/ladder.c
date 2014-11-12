@@ -77,7 +77,7 @@ static int ladder_select_state(struct cpuidle_device *dev)
 
 	last_state = &ldev->states[last_idx];
 
-	if (dev->states[last_idx].flags & CPUIDLE_FLAG_TIME_VALID)
+	if (!(dev->states[last_idx].flags & CPUIDLE_FLAG_TIME_INVALID))
 		last_residency = cpuidle_get_last_residency(dev) - dev->states[last_idx].exit_latency;
 	else
 		last_residency = last_state->threshold.promotion_time + 1;

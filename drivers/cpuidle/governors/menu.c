@@ -395,7 +395,7 @@ static void menu_update(struct cpuidle_device *dev)
 	 * are basically lost in the dark.  As a compromise, assume we slept
 	 * for the whole expected time.
 	 */
-	if (unlikely(!(target->flags & CPUIDLE_FLAG_TIME_VALID)))
+	if (unlikely(target->flags & CPUIDLE_FLAG_TIME_INVALID))
 		last_idle_us = data->next_timer_us;
 
 

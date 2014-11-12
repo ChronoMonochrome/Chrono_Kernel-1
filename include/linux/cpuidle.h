@@ -47,7 +47,7 @@ struct cpuidle_state {
 };
 
 /* Idle State Flags */
-#define CPUIDLE_FLAG_TIME_VALID	(0x01) /* is residency time measurable? */
+#define CPUIDLE_FLAG_TIME_INVALID	(0x01) /* is residency time measurable? */
 #define CPUIDLE_FLAG_IGNORE	(0x100) /* ignore during this idle period */
 
 #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
@@ -105,7 +105,7 @@ DECLARE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
  * cpuidle_get_last_residency - retrieves the last state's residency time
  * @dev: the target CPU
  *
- * NOTE: this value is invalid if CPUIDLE_FLAG_TIME_VALID isn't set
+ * NOTE: this value is invalid if CPUIDLE_FLAG_TIME_INVALID is set
  */
 static inline int cpuidle_get_last_residency(struct cpuidle_device *dev)
 {
