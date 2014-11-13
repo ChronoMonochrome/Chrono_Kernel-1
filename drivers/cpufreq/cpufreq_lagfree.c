@@ -30,6 +30,7 @@
 #include <linux/percpu.h>
 #include <linux/mutex.h>
 #include <linux/earlysuspend.h>
+#include <linux/input/input_boost.h>
 /*
  * dbs is used in this file as a shortform for demandbased switching
  * It helps to keep variable names smaller, simpler
@@ -344,6 +345,8 @@ static void dbs_check_cpu(int cpu)
 	unsigned int freq_down_sampling_rate;
 	struct cpu_dbs_info_s *this_dbs_info = &per_cpu(cpu_dbs_info, cpu);
 	struct cpufreq_policy *policy;
+	
+	bool boosted = ktime_to_us(ktime_get()) < (last_input_time + input_boost_ms * 1000);
 
 	if (!this_dbs_info->enable)
 		return;
@@ -414,6 +417,13 @@ static void dbs_check_cpu(int cpu)
 
 		__cpufreq_driver_target(policy, this_dbs_info->requested_freq,
 			CPUFREQ_RELATION_H);
+		return;
+	}
+	
+	if (boosted) {
+		if (policy->cur < input_boost_freq)
+			__cpufreq_driver_target(policy, input_boost_freq, CPUFREQ_RELATION_H);
+		
 		return;
 	}
 
