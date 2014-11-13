@@ -60,6 +60,8 @@ static bool eoc_noticed = 0;
 static bool eoc_first = 0;
 static bool eoc_real = 0;
 static bool is_suspend = 0;
+static int termination_curr_1st = 150;
+static int termination_curr_2nd = 150;
 
 static void ab8500_chargalg_early_suspend(struct early_suspend *h)
 {
@@ -983,7 +985,7 @@ static void ab8500_chargalg_end_of_charge(struct ab8500_chargalg *di)
 		*/
 		if (!di->recharging_status && !di->initial_timeout_expire &&
 		    di->batt_data.avg_curr <=
-		    di->bat->bat_type[di->bat->batt_id].termination_curr_1st) {
+		    termination_curr_1st) {
 
 			if (!di->full_charging_status_1st) {
 				if (++di->eoc_cnt_1st >= EOC_COND_CNT_1ST) {
@@ -1007,7 +1009,7 @@ for the %d time, out of %d before EOC\n",  di->eoc_cnt_1st, EOC_COND_CNT_1ST);
 		}
 
 		if (di->batt_data.avg_curr <=
-		   di->bat->bat_type[di->bat->batt_id].termination_curr_2nd) {
+		   termination_curr_2nd) {
 
 			if (++di->eoc_cnt_2nd >= EOC_COND_CNT_2ND) {
 				di->eoc_cnt_2nd = 0;
@@ -2484,11 +2486,61 @@ static ssize_t abb_chargalg_eoc_real_show(struct kobject *kobj, struct kobj_attr
 
 static struct kobj_attribute abb_chargalg_eoc_real_interface = __ATTR(eoc_real, 0444, abb_chargalg_eoc_real_show, NULL);
 
+static ssize_t abb_chargalg_termination_curr_1st_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "%d\n", termination_curr_1st);
+
+	return strlen(buf);
+}
+
+static ssize_t abb_chargalg_termination_curr_1st_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val;
+
+	ret = sscanf(buf, "%d", &val);
+
+	if (!ret)
+		return -EINVAL;
+
+	termination_curr_1st = val;
+
+	return count;
+}
+
+static struct kobj_attribute abb_chargalg_termination_curr_1st_interface = 
+	__ATTR(termination_curr_1st, 0644, abb_chargalg_termination_curr_1st_show, abb_chargalg_termination_curr_1st_store);
+	
+static ssize_t abb_chargalg_termination_curr_2nd_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "%d\n", termination_curr_2nd);
+
+	return strlen(buf);
+}
+
+static ssize_t abb_chargalg_termination_curr_2nd_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val;
+
+	ret = sscanf(buf, "%d", &val);
+
+	if (!ret)
+		return -EINVAL;
+
+	termination_curr_2nd = val;
+
+	return count;
+}
+
+static struct kobj_attribute abb_chargalg_termination_curr_2nd_interface = 
+	__ATTR(termination_curr_2nd, 0644, abb_chargalg_termination_curr_2nd_show, abb_chargalg_termination_curr_2nd_store);
+
 static struct attribute *abb_chargalg_attrs[] = {
 	&abb_chargalg_charging_stats_interface.attr, 
 	&abb_chargalg_eoc_stats_interface.attr, 
 	&abb_chargalg_eoc_first_interface.attr, 
 	&abb_chargalg_eoc_real_interface.attr, 
+	&abb_chargalg_termination_curr_1st_interface.attr,
+	&abb_chargalg_termination_curr_2nd_interface.attr,
 	NULL,
 };
 
