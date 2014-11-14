@@ -72,8 +72,13 @@ void cpufreq_limits_update(void) {
 		new_min = is_suspend ? screenoff_min_cpufreq : screenon_min_cpufreq;
 		new_max = is_suspend ? screenoff_max_cpufreq : screenon_max_cpufreq;
 		
-		policy->min = new_min;
-		policy->max = new_max;
+		if (policy) {
+			policy->min = new_min;
+			policy->max = new_max;
+		} else {
+			pr_err("[cpufreq] error: cpufreq policy == NULL\n");
+			return;
+		}
 		pr_err("[cpufreq_limits] new cpufreqs are %d - %d kHz\n", policy->min, policy->max);
 		
 		if (restore_screenon_max_cpufreq < screenon_max_cpufreq)
@@ -111,6 +116,9 @@ static int cpufreq_callback(struct notifier_block *nfb,
 			module_is_loaded = true;
 		}
 		/*------------------------------------------------------------*/
+		
+		if (!policy)
+			return;
 	  
 		if (!is_suspend && (screenon_max_cpufreq != policy->max)) 
 			screenon_max_cpufreq = policy->max;
@@ -374,11 +382,17 @@ static void cpufreq_limits_driver_exit(void)
 {
 	struct cpufreq_policy *policy = cpufreq_cpu_get(0);
 	if (screenon_min_cpufreq) {
-		policy->min = screenon_min_cpufreq;
+		if (policy)
+			policy->min = screenon_min_cpufreq;
+		else
+			return;
 		pr_err("[cpufreq] min screenon cpufreq limit restoren -> %d\n", policy->min);
 	}
 	if (screenon_max_cpufreq) {
-		policy->max = screenon_max_cpufreq;
+		if (policy)
+			policy->max = screenon_max_cpufreq;
+		else
+			return;
 		pr_err("[cpufreq] max screenon cpufreq limit restoren -> %d\n", policy->max);
 	}
 	
