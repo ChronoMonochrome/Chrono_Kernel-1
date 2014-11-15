@@ -319,25 +319,21 @@ static const struct battery_type bat_type[] = {
 		.nominal_voltage = 3820,
 		.termination_vol = 4340,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
-		/* 
-		 * Please find real termination_curr_1st and
-		 * termination_curr_2nd values in abb_chargalg.c
-		 */
-		.termination_curr_1st = 130,
-		.termination_curr_2nd = 120,
-		.recharge_vol = 4300,
+		.termination_curr_1st = 100,
+		.termination_curr_2nd = 100,
+		.recharge_vol = 4211,
 #else
-		.termination_curr = 120,
+		.termination_curr = 100,
 #endif
-		.normal_cur_lvl = 900,
+		.normal_cur_lvl = 400,
 		.normal_vol_lvl = 4340,
-		.maint_a_cur_lvl = 600,
-		.maint_a_vol_lvl = 4100,
+		.maint_a_cur_lvl = 400,
+		.maint_a_vol_lvl = 4050,
 		.maint_a_chg_timer_h = 60,
-		.maint_b_cur_lvl = 600,
-		.maint_b_vol_lvl = 4100,
+		.maint_b_cur_lvl = 400,
+		.maint_b_vol_lvl = 4000,
 		.maint_b_chg_timer_h = 200,
-		.low_high_cur_lvl = 300,
+		.low_high_cur_lvl = 400,
 		.low_high_vol_lvl = 4000,
 #ifdef CONFIG_MEASURE_TEMP_BY_ADC_TABLE
 		.n_temp_tbl_elements = ARRAY_SIZE(adc_temp_tbl),
@@ -392,19 +388,23 @@ static const struct battery_type bat_type[] = {
 		.nominal_voltage = 3820,
 		.termination_vol = 4340,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
-		.termination_curr_1st = 130,
-		.termination_curr_2nd = 120,
-		.recharge_vol = 4300,
+		/* 
+		 * Please find real termination_curr_1st and
+		 * termination_curr_2nd values in abb_chargalg.c
+		 */
+		.termination_curr_1st = 100,
+		.termination_curr_2nd = 100,
+		.recharge_vol = 4211,
 #else
-		.termination_curr = 120,
+		.termination_curr = 100,
 #endif
-		.normal_cur_lvl = 900,		/* was 700 */
+		.normal_cur_lvl = 600,		/* was 700 */
 		.normal_vol_lvl = 4340,		/* 4210 */
-		.maint_a_cur_lvl = 600,
-		.maint_a_vol_lvl = 4150,
+		.maint_a_cur_lvl = 400,
+		.maint_a_vol_lvl = 4050,
 		.maint_a_chg_timer_h = 60,
-		.maint_b_cur_lvl = 600,
-		.maint_b_vol_lvl = 4100,
+		.maint_b_cur_lvl = 400,
+		.maint_b_vol_lvl = 4000,
 		.maint_b_chg_timer_h = 200,
 		.low_high_cur_lvl = 300,
 		.low_high_vol_lvl = 4000,
