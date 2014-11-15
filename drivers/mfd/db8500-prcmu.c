@@ -1167,37 +1167,28 @@ static unsigned int last_arm_idx = 0;
 static int liveopp_start = 0;
 #endif
 
-// below this freq will be used ape_25_opp
-#define APE_25_OPP_DEFAULT_CPUFREQ 275000
-static bool liveopp_use_ape_25_opp = false;
-static unsigned int ape_25_opp_max_cpufreq = APE_25_OPP_DEFAULT_CPUFREQ;
-
-bool liveopp_use_ape_25_opp_state(void) {
-	return liveopp_use_ape_25_opp;
-}
-
 static struct liveopp_arm_table liveopp_arm[] = {
 //	| CLK            | PLL       | VDD | VBB | DDR | APE |
-	{  30000,   30720, 0x00050104, 0x16, 0xDB,  25,  50},
-	{  50000,   46080, 0x00050106, 0x16, 0xDB,  25,  50},
-	{  85000,   84480, 0x0005010B, 0x17, 0xDB,  25,  50},
-	{ 100000,   99840, 0x0005010D, 0x17, 0xDB,  25,  50},
-	{ 125000,  122880, 0x00050110, 0x17, 0xDB,  25,  50},
-	{ 150000,  153600, 0x00050114, 0x17, 0xDB,  25,  50},
-	{ 175000,  176640, 0x00050117, 0x17, 0xDB,  25,  50},
-	{ 184000,  184320, 0x00050118, 0x18, 0xDB,  25,  50},
+	{  30000,   30720, 0x00050104, 0x16, 0xDB,  25,  25},
+	{  50000,   46080, 0x00050106, 0x16, 0xDB,  25,  25},
+	{  85000,   84480, 0x0005010B, 0x17, 0xDB,  25,  25},
+	{ 100000,   99840, 0x0005010D, 0x17, 0xDB,  25,  25},
+	{ 125000,  122880, 0x00050110, 0x17, 0xDB,  25,  25},
+	{ 150000,  153600, 0x00050114, 0x17, 0xDB,  25,  25},
+	{ 175000,  176640, 0x00050117, 0x17, 0xDB,  25,  25},
+	{ 184000,  184320, 0x00050118, 0x18, 0xDB,  25,  25},
 	{ 200000,  199680, 0x0005011A, 0x18, 0xDB,  25,  50},
 	{ 250000,  253440, 0x00050121, 0x18, 0xDB,  25,  50},
 	{ 275000,  276480, 0x00050124, 0x18, 0xDB,  25,  50},
 	{ 300000,  299520, 0x00050127, 0x19, 0xDB,  25,  50},
 	{ 350000,  353280, 0x0005012E, 0x1a, 0xDB,  25,  50},
-	{ 400000,  399360, 0x00050134, 0x1a, 0xDB,  25,  50},
-	{ 450000,  453120, 0x0005013B, 0x20, 0xDB,  25,  50},
-	{ 500000,  499200, 0x00050141, 0x20, 0xDB,  25,  50},
-	{ 530000,  529920, 0x00050145, 0x20, 0xDB,  25,  50},
-	{ 550000,  552960, 0x00050148, 0x21, 0xDB,  25,  50},
-	{ 575000,  576000, 0x0005014b, 0x22, 0xDB,  50,  50},
-	{ 600000,  599040, 0x0005014E, 0x23, 0xDB,  50,  50},
+	{ 400000,  399360, 0x00050134, 0x1a, 0xDB,  50, 100},
+	{ 450000,  453120, 0x0005013B, 0x20, 0xDB,  50, 100},
+	{ 500000,  499200, 0x00050141, 0x20, 0xDB,  50, 100},
+	{ 530000,  529920, 0x00050145, 0x20, 0xDB,  50, 100},
+	{ 550000,  552960, 0x00050148, 0x21, 0xDB,  50, 100},
+	{ 575000,  576000, 0x0005014b, 0x22, 0xDB,  50, 100},
+	{ 600000,  599040, 0x0005014E, 0x23, 0xDB,  50, 100},
 	{ 700000,  698880, 0x0005015B, 0x24, 0xDB,  50, 100},
 	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 100, 100},
 	{ 900000,  898560, 0x00050175, 0x30, 0xDB, 100, 100},
@@ -1704,68 +1695,6 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 }
 ATTR_RW(pllddr);
 
-static void update_ape_opp(bool state) {
-	int i;
-	
-	if (liveopp_arm) {
-  
-		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
-		
-			if ((!state) &&	liveopp_arm[i].ape_opp == 25) {
-				liveopp_arm[i].ape_opp = 50;
-				continue;
-			}
-		
-			if (state && liveopp_arm[i].freq_show <= ape_25_opp_max_cpufreq) {
-				liveopp_arm[i].ape_opp = 25;
-			}
-		}
-	}
-}
-
-static ssize_t use_ape_25_opp_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	sprintf(buf, "status: %s\n"
-		     "max CPUfreq with APE_25_OPP: %d\n",
-		     liveopp_use_ape_25_opp ? "on" : "off",
-		     ape_25_opp_max_cpufreq);
-	
-	return strlen(buf);
-}
-
-static ssize_t use_ape_25_opp_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	bool old_state = liveopp_use_ape_25_opp,
-	     old_max_cpufreq = ape_25_opp_max_cpufreq;
-	if (!strncmp(buf, "on", 2)) {
-		liveopp_use_ape_25_opp = true;
-	}
-	
-	if (!strncmp(buf, "off", 3)) {
-		liveopp_use_ape_25_opp = false;
-	}
-	
-	if (!strncmp(&buf[0], "max_freq=", 9)) {
-		if (!sscanf(&buf[9], "%d", &ape_25_opp_max_cpufreq))
-			pr_err("[LiveOPP] invalid input\n");
-	}
-	
-	if ((old_state == liveopp_use_ape_25_opp) &&
-	    (old_max_cpufreq == ape_25_opp_max_cpufreq)
-	)
-		return count;
-
-	if (liveopp_use_ape_25_opp)
-		pr_err("LiveOPP: allow to use ape 25 opp\n");
-	else
-		pr_err("LiveOPP: disallow to use ape 25 opp\n");
- 
-	update_ape_opp(liveopp_use_ape_25_opp);
-	
-	return count;
-}
-ATTR_RW(use_ape_25_opp);
-
 static struct attribute *liveopp_attrs[] = {
 #if CONFIG_LIVEOPP_DEBUG > 1
 	&liveopp_start_interface.attr, 
@@ -1807,7 +1736,6 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step27_interface.attr, 
 	&arm_step28_interface.attr,
 	&pllddr_interface.attr, 
-	&use_ape_25_opp_interface.attr,
 	NULL,
 };
 
