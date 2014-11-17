@@ -49,6 +49,14 @@
 #include <mach/prcmu-debug.h>
 #include "dbx500-prcmu-regs.h"
 
+/* Define regulator for i8190 */
+
+#ifdef CONFIG_MACH_SEC_GOLDEN
+#define AB8505
+#else
+#define AB8500
+#endif
+
 #ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
 #define PRCMU_I2C_TIMEOUT	0x0F000000
 #endif //CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
@@ -1141,9 +1149,15 @@ struct liveopp_arm_table
  */
 #define AB8500_VARM_VSEL_MASK 		0x3f
 #define AB8500_VARM_STEP_UV		12500
+#define AB8500_VARM_MIN_UV		700000
+#define AB8500_VARM_MAX_UV		1362500
+
+#define AB8505_VARM_VSEL_MASK 		0x7f
 #define AB8505_VARM_STEP_UV		6250
 #define AB8500_VARM_MIN_UV		700000
 #define AB8500_VARM_MAX_UV		1362500
+#define AB8505_VARM_MIN_UV		600000
+#define AB8505_VARM_MAX_UV		1393750
 
 /*
  * Vbb:
@@ -1153,6 +1167,10 @@ struct liveopp_arm_table
 #define AB8500_VBBP_VSEL_MASK		0xf0
 #define AB8500_VBBN_VSEL_MASK		0x0f
 #define AB8500_VBB_STEP_UV		100000
+
+#define AB8505_VBBP_VSEL_MASK		0xf0
+#define AB8505_VBBN_VSEL_MASK		0x0f
+#define AB8505_VBB_STEP_UV		50000
 
 /* PLLARM in 38.4MHz steps */
 #define PLLARM_FREQ_STEPS		38400
@@ -1167,6 +1185,27 @@ static unsigned int last_arm_idx = 0;
 static int liveopp_start = 0;
 #endif
 
+#ifdef CONFIG_MACH_SEC_GOLDEN 
+/* table for i8190 */
+/* defaults bases on my avs values */
+static struct liveopp_arm_table liveopp_arm[] = {
+//	| CLK            | PLL       | VDD | VBB | DDR | APE |
+//	{  50000,   46080, 0x00050106, 0x16, 0xDB,  25,  25},
+//	{ 100000,   99840, 0x0005010D, 0x17, 0xDB,  25,  25},
+	{ 200000,  199680, 0x0005011A, 0x4C, 0xBD,  25,  25}, // VARM_RET
+	{ 300000,  299520, 0x00050127, 0x4C, 0xBD,  25,  25},
+	{ 400000,  399360, 0x00050134, 0x4C, 0xBD,  25,  50}, // VARM_50
+	{ 500000,  499200, 0x00050141, 0x4C, 0xBD,  25,  50},
+	{ 600000,  599040, 0x0005014E, 0x4C, 0xBD,  50,  50},
+	{ 700000,  698880, 0x0005015B, 0x4C, 0xBD,  50,  50},
+	{ 800000,  798720, 0x00050168, 0x5A, 0xBD, 100,  50}, // VARM_100
+	{ 900000,  898560, 0x00050175, 0x5A, 0xBD, 100,  50},
+	{1000000,  998400, 0x00050182, 0x5A, 0xBD, 100, 100}, 
+	{1100000, 1098240, 0x0005018F, 0xF8, 0xCD, 100, 100}, // VARM_MAX
+	{1200000, 1198080, 0x0005019C, 0xF8, 0xFF, 100, 100},
+};
+#else
+/* table for others */
 static struct liveopp_arm_table liveopp_arm[] = {
 //	| CLK            | PLL       | VDD | VBB | DDR | APE |
 	{  30000,   30720, 0x00050104, 0x16, 0xDB,  25,  25},
@@ -1199,6 +1238,7 @@ static struct liveopp_arm_table liveopp_arm[] = {
 	{1230000, 1228800, 0x000501A0, 0x38, 0x8F, 100, 100},
 	{1245000, 1244160, 0x000501A2, 0x38, 0x8F, 100, 100},
 };
+#endif
 
 static const char *armopp_name[] = 
 {
@@ -1218,6 +1258,7 @@ static const char *armopp_name[] =
  *      BIT(8)    (0x80) is enabled in MAX_OPP, and it's unknown yet!
  */
 
+#ifdef AB8500
 static int varm_uv(u8 raw)
 {
 	raw &= AB8500_VARM_VSEL_MASK;
@@ -1228,7 +1269,21 @@ static int varm_uv(u8 raw)
 		return AB8500_VARM_MAX_UV;
 	}
 }
+#endif
+#ifdef AB8505
+static int varm_uv(u8 raw)
+{
+	raw &= AB8505_VARM_VSEL_MASK;
 
+	if (raw <= 0x7f) {
+		return (AB8505_VARM_MIN_UV + (raw * AB8505_VARM_STEP_UV));
+	} else {
+		return AB8505_VARM_MAX_UV;
+	}
+}
+#endif
+
+#ifdef AB8500
 static int vbbp_uv(u8 raw)
 {
 	int ret;
@@ -1280,6 +1335,49 @@ static int vbbn_uv(u8 raw)
 
 	return ret;
 }
+#endif
+#ifdef AB8505
+static int vbbp_uv(u8 raw)
+{
+	int ret;
+	raw &= AB8505_VBBP_VSEL_MASK;
+	raw >>= 4; /* shift 4 bits right */
+
+	switch (raw) {
+		case 0x00 ... 0x07:
+			ret = -AB8505_VBB_STEP_UV * raw;
+			break;
+		case 0x08 ... 0x0f:
+			ret = 50000 + (raw - 0x08) * AB8505_VBB_STEP_UV; 
+			break;
+		default:
+			ret = 0;
+			break;
+	}
+
+	return ret;
+}
+
+static int vbbn_uv(u8 raw)
+{
+	int ret;
+	raw &= AB8505_VBBN_VSEL_MASK;
+
+	switch (raw) {
+		case 0x00 ... 0x07:
+			ret = -AB8505_VBB_STEP_UV * raw;
+			break;
+		case 0x08 ... 0x0f:
+			ret = 50000 + (raw - 0x08) * AB8505_VBB_STEP_UV; 
+			break;
+		default:
+			ret = 0;
+			break;
+	}
+
+	return ret;
+}
+#endif
 
 static int pllarm_freq(u32 raw)
 {
@@ -1706,17 +1804,17 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_pllclk_interface.attr,
 	&arm_varm_interface.attr,
 	&arm_vbb_interface.attr,
-	&arm_step00_interface.attr, 
-	&arm_step01_interface.attr, 
-	&arm_step02_interface.attr, 
-	&arm_step03_interface.attr, 
-	&arm_step04_interface.attr, 
-	&arm_step05_interface.attr, 
-	&arm_step06_interface.attr, 
-	&arm_step07_interface.attr, 
-	&arm_step08_interface.attr, 
-	&arm_step09_interface.attr, 
-	&arm_step10_interface.attr, 
+	&arm_step00_interface.attr,
+	&arm_step01_interface.attr,
+	&arm_step02_interface.attr,
+	&arm_step03_interface.attr,
+	&arm_step04_interface.attr,
+	&arm_step05_interface.attr,
+	&arm_step06_interface.attr,
+	&arm_step07_interface.attr,
+	&arm_step08_interface.attr,
+	&arm_step09_interface.attr,
+	&arm_step10_interface.attr,
 	&arm_step11_interface.attr, 
 	&arm_step12_interface.attr, 
 	&arm_step13_interface.attr, 
@@ -4942,7 +5040,7 @@ static void  db8500_prcmu_update_freq(void *pdata)
 					avs_varm_max,
 					avs_varm_100,
 					avs_varm_50);
-	
+
 	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
 		/* Update frequencies */
 		freq_table[i].frequency = liveopp_arm[i].freq_show;
@@ -5088,3 +5186,4 @@ arch_initcall(db8500_prcmu_init);
 MODULE_AUTHOR("Mattias Nilsson <mattias.i.nilsson@stericsson.com>");
 MODULE_DESCRIPTION("DB8500 PRCM Unit driver");
 MODULE_LICENSE("GPL v2");
+
