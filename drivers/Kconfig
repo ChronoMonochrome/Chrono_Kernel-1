@@ -146,5 +146,7 @@ source "drivers/iommu/Kconfig"
 
 source "drivers/bcmdhd/Kconfig"
 
+source "drivers/sensors/Kconfig"
+
 endmenu
 

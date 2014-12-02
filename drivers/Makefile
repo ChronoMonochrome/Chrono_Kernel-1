@@ -140,3 +140,5 @@ endif
 
 obj-$(CONFIG_BCM4330)	+= bcmdhd/
 obj-$(CONFIG_BCM4334)	+= bcmdhd/
+#sensor_class
+obj-$(CONFIG_SENSORS)		+= sensors/
