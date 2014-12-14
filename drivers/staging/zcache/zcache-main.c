@@ -34,7 +34,7 @@
 #include <linux/idr.h>
 #include "tmem.h"
 
-#include "../zsmalloc/zsmalloc.h"
+#include <linux/zsmalloc.h>
 
 #ifdef CONFIG_CLEANCACHE
 #include <linux/cleancache.h>
