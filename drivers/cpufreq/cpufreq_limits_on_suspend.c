@@ -14,6 +14,8 @@
  *
  */
 
+#include <linux/earlysuspend.h>
+#include <linux/workqueue.h>
 #include <linux/module.h>
 #include <linux/cpu.h>
 #include <linux/notifier.h>
@@ -25,17 +27,17 @@
 #include <linux/input.h>
 #include <linux/sysfs.h>
 
-static bool module_is_loaded = false;
-static bool cpu_freq_limits = false;
+#include <linux/mfd/dbx500-prcmu.h>
 
-static unsigned int screenoff_min_cpufreq = 100000;
-static unsigned int screenoff_max_cpufreq = 400000;
+static bool module_is_loaded = false; //FIXME: move code that uses module_is_loaded to init function
+static bool cpu_freq_limits = false;
+static bool is_suspend = false;
+
+static unsigned int screenoff_min_cpufreq = 200000;
+static unsigned int screenoff_max_cpufreq = 450000;
 
 static unsigned int screenon_min_cpufreq = 0; // screenon_min_cpufreq and screenon_max_cpufreq uses system values
 static unsigned int screenon_max_cpufreq = 0;
-
-static unsigned int restore_screenon_min_cpufreq = 0;// these values will be gotten from system at load
-static unsigned int restore_screenon_max_cpufreq = 0; 
 
 unsigned int input_boost_freq = 400000;
 EXPORT_SYMBOL(input_boost_freq);
@@ -46,47 +48,109 @@ EXPORT_SYMBOL(last_input_time);
 
 #define MIN_INPUT_INTERVAL (150 * USEC_PER_MSEC)
 
-bool cpu_freq_limits_enabled(void) {
+extern int get_cpufreq_forced_state(void);
+extern int get_prev_cpufreq(void);
+extern void set_cpufreq_forced_state(bool);
+
+int screen_off_max_cpufreq_get_(void) {
+	return screenoff_max_cpufreq;
+}
+EXPORT_SYMBOL(screen_off_max_cpufreq_get_);
+
+int screen_on_min_cpufreq_get_(void) {
+	return screenon_min_cpufreq;
+}
+EXPORT_SYMBOL(screen_on_min_cpufreq_get_);
+
+bool cpu_freq_limits_get(void) {
 	return cpu_freq_limits;
 }
+EXPORT_SYMBOL(cpu_freq_limits_get);
 
-#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
-extern bool bt404_is_suspend(void);
-#endif
+bool is_suspended_get(void) {
+	return is_suspend;
+}
+EXPORT_SYMBOL(is_suspended_get);
 
-void cpufreq_limits_update(void) {
-	int new_min, new_max;
+int get_max_cpufreq(void) {
+	struct cpufreq_policy *policy = cpufreq_cpu_get(0);
 	
-	if (cpu_freq_limits) {
+	return screenon_max_cpufreq ? screenon_max_cpufreq : policy->max;
+}
 
-#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
-		bool is_suspend = bt404_is_suspend();
-#endif
+int get_min_cpufreq(void) {
+	struct cpufreq_policy *policy = cpufreq_cpu_get(0);
+	
+	return screenon_min_cpufreq ? screenon_min_cpufreq : policy->min;
+}
+
+void set_min_cpufreq(int freq) {
+	struct cpufreq_policy *policy = cpufreq_cpu_get(0); 
+	
+	policy->min = freq;
+}
+
+static void cpufreq_limits_update(bool is_suspend_) {
+	int new_min, new_max;
+
+	if (cpu_freq_limits) {
 		
 		/*
 		 * since we don't have different cpufreq settings for different CPU cores,
-		 * we'll update cpufreq limits only for first core.
+		 * we'll update cpufreq limits only for first CPU core.
 		 */
 		struct cpufreq_policy *policy = cpufreq_cpu_get(0); 
 
-		new_min = is_suspend ? screenoff_min_cpufreq : screenon_min_cpufreq;
-		new_max = is_suspend ? screenoff_max_cpufreq : screenon_max_cpufreq;
-		if (new_min)
-			policy->min = new_min;
-		else 
-			pr_err("[cpufreq] new_min == 0\n");
-		if (new_max)
-			policy->max = new_max;
-		else
-			pr_err("[cpufreq] new_max == 0\n");
-		pr_err("[cpufreq_limits] new cpufreqs are %d - %d kHz\n", policy->min, policy->max);
+		new_min = is_suspend_ ? screenoff_min_cpufreq : screenon_min_cpufreq;
+		new_max = is_suspend_ ? screenoff_max_cpufreq : screenon_max_cpufreq;
 		
-		if (restore_screenon_max_cpufreq < screenon_max_cpufreq)
-			restore_screenon_max_cpufreq = screenon_max_cpufreq;
-		if (restore_screenon_min_cpufreq < screenon_min_cpufreq)
-			restore_screenon_min_cpufreq = screenon_min_cpufreq;
+		if (!screenon_max_cpufreq || !screenon_min_cpufreq ||
+		    !screenoff_min_cpufreq || ! screenoff_max_cpufreq) {
+			if (!is_suspend) {
+				  screenon_min_cpufreq = policy->min;
+				  screenon_max_cpufreq = policy->max;
+			}
+			
+			return;
+		}
+		
+		policy->min = new_min;
+		policy->max = new_max;
+
+		pr_err("[cpufreq_limits] new cpufreqs are %d - %d kHz\n", policy->min, policy->max);
 	}
 }  
+
+static struct work_struct early_suspend_work;
+static struct work_struct late_resume_work;
+
+static void early_suspend_fn(struct early_suspend *handler)
+{
+	schedule_work(&early_suspend_work);
+}
+
+static void late_resume_fn(struct early_suspend *handler)
+{
+	schedule_work(&late_resume_work);
+}
+
+static void early_suspend_work_fn(struct work_struct *work)
+{
+	cpufreq_limits_update(true);
+	is_suspend = true;
+}
+
+static void late_resume_work_fn(struct work_struct *work)
+{
+	cpufreq_limits_update(false);
+	is_suspend = false;
+}
+
+static struct early_suspend driver_early_suspend = {
+	.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1,
+	.suspend = early_suspend_fn,
+	.resume = late_resume_fn,
+};
 
 static int cpufreq_callback(struct notifier_block *nfb,
 		unsigned long event, void *data)
@@ -95,50 +159,28 @@ static int cpufreq_callback(struct notifier_block *nfb,
 	if (event != CPUFREQ_ADJUST)
 		return 0;
 	
-	if (cpu_freq_limits) {
+	struct cpufreq_policy *policy = data; 
 	  
-		struct cpufreq_policy *policy = data;
-		
-#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
-		bool is_suspend = bt404_is_suspend();
-#endif
-		
-		/* FIXME: would be better move that code to init function ?   */
-		if (!module_is_loaded) {
-		
-			/*
-			if (policy)
-				policy->min = 200000;
-			*/
+	if (!is_suspend) {
+		screenon_max_cpufreq = policy->max;
+		screenon_min_cpufreq = policy->min;
+	}
 	
+	if (cpu_freq_limits) {
+		
+		if (!module_is_loaded) {
+		  
 			if (!screenoff_min_cpufreq)
 				  screenoff_min_cpufreq = policy->min;
 			if (!screenoff_max_cpufreq)
 				  screenoff_max_cpufreq = policy->max;
 			module_is_loaded = true;
 		}
-		/*------------------------------------------------------------*/
 	  
 		if (!is_suspend) { 
-			if (screenon_max_cpufreq != policy->max)
-				screenon_max_cpufreq = policy->max;
+			screenon_max_cpufreq = policy->max;
 	
-			if  (screenon_min_cpufreq != policy->min)
-				screenon_min_cpufreq = policy->min;
-
-			if  (policy->min == screenoff_min_cpufreq) { 
-				if (restore_screenon_min_cpufreq) {
-					policy->min = restore_screenon_min_cpufreq;
-					pr_err("[cpufreq_limits] min cpufreq restored -> %d kHz\n", policy->min);
-				}
-			}
-			
-			if  (policy->max == screenoff_max_cpufreq) { 
-				if (restore_screenon_max_cpufreq) {
-					policy->max = restore_screenon_max_cpufreq;
-					pr_err("[cpufreq_limits] max cpufreq restored -> %d kHz\n", policy->max);
-				}
-			}
+			screenon_min_cpufreq = policy->min;
 		}	
 	}
 
@@ -363,6 +405,17 @@ static int cpufreq_limits_driver_init(void)
 					 screenoff_min_cpufreq / 1000,  screenoff_max_cpufreq / 1000
 	);
 	
+	INIT_WORK(&early_suspend_work, early_suspend_work_fn);
+	INIT_WORK(&late_resume_work, late_resume_work_fn);
+	
+	register_early_suspend(&driver_early_suspend);
+	
+	//when screen is on, APE_OPP 25 sometimes messes it up
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+				"codina_lcd_dpi", 50)) {
+			pr_info("pcrm_qos_add APE failed\n");
+	}
+
 	cpufreq_kobject = kobject_create_and_add("cpufreq", kernel_kobj);
 	if (!cpufreq_kobject) {
 		pr_err("[cpufreq] Failed to create kobject interface\n");
@@ -384,6 +437,7 @@ static int cpufreq_limits_driver_init(void)
 
 static void cpufreq_limits_driver_exit(void)
 {
+	unregister_early_suspend(&driver_early_suspend);
 }
 
 module_init(cpufreq_limits_driver_init);
