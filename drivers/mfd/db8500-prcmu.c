@@ -1105,6 +1105,7 @@ static void db8500_prcmu_get_abb_event_buffer(void __iomem **buf)
 #define PRCMU_SVACLK_REG		0x0008
 #define PRCMU_SIACLK_REG		0x000c
 #define PRCMU_SGACLK_REG		0x0014
+#define PRCMU_SDMMCCLK_REG		0x0024
 #define PRCMU_PER1CLK_REG		0x002c
 #define PRCMU_PER2CLK_REG		0x0030
 #define PRCMU_PER3CLK_REG		0x0034
@@ -1833,7 +1834,9 @@ static ssize_t pllddr_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	u32 val, old_val, new_val;
-	int ret, old_divider, new_divider;
+	u8 sdmmc_val_base;
+	int ret, pllddr_freq, old_divider, new_divider;
+	int sdmmc_old_divider, sdmmc_new_divider;
 
 	old_val = readl(prcmu_base + PRCMU_PLLDDR_REG);
 	ret = sscanf(buf, "%x", &new_val);
@@ -1845,10 +1848,24 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	new_divider = (new_val & 0x00FF0000) >> 16;
 	
 	if (new_divider != old_divider)
-	{ 
 		return -EINVAL;
+	
+	pllddr_freq = pllarm_freq(new_val);
+	sdmmc_old_divider = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x0f;
+	sdmmc_new_divider = (pllddr_freq - (pllddr_freq % 100000)) / 100000; 
+	if (pllddr_freq % 100000) sdmmc_new_divider++;
+	if (sdmmc_new_divider > 15) sdmmc_new_divider = 15;
+	
+	if (sdmmc_new_divider && (sdmmc_old_divider != sdmmc_new_divider)) {
+		pr_err("[pllddr] mmc_clk_div %d -> %d\n", sdmmc_old_divider, sdmmc_new_divider);
+		sdmmc_val_base = readl(prcmu_base + PRCMU_SDMMCCLK_REG) ^ sdmmc_old_divider;
+		//pr_err("[pllddr] mmc_val_base %#05x\n", sdmmc_val_base);
+		//pr_err("[pllddr] new mmc clk val %#05x\n", (sdmmc_val_base | sdmmc_new_divider));
+		writel_relaxed(sdmmc_val_base | sdmmc_new_divider,
+			       prcmu_base + PRCMU_SDMMCCLK_REG);
+		udelay(1000);
 	}
-
+		
 	for (val = old_val;
 	     (new_val > old_val) ? (val <= new_val) : (val >= new_val); 
 	     (new_val > old_val) ? val++ : val--) {
