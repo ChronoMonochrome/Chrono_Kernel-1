@@ -1414,17 +1414,15 @@ static struct prcmu_regs_table prcmu_regs[] = {
 	{PRCMU_ACLK_REG,	0x183,       0x184,	       "aclk"},
 	{PRCMU_SVACLK_REG,	0x002,       0x002,	     "svaclk"},
 	{PRCMU_SIACLK_REG,	0x002,       0x002,	     "siaclk"}, 
-	{PRCMU_PER1CLK_REG,	0x185,       0x186,	    "per1clk"},
-	{PRCMU_PER2CLK_REG,	0x185,       0x186,	    "per2clk"},
-	{PRCMU_PER3CLK_REG,	0x185,       0x186,	    "per3clk"},
-	{PRCMU_PER5CLK_REG,	0x185,       0x186,	    "per5clk"},
-	{PRCMU_PER6CLK_REG,	0x185,       0x186,	    "per6clk"},
-	{PRCMU_BMLCLK_REG,	0x003,       0x004,          "bmlclk"},
+	{PRCMU_PER1CLK_REG,	0x186,       0x186,	    "per1clk"},
+	{PRCMU_PER2CLK_REG,	0x186,       0x186,	    "per2clk"},
+	{PRCMU_PER3CLK_REG,	0x186,       0x186,	    "per3clk"},
+	{PRCMU_PER5CLK_REG,	0x186,       0x186,	    "per5clk"},
+	{PRCMU_PER6CLK_REG,	0x186,       0x186,	    "per6clk"},
 	{PRCMU_APEATCLK_REG,	0x183,       0x184,	   "apeatclk"},
 	{PRCMU_APETRACECLK_REG,	0x184,       0x185,	"apetraceclk"},
 	{PRCMU_MCDECLK_REG,	0x185,       0x185,	    "mcdeclk"},
 	{PRCMU_DMACLK_REG,	0x183,       0x184,          "dmaclk"},
-	{PRCMU_B2R2CLK_REG,	0x004,       0x004,	    "b2r2clk"},
 };
 
 static struct liveopp_arm_table curr_table; // LiveOPP step that uses at the moment 
@@ -1823,6 +1821,8 @@ static ssize_t liveopp_start_store(struct kobject *kobj, struct kobj_attribute *
 ATTR_RW(liveopp_start);
 #endif
 
+static int pllddr_oc_delay_us = 100;
+
 static ssize_t pllddr_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	u32 val;
@@ -1870,12 +1870,32 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	     (new_val > old_val) ? (val <= new_val) : (val >= new_val); 
 	     (new_val > old_val) ? val++ : val--) {
 			writel_relaxed(val, prcmu_base + PRCMU_PLLDDR_REG);
-			udelay(200);
+			udelay(pllddr_oc_delay_us);
 	}
 	
 	return count;
 }
 ATTR_RW(pllddr);
+
+static ssize_t pllddr_oc_delay_us_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", pllddr_oc_delay_us);
+}
+
+static ssize_t pllddr_oc_delay_us_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val;
+	
+	ret = sscanf(buf, "%d", &val);
+		
+	if (!ret)
+		return -EINVAL;
+	
+	pllddr_oc_delay_us = val;
+	
+	return count;
+}
+ATTR_RW(pllddr_oc_delay_us);
 
 static int pllddr_cross_clk_freq(int pllddr_freq, u32 reg_raw)
 {
@@ -1987,6 +2007,7 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step15_interface.attr, 
 	&arm_step16_interface.attr, 
 	&pllddr_interface.attr, 
+	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
 	NULL,
 };
