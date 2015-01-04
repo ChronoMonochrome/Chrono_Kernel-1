@@ -1224,13 +1224,9 @@ static struct liveopp_arm_table liveopp_arm[] = {
 static struct liveopp_arm_table liveopp_arm[] = {
 //	| CLK            | PLL       | VDD | VBB | DDR | APE |
 	{ 200000,  199680, 0x0005011A, 0x18, 0xDB,  25,  25},
-	{ 250000,  253440, 0x00050121, 0x18, 0xDB,  25,  25},
 	{ 300000,  299520, 0x00050127, 0x18, 0xDB,  25,  50},
-	{ 350000,  353280, 0x0005012E, 0x18, 0xDB,  25,  50},
 	{ 400000,  399360, 0x00050134, 0x18, 0xDB,  50,  50},
-	{ 450000,  453120, 0x0005013B, 0x20, 0xDB,  50,  50},
 	{ 500000,  499200, 0x00050141, 0x20, 0xDB,  50,  50},
-	{ 550000,  552960, 0x00050148, 0x20, 0xDB,  50,  50},
 	{ 600000,  599040, 0x0005014E, 0x20, 0xDB,  50,  50},
 	{ 700000,  698880, 0x0005015B, 0x24, 0xDB,  50,  50},
 	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 100,  50},
@@ -1802,10 +1798,6 @@ ARM_STEP(arm_step09, 9);
 ARM_STEP(arm_step10, 10);
 ARM_STEP(arm_step11, 11);
 ARM_STEP(arm_step12, 12);
-ARM_STEP(arm_step13, 13);
-ARM_STEP(arm_step14, 14);
-ARM_STEP(arm_step15, 15);
-ARM_STEP(arm_step16, 16);
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
@@ -1859,8 +1851,6 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	if (sdmmc_new_divider && (sdmmc_old_divider != sdmmc_new_divider)) {
 		pr_err("[pllddr] mmc_clk_div %d -> %d\n", sdmmc_old_divider, sdmmc_new_divider);
 		sdmmc_val_base = readl(prcmu_base + PRCMU_SDMMCCLK_REG) ^ sdmmc_old_divider;
-		//pr_err("[pllddr] mmc_val_base %#05x\n", sdmmc_val_base);
-		//pr_err("[pllddr] new mmc clk val %#05x\n", (sdmmc_val_base | sdmmc_new_divider));
 		writel_relaxed(sdmmc_val_base | sdmmc_new_divider,
 			       prcmu_base + PRCMU_SDMMCCLK_REG);
 		udelay(1000);
@@ -2002,11 +1992,7 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step10_interface.attr,
 	&arm_step11_interface.attr, 
 	&arm_step12_interface.attr, 
-	&arm_step13_interface.attr, 
-	&arm_step14_interface.attr, 
-	&arm_step15_interface.attr, 
-	&arm_step16_interface.attr, 
-	&pllddr_interface.attr, 
+	&pllddr_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
 	NULL,
