@@ -70,6 +70,12 @@ extern struct mutex alarm_setrtc_mutex;
 static DEFINE_MUTEX(alarm_setrtc_mutex);
 #endif
 
+/* Module parameter to control power-on-alarm */
+bool poweron_alarm;
+module_param(poweron_alarm, bool, 0644);
+MODULE_PARM_DESC(poweron_alarm, "Enable/Disable power-on alarm");
+EXPORT_SYMBOL(poweron_alarm);
+
 static const u8 ab8500_rtc_time_regs[] = {
 	AB8500_RTC_WATCH_TMIN_HI_REG, AB8500_RTC_WATCH_TMIN_MID_REG,
 	AB8500_RTC_WATCH_TMIN_LOW_REG, AB8500_RTC_WATCH_TSECHI_REG,
