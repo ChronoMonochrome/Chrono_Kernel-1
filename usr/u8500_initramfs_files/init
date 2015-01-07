@@ -11,6 +11,20 @@ busybox mount -t sysfs sysfs /sys
 
 busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
 
+if ! busybox grep -q bootmode=2 /proc/cmdline ; then
+
+	for i in /ramdisk/modules/autoload/*.ko
+	do
+		busybox insmod $i
+	done
+	
+	if busybox test -f /ramdisk/00userinit ; then
+		busybox sh /ramdisk/00userinit
+	fi
+fi
+
+busybox chmod 644 /ramdisk/boot.cpio
+
 load_image=/ramdisk/boot.cpio
 lvm=/ramdisk/lvm.cpio
 
@@ -21,33 +35,33 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# since it's pain, load j4fs and param from separate partition
 	busybox insmod /ramdisk/modules/j4fs.ko
 	busybox insmod /ramdisk/modules/param.ko
-	if ! test -f /mnt ; then
+	if ! busybox test -f /mnt ; then
 		busybox mkdir /mnt
-		if ! test -f /mnt/.lfs ; then
+		if ! busybox test -f /mnt/.lfs ; then
 			busybox mkdir /mnt/.lfs
 		fi
 	fi
 
 	busybox mount -t j4fs /dev/block/mmcblk0p1 /mnt/.lfs
 	
-	if test -f /ramdisk/00recovery ; then
+	if busybox test -f /ramdisk/00recovery ; then
 		busybox sh /ramdisk/00recovery
 	fi
 fi
 
-if test -f ${load_image} ; then
+if busybox test -f ${load_image} ; then
 	busybox cpio -i < ${load_image}
 fi
 
-if test -f ${load_image}.gz ; then
+if busybox test -f ${load_image}.gz ; then
 	busybox zcat ${load_image}.gz | busybox cpio -i -u
 fi
 
-if test -f ${lvm} ; then
+if busybox test -f ${lvm} ; then
 	busybox cpio -i < ${lwm}
 fi
 
-if test -f ${lvm}.gz ; then
+if busybox test -f ${lvm}.gz ; then
 	busybox zcat ${lvm}.gz | busybox cpio -i -u
 fi
 

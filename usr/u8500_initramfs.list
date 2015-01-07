@@ -22,6 +22,23 @@ nod /dev/block/mmcblk0p17 600 0 0 b 179 17
 nod /dev/block/mmcblk1 600 0 0 b 179 18
 nod /dev/block/mmcblk1p1 600 0 0 b 179 19
 slink /init /stage1/init 777 0 0
+slink /stage1/sh /stage1/busybox 777 0 0
+slink /stage1/test /stage1/busybox 777 0 0
+slink /stage1/mount /stage1/busybox 777 0 0
+slink /stage1/umount /stage1/busybox 777 0 0
+slink /stage1/[ /stage1/busybox 777 0 0
+slink /stage1/date /stage1/busybox 777 0 0
+slink /stage1/rm /stage1/busybox 777 0 0
+slink /stage1/cd /stage1/busybox 777 0 0
+slink /stage1/grep /stage1/busybox 777 0 0
+slink /stage1/zcat /stage1/busybox 777 0 0
+slink /stage1/cpio /stage1/busybox 777 0 0
+slink /stage1/chown /stage1/busybox 777 0 0
+slink /stage1/chmod /stage1/busybox 777 0 0
+slink /stage1/cp /stage1/busybox 777 0 0
+slink /stage1/mv /stage1/busybox 777 0 0
+slink /stage1/cat /stage1/busybox 777 0 0
+slink /stage1/insmod /stage1/busybox 777 0 0
 dir /proc 755 0 0
 dir /stage1 755 0 0
 file /stage1/busybox source/usr/u8500_initramfs_files/busybox 755 0 0
