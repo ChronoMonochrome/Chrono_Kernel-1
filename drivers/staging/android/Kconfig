@@ -35,7 +35,6 @@ config ANDROID_LOGGER
 
 config ANDROID_BINDER_IPC_32BIT
 	bool "Use old 32-bit binder api"
-        default y
 	depends on !64BIT
 	---help---
 	  Enable to support an old 32-bit Android user-space. Breaks the new
