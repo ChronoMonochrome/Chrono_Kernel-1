@@ -132,6 +132,7 @@ extern bool vbus_state;
 extern unsigned int system_rev;
 
 static int last_mah = 0;
+static struct ab8500_fg *di_;
 
 static bool debug_mask = 0;
 module_param(debug_mask, bool, 0644);
@@ -2639,6 +2640,7 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 	struct ab8500_fg *di;
 
 	di = to_ab8500_fg_device_info(psy);
+	if (!di_) di_ = di;
 
 	/*
 	 * If battery is identified as unknown and charging of unknown
@@ -3486,6 +3488,26 @@ static ssize_t abb_fg_capacity_real_store(struct kobject *kobj, struct kobj_attr
 
 static struct kobj_attribute abb_fg_capacity_real_interface = __ATTR(capacity_real, 0644, abb_fg_capacity_real_show, abb_fg_capacity_real_store);
 
+static ssize_t abb_fg_average_current_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	if (di_)
+		sprintf(buf, "%d mA\n", di_->avg_curr);
+
+	return strlen(buf);
+}
+
+static struct kobj_attribute abb_fg_average_current_interface = __ATTR(average_current, 0444, abb_fg_average_current_show, NULL);
+
+static ssize_t abb_fg_instant_current_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	if (di_)
+		sprintf(buf, "%d mA\n", di_->inst_curr);
+
+	return strlen(buf);
+}
+
+static struct kobj_attribute abb_fg_instant_current_interface = __ATTR(instant_current, 0444, abb_fg_instant_current_show, NULL);
+
 static struct attribute *abb_fg_attrs[] = {
 	&abb_fg_lowbat_zero_interface.attr, 
 	&abb_fg_lowbat_tolerance_interface.attr, 
@@ -3494,6 +3516,8 @@ static struct attribute *abb_fg_attrs[] = {
 	&abb_fg_use_wakelock_interface.attr, 
 	&abb_fg_capacity_real_interface.attr, 
 	&abb_fg_pwroff_threshold_interface.attr, 
+	&abb_fg_instant_current_interface.attr,
+	&abb_fg_average_current_interface.attr,
 	NULL,
 };
 
