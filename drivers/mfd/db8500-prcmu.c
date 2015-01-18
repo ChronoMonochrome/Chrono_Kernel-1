@@ -1223,9 +1223,9 @@ static struct liveopp_arm_table liveopp_arm[] = {
 /* table for others */
 static struct liveopp_arm_table liveopp_arm[] = {
 //	| CLK            | PLL       | VDD | VBB | DDR | APE |
-	{ 200000,  199680, 0x0005011A, 0x18, 0xDB,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x18, 0xDB,  25,  50},
-	{ 400000,  399360, 0x00050134, 0x18, 0xDB,  50,  50},
+	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB,  25,  25},
+	{ 300000,  299520, 0x00050127, 0x1a, 0xDB,  25,  50},
+	{ 400000,  399360, 0x00050134, 0x1a, 0xDB,  50,  50},
 	{ 500000,  499200, 0x00050141, 0x20, 0xDB,  50,  50},
 	{ 600000,  599040, 0x0005014E, 0x20, 0xDB,  50,  50},
 	{ 700000,  698880, 0x0005015B, 0x24, 0xDB,  50,  50},
@@ -1405,25 +1405,38 @@ struct prcmu_regs_table
 
 static bool ddr_clocks_boost = false;
 
+enum { 
+      ACLK,
+      SVACLK,
+      SIACLK,
+      PER1CLK,
+      PER2CLK,
+      PER3CLK,
+      PER5CLK,
+      PER6CLK,
+      APEATCLK,
+      APETRACECLK,
+      MCDECLK,
+      DMACLK,
+} clkddr;
+
 static struct prcmu_regs_table prcmu_regs[] = {
       // PRCMU reg            | Boost val   | Unboost val|      Name     
-	{PRCMU_ACLK_REG,	0x183,       0x184,	       "aclk"},
-	{PRCMU_SVACLK_REG,	0x002,       0x002,	     "svaclk"},
-	{PRCMU_SIACLK_REG,	0x002,       0x002,	     "siaclk"}, 
+	{PRCMU_ACLK_REG,	0x184,       0x184,	       "aclk"},
+	{PRCMU_SVACLK_REG,	0x004,       0x004,	     "svaclk"},
+	{PRCMU_SIACLK_REG,	0x004,       0x004,	     "siaclk"}, 
 	{PRCMU_PER1CLK_REG,	0x186,       0x186,	    "per1clk"},
 	{PRCMU_PER2CLK_REG,	0x186,       0x186,	    "per2clk"},
 	{PRCMU_PER3CLK_REG,	0x186,       0x186,	    "per3clk"},
 	{PRCMU_PER5CLK_REG,	0x186,       0x186,	    "per5clk"},
 	{PRCMU_PER6CLK_REG,	0x186,       0x186,	    "per6clk"},
-	{PRCMU_APEATCLK_REG,	0x183,       0x184,	   "apeatclk"},
-	{PRCMU_APETRACECLK_REG,	0x184,       0x185,	"apetraceclk"},
+	{PRCMU_APEATCLK_REG,	0x184,       0x184,	   "apeatclk"},
+	{PRCMU_APETRACECLK_REG,	0x185,       0x185,	"apetraceclk"},
 	{PRCMU_MCDECLK_REG,	0x185,       0x185,	    "mcdeclk"},
-	{PRCMU_DMACLK_REG,	0x183,       0x184,          "dmaclk"},
+	{PRCMU_DMACLK_REG,	0x184,       0x184,          "dmaclk"},
 };
 
-static struct liveopp_arm_table curr_table; // LiveOPP step that uses at the moment 
-
-static bool pllddr_opp_lock = false;
+static struct liveopp_arm_table curr_table;
 
 static int db8500_prcmu_get_ddr_opp(void);
 
@@ -1433,54 +1446,51 @@ static void ddr_cross_clocks_boost(bool state)
 	u32 old_val, new_val;
 	int new_divider, old_divider, base;
 	
-	pllddr_opp_lock = true;
-	
 	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
-				old_val = readl(prcmu_base + prcmu_regs[i].reg);
+		old_val = readl(prcmu_base + prcmu_regs[i].reg);
 		
-				new_val = state ? prcmu_regs[i].boost_value :
-						prcmu_regs[i].unboost_value;
-						
-				if ((!old_val) || (old_val == new_val)) continue;
-	
-				old_divider = old_val & 0xf;
-				new_divider = new_val & 0xf;
-				
-				if (!new_divider) {
-					pr_err("LiveOPP: bad divider, %s:%s:%#05x:\n", __func__, 
-						    prcmu_regs[i].name,
-						    new_val);
-					continue;
-				}
-
-				base = old_val ^ old_divider;
-				
-				ddr_opp = readb(PRCM_DDR_SUBSYS_APE_MINBW);
-				
-				if (ddr_opp != DDR_100_OPP) new_divider *= 2;
-				
-				new_val = base | new_divider;
-				
-				pr_err("[LiveOPP] set %s=%#05x -> %#05x\n", prcmu_regs[i].name, 
-									      old_val, new_val);
-	
-				for (val = old_val;
-				    (new_val > old_val) ? (val <= new_val) : (val >= new_val); 
-				    (new_val > old_val) ? val++ : val--)  {
-					      writel_relaxed(val, prcmu_base + prcmu_regs[i].reg);
-					      udelay(200);
-				}
-
-			}
+		new_val = state ? prcmu_regs[i].boost_value :
+				prcmu_regs[i].unboost_value;
 			
-	pllddr_opp_lock = false;
+		if ((!old_val) || (old_val == new_val)) continue;
+	
+		old_divider = old_val & 0xf;
+		new_divider = new_val & 0xf;
+			
+		if (!new_divider) {
+			pr_err("LiveOPP: bad divider, %s:%s:%#05x:\n", __func__, 
+					    prcmu_regs[i].name,
+					    new_val);
+				continue;
+		}
+
+		base = old_val ^ old_divider;
+		
+		// set new value according to DDR_OPP
+		// FIXME: why DDR OPP changing code doesn't work here?
+		if ((i >= PER1CLK && i<=PER6CLK) || i == MCDECLK) {
+			if (old_divider >= 8)
+				new_divider *= 2;
+		} else continue;
+
+		new_val = base | new_divider;
+			
+		pr_err("[LiveOPP] set %s=%#05x -> %#05x\n", prcmu_regs[i].name, 
+							      old_val, new_val);
+	
+		for (val = old_val;
+		    (new_val > old_val) ? (val <= new_val) : (val >= new_val); 
+		    (new_val > old_val) ? val++ : val--)  {
+			      writel_relaxed(val, prcmu_base + prcmu_regs[i].reg);
+			      udelay(200);
+		}
+	}
 }
 
 static void requirements_update_thread(struct work_struct *requirements_update_work)
 {
-	if (!pllddr_opp_lock)
-		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "cpufreq",
-					(signed char)curr_table.ddr_opp);
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "cpufreq",
+				(signed char)curr_table.ddr_opp);
 	
 	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "cpufreq",
 				(signed char)curr_table.ape_opp);
@@ -1813,6 +1823,9 @@ static ssize_t liveopp_start_store(struct kobject *kobj, struct kobj_attribute *
 ATTR_RW(liveopp_start);
 #endif
 
+#define PERX_ORIG_CLK 159744
+#define MCDE_ORIG_CLK 159744
+
 static int pllddr_oc_delay_us = 100;
 
 static ssize_t pllddr_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
@@ -1828,7 +1841,8 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	u32 val, old_val, new_val;
 	u8 sdmmc_val_base;
 	int ret, pllddr_freq, old_divider, new_divider;
-	int sdmmc_old_divider, sdmmc_new_divider;
+	int sdmmc_old_divider, sdmmc_new_divider,
+	    mcde_new_divider, perx_new_divider;
 
 	old_val = readl(prcmu_base + PRCMU_PLLDDR_REG);
 	ret = sscanf(buf, "%x", &new_val);
@@ -1843,8 +1857,28 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 		return -EINVAL;
 	
 	pllddr_freq = pllarm_freq(new_val);
+	
+	// Recalibrate PER1CLK-PER6CLK
+	perx_new_divider = (pllddr_freq - (pllddr_freq % PERX_ORIG_CLK)) / PERX_ORIG_CLK;
+	if (pllddr_freq % PERX_ORIG_CLK) perx_new_divider++;
+	if (perx_new_divider > 15) perx_new_divider = 15;
+	prcmu_regs[PER1CLK].boost_value = perx_new_divider;
+	prcmu_regs[PER2CLK].boost_value = perx_new_divider;
+	prcmu_regs[PER3CLK].boost_value = perx_new_divider;
+	prcmu_regs[PER5CLK].boost_value = perx_new_divider;
+	prcmu_regs[PER6CLK].boost_value = perx_new_divider;
+	
+	// Recalibrate MCDE clk
+	mcde_new_divider = (pllddr_freq - (pllddr_freq % MCDE_ORIG_CLK)) / MCDE_ORIG_CLK;
+	if (pllddr_freq % MCDE_ORIG_CLK) mcde_new_divider++;
+	if (mcde_new_divider > 15) mcde_new_divider = 15;
+	prcmu_regs[MCDECLK].boost_value = mcde_new_divider;
+	
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "pllddr", (signed char)100);
+	ddr_cross_clocks_boost(1);
+	
 	sdmmc_old_divider = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x0f;
-	sdmmc_new_divider = (pllddr_freq - (pllddr_freq % 100000)) / 100000; 
+	sdmmc_new_divider = (pllddr_freq - (pllddr_freq % 100000)) / 100000;
 	if (pllddr_freq % 100000) sdmmc_new_divider++;
 	if (sdmmc_new_divider > 15) sdmmc_new_divider = 15;
 	
@@ -1862,6 +1896,8 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 			writel_relaxed(val, prcmu_base + PRCMU_PLLDDR_REG);
 			udelay(pllddr_oc_delay_us);
 	}
+	
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "pllddr", (signed char)25);
 	
 	return count;
 }
@@ -4779,6 +4815,11 @@ static int __init late(void)
 		kobject_put(liveopp_kobject);
 	}
 	pr_info("[LiveOPP] Initialized: v%s\n", LIVEOPP_VER);
+	
+	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
+			"pllddr", 25)) {
+		pr_err("pcrm_qos_add DDR failed, %s\n", __func__);
+	}
 	#endif /* CONFIG_DB8500_LIVEOPP */
 
 #ifdef ENABLE_FTRACE_BY_DEFAULT
