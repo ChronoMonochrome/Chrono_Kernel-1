@@ -1430,8 +1430,8 @@ static struct prcmu_regs_table prcmu_regs[] = {
 	{PRCMU_PER3CLK_REG,	0x186,       0x186,	    "per3clk"},
 	{PRCMU_PER5CLK_REG,	0x186,       0x186,	    "per5clk"},
 	{PRCMU_PER6CLK_REG,	0x186,       0x186,	    "per6clk"},
-	{PRCMU_APEATCLK_REG,	0x184,       0x184,	   "apeatclk"},
-	{PRCMU_APETRACECLK_REG,	0x185,       0x185,	"apetraceclk"},
+	{PRCMU_APEATCLK_REG,	0x004,       0x004,	   "apeatclk"},
+	{PRCMU_APETRACECLK_REG,	0x005,       0x005,	"apetraceclk"},
 	{PRCMU_MCDECLK_REG,	0x185,       0x185,	    "mcdeclk"},
 	{PRCMU_DMACLK_REG,	0x184,       0x184,          "dmaclk"},
 };
@@ -1928,6 +1928,8 @@ static int pllddr_cross_clk_freq(int pllddr_freq, u32 reg_raw)
 	int reg_freq, reg_div;
 	
 	reg_div = reg_raw & 0xf;
+	if (!reg_div) reg_div = reg_raw & 0x10;
+	if (!reg_div) return 0;
 	reg_freq = (pllddr_freq - (pllddr_freq % reg_div)) / reg_div;
 	
 	return reg_freq;
