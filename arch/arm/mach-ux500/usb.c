@@ -176,7 +176,7 @@ struct platform_device ux500_musb_device = {
 		.dma_mask = &ux500_musb_dmamask,
 		.coherent_dma_mask = DMA_BIT_MASK(32),
 #ifdef CONFIG_UX500_SOC_DB8500
-		.pwr_domain = &ux500_dev_power_domain,
+		.pm_domain = &ux500_dev_power_domain,
 #endif
 	},
 	.num_resources = ARRAY_SIZE(usb_resources),
