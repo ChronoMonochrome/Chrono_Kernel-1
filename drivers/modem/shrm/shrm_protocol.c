@@ -645,6 +645,7 @@ void shm_ca_wake_req_work(struct kthread_work *work)
 #ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
 static int shrm_modem_reset_sequence(void)
 {
+#if 0
 	hrtimer_cancel(&timer);
 	hrtimer_cancel(&mod_stuck_timer_0);
 	hrtimer_cancel(&mod_stuck_timer_1);
@@ -682,12 +683,13 @@ static int shrm_modem_reset_sequence(void)
 	/* The order is very important here */
 	queue_kthread_work(&shm_dev->shm_ac_wake_kw, &shm_dev->shm_ac_wake_req);
 	queue_kthread_work(&shm_dev->shm_ac_wake_kw, &shm_dev->shm_mod_reset_process);
-
+#endif
 	return 0;
 }
 
 static void shm_mod_reset_work(struct kthread_work *work)
 {
+#if 0
 	int err;
 	unsigned long flags;
 
@@ -716,6 +718,7 @@ static void shm_mod_reset_work(struct kthread_work *work)
 	if (suspend_sleep_is_blocked()) {
 		suspend_unblock_sleep();
 	}
+#endif
 }
 #endif
 
@@ -1020,8 +1023,10 @@ int shrm_protocol_init(struct shrm_dev *shrm,
 	init_kthread_work(&shrm->shm_ca_sleep_req, shm_ca_sleep_req_work);
 	init_kthread_work(&shrm->shm_ac_sleep_req, shm_ac_sleep_req_work);
 	init_kthread_work(&shrm->shm_ac_wake_req, shm_ac_wake_req_work);
+#ifdef CONFIG_U8500_SHRM_MODEM_SILENT_RESET
 	init_kthread_work(&shrm->shm_mod_reset_process, shm_mod_reset_work);
 	init_kthread_work(&shrm->shm_mod_reset_req, shm_mod_reset_req_work);
+#endif
 	init_kthread_work(&shrm->shm_print_dbg_info, shm_print_dbg_info_work);
 
 	/* set tasklet data */
