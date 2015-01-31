@@ -145,6 +145,9 @@ static void s6d27a1_lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
 }
 static DECLARE_WORK(s6d27a1_lcdclk_work, s6d27a1_lcdclk_thread);
 
+
+static signed char apeopp_requirement = 0, ddropp_requirement = 0;
+
 /* to be removed when display works */
 //#define dev_dbg	dev_info
 /*#define ESD_OPERATION*/
@@ -977,6 +980,60 @@ static ssize_t s6d27a1_sysfs_store_lcdclk(struct device *dev,
 
 static DEVICE_ATTR(lcdclk, 0644, s6d27a1_sysfs_show_lcdclk, s6d27a1_sysfs_store_lcdclk);
 
+static ssize_t s6d_sysfs_show_opp(struct device *dev,
+				      struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "apeopp=%d\n"
+			    "ddropp=%d\n",
+			    apeopp_requirement,
+			    ddropp_requirement);
+}
+
+static ssize_t s6d_sysfs_store_opp(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t len)
+{
+	int val;
+  
+  	if (!strncmp(&buf[0], "apeopp=", 7))
+	{
+		sscanf(&buf[7], "%d", &val);
+		
+		if ((val != 25) && (val != 50) && (val != 100))
+			goto out;
+		
+		apeopp_requirement = val;
+		
+		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi", apeopp_requirement ?
+			apeopp_requirement : 50);
+
+		return len;
+	}
+	
+	if (!strncmp(&buf[0], "ddropp=", 7))
+	{
+		sscanf(&buf[7], "%d", &val);
+		
+		if ((val != 25) && (val != 50) && (val != 100))
+			goto out;
+		
+		ddropp_requirement = val;
+		
+		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
+			"codina_lcd_dpi", ddropp_requirement ?
+			ddropp_requirement : 50);
+
+		return len;
+	}
+	
+out:
+	return -EINVAL;
+}
+static DEVICE_ATTR(mcde_screenon_opp, 0644,
+		s6d_sysfs_show_opp, s6d_sysfs_store_opp);
+
+
 static ssize_t s6d27a1_dpi_sysfs_store_lcd_power(struct device *dev,
 						struct device_attribute *attr,
 						const char *buf, size_t len)
@@ -1218,6 +1275,10 @@ static int __devinit s6d27a1_dpi_mcde_probe(
 		dev_err(&(ddev->dev),
 			"failed to add lcd_power sysfs entries\n");
 		
+	ret = device_create_file(&(ddev->dev), &dev_attr_mcde_screenon_opp);	
+	if (ret < 0)
+		dev_err(&(ddev->dev), "failed to add mcde_screeon_opp sysfs entries\n");
+	
 	ret = device_create_file(&(ddev->dev), &dev_attr_lcdclk);
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
