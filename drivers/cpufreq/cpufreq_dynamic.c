@@ -26,6 +26,7 @@
 #include <linux/earlysuspend.h>
 #include <linux/input.h>
 #include <linux/slab.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 /*
  * dbs is used in this file as a shortform for demandbased switching
@@ -106,6 +107,13 @@ module_param(standby, bool, 0644);
 
 static u64 last_input_time = 0;
 #define MIN_INPUT_INTERVAL (50 * USEC_PER_MSEC)
+
+static unsigned int ape_boost = 1, ddr_boost = 0, ape_opp = 100, ddr_opp = 50;
+module_param(ape_boost, uint, 0644);
+module_param(ddr_boost, uint, 0644);
+module_param(ape_opp, uint, 0644);
+module_param(ddr_opp, uint, 0644);
+
 
 /* input boost end */
 
@@ -679,6 +687,13 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		}
 		if (policy->cur < freq_target) {
 			pr_debug("Boosting freq from %d to %d, dt=%llu us\n", this_dbs_info->requested_freq, freq_target, ktime_to_us(ktime_get())-last_input_time);
+
+			if (ape_boost)
+				prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", ape_opp);
+		
+			if (ddr_boost)
+				prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,	"DDRBOOST", ddr_opp);
+			
 			this_dbs_info->requested_freq = freq_target;
 			__cpufreq_driver_target(policy, freq_target, CPUFREQ_RELATION_H);
 			return;
@@ -686,6 +701,11 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	} else if (suspend) {
 		max_freq_hard = dbs_tuners_ins._suspend_max_freq_hard;
 		max_freq_soft = dbs_tuners_ins._suspend_max_freq_soft;
+	}
+	
+	if (!boosted) {
+		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", PRCMU_QOS_DEFAULT_VALUE);	
+		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST", PRCMU_QOS_DEFAULT_VALUE);
 	}
 
 	if (active && dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_boost_ms) {
@@ -1155,6 +1175,12 @@ static int __init cpufreq_gov_dbs_init(void)
 		min_sampling_rate =
 			MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(10);
 	}
+	
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", PRCMU_QOS_DEFAULT_VALUE))
+		pr_err("pcrm_qos_add APE failed\n");
+	
+	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST", PRCMU_QOS_DEFAULT_VALUE)) 
+		pr_err("pcrm_qos_add DDR failed\n");
 
 	return cpufreq_register_governor(&cpufreq_gov_dynamic);
 }
