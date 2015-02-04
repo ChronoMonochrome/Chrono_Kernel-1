@@ -508,7 +508,7 @@ static void fsync_late_resume(struct early_suspend *h)
 
 static void fsync_flush_data(void) 
 {
-	if (fsync_mode == 2) {
+	if (fsync_mode == 2 && !is_suspend) {
 		wakeup_flusher_threads(0, WB_REASON_SYNC);
 		sync_filesystems(0);
 		sync_filesystems(1);
