@@ -506,6 +506,38 @@ static void fsync_late_resume(struct early_suspend *h)
 	is_suspend = false;
 }
 
+static void fsync_flush_data(void) 
+{
+	if (fsync_mode == 2) {
+		wakeup_flusher_threads(0, WB_REASON_SYNC);
+		sync_filesystems(0);
+		sync_filesystems(1);
+	}
+}  
+
+static ssize_t fsync_flush_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return strlen(buf);
+}
+
+static ssize_t fsync_flush_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+	
+	ret = sscanf(buf, "%d", &ret);
+
+	if (ret < 0) {
+		pr_info("[FSYNC] invalid input\n");
+		return -EINVAL;
+	} else {
+		fsync_flush_data();
+	}
+
+	return count;
+}
+
+static struct kobj_attribute fsync_flush_interface = __ATTR(flush, 0644, fsync_flush_show, fsync_flush_store);
+
 static ssize_t fsync_mode_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 
@@ -539,6 +571,7 @@ static struct kobj_attribute fsync_mode_interface = __ATTR(mode, 0644, fsync_mod
 
 static struct attribute *fsync_attrs[] = {
 	&fsync_mode_interface.attr, 
+	&fsync_flush_interface.attr,
 	NULL,
 };
 
@@ -557,7 +590,7 @@ static int fsync_reboot_handler(struct notifier_block *this, unsigned long code,
 			wakeup_flusher_threads(0, WB_REASON_SYNC);
 			sync_filesystems(0);
 			sync_filesystems(1);
-
+			
 			pr_warn("[FSYNC] Reboot handler flushing data\n");
 		}
 	}
