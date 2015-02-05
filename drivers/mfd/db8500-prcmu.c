@@ -1444,7 +1444,8 @@ static void do_oc_ddr(int new_val_)
 			if (val == 0x50180) {
 				curr_workload = get_cpufreq_workload();
 				mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
-				if (curr_workload > idle_cpu_workload || mcdeclk_is_enabled) {
+				sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
+				if (curr_workload > idle_cpu_workload || mcdeclk_is_enabled || sdmmcclk_is_enabled) {
 					pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
 					tmp_val = val;
 					return;
