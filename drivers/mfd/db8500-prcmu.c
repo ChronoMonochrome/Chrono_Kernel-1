@@ -1206,6 +1206,10 @@ static int liveopp_start = 0;
 
 #define PERX_ORIG_CLK 159744
 #define MCDE_ORIG_CLK 159744
+#define ACLK_ORIG_CLK 199680
+#define SIACLK_ORIG_CLK 399360
+#define SVACLK_ORIG_CLK 399360
+#define DMACLK_ORIG_CLK 199680
 
 static int pllddr_oc_delay_us = 100;
 
@@ -1252,8 +1256,8 @@ enum {
 static struct prcmu_regs_table prcmu_regs[] = {
       // PRCMU reg            | Boost val   | Unboost val|      Name     
 	{PRCMU_ACLK_REG,	0x184,       0x184,	       "aclk"},
-	{PRCMU_SVACLK_REG,	0x004,       0x004,	     "svaclk"},
-	{PRCMU_SIACLK_REG,	0x004,       0x004,	     "siaclk"}, 
+	{PRCMU_SVACLK_REG,	0x002,       0x002,	     "svaclk"},
+	{PRCMU_SIACLK_REG,	0x002,       0x002,	     "siaclk"}, 
 	{PRCMU_PER1CLK_REG,	0x186,       0x186,	    "per1clk"},
 	{PRCMU_PER2CLK_REG,	0x186,       0x186,	    "per2clk"},
 	{PRCMU_PER3CLK_REG,	0x186,       0x186,	    "per3clk"},
@@ -1265,11 +1269,19 @@ static struct prcmu_regs_table prcmu_regs[] = {
 	{PRCMU_DMACLK_REG,	0x184,       0x184,          "dmaclk"},
 };
 
+static int db8500_prcmu_get_ape_opp(void);
+
 static void ddr_cross_clocks_boost(bool state)
 {
-	int i, val, ddr_opp;
+	int i, val, ape_opp;
 	u32 old_val, new_val;
 	int new_divider, old_divider, base;
+	
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+			"PLLDDR_OC", PRCMU_QOS_MAX_VALUE);
+	
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
+			"PLLDDR_OC", PRCMU_QOS_MAX_VALUE);
 	
 	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
 		old_val = readl(prcmu_base + prcmu_regs[i].reg);
@@ -1290,12 +1302,6 @@ static void ddr_cross_clocks_boost(bool state)
 		}
 
 		base = old_val ^ old_divider;
-		
-		// set new value according to DDR_OPP
-		if ((i >= PER1CLK && i<=PER6CLK) || i == MCDECLK) {
-			if (old_divider >= 8)
-				new_divider *= 2;
-		} else continue;
 
 		new_val = base | new_divider;
 			
@@ -1309,6 +1315,12 @@ static void ddr_cross_clocks_boost(bool state)
 			      udelay(200);
 		}
 	}
+	
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+			"PLLDDR_OC", PRCMU_QOS_DEFAULT_VALUE);
+	
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
+			"PLLDDR_OC", PRCMU_QOS_DEFAULT_VALUE);
 }
 
 static int pllarm_freq(u32 raw);
@@ -1322,7 +1334,9 @@ static void do_oc_ddr(int new_val_)
 	int mcdeclk_is_enabled = 0, sdmmcclk_is_enabled = 0;
 	int pllddr_freq;
 	int sdmmc_old_divider, sdmmc_new_divider,
-	    mcde_new_divider, perx_new_divider;
+	    mcde_new_divider, perx_new_divider,
+	    dma_new_divider, // used for ACLK and DMACLK since its orig. values are same
+	    sxa_new_divider; // used for SIACLK and SVACLK
 
 	//mutex_lock(&ddr_boost_lock);
 	    
@@ -1331,6 +1345,24 @@ static void do_oc_ddr(int new_val_)
 	pllddr_freq = pllarm_freq(new_val_);
 		
 	if (!perx_is_calibrated) {
+		// Recalibrate DMACLK and ACLK
+		
+		dma_new_divider = (pllddr_freq - (pllddr_freq % DMACLK_ORIG_CLK)) / DMACLK_ORIG_CLK;
+		if (pllddr_freq % DMACLK_ORIG_CLK) dma_new_divider++;
+		if (dma_new_divider > 15) dma_new_divider = 15;
+		
+		prcmu_regs[DMACLK].boost_value = dma_new_divider;
+		prcmu_regs[ACLK].boost_value = dma_new_divider;
+	  
+		// Recalibrate SIACLK and SVACLK
+		
+		sxa_new_divider = (pllddr_freq - (pllddr_freq % SIACLK_ORIG_CLK)) / SIACLK_ORIG_CLK;
+		if (pllddr_freq % SIACLK_ORIG_CLK) sxa_new_divider++;
+		if (sxa_new_divider > 15) sxa_new_divider = 15;
+
+		prcmu_regs[SIACLK].boost_value = sxa_new_divider;
+		prcmu_regs[SVACLK].boost_value = sxa_new_divider;
+	  
 		// Recalibrate PER1CLK-PER6CLK
 		//spin_lock_irqsave(&plldrr_spinlock, flags);
 		perx_new_divider = (pllddr_freq - (pllddr_freq % PERX_ORIG_CLK)) / PERX_ORIG_CLK;
@@ -5014,6 +5046,16 @@ static int __init late(void)
 		kobject_put(liveopp_kobject);
 	}
 	pr_info("[LiveOPP] Initialized: v%s\n", LIVEOPP_VER);
+	
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+			"PLLDDR_OC", PRCMU_QOS_DEFAULT_VALUE)) {
+		pr_err("pcrm_qos_add APE failed\n");
+	}
+	
+	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
+			"PLLDDR_OC", PRCMU_QOS_DEFAULT_VALUE)) {
+		pr_err("pcrm_qos_add DDR failed\n");
+	}
 	
 	wake_lock_init(&pllddr_oc_lock, WAKE_LOCK_IDLE, "PLLDDR_OC");
 	
