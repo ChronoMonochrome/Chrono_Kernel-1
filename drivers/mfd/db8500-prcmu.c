@@ -1213,8 +1213,8 @@ extern unsigned int get_cpufreq_load(void);
 extern unsigned int get_cpufreq_workload(void);
 static u32 pending_pllddr_val;
 static int curr_workload = 0;
-static int idle_cpu_workload = 1200000;
-static int high_cpu_workload = 800000;
+static int idle_cpu_workload = 20000;
+static int high_cpu_workload = 400000;
 static bool is_suspend = false;
 static bool sdmmc_is_calibrated = false, 
 	    perx_is_calibrated = false, 
@@ -1313,6 +1313,8 @@ static void ddr_cross_clocks_boost(bool state)
 
 static int pllarm_freq(u32 raw);
 
+static u32 tmp_val;
+
 static void do_oc_ddr(int new_val_)
 {
 	u32 old_val_, val;
@@ -1404,14 +1406,24 @@ static void do_oc_ddr(int new_val_)
 		}
 		
 		pr_err("[PLLDDR] changing PLLDDR %#010x -> %#010x\n", old_val_, new_val_);
-		for (val = old_val_;
+		for (val = (tmp_val ? tmp_val : old_val_);
 		    (new_val_ > old_val_) ? (val <= new_val_) : (val >= new_val_); 
 		    (new_val_ > old_val_) ? val++ : val--) {
+			if (val == 0x50180) {
+				curr_workload = get_cpufreq_workload();
+				mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
+				if (curr_workload > idle_cpu_workload || mcdeclk_is_enabled) {
+					pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
+					tmp_val = val;
+					return;
+				}
+			}
 			writel_relaxed(val, prcmu_base + PRCMU_PLLDDR_REG);
 			udelay(pllddr_oc_delay_us);
 		}
 			
 		pllddr_is_calibrated = true;
+		tmp_val = 0;
 		udelay(50);
 		//spin_unlock_irqrestore(&plldrr_spinlock, flags);
 	}
