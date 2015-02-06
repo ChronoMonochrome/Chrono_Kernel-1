@@ -1202,7 +1202,11 @@ static unsigned int last_arm_idx = 0;
 static int liveopp_start = 0;
 #endif
 
-/* DDR OC code starts here */
+// DDR OC code starts here
+
+/*
+ * Original PRCMU registers frequency
+ */
 
 #define PERX_ORIG_CLK 159744
 #define MCDE_ORIG_CLK 159744
@@ -1211,24 +1215,26 @@ static int liveopp_start = 0;
 #define SVACLK_ORIG_CLK 399360
 #define DMACLK_ORIG_CLK 199680
 
-static int pllddr_oc_delay_us = 100;
+static bool ddr_oc_on_suspend = false; // set true if needed to schedule DDR OC on suspend
 
-extern unsigned int get_cpufreq_load(void);
+/*
+ *  DDR OC algorithm depends on CPU workload
+ *  workload = frequency * load (Hz * %)
+ */
 extern unsigned int get_cpufreq_workload(void);
-static u32 pending_pllddr_val;
-static int curr_workload = 0;
+
+static u32 pending_pllddr_val; // scheduled PLLDDR value
+static int curr_workload = 0; 
+static int pllddr_oc_delay_us = 100; // delay between graduate PLLDDR changing
 static int idle_cpu_workload = 20000;
-static int high_cpu_workload = 400000;
 static bool is_suspend = false;
 static bool sdmmc_is_calibrated = false, 
 	    perx_is_calibrated = false, 
 	    pllddr_is_calibrated = false;
 static bool ddr_clocks_boost = false;
 static struct wake_lock pllddr_oc_lock;
-//static DEFINE_SPINLOCK(plldrr_spinlock);
 
 module_param(idle_cpu_workload, uint, 0644);
-module_param(high_cpu_workload, uint, 0644);
 
 struct prcmu_regs_table
 {
@@ -1238,20 +1244,10 @@ struct prcmu_regs_table
 	char *name;
 };
 
-enum { 
-      ACLK,
-      SVACLK,
-      SIACLK,
-      PER1CLK,
-      PER2CLK,
-      PER3CLK,
-      PER5CLK,
-      PER6CLK,
-      APEATCLK,
-      APETRACECLK,
-      MCDECLK,
-      DMACLK,
-} clkddr;
+/*
+ * PRCMU registers table
+ * Registers above are depends on PLLDDR
+ */
 
 static struct prcmu_regs_table prcmu_regs[] = {
       // PRCMU reg            | Boost val   | Unboost val|      Name     
@@ -1269,13 +1265,31 @@ static struct prcmu_regs_table prcmu_regs[] = {
 	{PRCMU_DMACLK_REG,	0x184,       0x184,          "dmaclk"},
 };
 
+enum { 
+      ACLK,
+      SVACLK,
+      SIACLK,
+      PER1CLK,
+      PER2CLK,
+      PER3CLK,
+      PER5CLK,
+      PER6CLK,
+      APEATCLK,
+      APETRACECLK,
+      MCDECLK,
+      DMACLK,
+} clkddr;
+
 static int db8500_prcmu_get_ape_opp(void);
 
 static void ddr_cross_clocks_boost(bool state)
 {
-	int i, val, ape_opp;
+	int i, val;
 	u32 old_val, new_val;
 	int new_divider, old_divider, base;
+	
+	// Set APE100/DDR100 to avoid calculating values of PRCMU registers 
+	// for different OPP states
 	
 	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
 			"PLLDDR_OC", PRCMU_QOS_MAX_VALUE);
@@ -1325,7 +1339,7 @@ static void ddr_cross_clocks_boost(bool state)
 
 static int pllarm_freq(u32 raw);
 
-static u32 tmp_val;
+static u32 tmp_val; // this value is used if do_oc_ddr was aborted on PLLDDR calibration
 
 static void do_oc_ddr(int new_val_)
 {
@@ -1336,9 +1350,7 @@ static void do_oc_ddr(int new_val_)
 	int sdmmc_old_divider, sdmmc_new_divider,
 	    mcde_new_divider, perx_new_divider,
 	    dma_new_divider, // used for ACLK and DMACLK since its orig. values are same
-	    sxa_new_divider; // used for SIACLK and SVACLK
-
-	//mutex_lock(&ddr_boost_lock);
+	    sxa_new_divider; // used for SIACLK and SVACLK;
 	    
 	old_val_ = readl(prcmu_base + PRCMU_PLLDDR_REG);
   
@@ -1364,7 +1376,6 @@ static void do_oc_ddr(int new_val_)
 		prcmu_regs[SVACLK].boost_value = sxa_new_divider;
 	  
 		// Recalibrate PER1CLK-PER6CLK
-		//spin_lock_irqsave(&plldrr_spinlock, flags);
 		perx_new_divider = (pllddr_freq - (pllddr_freq % PERX_ORIG_CLK)) / PERX_ORIG_CLK;
 		if (pllddr_freq % PERX_ORIG_CLK) perx_new_divider++;
 		if (perx_new_divider > 15) perx_new_divider = 15;
@@ -1383,9 +1394,9 @@ static void do_oc_ddr(int new_val_)
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
 		curr_workload = get_cpufreq_workload();
-		if (curr_workload > idle_cpu_workload || mcdeclk_is_enabled || sdmmcclk_is_enabled) {
-		//	spin_unlock_irqrestore(&plldrr_spinlock, flags);
-			pr_err("[PLLDDR] 1, curr_workload > idle_cpu_workload\n");
+		if (curr_workload > idle_cpu_workload || sdmmcclk_is_enabled
+		  || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
+			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
 		
@@ -1393,11 +1404,9 @@ static void do_oc_ddr(int new_val_)
 		ddr_cross_clocks_boost(1); // apply settings above
 		perx_is_calibrated = true;
 		udelay(50);
-		//spin_unlock_irqrestore(&plldrr_spinlock, flags);
 	}
 		
 	if (!sdmmc_is_calibrated) {
-		//spin_lock_irqsave(&plldrr_spinlock, flags);
 		sdmmc_old_divider = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x0f;
 		sdmmc_new_divider = (pllddr_freq - (pllddr_freq % 100000)) / 100000;
 		if (pllddr_freq % 100000) sdmmc_new_divider++;
@@ -1406,13 +1415,11 @@ static void do_oc_ddr(int new_val_)
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
 		curr_workload = get_cpufreq_workload();
-		if (curr_workload > idle_cpu_workload || mcdeclk_is_enabled || sdmmcclk_is_enabled) {
-		//	spin_unlock_irqrestore(&plldrr_spinlock, flags);
-			pr_err("[PLLDDR] 2, curr_workload > idle_cpu_workload\n");
+		if (curr_workload > idle_cpu_workload || sdmmcclk_is_enabled
+		  || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
+			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
-			
-		//pr_err("[PLLDDR] recalibrating SDMMCCLK\n");
 			
 		if (sdmmc_new_divider && (sdmmc_old_divider != sdmmc_new_divider)) {
 			pr_err("[PLLDDR] mmc_clk_div %d -> %d\n", sdmmc_old_divider, sdmmc_new_divider);
@@ -1423,17 +1430,15 @@ static void do_oc_ddr(int new_val_)
 		
 		sdmmc_is_calibrated = true;
 		udelay(50);
-		//spin_unlock_irqrestore(&plldrr_spinlock, flags);
 	}
 		
 	if (!pllddr_is_calibrated) {
-		//spin_lock_irqsave(&plldrr_spinlock, flags);
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
 		curr_workload = get_cpufreq_workload();
-		if (curr_workload > idle_cpu_workload || mcdeclk_is_enabled || sdmmcclk_is_enabled) {
-			//spin_unlock_irqrestore(&plldrr_spinlock, flags);
-			pr_err("[PLLDDR] 3, curr_workload > idle_cpu_workload\n");
+		if (curr_workload > idle_cpu_workload || sdmmcclk_is_enabled
+		  || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
+			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
 		
@@ -1446,11 +1451,12 @@ static void do_oc_ddr(int new_val_)
 				mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 				sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
 				if (curr_workload > idle_cpu_workload || mcdeclk_is_enabled || sdmmcclk_is_enabled) {
-					pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
+					//pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
 					tmp_val = val;
 					return;
 				}
 			}
+			//pr_err("[PLLDRR] val=%#010x", val);
 			writel_relaxed(val, prcmu_base + PRCMU_PLLDDR_REG);
 			udelay(pllddr_oc_delay_us);
 		}
@@ -1458,13 +1464,7 @@ static void do_oc_ddr(int new_val_)
 		pllddr_is_calibrated = true;
 		tmp_val = 0;
 		udelay(50);
-		//spin_unlock_irqrestore(&plldrr_spinlock, flags);
 	}
-		
-	/*
-	if (perx_is_calibrated && sdmmc_is_calibrated && pllddr_is_calibrated) {
-		pending_pllddr_val = 0;
-	}*/
 }
 
 /*--------------------------------------------------------*/
@@ -2025,30 +2025,31 @@ static ssize_t liveopp_start_store(struct kobject *kobj, struct kobj_attribute *
 ATTR_RW(liveopp_start);
 #endif
 
-//static unsigned int counter = 0;
-
 static void do_oc_ddr_fn(struct work_struct *work);
 static DECLARE_DELAYED_WORK(do_oc_ddr_delayedwork, do_oc_ddr_fn);
 static void do_oc_ddr_fn(struct work_struct *work)
 {
-	//if (counter++ <= 10) {
-		//pr_err("[PLLDDR] counter=%d\n", counter);
+	if (ddr_oc_on_suspend) {
 		if (!wake_lock_active(&pllddr_oc_lock))
 			wake_lock(&pllddr_oc_lock);
-		if (!(perx_is_calibrated && sdmmc_is_calibrated && pllddr_is_calibrated)) {
-			do_oc_ddr(pending_pllddr_val);
-			schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(100));
-		} else {
-			perx_is_calibrated = false;
-			sdmmc_is_calibrated = false;
-			pllddr_is_calibrated = false;
-			pending_pllddr_val = 0;
+	}
+	
+	if (!(perx_is_calibrated && sdmmc_is_calibrated && pllddr_is_calibrated)) {
+		do_oc_ddr(pending_pllddr_val);
+		schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(100));
+	} else {
+		perx_is_calibrated = false;
+		sdmmc_is_calibrated = false;
+		pllddr_is_calibrated = false;
+		pending_pllddr_val = 0;
+	
+		if (ddr_oc_on_suspend) {
 			if (wake_lock_active(&pllddr_oc_lock))
 				wake_unlock(&pllddr_oc_lock);
+			
+			ddr_oc_on_suspend = false;
 		}
-	//} else {
-		//counter = 0;
-	//}
+	}
 }
 
 static struct early_suspend early_suspend;
@@ -2060,9 +2061,9 @@ static void pllddr_early_suspend(struct early_suspend *h)
 {
 	is_suspend = true;
 	
-	pr_err("[PLLDDR] %s\n", __func__);
+	//pr_err("[PLLDDR] %s\n", __func__);
 	
-	if (pending_pllddr_val) {
+	if (pending_pllddr_val && ddr_oc_on_suspend) {
 		pr_err("[PLLDDR] pending_pllddr_val=%#010x\n", pending_pllddr_val);
 		schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(ddr_oc_delay_ms));
 	}
@@ -2072,9 +2073,9 @@ static void pllddr_late_resume(struct early_suspend *h)
 {
 	is_suspend = false;
 	
-	pr_err("[PLLDDR] %s\n", __func__);
+	//pr_err("[PLLDDR] %s\n", __func__);
 	
-	if (pending_pllddr_val) {
+	if (pending_pllddr_val && ddr_oc_on_suspend) {
 		cancel_delayed_work(&do_oc_ddr_delayedwork);
 		if (wake_lock_active(&pllddr_oc_lock))
 			wake_unlock(&pllddr_oc_lock);
@@ -2113,6 +2114,7 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	}
 
 	pending_pllddr_val = new_val;
+
 	schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
 	
 	return count;
@@ -2121,6 +2123,8 @@ ATTR_RW(pllddr);
 
 static ssize_t pllddr_oc_on_suspend_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
+	ddr_oc_on_suspend = true;
+  
 	if (pending_pllddr_val)
 		sprintf(buf, "pending_pllddr_val: %#010x (%d kHz)\n", pending_pllddr_val,
 							pllarm_freq(pending_pllddr_val));
@@ -2397,8 +2401,6 @@ static unsigned long arm_get_rate(void)
 }
 #endif /* CONFIG_DB8500_LIVEOPP */
 unsigned long (*toto)(void);
-
-static unsigned int counter; 
 
 #ifdef CONFIG_DB8500_LIVEOPP
 static int arm_set_rate(unsigned long rate)
