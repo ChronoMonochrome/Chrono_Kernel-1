@@ -45,11 +45,18 @@ EXPORT_SYMBOL_GPL(usb_unregister_notify);
 
 void usb_notify_add_device(struct usb_device *udev)
 {
+#ifdef CONFIG_ARCH_U8500
+	usb_device_count++;
+#endif
+
 	blocking_notifier_call_chain(&usb_notifier_list, USB_DEVICE_ADD, udev);
 }
 
 void usb_notify_remove_device(struct usb_device *udev)
 {
+#ifdef CONFIG_ARCH_U8500
+	usb_device_count--;
+#endif
 	/* Protect against simultaneous usbfs open */
 	mutex_lock(&usbfs_mutex);
 	blocking_notifier_call_chain(&usb_notifier_list,

@@ -1,5 +1,9 @@
 #include <linux/pm.h>
 
+#ifdef CONFIG_ARCH_U8500
+extern int usb_device_count;
+#endif
+
 /* Functions local to drivers/usb/core/ */
 
 extern int usb_create_sysfs_dev_files(struct usb_device *dev);
@@ -71,7 +75,10 @@ static inline int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 }
 
 #endif
-
+#ifdef CONFIG_USB_OTG_20
+extern void usb_hnp_polling_work(struct work_struct *work);
+extern void usb_hnp_suspend_work(struct work_struct *work);
+#endif
 #ifdef CONFIG_USB_SUSPEND
 
 extern void usb_autosuspend_device(struct usb_device *udev);
