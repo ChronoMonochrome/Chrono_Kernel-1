@@ -96,7 +96,12 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM9705 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9712 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9713 if SND_SOC_AC97_BUS
-        help
+	select SND_SOC_AB3550
+	select SND_SOC_AB5500
+	select SND_SOC_AB8500
+	select SND_SOC_CG29XX
+	select SND_SOC_AV8100
+	help
           Normally ASoC codec drivers are only built if a machine driver which
           uses them is also built since they are only usable with a machine
           driver.  Selecting this option will allow these drivers to be built
@@ -369,6 +374,21 @@ config SND_SOC_WM9712
 	tristate
 
 config SND_SOC_WM9713
+	tristate
+
+config SND_SOC_AB3550
+	tristate
+
+config SND_SOC_AB5500
+	tristate
+
+config SND_SOC_AB8500
+	tristate
+
+config SND_SOC_CG29XX
+	tristate
+
+config SND_SOC_AV8100
 	tristate
 
 # Amp

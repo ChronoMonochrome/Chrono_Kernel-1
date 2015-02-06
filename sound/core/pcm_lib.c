@@ -645,6 +645,8 @@ int snd_interval_refine(struct snd_interval *i, const struct snd_interval *v)
 		}
 	} else if (!i->openmin && !i->openmax && i->min == i->max)
 		i->integer = 1;
+	if (i->max < i->min)
+		i->max = i->min;
 	if (snd_interval_checkempty(i)) {
 		snd_interval_none(i);
 		return -EINVAL;
