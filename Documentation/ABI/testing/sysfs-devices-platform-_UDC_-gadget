@@ -7,15 +7,15 @@ Description:
 		0 -> resumed
 
 		(_UDC_ is the name of the USB Device Controller driver)
-
-What:           /sys/devices/platform/_UDC_/gadget/gadget-lunX/nofua
-Date:           July 2010
-Contact:        Andy Shevchenko <andy.shevchenko@gmail.com>
+What:		/sys/devices/platform/_UDC_/gadget/host_request
+Date:		December 2010
+Contact:	Pavan Kondeti <pkondeti@...>
 Description:
-		Show or set the reaction on the FUA (Force Unit Access) bit in
-		the SCSI WRITE(10,12) commands when a gadget in USB Mass
-		Storage mode.
+		OTG 2.0 compliant host keeps polling OTG2.0 peripheral
+		for host role. Set host_request flag, which tells host
+		to give up the host role to peripheral.
 
-		Possible values are:
-			1 -> ignore the FUA flag
-			0 -> obey the FUA flag
+		1 -> host role is requested
+		0 -> no effect (automatically cleared upon reset/disconnect)
+
+		(_UDC_ is the name of the USB Device Controller driver)
