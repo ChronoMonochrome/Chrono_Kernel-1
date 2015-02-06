@@ -16,6 +16,7 @@
 #include <linux/amba/bus.h>
 #include <linux/interrupt.h>
 #include <linux/gpio.h>
+#include <linux/gpio/nomadik.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
 #include <linux/mtd/onenand.h>
