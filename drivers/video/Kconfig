@@ -23,6 +23,10 @@ source "drivers/gpu/drm/Kconfig"
 
 source "drivers/gpu/stub/Kconfig"
 
+source "drivers/gpu/ion/Kconfig"
+
+source "drivers/gpu/mali/Kconfig"
+
 config VGASTATE
        tristate
        default n
@@ -276,6 +280,8 @@ config FB_CIRRUS
 
 	  Say N unless you have such a graphics board or plan to get one
 	  before you next recompile the kernel.
+
+source "drivers/video/mcde/Kconfig"
 
 config FB_PM2
 	tristate "Permedia2 support"
@@ -2388,6 +2394,8 @@ source "drivers/video/omap2/Kconfig"
 
 source "drivers/video/backlight/Kconfig"
 source "drivers/video/display/Kconfig"
+source "drivers/video/av8100/Kconfig"
+source "drivers/video/b2r2/Kconfig"
 
 if VT
 	source "drivers/video/console/Kconfig"
