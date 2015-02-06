@@ -39,6 +39,44 @@ config HWMON_DEBUG_CHIP
 
 comment "Native drivers"
 
+config SENSORS_AB8500
+	tristate "AB8500 thermal monitoring"
+	depends on AB8500_GPADC
+	default n
+	help
+	  If you say yes here you get support for the thermal sensor part
+	  of the AB8500 chip. The driver includes thermal management for
+	  AB8500 die and two GPADC channels. The GPADC channel are preferably
+	  used to access sensors outside the AB8500 chip.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called abx500-temp.
+
+config SENSORS_AB5500
+	tristate "AB5500 thermal monitoring"
+	depends on AB5500_GPADC
+	default n
+	help
+	  If you say yes here you get support for the thermal sensor part
+	  of the AB5500 chip. The driver includes thermal management for
+	  AB5500 die, pcb and RF XTAL temperature.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called abx500-temp.
+
+config SENSORS_DBX500
+	tristate "DBX500 thermal monitoring"
+	depends on MFD_DB8500_PRCMU || MFD_DB5500_PRCMU || MFD_DBX540_PRCMU
+	default n
+	help
+	  If you say yes here you get support for the thermal sensor part
+	  of the DBX500 chip. The driver includes thermal management for
+	  DBX500 die.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called dbx500_temp.
+
+
 config SENSORS_ABITUGURU
 	tristate "Abit uGuru (rev 1 & 2)"
 	depends on X86 && DMI && EXPERIMENTAL
@@ -660,6 +698,15 @@ config SENSORS_LTC4151
 
 	  This driver can also be built as a module. If so, the module will
 	  be called ltc4151.
+
+config SENSORS_LSM303DLH_INPUT_DEVICE
+	bool "ST LSM303DLH INPUT DEVICE"
+	depends on SENSORS_LSM303DLH
+	default n
+	help
+	  This driver allows device to be used as an input device with
+	  interrupts, need to be enabled only when input device support
+	  is required.
 
 config SENSORS_LTC4215
 	tristate "Linear Technology LTC4215"

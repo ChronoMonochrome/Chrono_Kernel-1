@@ -21,6 +21,7 @@
 #include <linux/gfp.h>
 #include <linux/spinlock.h>
 #include <linux/pci.h>
+#include <linux/notifier.h>
 
 #define HWMON_ID_PREFIX "hwmon"
 #define HWMON_ID_FORMAT HWMON_ID_PREFIX "%d"
@@ -29,7 +30,7 @@ static struct class *hwmon_class;
 
 static DEFINE_IDR(hwmon_idr);
 static DEFINE_SPINLOCK(idr_lock);
-
+static BLOCKING_NOTIFIER_HEAD(hwmon_notifier_list);
 /**
  * hwmon_device_register - register w/ hwmon
  * @dev: the device to register
@@ -88,6 +89,24 @@ void hwmon_device_unregister(struct device *dev)
 		dev_dbg(dev->parent,
 			"hwmon_device_unregister() failed: bad class ID!\n");
 }
+
+int hwmon_notifier_register(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_register(&hwmon_notifier_list, nb);
+}
+EXPORT_SYMBOL(hwmon_notifier_register);
+
+int hwmon_notifier_unregister(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_unregister(&hwmon_notifier_list, nb);
+}
+EXPORT_SYMBOL(hwmon_notifier_unregister);
+
+void hwmon_notify(unsigned long val, void *v)
+{
+	blocking_notifier_call_chain(&hwmon_notifier_list, val, v);
+}
+EXPORT_SYMBOL(hwmon_notify);
 
 static void __init hwmon_pci_quirks(void)
 {
