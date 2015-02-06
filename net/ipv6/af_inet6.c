@@ -63,6 +63,20 @@
 #include <asm/system.h>
 #include <linux/mroute6.h>
 
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
+#include <linux/android_aid.h>
+
+static inline int current_has_network(void)
+{
+	return in_egroup_p(AID_INET) || capable(CAP_NET_RAW);
+}
+#else
+static inline int current_has_network(void)
+{
+	return 1;
+}
+#endif
+
 MODULE_AUTHOR("Cast of dozens");
 MODULE_DESCRIPTION("IPv6 protocol stack for Linux");
 MODULE_LICENSE("GPL");
@@ -108,6 +122,9 @@ static int inet6_create(struct net *net, struct socket *sock, int protocol,
 	char answer_no_check;
 	int try_loading_module = 0;
 	int err;
+
+	if (!current_has_network())
+		return -EACCES;
 
 	if (sock->type != SOCK_RAW &&
 	    sock->type != SOCK_DGRAM &&
@@ -488,7 +505,7 @@ int inet6_killaddr_ioctl(struct net *net, void __user *arg) {
 		return -EFAULT;
 
 	sin6.sin6_family = AF_INET6;
-	sin6.sin6_addr = ireq.ifr6_addr;
+	ipv6_addr_copy(&sin6.sin6_addr, &ireq.ifr6_addr);
 	return tcp_nuke_addr(net, (struct sockaddr *) &sin6);
 }
 
