@@ -108,7 +108,11 @@ struct usb_function {
 	struct usb_descriptor_header	**hs_descriptors;
 
 	struct usb_configuration	*config;
-
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+	int	(*set_intf_num)(struct usb_function *f,
+			int intf_num, int index_num);
+	int	(*set_config_desc)(int conf_num);
+#endif
 	/* REVISIT:  bind() functions can be marked __init, which
 	 * makes trouble for section mismatch analysis.  See if
 	 * we can't restructure things to avoid mismatching.
@@ -239,6 +243,9 @@ struct usb_configuration {
 int usb_add_config(struct usb_composite_dev *,
 		struct usb_configuration *,
 		int (*)(struct usb_configuration *));
+
+int usb_remove_config(struct usb_composite_dev *,
+		struct usb_configuration *);
 
 /**
  * struct usb_composite_driver - groups configurations into a gadget

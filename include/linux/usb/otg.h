@@ -41,6 +41,11 @@ enum usb_xceiv_events {
 	USB_EVENT_ID,           /* id was grounded */
 	USB_EVENT_CHARGER,      /* usb dedicated charger */
 	USB_EVENT_ENUMERATED,   /* gadget driver enumerated */
+	USB_EVENT_RIDA,
+	USB_EVENT_RIDB,
+	USB_EVENT_RIDC,
+	USB_EVENT_PREPARE,	/* restore context and clocks */
+	USB_EVENT_CLEAN,	/* disable clocks */
 };
 
 struct otg_transceiver;
