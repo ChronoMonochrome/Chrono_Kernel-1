@@ -63,6 +63,12 @@ extern void __raw_readsl(const void __iomem *addr, void *data, int longlen);
 #define MT_DEVICE_CACHED	2
 #define MT_DEVICE_WC		3
 /*
+ * NOTE : U8500 v1.0/ED cut specific hack.
+ * look at the commit message for more details
+ */
+#define MT_BACKUP_RAM           4
+
+/*
  * types 4 onwards can be found in asm/mach/map.h and are undefined
  * for ioremap
  */
@@ -205,9 +211,16 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
 #define readw(c)		({ u16 __v = readw_relaxed(c); __iormb(); __v; })
 #define readl(c)		({ u32 __v = readl_relaxed(c); __iormb(); __v; })
 
-#define writeb(v,c)		({ __iowmb(); writeb_relaxed(v,c); })
-#define writew(v,c)		({ __iowmb(); writew_relaxed(v,c); })
-#define writel(v,c)		({ __iowmb(); writel_relaxed(v,c); })
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+extern unsigned int * log_buf_writel;
+#define __write_log(a)          ({ if (log_buf_writel) *(volatile unsigned int __force *)log_buf_writel = (unsigned int)(a);})
+#else
+#define __write_log(a)
+#endif
+
+#define writeb(v,c)		({ __write_log(c); __iowmb(); writeb_relaxed(v,c); })
+#define writew(v,c)		({ __write_log(c); __iowmb(); writew_relaxed(v,c); })
+#define writel(v,c)		({ __write_log(c); __iowmb(); writel_relaxed(v,c); })
 
 #define readsb(p,d,l)		__raw_readsb(__mem_pci(p),d,l)
 #define readsw(p,d,l)		__raw_readsw(__mem_pci(p),d,l)
