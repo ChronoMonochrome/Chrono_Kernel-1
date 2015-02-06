@@ -12,6 +12,14 @@ config USB_OTG_UTILS
 	  Select this to make sure the build includes objects from
 	  the OTG infrastructure directory.
 
+config USB_OTG_WAKELOCK
+	bool "Hold a wakelock when USB connected"
+	depends on WAKELOCK
+	select USB_OTG_UTILS
+	help
+	  Select this to automatically hold a wakelock when USB is
+	  connected, preventing suspend.
+
 if USB || USB_GADGET
 
 #
@@ -119,6 +127,15 @@ config AB8500_USB
         select USB_OTG_UTILS
         help
           Enable this to support the USB OTG transceiver in AB8500 chip.
+          This transceiver supports high and full speed devices plus,
+          in host mode, low speed.
+
+config AB5500_USB
+        tristate "AB5500 USB Transceiver Driver"
+        depends on AB5500_CORE
+        select USB_OTG_UTILS
+        help
+          Enable this to support the USB OTG transceiver in AB5500 chip.
           This transceiver supports high and full speed devices plus,
           in host mode, low speed.
 
