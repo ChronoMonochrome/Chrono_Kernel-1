@@ -155,6 +155,7 @@ struct bnep_session {
 	unsigned int  role;
 	unsigned long state;
 	unsigned long flags;
+	atomic_t      terminate;
 	struct task_struct *task;
 
 	struct ethhdr eh;
@@ -165,6 +166,8 @@ struct bnep_session {
 
 	struct socket    *sock;
 	struct net_device *dev;
+
+	unsigned int setup_done;
 };
 
 void bnep_net_setup(struct net_device *dev);
