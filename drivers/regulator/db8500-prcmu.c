@@ -13,78 +13,17 @@
 #include <linux/err.h>
 #include <linux/spinlock.h>
 #include <linux/platform_device.h>
-#include <linux/mfd/db8500-prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/db8500-prcmu.h>
+#include "dbx500-prcmu.h"
 
-/*
- * power state reference count
- */
-static int power_state_active_cnt; /* will initialize to zero */
-static DEFINE_SPINLOCK(power_state_active_lock);
-
-static void power_state_active_enable(void)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&power_state_active_lock, flags);
-	power_state_active_cnt++;
-	spin_unlock_irqrestore(&power_state_active_lock, flags);
-}
-
-static int power_state_active_disable(void)
-{
-	int ret = 0;
-	unsigned long flags;
-
-	spin_lock_irqsave(&power_state_active_lock, flags);
-	if (power_state_active_cnt <= 0) {
-		pr_err("power state: unbalanced enable/disable calls\n");
-		ret = -EINVAL;
-		goto out;
-	}
-
-	power_state_active_cnt--;
-out:
-	spin_unlock_irqrestore(&power_state_active_lock, flags);
-	return ret;
-}
-
-/*
- * Exported interface for CPUIdle only. This function is called when interrupts
- * are turned off. Hence, no locking.
- */
-int power_state_active_is_enabled(void)
-{
-	return (power_state_active_cnt > 0);
-}
-
-/**
- * struct db8500_regulator_info - db8500 regulator information
- * @dev: device pointer
- * @desc: regulator description
- * @rdev: regulator device pointer
- * @is_enabled: status of the regulator
- * @epod_id: id for EPOD (power domain)
- * @is_ramret: RAM retention switch for EPOD (power domain)
- * @operating_point: operating point (only for vape, to be removed)
- *
- */
-struct db8500_regulator_info {
-	struct device *dev;
-	struct regulator_desc desc;
-	struct regulator_dev *rdev;
-	bool is_enabled;
-	u16 epod_id;
-	bool is_ramret;
-	bool exclude_from_power_state;
-	unsigned int operating_point;
-};
+int (*prcmu_set_epod) (u16 epod_id, u8 epod_state);
 
 static int db8500_regulator_enable(struct regulator_dev *rdev)
 {
-	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
 
 	if (info == NULL)
 		return -EINVAL;
@@ -92,16 +31,18 @@ static int db8500_regulator_enable(struct regulator_dev *rdev)
 	dev_vdbg(rdev_get_dev(rdev), "regulator-%s-enable\n",
 		info->desc.name);
 
-	info->is_enabled = true;
-	if (!info->exclude_from_power_state)
-		power_state_active_enable();
+	if (!info->is_enabled) {
+		info->is_enabled = true;
+		if (!info->exclude_from_power_state)
+			power_state_active_enable();
+	}
 
 	return 0;
 }
 
 static int db8500_regulator_disable(struct regulator_dev *rdev)
 {
-	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
 	int ret = 0;
 
 	if (info == NULL)
@@ -110,16 +51,18 @@ static int db8500_regulator_disable(struct regulator_dev *rdev)
 	dev_vdbg(rdev_get_dev(rdev), "regulator-%s-disable\n",
 		info->desc.name);
 
-	info->is_enabled = false;
-	if (!info->exclude_from_power_state)
-		ret = power_state_active_disable();
+	if (info->is_enabled) {
+		info->is_enabled = false;
+		if (!info->exclude_from_power_state)
+			ret = power_state_active_disable();
+	}
 
 	return ret;
 }
 
 static int db8500_regulator_is_enabled(struct regulator_dev *rdev)
 {
-	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
 
 	if (info == NULL)
 		return -EINVAL;
@@ -140,8 +83,13 @@ static struct regulator_ops db8500_regulator_ops = {
 /*
  * EPOD control
  */
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+bool epod_on[NUM_EPOD_ID];
+bool epod_ramret[NUM_EPOD_ID];
+#else
 static bool epod_on[NUM_EPOD_ID];
 static bool epod_ramret[NUM_EPOD_ID];
+#endif
 
 static int enable_epod(u16 epod_id, bool ramret)
 {
@@ -196,7 +144,7 @@ static int disable_epod(u16 epod_id, bool ramret)
  */
 static int db8500_regulator_switch_enable(struct regulator_dev *rdev)
 {
-	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
 	int ret;
 
 	if (info == NULL)
@@ -220,7 +168,7 @@ out:
 
 static int db8500_regulator_switch_disable(struct regulator_dev *rdev)
 {
-	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
 	int ret;
 
 	if (info == NULL)
@@ -244,7 +192,7 @@ out:
 
 static int db8500_regulator_switch_is_enabled(struct regulator_dev *rdev)
 {
-	struct db8500_regulator_info *info = rdev_get_drvdata(rdev);
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
 
 	if (info == NULL)
 		return -EINVAL;
@@ -265,8 +213,8 @@ static struct regulator_ops db8500_regulator_switch_ops = {
 /*
  * Regulator information
  */
-static struct db8500_regulator_info
-db8500_regulator_info[DB8500_NUM_REGULATORS] = {
+static struct dbx500_regulator_info
+dbx500_regulator_info[DB8500_NUM_REGULATORS] = {
 	[DB8500_REGULATOR_VAPE] = {
 		.desc = {
 			.name	= "db8500-vape",
@@ -470,17 +418,20 @@ db8500_regulator_info[DB8500_NUM_REGULATORS] = {
 
 static int __devinit db8500_regulator_probe(struct platform_device *pdev)
 {
-	struct regulator_init_data *db8500_init_data =
+	struct db8500_regulator_init_data *db8500_init_pdata =
 					dev_get_platdata(&pdev->dev);
+	struct regulator_init_data *db8500_init_data =
+		(struct regulator_init_data *) db8500_init_pdata->regulators;
 	int i, err;
 
+	prcmu_set_epod = db8500_init_pdata->set_epod;
 	/* register all regulators */
-	for (i = 0; i < ARRAY_SIZE(db8500_regulator_info); i++) {
-		struct db8500_regulator_info *info;
+	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
+		struct dbx500_regulator_info *info;
 		struct regulator_init_data *init_data = &db8500_init_data[i];
 
 		/* assign per-regulator data */
-		info = &db8500_regulator_info[i];
+		info = &dbx500_regulator_info[i];
 		info->dev = &pdev->dev;
 
 		/* register with the regulator framework */
@@ -493,7 +444,7 @@ static int __devinit db8500_regulator_probe(struct platform_device *pdev)
 
 			/* if failing, unregister all earlier regulators */
 			while (--i >= 0) {
-				info = &db8500_regulator_info[i];
+				info = &dbx500_regulator_info[i];
 				regulator_unregister(info->rdev);
 			}
 			return err;
@@ -502,17 +453,22 @@ static int __devinit db8500_regulator_probe(struct platform_device *pdev)
 		dev_dbg(rdev_get_dev(info->rdev),
 			"regulator-%s-probed\n", info->desc.name);
 	}
+	err = ux500_regulator_debug_init(pdev,
+					 dbx500_regulator_info,
+					 ARRAY_SIZE(dbx500_regulator_info));
 
-	return 0;
+	return err;
 }
 
 static int __exit db8500_regulator_remove(struct platform_device *pdev)
 {
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(db8500_regulator_info); i++) {
-		struct db8500_regulator_info *info;
-		info = &db8500_regulator_info[i];
+	ux500_regulator_debug_exit();
+
+	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
+		struct dbx500_regulator_info *info;
+		info = &dbx500_regulator_info[i];
 
 		dev_vdbg(rdev_get_dev(info->rdev),
 			"regulator-%s-remove\n", info->desc.name);
