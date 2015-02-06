@@ -12,14 +12,8 @@
 #include <linux/dmaengine.h>
 #include <linux/workqueue.h>
 #include <linux/interrupt.h>
-
-/*
- * Maxium size for a single dma descriptor
- * Size is limited to 16 bits.
- * Size is in the units of addr-widths (1,2,4,8 bytes)
- * Larger transfers will be split up to multiple linked desc
- */
-#define STEDMA40_MAX_SEG_SIZE 0xFFFF
+#include <linux/dmaengine.h>
+#include <linux/version.h>
 
 /* dev types for memcpy */
 #define STEDMA40_DEV_DST_MEMORY (-1)
@@ -70,9 +64,9 @@ enum stedma40_flow_ctrl {
 };
 
 enum stedma40_periph_data_width {
-	STEDMA40_BYTE_WIDTH = STEDMA40_ESIZE_8_BIT,
-	STEDMA40_HALFWORD_WIDTH = STEDMA40_ESIZE_16_BIT,
-	STEDMA40_WORD_WIDTH = STEDMA40_ESIZE_32_BIT,
+	STEDMA40_BYTE_WIDTH       = STEDMA40_ESIZE_8_BIT,
+	STEDMA40_HALFWORD_WIDTH   = STEDMA40_ESIZE_16_BIT,
+	STEDMA40_WORD_WIDTH       = STEDMA40_ESIZE_32_BIT,
 	STEDMA40_DOUBLEWORD_WIDTH = STEDMA40_ESIZE_64_BIT
 };
 
@@ -83,21 +77,21 @@ enum stedma40_xfer_dir {
 	STEDMA40_PERIPH_TO_PERIPH
 };
 
-
 /**
- * struct stedma40_chan_cfg - dst/src channel configuration
+ * struct stedma40_chan_cfg - dst/src channel configurration
  *
- * @big_endian: true if the src/dst should be read as big endian
+ * @big_endian: true if src/dst should be read as big_endian
  * @data_width: Data width of the src/dst hardware
- * @p_size: Burst size
+ * @psize: Burst size
  * @flow_ctrl: Flow control on/off.
  */
 struct stedma40_half_channel_info {
-	bool big_endian;
+	bool				big_endian;
 	enum stedma40_periph_data_width data_width;
-	int psize;
-	enum stedma40_flow_ctrl flow_ctrl;
+	int				psize;
+	enum stedma40_flow_ctrl		flow_ctrl;
 };
+
 
 /**
  * struct stedma40_chan_cfg - Structure to be filled by client drivers.
@@ -112,7 +106,8 @@ struct stedma40_half_channel_info {
  * @dst_dev_type: Dst device type
  * @src_info: Parameters for dst half channel
  * @dst_info: Parameters for dst half channel
- *
+ * @use_fixed_channel: if true, use the physical channel specified by phy_channel
+ * @phy_channel: physical channel to use, only if use_fixed_channel is true
  *
  * This structure has to be filled by the client drivers.
  * It is recommended to do all dma configurations for clients in the machine.
@@ -120,14 +115,19 @@ struct stedma40_half_channel_info {
  */
 struct stedma40_chan_cfg {
 	enum stedma40_xfer_dir			 dir;
+
 	bool					 high_priority;
 	bool					 realtime;
 	enum stedma40_mode			 mode;
 	enum stedma40_mode_opt			 mode_opt;
+
 	int					 src_dev_type;
 	int					 dst_dev_type;
 	struct stedma40_half_channel_info	 src_info;
 	struct stedma40_half_channel_info	 dst_info;
+
+	bool					 use_fixed_channel;
+	int					 phy_channel;
 };
 
 /**
@@ -141,6 +141,13 @@ struct stedma40_chan_cfg {
  * @memcpy_conf_phy: default configuration of physical channel memcpy
  * @memcpy_conf_log: default configuration of logical channel memcpy
  * @disabled_channels: A vector, ending with -1, that marks physical channels
+ * @soft_lli_chans: A vector, that marks physical channels will use LLI by SW
+ * 		    which avoids HW bug that exists in some versions of the
+ * 		    controller. SoftLLI introduces relink overhead that could
+ *		    impact performace for certain use cases.
+ * @num_of_soft_lli_chans: The number of channels that needs to be configured
+ *			   to use SoftLLI.
+ * @use_esram_lcla: flag for mapping the lcla into esram region
  * that are for different reasons not available for the driver.
  */
 struct stedma40_platform_data {
@@ -152,9 +159,43 @@ struct stedma40_platform_data {
 	struct stedma40_chan_cfg	*memcpy_conf_phy;
 	struct stedma40_chan_cfg	*memcpy_conf_log;
 	int				 disabled_channels[STEDMA40_MAX_PHYS];
+	int				*soft_lli_chans;
+	int				 num_of_soft_lli_chans;
+	bool				 use_esram_lcla;
 };
 
-#ifdef CONFIG_STE_DMA40
+struct d40_desc;
+
+int stedma40_set_dev_addr(struct dma_chan *chan,
+			  dma_addr_t src_dev_addr,
+			  dma_addr_t dst_dev_addr);
+
+/*
+ * stedma40_get_src_addr - get current source address
+ * @chan: the DMA channel
+ *
+ * Returns the physical address of the current source element to be read by the
+ * DMA.
+ */
+dma_addr_t stedma40_get_src_addr(struct dma_chan *chan);
+
+/*
+ * stedma40_get_dst_addr - get current destination address
+ * @chan: the DMA channel
+ *
+ * Returns the physical address of the current destination element to be
+ * written by the DMA.
+ */
+dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan);
+
+/**
+ * setdma40_residue() - Returna the remaining bytes to transfer.
+ *
+ * @chan: dmaengine handle
+ *
+ * returns 0 or positive number of remaning bytes.
+ */
+u32 stedma40_residue(struct dma_chan *chan);
 
 /**
  * stedma40_filter() - Provides stedma40_chan_cfg to the
@@ -168,51 +209,6 @@ struct stedma40_platform_data {
  *
  *
  */
-
 bool stedma40_filter(struct dma_chan *chan, void *data);
-
-/**
- * stedma40_slave_mem() - Transfers a raw data buffer to or from a slave
- * (=device)
- *
- * @chan: dmaengine handle
- * @addr: source or destination physicall address.
- * @size: bytes to transfer
- * @direction: direction of transfer
- * @flags: is actually enum dma_ctrl_flags. See dmaengine.h
- */
-
-static inline struct
-dma_async_tx_descriptor *stedma40_slave_mem(struct dma_chan *chan,
-					    dma_addr_t addr,
-					    unsigned int size,
-					    enum dma_data_direction direction,
-					    unsigned long flags)
-{
-	struct scatterlist sg;
-	sg_init_table(&sg, 1);
-	sg.dma_address = addr;
-	sg.length = size;
-
-	return chan->device->device_prep_slave_sg(chan, &sg, 1,
-						  direction, flags);
-}
-
-#else
-static inline bool stedma40_filter(struct dma_chan *chan, void *data)
-{
-	return false;
-}
-
-static inline struct
-dma_async_tx_descriptor *stedma40_slave_mem(struct dma_chan *chan,
-					    dma_addr_t addr,
-					    unsigned int size,
-					    enum dma_data_direction direction,
-					    unsigned long flags)
-{
-	return NULL;
-}
-#endif
 
 #endif
