@@ -13,6 +13,7 @@
 #include <linux/list.h>
 #include <linux/netdevice.h>
 #include <linux/if_arp.h>
+#include <linux/kthread.h>
 
 #include <net/caif/caif_device.h>
 #include <net/caif/caif_shm.h>
@@ -107,8 +108,13 @@ struct shmdrv_layer {
 	struct workqueue_struct *pshm_tx_workqueue;
 	struct workqueue_struct *pshm_rx_workqueue;
 
+	struct kthread_worker pshm_flow_ctrl_kw;
+	struct task_struct *pshm_flow_ctrl_kw_task;
+
 	struct work_struct shm_tx_work;
 	struct work_struct shm_rx_work;
+	struct kthread_work shm_flow_on_work;
+	struct kthread_work shm_flow_off_work;
 
 	struct sk_buff_head sk_qhead;
 	struct shmdev_layer *pshm_dev;
@@ -124,6 +130,24 @@ static int shm_netdev_close(struct net_device *shm_netdev)
 {
 	netif_stop_queue(shm_netdev);
 	return 0;
+}
+
+static void shm_flow_on_work_func(struct kthread_work *work)
+{
+	struct shmdrv_layer *pshm_drv = container_of(work, struct shmdrv_layer, shm_flow_on_work);
+
+	pshm_drv->cfdev.flowctrl
+			(pshm_drv->pshm_dev->pshm_netdev,
+			CAIF_FLOW_ON);
+}
+
+static void shm_flow_off_work_func(struct kthread_work *work)
+{
+	struct shmdrv_layer *pshm_drv = container_of(work, struct shmdrv_layer, shm_flow_off_work);
+
+	pshm_drv->cfdev.flowctrl
+			(pshm_drv->pshm_dev->pshm_netdev,
+			CAIF_FLOW_OFF);
 }
 
 int caif_shmdrv_rx_cb(u32 mbx_msg, void *priv)
@@ -238,10 +262,8 @@ int caif_shmdrv_rx_cb(u32 mbx_msg, void *priv)
 		if ((avail_emptybuff > HIGH_WATERMARK) &&
 					(!pshm_drv->tx_empty_available)) {
 			pshm_drv->tx_empty_available = 1;
-			pshm_drv->cfdev.flowctrl
-					(pshm_drv->pshm_dev->pshm_netdev,
-								CAIF_FLOW_ON);
-
+			queue_kthread_work(&pshm_drv->pshm_flow_ctrl_kw,
+					&pshm_drv->shm_flow_on_work);
 			spin_unlock_irqrestore(&pshm_drv->lock, flags);
 
 			/* Schedule the work queue. if required */
@@ -285,6 +307,7 @@ static void shm_rx_work_func(struct work_struct *rx_work)
 			list_entry(pshm_drv->rx_full_list.next, struct buf_list,
 					list);
 		list_del_init(&pbuf->list);
+		spin_unlock_irqrestore(&pshm_drv->lock, flags);
 
 		/* Retrieve pointer to start of the packet descriptor area. */
 		pck_desc = (struct shm_pck_desc *) pbuf->desc_vptr;
@@ -360,6 +383,7 @@ static void shm_rx_work_func(struct work_struct *rx_work)
 			pck_desc++;
 		}
 
+		spin_lock_irqsave(&pshm_drv->lock, flags);
 		list_add_tail(&pbuf->list, &pshm_drv->rx_pend_list);
 
 		spin_unlock_irqrestore(&pshm_drv->lock, flags);
@@ -412,7 +436,6 @@ static void shm_tx_work_func(struct work_struct *tx_work)
 
 		if (skb == NULL)
 			goto send_msg;
-
 		/* Check the available no. of buffers in the empty list */
 		list_for_each(pos, &pshm_drv->tx_empty_list)
 			avail_emptybuff++;
@@ -421,9 +444,8 @@ static void shm_tx_work_func(struct work_struct *tx_work)
 					pshm_drv->tx_empty_available) {
 			/* Update blocking condition. */
 			pshm_drv->tx_empty_available = 0;
-			pshm_drv->cfdev.flowctrl
-					(pshm_drv->pshm_dev->pshm_netdev,
-					CAIF_FLOW_OFF);
+			queue_kthread_work(&pshm_drv->pshm_flow_ctrl_kw,
+					&pshm_drv->shm_flow_off_work);
 		}
 		/*
 		 * We simply return back to the caller if we do not have space
@@ -469,6 +491,8 @@ static void shm_tx_work_func(struct work_struct *tx_work)
 			}
 
 			skb = skb_dequeue(&pshm_drv->sk_qhead);
+			if (skb == NULL)
+				break;
 			/* Copy in CAIF frame. */
 			skb_copy_bits(skb, 0, pbuf->desc_vptr +
 					pbuf->frm_ofs + SHM_HDR_LEN +
@@ -477,7 +501,7 @@ static void shm_tx_work_func(struct work_struct *tx_work)
 			pshm_drv->pshm_dev->pshm_netdev->stats.tx_packets++;
 			pshm_drv->pshm_dev->pshm_netdev->stats.tx_bytes +=
 									frmlen;
-			dev_kfree_skb(skb);
+			dev_kfree_skb_any(skb);
 
 			/* Fill in the shared memory packet descriptor area. */
 			pck_desc = (struct shm_pck_desc *) (pbuf->desc_vptr);
@@ -494,7 +518,8 @@ static void shm_tx_work_func(struct work_struct *tx_work)
 			pbuf->frames++;
 			pbuf->frm_ofs += frmlen + (frmlen % 32);
 
-		} while (pbuf->frames < SHM_MAX_FRMS_PER_BUF);
+		} while (pbuf->frames < SHM_MAX_FRMS_PER_BUF &&
+				pbuf->frm_ofs < pbuf->len);
 
 		/* Assign buffer as full. */
 		list_add_tail(&pbuf->list, &pshm_drv->tx_full_list);
@@ -512,15 +537,10 @@ send_msg:
 static int shm_netdev_tx(struct sk_buff *skb, struct net_device *shm_netdev)
 {
 	struct shmdrv_layer *pshm_drv;
-	unsigned long flags = 0;
 
 	pshm_drv = netdev_priv(shm_netdev);
 
-	spin_lock_irqsave(&pshm_drv->lock, flags);
-
 	skb_queue_tail(&pshm_drv->sk_qhead, skb);
-
-	spin_unlock_irqrestore(&pshm_drv->lock, flags);
 
 	/* Schedule Tx work queue. for deferred processing of skbs*/
 	if (!work_pending(&pshm_drv->shm_tx_work))
@@ -558,6 +578,7 @@ int caif_shmcore_probe(struct shmdev_layer *pshm_dev)
 {
 	int result, j;
 	struct shmdrv_layer *pshm_drv = NULL;
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
 	pshm_dev->pshm_netdev = alloc_netdev(sizeof(struct shmdrv_layer),
 						"cfshm%d", shm_netdev_setup);
@@ -606,6 +627,7 @@ int caif_shmcore_probe(struct shmdev_layer *pshm_dev)
 		pshm_drv->shm_rx_addr = pshm_dev->shm_base_addr +
 						(NR_TX_BUF * TX_BUF_SZ);
 
+	spin_lock_init(&pshm_drv->lock);
 	INIT_LIST_HEAD(&pshm_drv->tx_empty_list);
 	INIT_LIST_HEAD(&pshm_drv->tx_pend_list);
 	INIT_LIST_HEAD(&pshm_drv->tx_full_list);
@@ -617,10 +639,19 @@ int caif_shmcore_probe(struct shmdev_layer *pshm_dev)
 	INIT_WORK(&pshm_drv->shm_tx_work, shm_tx_work_func);
 	INIT_WORK(&pshm_drv->shm_rx_work, shm_rx_work_func);
 
+	init_kthread_work(&pshm_drv->shm_flow_on_work, shm_flow_on_work_func);
+	init_kthread_work(&pshm_drv->shm_flow_off_work, shm_flow_off_work_func);
+
 	pshm_drv->pshm_tx_workqueue =
 				create_singlethread_workqueue("shm_tx_work");
 	pshm_drv->pshm_rx_workqueue =
 				create_singlethread_workqueue("shm_rx_work");
+
+	init_kthread_worker(&pshm_drv->pshm_flow_ctrl_kw);
+	pshm_drv->pshm_flow_ctrl_kw_task = kthread_run(kthread_worker_fn,
+			&pshm_drv->pshm_flow_ctrl_kw, "pshm_caif_flow_ctrl");
+	/* must use the FIFO scheduler as it is realtime sensitive */
+	sched_setscheduler(pshm_drv->pshm_flow_ctrl_kw_task, SCHED_FIFO, &param);
 
 	for (j = 0; j < NR_TX_BUF; j++) {
 		struct buf_list *tx_buf =
@@ -739,6 +770,8 @@ void caif_shmcore_remove(struct net_device *pshm_netdev)
 	/* Destroy work queues. */
 	destroy_workqueue(pshm_drv->pshm_tx_workqueue);
 	destroy_workqueue(pshm_drv->pshm_rx_workqueue);
+	flush_kthread_worker(&pshm_drv->pshm_flow_ctrl_kw);
+	kthread_stop(pshm_drv->pshm_flow_ctrl_kw_task);
 
 	unregister_netdev(pshm_netdev);
 }
