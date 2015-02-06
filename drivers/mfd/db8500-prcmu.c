@@ -1898,6 +1898,30 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 
 		return count;
 	}
+	
+	if (!strncmp(buf, "varm+=", 6)) {
+		ret = sscanf(&buf[6], "%d", &val);
+		if ((!ret)) {
+			pr_err("[LiveOPP] Invalid value\n");
+			return -EINVAL;
+		}
+
+		liveopp_arm[_index].varm_raw += val;
+
+		return count;
+	}
+
+	if (!strncmp(buf, "varm-=", 6)) {
+		ret = sscanf(&buf[6], "%d", &val);
+		if ((!ret)) {
+			pr_err("[LiveOPP] Invalid value\n");
+			return -EINVAL;
+		}
+
+		liveopp_arm[_index].varm_raw -= val;
+
+		return count;
+	}
 
 	if (!strncmp(buf, "varm+", 5)) {
 		liveopp_arm[_index].varm_raw ++;
