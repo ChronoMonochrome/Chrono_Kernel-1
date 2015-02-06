@@ -11,9 +11,7 @@
 #define ASM_ARCH_IRQS_H
 
 #include <mach/hardware.h>
-
-#define IRQ_LOCALTIMER			29
-#define IRQ_LOCALWDOG			30
+#include <linux/gpio.h>
 
 /* Shared Peripheral Interrupt (SHPI) */
 #define IRQ_SHPI_START			32
@@ -22,28 +20,37 @@
  * MTU0 preserved for now until plat-nomadik is taught not to use it.  Don't
  * add any other IRQs here, use the irqs-dbx500.h files.
  */
-#define IRQ_MTU0		(IRQ_SHPI_START + 4)
+#define IRQ_MTU0			(IRQ_SHPI_START + 4)
 
-#define DBX500_NR_INTERNAL_IRQS		160
+#define IRQ_LOCALTIMER			29
+#define IRQ_LOCALWDOG			30
+
+/*********************************************************************/
+
+#define DBX500_NR_INTERNAL_IRQS	(IRQ_SHPI_START + 224)
 
 /* After chip-specific IRQ numbers we have the GPIO ones */
-#define NOMADIK_NR_GPIO			288
 #define NOMADIK_GPIO_TO_IRQ(gpio)	((gpio) + DBX500_NR_INTERNAL_IRQS)
 #define NOMADIK_IRQ_TO_GPIO(irq)	((irq) - DBX500_NR_INTERNAL_IRQS)
+
+#define GPIO_TO_IRQ			NOMADIK_GPIO_TO_IRQ
+#define IRQ_TO_GPIO			NOMADIK_IRQ_TO_GPIO
 #define IRQ_GPIO_END			NOMADIK_GPIO_TO_IRQ(NOMADIK_NR_GPIO)
 
-#define IRQ_SOC_START		IRQ_GPIO_END
+#define IRQ_SOC_START			IRQ_GPIO_END
 /* This will be overridden by SoC-specific irq headers */
-#define IRQ_SOC_END		IRQ_SOC_START
+#define IRQ_SOC_END			IRQ_SOC_START
+
+#define IRQ_BOARD_START			IRQ_SOC_END
+/* This will be overridden by board-specific irq headers */
+#define IRQ_BOARD_END			IRQ_BOARD_START
 
 #include <mach/irqs-db5500.h>
 #include <mach/irqs-db8500.h>
+#include <mach/irqs-db9540.h>
 
-#define IRQ_BOARD_START		IRQ_SOC_END
-/* This will be overridden by board-specific irq headers */
-#define IRQ_BOARD_END		IRQ_BOARD_START
 
-#ifdef CONFIG_MACH_U8500
+#if defined(CONFIG_MACH_U8500) || defined(CONFIG_MACH_SAMSUNG_U8500)
 #include <mach/irqs-board-mop500.h>
 #endif
 
@@ -51,6 +58,8 @@
 #include <mach/irqs-board-u5500.h>
 #endif
 
+#ifndef NR_IRQS
 #define NR_IRQS			IRQ_BOARD_END
+#endif
 
 #endif /* ASM_ARCH_IRQS_H */

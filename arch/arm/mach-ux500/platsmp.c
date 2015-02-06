@@ -22,7 +22,7 @@
 #include <asm/smp_scu.h>
 #include <mach/hardware.h>
 #include <mach/setup.h>
-
+#include <linux/mfd/dbx500-prcmu.h>
 /* This is called from headsmp.S to wakeup the secondary core */
 extern void u8500_secondary_startup(void);
 
@@ -49,7 +49,7 @@ static void __iomem *scu_base_addr(void)
 {
 	if (cpu_is_u5500())
 		return __io_address(U5500_SCU_BASE);
-	else if (cpu_is_u8500())
+	else if (cpu_is_u8500() || cpu_is_u9540())
 		return __io_address(U8500_SCU_BASE);
 	else
 		ux500_unknown_soc();
@@ -84,11 +84,18 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
 int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
 	unsigned long timeout;
+	int ret;
+
+	ret = prcmu_replug_cpu1();
+	/*  if CPU1 not switch on Abort sequence */
+	if (ret != 0)
+		return ret;
 
 	/*
 	 * set synchronisation state between this boot processor
 	 * and the secondary one
 	 */
+
 	spin_lock(&boot_lock);
 
 	/*
@@ -98,7 +105,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 	 */
 	write_pen_release(cpu);
 
-	gic_raise_softirq(cpumask_of(cpu), 1);
+	smp_send_reschedule(cpu);
 
 	timeout = jiffies + (1 * HZ);
 	while (time_before(jiffies, timeout)) {
@@ -121,7 +128,7 @@ static void __init wakeup_secondary(void)
 
 	if (cpu_is_u5500())
 		backupram = __io_address(U5500_BACKUPRAM0_BASE);
-	else if (cpu_is_u8500())
+	else if (cpu_is_u8500() || cpu_is_u9540())
 		backupram = __io_address(U8500_BACKUPRAM0_BASE);
 	else
 		ux500_unknown_soc();

@@ -38,61 +38,47 @@ static inline unsigned int __attribute_const__ dbx500_revision(void)
 
 static inline bool __attribute_const__ cpu_is_u8500(void)
 {
-	return dbx500_partnumber() == 0x8500;
+#ifdef CONFIG_UX500_SOC_DB8500
+	/* partnumber 8520 also comes under 8500 */
+	return ((dbx500_partnumber() >> 8) & 0xff) == 0x85;
+#else
+	return false;
+#endif
+}
+
+static inline bool __attribute_const__ cpu_is_u8520(void)
+{
+#ifdef CONFIG_UX500_SOC_DB8500
+	return dbx500_partnumber() == 0x8520;
+#else
+	return false;
+#endif
 }
 
 static inline bool __attribute_const__ cpu_is_u5500(void)
 {
+#ifdef CONFIG_UX500_SOC_DB5500
 	return dbx500_partnumber() == 0x5500;
+#else
+	return false;
+#endif
 }
 
-/*
- * 8500 revisions
- */
-
-static inline bool __attribute_const__ cpu_is_u8500ed(void)
-{
-	return cpu_is_u8500() && dbx500_revision() == 0x00;
-}
-
-static inline bool __attribute_const__ cpu_is_u8500v1(void)
-{
-	return cpu_is_u8500() && (dbx500_revision() & 0xf0) == 0xA0;
-}
-
-static inline bool __attribute_const__ cpu_is_u8500v10(void)
-{
-	return cpu_is_u8500() && dbx500_revision() == 0xA0;
-}
-
-static inline bool __attribute_const__ cpu_is_u8500v11(void)
-{
-	return cpu_is_u8500() && dbx500_revision() == 0xA1;
-}
-
-static inline bool __attribute_const__ cpu_is_u8500v2(void)
-{
-	return cpu_is_u8500() && ((dbx500_revision() & 0xf0) == 0xB0);
-}
-
-static inline bool cpu_is_u8500v20(void)
-{
-	return cpu_is_u8500() && (dbx500_revision() == 0xB0);
-}
-
-static inline bool cpu_is_u8500v21(void)
-{
-	return cpu_is_u8500() && (dbx500_revision() == 0xB1);
-}
-
-static inline bool cpu_is_u8500v20_or_later(void)
-{
-	return cpu_is_u8500() && !cpu_is_u8500v10() && !cpu_is_u8500v11();
-}
-
-static inline bool ux500_is_svp(void)
+#ifdef CONFIG_UX500_SOC_DB8500
+inline bool cpu_is_u9500(void);
+#else
+static inline bool cpu_is_u9500(void)
 {
 	return false;
+}
+#endif
+static inline bool __attribute_const__ cpu_is_u9540(void)
+{
+#ifdef CONFIG_UX500_SOC_DB8500
+	return dbx500_partnumber() == 0x9540;
+#else
+	return false;
+#endif
 }
 
 #define ux500_unknown_soc()	BUG()

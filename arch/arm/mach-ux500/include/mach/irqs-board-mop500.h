@@ -8,12 +8,12 @@
 #ifndef __MACH_IRQS_BOARD_MOP500_H
 #define __MACH_IRQS_BOARD_MOP500_H
 
-/* Number of AB8500 irqs is taken from header file */
+/* Number of AB8500 or AB9540 irqs is taken from header file */
 #include <linux/mfd/ab8500.h>
 
 #define MOP500_AB8500_IRQ_BASE		IRQ_BOARD_START
 #define MOP500_AB8500_IRQ_END		(MOP500_AB8500_IRQ_BASE \
-					 + AB8500_NR_IRQS)
+					 + AB8500_MAX_NR_IRQS)
 
 /* TC35892 */
 #define TC35892_NR_INTERNAL_IRQS	8
@@ -43,6 +43,8 @@
 
 #define MOP500_AB8500_VIR_GPIO_IRQ_BASE		\
 	MOP500_STMPE1601_IRQ_END
+#define MOP500_AB8500_VIR_GPIO_IRQ(x)		\
+	(MOP500_AB8500_VIR_GPIO_IRQ_BASE + (x))
 #define MOP500_AB8500_VIR_GPIO_IRQ_END		\
 	(MOP500_AB8500_VIR_GPIO_IRQ_BASE + AB8500_VIR_GPIO_NR_IRQS)
 
@@ -57,7 +59,7 @@
  */
 #if MOP500_IRQ_END > IRQ_BOARD_END
 #undef IRQ_BOARD_END
-#define IRQ_BOARD_END	MOP500_IRQ_END
+#define IRQ_BOARD_END		MOP500_IRQ_END
 #endif
 
 #endif

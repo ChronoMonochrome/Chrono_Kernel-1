@@ -18,6 +18,7 @@ void __init ux500_map_io(void);
 extern void __init u5500_map_io(void);
 extern void __init u8500_map_io(void);
 
+extern void __init ux500_init_devices(void);
 extern void __init u5500_init_devices(void);
 extern void __init u8500_init_devices(void);
 
@@ -26,6 +27,7 @@ extern void __init ux500_init_irq(void);
 extern void __init u5500_sdi_init(void);
 
 extern void __init db5500_dma_init(void);
+extern void __init db8500_dma_init(void);
 
 /* We re-use nomadik_timer for this platform */
 extern void nmdk_timer_init(void);
@@ -35,6 +37,8 @@ extern void __init amba_add_devices(struct amba_device *devs[], int num);
 
 struct sys_timer;
 extern struct sys_timer ux500_timer;
+
+void ux500_restart(char mode, const char *cmd);
 
 #define __IO_DEV_DESC(x, sz)	{		\
 	.virtual	= IO_ADDRESS(x),	\
@@ -48,6 +52,13 @@ extern struct sys_timer ux500_timer;
 	.pfn		= __phys_to_pfn(x),	\
 	.length		= sz,			\
 	.type		= MT_MEMORY,		\
+}
+
+#define __MEM_DEV_DESC_DB9540_ROM(x, sz) {		\
+	.virtual	= IO_ADDRESS_DB9540_ROM(x),	\
+	.pfn		= __phys_to_pfn(x),		\
+	.length		= sz,				\
+	.type		= MT_MEMORY,			\
 }
 
 #endif /*  __ASM_ARCH_SETUP_H */

@@ -1,11 +1,57 @@
 /*
- *  Copyright (C) 2010 ST-Ericsson
+ *  Copyright (C) 2010 ST-Ericsson SA
  *  Copyright (C) 2009 STMicroelectronics
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
+#ifndef UX500_CLOCK_H
+#define UX500_CLOCK_H
+
+#include <linux/clkdev.h>
+
+/**
+ * struct clk
+ * @ops:	The hardware specific operations defined for the clock.
+ * @name:	The name of the clock.
+ * @mutex:	The mutex to lock when operating on the clock. %NULL means that
+ *		the common clock spinlock will be used.
+ * @enabled:	A reference counter of the enable requests for the clock.
+ * @rate_locked: A rate lock counter used by clk_set_rate().
+ * @opp100:	A flag saying whether the clock is requested to run at the
+ *		OPP 100%% frequency.
+ * @rate:	The frequency of the clock. For scalable and scaling clocks,
+ *		this is the OPP 100%% frequency.
+ * @io_base:	An IO memory base address, meaningful only when considered
+ *		together with the defined @ops.
+ * @cg_sel:	Clock gate selector, meaningful only when considered together
+ *		with the specified @ops.
+ * @parent:	The current (or only) parent clock of the clock.
+ * @bus_parent:	The (optional) auxiliary bus clock "parent" of the clock.
+ * @parents:	A list of the possible parents the clock can have. This should
+ *		be a %NULL-terminated &struct_clk array. Present if and only
+ *		if clk_set_parent() is implemented for the clock.
+ * @regulator:	The regulator needed to have the clock functional, if any.
+ * @clock:	The clock needed to control the clock, if any.
+ */
+struct clk {
+	const struct clkops *ops;
+	const char *name;
+	struct mutex *mutex;
+	unsigned int enabled;
+	unsigned int rate_locked;
+	bool opp100;
+	unsigned long rate;
+	unsigned int io_base;
+	u32 cg_sel;
+	struct clk *parent;
+	struct clk *bus_parent;
+	struct clk **parents;
+	struct regulator *regulator;
+	struct clk *clock;
+	struct list_head list;
+};
 
 /**
  * struct clkops - ux500 clock operations
@@ -18,134 +64,119 @@
  * NULL, the rate in the struct clk will be used.
  */
 struct clkops {
-	void (*enable) (struct clk *);
-	void (*disable) (struct clk *);
-	unsigned long (*get_rate) (struct clk *);
+	int (*enable)(struct clk *);
+	void (*disable)(struct clk *);
+	unsigned long (*get_rate)(struct clk *);
+	int (*set_rate)(struct clk *, unsigned long);
+	long (*round_rate)(struct clk *, unsigned long);
+	int (*set_parent)(struct clk *, struct clk *);
 };
 
-/**
- * struct clk - ux500 clock structure
- * @ops:		pointer to clkops struct used to control this clock
- * @name:		name, for debugging
- * @enabled:		refcount. positive if enabled, zero if disabled
- * @get_rate:		custom callback for getting the clock rate
- * @data:		custom per-clock data for example for the get_rate
- *			callback
- * @rate:		fixed rate for clocks which don't implement
- * 			ops->getrate
- * @prcmu_cg_off:	address offset of the combined enable/disable register
- * 			(used on u8500v1)
- * @prcmu_cg_bit:	bit in the combined enable/disable register (used on
- * 			u8500v1)
- * @prcmu_cg_mgt:	address of the enable/disable register (used on
- * 			u8500ed)
- * @cluster:		peripheral cluster number
- * @prcc_bus:		bit for the bus clock in the peripheral's CLKRST
- * @prcc_kernel:	bit for the kernel clock in the peripheral's CLKRST.
- * 			-1 if no kernel clock exists.
- * @parent_cluster:	pointer to parent's cluster clk struct
- * @parent_periph:	pointer to parent's peripheral clk struct
- *
- * Peripherals are organised into clusters, and each cluster has an associated
- * bus clock.  Some peripherals also have a parent peripheral clock.
- *
- * In order to enable a clock for a peripheral, we need to enable:
- * 	(1) the parent cluster (bus) clock at the PRCMU level
- * 	(2) the parent peripheral clock (if any) at the PRCMU level
- * 	(3) the peripheral's bus & kernel clock at the PRCC level
- *
- * (1) and (2) are handled by defining clk structs (DEFINE_PRCMU_CLK) for each
- * of the cluster and peripheral clocks, and hooking these as the parents of
- * the individual peripheral clocks.
- *
- * (3) is handled by specifying the bits in the PRCC control registers required
- * to enable these clocks and modifying them in the ->enable and
- * ->disable callbacks of the peripheral clocks (DEFINE_PRCC_CLK).
- *
- * This structure describes both the PRCMU-level clocks and PRCC-level clocks.
- * The prcmu_* fields are only used for the PRCMU clocks, and the cluster,
- * prcc, and parent pointers are only used for the PRCC-level clocks.
- */
-struct clk {
-	const struct clkops	*ops;
-	const char 		*name;
-	unsigned int		enabled;
-	unsigned long		(*get_rate)(struct clk *);
-	void			*data;
+extern struct clkops prcmu_clk_ops;
+extern struct clkops prcmu_scalable_clk_ops;
+extern struct clkops prcmu_opp100_clk_ops;
+extern struct mutex clk_opp100_mutex;
+extern struct clkops prcc_pclk_ops;
+extern struct clkops prcc_kclk_ops;
+extern struct clkops prcc_kclk_rec_ops;
+extern struct clkops sga_clk_ops;
 
-	unsigned long		rate;
-	struct list_head	list;
+#define CLK_LOOKUP(_clk, _dev_id, _con_id) \
+	{ .dev_id = _dev_id, .con_id = _con_id, .clk = &_clk }
 
-	/* These three are only for PRCMU clks */
-
-	unsigned int		prcmu_cg_off;
-	unsigned int		prcmu_cg_bit;
-	unsigned int		prcmu_cg_mgt;
-
-	/* The rest are only for PRCC clks */
-
-	int			cluster;
-	unsigned int		prcc_bus;
-	unsigned int		prcc_kernel;
-
-	struct clk		*parent_cluster;
-	struct clk		*parent_periph;
-#if defined(CONFIG_DEBUG_FS)
-	struct dentry		*dent;		/* For visible tree hierarchy */
-	struct dentry		*dent_bus;	/* For visible tree hierarchy */
-#endif
-};
-
-#define DEFINE_PRCMU_CLK(_name, _cg_off, _cg_bit, _reg)		\
-struct clk clk_##_name = {					\
-		.name		= #_name,			\
-		.ops    	= &clk_prcmu_ops, 		\
-		.prcmu_cg_off	= _cg_off, 			\
-		.prcmu_cg_bit	= _cg_bit,			\
-		.prcmu_cg_mgt	= PRCM_##_reg##_MGT		\
+/* Define PRCMU Clock */
+#define DEF_PRCMU_CLK(_name, _cg_sel, _rate) \
+	struct clk _name = { \
+		.name = #_name, \
+		.ops = &prcmu_clk_ops, \
+		.cg_sel = _cg_sel, \
+		.rate = _rate, \
 	}
 
-#define DEFINE_PRCMU_CLK_RATE(_name, _cg_off, _cg_bit, _reg, _rate)	\
-struct clk clk_##_name = {						\
-		.name		= #_name,				\
-		.ops    	= &clk_prcmu_ops, 			\
-		.prcmu_cg_off	= _cg_off, 				\
-		.prcmu_cg_bit	= _cg_bit,				\
-		.rate		= _rate,				\
-		.prcmu_cg_mgt	= PRCM_##_reg##_MGT			\
+#define DEF_PRCMU_SCALABLE_CLK(_name, _cg_sel) \
+	struct clk _name = { \
+		.name = #_name, \
+		.ops = &prcmu_scalable_clk_ops, \
+		.cg_sel = _cg_sel, \
 	}
 
-#define DEFINE_PRCC_CLK(_pclust, _name, _bus_en, _kernel_en, _kernclk)	\
-struct clk clk_##_name = {						\
-		.name		= #_name,				\
-		.ops    	= &clk_prcc_ops, 			\
-		.cluster 	= _pclust,				\
-		.prcc_bus 	= _bus_en, 				\
-		.prcc_kernel 	= _kernel_en, 				\
-		.parent_cluster = &clk_per##_pclust##clk,		\
-		.parent_periph 	= _kernclk				\
+/* Use this for clocks that are only defined at OPP 100%. */
+#define DEF_PRCMU_OPP100_CLK(_name, _cg_sel, _rate) \
+	struct clk _name = { \
+		.name = #_name, \
+		.ops = &prcmu_opp100_clk_ops, \
+		.cg_sel = _cg_sel, \
+		.rate = _rate, \
+		.mutex = &clk_opp100_mutex, \
 	}
 
-#define DEFINE_PRCC_CLK_CUSTOM(_pclust, _name, _bus_en, _kernel_en, _kernclk, _callback, _data) \
-struct clk clk_##_name = {						\
-		.name		= #_name,				\
-		.ops		= &clk_prcc_ops,			\
-		.cluster	= _pclust,				\
-		.prcc_bus	= _bus_en,				\
-		.prcc_kernel	= _kernel_en,				\
-		.parent_cluster = &clk_per##_pclust##clk,		\
-		.parent_periph	= _kernclk,				\
-		.get_rate	= _callback,				\
-		.data		= (void *) _data			\
+/* Define PRCC clock */
+#define DEF_PRCC_PCLK(_name, _io_base, _cg_bit, _parent) \
+	struct clk _name = { \
+		.name = #_name, \
+		.ops = &prcc_pclk_ops, \
+		.io_base = _io_base, \
+		.cg_sel = BIT(_cg_bit), \
+		.parent = _parent, \
 	}
 
-
-#define CLK(_clk, _devname, _conname)			\
-	{						\
-		.clk	= &clk_##_clk,			\
-		.dev_id	= _devname,			\
-		.con_id = _conname,			\
+#define DEF_PRCC_KCLK(_name, _io_base, _cg_bit, _parent, _clock) \
+	struct clk _name = { \
+		.name = #_name, \
+		.ops = &prcc_kclk_ops, \
+		.io_base = _io_base, \
+		.cg_sel = BIT(_cg_bit), \
+		.parent = _parent, \
+		.clock = _clock, \
 	}
 
-int __init clk_db8500_ed_fixup(void);
+#define DEF_PER_CLK(_name, _bus_parent, _parent) \
+	struct clk _name = { \
+		.name = #_name, \
+		.parent = _parent, \
+		.bus_parent = _bus_parent, \
+	}
+
+#define DEF_MTU_CLK(_cg_sel, _name, _bus_parent) \
+	struct clk _name = { \
+		.name = #_name, \
+		.ops = &mtu_clk_ops, \
+		.cg_sel = _cg_sel, \
+		.bus_parent = _bus_parent, \
+	}
+
+/* Functions defined in clock.c */
 int __init clk_init(void);
+void clks_register(struct clk_lookup *clks, size_t num);
+int __clk_enable(struct clk *clk, void *current_lock);
+void __clk_disable(struct clk *clk, void *current_lock);
+unsigned long __clk_get_rate(struct clk *clk, void *current_lock);
+long clk_round_rate_rec(struct clk *clk, unsigned long rate);
+int clk_set_rate_rec(struct clk *clk, unsigned long rate);
+
+#ifdef CONFIG_DEBUG_FS
+int dbx500_clk_debug_init(struct clk **clks, int num);
+#else
+static inline int dbx500_clk_debug_init(struct clk **clks, int num)
+{
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_UX500_SOC_DB8500
+int __init db8500_clk_init(void);
+int __init db8500_clk_debug_init(void);
+#else
+static inline int db8500_clk_init(void) { return 0; }
+static inline int db8500_clk_debug_init(void) { return 0; }
+#endif
+
+#ifdef CONFIG_UX500_SOC_DB5500
+int __init db5500_clk_init(void);
+int __init db5500_clk_debug_init(void);
+#else
+static inline int db5500_clk_init(void) { return 0; }
+static inline int db5500_clk_debug_init(void) { return 0; }
+#endif
+
+#endif

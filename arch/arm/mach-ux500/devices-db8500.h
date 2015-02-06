@@ -48,6 +48,8 @@ db8500_add_ssp(const char *name, resource_size_t base, int irq,
 	dbx500_add_msp_i2s(2, U8500_MSP2_BASE, IRQ_DB8500_MSP2, pdata)
 #define db8500_add_msp3_i2s(pdata) \
 	dbx500_add_msp_i2s(3, U8500_MSP3_BASE, IRQ_DB8500_MSP1, pdata)
+#define db9540_add_msp4_i2s(pdata) \
+	dbx500_add_msp_i2s(4, U9540_MSP4_BASE, IRQ_DB9540_MSP4, pdata)
 
 #define db8500_add_msp0_spi(pdata) \
 	dbx500_add_msp_spi("msp0", U8500_MSP0_BASE, IRQ_DB8500_MSP0, pdata)
@@ -57,6 +59,8 @@ db8500_add_ssp(const char *name, resource_size_t base, int irq,
 	dbx500_add_msp_spi("msp2", U8500_MSP2_BASE, IRQ_DB8500_MSP2, pdata)
 #define db8500_add_msp3_spi(pdata) \
 	dbx500_add_msp_spi("msp3", U8500_MSP3_BASE, IRQ_DB8500_MSP1, pdata)
+#define db9540_add_msp4_spi(pdata) \
+	dbx500_add_msp_spi("msp4", U9540_MSP4_BASE, IRQ_DB9540_MSP4, pdata)
 
 #define db8500_add_rtc() \
 	dbx500_add_rtc(U8500_RTC_BASE, IRQ_DB8500_RTC);
@@ -97,5 +101,10 @@ db8500_add_ssp(const char *name, resource_size_t base, int irq,
 	dbx500_add_uart("uart1", U8500_UART1_BASE, IRQ_DB8500_UART1, pdata)
 #define db8500_add_uart2(pdata) \
 	dbx500_add_uart("uart2", U8500_UART2_BASE, IRQ_DB8500_UART2, pdata)
+
+#define db8500_add_cryp1(pdata) \
+	dbx500_add_cryp1(-1, U8500_CRYP1_BASE, IRQ_DB8500_CRYP1, pdata)
+#define db8500_add_hash1(pdata) \
+	dbx500_add_hash1(-1, U8500_HASH1_BASE, pdata)
 
 #endif
