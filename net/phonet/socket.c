@@ -506,7 +506,9 @@ int pn_sock_get_port(struct sock *sk, unsigned short sport)
 
 		phonet_get_local_port_range(&pmin, &pmax);
 		for (port = pmin; port <= pmax; port++) {
-			port_cur++;
+			/* To fix 2nd VT call problem */
+			/* port_cur++; */
+			port_cur += PN_HASHSIZE;
 			if (port_cur < pmin || port_cur > pmax)
 				port_cur = pmin;
 
