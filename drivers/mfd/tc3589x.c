@@ -357,16 +357,115 @@ static int __devexit tc3589x_remove(struct i2c_client *client)
 	return 0;
 }
 
+static u32 sleep_regs[] = {
+	TC3589x_IOPC0_L,
+	TC3589x_IOPC0_H,
+	TC3589x_IOPC1_L,
+	TC3589x_IOPC1_H,
+	TC3589x_IOPC2_L,
+	TC3589x_IOPC2_H,
+	TC3589x_DRIVE0_L,
+	TC3589x_DRIVE0_H,
+	TC3589x_DRIVE1_L,
+	TC3589x_DRIVE1_H,
+	TC3589x_DRIVE2_L,
+	TC3589x_DRIVE2_H,
+	TC3589x_DRIVE3,
+	TC3589x_GPIODATA0,
+	TC3589x_GPIOMASK0,
+	TC3589x_GPIODATA1,
+	TC3589x_GPIOMASK1,
+	TC3589x_GPIODATA2,
+	TC3589x_GPIOMASK2,
+	TC3589x_GPIODIR0,
+	TC3589x_GPIODIR1,
+	TC3589x_GPIODIR2,
+	TC3589x_GPIOIE0,
+	TC3589x_GPIOIE1,
+	TC3589x_GPIOIE2,
+	TC3589x_RSTCTRL,
+	TC3589x_CLKCFG,
+};
+
+static u8 sleep_regs_val[] = {
+	0x00,		/* TC3589x_IOPC0_L */
+	0x00,		/* TC3589x_IOPC0_H */
+	0x00,		/* TC3589x_IOPC1_L */
+	0x00,		/* TC3589x_IOPC1_H */
+	0x00,		/* TC3589x_IOPC2_L */
+	0x00,		/* TC3589x_IOPC2_H */
+	0xff,		/* TC3589x_DRIVE0_L */
+	0xff,		/* TC3589x_DRIVE0_H */
+	0xff,		/* TC3589x_DRIVE1_L */
+	0xff,		/* TC3589x_DRIVE1_H */
+	0xff,		/* TC3589x_DRIVE2_L */
+	0xff,		/* TC3589x_DRIVE2_H */
+	0x0f,		/* TC3589x_DRIVE3 */
+	0x80,		/* TC3589x_GPIODATA0 */
+	0x80,		/* TC3589x_GPIOMASK0 */
+	0x80,		/* TC3589x_GPIODATA1 */
+	0x80,		/* TC3589x_GPIOMASK1 */
+	0x06,		/* TC3589x_GPIODATA2 */
+	0x06,		/* TC3589x_GPIOMASK2 */
+	0xf0,		/* TC3589x_GPIODIR0 */
+	0xe0,		/* TC3589x_GPIODIR1 */
+	0xee,		/* TC3589x_GPIODIR2 */
+	0x0f,		/* TC3589x_GPIOIE0 */
+	0x1f,		/* TC3589x_GPIOIE1 */
+	0x11,		/* TC3589x_GPIOIE2 */
+	0x0f,		/* TC3589x_RSTCTRL */
+	0xb0		/* TC3589x_CLKCFG */
+
+};
+
+static u8 sleep_regs_backup[ARRAY_SIZE(sleep_regs)];
+
 static int tc3589x_suspend(struct device *dev)
 {
 	struct tc3589x *tc3589x = dev_get_drvdata(dev);
 	struct i2c_client *client = tc3589x->i2c;
 	int ret = 0;
+	int i, j;
+	int val;
 
-	/* put the system to sleep mode */
-	if (!device_may_wakeup(&client->dev))
-		ret = tc3589x_reg_write(tc3589x, TC3589x_CLKMODE,
-				TC3589x_CLKMODE_MODCTL_SLEEP);
+	disable_irq(client->irq);
+
+	/* Put the system to sleep mode */
+	if (!device_may_wakeup(&client->dev)) {
+		for (i = 0; i < ARRAY_SIZE(sleep_regs); i++) {
+			val = tc3589x_reg_read(tc3589x,
+					       sleep_regs[i]);
+			if (val < 0)
+				goto out;
+
+			sleep_regs_backup[i] = (u8) (val & 0xff);
+		}
+
+		for (i = 0; i < ARRAY_SIZE(sleep_regs); i++) {
+			ret = tc3589x_reg_write(tc3589x,
+					  sleep_regs[i],
+					  sleep_regs_val[i]);
+			if (ret < 0)
+				goto fail;
+
+		}
+
+		ret = tc3589x_reg_write(tc3589x,
+					TC3589x_CLKMODE,
+					TC3589x_CLKMODE_MODCTL_SLEEP);
+	} else {
+		enable_irq_wake(client->irq);
+	}
+out:
+	return ret;
+fail:
+	for (j = 0; j <= i; j++) {
+		ret = tc3589x_reg_write(tc3589x,
+					sleep_regs[i],
+					sleep_regs_backup[i]);
+		if (ret < 0)
+			break;
+	}
 
 	return ret;
 }
@@ -376,12 +475,32 @@ static int tc3589x_resume(struct device *dev)
 	struct tc3589x *tc3589x = dev_get_drvdata(dev);
 	struct i2c_client *client = tc3589x->i2c;
 	int ret = 0;
+	int i;
 
-	/* enable the system into operation */
+	/* Enable the system into operation */
 	if (!device_may_wakeup(&client->dev))
-		ret = tc3589x_reg_write(tc3589x, TC3589x_CLKMODE,
-				TC3589x_CLKMODE_MODCTL_OPERATION);
+	{
+		ret = tc3589x_reg_write(tc3589x,
+					TC3589x_CLKMODE,
+					TC3589x_CLKMODE_MODCTL_OPERATION);
+		if (ret < 0)
+			goto out;
 
+		for (i = ARRAY_SIZE(sleep_regs) - 1; i >= 0; i--) {
+			ret = tc3589x_reg_write(tc3589x,
+						sleep_regs[i],
+						sleep_regs_backup[i]);
+			/* Not much to do here if we fail */
+			if (ret < 0)
+				break;
+		}
+	} else {
+		disable_irq_wake(client->irq);
+	}
+
+	enable_irq(client->irq);
+
+out:
 	return ret;
 }
 

@@ -1,115 +1,141 @@
 /*
- * Copyright (C) STMicroelectronics 2009
- * Copyright (C) ST-Ericsson SA 2010
- *
- * Author: Kumar Sanghvi <kumar.sanghvi@stericsson.com>
- * Author: Sundar Iyer <sundar.iyer@stericsson.com>
+ * Copyright (C) ST-Ericsson SA 2011
  *
  * License Terms: GNU General Public License v2
- *
- * PRCM Unit registers
  */
 
-#ifndef __MACH_PRCMU_REGS_H
-#define __MACH_PRCMU_REGS_H
+#ifndef __MACH_PRCMU_REGS_DB5500_H
+#define __MACH_PRCMU_REGS_DB5500_H
 
-#include <mach/hardware.h>
+#define BITS(_start, _end) ((BIT(_end) - BIT(_start)) + BIT(_end))
 
-#define PRCM_ARM_PLLDIVPS	(_PRCMU_BASE + 0x118)
-#define PRCM_ARM_PLLDIVPS_ARM_BRM_RATE		0x3f
-#define PRCM_ARM_PLLDIVPS_MAX_MASK		0xf
+#define PRCM_TCR		0x1C8
+#define PRCM_TCR_TENSEL_MASK	BITS(0, 7)
+#define PRCM_TCR_STOP_TIMERS	BIT(16)
+#define PRCM_TCR_DOZE_MODE	BIT(17)
 
-#define PRCM_PLLARM_LOCKP       (_PRCMU_BASE + 0x0a8)
-#define PRCM_PLLARM_LOCKP_PRCM_PLLARM_LOCKP3	0x2
+/* PRCMU HW semaphore */
+#define PRCM_SEM 0x400
+#define PRCM_SEM_PRCM_SEM BIT(0)
 
-#define PRCM_ARM_CHGCLKREQ	(_PRCMU_BASE + 0x114)
-#define PRCM_ARM_CHGCLKREQ_PRCM_ARM_CHGCLKREQ	0x1
+#define DB5500_PRCM_ACLK_MGT		0x004
+#define DB5500_PRCM_SVACLK_MGT		0x008
+#define DB5500_PRCM_SIACLK_MGT		0x00C
+#define DB5500_PRCM_SGACLK_MGT		0x014
+#define DB5500_PRCM_UARTCLK_MGT		0x018
+#define DB5500_PRCM_MSP02CLK_MGT	0x01C
+#define DB5500_PRCM_I2CCLK_MGT		0x020
+#define DB5500_PRCM_SDMMCCLK_MGT	0x024
+#define DB5500_PRCM_PER1CLK_MGT		0x02C
+#define DB5500_PRCM_PER2CLK_MGT		0x030
+#define DB5500_PRCM_PER3CLK_MGT		0x034
+#define DB5500_PRCM_PER5CLK_MGT		0x038
+#define DB5500_PRCM_PER6CLK_MGT		0x03C
+#define DB5500_PRCM_IRDACLK_MGT		0x040
+#define DB5500_PRCM_PWMCLK_MGT		0x044
+#define DB5500_PRCM_SPARE1CLK_MGT	0x048
+#define DB5500_PRCM_IRRCCLK_MGT		0x04C
+#define DB5500_PRCM_HDMICLK_MGT		0x058
+#define DB5500_PRCM_APEATCLK_MGT	0x05C
+#define DB5500_PRCM_APETRACECLK_MGT	0x060
+#define DB5500_PRCM_MCDECLK_MGT		0x064
+#define DB5500_PRCM_DSIALTCLK_MGT	0x06C
+#define DB5500_PRCM_DMACLK_MGT		0x074
+#define DB5500_PRCM_B2R2CLK_MGT		0x078
+#define DB5500_PRCM_TVCLK_MGT		0x07C
+#define DB5500_PRCM_RNGCLK_MGT		0x284
 
-#define PRCM_PLLARM_ENABLE	(_PRCMU_BASE + 0x98)
-#define PRCM_PLLARM_ENABLE_PRCM_PLLARM_ENABLE	0x1
-#define PRCM_PLLARM_ENABLE_PRCM_PLLARM_COUNTON	0x100
+#define PRCM_CLK_MGT_CLKPLLDIV_MASK	BITS(0, 4)
+#define PRCM_CLK_MGT_CLKPLLDIV_SHIFT	0
+#define PRCM_CLK_MGT_CLKPLLSW_MASK	BITS(5, 7)
+#define PRCM_CLK_MGT_CLKEN		BIT(8)
 
-#define PRCM_ARMCLKFIX_MGT	(_PRCMU_BASE + 0x0)
-#define PRCM_A9_RESETN_CLR	(_PRCMU_BASE + 0x1f4)
-#define PRCM_A9_RESETN_SET	(_PRCMU_BASE + 0x1f0)
-#define PRCM_ARM_LS_CLAMP	(_PRCMU_BASE + 0x30c)
-#define PRCM_SRAM_A9		(_PRCMU_BASE + 0x308)
-
-/* ARM WFI Standby signal register */
-#define PRCM_ARM_WFI_STANDBY    (_PRCMU_BASE + 0x130)
-#define PRCM_IOCR		(_PRCMU_BASE + 0x310)
-#define PRCM_IOCR_IOFORCE			0x1
+#define PRCM_ARM_IT1_CLEAR 0x48C
+#define PRCM_ARM_IT1_VAL 0x494
 
 /* CPU mailbox registers */
-#define PRCM_MBOX_CPU_VAL	(_PRCMU_BASE + 0x0fc)
-#define PRCM_MBOX_CPU_SET	(_PRCMU_BASE + 0x100)
-#define PRCM_MBOX_CPU_CLR	(_PRCMU_BASE + 0x104)
-
-/* Dual A9 core interrupt management unit registers */
-#define PRCM_A9_MASK_REQ	(_PRCMU_BASE + 0x328)
-#define PRCM_A9_MASK_REQ_PRCM_A9_MASK_REQ	0x1
-
-#define PRCM_A9_MASK_ACK	(_PRCMU_BASE + 0x32c)
-#define PRCM_ARMITMSK31TO0	(_PRCMU_BASE + 0x11c)
-#define PRCM_ARMITMSK63TO32	(_PRCMU_BASE + 0x120)
-#define PRCM_ARMITMSK95TO64	(_PRCMU_BASE + 0x124)
-#define PRCM_ARMITMSK127TO96	(_PRCMU_BASE + 0x128)
-#define PRCM_POWER_STATE_VAL	(_PRCMU_BASE + 0x25C)
-#define PRCM_ARMITVAL31TO0	(_PRCMU_BASE + 0x260)
-#define PRCM_ARMITVAL63TO32	(_PRCMU_BASE + 0x264)
-#define PRCM_ARMITVAL95TO64	(_PRCMU_BASE + 0x268)
-#define PRCM_ARMITVAL127TO96	(_PRCMU_BASE + 0x26C)
-
-#define PRCM_HOSTACCESS_REQ	(_PRCMU_BASE + 0x334)
-#define ARM_WAKEUP_MODEM	0x1
-
-#define PRCM_ARM_IT1_CLEAR	(_PRCMU_BASE + 0x48C)
-#define PRCM_ARM_IT1_VAL	(_PRCMU_BASE + 0x494)
-#define PRCM_HOLD_EVT		(_PRCMU_BASE + 0x174)
-
-#define PRCM_ITSTATUS0		(_PRCMU_BASE + 0x148)
-#define PRCM_ITSTATUS1		(_PRCMU_BASE + 0x150)
-#define PRCM_ITSTATUS2		(_PRCMU_BASE + 0x158)
-#define PRCM_ITSTATUS3		(_PRCMU_BASE + 0x160)
-#define PRCM_ITSTATUS4		(_PRCMU_BASE + 0x168)
-#define PRCM_ITSTATUS5		(_PRCMU_BASE + 0x484)
-#define PRCM_ITCLEAR5		(_PRCMU_BASE + 0x488)
-#define PRCM_ARMIT_MASKXP70_IT	(_PRCMU_BASE + 0x1018)
+#define PRCM_MBOX_CPU_VAL 0x0FC
+#define PRCM_MBOX_CPU_SET 0x100
 
 /* System reset register */
-#define PRCM_APE_SOFTRST	(_PRCMU_BASE + 0x228)
-
-/* Level shifter and clamp control registers */
-#define PRCM_MMIP_LS_CLAMP_SET     (_PRCMU_BASE + 0x420)
-#define PRCM_MMIP_LS_CLAMP_CLR     (_PRCMU_BASE + 0x424)
+#define PRCM_APE_SOFTRST 0x228
 
 /* PRCMU clock/PLL/reset registers */
-#define PRCM_PLLDSI_FREQ           (_PRCMU_BASE + 0x500)
-#define PRCM_PLLDSI_ENABLE         (_PRCMU_BASE + 0x504)
-#define PRCM_PLLDSI_LOCKP          (_PRCMU_BASE + 0x508)
-#define PRCM_LCDCLK_MGT            (_PRCMU_BASE + 0x044)
-#define PRCM_MCDECLK_MGT           (_PRCMU_BASE + 0x064)
-#define PRCM_HDMICLK_MGT           (_PRCMU_BASE + 0x058)
-#define PRCM_TVCLK_MGT             (_PRCMU_BASE + 0x07c)
-#define PRCM_DSI_PLLOUT_SEL        (_PRCMU_BASE + 0x530)
-#define PRCM_DSITVCLK_DIV          (_PRCMU_BASE + 0x52C)
-#define PRCM_PLLDSI_LOCKP          (_PRCMU_BASE + 0x508)
-#define PRCM_APE_RESETN_SET        (_PRCMU_BASE + 0x1E4)
-#define PRCM_APE_RESETN_CLR        (_PRCMU_BASE + 0x1E8)
-#define PRCM_CLKOCR		   (_PRCMU_BASE + 0x1CC)
+#define PRCM_PLLDSI_FREQ	0x500
+#define PRCM_PLLDSI_ENABLE	0x504
+#define PRCM_PLLDSI_LOCKP	0x508
+#define PRCM_DSI_PLLOUT_SEL	0x530
+#define PRCM_DSITVCLK_DIV	0x52C
+#define PRCM_APE_RESETN_SET	0x1E4
+#define PRCM_APE_RESETN_CLR	0x1E8
 
-/* ePOD and memory power signal control registers */
-#define PRCM_EPOD_C_SET            (_PRCMU_BASE + 0x410)
-#define PRCM_SRAM_LS_SLEEP         (_PRCMU_BASE + 0x304)
+/* CLKOUTx SEL0 settings */
+#define CLKOUT_SEL0_REF_CLK  0x01 /* 0b 0001 */
+#define CLKOUT_SEL0_RTC_CLK0 0x02 /* 0b 0010 */
+#define CLKOUT_SEL0_ULP_CLK  0x04 /* 0b 0100 */
+#define CLKOUT_SEL0_SEL_CLK  0x08 /* 0b 1000 */
 
-/* Debug power control unit registers */
-#define PRCM_POWER_STATE_SET       (_PRCMU_BASE + 0x254)
+/* CLKOUTx SEL settings */
+#define CLKOUT_SEL_STATIC0     0x0001 /* 0b 00 0000 0001 */
+#define CLKOUT_SEL_REFCLK      0x0002 /* 0b 00 0000 0010 */
+#define CLKOUT_SEL_ULPCLK      0x0004 /* 0b 00 0000 0100 */
+#define CLKOUT_SEL_ARMCLK      0x0008 /* 0b 00 0000 1000 */
+#define CLKOUT_SEL_SYSACC0CLK  0x0010 /* 0b 00 0001 0000 */
+#define CLKOUT_SEL_SOC0PLLCLK  0x0020 /* 0b 00 0010 0000 */
+#define CLKOUT_SEL_SOC1PLLCLK  0x0040 /* 0b 00 0100 0000 */
+#define CLKOUT_SEL_DDRPLLCLK   0x0080 /* 0b 00 1000 0000 */
+#define CLKOUT_SEL_TVCLK       0x0100 /* 0b 01 0000 0000 */
+#define CLKOUT_SEL_IRDACLK     0x0200 /* 0b 10 0000 0000 */
+
+/* CLKOUTx dividers */
+#define CLKOUT_DIV_2   0x00 /* 0b 000 */
+#define CLKOUT_DIV_4   0x01 /* 0b 001 */
+#define CLKOUT_DIV_8   0x02 /* 0b 010 */
+#define CLKOUT_DIV_16  0x03 /* 0b 011 */
+#define CLKOUT_DIV_32  0x04 /* 0b 100 */
+#define CLKOUT_DIV_64  0x05 /* 0b 101 */
+/* Values 0x06 and 0x07 will also set the CLKOUTx divider to 64. */
+
+/* PRCM_CLKOCR CLKOUTx Control registers */
+#define PRCM_CLKOCR  0x1CC
+#define PRCM_CLKOCR_CLKOUT0_SEL0_SHIFT  0
+#define PRCM_CLKOCR_CLKOUT0_SEL0_MASK   BITS(0, 3)
+#define PRCM_CLKOCR_CLKOUT0_SEL_SHIFT   4
+#define PRCM_CLKOCR_CLKOUT0_SEL_MASK    BITS(4, 13)
+#define PRCM_CLKOCR_CLKOUT1_SEL0_SHIFT  16
+#define PRCM_CLKOCR_CLKOUT1_SEL0_MASK   BITS(16, 19)
+#define PRCM_CLKOCR_CLKOUT1_SEL_SHIFT   20
+#define PRCM_CLKOCR_CLKOUT1_SEL_MASK    BITS(20, 29)
+
+/* PRCM_CLKODIV CLKOUTx Dividers */
+#define PRCM_CLKODIV  0x188
+#define PRCM_CLKODIV_CLKOUT0_DIV_SHIFT  0
+#define PRCM_CLKODIV_CLKOUT0_DIV_MASK   BITS(0, 2)
+#define PRCM_CLKODIV_CLKOUT1_DIV_SHIFT  16
+#define PRCM_CLKODIV_CLKOUT1_DIV_MASK   BITS(16, 18)
+
+#define PRCM_MMIP_LS_CLAMP_SET 0x420
+#define PRCM_MMIP_LS_CLAMP_CLR 0x424
+#define PRCM_DDR_SUBSYS_APE_MINBW 0x438
 
 /* Miscellaneous unit registers */
-#define PRCM_DSI_SW_RESET          (_PRCMU_BASE + 0x324)
-#define PRCM_GPIOCR                (_PRCMU_BASE + 0x138)
-#define PRCM_GPIOCR_DBG_STM_MOD_CMD1            0x800
-#define PRCM_GPIOCR_DBG_UARTMOD_CMD0            0x1
+#define PRCM_DSI_SW_RESET 0x324
+#define PRCM_RESOUTN_SET_OFFSET 0x214
+#define PRCM_RESOUTN_CLR_OFFSET 0x218
 
+/* APE - Modem Registers */
+#define PRCM_HOSTACCESS_REQ	0x334
+/* APE - Modem register bit maipulation */
+#define PRCM_HOSTACCESS_REQ_BIT BIT(0)
+#define PRCM_APE_ACK		0x49c
+#define PRCM_APE_ACK_BIT	0x01
 
-#endif /* __MACH_PRCMU__REGS_H */
+/* Watchdog - mtimer registers */
+#define PRCM_TIMER0_RTOS_COMP1_OFFSET	0x4C
+#define PRCM_TIMER0_RTOS_COUNTER_OFFSET	0x40
+#define PRCM_TIMER0_IRQ_EN_SET_OFFSET	0x70
+#define PRCM_TIMER0_IRQ_EN_CLR_OFFSET	0x6C
+#define PRCM_TIMER0_IRQ_RTOS1_SET	0x08
+#define PRCM_TIMER0_IRQ_RTOS1_CLR	0x08
+
+#endif
