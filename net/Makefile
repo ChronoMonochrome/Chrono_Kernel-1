@@ -34,7 +34,11 @@ obj-$(CONFIG_ROSE)		+= rose/
 obj-$(CONFIG_AX25)		+= ax25/
 obj-$(CONFIG_CAN)		+= can/
 obj-$(CONFIG_IRDA)		+= irda/
+ifeq ($(CONFIG_BT_MGMT), y)
+obj-$(CONFIG_BT)		+= bluetooth_mgmt/
+else
 obj-$(CONFIG_BT)		+= bluetooth/
+endif
 obj-$(CONFIG_SUNRPC)		+= sunrpc/
 obj-$(CONFIG_AF_RXRPC)		+= rxrpc/
 obj-$(CONFIG_ATM)		+= atm/
@@ -48,8 +52,17 @@ endif
 obj-$(CONFIG_IP_DCCP)		+= dccp/
 obj-$(CONFIG_IP_SCTP)		+= sctp/
 obj-$(CONFIG_RDS)		+= rds/
+ifneq ($(CONFIG_COMPAT_WIRELESS),)
+# If MAC80211 is disabled use UMAC
+ifneq ($(CONFIG_MAC80211),)
+obj-$(CONFIG_COMPAT_WIRELESS)   += compat-wireless-openmac/
+else
+obj-$(CONFIG_COMPAT_WIRELESS)   += compat-wireless/
+endif
+else
 obj-$(CONFIG_WIRELESS)		+= wireless/
 obj-$(CONFIG_MAC80211)		+= mac80211/
+endif
 obj-$(CONFIG_TIPC)		+= tipc/
 obj-$(CONFIG_NETLABEL)		+= netlabel/
 obj-$(CONFIG_IUCV)		+= iucv/
@@ -68,3 +81,4 @@ obj-$(CONFIG_WIMAX)		+= wimax/
 obj-$(CONFIG_DNS_RESOLVER)	+= dns_resolver/
 obj-$(CONFIG_CEPH_LIB)		+= ceph/
 obj-$(CONFIG_BATMAN_ADV)	+= batman-adv/
+obj-$(CONFIG_NET_ACTIVITY_STATS)		+= activity_stats.o
