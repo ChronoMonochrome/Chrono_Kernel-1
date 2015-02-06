@@ -122,7 +122,7 @@ struct gs_port {
 };
 
 /* increase N_PORTS if you need more */
-#define N_PORTS		4
+#define N_PORTS		8
 static struct portmaster {
 	struct mutex	lock;			/* protect open/close */
 	struct gs_port	*port;
@@ -393,9 +393,14 @@ __acquires(&port->port_lock)
 		 * NOTE that we may keep sending data for a while after
 		 * the TTY closed (dev->ioport->port_tty is NULL).
 		 */
-		spin_unlock(&port->port_lock);
+		/* Fix queue synchronization issue in the gadget serial driver.
+		 * ( Removed port lock code. )
+		 * original code :
+		 *	spin_unlock(&port->port_lock);
+		 *	status = usb_ep_queue(in, req, GFP_ATOMIC);
+ 		 *	spin_lock(&port->port_lock);
+		 */
 		status = usb_ep_queue(in, req, GFP_ATOMIC);
-		spin_lock(&port->port_lock);
 
 		if (status) {
 			pr_debug("%s: %s %s err %d\n",
@@ -1028,7 +1033,7 @@ static const struct tty_operations gs_tty_ops = {
 
 static struct tty_driver *gs_tty_driver;
 
-static int __init
+static int
 gs_port_alloc(unsigned port_num, struct usb_cdc_line_coding *coding)
 {
 	struct gs_port	*port;
@@ -1074,7 +1079,7 @@ gs_port_alloc(unsigned port_num, struct usb_cdc_line_coding *coding)
  *
  * Returns negative errno or zero.
  */
-int __init gserial_setup(struct usb_gadget *g, unsigned count)
+int gserial_setup(struct usb_gadget *g, unsigned count)
 {
 	unsigned			i;
 	struct usb_cdc_line_coding	coding;

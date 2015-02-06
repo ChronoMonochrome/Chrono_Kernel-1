@@ -286,13 +286,6 @@ struct fsg_buffhd {
 	enum fsg_buffer_state		state;
 	struct fsg_buffhd		*next;
 
-	/*
-	 * The NetChip 2280 is faster, and handles some protocol faults
-	 * better, if we don't submit any short bulk-out read requests.
-	 * So we will record the intended request length here.
-	 */
-	unsigned int			bulk_out_intended_length;
-
 	struct usb_request		*inreq;
 	int				inreq_busy;
 	struct usb_request		*outreq;
@@ -763,10 +756,16 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
 	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
 	int		rc = 0;
 
+
+#ifndef CONFIG_USB_ANDROID_MASS_STORAGE
+	/* disabled in android because we need to allow closing the backing file
+	 * if the media was removed
+	 */
 	if (curlun->prevent_medium_removal && fsg_lun_is_open(curlun)) {
 		LDBG(curlun, "eject attempt prevented\n");
 		return -EBUSY;				/* "Door is locked" */
 	}
+#endif
 
 	/* Remove a trailing newline */
 	if (count > 0 && buf[count-1] == '\n')

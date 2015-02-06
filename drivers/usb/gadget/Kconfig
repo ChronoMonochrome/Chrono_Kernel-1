@@ -936,6 +936,49 @@ config USB_G_PRINTER
 	  For more information, see Documentation/usb/gadget_printer.txt
 	  which includes sample code for accessing the device file.
 
+config USB_G_ANDROID
+	boolean "Android Gadget"
+	depends on SWITCH
+	help
+	  The Android gadget driver supports multiple USB functions.
+	  The functions can be configured via a board file and may be
+	  enabled and disabled dynamically.
+
+config USB_ANDROID_SAMSUNG_COMPOSITE
+	boolean "Samsung Composite function"
+	depends on USB_G_ANDROID
+	help
+	  Provides SAMSUNG composite driver.
+	  It also provides KIES connection and
+	  Multi Configuration.
+	  If you enable this option, android composite will be changed.
+
+config USB_ANDROID_SAMSUNG_MTP
+	boolean "Samsung MTP function"
+	depends on USB_G_ANDROID
+	help
+	  Provides Media Transfer Protocol (MTP) support
+	  for samsung gadget driver.
+	  If you enable this option,
+	  google mtp will be changed to samsung mtp.
+
+config USB_DUN_SUPPORT
+	boolean "DUN support function"
+	depends on USB_G_ANDROID
+	help
+	  Provides USB modem serial driver.
+	  This function makes connection to acm from data router.
+	  It uses misc register.
+	  Support fops : open, close, release, read, poll, llseek, ioctl
+
+config USB_ANDROID_PHONET
+	boolean "Android Phonet function"
+	depends on USB_G_ANDROID
+	depends on PHONET
+	help
+	  Provides Phonet Protocol support for android gadget
+	  driver.
+
 config USB_CDC_COMPOSITE
 	tristate "CDC Composite Device (Ethernet and ACM)"
 	depends on NET
@@ -1056,5 +1099,16 @@ config USB_G_WEBCAM
 	  dynamically linked module called "g_webcam".
 
 endchoice
+
+config USB_OTG_20
+	bool "OTG 2.0 USB SUPPORT"
+	select USB_OTG
+	select PM_RUNTIME
+	select USB_OTG_WHITELIST
+	select USB_SUSPEND
+	default n
+	help
+	Enabling the whitelist (Target Peripheral List-TPL) and runtime power
+	management at system level and usb level for OTG 2.0.
 
 endif # USB_GADGET

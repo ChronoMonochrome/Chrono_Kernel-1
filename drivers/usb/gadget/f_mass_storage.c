@@ -406,6 +406,11 @@ struct fsg_common {
 	 */
 	char inquiry_string[8 + 16 + 4 + 1];
 
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+	char vendor_string[8 + 1];
+	char product_string[16 + 1];
+#endif
+
 	struct kref		ref;
 };
 
@@ -474,20 +479,6 @@ static int exception_in_progress(struct fsg_common *common)
 {
 	return common->state > FSG_STATE_IDLE;
 }
-
-/* Make bulk-out requests be divisible by the maxpacket size */
-static void set_bulk_out_req_length(struct fsg_common *common,
-				    struct fsg_buffhd *bh, unsigned int length)
-{
-	unsigned int	rem;
-
-	bh->bulk_out_intended_length = length;
-	rem = length % common->bulk_out_maxpacket;
-	if (rem > 0)
-		length += common->bulk_out_maxpacket - rem;
-	bh->outreq->length = length;
-}
-
 
 /*-------------------------------------------------------------------------*/
 
@@ -587,9 +578,9 @@ static void bulk_out_complete(struct usb_ep *ep, struct usb_request *req)
 	struct fsg_buffhd	*bh = req->context;
 
 	dump_msg(common, "bulk-out", req->buf, req->actual);
-	if (req->status || req->actual != bh->bulk_out_intended_length)
+	if (req->status || req->actual != req->length)
 		DBG(common, "%s --> %d, %u/%u\n", __func__,
-		    req->status, req->actual, bh->bulk_out_intended_length);
+		    req->status, req->actual, req->length);
 	if (req->status == -ECONNRESET)		/* Request was cancelled */
 		usb_ep_fifo_flush(ep);
 
@@ -981,7 +972,6 @@ static int do_write(struct fsg_common *common)
 			 * the bulk-out maxpacket size
 			 */
 			bh->outreq->length = amount;
-			bh->bulk_out_intended_length = amount;
 			bh->outreq->short_not_ok = 1;
 			if (!start_out_transfer(common, bh))
 				/* Dunno what to do if common->fsg is NULL */
@@ -1200,6 +1190,9 @@ static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
 {
 	struct fsg_lun *curlun = common->curlun;
 	u8	*buf = (u8 *) bh->buf;
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+	static char new_product_name[16 + 1];
+#endif
 
 	if (!curlun) {		/* Unsupported LUNs are okay */
 		common->bad_lun_okay = 1;
@@ -1217,6 +1210,23 @@ static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
 	buf[5] = 0;		/* No special options */
 	buf[6] = 0;
 	buf[7] = 0;
+
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE)
+	strncpy(new_product_name, common->product_string, 16);
+	new_product_name[16] = '\0';
+	if (common->product_string[0] &&
+		strlen(common->product_string) <= 11 && /*check string length*/
+		common->lun > 0) {
+		strncat(new_product_name, " Card", 16);
+		new_product_name[16] = '\0';
+	}
+
+	snprintf(common->inquiry_string,
+		sizeof common->inquiry_string,
+		"%-8s%-16s%04x",
+		common->vendor_string,
+		new_product_name, 1);
+#endif
 	memcpy(buf + 8, common->inquiry_string, sizeof common->inquiry_string);
 	return 36;
 }
@@ -1627,7 +1637,6 @@ static int throw_away_data(struct fsg_common *common)
 			 * the bulk-out maxpacket size.
 			 */
 			bh->outreq->length = amount;
-			bh->bulk_out_intended_length = amount;
 			bh->outreq->short_not_ok = 1;
 			if (!start_out_transfer(common, bh))
 				/* Dunno what to do if common->fsg is NULL */
@@ -2187,7 +2196,7 @@ unknown_cmnd:
 		common->data_size_from_cmnd = 0;
 		sprintf(unknown, "Unknown x%02x", common->cmnd[0]);
 		reply = check_command(common, common->cmnd_size,
-				      DATA_DIR_UNKNOWN, ~0, 0, unknown);
+				      DATA_DIR_UNKNOWN, 0xff, 0, unknown);
 		if (reply == 0) {
 			common->curlun->sense_data = SS_INVALID_COMMAND;
 			reply = -EINVAL;
@@ -2296,8 +2305,8 @@ static int get_next_command(struct fsg_common *common)
 	}
 
 	/* Queue a request to read a Bulk-only CBW */
-	set_bulk_out_req_length(common, bh, USB_BULK_CB_WRAP_LEN);
-	bh->outreq->short_not_ok = 1;
+	bh->outreq->length = USB_BULK_CB_WRAP_LEN;
+	bh->outreq->short_not_ok = 0;
 	if (!start_out_transfer(common, bh))
 		/* Don't know what to do if common->fsg is NULL */
 		return -EIO;
@@ -2777,6 +2786,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
 	for (i = 0, lcfg = cfg->luns; i < nluns; ++i, ++curlun, ++lcfg) {
 		curlun->cdrom = !!lcfg->cdrom;
 		curlun->ro = lcfg->cdrom || lcfg->ro;
+		curlun->nofua = 1;
 		curlun->initially_ro = curlun->ro;
 		curlun->removable = lcfg->removable;
 		curlun->dev.release = fsg_lun_release;
@@ -2855,6 +2865,15 @@ buffhds_first_it:
 				     ? "File-Stor Gadget"
 				     : "File-CD Gadget"),
 		 i);
+
+#ifdef	CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+	/* Default INQUIRY strings */
+	strncpy(common->vendor_string, "SAMSUNG",
+			sizeof(common->vendor_string) - 1);
+	strncpy(common->product_string, "File-Stor Gadget",
+			sizeof(common->product_string) - 1);
+	common->product_string[sizeof(common->product_string) - 1] = '\0';
+#endif
 
 	/*
 	 * Some peripheral controllers are known not to be able to
@@ -3052,7 +3071,7 @@ static int fsg_bind_config(struct usb_composite_dev *cdev,
 	if (unlikely(!fsg))
 		return -ENOMEM;
 
-	fsg->function.name        = FSG_DRIVER_DESC;
+	fsg->function.name        = "mass_storage";
 	fsg->function.strings     = fsg_strings_array;
 	fsg->function.bind        = fsg_bind;
 	fsg->function.unbind      = fsg_unbind;
