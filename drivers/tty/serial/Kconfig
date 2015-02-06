@@ -323,6 +323,14 @@ config SERIAL_AMBA_PL011_CONSOLE
 	  your boot loader (lilo or loadlin) about how to pass options to the
 	  kernel at boot time.)
 
+config SERIAL_AMBA_PL011_CLOCK_CONTROL
+	bool "Support for clock control on AMBA serial port"
+	depends on SERIAL_AMBA_PL011
+	select CONSOLE_POLL
+	---help---
+	  Say Y here if you wish to use amba set_termios function to control
+	  the pl011 clock. Any positive baudrate passed enables clock,
+
 config SERIAL_SB1250_DUART
 	tristate "BCM1xxx on-chip DUART serial support"
 	depends on SIBYTE_SB1xxx_SOC=y
