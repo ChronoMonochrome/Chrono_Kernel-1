@@ -98,6 +98,9 @@ static int ricoh_mmc_probe_slot(struct sdhci_pci_slot *slot)
 		SDHCI_TIMEOUT_CLK_UNIT |
 		SDHCI_CAN_VDD_330 |
 		SDHCI_CAN_DO_SDMA;
+
+	slot->host->mmc->caps2 = MMC_CAP2_BOOTPART_NOACC;
+
 	return 0;
 }
 
