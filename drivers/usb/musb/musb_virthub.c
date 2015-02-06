@@ -382,7 +382,7 @@ int musb_hub_control(
 			musb_port_suspend(musb, true);
 			break;
 		case USB_PORT_FEAT_TEST:
-			if (unlikely(is_host_active(musb)))
+			if (unlikely(!is_host_active(musb)))
 				goto error;
 
 			wIndex >>= 8;

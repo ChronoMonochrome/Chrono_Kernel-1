@@ -61,6 +61,7 @@
 #define MUSB_INTR_DISCONNECT	0x20
 #define MUSB_INTR_SESSREQ	0x40
 #define MUSB_INTR_VBUSERROR	0x80	/* For SESSION end */
+#define MUSB_INTR_ENABLE_ALL    0xFF
 
 /* DEVCTL */
 #define MUSB_DEVCTL_BDEVICE	0x80
@@ -79,6 +80,10 @@
 #define MUSB_ULPI_REG_REQ	(1 << 0)
 #define MUSB_ULPI_REG_CMPLT	(1 << 1)
 #define MUSB_ULPI_RDN_WR	(1 << 2)
+
+/* SOFT_RST */
+#define MUSB_SOFT_RST_NRST     (1 << 0)
+#define MUSB_SOFT_RST_NRSTX    (1 << 1)
 
 /* TESTMODE */
 #define MUSB_TEST_FORCE_HOST	0x80
@@ -245,7 +250,9 @@
  */
 
 #define MUSB_DEVCTL		0x60	/* 8 bit */
-
+#ifdef	CONFIG_USB_OTG_20
+#define MUSB_MISC		0x61	/* 8 bit */
+#endif
 /* These are always controlled through the INDEX register */
 #define MUSB_TXFIFOSZ		0x62	/* 8-bit (see masks) */
 #define MUSB_RXFIFOSZ		0x63	/* 8-bit (see masks) */
@@ -269,6 +276,7 @@
 #define MUSB_HS_EOF1		0x7c	/* 8 bit */
 #define MUSB_FS_EOF1		0x7d	/* 8 bit */
 #define MUSB_LS_EOF1		0x7e	/* 8 bit */
+#define MUSB_SOFT_RST          0x7f     /* 8 bit */
 
 /* Offsets to endpoint registers */
 #define MUSB_TXMAXP		0x00

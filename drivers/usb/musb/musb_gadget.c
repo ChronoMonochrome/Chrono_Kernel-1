@@ -403,7 +403,21 @@ static void txstate(struct musb *musb, struct musb_request *req)
 					csr |= (MUSB_TXCSR_DMAENAB
 							| MUSB_TXCSR_DMAMODE
 							| MUSB_TXCSR_MODE);
-					if (!musb_ep->hb_mult)
+					/*
+					 * Enable Autoset according to table
+					 * below
+					 * ************************************
+					 * bulk_split hb_mult	Autoset_Enable
+					 * ************************************
+					 *	0	0	Yes(Normal)
+					 *	0	>0	No(High BW ISO)
+					 *	1	0	Yes(HS bulk)
+					 *	1	>0	Yes(FS bulk)
+					 */
+					if (!musb_ep->hb_mult ||
+						(musb_ep->hb_mult &&
+						 can_bulk_split(musb,
+						    musb_ep->type)))
 						csr |= MUSB_TXCSR_AUTOSET;
 				}
 				csr &= ~MUSB_TXCSR_P_UNDERRUN;
@@ -580,9 +594,9 @@ void musb_g_tx(struct musb *musb, u8 epnum)
 			 * In the giveback function the MUSB lock is
 			 * released and acquired after sometime. During
 			 * this time period the INDEX register could get
-			 * changed by the gadget_queue function especially
-			 * on SMP systems. Reselect the INDEX to be sure
-			 * we are reading/modifying the right registers
+			 * changed by gadget_queue function. Reselect the
+			 * INDEX to be sure we are reading/modifying the
+			 * right registers
 			 */
 			musb_ep_select(mbase, epnum);
 			req = musb_ep->desc ? next_request(musb_ep) : NULL;
@@ -643,6 +657,7 @@ static void rxstate(struct musb *musb, struct musb_request *req)
 	u16			len;
 	u16			csr = musb_readw(epio, MUSB_RXCSR);
 	struct musb_hw_ep	*hw_ep = &musb->endpoints[epnum];
+	u8			use_mode_1;
 
 	if (hw_ep->is_shared_fifo)
 		musb_ep = &hw_ep->ep_in;
@@ -692,6 +707,17 @@ static void rxstate(struct musb *musb, struct musb_request *req)
 
 	if (csr & MUSB_RXCSR_RXPKTRDY) {
 		len = musb_readw(epio, MUSB_RXCOUNT);
+
+		/*
+		* Enable Mode 1 on RX transfers only when short_not_ok flag
+		* is set. Currently short_not_ok flag is set only from
+		* file_storage and f_mass_storage drivers
+		*/
+
+		if (request->short_not_ok && len == musb_ep->packet_sz)
+			use_mode_1 = 1;
+		else
+			use_mode_1 = 0;
 		if (request->actual < request->length) {
 #ifdef CONFIG_USB_INVENTRA_DMA
 			if (is_buffer_mapped(req)) {
@@ -723,50 +749,56 @@ static void rxstate(struct musb *musb, struct musb_request *req)
 	 * then becomes usable as a runtime "use mode 1" hint...
 	 */
 
-				csr |= MUSB_RXCSR_DMAENAB;
-#ifdef USE_MODE1
-				csr |= MUSB_RXCSR_AUTOCLEAR;
-				/* csr |= MUSB_RXCSR_DMAMODE; */
+	/* Experimental: Mode1 works with mass storage use cases */
+	if (use_mode_1) {
+		csr |= MUSB_RXCSR_AUTOCLEAR;
 
-				/* this special sequence (enabling and then
-				 * disabling MUSB_RXCSR_DMAMODE) is required
-				 * to get DMAReq to activate
-				 */
-				musb_writew(epio, MUSB_RXCSR,
-					csr | MUSB_RXCSR_DMAMODE);
-#else
-				if (!musb_ep->hb_mult &&
-					musb_ep->hw_ep->rx_double_buffered)
-					csr |= MUSB_RXCSR_AUTOCLEAR;
-#endif
-				musb_writew(epio, MUSB_RXCSR, csr);
+		musb_writew(epio, MUSB_RXCSR, csr);
+		csr |= MUSB_RXCSR_DMAENAB;
+		musb_writew(epio, MUSB_RXCSR, csr);
 
-				if (request->actual < request->length) {
-					int transfer_size = 0;
-#ifdef USE_MODE1
-					transfer_size = min(request->length - request->actual,
-							channel->max_len);
-#else
-					transfer_size = min(request->length - request->actual,
-							(unsigned)len);
-#endif
-					if (transfer_size <= musb_ep->packet_sz)
-						musb_ep->dma->desired_mode = 0;
-					else
-						musb_ep->dma->desired_mode = 1;
+		/*
+		* this special sequence (enabling and then
+		* disabling MUSB_RXCSR_DMAMODE) is required
+		* to get DMAReq to activate
+		*/
 
-					use_dma = c->channel_program(
-							channel,
-							musb_ep->packet_sz,
-							channel->desired_mode,
-							request->dma
-							+ request->actual,
-							transfer_size);
-				}
+		musb_writew(epio, MUSB_RXCSR,
+			csr | MUSB_RXCSR_DMAMODE);
+		musb_writew(epio, MUSB_RXCSR, csr);
+	} else {
+		if (!musb_ep->hb_mult &&
+			musb_ep->hw_ep->rx_double_buffered)
+			csr |= MUSB_RXCSR_AUTOCLEAR;
+			csr |= MUSB_RXCSR_DMAENAB;
+			musb_writew(epio, MUSB_RXCSR, csr);
+	}
 
-				if (use_dma)
-					return;
-			}
+	if (request->actual < request->length) {
+			int transfer_size = 0;
+
+	if (use_mode_1) {
+		transfer_size = min(request->length - request->actual,
+					channel->max_len);
+		musb_ep->dma->desired_mode = 1;
+	} else {
+		transfer_size = min(request->length - request->actual,
+				(unsigned)len);
+		musb_ep->dma->desired_mode = 0;
+	}
+
+		use_dma = c->channel_program(
+				channel,
+				musb_ep->packet_sz,
+				channel->desired_mode,
+				request->dma
+				+ request->actual,
+				transfer_size);
+	}
+
+		if (use_dma)
+			return;
+		}
 #elif defined(CONFIG_USB_UX500_DMA)
 			if ((is_buffer_mapped(req)) &&
 				(request->actual < request->length)) {
@@ -978,13 +1010,13 @@ void musb_g_rx(struct musb *musb, u8 epnum)
 #endif
 		musb_g_giveback(musb_ep, request, 0);
 		/*
-		 * In the giveback function the MUSB lock is
-		 * released and acquired after sometime. During
-		 * this time period the INDEX register could get
-		 * changed by the gadget_queue function especially
-		 * on SMP systems. Reselect the INDEX to be sure
-		 * we are reading/modifying the right registers
-		 */
+		* In the giveback function the MUSB lock is
+		* released and acquired after sometime. During
+		* this time period the INDEX register could get
+		* changed by gadget_queue function. Reselect the
+		* INDEX to be sure we are reading/modifying the
+		* right registers
+		*/
 		musb_ep_select(mbase, epnum);
 
 		req = next_request(musb_ep);
@@ -1082,6 +1114,12 @@ static int musb_gadget_enable(struct usb_ep *ep,
 		/* REVISIT if can_bulk_split(), use by updating "tmp";
 		 * likewise high bandwidth periodic tx
 		 */
+		/* Set the TXMAXP register correctly for Bulk IN
+		 * endpoints in device mode
+		 */
+		if (can_bulk_split(musb, musb_ep->type))
+			musb_ep->hb_mult = (hw_ep->max_packet_sz_tx /
+						musb_ep->packet_sz) - 1;
 		/* Set TXMAXP with the FIFO size of the endpoint
 		 * to disable double buffering mode.
 		 */
@@ -1627,7 +1665,9 @@ static int musb_gadget_wakeup(struct usb_gadget *gadget)
 		}
 
 		spin_unlock_irqrestore(&musb->lock, flags);
+#ifndef CONFIG_USB_OTG_20
 		otg_start_srp(musb->xceiv);
+#endif
 		spin_lock_irqsave(&musb->lock, flags);
 
 		/* Block idling for at least 1s */
@@ -1733,6 +1773,14 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	return 0;
 }
 
+static struct usb_ep *musb_gadget_configure_ep(struct usb_gadget *gadget,
+		u8 type, struct usb_endpoint_descriptor *desc)
+{
+	struct musb	*musb = gadget_to_musb(gadget);
+
+	return musb_platform_configure_ep(musb, type, desc);
+}
+
 static const struct usb_gadget_ops musb_gadget_operations = {
 	.get_frame		= musb_gadget_get_frame,
 	.wakeup			= musb_gadget_wakeup,
@@ -1740,6 +1788,7 @@ static const struct usb_gadget_ops musb_gadget_operations = {
 	/* .vbus_session		= musb_gadget_vbus_session, */
 	.vbus_draw		= musb_gadget_vbus_draw,
 	.pullup			= musb_gadget_pullup,
+	.configure_ep		= musb_gadget_configure_ep,
 };
 
 /* ----------------------------------------------------------------------- */
@@ -2149,6 +2198,9 @@ void musb_g_suspend(struct musb *musb)
 			spin_lock(&musb->lock);
 		}
 		break;
+	case OTG_STATE_B_HOST:
+		dev_dbg(musb->controller, "B_HOST. Revisit\n");
+		break;
 	default:
 		/* REVISIT if B_HOST, clear DEVCTL.HOSTREQ;
 		 * A_PERIPHERAL may need care too
@@ -2171,6 +2223,19 @@ void musb_g_disconnect(struct musb *musb)
 	u8	devctl = musb_readb(mregs, MUSB_DEVCTL);
 
 	dev_dbg(musb->controller, "devctl %02x\n", devctl);
+#ifdef CONFIG_USB_OTG_20
+	/*
+	 * OTG 2.0 Compliance
+	 * In host mode, do not do a gadget_disconnect
+	 */
+	if (is_host_enabled(musb))
+		return; /* fail safe */
+#endif
+
+	if(musb->is_disconnected)
+		return;
+	else
+		musb->is_disconnected = 1;
 
 	/* clear HR */
 	musb_writeb(mregs, MUSB_DEVCTL, devctl & MUSB_DEVCTL_SESSION);
@@ -2244,6 +2309,7 @@ __acquires(musb->lock)
 
 	/* start in USB_STATE_DEFAULT */
 	musb->is_active = 1;
+	musb->is_disconnected = 0;
 	musb->is_suspended = 0;
 	MUSB_DEV_MODE(musb);
 	musb->address = 0;
