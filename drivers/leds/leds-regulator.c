@@ -152,7 +152,7 @@ static int __devinit regulator_led_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	vcc = regulator_get_exclusive(&pdev->dev, "vled");
+	vcc = regulator_get_exclusive(&pdev->dev, pdata->reg_id);
 	if (IS_ERR(vcc)) {
 		dev_err(&pdev->dev, "Cannot get vcc for %s\n", pdata->name);
 		return PTR_ERR(vcc);

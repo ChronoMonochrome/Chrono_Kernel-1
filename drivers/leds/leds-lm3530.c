@@ -18,6 +18,7 @@
 #include <linux/led-lm3530.h>
 #include <linux/types.h>
 #include <linux/regulator/consumer.h>
+#include <linux/gpio.h>
 
 #define LM3530_LED_DEV "lcd-backlight"
 #define LM3530_NAME "lm3530-led"
@@ -68,17 +69,16 @@
 #define LM3530_ALS2_IMP_SHIFT		(4)
 
 /* Zone Boundary Register defaults */
-#define LM3530_DEF_ZB_0			(0x33)
-#define LM3530_DEF_ZB_1			(0x66)
-#define LM3530_DEF_ZB_2			(0x99)
-#define LM3530_DEF_ZB_3			(0xCC)
+#define LM3530_ALS_ZB_MAX		(4)
+#define LM3530_ALS_WINDOW_mV		(1000)
+#define LM3530_ALS_OFFSET_mV		(4)
 
 /* Zone Target Register defaults */
-#define LM3530_DEF_ZT_0			(0x19)
-#define LM3530_DEF_ZT_1			(0x33)
+#define LM3530_DEF_ZT_0			(0x7F)
+#define LM3530_DEF_ZT_1			(0x66)
 #define LM3530_DEF_ZT_2			(0x4C)
-#define LM3530_DEF_ZT_3			(0x66)
-#define LM3530_DEF_ZT_4			(0x7F)
+#define LM3530_DEF_ZT_3			(0x33)
+#define LM3530_DEF_ZT_4			(0x19)
 
 struct lm3530_mode_map {
 	const char *mode;
@@ -99,6 +99,7 @@ static struct lm3530_mode_map mode_map[] = {
  * @mode: mode of operation - manual, ALS, PWM
  * @regulator: regulator
  * @brighness: previous brightness value
+ * @hw_en_gpio: GPIO line for LM3530 HWEN
  * @enable: regulator is enabled
  */
 struct lm3530_data {
@@ -108,6 +109,7 @@ struct lm3530_data {
 	enum lm3530_mode mode;
 	struct regulator *regulator;
 	enum led_brightness brightness;
+	int hw_en_gpio;
 	bool enable;
 };
 
@@ -150,6 +152,8 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
 	u8 als_imp_sel = 0;
 	u8 brightness;
 	u8 reg_val[LM3530_REG_MAX];
+	u8 zones[LM3530_ALS_ZB_MAX] = {0};
+	u32 als_vmin, als_vmax, als_vstep;
 	struct lm3530_platform_data *pltfm = drvdata->pdata;
 	struct i2c_client *client = drvdata->client;
 
@@ -161,6 +165,26 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
 		gen_config |= (LM3530_ENABLE_I2C);
 
 	if (drvdata->mode == LM3530_BL_MODE_ALS) {
+		if (pltfm->als_vmax == 0) {
+			pltfm->als_vmin = als_vmin = 0;
+			pltfm->als_vmin = als_vmax = LM3530_ALS_WINDOW_mV;
+		}
+
+		als_vmin = pltfm->als_vmin;
+		als_vmax = pltfm->als_vmax;
+
+		if ((als_vmax - als_vmin) > LM3530_ALS_WINDOW_mV)
+			pltfm->als_vmax = als_vmax =
+				als_vmin + LM3530_ALS_WINDOW_mV;
+
+		/* n zone boundary makes n+1 zones */
+		als_vstep = (als_vmax - als_vmin) / (LM3530_ALS_ZB_MAX + 1);
+
+		for (i = 0; i < LM3530_ALS_ZB_MAX; i++)
+			zones[i] = (((als_vmin + LM3530_ALS_OFFSET_mV) +
+					als_vstep + (i * als_vstep)) * LED_FULL)
+					/ 1000;
+
 		als_config =
 			(pltfm->als_avrg_time << LM3530_ALS_AVG_TIME_SHIFT) |
 			(LM3530_ENABLE_ALS) |
@@ -169,6 +193,7 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
 		als_imp_sel =
 			(pltfm->als1_resistor_sel << LM3530_ALS1_IMP_SHIFT) |
 			(pltfm->als2_resistor_sel << LM3530_ALS2_IMP_SHIFT);
+
 	}
 
 	if (drvdata->mode == LM3530_BL_MODE_PWM)
@@ -190,10 +215,10 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
 	reg_val[3] = 0x00;		/* LM3530_ALS_ZONE_REG */
 	reg_val[4] = als_imp_sel;	/* LM3530_ALS_IMP_SELECT */
 	reg_val[5] = brightness;	/* LM3530_BRT_CTRL_REG */
-	reg_val[6] = LM3530_DEF_ZB_0;	/* LM3530_ALS_ZB0_REG */
-	reg_val[7] = LM3530_DEF_ZB_1;	/* LM3530_ALS_ZB1_REG */
-	reg_val[8] = LM3530_DEF_ZB_2;	/* LM3530_ALS_ZB2_REG */
-	reg_val[9] = LM3530_DEF_ZB_3;	/* LM3530_ALS_ZB3_REG */
+	reg_val[6] = zones[0];		/* LM3530_ALS_ZB0_REG */
+	reg_val[7] = zones[1];		/* LM3530_ALS_ZB1_REG */
+	reg_val[8] = zones[2];		/* LM3530_ALS_ZB2_REG */
+	reg_val[9] = zones[3];		/* LM3530_ALS_ZB3_REG */
 	reg_val[10] = LM3530_DEF_ZT_0;	/* LM3530_ALS_Z0T_REG */
 	reg_val[11] = LM3530_DEF_ZT_1;	/* LM3530_ALS_Z1T_REG */
 	reg_val[12] = LM3530_DEF_ZT_2;	/* LM3530_ALS_Z2T_REG */
@@ -201,6 +226,8 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
 	reg_val[14] = LM3530_DEF_ZT_4;	/* LM3530_ALS_Z4T_REG */
 
 	if (!drvdata->enable) {
+		if (drvdata->hw_en_gpio != LM3530_NO_HWEN_GPIO)
+			gpio_set_value(drvdata->hw_en_gpio, 1);
 		ret = regulator_enable(drvdata->regulator);
 		if (ret) {
 			dev_err(&drvdata->client->dev,
@@ -253,6 +280,8 @@ static void lm3530_brightness_set(struct led_classdev *led_cdev,
 			if (err)
 				dev_err(&drvdata->client->dev,
 					"Disable regulator failed\n");
+			if (drvdata->hw_en_gpio != LM3530_NO_HWEN_GPIO)
+				gpio_set_value(drvdata->hw_en_gpio, 0);
 			drvdata->enable = false;
 		}
 		break;
@@ -265,6 +294,24 @@ static void lm3530_brightness_set(struct led_classdev *led_cdev,
 	}
 }
 
+static ssize_t lm3530_mode_get(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *client = container_of(
+					dev->parent, struct i2c_client, dev);
+	struct lm3530_data *drvdata = i2c_get_clientdata(client);
+	int i, len = 0;
+
+	for (i = 0; i < ARRAY_SIZE(mode_map); i++)
+		if (drvdata->mode == mode_map[i].mode_val)
+			len += sprintf(buf + len, "[%s] ", mode_map[i].mode);
+		else
+			len += sprintf(buf + len, "%s ", mode_map[i].mode);
+
+	len += sprintf(buf + len, "\n");
+
+	return len;
+}
 
 static ssize_t lm3530_mode_set(struct device *dev, struct device_attribute
 				   *attr, const char *buf, size_t size)
@@ -298,8 +345,7 @@ static ssize_t lm3530_mode_set(struct device *dev, struct device_attribute
 
 	return sizeof(drvdata->mode);
 }
-
-static DEVICE_ATTR(mode, 0644, NULL, lm3530_mode_set);
+static DEVICE_ATTR(mode, 0644, lm3530_mode_get, lm3530_mode_set);
 
 static int __devinit lm3530_probe(struct i2c_client *client,
 			   const struct i2c_device_id *id)
@@ -337,11 +383,21 @@ static int __devinit lm3530_probe(struct i2c_client *client,
 	drvdata->client = client;
 	drvdata->pdata = pdata;
 	drvdata->brightness = LED_OFF;
+	drvdata->hw_en_gpio = pdata->hw_en_gpio;
 	drvdata->enable = false;
 	drvdata->led_dev.name = LM3530_LED_DEV;
 	drvdata->led_dev.brightness_set = lm3530_brightness_set;
 
 	i2c_set_clientdata(client, drvdata);
+
+	if (gpio_is_valid(drvdata->hw_en_gpio)) {
+		err = gpio_request_one(drvdata->hw_en_gpio, GPIOF_OUT_INIT_HIGH,
+				"lm3530_hw_en");
+		if (err < 0) {
+			dev_err(&client->dev, "lm3530 hw_en gpio failed: %d\n", err);
+			goto err_gpio_request;
+		}
+	}
 
 	drvdata->regulator = regulator_get(&client->dev, "vin");
 	if (IS_ERR(drvdata->regulator)) {
@@ -382,6 +438,9 @@ err_class_register:
 err_reg_init:
 	regulator_put(drvdata->regulator);
 err_regulator_get:
+	if (gpio_is_valid(drvdata->hw_en_gpio))
+		gpio_free(drvdata->hw_en_gpio);
+err_gpio_request:
 	i2c_set_clientdata(client, NULL);
 	kfree(drvdata);
 err_out:
@@ -397,6 +456,8 @@ static int __devexit lm3530_remove(struct i2c_client *client)
 	if (drvdata->enable)
 		regulator_disable(drvdata->regulator);
 	regulator_put(drvdata->regulator);
+	if (gpio_is_valid(drvdata->hw_en_gpio))
+		gpio_free(drvdata->hw_en_gpio);
 	led_classdev_unregister(&drvdata->led_dev);
 	kfree(drvdata);
 	return 0;
