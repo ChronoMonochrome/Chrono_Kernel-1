@@ -32,11 +32,13 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/io.h>
+#include <linux/cpufreq.h>
+#include <linux/kexec.h>
 
 #include <asm/smp_twd.h>
 
 struct mpcore_wdt {
-	unsigned long	timer_alive;
+	cpumask_t	timer_alive;
 	struct device	*dev;
 	void __iomem	*base;
 	int		irq;
@@ -46,6 +48,8 @@ struct mpcore_wdt {
 
 static struct platform_device *mpcore_wdt_dev;
 static DEFINE_SPINLOCK(wdt_lock);
+
+static DEFINE_PER_CPU(unsigned long, mpcore_wdt_rate);
 
 #define TIMER_MARGIN	60
 static int mpcore_margin = TIMER_MARGIN;
@@ -66,6 +70,8 @@ module_param(mpcore_noboot, int, 0);
 MODULE_PARM_DESC(mpcore_noboot, "MPcore watchdog action, "
 	"set to 1 to ignore reboots, 0 to reboot (default="
 					__MODULE_STRING(ONLY_TESTING) ")");
+
+#define MPCORE_WDT_PERIPHCLK_PRESCALER 2
 
 /*
  *	This is the interrupt handler.  Note that we only use this
@@ -99,15 +105,64 @@ static void mpcore_wdt_keepalive(struct mpcore_wdt *wdt)
 
 	spin_lock(&wdt_lock);
 	/* Assume prescale is set to 256 */
-	count =  __raw_readl(wdt->base + TWD_WDOG_COUNTER);
-	count = (0xFFFFFFFFU - count) * (HZ / 5);
-	count = (count / 256) * mpcore_margin;
+	count = per_cpu(mpcore_wdt_rate, smp_processor_id()) / 256;
+	count = count*mpcore_margin;
 
 	/* Reload the counter */
 	writel(count + wdt->perturb, wdt->base + TWD_WDOG_LOAD);
 	wdt->perturb = wdt->perturb ? 0 : 1;
 	spin_unlock(&wdt_lock);
 }
+
+static void mpcore_wdt_set_rate(unsigned long new_rate)
+{
+	unsigned long count;
+	unsigned long long rate_tmp;
+	unsigned long old_rate;
+
+	spin_lock(&wdt_lock);
+	old_rate = per_cpu(mpcore_wdt_rate, smp_processor_id());
+	per_cpu(mpcore_wdt_rate, smp_processor_id()) = new_rate;
+
+	if (mpcore_wdt_dev) {
+		struct mpcore_wdt *wdt = platform_get_drvdata(mpcore_wdt_dev);
+		count = readl(wdt->base + TWD_WDOG_COUNTER);
+		/* The goal: count = count * (new_rate/old_rate); */
+		rate_tmp = (unsigned long long)count * new_rate;
+		do_div(rate_tmp, old_rate);
+		count = rate_tmp;
+		writel(count + wdt->perturb, wdt->base + TWD_WDOG_LOAD);
+		wdt->perturb = wdt->perturb ? 0 : 1;
+	}
+	spin_unlock(&wdt_lock);
+}
+
+static void mpcore_wdt_update_cpu_frequency_on_cpu(void *data)
+{
+	struct cpufreq_freqs *freq = data;
+	mpcore_wdt_set_rate((freq->new * 1000) /
+			    MPCORE_WDT_PERIPHCLK_PRESCALER);
+}
+
+static int mpcore_wdt_cpufreq_notifier(struct notifier_block *nb,
+				       unsigned long event, void *data)
+{
+	struct cpufreq_freqs *freq = data;
+
+	if (event == CPUFREQ_RESUMECHANGE ||
+	    (event == CPUFREQ_PRECHANGE && freq->new > freq->old) ||
+	    (event == CPUFREQ_POSTCHANGE && freq->new < freq->old))
+		smp_call_function_single(freq->cpu,
+					 mpcore_wdt_update_cpu_frequency_on_cpu,
+					 freq, 1);
+
+	return 0;
+}
+
+static struct notifier_block mpcore_wdt_cpufreq_notifier_block = {
+	.notifier_call = mpcore_wdt_cpufreq_notifier,
+};
+
 
 static void mpcore_wdt_stop(struct mpcore_wdt *wdt)
 {
@@ -143,6 +198,20 @@ static int mpcore_wdt_set_heartbeat(int t)
 	return 0;
 }
 
+static int mpcore_wdt_stop_notifier(struct notifier_block *this,
+				unsigned long event, void *ptr)
+{
+	struct mpcore_wdt *wdt = platform_get_drvdata(mpcore_wdt_dev);
+	printk(KERN_INFO "Stopping watchdog on non-crashing core %u\n",
+	       smp_processor_id());
+	mpcore_wdt_stop(wdt);
+	return NOTIFY_STOP;
+}
+
+static struct notifier_block mpcore_wdt_stop_block = {
+	.notifier_call = mpcore_wdt_stop_notifier,
+};
+
 /*
  *	/dev/watchdog handling
  */
@@ -150,13 +219,16 @@ static int mpcore_wdt_open(struct inode *inode, struct file *file)
 {
 	struct mpcore_wdt *wdt = platform_get_drvdata(mpcore_wdt_dev);
 
-	if (test_and_set_bit(0, &wdt->timer_alive))
+	if (cpumask_test_and_set_cpu(smp_processor_id(), &wdt->timer_alive))
 		return -EBUSY;
 
 	if (nowayout)
 		__module_get(THIS_MODULE);
 
 	file->private_data = wdt;
+
+	atomic_notifier_chain_register(&crash_percpu_notifier_list,
+				       &mpcore_wdt_stop_block);
 
 	/*
 	 *	Activate timer
@@ -181,7 +253,7 @@ static int mpcore_wdt_release(struct inode *inode, struct file *file)
 				"unexpected close, not stopping watchdog!\n");
 		mpcore_wdt_keepalive(wdt);
 	}
-	clear_bit(0, &wdt->timer_alive);
+	cpumask_clear_cpu(smp_processor_id(), &wdt->timer_alive);
 	wdt->expect_close = 0;
 	return 0;
 }
@@ -425,15 +497,30 @@ static char banner[] __initdata = KERN_INFO "MPcore Watchdog Timer: 0.1. "
 
 static int __init mpcore_wdt_init(void)
 {
+	int i;
+
 	/*
 	 * Check that the margin value is within it's range;
 	 * if not reset to the default
 	 */
 	if (mpcore_wdt_set_heartbeat(mpcore_margin)) {
 		mpcore_wdt_set_heartbeat(TIMER_MARGIN);
-		printk(KERN_INFO "mpcore_margin value must be 0 < mpcore_margin < 65536, using %d\n",
+		printk(KERN_INFO "mpcore_wdt: mpcore_margin value must be 0 < mpcore_margin < 65536, using %d\n",
 			TIMER_MARGIN);
 	}
+
+	cpufreq_register_notifier(&mpcore_wdt_cpufreq_notifier_block,
+				  CPUFREQ_TRANSITION_NOTIFIER);
+
+	for_each_online_cpu(i)
+		per_cpu(mpcore_wdt_rate, i) =
+		(cpufreq_get(i) * 1000) / MPCORE_WDT_PERIPHCLK_PRESCALER;
+
+	for_each_online_cpu(i)
+		printk(KERN_INFO
+		       "mpcore_wdt: rate for core %d is %lu.%02luMHz.\n", i,
+		       per_cpu(mpcore_wdt_rate, i) / 1000000,
+		       (per_cpu(mpcore_wdt_rate, i) / 10000) % 100);
 
 	printk(banner, mpcore_noboot, mpcore_margin, nowayout);
 

@@ -331,6 +331,28 @@ config IMX2_WDT
 	  To compile this driver as a module, choose M here: the
 	  module will be called imx2_wdt.
 
+config UX500_WATCHDOG
+	bool "ST-Ericsson Ux500 watchdog"
+	depends on UX500_SOC_DB8500 || UX500_SOC_DB5500
+	default y
+	help
+	  Say Y here to include Watchdog timer support for the
+	  watchdog existing in the prcmu of ST-Ericsson Ux500 series platforms.
+	  This watchdog is used to reset the system and thus cannot be
+	  compiled as a module.
+
+config UX500_WATCHDOG_DEBUG
+	bool "ST-Ericsson Ux500 watchdog DEBUG"
+	depends on (UX500_SOC_DB8500 || UX500_SOC_DB5500) && DEBUG_FS
+	help
+	  Say Y here to add various debugfs entries in wdog/
+
+config UX500_WATCHDOG_KERNEL_KICKER
+	bool "ST-Ericsson Ux500 watchdog kernel kicker"
+	depends on UX500_WATCHDOG
+	help
+		Say Y here to automatically start and refresh Ux500 watchdog
+
 # AVR32 Architecture
 
 config AT32AP700X_WDT
