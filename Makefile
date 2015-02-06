@@ -192,8 +192,9 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
-ARCH		?= $(SUBARCH)
+ARCH		?=arm
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -350,7 +351,7 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	=
+CFLAGS_KERNEL	= -D__linux__
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
@@ -443,7 +444,7 @@ asm-generic:
 no-dot-config-targets := clean mrproper distclean \
 			 cscope gtags TAGS tags help %docs check% coccicheck \
 			 include/linux/version.h headers_% \
-			 kernelversion %src-pkg
+			 kernelrelease kernelversion %src-pkg
 
 config-targets := 0
 mixed-targets  := 0
@@ -686,7 +687,9 @@ export	INSTALL_PATH ?= /boot
 # makefile but the argument can be passed to make if needed.
 #
 
-MODLIB	= $(INSTALL_MOD_PATH)/lib/modules/$(KERNELRELEASE)
+#MODLIB	= $(INSTALL_MOD_PATH)/lib/modules/$(KERNELRELEASE)
+#MODLIB	= $(INSTALL_MOD_PATH)/lib/modules/$(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL)))
+MODLIB	= $(INSTALL_MOD_PATH)/lib/modules
 export MODLIB
 
 #
@@ -947,7 +950,7 @@ $(vmlinux-dirs): prepare scripts
 # Store (new) KERNELRELASE string in include/config/kernel.release
 include/config/kernel.release: include/config/auto.conf FORCE
 	$(Q)rm -f $@
-	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))" > $@
+	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion -s $(srctree) -t v$(KERNELVERSION))" > $@
 
 
 # Things we need to do before we recursively start building the kernel
@@ -1110,16 +1113,16 @@ modules_install: _modinst_ _modinst_post
 
 PHONY += _modinst_
 _modinst_:
-	@rm -rf $(MODLIB)/kernel
-	@rm -f $(MODLIB)/source
-	@mkdir -p $(MODLIB)/kernel
-	@ln -s $(srctree) $(MODLIB)/source
-	@if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
-		rm -f $(MODLIB)/build ; \
-		ln -s $(objtree) $(MODLIB)/build ; \
-	fi
-	@cp -f $(objtree)/modules.order $(MODLIB)/
-	@cp -f $(objtree)/modules.builtin $(MODLIB)/
+#	@rm -rf $(MODLIB)/kernel
+#	@rm -f $(MODLIB)/source
+#	@mkdir -p $(MODLIB)/kernel
+#	@ln -s $(srctree) $(MODLIB)/source
+#	@if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
+#		rm -f $(MODLIB)/build ; \
+#		ln -s $(objtree) $(MODLIB)/build ; \
+#	fi
+#	@cp -f $(objtree)/modules.order $(MODLIB)/
+#	@cp -f $(objtree)/modules.builtin $(MODLIB)/
 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modinst
 
 # This depmod is only for convenience to give the initial
@@ -1128,7 +1131,7 @@ _modinst_:
 PHONY += _modinst_post
 _modinst_post: _modinst_
 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.fwinst obj=firmware __fw_modinst
-	$(call cmd,depmod)
+#	$(call cmd,depmod)
 
 else # CONFIG_MODULES
 
@@ -1461,7 +1464,7 @@ checkstack:
 	$(PERL) $(src)/scripts/checkstack.pl $(CHECKSTACK_ARCH)
 
 kernelrelease:
-	@echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))"
+	@echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion -s $(srctree) -t v$(KERNELVERSION))"
 
 kernelversion:
 	@echo $(KERNELVERSION)
@@ -1525,9 +1528,12 @@ quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files))
       cmd_rmfiles = rm -f $(rm-files)
 
 # Run depmod only if we have System.map and depmod is executable
-quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
+#quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
+#      cmd_depmod = $(CONFIG_SHELL) $(srctree)/scripts/depmod.sh $(DEPMOD) \
+#                   $(KERNELRELEASE)
+quiet_cmd_depmod = DEPMOD $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL)))
       cmd_depmod = $(CONFIG_SHELL) $(srctree)/scripts/depmod.sh $(DEPMOD) \
-                   $(KERNELRELEASE)
+                   $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL)))
 
 # Create temporary dir for module support files
 # clean it up only when building all modules
