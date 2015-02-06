@@ -34,7 +34,7 @@ obj-$(CONFIG_SPI_OMAP_UWIRE)		+= omap_uwire.o
 obj-$(CONFIG_SPI_OMAP24XX)		+= omap2_mcspi.o
 obj-$(CONFIG_SPI_OMAP_100K)		+= omap_spi_100k.o
 obj-$(CONFIG_SPI_ORION)			+= orion_spi.o
-obj-$(CONFIG_SPI_PL022)			+= amba-pl022.o
+obj-$(CONFIG_SPI_PL022)			+= spi-pl022.o
 obj-$(CONFIG_SPI_MPC512x_PSC)		+= mpc512x_psc_spi.o
 obj-$(CONFIG_SPI_MPC52xx_PSC)		+= mpc52xx_psc_spi.o
 obj-$(CONFIG_SPI_MPC52xx)		+= mpc52xx_spi.o
@@ -55,6 +55,7 @@ obj-$(CONFIG_SPI_SH_SCI)		+= spi_sh_sci.o
 obj-$(CONFIG_SPI_SH_MSIOF)		+= spi_sh_msiof.o
 obj-$(CONFIG_SPI_STMP3XXX)		+= spi_stmp.o
 obj-$(CONFIG_SPI_NUC900)		+= spi_nuc900.o
+obj-$(CONFIG_STM_MSP_SPI)               += stm_msp.o
 
 # special build for s3c24xx spi driver with fiq support
 spi_s3c24xx_hw-y			:= spi_s3c24xx.o

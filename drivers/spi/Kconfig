@@ -113,6 +113,20 @@ config SPI_BITBANG
 	  need it.  You only need to select this explicitly to support driver
 	  modules that aren't part of this kernel tree.
 
+config STM_MSP_SPI
+	tristate "STM MSP CONTROLLER (SPI master)"
+	default y
+	help
+	  This enables using the STM MSP controller in master
+	  mode.
+
+config SPI_WORKQUEUE
+	bool "SPI_WORKQUEUE"
+	depends on STM_MSP_SPI
+	default n
+	help
+	  This feature allow SPI works to be deferred in MSP driver.
+
 config SPI_BUTTERFLY
 	tristate "Parallel port adapter for AVR Butterfly (DEVELOPMENT)"
 	depends on PARPORT
