@@ -47,6 +47,7 @@ void machine_crash_nonpanic_core(void *unused)
 	printk(KERN_DEBUG "CPU %u will stop doing anything useful since another CPU has crashed\n",
 	       smp_processor_id());
 	crash_save_cpu(&regs, smp_processor_id());
+	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
 	flush_cache_all();
 
 	atomic_dec(&waiting_for_crash_ipi);
@@ -59,6 +60,8 @@ void machine_crash_shutdown(struct pt_regs *regs)
 	unsigned long msecs;
 
 	local_irq_disable();
+
+	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
 
 	atomic_set(&waiting_for_crash_ipi, num_online_cpus() - 1);
 	smp_call_function(machine_crash_nonpanic_core, NULL, false);
@@ -121,4 +124,14 @@ void machine_kexec(struct kimage *image)
 	outer_inv_all();
 	flush_cache_all();
 	cpu_reset(reboot_code_buffer_phys);
+}
+
+void machine_crash_swreset(void)
+{
+	printk(KERN_INFO "Software reset on panic!\n");
+
+	flush_cache_all();
+	outer_flush_all();
+	outer_disable();
+	arm_pm_restart(0, NULL);
 }
