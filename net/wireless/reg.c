@@ -1658,6 +1658,19 @@ void regulatory_hint_11d(struct wiphy *wiphy,
 	enum environment_cap env = ENVIRON_ANY;
 	struct regulatory_request *request;
 
+	/*
+	* SAMSUNG FIX : Regulatory Configuration was update
+	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
+	* Regulation should not updated even if device found other country Access Point Beacon once
+	* since device should find around other Access Points.
+	* 2011.11.19 Convergence Wi-Fi Core
+	*/
+
+#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
+	printk("regulatory is not upadted via %s.\n", __func__);
+	return;
+#endif
+
 	mutex_lock(&reg_mutex);
 
 	if (unlikely(!last_request))
@@ -1864,6 +1877,19 @@ static void restore_regulatory_settings(bool reset_user)
 
 void regulatory_hint_disconnect(void)
 {
+	/*
+	* SAMSUNG FIX : Regulatory Configuration was update
+	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
+	* Regulation should not updated even if device found other country Access Point Beacon once
+	* since device should find around other Access Points.
+	* 2011.11.19 Convergence Wi-Fi Core
+	*/
+
+#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
+	printk("regulatory is not upadted via %s.\n",__func__);
+	return;
+#endif
+
 	REG_DBG_PRINT("All devices are disconnected, going to "
 		      "restore regulatory settings\n");
 	restore_regulatory_settings(false);
@@ -1883,6 +1909,19 @@ int regulatory_hint_found_beacon(struct wiphy *wiphy,
 				 gfp_t gfp)
 {
 	struct reg_beacon *reg_beacon;
+
+	/*
+	* SAMSUNG FIX : Regulatory Configuration was update
+	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
+	* Regulation should not updated even if device found other country Access Point Beacon once
+	* since device should find around other Access Points.
+	* 2011.11.19 Convergence Wi-Fi Core
+	*/
+
+#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
+	REG_DBG_PRINT("regulatory is not upadted via %s.\n",__func__);
+	return 0;
+#endif
 
 	if (likely((beacon_chan->beacon_found ||
 	    (beacon_chan->flags & IEEE80211_CHAN_RADAR) ||
