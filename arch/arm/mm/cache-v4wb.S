@@ -251,18 +251,25 @@ ENTRY(v4wb_dma_unmap_area)
 	mov	pc, lr
 ENDPROC(v4wb_dma_unmap_area)
 
+/*
+ *	clean_dcache_all()
+ *
+ *	Clean the whole D-cache.
+ */
+ENTRY(v4wb_clean_dcache_all)
+	mov	pc, lr
+ENDPROC(v4wb_clean_dcache_all)
+
+/*
+ *	flush_dcache_all()
+ *
+ *	Flush the whole D-cache.
+ */
+ENTRY(v4wb_flush_dcache_all)
+	mov	pc, lr
+ENDPROC(v4wb_flush_dcache_all)
+
 	__INITDATA
 
-	.type	v4wb_cache_fns, #object
-ENTRY(v4wb_cache_fns)
-	.long	v4wb_flush_icache_all
-	.long	v4wb_flush_kern_cache_all
-	.long	v4wb_flush_user_cache_all
-	.long	v4wb_flush_user_cache_range
-	.long	v4wb_coherent_kern_range
-	.long	v4wb_coherent_user_range
-	.long	v4wb_flush_kern_dcache_area
-	.long	v4wb_dma_map_area
-	.long	v4wb_dma_unmap_area
-	.long	v4wb_dma_flush_range
-	.size	v4wb_cache_fns, . - v4wb_cache_fns
+	@ define struct cpu_cache_fns (see <asm/cacheflush.h> and proc-macros.S)
+	define_cache_functions v4wb

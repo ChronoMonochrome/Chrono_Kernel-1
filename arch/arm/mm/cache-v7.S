@@ -33,7 +33,7 @@ ENTRY(v7_flush_icache_all)
 ENDPROC(v7_flush_icache_all)
 
 /*
- *	v7_flush_dcache_all()
+ *	__v7_flush_dcache_all()
  *
  *	Flush the whole D-cache.
  *
@@ -41,7 +41,7 @@ ENDPROC(v7_flush_icache_all)
  *
  *	- mm    - mm_struct describing address space
  */
-ENTRY(v7_flush_dcache_all)
+ENTRY(__v7_flush_dcache_all)
 	dmb					@ ensure ordering with previous memory accesses
 	mrc	p15, 1, r0, c0, c0, 1		@ read clidr
 	ands	r3, r0, #0x7000000		@ extract loc from clidr
@@ -54,15 +54,9 @@ loop1:
 	and	r1, r1, #7			@ mask of the bits for current cache only
 	cmp	r1, #2				@ see what cache we have at this level
 	blt	skip				@ skip if no cache, or just i-cache
-#ifdef CONFIG_PREEMPT
-	save_and_disable_irqs_notrace r9	@ make cssr&csidr read atomic
-#endif
 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
 	isb					@ isb to sych the new cssr&csidr
 	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
-#ifdef CONFIG_PREEMPT
-	restore_irqs_notrace r9
-#endif
 	and	r2, r1, #7			@ extract the length of the cache lines
 	add	r2, r2, #4			@ add 4 (line length offset)
 	ldr	r4, =0x3ff
@@ -94,7 +88,91 @@ finished:
 	dsb
 	isb
 	mov	pc, lr
+ENDPROC(__v7_flush_dcache_all)
+
+/*
+ *	__v7_clean_dcache_all()
+ *
+ *	Clean the whole D-cache.
+ *
+ *	Corrupted registers: r0-r7, r9-r11 (r6 only in Thumb mode)
+ */
+ENTRY(__v7_clean_dcache_all)
+	dmb					@ ensure ordering with previous memory accesses
+	mrc	p15, 1, r0, c0, c0, 1		@ read clidr
+	ands	r3, r0, #0x7000000		@ extract loc from clidr
+	mov	r3, r3, lsr #23			@ left align loc bit field
+	beq	finished1			@ if loc is 0, then no need to clean
+	mov	r10, #0				@ start clean at cache level 0
+loop21:
+	add	r2, r10, r10, lsr #1		@ work out 3x current cache level
+	mov	r1, r0, lsr r2			@ extract cache type bits from clidr
+	and	r1, r1, #7			@ mask of the bits for current cache only
+	cmp	r1, #2				@ see what cache we have at this level
+	blt	skip1				@ skip if no cache, or just i-cache
+	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+	isb					@ isb to sych the new cssr&csidr
+	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
+	and	r2, r1, #7			@ extract the length of the cache lines
+	add	r2, r2, #4			@ add 4 (line length offset)
+	ldr	r4, =0x3ff
+	ands	r4, r4, r1, lsr #3		@ find maximum number on the way size
+	clz	r5, r4				@ find bit position of way size increment
+	ldr	r7, =0x7fff
+	ands	r7, r7, r1, lsr #13		@ extract max number of the index size
+loop22:
+	mov	r9, r4				@ create working copy of max way size
+loop23:
+ ARM(	orr	r11, r10, r9, lsl r5	)	@ factor way and cache number into r11
+ THUMB(	lsl	r6, r9, r5		)
+ THUMB(	orr	r11, r10, r6		)	@ factor way and cache number into r11
+ ARM(	orr	r11, r11, r7, lsl r2	)	@ factor index number into r11
+ THUMB(	lsl	r6, r7, r2		)
+ THUMB(	orr	r11, r11, r6		)	@ factor index number into r11
+	mcr	p15, 0, r11, c7, c10, 2		@ clean by set/way
+	subs	r9, r9, #1			@ decrement the way
+	bge	loop23
+	subs	r7, r7, #1			@ decrement the index
+	bge	loop22
+skip1:
+	add	r10, r10, #2			@ increment cache number
+	cmp	r3, r10
+	bgt	loop21
+finished1:
+	mov	r10, #0				@ swith back to cache level 0
+	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+	dsb
+	isb
+	mov	pc, lr
+ENDPROC(__v7_clean_dcache_all)
+
+/*
+ *	v7_flush_dcache_all()
+ *
+ *	Flush the whole D-cache.
+ */
+ENTRY(v7_flush_dcache_all)
+ ARM(	stmfd	sp!, {r4-r5, r7, r9-r11, lr}	)
+ THUMB(	stmfd	sp!, {r4-r7, r9-r11, lr}	)
+	bl	__v7_flush_dcache_all
+ ARM(	ldmfd	sp!, {r4-r5, r7, r9-r11, lr}	)
+ THUMB(	ldmfd	sp!, {r4-r7, r9-r11, lr}	)
+	mov	pc, lr
 ENDPROC(v7_flush_dcache_all)
+
+/*
+ *	v7_clean_dcache_all()
+ *
+ *	Clean the whole D-cache.
+ */
+ENTRY(v7_clean_dcache_all)
+ ARM(	stmfd	sp!, {r4-r5, r7, r9-r11, lr}	)
+ THUMB(	stmfd	sp!, {r4-r7, r9-r11, lr}	)
+	bl	__v7_clean_dcache_all
+ ARM(	ldmfd	sp!, {r4-r5, r7, r9-r11, lr}	)
+ THUMB(	ldmfd	sp!, {r4-r7, r9-r11, lr}	)
+	mov	pc, lr
+ENDPROC(v7_clean_dcache_all)
 
 /*
  *	v7_flush_cache_all()
@@ -108,14 +186,12 @@ ENDPROC(v7_flush_dcache_all)
  *
  */
 ENTRY(v7_flush_kern_cache_all)
- ARM(	stmfd	sp!, {r4-r5, r7, r9-r11, lr}	)
- THUMB(	stmfd	sp!, {r4-r7, r9-r11, lr}	)
+	stmfd	sp!, {lr}
 	bl	v7_flush_dcache_all
 	mov	r0, #0
 	ALT_SMP(mcr	p15, 0, r0, c7, c1, 0)	@ invalidate I-cache inner shareable
 	ALT_UP(mcr	p15, 0, r0, c7, c5, 0)	@ I+BTB cache invalidate
- ARM(	ldmfd	sp!, {r4-r5, r7, r9-r11, lr}	)
- THUMB(	ldmfd	sp!, {r4-r7, r9-r11, lr}	)
+	ldmfd	sp!, {lr}
 	mov	pc, lr
 ENDPROC(v7_flush_kern_cache_all)
 
@@ -351,16 +427,5 @@ ENDPROC(v7_dma_unmap_area)
 
 	__INITDATA
 
-	.type	v7_cache_fns, #object
-ENTRY(v7_cache_fns)
-	.long	v7_flush_icache_all
-	.long	v7_flush_kern_cache_all
-	.long	v7_flush_user_cache_all
-	.long	v7_flush_user_cache_range
-	.long	v7_coherent_kern_range
-	.long	v7_coherent_user_range
-	.long	v7_flush_kern_dcache_area
-	.long	v7_dma_map_area
-	.long	v7_dma_unmap_area
-	.long	v7_dma_flush_range
-	.size	v7_cache_fns, . - v7_cache_fns
+	@ define struct cpu_cache_fns (see <asm/cacheflush.h> and proc-macros.S)
+	define_cache_functions v7

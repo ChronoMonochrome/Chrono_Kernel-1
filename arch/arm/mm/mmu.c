@@ -273,6 +273,20 @@ static struct mem_type mem_types[] = {
 		.prot_l1   = PMD_TYPE_TABLE,
 		.domain    = DOMAIN_KERNEL,
 	},
+	/* NOTE : this is only a temporary hack!!!
+	 *        The U8500 ED/V1.0 cuts require such a
+	 *        memory type for deep sleep resume.
+	 *        This is expected to be solved in cut v2.0
+	 *        and we clean this up then. for more details
+	 *        look @ the commit message please
+	 */
+	[MT_BACKUP_RAM] = {
+		.prot_pte       = PROT_PTE_DEVICE | L_PTE_MT_DEV_SHARED |
+			L_PTE_SHARED,
+		.prot_l1        = PMD_TYPE_TABLE,
+		.prot_sect      = PROT_SECT_DEVICE | PMD_SECT_S,
+		.domain         = DOMAIN_IO,
+	},
 };
 
 const struct mem_type *get_mem_type(unsigned int type)
