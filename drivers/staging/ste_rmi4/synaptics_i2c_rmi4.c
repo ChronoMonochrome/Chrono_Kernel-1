@@ -1,11 +1,10 @@
-/**
- *
+/*
  * Synaptics Register Mapped Interface (RMI4) I2C Physical Layer Driver.
  * Copyright (c) 2007-2010, Synaptics Incorporated
  *
  * Author: Js HA <js.ha@stericsson.com> for ST-Ericsson
  * Author: Naveen Kumar G <naveen.gaddipati@stericsson.com> for ST-Ericsson
- * Copyright 2010 (c) ST-Ericsson AB
+ * Copyright 2010 (c) ST-Ericsson SA
  */
 /*
  * This file is licensed under the GPL2 license.
@@ -27,16 +26,20 @@
 
 #include <linux/input.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
 #include <linux/regulator/consumer.h>
+#include <linux/earlysuspend.h>
 #include "synaptics_i2c_rmi4.h"
 
 /* TODO: for multiple device support will need a per-device mutex */
 #define DRIVER_NAME "synaptics_rmi4_i2c"
 
+#define DELTA			8
 #define MAX_ERROR_REPORT	6
-#define MAX_TOUCH_MAJOR		15
+#define	TIMEOUT_PERIOD		1
+#define MAX_WIDTH_MAJOR		255
 #define MAX_RETRY_COUNT		5
 #define STD_QUERY_LEN		21
 #define PAGE_LEN		2
@@ -44,6 +47,7 @@
 #define BUF_LEN			37
 #define QUERY_LEN		9
 #define DATA_LEN		12
+#define RESUME_DELAY		100 /* msecs */
 #define HAS_TAP			0x01
 #define HAS_PALMDETECT		0x01
 #define HAS_ROTATE		0x02
@@ -163,6 +167,9 @@ struct synaptics_rmi4_device_info {
  * @regulator: pointer to the regulator structure
  * @wait: wait queue structure variable
  * @touch_stopped: flag to stop the thread function
+ * @enable: flag to enable/disable the driver event.
+ * @resume_wq_handler: work queue for resume the device
+ * @early_suspend: early suspend structure variable
  *
  * This structure gives the device data information.
  */
@@ -183,7 +190,15 @@ struct synaptics_rmi4_data {
 	struct regulator	*regulator;
 	wait_queue_head_t	wait;
 	bool			touch_stopped;
+	bool			enable;
+	struct work_struct	resume_wq_handler;
+	struct early_suspend	early_suspend;
 };
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void synaptics_rmi4_early_suspend(struct early_suspend *data);
+static void synaptics_rmi4_late_resume(struct early_suspend *data);
+#endif
 
 /**
  * synaptics_rmi4_set_page() - sets the page
@@ -290,6 +305,133 @@ exit:
 }
 
 /**
+ * synaptics_rmi4_enable() - enable the touchpad driver event
+ * @pdata: pointer to synaptics_rmi4_data structure
+ *
+ * This function is to enable the touchpad driver event and returns integer.
+ */
+static int synaptics_rmi4_enable(struct synaptics_rmi4_data *pdata)
+{
+	int retval;
+	unsigned char intr_status;
+
+	if (pdata->board->regulator_en)
+		regulator_enable(pdata->regulator);
+	enable_irq(pdata->board->irq_number);
+	pdata->touch_stopped = false;
+
+	msleep(RESUME_DELAY);
+	retval = synaptics_rmi4_i2c_block_read(pdata,
+					pdata->fn01_data_base_addr + 1,
+					&intr_status,
+					pdata->number_of_interrupt_register);
+	if (retval < 0)
+		return retval;
+
+	retval = synaptics_rmi4_i2c_byte_write(pdata,
+					pdata->fn01_ctrl_base_addr + 1,
+					(intr_status | TOUCHPAD_CTRL_INTR));
+	if (retval < 0)
+		return retval;
+
+	return 0;
+}
+
+/**
+ * synaptics_rmi4_disable() - disable the touchpad driver event
+ * @pdata: pointer to synaptics_rmi4_data structure
+ *
+ * This function is to disable the driver event and returns integer.
+ */
+
+static int synaptics_rmi4_disable(struct synaptics_rmi4_data *pdata)
+{
+	int retval;
+	unsigned char intr_status;
+
+	pdata->touch_stopped = true;
+	disable_irq(pdata->board->irq_number);
+
+	retval = synaptics_rmi4_i2c_block_read(pdata,
+					pdata->fn01_data_base_addr + 1,
+					&intr_status,
+					pdata->number_of_interrupt_register);
+	if (retval < 0)
+		return retval;
+
+	retval = synaptics_rmi4_i2c_byte_write(pdata,
+					pdata->fn01_ctrl_base_addr + 1,
+					(intr_status & ~TOUCHPAD_CTRL_INTR));
+	if (retval < 0)
+		return retval;
+	if (pdata->board->regulator_en)
+		regulator_disable(pdata->regulator);
+
+	return 0;
+}
+
+/**
+ * synaptics_rmi4_show_attr_enable() - show the touchpad enable value
+ * @dev: pointer to device data structure
+ * @attr: pointer to attribute structure
+ * @buf: pointer to character buffer
+ *
+ * This function is to show the touchpad enable value and returns ssize_t.
+ */
+static ssize_t synaptics_rmi4_show_attr_enable(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct synaptics_rmi4_data *pdata = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", pdata->enable);
+}
+
+/**
+ * synaptics_rmi4_store_attr_enable() - store the touchpad enable value
+ * @dev: pointer to device data structure
+ * @attr: pointer to attribute structure
+ * @buf: pointer to character buffer
+ * @count: number fo arguments
+ *
+ * This function is to store the touchpad enable value and returns ssize_t.
+ */
+static ssize_t synaptics_rmi4_store_attr_enable(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct synaptics_rmi4_data *pdata = dev_get_drvdata(dev);
+	unsigned long val;
+	int retval = 0;
+
+	if (strict_strtoul(buf, 0, &val))
+		return -EINVAL;
+
+	if ((val != 0) && (val != 1))
+		return -EINVAL;
+
+	if (pdata->enable != val) {
+		pdata->enable = val ? true : false;
+		if (pdata->enable)
+			retval = synaptics_rmi4_enable(pdata);
+		else
+			retval = synaptics_rmi4_disable(pdata);
+
+	}
+	return ((retval < 0) ? retval : count);
+}
+
+static DEVICE_ATTR(enable, S_IWUSR | S_IRUGO,
+	synaptics_rmi4_show_attr_enable, synaptics_rmi4_store_attr_enable);
+
+static struct attribute *synaptics_rmi4_attrs[] = {
+	&dev_attr_enable.attr,
+	NULL,
+};
+
+static struct attribute_group synaptics_rmi4_attr_group = {
+	.attrs = synaptics_rmi4_attrs,
+};
+
+/**
  * synpatics_rmi4_touchpad_report() - reports for the rmi4 touchpad device
  * @pdata: pointer to synaptics_rmi4_data structure
  * @rfi: pointer to synaptics_rmi4_fn structure
@@ -315,8 +457,9 @@ static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
 	unsigned char	data[DATA_LEN];
 	int	x[RMI4_NUMBER_OF_MAX_FINGERS];
 	int	y[RMI4_NUMBER_OF_MAX_FINGERS];
-	int	wx[RMI4_NUMBER_OF_MAX_FINGERS];
-	int	wy[RMI4_NUMBER_OF_MAX_FINGERS];
+	int	w[RMI4_NUMBER_OF_MAX_FINGERS];
+	static int	prv_x[RMI4_NUMBER_OF_MAX_FINGERS];
+	static int	prv_y[RMI4_NUMBER_OF_MAX_FINGERS];
 	struct	i2c_client *client = pdata->i2c_client;
 
 	/* get 2D sensor finger data */
@@ -375,11 +518,7 @@ static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
 				y[touch_count]	=
 					(data[1] << 4) |
 					((data[2] >> 4) & MASK_4BIT);
-				wy[touch_count]	=
-						(data[3] >> 4) & MASK_4BIT;
-				wx[touch_count]	=
-						(data[3] & MASK_4BIT);
-
+				w[touch_count]	= data[3];
 				if (pdata->board->x_flip)
 					x[touch_count] =
 						pdata->sensor_max_x -
@@ -388,6 +527,25 @@ static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
 					y[touch_count] =
 						pdata->sensor_max_y -
 								y[touch_count];
+				if (x[touch_count] < 0)
+					x[touch_count]	=	0;
+				else if (x[touch_count] >= pdata->sensor_max_x)
+					x[touch_count]	=
+							pdata->sensor_max_x - 1;
+
+				if (y[touch_count] < 0)
+					y[touch_count]	=	0;
+				else if (y[touch_count] >= pdata->sensor_max_y)
+					y[touch_count]	=
+							pdata->sensor_max_y - 1;
+			}
+			if ((abs(x[finger] - prv_x[finger]) < DELTA) &&
+				(abs(y[finger] - prv_y[finger]) < DELTA)) {
+				x[finger] = prv_x[finger];
+				y[finger] = prv_y[finger];
+			} else {
+				prv_x[finger] = x[finger];
+				prv_y[finger] = y[finger];
 			}
 			/* number of active touch points */
 			touch_count++;
@@ -398,7 +556,9 @@ static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
 	if (touch_count) {
 		for (finger = 0; finger < touch_count; finger++) {
 			input_report_abs(pdata->input_dev, ABS_MT_TOUCH_MAJOR,
-						max(wx[finger] , wy[finger]));
+						max(x[finger] , y[finger]));
+			input_report_abs(pdata->input_dev, ABS_MT_WIDTH_MAJOR,
+								w[finger]);
 			input_report_abs(pdata->input_dev, ABS_MT_POSITION_X,
 								x[finger]);
 			input_report_abs(pdata->input_dev, ABS_MT_POSITION_Y,
@@ -501,7 +661,7 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 		touch_count = synaptics_rmi4_sensor_report(pdata);
 		if (touch_count)
 			wait_event_timeout(pdata->wait, pdata->touch_stopped,
-							msecs_to_jiffies(1));
+					msecs_to_jiffies(TIMEOUT_PERIOD));
 		else
 			break;
 	} while (!pdata->touch_stopped);
@@ -880,9 +1040,27 @@ static int synaptics_rmi4_i2c_query_device(struct synaptics_rmi4_data *pdata)
 }
 
 /**
+ * synaptics_rmi4_resume_handler() - work queue for resume handler
+ * @work:work_struct structure pointer
+ *
+ * This work queue handler used to resume the device and returns none
+ */
+static void synaptics_rmi4_resume_handler(struct work_struct *work)
+{
+	struct synaptics_rmi4_data *prmi4_data = container_of(work,
+				struct synaptics_rmi4_data, resume_wq_handler);
+	struct i2c_client *client = prmi4_data->i2c_client;
+	int retval;
+
+	retval = synaptics_rmi4_enable(prmi4_data);
+	if (retval < 0)
+		dev_err(&client->dev, "%s: resume failed\n", __func__);
+}
+
+/**
  * synaptics_rmi4_probe() - Initialze the i2c-client touchscreen driver
- * @i2c: i2c client structure pointer
- * @id:i2c device id pointer
+ * @client: i2c client structure pointer
+ * @dev_id:i2c device id pointer
  *
  * This function will allocate and initialize the instance
  * data and request the irq and set the instance data as the clients
@@ -984,7 +1162,16 @@ static int __devinit synaptics_rmi4_probe
 	input_set_abs_params(rmi4_data->input_dev, ABS_MT_POSITION_Y, 0,
 					rmi4_data->sensor_max_y, 0, 0);
 	input_set_abs_params(rmi4_data->input_dev, ABS_MT_TOUCH_MAJOR, 0,
-						MAX_TOUCH_MAJOR, 0, 0);
+			max(rmi4_data->sensor_max_y, rmi4_data->sensor_max_y),
+							0, 0);
+	input_set_abs_params(rmi4_data->input_dev, ABS_MT_WIDTH_MAJOR, 0,
+						MAX_WIDTH_MAJOR, 0, 0);
+
+	retval = input_register_device(rmi4_data->input_dev);
+	if (retval) {
+		dev_err(&client->dev, "%s:input register failed\n", __func__);
+		goto err_input_register;
+	}
 
 	/* Clear interrupts */
 	synaptics_rmi4_i2c_block_read(rmi4_data,
@@ -997,19 +1184,36 @@ static int __devinit synaptics_rmi4_probe
 	if (retval) {
 		dev_err(&client->dev, "%s:Unable to get attn irq %d\n",
 				__func__, platformdata->irq_number);
-		goto err_query_dev;
+		goto err_request_irq;
 	}
 
-	retval = input_register_device(rmi4_data->input_dev);
+	INIT_WORK(&rmi4_data->resume_wq_handler, synaptics_rmi4_resume_handler);
+
+	/* sysfs implementation for dynamic enable/disable the input event */
+	retval = sysfs_create_group(&client->dev.kobj,
+					&synaptics_rmi4_attr_group);
 	if (retval) {
-		dev_err(&client->dev, "%s:input register failed\n", __func__);
-		goto err_free_irq;
+		dev_err(&client->dev, "failed to create sysfs entries\n");
+		goto err_sysfs;
 	}
+	rmi4_data->enable		= true;
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	rmi4_data->early_suspend.level =
+				EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	rmi4_data->early_suspend.suspend = synaptics_rmi4_early_suspend;
+	rmi4_data->early_suspend.resume = synaptics_rmi4_late_resume;
+	register_early_suspend(&rmi4_data->early_suspend);
+#endif
 	return retval;
 
-err_free_irq:
+err_sysfs:
+	cancel_work_sync(&rmi4_data->resume_wq_handler);
+err_request_irq:
 	free_irq(platformdata->irq_number, rmi4_data);
+	input_unregister_device(rmi4_data->input_dev);
+err_input_register:
+	i2c_set_clientdata(client, NULL);
 err_query_dev:
 	if (platformdata->regulator_en) {
 		regulator_disable(rmi4_data->regulator);
@@ -1035,8 +1239,10 @@ static int __devexit synaptics_rmi4_remove(struct i2c_client *client)
 	struct synaptics_rmi4_data *rmi4_data = i2c_get_clientdata(client);
 	const struct synaptics_rmi4_platform_data *pdata = rmi4_data->board;
 
+	sysfs_remove_group(&client->dev.kobj, &synaptics_rmi4_attr_group);
 	rmi4_data->touch_stopped = true;
 	wake_up(&rmi4_data->wait);
+	cancel_work_sync(&rmi4_data->resume_wq_handler);
 	free_irq(pdata->irq_number, rmi4_data);
 	input_unregister_device(rmi4_data->input_dev);
 	if (pdata->regulator_en) {
@@ -1048,6 +1254,7 @@ static int __devexit synaptics_rmi4_remove(struct i2c_client *client)
 	return 0;
 }
 
+#ifndef CONFIG_HAS_EARLYSUSPEND
 #ifdef CONFIG_PM
 /**
  * synaptics_rmi4_suspend() - suspend the touch screen controller
@@ -1059,32 +1266,11 @@ static int __devexit synaptics_rmi4_remove(struct i2c_client *client)
 static int synaptics_rmi4_suspend(struct device *dev)
 {
 	/* Touch sleep mode */
-	int retval;
-	unsigned char intr_status;
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
-	const struct synaptics_rmi4_platform_data *pdata = rmi4_data->board;
 
-	rmi4_data->touch_stopped = true;
-	disable_irq(pdata->irq_number);
-
-	retval = synaptics_rmi4_i2c_block_read(rmi4_data,
-				rmi4_data->fn01_data_base_addr + 1,
-				&intr_status,
-				rmi4_data->number_of_interrupt_register);
-	if (retval < 0)
-		return retval;
-
-	retval = synaptics_rmi4_i2c_byte_write(rmi4_data,
-					rmi4_data->fn01_ctrl_base_addr + 1,
-					(intr_status & ~TOUCHPAD_CTRL_INTR));
-	if (retval < 0)
-		return retval;
-
-	if (pdata->regulator_en)
-		regulator_disable(rmi4_data->regulator);
-
-	return 0;
+	return synaptics_rmi4_disable(rmi4_data);
 }
+
 /**
  * synaptics_rmi4_resume() - resume the touch screen controller
  * @dev: pointer to device structure
@@ -1094,29 +1280,9 @@ static int synaptics_rmi4_suspend(struct device *dev)
  */
 static int synaptics_rmi4_resume(struct device *dev)
 {
-	int retval;
-	unsigned char intr_status;
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
-	const struct synaptics_rmi4_platform_data *pdata = rmi4_data->board;
 
-	if (pdata->regulator_en)
-		regulator_enable(rmi4_data->regulator);
-
-	enable_irq(pdata->irq_number);
-	rmi4_data->touch_stopped = false;
-
-	retval = synaptics_rmi4_i2c_block_read(rmi4_data,
-				rmi4_data->fn01_data_base_addr + 1,
-				&intr_status,
-				rmi4_data->number_of_interrupt_register);
-	if (retval < 0)
-		return retval;
-
-	retval = synaptics_rmi4_i2c_byte_write(rmi4_data,
-					rmi4_data->fn01_ctrl_base_addr + 1,
-					(intr_status | TOUCHPAD_CTRL_INTR));
-	if (retval < 0)
-		return retval;
+	schedule_work(&rmi4_data->resume_wq_handler);
 
 	return 0;
 }
@@ -1125,6 +1291,32 @@ static const struct dev_pm_ops synaptics_rmi4_dev_pm_ops = {
 	.suspend = synaptics_rmi4_suspend,
 	.resume  = synaptics_rmi4_resume,
 };
+#endif
+
+#else
+static void synaptics_rmi4_early_suspend(struct early_suspend *data)
+{
+	struct synaptics_rmi4_data *rmi4_data =
+		container_of(data, struct synaptics_rmi4_data, early_suspend);
+	struct i2c_client *client = rmi4_data->i2c_client;
+	int retval;
+
+	retval = synaptics_rmi4_disable(rmi4_data);
+	if (retval < 0)
+		dev_err(&client->dev, "rmi4 disable failed\n");
+}
+
+static void synaptics_rmi4_late_resume(struct early_suspend *data)
+{
+	struct synaptics_rmi4_data *rmi4_data =
+		container_of(data, struct synaptics_rmi4_data, early_suspend);
+	struct i2c_client *client = rmi4_data->i2c_client;
+	int retval;
+
+	retval = synaptics_rmi4_enable(rmi4_data);
+	if (retval < 0)
+		dev_err(&client->dev, "rmi4 enable failed\n");
+}
 #endif
 
 static const struct i2c_device_id synaptics_rmi4_id_table[] = {
@@ -1137,7 +1329,7 @@ static struct i2c_driver synaptics_rmi4_driver = {
 	.driver = {
 		.name	=	DRIVER_NAME,
 		.owner	=	THIS_MODULE,
-#ifdef CONFIG_PM
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
 		.pm	=	&synaptics_rmi4_dev_pm_ops,
 #endif
 	},

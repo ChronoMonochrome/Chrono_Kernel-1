@@ -24,6 +24,16 @@ menuconfig STAGING
 
 if STAGING
 
+config AB5500_SIM
+        bool "ST-Ericsson AB5500 SIM Interface driver"
+        depends on AB5500_CORE
+        help
+          SIM Interface driver provides interface to configure
+          various parameters of AB5550 SIM Level Shifter.Support provided are:
+          Configure Pull up on sim lines
+          Configure Operation Mode
+          Notify Sim Insert/Extract Interrupt
+
 source "drivers/staging/tty/Kconfig"
 
 source "drivers/staging/generic_serial/Kconfig"
@@ -69,6 +79,8 @@ source "drivers/staging/rtl8712/Kconfig"
 source "drivers/staging/rts_pstor/Kconfig"
 
 source "drivers/staging/frontier/Kconfig"
+
+source "drivers/staging/android/Kconfig"
 
 source "drivers/staging/pohmelfs/Kconfig"
 
@@ -160,4 +172,24 @@ source "drivers/staging/mei/Kconfig"
 
 source "drivers/staging/nvec/Kconfig"
 
+source "drivers/staging/cg2900/Kconfig"
+
+#source "drivers/staging/cw1200/Kconfig"
+
+source "drivers/staging/mmio/Kconfig"
+
+source "drivers/staging/nmf-cm/Kconfig"
+
+source "drivers/staging/camera_flash/Kconfig"
+
+source "drivers/staging/pasr/Kconfig"
+
+
+if CW1200
+config STE_WLAN 
+	bool "Enabling STE WLAN relevant feature"
+	default y
+	
+source "drivers/staging/etf_drivers/Kconfig"
+endif
 endif # STAGING
