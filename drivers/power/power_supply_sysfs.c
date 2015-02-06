@@ -1,10 +1,10 @@
 /*
  *  Sysfs interface for the universal power supply monitor class
  *
- *  Copyright © 2007  David Woodhouse <dwmw2@infradead.org>
- *  Copyright © 2007  Anton Vorontsov <cbou@mail.ru>
- *  Copyright © 2004  Szabolcs Gyurko
- *  Copyright © 2003  Ian Molton <spyro@f2s.com>
+ *  Copyright Â© 2007  David Woodhouse <dwmw2@infradead.org>
+ *  Copyright Â© 2007  Anton Vorontsov <cbou@mail.ru>
+ *  Copyright Â© 2004  Szabolcs Gyurko
+ *  Copyright Â© 2003  Ian Molton <spyro@f2s.com>
  *
  *  Modified: 2004, Oct     Szabolcs Gyurko
  *
@@ -42,11 +42,11 @@ static ssize_t power_supply_show_property(struct device *dev,
 					  struct device_attribute *attr,
 					  char *buf) {
 	static char *type_text[] = {
-		"Battery", "UPS", "Mains", "USB",
+		"Unknown", "Battery", "UPS", "Mains", "USB",
 		"USB_DCP", "USB_CDP", "USB_ACA"
 	};
 	static char *status_text[] = {
-		"Unknown", "Charging", "Discharging", "Not charging", "Full"
+		"Unknown", "Charging", "Discharging", "Not charging", "Full", "Suspended"
 	};
 	static char *charge_type[] = {
 		"Unknown", "N/A", "Trickle", "Fast"
@@ -159,6 +159,9 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(energy_avg),
 	POWER_SUPPLY_ATTR(capacity),
 	POWER_SUPPLY_ATTR(capacity_level),
+	#if defined(CONFIG_MACH_JANICE) || 	defined(CONFIG_MACH_CODINA) || 	defined(CONFIG_MACH_GAVINI)
+	POWER_SUPPLY_ATTR(capacity_level_raw),
+	#endif
 	POWER_SUPPLY_ATTR(temp),
 	POWER_SUPPLY_ATTR(temp_ambient),
 	POWER_SUPPLY_ATTR(time_to_empty_now),
@@ -166,6 +169,15 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(time_to_full_now),
 	POWER_SUPPLY_ATTR(time_to_full_avg),
 	POWER_SUPPLY_ATTR(type),
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	POWER_SUPPLY_ATTR(batt_cal),
+	POWER_SUPPLY_ATTR(ui_full),
+	POWER_SUPPLY_ATTR(charging_timeout),
+	POWER_SUPPLY_ATTR(charging_source),
+	POWER_SUPPLY_ATTR(lpm_mode),
+	POWER_SUPPLY_ATTR(reinit_capacity),
+	POWER_SUPPLY_ATTR(siop),
+#endif
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),

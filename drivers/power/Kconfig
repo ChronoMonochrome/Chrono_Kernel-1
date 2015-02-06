@@ -62,6 +62,18 @@ config TEST_POWER
 	help
 	  This driver is used for testing. It's safe to say M here.
 
+config FAKE_DFMS_DEVICES
+	bool "fake power supply sysfs devices"
+	default n
+	help
+	  Say Y To create fake sysfs entries in order to keep Samsung DFMS happy.
+
+config ABB_FAKE_DFMS_DEVICES
+	bool "fake power supply sysfs devices"
+	default n
+	help
+	  Say Y To create fake sysfs entries in order to keep Samsung DFMS happy.
+
 config BATTERY_DS2760
 	tristate "DS2760 battery driver (HP iPAQ & others)"
 	depends on W1 && W1_SLAVE_DS2760
@@ -235,4 +247,75 @@ config CHARGER_GPIO
 	  This driver can be build as a module. If so, the module will be
 	  called gpio-charger.
 
+config SAMSUNG_CHARGER_SPEC
+	bool "Samsung Charger specification"
+	help
+	  Say Y to include enable the Samsung Charger Spec.
+
+config AB8500_BM
+	bool "AB8500 Battery Management Driver"
+	depends on AB8500_CORE && AB8500_GPADC && ARCH_U8500
+	help
+	  Say Y to include support for AB8500 battery management.
+
+config AB8500_BATTERY_THERM_ON_BATCTRL
+	bool "Thermistor connected on BATCTRL ADC"
+	depends on AB8500_BM
+	help
+	  Say Y to enable battery temperature measurements using
+	  thermistor connected on BATCTRL ADC.
+
+config AB8XX0_USBCHG_ON_MAIN
+	bool "USB Charging is performed through the Main Charger"
+	depends on AB8500_BM
+	help
+	  Say Y to enable USB charging though the Main Charger.
+
+config AB8XX0_TACHG_ON_USB
+	bool "TA (AC) Charging is performed through the USB Charger"
+	depends on AB8500_BM
+	help
+	  Say Y to enable TA charging though the USB Charger.
+
+config ABB_BM
+	bool "AB8500 Legacy(GB) Battery Management Driver"
+	depends on AB8500_CORE && AB8500_GPADC && ARCH_U8500
+	help
+	  Say Y to include support for AB8500 Legacy(GB) battery management.
+
+config AB5500_BM
+	bool "AB5500 Battery Management Driver"
+	depends on AB5500_CORE && AB5500_GPADC && MACH_U5500
+	help
+	  Say Y to include support for AB5500 battery management.
+
+config AB5500_BATTERY_THERM_ON_BATCTRL
+	bool "Thermistor connected on BATCTRL ADC"
+	depends on AB5500_BM
+	help
+	  Say Y to enable battery temperature measurements using
+	  thermistor connected on BATCTRL ADC.
+
+config MEASURE_TEMP_BY_ADC_TABLE
+	bool "Temperature measurement by ADC table"
+	default n
+	help
+	  Say Y to include support for measurement by ADC table.	  
+
+config CHARGER_PM2301
+	bool "PM2301 Battery Charger Driver"
+	depends on AB8500_BM
+	help
+	  Say Y to include support for PM2301 charger driver.
+	  Depends on AB8500 battery management core.
+
+config PM2XXX_DEEP_DEBUG
+	bool "PM2XXX Deep Debug"
+	depends on DEEP_DEBUG && CHARGER_PM2301
+	default n
+	help
+	  Deep Debug interface provides an access to all registers.
+	  It allows to read or write directly a register.
+	  Say Y to include support for Deep Debug.
+	  If unsure, say N.
 endif # POWER_SUPPLY
