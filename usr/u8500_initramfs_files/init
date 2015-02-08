@@ -10,9 +10,9 @@ busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
 busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
-busybox chmod 644 /ramdisk/boot.cpio
 
 load_image=/ramdisk/boot.cpio
+lvm=/ramdisk/lvm.cpio
 
 if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
@@ -35,7 +35,21 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 	fi
 fi
 
-busybox cpio -i < ${load_image}
+if test -f ${load_image} ; then
+	busybox cpio -i < ${load_image}
+fi
+
+if test -f ${load_image}.gz ; then
+	busybox zcat ${load_image}.gz | busybox cpio -i -u
+fi
+
+if test -f ${lvm} ; then
+	busybox cpio -i < ${lwm}
+fi
+
+if test -f ${lvm}.gz ; then
+	busybox zcat ${lvm}.gz | busybox cpio -i -u
+fi
 
 busybox umount /sys
 busybox umount /proc
