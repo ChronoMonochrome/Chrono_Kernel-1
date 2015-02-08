@@ -1349,7 +1349,9 @@ static void do_oc_ddr(int new_val_)
 	int pllddr_freq;
 	int sdmmc_old_divider, sdmmc_new_divider,
 	    mcde_new_divider, perx_new_divider,
+#if 0
 	    dma_new_divider, // used for ACLK and DMACLK since its orig. values are same
+#endif
 	    sxa_new_divider; // used for SIACLK and SVACLK;
 	    
 	old_val_ = readl(prcmu_base + PRCMU_PLLDDR_REG);
@@ -1359,12 +1361,14 @@ static void do_oc_ddr(int new_val_)
 	if (!perx_is_calibrated) {
 		// Recalibrate DMACLK and ACLK
 		
+#if 0
 		dma_new_divider = (pllddr_freq - (pllddr_freq % DMACLK_ORIG_CLK)) / DMACLK_ORIG_CLK;
 		if (pllddr_freq % DMACLK_ORIG_CLK) dma_new_divider++;
 		if (dma_new_divider > 15) dma_new_divider = 15;
 		
 		prcmu_regs[DMACLK].boost_value = dma_new_divider;
 		prcmu_regs[ACLK].boost_value = dma_new_divider;
+#endif
 	  
 		// Recalibrate SIACLK and SVACLK
 		
