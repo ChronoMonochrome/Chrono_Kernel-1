@@ -1215,24 +1215,14 @@ static int liveopp_start = 0;
 
 static bool ddr_oc_on_suspend = false; // set true if needed to schedule DDR OC on suspend
 
-/*
- *  DDR OC algorithm depends on CPU workload
- *  workload = frequency * load (Hz * %)
- */
-extern unsigned int get_cpufreq_workload(void);
-
 static u32 pending_pllddr_val; // scheduled PLLDDR value
-static int curr_workload = 0; 
 static int pllddr_oc_delay_us = 100; // delay between graduate PLLDDR changing
-static int idle_cpu_workload = 20000;
 static bool is_suspend = false;
 static bool sdmmc_is_calibrated = false, 
 	    perx_is_calibrated = false, 
 	    pllddr_is_calibrated = false;
 static bool ddr_clocks_boost = false;
 static struct wake_lock pllddr_oc_lock;
-
-module_param(idle_cpu_workload, uint, 0644);
 
 struct prcmu_regs_table
 {
@@ -1395,9 +1385,7 @@ static void do_oc_ddr(int new_val_)
 		
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
-		curr_workload = get_cpufreq_workload();
-		if (curr_workload > idle_cpu_workload || sdmmcclk_is_enabled
-		  || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
+		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
 			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
@@ -1416,9 +1404,7 @@ static void do_oc_ddr(int new_val_)
 			
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
-		curr_workload = get_cpufreq_workload();
-		if (curr_workload > idle_cpu_workload || sdmmcclk_is_enabled
-		  || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
+		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
 			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
@@ -1437,9 +1423,7 @@ static void do_oc_ddr(int new_val_)
 	if (!pllddr_is_calibrated) {
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
-		curr_workload = get_cpufreq_workload();
-		if (curr_workload > idle_cpu_workload || sdmmcclk_is_enabled
-		  || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
+		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
 			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
@@ -1449,10 +1433,9 @@ static void do_oc_ddr(int new_val_)
 		    (new_val_ > old_val_) ? (val <= new_val_) : (val >= new_val_); 
 		    (new_val_ > old_val_) ? val++ : val--) {
 			if (val == 0x50180) {
-				curr_workload = get_cpufreq_workload();
 				mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 				sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
-				if (curr_workload > idle_cpu_workload || mcdeclk_is_enabled || sdmmcclk_is_enabled) {
+				if (mcdeclk_is_enabled || sdmmcclk_is_enabled) {
 					//pr_err("[PLLDDR] refused to change PLLDDR due to possible reboot\n");
 					tmp_val = val;
 					return;
