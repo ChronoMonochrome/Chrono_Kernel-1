@@ -1297,7 +1297,7 @@ static void ddr_cross_clocks_boost(bool state)
 		new_divider = new_val & 0xf;
 			
 		if (!new_divider) {
-			pr_err("LiveOPP: bad divider, %s:%s:%#05x:\n", __func__, 
+			pr_err("[PLLDDR] bad divider, %s:%s:%#05x:\n", __func__, 
 					    prcmu_regs[i].name,
 					    new_val);
 				continue;
@@ -1307,7 +1307,7 @@ static void ddr_cross_clocks_boost(bool state)
 
 		new_val = base | new_divider;
 			
-		pr_err("[LiveOPP] set %s=%#05x -> %#05x\n", prcmu_regs[i].name, 
+		pr_err("[PLLDDR] set %s=%#05x -> %#05x\n", prcmu_regs[i].name, 
 							      old_val, new_val);
 	
 		for (val = old_val;
@@ -1386,7 +1386,7 @@ static void do_oc_ddr(int new_val_)
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
 		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
-			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
+			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
 		
@@ -1405,7 +1405,7 @@ static void do_oc_ddr(int new_val_)
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
 		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
-			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
+			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
 			
@@ -1424,7 +1424,7 @@ static void do_oc_ddr(int new_val_)
 		mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 		sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100; 
 		if (sdmmcclk_is_enabled || (new_val_>=0x50180 && mcdeclk_is_enabled)) {
-			//pr_err("[PLLDDR] refused to OC due to high cpu workload, enabled SDMMCCLK or MCDECLK\n");
+			//pr_err("[PLLDDR] refused to OC due to enabled SDMMCCLK or MCDECLK\n");
 			return;
 		}
 		
@@ -2051,7 +2051,7 @@ static void pllddr_early_suspend(struct early_suspend *h)
 	is_suspend = true;
 	
 	//pr_err("[PLLDDR] %s\n", __func__);
-	
+
 	if (pending_pllddr_val && ddr_oc_on_suspend) {
 		pr_err("[PLLDDR] pending_pllddr_val=%#010x\n", pending_pllddr_val);
 		schedule_delayed_work(&do_oc_ddr_delayedwork, msecs_to_jiffies(ddr_oc_delay_ms));
@@ -2061,11 +2061,12 @@ static void pllddr_early_suspend(struct early_suspend *h)
 static void pllddr_late_resume(struct early_suspend *h)
 {
 	is_suspend = false;
-	
+
 	//pr_err("[PLLDDR] %s\n", __func__);
 	
 	if (pending_pllddr_val && ddr_oc_on_suspend) {
 		cancel_delayed_work(&do_oc_ddr_delayedwork);
+		//pr_err("canceled\n");
 		if (wake_lock_active(&pllddr_oc_lock))
 			wake_unlock(&pllddr_oc_lock);
 	}
@@ -2114,7 +2115,7 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 		pr_err("[PLLDDR] invalid divider\n");
 		return -EINVAL;
 	}
-
+	
 	pending_pllddr_val = new_val;
 
 	schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
@@ -2125,8 +2126,7 @@ ATTR_RW(pllddr);
 
 static ssize_t pllddr_oc_on_suspend_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	ddr_oc_on_suspend = true;
-  
+ 
 	if (pending_pllddr_val)
 		sprintf(buf, "pending_pllddr_val: %#010x (%d kHz)\n", pending_pllddr_val,
 							pllarm_freq(pending_pllddr_val));
@@ -2151,9 +2151,10 @@ static ssize_t pllddr_oc_on_suspend_store(struct kobject *kobj, struct kobj_attr
 	if (new_divider != old_divider)
 		return -EINVAL;
 	
-	if (tmp_val) {
-		pending_pllddr_val = tmp_val;
-	}
+	ddr_oc_on_suspend = true;
+	pending_pllddr_val = tmp_val;
+
+	pr_err("[PLLDDR] pending_pllddr_val = %#010x \n", pending_pllddr_val);
 	
 	return count;
 }
