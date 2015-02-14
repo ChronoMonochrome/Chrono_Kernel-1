@@ -1491,6 +1491,7 @@ static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
 	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 100,  100},
 	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 100,  100},
 	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 100,  100},
+	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 100,  100},
 	{1230000, 1228800, 0x000501A0, 0x38, 0x8F, 100,  100},
 	{1245000, 1244160, 0x000501A2, 0x38, 0x8F, 100,  100},
 };
@@ -1999,6 +2000,7 @@ ARM_STEP(arm_step09, 9);
 ARM_STEP(arm_step10, 10);
 ARM_STEP(arm_step11, 11);
 ARM_STEP(arm_step12, 12);
+ARM_STEP(arm_step13, 13);
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
@@ -2288,6 +2290,7 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step10_interface.attr,
 	&arm_step11_interface.attr, 
 	&arm_step12_interface.attr, 
+	&arm_step13_interface.attr, 
 	&pllddr_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
