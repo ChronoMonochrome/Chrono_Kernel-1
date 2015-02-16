@@ -1483,15 +1483,15 @@ static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
 static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
 //	| CLK            | PLL       | VDD | VBB | Enable | DDR | APE |
 	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 1,  25,  50},
+	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 0,  25,  50},
 	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1,  50,  50},
-	{ 500000,  499200, 0x00050141, 0x20, 0xDB, 1,  50,  50},
+	{ 500000,  499200, 0x00050141, 0x20, 0xDB, 0,  50,  50},
 	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1,  50,  50},
-	{ 700000,  698880, 0x0005015B, 0x24, 0xDB, 1,  50,  50},
+	{ 700000,  698880, 0x0005015B, 0x24, 0xDB, 0,  50,  50},
 	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1, 100,  50},
 	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1, 100, 100},
-	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1, 100, 100},
-	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 1, 100, 100},
+	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 0, 100, 100},
+	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 0, 100, 100},
 	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1, 100, 100},
 	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1, 100, 100},
 	{1230000, 1228800, 0x000501A0, 0x37, 0x8F, 1, 100, 100},
@@ -1743,16 +1743,17 @@ static ssize_t arm_summary_show(struct kobject *kobj, struct kobj_attribute *att
 {
 	int i;
 
-	sprintf(buf, "IDX | CLK     | PLL        | VDD            | VBB\n");
+	sprintf(buf, "IDX | CLK      | PLL           | VDD            | VBB        | Enabled\n");
 	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
-		sprintf(buf, "%s%3d | %7d | %#010x | %7duV %#04x | %#04x\n",
+		sprintf(buf, "%s%3d | %7d | %#010x | %7duV %#04x | %#04x  | %d\n",
 				buf,
 				i,
 				pllarm_freq(liveopp_arm[i].pllarm_raw),
 				liveopp_arm[i].pllarm_raw,
 				varm_uv(liveopp_arm[i].varm_raw),
 				liveopp_arm[i].varm_raw,
-				liveopp_arm[i].vbbx_raw);
+				liveopp_arm[i].vbbx_raw,
+				liveopp_arm[i].enable);
 	}
 
 	return strlen(buf);
@@ -1865,7 +1866,7 @@ static ssize_t arm_step_show(struct kobject *kobj, struct kobj_attribute *attr, 
 	sprintf(buf, "%sVarm:\t\t\t%d uV (%#04x)\n", buf, varm_uv(liveopp_arm[_index].varm_raw),
 								     (int)liveopp_arm[_index].varm_raw);
 	sprintf(buf, "%sVbbx:\t\t\t%#04x\n", buf, (int)liveopp_arm[_index].vbbx_raw);
-	sprintf(buf, "%sEnable:\t\t\t%d\n", buf,  liveopp_arm[_index].enable ? 1 : 0);
+	sprintf(buf, "%sEnable:\t\t\t%d\n", buf,  liveopp_arm[_index].enable);
 	sprintf(buf, "%sDDR_OPP:\t\t%d\n", buf, liveopp_arm[_index].ddr_opp);
 	sprintf(buf, "%sAPE_OPP:\t\t%d\n", buf, liveopp_arm[_index].ape_opp);
 
