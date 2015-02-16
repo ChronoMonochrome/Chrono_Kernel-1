@@ -1748,7 +1748,7 @@ static ssize_t arm_summary_show(struct kobject *kobj, struct kobj_attribute *att
 		sprintf(buf, "%s%3d | %7d | %#010x | %7duV %#04x | %#04x  | %d\n",
 				buf,
 				i,
-				pllarm_freq(liveopp_arm[i].pllarm_raw),
+				liveopp_arm[i].freq_show,
 				liveopp_arm[i].pllarm_raw,
 				varm_uv(liveopp_arm[i].varm_raw),
 				liveopp_arm[i].varm_raw,
@@ -1758,7 +1758,124 @@ static ssize_t arm_summary_show(struct kobject *kobj, struct kobj_attribute *att
 
 	return strlen(buf);
 }
-ATTR_RO(arm_summary);
+
+static ssize_t arm_summary_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int i;
+	u32 val1, val2;
+
+	if (sscanf(buf, "%d pll=%x", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].pllarm_raw = val2;
+				break;
+			}
+		}
+		
+		return count;
+	}
+	
+	if (sscanf(buf, "%d varm=%x", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].varm_raw = val2;
+				break;
+			}
+		}
+		
+		return count;
+	}
+	
+	if (sscanf(buf, "%d vbbx=%x", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].vbbx_raw = val2;
+				break;
+			}
+		}
+		
+		return count;
+	}
+	
+	if (sscanf(buf, "%d varm+=%d", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].varm_raw += (int)val2;
+				break;
+			}
+		}
+		
+		return count;
+	}	
+	
+	if (sscanf(buf, "%d varm-=%d", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].varm_raw -= (int)val2;
+				break;
+			}
+		}
+	}
+	
+	if (sscanf(buf, "%d apeopp=%d", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].ape_opp = (int)val2;
+				break;
+			}
+		}
+		
+		return count;
+	}	
+	
+	if (sscanf(buf, "%d ddropp=%d", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].ddr_opp = (int)val2;
+				break;
+			}
+		}
+		
+		return count;
+	}
+	
+	if (sscanf(buf, "%d enable=%d", &val1, &val2) == 2) {
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+			if (liveopp_arm[i].freq_show == (int)val1) {
+					liveopp_arm[i].enable = (int)val2;
+				break;
+			}
+		}
+		
+		return count;
+	}
+
+	return count;
+}
+
+ATTR_RW(arm_summary);
+
+static ssize_t arm_summary_enabled_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	int i;
+
+	sprintf(buf, "IDX | CLK      | PLL           | VDD            | VBB        \n");
+	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+		if (!liveopp_arm[i].enable) continue;
+		
+		sprintf(buf, "%s%3d | %7d | %#010x | %7duV %#04x | %#04x  \n",
+				buf,
+				i,
+				pllarm_freq(liveopp_arm[i].pllarm_raw),
+				liveopp_arm[i].pllarm_raw,
+				varm_uv(liveopp_arm[i].varm_raw),
+				liveopp_arm[i].varm_raw,
+				liveopp_arm[i].vbbx_raw);
+	}
+
+	return strlen(buf);
+}
+ATTR_RO(arm_summary_enabled);
 
 static ssize_t arm_extclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -2288,6 +2405,7 @@ static struct attribute *liveopp_attrs[] = {
 	&version_interface.attr,
 	&prcmu_avs_interface.attr,
 	&arm_summary_interface.attr,
+	&arm_summary_enabled_interface.attr,
 	&arm_extclk_interface.attr,
 	&arm_pllclk_interface.attr,
 	&arm_varm_interface.attr,
