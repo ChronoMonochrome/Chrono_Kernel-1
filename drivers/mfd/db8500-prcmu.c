@@ -1140,6 +1140,7 @@ static void db8500_prcmu_get_abb_event_buffer(void __iomem **buf)
  * @pllarm_raw:		Raw register value of PLLARM_FREQ in PRCMU
  * @varm_raw:		Raw register value of Varm regulator in AB850x
  * @vbbx_raw:		Raw register value of Vbbp and Vbbn regulator in AB850x
+ * @enable:		flag that allow to skip step during frequency scaling
  * @ddr_opp		minimum DDR_OPP - valid values are 25/default, 50, 100/max
  * @ape_opp		minimum APE_OPP - valid values are 25/default, 50, 100/max
  * 			25 is actually APE_50_PARTLY_25_OPP - its OPP_50 with some clocks
@@ -1155,6 +1156,7 @@ struct liveopp_arm_table
 	u32 	pllarm_raw;
 	u8 	varm_raw;
 	u8  	vbbx_raw;
+	bool	enable;
 	int	ddr_opp;
 	int	ape_opp;
 };
@@ -1479,21 +1481,21 @@ static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
 #else
 /* table for others */
 static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
-//	| CLK            | PLL       | VDD | VBB | DDR | APE |
-	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x1a, 0xDB,  25,  50},
-	{ 400000,  399360, 0x00050134, 0x1a, 0xDB,  50,  50},
-	{ 500000,  499200, 0x00050141, 0x20, 0xDB,  50,  50},
-	{ 600000,  599040, 0x0005014E, 0x20, 0xDB,  50,  50},
-	{ 700000,  698880, 0x0005015B, 0x24, 0xDB,  50,  50},
-	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 100,  50},
-	{1000000,  998400, 0x00050182, 0x31, 0x8F, 100,  100},
-	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 100,  100},
-	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 100,  100},
-	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 100,  100},
-	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 100,  100},
-	{1230000, 1228800, 0x000501A0, 0x38, 0x8F, 100,  100},
-	{1245000, 1244160, 0x000501A2, 0x38, 0x8F, 100,  100},
+//	| CLK            | PLL       | VDD | VBB | Enable | DDR | APE |
+	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1,  25,  25},
+	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 1,  25,  50},
+	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1,  50,  50},
+	{ 500000,  499200, 0x00050141, 0x20, 0xDB, 1,  50,  50},
+	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1,  50,  50},
+	{ 700000,  698880, 0x0005015B, 0x24, 0xDB, 1,  50,  50},
+	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1, 100,  50},
+	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1, 100, 100},
+	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1, 100, 100},
+	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 1, 100, 100},
+	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1, 100, 100},
+	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1, 100, 100},
+	{1230000, 1228800, 0x000501A0, 0x37, 0x8F, 1, 100, 100},
+	{1245000, 1244160, 0x000501A2, 0x37, 0x8F, 1, 100, 100},
 };
 #endif
 
@@ -1863,8 +1865,9 @@ static ssize_t arm_step_show(struct kobject *kobj, struct kobj_attribute *attr, 
 	sprintf(buf, "%sVarm:\t\t\t%d uV (%#04x)\n", buf, varm_uv(liveopp_arm[_index].varm_raw),
 								     (int)liveopp_arm[_index].varm_raw);
 	sprintf(buf, "%sVbbx:\t\t\t%#04x\n", buf, (int)liveopp_arm[_index].vbbx_raw);
-	sprintf(buf, "%sDDR_OPP:\t\t\t%d\n", buf, liveopp_arm[_index].ddr_opp);
-	sprintf(buf, "%sAPE_OPP:\t\t\t%d\n", buf, liveopp_arm[_index].ape_opp);
+	sprintf(buf, "%sEnable:\t\t\t%d\n", buf,  liveopp_arm[_index].enable ? 1 : 0);
+	sprintf(buf, "%sDDR_OPP:\t\t%d\n", buf, liveopp_arm[_index].ddr_opp);
+	sprintf(buf, "%sAPE_OPP:\t\t%d\n", buf, liveopp_arm[_index].ape_opp);
 
 	return sprintf(buf, "%s\n", buf);
 }
@@ -1876,10 +1879,22 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 
 	if (_index >= ARRAY_SIZE(liveopp_arm))
 		return -EINVAL;
+	
+	if (!strncmp(buf, "enable=", 7)) {
+		ret = sscanf(&buf[7], "%d", &val);
+		if (!ret) {
+			pr_err("[LiveOPP] Invalid value\n");
+			return -EINVAL;
+		}
+
+		liveopp_arm[_index].enable = val;
+
+		return count;
+	}
 
 	if (!strncmp(buf, "pll=", 4)) {
 		ret = sscanf(&buf[4], "%x", &val);
-		if ((!ret)) {
+		if (!ret) {
 			pr_err("[LiveOPP] Invalid value\n");
 			return -EINVAL;
 		}
@@ -1891,7 +1906,7 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 	
 	if (!strncmp(buf, "varm+=", 6)) {
 		ret = sscanf(&buf[6], "%d", &val);
-		if ((!ret)) {
+		if (!ret) {
 			pr_err("[LiveOPP] Invalid value\n");
 			return -EINVAL;
 		}
@@ -1903,7 +1918,7 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 
 	if (!strncmp(buf, "varm-=", 6)) {
 		ret = sscanf(&buf[6], "%d", &val);
-		if ((!ret)) {
+		if (!ret) {
 			pr_err("[LiveOPP] Invalid value\n");
 			return -EINVAL;
 		}
@@ -1926,7 +1941,7 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 	}
 	if (!strncmp(buf, "varm=", 5)) {
 		ret = sscanf(&buf[5], "%x", &val);
-		if ((!ret)) {
+		if (!ret) {
 			pr_err("[LiveOPP] Invalid value\n");
 			return -EINVAL;
 		}
@@ -1937,7 +1952,7 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 	}
 	if (!strncmp(buf, "vbbx=", 5)) {
 		ret = sscanf(&buf[5], "%x", &val);
-		if ((!ret)) {
+		if (!ret) {
 			pr_err("[LiveOPP] Invalid value\n");
 			return -EINVAL;
 		}
@@ -2414,6 +2429,7 @@ static int arm_set_rate(unsigned long rate)
 {
 	unsigned long frequency = rate / 1000;
 	int i;
+	bool tmp = false;
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 	if (!liveopp_start)
@@ -2428,12 +2444,18 @@ static int arm_set_rate(unsigned long rate)
 	BUG_ON(!freq_table);
 
 	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
-		if (frequency == freq_table[i].frequency) {
+		// TODO: optimize this
+		if (!tmp) {
+			tmp = (frequency == freq_table[i].frequency);
+		}
+		if (tmp && liveopp_arm[i].enable) {
+			
 			liveopp_update_cpuhw(liveopp_arm[i],
 						last_arm_idx,
 						i);
 			last_arm_idx = i;
 			schedule_work(&requirements_update_work);
+			tmp = false;
 
 			break;
 		}
