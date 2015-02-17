@@ -22,7 +22,6 @@
 #include <linux/uaccess.h>
 #include <linux/user.h>
 #include <linux/proc_fs.h>
-#include <linux/export.h>
 
 #include <asm/cputype.h>
 #include <asm/thread_notify.h>
