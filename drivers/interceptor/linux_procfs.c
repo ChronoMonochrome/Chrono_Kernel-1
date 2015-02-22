@@ -100,20 +100,12 @@ interceptor_proc_entry_fop_release(SshInterceptorProcEntry entry)
   return 0;
 }
 
-static int interceptor_proc_entry_iop_permission(struct inode *inode,
-						 int op
-#ifdef LINUX_INODE_OPERATION_PERMISSION_HAS_NAMEIDATA
-						 , struct nameidata *nd
-#endif /* LINUX_INODE_OPERATION_PERMISSION_HAS_NAMEIDATA */
-#ifdef LINUX_INODE_OPERATION_PERMISSION_HAS_UINT
-						 , unsigned int ed
-#endif /* LINUX_INODE_OPERATION_PERMISSION_HAS_UINT */
-						 )
+static int interceptor_proc_entry_iop_permission(struct inode *inode, int mask)
 {
-  if (op & MAY_EXEC)
+  if (mask & MAY_EXEC)
     return -EACCES;
   
-  if ((op & (MAY_READ | MAY_WRITE)) && 
+  if ((mask & (MAY_READ | MAY_WRITE)) && 
 #ifdef LINUX_HAS_TASK_CRED_STRUCT
       current_euid() == (uid_t) ssh_procfs_uid
 #else /* LINUX_HAS_TASK_CRED_STRUCT */
