@@ -74,8 +74,14 @@ symlink_hash(unsigned int link_len, const char *link_str, u8 *md5_hash)
 		cERROR(1, "%s: Could not init md5 shash\n", __func__);
 		goto symlink_hash_err;
 	}
-	crypto_shash_update(&sdescmd5->shash, link_str, link_len);
+	rc = crypto_shash_update(&sdescmd5->shash, link_str, link_len);
+	if (rc) {
+		cERROR(1, "%s: Could not update iwth link_str\n", __func__);
+		goto symlink_hash_err;
+	}
 	rc = crypto_shash_final(&sdescmd5->shash, md5_hash);
+	if (rc)
+		cERROR(1, "%s: Could not generate md5 hash\n", __func__);
 
 symlink_hash_err:
 	crypto_free_shash(md5);
@@ -427,7 +433,7 @@ cifs_hardlink(struct dentry *old_file, struct inode *inode,
 	if (old_file->d_inode) {
 		cifsInode = CIFS_I(old_file->d_inode);
 		if (rc == 0) {
-			old_file->d_inode->i_nlink++;
+			inc_nlink(old_file->d_inode);
 /* BB should we make this contingent on superblock flag NOATIME? */
 /*			old_file->d_inode->i_ctime = CURRENT_TIME;*/
 			/* parent dir timestamps will update from srv

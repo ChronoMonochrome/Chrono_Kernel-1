@@ -57,11 +57,6 @@ build_path_from_dentry(struct dentry *direntry)
 	struct cifs_tcon *tcon = cifs_sb_master_tcon(cifs_sb);
 	unsigned seq;
 
-	if (direntry == NULL)
-		return NULL;  /* not much we can do if dentry is freed and
-		we need to reopen the file after it was closed implicitly
-		when the server crashed */
-
 	dirsep = CIFS_DIR_SEP(cifs_sb);
 	if (tcon->Flags & SMB_SHARE_IS_IN_DFS)
 		dfsplen = strnlen(tcon->treeName, MAX_TREE_SIZE + 1);
@@ -176,10 +171,10 @@ cifs_create(struct inode *inode, struct dentry *direntry, int mode,
 	}
 	tcon = tlink_tcon(tlink);
 
-	if (oplockEnabled)
+	if (enable_oplocks)
 		oplock = REQ_OPLOCK;
 
-	if (nd && (nd->flags & LOOKUP_OPEN))
+	if (nd)
 		oflags = nd->intent.open.file->f_flags;
 	else
 		oflags = O_RDONLY | O_CREAT;
@@ -214,7 +209,7 @@ cifs_create(struct inode *inode, struct dentry *direntry, int mode,
 		   which should be rare for path not covered on files) */
 	}
 
-	if (nd && (nd->flags & LOOKUP_OPEN)) {
+	if (nd) {
 		/* if the file is going to stay open, then we
 		   need to set the desired access properly */
 		desiredAccess = 0;
@@ -331,7 +326,7 @@ cifs_create_set_dentry:
 	else
 		cFYI(1, "Create worked, get_inode_info failed rc = %d", rc);
 
-	if (newinode && nd && (nd->flags & LOOKUP_OPEN)) {
+	if (newinode && nd) {
 		struct cifsFileInfo *pfile_info;
 		struct file *filp;
 
@@ -574,7 +569,7 @@ cifs_lookup(struct inode *parent_dir_inode, struct dentry *direntry,
 	 * reduction in network traffic in the other paths.
 	 */
 	if (pTcon->unix_ext) {
-		if (nd && !(nd->flags & (LOOKUP_PARENT | LOOKUP_DIRECTORY)) &&
+		if (nd && !(nd->flags & LOOKUP_DIRECTORY) &&
 		     (nd->flags & LOOKUP_OPEN) && !pTcon->broken_posix_open &&
 		     (nd->intent.open.file->f_flags & O_CREAT)) {
 			rc = cifs_posix_open(full_path, &newInode,
@@ -589,26 +584,10 @@ cifs_lookup(struct inode *parent_dir_inode, struct dentry *direntry,
 			 * If either that or op not supported returned, follow
 			 * the normal lookup.
 			 */
-			switch (rc) {
-			case 0:
-				/*
-				 * The server may allow us to open things like
-				 * FIFOs, but the client isn't set up to deal
-				 * with that. If it's not a regular file, just
-				 * close it and proceed as if it were a normal
-				 * lookup.
-				 */
-				if (newInode && !S_ISREG(newInode->i_mode)) {
-					CIFSSMBClose(xid, pTcon, fileHandle);
-					break;
-				}
-			case -ENOENT:
+			if ((rc == 0) || (rc == -ENOENT))
 				posix_open = true;
-			case -EOPNOTSUPP:
-				break;
-			default:
+			else if ((rc == -EINVAL) || (rc != -EOPNOTSUPP))
 				pTcon->broken_posix_open = true;
-			}
 		}
 		if (!posix_open)
 			rc = cifs_get_inode_info_unix(&newInode, full_path,
@@ -669,8 +648,16 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
 	if (direntry->d_inode) {
 		if (cifs_revalidate_dentry(direntry))
 			return 0;
-		else
+		else {
+			/*
+			 * Forcibly invalidate automounting directory inodes
+			 * (remote DFS directories) so to have them
+			 * instantiated again for automount
+			 */
+			if (IS_AUTOMOUNT(direntry->d_inode))
+				return 0;
 			return 1;
+		}
 	}
 
 	/*
