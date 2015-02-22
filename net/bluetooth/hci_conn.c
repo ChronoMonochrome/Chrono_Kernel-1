@@ -982,9 +982,7 @@ int hci_get_auth_info(struct hci_dev *hdev, void __user *arg)
 	conn = hci_conn_hash_lookup_ba(hdev, ACL_LINK, &req.bdaddr);
 	if (conn) {
 		req.type = conn->auth_type;
-#ifdef CONFIG_BT_MGMT
 		req.sec_level = max(conn->sec_level, conn->pending_sec_level);
-#endif
 	}
 	hci_dev_unlock_bh(hdev);
 
