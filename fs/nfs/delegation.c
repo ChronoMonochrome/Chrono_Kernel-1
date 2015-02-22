@@ -240,7 +240,7 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct 
 			sizeof(delegation->stateid.data));
 	delegation->type = res->delegation_type;
 	delegation->maxsize = res->maxsize;
-	delegation->change_attr = nfsi->change_attr;
+	delegation->change_attr = inode->i_version;
 	delegation->cred = get_rpccred(cred);
 	delegation->inode = inode;
 	delegation->flags = 1<<NFS_DELEGATION_REFERENCED;
@@ -464,17 +464,6 @@ static void nfs_delegation_run_state_manager(struct nfs_client *clp)
 {
 	if (test_bit(NFS4CLNT_DELEGRETURN, &clp->cl_state))
 		nfs4_schedule_state_manager(clp);
-}
-
-void nfs_remove_bad_delegation(struct inode *inode)
-{
-	struct nfs_delegation *delegation;
-
-	delegation = nfs_detach_delegation(NFS_I(inode), NFS_SERVER(inode));
-	if (delegation) {
-		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
-		nfs_free_delegation(delegation);
-	}
 }
 
 /**
