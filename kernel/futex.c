@@ -2110,8 +2110,11 @@ static void futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
 		 * flagged for rescheduling. Only call schedule if there
 		 * is no timeout, or if it has yet to expire.
 		 */
-		if (!timeout || timeout->task)
-			freezable_schedule();
+		if (!timeout || timeout->task) {
+			freezer_do_not_count();
+			schedule(); 
+			freezer_count();
+		}
 	}
 	__set_current_state(TASK_RUNNING);
 }
@@ -3043,8 +3046,7 @@ static void __init futex_detect_cmpxchg(void)
 #ifndef CONFIG_HAVE_FUTEX_CMPXCHG
 	u32 curval;
 	unsigned int futex_shift;
-	unsigned long i;
-
+	
 #if CONFIG_BASE_SMALL
 	futex_hashsize = 16;
 #else
