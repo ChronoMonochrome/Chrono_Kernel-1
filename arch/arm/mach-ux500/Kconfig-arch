@@ -4,6 +4,12 @@ config U8500_SECURE
 	help
 		Build the kernel to run in Secure mode.
 
+config HWMEM_SIZE_MB
+	int "Size of HWMEM"
+	default 84
+	help
+		Set here the size of the HWMEM, should be between 1 and 127 MB.
+		
 #Configuration for MCDE setup
 
 if FB_MCDE
