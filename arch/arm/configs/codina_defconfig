@@ -462,7 +462,7 @@ CONFIG_ARM_USE_GLIBC_MEMCOPY=y
 #
 # Boot options
 #
-# CONFIG_USE_OF is not set
+CONFIG_USE_OF=y
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
 CONFIG_CMDLINE="androidboot.hardware=samsungcodina log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=84M@256M mem=43M@340M mem_issw=1M@383M mem_ram_console=1M@384M mem=382M@385M vmalloc=264M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 sbl_copy=1"
@@ -470,7 +470,10 @@ CONFIG_CMDLINE="androidboot.hardware=samsungcodina log_buf_len=64K cachepolicy=w
 # CONFIG_CMDLINE_EXTEND is not set
 CONFIG_CMDLINE_FORCE=y
 # CONFIG_XIP_KERNEL is not set
-# CONFIG_KEXEC is not set
+CONFIG_KEXEC=y
+CONFIG_KEXEC_HARDBOOT=y
+CONFIG_ATAGS_PROC=y
+CONFIG_BOOTINFO=y
 # CONFIG_CRASH_DUMP is not set
 # CONFIG_AUTO_ZRELADDR is not set
 
@@ -2588,7 +2591,9 @@ CONFIG_HAVE_DYNAMIC_FTRACE=y
 CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
 CONFIG_HAVE_C_RECORDMCOUNT=y
 CONFIG_TRACING_SUPPORT=y
-# CONFIG_FTRACE is not set
+CONFIG_FTRACE=y
+CONFIG_DYNAMIC_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
 # CONFIG_DYNAMIC_DEBUG is not set
 # CONFIG_DMA_API_DEBUG is not set
 # CONFIG_ATOMIC64_SELFTEST is not set
