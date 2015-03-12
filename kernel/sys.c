@@ -418,12 +418,14 @@ static int reboot_timer_setup(unsigned long cmd)
 {
 	struct task_struct *task;
 
-	task = kthread_create(reboot_timer_expired, cmd, "reboot_rescue0");
+	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue0");
 	kthread_bind(task, 0);
 	wake_up_process(task);
-	task = kthread_create(reboot_timer_expired, cmd, "reboot_rescue1");
+	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue1");
 	kthread_bind(task, 1);
 	wake_up_process(task);
+	
+	return 0;
 }
 
 /*

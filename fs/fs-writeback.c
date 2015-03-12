@@ -516,32 +516,6 @@ static long writeback_chunk_size(struct backing_dev_info *bdi,
 }
 
 /*
- * For background writeback the caller does not have the sb pinned
- * before calling writeback. So make sure that we do pin it, so it doesn't
- * go away while we are writing inodes from it.
- */
-static bool pin_sb_for_writeback(struct super_block *sb)
-{
-	spin_lock(&sb_lock);
-	if (list_empty(&sb->s_instances)) {
-		spin_unlock(&sb_lock);
-		return false;
-	}
-
-	sb->s_count++;
-	spin_unlock(&sb_lock);
-
-	if (down_read_trylock(&sb->s_umount)) {
-		if (sb->s_root)
-			return true;
-		up_read(&sb->s_umount);
-	}
-
-	put_super(sb);
-	return false;
-}
-
-/*
  * Write a portion of b_io inodes which belong to @sb.
  *
  * If @only_this_sb is true, then find and write all such
