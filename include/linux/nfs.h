@@ -141,6 +141,7 @@ struct nfs_fh {
 	unsigned char		data[NFS_MAXFHSIZE];
 };
 
+extern int memcmp(const void *cs, const void *ct, size_t count);
 /*
  * Returns a zero iff the size and data fields match.
  * Checks only "size" bytes in the data field.
