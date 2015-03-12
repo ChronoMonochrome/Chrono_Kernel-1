@@ -377,12 +377,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -mfloat-abi=softfp \
 		   -mfpu=vfpv3 \
 		   -mvectorize-with-neon-double \
-		   -floop-interchange \
-		   -floop-strip-mine \
-		   -floop-block \
-		   -floop-nest-optimize \
-		   -fgraphite-identity \
-		   -floop-parallelize-all \
 		   -DNDEBUG \
 		   -fsection-anchors \
 		   -funsafe-loop-optimizations \
@@ -590,10 +584,10 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -Ofast
+KBUILD_CFLAGS	+= -O2
 endif
 
-LDFLAGS += -O3 --sort-common
+LDFLAGS += -O2 --sort-common
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
