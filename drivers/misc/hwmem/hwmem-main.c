@@ -168,7 +168,7 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 {
 	int ret;
 	pgprot_t pgprot;
-	void *alloc_kaddr;
+	void *alloc_kaddr = NULL;
 	void *vmap_addr;
 
 	if (alloc->mem_type->id != HWMEM_MEM_SCATTERED_SYS) {

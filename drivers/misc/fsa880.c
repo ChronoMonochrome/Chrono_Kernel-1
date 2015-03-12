@@ -312,7 +312,7 @@ static ssize_t show_current_connection(struct device *dev, struct device_attribu
 {
 	int i;
 	const char *string = NULL;
-	char c;
+	char c = 0;
 	struct FSA9480_instance *instance = dev_get_drvdata(dev);
 
 	if (instance->disabled)
@@ -397,7 +397,7 @@ static ssize_t store_smd_wakelock(struct device *dev, struct device_attribute *a
 static ssize_t show_usb_state(struct device *dev, struct device_attribute *attr,
 		char *buf)
 {
-	unsigned char c, device_type1, device_type2;
+	unsigned char c = 0, device_type1 = 0, device_type2 = 0;
 
 	read_FSA9480_register(&driver_instance, FSA9490_DEVICE_TYPE_1_REGISTER, &c);
 	device_type1 = c;
@@ -415,7 +415,7 @@ static ssize_t show_usb_state(struct device *dev, struct device_attribute *attr,
 static ssize_t show_adc(struct device *dev, struct device_attribute *attr,
 				char *buf)
 {
-	unsigned char adc;
+	unsigned char adc = 0;
 	int ret;
 
 	ret = read_FSA9480_register(&driver_instance, FSA9490_ADC_REGISTER, &adc);
@@ -485,6 +485,7 @@ static irqreturn_t FSA9480_irq_handler(int irq, void *data)
 }
 #endif
 
+#if 0
 static unsigned long current_device_mask(struct FSA9480_instance *instance)
 {
 	char c;
@@ -517,6 +518,7 @@ static unsigned long current_device_mask(struct FSA9480_instance *instance)
 
 	return event;
 }
+#endif
 
 static unsigned long current_connection_mask(struct FSA9480_instance *instance)
 {
@@ -559,7 +561,7 @@ static unsigned long current_connection_mask(struct FSA9480_instance *instance)
 
 static unsigned long get_current_connection_mask(struct FSA9480_instance *instance)
 {
-	char c;
+	char c = 0;
 	int i;
 	unsigned long event = 0;
 	int event_found = 0;
@@ -609,7 +611,7 @@ static void switch_dock_init(void)
 
 static void usb_switch_notify_clients(struct work_struct *work)
 {
-	char c, adc, id;
+	char c = 0, id = 0;
 
 #if defined(FSA_DELAYED_WORK)
 	struct FSA9480_instance *instance = container_of(work, struct FSA9480_instance, notifier_queue.work);
@@ -789,7 +791,7 @@ EXPORT_SYMBOL_GPL(usb_switch_disable);
 */
 static int reboot_pending(struct notifier_block *self, unsigned long type , void *arg)
 {
-	unsigned char c;
+	unsigned char c = 0;
 	struct FSA9480_instance *instance = container_of(self, struct FSA9480_instance, reboot_notifier);
 
 	if (instance && instance->current_switch) {
@@ -867,7 +869,7 @@ static int init_driver_instance(struct FSA9480_instance *instance, struct i2c_cl
 	instance->prev_event = instance->last_event = current_connection_mask(instance);
 	printk(KERN_INFO "MUIC Initial Event = 0x%08lx\n", instance->last_event);
 
-	/* /sys/class/usb_switch/FSA_SWITCH/* */
+	/* /sys/class/usb_switch/FSA_SWITCH/ * */
 	instance->dev = device_create(usb_switch_class, NULL, 0, instance, "%s", "FSA_SWITCH");
 	for (i = 0; i < ARRAY_SIZE(FSA9480_device_attrs); i++) {
 			ret = device_create_file(instance->dev, &FSA9480_device_attrs[i]);
