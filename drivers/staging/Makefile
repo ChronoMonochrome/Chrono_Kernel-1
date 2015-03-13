@@ -43,15 +43,8 @@ obj-$(CONFIG_HYPERV)		+= hv/
 obj-$(CONFIG_VME_BUS)		+= vme/
 obj-$(CONFIG_DX_SEP)            += sep/
 obj-$(CONFIG_IIO)		+= iio/
-<<<<<<< HEAD
 obj-$(CONFIG_CS5535_GPIO)	+= cs5535_gpio/
-obj-$(CONFIG_ZRAM)		+= zram/
 obj-$(CONFIG_ZCACHE)		+= zcache/
-obj-$(CONFIG_ZSMALLOC)		+= zsmalloc/
-=======
-obj-$(CONFIG_ZCACHE)		+= zcache/
-obj-$(CONFIG_QCACHE)		+= qcache/
->>>>>>> 41d3095... Update zram and zsmalloc up-to 3.17 kernel changes
 obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
 obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
 obj-$(CONFIG_FB_SM7XX)		+= sm7xx/

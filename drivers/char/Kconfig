@@ -632,9 +632,7 @@ config MSM_SMD_PKT
 	help
 	  Enables userspace clients to read and write to some packet SMD
 	  ports via device interface for MSM chipset.
-source "drivers/char/hwreg/Kconfig"
-endmenu
-
+	 
 config FRANDOM
 	tristate "Frandom: Fast random number generator support"
 	default m
@@ -644,5 +642,6 @@ config FRANDOM
 	  And it uses very little (/dev/frandom) or none (/dev/erandom) of
 	  the kernel's entropy pool, so it is very useful for applications
 	  that require a handy source for lots of random data.
-
+ 
+source "drivers/char/hwreg/Kconfig"
 endmenu
