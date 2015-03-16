@@ -18,6 +18,7 @@
 #include <linux/crc32.h>
 #include <linux/magic.h>
 #include <linux/kobject.h>
+#include <linux/llist.h>
 #include <linux/sched.h>
 
 #ifdef CONFIG_F2FS_CHECK_FS
