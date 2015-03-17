@@ -1813,6 +1813,14 @@ static void merge_nats_in_set(struct f2fs_sb_info *sbi)
 	write_unlock(&nm_i->nat_tree_lock);
 }
 
+static bool __has_cursum_space(struct f2fs_summary_block *sum, int size)
+{
+	if (nats_in_cursum(sum) + size <= NAT_JOURNAL_ENTRIES)
+		return true;
+	else
+		return false;
+}
+
 static void remove_nats_in_journal(struct f2fs_sb_info *sbi)
 {
 	struct f2fs_nm_info *nm_i = NM_I(sbi);
@@ -1867,7 +1875,7 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
 	 * entries, remove all entries from journal and merge them
 	 * into nat entry set.
 	 */
-	if (!__has_cursum_space(sum, nm_i->dirty_nat_cnt, NAT_JOURNAL)) {
+	if (!__has_cursum_space(sum, nm_i->dirty_nat_cnt)) {
 		remove_nats_in_journal(sbi);
 
 		/*
@@ -1890,8 +1898,7 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
 		struct page *page;
 		nid_t start_nid = nes->start_nid;
 
-		if (to_journal &&
-			!__has_cursum_space(sum, nes->entry_cnt, NAT_JOURNAL))
+		if (to_journal && !__has_cursum_space(sum, nes->entry_cnt))
 			to_journal = false;
 
 		if (to_journal) {
