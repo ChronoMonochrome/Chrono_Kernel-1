@@ -516,22 +516,7 @@ out:
 	kmem_cache_destroy(fsync_entry_slab);
 
 	sbi->por_doing = false;
-	if (err) {
-		discard_next_dnode(sbi, blkaddr);
-
-		/* Flush all the NAT/SIT pages */
-		while (get_pages(sbi, F2FS_DIRTY_META))
-			sync_meta_pages(sbi, META, LONG_MAX);
-		set_ckpt_flags(sbi->ckpt, CP_ERROR_FLAG);
-		mutex_unlock(&sbi->cp_mutex);
-	} else if (need_writecp) {
-		struct cp_control cpc = {
-			.reason = CP_SYNC,
-		};
-		mutex_unlock(&sbi->cp_mutex);
-		write_checkpoint(sbi, &cpc);
-	} else {
-		mutex_unlock(&sbi->cp_mutex);
-	}
+	if (!err && need_writecp)
+		write_checkpoint(sbi, false);
 	return err;
 }
