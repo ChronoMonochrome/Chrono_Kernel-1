@@ -123,4 +123,6 @@ void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
 		     struct llist_head *head);
 struct llist_node *llist_del_first(struct llist_head *head);
 struct llist_node *llist_del_all(struct llist_head *head);
+struct llist_node *llist_reverse_order(struct llist_node *head);
+
 #endif /* LLIST_H */
