@@ -94,6 +94,23 @@
 	(sectors >> (sbi)->log_sectors_per_block)
 #define MAX_BIO_BLOCKS(max_hw_blocks)					\
 	(min((int)max_hw_blocks, BIO_MAX_PAGES))
+	 
+#define for_each_clear_bit(bit, addr, size) \
+       for ((bit) = find_first_zero_bit((addr), (size));       \
+/* same as for_each_set_bit() but use bit as value to start with */
+#define for_each_set_bit_from(bit, addr, size) \
+       for ((bit) = find_next_bit((addr), (size), (bit));      \
+            (bit) < (size);                                    \
+            (bit) = find_next_zero_bit((addr), (size), (bit) + 1))
+
+/* same as for_each_clear_bit() but use bit as value to start with */
+#define for_each_clear_bit_from(bit, addr, size) \
+       for ((bit) = find_next_zero_bit((addr), (size), (bit)); \
+            (bit) < (size);                                    \
+            (bit) = find_next_zero_bit((addr), (size), (bit) + 1))
+
+#define for_each_set_bit_cont(bit, addr, size) \
+       for_each_set_bit_from(bit, addr, size)
 
 /*
  * indicate a block allocation direction: RIGHT and LEFT.
