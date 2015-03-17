@@ -1081,7 +1081,7 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
 		return 0;
 
 	/* clear fsync mark to recover these blocks */
-	fsync_mark_clear(F2FS_I_SB(inode), inode->i_ino);
+	need_inode_block_update(F2FS_I_SB(inode), inode->i_ino);
 
 	return blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
 						  get_data_block);
@@ -1091,7 +1091,7 @@ static void f2fs_invalidate_data_page(struct page *page, unsigned long offset)
 {
 	struct inode *inode = page->mapping->host;
 
-	if (offset % PAGE_CACHE_SIZE || length != PAGE_CACHE_SIZE)
+	if (offset % PAGE_CACHE_SIZE)
 		return;
 
 	if (PageDirty(page))
