@@ -298,7 +298,7 @@ SYSCALL_DEFINE1(fsync, unsigned int, fd)
 
 SYSCALL_DEFINE1(fdatasync, unsigned int, fd)
 {
-	if (likely(dyn_fsync_active && !dyn_fdatasync_active && !early_suspend_active))
+	if (likely(dyn_fsync_active && dyn_fdatasync_active && !early_suspend_active))
 		return 0;
 	else
 		return do_fsync(fd, 1);
