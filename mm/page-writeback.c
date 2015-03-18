@@ -108,7 +108,7 @@ EXPORT_SYMBOL_GPL(dirty_writeback_interval);
 /*
  * The dynamic writeback activation status
  */
-int dyn_dirty_writeback_enabled = 0;
+int dyn_dirty_writeback_enabled = 1;
 EXPORT_SYMBOL_GPL(dyn_dirty_writeback_enabled);
 
 /*
