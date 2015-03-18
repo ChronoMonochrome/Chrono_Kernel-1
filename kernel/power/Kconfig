@@ -324,3 +324,10 @@ config SUSPEND_TIME
 
 config DVFS_LIMIT
 	bool "DVFS frequency limitation feature"
+	
+config PM_SYNC_CTRL
+	bool "file systems sync on suspend control"
+	depends on PM
+	default n
+	help
+	   An experimental control of filesystems sync on suspend

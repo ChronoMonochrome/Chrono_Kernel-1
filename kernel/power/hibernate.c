@@ -25,6 +25,9 @@
 #include <linux/gfp.h>
 #include <linux/syscore_ops.h>
 #include <scsi/scsi_scan.h>
+#ifdef CONFIG_PM_SYNC_CTRL
+#include <linux/pm_sync_ctrl.h>
+#endif /* CONFIG_PM_SYNC_CTRL */
 
 #include "power.h"
 
@@ -631,9 +634,12 @@ int hibernate(void)
 	if (error)
 		goto Enable_umh;
 
-	printk(KERN_INFO "PM: Syncing filesystems ... ");
+#ifdef CONFIG_PM_SYNC_CTRL
+	if (pm_sync_active)
+		sys_sync();
+#else
 	sys_sync();
-	printk("done.\n");
+#endif
 
 	error = prepare_processes();
 	if (error)
