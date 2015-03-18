@@ -282,16 +282,9 @@ EXPORT_SYMBOL(blk_queue_resize_tags);
 void blk_queue_end_tag(struct request_queue *q, struct request *rq)
 {
 	struct blk_queue_tag *bqt = q->queue_tags;
-	int tag = rq->tag;
+	unsigned tag = rq->tag; /* negative tags invalid */
 
-	BUG_ON(tag == -1);
-
-	if (unlikely(tag >= bqt->real_max_depth))
-		/*
-		 * This can happen after tag depth has been reduced.
-		 * FIXME: how about a warning or info message here?
-		 */
-		return;
+	BUG_ON(tag >= bqt->real_max_depth);
 
 	list_del_init(&rq->queuelist);
 	rq->cmd_flags &= ~REQ_QUEUED;
@@ -357,16 +350,9 @@ int blk_queue_start_tag(struct request_queue *q, struct request *rq)
 	 */
 	max_depth = bqt->max_depth;
 	if (!rq_is_sync(rq) && max_depth > 1) {
-		switch (max_depth) {
-		case 2:
+		max_depth -= 2;
+		if (!max_depth)
 			max_depth = 1;
-			break;
-		case 3:
-			max_depth = 2;
-			break;
-		default:
-			max_depth -= 2;
-		}
 		if (q->in_flight[BLK_RW_ASYNC] > max_depth)
 			return 1;
 	}

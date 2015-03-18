@@ -10,7 +10,7 @@
 #include "dm-space-map-metadata.h"
 #include "dm-persistent-data-internal.h"
 
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/slab.h>
 #include <linux/device-mapper.h>
 
@@ -345,8 +345,10 @@ static int dm_tm_create_internal(struct dm_block_manager *bm,
 		}
 
 		*sm = dm_sm_checker_create(inner);
-		if (!*sm)
+		if (IS_ERR(*sm)) {
+			r = PTR_ERR(*sm);
 			goto bad2;
+		}
 
 	} else {
 		r = dm_bm_write_lock(dm_tm_get_bm(*tm), sb_location,
@@ -365,8 +367,10 @@ static int dm_tm_create_internal(struct dm_block_manager *bm,
 		}
 
 		*sm = dm_sm_checker_create(inner);
-		if (!*sm)
+		if (IS_ERR(*sm)) {
+			r = PTR_ERR(*sm);
 			goto bad2;
+		}
 	}
 
 	return 0;
