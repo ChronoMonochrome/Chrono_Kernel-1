@@ -21,6 +21,7 @@
 #ifdef CONFIG_DYNAMIC_FSYNC
 extern bool early_suspend_active;
 extern bool dyn_fsync_active;
+extern bool dyn_fdatasync_active;
 #endif
 
 #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
@@ -297,12 +298,10 @@ SYSCALL_DEFINE1(fsync, unsigned int, fd)
 
 SYSCALL_DEFINE1(fdatasync, unsigned int, fd)
 {
-#if 0
-	if (likely(dyn_fsync_active && !early_suspend_active))
+	if (likely(dyn_fsync_active && !dyn_fdatasync_active && !early_suspend_active))
 		return 0;
 	else
-#endif
-	return do_fsync(fd, 1);
+		return do_fsync(fd, 1);
 }
 
 /**
