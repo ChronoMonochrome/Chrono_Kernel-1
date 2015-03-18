@@ -35,12 +35,12 @@ static DEFINE_MUTEX(fsync_mutex);
 
 bool early_suspend_active __read_mostly = false;
 bool dyn_fsync_active __read_mostly = false;
-bool dyn_fdatasync_active __read_mostly = true;
+bool dyn_fdatasync_active __read_mostly = false;
 
 static ssize_t dyn_fdatasync_active_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%u\n", (dyn_fsync_active ? 1 : 0));
+	return sprintf(buf, "%u\n", (dyn_fdatasync_active ? 1 : 0));
 }
 
 static ssize_t dyn_fdatasync_active_store(struct kobject *kobj,
@@ -50,11 +50,11 @@ static ssize_t dyn_fdatasync_active_store(struct kobject *kobj,
 
 	if(sscanf(buf, "%u\n", &data) == 1) {
 		if (data == 1) {
-			pr_info("%s: dynamic fsync enabled\n", __FUNCTION__);
+			pr_info("%s: dynamic fdatasync enabled\n", __FUNCTION__);
 			dyn_fdatasync_active = true;
 		}
 		else if (data == 0) {
-			pr_info("%s: dyanamic fsync disabled\n", __FUNCTION__);
+			pr_info("%s: dynamic fdatasync disabled\n", __FUNCTION__);
 			dyn_fdatasync_active = false;
 		}
 		else
