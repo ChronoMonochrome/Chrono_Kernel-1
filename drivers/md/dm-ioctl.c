@@ -128,6 +128,24 @@ static struct hash_cell *__get_uuid_cell(const char *str)
 	return NULL;
 }
 
+static struct hash_cell *__get_dev_cell(uint64_t dev)
+{
+	struct mapped_device *md;
+	struct hash_cell *hc;
+
+	md = dm_get_md(huge_decode_dev(dev));
+	if (!md)
+		return NULL;
+
+	hc = dm_get_mdptr(md);
+	if (!hc) {
+		dm_put(md);
+		return NULL;
+	}
+
+	return hc;
+}
+
 /*-----------------------------------------------------------------
  * Inserting, removing and renaming a device.
  *---------------------------------------------------------------*/
@@ -718,34 +736,29 @@ static int dev_create(struct dm_ioctl *param, size_t param_size)
  */
 static struct hash_cell *__find_device_hash_cell(struct dm_ioctl *param)
 {
-	struct mapped_device *md;
 	struct hash_cell *hc = NULL;
 
 	if (*param->uuid) {
+		if (*param->name || param->dev)
+			return NULL;
+
 		hc = __get_uuid_cell(param->uuid);
 		if (!hc)
 			return NULL;
-		goto fill_params;
-	}
+	} else if (*param->name) {
+		if (param->dev)
+			return NULL;
 
-	if (*param->name) {
 		hc = __get_name_cell(param->name);
 		if (!hc)
 			return NULL;
-		goto fill_params;
-	}
-
-	md = dm_get_md(huge_decode_dev(param->dev));
-	if (!md)
+	} else if (param->dev) {
+		hc = __get_dev_cell(param->dev);
+		if (!hc)
+			return NULL;
+	} else
 		return NULL;
 
-	hc = dm_get_mdptr(md);
-	if (!hc) {
-		dm_put(md);
-		return NULL;
-	}
-
-fill_params:
 	/*
 	 * Sneakily write in both the name and the uuid
 	 * while we have the cell.
@@ -867,6 +880,7 @@ static int dev_set_geometry(struct dm_ioctl *param, size_t param_size)
 	struct hd_geometry geometry;
 	unsigned long indata[4];
 	char *geostr = (char *) param + param->data_start;
+	char dummy;
 
 	md = find_device(param);
 	if (!md)
@@ -878,8 +892,8 @@ static int dev_set_geometry(struct dm_ioctl *param, size_t param_size)
 		goto out;
 	}
 
-	x = sscanf(geostr, "%lu %lu %lu %lu", indata,
-		   indata + 1, indata + 2, indata + 3);
+	x = sscanf(geostr, "%lu %lu %lu %lu%c", indata,
+		   indata + 1, indata + 2, indata + 3, &dummy);
 
 	if (x != 4) {
 		DMWARN("Unable to interpret geometry settings.");
@@ -1420,6 +1434,11 @@ static int target_message(struct dm_ioctl *param, size_t param_size)
 	if (r) {
 		DMWARN("Failed to split target message parameters");
 		goto out;
+	}
+
+	if (!argc) {
+		DMWARN("Empty message received.");
+		goto out_argv;
 	}
 
 	table = dm_get_live_table(md);
