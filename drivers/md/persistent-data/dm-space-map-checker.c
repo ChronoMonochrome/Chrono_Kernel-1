@@ -7,7 +7,7 @@
 #include "dm-space-map-checker.h"
 
 #include <linux/device-mapper.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/vmalloc.h>
 
 #ifdef CONFIG_DM_DEBUG_SPACE_MAPS
