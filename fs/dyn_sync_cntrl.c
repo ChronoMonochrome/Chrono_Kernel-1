@@ -34,7 +34,36 @@
 static DEFINE_MUTEX(fsync_mutex);
 
 bool early_suspend_active __read_mostly = false;
-bool dyn_fsync_active __read_mostly = true;
+bool dyn_fsync_active __read_mostly = false;
+bool dyn_fdatasync_active __read_mostly = true;
+
+static ssize_t dyn_fdatasync_active_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", (dyn_fsync_active ? 1 : 0));
+}
+
+static ssize_t dyn_fdatasync_active_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int data;
+
+	if(sscanf(buf, "%u\n", &data) == 1) {
+		if (data == 1) {
+			pr_info("%s: dynamic fsync enabled\n", __FUNCTION__);
+			dyn_fdatasync_active = true;
+		}
+		else if (data == 0) {
+			pr_info("%s: dyanamic fsync disabled\n", __FUNCTION__);
+			dyn_fdatasync_active = false;
+		}
+		else
+			pr_info("%s: bad value: %u\n", __FUNCTION__, data);
+	} else
+		pr_info("%s: unknown input!\n", __FUNCTION__);
+
+	return count;
+}
 
 static ssize_t dyn_fsync_active_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -82,6 +111,11 @@ static struct kobj_attribute dyn_fsync_active_attribute =
 	__ATTR(Dyn_fsync_active, 0666,
 		dyn_fsync_active_show,
 		dyn_fsync_active_store);
+	
+static struct kobj_attribute dyn_fdatasync_active_attribute = 
+	__ATTR(Dyn_fdatasync_active, 0644,
+		dyn_fdatasync_active_show,
+		dyn_fdatasync_active_store);
 
 static struct kobj_attribute dyn_fsync_version_attribute = 
 	__ATTR(Dyn_fsync_version, 0444, dyn_fsync_version_show, NULL);
@@ -92,6 +126,7 @@ static struct kobj_attribute dyn_fsync_earlysuspend_attribute =
 static struct attribute *dyn_fsync_active_attrs[] =
 	{
 		&dyn_fsync_active_attribute.attr,
+		&dyn_fdatasync_active_attribute.attr,
 		&dyn_fsync_version_attribute.attr,
 		&dyn_fsync_earlysuspend_attribute.attr,
 		NULL,
