@@ -71,7 +71,7 @@ struct fuse_mount_data {
 	unsigned blksize;
 };
 
-struct fuse_forget_link *fuse_alloc_forget()
+struct fuse_forget_link *fuse_alloc_forget(void)
 {
 	return kzalloc(sizeof(struct fuse_forget_link), GFP_KERNEL);
 }
@@ -91,7 +91,6 @@ static struct inode *fuse_alloc_inode(struct super_block *sb)
 	fi->nlookup = 0;
 	fi->attr_version = 0;
 	fi->writectr = 0;
-	fi->orig_ino = 0;
 	INIT_LIST_HEAD(&fi->write_files);
 	INIT_LIST_HEAD(&fi->queued_writes);
 	INIT_LIST_HEAD(&fi->writepages);
@@ -141,18 +140,6 @@ static int fuse_remount_fs(struct super_block *sb, int *flags, char *data)
 	return 0;
 }
 
-/*
- * ino_t is 32-bits on 32-bit arch. We have to squash the 64-bit value down
- * so that it will fit.
- */
-static ino_t fuse_squash_ino(u64 ino64)
-{
-	ino_t ino = (ino_t) ino64;
-	if (sizeof(ino_t) < sizeof(u64))
-		ino ^= ino64 >> (sizeof(u64) - sizeof(ino_t)) * 8;
-	return ino;
-}
-
 void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
 				   u64 attr_valid)
 {
@@ -162,9 +149,9 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
 	fi->attr_version = ++fc->attr_version;
 	fi->i_time = attr_valid;
 
-	inode->i_ino     = fuse_squash_ino(attr->ino);
+	inode->i_ino     = attr->ino;
 	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
-	inode->i_nlink   = attr->nlink;
+	set_nlink(inode, attr->nlink);
 	inode->i_uid     = attr->uid;
 	inode->i_gid     = attr->gid;
 	inode->i_blocks  = attr->blocks;
@@ -188,8 +175,6 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
 	fi->orig_i_mode = inode->i_mode;
 	if (!(fc->flags & FUSE_DEFAULT_PERMISSIONS))
 		inode->i_mode &= ~S_ISVTX;
-
-	fi->orig_ino = attr->ino;
 }
 
 void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
@@ -344,8 +329,7 @@ void fuse_conn_kill(struct fuse_conn *fc)
 	spin_unlock(&fc->lock);
 	/* Flush all readers on this fs */
 	kill_fasync(&fc->fasync, SIGIO, POLL_IN);
-	wake_up_all(&fc->waitq[0]);
-	wake_up_all(&fc->waitq[1]);
+	wake_up_all(&fc->waitq);
 	wake_up_all(&fc->blocked_waitq);
 	wake_up_all(&fc->reserved_req_waitq);
 	mutex_lock(&fuse_mutex);
@@ -421,7 +405,6 @@ enum {
 	OPT_ALLOW_OTHER,
 	OPT_MAX_READ,
 	OPT_BLKSIZE,
-	OPT_HANDLE_RT_CLASS,
 	OPT_ERR
 };
 
@@ -434,7 +417,6 @@ static const match_table_t tokens = {
 	{OPT_ALLOW_OTHER,		"allow_other"},
 	{OPT_MAX_READ,			"max_read=%u"},
 	{OPT_BLKSIZE,			"blksize=%u"},
-	{OPT_HANDLE_RT_CLASS,		"handle_rt_class"},
 	{OPT_ERR,			NULL}
 };
 
@@ -468,10 +450,6 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
 				return 0;
 			d->rootmode = value;
 			d->rootmode_present = 1;
-			break;
-
-		case OPT_HANDLE_RT_CLASS:
-			d->flags |= FUSE_HANDLE_RT_CLASS;
 			break;
 
 		case OPT_USER_ID:
@@ -545,16 +523,13 @@ void fuse_conn_init(struct fuse_conn *fc)
 	mutex_init(&fc->inst_mutex);
 	init_rwsem(&fc->killsb);
 	atomic_set(&fc->count, 1);
-	init_waitqueue_head(&fc->waitq[0]);
-	init_waitqueue_head(&fc->waitq[1]);
+	init_waitqueue_head(&fc->waitq);
 	init_waitqueue_head(&fc->blocked_waitq);
 	init_waitqueue_head(&fc->reserved_req_waitq);
-	INIT_LIST_HEAD(&fc->pending[0]);
-	INIT_LIST_HEAD(&fc->pending[1]);
+	INIT_LIST_HEAD(&fc->pending);
 	INIT_LIST_HEAD(&fc->processing);
 	INIT_LIST_HEAD(&fc->io);
-	INIT_LIST_HEAD(&fc->interrupts[0]);
-	INIT_LIST_HEAD(&fc->interrupts[1]);
+	INIT_LIST_HEAD(&fc->interrupts);
 	INIT_LIST_HEAD(&fc->bg_queue);
 	INIT_LIST_HEAD(&fc->entry);
 	fc->forget_list_tail = &fc->forget_list_head;
@@ -834,6 +809,13 @@ static void process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
 				fc->async_read = 1;
 			if (!(arg->flags & FUSE_POSIX_LOCKS))
 				fc->no_lock = 1;
+			if (arg->minor >= 17) {
+				if (!(arg->flags & FUSE_FLOCK_LOCKS))
+					fc->no_flock = 1;
+			} else {
+				if (!(arg->flags & FUSE_POSIX_LOCKS))
+					fc->no_flock = 1;
+			}
 			if (arg->flags & FUSE_ATOMIC_O_TRUNC)
 				fc->atomic_o_trunc = 1;
 			if (arg->minor >= 9) {
@@ -848,6 +830,7 @@ static void process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
 		} else {
 			ra_pages = fc->max_read / PAGE_CACHE_SIZE;
 			fc->no_lock = 1;
+			fc->no_flock = 1;
 		}
 
 		fc->bdi.ra_pages = min(fc->bdi.ra_pages, ra_pages);
@@ -868,7 +851,8 @@ static void fuse_send_init(struct fuse_conn *fc, struct fuse_req *req)
 	arg->minor = FUSE_KERNEL_MINOR_VERSION;
 	arg->max_readahead = fc->bdi.ra_pages * PAGE_CACHE_SIZE;
 	arg->flags |= FUSE_ASYNC_READ | FUSE_POSIX_LOCKS | FUSE_ATOMIC_O_TRUNC |
-		FUSE_EXPORT_SUPPORT | FUSE_BIG_WRITES | FUSE_DONT_MASK;
+		FUSE_EXPORT_SUPPORT | FUSE_BIG_WRITES | FUSE_DONT_MASK |
+		FUSE_FLOCK_LOCKS;
 	req->in.h.opcode = FUSE_INIT;
 	req->in.numargs = 1;
 	req->in.args[0].size = sizeof(*arg);
