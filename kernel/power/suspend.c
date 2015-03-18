@@ -26,6 +26,9 @@
 #include <linux/syscore_ops.h>
 #include <linux/ftrace.h>
 #include <trace/events/power.h>
+#ifdef CONFIG_PM_SYNC_CTRL
+#include <linux/pm_sync_ctrl.h>
+#endif
 
 #include "power.h"
 
@@ -302,10 +305,17 @@ int enter_state(suspend_state_t state)
 	error = wait_for_completion_timeout(&second_cpu_complete,
 					    msecs_to_jiffies(500));
 	WARN_ON(error == 0);
-
+#ifdef CONFIG_PM_SYNC_CTRL
+	if (pm_sync_active) {
+		printk(KERN_INFO "PM: Syncing filesystems ... ");
+		sys_sync();
+		printk("done.\n");
+	}
+#else
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	sys_sync();
 	printk("done.\n");
+#endif
 
 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
 	error = suspend_prepare();
