@@ -872,7 +872,7 @@ static int f2fs_ioc_setflags(struct file *filp, unsigned long arg)
 	inode->i_ctime = CURRENT_TIME;
 	mark_inode_dirty(inode);
 out:
-	mnt_drop_write_file(filp);
+	mnt_drop_write(filp->f_path.mnt);
 	return ret;
 }
  
