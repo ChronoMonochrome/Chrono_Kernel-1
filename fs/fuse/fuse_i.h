@@ -44,11 +44,6 @@
     doing the mount will be allowed to access the filesystem */
 #define FUSE_ALLOW_OTHER         (1 << 1)
 
-/** If the FUSE_HANDLE_RT_CLASS flag is given,
-    then fuse handle RT class I/O in different request queue  */
-#define FUSE_HANDLE_RT_CLASS   (1 << 2)
-
-
 /** List of active connections */
 extern struct list_head fuse_conn_list;
 
@@ -86,9 +81,6 @@ struct fuse_inode {
 	/** The sticky bit in inode->i_mode may have been removed, so
 	    preserve the original mode */
 	mode_t orig_i_mode;
-
-	/** 64 bit inode number */
-	u64 orig_ino;
 
 	/** Version of last attribute change */
 	u64 attr_version;
@@ -143,6 +135,9 @@ struct fuse_file {
 
 	/** Wait queue head for poll */
 	wait_queue_head_t poll_wait;
+
+	/** Has flock been performed on this file? */
+	bool flock:1;
 };
 
 /** One input argument of a request */
@@ -350,10 +345,10 @@ struct fuse_conn {
 	unsigned max_write;
 
 	/** Readers of the connection are waiting on this */
-	wait_queue_head_t waitq[2];
+	wait_queue_head_t waitq;
 
 	/** The list of pending requests */
-	struct list_head pending[2];
+	struct list_head pending;
 
 	/** The list of requests being processed */
 	struct list_head processing;
@@ -383,7 +378,7 @@ struct fuse_conn {
 	struct list_head bg_queue;
 
 	/** Pending interrupts */
-	struct list_head interrupts[2];
+	struct list_head interrupts;
 
 	/** Queue of pending forgets */
 	struct fuse_forget_link forget_list_head;
@@ -456,7 +451,7 @@ struct fuse_conn {
 	/** Is removexattr not implemented by fs? */
 	unsigned no_removexattr:1;
 
-	/** Are file locking primitives not implemented by fs? */
+	/** Are posix file locking primitives not implemented by fs? */
 	unsigned no_lock:1;
 
 	/** Is access not implemented by fs? */
@@ -479,6 +474,9 @@ struct fuse_conn {
 
 	/** Don't apply umask to creation modes */
 	unsigned dont_mask:1;
+
+	/** Are BSD file locking primitives not implemented by fs? */
+	unsigned no_flock:1;
 
 	/** The number of requests waiting for completion */
 	atomic_t num_waiting;
