@@ -153,6 +153,38 @@ void tty_port_hangup(struct tty_port *port)
 EXPORT_SYMBOL(tty_port_hangup);
 
 /**
+ * tty_port_tty_hangup - helper to hang up a tty
+ *
+ * @port: tty port
+ * @check_clocal: hang only ttys with CLOCAL unset?
+ */
+void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
+{
+	struct tty_struct *tty = tty_port_tty_get(port);
+
+	if (tty && (!check_clocal || !C_CLOCAL(tty)))
+		tty_hangup(tty);
+	tty_kref_put(tty);
+}
+EXPORT_SYMBOL_GPL(tty_port_tty_hangup);
+
+/**
+ * tty_port_tty_wakeup - helper to wake up a tty
+ *
+ * @port: tty port
+ */
+void tty_port_tty_wakeup(struct tty_port *port)
+{
+	struct tty_struct *tty = tty_port_tty_get(port);
+
+	if (tty) {
+		tty_wakeup(tty);
+		tty_kref_put(tty);
+	}
+}
+EXPORT_SYMBOL_GPL(tty_port_tty_wakeup);
+
+/**
  *	tty_port_carrier_raised	-	carrier raised check
  *	@port: tty port
  *
@@ -412,6 +444,24 @@ void tty_port_close(struct tty_port *port, struct tty_struct *tty,
 	tty_port_tty_set(port, NULL);
 }
 EXPORT_SYMBOL(tty_port_close);
+
+/**
+ * tty_port_install - generic tty->ops->install handler
+ * @port: tty_port of the device
+ * @driver: tty_driver for this device
+ * @tty: tty to be installed
+ *
+ * It is the same as tty_standard_install except the provided @port is linked
+ * to a concrete tty specified by @tty. Use this or tty_port_register_device
+ * (or both). Call tty_port_link_device as a last resort.
+ */
+int tty_port_install(struct tty_port *port, struct tty_driver *driver,
+		struct tty_struct *tty)
+{
+	tty->port = port;
+	return tty_standard_install(driver, tty);
+}
+EXPORT_SYMBOL_GPL(tty_port_install);
 
 int tty_port_open(struct tty_port *port, struct tty_struct *tty,
 							struct file *filp)
