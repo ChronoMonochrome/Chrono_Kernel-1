@@ -1197,32 +1197,28 @@ struct lcdclk_prop
 
 static struct lcdclk_prop lcdclk_prop[] = {
   	[0] = {
-		.name = "60++ Hz (unsafe)",
-		.clk = 66560000,
-	},
-  	[1] = {
 		.name = "60+ Hz (unsafe)",
 		.clk = 57051428,
 	},
-	[2] = {
+	[1] = {
 		.name = "60 Hz",
 		.clk = 49920000,
 	},
-	[3] = {
+	[2] = {
 		.name = "50 Hz",
 		.clk = 39936000,
 	},
-	[4] = {
+	[3] = {
 		.name = "45 Hz",
 		.clk = 36305454,
 	},
-	[5] = {
+	[4] = {
 		.name = "40 Hz",
 		.clk = 33280000,
 	},
 };
 
-static int lcdclk_usr = 2; /* 60 Hz */
+static int lcdclk_usr = 1; /* 60 Hz */
 static unsigned int custom_lcdclk = 49920000;
 
 static void lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
@@ -1248,7 +1244,7 @@ static DECLARE_WORK(lcdclk_work, lcdclk_thread);
 #define ATTR_RW(_name)	\
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0644, _name##_show, _name##_store);
 
-static ssize_t mcde_lcdclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t lcdclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	int i;
 
@@ -1264,7 +1260,7 @@ static ssize_t mcde_lcdclk_show(struct kobject *kobj, struct kobj_attribute *att
 	return strlen(buf);
 }
 
-static ssize_t mcde_lcdclk_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+static ssize_t lcdclk_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	int ret, tmp;
 	
@@ -1275,7 +1271,7 @@ static ssize_t mcde_lcdclk_store(struct kobject *kobj, struct kobj_attribute *at
 	}
 
 	ret = sscanf(buf, "%d", &tmp);
-	if (!ret || (tmp < -2) || (tmp > 5)) {
+	if (!ret || (tmp < -2) || (tmp > 4)) {
 		  pr_err("[MCDE] Bad cmd\n");
 		  return -EINVAL;
 	}
@@ -1286,11 +1282,11 @@ out:
 
 	return count;
 }
-ATTR_RW(mcde_lcdclk);
+ATTR_RW(lcdclk);
 
 static struct attribute *mcde_attrs[] = {
  
-	&mcde_lcdclk_interface.attr, 
+	&lcdclk_interface.attr, 
 	NULL,
 };
 
