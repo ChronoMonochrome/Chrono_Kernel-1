@@ -1460,10 +1460,9 @@ static u32 __read_mostly liveopp_varm_us = 50;
 
 static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
 //	| CLK            | PLL       | VDD | VBB | Enable | DDR | APE |
-	{ 100000,   99840, 0x0005010D, 0x1a, 0xDB, 0,  25,  25},
-	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 0,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 0,  25,  50},
-	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1,  50,  50},
+	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1,  25,  25},
+	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 1,  25,  50},
+	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1,  25,  50},
 	{ 500000,  499200, 0x00050141, 0x20, 0xDB, 0,  50,  50},
 	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1,  50,  50},
 	{ 700000,  698880, 0x0005015B, 0x24, 0xDB, 0,  50,  50},
@@ -2112,7 +2111,6 @@ ARM_STEP(arm_step10, 10);
 ARM_STEP(arm_step11, 11);
 ARM_STEP(arm_step12, 12);
 ARM_STEP(arm_step13, 13);
-ARM_STEP(arm_step14, 14);
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
@@ -2404,7 +2402,6 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step11_interface.attr, 
 	&arm_step12_interface.attr, 
 	&arm_step13_interface.attr, 
-	&arm_step14_interface.attr, 
 	&pllddr_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
