@@ -371,7 +371,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -fno-delete-null-pointer-checks \
 		   -funsafe-math-optimizations \
-		   -ftree-vectorize -pipe -marm \
+		   -ftree-vectorize -pipe -mthumb \
 		   -mcpu=cortex-a9 \
 		   -mtune=cortex-a9 \
 		   -mfloat-abi=softfp \
