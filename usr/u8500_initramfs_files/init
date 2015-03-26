@@ -35,18 +35,10 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# since it's pain, load j4fs and param from separate partition
 	busybox insmod /ramdisk/modules/j4fs.ko
 	busybox insmod /ramdisk/modules/param.ko
-	if ! busybox test -f /mnt ; then
-		busybox mkdir /mnt
-		if ! busybox test -f /mnt/.lfs ; then
-			busybox mkdir /mnt/.lfs
-		fi
-	fi
+	busybox insmod /ramdisk/modules/exfat.ko
 
 	busybox mount -t j4fs /dev/block/mmcblk0p1 /mnt/.lfs
-	
-	if busybox test -f /ramdisk/00recovery ; then
-		busybox sh /ramdisk/00recovery
-	fi
+	busybox sh /ramdisk/00recovery
 fi
 
 if busybox test -f ${load_image} ; then
