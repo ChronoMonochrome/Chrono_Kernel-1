@@ -409,6 +409,19 @@ int dirty_background_bytes_handler(struct ctl_table *table, int write,
 	return ret;
 }
 
+bool check_dirty_ratio_run = false;
+
+static void check_dirty_ratio_fn(struct work_struct *work)
+{
+	if (vm_dirty_ratio == 0) {
+		vm_dirty_ratio = 20;
+	}
+	
+	check_dirty_ratio_run = false;
+}
+
+static DECLARE_DELAYED_WORK(check_dirty_ratio_delayedwork, check_dirty_ratio_fn);
+
 int dirty_ratio_handler(struct ctl_table *table, int write,
 		void __user *buffer, size_t *lenp,
 		loff_t *ppos)
@@ -421,6 +434,12 @@ int dirty_ratio_handler(struct ctl_table *table, int write,
 		update_completion_period();
 		vm_dirty_bytes = 0;
 	}
+	
+	if (!check_dirty_ratio_run) {
+		schedule_delayed_work(&check_dirty_ratio_delayedwork, msecs_to_jiffies(100));
+		check_dirty_ratio_run = true;
+	}
+	
 	return ret;
 }
 
