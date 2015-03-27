@@ -1649,6 +1649,7 @@ extern int get_max_cpufreq(void);
 // when ape100_mali_threshold is enabled, only GPU can boost APE. 
 // It can save power at the cost of I/O throughput and RAM performance.
 static int ape100_mali_threshold = 0; /* disabled */
+static int ddr100_mali_threshold = 0;
 extern int get_mali_last_utilization(void);
 
 static void requirements_update_thread(struct work_struct *requirements_update_work)
@@ -1662,7 +1663,11 @@ static void requirements_update_thread(struct work_struct *requirements_update_w
 	// considering of overall performance, only use maximazed OPPs if is above power_optimal_idx 
 	// or if CPUfreq == max CPUfreq
 	if ((last_arm_idx >= power_optimal_idx || (liveopp_arm[last_arm_idx].freq_show == get_max_cpufreq()))) {
-		ddropp = 100;
+		if (!ddr100_mali_threshold) {
+			ddropp = 100;
+		} else if (get_mali_last_utilization() < ddr100_mali_threshold) {
+			ddropp = min_cpufreq_ddr_opp;
+		}
 		
 		if (!ape100_mali_threshold) {
 			apeopp = 100;
@@ -2379,14 +2384,16 @@ static ssize_t prcmu_qos_performance_show(struct kobject *kobj, struct kobj_attr
 		     "pow_opt_idx=%d (%d kHz)\n"
 		     "ddr50_cpufreq_idx=%d (%d kHz)\n"
 		     "ape50_cpufreq_idx=%d (%d kHz)\n"
-		     "ape100_mali_threshold=%d%s\n",
+		     "ape100_mali_threshold=%d%s\n"
+		     "ddr100_mali_threshold=%d%s\n",
 		get_min_cpufreq(),
 		min_cpufreq_ape_opp, 
 		min_cpufreq_ddr_opp,
 		power_optimal_idx, liveopp_arm[power_optimal_idx].freq_show,
 		ddr50_cpufreq_idx, liveopp_arm[ddr50_cpufreq_idx].freq_show,
 		ape50_cpufreq_idx, liveopp_arm[ape50_cpufreq_idx].freq_show,
-		ape100_mali_threshold, ape100_mali_threshold ? "" : " (disabled)");
+		ape100_mali_threshold, ape100_mali_threshold ? "" : " (disabled)",
+		ddr100_mali_threshold, ddr100_mali_threshold ? "" : " (disabled)");
 	
 	return strlen(buf);
 }
@@ -2456,6 +2463,16 @@ static ssize_t prcmu_qos_performance_store(struct kobject *kobj, struct kobj_att
 			return -EINVAL;
 
 		ape100_mali_threshold = val;
+
+		return count;
+	}
+	
+	if (!strncmp(buf, "ddr100_mali_threshold=", 22)) {
+		ret = sscanf(&buf[22], "%d", &val);
+		if (!ret)
+			return -EINVAL;
+
+		ddr100_mali_threshold = val;
 
 		return count;
 	}
