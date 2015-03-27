@@ -1157,8 +1157,6 @@ struct liveopp_arm_table
 	u8 	varm_raw;
 	u8  	vbbx_raw;
 	bool	enable;
-	int	ddr_opp;
-	int	ape_opp;
 };
 
 /* 
@@ -1459,21 +1457,21 @@ static void do_oc_ddr(int new_val_)
 static u32 __read_mostly liveopp_varm_us = 50;
 
 static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
-//	| CLK            | PLL       | VDD | VBB | Enable | DDR | APE |
-	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 1,  25,  50},
-	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1,  25,  50},
-	{ 500000,  499200, 0x00050141, 0x20, 0xDB, 0,  50,  50},
-	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1,  50,  50},
-	{ 700000,  698880, 0x0005015B, 0x24, 0xDB, 0,  50,  50},
-	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1, 100,  50},
-	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1, 100, 100},
-	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1, 100, 100},
-	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 1, 100, 100},
-	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1, 100, 100},
-	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1, 100, 100},
-	{1220000, 1221120, 0x0005019f, 0x37, 0x8F, 1, 100, 100},
-	{1245000, 1244160, 0x000501A2, 0x37, 0x8F, 1, 100, 100},
+//	| CLK            | PLL       | VDD | VBB | Enable 
+	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1},
+	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 1},
+	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1},
+	{ 500000,  499200, 0x00050141, 0x20, 0xDB, 0},
+	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1},
+	{ 700000,  698880, 0x0005015B, 0x24, 0xDB, 0},
+	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1},
+	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1},
+	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1},
+	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 1},
+	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1},
+	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1},
+	{1220000, 1221120, 0x0005019f, 0x37, 0x8F, 1},
+	{1245000, 1244160, 0x000501A2, 0x37, 0x8F, 1},
 };
 
 static const char *armopp_name[] = 
@@ -1638,7 +1636,7 @@ static int pllarm_freq(u32 raw)
  */
 static bool min_OPPs_on_suspend = true; 
 static int power_optimal_idx = 6; /* 800 MHz */
-static int ddr50_cpufreq_idx = 3; /* 400 MHz */
+static int ddr50_cpufreq_idx = 2; /* 400 MHz */
 
 static int min_cpufreq_ape_opp = 25;
 static int min_cpufreq_ddr_opp = 25;
@@ -1664,7 +1662,7 @@ static void requirements_update_thread(struct work_struct *requirements_update_w
 	// considering of overall performance, only use maximazed OPPs if is above power_optimal_idx 
 	// or if CPUfreq == max CPUfreq
 	if ((last_arm_idx >= power_optimal_idx || (liveopp_arm[last_arm_idx].freq_show == get_max_cpufreq()))) {
-		if (!suspend)
+		if (!is_suspend)
 			apeopp = 100;
 		ddropp = 100;
 		goto update_opp;
@@ -1836,29 +1834,7 @@ static ssize_t arm_summary_store(struct kobject *kobj, struct kobj_attribute *at
 			}
 		}
 	}
-	
-	if (sscanf(buf, "%d apeopp=%d", &val1, &val2) == 2) {
-		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
-			if (liveopp_arm[i].freq_show == (int)val1) {
-					liveopp_arm[i].ape_opp = (int)val2;
-				break;
-			}
-		}
-		
-		return count;
-	}	
-	
-	if (sscanf(buf, "%d ddropp=%d", &val1, &val2) == 2) {
-		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
-			if (liveopp_arm[i].freq_show == (int)val1) {
-					liveopp_arm[i].ddr_opp = (int)val2;
-				break;
-			}
-		}
-		
-		return count;
-	}
-	
+
 	if (sscanf(buf, "%d enable=%d", &val1, &val2) == 2) {
 		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
 			if (liveopp_arm[i].freq_show == (int)val1) {
@@ -2004,8 +1980,6 @@ static ssize_t arm_step_show(struct kobject *kobj, struct kobj_attribute *attr, 
 								     (int)liveopp_arm[_index].varm_raw);
 	sprintf(buf, "%sVbbx:\t\t\t%#04x\n", buf, (int)liveopp_arm[_index].vbbx_raw);
 	sprintf(buf, "%sEnable:\t\t\t%d\n", buf,  liveopp_arm[_index].enable);
-	sprintf(buf, "%sDDR_OPP:\t\t%d\n", buf, liveopp_arm[_index].ddr_opp);
-	sprintf(buf, "%sAPE_OPP:\t\t%d\n", buf, liveopp_arm[_index].ape_opp);
 
 	return sprintf(buf, "%s\n", buf);
 }
@@ -2096,31 +2070,6 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 		}
 
 		liveopp_arm[_index].vbbx_raw = val;
-
-		return count;
-	}
-
-	if (!strncmp(buf, "apeopp=", 7)) {
-		ret = sscanf(&buf[7], "%d", &val);
-		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != -1 && val != -2)) {
-			pr_err("[LiveOPP] Invalid QOS_APE_OPP value. Enter 25, 50 or 100\n");
-			return -EINVAL;
-		}
-
-		liveopp_arm[_index].ape_opp = (signed char)val;
-
-		return count;
-	}
-
-	if (!strncmp(buf, "ddropp=", 7)) {
-		ret = sscanf(&buf[7], "%d", &val);
-		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != -1 && val != -2)) {
-			pr_err("[LiveOPP] Invalid QOS_DDR_OPP value."
-			"Enter 25, 50, 100 or 125\n");
-			return -EINVAL;
-		}
-
-		liveopp_arm[_index].ddr_opp = (signed char)val;
 
 		return count;
 	}
@@ -2413,20 +2362,22 @@ invalid_input:
 }
 ATTR_RW(pllddr_cross_clocks);
 
-static ssize_t min_cpufreq_requirements_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t prcmu_qos_performance_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "min cpufreq=%d\napeopp=%d\nddropp=%d\n"
-		     "use_on_suspend=%d\npow_opt_idx=%d\n",
+	sprintf(buf, "min cpufreq=%d\ndef. min apeopp=%d\ndef. min ddropp=%d\n"
+		     "use_on_suspend=%d\npow_opt_idx=%d (%d kHz)\n"
+		     "ddr50_cpufreq_idx=%d (%d kHz)",
 		get_min_cpufreq(),
 		min_cpufreq_ape_opp, 
 		min_cpufreq_ddr_opp,
 		min_OPPs_on_suspend ? 1 : 0,
-		power_optimal_idx);
+		power_optimal_idx, liveopp_arm[power_optimal_idx].freq_show,
+		ddr50_cpufreq_idx, liveopp_arm[ddr50_cpufreq_idx].freq_show);
 	
 	return strlen(buf);
 }
 
-static ssize_t min_cpufreq_requirements_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+static ssize_t prcmu_qos_performance_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	int ret, val;
 	
@@ -2446,7 +2397,7 @@ static ssize_t min_cpufreq_requirements_store(struct kobject *kobj, struct kobj_
 		ret = sscanf(&buf[7], "%d", &val);
 		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != 0 && val != -1 && val != -2)) {
 			pr_err("[LiveOPP] Invalid QOS_DDR_OPP value."
-			"Enter 25, 50, 100 or 125\n");
+			"Enter 25, 50, 100\n");
 			return -EINVAL;
 		}
 
@@ -2475,9 +2426,19 @@ static ssize_t min_cpufreq_requirements_store(struct kobject *kobj, struct kobj_
 		return count;
 	}
 	
+	if (!strncmp(buf, "ddr50_cpufreq_idx=", 18)) {
+		ret = sscanf(&buf[18], "%d", &val);
+		if (!ret)
+			return -EINVAL;
+
+		ddr50_cpufreq_idx = val;
+
+		return count;
+	}
+	
 	return count;
 }
-ATTR_RW(min_cpufreq_requirements);
+ATTR_RW(prcmu_qos_performance);
 
 static struct attribute *liveopp_attrs[] = {
 #if CONFIG_LIVEOPP_DEBUG > 1
@@ -2510,7 +2471,7 @@ static struct attribute *liveopp_attrs[] = {
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
 	&pllddr_oc_on_suspend_interface.attr,
-	&min_cpufreq_requirements_interface.attr,
+	&prcmu_qos_performance_interface.attr,
 	NULL,
 };
 
