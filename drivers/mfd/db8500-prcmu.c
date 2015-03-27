@@ -1632,6 +1632,13 @@ static int pllarm_freq(u32 raw)
 	return pll;
 }
 
+/* 
+ * allow to use minimal OPPs if is on earlysuspend
+ * and last_arm_idx doesn't exceed power_optimal_idx
+ */
+static bool min_OPPs_on_suspend = true; 
+static int power_optimal_idx = 6; /* 800 MHz */
+
 static int min_cpufreq_ape_opp = 25;
 static int min_cpufreq_ddr_opp = 25;
 
@@ -1644,6 +1651,21 @@ static void requirements_update_thread(struct work_struct *requirements_update_w
 	int min_cpufreq;
 	
 	mutex_lock(&requirements_update_mutex);
+
+	if (min_OPPs_on_suspend && is_suspend &&
+			last_arm_idx <= power_optimal_idx) {
+	  
+		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+						"cpufreq",
+						 (signed char) min_cpufreq_ape_opp);
+		
+		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
+						"cpufreq",
+						 (signed char) min_cpufreq_ddr_opp);
+		
+		goto out;
+	}
+	
 	min_cpufreq = get_min_cpufreq();
   
 	if (liveopp_arm[last_arm_idx].freq_show == min_cpufreq
@@ -1668,6 +1690,7 @@ static void requirements_update_thread(struct work_struct *requirements_update_w
 						(signed char)liveopp_arm[last_arm_idx].ape_opp);
 	}
 	
+out:
 	mutex_unlock(&requirements_update_mutex);
 }
 static DECLARE_WORK(requirements_update_work, requirements_update_thread);
@@ -2401,9 +2424,14 @@ ATTR_RW(pllddr_cross_clocks);
 
 static ssize_t min_cpufreq_requirements_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
- 
-	sprintf(buf, "min cpufreq=%d\napeopp=%d\nddr_opp=%d\n", get_min_cpufreq(),
-		min_cpufreq_ape_opp, min_cpufreq_ddr_opp);
+	sprintf(buf, "min cpufreq=%d\napeopp=%d\nddropp=%d\n"
+		     "use_on_suspend=%d\npow_opt_idx=%d\n",
+		get_min_cpufreq(),
+		min_cpufreq_ape_opp, 
+		min_cpufreq_ddr_opp,
+		min_OPPs_on_suspend ? 1 : 0,
+		power_optimal_idx);
+	
 	return strlen(buf);
 }
 
@@ -2432,6 +2460,26 @@ static ssize_t min_cpufreq_requirements_store(struct kobject *kobj, struct kobj_
 		}
 
 		min_cpufreq_ddr_opp = val;
+
+		return count;
+	}
+	
+	if (!strncmp(buf, "use_on_suspend=", 15)) {
+		ret = sscanf(&buf[15], "%d", &val);
+		if (!ret)
+			return -EINVAL;
+
+		min_OPPs_on_suspend = val;
+
+		return count;
+	}
+	
+	if (!strncmp(buf, "pow_opt_idx=", 12)) {
+		ret = sscanf(&buf[12], "%d", &val);
+		if (!ret)
+			return -EINVAL;
+
+		power_optimal_idx = val;
 
 		return count;
 	}
