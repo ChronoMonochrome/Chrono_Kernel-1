@@ -414,6 +414,11 @@ int get_mali_workload(void)
 	return mali_last_utilization * sgaclk_freq() / 256; 
 }
 
+int get_mali_last_utilization(void)
+{
+	return mali_last_utilization;
+}
+
 #define ATTR_RO(_name)	\
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0444, _name##_show, NULL);
 
