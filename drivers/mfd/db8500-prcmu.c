@@ -1632,14 +1632,43 @@ static int pllarm_freq(u32 raw)
 	return pll;
 }
 
+static int min_cpufreq_ape_opp = 25;
+static int min_cpufreq_ddr_opp = 25;
+
+static DEFINE_MUTEX(requirements_update_mutex);
+
+extern int get_min_cpufreq(void);
+
 static void requirements_update_thread(struct work_struct *requirements_update_work)
 {
-	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-					"cpufreq",
-					(signed char)liveopp_arm[last_arm_idx].ddr_opp);
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-					"cpufreq",
-					(signed char)liveopp_arm[last_arm_idx].ape_opp);
+	int min_cpufreq;
+	
+	mutex_lock(&requirements_update_mutex);
+	min_cpufreq = get_min_cpufreq();
+  
+	if (liveopp_arm[last_arm_idx].freq_show == min_cpufreq
+			&& min_cpufreq_ddr_opp) { 
+		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
+						"cpufreq",
+						 (signed char) min_cpufreq_ddr_opp);
+	} else {
+		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
+						"cpufreq",
+						(signed char)liveopp_arm[last_arm_idx].ddr_opp);
+	}
+	
+	if (liveopp_arm[last_arm_idx].freq_show == min_cpufreq
+			&& min_cpufreq_ape_opp) {
+		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+						"cpufreq",
+						 (signed char) min_cpufreq_ape_opp);
+	} else {
+		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+						"cpufreq",
+						(signed char)liveopp_arm[last_arm_idx].ape_opp);
+	}
+	
+	mutex_unlock(&requirements_update_mutex);
 }
 static DECLARE_WORK(requirements_update_work, requirements_update_thread);
 
@@ -2161,8 +2190,6 @@ module_param(ddr_oc_delay_ms, uint, 0644);
 static void pllddr_early_suspend(struct early_suspend *h)
 {
 	is_suspend = true;
-	
-	//pr_err("[PLLDDR] %s\n", __func__);
 
 	if (pending_pllddr_val && ddr_oc_on_suspend) {
 		pr_err("[PLLDDR] pending_pllddr_val=%#010x\n", pending_pllddr_val);
@@ -2173,12 +2200,9 @@ static void pllddr_early_suspend(struct early_suspend *h)
 static void pllddr_late_resume(struct early_suspend *h)
 {
 	is_suspend = false;
-
-	//pr_err("[PLLDDR] %s\n", __func__);
 	
 	if (pending_pllddr_val && ddr_oc_on_suspend) {
 		cancel_delayed_work(&do_oc_ddr_delayedwork);
-		//pr_err("canceled\n");
 		if (wake_lock_active(&pllddr_oc_lock))
 			wake_unlock(&pllddr_oc_lock);
 	}
@@ -2375,6 +2399,47 @@ invalid_input:
 }
 ATTR_RW(pllddr_cross_clocks);
 
+static ssize_t min_cpufreq_requirements_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+ 
+	sprintf(buf, "min cpufreq=%d\napeopp=%d\nddr_opp=%d\n", get_min_cpufreq(),
+		min_cpufreq_ape_opp, min_cpufreq_ddr_opp);
+	return strlen(buf);
+}
+
+static ssize_t min_cpufreq_requirements_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val;
+	
+	if (!strncmp(buf, "apeopp=", 7)) {
+		ret = sscanf(&buf[7], "%d", &val);
+		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != 0 && val != -1 && val != -2)) {
+			pr_err("[LiveOPP] Invalid QOS_APE_OPP value. Enter 25, 50 or 100\n");
+			return -EINVAL;
+		}
+
+		min_cpufreq_ape_opp = val;
+
+		return count;
+	}
+
+	if (!strncmp(buf, "ddropp=", 7)) {
+		ret = sscanf(&buf[7], "%d", &val);
+		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != 0 && val != -1 && val != -2)) {
+			pr_err("[LiveOPP] Invalid QOS_DDR_OPP value."
+			"Enter 25, 50, 100 or 125\n");
+			return -EINVAL;
+		}
+
+		min_cpufreq_ddr_opp = val;
+
+		return count;
+	}
+	
+	return count;
+}
+ATTR_RW(min_cpufreq_requirements);
+
 static struct attribute *liveopp_attrs[] = {
 #if CONFIG_LIVEOPP_DEBUG > 1
 	&liveopp_start_interface.attr, 
@@ -2406,6 +2471,7 @@ static struct attribute *liveopp_attrs[] = {
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
 	&pllddr_oc_on_suspend_interface.attr,
+	&min_cpufreq_requirements_interface.attr,
 	NULL,
 };
 
