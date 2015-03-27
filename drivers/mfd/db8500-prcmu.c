@@ -1634,9 +1634,9 @@ static int pllarm_freq(u32 raw)
  * allow to use minimal OPPs if is on earlysuspend
  * and last_arm_idx doesn't exceed power_optimal_idx
  */
-static bool min_OPPs_on_suspend = true; 
 static int power_optimal_idx = 6; /* 800 MHz */
 static int ddr50_cpufreq_idx = 2; /* 400 MHz */
+static int ape50_cpufreq_idx = 4; /* 600 MHz */
 
 static int min_cpufreq_ape_opp = 25;
 static int min_cpufreq_ddr_opp = 25;
@@ -1646,7 +1646,9 @@ static DEFINE_MUTEX(requirements_update_mutex);
 extern int get_min_cpufreq(void);
 extern int get_max_cpufreq(void);
 
-static int ape100_mali_threshold = 192;
+// when ape100_mali_threshold is enabled, only GPU can boost APE. 
+// It can save power at the cost of I/O throughput and RAM performance.
+static int ape100_mali_threshold = 0; /* disabled */
 extern int get_mali_last_utilization(void);
 
 static void requirements_update_thread(struct work_struct *requirements_update_work)
@@ -1656,23 +1658,29 @@ static void requirements_update_thread(struct work_struct *requirements_update_w
 	int apeopp = min_cpufreq_ape_opp, ddropp = min_cpufreq_ddr_opp;
 	
 	mutex_lock(&requirements_update_mutex);
-
-	// allow to lower OPPs on suspend anda at min cpufreq
-	if ((min_OPPs_on_suspend && is_suspend && last_arm_idx <= power_optimal_idx)
-	  || liveopp_arm[last_arm_idx].freq_show == min_cpufreq)
-		goto check_ddropp;
 	
 	// considering of overall performance, only use maximazed OPPs if is above power_optimal_idx 
 	// or if CPUfreq == max CPUfreq
 	if ((last_arm_idx >= power_optimal_idx || (liveopp_arm[last_arm_idx].freq_show == get_max_cpufreq()))) {
-		if (!is_suspend && (get_mali_last_utilization() >= ape100_mali_threshold))
-			apeopp = 100;
 		ddropp = 100;
+		
+		if (!ape100_mali_threshold) {
+			apeopp = 100;
+		} else if (get_mali_last_utilization() < ape100_mali_threshold) {
+			apeopp = min_cpufreq_ape_opp;
+		}
+		
 		goto update_opp;
 	} 
-check_ddropp:
-	if (last_arm_idx >= ddr50_cpufreq_idx) {
+
+	if (last_arm_idx >= ddr50_cpufreq_idx && 
+			min_cpufreq != liveopp_arm[ddr50_cpufreq_idx].freq_show) {
 		ddropp = (min_cpufreq_ddr_opp > 50) ? min_cpufreq_ddr_opp : 50;
+	} 
+	
+	if (last_arm_idx >= ape50_cpufreq_idx && 
+			min_cpufreq != liveopp_arm[ape50_cpufreq_idx].freq_show) {
+		apeopp = (min_cpufreq_ape_opp > 50) ? min_cpufreq_ape_opp : 50;
 	} 
 update_opp:
 	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
@@ -2368,16 +2376,17 @@ ATTR_RW(pllddr_cross_clocks);
 static ssize_t prcmu_qos_performance_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	sprintf(buf, "min cpufreq=%d\ndef. min apeopp=%d\ndef. min ddropp=%d\n"
-		     "use_on_suspend=%d\npow_opt_idx=%d (%d kHz)\n"
+		     "pow_opt_idx=%d (%d kHz)\n"
 		     "ddr50_cpufreq_idx=%d (%d kHz)\n"
-		     "ape100_mali_threshold=%d\n",
+		     "ape50_cpufreq_idx=%d (%d kHz)\n"
+		     "ape100_mali_threshold=%d%s\n",
 		get_min_cpufreq(),
 		min_cpufreq_ape_opp, 
 		min_cpufreq_ddr_opp,
-		min_OPPs_on_suspend ? 1 : 0,
 		power_optimal_idx, liveopp_arm[power_optimal_idx].freq_show,
 		ddr50_cpufreq_idx, liveopp_arm[ddr50_cpufreq_idx].freq_show,
-		ape100_mali_threshold);
+		ape50_cpufreq_idx, liveopp_arm[ape50_cpufreq_idx].freq_show,
+		ape100_mali_threshold, ape100_mali_threshold ? "" : " (disabled)");
 	
 	return strlen(buf);
 }
@@ -2411,22 +2420,22 @@ static ssize_t prcmu_qos_performance_store(struct kobject *kobj, struct kobj_att
 		return count;
 	}
 	
-	if (!strncmp(buf, "use_on_suspend=", 15)) {
-		ret = sscanf(&buf[15], "%d", &val);
-		if (!ret)
-			return -EINVAL;
-
-		min_OPPs_on_suspend = val;
-
-		return count;
-	}
-	
 	if (!strncmp(buf, "pow_opt_idx=", 12)) {
 		ret = sscanf(&buf[12], "%d", &val);
 		if (!ret)
 			return -EINVAL;
 
 		power_optimal_idx = val;
+
+		return count;
+	}
+	
+	if (!strncmp(buf, "ape50_cpufreq_idx=", 18)) {
+		ret = sscanf(&buf[18], "%d", &val);
+		if (!ret)
+			return -EINVAL;
+
+		ape50_cpufreq_idx = val;
 
 		return count;
 	}
