@@ -128,7 +128,7 @@ struct ws2401_dpi {
 #endif
 };
 
-static signed char apeopp_requirement = 0, ddropp_requirement = 0;
+static signed char apeopp_requirement = 50, ddropp_requirement = 25;
 
 #ifdef ESD_TEST
 struct ws2401_dpi *pdpi;
