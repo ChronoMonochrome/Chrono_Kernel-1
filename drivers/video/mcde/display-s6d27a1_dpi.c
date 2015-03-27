@@ -86,7 +86,7 @@
 
 #define DPI_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
 
-static signed char apeopp_requirement = 0, ddropp_requirement = 0;
+static signed char apeopp_requirement = 50, ddropp_requirement = 25;
 
 /* to be removed when display works */
 //#define dev_dbg	dev_info
