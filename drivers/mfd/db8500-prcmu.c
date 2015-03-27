@@ -1646,6 +1646,9 @@ static DEFINE_MUTEX(requirements_update_mutex);
 extern int get_min_cpufreq(void);
 extern int get_max_cpufreq(void);
 
+static int ape100_mali_threshold = 192;
+extern int get_mali_last_utilization(void);
+
 static void requirements_update_thread(struct work_struct *requirements_update_work)
 {
 	int min_cpufreq = get_min_cpufreq();
@@ -1662,7 +1665,7 @@ static void requirements_update_thread(struct work_struct *requirements_update_w
 	// considering of overall performance, only use maximazed OPPs if is above power_optimal_idx 
 	// or if CPUfreq == max CPUfreq
 	if ((last_arm_idx >= power_optimal_idx || (liveopp_arm[last_arm_idx].freq_show == get_max_cpufreq()))) {
-		if (!is_suspend)
+		if (!is_suspend && (get_mali_last_utilization() >= ape100_mali_threshold))
 			apeopp = 100;
 		ddropp = 100;
 		goto update_opp;
@@ -2366,13 +2369,15 @@ static ssize_t prcmu_qos_performance_show(struct kobject *kobj, struct kobj_attr
 {
 	sprintf(buf, "min cpufreq=%d\ndef. min apeopp=%d\ndef. min ddropp=%d\n"
 		     "use_on_suspend=%d\npow_opt_idx=%d (%d kHz)\n"
-		     "ddr50_cpufreq_idx=%d (%d kHz)",
+		     "ddr50_cpufreq_idx=%d (%d kHz)\n"
+		     "ape100_mali_threshold=%d\n",
 		get_min_cpufreq(),
 		min_cpufreq_ape_opp, 
 		min_cpufreq_ddr_opp,
 		min_OPPs_on_suspend ? 1 : 0,
 		power_optimal_idx, liveopp_arm[power_optimal_idx].freq_show,
-		ddr50_cpufreq_idx, liveopp_arm[ddr50_cpufreq_idx].freq_show);
+		ddr50_cpufreq_idx, liveopp_arm[ddr50_cpufreq_idx].freq_show,
+		ape100_mali_threshold);
 	
 	return strlen(buf);
 }
@@ -2432,6 +2437,16 @@ static ssize_t prcmu_qos_performance_store(struct kobject *kobj, struct kobj_att
 			return -EINVAL;
 
 		ddr50_cpufreq_idx = val;
+
+		return count;
+	}
+
+	if (!strncmp(buf, "ape100_mali_threshold=", 22)) {
+		ret = sscanf(&buf[22], "%d", &val);
+		if (!ret)
+			return -EINVAL;
+
+		ape100_mali_threshold = val;
 
 		return count;
 	}
