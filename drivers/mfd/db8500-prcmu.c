@@ -1638,6 +1638,7 @@ static int pllarm_freq(u32 raw)
  */
 static bool min_OPPs_on_suspend = true; 
 static int power_optimal_idx = 6; /* 800 MHz */
+static int ddr50_cpufreq_idx = 3; /* 400 MHz */
 
 static int min_cpufreq_ape_opp = 25;
 static int min_cpufreq_ddr_opp = 25;
@@ -1645,52 +1646,42 @@ static int min_cpufreq_ddr_opp = 25;
 static DEFINE_MUTEX(requirements_update_mutex);
 
 extern int get_min_cpufreq(void);
+extern int get_max_cpufreq(void);
 
 static void requirements_update_thread(struct work_struct *requirements_update_work)
 {
-	int min_cpufreq;
+	int min_cpufreq = get_min_cpufreq();
+	
+	int apeopp = min_cpufreq_ape_opp, ddropp = min_cpufreq_ddr_opp;
 	
 	mutex_lock(&requirements_update_mutex);
 
-	if (min_OPPs_on_suspend && is_suspend &&
-			last_arm_idx <= power_optimal_idx) {
-	  
-		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-						"cpufreq",
-						 (signed char) min_cpufreq_ape_opp);
-		
-		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-						"cpufreq",
-						 (signed char) min_cpufreq_ddr_opp);
-		
-		goto out;
-	}
+	// allow to lower OPPs on suspend anda at min cpufreq
+	if ((min_OPPs_on_suspend && is_suspend && last_arm_idx <= power_optimal_idx)
+	  || liveopp_arm[last_arm_idx].freq_show == min_cpufreq)
+		goto check_ddropp;
 	
-	min_cpufreq = get_min_cpufreq();
-  
-	if (liveopp_arm[last_arm_idx].freq_show == min_cpufreq
-			&& min_cpufreq_ddr_opp) { 
-		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-						"cpufreq",
-						 (signed char) min_cpufreq_ddr_opp);
-	} else {
-		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-						"cpufreq",
-						(signed char)liveopp_arm[last_arm_idx].ddr_opp);
-	}
+	// considering of overall performance, only use maximazed OPPs if is above power_optimal_idx 
+	// or if CPUfreq == max CPUfreq
+	if ((last_arm_idx >= power_optimal_idx || (liveopp_arm[last_arm_idx].freq_show == get_max_cpufreq()))) {
+		if (!suspend)
+			apeopp = 100;
+		ddropp = 100;
+		goto update_opp;
+	} 
+check_ddropp:
+	if (last_arm_idx >= ddr50_cpufreq_idx) {
+		ddropp = (min_cpufreq_ddr_opp > 50) ? min_cpufreq_ddr_opp : 50;
+	} 
+update_opp:
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+				"cpufreq",
+				 (signed char) apeopp);
 	
-	if (liveopp_arm[last_arm_idx].freq_show == min_cpufreq
-			&& min_cpufreq_ape_opp) {
-		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-						"cpufreq",
-						 (signed char) min_cpufreq_ape_opp);
-	} else {
-		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-						"cpufreq",
-						(signed char)liveopp_arm[last_arm_idx].ape_opp);
-	}
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
+				"cpufreq",
+				 (signed char) ddropp);
 	
-out:
 	mutex_unlock(&requirements_update_mutex);
 }
 static DECLARE_WORK(requirements_update_work, requirements_update_thread);
