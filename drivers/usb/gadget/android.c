@@ -33,6 +33,11 @@
 
 #include "gadget_chips.h"
 
+int hid_mouse_enable = 0;
+module_param(hid_mouse_enable, uint, 0644);
+int hid_keyboard_enable = 0;
+module_param(hid_keyboard_enable, uint, 0644);
+
 /*
  * Kbuild is not very cooperative with respect to linking separately
  * compiled library objects into one module.  So for now we won't use
@@ -995,18 +1000,25 @@ static void hid_function_cleanup(struct android_usb_function *f)
 static int hid_function_bind_config(struct android_usb_function *f, struct usb_configuration *c)
 {
 	int ret;
-	printk(KERN_INFO "hid keyboard\n");
-	ret = hidg_bind_config(c, &ghid_device_android_keyboard, 0);
-	if (ret) {
-		pr_info("%s: hid_function_bind_config keyboard failed: %d\n", __func__, ret);
-		return ret;
+	
+	if (hid_keyboard_enable) {
+		printk(KERN_INFO "hid keyboard\n");
+		ret = hidg_bind_config(c, &ghid_device_android_keyboard, 0);
+		if (ret) {
+			pr_info("%s: hid_function_bind_config keyboard failed: %d\n", __func__, ret);
+			return ret;
+		}
 	}
-	printk(KERN_INFO "hid mouse\n");
-	ret = hidg_bind_config(c, &ghid_device_android_mouse, 1);
-	if (ret) {
-		pr_info("%s: hid_function_bind_config mouse failed: %d\n", __func__, ret);
-		return ret;
+	
+	if (hid_mouse_enable) {
+		printk(KERN_INFO "hid mouse\n");
+		ret = hidg_bind_config(c, &ghid_device_android_mouse, 1);
+		if (ret) {
+			pr_info("%s: hid_function_bind_config mouse failed: %d\n", __func__, ret);
+			return ret;
+		}
 	}
+	
 	return 0;
 }
 
