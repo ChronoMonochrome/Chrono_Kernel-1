@@ -87,6 +87,7 @@
 #define DPI_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
 
 static signed char apeopp_requirement = 50, ddropp_requirement = 25;
+static unsigned int reset_delay = 5, power_on_delay = 5;
 
 /* to be removed when display works */
 //#define dev_dbg	dev_info
@@ -660,7 +661,7 @@ static int s6d27a1_dpi_power_on(struct s6d27a1_dpi *lcd)
 	}
 
 	dpd->power_on(dpd, LCD_POWER_UP);
-	msleep(dpd->power_on_delay);
+	msleep(power_on_delay);
 
 	if (!dpd->gpio_cfg_lateresume) {
 		dev_err(lcd->dev, "gpio_cfg_lateresume is NULL.\n");
@@ -669,7 +670,7 @@ static int s6d27a1_dpi_power_on(struct s6d27a1_dpi *lcd)
 		dpd->gpio_cfg_lateresume();
 
 	dpd->reset(dpd);
-	msleep(dpd->reset_delay);
+	msleep(reset_delay);
 
 	ret = s6d27a1_dpi_ldi_init(lcd);
 	if (ret) {
@@ -946,6 +947,44 @@ static DEVICE_ATTR(mcde_screenon_opp, 0644,
 		s6d_sysfs_show_opp, s6d_sysfs_store_opp);
 
 
+static ssize_t sysfs_show_display_settings(struct device *dev,
+				      struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "power_on_delay=%d\n"
+			    "reset_delay=%d\n",
+			    power_on_delay,
+			    reset_delay);
+}
+
+static ssize_t sysfs_store_display_settings(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t len)
+{
+	int val;
+  
+  	if (!strncmp(&buf[0], "power_on_delay=", 15))
+	{
+		sscanf(&buf[15], "%d", &val);
+		
+		power_on_delay = val;
+		
+		return len;
+	}
+	
+	if (!strncmp(&buf[0], "reset_delay=", 12))
+	{
+		sscanf(&buf[12], "%d", &val);
+		
+		reset_delay = val;
+
+		return len;
+	}
+	
+	return -EINVAL;
+}
+static DEVICE_ATTR(display_settings, 0644,
+		sysfs_show_display_settings, sysfs_store_display_settings);
+
 static ssize_t s6d27a1_dpi_sysfs_store_lcd_power(struct device *dev,
 						struct device_attribute *attr,
 						const char *buf, size_t len)
@@ -1189,7 +1228,11 @@ static int __devinit s6d27a1_dpi_mcde_probe(
 		
 	ret = device_create_file(&(ddev->dev), &dev_attr_mcde_screenon_opp);	
 	if (ret < 0)
-		dev_err(&(ddev->dev), "failed to add mcde_screeon_opp sysfs entries\n");
+		dev_err(&(ddev->dev), "failed to add mcde_screenon_opp sysfs entries\n");
+	
+	ret = device_create_file(&(ddev->dev), &dev_attr_display_settings);	
+	if (ret < 0)
+		dev_err(&(ddev->dev), "failed to add display_settings sysfs entries\n");
 
 	lcd->spi_drv.driver.name	= "pri_lcd_spi";
 	lcd->spi_drv.driver.bus		= &spi_bus_type;
