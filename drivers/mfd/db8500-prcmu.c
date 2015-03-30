@@ -1630,13 +1630,9 @@ static int pllarm_freq(u32 raw)
 	return pll;
 }
 
-/* 
- * allow to use minimal OPPs if is on earlysuspend
- * and last_arm_idx doesn't exceed power_optimal_idx
- */
 static int power_optimal_idx = 6; /* 800 MHz */
-static int ddr50_cpufreq_idx = 2; /* 400 MHz */
-static int ape50_cpufreq_idx = 4; /* 600 MHz */
+static int ddr50_cpufreq_idx = 3; /* 500 MHz */
+static int ape50_cpufreq_idx = 1; /* 200 MHz */
 
 static int min_cpufreq_ape_opp = 25;
 static int min_cpufreq_ddr_opp = 25;
@@ -1649,7 +1645,7 @@ extern int get_max_cpufreq(void);
 // when ape100_mali_threshold is enabled, only GPU can boost APE. 
 // It can save power at the cost of I/O throughput and RAM performance.
 static int ape100_mali_threshold = 0; /* disabled */
-static int ddr100_mali_threshold = 0;
+static int ddr100_mali_threshold = 0; /* disabled */
 extern int get_mali_last_utilization(void);
 
 static void requirements_update_thread(struct work_struct *requirements_update_work)
