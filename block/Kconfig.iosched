@@ -55,6 +55,11 @@ config IOSCHED_BFQ
 	  guarantee low latency to interactive and soft real-time
 	  applications. If compiled built-in (saying Y here), BFQ can
 	  be configured to support hierarchical scheduling.
+	  
+config IOSCHED_TRIPNDROID
+	tristate "Tripndroid I/O scheduler"
+	depends on EXPERIMENTAL
+	default n
 
 config CGROUP_BFQIO
 	bool "BFQ hierarchical scheduling support"
@@ -144,7 +149,10 @@ choice
 		  interactive and soft real-time applications.
 
 	config DEFAULT_NOOP
-		bool "No-op"
+		bool "No-op" if IOSCHED_NOOP=y
+		
+	config DEFAULT_TRIPNDROID
+		bool "TRIPNDROID" if IOSCHED_TRIPNDROID=y
 	
 	config DEFAULT_SIOPLUS
 		bool "SIOPLUS" if IOSCHED_SIOPLUS=y
@@ -159,6 +167,7 @@ config DEFAULT_IOSCHED
 	default "fiops" if DEFAULT_FIOPS
 	default "sioplus" if DEFAULT_SIOPLUS
 	default "noop" if DEFAULT_NOOP
+	default "tripndroid" if DEFAULT_TRIPNDROID
 	default "row" if DEFAULT_ROW
 	default "vr" if DEFAULT_VR
 	default "zen" if DEFAULT_ZEN
