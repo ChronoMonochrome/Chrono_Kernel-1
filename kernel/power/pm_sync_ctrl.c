@@ -18,7 +18,7 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h> 
 
-bool pm_sync_active __read_mostly = false;
+bool pm_sync_active __read_mostly = true;
 
 static ssize_t pm_sync_active_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
