@@ -47,7 +47,6 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/stat.h>
-#include <linux/module.h>
 
 #include "fuse_i.h"
 
