@@ -240,12 +240,14 @@ static u64 fuse_get_unique(struct fuse_conn *fc)
 	return fc->reqctr;
 }
 
+extern void get_io_context(struct io_context *ioc);
+
 static inline int is_rt(struct fuse_conn *fc)
 {
 	/*
 	* Returns 1 if a process is RT class.
 	*/
-	struct io_context *ioc;
+	struct io_context *ioc = NULL;
 	int ret = 0;
 
 	if (!fc)
@@ -253,7 +255,7 @@ static inline int is_rt(struct fuse_conn *fc)
 	if (!(fc->flags & FUSE_HANDLE_RT_CLASS)) /* Don't handle RT class */
 		return 0;
 
-	ioc = get_io_context(GFP_NOWAIT, 0);
+	get_io_context(ioc);
 	if(!ioc)
 		return 0;
 
