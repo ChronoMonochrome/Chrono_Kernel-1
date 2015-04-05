@@ -108,13 +108,13 @@ EXPORT_SYMBOL_GPL(dirty_writeback_interval);
 /*
  * The dynamic writeback activation status
  */
-int dyn_dirty_writeback_enabled = 1;
+int dyn_dirty_writeback_enabled = 0;
 EXPORT_SYMBOL_GPL(dyn_dirty_writeback_enabled);
 
 /*
  * The interval between `kupdate'-style writebacks when the system is active
  */
-unsigned int dirty_writeback_active_interval = 0; /* centiseconds */
+unsigned int dirty_writeback_active_interval = HIGH_DIRTY_WRITEBACK_INTERVAL; /* centiseconds */
 EXPORT_SYMBOL_GPL(dirty_writeback_active_interval);
 
 /*
@@ -1406,9 +1406,9 @@ int dirty_writeback_centisecs_handler(ctl_table *table, int write,
 static void set_dirty_writeback_status(bool active) {
 	/* Change the current dirty writeback interval according to the
 	 * status provided */
-	dirty_writeback_interval = active ?
-		dirty_writeback_active_interval :
-		dirty_writeback_suspend_interval;
+	dirty_writeback_interval = (active) ?
+								dirty_writeback_active_interval :
+								dirty_writeback_suspend_interval;
 
 	/* Update the timer related to dirty writebacks interval */
 	bdi_arm_supers_timer();
