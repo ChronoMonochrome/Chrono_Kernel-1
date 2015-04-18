@@ -18,7 +18,6 @@
  * and processes may not get killed until the normal oom killer is triggered.
  *
  * Copyright (C) 2007-2008 Google, Inc.
- * Copyright (C) 2012 Sony Mobile Communications AB.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -41,8 +40,6 @@
 #include <linux/swap.h>
 #include <linux/rcupdate.h>
 #include <linux/notifier.h>
-#include <linux/ktime.h>
-#include <linux/spinlock.h>
 
 static uint32_t lowmem_debug_level = 1;
 static int lowmem_adj[6] = {
@@ -60,9 +57,7 @@ static int lowmem_minfree[6] = {
 };
 static int lowmem_minfree_size = 4;
 
-static ktime_t lowmem_deathpending_timeout;
-
-#define LMK_BUSY (-1)
+static unsigned long lowmem_deathpending_timeout;
 
 #define lowmem_print(level, x...)			\
 	do {						\
@@ -72,16 +67,9 @@ static ktime_t lowmem_deathpending_timeout;
 
 static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 {
-	static DEFINE_SPINLOCK(lowmem_lock);
 	struct task_struct *tsk;
 	struct task_struct *selected = NULL;
 	int rem = 0;
-	static int same_count;
-	static int busy_count;
-	static int busy_count_dropped;
-	static int oldpid;
-	static int lastpid;
-	static ktime_t next_busy_print;
 	int tasksize;
 	int i;
 	int min_score_adj = OOM_SCORE_ADJ_MAX + 1;
@@ -91,18 +79,13 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	int array_size = ARRAY_SIZE(lowmem_adj);
 	int other_free = global_page_state(NR_FREE_PAGES) - totalreserve_pages;
 	int other_file = global_page_state(NR_FILE_PAGES) -
-						global_page_state(NR_FILE_MAPPED);
+						global_page_state(NR_SHMEM);
 
 	if (lowmem_adj_size < array_size)
 		array_size = lowmem_adj_size;
 	if (lowmem_minfree_size < array_size)
 		array_size = lowmem_minfree_size;
 	for (i = 0; i < array_size; i++) {
-		/*
-		 * Convert lowmem_minfree[i] to signed to avoid that other_free
-		 * and/or other_file are converted to unsigned.
-		 *
-		 */
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
 			min_score_adj = lowmem_adj[i];
@@ -110,12 +93,9 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		}
 	}
 	if (sc->nr_to_scan > 0)
-		lowmem_print(3, "lowmem_shrink %lu, %x, ofree %d %d (%lu %lu), ma %d\n",
+		lowmem_print(3, "lowmem_shrink %lu, %x, ofree %d %d, ma %d\n",
 				sc->nr_to_scan, sc->gfp_mask, other_free,
-				other_file,
-				global_page_state(NR_FILE_PAGES),
-				global_page_state(NR_FILE_MAPPED),
-				min_score_adj);
+				other_file, min_score_adj);
 	rem = global_page_state(NR_ACTIVE_ANON) +
 		global_page_state(NR_ACTIVE_FILE) +
 		global_page_state(NR_INACTIVE_ANON) +
@@ -123,25 +103,10 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	if (sc->nr_to_scan <= 0 || min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
 		lowmem_print(5, "lowmem_shrink %lu, %x, return %d\n",
 			     sc->nr_to_scan, sc->gfp_mask, rem);
-
 		return rem;
 	}
 	selected_oom_score_adj = min_score_adj;
 
-	if (spin_trylock(&lowmem_lock) == 0) {
-		if (ktime_us_delta(ktime_get(), next_busy_print) > 0) {
-			lowmem_print(2, "Lowmemkiller busy %d %d %d\n",
-				busy_count, busy_count_dropped,
-				oom_killer_disabled);
-			next_busy_print = ktime_add(ktime_get(),
-						    ktime_set(5, 0));
-			busy_count_dropped = 0;
-		}
-		busy_count++;
-		busy_count_dropped++;
-		return LMK_BUSY;
-	}
-	/* turn of scheduling to protect task list */
 	rcu_read_lock();
 	for_each_process(tsk) {
 		struct task_struct *p;
@@ -155,30 +120,10 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			continue;
 
 		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
-			ktime_us_delta(ktime_get(),
-				lowmem_deathpending_timeout) < 0) {
+		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
 			task_unlock(p);
-			same_count++;
-			if (p->pid != oldpid || same_count > 1000) {
-				lowmem_print(1,
-					"terminate %d (%s) old:%d last:%d %ld %d\n",
-					p->pid, p->comm, oldpid, lastpid,
-					(long)ktime_us_delta(ktime_get(),
-						lowmem_deathpending_timeout),
-					same_count);
-				lowmem_print(2,
-					"state:%ld flag:0x%x la:%lld busy:%d %d\n",
-					p->state, p->flags,
-					p->sched_info.last_arrival,
-					busy_count, oom_killer_disabled);
-				oldpid = p->pid;
-				same_count = 0;
-			}
 			rcu_read_unlock();
-			spin_unlock(&lowmem_lock);
-			/* wait one jiffie */
-			schedule_timeout(1);
-			return LMK_BUSY;
+			return 0;
 		}
 		oom_score_adj = p->signal->oom_score_adj;
 		if (oom_score_adj < min_score_adj) {
@@ -199,13 +144,13 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		selected = p;
 		selected_tasksize = tasksize;
 		selected_oom_score_adj = oom_score_adj;
-		lowmem_print(4, "select '%s' (%d), adj %hd, size %d, to kill\n",
+		lowmem_print(2, "select '%s' (%d), adj %d, size %d, to kill\n",
 			     p->comm, p->pid, oom_score_adj, tasksize);
 	}
 	if (selected) {
-		lowmem_print(1, "Killing '%s' (%d), adj %hd,\n" \
+		lowmem_print(1, "Killing '%s' (%d), adj %d,\n" \
 				"   to free %ldkB on behalf of '%s' (%d) because\n" \
-				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n" \
+				"   cache %ldkB is below limit %ldkB for oom_score_adj %d\n" \
 				"   Free memory is %ldkB above reserved\n",
 			     selected->comm, selected->pid,
 			     selected_oom_score_adj,
@@ -215,22 +160,14 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			     minfree * (long)(PAGE_SIZE / 1024),
 			     min_score_adj,
 			     other_free * (long)(PAGE_SIZE / 1024));
+		lowmem_deathpending_timeout = jiffies + HZ;
 		send_sig(SIGKILL, selected, 0);
-
-		lowmem_deathpending_timeout = ktime_add_ns(ktime_get(),
-							   NSEC_PER_SEC/2);
-		lowmem_print(2, "state:%ld flag:0x%x la:%lld busy:%d %d\n",
-			     selected->state, selected->flags,
-			     selected->sched_info.last_arrival,
-			     busy_count, oom_killer_disabled);
-		lastpid = selected->pid;
 		set_tsk_thread_flag(selected, TIF_MEMDIE);
 		rem -= selected_tasksize;
 	}
 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
-	spin_unlock(&lowmem_lock);
 	return rem;
 }
 
