@@ -1216,9 +1216,13 @@ static struct lcdclk_prop lcdclk_prop[] = {
 		.name = "40 Hz",
 		.clk = 33280000,
 	},
+	[5] = {
+		.name = "35 Hz",
+		.clk = 30720000,
+	},
 };
 
-static int lcdclk_usr = 1; /* 60 Hz */
+static int lcdclk_usr = -1; /* Default */
 static unsigned int custom_lcdclk = 49920000;
 
 static void lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
@@ -1271,7 +1275,7 @@ static ssize_t lcdclk_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	}
 
 	ret = sscanf(buf, "%d", &tmp);
-	if (!ret || (tmp < -2) || (tmp > 4)) {
+	if (!ret || (tmp < -2) || (tmp > ARRAY_SIZE(lcdclk_prop))) {
 		  pr_err("[MCDE] Bad cmd\n");
 		  return -EINVAL;
 	}
