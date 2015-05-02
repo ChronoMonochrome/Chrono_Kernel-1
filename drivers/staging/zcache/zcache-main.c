@@ -1590,8 +1590,10 @@ struct cleancache_ops *zcache_cleancache_register_ops(void)
 	return old_ops;
 }
 
+#ifdef CONFIG_FRONTSWAP
 /* a single tmem poolid is used for all frontswap "types" (swapfiles) */
 static int zcache_frontswap_poolid __read_mostly = -1;
+#endif
 
 /*
  * Swizzling increases objects per swaptype, increasing tmem concurrency
@@ -1621,6 +1623,7 @@ static void unswiz(struct tmem_oid oid, u32 index,
 }
 #endif
 
+#ifdef CONFIG_FRONTSWAP
 static int zcache_frontswap_put_page(unsigned type, pgoff_t offset,
 					struct page *page)
 {
@@ -1720,6 +1723,7 @@ struct frontswap_ops *zcache_frontswap_register_ops(void)
 
 	return old_ops;
 }
+#endif /* CONFIG_FRONTSWAP */
 
 /*
  * zcache initialization
@@ -1895,6 +1899,7 @@ static int zcache_init(void)
 		if (old_ops != NULL)
 			pr_warn("%s: cleancache_ops overridden\n", namestr);
 	}
+#ifdef CONFIG_FRONTSWAP
 	if (zcache_enabled && !disable_frontswap) {
 		struct frontswap_ops *old_ops;
 
@@ -1914,6 +1919,7 @@ static int zcache_init(void)
 			pr_warn("%s: frontswap_ops overridden\n", namestr);
 		}
 	}
+#endif /* CONFIG_FRONTSWAP */
 	if (ramster_enabled)
 		ramster_init(!disable_cleancache, !disable_frontswap,
 				frontswap_has_exclusive_gets,
