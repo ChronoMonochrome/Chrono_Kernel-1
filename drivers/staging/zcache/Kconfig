@@ -1,7 +1,7 @@
 config ZCACHE
 	tristate "Dynamic compression of swap pages and clean pagecache pages"
-	depends on CRYPTO=y && SWAP=y && CLEANCACHE && FRONTSWAP
-	select CRYPTO_LZO
+	depends on CRYPTO=y && SWAP=y && (CLEANCACHE || FRONTSWAP)
+	select CRYPTO_LZ4
 	default n
 	help
 	  Zcache doubles RAM efficiency while providing a significant
