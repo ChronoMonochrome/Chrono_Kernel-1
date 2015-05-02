@@ -84,7 +84,7 @@ static char *namestr __read_mostly = "zcache";
 
 /* crypto API for zcache  */
 #ifdef CONFIG_ZCACHE_MODULE
-static char *zcache_comp_name = "lzo";
+static char *zcache_comp_name = "lz4";
 #else
 #define ZCACHE_COMP_NAME_SZ CRYPTO_MAX_ALG_NAME
 static char zcache_comp_name[ZCACHE_COMP_NAME_SZ] __read_mostly;
@@ -1819,7 +1819,7 @@ static int zcache_comp_init(void)
 		}
 	}
 	if (!ret)
-		strcpy(zcache_comp_name, "lzo");
+		strcpy(zcache_comp_name, "lz4");
 	ret = crypto_has_comp(zcache_comp_name, 0, 0);
 	if (!ret) {
 		ret = 1;
