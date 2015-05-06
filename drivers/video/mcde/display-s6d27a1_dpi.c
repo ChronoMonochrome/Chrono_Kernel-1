@@ -1058,19 +1058,9 @@ static void est_test_timer_func(unsigned long data)
 }
 #endif
 #endif
-
-static bool s6d = 0;
-bool is_s6d(void)
-{
-	return s6d;
-}
-
 static int __devinit s6d27a1_dpi_spi_probe(struct spi_device *spi)
 {
 	int ret = 0;
-
-	s6d = 1;
-	
 	struct s6d27a1_dpi *lcd = container_of(spi->dev.driver,
 					 struct s6d27a1_dpi, spi_drv.driver);
 
