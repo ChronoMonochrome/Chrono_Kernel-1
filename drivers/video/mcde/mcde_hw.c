@@ -1244,9 +1244,16 @@ static DECLARE_WORK(lcdclk_work, lcdclk_thread);
 #define ATTR_RW(_name)	\
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0644, _name##_show, _name##_store);
 
+extern bool is_s6d(void);
+
 static ssize_t lcdclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	int i;
+
+        if (is_s6d())
+                sprintf(buf, "%sLCD type: %s\n", buf,  "S6D27A1");
+        else
+                sprintf(buf, "%sLCD type: %s\n", buf,  "WS2401");
 
 	sprintf(buf, "%s[-2][%s] Custom\n", buf, lcdclk_usr == -2 ? "*" : " ");
 	sprintf(buf, "%s[-1][%s] Default (60 Hz)\n", buf, lcdclk_usr == -1 ? "*" : " ");
