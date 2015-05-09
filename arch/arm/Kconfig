@@ -765,7 +765,7 @@ source kernel/Kconfig.preempt
 
 config HZ
 	int
-	default 100
+	default 300
 
 config THUMB2_KERNEL
 	bool "Compile the kernel in Thumb-2 mode (EXPERIMENTAL)"
