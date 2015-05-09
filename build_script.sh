@@ -47,13 +47,11 @@ inst(){
     cp -f $BUILD/../system/lib/modules/param.ko $BUILD/../ramdisk/modules/param.ko
     cp -f $BUILD/../system/lib/modules/j4fs.ko $BUILD/../ramdisk/modules/j4fs.ko
     mv -f $BUILD/../system/lib/modules/bfq-iosched.ko $BUILD/../ramdisk/modules/autoload/bfq-iosched.ko
-    mv -f $BUILD/../system/lib/modules/cpufreq_interactive.ko 
-$BUILD/../ramdisk/modules/autoload/cpufreq_interactive.ko
+    mv -f $BUILD/../system/lib/modules/cpufreq_interactive.ko $BUILD/../ramdisk/modules/autoload/cpufreq_interactive.ko
     #mv -f $BUILD/../system/lib/modules/cpufreq_dynamic.ko $BUILD/../ramdisk/modules/autoload/cpufreq_dynamic.ko
     mv -f $BUILD/../system/lib/modules/cpufreq_zenx.ko $BUILD/../ramdisk/modules/autoload/cpufreq_zenx.ko
-    mv -f $BUILD/../system/lib/modules/zcache.ko $BUILD/../ramdisk/modules/autoload/zcache.ko
-    mv -f $BUILD/../system/lib/modules/cpufreq_ondemandplus.ko 
-$BUILD/../ramdisk/modules/autoload/cpufreq_ondemandplus.ko
+    #mv -f $BUILD/../system/lib/modules/zcache.ko $BUILD/../ramdisk/modules/autoload/zcache.ko
+    mv -f $BUILD/../system/lib/modules/cpufreq_ondemandplus.ko $BUILD/../ramdisk/modules/autoload/cpufreq_ondemandplus.ko
     mv -f $BUILD/../system/lib/modules/logger.ko $BUILD/../system/lib/modules/autoload/logger.ko
     cp -f arch/arm/boot/zImage ../boot.img
     if [ "$1" == "codina" ] ; then
