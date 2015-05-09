@@ -255,6 +255,30 @@ static void print_vmode(struct device *dev, struct mcde_video_mode *vmode)
 */
 }
 
+/* 
+ * ChronoMonochrome: provide struct for custom videomode,
+ * but have it disabled by default
+ */
+static struct custom_videomode_t
+{
+	bool interlaced;
+	u32 hsw;
+	u32 hbp;
+	u32 hfp;
+	u32 vsw;
+	u32 vbp;
+	u32 vfp;
+} custom_videomode = 
+{
+	.interlaced = false,
+	.hsw = 0,
+	.hbp = 0,
+	.hfp = 0,
+ 	.vsw = 0,
+ 	.vbp = 0,
+ 	.vfp = 0,
+};
+
 static int try_video_mode(struct mcde_display_device *ddev,
 				struct mcde_video_mode *video_mode)
 {
@@ -272,13 +296,30 @@ static int try_video_mode(struct mcde_display_device *ddev,
 	    (video_mode->xres == VMODE_YRES &&
 		video_mode->yres == VMODE_XRES)) {
 
+	if (!custom_videomode.hsw)
 		video_mode->hsw		= pdata->video_mode.hsw;
-		video_mode->hbp		= pdata->video_mode.hbp;
-		video_mode->hfp		= pdata->video_mode.hfp;
-		video_mode->vsw		= pdata->video_mode.vsw;
-		video_mode->vbp		= pdata->video_mode.vbp;
-		video_mode->vfp		= pdata->video_mode.vfp;
-		video_mode->interlaced	= pdata->video_mode.interlaced;
+	else video_mode->hsw = custom_videomode.hsw;
+		
+	if (!custom_videomode.hfp)
+        video_mode->hfp         = pdata->video_mode.hfp;
+    else video_mode->hfp = custom_videomode.hfp;
+		
+	if (!custom_videomode.vsw)
+        video_mode->vsw         = pdata->video_mode.vsw;
+    else video_mode->vsw = custom_videomode.vsw;
+		
+    if (!custom_videomode.vbp)
+        video_mode->vbp         = pdata->video_mode.vbp;
+    else video_mode->vbp = custom_videomode.vbp;
+ 		
+    if (!custom_videomode.vfp)
+        video_mode->vfp         = pdata->video_mode.vfp;
+    else video_mode->vfp = custom_videomode.vfp;
+		
+	if (!custom_videomode.interlaced)
+        video_mode->interlaced        = pdata->video_mode.interlaced;
+    else video_mode->interlaced = custom_videomode.interlaced;
+    
 		video_mode->pixclock	= pdata->video_mode.pixclock;
 		/* +445681 display padding */
 		video_mode->xres_padding = ddev->x_res_padding;
@@ -866,6 +907,86 @@ out:
 }
 static DEVICE_ATTR(mcde_screenon_opp, 0644,
 		ws2401_sysfs_show_opp, ws2401_sysfs_store_opp);
+		
+static ssize_t ws2401_sysfs_show_custom_videomode(struct device *dev,
+				      struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, 
+                "hsw=%d\n"
+                "hbp=%d\n"
+		"hfp=%d\n"
+                "vsw=%d\n"
+                "vbp=%d\n"
+                "vfp=%d\n",
+                "interlaced=%d\n",
+			    custom_videomode.hsw,
+			    custom_videomode.hbp,
+                custom_videomode.hfp,
+                custom_videomode.vsw,
+                custom_videomode.vbp,
+                custom_videomode.vfp,
+                custom_videomode.interlaced);
+}
+
+static ssize_t ws2401_sysfs_store_custom_videomode(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t len)
+{
+	int val;
+  
+  	if (!strncmp(&buf[0], "hsw=", 4))
+	{
+		sscanf(&buf[4], "%d", &val);
+		custom_videomode.hsw = val;
+		return len;
+	}
+
+  	if (!strncmp(&buf[0], "hbp=", 4))
+	{
+		sscanf(&buf[4], "%d", &val);
+		custom_videomode.hbp = val;
+		return len;
+	}
+	
+	if (!strncmp(&buf[0], "hfp=", 4))
+	{
+		sscanf(&buf[4], "%d", &val);
+		custom_videomode.hfp = val;
+		return len;
+	}
+	
+	if (!strncmp(&buf[0], "vsw=", 4))
+	{
+		sscanf(&buf[4], "%d", &val);
+		custom_videomode.vsw = val;
+		return len;
+	}
+	
+	if (!strncmp(&buf[0], "vbp=", 4))
+	{
+		sscanf(&buf[4], "%d", &val);
+		custom_videomode.hbp = val;
+		return len;
+	}
+	
+	if (!strncmp(&buf[0], "vfp=", 4))
+	{
+		sscanf(&buf[4], "%d", &val);
+		custom_videomode.vfp = val;
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "interlaced=", 11))
+	{
+		sscanf(&buf[11], "%d", &val);
+		custom_videomode.interlaced = val;
+		return len;
+	}
+
+	return -EINVAL;
+}
+static DEVICE_ATTR(custom_videomode, 0644,
+		ws2401_sysfs_show_custom_videomode, ws2401_sysfs_store_custom_videomode);
 
 static ssize_t sysfs_show_display_settings(struct device *dev,
 				      struct device_attribute *attr, char *buf)
@@ -1148,6 +1269,10 @@ static int __devinit ws2401_dpi_mcde_probe(
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add mcde_screenon_opp sysfs entries\n");
 
+    ret = device_create_file(&(ddev->dev), &dev_attr_custom_videomode);	
+	if (ret < 0)
+		dev_err(&(ddev->dev), "failed to add custom_videomode sysfs entries\n");
+
 	ret = device_create_file(&(ddev->dev), &dev_attr_display_settings);	
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add display_settings sysfs entries\n");
@@ -1385,3 +1510,4 @@ module_exit(ws2401_dpi_exit);
 MODULE_AUTHOR("Gareth Phillips <gareth.phillips@samsung.com>");
 MODULE_DESCRIPTION("WideChips WS2401 DPI Driver");
 MODULE_LICENSE("GPL");
+
