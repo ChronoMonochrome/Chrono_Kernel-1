@@ -85,7 +85,7 @@ static spinlock_t speedchange_cpumask_lock;
  * Tunables start
  */
 
-#define DEFAULT_TIMER_RATE (30 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
 static unsigned long timer_rate;
 
 #define DEFAULT_UP_THRESHOLD 95
