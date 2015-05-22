@@ -246,8 +246,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer
-HOSTCXXFLAGS = -Ofast
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -pipe
+HOSTCXXFLAGS = -Ofast -pipe
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -366,16 +366,19 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing -fno-common \
+		   -fno-strict-aliasing \
+                   -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -fno-delete-null-pointer-checks \
 		   -funsafe-math-optimizations \
-		   -ftree-vectorize -pipe -mthumb \
+		   -ftree-vectorize \
+                   -pipe \
+                   -mthumb \
 		   -mcpu=cortex-a9 \
 		   -mtune=cortex-a9 \
 		   -mfloat-abi=softfp \
-		   -mfpu=vfpv3 \
+		   -mfpu=neon-fp16 \
 		   -mvectorize-with-neon-double \
 		   -DNDEBUG \
 		   -fsection-anchors \
@@ -391,7 +394,15 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -ftracer \
 		   -fipa-pta \
 		   -fmodulo-sched \
-		   -fmodulo-sched-allow-regmoves
+		   -fmodulo-sched-allow-regmoves \
+                   -ffunction-sections \
+                   -fdata-sections \
+                   -frerun-cse-after-loop \
+                   -fomit-frame-pointer \
+                   -Wno-error=unused-parameter \
+                   -Wno-error=unused-but-set-variable \
+                   -Wno-error=maybe-uninitialized \
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
