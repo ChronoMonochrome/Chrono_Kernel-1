@@ -1454,24 +1454,25 @@ static void do_oc_ddr(int new_val_)
 
 /*--------------------------------------------------------*/
 
-static u32 __read_mostly liveopp_varm_us = 50;
+static u32 __read_mostly liveopp_delay_in  = 60;
+static u32 __read_mostly liveopp_delay_out = 30;
 
 static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
 //	| CLK            | PLL       | VDD | VBB | Enable 
-	{ 200000,  199680, 0x0005011A, 0x1a, 0xDB, 1},
-	{ 300000,  299520, 0x00050127, 0x1a, 0xDB, 1},
-	{ 400000,  399360, 0x00050134, 0x1a, 0xDB, 1},
-	{ 500000,  499200, 0x00050141, 0x20, 0xDB, 0},
-	{ 600000,  599040, 0x0005014E, 0x20, 0xDB, 1},
-	{ 700000,  698880, 0x0005015B, 0x24, 0xDB, 0},
-	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 1},
-	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1},
-	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1},
-	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 1},
-	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1},
-	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1},
-	{1220000, 1221120, 0x0005019f, 0x37, 0x8F, 1},
-	{1245000, 1244160, 0x000501A2, 0x37, 0x8F, 1},
+	{ 150000,  153600, 0x00010104, 0x1a, 0xDB, 1},
+	{ 200000,  192000, 0x00010105, 0x1a, 0xDB, 1},
+	{ 300000,  307200, 0x00010108, 0x1a, 0xDB, 1},
+	{ 400000,  422400, 0x0001010B, 0x1a, 0xDB, 1},
+	{ 500000,  499200, 0x0001010D, 0x20, 0xDB, 0},
+	{ 600000,  614400, 0x00010110, 0x20, 0xDB, 1},
+	{ 700000,  691200, 0x00010112, 0x24, 0xDB, 0},
+	{ 800000,  806400, 0x00010115, 0x24, 0xDB, 1},
+	{1000000,  998400, 0x0001011A, 0x31, 0x8F, 1},
+	{1100000, 1075200, 0x0001011C, 0x36, 0x8F, 1},
+	{1150000, 1152000, 0x0001011E, 0x36, 0x8F, 1},
+	{1200000, 1190400, 0x0001011F, 0x37, 0x8F, 1},
+	{1230000, 1228800, 0x00010120, 0x37, 0x8F, 1},
+	{1267000, 1267200, 0x00010121, 0x37, 0x8F, 1},
 };
 
 static const char *armopp_name[] = 
@@ -1722,17 +1723,17 @@ static void liveopp_update_cpuhw(struct liveopp_arm_table table, int last_idx, i
 			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &table.varm_raw, 1);
 
 		mb();
-		udelay(liveopp_varm_us);
+		udelay(liveopp_delay_in);
 
 		db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
 
 		mb();
-		udelay(5);
+		udelay(liveopp_delay_out);
 	} else {
 		db8500_prcmu_writel(PRCMU_PLLARM_REG, table.pllarm_raw);
 
 		mb();
-		udelay(5);
+		udelay(liveopp_delay_in);
 
 		if (update_vdd)
 			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VARM_SEL1, &table.varm_raw, 1);
@@ -1740,7 +1741,7 @@ static void liveopp_update_cpuhw(struct liveopp_arm_table table, int last_idx, i
 			prcmu_abb_write(AB8500_REGU_CTRL2, AB8500_VBBX_REG,  &table.vbbx_raw, 1);
 
 		mb();
-		udelay(liveopp_varm_us);
+		udelay(liveopp_delay_out);
 	}
 
 out:
@@ -2183,18 +2184,31 @@ static void pllddr_late_resume(struct early_suspend *h)
 	}
 }
 
-static ssize_t varm_delay_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
+static ssize_t liveopp_delay_in_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
 {
-	return sprintf(buf, "%u usecs\n", liveopp_varm_us);
+	return sprintf(buf, "%u usecs\n", liveopp_delay_in);
 }
 
-static ssize_t varm_delay_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)	
+static ssize_t liveopp_delay_in_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)	
 {
-	sscanf(buf, "%u", &liveopp_varm_us);
+	sscanf(buf, "%u", &liveopp_delay_in);
 
 	return count;
 }
-ATTR_RW(varm_delay);
+ATTR_RW(liveopp_delay_in);
+
+static ssize_t liveopp_delay_out_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
+{
+	return sprintf(buf, "%u usecs\n", liveopp_delay_out);
+}
+
+static ssize_t liveopp_delay_out_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)	
+{
+	sscanf(buf, "%u", &liveopp_delay_out);
+
+	return count;
+}
+ATTR_RW(liveopp_delay_out);
 
 static ssize_t pllddr_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -2489,7 +2503,8 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_pllclk_interface.attr,
 	&arm_varm_interface.attr,
 	&arm_vbb_interface.attr,
-	&varm_delay_interface.attr,
+	&liveopp_delay_in_interface.attr,
+	&liveopp_delay_out_interface.attr,
 	&arm_step00_interface.attr,
 	&arm_step01_interface.attr,
 	&arm_step02_interface.attr,
