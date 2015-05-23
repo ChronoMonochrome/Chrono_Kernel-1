@@ -376,7 +376,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
                    -mthumb \
 		   -mcpu=cortex-a9 \
 		   -mtune=cortex-a9 \
-		   -mfloat-abi=hard \
+		   -mfloat-abi=soft \
 		   -mfpu=neon-fp16 \
 		   -mvectorize-with-neon-double \
 		   -DNDEBUG \

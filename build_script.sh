@@ -1,14 +1,13 @@
+SOURCE=~/kernel_build/chrono_kernel
+BUILD=~/kernel_build/obj
+
+clean(){
+    make O=$BUILD mkproper
+    make O=$BUILD clean
+}
+
 compile(){
-    export USE_CCACHE=1
-    export CCACHE_DIR=~/.ccache
-    #PATH=/home/chrono/Kernels/gcc_4.9/bin:$PATH
-    SOURCE=~/kernel_build/chrono_kernel
-    BUILD=~/kernel_build/obj_noselinux
     cd $SOURCE
-    if [ "$1" == "clean" ] ; then
-        make O=$BUILD mkproper
-        make O=$BUILD clean
-    fi
     if [ "$1" == "config" ] ; then
         make O=$BUILD codina_defconfig
     fi
@@ -18,7 +17,7 @@ compile(){
     
     make O=$BUILD \
     ARCH=arm \
-    CROSS_COMPILE="/home/chrono/kernel_build/novatp_arm-eabi-4.9-master/bin/arm-eabi-" \
+    CROSS_COMPILE="/home/chrono/kernel_build/arm-cortex_a9-linux-gnueabihf-linaro_4.9.3-2015.03/bin/arm-cortex_a9-linux-gnueabihf-" \
     -j5 -k
 }
 send() {
@@ -28,8 +27,6 @@ dump_config() {
     cp $BUILD/.config $SOURCE/arch/arm/configs/codina_defconfig
 }
 inst(){
-    SOURCE=~/kernel_build/chrono_kernel
-    BUILD=~/kernel_build/obj_noselinux
     rm $BUILD/../osfiles/osfiles_install.sh
     if [ "$1" == "codina" ] ; then
         ln $BUILD/../osfiles_install_codina.sh $BUILD/../osfiles/osfiles_install.sh
@@ -48,9 +45,7 @@ inst(){
     cp -f $BUILD/../system/lib/modules/j4fs.ko $BUILD/../ramdisk/modules/j4fs.ko
     mv -f $BUILD/../system/lib/modules/bfq-iosched.ko $BUILD/../ramdisk/modules/autoload/bfq-iosched.ko
     mv -f $BUILD/../system/lib/modules/cpufreq_interactive.ko $BUILD/../ramdisk/modules/autoload/cpufreq_interactive.ko
-    #mv -f $BUILD/../system/lib/modules/cpufreq_dynamic.ko $BUILD/../ramdisk/modules/autoload/cpufreq_dynamic.ko
     mv -f $BUILD/../system/lib/modules/cpufreq_zenx.ko $BUILD/../ramdisk/modules/autoload/cpufreq_zenx.ko
-    #mv -f $BUILD/../system/lib/modules/zcache.ko $BUILD/../ramdisk/modules/autoload/zcache.ko
     mv -f $BUILD/../system/lib/modules/cpufreq_ondemandplus.ko $BUILD/../ramdisk/modules/autoload/cpufreq_ondemandplus.ko
     mv -f $BUILD/../system/lib/modules/logger.ko $BUILD/../system/lib/modules/autoload/logger.ko
     cp -f arch/arm/boot/zImage ../boot.img
@@ -86,8 +81,3 @@ upload() {
     
 }
 
-compile config
-inst codina
-inst codinap
-upload codina
-upload codinap
