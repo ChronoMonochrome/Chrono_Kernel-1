@@ -370,14 +370,13 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
                    -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks \
 		   -funsafe-math-optimizations \
 		   -ftree-vectorize \
                    -pipe \
                    -mthumb \
 		   -mcpu=cortex-a9 \
 		   -mtune=cortex-a9 \
-		   -mfloat-abi=softfp \
+		   -mfloat-abi=hard \
 		   -mfpu=neon-fp16 \
 		   -mvectorize-with-neon-double \
 		   -DNDEBUG \
@@ -386,22 +385,44 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fivopts \
 		   -ftree-loop-im \
 		   -ftree-loop-ivcanon \
+                   -ftree-coalesce-inlined-vars \
+		   -fvect-cost-model=unlimited \
+		   -fuse-linker-plugin \
+		   -ffat-lto-objects \
+		   -fuse-ld=gold \
+		   -funroll-loops \
 		   -funswitch-loops \
 		   -frename-registers \
 		   -fgcse-sm \
 		   -fgcse-las \
+		   -fgcse-after-reload \
+		   -fdevirtualize-speculatively \
+		   -fira-region=all \
+                   -fsched-pressure \
+		   -fsched-spec-load \
+ 		   -fsched-spec-load-dangerous \
 		   -fweb \
 		   -ftracer \
 		   -fipa-pta \
+                   -fno-check-data-deps \
+                   -ftree-loop-distribution \
+		   -ftree-loop-if-convert \
 		   -fmodulo-sched \
 		   -fmodulo-sched-allow-regmoves \
                    -ffunction-sections \
                    -fdata-sections \
-                   -frerun-cse-after-loop \
                    -fomit-frame-pointer \
                    -Wno-error=unused-parameter \
                    -Wno-error=unused-but-set-variable \
                    -Wno-error=maybe-uninitialized \
+		   -fno-keep-static-consts \
+		   -fmerge-all-constants \
+		  --param ggc-min-expand=70 \
+ 		  --param ggc-min-heapsize=524288 \
+ 		  --param max-reload-search-insns=200 \
+ 		  --param max-cselib-memory-locations=1000 \
+ 		  --param max-sched-ready-insns=200 \
+ 		  --param loop-invariant-max-bbs-in-loop="50000"
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
