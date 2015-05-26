@@ -34,20 +34,18 @@
 
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/delay.h>
 #include <linux/mm.h>
 #include <linux/oom.h>
 #include <linux/sched.h>
 #include <linux/swap.h>
-#include <linux/ratelimit.h>
 #include <linux/rcupdate.h>
 #include <linux/notifier.h>
-#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
-#include <linux/string.h>
-#endif
+
+#define CREATE_TRACE_POINTS
+#include "trace/lowmemorykiller.h"
 
 static uint32_t lowmem_debug_level = 1;
-static int lowmem_adj[6] = {
+static short lowmem_adj[6] = {
 	0,
 	1,
 	6,
@@ -62,60 +60,12 @@ static int lowmem_minfree[6] = {
 };
 static int lowmem_minfree_size = 4;
 
-#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
-#define MAX_NOT_KILLABLE_PROCESSES	25
-
-/*
- * Data struct for the management of not killable processes
- */
-struct donotkill {
-	uint enabled;
-	char *names[MAX_NOT_KILLABLE_PROCESSES];
-	int names_count;
-};
-
-static struct donotkill donotkill_proc;		/* User processes to preserve from killing */
-
-/*
- * Checks if a process name is inside a list of processes to be preserved from killing
- */
-static bool is_in_donotkill_list(char *proc_name, struct donotkill *donotkill_proc)
-{
-	int i = 0;
-
-	/* If the do not kill feature is enabled and the process names to be preserved
-	 * is not empty, then check if the passed process name is contained inside it */
-	if (donotkill_proc->enabled && donotkill_proc->names_count > 0) {
-		for (i = 0; i < donotkill_proc->names_count; i++) {
-			if (strstr(donotkill_proc->names[i], proc_name) != NULL)
-				return true; /* The process must be preserved from killing */
-		}
-	}
-
-	return false; /* The process is not contained inside the process names list */
-}
-
-/*
- * Checks if a process name is inside a list of user processes to be preserved from killing
- */
-static bool is_in_donotkill_proc_list(char *proc_name)
-{
-	return is_in_donotkill_list(proc_name, &donotkill_proc);
-}
-#endif
-
 static unsigned long lowmem_deathpending_timeout;
 
 #define lowmem_print(level, x...)			\
 	do {						\
 		if (lowmem_debug_level >= (level))	\
-			pr_err(x);			\
-	} while (0)
-
-#define lowmem_print_ratelimited(level, x...)			\
-	do {						\
-		if (lowmem_debug_level >= (level))	\
-			pr_err_ratelimited(x);			\
+			pr_info(x);			\
 	} while (0)
 
 static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
@@ -125,10 +75,10 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	int rem = 0;
 	int tasksize;
 	int i;
-	int min_score_adj = OOM_SCORE_ADJ_MAX + 1;
+	short min_score_adj = OOM_SCORE_ADJ_MAX + 1;
 	int minfree = 0;
 	int selected_tasksize = 0;
-	int selected_oom_score_adj;
+	short selected_oom_score_adj;
 	int array_size = ARRAY_SIZE(lowmem_adj);
 	int other_free = global_page_state(NR_FREE_PAGES) - totalreserve_pages;
 	int other_file = global_page_state(NR_FILE_PAGES) -
@@ -146,7 +96,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		}
 	}
 	if (sc->nr_to_scan > 0)
-		lowmem_print(3, "lowmem_shrink %lu, %x, ofree %d %d, ma %d\n",
+		lowmem_print(3, "lowmem_shrink %lu, %x, ofree %d %d, ma %hd\n",
 				sc->nr_to_scan, sc->gfp_mask, other_free,
 				other_file, min_score_adj);
 	rem = global_page_state(NR_ACTIVE_ANON) +
@@ -163,7 +113,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	rcu_read_lock();
 	for_each_process(tsk) {
 		struct task_struct *p;
-		int oom_score_adj;
+		short oom_score_adj;
 
 		if (tsk->flags & PF_KTHREAD)
 			continue;
@@ -194,56 +144,33 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			    tasksize <= selected_tasksize)
 				continue;
 		}
-
-#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
-		if (is_in_donotkill_proc_list(p->comm)) {
-			lowmem_print_ratelimited(2, "[lmk] the process '%s' is inside the donotkill_proc_names\n", p->comm);
-			lowmem_print_ratelimited(2, "[lmk] set oom_score_adj from %d to %d for (%s)\n", p->signal->oom_score_adj, 0, p->comm);
-			p->signal->oom_score_adj = 0;
-			continue;
-		}
-#endif
-
 		selected = p;
 		selected_tasksize = tasksize;
 		selected_oom_score_adj = oom_score_adj;
-		lowmem_print(2, "select '%s' (%d), adj %d, size %d, to kill\n",
+		lowmem_print(2, "select '%s' (%d), adj %hd, size %d, to kill\n",
 			     p->comm, p->pid, oom_score_adj, tasksize);
 	}
 	if (selected) {
-#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
-		if (!is_in_donotkill_proc_list(selected->comm)) {
-#endif
-			lowmem_print(1, "Killing '%s' (%d), adj %d,\n" \
+		long cache_size = other_file * (long)(PAGE_SIZE / 1024);
+		long cache_limit = minfree * (long)(PAGE_SIZE / 1024);
+		long free = other_free * (long)(PAGE_SIZE / 1024);
+		trace_lowmemory_kill(selected, cache_size, cache_limit, free);
+		lowmem_print(1, "Killing '%s' (%d), adj %hd,\n" \
 				"   to free %ldkB on behalf of '%s' (%d) because\n" \
-				"   cache %ldkB is below limit %ldkB for oom_score_adj %d\n" \
+				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n" \
 				"   Free memory is %ldkB above reserved\n",
 			     selected->comm, selected->pid,
 			     selected_oom_score_adj,
 			     selected_tasksize * (long)(PAGE_SIZE / 1024),
 			     current->comm, current->pid,
-			     other_file * (long)(PAGE_SIZE / 1024),
-			     minfree * (long)(PAGE_SIZE / 1024),
+			     cache_size, cache_limit,
 			     min_score_adj,
-			     other_free * (long)(PAGE_SIZE / 1024));
-			lowmem_deathpending_timeout = jiffies + HZ;
-			send_sig(SIGKILL, selected, 0);
-			set_tsk_thread_flag(selected, TIF_MEMDIE);
-			rem -= selected_tasksize;
-#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
-		} else {
-			lowmem_print(1, "[lmk] the process '%s' is inside the donotkill_proc_names\n", selected->comm);
-			lowmem_print(2, "[lmk] set oom_score_adj from %d to %d for (%s)\n", selected->signal->oom_score_adj, 0, selected->comm);
-			selected->signal->oom_score_adj = 0;
-			rcu_read_unlock();
-			/* give the system time to free up the memory */
-			msleep_interruptible(20);
-
-		}
-
-#endif
+			     free);
+		lowmem_deathpending_timeout = jiffies + HZ;
+		send_sig(SIGKILL, selected, 0);
+		set_tsk_thread_flag(selected, TIF_MEMDIE);
+		rem -= selected_tasksize;
 	}
-
 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
@@ -267,7 +194,7 @@ static void __exit lowmem_exit(void)
 }
 
 #ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES
-static int lowmem_oom_adj_to_oom_score_adj(int oom_adj)
+static short lowmem_oom_adj_to_oom_score_adj(short oom_adj)
 {
 	if (oom_adj == OOM_ADJUST_MAX)
 		return OOM_SCORE_ADJ_MAX;
@@ -278,8 +205,8 @@ static int lowmem_oom_adj_to_oom_score_adj(int oom_adj)
 static void lowmem_autodetect_oom_adj_values(void)
 {
 	int i;
-	int oom_adj;
-	int oom_score_adj;
+	short oom_adj;
+	short oom_score_adj;
 	int array_size = ARRAY_SIZE(lowmem_adj);
 
 	if (lowmem_adj_size < array_size)
@@ -337,7 +264,7 @@ static struct kernel_param_ops lowmem_adj_array_ops = {
 static const struct kparam_array __param_arr_adj = {
 	.max = ARRAY_SIZE(lowmem_adj),
 	.num = &lowmem_adj_size,
-	.ops = &param_ops_int,
+	.ops = &param_ops_short,
 	.elemsize = sizeof(lowmem_adj[0]),
 	.elem = lowmem_adj,
 };
@@ -348,21 +275,15 @@ module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
 __module_param_call(MODULE_PARAM_PREFIX, adj,
 		    &lowmem_adj_array_ops,
 		    .arr = &__param_arr_adj,
-		    S_IRUGO | S_IWUSR, 0664);
-__MODULE_PARM_TYPE(adj, "array of int");
+		    S_IRUGO | S_IWUSR, -1);
+__MODULE_PARM_TYPE(adj, "array of short");
 #else
-module_param_array_named(adj, lowmem_adj, int, &lowmem_adj_size,
+module_param_array_named(adj, lowmem_adj, short, &lowmem_adj_size,
 			 S_IRUGO | S_IWUSR);
 #endif
 module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
 			 S_IRUGO | S_IWUSR);
 module_param_named(debug_level, lowmem_debug_level, uint, S_IRUGO | S_IWUSR);
-
-#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
-module_param_named(donotkill_proc, donotkill_proc.enabled, uint, S_IRUGO | S_IWUSR);
-module_param_array_named(donotkill_proc_names, donotkill_proc.names, charp,
-			 &donotkill_proc.names_count, S_IRUGO | S_IWUSR);
-#endif
 
 module_init(lowmem_init);
 module_exit(lowmem_exit);
