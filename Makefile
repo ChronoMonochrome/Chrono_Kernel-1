@@ -246,8 +246,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -pipe
-HOSTCXXFLAGS = -Ofast -pipe
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fno-tree-vectorize  -fomit-frame-pointer -pipe
+HOSTCXXFLAGS = -Ofast -fno-tree-vectorize -pipe
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -371,21 +371,19 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -funsafe-math-optimizations \
-		   -ftree-vectorize \
+		   -fno-tree-vectorize \
+		   -fno-inline-functions \
                    -pipe \
                    -mthumb \
-		   -mcpu=cortex-a9 \
+		   -march=armv7-a \
 		   -mtune=cortex-a9 \
-		   -mfloat-abi=soft \
+		   -mfloat-abi=softfp \
 		   -mfpu=neon-fp16 \
 		   -mvectorize-with-neon-double \
 		   -DNDEBUG \
 		   -fsection-anchors \
 		   -funsafe-loop-optimizations \
 		   -fivopts \
-		   -ftree-loop-im \
-		   -ftree-loop-ivcanon \
-                   -ftree-coalesce-inlined-vars \
 		   -fvect-cost-model=unlimited \
 		   -fuse-linker-plugin \
 		   -ffat-lto-objects \
@@ -619,7 +617,7 @@ else
 KBUILD_CFLAGS	+= -Ofast
 endif
 
-LDFLAGS += -Ofast --sort-common
+LDFLAGS += -Ofast --as-needed --sort-common
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
