@@ -439,7 +439,7 @@ int cg2900_register_chip_driver(struct cg2900_id_callbacks *cb)
 		return -ENOMEM;
 	}
 
-	memcpy(&item->cb, cb, sizeof(cb));
+	memcpy(&item->cb, cb, sizeof(item->cb));
 	mutex_lock(&main_info->man_mutex);
 	list_add_tail(&item->list, &main_info->chip_handlers);
 	mutex_unlock(&main_info->man_mutex);
