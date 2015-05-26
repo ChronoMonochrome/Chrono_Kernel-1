@@ -17,7 +17,7 @@ compile(){
     
     make O=$BUILD \
     ARCH=arm \
-    CROSS_COMPILE="/home/chrono/kernel_build/arm-cortex_a9-linux-gnueabihf-linaro_4.9.3-2015.03/bin/arm-cortex_a9-linux-gnueabihf-" \
+    CROSS_COMPILE="/home/chrono/kernel_build/arm-eabi-5.1/bin/arm-eabi-" \
     -j5 -k
 }
 send() {
