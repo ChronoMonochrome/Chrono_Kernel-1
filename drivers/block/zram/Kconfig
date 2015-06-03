@@ -25,6 +25,13 @@ config ZRAM_LZ4_COMPRESS
 	  This option enables LZ4 compression algorithm support. Compression
 	  algorithm can be changed using `comp_algorithm' device attribute.
 
+config ZRAM_FOR_ANDROID
+       bool "Optimize zram behavior for android"
+       depends on ZRAM && ANDROID
+       default n
+       help
+         This option enables modified zram behavior optimized for android
+
 config ZRAM_DEBUG
 	bool "Compressed RAM block device debug support"
 	depends on ZRAM
