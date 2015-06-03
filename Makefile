@@ -371,7 +371,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -funsafe-math-optimizations \
-		   -ftree-vectorize \
+		   -fno-tree-vectorize \
                    -pipe \
                    -marm \
 		   -march=armv7-a \
@@ -401,8 +401,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -ftracer \
 		   -fipa-pta \
                    -fno-check-data-deps \
-                   -ftree-loop-distribution \
-		   -ftree-loop-if-convert \
 		   -fmodulo-sched \
 		   -fmodulo-sched-allow-regmoves \
                    -ffunction-sections \
