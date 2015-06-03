@@ -1614,6 +1614,34 @@ static int vbbn_uv(u8 raw)
 }
 #endif
 
+static void decode_vbbx(u8 vbbx_raw, int* vbbp, int* vbbn) {
+	int vsel;
+	//Vbbp
+	vsel = (vbbx_raw >> 4) & 0xF;
+	switch ((vsel & 0xC) >> 2) {
+		case 0: (*vbbp) = (vsel & 0x3) * 100;
+			break;
+		case 1: (*vbbp) = 400;
+			break;
+		case 2: (*vbbp) = -400;
+			break;
+		case 3: (*vbbp) = -400 + (vsel & 0x3) * 100;
+			break;
+	}
+	//Vbbn
+	vsel = vbbx_raw & 0xF;
+	switch ((vsel & 0xC) >> 2) {
+		case 0: (*vbbn) = (vsel & 0x3) * (-100);
+			break;
+		case 1: (*vbbn) = -400;
+			break;
+		case 2: (*vbbn) = (vsel & 0x3) * 100;
+			break;
+		case 3: (*vbbn) = 400;
+			break;
+	}
+}
+
 static int pllarm_freq(u32 raw)
 {
 	int multiple = raw & 0x000000FF;
@@ -1981,8 +2009,13 @@ ATTR_RO(prcmu_avs);
 
 static ssize_t arm_step_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf, int _index)
 {
+/*
 	if (_index >= ARRAY_SIZE(liveopp_arm))
 		return sprintf(buf, "Not available\n");
+*/
+
+	int vbbn, vbbp;
+	decode_vbbx(liveopp_arm[_index].vbbx_raw, &vbbp, &vbbn);
 	
 
 	sprintf(buf,   "[LiveOPP ARM Step %d]\n\n", _index);
@@ -1991,7 +2024,7 @@ static ssize_t arm_step_show(struct kobject *kobj, struct kobj_attribute *attr, 
 	sprintf(buf, "%sArmPLL:\t\t\t%#010x\n", buf, liveopp_arm[_index].pllarm_raw);
 	sprintf(buf, "%sVarm:\t\t\t%d uV (%#04x)\n", buf, varm_uv(liveopp_arm[_index].varm_raw),
 								     (int)liveopp_arm[_index].varm_raw);
-	sprintf(buf, "%sVbbx:\t\t\t%#04x\n", buf, (int)liveopp_arm[_index].vbbx_raw);
+	sprintf(buf, "%sVbbx(p, n):\t\t%d mV, %d mV (%#04x)\n", buf, vbbp, vbbn, (int)liveopp_arm[_index].vbbx_raw);
 	sprintf(buf, "%sEnable:\t\t\t%d\n", buf,  liveopp_arm[_index].enable);
 
 	return sprintf(buf, "%s\n", buf);
