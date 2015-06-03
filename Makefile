@@ -371,20 +371,18 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -funsafe-math-optimizations \
-		   -fno-tree-vectorize \
-		   -fno-inline-functions \
+		   -ftree-vectorize \
                    -pipe \
-                   -mthumb \
+                   -marm \
 		   -march=armv7-a \
 		   -mtune=cortex-a9 \
 		   -mfloat-abi=softfp \
 		   -mfpu=neon-fp16 \
-		   -mvectorize-with-neon-double \
+		   -mvectorize-with-neon-quad \
 		   -DNDEBUG \
 		   -fsection-anchors \
 		   -funsafe-loop-optimizations \
 		   -fivopts \
-		   -fvect-cost-model=unlimited \
 		   -fuse-linker-plugin \
 		   -ffat-lto-objects \
 		   -fuse-ld=gold \
@@ -409,18 +407,11 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fmodulo-sched-allow-regmoves \
                    -ffunction-sections \
                    -fdata-sections \
-                   -fomit-frame-pointer \
                    -Wno-error=unused-parameter \
                    -Wno-error=unused-but-set-variable \
                    -Wno-error=maybe-uninitialized \
 		   -fno-keep-static-consts \
-		   -fmerge-all-constants \
-		  --param ggc-min-expand=70 \
- 		  --param ggc-min-heapsize=524288 \
- 		  --param max-reload-search-insns=200 \
- 		  --param max-cselib-memory-locations=1000 \
- 		  --param max-sched-ready-insns=200 \
- 		  --param loop-invariant-max-bbs-in-loop="50000"
+		   -fmerge-all-constants 
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
