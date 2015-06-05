@@ -2,7 +2,7 @@ SOURCE=~/kernel_build/chrono_kernel
 BUILD=~/kernel_build/obj
 
 clean(){
-    make O=$BUILD mkproper
+    make O=$BUILD mrproper
     make O=$BUILD clean
 }
 
@@ -63,7 +63,11 @@ inst(){
     if [ "$2" == "light" ] ; then 
         zip -r -9 $KERNEL_NAME META-INF system ramdisk boot.img tmp
     else
-        zip -r -9 $KERNEL_NAME META-INF system ramdisk genfstab osfiles recovery boot.img tmp
+        if [ "$2" == "light2" ] ; then
+             zip -r -9 $KERNEL_NAME META-INF system ramdisk genfstab boot.img tmp
+        else
+             zip -r -9 $KERNEL_NAME META-INF system ramdisk genfstab osfiles recovery boot.img tmp
+        fi
     fi
 
     cd $SOURCE
