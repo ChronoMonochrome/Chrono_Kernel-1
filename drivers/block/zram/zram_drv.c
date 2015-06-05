@@ -990,8 +990,8 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
 	if (unlikely(!zram_meta_get(zram)))
 		goto error;
 
-	if (!valid_io_request(zram, bio->bi_iter.bi_sector,
-					bio->bi_iter.bi_size)) {
+	if (!valid_io_request(zram, bio->bi_sector,
+					bio->bi_size)) {
 		atomic64_inc(&zram->stats.invalid_io);
 		goto put_zram;
 	}
@@ -1001,9 +1001,9 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
 	return 0;
 put_zram:
 	zram_meta_put(zram);
+	return 0;
 error:
 	bio_io_error(bio);
-
 	return 0;
 }
 
