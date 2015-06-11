@@ -139,6 +139,9 @@
 #define D40_DREG_PRTYP		0x004
 #define D40_DREG_PRSME		0x008
 #define D40_DREG_PRSMO		0x00C
+#define D40_DREG_PRSM_MODE_MASK		0x3
+#define D40_DREG_PRSM_MODE_SECURE	0x1
+
 #define D40_DREG_PRMSE		0x010
 #define D40_DREG_PRMSO		0x014
 #define D40_DREG_PRMOE		0x018
@@ -306,8 +309,6 @@ struct d40_def_lcsp {
 enum d40_lli_flags {
 	LLI_ADDR_INC	= 1 << 0,
 	LLI_TERM_INT	= 1 << 1,
-	LLI_CYCLIC	= 1 << 2,
-	LLI_LAST_LINK	= 1 << 3,
 };
 
 void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
@@ -325,27 +326,42 @@ int d40_phy_sg_to_lli(struct scatterlist *sg,
 		      struct d40_phy_lli *lli,
 		      dma_addr_t lli_phys,
 		      u32 reg_cfg,
-		      struct stedma40_half_channel_info *info,
-		      struct stedma40_half_channel_info *otherinfo,
-		      unsigned long flags);
+		      bool cyclic,
+		      bool cyclic_int,
+		      struct stedma40_half_channel_info *info);
+
+int d40_phy_fill_lli(struct d40_phy_lli *lli,
+		     dma_addr_t data,
+		     u32 data_size,
+		     dma_addr_t next_lli,
+		     u32 reg_cfg,
+		     struct stedma40_half_channel_info *info,
+		     unsigned int flags);
 
 /* Logical channels */
+
+void d40_log_fill_lli(struct d40_log_lli *lli,
+		      dma_addr_t data,
+		      u32 data_size,
+		      u32 reg_cfg,
+		      u32 data_width,
+		      unsigned int flags);
 
 int d40_log_sg_to_lli(struct scatterlist *sg,
 		      int sg_len,
 		      dma_addr_t dev_addr,
 		      struct d40_log_lli *lli_sg,
 		      u32 lcsp13, /* src or dst*/
-		      u32 data_width1, u32 data_width2);
+		      u32 data_width);
 
 void d40_log_lli_lcpa_write(struct d40_log_lli_full *lcpa,
 			    struct d40_log_lli *lli_dst,
 			    struct d40_log_lli *lli_src,
-			    int next, unsigned int flags);
+			    int next, bool interrupt);
 
 void d40_log_lli_lcla_write(struct d40_log_lli *lcla,
 			    struct d40_log_lli *lli_dst,
 			    struct d40_log_lli *lli_src,
-			    int next, unsigned int flags);
+			    int next, bool interrupt);
 
 #endif /* STE_DMA40_LLI_H */
