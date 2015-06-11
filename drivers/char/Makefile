@@ -50,6 +50,11 @@ obj-$(CONFIG_NSC_GPIO)		+= nsc_gpio.o
 obj-$(CONFIG_GPIO_TB0219)	+= tb0219.o
 obj-$(CONFIG_TELCLOCK)		+= tlclk.o
 
+ifdef CONFIG_PHONET
+obj-$(CONFIG_U8500_SHRM)	+= shrm_char.o
+obj-$(CONFIG_MODEM_M6718_SPI)	+= m6718_modem_char.o
+endif
+
 obj-$(CONFIG_MWAVE)		+= mwave/
 obj-$(CONFIG_AGP)		+= agp/
 obj-$(CONFIG_PCMCIA)		+= pcmcia/
@@ -64,3 +69,5 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
 
 obj-$(CONFIG_JS_RTC)		+= js-rtc.o
 js-rtc-y = rtc.o
+# Module HWREG for HATS
+obj-$(CONFIG_HWREG)		+= hwreg/
