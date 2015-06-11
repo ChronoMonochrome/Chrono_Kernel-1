@@ -109,7 +109,7 @@ static int amba_legacy_resume(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_prepare(struct device *dev)
+int amba_pm_prepare(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -120,7 +120,7 @@ static int amba_pm_prepare(struct device *dev)
 	return ret;
 }
 
-static void amba_pm_complete(struct device *dev)
+void amba_pm_complete(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 
@@ -137,7 +137,7 @@ static void amba_pm_complete(struct device *dev)
 
 #ifdef CONFIG_SUSPEND
 
-static int amba_pm_suspend(struct device *dev)
+int amba_pm_suspend(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -155,7 +155,7 @@ static int amba_pm_suspend(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_suspend_noirq(struct device *dev)
+int amba_pm_suspend_noirq(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -171,7 +171,7 @@ static int amba_pm_suspend_noirq(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_resume(struct device *dev)
+int amba_pm_resume(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -189,7 +189,7 @@ static int amba_pm_resume(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_resume_noirq(struct device *dev)
+int amba_pm_resume_noirq(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -216,7 +216,7 @@ static int amba_pm_resume_noirq(struct device *dev)
 
 #ifdef CONFIG_HIBERNATE_CALLBACKS
 
-static int amba_pm_freeze(struct device *dev)
+int amba_pm_freeze(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -234,7 +234,7 @@ static int amba_pm_freeze(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_freeze_noirq(struct device *dev)
+int amba_pm_freeze_noirq(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -250,7 +250,7 @@ static int amba_pm_freeze_noirq(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_thaw(struct device *dev)
+int amba_pm_thaw(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -268,7 +268,7 @@ static int amba_pm_thaw(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_thaw_noirq(struct device *dev)
+int amba_pm_thaw_noirq(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -284,7 +284,7 @@ static int amba_pm_thaw_noirq(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_poweroff(struct device *dev)
+int amba_pm_poweroff(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -302,7 +302,7 @@ static int amba_pm_poweroff(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_poweroff_noirq(struct device *dev)
+int amba_pm_poweroff_noirq(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -318,7 +318,7 @@ static int amba_pm_poweroff_noirq(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_restore(struct device *dev)
+int amba_pm_restore(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -336,7 +336,7 @@ static int amba_pm_restore(struct device *dev)
 	return ret;
 }
 
-static int amba_pm_restore_noirq(struct device *dev)
+int amba_pm_restore_noirq(struct device *dev)
 {
 	struct device_driver *drv = dev->driver;
 	int ret = 0;
@@ -402,20 +402,7 @@ static int amba_pm_runtime_resume(struct device *dev)
 #ifdef CONFIG_PM
 
 static const struct dev_pm_ops amba_pm = {
-	.prepare	= amba_pm_prepare,
-	.complete	= amba_pm_complete,
-	.suspend	= amba_pm_suspend,
-	.resume		= amba_pm_resume,
-	.freeze		= amba_pm_freeze,
-	.thaw		= amba_pm_thaw,
-	.poweroff	= amba_pm_poweroff,
-	.restore	= amba_pm_restore,
-	.suspend_noirq	= amba_pm_suspend_noirq,
-	.resume_noirq	= amba_pm_resume_noirq,
-	.freeze_noirq	= amba_pm_freeze_noirq,
-	.thaw_noirq	= amba_pm_thaw_noirq,
-	.poweroff_noirq	= amba_pm_poweroff_noirq,
-	.restore_noirq	= amba_pm_restore_noirq,
+	USE_AMBA_PM_SLEEP_OPS
 	SET_RUNTIME_PM_OPS(
 		amba_pm_runtime_suspend,
 		amba_pm_runtime_resume,
