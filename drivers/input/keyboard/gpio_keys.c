@@ -26,6 +26,20 @@
 #include <linux/workqueue.h>
 #include <linux/gpio.h>
 #include <linux/pm_runtime.h>
+#ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
+#include <mach/sec_common.h>
+#include <mach/sec_param.h>
+
+struct timer_list debug_timer;
+struct gpio_keys_platform_data *g_pdata;
+extern int jack_is_detected;
+#endif
+
+extern struct class *sec_class;
+
+static bool g_bVolUp;
+static bool g_bPower;
+static bool g_bHome;
 
 struct gpio_button_data {
 	struct gpio_keys_button *button;
@@ -34,10 +48,12 @@ struct gpio_button_data {
 	struct work_struct work;
 	int timer_debounce;	/* in msecs */
 	bool disabled;
+	bool key_state;
 };
 
 struct gpio_keys_drvdata {
 	struct input_dev *input;
+	struct device *sec_key;
 	struct mutex disable_lock;
 	unsigned int n_buttons;
 	bool enabled;
@@ -249,6 +265,38 @@ out:
 	return error;
 }
 
+/* the volume keys can be the wakeup keys in special case */
+static ssize_t wakeup_enable(struct device *dev,
+			struct device_attribute *attr, char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct gpio_keys_drvdata *ddata = platform_get_drvdata(pdev);
+
+	int n_events = get_n_events_by_type(EV_KEY);
+	unsigned long *bits;
+	ssize_t error;
+	int i;
+
+	bits = kcalloc(BITS_TO_LONGS(n_events), sizeof(*bits), GFP_KERNEL);
+	if (!bits)
+		return -ENOMEM;
+	error = bitmap_parselist(buf, bits, n_events);
+	if (error)
+		goto out;
+
+	for (i = 0; i < ddata->n_buttons; i++) {
+		struct gpio_button_data *button = &ddata->data[i];
+		if (test_bit(button->button->code, bits))
+			button->button->wakeup = 1;
+		else
+			button->button->wakeup = 0;
+	}
+
+out:
+	kfree(bits);
+	return count;
+}
+
 #define ATTR_SHOW_FN(name, type, only_disabled)				\
 static ssize_t gpio_keys_show_##name(struct device *dev,		\
 				     struct device_attribute *attr,	\
@@ -307,12 +355,14 @@ static DEVICE_ATTR(disabled_keys, S_IWUSR | S_IRUGO,
 static DEVICE_ATTR(disabled_switches, S_IWUSR | S_IRUGO,
 		   gpio_keys_show_disabled_switches,
 		   gpio_keys_store_disabled_switches);
+static DEVICE_ATTR(wakeup_keys, 0664, NULL, wakeup_enable);
 
 static struct attribute *gpio_keys_attrs[] = {
 	&dev_attr_keys.attr,
 	&dev_attr_switches.attr,
 	&dev_attr_disabled_keys.attr,
 	&dev_attr_disabled_switches.attr,
+	&dev_attr_wakeup_keys.attr,
 	NULL,
 };
 
@@ -320,17 +370,130 @@ static struct attribute_group gpio_keys_attr_group = {
 	.attrs = gpio_keys_attrs,
 };
 
+static ssize_t key_pressed_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct gpio_keys_drvdata *ddata = dev_get_drvdata(dev);
+	int i;
+	int keystate = 0;
+
+	for (i = 0; i < ddata->n_buttons; i++) {
+		struct gpio_button_data *bdata = &ddata->data[i];
+		keystate |= bdata->key_state;
+	}
+
+	if (keystate)
+		sprintf(buf, "PRESS");
+	else
+		sprintf(buf, "RELEASE");
+
+	return strlen(buf);
+}
+
+static DEVICE_ATTR(sec_key_pressed, 0664, key_pressed_show, NULL);
+
+static struct attribute *sec_key_attrs[] = {
+	&dev_attr_sec_key_pressed.attr,
+	NULL,
+};
+
+static struct attribute_group sec_key_attr_group = {
+	.attrs = sec_key_attrs,
+};
+
+#ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
+extern void dump_all_task_info(void);
+extern void dump_cpu_stat(void);
+void enter_upload_mode(unsigned long val)
+{
+	bool uploadmode = true;
+	int i;
+	struct gpio_keys_button *pButton;
+	if (g_bVolUp && jack_is_detected && g_bPower) {
+		dump_all_task_info();
+		dump_cpu_stat();
+		panic("__forced_upload");
+	}
+}
+bool gpio_keys_getstate(int keycode)
+{
+	switch (keycode) {
+	case KEY_VOLUMEUP:
+		return g_bVolUp;
+	case KEY_POWER:
+		return g_bPower;
+	case KEY_HOME:
+		return g_bHome;
+	default:
+		break;
+	}
+	return 0;
+}
+EXPORT_SYMBOL(gpio_keys_getstate);
+void gpio_keys_start_upload_modtimer(void)
+{
+	mod_timer(&debug_timer, jiffies + HZ*2);
+	printk(KERN_WARNING "[Key] Waiting for upload mode for 2 seconds.\n");
+}
+EXPORT_SYMBOL(gpio_keys_start_upload_modtimer);
+#endif //CONFIG_SAMSUNG_PRODUCT_SHIP
+void gpio_keys_setstate(int keycode, bool bState)
+{
+	switch (keycode) {
+	case KEY_VOLUMEUP:
+		g_bVolUp = bState;
+		break;
+	case KEY_POWER:
+		g_bPower = bState;
+		break;
+	case KEY_HOME:
+		g_bHome = bState;
+		break;
+	default:
+		break;
+	}
+}
+EXPORT_SYMBOL(gpio_keys_setstate);
+
+#if defined(CONFIG_MACH_GAVINI)
+extern void ProjectorPowerOnSequence();
+extern void ProjectorPowerOffSequence();
+extern void projector_motor_cw(void);
+extern void projector_motor_ccw(void);
+#endif
+
 static void gpio_keys_report_event(struct gpio_button_data *bdata)
 {
 	struct gpio_keys_button *button = bdata->button;
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+	printk(KERN_DEBUG "[KEY] key: %s gpio_keys_report_event state = %d \n",
+		button->desc, state);
+
+	/* Forced Upload Mode checker */
+	bool bState = false;
+
+	bState = state ? true : false;
+
+	switch (button->code) {
+	case KEY_VOLUMEUP:
+		g_bVolUp = bState;
+		break;
+	case KEY_HOME:
+		g_bHome = bState;
+		break;
+	default:
+		break;
+	}
+#endif
 
 	if (type == EV_ABS) {
 		if (state)
 			input_event(input, type, button->code, button->value);
 	} else {
+		bdata->key_state = !!state;
 		input_event(input, type, button->code, !!state);
 	}
 	input_sync(input);
@@ -523,6 +686,17 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 		goto fail2;
 	}
 
+	ddata->sec_key = device_create(sec_class, NULL, 0, ddata, "sec_key");
+	if (IS_ERR(ddata->sec_key))
+		dev_err(dev, "Failed to create sec_key device\n");
+
+	error = sysfs_create_group(&ddata->sec_key->kobj, &sec_key_attr_group);
+	if (error) {
+		dev_err(dev, "Unable to export sec_key device, error: %d\n",
+				error);
+		goto fail2;
+	}
+
 	error = input_register_device(input);
 	if (error) {
 		dev_err(dev, "Unable to register input device, error: %d\n",
@@ -537,10 +711,18 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 
 	device_init_wakeup(&pdev->dev, wakeup);
 
+#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+	/* Initialize for Forced Upload mode */
+	g_pdata = pdata;
+	init_timer(&debug_timer);
+	debug_timer.function = enter_upload_mode;
+#endif
+
 	return 0;
 
  fail3:
 	sysfs_remove_group(&pdev->dev.kobj, &gpio_keys_attr_group);
+	sysfs_remove_group(&ddata->sec_key->kobj, &sec_key_attr_group);
  fail2:
 	while (--i >= 0) {
 		free_irq(gpio_to_irq(pdata->buttons[i].gpio), &ddata->data[i]);
@@ -590,6 +772,7 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
 static int gpio_keys_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
+	struct gpio_keys_drvdata *ddata = platform_get_drvdata(pdev);
 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
 	int i;
 
@@ -604,7 +787,7 @@ static int gpio_keys_suspend(struct device *dev)
 	} else {
 		ddata->enable_after_suspend = ddata->enabled;
 		if (ddata->enabled && ddata->disable)
-			ddata->disable(dev);
+			ddata->disable(&pdev->dev);
 	}
 
 	return 0;
@@ -628,9 +811,9 @@ static int gpio_keys_resume(struct device *dev)
 		gpio_keys_report_event(&ddata->data[i]);
 	}
 
-	if (!device_may_wakeup(dev) && ddata->enable_after_suspend
+	if (!device_may_wakeup(&pdev->dev) && ddata->enable_after_suspend
 	    && ddata->enable)
-		ddata->enable(dev);
+		ddata->enable(&pdev->dev);
 
 	input_sync(ddata->input);
 
