@@ -69,6 +69,7 @@
 #include <linux/slab.h>
 #include <linux/perf_event.h>
 #include <linux/boottime.h>
+#include <linux/pasr.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
@@ -156,6 +157,24 @@ static const char *panic_later, *panic_param;
 
 extern const struct obs_kernel_param __setup_start[], __setup_end[];
 
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+void __iomem * log_buf_base = NULL;
+EXPORT_SYMBOL(log_buf_base);
+
+#include <mach/board-sec-ux500.h>
+extern void* log_buf_irq;
+extern int log_buf_irq_entry_size;
+extern int log_buf_irq_entry_count;
+extern void* log_buf_sched;
+extern int log_buf_sched_entry_size;
+extern int log_buf_sched_entry_count;
+extern void* log_buf_prcmu;
+extern int log_buf_prcmu_entry_size;
+extern int log_buf_prcmu_entry_count;
+
+unsigned int * log_buf_writel = NULL;
+EXPORT_SYMBOL(log_buf_writel);
+#endif
 static int __init obsolete_checksetup(char *line)
 {
 	const struct obs_kernel_param *p;
@@ -487,6 +506,9 @@ asmlinkage void __init start_kernel(void)
 	page_address_init();
 	printk(KERN_NOTICE "%s", linux_banner);
 	setup_arch(&command_line);
+#ifdef CONFIG_PASR
+	early_pasr_setup();
+#endif
 	mm_init_owner(&init_mm, &init_task);
 	mm_init_cpumask(&init_mm);
 	setup_command_line(command_line);
@@ -555,6 +577,10 @@ asmlinkage void __init start_kernel(void)
 
 	kmem_cache_init_late();
 
+#ifdef CONFIG_PASR
+	late_pasr_setup();
+#endif
+
 	/*
 	 * HACK ALERT! This is early. We're enabling the console before
 	 * we've done PCI setups etc, and console_init() must be aware of
@@ -618,6 +644,44 @@ asmlinkage void __init start_kernel(void)
 	cpuset_init();
 	taskstats_init_early();
 	delayacct_init();
+
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+	{
+		extern struct meminfo meminfo;
+		struct membank * bank =&meminfo.bank[meminfo.nr_banks-1];
+		log_buf_base = ioremap(bank->start + bank->size, 0x100000);
+		if(!log_buf_base)
+			printk(KERN_NOTICE "[LOG][ERROR] %s() log_buf_base = 0x%p\n", __FUNCTION__, log_buf_base);
+		else {
+			printk(KERN_NOTICE "[LOG] %s() log_buf_base = 0x%p, size=%ld\n", __FUNCTION__, 
+				(long unsigned int)log_buf_base, bank->size);
+
+			/* irq log buffer initialize */
+			if (LOG_IRQ_BUF_SIZE < (log_buf_irq_entry_size*(log_buf_irq_entry_count+2))) {
+				printk(KERN_NOTICE "LOG_IRQ_BUF_SIZE should be checked!!\n");
+			} else {
+				log_buf_irq = (void*)((unsigned long)log_buf_base + LOG_IRQ_BUF_START + log_buf_irq_entry_size);
+			}
+
+			/* scheduler log buffer initialize */
+			if (LOG_SCHED_BUF_SIZE < (log_buf_sched_entry_size*(log_buf_sched_entry_count+2))) {
+				printk(KERN_NOTICE "LOG_SCHED_BUF_SIZE should be checked!!\n");
+			} else {
+				log_buf_sched = (void*)((unsigned long)log_buf_base + LOG_SCHED_BUF_START + log_buf_sched_entry_size);
+			}
+
+			/* prcmu/shrm log buffer initialize */
+			if (LOG_SHRM_PRCMU_BUF_SIZE < (log_buf_prcmu_entry_size*(log_buf_prcmu_entry_count+2))) {
+				printk(KERN_NOTICE "LOG_SHRM_PRCMU_BUF_SIZE should be checked!!\n");
+			} else {
+				log_buf_prcmu = (void*)((unsigned long)log_buf_base + LOG_SHRM_PRCMU_BUF_START + log_buf_prcmu_entry_size);
+			}
+
+			/* writel log initialize */
+			log_buf_writel = (unsigned int*)((unsigned long)log_buf_base + 0x100000 - 4);
+		}
+	}
+#endif
 
 	check_bugs();
 
