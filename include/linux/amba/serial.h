@@ -198,6 +198,7 @@ struct amba_pl010_data {
 
 struct dma_chan;
 struct amba_pl011_data {
+	void (*amba_pl011_wake_peer)(struct uart_port *);
 	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
 	void *dma_rx_param;
 	void *dma_tx_param;
