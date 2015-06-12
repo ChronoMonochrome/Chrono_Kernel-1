@@ -98,6 +98,18 @@ config TOUCHSCREEN_ATMEL_MXT
 	  To compile this driver as a module, choose M here: the
 	  module will be called atmel_mxt_ts.
 
+config TOUCHSCREEN_ATMEL_MXT224S
+	tristate "Atmel mXT MXT224S I2C Touchscreen"
+	depends on I2C
+	help
+	  Say Y here if you have Atmel mXT series I2C touchscreen,
+	  such as ATMXT224S, connected to your system.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called atmel_mxt_ts.
+
 config TOUCHSCREEN_BITSY
 	tristate "Compaq iPAQ H3600 (Bitsy) touchscreen"
 	depends on SA1100_BITSY
@@ -121,6 +133,23 @@ config TOUCHSCREEN_BU21013
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called bu21013_ts.
+
+config TOUCHSCREEN_CYTTSP_CORE
+	tristate "Cypress TTSP touchscreen core"
+	help
+	  Always activated for Cypress TTSP touchscreen.
+
+config TOUCHSCREEN_CYTTSP_SPI
+	tristate "Cypress TTSP spi touchscreen"
+	depends on SPI_MASTER && TOUCHSCREEN_CYTTSP_CORE
+	help
+	  Say Y here if you have a Cypress TTSP touchscreen
+	  connected to your  with an SPI interface.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called cyttsp-spi.
 
 config TOUCHSCREEN_CY8CTMG110
 	tristate "cy8ctmg110 touchscreen"
@@ -382,6 +411,12 @@ config TOUCHSCREEN_TNETV107X
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called tnetv107x-ts.
+
+config TOUCHSCREEN_SYNAPTICS_I2C_RMI
+	tristate "Synaptics i2c touchscreen"
+	depends on I2C
+	help
+	  This enables support for Synaptics RMI over I2C based touchscreens.
 
 config TOUCHSCREEN_TOUCHRIGHT
 	tristate "Touchright serial touchscreen"
@@ -726,4 +761,55 @@ config TOUCHSCREEN_TPS6507X
 	  To compile this driver as a module, choose M here: the
 	  module will be called tps6507x_ts.
 
+config TOUCHSCREEN_ZINITIX_BT404
+	bool "Zinitix BT404 Touchscreens"
+	depends on I2C
+	default n
+	help
+		Say Y if you want support for Zinitix bt404 touchscreen
+		controllers.
+config TOUCHSCREEN_ZINITIX
+	bool "Zinitix Touchscreens"
+	depends on I2C
+	default n
+	help
+		Say Y if you want support for Zinitix  touchscreen
+		controllers.
+config TOUCHSCREEN_ATMEL_MXT224E
+	bool "Atmel MXT224E Touchscreen Interface"
+	depends on I2C
+	default n
+	help
+		Say Y here if you want support for atmel_224E touchscreen controllers.
+		To compile this driver as a module, choose M here: the
+		module will be called atmel_mxt224E.
+
+config TOUCHSCREEN_MMS136_TS
+	tristate "MELFAS mms-136 touchscreen driver"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have a MELFAS mms-136 touchscreen.
+
+config TOUCHSCREEN_MMS134S_TS
+	bool "MELFAS MMS-134S touchscreen driver"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have a MELFAS MMS-134S touchscreen.
+
+config TOUCHSCREEN_MMS1XX_TS
+	bool "MELFAS MMS-1xx touchscreen driver"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you have a MELFAS MMS-100 series touchscreen.
+
+config TOUCHSCREEN_TMA140
+	tristate "Cypress TMA140 i2c touchscreen"
+	depends on I2C
+	help
+	  This enables support for TMA140 driver over I2C based touchscreens.
+
 endif
+
