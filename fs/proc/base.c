@@ -790,13 +790,57 @@ static int mem_open(struct inode* inode, struct file* file)
 	return 0;
 }
 
-static ssize_t mem_rw(struct file *file, char __user *buf,
-			size_t count, loff_t *ppos, int write)
+static ssize_t mem_read(struct file * file, char __user * buf,
+			size_t count, loff_t *ppos)
 {
-	struct mm_struct *mm = file->private_data;
-	unsigned long addr = *ppos;
-	ssize_t copied;
+	int ret;
 	char *page;
+	unsigned long src = *ppos;
+	struct mm_struct *mm = file->private_data;
+
+	if (!mm)
+		return 0;
+
+	page = (char *)__get_free_page(GFP_TEMPORARY);
+	if (!page)
+		return -ENOMEM;
+
+	ret = 0;
+ 
+	while (count > 0) {
+		int this_len, retval;
+
+		this_len = (count > PAGE_SIZE) ? PAGE_SIZE : count;
+		retval = access_remote_vm(mm, src, page, this_len, 0);
+		if (!retval) {
+			if (!ret)
+				ret = -EIO;
+			break;
+		}
+
+		if (copy_to_user(buf, page, retval)) {
+			ret = -EFAULT;
+			break;
+		}
+ 
+		ret += retval;
+		src += retval;
+		buf += retval;
+		count -= retval;
+	}
+	*ppos = src;
+
+	free_page((unsigned long) page);
+	return ret;
+}
+
+static ssize_t mem_write(struct file * file, const char __user *buf,
+			 size_t count, loff_t *ppos)
+{
+	int copied;
+	char *page;
+	unsigned long dst = *ppos;
+	struct mm_struct *mm = file->private_data;
 
 	if (!mm)
 		return 0;
@@ -807,46 +851,28 @@ static ssize_t mem_rw(struct file *file, char __user *buf,
 
 	copied = 0;
 	while (count > 0) {
-		int this_len = min_t(int, count, PAGE_SIZE);
+		int this_len, retval;
 
-		if (write && copy_from_user(page, buf, this_len)) {
+		this_len = (count > PAGE_SIZE) ? PAGE_SIZE : count;
+		if (copy_from_user(page, buf, this_len)) {
 			copied = -EFAULT;
 			break;
 		}
-
-		this_len = access_remote_vm(mm, addr, page, this_len, write);
-		if (!this_len) {
+		retval = access_remote_vm(mm, dst, page, this_len, 1);
+		if (!retval) {
 			if (!copied)
 				copied = -EIO;
 			break;
 		}
-
-		if (!write && copy_to_user(buf, page, this_len)) {
-			copied = -EFAULT;
-			break;
-		}
-
-		buf += this_len;
-		addr += this_len;
-		copied += this_len;
-		count -= this_len;
+		copied += retval;
+		buf += retval;
+		dst += retval;
+		count -= retval;			
 	}
-	*ppos = addr;
+	*ppos = dst;
 
 	free_page((unsigned long) page);
 	return copied;
-}
-
-static ssize_t mem_read(struct file *file, char __user *buf,
-			size_t count, loff_t *ppos)
-{
-	return mem_rw(file, buf, count, ppos, 0);
-}
-
-static ssize_t mem_write(struct file *file, const char __user *buf,
-			 size_t count, loff_t *ppos)
-{
-	return mem_rw(file, (char __user*)buf, count, ppos, 1);
 }
 
 loff_t mem_lseek(struct file *file, loff_t offset, int orig)
