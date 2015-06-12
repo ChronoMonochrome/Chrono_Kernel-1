@@ -783,13 +783,6 @@ static int mem_open(struct inode* inode, struct file* file)
 	if (IS_ERR(mm))
 		return PTR_ERR(mm);
 
-	if (mm) {
-		/* ensure this mm_struct can't be freed */
-		atomic_inc(&mm->mm_count);
-		/* but do not pin its memory */
-		mmput(mm);
-	}
-
 	/* OK to pass negative loff_t, we can catch out-of-range */
 	file->f_mode |= FMODE_UNSIGNED_OFFSET;
 	file->private_data = mm;
@@ -813,9 +806,6 @@ static ssize_t mem_rw(struct file *file, char __user *buf,
 		return -ENOMEM;
 
 	copied = 0;
-	if (!atomic_inc_not_zero(&mm->mm_users))
-		goto free;
-
 	while (count > 0) {
 		int this_len = min_t(int, count, PAGE_SIZE);
 
@@ -843,8 +833,6 @@ static ssize_t mem_rw(struct file *file, char __user *buf,
 	}
 	*ppos = addr;
 
-	mmput(mm);
-free:
 	free_page((unsigned long) page);
 	return copied;
 }
@@ -881,7 +869,7 @@ static int mem_release(struct inode *inode, struct file *file)
 {
 	struct mm_struct *mm = file->private_data;
 	if (mm)
-		mmdrop(mm);
+		mmput(mm);
 	return 0;
 }
 
