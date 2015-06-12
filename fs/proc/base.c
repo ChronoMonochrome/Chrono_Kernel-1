@@ -222,7 +222,7 @@ static struct mm_struct *__check_mem_permission(struct task_struct *task)
 	if (task_is_stopped_or_traced(task)) {
 		int match;
 		rcu_read_lock();
-		match = (ptrace_parent(task) == current);
+		match = (tracehook_tracer_task(task) == current);
 		rcu_read_unlock();
 		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
 			return mm;
@@ -269,7 +269,8 @@ struct mm_struct *mm_for_maps(struct task_struct *task)
 
 	mm = get_task_mm(task);
 	if (mm && mm != current->mm &&
-			!ptrace_may_access(task, PTRACE_MODE_READ)) {
+			!ptrace_may_access(task, PTRACE_MODE_READ) &&
+			!capable(CAP_SYS_RESOURCE)) {
 		mmput(mm);
 		mm = ERR_PTR(-EACCES);
 	}
@@ -890,6 +891,10 @@ out_no_task:
 	return ret;
 }
 
+#define mem_write NULL
+
+#ifndef mem_write
+/* This is a security hazard */
 static ssize_t mem_write(struct file * file, const char __user *buf,
 			 size_t count, loff_t *ppos)
 {
@@ -948,6 +953,7 @@ out_task:
 out_no_task:
 	return copied;
 }
+#endif
 
 loff_t mem_lseek(struct file *file, loff_t offset, int orig)
 {
@@ -1147,10 +1153,14 @@ out:
 	return err < 0 ? err : count;
 }
 
-static int oom_adjust_permission(struct inode *inode, int mask)
+static int oom_adjust_permission(struct inode *inode, int mask,
+				 unsigned int flags)
 {
 	uid_t uid;
 	struct task_struct *p;
+
+	if (flags & IPERM_FLAG_RCU)
+		return -ECHILD;
 
 	p = get_proc_task(inode);
 	if(p) {
@@ -1169,7 +1179,7 @@ static int oom_adjust_permission(struct inode *inode, int mask)
 	}
 
 	/* Fall back to default. */
-	return generic_permission(inode, mask);
+	return generic_permission(inode, mask, flags, NULL);
 }
 
 static const struct inode_operations proc_oom_adjust_inode_operations = {
@@ -1955,14 +1965,6 @@ static int proc_fd_info(struct inode *inode, struct path *path, char *info)
 		spin_lock(&files->file_lock);
 		file = fcheck_files(files, fd);
 		if (file) {
-			unsigned int f_flags;
-			struct fdtable *fdt;
-
-			fdt = files_fdtable(files);
-			f_flags = file->f_flags & ~O_CLOEXEC;
-			if (FD_ISSET(fd, fdt->close_on_exec))
-				f_flags |= O_CLOEXEC;
-
 			if (path) {
 				*path = file->f_path;
 				path_get(&file->f_path);
@@ -1972,7 +1974,7 @@ static int proc_fd_info(struct inode *inode, struct path *path, char *info)
 					 "pos:\t%lli\n"
 					 "flags:\t0%o\n",
 					 (long long) file->f_pos,
-					 f_flags);
+					 file->f_flags);
 			spin_unlock(&files->file_lock);
 			put_files_struct(files);
 			return 0;
