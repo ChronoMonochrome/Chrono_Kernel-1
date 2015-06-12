@@ -1575,7 +1575,9 @@ void input_reset_device(struct input_dev *dev)
 		 * to be still pressed when we resume.
 		 */
 		spin_lock_irq(&dev->event_lock);
+#if !defined(CONFIG_TORCH_FLASH)    
 		input_dev_release_keys(dev);
+#endif                            
 		spin_unlock_irq(&dev->event_lock);
 	}
 
