@@ -22,7 +22,7 @@
 #include <linux/regulator/consumer.h>
 
 #include <plat/ske.h>
-#include <linux/gpio/nomadik.h>
+#include <plat/gpio-nomadik.h>
 
 /* SKE_CR bits */
 #define SKE_KPMLT	(0x1 << 6)
@@ -758,8 +758,8 @@ static int __devinit ske_keypad_probe(struct platform_device *pdev)
 	}
 
 	for (i = 0; i < plat->kconnected_rows; i++) {
-		keypad->ske_rows[i] = *plat->gpio_input_pins;
-		keypad->ske_cols[i] = *plat->gpio_output_pins;
+		keypad->ske_rows[i] = plat->gpio_input_pins[i];
+		keypad->ske_cols[i] = plat->gpio_output_pins[i];
 		keypad->gpio_input_irq[i] =
 				NOMADIK_GPIO_TO_IRQ(keypad->ske_rows[i]);
 	}
@@ -950,7 +950,7 @@ struct platform_driver ske_keypad_driver = {
 
 static int __init ske_keypad_init(void)
 {
-	return platform_driver_probe(&ske_keypad_driver, ske_keypad_probe);
+	return platform_driver_register(&ske_keypad_driver);
 }
 module_init(ske_keypad_init);
 
