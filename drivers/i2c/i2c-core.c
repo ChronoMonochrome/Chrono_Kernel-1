@@ -925,6 +925,9 @@ EXPORT_SYMBOL(i2c_add_adapter);
  * or otherwise built in to the system's mainboard, and where i2c_board_info
  * is used to properly configure I2C devices.
  *
+ * If the requested bus number is set to -1, then this function will behave
+ * identically to i2c_add_adapter, and will dynamically assign a bus number.
+ *
  * If no devices have pre-been declared for this bus, then be sure to
  * register the adapter before any dynamically allocated ones.  Otherwise
  * the required bus ID may not be available.
@@ -940,6 +943,8 @@ int i2c_add_numbered_adapter(struct i2c_adapter *adap)
 	int	id;
 	int	status;
 
+	if (adap->nr == -1) /* -1 means dynamically assign bus id */
+		return i2c_add_adapter(adap);
 	if (adap->nr & ~MAX_ID_MASK)
 		return -EINVAL;
 
@@ -1351,7 +1356,19 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 		i2c_unlock_adapter(adap);
 
 		return ret;
-	} else {
+	}
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+	else if (adap->algo->master_panic_xfer){
+		for (ret = 0, try = 0; try <= adap->retries; try++) {
+			ret = adap->algo->master_panic_xfer(adap, msgs, num);
+			if (ret != -EAGAIN)
+				break;
+		}
+
+		return ret;
+	}
+#endif 
+	else {
 		dev_dbg(&adap->dev, "I2C level transfers not supported\n");
 		return -EOPNOTSUPP;
 	}
