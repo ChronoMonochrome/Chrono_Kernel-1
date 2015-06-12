@@ -339,6 +339,10 @@ struct i2c_algorithm {
 	   processed, or a negative value on error */
 	int (*master_xfer)(struct i2c_adapter *adap, struct i2c_msg *msgs,
 			   int num);
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+	int (*master_panic_xfer)(struct i2c_adapter *adap, struct i2c_msg *msgs,
+			   int num);
+#endif			   
 	int (*smbus_xfer) (struct i2c_adapter *adap, u16 addr,
 			   unsigned short flags, char read_write,
 			   u8 command, int size, union i2c_smbus_data *data);
