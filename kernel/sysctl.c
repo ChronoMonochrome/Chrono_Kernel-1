@@ -1518,7 +1518,20 @@ static struct ctl_table fs_table[] = {
 	{ }
 };
 
+#ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
+int gDvm_addr = 0;
+#endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
+
 static struct ctl_table debug_table[] = {
+#ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
+    {
+        .procname   = "gDvm_addr",
+        .data       = &gDvm_addr,
+        .maxlen     = sizeof(int),
+        .mode       = 0644,
+        .proc_handler   = &proc_dointvec,
+    },
+#endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
 #if defined(CONFIG_X86) || defined(CONFIG_PPC) || defined(CONFIG_SPARC) || \
     defined(CONFIG_S390) || defined(CONFIG_TILE)
 	{
