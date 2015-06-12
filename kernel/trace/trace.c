@@ -37,6 +37,7 @@
 #include <linux/init.h>
 #include <linux/poll.h>
 #include <linux/fs.h>
+#include <trace/stm.h>
 
 #include "trace.h"
 #include "trace_output.h"
@@ -118,7 +119,7 @@ cpumask_var_t __read_mostly	tracing_buffer_mask;
 
 enum ftrace_dump_mode ftrace_dump_on_oops;
 
-static int tracing_set_tracer(const char *buf);
+int tracing_set_tracer(const char *buf);
 
 #define MAX_TRACER_SIZE		100
 static char bootup_tracer_buf[MAX_TRACER_SIZE] __initdata;
@@ -235,7 +236,7 @@ int tracing_is_enabled(void)
  * to not have to wait for all that output. Anyway this can be
  * boot time and run time configurable.
  */
-#define TRACE_BUF_SIZE_DEFAULT	1441792UL /* 16384 * 88 (sizeof(entry)) */
+#define TRACE_BUF_SIZE_DEFAULT	2097128UL /* 23831 * 88 (sizeof(entry)) */
 
 static unsigned long		trace_buf_size = TRACE_BUF_SIZE_DEFAULT;
 
@@ -906,7 +907,7 @@ void tracing_reset_current_online_cpus(void)
 	tracing_reset_online_cpus(&global_trace);
 }
 
-#define SAVED_CMDLINES 128
+#define SAVED_CMDLINES 2048
 #define NO_CMDLINE_MAP UINT_MAX
 static unsigned map_pid_to_cmdline[PID_MAX_DEFAULT+1];
 static unsigned map_cmdline_to_pid[SAVED_CMDLINES];
@@ -1222,6 +1223,8 @@ trace_function(struct trace_array *tr,
 
 	if (!filter_check_discard(call, entry, buffer, event))
 		ring_buffer_unlock_commit(buffer, event);
+
+	stm_ftrace(ip, parent_ip);
 }
 
 void
@@ -1256,8 +1259,11 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
 	trace.entries		= entry->caller;
 
 	save_stack_trace(&trace);
+
 	if (!filter_check_discard(call, entry, buffer, event))
 		ring_buffer_unlock_commit(buffer, event);
+
+	stm_stack_trace(trace.entries);
 }
 
 void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
@@ -1413,6 +1419,8 @@ int trace_vbprintk(unsigned long ip, const char *fmt, va_list args)
 		ftrace_trace_stack(buffer, flags, 6, pc);
 	}
 
+	stm_trace_bprintk_buf(ip, fmt, trace_buf, sizeof(u32) * len);
+
 out_unlock:
 	arch_spin_unlock(&trace_buf_lock);
 	local_irq_restore(flags);
@@ -1488,6 +1496,8 @@ int trace_array_vprintk(struct trace_array *tr,
 		ring_buffer_unlock_commit(buffer, event);
 		ftrace_trace_stack(buffer, irq_flags, 6, pc);
 	}
+
+	stm_trace_printk_buf(ip, trace_buf, len);
 
  out_unlock:
 	arch_spin_unlock(&trace_buf_lock);
@@ -2850,7 +2860,7 @@ create_trace_option_files(struct tracer *tracer);
 static void
 destroy_trace_option_files(struct trace_option_dentry *topts);
 
-static int tracing_set_tracer(const char *buf)
+int tracing_set_tracer(const char *buf)
 {
 	static struct trace_option_dentry *topts;
 	struct trace_array *tr = &global_trace;
