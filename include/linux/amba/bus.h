@@ -94,24 +94,64 @@ void amba_release_regions(struct amba_device *);
 #define amba_manf(d)	AMBA_MANF_BITS((d)->periphid)
 #define amba_part(d)	AMBA_PART_BITS((d)->periphid)
 
+#ifdef CONFIG_PM_SLEEP
+extern int amba_pm_prepare(struct device *dev);
+extern void amba_pm_complete(struct device *dev);
+#else
+#define amba_pm_prepare	NULL
+#define amba_pm_complete	NULL
 #endif
 
 #ifdef CONFIG_SUSPEND
 extern int amba_pm_suspend(struct device *dev);
+extern int amba_pm_suspend_noirq(struct device *dev);
 extern int amba_pm_resume(struct device *dev);
+extern int amba_pm_resume_noirq(struct device *dev);
 #else
 #define amba_pm_suspend		NULL
 #define amba_pm_resume		NULL
+#define amba_pm_suspend_noirq	NULL
+#define amba_pm_resume_noirq	NULL
 #endif
 
 #ifdef CONFIG_HIBERNATE_CALLBACKS
 extern int amba_pm_freeze(struct device *dev);
+extern int amba_pm_freeze_noirq(struct device *dev);
 extern int amba_pm_thaw(struct device *dev);
+extern int amba_pm_thaw_noirq(struct device *dev);
 extern int amba_pm_poweroff(struct device *dev);
+extern int amba_pm_poweroff_noirq(struct device *dev);
 extern int amba_pm_restore(struct device *dev);
+extern int amba_pm_restore_noirq(struct device *dev);
 #else
 #define amba_pm_freeze		NULL
 #define amba_pm_thaw		NULL
-#define amba_pm_poweroff	NULL
+#define amba_pm_poweroff		NULL
 #define amba_pm_restore		NULL
+#define amba_pm_freeze_noirq	NULL
+#define amba_pm_thaw_noirq		NULL
+#define amba_pm_poweroff_noirq	NULL
+#define amba_pm_restore_noirq	NULL
+#endif
+
+#ifdef CONFIG_PM_SLEEP
+#define USE_AMBA_PM_SLEEP_OPS \
+	.prepare = amba_pm_prepare, \
+	.complete = amba_pm_complete, \
+	.suspend = amba_pm_suspend, \
+	.resume = amba_pm_resume, \
+	.freeze = amba_pm_freeze, \
+	.thaw = amba_pm_thaw, \
+	.poweroff = amba_pm_poweroff, \
+	.restore = amba_pm_restore, \
+	.suspend_noirq = amba_pm_suspend_noirq, \
+	.resume_noirq = amba_pm_resume_noirq, \
+	.freeze_noirq = amba_pm_freeze_noirq, \
+	.thaw_noirq = amba_pm_thaw_noirq, \
+	.poweroff_noirq = amba_pm_poweroff_noirq, \
+	.restore_noirq = amba_pm_restore_noirq,
+#else
+#define USE_AMBA_PM_SLEEP_OPS
+#endif
+
 #endif
