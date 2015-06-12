@@ -41,8 +41,13 @@
 #include <linux/cpu.h>
 #include <linux/notifier.h>
 #include <linux/rculist.h>
+#include <trace/stm.h>
 
 #include <asm/uaccess.h>
+#ifdef	CONFIG_SAMSUNG_LOG_BUF
+#include <mach/board-sec-ux500.h>
+#endif
+
 
 /*
  * Architectures can override it:
@@ -53,7 +58,7 @@ void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
 
 #define __LOG_BUF_LEN	(1 << CONFIG_LOG_BUF_SHIFT)
 
-#ifdef CONFIG_PRINTK_LL
+#ifdef        CONFIG_PRINTK_LL
 extern void printascii(char *);
 #endif
 
@@ -179,6 +184,7 @@ static unsigned long __initdata new_log_buf_len;
 static int __init log_buf_len_setup(char *str)
 {
 	unsigned size = memparse(str, &str);
+	unsigned long flags;
 
 	if (size)
 		size = roundup_pow_of_two(size);
@@ -239,6 +245,7 @@ void __init setup_log_buf(int early)
 	pr_info("log_buf_len: %d\n", log_buf_len);
 	pr_info("early log buf free: %d(%d%%)\n",
 		free, (free * 100) / __LOG_BUF_LEN);
+
 }
 
 #ifdef CONFIG_BOOT_PRINTK_DELAY
@@ -293,6 +300,53 @@ static inline void boot_delay_msec(void)
 {
 }
 #endif
+
+/*
+ * Return the number of unread characters in the log buffer.
+ */
+static int log_buf_get_len(void)
+{
+	return logged_chars;
+}
+
+/*
+ * Clears the ring-buffer
+ */
+void log_buf_clear(void)
+{
+	logged_chars = 0;
+}
+
+/*
+ * Copy a range of characters from the log buffer.
+ */
+int log_buf_copy(char *dest, int idx, int len)
+{
+	int ret, max;
+	bool took_lock = false;
+
+	if (!oops_in_progress) {
+		spin_lock_irq(&logbuf_lock);
+		took_lock = true;
+	}
+
+	max = log_buf_get_len();
+	if (idx < 0 || idx >= max) {
+		ret = -1;
+	} else {
+		if (len > max - idx)
+			len = max - idx;
+		ret = len;
+		idx += (log_end - max);
+		while (len-- > 0)
+			dest[len] = LOG_BUF(idx + len);
+	}
+
+	if (took_lock)
+		spin_unlock_irq(&logbuf_lock);
+
+	return ret;
+}
 
 #ifdef CONFIG_SECURITY_DMESG_RESTRICT
 int dmesg_restrict = 1;
@@ -665,6 +719,61 @@ static void call_console_drivers(unsigned start, unsigned end)
 	_call_console_drivers(start_print, end, msg_level);
 }
 
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+extern void __iomem * log_buf_base;
+static unsigned long * log_index;
+static int ioremapped = 0;
+static char *logging_buffer = NULL;
+static int b_first_call_after_booting = 0;
+unsigned long logging_mode = 3;// 0= nothing, 1=ram logging only, 2=serial only, 3=both
+
+#define LOGGING_INDEX_MASK	((1 << 20) - 1)	// 1111 1111 1111 1111 1111 = 0xfffff = 1,048,575 // 1M = 1,048,576
+#define LOGGING_BUF(idx) (logging_buffer[(idx) & LOGGING_INDEX_MASK])
+extern unsigned long logging_mode;
+
+unsigned long g_log_index = 0;
+int g_offset = 0;
+int g_chunk=0;
+int g_len=0;
+
+static void emit_log_char_RAMbuf(char* src, int len)
+{
+	int chunk=0;
+	int offset=0;
+	if((logging_mode & LOGGING_RAM_MASK) && (!ioremapped && log_buf_base  ))
+	{
+		logging_buffer = (char *)(log_buf_base+LOG_BUF_INDEX_SIZE);
+		log_index = (unsigned long *)(log_buf_base);
+
+		(*log_index) = 0;
+		ioremapped=1;
+	}
+
+	if((ioremapped) && (logging_mode & LOGGING_RAM_MASK))
+	{
+		do {
+			if((*log_index + len) > (LOGGING_RAMBUF_DATA_SIZE))
+				chunk = LOGGING_RAMBUF_DATA_SIZE - *log_index;
+			else
+				chunk = len;
+
+			g_log_index = (*log_index);
+			g_offset = offset;
+			g_chunk = chunk;
+			g_len = len;
+
+			memcpy((void *)&LOGGING_BUF((*log_index)),src+offset, chunk);
+			*log_index += chunk;
+			len -= chunk;
+			offset += chunk;
+
+			if((*log_index) >= LOGGING_RAMBUF_DATA_SIZE)
+				(*log_index)=0;
+		}while(len > 0);
+	}
+}
+
+#endif	//	CONFIG_SAMSUNG_LOG_BUF
 static void emit_log_char(char c)
 {
 	LOG_BUF(log_end) = c;
@@ -903,6 +1012,9 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 		}
 	}
 
+	/* Send printk buffer to MIPI STM trace hardware too if enable */
+	stm_dup_printk(printk_buf, printed_len);
+
 	/*
 	 * Copy the output into log_buf. If the caller didn't provide
 	 * the appropriate log prefix, we insert them here
@@ -923,6 +1035,24 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 				emit_log_char('<');
 				emit_log_char(current_log_level + '0');
 				emit_log_char('>');
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+			{
+				char tbuf[3];
+
+				// check kernel start
+				if( (b_first_call_after_booting == 0) &&
+					(logging_mode & LOGGING_RAM_MASK) && 
+					(!ioremapped && log_buf_base  ) )
+				{
+					char tempChar[] = "============== start kernel logging !! ==============\n";
+					b_first_call_after_booting = 1;
+					emit_log_char_RAMbuf(tempChar, sizeof(tempChar));
+				}
+				
+				sprintf(tbuf, "<%1d>",default_message_loglevel);
+				emit_log_char_RAMbuf(tbuf, 3);
+			}
+#endif
 				printed_len += 3;
 			}
 
@@ -941,6 +1071,9 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 
 				for (tp = tbuf; tp < tbuf + tlen; tp++)
 					emit_log_char(*tp);
+#ifdef CONFIG_SAMSUNG_LOG_BUF				
+				emit_log_char_RAMbuf(tbuf, tlen);
+#endif
 				printed_len += tlen;
 			}
 
@@ -952,6 +1085,10 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 		if (*p == '\n')
 			new_text_line = 1;
 	}
+
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+	emit_log_char_RAMbuf(printk_buf, strlen(printk_buf));
+#endif
 
 	/*
 	 * Try to acquire and then immediately release the
@@ -1156,7 +1293,6 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
 	switch (action) {
 	case CPU_ONLINE:
 	case CPU_DEAD:
-	case CPU_DYING:
 	case CPU_DOWN_FAILED:
 	case CPU_UP_CANCELED:
 		console_lock();
