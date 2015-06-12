@@ -12,7 +12,7 @@ static int uptime_proc_show(struct seq_file *m, void *v)
 	struct timespec uptime;
 	struct timespec idle;
 	int i;
-	cputime_t idletime = 0;
+	cputime_t idletime = cputime_zero;
 
 	for_each_possible_cpu(i)
 		idletime = cputime64_add(idletime, kstat_cpu(i).cpustat.idle);
