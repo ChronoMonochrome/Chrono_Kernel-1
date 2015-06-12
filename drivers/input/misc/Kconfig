@@ -22,6 +22,20 @@ config INPUT_88PM860X_ONKEY
 	  To compile this driver as a module, choose M here: the module
 	  will be called 88pm860x_onkey.
 
+config INPUT_AB8500_ACCDET
+	bool "AB8500 AV Accessory detection"
+	depends on AB8500_CORE && AB8500_GPADC && GPIO_AB8500
+	help
+	  Say Y here to enable AV accessory detection features for ST-Ericsson's
+	  AB8500 Mix-Sig PMIC.
+
+config INPUT_AB5500_ACCDET
+	bool "AB5500 AV Accessory detection"
+	depends on AB5500_CORE && AB5500_GPADC
+	help
+	  Say Y here to enable AV accessory detection features for ST-Ericsson's
+	  AB5500 Mix-Sig PMIC.
+
 config INPUT_AB8500_PONKEY
 	tristate "AB5500/AB8500 Pon (PowerOn) Key"
 	depends on AB5500_CORE || AB8500_CORE
@@ -31,6 +45,16 @@ config INPUT_AB8500_PONKEY
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called ab8500-ponkey.
+
+config INPUT_AB8505_MICRO_USB_DETECT
+	bool "AB8505/AB9540 Micro USB device detection support"
+	depends on AB8500_CORE
+	help
+	  Say Y here to enable Micro USB cable detection driver. This Driver
+	  detects the accessory devices connected to the micro usb connector,
+	  like micro usb headset, uart, carkit etc.
+
+	  If unsure, say N.
 
 config INPUT_AD714X
 	tristate "Analog Devices AD714x Capacitance Touch Sensor"
@@ -220,6 +244,40 @@ config INPUT_KEYSPAN_REMOTE
 	  To compile this driver as a module, choose M here: the module will
 	  be called keyspan_remote.
 
+config INPUT_LPS001WP
+	tristate "LPS0001WP pressure sensor from ST Micro"
+	default y if MACH_U8500
+	help
+	  This is a pressure sensor connected to I2C, mounted on the
+	  snowball and other ST-E boards
+
+config LPS001WP_INPUT_DEVICE
+	bool "ST LPS001WP INPUT DEVICE"
+	depends on INPUT_LPS001WP
+	default n
+	help
+	   This driver allows device to be used as an input device
+	   need to be enabled only when input device support
+	   is required.
+
+config INPUT_LPS331AP
+	tristate "LPS331AP pressure sensor from ST Micro"
+	depends on I2C
+	help
+	  Say Y here if you want to support a pressure sensor connetced via I2C
+	  with a LPS331AP, mounted on the U9540 and other ST-E boards.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called lps331ap.
+
+config LPS331AP_INPUT_DEVICE
+	bool "ST LPS331AP INPUT DEVICE"
+	depends on INPUT_LPS331AP
+	default n
+	help
+	  Say Y here if LPS331AP device is required, when enable here, the driver
+	  allows LPS331AP device to be used as an input device.
+
 config INPUT_POWERMATE
 	tristate "Griffin PowerMate and Contour Jog support"
 	depends on USB_ARCH_HAS_HCD
@@ -304,6 +362,11 @@ config INPUT_SGI_BTNS
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called sgi_btns.
+
+config INPUT_GPIO
+	tristate "GPIO driver support"
+	help
+	  Say Y here if you want to support gpio based keys, wheels etc...
 
 config HP_SDC_RTC
 	tristate "HP SDC Real Time Clock"
@@ -489,4 +552,24 @@ config INPUT_XEN_KBDDEV_FRONTEND
 	  To compile this driver as a module, choose M here: the
 	  module will be called xen-kbdfront.
 
+config INPUT_STE_FF_VIBRA
+	tristate "ST-Ericsson Force Feedback Vibrator"
+	depends on STE_AUDIO_IO_DEV
+	select INPUT_FF_MEMLESS
+	help
+	  This option enables support for ST-Ericsson's Vibrator which
+	  registers as an input force feedback driver.
+
+	  To compile this driver as a module, choose M here. The module will
+	  be called ste_ff_vibra.
+
+config INPUT_MPU6050
+	bool "Invensense MPU-6050 sensor"
+	default n
+
+config INPUT_MPU6050_POLLING
+	depends on INPUT_MPU6050
+	bool "Invensense MPU-6050 sensor polling"
+	default n
+	
 endif
