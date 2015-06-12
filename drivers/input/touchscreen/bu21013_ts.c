@@ -1,10 +1,11 @@
 /*
- * Copyright (C) ST-Ericsson SA 2010
+ * Copyright (C) ST-Ericsson SA 2009
  * Author: Naveen Kumar G <naveen.gaddipati@stericsson.com> for ST-Ericsson
  * License terms:GNU General Public License (GPL) version 2
  */
 
 #include <linux/kernel.h>
+#include <linux/earlysuspend.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
@@ -12,12 +13,13 @@
 #include <linux/input.h>
 #include <linux/input/bu21013.h>
 #include <linux/slab.h>
+#include <linux/clk.h>
 #include <linux/regulator/consumer.h>
 
 #define PEN_DOWN_INTR	0
-#define MAX_FINGERS	2
 #define RESET_DELAY	30
-#define PENUP_TIMEOUT	(10)
+#define PENUP_TIMEOUT	2 /* 2msecs */
+#define SCALE_FACTOR	1000
 #define DELTA_MIN	16
 #define MASK_BITS	0x03
 #define SHIFT_8		8
@@ -130,7 +132,7 @@
 #define BU21013_NUMBER_OF_X_SENSORS	(6)
 #define BU21013_NUMBER_OF_Y_SENSORS	(11)
 
-#define DRIVER_TP	"bu21013_tp"
+#define DRIVER_TP	"bu21013_ts"
 
 /**
  * struct bu21013_ts_data - touch panel data structure
@@ -141,6 +143,13 @@
  * @in_dev: pointer to the input device structure
  * @intr_pin: interrupt pin value
  * @regulator: pointer to the Regulator used for touch screen
+ * @enable: variable to indicate the enable/disable of touch screen
+ * @ext_clk_enable: true if running on ext clk
+ * @ext_clk_state: Saved state for suspend/resume of ext clk
+ * @factor_x: x scale factor
+ * @factor_y: y scale factor
+ * @tpclk: pointer to clock structure
+ * @early_suspend: early_suspend structure variable
  *
  * Touch panel device data structure
  */
@@ -148,11 +157,231 @@ struct bu21013_ts_data {
 	struct i2c_client *client;
 	wait_queue_head_t wait;
 	bool touch_stopped;
-	const struct bu21013_platform_device *chip;
+	struct bu21013_platform_device *chip;
 	struct input_dev *in_dev;
 	unsigned int intr_pin;
 	struct regulator *regulator;
+	bool enable;
+	bool ext_clk_enable;
+	bool ext_clk_state;
+	unsigned int factor_x;
+	unsigned int factor_y;
+	struct clk *tpclk;
+	struct early_suspend early_suspend;
 };
+
+static int bu21013_init_chip(struct bu21013_ts_data *data, bool on_ext_clk);
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void bu21013_ts_early_suspend(struct early_suspend *data);
+static void bu21013_ts_late_resume(struct early_suspend *data);
+#endif
+
+/**
+ * bu21013_ext_clk() - enable/disable the external clock
+ * @pdata: touch screen data
+ * @enable: enable external clock
+ * @reconfig: reconfigure chip upon external clock off.
+ *
+ * This function used to enable or disable the external clock and possible
+ * reconfigure hw.
+ */
+static int bu21013_ext_clk(struct bu21013_ts_data *pdata, bool enable,
+			   bool reconfig)
+{
+	int retval = 0;
+
+	if (!pdata->tpclk || pdata->ext_clk_enable == enable)
+		return retval;
+
+	if (enable) {
+		pdata->ext_clk_enable = true;
+		clk_enable(pdata->tpclk);
+		retval = bu21013_init_chip(pdata, true);
+	} else {
+		pdata->ext_clk_enable = false;
+		if (reconfig)
+			retval = bu21013_init_chip(pdata, false);
+		clk_disable(pdata->tpclk);
+	}
+	return retval;
+}
+
+/**
+ * bu21013_enable() - enable the touch driver event
+ * @pdata: touch screen data
+ *
+ * This function used to enable the driver and returns integer
+ */
+static int bu21013_enable(struct bu21013_ts_data *pdata)
+{
+	int retval;
+
+	if (pdata->regulator)
+		regulator_enable(pdata->regulator);
+
+	if (pdata->chip->cs_en) {
+		retval = pdata->chip->cs_en(pdata->chip->cs_pin);
+		if (retval < 0) {
+			dev_err(&pdata->client->dev, "enable hw failed\n");
+			return retval;
+		}
+	}
+
+	if (pdata->ext_clk_state)
+		retval = bu21013_ext_clk(pdata, true, true);
+	else
+		retval = bu21013_init_chip(pdata, false);
+
+	if (retval < 0) {
+		dev_err(&pdata->client->dev, "enable hw failed\n");
+		return retval;
+	}
+	pdata->touch_stopped = false;
+	enable_irq(pdata->chip->irq);
+
+	return 0;
+}
+
+/**
+ * bu21013_disable() - disable the touch driver event
+ * @pdata: touch screen data
+ *
+ * This function used to disable the driver and returns integer
+ */
+static void bu21013_disable(struct bu21013_ts_data *pdata)
+{
+	pdata->touch_stopped = true;
+
+	pdata->ext_clk_state = pdata->ext_clk_enable;
+	(void) bu21013_ext_clk(pdata, false, false);
+
+	disable_irq(pdata->chip->irq);
+	if (pdata->chip->cs_dis)
+		pdata->chip->cs_dis(pdata->chip->cs_pin);
+	if (pdata->regulator)
+		regulator_disable(pdata->regulator);
+}
+
+/**
+ * bu21013_show_attr_enable() - show the touch screen controller status
+ * @dev: pointer to device structure
+ * @attr: pointer to device attribute
+ * @buf: parameter buffer
+ *
+ * This funtion is used to show whether the touch screen is enabled or
+ * disabled
+ */
+static ssize_t bu21013_show_attr_enable(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct bu21013_ts_data *pdata = dev_get_drvdata(dev);
+	return sprintf(buf, "%d\n", pdata->enable);
+}
+
+/**
+ * bu21013_store_attr_enable() - Enable/Disable the touchscreen.
+ * @dev: pointer to device structure
+ * @attr: pointer to device attribute
+ * @buf: parameter buffer
+ * @count: number of parameters
+ *
+ * This funtion is used to enable or disable the touch screen controller.
+ */
+static ssize_t bu21013_store_attr_enable(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int ret = 0;
+	unsigned long val;
+
+	struct bu21013_ts_data *pdata = dev_get_drvdata(dev);
+
+	if (strict_strtoul(buf, 0, &val))
+		return -EINVAL;
+
+	if ((val != 0) && (val != 1))
+		return -EINVAL;
+
+	if (pdata->enable != val) {
+		pdata->enable = val ? true : false;
+		if (pdata->enable) {
+			ret = bu21013_enable(pdata);
+			if (ret < 0)
+				return ret;
+		} else
+			bu21013_disable(pdata);
+	}
+	return count;
+}
+
+/**
+ * bu21013_show_attr_extclk() - shows the external clock status
+ * @dev: pointer to device structure
+ * @attr: pointer to device attribute
+ * @buf: parameter buffer
+ *
+ * This funtion is used to show whether the external clock for the touch
+ * screen is enabled or disabled.
+ */
+static ssize_t bu21013_show_attr_extclk(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct bu21013_ts_data *pdata = dev_get_drvdata(dev);
+	return sprintf(buf, "%d\n", pdata->ext_clk_enable);
+}
+
+/**
+ * bu21013_store_attr_extclk() - Enable/Disable the external clock
+ * for the tocuh screen controller.
+ * @dev: pointer to device structure
+ * @attr: pointer to device attribute
+ * @buf: parameter buffer
+ * @count: number of parameters
+ *
+ * This funtion is used enabled or disable the external clock for the touch
+ * screen controller.
+ */
+static ssize_t bu21013_store_attr_extclk(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int retval = 0;
+	struct bu21013_ts_data *pdata = dev_get_drvdata(dev);
+	unsigned long val;
+
+	if (strict_strtoul(buf, 0, &val))
+		return -EINVAL;
+
+	if ((val != 0) && (val != 1))
+		return -EINVAL;
+
+	if (pdata->chip->has_ext_clk) {
+		if (pdata->enable)
+			retval = bu21013_ext_clk(pdata, val, true);
+		else
+			pdata->ext_clk_state = val;
+		if (retval < 0)
+			return retval;
+	}
+	return count;
+}
+
+static DEVICE_ATTR(enable, S_IWUSR | S_IRUGO,
+		bu21013_show_attr_enable, bu21013_store_attr_enable);
+
+static DEVICE_ATTR(ext_clk, S_IWUSR | S_IRUGO,
+		bu21013_show_attr_extclk, bu21013_store_attr_extclk);
+
+
+static struct attribute *bu21013_attribute[] = {
+		&dev_attr_enable.attr,
+		&dev_attr_ext_clk.attr,
+		NULL,
+};
+
+static struct attribute_group bu21013_attr_group = {
+		.attrs = bu21013_attribute,
+};
+
 
 /**
  * bu21013_read_block_data(): read the touch co-ordinates
@@ -203,12 +432,14 @@ static int bu21013_do_touch_report(struct bu21013_ts_data *data)
 	if (!has_x_sensors || !has_y_sensors)
 		return 0;
 
-	for (i = 0; i < MAX_FINGERS; i++) {
+	for (i = 0; i < 2; i++) {
 		const u8 *p = &buf[4 * i + 3];
 		unsigned int x = p[0] << SHIFT_2 | (p[1] & MASK_BITS);
 		unsigned int y = p[2] << SHIFT_2 | (p[3] & MASK_BITS);
 		if (x == 0 || y == 0)
 			continue;
+		x = x * data->factor_x / SCALE_FACTOR;
+		y = y * data->factor_y / SCALE_FACTOR;
 		pos_x[finger_down_count] = x;
 		pos_y[finger_down_count] = y;
 		finger_down_count++;
@@ -216,21 +447,21 @@ static int bu21013_do_touch_report(struct bu21013_ts_data *data)
 
 	if (finger_down_count) {
 		if (finger_down_count == 2 &&
-		    (abs(pos_x[0] - pos_x[1]) < DELTA_MIN ||
-		     abs(pos_y[0] - pos_y[1]) < DELTA_MIN)) {
+				(abs(pos_x[0] - pos_x[1]) < DELTA_MIN ||
+				abs(pos_y[0] - pos_y[1]) < DELTA_MIN))
 			return 0;
-		}
 
 		for (i = 0; i < finger_down_count; i++) {
-			if (data->chip->x_flip)
-				pos_x[i] = data->chip->touch_x_max - pos_x[i];
-			if (data->chip->y_flip)
-				pos_y[i] = data->chip->touch_y_max - pos_y[i];
-
-			input_report_abs(data->in_dev,
-					 ABS_MT_POSITION_X, pos_x[i]);
-			input_report_abs(data->in_dev,
-					 ABS_MT_POSITION_Y, pos_y[i]);
+			if (data->chip->portrait && data->chip->x_flip)
+				pos_x[i] = data->chip->x_max_res - pos_x[i];
+			if (data->chip->portrait && data->chip->y_flip)
+				pos_y[i] = data->chip->y_max_res - pos_y[i];
+			input_report_abs(data->in_dev, ABS_MT_TOUCH_MAJOR,
+						max(pos_x[i], pos_y[i]));
+			input_report_abs(data->in_dev, ABS_MT_POSITION_X,
+								pos_x[i]);
+			input_report_abs(data->in_dev, ABS_MT_POSITION_Y,
+								pos_y[i]);
 			input_mt_sync(data->in_dev);
 		}
 	} else
@@ -260,24 +491,23 @@ static irqreturn_t bu21013_gpio_irq(int irq, void *device_data)
 			dev_err(&i2c->dev, "bu21013_do_touch_report failed\n");
 			return IRQ_NONE;
 		}
-
 		data->intr_pin = data->chip->irq_read_val();
 		if (data->intr_pin == PEN_DOWN_INTR)
 			wait_event_timeout(data->wait, data->touch_stopped,
-					   msecs_to_jiffies(2));
+					msecs_to_jiffies(PENUP_TIMEOUT));
 	} while (!data->intr_pin && !data->touch_stopped);
-
 	return IRQ_HANDLED;
 }
 
 /**
  * bu21013_init_chip() - power on sequence for the bu21013 controller
  * @data: device structure pointer
+ * @on_ext_clk: Run on external clock
  *
  * This function is used to power on
  * the bu21013 controller and returns integer.
  */
-static int bu21013_init_chip(struct bu21013_ts_data *data)
+static int bu21013_init_chip(struct bu21013_ts_data *data, bool on_ext_clk)
 {
 	int retval;
 	struct i2c_client *i2c = data->client;
@@ -296,28 +526,24 @@ static int bu21013_init_chip(struct bu21013_ts_data *data)
 		dev_err(&i2c->dev, "BU21013_SENSOR_0_7 reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_SENSOR_8_15_REG,
 						BU21013_SENSORS_EN_8_15);
 	if (retval < 0) {
 		dev_err(&i2c->dev, "BU21013_SENSOR_8_15 reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_SENSOR_16_23_REG,
 						BU21013_SENSORS_EN_16_23);
 	if (retval < 0) {
 		dev_err(&i2c->dev, "BU21013_SENSOR_16_23 reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_POS_MODE1_REG,
 				(BU21013_POS_MODE1_0 | BU21013_POS_MODE1_1));
 	if (retval < 0) {
 		dev_err(&i2c->dev, "BU21013_POS_MODE1 reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_POS_MODE2_REG,
 			(BU21013_POS_MODE2_ZERO | BU21013_POS_MODE2_AVG1 |
 			BU21013_POS_MODE2_AVG2 | BU21013_POS_MODE2_EN_RAW |
@@ -326,8 +552,7 @@ static int bu21013_init_chip(struct bu21013_ts_data *data)
 		dev_err(&i2c->dev, "BU21013_POS_MODE2 reg write failed\n");
 		return retval;
 	}
-
-	if (data->chip->ext_clk)
+	if (on_ext_clk)
 		retval = i2c_smbus_write_byte_data(i2c, BU21013_CLK_MODE_REG,
 			(BU21013_CLK_MODE_EXT | BU21013_CLK_MODE_CALIB));
 	else
@@ -337,21 +562,18 @@ static int bu21013_init_chip(struct bu21013_ts_data *data)
 		dev_err(&i2c->dev, "BU21013_CLK_MODE reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_IDLE_REG,
 				(BU21013_IDLET_0 | BU21013_IDLE_INTERMIT_EN));
 	if (retval < 0) {
 		dev_err(&i2c->dev, "BU21013_IDLE reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_INT_MODE_REG,
 						BU21013_INT_MODE_LEVEL);
 	if (retval < 0) {
 		dev_err(&i2c->dev, "BU21013_INT_MODE reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_FILTER_REG,
 						(BU21013_DELTA_0_6 |
 							BU21013_FILTER_EN));
@@ -366,14 +588,12 @@ static int bu21013_init_chip(struct bu21013_ts_data *data)
 		dev_err(&i2c->dev, "BU21013_TH_ON reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_TH_OFF_REG,
 				BU21013_TH_OFF_4 | BU21013_TH_OFF_3);
 	if (retval < 0) {
 		dev_err(&i2c->dev, "BU21013_TH_OFF reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_GAIN_REG,
 					(BU21013_GAIN_0 | BU21013_GAIN_1));
 	if (retval < 0) {
@@ -387,7 +607,6 @@ static int bu21013_init_chip(struct bu21013_ts_data *data)
 		dev_err(&i2c->dev, "BU21013_OFFSET_MODE reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_XY_EDGE_REG,
 				(BU21013_X_EDGE_0 | BU21013_X_EDGE_2 |
 				BU21013_Y_EDGE_1 | BU21013_Y_EDGE_3));
@@ -395,7 +614,6 @@ static int bu21013_init_chip(struct bu21013_ts_data *data)
 		dev_err(&i2c->dev, "BU21013_XY_EDGE reg write failed\n");
 		return retval;
 	}
-
 	retval = i2c_smbus_write_byte_data(i2c, BU21013_DONE_REG,
 							BU21013_DONE);
 	if (retval < 0) {
@@ -403,25 +621,15 @@ static int bu21013_init_chip(struct bu21013_ts_data *data)
 		return retval;
 	}
 
-	return 0;
+	data->factor_x = (data->chip->x_max_res * SCALE_FACTOR /
+					data->chip->touch_x_max);
+	data->factor_y = (data->chip->y_max_res * SCALE_FACTOR /
+					data->chip->touch_y_max);
+	return retval;
 }
 
 /**
- * bu21013_free_irq() - frees IRQ registered for touchscreen
- * @bu21013_data: device structure pointer
- *
- * This function signals interrupt thread to stop processing and
- * frees interrupt.
- */
-static void bu21013_free_irq(struct bu21013_ts_data *bu21013_data)
-{
-	bu21013_data->touch_stopped = true;
-	wake_up(&bu21013_data->wait);
-	free_irq(bu21013_data->chip->irq, bu21013_data);
-}
-
-/**
- * bu21013_probe() - initializes the i2c-client touchscreen driver
+ * bu21013_probe() - initialzes the i2c-client touchscreen driver
  * @client: i2c client structure pointer
  * @id: i2c device id pointer
  *
@@ -431,11 +639,11 @@ static void bu21013_free_irq(struct bu21013_ts_data *bu21013_data)
 static int __devinit bu21013_probe(struct i2c_client *client,
 					const struct i2c_device_id *id)
 {
+	int retval;
 	struct bu21013_ts_data *bu21013_data;
 	struct input_dev *in_dev;
-	const struct bu21013_platform_device *pdata =
+	struct bu21013_platform_device *pdata =
 					client->dev.platform_data;
-	int error;
 
 	if (!i2c_check_functionality(client->adapter,
 					I2C_FUNC_SMBUS_BYTE_DATA)) {
@@ -445,52 +653,71 @@ static int __devinit bu21013_probe(struct i2c_client *client,
 
 	if (!pdata) {
 		dev_err(&client->dev, "platform data not defined\n");
-		return -EINVAL;
+		retval = -EINVAL;
+		return retval;
 	}
 
 	bu21013_data = kzalloc(sizeof(struct bu21013_ts_data), GFP_KERNEL);
-	in_dev = input_allocate_device();
-	if (!bu21013_data || !in_dev) {
+	if (!bu21013_data) {
 		dev_err(&client->dev, "device memory alloc failed\n");
-		error = -ENOMEM;
-		goto err_free_mem;
+		retval = -ENOMEM;
+		return retval;
+	}
+	/* allocate input device */
+	in_dev = input_allocate_device();
+	if (!in_dev) {
+		dev_err(&client->dev, "input device memory alloc failed\n");
+		retval = -ENOMEM;
+		goto err_alloc;
 	}
 
 	bu21013_data->in_dev = in_dev;
 	bu21013_data->chip = pdata;
 	bu21013_data->client = client;
 
-	bu21013_data->regulator = regulator_get(&client->dev, "V-TOUCH");
+	bu21013_data->regulator = regulator_get(&client->dev, "avdd");
 	if (IS_ERR(bu21013_data->regulator)) {
-		dev_err(&client->dev, "regulator_get failed\n");
-		error = PTR_ERR(bu21013_data->regulator);
-		goto err_free_mem;
+		dev_warn(&client->dev, "regulator_get failed\n");
+		bu21013_data->regulator = NULL;
 	}
-
-	error = regulator_enable(bu21013_data->regulator);
-	if (error < 0) {
-		dev_err(&client->dev, "regulator enable failed\n");
-		goto err_put_regulator;
-	}
-
-	bu21013_data->touch_stopped = false;
-	init_waitqueue_head(&bu21013_data->wait);
+	if (bu21013_data->regulator)
+		regulator_enable(bu21013_data->regulator);
 
 	/* configure the gpio pins */
 	if (pdata->cs_en) {
-		error = pdata->cs_en(pdata->cs_pin);
-		if (error < 0) {
+		retval = pdata->cs_en(pdata->cs_pin);
+		if (retval < 0) {
 			dev_err(&client->dev, "chip init failed\n");
-			goto err_disable_regulator;
+			goto err_init_cs;
 		}
 	}
 
-	/* configure the touch panel controller */
-	error = bu21013_init_chip(bu21013_data);
-	if (error) {
-		dev_err(&client->dev, "error in bu21013 config\n");
-		goto err_cs_disable;
+	if (pdata->has_ext_clk) {
+		bu21013_data->tpclk = clk_get(&client->dev, NULL);
+		if (IS_ERR(bu21013_data->tpclk)) {
+			dev_warn(&client->dev, "get extern clock failed\n");
+			bu21013_data->tpclk = NULL;
+		}
 	}
+
+	if (pdata->enable_ext_clk && bu21013_data->tpclk) {
+		retval = clk_enable(bu21013_data->tpclk);
+		if (retval < 0) {
+			dev_err(&client->dev, "clock enable failed\n");
+			goto err_ext_clk;
+		}
+		bu21013_data->ext_clk_enable = true;
+	}
+
+	/* configure the touch panel controller */
+	retval = bu21013_init_chip(bu21013_data, bu21013_data->ext_clk_enable);
+	if (retval < 0) {
+		dev_err(&client->dev, "error in bu21013 config\n");
+		goto err_init_config;
+	}
+
+	init_waitqueue_head(&bu21013_data->wait);
+	bu21013_data->touch_stopped = false;
 
 	/* register the device to input subsystem */
 	in_dev->name = DRIVER_TP;
@@ -502,44 +729,70 @@ static int __devinit bu21013_probe(struct i2c_client *client,
 	__set_bit(EV_ABS, in_dev->evbit);
 
 	input_set_abs_params(in_dev, ABS_MT_POSITION_X, 0,
-						pdata->touch_x_max, 0, 0);
+						pdata->x_max_res, 0, 0);
 	input_set_abs_params(in_dev, ABS_MT_POSITION_Y, 0,
-						pdata->touch_y_max, 0, 0);
+						pdata->y_max_res, 0, 0);
+	input_set_abs_params(in_dev, ABS_MT_TOUCH_MAJOR, 0,
+			max(pdata->x_max_res , pdata->y_max_res), 0, 0);
 	input_set_drvdata(in_dev, bu21013_data);
+	retval = input_register_device(in_dev);
+	if (retval)
+		goto err_input_register;
 
-	error = request_threaded_irq(pdata->irq, NULL, bu21013_gpio_irq,
-				     IRQF_TRIGGER_FALLING | IRQF_SHARED,
-				     DRIVER_TP, bu21013_data);
-	if (error) {
+	retval = request_threaded_irq(pdata->irq, NULL, bu21013_gpio_irq,
+					(IRQF_TRIGGER_FALLING | IRQF_SHARED),
+					DRIVER_TP, bu21013_data);
+	if (retval) {
 		dev_err(&client->dev, "request irq %d failed\n", pdata->irq);
-		goto err_cs_disable;
+		goto err_init_irq;
 	}
-
-	error = input_register_device(in_dev);
-	if (error) {
-		dev_err(&client->dev, "failed to register input device\n");
-		goto err_free_irq;
-	}
-
-	device_init_wakeup(&client->dev, pdata->wakeup);
+	bu21013_data->enable = true;
 	i2c_set_clientdata(client, bu21013_data);
 
-	return 0;
+	/* sysfs implementation for dynamic enable/disable the input event */
+	retval = sysfs_create_group(&client->dev.kobj,	&bu21013_attr_group);
+	if (retval) {
+		dev_err(&client->dev, "failed to create sysfs entries\n");
+		goto err_sysfs_create;
+	}
 
-err_free_irq:
-	bu21013_free_irq(bu21013_data);
-err_cs_disable:
-	pdata->cs_dis(pdata->cs_pin);
-err_disable_regulator:
-	regulator_disable(bu21013_data->regulator);
-err_put_regulator:
-	regulator_put(bu21013_data->regulator);
-err_free_mem:
-	input_free_device(in_dev);
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	bu21013_data->early_suspend.level =
+				EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	bu21013_data->early_suspend.suspend = bu21013_ts_early_suspend;
+	bu21013_data->early_suspend.resume = bu21013_ts_late_resume;
+	register_early_suspend(&bu21013_data->early_suspend);
+#endif
+	return retval;
+
+err_sysfs_create:
+	free_irq(pdata->irq, bu21013_data);
+	i2c_set_clientdata(client, NULL);
+err_init_irq:
+	input_unregister_device(bu21013_data->in_dev);
+err_input_register:
+	wake_up(&bu21013_data->wait);
+err_init_config:
+	if (bu21013_data->tpclk) {
+		if (bu21013_data->ext_clk_enable)
+			clk_disable(bu21013_data->tpclk);
+		clk_put(bu21013_data->tpclk);
+	}
+err_ext_clk:
+	if (pdata->cs_dis)
+		pdata->cs_dis(pdata->cs_pin);
+err_init_cs:
+	if (bu21013_data->regulator) {
+		regulator_disable(bu21013_data->regulator);
+		regulator_put(bu21013_data->regulator);
+	}
+	input_free_device(bu21013_data->in_dev);
+err_alloc:
 	kfree(bu21013_data);
 
-	return error;
+	return retval;
 }
+
 /**
  * bu21013_remove() - removes the i2c-client touchscreen driver
  * @client: i2c client structure pointer
@@ -551,22 +804,28 @@ static int __devexit bu21013_remove(struct i2c_client *client)
 {
 	struct bu21013_ts_data *bu21013_data = i2c_get_clientdata(client);
 
-	bu21013_free_irq(bu21013_data);
-
+	bu21013_data->touch_stopped = true;
+	sysfs_remove_group(&client->dev.kobj, &bu21013_attr_group);
+	wake_up(&bu21013_data->wait);
+	free_irq(bu21013_data->chip->irq, bu21013_data);
 	bu21013_data->chip->cs_dis(bu21013_data->chip->cs_pin);
-
 	input_unregister_device(bu21013_data->in_dev);
 
-	regulator_disable(bu21013_data->regulator);
-	regulator_put(bu21013_data->regulator);
-
+	if (bu21013_data->tpclk) {
+		if (bu21013_data->ext_clk_enable)
+			clk_disable(bu21013_data->tpclk);
+		clk_put(bu21013_data->tpclk);
+	}
+	if (bu21013_data->regulator) {
+		regulator_disable(bu21013_data->regulator);
+		regulator_put(bu21013_data->regulator);
+	}
 	kfree(bu21013_data);
-
-	device_init_wakeup(&client->dev, false);
 
 	return 0;
 }
 
+#ifndef CONFIG_HAS_EARLYSUSPEND
 #ifdef CONFIG_PM
 /**
  * bu21013_suspend() - suspend the touch screen controller
@@ -578,15 +837,8 @@ static int __devexit bu21013_remove(struct i2c_client *client)
 static int bu21013_suspend(struct device *dev)
 {
 	struct bu21013_ts_data *bu21013_data = dev_get_drvdata(dev);
-	struct i2c_client *client = bu21013_data->client;
 
-	bu21013_data->touch_stopped = true;
-	if (device_may_wakeup(&client->dev))
-		enable_irq_wake(bu21013_data->chip->irq);
-	else
-		disable_irq(bu21013_data->chip->irq);
-
-	regulator_disable(bu21013_data->regulator);
+	bu21013_disable(bu21013_data);
 
 	return 0;
 }
@@ -601,35 +853,34 @@ static int bu21013_suspend(struct device *dev)
 static int bu21013_resume(struct device *dev)
 {
 	struct bu21013_ts_data *bu21013_data = dev_get_drvdata(dev);
-	struct i2c_client *client = bu21013_data->client;
-	int retval;
 
-	retval = regulator_enable(bu21013_data->regulator);
-	if (retval < 0) {
-		dev_err(&client->dev, "bu21013 regulator enable failed\n");
-		return retval;
-	}
-
-	retval = bu21013_init_chip(bu21013_data);
-	if (retval < 0) {
-		dev_err(&client->dev, "bu21013 controller config failed\n");
-		return retval;
-	}
-
-	bu21013_data->touch_stopped = false;
-
-	if (device_may_wakeup(&client->dev))
-		disable_irq_wake(bu21013_data->chip->irq);
-	else
-		enable_irq(bu21013_data->chip->irq);
-
-	return 0;
+	return bu21013_enable(bu21013_data);
 }
 
 static const struct dev_pm_ops bu21013_dev_pm_ops = {
 	.suspend = bu21013_suspend,
 	.resume  = bu21013_resume,
 };
+#endif
+#else
+static void bu21013_ts_early_suspend(struct early_suspend *data)
+{
+	struct bu21013_ts_data *bu21013_data =
+		container_of(data, struct bu21013_ts_data, early_suspend);
+	bu21013_disable(bu21013_data);
+}
+
+static void bu21013_ts_late_resume(struct early_suspend *data)
+{
+	struct bu21013_ts_data *bu21013_data =
+		container_of(data, struct bu21013_ts_data, early_suspend);
+	struct i2c_client *client = bu21013_data->client;
+	int retval;
+
+	retval = bu21013_enable(bu21013_data);
+	if (retval < 0)
+		dev_err(&client->dev, "bu21013 enable failed\n");
+}
 #endif
 
 static const struct i2c_device_id bu21013_id[] = {
@@ -642,7 +893,7 @@ static struct i2c_driver bu21013_driver = {
 	.driver	= {
 		.name	=	DRIVER_TP,
 		.owner	=	THIS_MODULE,
-#ifdef CONFIG_PM
+#if !defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM)
 		.pm	=	&bu21013_dev_pm_ops,
 #endif
 	},
