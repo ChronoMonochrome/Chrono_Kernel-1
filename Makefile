@@ -246,8 +246,14 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fno-tree-vectorize  -fomit-frame-pointer -pipe
-HOSTCXXFLAGS = -Ofast -fno-tree-vectorize -pipe
+HOSTCFLAGS  := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fno-tree-vectorize -fomit-frame-pointer -std=gnu99 -pipe
+
+HOSTCXXFLAGS := -O2 -pipe
+
+ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
+HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
+		-Wno-missing-field-initializers -fno-delete-null-pointer-checks
+endif
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -348,12 +354,12 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = -fno-pic
+CFLAGS_MODULE   = -pipe
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -D__linux__
+CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
-CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -pipe
 
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
@@ -365,57 +371,25 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing \
-                   -fno-common \
-		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
-		   -funsafe-math-optimizations \
-		   -fno-tree-vectorize \
-                   -pipe \
-                   -marm \
-		   -march=armv7-a \
-		   -mtune=cortex-a9 \
-		   -mfloat-abi=softfp \
-		   -mfpu=neon-fp16 \
-		   -mvectorize-with-neon-quad \
-		   -DNDEBUG \
-		   -fsection-anchors \
-		   -funsafe-loop-optimizations \
-		   -fivopts \
-		   -fuse-linker-plugin \
-		   -ffat-lto-objects \
-		   -fuse-ld=gold \
-		   -funroll-loops \
-		   -funswitch-loops \
-		   -frename-registers \
-		   -fgcse-sm \
-		   -fgcse-las \
-		   -fgcse-after-reload \
-		   -fdevirtualize-speculatively \
-		   -fira-region=all \
-                   -fsched-pressure \
-		   -fsched-spec-load \
- 		   -fsched-spec-load-dangerous \
-		   -fweb \
-		   -ftracer \
-		   -fipa-pta \
-                   -fno-check-data-deps \
-		   -fmodulo-sched \
-		   -fmodulo-sched-allow-regmoves \
-                   -ffunction-sections \
-                   -fdata-sections \
-                   -Wno-error=unused-parameter \
-                   -Wno-error=unused-but-set-variable \
-                   -Wno-error=maybe-uninitialized \
-		   -fno-keep-static-consts \
-		   -fmerge-all-constants 
+KBUILD_CFLAGS := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+		  -fno-strict-aliasing -fno-common \
+		  -Werror-implicit-function-declaration \
+		  -Wno-format-security \
+		  -fno-delete-null-pointer-checks \
+		  -marm \
+		  -march=armv7-a \
+		  -mtune=cortex-a9 \
+		  -mfpu=neon-fp16 \
+		  -mfloat-abi=softfp \
+		  -mthumb-interwork \
+		  -ftree-vectorize \
+		  -pipe
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_AFLAGS_MODULE  := -DMODULE
-KBUILD_CFLAGS_MODULE  := -DMODULE
+KBUILD_AFLAGS_MODULE  := -DMODULE -pipe
+KBUILD_CFLAGS_MODULE := -DMODULE -pipe
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
@@ -603,10 +577,10 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -Ofast
+KBUILD_CFLAGS	+= -O2
 endif
 
-LDFLAGS += -Ofast --as-needed --sort-common
+LDFLAGS += -O2 --as-needed --sort-common
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
