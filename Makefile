@@ -246,7 +246,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS  := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fno-tree-vectorize -fomit-frame-pointer -std=gnu99 -pipe
+HOSTCFLAGS  := -Wno-missing-prototypes -Wno-strict-prototypes -O2 -fno-tree-vectorize -fomit-frame-pointer -std=gnu99 -pipe
 
 HOSTCXXFLAGS := -O2 -pipe
 
@@ -371,7 +371,7 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fno-strict-aliasing -fno-common \
 		  -Werror-implicit-function-declaration \
 		  -Wno-format-security \
@@ -383,7 +383,9 @@ KBUILD_CFLAGS := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		  -mfloat-abi=softfp \
 		  -mthumb-interwork \
 		  -ftree-vectorize \
-		  -pipe
+		  -pipe \
+		  --param ggc-min-expand=70 \
+		  --param ggc-min-heapsize=262144 \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
