@@ -181,7 +181,7 @@ static int ext4_sync_parent(struct inode *inode)
  * i_mutex lock is held when entering and exiting this function
  */
 
-int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+int ext4_sync_file(struct file *file, int datasync)
 {
 	struct inode *inode = file->f_mapping->host;
 	struct ext4_inode_info *ei = EXT4_I(inode);
@@ -202,7 +202,7 @@ int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
 		goto out;
 
 	if (!journal) {
-		ret = generic_file_fsync(file, 0, LONG_MAX, datasync);
+		ret = generic_file_fsync(file, datasync);
 		if (!ret && !list_empty(&inode->i_dentry))
 			ret = ext4_sync_parent(inode);
 		goto out;

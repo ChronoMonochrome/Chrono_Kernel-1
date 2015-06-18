@@ -246,7 +246,7 @@ int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
 	 * livelocks in fsync_buffers_list().
 	 */
 	mutex_lock(&mapping->host->i_mutex);
-	err = file->f_op->fsync(file, start, end, datasync);
+	err = file->f_op->fsync(file, datasync);
 	if (!ret)
 		ret = err;
 	mutex_unlock(&mapping->host->i_mutex);
