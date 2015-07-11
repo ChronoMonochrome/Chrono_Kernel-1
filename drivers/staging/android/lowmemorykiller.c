@@ -42,6 +42,10 @@
 #include <linux/device.h>
 #include <linux/err.h>
 #include <linux/mm_inline.h>
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
+#include <linux/string.h>
+#endif
+
 #endif /* CONFIG_ZRAM_FOR_ANDROID */
 #ifdef ENHANCED_LMK_ROUTINE
 #define LOWMEM_DEATHPENDING_DEPTH 3
@@ -62,6 +66,48 @@ static size_t lowmem_minfree[6] = {
 	16 * 1024,	/* 64MB */
 };
 static int lowmem_minfree_size = 4;
+
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
+#define MAX_NOT_KILLABLE_PROCESSES	25
+
+/*
+ * Data struct for the management of not killable processes
+ */
+struct donotkill {
+	uint enabled;
+	char *names[MAX_NOT_KILLABLE_PROCESSES];
+	int names_count;
+};
+
+static struct donotkill donotkill_proc;		/* User processes to preserve from killing */
+
+/*
+ * Checks if a process name is inside a list of processes to be preserved from killing
+ */
+static bool is_in_donotkill_list(char *proc_name, struct donotkill *donotkill_proc)
+{
+	int i = 0;
+
+	/* If the do not kill feature is enabled and the process names to be preserved
+	 * is not empty, then check if the passed process name is contained inside it */
+	if (donotkill_proc->enabled && donotkill_proc->names_count > 0) {
+		for (i = 0; i < donotkill_proc->names_count; i++) {
+			if (strstr(donotkill_proc->names[i], proc_name) != NULL)
+				return true; /* The process must be preserved from killing */
+		}
+	}
+
+	return false; /* The process is not contained inside the process names list */
+}
+
+/*
+ * Checks if a process name is inside a list of user processes to be preserved from killing
+ */
+static bool is_in_donotkill_proc_list(char *proc_name)
+{
+	return is_in_donotkill_list(proc_name, &donotkill_proc);
+}
+#endif
 
 #ifdef CONFIG_ZRAM_FOR_ANDROID
 static struct class *lmk_class;
@@ -266,9 +312,10 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 				}
 			}
 
-			lowmem_print(2, "select %d (%s), adj %d, size %d, to kill\n",
+			lowmem_print(2, "[lmk] select %d (%s), adj %d, size %d, to kill\n",
 				p->pid, p->comm, oom_adj, tasksize);
 		}
+
 #else
 		if (selected) {
 			if (oom_adj < selected_oom_adj)
@@ -280,31 +327,51 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		selected = p;
 		selected_tasksize = tasksize;
 		selected_oom_adj = oom_adj;
-		lowmem_print(2, "select %d (%s), adj %d, size %d, to kill\n",
+		lowmem_print(2, "[lmk] select %d (%s), adj %d, size %d, to kill\n",
 			     p->pid, p->comm, oom_adj, tasksize);
 #endif
 	}
 #ifdef ENHANCED_LMK_ROUTINE
 	for (i = 0; i < LOWMEM_DEATHPENDING_DEPTH; i++) {
 		if (selected[i]) {
-			lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
-				selected[i]->pid, selected[i]->comm,
-				selected_oom_adj[i], selected_tasksize[i]);
-			lowmem_deathpending[i] = selected[i];
-			lowmem_deathpending_timeout = jiffies + HZ;
-			force_sig(SIGKILL, selected[i]);
-			rem -= selected_tasksize[i];
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
+			if (!is_in_donotkill_proc_list(selected[i]->comm)) {
+#endif
+				lowmem_print(1, "[lmk] send sigkill to %d (%s), adj %d, size %d\n",
+					selected[i]->pid, selected[i]->comm,
+					selected_oom_adj[i], selected_tasksize[i]);
+				lowmem_deathpending[i] = selected[i];
+				lowmem_deathpending_timeout = jiffies + HZ;
+				force_sig(SIGKILL, selected[i]);
+				rem -= selected_tasksize[i];
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
+			} else {
+				lowmem_print(1, "[lmk] the process '%s' is inside the donotkill_proc_names\n", selected[i]->comm);
+				lowmem_print(2, "[lmk] set adj from %d to %d for (%s)\n", selected[i]->signal->oom_adj, 0, selected[i]->comm);
+				selected[i]->signal->oom_adj = 0;
+			}
+#endif
 		}
 	}
 #else
 	if (selected) {
-		lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
-			     selected->pid, selected->comm,
-			     selected_oom_adj, selected_tasksize);
-		lowmem_deathpending = selected;
-		lowmem_deathpending_timeout = jiffies + HZ;
-		force_sig(SIGKILL, selected);
-		rem -= selected_tasksize;
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
+		if (!is_in_donotkill_proc_list(selected[i]->comm)) {
+#endif
+			lowmem_print(1, "[lmk] send sigkill to %d (%s), adj %d, size %d\n",
+				     selected->pid, selected->comm,
+				     selected_oom_adj, selected_tasksize);
+			lowmem_deathpending = selected;
+			lowmem_deathpending_timeout = jiffies + HZ;
+			force_sig(SIGKILL, selected);
+			rem -= selected_tasksize;
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
+		} else {
+			lowmem_print(1, "[lmk] the process '%s' is inside the donotkill_proc_names", selected->comm);
+			lowmem_print(2, "[lmk] set adj from %d to %d for (%s)\n", selected[i]->signal->oom_adj, 0, selected->comm);
+			selected[i]->signal->oom_adj = 0;
+		}
+#endif
 	}
 #endif
 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
@@ -562,6 +629,12 @@ module_param_array_named(adj, lowmem_adj, int, &lowmem_adj_size,
 module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
 			 S_IRUGO | S_IWUSR);
 module_param_named(debug_level, lowmem_debug_level, uint, S_IRUGO | S_IWUSR);
+
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
+module_param_named(donotkill_proc, donotkill_proc.enabled, uint, S_IRUGO | S_IWUSR);
+module_param_array_named(donotkill_proc_names, donotkill_proc.names, charp,
+			 &donotkill_proc.names_count, S_IRUGO | S_IWUSR);
+#endif
 
 module_init(lowmem_init);
 module_exit(lowmem_exit);
