@@ -17,6 +17,9 @@
 #include <linux/module.h>
 #include <linux/wakelock.h>
 #include <linux/slab.h>
+#ifdef CONFIG_USER_WAKELOCK_DONT_LOCK
+#include <linux/string.h>
+#endif
 
 #include "power.h"
 
@@ -38,6 +41,76 @@ struct user_wake_lock {
 	char			name[0];
 };
 struct rb_root user_wake_locks;
+
+#ifdef CONFIG_USER_WAKELOCK_DONT_LOCK
+#define MAX_USERLIST_WAKELOCKS		100
+
+/*
+ * Data struct for the wakelocks in user defined list
+ */
+struct wakelock_userlist_t {
+	uint enabled;
+	char *names[MAX_USERLIST_WAKELOCKS];
+	int names_count;
+};
+
+static struct wakelock_userlist_t wakelock_blacklist;		/* User defined wakelocks blacklist */
+static struct wakelock_userlist_t wakelock_whitelist;		/* User defined wakelocks whitelist */
+
+/*
+ * Checks if a wakelock name is inside a user defined list
+ */
+static bool is_in_wakelock_userlist(char *wakelock_name, struct wakelock_userlist_t *wakelock_userlist)
+{
+	int i = 0;
+
+	/* If  the wakelock list is not empty, then check if 
+	 * the passed wakelock name is contained inside it */
+	if (wakelock_userlist->names_count > 0) {
+		for (i = 0; i < wakelock_userlist->names_count; i++) {
+			if (strstr(wakelock_userlist->names[i], wakelock_name) != NULL)
+				return true; /* The wakelock name is inside the list */
+		}
+	}
+
+	return false; /* The wakelock name is not contained inside the list */
+}
+
+/*
+ * Checks if a wakelock name is inside a blacklist
+ */
+static bool is_in_wakelock_blacklist(char *wakelock_name)
+{
+	return is_in_wakelock_userlist(wakelock_name, &wakelock_blacklist);
+}
+
+/*
+ * Checks if a wakelock name is inside a whitelist
+ */
+static bool is_in_wakelock_whitelist(char *wakelock_name)
+{
+	return is_in_wakelock_userlist(wakelock_name, &wakelock_whitelist);
+}
+
+/*
+ * Check if a do not lock feature is enabled
+ */
+
+static bool is_wakelock_list_enabled(struct wakelock_userlist_t *wakelock_userlist)
+{
+	return wakelock_userlist->enabled;
+}
+
+static bool is_wakelock_blacklist_enabled(void)
+{
+	return is_wakelock_list_enabled(&wakelock_blacklist);
+}
+
+static bool is_wakelock_whitelist_enabled(void)
+{
+	return is_wakelock_list_enabled(&wakelock_whitelist);
+}
+#endif
 
 static struct user_wake_lock *lookup_wake_lock_name(
 	const char *buf, int allocate, long *timeoutptr)
@@ -153,6 +226,7 @@ ssize_t wake_lock_store(
 {
 	long timeout;
 	struct user_wake_lock *l;
+	bool is_whitelist_enabled, is_blacklist_enabled, is_in_whitelist, is_in_blacklist;
 
 	mutex_lock(&tree_lock);
 	l = lookup_wake_lock_name(buf, 1, &timeout);
@@ -164,10 +238,21 @@ ssize_t wake_lock_store(
 	if (debug_mask & DEBUG_ACCESS)
 		pr_info("wake_lock_store: %s, timeout %ld\n", l->name, timeout);
 
-	if (timeout)
-		wake_lock_timeout(&l->wake_lock, timeout);
-	else
-		wake_lock(&l->wake_lock);
+	is_whitelist_enabled = is_wakelock_whitelist_enabled();
+	is_blacklist_enabled = is_wakelock_blacklist_enabled();
+	is_in_whitelist = is_in_wakelock_whitelist(l->name);
+	is_in_blacklist = is_in_wakelock_blacklist(l->name);
+
+	if (is_whitelist_enabled &&  is_in_whitelist ||
+	     is_blacklist_enabled && !is_in_blacklist ||
+	     !is_whitelist_enabled && !is_blacklist_enabled) {
+		if (timeout)
+			wake_lock_timeout(&l->wake_lock, timeout);
+		else
+			wake_lock(&l->wake_lock);
+	} else {
+		pr_err("wake_lock_store: wakelock %s is blocked\n", l->name);
+	}
 bad_name:
 	mutex_unlock(&tree_lock);
 	return n;
@@ -216,4 +301,14 @@ not_found:
 	mutex_unlock(&tree_lock);
 	return n;
 }
+
+#ifdef CONFIG_USER_WAKELOCK_DONT_LOCK
+module_param_named(wakelock_blacklist, wakelock_blacklist.enabled, uint, S_IRUGO | S_IWUSR);
+module_param_array_named(wakelock_blacklist_names, wakelock_blacklist.names, charp,
+			 &wakelock_blacklist.names_count, S_IRUGO | S_IWUSR);
+
+module_param_named(wakelock_whitelist, wakelock_whitelist.enabled, uint, S_IRUGO | S_IWUSR);
+module_param_array_named(wakelock_whitelist_names, wakelock_whitelist.names, charp,
+			 &wakelock_whitelist.names_count, S_IRUGO | S_IWUSR);
+#endif
 

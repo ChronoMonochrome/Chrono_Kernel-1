@@ -50,6 +50,14 @@ config USER_WAKELOCK
 	  Write "lockname" to /sys/power/wake_unlock to unlock a user wake
 	  lock.
 
+config USER_WAKELOCK_DONT_LOCK
+	bool "Userspace wakelocks white- and blacklists"
+	depends on WAKELOCK
+	default y
+	---help---
+	  This feature allows to define wakelocks white- and blacklists to be 
+	  preserved from keeping the system awake.
+
 config EARLYSUSPEND
 	bool "Early suspend"
 	depends on WAKELOCK
