@@ -226,7 +226,9 @@ ssize_t wake_lock_store(
 {
 	long timeout;
 	struct user_wake_lock *l;
+#ifdef CONFIG_USER_WAKELOCK_DONT_LOCK
 	bool is_whitelist_enabled, is_blacklist_enabled, is_in_whitelist, is_in_blacklist;
+#endif
 
 	mutex_lock(&tree_lock);
 	l = lookup_wake_lock_name(buf, 1, &timeout);
@@ -238,6 +240,7 @@ ssize_t wake_lock_store(
 	if (debug_mask & DEBUG_ACCESS)
 		pr_info("wake_lock_store: %s, timeout %ld\n", l->name, timeout);
 
+#ifdef CONFIG_USER_WAKELOCK_DONT_LOCK
 	is_whitelist_enabled = is_wakelock_whitelist_enabled();
 	is_blacklist_enabled = is_wakelock_blacklist_enabled();
 	is_in_whitelist = is_in_wakelock_whitelist(l->name);
@@ -246,13 +249,17 @@ ssize_t wake_lock_store(
 	if (is_whitelist_enabled &&  is_in_whitelist ||
 	     is_blacklist_enabled && !is_in_blacklist ||
 	     !is_whitelist_enabled && !is_blacklist_enabled) {
+#endif
 		if (timeout)
 			wake_lock_timeout(&l->wake_lock, timeout);
 		else
 			wake_lock(&l->wake_lock);
+#ifdef CONFIG_USER_WAKELOCK_DONT_LOCK
 	} else {
-		pr_err("wake_lock_store: wakelock %s is blocked\n", l->name);
+		if (debug_mask & DEBUG_ACCESS)
+			pr_err("wake_lock_store: wakelock %s is blocked\n", l->name);
 	}
+#endif
 bad_name:
 	mutex_unlock(&tree_lock);
 	return n;
