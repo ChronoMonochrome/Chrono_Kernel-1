@@ -44,6 +44,18 @@ enum {
 static int debug_mask = DEBUG_EXIT_SUSPEND | DEBUG_WAKEUP;
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 
+static int no_suspend_backoff_wakelock = 1;
+module_param_named(no_suspend_backoff_wakelock, no_suspend_backoff_wakelock, uint, S_IRUGO | S_IWUSR);
+
+static int no_deleted_wakelocks = 1;
+module_param_named(no_deleted_wakelocks, no_deleted_wakelocks, uint, S_IRUGO | S_IWUSR);
+
+static int no_unknown_wakeups = 1;
+module_param_named(no_unknown_wakeups, no_unknown_wakeups, uint, S_IRUGO | S_IWUSR);
+
+static int no_main_wakelock = 0;
+module_param_named(no_main_wakelock, no_main_wakelock, uint, S_IRUGO | S_IWUSR);
+
 #define WAKE_LOCK_TYPE_MASK              (0x0f)
 #define WAKE_LOCK_INITIALIZED            (1U << 8)
 #define WAKE_LOCK_ACTIVE                 (1U << 9)
@@ -273,9 +285,13 @@ long has_wake_lock(int type)
 
 static void suspend_backoff(void)
 {
-	pr_info("suspend: too many immediate wakeups, back off\n");
-	wake_lock_timeout(&suspend_backoff_lock,
-			  msecs_to_jiffies(SUSPEND_BACKOFF_INTERVAL));
+	if (!no_suspend_backoff_wakelock) {
+		pr_err("suspend: too many immediate wakeups, back off\n");
+		wake_lock_timeout(&suspend_backoff_lock,
+				  msecs_to_jiffies(SUSPEND_BACKOFF_INTERVAL));
+	} else {
+		pr_err("suspend: wakelock suspend_backoff is not enabled because no_suspend_backoff_wakelock=1\n");
+	}
 }
 
 static void suspend(struct work_struct *work)
@@ -472,6 +488,21 @@ static void wake_lock_internal(
 	unsigned long irqflags;
 	long expire_in;
 
+	if (no_deleted_wakelocks && !strncmp(&lock->name[0], "deleted_wake_locks", 18)) {
+		pr_err("suspend: wakelock deleted_wakelocks is not enabled because no_deleted_wakelocks=1\n");
+		return;
+	}
+
+	if (no_unknown_wakeups && !strncmp(&lock->name[0], "unknown_wakeups", 15)) {
+		pr_err("suspend: wakelock unknown_wakeups is not enabled because no_unknown_wakeups=1\n");
+		return;
+	}
+	
+	if (no_main_wakelock && !strncmp(&lock->name[0], "main", 4)) {
+		pr_err("suspend: wakelock main is not enabled because no_main_wakelock=1\n");
+		return;
+	}
+	
 	spin_lock_irqsave(&list_lock, irqflags);
 	type = lock->flags & WAKE_LOCK_TYPE_MASK;
 	BUG_ON(type >= WAKE_LOCK_TYPE_COUNT);
