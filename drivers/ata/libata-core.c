@@ -4372,6 +4372,9 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
 	/* Devices which aren't very happy with higher link speeds */
 	{ "WD My Book",			NULL,	ATA_HORKAGE_1_5_GBPS, },
 
+	/* devices that don't properly handle TRIM commands */
+	{ "SuperSSpeed S238*",		NULL,	ATA_HORKAGE_NOTRIM, },
+
 	/*
 	 * Devices which choke on SETXFER.  Applies only if both the
 	 * device and controller are SATA.
