@@ -384,7 +384,7 @@ static const struct battery_type bat_type[] = {
 #endif
 		.charge_full_design = 1500,
 		.nominal_voltage = 3820,
-		.termination_vol =  4350,
+		.termination_vol =  4200,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
 		/* 
 		 * Please find real termination_curr_1st and
