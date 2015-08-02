@@ -64,10 +64,10 @@ static bool is_suspend = 0;
 static unsigned int battery_type = 1;
 module_param_named(battery_type, battery_type, uint, 0644);
 
-static int termination_vol[] = {4090, 4240};
-static int recharge_vol[] = {4050, 4190};
-static int termination_curr_1st[] = {60, 60};
-static int termination_curr_2nd[] = {0, 0};
+static int termination_vol[] = {4200, 4350};
+static int recharge_vol[] = {4050, 4200};
+static int termination_curr_1st[] = {200, 200};
+static int termination_curr_2nd[] = {150, 150};
 
 static void ab8500_chargalg_early_suspend(struct early_suspend *h)
 {
