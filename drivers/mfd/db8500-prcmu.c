@@ -2407,6 +2407,93 @@ invalid_input:
 }
 ATTR_RW(pllddr_cross_clocks);
 
+/*
+ * Dynamic management of aclk/dmaclk register 
+ * dividers based on earlysuspend state.
+ */ 
+static u32 ape_25_clk_div[] = {12, 12};
+static u32 ape_25_clk_div_screen_off[] = {16, 16};
+static u32 ape_50_clk_div[] = {8, 8};
+
+static ssize_t prcmu_ape25_clk_dyn_mgmt_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "ape_25_aclk=%d\nape_25_dmaclk=%d\nape_25_aclk_screen_off=%d\nape_25_dmaclk_screen_off=%d\nape_50_aclk=%d\nape_50_dmaclk=%d\n", ape_25_clk_div[0], ape_25_clk_div[1], ape_25_clk_div_screen_off[0], ape_25_clk_div_screen_off[1], ape_50_clk_div[0], ape_50_clk_div[1]);
+}
+
+static ssize_t prcmu_ape25_clk_dyn_mgmt_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val;
+	
+	if (!strncmp(buf, "ape_25_aclk=", 12)) {
+		ret = sscanf(&buf[12], "%d", &val);
+		if ((!ret) || (val <=0 || val > 31)) {
+			return -EINVAL;
+		}
+
+		 ape_25_clk_div[0] = val;
+
+		return count;
+	}
+
+	 if (!strncmp(buf, "ape_25_dmaclk=", 14)) {
+		ret = sscanf(&buf[14], "%d", &val);
+		if ((!ret) || (val <=0 || val > 31)) {
+			return -EINVAL;
+		}
+
+		 ape_25_clk_div[1] = val;
+
+		return count;
+	}
+
+	if (!strncmp(buf, "ape_25_aclk_screen_off=", 23)) {
+		ret = sscanf(&buf[23], "%d", &val);
+		if ((!ret) || (val <=0 || val > 31)) {
+			return -EINVAL;
+		}
+
+		 ape_25_clk_div_screen_off[0] = val;
+
+		return count;
+	}
+
+	if (!strncmp(buf, "ape_25_dmaclk_screen_off=", 25)) {
+		ret = sscanf(&buf[25], "%d", &val);
+		if ((!ret) || (val <=0 || val > 31)) {
+			return -EINVAL;
+		}
+
+		 ape_25_clk_div_screen_off[1] = val;
+
+		return count;
+	}
+
+	if (!strncmp(buf, "ape_50_aclk=", 12)) {
+		ret = sscanf(&buf[12], "%d", &val);
+		if ((!ret) || (val <=0 || val > 31)) {
+			return -EINVAL;
+		}
+
+		 ape_50_clk_div[0] = val;
+
+		return count;
+	}
+
+	 if (!strncmp(buf, "ape_50_dmaclk=", 14)) {
+		ret = sscanf(&buf[14], "%d", &val);
+		if ((!ret) || (val <=0 || val > 31)) {
+			return -EINVAL;
+		}
+
+		 ape_50_clk_div[1] = val;
+
+		return count;
+	} 	
+	return count;
+}
+ATTR_RW(prcmu_ape25_clk_dyn_mgmt);
+
+
 static ssize_t prcmu_qos_performance_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	sprintf(buf, "min cpufreq=%d\ndef. min apeopp=%d\ndef. min ddropp=%d\n"
@@ -2541,6 +2628,7 @@ static struct attribute *liveopp_attrs[] = {
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
 	&pllddr_oc_on_suspend_interface.attr,
+	&prcmu_ape25_clk_dyn_mgmt_interface.attr,
 	&prcmu_qos_performance_interface.attr,
 	NULL,
 };
@@ -2744,7 +2832,6 @@ static int db8500_prcmu_set_ddr_opp(u8 opp)
 	return 0;
 }
 
-/* Divide the frequency of certain clocks by 2 for APE_50_PARTLY_25_OPP. */
 static void request_even_slower_clocks(bool enable)
 {
 	void __iomem *clock_reg[] = {
@@ -2763,20 +2850,23 @@ static void request_even_slower_clocks(bool enable)
 	for (i = 0; i < ARRAY_SIZE(clock_reg); i++) {
 		u32 val;
 		u32 div;
-
 		val = readl(clock_reg[i]);
 		div = (val & PRCM_CLK_MGT_CLKPLLDIV_MASK);
 		if (enable) {
-			if ((div <= 1) || (div > 15)) {
+			if (is_suspend) 
+			 	div = ape_25_clk_div_screen_off[i];
+			else
+			 	div = ape_25_clk_div[i];
+			if ((div <= 0) || (div > 31)) {
 				pr_err("prcmu: Bad clock divider %d in %s\n",
 					div, __func__);
 				goto unlock_and_return;
 			}
-			div <<= 1;
 		} else {
-			if (div <= 2)
+	 		div = ape_50_clk_div[i];
+	 	 	if ((div <= 0) || (div > 31)) {
 				goto unlock_and_return;
-			div >>= 1;
+			}
 		}
 		val = ((val & ~PRCM_CLK_MGT_CLKPLLDIV_MASK) |
 			(div & PRCM_CLK_MGT_CLKPLLDIV_MASK));
