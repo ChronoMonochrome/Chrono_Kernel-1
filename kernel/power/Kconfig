@@ -339,3 +339,10 @@ config PM_SYNC_CTRL
 	default n
 	help
 	   An experimental control of filesystems sync on suspend
+
+config SPEEDUP_KEYRESUME
+	bool "Speed up late resume"
+	depends on SUSPEND
+	default y
+	---help---
+	  Speed up system resume
