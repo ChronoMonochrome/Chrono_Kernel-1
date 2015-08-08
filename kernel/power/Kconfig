@@ -380,3 +380,10 @@ config WQ_POWER_EFFICIENT_DEFAULT
 	  is enabled by default.
 
 	  If in doubt, say N.
+
+config SPEEDUP_KEYRESUME
+	bool "Speed up late resume"
+	depends on SUSPEND
+	default y
+	---help---
+	  Speed up system resume
