@@ -828,39 +828,38 @@ static ssize_t ws2401_sysfs_store_opp(struct device *dev,
 				       const char *buf, size_t len)
 {
 	int val;
-  
+
   	if (!strncmp(&buf[0], "apeopp=", 7))
 	{
 		sscanf(&buf[7], "%d", &val);
-		
+
 		if ((val != 25) && (val != 50) && (val != 100))
 			goto out;
-		
+
 		apeopp_requirement = val;
-		
+
 		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
 			"codina_lcd_dpi", apeopp_requirement ?
 			apeopp_requirement : 50);
 
 		return len;
 	}
-	
+
 	if (!strncmp(&buf[0], "ddropp=", 7))
 	{
 		sscanf(&buf[7], "%d", &val);
-		
+
 		if ((val != 25) && (val != 50) && (val != 100))
 			goto out;
-		
+
 		ddropp_requirement = val;
-		
+
 		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
 			"codina_lcd_dpi", ddropp_requirement ?
 			ddropp_requirement : 50);
 
 		return len;
 	}
-	
 out:
 	return -EINVAL;
 }
@@ -881,29 +880,234 @@ static ssize_t sysfs_store_display_settings(struct device *dev,
 				       const char *buf, size_t len)
 {
 	int val;
-  
+ 
   	if (!strncmp(&buf[0], "power_on_delay=", 15))
 	{
 		sscanf(&buf[15], "%d", &val);
-		
 		power_on_delay = val;
-		
 		return len;
 	}
-	
+
 	if (!strncmp(&buf[0], "reset_delay=", 12))
 	{
 		sscanf(&buf[12], "%d", &val);
-		
 		reset_delay = val;
 
 		return len;
 	}
-	
 	return -EINVAL;
 }
 static DEVICE_ATTR(display_settings, 0644,
 		sysfs_show_display_settings, sysfs_store_display_settings);
+
+static ssize_t ws2401_sysfs_show_mcde_chnl(struct device *dev,
+				      struct device_attribute *attr, char *buf)
+{
+	struct ws2401_dpi *lcd = dev_get_drvdata(dev);
+
+	sprintf(buf,   "[WS2401 MCDE Channel]\n");
+	sprintf(buf, "%spixclock: %d\n", buf, lcd->mdd->video_mode.pixclock);
+	sprintf(buf, "%shbp: %d\n", buf, lcd->mdd->video_mode.hbp);
+	sprintf(buf, "%shfp: %d\n", buf, lcd->mdd->video_mode.hfp);
+	sprintf(buf, "%shsw: %d\n", buf, lcd->mdd->video_mode.hsw);
+	sprintf(buf, "%svbp: %d\n", buf, lcd->mdd->video_mode.vbp);
+	sprintf(buf, "%svfp: %d\n", buf, lcd->mdd->video_mode.vfp);
+	sprintf(buf, "%svsw: %d\n", buf, lcd->mdd->video_mode.vsw);
+	sprintf(buf, "%sinterlaced: %d\n", buf, lcd->mdd->video_mode.interlaced);
+
+	return strlen(buf);
+}
+
+static ssize_t ws2401_sysfs_store_mcde_chnl(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t len)
+{
+	struct ws2401_dpi *lcd = dev_get_drvdata(dev);
+	int ret;
+	u32 pclk;	/* pixel clock in ps (pico seconds) */
+	u32 hbp;	/* horizontal back porch: left margin (excl. hsync) */
+	u32 hfp;	/* horizontal front porch: right margin (excl. hsync) */
+	u32 hsw;	/* horizontal sync width */
+	u32 vbp;	/* vertical back porch: upper margin (excl. vsync) */
+	u32 vfp;	/* vertical front porch: lower margin (excl. vsync) */
+	u32 vsw;
+	u32 interlaced;
+	u32 enable;
+
+	if (!strncmp(buf, "set_vmode", 8))
+	{
+		pr_err("[WS2401] Save chnl params\n");
+		mcde_chnl_set_video_mode(lcd->mdd->chnl_state, &lcd->mdd->video_mode);
+
+		return len;
+	}
+
+	if (!strncmp(buf, "apply_config", 8))
+	{
+		pr_err("[WS2401] Apply chnl config!\n");
+		mcde_chnl_apply(lcd->mdd->chnl_state);
+
+		return len;
+	}
+
+	if (!strncmp(buf, "stop_flow", 8))
+	{
+		pr_err("[WS2401] MCDE chnl stop flow!\n");
+		mcde_chnl_stop_flow(lcd->mdd->chnl_state);
+
+		return len;
+	}
+
+	if (!strncmp(buf, "update", 6))
+	{
+		pr_err("[WS2401] Update MCDE chnl!\n");
+		mcde_chnl_set_video_mode(lcd->mdd->chnl_state, &lcd->mdd->video_mode);
+		mcde_chnl_apply(lcd->mdd->chnl_state);
+		mcde_chnl_stop_flow(lcd->mdd->chnl_state);
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "enable=", 7))
+	{
+		sscanf(&buf[7], "%d", &enable);
+		pr_err("[WS2401] %s chnl\n", enable ? "Enable" : "Disable");
+
+		if (!enable)
+			mcde_chnl_disable(lcd->mdd->chnl_state);
+		else
+			mcde_chnl_enable(lcd->mdd->chnl_state);
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "pclk=", 5))
+	{
+		ret = sscanf(&buf[5], "%d", &pclk);
+		if (!ret) {
+			pr_err("[WS2401] Invaild param\n");
+
+			return -EINVAL;
+		}
+
+		pr_err("[WS2401] pclk: %d\n", pclk);
+		lcd->mdd->video_mode.pixclock = pclk;
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "hbp=", 4))
+	{
+		ret = sscanf(&buf[4], "%d", &hbp);
+		if (!ret) {
+			pr_err("[WS2401] Invaild param\n");
+
+			return -EINVAL;
+		}
+
+		pr_err("[WS2401] hbp: %d\n", hbp);
+		lcd->mdd->video_mode.hbp = hbp;
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "hfp=", 4))
+	{
+		ret = sscanf(&buf[4], "%d", &hfp);
+		if (!ret) {
+			pr_err("[WS2401] Invaild param\n");
+
+			return -EINVAL;
+		}
+
+		pr_err("[WS2401] hfp: %d\n", hfp);
+		lcd->mdd->video_mode.hfp = hfp;
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "hsw=", 4))
+	{
+		ret = sscanf(&buf[4], "%d", &hsw);
+		if (!ret) {
+			pr_err("[WS2401] Invaild param\n");
+
+			return -EINVAL;
+		}
+
+		pr_err("[WS2401] hsw: %d\n", hsw);
+		lcd->mdd->video_mode.hsw = hsw;
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "vbp=", 4))
+	{
+		ret = sscanf(&buf[4], "%d", &vbp);
+		if (!ret) {
+			pr_err("[WS2401] Invaild param\n");
+
+			return -EINVAL;
+		}
+
+		pr_err("[WS2401] vbp: %d\n", vbp);
+		lcd->mdd->video_mode.vbp = vbp;
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "vfp=", 4))
+	{
+		ret = sscanf(&buf[4], "%d", &vfp);
+		if (!ret) {
+			pr_err("[WS2401] Invaild param\n");
+
+			return -EINVAL;
+		}
+
+		pr_err("[WS2401] vfp: %d\n", vfp);
+		lcd->mdd->video_mode.vfp = vfp;
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "vsw=", 4))
+	{
+		ret = sscanf(&buf[4], "%d", &vsw);
+		if (!ret) {
+			pr_err("[WS2401] Invaild param\n");
+
+			return -EINVAL;
+		}
+
+		pr_err("[WS2401] vsw: %d\n", vsw);
+		lcd->mdd->video_mode.vsw = vsw;
+
+		return len;
+	}
+
+	if (!strncmp(&buf[0], "interlaced=", 11))
+	{
+		ret = sscanf(&buf[11], "%d", &interlaced);
+		if (!ret) {
+			pr_err("[WS2401] Invaild param\n");
+
+			return -EINVAL;
+		}
+
+		pr_err("[WS2401] interlaced: %d\n", interlaced);
+		lcd->mdd->video_mode.interlaced = interlaced;
+
+		return len;
+	}
+
+	pr_err("[WS2401] Invaild cmd\n");
+
+	return len;
+}
+
+static DEVICE_ATTR(mcde_chnl, 0644,
+		ws2401_sysfs_show_mcde_chnl, ws2401_sysfs_store_mcde_chnl);
 
 static ssize_t ws2401_dpi_sysfs_store_lcd_power(struct device *dev,
 						struct device_attribute *attr,
@@ -1143,15 +1347,19 @@ static int __devinit ws2401_dpi_mcde_probe(
 	if (ret < 0)
 		dev_err(&(ddev->dev),
 			"failed to add lcd_power sysfs entries\n");
-	
-	ret = device_create_file(&(ddev->dev), &dev_attr_mcde_screenon_opp);	
+
+	ret = device_create_file(&(ddev->dev), &dev_attr_mcde_screenon_opp);
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add mcde_screenon_opp sysfs entries\n");
 
-	ret = device_create_file(&(ddev->dev), &dev_attr_display_settings);	
+	ret = device_create_file(&(ddev->dev), &dev_attr_display_settings);
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add display_settings sysfs entries\n");
-	
+
+	ret = device_create_file(&(ddev->dev), &dev_attr_mcde_chnl);
+	if (ret < 0)
+		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
+
 	lcd->spi_drv.driver.name	= "pri_lcd_spi";
 	lcd->spi_drv.driver.bus		= &spi_bus_type;
 	lcd->spi_drv.driver.owner	= THIS_MODULE;
