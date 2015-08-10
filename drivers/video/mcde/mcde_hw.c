@@ -1187,6 +1187,8 @@ static int wait_for_vsync(struct mcde_chnl_state *chnl)
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/mfd/db8500-prcmu.h>
 
+extern int lcdclk_usr;
+
 #define LCDCLK_SET(clk) prcmu_set_clock_rate(PRCMU_LCDCLK, (unsigned long) clk);
 
 struct lcdclk_prop
@@ -1216,9 +1218,12 @@ static struct lcdclk_prop lcdclk_prop[] = {
 		.name = "40 Hz",
 		.clk = 33280000,
 	},
+  	[5] = {
+		.name = "35 Hz",
+		.clk = 30720000,
+	},
 };
 
-static int lcdclk_usr = 1; /* 60 Hz */
 static unsigned int custom_lcdclk = 49920000;
 
 static void lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
@@ -1228,7 +1233,7 @@ static void lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
 	if ((custom_lcdclk != 0) && (lcdclk_usr == -2)) {
 		pr_err("[MCDE] LCDCLK %dHz\n", custom_lcdclk);
 		LCDCLK_SET(custom_lcdclk);
-	} else if (lcdclk_usr != -1) { 
+	} else if (lcdclk_usr != -1) {
 		pr_err("[MCDE] LCDCLK %dHz\n", lcdclk_prop[lcdclk_usr].clk);
 		LCDCLK_SET(lcdclk_prop[lcdclk_usr].clk);
 	}
@@ -1257,11 +1262,11 @@ static ssize_t lcdclk_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 
 	sprintf(buf, "%s[-2][%s] Custom\n", buf, lcdclk_usr == -2 ? "*" : " ");
 	sprintf(buf, "%s[-1][%s] Default (60 Hz)\n", buf, lcdclk_usr == -1 ? "*" : " ");
-	
+
 	for (i = 0; i < ARRAY_SIZE(lcdclk_prop); i++) {
 		sprintf(buf, "%s[%d][%s] %s\n", buf, i, i == lcdclk_usr ? "*" : " ", lcdclk_prop[i].name);
 	}
-	
+
 	sprintf(buf, "%sCurrent LCDCLK freq: %d\n", buf, (int) prcmu_clock_rate(PRCMU_LCDCLK));
 
 	return strlen(buf);
@@ -1278,7 +1283,7 @@ static ssize_t lcdclk_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	}
 
 	ret = sscanf(buf, "%d", &tmp);
-	if (!ret || (tmp < -2) || (tmp > 4)) {
+	if (!ret || (tmp < -2) || (tmp > ARRAY_SIZE(lcdclk_prop) - 1)) {
 		  pr_err("[MCDE] Bad cmd\n");
 		  return -EINVAL;
 	}

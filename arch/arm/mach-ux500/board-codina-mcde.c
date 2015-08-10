@@ -92,7 +92,7 @@ static struct mcde_port port0 = {
 				DPI_ACT_LOW_HSYNC |
 				/* DPI_ACT_LOW_DATA_ENABLE | */
 				DPI_ACT_ON_FALLING_EDGE,
-			.lcd_freq = PRCMU_DPI_CLK_SMD_FREQ
+			.lcd_freq = PRCMU_DPI_CLK_SHARP_FREQ
 		},
 	},
 };
@@ -407,6 +407,8 @@ if ((reqs->num_rot_channels && reqs->num_overlays > 1) ||
 	
 }
 
+int lcdclk_usr = 0;
+
 int __init init_codina_display_devices(void)
 {
 	int ret;
@@ -427,11 +429,13 @@ int __init init_codina_display_devices(void)
 	 * space.
 	 */
 	if (lcd_type == LCD_PANEL_TYPE_SMD) {
+		lcdclk_usr = 1; /* 49.92 MHz */
 		port0.phy.dpi.clock_div = 2;
 		port0.phy.dpi.lcd_freq = PRCMU_DPI_CLK_SMD_FREQ;
 		codina_dpi_pri_display_info.video_mode.pixclock	=
 				(int)(1e+12 * (1.0 / PRCMU_DPI_CLK_SMD_FREQ));
 	} else {
+		lcdclk_usr = 5; /* 30.72 MHz */
 		port0.phy.dpi.clock_div = 1;
 		port0.phy.dpi.lcd_freq = PRCMU_DPI_CLK_SHARP_FREQ;
 		codina_dpi_pri_display_info.video_mode.pixclock	=
