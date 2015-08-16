@@ -520,11 +520,72 @@ out:
 	return ret;
 }
 
+#include <linux/ab8500-ponkey.h>
+#include <linux/input.h>
+#include <linux/earlysuspend.h>
+
+static unsigned int voice_call_wake_device = false;
+
+/* if wake_device_home_key == false, power key will be used instead */
+static unsigned int voice_call_wake_device_home_key = true; 
+static unsigned int emu_delay = 300;
+
+static bool prcmu_qos_power_ponkey_thread_is_ongoing = false;
+
+module_param_named(voice_call_wake_device, voice_call_wake_device, uint, 0644);
+module_param_named(voice_call_wake_device_home_key, voice_call_wake_device_home_key, uint, 0644);
+module_param_named(emu_delay, emu_delay, uint, 0644);
+
+static void prcmu_qos_power_ponkey_thread(struct work_struct *abb_ponkey_emulator_work)
+{
+	int keycode = voice_call_wake_device_home_key ? KEY_HOMEPAGE : KEY_POWER;
+	pr_err("[PRCMU-QOS-POWER] Emulator thread called, timer = %d", emu_delay);
+
+	ab8500_ponkey_emulator(keycode, 1);
+
+	mdelay(emu_delay);
+
+	ab8500_ponkey_emulator(keycode, 0);
+	
+	if (voice_call_wake_device_home_key)
+		abb_ponkey_unmap_power_key(KEY_HOMEPAGE);
+
+	prcmu_qos_power_ponkey_thread_is_ongoing = false;
+}
+static DECLARE_WORK(prcmu_qos_power_ponkey_work, prcmu_qos_power_ponkey_thread);
+
+static bool is_suspend = false;
+static struct early_suspend prcmu_qos_power_early_suspend;
+
+static void early_suspend(struct early_suspend *h)
+{
+	is_suspend = true;
+}
+
+static void late_resume(struct early_suspend *h)
+{
+	is_suspend = false;
+}
+
 void prcmu_qos_voice_call_override(bool enable)
 {
 	int ape_opp;
 
 	mutex_lock(&prcmu_qos_mutex);
+
+	pr_err("voice_call_wake_device: %d\n", (int)voice_call_wake_device);
+	pr_err("enable: %d\n", (int)enable);
+	pr_err("is_suspend: %d\n", (int)is_suspend);
+
+	if (voice_call_wake_device && enable && is_suspend) {
+		if (voice_call_wake_device_home_key)
+			abb_ponkey_remap_power_key(KEY_POWER, KEY_HOMEPAGE);
+
+		if (!prcmu_qos_power_ponkey_thread_is_ongoing) {
+			schedule_work(&prcmu_qos_power_ponkey_work);
+			prcmu_qos_power_ponkey_thread_is_ongoing = true;
+		}
+	}
 
 	/*
 	 * All changes done through debugfs will be lost when voice-call is
@@ -1068,6 +1129,9 @@ static int __init prcmu_qos_power_init(void)
 #ifdef CONFIG_DEBUG_FS
 	ret = setup_debugfs();
 #endif
+	prcmu_qos_power_early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	prcmu_qos_power_early_suspend.suspend = early_suspend;
+	prcmu_qos_power_early_suspend.resume = late_resume;
 
 	return ret;
 
