@@ -452,6 +452,10 @@ extern void projector_motor_ccw(void);
 
 static unsigned int volkey_press_skip_track = false;
 
+bool is_volkey_press_skip_track(void){
+	return volkey_press_skip_track;
+}
+
 // determines whether skip track thread is already run
 static bool volkey_skip_track_is_ongoing = false;
 
@@ -489,11 +493,17 @@ static void volkey_skip_track_fn(struct work_struct *volkey_skip_track_work)
 }
 static DECLARE_DELAYED_WORK(volkey_skip_track_work, volkey_skip_track_fn);
 
+static unsigned long emulated_keys[] = {KEY_NEXTSONG, KEY_PREVIOUSSONG, KEY_VOLUMEUP, KEY_VOLUMEDOWN};
+
+void unmap_keys(void) {
+	abb_ponkey_unmap_all_keys(&emulated_keys, 4);
+}
+
 static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_work)
 {
-	int key;
+	int key, mask;
 
-	if (volkey_remap_keys) 
+	if (volkey_remap_keys)
 		key = volkey_emulate_key_nextsong ? KEY_NEXTSONG : KEY_PREVIOUSSONG;
 	else
 		key = volkey_emulate_key_nextsong ? KEY_VOLUMEUP : KEY_VOLUMEDOWN;
@@ -501,7 +511,7 @@ static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_
 	ab8500_ponkey_emulator(key, 1);
 	mdelay(volkey_do_volume_key_press_delay_ms);
 	ab8500_ponkey_emulator(key, 0);
-	abb_ponkey_unmap_power_key(key);
+	unmap_keys();
 
 	volkey_do_volume_key_press_is_ongoing = false;
 }
@@ -566,12 +576,6 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 					volkey_skip_track_is_ongoing = true;
 				} else if (volkey_debug_level > 1) {
                                         pr_err("skipping volkey_skip_track_work\n");
-                                }
-
-
-				if (volkey_debug_level > 1) {
-                                        pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
-                                        pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
                                 }
 
 				return 0;

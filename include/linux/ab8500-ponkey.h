@@ -11,6 +11,7 @@
 #define __LINUX_AB8500_PONKEY_H
 
 void ab8500_ponkey_emulator(unsigned long keycode, bool press);
+void abb_ponkey_unmap_all_keys(unsigned long *keys, unsigned int array_len);
 void abb_ponkey_remap_power_key(unsigned long old_keycode, unsigned long new_keycode);
 void abb_ponkey_unmap_power_key(unsigned long old_keycode);
 

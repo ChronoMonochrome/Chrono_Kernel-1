@@ -145,12 +145,20 @@ static int try_to_freeze_tasks(bool sig_only)
 	return todo ? -EBUSY : 0;
 }
 
+extern bool is_volkey_press_skip_track(void);
+extern void unmap_keys(void);
+
 /**
  *	freeze_processes - tell processes to enter the refrigerator
  */
 int freeze_processes(void)
 {
 	int error;
+
+	if (is_volkey_press_skip_track()) {
+		unmap_keys();
+		pr_err("%s: power key unmapped\n", __func__);
+	}
 
 	printk("Freezing user space processes ... ");
 	error = try_to_freeze_tasks(true);

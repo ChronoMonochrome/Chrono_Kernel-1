@@ -207,6 +207,17 @@ void abb_ponkey_remap_power_key(unsigned long old_keycode, unsigned long new_key
 	p_info->idev->keybit[BIT_WORD(new_keycode)] = BIT_MASK(new_keycode);
 }
 
+void abb_ponkey_unmap_all_keys(unsigned long *keys, unsigned int array_len)
+{
+	int i;	
+
+	for (i = 0; i < array_len; i++){
+		p_info->idev->keybit[BIT_WORD(keys[i])] = (unsigned long)NULL;
+	}
+
+	p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+}
+
 void abb_ponkey_unmap_power_key(unsigned long old_keycode)
 {
 	p_info->idev->keybit[BIT_WORD(old_keycode)] = (unsigned long)NULL;
