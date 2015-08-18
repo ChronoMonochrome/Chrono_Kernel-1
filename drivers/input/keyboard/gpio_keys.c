@@ -455,6 +455,8 @@ static unsigned int volkey_press_skip_track = false;
 // determines whether skip track thread is already run
 static bool volkey_skip_track_is_ongoing = false;
 
+static bool volkey_do_volume_key_press_is_ongoing = false;
+
 // determines whether track should be skipped now
 static bool volkey_skip_track_now = false;
 
@@ -497,12 +499,11 @@ static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_
 		key = volkey_emulate_key_nextsong ? KEY_VOLUMEUP : KEY_VOLUMEDOWN;
 
 	ab8500_ponkey_emulator(key, 1);
-
 	mdelay(volkey_do_volume_key_press_delay_ms);
-
 	ab8500_ponkey_emulator(key, 0);
-	
 	abb_ponkey_unmap_power_key(key);
+
+	volkey_do_volume_key_press_is_ongoing = false;
 }
 static DECLARE_WORK(volkey_do_volume_key_press_work, volkey_do_volume_key_press_fn);
 
@@ -546,34 +547,32 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 				if (volkey_debug_level > 0) 
 					pr_err("[GPIO-KEYS] volkey_skip_track_work is already run\n");
 
-				if (volkey_debug_level > 1) {
-					pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
-					pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
-					pr_err("volkey_emulate_key_nextsong = %d\n", (int)volkey_emulate_key_nextsong);
-				}
-
 				cancel_delayed_work(&volkey_skip_track_work);
 				volkey_skip_track_is_ongoing = false;
 				volkey_skip_track_now = false;
 			}
 
 			volkey_emulate_key_nextsong = (button->gpio == VOL_UP_JANICE_R0_0);
-			
+
 			// vol.up/vol.down is pressed, start volkey_skip_track_work now
 			if (state == 1) {
 				if (volkey_debug_level > 0)
 					pr_err("[GPIO-KEYS] vol.%s is pressed\n", 
 							volkey_emulate_key_nextsong ? "up" : "down");
-			
-				if (volkey_debug_level > 1) {
-					pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
-					pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
-					pr_err("volkey_emulate_key_nextsong = %d\n", (int)volkey_emulate_key_nextsong);
-				}
 
-				volkey_skip_track_now = false;
-				schedule_delayed_work(&volkey_skip_track_work, volkey_long_press_delay_ms);
-				volkey_skip_track_is_ongoing = true;
+				if (!volkey_skip_track_is_ongoing) {
+					schedule_delayed_work(&volkey_skip_track_work, volkey_long_press_delay_ms);
+					volkey_skip_track_now = false;
+					volkey_skip_track_is_ongoing = true;
+				} else if (volkey_debug_level > 1) {
+                                        pr_err("skipping volkey_skip_track_work\n");
+                                }
+
+
+				if (volkey_debug_level > 1) {
+                                        pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
+                                        pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
+                                }
 
 				return 0;
 			} else if (state == 0 && volkey_skip_track_now) {
@@ -581,43 +580,38 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 				if (volkey_debug_level > 0)
 					pr_err("[GPIO-KEYS] vol.%s is released, skipping track\n", 
 							volkey_emulate_key_nextsong ? "up" : "down");
-				
-				if (volkey_debug_level > 1) {
-					pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
-					pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
-					pr_err("volkey_emulate_key_nextsong = %d\n", (int)volkey_emulate_key_nextsong);
+
+				if (!volkey_do_volume_key_press_is_ongoing) {
+					// emulate KEY_NEXTSONG / KEY_PREVIOUSSONG
+                                	volkey_remap_keys = true;
+
+                                	abb_ponkey_remap_power_key(KEY_POWER, 
+                                        	volkey_emulate_key_nextsong ? KEY_NEXTSONG : KEY_PREVIOUSSONG);	
+					schedule_work(&volkey_do_volume_key_press_work);
+					volkey_do_volume_key_press_is_ongoing = true;
+					volkey_skip_track_now = false;
+				} else if (volkey_debug_level > 1) {
+					pr_err("skipping volkey_do_volume_key_press_work\n");
 				}
-
-				// emulate KEY_NEXTSONG / KEY_PREVIOUSSONG
-				volkey_remap_keys = true;
-
-				abb_ponkey_remap_power_key(KEY_POWER, 
-					volkey_emulate_key_nextsong ? KEY_NEXTSONG : KEY_PREVIOUSSONG);
-
-				schedule_work(&volkey_do_volume_key_press_work);
-
-				volkey_skip_track_now = false;
 
 				return 0;
 			} else if (state == 0 && !volkey_skip_track_now) {
 				if (volkey_debug_level > 0)
 					pr_err("[GPIO-KEYS] vol.%s is released, not skipping track\n", 
 							volkey_emulate_key_nextsong ? "up" : "down");
-			
-				if (volkey_debug_level > 1) {
-					pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
-					pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
-					pr_err("volkey_emulate_key_nextsong = %d\n", (int)volkey_emulate_key_nextsong);
-				}
 
-				// volume key is released before volkey_long_press_delay_ms 
-				// has spent, emulate volume key press
-				volkey_remap_keys = false;
+				if (!volkey_do_volume_key_press_is_ongoing) {
+					// volume key is released before volkey_long_press_delay_ms 
+                                        // has spent, emulate volume key press
+                                	volkey_remap_keys = false;
 
-				abb_ponkey_remap_power_key(KEY_POWER, 
-					volkey_emulate_key_nextsong ? KEY_VOLUMEUP : KEY_VOLUMEDOWN);
-
-				schedule_work(&volkey_do_volume_key_press_work);
+	                                abb_ponkey_remap_power_key(KEY_POWER, 
+        	                                volkey_emulate_key_nextsong ? KEY_VOLUMEUP : KEY_VOLUMEDOWN);
+                                        schedule_work(&volkey_do_volume_key_press_work);
+                                        volkey_do_volume_key_press_is_ongoing = true;
+                                } else if (volkey_debug_level > 1) {
+                                        pr_err("skipping volkey_do_volume_key_press_work\n");
+                                }
 
 				return 0;
 			}
