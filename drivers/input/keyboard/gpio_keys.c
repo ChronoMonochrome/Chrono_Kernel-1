@@ -517,17 +517,22 @@ static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_
 }
 static DECLARE_WORK(volkey_do_volume_key_press_work, volkey_do_volume_key_press_fn);
 
-static bool is_suspend = false;
+static bool is_early_suspend = false;
+unsigned int is_suspend = 0;
+module_param_named(is_suspend, is_suspend, uint, 0444);
+
 static struct early_suspend early_suspend;
 
 static void gpio_keys_early_suspend(struct early_suspend *h)
 {
-	is_suspend = true;
+	is_early_suspend = true;
+	is_suspend = 0;
 }
 
 static void gpio_keys_late_resume(struct early_suspend *h)
 {
-	is_suspend = false;
+	is_early_suspend = false;
+	is_suspend = 0;
 }
 
 
@@ -550,7 +555,7 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 
 			return 0;
 		}
-	} else if (volkey_press_skip_track && (is_suspend || !volkey_skip_tracks_in_suspend_only)) {
+	} else if (volkey_press_skip_track && ! is_suspend && (is_early_suspend || !volkey_skip_tracks_in_suspend_only)) {
 		if (button->gpio == VOL_UP_JANICE_R0_0 || button->gpio == VOL_DOWN_JANICE_R0_0) {
 			// if vol.up/vol.down is pressed when volkey_skip_track_work is running, cancel it first
 			if (volkey_skip_track_is_ongoing && state == 1) {

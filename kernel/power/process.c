@@ -148,12 +148,16 @@ static int try_to_freeze_tasks(bool sig_only)
 extern bool is_volkey_press_skip_track(void);
 extern void unmap_keys(void);
 
+extern unsigned int is_suspend;
+
 /**
  *	freeze_processes - tell processes to enter the refrigerator
  */
 int freeze_processes(void)
 {
 	int error;
+	
+	is_suspend = 1;
 
 	if (is_volkey_press_skip_track()) {
 		unmap_keys();
