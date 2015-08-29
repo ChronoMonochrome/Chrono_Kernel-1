@@ -354,7 +354,7 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = -pipe
+CFLAGS_MODULE   = -pipe -fno-lto
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
 CFLAGS_KERNEL	=
@@ -377,17 +377,15 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -Wno-format-security \
 		  -fno-delete-null-pointer-checks \
 		  -marm \
+		  -mtune=cortex-a9 \
 		  -march=armv7-a \
 		  -mfpu=neon-fp16 \
-		  -mfloat-abi=softfp \
 		  -mthumb-interwork \
 		  -ftree-vectorize \
 		  -funsafe-loop-optimizations \
 		  -flto \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
-		  -pipe \
-		  --param ggc-min-expand=70 \
-		  --param ggc-min-heapsize=262144 \
+		  -pipe 
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
