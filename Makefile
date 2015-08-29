@@ -246,7 +246,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS  := -Wno-missing-prototypes -Wno-strict-prototypes -O2 -fno-tree-vectorize -fomit-frame-pointer -std=gnu99 -pipe
+HOSTCFLAGS  := -Wno-missing-prototypes -Wno-strict-prototypes -O2 -fomit-frame-pointer -std=gnu99 -pipe
 
 HOSTCXXFLAGS := -O2 -pipe
 
@@ -378,11 +378,13 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fno-delete-null-pointer-checks \
 		  -marm \
 		  -march=armv7-a \
-		  -mtune=cortex-a9 \
 		  -mfpu=neon-fp16 \
 		  -mfloat-abi=softfp \
 		  -mthumb-interwork \
 		  -ftree-vectorize \
+		  -funsafe-loop-optimizations \
+		  -flto \
+		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
 		  --param ggc-min-expand=70 \
 		  --param ggc-min-heapsize=262144 \
