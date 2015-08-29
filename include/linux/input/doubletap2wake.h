@@ -27,6 +27,10 @@
 
 #define DOUBLETAP2WAKE_I2C_SLEEP 40
 
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
+extern bool use_wakelock;
+#endif
+
 extern int dt2w_switch;
 
 /* Sweep2wake main function */

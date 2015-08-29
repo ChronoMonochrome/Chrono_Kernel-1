@@ -4442,24 +4442,28 @@ out:
 static void bt404_ts_late_resume(struct early_suspend *h)
 {
 #if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	if(s2w_switch || dt2w_switch){
-		printk("==bt404_ts_resume=canceled for s2w or dt2w\n");
-		s2w_set_scr_suspended(false);
-		dt2w_set_scr_suspended(false);
-		return;
-	}
+	#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
+		if((s2w_switch || dt2w_switch) && use_wakelock){
+			printk("==bt404_ts_resume=canceled for s2w or dt2w\n");
+			s2w_set_scr_suspended(false);
+			dt2w_set_scr_suspended(false);
+			return;
+		}
+	#endif
 #elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if(s2w_switch){
+	if(s2w_switch) {
 		printk("==bt404_ts_resume=canceled for s2w\n");
 		s2w_set_scr_suspended(false);
 		return;
 	}
-#elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if(s2w_switch){
+#elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE 
+	#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
+	if(dt2w_switch && use_wakelock) {
 		printk("==bt404_ts_resume=canceled for dt2w\n");
 		dt2w_set_scr_suspended(false);
 		return;
 	}
+	#endif
 #endif
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
@@ -4481,20 +4485,24 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
 	dt2w_set_scr_suspended(true);
 #endif
 #if defined (CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined (CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	if(s2w_switch || dt2w_switch){
+	#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
+	if((s2w_switch || dt2w_switch) && use_wakelock){
 		printk("==bt404_ts_suspend=canceled for s2w or dt2w\n");
 		return;
 	}
+	#endif
 #elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
 	if(s2w_switch){
 		printk("==bt404_ts_suspend=canceled for s2w\n");
 		return;
 	}
 #elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if(dt2w_switch){
+	#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
+	if(dt2w_switch && use_wakelock){
 		printk("==bt404_ts_suspend=canceled for dt2w\n");
 		return;
 	}
+	#endif
 #endif
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);

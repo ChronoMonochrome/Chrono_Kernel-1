@@ -41,6 +41,8 @@
 #define DT2W_TIME		700
 
 /* Resources */
+unsigned int dt2w_debug = DT2W_DEBUG;
+module_param_named(dt2w_debug, dt2w_debug, uint, 0644);
 int dt2w_switch = DT2W_DEFAULT;
 static cputime64_t tap_time_pre = 0;
 static int touch_nr = 0, x_pre = 0, y_pre = 0;
@@ -49,25 +51,9 @@ static struct input_dev * doubletap2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-static bool use_wakelock = true;
+bool use_wakelock = false;
 static struct wake_lock dt2w_wake_lock;
 #endif
-
-/* Read cmdline for dt2w */
-static int __init read_dt2w_cmdline(char *dt2w)
-{
-	if (strcmp(dt2w, "1") == 0) {
-		printk(KERN_INFO "[cmdline_dt2w]: DoubleTap2Wake enabled. | dt2w='%s'", dt2w);
-		dt2w_switch = 1;
-	} else if (strcmp(dt2w, "0") == 0) {
-		printk(KERN_INFO "[cmdline_dt2w]: DoubleTap2Wake disabled. | dt2w='%s'", dt2w);
-		dt2w_switch = 0;
-	} else {
-		printk(KERN_INFO "[cmdline_dt2w]: No valid input found. Going with default: | dt2w='%u'", dt2w_switch);
-	}
-	return 1;
-}
-__setup("dt2w=", read_dt2w_cmdline);
 
 /* PowerKey setter */
 void doubletap2wake_setdev(struct input_dev * input_device) {
@@ -120,10 +106,10 @@ void detect_doubletap2wake(int x, int y, bool st)
 	bool single_touch = st;
 
 
-#if DT2W_DEBUG
-        pr_info("[doubletap2wake]: x,y(%4d,%4d) single:%s\n",
-                x, y, (single_touch) ? "true" : "false");
-#endif
+	if (dt2w_debug)
+	        pr_err("[doubletap2wake]: x,y(%4d,%4d) single:%s\n",
+        	        x, y, (single_touch) ? "true" : "false");
+
 	if ((!single_touch) && (dt2w_switch > 0) && (exec_count) && (scr_suspended)) {
 		if (touch_nr == 0) {
 			tap_time_pre = ktime_to_ms(ktime_get());
@@ -150,7 +136,8 @@ void detect_doubletap2wake(int x, int y, bool st)
 			touch_nr++;
 		}
 		if ((touch_nr > 1)) {
-			pr_info("[doubletap2wake]:ON\n");
+			if (dt2w_debug)
+				pr_err("[doubletap2wake]:ON\n");
 			exec_count = false;
 			doubletap2wake_pwrtrigger();
 			doubletap2wake_reset();
@@ -179,8 +166,8 @@ static int set_enable(const char *val, struct kernel_param *kp)
 		 * it causes unbalanced irq enable/disable requests. So
 		 * I'm waking the screen and then setting it.
 		 */
-		if(DT2W_DEBUG)	
-			printk("dt2w: cant enable/disable while screen is off! Waking...\n");
+		if(dt2w_debug)	
+			pr_err("dt2w: cant enable/disable while screen is off! Waking...\n");
 
 		doubletap2wake_pwrtrigger();
 
@@ -191,21 +178,21 @@ static int set_enable(const char *val, struct kernel_param *kp)
 	}
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
 		dt2w_switch = 1;
-		if(DT2W_DEBUG)
-			printk("dt2w: enabled\n");
+		if(dt2w_debug)
+			pr_err("dt2w: enabled\n");
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
 		if(use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
 			wake_lock(&dt2w_wake_lock);
-			if(DT2W_DEBUG)
-				printk("dt2w: wake lock enabled\n");
+			if(dt2w_debug)
+				pr_err("dt2w: wake lock enabled\n");
 		}
 #endif
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
 		dt2w_switch = 0;
-		if(DT2W_DEBUG)
-			printk("dt2w: disabled\n");
+		if(dt2w_debug)
+			pr_err("dt2w: disabled\n");
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
 		if(wake_lock_active(&dt2w_wake_lock)){
 			wake_unlock(&dt2w_wake_lock);
@@ -229,7 +216,7 @@ static int set_use_wakelock(const char *val, struct kernel_param *kp){
 		use_wakelock = true;
 		if(use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
 			wake_lock(&dt2w_wake_lock);
-			if(DT2W_DEBUG)
+			if(dt2w_debug)
 				printk("dt2w: wake lock enabled\n");
 		}
 	}
@@ -240,7 +227,7 @@ static int set_use_wakelock(const char *val, struct kernel_param *kp){
 		}
 
 	}else {
-		printk("dt2w: invalid input '%s' for 'use_wakelock'; use 1 or 0\n", val);
+		pr_err("dt2w: invalid input '%s' for 'use_wakelock'; use 1 or 0\n", val);
 	}
 	return 0;
 
@@ -252,14 +239,15 @@ module_param_call(use_wakelock, set_use_wakelock, param_get_bool, &use_wakelock,
 static int __init doubletap2wake_init(void)
 {
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-	wake_lock_init(&dt2w_wake_lock, WAKE_LOCK_SUSPEND, "dt2w_kernel_wake_lock");
+	wake_lock_init(&dt2w_wake_lock, WAKE_LOCK_SUSPEND, "dt2w_kernel_wake_lock");		
 #endif
-	pr_info("[doubletap2wake]: %s done\n", __func__);
+	pr_err("[doubletap2wake]: %s done\n", __func__);
 	return 0;
 }
 
 static void __exit doubletap2wake_exit(void)
 {
+	wake_lock_destroy(&dt2w_wake_lock);
 	return;
 }
 
