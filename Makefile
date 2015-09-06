@@ -388,7 +388,6 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -mthumb-interwork \
 		  -ftree-vectorize \
 		  -funsafe-loop-optimizations \
-		  -flto \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe 
 
