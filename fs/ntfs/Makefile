@@ -1,5 +1,7 @@
 # Rules for making the NTFS driver.
 
+CFLAGS_MODULE += $(DISABLE_LTO)
+
 obj-$(CONFIG_NTFS_FS) += ntfs.o
 
 ntfs-y := aops.o attrib.o collate.o compress.o debug.o dir.o file.o \

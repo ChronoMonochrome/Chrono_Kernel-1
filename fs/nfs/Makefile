@@ -2,6 +2,8 @@
 # Makefile for the Linux nfs filesystem routines.
 #
 
+CFLAGS_MODULE += $(DISABLE_LTO)
+
 obj-$(CONFIG_NFS_FS) += nfs.o
 
 nfs-y 			:= client.o dir.o file.o getroot.o inode.o super.o nfs2xdr.o \

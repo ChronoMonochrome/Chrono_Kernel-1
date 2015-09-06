@@ -1,5 +1,7 @@
 obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) := vpnclient.o
 
+CFLAGS_MODULE += $(DISABLE_LTO)
+
 vpnclient-y := \
 	kernel_alloc.o \
 	kernel_encode.o \
