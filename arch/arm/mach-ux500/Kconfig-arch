@@ -4,12 +4,6 @@ config U8500_SECURE
 	help
 		Build the kernel to run in Secure mode.
 
-config VMALLOC_SIZE_MB
-	int "Size of VMALLOC"
-	default 264
-	help
-		Set here the size of the VMALLOC.
-		
 #Configuration for MCDE setup
 
 if FB_MCDE
