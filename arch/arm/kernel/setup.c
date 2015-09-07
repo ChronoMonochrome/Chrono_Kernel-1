@@ -662,7 +662,9 @@ __tagtable(ATAG_REVISION, parse_tag_revision);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
+#ifdef CONFIG_HWMEM_SIZE_MB
 	char buf[50];
+#endif
 
 #if defined(CONFIG_CMDLINE_EXTEND)
 	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
