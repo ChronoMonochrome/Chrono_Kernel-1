@@ -18,9 +18,12 @@ ifdef CONFIG_LTO_SLIM
         LTO_CFLAGS += -fno-fat-lto-objects
 endif
 # Used to disable LTO for specific files (e.g. vdso)
-	DISABLE_LTO := -fno-lto
+	DISABLE_LTO := -fno-lto -ftoplevel-reorder
+	ifdef CONFIG_LTO_SLIM
+		DISABLE_LTO += -ffat-lto-objects
+	endif
 
-	LTO_FINAL_CFLAGS += ${LTO_CFLAGS} -fwhole-program
+	LTO_FINAL_CFLAGS += ${LTO_CFLAGS}
 
 ifdef CONFIG_LTO_DEBUG
 	LTO_FINAL_CFLAGS += -dH -fdump-ipa-cgraph -fdump-ipa-inline-details
