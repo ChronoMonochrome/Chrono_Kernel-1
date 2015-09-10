@@ -383,6 +383,7 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fno-delete-null-pointer-checks \
 		  -marm \
 		  -march=armv7-a \
+		  -mtune=cortex-a9 \
 		  -mfpu=neon-fp16 \
 		  -mfloat-abi=softfp \
 		  -mthumb-interwork \
