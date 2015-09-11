@@ -391,7 +391,6 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -mtune=cortex-a9 \
 		  -mfpu=neon-fp16 \
 		  -mfloat-abi=softfp \
-		  -mthumb-interwork \
 		  -ftree-vectorize \
 		  -funsafe-loop-optimizations \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
