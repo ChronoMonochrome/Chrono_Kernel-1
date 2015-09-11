@@ -79,7 +79,7 @@ int ipv6_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt
 		goto drop;
 	}
 
-	memset(IP6CB(skb), 0, sizeof(struct inet6_skb_parm));
+	memset(((struct inet6_skb_parm*)((skb)->cb)), 0, sizeof(struct inet6_skb_parm));
 
 	/*
 	 * Store incoming device index. When the packet will
@@ -92,7 +92,7 @@ int ipv6_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt
 	 * arrived via the sending interface (ethX), because of the
 	 * nature of scoping architecture. --yoshfuji
 	 */
-	IP6CB(skb)->iif = skb_dst(skb) ? ip6_dst_idev(skb_dst(skb))->dev->ifindex : dev->ifindex;
+	((struct inet6_skb_parm*)((skb)->cb))->iif = skb_dst(skb) ? ip6_dst_idev(skb_dst(skb))->dev->ifindex : dev->ifindex;
 
 	if (unlikely(!pskb_may_pull(skb, sizeof(*hdr))))
 		goto err;
@@ -112,7 +112,7 @@ int ipv6_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt
 		goto err;
 
 	skb->transport_header = skb->network_header + sizeof(*hdr);
-	IP6CB(skb)->nhoff = offsetof(struct ipv6hdr, nexthdr);
+	((struct inet6_skb_parm*)((skb)->cb))->nhoff = offsetof(struct ipv6hdr, nexthdr);
 
 	pkt_len = ntohs(hdr->payload_len);
 
@@ -176,7 +176,7 @@ resubmit:
 	idev = ip6_dst_idev(skb_dst(skb));
 	if (!pskb_pull(skb, skb_transport_offset(skb)))
 		goto discard;
-	nhoff = IP6CB(skb)->nhoff;
+	nhoff = ((struct inet6_skb_parm*)((skb)->cb))->nhoff;
 	nexthdr = skb_network_header(skb)[nhoff];
 
 	raw = raw6_local_deliver(skb, nexthdr);
@@ -259,13 +259,13 @@ int ip6_mc_input(struct sk_buff *skb)
 	if (dev_net(skb->dev)->ipv6.devconf_all->mc_forwarding &&
 	    !(ipv6_addr_type(&hdr->daddr) &
 	      (IPV6_ADDR_LOOPBACK|IPV6_ADDR_LINKLOCAL)) &&
-	    likely(!(IP6CB(skb)->flags & IP6SKB_FORWARDED))) {
+	    likely(!(((struct inet6_skb_parm*)((skb)->cb))->flags & IP6SKB_FORWARDED))) {
 		/*
 		 * Okay, we try to forward - split and duplicate
 		 * packets.
 		 */
 		struct sk_buff *skb2;
-		struct inet6_skb_parm *opt = IP6CB(skb);
+		struct inet6_skb_parm *opt = ((struct inet6_skb_parm*)((skb)->cb));
 
 		/* Check for MLD */
 		if (unlikely(opt->ra)) {

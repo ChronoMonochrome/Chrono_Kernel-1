@@ -198,7 +198,7 @@ bad:
 static int ipv6_dest_hao(struct sk_buff *skb, int optoff)
 {
 	struct ipv6_destopt_hao *hao;
-	struct inet6_skb_parm *opt = IP6CB(skb);
+	struct inet6_skb_parm *opt = ((struct inet6_skb_parm*)((skb)->cb));
 	struct ipv6hdr *ipv6h = ipv6_hdr(skb);
 	struct in6_addr tmp_addr;
 	int ret;
@@ -269,7 +269,7 @@ static struct tlvtype_proc tlvprocdestopt_lst[] = {
 
 static int ipv6_destopt_rcv(struct sk_buff *skb)
 {
-	struct inet6_skb_parm *opt = IP6CB(skb);
+	struct inet6_skb_parm *opt = ((struct inet6_skb_parm*)((skb)->cb));
 #if defined(CONFIG_IPV6_MIP6) || defined(CONFIG_IPV6_MIP6_MODULE)
 	__u16 dstbuf;
 #endif
@@ -293,7 +293,7 @@ static int ipv6_destopt_rcv(struct sk_buff *skb)
 	if (ip6_parse_tlv(tlvprocdestopt_lst, skb)) {
 		dst_release(dst);
 		skb->transport_header += (skb_transport_header(skb)[1] + 1) << 3;
-		opt = IP6CB(skb);
+		opt = ((struct inet6_skb_parm*)((skb)->cb));
 #if defined(CONFIG_IPV6_MIP6) || defined(CONFIG_IPV6_MIP6_MODULE)
 		opt->nhoff = dstbuf;
 #else
@@ -315,7 +315,7 @@ static int ipv6_destopt_rcv(struct sk_buff *skb)
 /* called with rcu_read_lock() */
 static int ipv6_rthdr_rcv(struct sk_buff *skb)
 {
-	struct inet6_skb_parm *opt = IP6CB(skb);
+	struct inet6_skb_parm *opt = ((struct inet6_skb_parm*)((skb)->cb));
 	struct in6_addr *addr = NULL;
 	struct in6_addr daddr;
 	struct inet6_dev *idev;
@@ -570,7 +570,7 @@ static int ipv6_hop_ra(struct sk_buff *skb, int optoff)
 	const unsigned char *nh = skb_network_header(skb);
 
 	if (nh[optoff + 1] == 2) {
-		IP6CB(skb)->ra = optoff;
+		((struct inet6_skb_parm*)((skb)->cb))->ra = optoff;
 		return 1;
 	}
 	LIMIT_NETDEBUG(KERN_DEBUG "ipv6_hop_ra: wrong RA length %d\n",
@@ -639,7 +639,7 @@ static struct tlvtype_proc tlvprochopopt_lst[] = {
 
 int ipv6_parse_hopopts(struct sk_buff *skb)
 {
-	struct inet6_skb_parm *opt = IP6CB(skb);
+	struct inet6_skb_parm *opt = ((struct inet6_skb_parm*)((skb)->cb));
 
 	/*
 	 * skb_network_header(skb) is equal to skb->data, and
@@ -657,7 +657,7 @@ int ipv6_parse_hopopts(struct sk_buff *skb)
 	opt->hop = sizeof(struct ipv6hdr);
 	if (ip6_parse_tlv(tlvprochopopt_lst, skb)) {
 		skb->transport_header += (skb_transport_header(skb)[1] + 1) << 3;
-		opt = IP6CB(skb);
+		opt = ((struct inet6_skb_parm*)((skb)->cb));
 		opt->nhoff = sizeof(struct ipv6hdr);
 		return 1;
 	}

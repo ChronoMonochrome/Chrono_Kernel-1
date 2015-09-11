@@ -381,7 +381,8 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
-		  -fno-strict-aliasing -fno-common \
+		  -fstrict-aliasing -fno-common \
+		  -Werror=strict-aliasing
 		  -Werror-implicit-function-declaration \
 		  -Wno-format-security \
 		  -fno-delete-null-pointer-checks \

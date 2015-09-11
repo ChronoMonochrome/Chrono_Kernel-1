@@ -19,6 +19,9 @@ else
 obj-y +=	no-block.o
 endif
 
+CFLAGS_exec.o += -fno-strict-aliasing
+CFLAGS_binfmt_elf.o += -fno-strict-aliasing
+
 obj-$(CONFIG_BLK_DEV_INTEGRITY) += bio-integrity.o
 obj-y				+= notify/
 obj-$(CONFIG_EPOLL)		+= eventpoll.o

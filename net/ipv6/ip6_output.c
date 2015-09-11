@@ -111,7 +111,7 @@ static int ip6_finish_output2(struct sk_buff *skb)
 
 		if (!(dev->flags & IFF_LOOPBACK) && sk_mc_loop(skb->sk) &&
 		    ((mroute6_socket(dev_net(dev), skb) &&
-		     !(IP6CB(skb)->flags & IP6SKB_FORWARDED)) ||
+		     !(((struct inet6_skb_parm*)((skb)->cb))->flags & IP6SKB_FORWARDED)) ||
 		     ipv6_chk_mcast_addr(dev, &ipv6_hdr(skb)->daddr,
 					 &ipv6_hdr(skb)->saddr))) {
 			struct sk_buff *newskb = skb_clone(skb, GFP_ATOMIC);
@@ -181,7 +181,7 @@ int ip6_output(struct sk_buff *skb)
 
 	return NF_HOOK_COND(NFPROTO_IPV6, NF_INET_POST_ROUTING, skb, NULL, dev,
 			    ip6_finish_output,
-			    !(IP6CB(skb)->flags & IP6SKB_REROUTED));
+			    !(((struct inet6_skb_parm*)((skb)->cb))->flags & IP6SKB_REROUTED));
 }
 
 /*
@@ -397,7 +397,7 @@ int ip6_forward(struct sk_buff *skb)
 {
 	struct dst_entry *dst = skb_dst(skb);
 	struct ipv6hdr *hdr = ipv6_hdr(skb);
-	struct inet6_skb_parm *opt = IP6CB(skb);
+	struct inet6_skb_parm *opt = ((struct inet6_skb_parm*)((skb)->cb));
 	struct net *net = dev_net(dst->dev);
 	struct neighbour *n;
 	u32 mtu;

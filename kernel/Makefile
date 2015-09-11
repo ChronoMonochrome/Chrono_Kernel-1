@@ -13,6 +13,8 @@ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o \
 	    async.o range.o jump_label.o
 obj-y += groups.o
 
+CFLAGS_workqueue.o += -fno-strict-aliasing
+
 ifdef CONFIG_FUNCTION_TRACER
 # Do not trace debug files and internal ftrace files
 CFLAGS_REMOVE_lockdep.o = -pg

@@ -5,6 +5,9 @@
 ifneq ($(KERNELRELEASE),)
 # call from kernel build system
 
+CFLAGS_exfat_core.o += -fno-strict-aliasing
+CFLAGS_MODULE_exfat_core.o += -fno-strict-aliasing
+
 obj-$(CONFIG_EXFAT_FS) += exfat.o
 
 exfat-objs := exfat_core.o exfat_super.o exfat_api.o exfat_blkdev.o exfat_cache.o \

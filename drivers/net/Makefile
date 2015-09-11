@@ -2,6 +2,8 @@
 # Makefile for the Linux network (ethercard) device drivers.
 #
 
+KBUILD_CFLAGS += -fno-strict-aliasing
+
 obj-$(CONFIG_MII) += mii.o
 obj-$(CONFIG_MDIO) += mdio.o
 obj-$(CONFIG_PHYLIB) += phy/

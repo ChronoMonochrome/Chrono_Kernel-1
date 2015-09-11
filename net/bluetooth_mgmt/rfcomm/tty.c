@@ -35,7 +35,7 @@
 #include <linux/slab.h>
 #include <linux/skbuff.h>
 
-#include <net/bluetooth/bluetooth.h>
+#include <net/bluetooth/bluetooth_mgmt_stuff.h>
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/rfcomm.h>
 

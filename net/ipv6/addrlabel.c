@@ -16,7 +16,7 @@
 #include <linux/slab.h>
 #include <net/addrconf.h>
 #include <linux/if_addrlabel.h>
-#include <linux/netlink.h>
+#include <linux/netlink_stuff.h>
 #include <linux/rtnetlink.h>
 
 #if 0

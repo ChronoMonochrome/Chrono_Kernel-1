@@ -1,5 +1,7 @@
 obj-$(CONFIG_PHONET) += phonet.o pn_pep.o
 
+CFLAGS_pn_netlink.o += -fno-strict-aliasing
+
 phonet-y := \
 	pn_dev.o \
 	pn_netlink.o \

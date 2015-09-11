@@ -67,9 +67,9 @@ int xfrm6_prepare_output(struct xfrm_state *x, struct sk_buff *skb)
 	if (err)
 		return err;
 
-	memset(IP6CB(skb), 0, sizeof(*IP6CB(skb)));
+	memset(((struct inet6_skb_parm*)((skb)->cb)), 0, sizeof(*((struct inet6_skb_parm*)((skb)->cb))));
 #ifdef CONFIG_NETFILTER
-	IP6CB(skb)->flags |= IP6SKB_XFRM_TRANSFORMED;
+	((struct inet6_skb_parm*)((skb)->cb))->flags |= IP6SKB_XFRM_TRANSFORMED;
 #endif
 
 	skb->protocol = htons(ETH_P_IPV6);
@@ -82,7 +82,7 @@ EXPORT_SYMBOL(xfrm6_prepare_output);
 int xfrm6_output_finish(struct sk_buff *skb)
 {
 #ifdef CONFIG_NETFILTER
-	IP6CB(skb)->flags |= IP6SKB_XFRM_TRANSFORMED;
+	((struct inet6_skb_parm*)((skb)->cb))->flags |= IP6SKB_XFRM_TRANSFORMED;
 #endif
 
 	skb->protocol = htons(ETH_P_IPV6);

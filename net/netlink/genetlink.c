@@ -14,6 +14,7 @@
 #include <linux/socket.h>
 #include <linux/string.h>
 #include <linux/skbuff.h>
+#include <linux/netlink_stuff.h>
 #include <linux/mutex.h>
 #include <linux/bitmap.h>
 #include <net/sock.h>

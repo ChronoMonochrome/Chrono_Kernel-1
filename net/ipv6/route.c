@@ -53,7 +53,7 @@
 #include <net/dst.h>
 #include <net/xfrm.h>
 #include <net/netevent.h>
-#include <net/netlink.h>
+#include <linux/netlink_stuff.h>
 
 #include <asm/uaccess.h>
 

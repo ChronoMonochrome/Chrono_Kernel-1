@@ -3,6 +3,10 @@
 #
 
 CFLAGS_MODULE += $(DISABLE_LTO)
+CFLAGS_namei.o += -fno-strict-aliasing
+CFLAGS_namei.o += -fno-strict-aliasing
+CFLAGS_super.o += -fno-strict-aliasing
+CFLAGS_MODULE_super.o += -fno-strict-aliasing
 
 obj-$(CONFIG_UDF_FS) += udf.o
 

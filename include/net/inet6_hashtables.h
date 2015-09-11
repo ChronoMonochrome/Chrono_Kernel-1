@@ -103,7 +103,7 @@ static inline struct sock *__inet6_lookup_skb(struct inet_hashinfo *hashinfo,
 	else return __inet6_lookup(dev_net(skb_dst(skb)->dev), hashinfo,
 				   &ipv6_hdr(skb)->saddr, sport,
 				   &ipv6_hdr(skb)->daddr, ntohs(dport),
-				   inet6_iif(skb));
+				   ((struct inet6_skb_parm*)((skb)->cb))->iif);
 }
 
 extern struct sock *inet6_lookup(struct net *net, struct inet_hashinfo *hashinfo,

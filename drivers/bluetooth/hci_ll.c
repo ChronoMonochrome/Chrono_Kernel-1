@@ -46,7 +46,7 @@
 #include <linux/ioctl.h>
 #include <linux/skbuff.h>
 
-#include <net/bluetooth/bluetooth.h>
+#include <net/bluetooth/bluetooth_mgmt_stuff.h>
 #include <net/bluetooth/hci_core.h>
 
 #include "hci_uart.h"

@@ -31,7 +31,7 @@
 #include <linux/string.h>
 #include <asm/errno.h>
 
-#include <net/bluetooth/bluetooth.h>
+#include <net/bluetooth/bluetooth_mgmt_stuff.h>
 
 void baswap(bdaddr_t *dst, bdaddr_t *src)
 {

@@ -25,7 +25,7 @@
 #include <linux/security.h>
 #include <linux/skbuff.h>
 #include <linux/errno.h>
-#include <linux/netlink.h>
+#include <linux/netlink_stuff.h>
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>

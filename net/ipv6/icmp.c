@@ -294,7 +294,7 @@ static int icmpv6_getfrag(void *from, char *to, int offset, int len, int odd, st
 static void mip6_addr_swap(struct sk_buff *skb)
 {
 	struct ipv6hdr *iph = ipv6_hdr(skb);
-	struct inet6_skb_parm *opt = IP6CB(skb);
+	struct inet6_skb_parm *opt = ((struct inet6_skb_parm*)((skb)->cb));
 	struct ipv6_destopt_hao *hao;
 	struct in6_addr tmp;
 	int off;

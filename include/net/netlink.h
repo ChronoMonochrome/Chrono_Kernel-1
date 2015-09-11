@@ -491,26 +491,6 @@ static inline struct nlmsghdr *nlmsg_put(struct sk_buff *skb, u32 pid, u32 seq,
 }
 
 /**
- * nlmsg_put_answer - Add a new callback based netlink message to an skb
- * @skb: socket buffer to store message in
- * @cb: netlink callback
- * @type: message type
- * @payload: length of message payload
- * @flags: message flags
- *
- * Returns NULL if the tailroom of the skb is insufficient to store
- * the message header and payload.
- */
-static inline struct nlmsghdr *nlmsg_put_answer(struct sk_buff *skb,
-						struct netlink_callback *cb,
-						int type, int payload,
-						int flags)
-{
-	return nlmsg_put(skb, NETLINK_CB(cb->skb).pid, cb->nlh->nlmsg_seq,
-			 type, payload, flags);
-}
-
-/**
  * nlmsg_new - Allocate a new netlink message
  * @payload: size of the message payload
  * @flags: the type of memory to allocate.
@@ -585,28 +565,6 @@ static inline void nlmsg_cancel(struct sk_buff *skb, struct nlmsghdr *nlh)
 static inline void nlmsg_free(struct sk_buff *skb)
 {
 	kfree_skb(skb);
-}
-
-/**
- * nlmsg_multicast - multicast a netlink message
- * @sk: netlink socket to spread messages to
- * @skb: netlink message as socket buffer
- * @pid: own netlink pid to avoid sending to yourself
- * @group: multicast group id
- * @flags: allocation flags
- */
-static inline int nlmsg_multicast(struct sock *sk, struct sk_buff *skb,
-				  u32 pid, unsigned int group, gfp_t flags)
-{
-	int err;
-
-	NETLINK_CB(skb).dst_group = group;
-
-	err = netlink_broadcast(sk, skb, pid, group, flags);
-	if (err > 0)
-		err = 0;
-
-	return err;
 }
 
 /**

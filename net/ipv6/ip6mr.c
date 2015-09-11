@@ -1960,7 +1960,7 @@ static int ip6mr_forward2(struct net *net, struct mr6_table *mrt,
 	ipv6h = ipv6_hdr(skb);
 	ipv6h->hop_limit--;
 
-	IP6CB(skb)->flags |= IP6SKB_FORWARDED;
+	((struct inet6_skb_parm*)((skb)->cb))->flags |= IP6SKB_FORWARDED;
 
 	return NF_HOOK(NFPROTO_IPV6, NF_INET_FORWARD, skb, skb->dev, dev,
 		       ip6mr_forward2_finish);

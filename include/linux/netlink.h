@@ -163,10 +163,6 @@ struct netlink_skb_parms {
 	__u32			dst_group;
 };
 
-#define NETLINK_CB(skb)		(*(struct netlink_skb_parms*)&((skb)->cb))
-#define NETLINK_CREDS(skb)	(&NETLINK_CB((skb)).creds)
-
-
 extern void netlink_table_grab(void);
 extern void netlink_table_ungrab(void);
 

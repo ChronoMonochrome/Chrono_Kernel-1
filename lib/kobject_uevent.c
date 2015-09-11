@@ -22,7 +22,7 @@
 #include <linux/user_namespace.h>
 #include <linux/socket.h>
 #include <linux/skbuff.h>
-#include <linux/netlink.h>
+#include <linux/netlink_stuff.h>
 #include <net/sock.h>
 #include <net/net_namespace.h>
 

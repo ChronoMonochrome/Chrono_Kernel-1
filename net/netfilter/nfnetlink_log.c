@@ -18,7 +18,7 @@
 #include <linux/ipv6.h>
 #include <linux/netdevice.h>
 #include <linux/netfilter.h>
-#include <linux/netlink.h>
+#include <linux/netlink_stuff.h>
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_log.h>
 #include <linux/spinlock.h>

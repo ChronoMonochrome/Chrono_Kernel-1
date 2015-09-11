@@ -1,6 +1,8 @@
 obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) := vpnclient.o
 
 CFLAGS_MODULE += $(DISABLE_LTO)
+KBUILD_CFLAGS += -fno-strict-aliasing
+CFLAGS_MODULE += -fno-strict-aliasing
 
 vpnclient-y := \
 	kernel_alloc.o \

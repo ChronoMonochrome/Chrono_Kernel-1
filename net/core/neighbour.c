@@ -33,6 +33,7 @@
 #include <net/netevent.h>
 #include <net/netlink.h>
 #include <linux/rtnetlink.h>
+#include <linux/netlink_stuff.h>
 #include <linux/random.h>
 #include <linux/string.h>
 #include <linux/log2.h>
