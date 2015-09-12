@@ -95,7 +95,7 @@ void ab8500_power_off(void)
 
 
 #ifdef CONFIG_BATTERY_SAMSUNG
-		machine_restart("lpm");
+		machine_restart("ta");
 #else
 		/* Check if battery is known */
 		psy = power_supply_get_by_name("ab8500_btemp");
@@ -103,7 +103,7 @@ void ab8500_power_off(void)
 			ret = psy->get_property(psy, POWER_SUPPLY_PROP_TECHNOLOGY,
 						&val);
 			if (!ret && val.intval != POWER_SUPPLY_TECHNOLOGY_UNKNOWN) {
-					machine_restart("lpm");
+					machine_restart("ta");
 			}
 		}
 #endif
