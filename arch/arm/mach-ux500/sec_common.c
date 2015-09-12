@@ -318,12 +318,9 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 		{"arm9_fota", REBOOT_MODE_ARM9_FOTA},
 		{"recovery", REBOOT_MODE_RECOVERY},
 		{"cp_crash", REBOOT_MODE_CP_CRASH},
-		{"bootloader", REBOOT_MODE_DOWNLOAD},
 		{"download", REBOOT_MODE_DOWNLOAD},
 		{"prerecovery_done", REBOOT_MODE_RECOVERY},
 		{"prerecovery", REBOOT_MODE_PRERECOVERY},
-		{"factorytest", REBOOT_MODE_FACTORYTEST},
-		{"forcereboot", REBOOT_MODE_FORCEREBOOT},
 	};
 
 	printk(KERN_INFO "%s: code: 0x%lx, cmd: %s\n", __func__, code,
