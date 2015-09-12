@@ -18,7 +18,7 @@
 #include <linux/mutex.h>
 #include <linux/bitmap.h>
 #include <net/sock.h>
-#include <net/genetlink.h>
+#include <net/genetlink_stuff.h>
 
 static DEFINE_MUTEX(genl_mutex); /* serialization of message processing */
 

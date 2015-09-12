@@ -13,6 +13,7 @@
 #include <linux/netdevice.h>
 #include <linux/nl80211.h>
 #include <linux/rtnetlink.h>
+#include <linux/netlink_stuff.h>
 #include <net/cfg80211.h>
 #include "sysfs.h"
 #include "core.h"

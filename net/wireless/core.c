@@ -17,6 +17,7 @@
 #include <linux/device.h>
 #include <linux/etherdevice.h>
 #include <linux/rtnetlink.h>
+#include <linux/netlink_stuff.h>
 #include <linux/sched.h>
 #include <net/genetlink.h>
 #include <net/cfg80211.h>

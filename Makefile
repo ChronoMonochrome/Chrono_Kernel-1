@@ -5,7 +5,8 @@ EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
 ifeq ("$(CROSS_COMPILE)", "")
-   CROSS_COMPILE=/home/chrono/tools/opt/armv7a-linux-gnueabihf-linaro-gcc-4.9.4/bin/armv7a-linux-gnueabihf-
+   CROSS_COMPILE=/media/chrono/Other/cross/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin/arm-linux-gnueabihf-
+   #CROSS_COMPILE=/home/chrono/tools/opt/armv7a-linux-gnueabihf-linaro-gcc-4.9.4/bin/armv7a-linux-gnueabihf-
 endif
 
 # *DOCUMENTATION*
@@ -382,7 +383,7 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fstrict-aliasing -fno-common \
-		  -Werror=strict-aliasing
+		  -Werror=strict-aliasing \
 		  -Werror-implicit-function-declaration \
 		  -Wno-format-security \
 		  -fno-delete-null-pointer-checks \
