@@ -5,8 +5,8 @@ EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
 ifeq ("$(CROSS_COMPILE)", "")
-   CROSS_COMPILE=/media/chrono/Other/cross/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin/arm-linux-gnueabihf-
-   #CROSS_COMPILE=/home/chrono/tools/opt/armv7a-linux-gnueabihf-linaro-gcc-4.9.4/bin/armv7a-linux-gnueabihf-
+   #CROSS_COMPILE=/media/chrono/Other/cross/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin/arm-linux-gnueabihf-
+   CROSS_COMPILE=/home/chrono/tools/opt/armv7a-linux-gnueabihf-linaro-gcc-4.9.4/bin/armv7a-linux-gnueabihf-
 endif
 
 # *DOCUMENTATION*
@@ -251,7 +251,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS  := -Wno-missing-prototypes -Wno-strict-prototypes -O2 -fomit-frame-pointer -std=gnu99 -pipe
+HOSTCFLAGS  := -Wno-missing-prototypes -Wno-strict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -pipe
 
 HOSTCXXFLAGS := -O2 -pipe
 
@@ -390,6 +390,7 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -marm \
 		  -march=armv7-a \
 		  -mtune=cortex-a9 \
+		  -mcpu=cortex-a9 \
 		  -mfpu=neon-fp16 \
 		  -mfloat-abi=softfp \
 		  -ftree-vectorize \
