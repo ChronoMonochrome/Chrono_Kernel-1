@@ -2,6 +2,8 @@
 # Makefile for Linux FAT12/FAT16/FAT32(VFAT)/FAT64(ExFAT) filesystem driver.
 #
 
+CFLAGS_MODULE += $(DISABLE_LTO)
+
 ifneq ($(KERNELRELEASE),)
 # call from kernel build system
 

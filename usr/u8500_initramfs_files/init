@@ -28,6 +28,9 @@ busybox chmod 644 /ramdisk/boot.cpio
 load_image=/ramdisk/boot.cpio
 lvm=/ramdisk/lvm.cpio
 
+busybox insmod /ramdisk/modules/exfat.ko
+busybox insmod /ramdisk/modules/f2fs.ko
+
 if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
 	busybox chmod 644 /ramdisk/recovery.cpio
@@ -35,7 +38,6 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# since it's pain, load j4fs and param from separate partition
 	busybox insmod /ramdisk/modules/j4fs.ko
 	busybox insmod /ramdisk/modules/param.ko
-	busybox insmod /ramdisk/modules/exfat.ko
 
 	busybox mount -t j4fs /dev/block/mmcblk0p1 /mnt/.lfs
 	busybox sh /ramdisk/00recovery
