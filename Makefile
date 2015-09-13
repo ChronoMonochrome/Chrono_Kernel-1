@@ -7,10 +7,7 @@ NAME = Saber-toothed Squirrel
 ifeq ("$(CROSS_COMPILE)", "")
    #GCC=/home/chrono/tools/opt/armv7a-linux-gnueabihf-linaro-gcc-4.9.4/bin/armv7a-linux-gnueabihf
    GCC=/media/chrono/Other/cross/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin/arm-linux-gnueabihf-
-   FILE_EXISTS=$(stat $GCC"gcc" 2>&1 | grep -c "File")
-   ifeq ("$(FILE_EXISTS)", "1")
-      CROSS_COMPILE=$(GCC)
-   endif
+   CROSS_COMPILE=$(GCC)
 endif
 
 # *DOCUMENTATION*
@@ -395,10 +392,18 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -march=armv7-a \
 		  -mtune=cortex-a9 \
 		  -mcpu=cortex-a9 \
-		  -mfpu=neon-fp16 \
+		  -mfpu=vfpv3 \
 		  -mfloat-abi=softfp \
 		  -ftree-vectorize \
 		  -funsafe-loop-optimizations \
+		  -ftree-parallelize-loops=2 \
+		  -fgraphite \
+		  -fgraphite-identity \
+		  -floop-block \
+		  -floop-interchange \
+		  -floop-nest-optimize \
+		  -floop-strip-mine \
+		  -floop-parallelize-all \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
 		  --param ggc-min-expand=70 \
