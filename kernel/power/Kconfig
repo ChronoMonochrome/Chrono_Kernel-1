@@ -348,5 +348,6 @@ config SPEEDUP_KEYRESUME
 	  Speed up system resume
 
 config CPU_PM
-       bool
+       bool "CPU PM"
+       default y
        depends on SUSPEND || CPU_IDLE
