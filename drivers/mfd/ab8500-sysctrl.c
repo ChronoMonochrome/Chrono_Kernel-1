@@ -38,7 +38,7 @@ static struct device *sysctrl_dev;
 static bool use_pcut_registers = false;
 #endif
 
-static unsigned int reboot_to_lpm = 0;
+static unsigned int reboot_to_lpm = 1;
 module_param_named(reboot_to_lpm, reboot_to_lpm, uint, 0644);
 
 void ab8500_power_off(void)

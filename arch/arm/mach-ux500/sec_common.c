@@ -865,6 +865,8 @@ static __inline char __sec_common_convert_reboot_mode(char mode,
 		{"recovery", 'r'},
 		{"download", 'd'},
 		{"cp_crash", 'C'},
+		{"bootloader", 'd'},
+		{"lpm", 't'},
 		{"Checkin scheduled forced", 'c'} /* Note - c means REBOOTMODE_NORMAL */
 	};
 	size_t i, n;
