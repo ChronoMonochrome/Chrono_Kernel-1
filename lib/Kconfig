@@ -337,4 +337,9 @@ config AVERAGE
 config LLIST
 	bool
 
+config BENCH
+	tristate
+	help
+	  A simple benchmark for Linux Kernel.
+
 endmenu
