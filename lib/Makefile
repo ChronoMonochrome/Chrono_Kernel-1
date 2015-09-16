@@ -2,6 +2,8 @@
 # Makefile for some libs needed in the kernel.
 #
 
+#CFLAGS_bench.o += -fno-lto
+
 CFLAGS_libcrc32c.o += -fno-strict-aliasing
 CFLAGS_kobject_uevent.o += -fno-strict-aliasing
 CFLAGS_klist.o += -fno-strict-aliasing

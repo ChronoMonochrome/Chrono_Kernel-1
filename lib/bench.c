@@ -12,22 +12,20 @@ const int LOOP_BOUND = 200000000;
  
 static int __init bench_init(void)
 {
-    s64 time;
+    s64 time, time1;
  
-    int I, J, K;
+    int i;
  
-    J = 2;
-    K = 3;
     time = ktime_to_us(ktime_get());
  
-    for (I = 1; I <= LOOP_BOUND; I++) {
-        J = J + K;
-        K = J + K;
-        J = K - J;
-        K = K - J - J;
+    for (i = 0; i <= LOOP_BOUND; i++) {
+	/* put your code here */
+	int_sqrt(9);
     }
-    
-    pr_err("[Bench] time = %lld us\n", (long long)(ktime_to_us(ktime_get()) - time));
+
+    time1 =  ktime_to_us(ktime_get()) - time;
+
+    pr_err("[Bench] time = %lld us\n", (long long)time1);
  
     return 0;    // Non-zero return means that the module couldn't be loaded.
 }

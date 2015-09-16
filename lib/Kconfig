@@ -25,6 +25,12 @@ config GENERIC_STRNLEN_USER
 config GENERIC_FIND_FIRST_BIT
 	bool
 
+config BENCH
+	tristate "Benchmark"
+	default n
+	help
+	  A simple benchmark for Linux Kernel.
+
 config CRC_CCITT
 	tristate "CRC-CCITT functions"
 	help
@@ -336,10 +342,5 @@ config AVERAGE
 
 config LLIST
 	bool
-
-config BENCH
-	tristate
-	help
-	  A simple benchmark for Linux Kernel.
 
 endmenu
