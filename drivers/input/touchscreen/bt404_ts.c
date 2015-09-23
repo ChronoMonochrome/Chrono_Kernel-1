@@ -47,6 +47,7 @@
 #include <linux/uaccess.h>
 #include <linux/input/mt.h>
 #include <linux/regulator/consumer.h>
+#include <linux/wakelock.h>
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 #include <linux/input/sweep2wake.h>
 extern bool s2w_use_wakelock;
@@ -4334,19 +4335,23 @@ err_i2c:
 static int bt404_ts_suspend(struct device *dev)
 {
 #if defined (CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined (CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	if (s2w_use_wakelock || dt2w_use_wakelock) {
-		if(s2w_switch || dt2w_switch)
+	if(s2w_switch || dt2w_switch) {
+		if (is_any_user_wakelock_active())
 			return 0;
-#elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if (s2w_use_wakelock || dt2w_use_wakelock) {
-		if(s2w_switch)
-			return 0;
-#elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if (s2w_use_wakelock || dt2w_use_wakelock) {
-		if(dt2w_switch)
-			return 0;
-#endif
 	}
+#elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
+        if(s2w_switch) {
+                if (is_any_user_wakelock_active())
+                        return 0;
+        }
+
+#elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+	if(dt2w_switch) {
+                if (is_any_user_wakelock_active())
+                        return 0;
+        }
+
+#endif
 
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
@@ -4395,19 +4400,22 @@ out:
 static int bt404_ts_resume(struct device *dev)
 {
 #if defined (CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined (CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	if (s2w_use_wakelock || dt2w_use_wakelock) {
-		if(s2w_switch || dt2w_switch)
-			return 0;
+	if(s2w_switch || dt2w_switch) {
+                if (is_any_user_wakelock_active())
+                        return 0;
+        }
+
 #elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if (s2w_use_wakelock || dt2w_use_wakelock) {
-		if(s2w_switch)
-			return 0;
+        if(s2w_switch) {
+                if (is_any_user_wakelock_active())
+                        return 0;
+        }
 #elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if (s2w_use_wakelock || dt2w_use_wakelock) {
-		if(dt2w_switch)
-			return 0;
+        if(dt2w_switch) {
+                if (is_any_user_wakelock_active())
+                        return 0;
+        }
 #endif
-	}
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
@@ -4455,7 +4463,7 @@ static void bt404_ts_late_resume(struct early_suspend *h)
 	if(s2w_switch || dt2w_switch){
 		s2w_set_scr_suspended(false);
 		dt2w_set_scr_suspended(false);
-		if (s2w_use_wakelock || dt2w_use_wakelock) {
+                if (is_any_user_wakelock_active()) {
 				return;
 		}
 	}
@@ -4472,7 +4480,7 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
         if(s2w_switch || dt2w_switch){
                 s2w_set_scr_suspended(true);
                 dt2w_set_scr_suspended(true);
-                if (s2w_use_wakelock || dt2w_use_wakelock) {
+                if (is_any_user_wakelock_active()) {
                                 return;
                 }
 	}
