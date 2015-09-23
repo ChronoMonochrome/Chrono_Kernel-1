@@ -4450,71 +4450,35 @@ out:
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void bt404_ts_late_resume(struct early_suspend *h)
 {
+	struct bt404_ts_data *data;
 #if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-		if((s2w_switch || dt2w_switch) && (s2w_use_wakelock || dt2w_use_wakelock)){
-			printk("==bt404_ts_resume=canceled for s2w or dt2w\n");
-			s2w_set_scr_suspended(false);
-			dt2w_set_scr_suspended(false);
-			return;
-		}
-	#endif
-#elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if(s2w_switch) {
-		printk("==bt404_ts_resume=canceled for s2w\n");
+	if(s2w_switch || dt2w_switch){
 		s2w_set_scr_suspended(false);
-		return;
-	}
-#elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE 
-	#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-	if(dt2w_switch && dt2w_use_wakelock) {
-		printk("==bt404_ts_resume=canceled for dt2w\n");
 		dt2w_set_scr_suspended(false);
-		return;
+		if (s2w_use_wakelock || dt2w_use_wakelock) {
+				return;
+		}
 	}
-	#endif
 #endif
-	struct bt404_ts_data *data =
-			container_of(h, struct bt404_ts_data, early_suspend);
-	bt404_ts_resume(&data->client->dev);
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	s2w_set_scr_suspended(false);
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	dt2w_set_scr_suspended(false);
-#endif
+       data = container_of(h, struct bt404_ts_data, early_suspend);
+       bt404_ts_resume(&data->client->dev);
+
 }
 
 static void bt404_ts_early_suspend(struct early_suspend *h)
 {
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	s2w_set_scr_suspended(true);
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	dt2w_set_scr_suspended(true);
-#endif
-#if defined (CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined (CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-	if((s2w_switch || dt2w_switch) && (s2w_use_wakelock || dt2w_use_wakelock)){
-		printk("==bt404_ts_suspend=canceled for s2w or dt2w\n");
-		return;
+	struct bt404_ts_data *data;
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+        if(s2w_switch || dt2w_switch){
+                s2w_set_scr_suspended(true);
+                dt2w_set_scr_suspended(true);
+                if (s2w_use_wakelock || dt2w_use_wakelock) {
+                                return;
+                }
 	}
-	#endif
-#elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
-	if(s2w_switch && s2w_use_wakelock){
-		printk("==bt404_ts_suspend=canceled for s2w\n");
-		return;
-	}
-#elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-	if(dt2w_switch && dt2w_use_wakelock){
-		printk("==bt404_ts_suspend=canceled for dt2w\n");
-		return;
-	}
-	#endif
 #endif
-	struct bt404_ts_data *data =
-			container_of(h, struct bt404_ts_data, early_suspend);
+
+	data = container_of(h, struct bt404_ts_data, early_suspend);
 	bt404_ts_suspend(&data->client->dev);
 }
 
