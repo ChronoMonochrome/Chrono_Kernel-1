@@ -51,8 +51,8 @@ static struct input_dev * doubletap2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-bool use_wakelock = false;
 static struct wake_lock dt2w_wake_lock;
+bool dt2w_use_wakelock;
 #endif
 
 /* PowerKey setter */
@@ -182,7 +182,7 @@ static int set_enable(const char *val, struct kernel_param *kp)
 			pr_err("dt2w: enabled\n");
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-		if(use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
+		if(dt2w_use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
 			wake_lock(&dt2w_wake_lock);
 			if(dt2w_debug)
 				pr_err("dt2w: wake lock enabled\n");
@@ -210,30 +210,30 @@ module_param_call(enable, set_enable, param_get_int, &dt2w_switch, 0664);
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
 
-static int set_use_wakelock(const char *val, struct kernel_param *kp){
+static int set_dt2w_use_wakelock(const char *val, struct kernel_param *kp){
 
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
-		use_wakelock = true;
-		if(use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
+		dt2w_use_wakelock = true;
+		if(dt2w_use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
 			wake_lock(&dt2w_wake_lock);
 			if(dt2w_debug)
 				printk("dt2w: wake lock enabled\n");
 		}
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
-		use_wakelock = false;
+		dt2w_use_wakelock = false;
 		if(wake_lock_active(&dt2w_wake_lock)){
 			wake_unlock(&dt2w_wake_lock);
 		}
 
 	}else {
-		pr_err("dt2w: invalid input '%s' for 'use_wakelock'; use 1 or 0\n", val);
+		pr_err("dt2w: invalid input '%s' for 'dt2w_use_wakelock'; use 1 or 0\n", val);
 	}
 	return 0;
 
 }
 
-module_param_call(use_wakelock, set_use_wakelock, param_get_bool, &use_wakelock, 0664);
+module_param_call(dt2w_use_wakelock, set_dt2w_use_wakelock, param_get_bool, &dt2w_use_wakelock, 0664);
 #endif
 
 static int __init doubletap2wake_init(void)

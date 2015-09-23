@@ -47,8 +47,8 @@ static struct input_dev * sweep2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
-static bool use_wakelock = true;
 static struct wake_lock s2w_wake_lock;
+bool s2w_use_wakelock;
 #endif
 
 /* Read cmdline for s2w */
@@ -215,7 +215,7 @@ static int set_enable(const char *val, struct kernel_param *kp)
 			printk("s2w: enabled\n");
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
-		if(use_wakelock && !wake_lock_active(&s2w_wake_lock)){
+		if(s2w_use_wakelock && !wake_lock_active(&s2w_wake_lock)){
 			wake_lock(&s2w_wake_lock);
 			if(DEBUG)
 				printk("s2w: wake lock enabled\n");
@@ -243,30 +243,30 @@ module_param_call(enable, set_enable, param_get_int, &s2w_switch, 0664);
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
 
-static int set_use_wakelock(const char *val, struct kernel_param *kp){
+static int set_s2w_use_wakelock(const char *val, struct kernel_param *kp){
 
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
-		use_wakelock = true;
-		if(use_wakelock && !wake_lock_active(&s2w_wake_lock)){
+		s2w_use_wakelock = true;
+		if(s2w_use_wakelock && !wake_lock_active(&s2w_wake_lock)){
 			wake_lock(&s2w_wake_lock);
 			if(DEBUG)
 				printk("s2w: wake lock enabled\n");
 		}
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
-		use_wakelock = false;
+		s2w_use_wakelock = false;
 		if(wake_lock_active(&s2w_wake_lock)){
 			wake_unlock(&s2w_wake_lock);
 		}
 
 	}else {
-		printk("s2w: invalid input '%s' for 'use_wakelock'; use 1 or 0\n", val);
+		printk("s2w: invalid input '%s' for 's2w_use_wakelock'; use 1 or 0\n", val);
 	}
 	return 0;
 
 }
 
-module_param_call(use_wakelock, set_use_wakelock, param_get_bool, &use_wakelock, 0664);
+module_param_call(s2w_use_wakelock, set_s2w_use_wakelock, param_get_bool, &s2w_use_wakelock, 0664);
 #endif
 
 static int __init sweep2wake_init(void)
