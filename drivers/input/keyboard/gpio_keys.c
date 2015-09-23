@@ -451,6 +451,11 @@ extern void projector_motor_ccw(void);
 #endif
 
 static unsigned int volkey_press_skip_track = false;
+static unsigned int homekey_press_play = false;
+
+bool is_homekey_press_play(void){
+	return homekey_press_play;
+}
 
 bool is_volkey_press_skip_track(void){
 	return volkey_press_skip_track;
@@ -459,10 +464,16 @@ bool is_volkey_press_skip_track(void){
 // determines whether skip track thread is already run
 static bool volkey_skip_track_is_ongoing = false;
 
+static bool homekey_press_play_is_ongoing = false;
+
 static bool volkey_do_volume_key_press_is_ongoing = false;
+
+static bool homekey_do_press_play_is_ongoing = false;
 
 // determines whether track should be skipped now
 static bool volkey_skip_track_now = false;
+
+static bool homekey_press_play_now = false;
 
 // remap vol.up -> KEY_NEXTSONG / vol.down -> KEY_PREVIOUSSONG
 static bool volkey_remap_keys = false;
@@ -473,10 +484,16 @@ static bool volkey_emulate_key_nextsong = false;
 // below this threshold don't emulate KEY_NEXTSONG/KEY_PREVIOUSSONG
 static unsigned int volkey_long_press_delay_ms = 300;
 
+static unsigned int homekey_long_press_delay_ms = 300;
+
 // FIXME: key press emulation requires this additional delay 
 static unsigned int volkey_do_volume_key_press_delay_ms = 101;
 
+static unsigned int homekey_do_press_play_delay_ms = 101;
+
 static unsigned int volkey_skip_tracks_in_suspend_only = true;
+
+static unsigned int homekey_press_play_in_suspend_only = true;
 
 static unsigned int volkey_debug_level = 1;
 
@@ -485,6 +502,10 @@ module_param_named(volkey_long_press_delay_ms, volkey_long_press_delay_ms, uint,
 module_param_named(volkey_do_volume_key_press_delay_ms, volkey_do_volume_key_press_delay_ms, uint, 0644);
 module_param_named(volkey_debug_level, volkey_debug_level, uint, 0644);
 module_param_named(volkey_skip_tracks_in_suspend_only, volkey_skip_tracks_in_suspend_only, uint, 0644);
+module_param_named(homekey_press_play, homekey_press_play, uint, 0644);
+module_param_named(homekey_long_press_delay_ms, homekey_long_press_delay_ms, uint, 0644);
+module_param_named(homekey_do_press_play_delay_ms, homekey_do_press_play_delay_ms, uint, 0644);
+module_param_named(homekey_press_play_in_suspend_only, homekey_press_play_in_suspend_only, uint, 0644);
 
 static void volkey_skip_track_fn(struct work_struct *volkey_skip_track_work)
 {
@@ -493,10 +514,17 @@ static void volkey_skip_track_fn(struct work_struct *volkey_skip_track_work)
 }
 static DECLARE_DELAYED_WORK(volkey_skip_track_work, volkey_skip_track_fn);
 
-static unsigned long emulated_keys[] = {KEY_NEXTSONG, KEY_PREVIOUSSONG, KEY_VOLUMEUP, KEY_VOLUMEDOWN};
+static void homekey_press_play_fn(struct work_struct *homekey_press_play_work)
+{
+	homekey_press_play_now = true;
+        homekey_press_play_is_ongoing = false;
+}
+static DECLARE_DELAYED_WORK(homekey_press_play_work, homekey_press_play_fn);
+
+static unsigned long emulated_keys[] = {KEY_NEXTSONG, KEY_PREVIOUSSONG, KEY_VOLUMEUP, KEY_VOLUMEDOWN, KEY_PLAYPAUSE};
 
 void unmap_keys(void) {
-	abb_ponkey_unmap_all_keys(&emulated_keys, 4);
+	abb_ponkey_unmap_all_keys(&emulated_keys, 5);
 }
 
 static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_work)
@@ -516,6 +544,25 @@ static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_
 	volkey_do_volume_key_press_is_ongoing = false;
 }
 static DECLARE_WORK(volkey_do_volume_key_press_work, volkey_do_volume_key_press_fn);
+
+static unsigned int homekey_is_remapped = false;
+
+static void homekey_do_press_play_fn(struct work_struct *homekey_do_press_play_work)
+{
+        int key = KEY_PLAYPAUSE;
+
+        ab8500_ponkey_emulator(key, 1);
+        mdelay(homekey_do_press_play_delay_ms);
+        ab8500_ponkey_emulator(key, 0);
+
+        if (homekey_is_remapped) {
+		abb_ponkey_unmap_power_key(KEY_PLAYPAUSE);
+		homekey_is_remapped = false;
+	}
+
+        homekey_do_press_play_is_ongoing = false;
+}
+static DECLARE_WORK(homekey_do_press_play_work, homekey_do_press_play_fn);
 
 static bool is_early_suspend = false;
 unsigned int is_suspend = 0;
@@ -555,8 +602,69 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 
 			return 0;
 		}
-	} else if (volkey_press_skip_track && ! is_suspend && (is_early_suspend || !volkey_skip_tracks_in_suspend_only)) {
-		if (button->gpio == VOL_UP_JANICE_R0_0 || button->gpio == VOL_DOWN_JANICE_R0_0) {
+	} else if ((volkey_press_skip_track || homekey_press_play) && ! is_suspend && (is_early_suspend || 
+			!volkey_skip_tracks_in_suspend_only || ! homekey_press_play_in_suspend_only)) {
+		if (button->gpio == HOME_KEY_JANICE_R0_0) {
+			if (homekey_press_play_is_ongoing && state == 1) {
+                                if (volkey_debug_level > 0)
+                                        pr_err("[GPIO-KEYS] homekey_press_play_work is already run\n");
+
+                                cancel_delayed_work(&homekey_press_play_work);
+                                homekey_press_play_is_ongoing = false;
+                                homekey_press_play_now = false;
+                        }
+
+			if (state == 1) {
+                                if (volkey_debug_level > 0)
+                                        pr_err("[GPIO-KEYS] homekey is pressed\n");
+
+                                if (!homekey_press_play_is_ongoing) {
+                                        schedule_delayed_work(&homekey_press_play_work, homekey_long_press_delay_ms);
+                                        homekey_press_play_now = false;
+                                        homekey_press_play_is_ongoing = true;
+                                } else if (volkey_debug_level > 1) {
+                                        pr_err("skipping homekey_press_play_work\n");
+                                }
+
+                                return 0;
+                        } else if (state == 0 && homekey_press_play_now) {
+                                // homekey is released and homekey_long_press_delay_ms has spent, press play now
+                                if (volkey_debug_level > 0)
+                                        pr_err("[GPIO-KEYS] homekey is released, skipping track\n");
+
+
+                               if (!homekey_do_press_play_is_ongoing) {
+
+                                        abb_ponkey_remap_power_key(KEY_POWER, KEY_PLAYPAUSE);
+					homekey_is_remapped = true;
+                                        schedule_work(&homekey_do_press_play_work);
+                                        homekey_do_press_play_is_ongoing = true;
+                                        homekey_press_play_now = false;
+                                } else if (volkey_debug_level > 1) {
+                                        pr_err("skipping homekey_do_press_play_work\n");
+                                }
+
+                                return 0;
+                        } else if (state == 0 && !homekey_press_play_now) {
+                                if (volkey_debug_level > 0)
+                                        pr_err("[GPIO-KEYS] homekey is released, not pressing play\n");
+                                if (!homekey_do_press_play_is_ongoing) {
+                                        // home key is released before homekey_long_press_delay_ms
+                                        // has spent, emulate volume key press
+
+                                        abb_ponkey_unmap_power_key(KEY_PLAYPAUSE);
+					homekey_is_remapped = false;
+					schedule_work(&homekey_do_press_play_work);
+					homekey_do_press_play_is_ongoing = true;
+                                } else if (volkey_debug_level > 1) {
+                                        pr_err("skipping homekey_do_press_play_work\n");
+                                }
+
+                                return 0;
+                        }
+
+		}
+		else if (button->gpio == VOL_UP_JANICE_R0_0 || button->gpio == VOL_DOWN_JANICE_R0_0) {
 			// if vol.up/vol.down is pressed when volkey_skip_track_work is running, cancel it first
 			if (volkey_skip_track_is_ongoing && state == 1) {
 				if (volkey_debug_level > 0) 
