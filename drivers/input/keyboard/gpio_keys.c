@@ -478,6 +478,8 @@ static bool homekey_press_play_now = false;
 // remap vol.up -> KEY_NEXTSONG / vol.down -> KEY_PREVIOUSSONG
 static bool volkey_remap_keys = false;
 
+static bool homekey_is_remapped = false;
+
 // if true, KEY_NEXTSONG will be emulated, otherwise - KEY_PREVIOUSSONG
 static bool volkey_emulate_key_nextsong = false;
 
@@ -506,6 +508,21 @@ module_param_named(homekey_press_play, homekey_press_play, uint, 0644);
 module_param_named(homekey_long_press_delay_ms, homekey_long_press_delay_ms, uint, 0644);
 module_param_named(homekey_do_press_play_delay_ms, homekey_do_press_play_delay_ms, uint, 0644);
 module_param_named(homekey_press_play_in_suspend_only, homekey_press_play_in_suspend_only, uint, 0644);
+
+void volkey_reset_variables(void) {
+        volkey_skip_track_is_ongoing = false;
+        volkey_do_volume_key_press_is_ongoing = false;
+        volkey_skip_track_now = false;
+        volkey_remap_keys = false;
+        volkey_emulate_key_nextsong = false;
+}
+
+void homekey_reset_variables(void) {
+	homekey_press_play_is_ongoing = false;
+	homekey_do_press_play_is_ongoing = false;
+	homekey_press_play_now = false;
+	homekey_is_remapped = false;
+}
 
 static void volkey_skip_track_fn(struct work_struct *volkey_skip_track_work)
 {
@@ -544,8 +561,6 @@ static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_
 	volkey_do_volume_key_press_is_ongoing = false;
 }
 static DECLARE_WORK(volkey_do_volume_key_press_work, volkey_do_volume_key_press_fn);
-
-static unsigned int homekey_is_remapped = false;
 
 static void homekey_do_press_play_fn(struct work_struct *homekey_do_press_play_work)
 {
