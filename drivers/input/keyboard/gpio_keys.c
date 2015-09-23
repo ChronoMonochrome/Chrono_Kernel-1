@@ -538,10 +538,10 @@ static void homekey_press_play_fn(struct work_struct *homekey_press_play_work)
 }
 static DECLARE_DELAYED_WORK(homekey_press_play_work, homekey_press_play_fn);
 
-static unsigned long emulated_keys[] = {KEY_NEXTSONG, KEY_PREVIOUSSONG, KEY_VOLUMEUP, KEY_VOLUMEDOWN, KEY_PLAYPAUSE};
+static unsigned long emulated_keys[] = {KEY_NEXTSONG, KEY_PREVIOUSSONG, KEY_VOLUMEUP, KEY_VOLUMEDOWN, HOME_KEY_JANICE_R0_0, HOME_KEY_CODINA_R0_5, KEY_PLAYPAUSE};
 
 void unmap_keys(void) {
-	abb_ponkey_unmap_all_keys(&emulated_keys, 5);
+	abb_ponkey_unmap_all_keys(&emulated_keys, ARRAY_SIZE(emulated_keys));
 }
 
 static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_work)
@@ -564,7 +564,7 @@ static DECLARE_WORK(volkey_do_volume_key_press_work, volkey_do_volume_key_press_
 
 static void homekey_do_press_play_fn(struct work_struct *homekey_do_press_play_work)
 {
-        int key = homekey_is_remapped ? KEY_PLAYPAUSE : HOME_KEY_JANICE_R0_0;
+        int key = homekey_is_remapped ? KEY_PLAYPAUSE : HOME_KEY_CODINA_R0_5;
 
         ab8500_ponkey_emulator(key, 1);
         mdelay(homekey_do_press_play_delay_ms);
@@ -664,7 +664,7 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
                                         	// home key is released before homekey_long_press_delay_ms
                                         	// has spent, emulate volume key press
 
-                                       		abb_ponkey_remap_power_key(KEY_POWER, HOME_KEY_JANICE_R0_0);
+                                       		abb_ponkey_remap_power_key(KEY_POWER, HOME_KEY_CODINA_R0_5);
 						homekey_is_remapped = false;
 						schedule_work(&homekey_do_press_play_work);
 						homekey_do_press_play_is_ongoing = true;
