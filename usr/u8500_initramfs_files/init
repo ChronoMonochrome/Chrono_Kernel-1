@@ -23,7 +23,16 @@ if ! busybox grep -q bootmode=2 /proc/cmdline ; then
 	fi
 fi
 
-busybox chmod 644 /ramdisk/boot.cpio
+if busybox grep -q lpm_boot=1 /proc/cmdline ; then
+	busybox echo 1 > /sys/module/doubletap2wake/parameters/is_lpm
+	busybox echo 1 > /sys/module/sweep2wake/parameters/is_lpm
+	busybox echo 1 > /sys/module/doubletap2wake/parameters/enable
+	busybox echo 1 > /sys/module/sweep2wake/parameters/enable
+fi
+
+if test -f /ramdisk/boot.cpio ; then
+	busybox chmod 644 /ramdisk/boot.cpio
+fi
 
 load_image=/ramdisk/boot.cpio
 lvm=/ramdisk/lvm.cpio

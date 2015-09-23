@@ -102,6 +102,10 @@ void s2w_reset(void)
 	exec_count = true;
 }
 
+
+static unsigned int is_lpm = 0;
+module_param_named(is_lpm, is_lpm, uint, 0644);
+
 /* Sweep2wake main function */
 void detect_sweep2wake(int x, int y, bool st)
 {
@@ -117,7 +121,7 @@ void detect_sweep2wake(int x, int y, bool st)
                 x, y, (single_touch) ? "true" : "false");
 #endif
 	//left->right
-	if ((single_touch) && (scr_suspended == true) && (s2w_switch > 0)) {
+	if ((single_touch) && (scr_suspended || is_lpm) && (s2w_switch > 0)) {
 		prevx = 0;
 		nextx = S2W_X_B1;
 		if ((barrier[0] == true) ||

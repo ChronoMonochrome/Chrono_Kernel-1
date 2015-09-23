@@ -100,6 +100,9 @@ static unsigned int calc_feather(int coord, int prev_coord) {
 	return calc_coord;
 }
 
+static unsigned int is_lpm = 0;
+module_param_named(is_lpm, is_lpm, uint, 0644);
+
 /* Sweep2wake main function */
 void detect_doubletap2wake(int x, int y, bool st)
 {
@@ -110,7 +113,7 @@ void detect_doubletap2wake(int x, int y, bool st)
 	        pr_err("[doubletap2wake]: x,y(%4d,%4d) single:%s\n",
         	        x, y, (single_touch) ? "true" : "false");
 
-	if ((!single_touch) && (dt2w_switch > 0) && (exec_count) && (scr_suspended)) {
+	if ((!single_touch) && (dt2w_switch > 0) && (exec_count) && (scr_suspended || is_lpm)) {
 		if (touch_nr == 0) {
 			tap_time_pre = ktime_to_ms(ktime_get());
 			x_pre = x;
