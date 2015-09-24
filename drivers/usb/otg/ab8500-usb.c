@@ -286,6 +286,7 @@ static void ab8500_usb_regulator_ctrl(struct ab8500_usb *ab, bool sel_host,
 	}
 }
 
+extern unsigned int ignore_usb_requirements;
 
 static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 {
@@ -299,9 +300,14 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
 
 	ab8500_usb_regulator_ctrl(ab, sel_host, true);
 
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
+	if (ignore_usb_requirements)
+		prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
 				     (char *)dev_name(ab->dev),
-				     PRCMU_QOS_APE_OPP_MAX);
+				     25);
+	else 
+		prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+                                     (char *)dev_name(ab->dev),
+                                     100);
 
 	schedule_delayed_work_on(0,
 					&ab->work_usb_workaround,
@@ -349,9 +355,8 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
 
 	ab8500_usb_regulator_ctrl(ab, sel_host, false);
 
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-				     (char *)dev_name(ab->dev),
-				     PRCMU_QOS_DEFAULT_VALUE);
+	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+                                     (char *)dev_name(ab->dev));
 
 	if (!sel_host) {
 
@@ -1241,8 +1246,6 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 	/* Needed to enable ID detection. */
 	ab8500_usb_wd_workaround(ab);
 
-	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			(char *)dev_name(ab->dev), PRCMU_QOS_DEFAULT_VALUE);
 	dev_info(&pdev->dev, "revision 0x%2x driver initialized\n", rev);
 
 	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "usb",

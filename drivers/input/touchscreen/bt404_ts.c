@@ -4332,13 +4332,12 @@ err_i2c:
 }
 
 extern bool is_bln_wakelock_active(void);
-extern bool is_abb_charger_wakelocks_active(void);
 
 inline bool break_suspend_early(void)
 {
 	return prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia") ||
-		is_bln_wakelock_active() ||
-		is_abb_charger_wakelocks_active();
+		prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "ab8500-usb.0") ||
+		is_bln_wakelock_active();
 }
 
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
