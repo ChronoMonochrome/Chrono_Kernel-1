@@ -4331,23 +4331,33 @@ err_i2c:
 	return ret;
 }
 
+extern bool is_bln_wakelock_active(void);
+extern bool is_abb_charger_wakelocks_active(void);
+
+inline bool break_suspend_early(void)
+{
+	return prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia") ||
+		is_bln_wakelock_active() ||
+		is_abb_charger_wakelocks_active();
+}
+
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
 static int bt404_ts_suspend(struct device *dev)
 {
 #if defined (CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined (CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	if(s2w_switch || dt2w_switch) {
-		if (is_any_user_wakelock_active())
+		if (break_suspend_early())
 			return 0;
 	}
 #elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
         if(s2w_switch) {
-                if (is_any_user_wakelock_active())
+                if (break_suspend_early())
                         return 0;
         }
 
 #elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
 	if(dt2w_switch) {
-                if (is_any_user_wakelock_active())
+                if (break_suspend_early())
                         return 0;
         }
 
@@ -4401,18 +4411,18 @@ static int bt404_ts_resume(struct device *dev)
 {
 #if defined (CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined (CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	if(s2w_switch || dt2w_switch) {
-                if (is_any_user_wakelock_active())
+                if (break_suspend_early())
                         return 0;
         }
 
 #elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
         if(s2w_switch) {
-                if (is_any_user_wakelock_active())
+                if (break_suspend_early())
                         return 0;
         }
 #elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
         if(dt2w_switch) {
-                if (is_any_user_wakelock_active())
+                if (break_suspend_early())
                         return 0;
         }
 #endif
@@ -4463,7 +4473,7 @@ static void bt404_ts_late_resume(struct early_suspend *h)
 	if(s2w_switch || dt2w_switch){
 		s2w_set_scr_suspended(false);
 		dt2w_set_scr_suspended(false);
-                if (is_any_user_wakelock_active()) {
+                if (break_suspend_early()) {
 				return;
 		}
 	}
@@ -4480,7 +4490,7 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
         if(s2w_switch || dt2w_switch){
                 s2w_set_scr_suspended(true);
                 dt2w_set_scr_suspended(true);
-                if (is_any_user_wakelock_active()) {
+                if (break_suspend_early()) {
                                 return;
                 }
 	}

@@ -1410,6 +1410,16 @@ static int ab8500_charger_led_en(struct ab8500_charger *di, int on)
 	return ret;
 }
 
+static struct wake_lock *ab8500_vbus_wake_lock;
+static struct wake_lock *ab8500_vbus_detect_charging_lock;
+static struct wake_lock *charger_attached_lock;
+
+bool is_abb_charger_wakelocks_active(void)
+{
+	return wake_lock_active(&ab8500_vbus_wake_lock) ||
+		wake_lock_active(&ab8500_vbus_detect_charging_lock) ||
+		wake_lock_active(&charger_attached_lock);
+}
 
 /**
  * ab8500_charger_ac_en() - enable or disable ac charging
@@ -3767,6 +3777,10 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, di);
 	di->parent->charger = di;
+
+	ab8500_vbus_wake_lock = di->ab8500_vbus_wake_lock;
+	ab8500_vbus_detect_charging_lock = di->ab8500_vbus_detect_charging_lock;
+	charger_attached_lock = di->charger_attached_lock;
 
 	return ret;
 
