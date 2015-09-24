@@ -205,6 +205,8 @@ inline bool is_any_user_wakelock_active(void)
 	struct user_wake_lock *l;
 	bool res = false;
 
+	mutex_lock(&tree_lock);
+
         for (n = rb_first(&user_wake_locks); n != NULL; n = rb_next(n)) {
                 l = rb_entry(n, struct user_wake_lock, node);
                 if (wake_lock_active(&l->wake_lock)) {
@@ -212,6 +214,8 @@ inline bool is_any_user_wakelock_active(void)
 			break;
 		}
         }
+
+        mutex_unlock(&tree_lock);
 
 	return res;
 }
@@ -224,6 +228,8 @@ ssize_t wake_lock_show(
 	struct rb_node *n;
 	struct user_wake_lock *l;
 
+	mutex_lock(&tree_lock);
+
 	for (n = rb_first(&user_wake_locks); n != NULL; n = rb_next(n)) {
 		l = rb_entry(n, struct user_wake_lock, node);
 		if (wake_lock_active(&l->wake_lock))
@@ -231,6 +237,7 @@ ssize_t wake_lock_show(
 	}
 	s += scnprintf(s, end - s, "\n");
 
+	mutex_unlock(&tree_lock);
 	return (s - buf);
 }
 
