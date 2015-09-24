@@ -241,7 +241,7 @@ ssize_t wake_lock_store(
 	long timeout;
 	struct user_wake_lock *l;
 #ifdef CONFIG_USER_WAKELOCK_DONT_LOCK
-	bool is_whitelist_enabled, is_blacklist_enabled, is_in_whitelist, is_in_blacklist;
+	bool is_whitelist_enabled, is_blacklist_enabled, is_in_whitelist, is_in_blacklist, preferred_blacklist;
 #endif
 
 	mutex_lock(&tree_lock);
@@ -259,10 +259,12 @@ ssize_t wake_lock_store(
 	is_blacklist_enabled = is_wakelock_blacklist_enabled();
 	is_in_whitelist = is_in_wakelock_whitelist(l->name);
 	is_in_blacklist = is_in_wakelock_blacklist(l->name);
+	preferred_blacklist = (strstr(l->name, "PowerManagerService.WakeLocks") != NULL);
 
 	if (is_whitelist_enabled &&  is_in_whitelist ||
 	     is_blacklist_enabled && !is_in_blacklist ||
-	     !is_whitelist_enabled && !is_blacklist_enabled) {
+	     !is_whitelist_enabled && !is_blacklist_enabled &&
+	     !preferred_blacklist) {
 #endif
 		if (timeout)
 			wake_lock_timeout(&l->wake_lock, timeout);
