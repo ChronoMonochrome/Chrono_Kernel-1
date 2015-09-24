@@ -4331,37 +4331,9 @@ err_i2c:
 	return ret;
 }
 
-extern bool is_bln_wakelock_active(void);
-
-inline bool break_suspend_early(void)
-{
-	return prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia") ||
-		prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "ab8500-usb.0") ||
-		is_bln_wakelock_active();
-}
-
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
 static int bt404_ts_suspend(struct device *dev)
 {
-#if defined (CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined (CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	if(s2w_switch || dt2w_switch) {
-		if (break_suspend_early())
-			return 0;
-	}
-#elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
-        if(s2w_switch) {
-                if (break_suspend_early())
-                        return 0;
-        }
-
-#elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if(dt2w_switch) {
-                if (break_suspend_early())
-                        return 0;
-        }
-
-#endif
-
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
@@ -4408,23 +4380,6 @@ out:
 
 static int bt404_ts_resume(struct device *dev)
 {
-#if defined (CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined (CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	if(s2w_switch || dt2w_switch) {
-                if (break_suspend_early())
-                        return 0;
-        }
-
-#elif CONFIG_TOUCHSCREEN_SWEEP2WAKE
-        if(s2w_switch) {
-                if (break_suspend_early())
-                        return 0;
-        }
-#elif CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-        if(dt2w_switch) {
-                if (break_suspend_early())
-                        return 0;
-        }
-#endif
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
@@ -4463,6 +4418,31 @@ out:
 }
 #endif
 
+extern bool is_bln_wakelock_active(void);
+
+static int last_suspend_skipped = 0, last_resume_skipped = 0;
+
+inline bool break_suspend_early(bool suspend)
+{
+        bool ret;
+
+        ret = prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia") ||
+                prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "ab8500-usb.0") ||
+                is_bln_wakelock_active();
+
+        if (suspend) {
+                last_suspend_skipped = ret;
+        } else {
+		/* only skip resume if last suspend was skipped */
+		if (unlikely(ret && !last_suspend_skipped)) {
+			pr_err("[bt404_ts] not skipping resume because suspend was not skipped\n");
+		}
+		ret = ret && last_suspend_skipped;
+                last_resume_skipped = ret;
+	}
+
+	return ret;
+}
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void bt404_ts_late_resume(struct early_suspend *h)
@@ -4472,7 +4452,7 @@ static void bt404_ts_late_resume(struct early_suspend *h)
 	if(s2w_switch || dt2w_switch){
 		s2w_set_scr_suspended(false);
 		dt2w_set_scr_suspended(false);
-                if (break_suspend_early()) {
+                if (break_suspend_early(false)) {
 				return;
 		}
 	}
@@ -4489,7 +4469,7 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
         if(s2w_switch || dt2w_switch){
                 s2w_set_scr_suspended(true);
                 dt2w_set_scr_suspended(true);
-                if (break_suspend_early()) {
+                if (break_suspend_early(true)) {
                                 return;
                 }
 	}
