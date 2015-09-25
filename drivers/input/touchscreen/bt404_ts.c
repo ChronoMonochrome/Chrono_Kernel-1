@@ -622,6 +622,8 @@ struct bt404_ts_data *misc_data;
 
 #endif /*USE_TEST_RAW_TH_DATA_MODE */
 
+struct bt404_ts_data *data_;
+
 #if	USE_TEST_RAW_TH_DATA_MODE
 static bool ts_get_raw_data(struct bt404_ts_data *data)
 {
@@ -4134,6 +4136,9 @@ static int bt404_ts_probe(struct i2c_client *client,
 			"Failed to create sysfs (touchscreen_temp_attr_group).");
 	
 	dev_info(&client->dev, "successfully probed.\n");
+
+	data_ = data;
+
 	return 0;
 
 err_create_sysfs:
@@ -4439,6 +4444,13 @@ out:
 extern bool is_bln_wakelock_active(void);
 extern unsigned int is_charger_present;
 
+static bool is_suspend = false;
+static bool should_break_suspend_early = false; // flag, that determines whether suspend/resume of bt404
+                                                // should be skipped
+static bool is_awaken = false; // two flags, that protects suspend/resume
+static bool is_sleep = false; // against race conditions
+static int should_break_suspend_early_check_delay = 10000;// check state of should_break_suspend_early
+                                                          // each 10 seconds
 inline bool break_suspend_early(bool suspend)
 {
         bool ret;
@@ -4450,50 +4462,108 @@ inline bool break_suspend_early(bool suspend)
         if (suspend) {
                 last_suspend_skipped = ret;
         } else {
-		/* only skip resume if last suspend was skipped */
-		if (unlikely(ret && !last_suspend_skipped)) {
-			pr_err("[bt404_ts] not skipping resume because suspend was not skipped\n");
-		}
-		ret = ret && last_suspend_skipped;
+                /* only skip resume if last suspend was skipped */
+                if (ret && !last_suspend_skipped) {
+                        pr_err("[bt404_ts] not skipping resume because suspend was not skipped\n");
+                }
+                ret = ret && last_suspend_skipped;
                 last_resume_skipped = ret;
-	}
+        }
+
+        return ret;
+}
+
+/*
+ * early_suspend_: returns true if suspended, or false otherwise
+ */
+
+static inline bool early_suspend_(void)
+{
+	bool ret = false;
+
+        if (!is_sleep) {
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+                if(s2w_switch || dt2w_switch){
+                        if (break_suspend_early(true)) {
+                                        return;
+                        }
+                }
+#endif
+                is_awaken = false;
+                is_sleep = true;
+		ret = true;
+                bt404_ts_suspend(&data_->client->dev);
+        }
 
 	return ret;
+}
+
+static inline void late_resume_(void)
+{
+        if (!is_awaken) {
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+                if(s2w_switch || dt2w_switch){
+                        if (break_suspend_early(false)) {
+                                        return;
+                        }
+                }
+#endif
+                bt404_ts_resume(&data_->client->dev);
+                is_sleep = false;
+                is_awaken = true;
+        }
+}
+
+void should_break_suspend_early_check_fn(struct work_struct *work);
+DECLARE_DELAYED_WORK(should_break_suspend_early_check_work, should_break_suspend_early_check_fn);
+void should_break_suspend_early_check_fn(struct work_struct *work)
+{
+	should_break_suspend_early = 
+		prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia") ||
+                prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "ab8500-usb.0") ||
+                is_bln_wakelock_active();
+
+	if (dt2w_switch || s2w_switch) {
+		// we're in suspend, and we skipped it,
+		// but should_break_suspend_early now == false
+		if (is_suspend && last_suspend_skipped && !should_break_suspend_early) {
+			// now put the driver into suspend
+			pr_err("%s: put bt404 driver to suspend: %d\n", __func__, early_suspend_());
+		}
+
+		schedule_delayed_work(&should_break_suspend_early_check_work, 
+			msecs_to_jiffies(should_break_suspend_early_check_delay));
+	}
+}
+
+void should_break_suspend_check_init_work(void) {
+	pr_err("%s: started\n", __func__);
+        schedule_delayed_work(&should_break_suspend_early_check_work, 0);
 }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void bt404_ts_late_resume(struct early_suspend *h)
 {
-	struct bt404_ts_data *data;
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-	if(s2w_switch || dt2w_switch){
-		s2w_set_scr_suspended(false);
-		dt2w_set_scr_suspended(false);
-                if (break_suspend_early(false)) {
-				return;
-		}
-	}
-#endif
-       data = container_of(h, struct bt404_ts_data, early_suspend);
-       bt404_ts_resume(&data->client->dev);
+	is_suspend = false;
 
+	if (s2w_switch || dt2w_switch) {
+		s2w_set_scr_suspended(is_suspend);
+	        dt2w_set_scr_suspended(is_suspend);
+	}
+
+	late_resume_();
 }
 
 static void bt404_ts_early_suspend(struct early_suspend *h)
 {
-	struct bt404_ts_data *data;
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-        if(s2w_switch || dt2w_switch){
-                s2w_set_scr_suspended(true);
-                dt2w_set_scr_suspended(true);
-                if (break_suspend_early(true)) {
-                                return;
-                }
-	}
-#endif
+	is_suspend = true;
 
-	data = container_of(h, struct bt404_ts_data, early_suspend);
-	bt404_ts_suspend(&data->client->dev);
+	if (s2w_switch || dt2w_switch) {
+                s2w_set_scr_suspended(is_suspend);
+                dt2w_set_scr_suspended(is_suspend);
+        }
+
+	early_suspend_();
 }
 
 #endif	/* CONFIG_HAS_EARLYSUSPEND */

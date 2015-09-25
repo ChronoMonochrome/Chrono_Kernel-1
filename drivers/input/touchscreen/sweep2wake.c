@@ -192,6 +192,8 @@ void s2w_set_scr_suspended(bool suspended)
 	s2w_reset();
 }
 
+extern void should_break_suspend_check_init_work(void);
+
 static int set_enable(const char *val, struct kernel_param *kp)
 {
 	int max_tries = 10; 
@@ -215,6 +217,7 @@ static int set_enable(const char *val, struct kernel_param *kp)
 	}
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
 		s2w_switch = 1;
+		should_break_suspend_check_init_work();
 		if(DEBUG)
 			printk("s2w: enabled\n");
 
