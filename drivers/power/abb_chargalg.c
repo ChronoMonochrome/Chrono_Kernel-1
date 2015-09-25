@@ -1205,6 +1205,8 @@ static void handle_maxim_chg_curr(struct ab8500_chargalg *di)
 	}
 }
 
+int is_charger_present = false;
+
 static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 {
 	struct power_supply *psy;
@@ -1213,6 +1215,7 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 	union power_supply_propval ret;
 	int i, j;
 	bool psy_found = false;
+	bool is_charger = false;
 
 	psy = (struct power_supply *)data;
 	ext = dev_get_drvdata(dev);
@@ -1268,15 +1271,19 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 			break ;
 
 		case POWER_SUPPLY_PROP_PRESENT:
-			if (!ret.intval && (ext->type == POWER_SUPPLY_TYPE_MAINS || 
-				ext->type == POWER_SUPPLY_TYPE_USB) && 
-				(di->chg_info.conn_chg & AC_CHG || di->chg_info.conn_chg & USB_CHG)) {
+			is_charger = (ext->type == POWER_SUPPLY_TYPE_MAINS ||
+                                ext->type == POWER_SUPPLY_TYPE_USB) &&
+                                (di->chg_info.conn_chg & AC_CHG || di->chg_info.conn_chg & USB_CHG);
+			if (!ret.intval && is_charger) {
 			      if (eoc_blink_ongoing) {
 					if (eoc_blink_timeout_sec)
 	                                        cancel_delayed_work(&eoc_blink_stop_work);
                                         schedule_delayed_work(&eoc_blink_stop_work, 0);
                                         eoc_blink_ongoing = false;
                                 }
+				is_charger_present = false;
+			} else if (ret.intval && is_charger) {
+				is_charger_present = true;
 			}
 			switch (ext->type) {
 			case POWER_SUPPLY_TYPE_BATTERY:

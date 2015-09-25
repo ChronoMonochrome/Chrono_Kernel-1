@@ -4419,6 +4419,7 @@ out:
 #endif
 
 extern bool is_bln_wakelock_active(void);
+extern int is_charger_present;
 
 static int last_suspend_skipped = 0, last_resume_skipped = 0;
 
@@ -4427,7 +4428,8 @@ inline bool break_suspend_early(bool suspend)
         bool ret;
 
         ret = prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia") ||
-                is_bln_wakelock_active();
+                is_bln_wakelock_active() ||
+		is_charger_present;
 
         if (suspend) {
                 last_suspend_skipped = ret;
