@@ -4427,7 +4427,6 @@ inline bool break_suspend_early(bool suspend)
         bool ret;
 
         ret = prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia") ||
-                prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "ab8500-usb.0") ||
                 is_bln_wakelock_active();
 
         if (suspend) {
