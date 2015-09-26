@@ -1212,7 +1212,8 @@ static void handle_maxim_chg_curr(struct ab8500_chargalg *di)
 	}
 }
 
-int is_charger_present = false;
+unsigned int is_charger_present = false;
+module_param_named(is_charger_present, is_charger_present, uint, 0644);
 
 static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 {

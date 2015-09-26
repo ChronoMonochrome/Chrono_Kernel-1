@@ -4437,7 +4437,7 @@ out:
 #endif
 
 extern bool is_bln_wakelock_active(void);
-extern int is_charger_present;
+extern unsigned int is_charger_present;
 
 static int last_suspend_skipped = 0, last_resume_skipped = 0;
 
