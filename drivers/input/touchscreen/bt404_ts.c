@@ -4501,6 +4501,9 @@ static inline void late_resume_(void)
 	return !is_awaken;
 }
 
+static unsigned int debug = 0;
+module_param_named(debug, debug, uint, 0644);
+
 void should_break_suspend_early_check_fn(struct work_struct *work);
 DECLARE_DELAYED_WORK(should_break_suspend_early_check_work, should_break_suspend_early_check_fn);
 void should_break_suspend_early_check_fn(struct work_struct *work)
@@ -4515,11 +4518,12 @@ void should_break_suspend_early_check_fn(struct work_struct *work)
 		// but should_break_suspend_early now == false
 		if (is_suspend && last_suspend_skipped && !should_break_suspend_early) {
 			// now put the driver into suspend
-			if (debug) {
+			if (debug && data_->enabled) {
 				pr_err("%s: put bt404 driver to suspend\n", __func__);
 			}
-			early_suspend_();
 
+			if (data_->enabled)
+				bt404_ts_suspend(&data_->client->dev);
 		}
 
 		schedule_delayed_work(&should_break_suspend_early_check_work, 
