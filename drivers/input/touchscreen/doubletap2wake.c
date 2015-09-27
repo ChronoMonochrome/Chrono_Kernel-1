@@ -52,6 +52,9 @@ static DEFINE_MUTEX(pwrkeyworklock);
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
 static struct wake_lock dt2w_wake_lock;
+bool is_dt2w_wakelock_active(void) {
+	return wake_lock_active(&dt2w_wake_lock);
+}
 bool dt2w_use_wakelock;
 #endif
 
