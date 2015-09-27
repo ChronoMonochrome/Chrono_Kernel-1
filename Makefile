@@ -399,6 +399,14 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -mfloat-abi=softfp \
 		  -ftree-vectorize \
 		  -funsafe-loop-optimizations \
+		  -ftree-parallelize-loops=2 \
+                  -fgraphite \
+                  -fgraphite-identity \
+                  -floop-block \
+                  -floop-interchange \
+                  -floop-nest-optimize \
+                  -floop-strip-mine \
+                  -floop-parallelize-all \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
 		  --param ggc-min-expand=70 \
