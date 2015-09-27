@@ -4346,19 +4346,18 @@ static int bt404_ts_suspend(struct device *dev)
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
 
-	if (s2w_switch || dt2w_switch) {
-		 if (break_suspend_early(true)) {
-			pr_err("%s: skipped\n", __func__);
-			goto out;
-		}
-	}
-
-
 	if (!data->enabled) {
 		dev_err(dev, "%s, already disabled\n", __func__);
 		ret = -1;
 		goto out;
 	}
+
+        if (s2w_switch || dt2w_switch) {
+                 if (break_suspend_early(true)) {
+                        pr_err("%s: skipped\n", __func__);
+                        goto out;
+                }
+        }
 
 	disable_irq(data->irq);
 	data->enabled = false;
@@ -4400,20 +4399,20 @@ static int bt404_ts_resume(struct device *dev)
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
 
-	if (s2w_switch || dt2w_switch) {
-		if (break_suspend_early(false)) {
-			if (last_suspend_skipped) {
-				pr_err("%s: skipped\n", __func__);
-				goto out;
-			}
-		}
-	}
-
 	if (data->enabled) {
 		dev_err(dev, "%s, already enabled\n", __func__);
 		ret = -1;
 		goto out;
 	}
+
+        if (s2w_switch || dt2w_switch) {
+                if (break_suspend_early(false)) {
+                        if (last_suspend_skipped) {
+                                pr_err("%s: skipped\n", __func__);
+                                goto out;
+                        }
+                }
+        }
 
 	data->pdata->int_set_pull(true);
 	data->enabled = true;
