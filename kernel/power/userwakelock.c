@@ -199,27 +199,6 @@ bad_arg:
 	return ERR_PTR(-EINVAL);
 }
 
-inline bool is_any_user_wakelock_active(void)
-{
-	struct rb_node *n;
-	struct user_wake_lock *l;
-	bool res = false;
-
-	mutex_lock(&tree_lock);
-
-        for (n = rb_first(&user_wake_locks); n != NULL; n = rb_next(n)) {
-                l = rb_entry(n, struct user_wake_lock, node);
-                if (wake_lock_active(&l->wake_lock)) {
-			res = true;
-			break;
-		}
-        }
-
-        mutex_unlock(&tree_lock);
-
-	return res;
-}
-
 ssize_t wake_lock_show(
 	struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
