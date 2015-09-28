@@ -94,7 +94,7 @@ static struct donotkill donotkill_proc;		/* User processes to preserve from kill
 /*
  * Checks if a process name is inside a list of processes to be preserved from killing
  */
-static bool is_in_donotkill_list(char *proc_name, struct donotkill *donotkill_proc)
+static inline bool is_in_donotkill_list(char *proc_name, struct donotkill *donotkill_proc)
 {
 	int i = 0;
 
@@ -113,7 +113,7 @@ static bool is_in_donotkill_list(char *proc_name, struct donotkill *donotkill_pr
 /*
  * Checks if a process name is inside a list of user processes to be preserved from killing
  */
-static bool is_in_donotkill_proc_list(char *proc_name)
+static inline bool is_in_donotkill_proc_list(char *proc_name)
 {
 	return is_in_donotkill_list(proc_name, &donotkill_proc);
 }
