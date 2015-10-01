@@ -1174,6 +1174,7 @@ static int wait_for_vsync(struct mcde_chnl_state *chnl)
 	}
 }
 
+#ifdef CONFIG_MCDE_LCDCLK_MANAGEMENT
 /* PRCMU LCDCLK */
 /* 60+++	79872000 unsafe
  * 60++ 	62400000 unsafe
@@ -1308,6 +1309,7 @@ static struct attribute_group mcde_interface_group = {
 };
 
 static struct kobject *mcde_kobject;
+#endif /* CONFIG_MCDE_LCDCLK_MANAGEMENT */
 
 static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 {
@@ -1399,10 +1401,12 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 	}
 
 	if (port->type == MCDE_PORTTYPE_DPI) {
+#ifdef CONFIG_MCDE_LCDCLK_MANAGEMENT
 		if (lcdclk_usr != -1) {
 			pr_err("[MCDE] Rebasing LCDCLK...\n");
 			schedule_work(&lcdclk_work);
 		}
+#endif
 		
 		if (port->phy.dpi.lcd_freq != clk_round_rate(chnl->clk_dpi,
 						port->phy.dpi.lcd_freq))
@@ -1411,8 +1415,9 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 					
 		WARN_ON_ONCE(clk_set_rate(chnl->clk_dpi,
 					port->phy.dpi.lcd_freq));
+#ifdef CONFIG_MCDE_LCDCLK_MANAGEMENT
 		pr_err("[MCDE] rebased LCDCLK to %d Hz\n", port->phy.dpi.lcd_freq);
-		
+#endif		
 		WARN_ON_ONCE(clk_enable(chnl->clk_dpi));
 	}
 
@@ -4470,6 +4475,7 @@ int __init mcde_init(void)
   
 	mutex_init(&mcde_hw_lock);
 	
+#ifdef CONFIG_MCDE_LCDCLK_MANAGEMENT
 	mcde_kobject = kobject_create_and_add("mcde", kernel_kobj);
 	if (!mcde_kobject) {
 		pr_err("[MCDE] Failed to create kobject interface\n");
@@ -4480,6 +4486,7 @@ int __init mcde_init(void)
 	if (ret) {
 		kobject_put(mcde_kobject);
 	}
+#endif
 	
 out:
 	return platform_driver_register(&mcde_driver);
@@ -4488,6 +4495,8 @@ out:
 void mcde_exit(void)
 {
 	/* REVIEW: shutdown MCDE? */
+#ifdef CONFIG_MCDE_LCDCLK_MANAGEMENT
 	kobject_put(mcde_kobject);
+#endif
 	platform_driver_unregister(&mcde_driver);
 }
