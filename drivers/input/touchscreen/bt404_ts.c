@@ -4545,26 +4545,44 @@ void should_break_suspend_check_init_work(void) {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void bt404_ts_late_resume(struct early_suspend *h)
 {
-	is_suspend = false;
+       struct bt404_ts_data *data;
 
-	if (s2w_switch || dt2w_switch) {
-		s2w_set_scr_suspended(is_suspend);
-		dt2w_set_scr_suspended(is_suspend);
-	}
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+        is_suspend = false;
 
-	late_resume_();
+        if (s2w_switch || dt2w_switch) {
+               s2w_set_scr_suspended(is_suspend);
+               dt2w_set_scr_suspended(is_suspend);
+               late_resume_();
+        } else {
+#endif
+               data = container_of(h, struct bt404_ts_data, early_suspend);
+               bt404_ts_resume(&data->client->dev);
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+        }
+#endif
+
 }
 
 static void bt404_ts_early_suspend(struct early_suspend *h)
 {
-	is_suspend = true;
+        struct bt404_ts_data *data;
 
-	if (s2w_switch || dt2w_switch) {
-		 s2w_set_scr_suspended(is_suspend);
-		 dt2w_set_scr_suspended(is_suspend);
-	 }
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+        is_suspend = true;
 
-	early_suspend_();
+        if (s2w_switch || dt2w_switch) {
+                s2w_set_scr_suspended(is_suspend);
+                dt2w_set_scr_suspended(is_suspend);
+                early_suspend_();
+        } else {
+#endif
+               data = container_of(h, struct bt404_ts_data, early_suspend);
+               bt404_ts_suspend(&data->client->dev);
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) && defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+        }
+#endif
+
 }
 
 #endif	/* CONFIG_HAS_EARLYSUSPEND */
