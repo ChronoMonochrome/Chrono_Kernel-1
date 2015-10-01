@@ -135,12 +135,6 @@ struct ssg_dpi_display_platform_data codina_dpi_pri_display_info = {
 	.reset_gpio		= LCD_RESX_CODINA_R0_0,
 	.pwr_gpio		= LCD_PWR_EN_CODINA_R0_0,
 	.bl_ctrl		= false,
-	.power_on_delay		= 5,
-	.reset_delay		= 5,
-	.sleep_out_delay	= 120, /* 50ms for WS2401, but 120ms for S6D27A1 */
-
-	.display_off_delay	= 25,
-	.sleep_in_delay		= 120,
 	.min_ddr_opp		= 50,
 
 	.video_mode.xres	= 480,
@@ -152,6 +146,7 @@ struct ssg_dpi_display_platform_data codina_dpi_pri_display_info = {
 	 * setup elsewhere. But the pixclock value is visible in user
 	 * space.
 	 */
+
 	.video_mode.pixclock = (int)(1e+12 * (1.0 / PRCMU_DPI_CLK_SMD_FREQ)),
 
 	.reset		= pri_display_reset,
@@ -465,22 +460,34 @@ int __init init_codina_display_devices(void)
 
 	if (lcd_type == LCD_PANEL_TYPE_SMD){
 		generic_display0.name = LCD_DRIVER_NAME_WS2401;
-		codina_dpi_pri_display_info.video_mode.hsw = 10;
-		codina_dpi_pri_display_info.video_mode.hbp = 1;
-		codina_dpi_pri_display_info.video_mode.hfp = 1;
-		codina_dpi_pri_display_info.video_mode.vsw = 2;
-		codina_dpi_pri_display_info.video_mode.vbp = 8;
-		codina_dpi_pri_display_info.video_mode.vfp = 18;
-		codina_dpi_pri_display_info.sleep_out_delay = 50;
+		/* video modes */
+		codina_dpi_pri_display_info.video_mode.hsw = 10;	/* 10 */
+		codina_dpi_pri_display_info.video_mode.hbp = 2;		/* 8 */
+		codina_dpi_pri_display_info.video_mode.hfp = 2;		/* 8 */
+		codina_dpi_pri_display_info.video_mode.vsw = 2;		/* 2 */
+		codina_dpi_pri_display_info.video_mode.vbp = 8;		/* 8 */
+		codina_dpi_pri_display_info.video_mode.vfp = 18;	/* 18 */
+		/* delays */
+		codina_dpi_pri_display_info.sleep_out_delay = 50;	/* 50 */
+		codina_dpi_pri_display_info.power_on_delay = 50;	/* 10 */
+		codina_dpi_pri_display_info.reset_delay = 50;		/* 10 */
+		codina_dpi_pri_display_info.display_off_delay = 50;	/* 25 */
+		codina_dpi_pri_display_info.sleep_in_delay = 50;	/* 120 */
 	} else {
 		generic_display0.name = LCD_DRIVER_NAME_S6D27A1;
-		codina_dpi_pri_display_info.video_mode.hsw = 2;
-		codina_dpi_pri_display_info.video_mode.hbp = 63;
-		codina_dpi_pri_display_info.video_mode.hfp = 63;
-		codina_dpi_pri_display_info.video_mode.vsw = 2;
-		codina_dpi_pri_display_info.video_mode.vbp = 11;
-		codina_dpi_pri_display_info.video_mode.vfp = 10;
-		codina_dpi_pri_display_info.sleep_out_delay = 120;
+		/* video modes */
+		codina_dpi_pri_display_info.video_mode.hsw = 40;	/* 2 */
+		codina_dpi_pri_display_info.video_mode.hbp = 40;	/* 63 */
+		codina_dpi_pri_display_info.video_mode.hfp = 40;	/* 63 */
+		codina_dpi_pri_display_info.video_mode.vsw = 6;		/* 2 */
+		codina_dpi_pri_display_info.video_mode.vbp = 6;		/* 11 */
+		codina_dpi_pri_display_info.video_mode.vfp = 40;	/* 10 */
+		/* delays */
+		codina_dpi_pri_display_info.sleep_out_delay = 30;	/* 120 */
+		codina_dpi_pri_display_info.power_on_delay = 30;	/* 10 */
+		codina_dpi_pri_display_info.reset_delay = 30;		/* 10 */
+		codina_dpi_pri_display_info.display_off_delay = 30;	/* 25 */
+		codina_dpi_pri_display_info.sleep_in_delay = 30;	/* 120 */
 	}
 	
 	ret = mcde_display_device_register(&generic_display0);
@@ -494,7 +501,6 @@ int __init init_codina_display_devices(void)
 error:
 	return ret;
 }
-
 
 struct fb_info *get_primary_display_fb_info(void)
 {
