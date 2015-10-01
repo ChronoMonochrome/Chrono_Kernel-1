@@ -161,7 +161,9 @@ void dt2w_set_scr_suspended(bool suspended)
 	doubletap2wake_reset();
 }
 
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
 extern void should_break_suspend_check_init_work(void);
+#endif
 
 static int set_enable(const char *val, struct kernel_param *kp)
 {
@@ -186,7 +188,9 @@ static int set_enable(const char *val, struct kernel_param *kp)
 	}
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
 		dt2w_switch = 1;
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
 		should_break_suspend_check_init_work();
+#endif
 		if(dt2w_debug)
 			pr_err("dt2w: enabled\n");
 
