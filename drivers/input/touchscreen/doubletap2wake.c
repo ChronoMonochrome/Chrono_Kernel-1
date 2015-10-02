@@ -103,8 +103,7 @@ static unsigned int calc_feather(int coord, int prev_coord) {
 	return calc_coord;
 }
 
-static unsigned int is_lpm = 0;
-module_param_named(is_lpm, is_lpm, uint, 0644);
+extern unsigned int is_lpm;
 
 /* Sweep2wake main function */
 void detect_doubletap2wake(int x, int y, bool st)

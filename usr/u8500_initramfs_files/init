@@ -24,8 +24,6 @@ if ! busybox grep -q bootmode=2 /proc/cmdline ; then
 fi
 
 if busybox grep -q lpm_boot=1 /proc/cmdline ; then
-	busybox echo 1 > /sys/module/doubletap2wake/parameters/is_lpm
-	busybox echo 1 > /sys/module/sweep2wake/parameters/is_lpm
 	busybox echo 1 > /sys/module/doubletap2wake/parameters/enable
 	busybox echo 1 > /sys/module/sweep2wake/parameters/enable
 fi
