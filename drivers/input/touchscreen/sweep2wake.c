@@ -83,10 +83,10 @@ static void sweep2wake_presspwr(struct work_struct * sweep2wake_presspwr_work) {
                 return;
 	input_event(sweep2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
-	msleep(S2W_PWRKEY_DUR);
+	mdelay(S2W_PWRKEY_DUR);
 	input_event(sweep2wake_pwrdev, EV_KEY, KEY_POWER, 0);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
-	msleep(S2W_PWRKEY_DUR);
+	mdelay(S2W_PWRKEY_DUR);
         mutex_unlock(&pwrkeyworklock);
 	return;
 }
@@ -113,7 +113,10 @@ void detect_sweep2wake(int x, int y, bool st)
 {
         int prevx = 0, nextx = 0;
         bool single_touch = st;
-	
+
+	if (!s2w_switch)
+		return;
+
 	if(!single_touch){
 		s2w_reset();
 		return;

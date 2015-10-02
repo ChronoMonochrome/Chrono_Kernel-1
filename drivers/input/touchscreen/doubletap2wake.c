@@ -40,9 +40,17 @@
 #define DT2W_FEATHER		200
 #define DT2W_TIME		700
 
-/* Resources */
-unsigned int dt2w_debug = DT2W_DEBUG;
+static unsigned int dt2w_feather = DT2W_FEATHER;
+static unsigned int dt2w_time = DT2W_TIME;
+static unsigned int dt2w_debug = DT2W_DEBUG;
+static unsigned int dt2w_pwrkey_dur = DT2W_PWRKEY_DUR;
 module_param_named(dt2w_debug, dt2w_debug, uint, 0644);
+module_param_named(dt2w_feather, dt2w_feather, uint, 0644);
+module_param_named(dt2w_time, dt2w_time, uint, 0644);
+module_param_named(dt2w_pwrkey_dur, dt2w_pwrkey_dur, uint, 0644);
+
+/* Resources */
+
 int dt2w_switch = DT2W_DEFAULT;
 static cputime64_t tap_time_pre = 0;
 static int touch_nr = 0, x_pre = 0, y_pre = 0;
@@ -71,10 +79,10 @@ static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr
                 return;
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
-	msleep(DT2W_PWRKEY_DUR);
+	mdelay(dt2w_pwrkey_dur);
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 0);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
-	msleep(DT2W_PWRKEY_DUR);
+	mdelay(dt2w_pwrkey_dur);
         mutex_unlock(&pwrkeyworklock);
 	return;
 }
@@ -95,7 +103,7 @@ void doubletap2wake_reset(void)
 	y_pre = 0;
 }
 
-static unsigned int calc_feather(int coord, int prev_coord) {
+static inline unsigned int calc_feather(int coord, int prev_coord) {
 	int calc_coord = 0;
 	calc_coord = coord-prev_coord;
 	if (calc_coord < 0)
@@ -109,9 +117,10 @@ extern unsigned int is_lpm;
 void detect_doubletap2wake(int x, int y, bool st)
 {
 	bool single_touch = st;
+	if (!dt2w_switch)
+		return;
 
-
-	if (dt2w_debug)
+	if (unlikely(dt2w_debug && (scr_suspended || is_lpm) == true))
 	        pr_err("[doubletap2wake]: x,y(%4d,%4d) single:%s\n",
         	        x, y, (single_touch) ? "true" : "false");
 
@@ -122,9 +131,9 @@ void detect_doubletap2wake(int x, int y, bool st)
 			y_pre = y;
 			touch_nr++;
 		} else if (touch_nr == 1) {
-			if ((calc_feather(x, x_pre) < DT2W_FEATHER) &&
-			    (calc_feather(y, y_pre) < DT2W_FEATHER) &&
-			    ((ktime_to_ms(ktime_get())-tap_time_pre) < DT2W_TIME))
+			if ((calc_feather(x, x_pre) < dt2w_feather) &&
+			    (calc_feather(y, y_pre) < dt2w_feather) &&
+			    ((ktime_to_ms(ktime_get())-tap_time_pre) < dt2w_time))
 				touch_nr++;
 			else
 				doubletap2wake_reset();
@@ -181,7 +190,7 @@ static int set_enable(const char *val, struct kernel_param *kp)
 		doubletap2wake_pwrtrigger();
 
 		while(scr_suspended && tries <= max_tries){
-			msleep(200);
+			mdelay(200);
 			tries = tries + 1;
 		}
 	}
