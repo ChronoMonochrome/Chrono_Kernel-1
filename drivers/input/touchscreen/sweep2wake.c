@@ -106,7 +106,7 @@ void s2w_reset(void)
 }
 
 
-extern unsigned int is_lpm = 0;
+extern unsigned int is_lpm;
 
 /* Sweep2wake main function */
 void detect_sweep2wake(int x, int y, bool st)
