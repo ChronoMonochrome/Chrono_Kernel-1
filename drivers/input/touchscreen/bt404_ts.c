@@ -4450,8 +4450,6 @@ extern unsigned int is_charger_present;
 static bool is_suspend = false;
 static bool should_break_suspend_early = false; // flag, that determines whether suspend/resume of bt404
 			                          // should be skipped
-static bool is_awaken = false; // two flags, that protects suspend/resume
-static bool is_sleep = false; // against race conditions
 static int should_break_suspend_early_check_delay = 10000;// check state of should_break_suspend_early
 			                                    // each 10 seconds
 inline bool break_suspend_early(bool suspend)
@@ -4478,30 +4476,14 @@ inline bool break_suspend_early(bool suspend)
 	 return ret;
 }
 
-/*
- * early_suspend_: returns true if suspended, or false otherwise
- */
-
-static inline bool early_suspend_(void)
+static inline void early_suspend_(void)
 {
-	if (!is_sleep) {
-		 is_awaken = false;
-		 is_sleep = true;
-		 bt404_ts_suspend(&data_->client->dev);
-	}
-
-	return !is_sleep;
+        bt404_ts_suspend(&data_->client->dev);
 }
 
 static inline void late_resume_(void)
 {
-	 if (!is_awaken) {
-		 bt404_ts_resume(&data_->client->dev);
-		 is_sleep = false;
-		 is_awaken = true;
-	 }
-
-	return !is_awaken;
+	bt404_ts_resume(&data_->client->dev);
 }
 
 static unsigned int debug = 0;
