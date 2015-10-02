@@ -66,13 +66,6 @@ void wake_unlock(struct wake_lock *lock);
  */
 int wake_lock_active(struct wake_lock *lock);
 
-/* is_any_user_wakelock_active returns true if at least one user wakelock 
- * is locked, or false otherwise.
- */
-#ifdef CONFIG_USER_WAKELOCK
-extern bool is_any_user_wakelock_active(void);
-#endif
-
 /* has_wake_lock returns 0 if no wake locks of the specified type are active,
  * and non-zero if one or more wake locks are held. Specifically it returns
  * -1 if one or more wake locks with no timeout are active or the
