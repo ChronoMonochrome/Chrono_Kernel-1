@@ -4457,7 +4457,8 @@ inline bool break_suspend_early(bool suspend)
 	 bool ret;
 
 	 ret = prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia")||
-		is_any_user_wakelock_active();
+		is_any_user_wakelock_active() ||
+		is_charger_present;
 
 	 if (suspend) {
 		 last_suspend_skipped = ret;
@@ -4491,8 +4492,9 @@ DECLARE_DELAYED_WORK(should_break_suspend_early_check_work, should_break_suspend
 void should_break_suspend_early_check_fn(struct work_struct *work)
 {
 	should_break_suspend_early = 
-		prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia")||
-		is_any_user_wakelock_active();
+		prcmu_qos_requirement_is_active(PRCMU_QOS_APE_OPP, "sia") ||
+		is_any_user_wakelock_active() ||
+		is_charger_present;
 
 
 	if (dt2w_switch || s2w_switch) {
