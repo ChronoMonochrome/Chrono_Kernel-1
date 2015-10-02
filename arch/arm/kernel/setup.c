@@ -660,6 +660,9 @@ static int __init parse_tag_revision(const struct tag *tag)
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
+unsigned int is_lpm = 0;
+module_param_named(is_lpm, is_lpm, uint, 0444);
+
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
 #if defined(CONFIG_CMDLINE_EXTEND)
@@ -672,6 +675,12 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	strlcpy(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
 #endif
+	pr_err("setup: parsing %s\n", tag->u.cmdline.cmdline);
+	if (!is_lpm && (strstr(default_command_line, "lpm_boot=1") != NULL)) {
+		is_lpm = 1;
+		pr_err("setup: is_lpm=1");
+	}
+
 	return 0;
 }
 

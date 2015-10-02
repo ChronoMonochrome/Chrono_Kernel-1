@@ -199,7 +199,7 @@ bad_arg:
 	return ERR_PTR(-EINVAL);
 }
 
-inline bool is_any_user_wakelock_active(void)
+bool is_any_user_wakelock_active(void)
 {
 	struct rb_node *n;
 	struct user_wake_lock *l;
