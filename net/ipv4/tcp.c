@@ -267,6 +267,7 @@
 #include <linux/time.h>
 #include <linux/slab.h>
 #include <linux/uid_stat.h>
+#include <linux/in6.h>
 
 #include <net/icmp.h>
 #include <net/tcp.h>

@@ -173,8 +173,10 @@ u32 addrconf_rt_table(const struct net_device *dev, u32 default_table);
 
 
 /* Device notifier */
+#ifdef CONFIG_IPV6
 extern int register_inet6addr_notifier(struct notifier_block *nb);
 extern int unregister_inet6addr_notifier(struct notifier_block *nb);
+#endif
 
 /**
  * __in6_dev_get - get inet6_dev pointer from netdevice
