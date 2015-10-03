@@ -667,9 +667,6 @@ module_param_named(setup_debug, setup_debug, uint, 0644);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
-#ifdef CONFIG_HWMEM_SIZE_MB
-	char buf[50];
-#endif
 #if defined(CONFIG_CMDLINE_EXTEND)
 	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
 	strlcat(default_command_line, tag->u.cmdline.cmdline,
@@ -679,11 +676,6 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 #else
 	strlcpy(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
-	
-#ifdef CONFIG_HWMEM_SIZE_MB
-	sprintf(buf, " hwmem=%dM@256M mem=%dM@%dM", CONFIG_HWMEM_SIZE_MB, 127 - CONFIG_HWMEM_SIZE_MB, 256 + CONFIG_HWMEM_SIZE_MB);
-	strlcat(default_command_line, buf, COMMAND_LINE_SIZE);
-#endif /* CONFIG_HWMEM_SIZE_MB */
 #endif
 	if (unlikely(setup_debug > 0))
 		pr_err("setup: parsing %s\n", tag->u.cmdline.cmdline);
