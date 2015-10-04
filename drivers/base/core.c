@@ -1773,8 +1773,8 @@ static int __dev_printk(const char *level, const struct device *dev,
 	if (!dev)
 		return printk("%s(NULL device *): %pV", level, vaf);
 
-//	return printk("%s%s %s: %pV",
-;
+	return printk("%s%s %s: %pV",
+		      level, dev_driver_string(dev), dev_name(dev), vaf);
 }
 
 int dev_printk(const char *level, const struct device *dev,
@@ -1789,7 +1789,7 @@ int dev_printk(const char *level, const struct device *dev,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-;
+	r = __dev_printk(level, dev, &vaf);
 	va_end(args);
 
 	return r;
@@ -1808,7 +1808,7 @@ int func(const struct device *dev, const char *fmt, ...)	\
 	vaf.fmt = fmt;						\
 	vaf.va = &args;						\
 								\
-;
+	r = __dev_printk(kern_level, dev, &vaf);		\
 	va_end(args);						\
 								\
 	return r;						\
