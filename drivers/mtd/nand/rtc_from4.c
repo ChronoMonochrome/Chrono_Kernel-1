@@ -444,7 +444,7 @@ static int rtc_from4_errstat(struct mtd_info *mtd, struct nand_chip *this,
 		len = mtd->writesize;
 		buf = kmalloc(len, GFP_KERNEL);
 		if (!buf) {
-			printk(KERN_ERR "rtc_from4_errstat: Out of memory!\n");
+;
 			er_stat = 1;
 			goto out;
 		}
@@ -480,7 +480,7 @@ static int __init rtc_from4_init(void)
 	/* Allocate memory for MTD device structure and private data */
 	rtc_from4_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!rtc_from4_mtd) {
-		printk("Unable to allocate Renesas NAND MTD device structure.\n");
+;
 		return -ENOMEM;
 	}
 
@@ -523,7 +523,7 @@ static int __init rtc_from4_init(void)
 	this->dev_ready = rtc_from4_nand_device_ready;
 
 #ifdef RTC_FROM4_HWECC
-	printk(KERN_INFO "rtc_from4_init: using hardware ECC detection.\n");
+;
 
 	this->ecc.mode = NAND_ECC_HW_SYNDROME;
 	this->ecc.size = 512;
@@ -547,12 +547,12 @@ static int __init rtc_from4_init(void)
 	 */
 	rs_decoder = init_rs(10, 0x409, 0, 1, 6);
 	if (!rs_decoder) {
-		printk(KERN_ERR "Could not create a RS decoder\n");
+;
 		ret = -ENOMEM;
 		goto err_1;
 	}
 #else
-	printk(KERN_INFO "rtc_from4_init: using software ECC detection.\n");
+;
 
 	this->ecc.mode = NAND_ECC_SOFT;
 #endif

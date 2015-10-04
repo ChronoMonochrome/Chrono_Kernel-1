@@ -373,16 +373,16 @@ static void ace_dump_mem(void *base, int len)
 	int i, j;
 
 	for (i = 0; i < len; i += 16) {
-		printk(KERN_INFO "%.8x:", i);
+;
 		for (j = 0; j < 16; j++) {
 			if (!(j % 4))
-				printk(" ");
-			printk("%.2x", ptr[i + j]);
+;
+;
 		}
-		printk(" ");
+;
 		for (j = 0; j < 16; j++)
-			printk("%c", isprint(ptr[i + j]) ? ptr[i + j] : '.');
-		printk("\n");
+;
+;
 	}
 }
 #else
@@ -1235,7 +1235,7 @@ static int __init ace_init(void)
 err_plat:
 	unregister_blkdev(ace_major, "xsysace");
 err_blk:
-	printk(KERN_ERR "xsysace: registration failed; err=%i\n", rc);
+;
 	return rc;
 }
 module_init(ace_init);

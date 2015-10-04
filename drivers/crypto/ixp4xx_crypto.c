@@ -438,7 +438,7 @@ static int init_ixp_crypto(void)
 
 	if (! ( ~(*IXP4XX_EXP_CFG2) & (IXP4XX_FEATURE_HASH |
 				IXP4XX_FEATURE_AES | IXP4XX_FEATURE_DES))) {
-		printk(KERN_ERR "ixp_crypto: No HW crypto available\n");
+;
 		return ret;
 	}
 	npe_c = npe_request(NPE_ID);
@@ -462,8 +462,8 @@ static int init_ixp_crypto(void)
 
 	switch ((msg[1]>>16) & 0xff) {
 	case 3:
-		printk(KERN_WARNING "Firmware of %s lacks AES support\n",
-				npe_name(npe_c));
+//		printk(KERN_WARNING "Firmware of %s lacks AES support\n",
+;
 		support_aes = 0;
 		break;
 	case 4:
@@ -471,8 +471,8 @@ static int init_ixp_crypto(void)
 		support_aes = 1;
 		break;
 	default:
-		printk(KERN_ERR "Firmware of %s lacks crypto support\n",
-			npe_name(npe_c));
+//		printk(KERN_ERR "Firmware of %s lacks crypto support\n",
+;
 		return -ENODEV;
 	}
 	/* buffer_pool will also be used to sometimes store the hmac,
@@ -507,7 +507,7 @@ static int init_ixp_crypto(void)
 	return 0;
 
 npe_error:
-	printk(KERN_ERR "%s not responding\n", npe_name(npe_c));
+;
 	ret = -EIO;
 err:
 	if (ctx_pool)
@@ -1475,8 +1475,8 @@ static int __init ixp_module_init(void)
 		cra->cra_priority = 300;
 		cra->cra_exit = exit_tfm;
 		if (crypto_register_alg(cra))
-			printk(KERN_ERR "Failed to register '%s'\n",
-				cra->cra_name);
+//			printk(KERN_ERR "Failed to register '%s'\n",
+;
 		else
 			ixp4xx_algos[i].registered = 1;
 	}

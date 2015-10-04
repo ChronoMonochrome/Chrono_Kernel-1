@@ -29,16 +29,16 @@
 #undef DEBUG
 
 #ifdef DEBUG
-#define DBG(args...)	printk(args)
-#else
-#define DBG(args...)	do { } while(0)
-#endif
-
-/*
- * Various SMU "partitions" calibration objects for which we
- * keep pointers here for use by bits & pieces of the driver
- */
-static struct smu_sdbp_cpuvcp *cpuvcp;
+//#define DBG(args...)	printk(args)
+//#else
+//#define DBG(args...)	do { } while(0)
+//#endif
+//
+///*
+// * Various SMU "partitions" calibration objects for which we
+// * keep pointers here for use by bits & pieces of the driver
+// */
+;
 static int  cpuvcp_version;
 static struct smu_sdbp_cpudiode *cpudiode;
 static struct smu_sdbp_slotspow *slotspow;
@@ -78,8 +78,8 @@ static int smu_read_adc(u8 id, s32 *value)
 	if (cmd.cmd.status != 0)
 		return cmd.cmd.status;
 	if (cmd.cmd.reply_len != 2) {
-		printk(KERN_ERR "winfarm: read ADC 0x%x returned %d bytes !\n",
-		       id, cmd.cmd.reply_len);
+//		printk(KERN_ERR "winfarm: read ADC 0x%x returned %d bytes !\n",
+;
 		return -EIO;
 	}
 	*value = *((u16 *)cmd.buffer);
@@ -95,8 +95,8 @@ static int smu_cputemp_get(struct wf_sensor *sr, s32 *value)
 
 	rc = smu_read_adc(ads->reg, &val);
 	if (rc) {
-		printk(KERN_ERR "windfarm: read CPU temp failed, err %d\n",
-		       rc);
+//		printk(KERN_ERR "windfarm: read CPU temp failed, err %d\n",
+;
 		return rc;
 	}
 
@@ -117,8 +117,8 @@ static int smu_cpuamp_get(struct wf_sensor *sr, s32 *value)
 
 	rc = smu_read_adc(ads->reg, &val);
 	if (rc) {
-		printk(KERN_ERR "windfarm: read CPU current failed, err %d\n",
-		       rc);
+//		printk(KERN_ERR "windfarm: read CPU current failed, err %d\n",
+;
 		return rc;
 	}
 
@@ -138,8 +138,8 @@ static int smu_cpuvolt_get(struct wf_sensor *sr, s32 *value)
 
 	rc = smu_read_adc(ads->reg, &val);
 	if (rc) {
-		printk(KERN_ERR "windfarm: read CPU voltage failed, err %d\n",
-		       rc);
+//		printk(KERN_ERR "windfarm: read CPU voltage failed, err %d\n",
+;
 		return rc;
 	}
 
@@ -159,8 +159,8 @@ static int smu_slotspow_get(struct wf_sensor *sr, s32 *value)
 
 	rc = smu_read_adc(ads->reg, &val);
 	if (rc) {
-		printk(KERN_ERR "windfarm: read slots power failed, err %d\n",
-		       rc);
+//		printk(KERN_ERR "windfarm: read slots power failed, err %d\n",
+;
 		return rc;
 	}
 
@@ -353,8 +353,8 @@ smu_cpu_power_create(struct wf_sensor *volts, struct wf_sensor *amps)
 
 	/* Some early machines need a faked voltage */
 	if (debugswitches && ((*debugswitches) & 0x80)) {
-		printk(KERN_INFO "windfarm: CPU Power sensor using faked"
-		       " voltage !\n");
+//		printk(KERN_INFO "windfarm: CPU Power sensor using faked"
+;
 		pow->fake_volts = 1;
 	} else
 		pow->fake_volts = 0;

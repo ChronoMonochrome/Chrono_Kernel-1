@@ -252,7 +252,7 @@ static void i_usX2Y_In04Int(struct urb *urb)
 		}
 
 	if (err)
-		snd_printk(KERN_ERR "In04Int() usb_submit_urb err=%i\n", err);
+;
 
 	urb->dev = usX2Y->dev;
 	usb_submit_urb(urb, GFP_ATOMIC);

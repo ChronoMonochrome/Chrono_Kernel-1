@@ -106,7 +106,7 @@ static int __devinit snd_ymfpci_create_gameport(struct snd_ymfpci *chip, int dev
 					break;
 			}
 			if (!r) {
-				printk(KERN_ERR "ymfpci: no gameport ports available\n");
+;
 				return -EBUSY;
 			}
 		}
@@ -116,19 +116,19 @@ static int __devinit snd_ymfpci_create_gameport(struct snd_ymfpci *chip, int dev
 		case 0x204: legacy_ctrl2 |= 2 << 6; break;
 		case 0x205: legacy_ctrl2 |= 3 << 6; break;
 		default:
-			printk(KERN_ERR "ymfpci: invalid joystick port %#x", io_port);
+;
 			return -EINVAL;
 		}
 	}
 
 	if (!r && !(r = request_region(io_port, 1, "YMFPCI gameport"))) {
-		printk(KERN_ERR "ymfpci: joystick port %#x is in use.\n", io_port);
+;
 		return -EBUSY;
 	}
 
 	chip->gameport = gp = gameport_allocate_port();
 	if (!gp) {
-		printk(KERN_ERR "ymfpci: cannot allocate memory for gameport\n");
+;
 		release_and_free_resource(r);
 		return -ENOMEM;
 	}
@@ -307,7 +307,7 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 					       mpu_port[dev],
 					       MPU401_INFO_INTEGRATED,
 					       pci->irq, 0, &chip->rawmidi)) < 0) {
-			printk(KERN_WARNING "ymfpci: cannot initialize MPU401 at 0x%lx, skipping...\n", mpu_port[dev]);
+;
 			legacy_ctrl &= ~YMFPCI_LEGACY_MIEN; /* disable MPU401 irq */
 			pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
 		}
@@ -317,12 +317,12 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 					   fm_port[dev],
 					   fm_port[dev] + 2,
 					   OPL3_HW_OPL3, 1, &opl3)) < 0) {
-			printk(KERN_WARNING "ymfpci: cannot initialize FM OPL3 at 0x%lx, skipping...\n", fm_port[dev]);
+;
 			legacy_ctrl &= ~YMFPCI_LEGACY_FMEN;
 			pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
 		} else if ((err = snd_opl3_hwdep_new(opl3, 0, 1, NULL)) < 0) {
 			snd_card_free(card);
-			snd_printk(KERN_ERR "cannot create opl3 hwdep\n");
+;
 			return err;
 		}
 	}

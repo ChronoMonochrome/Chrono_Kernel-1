@@ -128,8 +128,8 @@ static void ali14xx_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 		param3 += 8;
 		param4 += 8;
 	}
-	printk(KERN_DEBUG "%s: PIO mode%d, t1=%dns, t2=%dns, cycles = %d+%d, %d+%d\n",
-		drive->name, pio, time1, time2, param1, param2, param3, param4);
+//	printk(KERN_DEBUG "%s: PIO mode%d, t1=%dns, t2=%dns, cycles = %d+%d, %d+%d\n",
+;
 
 	/* stuff timing parameters into controller registers */
 	driveNum = (drive->hwif->index << 1) + (drive->dn & 1);
@@ -209,12 +209,12 @@ static const struct ide_port_info ali14xx_port_info = {
 
 static int __init ali14xx_probe(void)
 {
-	printk(KERN_DEBUG "ali14xx: base=0x%03x, regOn=0x%02x.\n",
-			  basePort, regOn);
+//	printk(KERN_DEBUG "ali14xx: base=0x%03x, regOn=0x%02x.\n",
+;
 
 	/* initialize controller registers */
 	if (!initRegisters()) {
-		printk(KERN_ERR "ali14xx: Chip initialization failed.\n");
+;
 		return 1;
 	}
 
@@ -237,7 +237,7 @@ static int __init ali14xx_init(void)
 			return -ENODEV;
 		return 0;
 	}
-	printk(KERN_ERR "ali14xx: not found.\n");
+;
 out:
 	return -ENODEV;
 }

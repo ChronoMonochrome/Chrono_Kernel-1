@@ -251,13 +251,13 @@ int vx_send_msg_nolock(struct vx_core *chip, struct vx_rmh *rmh)
 	}
 
 #if 0
-	printk(KERN_DEBUG "rmh: cmd = 0x%06x, length = %d, stype = %d\n",
-	       rmh->Cmd[0], rmh->LgCmd, rmh->DspStat);
+//	printk(KERN_DEBUG "rmh: cmd = 0x%06x, length = %d, stype = %d\n",
+;
 	if (rmh->LgCmd > 1) {
-		printk(KERN_DEBUG "  ");
+;
 		for (i = 1; i < rmh->LgCmd; i++)
-			printk("0x%06x ", rmh->Cmd[i]);
-		printk("\n");
+;
+;
 	}
 #endif
 	/* Check bit M is set according to length of the command */
@@ -374,7 +374,7 @@ int vx_send_rih_nolock(struct vx_core *chip, int cmd)
 		return -EBUSY;
 
 #if 0
-	printk(KERN_DEBUG "send_rih: cmd = 0x%x\n", cmd);
+;
 #endif
 	if ((err = vx_reset_chk(chip)) < 0)
 		return err;
@@ -450,7 +450,7 @@ int snd_vx_load_boot_image(struct vx_core *chip, const struct firmware *boot)
 			if (no_fillup)
 				break;
 			if (vx_wait_isr_bit(chip, ISR_TX_EMPTY) < 0) {
-				snd_printk(KERN_ERR "dsp boot failed at %d\n", i);
+;
 				return -EIO;
 			}
 			vx_outb(chip, TXH, 0);
@@ -459,7 +459,7 @@ int snd_vx_load_boot_image(struct vx_core *chip, const struct firmware *boot)
 		} else {
 			const unsigned char *image = boot->data + i;
 			if (vx_wait_isr_bit(chip, ISR_TX_EMPTY) < 0) {
-				snd_printk(KERN_ERR "dsp boot failed at %d\n", i);
+;
 				return -EIO;
 			}
 			vx_outb(chip, TXH, image[0]);
@@ -509,16 +509,16 @@ static void vx_interrupt(unsigned long private_data)
     
 #if 0
 	if (events & 0x000800)
-		printk(KERN_ERR "DSP Stream underrun ! IRQ events = 0x%x\n", events);
+;
 #endif
-	// printk(KERN_DEBUG "IRQ events = 0x%x\n", events);
+;
 
 	/* We must prevent any application using this DSP
 	 * and block any further request until the application
 	 * either unregisters or reloads the DSP
 	 */
 	if (events & FATAL_DSP_ERROR) {
-		snd_printk(KERN_ERR "vx_core: fatal DSP error!!\n");
+;
 		return;
 	}
 
@@ -688,8 +688,8 @@ int snd_vx_dsp_load(struct vx_core *chip, const struct firmware *dsp)
 		image = dsp->data + i;
 		/* Wait DSP ready for a new read */
 		if ((err = vx_wait_isr_bit(chip, ISR_TX_EMPTY)) < 0) {
-			printk(KERN_ERR
-			       "dsp loading error at position %d\n", i);
+//			printk(KERN_ERR
+;
 			return err;
 		}
 		cptr = image;
@@ -752,7 +752,7 @@ int snd_vx_resume(struct vx_core *chip)
 			continue;
 		err = chip->ops->load_dsp(chip, i, chip->firmware[i]);
 		if (err < 0) {
-			snd_printk(KERN_ERR "vx: firmware resume error at DSP %d\n", i);
+;
 			return -EIO;
 		}
 	}
@@ -787,7 +787,7 @@ struct vx_core *snd_vx_create(struct snd_card *card, struct snd_vx_hardware *hw,
 
 	chip = kzalloc(sizeof(*chip) + extra_size, GFP_KERNEL);
 	if (! chip) {
-		snd_printk(KERN_ERR "vx_core: no memory\n");
+;
 		return NULL;
 	}
 	spin_lock_init(&chip->lock);

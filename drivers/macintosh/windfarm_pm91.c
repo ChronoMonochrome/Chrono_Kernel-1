@@ -53,18 +53,18 @@
 #undef DEBUG
 
 #ifdef DEBUG
-#define DBG(args...)	printk(args)
-#else
-#define DBG(args...)	do { } while(0)
-#endif
-
-/* define this to force CPU overtemp to 74 degree, useful for testing
- * the overtemp code
- */
-#undef HACKED_OVERTEMP
-
-/* Controls & sensors */
-static struct wf_sensor	*sensor_cpu_power;
+//#define DBG(args...)	printk(args)
+//#else
+//#define DBG(args...)	do { } while(0)
+//#endif
+//
+///* define this to force CPU overtemp to 74 degree, useful for testing
+// * the overtemp code
+// */
+//#undef HACKED_OVERTEMP
+//
+///* Controls & sensors */
+;
 static struct wf_sensor	*sensor_cpu_temp;
 static struct wf_sensor	*sensor_hd_temp;
 static struct wf_sensor	*sensor_slots_power;
@@ -150,8 +150,8 @@ static void wf_smu_create_cpu_fans(void)
 	/* First, locate the PID params in SMU SBD */
 	hdr = smu_get_sdb_partition(SMU_SDB_CPUPIDDATA_ID, NULL);
 	if (hdr == 0) {
-		printk(KERN_WARNING "windfarm: CPU PID fan config not found "
-		       "max fan speed\n");
+//		printk(KERN_WARNING "windfarm: CPU PID fan config not found "
+;
 		goto fail;
 	}
 	piddata = (struct smu_sdbp_cpupiddata *)&hdr[1];
@@ -177,8 +177,8 @@ static void wf_smu_create_cpu_fans(void)
 	pid_param.interval = WF_SMU_CPU_FANS_INTERVAL;
 	pid_param.history_len = piddata->history_len;
 	if (pid_param.history_len > WF_CPU_PID_MAX_HISTORY) {
-		printk(KERN_WARNING "windfarm: History size overflow on "
-		       "CPU control loop (%d)\n", piddata->history_len);
+//		printk(KERN_WARNING "windfarm: History size overflow on "
+;
 		pid_param.history_len = WF_CPU_PID_MAX_HISTORY;
 	}
 	pid_param.gd = piddata->gd;
@@ -206,8 +206,8 @@ static void wf_smu_create_cpu_fans(void)
 	return;
 
  fail:
-	printk(KERN_WARNING "windfarm: CPU fan config not found\n"
-	       "for this machine model, max fan speed\n");
+//	printk(KERN_WARNING "windfarm: CPU fan config not found\n"
+;
 
 	if (cpufreq_clamp)
 		wf_control_set_max(cpufreq_clamp);
@@ -229,16 +229,16 @@ static void wf_smu_cpu_fans_tick(struct wf_smu_cpu_fans_state *st)
 
 	rc = sensor_cpu_temp->ops->get_value(sensor_cpu_temp, &temp);
 	if (rc) {
-		printk(KERN_WARNING "windfarm: CPU temp sensor error %d\n",
-		       rc);
+//		printk(KERN_WARNING "windfarm: CPU temp sensor error %d\n",
+;
 		wf_smu_failure_state |= FAILURE_SENSOR;
 		return;
 	}
 
 	rc = sensor_cpu_power->ops->get_value(sensor_cpu_power, &power);
 	if (rc) {
-		printk(KERN_WARNING "windfarm: CPU power sensor error %d\n",
-		       rc);
+//		printk(KERN_WARNING "windfarm: CPU power sensor error %d\n",
+;
 		wf_smu_failure_state |= FAILURE_SENSOR;
 		return;
 	}
@@ -265,8 +265,8 @@ static void wf_smu_cpu_fans_tick(struct wf_smu_cpu_fans_state *st)
 		rc = fan_cpu_main->ops->set_value(fan_cpu_main,
 						  st->cpu_setpoint);
 		if (rc) {
-			printk(KERN_WARNING "windfarm: CPU main fan"
-			       " error %d\n", rc);
+//			printk(KERN_WARNING "windfarm: CPU main fan"
+;
 			wf_smu_failure_state |= FAILURE_FAN;
 		}
 	}
@@ -274,8 +274,8 @@ static void wf_smu_cpu_fans_tick(struct wf_smu_cpu_fans_state *st)
 		rc = fan_cpu_second->ops->set_value(fan_cpu_second,
 						    st->cpu_setpoint);
 		if (rc) {
-			printk(KERN_WARNING "windfarm: CPU second fan"
-			       " error %d\n", rc);
+//			printk(KERN_WARNING "windfarm: CPU second fan"
+;
 			wf_smu_failure_state |= FAILURE_FAN;
 		}
 	}
@@ -283,8 +283,8 @@ static void wf_smu_cpu_fans_tick(struct wf_smu_cpu_fans_state *st)
 		rc = fan_cpu_main->ops->set_value(fan_cpu_third,
 						  st->cpu_setpoint);
 		if (rc) {
-			printk(KERN_WARNING "windfarm: CPU third fan"
-			       " error %d\n", rc);
+//			printk(KERN_WARNING "windfarm: CPU third fan"
+;
 			wf_smu_failure_state |= FAILURE_FAN;
 		}
 	}
@@ -305,8 +305,8 @@ static void wf_smu_create_drive_fans(void)
 	wf_smu_drive_fans = kmalloc(sizeof(struct wf_smu_drive_fans_state),
 					GFP_KERNEL);
 	if (wf_smu_drive_fans == NULL) {
-		printk(KERN_WARNING "windfarm: Memory allocation error"
-		       " max fan speed\n");
+//		printk(KERN_WARNING "windfarm: Memory allocation error"
+;
 		goto fail;
 	}
        	wf_smu_drive_fans->ticks = 1;
@@ -341,8 +341,8 @@ static void wf_smu_drive_fans_tick(struct wf_smu_drive_fans_state *st)
 
 	rc = sensor_hd_temp->ops->get_value(sensor_hd_temp, &temp);
 	if (rc) {
-		printk(KERN_WARNING "windfarm: HD temp sensor error %d\n",
-		       rc);
+//		printk(KERN_WARNING "windfarm: HD temp sensor error %d\n",
+;
 		wf_smu_failure_state |= FAILURE_SENSOR;
 		return;
 	}
@@ -364,8 +364,8 @@ static void wf_smu_drive_fans_tick(struct wf_smu_drive_fans_state *st)
 	if (fan_hd && wf_smu_failure_state == 0) {
 		rc = fan_hd->ops->set_value(fan_hd, st->setpoint);
 		if (rc) {
-			printk(KERN_WARNING "windfarm: HD fan error %d\n",
-			       rc);
+//			printk(KERN_WARNING "windfarm: HD fan error %d\n",
+;
 			wf_smu_failure_state |= FAILURE_FAN;
 		}
 	}
@@ -386,8 +386,8 @@ static void wf_smu_create_slots_fans(void)
 	wf_smu_slots_fans = kmalloc(sizeof(struct wf_smu_slots_fans_state),
 					GFP_KERNEL);
 	if (wf_smu_slots_fans == NULL) {
-		printk(KERN_WARNING "windfarm: Memory allocation error"
-		       " max fan speed\n");
+//		printk(KERN_WARNING "windfarm: Memory allocation error"
+;
 		goto fail;
 	}
        	wf_smu_slots_fans->ticks = 1;
@@ -422,8 +422,8 @@ static void wf_smu_slots_fans_tick(struct wf_smu_slots_fans_state *st)
 
 	rc = sensor_slots_power->ops->get_value(sensor_slots_power, &power);
 	if (rc) {
-		printk(KERN_WARNING "windfarm: Slots power sensor error %d\n",
-		       rc);
+//		printk(KERN_WARNING "windfarm: Slots power sensor error %d\n",
+;
 		wf_smu_failure_state |= FAILURE_SENSOR;
 		return;
 	}
@@ -447,8 +447,8 @@ static void wf_smu_slots_fans_tick(struct wf_smu_slots_fans_state *st)
 	if (fan_slots && wf_smu_failure_state == 0) {
 		rc = fan_slots->ops->set_value(fan_slots, st->setpoint);
 		if (rc) {
-			printk(KERN_WARNING "windfarm: Slots fan error %d\n",
-			       rc);
+//			printk(KERN_WARNING "windfarm: Slots fan error %d\n",
+;
 			wf_smu_failure_state |= FAILURE_FAN;
 		}
 	}
@@ -634,7 +634,7 @@ static struct notifier_block wf_smu_events = {
 
 static int wf_init_pm(void)
 {
-	printk(KERN_INFO "windfarm: Initializing for Desktop G5 model\n");
+;
 
 	return 0;
 }

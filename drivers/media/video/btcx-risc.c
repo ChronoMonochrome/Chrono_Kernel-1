@@ -52,8 +52,8 @@ void btcx_riscmem_free(struct pci_dev *pci,
 		return;
 	if (debug) {
 		memcnt--;
-		printk("btcx: riscmem free [%d] dma=%lx\n",
-		       memcnt, (unsigned long)risc->dma);
+//		printk("btcx: riscmem free [%d] dma=%lx\n",
+;
 	}
 	pci_free_consistent(pci, risc->size, risc->cpu, risc->dma);
 	memset(risc,0,sizeof(*risc));
@@ -77,8 +77,8 @@ int btcx_riscmem_alloc(struct pci_dev *pci,
 		risc->size = size;
 		if (debug) {
 			memcnt++;
-			printk("btcx: riscmem alloc [%d] dma=%lx cpu=%p size=%d\n",
-			       memcnt, (unsigned long)dma, cpu, size);
+//			printk("btcx: riscmem alloc [%d] dma=%lx cpu=%p size=%d\n",
+;
 		}
 	}
 	memset(risc->cpu,0,risc->size);
@@ -142,8 +142,8 @@ btcx_align(struct v4l2_rect *win, struct v4l2_clip *clips, unsigned int n, int m
 	win->left  = nx;
 	win->width = nw;
 	if (debug)
-		printk(KERN_DEBUG "btcx: window align %dx%d+%d+%d [dx=%d]\n",
-		       win->width, win->height, win->left, win->top, dx);
+//		printk(KERN_DEBUG "btcx: window align %dx%d+%d+%d [dx=%d]\n",
+;
 
 	/* fixup clips */
 	for (i = 0; i < n; i++) {
@@ -154,9 +154,9 @@ btcx_align(struct v4l2_rect *win, struct v4l2_clip *clips, unsigned int n, int m
 		clips[i].c.left  = nx;
 		clips[i].c.width = nw;
 		if (debug)
-			printk(KERN_DEBUG "btcx:   clip align %dx%d+%d+%d\n",
-			       clips[i].c.width, clips[i].c.height,
-			       clips[i].c.left, clips[i].c.top);
+//			printk(KERN_DEBUG "btcx:   clip align %dx%d+%d+%d\n",
+//			       clips[i].c.width, clips[i].c.height,
+;
 	}
 	return 0;
 }
@@ -235,11 +235,11 @@ btcx_calc_skips(int line, int width, int *maxy,
 	*maxy = maxline;
 
 	if (debug) {
-		printk(KERN_DEBUG "btcx: skips line %d-%d:",line,maxline);
+;
 		for (skip = 0; skip < *nskips; skip++) {
-			printk(" %d-%d",skips[skip].start,skips[skip].end);
+;
 		}
-		printk("\n");
+;
 	}
 }
 

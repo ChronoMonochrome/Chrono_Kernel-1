@@ -1069,7 +1069,7 @@ int agp_frontend_initialize(void)
 	mutex_init(&(agp_fe.agp_mutex));
 
 	if (misc_register(&agp_miscdev)) {
-		printk(KERN_ERR PFX "unable to get minor: %d\n", AGPGART_MINOR);
+;
 		return -EIO;
 	}
 	return 0;

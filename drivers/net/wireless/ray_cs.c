@@ -365,11 +365,11 @@ static int ray_config(struct pcmcia_device *link)
 	dev_dbg(&link->dev, "ray_config\n");
 
 	/* Determine card type and firmware version */
-	printk(KERN_INFO "ray_cs Detected: %s%s%s%s\n",
-	       link->prod_id[0] ? link->prod_id[0] : " ",
-	       link->prod_id[1] ? link->prod_id[1] : " ",
-	       link->prod_id[2] ? link->prod_id[2] : " ",
-	       link->prod_id[3] ? link->prod_id[3] : " ");
+//	printk(KERN_INFO "ray_cs Detected: %s%s%s%s\n",
+//	       link->prod_id[0] ? link->prod_id[0] : " ",
+//	       link->prod_id[1] ? link->prod_id[1] : " ",
+//	       link->prod_id[2] ? link->prod_id[2] : " ",
+;
 
 	/* Now allocate an interrupt line.  Note that this does not
 	   actually assign a handler to the interrupt.
@@ -435,13 +435,13 @@ static int ray_config(struct pcmcia_device *link)
 	SET_NETDEV_DEV(dev, &link->dev);
 	i = register_netdev(dev);
 	if (i != 0) {
-		printk("ray_config register_netdev() failed\n");
+;
 		ray_release(link);
 		return i;
 	}
 
-	printk(KERN_INFO "%s: RayLink, irq %d, hw_addr %pM\n",
-	       dev->name, dev->irq, dev->dev_addr);
+//	printk(KERN_INFO "%s: RayLink, irq %d, hw_addr %pM\n",
+;
 
 	return 0;
 
@@ -490,8 +490,8 @@ static int ray_init(struct net_device *dev)
 
 	/* Check Power up test status and get mac address from card */
 	if (local->startup_res.startup_word != 0x80) {
-		printk(KERN_INFO "ray_init ERROR card status = %2x\n",
-		       local->startup_res.startup_word);
+//		printk(KERN_INFO "ray_init ERROR card status = %2x\n",
+;
 		local->card_status = CARD_INIT_ERROR;
 		return -1;
 	}
@@ -561,8 +561,8 @@ static int dl_startup_params(struct net_device *dev)
 	      local->dl_param_ccs);
 	/* Interrupt the firmware to process the command */
 	if (interrupt_ecf(local, ccsindex)) {
-		printk(KERN_INFO "ray dl_startup_params failed - "
-		       "ECF not ready for intr\n");
+//		printk(KERN_INFO "ray dl_startup_params failed - "
+;
 		local->card_status = CARD_DL_PARAM_ERROR;
 		writeb(CCS_BUFFER_FREE, &(pccs++)->buffer_status);
 		return -2;
@@ -655,23 +655,23 @@ static void verify_dl_startup(u_long data)
 #if 0
 	{
 		int i;
-		printk(KERN_DEBUG
-		       "verify_dl_startup parameters sent via ccs %d:\n",
-		       local->dl_param_ccs);
+//		printk(KERN_DEBUG
+//		       "verify_dl_startup parameters sent via ccs %d:\n",
+;
 		for (i = 0; i < sizeof(struct b5_startup_params); i++) {
-			printk(" %2x",
-			       (unsigned int)readb(local->sram +
-						   HOST_TO_ECF_BASE + i));
+//			printk(" %2x",
+//			       (unsigned int)readb(local->sram +
+;
 		}
-		printk("\n");
+;
 	}
 #endif
 
 	status = readb(&pccs->buffer_status);
 	if (status != CCS_BUFFER_FREE) {
-		printk(KERN_INFO
-		       "Download startup params failed.  Status = %d\n",
-		       status);
+//		printk(KERN_INFO
+//		       "Download startup params failed.  Status = %d\n",
+;
 		local->card_status = CARD_DL_PARAM_ERROR;
 		return;
 	}
@@ -795,8 +795,8 @@ static int ray_dev_init(struct net_device *dev)
 #ifdef RAY_IMMEDIATE_INIT
 	/* Download startup parameters */
 	if ((i = dl_startup_params(dev)) < 0) {
-		printk(KERN_INFO "ray_dev_init dl_startup_params failed - "
-		       "returns 0x%x\n", i);
+//		printk(KERN_INFO "ray_dev_init dl_startup_params failed - "
+;
 		return -1;
 	}
 #else /* RAY_IMMEDIATE_INIT */
@@ -888,8 +888,8 @@ static int ray_hw_xmit(unsigned char *data, int len, struct net_device *dev,
 
 	pr_debug("ray_hw_xmit(data=%p, len=%d, dev=%p)\n", data, len, dev);
 	if (len + TX_HEADER_LENGTH > TX_BUF_SIZE) {
-		printk(KERN_INFO "ray_hw_xmit packet too large: %d bytes\n",
-		       len);
+//		printk(KERN_INFO "ray_hw_xmit packet too large: %d bytes\n",
+;
 		return XMIT_MSG_BAD;
 	}
 	switch (ccsindex = get_free_tx_ccs(local)) {
@@ -1502,9 +1502,9 @@ static int ray_open(struct net_device *dev)
 
 		/* Download startup parameters */
 		if ((i = dl_startup_params(dev)) < 0) {
-			printk(KERN_INFO
-			       "ray_dev_init dl_startup_params failed - "
-			       "returns 0x%x\n", i);
+//			printk(KERN_INFO
+//			       "ray_dev_init dl_startup_params failed - "
+;
 			return -1;
 		}
 	}
@@ -1640,8 +1640,8 @@ static void authenticate_timeout(u_long data)
 {
 	ray_dev_t *local = (ray_dev_t *) data;
 	del_timer(&local->timer);
-	printk(KERN_INFO "ray_cs Authentication with access point failed"
-	       " - timeout\n");
+//	printk(KERN_INFO "ray_cs Authentication with access point failed"
+;
 	join_net((u_long) local);
 }
 
@@ -2291,11 +2291,11 @@ static void untranslate(ray_dev_t *local, struct sk_buff *skb, int len)
 		print_hex_dump(KERN_DEBUG, "skb->data before untranslate: ",
 			       DUMP_PREFIX_NONE, 16, 1,
 			       skb->data, 64, true);
-		printk(KERN_DEBUG
-		       "type = %08x, xsap = %02x%02x%02x, org = %02x02x02x\n",
-		       ntohs(type), psnap->dsap, psnap->ssap, psnap->ctrl,
-		       psnap->org[0], psnap->org[1], psnap->org[2]);
-		printk(KERN_DEBUG "untranslate skb->data = %p\n", skb->data);
+//		printk(KERN_DEBUG
+//		       "type = %08x, xsap = %02x%02x%02x, org = %02x02x02x\n",
+//		       ntohs(type), psnap->dsap, psnap->ssap, psnap->ctrl,
+;
+;
 	}
 #endif
 
@@ -2334,7 +2334,7 @@ static void untranslate(ray_dev_t *local, struct sk_buff *skb, int len)
 				break;
 			}
 		} else {
-			printk("ray_cs untranslate very confused by packet\n");
+;
 			delta = RX_MAC_HEADER_LENGTH - ETH_HLEN;
 			peth = (struct ethhdr *)(skb->data + delta);
 			peth->h_proto = type;
@@ -2349,10 +2349,10 @@ static void untranslate(ray_dev_t *local, struct sk_buff *skb, int len)
 #if 0
 	{
 		int i;
-		printk(KERN_DEBUG "skb->data after untranslate:");
+;
 		for (i = 0; i < 64; i++)
-			printk("%02x ", skb->data[i]);
-		printk("\n");
+;
+;
 	}
 #endif
 } /* end untranslate */

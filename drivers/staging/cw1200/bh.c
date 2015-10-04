@@ -24,12 +24,12 @@
 #include "sbus.h"
 
 #if defined(CONFIG_CW1200_BH_DEBUG)
-#define bh_printk(...) printk(__VA_ARGS__)
-#else
-#define bh_printk(...)
-#endif
-
-static int cw1200_bh(void *arg);
+//#define bh_printk(...) printk(__VA_ARGS__)
+//#else
+//#define bh_printk(...)
+//#endif
+//
+;
 
 /* TODO: Verify these numbers with WSM specification. */
 #define DOWNLOAD_BLOCK_SIZE_WR	(0x1000 - 4)
@@ -47,7 +47,7 @@ int cw1200_register_bh(struct cw1200_common *priv)
 {
 	int err = 0;
 	struct sched_param param = { .sched_priority = 1 };
-	bh_printk(KERN_DEBUG "[BH] register.\n");
+;
 	BUG_ON(priv->bh_thread);
 	atomic_set(&priv->bh_rx, 0);
 	atomic_set(&priv->bh_tx, 0);
@@ -78,7 +78,7 @@ void cw1200_unregister_bh(struct cw1200_common *priv)
 		return;
 
 	priv->bh_thread = NULL;
-	bh_printk(KERN_DEBUG "[BH] unregister.\n");
+;
 	atomic_add(1, &priv->bh_term);
 	wake_up_interruptible(&priv->bh_wq);
 	kthread_stop(thread);
@@ -89,7 +89,7 @@ void cw1200_unregister_bh(struct cw1200_common *priv)
 
 void cw1200_irq_handler(struct cw1200_common *priv)
 {
-	bh_printk(KERN_DEBUG "[BH] irq.\n");
+;
 	if (/* WARN_ON */(priv->bh_error))
 		return;
 
@@ -99,7 +99,7 @@ void cw1200_irq_handler(struct cw1200_common *priv)
 
 void cw1200_bh_wakeup(struct cw1200_common *priv)
 {
-	bh_printk(KERN_DEBUG "[BH] wakeup.\n");
+;
 	if (WARN_ON(priv->bh_error))
 		return;
 
@@ -169,12 +169,12 @@ static int cw1200_bh_read_ctrl_reg(struct cw1200_common *priv,
 		ret = cw1200_reg_read_16(priv,
 				ST90TDS_CONTROL_REG_ID, ctrl_reg);
 		if (ret)
-			printk(KERN_ERR
-				"[BH] Failed to read control register.\n");
+//			printk(KERN_ERR
+;
 		else
-			printk(KERN_WARNING
-				"[BH] Second attempt to read control "
-				"register passed. This is a firmware bug.\n");
+//			printk(KERN_WARNING
+//				"[BH] Second attempt to read control "
+;
 	}
 
 	return ret;
@@ -185,7 +185,7 @@ static int cw1200_device_wakeup(struct cw1200_common *priv)
 	u16 ctrl_reg;
 	int ret;
 
-	bh_printk(KERN_DEBUG "[BH] Device wakeup.\n");
+;
 
 	/* To force the device to be always-on, the host sets WLAN_UP to 1 */
 	ret = cw1200_reg_write_16(priv, ST90TDS_CONTROL_REG_ID,
@@ -200,7 +200,7 @@ static int cw1200_device_wakeup(struct cw1200_common *priv)
 	/* If the device returns WLAN_RDY as 1, the device is active and will
 	 * remain active. */
 	if (ctrl_reg & ST90TDS_CONT_RDY_BIT) {
-		bh_printk(KERN_DEBUG "[BH] Device awake.\n");
+;
 		return 1;
 	}
 
@@ -211,8 +211,8 @@ static int cw1200_device_wakeup(struct cw1200_common *priv)
 void cw1200_enable_powersave(struct cw1200_common *priv,
 			     bool enable)
 {
-	bh_printk(KERN_DEBUG "[BH] Powerave is %s.\n",
-			enable ? "enabled" : "disabled");
+//	bh_printk(KERN_DEBUG "[BH] Powerave is %s.\n",
+;
 	priv->powersave_enabled = enable;
 }
 
@@ -251,7 +251,7 @@ static int cw1200_bh(void *arg)
 			break;
 
 		if (!status) {
-			bh_printk(KERN_DEBUG "[BH] Device wakedown.\n");
+;
 			WARN_ON(cw1200_reg_write_16(priv, ST90TDS_CONTROL_REG_ID, 0));
 			priv->device_can_sleep = true;
 			continue;
@@ -274,8 +274,8 @@ rx:
 
 			if (WARN_ON((read_len < sizeof(struct wsm_hdr)) ||
 					(read_len > EFFECTIVE_BUF_SIZE))) {
-				printk(KERN_DEBUG "Invalid read len: %d",
-					read_len);
+//				printk(KERN_DEBUG "Invalid read len: %d",
+;
 				break;
 			}
 

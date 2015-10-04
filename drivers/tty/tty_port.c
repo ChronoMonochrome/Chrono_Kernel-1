@@ -327,14 +327,14 @@ int tty_port_close_start(struct tty_port *port,
 	}
 
 	if (tty->count == 1 && port->count != 1) {
-		printk(KERN_WARNING
-		    "tty_port_close_start: tty->count = 1 port count = %d.\n",
-								port->count);
+//		printk(KERN_WARNING
+//		    "tty_port_close_start: tty->count = 1 port count = %d.\n",
+;
 		port->count = 1;
 	}
 	if (--port->count < 0) {
-		printk(KERN_WARNING "tty_port_close_start: count = %d\n",
-								port->count);
+//		printk(KERN_WARNING "tty_port_close_start: count = %d\n",
+;
 		port->count = 0;
 	}
 

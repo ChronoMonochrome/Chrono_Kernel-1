@@ -276,7 +276,7 @@ static void cpm_uart_int_rx(struct uart_port *port)
 		 * later, which will be the next rx-interrupt or a timeout
 		 */
 		if(tty_buffer_request_room(tty, i) < i) {
-			printk(KERN_WARNING "No room in flip buffer\n");
+;
 			return;
 		}
 
@@ -1140,8 +1140,8 @@ static int cpm_uart_init_port(struct device_node *np,
 	if (!pinfo->clk) {
 		data = of_get_property(np, "fsl,cpm-brg", &len);
 		if (!data || len != 4) {
-			printk(KERN_ERR "CPM UART %s has no/invalid "
-			                "fsl,cpm-brg property.\n", np->name);
+//			printk(KERN_ERR "CPM UART %s has no/invalid "
+;
 			return -EINVAL;
 		}
 		pinfo->brg = *data;
@@ -1149,8 +1149,8 @@ static int cpm_uart_init_port(struct device_node *np,
 
 	data = of_get_property(np, "fsl,cpm-command", &len);
 	if (!data || len != 4) {
-		printk(KERN_ERR "CPM UART %s has no/invalid "
-		                "fsl,cpm-command property.\n", np->name);
+//		printk(KERN_ERR "CPM UART %s has no/invalid "
+;
 		return -EINVAL;
 	}
 	pinfo->command = *data;
@@ -1257,8 +1257,8 @@ static int __init cpm_uart_console_setup(struct console *co, char *options)
 	int i = 0;
 
 	if (co->index >= UART_NR) {
-		printk(KERN_ERR "cpm_uart: console index %d too high\n",
-		       co->index);
+//		printk(KERN_ERR "cpm_uart: console index %d too high\n",
+;
 		return -ENODEV;
 	}
 

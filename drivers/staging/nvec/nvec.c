@@ -47,10 +47,10 @@ static int nvec_status_notifier(struct notifier_block *nb, unsigned long event_t
 	if(event_type != NVEC_CNTL)
 		return NOTIFY_DONE;
 
-	printk("unhandled msg type %ld, payload: ", event_type);
+;
 	for (i = 0; i < msg[1]; i++)
-		printk("%0x ", msg[i+2]);
-	printk("\n");
+;
+;
 
 	return NOTIFY_OK;
 }
@@ -169,7 +169,7 @@ static irqreturn_t i2c_interrupt(int irq, void *dev)
 	if(status & END_TRANS && !(status & RCVD))
 	{
 		//Reenable IRQ only when even has been sent
-		//printk("Write sequence ended !\n");
+;
                 //parse_msg(nvec);
 		nvec->state = NVEC_WAIT;
 		if(nvec->rx->size > 1)
@@ -320,7 +320,7 @@ static int __devinit tegra_nvec_probe(struct platform_device *pdev)
 /*
 	i2c_clk=clk_get_sys(NULL, "i2c");
 	if(IS_ERR_OR_NULL(i2c_clk))
-		printk(KERN_ERR"No such clock tegra-i2c.2\n");
+;
 	else
 		clk_enable(i2c_clk);
 */

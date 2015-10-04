@@ -98,7 +98,7 @@ static int __init openrd_client_init(void)
 
 	ret = platform_device_add(openrd_client_snd_device);
 	if (ret) {
-		printk(KERN_ERR "%s: platform_device_add failed\n", __func__);
+;
 		platform_device_put(openrd_client_snd_device);
 	}
 

@@ -1179,7 +1179,7 @@ static int __init crypto4xx_probe(struct platform_device *ofdev)
 		mtdcri(SDR0, PPC460SX_SDR0_SRST,
 		       mfdcri(SDR0, PPC460SX_SDR0_SRST) & ~PPC460SX_CE_RESET);
 	} else {
-		printk(KERN_ERR "Crypto Function Not supported!\n");
+;
 		return -EINVAL;
 	}
 

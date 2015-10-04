@@ -82,9 +82,9 @@ static void prepare_reply_buffer(struct rpc_rqst *req, struct page **pages,
  */
 static void print_overflow_msg(const char *func, const struct xdr_stream *xdr)
 {
-	dprintk("NFS: %s prematurely hit the end of our receive buffer. "
-		"Remaining buffer length is %tu words.\n",
-		func, xdr->end - xdr->p);
+//	dprintk("NFS: %s prematurely hit the end of our receive buffer. "
+//		"Remaining buffer length is %tu words.\n",
+;
 }
 
 
@@ -122,8 +122,8 @@ out:
 	result->count = count;
 	return count;
 out_cheating:
-	dprintk("NFS: server cheating in read result: "
-		"count %u > recvd %u\n", count, recvd);
+//	dprintk("NFS: server cheating in read result: "
+;
 	count = recvd;
 	goto out;
 out_overflow:
@@ -412,7 +412,7 @@ static int decode_filename_inline(struct xdr_stream *xdr,
 	*length = count;
 	return 0;
 out_nametoolong:
-	dprintk("NFS: returned filename too long: %u\n", count);
+;
 	return -ENAMETOOLONG;
 out_overflow:
 	print_overflow_msg(__func__, xdr);
@@ -455,11 +455,11 @@ static int decode_path(struct xdr_stream *xdr)
 	xdr_terminate_string(xdr->buf, length);
 	return 0;
 out_size:
-	dprintk("NFS: returned pathname too long: %u\n", length);
+;
 	return -ENAMETOOLONG;
 out_cheating:
-	dprintk("NFS: server cheating in pathname result: "
-		"length %u > received %u\n", length, recvd);
+//	dprintk("NFS: server cheating in pathname result: "
+;
 	return -EIO;
 out_overflow:
 	print_overflow_msg(__func__, xdr);
@@ -981,8 +981,8 @@ out:
 	xdr_read_pages(xdr, pglen);
 	return pglen;
 out_cheating:
-	dprintk("NFS: server cheating in readdir result: "
-		"pglen %u > recvd %u\n", pglen, recvd);
+//	dprintk("NFS: server cheating in readdir result: "
+;
 	pglen = recvd;
 	goto out;
 }
@@ -1117,7 +1117,7 @@ int nfs_stat_to_errno(enum nfs_stat status)
 		if (nfs_errtbl[i].stat == (int)status)
 			return nfs_errtbl[i].errno;
 	}
-	dprintk("NFS: Unrecognized nfs status value: %u\n", status);
+;
 	return nfs_errtbl[i].errno;
 }
 

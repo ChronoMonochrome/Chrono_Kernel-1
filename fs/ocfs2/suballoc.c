@@ -2607,48 +2607,48 @@ int ocfs2_release_clusters(handle_t *handle,
 
 static inline void ocfs2_debug_bg(struct ocfs2_group_desc *bg)
 {
-	printk("Block Group:\n");
-	printk("bg_signature:       %s\n", bg->bg_signature);
-	printk("bg_size:            %u\n", bg->bg_size);
-	printk("bg_bits:            %u\n", bg->bg_bits);
-	printk("bg_free_bits_count: %u\n", bg->bg_free_bits_count);
-	printk("bg_chain:           %u\n", bg->bg_chain);
-	printk("bg_generation:      %u\n", le32_to_cpu(bg->bg_generation));
-	printk("bg_next_group:      %llu\n",
-	       (unsigned long long)bg->bg_next_group);
-	printk("bg_parent_dinode:   %llu\n",
-	       (unsigned long long)bg->bg_parent_dinode);
-	printk("bg_blkno:           %llu\n",
-	       (unsigned long long)bg->bg_blkno);
+;
+;
+;
+;
+;
+;
+;
+//	printk("bg_next_group:      %llu\n",
+;
+//	printk("bg_parent_dinode:   %llu\n",
+;
+//	printk("bg_blkno:           %llu\n",
+;
 }
 
 static inline void ocfs2_debug_suballoc_inode(struct ocfs2_dinode *fe)
 {
 	int i;
 
-	printk("Suballoc Inode %llu:\n", (unsigned long long)fe->i_blkno);
-	printk("i_signature:                  %s\n", fe->i_signature);
-	printk("i_size:                       %llu\n",
-	       (unsigned long long)fe->i_size);
-	printk("i_clusters:                   %u\n", fe->i_clusters);
-	printk("i_generation:                 %u\n",
-	       le32_to_cpu(fe->i_generation));
-	printk("id1.bitmap1.i_used:           %u\n",
-	       le32_to_cpu(fe->id1.bitmap1.i_used));
-	printk("id1.bitmap1.i_total:          %u\n",
-	       le32_to_cpu(fe->id1.bitmap1.i_total));
-	printk("id2.i_chain.cl_cpg:           %u\n", fe->id2.i_chain.cl_cpg);
-	printk("id2.i_chain.cl_bpc:           %u\n", fe->id2.i_chain.cl_bpc);
-	printk("id2.i_chain.cl_count:         %u\n", fe->id2.i_chain.cl_count);
-	printk("id2.i_chain.cl_next_free_rec: %u\n",
-	       fe->id2.i_chain.cl_next_free_rec);
+;
+;
+//	printk("i_size:                       %llu\n",
+;
+;
+//	printk("i_generation:                 %u\n",
+;
+//	printk("id1.bitmap1.i_used:           %u\n",
+;
+//	printk("id1.bitmap1.i_total:          %u\n",
+;
+;
+;
+;
+//	printk("id2.i_chain.cl_next_free_rec: %u\n",
+;
 	for(i = 0; i < fe->id2.i_chain.cl_next_free_rec; i++) {
-		printk("fe->id2.i_chain.cl_recs[%d].c_free:  %u\n", i,
-		       fe->id2.i_chain.cl_recs[i].c_free);
-		printk("fe->id2.i_chain.cl_recs[%d].c_total: %u\n", i,
-		       fe->id2.i_chain.cl_recs[i].c_total);
-		printk("fe->id2.i_chain.cl_recs[%d].c_blkno: %llu\n", i,
-		       (unsigned long long)fe->id2.i_chain.cl_recs[i].c_blkno);
+//		printk("fe->id2.i_chain.cl_recs[%d].c_free:  %u\n", i,
+;
+//		printk("fe->id2.i_chain.cl_recs[%d].c_total: %u\n", i,
+;
+//		printk("fe->id2.i_chain.cl_recs[%d].c_blkno: %llu\n", i,
+;
 	}
 }
 

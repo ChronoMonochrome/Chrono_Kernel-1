@@ -238,12 +238,12 @@ int sun3scsi_detect(struct scsi_host_template * tpnt)
 
 	if((udc_regs = dvma_malloc(sizeof(struct sun3_udc_regs)))
 	   == NULL) {
-	     printk("SUN3 Scsi couldn't allocate DVMA memory!\n");
+;
 	     return 0;
 	}
 #ifdef OLDDMA
 	if((dmabuf = dvma_malloc_align(SUN3_DVMA_BUFSIZE, 0x10000)) == NULL) {
-	     printk("SUN3 Scsi couldn't allocate DVMA memory!\n");
+;
 	     return 0;
 	}
 #endif
@@ -270,27 +270,27 @@ int sun3scsi_detect(struct scsi_host_template * tpnt)
 	if (request_irq(instance->irq, scsi_sun3_intr,
 			     0, "Sun3SCSI-5380", instance)) {
 #ifndef REAL_DMA
-		printk("scsi%d: IRQ%d not free, interrupts disabled\n",
-		       instance->host_no, instance->irq);
+//		printk("scsi%d: IRQ%d not free, interrupts disabled\n",
+;
 		instance->irq = SCSI_IRQ_NONE;
 #else
-		printk("scsi%d: IRQ%d not free, bailing out\n",
-		       instance->host_no, instance->irq);
+//		printk("scsi%d: IRQ%d not free, bailing out\n",
+;
 		return 0;
 #endif
 	}
 	
-	printk("scsi%d: Sun3 5380 at port %lX irq", instance->host_no, instance->io_port);
+;
 	if (instance->irq == SCSI_IRQ_NONE)
 		printk ("s disabled");
 	else
 		printk (" %d", instance->irq);
-	printk(" options CAN_QUEUE=%d CMD_PER_LUN=%d release=%d",
-	       instance->can_queue, instance->cmd_per_lun,
-	       SUN3SCSI_PUBLIC_RELEASE);
-	printk("\nscsi%d:", instance->host_no);
+//	printk(" options CAN_QUEUE=%d CMD_PER_LUN=%d release=%d",
+//	       instance->can_queue, instance->cmd_per_lun,
+;
+;
 	NCR5380_print_options(instance);
-	printk("\n");
+;
 
 	dregs->csr = 0;
 	udelay(SUN3_DMA_DELAY);
@@ -334,7 +334,7 @@ static void sun3_scsi_reset_boot(struct Scsi_Host *instance)
 	 * messing with the queues, interrupts, or locks necessary here.
 	 */
 
-	printk( "Sun3 SCSI: resetting the SCSI bus..." );
+;
 
 	/* switch off SCSI IRQ - catch an interrupt without IRQ bit set else */
 //       	sun3_disable_irq( IRQ_SUN3_SCSI );
@@ -359,7 +359,7 @@ static void sun3_scsi_reset_boot(struct Scsi_Host *instance)
 	/* switch on SCSI IRQ again */
 //       	sun3_enable_irq( IRQ_SUN3_SCSI );
 
-	printk( " done\n" );
+;
 }
 #endif
 
@@ -377,11 +377,11 @@ static irqreturn_t scsi_sun3_intr(int irq, void *dummy)
 
 	if(csr & ~CSR_GOOD) {
 		if(csr & CSR_DMA_BUSERR) {
-			printk("scsi%d: bus error in dma\n", default_instance->host_no);
+;
 		}
 
 		if(csr & CSR_DMA_CONFLICT) {
-			printk("scsi%d: dma conflict\n", default_instance->host_no);
+;
 		}
 		handled = 1;
 	}
@@ -460,9 +460,9 @@ static unsigned long sun3scsi_dma_setup(void *data, unsigned long count, int wri
 	dregs->csr |= CSR_FIFO;
 	
 	if(dregs->fifo_count != count) { 
-		printk("scsi%d: fifo_mismatch %04x not %04x\n",
-		       default_instance->host_no, dregs->fifo_count,
-		       (unsigned int) count);
+//		printk("scsi%d: fifo_mismatch %04x not %04x\n",
+//		       default_instance->host_no, dregs->fifo_count,
+;
 		NCR5380_print(default_instance);
 	}
 
@@ -556,7 +556,7 @@ static int sun3scsi_dma_finish(int write_flag)
 				break;
 
 			if(--tmo <= 0) {
-				printk("sun3scsi: fifo failed to empty!\n");
+;
 				return 1;
 			}
 			udelay(10);
@@ -573,8 +573,8 @@ static int sun3scsi_dma_finish(int write_flag)
 		/* check for residual bytes after dma end */
 		if(count && (NCR5380_read(BUS_AND_STATUS_REG) &
 			     (BASR_PHASE_MATCH | BASR_ACK))) {
-			printk("scsi%d: sun3_scsi_finish: read overrun baby... ", default_instance->host_no);
-			printk("basr now %02x\n", NCR5380_read(BUS_AND_STATUS_REG));
+;
+;
 			ret = count;
 		}
 		

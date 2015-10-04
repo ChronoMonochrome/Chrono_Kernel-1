@@ -29,13 +29,13 @@
 #undef DEBUG
 
 #ifdef DEBUG
-#define DBG(args...)	printk(args)
-#else
-#define DBG(args...)	do { } while(0)
-#endif
-
-struct wf_lm75_sensor {
-	int			ds1775 : 1;
+//#define DBG(args...)	printk(args)
+//#else
+//#define DBG(args...)	do { } while(0)
+//#endif
+//
+//struct wf_lm75_sensor {
+;
 	int			inited : 1;
 	struct 	i2c_client	*i2c;
 	struct 	wf_sensor	sens;
@@ -148,8 +148,8 @@ static struct i2c_client *wf_lm75_create(struct i2c_adapter *adapter,
 
 	client = i2c_new_device(adapter, &info);
 	if (client == NULL) {
-		printk(KERN_ERR "windfarm: failed to attach %s %s to i2c\n",
-		       ds1775 ? "ds1775" : "lm75", name);
+//		printk(KERN_ERR "windfarm: failed to attach %s %s to i2c\n",
+;
 		goto fail;
 	}
 

@@ -33,7 +33,7 @@ void __devinit ISACVersion(struct IsdnCardState *cs, char *s)
 	int val;
 
 	val = cs->readisac(cs, ISAC_RBCH);
-	printk(KERN_INFO "%s ISAC version (%x): %s\n", s, val, ISACVer[(val >> 5) & 3]);
+;
 }
 
 static void
@@ -218,7 +218,7 @@ isac_interrupt(struct IsdnCardState *cs, u_char val)
 			if ((count = cs->rcvidx) > 0) {
 				cs->rcvidx = 0;
 				if (!(skb = alloc_skb(count, GFP_ATOMIC)))
-					printk(KERN_WARNING "HiSax: D receive out of memory\n");
+;
 				else {
 					memcpy(skb_put(skb, count), cs->rcvbuf, count);
 					skb_queue_tail(&cs->rq, skb);
@@ -285,11 +285,11 @@ isac_interrupt(struct IsdnCardState *cs, u_char val)
 			debugl1(cs, "ISAC EXIR %02x", exval);
 		if (exval & 0x80) {  /* XMR */
 			debugl1(cs, "ISAC XMR");
-			printk(KERN_WARNING "HiSax: ISAC XMR\n");
+;
 		}
 		if (exval & 0x40) {  /* XDU */
 			debugl1(cs, "ISAC XDU");
-			printk(KERN_WARNING "HiSax: ISAC XDU\n");
+;
 #ifdef ERROR_STATISTIC
 			cs->err_tx++;
 #endif
@@ -302,7 +302,7 @@ isac_interrupt(struct IsdnCardState *cs, u_char val)
 				cs->tx_cnt = 0;
 				isac_fill_fifo(cs);
 			} else {
-				printk(KERN_WARNING "HiSax: ISAC XDU no skb\n");
+;
 				debugl1(cs, "ISAC XDU no skb");
 			}
 		}
@@ -605,7 +605,7 @@ dbusy_timer_handler(struct IsdnCardState *cs)
 				cs->tx_cnt = 0;
 				cs->tx_skb = NULL;
 			} else {
-				printk(KERN_WARNING "HiSax: ISAC D-Channel Busy no skb\n");
+;
 				debugl1(cs, "D-Channel Busy no skb");
 			}
 			cs->writeisac(cs, ISAC_CMDR, 0x01); /* Transmitter reset */

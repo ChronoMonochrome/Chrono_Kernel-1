@@ -307,19 +307,19 @@ static int __devinit en_pci_probe(struct pci_dev *dev_netjet,
 		return(0);
 	cs->irq = dev_netjet->irq;
 	if (!cs->irq) {
-		printk(KERN_WARNING "enter:now PCI: No IRQ for PCI card found\n");
+;
 		return(0);
 	}
 	cs->hw.njet.base = pci_resource_start(dev_netjet, 0);
 	if (!cs->hw.njet.base) {
-		printk(KERN_WARNING "enter:now PCI: No IO-Adr for PCI card found\n");
+;
 		return(0);
 	}
 	/* checks Sub-Vendor ID because system crashes with Traverse-Card */
 	if ((dev_netjet->subsystem_vendor != 0x55) ||
 	    (dev_netjet->subsystem_device != 0x02)) {
-		printk(KERN_WARNING "enter:now: You tried to load this driver with an incompatible TigerJet-card\n");
-		printk(KERN_WARNING "Use type=20 for Traverse NetJet PCI Card.\n");
+;
+;
 		return(0);
 	}
 
@@ -355,14 +355,14 @@ static int __devinit en_cs_init_rest(struct IsdnCard *card,
 {
 	const int bytecnt = 256;
 
-	printk(KERN_INFO
-		"enter:now PCI: PCI card configured at 0x%lx IRQ %d\n",
-		cs->hw.njet.base, cs->irq);
+//	printk(KERN_INFO
+//		"enter:now PCI: PCI card configured at 0x%lx IRQ %d\n",
+;
 	if (!request_region(cs->hw.njet.base, bytecnt, "Fn_ISDN")) {
-		printk(KERN_WARNING
-		       "HiSax: enter:now config port %lx-%lx already in use\n",
-		       cs->hw.njet.base,
-		       cs->hw.njet.base + bytecnt);
+//		printk(KERN_WARNING
+//		       "HiSax: enter:now config port %lx-%lx already in use\n",
+//		       cs->hw.njet.base,
+;
 		return (0);
 	}
 
@@ -399,7 +399,7 @@ setup_enternow_pci(struct IsdnCard *card)
 #endif
 
         strcpy(tmp, enternow_pci_rev);
-	printk(KERN_INFO "HiSax: Formula-n Europe AG enter:now ISDN PCI driver Rev. %s\n", HiSax_getrev(tmp));
+;
 	if (cs->typ != ISDN_CTYPE_ENTERNOW)
 		return(0);
 	test_and_clear_bit(FLG_LOCK_ATOMIC, &cs->HW_Flags);
@@ -412,7 +412,7 @@ setup_enternow_pci(struct IsdnCard *card)
 			if (!ret)
 				return(0);
 		} else {
-                        printk(KERN_WARNING "enter:now PCI: No PCI card found\n");
+;
 			return(0);
 		}
 

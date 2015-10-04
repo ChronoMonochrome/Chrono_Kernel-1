@@ -311,7 +311,7 @@ err_ioremap:
 err_request:
 	kfree(tgpio);
 err_mem:
-	printk(KERN_ERR DRIVER_NAME": Failed to register GPIOs: %d\n", err);
+;
 
 	return err;
 }
@@ -337,7 +337,7 @@ static int __devexit timbgpio_remove(struct platform_device *pdev)
 
 	err = gpiochip_remove(&tgpio->gpio);
 	if (err)
-		printk(KERN_ERR DRIVER_NAME": failed to remove gpio_chip\n");
+;
 
 	iounmap(tgpio->membase);
 	release_mem_region(iomem->start, resource_size(iomem));

@@ -312,33 +312,33 @@ static irqreturn_t wdtpci_interrupt(int irq, void *dev_id)
 	status = inb(WDT_SR);
 	udelay(8);
 
-	printk(KERN_CRIT PFX "status %d\n", status);
+;
 
 	if (type == 501) {
 		if (!(status & WDC_SR_TGOOD)) {
-			printk(KERN_CRIT PFX "Overheat alarm.(%d)\n",
-								inb(WDT_RT));
+//			printk(KERN_CRIT PFX "Overheat alarm.(%d)\n",
+;
 			udelay(8);
 		}
 		if (!(status & WDC_SR_PSUOVER))
-			printk(KERN_CRIT PFX "PSU over voltage.\n");
+;
 		if (!(status & WDC_SR_PSUUNDR))
-			printk(KERN_CRIT PFX "PSU under voltage.\n");
+;
 		if (tachometer) {
 			if (!(status & WDC_SR_FANGOOD))
-				printk(KERN_CRIT PFX "Possible fan fault.\n");
+;
 		}
 	}
 	if (!(status & WDC_SR_WCCR)) {
 #ifdef SOFTWARE_REBOOT
 #ifdef ONLY_TESTING
-		printk(KERN_CRIT PFX "Would Reboot.\n");
+;
 #else
-		printk(KERN_CRIT PFX "Initiating system reboot.\n");
+;
 		emergency_restart(NULL);
 #endif
 #else
-		printk(KERN_CRIT PFX "Reset in 5ms.\n");
+;
 #endif
 	}
 	spin_unlock(&wdtpci_lock);
@@ -484,7 +484,7 @@ static int wdtpci_release(struct inode *inode, struct file *file)
 	if (expect_close == 42) {
 		wdtpci_stop();
 	} else {
-		printk(KERN_CRIT PFX "Unexpected close, not stopping timer!");
+;
 		wdtpci_ping();
 	}
 	expect_close = 0;
@@ -614,29 +614,29 @@ static int __devinit wdtpci_init_one(struct pci_dev *dev,
 
 	dev_count++;
 	if (dev_count > 1) {
-		printk(KERN_ERR PFX "This driver only supports one device\n");
+;
 		return -ENODEV;
 	}
 
 	if (type != 500 && type != 501) {
-		printk(KERN_ERR PFX "unknown card type '%d'.\n", type);
+;
 		return -ENODEV;
 	}
 
 	if (pci_enable_device(dev)) {
-		printk(KERN_ERR PFX "Not possible to enable PCI Device\n");
+;
 		return -ENODEV;
 	}
 
 	if (pci_resource_start(dev, 2) == 0x0000) {
-		printk(KERN_ERR PFX "No I/O-Address for card detected\n");
+;
 		ret = -ENODEV;
 		goto out_pci;
 	}
 
 	if (pci_request_region(dev, 2, "wdt_pci")) {
-		printk(KERN_ERR PFX "I/O address 0x%llx already in use\n",
-			(unsigned long long)pci_resource_start(dev, 2));
+//		printk(KERN_ERR PFX "I/O address 0x%llx already in use\n",
+;
 		goto out_pci;
 	}
 
@@ -645,53 +645,53 @@ static int __devinit wdtpci_init_one(struct pci_dev *dev,
 
 	if (request_irq(irq, wdtpci_interrupt, IRQF_DISABLED | IRQF_SHARED,
 			 "wdt_pci", &wdtpci_miscdev)) {
-		printk(KERN_ERR PFX "IRQ %d is not free\n", irq);
+;
 		goto out_reg;
 	}
 
-	printk(KERN_INFO
-	 "PCI-WDT500/501 (PCI-WDG-CSM) driver 0.10 at 0x%llx (Interrupt %d)\n",
-					(unsigned long long)io, irq);
+//	printk(KERN_INFO
+//	 "PCI-WDT500/501 (PCI-WDG-CSM) driver 0.10 at 0x%llx (Interrupt %d)\n",
+;
 
 	/* Check that the heartbeat value is within its range;
 	   if not reset to the default */
 	if (wdtpci_set_heartbeat(heartbeat)) {
 		wdtpci_set_heartbeat(WD_TIMO);
-		printk(KERN_INFO PFX
-		  "heartbeat value must be 0 < heartbeat < 65536, using %d\n",
-								WD_TIMO);
+//		printk(KERN_INFO PFX
+//		  "heartbeat value must be 0 < heartbeat < 65536, using %d\n",
+;
 	}
 
 	ret = register_reboot_notifier(&wdtpci_notifier);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"cannot register reboot notifier (err=%d)\n", ret);
+//		printk(KERN_ERR PFX
+;
 		goto out_irq;
 	}
 
 	if (type == 501) {
 		ret = misc_register(&temp_miscdev);
 		if (ret) {
-			printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-							TEMP_MINOR, ret);
+//			printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 			goto out_rbt;
 		}
 	}
 
 	ret = misc_register(&wdtpci_miscdev);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-						WATCHDOG_MINOR, ret);
+//		printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 		goto out_misc;
 	}
 
-	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
-		heartbeat, nowayout);
+//	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
+;
 	if (type == 501)
-		printk(KERN_INFO "wdt: Fan Tachometer is %s\n",
-				(tachometer ? "Enabled" : "Disabled"));
+//		printk(KERN_INFO "wdt: Fan Tachometer is %s\n",
+;
 
 	ret = 0;
 out:

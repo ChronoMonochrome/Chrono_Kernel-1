@@ -28,8 +28,8 @@ static bool tomoyo_policy_loader_exists(void)
 	struct path path;
 
 	if (kern_path(tomoyo_loader, LOOKUP_FOLLOW, &path)) {
-		printk(KERN_INFO "Not activating Mandatory Access Control now "
-		       "since %s doesn't exist.\n", tomoyo_loader);
+//		printk(KERN_INFO "Not activating Mandatory Access Control now "
+;
 		return false;
 	}
 	path_put(&path);
@@ -69,8 +69,8 @@ void tomoyo_load_policy(const char *filename)
 	if (!tomoyo_policy_loader_exists())
 		return;
 
-	printk(KERN_INFO "Calling %s to load policy. Please wait.\n",
-	       tomoyo_loader);
+//	printk(KERN_INFO "Calling %s to load policy. Please wait.\n",
+;
 	argv[0] = (char *) tomoyo_loader;
 	argv[1] = NULL;
 	envp[0] = "HOME=/";

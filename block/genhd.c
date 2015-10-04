@@ -294,8 +294,8 @@ int register_blkdev(unsigned int major, const char *name)
 		}
 
 		if (index == 0) {
-			printk("register_blkdev: failed to get major for %s\n",
-			       name);
+//			printk("register_blkdev: failed to get major for %s\n",
+;
 			ret = -EBUSY;
 			goto out;
 		}
@@ -324,8 +324,8 @@ int register_blkdev(unsigned int major, const char *name)
 		ret = -EBUSY;
 
 	if (ret < 0) {
-		printk("register_blkdev: cannot get major %d for %s\n",
-		       major, name);
+//		printk("register_blkdev: cannot get major %d for %s\n",
+;
 		kfree(p);
 	}
 out:
@@ -768,20 +768,20 @@ void __init printk_all_partitions(void)
 				snprintf(uuid_buf, sizeof(uuid_buf), "%pU",
 					 part->info->uuid);
 
-			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
-			       bdevt_str(part_devt(part), devt_buf),
-			       (unsigned long long)part->nr_sects >> 1,
-			       disk_name(disk, part->partno, name_buf),
-			       uuid_buf);
+//			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
+//			       bdevt_str(part_devt(part), devt_buf),
+//			       (unsigned long long)part->nr_sects >> 1,
+//			       disk_name(disk, part->partno, name_buf),
+;
 			if (is_part0) {
 				if (disk->driverfs_dev != NULL &&
 				    disk->driverfs_dev->driver != NULL)
-					printk(" driver: %s\n",
-					      disk->driverfs_dev->driver->name);
+//					printk(" driver: %s\n",
+;
 				else
-					printk(" (driver?)\n");
+;
 			} else
-				printk("\n");
+;
 		}
 		disk_part_iter_exit(&piter);
 	}

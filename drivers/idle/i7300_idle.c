@@ -46,8 +46,8 @@ static int forceload;
 module_param_named(forceload, forceload, uint, 0644);
 MODULE_PARM_DESC(debug, "Enable driver testing on unvalidated i5000");
 
-#define dprintk(fmt, arg...) \
-	do { if (debug) printk(KERN_INFO I7300_PRINT fmt, ##arg); } while (0)
+//#define dprintk(fmt, arg...) \
+;
 
 /*
  * Value to set THRTLOW to when initiating throttling
@@ -135,8 +135,8 @@ static void i7300_idle_ioat_stop(void)
 	}
 
 	if (i == MAX_STOP_RETRIES) {
-		dprintk("failed to stop I/O AT after %d retries\n",
-			MAX_STOP_RETRIES);
+//		dprintk("failed to stop I/O AT after %d retries\n",
+;
 	}
 }
 
@@ -172,10 +172,10 @@ static int __init i7300_idle_ioat_selftest(u8 *ctl,
 
 	if (*(u32 *) ((u8 *) desc + 3068) != 0xabababab ||
 	    *(u32 *) ((u8 *) desc + 2044) != 0xabababab) {
-		dprintk("Data values src 0x%x, dest 0x%x, memset 0x%x\n",
-			*(u32 *) ((u8 *) desc + 2048),
-			*(u32 *) ((u8 *) desc + 1024),
-			*(u32 *) ((u8 *) desc + 3072));
+//		dprintk("Data values src 0x%x, dest 0x%x, memset 0x%x\n",
+//			*(u32 *) ((u8 *) desc + 2048),
+//			*(u32 *) ((u8 *) desc + 1024),
+;
 		return -1;
 	}
 	return 0;
@@ -201,22 +201,22 @@ static int __init i7300_idle_ioat_init(void)
 					    pci_resource_len(ioat_dev, 0));
 
 	if (!ioat_iomap) {
-		printk(KERN_ERR I7300_PRINT "failed to map I/O AT registers\n");
+;
 		goto err_ret;
 	}
 
 	ver = readb(ioat_iomap + IOAT_VER_OFFSET);
 	if (ver != IOAT_VER_1_2) {
-		printk(KERN_ERR I7300_PRINT "unknown I/O AT version (%u.%u)\n",
-			ver >> 4, ver & 0xf);
+//		printk(KERN_ERR I7300_PRINT "unknown I/O AT version (%u.%u)\n",
+;
 		goto err_unmap;
 	}
 
 	chan_count = readb(ioat_iomap + IOAT_CHANCNT_OFFSET);
 	if (!chan_count) {
-		printk(KERN_ERR I7300_PRINT "unexpected # of I/O AT channels "
-			"(%u)\n",
-			chan_count);
+//		printk(KERN_ERR I7300_PRINT "unexpected # of I/O AT channels "
+//			"(%u)\n",
+;
 		goto err_unmap;
 	}
 
@@ -225,7 +225,7 @@ static int __init i7300_idle_ioat_init(void)
 
 	chan_ctl = readw(ioat_chanbase + IOAT_CHANCTRL_OFFSET);
 	if (chan_ctl & IOAT_CHANCTRL_CHANNEL_IN_USE) {
-		printk(KERN_ERR I7300_PRINT "channel %d in use\n", ioat_chan);
+;
 		goto err_unmap;
 	}
 
@@ -236,7 +236,7 @@ static int __init i7300_idle_ioat_init(void)
 			&dummy_dma_dev, 4096,
 			(dma_addr_t *)&ioat_desc_phys, GFP_KERNEL);
 	if (!ioat_desc) {
-		printk(KERN_ERR I7300_PRINT "failed to allocate I/O AT desc\n");
+;
 		goto err_mark_unused;
 	}
 
@@ -246,7 +246,7 @@ static int __init i7300_idle_ioat_init(void)
 	       ioat_chanbase + IOAT1_CHAINADDR_OFFSET_HIGH);
 
 	if (i7300_idle_ioat_selftest(ioat_iomap, ioat_desc, ioat_desc_phys)) {
-		printk(KERN_ERR I7300_PRINT "I/O AT self-test failed\n");
+;
 		goto err_free;
 	}
 
@@ -307,8 +307,8 @@ static void __exit i7300_idle_ioat_exit(void)
 	 * than random corruption in that extreme error situation.
 	 */
 	if (chan_sts == IOAT_CHANSTS_ACTIVE) {
-		printk(KERN_ERR I7300_PRINT "Unable to stop IO A/T channels."
-			" Not freeing resources\n");
+//		printk(KERN_ERR I7300_PRINT "Unable to stop IO A/T channels."
+;
 		return;
 	}
 
@@ -365,18 +365,18 @@ static int i7300_idle_thrt_save(void)
 	 * Global Activation Throttle Limit is zero).
 	 */
 	pci_read_config_byte(fbd_dev, DIMM_GBLACT, &gblactlm);
-	dprintk("thrtctl_saved = 0x%02x, thrtlow_saved = 0x%02x\n",
-		i7300_idle_thrtctl_saved,
-		i7300_idle_thrtlow_saved);
-	dprintk("mc_saved = 0x%08x, gblactlm = 0x%02x\n",
-		i7300_idle_mc_saved,
-		gblactlm);
+//	dprintk("thrtctl_saved = 0x%02x, thrtlow_saved = 0x%02x\n",
+//		i7300_idle_thrtctl_saved,
+;
+//	dprintk("mc_saved = 0x%08x, gblactlm = 0x%02x\n",
+//		i7300_idle_mc_saved,
+;
 	if (gblactlm == 0) {
 		new_mc_val = i7300_idle_mc_saved | DIMM_GTW_MODE;
 		pci_write_config_dword(fbd_dev, DIMM_MC, new_mc_val);
 		return 0;
 	} else {
-		dprintk("could not set GTW_MODE = 1 (OLTT enabled)\n");
+;
 		return -ENODEV;
 	}
 }
@@ -586,7 +586,7 @@ static int __init i7300_idle_init(void)
 
 	idle_notifier_register(&i7300_idle_nb);
 
-	printk(KERN_INFO "i7300_idle: loaded v%s\n", I7300_IDLE_DRIVER_VERSION);
+;
 	return 0;
 }
 

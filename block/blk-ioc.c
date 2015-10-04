@@ -373,7 +373,7 @@ struct io_cq *ioc_create_icq(struct request_queue *q, gfp_t gfp_mask)
 		kmem_cache_free(et->icq_cache, icq);
 		icq = ioc_lookup_icq(ioc, q);
 		if (!icq)
-			printk(KERN_ERR "cfq: icq link failed!\n");
+;
 	}
 
 	spin_unlock(&ioc->lock);

@@ -133,7 +133,7 @@ static int acpi_fan_add(struct acpi_device *device)
 
 	result = acpi_bus_update_power(device->handle, NULL);
 	if (result) {
-		printk(KERN_ERR PREFIX "Setting initial power state\n");
+;
 		goto end;
 	}
 
@@ -161,9 +161,9 @@ static int acpi_fan_add(struct acpi_device *device)
 		dev_err(&device->dev, "Failed to create sysfs link "
 			"'device'\n");
 
-	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
-	       acpi_device_name(device), acpi_device_bid(device),
-	       !device->power.state ? "on" : "off");
+//	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
+//	       acpi_device_name(device), acpi_device_bid(device),
+;
 
       end:
 	return result;
@@ -202,7 +202,7 @@ static int acpi_fan_resume(struct acpi_device *device)
 
 	result = acpi_bus_update_power(device->handle, NULL);
 	if (result)
-		printk(KERN_ERR PREFIX "Error updating fan power state\n");
+;
 
 	return result;
 }

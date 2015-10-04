@@ -3014,7 +3014,7 @@ int b2r2_control_init(struct b2r2_control *cont)
 	/* Initialize node splitter */
 	ret = b2r2_node_split_init(cont);
 	if (ret) {
-		printk(KERN_WARNING "%s: node split init fails\n", __func__);
+;
 		goto b2r2_node_split_init_fail;
 	}
 
@@ -3033,8 +3033,8 @@ int b2r2_control_init(struct b2r2_control *cont)
 	ret = b2r2_mem_init(cont, B2R2_HEAP_SIZE,
 			4, sizeof(struct b2r2_node));
 	if (ret) {
-		printk(KERN_WARNING "%s: initializing B2R2 memhandler fails\n",
-				__func__);
+//		printk(KERN_WARNING "%s: initializing B2R2 memhandler fails\n",
+;
 		goto b2r2_mem_init_fail;
 	}
 

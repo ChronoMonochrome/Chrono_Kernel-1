@@ -278,7 +278,7 @@ static unsigned int ql_pcmd(struct scsi_cmnd *cmd)
 	}
 	i |= inb(qbase + 5);	/* the 0x10 bit can be set after the 0x08 */
 	if (i != 0x18) {
-		printk(KERN_ERR "Ql:Bad Interrupt status:%02x\n", i);
+;
 		ql_zap(priv);
 		return (DID_BAD_INTR << 16);
 	}
@@ -290,8 +290,8 @@ static unsigned int ql_pcmd(struct scsi_cmnd *cmd)
 	   sequence of 3 if any bytes are left (but we do flush the FIFO anyway */
 
 	if (j != 3 && j != 4) {
-		printk(KERN_ERR "Ql:Bad sequence for command %d, int %02X, cmdleft = %d\n",
-		     j, i, inb(qbase + 7) & 0x1f);
+//		printk(KERN_ERR "Ql:Bad sequence for command %d, int %02X, cmdleft = %d\n",
+;
 		ql_zap(priv);
 		return (DID_ERROR << 16);
 	}
@@ -367,7 +367,7 @@ static unsigned int ql_pcmd(struct scsi_cmnd *cmd)
 	 *	bus serv if only status 
 	 */
 	if (!((i == 8 && j == 2) || (i == 0x10 && j == 1))) {
-		printk(KERN_ERR "Ql:Error during status phase, int=%02X, %d bytes recd\n", i, j);
+;
 		result = DID_ERROR;
 	}
 	outb(0x12, qbase + 3);	/* done, disconnect */

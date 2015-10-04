@@ -34,9 +34,9 @@ static unsigned int vbi_debug;
 module_param(vbi_debug, int, 0644);
 MODULE_PARM_DESC(vbi_debug, "enable debug messages [vbi]");
 
-#define dprintk(level, fmt, arg...)\
-	do { if (vbi_debug >= level)\
-		printk(KERN_DEBUG "%s/0: " fmt, dev->name, ## arg);\
+//#define dprintk(level, fmt, arg...)\
+//	do { if (vbi_debug >= level)\
+;
 	} while (0)
 
 /* ------------------------------------------------------------------ */
@@ -95,8 +95,8 @@ static int cx23885_restart_vbi_queue(struct cx23885_dev    *dev,
 		return 0;
 
 	buf = list_entry(q->active.next, struct cx23885_buffer, vb.queue);
-	dprintk(2, "restart_queue [%p/%d]: restart dma\n",
-		buf, buf->vb.i);
+//	dprintk(2, "restart_queue [%p/%d]: restart dma\n",
+;
 	cx23885_start_vbi_dma(dev, q, buf);
 	list_for_each(item, &q->active) {
 		buf = list_entry(item, struct cx23885_buffer, vb.queue);
@@ -124,8 +124,8 @@ void cx23885_vbi_timeout(unsigned long data)
 		list_del(&buf->vb.queue);
 		buf->vb.state = VIDEOBUF_ERROR;
 		wake_up(&buf->vb.done);
-		printk("%s/0: [%p/%d] timeout - dma=0x%08lx\n", dev->name,
-		       buf, buf->vb.i, (unsigned long)buf->risc.dma);
+//		printk("%s/0: [%p/%d] timeout - dma=0x%08lx\n", dev->name,
+;
 	}
 	cx23885_restart_vbi_queue(dev, q);
 	spin_unlock_irqrestore(&dev->slock, flags);
@@ -208,8 +208,8 @@ vbi_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
 		buf->vb.state = VIDEOBUF_ACTIVE;
 		buf->count    = q->count++;
 		mod_timer(&q->timeout, jiffies+BUFFER_TIMEOUT);
-		dprintk(2, "[%p/%d] vbi_queue - first active\n",
-			buf, buf->vb.i);
+//		dprintk(2, "[%p/%d] vbi_queue - first active\n",
+;
 
 	} else {
 		prev = list_entry(q->active.prev, struct cx23885_buffer,
@@ -219,8 +219,8 @@ vbi_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
 		buf->count    = q->count++;
 		prev->risc.jmp[1] = cpu_to_le32(buf->risc.dma);
 		prev->risc.jmp[2] = cpu_to_le32(0); /* Bits 63-32 */
-		dprintk(2, "[%p/%d] buffer_queue - append to active\n",
-			buf, buf->vb.i);
+//		dprintk(2, "[%p/%d] buffer_queue - append to active\n",
+;
 	}
 }
 

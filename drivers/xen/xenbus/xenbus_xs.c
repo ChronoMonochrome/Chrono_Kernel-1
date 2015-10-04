@@ -127,9 +127,9 @@ static int get_error(const char *errorstring)
 
 	for (i = 0; strcmp(errorstring, xsd_errors[i].errstring) != 0; i++) {
 		if (i == ARRAY_SIZE(xsd_errors) - 1) {
-			printk(KERN_WARNING
-			       "XENBUS xen store gave: unknown error %s",
-			       errorstring);
+//			printk(KERN_WARNING
+//			       "XENBUS xen store gave: unknown error %s",
+;
 			return EINVAL;
 		}
 	}
@@ -271,9 +271,9 @@ static void *xs_talkv(struct xenbus_transaction t,
 
 	if (msg.type != type) {
 		if (printk_ratelimit())
-			printk(KERN_WARNING
-			       "XENBUS unexpected type [%d], expected [%d]\n",
-			       msg.type, type);
+//			printk(KERN_WARNING
+//			       "XENBUS unexpected type [%d], expected [%d]\n",
+;
 		kfree(ret);
 		return ERR_PTR(-EINVAL);
 	}
@@ -668,9 +668,9 @@ void unregister_xenbus_watch(struct xenbus_watch *watch)
 
 	err = xs_unwatch(watch->node, token);
 	if (err)
-		printk(KERN_WARNING
-		       "XENBUS Failed to release watch %s: %i\n",
-		       watch->node, err);
+//		printk(KERN_WARNING
+//		       "XENBUS Failed to release watch %s: %i\n",
+;
 
 	up_read(&xs_state.watch_mutex);
 
@@ -870,8 +870,8 @@ static int xenbus_thread(void *unused)
 	for (;;) {
 		err = process_msg();
 		if (err)
-			printk(KERN_WARNING "XENBUS error %d while reading "
-			       "message\n", err);
+//			printk(KERN_WARNING "XENBUS error %d while reading "
+;
 		if (kthread_should_stop())
 			break;
 	}

@@ -281,7 +281,7 @@ struct se_node_acl *ft_tpg_alloc_fabric_acl(struct se_portal_group *se_tpg)
 
 	acl = kzalloc(sizeof(*acl), GFP_KERNEL);
 	if (!(acl)) {
-		printk(KERN_ERR "Unable to allocate struct ft_node_acl\n");
+;
 		return NULL;
 	}
 	FT_CONF_DBG("acl %p\n", acl);
@@ -583,8 +583,8 @@ int ft_register_configfs(void)
 	 */
 	fabric = target_fabric_configfs_init(THIS_MODULE, "fc");
 	if (!fabric) {
-		printk(KERN_INFO "%s: target_fabric_configfs_init() failed!\n",
-		       __func__);
+//		printk(KERN_INFO "%s: target_fabric_configfs_init() failed!\n",
+;
 		return -1;
 	}
 	fabric->tf_ops = ft_fabric_ops;
@@ -612,9 +612,9 @@ int ft_register_configfs(void)
 	if (ret < 0) {
 		FT_CONF_DBG("target_fabric_configfs_register() for"
 			    " FC Target failed!\n");
-		printk(KERN_INFO
-		       "%s: target_fabric_configfs_register() failed!\n",
-		       __func__);
+//		printk(KERN_INFO
+//		       "%s: target_fabric_configfs_register() failed!\n",
+;
 		target_fabric_configfs_free(fabric);
 		return -1;
 	}

@@ -228,7 +228,7 @@ static void ktd253_early_suspend(struct early_suspend *earlysuspend)
 	struct ktd253 *pKtd253Data = container_of(earlysuspend,
 						struct ktd253,
 						earlysuspend);
-	printk("%s function enter\n", __func__);
+;
 
 	/* Ignore suspend if external backlight control is used */
 	if (pKtd253Data->pd->external_bl_control == false)
@@ -245,7 +245,7 @@ static void ktd253_late_resume(struct early_suspend *earlysuspend)
 	struct ktd253 *pKtd253Data = container_of(earlysuspend,
 						struct ktd253,
 						earlysuspend);
-	printk("%s function enter\n", __func__);
+;
 
 	/* Ignore resume if external backlight control is used */
 	if (pKtd253Data->pd->external_bl_control == false)

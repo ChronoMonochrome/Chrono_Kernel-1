@@ -280,16 +280,16 @@ static int pcm3724_attach(struct comedi_device *dev,
 	((struct priv_pcm3724 *)(dev->private))->dio_1 = 0;
 	((struct priv_pcm3724 *)(dev->private))->dio_2 = 0;
 
-	printk(KERN_INFO "comedi%d: pcm3724: board=%s, 0x%03lx ", dev->minor,
-	       this_board->name, iobase);
+//	printk(KERN_INFO "comedi%d: pcm3724: board=%s, 0x%03lx ", dev->minor,
+;
 	if (!iobase || !request_region(iobase, iorange, "pcm3724")) {
-		printk("I/O port conflict\n");
+;
 		return -EIO;
 	}
 
 	dev->iobase = iobase;
 	dev->board_name = this_board->name;
-	printk(KERN_INFO "\n");
+;
 
 	n_subdevices = this_board->numofports;
 

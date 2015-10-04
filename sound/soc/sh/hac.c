@@ -210,7 +210,7 @@ static void hac_ac97_warmrst(struct snd_ac97 *ac97)
 		udelay(1);
 
 	if (!tmo)
-		printk(KERN_INFO "hac: reset: AC97 link down!\n");
+;
 	/* settings this bit lets us have a conversation with codec */
 	HACREG(HACACR) |= ACR_TX12ATOM;
 }

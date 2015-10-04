@@ -141,11 +141,11 @@ static int minix_remount (struct super_block * sb, int * flags, char * data)
 		mark_buffer_dirty(sbi->s_sbh);
 
 		if (!(sbi->s_mount_state & MINIX_VALID_FS))
-			printk("MINIX-fs warning: remounting unchecked fs, "
-				"running fsck is recommended\n");
+//			printk("MINIX-fs warning: remounting unchecked fs, "
+;
 		else if ((sbi->s_mount_state & MINIX_ERROR_FS))
-			printk("MINIX-fs warning: remounting fs with errors, "
-				"running fsck is recommended\n");
+//			printk("MINIX-fs warning: remounting fs with errors, "
+;
 	}
 	return 0;
 }
@@ -274,11 +274,11 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		mark_buffer_dirty(bh);
 	}
 	if (!(sbi->s_mount_state & MINIX_VALID_FS))
-		printk("MINIX-fs: mounting unchecked file system, "
-			"running fsck is recommended\n");
+//		printk("MINIX-fs: mounting unchecked file system, "
+;
  	else if (sbi->s_mount_state & MINIX_ERROR_FS)
-		printk("MINIX-fs: mounting file system with errors, "
-			"running fsck is recommended\n");
+//		printk("MINIX-fs: mounting file system with errors, "
+;
 
 	/* Apparently minix can create filesystems that allocate more blocks for
 	 * the bitmaps than needed.  We simply ignore that, but verify it didn't
@@ -286,8 +286,8 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 	 */
 	block = minix_blocks_needed(sbi->s_ninodes, s->s_blocksize);
 	if (sbi->s_imap_blocks < block) {
-		printk("MINIX-fs: file system does not have enough "
-				"imap blocks allocated.  Refusing to mount\n");
+//		printk("MINIX-fs: file system does not have enough "
+;
 		goto out_iput;
 	}
 
@@ -295,8 +295,8 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 			(sbi->s_nzones - (sbi->s_firstdatazone + 1)),
 			s->s_blocksize);
 	if (sbi->s_zmap_blocks < block) {
-		printk("MINIX-fs: file system does not have enough "
-				"zmap blocks allocated.  Refusing to mount.\n");
+//		printk("MINIX-fs: file system does not have enough "
+;
 		goto out_iput;
 	}
 
@@ -308,11 +308,11 @@ out_iput:
 
 out_no_root:
 	if (!silent)
-		printk("MINIX-fs: get root inode failed\n");
+;
 	goto out_freemap;
 
 out_no_bitmap:
-	printk("MINIX-fs: bad superblock or unable to read bitmaps\n");
+;
 out_freemap:
 	for (i = 0; i < sbi->s_imap_blocks; i++)
 		brelse(sbi->s_imap[i]);
@@ -324,28 +324,28 @@ out_freemap:
 out_no_map:
 	ret = -ENOMEM;
 	if (!silent)
-		printk("MINIX-fs: can't allocate map\n");
+;
 	goto out_release;
 
 out_illegal_sb:
 	if (!silent)
-		printk("MINIX-fs: bad superblock\n");
+;
 	goto out_release;
 
 out_no_fs:
 	if (!silent)
-		printk("VFS: Can't find a Minix filesystem V1 | V2 | V3 "
-		       "on device %s.\n", s->s_id);
+//		printk("VFS: Can't find a Minix filesystem V1 | V2 | V3 "
+;
 out_release:
 	brelse(bh);
 	goto out;
 
 out_bad_hblock:
-	printk("MINIX-fs: blocksize too small for device\n");
+;
 	goto out;
 
 out_bad_sb:
-	printk("MINIX-fs: unable to read superblock\n");
+;
 out:
 	s->s_fs_info = NULL;
 	kfree(sbi);
@@ -606,8 +606,8 @@ static int minix_write_inode(struct inode *inode, struct writeback_control *wbc)
 	if (wbc->sync_mode == WB_SYNC_ALL && buffer_dirty(bh)) {
 		sync_dirty_buffer(bh);
 		if (buffer_req(bh) && !buffer_uptodate(bh)) {
-			printk("IO error syncing minix inode [%s:%08lx]\n",
-				inode->i_sb->s_id, inode->i_ino);
+//			printk("IO error syncing minix inode [%s:%08lx]\n",
+;
 			err = -EIO;
 		}
 	}

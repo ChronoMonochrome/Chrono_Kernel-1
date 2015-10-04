@@ -162,16 +162,16 @@ void __meminit mminit_validate_memmodel_limits(unsigned long *start_pfn,
 	 * in larger pfns than the maximum scope of sparsemem:
 	 */
 	if (*start_pfn > max_sparsemem_pfn) {
-		mminit_dprintk(MMINIT_WARNING, "pfnvalidation",
-			"Start of range %lu -> %lu exceeds SPARSEMEM max %lu\n",
-			*start_pfn, *end_pfn, max_sparsemem_pfn);
+//		mminit_dprintk(MMINIT_WARNING, "pfnvalidation",
+//			"Start of range %lu -> %lu exceeds SPARSEMEM max %lu\n",
+;
 		WARN_ON_ONCE(1);
 		*start_pfn = max_sparsemem_pfn;
 		*end_pfn = max_sparsemem_pfn;
 	} else if (*end_pfn > max_sparsemem_pfn) {
-		mminit_dprintk(MMINIT_WARNING, "pfnvalidation",
-			"End of range %lu -> %lu exceeds SPARSEMEM max %lu\n",
-			*start_pfn, *end_pfn, max_sparsemem_pfn);
+//		mminit_dprintk(MMINIT_WARNING, "pfnvalidation",
+//			"End of range %lu -> %lu exceeds SPARSEMEM max %lu\n",
+;
 		WARN_ON_ONCE(1);
 		*end_pfn = max_sparsemem_pfn;
 	}
@@ -313,9 +313,9 @@ static void __init check_usemap_section_nr(int nid, unsigned long *usemap)
 
 	usemap_nid = sparse_early_nid(__nr_to_section(usemap_snr));
 	if (usemap_nid != nid) {
-		printk(KERN_INFO
-		       "node %d must be removed before remove section %ld\n",
-		       nid, usemap_snr);
+//		printk(KERN_INFO
+//		       "node %d must be removed before remove section %ld\n",
+;
 		return;
 	}
 	/*
@@ -324,10 +324,10 @@ static void __init check_usemap_section_nr(int nid, unsigned long *usemap)
 	 * gather other removable sections for dynamic partitioning.
 	 * Just notify un-removable section's number here.
 	 */
-	printk(KERN_INFO "Section %ld and %ld (node %d)", usemap_snr,
-	       pgdat_snr, nid);
-	printk(KERN_CONT
-	       " have a circular dependency on usemap and pgdat allocations\n");
+//	printk(KERN_INFO "Section %ld and %ld (node %d)", usemap_snr,
+;
+//	printk(KERN_CONT
+;
 }
 #else
 static unsigned long * __init
@@ -356,7 +356,7 @@ static void __init sparse_early_usemaps_alloc_node(unsigned long**usemap_map,
 	if (!usemap) {
 		usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
 		if (!usemap) {
-			printk(KERN_WARNING "%s: allocation failed\n", __func__);
+;
 			return;
 		}
 	}
@@ -428,8 +428,8 @@ void __init sparse_mem_maps_populate_node(struct page **map_map,
 		if (map_map[pnum])
 			continue;
 		ms = __nr_to_section(pnum);
-		printk(KERN_ERR "%s: sparsemem memory map backing failed "
-			"some memory will not be available.\n", __func__);
+//		printk(KERN_ERR "%s: sparsemem memory map backing failed "
+;
 		ms->section_mem_map = 0;
 	}
 }
@@ -455,8 +455,8 @@ static struct page __init *sparse_early_mem_map_alloc(unsigned long pnum)
 	if (map)
 		return map;
 
-	printk(KERN_ERR "%s: sparsemem memory map backing failed "
-			"some memory will not be available.\n", __func__);
+//	printk(KERN_ERR "%s: sparsemem memory map backing failed "
+;
 	ms->section_mem_map = 0;
 	return NULL;
 }

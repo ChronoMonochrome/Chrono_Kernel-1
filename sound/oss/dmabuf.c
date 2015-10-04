@@ -96,20 +96,20 @@ static int sound_alloc_dmap(struct dma_buffparms *dmap)
 	}
 
 	if (start_addr == NULL) {
-		printk(KERN_WARNING "Sound error: Couldn't allocate DMA buffer\n");
+;
 		return -ENOMEM;
 	} else {
 		/* make some checks */
 		end_addr = start_addr + dmap->buffsize - 1;
 
 		if (debugmem)
-			printk(KERN_DEBUG "sound: start 0x%lx, end 0x%lx\n", (long) start_addr, (long) end_addr);
+;
 		
 		/* now check if it fits into the same dma-pagesize */
 
 		if (((long) start_addr & ~(dma_pagesize - 1)) != ((long) end_addr & ~(dma_pagesize - 1))
 		    || end_addr >= (char *) (MAX_DMA_ADDRESS)) {
-			printk(KERN_ERR "sound: Got invalid address 0x%lx for %db DMA-buffer\n", (long) start_addr, dmap->buffsize);
+;
 			return -EFAULT;
 		}
 	}
@@ -192,11 +192,11 @@ static int open_dmap(struct audio_operations *adev, int mode, struct dma_buffpar
 		return err;
 
 	if (dmap->raw_buf == NULL) {
-		printk(KERN_WARNING "Sound: DMA buffers not available\n");
+;
 		return -ENOSPC;	/* Memory allocation failed during boot */
 	}
 	if (dmap->dma >= 0 && sound_open_dma(dmap->dma, adev->name)) {
-		printk(KERN_WARNING "Unable to grab(2) DMA%d for the audio driver\n", dmap->dma);
+;
 		return -EBUSY;
 	}
 	dma_init_buffers(dmap);
@@ -592,7 +592,7 @@ int DMAbuf_getrdbuffer(int dev, char **buf, int *len, int dontblock)
 		if (!timeout) {
 			/* FIXME: include device name */
 			err = -EIO;
-			printk(KERN_WARNING "Sound: DMA (input) timed out - IRQ/DRQ config error?\n");
+;
 			dma_reset_input(dev);
 		} else
 			err = -EINTR;
@@ -771,7 +771,7 @@ static int output_sleep(int dev, int dontblock)
 	timeout_value = interruptible_sleep_on_timeout(&adev->out_sleeper,
 						       timeout_value);
 	if (timeout != MAX_SCHEDULE_TIMEOUT && !timeout_value) {
-		printk(KERN_WARNING "Sound: DMA (output) timed out - IRQ/DRQ config error?\n");
+;
 		dma_reset_output(dev);
 	} else {
 		if (signal_pending(current))
@@ -805,8 +805,8 @@ static int find_output_space(int dev, char **buf, int *size)
 
 	offs = (dmap->user_counter % dmap->bytes_in_use) & ~SAMPLE_ROUNDUP;
 	if (offs < 0 || offs >= dmap->bytes_in_use) {
-		printk(KERN_ERR "Sound: Got unexpected offs %ld. Giving up.\n", offs);
-		printk("Counter = %ld, bytes=%d\n", dmap->user_counter, dmap->bytes_in_use);
+;
+;
 		return 0;
 	}
 	*buf = dmap->raw_buf + offs;
@@ -919,8 +919,8 @@ int DMAbuf_start_dma(int dev, unsigned long physaddr, int count, int dma_mode)
 	struct dma_buffparms *dmap = (dma_mode == DMA_MODE_WRITE) ? adev->dmap_out : adev->dmap_in;
 
 	if (dmap->raw_buf == NULL) {
-		printk(KERN_ERR "sound: DMA buffer(1) == NULL\n");
-		printk("Device %d, chn=%s\n", dev, (dmap == adev->dmap_out) ? "out" : "in");
+;
+;
 		return 0;
 	}
 	if (dmap->dma < 0)
@@ -935,8 +935,8 @@ static int local_start_dma(struct audio_operations *adev, unsigned long physaddr
 	struct dma_buffparms *dmap = (dma_mode == DMA_MODE_WRITE) ? adev->dmap_out : adev->dmap_in;
 
 	if (dmap->raw_buf == NULL) {
-		printk(KERN_ERR "sound: DMA buffer(2) == NULL\n");
-		printk(KERN_ERR "Device %s, chn=%s\n", adev->name, (dmap == adev->dmap_out) ? "out" : "in");
+;
+;
 		return 0;
 	}
 	if (dmap->flags & DMA_NODMA)
@@ -965,7 +965,7 @@ static void do_outputintr(int dev, int dummy)
 	int this_fragment;
 
 	if (dmap->raw_buf == NULL) {
-		printk(KERN_ERR "Sound: Error. Audio interrupt (%d) after freeing buffers.\n", dev);
+;
 		return;
 	}
 	if (dmap->mapping_flags & DMA_MAP_MAPPED) {	/* Virtual memory mapped access */
@@ -1067,7 +1067,7 @@ static void do_inputintr(int dev)
 	struct dma_buffparms *dmap = adev->dmap_in;
 
 	if (dmap->raw_buf == NULL) {
-		printk(KERN_ERR "Sound: Fatal error. Audio interrupt after freeing buffers.\n");
+;
 		return;
 	}
 	if (dmap->mapping_flags & DMA_MAP_MAPPED) {
@@ -1094,7 +1094,7 @@ static void do_inputintr(int dev)
 		}
 		dmap->flags |= DMA_ACTIVE;
 	} else if (dmap->qlen >= (dmap->nbufs - 1)) {
-		printk(KERN_WARNING "Sound: Recording overrun\n");
+;
 		dmap->underrun_count++;
 
 		/* Just throw away the oldest fragment but keep the engine running */

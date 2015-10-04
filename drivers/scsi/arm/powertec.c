@@ -371,15 +371,15 @@ powertecscsi_probe(struct expansion_card *ec, const struct ecard_id *id)
 	ret = request_irq(ec->irq, powertecscsi_intr,
 			  IRQF_DISABLED, "powertec", info);
 	if (ret) {
-		printk("scsi%d: IRQ%d not free: %d\n",
-		       host->host_no, ec->irq, ret);
+//		printk("scsi%d: IRQ%d not free: %d\n",
+;
 		goto out_release;
 	}
 
 	if (info->info.scsi.dma != NO_DMA) {
 		if (request_dma(info->info.scsi.dma, "powertec")) {
-			printk("scsi%d: DMA%d not free, using PIO\n",
-			       host->host_no, info->info.scsi.dma);
+//			printk("scsi%d: DMA%d not free, using PIO\n",
+;
 			info->info.scsi.dma = NO_DMA;
 		} else {
 			set_dma_speed(info->info.scsi.dma, 180);

@@ -60,32 +60,32 @@ void dsp_dtmf_hardware(struct dsp *dsp)
 	/* check for volume change */
 	if (dsp->tx_volume) {
 		if (dsp_debug & DEBUG_DSP_DTMF)
-			printk(KERN_DEBUG "%s dsp %s cannot do hardware DTMF, "
-				"because tx_volume is changed\n",
-				__func__, dsp->name);
+//			printk(KERN_DEBUG "%s dsp %s cannot do hardware DTMF, "
+//				"because tx_volume is changed\n",
+;
 		hardware = 0;
 	}
 	if (dsp->rx_volume) {
 		if (dsp_debug & DEBUG_DSP_DTMF)
-			printk(KERN_DEBUG "%s dsp %s cannot do hardware DTMF, "
-				"because rx_volume is changed\n",
-				__func__, dsp->name);
+//			printk(KERN_DEBUG "%s dsp %s cannot do hardware DTMF, "
+//				"because rx_volume is changed\n",
+;
 		hardware = 0;
 	}
 	/* check if encryption is enabled */
 	if (dsp->bf_enable) {
 		if (dsp_debug & DEBUG_DSP_DTMF)
-			printk(KERN_DEBUG "%s dsp %s cannot do hardware DTMF, "
-				"because encryption is enabled\n",
-				__func__, dsp->name);
+//			printk(KERN_DEBUG "%s dsp %s cannot do hardware DTMF, "
+//				"because encryption is enabled\n",
+;
 		hardware = 0;
 	}
 	/* check if pipeline exists */
 	if (dsp->pipeline.inuse) {
 		if (dsp_debug & DEBUG_DSP_DTMF)
-			printk(KERN_DEBUG "%s dsp %s cannot do hardware DTMF, "
-				"because pipeline exists.\n",
-				__func__, dsp->name);
+//			printk(KERN_DEBUG "%s dsp %s cannot do hardware DTMF, "
+//				"because pipeline exists.\n",
+;
 		hardware = 0;
 	}
 
@@ -149,9 +149,9 @@ again:
 	default:
 		if (len < 64) {
 			if (len > 0)
-				printk(KERN_ERR "%s: coefficients have invalid "
-					"size. (is=%d < must=%d)\n",
-					__func__, len, 64);
+//				printk(KERN_ERR "%s: coefficients have invalid "
+//					"size. (is=%d < must=%d)\n",
+;
 			return dsp->dtmf.digits;
 		}
 		hfccoeff = (s32 *)data;
@@ -160,8 +160,8 @@ again:
 			sk = (*hfccoeff++)>>4;
 			if (sk > 32767 || sk < -32767 || sk2 > 32767
 			    || sk2 < -32767)
-				printk(KERN_WARNING
-					"DTMF-Detection overflow\n");
+//				printk(KERN_WARNING
+;
 			/* compute |X(k)|**2 */
 			result[k] =
 				 (sk * sk) -
@@ -195,7 +195,7 @@ again:
 		sk >>= 8;
 		sk2 >>= 8;
 		if (sk > 32767 || sk < -32767 || sk2 > 32767 || sk2 < -32767)
-			printk(KERN_WARNING "DTMF-Detection overflow\n");
+;
 		/* compute |X(k)|**2 */
 		result[k] =
 			(sk * sk) -
@@ -223,15 +223,15 @@ coefficients:
 	}
 
 	if (dsp_debug & DEBUG_DSP_DTMFCOEFF)
-		printk(KERN_DEBUG "a %3d %3d %3d %3d %3d %3d %3d %3d"
-			" tr:%3d r %3d %3d %3d %3d %3d %3d %3d %3d\n",
-			result[0]/10000, result[1]/10000, result[2]/10000,
-			result[3]/10000, result[4]/10000, result[5]/10000,
-			result[6]/10000, result[7]/10000, tresh/10000,
-			result[0]/(tresh/100), result[1]/(tresh/100),
-			result[2]/(tresh/100), result[3]/(tresh/100),
-			result[4]/(tresh/100), result[5]/(tresh/100),
-			result[6]/(tresh/100), result[7]/(tresh/100));
+//		printk(KERN_DEBUG "a %3d %3d %3d %3d %3d %3d %3d %3d"
+//			" tr:%3d r %3d %3d %3d %3d %3d %3d %3d %3d\n",
+//			result[0]/10000, result[1]/10000, result[2]/10000,
+//			result[3]/10000, result[4]/10000, result[5]/10000,
+//			result[6]/10000, result[7]/10000, tresh/10000,
+//			result[0]/(tresh/100), result[1]/(tresh/100),
+//			result[2]/(tresh/100), result[3]/(tresh/100),
+//			result[4]/(tresh/100), result[5]/(tresh/100),
+;
 
 	/* calc digit (lowgroup/highgroup) */
 	lowgroup = -1;
@@ -273,7 +273,7 @@ coefficients:
 
 storedigit:
 	if (what && (dsp_debug & DEBUG_DSP_DTMF))
-		printk(KERN_DEBUG "DTMF what: %c\n", what);
+;
 
 	if (dsp->dtmf.lastwhat != what)
 		dsp->dtmf.count = 0;
@@ -284,8 +284,8 @@ storedigit:
 			dsp->dtmf.lastdigit = what;
 			if (what) {
 				if (dsp_debug & DEBUG_DSP_DTMF)
-					printk(KERN_DEBUG "DTMF digit: %c\n",
-						what);
+//					printk(KERN_DEBUG "DTMF digit: %c\n",
+;
 				if ((strlen(dsp->dtmf.digits)+1)
 					< sizeof(dsp->dtmf.digits)) {
 					dsp->dtmf.digits[strlen(

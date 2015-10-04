@@ -252,8 +252,8 @@ static int __devinit sgiwd93_probe(struct platform_device *pdev)
 	hdata->cpu = dma_alloc_noncoherent(&pdev->dev, HPC_DMA_SIZE,
 					   &hdata->dma, GFP_KERNEL);
 	if (!hdata->cpu) {
-		printk(KERN_WARNING "sgiwd93: Could not allocate memory for "
-		       "host %d buffer.\n", unit);
+//		printk(KERN_WARNING "sgiwd93: Could not allocate memory for "
+;
 		err = -ENOMEM;
 		goto out_put;
 	}
@@ -271,8 +271,8 @@ static int __devinit sgiwd93_probe(struct platform_device *pdev)
 
 	err = request_irq(irq, sgiwd93_intr, 0, "SGI WD93", host);
 	if (err) {
-		printk(KERN_WARNING "sgiwd93: Could not register irq %d "
-		       "for host %d.\n", irq, unit);
+//		printk(KERN_WARNING "sgiwd93: Could not register irq %d "
+;
 		goto out_free;
 	}
 

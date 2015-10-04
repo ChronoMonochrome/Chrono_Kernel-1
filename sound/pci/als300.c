@@ -91,22 +91,22 @@
 #define DEBUG_PLAY_REC	0
 
 #if DEBUG_CALLS
-#define snd_als300_dbgcalls(format, args...) printk(KERN_DEBUG format, ##args)
-#define snd_als300_dbgcallenter() printk(KERN_ERR "--> %s\n", __func__)
-#define snd_als300_dbgcallleave() printk(KERN_ERR "<-- %s\n", __func__)
-#else
-#define snd_als300_dbgcalls(format, args...)
-#define snd_als300_dbgcallenter()
-#define snd_als300_dbgcallleave()
-#endif
-
-#if DEBUG_PLAY_REC
-#define snd_als300_dbgplay(format, args...) printk(KERN_ERR format, ##args)
-#else
-#define snd_als300_dbgplay(format, args...)
-#endif		
-
-enum {DEVICE_ALS300, DEVICE_ALS300_PLUS};
+//#define snd_als300_dbgcalls(format, args...) printk(KERN_DEBUG format, ##args)
+//#define snd_als300_dbgcallenter() printk(KERN_ERR "--> %s\n", __func__)
+//#define snd_als300_dbgcallleave() printk(KERN_ERR "<-- %s\n", __func__)
+//#else
+//#define snd_als300_dbgcalls(format, args...)
+//#define snd_als300_dbgcallenter()
+//#define snd_als300_dbgcallleave()
+//#endif
+//
+//#if DEBUG_PLAY_REC
+//#define snd_als300_dbgplay(format, args...) printk(KERN_ERR format, ##args)
+//#else
+//#define snd_als300_dbgplay(format, args...)
+//#endif		
+//
+;
 
 MODULE_AUTHOR("Ash Willis <ashwillis@programmer.net>");
 MODULE_DESCRIPTION("Avance Logic ALS300");
@@ -691,7 +691,7 @@ static int __devinit snd_als300_create(struct snd_card *card,
 
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(28)) < 0 ||
 		pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(28)) < 0) {
-		printk(KERN_ERR "error setting 28bit DMA mask\n");
+;
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -723,7 +723,7 @@ static int __devinit snd_als300_create(struct snd_card *card,
 
 	if (request_irq(pci->irq, irq_handler, IRQF_SHARED,
 			card->shortname, chip)) {
-		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
+;
 		snd_als300_free(chip);
 		return -EBUSY;
 	}
@@ -734,13 +734,13 @@ static int __devinit snd_als300_create(struct snd_card *card,
 
 	err = snd_als300_ac97(chip);
 	if (err < 0) {
-		snd_printk(KERN_WARNING "Could not create ac97\n");
+;
 		snd_als300_free(chip);
 		return err;
 	}
 
 	if ((err = snd_als300_new_pcm(chip)) < 0) {
-		snd_printk(KERN_WARNING "Could not create PCM\n");
+;
 		snd_als300_free(chip);
 		return err;
 	}
@@ -782,8 +782,8 @@ static int snd_als300_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-		printk(KERN_ERR "als300: pci_enable_device failed, "
-		       "disabling device\n");
+//		printk(KERN_ERR "als300: pci_enable_device failed, "
+;
 		snd_card_disconnect(card);
 		return -EIO;
 	}

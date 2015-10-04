@@ -94,41 +94,41 @@ static void cfi_tell_features(struct cfi_pri_amdstd *extp)
 		"Uniform, Bottom WP", "Uniform, Top WP"
 	};
 
-	printk("  Silicon revision: %d\n", extp->SiliconRevision >> 1);
-	printk("  Address sensitive unlock: %s\n",
-	       (extp->SiliconRevision & 1) ? "Not required" : "Required");
+;
+//	printk("  Address sensitive unlock: %s\n",
+;
 
 	if (extp->EraseSuspend < ARRAY_SIZE(erase_suspend))
-		printk("  Erase Suspend: %s\n", erase_suspend[extp->EraseSuspend]);
+;
 	else
-		printk("  Erase Suspend: Unknown value %d\n", extp->EraseSuspend);
+;
 
 	if (extp->BlkProt == 0)
-		printk("  Block protection: Not supported\n");
+;
 	else
-		printk("  Block protection: %d sectors per group\n", extp->BlkProt);
+;
 
 
-	printk("  Temporary block unprotect: %s\n",
-	       extp->TmpBlkUnprotect ? "Supported" : "Not supported");
-	printk("  Block protect/unprotect scheme: %d\n", extp->BlkProtUnprot);
-	printk("  Number of simultaneous operations: %d\n", extp->SimultaneousOps);
-	printk("  Burst mode: %s\n",
-	       extp->BurstMode ? "Supported" : "Not supported");
+//	printk("  Temporary block unprotect: %s\n",
+;
+;
+;
+//	printk("  Burst mode: %s\n",
+;
 	if (extp->PageMode == 0)
-		printk("  Page mode: Not supported\n");
+;
 	else
-		printk("  Page mode: %d word page\n", extp->PageMode << 2);
+;
 
-	printk("  Vpp Supply Minimum Program/Erase Voltage: %d.%d V\n",
-	       extp->VppMin >> 4, extp->VppMin & 0xf);
-	printk("  Vpp Supply Maximum Program/Erase Voltage: %d.%d V\n",
-	       extp->VppMax >> 4, extp->VppMax & 0xf);
+//	printk("  Vpp Supply Minimum Program/Erase Voltage: %d.%d V\n",
+;
+//	printk("  Vpp Supply Maximum Program/Erase Voltage: %d.%d V\n",
+;
 
 	if (extp->TopBottom < ARRAY_SIZE(top_bottom))
-		printk("  Top/Bottom Boot Block: %s\n", top_bottom[extp->TopBottom]);
+;
 	else
-		printk("  Top/Bottom Boot Block: Unknown value %d\n", extp->TopBottom);
+;
 }
 #endif
 
@@ -172,7 +172,7 @@ static void fixup_amd_bootblock(struct mtd_info *mtd)
 			extp->TopBottom = 2;	/* bottom boot */
 		} else
 		if (cfi->id & 0x80) {
-			printk(KERN_WARNING "%s: JEDEC Device ID is 0x%02X. Assuming broken CFI table.\n", map->name, cfi->id);
+;
 			extp->TopBottom = 3;	/* top boot */
 		} else {
 			extp->TopBottom = 2;	/* bottom boot */
@@ -401,9 +401,9 @@ static void cfi_fixup_major_minor(struct cfi_private *cfi,
 			 * report major=0 / minor=0.
 			 * K8D3x16UxC chips report major=3 / minor=3.
 			 */
-			printk(KERN_NOTICE "  Fixing Samsung's Amd/Fujitsu"
-			       " Extended Query version to 1.%c\n",
-			       extp->MinorVersion);
+//			printk(KERN_NOTICE "  Fixing Samsung's Amd/Fujitsu"
+//			       " Extended Query version to 1.%c\n",
+;
 			extp->MajorVersion = '1';
 		}
 	}
@@ -425,7 +425,7 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
 
 	mtd = kzalloc(sizeof(*mtd), GFP_KERNEL);
 	if (!mtd) {
-		printk(KERN_WARNING "Failed to allocate memory for MTD device\n");
+;
 		return NULL;
 	}
 	mtd->priv = map;
@@ -470,17 +470,17 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
 			 */
 			if (extp->MajorVersion != '1' ||
 			    (extp->MajorVersion == '1' && (extp->MinorVersion < '0' || extp->MinorVersion > '5'))) {
-				printk(KERN_ERR "  Unknown Amd/Fujitsu Extended Query "
-				       "version %c.%c (%#02x/%#02x).\n",
-				       extp->MajorVersion, extp->MinorVersion,
-				       extp->MajorVersion, extp->MinorVersion);
+//				printk(KERN_ERR "  Unknown Amd/Fujitsu Extended Query "
+//				       "version %c.%c (%#02x/%#02x).\n",
+//				       extp->MajorVersion, extp->MinorVersion,
+;
 				kfree(extp);
 				kfree(mtd);
 				return NULL;
 			}
 
-			printk(KERN_INFO "  Amd/Fujitsu Extended Query version %c.%c.\n",
-			       extp->MajorVersion, extp->MinorVersion);
+//			printk(KERN_INFO "  Amd/Fujitsu Extended Query version %c.%c.\n",
+;
 
 			/* Install our own private info structure */
 			cfi->cmdset_priv = extp;
@@ -495,14 +495,14 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
 
 			bootloc = extp->TopBottom;
 			if ((bootloc < 2) || (bootloc > 5)) {
-				printk(KERN_WARNING "%s: CFI contains unrecognised boot "
-				       "bank location (%d). Assuming bottom.\n",
-				       map->name, bootloc);
+//				printk(KERN_WARNING "%s: CFI contains unrecognised boot "
+//				       "bank location (%d). Assuming bottom.\n",
+;
 				bootloc = 2;
 			}
 
 			if (bootloc == 3 && cfi->cfiq->NumEraseRegions > 1) {
-				printk(KERN_WARNING "%s: Swapping erase regions for top-boot CFI table.\n", map->name);
+;
 
 				for (i=0; i<cfi->cfiq->NumEraseRegions / 2; i++) {
 					int j = (cfi->cfiq->NumEraseRegions-1)-i;
@@ -558,8 +558,8 @@ static struct mtd_info *cfi_amdstd_setup(struct mtd_info *mtd)
 	unsigned long offset = 0;
 	int i,j;
 
-	printk(KERN_NOTICE "number of %s chips: %d\n",
-	       (cfi->cfi_mode == CFI_MODE_CFI)?"CFI":"JEDEC",cfi->numchips);
+//	printk(KERN_NOTICE "number of %s chips: %d\n",
+;
 	/* Select the correct geometry setup */
 	mtd->size = devsize * cfi->numchips;
 
@@ -567,7 +567,7 @@ static struct mtd_info *cfi_amdstd_setup(struct mtd_info *mtd)
 	mtd->eraseregions = kmalloc(sizeof(struct mtd_erase_region_info)
 				    * mtd->numeraseregions, GFP_KERNEL);
 	if (!mtd->eraseregions) {
-		printk(KERN_WARNING "Failed to allocate memory for MTD erase region info\n");
+;
 		goto setup_err;
 	}
 
@@ -588,7 +588,7 @@ static struct mtd_info *cfi_amdstd_setup(struct mtd_info *mtd)
 	}
 	if (offset != devsize) {
 		/* Argh */
-		printk(KERN_WARNING "Sum of regions (%lx) != total size of set of interleaved chips (%lx)\n", offset, devsize);
+;
 		goto setup_err;
 	}
 
@@ -669,7 +669,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
 				break;
 
 			if (time_after(jiffies, timeo)) {
-				printk(KERN_ERR "Waiting for chip to be ready timed out.\n");
+;
 				return -EIO;
 			}
 			mutex_unlock(&chip->mutex);
@@ -712,7 +712,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
 				 * routine to recover from it) or we trying to
 				 * use the erase-in-progress sector. */
 				put_chip(map, chip, adr);
-				printk(KERN_ERR "MTD %s(): chip not ready after erase suspend\n", __func__);
+;
 				return -EIO;
 			}
 
@@ -777,7 +777,7 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
 		DISABLE_VPP(map);
 		break;
 	default:
-		printk(KERN_ERR "MTD: put_chip() called with oldstate %d!!\n", chip->oldstate);
+;
 	}
 	wake_up(&chip->wq);
 }
@@ -1212,7 +1212,7 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 
 		if (time_after(jiffies, timeo) && !chip_ready(map, adr)){
 			xip_enable(map, chip, adr);
-			printk(KERN_WARNING "MTD %s(): software timeout\n", __func__);
+;
 			xip_disable(map, chip, adr);
 			break;
 		}
@@ -1473,8 +1473,8 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
 	xip_enable(map, chip, adr);
 	/* FIXME - should have reset delay before continuing */
 
-	printk(KERN_WARNING "MTD %s(): software timeout\n",
-	       __func__ );
+//	printk(KERN_WARNING "MTD %s(): software timeout\n",
+;
 
 	ret = -EIO;
  op_done:
@@ -1633,8 +1633,8 @@ static int __xipram do_erase_chip(struct map_info *map, struct flchip *chip)
 			break;
 
 		if (time_after(jiffies, timeo)) {
-			printk(KERN_WARNING "MTD %s(): software timeout\n",
-				__func__ );
+//			printk(KERN_WARNING "MTD %s(): software timeout\n",
+;
 			break;
 		}
 
@@ -1724,8 +1724,8 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
 
 		if (time_after(jiffies, timeo)) {
 			xip_enable(map, chip, adr);
-			printk(KERN_WARNING "MTD %s(): software timeout\n",
-				__func__ );
+//			printk(KERN_WARNING "MTD %s(): software timeout\n",
+;
 			break;
 		}
 
@@ -1998,7 +1998,7 @@ static void cfi_amdstd_resume(struct mtd_info *mtd)
 			wake_up(&chip->wq);
 		}
 		else
-			printk(KERN_ERR "Argh. Chip not in PM_SUSPENDED state upon resume()\n");
+;
 
 		mutex_unlock(&chip->mutex);
 	}

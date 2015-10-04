@@ -54,7 +54,7 @@ objlayout_alloc_layout_hdr(struct inode *inode, gfp_t gfp_flags)
 		spin_lock_init(&objlay->lock);
 		INIT_LIST_HEAD(&objlay->err_list);
 	}
-	dprintk("%s: Return %p\n", __func__, objlay);
+;
 	return &objlay->pnfs_layout;
 }
 
@@ -66,7 +66,7 @@ objlayout_free_layout_hdr(struct pnfs_layout_hdr *lo)
 {
 	struct objlayout *objlay = OBJLAYOUT(lo);
 
-	dprintk("%s: objlay %p\n", __func__, objlay);
+;
 
 	WARN_ON(!list_empty(&objlay->err_list));
 	kfree(objlay);
@@ -91,7 +91,7 @@ objlayout_alloc_lseg(struct pnfs_layout_hdr *pnfslay,
 	struct page *scratch;
 	struct pnfs_layout_segment *lseg;
 
-	dprintk("%s: Begin pnfslay %p\n", __func__, pnfslay);
+;
 
 	scratch = alloc_page(gfp_flags);
 	if (!scratch)
@@ -102,20 +102,20 @@ objlayout_alloc_lseg(struct pnfs_layout_hdr *pnfslay,
 
 	status = objio_alloc_lseg(&lseg, pnfslay, &lgr->range, &stream, gfp_flags);
 	if (unlikely(status)) {
-		dprintk("%s: objio_alloc_lseg Return err %d\n", __func__,
-			status);
+//		dprintk("%s: objio_alloc_lseg Return err %d\n", __func__,
+;
 		goto err;
 	}
 
 	__free_page(scratch);
 
-	dprintk("%s: Return %p\n", __func__, lseg);
+;
 	return lseg;
 
 err:
 	__free_page(scratch);
 err_nofree:
-	dprintk("%s: Err Return=>%d\n", __func__, status);
+;
 	return ERR_PTR(status);
 }
 
@@ -125,7 +125,7 @@ err_nofree:
 void
 objlayout_free_lseg(struct pnfs_layout_segment *lseg)
 {
-	dprintk("%s: freeing layout segment %p\n", __func__, lseg);
+;
 
 	if (unlikely(!lseg))
 		return;
@@ -214,16 +214,16 @@ objlayout_io_set_result(struct objlayout_io_res *oir, unsigned index,
 		ioerr->oer_iswrite = is_write;
 		ioerr->oer_errno = osd_error;
 
-		dprintk("%s: err[%d]: errno=%d is_write=%d dev(%llx:%llx) "
-			"par=0x%llx obj=0x%llx offset=0x%llx length=0x%llx\n",
-			__func__, index, ioerr->oer_errno,
-			ioerr->oer_iswrite,
-			_DEVID_LO(&ioerr->oer_component.oid_device_id),
-			_DEVID_HI(&ioerr->oer_component.oid_device_id),
-			ioerr->oer_component.oid_partition_id,
-			ioerr->oer_component.oid_object_id,
-			ioerr->oer_comp_offset,
-			ioerr->oer_comp_length);
+//		dprintk("%s: err[%d]: errno=%d is_write=%d dev(%llx:%llx) "
+//			"par=0x%llx obj=0x%llx offset=0x%llx length=0x%llx\n",
+//			__func__, index, ioerr->oer_errno,
+//			ioerr->oer_iswrite,
+//			_DEVID_LO(&ioerr->oer_component.oid_device_id),
+//			_DEVID_HI(&ioerr->oer_component.oid_device_id),
+//			ioerr->oer_component.oid_partition_id,
+//			ioerr->oer_component.oid_object_id,
+//			ioerr->oer_comp_offset,
+;
 	} else {
 		/* User need not call if no error is reported */
 		ioerr->oer_errno = 0;
@@ -239,7 +239,7 @@ static void _rpc_read_complete(struct work_struct *work)
 	struct rpc_task *task;
 	struct nfs_read_data *rdata;
 
-	dprintk("%s enter\n", __func__);
+;
 	task = container_of(work, struct rpc_task, u.tk_work);
 	rdata = container_of(task, struct nfs_read_data, task);
 
@@ -257,8 +257,8 @@ objlayout_read_done(struct objlayout_io_res *oir, ssize_t status, bool sync)
 	objlayout_iodone(oir);
 	/* must not use oir after this point */
 
-	dprintk("%s: Return status=%zd eof=%d sync=%d\n", __func__,
-		status, rdata->res.eof, sync);
+//	dprintk("%s: Return status=%zd eof=%d sync=%d\n", __func__,
+;
 
 	if (sync)
 		pnfs_ld_read_done(rdata);
@@ -296,14 +296,14 @@ objlayout_read_pagelist(struct nfs_read_data *rdata)
 			      &rdata->args.pgbase,
 			      rdata->args.offset, rdata->args.count);
 
-	dprintk("%s: inode(%lx) offset 0x%llx count 0x%Zx eof=%d\n",
-		__func__, rdata->inode->i_ino, offset, count, rdata->res.eof);
+//	dprintk("%s: inode(%lx) offset 0x%llx count 0x%Zx eof=%d\n",
+;
 
 	err = objio_read_pagelist(rdata);
  out:
 	if (unlikely(err)) {
 		rdata->pnfs_error = err;
-		dprintk("%s: Returned Error %d\n", __func__, err);
+;
 		return PNFS_NOT_ATTEMPTED;
 	}
 	return PNFS_ATTEMPTED;
@@ -318,7 +318,7 @@ static void _rpc_write_complete(struct work_struct *work)
 	struct rpc_task *task;
 	struct nfs_write_data *wdata;
 
-	dprintk("%s enter\n", __func__);
+;
 	task = container_of(work, struct rpc_task, u.tk_work);
 	wdata = container_of(task, struct nfs_write_data, task);
 
@@ -338,8 +338,8 @@ objlayout_write_done(struct objlayout_io_res *oir, ssize_t status, bool sync)
 	objlayout_iodone(oir);
 	/* must not use oir after this point */
 
-	dprintk("%s: Return status %zd committed %d sync=%d\n", __func__,
-		status, wdata->verf.committed, sync);
+//	dprintk("%s: Return status %zd committed %d sync=%d\n", __func__,
+;
 
 	if (sync)
 		pnfs_ld_write_done(wdata);
@@ -365,7 +365,7 @@ objlayout_write_pagelist(struct nfs_write_data *wdata,
 	err = objio_write_pagelist(wdata, how);
 	if (unlikely(err)) {
 		wdata->pnfs_error = err;
-		dprintk("%s: Returned Error %d\n", __func__, err);
+;
 		return PNFS_NOT_ATTEMPTED;
 	}
 	return PNFS_ATTEMPTED;
@@ -380,7 +380,7 @@ objlayout_encode_layoutcommit(struct pnfs_layout_hdr *pnfslay,
 	struct pnfs_osd_layoutupdate lou;
 	__be32 *start;
 
-	dprintk("%s: Begin\n", __func__);
+;
 
 	spin_lock(&objlay->lock);
 	lou.dsu_valid = (objlay->delta_space_valid == OBJ_DSU_VALID);
@@ -396,8 +396,8 @@ objlayout_encode_layoutcommit(struct pnfs_layout_hdr *pnfslay,
 
 	*start = cpu_to_be32((xdr->p - start - 1) * 4);
 
-	dprintk("%s: Return delta_space_used %lld err %d\n", __func__,
-		lou.dsu_delta, lou.olu_ioerr_flag);
+//	dprintk("%s: Return delta_space_used %lld err %d\n", __func__,
+;
 }
 
 static int
@@ -486,17 +486,17 @@ encode_accumulated_error(struct objlayout *objlay, __be32 *p)
 			if (!ioerr->oer_errno)
 				continue;
 
-			printk(KERN_ERR "%s: err[%d]: errno=%d is_write=%d "
-				"dev(%llx:%llx) par=0x%llx obj=0x%llx "
-				"offset=0x%llx length=0x%llx\n",
-				__func__, i, ioerr->oer_errno,
-				ioerr->oer_iswrite,
-				_DEVID_LO(&ioerr->oer_component.oid_device_id),
-				_DEVID_HI(&ioerr->oer_component.oid_device_id),
-				ioerr->oer_component.oid_partition_id,
-				ioerr->oer_component.oid_object_id,
-				ioerr->oer_comp_offset,
-				ioerr->oer_comp_length);
+//			printk(KERN_ERR "%s: err[%d]: errno=%d is_write=%d "
+//				"dev(%llx:%llx) par=0x%llx obj=0x%llx "
+//				"offset=0x%llx length=0x%llx\n",
+//				__func__, i, ioerr->oer_errno,
+//				ioerr->oer_iswrite,
+//				_DEVID_LO(&ioerr->oer_component.oid_device_id),
+//				_DEVID_HI(&ioerr->oer_component.oid_device_id),
+//				ioerr->oer_component.oid_partition_id,
+//				ioerr->oer_component.oid_object_id,
+//				ioerr->oer_comp_offset,
+;
 
 			merge_ioerr(&accumulated_err, ioerr);
 		}
@@ -516,7 +516,7 @@ objlayout_encode_layoutreturn(struct pnfs_layout_hdr *pnfslay,
 	struct objlayout_io_res *oir, *tmp;
 	__be32 *start;
 
-	dprintk("%s: Begin\n", __func__);
+;
 	start = xdr_reserve_space(xdr, 4);
 	BUG_ON(!start);
 
@@ -533,17 +533,17 @@ objlayout_encode_layoutreturn(struct pnfs_layout_hdr *pnfslay,
 			if (!ioerr->oer_errno)
 				continue;
 
-			dprintk("%s: err[%d]: errno=%d is_write=%d "
-				"dev(%llx:%llx) par=0x%llx obj=0x%llx "
-				"offset=0x%llx length=0x%llx\n",
-				__func__, i, ioerr->oer_errno,
-				ioerr->oer_iswrite,
-				_DEVID_LO(&ioerr->oer_component.oid_device_id),
-				_DEVID_HI(&ioerr->oer_component.oid_device_id),
-				ioerr->oer_component.oid_partition_id,
-				ioerr->oer_component.oid_object_id,
-				ioerr->oer_comp_offset,
-				ioerr->oer_comp_length);
+//			dprintk("%s: err[%d]: errno=%d is_write=%d "
+//				"dev(%llx:%llx) par=0x%llx obj=0x%llx "
+//				"offset=0x%llx length=0x%llx\n",
+//				__func__, i, ioerr->oer_errno,
+//				ioerr->oer_iswrite,
+//				_DEVID_LO(&ioerr->oer_component.oid_device_id),
+//				_DEVID_HI(&ioerr->oer_component.oid_device_id),
+//				ioerr->oer_component.oid_partition_id,
+//				ioerr->oer_component.oid_object_id,
+//				ioerr->oer_comp_offset,
+;
 
 			p = pnfs_osd_xdr_ioerr_reserve_space(xdr);
 			if (unlikely(!p)) {
@@ -575,7 +575,7 @@ loop_done:
 	spin_unlock(&objlay->lock);
 
 	*start = cpu_to_be32((xdr->p - start - 1) * 4);
-	dprintk("%s: Return\n", __func__);
+;
 }
 
 
@@ -618,7 +618,7 @@ int objlayout_get_deviceinfo(struct pnfs_layout_hdr *pnfslay,
 
 	sb = pnfslay->plh_inode->i_sb;
 	err = nfs4_proc_getdeviceinfo(NFS_SERVER(pnfslay->plh_inode), &pd);
-	dprintk("%s nfs_getdeviceinfo returned %d\n", __func__, err);
+;
 	if (err)
 		goto err_out;
 

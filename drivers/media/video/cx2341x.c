@@ -1157,83 +1157,83 @@ void cx2341x_log_status(const struct cx2341x_mpeg_params *p, const char *prefix)
 	int is_mpeg1 = p->video_encoding == V4L2_MPEG_VIDEO_ENCODING_MPEG_1;
 
 	/* Stream */
-	printk(KERN_INFO "%s: Stream: %s",
-		prefix,
-		cx2341x_menu_item(p, V4L2_CID_MPEG_STREAM_TYPE));
+//	printk(KERN_INFO "%s: Stream: %s",
+//		prefix,
+;
 	if (p->stream_insert_nav_packets)
-		printk(" (with navigation packets)");
-	printk("\n");
-	printk(KERN_INFO "%s: VBI Format: %s\n",
-		prefix,
-		cx2341x_menu_item(p, V4L2_CID_MPEG_STREAM_VBI_FMT));
+;
+;
+//	printk(KERN_INFO "%s: VBI Format: %s\n",
+//		prefix,
+;
 
 	/* Video */
-	printk(KERN_INFO "%s: Video:  %dx%d, %d fps%s\n",
-		prefix,
-		p->width / (is_mpeg1 ? 2 : 1), p->height / (is_mpeg1 ? 2 : 1),
-		p->is_50hz ? 25 : 30,
-		(p->video_mute) ? " (muted)" : "");
-	printk(KERN_INFO "%s: Video:  %s, %s, %s, %d",
-		prefix,
-		cx2341x_menu_item(p, V4L2_CID_MPEG_VIDEO_ENCODING),
-		cx2341x_menu_item(p, V4L2_CID_MPEG_VIDEO_ASPECT),
-		cx2341x_menu_item(p, V4L2_CID_MPEG_VIDEO_BITRATE_MODE),
-		p->video_bitrate);
+//	printk(KERN_INFO "%s: Video:  %dx%d, %d fps%s\n",
+//		prefix,
+//		p->width / (is_mpeg1 ? 2 : 1), p->height / (is_mpeg1 ? 2 : 1),
+//		p->is_50hz ? 25 : 30,
+;
+//	printk(KERN_INFO "%s: Video:  %s, %s, %s, %d",
+//		prefix,
+//		cx2341x_menu_item(p, V4L2_CID_MPEG_VIDEO_ENCODING),
+//		cx2341x_menu_item(p, V4L2_CID_MPEG_VIDEO_ASPECT),
+//		cx2341x_menu_item(p, V4L2_CID_MPEG_VIDEO_BITRATE_MODE),
+;
 	if (p->video_bitrate_mode == V4L2_MPEG_VIDEO_BITRATE_MODE_VBR)
-		printk(", Peak %d", p->video_bitrate_peak);
-	printk("\n");
-	printk(KERN_INFO
-		"%s: Video:  GOP Size %d, %d B-Frames, %sGOP Closure\n",
-		prefix,
-		p->video_gop_size, p->video_b_frames,
-		p->video_gop_closure ? "" : "No ");
+;
+;
+//	printk(KERN_INFO
+//		"%s: Video:  GOP Size %d, %d B-Frames, %sGOP Closure\n",
+//		prefix,
+//		p->video_gop_size, p->video_b_frames,
+;
 	if (p->video_temporal_decimation)
-		printk(KERN_INFO "%s: Video: Temporal Decimation %d\n",
-			prefix, p->video_temporal_decimation);
+//		printk(KERN_INFO "%s: Video: Temporal Decimation %d\n",
+;
 
 	/* Audio */
-	printk(KERN_INFO "%s: Audio:  %s, %s, %s, %s%s",
-		prefix,
-		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ),
-		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_ENCODING),
-		cx2341x_menu_item(p,
-			   p->audio_encoding == V4L2_MPEG_AUDIO_ENCODING_AC3
-					      ? V4L2_CID_MPEG_AUDIO_AC3_BITRATE
-					      : V4L2_CID_MPEG_AUDIO_L2_BITRATE),
-		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_MODE),
-		p->audio_mute ? " (muted)" : "");
+//	printk(KERN_INFO "%s: Audio:  %s, %s, %s, %s%s",
+//		prefix,
+//		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_SAMPLING_FREQ),
+//		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_ENCODING),
+//		cx2341x_menu_item(p,
+//			   p->audio_encoding == V4L2_MPEG_AUDIO_ENCODING_AC3
+//					      ? V4L2_CID_MPEG_AUDIO_AC3_BITRATE
+//					      : V4L2_CID_MPEG_AUDIO_L2_BITRATE),
+//		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_MODE),
+;
 	if (p->audio_mode == V4L2_MPEG_AUDIO_MODE_JOINT_STEREO)
-		printk(", %s", cx2341x_menu_item(p,
-				V4L2_CID_MPEG_AUDIO_MODE_EXTENSION));
-	printk(", %s, %s\n",
-		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_EMPHASIS),
-		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_CRC));
+//		printk(", %s", cx2341x_menu_item(p,
+;
+//	printk(", %s, %s\n",
+//		cx2341x_menu_item(p, V4L2_CID_MPEG_AUDIO_EMPHASIS),
+;
 
 	/* Encoding filters */
-	printk(KERN_INFO "%s: Spatial Filter:  %s, Luma %s, Chroma %s, %d\n",
-		prefix,
-		cx2341x_menu_item(p,
-		    V4L2_CID_MPEG_CX2341X_VIDEO_SPATIAL_FILTER_MODE),
-		cx2341x_menu_item(p,
-		    V4L2_CID_MPEG_CX2341X_VIDEO_LUMA_SPATIAL_FILTER_TYPE),
-		cx2341x_menu_item(p,
-		    V4L2_CID_MPEG_CX2341X_VIDEO_CHROMA_SPATIAL_FILTER_TYPE),
-		p->video_spatial_filter);
+//	printk(KERN_INFO "%s: Spatial Filter:  %s, Luma %s, Chroma %s, %d\n",
+//		prefix,
+//		cx2341x_menu_item(p,
+//		    V4L2_CID_MPEG_CX2341X_VIDEO_SPATIAL_FILTER_MODE),
+//		cx2341x_menu_item(p,
+//		    V4L2_CID_MPEG_CX2341X_VIDEO_LUMA_SPATIAL_FILTER_TYPE),
+//		cx2341x_menu_item(p,
+//		    V4L2_CID_MPEG_CX2341X_VIDEO_CHROMA_SPATIAL_FILTER_TYPE),
+;
 
-	printk(KERN_INFO "%s: Temporal Filter: %s, %d\n",
-		prefix,
-		cx2341x_menu_item(p,
-			V4L2_CID_MPEG_CX2341X_VIDEO_TEMPORAL_FILTER_MODE),
-		p->video_temporal_filter);
-	printk(KERN_INFO
-		"%s: Median Filter:   %s, Luma [%d, %d], Chroma [%d, %d]\n",
-		prefix,
-		cx2341x_menu_item(p,
-			V4L2_CID_MPEG_CX2341X_VIDEO_MEDIAN_FILTER_TYPE),
-		p->video_luma_median_filter_bottom,
-		p->video_luma_median_filter_top,
-		p->video_chroma_median_filter_bottom,
-		p->video_chroma_median_filter_top);
+//	printk(KERN_INFO "%s: Temporal Filter: %s, %d\n",
+//		prefix,
+//		cx2341x_menu_item(p,
+//			V4L2_CID_MPEG_CX2341X_VIDEO_TEMPORAL_FILTER_MODE),
+;
+//	printk(KERN_INFO
+//		"%s: Median Filter:   %s, Luma [%d, %d], Chroma [%d, %d]\n",
+//		prefix,
+//		cx2341x_menu_item(p,
+//			V4L2_CID_MPEG_CX2341X_VIDEO_MEDIAN_FILTER_TYPE),
+//		p->video_luma_median_filter_bottom,
+//		p->video_luma_median_filter_top,
+//		p->video_chroma_median_filter_bottom,
+;
 }
 EXPORT_SYMBOL(cx2341x_log_status);
 

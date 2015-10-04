@@ -44,10 +44,10 @@ static int marvell_pata_active(struct pci_dev *pdev)
 	if (barp == NULL)
 		return -ENOMEM;
 
-	printk("BAR5:");
+;
 	for(i = 0; i <= 0x0F; i++)
-		printk("%02X:%02X ", i, ioread8(barp + i));
-	printk("\n");
+;
+;
 
 	devices = ioread32(barp + 0x0C);
 	pci_iounmap(pdev, barp);
@@ -149,7 +149,7 @@ static int marvell_init_one (struct pci_dev *pdev, const struct pci_device_id *i
 
 #if defined(CONFIG_SATA_AHCI) || defined(CONFIG_SATA_AHCI_MODULE)
 	if (!marvell_pata_active(pdev)) {
-		printk(KERN_INFO DRV_NAME ": PATA port not active, deferring to AHCI driver.\n");
+;
 		return -ENODEV;
 	}
 #endif

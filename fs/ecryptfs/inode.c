@@ -185,15 +185,15 @@ ecryptfs_do_create(struct inode *directory_inode,
 	lower_dentry = ecryptfs_dentry_to_lower(ecryptfs_dentry);
 	lower_dir_dentry = lock_parent(lower_dentry);
 	if (IS_ERR(lower_dir_dentry)) {
-		ecryptfs_printk(KERN_ERR, "Error locking directory of "
-				"dentry\n");
+//		ecryptfs_printk(KERN_ERR, "Error locking directory of "
+;
 		rc = PTR_ERR(lower_dir_dentry);
 		goto out;
 	}
 	rc = ecryptfs_create_underlying_file(lower_dir_dentry->d_inode,
 					     ecryptfs_dentry, mode);
 	if (rc) {
-		printk(KERN_ERR "%s: Failure to create dentry in lower fs; "
+;
 		       "rc = [%d]\n", __func__, rc);
 		inode = ERR_PTR(rc);
 		goto out_lock;
@@ -226,22 +226,22 @@ static int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
 	int rc = 0;
 
 	if (S_ISDIR(ecryptfs_inode->i_mode)) {
-		ecryptfs_printk(KERN_DEBUG, "This is a directory\n");
+;
 		crypt_stat->flags &= ~(ECRYPTFS_ENCRYPTED);
 		goto out;
 	}
-	ecryptfs_printk(KERN_DEBUG, "Initializing crypto context\n");
+;
 	rc = ecryptfs_new_file_context(ecryptfs_inode);
 	if (rc) {
-		ecryptfs_printk(KERN_ERR, "Error creating new file "
-				"context; rc = [%d]\n", rc);
+//		ecryptfs_printk(KERN_ERR, "Error creating new file "
+;
 		goto out;
 	}
 	rc = ecryptfs_get_lower_file(ecryptfs_dentry, ecryptfs_inode);
 	if (rc) {
-		printk(KERN_ERR "%s: Error attempting to initialize "
-			"the lower file for the dentry with name "
-			"[%s]; rc = [%d]\n", __func__,
+//		printk(KERN_ERR "%s: Error attempting to initialize "
+//			"the lower file for the dentry with name "
+;
 			ecryptfs_dentry->d_name.name, rc);
 		goto out;
 	}
@@ -269,8 +269,8 @@ static int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
 		} else {
 			rc = ecryptfs_write_metadata(ecryptfs_dentry, ecryptfs_inode);
 			if (rc)
-				printk(
-				KERN_ERR "Error writing headers; rc = [%d]\n"
+//				printk(
+;
 				    , rc);
 			ecryptfs_put_lower_file(ecryptfs_dentry->d_inode);
 		}
@@ -279,7 +279,7 @@ static int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
 #else
 	rc = ecryptfs_write_metadata(ecryptfs_dentry);
 	if (rc)
-		printk(KERN_ERR "Error writing headers; rc = [%d]\n", rc);
+;
 	ecryptfs_put_lower_file(ecryptfs_dentry->d_inode);
 #endif
 out:
@@ -306,8 +306,8 @@ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
 	/* ecryptfs_do_create() calls ecryptfs_interpose() */
 	rc = ecryptfs_do_create(directory_inode, ecryptfs_dentry, mode);
 	if (unlikely(rc)) {
-		ecryptfs_printk(KERN_WARNING, "Failed to create file in"
-				"lower filesystem\n");
+//		ecryptfs_printk(KERN_WARNING, "Failed to create file in"
+;
 		goto out;
 	}
 	/* At this point, a file exists on "disk"; we need to make sure
@@ -324,9 +324,9 @@ static int ecryptfs_i_size_read(struct dentry *dentry, struct inode *inode)
 
 	rc = ecryptfs_get_lower_file(dentry, inode);
 	if (rc) {
-		printk(KERN_ERR "%s: Error attempting to initialize "
-			"the lower file for the dentry with name "
-			"[%s]; rc = [%d]\n", __func__,
+//		printk(KERN_ERR "%s: Error attempting to initialize "
+//			"the lower file for the dentry with name "
+;
 			dentry->d_name.name, rc);
 		return rc;
 	}
@@ -367,9 +367,9 @@ static int ecryptfs_lookup_interpose(struct dentry *dentry,
 	dentry_info = kmem_cache_alloc(ecryptfs_dentry_info_cache, GFP_KERNEL);
 	ecryptfs_set_dentry_private(dentry, dentry_info);
 	if (!dentry_info) {
-		printk(KERN_ERR "%s: Out of memory whilst attempting "
-		       "to allocate ecryptfs_dentry_info struct\n",
-			__func__);
+//		printk(KERN_ERR "%s: Out of memory whilst attempting "
+//		       "to allocate ecryptfs_dentry_info struct\n",
+;
 		dput(lower_dentry);
 		mntput(lower_mnt);
 		d_drop(dentry);
@@ -385,7 +385,7 @@ static int ecryptfs_lookup_interpose(struct dentry *dentry,
 	}
 	inode = __ecryptfs_get_inode(lower_inode, dir_inode->i_sb);
 	if (IS_ERR(inode)) {
-		printk(KERN_ERR "%s: Error interposing; rc = [%ld]\n",
+;
 		       __func__, PTR_ERR(inode));
 		return PTR_ERR(inode);
 	}
@@ -437,9 +437,9 @@ static struct dentry *ecryptfs_lookup(struct inode *ecryptfs_dir_inode,
 	mutex_unlock(&lower_dir_dentry->d_inode->i_mutex);
 	if (IS_ERR(lower_dentry)) {
 		rc = PTR_ERR(lower_dentry);
-		ecryptfs_printk(KERN_DEBUG, "%s: lookup_one_len() returned "
-				"[%d] on lower_dentry = [%s]\n", __func__, rc,
-				encrypted_and_encoded_name);
+//		ecryptfs_printk(KERN_DEBUG, "%s: lookup_one_len() returned "
+//				"[%d] on lower_dentry = [%s]\n", __func__, rc,
+;
 		goto out_d_drop;
 	}
 	if (lower_dentry->d_inode)
@@ -455,8 +455,8 @@ static struct dentry *ecryptfs_lookup(struct inode *ecryptfs_dir_inode,
 		NULL, mount_crypt_stat, ecryptfs_dentry->d_name.name,
 		ecryptfs_dentry->d_name.len);
 	if (rc) {
-		printk(KERN_ERR "%s: Error attempting to encrypt and encode "
-		       "filename; rc = [%d]\n", __func__, rc);
+//		printk(KERN_ERR "%s: Error attempting to encrypt and encode "
+;
 		goto out_d_drop;
 	}
 	mutex_lock(&lower_dir_dentry->d_inode->i_mutex);
@@ -466,9 +466,9 @@ static struct dentry *ecryptfs_lookup(struct inode *ecryptfs_dir_inode,
 	mutex_unlock(&lower_dir_dentry->d_inode->i_mutex);
 	if (IS_ERR(lower_dentry)) {
 		rc = PTR_ERR(lower_dentry);
-		ecryptfs_printk(KERN_DEBUG, "%s: lookup_one_len() returned "
-				"[%d] on lower_dentry = [%s]\n", __func__, rc,
-				encrypted_and_encoded_name);
+//		ecryptfs_printk(KERN_DEBUG, "%s: lookup_one_len() returned "
+//				"[%d] on lower_dentry = [%s]\n", __func__, rc,
+;
 		goto out_d_drop;
 	}
 interpose:
@@ -527,7 +527,7 @@ static int ecryptfs_unlink(struct inode *dir, struct dentry *dentry)
 	lower_dir_dentry = lock_parent(lower_dentry);
 	rc = vfs_unlink(lower_dir_inode, lower_dentry);
 	if (rc) {
-		printk(KERN_ERR "Error in vfs_unlink; rc = [%d]\n", rc);
+;
 		goto out_unlock;
 	}
 	fsstack_copy_attr_times(dir, lower_dir_inode);
@@ -898,17 +898,17 @@ static int truncate_upper(struct dentry *dentry, struct iattr *ia,
 					    ia->ia_size, num_zeros);
 			kfree(zeros_virt);
 			if (rc) {
-				printk(KERN_ERR "Error attempting to zero out "
-				       "the remainder of the end page on "
-				       "reducing truncate; rc = [%d]\n", rc);
+//				printk(KERN_ERR "Error attempting to zero out "
+//				       "the remainder of the end page on "
+;
 				goto out;
 			}
 		}
 		truncate_setsize(inode, ia->ia_size);
 		rc = ecryptfs_write_inode_size_to_metadata(inode);
 		if (rc) {
-			printk(KERN_ERR	"Problem with "
-			       "ecryptfs_write_inode_size_to_metadata; "
+//			printk(KERN_ERR	"Problem with "
+;
 			       "rc = [%d]\n", rc);
 			goto out;
 		}
@@ -1012,11 +1012,11 @@ static int ecryptfs_setattr(struct dentry *dentry, struct iattr *ia)
 			if (!(mount_crypt_stat->flags
 			      & ECRYPTFS_PLAINTEXT_PASSTHROUGH_ENABLED)) {
 				rc = -EIO;
-				printk(KERN_WARNING "Either the lower file "
-				       "is not in a valid eCryptfs format, "
-				       "or the key could not be retrieved. "
-				       "Plaintext passthrough mode is not "
-				       "enabled; returning -EIO\n");
+//				printk(KERN_WARNING "Either the lower file "
+//				       "is not in a valid eCryptfs format, "
+//				       "or the key could not be retrieved. "
+//				       "Plaintext passthrough mode is not "
+;
 				mutex_unlock(&crypt_stat->cs_mutex);
 				goto out;
 			}

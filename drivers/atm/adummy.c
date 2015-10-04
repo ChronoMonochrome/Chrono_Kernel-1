@@ -145,18 +145,18 @@ static int __init adummy_init(void)
 	struct adummy_dev *adummy_dev;
 	int err = 0;
 
-	printk(KERN_ERR "adummy: version %s\n", DRV_VERSION);
+;
 
 	adummy_dev = kzalloc(sizeof(struct adummy_dev),
 						   GFP_KERNEL);
 	if (!adummy_dev) {
-		printk(KERN_ERR DEV_LABEL ": kzalloc() failed\n");
+;
 		err = -ENOMEM;
 		goto out;
 	}
 	atm_dev = atm_dev_register(DEV_LABEL, NULL, &adummy_ops, -1, NULL);
 	if (!atm_dev) {
-		printk(KERN_ERR DEV_LABEL ": atm_dev_register() failed\n");
+;
 		err = -ENODEV;
 		goto out_kfree;
 	}
@@ -168,7 +168,7 @@ static int __init adummy_init(void)
 		dev_err(&atm_dev->class_dev, "Could not register attrs for adummy\n");
 
 	if (adummy_start(atm_dev)) {
-		printk(KERN_ERR DEV_LABEL ": adummy_start() failed\n");
+;
 		err = -ENODEV;
 		goto out_unregister;
 	}

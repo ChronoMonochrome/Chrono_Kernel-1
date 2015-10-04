@@ -211,7 +211,7 @@ void __init mca_do_proc_init(void)
 					      mca_read_proc, (void *)mca_dev);
 
 		if(node == NULL) {
-			printk("Failed to allocate memory for MCA proc-entries!");
+;
 			return;
 		}
 	}

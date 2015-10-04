@@ -49,8 +49,8 @@
 #ifdef CONFIG_FB_NVIDIA_DEBUG
 #define assert(expr) \
 	if (!(expr)) { \
-	printk( "Assertion failed! %s,%s,%s,line=%d\n",\
-	#expr,__FILE__,__func__,__LINE__); \
+//	printk( "Assertion failed! %s,%s,%s,line=%d\n",\
+;
 	BUG(); \
 	}
 #else
@@ -265,7 +265,7 @@ static void nvidia_write_regs(struct nvidia_par *par,
 
 	for (i = 1; i < NUM_SEQ_REGS; i++) {
 #ifdef DUMP_REG
-		printk(" SEQ[%02x] = %08x\n", i, state->seq[i]);
+;
 #endif
 		NVWriteSeq(par, i, state->seq[i]);
 	}
@@ -280,7 +280,7 @@ static void nvidia_write_regs(struct nvidia_par *par,
 			break;
 		default:
 #ifdef DUMP_REG
-			printk("CRTC[%02x] = %08x\n", i, state->crtc[i]);
+;
 #endif
 			NVWriteCrtc(par, i, state->crtc[i]);
 		}
@@ -288,14 +288,14 @@ static void nvidia_write_regs(struct nvidia_par *par,
 
 	for (i = 0; i < NUM_GRC_REGS; i++) {
 #ifdef DUMP_REG
-		printk(" GRA[%02x] = %08x\n", i, state->gra[i]);
+;
 #endif
 		NVWriteGr(par, i, state->gra[i]);
 	}
 
 	for (i = 0; i < NUM_ATC_REGS; i++) {
 #ifdef DUMP_REG
-		printk("ATTR[%02x] = %08x\n", i, state->attr[i]);
+;
 #endif
 		NVWriteAttr(par, i, state->attr[i]);
 	}
@@ -632,8 +632,8 @@ static int nvidiafb_set_par(struct fb_info *info)
 					   & 0x00010000);
 		else
 			par->FPDither = !!(NV_RD32(par->PRAMDAC, 0x083C) & 1);
-		printk(KERN_INFO PFX "Flat panel dithering %s\n",
-		       par->FPDither ? "enabled" : "disabled");
+//		printk(KERN_INFO PFX "Flat panel dithering %s\n",
+;
 	}
 
 	info->fix.visual = (info->var.bits_per_pixel == 8) ?
@@ -863,8 +863,8 @@ static int nvidiafb_check_var(struct fb_var_screeninfo *var,
 
 		mode = fb_find_best_mode(var, &info->modelist);
 		if (!mode) {
-			printk(KERN_ERR PFX "mode out of range of flat "
-			       "panel dimensions\n");
+//			printk(KERN_ERR PFX "mode out of range of flat "
+;
 			return -EINVAL;
 		}
 
@@ -896,11 +896,11 @@ static int nvidiafb_check_var(struct fb_var_screeninfo *var,
 			memlen = pitch * var->yres;
 
 			if (var->xres_virtual < var->xres) {
-				printk("nvidiafb: required video memory, "
-				       "%d bytes, for %dx%d-%d (virtual) "
-				       "is out of range\n",
-				       memlen, var->xres_virtual,
-				       var->yres_virtual, var->bits_per_pixel);
+//				printk("nvidiafb: required video memory, "
+//				       "%d bytes, for %dx%d-%d (virtual) "
+//				       "is out of range\n",
+//				       memlen, var->xres_virtual,
+;
 				err = -ENOMEM;
 			}
 		}
@@ -1206,7 +1206,7 @@ static u32 __devinit nvidia_get_chipset(struct fb_info *info)
 	struct nvidia_par *par = info->par;
 	u32 id = (par->pci_dev->vendor << 16) | par->pci_dev->device;
 
-	printk(KERN_INFO PFX "Device ID: %x \n", id);
+;
 
 	if ((id & 0xfff0) == 0x00f0 ||
 	    (id & 0xfff0) == 0x02e0) {
@@ -1218,7 +1218,7 @@ static u32 __devinit nvidia_get_chipset(struct fb_info *info)
 		else if ((id & 0xffff0000) == 0xDE100000) /* wrong endian */
 			id = 0x10DE0000 | ((id << 8) & 0x0000ff00) |
                             ((id >> 8) & 0x000000ff);
-		printk(KERN_INFO PFX "Subsystem ID: %x \n", id);
+;
 	}
 
 	return id;
@@ -1300,18 +1300,18 @@ static int __devinit nvidiafb_probe(struct pci_dev *pd,
 		goto err_out_kfree;
 
 	if (pci_enable_device(pd)) {
-		printk(KERN_ERR PFX "cannot enable PCI device\n");
+;
 		goto err_out_enable;
 	}
 
 	if (pci_request_regions(pd, "nvidiafb")) {
-		printk(KERN_ERR PFX "cannot request PCI regions\n");
+;
 		goto err_out_enable;
 	}
 
 	par->FlatPanel = flatpanel;
 	if (flatpanel == 1)
-		printk(KERN_INFO PFX "flatpanel support enabled\n");
+;
 	par->FPDither = fpdither;
 
 	par->CRTCnumber = forceCRTC;
@@ -1331,7 +1331,7 @@ static int __devinit nvidiafb_probe(struct pci_dev *pd,
 	par->REGS = ioremap(nvidiafb_fix.mmio_start, nvidiafb_fix.mmio_len);
 
 	if (!par->REGS) {
-		printk(KERN_ERR PFX "cannot ioremap MMIO base\n");
+;
 		goto err_out_free_base0;
 	}
 
@@ -1339,7 +1339,7 @@ static int __devinit nvidiafb_probe(struct pci_dev *pd,
 	par->Architecture = nvidia_get_arch(info);
 
 	if (par->Architecture == 0) {
-		printk(KERN_ERR PFX "unknown NV_ARCH\n");
+;
 		goto err_out_arch;
 	}
 
@@ -1371,7 +1371,7 @@ static int __devinit nvidiafb_probe(struct pci_dev *pd,
 	nvidiafb_fix.smem_len = par->RamAmountKBytes * 1024;
 
 	if (!info->screen_base) {
-		printk(KERN_ERR PFX "cannot ioremap FB base\n");
+;
 		goto err_out_free_base1;
 	}
 
@@ -1383,11 +1383,11 @@ static int __devinit nvidiafb_probe(struct pci_dev *pd,
 					  par->RamAmountKBytes * 1024,
 					  MTRR_TYPE_WRCOMB, 1);
 		if (par->mtrr.vram < 0) {
-			printk(KERN_ERR PFX "unable to setup MTRR\n");
+;
 		} else {
 			par->mtrr.vram_valid = 1;
 			/* let there be speed */
-			printk(KERN_INFO PFX "MTRR set to ON\n");
+;
 		}
 	}
 #endif				/* CONFIG_MTRR */
@@ -1396,7 +1396,7 @@ static int __devinit nvidiafb_probe(struct pci_dev *pd,
 	info->fix = nvidiafb_fix;
 
 	if (nvidia_set_fbinfo(info) < 0) {
-		printk(KERN_ERR PFX "error setting initial video mode\n");
+;
 		goto err_out_iounmap_fb;
 	}
 
@@ -1408,15 +1408,15 @@ static int __devinit nvidiafb_probe(struct pci_dev *pd,
 		nvidia_bl_init(par);
 
 	if (register_framebuffer(info) < 0) {
-		printk(KERN_ERR PFX "error registering nVidia framebuffer\n");
+;
 		goto err_out_iounmap_fb;
 	}
 
 
-	printk(KERN_INFO PFX
-	       "PCI nVidia %s framebuffer (%dMB @ 0x%lX)\n",
-	       info->fix.id,
-	       par->FbMapSize / (1024 * 1024), info->fix.smem_start);
+//	printk(KERN_INFO PFX
+//	       "PCI nVidia %s framebuffer (%dMB @ 0x%lX)\n",
+//	       info->fix.id,
+;
 
 	NVTRACE_LEAVE();
 	return 0;

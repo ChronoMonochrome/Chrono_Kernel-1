@@ -149,7 +149,7 @@ static int ciintf_read_attribute_mem(struct dvb_ca_en50221 *ca, int slot, int ad
 	result = ttpci_budget_debiread(&budget_av->budget, DEBICICAM, address & 0xfff, 1, 0, 1);
 	if (result == -ETIMEDOUT) {
 		ciintf_slot_shutdown(ca, slot);
-		printk(KERN_INFO "budget-av: cam ejected 1\n");
+;
 	}
 	return result;
 }
@@ -168,7 +168,7 @@ static int ciintf_write_attribute_mem(struct dvb_ca_en50221 *ca, int slot, int a
 	result = ttpci_budget_debiwrite(&budget_av->budget, DEBICICAM, address & 0xfff, 1, value, 0, 1);
 	if (result == -ETIMEDOUT) {
 		ciintf_slot_shutdown(ca, slot);
-		printk(KERN_INFO "budget-av: cam ejected 2\n");
+;
 	}
 	return result;
 }
@@ -187,7 +187,7 @@ static int ciintf_read_cam_control(struct dvb_ca_en50221 *ca, int slot, u8 addre
 	result = ttpci_budget_debiread(&budget_av->budget, DEBICICAM, address & 3, 1, 0, 0);
 	if (result == -ETIMEDOUT) {
 		ciintf_slot_shutdown(ca, slot);
-		printk(KERN_INFO "budget-av: cam ejected 3\n");
+;
 		return -ETIMEDOUT;
 	}
 	return result;
@@ -207,7 +207,7 @@ static int ciintf_write_cam_control(struct dvb_ca_en50221 *ca, int slot, u8 addr
 	result = ttpci_budget_debiwrite(&budget_av->budget, DEBICICAM, address & 3, 1, value, 0, 0);
 	if (result == -ETIMEDOUT) {
 		ciintf_slot_shutdown(ca, slot);
-		printk(KERN_INFO "budget-av: cam ejected 5\n");
+;
 	}
 	return result;
 }
@@ -220,7 +220,7 @@ static int ciintf_slot_reset(struct dvb_ca_en50221 *ca, int slot)
 	if (slot != 0)
 		return -EINVAL;
 
-	dprintk(1, "ciintf_slot_reset\n");
+;
 	budget_av->slot_status = SLOTSTATUS_RESET;
 
 	saa7146_setgpio(saa, 2, SAA7146_GPIO_OUTHI); /* disable card */
@@ -249,7 +249,7 @@ static int ciintf_slot_shutdown(struct dvb_ca_en50221 *ca, int slot)
 	if (slot != 0)
 		return -EINVAL;
 
-	dprintk(1, "ciintf_slot_shutdown\n");
+;
 
 	ttpci_budget_set_video_port(saa, BUDGET_VIDEO_PORTB);
 	budget_av->slot_status = SLOTSTATUS_NONE;
@@ -265,7 +265,7 @@ static int ciintf_slot_ts_enable(struct dvb_ca_en50221 *ca, int slot)
 	if (slot != 0)
 		return -EINVAL;
 
-	dprintk(1, "ciintf_slot_ts_enable: %d\n", budget_av->slot_status);
+;
 
 	ttpci_budget_set_video_port(saa, BUDGET_VIDEO_PORTA);
 
@@ -289,7 +289,7 @@ static int ciintf_poll_slot_status(struct dvb_ca_en50221 *ca, int slot, int open
 		if (saa7146_read(saa, PSR) & MASK_06) {
 			if (budget_av->slot_status == SLOTSTATUS_NONE) {
 				budget_av->slot_status = SLOTSTATUS_PRESENT;
-				printk(KERN_INFO "budget-av: cam inserted A\n");
+;
 			}
 		}
 		saa7146_setgpio(saa, 3, SAA7146_GPIO_OUTLO);
@@ -306,11 +306,11 @@ static int ciintf_poll_slot_status(struct dvb_ca_en50221 *ca, int slot, int open
 		result = ttpci_budget_debiread(&budget_av->budget, DEBICICAM, 0, 1, 0, 1);
 		if ((result >= 0) && (budget_av->slot_status == SLOTSTATUS_NONE)) {
 			budget_av->slot_status = SLOTSTATUS_PRESENT;
-			printk(KERN_INFO "budget-av: cam inserted B\n");
+;
 		} else if (result < 0) {
 			if (budget_av->slot_status != SLOTSTATUS_NONE) {
 				ciintf_slot_shutdown(ca, slot);
-				printk(KERN_INFO "budget-av: cam ejected 5\n");
+;
 				return 0;
 			}
 		}
@@ -365,11 +365,11 @@ static int ciintf_init(struct budget_av *budget_av)
 
 	if ((result = dvb_ca_en50221_init(&budget_av->budget.dvb_adapter,
 					  &budget_av->ca, 0, 1)) != 0) {
-		printk(KERN_ERR "budget-av: ci initialisation failed.\n");
+;
 		goto error;
 	}
 
-	printk(KERN_INFO "budget-av: ci interface initialised.\n");
+;
 	return 0;
 
 error:
@@ -433,18 +433,18 @@ static int saa7113_init(struct budget_av *budget_av)
 	msleep(200);
 
 	if (i2c_writereg(&budget->i2c_adap, 0x4a, 0x01, 0x08) != 1) {
-		dprintk(1, "saa7113 not found on KNC card\n");
+;
 		return -ENODEV;
 	}
 
-	dprintk(1, "saa7113 detected and initializing\n");
+;
 
 	while (*data != 0xff) {
 		i2c_writereg(&budget->i2c_adap, 0x4a, *data, *(data + 1));
 		data += 2;
 	}
 
-	dprintk(1, "saa7113  status=%02x\n", i2c_readreg(&budget->i2c_adap, 0x4a, 0x1f));
+;
 
 	return 0;
 }
@@ -1343,12 +1343,12 @@ static void frontend_init(struct budget_av *budget_av)
 	}
 
 	if (fe == NULL) {
-		printk(KERN_ERR "budget-av: A frontend driver was not found "
-				"for device [%04x:%04x] subsystem [%04x:%04x]\n",
-		       saa->pci->vendor,
-		       saa->pci->device,
-		       saa->pci->subsystem_vendor,
-		       saa->pci->subsystem_device);
+//		printk(KERN_ERR "budget-av: A frontend driver was not found "
+//				"for device [%04x:%04x] subsystem [%04x:%04x]\n",
+//		       saa->pci->vendor,
+//		       saa->pci->device,
+//		       saa->pci->subsystem_vendor,
+;
 		return;
 	}
 
@@ -1356,7 +1356,7 @@ static void frontend_init(struct budget_av *budget_av)
 
 	if (dvb_register_frontend(&budget_av->budget.dvb_adapter,
 				  budget_av->budget.dvb_frontend)) {
-		printk(KERN_ERR "budget-av: Frontend registration failed!\n");
+;
 		dvb_frontend_detach(budget_av->budget.dvb_frontend);
 		budget_av->budget.dvb_frontend = NULL;
 	}
@@ -1367,7 +1367,7 @@ static void budget_av_irq(struct saa7146_dev *dev, u32 * isr)
 {
 	struct budget_av *budget_av = (struct budget_av *) dev->ext_priv;
 
-	dprintk(8, "dev: %p, budget_av: %p\n", dev, budget_av);
+;
 
 	if (*isr & MASK_10)
 		ttpci_budget_irq10_handler(dev, isr);
@@ -1378,7 +1378,7 @@ static int budget_av_detach(struct saa7146_dev *dev)
 	struct budget_av *budget_av = (struct budget_av *) dev->ext_priv;
 	int err;
 
-	dprintk(2, "dev: %p\n", dev);
+;
 
 	if (1 == budget_av->has_saa7113) {
 		saa7146_setgpio(dev, 0, SAA7146_GPIO_OUTLO);
@@ -1414,7 +1414,7 @@ static struct v4l2_input knc1_inputs[KNC1_INPUTS] = {
 
 static int vidioc_enum_input(struct file *file, void *fh, struct v4l2_input *i)
 {
-	dprintk(1, "VIDIOC_ENUMINPUT %d.\n", i->index);
+;
 	if (i->index >= KNC1_INPUTS)
 		return -EINVAL;
 	memcpy(i, &knc1_inputs[i->index], sizeof(struct v4l2_input));
@@ -1437,7 +1437,7 @@ static int vidioc_s_input(struct file *file, void *fh, unsigned int input)
 	struct saa7146_dev *dev = ((struct saa7146_fh *)fh)->dev;
 	struct budget_av *budget_av = (struct budget_av *)dev->ext_priv;
 
-	dprintk(1, "VIDIOC_S_INPUT %d.\n", input);
+;
 	return saa7113_setinput(budget_av, input);
 }
 
@@ -1449,7 +1449,7 @@ static int budget_av_attach(struct saa7146_dev *dev, struct saa7146_pci_extensio
 	u8 *mac;
 	int err;
 
-	dprintk(2, "dev: %p\n", dev);
+;
 
 	if (!(budget_av = kzalloc(sizeof(struct budget_av), GFP_KERNEL)))
 		return -ENOMEM;
@@ -1502,13 +1502,13 @@ static int budget_av_attach(struct saa7146_dev *dev, struct saa7146_pci_extensio
 
 	mac = budget_av->budget.dvb_adapter.proposed_mac;
 	if (i2c_readregs(&budget_av->budget.i2c_adap, 0xa0, 0x30, mac, 6)) {
-		printk(KERN_ERR "KNC1-%d: Could not read MAC from KNC1 card\n",
-		       budget_av->budget.dvb_adapter.num);
+//		printk(KERN_ERR "KNC1-%d: Could not read MAC from KNC1 card\n",
+;
 		memset(mac, 0, 6);
 	} else {
-		printk(KERN_INFO "KNC1-%d: MAC addr = %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
-		       budget_av->budget.dvb_adapter.num,
-		       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+//		printk(KERN_INFO "KNC1-%d: MAC addr = %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
+//		       budget_av->budget.dvb_adapter.num,
+;
 	}
 
 	budget_av->budget.dvb_adapter.priv = budget_av;

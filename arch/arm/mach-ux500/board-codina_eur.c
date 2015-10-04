@@ -755,8 +755,8 @@ static void bt404_ts_int_set_pull(bool to_up)
 
 	ret = nmk_gpio_set_pull(TSP_INT_CODINA_R0_0, pull);
 	if (ret < 0)
-		printk(KERN_ERR "%s: fail to set pull xx on interrupt pin\n",
-								__func__);
+//		printk(KERN_ERR "%s: fail to set pull xx on interrupt pin\n",
+;
 }
 
 static int bt404_ts_pin_configure(bool to_gpios)
@@ -804,8 +804,8 @@ static int __init bt404_ts_init(void)
 	if (system_rev != CODINA_TMO_R0_0_A) {
 	ret = gpio_request(TSP_LDO_ON1_CODINA_R0_0, "bt404_ldo_en");
 	if (ret < 0) {
-			printk(KERN_ERR
-				"bt404: could not obtain gpio for ldo pin\n");
+//			printk(KERN_ERR
+;
 		return -1;
 	}
 	gpio_direction_output(TSP_LDO_ON1_CODINA_R0_0, 0);
@@ -817,7 +817,7 @@ static int __init bt404_ts_init(void)
 
 	ret = gpio_request(TSP_INT_CODINA_R0_0, "bt404_int");
 	if (ret < 0) {
-		printk(KERN_ERR "bt404: could not obtain gpio for int\n");
+;
 		return -1;
 	}
 	gpio_direction_input(TSP_INT_CODINA_R0_0);
@@ -825,7 +825,7 @@ static int __init bt404_ts_init(void)
 	bt404_ts_pdata.panel_type = (board_id >= 12) ?
 						GFF_PANEL : EX_CLEAR_PANEL;
 
-	printk(KERN_INFO "bt404: initialize pins\n");
+;
 
 	return 0;
 }
@@ -2351,7 +2351,7 @@ static void fetch_usb_serial_no(int len)
 					buf[0], buf[1], buf[2], buf[3], buf[4]);
 		iounmap(backup_ram);
 	} else {
-		printk(KERN_ERR "$$ ioremap failed\n");
+;
 	}
 }
 #endif
@@ -2498,55 +2498,55 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 7:
-		printk(KERN_INFO "GT-I8160 Board Rev 0.0\n");
+;
 		system_rev = CODINA_R0_0;
 		break;
 	case 8:
-		printk(KERN_INFO "GT-I8160 Board Rev 0.1\n");
+;
 		system_rev = CODINA_R0_1;
 		break;
 	case 9:
-		printk(KERN_INFO "GT-I8160 Board Rev 0.2\n");
+;
 		system_rev = CODINA_R0_2;
 		break;
 	case 10:
-		printk(KERN_INFO "GT-I8160 Board Rev 0.3\n");
+;
 		system_rev = CODINA_R0_3;
 		break;
 	case 11:
-		printk(KERN_INFO "GT-I8160 Board Rev 0.4\n");
+;
 		system_rev = CODINA_R0_4;
 		break;
 	case 12:
-		printk(KERN_INFO "GT-I8160 Board Rev 0.5\n");
+;
 		system_rev = CODINA_R0_5;
 		break;
 	case 0x101:
-		printk(KERN_INFO "SGH-T599 Board pre-Rev 0.0\n");
+;
 		system_rev = CODINA_TMO_R0_0;
 		break;
 	case 0x102:
-		printk(KERN_INFO "SGH-T599 Board Rev 0.0\n");
+;
 		system_rev = CODINA_TMO_R0_0_A;
 		break;
 	case 0x103:
-		printk(KERN_INFO "SGH-T599 Board Rev 0.1\n");
+;
 		system_rev = CODINA_TMO_R0_1;
 		break;
 	case 0x104:
-		printk(KERN_INFO "SGH-T599 Board Rev 0.2\n");
+;
 		system_rev = CODINA_TMO_R0_2;
 		break;
 	case 0x105:
-		printk(KERN_INFO "SGH-T599 Board Rev 0.4\n");
+;
 		system_rev = CODINA_TMO_R0_4;
 		break;
 	case 0x106:
-		printk(KERN_INFO "SGH-T599 Board Rev 0.6\n");
+;
 		system_rev = CODINA_TMO_R0_6;
 		break;
 	case 0x107:
-		printk(KERN_INFO "SGH-T599 Board Rev 0.7\n");
+;
 		system_rev = CODINA_TMO_R0_7;
 		break;
 	default:

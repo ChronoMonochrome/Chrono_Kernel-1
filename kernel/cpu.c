@@ -180,10 +180,10 @@ static inline void check_for_tasks(int cpu)
 		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
 		    (!cputime_eq(p->utime, cputime_zero) ||
 		     !cputime_eq(p->stime, cputime_zero)))
-			printk(KERN_WARNING "Task %s (pid = %d) is on cpu %d "
-				"(state = %ld, flags = %x)\n",
-				p->comm, task_pid_nr(p), cpu,
-				p->state, p->flags);
+//			printk(KERN_WARNING "Task %s (pid = %d) is on cpu %d "
+//				"(state = %ld, flags = %x)\n",
+//				p->comm, task_pid_nr(p), cpu,
+;
 	}
 	write_unlock_irq(&tasklist_lock);
 }
@@ -231,8 +231,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 	if (err) {
 		nr_calls--;
 		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
-		printk("%s: attempt to take down CPU %u failed\n",
-				__func__, cpu);
+//		printk("%s: attempt to take down CPU %u failed\n",
+;
 		goto out_release;
 	}
 
@@ -304,8 +304,8 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
 	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
 	if (ret) {
 		nr_calls--;
-		printk(KERN_WARNING "%s: attempt to bring up CPU %u failed\n",
-				__func__, cpu);
+//		printk(KERN_WARNING "%s: attempt to bring up CPU %u failed\n",
+;
 		goto out_notify;
 	}
 
@@ -336,11 +336,11 @@ int __cpuinit cpu_up(unsigned int cpu)
 #endif
 
 	if (!cpu_possible(cpu)) {
-		printk(KERN_ERR "can't online cpu %d because it is not "
-			"configured as may-hotadd at boot time\n", cpu);
+//		printk(KERN_ERR "can't online cpu %d because it is not "
+;
 #if defined(CONFIG_IA64)
-		printk(KERN_ERR "please check additional_cpus= boot "
-				"parameter\n");
+//		printk(KERN_ERR "please check additional_cpus= boot "
+;
 #endif
 		return -EINVAL;
 	}
@@ -355,8 +355,8 @@ int __cpuinit cpu_up(unsigned int cpu)
 
 	pgdat = NODE_DATA(nid);
 	if (!pgdat) {
-		printk(KERN_ERR
-			"Can't online cpu %d due to NULL pgdat\n", cpu);
+//		printk(KERN_ERR
+;
 		return -ENOMEM;
 	}
 
@@ -406,7 +406,7 @@ int disable_nonboot_cpus(void)
 	cpumask_clear(frozen_cpus);
 	arch_disable_nonboot_cpus_begin();
 
-	printk("Disabling non-boot CPUs ...\n");
+;
 	for_each_online_cpu(cpu) {
 		if (cpu == first_cpu)
 			continue;
@@ -414,8 +414,8 @@ int disable_nonboot_cpus(void)
 		if (!error)
 			cpumask_set_cpu(cpu, frozen_cpus);
 		else {
-			printk(KERN_ERR "Error taking CPU%d down: %d\n",
-				cpu, error);
+//			printk(KERN_ERR "Error taking CPU%d down: %d\n",
+;
 			break;
 		}
 	}
@@ -427,7 +427,7 @@ int disable_nonboot_cpus(void)
 		/* Make sure the CPUs won't be enabled by someone else */
 		cpu_hotplug_disabled = 1;
 	} else {
-		printk(KERN_ERR "Non-boot CPUs are not disabled\n");
+;
 	}
 	cpu_maps_update_done();
 	return error;
@@ -451,17 +451,17 @@ void __ref enable_nonboot_cpus(void)
 	if (cpumask_empty(frozen_cpus))
 		goto out;
 
-	printk(KERN_INFO "Enabling non-boot CPUs ...\n");
+;
 
 	arch_enable_nonboot_cpus_begin();
 
 	for_each_cpu(cpu, frozen_cpus) {
 		error = _cpu_up(cpu, 1);
 		if (!error) {
-			printk(KERN_INFO "CPU%d is up\n", cpu);
+;
 			continue;
 		}
-		printk(KERN_WARNING "Error taking CPU%d up: %d\n", cpu, error);
+;
 	}
 
 	arch_enable_nonboot_cpus_end();

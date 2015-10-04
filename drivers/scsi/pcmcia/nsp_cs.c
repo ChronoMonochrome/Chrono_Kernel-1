@@ -147,9 +147,9 @@ static void nsp_cs_message(const char *func, int line, char *type, char *fmt, ..
 	va_end(args);
 
 #ifndef NSP_DEBUG
-	printk("%snsp_cs: %s\n", type, buf);
+;
 #else
-	printk("%snsp_cs: %s (%d): %s\n", type, func, line, buf);
+;
 #endif
 }
 
@@ -164,7 +164,7 @@ static void nsp_cs_dmessage(const char *func, int line, int mask, char *fmt, ...
 	va_end(args);
 
 	if (mask & NSP_DEBUG_MASK) {
-		printk("nsp_cs-debug: 0x%x %s (%d): %s\n", mask, func, line, buf);
+;
 	}
 }
 #endif

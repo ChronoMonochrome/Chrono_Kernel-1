@@ -572,7 +572,7 @@ static int tda829x_find_tuner(struct dvb_frontend *fe)
 	struct i2c_msg msg = { .flags = I2C_M_RD, .buf = &data, .len = 1 };
 
 	if (!analog_ops->i2c_gate_ctrl) {
-		printk(KERN_ERR "tda8290: no gate control were provided!\n");
+;
 
 		return -EINVAL;
 	}
@@ -664,16 +664,16 @@ static int tda8290_probe(struct tuner_i2c_props *i2c_props)
 
 	/* detect tda8290 */
 	if (i2c_transfer(i2c_props->adap, msg_read, 2) != 2) {
-		printk(KERN_WARNING "%s: couldn't read register 0x%02x\n",
-			       __func__, reg);
+//		printk(KERN_WARNING "%s: couldn't read register 0x%02x\n",
+;
 		return -ENODEV;
 	}
 
 	if (id == TDA8290_ID) {
 		if (debug)
-			printk(KERN_DEBUG "%s: tda8290 detected @ %d-%04x\n",
-			       __func__, i2c_adapter_id(i2c_props->adap),
-			       i2c_props->addr);
+//			printk(KERN_DEBUG "%s: tda8290 detected @ %d-%04x\n",
+//			       __func__, i2c_adapter_id(i2c_props->adap),
+;
 		return 0;
 	}
 	return -ENODEV;
@@ -691,18 +691,18 @@ static int tda8295_probe(struct tuner_i2c_props *i2c_props)
 
 	/* detect tda8295 */
 	if (i2c_transfer(i2c_props->adap, msg_read, 2) != 2) {
-		printk(KERN_WARNING "%s: couldn't read register 0x%02x\n",
-			       __func__, reg);
+//		printk(KERN_WARNING "%s: couldn't read register 0x%02x\n",
+;
 		return -ENODEV;
 	}
 
 	if ((id & 0xfe) == TDA8295_ID) {
 		if (debug)
-			printk(KERN_DEBUG "%s: %s detected @ %d-%04x\n",
-			       __func__, (id == TDA8295_ID) ?
-			       "tda8295c1" : "tda8295c2",
-			       i2c_adapter_id(i2c_props->adap),
-			       i2c_props->addr);
+//			printk(KERN_DEBUG "%s: %s detected @ %d-%04x\n",
+//			       __func__, (id == TDA8295_ID) ?
+//			       "tda8295c1" : "tda8295c2",
+//			       i2c_adapter_id(i2c_props->adap),
+;
 		return 0;
 	}
 

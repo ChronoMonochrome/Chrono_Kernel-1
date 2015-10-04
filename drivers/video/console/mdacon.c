@@ -325,7 +325,7 @@ static const char *mdacon_startup(void)
 	mda_type_name = "MDA";
 
 	if (! mda_detect()) {
-		printk("mdacon: MDA card not detected.\n");
+;
 		return NULL;
 	}
 
@@ -336,8 +336,8 @@ static const char *mdacon_startup(void)
 	/* cursor looks ugly during boot-up, so turn it off */
 	mda_set_cursor(mda_vram_len - 1);
 
-	printk("mdacon: %s with %ldK of memory detected.\n",
-		mda_type_name, mda_vram_len/1024);
+//	printk("mdacon: %s with %ldK of memory detected.\n",
+;
 
 	return "MDA-2";
 }

@@ -126,7 +126,7 @@ int pm8001_mem_alloc(struct pci_dev *pdev, void **virt_addr,
 	mem_virt_alloc =
 		pci_alloc_consistent(pdev, mem_size + align, &mem_dma_handle);
 	if (!mem_virt_alloc) {
-		pm8001_printk("memory allocation error\n");
+;
 		return -1;
 	}
 	memset((void *)mem_virt_alloc, 0, mem_size+align);
@@ -380,7 +380,7 @@ static int pm8001_task_exec(struct sas_task *task, const int num,
 		return 0;
 	}
 	pm8001_ha = pm8001_find_ha_by_dev(task->dev);
-	PM8001_IO_DBG(pm8001_ha, pm8001_printk("pm8001_task_exec device \n "));
+;
 	spin_lock_irqsave(&pm8001_ha->lock, flags);
 	do {
 		dev = t->dev;
@@ -388,12 +388,12 @@ static int pm8001_task_exec(struct sas_task *task, const int num,
 		if (DEV_IS_GONE(pm8001_dev)) {
 			if (pm8001_dev) {
 				PM8001_IO_DBG(pm8001_ha,
-					pm8001_printk("device %d not ready.\n",
-					pm8001_dev->device_id));
+//					pm8001_printk("device %d not ready.\n",
+;
 			} else {
 				PM8001_IO_DBG(pm8001_ha,
-					pm8001_printk("device %016llx not "
-					"ready.\n", SAS_ADDR(dev->sas_addr)));
+//					pm8001_printk("device %016llx not "
+;
 			}
 			rc = SAS_PHY_DOWN;
 			goto out_done;
@@ -468,16 +468,16 @@ static int pm8001_task_exec(struct sas_task *task, const int num,
 			rc = pm8001_task_prep_ata(pm8001_ha, ccb);
 			break;
 		default:
-			dev_printk(KERN_ERR, pm8001_ha->dev,
-				"unknown sas_task proto: 0x%x\n",
-				t->task_proto);
+//			dev_printk(KERN_ERR, pm8001_ha->dev,
+//				"unknown sas_task proto: 0x%x\n",
+;
 			rc = -EINVAL;
 			break;
 		}
 
 		if (rc) {
 			PM8001_IO_DBG(pm8001_ha,
-				pm8001_printk("rc is %x\n", rc));
+;
 			goto err_out_tag;
 		}
 		/* TODO: select normal or high priority */
@@ -494,7 +494,7 @@ static int pm8001_task_exec(struct sas_task *task, const int num,
 err_out_tag:
 	pm8001_tag_free(pm8001_ha, tag);
 err_out:
-	dev_printk(KERN_ERR, pm8001_ha->dev, "pm8001 exec failed[%d]!\n", rc);
+;
 	if (!sas_protocol_ata(t->task_proto))
 		if (n_elem)
 			dma_unmap_sg(pm8001_ha->dev, t->scatter, n_elem,
@@ -576,8 +576,8 @@ struct pm8001_device *pm8001_alloc_dev(struct pm8001_hba_info *pm8001_ha)
 	}
 	if (dev == PM8001_MAX_DEVICES) {
 		PM8001_FAIL_DBG(pm8001_ha,
-			pm8001_printk("max support %d devices, ignore ..\n",
-			PM8001_MAX_DEVICES));
+//			pm8001_printk("max support %d devices, ignore ..\n",
+;
 	}
 	return NULL;
 }
@@ -639,9 +639,9 @@ static int pm8001_dev_found_notify(struct domain_device *dev)
 		}
 		if (phy_id == parent_dev->ex_dev.num_phys) {
 			PM8001_FAIL_DBG(pm8001_ha,
-			pm8001_printk("Error: no attached dev:%016llx"
-			" at ex:%016llx.\n", SAS_ADDR(dev->sas_addr),
-				SAS_ADDR(parent_dev->sas_addr)));
+//			pm8001_printk("Error: no attached dev:%016llx"
+//			" at ex:%016llx.\n", SAS_ADDR(dev->sas_addr),
+;
 			res = -1;
 		}
 	} else {
@@ -651,7 +651,7 @@ static int pm8001_dev_found_notify(struct domain_device *dev)
 				flag = 1; /* directly sata*/
 		}
 	} /*register this device to HBA*/
-	PM8001_DISC_DBG(pm8001_ha, pm8001_printk("Found device \n"));
+;
 	PM8001_CHIP_DISP->reg_dev_req(pm8001_ha, pm8001_device, flag);
 	spin_unlock_irqrestore(&pm8001_ha->lock, flags);
 	wait_for_completion(&completion);
@@ -746,8 +746,8 @@ static int pm8001_exec_internal_tmf_task(struct domain_device *dev,
 		if (res) {
 			del_timer(&task->timer);
 			PM8001_FAIL_DBG(pm8001_ha,
-				pm8001_printk("Executing internal task "
-				"failed\n"));
+//				pm8001_printk("Executing internal task "
+;
 			goto ex_err;
 		}
 		wait_for_completion(&task->completion);
@@ -756,8 +756,8 @@ static int pm8001_exec_internal_tmf_task(struct domain_device *dev,
 		if ((task->task_state_flags & SAS_TASK_STATE_ABORTED)) {
 			if (!(task->task_state_flags & SAS_TASK_STATE_DONE)) {
 				PM8001_FAIL_DBG(pm8001_ha,
-					pm8001_printk("TMF task[%x]timeout.\n",
-					tmf->tmf));
+//					pm8001_printk("TMF task[%x]timeout.\n",
+;
 				goto ex_err;
 			}
 		}
@@ -779,16 +779,16 @@ static int pm8001_exec_internal_tmf_task(struct domain_device *dev,
 		if (task->task_status.resp == SAS_TASK_COMPLETE &&
 			task->task_status.stat == SAS_DATA_OVERRUN) {
 			PM8001_FAIL_DBG(pm8001_ha,
-				pm8001_printk("Blocked task error.\n"));
+;
 			res = -EMSGSIZE;
 			break;
 		} else {
 			PM8001_EH_DBG(pm8001_ha,
-				pm8001_printk(" Task to dev %016llx response:"
-				"0x%x status 0x%x\n",
-				SAS_ADDR(dev->sas_addr),
-				task->task_status.resp,
-				task->task_status.stat));
+//				pm8001_printk(" Task to dev %016llx response:"
+//				"0x%x status 0x%x\n",
+//				SAS_ADDR(dev->sas_addr),
+//				task->task_status.resp,
+;
 			pm8001_free_task(task);
 			task = NULL;
 		}
@@ -837,8 +837,8 @@ pm8001_exec_internal_task_abort(struct pm8001_hba_info *pm8001_ha,
 		if (res) {
 			del_timer(&task->timer);
 			PM8001_FAIL_DBG(pm8001_ha,
-				pm8001_printk("Executing internal task "
-				"failed\n"));
+//				pm8001_printk("Executing internal task "
+;
 			goto ex_err;
 		}
 		wait_for_completion(&task->completion);
@@ -847,7 +847,7 @@ pm8001_exec_internal_task_abort(struct pm8001_hba_info *pm8001_ha,
 		if ((task->task_state_flags & SAS_TASK_STATE_ABORTED)) {
 			if (!(task->task_state_flags & SAS_TASK_STATE_DONE)) {
 				PM8001_FAIL_DBG(pm8001_ha,
-					pm8001_printk("TMF task timeout.\n"));
+;
 				goto ex_err;
 			}
 		}
@@ -859,11 +859,11 @@ pm8001_exec_internal_task_abort(struct pm8001_hba_info *pm8001_ha,
 
 		} else {
 			PM8001_EH_DBG(pm8001_ha,
-				pm8001_printk(" Task to dev %016llx response: "
-					"0x%x status 0x%x\n",
-				SAS_ADDR(dev->sas_addr),
-				task->task_status.resp,
-				task->task_status.stat));
+//				pm8001_printk(" Task to dev %016llx response: "
+//					"0x%x status 0x%x\n",
+//				SAS_ADDR(dev->sas_addr),
+//				task->task_status.resp,
+;
 			pm8001_free_task(task);
 			task = NULL;
 		}
@@ -893,8 +893,8 @@ static void pm8001_dev_gone_notify(struct domain_device *dev)
 		u32 device_id = pm8001_dev->device_id;
 
 		PM8001_DISC_DBG(pm8001_ha,
-			pm8001_printk("found dev[%d:%x] is gone.\n",
-			pm8001_dev->device_id, pm8001_dev->dev_type));
+//			pm8001_printk("found dev[%d:%x] is gone.\n",
+;
 		if (pm8001_dev->running_req) {
 			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
 			pm8001_exec_internal_task_abort(pm8001_ha, pm8001_dev ,
@@ -905,7 +905,7 @@ static void pm8001_dev_gone_notify(struct domain_device *dev)
 		pm8001_free_dev(pm8001_dev);
 	} else {
 		PM8001_DISC_DBG(pm8001_ha,
-			pm8001_printk("Found dev has gone.\n"));
+;
 	}
 	dev->lldd_dev = NULL;
 	spin_unlock_irqrestore(&pm8001_ha->lock, flags);
@@ -961,8 +961,8 @@ int pm8001_I_T_nexus_reset(struct domain_device *dev)
 	rc = sas_phy_reset(phy, 1);
 	msleep(2000);
 	}
-	PM8001_EH_DBG(pm8001_ha, pm8001_printk(" for device[%x]:rc=%d\n",
-		pm8001_dev->device_id, rc));
+//	PM8001_EH_DBG(pm8001_ha, pm8001_printk(" for device[%x]:rc=%d\n",
+;
 	return rc;
 }
 
@@ -986,8 +986,8 @@ int pm8001_lu_reset(struct domain_device *dev, u8 *lun)
 		rc = pm8001_issue_ssp_tmf(dev, lun, &tmf_task);
 	}
 	/* If failed, fall-through I_T_Nexus reset */
-	PM8001_EH_DBG(pm8001_ha, pm8001_printk("for device[%x]:rc=%d\n",
-		pm8001_dev->device_id, rc));
+//	PM8001_EH_DBG(pm8001_ha, pm8001_printk("for device[%x]:rc=%d\n",
+;
 	return rc;
 }
 
@@ -1014,10 +1014,10 @@ int pm8001_query_task(struct sas_task *task)
 			rc = TMF_RESP_FUNC_FAILED;
 			return rc;
 		}
-		PM8001_EH_DBG(pm8001_ha, pm8001_printk("Query:["));
+;
 		for (i = 0; i < 16; i++)
-			printk(KERN_INFO "%02x ", cmnd->cmnd[i]);
-		printk(KERN_INFO "]\n");
+;
+;
 		tmf_task.tmf = 	TMF_QUERY_TASK;
 		tmf_task.tag_of_task_to_be_managed = tag;
 
@@ -1026,17 +1026,17 @@ int pm8001_query_task(struct sas_task *task)
 		/* The task is still in Lun, release it then */
 		case TMF_RESP_FUNC_SUCC:
 			PM8001_EH_DBG(pm8001_ha,
-				pm8001_printk("The task is still in Lun \n"));
+;
 		/* The task is not in Lun or failed, reset the phy */
 		case TMF_RESP_FUNC_FAILED:
 		case TMF_RESP_FUNC_COMPLETE:
 			PM8001_EH_DBG(pm8001_ha,
-			pm8001_printk("The task is not in Lun or failed,"
-			" reset the phy \n"));
+//			pm8001_printk("The task is not in Lun or failed,"
+;
 			break;
 		}
 	}
-	pm8001_printk(":rc= %d\n", rc);
+;
 	return rc;
 }
 
@@ -1071,13 +1071,13 @@ int pm8001_abort_task(struct sas_task *task)
 		int_to_scsilun(cmnd->device->lun, &lun);
 		rc = pm8001_find_tag(task, &tag);
 		if (rc == 0) {
-			printk(KERN_INFO "No such tag in %s\n", __func__);
+;
 			rc = TMF_RESP_FUNC_FAILED;
 			return rc;
 		}
 		device_id = pm8001_dev->device_id;
 		PM8001_EH_DBG(pm8001_ha,
-			pm8001_printk("abort io to deviceid= %d\n", device_id));
+;
 		tmf_task.tmf = TMF_ABORT_TASK;
 		tmf_task.tag_of_task_to_be_managed = tag;
 		rc = pm8001_issue_ssp_tmf(dev, lun.scsi_lun, &tmf_task);
@@ -1090,7 +1090,7 @@ int pm8001_abort_task(struct sas_task *task)
 		pm8001_ha = pm8001_find_ha_by_dev(dev);
 		rc = pm8001_find_tag(task, &tag);
 		if (rc == 0) {
-			printk(KERN_INFO "No such tag in %s\n", __func__);
+;
 			rc = TMF_RESP_FUNC_FAILED;
 			return rc;
 		}
@@ -1103,7 +1103,7 @@ int pm8001_abort_task(struct sas_task *task)
 		pm8001_ha = pm8001_find_ha_by_dev(dev);
 		rc = pm8001_find_tag(task, &tag);
 		if (rc == 0) {
-			printk(KERN_INFO "No such tag in %s\n", __func__);
+;
 			rc = TMF_RESP_FUNC_FAILED;
 			return rc;
 		}
@@ -1113,7 +1113,7 @@ int pm8001_abort_task(struct sas_task *task)
 	}
 out:
 	if (rc != TMF_RESP_FUNC_COMPLETE)
-		pm8001_printk("rc= %d\n", rc);
+;
 	return rc;
 }
 
@@ -1146,8 +1146,8 @@ int pm8001_clear_task_set(struct domain_device *dev, u8 *lun)
 	struct pm8001_hba_info *pm8001_ha = pm8001_find_ha_by_dev(dev);
 
 	PM8001_EH_DBG(pm8001_ha,
-		pm8001_printk("I_T_L_Q clear task set[%x]\n",
-		pm8001_dev->device_id));
+//		pm8001_printk("I_T_L_Q clear task set[%x]\n",
+;
 	tmf_task.tmf = TMF_CLEAR_TASK_SET;
 	rc = pm8001_issue_ssp_tmf(dev, lun, &tmf_task);
 	return rc;

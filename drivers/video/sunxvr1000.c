@@ -32,8 +32,8 @@ static int __devinit gfb_get_props(struct gfb_info *gp)
 	gp->depth = of_getintprop_default(gp->of_node, "depth", 32);
 
 	if (!gp->width || !gp->height) {
-		printk(KERN_ERR "gfb: Critical properties missing for %s\n",
-		       gp->of_node->full_name);
+//		printk(KERN_ERR "gfb: Critical properties missing for %s\n",
+;
 		return -EINVAL;
 	}
 
@@ -104,7 +104,7 @@ static int __devinit gfb_set_fbinfo(struct gfb_info *gp)
 	var->transp.length = 0;
 
 	if (fb_alloc_cmap(&info->cmap, 256, 0)) {
-		printk(KERN_ERR "gfb: Cannot allocate color map.\n");
+;
 		return -ENOMEM;
 	}
 
@@ -120,7 +120,7 @@ static int __devinit gfb_probe(struct platform_device *op)
 
 	info = framebuffer_alloc(sizeof(struct gfb_info), &op->dev);
 	if (!info) {
-		printk(KERN_ERR "gfb: Cannot allocate fb_info\n");
+;
 		err = -ENOMEM;
 		goto err_out;
 	}
@@ -148,12 +148,12 @@ static int __devinit gfb_probe(struct platform_device *op)
 	if (err)
 		goto err_unmap_fb;
 
-	printk("gfb: Found device at %s\n", dp->full_name);
+;
 
 	err = register_framebuffer(info);
 	if (err < 0) {
-		printk(KERN_ERR "gfb: Could not register framebuffer %s\n",
-		       dp->full_name);
+//		printk(KERN_ERR "gfb: Could not register framebuffer %s\n",
+;
 		goto err_unmap_fb;
 	}
 

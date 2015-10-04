@@ -113,11 +113,11 @@ static int i460_fetch_size (void)
 	pr_debug("i460_fetch_size: io_page_shift=%d\n", i460.io_page_shift);
 
 	if (i460.io_page_shift != I460_IO_PAGE_SHIFT) {
-		printk(KERN_ERR PFX
-			"I/O (GART) page-size %luKB doesn't match expected "
-				"size %luKB\n",
-			1UL << (i460.io_page_shift - 10),
-			1UL << (I460_IO_PAGE_SHIFT));
+//		printk(KERN_ERR PFX
+//			"I/O (GART) page-size %luKB doesn't match expected "
+//				"size %luKB\n",
+//			1UL << (i460.io_page_shift - 10),
+;
 		return 0;
 	}
 
@@ -127,14 +127,14 @@ static int i460_fetch_size (void)
 
 	/* Exit now if the IO drivers for the GART SRAMS are turned off */
 	if (temp & I460_SRAM_IO_DISABLE) {
-		printk(KERN_ERR PFX "GART SRAMS disabled on 460GX chipset\n");
-		printk(KERN_ERR PFX "AGPGART operation not possible\n");
+;
+;
 		return 0;
 	}
 
 	/* Make sure we don't try to create an 2 ^ 23 entry GATT */
 	if ((i460.io_page_shift == 0) && ((temp & I460_AGPSIZ_MASK) == 4)) {
-		printk(KERN_ERR PFX "We can't have a 32GB aperture with 4KB GART pages\n");
+;
 		return 0;
 	}
 
@@ -253,7 +253,7 @@ static int i460_create_gatt_table (struct agp_bridge_data *bridge)
 
 	i460.gatt = ioremap(INTEL_I460_ATTBASE, PAGE_SIZE << page_order);
 	if (!i460.gatt) {
-		printk(KERN_ERR PFX "ioremap failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -309,7 +309,7 @@ static int i460_insert_memory_small_io_page (struct agp_memory *mem,
 	num_entries = A_SIZE_8(temp)->num_entries;
 
 	if ((io_pg_start + I460_IOPAGES_PER_KPAGE * mem->page_count) > num_entries) {
-		printk(KERN_ERR PFX "Looks like we're out of AGP memory\n");
+;
 		return -EINVAL;
 	}
 
@@ -370,7 +370,7 @@ static int i460_alloc_large_page (struct lp_desc *lp)
 
 	lp->page = alloc_pages(GFP_KERNEL, order);
 	if (!lp->page) {
-		printk(KERN_ERR PFX "Couldn't alloc 4M GART page...\n");
+;
 		return -ENOMEM;
 	}
 
@@ -378,7 +378,7 @@ static int i460_alloc_large_page (struct lp_desc *lp)
 	lp->alloced_map = kzalloc(map_size, GFP_KERNEL);
 	if (!lp->alloced_map) {
 		__free_pages(lp->page, order);
-		printk(KERN_ERR PFX "Out of memory, we're in trouble...\n");
+;
 		return -ENOMEM;
 	}
 
@@ -417,7 +417,7 @@ static int i460_insert_memory_large_io_page (struct agp_memory *mem,
 	end_offset = (pg_start + mem->page_count - 1) % I460_KPAGES_PER_IOPAGE;
 
 	if (end > i460.lp_desc + num_entries) {
-		printk(KERN_ERR PFX "Looks like we're out of AGP memory\n");
+;
 		return -EINVAL;
 	}
 
@@ -605,7 +605,7 @@ static int __devinit agp_intel_i460_probe(struct pci_dev *pdev,
 	bridge->dev = pdev;
 	bridge->capndx = cap_ptr;
 
-	printk(KERN_INFO PFX "Detected Intel 460GX chipset\n");
+;
 
 	pci_set_drvdata(pdev, bridge);
 	return agp_add_bridge(bridge);

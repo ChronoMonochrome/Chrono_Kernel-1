@@ -64,7 +64,7 @@ static struct pci_device_id pci_tbl[] = {
 static void gpio_Set22K (struct budget *budget, int state)
 {
 	struct saa7146_dev *dev=budget->dev;
-	dprintk(2, "budget: %p\n", budget);
+;
 	saa7146_setgpio(dev, 3, (state ? SAA7146_GPIO_OUTHI : SAA7146_GPIO_OUTLO));
 }
 
@@ -75,7 +75,7 @@ static void gpio_Set22K (struct budget *budget, int state)
 static void DiseqcSendBit (struct budget *budget, int data)
 {
 	struct saa7146_dev *dev=budget->dev;
-	dprintk(2, "budget: %p\n", budget);
+;
 
 	saa7146_setgpio(dev, 3, SAA7146_GPIO_OUTHI);
 	udelay(data ? 500 : 1000);
@@ -87,7 +87,7 @@ static void DiseqcSendByte (struct budget *budget, int data)
 {
 	int i, par=1, d;
 
-	dprintk(2, "budget: %p\n", budget);
+;
 
 	for (i=7; i>=0; i--) {
 		d = (data>>i)&1;
@@ -103,7 +103,7 @@ static int SendDiSEqCMsg (struct budget *budget, int len, u8 *msg, unsigned long
 	struct saa7146_dev *dev=budget->dev;
 	int i;
 
-	dprintk(2, "budget: %p\n", budget);
+;
 
 	saa7146_setgpio(dev, 3, SAA7146_GPIO_OUTLO);
 	mdelay(16);
@@ -172,7 +172,7 @@ static int budget_av7110_send_fw_cmd(struct budget_patch *budget, u16* buf, int 
 {
 	int i;
 
-	dprintk(2, "budget: %p\n", budget);
+;
 
 	for (i = 2; i < length; i++)
 	{
@@ -193,7 +193,7 @@ static void av7110_set22k(struct budget_patch *budget, int state)
 {
 	u16 buf[2] = {( COMTYPE_AUDIODAC << 8) | (state ? ON22K : OFF22K), 0};
 
-	dprintk(2, "budget: %p\n", budget);
+;
 	budget_av7110_send_fw_cmd(budget, buf, 2);
 }
 
@@ -203,7 +203,7 @@ static int av7110_send_diseqc_msg(struct budget_patch *budget, int len, u8 *msg,
 	u16 buf[18] = { ((COMTYPE_AUDIODAC << 8) | SendDiSEqC),
 		16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-	dprintk(2, "budget: %p\n", budget);
+;
 
 	if (len>10)
 		len=10;
@@ -362,14 +362,14 @@ static void frontend_init(struct budget_patch* budget)
 	}
 
 	if (budget->dvb_frontend == NULL) {
-		printk("dvb-ttpci: A frontend driver was not found for device [%04x:%04x] subsystem [%04x:%04x]\n",
-		       budget->dev->pci->vendor,
-		       budget->dev->pci->device,
-		       budget->dev->pci->subsystem_vendor,
-		       budget->dev->pci->subsystem_device);
+//		printk("dvb-ttpci: A frontend driver was not found for device [%04x:%04x] subsystem [%04x:%04x]\n",
+//		       budget->dev->pci->vendor,
+//		       budget->dev->pci->device,
+//		       budget->dev->pci->subsystem_vendor,
+;
 	} else {
 		if (dvb_register_frontend(&budget->dvb_adapter, budget->dvb_frontend)) {
-			printk("budget-av: Frontend registration failed!\n");
+;
 			dvb_frontend_detach(budget->dvb_frontend);
 			budget->dvb_frontend = NULL;
 		}
@@ -476,17 +476,17 @@ static int budget_patch_attach (struct saa7146_dev* dev, struct saa7146_pci_exte
 		detected = 1;
 
 #if RPS_IRQ
-	printk("Event Counter 1 0x%04x\n", saa7146_read(dev, EC1R) & 0x3fff );
+;
 #endif
 	// Disable RPS1
 	saa7146_write(dev, MC1, ( MASK_29 ));
 
 	if(detected == 0)
-		printk("budget-patch not detected or saa7146 in non-default state.\n"
-		       "try enabling ressetting of 7146 with MASK_31 in MC1 register\n");
+//		printk("budget-patch not detected or saa7146 in non-default state.\n"
+;
 
 	else
-		printk("BUDGET-PATCH DETECTED.\n");
+;
 
 
 /*      OLD (Original design by Roberto Deza):
@@ -592,7 +592,7 @@ static int budget_patch_attach (struct saa7146_dev* dev, struct saa7146_pci_exte
 	if (!(budget = kmalloc (sizeof(struct budget_patch), GFP_KERNEL)))
 		return -ENOMEM;
 
-	dprintk(2, "budget: %p\n", budget);
+;
 
 	err = ttpci_budget_init(budget, dev, info, THIS_MODULE, adapter_nr);
 	if (err) {

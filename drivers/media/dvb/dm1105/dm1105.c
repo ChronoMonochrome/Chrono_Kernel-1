@@ -298,26 +298,26 @@ static void dm1105_card_list(struct pci_dev *pci)
 
 	if (0 == pci->subsystem_vendor &&
 			0 == pci->subsystem_device) {
-		printk(KERN_ERR
-			"dm1105: Your board has no valid PCI Subsystem ID\n"
-			"dm1105: and thus can't be autodetected\n"
-			"dm1105: Please pass card=<n> insmod option to\n"
-			"dm1105: workaround that.  Redirect complaints to\n"
-			"dm1105: the vendor of the TV card.  Best regards,\n"
-			"dm1105: -- tux\n");
+//		printk(KERN_ERR
+//			"dm1105: Your board has no valid PCI Subsystem ID\n"
+//			"dm1105: and thus can't be autodetected\n"
+//			"dm1105: Please pass card=<n> insmod option to\n"
+//			"dm1105: workaround that.  Redirect complaints to\n"
+//			"dm1105: the vendor of the TV card.  Best regards,\n"
+;
 	} else {
-		printk(KERN_ERR
-			"dm1105: Your board isn't known (yet) to the driver.\n"
-			"dm1105: You can try to pick one of the existing\n"
-			"dm1105: card configs via card=<n> insmod option.\n"
-			"dm1105: Updating to the latest version might help\n"
-			"dm1105: as well.\n");
+//		printk(KERN_ERR
+//			"dm1105: Your board isn't known (yet) to the driver.\n"
+//			"dm1105: You can try to pick one of the existing\n"
+//			"dm1105: card configs via card=<n> insmod option.\n"
+//			"dm1105: Updating to the latest version might help\n"
+;
 	}
-	printk(KERN_ERR "Here is a list of valid choices for the card=<n> "
-		   "insmod option:\n");
+//	printk(KERN_ERR "Here is a list of valid choices for the card=<n> "
+;
 	for (i = 0; i < ARRAY_SIZE(dm1105_boards); i++)
-		printk(KERN_ERR "dm1105:    card=%d -> %s\n",
-				i, dm1105_boards[i].name);
+//		printk(KERN_ERR "dm1105:    card=%d -> %s\n",
+;
 }
 
 /* infrared remote control */
@@ -394,7 +394,7 @@ struct dm1105_dev {
 static void dm1105_gpio_set(struct dm1105_dev *dev, u32 mask)
 {
 	if (mask & 0xfffc0000)
-		printk(KERN_ERR "%s: Only 18 GPIO's are allowed\n", __func__);
+;
 
 	if (mask & 0x0003ffff)
 		dm_setl(DM1105_GPIOVAL, mask & 0x0003ffff);
@@ -404,7 +404,7 @@ static void dm1105_gpio_set(struct dm1105_dev *dev, u32 mask)
 static void dm1105_gpio_clear(struct dm1105_dev *dev, u32 mask)
 {
 	if (mask & 0xfffc0000)
-		printk(KERN_ERR "%s: Only 18 GPIO's are allowed\n", __func__);
+;
 
 	if (mask & 0x0003ffff)
 		dm_clearl(DM1105_GPIOVAL, mask & 0x0003ffff);
@@ -414,7 +414,7 @@ static void dm1105_gpio_clear(struct dm1105_dev *dev, u32 mask)
 static void dm1105_gpio_andor(struct dm1105_dev *dev, u32 mask, u32 val)
 {
 	if (mask & 0xfffc0000)
-		printk(KERN_ERR "%s: Only 18 GPIO's are allowed\n", __func__);
+;
 
 	if (mask & 0x0003ffff)
 		dm_andorl(DM1105_GPIOVAL, mask & 0x0003ffff, val);
@@ -424,7 +424,7 @@ static void dm1105_gpio_andor(struct dm1105_dev *dev, u32 mask, u32 val)
 static u32 dm1105_gpio_get(struct dm1105_dev *dev, u32 mask)
 {
 	if (mask & 0xfffc0000)
-		printk(KERN_ERR "%s: Only 18 GPIO's are allowed\n", __func__);
+;
 
 	if (mask & 0x0003ffff)
 		return dm_readl(DM1105_GPIOVAL) & mask & 0x0003ffff;
@@ -435,7 +435,7 @@ static u32 dm1105_gpio_get(struct dm1105_dev *dev, u32 mask)
 static void dm1105_gpio_enable(struct dm1105_dev *dev, u32 mask, int asoutput)
 {
 	if (mask & 0xfffc0000)
-		printk(KERN_ERR "%s: Only 18 GPIO's are allowed\n", __func__);
+;
 
 	if ((mask & 0x0003ffff) && asoutput)
 		dm_clearl(DM1105_GPIOCTR, mask & 0x0003ffff);
@@ -672,7 +672,7 @@ static void dm1105_emit_key(struct work_struct *work)
 	u8 data;
 
 	if (ir_debug)
-		printk(KERN_INFO "%s: received byte 0x%04x\n", __func__, ircom);
+;
 
 	data = (ircom >> 8) & 0x7f;
 

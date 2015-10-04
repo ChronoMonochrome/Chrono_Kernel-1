@@ -213,7 +213,7 @@ void __init pas_midi_init(void)
 
 	if (dev == -1)
 	{
-		printk(KERN_WARNING "pas_midi_init: Too many midi devices detected\n");
+;
 		return;
 	}
 	std_midi_synth.midi_dev = my_dev = dev;
@@ -256,7 +256,7 @@ void pas_midi_interrupt(void)
 	}
 	if (stat & 0x40)
 	{
-		printk(KERN_WARNING "MIDI output overrun %x,%x\n", pas_read(0x1B89), stat);
+;
 	}
 	pas_write(stat, 0x1B88);	/* Acknowledge interrupts */
 }

@@ -256,7 +256,7 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 1 : getscl(adap);
 	if (!scl || !sda) {
-		printk(KERN_WARNING "%s: bus seems to be busy\n", name);
+;
 		goto bailout;
 	}
 
@@ -264,12 +264,12 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 1 : getscl(adap);
 	if (sda) {
-		printk(KERN_WARNING "%s: SDA stuck high!\n", name);
+;
 		goto bailout;
 	}
 	if (!scl) {
-		printk(KERN_WARNING "%s: SCL unexpected low "
-		       "while pulling SDA low!\n", name);
+//		printk(KERN_WARNING "%s: SCL unexpected low "
+;
 		goto bailout;
 	}
 
@@ -277,12 +277,12 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 1 : getscl(adap);
 	if (!sda) {
-		printk(KERN_WARNING "%s: SDA stuck low!\n", name);
+;
 		goto bailout;
 	}
 	if (!scl) {
-		printk(KERN_WARNING "%s: SCL unexpected low "
-		       "while pulling SDA high!\n", name);
+//		printk(KERN_WARNING "%s: SCL unexpected low "
+;
 		goto bailout;
 	}
 
@@ -290,12 +290,12 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 0 : getscl(adap);
 	if (scl) {
-		printk(KERN_WARNING "%s: SCL stuck high!\n", name);
+;
 		goto bailout;
 	}
 	if (!sda) {
-		printk(KERN_WARNING "%s: SDA unexpected low "
-		       "while pulling SCL low!\n", name);
+//		printk(KERN_WARNING "%s: SDA unexpected low "
+;
 		goto bailout;
 	}
 
@@ -303,12 +303,12 @@ static int test_bus(struct i2c_adapter *i2c_adap)
 	sda = getsda(adap);
 	scl = (adap->getscl == NULL) ? 1 : getscl(adap);
 	if (!scl) {
-		printk(KERN_WARNING "%s: SCL stuck low!\n", name);
+;
 		goto bailout;
 	}
 	if (!sda) {
-		printk(KERN_WARNING "%s: SDA unexpected low "
-		       "while pulling SCL high!\n", name);
+//		printk(KERN_WARNING "%s: SDA unexpected low "
+;
 		goto bailout;
 	}
 

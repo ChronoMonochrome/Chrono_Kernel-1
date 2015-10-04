@@ -250,9 +250,9 @@ static bool pages_correctly_reserved(unsigned long start_pfn,
 			if (PageReserved(page + j))
 				continue;
 
-			printk(KERN_WARNING "section number %ld page number %d "
-				"not reserved, was it already online?\n",
-				pfn_to_section_nr(pfn), j);
+//			printk(KERN_WARNING "section number %ld page number %d "
+//				"not reserved, was it already online?\n",
+;
 
 			return false;
 		}
@@ -694,6 +694,6 @@ int __init memory_dev_init(void)
 		ret = err;
 out:
 	if (ret)
-		printk(KERN_ERR "%s() failed: %d\n", __func__, ret);
+;
 	return ret;
 }

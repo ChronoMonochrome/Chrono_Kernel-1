@@ -31,9 +31,9 @@
 
 #undef dprintk
 
-#define dprintk(level, fmt, arg...) do {				   \
-	if (debug >= level)						   \
-		printk(KERN_INFO "%s/1: " fmt, chip->core->name , ## arg); \
+//#define dprintk(level, fmt, arg...) do {				   \
+//	if (debug >= level)						   \
+;
 	} while (0)
 
 /****************************************************************************
@@ -77,7 +77,7 @@ static int _tm6000_start_audio_dma(struct snd_tm6000_card *chip)
 {
 	struct tm6000_core *core = chip->core;
 
-	dprintk(1, "Starting audio DMA\n");
+;
 
 	/* Enables audio */
 	tm6000_set_reg_mask(core, TM6010_REQ07_RCC_ACTIVE_VIDEO_IF, 0x40, 0x40);
@@ -95,7 +95,7 @@ static int _tm6000_stop_audio_dma(struct snd_tm6000_card *chip)
 {
 	struct tm6000_core *core = chip->core;
 
-	dprintk(1, "Stopping audio DMA\n");
+;
 
 	/* Disables audio */
 	tm6000_set_reg_mask(core, TM6010_REQ07_RCC_ACTIVE_VIDEO_IF, 0x00, 0x40);
@@ -107,7 +107,7 @@ static void dsp_buffer_free(struct snd_pcm_substream *substream)
 {
 	struct snd_tm6000_card *chip = snd_pcm_substream_chip(substream);
 
-	dprintk(2, "Freeing buffer\n");
+;
 
 	vfree(substream->runtime->dma_area);
 	substream->runtime->dma_area = NULL;
@@ -118,7 +118,7 @@ static int dsp_buffer_alloc(struct snd_pcm_substream *substream, int size)
 {
 	struct snd_tm6000_card *chip = snd_pcm_substream_chip(substream);
 
-	dprintk(2, "Allocating buffer\n");
+;
 
 	if (substream->runtime->dma_area) {
 		if (substream->runtime->dma_bytes > size)
@@ -184,7 +184,7 @@ static int snd_tm6000_pcm_open(struct snd_pcm_substream *substream)
 
 	return 0;
 _error:
-	dprintk(1, "Error opening PCM!\n");
+;
 	return err;
 }
 
@@ -217,13 +217,13 @@ static int tm6000_fillbuf(struct tm6000_core *core, char *buf, int size)
 		return 0;
 
 	if (!size || !substream) {
-		dprintk(1, "substream was NULL\n");
+;
 		return -EINVAL;
 	}
 
 	runtime = substream->runtime;
 	if (!runtime || !runtime->dma_area) {
-		dprintk(1, "runtime was NULL\n");
+;
 		return -EINVAL;
 	}
 
@@ -231,19 +231,19 @@ static int tm6000_fillbuf(struct tm6000_core *core, char *buf, int size)
 	stride = runtime->frame_bits >> 3;
 
 	if (stride == 0) {
-		dprintk(1, "stride is zero\n");
+;
 		return -EINVAL;
 	}
 
 	length = size / stride;
 	if (length == 0) {
-		dprintk(1, "%s: length was zero\n", __func__);
+;
 		return -EINVAL;
 	}
 
-	dprintk(1, "Copying %d bytes at %p[%d] - buf size=%d x %d\n", size,
-		runtime->dma_area, buf_pos,
-		(unsigned int)runtime->buffer_size, stride);
+//	dprintk(1, "Copying %d bytes at %p[%d] - buf size=%d x %d\n", size,
+//		runtime->dma_area, buf_pos,
+;
 
 	if (buf_pos + length >= runtime->buffer_size) {
 		unsigned int cnt = runtime->buffer_size - buf_pos;
@@ -335,10 +335,10 @@ static void audio_trigger(struct work_struct *work)
 	struct snd_tm6000_card *chip = core->adev;
 
 	if (atomic_read(&core->stream_started)) {
-		dprintk(1, "starting capture");
+;
 		_tm6000_start_audio_dma(chip);
 	} else {
-		dprintk(1, "stopping capture");
+;
 		_tm6000_stop_audio_dma(chip);
 	}
 }
@@ -421,7 +421,7 @@ int tm6000_audio_init(struct tm6000_core *dev)
 
 	rc = snd_card_create(index[devnr], "tm6000", THIS_MODULE, 0, &card);
 	if (rc < 0) {
-		snd_printk(KERN_ERR "cannot create card instance %d\n", devnr);
+;
 		return rc;
 	}
 	strcpy(card->driver, "tm6000-alsa");
@@ -461,7 +461,7 @@ int tm6000_audio_init(struct tm6000_core *dev)
 	if (rc < 0)
 		goto error_chip;
 
-	dprintk(1,"Registered audio driver for %s\n", card->longname);
+;
 
 	return 0;
 

@@ -533,7 +533,7 @@ bfad_im_scsi_host_alloc(struct bfad_s *bfad, struct bfad_im_port_s *im_port,
 	mutex_lock(&bfad_mutex);
 	if (!idr_pre_get(&bfad_im_port_index, GFP_KERNEL)) {
 		mutex_unlock(&bfad_mutex);
-		printk(KERN_WARNING "idr_pre_get failure\n");
+;
 		goto out;
 	}
 
@@ -541,7 +541,7 @@ bfad_im_scsi_host_alloc(struct bfad_s *bfad, struct bfad_im_port_s *im_port,
 					 &im_port->idr_id);
 	if (error) {
 		mutex_unlock(&bfad_mutex);
-		printk(KERN_WARNING "idr_get_new failure\n");
+;
 		goto out;
 	}
 
@@ -568,7 +568,7 @@ bfad_im_scsi_host_alloc(struct bfad_s *bfad, struct bfad_im_port_s *im_port,
 
 	error = scsi_add_host_with_dma(im_port->shost, dev, &bfad->pcidev->dev);
 	if (error) {
-		printk(KERN_WARNING "scsi_add_host failure %d\n", error);
+;
 		goto out_fc_rel;
 	}
 
@@ -1058,10 +1058,10 @@ bfad_im_itnim_work_handler(struct work_struct *work)
 				itnim->scsi_tgt_id,
 				fcid_str, wwpn_str);
 		} else {
-			printk(KERN_WARNING
-				"%s: itnim %llx is already in online state\n",
-				__func__,
-				bfa_fcs_itnim_get_pwwn(&itnim->fcs_itnim));
+//			printk(KERN_WARNING
+//				"%s: itnim %llx is already in online state\n",
+//				__func__,
+;
 		}
 
 		break;
@@ -1150,9 +1150,9 @@ bfad_im_queuecommand_lck(struct scsi_cmnd *cmnd, void (*done) (struct scsi_cmnd 
 
 	spin_lock_irqsave(&bfad->bfad_lock, flags);
 	if (!(bfad->bfad_flags & BFAD_HAL_START_DONE)) {
-		printk(KERN_WARNING
-			"bfad%d, queuecommand %p %x failed, BFA stopped\n",
-		       bfad->inst_no, cmnd, cmnd->cmnd[0]);
+//		printk(KERN_WARNING
+//			"bfad%d, queuecommand %p %x failed, BFA stopped\n",
+;
 		cmnd->result = ScsiResult(DID_NO_CONNECT, 0);
 		goto out_fail_cmd;
 	}
@@ -1167,7 +1167,7 @@ bfad_im_queuecommand_lck(struct scsi_cmnd *cmnd, void (*done) (struct scsi_cmnd 
 	hal_io = bfa_ioim_alloc(&bfad->bfa, (struct bfad_ioim_s *) cmnd,
 				    itnim->bfa_itnim, sg_cnt);
 	if (!hal_io) {
-		printk(KERN_WARNING "hal_io failure\n");
+;
 		spin_unlock_irqrestore(&bfad->bfad_lock, flags);
 		scsi_dma_unmap(cmnd);
 		return SCSI_MLQUEUE_HOST_BUSY;

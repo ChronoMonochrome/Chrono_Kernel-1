@@ -142,14 +142,14 @@ static int at91sam9g20ek_wm8731_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 	int ret;
 
-	printk(KERN_DEBUG
-			"at91sam9g20ek_wm8731 "
-			": at91sam9g20ek_wm8731_init() called\n");
+//	printk(KERN_DEBUG
+//			"at91sam9g20ek_wm8731 "
+;
 
 	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_MCLK,
 		MCLK_RATE, SND_SOC_CLOCK_IN);
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to set WM8731 SYSCLK: %d\n", ret);
+;
 		return ret;
 	}
 
@@ -216,21 +216,21 @@ static int __init at91sam9g20ek_init(void)
 	 */
 	mclk = clk_get(NULL, "pck0");
 	if (IS_ERR(mclk)) {
-		printk(KERN_ERR "ASoC: Failed to get MCLK\n");
+;
 		ret = PTR_ERR(mclk);
 		goto err;
 	}
 
 	pllb = clk_get(NULL, "pllb");
 	if (IS_ERR(pllb)) {
-		printk(KERN_ERR "ASoC: Failed to get PLLB\n");
+;
 		ret = PTR_ERR(pllb);
 		goto err_mclk;
 	}
 	ret = clk_set_parent(mclk, pllb);
 	clk_put(pllb);
 	if (ret != 0) {
-		printk(KERN_ERR "ASoC: Failed to set MCLK parent\n");
+;
 		goto err_mclk;
 	}
 
@@ -238,7 +238,7 @@ static int __init at91sam9g20ek_init(void)
 
 	at91sam9g20ek_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!at91sam9g20ek_snd_device) {
-		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
+;
 		ret = -ENOMEM;
 		goto err_mclk;
 	}
@@ -248,7 +248,7 @@ static int __init at91sam9g20ek_init(void)
 
 	ret = platform_device_add(at91sam9g20ek_snd_device);
 	if (ret) {
-		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
+;
 		goto err_device_add;
 	}
 

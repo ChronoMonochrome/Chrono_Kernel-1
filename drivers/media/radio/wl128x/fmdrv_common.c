@@ -205,21 +205,21 @@ inline void dump_tx_skb_data(struct sk_buff *skb)
 	struct fm_cmd_msg_hdr *cmd_hdr;
 
 	cmd_hdr = (struct fm_cmd_msg_hdr *)skb->data;
-	printk(KERN_INFO "<<%shdr:%02x len:%02x opcode:%02x type:%s dlen:%02x",
-	       fm_cb(skb)->completion ? " " : "*", cmd_hdr->hdr,
-	       cmd_hdr->len, cmd_hdr->op,
-	       cmd_hdr->rd_wr ? "RD" : "WR", cmd_hdr->dlen);
+//	printk(KERN_INFO "<<%shdr:%02x len:%02x opcode:%02x type:%s dlen:%02x",
+//	       fm_cb(skb)->completion ? " " : "*", cmd_hdr->hdr,
+//	       cmd_hdr->len, cmd_hdr->op,
+;
 
 	len_org = skb->len - FM_CMD_MSG_HDR_SIZE;
 	if (len_org > 0) {
-		printk("\n   data(%d): ", cmd_hdr->dlen);
+;
 		len = min(len_org, 14);
 		for (index = 0; index < len; index++)
-			printk("%x ",
-			       skb->data[FM_CMD_MSG_HDR_SIZE + index]);
-		printk("%s", (len_org > 14) ? ".." : "");
+//			printk("%x ",
+;
+;
 	}
-	printk("\n");
+;
 }
 
  /* To dump incoming FM Channel-8 packets */
@@ -230,21 +230,21 @@ inline void dump_rx_skb_data(struct sk_buff *skb)
 	struct fm_event_msg_hdr *evt_hdr;
 
 	evt_hdr = (struct fm_event_msg_hdr *)skb->data;
-	printk(KERN_INFO ">> hdr:%02x len:%02x sts:%02x numhci:%02x "
-	    "opcode:%02x type:%s dlen:%02x", evt_hdr->hdr, evt_hdr->len,
-	    evt_hdr->status, evt_hdr->num_fm_hci_cmds, evt_hdr->op,
-	    (evt_hdr->rd_wr) ? "RD" : "WR", evt_hdr->dlen);
+//	printk(KERN_INFO ">> hdr:%02x len:%02x sts:%02x numhci:%02x "
+//	    "opcode:%02x type:%s dlen:%02x", evt_hdr->hdr, evt_hdr->len,
+//	    evt_hdr->status, evt_hdr->num_fm_hci_cmds, evt_hdr->op,
+;
 
 	len_org = skb->len - FM_EVT_MSG_HDR_SIZE;
 	if (len_org > 0) {
-		printk("\n   data(%d): ", evt_hdr->dlen);
+;
 		len = min(len_org, 14);
 		for (index = 0; index < len; index++)
-			printk("%x ",
-			       skb->data[FM_EVT_MSG_HDR_SIZE + index]);
-		printk("%s", (len_org > 14) ? ".." : "");
+//			printk("%x ",
+;
+;
 	}
-	printk("\n");
+;
 }
 #endif
 

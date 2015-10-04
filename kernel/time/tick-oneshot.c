@@ -38,9 +38,9 @@ static int tick_increase_min_delta(struct clock_event_device *dev)
 	if (dev->min_delta_ns > MIN_DELTA_LIMIT)
 		dev->min_delta_ns = MIN_DELTA_LIMIT;
 
-	printk(KERN_WARNING "CE: %s increased min_delta_ns to %llu nsec\n",
-	       dev->name ? dev->name : "?",
-	       (unsigned long long) dev->min_delta_ns);
+//	printk(KERN_WARNING "CE: %s increased min_delta_ns to %llu nsec\n",
+//	       dev->name ? dev->name : "?",
+;
 	return 0;
 }
 
@@ -76,8 +76,8 @@ int tick_dev_program_event(struct clock_event_device *dev, ktime_t expires,
 				 * We clear next_event so we have a
 				 * chance that the box survives.
 				 */
-				printk(KERN_WARNING
-				       "CE: Reprogramming failure. Giving up\n");
+//				printk(KERN_WARNING
+;
 				dev->next_event.tv64 = KTIME_MAX;
 				return -ETIME;
 			}
@@ -134,16 +134,16 @@ int tick_switch_to_oneshot(void (*handler)(struct clock_event_device *))
 	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT) ||
 		    !tick_device_is_functional(dev)) {
 
-		printk(KERN_INFO "Clockevents: "
-		       "could not switch to one-shot mode:");
+//		printk(KERN_INFO "Clockevents: "
+;
 		if (!dev) {
-			printk(" no tick device\n");
+;
 		} else {
 			if (!tick_device_is_functional(dev))
-				printk(" %s is not functional.\n", dev->name);
+;
 			else
-				printk(" %s does not support one-shot mode.\n",
-				       dev->name);
+//				printk(" %s does not support one-shot mode.\n",
+;
 		}
 		return -EINVAL;
 	}

@@ -1107,9 +1107,9 @@ static int ocfs2_fill_super(struct super_block *sb, void *data, int silent)
 
 		ocfs2_set_ro_flag(osb, 1);
 
-		printk(KERN_NOTICE "Readonly device detected. No cluster "
-		       "services will be utilized for this mount. Recovery "
-		       "will be skipped.\n");
+//		printk(KERN_NOTICE "Readonly device detected. No cluster "
+//		       "services will be utilized for this mount. Recovery "
+;
 	}
 
 	if (!ocfs2_is_hard_readonly(osb)) {
@@ -1182,11 +1182,11 @@ static int ocfs2_fill_super(struct super_block *sb, void *data, int silent)
 	else
 		snprintf(nodestr, sizeof(nodestr), "%u", osb->node_num);
 
-	printk(KERN_INFO "ocfs2: Mounting device (%s) on (node %s, slot %d) "
-	       "with %s data mode.\n",
-	       osb->dev_str, nodestr, osb->slot_num,
-	       osb->s_mount_opt & OCFS2_MOUNT_DATA_WRITEBACK ? "writeback" :
-	       "ordered");
+//	printk(KERN_INFO "ocfs2: Mounting device (%s) on (node %s, slot %d) "
+//	       "with %s data mode.\n",
+//	       osb->dev_str, nodestr, osb->slot_num,
+//	       osb->s_mount_opt & OCFS2_MOUNT_DATA_WRITEBACK ? "writeback" :
+;
 
 	atomic_set(&osb->vol_state, VOLUME_MOUNTED);
 	wake_up(&osb->osb_mount_event);
@@ -1993,8 +1993,8 @@ static void ocfs2_dismount_volume(struct super_block *sb, int mnt_err)
 	else
 		snprintf(nodestr, sizeof(nodestr), "%u", osb->node_num);
 
-	printk(KERN_INFO "ocfs2: Unmounting device (%s) on (node %s)\n",
-	       osb->dev_str, nodestr);
+//	printk(KERN_INFO "ocfs2: Unmounting device (%s) on (node %s)\n",
+;
 
 	ocfs2_delete_osb(osb);
 	kfree(osb);
@@ -2568,9 +2568,9 @@ static void ocfs2_handle_error(struct super_block *sb)
 	     ocfs2_is_hard_readonly(osb)))
 		return;
 
-	printk(KERN_CRIT "File system is now read-only due to the potential "
-	       "of on-disk corruption. Please run fsck.ocfs2 once the file "
-	       "system is unmounted.\n");
+//	printk(KERN_CRIT "File system is now read-only due to the potential "
+//	       "of on-disk corruption. Please run fsck.ocfs2 once the file "
+;
 	sb->s_flags |= MS_RDONLY;
 	ocfs2_set_ro_flag(osb, 0);
 }
@@ -2589,8 +2589,8 @@ void __ocfs2_error(struct super_block *sb,
 
 	/* Not using mlog here because we want to show the actual
 	 * function the error came from. */
-	printk(KERN_CRIT "OCFS2: ERROR (device %s): %s: %s\n",
-	       sb->s_id, function, error_buf);
+//	printk(KERN_CRIT "OCFS2: ERROR (device %s): %s: %s\n",
+;
 
 	ocfs2_handle_error(sb);
 }
@@ -2608,8 +2608,8 @@ void __ocfs2_abort(struct super_block* sb,
 	vsnprintf(error_buf, sizeof(error_buf), fmt, args);
 	va_end(args);
 
-	printk(KERN_CRIT "OCFS2: abort (device %s): %s: %s\n",
-	       sb->s_id, function, error_buf);
+//	printk(KERN_CRIT "OCFS2: abort (device %s): %s: %s\n",
+;
 
 	/* We don't have the cluster support yet to go straight to
 	 * hard readonly in here. Until then, we want to keep

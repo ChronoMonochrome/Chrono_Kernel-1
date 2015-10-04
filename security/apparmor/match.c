@@ -139,8 +139,8 @@ static int verify_dfa(struct aa_dfa *dfa, int flags)
 				goto out;
 			/* TODO: do check that DEF state recursion terminates */
 			if (BASE_TABLE(dfa)[i] + 255 >= trans_count) {
-				printk(KERN_ERR "AppArmor DFA next/check upper "
-				       "bounds error\n");
+//				printk(KERN_ERR "AppArmor DFA next/check upper "
+;
 				goto out;
 			}
 		}

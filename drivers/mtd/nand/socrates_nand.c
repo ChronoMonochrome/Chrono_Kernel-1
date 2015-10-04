@@ -172,14 +172,14 @@ static int __devinit socrates_nand_probe(struct platform_device *ofdev)
 	/* Allocate memory for the device structure (and zero it) */
 	host = kzalloc(sizeof(struct socrates_nand_host), GFP_KERNEL);
 	if (!host) {
-		printk(KERN_ERR
-		       "socrates_nand: failed to allocate device structure.\n");
+//		printk(KERN_ERR
+;
 		return -ENOMEM;
 	}
 
 	host->io_base = of_iomap(ofdev->dev.of_node, 0);
 	if (host->io_base == NULL) {
-		printk(KERN_ERR "socrates_nand: ioremap failed\n");
+;
 		kfree(host);
 		return -EIO;
 	}

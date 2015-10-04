@@ -87,12 +87,12 @@ static const char * vendor_labels[CH_TYPES-4] = {
 #define DPRINTK(fmt, arg...)						\
 do {									\
 	if (debug)							\
-		printk(KERN_DEBUG "%s: " fmt, ch->name, ##arg);		\
+;
 } while (0)
 #define VPRINTK(level, fmt, arg...)					\
 do {									\
 	if (verbose)							\
-		printk(level "%s: " fmt, ch->name, ##arg);		\
+;
 } while (0)
 
 /* ------------------------------------------------------------------- */
@@ -927,8 +927,8 @@ static int ch_probe(struct device *dev)
 				  MKDEV(SCSI_CHANGER_MAJOR, ch->minor), ch,
 				  "s%s", ch->name);
 	if (IS_ERR(class_dev)) {
-		printk(KERN_WARNING "ch%d: device_create failed\n",
-		       ch->minor);
+//		printk(KERN_WARNING "ch%d: device_create failed\n",
+;
 		ret = PTR_ERR(class_dev);
 		goto remove_idr;
 	}
@@ -940,7 +940,7 @@ static int ch_probe(struct device *dev)
 		ch_init_elem(ch);
 
 	dev_set_drvdata(dev, ch);
-	sdev_printk(KERN_INFO, sd, "Attached scsi changer %s\n", ch->name);
+;
 
 	return 0;
 remove_idr:
@@ -988,7 +988,7 @@ static int __init init_ch_module(void)
 {
 	int rc;
 
-	printk(KERN_INFO "SCSI Media Changer driver v" VERSION " \n");
+;
         ch_sysfs_class = class_create(THIS_MODULE, "scsi_changer");
         if (IS_ERR(ch_sysfs_class)) {
 		rc = PTR_ERR(ch_sysfs_class);
@@ -996,8 +996,8 @@ static int __init init_ch_module(void)
         }
 	rc = register_chrdev(SCSI_CHANGER_MAJOR,"ch",&changer_fops);
 	if (rc < 0) {
-		printk("Unable to get major %d for SCSI-Changer\n",
-		       SCSI_CHANGER_MAJOR);
+//		printk("Unable to get major %d for SCSI-Changer\n",
+;
 		goto fail1;
 	}
 	rc = scsi_register_driver(&ch_template.gendrv);

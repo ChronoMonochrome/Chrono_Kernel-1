@@ -527,7 +527,7 @@ static int sec_jack_probe(struct platform_device *pdev)
 	}
 	ret = switch_dev_register(&switch_sendend);
 	if (ret < 0) {
-		printk(KERN_ERR "SEC JACK: Failed to register switch device\n");
+;
 		goto err_switch_dev_register_send_end;
 	}
 

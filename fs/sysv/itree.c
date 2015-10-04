@@ -29,7 +29,7 @@ static int block_to_path(struct inode *inode, long block, int offsets[DEPTH])
 	int n = 0;
 
 	if (block < 0) {
-		printk("sysv_block_map: block < 0\n");
+;
 	} else if (block < DIRECT) {
 		offsets[n++] = block;
 	} else if ( (block -= DIRECT) < indirect_blocks) {

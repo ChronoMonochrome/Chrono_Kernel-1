@@ -128,7 +128,7 @@ static int iop_intr_itl(struct hptiop_hba *hba)
 	if (status & IOPMU_OUTBOUND_INT_MSG0) {
 		u32 msg = readl(&iop->outbound_msgaddr0);
 
-		dprintk("received outbound msg %x\n", msg);
+;
 		writel(IOPMU_OUTBOUND_INT_MSG0, &iop->outbound_intstatus);
 		hptiop_message_callback(hba, msg);
 		ret = 1;
@@ -180,7 +180,7 @@ static void hptiop_request_callback_mv(struct hptiop_hba *hba, u64 tag)
 	u32 req_type = (tag >> 5) & 0x7;
 	struct hpt_iop_request_scsi_command *req;
 
-	dprintk("hptiop_request_callback_mv: tag=%llx\n", tag);
+;
 
 	BUG_ON((tag & MVIOP_MU_QUEUE_REQUEST_RETURN_CONTEXT) == 0);
 
@@ -214,7 +214,7 @@ static int iop_intr_mv(struct hptiop_hba *hba)
 	if (status & MVIOP_MU_OUTBOUND_INT_MSG) {
 		u32 msg;
 		msg = readl(&hba->u.mv.mu->outbound_msg);
-		dprintk("received outbound msg %x\n", msg);
+;
 		hptiop_message_callback(hba, msg);
 		ret = 1;
 	}
@@ -323,7 +323,7 @@ static int iop_get_config_itl(struct hptiop_hba *hba,
 	writel(IOP_RESULT_PENDING, &req->header.result);
 
 	if (iop_send_sync_request_itl(hba, req, 20000)) {
-		dprintk("Get config send cmd failed\n");
+;
 		return -1;
 	}
 
@@ -346,7 +346,7 @@ static int iop_get_config_mv(struct hptiop_hba *hba,
 	req->header.context_hi32 = 0;
 
 	if (iop_send_sync_request_mv(hba, 0, 20000)) {
-		dprintk("Get config send cmd failed\n");
+;
 		return -1;
 	}
 
@@ -378,7 +378,7 @@ static int iop_set_config_itl(struct hptiop_hba *hba,
 	writel(IOP_RESULT_PENDING, &req->header.result);
 
 	if (iop_send_sync_request_itl(hba, req, 20000)) {
-		dprintk("Set config send cmd failed\n");
+;
 		return -1;
 	}
 
@@ -401,7 +401,7 @@ static int iop_set_config_mv(struct hptiop_hba *hba,
 	req->header.context_hi32 = 0;
 
 	if (iop_send_sync_request_mv(hba, 0, 20000)) {
-		dprintk("Set config send cmd failed\n");
+;
 		return -1;
 	}
 
@@ -430,8 +430,8 @@ static int hptiop_initialize_iop(struct hptiop_hba *hba)
 	/* start background tasks */
 	if (iop_send_sync_msg(hba,
 			IOPMU_INBOUND_MSG0_START_BACKGROUND_TASK, 5000)) {
-		printk(KERN_ERR "scsi%d: fail to start background task\n",
-			hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: fail to start background task\n",
+;
 		return -1;
 	}
 	return 0;
@@ -446,8 +446,8 @@ static void __iomem *hptiop_map_pci_bar(struct hptiop_hba *hba, int index)
 
 
 	if (!(pci_resource_flags(pcidev, index) & IORESOURCE_MEM)) {
-		printk(KERN_ERR "scsi%d: pci resource invalid\n",
-				hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: pci resource invalid\n",
+;
 		return NULL;
 	}
 
@@ -456,8 +456,8 @@ static void __iomem *hptiop_map_pci_bar(struct hptiop_hba *hba, int index)
 	mem_base_virt = ioremap(mem_base_phy, length);
 
 	if (!mem_base_virt) {
-		printk(KERN_ERR "scsi%d: Fail to ioremap memory space\n",
-				hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: Fail to ioremap memory space\n",
+;
 		return NULL;
 	}
 	return mem_base_virt;
@@ -510,7 +510,7 @@ static void hptiop_unmap_pci_bar_mv(struct hptiop_hba *hba)
 
 static void hptiop_message_callback(struct hptiop_hba *hba, u32 msg)
 {
-	dprintk("iop message 0x%x\n", msg);
+;
 
 	if (msg == IOPMU_INBOUND_MSG0_NOP)
 		hba->msg_done = 1;
@@ -530,7 +530,7 @@ static struct hptiop_request *get_req(struct hptiop_hba *hba)
 {
 	struct hptiop_request *ret;
 
-	dprintk("get_req : req=%p\n", hba->req_list);
+;
 
 	ret = hba->req_list;
 	if (ret)
@@ -541,7 +541,7 @@ static struct hptiop_request *get_req(struct hptiop_hba *hba)
 
 static void free_req(struct hptiop_hba *hba, struct hptiop_request *req)
 {
-	dprintk("free_req(%d, %p)\n", req->index, req);
+;
 	req->next = hba->req_list;
 	hba->req_list = req;
 }
@@ -551,10 +551,10 @@ static void hptiop_finish_scsi_req(struct hptiop_hba *hba, u32 tag,
 {
 	struct scsi_cmnd *scp;
 
-	dprintk("hptiop_finish_scsi_req: req=%p, type=%d, "
-			"result=%d, context=0x%x tag=%d\n",
-			req, req->header.type, req->header.result,
-			req->header.context, tag);
+//	dprintk("hptiop_finish_scsi_req: req=%p, type=%d, "
+//			"result=%d, context=0x%x tag=%d\n",
+//			req, req->header.type, req->header.result,
+;
 
 	BUG_ON(!req->header.result);
 	BUG_ON(req->header.type != cpu_to_le32(IOP_REQUEST_TYPE_SCSI_COMMAND));
@@ -599,7 +599,7 @@ static void hptiop_finish_scsi_req(struct hptiop_hba *hba, u32 tag,
 		break;
 	}
 
-	dprintk("scsi_done(%p)\n", scp);
+;
 	scp->scsi_done(scp);
 	free_req(hba, &hba->reqs[tag]);
 }
@@ -630,10 +630,10 @@ void hptiop_iop_request_callback_itl(struct hptiop_hba *hba, u32 tag)
 
 	req = (struct hpt_iop_request_header __iomem *)
 			((unsigned long)hba->u.itl.iop + tag);
-	dprintk("hptiop_iop_request_callback_itl: req=%p, type=%d, "
-			"result=%d, context=0x%x tag=%d\n",
-			req, readl(&req->type), readl(&req->result),
-			readl(&req->context), tag);
+//	dprintk("hptiop_iop_request_callback_itl: req=%p, type=%d, "
+//			"result=%d, context=0x%x tag=%d\n",
+//			req, readl(&req->type), readl(&req->result),
+;
 
 	BUG_ON(!readl(&req->result));
 	BUG_ON(readl(&req->type) != IOP_REQUEST_TYPE_IOCTL_COMMAND);
@@ -765,21 +765,21 @@ static int hptiop_queuecommand_lck(struct scsi_cmnd *scp,
 
 	_req = get_req(hba);
 	if (_req == NULL) {
-		dprintk("hptiop_queuecmd : no free req\n");
+;
 		return SCSI_MLQUEUE_HOST_BUSY;
 	}
 
 	_req->scp = scp;
 
-	dprintk("hptiop_queuecmd(scp=%p) %d/%d/%d/%d cdb=(%x-%x-%x) "
-			"req_index=%d, req=%p\n",
-			scp,
-			host->host_no, scp->device->channel,
-			scp->device->id, scp->device->lun,
-			((u32 *)scp->cmnd)[0],
-			((u32 *)scp->cmnd)[1],
-			((u32 *)scp->cmnd)[2],
-			_req->index, _req->req_virt);
+//	dprintk("hptiop_queuecmd(scp=%p) %d/%d/%d/%d cdb=(%x-%x-%x) "
+//			"req_index=%d, req=%p\n",
+//			scp,
+//			host->host_no, scp->device->channel,
+//			scp->device->id, scp->device->lun,
+//			((u32 *)scp->cmnd)[0],
+//			((u32 *)scp->cmnd)[1],
+//			((u32 *)scp->cmnd)[2],
+;
 
 	scp->result = 0;
 
@@ -814,7 +814,7 @@ static int hptiop_queuecommand_lck(struct scsi_cmnd *scp,
 	return 0;
 
 cmd_done:
-	dprintk("scsi_done(scp=%p)\n", scp);
+;
 	scp->scsi_done(scp);
 	return 0;
 }
@@ -838,14 +838,14 @@ static int hptiop_reset_hba(struct hptiop_hba *hba)
 
 	if (atomic_read(&hba->resetting)) {
 		/* IOP is in unknown state, abort reset */
-		printk(KERN_ERR "scsi%d: reset failed\n", hba->host->host_no);
+;
 		return -1;
 	}
 
 	if (iop_send_sync_msg(hba,
 		IOPMU_INBOUND_MSG0_START_BACKGROUND_TASK, 5000)) {
-		dprintk("scsi%d: fail to start background task\n",
-				hba->host->host_no);
+//		dprintk("scsi%d: fail to start background task\n",
+;
 	}
 
 	return 0;
@@ -856,9 +856,9 @@ static int hptiop_reset(struct scsi_cmnd *scp)
 	struct Scsi_Host * host = scp->device->host;
 	struct hptiop_hba * hba = (struct hptiop_hba *)host->hostdata;
 
-	printk(KERN_WARNING "hptiop_reset(%d/%d/%d) scp=%p\n",
-			scp->device->host->host_no, scp->device->channel,
-			scp->device->id, scp);
+//	printk(KERN_WARNING "hptiop_reset(%d/%d/%d) scp=%p\n",
+//			scp->device->host->host_no, scp->device->channel,
+;
 
 	return hptiop_reset_hba(hba)? FAILED : SUCCESS;
 }
@@ -964,35 +964,35 @@ static int __devinit hptiop_probe(struct pci_dev *pcidev,
 	void *start_virt;
 	u32 offset, i, req_size;
 
-	dprintk("hptiop_probe(%p)\n", pcidev);
+;
 
 	if (pci_enable_device(pcidev)) {
-		printk(KERN_ERR "hptiop: fail to enable pci device\n");
+;
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO "adapter at PCI %d:%d:%d, IRQ %d\n",
-		pcidev->bus->number, pcidev->devfn >> 3, pcidev->devfn & 7,
-		pcidev->irq);
+//	printk(KERN_INFO "adapter at PCI %d:%d:%d, IRQ %d\n",
+//		pcidev->bus->number, pcidev->devfn >> 3, pcidev->devfn & 7,
+;
 
 	pci_set_master(pcidev);
 
 	/* Enable 64bit DMA if possible */
 	if (pci_set_dma_mask(pcidev, DMA_BIT_MASK(64))) {
 		if (pci_set_dma_mask(pcidev, DMA_BIT_MASK(32))) {
-			printk(KERN_ERR "hptiop: fail to set dma_mask\n");
+;
 			goto disable_pci_device;
 		}
 	}
 
 	if (pci_request_regions(pcidev, driver_name)) {
-		printk(KERN_ERR "hptiop: pci_request_regions failed\n");
+;
 		goto disable_pci_device;
 	}
 
 	host = scsi_host_alloc(&driver_template, sizeof(struct hptiop_hba));
 	if (!host) {
-		printk(KERN_ERR "hptiop: fail to alloc scsi host\n");
+;
 		goto free_pci_regions;
 	}
 
@@ -1020,22 +1020,22 @@ static int __devinit hptiop_probe(struct pci_dev *pcidev,
 		goto free_scsi_host;
 
 	if (hba->ops->iop_wait_ready(hba, 20000)) {
-		printk(KERN_ERR "scsi%d: firmware not ready\n",
-				hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: firmware not ready\n",
+;
 		goto unmap_pci_bar;
 	}
 
 	if (hba->ops->internal_memalloc) {
 		if (hba->ops->internal_memalloc(hba)) {
-			printk(KERN_ERR "scsi%d: internal_memalloc failed\n",
-				hba->host->host_no);
+//			printk(KERN_ERR "scsi%d: internal_memalloc failed\n",
+;
 			goto unmap_pci_bar;
 		}
 	}
 
 	if (hba->ops->get_config(hba, &iop_config)) {
-		printk(KERN_ERR "scsi%d: get config failed\n",
-				hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: get config failed\n",
+;
 		goto unmap_pci_bar;
 	}
 
@@ -1070,8 +1070,8 @@ static int __devinit hptiop_probe(struct pci_dev *pcidev,
 	set_config.max_host_request_size = cpu_to_le16(req_size);
 
 	if (hba->ops->set_config(hba, &set_config)) {
-		printk(KERN_ERR "scsi%d: set config failed\n",
-				hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: set config failed\n",
+;
 		goto unmap_pci_bar;
 	}
 
@@ -1079,14 +1079,14 @@ static int __devinit hptiop_probe(struct pci_dev *pcidev,
 
 	if (request_irq(pcidev->irq, hptiop_intr, IRQF_SHARED,
 					driver_name, hba)) {
-		printk(KERN_ERR "scsi%d: request irq %d failed\n",
-					hba->host->host_no, pcidev->irq);
+//		printk(KERN_ERR "scsi%d: request irq %d failed\n",
+;
 		goto unmap_pci_bar;
 	}
 
 	/* Allocate request mem */
 
-	dprintk("req_size=%d, max_requests=%d\n", req_size, hba->max_requests);
+;
 
 	hba->req_size = req_size;
 	start_virt = dma_alloc_coherent(&pcidev->dev,
@@ -1094,8 +1094,8 @@ static int __devinit hptiop_probe(struct pci_dev *pcidev,
 				&start_phy, GFP_KERNEL);
 
 	if (!start_virt) {
-		printk(KERN_ERR "scsi%d: fail to alloc request mem\n",
-					hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: fail to alloc request mem\n",
+;
 		goto free_request_irq;
 	}
 
@@ -1125,15 +1125,15 @@ static int __devinit hptiop_probe(struct pci_dev *pcidev,
 		goto free_request_mem;
 
 	if (scsi_add_host(host, &pcidev->dev)) {
-		printk(KERN_ERR "scsi%d: scsi_add_host failed\n",
-					hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: scsi_add_host failed\n",
+;
 		goto free_request_mem;
 	}
 
 
 	scsi_scan_host(host);
 
-	dprintk("scsi%d: hptiop_probe successfully\n", hba->host->host_no);
+;
 	return 0;
 
 free_request_mem:
@@ -1159,7 +1159,7 @@ free_pci_regions:
 disable_pci_device:
 	pci_disable_device(pcidev);
 
-	dprintk("scsi%d: hptiop_probe fail\n", host ? host->host_no : 0);
+;
 	return -ENODEV;
 }
 
@@ -1168,12 +1168,12 @@ static void hptiop_shutdown(struct pci_dev *pcidev)
 	struct Scsi_Host *host = pci_get_drvdata(pcidev);
 	struct hptiop_hba *hba = (struct hptiop_hba *)host->hostdata;
 
-	dprintk("hptiop_shutdown(%p)\n", hba);
+;
 
 	/* stop the iop */
 	if (iop_send_sync_msg(hba, IOPMU_INBOUND_MSG0_SHUTDOWN, 60000))
-		printk(KERN_ERR "scsi%d: shutdown the iop timeout\n",
-					hba->host->host_no);
+//		printk(KERN_ERR "scsi%d: shutdown the iop timeout\n",
+;
 
 	/* disable all outbound interrupts */
 	hba->ops->disable_intr(hba);
@@ -1201,7 +1201,7 @@ static void hptiop_remove(struct pci_dev *pcidev)
 	struct Scsi_Host *host = pci_get_drvdata(pcidev);
 	struct hptiop_hba *hba = (struct hptiop_hba *)host->hostdata;
 
-	dprintk("scsi%d: hptiop_remove\n", hba->host->host_no);
+;
 
 	scsi_remove_host(host);
 
@@ -1294,7 +1294,7 @@ static struct pci_driver hptiop_pci_driver = {
 
 static int __init hptiop_module_init(void)
 {
-	printk(KERN_INFO "%s %s\n", driver_name_long, driver_ver);
+;
 	return pci_register_driver(&hptiop_pci_driver);
 }
 

@@ -21,12 +21,12 @@ MODULE_PARM_DESC(debug, "set debugging level (rc=1 (or-able))." DVB_USB_DEBUG_ST
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
-#define deb_rc(args...)   dprintk(debug,0x01,args)
-
-static int a800_power_ctrl(struct dvb_usb_device *d, int onoff)
-{
-	/* do nothing for the AVerMedia */
-	return 0;
+//#define deb_rc(args...)   dprintk(debug,0x01,args)
+//
+//static int a800_power_ctrl(struct dvb_usb_device *d, int onoff)
+//{
+//	/* do nothing for the AVerMedia */
+;
 }
 
 /* assure to put cold to 0 for iManufacturer == 1 */

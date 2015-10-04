@@ -815,7 +815,7 @@ snd_pmac_ctrl_intr(int irq, void *devid)
 	if (ctrl & MASK_CNTLERR) {
 		int err = (in_le32(&chip->awacs->codec_stat) & MASK_ERRCODE) >> 16;
 		if (err && chip->model <= PMAC_SCREAMER)
-			snd_printk(KERN_DEBUG "error %x\n", err);
+;
 	}
 	/* Writing 1s to the CNTLERR and PORTCHG bits clears them... */
 	out_le32(&chip->awacs->control, ctrl);
@@ -1007,9 +1007,9 @@ static int __devinit snd_pmac_detect(struct snd_pmac *chip)
 	if (prop) {
 		/* partly deprecate snd-powermac, for those machines
 		 * that have a layout-id property for now */
-		printk(KERN_INFO "snd-powermac no longer handles any "
-				 "machines with a layout-id property "
-				 "in the device-tree, use snd-aoa.\n");
+//		printk(KERN_INFO "snd-powermac no longer handles any "
+//				 "machines with a layout-id property "
+;
 		of_node_put(sound);
 		of_node_put(chip->node);
 		chip->node = NULL;
@@ -1064,7 +1064,7 @@ static int __devinit snd_pmac_detect(struct snd_pmac *chip)
 	 */
 	macio = macio_find(chip->node, macio_unknown);
 	if (macio == NULL)
-		printk(KERN_WARNING "snd-powermac: can't locate macio !\n");
+;
 	else {
 		struct pci_dev *pdev = NULL;
 
@@ -1077,8 +1077,8 @@ static int __devinit snd_pmac_detect(struct snd_pmac *chip)
 		}
 	}
 	if (chip->pdev == NULL)
-		printk(KERN_WARNING "snd-powermac: can't locate macio PCI"
-		       " device !\n");
+//		printk(KERN_WARNING "snd-powermac: can't locate macio PCI"
+;
 
 	detect_byte_swap(chip);
 
@@ -1168,7 +1168,7 @@ int __devinit snd_pmac_add_automute(struct snd_pmac *chip)
 	chip->auto_mute = 1;
 	err = snd_ctl_add(chip->card, snd_ctl_new1(&auto_mute_controls[0], chip));
 	if (err < 0) {
-		printk(KERN_ERR "snd-powermac: Failed to add automute control\n");
+;
 		return err;
 	}
 	chip->hp_detect_ctl = snd_ctl_new1(&auto_mute_controls[1], chip);
@@ -1222,8 +1222,8 @@ int __devinit snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 		for (i = 0; i < 2; i ++) {
 			if (of_address_to_resource(np->parent, i,
 						   &chip->rsrc[i])) {
-				printk(KERN_ERR "snd: can't translate rsrc "
-				       " %d (%s)\n", i, rnames[i]);
+//				printk(KERN_ERR "snd: can't translate rsrc "
+;
 				err = -ENODEV;
 				goto __error;
 			}
@@ -1231,9 +1231,9 @@ int __devinit snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 					       chip->rsrc[i].end -
 					       chip->rsrc[i].start + 1,
 					       rnames[i]) == NULL) {
-				printk(KERN_ERR "snd: can't request rsrc "
-				       " %d (%s: %pR)\n",
-				       i, rnames[i], &chip->rsrc[i]);
+//				printk(KERN_ERR "snd: can't request rsrc "
+//				       " %d (%s: %pR)\n",
+;
 				err = -ENODEV;
 				goto __error;
 			}
@@ -1248,8 +1248,8 @@ int __devinit snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 		for (i = 0; i < 3; i ++) {
 			if (of_address_to_resource(np, i,
 						   &chip->rsrc[i])) {
-				printk(KERN_ERR "snd: can't translate rsrc "
-				       " %d (%s)\n", i, rnames[i]);
+//				printk(KERN_ERR "snd: can't translate rsrc "
+;
 				err = -ENODEV;
 				goto __error;
 			}
@@ -1257,9 +1257,9 @@ int __devinit snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 					       chip->rsrc[i].end -
 					       chip->rsrc[i].start + 1,
 					       rnames[i]) == NULL) {
-				printk(KERN_ERR "snd: can't request rsrc "
-				       " %d (%s: %pR)\n",
-				       i, rnames[i], &chip->rsrc[i]);
+//				printk(KERN_ERR "snd: can't request rsrc "
+//				       " %d (%s: %pR)\n",
+;
 				err = -ENODEV;
 				goto __error;
 			}
@@ -1277,8 +1277,8 @@ int __devinit snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 		irq = irq_of_parse_and_map(np, 0);
 		if (request_irq(irq, snd_pmac_ctrl_intr, 0,
 				"PMac", (void*)chip)) {
-			snd_printk(KERN_ERR "pmac: unable to grab IRQ %d\n",
-				   irq);
+//			snd_printk(KERN_ERR "pmac: unable to grab IRQ %d\n",
+;
 			err = -EBUSY;
 			goto __error;
 		}
@@ -1286,14 +1286,14 @@ int __devinit snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 	}
 	irq = irq_of_parse_and_map(np, 1);
 	if (request_irq(irq, snd_pmac_tx_intr, 0, "PMac Output", (void*)chip)){
-		snd_printk(KERN_ERR "pmac: unable to grab IRQ %d\n", irq);
+;
 		err = -EBUSY;
 		goto __error;
 	}
 	chip->tx_irq = irq;
 	irq = irq_of_parse_and_map(np, 2);
 	if (request_irq(irq, snd_pmac_rx_intr, 0, "PMac Input", (void*)chip)) {
-		snd_printk(KERN_ERR "pmac: unable to grab IRQ %d\n", irq);
+;
 		err = -EBUSY;
 		goto __error;
 	}

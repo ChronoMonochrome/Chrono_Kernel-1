@@ -202,7 +202,7 @@ int dvb_register_device(struct dvb_adapter *adap, struct dvb_device **pdvbdev,
 	if ((id = dvbdev_get_free_id (adap, type)) < 0){
 		mutex_unlock(&dvbdev_register_lock);
 		*pdvbdev = NULL;
-		printk(KERN_ERR "%s: couldn't find free device id\n", __func__);
+;
 		return -ENFILE;
 	}
 
@@ -261,13 +261,13 @@ int dvb_register_device(struct dvb_adapter *adap, struct dvb_device **pdvbdev,
 			       MKDEV(DVB_MAJOR, minor),
 			       dvbdev, "dvb%d.%s%d", adap->num, dnames[type], id);
 	if (IS_ERR(clsdev)) {
-		printk(KERN_ERR "%s: failed to create device dvb%d.%s%d (%ld)\n",
-		       __func__, adap->num, dnames[type], id, PTR_ERR(clsdev));
+//		printk(KERN_ERR "%s: failed to create device dvb%d.%s%d (%ld)\n",
+;
 		return PTR_ERR(clsdev);
 	}
 
-	dprintk(KERN_DEBUG "DVB: register adapter%d/%s%d @ minor: %i (0x%02x)\n",
-		adap->num, dnames[type], id, minor, minor);
+//	dprintk(KERN_DEBUG "DVB: register adapter%d/%s%d @ minor: %i (0x%02x)\n",
+;
 
 	return 0;
 }
@@ -346,7 +346,7 @@ int dvb_register_adapter(struct dvb_adapter *adap, const char *name,
 	memset (adap, 0, sizeof(struct dvb_adapter));
 	INIT_LIST_HEAD (&adap->device_list);
 
-	printk(KERN_INFO "DVB: registering new adapter (%s)\n", name);
+;
 
 	adap->num = num;
 	adap->name = name;
@@ -466,13 +466,13 @@ static int __init init_dvbdev(void)
 	dev_t dev = MKDEV(DVB_MAJOR, 0);
 
 	if ((retval = register_chrdev_region(dev, MAX_DVB_MINORS, "DVB")) != 0) {
-		printk(KERN_ERR "dvb-core: unable to get major %d\n", DVB_MAJOR);
+;
 		return retval;
 	}
 
 	cdev_init(&dvb_device_cdev, &dvb_device_fops);
 	if ((retval = cdev_add(&dvb_device_cdev, dev, MAX_DVB_MINORS)) != 0) {
-		printk(KERN_ERR "dvb-core: unable register character device\n");
+;
 		goto error;
 	}
 

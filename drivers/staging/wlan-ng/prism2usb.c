@@ -113,14 +113,14 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
 	dev = interface_to_usbdev(interface);
 	wlandev = create_wlan();
 	if (wlandev == NULL) {
-		printk(KERN_ERR "%s: Memory allocation failure.\n", dev_info);
+;
 		result = -EIO;
 		goto failed;
 	}
 	hw = wlandev->priv;
 
 	if (wlan_setup(wlandev, &(interface->dev)) != 0) {
-		printk(KERN_ERR "%s: wlan_setup() failed.\n", dev_info);
+;
 		result = -EIO;
 		goto failed;
 	}
@@ -143,8 +143,8 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
 			unregister_wlandev(wlandev);
 			hfa384x_destroy(hw);
 			result = -EIO;
-			printk(KERN_ERR
-			       "%s: hfa384x_corereset() failed.\n", dev_info);
+//			printk(KERN_ERR
+;
 			goto failed;
 		}
 	}
@@ -158,7 +158,7 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
 	prism2sta_ifstate(wlandev, P80211ENUM_ifstate_enable);
 
 	if (register_wlandev(wlandev) != 0) {
-		printk(KERN_ERR "%s: register_wlandev() failed.\n", dev_info);
+;
 		result = -EIO;
 		goto failed;
 	}
@@ -329,8 +329,8 @@ static int prism2sta_resume(struct usb_interface *interface)
 		if (result != 0) {
 			unregister_wlandev(wlandev);
 			hfa384x_destroy(hw);
-			printk(KERN_ERR
-			       "%s: hfa384x_corereset() failed.\n", dev_info);
+//			printk(KERN_ERR
+;
 			kfree(wlandev);
 			kfree(hw);
 			wlandev = NULL;

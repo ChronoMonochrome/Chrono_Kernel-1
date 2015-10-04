@@ -97,7 +97,7 @@ static int __devinit vortex_gameport_register(vortex_t * vortex)
 
 	vortex->gameport = gp = gameport_allocate_port();
 	if (!gp) {
-		printk(KERN_ERR "vortex: cannot allocate memory for gameport\n");
+;
 		return -ENOMEM;
 	};
 

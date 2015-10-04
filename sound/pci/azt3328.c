@@ -248,52 +248,52 @@ MODULE_SUPPORTED_DEVICE("{{Aztech,AZF3328}}");
 #define MIXER_TESTING	0
 
 #if DEBUG_MISC
-#define snd_azf3328_dbgmisc(format, args...) printk(KERN_DEBUG format, ##args)
-#else
-#define snd_azf3328_dbgmisc(format, args...)
-#endif
-
-#if DEBUG_CALLS
-#define snd_azf3328_dbgcalls(format, args...) printk(format, ##args)
-#define snd_azf3328_dbgcallenter() printk(KERN_DEBUG "--> %s\n", __func__)
-#define snd_azf3328_dbgcallleave() printk(KERN_DEBUG "<-- %s\n", __func__)
-#else
-#define snd_azf3328_dbgcalls(format, args...)
-#define snd_azf3328_dbgcallenter()
-#define snd_azf3328_dbgcallleave()
-#endif
-
-#if DEBUG_MIXER
-#define snd_azf3328_dbgmixer(format, args...) printk(KERN_DEBUG format, ##args)
-#else
-#define snd_azf3328_dbgmixer(format, args...)
-#endif
-
-#if DEBUG_CODEC
-#define snd_azf3328_dbgcodec(format, args...) printk(KERN_DEBUG format, ##args)
-#else
-#define snd_azf3328_dbgcodec(format, args...)
-#endif
-
-#if DEBUG_MISC
-#define snd_azf3328_dbgtimer(format, args...) printk(KERN_DEBUG format, ##args)
-#else
-#define snd_azf3328_dbgtimer(format, args...)
-#endif
-
-#if DEBUG_GAME
-#define snd_azf3328_dbggame(format, args...) printk(KERN_DEBUG format, ##args)
-#else
-#define snd_azf3328_dbggame(format, args...)
-#endif
-
-#if DEBUG_PM
-#define snd_azf3328_dbgpm(format, args...) printk(KERN_DEBUG format, ##args)
-#else
-#define snd_azf3328_dbgpm(format, args...)
-#endif
-
-static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
+//#define snd_azf3328_dbgmisc(format, args...) printk(KERN_DEBUG format, ##args)
+//#else
+//#define snd_azf3328_dbgmisc(format, args...)
+//#endif
+//
+//#if DEBUG_CALLS
+//#define snd_azf3328_dbgcalls(format, args...) printk(format, ##args)
+//#define snd_azf3328_dbgcallenter() printk(KERN_DEBUG "--> %s\n", __func__)
+//#define snd_azf3328_dbgcallleave() printk(KERN_DEBUG "<-- %s\n", __func__)
+//#else
+//#define snd_azf3328_dbgcalls(format, args...)
+//#define snd_azf3328_dbgcallenter()
+//#define snd_azf3328_dbgcallleave()
+//#endif
+//
+//#if DEBUG_MIXER
+//#define snd_azf3328_dbgmixer(format, args...) printk(KERN_DEBUG format, ##args)
+//#else
+//#define snd_azf3328_dbgmixer(format, args...)
+//#endif
+//
+//#if DEBUG_CODEC
+//#define snd_azf3328_dbgcodec(format, args...) printk(KERN_DEBUG format, ##args)
+//#else
+//#define snd_azf3328_dbgcodec(format, args...)
+//#endif
+//
+//#if DEBUG_MISC
+//#define snd_azf3328_dbgtimer(format, args...) printk(KERN_DEBUG format, ##args)
+//#else
+//#define snd_azf3328_dbgtimer(format, args...)
+//#endif
+//
+//#if DEBUG_GAME
+//#define snd_azf3328_dbggame(format, args...) printk(KERN_DEBUG format, ##args)
+//#else
+//#define snd_azf3328_dbggame(format, args...)
+//#endif
+//
+//#if DEBUG_PM
+//#define snd_azf3328_dbgpm(format, args...) printk(KERN_DEBUG format, ##args)
+//#else
+//#define snd_azf3328_dbgpm(format, args...)
+//#endif
+//
+;
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for AZF3328 soundcard.");
 
@@ -581,9 +581,9 @@ static inline void
 snd_azf3328_mixer_ac97_map_unsupported(unsigned short reg, const char *mode)
 {
 	/* need to add some more or less clever emulation? */
-	printk(KERN_WARNING
-		"azt3328: missing %s emulation for AC97 register 0x%02x!\n",
-		mode, reg);
+//	printk(KERN_WARNING
+//		"azt3328: missing %s emulation for AC97 register 0x%02x!\n",
+;
 }
 
 /*
@@ -850,7 +850,7 @@ snd_azf3328_mixer_new(struct snd_azf3328 *chip)
 		 * due to this card being a very quirky AC97 "lookalike".
 		 */
 	if (rc)
-		printk(KERN_ERR "azt3328: AC97 init failed, err %d!\n", rc);
+;
 
 	/* If we return an error here, then snd_card_free() should
 	 * free up any ac97 codecs that got created, as well as the bus.
@@ -1331,7 +1331,7 @@ snd_azf3328_codec_setfmt(struct snd_azf3328_codec_data *codec,
 	case AZF_FREQ_22050: freq = SOUNDFORMAT_FREQ_22050; break;
 	case AZF_FREQ_32000: freq = SOUNDFORMAT_FREQ_32000; break;
 	default:
-		snd_printk(KERN_WARNING "unknown bitrate %d, assuming 44.1kHz!\n", bitrate);
+;
 		/* fall-through */
 	case AZF_FREQ_44100: freq = SOUNDFORMAT_FREQ_44100; break;
 	case AZF_FREQ_48000: freq = SOUNDFORMAT_FREQ_48000; break;
@@ -1696,13 +1696,13 @@ snd_azf3328_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 		);
 		break;
         case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		snd_printk(KERN_ERR "FIXME: SNDRV_PCM_TRIGGER_PAUSE_PUSH NIY!\n");
+;
                 break;
         case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		snd_printk(KERN_ERR "FIXME: SNDRV_PCM_TRIGGER_PAUSE_RELEASE NIY!\n");
+;
                 break;
         default:
-		snd_printk(KERN_ERR "FIXME: unknown trigger mode!\n");
+;
                 return -EINVAL;
 	}
 
@@ -1906,7 +1906,7 @@ snd_azf3328_gameport(struct snd_azf3328 *chip, int dev)
 
 	chip->gameport = gp = gameport_allocate_port();
 	if (!gp) {
-		printk(KERN_ERR "azt3328: cannot alloc memory for gameport\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1950,7 +1950,7 @@ snd_azf3328_gameport_free(struct snd_azf3328 *chip) { }
 static inline void
 snd_azf3328_gameport_interrupt(struct snd_azf3328 *chip)
 {
-	printk(KERN_WARNING "huh, game port IRQ occurred!?\n");
+;
 }
 #endif /* SUPPORT_GAMEPORT */
 
@@ -1998,7 +1998,7 @@ snd_azf3328_pcm_interrupt(const struct snd_azf3328_codec_data *first_codec,
 				)
 			);
 		} else
-			printk(KERN_WARNING "azt3328: irq handler problem!\n");
+;
 		if (which & IRQ_SOMETHING)
 			snd_azf3328_irq_log_unknown_type(which);
 	}
@@ -2429,9 +2429,9 @@ snd_azf3328_test_bit(unsigned unsigned reg, int bit)
 
 	outb(val, reg);
 
-	printk(KERN_DEBUG "reg %04x bit %d: %02x %02x %02x\n",
-				reg, bit, val, valoff, valon
-	);
+//	printk(KERN_DEBUG "reg %04x bit %d: %02x %02x %02x\n",
+//				reg, bit, val, valoff, valon
+;
 }
 #endif
 
@@ -2523,9 +2523,9 @@ snd_azf3328_create(struct snd_card *card,
 	/* check if we can restrict PCI DMA transfers to 24 bits */
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(24)) < 0 ||
 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(24)) < 0) {
-		snd_printk(KERN_ERR "architecture does not support "
-					"24bit PCI busmaster DMA\n"
-		);
+//		snd_printk(KERN_ERR "architecture does not support "
+//					"24bit PCI busmaster DMA\n"
+;
 		err = -ENXIO;
 		goto out_err;
 	}
@@ -2560,7 +2560,7 @@ snd_azf3328_create(struct snd_card *card,
 
 	if (request_irq(pci->irq, snd_azf3328_interrupt,
 			IRQF_SHARED, card->shortname, chip)) {
-		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
+;
 		err = -EBUSY;
 		goto out_err;
 	}
@@ -2653,9 +2653,9 @@ snd_azf3328_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 		pci->irq, 0, &chip->rmidi
 	);
 	if (err < 0) {
-		snd_printk(KERN_ERR "azf3328: no MPU-401 device at 0x%lx?\n",
-				chip->mpu_io
-		);
+//		snd_printk(KERN_ERR "azf3328: no MPU-401 device at 0x%lx?\n",
+//				chip->mpu_io
+;
 		goto out_err;
 	}
 
@@ -2669,9 +2669,9 @@ snd_azf3328_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 
 	if (snd_opl3_create(card, chip->opl3_io, chip->opl3_io+2,
 			    OPL3_HW_AUTO, 1, &opl3) < 0) {
-		snd_printk(KERN_ERR "azf3328: no OPL3 device at 0x%lx-0x%lx?\n",
-			   chip->opl3_io, chip->opl3_io+2
-		);
+//		snd_printk(KERN_ERR "azf3328: no OPL3 device at 0x%lx-0x%lx?\n",
+//			   chip->opl3_io, chip->opl3_io+2
+;
 	} else {
 		/* need to use IDs 1, 2 since ID 0 is snd_azf3328_timer above */
 		err = snd_opl3_timer_new(opl3, 1, 2);
@@ -2692,12 +2692,12 @@ snd_azf3328_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 		goto out_err;
 
 #ifdef MODULE
-	printk(KERN_INFO
-"azt3328: Sound driver for Aztech AZF3328-based soundcards such as PCI168.\n"
-"azt3328: Hardware was completely undocumented, unfortunately.\n"
-"azt3328: Feel free to contact andi AT lisas.de for bug reports etc.!\n"
-"azt3328: User-scalable sequencer timer set to %dHz (1024000Hz / %d).\n",
-	1024000 / seqtimer_scaling, seqtimer_scaling);
+//	printk(KERN_INFO
+//"azt3328: Sound driver for Aztech AZF3328-based soundcards such as PCI168.\n"
+//"azt3328: Hardware was completely undocumented, unfortunately.\n"
+//"azt3328: Feel free to contact andi AT lisas.de for bug reports etc.!\n"
+//"azt3328: User-scalable sequencer timer set to %dHz (1024000Hz / %d).\n",
+;
 #endif
 
 	snd_azf3328_gameport(chip, dev);
@@ -2709,7 +2709,7 @@ snd_azf3328_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 	goto out;
 
 out_err:
-	snd_printk(KERN_ERR "azf3328: something failed, exiting\n");
+;
 	snd_card_free(card);
 
 out:
@@ -2834,8 +2834,8 @@ snd_azf3328_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-		printk(KERN_ERR "azt3328: pci_enable_device failed, "
-		       "disabling device\n");
+//		printk(KERN_ERR "azt3328: pci_enable_device failed, "
+;
 		snd_card_disconnect(card);
 		return -EIO;
 	}

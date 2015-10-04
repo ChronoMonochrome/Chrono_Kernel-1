@@ -167,7 +167,7 @@ int vb2_mmap_pfn_range(struct vm_area_struct *vma, unsigned long paddr,
 	ret = remap_pfn_range(vma, vma->vm_start, paddr >> PAGE_SHIFT,
 				size, vma->vm_page_prot);
 	if (ret) {
-		printk(KERN_ERR "Remapping memory failed, error: %d\n", ret);
+;
 		return ret;
 	}
 
@@ -177,8 +177,8 @@ int vb2_mmap_pfn_range(struct vm_area_struct *vma, unsigned long paddr,
 
 	vma->vm_ops->open(vma);
 
-	printk(KERN_DEBUG "%s: mapped paddr 0x%08lx at 0x%08lx, size %ld\n",
-			__func__, paddr, vma->vm_start, size);
+//	printk(KERN_DEBUG "%s: mapped paddr 0x%08lx at 0x%08lx, size %ld\n",
+;
 
 	return 0;
 }
@@ -195,9 +195,9 @@ static void vb2_common_vm_open(struct vm_area_struct *vma)
 {
 	struct vb2_vmarea_handler *h = vma->vm_private_data;
 
-	printk(KERN_DEBUG "%s: %p, refcount: %d, vma: %08lx-%08lx\n",
-	       __func__, h, atomic_read(h->refcount), vma->vm_start,
-	       vma->vm_end);
+//	printk(KERN_DEBUG "%s: %p, refcount: %d, vma: %08lx-%08lx\n",
+//	       __func__, h, atomic_read(h->refcount), vma->vm_start,
+;
 
 	atomic_inc(h->refcount);
 }
@@ -213,9 +213,9 @@ static void vb2_common_vm_close(struct vm_area_struct *vma)
 {
 	struct vb2_vmarea_handler *h = vma->vm_private_data;
 
-	printk(KERN_DEBUG "%s: %p, refcount: %d, vma: %08lx-%08lx\n",
-	       __func__, h, atomic_read(h->refcount), vma->vm_start,
-	       vma->vm_end);
+//	printk(KERN_DEBUG "%s: %p, refcount: %d, vma: %08lx-%08lx\n",
+//	       __func__, h, atomic_read(h->refcount), vma->vm_start,
+;
 
 	h->put(h->arg);
 }

@@ -93,11 +93,11 @@ void radeon_benchmark_move(struct radeon_device *rdev, unsigned bsize,
 		time = jiffies_to_msecs(time);
 		if (time > 0) {
 			i = ((n * size) >> 10) / time;
-			printk(KERN_INFO "radeon: dma %u bo moves of %ukb from"
-					" %d to %d in %lums (%ukb/ms %ukb/s %uM/s)\n",
-					n, size >> 10,
-					sdomain, ddomain, time,
-					i, i * 1000, (i * 1000) / 1024);
+//			printk(KERN_INFO "radeon: dma %u bo moves of %ukb from"
+//					" %d to %d in %lums (%ukb/ms %ukb/s %uM/s)\n",
+//					n, size >> 10,
+//					sdomain, ddomain, time,
+;
 		}
 	}
 
@@ -122,9 +122,9 @@ void radeon_benchmark_move(struct radeon_device *rdev, unsigned bsize,
 	time = jiffies_to_msecs(time);
 	if (time > 0) {
 		i = ((n * size) >> 10) / time;
-		printk(KERN_INFO "radeon: blit %u bo moves of %ukb from %d to %d"
-		       " in %lums (%ukb/ms %ukb/s %uM/s)\n", n, size >> 10,
-		       sdomain, ddomain, time, i, i * 1000, (i * 1000) / 1024);
+//		printk(KERN_INFO "radeon: blit %u bo moves of %ukb from %d to %d"
+//		       " in %lums (%ukb/ms %ukb/s %uM/s)\n", n, size >> 10,
+;
 	}
 out_cleanup:
 	if (sobj) {
@@ -147,7 +147,7 @@ out_cleanup:
 		radeon_fence_unref(&fence);
 	}
 	if (r) {
-		printk(KERN_WARNING "Error while benchmarking BO move.\n");
+;
 	}
 }
 

@@ -545,18 +545,18 @@ static void o2net_set_nn_state(struct o2net_node *nn,
 	}
 
 	if (was_valid && !valid) {
-		printk(KERN_NOTICE "o2net: no longer connected to "
-		       SC_NODEF_FMT "\n", SC_NODEF_ARGS(old_sc));
+//		printk(KERN_NOTICE "o2net: no longer connected to "
+;
 		o2net_complete_nodes_nsw(nn);
 	}
 
 	if (!was_valid && valid) {
 		o2quo_conn_up(o2net_num_from_nn(nn));
 		cancel_delayed_work(&nn->nn_connect_expired);
-		printk(KERN_NOTICE "o2net: %s " SC_NODEF_FMT "\n",
-		       o2nm_this_node() > sc->sc_node->nd_num ?
-		       		"connected to" : "accepted connection from",
-		       SC_NODEF_ARGS(sc));
+//		printk(KERN_NOTICE "o2net: %s " SC_NODEF_FMT "\n",
+//		       o2nm_this_node() > sc->sc_node->nd_num ?
+//		       		"connected to" : "accepted connection from",
+;
 	}
 
 	/* trigger the connecting worker func as long as we're not valid,
@@ -643,9 +643,9 @@ static void o2net_state_change(struct sock *sk)
 			o2net_sc_queue_work(sc, &sc->sc_connect_work);
 			break;
 		default:
-			printk(KERN_INFO "o2net: connection to " SC_NODEF_FMT
-			      " shutdown, state %d\n",
-			      SC_NODEF_ARGS(sc), sk->sk_state);
+//			printk(KERN_INFO "o2net: connection to " SC_NODEF_FMT
+//			      " shutdown, state %d\n",
+;
 			o2net_sc_queue_work(sc, &sc->sc_shutdown_work);
 			break;
 	}
@@ -1544,10 +1544,10 @@ static void o2net_idle_timer(unsigned long data)
 	ktime_t now = ktime_get();
 #endif
 
-	printk(KERN_NOTICE "o2net: connection to " SC_NODEF_FMT " has been idle for %u.%u "
-	     "seconds, shutting it down.\n", SC_NODEF_ARGS(sc),
-		     o2net_idle_timeout() / 1000,
-		     o2net_idle_timeout() % 1000);
+//	printk(KERN_NOTICE "o2net: connection to " SC_NODEF_FMT " has been idle for %u.%u "
+//	     "seconds, shutting it down.\n", SC_NODEF_ARGS(sc),
+//		     o2net_idle_timeout() / 1000,
+;
 
 #ifdef CONFIG_DEBUG_FS
 	mlog(ML_NOTICE, "Here are some times that might help debug the "

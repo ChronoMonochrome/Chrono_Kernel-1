@@ -76,8 +76,8 @@
 #ifdef CONFIG_FB_RIVA_DEBUG
 #define assert(expr) \
 	if(!(expr)) { \
-	printk( "Assertion failed! %s,%s,%s,line=%d\n",\
-	#expr,__FILE__,__func__,__LINE__); \
+//	printk( "Assertion failed! %s,%s,%s,line=%d\n",\
+;
 	BUG(); \
 	}
 #else
@@ -361,7 +361,7 @@ static void riva_bl_init(struct riva_par *par)
 				       &props);
 	if (IS_ERR(bd)) {
 		info->bl_dev = NULL;
-		printk(KERN_WARNING "riva: Backlight registration failed\n");
+;
 		goto error;
 	}
 
@@ -374,7 +374,7 @@ static void riva_bl_init(struct riva_par *par)
 	bd->props.power = FB_BLANK_UNBLANK;
 	backlight_update_status(bd);
 
-	printk("riva: Backlight initialized (%s)\n", name);
+;
 
 	return;
 
@@ -387,7 +387,7 @@ static void riva_bl_exit(struct fb_info *info)
 	struct backlight_device *bd = info->bl_dev;
 
 	backlight_device_unregister(bd);
-	printk("riva: Backlight unloaded\n");
+;
 }
 #else
 static inline void riva_bl_init(struct riva_par *par) {}
@@ -895,63 +895,63 @@ static int rivafb_do_maximize(struct fb_info *info,
 	NVTRACE_ENTER();
 	/* use highest possible virtual resolution */
 	if (var->xres_virtual == -1 && var->yres_virtual == -1) {
-		printk(KERN_WARNING PFX
-		       "using maximum available virtual resolution\n");
+//		printk(KERN_WARNING PFX
+;
 		for (i = 0; modes[i].xres != -1; i++) {
 			if (modes[i].xres * nom / den * modes[i].yres <
 			    info->fix.smem_len)
 				break;
 		}
 		if (modes[i].xres == -1) {
-			printk(KERN_ERR PFX
-			       "could not find a virtual resolution that fits into video memory!!\n");
+//			printk(KERN_ERR PFX
+;
 			NVTRACE("EXIT - EINVAL error\n");
 			return -EINVAL;
 		}
 		var->xres_virtual = modes[i].xres;
 		var->yres_virtual = modes[i].yres;
 
-		printk(KERN_INFO PFX
-		       "virtual resolution set to maximum of %dx%d\n",
-		       var->xres_virtual, var->yres_virtual);
+//		printk(KERN_INFO PFX
+//		       "virtual resolution set to maximum of %dx%d\n",
+;
 	} else if (var->xres_virtual == -1) {
 		var->xres_virtual = (info->fix.smem_len * den /
 			(nom * var->yres_virtual)) & ~15;
-		printk(KERN_WARNING PFX
-		       "setting virtual X resolution to %d\n", var->xres_virtual);
+//		printk(KERN_WARNING PFX
+;
 	} else if (var->yres_virtual == -1) {
 		var->xres_virtual = (var->xres_virtual + 15) & ~15;
 		var->yres_virtual = info->fix.smem_len * den /
 			(nom * var->xres_virtual);
-		printk(KERN_WARNING PFX
-		       "setting virtual Y resolution to %d\n", var->yres_virtual);
+//		printk(KERN_WARNING PFX
+;
 	} else {
 		var->xres_virtual = (var->xres_virtual + 15) & ~15;
 		if (var->xres_virtual * nom / den * var->yres_virtual > info->fix.smem_len) {
-			printk(KERN_ERR PFX
-			       "mode %dx%dx%d rejected...resolution too high to fit into video memory!\n",
-			       var->xres, var->yres, var->bits_per_pixel);
+//			printk(KERN_ERR PFX
+//			       "mode %dx%dx%d rejected...resolution too high to fit into video memory!\n",
+;
 			NVTRACE("EXIT - EINVAL error\n");
 			return -EINVAL;
 		}
 	}
 	
 	if (var->xres_virtual * nom / den >= 8192) {
-		printk(KERN_WARNING PFX
-		       "virtual X resolution (%d) is too high, lowering to %d\n",
-		       var->xres_virtual, 8192 * den / nom - 16);
+//		printk(KERN_WARNING PFX
+//		       "virtual X resolution (%d) is too high, lowering to %d\n",
+;
 		var->xres_virtual = 8192 * den / nom - 16;
 	}
 	
 	if (var->xres_virtual < var->xres) {
-		printk(KERN_ERR PFX
-		       "virtual X resolution (%d) is smaller than real\n", var->xres_virtual);
+//		printk(KERN_ERR PFX
+;
 		return -EINVAL;
 	}
 
 	if (var->yres_virtual < var->yres) {
-		printk(KERN_ERR PFX
-		       "virtual Y resolution (%d) is smaller than real\n", var->yres_virtual);
+//		printk(KERN_ERR PFX
+;
 		return -EINVAL;
 	}
 	if (var->yres_virtual > 0x7fff/nom)
@@ -1148,9 +1148,9 @@ static int rivafb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 		den = 1;
 		break;
 	default:
-		printk(KERN_ERR PFX
-		       "mode %dx%dx%d rejected...color depth not supported.\n",
-		       var->xres, var->yres, var->bits_per_pixel);
+//		printk(KERN_ERR PFX
+//		       "mode %dx%dx%d rejected...color depth not supported.\n",
+;
 		NVTRACE("EXIT, returning -EINVAL\n");
 		return -EINVAL;
 	}
@@ -1724,7 +1724,7 @@ static int __devinit riva_set_fbinfo(struct fb_info *info)
 
 	/* Accel seems to not work properly on NV30 yet...*/
 	if ((par->riva.Architecture == NV_ARCH_30) || noaccel) {
-	    	printk(KERN_DEBUG PFX "disabling acceleration\n");
+;
   		info->flags |= FBINFO_HWACCEL_DISABLED;
 	}
 
@@ -1793,7 +1793,7 @@ static int __devinit riva_get_EDID_i2c(struct fb_info *info)
 			continue;
 		riva_probe_i2c_connector(par, i, &par->EDID);
 		if (par->EDID && !fb_parse_edid(par->EDID, &var)) {
-			printk(PFX "Found EDID Block from BUS %i\n", i);
+;
 			break;
 		}
 	}
@@ -1841,10 +1841,10 @@ static void __devinit riva_get_EDID(struct fb_info *info, struct pci_dev *pdev)
 	NVTRACE_ENTER();
 #ifdef CONFIG_PPC_OF
 	if (!riva_get_EDID_OF(info, pdev))
-		printk(PFX "could not retrieve EDID from OF\n");
+;
 #elif defined(CONFIG_FB_RIVA_I2C)
 	if (!riva_get_EDID_i2c(info))
-		printk(PFX "could not retrieve EDID from DDC/I2C\n");
+;
 #endif
 	NVTRACE_LEAVE();
 }
@@ -1936,13 +1936,13 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 
 	ret = pci_enable_device(pd);
 	if (ret < 0) {
-		printk(KERN_ERR PFX "cannot enable PCI device\n");
+;
 		goto err_free_pixmap;
 	}
 
 	ret = pci_request_regions(pd, "rivafb");
 	if (ret < 0) {
-		printk(KERN_ERR PFX "cannot request PCI regions\n");
+;
 		goto err_disable_device;
 	}
 
@@ -1950,10 +1950,10 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 	default_par->riva.Architecture = riva_get_arch(pd);
 
 	default_par->Chipset = (pd->vendor << 16) | pd->device;
-	printk(KERN_INFO PFX "nVidia device/chipset %X\n",default_par->Chipset);
+;
 	
 	if(default_par->riva.Architecture == 0) {
-		printk(KERN_ERR PFX "unknown NV_ARCH\n");
+;
 		ret=-ENODEV;
 		goto err_release_region;
 	}
@@ -1967,7 +1967,7 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 
 	default_par->FlatPanel = flatpanel;
 	if (flatpanel == 1)
-		printk(KERN_INFO PFX "flatpanel support enabled\n");
+;
 	default_par->forceCRTC = forceCRTC;
 	
 	rivafb_fix.mmio_len = pci_resource_len(pd, 0);
@@ -1988,7 +1988,7 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 	default_par->ctrl_base = ioremap(rivafb_fix.mmio_start,
 					 rivafb_fix.mmio_len);
 	if (!default_par->ctrl_base) {
-		printk(KERN_ERR PFX "cannot ioremap MMIO base\n");
+;
 		ret = -EIO;
 		goto err_release_region;
 	}
@@ -2001,7 +2001,7 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 		 */
 		default_par->riva.PRAMIN = ioremap(rivafb_fix.smem_start + 0x00C00000, 0x00008000);
 		if (!default_par->riva.PRAMIN) {
-			printk(KERN_ERR PFX "cannot ioremap PRAMIN region\n");
+;
 			ret = -EIO;
 			goto err_iounmap_ctrl_base;
 		}
@@ -2028,7 +2028,7 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 	info->screen_base = ioremap(rivafb_fix.smem_start,
 				    rivafb_fix.smem_len);
 	if (!info->screen_base) {
-		printk(KERN_ERR PFX "cannot ioremap FB base\n");
+;
 		ret = -EIO;
 		goto err_iounmap_pramin;
 	}
@@ -2039,11 +2039,11 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 					   	  rivafb_fix.smem_len,
 					    	  MTRR_TYPE_WRCOMB, 1);
 		if (default_par->mtrr.vram < 0) {
-			printk(KERN_ERR PFX "unable to setup MTRR\n");
+;
 		} else {
 			default_par->mtrr.vram_valid = 1;
 			/* let there be speed */
-			printk(KERN_INFO PFX "RIVA MTRR set to ON\n");
+;
 		}
 	}
 #endif /* CONFIG_MTRR */
@@ -2055,7 +2055,7 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 
 	ret=riva_set_fbinfo(info);
 	if (ret < 0) {
-		printk(KERN_ERR PFX "error setting initial video mode\n");
+;
 		goto err_iounmap_screen_base;
 	}
 
@@ -2069,17 +2069,17 @@ static int __devinit rivafb_probe(struct pci_dev *pd,
 
 	ret = register_framebuffer(info);
 	if (ret < 0) {
-		printk(KERN_ERR PFX
-			"error registering riva framebuffer\n");
+//		printk(KERN_ERR PFX
+;
 		goto err_iounmap_screen_base;
 	}
 
-	printk(KERN_INFO PFX
-		"PCI nVidia %s framebuffer ver %s (%dMB @ 0x%lX)\n",
-		info->fix.id,
-		RIVAFB_VERSION,
-		info->fix.smem_len / (1024 * 1024),
-		info->fix.smem_start);
+//	printk(KERN_INFO PFX
+//		"PCI nVidia %s framebuffer ver %s (%dMB @ 0x%lX)\n",
+//		info->fix.id,
+//		RIVAFB_VERSION,
+//		info->fix.smem_len / (1024 * 1024),
+;
 
 	NVTRACE_LEAVE();
 	return 0;

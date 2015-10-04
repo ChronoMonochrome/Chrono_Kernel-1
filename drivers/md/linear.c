@@ -153,8 +153,8 @@ static struct linear_conf *linear_conf(struct mddev *mddev, int raid_disks)
 		sector_t sectors;
 
 		if (j < 0 || j >= raid_disks || disk->rdev) {
-			printk(KERN_ERR "md/linear:%s: disk numbering problem. Aborting!\n",
-			       mdname(mddev));
+//			printk(KERN_ERR "md/linear:%s: disk numbering problem. Aborting!\n",
+;
 			goto out;
 		}
 
@@ -173,8 +173,8 @@ static struct linear_conf *linear_conf(struct mddev *mddev, int raid_disks)
 
 	}
 	if (cnt != raid_disks) {
-		printk(KERN_ERR "md/linear:%s: not enough drives present. Aborting!\n",
-		       mdname(mddev));
+//		printk(KERN_ERR "md/linear:%s: not enough drives present. Aborting!\n",
+;
 		goto out;
 	}
 
@@ -292,14 +292,14 @@ static void linear_make_request(struct mddev *mddev, struct bio *bio)
 		     || (bio->bi_sector < start_sector))) {
 		char b[BDEVNAME_SIZE];
 
-		printk(KERN_ERR
-		       "md/linear:%s: make_request: Sector %llu out of bounds on "
-		       "dev %s: %llu sectors, offset %llu\n",
-		       mdname(mddev),
-		       (unsigned long long)bio->bi_sector,
-		       bdevname(tmp_dev->rdev->bdev, b),
-		       (unsigned long long)tmp_dev->rdev->sectors,
-		       (unsigned long long)start_sector);
+//		printk(KERN_ERR
+//		       "md/linear:%s: make_request: Sector %llu out of bounds on "
+//		       "dev %s: %llu sectors, offset %llu\n",
+//		       mdname(mddev),
+//		       (unsigned long long)bio->bi_sector,
+//		       bdevname(tmp_dev->rdev->bdev, b),
+//		       (unsigned long long)tmp_dev->rdev->sectors,
+;
 		rcu_read_unlock();
 		bio_io_error(bio);
 		return;

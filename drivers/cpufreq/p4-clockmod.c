@@ -184,11 +184,11 @@ static unsigned int cpufreq_p4_get_frequency(struct cpuinfo_x86 *c)
 	p4clockmod_driver.flags |= CPUFREQ_CONST_LOOPS;
 
 	if (speedstep_detect_processor() == SPEEDSTEP_CPU_P4M) {
-		printk(KERN_WARNING PFX "Warning: Pentium 4-M detected. "
-		       "The speedstep-ich or acpi cpufreq modules offer "
-		       "voltage scaling in addition of frequency scaling. "
-		       "You should use either one instead of p4-clockmod, "
-		       "if possible.\n");
+//		printk(KERN_WARNING PFX "Warning: Pentium 4-M detected. "
+//		       "The speedstep-ich or acpi cpufreq modules offer "
+//		       "voltage scaling in addition of frequency scaling. "
+//		       "You should use either one instead of p4-clockmod, "
+;
 		return speedstep_get_frequency(SPEEDSTEP_CPU_P4M);
 	}
 
@@ -308,8 +308,8 @@ static int __init cpufreq_p4_init(void)
 
 	ret = cpufreq_register_driver(&p4clockmod_driver);
 	if (!ret)
-		printk(KERN_INFO PFX "P4/Xeon(TM) CPU On-Demand Clock "
-				"Modulation available\n");
+//		printk(KERN_INFO PFX "P4/Xeon(TM) CPU On-Demand Clock "
+;
 
 	return ret;
 }

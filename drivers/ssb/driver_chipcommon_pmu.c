@@ -110,8 +110,8 @@ static void ssb_pmu0_pllinit_r0(struct ssb_chipcommon *cc,
 		return;
 	}
 
-	ssb_printk(KERN_INFO PFX "Programming PLL to %u.%03u MHz\n",
-		   (crystalfreq / 1000), (crystalfreq % 1000));
+//	ssb_printk(KERN_INFO PFX "Programming PLL to %u.%03u MHz\n",
+;
 
 	/* First turn the PLL off. */
 	switch (bus->chip_id) {
@@ -138,7 +138,7 @@ static void ssb_pmu0_pllinit_r0(struct ssb_chipcommon *cc,
 	}
 	tmp = chipco_read32(cc, SSB_CHIPCO_CLKCTLST);
 	if (tmp & SSB_CHIPCO_CLKCTLST_HAVEHT)
-		ssb_printk(KERN_EMERG PFX "Failed to turn the PLL off!\n");
+;
 
 	/* Set PDIV in PLL control 0. */
 	pllctl = ssb_chipco_pll_read(cc, SSB_PMU0_PLLCTL0);
@@ -249,8 +249,8 @@ static void ssb_pmu1_pllinit_r0(struct ssb_chipcommon *cc,
 		return;
 	}
 
-	ssb_printk(KERN_INFO PFX "Programming PLL to %u.%03u MHz\n",
-		   (crystalfreq / 1000), (crystalfreq % 1000));
+//	ssb_printk(KERN_INFO PFX "Programming PLL to %u.%03u MHz\n",
+;
 
 	/* First turn the PLL off. */
 	switch (bus->chip_id) {
@@ -275,7 +275,7 @@ static void ssb_pmu1_pllinit_r0(struct ssb_chipcommon *cc,
 	}
 	tmp = chipco_read32(cc, SSB_CHIPCO_CLKCTLST);
 	if (tmp & SSB_CHIPCO_CLKCTLST_HAVEHT)
-		ssb_printk(KERN_EMERG PFX "Failed to turn the PLL off!\n");
+;
 
 	/* Set p1div and p2div. */
 	pllctl = ssb_chipco_pll_read(cc, SSB_PMU1_PLLCTL0);
@@ -339,9 +339,9 @@ static void ssb_pmu_pll_init(struct ssb_chipcommon *cc)
 		}
 		break;
 	default:
-		ssb_printk(KERN_ERR PFX
-			   "ERROR: PLL init unknown for device %04X\n",
-			   bus->chip_id);
+//		ssb_printk(KERN_ERR PFX
+//			   "ERROR: PLL init unknown for device %04X\n",
+;
 	}
 }
 
@@ -461,9 +461,9 @@ static void ssb_pmu_resources_init(struct ssb_chipcommon *cc)
 		max_msk = 0xFFFFF;
 		break;
 	default:
-		ssb_printk(KERN_ERR PFX
-			   "ERROR: PMU resource config unknown for device %04X\n",
-			   bus->chip_id);
+//		ssb_printk(KERN_ERR PFX
+//			   "ERROR: PMU resource config unknown for device %04X\n",
+;
 	}
 
 	if (updown_tab) {
@@ -515,8 +515,8 @@ void ssb_pmu_init(struct ssb_chipcommon *cc)
 	pmucap = chipco_read32(cc, SSB_CHIPCO_PMU_CAP);
 	cc->pmu.rev = (pmucap & SSB_CHIPCO_PMU_CAP_REVISION);
 
-	ssb_dprintk(KERN_DEBUG PFX "Found rev %u PMU (capabilities 0x%08X)\n",
-		    cc->pmu.rev, pmucap);
+//	ssb_dprintk(KERN_DEBUG PFX "Found rev %u PMU (capabilities 0x%08X)\n",
+;
 
 	if (cc->pmu.rev == 1)
 		chipco_mask32(cc, SSB_CHIPCO_PMU_CTL,

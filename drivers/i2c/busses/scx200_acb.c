@@ -363,11 +363,11 @@ static s32 scx200_acb_smbus_xfer(struct i2c_adapter *adapter,
 	dev_dbg(&adapter->dev, "transfer done, result: %d", rc);
 	if (buffer) {
 		int i;
-		printk(" data:");
+;
 		for (i = 0; i < len; ++i)
-			printk(" %02x", buffer[i]);
+;
 	}
-	printk("\n");
+;
 #endif
 
 	return rc;
@@ -433,7 +433,7 @@ static __devinit struct scx200_acb_iface *scx200_create_iface(const char *text,
 
 	iface = kzalloc(sizeof(*iface), GFP_KERNEL);
 	if (!iface) {
-		printk(KERN_ERR NAME ": can't allocate memory\n");
+;
 		return NULL;
 	}
 
@@ -459,14 +459,14 @@ static int __devinit scx200_acb_create(struct scx200_acb_iface *iface)
 
 	rc = scx200_acb_probe(iface);
 	if (rc) {
-		printk(KERN_WARNING NAME ": probe failed\n");
+;
 		return rc;
 	}
 
 	scx200_acb_reset(iface);
 
 	if (i2c_add_adapter(adapter) < 0) {
-		printk(KERN_ERR NAME ": failed to register\n");
+;
 		return -ENODEV;
 	}
 
@@ -493,8 +493,8 @@ static struct scx200_acb_iface * __devinit scx200_create_dev(const char *text,
 		return NULL;
 
 	if (!request_region(base, 8, iface->adapter.name)) {
-		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
-		       base, base + 8 - 1);
+//		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
+;
 		goto errout_free;
 	}
 

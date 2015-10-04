@@ -34,7 +34,7 @@
 	\
 	memcpy(temp, Address, 40);\
 	for (i = 0; i <40; i+=4)\
-		printk("\r\n %08x", temp[i]);\
+;
 }\
 /*---------------------------Define functions---------------------------------*/
 

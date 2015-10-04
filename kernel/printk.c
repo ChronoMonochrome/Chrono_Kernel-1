@@ -583,7 +583,7 @@ static int __read_mostly ignore_loglevel;
 static int __init ignore_loglevel_setup(char *str)
 {
 	ignore_loglevel = 1;
-	printk(KERN_INFO "debug: ignoring loglevel setting.\n");
+;
 
 	return 0;
 }
@@ -872,7 +872,7 @@ asmlinkage int printk(const char *fmt, ...)
 	}
 #endif
 	va_start(args, fmt);
-	r = vprintk(fmt, args);
+;
 	va_end(args);
 
 	return r;
@@ -904,10 +904,10 @@ static inline int can_use_console(unsigned int cpu)
  * interrupts disabled. It should return with 'lockbuf_lock'
  * released but interrupts still disabled.
  */
-static int console_trylock_for_printk(unsigned int cpu)
-	__releases(&logbuf_lock)
-{
-	int retval = 0;
+//static int console_trylock_for_printk(unsigned int cpu)
+//	__releases(&logbuf_lock)
+//{
+;
 
 	if (console_trylock()) {
 		retval = 1;
@@ -1023,7 +1023,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	}
 
 	/* Send printk buffer to MIPI STM trace hardware too if enable */
-	stm_dup_printk(printk_buf, printed_len);
+;
 
 	/*
 	 * Copy the output into log_buf. If the caller didn't provide
@@ -1110,8 +1110,8 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	 * will release 'logbuf_lock' regardless of whether it
 	 * actually gets the semaphore or not.
 	 */
-	if (console_trylock_for_printk(this_cpu))
-		console_unlock();
+//	if (console_trylock_for_printk(this_cpu))
+;
 
 	lockdep_on();
 out_restore_irqs:
@@ -1178,7 +1178,7 @@ static int __init console_setup(char *str)
 		brl_options = str + 4;
 		str = strchr(brl_options, ',');
 		if (!str) {
-			printk(KERN_ERR "need port name after brl=\n");
+;
 			return 1;
 		}
 		*(str++) = 0;
@@ -1271,7 +1271,7 @@ void suspend_console(void)
 {
 	if (!console_suspend_enabled)
 		return;
-	printk("Suspending console(s) (use no_console_suspend to debug)\n");
+;
 	console_lock();
 	console_suspended = 1;
 	up(&console_sem);
@@ -1518,7 +1518,7 @@ static int __read_mostly keep_bootcon;
 static int __init keep_bootcon_setup(char *str)
 {
 	keep_bootcon = 1;
-	printk(KERN_INFO "debug: skip boot console de-registration.\n");
+;
 
 	return 0;
 }
@@ -1558,8 +1558,8 @@ void register_console(struct console *newcon)
 		/* find the last or real console */
 		for_each_console(bcon) {
 			if (!(bcon->flags & CON_BOOT)) {
-				printk(KERN_INFO "Too late to register bootconsole %s%d\n",
-					newcon->name, newcon->index);
+//				printk(KERN_INFO "Too late to register bootconsole %s%d\n",
+;
 				return;
 			}
 		}
@@ -1684,15 +1684,15 @@ void register_console(struct console *newcon)
 		/* we need to iterate through twice, to make sure we print
 		 * everything out, before we unregister the console(s)
 		 */
-		printk(KERN_INFO "console [%s%d] enabled, bootconsole disabled\n",
-			newcon->name, newcon->index);
+//		printk(KERN_INFO "console [%s%d] enabled, bootconsole disabled\n",
+;
 		for_each_console(bcon)
 			if (bcon->flags & CON_BOOT)
 				unregister_console(bcon);
 	} else {
-		printk(KERN_INFO "%sconsole [%s%d] enabled\n",
-			(newcon->flags & CON_BOOT) ? "boot" : "" ,
-			newcon->name, newcon->index);
+//		printk(KERN_INFO "%sconsole [%s%d] enabled\n",
+//			(newcon->flags & CON_BOOT) ? "boot" : "" ,
+;
 	}
 }
 EXPORT_SYMBOL(register_console);
@@ -1741,8 +1741,8 @@ static int __init printk_late_init(void)
 
 	for_each_console(con) {
 		if (!keep_bootcon && con->flags & CON_BOOT) {
-			printk(KERN_INFO "turn off boot console %s%d\n",
-				con->name, con->index);
+//			printk(KERN_INFO "turn off boot console %s%d\n",
+;
 			unregister_console(con);
 		}
 	}

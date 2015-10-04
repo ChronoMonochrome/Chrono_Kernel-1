@@ -680,8 +680,8 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
 	 * See Documentation/RCU/stallwarn.txt for info on how to debug
 	 * RCU CPU stall warnings.
 	 */
-	printk(KERN_ERR "INFO: %s detected stalls on CPUs/tasks: {",
-	       rsp->name);
+//	printk(KERN_ERR "INFO: %s detected stalls on CPUs/tasks: {",
+;
 	rcu_for_each_leaf_node(rsp, rnp) {
 		raw_spin_lock_irqsave(&rnp->lock, flags);
 		ndetected += rcu_print_task_stall(rnp);
@@ -690,14 +690,14 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
 			continue;
 		for (cpu = 0; cpu <= rnp->grphi - rnp->grplo; cpu++)
 			if (rnp->qsmask & (1UL << cpu)) {
-				printk(" %d", rnp->grplo + cpu);
+;
 				ndetected++;
 			}
 	}
-	printk("} (detected by %d, t=%ld jiffies)\n",
-	       smp_processor_id(), (long)(jiffies - rsp->gp_start));
+//	printk("} (detected by %d, t=%ld jiffies)\n",
+;
 	if (ndetected == 0)
-		printk(KERN_ERR "INFO: Stall ended before state dump start\n");
+;
 	else if (!trigger_all_cpu_backtrace())
 		dump_stack();
 
@@ -718,8 +718,8 @@ static void print_cpu_stall(struct rcu_state *rsp)
 	 * See Documentation/RCU/stallwarn.txt for info on how to debug
 	 * RCU CPU stall warnings.
 	 */
-	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies)\n",
-	       rsp->name, smp_processor_id(), jiffies - rsp->gp_start);
+//	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies)\n",
+;
 	if (!trigger_all_cpu_backtrace())
 		dump_stack();
 

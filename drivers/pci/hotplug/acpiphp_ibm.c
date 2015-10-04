@@ -57,8 +57,8 @@ MODULE_PARM_DESC(debug, " Debugging mode enabled or not");
 #define dbg(format, arg...)				\
 do {							\
 	if (debug)					\
-		printk(KERN_DEBUG "%s: " format,	\
-				MY_NAME , ## arg);	\
+//		printk(KERN_DEBUG "%s: " format,	\
+;
 } while (0)
 
 #define FOUND_APCI 0x61504349

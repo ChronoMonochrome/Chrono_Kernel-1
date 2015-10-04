@@ -754,10 +754,10 @@ static int __init ark3116_init(void)
 		return retval;
 	retval = usb_register(&ark3116_driver);
 	if (retval == 0) {
-		printk(KERN_INFO "%s:"
-		       DRIVER_VERSION ":"
-		       DRIVER_DESC "\n",
-		       KBUILD_MODNAME);
+//		printk(KERN_INFO "%s:"
+//		       DRIVER_VERSION ":"
+//		       DRIVER_DESC "\n",
+;
 	} else
 		usb_serial_deregister(&ark3116_device);
 	return retval;

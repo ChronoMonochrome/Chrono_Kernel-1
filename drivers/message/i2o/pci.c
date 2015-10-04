@@ -90,7 +90,7 @@ static int __devinit i2o_pci_alloc(struct i2o_controller *c)
 	int i;
 
 	if (pci_request_regions(pdev, OSM_DESCRIPTION)) {
-		printk(KERN_ERR "%s: device already claimed\n", c->name);
+;
 		return -ENODEV;
 	}
 
@@ -126,28 +126,28 @@ static int __devinit i2o_pci_alloc(struct i2o_controller *c)
 	}
 
 	if (i == 6) {
-		printk(KERN_ERR "%s: I2O controller has no memory regions"
-		       " defined.\n", c->name);
+//		printk(KERN_ERR "%s: I2O controller has no memory regions"
+;
 		i2o_pci_free(c);
 		return -EINVAL;
 	}
 
 	/* Map the I2O controller */
 	if (c->raptor) {
-		printk(KERN_INFO "%s: PCI I2O controller\n", c->name);
-		printk(KERN_INFO "     BAR0 at 0x%08lX size=%ld\n",
-		       (unsigned long)c->base.phys, (unsigned long)c->base.len);
-		printk(KERN_INFO "     BAR1 at 0x%08lX size=%ld\n",
-		       (unsigned long)c->in_queue.phys,
-		       (unsigned long)c->in_queue.len);
+;
+//		printk(KERN_INFO "     BAR0 at 0x%08lX size=%ld\n",
+;
+//		printk(KERN_INFO "     BAR1 at 0x%08lX size=%ld\n",
+//		       (unsigned long)c->in_queue.phys,
+;
 	} else
-		printk(KERN_INFO "%s: PCI I2O controller at %08lX size=%ld\n",
-		       c->name, (unsigned long)c->base.phys,
-		       (unsigned long)c->base.len);
+//		printk(KERN_INFO "%s: PCI I2O controller at %08lX size=%ld\n",
+//		       c->name, (unsigned long)c->base.phys,
+;
 
 	c->base.virt = ioremap_nocache(c->base.phys, c->base.len);
 	if (!c->base.virt) {
-		printk(KERN_ERR "%s: Unable to map controller.\n", c->name);
+;
 		i2o_pci_free(c);
 		return -ENOMEM;
 	}
@@ -156,8 +156,8 @@ static int __devinit i2o_pci_alloc(struct i2o_controller *c)
 		c->in_queue.virt =
 		    ioremap_nocache(c->in_queue.phys, c->in_queue.len);
 		if (!c->in_queue.virt) {
-			printk(KERN_ERR "%s: Unable to map controller.\n",
-			       c->name);
+//			printk(KERN_ERR "%s: Unable to map controller.\n",
+;
 			i2o_pci_free(c);
 			return -ENOMEM;
 		}
@@ -173,8 +173,8 @@ static int __devinit i2o_pci_alloc(struct i2o_controller *c)
 	if (pdev->vendor == PCI_VENDOR_ID_MOTOROLA && pdev->device == 0x18c0) {
 		/* Check if CPU is enabled */
 		if (be32_to_cpu(readl(c->base.virt + 0x10000)) & 0x10000000) {
-			printk(KERN_INFO "%s: MPC82XX needs CPU running to "
-			       "service I2O.\n", c->name);
+//			printk(KERN_INFO "%s: MPC82XX needs CPU running to "
+;
 			i2o_pci_free(c);
 			return -ENODEV;
 		} else {
@@ -182,8 +182,8 @@ static int __devinit i2o_pci_alloc(struct i2o_controller *c)
 			c->irq_mask += I2O_MOTOROLA_PORT_OFFSET;
 			c->in_port += I2O_MOTOROLA_PORT_OFFSET;
 			c->out_port += I2O_MOTOROLA_PORT_OFFSET;
-			printk(KERN_INFO "%s: MPC82XX workarounds activated.\n",
-			       c->name);
+//			printk(KERN_INFO "%s: MPC82XX workarounds activated.\n",
+;
 		}
 	}
 
@@ -276,15 +276,15 @@ static int i2o_pci_irq_enable(struct i2o_controller *c)
 		rc = request_irq(pdev->irq, i2o_pci_interrupt, IRQF_SHARED,
 				 c->name, c);
 		if (rc < 0) {
-			printk(KERN_ERR "%s: unable to allocate interrupt %d."
-			       "\n", c->name, pdev->irq);
+//			printk(KERN_ERR "%s: unable to allocate interrupt %d."
+;
 			return rc;
 		}
 	}
 
 	writel(0x00000000, c->irq_mask);
 
-	printk(KERN_INFO "%s: Installed at IRQ %d\n", c->name, pdev->irq);
+;
 
 	return 0;
 }
@@ -321,23 +321,23 @@ static int __devinit i2o_pci_probe(struct pci_dev *pdev,
 	int rc;
 	struct pci_dev *i960 = NULL;
 
-	printk(KERN_INFO "i2o: Checking for PCI I2O controllers...\n");
+;
 
 	if ((pdev->class & 0xff) > 1) {
-		printk(KERN_WARNING "i2o: %s does not support I2O 1.5 "
-		       "(skipping).\n", pci_name(pdev));
+//		printk(KERN_WARNING "i2o: %s does not support I2O 1.5 "
+;
 		return -ENODEV;
 	}
 
 	if ((rc = pci_enable_device(pdev))) {
-		printk(KERN_WARNING "i2o: couldn't enable device %s\n",
-		       pci_name(pdev));
+//		printk(KERN_WARNING "i2o: couldn't enable device %s\n",
+;
 		return rc;
 	}
 
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-		printk(KERN_WARNING "i2o: no suitable DMA found for %s\n",
-		       pci_name(pdev));
+//		printk(KERN_WARNING "i2o: no suitable DMA found for %s\n",
+;
 		rc = -ENODEV;
 		goto disable;
 	}
@@ -346,13 +346,13 @@ static int __devinit i2o_pci_probe(struct pci_dev *pdev,
 
 	c = i2o_iop_alloc();
 	if (IS_ERR(c)) {
-		printk(KERN_ERR "i2o: couldn't allocate memory for %s\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "i2o: couldn't allocate memory for %s\n",
+;
 		rc = PTR_ERR(c);
 		goto disable;
 	} else
-		printk(KERN_INFO "%s: controller found (%s)\n", c->name,
-		       pci_name(pdev));
+//		printk(KERN_INFO "%s: controller found (%s)\n", c->name,
+;
 
 	c->pdev = pdev;
 	c->device.parent = &pdev->dev;
@@ -360,8 +360,8 @@ static int __devinit i2o_pci_probe(struct pci_dev *pdev,
 	/* Cards that fall apart if you hit them with large I/O loads... */
 	if (pdev->vendor == PCI_VENDOR_ID_NCR && pdev->device == 0x0630) {
 		c->short_req = 1;
-		printk(KERN_INFO "%s: Symbios FC920 workarounds activated.\n",
-		       c->name);
+//		printk(KERN_INFO "%s: Symbios FC920 workarounds activated.\n",
+;
 	}
 
 	if (pdev->subsystem_vendor == PCI_VENDOR_ID_PROMISE) {
@@ -392,33 +392,33 @@ static int __devinit i2o_pci_probe(struct pci_dev *pdev,
 
 		if (pdev->subsystem_device == 0xc05a) {
 			c->limit_sectors = 1;
-			printk(KERN_INFO
-			       "%s: limit sectors per request to %d\n", c->name,
-			       I2O_MAX_SECTORS_LIMITED);
+//			printk(KERN_INFO
+//			       "%s: limit sectors per request to %d\n", c->name,
+;
 		}
 #ifdef CONFIG_I2O_EXT_ADAPTEC_DMA64
 		if (sizeof(dma_addr_t) > 4) {
 			if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64)))
-				printk(KERN_INFO "%s: 64-bit DMA unavailable\n",
-				       c->name);
+//				printk(KERN_INFO "%s: 64-bit DMA unavailable\n",
+;
 			else {
 				c->pae_support = 1;
-				printk(KERN_INFO "%s: using 64-bit DMA\n",
-				       c->name);
+//				printk(KERN_INFO "%s: using 64-bit DMA\n",
+;
 			}
 		}
 #endif
 	}
 
 	if ((rc = i2o_pci_alloc(c))) {
-		printk(KERN_ERR "%s: DMA / IO allocation for I2O controller "
-		       "failed\n", c->name);
+//		printk(KERN_ERR "%s: DMA / IO allocation for I2O controller "
+;
 		goto free_controller;
 	}
 
 	if (i2o_pci_irq_enable(c)) {
-		printk(KERN_ERR "%s: unable to enable interrupts for I2O "
-		       "controller\n", c->name);
+//		printk(KERN_ERR "%s: unable to enable interrupts for I2O "
+;
 		goto free_pci;
 	}
 
@@ -463,7 +463,7 @@ static void __devexit i2o_pci_remove(struct pci_dev *pdev)
 
 	pci_disable_device(pdev);
 
-	printk(KERN_INFO "%s: Controller removed.\n", c->name);
+;
 
 	put_device(&c->device);
 };

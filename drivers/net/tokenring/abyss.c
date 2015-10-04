@@ -103,7 +103,7 @@ static int __devinit abyss_attach(struct pci_dev *pdev, const struct pci_device_
 	unsigned long pci_ioaddr;
 	
 	if (versionprinted++ == 0)
-		printk("%s", version);
+;
 
 	if (pci_enable_device(pdev))
 		return -EIO;
@@ -131,9 +131,9 @@ static int __devinit abyss_attach(struct pci_dev *pdev, const struct pci_device_
 	dev->base_addr	= pci_ioaddr;
 	dev->irq	= pci_irq_line;
 		
-	printk("%s: Madge Smart 16/4 PCI Mk2 (Abyss)\n", dev->name);
-	printk("%s:    IO: %#4lx  IRQ: %d\n",
-	       dev->name, pci_ioaddr, dev->irq);
+;
+//	printk("%s:    IO: %#4lx  IRQ: %d\n",
+;
 	/*
 	 * The TMS SIF registers lay 0x10 above the card base address.
 	 */
@@ -141,14 +141,14 @@ static int __devinit abyss_attach(struct pci_dev *pdev, const struct pci_device_
 		
 	ret = tmsdev_init(dev, &pdev->dev);
 	if (ret) {
-		printk("%s: unable to get memory for dev->priv.\n", 
-		       dev->name);
+//		printk("%s: unable to get memory for dev->priv.\n", 
+;
 		goto err_out_irq;
 	}
 
 	abyss_read_eeprom(dev);
 
-	printk("%s:    Ring Station Address: %pM\n", dev->name, dev->dev_addr);
+;
 
 	tp = netdev_priv(dev);
 	tp->setnselout = abyss_setnselout_pins;
@@ -403,11 +403,11 @@ static void abyss_read_eeprom(struct net_device *dev)
 	val = at24_readb(ioaddr + PCIBM2_SEEPROM_REG, 
 			 PCIBM2_SEEPROM_RING_SPEED);
 	tp->DataRate = val?SPEED_4:SPEED_16; /* set open speed */
-	printk("%s:    SEEPROM: ring speed: %dMb/sec\n", dev->name, tp->DataRate);
+;
 	
 	val = at24_readb(ioaddr + PCIBM2_SEEPROM_REG,
 			 PCIBM2_SEEPROM_RAM_SIZE) * 128;
-	printk("%s:    SEEPROM: adapter RAM: %dkb\n", dev->name, val);
+;
 	
 	dev->addr_len = 6;
 	for (i = 0; i < 6; i++) 

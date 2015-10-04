@@ -35,7 +35,7 @@ static __init int init_emergency_pool(void)
 
 	page_pool = mempool_create_page_pool(POOL_SIZE, 0);
 	BUG_ON(!page_pool);
-	printk("highmem bounce pool size: %d pages\n", POOL_SIZE);
+;
 
 	return 0;
 }
@@ -85,7 +85,7 @@ int init_emergency_isa_pool(void)
 				       mempool_free_pages, (void *) 0);
 	BUG_ON(!isa_page_pool);
 
-	printk("isa bounce pool size: %d pages\n", ISA_POOL_SIZE);
+;
 	return 0;
 }
 

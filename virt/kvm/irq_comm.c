@@ -86,7 +86,7 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
 
 	if (irq->dest_mode == 0 && irq->dest_id == 0xff &&
 			kvm_is_dm_lowest_prio(irq))
-		printk(KERN_INFO "kvm: apic: phys broadcast and lowest prio\n");
+;
 
 	kvm_for_each_vcpu(i, vcpu, kvm) {
 		if (!kvm_apic_present(vcpu))
@@ -220,7 +220,7 @@ int kvm_request_irq_source_id(struct kvm *kvm)
 	irq_source_id = find_first_zero_bit(bitmap, BITS_PER_LONG);
 
 	if (irq_source_id >= BITS_PER_LONG) {
-		printk(KERN_WARNING "kvm: exhaust allocatable IRQ sources!\n");
+;
 		irq_source_id = -EFAULT;
 		goto unlock;
 	}
@@ -242,7 +242,7 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id)
 	mutex_lock(&kvm->irq_lock);
 	if (irq_source_id < 0 ||
 	    irq_source_id >= BITS_PER_LONG) {
-		printk(KERN_ERR "kvm: IRQ source ID out of range!\n");
+;
 		goto unlock;
 	}
 	clear_bit(irq_source_id, &kvm->arch.irq_sources_bitmap);

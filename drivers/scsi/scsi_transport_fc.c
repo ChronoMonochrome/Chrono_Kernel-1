@@ -563,10 +563,10 @@ send_fail_skb:
 	kfree_skb(skb);
 send_fail:
 	name = get_fc_host_event_code_name(event_code);
-	printk(KERN_WARNING
-		"%s: Dropped Event : host %d %s data 0x%08x - err %d\n",
-		__func__, shost->host_no,
-		(name) ? name : "<unknown>", event_data, err);
+//	printk(KERN_WARNING
+//		"%s: Dropped Event : host %d %s data 0x%08x - err %d\n",
+//		__func__, shost->host_no,
+;
 	return;
 }
 EXPORT_SYMBOL(fc_host_post_event);
@@ -632,9 +632,9 @@ fc_host_post_vendor_event(struct Scsi_Host *shost, u32 event_number,
 send_vendor_fail_skb:
 	kfree_skb(skb);
 send_vendor_fail:
-	printk(KERN_WARNING
-		"%s: Dropped Event : host %d vendor_unique - err %d\n",
-		__func__, shost->host_no, err);
+//	printk(KERN_WARNING
+//		"%s: Dropped Event : host %d vendor_unique - err %d\n",
+;
 	return;
 }
 EXPORT_SYMBOL(fc_host_post_vendor_event);
@@ -2300,9 +2300,9 @@ static int
 fc_queue_work(struct Scsi_Host *shost, struct work_struct *work)
 {
 	if (unlikely(!fc_host_work_q(shost))) {
-		printk(KERN_ERR
-			"ERROR: FC host '%s' attempted to queue work, "
-			"when no workqueue created.\n", shost->hostt->name);
+//		printk(KERN_ERR
+//			"ERROR: FC host '%s' attempted to queue work, "
+;
 		dump_stack();
 
 		return -EINVAL;
@@ -2319,9 +2319,9 @@ static void
 fc_flush_work(struct Scsi_Host *shost)
 {
 	if (!fc_host_work_q(shost)) {
-		printk(KERN_ERR
-			"ERROR: FC host '%s' attempted to flush work, "
-			"when no workqueue created.\n", shost->hostt->name);
+//		printk(KERN_ERR
+//			"ERROR: FC host '%s' attempted to flush work, "
+;
 		dump_stack();
 		return;
 	}
@@ -2343,9 +2343,9 @@ fc_queue_devloss_work(struct Scsi_Host *shost, struct delayed_work *work,
 				unsigned long delay)
 {
 	if (unlikely(!fc_host_devloss_work_q(shost))) {
-		printk(KERN_ERR
-			"ERROR: FC host '%s' attempted to queue work, "
-			"when no workqueue created.\n", shost->hostt->name);
+//		printk(KERN_ERR
+//			"ERROR: FC host '%s' attempted to queue work, "
+;
 		dump_stack();
 
 		return -EINVAL;
@@ -2362,9 +2362,9 @@ static void
 fc_flush_devloss(struct Scsi_Host *shost)
 {
 	if (!fc_host_devloss_work_q(shost)) {
-		printk(KERN_ERR
-			"ERROR: FC host '%s' attempted to flush work, "
-			"when no workqueue created.\n", shost->hostt->name);
+//		printk(KERN_ERR
+//			"ERROR: FC host '%s' attempted to flush work, "
+;
 		dump_stack();
 		return;
 	}
@@ -2574,7 +2574,7 @@ fc_rport_create(struct Scsi_Host *shost, int channel,
 	size = (sizeof(struct fc_rport) + fci->f->dd_fcrport_size);
 	rport = kzalloc(size, GFP_KERNEL);
 	if (unlikely(!rport)) {
-		printk(KERN_ERR "%s: allocation failure\n", __func__);
+;
 		return NULL;
 	}
 
@@ -2619,7 +2619,7 @@ fc_rport_create(struct Scsi_Host *shost, int channel,
 
 	error = device_add(dev);
 	if (error) {
-		printk(KERN_ERR "FC Remote Port device_add failed\n");
+;
 		goto delete_rport;
 	}
 	transport_add_device(dev);
@@ -3020,8 +3020,8 @@ fc_remote_port_rolechg(struct fc_rport  *rport, u32 roles)
 		ret = fc_tgt_it_nexus_create(shost, (unsigned long)rport,
 					     (char *)&rport->node_name);
 		if (ret)
-			printk(KERN_ERR "FC Remore Port tgt nexus failed %d\n",
-			       ret);
+//			printk(KERN_ERR "FC Remore Port tgt nexus failed %d\n",
+;
 	}
 
 	rport->roles = roles;
@@ -3094,9 +3094,9 @@ fc_timeout_deleted_rport(struct work_struct *work)
 	if ((rport->port_state == FC_PORTSTATE_ONLINE) &&
 	    (rport->scsi_target_id != -1) &&
 	    !(rport->roles & FC_PORT_ROLE_FCP_TARGET)) {
-		dev_printk(KERN_ERR, &rport->dev,
-			"blocked FC remote port time out: no longer"
-			" a FCP target, removing starget\n");
+//		dev_printk(KERN_ERR, &rport->dev,
+//			"blocked FC remote port time out: no longer"
+;
 		spin_unlock_irqrestore(shost->host_lock, flags);
 		scsi_target_unblock(&rport->dev);
 		fc_queue_work(shost, &rport->stgt_delete_work);
@@ -3106,10 +3106,10 @@ fc_timeout_deleted_rport(struct work_struct *work)
 	/* NOOP state - we're flushing workq's */
 	if (rport->port_state != FC_PORTSTATE_BLOCKED) {
 		spin_unlock_irqrestore(shost->host_lock, flags);
-		dev_printk(KERN_ERR, &rport->dev,
-			"blocked FC remote port time out: leaving"
-			" rport%s alone\n",
-			(rport->scsi_target_id != -1) ?  " and starget" : "");
+//		dev_printk(KERN_ERR, &rport->dev,
+//			"blocked FC remote port time out: leaving"
+//			" rport%s alone\n",
+;
 		return;
 	}
 
@@ -3117,18 +3117,18 @@ fc_timeout_deleted_rport(struct work_struct *work)
 	    (rport->scsi_target_id == -1)) {
 		list_del(&rport->peers);
 		rport->port_state = FC_PORTSTATE_DELETED;
-		dev_printk(KERN_ERR, &rport->dev,
-			"blocked FC remote port time out: removing"
-			" rport%s\n",
-			(rport->scsi_target_id != -1) ?  " and starget" : "");
+//		dev_printk(KERN_ERR, &rport->dev,
+//			"blocked FC remote port time out: removing"
+//			" rport%s\n",
+;
 		fc_queue_work(shost, &rport->rport_delete_work);
 		spin_unlock_irqrestore(shost->host_lock, flags);
 		return;
 	}
 
-	dev_printk(KERN_ERR, &rport->dev,
-		"blocked FC remote port time out: removing target and "
-		"saving binding\n");
+//	dev_printk(KERN_ERR, &rport->dev,
+//		"blocked FC remote port time out: removing target and "
+;
 
 	list_move_tail(&rport->peers, &fc_host->rport_bindings);
 
@@ -3317,7 +3317,7 @@ fc_vport_setup(struct Scsi_Host *shost, int channel, struct device *pdev,
 	size = (sizeof(struct fc_vport) + fci->f->dd_fcvport_size);
 	vport = kzalloc(size, GFP_KERNEL);
 	if (unlikely(!vport)) {
-		printk(KERN_ERR "%s: allocation failure\n", __func__);
+;
 		return -ENOMEM;
 	}
 
@@ -3358,7 +3358,7 @@ fc_vport_setup(struct Scsi_Host *shost, int channel, struct device *pdev,
 
 	error = device_add(dev);
 	if (error) {
-		printk(KERN_ERR "FC Virtual Port device_add failed\n");
+;
 		goto delete_vport;
 	}
 	transport_add_device(dev);
@@ -3366,7 +3366,7 @@ fc_vport_setup(struct Scsi_Host *shost, int channel, struct device *pdev,
 
 	error = fci->f->vport_create(vport, ids->disable);
 	if (error) {
-		printk(KERN_ERR "FC Virtual Port LLDD Create failed\n");
+;
 		goto delete_vport_all;
 	}
 
@@ -3378,18 +3378,18 @@ fc_vport_setup(struct Scsi_Host *shost, int channel, struct device *pdev,
 		error = sysfs_create_link(&shost->shost_gendev.kobj,
 				 &dev->kobj, dev_name(dev));
 		if (error)
-			printk(KERN_ERR
-				"%s: Cannot create vport symlinks for "
-				"%s, err=%d\n",
-				__func__, dev_name(dev), error);
+//			printk(KERN_ERR
+//				"%s: Cannot create vport symlinks for "
+//				"%s, err=%d\n",
+;
 	}
 	spin_lock_irqsave(shost->host_lock, flags);
 	vport->flags &= ~FC_VPORT_CREATING;
 	spin_unlock_irqrestore(shost->host_lock, flags);
 
-	dev_printk(KERN_NOTICE, pdev,
-			"%s created via shost%d channel %d\n", dev_name(dev),
-			shost->host_no, channel);
+//	dev_printk(KERN_NOTICE, pdev,
+//			"%s created via shost%d channel %d\n", dev_name(dev),
+;
 
 	*ret_vport = vport;
 
@@ -3502,11 +3502,11 @@ fc_vport_sched_delete(struct work_struct *work)
 
 	stat = fc_vport_terminate(vport);
 	if (stat)
-		dev_printk(KERN_ERR, vport->dev.parent,
-			"%s: %s could not be deleted created via "
-			"shost%d channel %d - error %d\n", __func__,
-			dev_name(&vport->dev), vport->shost->host_no,
-			vport->channel, stat);
+//		dev_printk(KERN_ERR, vport->dev.parent,
+//			"%s: %s could not be deleted created via "
+//			"shost%d channel %d - error %d\n", __func__,
+//			dev_name(&vport->dev), vport->shost->host_no,
+;
 }
 
 
@@ -3619,8 +3619,8 @@ fc_bsg_job_timeout(struct request *req)
 			job->ref_cnt--;
 			return BLK_EH_RESET_TIMER;
 		} else if (err)
-			printk(KERN_ERR "ERROR: FC BSG request timeout - LLD "
-				"abort failed with status %d\n", err);
+//			printk(KERN_ERR "ERROR: FC BSG request timeout - LLD "
+;
 	}
 
 	/* the blk_end_sync_io() doesn't check the error */
@@ -4013,9 +4013,9 @@ fc_bsg_hostadd(struct Scsi_Host *shost, struct fc_host_attrs *fc_host)
 
 	q = __scsi_alloc_queue(shost, fc_bsg_host_handler);
 	if (!q) {
-		printk(KERN_ERR "fc_host%d: bsg interface failed to "
-				"initialize - no request queue\n",
-				 shost->host_no);
+//		printk(KERN_ERR "fc_host%d: bsg interface failed to "
+//				"initialize - no request queue\n",
+;
 		return -ENOMEM;
 	}
 
@@ -4027,9 +4027,9 @@ fc_bsg_hostadd(struct Scsi_Host *shost, struct fc_host_attrs *fc_host)
 
 	err = bsg_register_queue(q, dev, bsg_name, NULL);
 	if (err) {
-		printk(KERN_ERR "fc_host%d: bsg interface failed to "
-				"initialize - register queue\n",
-				shost->host_no);
+//		printk(KERN_ERR "fc_host%d: bsg interface failed to "
+//				"initialize - register queue\n",
+;
 		blk_cleanup_queue(q);
 		return err;
 	}
@@ -4059,9 +4059,9 @@ fc_bsg_rportadd(struct Scsi_Host *shost, struct fc_rport *rport)
 
 	q = __scsi_alloc_queue(shost, fc_bsg_rport_handler);
 	if (!q) {
-		printk(KERN_ERR "%s: bsg interface failed to "
-				"initialize - no request queue\n",
-				 dev->kobj.name);
+//		printk(KERN_ERR "%s: bsg interface failed to "
+//				"initialize - no request queue\n",
+;
 		return -ENOMEM;
 	}
 
@@ -4073,9 +4073,9 @@ fc_bsg_rportadd(struct Scsi_Host *shost, struct fc_rport *rport)
 
 	err = bsg_register_queue(q, dev, NULL, NULL);
 	if (err) {
-		printk(KERN_ERR "%s: bsg interface failed to "
-				"initialize - register queue\n",
-				 dev->kobj.name);
+//		printk(KERN_ERR "%s: bsg interface failed to "
+//				"initialize - register queue\n",
+;
 		blk_cleanup_queue(q);
 		return err;
 	}

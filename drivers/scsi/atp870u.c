@@ -73,7 +73,7 @@ static irqreturn_t atp870u_intr_handle(int irq, void *dev_id)
 	return IRQ_NONE;
 ch_sel:
 #ifdef ED_DBGP	
-	printk("atp870u_intr_handle enter\n");
+;
 #endif	
 	dev->in_int[c] = 1;
 	cmdp = inb(dev->ioport[c] + 0x10);
@@ -133,7 +133,7 @@ stop_dma:
 		if (dev->dev_id == ATP885_DEVID) 
 			dev->r1f[c][target_id] |= j;
 #ifdef ED_DBGP
-		printk("atp870u_intr_handle status = %x\n",i);
+;
 #endif	
 		if (i == 0x85) {
 			if ((dev->last_cmd[c] & 0xf0) != 0x40) {
@@ -153,7 +153,7 @@ stop_dma:
 			   	dev->id[c][target_id].last_len = adrcnt;			   
 				}
 #ifdef ED_DBGP
-				printk("tmport = %x dev->id[c][target_id].last_len = %d dev->id[c][target_id].tran_len = %d\n",tmport,dev->id[c][target_id].last_len,dev->id[c][target_id].tran_len);
+;
 #endif		
 			}
 
@@ -174,7 +174,7 @@ stop_dma:
 			if (((dev->quhd[c] != dev->quend[c]) || (dev->last_cmd[c] != 0xff)) &&
 			    (dev->in_snd[c] == 0)) {
 #ifdef ED_DBGP
-				printk("Call sent_s870\n");
+;
 #endif				
 				send_s870(dev,c);
 			}
@@ -184,7 +184,7 @@ stop_dma:
 			 */
 			dev->in_int[c] = 0;
 #ifdef ED_DBGP
-				printk("Status 0x85 return\n");
+;
 #endif				
 			goto handled;
 		}
@@ -227,7 +227,7 @@ stop_dma:
 		}
 		if ((i == 0x80) || (i == 0x8f)) {
 #ifdef ED_DBGP
-			printk(KERN_DEBUG "Device reselect\n");
+;
 #endif			
 			lun = 0;
 			tmport -= 0x07;
@@ -240,7 +240,7 @@ stop_dma:
 				}
 				if (cmdp == 0x41) {
 #ifdef ED_DBGP
-					printk("cmdp = 0x41\n");
+;
 #endif						
 					tmport += 0x02;
 					adrcnt = 0;
@@ -257,7 +257,7 @@ stop_dma:
 					goto handled;
 				} else {
 #ifdef ED_DBGP
-					printk("cmdp != 0x41\n");
+;
 #endif						
 					outb(0x46, tmport);
 					dev->id[c][target_id].dirct = 0x00;
@@ -299,10 +299,10 @@ stop_dma:
 			}
 			workreq = dev->id[c][target_id].curr_req;
 #ifdef ED_DBGP			
-			scmd_printk(KERN_DEBUG, workreq, "CDB");
+;
 			for (l = 0; l < workreq->cmd_len; l++)
-				printk(KERN_DEBUG " %x",workreq->cmnd[l]);
-			printk("\n");
+;
+;
 #endif	
 			
 			tmport = workport + 0x0f;
@@ -316,7 +316,7 @@ stop_dma:
 			outb(((unsigned char *) &k)[1], tmport++);
 			outb(((unsigned char *) &k)[0], tmport++);
 #ifdef ED_DBGP			
-			printk("k %x, k[0] 0x%x k[1] 0x%x k[2] 0x%x\n", k, inb(tmport-1), inb(tmport-2), inb(tmport-3));
+;
 #endif			
 			/* Remap wide */
 			j = target_id;
@@ -372,12 +372,12 @@ stop_dma:
 				outb(0x08, tmport);
 				dev->in_int[c] = 0;
 #ifdef ED_DBGP
-				printk("dev->id[c][target_id].last_len = 0\n");
+;
 #endif					
 				goto handled;
 			}
 #ifdef ED_DBGP
-			printk("target_id = %d adrcnt = %d\n",target_id,adrcnt);
+;
 #endif			
 			prd = dev->id[c][target_id].prd_pos;
 			while (adrcnt != 0) {
@@ -405,7 +405,7 @@ stop_dma:
 			tmpcip = dev->pciport[c] + 0x04;
 			outl(dev->id[c][target_id].prdaddr, tmpcip);
 #ifdef ED_DBGP
-			printk("dev->id[%d][%d].prdaddr 0x%8x\n", c, target_id, dev->id[c][target_id].prdaddr);
+;
 #endif
 			if (dev->dev_id == ATP885_DEVID) {
 				tmpcip -= 0x04;
@@ -424,7 +424,7 @@ stop_dma:
 				outb(0x01, tmpcip);
 				dev->in_int[c] = 0;
 #ifdef ED_DBGP
-				printk("status 0x80 return dirct != 0\n");
+;
 #endif				
 				goto handled;
 			}
@@ -432,7 +432,7 @@ stop_dma:
 			outb(0x09, tmpcip);
 			dev->in_int[c] = 0;
 #ifdef ED_DBGP
-			printk("status 0x80 return dirct = 0\n");
+;
 #endif			
 			goto handled;
 		}
@@ -460,7 +460,7 @@ stop_dma:
 			tmport -= 0x08;
 			errstus = inb(tmport);
 			if (((dev->r1f[c][target_id] & 0x10) != 0)&&(dev->dev_id==ATP885_DEVID)) {
-			   printk(KERN_WARNING "AEC67162 CRC ERROR !\n");
+;
 			   errstus = 0x02;
 			}
 			workreq->result = errstus;
@@ -477,7 +477,7 @@ go_42:
 			spin_lock_irqsave(dev->host->host_lock, flags);
 			(*workreq->scsi_done) (workreq);
 #ifdef ED_DBGP
-			   printk("workreq->scsi_done\n");
+;
 #endif	
 			/*
 			 *	Clear it off the queue
@@ -502,7 +502,7 @@ go_42:
 			if (((dev->last_cmd[c] != 0xff) || (dev->quhd[c] != dev->quend[c])) &&
 			    (dev->in_snd[c] == 0)) {
 #ifdef ED_DBGP
-			   printk("Call sent_s870(scsi_done)\n");
+;
 #endif				   
 			   send_s870(dev,c);
 			}
@@ -594,7 +594,7 @@ go_42:
 	
 handled:
 #ifdef ED_DBGP
-	printk("atp870u_intr_handle exit\n");
+;
 #endif			
 	return IRQ_HANDLED;
 }
@@ -620,7 +620,7 @@ static int atp870u_queuecommand_lck(struct scsi_cmnd *req_p,
 		req_p->result = 0x00040000;
 		done(req_p);
 #ifdef ED_DBGP		
-		printk("atp870u_queuecommand : req_p->device->channel > 1\n");	
+;
 #endif			
 		return 0;
 	}
@@ -647,7 +647,7 @@ static int atp870u_queuecommand_lck(struct scsi_cmnd *req_p,
 		req_p->scsi_done = done;
 	} else {
 #ifdef ED_DBGP		
-		printk( "atp870u_queuecommand: done can't be NULL\n");
+;
 #endif		
 		req_p->result = 0;
 		done(req_p);
@@ -670,7 +670,7 @@ static int atp870u_queuecommand_lck(struct scsi_cmnd *req_p,
 			dev->quend[c] = qcnt;
 		}
 #ifdef ED_DBGP		
-		printk("atp870u_queuecommand : dev->quhd[c] == dev->quend[c]\n");
+;
 #endif		
 		dev->quend[c]--;
 		req_p->result = 0x00020000;
@@ -680,16 +680,16 @@ static int atp870u_queuecommand_lck(struct scsi_cmnd *req_p,
 	dev->quereq[c][dev->quend[c]] = req_p;
 	tmport = dev->ioport[c] + 0x1c;
 #ifdef ED_DBGP	
-	printk("dev->ioport[c] = %x inb(tmport) = %x dev->in_int[%d] = %d dev->in_snd[%d] = %d\n",dev->ioport[c],inb(tmport),c,dev->in_int[c],c,dev->in_snd[c]);
+;
 #endif
 	if ((inb(tmport) == 0) && (dev->in_int[c] == 0) && (dev->in_snd[c] == 0)) {
 #ifdef ED_DBGP
-		printk("Call sent_s870(atp870u_queuecommand)\n");
+;
 #endif		
 		send_s870(dev,c);
 	}
 #ifdef ED_DBGP	
-	printk("atp870u_queuecommand : exit\n");
+;
 #endif	
 	return 0;
 }
@@ -719,12 +719,12 @@ static void send_s870(struct atp_unit *dev,unsigned char c)
 
 	if (dev->in_snd[c] != 0) {
 #ifdef ED_DBGP		
-		printk("cmnd in_snd\n");
+;
 #endif
 		return;
 	}
 #ifdef ED_DBGP
-	printk("Sent_s870 enter\n");
+;
 #endif
 	dev->in_snd[c] = 1;
 	if ((dev->last_cmd[c] != 0xff) && ((dev->last_cmd[c] & 0x40) != 0)) {
@@ -771,19 +771,19 @@ cmd_subp:
 	}
 abortsnd:
 #ifdef ED_DBGP
-	printk("Abort to Send\n");
+;
 #endif
 	dev->last_cmd[c] |= 0x40;
 	dev->in_snd[c] = 0;
 	return;
 oktosend:
 #ifdef ED_DBGP
-	printk("OK to Send\n");
-	scmd_printk(KERN_DEBUG, workreq, "CDB");
+;
+;
 	for(i=0;i<workreq->cmd_len;i++) {
-		printk(" %x",workreq->cmnd[i]);
+;
 	}
-	printk("\n");
+;
 #endif	
 	l = scsi_bufflen(workreq);
 
@@ -817,7 +817,7 @@ oktosend:
 	while ((inb(tmport) & 0x01) != j) {
 		outb(j,tmport);
 #ifdef ED_DBGP
-		printk("send_s870 while loop 1\n");
+;
 #endif
 	}
 	/*
@@ -843,7 +843,7 @@ oktosend:
 	 */
 	outb(dev->id[c][target_id].devsp, tmport++);	 
 #ifdef ED_DBGP	
-	printk("dev->id[%d][%d].devsp = %2x\n",c,target_id,dev->id[c][target_id].devsp);
+;
 #endif
 
 	sg_count = scsi_dma_map(workreq);
@@ -857,7 +857,7 @@ oktosend:
 	dev->id[c][j].last_len = l;
 	dev->id[c][j].tran_len = 0;
 #ifdef ED_DBGP	
-	printk("dev->id[%2d][%2d].last_len = %d\n",c,j,dev->id[c][j].last_len);
+;
 #endif	
 	/*
 	 *	Flip the wide bits
@@ -881,7 +881,7 @@ oktosend:
 		if (inb(tmport) == 0) {
 			tmport = workport + 0x18;
 #ifdef ED_DBGP
-			printk("change SCSI_CMD_REG 0x08\n");	
+;
 #endif				
 			outb(0x08, tmport);
 		} else {
@@ -906,7 +906,7 @@ oktosend:
 			bttl = sg_dma_address(sgpnt);
 			l=sg_dma_len(sgpnt);
 #ifdef ED_DBGP		
-			printk("1. bttl %x, l %x\n",bttl, l);
+;
 #endif			
 			while (l > 0x10000) {
 				(((u16 *) (prd))[i + 3]) = 0x0000;
@@ -924,12 +924,12 @@ oktosend:
 		(((u16 *) (prd))[i - 1]) = cpu_to_le16(0x8000);	
 #ifdef ED_DBGP		
 		printk("prd %4x %4x %4x %4x\n",(((unsigned short int *)prd)[0]),(((unsigned short int *)prd)[1]),(((unsigned short int *)prd)[2]),(((unsigned short int *)prd)[3]));
-		printk("2. bttl %x, l %x\n",bttl, l);
+;
 #endif			
 	}
 	tmpcip += 4;
 #ifdef ED_DBGP		
-	printk("send_s870: prdaddr_2 0x%8x tmpcip %x target_id %d\n", dev->id[c][target_id].prdaddr,tmpcip,target_id);
+;
 #endif	
 	dev->id[c][target_id].prdaddr = dev->id[c][target_id].prd_bus;
 	outl(dev->id[c][target_id].prdaddr, tmpcip);
@@ -972,7 +972,7 @@ oktosend:
 			outb(0x08, tmport);
 			outb(0x01, tmpcip);
 #ifdef ED_DBGP		
-		printk( "start DMA(to target)\n");
+;
 #endif				
 		} else {
 			dev->last_cmd[c] |= 0x40;
@@ -985,7 +985,7 @@ oktosend:
 		outb(0x08, tmport);
 		outb(0x09, tmpcip);
 #ifdef ED_DBGP		
-		printk( "start DMA(to host)\n");
+;
 #endif			
 	} else {
 		dev->last_cmd[c] |= 0x40;
@@ -1315,7 +1315,7 @@ static void is870(struct atp_unit *dev, unsigned int wkport)
 			continue;
 		}
 		if (i == dev->host_id[0]) {
-			printk(KERN_INFO "         ID: %2d  Host Adapter\n", dev->host_id[0]);
+;
 			continue;
 		}
 		tmport = wkport + 0x1b;
@@ -1451,7 +1451,7 @@ rd_inq_data:
 		}
 inq_ok:
 		mbuf[36] = 0;
-		printk(KERN_INFO "         ID: %2d  %s\n", i, &mbuf[8]);
+;
 		dev->id[0][i].devtype = mbuf[0];
 		rmb = mbuf[1];
 		n = mbuf[7];
@@ -1839,7 +1839,7 @@ static void is880(struct atp_unit *dev, unsigned int wkport)
 			continue;
 		}
 		if (i == dev->host_id[0]) {
-			printk(KERN_INFO "         ID: %2d  Host Adapter\n", dev->host_id[0]);
+;
 			continue;
 		}
 		tmport = wkport + 0x5b;
@@ -1970,7 +1970,7 @@ rd_inq_data:
 
 inq_ok:
 		mbuf[36] = 0;
-		printk(KERN_INFO "         ID: %2d  %s\n", i, &mbuf[8]);
+;
 		dev->id[0][i].devtype = mbuf[0];
 		rmb = mbuf[1];
 		n = mbuf[7];
@@ -2531,7 +2531,7 @@ static int atp870u_init_tables(struct Scsi_Host *host)
 	   	for(k=0;k<16;k++) {
 	   			atp_dev->id[c][k].prd_table = pci_alloc_consistent(atp_dev->pdev, 1024, &(atp_dev->id[c][k].prd_bus));
 	   			if (!atp_dev->id[c][k].prd_table) {
-	   				printk("atp870u_init_tables fail\n");
+;
 				atp870u_free_tables(host);
 				return -ENOMEM;
 			}
@@ -2581,9 +2581,9 @@ static int atp870u_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		goto err_eio;
 
         if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-                printk(KERN_INFO "atp870u: use 32bit DMA mask.\n");
+;
         } else {
-                printk(KERN_ERR "atp870u: DMA mask required but not available.\n");
+;
 		goto err_eio;
         }
 
@@ -2617,8 +2617,8 @@ static int atp870u_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		host_id = inb(base_io + 0x39);
 		host_id >>= 0x04;
 
-		printk(KERN_INFO "   ACARD AEC-67160 PCI Ultra3 LVD Host Adapter: %d"
-			"    IO:%x, IRQ:%d.\n", count, base_io, pdev->irq);
+//		printk(KERN_INFO "   ACARD AEC-67160 PCI Ultra3 LVD Host Adapter: %d"
+;
 		atpdev->ioport[0] = base_io + 0x40;
 		atpdev->pciport[0] = base_io + 0x28;
 		atpdev->dev_id = ent->device;
@@ -2694,12 +2694,12 @@ flash_ok_880:
 		pci_set_drvdata(pdev, p);
 		memcpy(p, atpdev, sizeof(*atpdev));
 		if (atp870u_init_tables(shpnt) < 0) {
-			printk(KERN_ERR "Unable to allocate tables for Acard controller\n");
+;
 			goto unregister;
 		}
 
 		if (request_irq(pdev->irq, atp870u_intr_handle, IRQF_SHARED, "atp880i", shpnt)) {
- 			printk(KERN_ERR "Unable to allocate IRQ%d for Acard controller.\n", pdev->irq);
+;
 			goto free_tables;
 		}
 
@@ -2742,8 +2742,8 @@ flash_ok_880:
 		shpnt->n_io_port = 0x60;	/* Number of bytes of I/O space used */
 		shpnt->irq = pdev->irq;			
 	} else if (ent->device == ATP885_DEVID) {	
-			printk(KERN_INFO "   ACARD AEC-67162 PCI Ultra3 LVD Host Adapter:  IO:%x, IRQ:%d.\n"
-			       , base_io, pdev->irq);
+//			printk(KERN_INFO "   ACARD AEC-67162 PCI Ultra3 LVD Host Adapter:  IO:%x, IRQ:%d.\n"
+;
         	
 		atpdev->pdev = pdev;
 		atpdev->dev_id  = ent->device;
@@ -2767,10 +2767,10 @@ flash_ok_880:
 			goto unregister;
 			
 #ifdef ED_DBGP		
-	printk("request_irq() shpnt %p hostdata %p\n", shpnt, p);
+;
 #endif	        
 		if (request_irq(pdev->irq, atp870u_intr_handle, IRQF_SHARED, "atp870u", shpnt)) {
-				printk(KERN_ERR "Unable to allocate IRQ for Acard controller.\n");
+;
 			goto free_tables;
 		}
 		
@@ -2803,7 +2803,7 @@ next_fblk_885:
 		goto next_fblk_885;
 flash_ok_885:
 #ifdef ED_DBGP
-		printk( "Flash Read OK\n");
+;
 #endif	
 		c=inb(base_io + 0x29);
 		outb((c & 0xfb),base_io + 0x29);
@@ -2891,9 +2891,9 @@ flash_ok_885:
 		outb(0x20, tmport);
 
 		tscam_885();
-		printk(KERN_INFO "   Scanning Channel A SCSI Device ...\n");
+;
 		is885(p, base_io + 0x80, 0);
-		printk(KERN_INFO "   Scanning Channel B SCSI Device ...\n");
+;
 		is885(p, base_io + 0xc0, 1);
 
 		k = inb(base_io + 0x28) & 0xcf;
@@ -2904,7 +2904,7 @@ flash_ok_885:
 		k = inb(base_io + 0x29) | 0x01;
 		outb(k, base_io + 0x29);
 #ifdef ED_DBGP
-		//printk("atp885: atp_host[0] 0x%p\n", atp_host[0]);
+;
 #endif		
 		shpnt->max_id = 16;
 		shpnt->max_lun = (p->global_map[0] & 0x07) + 1;
@@ -2918,8 +2918,8 @@ flash_ok_885:
 	} else {
 		error = pci_read_config_byte(pdev, 0x49, &host_id);
 
-		printk(KERN_INFO "   ACARD AEC-671X PCI Ultra/W SCSI-2/3 Host Adapter: %d "
-			"IO:%x, IRQ:%d.\n", count, base_io, pdev->irq);
+//		printk(KERN_INFO "   ACARD AEC-671X PCI Ultra/W SCSI-2/3 Host Adapter: %d "
+;
 
 		atpdev->ioport[0] = base_io;
 		atpdev->pciport[0] = base_io + 0x20;
@@ -2952,7 +2952,7 @@ flash_ok_885:
 			goto unregister;
 
 		if (request_irq(pdev->irq, atp870u_intr_handle, IRQF_SHARED, "atp870i", shpnt)) {
-			printk(KERN_ERR "Unable to allocate IRQ%d for Acard controller.\n", pdev->irq);
+;
 			goto free_tables;
 		}
 
@@ -3017,12 +3017,12 @@ flash_ok_885:
 			goto scsi_add_fail;
 		scsi_scan_host(shpnt);
 #ifdef ED_DBGP			
-		printk("atp870u_prob : exit\n");
+;
 #endif		
 		return 0;
 
 scsi_add_fail:
-	printk("atp870u_prob:scsi_add_fail\n");
+;
 	if(ent->device==ATP885_DEVID) {
 		release_region(base_io, 0xff);
 	} else if((ent->device==ATP880_DEVID1)||(ent->device==ATP880_DEVID2)) {
@@ -3031,13 +3031,13 @@ scsi_add_fail:
 		release_region(base_io, 0x40);
 	}
 request_io_fail:
-	printk("atp870u_prob:request_io_fail\n");
+;
 	free_irq(pdev->irq, shpnt);
 free_tables:
-	printk("atp870u_prob:free_table\n");
+;
 	atp870u_free_tables(shpnt);
 unregister:
-	printk("atp870u_prob:unregister\n");
+;
 	scsi_host_put(shpnt);
 	return -1;		
 err_eio:
@@ -3063,29 +3063,29 @@ static int atp870u_abort(struct scsi_cmnd * SCpnt)
 
 	dev = (struct atp_unit *)&host->hostdata;
 	c = scmd_channel(SCpnt);
-	printk(" atp870u: abort Channel = %x \n", c);
-	printk("working=%x last_cmd=%x ", dev->working[c], dev->last_cmd[c]);
-	printk(" quhdu=%x quendu=%x ", dev->quhd[c], dev->quend[c]);
+;
+;
+;
 	tmport = dev->ioport[c];
 	for (j = 0; j < 0x18; j++) {
-		printk(" r%2x=%2x", j, inb(tmport++));
+;
 	}
 	tmport += 0x04;
-	printk(" r1c=%2x", inb(tmport));
+;
 	tmport += 0x03;
-	printk(" r1f=%2x in_snd=%2x ", inb(tmport), dev->in_snd[c]);
+;
 	tmport= dev->pciport[c];
-	printk(" d00=%2x", inb(tmport));
+;
 	tmport += 0x02;
-	printk(" d02=%2x", inb(tmport));
+;
 	for(j=0;j<16;j++) {
 	   if (dev->id[c][j].curr_req != NULL) {
 		workrequ = dev->id[c][j].curr_req;
-		printk("\n que cdb= ");
+;
 		for (k=0; k < workrequ->cmd_len; k++) {
-		    printk(" %2x ",workrequ->cmnd[k]);
+;
 		}
-		printk(" last_lenu= %x ",(unsigned int)dev->id[c][j].last_len);
+;
 	   }
 	}
 	return SUCCESS;
@@ -3162,14 +3162,14 @@ static void atp870u_remove (struct pci_dev *pdev)
 	
 	
 	scsi_remove_host(pshost);
-	printk(KERN_INFO "free_irq : %d\n",pshost->irq);
+;
 	free_irq(pshost->irq, pshost);
 	release_region(pshost->io_port, pshost->n_io_port);
-	printk(KERN_INFO "atp870u_free_tables : %p\n",pshost);
+;
 	atp870u_free_tables(pshost);
-	printk(KERN_INFO "scsi_host_put : %p\n",pshost);
+;
 	scsi_host_put(pshost);
-	printk(KERN_INFO "pci_set_drvdata : %p\n",pdev);
+;
 	pci_set_drvdata(pdev, NULL);	
 }
 MODULE_LICENSE("GPL");
@@ -3217,7 +3217,7 @@ static struct pci_driver atp870u_driver = {
 static int __init atp870u_init(void)
 {
 #ifdef ED_DBGP	
-	printk("atp870u_init: Entry\n");
+;
 #endif	
 	return pci_register_driver(&atp870u_driver);
 }
@@ -3225,7 +3225,7 @@ static int __init atp870u_init(void)
 static void __exit atp870u_exit(void)
 {
 #ifdef ED_DBGP	
-	printk("atp870u_exit: Entry\n");
+;
 #endif
 	pci_unregister_driver(&atp870u_driver);
 }
@@ -3266,7 +3266,7 @@ static void is885(struct atp_unit *dev, unsigned int wkport,unsigned char c)
 			continue;
 		}
 		if (i == dev->host_id[c]) {
-			printk(KERN_INFO "         ID: %2d  Host Adapter\n", dev->host_id[c]);
+;
 			continue;
 		}
 		tmport = wkport + 0x1b;
@@ -3390,7 +3390,7 @@ rd_inq_data:
 		}
 inq_ok:
 		mbuf[36] = 0;
-		printk( KERN_INFO"         ID: %2d  %s\n", i, &mbuf[8]);
+;
 		dev->id[c][i].devtype = mbuf[0];
 		rmb = mbuf[1];
 		n = mbuf[7];
@@ -3551,7 +3551,7 @@ u3p_cmd:
 			dev->wide_id[c] |= m;
 			dev->id[c][i].devsp = 0xce;
 #ifdef ED_DBGP		   
-			printk("dev->id[%2d][%2d].devsp = %2x\n",c,i,dev->id[c][i].devsp);
+;
 #endif
 			continue;
 		}
@@ -3913,7 +3913,7 @@ tar_dcons:
 	      set_syn_ok:
 		dev->id[c][i].devsp = (dev->id[c][i].devsp & 0x0f) | j;
 #ifdef ED_DBGP		
-		printk("dev->id[%2d][%2d].devsp = %2x\n",c,i,dev->id[c][i].devsp);
+;
 #endif
 	}
 	tmport = wkport + 0x16;

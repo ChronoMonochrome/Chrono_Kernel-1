@@ -63,7 +63,7 @@ static int ttusbdecfe_dvbt_read_status(struct dvb_frontend *fe,
 		return ret;
 
 	if(len != 4) {
-		printk(KERN_ERR "%s: unexpected reply\n", __func__);
+;
 		return -EIO;
 	}
 

@@ -907,10 +907,10 @@ static void ocfs2_verify_zero_bits(unsigned long *bitmap,
 	unsigned int tmp = count;
 	while(tmp--) {
 		if (ocfs2_test_bit(start + tmp, bitmap)) {
-			printk("ocfs2_verify_zero_bits: start = %u, count = "
-			       "%u\n", start, count);
-			printk("ocfs2_verify_zero_bits: bit %u is set!",
-			       start + tmp);
+//			printk("ocfs2_verify_zero_bits: start = %u, count = "
+;
+//			printk("ocfs2_verify_zero_bits: bit %u is set!",
+;
 			BUG();
 		}
 	}

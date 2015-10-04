@@ -280,7 +280,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
 		/* Declared with "Processor" statement; match ProcessorID */
 		status = acpi_evaluate_object(pr->handle, NULL, NULL, &buffer);
 		if (ACPI_FAILURE(status)) {
-			printk(KERN_ERR PREFIX "Evaluating processor object\n");
+;
 			return -ENODEV;
 		}
 
@@ -299,8 +299,8 @@ static int acpi_processor_get_info(struct acpi_device *device)
 		status = acpi_evaluate_integer(pr->handle, METHOD_NAME__UID,
 						NULL, &value);
 		if (ACPI_FAILURE(status)) {
-			printk(KERN_ERR PREFIX
-			    "Evaluating processor _UID [%#x]\n", status);
+//			printk(KERN_ERR PREFIX
+;
 			return -ENODEV;
 		}
 		device_declaration = 1;
@@ -345,8 +345,8 @@ static int acpi_processor_get_info(struct acpi_device *device)
 	if (!object.processor.pblk_address)
 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No PBLK (NULL address)\n"));
 	else if (object.processor.pblk_length != 6)
-		printk(KERN_ERR PREFIX "Invalid PBLK length [%d]\n",
-			    object.processor.pblk_length);
+//		printk(KERN_ERR PREFIX "Invalid PBLK length [%d]\n",
+;
 	else {
 		pr->throttling.address = object.processor.pblk_address;
 		pr->throttling.duty_offset = acpi_gbl_FADT.duty_offset;
@@ -483,8 +483,8 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
 	 */
 	if (per_cpu(processor_device_array, pr->id) != NULL &&
 	    per_cpu(processor_device_array, pr->id) != device) {
-		printk(KERN_WARNING "BIOS reported wrong ACPI id "
-			"for the processor\n");
+//		printk(KERN_WARNING "BIOS reported wrong ACPI id "
+;
 		result = -ENODEV;
 		goto err_free_cpumask;
 	}
@@ -522,14 +522,14 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
 				   &pr->cdev->device.kobj,
 				   "thermal_cooling");
 	if (result) {
-		printk(KERN_ERR PREFIX "Create sysfs link\n");
+;
 		goto err_thermal_unregister;
 	}
 	result = sysfs_create_link(&pr->cdev->device.kobj,
 				   &device->dev.kobj,
 				   "device");
 	if (result) {
-		printk(KERN_ERR PREFIX "Create sysfs link\n");
+;
 		goto err_remove_sysfs;
 	}
 
@@ -658,8 +658,8 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
 		if (acpi_bus_get_device(handle, &device)) {
 			result = acpi_processor_device_add(handle, &device);
 			if (result)
-				printk(KERN_ERR PREFIX
-					    "Unable to add the device\n");
+//				printk(KERN_ERR PREFIX
+;
 			break;
 		}
 		break;
@@ -668,14 +668,14 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
 
 		if (acpi_bus_get_device(handle, &device)) {
-			printk(KERN_ERR PREFIX
-				    "Device don't exist, dropping EJECT\n");
+//			printk(KERN_ERR PREFIX
+;
 			break;
 		}
 		pr = acpi_driver_data(device);
 		if (!pr) {
-			printk(KERN_ERR PREFIX
-				    "Driver data is NULL, dropping EJECT\n");
+//			printk(KERN_ERR PREFIX
+;
 			return;
 		}
 		break;
@@ -802,11 +802,11 @@ static int __init acpi_processor_init(void)
 	memset(&errata, 0, sizeof(errata));
 
 	if (!cpuidle_register_driver(&acpi_idle_driver)) {
-		printk(KERN_DEBUG "ACPI: %s registered with cpuidle\n",
-			acpi_idle_driver.name);
+//		printk(KERN_DEBUG "ACPI: %s registered with cpuidle\n",
+;
 	} else {
-		printk(KERN_DEBUG "ACPI: acpi_idle yielding to %s\n",
-			cpuidle_get_driver()->name);
+//		printk(KERN_DEBUG "ACPI: acpi_idle yielding to %s\n",
+;
 	}
 
 	result = acpi_bus_register_driver(&acpi_processor_driver);

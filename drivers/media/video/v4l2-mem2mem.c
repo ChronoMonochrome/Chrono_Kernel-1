@@ -27,10 +27,10 @@ MODULE_LICENSE("GPL");
 static bool debug;
 module_param(debug, bool, 0644);
 
-#define dprintk(fmt, arg...)						\
-	do {								\
-		if (debug)						\
-			printk(KERN_DEBUG "%s: " fmt, __func__, ## arg);\
+//#define dprintk(fmt, arg...)						\
+//	do {								\
+//		if (debug)						\
+;
 	} while (0)
 
 
@@ -163,13 +163,13 @@ static void v4l2_m2m_try_run(struct v4l2_m2m_dev *m2m_dev)
 	spin_lock_irqsave(&m2m_dev->job_spinlock, flags);
 	if (NULL != m2m_dev->curr_ctx) {
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags);
-		dprintk("Another instance is running, won't run now\n");
+;
 		return;
 	}
 
 	if (list_empty(&m2m_dev->job_queue)) {
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags);
-		dprintk("No job pending\n");
+;
 		return;
 	}
 
@@ -203,18 +203,18 @@ static void v4l2_m2m_try_schedule(struct v4l2_m2m_ctx *m2m_ctx)
 	unsigned long flags_job, flags;
 
 	m2m_dev = m2m_ctx->m2m_dev;
-	dprintk("Trying to schedule a job for m2m_ctx: %p\n", m2m_ctx);
+;
 
 	if (!m2m_ctx->out_q_ctx.q.streaming
 	    || !m2m_ctx->cap_q_ctx.q.streaming) {
-		dprintk("Streaming needs to be on for both queues\n");
+;
 		return;
 	}
 
 	spin_lock_irqsave(&m2m_dev->job_spinlock, flags_job);
 	if (m2m_ctx->job_flags & TRANS_QUEUED) {
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags_job);
-		dprintk("On job queue already\n");
+;
 		return;
 	}
 
@@ -222,13 +222,13 @@ static void v4l2_m2m_try_schedule(struct v4l2_m2m_ctx *m2m_ctx)
 	if (list_empty(&m2m_ctx->out_q_ctx.rdy_queue)) {
 		spin_unlock_irqrestore(&m2m_ctx->out_q_ctx.rdy_spinlock, flags);
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags_job);
-		dprintk("No input buffers available\n");
+;
 		return;
 	}
 	if (list_empty(&m2m_ctx->cap_q_ctx.rdy_queue)) {
 		spin_unlock_irqrestore(&m2m_ctx->out_q_ctx.rdy_spinlock, flags);
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags_job);
-		dprintk("No output buffers available\n");
+;
 		return;
 	}
 	spin_unlock_irqrestore(&m2m_ctx->out_q_ctx.rdy_spinlock, flags);
@@ -236,7 +236,7 @@ static void v4l2_m2m_try_schedule(struct v4l2_m2m_ctx *m2m_ctx)
 	if (m2m_dev->m2m_ops->job_ready
 		&& (!m2m_dev->m2m_ops->job_ready(m2m_ctx->priv))) {
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags_job);
-		dprintk("Driver not ready\n");
+;
 		return;
 	}
 
@@ -268,7 +268,7 @@ void v4l2_m2m_job_finish(struct v4l2_m2m_dev *m2m_dev,
 	spin_lock_irqsave(&m2m_dev->job_spinlock, flags);
 	if (!m2m_dev->curr_ctx || m2m_dev->curr_ctx != m2m_ctx) {
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags);
-		dprintk("Called by an instance not currently running\n");
+;
 		return;
 	}
 
@@ -585,14 +585,14 @@ void v4l2_m2m_ctx_release(struct v4l2_m2m_ctx *m2m_ctx)
 	if (m2m_ctx->job_flags & TRANS_RUNNING) {
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags);
 		m2m_dev->m2m_ops->job_abort(m2m_ctx->priv);
-		dprintk("m2m_ctx %p running, will wait to complete", m2m_ctx);
+;
 		wait_event(m2m_ctx->finished, !(m2m_ctx->job_flags & TRANS_RUNNING));
 	} else if (m2m_ctx->job_flags & TRANS_QUEUED) {
 		list_del(&m2m_ctx->queue);
 		m2m_ctx->job_flags &= ~(TRANS_QUEUED | TRANS_RUNNING);
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags);
-		dprintk("m2m_ctx: %p had been on queue and was removed\n",
-			m2m_ctx);
+//		dprintk("m2m_ctx: %p had been on queue and was removed\n",
+;
 	} else {
 		/* Do nothing, was not on queue/running */
 		spin_unlock_irqrestore(&m2m_dev->job_spinlock, flags);

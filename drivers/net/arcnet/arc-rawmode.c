@@ -59,7 +59,7 @@ static int __init arcnet_raw_init(void)
 {
 	int count;
 
-	printk(VERSION);
+;
 
 	for (count = 0; count < 256; count++)
 		if (arc_proto_map[count] == arc_proto_default)

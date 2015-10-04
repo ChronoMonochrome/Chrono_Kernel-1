@@ -86,7 +86,7 @@ static int __init orion_nand_probe(struct platform_device *pdev)
 
 	nc = kzalloc(sizeof(struct nand_chip) + sizeof(struct mtd_info), GFP_KERNEL);
 	if (!nc) {
-		printk(KERN_ERR "orion_nand: failed to allocate device structure.\n");
+;
 		ret = -ENOMEM;
 		goto no_res;
 	}
@@ -100,7 +100,7 @@ static int __init orion_nand_probe(struct platform_device *pdev)
 
 	io_base = ioremap(res->start, resource_size(res));
 	if (!io_base) {
-		printk(KERN_ERR "orion_nand: ioremap failed\n");
+;
 		ret = -EIO;
 		goto no_res;
 	}

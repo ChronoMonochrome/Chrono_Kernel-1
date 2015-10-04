@@ -71,7 +71,7 @@ void snd_emu10k1_ptr_write(struct snd_emu10k1 *emu, unsigned int reg, unsigned i
 	unsigned int mask;
 
 	if (!emu) {
-		snd_printk(KERN_ERR "ptr_write: emu is null!\n");
+;
 		dump_stack();
 		return;
 	}
@@ -198,7 +198,7 @@ int snd_emu10k1_i2c_write(struct snd_emu10k1 *emu,
 	int err = 0;
 
 	if ((reg > 0x7f) || (value > 0x1ff)) {
-		snd_printk(KERN_ERR "i2c_write: invalid values.\n");
+;
 		return -EINVAL;
 	}
 
@@ -226,9 +226,9 @@ int snd_emu10k1_i2c_write(struct snd_emu10k1 *emu,
 				break;
 
 			if (timeout > 1000) {
-                		snd_printk(KERN_WARNING
-					   "emu10k1:I2C:timeout status=0x%x\n",
-					   status);
+//                		snd_printk(KERN_WARNING
+//					   "emu10k1:I2C:timeout status=0x%x\n",
+;
 				break;
 			}
 		}
@@ -238,9 +238,9 @@ int snd_emu10k1_i2c_write(struct snd_emu10k1 *emu,
 	}
 
 	if (retry == 10) {
-		snd_printk(KERN_ERR "Writing to ADC failed!\n");
-		snd_printk(KERN_ERR "status=0x%x, reg=%d, value=%d\n",
-			status, reg, value);
+;
+//		snd_printk(KERN_ERR "status=0x%x, reg=%d, value=%d\n",
+;
 		/* dump_stack(); */
 		err = -EINVAL;
 	}

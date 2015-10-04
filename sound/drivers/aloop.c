@@ -1246,7 +1246,7 @@ static int __init alsa_card_loopback_init(void)
 	}
 	if (!cards) {
 #ifdef MODULE
-		printk(KERN_ERR "aloop: No loopback enabled\n");
+;
 #endif
 		loopback_unregister_all();
 		return -ENODEV;

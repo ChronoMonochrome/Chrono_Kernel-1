@@ -855,8 +855,8 @@ static int __devinit snd_sgio2audio_create(struct snd_card *card,
 	chip->ring_base = dma_alloc_coherent(NULL, MACEISA_RINGBUFFERS_SIZE,
 					     &chip->ring_base_dma, GFP_USER);
 	if (chip->ring_base == NULL) {
-		printk(KERN_ERR
-		       "sgio2audio: could not allocate ring buffers\n");
+//		printk(KERN_ERR
+;
 		kfree(chip);
 		return -ENOMEM;
 	}
@@ -877,8 +877,8 @@ static int __devinit snd_sgio2audio_create(struct snd_card *card,
 				snd_sgio2_isr_table[i].desc,
 				&chip->channel[snd_sgio2_isr_table[i].idx])) {
 			snd_sgio2audio_free(chip);
-			printk(KERN_ERR "sgio2audio: cannot allocate irq %d\n",
-			       snd_sgio2_isr_table[i].irq);
+//			printk(KERN_ERR "sgio2audio: cannot allocate irq %d\n",
+;
 			return -EBUSY;
 		}
 	}

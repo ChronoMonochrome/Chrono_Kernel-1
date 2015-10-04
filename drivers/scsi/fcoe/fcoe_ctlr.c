@@ -233,15 +233,15 @@ static void fcoe_ctlr_announce(struct fcoe_ctlr *fip)
 	if (sel && !compare_ether_addr(sel->fcf_mac, fip->dest_addr))
 		goto unlock;
 	if (!is_zero_ether_addr(fip->dest_addr)) {
-		printk(KERN_NOTICE "libfcoe: host%d: "
-		       "FIP Fibre-Channel Forwarder MAC %pM deselected\n",
-		       fip->lp->host->host_no, fip->dest_addr);
+//		printk(KERN_NOTICE "libfcoe: host%d: "
+//		       "FIP Fibre-Channel Forwarder MAC %pM deselected\n",
+;
 		memset(fip->dest_addr, 0, ETH_ALEN);
 	}
 	if (sel) {
-		printk(KERN_INFO "libfcoe: host%d: FIP selected "
-		       "Fibre-Channel Forwarder MAC %pM\n",
-		       fip->lp->host->host_no, sel->fcf_mac);
+//		printk(KERN_INFO "libfcoe: host%d: FIP selected "
+//		       "Fibre-Channel Forwarder MAC %pM\n",
+;
 		memcpy(fip->dest_addr, sel->fcf_mac, ETH_ALEN);
 		fip->map_dest = 0;
 	}
@@ -723,11 +723,11 @@ static unsigned long fcoe_ctlr_age_fcfs(struct fcoe_ctlr *fip)
 		if (fip->sel_fcf == fcf) {
 			if (time_after(jiffies, deadline)) {
 				stats->MissDiscAdvCount++;
-				printk(KERN_INFO "libfcoe: host%d: "
-				       "Missing Discovery Advertisement "
-				       "for fab %16.16llx count %lld\n",
-				       fip->lp->host->host_no, fcf->fabric_name,
-				       stats->MissDiscAdvCount);
+//				printk(KERN_INFO "libfcoe: host%d: "
+//				       "Missing Discovery Advertisement "
+//				       "for fab %16.16llx count %lld\n",
+//				       fip->lp->host->host_no, fcf->fabric_name,
+;
 			} else if (time_after(next_timer, deadline))
 				next_timer = deadline;
 		}

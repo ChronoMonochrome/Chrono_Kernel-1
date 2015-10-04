@@ -32,8 +32,6 @@ DECLARE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases);
  do {						\
 	if (m)					\
 		seq_printf(m, x);		\
-	else					\
-		printk(x);			\
  } while (0)
 
 static void print_name_offset(struct seq_file *m, void *sym)

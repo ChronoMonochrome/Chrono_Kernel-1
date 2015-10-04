@@ -252,7 +252,7 @@ static int __devinit agp_aperture_valid(u64 aper, u32 size)
 	   trusting the bridges? */
 	if (!aperture_resource &&
 	    !(aperture_resource = request_mem_region(aper, size, "aperture"))) {
-		printk(KERN_ERR PFX "Aperture conflicts with PCI mapping.\n");
+;
 		return 0;
 	}
 	return 1;
@@ -767,11 +767,11 @@ int __init agp_amd64_init(void)
 
 	if (agp_bridges_found == 0) {
 		if (!agp_try_unsupported && !agp_try_unsupported_boot) {
-			printk(KERN_INFO PFX "No supported AGP bridge found.\n");
+;
 #ifdef MODULE
-			printk(KERN_INFO PFX "You can try agp_try_unsupported=1\n");
+;
 #else
-			printk(KERN_INFO PFX "You can boot with agp=try_unsupported\n");
+;
 #endif
 			pci_unregister_driver(&agp_amd64_pci_driver);
 			return -ENODEV;

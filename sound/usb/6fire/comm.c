@@ -52,8 +52,8 @@ static void usb6fire_comm_receiver_handler(struct urb *urb)
 		urb->status = 0;
 		urb->actual_length = 0;
 		if (usb_submit_urb(urb, GFP_ATOMIC) < 0)
-			snd_printk(KERN_WARNING PREFIX
-					"comm data receiver aborted.\n");
+//			snd_printk(KERN_WARNING PREFIX
+;
 	}
 }
 
@@ -154,7 +154,7 @@ int __devinit usb6fire_comm_init(struct sfire_chip *chip)
 	ret = usb_submit_urb(urb, GFP_KERNEL);
 	if (ret < 0) {
 		kfree(rt);
-		snd_printk(KERN_ERR PREFIX "cannot create comm data receiver.");
+;
 		return ret;
 	}
 	chip->comm = rt;

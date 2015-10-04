@@ -93,7 +93,7 @@ int atari_partition(struct parsed_partitions *state)
 
 			/* ++roman: sanity check: bit 0 of flg field must be set */
 			if (!(xrs->part[0].flg & 1)) {
-				printk( "\nFirst sub-partition in extended partition is not valid!\n" );
+;
 				put_dev_sector(sect2);
 				break;
 			}
@@ -108,7 +108,7 @@ int atari_partition(struct parsed_partitions *state)
 				break;
 			}
 			if (memcmp( xrs->part[1].id, "XGM", 3 ) != 0) {
-				printk("\nID of extended partition is not XGM!\n");
+;
 				put_dev_sector(sect2);
 				break;
 			}
@@ -116,7 +116,7 @@ int atari_partition(struct parsed_partitions *state)
 			partsect = be32_to_cpu(xrs->part[1].st) + extensect;
 			put_dev_sector(sect2);
 			if (++slot == state->limit) {
-				printk( "\nMaximum number of partitions reached!\n" );
+;
 				break;
 			}
 		}

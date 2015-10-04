@@ -386,11 +386,11 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	if (!ape) {
 		if (prcmu_is_mcdeclk_on()) {
 			ape++;
-			printk(KERN_ERR "cpuidle: wrong ape value because MCDE clk is on\n");
+;
 		}
 		if (prcmu_is_mmcclk_on()) {
 			ape++;
-			printk(KERN_ERR "cpuidle: wrong ape value because MMC clk is on\n");
+;
 		}
 	}
 

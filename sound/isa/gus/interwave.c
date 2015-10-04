@@ -169,7 +169,7 @@ static void snd_interwave_i2c_setlines(struct snd_i2c_bus *bus, int ctrl, int da
 	unsigned long port = bus->private_value;
 
 #if 0
-	printk(KERN_DEBUG "i2c_setlines - 0x%lx <- %i,%i\n", port, ctrl, data);
+;
 #endif
 	outb((data << 1) | ctrl, port);
 	udelay(10);
@@ -182,7 +182,7 @@ static int snd_interwave_i2c_getclockline(struct snd_i2c_bus *bus)
 
 	res = inb(port) & 1;
 #if 0
-	printk(KERN_DEBUG "i2c_getclockline - 0x%lx -> %i\n", port, res);
+;
 #endif
 	return res;
 }
@@ -196,7 +196,7 @@ static int snd_interwave_i2c_getdataline(struct snd_i2c_bus *bus, int ack)
 		udelay(10);
 	res = (inb(port) & 2) >> 1;
 #if 0
-	printk(KERN_DEBUG "i2c_getdataline - 0x%lx -> %i\n", port, res);
+;
 #endif
 	return res;
 }
@@ -233,7 +233,7 @@ static int __devinit snd_interwave_detect_stb(struct snd_interwave *iwcard,
 		iwcard->i2c_res = request_region(port, 1, "InterWave (I2C bus)");
 	}
 	if (iwcard->i2c_res == NULL) {
-		snd_printk(KERN_ERR "interwave: can't grab i2c bus port\n");
+;
 		return -ENODEV;
 	}
 
@@ -341,12 +341,12 @@ static void __devinit snd_interwave_bank_sizes(struct snd_gus_card * gus, int *s
 			snd_gf1_poke(gus, local, d);
 			snd_gf1_poke(gus, local + 1, d + 1);
 #if 0
-			printk(KERN_DEBUG "d = 0x%x, local = 0x%x, "
-			       "local + 1 = 0x%x, idx << 22 = 0x%x\n",
-			       d,
-			       snd_gf1_peek(gus, local),
-			       snd_gf1_peek(gus, local + 1),
-			       snd_gf1_peek(gus, idx << 22));
+//			printk(KERN_DEBUG "d = 0x%x, local = 0x%x, "
+//			       "local + 1 = 0x%x, idx << 22 = 0x%x\n",
+//			       d,
+//			       snd_gf1_peek(gus, local),
+//			       snd_gf1_peek(gus, local + 1),
+;
 #endif
 			if (snd_gf1_peek(gus, local) != d ||
 			    snd_gf1_peek(gus, local + 1) != d + 1 ||
@@ -356,8 +356,8 @@ static void __devinit snd_interwave_bank_sizes(struct snd_gus_card * gus, int *s
 		}
 	}
 #if 0
-	printk(KERN_DEBUG "sizes: %i %i %i %i\n",
-	       sizes[0], sizes[1], sizes[2], sizes[3]);
+//	printk(KERN_DEBUG "sizes: %i %i %i %i\n",
+;
 #endif
 }
 
@@ -411,12 +411,12 @@ static void __devinit snd_interwave_detect_memory(struct snd_gus_card * gus)
 		lmct = (psizes[3] << 24) | (psizes[2] << 16) |
 		    (psizes[1] << 8) | psizes[0];
 #if 0
-		printk(KERN_DEBUG "lmct = 0x%08x\n", lmct);
+;
 #endif
 		for (i = 0; i < ARRAY_SIZE(lmc); i++)
 			if (lmct == lmc[i]) {
 #if 0
-				printk(KERN_DEBUG "found !!! %i\n", i);
+;
 #endif
 				snd_gf1_write16(gus, SNDRV_GF1_GW_MEMORY_CONFIG, (snd_gf1_look16(gus, SNDRV_GF1_GW_MEMORY_CONFIG) & 0xfff0) | i);
 				snd_interwave_bank_sizes(gus, psizes);
@@ -443,9 +443,9 @@ static void __devinit snd_interwave_detect_memory(struct snd_gus_card * gus)
 		for (i = 0; i < 8; ++i)
 			iwave[i] = snd_gf1_peek(gus, bank_pos + i);
 #ifdef CONFIG_SND_DEBUG_ROM
-		printk(KERN_DEBUG "ROM at 0x%06x = %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\n", bank_pos,
-		       iwave[0], iwave[1], iwave[2], iwave[3],
-		       iwave[4], iwave[5], iwave[6], iwave[7]);
+//		printk(KERN_DEBUG "ROM at 0x%06x = %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\n", bank_pos,
+//		       iwave[0], iwave[1], iwave[2], iwave[3],
+;
 #endif
 		if (strncmp(iwave, "INTRWAVE", 8))
 			continue;	/* first check */
@@ -453,7 +453,7 @@ static void __devinit snd_interwave_detect_memory(struct snd_gus_card * gus)
 		for (i = 0; i < sizeof(struct rom_hdr); i++)
 			csum += snd_gf1_peek(gus, bank_pos + i);
 #ifdef CONFIG_SND_DEBUG_ROM
-		printk(KERN_DEBUG "ROM checksum = 0x%x (computed)\n", csum);
+;
 #endif
 		if (csum != 0)
 			continue;	/* not valid rom */
@@ -580,12 +580,12 @@ static int __devinit snd_interwave_pnp(int dev, struct snd_interwave *iwcard,
 
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
-		snd_printk(KERN_ERR "InterWave PnP configure failure (out of resources?)\n");
+;
 		return err;
 	}
 	if (pnp_port_start(pdev, 0) + 0x100 != pnp_port_start(pdev, 1) ||
 	    pnp_port_start(pdev, 0) + 0x10c != pnp_port_start(pdev, 2)) {
-		snd_printk(KERN_ERR "PnP configure failure (wrong ports)\n");
+;
 		return -ENOENT;
 	}
 	port[dev] = pnp_port_start(pdev, 0);
@@ -604,7 +604,7 @@ static int __devinit snd_interwave_pnp(int dev, struct snd_interwave *iwcard,
 
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
-		snd_printk(KERN_ERR "InterWave ToneControl PnP configure failure (out of resources?)\n");
+;
 		return err;
 	}
 	port_tc[dev] = pnp_port_start(pdev, 0);
@@ -686,7 +686,7 @@ static int __devinit snd_interwave_probe(struct snd_card *card, int dev)
 
 	if (request_irq(xirq, snd_interwave_interrupt, IRQF_DISABLED,
 			"InterWave", iwcard)) {
-		snd_printk(KERN_ERR PFX "unable to grab IRQ %d\n", xirq);
+;
 		return -EBUSY;
 	}
 	iwcard->irq = xirq;
@@ -815,19 +815,19 @@ static int __devinit snd_interwave_isa_probe(struct device *pdev,
 
 	if (irq[dev] == SNDRV_AUTO_IRQ) {
 		if ((irq[dev] = snd_legacy_find_free_irq(possible_irqs)) < 0) {
-			snd_printk(KERN_ERR PFX "unable to find a free IRQ\n");
+;
 			return -EBUSY;
 		}
 	}
 	if (dma1[dev] == SNDRV_AUTO_DMA) {
 		if ((dma1[dev] = snd_legacy_find_free_dma(possible_dmas)) < 0) {
-			snd_printk(KERN_ERR PFX "unable to find a free DMA1\n");
+;
 			return -EBUSY;
 		}
 	}
 	if (dma2[dev] == SNDRV_AUTO_DMA) {
 		if ((dma2[dev] = snd_legacy_find_free_dma(possible_dmas)) < 0) {
-			snd_printk(KERN_ERR PFX "unable to find a free DMA2\n");
+;
 			return -EBUSY;
 		}
 	}

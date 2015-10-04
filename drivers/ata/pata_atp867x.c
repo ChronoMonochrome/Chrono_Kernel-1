@@ -170,8 +170,8 @@ static int atp867x_get_active_clocks_shifted(struct ata_port *ap,
 	case 1 ... 6:
 		break;
 	default:
-		printk(KERN_WARNING "ATP867X: active %dclk is invalid. "
-			"Using 12clk.\n", clk);
+//		printk(KERN_WARNING "ATP867X: active %dclk is invalid. "
+;
 	case 9 ... 12:
 		clocks = 7;	/* 12 clk */
 		break;
@@ -202,8 +202,8 @@ static int atp867x_get_recover_clocks_shifted(unsigned int clk)
 	case 15:
 		break;
 	default:
-		printk(KERN_WARNING "ATP867X: recover %dclk is invalid. "
-			"Using default 12clk.\n", clk);
+//		printk(KERN_WARNING "ATP867X: recover %dclk is invalid. "
+;
 	case 12:	/* default 12 clk */
 		clocks = 0;
 		break;
@@ -293,8 +293,8 @@ static void atp867x_check_res(struct pci_dev *pdev)
 	for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
 		start = pci_resource_start(pdev, i);
 		len   = pci_resource_len(pdev, i);
-		printk(KERN_DEBUG "ATP867X: resource start:len=%lx:%lx\n",
-			start, len);
+//		printk(KERN_DEBUG "ATP867X: resource start:len=%lx:%lx\n",
+;
 	}
 }
 
@@ -303,47 +303,47 @@ static void atp867x_check_ports(struct ata_port *ap, int port)
 	struct ata_ioports *ioaddr = &ap->ioaddr;
 	struct atp867x_priv *dp = ap->private_data;
 
-	printk(KERN_DEBUG "ATP867X: port[%d] addresses\n"
-		"  cmd_addr	=0x%llx, 0x%llx\n"
-		"  ctl_addr	=0x%llx, 0x%llx\n"
-		"  bmdma_addr	=0x%llx, 0x%llx\n"
-		"  data_addr	=0x%llx\n"
-		"  error_addr	=0x%llx\n"
-		"  feature_addr	=0x%llx\n"
-		"  nsect_addr	=0x%llx\n"
-		"  lbal_addr	=0x%llx\n"
-		"  lbam_addr	=0x%llx\n"
-		"  lbah_addr	=0x%llx\n"
-		"  device_addr	=0x%llx\n"
-		"  status_addr	=0x%llx\n"
-		"  command_addr	=0x%llx\n"
-		"  dp->dma_mode	=0x%llx\n"
-		"  dp->mstr_piospd	=0x%llx\n"
-		"  dp->slave_piospd	=0x%llx\n"
-		"  dp->eightb_piospd	=0x%llx\n"
-		"  dp->pci66mhz		=0x%lx\n",
-		port,
-		(unsigned long long)ioaddr->cmd_addr,
-		(unsigned long long)ATP867X_IO_PORTBASE(ap, port),
-		(unsigned long long)ioaddr->ctl_addr,
-		(unsigned long long)ATP867X_IO_ALTSTATUS(ap, port),
-		(unsigned long long)ioaddr->bmdma_addr,
-		(unsigned long long)ATP867X_IO_DMABASE(ap, port),
-		(unsigned long long)ioaddr->data_addr,
-		(unsigned long long)ioaddr->error_addr,
-		(unsigned long long)ioaddr->feature_addr,
-		(unsigned long long)ioaddr->nsect_addr,
-		(unsigned long long)ioaddr->lbal_addr,
-		(unsigned long long)ioaddr->lbam_addr,
-		(unsigned long long)ioaddr->lbah_addr,
-		(unsigned long long)ioaddr->device_addr,
-		(unsigned long long)ioaddr->status_addr,
-		(unsigned long long)ioaddr->command_addr,
-		(unsigned long long)dp->dma_mode,
-		(unsigned long long)dp->mstr_piospd,
-		(unsigned long long)dp->slave_piospd,
-		(unsigned long long)dp->eightb_piospd,
-		(unsigned long)dp->pci66mhz);
+//	printk(KERN_DEBUG "ATP867X: port[%d] addresses\n"
+//		"  cmd_addr	=0x%llx, 0x%llx\n"
+//		"  ctl_addr	=0x%llx, 0x%llx\n"
+//		"  bmdma_addr	=0x%llx, 0x%llx\n"
+//		"  data_addr	=0x%llx\n"
+//		"  error_addr	=0x%llx\n"
+//		"  feature_addr	=0x%llx\n"
+//		"  nsect_addr	=0x%llx\n"
+//		"  lbal_addr	=0x%llx\n"
+//		"  lbam_addr	=0x%llx\n"
+//		"  lbah_addr	=0x%llx\n"
+//		"  device_addr	=0x%llx\n"
+//		"  status_addr	=0x%llx\n"
+//		"  command_addr	=0x%llx\n"
+//		"  dp->dma_mode	=0x%llx\n"
+//		"  dp->mstr_piospd	=0x%llx\n"
+//		"  dp->slave_piospd	=0x%llx\n"
+//		"  dp->eightb_piospd	=0x%llx\n"
+//		"  dp->pci66mhz		=0x%lx\n",
+//		port,
+//		(unsigned long long)ioaddr->cmd_addr,
+//		(unsigned long long)ATP867X_IO_PORTBASE(ap, port),
+//		(unsigned long long)ioaddr->ctl_addr,
+//		(unsigned long long)ATP867X_IO_ALTSTATUS(ap, port),
+//		(unsigned long long)ioaddr->bmdma_addr,
+//		(unsigned long long)ATP867X_IO_DMABASE(ap, port),
+//		(unsigned long long)ioaddr->data_addr,
+//		(unsigned long long)ioaddr->error_addr,
+//		(unsigned long long)ioaddr->feature_addr,
+//		(unsigned long long)ioaddr->nsect_addr,
+//		(unsigned long long)ioaddr->lbal_addr,
+//		(unsigned long long)ioaddr->lbam_addr,
+//		(unsigned long long)ioaddr->lbah_addr,
+//		(unsigned long long)ioaddr->device_addr,
+//		(unsigned long long)ioaddr->status_addr,
+//		(unsigned long long)ioaddr->command_addr,
+//		(unsigned long long)dp->dma_mode,
+//		(unsigned long long)dp->mstr_piospd,
+//		(unsigned long long)dp->slave_piospd,
+//		(unsigned long long)dp->eightb_piospd,
+;
 }
 #endif
 
@@ -383,8 +383,8 @@ static void atp867x_fixup(struct ata_host *host)
 	if (v < 0x80) {
 		v = 0x80;
 		pci_write_config_byte(pdev, PCI_LATENCY_TIMER, v);
-		printk(KERN_DEBUG "ATP867X: set latency timer of device %s"
-			" to %d\n", pci_name(pdev), v);
+//		printk(KERN_DEBUG "ATP867X: set latency timer of device %s"
+;
 	}
 
 	/*
@@ -436,8 +436,8 @@ static int atp867x_ata_pci_sff_init_host(struct ata_host *host)
 	atp867x_check_res(pdev);
 
 	for (i = 0; i < PCI_ROM_RESOURCE; i++)
-		printk(KERN_DEBUG "ATP867X: iomap[%d]=0x%llx\n", i,
-			(unsigned long long)(host->iomap[i]));
+//		printk(KERN_DEBUG "ATP867X: iomap[%d]=0x%llx\n", i,
+;
 #endif
 
 	/*
@@ -470,7 +470,7 @@ static int atp867x_ata_pci_sff_init_host(struct ata_host *host)
 	}
 
 	if (!mask) {
-		dev_printk(KERN_ERR, gdev, "no available native port\n");
+;
 		return -ENODEV;
 	}
 
@@ -500,26 +500,26 @@ static int atp867x_init_one(struct pci_dev *pdev,
 	int rc;
 
 	if (!printed_version++)
-		dev_printk(KERN_INFO, &pdev->dev, "version " DRV_VERSION "\n");
+;
 
 	rc = pcim_enable_device(pdev);
 	if (rc)
 		return rc;
 
-	printk(KERN_INFO "ATP867X: ATP867 ATA UDMA133 controller (rev %02X)",
-		pdev->device);
+//	printk(KERN_INFO "ATP867X: ATP867 ATA UDMA133 controller (rev %02X)",
+;
 
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, ATP867X_NUM_PORTS);
 	if (!host) {
-		dev_printk(KERN_ERR, &pdev->dev,
-			"failed to allocate ATA host\n");
+//		dev_printk(KERN_ERR, &pdev->dev,
+;
 		rc = -ENOMEM;
 		goto err_out;
 	}
 
 	rc = atp867x_ata_pci_sff_init_host(host);
 	if (rc) {
-		dev_printk(KERN_ERR, &pdev->dev, "failed to init host\n");
+;
 		goto err_out;
 	}
 
@@ -528,7 +528,7 @@ static int atp867x_init_one(struct pci_dev *pdev,
 	rc = ata_host_activate(host, pdev->irq, ata_bmdma_interrupt,
 				IRQF_SHARED, &atp867x_sht);
 	if (rc)
-		dev_printk(KERN_ERR, &pdev->dev, "failed to activate host\n");
+;
 
 err_out:
 	return rc;

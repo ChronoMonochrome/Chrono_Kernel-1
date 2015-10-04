@@ -1106,8 +1106,8 @@ static int __init isif_probe(struct platform_device *pdev)
 	}
 	isif_cfg.dev = &pdev->dev;
 
-	printk(KERN_NOTICE "%s is registered with vpfe.\n",
-		isif_hw_dev.name);
+//	printk(KERN_NOTICE "%s is registered with vpfe.\n",
+;
 	return 0;
 fail_base_iomap:
 	release_mem_region(res->start, resource_size(res));

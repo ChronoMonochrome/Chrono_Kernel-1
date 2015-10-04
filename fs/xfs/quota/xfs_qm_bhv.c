@@ -160,7 +160,7 @@ xfs_qm_newmount(
 void __init
 xfs_qm_init(void)
 {
-	printk(KERN_INFO "SGI XFS Quota Management subsystem\n");
+;
 	mutex_init(&xfs_Gqm_lock);
 	xfs_qm_init_procfs();
 }

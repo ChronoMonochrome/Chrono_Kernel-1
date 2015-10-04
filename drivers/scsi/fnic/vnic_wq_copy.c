@@ -40,10 +40,10 @@ int vnic_wq_copy_disable(struct vnic_wq_copy *wq)
 		udelay(1);
 	}
 
-	printk(KERN_ERR "Failed to disable Copy WQ[%d],"
-	       " fetch index=%d, posted_index=%d\n",
-	       wq->index, ioread32(&wq->ctrl->fetch_index),
-	       ioread32(&wq->ctrl->posted_index));
+//	printk(KERN_ERR "Failed to disable Copy WQ[%d],"
+//	       " fetch index=%d, posted_index=%d\n",
+//	       wq->index, ioread32(&wq->ctrl->fetch_index),
+;
 
 	return -ENODEV;
 }
@@ -86,7 +86,7 @@ int vnic_wq_copy_alloc(struct vnic_dev *vdev, struct vnic_wq_copy *wq,
 	wq->to_use_index = wq->to_clean_index = 0;
 	wq->ctrl = vnic_dev_get_res(vdev, RES_TYPE_WQ, index);
 	if (!wq->ctrl) {
-		printk(KERN_ERR "Failed to hook COPY WQ[%d] resource\n", index);
+;
 		return -EINVAL;
 	}
 

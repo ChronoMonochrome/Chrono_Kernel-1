@@ -847,9 +847,9 @@ setup:
 			if (unlikely(musb->g.speed == USB_SPEED_UNKNOWN)) {
 				u8	power;
 
-				printk(KERN_NOTICE "%s: peripheral reset "
-						"irq lost!\n",
-						musb_driver_name);
+//				printk(KERN_NOTICE "%s: peripheral reset "
+//						"irq lost!\n",
+;
 				power = musb_readb(mbase, MUSB_POWER);
 				musb->g.speed = (power & MUSB_POWER_HSMODE)
 					? USB_SPEED_HIGH : USB_SPEED_FULL;

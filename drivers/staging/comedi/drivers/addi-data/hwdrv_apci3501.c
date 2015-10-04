@@ -90,7 +90,7 @@ int i_APCI3501_ReadDigitalInput(struct comedi_device *dev, struct comedi_subdevi
 			*data = *data & 0x3;
 		}		/* if  (ui_Temp==1) */
 		else {
-			printk("\nSpecified channel not supported \n");
+;
 		}		/* elseif  (ui_Temp==1) */
 	}			/* elseif  (ui_Temp==0) */
 	return insn->n;
@@ -184,7 +184,7 @@ int i_APCI3501_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 					devpriv->iobase + APCI3501_DIGITAL_OP);
 			}	/*  if(data[1]==1) */
 			else {
-				printk("\nSpecified channel not supported\n");
+;
 			}	/* else if(data[1]==1) */
 		}		/* elseif(data[1]==0) */
 	}			/* if(data[3]==0) */
@@ -217,12 +217,12 @@ int i_APCI3501_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 						APCI3501_DIGITAL_OP);
 				}	/*  if(data[1]==1) */
 				else {
-					printk("\nSpecified channel not supported\n");
+;
 				}	/* else if(data[1]==1) */
 			}	/* elseif(data[1]==0) */
 		}		/* if(data[3]==1); */
 		else {
-			printk("\nSpecified functionality does not exist\n");
+;
 			return -EINVAL;
 		}		/* if else data[3]==1) */
 	}			/* if else data[3]==0) */
@@ -266,7 +266,7 @@ int i_APCI3501_ReadDigitalOutput(struct comedi_device *dev, struct comedi_subdev
 
 		}		/*  if  (ui_Temp==1) */
 		else {
-			printk("\nSpecified channel not supported \n");
+;
 		}		/*  else if (ui_Temp==1) */
 	}			/*  else if  (ui_Temp==0) */
 	return insn->n;
@@ -346,20 +346,20 @@ int i_APCI3501_WriteAnalogOutput(struct comedi_device *dev, struct comedi_subdev
 	if (devpriv->b_InterruptMode == MODE1) {
 		ul_Polarity = 0x80000000;
 		if ((*data < 0) || (*data > 16384)) {
-			printk("\nIn WriteAnalogOutput :: Not Valid Data\n");
+;
 		}
 
 	}			/*  end if(devpriv->b_InterruptMode==MODE1) */
 	else {
 		ul_Polarity = 0;
 		if ((*data < 0) || (*data > 8192)) {
-			printk("\nIn WriteAnalogOutput :: Not Valid Data\n");
+;
 		}
 
 	}			/*  end else */
 
 	if ((ul_Channel_no < 0) || (ul_Channel_no > 7)) {
-		printk("\nIn WriteAnalogOutput :: Not Valid Channel\n");
+;
 	}			/*  end if((ul_Channel_no<0)||(ul_Channel_no>7)) */
 
 	ul_DAC_Ready = inl(devpriv->iobase + APCI3501_ANALOG_OUTPUT);
@@ -633,7 +633,7 @@ int i_APCI3501_ReadTimerCounterWatchdog(struct comedi_device *dev,
 
 	else if ((devpriv->b_TimerSelectMode != ADDIDATA_TIMER)
 		&& (devpriv->b_TimerSelectMode != ADDIDATA_WATCHDOG)) {
-		printk("\nIn ReadTimerCounterWatchdog :: Invalid Subdevice \n");
+;
 	}
 	return insn->n;
 }

@@ -57,7 +57,7 @@ static inline int NCR5380_pwrite(struct Scsi_Host *instance, unsigned char *addr
 {
   void __iomem *base = priv(instance)->base;
 
-printk("writing %p len %d\n",addr, len);
+;
   if(!len) return -1;
 
   while(1)
@@ -71,7 +71,7 @@ static inline int NCR5380_pread(struct Scsi_Host *instance, unsigned char *addr,
               int len)
 {
   void __iomem *base = priv(instance)->base;
-printk("reading %p len %d\n", addr, len);
+;
   while(len > 0)
   {
     unsigned int status, timeout;
@@ -84,7 +84,7 @@ printk("reading %p len %d\n", addr, len);
       timeout--;
       if(status & 0x200 || !timeout)
       {
-        printk("status = %08X\n", status);
+;
         return 1;
       }
     }
@@ -157,13 +157,13 @@ oakscsi_probe(struct expansion_card *ec, const struct ecard_id *id)
 
 	NCR5380_init(host, 0);
 
-	printk("scsi%d: at port 0x%08lx irqs disabled",
-		host->host_no, host->io_port);
-	printk(" options CAN_QUEUE=%d  CMD_PER_LUN=%d release=%d",
-		host->can_queue, host->cmd_per_lun, OAKSCSI_PUBLIC_RELEASE);
-	printk("\nscsi%d:", host->host_no);
+//	printk("scsi%d: at port 0x%08lx irqs disabled",
+;
+//	printk(" options CAN_QUEUE=%d  CMD_PER_LUN=%d release=%d",
+;
+;
 	NCR5380_print_options(host);
-	printk("\n");
+;
 
 	ret = scsi_add_host(host, &ec->dev);
 	if (ret)

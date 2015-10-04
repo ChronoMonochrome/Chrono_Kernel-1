@@ -231,8 +231,8 @@ static int __devinit jornada680kbd_probe(struct platform_device *pdev)
 	return 0;
 
  failed:
-	printk(KERN_ERR "Jornadakbd: failed to register driver, error: %d\n",
-		error);
+//	printk(KERN_ERR "Jornadakbd: failed to register driver, error: %d\n",
+;
 	platform_set_drvdata(pdev, NULL);
 	input_free_polled_device(poll_dev);
 	kfree(jornadakbd);

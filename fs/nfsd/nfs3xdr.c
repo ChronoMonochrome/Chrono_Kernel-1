@@ -255,7 +255,7 @@ void fill_post_wcc(struct svc_fh *fhp)
 	int err;
 
 	if (fhp->fh_post_saved)
-		printk("nfsd: inode locked twice during operation.\n");
+;
 
 	err = vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry,
 			&fhp->fh_post_attr);

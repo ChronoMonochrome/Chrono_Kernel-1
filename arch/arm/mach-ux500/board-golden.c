@@ -524,39 +524,39 @@ static int mxt_setup_power(struct device *dev, bool setup)
 
 		if (IS_ERR(mxt_vdd_regulator)) {
 			ret = PTR_ERR(mxt_vdd_regulator);
-			printk(KERN_ERR "%s: %s: fail to get mxt_vdd_regulator "
-			       "(%d)\n", MXT_TAG, __func__, ret);
+//			printk(KERN_ERR "%s: %s: fail to get mxt_vdd_regulator "
+;
 			return ret;
 		}
 
 		ret = regulator_set_voltage(mxt_vdd_regulator, min_uV, max_uV);
 		if (ret < 0) {
-			printk(KERN_ERR "%s: %s: fail to set mxt_vdd_regulator"
-			       " to %d, %d (%d)\n", MXT_TAG, __func__, min_uV,
-			       max_uV, ret);
+//			printk(KERN_ERR "%s: %s: fail to set mxt_vdd_regulator"
+//			       " to %d, %d (%d)\n", MXT_TAG, __func__, min_uV,
+;
 			goto err_set_vdd_voltage;
 		}
-		printk(KERN_INFO "%s: %s: set vdd to %d uV - %d uV (%d)\n",
-		       MXT_TAG, __func__, min_uV, max_uV, ret);
+//		printk(KERN_INFO "%s: %s: set vdd to %d uV - %d uV (%d)\n",
+;
 
 		min_uV = max_uV = 1800000;
 		mxt_vio_regulator = regulator_get(dev, "v-tsp-1.8");
 		if (IS_ERR(mxt_vio_regulator)) {
 			ret = PTR_ERR(mxt_vio_regulator);
-			printk(KERN_ERR "%s: %s: fail to get mxt_vio_regulator "
-			       "(%d)\n", MXT_TAG, __func__, ret);
+//			printk(KERN_ERR "%s: %s: fail to get mxt_vio_regulator "
+;
 			goto err_get_vio_regulator;
 		}
 		ret = regulator_set_voltage(mxt_vio_regulator, min_uV,
 					    max_uV);
 		if (ret < 0) {
-			printk(KERN_ERR "%s: %s: fail to set mxt_vio_regulator "
-			       "to %d, %d (%d)\n", MXT_TAG, __func__, min_uV,
-			       max_uV, ret);
+//			printk(KERN_ERR "%s: %s: fail to set mxt_vio_regulator "
+//			       "to %d, %d (%d)\n", MXT_TAG, __func__, min_uV,
+;
 			goto err_set_vio_voltage;
 		}
-		printk(KERN_INFO "%s: %s: set vled to %d uV - %d uV (%d)\n",
-		       MXT_TAG, __func__, min_uV, max_uV, ret);
+//		printk(KERN_INFO "%s: %s: set vled to %d uV - %d uV (%d)\n",
+;
 	} else {
 		regulator_force_disable(mxt_vdd_regulator);
 		regulator_put(mxt_vdd_regulator);
@@ -579,7 +579,7 @@ err_set_vdd_voltage:
 static void mxt_power_con(bool on)
 {
 	if (mxt_vio_regulator == NULL || mxt_vdd_regulator == NULL) {
-		printk(KERN_ERR "%s: %s: no regulator\n", MXT_TAG,  __func__);
+;
 		return;
 	}
 
@@ -591,8 +591,8 @@ static void mxt_power_con(bool on)
 		regulator_disable(mxt_vio_regulator);
 	}
 
-	printk(KERN_INFO "%s: %s: %s\n", MXT_TAG,  __func__,
-	       (on) ? "on" : "off");
+//	printk(KERN_INFO "%s: %s: %s\n", MXT_TAG,  __func__,
+;
 }
 
 static struct pn547_i2c_platform_data rx71_nfc_data = {
@@ -1182,13 +1182,13 @@ static void nts_touchkey_power(bool on)
 	static struct regulator *toutchkey_reg_2v2;
 
 	if (!toutchkey_reg_2v2) {
-		printk(KERN_ERR "%s: 2.2v touchkey regulator is NULL\n",
-			"nts_touchkey");
+//		printk(KERN_ERR "%s: 2.2v touchkey regulator is NULL\n",
+;
 
 		toutchkey_reg_2v2 = regulator_get(NULL, "v-touchkey");
 		if (IS_ERR(toutchkey_reg_2v2)) {
-			printk(KERN_ERR "%s: fail to get regulator v2.2 (%d)\n",
-			       "nts_touchkey", (int)PTR_ERR(toutchkey_reg_2v2));
+//			printk(KERN_ERR "%s: fail to get regulator v2.2 (%d)\n",
+;
 			goto err_get_reg;
 		}
 		regulator_set_voltage(toutchkey_reg_2v2, 2200000, 2200000);
@@ -1201,8 +1201,8 @@ static void nts_touchkey_power(bool on)
 		regulator_disable(toutchkey_reg_2v2);
 	}
 
-	printk(KERN_INFO "%s is finished.(%s)\n",
-						__func__, (on) ? "on" : "off");
+//	printk(KERN_INFO "%s is finished.(%s)\n",
+;
 
 	return;
 
@@ -1218,8 +1218,8 @@ static void nts_touchkey_int_set_pull(bool to_up)
 
 	ret = nmk_gpio_set_pull(TOUCHKEY_INT_GOLDEN_BRINGUP, pull);
 	if (ret < 0)
-		printk(KERN_ERR "%s: fail to set pull-%s on interrupt pin\n",
-			__func__, (pull == NMK_GPIO_PULL_UP) ? "up" : "down");
+//		printk(KERN_ERR "%s: fail to set pull-%s on interrupt pin\n",
+;
 }
 
 struct nts_touchkey_platform_data nts_touchkey_pdata = {
@@ -1250,8 +1250,8 @@ static int nts_touchkey_init(void)
 	pin = TOUCHKEY_TEST_GOLDEN_BRINGUP;
 	ret = gpio_request(pin, "touchkey-test");
 	if (ret < 0) {
-		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
-			"nts_touchkey", pin, ret);
+//		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
+;
 		goto err_request_test;
 	}
 	gpio_direction_output(pin, 0);
@@ -1259,8 +1259,8 @@ static int nts_touchkey_init(void)
 	pin = TOUCHKEY_RESET_GOLDEN_BRINGUP;
 	ret = gpio_request(pin, "touchkey-reset");
 	if (ret < 0) {
-		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
-			"nts_touchkey", pin, ret);
+//		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
+;
 		goto err_request_reset;
 	}
 	gpio_direction_output(pin, 1);
@@ -1268,8 +1268,8 @@ static int nts_touchkey_init(void)
 	pin = TOUCHKEY_INT_GOLDEN_BRINGUP;
 	ret = gpio_request(pin, "touchkey-int");
 	if (ret < 0) {
-		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
-			"nts_touchkey", pin, ret);
+//		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
+;
 		goto err_request_int;
 	}
 	gpio_direction_input(pin);
@@ -1277,8 +1277,8 @@ static int nts_touchkey_init(void)
 	pin = TOUCHKEY_EN_GOLDEN_BRINGUP;
 	ret = gpio_request(pin, "touchkey-en");
 	if (ret < 0) {
-		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
-			"nts_touchkey", pin, ret);
+//		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
+;
 		goto err_request_en;
 	}
 	gpio_direction_output(pin, 0);
@@ -1315,40 +1315,40 @@ static int tc360_setup_power(struct device *dev, bool setup)
 
 		if (IS_ERR(tc360_vdd_regulator)) {
 			ret = PTR_ERR(tc360_vdd_regulator);
-			printk(KERN_ERR "%s: fail to get tc360_regulator_vdd "
-			       "(%d)\n", __func__, ret);
+//			printk(KERN_ERR "%s: fail to get tc360_regulator_vdd "
+;
 			return ret;
 		}
 
 		ret = regulator_set_voltage(tc360_vdd_regulator, min_uV,
 					    max_uV);
 		if (ret < 0) {
-			printk(KERN_ERR "%s: fail to set tc360_regulator_vdd to"
-			       " %d, %d (%d)\n", __func__, min_uV, max_uV,
-			       ret);
+//			printk(KERN_ERR "%s: fail to set tc360_regulator_vdd to"
+//			       " %d, %d (%d)\n", __func__, min_uV, max_uV,
+;
 			goto err_set_vdd_voltage;
 		}
-		printk(KERN_INFO "%s: set vdd to %d uV - %d uV (%d)\n",
-		       __func__, min_uV, max_uV, ret);
+//		printk(KERN_INFO "%s: set vdd to %d uV - %d uV (%d)\n",
+;
 
 		min_uV = max_uV = 3300000;
 		tc360_vled_regulator = regulator_get(dev, "v_led_3v3");
 		if (IS_ERR(tc360_vled_regulator)) {
 			ret = PTR_ERR(tc360_vled_regulator);
-			printk(KERN_ERR "%s: fail to get tc360_vled_regulator "
-			       "(%d)\n", __func__, ret);
+//			printk(KERN_ERR "%s: fail to get tc360_vled_regulator "
+;
 			goto err_get_vled_regulator;
 		}
 		ret = regulator_set_voltage(tc360_vled_regulator, min_uV,
 					    max_uV);
 		if (ret < 0) {
-			printk(KERN_ERR "%s: fail to set tc360_vled_regulator "
-			       "to %d, %d (%d)\n", __func__, min_uV,
-			       max_uV, ret);
+//			printk(KERN_ERR "%s: fail to set tc360_vled_regulator "
+//			       "to %d, %d (%d)\n", __func__, min_uV,
+;
 			goto err_set_vled_voltage;
 		}
-		printk(KERN_INFO "%s: set vled to %d uV - %d uV (%d)\n",
-		       __func__, min_uV, max_uV, ret);
+//		printk(KERN_INFO "%s: set vled to %d uV - %d uV (%d)\n",
+;
 	} else {
 		regulator_force_disable(tc360_vdd_regulator);
 		regulator_put(tc360_vdd_regulator);
@@ -1373,7 +1373,7 @@ static void tc360_power(bool on)
 	int ret;
 
 	if (!tc360_vdd_regulator) {
-		printk(KERN_ERR "%s: No regulator.\n", __func__);
+;
 		return;
 	}
 
@@ -1382,7 +1382,7 @@ static void tc360_power(bool on)
 	else
 		ret = regulator_disable(tc360_vdd_regulator);
 
-	printk(KERN_INFO "%s: %s (%d)\n", __func__, (on) ? "on" : "off", ret);
+;
 }
 
 static void tc360_led_power(bool on)
@@ -1390,7 +1390,7 @@ static void tc360_led_power(bool on)
 	int ret;
 
 	if (!tc360_vled_regulator) {
-		printk(KERN_ERR "%s: No regulator.\n", __func__);
+;
 		return;
 	}
 
@@ -1399,7 +1399,7 @@ static void tc360_led_power(bool on)
 	else
 		ret = regulator_disable(tc360_vled_regulator);
 
-	printk(KERN_INFO "%s: %s (%d)\n", __func__, (on) ? "on" : "off", ret);
+;
 }
 
 static void tc360_pin_configure(bool to_gpios)
@@ -1441,9 +1441,9 @@ static void tc360_int_set_pull(bool to_up)
 
 	ret = nmk_gpio_set_pull(TOUCHKEY_INT_GOLDEN_BRINGUP, pull);
 	if (ret < 0)
-		printk(KERN_ERR "%s: fail to set pull-%s on interrupt pin\n",
-		       __func__,
-		       (pull == NMK_GPIO_PULL_UP) ? "up" : "down");
+//		printk(KERN_ERR "%s: fail to set pull-%s on interrupt pin\n",
+//		       __func__,
+;
 }
 
 struct tc360_platform_data tc360_pdata = {
@@ -1478,8 +1478,8 @@ static int tc360_init(void)
 	pin = TOUCHKEY_INT_GOLDEN_BRINGUP;
 	ret = gpio_request(pin, "touchkey-int");
 	if (ret < 0) {
-		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
-			__func__, pin, ret);
+//		printk(KERN_ERR "%s: fail to request_gpio of %d (%d).\n",
+;
 		return ret;
 	}
 	gpio_direction_input(pin);
@@ -2771,7 +2771,7 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
-	printk("@@@@ BT WAKE_PEER\n");
+;
 	return;
 }
 
@@ -3031,7 +3031,7 @@ static void fetch_usb_serial_no(int len)
 					buf[0], buf[1], buf[2], buf[3], buf[4]);
 		iounmap(backup_ram);
 	} else {
-		printk(KERN_ERR "$$ ioremap failed\n");
+;
 	}
 }
 #endif
@@ -3174,27 +3174,27 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 0x0102:
-		printk(KERN_INFO "GOLDEN Board for SW BRINGUP\n");
+;
 		system_rev = GOLDEN_BRINGUP;
 		break;
 	case 0x0103:
-		printk(KERN_INFO "GOLDEN Board for Rev0.2\n");
+;
 		system_rev = GOLDEN_R0_2;
 		break;
 	case 0x0104:
-		printk(KERN_INFO "GOLDEN Board for Rev0.3\n");
+;
 		system_rev = GOLDEN_R0_3;
 		break;
 	case 0x0105:
-		printk(KERN_INFO "GOLDEN Board for Rev0.4\n");
+;
 		system_rev = GOLDEN_R0_4;
 		break;
 	case 0x0106:
-		printk(KERN_INFO "GOLDEN Board for Rev0.5\n");
+;
 		system_rev = GOLDEN_R0_5;
 		break;
 	case 0x0107:
-		printk(KERN_INFO "GOLDEN Board for Rev0.6\n");
+;
 		system_rev = GOLDEN_R0_6;
 		break;
 	default:

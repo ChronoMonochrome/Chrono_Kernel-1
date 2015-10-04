@@ -903,7 +903,7 @@ static void pvr2_v4l2_dev_destroy(struct pvr2_v4l2_dev *dip)
 	   are gone. */
 	video_unregister_device(&dip->devbase);
 
-	printk(KERN_INFO "%s\n", msg);
+;
 
 }
 
@@ -1312,9 +1312,9 @@ static void pvr2_v4l2_dev_init(struct pvr2_v4l2_dev *dip,
 			": Failed to register pvrusb2 v4l device\n");
 	}
 
-	printk(KERN_INFO "pvrusb2: registered device %s [%s]\n",
-	       video_device_node_name(&dip->devbase),
-	       pvr2_config_get_name(dip->config));
+//	printk(KERN_INFO "pvrusb2: registered device %s [%s]\n",
+//	       video_device_node_name(&dip->devbase),
+;
 
 	pvr2_hdw_v4l_store_minor_number(vp->channel.mc_head->hdw,
 					dip->minor_type,dip->devbase.minor);

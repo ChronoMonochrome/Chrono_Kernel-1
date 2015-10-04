@@ -149,17 +149,17 @@ static int add_edac_pci_to_global_list(struct edac_pci_ctl_info *pci)
 	return 0;
 
 fail0:
-	edac_printk(KERN_WARNING, EDAC_PCI,
-		"%s (%s) %s %s already assigned %d\n",
-		dev_name(rover->dev), edac_dev_name(rover),
-		rover->mod_name, rover->ctl_name, rover->pci_idx);
+//	edac_printk(KERN_WARNING, EDAC_PCI,
+//		"%s (%s) %s %s already assigned %d\n",
+//		dev_name(rover->dev), edac_dev_name(rover),
+;
 	return 1;
 
 fail1:
-	edac_printk(KERN_WARNING, EDAC_PCI,
-		"but in low-level driver: attempt to assign\n"
-		"\tduplicate pci_idx %d in %s()\n", rover->pci_idx,
-		__func__);
+//	edac_printk(KERN_WARNING, EDAC_PCI,
+//		"but in low-level driver: attempt to assign\n"
+//		"\tduplicate pci_idx %d in %s()\n", rover->pci_idx,
+;
 	return 1;
 }
 
@@ -345,8 +345,8 @@ int edac_pci_add_device(struct edac_pci_ctl_info *pci, int edac_idx)
 		goto fail0;
 
 	if (edac_pci_create_sysfs(pci)) {
-		edac_pci_printk(pci, KERN_WARNING,
-				"failed to create sysfs pci\n");
+//		edac_pci_printk(pci, KERN_WARNING,
+;
 		goto fail1;
 	}
 
@@ -358,12 +358,12 @@ int edac_pci_add_device(struct edac_pci_ctl_info *pci, int edac_idx)
 		pci->op_state = OP_RUNNING_INTERRUPT;
 	}
 
-	edac_pci_printk(pci, KERN_INFO,
-			"Giving out device to module '%s' controller '%s':"
-			" DEV '%s' (%s)\n",
-			pci->mod_name,
-			pci->ctl_name,
-			edac_dev_name(pci), edac_op_state_to_string(pci->op_state));
+//	edac_pci_printk(pci, KERN_INFO,
+//			"Giving out device to module '%s' controller '%s':"
+//			" DEV '%s' (%s)\n",
+//			pci->mod_name,
+//			pci->ctl_name,
+;
 
 	mutex_unlock(&edac_pci_ctls_mutex);
 	return 0;
@@ -416,9 +416,9 @@ struct edac_pci_ctl_info *edac_pci_del_device(struct device *dev)
 	/* stop the workq timer */
 	edac_pci_workq_teardown(pci);
 
-	edac_printk(KERN_INFO, EDAC_PCI,
-		"Removed device %d for %s %s: DEV %s\n",
-		pci->pci_idx, pci->mod_name, pci->ctl_name, edac_dev_name(pci));
+//	edac_printk(KERN_INFO, EDAC_PCI,
+//		"Removed device %d for %s %s: DEV %s\n",
+;
 
 	return pci;
 }

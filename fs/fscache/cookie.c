@@ -428,8 +428,8 @@ void __fscache_relinquish_cookie(struct fscache_cookie *cookie, int retire)
 	       cookie, cookie->def->name, cookie->netfs_data, retire);
 
 	if (atomic_read(&cookie->n_children) != 0) {
-		printk(KERN_ERR "FS-Cache: Cookie '%s' still has children\n",
-		       cookie->def->name);
+//		printk(KERN_ERR "FS-Cache: Cookie '%s' still has children\n",
+;
 		BUG();
 	}
 

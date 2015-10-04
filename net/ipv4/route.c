@@ -960,7 +960,7 @@ void rt_cache_flush_batch(struct net *net)
 static void rt_emergency_hash_rebuild(struct net *net)
 {
 	if (net_ratelimit())
-		printk(KERN_WARNING "Route hash chain too long!\n");
+;
 	rt_cache_invalidate(net);
 }
 
@@ -1084,7 +1084,7 @@ static int rt_garbage_collect(struct dst_ops *ops)
 	if (dst_entries_get_slow(&ipv4_dst_ops) < ip_rt_max_size)
 		goto out;
 	if (net_ratelimit())
-		printk(KERN_WARNING "dst cache overflow\n");
+;
 	RT_CACHE_STAT_INC(gc_dst_overflow);
 	return 1;
 
@@ -1172,8 +1172,8 @@ restart:
 			int err = arp_bind_neighbour(&rt->dst);
 			if (err) {
 				if (net_ratelimit())
-					printk(KERN_WARNING
-					    "Neighbour table failure & not caching routes.\n");
+//					printk(KERN_WARNING
+;
 				ip_rt_put(rt);
 				return ERR_PTR(err);
 			}
@@ -1249,8 +1249,8 @@ restart:
 			struct net *net = dev_net(rt->dst.dev);
 			int num = ++net->ipv4.current_rt_cache_rebuild_count;
 			if (!rt_caching(net)) {
-				printk(KERN_WARNING "%s: %d rebuilds is over limit, route caching disabled\n",
-					rt->dst.dev->name, num);
+//				printk(KERN_WARNING "%s: %d rebuilds is over limit, route caching disabled\n",
+;
 			}
 			rt_emergency_hash_rebuild(net);
 			spin_unlock_bh(rt_hash_lock_addr(hash));
@@ -1290,7 +1290,7 @@ restart:
 			}
 
 			if (net_ratelimit())
-				printk(KERN_WARNING "ipv4: Neighbour table overflow.\n");
+;
 			rt_drop(rt);
 			return ERR_PTR(-ENOBUFS);
 		}
@@ -1368,8 +1368,8 @@ void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst, int more)
 			return;
 		}
 	} else
-		printk(KERN_DEBUG "rt_bind_peer(0) @%p\n",
-		       __builtin_return_address(0));
+//		printk(KERN_DEBUG "rt_bind_peer(0) @%p\n",
+;
 
 	ip_select_fb_ident(iph);
 }
@@ -1524,10 +1524,10 @@ void ip_rt_redirect(__be32 old_gw, __be32 daddr, __be32 new_gw,
 reject_redirect:
 #ifdef CONFIG_IP_ROUTE_VERBOSE
 	if (IN_DEV_LOG_MARTIANS(in_dev) && net_ratelimit())
-		printk(KERN_INFO "Redirect from %pI4 on %s about %pI4 ignored.\n"
-			"  Advised path = %pI4 -> %pI4\n",
-		       &old_gw, dev->name, &new_gw,
-		       &saddr, &daddr);
+//		printk(KERN_INFO "Redirect from %pI4 on %s about %pI4 ignored.\n"
+//			"  Advised path = %pI4 -> %pI4\n",
+//		       &old_gw, dev->name, &new_gw,
+;
 #endif
 	;
 }
@@ -1639,9 +1639,9 @@ void ip_rt_send_redirect(struct sk_buff *skb)
 		if (log_martians &&
 		    peer->rate_tokens == ip_rt_redirect_number &&
 		    net_ratelimit())
-			printk(KERN_WARNING "host %pI4/if%d ignores redirects for %pI4 to %pI4.\n",
-			       &ip_hdr(skb)->saddr, rt->rt_iif,
-				&rt->rt_dst, &rt->rt_gateway);
+//			printk(KERN_WARNING "host %pI4/if%d ignores redirects for %pI4 to %pI4.\n",
+//			       &ip_hdr(skb)->saddr, rt->rt_iif,
+;
 #endif
 	}
 }
@@ -1832,9 +1832,9 @@ static void ipv4_link_failure(struct sk_buff *skb)
 
 static int ip_rt_bug(struct sk_buff *skb)
 {
-	printk(KERN_DEBUG "ip_rt_bug: %pI4 -> %pI4, %s\n",
-		&ip_hdr(skb)->saddr, &ip_hdr(skb)->daddr,
-		skb->dev ? skb->dev->name : "?");
+//	printk(KERN_DEBUG "ip_rt_bug: %pI4 -> %pI4, %s\n",
+//		&ip_hdr(skb)->saddr, &ip_hdr(skb)->daddr,
+;
 	kfree_skb(skb);
 	WARN_ON(1);
 	return 0;
@@ -2092,18 +2092,18 @@ static void ip_handle_martian_source(struct net_device *dev,
 		 *	RFC1812 recommendation, if source is martian,
 		 *	the only hint is MAC header.
 		 */
-		printk(KERN_WARNING "martian source %pI4 from %pI4, on dev %s\n",
-			&daddr, &saddr, dev->name);
+//		printk(KERN_WARNING "martian source %pI4 from %pI4, on dev %s\n",
+;
 		if (dev->hard_header_len && skb_mac_header_was_set(skb)) {
 			int i;
 			const unsigned char *p = skb_mac_header(skb);
-			printk(KERN_WARNING "ll header: ");
+;
 			for (i = 0; i < dev->hard_header_len; i++, p++) {
 				printk("%02x", *p);
 				if (i < (dev->hard_header_len - 1))
-					printk(":");
+;
 			}
-			printk("\n");
+;
 		}
 	}
 #endif
@@ -2127,8 +2127,8 @@ static int __mkroute_input(struct sk_buff *skb,
 	out_dev = __in_dev_get_rcu(FIB_RES_DEV(*res));
 	if (out_dev == NULL) {
 		if (net_ratelimit())
-			printk(KERN_CRIT "Bug in ip_route_input" \
-			       "_slow(). Please, report\n");
+//			printk(KERN_CRIT "Bug in ip_route_input" \
+;
 		return -EINVAL;
 	}
 
@@ -2403,8 +2403,8 @@ martian_destination:
 	RT_CACHE_STAT_INC(in_martian_dst);
 #ifdef CONFIG_IP_ROUTE_VERBOSE
 	if (IN_DEV_LOG_MARTIANS(in_dev) && net_ratelimit())
-		printk(KERN_WARNING "martian destination %pI4 from %pI4, dev %s\n",
-			&daddr, &saddr, dev->name);
+//		printk(KERN_WARNING "martian destination %pI4 from %pI4, dev %s\n",
+;
 #endif
 
 e_hostunreach:
@@ -3488,7 +3488,7 @@ int __init ip_rt_init(void)
 		net_random() % ip_rt_gc_interval + ip_rt_gc_interval);
 
 	if (ip_rt_proc_init())
-		printk(KERN_ERR "Unable to create route proc files\n");
+;
 #ifdef CONFIG_XFRM
 	xfrm_init();
 	xfrm4_init(ip_rt_max_size);

@@ -11,9 +11,9 @@
 #include "mesh.h"
 
 #ifdef CONFIG_MAC80211_VERBOSE_MHWMP_DEBUG
-#define mhwmp_dbg(fmt, args...)   printk(KERN_DEBUG "Mesh HWMP: " fmt, ##args)
-#else
-#define mhwmp_dbg(fmt, args...)   do { (void)(0); } while (0)
+//#define mhwmp_dbg(fmt, args...)   printk(KERN_DEBUG "Mesh HWMP: " fmt, ##args)
+//#else
+;
 #endif
 
 #define TEST_FRAME_LEN	8192

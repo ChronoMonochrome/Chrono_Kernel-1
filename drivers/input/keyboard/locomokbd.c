@@ -254,7 +254,7 @@ static int __devinit locomokbd_probe(struct locomo_dev *dev)
 				dev->length,
 				LOCOMO_DRIVER_NAME(dev))) {
 		err = -EBUSY;
-		printk(KERN_ERR "locomokbd: Can't acquire access to io memory for keyboard\n");
+;
 		goto err_free_mem;
 	}
 
@@ -299,7 +299,7 @@ static int __devinit locomokbd_probe(struct locomo_dev *dev)
 	/* attempt to get the interrupt */
 	err = request_irq(dev->irq[0], locomokbd_interrupt, 0, "locomokbd", locomokbd);
 	if (err) {
-		printk(KERN_ERR "locomokbd: Can't get irq for keyboard\n");
+;
 		goto err_release_region;
 	}
 

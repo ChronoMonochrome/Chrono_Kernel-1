@@ -1106,11 +1106,11 @@ nv10_graph_isr(struct drm_device *dev)
 		if (show && nouveau_ratelimit()) {
 			NV_INFO(dev, "PGRAPH -");
 			nouveau_bitfield_print(nv10_graph_intr, show);
-			printk(" nsource:");
+;
 			nouveau_bitfield_print(nv04_graph_nsource, nsource);
-			printk(" nstatus:");
+;
 			nouveau_bitfield_print(nv10_graph_nstatus, nstatus);
-			printk("\n");
+;
 			NV_INFO(dev, "PGRAPH - ch %d/%d class 0x%04x "
 				     "mthd 0x%04x data 0x%08x\n",
 				chid, subc, class, mthd, data);

@@ -278,7 +278,7 @@ static int __devinit snd_aw2_create(struct snd_card *card,
 	/* check PCI availability (32bit DMA) */
 	if ((pci_set_dma_mask(pci, DMA_BIT_MASK(32)) < 0) ||
 	    (pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32)) < 0)) {
-		printk(KERN_ERR "aw2: Impossible to set 32bit mask DMA\n");
+;
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -306,7 +306,7 @@ static int __devinit snd_aw2_create(struct snd_card *card,
 				pci_resource_len(pci, 0));
 
 	if (chip->iobase_virt == NULL) {
-		printk(KERN_ERR "aw2: unable to remap memory region");
+;
 		pci_release_regions(pci);
 		pci_disable_device(pci);
 		kfree(chip);
@@ -318,7 +318,7 @@ static int __devinit snd_aw2_create(struct snd_card *card,
 
 	if (request_irq(pci->irq, snd_aw2_saa7146_interrupt,
 			IRQF_SHARED, "Audiowerk2", chip)) {
-		printk(KERN_ERR "aw2: Cannot grab irq %d\n", pci->irq);
+;
 
 		iounmap(chip->iobase_virt);
 		pci_release_regions(chip->pci);
@@ -341,9 +341,9 @@ static int __devinit snd_aw2_create(struct snd_card *card,
 	snd_card_set_dev(card, &pci->dev);
 	*rchip = chip;
 
-	printk(KERN_INFO
-	       "Audiowerk 2 sound card (saa7146 chipset) detected and "
-	       "managed\n");
+//	printk(KERN_INFO
+//	       "Audiowerk 2 sound card (saa7146 chipset) detected and "
+;
 	return 0;
 }
 
@@ -620,7 +620,7 @@ static int __devinit snd_aw2_new_pcm(struct aw2 *chip)
 	err = snd_pcm_new(chip->card, "Audiowerk2 analog playback", 0, 1, 0,
 			  &pcm_playback_ana);
 	if (err < 0) {
-		printk(KERN_ERR "aw2: snd_pcm_new error (0x%X)\n", err);
+;
 		return err;
 	}
 
@@ -650,14 +650,14 @@ static int __devinit snd_aw2_new_pcm(struct aw2 *chip)
 						    (chip->pci),
 						    64 * 1024, 64 * 1024);
 	if (err)
-		printk(KERN_ERR "aw2: snd_pcm_lib_preallocate_pages_for_all "
-		       "error (0x%X)\n", err);
+//		printk(KERN_ERR "aw2: snd_pcm_lib_preallocate_pages_for_all "
+;
 
 	err = snd_pcm_new(chip->card, "Audiowerk2 digital playback", 1, 1, 0,
 			  &pcm_playback_num);
 
 	if (err < 0) {
-		printk(KERN_ERR "aw2: snd_pcm_new error (0x%X)\n", err);
+;
 		return err;
 	}
 	/* Creation ok */
@@ -686,9 +686,9 @@ static int __devinit snd_aw2_new_pcm(struct aw2 *chip)
 						    (chip->pci),
 						    64 * 1024, 64 * 1024);
 	if (err)
-		printk(KERN_ERR
-		       "aw2: snd_pcm_lib_preallocate_pages_for_all error "
-		       "(0x%X)\n", err);
+//		printk(KERN_ERR
+//		       "aw2: snd_pcm_lib_preallocate_pages_for_all error "
+;
 
 
 
@@ -696,7 +696,7 @@ static int __devinit snd_aw2_new_pcm(struct aw2 *chip)
 			  &pcm_capture);
 
 	if (err < 0) {
-		printk(KERN_ERR "aw2: snd_pcm_new error (0x%X)\n", err);
+;
 		return err;
 	}
 
@@ -726,15 +726,15 @@ static int __devinit snd_aw2_new_pcm(struct aw2 *chip)
 						    (chip->pci),
 						    64 * 1024, 64 * 1024);
 	if (err)
-		printk(KERN_ERR
-		       "aw2: snd_pcm_lib_preallocate_pages_for_all error "
-		       "(0x%X)\n", err);
+//		printk(KERN_ERR
+//		       "aw2: snd_pcm_lib_preallocate_pages_for_all error "
+;
 
 
 	/* Create control */
 	err = snd_ctl_add(chip->card, snd_ctl_new1(&aw2_control, chip));
 	if (err < 0) {
-		printk(KERN_ERR "aw2: snd_ctl_add error (0x%X)\n", err);
+;
 		return err;
 	}
 

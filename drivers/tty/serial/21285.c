@@ -486,7 +486,7 @@ static int __init serial21285_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Serial: 21285 driver\n");
+;
 
 	serial21285_setup_ports();
 

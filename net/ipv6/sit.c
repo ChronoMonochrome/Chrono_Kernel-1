@@ -683,7 +683,7 @@ static netdev_tx_t ipip6_tunnel_xmit(struct sk_buff *skb,
 
 		if (neigh == NULL) {
 			if (net_ratelimit())
-				printk(KERN_DEBUG "sit: nexthop == NULL\n");
+;
 			goto tx_error;
 		}
 
@@ -708,7 +708,7 @@ static netdev_tx_t ipip6_tunnel_xmit(struct sk_buff *skb,
 
 		if (neigh == NULL) {
 			if (net_ratelimit())
-				printk(KERN_DEBUG "sit: nexthop == NULL\n");
+;
 			goto tx_error;
 		}
 
@@ -1274,7 +1274,7 @@ static int __init sit_init(void)
 {
 	int err;
 
-	printk(KERN_INFO "IPv6 over IPv4 tunneling driver\n");
+;
 
 	err = register_pernet_device(&sit_net_ops);
 	if (err < 0)
@@ -1282,7 +1282,7 @@ static int __init sit_init(void)
 	err = xfrm4_tunnel_register(&sit_handler, AF_INET6);
 	if (err < 0) {
 		unregister_pernet_device(&sit_net_ops);
-		printk(KERN_INFO "sit init: Can't add protocol\n");
+;
 	}
 	return err;
 }

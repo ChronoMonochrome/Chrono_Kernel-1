@@ -216,9 +216,9 @@ module_param(ips, charp, 0);
                          scb->scsi_cmd->sc_data_direction)
 
 #ifdef IPS_DEBUG
-#define METHOD_TRACE(s, i)    if (ips_debug >= (i+10)) printk(KERN_NOTICE s "\n");
-#define DEBUG(i, s)           if (ips_debug >= i) printk(KERN_NOTICE s "\n");
-#define DEBUG_VAR(i, s, v...) if (ips_debug >= i) printk(KERN_NOTICE s "\n", v);
+;
+;
+;
 #else
 #define METHOD_TRACE(s, i)
 #define DEBUG(i, s)
@@ -660,8 +660,8 @@ ips_release(struct Scsi_Host *sh)
 	for (i = 0; i < IPS_MAX_ADAPTERS && ips_sh[i] != sh; i++) ;
 
 	if (i == IPS_MAX_ADAPTERS) {
-		printk(KERN_WARNING
-		       "(%s) release, invalid Scsi_Host pointer.\n", ips_name);
+//		printk(KERN_WARNING
+;
 		BUG();
 		return (FALSE);
 	}
@@ -1694,7 +1694,7 @@ ips_flash_copperhead(ips_ha_t * ha, ips_passthru_t * pt, ips_scb_t * scb)
 					                      datasize,
 							      &ha->flash_busaddr);
 			if (!ha->flash_data){
-				printk(KERN_WARNING "Unable to allocate a flash buffer\n");
+;
 				return IPS_FAILURE;
 			}
 			ha->flash_datasize = 0;
@@ -7054,7 +7054,7 @@ ips_init_phase1(struct pci_dev *pci_dev, int *indexPtr)
 		(ha)->flags |= IPS_HA_ENH_SG;
 	} else {
 		if (pci_set_dma_mask(ha->pcidev, DMA_BIT_MASK(32)) != 0) {
-			printk(KERN_WARNING "Unable to set DMA Mask\n");
+;
 			return ips_abort_init(ha, index);
 		}
 	}

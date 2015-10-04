@@ -440,8 +440,8 @@ befs_init_inodecache(void)
 						SLAB_MEM_SPREAD),
 					      init_once);
 	if (befs_inode_cachep == NULL) {
-		printk(KERN_ERR "befs_init_inodecache: "
-		       "Couldn't initialize inode slabcache\n");
+//		printk(KERN_ERR "befs_init_inodecache: "
+;
 		return -ENOMEM;
 	}
 
@@ -698,8 +698,8 @@ parse_options(char *options, befs_mount_options * opts)
 			if (match_int(&args[0], &option))
 				return 0;
 			if (option < 0) {
-				printk(KERN_ERR "BeFS: Invalid uid %d, "
-						"using default\n", option);
+//				printk(KERN_ERR "BeFS: Invalid uid %d, "
+;
 				break;
 			}
 			opts->uid = option;
@@ -709,8 +709,8 @@ parse_options(char *options, befs_mount_options * opts)
 			if (match_int(&args[0], &option))
 				return 0;
 			if (option < 0) {
-				printk(KERN_ERR "BeFS: Invalid gid %d, "
-						"using default\n", option);
+//				printk(KERN_ERR "BeFS: Invalid gid %d, "
+;
 				break;
 			}
 			opts->gid = option;
@@ -720,8 +720,8 @@ parse_options(char *options, befs_mount_options * opts)
 			kfree(opts->iocharset);
 			opts->iocharset = match_strdup(&args[0]);
 			if (!opts->iocharset) {
-				printk(KERN_ERR "BeFS: allocation failure for "
-						"iocharset string\n");
+//				printk(KERN_ERR "BeFS: allocation failure for "
+;
 				return 0;
 			}
 			break;
@@ -729,8 +729,8 @@ parse_options(char *options, befs_mount_options * opts)
 			opts->debug = 1;
 			break;
 		default:
-			printk(KERN_ERR "BeFS: Unrecognized mount option \"%s\" "
-					"or missing value\n", p);
+//			printk(KERN_ERR "BeFS: Unrecognized mount option \"%s\" "
+;
 			return 0;
 		}
 	}
@@ -773,9 +773,9 @@ befs_fill_super(struct super_block *sb, void *data, int silent)
 
 	sb->s_fs_info = kmalloc(sizeof (*befs_sb), GFP_KERNEL);
 	if (sb->s_fs_info == NULL) {
-		printk(KERN_ERR
-		       "BeFS(%s): Unable to allocate memory for private "
-		       "portion of superblock. Bailing.\n", sb->s_id);
+//		printk(KERN_ERR
+//		       "BeFS(%s): Unable to allocate memory for private "
+;
 		goto unacquire_none;
 	}
 	befs_sb = BEFS_SB(sb);
@@ -943,7 +943,7 @@ init_befs_fs(void)
 {
 	int err;
 
-	printk(KERN_INFO "BeFS version: %s\n", BEFS_VERSION);
+;
 
 	err = befs_init_inodecache();
 	if (err)

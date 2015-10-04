@@ -60,7 +60,7 @@ static void indydog_stop(void)
 	sgimc->cpuctrl0 = mc_ctrl0;
 	spin_unlock(&indydog_lock);
 
-	printk(KERN_INFO PFX "Stopped watchdog timer.\n");
+;
 }
 
 static void indydog_ping(void)
@@ -83,7 +83,7 @@ static int indydog_open(struct inode *inode, struct file *file)
 	indydog_start();
 	indydog_ping();
 
-	printk(KERN_INFO "Started watchdog timer.\n");
+;
 
 	return nonseekable_open(inode, file);
 }
@@ -189,21 +189,21 @@ static int __init watchdog_init(void)
 
 	ret = register_reboot_notifier(&indydog_notifier);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"cannot register reboot notifier (err=%d)\n", ret);
+//		printk(KERN_ERR PFX
+;
 		return ret;
 	}
 
 	ret = misc_register(&indydog_miscdev);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-							WATCHDOG_MINOR, ret);
+//		printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 		unregister_reboot_notifier(&indydog_notifier);
 		return ret;
 	}
 
-	printk(banner);
+;
 
 	return 0;
 }

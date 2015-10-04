@@ -377,8 +377,8 @@ static int uevent_net_init(struct net *net)
 	ue_sk->sk = netlink_kernel_create(net, NETLINK_KOBJECT_UEVENT,
 					  1, NULL, NULL, THIS_MODULE);
 	if (!ue_sk->sk) {
-		printk(KERN_ERR
-		       "kobject_uevent: unable to create netlink socket!\n");
+//		printk(KERN_ERR
+;
 		kfree(ue_sk);
 		return -ENODEV;
 	}

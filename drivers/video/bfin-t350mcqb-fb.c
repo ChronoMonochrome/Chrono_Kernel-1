@@ -192,7 +192,7 @@ static int bfin_t350mcqb_request_ports(int action)
 {
 	if (action) {
 		if (peripheral_request_list(ppi0_req_8, DRIVER_NAME)) {
-			printk(KERN_ERR "Requesting Peripherals failed\n");
+;
 			return -EFAULT;
 		}
 	} else
@@ -427,12 +427,12 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
 	struct fb_info *fbinfo;
 	int ret;
 
-	printk(KERN_INFO DRIVER_NAME ": %dx%d %d-bit RGB FrameBuffer initializing...\n",
-					 LCD_X_RES, LCD_Y_RES, LCD_BPP);
+//	printk(KERN_INFO DRIVER_NAME ": %dx%d %d-bit RGB FrameBuffer initializing...\n",
+;
 
 	if (request_dma(CH_PPI, "CH_PPI") < 0) {
-		printk(KERN_ERR DRIVER_NAME
-		       ": couldn't request CH_PPI DMA\n");
+//		printk(KERN_ERR DRIVER_NAME
+;
 		ret = -EFAULT;
 		goto out1;
 	}
@@ -495,8 +495,8 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
 				&info->dma_handle, GFP_KERNEL);
 
 	if (NULL == info->fb_buffer) {
-		printk(KERN_ERR DRIVER_NAME
-		       ": couldn't allocate dma buffer.\n");
+//		printk(KERN_ERR DRIVER_NAME
+;
 		ret = -ENOMEM;
 		goto out3;
 	}
@@ -510,15 +510,15 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
 
 	if (fb_alloc_cmap(&fbinfo->cmap, BFIN_LCD_NBR_PALETTE_ENTRIES, 0)
 	    < 0) {
-		printk(KERN_ERR DRIVER_NAME
-		       "Fail to allocate colormap (%d entries)\n",
-		       BFIN_LCD_NBR_PALETTE_ENTRIES);
+//		printk(KERN_ERR DRIVER_NAME
+//		       "Fail to allocate colormap (%d entries)\n",
+;
 		ret = -EFAULT;
 		goto out4;
 	}
 
 	if (bfin_t350mcqb_request_ports(1)) {
-		printk(KERN_ERR DRIVER_NAME ": couldn't request gpio port.\n");
+;
 		ret = -EFAULT;
 		goto out6;
 	}
@@ -532,14 +532,14 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
 	ret = request_irq(info->irq, bfin_t350mcqb_irq_error, IRQF_DISABLED,
 			"PPI ERROR", info);
 	if (ret < 0) {
-		printk(KERN_ERR DRIVER_NAME
-		       ": unable to request PPI ERROR IRQ\n");
+//		printk(KERN_ERR DRIVER_NAME
+;
 		goto out7;
 	}
 
 	if (register_framebuffer(fbinfo) < 0) {
-		printk(KERN_ERR DRIVER_NAME
-		       ": unable to register framebuffer.\n");
+//		printk(KERN_ERR DRIVER_NAME
+;
 		ret = -EINVAL;
 		goto out8;
 	}
@@ -550,15 +550,15 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
 	bl_dev = backlight_device_register("bf52x-bl", NULL, NULL,
 					   &bfin_lq043fb_bl_ops, &props);
 	if (IS_ERR(bl_dev)) {
-		printk(KERN_ERR DRIVER_NAME
-			": unable to register backlight.\n");
+//		printk(KERN_ERR DRIVER_NAME
+;
 		ret = -EINVAL;
 		unregister_framebuffer(fbinfo);
 		goto out8;
 	}
 
 	lcd_dev = lcd_device_register(DRIVER_NAME, NULL, &bfin_lcd_ops);
-	lcd_dev->props.max_contrast = 255, printk(KERN_INFO "Done.\n");
+;
 #endif
 
 	return 0;
@@ -610,7 +610,7 @@ static int __devexit bfin_t350mcqb_remove(struct platform_device *pdev)
 	platform_set_drvdata(pdev, NULL);
 	framebuffer_release(fbinfo);
 
-	printk(KERN_INFO DRIVER_NAME ": Unregister LCD driver.\n");
+;
 
 	return 0;
 }

@@ -232,8 +232,8 @@ struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file *tfile,
 		return NULL;
 
 	if (tfile != base->tfile && !base->shareable) {
-		printk(KERN_ERR TTM_PFX
-		       "Attempted access of non-shareable object.\n");
+//		printk(KERN_ERR TTM_PFX
+;
 		ttm_base_object_unref(&base);
 		return NULL;
 	}

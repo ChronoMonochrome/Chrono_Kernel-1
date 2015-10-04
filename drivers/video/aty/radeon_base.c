@@ -315,8 +315,8 @@ static int __devinit radeon_map_ROM(struct radeonfb_info *rinfo, struct pci_dev 
                                                                                                           
 	rom = pci_map_rom(dev, &rom_size);
 	if (!rom) {
-		printk(KERN_ERR "radeonfb (%s): ROM failed to map\n",
-		       pci_name(rinfo->pdev));
+//		printk(KERN_ERR "radeonfb (%s): ROM failed to map\n",
+;
 		return -ENOMEM;
 	}
 	
@@ -324,9 +324,9 @@ static int __devinit radeon_map_ROM(struct radeonfb_info *rinfo, struct pci_dev 
 
 	/* Very simple test to make sure it appeared */
 	if (BIOS_IN16(0) != 0xaa55) {
-		printk(KERN_DEBUG "radeonfb (%s): Invalid ROM signature %x "
-			"should be 0xaa55\n",
-			pci_name(rinfo->pdev), BIOS_IN16(0));
+//		printk(KERN_DEBUG "radeonfb (%s): Invalid ROM signature %x "
+//			"should be 0xaa55\n",
+;
 		goto failed;
 	}
 	/* Look for the PCI data to check the ROM type */
@@ -357,23 +357,23 @@ static int __devinit radeon_map_ROM(struct radeonfb_info *rinfo, struct pci_dev 
 	 * } pci_data_t;
 	 */
 	if (BIOS_IN32(dptr) !=  (('R' << 24) | ('I' << 16) | ('C' << 8) | 'P')) {
-		printk(KERN_WARNING "radeonfb (%s): PCI DATA signature in ROM"
-		       "incorrect: %08x\n", pci_name(rinfo->pdev), BIOS_IN32(dptr));
+//		printk(KERN_WARNING "radeonfb (%s): PCI DATA signature in ROM"
+;
 		goto anyway;
 	}
 	rom_type = BIOS_IN8(dptr + 0x14);
 	switch(rom_type) {
 	case 0:
-		printk(KERN_INFO "radeonfb: Found Intel x86 BIOS ROM Image\n");
+;
 		break;
 	case 1:
-		printk(KERN_INFO "radeonfb: Found Open Firmware ROM Image\n");
+;
 		goto failed;
 	case 2:
-		printk(KERN_INFO "radeonfb: Found HP PA-RISC ROM Image\n");
+;
 		goto failed;
 	default:
-		printk(KERN_INFO "radeonfb: Found unknown type %d ROM Image\n", rom_type);
+;
 		goto failed;
 	}
  anyway:
@@ -432,7 +432,7 @@ static int __devinit radeon_read_xtal_OF (struct radeonfb_info *rinfo)
 		return -ENODEV;
 	val = of_get_property(dp, "ATY,RefCLK", NULL);
 	if (!val || !*val) {
-		printk(KERN_WARNING "radeonfb: No ATY,RefCLK property !\n");
+;
 		return -EINVAL;
 	}
 
@@ -566,7 +566,7 @@ static int __devinit radeon_probe_pll_params(struct radeonfb_info *rinfo)
 	else if ((xtal > 29400) && (xtal < 29600))
 		xtal = 2950;
 	else {
-		printk(KERN_WARNING "xtal calculation failed: %ld\n", xtal);
+;
 		return -1;
 	}
 
@@ -658,7 +658,7 @@ static void __devinit radeon_get_pllinfo(struct radeonfb_info *rinfo)
 	 * Retrieve PLL infos from Open Firmware first
 	 */
        	if (!force_measure_pll && radeon_read_xtal_OF(rinfo) == 0) {
-       		printk(KERN_INFO "radeonfb: Retrieved PLL infos from Open Firmware\n");
+;
 		goto found;
 	}
 #endif /* CONFIG_PPC_OF || CONFIG_SPARC */
@@ -677,7 +677,7 @@ static void __devinit radeon_get_pllinfo(struct radeonfb_info *rinfo)
 		rinfo->pll.ppll_min	= BIOS_IN32(pll_info_block + 0x12);
 		rinfo->pll.ppll_max	= BIOS_IN32(pll_info_block + 0x16);
 
-		printk(KERN_INFO "radeonfb: Retrieved PLL infos from BIOS\n");
+;
 		goto found;
 	}
 
@@ -686,14 +686,14 @@ static void __devinit radeon_get_pllinfo(struct radeonfb_info *rinfo)
 	 * probe them
 	 */
 	if (radeon_probe_pll_params(rinfo) == 0) {
-		printk(KERN_INFO "radeonfb: Retrieved PLL infos from registers\n");
+;
 		goto found;
 	}
 
 	/*
 	 * Fall back to already-set defaults...
 	 */
-       	printk(KERN_INFO "radeonfb: Used default PLL infos\n");
+;
 
 found:
 	/*
@@ -706,12 +706,12 @@ found:
 	if (rinfo->pll.sclk == 0)
 		rinfo->pll.sclk = 20000;
 
-	printk("radeonfb: Reference=%d.%02d MHz (RefDiv=%d) Memory=%d.%02d Mhz, System=%d.%02d MHz\n",
-	       rinfo->pll.ref_clk / 100, rinfo->pll.ref_clk % 100,
-	       rinfo->pll.ref_div,
-	       rinfo->pll.mclk / 100, rinfo->pll.mclk % 100,
-	       rinfo->pll.sclk / 100, rinfo->pll.sclk % 100);
-	printk("radeonfb: PLL min %d max %d\n", rinfo->pll.ppll_min, rinfo->pll.ppll_max);
+//	printk("radeonfb: Reference=%d.%02d MHz (RefDiv=%d) Memory=%d.%02d Mhz, System=%d.%02d MHz\n",
+//	       rinfo->pll.ref_clk / 100, rinfo->pll.ref_clk % 100,
+//	       rinfo->pll.ref_div,
+//	       rinfo->pll.mclk / 100, rinfo->pll.mclk % 100,
+;
+;
 }
 
 static int radeonfb_check_var (struct fb_var_screeninfo *var, struct fb_info *info)
@@ -2157,8 +2157,8 @@ static int __devinit radeonfb_pci_register (struct pci_dev *pdev,
 	/* Enable device in PCI config */
 	ret = pci_enable_device(pdev);
 	if (ret < 0) {
-		printk(KERN_ERR "radeonfb (%s): Cannot enable PCI device\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "radeonfb (%s): Cannot enable PCI device\n",
+;
 		goto err_out;
 	}
 
@@ -2200,23 +2200,23 @@ static int __devinit radeonfb_pci_register (struct pci_dev *pdev,
 	/* request the mem regions */
 	ret = pci_request_region(pdev, 0, "radeonfb framebuffer");
 	if (ret < 0) {
-		printk( KERN_ERR "radeonfb (%s): cannot request region 0.\n",
-			pci_name(rinfo->pdev));
+//		printk( KERN_ERR "radeonfb (%s): cannot request region 0.\n",
+;
 		goto err_release_fb;
 	}
 
 	ret = pci_request_region(pdev, 2, "radeonfb mmio");
 	if (ret < 0) {
-		printk( KERN_ERR "radeonfb (%s): cannot request region 2.\n",
-			pci_name(rinfo->pdev));
+//		printk( KERN_ERR "radeonfb (%s): cannot request region 2.\n",
+;
 		goto err_release_pci0;
 	}
 
 	/* map the regions */
 	rinfo->mmio_base = ioremap(rinfo->mmio_base_phys, RADEON_REGSIZE);
 	if (!rinfo->mmio_base) {
-		printk(KERN_ERR "radeonfb (%s): cannot map MMIO\n",
-		       pci_name(rinfo->pdev));
+//		printk(KERN_ERR "radeonfb (%s): cannot map MMIO\n",
+;
 		ret = -EIO;
 		goto err_release_pci2;
 	}
@@ -2247,8 +2247,8 @@ static int __devinit radeonfb_pci_register (struct pci_dev *pdev,
 	 */
 	rinfo->of_node = pci_device_to_OF_node(pdev);
 	if (rinfo->of_node == NULL)
-		printk(KERN_WARNING "radeonfb (%s): Cannot match card to OF node !\n",
-		       pci_name(rinfo->pdev));
+//		printk(KERN_WARNING "radeonfb (%s): Cannot match card to OF node !\n",
+;
 
 #endif /* CONFIG_PPC_OF || CONFIG_SPARC */
 #ifdef CONFIG_PPC_OF

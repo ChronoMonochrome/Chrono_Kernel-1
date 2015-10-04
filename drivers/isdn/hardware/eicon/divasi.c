@@ -150,8 +150,8 @@ static int DIVA_INIT_FUNCTION divas_idi_register_chrdev(void)
 {
 	if ((major = register_chrdev(0, DEVNAME, &divas_idi_fops)) < 0)
 	{
-		printk(KERN_ERR "%s: failed to create /dev entry.\n",
-		       DRIVERLNAME);
+//		printk(KERN_ERR "%s: failed to create /dev entry.\n",
+;
 		return (0);
 	}
 
@@ -166,10 +166,10 @@ static int DIVA_INIT_FUNCTION divasi_init(void)
 	char tmprev[50];
 	int ret = 0;
 
-	printk(KERN_INFO "%s\n", DRIVERNAME);
-	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_IDI);
+;
+;
 	strcpy(tmprev, main_revision);
-	printk("%s  Build: %s\n", getrev(tmprev), DIVA_BUILD);
+;
 
 	if (!divas_idi_register_chrdev()) {
 		ret = -EIO;
@@ -178,8 +178,8 @@ static int DIVA_INIT_FUNCTION divasi_init(void)
 
 	if (!create_um_idi_proc()) {
 		divas_idi_unregister_chrdev();
-		printk(KERN_ERR "%s: failed to create proc entry.\n",
-		       DRIVERLNAME);
+//		printk(KERN_ERR "%s: failed to create proc entry.\n",
+;
 		ret = -EIO;
 		goto out;
 	}
@@ -187,12 +187,12 @@ static int DIVA_INIT_FUNCTION divasi_init(void)
 	if (!(idifunc_init())) {
 		remove_um_idi_proc();
 		divas_idi_unregister_chrdev();
-		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
-		       DRIVERLNAME);
+//		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
+;
 		ret = -EIO;
 		goto out;
 	}
-	printk(KERN_INFO "%s: started with major %d\n", DRIVERLNAME, major);
+;
 
       out:
 	return (ret);
@@ -208,7 +208,7 @@ static void DIVA_EXIT_FUNCTION divasi_exit(void)
 	remove_um_idi_proc();
 	divas_idi_unregister_chrdev();
 
-	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
+;
 }
 
 module_init(divasi_init);

@@ -105,8 +105,8 @@ ahd_linux_pci_dev_resume(struct pci_dev *pdev)
 	pci_restore_state(pdev);
 
 	if ((rc = pci_enable_device(pdev))) {
-		dev_printk(KERN_ERR, &pdev->dev,
-			   "failed to enable device after resume (%d)\n", rc);
+//		dev_printk(KERN_ERR, &pdev->dev,
+;
 		return rc;
 	}
 
@@ -148,7 +148,7 @@ ahd_linux_pci_inherit_flags(struct ahd_softc *ahd)
 			ahd->flags &= ~AHD_BIOS_ENABLED;
 			ahd->flags |= master->flags & AHD_BIOS_ENABLED;
 		} else
-			printk(KERN_ERR "aic79xx: no multichannel peer found!\n");
+;
 		pci_dev_put(master_pdev);
 	}
 }
@@ -333,11 +333,11 @@ ahd_pci_map_registers(struct ahd_softc *ahd)
 
 		if (ahd_pci_test_register_access(ahd) != 0) {
 
-			printk("aic79xx: PCI Device %d:%d:%d "
-			       "failed memory mapped test.  Using PIO.\n",
-			       ahd_get_pci_bus(ahd->dev_softc),
-			       ahd_get_pci_slot(ahd->dev_softc),
-			       ahd_get_pci_function(ahd->dev_softc));
+//			printk("aic79xx: PCI Device %d:%d:%d "
+//			       "failed memory mapped test.  Using PIO.\n",
+//			       ahd_get_pci_bus(ahd->dev_softc),
+//			       ahd_get_pci_slot(ahd->dev_softc),
+;
 			iounmap(maddr);
 			release_mem_region(ahd->platform_data->mem_busaddr,
 					   0x1000);
@@ -346,12 +346,12 @@ ahd_pci_map_registers(struct ahd_softc *ahd)
 		} else
 			command |= PCIM_CMD_MEMEN;
 	} else if (bootverbose) {
-		printk("aic79xx: PCI%d:%d:%d MEM region 0x%llx "
-		       "unavailable. Cannot memory map device.\n",
-		       ahd_get_pci_bus(ahd->dev_softc),
-		       ahd_get_pci_slot(ahd->dev_softc),
-		       ahd_get_pci_function(ahd->dev_softc),
-		       (unsigned long long)base);
+//		printk("aic79xx: PCI%d:%d:%d MEM region 0x%llx "
+//		       "unavailable. Cannot memory map device.\n",
+//		       ahd_get_pci_bus(ahd->dev_softc),
+//		       ahd_get_pci_slot(ahd->dev_softc),
+//		       ahd_get_pci_function(ahd->dev_softc),
+;
 	}
 
 	if (maddr == NULL) {
@@ -365,13 +365,13 @@ ahd_pci_map_registers(struct ahd_softc *ahd)
 			ahd->bshs[1].ioport = (u_long)base2;
 			command |= PCIM_CMD_PORTEN;
 		} else {
-			printk("aic79xx: PCI%d:%d:%d IO regions 0x%llx and "
-			       "0x%llx unavailable. Cannot map device.\n",
-			       ahd_get_pci_bus(ahd->dev_softc),
-			       ahd_get_pci_slot(ahd->dev_softc),
-			       ahd_get_pci_function(ahd->dev_softc),
-			       (unsigned long long)base,
-			       (unsigned long long)base2);
+//			printk("aic79xx: PCI%d:%d:%d IO regions 0x%llx and "
+//			       "0x%llx unavailable. Cannot map device.\n",
+//			       ahd_get_pci_bus(ahd->dev_softc),
+//			       ahd_get_pci_slot(ahd->dev_softc),
+//			       ahd_get_pci_function(ahd->dev_softc),
+//			       (unsigned long long)base,
+;
 		}
 	}
 	ahd_pci_write_config(ahd->dev_softc, PCIR_COMMAND, command, 4);

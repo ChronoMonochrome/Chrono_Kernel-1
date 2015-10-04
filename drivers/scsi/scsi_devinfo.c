@@ -298,8 +298,8 @@ static void scsi_strcpy_devinfo(char *name, char *to, size_t to_length,
 		}
 	}
 	if (from_length > to_length)
-		 printk(KERN_WARNING "%s: %s string '%s' is too long\n",
-			__func__, name, from);
+//		 printk(KERN_WARNING "%s: %s string '%s' is too long\n",
+;
 }
 
 /**
@@ -356,7 +356,7 @@ int scsi_dev_info_list_add_keyed(int compatible, char *vendor, char *model,
 
 	devinfo = kmalloc(sizeof(*devinfo), GFP_KERNEL);
 	if (!devinfo) {
-		printk(KERN_ERR "%s: no memory\n", __func__);
+;
 		return -ENOMEM;
 	}
 
@@ -508,9 +508,9 @@ static int scsi_dev_info_list_add_str(char *dev_list)
 		if (model)
 			strflags = strsep(&next, next_check);
 		if (!model || !strflags) {
-			printk(KERN_ERR "%s: bad dev info string '%s' '%s'"
-			       " '%s'\n", __func__, vendor, model,
-			       strflags);
+//			printk(KERN_ERR "%s: bad dev info string '%s' '%s'"
+//			       " '%s'\n", __func__, vendor, model,
+;
 			res = -EINVAL;
 		} else
 			res = scsi_dev_info_list_add(0 /* compatible */, vendor,

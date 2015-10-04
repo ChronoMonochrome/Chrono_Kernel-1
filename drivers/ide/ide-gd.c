@@ -138,7 +138,7 @@ static void ide_gd_shutdown(ide_drive_t *drive)
 		return;
 	}
 
-	printk(KERN_INFO "Shutdown: %s\n", drive->name);
+;
 
 	drive->gendev.bus->suspend(&drive->gendev, PMSG_SUSPEND);
 }
@@ -374,15 +374,15 @@ static int ide_gd_probe(ide_drive_t *drive)
 		goto failed;
 
 	if (disk_ops->check(drive, DRV_NAME) == 0) {
-		printk(KERN_ERR PFX "%s: not supported by this driver\n",
-			drive->name);
+//		printk(KERN_ERR PFX "%s: not supported by this driver\n",
+;
 		goto failed;
 	}
 
 	idkp = kzalloc(sizeof(*idkp), GFP_KERNEL);
 	if (!idkp) {
-		printk(KERN_ERR PFX "%s: can't allocate a disk structure\n",
-			drive->name);
+//		printk(KERN_ERR PFX "%s: can't allocate a disk structure\n",
+;
 		goto failed;
 	}
 
@@ -432,7 +432,7 @@ failed:
 
 static int __init ide_gd_init(void)
 {
-	printk(KERN_INFO DRV_NAME " driver " IDE_GD_VERSION "\n");
+;
 	return driver_register(&ide_gd_driver.gen_driver);
 }
 

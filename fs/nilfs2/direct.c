@@ -325,14 +325,14 @@ static int nilfs_direct_assign(struct nilfs_bmap *bmap,
 
 	key = nilfs_bmap_data_get_key(bmap, *bh);
 	if (unlikely(key > NILFS_DIRECT_KEY_MAX)) {
-		printk(KERN_CRIT "%s: invalid key: %llu\n", __func__,
-		       (unsigned long long)key);
+//		printk(KERN_CRIT "%s: invalid key: %llu\n", __func__,
+;
 		return -EINVAL;
 	}
 	ptr = nilfs_direct_get_ptr(bmap, key);
 	if (unlikely(ptr == NILFS_BMAP_INVALID_PTR)) {
-		printk(KERN_CRIT "%s: invalid pointer: %llu\n", __func__,
-		       (unsigned long long)ptr);
+//		printk(KERN_CRIT "%s: invalid pointer: %llu\n", __func__,
+;
 		return -EINVAL;
 	}
 

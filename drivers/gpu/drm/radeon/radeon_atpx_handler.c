@@ -53,7 +53,7 @@ static int radeon_atrm_call(acpi_handle atrm_handle, uint8_t *bios,
 
 	status = acpi_evaluate_object(atrm_handle, NULL, &atrm_arg, &buffer);
 	if (ACPI_FAILURE(status)) {
-		printk("failed to evaluate ATRM got %s\n", acpi_format_exception(status));
+;
 		return -ENODEV;
 	}
 
@@ -98,7 +98,7 @@ static int radeon_atpx_get_version(acpi_handle handle)
 
 	status = acpi_evaluate_object(handle, NULL, &atpx_arg, &buffer);
 	if (ACPI_FAILURE(status)) {
-		printk("%s: failed to call ATPX: %s\n", __func__, acpi_format_exception(status));
+;
 		return -ENOSYS;
 	}
 	obj = (union acpi_object *)buffer.pointer;
@@ -134,7 +134,7 @@ static int radeon_atpx_execute(acpi_handle handle, int cmd_id, u16 value)
 
 	status = acpi_evaluate_object(handle, NULL, &atpx_arg, &buffer);
 	if (ACPI_FAILURE(status)) {
-		printk("%s: failed to call ATPX: %s\n", __func__, acpi_format_exception(status));
+;
 		return -ENOSYS;
 	}
 	kfree(buffer.pointer);
@@ -257,8 +257,8 @@ static bool radeon_atpx_detect(void)
 
 	if (has_atpx && vga_count == 2) {
 		acpi_get_name(radeon_atpx_priv.atpx_handle, ACPI_FULL_PATHNAME, &buffer);
-		printk(KERN_INFO "VGA switcheroo: detected switching method %s handle\n",
-		       acpi_method_name);
+//		printk(KERN_INFO "VGA switcheroo: detected switching method %s handle\n",
+;
 		radeon_atpx_priv.atpx_detected = true;
 		return true;
 	}

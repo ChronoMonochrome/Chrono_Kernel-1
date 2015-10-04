@@ -446,7 +446,7 @@ __locomo_probe(struct device *me, struct resource *mem, int irq)
 	locomo_writel(r, lchip->base + LOCOMO_DAC);
 
 	r = locomo_readl(lchip->base + LOCOMO_VER);
-	printk(KERN_INFO "LoCoMo Chip: %lu%lu\n", (r >> 8), (r & 0xff));
+;
 
 	/*
 	 * The interrupt controller must be initialised before any
@@ -705,7 +705,7 @@ void locomo_m62332_senddata(struct locomo_dev *ldev, unsigned int dac_data, int 
 	udelay(DAC_HIGH_SETUP_TIME);	/* 1000 nsec */
 	udelay(DAC_SCL_HIGH_HOLD_TIME);	/* 4.7 usec */
 	if (locomo_readl(mapbase + LOCOMO_DAC) & LOCOMO_DAC_SDAOEB) {	/* High is error */
-		printk(KERN_WARNING "locomo: m62332_senddata Error 1\n");
+;
 		goto out;
 	}
 
@@ -733,7 +733,7 @@ void locomo_m62332_senddata(struct locomo_dev *ldev, unsigned int dac_data, int 
 	udelay(DAC_HIGH_SETUP_TIME);	/* 1000 nsec */
 	udelay(DAC_SCL_HIGH_HOLD_TIME);	/* 4.7 usec */
 	if (locomo_readl(mapbase + LOCOMO_DAC) & LOCOMO_DAC_SDAOEB) {	/* High is error */
-		printk(KERN_WARNING "locomo: m62332_senddata Error 2\n");
+;
 		goto out;
 	}
 
@@ -758,7 +758,7 @@ void locomo_m62332_senddata(struct locomo_dev *ldev, unsigned int dac_data, int 
 	udelay(DAC_HIGH_SETUP_TIME);	/* 1000 nsec */
 	udelay(DAC_SCL_HIGH_HOLD_TIME);	/* 4.7 usec */
 	if (locomo_readl(mapbase + LOCOMO_DAC) & LOCOMO_DAC_SDAOEB) {	/* High is error */
-		printk(KERN_WARNING "locomo: m62332_senddata Error 3\n");
+;
 	}
 
 out:

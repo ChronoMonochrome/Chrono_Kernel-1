@@ -29,8 +29,8 @@ HscxVersion(struct IsdnCardState *cs, char *s)
 
 	verA = cs->BC_Read_Reg(cs, 0, HSCX_VSTR) & 0xf;
 	verB = cs->BC_Read_Reg(cs, 1, HSCX_VSTR) & 0xf;
-	printk(KERN_INFO "%s HSCX version A: %s  B: %s\n", s,
-	       HSCXVer[verA], HSCXVer[verB]);
+//	printk(KERN_INFO "%s HSCX version A: %s  B: %s\n", s,
+;
 	if ((verA == 0) | (verA == 0xf) | (verB == 0) | (verB == 0xf))
 		return (1);
 	else
@@ -115,7 +115,7 @@ hscx_l2l1(struct PStack *st, int pr, void *arg)
 		case (PH_PULL | INDICATION):
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
-				printk(KERN_WARNING "hscx_l2l1: this shouldn't happen\n");
+;
 			} else {
 				test_and_set_bit(BC_FLG_BUSY, &bcs->Flag);
 				bcs->tx_skb = skb;
@@ -176,14 +176,14 @@ open_hscxstate(struct IsdnCardState *cs, struct BCState *bcs)
 {
 	if (!test_and_set_bit(BC_FLG_INIT, &bcs->Flag)) {
 		if (!(bcs->hw.hscx.rcvbuf = kmalloc(HSCX_BUFMAX, GFP_ATOMIC))) {
-			printk(KERN_WARNING
-				"HiSax: No memory for hscx.rcvbuf\n");
+//			printk(KERN_WARNING
+;
 			test_and_clear_bit(BC_FLG_INIT, &bcs->Flag);
 			return (1);
 		}
 		if (!(bcs->blog = kmalloc(MAX_BLOG_SPACE, GFP_ATOMIC))) {
-			printk(KERN_WARNING
-				"HiSax: No memory for bcs->blog\n");
+//			printk(KERN_WARNING
+;
 			test_and_clear_bit(BC_FLG_INIT, &bcs->Flag);
 			kfree(bcs->hw.hscx.rcvbuf);
 			bcs->hw.hscx.rcvbuf = NULL;

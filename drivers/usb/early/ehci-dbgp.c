@@ -76,14 +76,14 @@ static void dbgp_ehci_status(char *str)
 {
 	if (!ehci_debug)
 		return;
-	dbgp_printk("dbgp: %s\n", str);
-	dbgp_printk("  Debug control: %08x", readl(&ehci_debug->control));
-	dbgp_printk("  ehci cmd     : %08x", readl(&ehci_regs->command));
-	dbgp_printk("  ehci conf flg: %08x\n",
-		    readl(&ehci_regs->configured_flag));
-	dbgp_printk("  ehci status  : %08x", readl(&ehci_regs->status));
-	dbgp_printk("  ehci portsc  : %08x\n",
-		    readl(&ehci_regs->port_status[dbgp_phys_port - 1]));
+;
+;
+;
+//	dbgp_printk("  ehci conf flg: %08x\n",
+;
+;
+//	dbgp_printk("  ehci portsc  : %08x\n",
+;
 }
 #else
 static inline void dbgp_ehci_status(char *str) { }
@@ -459,10 +459,10 @@ static int dbgp_ehci_startup(void)
 	} while (--loop > 0);
 
 	if (!loop) {
-		dbgp_printk("ehci can not be started\n");
+;
 		return -ENODEV;
 	}
-	dbgp_printk("ehci started\n");
+;
 	return 0;
 }
 
@@ -480,7 +480,7 @@ static int dbgp_ehci_controller_reset(void)
 	} while ((cmd & CMD_RESET) && (--loop > 0));
 
 	if (!loop) {
-		dbgp_printk("can not reset ehci\n");
+;
 		return -1;
 	}
 	dbgp_ehci_status("ehci reset done");
@@ -529,7 +529,7 @@ try_port_reset_again:
 		} else if (reset_port_tries--) {
 			goto try_port_reset_again;
 		}
-		dbgp_printk("No device found in debug port\n");
+;
 		return -EIO;
 	}
 	dbgp_ehci_status("wait for port done");
@@ -540,7 +540,7 @@ try_port_reset_again:
 	writel(ctrl, &ehci_debug->control);
 	ctrl = readl(&ehci_debug->control);
 	if ((ctrl & DBGP_CLAIM) != DBGP_CLAIM) {
-		dbgp_printk("No device in debug port\n");
+;
 		writel(ctrl & ~DBGP_CLAIM, &ehci_debug->control);
 		return -ENODEV;
 	}
@@ -564,11 +564,11 @@ try_again:
 			break;
 	}
 	if (devnum > 127) {
-		dbgp_printk("Could not find attached debug device\n");
+;
 		goto err;
 	}
 	if (ret < 0) {
-		dbgp_printk("Attached device is not a debug device\n");
+;
 		goto err;
 	}
 	dbgp_endpoint_out = dbgp_desc.bDebugOutEndpoint;
@@ -580,12 +580,12 @@ try_again:
 			USB_DIR_OUT | USB_TYPE_STANDARD | USB_RECIP_DEVICE,
 			USB_REQ_SET_ADDRESS, USB_DEBUG_DEVNUM, 0, NULL, 0);
 		if (ret < 0) {
-			dbgp_printk("Could not move attached device to %d\n",
-				USB_DEBUG_DEVNUM);
+//			dbgp_printk("Could not move attached device to %d\n",
+;
 			goto err;
 		}
 		devnum = USB_DEBUG_DEVNUM;
-		dbgp_printk("debug device renamed to 127\n");
+;
 	}
 
 	/* Enable the debug interface */
@@ -593,18 +593,18 @@ try_again:
 		USB_DIR_OUT | USB_TYPE_STANDARD | USB_RECIP_DEVICE,
 		USB_REQ_SET_FEATURE, USB_DEVICE_DEBUG_MODE, 0, NULL, 0);
 	if (ret < 0) {
-		dbgp_printk(" Could not enable the debug device\n");
+;
 		goto err;
 	}
-	dbgp_printk("debug interface enabled\n");
+;
 	/* Perform a small write to get the even/odd data state in sync
 	 */
 	ret = dbgp_bulk_write(USB_DEBUG_DEVNUM, dbgp_endpoint_out, " ", 1);
 	if (ret < 0) {
-		dbgp_printk("dbgp_bulk_write failed: %d\n", ret);
+;
 		goto err;
 	}
-	dbgp_printk("small write done\n");
+;
 	dbgp_not_safe = 0;
 
 	return 0;
@@ -695,7 +695,7 @@ static void __init nvidia_set_debug_port(int port)
 	dword |= ((port & 0x0f)<<12);
 	write_pci_config(ehci_dev.bus, ehci_dev.slot, ehci_dev.func, 0x74,
 				 dword);
-	dbgp_printk("set debug port to %d\n", port);
+;
 }
 
 static void __init detect_set_debug_port(void)
@@ -706,7 +706,7 @@ static void __init detect_set_debug_port(void)
 		 0x00);
 
 	if ((vendorid & 0xffff) == 0x10de) {
-		dbgp_printk("using nvidia set_debug_port\n");
+;
 		set_debug_port = nvidia_set_debug_port;
 	}
 }
@@ -728,10 +728,10 @@ static void __init early_ehci_bios_handoff(void)
 
 	cap = read_pci_config(ehci_dev.bus, ehci_dev.slot,
 			      ehci_dev.func, offset);
-	dbgp_printk("dbgp: ehci BIOS state %08x\n", cap);
+;
 
 	if ((cap & 0xff) == 1 && (cap & EHCI_USBLEGSUP_BIOS)) {
-		dbgp_printk("dbgp: BIOS handoff\n");
+;
 		write_pci_config_byte(ehci_dev.bus, ehci_dev.slot,
 				      ehci_dev.func, offset + 3, 1);
 	}
@@ -748,7 +748,7 @@ static void __init early_ehci_bios_handoff(void)
 	if (cap & EHCI_USBLEGSUP_BIOS) {
 		/* well, possibly buggy BIOS... try to shut it down,
 		 * and hope nothing goes too wrong */
-		dbgp_printk("dbgp: BIOS handoff failed: %08x\n", cap);
+;
 		write_pci_config_byte(ehci_dev.bus, ehci_dev.slot,
 				      ehci_dev.func, offset + 2, 0);
 	}
@@ -778,13 +778,13 @@ try_next_port:
 	dbgp_phys_port = debug_port;
 	n_ports    = HCS_N_PORTS(hcs_params);
 
-	dbgp_printk("debug_port: %d\n", debug_port);
-	dbgp_printk("n_ports:    %d\n", n_ports);
+;
+;
 	dbgp_ehci_status("");
 
 	for (i = 1; i <= n_ports; i++) {
 		portsc = readl(&ehci_regs->port_status[i-1]);
-		dbgp_printk("portstatus%d: %08x\n", i, portsc);
+;
 	}
 
 	if (port_map_tried && (new_debug_port != debug_port)) {
@@ -849,30 +849,30 @@ int __init early_dbgp_init(char *s)
 	dbgp_num = 0;
 	if (*s)
 		dbgp_num = simple_strtoul(s, &e, 10);
-	dbgp_printk("dbgp_num: %d\n", dbgp_num);
+;
 
 	cap = find_dbgp(dbgp_num, &bus, &slot, &func);
 	if (!cap)
 		return -1;
 
-	dbgp_printk("Found EHCI debug port on %02x:%02x.%1x\n", bus, slot,
-			 func);
+//	dbgp_printk("Found EHCI debug port on %02x:%02x.%1x\n", bus, slot,
+;
 
 	debug_port = read_pci_config(bus, slot, func, cap);
 	bar = (debug_port >> 29) & 0x7;
 	bar = (bar * 4) + 0xc;
 	offset = (debug_port >> 16) & 0xfff;
-	dbgp_printk("bar: %02x offset: %03x\n", bar, offset);
+;
 	if (bar != PCI_BASE_ADDRESS_0) {
-		dbgp_printk("only debug ports on bar 1 handled.\n");
+;
 
 		return -1;
 	}
 
 	bar_val = read_pci_config(bus, slot, func, PCI_BASE_ADDRESS_0);
-	dbgp_printk("bar_val: %02x offset: %03x\n", bar_val, offset);
+;
 	if (bar_val & ~PCI_BASE_ADDRESS_MEM_MASK) {
-		dbgp_printk("only simple 32bit mmio bars supported\n");
+;
 
 		return -1;
 	}
@@ -882,7 +882,7 @@ int __init early_dbgp_init(char *s)
 	if (!(byte & 0x2)) {
 		byte  |= 0x02;
 		write_pci_config_byte(bus, slot, func, 0x04, byte);
-		dbgp_printk("mmio for ehci enabled\n");
+;
 	}
 
 	/*
@@ -892,7 +892,7 @@ int __init early_dbgp_init(char *s)
 	set_fixmap_nocache(FIX_DBGP_BASE, bar_val & PAGE_MASK);
 	ehci_bar = (void __iomem *)__fix_to_virt(FIX_DBGP_BASE);
 	ehci_bar += bar_val & ~PAGE_MASK;
-	dbgp_printk("ehci_bar: %p\n", ehci_bar);
+;
 
 	ehci_caps  = ehci_bar;
 	ehci_regs  = ehci_bar + EARLY_HC_LENGTH(readl(&ehci_caps->hc_capbase));
@@ -905,7 +905,7 @@ int __init early_dbgp_init(char *s)
 
 	ret = ehci_setup();
 	if (ret < 0) {
-		dbgp_printk("ehci_setup failed\n");
+;
 		ehci_debug = NULL;
 
 		return -1;

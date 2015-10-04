@@ -381,14 +381,14 @@ wd33c93_queuecommand_lck(struct scsi_cmnd *cmd,
 	hostdata = (struct WD33C93_hostdata *) cmd->device->host->hostdata;
 
 	DB(DB_QUEUE_COMMAND,
-	   printk("Q-%d-%02x( ", cmd->device->id, cmd->cmnd[0]))
-
-/* Set up a few fields in the scsi_cmnd structure for our own use:
- *  - host_scribble is the pointer to the next cmd in the input queue
- *  - scsi_done points to the routine we call when a cmd is finished
- *  - result is what you'd expect
- */
-	cmd->host_scribble = NULL;
+//	   printk("Q-%d-%02x( ", cmd->device->id, cmd->cmnd[0]))
+//
+///* Set up a few fields in the scsi_cmnd structure for our own use:
+// *  - host_scribble is the pointer to the next cmd in the input queue
+// *  - scsi_done points to the routine we call when a cmd is finished
+// *  - result is what you'd expect
+// */
+;
 	cmd->scsi_done = done;
 	cmd->result = 0;
 
@@ -462,9 +462,9 @@ wd33c93_queuecommand_lck(struct scsi_cmnd *cmd,
 
 	wd33c93_execute(cmd->device->host);
 
-	DB(DB_QUEUE_COMMAND, printk(")Q "))
-
-	spin_unlock_irq(&hostdata->lock);
+//	DB(DB_QUEUE_COMMAND, printk(")Q "))
+//
+;
 	return 0;
 }
 
@@ -488,10 +488,10 @@ wd33c93_execute(struct Scsi_Host *instance)
 	const wd33c93_regs regs = hostdata->regs;
 	struct scsi_cmnd *cmd, *prev;
 
-	DB(DB_EXECUTE, printk("EX("))
-	if (hostdata->selecting || hostdata->connected) {
-		DB(DB_EXECUTE, printk(")EX-0 "))
-		return;
+//	DB(DB_EXECUTE, printk("EX("))
+//	if (hostdata->selecting || hostdata->connected) {
+//		DB(DB_EXECUTE, printk(")EX-0 "))
+;
 	}
 
 	/*
@@ -511,8 +511,8 @@ wd33c93_execute(struct Scsi_Host *instance)
 	/* quit if queue empty or all possible targets are busy */
 
 	if (!cmd) {
-		DB(DB_EXECUTE, printk(")EX-1 "))
-		return;
+//		DB(DB_EXECUTE, printk(")EX-1 "))
+;
 	}
 
 	/*  remove command from queue */
@@ -687,19 +687,19 @@ wd33c93_execute(struct Scsi_Host *instance)
 	 */
 
 	DB(DB_EXECUTE,
-	   printk("%s)EX-2 ", (cmd->SCp.phase) ? "d:" : ""))
-}
-
-static void
-transfer_pio(const wd33c93_regs regs, uchar * buf, int cnt,
-	     int data_in_dir, struct WD33C93_hostdata *hostdata)
-{
-	uchar asr;
+//	   printk("%s)EX-2 ", (cmd->SCp.phase) ? "d:" : ""))
+//}
+//
+//static void
+//transfer_pio(const wd33c93_regs regs, uchar * buf, int cnt,
+//	     int data_in_dir, struct WD33C93_hostdata *hostdata)
+//{
+;
 
 	DB(DB_TRANSFER,
-	   printk("(%p,%d,%s:", buf, cnt, data_in_dir ? "in" : "out"))
-
-	write_wd33c93(regs, WD_CONTROL, CTRL_IDI | CTRL_EDI | CTRL_POLLED);
+//	   printk("(%p,%d,%s:", buf, cnt, data_in_dir ? "in" : "out"))
+//
+;
 	write_wd33c93_count(regs, cnt);
 	write_wd33c93_cmd(regs, WD_CMD_TRANS_INFO);
 	if (data_in_dir) {
@@ -821,13 +821,13 @@ wd33c93_intr(struct Scsi_Host *instance)
 	sr = read_wd33c93(regs, WD_SCSI_STATUS);	/* clear the interrupt */
 	phs = read_wd33c93(regs, WD_COMMAND_PHASE);
 
-	DB(DB_INTR, printk("{%02x:%02x-", asr, sr))
-
-/* After starting a DMA transfer, the next interrupt
- * is guaranteed to be in response to completion of
- * the transfer. Since the Amiga DMA hardware runs in
- * in an open-ended fashion, it needs to be told when
- * to stop; do that here if D_DMA_RUNNING is true.
+//	DB(DB_INTR, printk("{%02x:%02x-", asr, sr))
+//
+///* After starting a DMA transfer, the next interrupt
+// * is guaranteed to be in response to completion of
+// * the transfer. Since the Amiga DMA hardware runs in
+// * in an open-ended fashion, it needs to be told when
+;
  * Also, we have to update 'this_residual' and 'ptr'
  * based on the contents of the TRANSFER_COUNT register,
  * in case the device decided to do an intermediate
@@ -839,23 +839,23 @@ wd33c93_intr(struct Scsi_Host *instance)
  */
 	    if (hostdata->dma == D_DMA_RUNNING) {
 		DB(DB_TRANSFER,
-		   printk("[%p/%d:", cmd->SCp.ptr, cmd->SCp.this_residual))
-		    hostdata->dma_stop(cmd->device->host, cmd, 1);
+//		   printk("[%p/%d:", cmd->SCp.ptr, cmd->SCp.this_residual))
+;
 		hostdata->dma = D_DMA_OFF;
 		length = cmd->SCp.this_residual;
 		cmd->SCp.this_residual = read_wd33c93_count(regs);
 		cmd->SCp.ptr += (length - cmd->SCp.this_residual);
 		DB(DB_TRANSFER,
-		   printk("%p/%d]", cmd->SCp.ptr, cmd->SCp.this_residual))
-	}
-
-/* Respond to the specific WD3393 interrupt - there are quite a few! */
-	switch (sr) {
-	case CSR_TIMEOUT:
-		DB(DB_INTR, printk("TIMEOUT"))
-
-		    if (hostdata->state == S_RUNNING_LEVEL2)
-			hostdata->connected = NULL;
+//		   printk("%p/%d]", cmd->SCp.ptr, cmd->SCp.this_residual))
+//	}
+//
+///* Respond to the specific WD3393 interrupt - there are quite a few! */
+//	switch (sr) {
+//	case CSR_TIMEOUT:
+//		DB(DB_INTR, printk("TIMEOUT"))
+//
+//		    if (hostdata->state == S_RUNNING_LEVEL2)
+;
 		else {
 			cmd = (struct scsi_cmnd *) hostdata->selecting;	/* get a valid cmd */
 			hostdata->selecting = NULL;
@@ -888,9 +888,9 @@ wd33c93_intr(struct Scsi_Host *instance)
 /* Note: this interrupt should not occur in a LEVEL2 command */
 
 	case CSR_SELECT:
-		DB(DB_INTR, printk("SELECT"))
-		    hostdata->connected = cmd =
-		    (struct scsi_cmnd *) hostdata->selecting;
+//		DB(DB_INTR, printk("SELECT"))
+//		    hostdata->connected = cmd =
+;
 		hostdata->selecting = NULL;
 
 		/* construct an IDENTIFY message with correct disconnect bit */
@@ -924,8 +924,8 @@ wd33c93_intr(struct Scsi_Host *instance)
 			hostdata->outgoing_len = 6;
 #ifdef SYNC_DEBUG
 			ucp = hostdata->outgoing_msg + 1;
-			printk(" sending SDTR %02x03%02x%02x%02x ",
-				ucp[0], ucp[2], ucp[3], ucp[4]);
+//			printk(" sending SDTR %02x03%02x%02x%02x ",
+;
 #endif
 		} else
 			hostdata->outgoing_len = 1;
@@ -938,9 +938,9 @@ wd33c93_intr(struct Scsi_Host *instance)
 	case CSR_UNEXP | PHS_DATA_IN:
 	case CSR_SRV_REQ | PHS_DATA_IN:
 		DB(DB_INTR,
-		   printk("IN-%d.%d", cmd->SCp.this_residual,
-			  cmd->SCp.buffers_residual))
-		    transfer_bytes(regs, cmd, DATA_IN_DIR);
+//		   printk("IN-%d.%d", cmd->SCp.this_residual,
+//			  cmd->SCp.buffers_residual))
+;
 		if (hostdata->state != S_RUNNING_LEVEL2)
 			hostdata->state = S_CONNECTED;
 		spin_unlock_irqrestore(&hostdata->lock, flags);
@@ -950,9 +950,9 @@ wd33c93_intr(struct Scsi_Host *instance)
 	case CSR_UNEXP | PHS_DATA_OUT:
 	case CSR_SRV_REQ | PHS_DATA_OUT:
 		DB(DB_INTR,
-		   printk("OUT-%d.%d", cmd->SCp.this_residual,
-			  cmd->SCp.buffers_residual))
-		    transfer_bytes(regs, cmd, DATA_OUT_DIR);
+//		   printk("OUT-%d.%d", cmd->SCp.this_residual,
+//			  cmd->SCp.buffers_residual))
+;
 		if (hostdata->state != S_RUNNING_LEVEL2)
 			hostdata->state = S_CONNECTED;
 		spin_unlock_irqrestore(&hostdata->lock, flags);
@@ -963,9 +963,9 @@ wd33c93_intr(struct Scsi_Host *instance)
 	case CSR_XFER_DONE | PHS_COMMAND:
 	case CSR_UNEXP | PHS_COMMAND:
 	case CSR_SRV_REQ | PHS_COMMAND:
-		DB(DB_INTR, printk("CMND-%02x", cmd->cmnd[0]))
-		    transfer_pio(regs, cmd->cmnd, cmd->cmd_len, DATA_OUT_DIR,
-				 hostdata);
+//		DB(DB_INTR, printk("CMND-%02x", cmd->cmnd[0]))
+//		    transfer_pio(regs, cmd->cmnd, cmd->cmd_len, DATA_OUT_DIR,
+;
 		hostdata->state = S_CONNECTED;
 		spin_unlock_irqrestore(&hostdata->lock, flags);
 		break;
@@ -973,11 +973,11 @@ wd33c93_intr(struct Scsi_Host *instance)
 	case CSR_XFER_DONE | PHS_STATUS:
 	case CSR_UNEXP | PHS_STATUS:
 	case CSR_SRV_REQ | PHS_STATUS:
-		DB(DB_INTR, printk("STATUS="))
-		cmd->SCp.Status = read_1_byte(regs);
-		DB(DB_INTR, printk("%02x", cmd->SCp.Status))
-		    if (hostdata->level2 >= L2_BASIC) {
-			sr = read_wd33c93(regs, WD_SCSI_STATUS);	/* clear interrupt */
+//		DB(DB_INTR, printk("STATUS="))
+;
+//		DB(DB_INTR, printk("%02x", cmd->SCp.Status))
+//		    if (hostdata->level2 >= L2_BASIC) {
+;
 			udelay(7);
 			hostdata->state = S_RUNNING_LEVEL2;
 			write_wd33c93(regs, WD_COMMAND_PHASE, 0x50);
@@ -991,9 +991,9 @@ wd33c93_intr(struct Scsi_Host *instance)
 	case CSR_XFER_DONE | PHS_MESS_IN:
 	case CSR_UNEXP | PHS_MESS_IN:
 	case CSR_SRV_REQ | PHS_MESS_IN:
-		DB(DB_INTR, printk("MSG_IN="))
-
-		msg = read_1_byte(regs);
+//		DB(DB_INTR, printk("MSG_IN="))
+//
+;
 		sr = read_wd33c93(regs, WD_SCSI_STATUS);	/* clear interrupt */
 		udelay(7);
 
@@ -1007,21 +1007,21 @@ wd33c93_intr(struct Scsi_Host *instance)
 		switch (msg) {
 
 		case COMMAND_COMPLETE:
-			DB(DB_INTR, printk("CCMP"))
-			    write_wd33c93_cmd(regs, WD_CMD_NEGATE_ACK);
+//			DB(DB_INTR, printk("CCMP"))
+;
 			hostdata->state = S_PRE_CMP_DISC;
 			break;
 
 		case SAVE_POINTERS:
-			DB(DB_INTR, printk("SDP"))
-			    write_wd33c93_cmd(regs, WD_CMD_NEGATE_ACK);
+//			DB(DB_INTR, printk("SDP"))
+;
 			hostdata->state = S_CONNECTED;
 			break;
 
 		case RESTORE_POINTERS:
-			DB(DB_INTR, printk("RDP"))
-			    if (hostdata->level2 >= L2_BASIC) {
-				write_wd33c93(regs, WD_COMMAND_PHASE, 0x45);
+//			DB(DB_INTR, printk("RDP"))
+//			    if (hostdata->level2 >= L2_BASIC) {
+;
 				write_wd33c93_cmd(regs, WD_CMD_SEL_ATN_XFER);
 				hostdata->state = S_RUNNING_LEVEL2;
 			} else {
@@ -1031,16 +1031,16 @@ wd33c93_intr(struct Scsi_Host *instance)
 			break;
 
 		case DISCONNECT:
-			DB(DB_INTR, printk("DIS"))
-			    cmd->device->disconnect = 1;
+//			DB(DB_INTR, printk("DIS"))
+;
 			write_wd33c93_cmd(regs, WD_CMD_NEGATE_ACK);
 			hostdata->state = S_PRE_TMP_DISC;
 			break;
 
 		case MESSAGE_REJECT:
-			DB(DB_INTR, printk("REJ"))
-#ifdef SYNC_DEBUG
-			    printk("-REJ-");
+//			DB(DB_INTR, printk("REJ"))
+//#ifdef SYNC_DEBUG
+;
 #endif
 			if (hostdata->sync_stat[cmd->device->id] == SS_WAITING) {
 				hostdata->sync_stat[cmd->device->id] = SS_SET;
@@ -1054,12 +1054,12 @@ wd33c93_intr(struct Scsi_Host *instance)
 			break;
 
 		case EXTENDED_MESSAGE:
-			DB(DB_INTR, printk("EXT"))
-
-			    ucp = hostdata->incoming_msg;
+//			DB(DB_INTR, printk("EXT"))
+//
+;
 
 #ifdef SYNC_DEBUG
-			printk("%02x", ucp[hostdata->incoming_ptr]);
+;
 #endif
 			/* Is this the last byte of the extended message? */
 
@@ -1105,8 +1105,8 @@ wd33c93_intr(struct Scsi_Host *instance)
 					}
 					hostdata->sync_xfer[cmd->device->id] = id;
 #ifdef SYNC_DEBUG
-					printk(" sync_xfer=%02x\n",
-					       hostdata->sync_xfer[cmd->device->id]);
+//					printk(" sync_xfer=%02x\n",
+;
 #endif
 					hostdata->sync_stat[cmd->device->id] =
 					    SS_SET;
@@ -1116,7 +1116,7 @@ wd33c93_intr(struct Scsi_Host *instance)
 					break;
 				case EXTENDED_WDTR:
 					write_wd33c93_cmd(regs, WD_CMD_ASSERT_ATN);	/* want MESS_OUT */
-					printk("sending WDTR ");
+;
 					hostdata->outgoing_msg[0] =
 					    EXTENDED_MESSAGE;
 					hostdata->outgoing_msg[1] = 2;
@@ -1154,7 +1154,7 @@ wd33c93_intr(struct Scsi_Host *instance)
 			break;
 
 		default:
-			printk("Rejecting Unknown Message(%02x) ", msg);
+;
 			write_wd33c93_cmd(regs, WD_CMD_ASSERT_ATN);	/* want MESS_OUT */
 			hostdata->outgoing_msg[0] = MESSAGE_REJECT;
 			hostdata->outgoing_len = 1;
@@ -1174,11 +1174,11 @@ wd33c93_intr(struct Scsi_Host *instance)
 
 		write_wd33c93(regs, WD_SOURCE_ID, SRCID_ER);
 		if (phs == 0x60) {
-			DB(DB_INTR, printk("SX-DONE"))
-			    cmd->SCp.Message = COMMAND_COMPLETE;
+//			DB(DB_INTR, printk("SX-DONE"))
+;
 			lun = read_wd33c93(regs, WD_TARGET_LUN);
-			DB(DB_INTR, printk(":%d.%d", cmd->SCp.Status, lun))
-			    hostdata->connected = NULL;
+//			DB(DB_INTR, printk(":%d.%d", cmd->SCp.Status, lun))
+;
 			hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 			hostdata->state = S_UNCONNECTED;
 			if (cmd->SCp.Status == ILLEGAL_STATUS_BYTE)
@@ -1209,8 +1209,8 @@ wd33c93_intr(struct Scsi_Host *instance)
 /* Note: this interrupt will occur only after a LEVEL2 command */
 
 	case CSR_SDP:
-		DB(DB_INTR, printk("SDP"))
-		    hostdata->state = S_RUNNING_LEVEL2;
+//		DB(DB_INTR, printk("SDP"))
+;
 		write_wd33c93(regs, WD_COMMAND_PHASE, 0x41);
 		write_wd33c93_cmd(regs, WD_CMD_SEL_ATN_XFER);
 		spin_unlock_irqrestore(&hostdata->lock, flags);
@@ -1219,28 +1219,28 @@ wd33c93_intr(struct Scsi_Host *instance)
 	case CSR_XFER_DONE | PHS_MESS_OUT:
 	case CSR_UNEXP | PHS_MESS_OUT:
 	case CSR_SRV_REQ | PHS_MESS_OUT:
-		DB(DB_INTR, printk("MSG_OUT="))
-
-/* To get here, we've probably requested MESSAGE_OUT and have
- * already put the correct bytes in outgoing_msg[] and filled
- * in outgoing_len. We simply send them out to the SCSI bus.
- * Sometimes we get MESSAGE_OUT phase when we're not expecting
- * it - like when our SDTR message is rejected by a target. Some
- * targets send the REJECT before receiving all of the extended
- * message, and then seem to go back to MESSAGE_OUT for a byte
- * or two. Not sure why, or if I'm doing something wrong to
- * cause this to happen. Regardless, it seems that sending
- * NOP messages in these situations results in no harm and
- * makes everyone happy.
- */
-		    if (hostdata->outgoing_len == 0) {
-			hostdata->outgoing_len = 1;
+//		DB(DB_INTR, printk("MSG_OUT="))
+//
+///* To get here, we've probably requested MESSAGE_OUT and have
+// * already put the correct bytes in outgoing_msg[] and filled
+// * in outgoing_len. We simply send them out to the SCSI bus.
+// * Sometimes we get MESSAGE_OUT phase when we're not expecting
+// * it - like when our SDTR message is rejected by a target. Some
+// * targets send the REJECT before receiving all of the extended
+// * message, and then seem to go back to MESSAGE_OUT for a byte
+// * or two. Not sure why, or if I'm doing something wrong to
+// * cause this to happen. Regardless, it seems that sending
+// * NOP messages in these situations results in no harm and
+// * makes everyone happy.
+// */
+//		    if (hostdata->outgoing_len == 0) {
+;
 			hostdata->outgoing_msg[0] = NOP;
 		}
 		transfer_pio(regs, hostdata->outgoing_msg,
 			     hostdata->outgoing_len, DATA_OUT_DIR, hostdata);
-		DB(DB_INTR, printk("%02x", hostdata->outgoing_msg[0]))
-		    hostdata->outgoing_len = 0;
+//		DB(DB_INTR, printk("%02x", hostdata->outgoing_msg[0]))
+;
 		hostdata->state = S_CONNECTED;
 		spin_unlock_irqrestore(&hostdata->lock, flags);
 		break;
@@ -1261,13 +1261,13 @@ wd33c93_intr(struct Scsi_Host *instance)
 
 		write_wd33c93(regs, WD_SOURCE_ID, SRCID_ER);
 		if (cmd == NULL) {
-			printk(" - Already disconnected! ");
+;
 			hostdata->state = S_UNCONNECTED;
 			spin_unlock_irqrestore(&hostdata->lock, flags);
 			return;
 		}
-		DB(DB_INTR, printk("UNEXP_DISC"))
-		    hostdata->connected = NULL;
+//		DB(DB_INTR, printk("UNEXP_DISC"))
+;
 		hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 		hostdata->state = S_UNCONNECTED;
 		if (cmd->cmnd[0] == REQUEST_SENSE && cmd->SCp.Status != GOOD)
@@ -1292,9 +1292,9 @@ wd33c93_intr(struct Scsi_Host *instance)
  */
 
 		write_wd33c93(regs, WD_SOURCE_ID, SRCID_ER);
-		DB(DB_INTR, printk("DISC"))
-		    if (cmd == NULL) {
-			printk(" - Already disconnected! ");
+//		DB(DB_INTR, printk("DISC"))
+//		    if (cmd == NULL) {
+;
 			hostdata->state = S_UNCONNECTED;
 		}
 		switch (hostdata->state) {
@@ -1302,12 +1302,12 @@ wd33c93_intr(struct Scsi_Host *instance)
 			hostdata->connected = NULL;
 			hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 			hostdata->state = S_UNCONNECTED;
-			DB(DB_INTR, printk(":%d", cmd->SCp.Status))
-			    if (cmd->cmnd[0] == REQUEST_SENSE
-				&& cmd->SCp.Status != GOOD)
-				cmd->result =
-				    (cmd->
-				     result & 0x00ffff) | (DID_ERROR << 16);
+//			DB(DB_INTR, printk(":%d", cmd->SCp.Status))
+//			    if (cmd->cmnd[0] == REQUEST_SENSE
+//				&& cmd->SCp.Status != GOOD)
+//				cmd->result =
+//				    (cmd->
+;
 			else
 				cmd->result =
 				    cmd->SCp.Status | (cmd->SCp.Message << 8);
@@ -1339,19 +1339,19 @@ wd33c93_intr(struct Scsi_Host *instance)
 
 	case CSR_RESEL_AM:
 	case CSR_RESEL:
-		DB(DB_INTR, printk("RESEL%s", sr == CSR_RESEL_AM ? "_AM" : ""))
-
-		    /* Old chips (pre -A ???) don't have advanced features and will
-		     * generate CSR_RESEL.  In that case we have to extract the LUN the
-		     * hard way (see below).
-		     * First we have to make sure this reselection didn't
-		     * happen during Arbitration/Selection of some other device.
-		     * If yes, put losing command back on top of input_Q.
-		     */
-		    if (hostdata->level2 <= L2_NONE) {
-
-			if (hostdata->selecting) {
-				cmd = (struct scsi_cmnd *) hostdata->selecting;
+//		DB(DB_INTR, printk("RESEL%s", sr == CSR_RESEL_AM ? "_AM" : ""))
+//
+//		    /* Old chips (pre -A ???) don't have advanced features and will
+//		     * generate CSR_RESEL.  In that case we have to extract the LUN the
+//		     * hard way (see below).
+//		     * First we have to make sure this reselection didn't
+//		     * happen during Arbitration/Selection of some other device.
+//		     * If yes, put losing command back on top of input_Q.
+//		     */
+//		    if (hostdata->level2 <= L2_NONE) {
+//
+//			if (hostdata->selecting) {
+;
 				hostdata->selecting = NULL;
 				hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 				cmd->host_scribble =
@@ -1374,7 +1374,7 @@ wd33c93_intr(struct Scsi_Host *instance)
 					    ("---%02x:%02x:%02x-TROUBLE: Intrusive ReSelect!---",
 					     asr, sr, phs);
 					while (1)
-						printk("\r");
+;
 				}
 			}
 
@@ -1495,19 +1495,19 @@ wd33c93_intr(struct Scsi_Host *instance)
 		break;
 
 	default:
-		printk("--UNKNOWN INTERRUPT:%02x:%02x:%02x--", asr, sr, phs);
+;
 		spin_unlock_irqrestore(&hostdata->lock, flags);
 	}
 
-	DB(DB_INTR, printk("} "))
-
-}
-
-static void
-reset_wd33c93(struct Scsi_Host *instance)
-{
-	struct WD33C93_hostdata *hostdata =
-	    (struct WD33C93_hostdata *) instance->hostdata;
+//	DB(DB_INTR, printk("} "))
+//
+//}
+//
+//static void
+//reset_wd33c93(struct Scsi_Host *instance)
+//{
+//	struct WD33C93_hostdata *hostdata =
+;
 	const wd33c93_regs regs = hostdata->regs;
 	uchar sr;
 
@@ -1579,7 +1579,7 @@ wd33c93_host_reset(struct scsi_cmnd * SCpnt)
 	instance = SCpnt->device->host;
 	hostdata = (struct WD33C93_hostdata *) instance->hostdata;
 
-	printk("scsi%d: reset. ", instance->host_no);
+;
 	disable_irq(instance->irq);
 
 	hostdata->dma_stop(instance, NULL, 0);
@@ -1661,23 +1661,23 @@ wd33c93_abort(struct scsi_cmnd * cmd)
 		uchar sr, asr;
 		unsigned long timeout;
 
-		printk("scsi%d: Aborting connected command - ",
-		       instance->host_no);
+//		printk("scsi%d: Aborting connected command - ",
+;
 
-		printk("stopping DMA - ");
+;
 		if (hostdata->dma == D_DMA_RUNNING) {
 			hostdata->dma_stop(instance, cmd, 0);
 			hostdata->dma = D_DMA_OFF;
 		}
 
-		printk("sending wd33c93 ABORT command - ");
+;
 		write_wd33c93(regs, WD_CONTROL,
 			      CTRL_IDI | CTRL_EDI | CTRL_POLLED);
 		write_wd33c93_cmd(regs, WD_CMD_ABORT);
 
 /* Now we have to attempt to flush out the FIFO... */
 
-		printk("flushing fifo - ");
+;
 		timeout = 1000000;
 		do {
 			asr = read_aux_stat(regs);
@@ -1695,7 +1695,7 @@ wd33c93_abort(struct scsi_cmnd * cmd)
 		 * We must disconnect.
 		 */
 
-		printk("sending wd33c93 DISCONNECT command - ");
+;
 		write_wd33c93_cmd(regs, WD_CMD_DISCONNECT);
 
 		timeout = 1000000;
@@ -1703,7 +1703,7 @@ wd33c93_abort(struct scsi_cmnd * cmd)
 		while ((asr & ASR_CIP) && timeout-- > 0)
 			asr = read_aux_stat(regs);
 		sr = read_wd33c93(regs, WD_SCSI_STATUS);
-		printk("asr=%02x, sr=%02x.", asr, sr);
+;
 
 		hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 		hostdata->connected = NULL;
@@ -1730,7 +1730,7 @@ wd33c93_abort(struct scsi_cmnd * cmd)
 			printk
 			    ("scsi%d: Abort - command found on disconnected_Q - ",
 			     instance->host_no);
-			printk("Abort SNOOZE. ");
+;
 			enable_irq(cmd->device->host->irq);
 			return FAILED;
 		}
@@ -1751,8 +1751,8 @@ wd33c93_abort(struct scsi_cmnd * cmd)
 	wd33c93_execute(instance);
 
 	enable_irq(cmd->device->host->irq);
-	printk("scsi%d: warning : SCSI command probably completed successfully"
-	       "         before abortion. ", instance->host_no);
+//	printk("scsi%d: warning : SCSI command probably completed successfully"
+;
 	return FAILED;
 }
 
@@ -2035,23 +2035,23 @@ wd33c93_init(struct Scsi_Host *instance, const wd33c93_regs regs,
 	reset_wd33c93(instance);
 	spin_unlock_irq(&hostdata->lock);
 
-	printk("wd33c93-%d: chip=%s/%d no_sync=0x%x no_dma=%d",
-	       instance->host_no,
-	       (hostdata->chip == C_WD33C93) ? "WD33c93" : (hostdata->chip ==
-							    C_WD33C93A) ?
-	       "WD33c93A" : (hostdata->chip ==
-			     C_WD33C93B) ? "WD33c93B" : "unknown",
-	       hostdata->microcode, hostdata->no_sync, hostdata->no_dma);
+//	printk("wd33c93-%d: chip=%s/%d no_sync=0x%x no_dma=%d",
+//	       instance->host_no,
+//	       (hostdata->chip == C_WD33C93) ? "WD33c93" : (hostdata->chip ==
+//							    C_WD33C93A) ?
+//	       "WD33c93A" : (hostdata->chip ==
+//			     C_WD33C93B) ? "WD33c93B" : "unknown",
+;
 #ifdef DEBUGGING_ON
-	printk(" debug_flags=0x%02x\n", hostdata->args);
+;
 #else
-	printk(" debugging=OFF\n");
+;
 #endif
-	printk("           setup_args=");
+;
 	for (i = 0; i < MAX_SETUP_ARGS; i++)
-		printk("%s,", setup_args[i]);
-	printk("\n");
-	printk("           Version %s - %s\n", WD33C93_VERSION, WD33C93_DATE);
+;
+;
+;
 }
 
 int

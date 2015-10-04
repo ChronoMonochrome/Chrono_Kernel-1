@@ -56,60 +56,60 @@
  * Debugging.
  */
 #if 0
-#define DEBUG_AUTOCONF(fmt...)	printk(fmt)
-#else
-#define DEBUG_AUTOCONF(fmt...)	do { } while (0)
-#endif
-
-#if 0
-#define DEBUG_INTR(fmt...)	printk(fmt)
-#else
-#define DEBUG_INTR(fmt...)	do { } while (0)
-#endif
-
-#define PASS_LIMIT	256
-
-/*
- * We default to IRQ0 for the "no irq" hack.   Some
- * machine types want others as well - they're free
- * to redefine this in their header file.
- */
-#define is_real_interrupt(irq)	((irq) != 0)
-
-#define BASE_BAUD	115200
-
-/* Standard COM flags */
-#define STD_COM_FLAGS (UPF_BOOT_AUTOCONF | UPF_SKIP_TEST)
-
-/*
- * SERIAL_PORT_DFNS tells us about built-in ports that have no
- * standard enumeration mechanism.   Platforms that can find all
- * serial ports via mechanisms like ACPI or PCI need not supply it.
- */
-#if defined(CONFIG_PLAT_USRV)
-
-#define SERIAL_PORT_DFNS						\
-       /* UART  CLK     PORT   IRQ            FLAGS */			\
-	{ 0, BASE_BAUD, 0x3F8, PLD_IRQ_UART0, STD_COM_FLAGS }, /* ttyS0 */ \
-	{ 0, BASE_BAUD, 0x2F8, PLD_IRQ_UART1, STD_COM_FLAGS }, /* ttyS1 */
-
-#else /* !CONFIG_PLAT_USRV */
-
-#if defined(CONFIG_SERIAL_M32R_PLDSIO)
-#define SERIAL_PORT_DFNS						\
-	{ 0, BASE_BAUD, ((unsigned long)PLD_ESIO0CR), PLD_IRQ_SIO0_RCV,	\
-	  STD_COM_FLAGS }, /* ttyS0 */
-#else
-#define SERIAL_PORT_DFNS						\
-	{ 0, BASE_BAUD, M32R_SIO_OFFSET, M32R_IRQ_SIO0_R,		\
-	  STD_COM_FLAGS }, /* ttyS0 */
-#endif
-
-#endif /* !CONFIG_PLAT_USRV */
-
-static struct old_serial_port old_serial_port[] = {
-	SERIAL_PORT_DFNS
-};
+//#define DEBUG_AUTOCONF(fmt...)	printk(fmt)
+//#else
+//#define DEBUG_AUTOCONF(fmt...)	do { } while (0)
+//#endif
+//
+//#if 0
+//#define DEBUG_INTR(fmt...)	printk(fmt)
+//#else
+//#define DEBUG_INTR(fmt...)	do { } while (0)
+//#endif
+//
+//#define PASS_LIMIT	256
+//
+///*
+// * We default to IRQ0 for the "no irq" hack.   Some
+// * machine types want others as well - they're free
+// * to redefine this in their header file.
+// */
+//#define is_real_interrupt(irq)	((irq) != 0)
+//
+//#define BASE_BAUD	115200
+//
+///* Standard COM flags */
+//#define STD_COM_FLAGS (UPF_BOOT_AUTOCONF | UPF_SKIP_TEST)
+//
+///*
+// * SERIAL_PORT_DFNS tells us about built-in ports that have no
+// * standard enumeration mechanism.   Platforms that can find all
+// * serial ports via mechanisms like ACPI or PCI need not supply it.
+// */
+//#if defined(CONFIG_PLAT_USRV)
+//
+//#define SERIAL_PORT_DFNS						\
+//       /* UART  CLK     PORT   IRQ            FLAGS */			\
+//	{ 0, BASE_BAUD, 0x3F8, PLD_IRQ_UART0, STD_COM_FLAGS }, /* ttyS0 */ \
+//	{ 0, BASE_BAUD, 0x2F8, PLD_IRQ_UART1, STD_COM_FLAGS }, /* ttyS1 */
+//
+//#else /* !CONFIG_PLAT_USRV */
+//
+//#if defined(CONFIG_SERIAL_M32R_PLDSIO)
+//#define SERIAL_PORT_DFNS						\
+//	{ 0, BASE_BAUD, ((unsigned long)PLD_ESIO0CR), PLD_IRQ_SIO0_RCV,	\
+//	  STD_COM_FLAGS }, /* ttyS0 */
+//#else
+//#define SERIAL_PORT_DFNS						\
+//	{ 0, BASE_BAUD, M32R_SIO_OFFSET, M32R_IRQ_SIO0_R,		\
+//	  STD_COM_FLAGS }, /* ttyS0 */
+//#endif
+//
+//#endif /* !CONFIG_PLAT_USRV */
+//
+//static struct old_serial_port old_serial_port[] = {
+//	SERIAL_PORT_DFNS
+;
 
 #define UART_NR	ARRAY_SIZE(old_serial_port)
 
@@ -1161,7 +1161,7 @@ static int __init m32r_sio_init(void)
 {
 	int ret, i;
 
-	printk(KERN_INFO "Serial: M32R SIO driver\n");
+;
 
 	for (i = 0; i < nr_irqs; i++)
 		spin_lock_init(&irq_lists[i].lock);

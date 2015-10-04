@@ -115,7 +115,7 @@ int mantis_input_init(struct mantis_pci *mantis)
 
 	dev = rc_allocate_device();
 	if (!dev) {
-		dprintk(MANTIS_ERROR, 1, "Remote device allocation failed");
+;
 		err = -ENOMEM;
 		goto out_map;
 	}
@@ -135,7 +135,7 @@ int mantis_input_init(struct mantis_pci *mantis)
 
 	err = rc_register_device(dev);
 	if (err) {
-		dprintk(MANTIS_ERROR, 1, "IR device registration failed, ret = %d", err);
+;
 		goto out_dev;
 	}
 

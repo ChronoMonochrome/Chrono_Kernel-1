@@ -211,8 +211,8 @@ int ft1000_init_proc(struct net_device *dev)
 
 	info->ft1000_proc_dir = proc_mkdir(FT1000_PROC_DIR, FTNET_PROC);
 	if (info->ft1000_proc_dir == NULL) {
-		printk(KERN_WARNING "Unable to create %s dir.\n",
-			FT1000_PROC_DIR);
+//		printk(KERN_WARNING "Unable to create %s dir.\n",
+;
 		ret = -EINVAL;
 		goto fail;
 	}
@@ -222,7 +222,7 @@ int ft1000_init_proc(struct net_device *dev)
 			info->ft1000_proc_dir, ft1000ReadProc, dev);
 
 	if (ft1000_proc_file == NULL) {
-		printk(KERN_WARNING "Unable to create /proc entry.\n");
+;
 		ret = -EINVAL;
 		goto fail_entry;
 	}

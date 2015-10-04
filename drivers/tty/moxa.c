@@ -243,7 +243,7 @@ static void moxa_wait_finish(void __iomem *ofsAddr)
 		if (time_after(jiffies, end))
 			return;
 	if (readw(ofsAddr + FuncCode) != 0 && printk_ratelimit())
-		printk(KERN_WARNING "moxa function expired\n");
+;
 }
 
 static void moxafunc(void __iomem *ofsAddr, u16 cmd, u16 arg)
@@ -498,8 +498,8 @@ static int moxa_load_bios(struct moxa_board_conf *brd, const u8 *buf,
 			goto err;
 		tmp = readw(baseAddr + C320_status);
 		if (tmp != STS_init) {
-			printk(KERN_ERR "MOXA: bios upload failed -- CPU/Basic "
-					"module not found\n");
+//			printk(KERN_ERR "MOXA: bios upload failed -- CPU/Basic "
+;
 			return -EIO;
 		}
 		break;
@@ -507,7 +507,7 @@ static int moxa_load_bios(struct moxa_board_conf *brd, const u8 *buf,
 
 	return 0;
 err:
-	printk(KERN_ERR "MOXA: bios upload failed -- board not found\n");
+;
 	return -EIO;
 }
 
@@ -517,7 +517,7 @@ static int moxa_load_320b(struct moxa_board_conf *brd, const u8 *ptr,
 	void __iomem *baseAddr = brd->basemem;
 
 	if (len < 7168) {
-		printk(KERN_ERR "MOXA: invalid 320 bios -- too short\n");
+;
 		return -EINVAL;
 	}
 
@@ -660,7 +660,7 @@ static int moxa_load_code(struct moxa_board_conf *brd, const void *ptr,
 	int retval, i;
 
 	if (len % 2) {
-		printk(KERN_ERR "MOXA: bios length is not even\n");
+;
 		return -EINVAL;
 	}
 
@@ -782,8 +782,8 @@ static int moxa_load_fw(struct moxa_board_conf *brd, const struct firmware *fw)
 		lens[a] = le16_to_cpu(hdr->len[a]);
 		if (lens[a] && len + lens[a] <= fw->size &&
 				moxa_check_fw(&fw->data[len]))
-			printk(KERN_WARNING "MOXA firmware: unexpected input "
-				"at offset %u, but going on\n", (u32)len);
+//			printk(KERN_WARNING "MOXA firmware: unexpected input "
+;
 		if (!lens[a] && a < lencnt) {
 			sprintf(rsn, "too few entries in fw file");
 			goto err;
@@ -825,7 +825,7 @@ static int moxa_load_fw(struct moxa_board_conf *brd, const struct firmware *fw)
 
 	return 0;
 err:
-	printk(KERN_ERR "firmware failed to load, reason: %s\n", rsn);
+;
 	return ret;
 }
 
@@ -840,7 +840,7 @@ static int moxa_init_board(struct moxa_board_conf *brd, struct device *dev)
 	brd->ports = kcalloc(MAX_PORTS_PER_BOARD, sizeof(*brd->ports),
 			GFP_KERNEL);
 	if (brd->ports == NULL) {
-		printk(KERN_ERR "cannot allocate memory for ports\n");
+;
 		ret = -ENOMEM;
 		goto err;
 	}
@@ -867,10 +867,10 @@ static int moxa_init_board(struct moxa_board_conf *brd, struct device *dev)
 
 	ret = request_firmware(&fw, file, dev);
 	if (ret) {
-		printk(KERN_ERR "MOXA: request_firmware failed. Make sure "
-				"you've placed '%s' file into your firmware "
-				"loader directory (e.g. /lib/firmware)\n",
-				file);
+//		printk(KERN_ERR "MOXA: request_firmware failed. Make sure "
+//				"you've placed '%s' file into your firmware "
+//				"loader directory (e.g. /lib/firmware)\n",
+;
 		goto err_free;
 	}
 
@@ -1029,8 +1029,8 @@ static int __init moxa_init(void)
 	struct moxa_board_conf *brd = moxa_boards;
 	unsigned int i;
 
-	printk(KERN_INFO "MOXA Intellio family driver version %s\n",
-			MOXA_VERSION);
+//	printk(KERN_INFO "MOXA Intellio family driver version %s\n",
+;
 	moxaDriver = alloc_tty_driver(MAX_PORTS + 1);
 	if (!moxaDriver)
 		return -ENOMEM;
@@ -1049,7 +1049,7 @@ static int __init moxa_init(void)
 	tty_set_operations(moxaDriver, &moxa_ops);
 
 	if (tty_register_driver(moxaDriver)) {
-		printk(KERN_ERR "can't register MOXA Smartio tty driver!\n");
+;
 		put_tty_driver(moxaDriver);
 		return -1;
 	}
@@ -1070,8 +1070,8 @@ static int __init moxa_init(void)
 			brd->busType = MOXA_BUS_TYPE_ISA;
 			brd->basemem = ioremap_nocache(baseaddr[i], 0x4000);
 			if (!brd->basemem) {
-				printk(KERN_ERR "MOXA: can't remap %lx\n",
-						baseaddr[i]);
+//				printk(KERN_ERR "MOXA: can't remap %lx\n",
+;
 				continue;
 			}
 			if (moxa_init_board(brd, NULL)) {
@@ -1080,9 +1080,9 @@ static int __init moxa_init(void)
 				continue;
 			}
 
-			printk(KERN_INFO "MOXA isa board found at 0x%.8lu and "
-					"ready (%u ports, firmware loaded)\n",
-					baseaddr[i], brd->numPorts);
+//			printk(KERN_INFO "MOXA isa board found at 0x%.8lu and "
+//					"ready (%u ports, firmware loaded)\n",
+;
 
 			brd++;
 			isabrds++;
@@ -1092,7 +1092,7 @@ static int __init moxa_init(void)
 #ifdef CONFIG_PCI
 	retval = pci_register_driver(&moxa_pci_driver);
 	if (retval) {
-		printk(KERN_ERR "Can't register MOXA pci driver!\n");
+;
 		if (isabrds)
 			retval = 0;
 	}
@@ -1116,8 +1116,8 @@ static void __exit moxa_exit(void)
 	del_timer_sync(&moxaTimer);
 
 	if (tty_unregister_driver(moxaDriver))
-		printk(KERN_ERR "Couldn't unregister MOXA Intellio family "
-				"serial driver\n");
+//		printk(KERN_ERR "Couldn't unregister MOXA Intellio family "
+;
 	put_tty_driver(moxaDriver);
 }
 

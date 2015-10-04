@@ -490,7 +490,7 @@ int proc_fill_super(struct super_block *s)
 	return 0;
 
 out_no_root:
-	printk("proc_read_super: get root inode failed\n");
+;
 	iput(root_inode);
 	pde_put(&proc_root);
 	return -ENOMEM;

@@ -208,7 +208,7 @@ static int snd_msnd_reset_dsp(long io, unsigned char *info)
 			return 0;
 		msleep(1);
 	}
-	snd_printk(KERN_ERR LOGNAME ": Cannot reset DSP\n");
+;
 
 	return -EIO;
 }
@@ -224,7 +224,7 @@ static int __devinit snd_msnd_probe(struct snd_card *card)
 #endif
 
 	if (!request_region(chip->io, DSP_NUMIO, "probing")) {
-		snd_printk(KERN_ERR LOGNAME ": I/O port conflict\n");
+;
 		return -ENODEV;
 	}
 
@@ -236,12 +236,12 @@ static int __devinit snd_msnd_probe(struct snd_card *card)
 #ifdef MSND_CLASSIC
 	strcpy(card->shortname, "Classic/Tahiti/Monterey");
 	strcpy(card->longname, "Turtle Beach Multisound");
-	printk(KERN_INFO LOGNAME ": %s, "
-	       "I/O 0x%lx-0x%lx, IRQ %d, memory mapped to 0x%lX-0x%lX\n",
-	       card->shortname,
-	       chip->io, chip->io + DSP_NUMIO - 1,
-	       chip->irq,
-	       chip->base, chip->base + 0x7fff);
+//	printk(KERN_INFO LOGNAME ": %s, "
+//	       "I/O 0x%lx-0x%lx, IRQ %d, memory mapped to 0x%lX-0x%lX\n",
+//	       card->shortname,
+//	       chip->io, chip->io + DSP_NUMIO - 1,
+//	       chip->irq,
+;
 #else
 	switch (info >> 4) {
 	case 0xf:
@@ -296,13 +296,13 @@ static int __devinit snd_msnd_probe(struct snd_card *card)
 		break;
 	}
 	strcpy(card->longname, "Turtle Beach Multisound Pinnacle");
-	printk(KERN_INFO LOGNAME ": %s revision %s, Xilinx version %s, "
-	       "I/O 0x%lx-0x%lx, IRQ %d, memory mapped to 0x%lX-0x%lX\n",
-	       card->shortname,
-	       rev, xv,
-	       chip->io, chip->io + DSP_NUMIO - 1,
-	       chip->irq,
-	       chip->base, chip->base + 0x7fff);
+//	printk(KERN_INFO LOGNAME ": %s revision %s, Xilinx version %s, "
+//	       "I/O 0x%lx-0x%lx, IRQ %d, memory mapped to 0x%lX-0x%lX\n",
+//	       card->shortname,
+//	       rev, xv,
+//	       chip->io, chip->io + DSP_NUMIO - 1,
+//	       chip->irq,
+;
 #endif
 
 	release_region(chip->io, DSP_NUMIO);
@@ -388,22 +388,22 @@ static int upload_dsp_code(struct snd_card *card)
 
 	err = request_firmware(&init_fw, INITCODEFILE, card->dev);
 	if (err < 0) {
-		printk(KERN_ERR LOGNAME ": Error loading " INITCODEFILE);
+;
 		goto cleanup1;
 	}
 	err = request_firmware(&perm_fw, PERMCODEFILE, card->dev);
 	if (err < 0) {
-		printk(KERN_ERR LOGNAME ": Error loading " PERMCODEFILE);
+;
 		goto cleanup;
 	}
 
 	memcpy_toio(chip->mappedbase, perm_fw->data, perm_fw->size);
 	if (snd_msnd_upload_host(chip, init_fw->data, init_fw->size) < 0) {
-		printk(KERN_WARNING LOGNAME ": Error uploading to DSP\n");
+;
 		err = -ENODEV;
 		goto cleanup;
 	}
-	printk(KERN_INFO LOGNAME ": DSP firmware uploaded\n");
+;
 	err = 0;
 
 cleanup:
@@ -436,7 +436,7 @@ static int snd_msnd_initialize(struct snd_card *card)
 #endif
 	err = snd_msnd_init_sma(chip);
 	if (err < 0) {
-		printk(KERN_WARNING LOGNAME ": Cannot initialize SMA\n");
+;
 		return err;
 	}
 
@@ -446,7 +446,7 @@ static int snd_msnd_initialize(struct snd_card *card)
 
 	err = upload_dsp_code(card);
 	if (err < 0) {
-		printk(KERN_WARNING LOGNAME ": Cannot upload DSP code\n");
+;
 		return err;
 	}
 
@@ -477,7 +477,7 @@ static int snd_msnd_dsp_full_reset(struct snd_card *card)
 
 	rv = snd_msnd_initialize(card);
 	if (rv)
-		printk(KERN_WARNING LOGNAME ": DSP reset failed\n");
+;
 	snd_msndmix_force_recsrc(chip, 0);
 	clear_bit(F_RESETTING, &chip->flags);
 	return rv;
@@ -512,7 +512,7 @@ static int __devinit snd_msnd_calibrate_adc(struct snd_msnd *chip, u16 srate)
 		schedule_timeout_interruptible(msecs_to_jiffies(333));
 		return 0;
 	}
-	printk(KERN_WARNING LOGNAME ": ADC calibration failed\n");
+;
 	return -EIO;
 }
 
@@ -546,7 +546,7 @@ static int __devinit snd_msnd_attach(struct snd_card *card)
 	err = request_irq(chip->irq, snd_msnd_interrupt, 0, card->shortname,
 			  chip);
 	if (err < 0) {
-		printk(KERN_ERR LOGNAME ": Couldn't grab IRQ %d\n", chip->irq);
+;
 		return err;
 	}
 	if (request_region(chip->io, DSP_NUMIO, card->shortname) == NULL) {
@@ -555,18 +555,18 @@ static int __devinit snd_msnd_attach(struct snd_card *card)
 	}
 
 	if (!request_mem_region(chip->base, BUFFSIZE, card->shortname)) {
-		printk(KERN_ERR LOGNAME
-			": unable to grab memory region 0x%lx-0x%lx\n",
-			chip->base, chip->base + BUFFSIZE - 1);
+//		printk(KERN_ERR LOGNAME
+//			": unable to grab memory region 0x%lx-0x%lx\n",
+;
 		release_region(chip->io, DSP_NUMIO);
 		free_irq(chip->irq, chip);
 		return -EBUSY;
 	}
 	chip->mappedbase = ioremap_nocache(chip->base, 0x8000);
 	if (!chip->mappedbase) {
-		printk(KERN_ERR LOGNAME
-			": unable to map memory region 0x%lx-0x%lx\n",
-			chip->base, chip->base + BUFFSIZE - 1);
+//		printk(KERN_ERR LOGNAME
+//			": unable to map memory region 0x%lx-0x%lx\n",
+;
 		err = -EIO;
 		goto err_release_region;
 	}
@@ -582,13 +582,13 @@ static int __devinit snd_msnd_attach(struct snd_card *card)
 
 	err = snd_msnd_pcm(card, 0, NULL);
 	if (err < 0) {
-		printk(KERN_ERR LOGNAME ": error creating new PCM device\n");
+;
 		goto err_release_region;
 	}
 
 	err = snd_msndmix_new(card);
 	if (err < 0) {
-		printk(KERN_ERR LOGNAME ": error creating new Mixer device\n");
+;
 		goto err_release_region;
 	}
 
@@ -603,8 +603,8 @@ static int __devinit snd_msnd_attach(struct snd_card *card)
 					  mpu_irq[0], IRQF_DISABLED,
 					  &chip->rmidi);
 		if (err < 0) {
-			printk(KERN_ERR LOGNAME
-				": error creating new Midi device\n");
+//			printk(KERN_ERR LOGNAME
+;
 			goto err_release_region;
 		}
 		mpu = chip->rmidi->private_data;
@@ -654,7 +654,7 @@ static int __devinit snd_msnd_write_cfg(int cfg, int reg, int value)
 	outb(reg, cfg);
 	outb(value, cfg + 1);
 	if (value != inb(cfg + 1)) {
-		printk(KERN_ERR LOGNAME ": snd_msnd_write_cfg: I/O error\n");
+;
 		return -EIO;
 	}
 	return 0;
@@ -743,7 +743,7 @@ static int __devinit snd_msnd_pinnacle_cfg_reset(int cfg)
 	int i;
 
 	/* Reset devices if told to */
-	printk(KERN_INFO LOGNAME ": Resetting all devices\n");
+;
 	for (i = 0; i < 4; ++i)
 		if (snd_msnd_write_cfg_logical(cfg, i, 0, 0, 0, 0))
 			return -EIO;
@@ -824,7 +824,7 @@ static int __devinit snd_msnd_isa_match(struct device *pdev, unsigned int i)
 		return 0;
 
 	if (irq[i] == SNDRV_AUTO_PORT || mem[i] == SNDRV_AUTO_PORT) {
-		printk(KERN_WARNING LOGNAME ": io, irq and mem must be set\n");
+;
 		return 0;
 	}
 
@@ -837,16 +837,16 @@ static int __devinit snd_msnd_isa_match(struct device *pdev, unsigned int i)
 	      io[i] == 0x220 ||
 	      io[i] == 0x210 ||
 	      io[i] == 0x3e0)) {
-		printk(KERN_ERR LOGNAME ": \"io\" - DSP I/O base must be set "
-			" to 0x210, 0x220, 0x230, 0x240, 0x250, 0x260, 0x290, "
-			"or 0x3E0\n");
+//		printk(KERN_ERR LOGNAME ": \"io\" - DSP I/O base must be set "
+//			" to 0x210, 0x220, 0x230, 0x240, 0x250, 0x260, 0x290, "
+;
 		return 0;
 	}
 #else
 	if (io[i] < 0x100 || io[i] > 0x3e0 || (io[i] % 0x10) != 0) {
-		printk(KERN_ERR LOGNAME
-			": \"io\" - DSP I/O base must within the range 0x100 "
-			"to 0x3E0 and must be evenly divisible by 0x10\n");
+//		printk(KERN_ERR LOGNAME
+//			": \"io\" - DSP I/O base must within the range 0x100 "
+;
 		return 0;
 	}
 #endif /* MSND_CLASSIC */
@@ -857,8 +857,8 @@ static int __devinit snd_msnd_isa_match(struct device *pdev, unsigned int i)
 	      irq[i] == 10 ||
 	      irq[i] == 11 ||
 	      irq[i] == 12)) {
-		printk(KERN_ERR LOGNAME
-			": \"irq\" - must be set to 5, 7, 9, 10, 11 or 12\n");
+//		printk(KERN_ERR LOGNAME
+;
 		return 0;
 	}
 
@@ -868,19 +868,19 @@ static int __devinit snd_msnd_isa_match(struct device *pdev, unsigned int i)
 	      mem[i] == 0xd8000 ||
 	      mem[i] == 0xe0000 ||
 	      mem[i] == 0xe8000)) {
-		printk(KERN_ERR LOGNAME ": \"mem\" - must be set to "
-		       "0xb0000, 0xc8000, 0xd0000, 0xd8000, 0xe0000 or "
-		       "0xe8000\n");
+//		printk(KERN_ERR LOGNAME ": \"mem\" - must be set to "
+//		       "0xb0000, 0xc8000, 0xd0000, 0xd8000, 0xe0000 or "
+;
 		return 0;
 	}
 
 #ifndef MSND_CLASSIC
 	if (cfg[i] == SNDRV_AUTO_PORT) {
-		printk(KERN_INFO LOGNAME ": Assuming PnP mode\n");
+;
 	} else if (cfg[i] != 0x250 && cfg[i] != 0x260 && cfg[i] != 0x270) {
-		printk(KERN_INFO LOGNAME
-			": Config port must be 0x250, 0x260 or 0x270 "
-			"(or unspecified for PnP mode)\n");
+//		printk(KERN_INFO LOGNAME
+//			": Config port must be 0x250, 0x260 or 0x270 "
+;
 		return 0;
 	}
 #endif /* MSND_CLASSIC */
@@ -899,7 +899,7 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 	    || cfg[idx] == SNDRV_AUTO_PORT
 #endif
 	    ) {
-		printk(KERN_INFO LOGNAME ": Assuming PnP mode\n");
+;
 		return -ENODEV;
 	}
 
@@ -943,12 +943,12 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 		chip->memid = HPMEM_E800; break;
 	}
 #else
-	printk(KERN_INFO LOGNAME ": Non-PnP mode: configuring at port 0x%lx\n",
-			cfg[idx]);
+//	printk(KERN_INFO LOGNAME ": Non-PnP mode: configuring at port 0x%lx\n",
+;
 
 	if (!request_region(cfg[idx], 2, "Pinnacle/Fiji Config")) {
-		printk(KERN_ERR LOGNAME ": Config port 0x%lx conflict\n",
-			   cfg[idx]);
+//		printk(KERN_ERR LOGNAME ": Config port 0x%lx conflict\n",
+;
 		snd_card_free(card);
 		return -EIO;
 	}
@@ -971,9 +971,9 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 	/* MPU */
 	if (mpu_io[idx] != SNDRV_AUTO_PORT
 	    && mpu_irq[idx] != SNDRV_AUTO_IRQ) {
-		printk(KERN_INFO LOGNAME
-		       ": Configuring MPU to I/O 0x%lx IRQ %d\n",
-		       mpu_io[idx], mpu_irq[idx]);
+//		printk(KERN_INFO LOGNAME
+//		       ": Configuring MPU to I/O 0x%lx IRQ %d\n",
+;
 		err = snd_msnd_write_cfg_logical(cfg[idx], 1,
 						 mpu_io[idx], 0,
 						 mpu_irq[idx], 0);
@@ -986,9 +986,9 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 	if (ide_io0[idx] != SNDRV_AUTO_PORT
 	    && ide_io1[idx] != SNDRV_AUTO_PORT
 	    && ide_irq[idx] != SNDRV_AUTO_IRQ) {
-		printk(KERN_INFO LOGNAME
-		       ": Configuring IDE to I/O 0x%lx, 0x%lx IRQ %d\n",
-		       ide_io0[idx], ide_io1[idx], ide_irq[idx]);
+//		printk(KERN_INFO LOGNAME
+//		       ": Configuring IDE to I/O 0x%lx, 0x%lx IRQ %d\n",
+;
 		err = snd_msnd_write_cfg_logical(cfg[idx], 2,
 						 ide_io0[idx], ide_io1[idx],
 						 ide_irq[idx], 0);
@@ -999,9 +999,9 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 
 	/* Joystick */
 	if (joystick_io[idx] != SNDRV_AUTO_PORT) {
-		printk(KERN_INFO LOGNAME
-		       ": Configuring joystick to I/O 0x%lx\n",
-		       joystick_io[idx]);
+//		printk(KERN_INFO LOGNAME
+//		       ": Configuring joystick to I/O 0x%lx\n",
+;
 		err = snd_msnd_write_cfg_logical(cfg[idx], 3,
 						 joystick_io[idx], 0,
 						 0, 0);
@@ -1038,14 +1038,14 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 	spin_lock_init(&chip->lock);
 	err = snd_msnd_probe(card);
 	if (err < 0) {
-		printk(KERN_ERR LOGNAME ": Probe failed\n");
+;
 		snd_card_free(card);
 		return err;
 	}
 
 	err = snd_msnd_attach(card);
 	if (err < 0) {
-		printk(KERN_ERR LOGNAME ": Attach failed\n");
+;
 		snd_card_free(card);
 		return err;
 	}
@@ -1110,12 +1110,12 @@ static int __devinit snd_msnd_pnp_detect(struct pnp_card_link *pcard,
 		return -ENODEV;
 
 	if (!pnp_is_active(pnp_dev) && pnp_activate_dev(pnp_dev) < 0) {
-		printk(KERN_INFO "msnd_pinnacle: device is inactive\n");
+;
 		return -EBUSY;
 	}
 
 	if (!pnp_is_active(mpu_dev) && pnp_activate_dev(mpu_dev) < 0) {
-		printk(KERN_INFO "msnd_pinnacle: MPU device is inactive\n");
+;
 		return -EBUSY;
 	}
 
@@ -1166,13 +1166,13 @@ static int __devinit snd_msnd_pnp_detect(struct pnp_card_link *pcard,
 	spin_lock_init(&chip->lock);
 	ret = snd_msnd_probe(card);
 	if (ret < 0) {
-		printk(KERN_ERR LOGNAME ": Probe failed\n");
+;
 		goto _release_card;
 	}
 
 	ret = snd_msnd_attach(card);
 	if (ret < 0) {
-		printk(KERN_ERR LOGNAME ": Attach failed\n");
+;
 		goto _release_card;
 	}
 

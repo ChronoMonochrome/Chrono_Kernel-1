@@ -74,16 +74,16 @@ snd_emux_init_seq(struct snd_emux *emu, struct snd_card *card, int index)
 	emu->client = snd_seq_create_kernel_client(card, index,
 						   "%s WaveTable", emu->name);
 	if (emu->client < 0) {
-		snd_printk(KERN_ERR "can't create client\n");
+;
 		return -ENODEV;
 	}
 
 	if (emu->num_ports < 0) {
-		snd_printk(KERN_WARNING "seqports must be greater than zero\n");
+;
 		emu->num_ports = 1;
 	} else if (emu->num_ports >= SNDRV_EMUX_MAX_PORTS) {
-		snd_printk(KERN_WARNING "too many ports."
-			   "limited max. ports %d\n", SNDRV_EMUX_MAX_PORTS);
+//		snd_printk(KERN_WARNING "too many ports."
+;
 		emu->num_ports = SNDRV_EMUX_MAX_PORTS;
 	}
 
@@ -100,7 +100,7 @@ snd_emux_init_seq(struct snd_emux *emu, struct snd_card *card, int index)
 		p = snd_emux_create_port(emu, tmpname, MIDI_CHANNELS,
 					 0, &pinfo);
 		if (p == NULL) {
-			snd_printk(KERN_ERR "can't create port\n");
+;
 			return -ENOMEM;
 		}
 
@@ -147,12 +147,12 @@ snd_emux_create_port(struct snd_emux *emu, char *name,
 
 	/* Allocate structures for this channel */
 	if ((p = kzalloc(sizeof(*p), GFP_KERNEL)) == NULL) {
-		snd_printk(KERN_ERR "no memory\n");
+;
 		return NULL;
 	}
 	p->chset.channels = kcalloc(max_channels, sizeof(struct snd_midi_channel), GFP_KERNEL);
 	if (p->chset.channels == NULL) {
-		snd_printk(KERN_ERR "no memory\n");
+;
 		kfree(p);
 		return NULL;
 	}

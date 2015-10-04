@@ -291,7 +291,7 @@ static int __devinit fm2fb_probe(struct zorro_dev *z,
 		zorro_release_device(z);
 		return -EINVAL;
 	}
-	printk("fb%d: %s frame buffer device\n", info->node, fb_fix.id);
+;
 	return 0;
 }
 

@@ -133,8 +133,8 @@ __proc_file_read(struct file *file, char __user *buf, size_t nbytes,
 
 		if (start == NULL) {
 			if (n > PAGE_SIZE) {
-				printk(KERN_ERR
-				       "proc_file_read: Apparent buffer overflow!\n");
+//				printk(KERN_ERR
+;
 				n = PAGE_SIZE;
 			}
 			n -= *ppos;
@@ -145,8 +145,8 @@ __proc_file_read(struct file *file, char __user *buf, size_t nbytes,
 			start = page + *ppos;
 		} else if (start < page) {
 			if (n > PAGE_SIZE) {
-				printk(KERN_ERR
-				       "proc_file_read: Apparent buffer overflow!\n");
+//				printk(KERN_ERR
+;
 				n = PAGE_SIZE;
 			}
 			if (n > count) {
@@ -154,14 +154,14 @@ __proc_file_read(struct file *file, char __user *buf, size_t nbytes,
 				 * Don't reduce n because doing so might
 				 * cut off part of a data block.
 				 */
-				printk(KERN_WARNING
-				       "proc_file_read: Read count exceeded\n");
+//				printk(KERN_WARNING
+;
 			}
 		} else /* start >= page */ {
 			unsigned long startoff = (unsigned long)(start - page);
 			if (n > (PAGE_SIZE - startoff)) {
-				printk(KERN_ERR
-				       "proc_file_read: Apparent buffer overflow!\n");
+//				printk(KERN_ERR
+;
 				n = PAGE_SIZE - startoff;
 			}
 			if (n > count)

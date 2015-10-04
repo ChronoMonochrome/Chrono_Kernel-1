@@ -658,22 +658,22 @@ int bus_add_driver(struct device_driver *drv)
 
 	error = driver_create_file(drv, &driver_attr_uevent);
 	if (error) {
-		printk(KERN_ERR "%s: uevent attr (%s) failed\n",
-			__func__, drv->name);
+//		printk(KERN_ERR "%s: uevent attr (%s) failed\n",
+;
 	}
 	error = driver_add_attrs(bus, drv);
 	if (error) {
 		/* How the hell do we get out of this pickle? Give up */
-		printk(KERN_ERR "%s: driver_add_attrs(%s) failed\n",
-			__func__, drv->name);
+//		printk(KERN_ERR "%s: driver_add_attrs(%s) failed\n",
+;
 	}
 
 	if (!drv->suppress_bind_attrs) {
 		error = add_bind_files(drv);
 		if (error) {
 			/* Ditto */
-			printk(KERN_ERR "%s: add_bind_files(%s) failed\n",
-				__func__, drv->name);
+//			printk(KERN_ERR "%s: add_bind_files(%s) failed\n",
+;
 		}
 	}
 

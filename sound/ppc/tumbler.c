@@ -42,40 +42,40 @@
 #undef DEBUG
 
 #ifdef DEBUG
-#define DBG(fmt...) printk(KERN_DEBUG fmt)
-#else
-#define DBG(fmt...)
-#endif
-
-#define IS_G4DA (of_machine_is_compatible("PowerMac3,4"))
-
-/* i2c address for tumbler */
-#define TAS_I2C_ADDR	0x34
-
-/* registers */
-#define TAS_REG_MCS	0x01	/* main control */
-#define TAS_REG_DRC	0x02
-#define TAS_REG_VOL	0x04
-#define TAS_REG_TREBLE	0x05
-#define TAS_REG_BASS	0x06
-#define TAS_REG_INPUT1	0x07
-#define TAS_REG_INPUT2	0x08
-
-/* tas3001c */
-#define TAS_REG_PCM	TAS_REG_INPUT1
- 
-/* tas3004 */
-#define TAS_REG_LMIX	TAS_REG_INPUT1
-#define TAS_REG_RMIX	TAS_REG_INPUT2
-#define TAS_REG_MCS2	0x43		/* main control 2 */
-#define TAS_REG_ACS	0x40		/* analog control */
-
-/* mono volumes for tas3001c/tas3004 */
-enum {
-	VOL_IDX_PCM_MONO, /* tas3001c only */
-	VOL_IDX_BASS, VOL_IDX_TREBLE,
-	VOL_IDX_LAST_MONO
-};
+//#define DBG(fmt...) printk(KERN_DEBUG fmt)
+//#else
+//#define DBG(fmt...)
+//#endif
+//
+//#define IS_G4DA (of_machine_is_compatible("PowerMac3,4"))
+//
+///* i2c address for tumbler */
+//#define TAS_I2C_ADDR	0x34
+//
+///* registers */
+//#define TAS_REG_MCS	0x01	/* main control */
+//#define TAS_REG_DRC	0x02
+//#define TAS_REG_VOL	0x04
+//#define TAS_REG_TREBLE	0x05
+//#define TAS_REG_BASS	0x06
+//#define TAS_REG_INPUT1	0x07
+//#define TAS_REG_INPUT2	0x08
+//
+///* tas3001c */
+//#define TAS_REG_PCM	TAS_REG_INPUT1
+// 
+///* tas3004 */
+//#define TAS_REG_LMIX	TAS_REG_INPUT1
+//#define TAS_REG_RMIX	TAS_REG_INPUT2
+//#define TAS_REG_MCS2	0x43		/* main control 2 */
+//#define TAS_REG_ACS	0x40		/* analog control */
+//
+///* mono volumes for tas3001c/tas3004 */
+//enum {
+//	VOL_IDX_PCM_MONO, /* tas3001c only */
+//	VOL_IDX_BASS, VOL_IDX_TREBLE,
+//	VOL_IDX_LAST_MONO
+;
 
 /* stereo volumes for tas3004 */
 enum {
@@ -243,7 +243,7 @@ static int tumbler_set_master_volume(struct pmac_tumbler *mix)
   
 	if (i2c_smbus_write_i2c_block_data(mix->i2c.client, TAS_REG_VOL, 6,
 					   block) < 0) {
-		snd_printk(KERN_ERR "failed to set volume \n");
+;
 		return -EINVAL;
 	}
 	DBG("(I) succeeded to set volume (%u, %u)\n", left_vol, right_vol);
@@ -354,7 +354,7 @@ static int tumbler_set_drc(struct pmac_tumbler *mix)
 
 	if (i2c_smbus_write_i2c_block_data(mix->i2c.client, TAS_REG_DRC,
 					   2, val) < 0) {
-		snd_printk(KERN_ERR "failed to set DRC\n");
+;
 		return -EINVAL;
 	}
 	DBG("(I) succeeded to set DRC (%u, %u)\n", val[0], val[1]);
@@ -391,7 +391,7 @@ static int snapper_set_drc(struct pmac_tumbler *mix)
 
 	if (i2c_smbus_write_i2c_block_data(mix->i2c.client, TAS_REG_DRC,
 					   6, val) < 0) {
-		snd_printk(KERN_ERR "failed to set DRC\n");
+;
 		return -EINVAL;
 	}
 	DBG("(I) succeeded to set DRC (%u, %u)\n", val[0], val[1]);
@@ -512,8 +512,8 @@ static int tumbler_set_mono_volume(struct pmac_tumbler *mix,
 		block[i] = (vol >> ((info->bytes - i - 1) * 8)) & 0xff;
 	if (i2c_smbus_write_i2c_block_data(mix->i2c.client, info->reg,
 					   info->bytes, block) < 0) {
-		snd_printk(KERN_ERR "failed to set mono volume %d\n",
-			   info->index);
+//		snd_printk(KERN_ERR "failed to set mono volume %d\n",
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -650,7 +650,7 @@ static int snapper_set_mix_vol1(struct pmac_tumbler *mix, int idx, int ch, int r
 	}
 	if (i2c_smbus_write_i2c_block_data(mix->i2c.client, reg,
 					   9, block) < 0) {
-		snd_printk(KERN_ERR "failed to set mono volume %d\n", reg);
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -1242,9 +1242,9 @@ static void tumbler_resume(struct snd_pmac *chip)
 	tumbler_reset_audio(chip);
 	if (mix->i2c.client && mix->i2c.init_client) {
 		if (mix->i2c.init_client(&mix->i2c) < 0)
-			printk(KERN_ERR "tumbler_init_client error\n");
+;
 	} else
-		printk(KERN_ERR "tumbler: i2c is not initialized\n");
+;
 	if (chip->model == PMAC_TUMBLER) {
 		tumbler_set_mono_volume(mix, &tumbler_pcm_vol_info);
 		tumbler_set_mono_volume(mix, &tumbler_bass_vol_info);

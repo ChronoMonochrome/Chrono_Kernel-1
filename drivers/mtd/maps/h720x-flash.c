@@ -73,7 +73,7 @@ static int __init h720x_mtd_init(void)
 	h720x_map.virt = ioremap(h720x_map.phys, h720x_map.size);
 
 	if (!h720x_map.virt) {
-		printk(KERN_ERR "H720x-MTD: ioremap failed\n");
+;
 		return -EIO;
 	}
 
@@ -100,7 +100,7 @@ static int __init h720x_mtd_init(void)
 			nr_mtd_parts = NUM_PARTITIONS;
 			part_type = "builtin";
 		}
-		printk(KERN_INFO "Using %s partition table\n", part_type);
+;
 		mtd_device_register(mymtd, mtd_parts, nr_mtd_parts);
 		return 0;
 	}

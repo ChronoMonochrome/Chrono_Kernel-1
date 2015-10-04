@@ -51,7 +51,7 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
 
-#define dprintk(args...) do { if (debug) {printk(KERN_DEBUG "MT2266: " args); printk("\n"); }} while (0)
+;
 
 // Reads a single register
 static int mt2266_readreg(struct mt2266_priv *priv, u8 reg, u8 *val)
@@ -61,7 +61,7 @@ static int mt2266_readreg(struct mt2266_priv *priv, u8 reg, u8 *val)
 		{ .addr = priv->cfg->i2c_address, .flags = I2C_M_RD, .buf = val,  .len = 1 },
 	};
 	if (i2c_transfer(priv->i2c, msg, 2) != 2) {
-		printk(KERN_WARNING "MT2266 I2C read failed\n");
+;
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -75,7 +75,7 @@ static int mt2266_writereg(struct mt2266_priv *priv, u8 reg, u8 val)
 		.addr = priv->cfg->i2c_address, .flags = 0, .buf = buf, .len = 2
 	};
 	if (i2c_transfer(priv->i2c, &msg, 1) != 1) {
-		printk(KERN_WARNING "MT2266 I2C write failed\n");
+;
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -88,7 +88,7 @@ static int mt2266_writeregs(struct mt2266_priv *priv,u8 *buf, u8 len)
 		.addr = priv->cfg->i2c_address, .flags = 0, .buf = buf, .len = len
 	};
 	if (i2c_transfer(priv->i2c, &msg, 1) != 1) {
-		printk(KERN_WARNING "MT2266 I2C write failed (len=%i)\n",(int)len);
+;
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -163,12 +163,12 @@ static int mt2266_set_params(struct dvb_frontend *fe, struct dvb_frontend_parame
 	}
 
 	if (band == MT2266_VHF && priv->band == MT2266_UHF) {
-		dprintk("Switch from UHF to VHF");
+;
 		mt2266_writereg(priv, 0x05, 0x04);
 		mt2266_writereg(priv, 0x19, 0x61);
 		mt2266_writeregs(priv, mt2266_vhf, sizeof(mt2266_vhf));
 	} else if (band == MT2266_UHF && priv->band == MT2266_VHF) {
-		dprintk("Switch from VHF to UHF");
+;
 		mt2266_writereg(priv, 0x05, 0x52);
 		mt2266_writereg(priv, 0x19, 0x61);
 		mt2266_writeregs(priv, mt2266_uhf, sizeof(mt2266_uhf));
@@ -210,11 +210,11 @@ static int mt2266_set_params(struct dvb_frontend *fe, struct dvb_frontend_parame
 	b[3] = tune >> 13;
 	mt2266_writeregs(priv,b,4);
 
-	dprintk("set_parms: tune=%d band=%d %s",
-		(int) tune, (int) lnaband,
-		(band == MT2266_UHF) ? "UHF" : "VHF");
-	dprintk("set_parms: [1..3]: %2x %2x %2x",
-		(int) b[1], (int) b[2], (int)b[3]);
+//	dprintk("set_parms: tune=%d band=%d %s",
+//		(int) tune, (int) lnaband,
+;
+//	dprintk("set_parms: [1..3]: %2x %2x %2x",
+;
 
 	if (band == MT2266_UHF) {
 		b[0] = 0x05;
@@ -232,7 +232,7 @@ static int mt2266_set_params(struct dvb_frontend *fe, struct dvb_frontend_parame
 		msleep(10);
 		i++;
 	} while (i<10);
-	dprintk("Lock when i=%i",(int)i);
+;
 
 	if (band == MT2266_UHF && priv->band == MT2266_VHF)
 		mt2266_writereg(priv, 0x05, 0x62);
@@ -338,7 +338,7 @@ struct dvb_frontend * mt2266_attach(struct dvb_frontend *fe, struct i2c_adapter 
 		kfree(priv);
 		return NULL;
 	}
-	printk(KERN_INFO "MT2266: successfully identified\n");
+;
 	memcpy(&fe->ops.tuner_ops, &mt2266_tuner_ops, sizeof(struct dvb_tuner_ops));
 
 	fe->tuner_priv = priv;

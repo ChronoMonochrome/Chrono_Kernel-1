@@ -70,12 +70,12 @@ static int __init init_edb7312nor(void)
 	const char **type;
 	const char *part_type = 0;
 
-       	printk(KERN_NOTICE MSG_PREFIX "0x%08x at 0x%08x\n",
-	       WINDOW_SIZE, WINDOW_ADDR);
+//       	printk(KERN_NOTICE MSG_PREFIX "0x%08x at 0x%08x\n",
+;
 	edb7312nor_map.virt = ioremap(WINDOW_ADDR, WINDOW_SIZE);
 
 	if (!edb7312nor_map.virt) {
-		printk(MSG_PREFIX "failed to ioremap\n");
+;
 		return -EIO;
 	}
 
@@ -100,10 +100,10 @@ static int __init init_edb7312nor(void)
 		}
 
 		if (mtd_parts_nb == 0)
-			printk(KERN_NOTICE MSG_PREFIX "no partition info available\n");
+;
 		else
-			printk(KERN_NOTICE MSG_PREFIX
-			       "using %s partition definition\n", part_type);
+//			printk(KERN_NOTICE MSG_PREFIX
+;
 		/* Register the whole device first. */
 		mtd_device_register(mymtd, NULL, 0);
 		mtd_device_register(mymtd, mtd_parts, mtd_parts_nb);

@@ -47,7 +47,7 @@ static int igep2_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0) {
-		printk(KERN_ERR "can't set codec DAI configuration\n");
+;
 		return ret;
 	}
 
@@ -57,7 +57,7 @@ static int igep2_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0) {
-		printk(KERN_ERR "can't set cpu DAI configuration\n");
+;
 		return ret;
 	}
 
@@ -65,7 +65,7 @@ static int igep2_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_set_sysclk(codec_dai, 0, 26000000,
 					    SND_SOC_CLOCK_IN);
 	if (ret < 0) {
-		printk(KERN_ERR "can't set codec system clock\n");
+;
 		return ret;
 	}
 
@@ -102,11 +102,11 @@ static int __init igep2_soc_init(void)
 
 	if (!machine_is_igep0020())
 		return -ENODEV;
-	printk(KERN_INFO "IGEP v2 SoC init\n");
+;
 
 	igep2_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!igep2_snd_device) {
-		printk(KERN_ERR "Platform device allocation failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -119,7 +119,7 @@ static int __init igep2_soc_init(void)
 	return 0;
 
 err1:
-	printk(KERN_ERR "Unable to add platform device\n");
+;
 	platform_device_put(igep2_snd_device);
 
 	return ret;

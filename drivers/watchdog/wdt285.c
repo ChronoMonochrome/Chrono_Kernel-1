@@ -49,7 +49,7 @@ static unsigned long timer_alive;
  */
 static void watchdog_fire(int irq, void *dev_id)
 {
-	printk(KERN_CRIT "Watchdog: Would Reboot.\n");
+;
 	*CSR_TIMER4_CNTL = 0;
 	*CSR_TIMER4_CLR = 0;
 }
@@ -205,13 +205,13 @@ static int __init footbridge_watchdog_init(void)
 	if (retval < 0)
 		return retval;
 
-	printk(KERN_INFO
-		"Footbridge Watchdog Timer: 0.01, timer margin: %d sec\n",
-								soft_margin);
+//	printk(KERN_INFO
+//		"Footbridge Watchdog Timer: 0.01, timer margin: %d sec\n",
+;
 
 	if (machine_is_cats())
-		printk(KERN_WARNING
-		  "Warning: Watchdog reset may not work on this machine.\n");
+//		printk(KERN_WARNING
+;
 	return 0;
 }
 

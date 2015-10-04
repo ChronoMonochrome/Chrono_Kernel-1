@@ -463,8 +463,8 @@ static void mvs_94xx_get_att_identify_frame(struct mvs_info *mvi, int port_id,
 		mvs_write_port_cfg_addr(mvi, port_id,
 					CONFIG_ATT_ID_FRAME0 + i * 4);
 		id_frame[i] = mvs_read_port_cfg_data(mvi, port_id);
-		mv_dprintk("94xx phy %d atta frame %d %x.\n",
-			port_id + mvi->id * mvi->chip->n_phy, i, id_frame[i]);
+//		mv_dprintk("94xx phy %d atta frame %d %x.\n",
+;
 	}
 	/* mvs_hexdump(28, (u8 *)id_frame, 0); */
 	memcpy(id, id_frame, 28);
@@ -502,12 +502,12 @@ static void mvs_94xx_fix_phy_info(struct mvs_info *mvi, int i,
 {
 	struct mvs_phy *phy = &mvi->phy[i];
 	struct asd_sas_phy *sas_phy = &phy->sas_phy;
-	mv_dprintk("get all reg link rate is 0x%x\n", phy->phy_status);
+;
 	sas_phy->linkrate =
 		(phy->phy_status & PHY_NEG_SPP_PHYS_LINK_RATE_MASK) >>
 			PHY_NEG_SPP_PHYS_LINK_RATE_MASK_OFFSET;
 	sas_phy->linkrate += 0x8;
-	mv_dprintk("get link rate is %d\n", sas_phy->linkrate);
+;
 	phy->minimum_linkrate = SAS_LINK_RATE_1_5_GBPS;
 	phy->maximum_linkrate = SAS_LINK_RATE_6_0_GBPS;
 	mvs_94xx_get_dev_identify_frame(mvi, i, id);

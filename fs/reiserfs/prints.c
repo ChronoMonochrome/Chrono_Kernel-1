@@ -266,12 +266,12 @@ void __reiserfs_warning(struct super_block *sb, const char *id,
 {
 	do_reiserfs_warning(fmt);
 	if (sb)
-		printk(KERN_WARNING "REISERFS warning (device %s): %s%s%s: "
-		       "%s\n", sb->s_id, id ? id : "", id ? " " : "",
-		       function, error_buf);
+//		printk(KERN_WARNING "REISERFS warning (device %s): %s%s%s: "
+//		       "%s\n", sb->s_id, id ? id : "", id ? " " : "",
+;
 	else
-		printk(KERN_WARNING "REISERFS warning: %s%s%s: %s\n",
-		       id ? id : "", id ? " " : "", function, error_buf);
+//		printk(KERN_WARNING "REISERFS warning: %s%s%s: %s\n",
+;
 }
 
 /* No newline.. reiserfs_info calls can be followed by printk's */
@@ -279,17 +279,17 @@ void reiserfs_info(struct super_block *sb, const char *fmt, ...)
 {
 	do_reiserfs_warning(fmt);
 	if (sb)
-		printk(KERN_NOTICE "REISERFS (device %s): %s",
-		       sb->s_id, error_buf);
+//		printk(KERN_NOTICE "REISERFS (device %s): %s",
+;
 	else
-		printk(KERN_NOTICE "REISERFS %s:", error_buf);
+;
 }
 
 /* No newline.. reiserfs_printk calls can be followed by printk's */
 static void reiserfs_printk(const char *fmt, ...)
 {
 	do_reiserfs_warning(fmt);
-	printk(error_buf);
+;
 }
 
 void reiserfs_debug(struct super_block *s, int level, const char *fmt, ...)
@@ -297,10 +297,10 @@ void reiserfs_debug(struct super_block *s, int level, const char *fmt, ...)
 #ifdef CONFIG_REISERFS_CHECK
 	do_reiserfs_warning(fmt);
 	if (s)
-		printk(KERN_DEBUG "REISERFS debug (device %s): %s\n",
-		       s->s_id, error_buf);
+//		printk(KERN_DEBUG "REISERFS debug (device %s): %s\n",
+;
 	else
-		printk(KERN_DEBUG "REISERFS debug: %s\n", error_buf);
+;
 #endif
 }
 
@@ -377,11 +377,11 @@ void __reiserfs_error(struct super_block *sb, const char *id,
 		__reiserfs_panic(sb, id, function, error_buf);
 
 	if (id && id[0])
-		printk(KERN_CRIT "REISERFS error (device %s): %s %s: %s\n",
-		       sb->s_id, id, function, error_buf);
+//		printk(KERN_CRIT "REISERFS error (device %s): %s %s: %s\n",
+;
 	else
-		printk(KERN_CRIT "REISERFS error (device %s): %s: %s\n",
-		       sb->s_id, function, error_buf);
+//		printk(KERN_CRIT "REISERFS error (device %s): %s: %s\n",
+;
 
 	if (sb->s_flags & MS_RDONLY)
 		return;
@@ -403,8 +403,8 @@ void reiserfs_abort(struct super_block *sb, int errno, const char *fmt, ...)
 	if (reiserfs_is_journal_aborted(SB_JOURNAL(sb)))
 		return;
 
-	printk(KERN_CRIT "REISERFS abort (device %s): %s\n", sb->s_id,
-	       error_buf);
+//	printk(KERN_CRIT "REISERFS abort (device %s): %s\n", sb->s_id,
+;
 
 	sb->s_flags |= MS_RDONLY;
 	reiserfs_abort_journal(sb, errno);
@@ -433,18 +433,18 @@ static int print_internal(struct buffer_head *bh, int first, int last)
 		to = last < B_NR_ITEMS(bh) ? last : B_NR_ITEMS(bh);
 	}
 
-	reiserfs_printk("INTERNAL NODE (%ld) contains %z\n", bh->b_blocknr, bh);
+;
 
 	dc = B_N_CHILD(bh, from);
-	reiserfs_printk("PTR %d: %y ", from, dc);
+;
 
 	for (i = from, key = B_N_PDELIM_KEY(bh, from), dc++; i < to;
 	     i++, key++, dc++) {
-		reiserfs_printk("KEY %d: %k PTR %d: %y ", i, key, i + 1, dc);
+;
 		if (i && i % 4 == 0)
-			printk("\n");
+;
 	}
-	printk("\n");
+;
 	return 0;
 }
 
@@ -467,11 +467,11 @@ static int print_leaf(struct buffer_head *bh, int print_mode, int first,
 
 	printk
 	    ("\n===================================================================\n");
-	reiserfs_printk("LEAF NODE (%ld) contains %z\n", bh->b_blocknr, bh);
+;
 
 	if (!(print_mode & PRINT_LEAF_ITEMS)) {
-		reiserfs_printk("FIRST ITEM_KEY: %k, LAST ITEM KEY: %k\n",
-				&(ih->ih_key), &((ih + nr - 1)->ih_key));
+//		reiserfs_printk("FIRST ITEM_KEY: %k, LAST ITEM KEY: %k\n",
+;
 		return 0;
 	}
 
@@ -493,7 +493,7 @@ static int print_leaf(struct buffer_head *bh, int print_mode, int first,
 	for (i = from; i < to; i++, ih++) {
 		printk
 		    ("-------------------------------------------------------------------------------\n");
-		reiserfs_printk("|%2d| %h |\n", i, ih);
+;
 		if (print_mode & PRINT_LEAF_ITEMS)
 			op_print_item(ih, B_I_PITEM(bh, ih));
 	}
@@ -536,12 +536,12 @@ static int print_super_block(struct buffer_head *bh)
 		return 1;
 	}
 
-	printk("%s\'s super block is in block %llu\n", bdevname(bh->b_bdev, b),
-	       (unsigned long long)bh->b_blocknr);
-	printk("Reiserfs version %s\n", version);
-	printk("Block count %u\n", sb_block_count(rs));
-	printk("Blocksize %d\n", sb_blocksize(rs));
-	printk("Free blocks %u\n", sb_free_blocks(rs));
+//	printk("%s\'s super block is in block %llu\n", bdevname(bh->b_bdev, b),
+;
+;
+;
+;
+;
 	// FIXME: this would be confusing if
 	// someone stores reiserfs super block in some data block ;)
 //    skipped = (bh->b_blocknr * bh->b_size) / sb_blocksize(rs);
@@ -554,15 +554,15 @@ static int print_super_block(struct buffer_head *bh)
 	     "1 super block, %d data blocks\n", skipped, sb_bmap_nr(rs),
 	     (!is_reiserfs_jr(rs) ? (sb_jp_journal_size(rs) + 1) :
 	      sb_reserved_for_journal(rs)), data_blocks);
-	printk("Root block %u\n", sb_root_block(rs));
-	printk("Journal block (first) %d\n", sb_jp_journal_1st_block(rs));
-	printk("Journal dev %d\n", sb_jp_journal_dev(rs));
-	printk("Journal orig size %d\n", sb_jp_journal_size(rs));
-	printk("FS state %d\n", sb_fs_state(rs));
-	printk("Hash function \"%s\"\n",
-	       reiserfs_hashname(sb_hash_function_code(rs)));
+;
+;
+;
+;
+;
+//	printk("Hash function \"%s\"\n",
+;
 
-	printk("Tree height %d\n", sb_tree_height(rs));
+;
 	return 0;
 }
 
@@ -574,9 +574,9 @@ static int print_desc_block(struct buffer_head *bh)
 		return 1;
 
 	desc = (struct reiserfs_journal_desc *)(bh->b_data);
-	printk("Desc block %llu (j_trans_id %d, j_mount_id %d, j_len %d)",
-	       (unsigned long long)bh->b_blocknr, get_desc_trans_id(desc),
-	       get_desc_mount_id(desc), get_desc_trans_len(desc));
+//	printk("Desc block %llu (j_trans_id %d, j_mount_id %d, j_len %d)",
+//	       (unsigned long long)bh->b_blocknr, get_desc_trans_id(desc),
+;
 
 	return 0;
 }
@@ -587,7 +587,7 @@ void print_block(struct buffer_head *bh, ...)	//int print_mode, int first, int l
 	int mode, first, last;
 
 	if (!bh) {
-		printk("print_block: buffer is NULL\n");
+;
 		return;
 	}
 
@@ -698,7 +698,7 @@ void store_print_tb(struct tree_balance *tb)
 
 void print_cur_tb(char *mes)
 {
-	printk("%s\n%s", mes, print_tb_buf);
+;
 }
 
 static void check_leaf_block_head(struct buffer_head *bh)

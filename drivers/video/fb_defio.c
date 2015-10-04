@@ -57,7 +57,7 @@ static int fb_deferred_io_fault(struct vm_area_struct *vma,
 	if (vma->vm_file)
 		page->mapping = vma->vm_file->f_mapping;
 	else
-		printk(KERN_ERR "no mapping available\n");
+;
 
 	BUG_ON(!page->mapping);
 	page->index = vmf->pgoff;

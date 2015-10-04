@@ -4910,7 +4910,7 @@ static int __init cpufreq_gov_dbs_init(void)						// ZZ: idle exit time handling
     dbs_wq = alloc_workqueue("zzmoove_dbs_wq", WQ_HIGHPRI, 0);
 
     if (!dbs_wq) {
-	printk(KERN_ERR "Failed to create zzmoove_dbs_wq workqueue\n");
+;
 	return -EFAULT;
     }
 

@@ -317,7 +317,7 @@ void cfb_fillrect(struct fb_info *p, const struct fb_fillrect *rect)
 			fill_op32 = bitfill_aligned;
 			break;
 		default:
-			printk( KERN_ERR "cfb_fillrect(): unknown rop, defaulting to ROP_COPY\n");
+;
 			fill_op32 = bitfill_aligned;
 			break;
 		}
@@ -347,7 +347,7 @@ void cfb_fillrect(struct fb_info *p, const struct fb_fillrect *rect)
 			fill_op = bitfill_unaligned;
 			break;
 		default:
-			printk(KERN_ERR "cfb_fillrect(): unknown rop, defaulting to ROP_COPY\n");
+;
 			fill_op = bitfill_unaligned;
 			break;
 		}

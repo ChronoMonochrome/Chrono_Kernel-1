@@ -99,7 +99,7 @@ int bttv_sub_add_device(struct bttv_core *core, char *name)
 		kfree(sub);
 		return err;
 	}
-	printk("bttv%d: add subdevice \"%s\"\n", core->nr, dev_name(&sub->dev));
+;
 	list_add_tail(&sub->list,&core->subs);
 	return 0;
 }

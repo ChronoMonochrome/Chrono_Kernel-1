@@ -40,14 +40,14 @@ MODULE_PARM_DESC(ir_debug, "enable debug messages [IR]");
 
 #define MODULE_NAME "em28xx"
 
-#define i2cdprintk(fmt, arg...) \
-	if (ir_debug) { \
-		printk(KERN_DEBUG "%s/ir: " fmt, ir->name , ## arg); \
+//#define i2cdprintk(fmt, arg...) \
+//	if (ir_debug) { \
+;
 	}
 
-#define dprintk(fmt, arg...) \
-	if (ir_debug) { \
-		printk(KERN_DEBUG "%s/ir: " fmt, ir->name , ## arg); \
+//#define dprintk(fmt, arg...) \
+//	if (ir_debug) { \
+;
 	}
 
 /**********************************************************
@@ -86,7 +86,7 @@ int em28xx_get_key_terratec(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 
 	/* poll IR chip */
 	if (1 != i2c_master_recv(ir->c, &b, 1)) {
-		i2cdprintk("read error\n");
+;
 		return -EIO;
 	}
 
@@ -94,7 +94,7 @@ int em28xx_get_key_terratec(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 	   down, while 0xff indicates that no button is hold
 	   down. 0xfe sequences are sometimes interrupted by 0xFF */
 
-	i2cdprintk("key %02x\n", b);
+;
 
 	if (b == 0xff)
 		return 0;
@@ -148,8 +148,8 @@ int em28xx_get_key_em_haup(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 		 ((buf[1] & 0x40) ? 0x0200 : 0) | /* 0000 0010		  */
 		 ((buf[1] & 0x80) ? 0x0100 : 0);  /* 0000 0001		  */
 
-	i2cdprintk("ir hauppauge (em2840): code=0x%02x (rcv=0x%02x%02x)\n",
-			code, buf[1], buf[0]);
+//	i2cdprintk("ir hauppauge (em2840): code=0x%02x (rcv=0x%02x%02x)\n",
+;
 
 	/* return key */
 	*ir_key = code;
@@ -165,11 +165,11 @@ int em28xx_get_key_pinnacle_usb_grey(struct IR_i2c *ir, u32 *ir_key,
 	/* poll IR chip */
 
 	if (3 != i2c_master_recv(ir->c, buf, 3)) {
-		i2cdprintk("read error\n");
+;
 		return -EIO;
 	}
 
-	i2cdprintk("key %02x\n", buf[2]&0x3f);
+;
 	if (buf[0] != 0x00)
 		return 0;
 
@@ -189,7 +189,7 @@ int em28xx_get_key_winfast_usbii_deluxe(struct IR_i2c *ir, u32 *ir_key, u32 *ir_
 
 	subaddr = 0x10;
 	if (2 != i2c_transfer(ir->c->adapter, msg, 2)) {
-		i2cdprintk("read error\n");
+;
 		return -EIO;
 	}
 	if (keydetect == 0x00)
@@ -198,7 +198,7 @@ int em28xx_get_key_winfast_usbii_deluxe(struct IR_i2c *ir, u32 *ir_key, u32 *ir_
 	subaddr = 0x00;
 	msg[1].buf = &key;
 	if (2 != i2c_transfer(ir->c->adapter, msg, 2)) {
-		i2cdprintk("read error\n");
+;
 	return -EIO;
 	}
 	if (key == 0x00)
@@ -288,14 +288,14 @@ static void em28xx_ir_handle_key(struct em28xx_IR *ir)
 	/* read the registers containing the IR status */
 	result = ir->get_key(ir, &poll_result);
 	if (unlikely(result < 0)) {
-		dprintk("ir->get_key() failed %d\n", result);
+;
 		return;
 	}
 
 	if (unlikely(poll_result.read_count != ir->last_readcount)) {
-		dprintk("%s: toggle: %d, count: %d, key 0x%02x%02x\n", __func__,
-			poll_result.toggle_bit, poll_result.read_count,
-			poll_result.rc_address, poll_result.rc_data[0]);
+//		dprintk("%s: toggle: %d, count: %d, key 0x%02x%02x\n", __func__,
+//			poll_result.toggle_bit, poll_result.read_count,
+;
 		if (ir->full_code)
 			rc_keydown(ir->rc,
 				   poll_result.rc_address << 8 |
@@ -376,7 +376,7 @@ int em28xx_ir_change_protocol(struct rc_dev *rc_dev, u64 rc_type)
 		em28xx_write_regs(dev, EM2874_R50_IR_CONFIG, &ir_config, 1);
 		break;
 	default:
-		printk("Unrecognized em28xx chip id: IR not supported\n");
+;
 		rc = -EINVAL;
 	}
 

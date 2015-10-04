@@ -2755,8 +2755,8 @@ void tlan_phy_monitor(struct net_device *dev)
 	if (!(phy_status & MII_GS_LINK)) {
 		if (priv->link) {
 			priv->link = 0;
-			printk(KERN_DEBUG "TLAN: %s has lost link\n",
-			       dev->name);
+//			printk(KERN_DEBUG "TLAN: %s has lost link\n",
+;
 			netif_carrier_off(dev);
 			tlan_set_timer(dev, (2*HZ), TLAN_TIMER_LINK_BEAT);
 			return;
@@ -2766,8 +2766,8 @@ void tlan_phy_monitor(struct net_device *dev)
 	/* Link restablished? */
 	if ((phy_status & MII_GS_LINK) && !priv->link) {
 		priv->link = 1;
-		printk(KERN_DEBUG "TLAN: %s has reestablished link\n",
-		       dev->name);
+//		printk(KERN_DEBUG "TLAN: %s has reestablished link\n",
+;
 		netif_carrier_on(dev);
 	}
 

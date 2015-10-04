@@ -47,9 +47,9 @@ struct s5h1432_state {
 
 static int debug;
 
-#define dprintk(arg...) do {	\
-	if (debug)		\
-		printk(arg);	\
+//#define dprintk(arg...) do {	\
+//	if (debug)		\
+;
 	} while (0)
 
 static int s5h1432_writereg(struct s5h1432_state *state,
@@ -63,8 +63,8 @@ static int s5h1432_writereg(struct s5h1432_state *state,
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
-		printk(KERN_ERR "%s: writereg error 0x%02x 0x%02x 0x%04x, "
-		       "ret == %i)\n", __func__, addr, reg, data, ret);
+//		printk(KERN_ERR "%s: writereg error 0x%02x 0x%02x 0x%04x, "
+;
 
 	return (ret != 1) ? -1 : 0;
 }
@@ -83,8 +83,8 @@ static u8 s5h1432_readreg(struct s5h1432_state *state, u8 addr, u8 reg)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2)
-		printk(KERN_ERR "%s: readreg error (ret == %i)\n",
-		       __func__, ret);
+//		printk(KERN_ERR "%s: readreg error (ret == %i)\n",
+;
 	return b1[0];
 }
 
@@ -160,9 +160,9 @@ static int s5h1432_set_IF(struct dvb_frontend *fe, u32 ifFreqHz)
 			u32 value = 0;
 			value = (u32) (((48000 - (ifFreqHz / 1000)) * 512 *
 					(u32) 32768) / (48 * 1000));
-			printk(KERN_INFO
-			       "Default IFFreq %d :reg value = 0x%x\n",
-			       ifFreqHz, value);
+//			printk(KERN_INFO
+//			       "Default IFFreq %d :reg value = 0x%x\n",
+;
 			s5h1432_writereg(state, S5H1432_I2C_TOP_ADDR, 0xe4,
 					 (u8) value & 0xFF);
 			s5h1432_writereg(state, S5H1432_I2C_TOP_ADDR, 0xe5,
@@ -251,7 +251,7 @@ static int s5h1432_init(struct dvb_frontend *fe)
 
 	u8 reg = 0;
 	state->current_frequency = 0;
-	printk(KERN_INFO " s5h1432_init().\n");
+;
 
 	/*Set VSB mode as default, this also does a soft reset */
 	/*Initialize registers */
@@ -354,7 +354,7 @@ struct dvb_frontend *s5h1432_attach(const struct s5h1432_config *config,
 {
 	struct s5h1432_state *state = NULL;
 
-	printk(KERN_INFO " Enter s5h1432_attach(). attach success!\n");
+;
 	/* allocate memory for the internal state */
 	state = kmalloc(sizeof(struct s5h1432_state), GFP_KERNEL);
 	if (state == NULL)

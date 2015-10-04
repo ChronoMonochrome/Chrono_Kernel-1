@@ -525,9 +525,9 @@ static int __devinit vfb_probe(struct platform_device *dev)
 		goto err2;
 	platform_set_drvdata(dev, info);
 
-	printk(KERN_INFO
-	       "fb%d: Virtual frame buffer device, using %ldK of video memory\n",
-	       info->node, videomemorysize >> 10);
+//	printk(KERN_INFO
+//	       "fb%d: Virtual frame buffer device, using %ldK of video memory\n",
+;
 	return 0;
 err2:
 	fb_dealloc_cmap(&info->cmap);

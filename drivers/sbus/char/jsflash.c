@@ -198,12 +198,12 @@ static void jsfd_do_request(struct request_queue *q)
 			goto end;
 
 		if (rq_data_dir(req) != READ) {
-			printk(KERN_ERR "jsfd: write\n");
+;
 			goto end;
 		}
 
 		if ((jdp->dbase & 0xff000000) != 0x20000000) {
-			printk(KERN_ERR "jsfd: bad base %x\n", (int)jdp->dbase);
+;
 			goto end;
 		}
 
@@ -338,9 +338,9 @@ static int jsf_ioctl_erase(unsigned long arg)
 			if ((x & 0x80808080) == 0x80808080) break;
 		}
 		if ((x & 0x80808080) != 0x80808080) {
-			printk("jsf0: erase timeout with 0x%08x\n", x);
+;
 		} else {
-			printk("jsf0: erase done with 0x%08x\n", x);
+;
 		}
 	}
 #else
@@ -470,12 +470,12 @@ static int jsflash_init(void)
 	if (node != 0 && (s32)node != -1) {
 		if (prom_getproperty(node, "reg",
 		    (char *)&reg0, sizeof(reg0)) == -1) {
-			printk("jsflash: no \"reg\" property\n");
+;
 			return -ENXIO;
 		}
 		if (reg0.which_io != 0) {
-			printk("jsflash: bus number nonzero: 0x%x:%x\n",
-			    reg0.which_io, reg0.phys_addr);
+//			printk("jsflash: bus number nonzero: 0x%x:%x\n",
+;
 			return -ENXIO;
 		}
 		/*
@@ -484,18 +484,18 @@ static int jsflash_init(void)
 		 */
 #if 0
 		if ((reg0.phys_addr >> 24) != 0x20) {
-			printk("jsflash: suspicious address: 0x%x:%x\n",
-			    reg0.which_io, reg0.phys_addr);
+//			printk("jsflash: suspicious address: 0x%x:%x\n",
+;
 			return -ENXIO;
 		}
 #endif
 		if ((int)reg0.reg_size <= 0) {
-			printk("jsflash: bad size 0x%x\n", (int)reg0.reg_size);
+;
 			return -ENXIO;
 		}
 	} else {
 		/* XXX Remove this code once PROLL ID12 got widespread */
-		printk("jsflash: no /flash-memory node, use PROLL >= 12\n");
+;
 		prom_getproperty(prom_root_node, "banner-name", banner, 128);
 		if (strcmp (banner, "JavaStation-NC") != 0 &&
 		    strcmp (banner, "JavaStation-E") != 0) {
@@ -531,13 +531,13 @@ static int jsflash_init(void)
 		jsf->dv[2].dbase = JSF_BASE_ALL;
 		jsf->dv[2].dsize = 0x01000000;
 
-		printk("Espresso Flash @0x%lx [%d MB]\n", jsf->base,
-		    (int) (jsf->size / (1024*1024)));
+//		printk("Espresso Flash @0x%lx [%d MB]\n", jsf->base,
+;
 	}
 
 	if ((rc = misc_register(&jsf_dev)) != 0) {
-		printk(KERN_ERR "jsf: unable to get misc minor %d\n",
-		    JSF_MINOR);
+//		printk(KERN_ERR "jsf: unable to get misc minor %d\n",
+;
 		jsf0.base = 0;
 		return rc;
 	}
@@ -623,7 +623,7 @@ static void __exit jsflash_cleanup_module(void)
 		put_disk(jsfd_disk[i]);
 	}
 	if (jsf0.busy)
-		printk("jsf0: cleaning busy unit\n");
+;
 	jsf0.base = 0;
 	jsf0.busy = 0;
 

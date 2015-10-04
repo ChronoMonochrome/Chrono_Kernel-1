@@ -796,7 +796,7 @@ int register_ftrace_event(struct trace_event *event)
 		list_add_tail(&event->list, list);
 
 	} else if (event->type > __TRACE_LAST_TYPE) {
-		printk(KERN_WARNING "Need to add type to trace.h\n");
+;
 		WARN_ON(1);
 		goto out;
 	} else {
@@ -1297,8 +1297,8 @@ __init static int init_events(void)
 
 		ret = register_ftrace_event(event);
 		if (!ret) {
-			printk(KERN_WARNING "event %d failed to register\n",
-			       event->type);
+//			printk(KERN_WARNING "event %d failed to register\n",
+;
 			WARN_ON_ONCE(1);
 		}
 	}

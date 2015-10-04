@@ -100,13 +100,13 @@ static int mddi_ext_on(struct platform_device *pdev)
 	if (mddi_ext_pdata &&
 	    mddi_ext_pdata->mddi_sel_clk &&
 	    mddi_ext_pdata->mddi_sel_clk(&clk_rate))
-		printk(KERN_ERR
-			  "%s: can't select mddi io clk targate rate = %d\n",
-			  __func__, clk_rate);
+//		printk(KERN_ERR
+//			  "%s: can't select mddi io clk targate rate = %d\n",
+;
 
 	if (clk_set_min_rate(mddi_ext_clk, clk_rate) < 0)
-		printk(KERN_ERR "%s: clk_set_min_rate failed\n",
-			__func__);
+//		printk(KERN_ERR "%s: clk_set_min_rate failed\n",
+;
 
 	mddi_host_start_ext_display();
 	ret = panel_next_on(pdev);
@@ -171,7 +171,7 @@ static int mddi_ext_probe(struct platform_device *pdev)
 	if (platform_device_add_data
 	    (mdp_dev, pdev->dev.platform_data,
 	     sizeof(struct msm_fb_panel_data))) {
-		printk(KERN_ERR "mddi_ext_probe: platform_device_add_data failed!\n");
+;
 		platform_device_put(mdp_dev);
 		return -ENOMEM;
 	}
@@ -193,12 +193,12 @@ static int mddi_ext_probe(struct platform_device *pdev)
 	if (mddi_ext_pdata &&
 	    mddi_ext_pdata->mddi_sel_clk &&
 	    mddi_ext_pdata->mddi_sel_clk(&clk_rate))
-			printk(KERN_ERR
-			  "%s: can't select mddi io clk targate rate = %d\n",
-			  __func__, clk_rate);
+//			printk(KERN_ERR
+//			  "%s: can't select mddi io clk targate rate = %d\n",
+;
 
 	if (clk_set_max_rate(mddi_ext_clk, clk_rate) < 0)
-		printk(KERN_ERR "%s: clk_set_max_rate failed\n", __func__);
+;
 	mfd->panel_info.clk_rate = mfd->panel_info.clk_min;
 
 	/*
@@ -239,7 +239,7 @@ static int mddi_ext_suspend(struct platform_device *pdev, pm_message_t state)
 	mddi_ext_is_in_suspend = 1;
 
 	if (clk_set_min_rate(mddi_ext_clk, 0) < 0)
-		printk(KERN_ERR "%s: clk_set_min_rate failed\n", __func__);
+;
 
 	clk_disable(mddi_ext_clk);
 	disable_irq(INT_MDDI_EXT);
@@ -300,7 +300,7 @@ static int __init mddi_ext_driver_init(void)
 
 	mddi_ext_clk = clk_get(NULL, "emdh_clk");
 	if (IS_ERR(mddi_ext_clk)) {
-		printk(KERN_ERR "can't find emdh_clk\n");
+;
 		return PTR_ERR(mddi_ext_clk);
 	}
 	clk_enable(mddi_ext_clk);
@@ -309,7 +309,7 @@ static int __init mddi_ext_driver_init(void)
 	if (ret) {
 		clk_disable(mddi_ext_clk);
 		clk_put(mddi_ext_clk);
-		printk(KERN_ERR "mddi_ext_register_driver() failed!\n");
+;
 		return ret;
 	}
 	mddi_init();

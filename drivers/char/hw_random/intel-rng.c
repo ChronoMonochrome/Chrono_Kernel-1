@@ -199,7 +199,7 @@ static int intel_rng_init(struct hwrng *rng)
 	if ((hw_status & INTEL_RNG_ENABLED) == 0)
 		hw_status = hwstatus_set(mem, hw_status | INTEL_RNG_ENABLED);
 	if ((hw_status & INTEL_RNG_ENABLED) == 0) {
-		printk(KERN_ERR PFX "cannot enable RNG, aborting\n");
+;
 		goto out;
 	}
 	err = 0;
@@ -216,7 +216,7 @@ static void intel_rng_cleanup(struct hwrng *rng)
 	if (hw_status & INTEL_RNG_ENABLED)
 		hwstatus_set(mem, hw_status & ~INTEL_RNG_ENABLED);
 	else
-		printk(KERN_WARNING PFX "unusual: RNG already disabled\n");
+;
 }
 
 
@@ -274,7 +274,7 @@ static int __init intel_rng_hw_init(void *_intel_rng_hw)
 	if (mfc != INTEL_FWH_MANUFACTURER_CODE ||
 	    (dvc != INTEL_FWH_DEVICE_CODE_8M &&
 	     dvc != INTEL_FWH_DEVICE_CODE_4M)) {
-		printk(KERN_NOTICE PFX "FWH not detected\n");
+;
 		return -ENODEV;
 	}
 
@@ -314,7 +314,7 @@ PFX "RNG, try using the 'no_fwh_detect' option.\n";
 
 		if (no_fwh_detect)
 			return -ENODEV;
-		printk(warning);
+;
 		return -EBUSY;
 	}
 
@@ -392,11 +392,11 @@ fwh_done:
 		goto out;
 	}
 
-	printk(KERN_INFO "Intel 82802 RNG detected\n");
+;
 	err = hwrng_register(&intel_rng);
 	if (err) {
-		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
-		       err);
+//		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
+;
 		iounmap(mem);
 	}
 out:

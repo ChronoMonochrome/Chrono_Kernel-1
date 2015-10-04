@@ -29,8 +29,8 @@ static struct crypto_hash *pohmelfs_init_hash(struct pohmelfs_sb *psb)
 	hash = crypto_alloc_hash(psb->hash_string, 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(hash)) {
 		err = PTR_ERR(hash);
-		dprintk("%s: idx: %u: failed to allocate hash '%s', err: %d.\n",
-				__func__, psb->idx, psb->hash_string, err);
+//		dprintk("%s: idx: %u: failed to allocate hash '%s', err: %d.\n",
+;
 		goto err_out_exit;
 	}
 
@@ -41,8 +41,8 @@ static struct crypto_hash *pohmelfs_init_hash(struct pohmelfs_sb *psb)
 
 	err = crypto_hash_setkey(hash, psb->hash_key, psb->hash_keysize);
 	if (err) {
-		dprintk("%s: idx: %u: failed to set key for hash '%s', err: %d.\n",
-				__func__, psb->idx, psb->hash_string, err);
+//		dprintk("%s: idx: %u: failed to set key for hash '%s', err: %d.\n",
+;
 		goto err_out_free;
 	}
 
@@ -65,8 +65,8 @@ static struct crypto_ablkcipher *pohmelfs_init_cipher(struct pohmelfs_sb *psb)
 	cipher = crypto_alloc_ablkcipher(psb->cipher_string, 0, 0);
 	if (IS_ERR(cipher)) {
 		err = PTR_ERR(cipher);
-		dprintk("%s: idx: %u: failed to allocate cipher '%s', err: %d.\n",
-				__func__, psb->idx, psb->cipher_string, err);
+//		dprintk("%s: idx: %u: failed to allocate cipher '%s', err: %d.\n",
+;
 		goto err_out_exit;
 	}
 
@@ -74,8 +74,8 @@ static struct crypto_ablkcipher *pohmelfs_init_cipher(struct pohmelfs_sb *psb)
 
 	err = crypto_ablkcipher_setkey(cipher, psb->cipher_key, psb->cipher_keysize);
 	if (err) {
-		dprintk("%s: idx: %u: failed to set key for cipher '%s', err: %d.\n",
-				__func__, psb->idx, psb->cipher_string, err);
+//		dprintk("%s: idx: %u: failed to set key for cipher '%s', err: %d.\n",
+;
 		goto err_out_free;
 	}
 
@@ -142,7 +142,7 @@ static void pohmelfs_crypto_complete(struct crypto_async_request *req, int err)
 	if (err == -EINPROGRESS)
 		return;
 
-	dprintk("%s: req: %p, err: %d.\n", __func__, req, err);
+;
 	c->error = err;
 	complete(&c->complete);
 }
@@ -193,8 +193,8 @@ int pohmelfs_crypto_process_input_data(struct pohmelfs_crypto_engine *e, u64 cmd
 	if (!e->cipher && !e->hash)
 		return 0;
 
-	dprintk("%s: eng: %p, iv: %llx, data: %p, page: %p/%lu, size: %u.\n",
-		__func__, e, cmd_iv, data, page, (page) ? page->index : 0, size);
+//	dprintk("%s: eng: %p, iv: %llx, data: %p, page: %p/%lu, size: %u.\n",
+;
 
 	if (data) {
 		sg_init_one(&sg, data, size);
@@ -243,8 +243,8 @@ int pohmelfs_crypto_process_input_data(struct pohmelfs_crypto_engine *e, u64 cmd
 			unsigned int i;
 			unsigned char *recv = e->data, *calc = dst;
 
-			dprintk("%s: eng: %p, hash: %p, cipher: %p: iv : %llx, hash mismatch (recv/calc): ",
-					__func__, e, e->hash, e->cipher, cmd_iv);
+//			dprintk("%s: eng: %p, hash: %p, cipher: %p: iv : %llx, hash mismatch (recv/calc): ",
+;
 			for (i = 0; i < crypto_hash_digestsize(e->hash); ++i) {
 #if 0
 				dprintka("%02x ", recv[i]);
@@ -256,23 +256,23 @@ int pohmelfs_crypto_process_input_data(struct pohmelfs_crypto_engine *e, u64 cmd
 				dprintka("%02x/%02x ", recv[i], calc[i]);
 #endif
 			}
-			dprintk("\n");
+;
 #endif
 			goto err_out_exit;
 		} else {
-			dprintk("%s: eng: %p, hash: %p, cipher: %p: hashes matched.\n",
-					__func__, e, e->hash, e->cipher);
+//			dprintk("%s: eng: %p, hash: %p, cipher: %p: hashes matched.\n",
+;
 		}
 	}
 
-	dprintk("%s: eng: %p, size: %u, hash: %p, cipher: %p: completed.\n",
-			__func__, e, e->size, e->hash, e->cipher);
+//	dprintk("%s: eng: %p, size: %u, hash: %p, cipher: %p: completed.\n",
+;
 
 	return 0;
 
 err_out_exit:
-	dprintk("%s: eng: %p, hash: %p, cipher: %p: err: %d.\n",
-			__func__, e, e->hash, e->cipher, err);
+//	dprintk("%s: eng: %p, hash: %p, cipher: %p: err: %d.\n",
+;
 	return err;
 }
 
@@ -299,8 +299,8 @@ static int pohmelfs_trans_iter(struct netfs_trans *t, struct pohmelfs_crypto_eng
 
 		sz = csize + __be16_to_cpu(cmd->cpad) + sizeof(struct netfs_cmd);
 
-		dprintk("%s: size: %u, sz: %u, cmd_size: %u, cmd_cpad: %u.\n",
-				__func__, size, sz, __be32_to_cpu(cmd->size), __be16_to_cpu(cmd->cpad));
+//		dprintk("%s: size: %u, sz: %u, cmd_size: %u, cmd_cpad: %u.\n",
+;
 
 		data += sz;
 		size -= sz;
@@ -399,7 +399,7 @@ static int pohmelfs_hash(struct pohmelfs_crypto_thread *tc)
 
 	{
 		unsigned int i;
-		dprintk("%s: ", __func__);
+;
 		for (i = 0; i < tc->psb->crypto_attached_size; ++i)
 			dprintka("%02x ", dst[i]);
 		dprintka("\n");
@@ -553,8 +553,8 @@ static int pohmelfs_crypto_thread_func(void *data)
 		if (!t->trans && !t->page)
 			continue;
 
-		dprintk("%s: thread: %p, trans: %p, page: %p.\n",
-				__func__, t, t->trans, t->page);
+//		dprintk("%s: thread: %p, trans: %p, page: %p.\n",
+;
 
 		if (t->trans)
 			pohmelfs_crypto_thread_trans(t);
@@ -585,7 +585,7 @@ static void pohmelfs_crypto_flush(struct pohmelfs_sb *psb, struct list_head *hea
 static void pohmelfs_sys_crypto_exit(struct pohmelfs_sb *psb)
 {
 	while (!list_empty(&psb->crypto_active_list) || !list_empty(&psb->crypto_ready_list)) {
-		dprintk("%s: crypto_thread_num: %u.\n", __func__, psb->crypto_thread_num);
+;
 		pohmelfs_crypto_flush(psb, &psb->crypto_active_list);
 		pohmelfs_crypto_flush(psb, &psb->crypto_ready_list);
 	}
@@ -606,8 +606,8 @@ static int pohmelfs_sys_crypto_init(struct pohmelfs_sb *psb)
 		if (err)
 			goto err_out_exit;
 
-		dprintk("%s: st: %p, eng: %p, hash: %p, cipher: %p.\n",
-				__func__, st, &st->eng, &st->eng.hash, &st->eng.cipher);
+//		dprintk("%s: st: %p, eng: %p, hash: %p, cipher: %p.\n",
+;
 	}
 
 	for (i = 0; i < psb->crypto_thread_num; ++i) {
@@ -675,7 +675,7 @@ static int pohmelfs_crypt_init_complete(struct page **pages, unsigned int page_n
 	struct pohmelfs_sb *psb = private;
 
 	psb->flags = -err;
-	dprintk("%s: err: %d.\n", __func__, err);
+;
 
 	wake_up(&psb->wait);
 
@@ -816,7 +816,7 @@ static int pohmelfs_trans_crypt_action(struct pohmelfs_crypto_thread *t, void *d
 	netfs_trans_get(trans);
 	t->trans = trans;
 
-	dprintk("%s: t: %p, gen: %u, thread: %p.\n", __func__, trans, trans->gen, t);
+;
 	return 0;
 }
 

@@ -543,13 +543,13 @@ static void __dlm_print_nodes(struct dlm_ctxt *dlm)
 
 	assert_spin_locked(&dlm->spinlock);
 
-	printk(KERN_NOTICE "o2dlm: Nodes in domain %s: ", dlm->name);
+;
 
 	while ((node = find_next_bit(dlm->domain_map, O2NM_MAX_NODES,
 				     node + 1)) < O2NM_MAX_NODES) {
-		printk("%d ", node);
+;
 	}
-	printk("\n");
+;
 }
 
 static int dlm_exit_domain_handler(struct o2net_msg *msg, u32 len, void *data,
@@ -566,7 +566,7 @@ static int dlm_exit_domain_handler(struct o2net_msg *msg, u32 len, void *data,
 
 	node = exit_msg->node_idx;
 
-	printk(KERN_NOTICE "o2dlm: Node %u leaves domain %s\n", node, dlm->name);
+;
 
 	spin_lock(&dlm->spinlock);
 	clear_bit(node, dlm->domain_map);
@@ -970,8 +970,8 @@ static int dlm_assert_joined_handler(struct o2net_msg *msg, u32 len, void *data,
 		clear_bit(assert->node_idx, dlm->exit_domain_map);
 		__dlm_set_joining_node(dlm, DLM_LOCK_RES_OWNER_UNKNOWN);
 
-		printk(KERN_NOTICE "o2dlm: Node %u joins domain %s\n",
-		       assert->node_idx, dlm->name);
+//		printk(KERN_NOTICE "o2dlm: Node %u joins domain %s\n",
+;
 		__dlm_print_nodes(dlm);
 
 		/* notify anything attached to the heartbeat events */

@@ -162,9 +162,9 @@ static int __init clps_setup_mtd(struct clps_info *clps, int nr, struct mtd_info
 		clps[i].mtd->owner = THIS_MODULE;
 		subdev[i] = clps[i].mtd;
 
-		printk(KERN_INFO "clps flash: JEDEC device at 0x%08lx, %dMiB, "
-			"%d-bit\n", clps[i].base, clps[i].mtd->size >> 20,
-			clps[i].width * 8);
+//		printk(KERN_INFO "clps flash: JEDEC device at 0x%08lx, %dMiB, "
+//			"%d-bit\n", clps[i].base, clps[i].mtd->size >> 20,
+;
 		found += 1;
 	}
 
@@ -285,17 +285,17 @@ static void __init clps_locate_partitions(struct mtd_info *mtd)
 			part_type = "static";
 			break;
 		}
-		printk("found: %d partitions\n", nr_parts);
+;
 #endif
 	} while (0);
 
 	if (nr_parts == 0) {
-		printk(KERN_NOTICE "clps flash: no partition info "
-			"available, registering whole flash\n");
+//		printk(KERN_NOTICE "clps flash: no partition info "
+;
 		mtd_device_register(mtd, NULL, 0);
 	} else {
-		printk(KERN_NOTICE "clps flash: using %s partition "
-			"definition\n", part_type);
+//		printk(KERN_NOTICE "clps flash: using %s partition "
+;
 		mtd_device_register(mtd, parsed_parts, nr_parts);
 	}
 

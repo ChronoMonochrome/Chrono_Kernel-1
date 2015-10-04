@@ -327,12 +327,12 @@ void kernel_sec_save_final_context(void)
 {
 /*
 	if (kernel_sec_get_mmu_reg_dump(&kernel_sec_mmu_reg_dump) < 0) {
-		printk(KERN_EMERG
-		       "(kernel_sec_save_final_context) kernel_sec_get_mmu_reg_dump faile.\n");
+//		printk(KERN_EMERG
+;
 	}
 	kernel_sec_get_core_reg_dump(&kernel_sec_core_reg_dump);
-	printk(KERN_EMERG
-	       "(kernel_sec_save_final_context) Final context was saved before the system reset.\n");
+//	printk(KERN_EMERG
+;
 */
 //	unsigned long flags;
 	
@@ -342,8 +342,8 @@ void kernel_sec_save_final_context(void)
 				(kernel_sec_mmu_reg_dump, smp_processor_id()));	
 	kernel_sec_get_core_reg_dump(&per_cpu
 				(kernel_sec_core_reg_dump, smp_processor_id()));
-	printk(KERN_EMERG
-	       "(%s) context saved(CPU:%d)\n", __func__, smp_processor_id());
+//	printk(KERN_EMERG
+;
 	       
 //	local_irq_restore(flags);
 }
@@ -379,7 +379,7 @@ NORET_TYPE void panic(const char * fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
-	printk(KERN_EMERG "Kernel panic - not syncing: %s\n",buf);
+;
 #ifdef CONFIG_DEBUG_BUGVERBOSE
 	dump_stack();
 #endif
@@ -414,22 +414,22 @@ NORET_TYPE void panic(const char * fmt, ...)
 
 	if (0 == strcmp(fmt,"__do_user_fault"))
 	{
-		printk(KERN_INFO "machine_restart: userlockup\n" ) ;
+;
 		machine_restart("UserLockUp");
 	}
 	else if (0 == strcmp(fmt, "__forced_upload"))
 	{
-		printk(KERN_INFO "machine_restart: __forced_upload\n" ) ;
+;
 		machine_restart("ForcedUpload");
 	}
 	else if (0 == strcmp(fmt, "__MMDSP_forced_upload"))
 	{
-		printk(KERN_INFO "machine_restart: __MMDSP_forced_upload\n" ) ;
+;
 		machine_restart("MMDSP_ForcedUpload");
 	}
 	else
 	{
-		printk(KERN_INFO "machine_restart: lockup\n" ) ;
+;
 		machine_restart("LockUp");
 	}
 
@@ -449,7 +449,7 @@ NORET_TYPE void panic(const char * fmt, ...)
 		 * Delay timeout seconds before rebooting the machine.
 		 * We can't use the "normal" timers since we just panicked.
 		 */
-		printk(KERN_EMERG "Rebooting in %d seconds..", panic_timeout);
+;
 
 		for (i = 0; i < panic_timeout * 1000; i += PANIC_TIMER_STEP) {
 			touch_nmi_watchdog();
@@ -471,7 +471,7 @@ NORET_TYPE void panic(const char * fmt, ...)
 		extern int stop_a_enabled;
 		/* Make sure the user can actually press Stop-A (L1-A) */
 		stop_a_enabled = 1;
-		printk(KERN_EMERG "Press Stop-A (L1-A) to return to the boot prom\n");
+;
 	}
 #endif
 #if defined(CONFIG_S390)
@@ -584,7 +584,7 @@ void add_taint(unsigned flag)
 
 	default:
 		if (__debug_locks_off())
-			printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
+;
 	}
 
 	set_bit(flag, &tainted_mask);
@@ -692,11 +692,11 @@ void print_oops_end_marker(void)
 	init_oops_id();
 
 	if (mach_panic_string)
-		printk(KERN_WARNING "Board Information: %s\n",
-		       mach_panic_string);
+//		printk(KERN_WARNING "Board Information: %s\n",
+;
 
-	printk(KERN_WARNING "---[ end trace %016llx ]---\n",
-		(unsigned long long)oops_id);
+//	printk(KERN_WARNING "---[ end trace %016llx ]---\n",
+;
 }
 
 /*
@@ -721,14 +721,14 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
 {
 	const char *board;
 
-	printk(KERN_WARNING "------------[ cut here ]------------\n");
-	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
+;
+;
 	board = dmi_get_system_info(DMI_PRODUCT_NAME);
 	if (board)
-		printk(KERN_WARNING "Hardware name: %s\n", board);
+;
 
 	if (args)
-		vprintk(args->fmt, args->args);
+;
 
 	print_modules();
 	dump_stack();

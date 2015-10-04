@@ -808,10 +808,10 @@ static int af9005_frontend_attach(struct dvb_usb_adapter *adap)
 	usb_clear_halt(udev, usb_sndbulkpipe(udev, 2));
 	usb_clear_halt(udev, usb_rcvbulkpipe(udev, 1));
 	if (dvb_usb_af9005_dump_eeprom) {
-		printk("EEPROM DUMP\n");
+;
 		for (i = 0; i < 255; i += 8) {
 			af9005_read_eeprom(adap->dev, i, buf, 8);
-			printk("ADDR %x ", i);
+;
 			debug_dump(buf, 8, printk);
 		}
 	}

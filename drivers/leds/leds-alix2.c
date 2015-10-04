@@ -125,9 +125,9 @@ static int __init alix_present(unsigned long bios_phys,
 	char name[64];
 
 	if (force) {
-		printk(KERN_NOTICE "%s: forced to skip BIOS test, "
-		       "assume system has ALIX.2 style LEDs\n",
-		       KBUILD_MODNAME);
+//		printk(KERN_NOTICE "%s: forced to skip BIOS test, "
+//		       "assume system has ALIX.2 style LEDs\n",
+;
 		return 1;
 	}
 
@@ -154,9 +154,9 @@ static int __init alix_present(unsigned long bios_phys,
 
 		tail = p + alix_sig_len;
 		if ((tail[0] == '2' || tail[0] == '3')) {
-			printk(KERN_INFO
-			       "%s: system is recognized as \"%s\"\n",
-			       KBUILD_MODNAME, name);
+//			printk(KERN_INFO
+//			       "%s: system is recognized as \"%s\"\n",
+;
 			return 1;
 		}
 	}
@@ -171,7 +171,7 @@ static int __init alix_pci_led_init(void)
 	u32 low, hi;
 
 	if (pci_dev_present(divil_pci) == 0) {
-		printk(KERN_WARNING KBUILD_MODNAME": DIVIL not found\n");
+;
 		return -ENODEV;
 	}
 
@@ -180,7 +180,7 @@ static int __init alix_pci_led_init(void)
 
 	/* Check the mask and whether GPIO is enabled (sanity check) */
 	if (hi != 0x0000f001) {
-		printk(KERN_WARNING KBUILD_MODNAME": GPIO not enabled\n");
+;
 		return -ENODEV;
 	}
 
@@ -188,7 +188,7 @@ static int __init alix_pci_led_init(void)
 	gpio_base = low & 0x0000ff00;
 
 	if (!request_region(gpio_base, CS5535_GPIO_SIZE, KBUILD_MODNAME)) {
-		printk(KERN_ERR KBUILD_MODNAME": can't allocate I/O for GPIO\n");
+;
 		return -ENODEV;
 	}
 

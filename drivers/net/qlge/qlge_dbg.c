@@ -1351,8 +1351,8 @@ void ql_mpi_core_to_log(struct work_struct *work)
 
 	count = sizeof(struct ql_mpi_coredump) / sizeof(u32);
 	tmp = (u32 *)qdev->mpi_coredump;
-	netif_printk(qdev, drv, KERN_DEBUG, qdev->ndev,
-		     "Core is dumping to log file!\n");
+//	netif_printk(qdev, drv, KERN_DEBUG, qdev->ndev,
+;
 
 	for (i = 0; i < count; i += 8) {
 		pr_err("%.08x: %.08x %.08x %.08x %.08x %.08x "

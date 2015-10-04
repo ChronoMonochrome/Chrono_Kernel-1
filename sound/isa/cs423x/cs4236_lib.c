@@ -302,16 +302,16 @@ int snd_cs4236_create(struct snd_card *card,
 	{
 		int idx;
 		for (idx = 0; idx < 8; idx++)
-			snd_printk(KERN_DEBUG "CD%i = 0x%x\n",
-				   idx, inb(chip->cport + idx));
+//			snd_printk(KERN_DEBUG "CD%i = 0x%x\n",
+;
 		for (idx = 0; idx < 9; idx++)
-			snd_printk(KERN_DEBUG "C%i = 0x%x\n",
-				   idx, snd_cs4236_ctrl_in(chip, idx));
+//			snd_printk(KERN_DEBUG "C%i = 0x%x\n",
+;
 	}
 #endif
 	if (cport < 0x100 || cport == SNDRV_AUTO_PORT) {
-		snd_printk(KERN_ERR "please, specify control port "
-			   "for CS4236+ chips\n");
+//		snd_printk(KERN_ERR "please, specify control port "
+;
 		snd_device_free(card, chip);
 		return -ENODEV;
 	}
@@ -320,8 +320,8 @@ int snd_cs4236_create(struct snd_card *card,
 	snd_printdd("CS4236: [0x%lx] C1 (version) = 0x%x, ext = 0x%x\n",
 			cport, ver1, ver2);
 	if (ver1 != ver2) {
-		snd_printk(KERN_ERR "CS4236+ chip detected, but "
-			   "control port 0x%lx is not valid\n", cport);
+//		snd_printk(KERN_ERR "CS4236+ chip detected, but "
+;
 		snd_device_free(card, chip);
 		return -ENODEV;
 	}
@@ -953,14 +953,14 @@ static int snd_cs4236_get_iec958_switch(struct snd_kcontrol *kcontrol, struct sn
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	ucontrol->value.integer.value[0] = chip->image[CS4231_ALT_FEATURE_1] & 0x02 ? 1 : 0;
 #if 0
-	printk(KERN_DEBUG "get valid: ALT = 0x%x, C3 = 0x%x, C4 = 0x%x, "
-	       "C5 = 0x%x, C6 = 0x%x, C8 = 0x%x\n",
-			snd_wss_in(chip, CS4231_ALT_FEATURE_1),
-			snd_cs4236_ctrl_in(chip, 3),
-			snd_cs4236_ctrl_in(chip, 4),
-			snd_cs4236_ctrl_in(chip, 5),
-			snd_cs4236_ctrl_in(chip, 6),
-			snd_cs4236_ctrl_in(chip, 8));
+//	printk(KERN_DEBUG "get valid: ALT = 0x%x, C3 = 0x%x, C4 = 0x%x, "
+//	       "C5 = 0x%x, C6 = 0x%x, C8 = 0x%x\n",
+//			snd_wss_in(chip, CS4231_ALT_FEATURE_1),
+//			snd_cs4236_ctrl_in(chip, 3),
+//			snd_cs4236_ctrl_in(chip, 4),
+//			snd_cs4236_ctrl_in(chip, 5),
+//			snd_cs4236_ctrl_in(chip, 6),
+;
 #endif
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 	return 0;
@@ -991,14 +991,14 @@ static int snd_cs4236_put_iec958_switch(struct snd_kcontrol *kcontrol, struct sn
 	mutex_unlock(&chip->mce_mutex);
 
 #if 0
-	printk(KERN_DEBUG "set valid: ALT = 0x%x, C3 = 0x%x, C4 = 0x%x, "
-	       "C5 = 0x%x, C6 = 0x%x, C8 = 0x%x\n",
-			snd_wss_in(chip, CS4231_ALT_FEATURE_1),
-			snd_cs4236_ctrl_in(chip, 3),
-			snd_cs4236_ctrl_in(chip, 4),
-			snd_cs4236_ctrl_in(chip, 5),
-			snd_cs4236_ctrl_in(chip, 6),
-			snd_cs4236_ctrl_in(chip, 8));
+//	printk(KERN_DEBUG "set valid: ALT = 0x%x, C3 = 0x%x, C4 = 0x%x, "
+//	       "C5 = 0x%x, C6 = 0x%x, C8 = 0x%x\n",
+//			snd_wss_in(chip, CS4231_ALT_FEATURE_1),
+//			snd_cs4236_ctrl_in(chip, 3),
+//			snd_cs4236_ctrl_in(chip, 4),
+//			snd_cs4236_ctrl_in(chip, 5),
+//			snd_cs4236_ctrl_in(chip, 6),
+;
 #endif
 	return change;
 }

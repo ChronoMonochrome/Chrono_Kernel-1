@@ -1015,9 +1015,9 @@ static int __init ati_remote2_init(void)
 
 	r = usb_register(&ati_remote2_driver);
 	if (r)
-		printk(KERN_ERR "ati_remote2: usb_register() = %d\n", r);
+;
 	else
-		printk(KERN_INFO "ati_remote2: " DRIVER_DESC " " DRIVER_VERSION "\n");
+;
 
 	return r;
 }

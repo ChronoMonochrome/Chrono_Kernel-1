@@ -35,7 +35,7 @@ int ncp_make_open(struct inode *inode, int right)
 
 	error = -EINVAL;
 	if (!inode) {
-		printk(KERN_ERR "ncp_make_open: got NULL inode\n");
+;
 		goto out;
 	}
 

@@ -79,8 +79,8 @@ scb2_fixup_mtd(struct mtd_info *mtd)
 
 	/* barf if this doesn't look right */
 	if (cfi->cfiq->InterfaceDesc != CFI_INTERFACE_X16_ASYNC) {
-		printk(KERN_ERR MODNAME ": unsupported InterfaceDesc: %#x\n",
-		    cfi->cfiq->InterfaceDesc);
+//		printk(KERN_ERR MODNAME ": unsupported InterfaceDesc: %#x\n",
+;
 		return -1;
 	}
 
@@ -147,15 +147,15 @@ scb2_flash_probe(struct pci_dev *dev, const struct pci_device_id *ent)
 		 * The BIOS seems to mark the flash region as 'reserved'
 		 * in the e820 map.  Warn and go about our business.
 		 */
-		printk(KERN_WARNING MODNAME
-		    ": warning - can't reserve rom window, continuing\n");
+//		printk(KERN_WARNING MODNAME
+;
 		region_fail = 1;
 	}
 
 	/* remap the IO window (w/o caching) */
 	scb2_ioaddr = ioremap_nocache(SCB2_ADDR, SCB2_WINDOW);
 	if (!scb2_ioaddr) {
-		printk(KERN_ERR MODNAME ": Failed to ioremap window!\n");
+;
 		if (!region_fail)
 			release_mem_region(SCB2_ADDR, SCB2_WINDOW);
 		return -ENOMEM;
@@ -171,7 +171,7 @@ scb2_flash_probe(struct pci_dev *dev, const struct pci_device_id *ent)
 	scb2_mtd = do_map_probe("cfi_probe", &scb2_map);
 
 	if (!scb2_mtd) {
-		printk(KERN_ERR MODNAME ": flash probe failed!\n");
+;
 		iounmap(scb2_ioaddr);
 		if (!region_fail)
 			release_mem_region(SCB2_ADDR, SCB2_WINDOW);
@@ -188,9 +188,9 @@ scb2_flash_probe(struct pci_dev *dev, const struct pci_device_id *ent)
 		return -ENODEV;
 	}
 
-	printk(KERN_NOTICE MODNAME ": chip size 0x%llx at offset 0x%llx\n",
-	       (unsigned long long)scb2_mtd->size,
-	       (unsigned long long)(SCB2_WINDOW - scb2_mtd->size));
+//	printk(KERN_NOTICE MODNAME ": chip size 0x%llx at offset 0x%llx\n",
+//	       (unsigned long long)scb2_mtd->size,
+;
 
 	mtd_device_register(scb2_mtd, NULL, 0);
 

@@ -202,11 +202,11 @@ int ft_queue_data_in(struct se_cmd *se_cmd)
 		if (error) {
 			/* XXX For now, initiator will retry */
 			if (printk_ratelimit())
-				printk(KERN_ERR "%s: Failed to send frame %p, "
-						"xid <0x%x>, remaining %zu, "
-						"lso_max <0x%x>\n",
-						__func__, fp, ep->xid,
-						remaining, lport->lso_max);
+//				printk(KERN_ERR "%s: Failed to send frame %p, "
+//						"xid <0x%x>, remaining %zu, "
+//						"lso_max <0x%x>\n",
+//						__func__, fp, ep->xid,
+;
 		}
 	}
 	return ft_queue_status(se_cmd);
@@ -251,10 +251,10 @@ void ft_recv_write_data(struct ft_cmd *cmd, struct fc_frame *fp)
 	 */
 	buf = fc_frame_payload_get(fp, 1);
 	if (cmd->was_ddp_setup && buf) {
-		printk(KERN_INFO "%s: When DDP was setup, not expected to"
-				 "receive frame with payload, Payload shall be"
-				 "copied directly to buffer instead of coming "
-				 "via. legacy receive queues\n", __func__);
+//		printk(KERN_INFO "%s: When DDP was setup, not expected to"
+//				 "receive frame with payload, Payload shall be"
+//				 "copied directly to buffer instead of coming "
+;
 		BUG_ON(buf);
 	}
 
@@ -289,10 +289,10 @@ void ft_recv_write_data(struct ft_cmd *cmd, struct fc_frame *fp)
 			 * this point, but just in case if required in future
 			 * for debugging or any other purpose
 			 */
-			printk(KERN_ERR "%s: Received frame with TSI bit not"
-					" being SET, dropping the frame, "
-					"cmd->sg <%p>, cmd->sg_cnt <0x%x>\n",
-					__func__, cmd->sg, cmd->sg_cnt);
+//			printk(KERN_ERR "%s: Received frame with TSI bit not"
+//					" being SET, dropping the frame, "
+//					"cmd->sg <%p>, cmd->sg_cnt <0x%x>\n",
+;
 			cmd->write_data_len = lport->tt.ddp_done(lport,
 							      ep->xid);
 			lport->tt.seq_exch_abort(cmd->seq, 0);

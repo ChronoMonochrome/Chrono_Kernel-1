@@ -124,10 +124,10 @@ static void aten_log_adapter( PIA *pi, char * scratch, int verbose )
 
 {       char    *mode_string[2] = {"4-bit","8-bit"};
 
-        printk("%s: aten %s, ATEN EH-100 at 0x%x, ",
-                pi->device,ATEN_VERSION,pi->port);
-        printk("mode %d (%s), delay %d\n",pi->mode,
-		mode_string[pi->mode],pi->delay);
+//        printk("%s: aten %s, ATEN EH-100 at 0x%x, ",
+;
+//        printk("mode %d (%s), delay %d\n",pi->mode,
+;
 
 }
 

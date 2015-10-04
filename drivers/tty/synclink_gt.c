@@ -555,20 +555,20 @@ static void trace_block(struct slgt_info *info, const char *data, int count, con
 {
 	int i;
 	int linecount;
-	printk("%s %s data:\n",info->device_name, label);
+;
 	while(count) {
 		linecount = (count > 16) ? 16 : count;
 		for(i=0; i < linecount; i++)
-			printk("%02X ",(unsigned char)data[i]);
+;
 		for(;i<17;i++)
-			printk("   ");
+;
 		for(i=0;i<linecount;i++) {
 			if (data[i]>=040 && data[i]<=0176)
-				printk("%c",data[i]);
+;
 			else
-				printk(".");
+;
 		}
-		printk("\n");
+;
 		data  += linecount;
 		count -= linecount;
 	}
@@ -581,10 +581,10 @@ static void trace_block(struct slgt_info *info, const char *data, int count, con
 static void dump_tbufs(struct slgt_info *info)
 {
 	int i;
-	printk("tbuf_current=%d\n", info->tbuf_current);
+;
 	for (i=0 ; i < info->tbuf_count ; i++) {
-		printk("%d: count=%04X status=%04X\n",
-			i, le16_to_cpu(info->tbufs[i].count), le16_to_cpu(info->tbufs[i].status));
+//		printk("%d: count=%04X status=%04X\n",
+;
 	}
 }
 #else
@@ -595,10 +595,10 @@ static void dump_tbufs(struct slgt_info *info)
 static void dump_rbufs(struct slgt_info *info)
 {
 	int i;
-	printk("rbuf_current=%d\n", info->rbuf_current);
+;
 	for (i=0 ; i < info->rbuf_count ; i++) {
-		printk("%d: count=%04X status=%04X\n",
-			i, le16_to_cpu(info->rbufs[i].count), le16_to_cpu(info->rbufs[i].status));
+//		printk("%d: count=%04X status=%04X\n",
+;
 	}
 }
 #else
@@ -609,11 +609,11 @@ static inline int sanity_check(struct slgt_info *info, char *devname, const char
 {
 #ifdef SANITY_CHECK
 	if (!info) {
-		printk("null struct slgt_info for (%s) in %s\n", devname, name);
+;
 		return 1;
 	}
 	if (info->magic != MGSL_MAGIC) {
-		printk("bad magic number struct slgt_info (%s) in %s\n", devname, name);
+;
 		return 1;
 	}
 #else
@@ -1806,7 +1806,7 @@ static int hdlcdev_init(struct slgt_info *info)
 	/* allocate and initialize network and HDLC layer objects */
 
 	if (!(dev = alloc_hdlcdev(info))) {
-		printk(KERN_ERR "%s hdlc device alloc failure\n", info->device_name);
+;
 		return -ENOMEM;
 	}
 
@@ -1827,7 +1827,7 @@ static int hdlcdev_init(struct slgt_info *info)
 
 	/* register objects with HDLC layer */
 	if ((rc = register_hdlc_device(dev))) {
-		printk(KERN_WARNING "%s:unable to register hdlc device\n",__FILE__);
+;
 		free_netdev(dev);
 		return rc;
 	}
@@ -3570,9 +3570,9 @@ static void add_device(struct slgt_info *info)
 	default:
 		devstr = "(unknown model)";
 	}
-	printk("SyncLink %s %s IO=%08x IRQ=%d MaxFrameSize=%u\n",
-		devstr, info->device_name, info->phys_reg_addr,
-		info->irq_level, info->max_frame_size);
+//	printk("SyncLink %s %s IO=%08x IRQ=%d MaxFrameSize=%u\n",
+//		devstr, info->device_name, info->phys_reg_addr,
+;
 
 #if SYNCLINK_GENERIC_HDLC
 	hdlcdev_init(info);
@@ -3698,7 +3698,7 @@ static int __devinit init_one(struct pci_dev *dev,
 			      const struct pci_device_id *ent)
 {
 	if (pci_enable_device(dev)) {
-		printk("error enabling pci device %p\n", dev);
+;
 		return -EIO;
 	}
 	pci_set_master(dev);
@@ -3742,7 +3742,7 @@ static void slgt_cleanup(void)
 	struct slgt_info *info;
 	struct slgt_info *tmp;
 
-	printk(KERN_INFO "unload %s\n", driver_name);
+;
 
 	if (serial_driver) {
 		for (info=slgt_device_list ; info != NULL ; info=info->next_device)
@@ -3785,11 +3785,11 @@ static int __init slgt_init(void)
 {
 	int rc;
 
-	printk(KERN_INFO "%s\n", driver_name);
+;
 
 	serial_driver = alloc_tty_driver(MAX_DEVICES);
 	if (!serial_driver) {
-		printk("%s can't allocate tty driver\n", driver_name);
+;
 		return -ENOMEM;
 	}
 
@@ -3816,18 +3816,18 @@ static int __init slgt_init(void)
 		goto error;
 	}
 
-	printk(KERN_INFO "%s, tty major#%d\n",
-	       driver_name, serial_driver->major);
+//	printk(KERN_INFO "%s, tty major#%d\n",
+;
 
 	slgt_device_count = 0;
 	if ((rc = pci_register_driver(&pci_driver)) < 0) {
-		printk("%s pci_register_driver error=%d\n", driver_name, rc);
+;
 		goto error;
 	}
 	pci_registered = true;
 
 	if (!slgt_device_list)
-		printk("%s no devices found\n",driver_name);
+;
 
 	return 0;
 
@@ -5109,13 +5109,13 @@ static int adapter_test(struct slgt_info *info)
 {
 	DBGINFO(("testing %s\n", info->device_name));
 	if (register_test(info) < 0) {
-		printk("register test failure %s addr=%08X\n",
-			info->device_name, info->phys_reg_addr);
+//		printk("register test failure %s addr=%08X\n",
+;
 	} else if (irq_test(info) < 0) {
-		printk("IRQ test failure %s IRQ=%d\n",
-			info->device_name, info->irq_level);
+//		printk("IRQ test failure %s IRQ=%d\n",
+;
 	} else if (loopback_test(info) < 0) {
-		printk("loopback test failure %s\n", info->device_name);
+;
 	}
 	return info->init_error;
 }

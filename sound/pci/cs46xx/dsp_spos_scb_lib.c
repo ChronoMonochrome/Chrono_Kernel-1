@@ -1305,7 +1305,7 @@ cs46xx_dsp_create_pcm_channel (struct snd_cs46xx * chip,
 
 	if (src_scb == NULL) {
 		if (ins->nsrc_scb >= DSP_MAX_SRC_NR) {
-			snd_printk(KERN_ERR "dsp_spos: to many SRC instances\n!");
+;
 			return NULL;
 		}
 

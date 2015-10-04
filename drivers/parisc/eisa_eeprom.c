@@ -113,11 +113,11 @@ static int __init eisa_eeprom_init(void)
 
 	retval = misc_register(&eisa_eeprom_dev);
 	if (retval < 0) {
-		printk(KERN_ERR "EISA EEPROM: cannot register misc device.\n");
+;
 		return retval;
 	}
 
-	printk(KERN_INFO "EISA EEPROM at 0x%p\n", eisa_eeprom_addr);
+;
 	return 0;
 }
 

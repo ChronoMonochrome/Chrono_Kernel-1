@@ -303,7 +303,7 @@ static int __devinit rackmeter_setup(struct rackmeter *rm)
 	pr_debug("rackmeter: start CPU measurements..\n");
 	rackmeter_init_cpu_sniffer(rm);
 
-	printk(KERN_INFO "RackMeter initialized\n");
+;
 
 	return 0;
 }
@@ -340,12 +340,12 @@ static irqreturn_t rackmeter_irq(int irq, void *arg)
 	/* Read mark */
 	mark = db->mark;
 	if (mark != 1 && mark != 2) {
-		printk(KERN_WARNING "rackmeter: Incorrect DMA mark 0x%08x\n",
-		       mark);
+//		printk(KERN_WARNING "rackmeter: Incorrect DMA mark 0x%08x\n",
+;
 		/* We allow for 3 errors like that (stale DBDMA irqs) */
 		if (++rm->stale_irq > 3) {
-			printk(KERN_ERR "rackmeter: Too many errors,"
-			       " stopping DMA\n");
+//			printk(KERN_ERR "rackmeter: Too many errors,"
+;
 			DBDMA_DO_RESET(rm->dma_regs);
 		}
 		return IRQ_HANDLED;
@@ -398,7 +398,7 @@ static int __devinit rackmeter_probe(struct macio_dev* mdev,
 	/* Create and initialize our instance data */
 	rm = kzalloc(sizeof(struct rackmeter), GFP_KERNEL);
 	if (rm == NULL) {
-		printk(KERN_ERR "rackmeter: failed to allocate memory !\n");
+;
 		rc = -ENOMEM;
 		goto bail_release;
 	}
@@ -409,17 +409,17 @@ static int __devinit rackmeter_probe(struct macio_dev* mdev,
 	/* Check resources availability. We need at least resource 0 and 1 */
 #if 0 /* Use that when i2s-a is finally an mdev per-se */
 	if (macio_resource_count(mdev) < 2 || macio_irq_count(mdev) < 2) {
-		printk(KERN_ERR
-		       "rackmeter: found match but lacks resources: %s"
-		       " (%d resources, %d interrupts)\n",
-		       mdev->ofdev.node->full_name);
+//		printk(KERN_ERR
+//		       "rackmeter: found match but lacks resources: %s"
+//		       " (%d resources, %d interrupts)\n",
+;
 		rc = -ENXIO;
 		goto bail_free;
 	}
 	if (macio_request_resources(mdev, "rackmeter")) {
-		printk(KERN_ERR
-		       "rackmeter: failed to request resources: %s\n",
-		       mdev->ofdev.node->full_name);
+//		printk(KERN_ERR
+//		       "rackmeter: failed to request resources: %s\n",
+;
 		rc = -EBUSY;
 		goto bail_free;
 	}
@@ -429,9 +429,9 @@ static int __devinit rackmeter_probe(struct macio_dev* mdev,
 	if (rm->irq == NO_IRQ ||
 	    of_address_to_resource(i2s, 0, &ri2s) ||
 	    of_address_to_resource(i2s, 1, &rdma)) {
-		printk(KERN_ERR
-		       "rackmeter: found match but lacks resources: %s",
-		       mdev->ofdev.dev.of_node->full_name);
+//		printk(KERN_ERR
+//		       "rackmeter: found match but lacks resources: %s",
+;
 		rc = -ENXIO;
 		goto bail_free;
 	}
@@ -443,8 +443,8 @@ static int __devinit rackmeter_probe(struct macio_dev* mdev,
 
 	rm->ubuf = (u8 *)__get_free_page(GFP_KERNEL);
 	if (rm->ubuf == NULL) {
-		printk(KERN_ERR
-		       "rackmeter: failed to allocate samples page !\n");
+//		printk(KERN_ERR
+;
 		rc = -ENOMEM;
 		goto bail_release;
 	}
@@ -453,8 +453,8 @@ static int __devinit rackmeter_probe(struct macio_dev* mdev,
 					   sizeof(struct rackmeter_dma),
 					   &rm->dma_buf_p, GFP_KERNEL);
 	if (rm->dma_buf_v == NULL) {
-		printk(KERN_ERR
-		       "rackmeter: failed to allocate dma buffer !\n");
+//		printk(KERN_ERR
+;
 		rc = -ENOMEM;
 		goto bail_free_samples;
 	}
@@ -464,8 +464,8 @@ static int __devinit rackmeter_probe(struct macio_dev* mdev,
 	rm->i2s_regs = ioremap(ri2s.start, 0x1000);
 #endif
 	if (rm->i2s_regs == NULL) {
-		printk(KERN_ERR
-		       "rackmeter: failed to map i2s registers !\n");
+//		printk(KERN_ERR
+;
 		rc = -ENXIO;
 		goto bail_free_dma;
 	}
@@ -475,24 +475,24 @@ static int __devinit rackmeter_probe(struct macio_dev* mdev,
 	rm->dma_regs = ioremap(rdma.start, 0x100);
 #endif
 	if (rm->dma_regs == NULL) {
-		printk(KERN_ERR
-		       "rackmeter: failed to map dma registers !\n");
+//		printk(KERN_ERR
+;
 		rc = -ENXIO;
 		goto bail_unmap_i2s;
 	}
 
 	rc = rackmeter_setup(rm);
 	if (rc) {
-		printk(KERN_ERR
-		       "rackmeter: failed to initialize !\n");
+//		printk(KERN_ERR
+;
 		rc = -ENXIO;
 		goto bail_unmap_dma;
 	}
 
 	rc = request_irq(rm->irq, rackmeter_irq, 0, "rackmeter", rm);
 	if (rc != 0) {
-		printk(KERN_ERR
-		       "rackmeter: failed to request interrupt !\n");
+//		printk(KERN_ERR
+;
 		goto bail_stop_dma;
 	}
 	of_node_put(np);

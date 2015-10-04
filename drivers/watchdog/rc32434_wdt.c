@@ -78,8 +78,8 @@ static int rc32434_wdt_set(int new_timeout)
 	int max_to = WTCOMP2SEC((u32)-1);
 
 	if (new_timeout < 0 || new_timeout > max_to) {
-		printk(KERN_ERR PFX "timeout value must be between 0 and %d",
-			max_to);
+//		printk(KERN_ERR PFX "timeout value must be between 0 and %d",
+;
 		return -EINVAL;
 	}
 	timeout = new_timeout;
@@ -119,7 +119,7 @@ static void rc32434_wdt_start(void)
 	SET_BITS(wdt_reg->wtc, or, nand);
 
 	spin_unlock(&rc32434_wdt_device.io_lock);
-	printk(KERN_INFO PFX "Started watchdog timer.\n");
+;
 }
 
 static void rc32434_wdt_stop(void)
@@ -130,7 +130,7 @@ static void rc32434_wdt_stop(void)
 	SET_BITS(wdt_reg->wtc, 0, 1 << RC32434_WTC_EN);
 
 	spin_unlock(&rc32434_wdt_device.io_lock);
-	printk(KERN_INFO PFX "Stopped watchdog timer.\n");
+;
 }
 
 static void rc32434_wdt_ping(void)
@@ -160,8 +160,8 @@ static int rc32434_wdt_release(struct inode *inode, struct file *file)
 		rc32434_wdt_stop();
 		module_put(THIS_MODULE);
 	} else {
-		printk(KERN_CRIT PFX
-			"device closed unexpectedly. WDT will not stop!\n");
+//		printk(KERN_CRIT PFX
+;
 		rc32434_wdt_ping();
 	}
 	clear_bit(0, &rc32434_wdt_device.inuse);
@@ -272,13 +272,13 @@ static int __devinit rc32434_wdt_probe(struct platform_device *pdev)
 
 	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "rb532_wdt_res");
 	if (!r) {
-		printk(KERN_ERR PFX "failed to retrieve resources\n");
+;
 		return -ENODEV;
 	}
 
 	wdt_reg = ioremap_nocache(r->start, resource_size(r));
 	if (!wdt_reg) {
-		printk(KERN_ERR PFX "failed to remap I/O resources\n");
+;
 		return -ENXIO;
 	}
 
@@ -291,18 +291,18 @@ static int __devinit rc32434_wdt_probe(struct platform_device *pdev)
 	 * if not reset to the default */
 	if (rc32434_wdt_set(timeout)) {
 		rc32434_wdt_set(WATCHDOG_TIMEOUT);
-		printk(KERN_INFO PFX
-			"timeout value must be between 0 and %d\n",
-			WTCOMP2SEC((u32)-1));
+//		printk(KERN_INFO PFX
+//			"timeout value must be between 0 and %d\n",
+;
 	}
 
 	ret = misc_register(&rc32434_wdt_miscdev);
 	if (ret < 0) {
-		printk(KERN_ERR PFX "failed to register watchdog device\n");
+;
 		goto unmap;
 	}
 
-	printk(banner, timeout);
+;
 
 	return 0;
 

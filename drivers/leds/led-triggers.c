@@ -262,11 +262,11 @@ void led_trigger_register_simple(const char *name, struct led_trigger **tp)
 		trigger->name = name;
 		err = led_trigger_register(trigger);
 		if (err < 0)
-			printk(KERN_WARNING "LED trigger %s failed to register"
-				" (%d)\n", name, err);
+//			printk(KERN_WARNING "LED trigger %s failed to register"
+;
 	} else
-		printk(KERN_WARNING "LED trigger %s failed to register"
-			" (no memory)\n", name);
+//		printk(KERN_WARNING "LED trigger %s failed to register"
+;
 
 	*tp = trigger;
 }

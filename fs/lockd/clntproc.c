@@ -178,7 +178,7 @@ int nlmclnt_proc(struct nlm_host *host, int cmd, struct file_lock *fl)
 	fl->fl_ops->fl_release_private(fl);
 	fl->fl_ops = NULL;
 
-	dprintk("lockd: clnt proc returns %d\n", status);
+;
 	return status;
 }
 EXPORT_SYMBOL_GPL(nlmclnt_proc);
@@ -204,7 +204,7 @@ struct nlm_rqst *nlm_alloc_call(struct nlm_host *host)
 		}
 		if (signalled())
 			break;
-		printk("nlm_alloc_call: failed, waiting for memory\n");
+;
 		schedule_timeout_interruptible(5*HZ);
 	}
 	nlmclnt_release_host(host);
@@ -258,8 +258,8 @@ nlmclnt_call(struct rpc_cred *cred, struct nlm_rqst *req, u32 proc)
 	};
 	int		status;
 
-	dprintk("lockd: call procedure %d on %s\n",
-			(int)proc, host->h_name);
+//	dprintk("lockd: call procedure %d on %s\n",
+;
 
 	do {
 		if (host->h_reclaiming && !argp->reclaim)
@@ -272,7 +272,7 @@ nlmclnt_call(struct rpc_cred *cred, struct nlm_rqst *req, u32 proc)
 
 		/* Perform the RPC call. If an error occurs, try again */
 		if ((status = rpc_call_sync(clnt, &msg, 0)) < 0) {
-			dprintk("lockd: rpc_call returned error %d\n", -status);
+;
 			switch (status) {
 			case -EPROTONOSUPPORT:
 				status = -EINVAL;
@@ -291,10 +291,10 @@ nlmclnt_call(struct rpc_cred *cred, struct nlm_rqst *req, u32 proc)
 			break;
 		} else
 		if (resp->status == nlm_lck_denied_grace_period) {
-			dprintk("lockd: server in grace period\n");
+;
 			if (argp->reclaim) {
-				printk(KERN_WARNING
-				     "lockd: spurious grace period reject?!\n");
+//				printk(KERN_WARNING
+;
 				return -ENOLCK;
 			}
 		} else {
@@ -302,7 +302,7 @@ nlmclnt_call(struct rpc_cred *cred, struct nlm_rqst *req, u32 proc)
 				/* We appear to be out of the grace period */
 				wake_up_all(&host->h_gracewait);
 			}
-			dprintk("lockd: server returns status %d\n", resp->status);
+;
 			return 0;	/* Okay, call complete */
 		}
 
@@ -333,8 +333,8 @@ static struct rpc_task *__nlm_async_call(struct nlm_rqst *req, u32 proc, struct 
 		.flags = RPC_TASK_ASYNC,
 	};
 
-	dprintk("lockd: call procedure %d on %s (async)\n",
-			(int)proc, host->h_name);
+//	dprintk("lockd: call procedure %d on %s (async)\n",
+;
 
 	/* If we have no RPC client yet, create one. */
 	clnt = nlm_bind_host(host);
@@ -574,7 +574,7 @@ again:
 		/* Ensure the resulting lock will get added to granted list */
 		fl->fl_flags |= FL_SLEEP;
 		if (do_vfs_lock(fl) < 0)
-			printk(KERN_WARNING "%s: VFS is out of sync with lock manager!\n", __func__);
+;
 		up_read(&host->h_rwsem);
 		fl->fl_flags = fl_flags;
 		status = 0;
@@ -597,8 +597,8 @@ out:
 	return status;
 out_unlock:
 	/* Fatal error: ensure that we remove the lock altogether */
-	dprintk("lockd: lock attempt ended in fatal error.\n"
-		"       Attempting to unlock.\n");
+//	dprintk("lockd: lock attempt ended in fatal error.\n"
+;
 	nlmclnt_finish_block(block);
 	fl_type = fl->fl_type;
 	fl->fl_type = F_UNLCK;
@@ -635,9 +635,9 @@ nlmclnt_reclaim(struct nlm_host *host, struct file_lock *fl)
 	if (status >= 0 && req->a_res.status == nlm_granted)
 		return 0;
 
-	printk(KERN_WARNING "lockd: failed to reclaim lock for pid %d "
-				"(errno %d, status %d)\n", fl->fl_pid,
-				status, ntohl(req->a_res.status));
+//	printk(KERN_WARNING "lockd: failed to reclaim lock for pid %d "
+//				"(errno %d, status %d)\n", fl->fl_pid,
+;
 
 	/*
 	 * FIXME: This is a serious failure. We can
@@ -690,7 +690,7 @@ nlmclnt_unlock(struct nlm_rqst *req, struct file_lock *fl)
 		goto out;
 
 	if (resp->status != nlm_lck_denied_nolocks)
-		printk("lockd: unexpected unlock status: %d\n", resp->status);
+;
 	/* What to do now? I'm out of my depth... */
 	status = -ENOLCK;
 out:
@@ -707,7 +707,7 @@ static void nlmclnt_unlock_callback(struct rpc_task *task, void *data)
 		goto die;
 
 	if (task->tk_status < 0) {
-		dprintk("lockd: unlock failed (err = %d)\n", -task->tk_status);
+;
 		switch (task->tk_status) {
 		case -EACCES:
 		case -EIO:
@@ -721,7 +721,7 @@ static void nlmclnt_unlock_callback(struct rpc_task *task, void *data)
 		goto retry_unlock;
 	}
 	if (status != NLM_LCK_GRANTED)
-		printk(KERN_WARNING "lockd: unexpected unlock status: %d\n", status);
+;
 die:
 	return;
  retry_rebind:
@@ -745,8 +745,8 @@ static int nlmclnt_cancel(struct nlm_host *host, int block, struct file_lock *fl
 	struct nlm_rqst	*req;
 	int status;
 
-	dprintk("lockd: blocking lock attempt was interrupted by a signal.\n"
-		"       Attempting to cancel lock.\n");
+//	dprintk("lockd: blocking lock attempt was interrupted by a signal.\n"
+;
 
 	req = nlm_alloc_call(nlm_get_host(host));
 	if (!req)
@@ -774,13 +774,13 @@ static void nlmclnt_cancel_callback(struct rpc_task *task, void *data)
 		goto die;
 
 	if (task->tk_status < 0) {
-		dprintk("lockd: CANCEL call error %d, retrying.\n",
-					task->tk_status);
+//		dprintk("lockd: CANCEL call error %d, retrying.\n",
+;
 		goto retry_cancel;
 	}
 
-	dprintk("lockd: cancel status %u (task %u)\n",
-			status, task->tk_pid);
+//	dprintk("lockd: cancel status %u (task %u)\n",
+;
 
 	switch (status) {
 	case NLM_LCK_GRANTED:
@@ -789,11 +789,11 @@ static void nlmclnt_cancel_callback(struct rpc_task *task, void *data)
 		/* Everything's good */
 		break;
 	case NLM_LCK_DENIED_NOLOCKS:
-		dprintk("lockd: CANCEL failed (server has no locks)\n");
+;
 		goto retry_cancel;
 	default:
-		printk(KERN_NOTICE "lockd: weird return %d for CANCEL call\n",
-			status);
+//		printk(KERN_NOTICE "lockd: weird return %d for CANCEL call\n",
+;
 	}
 
 die:
@@ -828,7 +828,7 @@ nlm_stat_to_errno(__be32 status)
 	case NLM_LCK_DENIED_GRACE_PERIOD:
 		return -ENOLCK;
 	case NLM_LCK_BLOCKED:
-		printk(KERN_NOTICE "lockd: unexpected status NLM_BLOCKED\n");
+;
 		return -ENOLCK;
 #ifdef CONFIG_LOCKD_V4
 	case NLM_DEADLCK:
@@ -843,6 +843,6 @@ nlm_stat_to_errno(__be32 status)
 		return -ENOLCK;
 #endif
 	}
-	printk(KERN_NOTICE "lockd: unexpected server status %d\n", status);
+;
 	return -ENOLCK;
 }

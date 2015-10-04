@@ -2573,8 +2573,8 @@ out:
 		 * leave kernel.
 		 */
 		if (p->mm && printk_ratelimit()) {
-			printk(KERN_INFO "process %d (%s) no longer affine to cpu%d\n",
-					task_pid_nr(p), p->comm, cpu);
+//			printk(KERN_INFO "process %d (%s) no longer affine to cpu%d\n",
+;
 		}
 	}
 
@@ -4334,8 +4334,8 @@ static noinline void __schedule_bug(struct task_struct *prev)
 {
 	struct pt_regs *regs = get_irq_regs();
 
-	printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
-		prev->comm, prev->pid, preempt_count());
+//	printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
+;
 
 	debug_show_held_locks(prev);
 	print_modules();
@@ -6071,25 +6071,25 @@ void sched_show_task(struct task_struct *p)
 	unsigned state;
 
 	state = p->state ? __ffs(p->state) + 1 : 0;
-	printk(KERN_INFO "%-15.15s %c", p->comm,
-		state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+//	printk(KERN_INFO "%-15.15s %c", p->comm,
+;
 #if BITS_PER_LONG == 32
 	if (state == TASK_RUNNING)
-		printk(KERN_CONT " running  ");
+;
 	else
-		printk(KERN_CONT " %08lx ", thread_saved_pc(p));
+;
 #else
 	if (state == TASK_RUNNING)
-		printk(KERN_CONT "  running task    ");
+;
 	else
-		printk(KERN_CONT " %016lx ", thread_saved_pc(p));
+;
 #endif
 #ifdef CONFIG_DEBUG_STACK_USAGE
 	free = stack_not_used(p);
 #endif
-	printk(KERN_CONT "%5lu %5d %6d 0x%08lx\n", free,
-		task_pid_nr(p), task_pid_nr(p->real_parent),
-		(unsigned long)task_thread_info(p)->flags);
+//	printk(KERN_CONT "%5lu %5d %6d 0x%08lx\n", free,
+//		task_pid_nr(p), task_pid_nr(p->real_parent),
+;
 
 	show_stack(p, NULL);
 }
@@ -6099,11 +6099,11 @@ void show_state_filter(unsigned long state_filter)
 	struct task_struct *g, *p;
 
 #if BITS_PER_LONG == 32
-	printk(KERN_INFO
-		"  task                PC stack   pid father\n");
+//	printk(KERN_INFO
+;
 #else
-	printk(KERN_INFO
-		"  task                        PC stack   pid father\n");
+//	printk(KERN_INFO
+;
 #endif
 	read_lock(&tasklist_lock);
 	do_each_thread(g, p) {
@@ -6827,48 +6827,48 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
 	printk(KERN_DEBUG "%*s domain %d: ", level, "", level);
 
 	if (!(sd->flags & SD_LOAD_BALANCE)) {
-		printk("does not load-balance\n");
+;
 		if (sd->parent)
-			printk(KERN_ERR "ERROR: !SD_LOAD_BALANCE domain"
-					" has parent");
+//			printk(KERN_ERR "ERROR: !SD_LOAD_BALANCE domain"
+;
 		return -1;
 	}
 
-	printk(KERN_CONT "span %s level %s\n", str, sd->name);
+;
 
 	if (!cpumask_test_cpu(cpu, sched_domain_span(sd))) {
-		printk(KERN_ERR "ERROR: domain->span does not contain "
-				"CPU%d\n", cpu);
+//		printk(KERN_ERR "ERROR: domain->span does not contain "
+;
 	}
 	if (!cpumask_test_cpu(cpu, sched_group_cpus(group))) {
-		printk(KERN_ERR "ERROR: domain->groups does not contain"
-				" CPU%d\n", cpu);
+//		printk(KERN_ERR "ERROR: domain->groups does not contain"
+;
 	}
 
 	printk(KERN_DEBUG "%*s groups:", level + 1, "");
 	do {
 		if (!group) {
-			printk("\n");
-			printk(KERN_ERR "ERROR: group is NULL\n");
+;
+;
 			break;
 		}
 
 		if (!group->sgp->power) {
-			printk(KERN_CONT "\n");
-			printk(KERN_ERR "ERROR: domain->cpu_power not "
-					"set\n");
+;
+//			printk(KERN_ERR "ERROR: domain->cpu_power not "
+;
 			break;
 		}
 
 		if (!cpumask_weight(sched_group_cpus(group))) {
-			printk(KERN_CONT "\n");
-			printk(KERN_ERR "ERROR: empty group\n");
+;
+;
 			break;
 		}
 
 		if (cpumask_intersects(groupmask, sched_group_cpus(group))) {
-			printk(KERN_CONT "\n");
-			printk(KERN_ERR "ERROR: repeated CPUs\n");
+;
+;
 			break;
 		}
 
@@ -6876,23 +6876,23 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
 
 		cpulist_scnprintf(str, sizeof(str), sched_group_cpus(group));
 
-		printk(KERN_CONT " %s", str);
+;
 		if (group->sgp->power != SCHED_POWER_SCALE) {
-			printk(KERN_CONT " (cpu_power = %d)",
-				group->sgp->power);
+//			printk(KERN_CONT " (cpu_power = %d)",
+;
 		}
 
 		group = group->next;
 	} while (group != sd->groups);
-	printk(KERN_CONT "\n");
+;
 
 	if (!cpumask_equal(sched_domain_span(sd), groupmask))
-		printk(KERN_ERR "ERROR: groups don't span domain->span\n");
+;
 
 	if (sd->parent &&
 	    !cpumask_subset(groupmask, sched_domain_span(sd->parent)))
-		printk(KERN_ERR "ERROR: parent span is not a superset "
-			"of domain->span\n");
+//		printk(KERN_ERR "ERROR: parent span is not a superset "
+;
 	return 0;
 }
 
@@ -6904,11 +6904,11 @@ static void sched_domain_debug(struct sched_domain *sd, int cpu)
 		return;
 
 	if (!sd) {
-		printk(KERN_DEBUG "CPU%d attaching NULL sched-domain.\n", cpu);
+;
 		return;
 	}
 
-	printk(KERN_DEBUG "CPU%d attaching sched-domain:\n", cpu);
+;
 
 	for (;;) {
 		if (sched_domain_debug_one(sd, cpu, level, sched_domains_tmpmask))
@@ -8514,13 +8514,13 @@ void __might_sleep(const char *file, int line, int preempt_offset)
 		return;
 	prev_jiffy = jiffies;
 
-	printk(KERN_ERR
-		"BUG: sleeping function called from invalid context at %s:%d\n",
-			file, line);
-	printk(KERN_ERR
-		"in_atomic(): %d, irqs_disabled(): %d, pid: %d, name: %s\n",
-			in_atomic(), irqs_disabled(),
-			current->pid, current->comm);
+//	printk(KERN_ERR
+//		"BUG: sleeping function called from invalid context at %s:%d\n",
+;
+//	printk(KERN_ERR
+//		"in_atomic(): %d, irqs_disabled(): %d, pid: %d, name: %s\n",
+//			in_atomic(), irqs_disabled(),
+;
 
 	debug_show_held_locks(current);
 	if (irqs_disabled())

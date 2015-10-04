@@ -65,7 +65,7 @@ void soc_pcmcia_debug(struct soc_pcmcia_socket *skt, const char *func,
 		vaf.fmt = fmt;
 		vaf.va = &args;
 
-		printk(KERN_DEBUG "skt%u: %s: %pV", skt->nr, func, &vaf);
+;
 
 		va_end(args);
 	}
@@ -166,8 +166,8 @@ static int soc_common_pcmcia_config_skt(
 	}
 
 	if (ret < 0)
-		printk(KERN_ERR "soc_common_pcmcia: unable to configure "
-		       "socket %d\n", skt->nr);
+//		printk(KERN_ERR "soc_common_pcmcia: unable to configure "
+;
 
 	return ret;
 }
@@ -362,8 +362,8 @@ static int soc_common_pcmcia_set_io_map(
 		(map->flags & MAP_PREFETCH)	? "PREFETCH "	: "");
 
 	if (map->map >= MAX_IO_WIN) {
-		printk(KERN_ERR "%s(): map (%d) out of range\n", __func__,
-		       map->map);
+//		printk(KERN_ERR "%s(): map (%d) out of range\n", __func__,
+;
 		return -1;
 	}
 
@@ -541,8 +541,8 @@ int soc_pcmcia_request_irqs(struct soc_pcmcia_socket *skt,
 	}
 
 	if (res) {
-		printk(KERN_ERR "PCMCIA: request for IRQ%d failed (%d)\n",
-			irqs[i].irq, res);
+//		printk(KERN_ERR "PCMCIA: request for IRQ%d failed (%d)\n",
+;
 
 		while (i--)
 			if (irqs[i].sock == skt->nr)
@@ -619,8 +619,8 @@ static int soc_pcmcia_cpufreq_register(void)
 	ret = cpufreq_register_notifier(&soc_pcmcia_notifier_block,
 					CPUFREQ_TRANSITION_NOTIFIER);
 	if (ret < 0)
-		printk(KERN_ERR "Unable to register CPU frequency change "
-				"notifier for PCMCIA (%d)\n", ret);
+//		printk(KERN_ERR "Unable to register CPU frequency change "
+;
 	return ret;
 }
 fs_initcall(soc_pcmcia_cpufreq_register);

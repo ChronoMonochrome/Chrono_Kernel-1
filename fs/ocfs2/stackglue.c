@@ -127,9 +127,9 @@ static int ocfs2_stack_driver_get(const char *stack_name)
 		stack_name = OCFS2_STACK_PLUGIN_O2CB;
 
 	if (strlen(stack_name) != OCFS2_STACK_LABEL_LEN) {
-		printk(KERN_ERR
-		       "ocfs2 passed an invalid cluster stack label: \"%s\"\n",
-		       stack_name);
+//		printk(KERN_ERR
+//		       "ocfs2 passed an invalid cluster stack label: \"%s\"\n",
+;
 		return -EINVAL;
 	}
 
@@ -144,12 +144,12 @@ static int ocfs2_stack_driver_get(const char *stack_name)
 	}
 
 	if (rc == -ENOENT) {
-		printk(KERN_ERR
-		       "ocfs2: Cluster stack driver \"%s\" cannot be found\n",
-		       plugin_name);
+//		printk(KERN_ERR
+//		       "ocfs2: Cluster stack driver \"%s\" cannot be found\n",
+;
 	} else if (rc == -EBUSY) {
-		printk(KERN_ERR
-		       "ocfs2: A different cluster stack is in use\n");
+//		printk(KERN_ERR
+;
 	}
 
 	return rc;
@@ -178,12 +178,12 @@ int ocfs2_stack_glue_register(struct ocfs2_stack_plugin *plugin)
 		plugin->sp_count = 0;
 		plugin->sp_max_proto = locking_max_version;
 		list_add(&plugin->sp_list, &ocfs2_stack_list);
-		printk(KERN_INFO "ocfs2: Registered cluster interface %s\n",
-		       plugin->sp_name);
+//		printk(KERN_INFO "ocfs2: Registered cluster interface %s\n",
+;
 		rc = 0;
 	} else {
-		printk(KERN_ERR "ocfs2: Stack \"%s\" already registered\n",
-		       plugin->sp_name);
+//		printk(KERN_ERR "ocfs2: Stack \"%s\" already registered\n",
+;
 		rc = -EEXIST;
 	}
 	spin_unlock(&ocfs2_stack_lock);
@@ -203,11 +203,11 @@ void ocfs2_stack_glue_unregister(struct ocfs2_stack_plugin *plugin)
 		BUG_ON(plugin == active_stack);
 		BUG_ON(plugin->sp_count != 0);
 		list_del_init(&plugin->sp_list);
-		printk(KERN_INFO "ocfs2: Unregistered cluster interface %s\n",
-		       plugin->sp_name);
+//		printk(KERN_INFO "ocfs2: Unregistered cluster interface %s\n",
+;
 	} else {
-		printk(KERN_ERR "Stack \"%s\" is not registered\n",
-		       plugin->sp_name);
+//		printk(KERN_ERR "Stack \"%s\" is not registered\n",
+;
 	}
 	spin_unlock(&ocfs2_stack_lock);
 }
@@ -434,10 +434,10 @@ static void ocfs2_leave_group(const char *group)
 
 	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
 	if (ret < 0) {
-		printk(KERN_ERR
-		       "ocfs2: Error %d running user helper "
-		       "\"%s %s %s %s\"\n",
-		       ret, argv[0], argv[1], argv[2], argv[3]);
+//		printk(KERN_ERR
+//		       "ocfs2: Error %d running user helper "
+//		       "\"%s %s %s %s\"\n",
+;
 	}
 }
 
@@ -700,8 +700,8 @@ static int __init ocfs2_stack_glue_init(void)
 
 	ocfs2_table_header = register_sysctl_table(ocfs2_root_table);
 	if (!ocfs2_table_header) {
-		printk(KERN_ERR
-		       "ocfs2 stack glue: unable to register sysctl\n");
+//		printk(KERN_ERR
+;
 		return -ENOMEM; /* or something. */
 	}
 

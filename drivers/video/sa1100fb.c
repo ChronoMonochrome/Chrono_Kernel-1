@@ -647,9 +647,9 @@ sa1100fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 		var->transp.offset);
 
 #ifdef CONFIG_CPU_FREQ
-	printk(KERN_DEBUG "dma period = %d ps, clock = %d kHz\n",
-		sa1100fb_display_dma_period(var),
-		cpufreq_get(smp_processor_id()));
+//	printk(KERN_DEBUG "dma period = %d ps, clock = %d kHz\n",
+//		sa1100fb_display_dma_period(var),
+;
 #endif
 
 	return 0;
@@ -874,29 +874,29 @@ static int sa1100fb_activate_var(struct fb_var_screeninfo *var, struct sa1100fb_
 
 #if DEBUG_VAR
 	if (var->xres < 16        || var->xres > 1024)
-		printk(KERN_ERR "%s: invalid xres %d\n",
-			fbi->fb.fix.id, var->xres);
+//		printk(KERN_ERR "%s: invalid xres %d\n",
+;
 	if (var->hsync_len < 1    || var->hsync_len > 64)
-		printk(KERN_ERR "%s: invalid hsync_len %d\n",
-			fbi->fb.fix.id, var->hsync_len);
+//		printk(KERN_ERR "%s: invalid hsync_len %d\n",
+;
 	if (var->left_margin < 1  || var->left_margin > 255)
-		printk(KERN_ERR "%s: invalid left_margin %d\n",
-			fbi->fb.fix.id, var->left_margin);
+//		printk(KERN_ERR "%s: invalid left_margin %d\n",
+;
 	if (var->right_margin < 1 || var->right_margin > 255)
-		printk(KERN_ERR "%s: invalid right_margin %d\n",
-			fbi->fb.fix.id, var->right_margin);
+//		printk(KERN_ERR "%s: invalid right_margin %d\n",
+;
 	if (var->yres < 1         || var->yres > 1024)
-		printk(KERN_ERR "%s: invalid yres %d\n",
-			fbi->fb.fix.id, var->yres);
+//		printk(KERN_ERR "%s: invalid yres %d\n",
+;
 	if (var->vsync_len < 1    || var->vsync_len > 64)
-		printk(KERN_ERR "%s: invalid vsync_len %d\n",
-			fbi->fb.fix.id, var->vsync_len);
+//		printk(KERN_ERR "%s: invalid vsync_len %d\n",
+;
 	if (var->upper_margin < 0 || var->upper_margin > 255)
-		printk(KERN_ERR "%s: invalid upper_margin %d\n",
-			fbi->fb.fix.id, var->upper_margin);
+//		printk(KERN_ERR "%s: invalid upper_margin %d\n",
+;
 	if (var->lower_margin < 0 || var->lower_margin > 255)
-		printk(KERN_ERR "%s: invalid lower_margin %d\n",
-			fbi->fb.fix.id, var->lower_margin);
+//		printk(KERN_ERR "%s: invalid lower_margin %d\n",
+;
 #endif
 
 	new_regs.lccr0 = fbi->lccr0 |
@@ -1268,9 +1268,9 @@ sa1100fb_freq_policy(struct notifier_block *nb, unsigned long val,
 	switch (val) {
 	case CPUFREQ_ADJUST:
 	case CPUFREQ_INCOMPATIBLE:
-		printk(KERN_DEBUG "min dma period: %d ps, "
-			"new clock %d kHz\n", sa1100fb_min_dma_period(fbi),
-			policy->max);
+//		printk(KERN_DEBUG "min dma period: %d ps, "
+//			"new clock %d kHz\n", sa1100fb_min_dma_period(fbi),
+;
 		/* todo: fill in min/max values */
 		break;
 	case CPUFREQ_NOTIFY:
@@ -1460,7 +1460,7 @@ static int __devinit sa1100fb_probe(struct platform_device *pdev)
 	ret = request_irq(irq, sa1100fb_handle_irq, IRQF_DISABLED,
 			  "LCD", fbi);
 	if (ret) {
-		printk(KERN_ERR "sa1100fb: request_irq failed: %d\n", ret);
+;
 		goto failed;
 	}
 

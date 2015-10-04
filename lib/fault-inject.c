@@ -25,8 +25,8 @@ int __init setup_fault_attr(struct fault_attr *attr, char *str)
 	/* "<interval>,<probability>,<space>,<times>" */
 	if (sscanf(str, "%lu,%lu,%d,%d",
 			&interval, &probability, &space, &times) < 4) {
-		printk(KERN_WARNING
-			"FAULT_INJECTION: failed to parse arguments\n");
+//		printk(KERN_WARNING
+;
 		return 0;
 	}
 
@@ -41,7 +41,7 @@ int __init setup_fault_attr(struct fault_attr *attr, char *str)
 static void fail_dump(struct fault_attr *attr)
 {
 	if (attr->verbose > 0)
-		printk(KERN_NOTICE "FAULT_INJECTION: forcing a failure\n");
+;
 	if (attr->verbose > 1)
 		dump_stack();
 }

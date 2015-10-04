@@ -423,25 +423,25 @@ static int __init intel_iommu_setup(char *str)
 	while (*str) {
 		if (!strncmp(str, "on", 2)) {
 			dmar_disabled = 0;
-			printk(KERN_INFO "Intel-IOMMU: enabled\n");
+;
 		} else if (!strncmp(str, "off", 3)) {
 			dmar_disabled = 1;
-			printk(KERN_INFO "Intel-IOMMU: disabled\n");
+;
 		} else if (!strncmp(str, "igfx_off", 8)) {
 			dmar_map_gfx = 0;
-			printk(KERN_INFO
-				"Intel-IOMMU: disable GFX device mapping\n");
+//			printk(KERN_INFO
+;
 		} else if (!strncmp(str, "forcedac", 8)) {
-			printk(KERN_INFO
-				"Intel-IOMMU: Forcing DAC for PCI devices\n");
+//			printk(KERN_INFO
+;
 			dmar_forcedac = 1;
 		} else if (!strncmp(str, "strict", 6)) {
-			printk(KERN_INFO
-				"Intel-IOMMU: disable batched IOTLB flush\n");
+//			printk(KERN_INFO
+;
 			intel_iommu_strict = 1;
 		} else if (!strncmp(str, "sp_off", 6)) {
-			printk(KERN_INFO
-				"Intel-IOMMU: disable supported super page\n");
+//			printk(KERN_INFO
+;
 			intel_iommu_superpage = 0;
 		}
 
@@ -1049,7 +1049,7 @@ static void __iommu_flush_iotlb(struct intel_iommu *iommu, u16 did,
 
 	/* check IOTLB invalidation granularity */
 	if (DMA_TLB_IAIG(val) == 0)
-		printk(KERN_ERR"IOMMU: flush IOTLB failed\n");
+;
 	if (DMA_TLB_IAIG(val) != DMA_TLB_IIRG(type))
 		pr_debug("IOMMU: tlb flush request %Lx, actual %Lx\n",
 			(unsigned long long)DMA_TLB_IIRG(type),
@@ -1225,13 +1225,13 @@ static int iommu_init_domains(struct intel_iommu *iommu)
 	 */
 	iommu->domain_ids = kcalloc(nlongs, sizeof(unsigned long), GFP_KERNEL);
 	if (!iommu->domain_ids) {
-		printk(KERN_ERR "Allocating domain id array failed\n");
+;
 		return -ENOMEM;
 	}
 	iommu->domains = kcalloc(ndomains, sizeof(struct dmar_domain *),
 			GFP_KERNEL);
 	if (!iommu->domains) {
-		printk(KERN_ERR "Allocating domain array failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1327,7 +1327,7 @@ static int iommu_attach_domain(struct dmar_domain *domain,
 	num = find_first_zero_bit(iommu->domain_ids, ndomains);
 	if (num >= ndomains) {
 		spin_unlock_irqrestore(&iommu->lock, flags);
-		printk(KERN_ERR "IOMMU: no free domain ids\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1382,7 +1382,7 @@ static int dmar_init_reserved_ranges(void)
 	iova = reserve_iova(&reserved_iova_list, IOVA_PFN(IOAPIC_RANGE_START),
 		IOVA_PFN(IOAPIC_RANGE_END));
 	if (!iova) {
-		printk(KERN_ERR "Reserve IOAPIC range failed\n");
+;
 		return -ENODEV;
 	}
 
@@ -1398,7 +1398,7 @@ static int dmar_init_reserved_ranges(void)
 					    IOVA_PFN(r->start),
 					    IOVA_PFN(r->end));
 			if (!iova) {
-				printk(KERN_ERR "Reserve iova failed\n");
+;
 				return -ENODEV;
 			}
 		}
@@ -1560,7 +1560,7 @@ static int domain_context_mapping_one(struct dmar_domain *domain, int segment,
 			num = find_first_zero_bit(iommu->domain_ids, ndomains);
 			if (num >= ndomains) {
 				spin_unlock_irqrestore(&iommu->lock, flags);
-				printk(KERN_ERR "IOMMU: no free domain ids\n");
+;
 				return -EFAULT;
 			}
 
@@ -1810,8 +1810,8 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
 		tmp = cmpxchg64_local(&pte->val, 0ULL, pteval);
 		if (tmp) {
 			static int dumps = 5;
-			printk(KERN_CRIT "ERROR: DMA PTE for vPFN 0x%lx already set (to %llx not %llx)\n",
-			       iov_pfn, tmp, (unsigned long long)pteval);
+//			printk(KERN_CRIT "ERROR: DMA PTE for vPFN 0x%lx already set (to %llx not %llx)\n",
+;
 			if (dumps) {
 				dumps--;
 				debug_dma_dump_mappings(NULL);
@@ -1973,8 +1973,8 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
 	/* Allocate new domain for the device */
 	drhd = dmar_find_matched_drhd_unit(pdev);
 	if (!drhd) {
-		printk(KERN_ERR "IOMMU: can't find DMAR for device %s\n",
-			pci_name(pdev));
+//		printk(KERN_ERR "IOMMU: can't find DMAR for device %s\n",
+;
 		return NULL;
 	}
 	iommu = drhd->iommu;
@@ -2072,7 +2072,7 @@ static int iommu_domain_identity_map(struct dmar_domain *domain,
 
 	if (!reserve_iova(&domain->iovad, dma_to_mm_pfn(first_vpfn),
 			  dma_to_mm_pfn(last_vpfn))) {
-		printk(KERN_ERR "IOMMU: reserve iova failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -2105,14 +2105,14 @@ static int iommu_prepare_identity_map(struct pci_dev *pdev,
 	   range which is reserved in E820, so which didn't get set
 	   up to start with in si_domain */
 	if (domain == si_domain && hw_pass_through) {
-		printk("Ignoring identity map for HW passthrough device %s [0x%Lx - 0x%Lx]\n",
-		       pci_name(pdev), start, end);
+//		printk("Ignoring identity map for HW passthrough device %s [0x%Lx - 0x%Lx]\n",
+;
 		return 0;
 	}
 
-	printk(KERN_INFO
-	       "IOMMU: Setting identity map for device %s [0x%Lx - 0x%Lx]\n",
-	       pci_name(pdev), start, end);
+//	printk(KERN_INFO
+//	       "IOMMU: Setting identity map for device %s [0x%Lx - 0x%Lx]\n",
+;
 	
 	if (end < start) {
 		WARN(1, "Your BIOS is broken; RMRR ends before it starts!\n"
@@ -2170,11 +2170,11 @@ static inline void iommu_prepare_isa(void)
 	if (!pdev)
 		return;
 
-	printk(KERN_INFO "IOMMU: Prepare 0-16MiB unity mapping for LPC\n");
+;
 	ret = iommu_prepare_identity_map(pdev, 0, 16*1024*1024 - 1);
 
 	if (ret)
-		printk(KERN_ERR "IOMMU: Failed to create 0-16MiB identity map; "
+;
 		       "floppy might not work\n");
 
 }
@@ -2390,8 +2390,8 @@ static int __init iommu_prepare_static_identity_mapping(int hw)
 		if (IS_BRIDGE_HOST_DEVICE(pdev))
 			continue;
 		if (iommu_should_identity_map(pdev, 1)) {
-			printk(KERN_INFO "IOMMU: %s identity mapping for device %s\n",
-			       hw ? "hardware" : "software", pci_name(pdev));
+//			printk(KERN_INFO "IOMMU: %s identity mapping for device %s\n",
+;
 
 			ret = domain_add_dev_info(si_domain, pdev,
 						     hw ? CONTEXT_TT_PASS_THROUGH :
@@ -2430,7 +2430,7 @@ static int __init init_dmars(void)
 	g_iommus = kcalloc(g_num_of_iommus, sizeof(struct intel_iommu *),
 			GFP_KERNEL);
 	if (!g_iommus) {
-		printk(KERN_ERR "Allocating global iommu array failed\n");
+;
 		ret = -ENOMEM;
 		goto error;
 	}
@@ -2460,7 +2460,7 @@ static int __init init_dmars(void)
 		 */
 		ret = iommu_alloc_root_entry(iommu);
 		if (ret) {
-			printk(KERN_ERR "IOMMU: allocate root entry failed\n");
+;
 			goto error;
 		}
 		if (!ecap_pass_through(iommu->ecap))
@@ -2508,17 +2508,17 @@ static int __init init_dmars(void)
 			 */
 			iommu->flush.flush_context = __iommu_flush_context;
 			iommu->flush.flush_iotlb = __iommu_flush_iotlb;
-			printk(KERN_INFO "IOMMU %d 0x%Lx: using Register based "
-			       "invalidation\n",
-				iommu->seq_id,
-			       (unsigned long long)drhd->reg_base_addr);
+//			printk(KERN_INFO "IOMMU %d 0x%Lx: using Register based "
+//			       "invalidation\n",
+//				iommu->seq_id,
+;
 		} else {
 			iommu->flush.flush_context = qi_flush_context;
 			iommu->flush.flush_iotlb = qi_flush_iotlb;
-			printk(KERN_INFO "IOMMU %d 0x%Lx: using Queued "
-			       "invalidation\n",
-				iommu->seq_id,
-			       (unsigned long long)drhd->reg_base_addr);
+//			printk(KERN_INFO "IOMMU %d 0x%Lx: using Queued "
+//			       "invalidation\n",
+//				iommu->seq_id,
+;
 		}
 	}
 
@@ -2539,7 +2539,7 @@ static int __init init_dmars(void)
 	if (iommu_identity_mapping) {
 		ret = iommu_prepare_static_identity_mapping(hw_pass_through);
 		if (ret) {
-			printk(KERN_CRIT "Failed to setup IOMMU pass-through\n");
+;
 			goto error;
 		}
 	}
@@ -2557,7 +2557,7 @@ static int __init init_dmars(void)
 	 *    endfor
 	 * endfor
 	 */
-	printk(KERN_INFO "IOMMU: Setting RMRR:\n");
+;
 	for_each_rmrr_units(rmrr) {
 		for (i = 0; i < rmrr->devices_cnt; i++) {
 			pdev = rmrr->devices[i];
@@ -2569,8 +2569,8 @@ static int __init init_dmars(void)
 				continue;
 			ret = iommu_prepare_rmrr_dev(rmrr, pdev);
 			if (ret)
-				printk(KERN_ERR
-				       "IOMMU: mapping reserved region failed\n");
+//				printk(KERN_ERR
+;
 		}
 	}
 
@@ -2649,8 +2649,8 @@ static struct iova *intel_alloc_iova(struct device *dev,
 	}
 	iova = alloc_iova(&domain->iovad, nrpages, IOVA_PFN(dma_mask), 1);
 	if (unlikely(!iova)) {
-		printk(KERN_ERR "Allocating %ld-page iova for %s failed",
-		       nrpages, pci_name(pdev));
+//		printk(KERN_ERR "Allocating %ld-page iova for %s failed",
+;
 		return NULL;
 	}
 
@@ -2665,8 +2665,8 @@ static struct dmar_domain *__get_valid_domain_for_dev(struct pci_dev *pdev)
 	domain = get_domain_for_dev(pdev,
 			DEFAULT_DOMAIN_ADDRESS_WIDTH);
 	if (!domain) {
-		printk(KERN_ERR
-			"Allocating domain for %s failed", pci_name(pdev));
+//		printk(KERN_ERR
+;
 		return NULL;
 	}
 
@@ -2675,9 +2675,9 @@ static struct dmar_domain *__get_valid_domain_for_dev(struct pci_dev *pdev)
 		ret = domain_context_mapping(domain, pdev,
 					     CONTEXT_TT_MULTI_LEVEL);
 		if (ret) {
-			printk(KERN_ERR
-				"Domain context map for %s failed",
-				pci_name(pdev));
+//			printk(KERN_ERR
+//				"Domain context map for %s failed",
+;
 			return NULL;
 		}
 	}
@@ -2728,8 +2728,8 @@ static int iommu_no_mapping(struct device *dev)
 			 * to non-identity mapping.
 			 */
 			domain_remove_one_dev_info(si_domain, pdev);
-			printk(KERN_INFO "32bit %s uses non-identity mapping\n",
-			       pci_name(pdev));
+//			printk(KERN_INFO "32bit %s uses non-identity mapping\n",
+;
 			return 0;
 		}
 	} else {
@@ -2744,8 +2744,8 @@ static int iommu_no_mapping(struct device *dev)
 						  CONTEXT_TT_PASS_THROUGH :
 						  CONTEXT_TT_MULTI_LEVEL);
 			if (!ret) {
-				printk(KERN_INFO "64bit %s uses identity mapping\n",
-				       pci_name(pdev));
+//				printk(KERN_INFO "64bit %s uses identity mapping\n",
+;
 				return 1;
 			}
 		}
@@ -2815,8 +2815,8 @@ static dma_addr_t __intel_map_single(struct device *hwdev, phys_addr_t paddr,
 error:
 	if (iova)
 		__free_iova(&domain->iovad, iova);
-	printk(KERN_ERR"Device %s request: %zx@%llx dir %d --- failed\n",
-		pci_name(pdev), size, (unsigned long long)paddr, dir);
+//	printk(KERN_ERR"Device %s request: %zx@%llx dir %d --- failed\n",
+;
 	return 0;
 }
 
@@ -3152,7 +3152,7 @@ static inline int iommu_domain_cache_init(void)
 
 					 NULL);
 	if (!iommu_domain_cache) {
-		printk(KERN_ERR "Couldn't create iommu_domain cache\n");
+;
 		ret = -ENOMEM;
 	}
 
@@ -3169,7 +3169,7 @@ static inline int iommu_devinfo_cache_init(void)
 					 SLAB_HWCACHE_ALIGN,
 					 NULL);
 	if (!iommu_devinfo_cache) {
-		printk(KERN_ERR "Couldn't create devinfo cache\n");
+;
 		ret = -ENOMEM;
 	}
 
@@ -3186,7 +3186,7 @@ static inline int iommu_iova_cache_init(void)
 					 SLAB_HWCACHE_ALIGN,
 					 NULL);
 	if (!iommu_iova_cache) {
-		printk(KERN_ERR "Couldn't create iova cache\n");
+;
 		ret = -ENOMEM;
 	}
 
@@ -3511,13 +3511,13 @@ int __init intel_iommu_init(void)
 	if (ret) {
 		if (force_on)
 			panic("tboot: Failed to initialize DMARs\n");
-		printk(KERN_ERR "IOMMU: dmar init failed\n");
+;
 		put_iova_domain(&reserved_iova_list);
 		iommu_exit_mempool();
 		return ret;
 	}
-	printk(KERN_INFO
-	"PCI-DMA: Intel(R) Virtualization Technology for Directed I/O\n");
+//	printk(KERN_INFO
+;
 
 	init_timer(&unmap_timer);
 #ifdef CONFIG_SWIOTLB
@@ -3770,13 +3770,13 @@ static int intel_iommu_domain_init(struct iommu_domain *domain)
 
 	dmar_domain = iommu_alloc_vm_domain();
 	if (!dmar_domain) {
-		printk(KERN_ERR
-			"intel_iommu_domain_init: dmar_domain == NULL\n");
+//		printk(KERN_ERR
+;
 		return -ENOMEM;
 	}
 	if (md_domain_init(dmar_domain, DEFAULT_DOMAIN_ADDRESS_WIDTH)) {
-		printk(KERN_ERR
-			"intel_iommu_domain_init() failed\n");
+//		printk(KERN_ERR
+;
 		vm_domain_exit(dmar_domain);
 		return -ENOMEM;
 	}
@@ -3827,9 +3827,9 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
 		addr_width = cap_mgaw(iommu->cap);
 
 	if (dmar_domain->max_addr > (1LL << addr_width)) {
-		printk(KERN_ERR "%s: iommu width (%d) is not "
-		       "sufficient for the mapped address (%llx)\n",
-		       __func__, addr_width, dmar_domain->max_addr);
+//		printk(KERN_ERR "%s: iommu width (%d) is not "
+//		       "sufficient for the mapped address (%llx)\n",
+;
 		return -EFAULT;
 	}
 	dmar_domain->gaw = addr_width;
@@ -3886,9 +3886,9 @@ static int intel_iommu_map(struct iommu_domain *domain,
 		/* check if minimum agaw is sufficient for mapped address */
 		end = __DOMAIN_MAX_ADDR(dmar_domain->gaw) + 1;
 		if (end < max_addr) {
-			printk(KERN_ERR "%s: iommu width (%d) is not "
-			       "sufficient for the mapped address (%llx)\n",
-			       __func__, dmar_domain->gaw, max_addr);
+//			printk(KERN_ERR "%s: iommu width (%d) is not "
+//			       "sufficient for the mapped address (%llx)\n",
+;
 			return -EFAULT;
 		}
 		dmar_domain->max_addr = max_addr;
@@ -3961,12 +3961,12 @@ static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
 	 * Mobile 4 Series Chipset neglects to set RWBF capability,
 	 * but needs it:
 	 */
-	printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
+;
 	rwbf_quirk = 1;
 
 	/* https://bugzilla.redhat.com/show_bug.cgi?id=538163 */
 	if (dev->revision == 0x07) {
-		printk(KERN_INFO "DMAR: Disabling IOMMU for graphics on this chipset\n");
+;
 		dmar_map_gfx = 0;
 	}
 }
@@ -3991,7 +3991,7 @@ static void __devinit quirk_calpella_no_shadow_gtt(struct pci_dev *dev)
 		return;
 
 	if (!(ggc & GGC_MEMORY_VT_ENABLED)) {
-		printk(KERN_INFO "DMAR: BIOS has allocated no shadow GTT; disabling IOMMU for graphics\n");
+;
 		dmar_map_gfx = 0;
 	}
 }
@@ -4054,6 +4054,6 @@ static void __init check_tylersburg_isoch(void)
 		return;
 	}
 	
-	printk(KERN_WARNING "DMAR: Recommended TLB entries for ISOCH unit is 16; your BIOS set %d\n",
+;
 	       vtisochctrl);
 }

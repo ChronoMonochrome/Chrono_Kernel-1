@@ -47,8 +47,8 @@ static int wis_uda1342_command(struct i2c_client *client,
 			write_reg(client, 0x00, 0x1241); /* select input 1 */
 			break;
 		default:
-			printk(KERN_ERR "wis-uda1342: input %d not supported\n",
-					*inp);
+//			printk(KERN_ERR "wis-uda1342: input %d not supported\n",
+;
 			break;
 		}
 		break;
@@ -67,9 +67,9 @@ static int wis_uda1342_probe(struct i2c_client *client,
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
 		return -ENODEV;
 
-	printk(KERN_DEBUG
-		"wis-uda1342: initializing UDA1342 at address %d on %s\n",
-		client->addr, adapter->name);
+//	printk(KERN_DEBUG
+//		"wis-uda1342: initializing UDA1342 at address %d on %s\n",
+;
 
 	write_reg(client, 0x00, 0x8000); /* reset registers */
 	write_reg(client, 0x00, 0x1241); /* select input 1 */

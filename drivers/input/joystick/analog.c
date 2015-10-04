@@ -531,9 +531,9 @@ static int analog_init_masks(struct analog_port *port)
 		return -1;
 
 	if ((port->mask & 3) != 3 && port->mask != 0xc) {
-		printk(KERN_WARNING "analog.c: Unknown joystick device found  "
-			"(data=%#x, %s), probably not analog joystick.\n",
-			port->mask, port->gameport->phys);
+//		printk(KERN_WARNING "analog.c: Unknown joystick device found  "
+//			"(data=%#x, %s), probably not analog joystick.\n",
+;
 		return -1;
 	}
 
@@ -693,9 +693,9 @@ static void analog_disconnect(struct gameport *gameport)
 			input_unregister_device(port->analog[i].dev);
 	gameport_close(gameport);
 	gameport_set_drvdata(gameport, NULL);
-	printk(KERN_INFO "analog.c: %d out of %d reads (%d%%) on %s failed\n",
-		port->bads, port->reads, port->reads ? (port->bads * 100 / port->reads) : 0,
-		port->gameport->phys);
+//	printk(KERN_INFO "analog.c: %d out of %d reads (%d%%) on %s failed\n",
+//		port->bads, port->reads, port->reads ? (port->bads * 100 / port->reads) : 0,
+;
 	kfree(port);
 }
 
@@ -738,7 +738,7 @@ static void analog_parse_options(void)
 		analog_options[i] = 0xff;
 		if (!strlen(js[i])) continue;
 
-		printk(KERN_WARNING "analog.c: Bad config for port %d - \"%s\"\n", i, js[i]);
+;
 	}
 
 	for (; i < ANALOG_PORTS; i++)

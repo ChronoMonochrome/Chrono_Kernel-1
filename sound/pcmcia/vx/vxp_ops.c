@@ -97,7 +97,7 @@ static int vx_check_magic(struct vx_core *chip)
 			return 0;
 		msleep(10);
 	} while (time_after_eq(end_time, jiffies));
-	snd_printk(KERN_ERR "cannot find xilinx magic word (%x)\n", c);
+;
 	return -EIO;
 }
 
@@ -183,7 +183,7 @@ static int vxp_load_xilinx_binary(struct vx_core *_chip, const struct firmware *
 			goto _error;
 		c = vx_inb(chip, RXL);
 		if (c != (int)data)
-			snd_printk(KERN_ERR "vxpocket: load xilinx mismatch at %d: 0x%x != 0x%x\n", i, c, (int)data);
+;
         }
 
 	/* reset HF1 */

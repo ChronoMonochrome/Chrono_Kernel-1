@@ -85,7 +85,7 @@ static int __init h8300_ide_init(void)
 {
 	struct ide_hw hw, *hws[] = { &hw };
 
-	printk(KERN_INFO DRV_NAME ": H8/300 generic IDE interface\n");
+;
 
 	if (!request_region(CONFIG_H8300_IDE_BASE, H8300_IDE_GAP*8, "ide-h8300"))
 		goto out_busy;
@@ -99,7 +99,7 @@ static int __init h8300_ide_init(void)
 	return ide_host_add(&h8300_port_info, hws, 1, NULL);
 
 out_busy:
-	printk(KERN_ERR "ide-h8300: IDE I/F resource already used.\n");
+;
 
 	return -EBUSY;
 }

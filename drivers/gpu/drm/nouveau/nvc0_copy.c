@@ -167,8 +167,8 @@ nvc0_copy_isr(struct drm_device *dev, int engine)
 	if (stat & 0x00000040) {
 		NV_INFO(dev, "PCOPY: DISPATCH_ERROR [");
 		nouveau_enum_print(nvc0_copy_isr_error_name, ssta);
-		printk("] ch %d [0x%010llx] subc %d mthd 0x%04x data 0x%08x\n",
-			chid, inst, subc, mthd, data);
+//		printk("] ch %d [0x%010llx] subc %d mthd 0x%04x data 0x%08x\n",
+;
 		nv_wr32(dev, pcopy->fuc + 0x004, 0x00000040);
 		stat &= ~0x00000040;
 	}

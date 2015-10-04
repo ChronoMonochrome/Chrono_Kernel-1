@@ -330,7 +330,7 @@ static inline void mcasp_set_ctl_reg(void __iomem *regs, u32 val)
 	}
 
 	if (i == 1000 && ((mcasp_get_reg(regs) & val) != val))
-		printk(KERN_ERR "GBLCTL write error\n");
+;
 }
 
 static void mcasp_start_rx(struct davinci_audio_dev *dev)
@@ -653,8 +653,8 @@ static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
 			mcasp_mod_bits(dev->base + DAVINCI_MCASP_TXFMCTL_REG,
 					FSXMOD(dev->tdm_slots), FSXMOD(0x1FF));
 		else
-			printk(KERN_ERR "playback tdm slot %d not supported\n",
-				dev->tdm_slots);
+//			printk(KERN_ERR "playback tdm slot %d not supported\n",
+;
 
 		mcasp_clr_bits(dev->base + DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
 	} else {
@@ -669,8 +669,8 @@ static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
 			mcasp_mod_bits(dev->base + DAVINCI_MCASP_RXFMCTL_REG,
 					FSRMOD(dev->tdm_slots), FSRMOD(0x1FF));
 		else
-			printk(KERN_ERR "capture tdm slot %d not supported\n",
-				dev->tdm_slots);
+//			printk(KERN_ERR "capture tdm slot %d not supported\n",
+;
 
 		mcasp_clr_bits(dev->base + DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
 	}
@@ -748,7 +748,7 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
 		break;
 
 	default:
-		printk(KERN_WARNING "davinci-mcasp: unsupported PCM format");
+;
 		return -EINVAL;
 	}
 

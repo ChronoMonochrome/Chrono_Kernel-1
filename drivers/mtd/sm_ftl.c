@@ -388,9 +388,9 @@ restart:
 
 		if (test_bit(boffset / SM_SECTOR_SIZE, &invalid_bitmap)) {
 
-			sm_printk("sector %d of block at LBA %d of zone %d"
-				" coudn't be read, marking it as invalid",
-				boffset / SM_SECTOR_SIZE, lba, zone);
+//			sm_printk("sector %d of block at LBA %d of zone %d"
+//				" coudn't be read, marking it as invalid",
+;
 
 			oob.data_status = 0;
 		}
@@ -443,7 +443,7 @@ static void sm_mark_block_bad(struct sm_ftl *ftl, int zone, int block)
 	if (sm_recheck_media(ftl))
 		return;
 
-	sm_printk("marking block %d of zone %d as bad", block, zone);
+;
 
 	/* We aren't checking the return value, because we don't care */
 	/* This also fails on fake xD cards, but I guess these won't expose
@@ -475,13 +475,13 @@ static int sm_erase_block(struct sm_ftl *ftl, int zone_num, uint16_t block,
 	BUG_ON(ftl->readonly);
 
 	if (zone_num == 0 && (block == ftl->cis_block || block == 0)) {
-		sm_printk("attempted to erase the CIS!");
+;
 		return -EIO;
 	}
 
 	if (mtd->erase(mtd, &erase)) {
-		sm_printk("erase of block %d in zone %d failed",
-							block, zone_num);
+//		sm_printk("erase of block %d in zone %d failed",
+;
 		goto error;
 	}
 
@@ -489,8 +489,8 @@ static int sm_erase_block(struct sm_ftl *ftl, int zone_num, uint16_t block,
 		wait_for_completion(&ftl->erase_completion);
 
 	if (erase.state != MTD_ERASE_DONE) {
-		sm_printk("erase of block %d in zone %d failed after wait",
-			block, zone_num);
+//		sm_printk("erase of block %d in zone %d failed after wait",
+;
 		goto error;
 	}
 
@@ -659,7 +659,7 @@ int sm_get_media_info(struct sm_ftl *ftl, struct mtd_info *mtd)
 		}
 	}
 
-	sm_printk("media has unknown size : %dMiB", size_in_megs);
+;
 	ftl->cylinders = 985;
 	ftl->heads =  33;
 	ftl->sectors = 63;
@@ -750,7 +750,7 @@ static int sm_recheck_media(struct sm_ftl *ftl)
 	if (sm_read_cis(ftl)) {
 
 		if (!ftl->unstable) {
-			sm_printk("media unstable, not allowing writes");
+;
 			ftl->unstable = 1;
 		}
 		return -EIO;
@@ -832,9 +832,9 @@ static int sm_init_zone(struct sm_ftl *ftl, int zone_num)
 			continue;
 		}
 
-		sm_printk("collision"
-			" of LBA %d between blocks %d and %d in zone %d",
-			lba, zone->lba_to_phys_table[lba], block, zone_num);
+//		sm_printk("collision"
+//			" of LBA %d between blocks %d and %d in zone %d",
+;
 
 		/* Test that this block is valid*/
 		if (sm_check_block(ftl, zone_num, block))
@@ -851,7 +851,7 @@ static int sm_init_zone(struct sm_ftl *ftl, int zone_num)
 			they hold different versions of same data. It not
 			known which is more recent, thus just erase one of them
 		*/
-		sm_printk("both blocks are valid, erasing the later");
+;
 		sm_erase_block(ftl, zone_num, block, 1);
 	}
 
@@ -861,7 +861,7 @@ static int sm_init_zone(struct sm_ftl *ftl, int zone_num)
 	/* No free sectors, means that the zone is heavily damaged, write won't
 		work, but it can still can be (partially) read */
 	if (!kfifo_len(&zone->free_sectors)) {
-		sm_printk("no free blocks in zone %d", zone_num);
+;
 		return 0;
 	}
 
@@ -1198,8 +1198,8 @@ static void sm_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		goto error6;
 	trans->disk_attributes = ftl->disk_attributes;
 
-	sm_printk("Found %d MiB xD/SmartMedia FTL on mtd%d",
-		(int)(mtd->size / (1024 * 1024)), mtd->index);
+//	sm_printk("Found %d MiB xD/SmartMedia FTL on mtd%d",
+;
 
 	dbg("FTL layout:");
 	dbg("%d zone(s), each consists of %d blocks (+%d spares)",

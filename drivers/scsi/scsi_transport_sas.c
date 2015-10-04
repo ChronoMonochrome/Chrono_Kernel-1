@@ -217,7 +217,7 @@ static int sas_bsg_initialize(struct Scsi_Host *shost, struct sas_rphy *rphy)
 	void (*release)(struct device *);
 
 	if (!to_sas_internal(shost->transportt)->f->smp_handler) {
-		printk("%s can't handle SMP requests\n", shost->hostt->name);
+;
 		return 0;
 	}
 
@@ -289,8 +289,8 @@ static int sas_host_setup(struct transport_container *tc, struct device *dev,
 	sas_host->next_port_id = 0;
 
 	if (sas_bsg_initialize(shost, NULL))
-		dev_printk(KERN_ERR, dev, "fail to a bsg device %d\n",
-			   shost->host_no);
+//		dev_printk(KERN_ERR, dev, "fail to a bsg device %d\n",
+;
 
 	return 0;
 }
@@ -862,8 +862,8 @@ static void sas_port_create_link(struct sas_port *port,
 		goto err;
 	return;
 err:
-	printk(KERN_ERR "%s: Cannot create port links, err=%d\n",
-	       __func__, res);
+//	printk(KERN_ERR "%s: Cannot create port links, err=%d\n",
+;
 }
 
 static void sas_port_delete_link(struct sas_port *port,
@@ -1068,8 +1068,8 @@ void sas_port_add_phy(struct sas_port *port, struct sas_phy *phy)
 		/* If this trips, you added a phy that was already
 		 * part of a different port */
 		if (unlikely(tmp != phy)) {
-			dev_printk(KERN_ERR, &port->dev, "trying to add phy %s fails: it's already part of another port\n",
-				   dev_name(&phy->dev));
+//			dev_printk(KERN_ERR, &port->dev, "trying to add phy %s fails: it's already part of another port\n",
+;
 			BUG();
 		}
 	} else {
@@ -1113,8 +1113,8 @@ void sas_port_mark_backlink(struct sas_port *port)
 		goto err;
 	return;
 err:
-	printk(KERN_ERR "%s: Cannot create port backlink, err=%d\n",
-	       __func__, res);
+//	printk(KERN_ERR "%s: Cannot create port backlink, err=%d\n",
+;
 
 }
 EXPORT_SYMBOL(sas_port_mark_backlink);
@@ -1530,7 +1530,7 @@ int sas_rphy_add(struct sas_rphy *rphy)
 	transport_add_device(&rphy->dev);
 	transport_configure_device(&rphy->dev);
 	if (sas_bsg_initialize(shost, rphy))
-		printk("fail to a bsg device %s\n", dev_name(&rphy->dev));
+;
 
 
 	mutex_lock(&sas_host->lock);

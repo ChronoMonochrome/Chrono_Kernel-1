@@ -112,23 +112,23 @@ static int __init nokia_bind_config(struct usb_configuration *c)
 
 	status = phonet_bind_config(c);
 	if (status)
-		printk(KERN_DEBUG "could not bind phonet config\n");
+;
 
 	status = obex_bind_config(c, 0);
 	if (status)
-		printk(KERN_DEBUG "could not bind obex config %d\n", 0);
+;
 
 	status = obex_bind_config(c, 1);
 	if (status)
-		printk(KERN_DEBUG "could not bind obex config %d\n", 0);
+;
 
 	status = acm_bind_config(c, 2);
 	if (status)
-		printk(KERN_DEBUG "could not bind acm config\n");
+;
 
 	status = ecm_bind_config(c, hostaddr);
 	if (status)
-		printk(KERN_DEBUG "could not bind ecm config\n");
+;
 
 	return status;
 }

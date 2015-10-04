@@ -190,9 +190,9 @@ static int pnp_dock_thread(void *unused)
 			if (pnp_dock_event(d, &now) == 0) {
 				docked = d;
 #if 0
-				printk(KERN_INFO
-				       "PnPBIOS: Docking station %stached\n",
-				       docked ? "at" : "de");
+//				printk(KERN_INFO
+//				       "PnPBIOS: Docking station %stached\n",
+;
 #endif
 			}
 		}
@@ -273,8 +273,8 @@ static void pnpbios_zero_data_stream(struct pnp_bios_node *node)
 			p[i] = 0;
 		p += len;
 	}
-	printk(KERN_ERR
-	       "PnPBIOS: Resource structure did not contain an end tag.\n");
+//	printk(KERN_ERR
+;
 }
 
 static int pnpbios_disable_resources(struct pnp_dev *dev)
@@ -382,17 +382,17 @@ static void __init build_devlist(void)
 		if (insert_device(node) == 0)
 			devs++;
 		if (nodenum <= thisnodenum) {
-			printk(KERN_ERR
-			       "PnPBIOS: build_devlist: Node number 0x%x is out of sequence following node 0x%x. Aborting.\n",
-			       (unsigned int)nodenum,
-			       (unsigned int)thisnodenum);
+//			printk(KERN_ERR
+//			       "PnPBIOS: build_devlist: Node number 0x%x is out of sequence following node 0x%x. Aborting.\n",
+//			       (unsigned int)nodenum,
+;
 			break;
 		}
 	}
 	kfree(node);
 
-	printk(KERN_INFO
-	       "PnPBIOS: %i node%s reported by PnP BIOS; %i recorded by driver\n",
+//	printk(KERN_INFO
+;
 	       nodes_got, nodes_got != 1 ? "s" : "", devs);
 }
 
@@ -438,7 +438,7 @@ static int __init pnpbios_probe_system(void)
 	u8 sum;
 	int length, i;
 
-	printk(KERN_INFO "PnPBIOS: Scanning system for PnP BIOS support...\n");
+;
 
 	/*
 	 * Search the defined area (0xf0000-0xffff0) for a valid PnP BIOS
@@ -450,45 +450,45 @@ static int __init pnpbios_probe_system(void)
 	     check = (void *)check + 16) {
 		if (check->fields.signature != PNP_SIGNATURE)
 			continue;
-		printk(KERN_INFO
-		       "PnPBIOS: Found PnP BIOS installation structure at 0x%p\n",
-		       check);
+//		printk(KERN_INFO
+//		       "PnPBIOS: Found PnP BIOS installation structure at 0x%p\n",
+;
 		length = check->fields.length;
 		if (!length) {
-			printk(KERN_ERR
-			       "PnPBIOS: installation structure is invalid, skipping\n");
+//			printk(KERN_ERR
+;
 			continue;
 		}
 		for (sum = 0, i = 0; i < length; i++)
 			sum += check->chars[i];
 		if (sum) {
-			printk(KERN_ERR
-			       "PnPBIOS: installation structure is corrupted, skipping\n");
+//			printk(KERN_ERR
+;
 			continue;
 		}
 		if (check->fields.version < 0x10) {
-			printk(KERN_WARNING
-			       "PnPBIOS: PnP BIOS version %d.%d is not supported\n",
-			       check->fields.version >> 4,
-			       check->fields.version & 15);
+//			printk(KERN_WARNING
+//			       "PnPBIOS: PnP BIOS version %d.%d is not supported\n",
+//			       check->fields.version >> 4,
+;
 			continue;
 		}
-		printk(KERN_INFO
-		       "PnPBIOS: PnP BIOS version %d.%d, entry 0x%x:0x%x, dseg 0x%x\n",
-		       check->fields.version >> 4, check->fields.version & 15,
-		       check->fields.pm16cseg, check->fields.pm16offset,
-		       check->fields.pm16dseg);
+//		printk(KERN_INFO
+//		       "PnPBIOS: PnP BIOS version %d.%d, entry 0x%x:0x%x, dseg 0x%x\n",
+//		       check->fields.version >> 4, check->fields.version & 15,
+//		       check->fields.pm16cseg, check->fields.pm16offset,
+;
 		pnp_bios_install = check;
 		return 1;
 	}
 
-	printk(KERN_INFO "PnPBIOS: PnP BIOS support was not detected.\n");
+;
 	return 0;
 }
 
 static int __init exploding_pnp_bios(const struct dmi_system_id *d)
 {
-	printk(KERN_WARNING "%s detected. Disabling PnPBIOS\n", d->ident);
+;
 	return 0;
 }
 
@@ -524,13 +524,13 @@ static int __init pnpbios_init(void)
 #endif
 	if (pnpbios_disabled || dmi_check_system(pnpbios_dmi_table) ||
 	    paravirt_enabled()) {
-		printk(KERN_INFO "PnPBIOS: Disabled\n");
+;
 		return -ENODEV;
 	}
 #ifdef CONFIG_PNPACPI
 	if (!acpi_disabled && !pnpacpi_disabled) {
 		pnpbios_disabled = 1;
-		printk(KERN_INFO "PnPBIOS: Disabled by ACPI PNP\n");
+;
 		return -ENODEV;
 	}
 #endif				/* CONFIG_ACPI */
@@ -545,23 +545,23 @@ static int __init pnpbios_init(void)
 	/* read the node info */
 	ret = pnp_bios_dev_node_info(&node_info);
 	if (ret) {
-		printk(KERN_ERR
-		       "PnPBIOS: Unable to get node info.  Aborting.\n");
+//		printk(KERN_ERR
+;
 		return ret;
 	}
 
 	/* register with the pnp layer */
 	ret = pnp_register_protocol(&pnpbios_protocol);
 	if (ret) {
-		printk(KERN_ERR
-		       "PnPBIOS: Unable to register driver.  Aborting.\n");
+//		printk(KERN_ERR
+;
 		return ret;
 	}
 
 	/* start the proc interface */
 	ret = pnpbios_proc_init();
 	if (ret)
-		printk(KERN_ERR "PnPBIOS: Failed to create proc interface.\n");
+;
 
 	/* scan for pnpbios devices */
 	build_devlist();

@@ -334,7 +334,7 @@ acpi_video_device_lcd_query_levels(struct acpi_video_device *device,
 		return status;
 	obj = (union acpi_object *)buffer.pointer;
 	if (!obj || (obj->type != ACPI_TYPE_PACKAGE)) {
-		printk(KERN_ERR PREFIX "Invalid _BCL data\n");
+;
 		status = -EFAULT;
 		goto err;
 	}
@@ -551,7 +551,7 @@ acpi_video_device_EDID(struct acpi_video_device *device,
 	if (obj && obj->type == ACPI_TYPE_BUFFER)
 		*edid = obj;
 	else {
-		printk(KERN_ERR PREFIX "Invalid _DDC data\n");
+;
 		status = -EFAULT;
 		kfree(obj);
 	}
@@ -643,7 +643,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
 
 	br = kzalloc(sizeof(*br), GFP_KERNEL);
 	if (!br) {
-		printk(KERN_ERR "can't allocate memory\n");
+;
 		result = -ENOMEM;
 		goto out;
 	}
@@ -658,7 +658,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
 	for (i = 0; i < obj->package.count; i++) {
 		o = (union acpi_object *)&obj->package.elements[i];
 		if (o->type != ACPI_TYPE_INTEGER) {
-			printk(KERN_ERR PREFIX "Invalid data\n");
+;
 			continue;
 		}
 		br->levels[count] = (u32) o->integer.value;
@@ -802,7 +802,7 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
 		device->cap._BQC = 1;
 	else if (ACPI_SUCCESS(acpi_get_handle(device->dev->handle, "_BCQ",
 				&h_dummy1))) {
-		printk(KERN_WARNING FW_BUG "_BCQ is used instead of _BQC\n");
+;
 		device->cap._BCQ = 1;
 	}
 
@@ -875,11 +875,11 @@ static void acpi_video_device_find_cap(struct acpi_video_device *device)
 				&device->cooling_dev->device.kobj,
 				"thermal_cooling");
 		if (result)
-			printk(KERN_ERR PREFIX "Create sysfs link\n");
+;
 		result = sysfs_create_link(&device->cooling_dev->device.kobj,
 				&device->dev->dev.kobj, "device");
 		if (result)
-			printk(KERN_ERR PREFIX "Create sysfs link\n");
+;
 
 	}
 }
@@ -943,9 +943,9 @@ static int acpi_video_bus_check(struct acpi_video_bus *video)
 	/* Does this device support video switching? */
 	if (video->cap._DOS || video->cap._DOD) {
 		if (!video->cap._DOS) {
-			printk(KERN_WARNING FW_BUG
-				"ACPI(%s) defines _DOD but not _DOS\n",
-				acpi_device_bid(video->device));
+//			printk(KERN_WARNING FW_BUG
+//				"ACPI(%s) defines _DOD but not _DOS\n",
+;
 		}
 		video->flags.multihead = 1;
 		status = 0;
@@ -1080,8 +1080,8 @@ acpi_video_bus_get_one_device(struct acpi_device *device,
 						     acpi_video_device_notify,
 						     data);
 		if (ACPI_FAILURE(status)) {
-			printk(KERN_ERR PREFIX
-					  "Error installing notify handler\n");
+//			printk(KERN_ERR PREFIX
+;
 			if(data->brightness)
 				kfree(data->brightness->levels);
 			kfree(data->brightness);
@@ -1202,8 +1202,8 @@ static int acpi_video_device_enumerate(struct acpi_video_bus *video)
 		obj = &dod->package.elements[i];
 
 		if (obj->type != ACPI_TYPE_INTEGER) {
-			printk(KERN_ERR PREFIX
-				"Invalid _DOD data in element %d\n", i);
+//			printk(KERN_ERR PREFIX
+;
 			continue;
 		}
 
@@ -1297,7 +1297,7 @@ acpi_video_switch_brightness(struct acpi_video_device *device, int event)
 
 out:
 	if (result)
-		printk(KERN_ERR PREFIX "Failed to switch the brightness\n");
+;
 
 	return result;
 }
@@ -1383,8 +1383,8 @@ acpi_video_bus_get_devices(struct acpi_video_bus *video,
 
 		status = acpi_video_bus_get_one_device(dev, video);
 		if (ACPI_FAILURE(status)) {
-			printk(KERN_WARNING PREFIX
-					"Can't attach device\n");
+//			printk(KERN_WARNING PREFIX
+;
 			continue;
 		}
 	}
@@ -1402,8 +1402,8 @@ static int acpi_video_bus_put_one_device(struct acpi_video_device *device)
 					    ACPI_DEVICE_NOTIFY,
 					    acpi_video_device_notify);
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_WARNING PREFIX
-		       "Can't remove video notify handler\n");
+//		printk(KERN_WARNING PREFIX
+;
 	}
 	if (device->backlight) {
 		backlight_device_unregister(device->backlight);
@@ -1432,8 +1432,8 @@ static int acpi_video_bus_put_devices(struct acpi_video_bus *video)
 
 		status = acpi_video_bus_put_one_device(dev);
 		if (ACPI_FAILURE(status))
-			printk(KERN_WARNING PREFIX
-			       "hhuuhhuu bug in acpi video driver.\n");
+//			printk(KERN_WARNING PREFIX
+;
 
 		if (dev->brightness) {
 			kfree(dev->brightness->levels);
@@ -1643,11 +1643,11 @@ static int acpi_video_bus_add(struct acpi_device *device)
 				acpi_video_bus_match, NULL,
 				device, NULL);
 	if (status == AE_ALREADY_EXISTS) {
-		printk(KERN_WARNING FW_BUG
-			"Duplicate ACPI video bus devices for the"
-			" same VGA controller, please try module "
-			"parameter \"video.allow_duplicates=1\""
-			"if the current driver doesn't work.\n");
+//		printk(KERN_WARNING FW_BUG
+//			"Duplicate ACPI video bus devices for the"
+//			" same VGA controller, please try module "
+//			"parameter \"video.allow_duplicates=1\""
+;
 		if (!allow_duplicates)
 			return -ENODEV;
 	}
@@ -1713,11 +1713,11 @@ static int acpi_video_bus_add(struct acpi_device *device)
 	if (error)
 		goto err_free_input_dev;
 
-	printk(KERN_INFO PREFIX "%s [%s] (multi-head: %s  rom: %s  post: %s)\n",
-	       ACPI_VIDEO_DEVICE_NAME, acpi_device_bid(device),
-	       video->flags.multihead ? "yes" : "no",
-	       video->flags.rom ? "yes" : "no",
-	       video->flags.post ? "yes" : "no");
+//	printk(KERN_INFO PREFIX "%s [%s] (multi-head: %s  rom: %s  post: %s)\n",
+//	       ACPI_VIDEO_DEVICE_NAME, acpi_device_bid(device),
+//	       video->flags.multihead ? "yes" : "no",
+//	       video->flags.rom ? "yes" : "no",
+;
 
 	video->pm_nb.notifier_call = acpi_video_resume;
 	video->pm_nb.priority = 0;

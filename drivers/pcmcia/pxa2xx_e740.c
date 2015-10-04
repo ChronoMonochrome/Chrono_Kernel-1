@@ -100,7 +100,7 @@ static int e740_pcmcia_configure_socket(struct soc_pcmcia_socket *skt,
 			gpio_set_value(GPIO_E740_PCMCIA_PWR1, 0);
 		break;
 	default:
-		printk(KERN_ERR "e740_cs: Unsupported Vcc: %d\n", state->Vcc);
+;
 	}
 
 	return 0;

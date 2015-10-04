@@ -751,7 +751,7 @@ static int __devinit max3100_probe(struct spi_device *spi)
 		uart_driver_registered = 1;
 		retval = uart_register_driver(&max3100_uart_driver);
 		if (retval) {
-			printk(KERN_ERR "Couldn't register max3100 uart driver\n");
+;
 			mutex_unlock(&max3100s_lock);
 			return retval;
 		}

@@ -3177,13 +3177,13 @@ static int patch_ad1988(struct hda_codec *codec)
 	codec->spec = spec;
 
 	if (is_rev2(codec))
-		snd_printk(KERN_INFO "patch_analog: AD1988A rev.2 is detected, enable workarounds\n");
+;
 
 	board_config = snd_hda_check_board_config(codec, AD1988_MODEL_LAST,
 						  ad1988_models, ad1988_cfg_tbl);
 	if (board_config < 0) {
-		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
-		       codec->chip_name);
+//		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
+;
 		board_config = AD1988_AUTO;
 	}
 
@@ -3194,7 +3194,7 @@ static int patch_ad1988(struct hda_codec *codec)
 			ad198x_free(codec);
 			return err;
 		} else if (! err) {
-			printk(KERN_INFO "hda_codec: Cannot set up configuration from BIOS.  Using 6-stack mode...\n");
+;
 			board_config = AD1988_6STACK;
 		}
 	}

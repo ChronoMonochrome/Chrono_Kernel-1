@@ -1420,7 +1420,7 @@ init_imstt(struct fb_info *info)
 
 	if ((info->var.xres * info->var.yres) * (info->var.bits_per_pixel >> 3) > info->fix.smem_len
 	    || !(compute_imstt_regvals(par, info->var.xres, info->var.yres))) {
-		printk("imsttfb: %ux%ux%u not supported\n", info->var.xres, info->var.yres, info->var.bits_per_pixel);
+;
 		framebuffer_release(info);
 		return;
 	}
@@ -1462,7 +1462,7 @@ init_imstt(struct fb_info *info)
 	}
 
 	tmp = (read_reg_le32(par->dc_regs, SSTATUS) & 0x0f00) >> 8;
-	printk("fb%u: %s frame buffer; %uMB vram; chip version %u\n",
+;
 		info->node, info->fix.id, info->fix.smem_len >> 20, tmp);
 }
 
@@ -1477,15 +1477,15 @@ imsttfb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	
 	dp = pci_device_to_OF_node(pdev);
 	if(dp)
-		printk(KERN_INFO "%s: OF name %s\n",__func__, dp->name);
+;
 	else
-		printk(KERN_ERR "imsttfb: no OF node for pci device\n");
+;
 #endif /* CONFIG_PPC_OF */
 
 	info = framebuffer_alloc(sizeof(struct imstt_par), &pdev->dev);
 
 	if (!info) {
-		printk(KERN_ERR "imsttfb: Can't allocate memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1495,7 +1495,7 @@ imsttfb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	size = pci_resource_len (pdev, 0);
 
 	if (!request_mem_region(addr, size, "imsttfb")) {
-		printk(KERN_ERR "imsttfb: Can't reserve memory region\n");
+;
 		framebuffer_release(info);
 		return -ENODEV;
 	}
@@ -1513,8 +1513,8 @@ imsttfb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 			par->ramdac = TVP;
 			break;
 		default:
-			printk(KERN_INFO "imsttfb: Device 0x%x unknown, "
-					 "contact maintainer.\n", pdev->device);
+//			printk(KERN_INFO "imsttfb: Device 0x%x unknown, "
+;
 			release_mem_region(addr, size);
 			framebuffer_release(info);
 			return -ENODEV;

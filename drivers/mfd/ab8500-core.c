@@ -1529,13 +1529,13 @@ int __devinit ab8500_init(struct ab8500 *ab8500, enum ab8500_version version)
 	if (value) {
 		for (i = 0; i < ARRAY_SIZE(switch_off_status); i++) {
 			if (value & 1)
-				printk("\"%s\" ", switch_off_status[i]);
+;
 			value = value >> 1;
 
 		}
-		printk("\n");
+;
 	} else {
-		printk("None\n");
+;
 	}
 
 

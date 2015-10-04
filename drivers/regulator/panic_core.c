@@ -220,7 +220,7 @@ static struct regulator *_regulator_panic_get(struct device *dev, const char *id
 	int ret;
 
 	if (id == NULL) {
-		printk(KERN_ERR "regulator: get() with no identifier\n");
+;
 		return regulator;
 	}
 
@@ -380,8 +380,8 @@ static int _regulator_panic_enable(struct regulator_dev *rdev)
 		if (rdev->supply) {
 			ret = _regulator_panic_enable(rdev->supply);
 			if (ret < 0) {
-				printk(KERN_ERR "%s: failed to enable %s: %d\n",
-				       __func__, rdev_get_name(rdev), ret);
+//				printk(KERN_ERR "%s: failed to enable %s: %d\n",
+;
 				return ret;
 			}
 		}
@@ -405,8 +405,8 @@ static int _regulator_panic_enable(struct regulator_dev *rdev)
 				return ret;
 
 		} else if (ret < 0) {
-			printk(KERN_ERR "%s: is_enabled() failed for %s: %d\n",
-			       __func__, rdev_get_name(rdev), ret);
+//			printk(KERN_ERR "%s: is_enabled() failed for %s: %d\n",
+;
 			return ret;
 		}
 		/* Fallthrough on positive return values - already enabled */
@@ -461,8 +461,8 @@ static int _regulator_panic_disable(struct regulator_dev *rdev,
 		    rdev->desc->ops->disable) {
 			ret = rdev->desc->ops->disable(rdev);
 			if (ret < 0) {
-				printk(KERN_ERR "%s: failed to disable %s\n",
-				       __func__, rdev_get_name(rdev));
+//				printk(KERN_ERR "%s: failed to disable %s\n",
+;
 				return ret;
 			}
 

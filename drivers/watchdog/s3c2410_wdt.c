@@ -88,7 +88,7 @@ static DEFINE_SPINLOCK(wdt_lock);
 
 #define DBG(msg...) do { \
 	if (debug) \
-		printk(KERN_INFO msg); \
+;
 	} while (0)
 
 /* functions */
@@ -459,7 +459,7 @@ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
 	clk_enable(wdt_clock);
 
 	if (s3c2410wdt_cpufreq_register() < 0) {
-		printk(KERN_ERR PFX "failed to register cpufreq\n");
+;
 		goto err_clk;
 	}
 
@@ -578,8 +578,8 @@ static int s3c2410wdt_resume(struct platform_device *dev)
 	writel(wtdat_save, wdt_base + S3C2410_WTCNT); /* Reset count */
 	writel(wtcon_save, wdt_base + S3C2410_WTCON);
 
-	printk(KERN_INFO PFX "watchdog %sabled\n",
-	       (wtcon_save & S3C2410_WTCON_ENABLE) ? "en" : "dis");
+//	printk(KERN_INFO PFX "watchdog %sabled\n",
+;
 
 	return 0;
 }
@@ -608,7 +608,7 @@ static char banner[] __initdata =
 
 static int __init watchdog_init(void)
 {
-	printk(banner);
+;
 	return platform_driver_register(&s3c2410wdt_driver);
 }
 

@@ -107,7 +107,7 @@ static int __devinit usb6fire_chip_probe(struct usb_interface *intf,
 	}
 	if (regidx < 0) {
 		mutex_unlock(&register_mutex);
-		snd_printk(KERN_ERR PREFIX "too many cards registered.\n");
+;
 		return -ENODEV;
 	}
 	devices[regidx] = device;
@@ -122,13 +122,13 @@ static int __devinit usb6fire_chip_probe(struct usb_interface *intf,
 
 	/* if we are here, card can be registered in alsa. */
 	if (usb_set_interface(device, 0, 0) != 0) {
-		snd_printk(KERN_ERR PREFIX "can't set first interface.\n");
+;
 		return -EIO;
 	}
 	ret = snd_card_create(index[regidx], id[regidx], THIS_MODULE,
 			sizeof(struct sfire_chip), &card);
 	if (ret < 0) {
-		snd_printk(KERN_ERR PREFIX "cannot create alsa card.\n");
+;
 		return ret;
 	}
 	strcpy(card->driver, "6FireUSB");
@@ -170,7 +170,7 @@ static int __devinit usb6fire_chip_probe(struct usb_interface *intf,
 
 	ret = snd_card_register(card);
 	if (ret < 0) {
-		snd_printk(KERN_ERR PREFIX "cannot register card.");
+;
 		usb6fire_chip_destroy(chip);
 		return ret;
 	}

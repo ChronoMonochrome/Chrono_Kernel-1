@@ -83,8 +83,8 @@ static int snd_gf1_pcm_block_change(struct snd_pcm_substream *substream,
 	count += offset & 31;
 	offset &= ~31;
 	/*
-	snd_printk(KERN_DEBUG "block change - offset = 0x%x, count = 0x%x\n",
-		   offset, count);
+//	snd_printk(KERN_DEBUG "block change - offset = 0x%x, count = 0x%x\n",
+;
 	*/
 	memset(&block, 0, sizeof(block));
 	block.cmd = SNDRV_GF1_DMA_IRQ;
@@ -139,9 +139,9 @@ static void snd_gf1_pcm_trigger_up(struct snd_pcm_substream *substream)
 		end = curr + (pcmp->block_size / runtime->channels);
 		end -= snd_pcm_format_width(runtime->format) == 16 ? 2 : 1;
 		/*
-		snd_printk(KERN_DEBUG "init: curr=0x%x, begin=0x%x, end=0x%x, "
-			   "ctrl=0x%x, ramp=0x%x, rate=0x%x\n",
-			   curr, begin, end, voice_ctrl, ramp_ctrl, rate);
+//		snd_printk(KERN_DEBUG "init: curr=0x%x, begin=0x%x, end=0x%x, "
+//			   "ctrl=0x%x, ramp=0x%x, rate=0x%x\n",
+;
 		*/
 		pan = runtime->channels == 2 ? (!voice ? 1 : 14) : 8;
 		vol = !voice ? gus->gf1.pcm_volume_level_left : gus->gf1.pcm_volume_level_right;
@@ -212,11 +212,11 @@ static void snd_gf1_pcm_interrupt_wave(struct snd_gus_card * gus,
 	ramp_ctrl = (snd_gf1_read8(gus, SNDRV_GF1_VB_VOLUME_CONTROL) & ~0xa4) | 0x03;
 #if 0
 	snd_gf1_select_voice(gus, pvoice->number);
-	printk(KERN_DEBUG "position = 0x%x\n",
-	       (snd_gf1_read_addr(gus, SNDRV_GF1_VA_CURRENT, voice_ctrl & 4) >> 4));
+//	printk(KERN_DEBUG "position = 0x%x\n",
+;
 	snd_gf1_select_voice(gus, pcmp->pvoices[1]->number);
-	printk(KERN_DEBUG "position = 0x%x\n",
-	       (snd_gf1_read_addr(gus, SNDRV_GF1_VA_CURRENT, voice_ctrl & 4) >> 4));
+//	printk(KERN_DEBUG "position = 0x%x\n",
+;
 	snd_gf1_select_voice(gus, pvoice->number);
 #endif
 	pcmp->bpos++;
@@ -309,8 +309,8 @@ static int snd_gf1_pcm_poke_block(struct snd_gus_card *gus, unsigned char *buf,
 	unsigned long flags;
 
 	/*
-	printk(KERN_DEBUG
-	       "poke block; buf = 0x%x, pos = %i, count = %i, port = 0x%x\n",
+//	printk(KERN_DEBUG
+;
 	       (int)buf, pos, count, gus->gf1.port);
 	*/
 	while (count > 0) {
@@ -693,8 +693,8 @@ static int snd_gf1_pcm_playback_open(struct snd_pcm_substream *substream)
 	runtime->private_free = snd_gf1_pcm_playback_free;
 
 #if 0
-	printk(KERN_DEBUG "playback.buffer = 0x%lx, gf1.pcm_buffer = 0x%lx\n",
-	       (long) pcm->playback.buffer, (long) gus->gf1.pcm_buffer);
+//	printk(KERN_DEBUG "playback.buffer = 0x%lx, gf1.pcm_buffer = 0x%lx\n",
+;
 #endif
 	if ((err = snd_gf1_dma_init(gus)) < 0)
 		return err;
@@ -714,7 +714,7 @@ static int snd_gf1_pcm_playback_close(struct snd_pcm_substream *substream)
 	struct gus_pcm_private *pcmp = runtime->private_data;
 	
 	if (!wait_event_timeout(pcmp->sleep, (atomic_read(&pcmp->dma_count) <= 0), 2*HZ))
-		snd_printk(KERN_ERR "gf1 pcm - serious DMA problem\n");
+;
 
 	snd_gf1_dma_done(gus);	
 	return 0;

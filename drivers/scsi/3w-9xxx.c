@@ -413,12 +413,12 @@ static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
 	event->parameter_len = strlen(header->err_specific_desc);
 	memcpy(event->parameter_data, header->err_specific_desc, event->parameter_len + (error_str[0] == '\0' ? 0 : (1 + strlen(error_str))));
 	if (event->severity != TW_AEN_SEVERITY_DEBUG)
-		printk(KERN_WARNING "3w-9xxx:%s AEN: %s (0x%02X:0x%04X): %s:%s.\n",
-		       host,
-		       twa_aen_severity_lookup(TW_SEV_OUT(header->status_block.severity__reserved)),
-		       TW_MESSAGE_SOURCE_CONTROLLER_EVENT, aen,
-		       error_str[0] == '\0' ? twa_string_lookup(twa_aen_table, aen) : error_str,
-		       header->err_specific_desc);
+//		printk(KERN_WARNING "3w-9xxx:%s AEN: %s (0x%02X:0x%04X): %s:%s.\n",
+//		       host,
+//		       twa_aen_severity_lookup(TW_SEV_OUT(header->status_block.severity__reserved)),
+//		       TW_MESSAGE_SOURCE_CONTROLLER_EVENT, aen,
+//		       error_str[0] == '\0' ? twa_string_lookup(twa_aen_table, aen) : error_str,
+;
 	else
 		tw_dev->aen_count--;
 
@@ -724,9 +724,9 @@ static long twa_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long 
 		/* We timed out, and didn't get an interrupt */
 		if (tw_dev->chrdev_request_id != TW_IOCTL_CHRDEV_FREE) {
 			/* Now we need to reset the board */
-			printk(KERN_WARNING "3w-9xxx: scsi%d: WARNING: (0x%02X:0x%04X): Character ioctl (0x%x) timed out, resetting card.\n",
-			       tw_dev->host->host_no, TW_DRIVER, 0x37,
-			       cmd);
+//			printk(KERN_WARNING "3w-9xxx: scsi%d: WARNING: (0x%02X:0x%04X): Character ioctl (0x%x) timed out, resetting card.\n",
+//			       tw_dev->host->host_no, TW_DRIVER, 0x37,
+;
 			retval = TW_IOCTL_ERROR_OS_EIO;
 			twa_reset_device_extension(tw_dev);
 			goto out3;
@@ -998,22 +998,22 @@ static int twa_fill_sense(TW_Device_Extension *tw_dev, int request_id, int copy_
 	error = le16_to_cpu(full_command_packet->header.status_block.error);
 	if ((error != TW_ERROR_LOGICAL_UNIT_NOT_SUPPORTED) && (error != TW_ERROR_UNIT_OFFLINE)) {
 		if (print_host)
-			printk(KERN_WARNING "3w-9xxx: scsi%d: ERROR: (0x%02X:0x%04X): %s:%s.\n",
-			       tw_dev->host->host_no,
-			       TW_MESSAGE_SOURCE_CONTROLLER_ERROR,
-			       full_command_packet->header.status_block.error,
-			       error_str[0] == '\0' ?
-			       twa_string_lookup(twa_error_table,
-						 full_command_packet->header.status_block.error) : error_str,
-			       full_command_packet->header.err_specific_desc);
+//			printk(KERN_WARNING "3w-9xxx: scsi%d: ERROR: (0x%02X:0x%04X): %s:%s.\n",
+//			       tw_dev->host->host_no,
+//			       TW_MESSAGE_SOURCE_CONTROLLER_ERROR,
+//			       full_command_packet->header.status_block.error,
+//			       error_str[0] == '\0' ?
+//			       twa_string_lookup(twa_error_table,
+//						 full_command_packet->header.status_block.error) : error_str,
+;
 		else
-			printk(KERN_WARNING "3w-9xxx: ERROR: (0x%02X:0x%04X): %s:%s.\n",
-			       TW_MESSAGE_SOURCE_CONTROLLER_ERROR,
-			       full_command_packet->header.status_block.error,
-			       error_str[0] == '\0' ?
-			       twa_string_lookup(twa_error_table,
-						 full_command_packet->header.status_block.error) : error_str,
-			       full_command_packet->header.err_specific_desc);
+//			printk(KERN_WARNING "3w-9xxx: ERROR: (0x%02X:0x%04X): %s:%s.\n",
+//			       TW_MESSAGE_SOURCE_CONTROLLER_ERROR,
+//			       full_command_packet->header.status_block.error,
+//			       error_str[0] == '\0' ?
+//			       twa_string_lookup(twa_error_table,
+//						 full_command_packet->header.status_block.error) : error_str,
+;
 	}
 
 	if (copy_sense) {
@@ -1745,9 +1745,9 @@ static int twa_scsi_eh_reset(struct scsi_cmnd *SCpnt)
 
 	tw_dev->num_resets++;
 
-	sdev_printk(KERN_WARNING, SCpnt->device,
-		"WARNING: (0x%02X:0x%04X): Command (0x%x) timed out, resetting card.\n",
-		TW_DRIVER, 0x2c, SCpnt->cmnd[0]);
+//	sdev_printk(KERN_WARNING, SCpnt->device,
+//		"WARNING: (0x%02X:0x%04X): Command (0x%x) timed out, resetting card.\n",
+;
 
 	/* Make sure we are not issuing an ioctl or resetting from ioctl */
 	mutex_lock(&tw_dev->ioctl_lock);
@@ -1959,13 +1959,13 @@ static void __twa_shutdown(TW_Device_Extension *tw_dev)
 	/* Free up the IRQ */
 	free_irq(tw_dev->tw_pci_dev->irq, tw_dev);
 
-	printk(KERN_WARNING "3w-9xxx: Shutting down host %d.\n", tw_dev->host->host_no);
+;
 
 	/* Tell the card we are shutting down */
 	if (twa_initconnection(tw_dev, 1, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL)) {
 		TW_PRINTK(tw_dev->host, TW_DRIVER, 0x31, "Connection shutdown failed");
 	} else {
-		printk(KERN_WARNING "3w-9xxx: Shutdown complete.\n");
+;
 	}
 
 	/* Clear all interrupts just before exit */
@@ -2122,16 +2122,16 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id 
 
 	pci_set_drvdata(pdev, host);
 
-	printk(KERN_WARNING "3w-9xxx: scsi%d: Found a 3ware 9000 Storage Controller at 0x%lx, IRQ: %d.\n",
-	       host->host_no, mem_addr, pdev->irq);
-	printk(KERN_WARNING "3w-9xxx: scsi%d: Firmware %s, BIOS %s, Ports: %d.\n",
-	       host->host_no,
-	       (char *)twa_get_param(tw_dev, 0, TW_VERSION_TABLE,
-				     TW_PARAM_FWVER, TW_PARAM_FWVER_LENGTH),
-	       (char *)twa_get_param(tw_dev, 1, TW_VERSION_TABLE,
-				     TW_PARAM_BIOSVER, TW_PARAM_BIOSVER_LENGTH),
-	       le32_to_cpu(*(int *)twa_get_param(tw_dev, 2, TW_INFORMATION_TABLE,
-				     TW_PARAM_PORTCOUNT, TW_PARAM_PORTCOUNT_LENGTH)));
+//	printk(KERN_WARNING "3w-9xxx: scsi%d: Found a 3ware 9000 Storage Controller at 0x%lx, IRQ: %d.\n",
+;
+//	printk(KERN_WARNING "3w-9xxx: scsi%d: Firmware %s, BIOS %s, Ports: %d.\n",
+//	       host->host_no,
+//	       (char *)twa_get_param(tw_dev, 0, TW_VERSION_TABLE,
+//				     TW_PARAM_FWVER, TW_PARAM_FWVER_LENGTH),
+//	       (char *)twa_get_param(tw_dev, 1, TW_VERSION_TABLE,
+//				     TW_PARAM_BIOSVER, TW_PARAM_BIOSVER_LENGTH),
+//	       le32_to_cpu(*(int *)twa_get_param(tw_dev, 2, TW_INFORMATION_TABLE,
+;
 
 	/* Try to enable MSI */
 	if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
@@ -2219,7 +2219,7 @@ static int twa_suspend(struct pci_dev *pdev, pm_message_t state)
 	struct Scsi_Host *host = pci_get_drvdata(pdev);
 	TW_Device_Extension *tw_dev = (TW_Device_Extension *)host->hostdata;
 
-	printk(KERN_WARNING "3w-9xxx: Suspending host %d.\n", tw_dev->host->host_no);
+;
 
 	TW_DISABLE_INTERRUPTS(tw_dev);
 	free_irq(tw_dev->tw_pci_dev->irq, tw_dev);
@@ -2231,7 +2231,7 @@ static int twa_suspend(struct pci_dev *pdev, pm_message_t state)
 	if (twa_initconnection(tw_dev, 1, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL)) {
 		TW_PRINTK(tw_dev->host, TW_DRIVER, 0x38, "Connection shutdown failed during suspend");
 	} else {
-		printk(KERN_WARNING "3w-9xxx: Suspend complete.\n");
+;
 	}
 	TW_CLEAR_ALL_INTERRUPTS(tw_dev);
 
@@ -2249,7 +2249,7 @@ static int twa_resume(struct pci_dev *pdev)
 	struct Scsi_Host *host = pci_get_drvdata(pdev);
 	TW_Device_Extension *tw_dev = (TW_Device_Extension *)host->hostdata;
 
-	printk(KERN_WARNING "3w-9xxx: Resuming host %d.\n", tw_dev->host->host_no);
+;
 	pci_set_power_state(pdev, PCI_D0);
 	pci_enable_wake(pdev, PCI_D0, 0);
 	pci_restore_state(pdev);
@@ -2293,7 +2293,7 @@ static int twa_resume(struct pci_dev *pdev)
 	/* Re-enable interrupts on the card */
 	TW_ENABLE_AND_CLEAR_INTERRUPTS(tw_dev);
 
-	printk(KERN_WARNING "3w-9xxx: Resume complete.\n");
+;
 	return 0;
 
 out_disable_device:
@@ -2334,7 +2334,7 @@ static struct pci_driver twa_driver = {
 /* This function is called on driver initialization */
 static int __init twa_init(void)
 {
-	printk(KERN_WARNING "3ware 9000 Storage Controller device driver for Linux v%s.\n", TW_DRIVER_VERSION);
+;
 
 	return pci_register_driver(&twa_driver);
 } /* End twa_init() */

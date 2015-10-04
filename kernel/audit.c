@@ -179,7 +179,7 @@ void audit_panic(const char *message)
 		break;
 	case AUDIT_FAIL_PRINTK:
 		if (printk_ratelimit())
-			printk(KERN_ERR "audit: %s\n", message);
+;
 		break;
 	case AUDIT_FAIL_PANIC:
 		/* test audit_pid since printk is always losey, why bother? */
@@ -250,12 +250,12 @@ void audit_log_lost(const char *message)
 
 	if (print) {
 		if (printk_ratelimit())
-			printk(KERN_WARNING
-				"audit: audit_lost=%d audit_rate_limit=%d "
-				"audit_backlog_limit=%d\n",
-				atomic_read(&audit_lost),
-				audit_rate_limit,
-				audit_backlog_limit);
+//			printk(KERN_WARNING
+//				"audit: audit_lost=%d audit_rate_limit=%d "
+//				"audit_backlog_limit=%d\n",
+//				atomic_read(&audit_lost),
+//				audit_rate_limit,
+;
 		audit_panic(message);
 	}
 }
@@ -385,7 +385,7 @@ static void audit_printk_skb(struct sk_buff *skb)
 
 	if (nlh->nlmsg_type != AUDIT_EOE) {
 		if (printk_ratelimit())
-			printk(KERN_NOTICE "type=%d %s\n", nlh->nlmsg_type, data);
+;
 		else
 			audit_log_lost("printk limit exceeded\n");
 	}
@@ -962,8 +962,8 @@ static int __init audit_init(void)
 	if (audit_initialized == AUDIT_DISABLED)
 		return 0;
 
-	printk(KERN_INFO "audit: initializing netlink socket (%s)\n",
-	       audit_default ? "enabled" : "disabled");
+//	printk(KERN_INFO "audit: initializing netlink socket (%s)\n",
+;
 	audit_sock = netlink_kernel_create(&init_net, NETLINK_AUDIT, 0,
 					   audit_receive, NULL, THIS_MODULE);
 	if (!audit_sock)
@@ -993,17 +993,17 @@ static int __init audit_enable(char *str)
 	if (!audit_default)
 		audit_initialized = AUDIT_DISABLED;
 
-	printk(KERN_INFO "audit: %s", audit_default ? "enabled" : "disabled");
+;
 
 	if (audit_initialized == AUDIT_INITIALIZED) {
 		audit_enabled = audit_default;
 		audit_ever_enabled |= !!audit_default;
 	} else if (audit_initialized == AUDIT_UNINITIALIZED) {
-		printk(" (after initialization)");
+;
 	} else {
-		printk(" (until reboot)");
+;
 	}
-	printk("\n");
+;
 
 	return 1;
 }
@@ -1176,11 +1176,11 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
 			continue;
 		}
 		if (audit_rate_check() && printk_ratelimit())
-			printk(KERN_WARNING
-			       "audit: audit_backlog=%d > "
-			       "audit_backlog_limit=%d\n",
-			       skb_queue_len(&audit_skb_queue),
-			       audit_backlog_limit);
+//			printk(KERN_WARNING
+//			       "audit: audit_backlog=%d > "
+//			       "audit_backlog_limit=%d\n",
+//			       skb_queue_len(&audit_skb_queue),
+;
 		audit_log_lost("backlog limit exceeded");
 		audit_backlog_wait_time = audit_backlog_wait_overflow;
 		wake_up(&audit_backlog_wait);

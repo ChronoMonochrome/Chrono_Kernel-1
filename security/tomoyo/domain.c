@@ -524,7 +524,7 @@ int tomoyo_find_next_domain(struct linux_binprm *bprm)
  done:
 	if (domain)
 		goto out;
-	printk(KERN_WARNING "TOMOYO-ERROR: Domain '%s' not defined.\n", tmp);
+;
 	if (is_enforce)
 		retval = -EPERM;
 	else

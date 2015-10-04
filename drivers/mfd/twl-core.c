@@ -1099,8 +1099,8 @@ static void clocks_init(struct device *dev,
 		osc = clk_get(dev, "osc_sys_ck");
 
 	if (IS_ERR(osc)) {
-		printk(KERN_WARNING "Skipping twl internal clock init and "
-				"using bootloader value (unknown osc rate)\n");
+//		printk(KERN_WARNING "Skipping twl internal clock init and "
+;
 		return;
 	}
 
@@ -1113,8 +1113,8 @@ static void clocks_init(struct device *dev,
 	 */
 	osc = ERR_PTR(-EIO);
 
-	printk(KERN_WARNING "Skipping twl internal clock init and "
-	       "using bootloader value (unknown osc rate)\n");
+//	printk(KERN_WARNING "Skipping twl internal clock init and "
+;
 
 	return;
 #endif

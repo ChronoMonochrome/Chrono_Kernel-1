@@ -70,7 +70,7 @@ static u8 ide_get_best_pio_mode(ide_drive_t *drive, u8 mode_wanted, u8 max_mode)
 		pio_mode = ide_scan_pio_blacklist((char *)&id[ATA_ID_PROD]);
 
 	if (pio_mode != -1) {
-		printk(KERN_INFO "%s: is on PIO blacklist\n", drive->name);
+;
 	} else {
 		pio_mode = id[ATA_ID_OLD_PIO_MODES] >> 8;
 		if (pio_mode > 2) {	/* 2 is maximum allowed tPIO value */
@@ -96,8 +96,8 @@ static u8 ide_get_best_pio_mode(ide_drive_t *drive, u8 mode_wanted, u8 max_mode)
 		}
 
 		if (overridden)
-			printk(KERN_INFO "%s: tPIO > 2, assuming tPIO = 2\n",
-					 drive->name);
+//			printk(KERN_INFO "%s: tPIO > 2, assuming tPIO = 2\n",
+;
 	}
 
 	if (pio_mode > max_mode)
@@ -199,9 +199,9 @@ void ide_set_pio(ide_drive_t *drive, u8 req_pio)
 	 * - report device max PIO mode
 	 * - check req_pio != 255 against device max PIO mode
 	 */
-	printk(KERN_DEBUG "%s: host max PIO%d wanted PIO%d%s selected PIO%d\n",
-			  drive->name, host_pio, req_pio,
-			  req_pio == 255 ? "(auto-tune)" : "", pio);
+//	printk(KERN_DEBUG "%s: host max PIO%d wanted PIO%d%s selected PIO%d\n",
+//			  drive->name, host_pio, req_pio,
+;
 
 	(void)ide_set_pio_mode(drive, XFER_PIO_0 + pio);
 }

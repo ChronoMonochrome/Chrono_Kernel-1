@@ -200,10 +200,10 @@ static int asd_verify_cseq(struct asd_ha_struct *asd_ha, const u8 *_prog,
 		u32 val = asd_read_reg_dword(asd_ha, addr);
 
 		if (le32_to_cpu(*prog) != val) {
-			asd_printk("%s: cseq verify failed at %u "
-				   "read:0x%x, wanted:0x%x\n",
-				   pci_name(asd_ha->pcidev),
-				   i, val, le32_to_cpu(*prog));
+//			asd_printk("%s: cseq verify failed at %u "
+//				   "read:0x%x, wanted:0x%x\n",
+//				   pci_name(asd_ha->pcidev),
+;
 			return -1;
 		}
 	}
@@ -242,10 +242,10 @@ static int asd_verify_lseq(struct asd_ha_struct *asd_ha, const u8 *_prog,
 			u32 val = asd_read_reg_dword(asd_ha, LmSEQRAM(lseq)+i);
 
 			if (le32_to_cpu(*prog) != val) {
-				asd_printk("%s: LSEQ%d verify failed "
-					   "page:%d, offs:%d\n",
-					   pci_name(asd_ha->pcidev),
-					   lseq, page, i);
+//				asd_printk("%s: LSEQ%d verify failed "
+//					   "page:%d, offs:%d\n",
+//					   pci_name(asd_ha->pcidev),
+;
 				return -1;
 			}
 		}
@@ -296,7 +296,7 @@ static int asd_download_seq(struct asd_ha_struct *asd_ha,
 	int err = 0;
 
 	if (size % 4) {
-		asd_printk("sequencer program not multiple of 4\n");
+;
 		return -1;
 	}
 
@@ -313,7 +313,7 @@ static int asd_download_seq(struct asd_ha_struct *asd_ha,
 
 	token = asd_alloc_coherent(asd_ha, MAX_DMA_OVLY_COUNT, GFP_KERNEL);
 	if (!token) {
-		asd_printk("out of memory for dma SEQ download\n");
+;
 		err = -ENOMEM;
 		goto out;
 	}
@@ -344,8 +344,8 @@ static int asd_download_seq(struct asd_ha_struct *asd_ha,
 	reg = asd_read_reg_dword(asd_ha, COMSTAT);
 	if (!(reg & OVLYDMADONE) || (reg & OVLYERR)
 	    || (asd_read_reg_dword(asd_ha, CHIMINT) & DEVEXCEPT_MASK)){
-		asd_printk("%s: error DMA-ing sequencer code\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("%s: error DMA-ing sequencer code\n",
+;
 		err = -ENODEV;
 	}
 
@@ -364,7 +364,7 @@ static int asd_download_seq(struct asd_ha_struct *asd_ha, const u8 *_prog,
 	const u32 *prog = (u32 *) _prog;
 
 	if (size % 4) {
-		asd_printk("sequencer program not multiple of 4\n");
+;
 		return -1;
 	}
 
@@ -401,7 +401,7 @@ static int asd_seq_download_seqs(struct asd_ha_struct *asd_ha)
 	int 	err;
 
 	if (!asd_ha->hw_prof.enabled_phys) {
-		asd_printk("%s: no enabled phys!\n", pci_name(asd_ha->pcidev));
+;
 		return -ENODEV;
 	}
 
@@ -409,7 +409,7 @@ static int asd_seq_download_seqs(struct asd_ha_struct *asd_ha)
 	ASD_DPRINTK("downloading CSEQ...\n");
 	err = asd_download_seq(asd_ha, cseq_code, cseq_code_size, 0);
 	if (err) {
-		asd_printk("CSEQ download failed:%d\n", err);
+;
 		return err;
 	}
 
@@ -432,7 +432,7 @@ static int asd_seq_download_seqs(struct asd_ha_struct *asd_ha)
 		}
 	}
 	if (err)
-		asd_printk("LSEQs download failed:%d\n", err);
+;
 
 	return err;
 }
@@ -1272,21 +1272,21 @@ static int asd_request_firmware(struct asd_ha_struct *asd_ha)
 		csum += sequencer_fw->data[i];
 
 	if (csum != header.csum) {
-		asd_printk("Firmware file checksum mismatch\n");
+;
 		return -EINVAL;
 	}
 
 	if (header.cseq_table_size != CSEQ_NUM_VECS ||
 	    header.lseq_table_size != LSEQ_NUM_VECS) {
-		asd_printk("Firmware file table size mismatch\n");
+;
 		return -EINVAL;
 	}
 
-	asd_printk("Found sequencer Firmware version %d.%d (%s)\n",
-		   header.major, header.minor, hdr_ptr->version);
+//	asd_printk("Found sequencer Firmware version %d.%d (%s)\n",
+;
 
 	if (header.major != SAS_RAZOR_SEQUENCER_FW_MAJOR) {
-		asd_printk("Firmware Major Version Mismatch;"
+;
 			   "driver requires version %d.X",
 			   SAS_RAZOR_SEQUENCER_FW_MAJOR);
 		return -EINVAL;
@@ -1319,15 +1319,15 @@ int asd_init_seqs(struct asd_ha_struct *asd_ha)
 	err = asd_request_firmware(asd_ha);
 
 	if (err) {
-		asd_printk("Failed to load sequencer firmware file %s, error %d\n",
-			   SAS_RAZOR_SEQUENCER_FW_FILE, err);
+//		asd_printk("Failed to load sequencer firmware file %s, error %d\n",
+;
 		return err;
 	}
 
 	err = asd_seq_download_seqs(asd_ha);
 	if (err) {
-		asd_printk("couldn't download sequencers for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't download sequencers for %s\n",
+;
 		return err;
 	}
 
@@ -1344,8 +1344,8 @@ int asd_start_seqs(struct asd_ha_struct *asd_ha)
 
 	err = asd_seq_start_cseq(asd_ha);
 	if (err) {
-		asd_printk("couldn't start CSEQ for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't start CSEQ for %s\n",
+;
 		return err;
 	}
 
@@ -1353,8 +1353,8 @@ int asd_start_seqs(struct asd_ha_struct *asd_ha)
 	for_each_sequencer(lseq_mask, lseq_mask, lseq) {
 		err = asd_seq_start_lseq(asd_ha, lseq);
 		if (err) {
-			asd_printk("coudln't start LSEQ %d for %s\n", lseq,
-				   pci_name(asd_ha->pcidev));
+//			asd_printk("coudln't start LSEQ %d for %s\n", lseq,
+;
 			return err;
 		}
 	}
@@ -1403,14 +1403,14 @@ void asd_update_port_links(struct asd_ha_struct *asd_ha, struct asd_phy *phy)
 		if (!err)
 			break;
 		else if (err == -EFAULT) {
-			asd_printk("phy_is_up: parity error in DDB 0\n");
+;
 			break;
 		}
 	}
 	spin_unlock_irqrestore(&asd_ha->hw_prof.ddb_lock, flags);
 
 	if (err)
-		asd_printk("couldn't update DDB 0:error:%d\n", err);
+;
 }
 
 MODULE_FIRMWARE(SAS_RAZOR_SEQUENCER_FW_FILE);

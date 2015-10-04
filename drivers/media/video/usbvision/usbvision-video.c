@@ -93,8 +93,8 @@ USBVISION_DRIVER_VERSION_PATCHLEVEL)
 #ifdef USBVISION_DEBUG
 	#define PDEBUG(level, fmt, args...) { \
 		if (video_debug & (level)) \
-			printk(KERN_INFO KBUILD_MODNAME ":[%s:%d] " fmt, \
-				__func__, __LINE__ , ## args); \
+//			printk(KERN_INFO KBUILD_MODNAME ":[%s:%d] " fmt, \
+;
 	}
 #else
 	#define PDEBUG(level, fmt, args...) do {} while (0)
@@ -449,7 +449,7 @@ static int usbvision_v4l2_close(struct file *file)
 	}
 
 	if (usbvision->remove_pending) {
-		printk(KERN_INFO "%s: Final disconnect\n", __func__);
+;
 		usbvision_release(usbvision);
 	}
 
@@ -1192,7 +1192,7 @@ static int usbvision_radio_close(struct file *file)
 	}
 
 	if (usbvision->remove_pending) {
-		printk(KERN_INFO "%s: Final disconnect\n", __func__);
+;
 		usbvision_release(usbvision);
 	}
 
@@ -1350,8 +1350,8 @@ static int __devinit usbvision_register_video(struct usb_usbvision *usbvision)
 		goto err_exit;
 	if (video_register_device(usbvision->vdev, VFL_TYPE_GRABBER, video_nr) < 0)
 		goto err_exit;
-	printk(KERN_INFO "USBVision[%d]: registered USBVision Video device %s [v4l2]\n",
-	       usbvision->nr, video_device_node_name(usbvision->vdev));
+//	printk(KERN_INFO "USBVision[%d]: registered USBVision Video device %s [v4l2]\n",
+;
 
 	/* Radio Device: */
 	if (usbvision_device_data[usbvision->dev_model].radio) {
@@ -1363,8 +1363,8 @@ static int __devinit usbvision_register_video(struct usb_usbvision *usbvision)
 			goto err_exit;
 		if (video_register_device(usbvision->rdev, VFL_TYPE_RADIO, radio_nr) < 0)
 			goto err_exit;
-		printk(KERN_INFO "USBVision[%d]: registered USBVision Radio device %s [v4l2]\n",
-		       usbvision->nr, video_device_node_name(usbvision->rdev));
+//		printk(KERN_INFO "USBVision[%d]: registered USBVision Radio device %s [v4l2]\n",
+;
 	}
 	/* all done */
 	return 0;
@@ -1507,8 +1507,8 @@ static int __devinit usbvision_probe(struct usb_interface *intf,
 		PDEBUG(DBG_PROBE, "model out of bounds %d", model);
 		return -ENODEV;
 	}
-	printk(KERN_INFO "%s: %s found\n", __func__,
-				usbvision_device_data[model].model_string);
+//	printk(KERN_INFO "%s: %s found\n", __func__,
+;
 
 	if (usbvision_device_data[model].interface >= 0)
 		interface = &dev->actconfig->interface[usbvision_device_data[model].interface]->altsetting[0];
@@ -1626,8 +1626,8 @@ static void __devexit usbvision_disconnect(struct usb_interface *intf)
 	mutex_unlock(&usbvision->v4l2_lock);
 
 	if (usbvision->user) {
-		printk(KERN_INFO "%s: In use, disconnect pending\n",
-		       __func__);
+//		printk(KERN_INFO "%s: In use, disconnect pending\n",
+;
 		wake_up_interruptible(&usbvision->wait_frame);
 		wake_up_interruptible(&usbvision->wait_stream);
 	} else {
@@ -1670,7 +1670,7 @@ static int __init usbvision_init(void)
 	err_code = usb_register(&usbvision_driver);
 
 	if (err_code == 0) {
-		printk(KERN_INFO DRIVER_DESC " : " USBVISION_VERSION_STRING "\n");
+;
 		PDEBUG(DBG_PROBE, "success");
 	}
 	return err_code;

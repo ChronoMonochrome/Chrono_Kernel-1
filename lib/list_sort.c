@@ -168,27 +168,27 @@ static struct debug_el **elts __initdata;
 static int __init check(struct debug_el *ela, struct debug_el *elb)
 {
 	if (ela->serial >= TEST_LIST_LEN) {
-		printk(KERN_ERR "list_sort_test: error: incorrect serial %d\n",
-				ela->serial);
+//		printk(KERN_ERR "list_sort_test: error: incorrect serial %d\n",
+;
 		return -EINVAL;
 	}
 	if (elb->serial >= TEST_LIST_LEN) {
-		printk(KERN_ERR "list_sort_test: error: incorrect serial %d\n",
-				elb->serial);
+//		printk(KERN_ERR "list_sort_test: error: incorrect serial %d\n",
+;
 		return -EINVAL;
 	}
 	if (elts[ela->serial] != ela || elts[elb->serial] != elb) {
-		printk(KERN_ERR "list_sort_test: error: phantom element\n");
+;
 		return -EINVAL;
 	}
 	if (ela->poison1 != TEST_POISON1 || ela->poison2 != TEST_POISON2) {
-		printk(KERN_ERR "list_sort_test: error: bad poison: %#x/%#x\n",
-				ela->poison1, ela->poison2);
+//		printk(KERN_ERR "list_sort_test: error: bad poison: %#x/%#x\n",
+;
 		return -EINVAL;
 	}
 	if (elb->poison1 != TEST_POISON1 || elb->poison2 != TEST_POISON2) {
-		printk(KERN_ERR "list_sort_test: error: bad poison: %#x/%#x\n",
-				elb->poison1, elb->poison2);
+//		printk(KERN_ERR "list_sort_test: error: bad poison: %#x/%#x\n",
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -212,20 +212,20 @@ static int __init list_sort_test(void)
 	struct list_head *cur, *tmp;
 	LIST_HEAD(head);
 
-	printk(KERN_DEBUG "list_sort_test: start testing list_sort()\n");
+;
 
 	elts = kmalloc(sizeof(void *) * TEST_LIST_LEN, GFP_KERNEL);
 	if (!elts) {
-		printk(KERN_ERR "list_sort_test: error: cannot allocate "
-				"memory\n");
+//		printk(KERN_ERR "list_sort_test: error: cannot allocate "
+;
 		goto exit;
 	}
 
 	for (i = 0; i < TEST_LIST_LEN; i++) {
 		el = kmalloc(sizeof(*el), GFP_KERNEL);
 		if (!el) {
-			printk(KERN_ERR "list_sort_test: error: cannot "
-					"allocate memory\n");
+//			printk(KERN_ERR "list_sort_test: error: cannot "
+;
 			goto exit;
 		}
 		 /* force some equivalencies */
@@ -244,37 +244,37 @@ static int __init list_sort_test(void)
 		int cmp_result;
 
 		if (cur->next->prev != cur) {
-			printk(KERN_ERR "list_sort_test: error: list is "
-					"corrupted\n");
+//			printk(KERN_ERR "list_sort_test: error: list is "
+;
 			goto exit;
 		}
 
 		cmp_result = cmp(NULL, cur, cur->next);
 		if (cmp_result > 0) {
-			printk(KERN_ERR "list_sort_test: error: list is not "
-					"sorted\n");
+//			printk(KERN_ERR "list_sort_test: error: list is not "
+;
 			goto exit;
 		}
 
 		el = container_of(cur, struct debug_el, list);
 		el1 = container_of(cur->next, struct debug_el, list);
 		if (cmp_result == 0 && el->serial >= el1->serial) {
-			printk(KERN_ERR "list_sort_test: error: order of "
-					"equivalent elements not preserved\n");
+//			printk(KERN_ERR "list_sort_test: error: order of "
+;
 			goto exit;
 		}
 
 		if (check(el, el1)) {
-			printk(KERN_ERR "list_sort_test: error: element check "
-					"failed\n");
+//			printk(KERN_ERR "list_sort_test: error: element check "
+;
 			goto exit;
 		}
 		count++;
 	}
 
 	if (count != TEST_LIST_LEN) {
-		printk(KERN_ERR "list_sort_test: error: bad list length %d",
-				count);
+//		printk(KERN_ERR "list_sort_test: error: bad list length %d",
+;
 		goto exit;
 	}
 

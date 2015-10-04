@@ -816,8 +816,8 @@ int tps65010_set_led(unsigned led, unsigned mode)
 		led_per = 0x08 | (1 << 7);
 		break;
 	default:
-		printk(KERN_ERR "%s: Wrong mode parameter for set_led()\n",
-		       DRIVER_NAME);
+//		printk(KERN_ERR "%s: Wrong mode parameter for set_led()\n",
+;
 		mutex_unlock(&the_tps->lock);
 		return -EINVAL;
 	}
@@ -826,8 +826,8 @@ int tps65010_set_led(unsigned led, unsigned mode)
 			TPS_LED1_ON + offs, led_on);
 
 	if (status != 0) {
-		printk(KERN_ERR "%s: Failed to write led%i_on register\n",
-		       DRIVER_NAME, led);
+//		printk(KERN_ERR "%s: Failed to write led%i_on register\n",
+;
 		mutex_unlock(&the_tps->lock);
 		return status;
 	}
@@ -839,8 +839,8 @@ int tps65010_set_led(unsigned led, unsigned mode)
 			TPS_LED1_PER + offs, led_per);
 
 	if (status != 0) {
-		printk(KERN_ERR "%s: Failed to write led%i_per register\n",
-		       DRIVER_NAME, led);
+//		printk(KERN_ERR "%s: Failed to write led%i_per register\n",
+;
 		mutex_unlock(&the_tps->lock);
 		return status;
 	}
@@ -917,8 +917,8 @@ int tps65010_set_low_pwr(unsigned mode)
 			TPS_VDCDC1, vdcdc1);
 
 	if (status != 0)
-		printk(KERN_ERR "%s: Failed to write vdcdc1 register\n",
-			DRIVER_NAME);
+//		printk(KERN_ERR "%s: Failed to write vdcdc1 register\n",
+;
 	else
 		pr_debug("%s: vdcdc1 0x%02x\n", DRIVER_NAME,
 			i2c_smbus_read_byte_data(the_tps->client, TPS_VDCDC1));
@@ -950,8 +950,8 @@ int tps65010_config_vregs1(unsigned value)
 			TPS_VREGS1, value);
 
 	if (status != 0)
-		printk(KERN_ERR "%s: Failed to write vregs1 register\n",
-			DRIVER_NAME);
+//		printk(KERN_ERR "%s: Failed to write vregs1 register\n",
+;
 	else
 		pr_debug("%s: vregs1 0x%02x\n", DRIVER_NAME,
 			i2c_smbus_read_byte_data(the_tps->client, TPS_VREGS1));
@@ -979,8 +979,8 @@ int tps65010_config_vdcdc2(unsigned value)
 	status = i2c_smbus_write_byte_data(c, TPS_VDCDC2, value);
 
 	if (status != 0)
-		printk(KERN_ERR "%s: Failed to write vdcdc2 register\n",
-			DRIVER_NAME);
+//		printk(KERN_ERR "%s: Failed to write vdcdc2 register\n",
+;
 	else
 		pr_debug("%s: vregs1 0x%02x\n", DRIVER_NAME,
 			 i2c_smbus_read_byte_data(c, TPS_VDCDC2));
@@ -1032,8 +1032,8 @@ int tps65013_set_low_pwr(unsigned mode)
 	status = i2c_smbus_write_byte_data(the_tps->client,
 			TPS_CHGCONFIG, chgconfig);
 	if (status != 0) {
-		printk(KERN_ERR "%s: Failed to write chconfig register\n",
-	 DRIVER_NAME);
+//		printk(KERN_ERR "%s: Failed to write chconfig register\n",
+;
 		mutex_unlock(&the_tps->lock);
 		return status;
 	}
@@ -1046,8 +1046,8 @@ int tps65013_set_low_pwr(unsigned mode)
 			TPS_VDCDC1, vdcdc1);
 
 	if (status != 0)
-		printk(KERN_ERR "%s: Failed to write vdcdc1 register\n",
-	 DRIVER_NAME);
+//		printk(KERN_ERR "%s: Failed to write vdcdc1 register\n",
+;
 	else
 		pr_debug("%s: vdcdc1 0x%02x\n", DRIVER_NAME,
 			i2c_smbus_read_byte_data(the_tps->client, TPS_VDCDC1));
@@ -1065,7 +1065,7 @@ static int __init tps_init(void)
 	u32	tries = 3;
 	int	status = -ENODEV;
 
-	printk(KERN_INFO "%s: version %s\n", DRIVER_NAME, DRIVER_VERSION);
+;
 
 	/* some boards have startup glitches */
 	while (tries--) {
@@ -1074,7 +1074,7 @@ static int __init tps_init(void)
 			break;
 		i2c_del_driver(&tps65010_driver);
 		if (!tries) {
-			printk(KERN_ERR "%s: no chip?\n", DRIVER_NAME);
+;
 			return -ENODEV;
 		}
 		pr_debug("%s: re-probe ...\n", DRIVER_NAME);

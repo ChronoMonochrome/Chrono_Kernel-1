@@ -70,7 +70,7 @@ u32 mega_mod64(u64 dividend, u32 divisor)
 	u32 remainder;
 
 	if (!divisor)
-		printk(KERN_ERR "megasas : DIVISOR is zero, in div fn\n");
+;
 	d = dividend;
 	remainder = do_div(d, divisor);
 	return remainder;
@@ -88,7 +88,7 @@ u64 mega_div64_32(uint64_t dividend, uint32_t divisor)
 	u64 d;
 
 	if (!divisor)
-		printk(KERN_ERR "megasas : DIVISOR is zero in mod fn\n");
+;
 
 	d = dividend;
 	remainder = do_div(d, divisor);
@@ -155,14 +155,14 @@ u8 MR_ValidateMapInfo(struct MR_FW_RAID_MAP_ALL *map,
 	if (pFwRaidMap->totalSize !=
 	    (sizeof(struct MR_FW_RAID_MAP) -sizeof(struct MR_LD_SPAN_MAP) +
 	     (sizeof(struct MR_LD_SPAN_MAP) *pFwRaidMap->ldCount))) {
-		printk(KERN_ERR "megasas: map info structure size 0x%x is not matching with ld count\n",
-		       (unsigned int)((sizeof(struct MR_FW_RAID_MAP) -
-				       sizeof(struct MR_LD_SPAN_MAP)) +
-				      (sizeof(struct MR_LD_SPAN_MAP) *
-				       pFwRaidMap->ldCount)));
-		printk(KERN_ERR "megasas: span map %x, pFwRaidMap->totalSize "
-		       ": %x\n", (unsigned int)sizeof(struct MR_LD_SPAN_MAP),
-		       pFwRaidMap->totalSize);
+//		printk(KERN_ERR "megasas: map info structure size 0x%x is not matching with ld count\n",
+//		       (unsigned int)((sizeof(struct MR_FW_RAID_MAP) -
+//				       sizeof(struct MR_LD_SPAN_MAP)) +
+//				      (sizeof(struct MR_LD_SPAN_MAP) *
+;
+//		printk(KERN_ERR "megasas: span map %x, pFwRaidMap->totalSize "
+//		       ": %x\n", (unsigned int)sizeof(struct MR_LD_SPAN_MAP),
+;
 		return 0;
 	}
 

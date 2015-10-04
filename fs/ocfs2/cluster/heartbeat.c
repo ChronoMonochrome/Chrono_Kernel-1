@@ -742,8 +742,8 @@ static void o2hb_set_quorum_device(struct o2hb_region *reg,
 	if (slot->ds_changed_samples < O2HB_LIVE_THRESHOLD)
 		return;
 
-	printk(KERN_NOTICE "o2hb: Region %s is now a quorum device\n",
-	       config_item_name(&reg->hr_item));
+//	printk(KERN_NOTICE "o2hb: Region %s is now a quorum device\n",
+;
 
 	set_bit(reg->hr_region_num, o2hb_quorum_region_bitmap);
 
@@ -1833,8 +1833,8 @@ static ssize_t o2hb_region_dev_write(struct o2hb_region *reg,
 		ret = -EIO;
 
 	if (hb_task && o2hb_global_heartbeat_active())
-		printk(KERN_NOTICE "o2hb: Heartbeat started on region %s\n",
-		       config_item_name(&reg->hr_item));
+//		printk(KERN_NOTICE "o2hb: Heartbeat started on region %s\n",
+;
 
 out:
 	if (filp)
@@ -2117,8 +2117,8 @@ static void o2hb_heartbeat_group_drop_item(struct config_group *group,
 	}
 
 	if (o2hb_global_heartbeat_active())
-		printk(KERN_NOTICE "o2hb: Heartbeat stopped on region %s\n",
-		       config_item_name(&reg->hr_item));
+//		printk(KERN_NOTICE "o2hb: Heartbeat stopped on region %s\n",
+;
 
 	config_item_put(item);
 
@@ -2225,8 +2225,8 @@ ssize_t o2hb_heartbeat_group_mode_store(struct o2hb_heartbeat_group *group,
 
 		ret = o2hb_global_hearbeat_mode_set(i);
 		if (!ret)
-			printk(KERN_NOTICE "o2hb: Heartbeat mode set to %s\n",
-			       o2hb_heartbeat_mode_desc[i]);
+//			printk(KERN_NOTICE "o2hb: Heartbeat mode set to %s\n",
+;
 		return count;
 	}
 

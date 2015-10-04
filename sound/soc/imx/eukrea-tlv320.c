@@ -111,7 +111,7 @@ static int __init eukrea_tlv320_init(void)
 	ret = platform_device_add(eukrea_tlv320_snd_device);
 
 	if (ret) {
-		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
+;
 		platform_device_put(eukrea_tlv320_snd_device);
 	}
 

@@ -414,7 +414,7 @@ static int __init init_control(struct fb_info_control *p)
 	struct fb_var_screeninfo var;
 	int rc;
 	
-	printk(KERN_INFO "controlfb: ");
+;
 
 	full = p->total_vram == 0x400000;
 
@@ -433,7 +433,7 @@ static int __init init_control(struct fb_info_control *p)
 		if (vmode < 1 || vmode > VMODE_MAX ||
 		    control_mac_modes[vmode - 1].m[full] < cmode) {
 			sense = read_control_sense(p);
-			printk("Monitor sense value = 0x%x, ", sense);
+;
 			vmode = mac_map_monitor_sense(sense);
 			if (control_mac_modes[vmode - 1].m[full] < cmode)
 				vmode = VMODE_640_480_60;
@@ -456,17 +456,17 @@ static int __init init_control(struct fb_info_control *p)
 	/* Setup default var */
 	if (mac_vmode_to_var(vmode, cmode, &var) < 0) {
 		/* This shouldn't happen! */
-		printk("mac_vmode_to_var(%d, %d,) failed\n", vmode, cmode);
+;
 try_again:
 		vmode = VMODE_640_480_60;
 		cmode = CMODE_8;
 		if (mac_vmode_to_var(vmode, cmode, &var) < 0) {
-			printk(KERN_ERR "controlfb: mac_vmode_to_var() failed\n");
+;
 			return -ENXIO;
 		}
-		printk(KERN_INFO "controlfb: ");
+;
 	}
-	printk("using video mode %d and color mode %d.\n", vmode, cmode);
+;
 
 	vyres = (p->total_vram - CTRLFB_OFF) / (var.xres << cmode);
 	if (vyres > var.yres)
@@ -482,7 +482,7 @@ try_again:
 	if (register_framebuffer(&p->info) < 0)
 		return -ENXIO;
 	
-	printk(KERN_INFO "fb%d: control display adapter\n", p->info.node);	
+;
 
 	return 0;
 }
@@ -678,9 +678,9 @@ static void __init find_vram_size(struct fb_info_control *p)
 
         p->total_vram = (bank1 + bank2) * 0x200000;
 
-	printk(KERN_INFO "controlfb: VRAM Total = %dMB "
-			"(%dMB @ bank 1, %dMB @ bank 2)\n",
-			(bank1 + bank2) << 1, bank1 << 1, bank2 << 1);
+//	printk(KERN_INFO "controlfb: VRAM Total = %dMB "
+//			"(%dMB @ bank 1, %dMB @ bank 2)\n",
+;
 }
 
 
@@ -693,13 +693,13 @@ static int __init control_of_init(struct device_node *dp)
 	struct resource		fb_res, reg_res;
 
 	if (control_fb) {
-		printk(KERN_ERR "controlfb: only one control is supported\n");
+;
 		return -ENXIO;
 	}
 
 	if (of_pci_address_to_resource(dp, 2, &fb_res) ||
 	    of_pci_address_to_resource(dp, 1, &reg_res)) {
-		printk(KERN_ERR "can't get 2 addresses for control\n");
+;
 		return -ENXIO;
 	}
 	p = kzalloc(sizeof(*p), GFP_KERNEL);

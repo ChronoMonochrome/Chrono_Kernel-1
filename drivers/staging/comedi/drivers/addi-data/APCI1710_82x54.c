@@ -688,7 +688,7 @@ int i_APCI1710_InsnBitsTimer(struct comedi_device *dev, struct comedi_subdevice 
 	int i_ReturnValue = 0;
 	b_BitsType = data[0];
 
-	printk("\n82X54");
+;
 
 	switch (b_BitsType) {
 	case APCI1710_TIMER_READVALUE:
@@ -721,7 +721,7 @@ int i_APCI1710_InsnBitsTimer(struct comedi_device *dev, struct comedi_subdevice 
 		break;
 
 	default:
-		printk("Bits Config Parameter Wrong\n");
+;
 		i_ReturnValue = -1;
 	}
 

@@ -129,8 +129,8 @@ static int init_pitch_v1(struct snd_usb_audio *chip, int iface,
 				   USB_TYPE_CLASS|USB_RECIP_ENDPOINT|USB_DIR_OUT,
 				   UAC_EP_CS_ATTR_PITCH_CONTROL << 8, ep,
 				   data, sizeof(data), 1000)) < 0) {
-		snd_printk(KERN_ERR "%d:%d:%d: cannot set enable PITCH\n",
-			   dev->devnum, iface, ep);
+//		snd_printk(KERN_ERR "%d:%d:%d: cannot set enable PITCH\n",
+;
 		return err;
 	}
 
@@ -153,8 +153,8 @@ static int init_pitch_v2(struct snd_usb_audio *chip, int iface,
 				   USB_TYPE_CLASS | USB_RECIP_ENDPOINT | USB_DIR_OUT,
 				   UAC2_EP_CS_PITCH << 8, 0,
 				   data, sizeof(data), 1000)) < 0) {
-		snd_printk(KERN_ERR "%d:%d:%d: cannot set enable PITCH (v2)\n",
-			   dev->devnum, iface, fmt->altsetting);
+//		snd_printk(KERN_ERR "%d:%d:%d: cannot set enable PITCH (v2)\n",
+;
 		return err;
 	}
 
@@ -211,8 +211,8 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 	/* close the old interface */
 	if (subs->interface >= 0 && subs->interface != fmt->iface) {
 		if (usb_set_interface(subs->dev, subs->interface, 0) < 0) {
-			snd_printk(KERN_ERR "%d:%d:%d: return to setting 0 failed\n",
-				dev->devnum, fmt->iface, fmt->altsetting);
+//			snd_printk(KERN_ERR "%d:%d:%d: return to setting 0 failed\n",
+;
 			return -EIO;
 		}
 		subs->interface = -1;
@@ -222,8 +222,8 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 	/* set interface */
 	if (subs->interface != fmt->iface || subs->altset_idx != fmt->altset_idx) {
 		if (usb_set_interface(dev, fmt->iface, fmt->altsetting) < 0) {
-			snd_printk(KERN_ERR "%d:%d:%d: usb_set_interface failed\n",
-				   dev->devnum, fmt->iface, fmt->altsetting);
+//			snd_printk(KERN_ERR "%d:%d:%d: usb_set_interface failed\n",
+;
 			return -EIO;
 		}
 		snd_printdd(KERN_INFO "setting usb interface %d:%d\n", fmt->iface, fmt->altsetting);
@@ -259,16 +259,16 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 		if ((get_endpoint(alts, 1)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) != 0x01 ||
 		    (get_endpoint(alts, 1)->bLength >= USB_DT_ENDPOINT_AUDIO_SIZE &&
 		     get_endpoint(alts, 1)->bSynchAddress != 0)) {
-			snd_printk(KERN_ERR "%d:%d:%d : invalid synch pipe\n",
-				   dev->devnum, fmt->iface, fmt->altsetting);
+//			snd_printk(KERN_ERR "%d:%d:%d : invalid synch pipe\n",
+;
 			return -EINVAL;
 		}
 		ep = get_endpoint(alts, 1)->bEndpointAddress;
 		if (get_endpoint(alts, 0)->bLength >= USB_DT_ENDPOINT_AUDIO_SIZE &&
 		    (( is_playback && ep != (unsigned int)(get_endpoint(alts, 0)->bSynchAddress | USB_DIR_IN)) ||
 		     (!is_playback && ep != (unsigned int)(get_endpoint(alts, 0)->bSynchAddress & ~USB_DIR_IN)))) {
-			snd_printk(KERN_ERR "%d:%d:%d : invalid synch pipe\n",
-				   dev->devnum, fmt->iface, fmt->altsetting);
+//			snd_printk(KERN_ERR "%d:%d:%d : invalid synch pipe\n",
+;
 			return -EINVAL;
 		}
 		ep &= USB_ENDPOINT_NUMBER_MASK;
@@ -302,12 +302,12 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 	snd_usb_set_format_quirk(subs, fmt);
 
 #if 0
-	printk(KERN_DEBUG
-	       "setting done: format = %d, rate = %d..%d, channels = %d\n",
-	       fmt->format, fmt->rate_min, fmt->rate_max, fmt->channels);
-	printk(KERN_DEBUG
-	       "  datapipe = 0x%0x, syncpipe = 0x%0x\n",
-	       subs->datapipe, subs->syncpipe);
+//	printk(KERN_DEBUG
+//	       "setting done: format = %d, rate = %d..%d, channels = %d\n",
+;
+//	printk(KERN_DEBUG
+//	       "  datapipe = 0x%0x, syncpipe = 0x%0x\n",
+;
 #endif
 
 	return 0;
@@ -414,7 +414,7 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	if (! subs->cur_audiofmt) {
-		snd_printk(KERN_ERR "usbaudio: no format is specified!\n");
+;
 		return -ENXIO;
 	}
 

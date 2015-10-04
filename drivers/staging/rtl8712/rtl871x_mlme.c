@@ -1037,9 +1037,9 @@ void r8712_got_addbareq_event_callback(struct _adapter *adapter, u8 *pbuf)
 	struct	sta_priv *pstapriv = &adapter->stapriv;
 	struct	recv_reorder_ctrl *precvreorder_ctrl = NULL;
 
-	printk(KERN_INFO "r8712u: [%s] mac = %pM, seq = %d, tid = %d\n",
-	     __func__, pAddbareq_pram->MacAddress,
-	    pAddbareq_pram->StartSeqNum, pAddbareq_pram->tid);
+//	printk(KERN_INFO "r8712u: [%s] mac = %pM, seq = %d, tid = %d\n",
+//	     __func__, pAddbareq_pram->MacAddress,
+;
 	psta = r8712_get_stainfo(pstapriv, pAddbareq_pram->MacAddress);
 	if (psta) {
 		precvreorder_ctrl =

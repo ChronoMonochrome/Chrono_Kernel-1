@@ -119,17 +119,17 @@
 #undef DEBUG
 
 #ifdef DEBUG
-#define DBG(args...)	printk(args)
-#else
-#define DBG(args...)	do { } while(0)
-#endif
-
-/* define this to force CPU overtemp to 74 degree, useful for testing
- * the overtemp code
- */
-#undef HACKED_OVERTEMP
-
-static int wf_smu_mach_model;	/* machine model id */
+//#define DBG(args...)	printk(args)
+//#else
+//#define DBG(args...)	do { } while(0)
+//#endif
+//
+///* define this to force CPU overtemp to 74 degree, useful for testing
+// * the overtemp code
+// */
+//#undef HACKED_OVERTEMP
+//
+;
 
 /* Controls & sensors */
 static struct wf_sensor	*sensor_cpu_power;
@@ -277,8 +277,8 @@ static void wf_smu_create_sys_fans(void)
 
 	/* No params found, put fans to max */
 	if (param == NULL) {
-		printk(KERN_WARNING "windfarm: System fan config not found "
-		       "for this machine model, max fan speed\n");
+//		printk(KERN_WARNING "windfarm: System fan config not found "
+;
 		goto fail;
 	}
 
@@ -286,8 +286,8 @@ static void wf_smu_create_sys_fans(void)
 	wf_smu_sys_fans = kmalloc(sizeof(struct wf_smu_sys_fans_state),
 				  GFP_KERNEL);
 	if (wf_smu_sys_fans == NULL) {
-		printk(KERN_WARNING "windfarm: Memory allocation error"
-		       " max fan speed\n");
+//		printk(KERN_WARNING "windfarm: Memory allocation error"
+;
 		goto fail;
 	}
 	wf_smu_sys_fans->ticks = 1;
@@ -340,8 +340,8 @@ static void wf_smu_sys_fans_tick(struct wf_smu_sys_fans_state *st)
 
 	rc = sensor_hd_temp->ops->get_value(sensor_hd_temp, &temp);
 	if (rc) {
-		printk(KERN_WARNING "windfarm: HD temp sensor error %d\n",
-		       rc);
+//		printk(KERN_WARNING "windfarm: HD temp sensor error %d\n",
+;
 		wf_smu_failure_state |= FAILURE_SENSOR;
 		return;
 	}
@@ -376,16 +376,16 @@ static void wf_smu_sys_fans_tick(struct wf_smu_sys_fans_state *st)
 	if (fan_system && wf_smu_failure_state == 0) {
 		rc = fan_system->ops->set_value(fan_system, st->sys_setpoint);
 		if (rc) {
-			printk(KERN_WARNING "windfarm: Sys fan error %d\n",
-			       rc);
+//			printk(KERN_WARNING "windfarm: Sys fan error %d\n",
+;
 			wf_smu_failure_state |= FAILURE_FAN;
 		}
 	}
 	if (fan_hd && wf_smu_failure_state == 0) {
 		rc = fan_hd->ops->set_value(fan_hd, st->hd_setpoint);
 		if (rc) {
-			printk(KERN_WARNING "windfarm: HD fan error %d\n",
-			       rc);
+//			printk(KERN_WARNING "windfarm: HD fan error %d\n",
+;
 			wf_smu_failure_state |= FAILURE_FAN;
 		}
 	}
@@ -402,8 +402,8 @@ static void wf_smu_create_cpu_fans(void)
 	/* First, locate the PID params in SMU SBD */
 	hdr = smu_get_sdb_partition(SMU_SDB_CPUPIDDATA_ID, NULL);
 	if (hdr == 0) {
-		printk(KERN_WARNING "windfarm: CPU PID fan config not found "
-		       "max fan speed\n");
+//		printk(KERN_WARNING "windfarm: CPU PID fan config not found "
+;
 		goto fail;
 	}
 	piddata = (struct smu_sdbp_cpupiddata *)&hdr[1];
@@ -432,8 +432,8 @@ static void wf_smu_create_cpu_fans(void)
 	pid_param.interval = WF_SMU_CPU_FANS_INTERVAL;
 	pid_param.history_len = piddata->history_len;
 	if (pid_param.history_len > WF_CPU_PID_MAX_HISTORY) {
-		printk(KERN_WARNING "windfarm: History size overflow on "
-		       "CPU control loop (%d)\n", piddata->history_len);
+//		printk(KERN_WARNING "windfarm: History size overflow on "
+;
 		pid_param.history_len = WF_CPU_PID_MAX_HISTORY;
 	}
 	pid_param.gd = piddata->gd;
@@ -461,8 +461,8 @@ static void wf_smu_create_cpu_fans(void)
 	return;
 
  fail:
-	printk(KERN_WARNING "windfarm: CPU fan config not found\n"
-	       "for this machine model, max fan speed\n");
+//	printk(KERN_WARNING "windfarm: CPU fan config not found\n"
+;
 
 	if (cpufreq_clamp)
 		wf_control_set_max(cpufreq_clamp);
@@ -484,16 +484,16 @@ static void wf_smu_cpu_fans_tick(struct wf_smu_cpu_fans_state *st)
 
 	rc = sensor_cpu_temp->ops->get_value(sensor_cpu_temp, &temp);
 	if (rc) {
-		printk(KERN_WARNING "windfarm: CPU temp sensor error %d\n",
-		       rc);
+//		printk(KERN_WARNING "windfarm: CPU temp sensor error %d\n",
+;
 		wf_smu_failure_state |= FAILURE_SENSOR;
 		return;
 	}
 
 	rc = sensor_cpu_power->ops->get_value(sensor_cpu_power, &power);
 	if (rc) {
-		printk(KERN_WARNING "windfarm: CPU power sensor error %d\n",
-		       rc);
+//		printk(KERN_WARNING "windfarm: CPU power sensor error %d\n",
+;
 		wf_smu_failure_state |= FAILURE_SENSOR;
 		return;
 	}
@@ -529,8 +529,8 @@ static void wf_smu_cpu_fans_tick(struct wf_smu_cpu_fans_state *st)
 		rc = fan_cpu_main->ops->set_value(fan_cpu_main,
 						  st->cpu_setpoint);
 		if (rc) {
-			printk(KERN_WARNING "windfarm: CPU main fan"
-			       " error %d\n", rc);
+//			printk(KERN_WARNING "windfarm: CPU main fan"
+;
 			wf_smu_failure_state |= FAILURE_FAN;
 		}
 	}
@@ -709,8 +709,8 @@ static int wf_init_pm(void)
 		wf_smu_mach_model = st->model_id;
 	}
 
-	printk(KERN_INFO "windfarm: Initializing for iMacG5 model ID %d\n",
-	       wf_smu_mach_model);
+//	printk(KERN_INFO "windfarm: Initializing for iMacG5 model ID %d\n",
+;
 
 	return 0;
 }

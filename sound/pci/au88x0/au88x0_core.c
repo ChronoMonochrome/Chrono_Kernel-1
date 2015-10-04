@@ -283,10 +283,10 @@ vortex_mixer_addWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 	while (temp & 0x10) {
 		prev = VORTEX_MIXER_RTBASE + ((temp & 0xf) << 2);
 		temp = hwread(vortex->mmio, prev);
-		//printk(KERN_INFO "vortex: mixAddWTD: while addr=%x, val=%x\n", prev, temp);
+;
 		if ((++lifeboat) > 0xf) {
-			printk(KERN_ERR
-			       "vortex_mixer_addWTD: lifeboat overflow\n");
+//			printk(KERN_ERR
+;
 			return 0;
 		}
 	}
@@ -303,7 +303,7 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 
 	eax = hwread(vortex->mmio, VORTEX_MIXER_SR);
 	if (((1 << ch) & eax) == 0) {
-		printk(KERN_ERR "mix ALARM %x\n", eax);
+;
 		return 0;
 	}
 	ebp = VORTEX_MIXER_CHNBASE + (ch << 2);
@@ -321,11 +321,11 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 			edx =
 			    hwread(vortex->mmio,
 				   VORTEX_MIXER_RTBASE + (ebx << 2));
-			//printk(KERN_INFO "vortex: mixdelWTD: 1 addr=%x, val=%x, src=%x\n", ebx, edx, src);
+;
 			while ((edx & 0xf) != mix) {
 				if ((esi) > 0xf) {
-					printk(KERN_ERR
-					       "vortex: mixdelWTD: error lifeboat overflow\n");
+//					printk(KERN_ERR
+;
 					return 0;
 				}
 				esp14 = ebx;
@@ -334,7 +334,7 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 				edx =
 				    hwread(vortex->mmio,
 					   VORTEX_MIXER_RTBASE + ebp);
-				//printk(KERN_INFO "vortex: mixdelWTD: while addr=%x, val=%x\n", ebp, edx);
+;
 				esi++;
 			}
 			//7b30
@@ -346,7 +346,7 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 				hwwrite(vortex->mmio,
 					VORTEX_MIXER_RTBASE + ebp, edx);
 				hwwrite(vortex->mmio, ebx, 0);
-				//printk(KERN_INFO "vortex mixdelWTD between addr= 0x%x, val= 0x%x\n", ebp, edx);
+;
 			} else {	/* Delete last entry */
 				//7b83
 				if (esp14 == -1)
@@ -358,7 +358,7 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 					hwwrite(vortex->mmio,
 						VORTEX_MIXER_RTBASE +
 						(esp14 << 2), ebx);
-					//printk(KERN_INFO "vortex mixdelWTD last addr= 0x%x, val= 0x%x\n", esp14, ebx);
+;
 				}
 				hwwrite(vortex->mmio,
 					VORTEX_MIXER_RTBASE + ebp, 0);
@@ -366,7 +366,7 @@ vortex_mixer_delWTD(vortex_t * vortex, unsigned char mix, unsigned char ch)
 			}
 		}
 	} else {
-		//printk(KERN_INFO "removed last mix\n");
+;
 		//7be0
 		vortex_mixer_dis_sr(vortex, ch);
 		hwwrite(vortex->mmio, ebp, 0);
@@ -492,7 +492,7 @@ vortex_src_persist_convratio(vortex_t * vortex, unsigned char src, int ratio)
 		hwwrite(vortex->mmio, VORTEX_SRC_CONVRATIO + (src << 2), ratio);
 		temp = hwread(vortex->mmio, VORTEX_SRC_CONVRATIO + (src << 2));
 		if ((++lifeboat) > 0x9) {
-			printk(KERN_ERR "Vortex: Src cvr fail\n");
+;
 			break;
 		}
 	}
@@ -545,8 +545,8 @@ vortex_src_checkratio(vortex_t * vortex, unsigned char src,
 		hwwrite(vortex->mmio, VORTEX_SRC_CONVRATIO + (src << 2), desired_ratio);
 
 		if ((lifeboat++) > 15) {
-			printk(KERN_ERR "Vortex: could not set src-%d from %d to %d\n",
-			       src, hw_ratio, desired_ratio);
+//			printk(KERN_ERR "Vortex: could not set src-%d from %d to %d\n",
+;
 			break;
 		}
 	}
@@ -634,7 +634,7 @@ static void vortex_src_setupchannel(vortex_t * card, unsigned char src,
 	hwwrite(card->mmio, VORTEX_SRC_U2 + (src << 2),
 		(tr << 0x11) | (dirplay << 0x10) | (ebp << 0x8) | esp10);
 	/* 0x30f00 e=g=1 esp10=0 ebp=f */
-	//printk(KERN_INFO "vortex: SRC %d, d=0x%x, esi=0x%x, esp10=0x%x, ebp=0x%x\n", src, d, esi, esp10, ebp);
+;
 }
 
 static void vortex_srcblock_init(vortex_t * vortex)
@@ -682,10 +682,10 @@ vortex_src_addWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 		prev = VORTEX_SRC_RTBASE + ((temp & 0xf) << 2);	/*esp12 */
 		//prev = VORTEX_SRC_RTBASE + ((temp & (NR_SRC-1)) << 2); /*esp12*/
 		temp = hwread(vortex->mmio, prev);
-		//printk(KERN_INFO "vortex: srcAddWTD: while addr=%x, val=%x\n", prev, temp);
+;
 		if ((++lifeboat) > 0xf) {
-			printk(KERN_ERR
-			       "vortex_src_addWTD: lifeboat overflow\n");
+//			printk(KERN_ERR
+;
 			return 0;
 		}
 	}
@@ -703,7 +703,7 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 
 	eax = hwread(vortex->mmio, VORTEX_SRCBLOCK_SR);
 	if (((1 << ch) & eax) == 0) {
-		printk(KERN_ERR "src alarm\n");
+;
 		return 0;
 	}
 	ebp = VORTEX_SRC_CHNBASE + (ch << 2);
@@ -721,7 +721,7 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 			edx =
 			    hwread(vortex->mmio,
 				   VORTEX_SRC_RTBASE + (ebx << 2));
-			//printk(KERN_INFO "vortex: srcdelWTD: 1 addr=%x, val=%x, src=%x\n", ebx, edx, src);
+;
 			while ((edx & 0xf) != src) {
 				if ((esi) > 0xf) {
 					printk
@@ -734,7 +734,7 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 				edx =
 				    hwread(vortex->mmio,
 					   VORTEX_SRC_RTBASE + ebp);
-				//printk(KERN_INFO "vortex: srcdelWTD: while addr=%x, val=%x\n", ebp, edx);
+;
 				esi++;
 			}
 			//7b30
@@ -746,7 +746,7 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 				hwwrite(vortex->mmio,
 					VORTEX_SRC_RTBASE + ebp, edx);
 				hwwrite(vortex->mmio, ebx, 0);
-				//printk(KERN_INFO "vortex srcdelWTD between addr= 0x%x, val= 0x%x\n", ebp, edx);
+;
 			} else {	/* Delete last entry */
 				//7b83
 				if (esp14 == -1)
@@ -758,7 +758,7 @@ vortex_src_delWTD(vortex_t * vortex, unsigned char src, unsigned char ch)
 					hwwrite(vortex->mmio,
 						VORTEX_SRC_RTBASE +
 						(esp14 << 2), ebx);
-					//printk(KERN_INFO"vortex srcdelWTD last addr= 0x%x, val= 0x%x\n", esp14, ebx);
+;
 				}
 				hwwrite(vortex->mmio,
 					VORTEX_SRC_RTBASE + ebp, 0);
@@ -819,8 +819,8 @@ vortex_fifo_setadbctrl(vortex_t * vortex, int fifo, int b, int priority,
 	do {
 		temp = hwread(vortex->mmio, VORTEX_FIFO_ADBCTRL + (fifo << 2));
 		if (lifeboat++ > 0xbb8) {
-			printk(KERN_ERR
-			       "Vortex: vortex_fifo_setadbctrl fail\n");
+//			printk(KERN_ERR
+;
 			break;
 		}
 	}
@@ -915,7 +915,7 @@ vortex_fifo_setwtctrl(vortex_t * vortex, int fifo, int ctrl, int priority,
 	do {
 		temp = hwread(vortex->mmio, VORTEX_FIFO_WTCTRL + (fifo << 2));
 		if (lifeboat++ > 0xbb8) {
-			printk(KERN_ERR "Vortex: vortex_fifo_setwtctrl fail\n");
+;
 			break;
 		}
 	}
@@ -970,7 +970,7 @@ vortex_fifo_setwtctrl(vortex_t * vortex, int fifo, int ctrl, int priority,
     do {
 		temp = hwread(vortex->mmio, VORTEX_FIFO_WTCTRL + (fifo << 2));
 		if (lifeboat++ > 0xbb8) {
-			printk(KERN_ERR "Vortex: vortex_fifo_setwtctrl fail (hanging)\n");
+;
 			break;
 		}
     } while ((temp & FIFO_RDONLY)&&(temp & FIFO_VALID)&&(temp != 0xFFFFFFFF));
@@ -1042,7 +1042,7 @@ static void vortex_fifo_init(vortex_t * vortex)
 	for (x = NR_ADB - 1; x >= 0; x--) {
 		hwwrite(vortex->mmio, addr, (FIFO_U0 | FIFO_U1));
 		if (hwread(vortex->mmio, addr) != (FIFO_U0 | FIFO_U1))
-			printk(KERN_ERR "bad adb fifo reset!");
+;
 		vortex_fifo_clearadbdata(vortex, x, FIFO_SIZE);
 		addr -= 4;
 	}
@@ -1053,9 +1053,9 @@ static void vortex_fifo_init(vortex_t * vortex)
 	for (x = NR_WT - 1; x >= 0; x--) {
 		hwwrite(vortex->mmio, addr, FIFO_U0);
 		if (hwread(vortex->mmio, addr) != FIFO_U0)
-			printk(KERN_ERR
-			       "bad wt fifo reset (0x%08x, 0x%08x)!\n",
-			       addr, hwread(vortex->mmio, addr));
+//			printk(KERN_ERR
+//			       "bad wt fifo reset (0x%08x, 0x%08x)!\n",
+;
 		vortex_fifo_clearwtdata(vortex, x, FIFO_SIZE);
 		addr -= 4;
 	}
@@ -1136,8 +1136,8 @@ vortex_adbdma_setbuffers(vortex_t * vortex, int adbdma,
 		break;
 	}
 	/*
-	printk(KERN_DEBUG "vortex: cfg0 = 0x%x\nvortex: cfg1=0x%x\n",
-	       dma->cfg0, dma->cfg1);
+//	printk(KERN_DEBUG "vortex: cfg0 = 0x%x\nvortex: cfg1=0x%x\n",
+;
 	*/
 	hwwrite(vortex->mmio, VORTEX_ADBDMA_BUFCFG0 + (adbdma << 3), dma->cfg0);
 	hwwrite(vortex->mmio, VORTEX_ADBDMA_BUFCFG1 + (adbdma << 3), dma->cfg1);
@@ -1213,8 +1213,8 @@ static int vortex_adbdma_bufshift(vortex_t * vortex, int adbdma)
 	if (dma->period_virt >= dma->nr_periods)
 		dma->period_virt -= dma->nr_periods;
 	if (delta != 1)
-		printk(KERN_INFO "vortex: %d virt=%d, real=%d, delta=%d\n",
-		       adbdma, dma->period_virt, dma->period_real, delta);
+//		printk(KERN_INFO "vortex: %d virt=%d, real=%d, delta=%d\n",
+;
 
 	return delta;
 }
@@ -1484,8 +1484,8 @@ static int vortex_wtdma_bufshift(vortex_t * vortex, int wtdma)
 	dma->period_real = page;
 
 	if (delta != 1)
-		printk(KERN_WARNING "vortex: wt virt = %d, delta = %d\n",
-		       dma->period_virt, delta);
+//		printk(KERN_WARNING "vortex: wt virt = %d, delta = %d\n",
+;
 
 	return delta;
 }
@@ -1669,9 +1669,9 @@ vortex_adb_addroutes(vortex_t * vortex, unsigned char channel,
 		    hwread(vortex->mmio,
 			   VORTEX_ADB_RTBASE + (temp << 2)) & ADB_MASK;
 		if ((lifeboat++) > ADB_MASK) {
-			printk(KERN_ERR
-			       "vortex_adb_addroutes: unending route! 0x%x\n",
-			       *route);
+//			printk(KERN_ERR
+//			       "vortex_adb_addroutes: unending route! 0x%x\n",
+;
 			return;
 		}
 	}
@@ -1705,9 +1705,9 @@ vortex_adb_delroutes(vortex_t * vortex, unsigned char channel,
 		    hwread(vortex->mmio,
 			   VORTEX_ADB_RTBASE + (prev << 2)) & ADB_MASK;
 		if (((lifeboat++) > ADB_MASK) || (temp == ADB_MASK)) {
-			printk(KERN_ERR
-			       "vortex_adb_delroutes: route not found! 0x%x\n",
-			       route0);
+//			printk(KERN_ERR
+//			       "vortex_adb_delroutes: route not found! 0x%x\n",
+;
 			return;
 		}
 	}
@@ -2024,9 +2024,9 @@ vortex_adb_checkinout(vortex_t * vortex, int resmap[], int out, int restype)
 				else
 					vortex->dma_adb[i].resources[restype] |= (1 << i);
 				/*
-				printk(KERN_DEBUG
-				       "vortex: ResManager: type %d out %d\n",
-				       restype, i);
+//				printk(KERN_DEBUG
+//				       "vortex: ResManager: type %d out %d\n",
+;
 				*/
 				return i;
 			}
@@ -2039,15 +2039,15 @@ vortex_adb_checkinout(vortex_t * vortex, int resmap[], int out, int restype)
 			if (resmap[restype] & (1 << i)) {
 				resmap[restype] &= ~(1 << i);
 				/*
-				printk(KERN_DEBUG
-				       "vortex: ResManager: type %d in %d\n",
-				       restype, i);
+//				printk(KERN_DEBUG
+//				       "vortex: ResManager: type %d in %d\n",
+;
 				*/
 				return i;
 			}
 		}
 	}
-	printk(KERN_ERR "vortex: FATAL: ResManager: resource type %d exhausted.\n", restype);
+;
 	return -ENOMEM;
 }
 
@@ -2179,7 +2179,7 @@ vortex_adb_allocroute(vortex_t * vortex, int dma, int nr_ch, int dir, int type)
 				memset(stream->resources, 0,
 				       sizeof(unsigned char) *
 				       VORTEX_RESOURCE_LAST);
-				printk(KERN_ERR "vortex: out of A3D sources. Sorry\n");
+;
 				return -EBUSY;
 			}
 			/* (De)Initialize A3D hardware source. */
@@ -2419,7 +2419,7 @@ static irqreturn_t vortex_interrupt(int irq, void *dev_id)
 	hwread(vortex->mmio, VORTEX_IRQ_SOURCE);
 	// Is at least one IRQ flag set?
 	if (source == 0) {
-		printk(KERN_ERR "vortex: missing irq source\n");
+;
 		return IRQ_NONE;
 	}
 
@@ -2427,19 +2427,19 @@ static irqreturn_t vortex_interrupt(int irq, void *dev_id)
 	// Attend every interrupt source.
 	if (unlikely(source & IRQ_ERR_MASK)) {
 		if (source & IRQ_FATAL) {
-			printk(KERN_ERR "vortex: IRQ fatal error\n");
+;
 		}
 		if (source & IRQ_PARITY) {
-			printk(KERN_ERR "vortex: IRQ parity error\n");
+;
 		}
 		if (source & IRQ_REG) {
-			printk(KERN_ERR "vortex: IRQ reg error\n");
+;
 		}
 		if (source & IRQ_FIFO) {
-			printk(KERN_ERR "vortex: IRQ fifo error\n");
+;
 		}
 		if (source & IRQ_DMA) {
-			printk(KERN_ERR "vortex: IRQ dma error\n");
+;
 		}
 		handled = 1;
 	}
@@ -2482,7 +2482,7 @@ static irqreturn_t vortex_interrupt(int irq, void *dev_id)
 	}
 
 	if (!handled) {
-		printk(KERN_ERR "vortex: unknown irq source %x\n", source);
+;
 	}
 	return IRQ_RETVAL(handled);
 }
@@ -2539,7 +2539,7 @@ vortex_codec_write(struct snd_ac97 * codec, unsigned short addr, unsigned short 
 	while (!(hwread(card->mmio, VORTEX_CODEC_CTRL) & 0x100)) {
 		udelay(100);
 		if (lifeboat++ > POLL_COUNT) {
-			printk(KERN_ERR "vortex: ac97 codec stuck busy\n");
+;
 			return;
 		}
 	}
@@ -2565,7 +2565,7 @@ static unsigned short vortex_codec_read(struct snd_ac97 * codec, unsigned short 
 	while (!(hwread(card->mmio, VORTEX_CODEC_CTRL) & 0x100)) {
 		udelay(100);
 		if (lifeboat++ > POLL_COUNT) {
-			printk(KERN_ERR "vortex: ac97 codec stuck busy\n");
+;
 			return 0xffff;
 		}
 	}
@@ -2579,7 +2579,7 @@ static unsigned short vortex_codec_read(struct snd_ac97 * codec, unsigned short 
 		udelay(100);
 		data = hwread(card->mmio, VORTEX_CODEC_IO);
 		if (lifeboat++ > POLL_COUNT) {
-			printk(KERN_ERR "vortex: ac97 address never arrived\n");
+;
 			return 0xffff;
 		}
 	} while ((data & VORTEX_CODEC_ADDMASK) !=
@@ -2676,7 +2676,7 @@ static void vortex_spdif_init(vortex_t * vortex, int spdif_sr, int spdif_mode)
 static int __devinit vortex_core_init(vortex_t * vortex)
 {
 
-	printk(KERN_INFO "Vortex: init.... ");
+;
 	/* Hardware Init. */
 	hwwrite(vortex->mmio, VORTEX_CTRL, 0xffffffff);
 	msleep(5);
@@ -2721,7 +2721,7 @@ static int __devinit vortex_core_init(vortex_t * vortex)
 	//vortex_enable_timer_int(vortex);
 	//vortex_disable_timer_int(vortex);
 
-	printk(KERN_INFO "done.\n");
+;
 	spin_lock_init(&vortex->lock);
 
 	return 0;
@@ -2730,7 +2730,7 @@ static int __devinit vortex_core_init(vortex_t * vortex)
 static int vortex_core_shutdown(vortex_t * vortex)
 {
 
-	printk(KERN_INFO "Vortex: shutdown...");
+;
 #ifndef CHIP_AU8820
 	vortex_eq_free(vortex);
 	vortex_Vort3D_disable(vortex);
@@ -2752,7 +2752,7 @@ static int vortex_core_shutdown(vortex_t * vortex)
 	msleep(5);
 	hwwrite(vortex->mmio, VORTEX_IRQ_SOURCE, 0xffff);
 
-	printk(KERN_INFO "done.\n");
+;
 	return 0;
 }
 
@@ -2786,7 +2786,7 @@ static int vortex_alsafmt_aspfmt(int alsafmt)
 		break;
 	default:
 		fmt = 0x8;
-		printk(KERN_ERR "vortex: format unsupported %d\n", alsafmt);
+;
 		break;
 	}
 	return fmt;

@@ -2384,7 +2384,7 @@ static int __init omapfb_init(void)
 	DBG("omapfb_init\n");
 
 	if (platform_driver_register(&omapfb_driver)) {
-		printk(KERN_ERR "failed to register omapfb driver\n");
+;
 		return -ENODEV;
 	}
 

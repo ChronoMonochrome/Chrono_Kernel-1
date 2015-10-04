@@ -305,14 +305,14 @@ static int clcdfb_set_par(struct fb_info *info)
 	clcdfb_enable(fb, regs.cntl);
 
 #ifdef DEBUG
-	printk(KERN_INFO
-	       "CLCD: Registers set to\n"
-	       "  %08x %08x %08x %08x\n"
-	       "  %08x %08x %08x %08x\n",
-		readl(fb->regs + CLCD_TIM0), readl(fb->regs + CLCD_TIM1),
-		readl(fb->regs + CLCD_TIM2), readl(fb->regs + CLCD_TIM3),
-		readl(fb->regs + CLCD_UBAS), readl(fb->regs + CLCD_LBAS),
-		readl(fb->regs + fb->off_ienb), readl(fb->regs + fb->off_cntl));
+//	printk(KERN_INFO
+//	       "CLCD: Registers set to\n"
+//	       "  %08x %08x %08x %08x\n"
+//	       "  %08x %08x %08x %08x\n",
+//		readl(fb->regs + CLCD_TIM0), readl(fb->regs + CLCD_TIM1),
+//		readl(fb->regs + CLCD_TIM2), readl(fb->regs + CLCD_TIM3),
+//		readl(fb->regs + CLCD_UBAS), readl(fb->regs + CLCD_LBAS),
+;
 #endif
 
 	return 0;
@@ -454,7 +454,7 @@ static int clcdfb_register(struct clcd_fb *fb)
 
 	fb->regs = ioremap(fb->fb.fix.mmio_start, fb->fb.fix.mmio_len);
 	if (!fb->regs) {
-		printk(KERN_ERR "CLCD: unable to remap registers\n");
+;
 		ret = -ENOMEM;
 		goto free_clk;
 	}
@@ -525,7 +525,7 @@ static int clcdfb_register(struct clcd_fb *fb)
 	if (ret == 0)
 		goto out;
 
-	printk(KERN_ERR "CLCD: cannot register framebuffer (%d)\n", ret);
+;
 
 	fb_dealloc_cmap(&fb->fb.cmap);
  unmap:
@@ -547,13 +547,13 @@ static int clcdfb_probe(struct amba_device *dev, const struct amba_id *id)
 
 	ret = amba_request_regions(dev, NULL);
 	if (ret) {
-		printk(KERN_ERR "CLCD: unable to reserve regs region\n");
+;
 		goto out;
 	}
 
 	fb = kzalloc(sizeof(struct clcd_fb), GFP_KERNEL);
 	if (!fb) {
-		printk(KERN_INFO "CLCD: could not allocate new clcd_fb struct\n");
+;
 		ret = -ENOMEM;
 		goto free_region;
 	}

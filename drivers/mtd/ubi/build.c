@@ -1296,8 +1296,8 @@ static int __init bytes_str_to_int(const char *str)
 
 	result = simple_strtoul(str, &endp, 0);
 	if (str == endp || result >= INT_MAX) {
-		printk(KERN_ERR "UBI error: incorrect bytes count: \"%s\"\n",
-		       str);
+//		printk(KERN_ERR "UBI error: incorrect bytes count: \"%s\"\n",
+;
 		return -EINVAL;
 	}
 
@@ -1313,8 +1313,8 @@ static int __init bytes_str_to_int(const char *str)
 	case '\0':
 		break;
 	default:
-		printk(KERN_ERR "UBI error: incorrect bytes count: \"%s\"\n",
-		       str);
+//		printk(KERN_ERR "UBI error: incorrect bytes count: \"%s\"\n",
+;
 		return -EINVAL;
 	}
 
@@ -1341,21 +1341,21 @@ static int __init ubi_mtd_param_parse(const char *val, struct kernel_param *kp)
 		return -EINVAL;
 
 	if (mtd_devs == UBI_MAX_DEVICES) {
-		printk(KERN_ERR "UBI error: too many parameters, max. is %d\n",
-		       UBI_MAX_DEVICES);
+//		printk(KERN_ERR "UBI error: too many parameters, max. is %d\n",
+;
 		return -EINVAL;
 	}
 
 	len = strnlen(val, MTD_PARAM_LEN_MAX);
 	if (len == MTD_PARAM_LEN_MAX) {
-		printk(KERN_ERR "UBI error: parameter \"%s\" is too long, "
-		       "max. is %d\n", val, MTD_PARAM_LEN_MAX);
+//		printk(KERN_ERR "UBI error: parameter \"%s\" is too long, "
+;
 		return -EINVAL;
 	}
 
 	if (len == 0) {
-		printk(KERN_WARNING "UBI warning: empty 'mtd=' parameter - "
-		       "ignored\n");
+//		printk(KERN_WARNING "UBI warning: empty 'mtd=' parameter - "
+;
 		return 0;
 	}
 
@@ -1369,8 +1369,8 @@ static int __init ubi_mtd_param_parse(const char *val, struct kernel_param *kp)
 		tokens[i] = strsep(&pbuf, ",");
 
 	if (pbuf) {
-		printk(KERN_ERR "UBI error: too many arguments at \"%s\"\n",
-		       val);
+//		printk(KERN_ERR "UBI error: too many arguments at \"%s\"\n",
+;
 		return -EINVAL;
 	}
 

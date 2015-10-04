@@ -849,14 +849,14 @@ static int sendcmd(struct cmdif *cif, u32 flags, u32 cmd, u32 parm,
 	hwport = cif->hwport;
 	if (cif->errcnt > MAX_ERROR_COUNT) {
 		if (cif->is_reset) {
-			snd_printk(KERN_ERR
-				   "Riptide: Too many failed cmds, reinitializing\n");
+//			snd_printk(KERN_ERR
+;
 			if (riptide_reset(cif, NULL) == 0) {
 				cif->errcnt = 0;
 				return -EIO;
 			}
 		}
-		snd_printk(KERN_ERR "Riptide: Initialization failed.\n");
+;
 		return -EINVAL;
 	}
 	if (ret) {
@@ -1116,8 +1116,8 @@ static void riptide_handleirq(unsigned long dev_id)
 				if ((flag & EOS_STATUS)
 				    && (data->state == ST_PLAY)) {
 					data->state = ST_STOP;
-					snd_printk(KERN_ERR
-						   "Riptide: DMA stopped unexpectedly\n");
+//					snd_printk(KERN_ERR
+;
 				}
 				c->dwStat_Ctl =
 				    cpu_to_le32(flag &
@@ -1173,8 +1173,8 @@ static int riptide_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-		printk(KERN_ERR "riptide: pci_enable_device failed, "
-		       "disabling device\n");
+//		printk(KERN_ERR "riptide: pci_enable_device failed, "
+;
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -1206,11 +1206,11 @@ static int try_to_load_firmware(struct cmdif *cif, struct snd_riptide *chip)
 			break;
 	}
 	if (!timeout) {
-		snd_printk(KERN_ERR
-			   "Riptide: device not ready, audio status: 0x%x "
-			   "ready: %d gerr: %d\n",
-			   READ_AUDIO_STATUS(cif->hwport),
-			   IS_READY(cif->hwport), IS_GERR(cif->hwport));
+//		snd_printk(KERN_ERR
+//			   "Riptide: device not ready, audio status: 0x%x "
+//			   "ready: %d gerr: %d\n",
+//			   READ_AUDIO_STATUS(cif->hwport),
+;
 		return -EIO;
 	} else {
 		snd_printdd
@@ -1238,15 +1238,15 @@ static int try_to_load_firmware(struct cmdif *cif, struct snd_riptide *chip)
 		err = request_firmware(&chip->fw_entry, "riptide.hex",
 				       &chip->pci->dev);
 		if (err) {
-			snd_printk(KERN_ERR
-				   "Riptide: Firmware not available %d\n", err);
+//			snd_printk(KERN_ERR
+;
 			return -EIO;
 		}
 	}
 	err = loadfirmware(cif, chip->fw_entry->data, chip->fw_entry->size);
 	if (err) {
-		snd_printk(KERN_ERR
-			   "Riptide: Could not load firmware %d\n", err);
+//		snd_printk(KERN_ERR
+;
 		return err;
 	}
 
@@ -1432,7 +1432,7 @@ static int snd_riptide_trigger(struct snd_pcm_substream *substream, int cmd)
 			udelay(1);
 		} while (i != rptr.retlongs[1] && j++ < MAX_WRITE_RETRY);
 		if (j > MAX_WRITE_RETRY)
-			snd_printk(KERN_ERR "Riptide: Could not stop stream!");
+;
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		if (!(data->state & ST_PAUSE)) {
@@ -1574,8 +1574,8 @@ snd_riptide_hw_params(struct snd_pcm_substream *substream,
 				       snd_dma_pci_data(chip->pci),
 				       sizeof(struct sgd) * (DESC_MAX_MASK + 1),
 				       sgdlist)) < 0) {
-		snd_printk(KERN_ERR "Riptide: failed to alloc %d dma bytes\n",
-			   (int)sizeof(struct sgd) * (DESC_MAX_MASK + 1));
+//		snd_printk(KERN_ERR "Riptide: failed to alloc %d dma bytes\n",
+;
 		return err;
 	}
 	data->sgdbuf = (struct sgd *)sgdlist->area;
@@ -1880,9 +1880,9 @@ snd_riptide_create(struct snd_card *card, struct pci_dev *pci,
 
 	if ((chip->res_port =
 	     request_region(chip->port, 64, "RIPTIDE")) == NULL) {
-		snd_printk(KERN_ERR
-			   "Riptide: unable to grab region 0x%lx-0x%lx\n",
-			   chip->port, chip->port + 64 - 1);
+//		snd_printk(KERN_ERR
+//			   "Riptide: unable to grab region 0x%lx-0x%lx\n",
+;
 		snd_riptide_free(chip);
 		return -EBUSY;
 	}
@@ -1891,8 +1891,8 @@ snd_riptide_create(struct snd_card *card, struct pci_dev *pci,
 
 	if (request_irq(pci->irq, snd_riptide_interrupt, IRQF_SHARED,
 			"RIPTIDE", chip)) {
-		snd_printk(KERN_ERR "Riptide: unable to grab IRQ %d\n",
-			   pci->irq);
+//		snd_printk(KERN_ERR "Riptide: unable to grab IRQ %d\n",
+;
 		snd_riptide_free(chip);
 		return -EBUSY;
 	}
@@ -2040,9 +2040,9 @@ snd_riptide_joystick_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	if (!gameport)
 		return -ENOMEM;
 	if (!request_region(joystick_port[dev], 8, "Riptide gameport")) {
-		snd_printk(KERN_WARNING
-			   "Riptide: cannot grab gameport 0x%x\n",
-			   joystick_port[dev]);
+//		snd_printk(KERN_WARNING
+//			   "Riptide: cannot grab gameport 0x%x\n",
+;
 		gameport_free_port(gameport);
 		return -EBUSY;
 	}
@@ -2112,9 +2112,9 @@ snd_card_riptide_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 					  val, 0, chip->irq, 0,
 					  &chip->rmidi);
 		if (err < 0)
-			snd_printk(KERN_WARNING
-				   "Riptide: Can't Allocate MPU at 0x%x\n",
-				   val);
+//			snd_printk(KERN_WARNING
+//				   "Riptide: Can't Allocate MPU at 0x%x\n",
+;
 		else
 			chip->mpuaddr = val;
 	}
@@ -2124,15 +2124,15 @@ snd_card_riptide_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 		err = snd_opl3_create(card, val, val + 2,
 				      OPL3_HW_RIPTIDE, 0, &chip->opl3);
 		if (err < 0)
-			snd_printk(KERN_WARNING
-				   "Riptide: Can't Allocate OPL3 at 0x%x\n",
-				   val);
+//			snd_printk(KERN_WARNING
+//				   "Riptide: Can't Allocate OPL3 at 0x%x\n",
+;
 		else {
 			chip->opladdr = val;
 			err = snd_opl3_hwdep_new(chip->opl3, 0, 1, NULL);
 			if (err < 0)
-				snd_printk(KERN_WARNING
-					   "Riptide: Can't Allocate OPL3-HWDEP\n");
+//				snd_printk(KERN_WARNING
+;
 		}
 	}
 #ifdef SUPPORT_JOYSTICK

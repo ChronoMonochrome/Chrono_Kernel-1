@@ -232,7 +232,7 @@ static int __devinit ne2k_pci_init_one (struct pci_dev *pdev,
 #ifndef MODULE
 	static int printed_version;
 	if (!printed_version++)
-		printk(version);
+;
 #endif
 
 	fnd_cnt++;
@@ -381,9 +381,9 @@ static int __devinit ne2k_pci_init_one (struct pci_dev *pdev,
 	if (i)
 		goto err_out_free_netdev;
 
-	printk("%s: %s found at %#lx, IRQ %d, %pM.\n",
-	       dev->name, pci_clone_list[chip_idx].name, ioaddr, dev->irq,
-	       dev->dev_addr);
+//	printk("%s: %s found at %#lx, IRQ %d, %pM.\n",
+//	       dev->name, pci_clone_list[chip_idx].name, ioaddr, dev->irq,
+;
 
 	return 0;
 
@@ -455,8 +455,8 @@ static void ne2k_pci_reset_8390(struct net_device *dev)
 {
 	unsigned long reset_start_time = jiffies;
 
-	if (debug > 1) printk("%s: Resetting the 8390 t=%ld...",
-						  dev->name, jiffies);
+//	if (debug > 1) printk("%s: Resetting the 8390 t=%ld...",
+;
 
 	outb(inb(NE_BASE + NE_RESET), NE_BASE + NE_RESET);
 
@@ -466,7 +466,7 @@ static void ne2k_pci_reset_8390(struct net_device *dev)
 	/* This check _should_not_ be necessary, omit eventually. */
 	while ((inb(NE_BASE+EN0_ISR) & ENISR_RESET) == 0)
 		if (jiffies - reset_start_time > 2) {
-			printk("%s: ne2k_pci_reset_8390() did not complete.\n", dev->name);
+;
 			break;
 		}
 	outb(ENISR_RESET, NE_BASE + EN0_ISR);	/* Ack intr. */
@@ -483,9 +483,9 @@ static void ne2k_pci_get_8390_hdr(struct net_device *dev, struct e8390_pkt_hdr *
 
 	/* This *shouldn't* happen. If it does, it's the last thing you'll see */
 	if (ei_status.dmaing) {
-		printk("%s: DMAing conflict in ne2k_pci_get_8390_hdr "
-			   "[DMAstat:%d][irqlock:%d].\n",
-			   dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk("%s: DMAing conflict in ne2k_pci_get_8390_hdr "
+//			   "[DMAstat:%d][irqlock:%d].\n",
+;
 		return;
 	}
 
@@ -521,9 +521,9 @@ static void ne2k_pci_block_input(struct net_device *dev, int count,
 
 	/* This *shouldn't* happen. If it does, it's the last thing you'll see */
 	if (ei_status.dmaing) {
-		printk("%s: DMAing conflict in ne2k_pci_block_input "
-			   "[DMAstat:%d][irqlock:%d].\n",
-			   dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk("%s: DMAing conflict in ne2k_pci_block_input "
+//			   "[DMAstat:%d][irqlock:%d].\n",
+;
 		return;
 	}
 	ei_status.dmaing |= 0x01;
@@ -576,9 +576,9 @@ static void ne2k_pci_block_output(struct net_device *dev, int count,
 
 	/* This *shouldn't* happen. If it does, it's the last thing you'll see */
 	if (ei_status.dmaing) {
-		printk("%s: DMAing conflict in ne2k_pci_block_output."
-			   "[DMAstat:%d][irqlock:%d]\n",
-			   dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk("%s: DMAing conflict in ne2k_pci_block_output."
+//			   "[DMAstat:%d][irqlock:%d]\n",
+;
 		return;
 	}
 	ei_status.dmaing |= 0x01;
@@ -623,7 +623,7 @@ static void ne2k_pci_block_output(struct net_device *dev, int count,
 
 	while ((inb(nic_base + EN0_ISR) & ENISR_RDC) == 0)
 		if (jiffies - dma_start > 2) {			/* Avoid clock roll-over. */
-			printk(KERN_WARNING "%s: timeout waiting for Tx RDC.\n", dev->name);
+;
 			ne2k_pci_reset_8390(dev);
 			NS8390_init(dev,1);
 			break;
@@ -711,7 +711,7 @@ static int __init ne2k_pci_init(void)
 {
 /* when a module, this is printed whether or not devices are found in probe */
 #ifdef MODULE
-	printk(version);
+;
 #endif
 	return pci_register_driver(&ne2k_driver);
 }

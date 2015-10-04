@@ -56,15 +56,15 @@ int uflash_devinit(struct platform_device *op, struct device_node *dp)
 		/* Non-CFI userflash device-- once I find one we
 		 * can work on supporting it.
 		 */
-		printk(KERN_ERR PFX "Unsupported device at %s, 0x%llx\n",
-		       dp->full_name, (unsigned long long)op->resource[0].start);
+//		printk(KERN_ERR PFX "Unsupported device at %s, 0x%llx\n",
+;
 
 		return -ENODEV;
 	}
 
 	up = kzalloc(sizeof(struct uflash_dev), GFP_KERNEL);
 	if (!up) {
-		printk(KERN_ERR PFX "Cannot allocate struct uflash_dev\n");
+;
 		return -ENOMEM;
 	}
 
@@ -82,7 +82,7 @@ int uflash_devinit(struct platform_device *op, struct device_node *dp)
 	up->map.virt = of_ioremap(&op->resource[0], 0, up->map.size,
 				  DRIVER_NAME);
 	if (!up->map.virt) {
-		printk(KERN_ERR PFX "Failed to map device.\n");
+;
 		kfree(up);
 
 		return -EINVAL;

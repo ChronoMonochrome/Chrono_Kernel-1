@@ -674,7 +674,7 @@ static int __init ks8695uart_init(void)
 {
 	int i, ret;
 
-	printk(KERN_INFO "Serial: Micrel KS8695 UART driver\n");
+;
 
 	ret = uart_register_driver(&ks8695_reg);
 	if (ret)

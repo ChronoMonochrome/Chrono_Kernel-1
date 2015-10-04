@@ -169,7 +169,7 @@ int i_APCI035_ConfigTimerWatchdog(struct comedi_device *dev, struct comedi_subde
 			ui_Command = ui_Command & 0xFFF819E2UL;
 
 		} else {
-			printk("\n The parameter for Timer/watchdog selection is in error\n");
+;
 			return -EINVAL;
 		}
 	}

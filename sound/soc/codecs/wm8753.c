@@ -676,8 +676,8 @@ static void pll_factors(struct _pll_div *pll_div, unsigned int target,
 		pll_div->div2 = 0;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
-		printk(KERN_WARNING
-			"wm8753: unsupported N = %u\n", Ndiv);
+//		printk(KERN_WARNING
+;
 
 	pll_div->n = Ndiv;
 	Nmod = target % source;
@@ -1123,7 +1123,7 @@ static int wm8753_i2s_hw_params(struct snd_pcm_substream *substream,
 	/* is digital filter coefficient valid ? */
 	coeff = get_coeff(wm8753->sysclk, params_rate(params));
 	if (coeff < 0) {
-		printk(KERN_ERR "wm8753 invalid MCLK or rate\n");
+;
 		return coeff;
 	}
 	snd_soc_write(codec, WM8753_SRATE1, srate | (coeff_div[coeff].sr << 1) |
@@ -1581,15 +1581,15 @@ static int __init wm8753_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8753_i2c_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register wm8753 I2C driver: %d\n",
-		       ret);
+//		printk(KERN_ERR "Failed to register wm8753 I2C driver: %d\n",
+;
 	}
 #endif
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&wm8753_spi_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register wm8753 SPI driver: %d\n",
-		       ret);
+//		printk(KERN_ERR "Failed to register wm8753 SPI driver: %d\n",
+;
 	}
 #endif
 	return ret;

@@ -577,7 +577,7 @@ static int __init populate_rootfs(void)
 	if (initrd_start) {
 #ifdef CONFIG_BLK_DEV_RAM
 		int fd;
-		printk(KERN_INFO "Trying to unpack rootfs image as initramfs...\n");
+;
 		err = unpack_to_rootfs((char *)initrd_start,
 			initrd_end - initrd_start);
 		if (!err) {
@@ -587,8 +587,8 @@ static int __init populate_rootfs(void)
 			clean_rootfs();
 			unpack_to_rootfs(__initramfs_start, __initramfs_size);
 		}
-		printk(KERN_INFO "rootfs image is not initramfs (%s)"
-				"; looks like an initrd\n", err);
+//		printk(KERN_INFO "rootfs image is not initramfs (%s)"
+;
 		fd = sys_open((const char __user __force *) "/initrd.image",
 			      O_WRONLY|O_CREAT, 0700);
 		if (fd >= 0) {
@@ -598,11 +598,11 @@ static int __init populate_rootfs(void)
 			free_initrd();
 		}
 #else
-		printk(KERN_INFO "Unpacking initramfs...\n");
+;
 		err = unpack_to_rootfs((char *)initrd_start,
 			initrd_end - initrd_start);
 		if (err)
-			printk(KERN_EMERG "Initramfs unpacking failed: %s\n", err);
+;
 		free_initrd();
 #endif
 	}

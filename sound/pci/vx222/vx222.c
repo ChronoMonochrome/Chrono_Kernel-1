@@ -170,7 +170,7 @@ static int __devinit snd_vx222_create(struct snd_card *card, struct pci_dev *pci
 
 	if (request_irq(pci->irq, snd_vx_irq_handler, IRQF_SHARED,
 			CARD_NAME, chip)) {
-		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
+;
 		snd_vx222_free(chip);
 		return -EBUSY;
 	}
@@ -279,8 +279,8 @@ static int snd_vx222_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-		printk(KERN_ERR "vx222: pci_enable_device failed, "
-		       "disabling device\n");
+//		printk(KERN_ERR "vx222: pci_enable_device failed, "
+;
 		snd_card_disconnect(card);
 		return -EIO;
 	}

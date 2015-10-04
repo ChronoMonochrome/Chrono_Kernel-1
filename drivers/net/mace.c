@@ -114,8 +114,8 @@ static int __devinit mace_probe(struct macio_dev *mdev, const struct of_device_i
 	int j, rev, rc = -EBUSY;
 
 	if (macio_resource_count(mdev) != 3 || macio_irq_count(mdev) != 3) {
-		printk(KERN_ERR "can't use MACE %s: need 3 addrs and 3 irqs\n",
-		       mace->full_name);
+//		printk(KERN_ERR "can't use MACE %s: need 3 addrs and 3 irqs\n",
+;
 		return -ENODEV;
 	}
 
@@ -123,8 +123,8 @@ static int __devinit mace_probe(struct macio_dev *mdev, const struct of_device_i
 	if (addr == NULL) {
 		addr = of_get_property(mace, "local-mac-address", NULL);
 		if (addr == NULL) {
-			printk(KERN_ERR "Can't get mac-address for MACE %s\n",
-			       mace->full_name);
+//			printk(KERN_ERR "Can't get mac-address for MACE %s\n",
+;
 			return -ENODEV;
 		}
 	}
@@ -136,19 +136,19 @@ static int __devinit mace_probe(struct macio_dev *mdev, const struct of_device_i
 	if (dummy_buf == NULL) {
 		dummy_buf = kmalloc(RX_BUFLEN+2, GFP_KERNEL);
 		if (dummy_buf == NULL) {
-			printk(KERN_ERR "MACE: couldn't allocate dummy buffer\n");
+;
 			return -ENOMEM;
 		}
 	}
 
 	if (macio_request_resources(mdev, "mace")) {
-		printk(KERN_ERR "MACE: can't request IO resources !\n");
+;
 		return -EBUSY;
 	}
 
 	dev = alloc_etherdev(PRIV_BYTES);
 	if (!dev) {
-		printk(KERN_ERR "MACE: can't allocate ethernet device !\n");
+;
 		rc = -ENOMEM;
 		goto err_release;
 	}
@@ -161,7 +161,7 @@ static int __devinit mace_probe(struct macio_dev *mdev, const struct of_device_i
 	dev->base_addr = macio_resource_start(mdev, 0);
 	mp->mace = ioremap(dev->base_addr, 0x1000);
 	if (mp->mace == NULL) {
-		printk(KERN_ERR "MACE: can't map IO resources !\n");
+;
 		rc = -ENOMEM;
 		goto err_free;
 	}
@@ -180,7 +180,7 @@ static int __devinit mace_probe(struct macio_dev *mdev, const struct of_device_i
 
 	mp->tx_dma = ioremap(macio_resource_start(mdev, 1), 0x1000);
 	if (mp->tx_dma == NULL) {
-		printk(KERN_ERR "MACE: can't map TX DMA resources !\n");
+;
 		rc = -ENOMEM;
 		goto err_unmap_io;
 	}
@@ -188,7 +188,7 @@ static int __devinit mace_probe(struct macio_dev *mdev, const struct of_device_i
 
 	mp->rx_dma = ioremap(macio_resource_start(mdev, 2), 0x1000);
 	if (mp->rx_dma == NULL) {
-		printk(KERN_ERR "MACE: can't map RX DMA resources !\n");
+;
 		rc = -ENOMEM;
 		goto err_unmap_tx_dma;
 	}
@@ -227,29 +227,29 @@ static int __devinit mace_probe(struct macio_dev *mdev, const struct of_device_i
 
 	rc = request_irq(dev->irq, mace_interrupt, 0, "MACE", dev);
 	if (rc) {
-		printk(KERN_ERR "MACE: can't get irq %d\n", dev->irq);
+;
 		goto err_unmap_rx_dma;
 	}
 	rc = request_irq(mp->tx_dma_intr, mace_txdma_intr, 0, "MACE-txdma", dev);
 	if (rc) {
-		printk(KERN_ERR "MACE: can't get irq %d\n", mp->tx_dma_intr);
+;
 		goto err_free_irq;
 	}
 	rc = request_irq(mp->rx_dma_intr, mace_rxdma_intr, 0, "MACE-rxdma", dev);
 	if (rc) {
-		printk(KERN_ERR "MACE: can't get irq %d\n", mp->rx_dma_intr);
+;
 		goto err_free_tx_irq;
 	}
 
 	rc = register_netdev(dev);
 	if (rc) {
-		printk(KERN_ERR "MACE: Cannot register net device, aborting.\n");
+;
 		goto err_free_rx_irq;
 	}
 
-	printk(KERN_INFO "%s: MACE at %pM, chip revision %d.%d\n",
-	       dev->name, dev->dev_addr,
-	       mp->chipid >> 8, mp->chipid & 0xff);
+//	printk(KERN_INFO "%s: MACE at %pM, chip revision %d.%d\n",
+//	       dev->name, dev->dev_addr,
+;
 
 	return 0;
 
@@ -333,7 +333,7 @@ static void mace_reset(struct net_device *dev)
 	break;
     }
     if (!i) {
-	printk(KERN_ERR "mace: cannot reset chip!\n");
+;
 	return;
     }
 
@@ -555,7 +555,7 @@ static int mace_xmit_start(struct sk_buff *skb, struct net_device *dev)
     /* partially fill in the dma command block */
     len = skb->len;
     if (len > ETH_FRAME_LEN) {
-	printk(KERN_DEBUG "mace: xmit frame too long (%d)\n", len);
+;
 	len = ETH_FRAME_LEN;
     }
     mp->tx_bufs[fill] = skb;
@@ -614,10 +614,10 @@ static void mace_set_multicast(struct net_device *dev)
 	    }
 	}
 #if 0
-	printk("Multicast filter :");
+;
 	for (i = 0; i < 8; i++)
-	    printk("%02x ", multicast_filter[i]);
-	printk("\n");
+;
+;
 #endif
 
 	if (mp->chipid == BROKEN_ADDRCHG_REV)
@@ -652,10 +652,10 @@ static void mace_handle_misc_intrs(struct mace_data *mp, int intr, struct net_de
 	++dev->stats.tx_heartbeat_errors;
     if (intr & BABBLE)
 	if (mace_babbles++ < 4)
-	    printk(KERN_DEBUG "mace: babbling transmitter\n");
+;
     if (intr & JABBER)
 	if (mace_jabbers++ < 4)
-	    printk(KERN_DEBUG "mace: jabbering transceiver\n");
+;
 }
 
 static irqreturn_t mace_interrupt(int irq, void *dev_id)
@@ -717,8 +717,8 @@ static irqreturn_t mace_interrupt(int irq, void *dev_id)
 	}
 	fs = in_8(&mb->xmtfs);
 	if ((fs & XMTSV) == 0) {
-	    printk(KERN_ERR "mace: xmtfs not valid! (fs=%x xc=%d ds=%x)\n",
-		   fs, xcount, dstat);
+//	    printk(KERN_ERR "mace: xmtfs not valid! (fs=%x xc=%d ds=%x)\n",
+;
 	    mace_reset(dev);
 		/*
 		 * XXX mace likes to hang the machine after a xmtfs error.
@@ -754,8 +754,8 @@ static irqreturn_t mace_interrupt(int irq, void *dev_id)
 	}
 	/* dma should have finished */
 	if (i == mp->tx_fill) {
-	    printk(KERN_DEBUG "mace: tx ring ran out? (fs=%x xc=%d ds=%x)\n",
-		   fs, xcount, dstat);
+//	    printk(KERN_DEBUG "mace: tx ring ran out? (fs=%x xc=%d ds=%x)\n",
+;
 	    continue;
 	}
 	/* Update stats */
@@ -827,7 +827,7 @@ static void mace_tx_timeout(unsigned long data)
 
     /* turn off both tx and rx and reset the chip */
     out_8(&mb->maccc, 0);
-    printk(KERN_ERR "mace: transmit timeout - resetting\n");
+;
     dbdma_reset(td);
     mace_reset(dev);
 
@@ -899,7 +899,7 @@ static irqreturn_t mace_rxdma_intr(int irq, void *dev_id)
 	    np = mp->rx_cmds + next;
 	    if (next != mp->rx_fill &&
 		(ld_le16(&np->xfer_status) & ACTIVE) != 0) {
-		printk(KERN_DEBUG "mace: lost a status word\n");
+;
 		++mace_lost_status;
 	    } else
 		break;

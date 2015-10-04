@@ -151,21 +151,21 @@ struct tx_data_struct {
 static struct tx_data_struct *tx_data;
 static struct mutex tx_data_lock;
 
-#define zilog_notify(s, args...) printk(KERN_NOTICE KBUILD_MODNAME ": " s, \
-					## args)
-#define zilog_error(s, args...) printk(KERN_ERR KBUILD_MODNAME ": " s, ## args)
-#define zilog_info(s, args...) printk(KERN_INFO KBUILD_MODNAME ": " s, ## args)
-
-/* module parameters */
-static int debug;	/* debug output */
+//#define zilog_notify(s, args...) printk(KERN_NOTICE KBUILD_MODNAME ": " s, \
+//					## args)
+//#define zilog_error(s, args...) printk(KERN_ERR KBUILD_MODNAME ": " s, ## args)
+//#define zilog_info(s, args...) printk(KERN_INFO KBUILD_MODNAME ": " s, ## args)
+//
+///* module parameters */
+;
 static int tx_only;	/* only handle the IR Tx function */
 static int minor = -1;	/* minor number */
 
-#define dprintk(fmt, args...)						\
-	do {								\
-		if (debug)						\
-			printk(KERN_DEBUG KBUILD_MODNAME ": " fmt,	\
-				 ## args);				\
+//#define dprintk(fmt, args...)						\
+//	do {								\
+//		if (debug)						\
+//			printk(KERN_DEBUG KBUILD_MODNAME ": " fmt,	\
+;
 	} while (0)
 
 
@@ -333,7 +333,7 @@ static int add_to_buf(struct IR *ir)
 	struct IR_tx *tx;
 
 	if (lirc_buffer_full(rbuf)) {
-		dprintk("buffer overflow\n");
+;
 		return -EOVERFLOW;
 	}
 
@@ -421,7 +421,7 @@ static int add_to_buf(struct IR *ir)
 			rx->b[0] = keybuf[3];
 			rx->b[1] = keybuf[4];
 			rx->b[2] = keybuf[5];
-			dprintk("key (0x%02x/0x%02x)\n", rx->b[0], rx->b[1]);
+;
 		}
 
 		/* key pressed ? */
@@ -472,7 +472,7 @@ static int lirc_thread(void *arg)
 	struct IR *ir = arg;
 	struct lirc_buffer *rbuf = ir->l.rbuf;
 
-	dprintk("poll thread started\n");
+;
 
 	while (!kthread_should_stop()) {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -500,7 +500,7 @@ static int lirc_thread(void *arg)
 			wake_up_interruptible(&rbuf->wait_poll);
 	}
 
-	dprintk("poll thread ended\n");
+;
 	return 0;
 }
 
@@ -660,8 +660,8 @@ static int send_data_block(struct IR_tx *tx, unsigned char *data_block)
 		buf[0] = (unsigned char)(i + 1);
 		for (j = 0; j < tosend; ++j)
 			buf[1 + j] = data_block[i + j];
-		dprintk("%02x %02x %02x %02x %02x",
-			buf[0], buf[1], buf[2], buf[3], buf[4]);
+//		dprintk("%02x %02x %02x %02x %02x",
+;
 		ret = i2c_master_send(tx->c, buf, tosend + 1);
 		if (ret != tosend + 1) {
 			zilog_error("i2c_master_send failed with %d\n", ret);
@@ -737,7 +737,7 @@ static void fw_unload_locked(void)
 
 		vfree(tx_data);
 		tx_data = NULL;
-		dprintk("successfully unloaded IR blaster firmware\n");
+;
 	}
 }
 
@@ -772,7 +772,7 @@ static int fw_load(struct IR_tx *tx)
 		ret = ret < 0 ? ret : -EFAULT;
 		goto out;
 	}
-	dprintk("firmware of size %zu loaded\n", fw_entry->size);
+;
 
 	/* Parse the file */
 	tx_data = vmalloc(sizeof(*tx_data));
@@ -819,7 +819,7 @@ static int fw_load(struct IR_tx *tx)
 			      &tx_data->num_code_sets))
 		goto corrupt;
 
-	dprintk("%u IR blaster codesets loaded\n", tx_data->num_code_sets);
+;
 
 	tx_data->code_sets = vmalloc(
 		tx_data->num_code_sets * sizeof(char *));
@@ -901,9 +901,9 @@ static ssize_t read(struct file *filep, char *outbuf, size_t n, loff_t *ppos)
 	unsigned int m;
 	DECLARE_WAITQUEUE(wait, current);
 
-	dprintk("read called\n");
+;
 	if (n % rbuf->chunk_size) {
-		dprintk("read result = -EINVAL\n");
+;
 		return -EINVAL;
 	}
 
@@ -964,7 +964,7 @@ static ssize_t read(struct file *filep, char *outbuf, size_t n, loff_t *ppos)
 	put_ir_rx(rx, false);
 	set_current_state(TASK_RUNNING);
 
-	dprintk("read result = %d (%s)\n", ret, ret ? "Error" : "OK");
+;
 
 	return ret ? ret : written;
 }
@@ -1040,7 +1040,7 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
 	 * going to skip this whole mess and say we're done on the HD PVR
 	 */
 	if (!tx->post_tx_ready_poll) {
-		dprintk("sent code %u, key %u\n", code, key);
+;
 		return 0;
 	}
 
@@ -1056,8 +1056,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
 		ret = i2c_master_send(tx->c, buf, 1);
 		if (ret == 1)
 			break;
-		dprintk("NAK expected: i2c_master_send "
-			"failed with %d (try %d)\n", ret, i+1);
+//		dprintk("NAK expected: i2c_master_send "
+;
 	}
 	if (ret != 1) {
 		zilog_error("IR TX chip never got ready: last i2c_master_send "
@@ -1077,7 +1077,7 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
 	}
 
 	/* Oh good, it worked */
-	dprintk("sent code %u, key %u\n", code, key);
+;
 	return 0;
 }
 
@@ -1202,7 +1202,7 @@ static unsigned int poll(struct file *filep, poll_table *wait)
 	struct lirc_buffer *rbuf = ir->l.rbuf;
 	unsigned int ret;
 
-	dprintk("poll called\n");
+;
 
 	rx = get_ir_rx(ir);
 	if (rx == NULL) {
@@ -1210,7 +1210,7 @@ static unsigned int poll(struct file *filep, poll_table *wait)
 		 * Revisit this, if our poll function ever reports writeable
 		 * status for Tx
 		 */
-		dprintk("poll result = POLLERR\n");
+;
 		return POLLERR;
 	}
 
@@ -1223,7 +1223,7 @@ static unsigned int poll(struct file *filep, poll_table *wait)
 	/* Indicate what ops could happen immediately without blocking */
 	ret = lirc_buffer_empty(rbuf) ? 0 : (POLLIN|POLLRDNORM);
 
-	dprintk("poll result = %s\n", ret ? "POLLIN|POLLRDNORM" : "none");
+;
 	return ret;
 }
 
@@ -1439,8 +1439,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	int ret;
 	bool tx_probe = false;
 
-	dprintk("%s: %s on i2c-%d (%s), client addr=0x%02x\n",
-		__func__, id->name, adap->nr, adap->name, client->addr);
+//	dprintk("%s: %s on i2c-%d (%s), client addr=0x%02x\n",
+;
 
 	/*
 	 * The IR receiver    is at i2c address 0x71.

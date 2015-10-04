@@ -106,7 +106,7 @@ static int hscd_power_on(void)
 {
 	int err = 0;
 
-	printk(KERN_INFO "%s\n", __func__);
+;
 
 	if (hscd_power.regulator_vdd) {
 		err = regulator_enable(hscd_power.regulator_vdd);
@@ -132,7 +132,7 @@ static int hscd_power_off(void)
 {
 	int err = 0;
 
-	printk(KERN_INFO "%s\n", __func__);
+;
 
 	if (hscd_power.regulator_vdd) {
 		err = regulator_disable(hscd_power.regulator_vdd);

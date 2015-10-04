@@ -147,7 +147,7 @@ static inline int gpio_valid(int gpio)
 static int check_gpio(int gpio)
 {
 	if (unlikely(gpio_valid(gpio) < 0)) {
-		printk(KERN_ERR "omap-gpio: invalid GPIO %d\n", gpio);
+;
 		dump_stack();
 		return -1;
 	}
@@ -876,9 +876,9 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
 	case METHOD_GPIO_24XX:
 	case METHOD_GPIO_44XX:
 		if (bank->non_wakeup_gpios & (1 << gpio)) {
-			printk(KERN_ERR "Unable to modify wakeup on "
-					"non-wakeup GPIO%d\n",
-					(bank - gpio_bank) * 32 + gpio);
+//			printk(KERN_ERR "Unable to modify wakeup on "
+//					"non-wakeup GPIO%d\n",
+;
 			return -EINVAL;
 		}
 		spin_lock_irqsave(&bank->lock, flags);
@@ -890,8 +890,8 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
 		return 0;
 #endif
 	default:
-		printk(KERN_ERR "Can't enable GPIO wakeup for method %i\n",
-		       bank->method);
+//		printk(KERN_ERR "Can't enable GPIO wakeup for method %i\n",
+;
 		return -EINVAL;
 	}
 }
@@ -1443,8 +1443,8 @@ static void __init omap_gpio_show_rev(struct gpio_bank *bank)
 	else
 		return;
 
-	printk(KERN_INFO "OMAP GPIO hardware version %d.%d\n",
-		(rev >> 4) & 0x0f, rev & 0x0f);
+//	printk(KERN_INFO "OMAP GPIO hardware version %d.%d\n",
+;
 }
 
 /* This lock class tells lockdep that GPIO irqs are in a different

@@ -154,7 +154,7 @@ snd_wavefront_pnp (int dev, snd_wavefront_card_t *acard, struct pnp_card_link *c
 
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
-		snd_printk(KERN_ERR "PnP WSS pnp configure failure\n");
+;
 		return err;
 	}
 
@@ -170,7 +170,7 @@ snd_wavefront_pnp (int dev, snd_wavefront_card_t *acard, struct pnp_card_link *c
 	
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
-		snd_printk(KERN_ERR "PnP ICS2115 pnp configure failure\n");
+;
 		return err;
 	}
 
@@ -188,7 +188,7 @@ snd_wavefront_pnp (int dev, snd_wavefront_card_t *acard, struct pnp_card_link *c
 
 		err = pnp_activate_dev(pdev);
 		if (err < 0) {
-			snd_printk(KERN_ERR "PnP MPU401 pnp configure failure\n");
+;
 			cs4232_mpu_port[dev] = SNDRV_AUTO_PORT;
 		} else {
 			cs4232_mpu_port[dev] = pnp_port_start(pdev, 0);
@@ -378,7 +378,7 @@ snd_wavefront_probe (struct snd_card *card, int dev)
 			     cs4232_pcm_irq[dev], dma1[dev], dma2[dev],
 			     WSS_HW_DETECT, 0, &chip);
 	if (err < 0) {
-		snd_printk(KERN_ERR "can't allocate WSS device\n");
+;
 		return err;
 	}
 
@@ -413,13 +413,13 @@ snd_wavefront_probe (struct snd_card *card, int dev)
 	acard->wavefront.res_base = request_region(ics2115_port[dev], 16,
 						   "ICS2115");
 	if (acard->wavefront.res_base == NULL) {
-		snd_printk(KERN_ERR "unable to grab ICS2115 i/o region 0x%lx-0x%lx\n",
-			   ics2115_port[dev], ics2115_port[dev] + 16 - 1);
+//		snd_printk(KERN_ERR "unable to grab ICS2115 i/o region 0x%lx-0x%lx\n",
+;
 		return -EBUSY;
 	}
 	if (request_irq(ics2115_irq[dev], snd_wavefront_ics2115_interrupt,
 			IRQF_DISABLED, "ICS2115", acard)) {
-		snd_printk(KERN_ERR "unable to use ICS2115 IRQ %d\n", ics2115_irq[dev]);
+;
 		return -EBUSY;
 	}
 	
@@ -552,11 +552,11 @@ static int __devinit snd_wavefront_isa_match(struct device *pdev,
 		return 0;
 #endif
 	if (cs4232_pcm_port[dev] == SNDRV_AUTO_PORT) {
-		snd_printk(KERN_ERR "specify CS4232 port\n");
+;
 		return 0;
 	}
 	if (ics2115_port[dev] == SNDRV_AUTO_PORT) {
-		snd_printk(KERN_ERR "specify ICS2115 port\n");
+;
 		return 0;
 	}
 	return 1;

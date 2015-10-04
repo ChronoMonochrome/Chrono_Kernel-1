@@ -264,7 +264,7 @@ static int __devinit dnfb_probe(struct platform_device *dev)
 	out_8(AP_CONTROL_2, S_DATA_PLN);
 	out_be16(AP_ROP_1, SWAP(0x3));
 
-	printk("apollo frame buffer alive and kicking !\n");
+;
 	return err;
 }
 

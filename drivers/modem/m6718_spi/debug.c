@@ -82,9 +82,9 @@ void ipc_dbg_dump_frame(struct device *dev, int linkid,
 	 * when DEBUG is not defined for this device - we want to be able to
 	 * dump the frames independently from the debug logging.
 	 */
-	printk(KERN_DEBUG "IPC link%d %s %3d %4d bytes:%s\n",
-		linkid, (tx ? "TX" : "RX"), frame->counter, frame->len,
-		format_buf(frame->data, frame->len));
+//	printk(KERN_DEBUG "IPC link%d %s %3d %4d bytes:%s\n",
+//		linkid, (tx ? "TX" : "RX"), frame->counter, frame->len,
+;
 #endif
 }
 

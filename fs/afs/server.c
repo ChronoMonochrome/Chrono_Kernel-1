@@ -169,8 +169,8 @@ found_server:
 server_in_two_cells:
 	write_unlock(&cell->servers_lock);
 	kfree(candidate);
-	printk(KERN_NOTICE "kAFS: Server %pI4 appears to be in two cells\n",
-	       addr);
+//	printk(KERN_NOTICE "kAFS: Server %pI4 appears to be in two cells\n",
+;
 	_leave(" = -EEXIST");
 	return ERR_PTR(-EEXIST);
 }

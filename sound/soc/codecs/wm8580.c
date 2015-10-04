@@ -360,8 +360,8 @@ static int pll_factors(struct _pll_div *pll_div, unsigned int target,
 	}
 
 	if (i == ARRAY_SIZE(post_table)) {
-		printk(KERN_ERR "wm8580: Unable to scale output frequency "
-		       "%u\n", target);
+//		printk(KERN_ERR "wm8580: Unable to scale output frequency "
+;
 		return -EINVAL;
 	}
 
@@ -375,8 +375,8 @@ static int pll_factors(struct _pll_div *pll_div, unsigned int target,
 		pll_div->prescale = 0;
 
 	if ((Ndiv < 5) || (Ndiv > 13)) {
-		printk(KERN_ERR
-			"WM8580 N=%u outside supported range\n", Ndiv);
+//		printk(KERN_ERR
+;
 		return -EINVAL;
 	}
 

@@ -269,8 +269,8 @@ tMLError MLSLSerialWriteFifo(void *sl_handle,
 	unsigned short bytesWritten = 0;
 
 	if (length > FIFO_HW_SIZE) {
-		printk(KERN_ERR
-		       "maximum fifo write length is %d\n", FIFO_HW_SIZE);
+//		printk(KERN_ERR
+;
 		return ML_ERROR_INVALID_PARAMETER;
 	}
 	while (bytesWritten < length) {
@@ -307,8 +307,8 @@ tMLError MLSLSerialReadFifo(void *sl_handle,
 	unsigned short bytesRead = 0;
 
 	if (length > FIFO_HW_SIZE) {
-		printk(KERN_ERR
-		       "maximum fifo read length is %d\n", FIFO_HW_SIZE);
+//		printk(KERN_ERR
+;
 		return ML_ERROR_INVALID_PARAMETER;
 	}
 	while (bytesRead < length) {

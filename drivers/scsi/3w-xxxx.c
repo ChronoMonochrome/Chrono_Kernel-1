@@ -240,11 +240,11 @@ static int tw_reset_device_extension(TW_Device_Extension *tw_dev);
 static int tw_check_bits(u32 status_reg_value)
 {
 	if ((status_reg_value & TW_STATUS_EXPECTED_BITS) != TW_STATUS_EXPECTED_BITS) {  
-		dprintk(KERN_WARNING "3w-xxxx: tw_check_bits(): No expected bits (0x%x).\n", status_reg_value);
+;
 		return 1;
 	}
 	if ((status_reg_value & TW_STATUS_UNEXPECTED_BITS) != 0) {
-		dprintk(KERN_WARNING "3w-xxxx: tw_check_bits(): Found unexpected bits (0x%x).\n", status_reg_value);
+;
 		return 1;
 	}
 
@@ -256,7 +256,7 @@ static int tw_decode_bits(TW_Device_Extension *tw_dev, u32 status_reg_value, int
 {
 	char host[16];
 
-	dprintk(KERN_WARNING "3w-xxxx: tw_decode_bits()\n");
+;
 
 	if (print_host)
 		sprintf(host, " scsi%d:", tw_dev->host->host_no);
@@ -264,29 +264,29 @@ static int tw_decode_bits(TW_Device_Extension *tw_dev, u32 status_reg_value, int
 		host[0] = '\0';
 
 	if (status_reg_value & TW_STATUS_PCI_PARITY_ERROR) {
-		printk(KERN_WARNING "3w-xxxx:%s PCI Parity Error: clearing.\n", host);
+;
 		outl(TW_CONTROL_CLEAR_PARITY_ERROR, TW_CONTROL_REG_ADDR(tw_dev));
 	}
 
 	if (status_reg_value & TW_STATUS_PCI_ABORT) {
-		printk(KERN_WARNING "3w-xxxx:%s PCI Abort: clearing.\n", host);
+;
 		outl(TW_CONTROL_CLEAR_PCI_ABORT, TW_CONTROL_REG_ADDR(tw_dev));
 		pci_write_config_word(tw_dev->tw_pci_dev, PCI_STATUS, TW_PCI_CLEAR_PCI_ABORT);
 	}
 
 	if (status_reg_value & TW_STATUS_QUEUE_ERROR) {
-		printk(KERN_WARNING "3w-xxxx:%s Controller Queue Error: clearing.\n", host);
+;
 		outl(TW_CONTROL_CLEAR_QUEUE_ERROR, TW_CONTROL_REG_ADDR(tw_dev));
 	}
 
 	if (status_reg_value & TW_STATUS_SBUF_WRITE_ERROR) {
-		printk(KERN_WARNING "3w-xxxx:%s SBUF Write Error: clearing.\n", host);
+;
 		outl(TW_CONTROL_CLEAR_SBUF_WRITE_ERROR, TW_CONTROL_REG_ADDR(tw_dev));
 	}
 
 	if (status_reg_value & TW_STATUS_MICROCONTROLLER_ERROR) {
 		if (tw_dev->reset_print == 0) {
-			printk(KERN_WARNING "3w-xxxx:%s Microcontroller Error: clearing.\n", host);
+;
 			tw_dev->reset_print = 1;
 		}
 		return 1;
@@ -359,12 +359,12 @@ static int tw_post_command_packet(TW_Device_Extension *tw_dev, int request_id)
 	u32 status_reg_value;
 	unsigned long command_que_value;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_post_command_packet()\n");
+;
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	status_reg_value = inl(TW_STATUS_REG_ADDR(tw_dev));
 
 	if (tw_check_bits(status_reg_value)) {
-		dprintk(KERN_WARNING "3w-xxxx: tw_post_command_packet(): Unexpected bits.\n");
+;
 		tw_decode_bits(tw_dev, status_reg_value, 1);
 	}
 
@@ -403,10 +403,10 @@ static int tw_decode_sense(TW_Device_Extension *tw_dev, int request_id, int fill
 	int i;
 	TW_Command *command;
 
-        dprintk(KERN_WARNING "3w-xxxx: tw_decode_sense()\n");
+;
 	command = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
 
-	printk(KERN_WARNING "3w-xxxx: scsi%d: Command failed: status = 0x%x, flags = 0x%x, unit #%d.\n", tw_dev->host->host_no, command->status, command->flags, TW_UNIT_OUT(command->unit__hostid));
+;
 
 	/* Attempt to return intelligent sense information */
 	if (fill_sense) {
@@ -559,16 +559,16 @@ static int tw_aen_read_queue(TW_Device_Extension *tw_dev, int request_id)
 	u32 status_reg_value;
 	unsigned long param_value = 0;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_aen_read_queue()\n");
+;
 
 	status_reg_value = inl(TW_STATUS_REG_ADDR(tw_dev));
 	if (tw_check_bits(status_reg_value)) {
-		dprintk(KERN_WARNING "3w-xxxx: tw_aen_read_queue(): Unexpected bits.\n");
+;
 		tw_decode_bits(tw_dev, status_reg_value, 1);
 		return 1;
 	}
 	if (tw_dev->command_packet_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_read_queue(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
@@ -581,12 +581,12 @@ static int tw_aen_read_queue(TW_Device_Extension *tw_dev, int request_id)
 	command_packet->byte6.parameter_count = 1;
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_read_queue(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
 	/* Now setup the param */
 	if (tw_dev->alignment_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_read_queue(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
@@ -596,7 +596,7 @@ static int tw_aen_read_queue(TW_Device_Extension *tw_dev, int request_id)
 	param->parameter_size_bytes = 2;
 	param_value = tw_dev->alignment_physical_address[request_id];
 	if (param_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_read_queue(): Bad alignment physical address.\n");
+;
 		return 1;
 	}
 	command_packet->byte8.param.sgl[0].address = param_value;
@@ -604,12 +604,12 @@ static int tw_aen_read_queue(TW_Device_Extension *tw_dev, int request_id)
 
 	/* Now post the command packet */
 	if ((status_reg_value & TW_STATUS_COMMAND_QUEUE_FULL) == 0) {
-		dprintk(KERN_WARNING "3w-xxxx: tw_aen_read_queue(): Post succeeded.\n");
+;
 		tw_dev->srb[request_id] = NULL; /* Flag internal command */
 		tw_dev->state[request_id] = TW_S_POSTED;
 		outl(command_que_value, TW_COMMAND_QUEUE_REG_ADDR(tw_dev));
 	} else {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_read_queue(): Post failed, will retry.\n");
+;
 		return 1;
 	}
 
@@ -623,29 +623,29 @@ static int tw_aen_complete(TW_Device_Extension *tw_dev, int request_id)
 	unsigned short aen;
 	int error = 0, table_max = 0;
 
-	dprintk(KERN_WARNING "3w-xxxx: tw_aen_complete()\n");
+;
 	if (tw_dev->alignment_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_complete(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
 	aen = *(unsigned short *)(param->data);
-	dprintk(KERN_NOTICE "3w-xxxx: tw_aen_complete(): Queue'd code 0x%x\n", aen);
+;
 
 	/* Print some useful info when certain aen codes come out */
 	if (aen == 0x0ff) {
-		printk(KERN_WARNING "3w-xxxx: scsi%d: AEN: INFO: AEN queue overflow.\n", tw_dev->host->host_no);
+;
 	} else {
 		table_max = ARRAY_SIZE(tw_aen_string);
 		if ((aen & 0x0ff) < table_max) {
 			if ((tw_aen_string[aen & 0xff][strlen(tw_aen_string[aen & 0xff])-1]) == '#') {
-				printk(KERN_WARNING "3w-xxxx: scsi%d: AEN: %s%d.\n", tw_dev->host->host_no, tw_aen_string[aen & 0xff], aen >> 8);
+;
 			} else {
 				if (aen != 0x0) 
-					printk(KERN_WARNING "3w-xxxx: scsi%d: AEN: %s.\n", tw_dev->host->host_no, tw_aen_string[aen & 0xff]);
+;
 			}
 		} else {
-			printk(KERN_WARNING "3w-xxxx: scsi%d: Received AEN %d.\n", tw_dev->host->host_no, aen);
+;
 		}
 	}
 	if (aen != TW_AEN_QUEUE_EMPTY) {
@@ -668,7 +668,7 @@ static int tw_aen_complete(TW_Device_Extension *tw_dev, int request_id)
 
 		error = tw_aen_read_queue(tw_dev, request_id);
 		if (error) {
-			printk(KERN_WARNING "3w-xxxx: scsi%d: Error completing AEN.\n", tw_dev->host->host_no);
+;
 			tw_dev->state[request_id] = TW_S_COMPLETED;
 			tw_state_request_finish(tw_dev, request_id);
 		}
@@ -696,10 +696,10 @@ static int tw_aen_drain_queue(TW_Device_Extension *tw_dev)
 	int queue = 0;
 	int found = 0, table_max = 0;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_aen_drain_queue()\n");
+;
 
 	if (tw_poll_status(tw_dev, TW_STATUS_ATTENTION_INTERRUPT | TW_STATUS_MICROCONTROLLER_READY, 30)) {
-		dprintk(KERN_WARNING "3w-xxxx: tw_aen_drain_queue(): No attention interrupt for card %d.\n", tw_device_extension_count);
+;
 		return 1;
 	}
 	TW_CLEAR_ATTENTION_INTERRUPT(tw_dev);
@@ -709,7 +709,7 @@ static int tw_aen_drain_queue(TW_Device_Extension *tw_dev)
 
 	/* Initialize command packet */
 	if (tw_dev->command_packet_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_drain_queue(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
@@ -722,13 +722,13 @@ static int tw_aen_drain_queue(TW_Device_Extension *tw_dev)
 	command_packet->byte6.parameter_count = 1;
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_drain_queue(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
 
 	/* Now setup the param */
 	if (tw_dev->alignment_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_drain_queue(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
@@ -738,7 +738,7 @@ static int tw_aen_drain_queue(TW_Device_Extension *tw_dev)
 	param->parameter_size_bytes = 2;
 	param_value = tw_dev->alignment_physical_address[request_id];
 	if (param_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_aen_drain_queue(): Bad alignment physical address.\n");
+;
 		return 1;
 	}
 	command_packet->byte8.param.sgl[0].address = param_value;
@@ -756,7 +756,7 @@ static int tw_aen_drain_queue(TW_Device_Extension *tw_dev)
 
 			if (request_id != 0) {
 				/* Unexpected request id */
-				printk(KERN_WARNING "3w-xxxx: tw_aen_drain_queue(): Unexpected request id.\n");
+;
 				return 1;
 			}
 			
@@ -777,7 +777,7 @@ static int tw_aen_drain_queue(TW_Device_Extension *tw_dev)
 			queue = 0;
 			switch (aen_code) {
 				case TW_AEN_QUEUE_EMPTY:
-					dprintk(KERN_WARNING "3w-xxxx: AEN: %s.\n", tw_aen_string[aen & 0xff]);
+;
 					if (first_reset != 1) {
 						return 1;
 					} else {
@@ -788,24 +788,24 @@ static int tw_aen_drain_queue(TW_Device_Extension *tw_dev)
 					if (first_reset == 0) {
 						first_reset = 1;
 					} else {
-						printk(KERN_WARNING "3w-xxxx: AEN: %s.\n", tw_aen_string[aen & 0xff]);
+;
 						tw_dev->aen_count++;
 						queue = 1;
 					}
 					break;
 				default:
 					if (aen == 0x0ff) {
-						printk(KERN_WARNING "3w-xxxx: AEN: INFO: AEN queue overflow.\n");
+;
 					} else {
 						table_max = ARRAY_SIZE(tw_aen_string);
 						if ((aen & 0x0ff) < table_max) {
 							if ((tw_aen_string[aen & 0xff][strlen(tw_aen_string[aen & 0xff])-1]) == '#') {
-								printk(KERN_WARNING "3w-xxxx: AEN: %s%d.\n", tw_aen_string[aen & 0xff], aen >> 8);
+;
 							} else {
-								printk(KERN_WARNING "3w-xxxx: AEN: %s.\n", tw_aen_string[aen & 0xff]);
+;
 							}
 						} else
-							printk(KERN_WARNING "3w-xxxx: Received AEN %d.\n", aen);
+;
 					}
 					tw_dev->aen_count++;
 					queue = 1;
@@ -830,7 +830,7 @@ static int tw_aen_drain_queue(TW_Device_Extension *tw_dev)
 			found = 1;
 		}
 		if (found == 0) {
-			printk(KERN_WARNING "3w-xxxx: tw_aen_drain_queue(): Response never received.\n");
+;
 			return 1;
 		}
 	} while (finished == 0);
@@ -845,16 +845,16 @@ static int tw_allocate_memory(TW_Device_Extension *tw_dev, int size, int which)
 	dma_addr_t dma_handle;
 	unsigned long *cpu_addr = NULL;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_allocate_memory()\n");
+;
 
 	cpu_addr = pci_alloc_consistent(tw_dev->tw_pci_dev, size*TW_Q_LENGTH, &dma_handle);
 	if (cpu_addr == NULL) {
-		printk(KERN_WARNING "3w-xxxx: pci_alloc_consistent() failed.\n");
+;
 		return 1;
 	}
 
 	if ((unsigned long)cpu_addr % (tw_dev->tw_pci_dev->device == TW_DEVICE_ID ? TW_ALIGNMENT_6000 : TW_ALIGNMENT_7000)) {
-		printk(KERN_WARNING "3w-xxxx: Couldn't allocate correctly aligned memory.\n");
+;
 		pci_free_consistent(tw_dev->tw_pci_dev, size*TW_Q_LENGTH, cpu_addr, dma_handle);
 		return 1;
 	}
@@ -872,7 +872,7 @@ static int tw_allocate_memory(TW_Device_Extension *tw_dev, int size, int which)
 			tw_dev->alignment_virtual_address[i] = (unsigned long *)((unsigned char *)cpu_addr + (i*size));
 			break;
 		default:
-			printk(KERN_WARNING "3w-xxxx: tw_allocate_memory(): case slip in tw_allocate_memory()\n");
+;
 			return 1;
 		}
 	}
@@ -898,7 +898,7 @@ static long tw_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	int retval = -EFAULT;
 	void __user *argp = (void __user *)arg;
 
-	dprintk(KERN_WARNING "3w-xxxx: tw_chrdev_ioctl()\n");
+;
 
 	mutex_lock(&tw_mutex);
 	/* Only let one of these through at a time */
@@ -938,10 +938,10 @@ static long tw_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	/* See which ioctl we are doing */
 	switch (cmd) {
 		case TW_OP_NOP:
-			dprintk(KERN_WARNING "3w-xxxx: tw_chrdev_ioctl(): caught TW_OP_NOP.\n");
+;
 			break;
 		case TW_OP_AEN_LISTEN:
-			dprintk(KERN_WARNING "3w-xxxx: tw_chrdev_ioctl(): caught TW_AEN_LISTEN.\n");
+;
 			memset(tw_ioctl->data_buffer, 0, data_buffer_length);
 
 			spin_lock_irqsave(tw_dev->host->host_lock, flags);
@@ -959,7 +959,7 @@ static long tw_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			memcpy(tw_ioctl->data_buffer, &tw_aen_code, sizeof(tw_aen_code));
 			break;
 		case TW_CMD_PACKET_WITH_DATA:
-			dprintk(KERN_WARNING "3w-xxxx: tw_chrdev_ioctl(): caught TW_CMD_PACKET_WITH_DATA.\n");
+;
 			spin_lock_irqsave(tw_dev->host->host_lock, flags);
 
 			tw_state_request_start(tw_dev, &request_id);
@@ -1002,10 +1002,10 @@ static long tw_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			/* We timed out, and didn't get an interrupt */
 			if (tw_dev->chrdev_request_id != TW_IOCTL_CHRDEV_FREE) {
 				/* Now we need to reset the board */
-				printk(KERN_WARNING "3w-xxxx: scsi%d: Character ioctl (0x%x) timed out, resetting card.\n", tw_dev->host->host_no, cmd);
+;
 				retval = -EIO;
 				if (tw_reset_device_extension(tw_dev)) {
-					printk(KERN_WARNING "3w-xxxx: tw_chrdev_ioctl(): Reset failed for card %d.\n", tw_dev->host->host_no);
+;
 				}
 				goto out2;
 			}
@@ -1044,7 +1044,7 @@ static int tw_chrdev_open(struct inode *inode, struct file *file)
 {
 	unsigned int minor_number;
 
-	dprintk(KERN_WARNING "3w-xxxx: tw_ioctl_open()\n");
+;
 
 	minor_number = iminor(inode);
 	if (minor_number >= tw_device_extension_count)
@@ -1065,7 +1065,7 @@ static const struct file_operations tw_fops = {
 /* This function will free up device extension resources */
 static void tw_free_device_extension(TW_Device_Extension *tw_dev)
 {
-	dprintk(KERN_NOTICE "3w-xxxx: tw_free_device_extension()\n");
+;
 
 	/* Free command packet and generic buffer memory */
 	if (tw_dev->command_packet_virtual_address[0])
@@ -1083,11 +1083,11 @@ static int tw_initconnection(TW_Device_Extension *tw_dev, int message_credits)
 	TW_Response_Queue response_queue;
 	int request_id = 0;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_initconnection()\n");
+;
 
 	/* Initialize InitConnection command packet */
 	if (tw_dev->command_packet_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_initconnection(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 
@@ -1103,7 +1103,7 @@ static int tw_initconnection(TW_Device_Extension *tw_dev, int message_credits)
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 
 	if (command_que_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_initconnection(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
   
@@ -1117,7 +1117,7 @@ static int tw_initconnection(TW_Device_Extension *tw_dev, int message_credits)
 
 		if (request_id != 0) {
 			/* unexpected request id */
-			printk(KERN_WARNING "3w-xxxx: tw_initconnection(): Unexpected request id.\n");
+;
 			return 1;
 		}
 		if (command_packet->status != 0) {
@@ -1142,7 +1142,7 @@ static int tw_setfeature(TW_Device_Extension *tw_dev, int parm, int param_size,
 
   	/* Initialize SetParam command packet */
 	if (tw_dev->command_packet_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_setfeature(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
@@ -1157,7 +1157,7 @@ static int tw_setfeature(TW_Device_Extension *tw_dev, int parm, int param_size,
 
 	param_value = tw_dev->alignment_physical_address[request_id];
 	if (param_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_setfeature(): Bad alignment physical address.\n");
+;
 		tw_dev->state[request_id] = TW_S_COMPLETED;
 		tw_state_request_finish(tw_dev, request_id);
 		tw_dev->srb[request_id]->result = (DID_OK << 16);
@@ -1172,7 +1172,7 @@ static int tw_setfeature(TW_Device_Extension *tw_dev, int parm, int param_size,
 
   	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_setfeature(): Bad command packet physical address.\n");
+;
 	return 1;
 	}
 
@@ -1186,7 +1186,7 @@ static int tw_setfeature(TW_Device_Extension *tw_dev, int parm, int param_size,
 
 		if (request_id != 0) {
 			/* unexpected request id */
-			printk(KERN_WARNING "3w-xxxx: tw_setfeature(): Unexpected request id.\n");
+;
 			return 1;
 		}
 		if (command_packet->status != 0) {
@@ -1212,14 +1212,14 @@ static int tw_reset_sequence(TW_Device_Extension *tw_dev)
 
 		error = tw_aen_drain_queue(tw_dev);
 		if (error) {
-			printk(KERN_WARNING "3w-xxxx: scsi%d: AEN drain failed, retrying.\n", tw_dev->host->host_no);
+;
 			tries++;
 			continue;
 		}
 
 		/* Check for controller errors */
 		if (tw_check_errors(tw_dev)) {
-			printk(KERN_WARNING "3w-xxxx: scsi%d: Controller errors found, retrying.\n", tw_dev->host->host_no);
+;
 			tries++;
 			continue;
 		}
@@ -1229,19 +1229,19 @@ static int tw_reset_sequence(TW_Device_Extension *tw_dev)
 	}
 
 	if (tries >= TW_MAX_RESET_TRIES) {
-		printk(KERN_WARNING "3w-xxxx: scsi%d: Controller errors, card not responding, check all cabling.\n", tw_dev->host->host_no);
+;
 		return 1;
 	}
 
 	error = tw_initconnection(tw_dev, TW_INIT_MESSAGE_CREDITS);
 	if (error) {
-		printk(KERN_WARNING "3w-xxxx: scsi%d: Connection initialization failed.\n", tw_dev->host->host_no);
+;
 		return 1;
 	}
 
 	error = tw_setfeature(tw_dev, 2, 1, &c);
 	if (error) {
-		printk(KERN_WARNING "3w-xxxx: Unable to set features for card, probable old firmware or card.\n");
+;
 	}
 
 	return 0;
@@ -1252,19 +1252,19 @@ static int tw_initialize_device_extension(TW_Device_Extension *tw_dev)
 {
 	int i, error=0;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_initialize_device_extension()\n");
+;
 
 	/* Initialize command packet buffers */
 	error = tw_allocate_memory(tw_dev, sizeof(TW_Command), 0);
 	if (error) {
-		printk(KERN_WARNING "3w-xxxx: Command packet memory allocation failed.\n");
+;
 		return 1;
 	}
 
 	/* Initialize generic buffer */
 	error = tw_allocate_memory(tw_dev, sizeof(TW_Sector), 1);
 	if (error) {
-		printk(KERN_WARNING "3w-xxxx: Generic memory allocation failed.\n");
+;
 		return 1;
 	}
 
@@ -1287,11 +1287,11 @@ static int tw_map_scsi_sg_data(struct pci_dev *pdev, struct scsi_cmnd *cmd)
 {
 	int use_sg;
 
-	dprintk(KERN_WARNING "3w-xxxx: tw_map_scsi_sg_data()\n");
+;
 
 	use_sg = scsi_dma_map(cmd);
 	if (use_sg < 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_map_scsi_sg_data(): pci_map_sg() failed.\n");
+;
 		return 0;
 	}
 
@@ -1303,7 +1303,7 @@ static int tw_map_scsi_sg_data(struct pci_dev *pdev, struct scsi_cmnd *cmd)
 
 static void tw_unmap_scsi_data(struct pci_dev *pdev, struct scsi_cmnd *cmd)
 {
-	dprintk(KERN_WARNING "3w-xxxx: tw_unmap_scsi_data()\n");
+;
 
 	if (cmd->SCp.phase == TW_PHASE_SGLIST)
 		scsi_dma_unmap(cmd);
@@ -1316,7 +1316,7 @@ static int tw_reset_device_extension(TW_Device_Extension *tw_dev)
 	struct scsi_cmnd *srb;
 	unsigned long flags = 0;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_reset_device_extension()\n");
+;
 
 	set_bit(TW_IN_RESET, &tw_dev->flags);
 	TW_DISABLE_INTERRUPTS(tw_dev);
@@ -1353,7 +1353,7 @@ static int tw_reset_device_extension(TW_Device_Extension *tw_dev)
 	spin_unlock_irqrestore(tw_dev->host->host_lock, flags);
 
 	if (tw_reset_sequence(tw_dev)) {
-		printk(KERN_WARNING "3w-xxxx: scsi%d: Reset sequence failed.\n", tw_dev->host->host_no);
+;
 		return 1;
 	}
 
@@ -1371,7 +1371,7 @@ static int tw_scsi_biosparam(struct scsi_device *sdev, struct block_device *bdev
 	int heads, sectors, cylinders;
 	TW_Device_Extension *tw_dev;
 	
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_biosparam()\n");
+;
 	tw_dev = (TW_Device_Extension *)sdev->host->hostdata;
 
 	heads = 64;
@@ -1384,7 +1384,7 @@ static int tw_scsi_biosparam(struct scsi_device *sdev, struct block_device *bdev
 		cylinders = sector_div(capacity, heads * sectors);
 	}
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_biosparam(): heads = %d, sectors = %d, cylinders = %d\n", heads, sectors, cylinders);
+;
 	geom[0] = heads;			 
 	geom[1] = sectors;
 	geom[2] = cylinders;
@@ -1402,16 +1402,16 @@ static int tw_scsi_eh_reset(struct scsi_cmnd *SCpnt)
 
 	tw_dev->num_resets++;
 
-	sdev_printk(KERN_WARNING, SCpnt->device,
-		"WARNING: Command (0x%x) timed out, resetting card.\n",
-		SCpnt->cmnd[0]);
+//	sdev_printk(KERN_WARNING, SCpnt->device,
+//		"WARNING: Command (0x%x) timed out, resetting card.\n",
+;
 
 	/* Make sure we are not issuing an ioctl or resetting from ioctl */
 	mutex_lock(&tw_dev->ioctl_lock);
 
 	/* Now reset the card and some of the device extension data */
 	if (tw_reset_device_extension(tw_dev)) {
-		printk(KERN_WARNING "3w-xxxx: scsi%d: Reset failed.\n", tw_dev->host->host_no);
+;
 		goto out;
 	}
 
@@ -1429,12 +1429,12 @@ static int tw_scsiop_inquiry(TW_Device_Extension *tw_dev, int request_id)
 	unsigned long command_que_value;
 	unsigned long param_value;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_inquiry()\n");
+;
 
 	/* Initialize command packet */
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
 	if (command_packet == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_inquiry(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 	memset(command_packet, 0, sizeof(TW_Sector));
@@ -1447,7 +1447,7 @@ static int tw_scsiop_inquiry(TW_Device_Extension *tw_dev, int request_id)
 
 	/* Now setup the param */
 	if (tw_dev->alignment_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_inquiry(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
@@ -1457,7 +1457,7 @@ static int tw_scsiop_inquiry(TW_Device_Extension *tw_dev, int request_id)
 	param->parameter_size_bytes = TW_MAX_UNITS;
 	param_value = tw_dev->alignment_physical_address[request_id];
 	if (param_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_inquiry(): Bad alignment physical address.\n");
+;
 		return 1;
 	}
 
@@ -1465,7 +1465,7 @@ static int tw_scsiop_inquiry(TW_Device_Extension *tw_dev, int request_id)
 	command_packet->byte8.param.sgl[0].length = sizeof(TW_Sector);
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_inquiry(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
 
@@ -1488,7 +1488,7 @@ static int tw_scsiop_inquiry_complete(TW_Device_Extension *tw_dev, int request_i
 	unsigned char request_buffer[36];
 	TW_Param *param;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_inquiry_complete()\n");
+;
 
 	memset(request_buffer, 0, sizeof(request_buffer));
 	request_buffer[0] = TYPE_DISK; /* Peripheral device type */
@@ -1503,7 +1503,7 @@ static int tw_scsiop_inquiry_complete(TW_Device_Extension *tw_dev, int request_i
 
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
 	if (param == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_inquiry_complete(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	is_unit_present = &(param->data[0]);
@@ -1527,7 +1527,7 @@ static int tw_scsiop_mode_sense(TW_Device_Extension *tw_dev, int request_id)
 	unsigned long command_que_value;
 	unsigned long param_value;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_mode_sense()\n");
+;
 
 	/* Only page control = 0, page code = 0x8 (cache page) supported */
 	if (tw_dev->srb[request_id]->cmnd[2] != 0x8) {
@@ -1541,7 +1541,7 @@ static int tw_scsiop_mode_sense(TW_Device_Extension *tw_dev, int request_id)
 	/* Now read firmware cache setting for this unit */
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
 	if (command_packet == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_mode_sense(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 
@@ -1556,7 +1556,7 @@ static int tw_scsiop_mode_sense(TW_Device_Extension *tw_dev, int request_id)
 
 	/* Setup the param */
 	if (tw_dev->alignment_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_mode_sense(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 
@@ -1567,7 +1567,7 @@ static int tw_scsiop_mode_sense(TW_Device_Extension *tw_dev, int request_id)
 	param->parameter_size_bytes = 1;
 	param_value = tw_dev->alignment_physical_address[request_id];
 	if (param_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_mode_sense(): Bad alignment physical address.\n");
+;
 		return 1;
 	}
 
@@ -1575,7 +1575,7 @@ static int tw_scsiop_mode_sense(TW_Device_Extension *tw_dev, int request_id)
 	command_packet->byte8.param.sgl[0].length = sizeof(TW_Sector);
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_mode_sense(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
 
@@ -1592,11 +1592,11 @@ static int tw_scsiop_mode_sense_complete(TW_Device_Extension *tw_dev, int reques
 	unsigned char *flags;
 	unsigned char request_buffer[8];
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_mode_sense_complete()\n");
+;
 
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
 	if (param == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_mode_sense_complete(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	flags = (char *)&(param->data[0]);
@@ -1626,13 +1626,13 @@ static int tw_scsiop_read_capacity(TW_Device_Extension *tw_dev, int request_id)
 	unsigned long command_que_value;
 	unsigned long param_value;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_capacity()\n");
+;
 
 	/* Initialize command packet */
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
 
 	if (command_packet == NULL) {
-		dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_capacity(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 	memset(command_packet, 0, sizeof(TW_Sector));
@@ -1646,7 +1646,7 @@ static int tw_scsiop_read_capacity(TW_Device_Extension *tw_dev, int request_id)
 
 	/* Now setup the param */
 	if (tw_dev->alignment_virtual_address[request_id] == NULL) {
-		dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_capacity(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
@@ -1657,7 +1657,7 @@ static int tw_scsiop_read_capacity(TW_Device_Extension *tw_dev, int request_id)
 	param->parameter_size_bytes = 4;
 	param_value = tw_dev->alignment_physical_address[request_id];
 	if (param_value == 0) {
-		dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_capacity(): Bad alignment physical address.\n");
+;
 		return 1;
 	}
   
@@ -1665,7 +1665,7 @@ static int tw_scsiop_read_capacity(TW_Device_Extension *tw_dev, int request_id)
 	command_packet->byte8.param.sgl[0].length = sizeof(TW_Sector);
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_capacity(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
 
@@ -1683,12 +1683,12 @@ static int tw_scsiop_read_capacity_complete(TW_Device_Extension *tw_dev, int req
 	char buff[8];
 	TW_Param *param;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_capacity_complete()\n");
+;
 
 	memset(buff, 0, sizeof(buff));
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
 	if (param == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_read_capacity_complete(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	param_data = &(param->data[0]);
@@ -1699,7 +1699,7 @@ static int tw_scsiop_read_capacity_complete(TW_Device_Extension *tw_dev, int req
 	/* Subtract one sector to fix get last sector ioctl */
 	capacity -= 1;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_capacity_complete(): Capacity = 0x%x.\n", capacity);
+;
 
 	/* Number of LBA's */
 	buff[0] = (capacity >> 24);
@@ -1728,20 +1728,20 @@ static int tw_scsiop_read_write(TW_Device_Extension *tw_dev, int request_id)
 	struct scsi_cmnd *srb;
 	struct scatterlist *sglist, *sg;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_write()\n");
+;
 
 	srb = tw_dev->srb[request_id];
 
 	sglist = scsi_sglist(srb);
 	if (!sglist) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_read_write(): Request buffer NULL.\n");
+;
 		return 1;
 	}
 
 	/* Initialize command packet */
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
 	if (command_packet == NULL) {
-		dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_write(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 
@@ -1775,7 +1775,7 @@ static int tw_scsiop_read_write(TW_Device_Extension *tw_dev, int request_id)
 	if (tw_dev->sector_count > tw_dev->max_sector_count)
 		tw_dev->max_sector_count = tw_dev->sector_count;
   
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_read_write(): lba = 0x%x num_sectors = 0x%x\n", lba, num_sectors);
+;
 	command_packet->byte8.io.lba = lba;
 	command_packet->byte6.block_count = num_sectors;
 
@@ -1796,7 +1796,7 @@ static int tw_scsiop_read_write(TW_Device_Extension *tw_dev, int request_id)
 
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		dprintk(KERN_WARNING "3w-xxxx: tw_scsiop_read_write(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
       
@@ -1811,7 +1811,7 @@ static int tw_scsiop_request_sense(TW_Device_Extension *tw_dev, int request_id)
 {
 	char request_buffer[18];
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_request_sense()\n");
+;
 
 	memset(request_buffer, 0, sizeof(request_buffer));
 	request_buffer[0] = 0x70; /* Immediate fixed format */
@@ -1836,12 +1836,12 @@ static int tw_scsiop_synchronize_cache(TW_Device_Extension *tw_dev, int request_
 	TW_Command *command_packet;
 	unsigned long command_que_value;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_synchronize_cache()\n");
+;
 
 	/* Send firmware flush command for this unit */
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
 	if (command_packet == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_synchronize_cache(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 
@@ -1856,7 +1856,7 @@ static int tw_scsiop_synchronize_cache(TW_Device_Extension *tw_dev, int request_
 	command_packet->byte6.parameter_count = 1;
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_synchronize_cache(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
 
@@ -1874,12 +1874,12 @@ static int tw_scsiop_test_unit_ready(TW_Device_Extension *tw_dev, int request_id
 	unsigned long command_que_value;
 	unsigned long param_value;
 
-	dprintk(KERN_NOTICE "3w-xxxx: tw_scsiop_test_unit_ready()\n");
+;
 
 	/* Initialize command packet */
 	command_packet = (TW_Command *)tw_dev->command_packet_virtual_address[request_id];
 	if (command_packet == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_test_unit_ready(): Bad command packet virtual address.\n");
+;
 		return 1;
 	}
 	memset(command_packet, 0, sizeof(TW_Sector));
@@ -1892,7 +1892,7 @@ static int tw_scsiop_test_unit_ready(TW_Device_Extension *tw_dev, int request_id
 
 	/* Now setup the param */
 	if (tw_dev->alignment_virtual_address[request_id] == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_test_unit_ready(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
@@ -1902,7 +1902,7 @@ static int tw_scsiop_test_unit_ready(TW_Device_Extension *tw_dev, int request_id
 	param->parameter_size_bytes = TW_MAX_UNITS;
 	param_value = tw_dev->alignment_physical_address[request_id];
 	if (param_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_test_unit_ready(): Bad alignment physical address.\n");
+;
 		return 1;
 	}
 
@@ -1910,7 +1910,7 @@ static int tw_scsiop_test_unit_ready(TW_Device_Extension *tw_dev, int request_id
 	command_packet->byte8.param.sgl[0].length = sizeof(TW_Sector);
 	command_que_value = tw_dev->command_packet_physical_address[request_id];
 	if (command_que_value == 0) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_test_unit_ready(): Bad command packet physical address.\n");
+;
 		return 1;
 	}
 
@@ -1926,11 +1926,11 @@ static int tw_scsiop_test_unit_ready_complete(TW_Device_Extension *tw_dev, int r
 	unsigned char *is_unit_present;
 	TW_Param *param;
 
-	dprintk(KERN_WARNING "3w-xxxx: tw_scsiop_test_unit_ready_complete()\n");
+;
 
 	param = (TW_Param *)tw_dev->alignment_virtual_address[request_id];
 	if (param == NULL) {
-		printk(KERN_WARNING "3w-xxxx: tw_scsiop_test_unit_ready_complete(): Bad alignment virtual address.\n");
+;
 		return 1;
 	}
 	is_unit_present = &(param->data[0]);
@@ -1975,35 +1975,35 @@ static int tw_scsi_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_c
 		case READ_6:
 		case WRITE_10:
 		case WRITE_6:
-			dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_queue(): caught READ/WRITE.\n");
+;
 			retval = tw_scsiop_read_write(tw_dev, request_id);
 			break;
 		case TEST_UNIT_READY:
-			dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_queue(): caught TEST_UNIT_READY.\n");
+;
 			retval = tw_scsiop_test_unit_ready(tw_dev, request_id);
 			break;
 		case INQUIRY:
-			dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_queue(): caught INQUIRY.\n");
+;
 			retval = tw_scsiop_inquiry(tw_dev, request_id);
 			break;
 		case READ_CAPACITY:
-			dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_queue(): caught READ_CAPACITY.\n");
+;
 			retval = tw_scsiop_read_capacity(tw_dev, request_id);
 			break;
 	        case REQUEST_SENSE:
-		        dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_queue(): caught REQUEST_SENSE.\n");
+;
 		        retval = tw_scsiop_request_sense(tw_dev, request_id);
 		        break;
 		case MODE_SENSE:
-			dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_queue(): caught MODE_SENSE.\n");
+;
 			retval = tw_scsiop_mode_sense(tw_dev, request_id);
 			break;
 		case SYNCHRONIZE_CACHE:
-			dprintk(KERN_NOTICE "3w-xxxx: tw_scsi_queue(): caught SYNCHRONIZE_CACHE.\n");
+;
 			retval = tw_scsiop_synchronize_cache(tw_dev, request_id);
 			break;
 		case TW_IOCTL:
-			printk(KERN_WARNING "3w-xxxx: SCSI_IOCTL_SEND_COMMAND deprecated, please update your 3ware tools.\n");
+;
 			break;
 		default:
 			printk(KERN_NOTICE "3w-xxxx: scsi%d: Unknown scsi opcode: 0x%x\n", tw_dev->host->host_no, *command);
@@ -2054,7 +2054,7 @@ static irqreturn_t tw_interrupt(int irq, void *dev_instance)
 
 	/* Check controller for errors */
 	if (tw_check_bits(status_reg_value)) {
-		dprintk(KERN_WARNING "3w-xxxx: tw_interrupt(): Unexpected bits.\n");
+;
 		if (tw_decode_bits(tw_dev, status_reg_value, 1)) {
 			TW_CLEAR_ALL_INTERRUPTS(tw_dev);
 			goto tw_interrupt_bail;
@@ -2063,18 +2063,18 @@ static irqreturn_t tw_interrupt(int irq, void *dev_instance)
 
 	/* Handle host interrupt */
 	if (status_reg_value & TW_STATUS_HOST_INTERRUPT) {
-		dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): Received host interrupt.\n");
+;
 		TW_CLEAR_HOST_INTERRUPT(tw_dev);
 	}
 
 	/* Handle attention interrupt */
 	if (status_reg_value & TW_STATUS_ATTENTION_INTERRUPT) {
-		dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): Received attention interrupt.\n");
+;
 		TW_CLEAR_ATTENTION_INTERRUPT(tw_dev);
 		tw_state_request_start(tw_dev, &request_id);
 		error = tw_aen_read_queue(tw_dev, request_id);
 		if (error) {
-			printk(KERN_WARNING "3w-xxxx: scsi%d: Error reading aen queue.\n", tw_dev->host->host_no);
+;
 			tw_dev->state[request_id] = TW_S_COMPLETED;
 			tw_state_request_finish(tw_dev, request_id);
 		}
@@ -2086,7 +2086,7 @@ static irqreturn_t tw_interrupt(int irq, void *dev_instance)
 		while (tw_dev->pending_request_count > 0) {
 			request_id = tw_dev->pending_queue[tw_dev->pending_head];
 			if (tw_dev->state[request_id] != TW_S_PENDING) {
-				printk(KERN_WARNING "3w-xxxx: scsi%d: Found request id that wasn't pending.\n", tw_dev->host->host_no);
+;
 				break;
 			}
 			if (tw_post_command_packet(tw_dev, request_id)==0) {
@@ -2129,21 +2129,21 @@ static irqreturn_t tw_interrupt(int irq, void *dev_instance)
 			/* Check for correct state */
 			if (tw_dev->state[request_id] != TW_S_POSTED) {
 				if (tw_dev->srb[request_id] != NULL) {
-					printk(KERN_WARNING "3w-xxxx: scsi%d: Received a request id that wasn't posted.\n", tw_dev->host->host_no);
+;
 					error = 1;
 				}
 			}
 
-			dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): Response queue request id: %d.\n", request_id);
+;
 
 			/* Check for internal command completion */
 			if (tw_dev->srb[request_id] == NULL) {
-				dprintk(KERN_WARNING "3w-xxxx: tw_interrupt(): Found internally posted command.\n");
+;
 				/* Check for chrdev ioctl completion */
 				if (request_id != tw_dev->chrdev_request_id) {
 					retval = tw_aen_complete(tw_dev, request_id);
 					if (retval) {
-						printk(KERN_WARNING "3w-xxxx: scsi%d: Error completing aen.\n", tw_dev->host->host_no);
+;
 					}
 				} else {
 					tw_dev->chrdev_request_id = TW_IOCTL_CHRDEV_FREE;
@@ -2153,33 +2153,33 @@ static irqreturn_t tw_interrupt(int irq, void *dev_instance)
 				switch (tw_dev->srb[request_id]->cmnd[0]) {
 				case READ_10:
 				case READ_6:
-					dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): caught READ_10/READ_6\n");
+;
 					break;
 				case WRITE_10:
 				case WRITE_6:
-					dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): caught WRITE_10/WRITE_6\n");
+;
 					break;
 				case TEST_UNIT_READY:
-					dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): caught TEST_UNIT_READY\n");
+;
 					error = tw_scsiop_test_unit_ready_complete(tw_dev, request_id);
 					break;
 				case INQUIRY:
-					dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): caught INQUIRY\n");
+;
 					error = tw_scsiop_inquiry_complete(tw_dev, request_id);
 					break;
 				case READ_CAPACITY:
-					dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): caught READ_CAPACITY\n");
+;
 					error = tw_scsiop_read_capacity_complete(tw_dev, request_id);
 					break;
 				case MODE_SENSE:
-					dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): caught MODE_SENSE\n");
+;
 					error = tw_scsiop_mode_sense_complete(tw_dev, request_id);
 					break;
 				case SYNCHRONIZE_CACHE:
-					dprintk(KERN_NOTICE "3w-xxxx: tw_interrupt(): caught SYNCHRONIZE_CACHE\n");
+;
 					break;
 				default:
-					printk(KERN_WARNING "3w-xxxx: case slip in tw_interrupt()\n");
+;
 					error = 1;
 				}
 
@@ -2208,7 +2208,7 @@ static irqreturn_t tw_interrupt(int irq, void *dev_instance)
 			/* Check for valid status after each drain */
 			status_reg_value = inl(TW_STATUS_REG_ADDR(tw_dev));
 			if (tw_check_bits(status_reg_value)) {
-				dprintk(KERN_WARNING "3w-xxxx: tw_interrupt(): Unexpected bits.\n");
+;
 				if (tw_decode_bits(tw_dev, status_reg_value, 1)) {
 					TW_CLEAR_ALL_INTERRUPTS(tw_dev);
 					goto tw_interrupt_bail;
@@ -2231,13 +2231,13 @@ static void __tw_shutdown(TW_Device_Extension *tw_dev)
 	/* Free up the IRQ */
 	free_irq(tw_dev->tw_pci_dev->irq, tw_dev);
 
-	printk(KERN_WARNING "3w-xxxx: Shutting down host %d.\n", tw_dev->host->host_no);
+;
 
 	/* Tell the card we are shutting down */
 	if (tw_initconnection(tw_dev, 1)) {
-		printk(KERN_WARNING "3w-xxxx: Connection shutdown failed.\n");
+;
 	} else {
-		printk(KERN_WARNING "3w-xxxx: Shutdown complete.\n");
+;
 	}
 
 	/* Clear all interrupts just before exit */
@@ -2289,7 +2289,7 @@ static int __devinit tw_probe(struct pci_dev *pdev, const struct pci_device_id *
 
 	retval = pci_enable_device(pdev);
 	if (retval) {
-		printk(KERN_WARNING "3w-xxxx: Failed to enable pci device.");
+;
 		goto out_disable_device;
 	}
 
@@ -2297,13 +2297,13 @@ static int __devinit tw_probe(struct pci_dev *pdev, const struct pci_device_id *
 
 	retval = pci_set_dma_mask(pdev, TW_DMA_MASK);
 	if (retval) {
-		printk(KERN_WARNING "3w-xxxx: Failed to set dma mask.");
+;
 		goto out_disable_device;
 	}
 
 	host = scsi_host_alloc(&driver_template, sizeof(TW_Device_Extension));
 	if (!host) {
-		printk(KERN_WARNING "3w-xxxx: Failed to allocate memory for device extension.");
+;
 		retval = -ENOMEM;
 		goto out_disable_device;
 	}
@@ -2314,21 +2314,21 @@ static int __devinit tw_probe(struct pci_dev *pdev, const struct pci_device_id *
 	tw_dev->tw_pci_dev = pdev;
 
 	if (tw_initialize_device_extension(tw_dev)) {
-		printk(KERN_WARNING "3w-xxxx: Failed to initialize device extension.");
+;
 		goto out_free_device_extension;
 	}
 
 	/* Request IO regions */
 	retval = pci_request_regions(pdev, "3w-xxxx");
 	if (retval) {
-		printk(KERN_WARNING "3w-xxxx: Failed to get mem region.");
+;
 		goto out_free_device_extension;
 	}
 
 	/* Save base address */
 	tw_dev->base_addr = pci_resource_start(pdev, 0);
 	if (!tw_dev->base_addr) {
-		printk(KERN_WARNING "3w-xxxx: Failed to get io address.");
+;
 		goto out_release_mem_region;
 	}
 
@@ -2350,18 +2350,18 @@ static int __devinit tw_probe(struct pci_dev *pdev, const struct pci_device_id *
 	/* Register the card with the kernel SCSI layer */
 	retval = scsi_add_host(host, &pdev->dev);
 	if (retval) {
-		printk(KERN_WARNING "3w-xxxx: scsi add host failed");
+;
 		goto out_release_mem_region;
 	}
 
 	pci_set_drvdata(pdev, host);
 
-	printk(KERN_WARNING "3w-xxxx: scsi%d: Found a 3ware Storage Controller at 0x%x, IRQ: %d.\n", host->host_no, tw_dev->base_addr, pdev->irq);
+;
 
 	/* Now setup the interrupt handler */
 	retval = request_irq(pdev->irq, tw_interrupt, IRQF_SHARED, "3w-xxxx", tw_dev);
 	if (retval) {
-		printk(KERN_WARNING "3w-xxxx: Error requesting IRQ.");
+;
 		goto out_remove_host;
 	}
 
@@ -2376,7 +2376,7 @@ static int __devinit tw_probe(struct pci_dev *pdev, const struct pci_device_id *
 
 	if (twe_major == -1) {
 		if ((twe_major = register_chrdev (0, "twe", &tw_fops)) < 0)
-			printk(KERN_WARNING "3w-xxxx: Failed to register character device.");
+;
 	}
 	return 0;
 
@@ -2443,7 +2443,7 @@ static struct pci_driver tw_driver = {
 /* This function is called on driver initialization */
 static int __init tw_init(void)
 {
-	printk(KERN_WARNING "3ware Storage Controller device driver for Linux v%s.\n", TW_DRIVER_VERSION);
+;
 
 	return pci_register_driver(&tw_driver);
 } /* End tw_init() */

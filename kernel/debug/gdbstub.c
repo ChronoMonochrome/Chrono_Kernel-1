@@ -433,7 +433,7 @@ static struct task_struct *getthread(struct pt_regs *regs, int tid)
 			return idle_task(-tid - 2);
 	}
 	if (tid <= 0) {
-		printk(KERN_ERR "KGDB: Internal thread select error\n");
+;
 		dump_stack();
 		return NULL;
 	}
@@ -667,7 +667,7 @@ static int gdb_cmd_reboot(struct kgdb_state *ks)
 {
 	/* For now, only honor R0 */
 	if (strcmp(remcom_in_buffer, "R0") == 0) {
-		printk(KERN_CRIT "Executing emergency reboot\n");
+;
 		strcpy(remcom_out_buffer, "OK");
 		put_packet(remcom_out_buffer);
 

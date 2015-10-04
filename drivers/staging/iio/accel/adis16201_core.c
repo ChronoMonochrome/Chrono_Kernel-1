@@ -277,8 +277,8 @@ static int adis16201_initial_setup(struct adis16201_state *st)
 		}
 	}
 
-	printk(KERN_INFO DRIVER_NAME ": at CS%d (irq %d)\n",
-			st->us->chip_select, st->us->irq);
+//	printk(KERN_INFO DRIVER_NAME ": at CS%d (irq %d)\n",
+;
 
 err_ret:
 	return ret;
@@ -517,7 +517,7 @@ static int __devinit adis16201_probe(struct spi_device *spi)
 					  adis16201_channels,
 					  ARRAY_SIZE(adis16201_channels));
 	if (ret) {
-		printk(KERN_ERR "failed to initialize the ring\n");
+;
 		goto error_unreg_ring_funcs;
 	}
 

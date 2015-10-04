@@ -205,7 +205,7 @@ static int clear_codec(struct hda_codec *codec)
 
 	err = snd_hda_codec_reset(codec);
 	if (err < 0) {
-		snd_printk(KERN_ERR "The codec is being used, can't free.\n");
+;
 		return err;
 	}
 	clear_hwdep_elements(codec);
@@ -217,11 +217,11 @@ static int reconfig_codec(struct hda_codec *codec)
 	int err;
 
 	snd_hda_power_up(codec);
-	snd_printk(KERN_INFO "hda-codec: reconfiguring\n");
+;
 	err = snd_hda_codec_reset(codec);
 	if (err < 0) {
-		snd_printk(KERN_ERR
-			   "The codec is being used, can't reconfigure.\n");
+//		snd_printk(KERN_ERR
+;
 		goto error;
 	}
 	err = snd_hda_codec_configure(codec);
@@ -794,8 +794,8 @@ int snd_hda_load_patch(struct hda_bus *bus, const char *patch)
 		return -ENODEV;
 	err = request_firmware(&fw, patch, dev);
 	if (err < 0) {
-		printk(KERN_ERR "hda-codec: Cannot load the patch '%s'\n",
-		       patch);
+//		printk(KERN_ERR "hda-codec: Cannot load the patch '%s'\n",
+;
 		return err;
 	}
 

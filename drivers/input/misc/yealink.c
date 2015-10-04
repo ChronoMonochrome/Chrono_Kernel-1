@@ -992,8 +992,8 @@ static int __init yealink_dev_init(void)
 {
 	int ret = usb_register(&yealink_driver);
 	if (ret == 0)
-		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-		       DRIVER_DESC "\n");
+//		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return ret;
 }
 

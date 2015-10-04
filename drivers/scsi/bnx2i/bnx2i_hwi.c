@@ -111,13 +111,13 @@ static void bnx2i_iscsi_license_error(struct bnx2i_hba *hba, u32 error_code)
 {
 	if (error_code == ISCSI_KCQE_COMPLETION_STATUS_ISCSI_NOT_SUPPORTED)
 		/* iSCSI offload not supported on this device */
-		printk(KERN_ERR "bnx2i: iSCSI not supported, dev=%s\n",
-				hba->netdev->name);
+//		printk(KERN_ERR "bnx2i: iSCSI not supported, dev=%s\n",
+;
 	if (error_code == ISCSI_KCQE_COMPLETION_STATUS_LOM_ISCSI_NOT_ENABLED)
 		/* iSCSI offload not supported on this LOM device */
-		printk(KERN_ERR "bnx2i: LOM is not enable to "
-				"offload iSCSI connections, dev=%s\n",
-				hba->netdev->name);
+//		printk(KERN_ERR "bnx2i: LOM is not enable to "
+//				"offload iSCSI connections, dev=%s\n",
+;
 	set_bit(ADAPTER_STATE_INIT_FAILED, &hba->adapter_state);
 }
 
@@ -570,7 +570,7 @@ int bnx2i_send_iscsi_nopout(struct bnx2i_conn *bnx2i_conn,
 	nopout_wqe->data_length = data_len;
 	if (data_len) {
 		/* handle payload data, not required in first release */
-		printk(KERN_ALERT "NOPOUT: WARNING!! payload len != 0\n");
+;
 	} else {
 		nopout_wqe->bd_list_addr_lo = (u32)
 					bnx2i_conn->hba->mp_bd_dma;
@@ -672,13 +672,13 @@ void bnx2i_update_iscsi_conn(struct iscsi_conn *conn)
 	update_wqe->exp_stat_sn = conn->exp_statsn;
 	update_wqe->max_outstanding_r2ts = conn->session->max_r2t;
 	update_wqe->session_error_recovery_level = conn->session->erl;
-	iscsi_conn_printk(KERN_ALERT, conn,
-			  "bnx2i: conn update - MBL 0x%x FBL 0x%x"
-			  "MRDSL_I 0x%x MRDSL_T 0x%x \n",
-			  update_wqe->max_burst_length,
-			  update_wqe->first_burst_length,
-			  update_wqe->max_recv_pdu_length,
-			  update_wqe->max_send_pdu_length);
+//	iscsi_conn_printk(KERN_ALERT, conn,
+//			  "bnx2i: conn update - MBL 0x%x FBL 0x%x"
+//			  "MRDSL_I 0x%x MRDSL_T 0x%x \n",
+//			  update_wqe->max_burst_length,
+//			  update_wqe->first_burst_length,
+//			  update_wqe->max_recv_pdu_length,
+;
 
 	kwqe_arr[0] = (struct kwqe *) update_wqe;
 	if (hba->cnic && hba->cnic->submit_kwqes)
@@ -697,13 +697,13 @@ void bnx2i_ep_ofld_timer(unsigned long data)
 	struct bnx2i_endpoint *ep = (struct bnx2i_endpoint *) data;
 
 	if (ep->state == EP_STATE_OFLD_START) {
-		printk(KERN_ALERT "ofld_timer: CONN_OFLD timeout\n");
+;
 		ep->state = EP_STATE_OFLD_FAILED;
 	} else if (ep->state == EP_STATE_DISCONN_START) {
-		printk(KERN_ALERT "ofld_timer: CONN_DISCON timeout\n");
+;
 		ep->state = EP_STATE_DISCONN_TIMEDOUT;
 	} else if (ep->state == EP_STATE_CLEANUP_START) {
-		printk(KERN_ALERT "ofld_timer: CONN_CLEANUP timeout\n");
+;
 		ep->state = EP_STATE_CLEANUP_FAILED;
 	}
 
@@ -1070,8 +1070,8 @@ int bnx2i_alloc_qp_resc(struct bnx2i_hba *hba, struct bnx2i_endpoint *ep)
 		dma_alloc_coherent(&hba->pcidev->dev, ep->qp.sq_pgtbl_size,
 				   &ep->qp.sq_pgtbl_phys, GFP_KERNEL);
 	if (!ep->qp.sq_pgtbl_virt) {
-		printk(KERN_ALERT "bnx2i: unable to alloc SQ PT mem (%d)\n",
-				  ep->qp.sq_pgtbl_size);
+//		printk(KERN_ALERT "bnx2i: unable to alloc SQ PT mem (%d)\n",
+;
 		goto mem_alloc_err;
 	}
 
@@ -1080,8 +1080,8 @@ int bnx2i_alloc_qp_resc(struct bnx2i_hba *hba, struct bnx2i_endpoint *ep)
 		dma_alloc_coherent(&hba->pcidev->dev, ep->qp.sq_mem_size,
 				   &ep->qp.sq_phys, GFP_KERNEL);
 	if (!ep->qp.sq_virt) {
-		printk(KERN_ALERT "bnx2i: unable to alloc SQ BD memory %d\n",
-				  ep->qp.sq_mem_size);
+//		printk(KERN_ALERT "bnx2i: unable to alloc SQ BD memory %d\n",
+;
 		goto mem_alloc_err;
 	}
 
@@ -1107,8 +1107,8 @@ int bnx2i_alloc_qp_resc(struct bnx2i_hba *hba, struct bnx2i_endpoint *ep)
 		dma_alloc_coherent(&hba->pcidev->dev, ep->qp.cq_pgtbl_size,
 				   &ep->qp.cq_pgtbl_phys, GFP_KERNEL);
 	if (!ep->qp.cq_pgtbl_virt) {
-		printk(KERN_ALERT "bnx2i: unable to alloc CQ PT memory %d\n",
-				  ep->qp.cq_pgtbl_size);
+//		printk(KERN_ALERT "bnx2i: unable to alloc CQ PT memory %d\n",
+;
 		goto mem_alloc_err;
 	}
 
@@ -1117,8 +1117,8 @@ int bnx2i_alloc_qp_resc(struct bnx2i_hba *hba, struct bnx2i_endpoint *ep)
 		dma_alloc_coherent(&hba->pcidev->dev, ep->qp.cq_mem_size,
 				   &ep->qp.cq_phys, GFP_KERNEL);
 	if (!ep->qp.cq_virt) {
-		printk(KERN_ALERT "bnx2i: unable to alloc CQ BD memory %d\n",
-				  ep->qp.cq_mem_size);
+//		printk(KERN_ALERT "bnx2i: unable to alloc CQ BD memory %d\n",
+;
 		goto mem_alloc_err;
 	}
 	memset(ep->qp.cq_virt, 0x00, ep->qp.cq_mem_size);
@@ -1150,8 +1150,8 @@ int bnx2i_alloc_qp_resc(struct bnx2i_hba *hba, struct bnx2i_endpoint *ep)
 		dma_alloc_coherent(&hba->pcidev->dev, ep->qp.rq_pgtbl_size,
 				   &ep->qp.rq_pgtbl_phys, GFP_KERNEL);
 	if (!ep->qp.rq_pgtbl_virt) {
-		printk(KERN_ALERT "bnx2i: unable to alloc RQ PT mem %d\n",
-				  ep->qp.rq_pgtbl_size);
+//		printk(KERN_ALERT "bnx2i: unable to alloc RQ PT mem %d\n",
+;
 		goto mem_alloc_err;
 	}
 
@@ -1160,8 +1160,8 @@ int bnx2i_alloc_qp_resc(struct bnx2i_hba *hba, struct bnx2i_endpoint *ep)
 		dma_alloc_coherent(&hba->pcidev->dev, ep->qp.rq_mem_size,
 				   &ep->qp.rq_phys, GFP_KERNEL);
 	if (!ep->qp.rq_virt) {
-		printk(KERN_ALERT "bnx2i: unable to alloc RQ BD memory %d\n",
-				  ep->qp.rq_mem_size);
+//		printk(KERN_ALERT "bnx2i: unable to alloc RQ BD memory %d\n",
+;
 		goto mem_alloc_err;
 	}
 
@@ -1393,14 +1393,14 @@ static int bnx2i_process_scsi_cmd_resp(struct iscsi_session *session,
 			goto done;
 
 		if (datalen > BNX2I_RQ_WQE_SIZE) {
-			iscsi_conn_printk(KERN_ERR, conn,
-					  "sense data len %d > RQ sz\n",
-					  datalen);
+//			iscsi_conn_printk(KERN_ERR, conn,
+//					  "sense data len %d > RQ sz\n",
+;
 			datalen = BNX2I_RQ_WQE_SIZE;
 		} else if (datalen > ISCSI_DEF_MAX_RECV_SEG_LEN) {
-			iscsi_conn_printk(KERN_ERR, conn,
-					  "sense data len %d > conn data\n",
-					  datalen);
+//			iscsi_conn_printk(KERN_ERR, conn,
+//					  "sense data len %d > conn data\n",
+;
 			datalen = ISCSI_DEF_MAX_RECV_SEG_LEN;
 		}
 
@@ -1746,8 +1746,8 @@ static void bnx2i_process_async_mesg(struct iscsi_session *session,
 	async_event = async_cqe->async_event;
 
 	if (async_event == ISCSI_ASYNC_MSG_SCSI_EVENT) {
-		iscsi_conn_printk(KERN_ALERT, bnx2i_conn->cls_conn->dd_data,
-				  "async: scsi events not supported\n");
+//		iscsi_conn_printk(KERN_ALERT, bnx2i_conn->cls_conn->dd_data,
+;
 		return;
 	}
 
@@ -1832,8 +1832,8 @@ static void bnx2i_process_cmd_cleanup_resp(struct iscsi_session *session,
 	task = iscsi_itt_to_task(conn,
 			cmd_clean_rsp->itt & ISCSI_CLEANUP_RESPONSE_INDEX);
 	if (!task)
-		printk(KERN_ALERT "bnx2i: cmd clean ITT %x not active\n",
-			cmd_clean_rsp->itt & ISCSI_CLEANUP_RESPONSE_INDEX);
+//		printk(KERN_ALERT "bnx2i: cmd clean ITT %x not active\n",
+;
 	spin_unlock(&session->lock);
 	complete(&bnx2i_conn->cmd_cleanup_cmpl);
 }
@@ -1862,10 +1862,10 @@ static void bnx2i_process_new_cqes(struct bnx2i_conn *bnx2i_conn)
 		if (unlikely(test_bit(ISCSI_SUSPEND_BIT, &conn->suspend_rx))) {
 			if (nopin->op_code == ISCSI_OP_NOOP_IN &&
 			    nopin->itt == (u16) RESERVED_ITT) {
-				printk(KERN_ALERT "bnx2i: Unsolicited "
-					"NOP-In detected for suspended "
-					"connection dev=%s!\n",
-					bnx2i_conn->hba->netdev->name);
+//				printk(KERN_ALERT "bnx2i: Unsolicited "
+//					"NOP-In detected for suspended "
+//					"connection dev=%s!\n",
+;
 				bnx2i_unsol_pdu_adjust_rq(bnx2i_conn);
 				goto cqe_out;
 			}
@@ -1918,8 +1918,8 @@ static void bnx2i_process_new_cqes(struct bnx2i_conn *bnx2i_conn)
 						       qp->cq_cons_qe);
 			break;
 		default:
-			printk(KERN_ALERT "bnx2i: unknown opcode 0x%x\n",
-					  nopin->op_code);
+//			printk(KERN_ALERT "bnx2i: unknown opcode 0x%x\n",
+;
 		}
 		if (!tgt_async_msg)
 			bnx2i_conn->ep->num_active_cmds--;
@@ -1960,11 +1960,11 @@ static void bnx2i_fastpath_notification(struct bnx2i_hba *hba,
 	bnx2i_conn = bnx2i_get_conn_from_id(hba, iscsi_cid);
 
 	if (!bnx2i_conn) {
-		printk(KERN_ALERT "cid #%x not valid\n", iscsi_cid);
+;
 		return;
 	}
 	if (!bnx2i_conn->ep) {
-		printk(KERN_ALERT "cid #%x - ep not bound\n", iscsi_cid);
+;
 		return;
 	}
 	bnx2i_process_new_cqes(bnx2i_conn);
@@ -1990,16 +1990,16 @@ static void bnx2i_process_update_conn_cmpl(struct bnx2i_hba *hba,
 	conn = bnx2i_get_conn_from_id(hba, iscsi_cid);
 
 	if (!conn) {
-		printk(KERN_ALERT "conn_update: cid %x not valid\n", iscsi_cid);
+;
 		return;
 	}
 	if (!conn->ep) {
-		printk(KERN_ALERT "cid %x does not have ep bound\n", iscsi_cid);
+;
 		return;
 	}
 
 	if (update_kcqe->completion_status) {
-		printk(KERN_ALERT "request failed cid %x\n", iscsi_cid);
+;
 		conn->ep->state = EP_STATE_ULP_UPDATE_FAILED;
 	} else
 		conn->ep->state = EP_STATE_ULP_UPDATE_COMPL;
@@ -2041,12 +2041,12 @@ static void bnx2i_process_tcp_error(struct bnx2i_hba *hba,
 	bnx2i_conn = bnx2i_get_conn_from_id(hba, iscsi_cid);
 
 	if (!bnx2i_conn) {
-		printk(KERN_ALERT "bnx2i - cid 0x%x not valid\n", iscsi_cid);
+;
 		return;
 	}
 
-	printk(KERN_ALERT "bnx2i - cid 0x%x had TCP errors, error code 0x%x\n",
-			  iscsi_cid, tcp_err->completion_status);
+//	printk(KERN_ALERT "bnx2i - cid 0x%x had TCP errors, error code 0x%x\n",
+;
 	bnx2i_recovery_que_add_conn(bnx2i_conn->hba, bnx2i_conn);
 }
 
@@ -2079,7 +2079,7 @@ static void bnx2i_process_iscsi_error(struct bnx2i_hba *hba,
 	iscsi_cid = iscsi_err->iscsi_conn_id;
 	bnx2i_conn = bnx2i_get_conn_from_id(hba, iscsi_cid);
 	if (!bnx2i_conn) {
-		printk(KERN_ALERT "bnx2i - cid 0x%x not valid\n", iscsi_cid);
+;
 		return;
 	}
 
@@ -2216,31 +2216,31 @@ static void bnx2i_process_iscsi_error(struct bnx2i_hba *hba,
 		strcpy(additional_notice, "urgent flag error");
 		break;
 	default:
-		printk(KERN_ALERT "iscsi_err - unknown err %x\n",
-				  iscsi_err->completion_status);
+//		printk(KERN_ALERT "iscsi_err - unknown err %x\n",
+;
 	}
 
 	if (need_recovery) {
-		iscsi_conn_printk(KERN_ALERT,
-				  bnx2i_conn->cls_conn->dd_data,
-				  "bnx2i: %s - %s\n",
-				  message, additional_notice);
+//		iscsi_conn_printk(KERN_ALERT,
+//				  bnx2i_conn->cls_conn->dd_data,
+//				  "bnx2i: %s - %s\n",
+;
 
-		iscsi_conn_printk(KERN_ALERT,
-				  bnx2i_conn->cls_conn->dd_data,
-				  "conn_err - hostno %d conn %p, "
-				  "iscsi_cid %x cid %x\n",
-				  bnx2i_conn->hba->shost->host_no,
-				  bnx2i_conn, bnx2i_conn->ep->ep_iscsi_cid,
-				  bnx2i_conn->ep->ep_cid);
+//		iscsi_conn_printk(KERN_ALERT,
+//				  bnx2i_conn->cls_conn->dd_data,
+//				  "conn_err - hostno %d conn %p, "
+//				  "iscsi_cid %x cid %x\n",
+//				  bnx2i_conn->hba->shost->host_no,
+//				  bnx2i_conn, bnx2i_conn->ep->ep_iscsi_cid,
+;
 		bnx2i_recovery_que_add_conn(bnx2i_conn->hba, bnx2i_conn);
 	} else
 		if (!test_and_set_bit(iscsi_err->completion_status,
 				      (void *) &bnx2i_conn->violation_notified))
-			iscsi_conn_printk(KERN_ALERT,
-					  bnx2i_conn->cls_conn->dd_data,
-					  "bnx2i: %s - %s\n",
-					  message, additional_notice);
+//			iscsi_conn_printk(KERN_ALERT,
+//					  bnx2i_conn->cls_conn->dd_data,
+//					  "bnx2i: %s - %s\n",
+;
 }
 
 
@@ -2258,18 +2258,18 @@ static void bnx2i_process_conn_destroy_cmpl(struct bnx2i_hba *hba,
 
 	ep = bnx2i_find_ep_in_destroy_list(hba, conn_destroy->iscsi_conn_id);
 	if (!ep) {
-		printk(KERN_ALERT "bnx2i_conn_destroy_cmpl: no pending "
-				  "offload request, unexpected complection\n");
+//		printk(KERN_ALERT "bnx2i_conn_destroy_cmpl: no pending "
+;
 		return;
 	}
 
 	if (hba != ep->hba) {
-		printk(KERN_ALERT "conn destroy- error hba mis-match\n");
+;
 		return;
 	}
 
 	if (conn_destroy->completion_status) {
-		printk(KERN_ALERT "conn_destroy_cmpl: op failed\n");
+;
 		ep->state = EP_STATE_CLEANUP_FAILED;
 	} else
 		ep->state = EP_STATE_CLEANUP_CMPL;
@@ -2294,12 +2294,12 @@ static void bnx2i_process_ofld_cmpl(struct bnx2i_hba *hba,
 
 	ep = bnx2i_find_ep_in_ofld_list(hba, ofld_kcqe->iscsi_conn_id);
 	if (!ep) {
-		printk(KERN_ALERT "ofld_cmpl: no pend offload request\n");
+;
 		return;
 	}
 
 	if (hba != ep->hba) {
-		printk(KERN_ALERT "ofld_cmpl: error hba mis-match\n");
+;
 		return;
 	}
 
@@ -2307,21 +2307,21 @@ static void bnx2i_process_ofld_cmpl(struct bnx2i_hba *hba,
 		ep->state = EP_STATE_OFLD_FAILED;
 		if (ofld_kcqe->completion_status ==
 		    ISCSI_KCQE_COMPLETION_STATUS_CTX_ALLOC_FAILURE)
-			printk(KERN_ALERT "bnx2i (%s): ofld1 cmpl - unable "
-				"to allocate iSCSI context resources\n",
-				hba->netdev->name);
+//			printk(KERN_ALERT "bnx2i (%s): ofld1 cmpl - unable "
+//				"to allocate iSCSI context resources\n",
+;
 		else if (ofld_kcqe->completion_status ==
 			 ISCSI_KCQE_COMPLETION_STATUS_INVALID_OPCODE)
-			printk(KERN_ALERT "bnx2i (%s): ofld1 cmpl - invalid "
-				"opcode\n", hba->netdev->name);
+//			printk(KERN_ALERT "bnx2i (%s): ofld1 cmpl - invalid "
+;
 		else if (ofld_kcqe->completion_status ==
 			ISCSI_KCQE_COMPLETION_STATUS_CID_BUSY)
 			/* error status code valid only for 5771x chipset */
 			ep->state = EP_STATE_OFLD_FAILED_CID_BUSY;
 		else
-			printk(KERN_ALERT "bnx2i (%s): ofld1 cmpl - invalid "
-				"error code %d\n", hba->netdev->name,
-				ofld_kcqe->completion_status);
+//			printk(KERN_ALERT "bnx2i (%s): ofld1 cmpl - invalid "
+//				"error code %d\n", hba->netdev->name,
+;
 	} else {
 		ep->state = EP_STATE_OFLD_COMPL;
 		cid_addr = ofld_kcqe->iscsi_conn_context_id;
@@ -2364,11 +2364,11 @@ static void bnx2i_indicate_kcqe(void *context, struct kcqe *kcqe[],
 			else {
 				set_bit(ADAPTER_STATE_UP, &hba->adapter_state);
 				bnx2i_get_link_state(hba);
-				printk(KERN_INFO "bnx2i [%.2x:%.2x.%.2x]: "
-						 "ISCSI_INIT passed\n",
-						 (u8)hba->pcidev->bus->number,
-						 hba->pci_devno,
-						 (u8)hba->pci_func);
+//				printk(KERN_INFO "bnx2i [%.2x:%.2x.%.2x]: "
+//						 "ISCSI_INIT passed\n",
+//						 (u8)hba->pcidev->bus->number,
+//						 hba->pci_devno,
+;
 
 
 			}
@@ -2379,8 +2379,8 @@ static void bnx2i_indicate_kcqe(void *context, struct kcqe *kcqe[],
 		else if (ikcqe->op_code == ISCSI_KCQE_OPCODE_TCP_ERROR)
 			bnx2i_process_tcp_error(hba, ikcqe);
 		else
-			printk(KERN_ALERT "bnx2i: unknown opcode 0x%x\n",
-					  ikcqe->op_code);
+//			printk(KERN_ALERT "bnx2i: unknown opcode 0x%x\n",
+;
 	}
 }
 
@@ -2525,7 +2525,7 @@ static int bnx2i_send_nl_mesg(void *context, u32 msg_type,
 	rc = iscsi_offload_mesg(hba->shost, &bnx2i_iscsi_transport,
 				msg_type, buf, buflen);
 	if (rc)
-		printk(KERN_ALERT "bnx2i: private nl message send error\n");
+;
 
 	return rc;
 }

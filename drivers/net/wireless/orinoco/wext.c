@@ -93,8 +93,8 @@ static struct iw_statistics *orinoco_get_wireless_stats(struct net_device *dev)
 	unsigned long flags;
 
 	if (!netif_device_present(dev)) {
-		printk(KERN_WARNING "%s: get_wireless_stats() called while device not present\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: get_wireless_stats() called while device not present\n",
+;
 		return NULL; /* FIXME: Can we do better than this? */
 	}
 
@@ -179,16 +179,16 @@ static int orinoco_ioctl_setwap(struct net_device *dev,
 	}
 
 	if (priv->firmware_type == FIRMWARE_TYPE_AGERE) {
-		printk(KERN_WARNING "%s: Lucent/Agere firmware doesn't "
-		       "support manual roaming\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Lucent/Agere firmware doesn't "
+//		       "support manual roaming\n",
+;
 		err = -EOPNOTSUPP;
 		goto out;
 	}
 
 	if (priv->iw_mode != NL80211_IFTYPE_STATION) {
-		printk(KERN_WARNING "%s: Manual roaming supported only in "
-		       "managed mode\n", dev->name);
+//		printk(KERN_WARNING "%s: Manual roaming supported only in "
+;
 		err = -EOPNOTSUPP;
 		goto out;
 	}
@@ -196,8 +196,8 @@ static int orinoco_ioctl_setwap(struct net_device *dev,
 	/* Intersil firmware hangs without Desired ESSID */
 	if (priv->firmware_type == FIRMWARE_TYPE_INTERSIL &&
 	    strlen(priv->desired_essid) == 0) {
-		printk(KERN_WARNING "%s: Desired ESSID must be set for "
-		       "manual roaming\n", dev->name);
+//		printk(KERN_WARNING "%s: Desired ESSID must be set for "
+;
 		err = -EOPNOTSUPP;
 		goto out;
 	}
@@ -794,8 +794,8 @@ static int orinoco_ioctl_set_encodeext(struct net_device *dev,
 				 priv->keys[idx].key,
 				 tkip_iv, ORINOCO_SEQ_LEN, NULL, 0);
 			if (err)
-				printk(KERN_ERR "%s: Error %d setting TKIP key"
-				       "\n", dev->name, err);
+//				printk(KERN_ERR "%s: Error %d setting TKIP key"
+;
 
 			goto out;
 		}
@@ -1106,12 +1106,12 @@ static int orinoco_ioctl_reset(struct net_device *dev,
 		return -EPERM;
 
 	if (info->cmd == (SIOCIWFIRSTPRIV + 0x1)) {
-		printk(KERN_DEBUG "%s: Forcing reset!\n", dev->name);
+;
 
 		/* Firmware reset */
 		orinoco_reset(&priv->reset_work);
 	} else {
-		printk(KERN_DEBUG "%s: Force scheduling reset!\n", dev->name);
+;
 
 		schedule_work(&priv->reset_work);
 	}

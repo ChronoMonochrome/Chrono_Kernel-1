@@ -27,7 +27,7 @@ static void set_sensor_attr(struct device *dev, struct device_attribute *attribu
 	{
 		if( ( device_create_file( dev, attributes[i] )) < 0 )
 		{
-			printk("[SENSOR CORE] fail!!! device_create_file( dev, attributes[%d] )\n", i);
+;
 		}
 	}
 }
@@ -49,7 +49,7 @@ int sensors_register(struct device *dev, void * drvdata, struct device_attribute
 
 	if (IS_ERR(dev)) {
 		ret = PTR_ERR(dev);
-        printk(KERN_ERR "[SENSORS CORE] device_create failed! [%d]\n", ret);
+;
 		return ret;
 	}
 	
@@ -69,7 +69,7 @@ void sensors_unregister(struct device *dev)
 
 static int __init sensors_class_init(void)
 {
-	printk("[SENSORS CORE] sensors_class_init\n");
+;
 	sensors_class = class_create(THIS_MODULE, "sensors");
 
 	if (IS_ERR(sensors_class))

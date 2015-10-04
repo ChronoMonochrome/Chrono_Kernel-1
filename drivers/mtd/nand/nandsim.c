@@ -179,15 +179,15 @@ MODULE_PARM_DESC(bch,		 "Enable BCH ecc and set how many bits should "
 
 /* Simulator's output macros (logging, debugging, warning, error) */
 #define NS_LOG(args...) \
-	do { if (log) printk(KERN_DEBUG NS_OUTPUT_PREFIX " log: " args); } while(0)
+;
 #define NS_DBG(args...) \
-	do { if (dbg) printk(KERN_DEBUG NS_OUTPUT_PREFIX " debug: " args); } while(0)
+;
 #define NS_WARN(args...) \
-	do { printk(KERN_WARNING NS_OUTPUT_PREFIX " warning: " args); } while(0)
+;
 #define NS_ERR(args...) \
-	do { printk(KERN_ERR NS_OUTPUT_PREFIX " error: " args); } while(0)
+;
 #define NS_INFO(args...) \
-	do { printk(KERN_INFO NS_OUTPUT_PREFIX " " args); } while(0)
+;
 
 /* Busy-wait delay macros (microseconds, milliseconds) */
 #define NS_UDELAY(us) \
@@ -664,22 +664,22 @@ static int init_nandsim(struct mtd_info *mtd)
 	if (ns->busw == 16)
 		NS_WARN("16-bit flashes support wasn't tested\n");
 
-	printk("flash size: %llu MiB\n",
-			(unsigned long long)ns->geom.totsz >> 20);
-	printk("page size: %u bytes\n",         ns->geom.pgsz);
-	printk("OOB area size: %u bytes\n",     ns->geom.oobsz);
-	printk("sector size: %u KiB\n",         ns->geom.secsz >> 10);
-	printk("pages number: %u\n",            ns->geom.pgnum);
-	printk("pages per sector: %u\n",        ns->geom.pgsec);
-	printk("bus width: %u\n",               ns->busw);
-	printk("bits in sector size: %u\n",     ns->geom.secshift);
-	printk("bits in page size: %u\n",       ns->geom.pgshift);
-	printk("bits in OOB size: %u\n",	ns->geom.oobshift);
-	printk("flash size with OOB: %llu KiB\n",
-			(unsigned long long)ns->geom.totszoob >> 10);
-	printk("page address bytes: %u\n",      ns->geom.pgaddrbytes);
-	printk("sector address bytes: %u\n",    ns->geom.secaddrbytes);
-	printk("options: %#x\n",                ns->options);
+//	printk("flash size: %llu MiB\n",
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+//	printk("flash size with OOB: %llu KiB\n",
+;
+;
+;
+;
 
 	if ((ret = alloc_device(ns)) != 0)
 		goto error;

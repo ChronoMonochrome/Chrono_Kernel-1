@@ -84,7 +84,7 @@ static int __devinit jazz16_configure_ports(unsigned long port,
 	unsigned char val;
 
 	if (!request_region(0x201, 1, "jazz16 config")) {
-		snd_printk(KERN_ERR "config port region is already in use.\n");
+;
 		return -EBUSY;
 	}
 	outb(SB_JAZZ16_WAKEUP - idx, 0x201);
@@ -107,7 +107,7 @@ static int __devinit jazz16_detect_board(unsigned long port,
 	struct snd_sb chip;
 
 	if (!request_region(port, 0x10, "jazz16")) {
-		snd_printk(KERN_ERR "I/O port region is already in use.\n");
+;
 		return -EBUSY;
 	}
 	/* just to call snd_sbdsp_command/reset/get_byte() */
@@ -188,31 +188,31 @@ static int __devinit snd_jazz16_match(struct device *devptr, unsigned int dev)
 	if (!enable[dev])
 		return 0;
 	if (port[dev] == SNDRV_AUTO_PORT) {
-		snd_printk(KERN_ERR "please specify port\n");
+;
 		return 0;
 	} else if (port[dev] == 0x200 || (port[dev] & ~0x270)) {
-		snd_printk(KERN_ERR "incorrect port specified\n");
+;
 		return 0;
 	}
 	if (dma8[dev] != SNDRV_AUTO_DMA &&
 	    dma8[dev] != 1 && dma8[dev] != 3) {
-		snd_printk(KERN_ERR "dma8 must be 1 or 3\n");
+;
 		return 0;
 	}
 	if (dma16[dev] != SNDRV_AUTO_DMA &&
 	    dma16[dev] != 5 && dma16[dev] != 7) {
-		snd_printk(KERN_ERR "dma16 must be 5 or 7\n");
+;
 		return 0;
 	}
 	if (mpu_port[dev] != SNDRV_AUTO_PORT &&
 	    (mpu_port[dev] & ~0x030) != 0x300) {
-		snd_printk(KERN_ERR "incorrect mpu_port specified\n");
+;
 		return 0;
 	}
 	if (mpu_irq[dev] != SNDRV_AUTO_DMA &&
 	    mpu_irq[dev] != 2 && mpu_irq[dev] != 3 &&
 	    mpu_irq[dev] != 5 && mpu_irq[dev] != 7) {
-		snd_printk(KERN_ERR "mpu_irq must be 2, 3, 5 or 7\n");
+;
 		return 0;
 	}
 	return 1;
@@ -240,7 +240,7 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
 	if (xirq == SNDRV_AUTO_IRQ) {
 		xirq = snd_legacy_find_free_irq(possible_irqs);
 		if (xirq < 0) {
-			snd_printk(KERN_ERR "unable to find a free IRQ\n");
+;
 			err = -EBUSY;
 			goto err_free;
 		}
@@ -249,7 +249,7 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
 	if (xdma8 == SNDRV_AUTO_DMA) {
 		xdma8 = snd_legacy_find_free_dma(possible_dmas8);
 		if (xdma8 < 0) {
-			snd_printk(KERN_ERR "unable to find a free DMA8\n");
+;
 			err = -EBUSY;
 			goto err_free;
 		}
@@ -258,7 +258,7 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
 	if (xdma16 == SNDRV_AUTO_DMA) {
 		xdma16 = snd_legacy_find_free_dma(possible_dmas16);
 		if (xdma16 < 0) {
-			snd_printk(KERN_ERR "unable to find a free DMA16\n");
+;
 			err = -EBUSY;
 			goto err_free;
 		}
@@ -269,7 +269,7 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
 		xmpu_port = 0;
 	err = jazz16_detect_board(port[dev], xmpu_port);
 	if (err < 0) {
-		printk(KERN_ERR "Media Vision Jazz16 board not detected\n");
+;
 		goto err_free;
 	}
 	err = snd_sbdsp_create(card, port[dev], irq[dev],
@@ -285,7 +285,7 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
 		xmpu_irq = 0;
 	err = jazz16_configure_board(chip, xmpu_irq);
 	if (err < 0) {
-		printk(KERN_ERR "Media Vision Jazz16 configuration failed\n");
+;
 		goto err_free;
 	}
 
@@ -307,8 +307,8 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
 	err = snd_opl3_create(card, chip->port, chip->port + 2,
 			      OPL3_HW_AUTO, 1, &opl3);
 	if (err < 0)
-		snd_printk(KERN_WARNING "no OPL device at 0x%lx-0x%lx\n",
-			   chip->port, chip->port + 2);
+//		snd_printk(KERN_WARNING "no OPL device at 0x%lx-0x%lx\n",
+;
 	else {
 		err = snd_opl3_hwdep_new(opl3, 0, 1, NULL);
 		if (err < 0)
@@ -324,8 +324,8 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
 					mpu_irq[dev],
 					mpu_irq[dev] >= 0 ? IRQF_DISABLED : 0,
 					NULL) < 0)
-			snd_printk(KERN_ERR "no MPU-401 device at 0x%lx\n",
-					mpu_port[dev]);
+//			snd_printk(KERN_ERR "no MPU-401 device at 0x%lx\n",
+;
 	}
 
 	snd_card_set_dev(card, devptr);

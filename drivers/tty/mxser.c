@@ -1491,9 +1491,9 @@ static int mxser_ioctl_special(unsigned int cmd, void __user *argp)
 	switch (cmd) {
 	case MOXA_GET_MAJOR:
 		if (printk_ratelimit())
-			printk(KERN_WARNING "mxser: '%s' uses deprecated ioctl "
-					"%x (GET_MAJOR), fix your userspace\n",
-					current->comm, cmd);
+//			printk(KERN_WARNING "mxser: '%s' uses deprecated ioctl "
+//					"%x (GET_MAJOR), fix your userspace\n",
+;
 		return put_user(ttymajor, (int __user *)argp);
 
 	case MOXA_CHKPORTENABLE:
@@ -2006,14 +2006,14 @@ static void mxser_wait_until_sent(struct tty_struct *tty, int timeout)
 	if (!timeout || timeout > 2 * info->timeout)
 		timeout = 2 * info->timeout;
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
-	printk(KERN_DEBUG "In rs_wait_until_sent(%d) check=%lu...",
-		timeout, char_time);
-	printk("jiff=%lu...", jiffies);
+//	printk(KERN_DEBUG "In rs_wait_until_sent(%d) check=%lu...",
+;
+;
 #endif
 	spin_lock_irqsave(&info->slock, flags);
 	while (!((lsr = inb(info->ioaddr + UART_LSR)) & UART_LSR_TEMT)) {
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
-		printk("lsr = %d (jiff=%lu)...", lsr, jiffies);
+;
 #endif
 		spin_unlock_irqrestore(&info->slock, flags);
 		schedule_timeout_interruptible(char_time);
@@ -2027,7 +2027,7 @@ static void mxser_wait_until_sent(struct tty_struct *tty, int timeout)
 	set_current_state(TASK_RUNNING);
 
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
-	printk("lsr = %d (jiff=%lu)...done\n", lsr, jiffies);
+;
 #endif
 }
 
@@ -2365,8 +2365,8 @@ static int __devinit mxser_initbrd(struct mxser_board *brd,
 	unsigned int i;
 	int retval;
 
-	printk(KERN_INFO "mxser: max. baud rate = %d bps\n",
-			brd->ports[0].max_baud);
+//	printk(KERN_INFO "mxser: max. baud rate = %d bps\n",
+;
 
 	for (i = 0; i < brd->info->nports; i++) {
 		info = &brd->ports[i];
@@ -2401,9 +2401,9 @@ static int __devinit mxser_initbrd(struct mxser_board *brd,
 	retval = request_irq(brd->irq, mxser_interrupt, IRQF_SHARED, "mxser",
 			brd);
 	if (retval)
-		printk(KERN_ERR "Board %s: Request irq failed, IRQ (%d) may "
-			"conflict with another device.\n",
-			brd->info->name, brd->irq);
+//		printk(KERN_ERR "Board %s: Request irq failed, IRQ (%d) may "
+//			"conflict with another device.\n",
+;
 
 	return retval;
 }
@@ -2463,14 +2463,14 @@ static int __init mxser_get_ISA_conf(int cap, struct mxser_board *brd)
 	}
 
 	if (!irq) {
-		printk(KERN_ERR "mxser: interrupt number unset\n");
+;
 		return -EIO;
 	}
 	brd->irq = ((int)(irq & 0xF000) >> 12);
 	for (i = 0; i < 8; i++)
 		brd->ports[i].ioaddr = (int) regs[i + 1] & 0xFFF8;
 	if ((regs[12] & 0x80) == 0) {
-		printk(KERN_ERR "mxser: invalid interrupt vector\n");
+;
 		return -EIO;
 	}
 	brd->vector = (int)regs[11];	/* interrupt vector */
@@ -2500,24 +2500,24 @@ static int __init mxser_get_ISA_conf(int cap, struct mxser_board *brd)
 		brd->uart_type = PORT_16450;
 	if (!request_region(brd->ports[0].ioaddr, 8 * brd->info->nports,
 			"mxser(IO)")) {
-		printk(KERN_ERR "mxser: can't request ports I/O region: "
-				"0x%.8lx-0x%.8lx\n",
-				brd->ports[0].ioaddr, brd->ports[0].ioaddr +
-				8 * brd->info->nports - 1);
+//		printk(KERN_ERR "mxser: can't request ports I/O region: "
+//				"0x%.8lx-0x%.8lx\n",
+//				brd->ports[0].ioaddr, brd->ports[0].ioaddr +
+;
 		return -EIO;
 	}
 	if (!request_region(brd->vector, 1, "mxser(vector)")) {
 		release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
-		printk(KERN_ERR "mxser: can't request interrupt vector region: "
-				"0x%.8lx-0x%.8lx\n",
-				brd->ports[0].ioaddr, brd->ports[0].ioaddr +
-				8 * brd->info->nports - 1);
+//		printk(KERN_ERR "mxser: can't request interrupt vector region: "
+//				"0x%.8lx-0x%.8lx\n",
+//				brd->ports[0].ioaddr, brd->ports[0].ioaddr +
+;
 		return -EIO;
 	}
 	return brd->info->nports;
 
 err_irqconflict:
-	printk(KERN_ERR "mxser: invalid interrupt number\n");
+;
 	return -EIO;
 }
 
@@ -2665,8 +2665,8 @@ static int __init mxser_module_init(void)
 	if (!mxvar_sdriver)
 		return -ENOMEM;
 
-	printk(KERN_INFO "MOXA Smartio/Industio family driver version %s\n",
-		MXSER_VERSION);
+//	printk(KERN_INFO "MOXA Smartio/Industio family driver version %s\n",
+;
 
 	/* Initialize the tty_driver structure */
 	mxvar_sdriver->owner = THIS_MODULE;
@@ -2684,8 +2684,8 @@ static int __init mxser_module_init(void)
 
 	retval = tty_register_driver(mxvar_sdriver);
 	if (retval) {
-		printk(KERN_ERR "Couldn't install MOXA Smartio/Industio family "
-				"tty driver !\n");
+//		printk(KERN_ERR "Couldn't install MOXA Smartio/Industio family "
+;
 		goto err_put;
 	}
 
@@ -2701,8 +2701,8 @@ static int __init mxser_module_init(void)
 			continue;
 		}
 
-		printk(KERN_INFO "mxser: found MOXA %s board (CAP=0x%lx)\n",
-				brd->info->name, ioaddr[b]);
+//		printk(KERN_INFO "mxser: found MOXA %s board (CAP=0x%lx)\n",
+;
 
 		/* mxser_initbrd will hook ISR. */
 		if (mxser_initbrd(brd, NULL) < 0) {
@@ -2719,7 +2719,7 @@ static int __init mxser_module_init(void)
 
 	retval = pci_register_driver(&mxser_driver);
 	if (retval) {
-		printk(KERN_ERR "mxser: can't register pci driver\n");
+;
 		if (!m) {
 			retval = -ENODEV;
 			goto err_unr;

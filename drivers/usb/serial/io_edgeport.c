@@ -310,8 +310,8 @@ static void update_edgeport_E2PROM(struct edgeport_serial *edge_serial)
 	response = request_ihex_firmware(&fw, fw_name,
 					 &edge_serial->serial->dev->dev);
 	if (response) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       fw_name, response);
+//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 		return;
 	}
 
@@ -2876,8 +2876,8 @@ static void load_application_firmware(struct edgeport_serial *edge_serial)
 	response = request_ihex_firmware(&fw, fw_name,
 				    &edge_serial->serial->dev->dev);
 	if (response) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       fw_name, response);
+//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 		return;
 	}
 
@@ -3208,8 +3208,8 @@ static int __init edgeport_init(void)
 	if (retval)
 		goto failed_usb_register;
 	atomic_set(&CmdUrbs, 0);
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 
 failed_usb_register:

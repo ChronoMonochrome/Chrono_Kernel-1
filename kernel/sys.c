@@ -340,9 +340,9 @@ void kernel_restart(char *cmd)
 	disable_nonboot_cpus();
 	syscore_shutdown();
 	if (!cmd)
-		printk(KERN_EMERG "Restarting system.\n");
+;
 	else
-		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
+;
 	kmsg_dump(KMSG_DUMP_RESTART);
 	machine_restart(cmd);
 }
@@ -366,7 +366,7 @@ void kernel_halt(void)
 	kernel_shutdown_prepare(SYSTEM_HALT);
 	disable_nonboot_cpus();
 	syscore_shutdown();
-	printk(KERN_EMERG "System halted.\n");
+;
 	kmsg_dump(KMSG_DUMP_HALT);
 	machine_halt();
 }
@@ -385,7 +385,7 @@ void kernel_power_off(void)
 		pm_power_off_prepare();
 	disable_nonboot_cpus();
 	syscore_shutdown();
-	printk(KERN_EMERG "Power down.\n");
+;
 	kmsg_dump(KMSG_DUMP_POWEROFF);
 	machine_power_off();
 }
@@ -403,8 +403,8 @@ static int reboot_timer_expired(void *data)
 
 	mutex_lock(&lock);
 
-	printk(KERN_EMERG "Timer expired forcing power %s.\n",
-	       cmd == LINUX_REBOOT_CMD_POWER_OFF ? "off" : "reboot");
+//	printk(KERN_EMERG "Timer expired forcing power %s.\n",
+;
 
 	if (cmd == LINUX_REBOOT_CMD_POWER_OFF)
 	  machine_power_off();
@@ -1918,8 +1918,8 @@ int orderly_poweroff(bool force)
 	struct subprocess_info *info;
 
 	if (argv == NULL) {
-		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
-		       __func__, poweroff_cmd);
+//		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
+;
 		goto out;
 	}
 
@@ -1935,8 +1935,8 @@ int orderly_poweroff(bool force)
 
   out:
 	if (ret && force) {
-		printk(KERN_WARNING "Failed to start orderly shutdown: "
-		       "forcing the issue\n");
+//		printk(KERN_WARNING "Failed to start orderly shutdown: "
+;
 
 		/* I guess this should try to kick off some daemon to
 		   sync and poweroff asap.  Or not even bother syncing

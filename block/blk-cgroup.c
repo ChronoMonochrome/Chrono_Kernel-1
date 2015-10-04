@@ -629,8 +629,8 @@ static void blkio_get_key_name(enum stat_sub_type type, dev_t dev, char *str,
 	snprintf(str, chars_left, "%d:%d", MAJOR(dev), MINOR(dev));
 	chars_left -= strlen(str);
 	if (chars_left <= 0) {
-		printk(KERN_WARNING
-			"Possibly incorrect cgroup stat display format");
+//		printk(KERN_WARNING
+;
 		return;
 	}
 	if (diskname_only)

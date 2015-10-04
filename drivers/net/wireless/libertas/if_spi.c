@@ -1307,7 +1307,7 @@ static int __init if_spi_init_module(void)
 {
 	int ret = 0;
 	lbs_deb_enter(LBS_DEB_SPI);
-	printk(KERN_INFO "libertas_spi: Libertas SPI driver\n");
+;
 	ret = spi_register_driver(&libertas_spi_driver);
 	lbs_deb_leave(LBS_DEB_SPI);
 	return ret;

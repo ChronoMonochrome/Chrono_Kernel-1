@@ -78,7 +78,7 @@ static int trix_set_wss_port(struct address_info *hw_config)
 
 	if (trix_read(0x15) != 0x71)	/* No ASIC signature */
 	{
-		MDB(printk(KERN_ERR "No AudioTrix ASIC signature found\n"));
+;
 		return 0;
 	}
 
@@ -146,7 +146,7 @@ static int __init init_trix_wss(struct address_info *hw_config)
 		bits = 0x20;
 		break;
 	default:
-		printk(KERN_ERR "AudioTrix: Bad WSS IRQ %d\n", hw_config->irq);
+;
 		return 0;
 	}
 
@@ -156,7 +156,7 @@ static int __init init_trix_wss(struct address_info *hw_config)
 	case 3:
 		break;
 	default:
-		printk(KERN_ERR "AudioTrix: Bad WSS DMA %d\n", dma1);
+;
 		return 0;
 	}
 
@@ -167,7 +167,7 @@ static int __init init_trix_wss(struct address_info *hw_config)
 	case 3:
 		break;
 	default:
-		printk(KERN_ERR "AudioTrix: Bad capture DMA %d\n", dma2);
+;
 		return 0;
 	}
 
@@ -178,12 +178,12 @@ static int __init init_trix_wss(struct address_info *hw_config)
 	 */
 	ports = request_region(hw_config->io_base + 4, 4, "ad1848");
 	if (!ports) {
-		printk(KERN_ERR "AudioTrix: MSS I/O port conflict (%x)\n", hw_config->io_base);
+;
 		return 0;
 	}
 
 	if (!request_region(hw_config->io_base, 4, "MSS config")) {
-		printk(KERN_ERR "AudioTrix: MSS I/O port conflict (%x)\n", hw_config->io_base);
+;
 		release_region(hw_config->io_base + 4, 4);
 		return 0;
 	}
@@ -195,7 +195,7 @@ static int __init init_trix_wss(struct address_info *hw_config)
 
 	if ((config & 0x3f) != 0x00)
 	{
-		MDB(printk(KERN_ERR "No MSS signature detected on port 0x%x\n", hw_config->io_base));
+;
 		goto fail;
 	}
 
@@ -205,12 +205,12 @@ static int __init init_trix_wss(struct address_info *hw_config)
 
 	if (dma1 == 0 && config & 0x80)
 	{
-		printk(KERN_ERR "AudioTrix: Can't use DMA0 with a 8 bit card slot\n");
+;
 		goto fail;
 	}
 	if (hw_config->irq > 9 && config & 0x80)
 	{
-		printk(KERN_ERR "AudioTrix: Can't use IRQ%d with a 8 bit card slot\n", hw_config->irq);
+;
 		goto fail;
 	}
 
@@ -296,7 +296,7 @@ static int __init probe_trix_sb(struct address_info *hw_config)
 		return 0;
 
 	if (!request_region(hw_config->io_base, 16, "soundblaster")) {
-		printk(KERN_ERR "AudioTrix: SB I/O port conflict (%x)\n", hw_config->io_base);
+;
 		return 0;
 	}
 
@@ -336,12 +336,12 @@ static int __init probe_trix_mpu(struct address_info *hw_config)
 
 	if (hw_config->irq > 9)
 	{
-		printk(KERN_ERR "AudioTrix: Bad MPU IRQ %d\n", hw_config->irq);
+;
 		return 0;
 	}
 	if (irq_bits[hw_config->irq] == -1)
 	{
-		printk(KERN_ERR "AudioTrix: Bad MPU IRQ %d\n", hw_config->irq);
+;
 		return 0;
 	}
 	switch (hw_config->io_base)
@@ -426,7 +426,7 @@ module_param(joystick, bool, 0);
 
 static int __init init_trix(void)
 {
-	printk(KERN_INFO "MediaTrix audio driver Copyright (C) by Hannu Savolainen 1993-1996\n");
+;
 
 	cfg.io_base = io;
 	cfg.irq = irq;
@@ -441,16 +441,16 @@ static int __init init_trix(void)
 	cfg_mpu.irq = mpu_irq;
 
 	if (cfg.io_base == -1 || cfg.dma == -1 || cfg.irq == -1) {
-		printk(KERN_INFO "I/O, IRQ, DMA and type are mandatory\n");
+;
 		return -EINVAL;
 	}
 
 	if (cfg2.io_base != -1 && (cfg2.irq == -1 || cfg2.dma == -1)) {
-		printk(KERN_INFO "CONFIG_SB_IRQ and CONFIG_SB_DMA must be specified if SB_IO is set.\n");
+;
 		return -EINVAL;
 	}
 	if (cfg_mpu.io_base != -1 && cfg_mpu.irq == -1) {
-		printk(KERN_INFO "CONFIG_MPU_IRQ must be specified if MPU_IO is set.\n");
+;
 		return -EINVAL;
 	}
 	if (!trix_boot)
@@ -461,7 +461,7 @@ static int __init init_trix(void)
 	}
 
 	if (!request_region(0x390, 2, "AudioTrix")) {
-		printk(KERN_ERR "AudioTrix: Config port I/O conflict\n");
+;
 		return -ENODEV;
 	}
 

@@ -1635,7 +1635,7 @@ static int parse_str(struct hotmod_vals *v, int *val, char *name, char **curr)
 
 	s = strchr(*curr, ',');
 	if (!s) {
-		printk(KERN_WARNING PFX "No hotmod %s given.\n", name);
+;
 		return -EINVAL;
 	}
 	*s = '\0';
@@ -1659,16 +1659,16 @@ static int check_hotmod_int_op(const char *curr, const char *option,
 
 	if (strcmp(curr, name) == 0) {
 		if (!option) {
-			printk(KERN_WARNING PFX
-			       "No option given for '%s'\n",
-			       curr);
+//			printk(KERN_WARNING PFX
+//			       "No option given for '%s'\n",
+;
 			return -EINVAL;
 		}
 		*val = simple_strtoul(option, &n, 0);
 		if ((*n != '\0') || (*option == '\0')) {
-			printk(KERN_WARNING PFX
-			       "Bad option given for '%s'\n",
-			       curr);
+//			printk(KERN_WARNING PFX
+//			       "Bad option given for '%s'\n",
+;
 			return -EINVAL;
 		}
 		return 1;
@@ -1750,8 +1750,8 @@ static int hotmod_handler(const char *val, struct kernel_param *kp)
 		}
 		addr = simple_strtoul(curr, &n, 0);
 		if ((*n != '\0') || (*curr == '\0')) {
-			printk(KERN_WARNING PFX "Invalid hotmod address"
-			       " '%s'\n", curr);
+//			printk(KERN_WARNING PFX "Invalid hotmod address"
+;
 			break;
 		}
 
@@ -1794,9 +1794,9 @@ static int hotmod_handler(const char *val, struct kernel_param *kp)
 				continue;
 
 			rv = -EINVAL;
-			printk(KERN_WARNING PFX
-			       "Invalid hotmod option '%s'\n",
-			       curr);
+//			printk(KERN_WARNING PFX
+//			       "Invalid hotmod option '%s'\n",
+;
 			goto out;
 		}
 
@@ -1872,7 +1872,7 @@ static int __devinit hardcode_find_bmc(void)
 			return -ENOMEM;
 
 		info->addr_source = SI_HARDCODED;
-		printk(KERN_INFO PFX "probing via hardcoded address\n");
+;
 
 		if (!si_type[i] || strcmp(si_type[i], "kcs") == 0) {
 			info->si_type = SI_KCS;
@@ -1881,9 +1881,9 @@ static int __devinit hardcode_find_bmc(void)
 		} else if (strcmp(si_type[i], "bt") == 0) {
 			info->si_type = SI_BT;
 		} else {
-			printk(KERN_WARNING PFX "Interface type specified "
-			       "for interface %d, was invalid: %s\n",
-			       i, si_type[i]);
+//			printk(KERN_WARNING PFX "Interface type specified "
+//			       "for interface %d, was invalid: %s\n",
+;
 			kfree(info);
 			continue;
 		}
@@ -1899,9 +1899,9 @@ static int __devinit hardcode_find_bmc(void)
 			info->io.addr_data = addrs[i];
 			info->io.addr_type = IPMI_MEM_ADDR_SPACE;
 		} else {
-			printk(KERN_WARNING PFX "Interface type specified "
-			       "for interface %d, but port and address were "
-			       "not set or set to zero.\n", i);
+//			printk(KERN_WARNING PFX "Interface type specified "
+//			       "for interface %d, but port and address were "
+;
 			kfree(info);
 			continue;
 		}
@@ -2049,18 +2049,18 @@ static int __devinit try_init_spmi(struct SPMITable *spmi)
 	struct smi_info  *info;
 
 	if (spmi->IPMIlegacy != 1) {
-		printk(KERN_INFO PFX "Bad SPMI legacy %d\n", spmi->IPMIlegacy);
+;
 		return -ENODEV;
 	}
 
 	info = smi_info_alloc();
 	if (!info) {
-		printk(KERN_ERR PFX "Could not allocate SI data (3)\n");
+;
 		return -ENOMEM;
 	}
 
 	info->addr_source = SI_SPMI;
-	printk(KERN_INFO PFX "probing via SPMI\n");
+;
 
 	/* Figure out the interface type. */
 	switch (spmi->InterfaceType) {
@@ -2074,8 +2074,8 @@ static int __devinit try_init_spmi(struct SPMITable *spmi)
 		info->si_type = SI_BT;
 		break;
 	default:
-		printk(KERN_INFO PFX "Unknown ACPI/SPMI SI type %d\n",
-		       spmi->InterfaceType);
+//		printk(KERN_INFO PFX "Unknown ACPI/SPMI SI type %d\n",
+;
 		kfree(info);
 		return -EIO;
 	}
@@ -2111,7 +2111,7 @@ static int __devinit try_init_spmi(struct SPMITable *spmi)
 		info->io.addr_type = IPMI_IO_ADDR_SPACE;
 	} else {
 		kfree(info);
-		printk(KERN_WARNING PFX "Unknown ACPI I/O Address type\n");
+;
 		return -EIO;
 	}
 	info->io.addr_data = spmi->addr.address;
@@ -2168,7 +2168,7 @@ static int __devinit ipmi_pnp_probe(struct pnp_dev *dev,
 		return -ENOMEM;
 
 	info->addr_source = SI_ACPI;
-	printk(KERN_INFO PFX "probing via ACPI\n");
+;
 
 	handle = acpi_dev->handle;
 	info->addr_info.acpi_info.acpi_handle = handle;
@@ -2347,12 +2347,12 @@ static void __devinit try_init_dmi(struct dmi_ipmi_data *ipmi_data)
 
 	info = smi_info_alloc();
 	if (!info) {
-		printk(KERN_ERR PFX "Could not allocate SI data\n");
+;
 		return;
 	}
 
 	info->addr_source = SI_SMBIOS;
-	printk(KERN_INFO PFX "probing via SMBIOS\n");
+;
 
 	switch (ipmi_data->type) {
 	case 0x01: /* KCS */
@@ -2382,8 +2382,8 @@ static void __devinit try_init_dmi(struct dmi_ipmi_data *ipmi_data)
 
 	default:
 		kfree(info);
-		printk(KERN_WARNING PFX "Unknown SMBIOS I/O Address type: %d\n",
-		       ipmi_data->addr_space);
+//		printk(KERN_WARNING PFX "Unknown SMBIOS I/O Address type: %d\n",
+;
 		return;
 	}
 	info->io.addr_data = ipmi_data->base_addr;
@@ -2747,9 +2747,9 @@ static int try_enable_event_buffer(struct smi_info *smi_info)
 
 	rv = wait_for_msg_done(smi_info);
 	if (rv) {
-		printk(KERN_WARNING PFX "Error getting response from get"
-		       " global enables command, the event buffer is not"
-		       " enabled.\n");
+//		printk(KERN_WARNING PFX "Error getting response from get"
+//		       " global enables command, the event buffer is not"
+;
 		goto out;
 	}
 
@@ -2760,8 +2760,8 @@ static int try_enable_event_buffer(struct smi_info *smi_info)
 			resp[0] != (IPMI_NETFN_APP_REQUEST | 1) << 2 ||
 			resp[1] != IPMI_GET_BMC_GLOBAL_ENABLES_CMD   ||
 			resp[2] != 0) {
-		printk(KERN_WARNING PFX "Invalid return from get global"
-		       " enables command, cannot enable the event buffer.\n");
+//		printk(KERN_WARNING PFX "Invalid return from get global"
+;
 		rv = -EINVAL;
 		goto out;
 	}
@@ -2777,9 +2777,9 @@ static int try_enable_event_buffer(struct smi_info *smi_info)
 
 	rv = wait_for_msg_done(smi_info);
 	if (rv) {
-		printk(KERN_WARNING PFX "Error getting response from set"
-		       " global, enables command, the event buffer is not"
-		       " enabled.\n");
+//		printk(KERN_WARNING PFX "Error getting response from set"
+//		       " global, enables command, the event buffer is not"
+;
 		goto out;
 	}
 
@@ -2789,8 +2789,8 @@ static int try_enable_event_buffer(struct smi_info *smi_info)
 	if (resp_len < 3 ||
 			resp[0] != (IPMI_NETFN_APP_REQUEST | 1) << 2 ||
 			resp[1] != IPMI_SET_BMC_GLOBAL_ENABLES_CMD) {
-		printk(KERN_WARNING PFX "Invalid return from get global,"
-		       "enables command, not enable the event buffer.\n");
+//		printk(KERN_WARNING PFX "Invalid return from get global,"
+;
 		rv = -EINVAL;
 		goto out;
 	}
@@ -3095,11 +3095,11 @@ static void __devinit default_find_bmc(void)
 		if (add_smi(info) == 0) {
 			if ((try_smi_init(info)) == 0) {
 				/* Found one... */
-				printk(KERN_INFO PFX "Found default %s"
-				" state machine at %s address 0x%lx\n",
-				si_to_str[info->si_type],
-				addr_space_to_str[info->io.addr_type],
-				info->io.addr_data);
+//				printk(KERN_INFO PFX "Found default %s"
+//				" state machine at %s address 0x%lx\n",
+//				si_to_str[info->si_type],
+//				addr_space_to_str[info->io.addr_type],
+;
 			} else
 				cleanup_one_si(info);
 		} else {
@@ -3126,17 +3126,17 @@ static int add_smi(struct smi_info *new_smi)
 {
 	int rv = 0;
 
-	printk(KERN_INFO PFX "Adding %s-specified %s state machine",
-			ipmi_addr_src_to_str[new_smi->addr_source],
-			si_to_str[new_smi->si_type]);
+//	printk(KERN_INFO PFX "Adding %s-specified %s state machine",
+//			ipmi_addr_src_to_str[new_smi->addr_source],
+;
 	mutex_lock(&smi_infos_lock);
 	if (!is_new_interface(new_smi)) {
-		printk(KERN_CONT " duplicate interface\n");
+;
 		rv = -EBUSY;
 		goto out_err;
 	}
 
-	printk(KERN_CONT "\n");
+;
 
 	/* So we know not to free it unless we have allocated one. */
 	new_smi->intf = NULL;
@@ -3155,14 +3155,14 @@ static int try_smi_init(struct smi_info *new_smi)
 	int rv = 0;
 	int i;
 
-	printk(KERN_INFO PFX "Trying %s-specified %s state"
-	       " machine at %s address 0x%lx, slave address 0x%x,"
-	       " irq %d\n",
-	       ipmi_addr_src_to_str[new_smi->addr_source],
-	       si_to_str[new_smi->si_type],
-	       addr_space_to_str[new_smi->io.addr_type],
-	       new_smi->io.addr_data,
-	       new_smi->slave_addr, new_smi->irq);
+//	printk(KERN_INFO PFX "Trying %s-specified %s state"
+//	       " machine at %s address 0x%lx, slave address 0x%x,"
+//	       " irq %d\n",
+//	       ipmi_addr_src_to_str[new_smi->addr_source],
+//	       si_to_str[new_smi->si_type],
+//	       addr_space_to_str[new_smi->io.addr_type],
+//	       new_smi->io.addr_data,
+;
 
 	switch (new_smi->si_type) {
 	case SI_KCS:
@@ -3186,8 +3186,8 @@ static int try_smi_init(struct smi_info *new_smi)
 	/* Allocate the state machine's data and initialize it. */
 	new_smi->si_sm = kmalloc(new_smi->handlers->size(), GFP_KERNEL);
 	if (!new_smi->si_sm) {
-		printk(KERN_ERR PFX
-		       "Could not allocate state machine memory\n");
+//		printk(KERN_ERR PFX
+;
 		rv = -ENOMEM;
 		goto out_err;
 	}
@@ -3197,14 +3197,14 @@ static int try_smi_init(struct smi_info *new_smi)
 	/* Now that we know the I/O size, we can set up the I/O. */
 	rv = new_smi->io_setup(new_smi);
 	if (rv) {
-		printk(KERN_ERR PFX "Could not set up I/O space\n");
+;
 		goto out_err;
 	}
 
 	/* Do low-level detection first. */
 	if (new_smi->handlers->detect(new_smi->si_sm)) {
 		if (new_smi->addr_source)
-			printk(KERN_INFO PFX "Interface detection failed\n");
+;
 		rv = -ENODEV;
 		goto out_err;
 	}
@@ -3216,8 +3216,8 @@ static int try_smi_init(struct smi_info *new_smi)
 	rv = try_get_dev_id(new_smi);
 	if (rv) {
 		if (new_smi->addr_source)
-			printk(KERN_INFO PFX "There appears to be no BMC"
-			       " at this location\n");
+//			printk(KERN_INFO PFX "There appears to be no BMC"
+;
 		goto out_err;
 	}
 
@@ -3258,8 +3258,8 @@ static int try_smi_init(struct smi_info *new_smi)
 		new_smi->pdev = platform_device_alloc("ipmi_si",
 						      new_smi->intf_num);
 		if (!new_smi->pdev) {
-			printk(KERN_ERR PFX
-			       "Unable to allocate platform device\n");
+//			printk(KERN_ERR PFX
+;
 			goto out_err;
 		}
 		new_smi->dev = &new_smi->pdev->dev;
@@ -3267,10 +3267,10 @@ static int try_smi_init(struct smi_info *new_smi)
 
 		rv = platform_device_add(new_smi->pdev);
 		if (rv) {
-			printk(KERN_ERR PFX
-			       "Unable to register system interface device:"
-			       " %d\n",
-			       rv);
+//			printk(KERN_ERR PFX
+//			       "Unable to register system interface device:"
+//			       " %d\n",
+;
 			goto out_err;
 		}
 		new_smi->dev_registered = 1;
@@ -3378,7 +3378,7 @@ static int __devinit init_ipmi_si(void)
 
 	rv = platform_driver_register(&ipmi_driver);
 	if (rv) {
-		printk(KERN_ERR PFX "Unable to register driver: %d\n", rv);
+;
 		return rv;
 	}
 
@@ -3398,7 +3398,7 @@ static int __devinit init_ipmi_si(void)
 		}
 	}
 
-	printk(KERN_INFO "IPMI System Interface driver.\n");
+;
 
 	/* If the user gave us a device, they presumably want us to use it */
 	if (!hardcode_find_bmc())
@@ -3407,7 +3407,7 @@ static int __devinit init_ipmi_si(void)
 #ifdef CONFIG_PCI
 	rv = pci_register_driver(&ipmi_pci_driver);
 	if (rv)
-		printk(KERN_ERR PFX "Unable to register PCI driver: %d\n", rv);
+;
 	else
 		pci_registered = 1;
 #endif
@@ -3476,8 +3476,8 @@ static int __devinit init_ipmi_si(void)
 	if (unload_when_empty && list_empty(&smi_infos)) {
 		mutex_unlock(&smi_infos_lock);
 		cleanup_ipmi_si();
-		printk(KERN_WARNING PFX
-		       "Unable to find any System Interface(s)\n");
+//		printk(KERN_WARNING PFX
+;
 		return -ENODEV;
 	} else {
 		mutex_unlock(&smi_infos_lock);
@@ -3536,8 +3536,8 @@ static void cleanup_one_si(struct smi_info *to_clean)
 		rv = ipmi_unregister_smi(to_clean->intf);
 
 	if (rv) {
-		printk(KERN_ERR PFX "Unable to unregister device: errno=%d\n",
-		       rv);
+//		printk(KERN_ERR PFX "Unable to unregister device: errno=%d\n",
+;
 	}
 
 	if (to_clean->handlers)

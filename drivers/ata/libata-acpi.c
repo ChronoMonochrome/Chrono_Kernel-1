@@ -332,25 +332,25 @@ int ata_acpi_gtm(struct ata_port *ap, struct ata_acpi_gtm *gtm)
 
 	rc = -EINVAL;
 	if (ACPI_FAILURE(status)) {
-		ata_port_printk(ap, KERN_ERR,
-				"ACPI get timing mode failed (AE 0x%x)\n",
-				status);
+//		ata_port_printk(ap, KERN_ERR,
+//				"ACPI get timing mode failed (AE 0x%x)\n",
+;
 		goto out_free;
 	}
 
 	out_obj = output.pointer;
 	if (out_obj->type != ACPI_TYPE_BUFFER) {
-		ata_port_printk(ap, KERN_WARNING,
-				"_GTM returned unexpected object type 0x%x\n",
-				out_obj->type);
+//		ata_port_printk(ap, KERN_WARNING,
+//				"_GTM returned unexpected object type 0x%x\n",
+;
 
 		goto out_free;
 	}
 
 	if (out_obj->buffer.length != sizeof(struct ata_acpi_gtm)) {
-		ata_port_printk(ap, KERN_ERR,
-				"_GTM returned invalid length %d\n",
-				out_obj->buffer.length);
+//		ata_port_printk(ap, KERN_ERR,
+//				"_GTM returned invalid length %d\n",
+;
 		goto out_free;
 	}
 
@@ -402,8 +402,8 @@ int ata_acpi_stm(struct ata_port *ap, const struct ata_acpi_gtm *stm)
 	if (status == AE_NOT_FOUND)
 		return -ENOENT;
 	if (ACPI_FAILURE(status)) {
-		ata_port_printk(ap, KERN_ERR,
-			"ACPI set timing mode failed (status=0x%x)\n", status);
+//		ata_port_printk(ap, KERN_ERR,
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -450,8 +450,8 @@ static int ata_dev_get_GTF(struct ata_device *dev, struct ata_acpi_gtf **gtf)
 	output.pointer = NULL;	/* ACPI-CA sets this; save/free it later */
 
 	if (ata_msg_probe(ap))
-		ata_dev_printk(dev, KERN_DEBUG, "%s: ENTER: port#: %d\n",
-			       __func__, ap->port_no);
+//		ata_dev_printk(dev, KERN_DEBUG, "%s: ENTER: port#: %d\n",
+;
 
 	/* _GTF has no input parameters */
 	status = acpi_evaluate_object(dev->acpi_handle, "_GTF", NULL, &output);
@@ -459,9 +459,9 @@ static int ata_dev_get_GTF(struct ata_device *dev, struct ata_acpi_gtf **gtf)
 
 	if (ACPI_FAILURE(status)) {
 		if (status != AE_NOT_FOUND) {
-			ata_dev_printk(dev, KERN_WARNING,
-				       "_GTF evaluation failed (AE 0x%x)\n",
-				       status);
+//			ata_dev_printk(dev, KERN_WARNING,
+//				       "_GTF evaluation failed (AE 0x%x)\n",
+;
 			rc = -EINVAL;
 		}
 		goto out_free;
@@ -469,27 +469,27 @@ static int ata_dev_get_GTF(struct ata_device *dev, struct ata_acpi_gtf **gtf)
 
 	if (!output.length || !output.pointer) {
 		if (ata_msg_probe(ap))
-			ata_dev_printk(dev, KERN_DEBUG, "%s: Run _GTF: "
-				"length or ptr is NULL (0x%llx, 0x%p)\n",
-				__func__,
-				(unsigned long long)output.length,
-				output.pointer);
+//			ata_dev_printk(dev, KERN_DEBUG, "%s: Run _GTF: "
+//				"length or ptr is NULL (0x%llx, 0x%p)\n",
+//				__func__,
+//				(unsigned long long)output.length,
+;
 		rc = -EINVAL;
 		goto out_free;
 	}
 
 	if (out_obj->type != ACPI_TYPE_BUFFER) {
-		ata_dev_printk(dev, KERN_WARNING,
-			       "_GTF unexpected object type 0x%x\n",
-			       out_obj->type);
+//		ata_dev_printk(dev, KERN_WARNING,
+//			       "_GTF unexpected object type 0x%x\n",
+;
 		rc = -EINVAL;
 		goto out_free;
 	}
 
 	if (out_obj->buffer.length % REGS_PER_GTF) {
-		ata_dev_printk(dev, KERN_WARNING,
-			       "unexpected _GTF length (%d)\n",
-			       out_obj->buffer.length);
+//		ata_dev_printk(dev, KERN_WARNING,
+//			       "unexpected _GTF length (%d)\n",
+;
 		rc = -EINVAL;
 		goto out_free;
 	}
@@ -499,9 +499,9 @@ static int ata_dev_get_GTF(struct ata_device *dev, struct ata_acpi_gtf **gtf)
 	if (gtf) {
 		*gtf = (void *)out_obj->buffer.pointer;
 		if (ata_msg_probe(ap))
-			ata_dev_printk(dev, KERN_DEBUG,
-				       "%s: returning gtf=%p, gtf_count=%d\n",
-				       __func__, *gtf, rc);
+//			ata_dev_printk(dev, KERN_DEBUG,
+//				       "%s: returning gtf=%p, gtf_count=%d\n",
+;
 	}
 	return rc;
 
@@ -735,11 +735,11 @@ static int ata_acpi_run_tf(struct ata_device *dev,
 	}
 	descr = ata_get_cmd_descript(tf.command);
 
-	ata_dev_printk(dev, level,
-		       "ACPI cmd %02x/%02x:%02x:%02x:%02x:%02x:%02x (%s) %s\n",
-		       tf.command, tf.feature, tf.nsect, tf.lbal,
-		       tf.lbam, tf.lbah, tf.device,
-		       (descr ? descr : "unknown"), msg);
+//	ata_dev_printk(dev, level,
+//		       "ACPI cmd %02x/%02x:%02x:%02x:%02x:%02x:%02x (%s) %s\n",
+//		       tf.command, tf.feature, tf.nsect, tf.lbal,
+//		       tf.lbam, tf.lbah, tf.device,
+;
 
 	return rc;
 }
@@ -811,8 +811,8 @@ static int ata_acpi_push_id(struct ata_device *dev)
 	union acpi_object in_params[1];
 
 	if (ata_msg_probe(ap))
-		ata_dev_printk(dev, KERN_DEBUG, "%s: ix = %d, port#: %d\n",
-			       __func__, dev->devno, ap->port_no);
+//		ata_dev_printk(dev, KERN_DEBUG, "%s: ix = %d, port#: %d\n",
+;
 
 	/* Give the drive Identify data to the drive via the _SDD method */
 	/* _SDD: set up input parameters */
@@ -832,8 +832,8 @@ static int ata_acpi_push_id(struct ata_device *dev)
 		return -ENOENT;
 
 	if (ACPI_FAILURE(status)) {
-		ata_dev_printk(dev, KERN_WARNING,
-			       "ACPI _SDD failed (AE 0x%x)\n", status);
+//		ata_dev_printk(dev, KERN_WARNING,
+;
 		return -EIO;
 	}
 
@@ -983,8 +983,8 @@ int ata_acpi_on_devcfg(struct ata_device *dev)
 	if (nr_executed) {
 		rc = ata_dev_reread_id(dev, 0);
 		if (rc < 0) {
-			ata_dev_printk(dev, KERN_ERR, "failed to IDENTIFY "
-				       "after ACPI commands\n");
+//			ata_dev_printk(dev, KERN_ERR, "failed to IDENTIFY "
+;
 			return rc;
 		}
 	}
@@ -1002,8 +1002,8 @@ int ata_acpi_on_devcfg(struct ata_device *dev)
 		return rc;
 	}
 
-	ata_dev_printk(dev, KERN_WARNING,
-		       "ACPI: failed the second time, disabled\n");
+//	ata_dev_printk(dev, KERN_WARNING,
+;
 	dev->acpi_handle = NULL;
 
 	/* We can safely continue if no _GTF command has been executed

@@ -215,8 +215,8 @@ static void __clocksource_unstable(struct clocksource *cs)
 
 static void clocksource_unstable(struct clocksource *cs, int64_t delta)
 {
-	printk(KERN_WARNING "Clocksource %s unstable (delta = %Ld ns)\n",
-	       cs->name, delta);
+//	printk(KERN_WARNING "Clocksource %s unstable (delta = %Ld ns)\n",
+;
 	__clocksource_unstable(cs);
 }
 
@@ -582,9 +582,9 @@ static void clocksource_select(void)
 		if (!(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES) &&
 		    tick_oneshot_mode_active()) {
 			/* Override clocksource cannot be used. */
-			printk(KERN_WARNING "Override clocksource %s is not "
-			       "HRT compatible. Cannot switch while in "
-			       "HRT/NOHZ mode\n", cs->name);
+//			printk(KERN_WARNING "Override clocksource %s is not "
+//			       "HRT compatible. Cannot switch while in "
+;
 			override_name[0] = 0;
 		} else
 			/* Override clocksource can be used. */
@@ -592,7 +592,7 @@ static void clocksource_select(void)
 		break;
 	}
 	if (curr_clocksource != best) {
-		printk(KERN_INFO "Switching to clocksource %s\n", best->name);
+;
 		curr_clocksource = best;
 		timekeeping_notify(curr_clocksource);
 	}
@@ -941,12 +941,12 @@ __setup("clocksource=", boot_override_clocksource);
 static int __init boot_override_clock(char* str)
 {
 	if (!strcmp(str, "pmtmr")) {
-		printk("Warning: clock=pmtmr is deprecated. "
-			"Use clocksource=acpi_pm.\n");
+//		printk("Warning: clock=pmtmr is deprecated. "
+;
 		return boot_override_clocksource("acpi_pm");
 	}
-	printk("Warning! clock= boot option is deprecated. "
-		"Use clocksource=xyz\n");
+//	printk("Warning! clock= boot option is deprecated. "
+;
 	return boot_override_clocksource(str);
 }
 

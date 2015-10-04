@@ -160,7 +160,7 @@ static int __init config_pas_hw(struct address_info *hw_config)
 
 	if (pas_irq < 0 || pas_irq > 15)
 	{
-		printk(KERN_ERR "PAS16: Invalid IRQ %d", pas_irq);
+;
 		hw_config->irq=-1;
 		ok = 0;
 	}
@@ -171,14 +171,14 @@ static int __init config_pas_hw(struct address_info *hw_config)
 		pas_write(int_ptrs, 0xF38A);
 		if (!irq_bits[pas_irq])
 		{
-			printk(KERN_ERR "PAS16: Invalid IRQ %d", pas_irq);
+;
 			hw_config->irq=-1;
 			ok = 0;
 		}
 		else
 		{
 			if (request_irq(pas_irq, pasintr, 0, "PAS16",hw_config) < 0) {
-				printk(KERN_ERR "PAS16: Cannot allocate IRQ %d\n",pas_irq);
+;
 				hw_config->irq=-1;
 				ok = 0;
 			}
@@ -187,7 +187,7 @@ static int __init config_pas_hw(struct address_info *hw_config)
 
 	if (hw_config->dma < 0 || hw_config->dma > 7)
 	{
-		printk(KERN_ERR "PAS16: Invalid DMA selection %d", hw_config->dma);
+;
 		hw_config->dma=-1;
 		ok = 0;
 	}
@@ -196,7 +196,7 @@ static int __init config_pas_hw(struct address_info *hw_config)
 		pas_write(dma_bits[hw_config->dma], 0xF389);
 		if (!dma_bits[hw_config->dma])
 		{
-			printk(KERN_ERR "PAS16: Invalid DMA selection %d", hw_config->dma);
+;
 			hw_config->dma=-1;
 			ok = 0;
 		}
@@ -204,7 +204,7 @@ static int __init config_pas_hw(struct address_info *hw_config)
 		{
 			if (sound_alloc_dma(hw_config->dma, "PAS16"))
 			{
-				printk(KERN_ERR "pas2_card.c: Can't allocate DMA channel\n");
+;
 				hw_config->dma=-1;
 				ok = 0;
 			}
@@ -261,10 +261,10 @@ static int __init config_pas_hw(struct address_info *hw_config)
 			pas_sb_base = sb_config->io_base;
 
 			if (!sb_dma_bits[sb_config->dma])
-				printk(KERN_ERR "PAS16 Warning: Invalid SB DMA %d\n\n", sb_config->dma);
+;
 
 			if (!sb_irq_bits[sb_config->irq])
-				printk(KERN_ERR "PAS16 Warning: Invalid SB IRQ %d\n\n", sb_config->irq);
+;
 
 			irq_dma = sb_dma_bits[sb_config->dma] |
 				sb_irq_bits[sb_config->irq];
@@ -276,7 +276,7 @@ static int __init config_pas_hw(struct address_info *hw_config)
 	}
 
 	if (!ok)
-		printk(KERN_WARNING "PAS16: Driver not enabled\n");
+;
 
 	return ok;
 }
@@ -398,7 +398,7 @@ MODULE_LICENSE("GPL");
 
 static int __init init_pas2(void)
 {
-	printk(KERN_INFO "Pro Audio Spectrum driver Copyright (C) by Hannu Savolainen 1993-1996\n");
+;
 
 	cfg.io_base = io;
 	cfg.irq = irq;
@@ -411,7 +411,7 @@ static int __init init_pas2(void)
 	cfg2.dma2 = sb_dma16;
 
 	if (cfg.io_base == -1 || cfg.dma == -1 || cfg.irq == -1) {
-		printk(KERN_INFO "I/O, IRQ, DMA and type are mandatory\n");
+;
 		return -EINVAL;
 	}
 

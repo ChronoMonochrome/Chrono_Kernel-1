@@ -49,7 +49,7 @@ static struct i2o_driver i2o_config_driver = {
  */
 static int __init i2o_config_init(void)
 {
-	printk(KERN_INFO OSM_DESCRIPTION " v" OSM_VERSION "\n");
+;
 
 	if (i2o_driver_register(&i2o_config_driver)) {
 		osm_err("handler register failed.\n");

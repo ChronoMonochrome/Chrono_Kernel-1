@@ -314,8 +314,8 @@ static netdev_tx_t lec_start_xmit(struct sk_buff *skb,
 #define MAX_DUMP_SKB 30
 #endif
 #if DUMP_PACKETS >= 1
-	printk(KERN_DEBUG "%s: send datalen:%ld lecid:%4.4x\n",
-	       dev->name, skb->len, priv->lecid);
+//	printk(KERN_DEBUG "%s: send datalen:%ld lecid:%4.4x\n",
+;
 	print_hex_dump(KERN_DEBUG, "", DUMP_OFFSET, 16, 1,
 		       skb->data, min(skb->len, MAX_DUMP_SKB), true);
 #endif /* DUMP_PACKETS >= 1 */
@@ -372,8 +372,8 @@ static netdev_tx_t lec_start_xmit(struct sk_buff *skb,
 		goto out;
 	}
 #if DUMP_PACKETS > 0
-	printk(KERN_DEBUG "%s:sending to vpi:%d vci:%d\n",
-	       dev->name, vcc->vpi, vcc->vci);
+//	printk(KERN_DEBUG "%s:sending to vpi:%d vci:%d\n",
+;
 #endif /* DUMP_PACKETS > 0 */
 
 	while (entry && (skb2 = skb_dequeue(&entry->tx_wait))) {
@@ -669,8 +669,8 @@ static void lec_push(struct atm_vcc *vcc, struct sk_buff *skb)
 	struct lec_priv *priv = netdev_priv(dev);
 
 #if DUMP_PACKETS > 0
-	printk(KERN_DEBUG "%s: vcc vpi:%d vci:%d\n",
-	       dev->name, vcc->vpi, vcc->vci);
+//	printk(KERN_DEBUG "%s: vcc vpi:%d vci:%d\n",
+;
 #endif
 	if (!skb) {
 		pr_debug("%s: null skb\n", dev->name);
@@ -683,8 +683,8 @@ static void lec_push(struct atm_vcc *vcc, struct sk_buff *skb)
 #define MAX_SKB_DUMP 30
 #endif
 #if DUMP_PACKETS > 0
-	printk(KERN_DEBUG "%s: rcv datalen:%ld lecid:%4.4x\n",
-	       dev->name, skb->len, priv->lecid);
+//	printk(KERN_DEBUG "%s: rcv datalen:%ld lecid:%4.4x\n",
+;
 	print_hex_dump(KERN_DEBUG, "", DUMP_OFFSET, 16, 1,
 		       skb->data, min(MAX_SKB_DUMP, skb->len), true);
 #endif /* DUMP_PACKETS > 0 */

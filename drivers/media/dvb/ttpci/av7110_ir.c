@@ -133,7 +133,7 @@ static void av7110_emit_key(unsigned long parm)
 		break;
 
 	default:
-		printk("%s invalid protocol %x\n", __func__, ir->protocol);
+;
 		return;
 	}
 
@@ -142,8 +142,8 @@ static void av7110_emit_key(unsigned long parm)
 
 	keycode = ir->key_map[data];
 
-	dprintk(16, "%s: code %08x -> addr %i data 0x%02x -> keycode %i\n",
-		__func__, ircom, addr, data, keycode);
+//	dprintk(16, "%s: code %08x -> addr %i data 0x%02x -> keycode %i\n",
+;
 
 	/* check device address */
 	if (!(ir->device_mask & (1 << addr)))
@@ -318,7 +318,7 @@ static const struct file_operations av7110_ir_proc_fops = {
 /* interrupt handler */
 static void ir_handler(struct av7110 *av7110, u32 ircom)
 {
-	dprintk(4, "ir command = %08x\n", ircom);
+;
 	av7110->ir.ir_command = ircom;
 	tasklet_schedule(&av7110->ir.ir_tasklet);
 }

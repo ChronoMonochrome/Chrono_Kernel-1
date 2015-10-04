@@ -30,10 +30,10 @@
 
 static int debug;
 
-#define dprintk(args...) \
-	do { \
-		if (debug) \
-			printk(KERN_DEBUG args); \
+//#define dprintk(args...) \
+//	do { \
+//		if (debug) \
+;
 	} while (0)
 
 enum zl10039_model_id {
@@ -84,10 +84,10 @@ static int zl10039_read(const struct zl10039_state *state,
 		},
 	};
 
-	dprintk("%s\n", __func__);
+;
 
 	if (i2c_transfer(state->i2c, msg, 2) != 2) {
-		dprintk("%s: i2c read error\n", __func__);
+;
 		return -EREMOTEIO;
 	}
 
@@ -106,12 +106,12 @@ static int zl10039_write(struct zl10039_state *state,
 		.len = count + 1,
 	};
 
-	dprintk("%s\n", __func__);
+;
 	/* Write register address and data in one go */
 	buf[0] = reg;
 	memcpy(&buf[1], src, count);
 	if (i2c_transfer(state->i2c, &msg, 1) != 1) {
-		dprintk("%s: i2c write error\n", __func__);
+;
 		return -EREMOTEIO;
 	}
 
@@ -136,19 +136,19 @@ static int zl10039_init(struct dvb_frontend *fe)
 	struct zl10039_state *state = fe->tuner_priv;
 	int ret;
 
-	dprintk("%s\n", __func__);
+;
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);
 	/* Reset logic */
 	ret = zl10039_writereg(state, GENERAL, 0x40);
 	if (ret < 0) {
-		dprintk("Note: i2c write error normal when resetting the "
-			"tuner\n");
+//		dprintk("Note: i2c write error normal when resetting the "
+;
 	}
 	/* Wake up */
 	ret = zl10039_writereg(state, GENERAL, 0x01);
 	if (ret < 0) {
-		dprintk("Tuner power up failed\n");
+;
 		return ret;
 	}
 	if (fe->ops.i2c_gate_ctrl)
@@ -162,12 +162,12 @@ static int zl10039_sleep(struct dvb_frontend *fe)
 	struct zl10039_state *state = fe->tuner_priv;
 	int ret;
 
-	dprintk("%s\n", __func__);
+;
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);
 	ret = zl10039_writereg(state, GENERAL, 0x80);
 	if (ret < 0) {
-		dprintk("Tuner sleep failed\n");
+;
 		return ret;
 	}
 	if (fe->ops.i2c_gate_ctrl)
@@ -186,9 +186,9 @@ static int zl10039_set_params(struct dvb_frontend *fe,
 	u32 div;
 	int ret;
 
-	dprintk("%s\n", __func__);
-	dprintk("Set frequency = %d, symbol rate = %d\n",
-			params->frequency, params->u.qpsk.symbol_rate);
+;
+//	dprintk("Set frequency = %d, symbol rate = %d\n",
+;
 
 	/* Assumed 10.111 MHz crystal oscillator */
 	/* Cancelled num/den 80 to prevent overflow */
@@ -231,7 +231,7 @@ static int zl10039_set_params(struct dvb_frontend *fe,
 		fe->ops.i2c_gate_ctrl(fe, 0);
 	return 0;
 error:
-	dprintk("Error setting tuner\n");
+;
 	return ret;
 }
 
@@ -239,7 +239,7 @@ static int zl10039_release(struct dvb_frontend *fe)
 {
 	struct zl10039_state *state = fe->tuner_priv;
 
-	dprintk("%s\n", __func__);
+;
 	kfree(state);
 	fe->tuner_priv = NULL;
 	return 0;
@@ -257,7 +257,7 @@ struct dvb_frontend *zl10039_attach(struct dvb_frontend *fe,
 {
 	struct zl10039_state *state = NULL;
 
-	dprintk("%s\n", __func__);
+;
 	state = kmalloc(sizeof(struct zl10039_state), GFP_KERNEL);
 	if (state == NULL)
 		goto error;
@@ -286,13 +286,13 @@ struct dvb_frontend *zl10039_attach(struct dvb_frontend *fe,
 			"Zarlink ZL10039 DVB-S tuner");
 		break;
 	default:
-		dprintk("Chip ID=%x does not match a known type\n", state->id);
+;
 		goto error;
 	}
 
 	memcpy(&fe->ops.tuner_ops, &zl10039_ops, sizeof(struct dvb_tuner_ops));
 	fe->tuner_priv = state;
-	dprintk("Tuner attached @ i2c address 0x%02x\n", i2c_addr);
+;
 	return fe;
 error:
 	kfree(state);

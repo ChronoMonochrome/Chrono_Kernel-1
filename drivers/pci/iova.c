@@ -428,8 +428,8 @@ copy_reserved_iova(struct iova_domain *from, struct iova_domain *to)
 		struct iova *new_iova;
 		new_iova = reserve_iova(to, iova->pfn_lo, iova->pfn_hi);
 		if (!new_iova)
-			printk(KERN_ERR "Reserve iova range %lx@%lx failed\n",
-				iova->pfn_lo, iova->pfn_lo);
+//			printk(KERN_ERR "Reserve iova range %lx@%lx failed\n",
+;
 	}
 	spin_unlock_irqrestore(&from->iova_rbtree_lock, flags);
 }

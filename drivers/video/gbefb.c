@@ -252,7 +252,7 @@ static void gbe_turn_off(void)
 		}
 	}
 	if (i == 10000)
-		printk(KERN_ERR "gbefb: turn off DMA timed out\n");
+;
 
 	/* wait for vpixen_off */
 	val = gbe->vt_vpixen;
@@ -267,8 +267,8 @@ static void gbe_turn_off(void)
 		udelay(1);
 	}
 	if (i == 100000)
-		printk(KERN_ERR
-		       "gbefb: wait for vpixen_off timed out\n");
+//		printk(KERN_ERR
+;
 	for (i = 0; i < 10000; i++) {
 		val = gbe->vt_xy;
 		x = GET_GBE_FIELD(VT_XY, X, val);
@@ -278,7 +278,7 @@ static void gbe_turn_off(void)
 		udelay(1);
 	}
 	if (i == 10000)
-		printk(KERN_ERR "gbefb: wait for vpixen_off timed out\n");
+;
 
 	/* turn off pixel counter */
 	val = 0;
@@ -293,7 +293,7 @@ static void gbe_turn_off(void)
 			break;
 	}
 	if (i == 10000)
-		printk(KERN_ERR "gbefb: turn off pixel clock timed out\n");
+;
 
 	/* turn off dot clock */
 	val = gbe->dotclock;
@@ -308,7 +308,7 @@ static void gbe_turn_off(void)
 			break;
 	}
 	if (i == 10000)
-		printk(KERN_ERR "gbefb: turn off dotclock timed out\n");
+;
 
 	/* reset the frame DMA FIFO */
 	val = gbe->frm_size_tile;
@@ -345,7 +345,7 @@ static void gbe_turn_on(void)
 			break;
 	}
 	if (i == 10000)
-		printk(KERN_ERR "gbefb: turn on dotclock timed out\n");
+;
 
 	/* turn on pixel counter */
 	val = 0;
@@ -360,7 +360,7 @@ static void gbe_turn_on(void)
 			break;
 	}
 	if (i == 10000)
-		printk(KERN_ERR "gbefb: turn on pixel clock timed out\n");
+;
 
 	/* turn on DMA */
 	val = gbe->frm_control;
@@ -375,7 +375,7 @@ static void gbe_turn_on(void)
 			break;
 	}
 	if (i == 10000)
-		printk(KERN_ERR "gbefb: turn on DMA timed out\n");
+;
 
 	gbe_turned_on = 1;
 }
@@ -388,7 +388,7 @@ static void gbe_loadcmap(void)
 		for (j = 0; j < 1000 && gbe->cm_fifo >= 63; j++)
 			udelay(10);
 		if (j == 1000)
-			printk(KERN_ERR "gbefb: cmap FIFO timeout\n");
+;
 
 		gbe->cmap[i] = gbe_cmap[i];
 	}
@@ -877,7 +877,7 @@ static int gbefb_setcolreg(unsigned regno, unsigned red, unsigned green,
 			for (i = 0; i < 1000 && gbe->cm_fifo >= 63; i++)
 				udelay(10);
 			if (i == 1000) {
-				printk(KERN_ERR "gbefb: cmap FIFO timeout\n");
+;
 				return 1;
 			}
 			gbe->cmap[regno] = gbe_cmap[regno];
@@ -1151,14 +1151,14 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
 #endif
 
 	if (!request_mem_region(GBE_BASE, sizeof(struct sgi_gbe), "GBE")) {
-		printk(KERN_ERR "gbefb: couldn't reserve mmio region\n");
+;
 		ret = -EBUSY;
 		goto out_release_framebuffer;
 	}
 
 	gbe = (struct sgi_gbe *) ioremap(GBE_BASE, sizeof(struct sgi_gbe));
 	if (!gbe) {
-		printk(KERN_ERR "gbefb: couldn't map mmio region\n");
+;
 		ret = -ENXIO;
 		goto out_release_mem_region;
 	}
@@ -1168,7 +1168,7 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
 		dma_alloc_coherent(NULL, GBE_TLB_SIZE * sizeof(uint16_t),
 				   &gbe_tiles.dma, GFP_KERNEL);
 	if (!gbe_tiles.cpu) {
-		printk(KERN_ERR "gbefb: couldn't allocate tiles table\n");
+;
 		ret = -ENOMEM;
 		goto out_unmap;
 	}
@@ -1177,7 +1177,7 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
 		/* memory was allocated at boot time */
 		gbe_mem = ioremap_nocache(gbe_mem_phys, gbe_mem_size);
 		if (!gbe_mem) {
-			printk(KERN_ERR "gbefb: couldn't map framebuffer\n");
+;
 			ret = -ENOMEM;
 			goto out_tiles_free;
 		}
@@ -1189,7 +1189,7 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
 		gbe_mem = dma_alloc_coherent(NULL, gbe_mem_size, &gbe_dma_addr,
 					     GFP_KERNEL);
 		if (!gbe_mem) {
-			printk(KERN_ERR "gbefb: couldn't allocate framebuffer memory\n");
+;
 			ret = -ENOMEM;
 			goto out_tiles_free;
 		}
@@ -1224,7 +1224,7 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
 	gbefb_encode_fix(&info->fix, &info->var);
 
 	if (register_framebuffer(info) < 0) {
-		printk(KERN_ERR "gbefb: couldn't register framebuffer\n");
+;
 		ret = -ENXIO;
 		goto out_gbe_unmap;
 	}
@@ -1232,9 +1232,9 @@ static int __devinit gbefb_probe(struct platform_device *p_dev)
 	platform_set_drvdata(p_dev, info);
 	gbefb_create_sysfs(&p_dev->dev);
 
-	printk(KERN_INFO "fb%d: %s rev %d @ 0x%08x using %dkB memory\n",
-	       info->node, info->fix.id, gbe_revision, (unsigned) GBE_BASE,
-	       gbe_mem_size >> 10);
+//	printk(KERN_INFO "fb%d: %s rev %d @ 0x%08x using %dkB memory\n",
+//	       info->node, info->fix.id, gbe_revision, (unsigned) GBE_BASE,
+;
 
 	return 0;
 

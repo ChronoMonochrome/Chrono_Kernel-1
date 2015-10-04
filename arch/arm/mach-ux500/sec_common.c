@@ -324,8 +324,8 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 		{"prerecovery", REBOOT_MODE_PRERECOVERY},
 	};
 
-	printk(KERN_INFO "%s: code: 0x%lx, cmd: %s\n", __func__, code,
-	       (cmd) ? (char *)cmd : "none");
+//	printk(KERN_INFO "%s: code: 0x%lx, cmd: %s\n", __func__, code,
+;
 
 	if ((code == SYS_RESTART) && cmd) {
 		n = ARRAY_SIZE(reboot_tbl);
@@ -333,8 +333,8 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 			if (!strcmp((char *)cmd, reboot_tbl[i].cmd)) {
 				if(!strcmp((char *)cmd, "recovery")) {
 					u8 prerecovery_state = 0;
-					printk(KERN_INFO "%s: clear prerecovery flag=%d\n", __func__,
-					       prerecovery_state);
+//					printk(KERN_INFO "%s: clear prerecovery flag=%d\n", __func__,
+;
 					sec_set_param_value(__FORCE_PRERECOVERY, &prerecovery_state);
 				}
 				mode = reboot_tbl[i].mode;
@@ -381,11 +381,11 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 	}
 	if (sec_get_param_value) {
 		sec_get_param_value(__REBOOT_MODE, &temp_mode);
-		printk(KERN_INFO "%s: __REBOOT_MODE: 0x%x\n",
-			__func__, temp_mode);
+//		printk(KERN_INFO "%s: __REBOOT_MODE: 0x%x\n",
+;
 		sec_get_param_value(__SWITCH_SEL, &temp_mode);
-		printk(KERN_INFO "%s: __SWITCH_SEL: 0x%x\n",
-			__func__, temp_mode);
+//		printk(KERN_INFO "%s: __SWITCH_SEL: 0x%x\n",
+;
 	}
 	
 	return NOTIFY_DONE;
@@ -622,11 +622,11 @@ int __init sec_common_init(void)
 
 	sec_checksum = device_create(sec_class, NULL, 0, NULL, "sec_checksum");
 	if (IS_ERR(sec_checksum))
-		printk(KERN_ERR "Failed to create device(sec_checksum)!\n");
+;
 	if (device_create_file(sec_checksum, &dev_attr_checksum_pass) < 0)
-		printk(KERN_ERR "%s device_create_file fail dev_attr_checksum_pass\n", __func__);
+;
 	if (device_create_file(sec_checksum, &dev_attr_checksum_done) < 0)
-		printk(KERN_ERR "%s device_create_file fail dev_attr_checksum_done\n", __func__);
+;
 
 	sec_common_create_board_props();
 #if defined(CONFIG_ARCH_OMAP3) || defined(CONFIG_ARCH_OMAP4)
@@ -826,7 +826,7 @@ static int sec_policy_notifier(struct notifier_block *nb,
 	struct cpufreq_policy *policy = data;
 
 	if (val == CPUFREQ_NOTIFY)
-		printk(KERN_INFO "DVFS Governor Policy set to - %s\n", policy->governor->name);
+;
 
 	return 0;
 */
@@ -842,7 +842,7 @@ int __init sec_common_init_post(void)
 #if defined(CONFIG_SAMSUNG_LOG_BUF)
 	retval = input_register_handler(&sec_common_input_log_handler);
 	if (retval)
-		printk(KERN_WARNING "%s: input_register_handler() failed (%d) ", __func__, retval);
+;
 
 	cpufreq_register_notifier(&sec_cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
 	cpufreq_register_notifier(&sec_policy_notifier_block, CPUFREQ_POLICY_NOTIFIER);
@@ -906,13 +906,13 @@ unsigned short sec_common_update_reboot_reason(char mode, const char *cmd)
 #if 0
 	/* for the compatibility with LSI chip-set based products */
 
-	printk(KERN_INFO "sec_common_update_reboot_reason: scpad_addr: 0x%x\n",
-			scpad_addr);
+//	printk(KERN_INFO "sec_common_update_reboot_reason: scpad_addr: 0x%x\n",
+;
 	if (cmd)
-		printk(KERN_INFO "sec_common_update_reboot_reason: mode= %c, cmd= %s\n",
-				mode, cmd);
+//		printk(KERN_INFO "sec_common_update_reboot_reason: mode= %c, cmd= %s\n",
+;
 	mode = __sec_common_convert_reboot_mode(mode, cmd);
-	printk(KERN_INFO "mode: %c\n", mode);
+;
 #else
 	mode = __sec_common_convert_reboot_mode(mode, cmd);
 #endif
@@ -995,7 +995,7 @@ void dump_ram_buffer(void)
 				i++;
 				bufAddr[index] = '\0';
 			}
-			printk(KERN_INFO "%s", &bufAddr[temp]);
+;
 			temp = index+1;
 		}
 	}
@@ -1019,7 +1019,7 @@ static void sec_disp_input_log(void)
 {
 	int key_idx, touch_idx, key_cnt = 0, touch_cnt = 0;
 
-	printk(KERN_EMERG "[Last %d key press and %d touch events]\n", SEC_KEY_LOG_SIZE, SEC_TOUCH_LOG_SIZE);
+;
 
 	key_idx = sec_key_log_idx;
 	touch_idx = sec_touch_log_idx;
@@ -1033,11 +1033,11 @@ static void sec_disp_input_log(void)
 				unsigned long nanosec_rem;
 
 				nanosec_rem = do_div(sec_key_log[key_idx].timestamp, 1000000000);
-				printk(KERN_EMERG "<KEY> key code: %d, up/down (0/1): %d @ [%5lu.%06lu]\n",
-					sec_key_log[key_idx].event_code,
-					sec_key_log[key_idx].value,
-					(unsigned long)sec_key_log[key_idx].timestamp,
-					nanosec_rem / 1000);
+//				printk(KERN_EMERG "<KEY> key code: %d, up/down (0/1): %d @ [%5lu.%06lu]\n",
+//					sec_key_log[key_idx].event_code,
+//					sec_key_log[key_idx].value,
+//					(unsigned long)sec_key_log[key_idx].timestamp,
+;
 			}
 			key_idx++;
 			key_idx &= (SEC_KEY_LOG_SIZE - 1);
@@ -1049,21 +1049,21 @@ static void sec_disp_input_log(void)
 				unsigned long nanosec_rem;
 
 				nanosec_rem = do_div(sec_touch_log[touch_idx].timestamp, 1000000000);
-				printk(KERN_EMERG "<TOUCH> x: %03d, y: %03d, width: %03d, touch: %03d, tracking id: %d @ [%5lu.%06lu]\n",
-					sec_touch_log[touch_idx].x,
-					sec_touch_log[touch_idx].y,
-					sec_touch_log[touch_idx].width,
-					sec_touch_log[touch_idx].touch,
-					sec_touch_log[touch_idx].id,
-					(unsigned long)sec_touch_log[touch_idx].timestamp,
-					nanosec_rem / 1000);
+//				printk(KERN_EMERG "<TOUCH> x: %03d, y: %03d, width: %03d, touch: %03d, tracking id: %d @ [%5lu.%06lu]\n",
+//					sec_touch_log[touch_idx].x,
+//					sec_touch_log[touch_idx].y,
+//					sec_touch_log[touch_idx].width,
+//					sec_touch_log[touch_idx].touch,
+//					sec_touch_log[touch_idx].id,
+//					(unsigned long)sec_touch_log[touch_idx].timestamp,
+;
 			}
 			touch_idx++;
 			touch_idx &= (SEC_TOUCH_LOG_SIZE - 1);
 			touch_cnt++;
 		}
 	}
-	printk(KERN_EMERG "\n");
+;
 
 }
 
@@ -1074,28 +1074,28 @@ static void sec_disp_dvfs_info(void)
 	struct cpufreq_policy policy;
 
 	if (!cpufreq_get_policy(&policy, 0)) {
-		printk(KERN_EMERG "Current DVFS Governor Policy - %s\n", policy.governor->name);
+;
 	}
 
 	if (sec_cpufreq_log_idx != -1) {
 		int i, idx;
 
-		printk(KERN_EMERG "[Last %u CPU frequency changes]\n", SEC_CPUFREQ_LOG_MAX + 1);
+;
 		idx = (sec_cpufreq_log_idx + 1) & SEC_CPUFREQ_LOG_MAX;
 		for (i = 0; i <= SEC_CPUFREQ_LOG_MAX; i++) {
 			if (sec_cpufreq_log[idx].timestamp != 0) {
 				unsigned long nanosec_rem;
 
 				nanosec_rem = do_div(sec_cpufreq_log[idx].timestamp, 1000000000);
-				printk(KERN_EMERG "CPU Freq set to %07u @ [%5lu.%06lu]\n",
-					sec_cpufreq_log[idx].freq,
-					(unsigned long)sec_cpufreq_log[idx].timestamp,
-					nanosec_rem / 1000);
+//				printk(KERN_EMERG "CPU Freq set to %07u @ [%5lu.%06lu]\n",
+//					sec_cpufreq_log[idx].freq,
+//					(unsigned long)sec_cpufreq_log[idx].timestamp,
+;
 			}
 			idx++;
 			idx &= SEC_CPUFREQ_LOG_MAX;
 		}
-		printk(KERN_EMERG "\n");
+;
 	}
 }
 
@@ -1114,15 +1114,15 @@ static void sec_disp_mount_info(void)
 
 	fd = sys_open("/proc/mounts", O_RDONLY, 0);
 
-	printk(KERN_EMERG "Current mount information:\n");
+;
 
 	if (fd >= 0) {
 		while ((read_size = sys_read(fd, buf, 127)) > 0) {
 			buf[read_size] = '\0';
-			printk(KERN_INFO "%s", buf);
+;
 		}
 		sys_close(fd);
-		printk("\n");
+;
 	}
 
 	set_fs(old_fs);
@@ -1137,12 +1137,12 @@ extern unsigned int system_serial_high;
 
 static void sec_disp_addition_crash_dbg(void)
 {
-	printk(KERN_EMERG "\n%s\n", linux_banner);
-	printk(KERN_EMERG "%s\n", saved_command_line);
+;
+;
 
-	printk(KERN_EMERG "Revision\t: %04x\n", system_rev);
-	printk(KERN_EMERG "Serial\t\t: %08x%08x\n\n",
-		   system_serial_high, system_serial_low);
+;
+//	printk(KERN_EMERG "Serial\t\t: %08x%08x\n\n",
+;
 
 	sec_disp_dvfs_info();
 	sec_disp_mount_info();
@@ -1285,18 +1285,18 @@ void dump_one_task_info( struct task_struct *tsk, bool isMain )
 
 	stat_ch = tsk->state <= TASK_UNINTERRUPTIBLE ? stat_array[tsk->state] : '?';
 #ifdef CONFIG_SAMSUNG_ADD_GAFORENSICINFO
-	printk( KERN_INFO "%8d %8d %8d %16lld %c(%d) %3d  %08x %08x  %08x %c %16s [%s]\n",
-		tsk->pid, (int)(tsk->utime), (int)(tsk->stime),
-		tsk->se.exec_start, stat_ch, (int)(tsk->state),
-		*(int*)(pThInf + GAFINFO.thread_info_struct_cpu),
-		(int)wchan, (int)pc, (int)tsk, isMain?'*':' ',
-		tsk->comm, symname);
+//	printk( KERN_INFO "%8d %8d %8d %16lld %c(%d) %3d  %08x %08x  %08x %c %16s [%s]\n",
+//		tsk->pid, (int)(tsk->utime), (int)(tsk->stime),
+//		tsk->se.exec_start, stat_ch, (int)(tsk->state),
+//		*(int*)(pThInf + GAFINFO.thread_info_struct_cpu),
+//		(int)wchan, (int)pc, (int)tsk, isMain?'*':' ',
+;
 #else
-	printk( KERN_INFO "%8d %8d %8d %16lld %c(%d) %3d  %08x  %08x %c %16s [%s]\n",
-		tsk->pid, (int)(tsk->utime), (int)(tsk->stime),
-		tsk->se.exec_start, stat_ch, (int)(tsk->state),
-		(int)wchan, (int)pc, (int)tsk, isMain?'*':' ',
-		tsk->comm, symname);
+//	printk( KERN_INFO "%8d %8d %8d %16lld %c(%d) %3d  %08x  %08x %c %16s [%s]\n",
+//		tsk->pid, (int)(tsk->utime), (int)(tsk->stime),
+//		tsk->se.exec_start, stat_ch, (int)(tsk->state),
+//		(int)wchan, (int)pc, (int)tsk, isMain?'*':' ',
+;
 #endif
 	if (tsk->state == TASK_RUNNING || tsk->state == TASK_UNINTERRUPTIBLE || tsk->mm == NULL)
 		show_stack(tsk, NULL);
@@ -1309,11 +1309,11 @@ void dump_all_task_info(void)
 	struct task_struct *frst_thr;
 	struct task_struct *curr_thr;
 
-	printk( KERN_INFO "\n" );
-	printk( KERN_INFO " current proc : %d %s\n", current->pid, current->comm );
-	printk( KERN_INFO " -------------------------------------------------------------------------------------------------------------\n" );
-	printk( KERN_INFO "     pid      uTime    sTime      exec(ns)  stat  cpu   wchan   user_pc  task_struct          comm   sym_wchan\n" );
-	printk( KERN_INFO " -------------------------------------------------------------------------------------------------------------\n" );
+;
+;
+;
+;
+;
 
 	local_irq_disable();
 
@@ -1340,7 +1340,7 @@ void dump_all_task_info(void)
 
 	local_irq_disable();
 
-	printk( KERN_INFO " -----------------------------------------------------------------------------------\n" );
+;
 }
 EXPORT_SYMBOL(dump_all_task_info);
 
@@ -1397,19 +1397,19 @@ void dump_cpu_stat(void)
 		}
 	}
 	sum += arch_irq_stat();
-	printk(KERN_INFO "\n");
-	printk(KERN_INFO " cpu     user:%llu  nice:%llu  system:%llu  idle:%llu  iowait:%llu  irq:%llu  softirq:%llu %llu %llu " "%llu\n",
-	(unsigned long long)cputime64_to_clock_t(user),
-	(unsigned long long)cputime64_to_clock_t(nice),
-	(unsigned long long)cputime64_to_clock_t(system),
-	(unsigned long long)cputime64_to_clock_t(idle),
-	(unsigned long long)cputime64_to_clock_t(iowait),
-	(unsigned long long)cputime64_to_clock_t(irq),
-	(unsigned long long)cputime64_to_clock_t(softirq),
-	(unsigned long long)0, //cputime64_to_clock_t(steal),
-	(unsigned long long)0, //cputime64_to_clock_t(guest),
-	(unsigned long long)0);//cputime64_to_clock_t(guest_nice));
-	printk(KERN_INFO " -----------------------------------------------------------------------------------\n" );
+;
+//	printk(KERN_INFO " cpu     user:%llu  nice:%llu  system:%llu  idle:%llu  iowait:%llu  irq:%llu  softirq:%llu %llu %llu " "%llu\n",
+//	(unsigned long long)cputime64_to_clock_t(user),
+//	(unsigned long long)cputime64_to_clock_t(nice),
+//	(unsigned long long)cputime64_to_clock_t(system),
+//	(unsigned long long)cputime64_to_clock_t(idle),
+//	(unsigned long long)cputime64_to_clock_t(iowait),
+//	(unsigned long long)cputime64_to_clock_t(irq),
+//	(unsigned long long)cputime64_to_clock_t(softirq),
+//	(unsigned long long)0, //cputime64_to_clock_t(steal),
+//	(unsigned long long)0, //cputime64_to_clock_t(guest),
+;
+;
 	for_each_online_cpu(i) {
 		/* Copy values here to work around gcc-2.95.3, gcc-2.96 */
 		user = kstat_cpu(i).cpustat.user;
@@ -1423,41 +1423,41 @@ void dump_cpu_stat(void)
 		//steal = kstat_cpu(i).cpustat.steal;
 		//guest = kstat_cpu(i).cpustat.guest;
 		//guest_nice = kstat_cpu(i).cpustat.guest_nice;
-		printk(KERN_INFO " cpu %d   user:%llu  nice:%llu  system:%llu  idle:%llu  iowait:%llu  irq:%llu  softirq:%llu %llu %llu " "%llu\n",
-		i,
-		(unsigned long long)cputime64_to_clock_t(user),
-		(unsigned long long)cputime64_to_clock_t(nice),
-		(unsigned long long)cputime64_to_clock_t(system),
-		(unsigned long long)cputime64_to_clock_t(idle),
-		(unsigned long long)cputime64_to_clock_t(iowait),
-		(unsigned long long)cputime64_to_clock_t(irq),
-		(unsigned long long)cputime64_to_clock_t(softirq),
-		(unsigned long long)0, //cputime64_to_clock_t(steal),
-		(unsigned long long)0, //cputime64_to_clock_t(guest),
-		(unsigned long long)0);//cputime64_to_clock_t(guest_nice));
+//		printk(KERN_INFO " cpu %d   user:%llu  nice:%llu  system:%llu  idle:%llu  iowait:%llu  irq:%llu  softirq:%llu %llu %llu " "%llu\n",
+//		i,
+//		(unsigned long long)cputime64_to_clock_t(user),
+//		(unsigned long long)cputime64_to_clock_t(nice),
+//		(unsigned long long)cputime64_to_clock_t(system),
+//		(unsigned long long)cputime64_to_clock_t(idle),
+//		(unsigned long long)cputime64_to_clock_t(iowait),
+//		(unsigned long long)cputime64_to_clock_t(irq),
+//		(unsigned long long)cputime64_to_clock_t(softirq),
+//		(unsigned long long)0, //cputime64_to_clock_t(steal),
+//		(unsigned long long)0, //cputime64_to_clock_t(guest),
+;
 	}
-	printk(KERN_INFO " -----------------------------------------------------------------------------------\n" );
-	printk(KERN_INFO "\n");
-	printk(KERN_INFO " irq : %llu", (unsigned long long)sum);
-	printk(KERN_INFO " -----------------------------------------------------------------------------------\n" );
+;
+;
+;
+;
 	/* sum again ? it could be updated? */
 	for_each_irq_nr(j) {
 		per_irq_sum = 0;
 		for_each_possible_cpu(i)
 		per_irq_sum += kstat_irqs_cpu(j, i);
 		if(per_irq_sum) {
-			printk(KERN_INFO " irq-%4d : %8u %s\n", j, per_irq_sum, irq_to_desc(j)->action ?
-			irq_to_desc(j)->action->name ?: "???" : "???");
+//			printk(KERN_INFO " irq-%4d : %8u %s\n", j, per_irq_sum, irq_to_desc(j)->action ?
+;
 		}
 	}
-	printk(KERN_INFO " -----------------------------------------------------------------------------------\n" );
-	printk(KERN_INFO "\n");
-	printk(KERN_INFO " softirq : %llu", (unsigned long long)sum_softirq);
-	printk(KERN_INFO " -----------------------------------------------------------------------------------\n" );
+;
+;
+;
+;
 	for (i = 0; i < NR_SOFTIRQS; i++)
 		if(per_softirq_sums[i])
-			printk(KERN_INFO " softirq-%d : %8u %s \n", i, per_softirq_sums[i], softirq_to_name[i]);
-	printk(KERN_INFO " -----------------------------------------------------------------------------------\n" );
+;
+;
 }
 EXPORT_SYMBOL(dump_cpu_stat);
 #endif	/* CONFIG_SAMSUNG_LOG_BUF */

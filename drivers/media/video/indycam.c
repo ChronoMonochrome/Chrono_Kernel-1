@@ -38,15 +38,15 @@ MODULE_LICENSE("GPL");
 // #define INDYCAM_DEBUG
 
 #ifdef INDYCAM_DEBUG
-#define dprintk(x...) printk("IndyCam: " x);
+;
 #define indycam_regdump(client) indycam_regdump_debug(client)
 #else
-#define dprintk(x...)
-#define indycam_regdump(client)
-#endif
-
-struct indycam {
-	struct v4l2_subdev sd;
+//#define dprintk(x...)
+//#define indycam_regdump(client)
+//#endif
+//
+//struct indycam {
+;
 	u8 version;
 };
 
@@ -74,8 +74,8 @@ static int indycam_read_reg(struct v4l2_subdev *sd, u8 reg, u8 *value)
 	int ret;
 
 	if (reg == INDYCAM_REG_RESET) {
-		dprintk("indycam_read_reg(): "
-			"skipping write-only register %d\n", reg);
+//		dprintk("indycam_read_reg(): "
+;
 		*value = 0;
 		return 0;
 	}
@@ -83,8 +83,8 @@ static int indycam_read_reg(struct v4l2_subdev *sd, u8 reg, u8 *value)
 	ret = i2c_smbus_read_byte_data(client, reg);
 
 	if (ret < 0) {
-		printk(KERN_ERR "IndyCam: indycam_read_reg(): read failed, "
-		       "register = 0x%02x\n", reg);
+//		printk(KERN_ERR "IndyCam: indycam_read_reg(): read failed, "
+;
 		return ret;
 	}
 
@@ -99,17 +99,17 @@ static int indycam_write_reg(struct v4l2_subdev *sd, u8 reg, u8 value)
 	int err;
 
 	if (reg == INDYCAM_REG_BRIGHTNESS || reg == INDYCAM_REG_VERSION) {
-		dprintk("indycam_write_reg(): "
-			"skipping read-only register %d\n", reg);
+//		dprintk("indycam_write_reg(): "
+;
 		return 0;
 	}
 
-	dprintk("Writing Reg %d = 0x%02x\n", reg, value);
+;
 	err = i2c_smbus_write_byte_data(client, reg, value);
 
 	if (err) {
-		printk(KERN_ERR "IndyCam: indycam_write_reg(): write failed, "
-		       "register = 0x%02x, value = 0x%02x\n", reg, value);
+//		printk(KERN_ERR "IndyCam: indycam_write_reg(): write failed, "
+;
 	}
 	return err;
 }
@@ -138,7 +138,7 @@ static void indycam_regdump_debug(struct v4l2_subdev *sd)
 
 	for (i = 0; i < 9; i++) {
 		indycam_read_reg(sd, i, &val);
-		dprintk("Reg %d = 0x%02x\n", i, val);
+;
 	}
 }
 #endif
@@ -330,16 +330,16 @@ static int indycam_probe(struct i2c_client *client,
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO "IndyCam v%d.%d detected\n",
-	       INDYCAM_VERSION_MAJOR(camera->version),
-	       INDYCAM_VERSION_MINOR(camera->version));
+//	printk(KERN_INFO "IndyCam v%d.%d detected\n",
+//	       INDYCAM_VERSION_MAJOR(camera->version),
+;
 
 	indycam_regdump(sd);
 
 	// initialize
 	err = indycam_write_block(sd, 0, sizeof(initseq), (u8 *)&initseq);
 	if (err) {
-		printk(KERN_ERR "IndyCam initialization failed\n");
+;
 		kfree(camera);
 		return -EIO;
 	}
@@ -350,14 +350,14 @@ static int indycam_probe(struct i2c_client *client,
 	err = indycam_write_reg(sd, INDYCAM_REG_CONTROL,
 			  INDYCAM_CONTROL_AGCENA | INDYCAM_CONTROL_AWBCTL);
 	if (err) {
-		printk(KERN_ERR "IndyCam: White balancing camera failed\n");
+;
 		kfree(camera);
 		return -EIO;
 	}
 
 	indycam_regdump(sd);
 
-	printk(KERN_INFO "IndyCam initialized\n");
+;
 
 	return 0;
 }

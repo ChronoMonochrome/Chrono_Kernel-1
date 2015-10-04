@@ -17,21 +17,21 @@ module_param(irq_chk_intv, int, 0644);
 MODULE_PARM_DESC(irq_chk_intv, "set the interval for IRQ streaming watchdog.");
 
 #ifdef CONFIG_DVB_B2C2_FLEXCOP_DEBUG
-#define dprintk(level,args...) \
-	do { if ((debug & level)) printk(args); } while (0)
+//#define dprintk(level,args...) \
+;
 #define DEBSTATUS ""
 #else
-#define dprintk(level,args...)
-#define DEBSTATUS " (debugging is not enabled)"
-#endif
-
-#define deb_info(args...) dprintk(0x01, args)
-#define deb_reg(args...) dprintk(0x02, args)
-#define deb_ts(args...) dprintk(0x04, args)
-#define deb_irq(args...) dprintk(0x08, args)
-#define deb_chk(args...) dprintk(0x10, args)
-
-static int debug;
+//#define dprintk(level,args...)
+//#define DEBSTATUS " (debugging is not enabled)"
+//#endif
+//
+//#define deb_info(args...) dprintk(0x01, args)
+//#define deb_reg(args...) dprintk(0x02, args)
+//#define deb_ts(args...) dprintk(0x04, args)
+//#define deb_irq(args...) dprintk(0x08, args)
+//#define deb_chk(args...) dprintk(0x10, args)
+//
+;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug,
 	"set debug level (1=info,2=regs,4=TS,8=irqdma,16=check (|-able))."

@@ -871,8 +871,8 @@ static int ab8500_registers_print(struct device *dev, u32 bank,
 					return 0;
 				}
 			} else {
-				printk(KERN_INFO" [%u/0x%02X]: 0x%02X\n", bank,
-					reg, value);
+//				printk(KERN_INFO" [%u/0x%02X]: 0x%02X\n", bank,
+;
 			}
 		}
 	}
@@ -928,10 +928,10 @@ void ab8500_dump_all_banks(struct device *dev)
 {
 	unsigned int i;
 
-	printk(KERN_INFO"ab8500 register values:\n");
+;
 
 	for (i = 1; i < AB8500_NUM_BANKS; i++) {
-		printk(KERN_INFO" bank %u:\n", i);
+;
 		ab8500_registers_print(dev, i, NULL);
 	}
 }
@@ -941,12 +941,12 @@ void ab8500_panic_dump_regs(int (*panic_read)(u8, u8, u8 *))
 {
 	unsigned int i;
 
-	printk(KERN_INFO"ab8500 register values:\n");
+;
 
 	for (i = 1; i < AB8500_NUM_BANKS; i++) {
 		unsigned int j;
 
-		printk(KERN_INFO" bank %u:\n", i);
+;
 		for (j = 0; j < debug_ranges[i].num_ranges; j++) {
 			u32 reg;
 
@@ -958,11 +958,11 @@ void ab8500_panic_dump_regs(int (*panic_read)(u8, u8, u8 *))
 
 				err = panic_read((u8)i, (u8)reg, &value);
 				if (err < 0) {
-					printk(KERN_INFO "ab->read fail %d\n", err);
+;
 					return;
 				}
-				printk(KERN_INFO" [%u/0x%02X]: 0x%02X\n", i,
-					reg, value);
+//				printk(KERN_INFO" [%u/0x%02X]: 0x%02X\n", i,
+;
 			}
 		}
 	}
@@ -1121,7 +1121,7 @@ static ssize_t ab8500_val_write(struct file *file,
 	err = abx500_set_register_interruptible(dev,
 		(u8)debug_bank, debug_address, (u8)user_val);
 	if (err < 0) {
-		printk(KERN_ERR "abx500_set_reg failed %d, %d", err, __LINE__);
+;
 		return -EINVAL;
 	}
 	return buf_size;
@@ -2027,15 +2027,15 @@ static ssize_t ab8500_subscribe_write(struct file *file,
 	dev_attr[irq_index]->attr.mode = S_IRUGO;
 	err = sysfs_create_file(&dev->kobj, &dev_attr[irq_index]->attr);
 	if (err < 0) {
-		printk(KERN_ERR "sysfs_create_file failed %d\n", err);
+;
 		return err;
 	}
 
 	err = request_threaded_irq(user_val, NULL, ab8500_debug_handler,
 		IRQF_SHARED | IRQF_NO_SUSPEND, "ab8500-debug", &dev->kobj);
 	if (err < 0) {
-		printk(KERN_ERR "request_threaded_irq failed %d, %lu\n",
-			err, user_val);
+//		printk(KERN_ERR "request_threaded_irq failed %d, %lu\n",
+;
 		sysfs_remove_file(&dev->kobj, &dev_attr[irq_index]->attr);
 		return err;
 	}

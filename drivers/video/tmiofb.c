@@ -230,7 +230,7 @@ static irqreturn_t tmiofb_irq(int irq, void *__info)
 	 * Switch back to IRQ-based sync of command FIFO
 	 */
 	if (unlikely(par->use_polling && irq != -1)) {
-		printk(KERN_INFO "tmiofb: switching to waitq\n");
+;
 		par->use_polling = false;
 	}
 
@@ -425,7 +425,7 @@ static int tmiofb_sync(struct fb_info *fbi)
 		udelay(1);
 		i++ ;
 		if (i > 10000) {
-			printk(KERN_ERR "timeout waiting for blit to end!\n");
+;
 			return -ETIMEDOUT;
 		}
 	}
@@ -777,8 +777,8 @@ static int __devinit tmiofb_probe(struct platform_device *dev)
 	if (retval < 0)
 		goto err_register_framebuffer;
 
-	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-				info->node, info->fix.id);
+//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+;
 
 	return 0;
 
@@ -839,9 +839,9 @@ static void tmiofb_dump_regs(struct platform_device *dev)
 	struct fb_info *info = platform_get_drvdata(dev);
 	struct tmiofb_par *par = info->par;
 
-	printk(KERN_DEBUG "lhccr:\n");
-#define CCR_PR(n)	printk(KERN_DEBUG "\t" #n " = \t%04x\n",\
-		tmio_ioread16(par->ccr + CCR_ ## n));
+;
+//#define CCR_PR(n)	printk(KERN_DEBUG "\t" #n " = \t%04x\n",\
+;
 	CCR_PR(CMD);
 	CCR_PR(REVID);
 	CCR_PR(BASEL);
@@ -854,9 +854,9 @@ static void tmiofb_dump_regs(struct platform_device *dev)
 	CCR_PR(VRAMBC);
 #undef CCR_PR
 
-	printk(KERN_DEBUG "lcr: \n");
-#define LCR_PR(n)	printk(KERN_DEBUG "\t" #n " = \t%04x\n",\
-		tmio_ioread16(par->lcr + LCR_ ## n));
+;
+//#define LCR_PR(n)	printk(KERN_DEBUG "\t" #n " = \t%04x\n",\
+;
 	LCR_PR(UIS);
 	LCR_PR(VHPN);
 	LCR_PR(CFSAL);
@@ -951,7 +951,7 @@ static int tmiofb_suspend(struct platform_device *dev, pm_message_t state)
 	 * The fb should be usable even if interrupts are disabled (and they are
 	 * during suspend/resume). Switch temporary to forced polling.
 	 */
-	printk(KERN_INFO "tmiofb: switching to polling\n");
+;
 	par->use_polling = true;
 #endif
 	tmiofb_hw_stop(dev);

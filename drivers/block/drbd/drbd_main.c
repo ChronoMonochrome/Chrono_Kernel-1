@@ -3340,7 +3340,7 @@ static void drbd_cleanup(void)
 
 	unregister_blkdev(DRBD_MAJOR, "drbd");
 
-	printk(KERN_INFO "drbd: module cleanup done.\n");
+;
 }
 
 /**
@@ -3501,15 +3501,15 @@ int __init drbd_init(void)
 	int err;
 
 	if (sizeof(struct p_handshake) != 80) {
-		printk(KERN_ERR
-		       "drbd: never change the size or layout "
-		       "of the HandShake packet.\n");
+//		printk(KERN_ERR
+//		       "drbd: never change the size or layout "
+;
 		return -EINVAL;
 	}
 
 	if (minor_count < DRBD_MINOR_COUNT_MIN || minor_count > DRBD_MINOR_COUNT_MAX) {
-		printk(KERN_ERR
-			"drbd: invalid minor_count (%d)\n", minor_count);
+//		printk(KERN_ERR
+;
 #ifdef MODULE
 		return -EINVAL;
 #else
@@ -3523,9 +3523,9 @@ int __init drbd_init(void)
 
 	err = register_blkdev(DRBD_MAJOR, "drbd");
 	if (err) {
-		printk(KERN_ERR
-		       "drbd: unable to register block device major %d\n",
-		       DRBD_MAJOR);
+//		printk(KERN_ERR
+//		       "drbd: unable to register block device major %d\n",
+;
 		return err;
 	}
 
@@ -3550,19 +3550,19 @@ int __init drbd_init(void)
 
 	drbd_proc = proc_create_data("drbd", S_IFREG | S_IRUGO , NULL, &drbd_proc_fops, NULL);
 	if (!drbd_proc)	{
-		printk(KERN_ERR "drbd: unable to register proc file\n");
+;
 		goto Enomem;
 	}
 
 	rwlock_init(&global_state_lock);
 
-	printk(KERN_INFO "drbd: initialized. "
-	       "Version: " REL_VERSION " (api:%d/proto:%d-%d)\n",
-	       API_VERSION, PRO_VERSION_MIN, PRO_VERSION_MAX);
-	printk(KERN_INFO "drbd: %s\n", drbd_buildtag());
-	printk(KERN_INFO "drbd: registered as block device major %d\n",
-		DRBD_MAJOR);
-	printk(KERN_INFO "drbd: minor_table @ 0x%p\n", minor_table);
+//	printk(KERN_INFO "drbd: initialized. "
+//	       "Version: " REL_VERSION " (api:%d/proto:%d-%d)\n",
+;
+;
+//	printk(KERN_INFO "drbd: registered as block device major %d\n",
+;
+;
 
 	return 0; /* Success! */
 
@@ -3570,9 +3570,9 @@ Enomem:
 	drbd_cleanup();
 	if (err == -ENOMEM)
 		/* currently always the case */
-		printk(KERN_ERR "drbd: ran out of memory\n");
+;
 	else
-		printk(KERN_ERR "drbd: initialization failure\n");
+;
 	return err;
 }
 

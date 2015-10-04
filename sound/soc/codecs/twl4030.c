@@ -1030,8 +1030,8 @@ static int snd_soc_put_twl4030_opmode_enum_double(struct snd_kcontrol *kcontrol,
 	unsigned short mask, bitmask;
 
 	if (twl4030->configured) {
-		printk(KERN_ERR "twl4030 operation mode cannot be "
-			"changed on-the-fly\n");
+//		printk(KERN_ERR "twl4030 operation mode cannot be "
+;
 		return -EBUSY;
 	}
 
@@ -1836,8 +1836,8 @@ static int twl4030_hw_params(struct snd_pcm_substream *substream,
 		mode |= TWL4030_APLL_RATE_96000;
 		break;
 	default:
-		printk(KERN_ERR "TWL4030 hw params: unknown rate %d\n",
-			params_rate(params));
+//		printk(KERN_ERR "TWL4030 hw params: unknown rate %d\n",
+;
 		return -EINVAL;
 	}
 
@@ -1853,8 +1853,8 @@ static int twl4030_hw_params(struct snd_pcm_substream *substream,
 		format |= TWL4030_DATA_WIDTH_32S_24W;
 		break;
 	default:
-		printk(KERN_ERR "TWL4030 hw params: unknown format %d\n",
-			params_format(params));
+//		printk(KERN_ERR "TWL4030 hw params: unknown format %d\n",
+;
 		return -EINVAL;
 	}
 
@@ -2032,8 +2032,8 @@ static int twl4030_voice_startup(struct snd_pcm_substream *substream,
 		& TWL4030_OPT_MODE;
 
 	if (mode != TWL4030_OPTION_2) {
-		printk(KERN_ERR "TWL4030 voice startup: "
-			"the codec mode is not option2\n");
+//		printk(KERN_ERR "TWL4030 voice startup: "
+;
 		return -EINVAL;
 	}
 
@@ -2074,8 +2074,8 @@ static int twl4030_voice_hw_params(struct snd_pcm_substream *substream,
 		mode |= TWL4030_SEL_16K;
 		break;
 	default:
-		printk(KERN_ERR "TWL4030 voice hw params: unknown rate %d\n",
-			params_rate(params));
+//		printk(KERN_ERR "TWL4030 voice hw params: unknown rate %d\n",
+;
 		return -EINVAL;
 	}
 
@@ -2255,7 +2255,7 @@ static int twl4030_soc_probe(struct snd_soc_codec *codec)
 
 	twl4030 = kzalloc(sizeof(struct twl4030_priv), GFP_KERNEL);
 	if (twl4030 == NULL) {
-		printk("Can not allocate memroy\n");
+;
 		return -ENOMEM;
 	}
 	snd_soc_codec_set_drvdata(codec, twl4030);

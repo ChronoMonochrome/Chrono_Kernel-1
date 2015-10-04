@@ -1129,8 +1129,8 @@ static int bfin_softreset(struct ata_link *link, unsigned int *classes,
 	/* issue bus reset */
 	err_mask = bfin_bus_softreset(ap, devmask);
 	if (err_mask) {
-		ata_port_printk(ap, KERN_ERR, "SRST failed (err_mask=0x%x)\n",
-				err_mask);
+//		ata_port_printk(ap, KERN_ERR, "SRST failed (err_mask=0x%x)\n",
+;
 		return -EIO;
 	}
 
@@ -1382,7 +1382,7 @@ idle_irq:
 #ifdef ATA_IRQ_TRAP
 	if ((ap->stats.idle_irq % 1000) == 0) {
 		ap->ops->irq_ack(ap, 0); /* debug trap */
-		ata_port_printk(ap, KERN_WARNING, "irq trap\n");
+;
 		return 1;
 	}
 #endif
@@ -1646,7 +1646,7 @@ static int bfin_atapi_resume(struct platform_device *pdev)
 	if (host) {
 		ret = bfin_reset_controller(host);
 		if (ret) {
-			printk(KERN_ERR DRV_NAME ": Error during HW init\n");
+;
 			return ret;
 		}
 		ata_host_resume(host);

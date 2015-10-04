@@ -122,10 +122,10 @@ static void dumpregs(struct net_device *dev)
 
 	for (z = 0; z < 160; z += 2) {
 		if (!(z & 15))
-			printk("REGS: %04x:", z);
-		printk(" %04x", inw(dev->base_addr + z));
+;
+;
 		if ((z & 15) == 14)
-			printk("\n");
+;
 	}
 }
 
@@ -136,16 +136,16 @@ static void dumpmem(struct net_device *dev, u32 start, u32 len)
 	ibmlana_priv *priv = netdev_priv(dev);
 	int z;
 
-	printk("Address %04x:\n", start);
+;
 	for (z = 0; z < len; z++) {
 		if ((z & 15) == 0)
-			printk("%04x:", z);
-		printk(" %02x", readb(priv->base + start + z));
+;
+;
 		if ((z & 15) == 15)
-			printk("\n");
+;
 	}
 	if ((z & 15) != 0)
-		printk("\n");
+;
 }
 
 /* print exact time - ditto */
@@ -155,7 +155,7 @@ static void PrTime(void)
 	struct timeval tv;
 
 	do_gettimeofday(&tv);
-	printk("%9d:%06d: ", (int) tv.tv_sec, (int) tv.tv_usec);
+;
 }
 #endif				/* DEBUG */
 
@@ -332,7 +332,7 @@ static int InitSONIC(struct net_device *dev)
 
 	outw(CMDREG_RRRA, dev->base_addr + SONIC_CMDREG);
 	if (!wait_timeout(dev, SONIC_CMDREG, CMDREG_RRRA, 0, 2)) {
-		printk(KERN_ERR "%s: SONIC did not respond on RRRA command - giving up.", dev->name);
+;
 		return 0;
 	}
 
@@ -435,7 +435,7 @@ static void InitBoard(struct net_device *dev)
 	memcpy_toio(priv->base + (sizeof(camentry_t) * camcnt), &cammask, sizeof(cammask));
 
 #ifdef DEBUG
-	printk("CAM setup:\n");
+;
 	dumpmem(dev, 0, sizeof(camentry_t) * camcnt + sizeof(cammask));
 #endif
 
@@ -443,7 +443,7 @@ static void InitBoard(struct net_device *dev)
 	outw(camcnt, dev->base_addr + SONIC_CAMCNT);
 	outw(CMDREG_LCAM, dev->base_addr + SONIC_CMDREG);
 	if (!wait_timeout(dev, SONIC_CMDREG, CMDREG_LCAM, 0, 2)) {
-		printk(KERN_ERR "%s:SONIC did not respond on LCAM command - giving up.", dev->name);
+;
 		return;
 	} else {
 		/* clear interrupt condition */
@@ -451,22 +451,22 @@ static void InitBoard(struct net_device *dev)
 		outw(ISREG_LCD, dev->base_addr + SONIC_ISREG);
 
 #ifdef DEBUG
-		printk("Loading CAM done, address pointers %04x:%04x\n",
-		       inw(dev->base_addr + SONIC_URRA),
-		       inw(dev->base_addr + SONIC_CAMPTR));
+//		printk("Loading CAM done, address pointers %04x:%04x\n",
+//		       inw(dev->base_addr + SONIC_URRA),
+;
 		{
 			int z;
 
-			printk("\n-->CAM: PTR %04x CNT %04x\n",
-			       inw(dev->base_addr + SONIC_CAMPTR),
-			       inw(dev->base_addr + SONIC_CAMCNT));
+//			printk("\n-->CAM: PTR %04x CNT %04x\n",
+//			       inw(dev->base_addr + SONIC_CAMPTR),
+;
 			outw(CMDREG_RST, dev->base_addr + SONIC_CMDREG);
 			for (z = 0; z < camcnt; z++) {
 				outw(z, dev->base_addr + SONIC_CAMEPTR);
-				printk("Entry %d: %04x %04x %04x\n", z,
-				       inw(dev->base_addr + SONIC_CAMADDR0),
-				       inw(dev->base_addr + SONIC_CAMADDR1),
-				       inw(dev->base_addr + SONIC_CAMADDR2));
+//				printk("Entry %d: %04x %04x %04x\n", z,
+//				       inw(dev->base_addr + SONIC_CAMADDR0),
+//				       inw(dev->base_addr + SONIC_CAMADDR1),
+;
 			}
 			outw(0, dev->base_addr + SONIC_CMDREG);
 		}
@@ -490,7 +490,7 @@ static void InitBoard(struct net_device *dev)
 
 	outw(rcrval, dev->base_addr + SONIC_RCREG);
 #ifdef DEBUG
-	printk("\nRCRVAL: %04x\n", rcrval);
+;
 #endif
 
 	/* set up descriptors in shared memory + feed them into SONIC registers */
@@ -513,7 +513,7 @@ static void InitBoard(struct net_device *dev)
 	outb(inb(dev->base_addr + BCMREG) | BCMREG_IEN, dev->base_addr + BCMREG);
 
 #ifdef DEBUG
-	printk("Register dump after initialization:\n");
+;
 	dumpregs(dev);
 #endif
 }
@@ -785,7 +785,7 @@ static int ibmlana_open(struct net_device *dev)
 	result = request_irq(priv->realirq, irq_handler, IRQF_SHARED,
 			     dev->name, dev);
 	if (result != 0) {
-		printk(KERN_ERR "%s: failed to register irq %d\n", dev->name, dev->irq);
+;
 		return result;
 	}
 	dev->irq = priv->realirq;
@@ -949,11 +949,11 @@ static int __devinit ibmlana_init_one(struct device *kdev)
 	}
 
 	/* announce success */
-	printk(KERN_INFO "%s: IBM LAN Adapter/A found in slot %d\n", dev->name, slot + 1);
+;
 
 	/* try to obtain I/O range */
 	if (!request_region(iobase, IBM_LANA_IORANGE, DRV_NAME)) {
-		printk(KERN_ERR "%s: cannot allocate I/O range at %#x!\n", DRV_NAME, iobase);
+;
 		startslot = slot + 1;
 		rc = -EBUSY;
 		goto err_out;
@@ -974,7 +974,7 @@ static int __devinit ibmlana_init_one(struct device *kdev)
 
 	priv->base = ioremap(base, memlen);
 	if (!priv->base) {
-		printk(KERN_ERR "%s: cannot remap memory!\n", DRV_NAME);
+;
 		startslot = slot + 1;
 		rc = -EBUSY;
 		goto err_out_reg;
@@ -994,12 +994,12 @@ static int __devinit ibmlana_init_one(struct device *kdev)
 
 	/* print config */
 
-	printk(KERN_INFO "%s: IRQ %d, I/O %#lx, memory %#lx-%#lx, "
-	       "MAC address %pM.\n",
-	       dev->name, priv->realirq, dev->base_addr,
-	       dev->mem_start, dev->mem_end - 1,
-	       dev->dev_addr);
-	printk(KERN_INFO "%s: %s medium\n", dev->name, MediaNames[priv->medium]);
+//	printk(KERN_INFO "%s: IRQ %d, I/O %#lx, memory %#lx-%#lx, "
+//	       "MAC address %pM.\n",
+//	       dev->name, priv->realirq, dev->base_addr,
+//	       dev->mem_start, dev->mem_end - 1,
+;
+;
 
 	/* reset board */
 

@@ -798,7 +798,7 @@ static int __init pl010_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Serial: AMBA driver\n");
+;
 
 	ret = uart_register_driver(&amba_reg);
 	if (ret == 0) {

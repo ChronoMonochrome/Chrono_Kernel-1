@@ -275,9 +275,9 @@ int crypto_init_cipher_ops(struct crypto_tfm *tfm)
 			break;
 
 		default:
-			printk(KERN_WARNING "%s: block size %u not supported\n",
-			       crypto_tfm_alg_name(tfm),
-			       crypto_tfm_alg_blocksize(tfm));
+//			printk(KERN_WARNING "%s: block size %u not supported\n",
+//			       crypto_tfm_alg_name(tfm),
+;
 			ret = -EINVAL;
 			goto out;
 		}

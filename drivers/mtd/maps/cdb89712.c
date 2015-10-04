@@ -49,14 +49,14 @@ static int __init init_cdb89712_flash (void)
 	int err;
 
 	if (request_resource (&ioport_resource, &cdb89712_flash_resource)) {
-		printk(KERN_NOTICE "Failed to reserve Cdb89712 FLASH space\n");
+;
 		err = -EBUSY;
 		goto out;
 	}
 
 	cdb89712_flash_map.virt = ioremap(FLASH_START, FLASH_SIZE);
 	if (!cdb89712_flash_map.virt) {
-		printk(KERN_NOTICE "Failed to ioremap Cdb89712 FLASH space\n");
+;
 		err = -EIO;
 		goto out_resource;
 	}
@@ -68,7 +68,7 @@ static int __init init_cdb89712_flash (void)
 			flash_mtd->erasesize = 0x10000;
 	}
 	if (!flash_mtd) {
-		printk("FLASH probe failed\n");
+;
 		err = -ENXIO;
 		goto out_ioremap;
 	}
@@ -76,7 +76,7 @@ static int __init init_cdb89712_flash (void)
 	flash_mtd->owner = THIS_MODULE;
 
 	if (mtd_device_register(flash_mtd, NULL, 0)) {
-		printk("FLASH device addition failed\n");
+;
 		err = -ENOMEM;
 		goto out_probe;
 	}
@@ -119,21 +119,21 @@ static int __init init_cdb89712_sram (void)
 	int err;
 
 	if (request_resource (&ioport_resource, &cdb89712_sram_resource)) {
-		printk(KERN_NOTICE "Failed to reserve Cdb89712 SRAM space\n");
+;
 		err = -EBUSY;
 		goto out;
 	}
 
 	cdb89712_sram_map.virt = ioremap(SRAM_START, SRAM_SIZE);
 	if (!cdb89712_sram_map.virt) {
-		printk(KERN_NOTICE "Failed to ioremap Cdb89712 SRAM space\n");
+;
 		err = -EIO;
 		goto out_resource;
 	}
 	simple_map_init(&cdb89712_sram_map);
 	sram_mtd = do_map_probe("map_ram", &cdb89712_sram_map);
 	if (!sram_mtd) {
-		printk("SRAM probe failed\n");
+;
 		err = -ENXIO;
 		goto out_ioremap;
 	}
@@ -142,7 +142,7 @@ static int __init init_cdb89712_sram (void)
 	sram_mtd->erasesize = 16;
 
 	if (mtd_device_register(sram_mtd, NULL, 0)) {
-		printk("SRAM device addition failed\n");
+;
 		err = -ENOMEM;
 		goto out_probe;
 	}
@@ -187,21 +187,21 @@ static int __init init_cdb89712_bootrom (void)
 	int err;
 
 	if (request_resource (&ioport_resource, &cdb89712_bootrom_resource)) {
-		printk(KERN_NOTICE "Failed to reserve Cdb89712 BOOTROM space\n");
+;
 		err = -EBUSY;
 		goto out;
 	}
 
 	cdb89712_bootrom_map.virt = ioremap(BOOTROM_START, BOOTROM_SIZE);
 	if (!cdb89712_bootrom_map.virt) {
-		printk(KERN_NOTICE "Failed to ioremap Cdb89712 BootROM space\n");
+;
 		err = -EIO;
 		goto out_resource;
 	}
 	simple_map_init(&cdb89712_bootrom_map);
 	bootrom_mtd = do_map_probe("map_rom", &cdb89712_bootrom_map);
 	if (!bootrom_mtd) {
-		printk("BootROM probe failed\n");
+;
 		err = -ENXIO;
 		goto out_ioremap;
 	}
@@ -210,7 +210,7 @@ static int __init init_cdb89712_bootrom (void)
 	bootrom_mtd->erasesize = 0x10000;
 
 	if (mtd_device_register(bootrom_mtd, NULL, 0)) {
-		printk("BootROM device addition failed\n");
+;
 		err = -ENOMEM;
 		goto out_probe;
 	}
@@ -235,8 +235,8 @@ out:
 static int __init init_cdb89712_maps(void)
 {
 
-       	printk(KERN_INFO "Cirrus CDB89712 MTD mappings:\n  Flash 0x%x at 0x%x\n  SRAM 0x%x at 0x%x\n  BootROM 0x%x at 0x%x\n",
-	       FLASH_SIZE, FLASH_START, SRAM_SIZE, SRAM_START, BOOTROM_SIZE, BOOTROM_START);
+//       	printk(KERN_INFO "Cirrus CDB89712 MTD mappings:\n  Flash 0x%x at 0x%x\n  SRAM 0x%x at 0x%x\n  BootROM 0x%x at 0x%x\n",
+;
 
 	init_cdb89712_flash();
 	init_cdb89712_sram();

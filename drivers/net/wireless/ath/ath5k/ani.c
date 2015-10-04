@@ -699,33 +699,33 @@ void
 ath5k_ani_print_counters(struct ath5k_hw *ah)
 {
 	/* clears too */
-	printk(KERN_NOTICE "ACK fail\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_ACK_FAIL));
-	printk(KERN_NOTICE "RTS fail\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_RTS_FAIL));
-	printk(KERN_NOTICE "RTS success\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_RTS_OK));
-	printk(KERN_NOTICE "FCS error\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_FCS_FAIL));
+//	printk(KERN_NOTICE "ACK fail\t%d\n",
+;
+//	printk(KERN_NOTICE "RTS fail\t%d\n",
+;
+//	printk(KERN_NOTICE "RTS success\t%d\n",
+;
+//	printk(KERN_NOTICE "FCS error\t%d\n",
+;
 
 	/* no clear */
-	printk(KERN_NOTICE "tx\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_PROFCNT_TX));
-	printk(KERN_NOTICE "rx\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_PROFCNT_RX));
-	printk(KERN_NOTICE "busy\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_PROFCNT_RXCLR));
-	printk(KERN_NOTICE "cycles\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_PROFCNT_CYCLE));
+//	printk(KERN_NOTICE "tx\t%d\n",
+;
+//	printk(KERN_NOTICE "rx\t%d\n",
+;
+//	printk(KERN_NOTICE "busy\t%d\n",
+;
+//	printk(KERN_NOTICE "cycles\t%d\n",
+;
 
-	printk(KERN_NOTICE "AR5K_PHYERR_CNT1\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_PHYERR_CNT1));
-	printk(KERN_NOTICE "AR5K_PHYERR_CNT2\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_PHYERR_CNT2));
-	printk(KERN_NOTICE "AR5K_OFDM_FIL_CNT\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_OFDM_FIL_CNT));
-	printk(KERN_NOTICE "AR5K_CCK_FIL_CNT\t%d\n",
-		ath5k_hw_reg_read(ah, AR5K_CCK_FIL_CNT));
+//	printk(KERN_NOTICE "AR5K_PHYERR_CNT1\t%d\n",
+;
+//	printk(KERN_NOTICE "AR5K_PHYERR_CNT2\t%d\n",
+;
+//	printk(KERN_NOTICE "AR5K_OFDM_FIL_CNT\t%d\n",
+;
+//	printk(KERN_NOTICE "AR5K_CCK_FIL_CNT\t%d\n",
+;
 }
 
 #endif

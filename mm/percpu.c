@@ -1114,8 +1114,8 @@ static void pcpu_dump_alloc_info(const char *lvl,
 		for (alloc_end += gi->nr_units / upa;
 		     alloc < alloc_end; alloc++) {
 			if (!(alloc % apl)) {
-				printk("\n");
-				printk("%spcpu-alloc: ", lvl);
+;
+;
 			}
 			printk("[%0*d] ", group_width, group);
 
@@ -1124,10 +1124,10 @@ static void pcpu_dump_alloc_info(const char *lvl,
 					printk("%0*d ", cpu_width,
 					       gi->cpu_map[unit]);
 				else
-					printk("%s ", empty_str);
+;
 		}
 	}
-	printk("\n");
+;
 }
 
 /**

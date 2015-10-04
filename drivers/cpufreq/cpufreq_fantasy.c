@@ -129,14 +129,12 @@ static DEFINE_MUTEX(dbs_mutex); /* mutex for protect dbs start/stop             
     #define FANTASY_INF(format,args...)   do{}while(0)
 #endif
 
-
 /*
 *********************************************************************************************************
 *                           __ulldiv
 *
 *Description: unsigned long long int division.
 *
-*Arguments  : dividend  64bits dividend;
 *             divisior  64bits divisior;
 *
 *Return     : 64bits quotient;
@@ -668,7 +666,7 @@ static int __init cpufreq_gov_dbs_init(void)
     /* create work queue for process cpu frequency policy */
     kfantasy_wq = create_workqueue("kfantasy");
     if (!kfantasy_wq) {
-        printk(KERN_ERR "Creation of kfantasy failed\n");
+;
         return -EFAULT;
     }
     /* register cpu frequency governor into cpu-freq core */

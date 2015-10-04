@@ -485,7 +485,7 @@ static int lxfb_resume(struct pci_dev *pdev)
 	console_lock();
 	ret = lx_powerup(info);
 	if (ret) {
-		printk(KERN_ERR "lxfb:  power up failed!\n");
+;
 		return ret;
 	}
 
@@ -559,8 +559,8 @@ static int __devinit lxfb_probe(struct pci_dev *pdev,
 		goto err;
 	}
 	pci_set_drvdata(pdev, info);
-	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-		info->node, info->fix.id);
+//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+;
 
 	return 0;
 

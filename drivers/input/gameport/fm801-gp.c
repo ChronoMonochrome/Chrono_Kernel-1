@@ -87,7 +87,7 @@ static int __devinit fm801_gp_probe(struct pci_dev *pci, const struct pci_device
 	gp = kzalloc(sizeof(struct fm801_gp), GFP_KERNEL);
 	port = gameport_allocate_port();
 	if (!gp || !port) {
-		printk(KERN_ERR "fm801-gp: Memory allocation failed\n");
+;
 		error = -ENOMEM;
 		goto err_out_free;
 	}
@@ -108,8 +108,8 @@ static int __devinit fm801_gp_probe(struct pci_dev *pci, const struct pci_device
 	gp->gameport = port;
 	gp->res_port = request_region(port->io, 0x10, "FM801 GP");
 	if (!gp->res_port) {
-		printk(KERN_DEBUG "fm801-gp: unable to grab region 0x%x-0x%x\n",
-			port->io, port->io + 0x0f);
+//		printk(KERN_DEBUG "fm801-gp: unable to grab region 0x%x-0x%x\n",
+;
 		error = -EBUSY;
 		goto err_out_disable_dev;
 	}

@@ -2435,9 +2435,9 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
 		if ((value = strchr(this_char,'=')) != NULL) {
 			*value++ = 0;
 		} else {
-			printk(KERN_ERR
-			    "tmpfs: No value for mount option '%s'\n",
-			    this_char);
+//			printk(KERN_ERR
+//			    "tmpfs: No value for mount option '%s'\n",
+;
 			return 1;
 		}
 
@@ -2484,16 +2484,16 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
 			if (mpol_parse_str(value, &sbinfo->mpol, 1))
 				goto bad_val;
 		} else {
-			printk(KERN_ERR "tmpfs: Bad mount option %s\n",
-			       this_char);
+//			printk(KERN_ERR "tmpfs: Bad mount option %s\n",
+;
 			return 1;
 		}
 	}
 	return 0;
 
 bad_val:
-	printk(KERN_ERR "tmpfs: Bad value '%s' for mount option '%s'\n",
-	       value, this_char);
+//	printk(KERN_ERR "tmpfs: Bad value '%s' for mount option '%s'\n",
+;
 	return 1;
 
 }
@@ -2813,7 +2813,7 @@ int __init init_tmpfs(void)
 
 	error = register_filesystem(&tmpfs_fs_type);
 	if (error) {
-		printk(KERN_ERR "Could not register tmpfs\n");
+;
 		goto out2;
 	}
 
@@ -2821,7 +2821,7 @@ int __init init_tmpfs(void)
 				tmpfs_fs_type.name, NULL);
 	if (IS_ERR(shm_mnt)) {
 		error = PTR_ERR(shm_mnt);
-		printk(KERN_ERR "Could not kern_mount tmpfs\n");
+;
 		goto out1;
 	}
 	return 0;

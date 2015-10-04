@@ -53,16 +53,16 @@ void
 print_ds(struct nfs4_pnfs_ds *ds)
 {
 	if (ds == NULL) {
-		printk("%s NULL device\n", __func__);
+;
 		return;
 	}
-	printk("        ds %s\n"
-		"        ref count %d\n"
-		"        client %p\n"
-		"        cl_exchange_flags %x\n",
-		ds->ds_remotestr,
-		atomic_read(&ds->ds_count), ds->ds_clp,
-		ds->ds_clp ? ds->ds_clp->cl_exchange_flags : 0);
+//	printk("        ds %s\n"
+//		"        ref count %d\n"
+//		"        client %p\n"
+//		"        cl_exchange_flags %x\n",
+//		ds->ds_remotestr,
+//		atomic_read(&ds->ds_count), ds->ds_clp,
+;
 }
 
 static bool
@@ -100,8 +100,8 @@ same_sockaddr(struct sockaddr *addr1, struct sockaddr *addr2)
 		break;
 
 	default:
-		dprintk("%s: unhandled address family: %u\n",
-			__func__, addr1->sa_family);
+//		dprintk("%s: unhandled address family: %u\n",
+;
 		return false;
 	}
 
@@ -173,14 +173,14 @@ nfs4_ds_connect(struct nfs_server *mds_srv, struct nfs4_pnfs_ds *ds)
 	struct nfs4_pnfs_ds_addr *da;
 	int status = 0;
 
-	dprintk("--> %s DS %s au_flavor %d\n", __func__, ds->ds_remotestr,
-		mds_srv->nfs_client->cl_rpcclient->cl_auth->au_flavor);
+//	dprintk("--> %s DS %s au_flavor %d\n", __func__, ds->ds_remotestr,
+;
 
 	BUG_ON(list_empty(&ds->ds_addrs));
 
 	list_for_each_entry(da, &ds->ds_addrs, da_node) {
-		dprintk("%s: DS %s: trying address %s\n",
-			__func__, ds->ds_remotestr, da->da_remotestr);
+//		dprintk("%s: DS %s: trying address %s\n",
+;
 
 		clp = nfs4_set_ds_client(mds_srv->nfs_client,
 				 (struct sockaddr *)&da->da_addr,
@@ -200,8 +200,8 @@ nfs4_ds_connect(struct nfs_server *mds_srv, struct nfs4_pnfs_ds *ds)
 			goto out_put;
 		}
 		ds->ds_clp = clp;
-		dprintk("%s [existing] server=%s\n", __func__,
-			ds->ds_remotestr);
+//		dprintk("%s [existing] server=%s\n", __func__,
+;
 		goto out;
 	}
 
@@ -220,7 +220,7 @@ nfs4_ds_connect(struct nfs_server *mds_srv, struct nfs4_pnfs_ds *ds)
 		goto out_put;
 
 	ds->ds_clp = clp;
-	dprintk("%s [new] addr: %s\n", __func__, ds->ds_remotestr);
+;
 out:
 	return status;
 out_put:
@@ -233,7 +233,7 @@ destroy_ds(struct nfs4_pnfs_ds *ds)
 {
 	struct nfs4_pnfs_ds_addr *da;
 
-	dprintk("--> %s\n", __func__);
+;
 	ifdebug(FACILITY)
 		print_ds(ds);
 
@@ -332,7 +332,7 @@ nfs4_pnfs_ds_add(struct list_head *dsaddrs, gfp_t gfp_flags)
 	char *remotestr;
 
 	if (list_empty(dsaddrs)) {
-		dprintk("%s: no addresses defined\n", __func__);
+;
 		goto out;
 	}
 
@@ -353,20 +353,20 @@ nfs4_pnfs_ds_add(struct list_head *dsaddrs, gfp_t gfp_flags)
 		INIT_LIST_HEAD(&ds->ds_node);
 		ds->ds_clp = NULL;
 		list_add(&ds->ds_node, &nfs4_data_server_cache);
-		dprintk("%s add new data server %s\n", __func__,
-			ds->ds_remotestr);
+//		dprintk("%s add new data server %s\n", __func__,
+;
 	} else {
 		if (!_data_server_match_all_addrs_locked(&tmp_ds->ds_addrs,
 							 dsaddrs)) {
-			dprintk("%s:  multipath address mismatch: %s != %s",
-				__func__, tmp_ds->ds_remotestr, remotestr);
+//			dprintk("%s:  multipath address mismatch: %s != %s",
+;
 		}
 		kfree(remotestr);
 		kfree(ds);
 		atomic_inc(&tmp_ds->ds_count);
-		dprintk("%s data server %s found, inc'ed ds_count to %d\n",
-			__func__, tmp_ds->ds_remotestr,
-			atomic_read(&tmp_ds->ds_count));
+//		dprintk("%s data server %s found, inc'ed ds_count to %d\n",
+//			__func__, tmp_ds->ds_remotestr,
+;
 		ds = tmp_ds;
 	}
 	spin_unlock(&nfs4_ds_cache_lock);
@@ -421,13 +421,13 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
 
 	/* port is ".ABC.DEF", 8 chars max */
 	if (rlen > INET6_ADDRSTRLEN + IPV6_SCOPE_ID_LEN + 8) {
-		dprintk("%s: Invalid address, length %d\n", __func__,
-			rlen);
+//		dprintk("%s: Invalid address, length %d\n", __func__,
+;
 		goto out_free_netid;
 	}
 	buf = kmalloc(rlen + 1, gfp_flags);
 	if (!buf) {
-		dprintk("%s: Not enough memory\n", __func__);
+;
 		goto out_free_netid;
 	}
 	buf[rlen] = '\0';
@@ -436,8 +436,8 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
 	/* replace port '.' with '-' */
 	portstr = strrchr(buf, '.');
 	if (!portstr) {
-		dprintk("%s: Failed finding expected dot in port\n",
-			__func__);
+//		dprintk("%s: Failed finding expected dot in port\n",
+;
 		goto out_free_buf;
 	}
 	*portstr = '-';
@@ -445,8 +445,8 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
 	/* find '.' between address and port */
 	portstr = strrchr(buf, '.');
 	if (!portstr) {
-		dprintk("%s: Failed finding expected dot between address and "
-			"port\n", __func__);
+//		dprintk("%s: Failed finding expected dot between address and "
+;
 		goto out_free_buf;
 	}
 	*portstr = '\0';
@@ -459,7 +459,7 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
 
 	if (!rpc_pton(buf, portstr-buf, (struct sockaddr *)&da->da_addr,
 		      sizeof(da->da_addr))) {
-		dprintk("%s: error parsing address %s\n", __func__, buf);
+;
 		goto out_free_da;
 	}
 
@@ -485,14 +485,14 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
 		break;
 
 	default:
-		dprintk("%s: unsupported address family: %u\n",
-			__func__, da->da_addr.ss_family);
+//		dprintk("%s: unsupported address family: %u\n",
+;
 		goto out_free_da;
 	}
 
 	if (nlen != match_netid_len || strncmp(netid, match_netid, nlen)) {
-		dprintk("%s: ERROR: r_netid \"%s\" != \"%s\"\n",
-			__func__, netid, match_netid);
+//		dprintk("%s: ERROR: r_netid \"%s\" != \"%s\"\n",
+;
 		goto out_free_da;
 	}
 
@@ -505,7 +505,7 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
 		snprintf(da->da_remotestr, len, "%s%s%s:%u", startsep,
 			 buf, endsep, ntohs(port));
 
-	dprintk("%s: Parsed DS addr %s\n", __func__, da->da_remotestr);
+;
 	kfree(buf);
 	kfree(netid);
 	return da;
@@ -513,7 +513,7 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
 out_free_da:
 	kfree(da);
 out_free_buf:
-	dprintk("%s: Error parsing DS addr: %s\n", __func__, buf);
+;
 	kfree(buf);
 out_free_netid:
 	kfree(netid);
@@ -552,11 +552,11 @@ decode_device(struct inode *ino, struct pnfs_device *pdev, gfp_t gfp_flags)
 		goto out_err_free_scratch;
 
 	cnt = be32_to_cpup(p);
-	dprintk("%s stripe count  %d\n", __func__, cnt);
+;
 	if (cnt > NFS4_PNFS_MAX_STRIPE_CNT) {
-		printk(KERN_WARNING "%s: stripe count %d greater than "
-		       "supported maximum %d\n", __func__,
-			cnt, NFS4_PNFS_MAX_STRIPE_CNT);
+//		printk(KERN_WARNING "%s: stripe count %d greater than "
+//		       "supported maximum %d\n", __func__,
+;
 		goto out_err_free_scratch;
 	}
 
@@ -583,18 +583,18 @@ decode_device(struct inode *ino, struct pnfs_device *pdev, gfp_t gfp_flags)
 		goto out_err_free_stripe_indices;
 
 	num = be32_to_cpup(p);
-	dprintk("%s ds_num %u\n", __func__, num);
+;
 	if (num > NFS4_PNFS_MAX_MULTI_CNT) {
-		printk(KERN_WARNING "%s: multipath count %d greater than "
-			"supported maximum %d\n", __func__,
-			num, NFS4_PNFS_MAX_MULTI_CNT);
+//		printk(KERN_WARNING "%s: multipath count %d greater than "
+//			"supported maximum %d\n", __func__,
+;
 		goto out_err_free_stripe_indices;
 	}
 
 	/* validate stripe indices are all < num */
 	if (max_stripe_index >= num) {
-		printk(KERN_WARNING "%s: stripe index %u >= num ds %u\n",
-			__func__, max_stripe_index, num);
+//		printk(KERN_WARNING "%s: stripe index %u >= num ds %u\n",
+;
 		goto out_err_free_stripe_indices;
 	}
 
@@ -630,8 +630,8 @@ decode_device(struct inode *ino, struct pnfs_device *pdev, gfp_t gfp_flags)
 				list_add_tail(&da->da_node, &dsaddrs);
 		}
 		if (list_empty(&dsaddrs)) {
-			dprintk("%s: no suitable DS addresses found\n",
-				__func__);
+//			dprintk("%s: no suitable DS addresses found\n",
+;
 			goto out_err_free_deviceid;
 		}
 
@@ -670,7 +670,7 @@ out_err_free_stripe_indices:
 out_err_free_scratch:
 	__free_page(scratch);
 out_err:
-	dprintk("%s ERROR: returning NULL\n", __func__);
+;
 	return NULL;
 }
 
@@ -686,8 +686,8 @@ decode_and_add_device(struct inode *inode, struct pnfs_device *dev, gfp_t gfp_fl
 
 	new = decode_device(inode, dev, gfp_flags);
 	if (!new) {
-		printk(KERN_WARNING "%s: Could not decode or add device\n",
-			__func__);
+//		printk(KERN_WARNING "%s: Could not decode or add device\n",
+;
 		return NULL;
 	}
 
@@ -722,8 +722,8 @@ get_device_info(struct inode *inode, struct nfs4_deviceid *dev_id, gfp_t gfp_fla
 	 */
 	max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
 	max_pages = max_resp_sz >> PAGE_SHIFT;
-	dprintk("%s inode %p max_resp_sz %u max_pages %d\n",
-		__func__, inode, max_resp_sz, max_pages);
+//	dprintk("%s inode %p max_resp_sz %u max_pages %d\n",
+;
 
 	pdev = kzalloc(sizeof(struct pnfs_device), gfp_flags);
 	if (pdev == NULL)
@@ -748,7 +748,7 @@ get_device_info(struct inode *inode, struct nfs4_deviceid *dev_id, gfp_t gfp_fla
 	pdev->mincount = 0;
 
 	rc = nfs4_proc_getdeviceinfo(server, pdev);
-	dprintk("%s getdevice info returns %d\n", __func__, rc);
+;
 	if (rc)
 		goto out_free;
 
@@ -762,7 +762,7 @@ out_free:
 		__free_page(pages[i]);
 	kfree(pages);
 	kfree(pdev);
-	dprintk("<-- %s dsaddr %p\n", __func__, dsaddr);
+;
 	return dsaddr;
 }
 
@@ -819,9 +819,9 @@ filelayout_mark_devid_negative(struct nfs4_file_layout_dsaddr *dsaddr,
 {
 	u32 *p = (u32 *)&dsaddr->id_node.deviceid;
 
-	printk(KERN_ERR "NFS: data server %s connection error %d."
-		" Deviceid [%x%x%x%x] marked out of use.\n",
-		ds_remotestr, err, p[0], p[1], p[2], p[3]);
+//	printk(KERN_ERR "NFS: data server %s connection error %d."
+//		" Deviceid [%x%x%x%x] marked out of use.\n",
+;
 
 	spin_lock(&nfs4_ds_cache_lock);
 	dsaddr->flags |= NFS4_DEVICE_ID_NEG_ENTRY;
@@ -835,8 +835,8 @@ nfs4_fl_prepare_ds(struct pnfs_layout_segment *lseg, u32 ds_idx)
 	struct nfs4_pnfs_ds *ds = dsaddr->ds_list[ds_idx];
 
 	if (ds == NULL) {
-		printk(KERN_ERR "%s: No data server for offset index %d\n",
-			__func__, ds_idx);
+//		printk(KERN_ERR "%s: No data server for offset index %d\n",
+;
 		return NULL;
 	}
 
@@ -846,7 +846,7 @@ nfs4_fl_prepare_ds(struct pnfs_layout_segment *lseg, u32 ds_idx)
 
 		if (dsaddr->flags & NFS4_DEVICE_ID_NEG_ENTRY) {
 			/* Already tried to connect, don't try again */
-			dprintk("%s Deviceid marked out of use\n", __func__);
+;
 			return NULL;
 		}
 		err = nfs4_ds_connect(s, ds);

@@ -256,11 +256,11 @@ static int chip_cmd(struct CHIPSTATE *chip, char *name, audiocmd *cmd)
 		name, cmd->bytes[0]);
 	for (i = 1; i < cmd->count; i++) {
 		if (debug)
-			printk(KERN_CONT " 0x%x", cmd->bytes[i]);
+;
 		chip->shadow.bytes[i+cmd->bytes[0]] = cmd->bytes[i];
 	}
 	if (debug)
-		printk(KERN_CONT "\n");
+;
 
 	/* send data to the chip */
 	if (cmd->count != i2c_master_send(c, cmd->bytes, cmd->count)) {
@@ -1930,11 +1930,11 @@ static int tvaudio_probe(struct i2c_client *client, const struct i2c_device_id *
 	struct v4l2_subdev *sd;
 
 	if (debug) {
-		printk(KERN_INFO "tvaudio: TV audio decoder + audio/video mux driver\n");
-		printk(KERN_INFO "tvaudio: known chips: ");
+;
+;
 		for (desc = chiplist; desc->name != NULL; desc++)
-			printk("%s%s", (desc == chiplist) ? "" : ", ", desc->name);
-		printk("\n");
+;
+;
 	}
 
 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);

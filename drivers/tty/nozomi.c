@@ -73,8 +73,8 @@
 do {								\
 	char tmp[P_BUF_SIZE];					\
 	snprintf(tmp, sizeof(tmp), ##args);			\
-	printk(_err_flag_ "[%d] %s(): %s\n", __LINE__,		\
-		__func__, tmp);				\
+//	printk(_err_flag_ "[%d] %s(): %s\n", __LINE__,		\
+;
 } while (0)
 
 #define DBG1(args...) D_(0x01, ##args)
@@ -1629,7 +1629,7 @@ static int ntty_activate(struct tty_port *tport, struct tty_struct *tty)
 	writew(dc->last_ier, dc->reg_ier);
 	dc->open_ttys++;
 	spin_unlock_irqrestore(&dc->spin_mutex, flags);
-	printk("noz: activated %d: %p\n", tty->index, tport);
+;
 	return 0;
 }
 
@@ -1651,7 +1651,7 @@ static void ntty_shutdown(struct tty_port *tport)
 	writew(dc->last_ier, dc->reg_ier);
 	dc->open_ttys--;
 	spin_unlock_irqrestore(&dc->spin_mutex, flags);
-	printk("noz: shutdown %p\n", tport);
+;
 }
 
 static void ntty_close(struct tty_struct *tty, struct file *filp)
@@ -1914,7 +1914,7 @@ static __init int nozomi_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Initializing %s\n", VERSION_STRING);
+;
 
 	ntty_driver = alloc_tty_driver(NTTY_TTY_MAXMINORS);
 	if (!ntty_driver)
@@ -1936,13 +1936,13 @@ static __init int nozomi_init(void)
 
 	ret = tty_register_driver(ntty_driver);
 	if (ret) {
-		printk(KERN_ERR "Nozomi: failed to register ntty driver\n");
+;
 		goto free_tty;
 	}
 
 	ret = pci_register_driver(&nozomi_driver);
 	if (ret) {
-		printk(KERN_ERR "Nozomi: can't register pci driver\n");
+;
 		goto unr_tty;
 	}
 
@@ -1956,7 +1956,7 @@ free_tty:
 
 static __exit void nozomi_exit(void)
 {
-	printk(KERN_INFO "Unloading %s\n", DRIVER_DESC);
+;
 	pci_unregister_driver(&nozomi_driver);
 	tty_unregister_driver(ntty_driver);
 	put_tty_driver(ntty_driver);

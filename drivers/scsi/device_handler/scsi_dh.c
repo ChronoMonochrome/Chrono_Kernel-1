@@ -337,7 +337,7 @@ int scsi_register_device_handler(struct scsi_device_handler *scsi_dh)
 	}
 
 	bus_for_each_dev(&scsi_bus_type, NULL, scsi_dh, scsi_dh_notifier_add);
-	printk(KERN_INFO "%s: device handler registered\n", scsi_dh->name);
+;
 
 	return SCSI_DH_OK;
 }
@@ -369,7 +369,7 @@ int scsi_unregister_device_handler(struct scsi_device_handler *scsi_dh)
 	spin_lock(&list_lock);
 	list_del(&scsi_dh->list);
 	spin_unlock(&list_lock);
-	printk(KERN_INFO "%s: device handler unregistered\n", scsi_dh->name);
+;
 
 	return SCSI_DH_OK;
 }

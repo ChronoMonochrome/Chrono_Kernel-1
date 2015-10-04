@@ -90,15 +90,15 @@ static struct mtd_info *mymtd;
 
 static int __init init_flagadm(void)
 {
-	printk(KERN_NOTICE "FlagaDM flash device: %x at %x\n",
-			FLASH_SIZE, FLASH_PHYS_ADDR);
+//	printk(KERN_NOTICE "FlagaDM flash device: %x at %x\n",
+;
 
 	flagadm_map.phys = FLASH_PHYS_ADDR;
 	flagadm_map.virt = ioremap(FLASH_PHYS_ADDR,
 					FLASH_SIZE);
 
 	if (!flagadm_map.virt) {
-		printk("Failed to ioremap\n");
+;
 		return -EIO;
 	}
 
@@ -108,7 +108,7 @@ static int __init init_flagadm(void)
 	if (mymtd) {
 		mymtd->owner = THIS_MODULE;
 		mtd_device_register(mymtd, flagadm_parts, PARTITION_COUNT);
-		printk(KERN_NOTICE "FlagaDM flash device initialized\n");
+;
 		return 0;
 	}
 

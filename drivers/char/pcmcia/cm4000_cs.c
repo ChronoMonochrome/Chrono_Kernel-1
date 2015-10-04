@@ -1726,8 +1726,8 @@ static void cmm_cm4000_release(struct pcmcia_device * link)
 	 */
 	DEBUGP(3, dev, "-> cmm_cm4000_release\n");
 	while (link->open) {
-		printk(KERN_INFO MODULE_NAME ": delaying release until "
-		       "process has terminated\n");
+//		printk(KERN_INFO MODULE_NAME ": delaying release until "
+;
 		/* note: don't interrupt us:
 		 * close the applications which own
 		 * the devices _first_ !
@@ -1805,7 +1805,7 @@ static int cm4000_probe(struct pcmcia_device *link)
 			break;
 
 	if (i == CM4000_MAX_DEV) {
-		printk(KERN_NOTICE MODULE_NAME ": all devices in use\n");
+;
 		return -ENODEV;
 	}
 
@@ -1896,8 +1896,8 @@ static int __init cmm_init(void)
 
 	major = register_chrdev(0, DEVICE_NAME, &cm4000_fops);
 	if (major < 0) {
-		printk(KERN_WARNING MODULE_NAME
-			": could not get major number\n");
+//		printk(KERN_WARNING MODULE_NAME
+;
 		class_destroy(cmm_class);
 		return major;
 	}

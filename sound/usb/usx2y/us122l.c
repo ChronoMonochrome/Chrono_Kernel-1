@@ -254,8 +254,8 @@ static int usb_stream_hwdep_mmap(struct snd_hwdep *hw,
 		    read ? s->read_size : s->write_size);
 	/* if userspace tries to mmap beyond end of our buffer, fail */
 	if (size > PAGE_ALIGN(read ? s->read_size : s->write_size)) {
-		snd_printk(KERN_WARNING "%lu > %u\n", size,
-			   read ? s->read_size : s->write_size);
+//		snd_printk(KERN_WARNING "%lu > %u\n", size,
+;
 		err = -EINVAL;
 		goto out;
 	}
@@ -320,8 +320,8 @@ static int us122l_set_sample_rate(struct usb_device *dev, int rate)
 			     USB_TYPE_CLASS|USB_RECIP_ENDPOINT|USB_DIR_OUT,
 			     UAC_EP_CS_ATTR_SAMPLE_RATE << 8, ep, data, 3, 1000);
 	if (err < 0)
-		snd_printk(KERN_ERR "%d: cannot set freq %d to ep 0x%x\n",
-			   dev->devnum, rate, ep);
+//		snd_printk(KERN_ERR "%d: cannot set freq %d to ep 0x%x\n",
+;
 	return err;
 }
 
@@ -357,13 +357,13 @@ static bool us122l_start(struct us122l *us122l,
 	err = us122l_set_sample_rate(us122l->dev, rate);
 	if (err < 0) {
 		us122l_stop(us122l);
-		snd_printk(KERN_ERR "us122l_set_sample_rate error \n");
+;
 		goto out;
 	}
 	err = usb_stream_start(&us122l->sk);
 	if (err < 0) {
 		us122l_stop(us122l);
-		snd_printk(KERN_ERR "us122l_start error %i \n", err);
+;
 		goto out;
 	}
 	list_for_each(p, &us122l->midi_list)
@@ -485,13 +485,13 @@ static bool us122l_create_card(struct snd_card *card)
 	    us122l->dev->descriptor.idProduct == USB_ID_US144MKII) {
 		err = usb_set_interface(us122l->dev, 0, 1);
 		if (err) {
-			snd_printk(KERN_ERR "usb_set_interface error \n");
+;
 			return false;
 		}
 	}
 	err = usb_set_interface(us122l->dev, 1, 1);
 	if (err) {
-		snd_printk(KERN_ERR "usb_set_interface error \n");
+;
 		return false;
 	}
 
@@ -507,7 +507,7 @@ static bool us122l_create_card(struct snd_card *card)
 	else
 		err = us122l_create_usbmidi(card);
 	if (err < 0) {
-		snd_printk(KERN_ERR "us122l_create_usbmidi error %i \n", err);
+;
 		us122l_stop(us122l);
 		return false;
 	}
@@ -607,7 +607,7 @@ static int snd_us122l_probe(struct usb_interface *intf,
 	if ((device->descriptor.idProduct == USB_ID_US144 ||
 	     device->descriptor.idProduct == USB_ID_US144MKII)
 		&& device->speed == USB_SPEED_HIGH) {
-		snd_printk(KERN_ERR "disable ehci-hcd to run US-144 \n");
+;
 		return -ENODEV;
 	}
 
@@ -704,13 +704,13 @@ static int snd_us122l_resume(struct usb_interface *intf)
 	    us122l->dev->descriptor.idProduct == USB_ID_US144MKII) {
 		err = usb_set_interface(us122l->dev, 0, 1);
 		if (err) {
-			snd_printk(KERN_ERR "usb_set_interface error \n");
+;
 			goto unlock;
 		}
 	}
 	err = usb_set_interface(us122l->dev, 1, 1);
 	if (err) {
-		snd_printk(KERN_ERR "usb_set_interface error \n");
+;
 		goto unlock;
 	}
 
@@ -720,7 +720,7 @@ static int snd_us122l_resume(struct usb_interface *intf)
 	err = us122l_set_sample_rate(us122l->dev,
 				     us122l->sk.s->cfg.sample_rate);
 	if (err < 0) {
-		snd_printk(KERN_ERR "us122l_set_sample_rate error \n");
+;
 		goto unlock;
 	}
 	err = usb_stream_start(&us122l->sk);

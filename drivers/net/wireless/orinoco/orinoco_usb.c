@@ -110,11 +110,11 @@ static int debug;
 /* Debugging macros */
 #undef dbg
 #define dbg(format, arg...) \
-	do { if (debug) printk(KERN_DEBUG PFX "%s: " format "\n", \
-			       __func__ , ## arg); } while (0)
+//	do { if (debug) printk(KERN_DEBUG PFX "%s: " format "\n", \
+;
 #undef err
 #define err(format, arg...) \
-	do { printk(KERN_ERR PFX format "\n", ## arg); } while (0)
+;
 
 /* Module paramaters */
 module_param(debug, int, 0644);
@@ -816,8 +816,8 @@ static int ezusb_firmware_download(struct ezusb_priv *upriv,
 	 */
 	variant_offset = be16_to_cpup((__be16 *) &fw->code[FW_VAR_OFFSET_PTR]);
 	if (variant_offset >= fw->size) {
-		printk(KERN_ERR PFX "Invalid firmware variant offset: "
-		       "0x%04x\n", variant_offset);
+//		printk(KERN_ERR PFX "Invalid firmware variant offset: "
+;
 		retval = -EINVAL;
 		goto fail;
 	}
@@ -856,8 +856,8 @@ static int ezusb_firmware_download(struct ezusb_priv *upriv,
 
 	goto exit;
  fail:
-	printk(KERN_ERR PFX "Firmware download failed, error %d\n",
-	       retval);
+//	printk(KERN_ERR PFX "Firmware download failed, error %d\n",
+;
  exit:
 	return retval;
 }
@@ -917,15 +917,15 @@ static int ezusb_access_ltv(struct ezusb_priv *upriv,
 	case EZUSB_CTX_REQ_FAILED:
 	case EZUSB_CTX_RESP_TIMEOUT:
 	case EZUSB_CTX_REQSUBMIT_FAIL:
-		printk(KERN_ERR PFX "Access failed, resetting (state %d,"
-		       " reply_count %d)\n", state, upriv->reply_count);
+//		printk(KERN_ERR PFX "Access failed, resetting (state %d,"
+;
 		upriv->reply_count = 0;
 		if (state == EZUSB_CTX_REQ_TIMEOUT
 		    || state == EZUSB_CTX_RESP_TIMEOUT) {
-			printk(KERN_ERR PFX "ctx timed out\n");
+;
 			retval = -ETIMEDOUT;
 		} else {
-			printk(KERN_ERR PFX "ctx failed\n");
+;
 			retval = -EFAULT;
 		}
 		goto exit;
@@ -1058,8 +1058,8 @@ static int ezusb_bap_pread(struct hermes *hw, int bap,
 
 	if (id == EZUSB_RID_RX) {
 		if ((sizeof(*ans) + offset + len) > actual_length) {
-			printk(KERN_ERR PFX "BAP read beyond buffer end "
-			       "in rx frame\n");
+//			printk(KERN_ERR PFX "BAP read beyond buffer end "
+;
 			return -EINVAL;
 		}
 		memcpy(buf, ans->data + offset, len);
@@ -1069,13 +1069,13 @@ static int ezusb_bap_pread(struct hermes *hw, int bap,
 	if (EZUSB_IS_INFO(id)) {
 		/* Include 4 bytes for length/type */
 		if ((sizeof(*ans) + offset + len - 4) > actual_length) {
-			printk(KERN_ERR PFX "BAP read beyond buffer end "
-			       "in info frame\n");
+//			printk(KERN_ERR PFX "BAP read beyond buffer end "
+;
 			return -EFAULT;
 		}
 		memcpy(buf, ans->data + offset - 4, len);
 	} else {
-		printk(KERN_ERR PFX "Unexpected fid 0x%04x\n", id);
+;
 		return -EINVAL;
 	}
 
@@ -1205,21 +1205,21 @@ static netdev_tx_t ezusb_xmit(struct sk_buff *skb, struct net_device *dev)
 	int tx_size;
 
 	if (!netif_running(dev)) {
-		printk(KERN_ERR "%s: Tx on stopped device!\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: Tx on stopped device!\n",
+;
 		return NETDEV_TX_BUSY;
 	}
 
 	if (netif_queue_stopped(dev)) {
-		printk(KERN_DEBUG "%s: Tx while transmitter busy!\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: Tx while transmitter busy!\n",
+;
 		return NETDEV_TX_BUSY;
 	}
 
 	if (orinoco_lock(priv, &flags) != 0) {
-		printk(KERN_ERR
-		       "%s: ezusb_xmit() called while hw_unavailable\n",
-		       dev->name);
+//		printk(KERN_ERR
+//		       "%s: ezusb_xmit() called while hw_unavailable\n",
+;
 		return NETDEV_TX_BUSY;
 	}
 
@@ -1281,8 +1281,8 @@ static netdev_tx_t ezusb_xmit(struct sk_buff *skb, struct net_device *dev)
 	if (err) {
 		netif_start_queue(dev);
 		if (net_ratelimit())
-			printk(KERN_ERR "%s: Error %d transmitting packet\n",
-				dev->name, err);
+//			printk(KERN_ERR "%s: Error %d transmitting packet\n",
+;
 		goto busy;
 	}
 
@@ -1376,13 +1376,13 @@ static int ezusb_init(hermes_t *hw)
 	retval = ezusb_write_ltv(hw, 0, EZUSB_RID_INIT1,
 				 HERMES_BYTES_TO_RECLEN(2), "\x10\x00");
 	if (retval < 0) {
-		printk(KERN_ERR PFX "EZUSB_RID_INIT1 error %d\n", retval);
+;
 		return retval;
 	}
 
 	retval = ezusb_docmd_wait(hw, HERMES_CMD_INIT, 0, NULL);
 	if (retval < 0) {
-		printk(KERN_ERR PFX "HERMES_CMD_INIT error %d\n", retval);
+;
 		return retval;
 	}
 
@@ -1502,7 +1502,7 @@ static inline void ezusb_delete(struct ezusb_priv *upriv)
 					  struct request_context, list));
 
 	if (upriv->read_urb && upriv->read_urb->status == -EINPROGRESS)
-		printk(KERN_ERR PFX "Some URB in progress\n");
+;
 
 	mutex_unlock(&upriv->mtx);
 
@@ -1742,7 +1742,7 @@ static void ezusb_disconnect(struct usb_interface *intf)
 	struct ezusb_priv *upriv = usb_get_intfdata(intf);
 	usb_set_intfdata(intf, NULL);
 	ezusb_delete(upriv);
-	printk(KERN_INFO PFX "Disconnected\n");
+;
 }
 
 
@@ -1763,13 +1763,13 @@ static int __init ezusb_module_init(void)
 {
 	int err;
 
-	printk(KERN_DEBUG "%s\n", version);
+;
 
 	/* register this driver with the USB subsystem */
 	err = usb_register(&orinoco_driver);
 	if (err < 0) {
-		printk(KERN_ERR PFX "usb_register failed, error %d\n",
-		       err);
+//		printk(KERN_ERR PFX "usb_register failed, error %d\n",
+;
 		return err;
 	}
 

@@ -45,7 +45,7 @@ static int snd_es1688_dsp_command(struct snd_es1688 *chip, unsigned char val)
 			return 1;
 		}
 #ifdef CONFIG_SND_DEBUG
-	printk(KERN_DEBUG "snd_es1688_dsp_command: timeout (0x%x)\n", val);
+;
 #endif
 	return 0;
 }
@@ -168,16 +168,16 @@ static int snd_es1688_probe(struct snd_es1688 *chip)
 	hw = ES1688_HW_AUTO;
 	switch (chip->version & 0xfff0) {
 	case 0x4880:
-		snd_printk(KERN_ERR "[0x%lx] ESS: AudioDrive ES488 detected, "
-			   "but driver is in another place\n", chip->port);
+//		snd_printk(KERN_ERR "[0x%lx] ESS: AudioDrive ES488 detected, "
+;
 		return -ENODEV;
 	case 0x6880:
 		hw = (chip->version & 0x0f) >= 8 ? ES1688_HW_1688 : ES1688_HW_688;
 		break;
 	default:
-		snd_printk(KERN_ERR "[0x%lx] ESS: unknown AudioDrive chip "
-			   "with version 0x%x (Jazz16 soundcard?)\n",
-			   chip->port, chip->version);
+//		snd_printk(KERN_ERR "[0x%lx] ESS: unknown AudioDrive chip "
+//			   "with version 0x%x (Jazz16 soundcard?)\n",
+;
 		return -ENODEV;
 	}
 
@@ -227,7 +227,7 @@ static int snd_es1688_init(struct snd_es1688 * chip, int enable)
 		}
 	}
 #if 0
-	snd_printk(KERN_DEBUG "mpu cfg = 0x%x\n", cfg);
+;
 #endif
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	snd_es1688_mixer_write(chip, 0x40, cfg);
@@ -241,9 +241,9 @@ static int snd_es1688_init(struct snd_es1688 * chip, int enable)
 		cfg = 0xf0;	/* enable only DMA counter interrupt */
 		irq_bits = irqs[chip->irq & 0x0f];
 		if (irq_bits < 0) {
-			snd_printk(KERN_ERR "[0x%lx] ESS: bad IRQ %d "
-				   "for ES1688 chip!!\n",
-				   chip->port, chip->irq);
+//			snd_printk(KERN_ERR "[0x%lx] ESS: bad IRQ %d "
+//				   "for ES1688 chip!!\n",
+;
 #if 0
 			irq_bits = 0;
 			cfg = 0x10;
@@ -256,8 +256,8 @@ static int snd_es1688_init(struct snd_es1688 * chip, int enable)
 		cfg = 0xf0;	/* extended mode DMA enable */
 		dma = chip->dma8;
 		if (dma > 3 || dma == 2) {
-			snd_printk(KERN_ERR "[0x%lx] ESS: bad DMA channel %d "
-				   "for ES1688 chip!!\n", chip->port, dma);
+//			snd_printk(KERN_ERR "[0x%lx] ESS: bad DMA channel %d "
+;
 #if 0
 			dma_bits = 0;
 			cfg = 0x00;	/* disable all DMA */
@@ -348,9 +348,9 @@ static int snd_es1688_trigger(struct snd_es1688 *chip, int cmd, unsigned char va
 		return -EINVAL;	/* something is wrong */
 	}
 #if 0
-	printk(KERN_DEBUG "trigger: val = 0x%x, value = 0x%x\n", val, value);
-	printk(KERN_DEBUG "trigger: pointer = 0x%x\n",
-	       snd_dma_pointer(chip->dma8, chip->dma_size));
+;
+//	printk(KERN_DEBUG "trigger: pointer = 0x%x\n",
+;
 #endif
 	snd_es1688_write(chip, 0xb8, (val & 0xf0) | value);
 	spin_unlock(&chip->reg_lock);
@@ -658,16 +658,16 @@ int snd_es1688_create(struct snd_card *card,
 	chip->dma8 = -1;
 	
 	if ((chip->res_port = request_region(port + 4, 12, "ES1688")) == NULL) {
-		snd_printk(KERN_ERR "es1688: can't grab port 0x%lx\n", port + 4);
+;
 		return -EBUSY;
 	}
 	if (request_irq(irq, snd_es1688_interrupt, IRQF_DISABLED, "ES1688", (void *) chip)) {
-		snd_printk(KERN_ERR "es1688: can't grab IRQ %d\n", irq);
+;
 		return -EBUSY;
 	}
 	chip->irq = irq;
 	if (request_dma(dma8, "ES1688")) {
-		snd_printk(KERN_ERR "es1688: can't grab DMA8 %d\n", dma8);
+;
 		return -EBUSY;
 	}
 	chip->dma8 = dma8;

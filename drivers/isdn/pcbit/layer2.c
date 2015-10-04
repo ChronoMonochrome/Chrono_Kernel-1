@@ -86,7 +86,7 @@ pcbit_l2_write(struct pcbit_dev *dev, ulong msg, ushort refnum,
 	}
 	if ((frame = kmalloc(sizeof(struct frame_buf),
 						  GFP_ATOMIC)) == NULL) {
-		printk(KERN_WARNING "pcbit_2_write: kmalloc failed\n");
+;
 		dev_kfree_skb(skb);
 		return -1;
 	}
@@ -269,9 +269,9 @@ pcbit_transmit(struct pcbit_dev *dev)
 	} else {
 		spin_unlock_irqrestore(&dev->lock, flags);
 #ifdef DEBUG
-		printk(KERN_DEBUG "unacked %d free %d write_queue %s\n",
-		     unacked, dev->free, dev->write_queue ? "not empty" :
-		       "empty");
+//		printk(KERN_DEBUG "unacked %d free %d write_queue %s\n",
+//		     unacked, dev->free, dev->write_queue ? "not empty" :
+;
 #endif
 	}
 }
@@ -337,8 +337,8 @@ pcbit_receive(struct pcbit_dev *dev)
 	tt = pcbit_readw(dev);
 
 	if ((tt & 0x7fffU) > 511) {
-		printk(KERN_INFO "pcbit: invalid frame length -> TT=%04x\n",
-		       tt);
+//		printk(KERN_INFO "pcbit: invalid frame length -> TT=%04x\n",
+;
 		pcbit_l2_error(dev);
 		return;
 	}
@@ -346,7 +346,7 @@ pcbit_receive(struct pcbit_dev *dev)
 		type1 = 0;
 
 		if (dev->read_frame) {
-			printk(KERN_DEBUG "pcbit_receive: Type 0 frame and read_frame != NULL\n");
+;
 			/* discard previous queued frame */
 			kfree_skb(dev->read_frame->skb);
 			kfree(dev->read_frame);
@@ -355,7 +355,7 @@ pcbit_receive(struct pcbit_dev *dev)
 		frame = kzalloc(sizeof(struct frame_buf), GFP_ATOMIC);
 
 		if (frame == NULL) {
-			printk(KERN_WARNING "kmalloc failed\n");
+;
 			return;
 		}
 
@@ -364,7 +364,7 @@ pcbit_receive(struct pcbit_dev *dev)
 
 
 		if (cpu != 0x06 && cpu != 0x02) {
-			printk(KERN_DEBUG "pcbit: invalid cpu value\n");
+;
 			kfree(frame);
 			pcbit_l2_error(dev);
 			return;
@@ -387,7 +387,7 @@ pcbit_receive(struct pcbit_dev *dev)
 		if (frame->hdr_len == 0) {
 			kfree(frame);
 #ifdef DEBUG
-			printk(KERN_DEBUG "0 sized frame\n");
+;
 #endif
 			pcbit_firmware_bug(dev);
 			return;
@@ -395,10 +395,10 @@ pcbit_receive(struct pcbit_dev *dev)
 		/* sanity check the length values */
 		if (frame->hdr_len > 1024 || frame->dt_len > 2048) {
 #ifdef DEBUG
-			printk(KERN_DEBUG "length problem: ");
-			printk(KERN_DEBUG "TH=%04x TD=%04x\n",
-			       frame->hdr_len,
-			       frame->dt_len);
+;
+//			printk(KERN_DEBUG "TH=%04x TD=%04x\n",
+//			       frame->hdr_len,
+;
 #endif
 			pcbit_l2_error(dev);
 			kfree(frame);
@@ -410,7 +410,7 @@ pcbit_receive(struct pcbit_dev *dev)
 					   ((frame->hdr_len + 15) & ~15));
 
 		if (!frame->skb) {
-			printk(KERN_DEBUG "pcbit_receive: out of memory\n");
+;
 			kfree(frame);
 			return;
 		}
@@ -424,7 +424,7 @@ pcbit_receive(struct pcbit_dev *dev)
 		tt &= 0x7fffU;
 
 		if (!(frame = dev->read_frame)) {
-			printk("Type 1 frame and no frame queued\n");
+;
 			/* usually after an error: toss frame */
 			dev->readptr += tt;
 			if (dev->readptr > dev->sh_mem + BANK2 + BANKLEN)
@@ -505,11 +505,11 @@ pcbit_irq_handler(int interrupt, void *devptr)
 	dev = (struct pcbit_dev *) devptr;
 
 	if (!dev) {
-		printk(KERN_WARNING "pcbit_irq_handler: wrong device\n");
+;
 		return IRQ_NONE;
 	}
 	if (dev->interrupt) {
-		printk(KERN_DEBUG "pcbit: reentering interrupt hander\n");
+;
 		return IRQ_HANDLED;
 	}
 	dev->interrupt = 1;
@@ -523,7 +523,7 @@ pcbit_irq_handler(int interrupt, void *devptr)
 	}
 	if (info & 0x40U) {     /* E bit set */
 #ifdef DEBUG
-		printk(KERN_DEBUG "pcbit_irq_handler: E bit on\n");
+;
 #endif
 		pcbit_l2_error(dev);
 		dev->interrupt = 0;
@@ -564,7 +564,7 @@ pcbit_l2_active_conf(struct pcbit_dev *dev, u_char info)
 	state = dev->l2_state;
 
 #ifdef DEBUG
-	printk(KERN_DEBUG "layer2_active_confirm\n");
+;
 #endif
 
 
@@ -639,7 +639,7 @@ pcbit_l2_error(struct pcbit_dev *dev)
 {
 	if (dev->l2_state == L2_RUNNING) {
 
-		printk(KERN_INFO "pcbit: layer 2 error\n");
+;
 
 #ifdef DEBUG
 		log_state(dev);
@@ -677,15 +677,15 @@ pcbit_recv_ack(struct pcbit_dev *dev, unsigned char ack)
 
 		if (dev->send_seq > dev->unack_seq) {
 			if (ack <= dev->unack_seq || ack > dev->send_seq) {
-				printk(KERN_DEBUG
-				     "layer 2 ack unacceptable - dev %d",
-				       dev->id);
+//				printk(KERN_DEBUG
+//				     "layer 2 ack unacceptable - dev %d",
+;
 
 				pcbit_l2_error(dev);
 			} else if (ack > dev->send_seq && ack <= dev->unack_seq) {
-				printk(KERN_DEBUG
-				     "layer 2 ack unacceptable - dev %d",
-				       dev->id);
+//				printk(KERN_DEBUG
+//				     "layer 2 ack unacceptable - dev %d",
+;
 				pcbit_l2_error(dev);
 			}
 		}
@@ -710,5 +710,5 @@ pcbit_recv_ack(struct pcbit_dev *dev, unsigned char ack)
 			count++;
 		}
 	} else
-		printk(KERN_DEBUG "recv_ack: unacked = 0\n");
+;
 }

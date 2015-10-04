@@ -578,7 +578,7 @@ static int __init sc26xx_console_setup(struct console *con, char *options)
 	if (port->type != PORT_SC26XX)
 		return -1;
 
-	printk(KERN_INFO "Console: ttySC%d (SC26XX)\n", con->index);
+;
 	if (options)
 		uart_parse_options(options, &baud, &parity, &bits, &flow);
 

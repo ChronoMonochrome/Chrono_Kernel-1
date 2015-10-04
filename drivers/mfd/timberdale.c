@@ -879,14 +879,14 @@ static int __init timberdale_init(void)
 
 	err = pci_register_driver(&timberdale_pci_driver);
 	if (err < 0) {
-		printk(KERN_ERR
-			"Failed to register PCI driver for %s device.\n",
-			timberdale_pci_driver.name);
+//		printk(KERN_ERR
+//			"Failed to register PCI driver for %s device.\n",
+;
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO "Driver for %s has been successfully registered.\n",
-		timberdale_pci_driver.name);
+//	printk(KERN_INFO "Driver for %s has been successfully registered.\n",
+;
 
 	return 0;
 }
@@ -895,8 +895,8 @@ static void __exit timberdale_exit(void)
 {
 	pci_unregister_driver(&timberdale_pci_driver);
 
-	printk(KERN_INFO "Driver for %s has been successfully unregistered.\n",
-		timberdale_pci_driver.name);
+//	printk(KERN_INFO "Driver for %s has been successfully unregistered.\n",
+;
 }
 
 module_init(timberdale_init);

@@ -654,9 +654,9 @@ __nf_conntrack_alloc(struct net *net, u16 zone,
 		if (!early_drop(net, hash_bucket(hash, net))) {
 			atomic_dec(&net->ct.count);
 			if (net_ratelimit())
-				printk(KERN_WARNING
-				       "nf_conntrack: table full, dropping"
-				       " packet.\n");
+//				printk(KERN_WARNING
+//				       "nf_conntrack: table full, dropping"
+;
 			return ERR_PTR(-ENOMEM);
 		}
 	}
@@ -1350,7 +1350,7 @@ void *nf_ct_alloc_hashtable(unsigned int *sizep, int nulls)
 	hash = (void *)__get_free_pages(GFP_KERNEL | __GFP_NOWARN | __GFP_ZERO,
 					get_order(sz));
 	if (!hash) {
-		printk(KERN_WARNING "nf_conntrack: falling back to vmalloc.\n");
+;
 		hash = __vmalloc(sz, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO,
 				 PAGE_KERNEL);
 	}
@@ -1451,9 +1451,9 @@ static int nf_conntrack_init_init_net(void)
 	}
 	nf_conntrack_max = max_factor * nf_conntrack_htable_size;
 
-	printk(KERN_INFO "nf_conntrack version %s (%u buckets, %d max)\n",
-	       NF_CONNTRACK_VERSION, nf_conntrack_htable_size,
-	       nf_conntrack_max);
+//	printk(KERN_INFO "nf_conntrack version %s (%u buckets, %d max)\n",
+//	       NF_CONNTRACK_VERSION, nf_conntrack_htable_size,
+;
 
 	ret = nf_conntrack_proto_init();
 	if (ret < 0)
@@ -1517,7 +1517,7 @@ static int nf_conntrack_init_net(struct net *net)
 							sizeof(struct nf_conn), 0,
 							SLAB_DESTROY_BY_RCU, NULL);
 	if (!net->ct.nf_conntrack_cachep) {
-		printk(KERN_ERR "Unable to create nf_conn slab cache\n");
+;
 		ret = -ENOMEM;
 		goto err_cache;
 	}
@@ -1526,7 +1526,7 @@ static int nf_conntrack_init_net(struct net *net)
 	net->ct.hash = nf_ct_alloc_hashtable(&net->ct.htable_size, 1);
 	if (!net->ct.hash) {
 		ret = -ENOMEM;
-		printk(KERN_ERR "Unable to create nf_conntrack_hash\n");
+;
 		goto err_hash;
 	}
 	ret = nf_conntrack_expect_init(net);

@@ -84,7 +84,7 @@ compute_wday(efi_time_t *eft)
 	int ndays = 0;
 
 	if ( eft->year < 1998 ) {
-		printk(KERN_ERR "efirtc: EFI year < 1998, invalid date\n");
+;
 		return -1;
 	}
 
@@ -180,7 +180,7 @@ static long efi_rtc_ioctl(struct file *file, unsigned int cmd,
 
 			if (status != EFI_SUCCESS) {
 				/* should never happen */
-				printk(KERN_ERR "efitime: can't read time\n");
+;
 				return -EINVAL;
 			}
 
@@ -381,19 +381,19 @@ efi_rtc_init(void)
 	int ret;
 	struct proc_dir_entry *dir;
 
-	printk(KERN_INFO "EFI Time Services Driver v%s\n", EFI_RTC_VERSION);
+;
 
 	ret = misc_register(&efi_rtc_dev);
 	if (ret) {
-		printk(KERN_ERR "efirtc: can't misc_register on minor=%d\n",
-				EFI_RTC_MINOR);
+//		printk(KERN_ERR "efirtc: can't misc_register on minor=%d\n",
+;
 		return ret;
 	}
 
 	dir = create_proc_read_entry ("driver/efirtc", 0, NULL,
 			              efi_rtc_read_proc, NULL);
 	if (dir == NULL) {
-		printk(KERN_ERR "efirtc: can't create /proc/driver/efirtc.\n");
+;
 		misc_deregister(&efi_rtc_dev);
 		return -1;
 	}

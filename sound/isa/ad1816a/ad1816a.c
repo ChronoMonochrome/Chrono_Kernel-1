@@ -113,14 +113,14 @@ static int __devinit snd_card_ad1816a_pnp(int dev, struct snd_card_ad1816a *acar
 	acard->devmpu = pnp_request_card_device(card, id->devs[1].id, NULL);
 	if (acard->devmpu == NULL) {
 		mpu_port[dev] = -1;
-		snd_printk(KERN_WARNING PFX "MPU401 device busy, skipping.\n");
+;
 	}
 
 	pdev = acard->dev;
 
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
-		printk(KERN_ERR PFX "AUDIO PnP configure failure\n");
+;
 		return -EBUSY;
 	}
 
@@ -137,7 +137,7 @@ static int __devinit snd_card_ad1816a_pnp(int dev, struct snd_card_ad1816a *acar
 
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
-		printk(KERN_ERR PFX "MPU401 PnP configure failure\n");
+;
 		mpu_port[dev] = -1;
 		acard->devmpu = NULL;
 	} else {
@@ -206,14 +206,14 @@ static int __devinit snd_card_ad1816a_probe(int dev, struct pnp_card_link *pcard
 		if (snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
 					mpu_port[dev], 0, mpu_irq[dev], IRQF_DISABLED,
 					NULL) < 0)
-			printk(KERN_ERR PFX "no MPU-401 device at 0x%lx.\n", mpu_port[dev]);
+;
 	}
 
 	if (fm_port[dev] > 0) {
 		if (snd_opl3_create(card,
 				    fm_port[dev], fm_port[dev] + 2,
 				    OPL3_HW_AUTO, 0, &opl3) < 0) {
-			printk(KERN_ERR PFX "no OPL device at 0x%lx-0x%lx.\n", fm_port[dev], fm_port[dev] + 2);
+;
 		} else {
 			error = snd_opl3_hwdep_new(opl3, 0, 1, NULL);
 			if (error < 0) {
@@ -278,7 +278,7 @@ static int __init alsa_card_ad1816a_init(void)
 	if (!ad1816a_devices) {
 		pnp_unregister_card_driver(&ad1816a_pnpc_driver);
 #ifdef MODULE
-		printk(KERN_ERR "no AD1816A based soundcards found.\n");
+;
 #endif	/* MODULE */
 		return -ENODEV;
 	}

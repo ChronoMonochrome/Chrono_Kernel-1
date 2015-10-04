@@ -130,15 +130,15 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq) {
 	  //////write zonetype
                 if(sZoneTypeCmd.ZoneType == ZoneType_USA) {
                   //set to USA
-                   printk("set_ZoneType:USA\n");
+;
 		}
                 else if(sZoneTypeCmd.ZoneType == ZoneType_Japan) {
                   //set to Japan
-                  printk("set_ZoneType:Japan\n");
+;
 		}
 	       else if(sZoneTypeCmd.ZoneType == ZoneType_Europe) {
                   //set to Europe
-                  printk("set_ZoneType:Europe\n");
+;
 		}
             }
 	else {
@@ -156,7 +156,7 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq) {
              sZoneTypeCmd.ZoneType = ZoneType_Europe;
 	 }
 	 else { //Unknown ZoneType
-	        printk("Error:ZoneType[%x] Unknown ???\n",zonetype);
+;
 	         result = -EFAULT;
 		break;
 	 }
@@ -686,12 +686,12 @@ if(wpa_Result.authenticated==TRUE) {
          pDevice->fWPA_Authened = TRUE;           //is successful peer to wpa_Result.authenticated?
 }
 
-        //printk("get private wpa_supplicant announce WPA SM\n");
-	//printk("wpa-->ifname=%s\n",wpa_Result.ifname);
-	//printk("wpa-->proto=%d\n",wpa_Result.proto);
-	//printk("wpa-->key-mgmt=%d\n",wpa_Result.key_mgmt);
-	//printk("wpa-->eap_type=%d\n",wpa_Result.eap_type);
-	//printk("wpa-->authenticated is %s\n",(wpa_Result.authenticated==TRUE)?"TRUE":"FALSE");
+;
+;
+;
+;
+;
+;
 
 	pReq->wResult = 0;
         break;

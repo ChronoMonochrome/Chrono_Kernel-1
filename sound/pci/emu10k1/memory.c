@@ -235,11 +235,11 @@ __found_pages:
 static int is_valid_page(struct snd_emu10k1 *emu, dma_addr_t addr)
 {
 	if (addr & ~emu->dma_mask) {
-		snd_printk(KERN_ERR "max memory size is 0x%lx (addr = 0x%lx)!!\n", emu->dma_mask, (unsigned long)addr);
+;
 		return 0;
 	}
 	if (addr & (EMUPAGESIZE-1)) {
-		snd_printk(KERN_ERR "page is not aligned\n");
+;
 		return 0;
 	}
 	return 1;
@@ -327,7 +327,7 @@ snd_emu10k1_alloc_pages(struct snd_emu10k1 *emu, struct snd_pcm_substream *subst
 		dma_addr_t addr;
 		addr = snd_pcm_sgbuf_get_addr(substream, ofs);
 		if (! is_valid_page(emu, addr)) {
-			printk(KERN_ERR "emu: failure page = %d\n", idx);
+;
 			mutex_unlock(&hdr->block_mutex);
 			return NULL;
 		}
@@ -503,7 +503,7 @@ static inline void *offset_ptr(struct snd_emu10k1 *emu, int page, int offset)
 		return NULL;
 	ptr = emu->page_ptr_table[page];
 	if (! ptr) {
-		printk(KERN_ERR "emu10k1: access to NULL ptr: page = %d\n", page);
+;
 		return NULL;
 	}
 	ptr += offset & (PAGE_SIZE - 1);

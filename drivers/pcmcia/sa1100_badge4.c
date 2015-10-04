@@ -64,9 +64,9 @@ static void complain_about_jumpering(const char *whom,
 				     const char *supply,
 				     int given, int wanted)
 {
-	printk(KERN_ERR
-	 "%s: %s %d.%dV wanted but board is jumpered for %s %d.%dV operation"
-	 "; re-jumper the board and/or use pcmv=xx,xx,xx\n",
+//	printk(KERN_ERR
+//	 "%s: %s %d.%dV wanted but board is jumpered for %s %d.%dV operation"
+;
 	       whom, supply,
 	       wanted / 10, wanted % 10,
 	       supply,
@@ -138,10 +138,10 @@ int pcmcia_badge4_init(struct device *dev)
 	int ret = -ENODEV;
 
 	if (machine_is_badge4()) {
-		printk(KERN_INFO
-		       "%s: badge4_pcmvcc=%d, badge4_pcmvpp=%d, badge4_cfvcc=%d\n",
-		       __func__,
-		       badge4_pcmvcc, badge4_pcmvpp, badge4_cfvcc);
+//		printk(KERN_INFO
+//		       "%s: badge4_pcmvcc=%d, badge4_pcmvpp=%d, badge4_cfvcc=%d\n",
+//		       __func__,
+;
 
 		sa11xx_drv_pcmcia_ops(&badge4_pcmcia_ops);
 		ret = sa1111_pcmcia_add(dev, &badge4_pcmcia_ops,

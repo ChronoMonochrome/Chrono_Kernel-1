@@ -673,9 +673,9 @@ int jbd2_log_wait_commit(journal_t *journal, tid_t tid)
 	read_lock(&journal->j_state_lock);
 #ifdef CONFIG_JBD2_DEBUG
 	if (!tid_geq(journal->j_commit_request, tid)) {
-		printk(KERN_EMERG
-		       "%s: error: j_commit_request=%d, tid=%d\n",
-		       __func__, journal->j_commit_request, tid);
+//		printk(KERN_EMERG
+//		       "%s: error: j_commit_request=%d, tid=%d\n",
+;
 	}
 #endif
 	while (tid_gt(tid, journal->j_commit_sequence)) {
@@ -690,7 +690,7 @@ int jbd2_log_wait_commit(journal_t *journal, tid_t tid)
 	read_unlock(&journal->j_state_lock);
 
 	if (unlikely(is_journal_aborted(journal))) {
-		printk(KERN_EMERG "journal commit I/O error\n");
+;
 		err = -EIO;
 	}
 	return err;
@@ -734,9 +734,9 @@ int jbd2_journal_bmap(journal_t *journal, unsigned long blocknr,
 		if (ret)
 			*retp = ret;
 		else {
-			printk(KERN_ALERT "%s: journal block not found "
-					"at offset %lu on %s\n",
-			       __func__, blocknr, journal->j_devname);
+//			printk(KERN_ALERT "%s: journal block not found "
+//					"at offset %lu on %s\n",
+;
 			err = -EIO;
 			__journal_abort_soft(journal, err);
 		}
@@ -1003,16 +1003,16 @@ journal_t * jbd2_journal_init_dev(struct block_device *bdev,
 	journal->j_wbufsize = n;
 	journal->j_wbuf = kmalloc(n * sizeof(struct buffer_head*), GFP_KERNEL);
 	if (!journal->j_wbuf) {
-		printk(KERN_ERR "%s: Can't allocate bhs for commit thread\n",
-			__func__);
+//		printk(KERN_ERR "%s: Can't allocate bhs for commit thread\n",
+;
 		goto out_err;
 	}
 
 	bh = __getblk(journal->j_dev, start, journal->j_blocksize);
 	if (!bh) {
-		printk(KERN_ERR
-		       "%s: Cannot get buffer for journal superblock\n",
-		       __func__);
+//		printk(KERN_ERR
+//		       "%s: Cannot get buffer for journal superblock\n",
+;
 		goto out_err;
 	}
 	journal->j_sb_buffer = bh;
@@ -1069,24 +1069,24 @@ journal_t * jbd2_journal_init_inode (struct inode *inode)
 	journal->j_wbufsize = n;
 	journal->j_wbuf = kmalloc(n * sizeof(struct buffer_head*), GFP_KERNEL);
 	if (!journal->j_wbuf) {
-		printk(KERN_ERR "%s: Can't allocate bhs for commit thread\n",
-			__func__);
+//		printk(KERN_ERR "%s: Can't allocate bhs for commit thread\n",
+;
 		goto out_err;
 	}
 
 	err = jbd2_journal_bmap(journal, 0, &blocknr);
 	/* If that failed, give up */
 	if (err) {
-		printk(KERN_ERR "%s: Cannot locate journal superblock\n",
-		       __func__);
+//		printk(KERN_ERR "%s: Cannot locate journal superblock\n",
+;
 		goto out_err;
 	}
 
 	bh = __getblk(journal->j_dev, blocknr, journal->j_blocksize);
 	if (!bh) {
-		printk(KERN_ERR
-		       "%s: Cannot get buffer for journal superblock\n",
-		       __func__);
+//		printk(KERN_ERR
+//		       "%s: Cannot get buffer for journal superblock\n",
+;
 		goto out_err;
 	}
 	journal->j_sb_buffer = bh;
@@ -1127,8 +1127,8 @@ static int journal_reset(journal_t *journal)
 	first = be32_to_cpu(sb->s_first);
 	last = be32_to_cpu(sb->s_maxlen);
 	if (first + JBD2_MIN_JOURNAL_BLOCKS > last + 1) {
-		printk(KERN_ERR "JBD: Journal too short (blocks %llu-%llu).\n",
-		       first, last);
+//		printk(KERN_ERR "JBD: Journal too short (blocks %llu-%llu).\n",
+;
 		journal_fail_superblock(journal);
 		return -EINVAL;
 	}
@@ -1189,9 +1189,9 @@ void jbd2_journal_update_superblock(journal_t *journal, int wait)
 		 * be remapped.  Nothing we can do but to retry the
 		 * write and hope for the best.
 		 */
-		printk(KERN_ERR "JBD2: previous I/O error detected "
-		       "for journal superblock update for %s.\n",
-		       journal->j_devname);
+//		printk(KERN_ERR "JBD2: previous I/O error detected "
+//		       "for journal superblock update for %s.\n",
+;
 		clear_buffer_write_io_error(bh);
 		set_buffer_uptodate(bh);
 	}
@@ -1210,9 +1210,9 @@ void jbd2_journal_update_superblock(journal_t *journal, int wait)
 	if (wait) {
 		sync_dirty_buffer(bh);
 		if (buffer_write_io_error(bh)) {
-			printk(KERN_ERR "JBD2: I/O error detected "
-			       "when updating journal superblock for %s.\n",
-			       journal->j_devname);
+//			printk(KERN_ERR "JBD2: I/O error detected "
+//			       "when updating journal superblock for %s.\n",
+;
 			clear_buffer_write_io_error(bh);
 			set_buffer_uptodate(bh);
 		}
@@ -1262,7 +1262,7 @@ static int journal_get_superblock(journal_t *journal)
 
 	if (sb->s_header.h_magic != cpu_to_be32(JBD2_MAGIC_NUMBER) ||
 	    sb->s_blocksize != cpu_to_be32(journal->j_blocksize)) {
-		printk(KERN_WARNING "JBD: no valid journal superblock found\n");
+;
 		goto out;
 	}
 
@@ -1274,7 +1274,7 @@ static int journal_get_superblock(journal_t *journal)
 		journal->j_format_version = 2;
 		break;
 	default:
-		printk(KERN_WARNING "JBD: unrecognised superblock format ID\n");
+;
 		goto out;
 	}
 
@@ -1287,17 +1287,17 @@ static int journal_get_superblock(journal_t *journal)
 
 	if (be32_to_cpu(sb->s_first) == 0 ||
 	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-		printk(KERN_WARNING
-			"JBD2: Invalid start block of journal: %u\n",
-			be32_to_cpu(sb->s_first));
+//		printk(KERN_WARNING
+//			"JBD2: Invalid start block of journal: %u\n",
+;
 		goto out;
 	}
 
 	if (be32_to_cpu(sb->s_first) == 0 ||
 	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-		printk(KERN_WARNING
-			"JBD2: Invalid start block of journal: %u\n",
-			be32_to_cpu(sb->s_first));
+//		printk(KERN_WARNING
+//			"JBD2: Invalid start block of journal: %u\n",
+;
 		goto out;
 	}
 
@@ -1379,9 +1379,9 @@ int jbd2_journal_load(journal_t *journal)
 		goto recovery_error;
 
 	if (journal->j_failed_commit) {
-		printk(KERN_ERR "JBD2: journal transaction %u on %s "
-		       "is corrupt.\n", journal->j_failed_commit,
-		       journal->j_devname);
+//		printk(KERN_ERR "JBD2: journal transaction %u on %s "
+//		       "is corrupt.\n", journal->j_failed_commit,
+;
 		return -EIO;
 	}
 
@@ -1626,8 +1626,8 @@ static int journal_convert_superblock_v1(journal_t *journal,
 	int offset, blocksize;
 	struct buffer_head *bh;
 
-	printk(KERN_WARNING
-		"JBD: Converting superblock from version 1 to 2.\n");
+//	printk(KERN_WARNING
+;
 
 	/* Pre-initialise new fields to zero */
 	offset = ((char *) &(sb->s_feature_compat)) - ((char *) sb);
@@ -1775,8 +1775,8 @@ void __jbd2_journal_abort_hard(journal_t *journal)
 	if (journal->j_flags & JBD2_ABORT)
 		return;
 
-	printk(KERN_ERR "Aborting journal on device %s.\n",
-	       journal->j_devname);
+//	printk(KERN_ERR "Aborting journal on device %s.\n",
+;
 
 	write_lock(&journal->j_state_lock);
 	journal->j_flags |= JBD2_ABORT;
@@ -1988,7 +1988,7 @@ static int jbd2_journal_create_slab(size_t size)
 					 slab_size, 0, NULL);
 	mutex_unlock(&jbd2_slab_create_mutex);
 	if (!jbd2_slab[i]) {
-		printk(KERN_EMERG "JBD2: no memory for jbd2_slab cache\n");
+;
 		return -ENOMEM;
 	}
 	return 0;
@@ -2070,7 +2070,7 @@ static int journal_init_jbd2_journal_head_cache(void)
 	retval = 0;
 	if (!jbd2_journal_head_cache) {
 		retval = -ENOMEM;
-		printk(KERN_EMERG "JBD: no memory for journal_head cache\n");
+;
 	}
 	return retval;
 }
@@ -2224,11 +2224,11 @@ static void __journal_remove_journal_head(struct buffer_head *bh)
 	J_ASSERT_BH(bh, jh2bh(jh) == bh);
 	BUFFER_TRACE(bh, "remove journal_head");
 	if (jh->b_frozen_data) {
-		printk(KERN_WARNING "%s: freeing b_frozen_data\n", __func__);
+;
 		jbd2_free(jh->b_frozen_data, bh->b_size);
 	}
 	if (jh->b_committed_data) {
-		printk(KERN_WARNING "%s: freeing b_committed_data\n", __func__);
+;
 		jbd2_free(jh->b_committed_data, bh->b_size);
 	}
 	bh->b_private = NULL;
@@ -2367,12 +2367,12 @@ static int __init journal_init_handle_cache(void)
 {
 	jbd2_handle_cache = KMEM_CACHE(jbd2_journal_handle, SLAB_TEMPORARY);
 	if (jbd2_handle_cache == NULL) {
-		printk(KERN_EMERG "JBD2: failed to create handle cache\n");
+;
 		return -ENOMEM;
 	}
 	jbd2_inode_cache = KMEM_CACHE(jbd2_inode, 0);
 	if (jbd2_inode_cache == NULL) {
-		printk(KERN_EMERG "JBD2: failed to create inode cache\n");
+;
 		kmem_cache_destroy(jbd2_handle_cache);
 		return -ENOMEM;
 	}
@@ -2433,7 +2433,7 @@ static void __exit journal_exit(void)
 #ifdef CONFIG_JBD2_DEBUG
 	int n = atomic_read(&nr_journal_heads);
 	if (n)
-		printk(KERN_EMERG "JBD: leaked %d journal_heads!\n", n);
+;
 #endif
 	jbd2_remove_debugfs_entry();
 	jbd2_remove_jbd_stats_proc_entry();

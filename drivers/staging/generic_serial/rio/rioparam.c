@@ -161,10 +161,10 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 
 	TtyP = PortP->gs.port.tty;
 
-	rio_dprintk(RIO_DEBUG_PARAM, "RIOParam: Port:%d cmd:%d Modem:%d SleepFlag:%d Mapped: %d, tty=%p\n", PortP->PortNum, cmd, Modem, SleepFlag, PortP->Mapped, TtyP);
+;
 
 	if (!TtyP) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Can't call rioparam with null tty.\n");
+;
 
 		func_exit();
 
@@ -188,11 +188,11 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 			break;
 		}
 		if (PortP->InUse != NOT_INUSE) {
-			rio_dprintk(RIO_DEBUG_PARAM, "Port IN_USE for pre-emptive command\n");
+;
 		}
 
 		if (!res) {
-			rio_dprintk(RIO_DEBUG_PARAM, "Port has no space on transmit queue\n");
+;
 		}
 
 		if (SleepFlag != OK_TO_SLEEP) {
@@ -202,12 +202,12 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 			return RIO_FAIL;
 		}
 
-		rio_dprintk(RIO_DEBUG_PARAM, "wait for can_add_transmit\n");
+;
 		rio_spin_unlock_irqrestore(&PortP->portSem, flags);
 		retval = RIODelay(PortP, HUNDRED_MS);
 		rio_spin_lock_irqsave(&PortP->portSem, flags);
 		if (retval == RIO_FAIL) {
-			rio_dprintk(RIO_DEBUG_PARAM, "wait for can_add_transmit broken by signal\n");
+;
 			rio_spin_unlock_irqrestore(&PortP->portSem, flags);
 			func_exit();
 			return -EINTR;
@@ -226,8 +226,8 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 		return RIO_FAIL;
 	}
 
-	rio_dprintk(RIO_DEBUG_PARAM, "can_add_transmit() returns %x\n", res);
-	rio_dprintk(RIO_DEBUG_PARAM, "Packet is %p\n", PacketP);
+;
+;
 
 	phb_param_ptr = (struct phb_param __iomem *) PacketP->data;
 
@@ -235,50 +235,50 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 	switch (TtyP->termios->c_cflag & CSIZE) {
 	case CS5:
 		{
-			rio_dprintk(RIO_DEBUG_PARAM, "5 bit data\n");
+;
 			Cor1 |= RIOC_COR1_5BITS;
 			break;
 		}
 	case CS6:
 		{
-			rio_dprintk(RIO_DEBUG_PARAM, "6 bit data\n");
+;
 			Cor1 |= RIOC_COR1_6BITS;
 			break;
 		}
 	case CS7:
 		{
-			rio_dprintk(RIO_DEBUG_PARAM, "7 bit data\n");
+;
 			Cor1 |= RIOC_COR1_7BITS;
 			break;
 		}
 	case CS8:
 		{
-			rio_dprintk(RIO_DEBUG_PARAM, "8 bit data\n");
+;
 			Cor1 |= RIOC_COR1_8BITS;
 			break;
 		}
 	}
 
 	if (TtyP->termios->c_cflag & CSTOPB) {
-		rio_dprintk(RIO_DEBUG_PARAM, "2 stop bits\n");
+;
 		Cor1 |= RIOC_COR1_2STOP;
 	} else {
-		rio_dprintk(RIO_DEBUG_PARAM, "1 stop bit\n");
+;
 		Cor1 |= RIOC_COR1_1STOP;
 	}
 
 	if (TtyP->termios->c_cflag & PARENB) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable parity\n");
+;
 		Cor1 |= RIOC_COR1_NORMAL;
 	} else {
-		rio_dprintk(RIO_DEBUG_PARAM, "Disable parity\n");
+;
 		Cor1 |= RIOC_COR1_NOP;
 	}
 	if (TtyP->termios->c_cflag & PARODD) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Odd parity\n");
+;
 		Cor1 |= RIOC_COR1_ODD;
 	} else {
-		rio_dprintk(RIO_DEBUG_PARAM, "Even parity\n");
+;
 		Cor1 |= RIOC_COR1_EVEN;
 	}
 
@@ -286,85 +286,85 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 	 ** COR 2
 	 */
 	if (TtyP->termios->c_iflag & IXON) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable start/stop output control\n");
+;
 		Cor2 |= RIOC_COR2_IXON;
 	} else {
 		if (PortP->Config & RIO_IXON) {
-			rio_dprintk(RIO_DEBUG_PARAM, "Force enable start/stop output control\n");
+;
 			Cor2 |= RIOC_COR2_IXON;
 		} else
-			rio_dprintk(RIO_DEBUG_PARAM, "IXON has been disabled.\n");
+;
 	}
 
 	if (TtyP->termios->c_iflag & IXANY) {
 		if (PortP->Config & RIO_IXANY) {
-			rio_dprintk(RIO_DEBUG_PARAM, "Enable any key to restart output\n");
+;
 			Cor2 |= RIOC_COR2_IXANY;
 		} else
-			rio_dprintk(RIO_DEBUG_PARAM, "IXANY has been disabled due to sanity reasons.\n");
+;
 	}
 
 	if (TtyP->termios->c_iflag & IXOFF) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable start/stop input control 2\n");
+;
 		Cor2 |= RIOC_COR2_IXOFF;
 	}
 
 	if (TtyP->termios->c_cflag & HUPCL) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Hangup on last close\n");
+;
 		Cor2 |= RIOC_COR2_HUPCL;
 	}
 
 	if (C_CRTSCTS(TtyP)) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Rx hardware flow control enabled\n");
+;
 		Cor2 |= RIOC_COR2_CTSFLOW;
 		Cor2 |= RIOC_COR2_RTSFLOW;
 	} else {
-		rio_dprintk(RIO_DEBUG_PARAM, "Rx hardware flow control disabled\n");
+;
 		Cor2 &= ~RIOC_COR2_CTSFLOW;
 		Cor2 &= ~RIOC_COR2_RTSFLOW;
 	}
 
 
 	if (TtyP->termios->c_cflag & CLOCAL) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Local line\n");
+;
 	} else {
-		rio_dprintk(RIO_DEBUG_PARAM, "Possible Modem line\n");
+;
 	}
 
 	/*
 	 ** COR 4 (there is no COR 3)
 	 */
 	if (TtyP->termios->c_iflag & IGNBRK) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Ignore break condition\n");
+;
 		Cor4 |= RIOC_COR4_IGNBRK;
 	}
 	if (!(TtyP->termios->c_iflag & BRKINT)) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Break generates NULL condition\n");
+;
 		Cor4 |= RIOC_COR4_NBRKINT;
 	} else {
-		rio_dprintk(RIO_DEBUG_PARAM, "Interrupt on	break condition\n");
+;
 	}
 
 	if (TtyP->termios->c_iflag & INLCR) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Map newline to carriage return on input\n");
+;
 		Cor4 |= RIOC_COR4_INLCR;
 	}
 
 	if (TtyP->termios->c_iflag & IGNCR) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Ignore carriage return on input\n");
+;
 		Cor4 |= RIOC_COR4_IGNCR;
 	}
 
 	if (TtyP->termios->c_iflag & ICRNL) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Map carriage return to newline on input\n");
+;
 		Cor4 |= RIOC_COR4_ICRNL;
 	}
 	if (TtyP->termios->c_iflag & IGNPAR) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Ignore characters with parity errors\n");
+;
 		Cor4 |= RIOC_COR4_IGNPAR;
 	}
 	if (TtyP->termios->c_iflag & PARMRK) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Mark parity errors\n");
+;
 		Cor4 |= RIOC_COR4_PARMRK;
 	}
 
@@ -394,24 +394,24 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 	 ** Could set LNE here if you wanted LNext processing. SVR4 will use it.
 	 */
 	if (TtyP->termios->c_iflag & ISTRIP) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Strip input characters\n");
+;
 		if (!(PortP->State & RIO_TRIAD_MODE)) {
 			Cor5 |= RIOC_COR5_ISTRIP;
 		}
 	}
 
 	if (TtyP->termios->c_oflag & ONLCR) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Map newline to carriage-return, newline on output\n");
+;
 		if (PortP->CookMode == COOK_MEDIUM)
 			Cor5 |= RIOC_COR5_ONLCR;
 	}
 	if (TtyP->termios->c_oflag & OCRNL) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Map carriage return to newline on output\n");
+;
 		if (PortP->CookMode == COOK_MEDIUM)
 			Cor5 |= RIOC_COR5_OCRNL;
 	}
 	if ((TtyP->termios->c_oflag & TABDLY) == TAB3) {
-		rio_dprintk(RIO_DEBUG_PARAM, "Tab delay 3 set\n");
+;
 		if (PortP->CookMode == COOK_MEDIUM)
 			Cor5 |= RIOC_COR5_TAB3;
 	}
@@ -431,7 +431,7 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 	/*
 	 ** Baud rate bytes
 	 */
-	rio_dprintk(RIO_DEBUG_PARAM, "Mapping of rx/tx baud %x (%x)\n", TtyP->termios->c_cflag, CBAUD);
+;
 
 	switch (TtyP->termios->c_cflag & CBAUD) {
 #define e(b) case B ## b : RxBaud = TxBaud = RIO_B ## b ;break
@@ -454,66 +454,66 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 		e(115200);	/* e(230400);e(460800); e(921600);  */
 	}
 
-	rio_dprintk(RIO_DEBUG_PARAM, "tx baud 0x%x, rx baud 0x%x\n", TxBaud, RxBaud);
+;
 
 
 	/*
 	 ** Leftovers
 	 */
 	if (TtyP->termios->c_cflag & CREAD)
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable receiver\n");
+;
 #ifdef RCV1EN
 	if (TtyP->termios->c_cflag & RCV1EN)
-		rio_dprintk(RIO_DEBUG_PARAM, "RCV1EN (?)\n");
+;
 #endif
 #ifdef XMT1EN
 	if (TtyP->termios->c_cflag & XMT1EN)
-		rio_dprintk(RIO_DEBUG_PARAM, "XMT1EN (?)\n");
+;
 #endif
 	if (TtyP->termios->c_lflag & ISIG)
-		rio_dprintk(RIO_DEBUG_PARAM, "Input character signal generating enabled\n");
+;
 	if (TtyP->termios->c_lflag & ICANON)
-		rio_dprintk(RIO_DEBUG_PARAM, "Canonical input: erase and kill enabled\n");
+;
 	if (TtyP->termios->c_lflag & XCASE)
-		rio_dprintk(RIO_DEBUG_PARAM, "Canonical upper/lower presentation\n");
+;
 	if (TtyP->termios->c_lflag & ECHO)
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable input echo\n");
+;
 	if (TtyP->termios->c_lflag & ECHOE)
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable echo erase\n");
+;
 	if (TtyP->termios->c_lflag & ECHOK)
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable echo kill\n");
+;
 	if (TtyP->termios->c_lflag & ECHONL)
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable echo newline\n");
+;
 	if (TtyP->termios->c_lflag & NOFLSH)
-		rio_dprintk(RIO_DEBUG_PARAM, "Disable flush after interrupt or quit\n");
+;
 #ifdef TOSTOP
 	if (TtyP->termios->c_lflag & TOSTOP)
-		rio_dprintk(RIO_DEBUG_PARAM, "Send SIGTTOU for background output\n");
+;
 #endif
 #ifdef XCLUDE
 	if (TtyP->termios->c_lflag & XCLUDE)
-		rio_dprintk(RIO_DEBUG_PARAM, "Exclusive use of this line\n");
+;
 #endif
 	if (TtyP->termios->c_iflag & IUCLC)
-		rio_dprintk(RIO_DEBUG_PARAM, "Map uppercase to lowercase on input\n");
+;
 	if (TtyP->termios->c_oflag & OPOST)
-		rio_dprintk(RIO_DEBUG_PARAM, "Enable output post-processing\n");
+;
 	if (TtyP->termios->c_oflag & OLCUC)
-		rio_dprintk(RIO_DEBUG_PARAM, "Map lowercase to uppercase on output\n");
+;
 	if (TtyP->termios->c_oflag & ONOCR)
-		rio_dprintk(RIO_DEBUG_PARAM, "No carriage return output at column 0\n");
+;
 	if (TtyP->termios->c_oflag & ONLRET)
-		rio_dprintk(RIO_DEBUG_PARAM, "Newline performs carriage return function\n");
+;
 	if (TtyP->termios->c_oflag & OFILL)
-		rio_dprintk(RIO_DEBUG_PARAM, "Use fill characters for delay\n");
+;
 	if (TtyP->termios->c_oflag & OFDEL)
-		rio_dprintk(RIO_DEBUG_PARAM, "Fill character is DEL\n");
+;
 	if (TtyP->termios->c_oflag & NLDLY)
-		rio_dprintk(RIO_DEBUG_PARAM, "Newline delay set\n");
+;
 	if (TtyP->termios->c_oflag & CRDLY)
-		rio_dprintk(RIO_DEBUG_PARAM, "Carriage return delay set\n");
+;
 	if (TtyP->termios->c_oflag & TABDLY)
-		rio_dprintk(RIO_DEBUG_PARAM, "Tab delay set\n");
+;
 	/*
 	 ** These things are kind of useful in a later life!
 	 */
@@ -560,7 +560,7 @@ int RIOParam(struct Port *PortP, int cmd, int Modem, int SleepFlag)
 
 	rio_spin_unlock_irqrestore(&PortP->portSem, flags);
 
-	rio_dprintk(RIO_DEBUG_PARAM, "add_transmit returned.\n");
+;
 	/*
 	 ** job done.
 	 */
@@ -591,7 +591,7 @@ int can_add_transmit(struct PKT __iomem **PktP, struct Port *PortP)
 void add_transmit(struct Port *PortP)
 {
 	if (readw(PortP->TxAdd) & PKT_IN_USE) {
-		rio_dprintk(RIO_DEBUG_PARAM, "add_transmit: Packet has been stolen!");
+;
 	}
 	writew(readw(PortP->TxAdd) | PKT_IN_USE, PortP->TxAdd);
 	PortP->TxAdd = (PortP->TxAdd == PortP->TxEnd) ? PortP->TxStart : PortP->TxAdd + 1;
@@ -615,7 +615,7 @@ void put_free_end(struct Host *HostP, struct PKT __iomem *PktP)
 	*
 	************************************************/
 
-	rio_dprintk(RIO_DEBUG_PFE, "put_free_end(PktP=%p)\n", PktP);
+;
 
 	if ((old_end = readw(&HostP->ParmMapP->free_list_end)) != TPNULL) {
 		new_end = RIO_OFF(HostP->Caddr, PktP);
@@ -625,13 +625,13 @@ void put_free_end(struct Host *HostP, struct PKT __iomem *PktP)
 		writew(TPNULL, &((struct rio_free_list __iomem *) PktP)->next);
 		writew(new_end, &HostP->ParmMapP->free_list_end);
 	} else {		/* First packet on the free list this should never happen! */
-		rio_dprintk(RIO_DEBUG_PFE, "put_free_end(): This should never happen\n");
+;
 		writew(RIO_OFF(HostP->Caddr, PktP), &HostP->ParmMapP->free_list_end);
 		tmp_pointer = (struct rio_free_list __iomem *) PktP;
 		writew(TPNULL, &tmp_pointer->prev);
 		writew(TPNULL, &tmp_pointer->next);
 	}
-	rio_dprintk(RIO_DEBUG_CMD, "Before unlock: %p\n", &HostP->HostLock);
+;
 	rio_spin_unlock_irqrestore(&HostP->HostLock, flags);
 }
 

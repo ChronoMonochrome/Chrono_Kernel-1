@@ -73,45 +73,45 @@
 #include <asm/runway.h>		/* for proc_runway_root */
 
 #ifdef DEBUG_CCIO_INIT
-#define DBG_INIT(x...)  printk(x)
-#else
-#define DBG_INIT(x...)
-#endif
-
-#ifdef DEBUG_CCIO_RUN
-#define DBG_RUN(x...)   printk(x)
-#else
-#define DBG_RUN(x...)
-#endif
-
-#ifdef DEBUG_CCIO_RES
-#define DBG_RES(x...)   printk(x)
-#else
-#define DBG_RES(x...)
-#endif
-
-#ifdef DEBUG_CCIO_RUN_SG
-#define DBG_RUN_SG(x...) printk(x)
-#else
-#define DBG_RUN_SG(x...)
-#endif
-
-#define CCIO_INLINE	inline
-#define WRITE_U32(value, addr) __raw_writel(value, addr)
-#define READ_U32(addr) __raw_readl(addr)
-
-#define U2_IOA_RUNWAY 0x580
-#define U2_BC_GSC     0x501
-#define UTURN_IOA_RUNWAY 0x581
-#define UTURN_BC_GSC     0x502
-
-#define IOA_NORMAL_MODE      0x00020080 /* IO_CONTROL to turn on CCIO        */
-#define CMD_TLB_DIRECT_WRITE 35         /* IO_COMMAND for I/O TLB Writes     */
-#define CMD_TLB_PURGE        33         /* IO_COMMAND to Purge I/O TLB entry */
-
-struct ioa_registers {
-        /* Runway Supervisory Set */
-        int32_t    unused1[12];
+//#define DBG_INIT(x...)  printk(x)
+//#else
+//#define DBG_INIT(x...)
+//#endif
+//
+//#ifdef DEBUG_CCIO_RUN
+//#define DBG_RUN(x...)   printk(x)
+//#else
+//#define DBG_RUN(x...)
+//#endif
+//
+//#ifdef DEBUG_CCIO_RES
+//#define DBG_RES(x...)   printk(x)
+//#else
+//#define DBG_RES(x...)
+//#endif
+//
+//#ifdef DEBUG_CCIO_RUN_SG
+//#define DBG_RUN_SG(x...) printk(x)
+//#else
+//#define DBG_RUN_SG(x...)
+//#endif
+//
+//#define CCIO_INLINE	inline
+//#define WRITE_U32(value, addr) __raw_writel(value, addr)
+//#define READ_U32(addr) __raw_readl(addr)
+//
+//#define U2_IOA_RUNWAY 0x580
+//#define U2_BC_GSC     0x501
+//#define UTURN_IOA_RUNWAY 0x581
+//#define UTURN_BC_GSC     0x502
+//
+//#define IOA_NORMAL_MODE      0x00020080 /* IO_CONTROL to turn on CCIO        */
+//#define CMD_TLB_DIRECT_WRITE 35         /* IO_COMMAND for I/O TLB Writes     */
+//#define CMD_TLB_PURGE        33         /* IO_COMMAND to Purge I/O TLB entry */
+//
+//struct ioa_registers {
+//        /* Runway Supervisory Set */
+;
         uint32_t   io_command;             /* Offset 12 */
         uint32_t   io_status;              /* Offset 13 */
         uint32_t   io_control;             /* Offset 14 */
@@ -710,7 +710,7 @@ static int
 ccio_dma_supported(struct device *dev, u64 mask)
 {
 	if(dev == NULL) {
-		printk(KERN_ERR MODULE_NAME ": EISA/ISA/et al not supported\n");
+;
 		BUG();
 		return 0;
 	}
@@ -1397,8 +1397,8 @@ ccio_init_resource(struct resource *res, char *name, void __iomem *ioaddr)
 	 */
 	result = insert_resource(&iomem_resource, res);
 	if (result < 0) {
-		printk(KERN_ERR "%s() failed to claim CCIO bus address space (%08lx,%08lx)\n", 
-			__func__, (unsigned long)res->start, (unsigned long)res->end);
+//		printk(KERN_ERR "%s() failed to claim CCIO bus address space (%08lx,%08lx)\n", 
+;
 	}
 }
 
@@ -1543,14 +1543,14 @@ static int __init ccio_probe(struct parisc_device *dev)
 
 	ioc = kzalloc(sizeof(struct ioc), GFP_KERNEL);
 	if (ioc == NULL) {
-		printk(KERN_ERR MODULE_NAME ": memory allocation failure\n");
+;
 		return 1;
 	}
 
 	ioc->name = dev->id.hversion == U2_IOA_RUNWAY ? "U2" : "UTurn";
 
-	printk(KERN_INFO "Found %s at 0x%lx\n", ioc->name,
-		(unsigned long)dev->hpa.start);
+//	printk(KERN_INFO "Found %s at 0x%lx\n", ioc->name,
+;
 
 	for (i = 0; i < ioc_count; i++) {
 		ioc_p = &(*ioc_p)->next;

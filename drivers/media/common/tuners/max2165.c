@@ -33,10 +33,10 @@
 #include "max2165_priv.h"
 #include "tuner-i2c.h"
 
-#define dprintk(args...) \
-	do { \
-		if (debug) \
-			printk(KERN_DEBUG "max2165: " args); \
+//#define dprintk(args...) \
+//	do { \
+//		if (debug) \
+;
 	} while (0)
 
 static int debug;
@@ -52,13 +52,13 @@ static int max2165_write_reg(struct max2165_priv *priv, u8 reg, u8 data)
 	msg.addr = priv->config->i2c_address;
 
 	if (debug >= 2)
-		dprintk("%s: reg=0x%02X, data=0x%02X\n", __func__, reg, data);
+;
 
 	ret = i2c_transfer(priv->i2c, &msg, 1);
 
 	if (ret != 1)
-		dprintk("%s: error reg=0x%x, data=0x%x, ret=%i\n",
-			__func__, reg, data, ret);
+//		dprintk("%s: error reg=0x%x, data=0x%x, ret=%i\n",
+;
 
 	return (ret != 1) ? -EIO : 0;
 }
@@ -77,14 +77,14 @@ static int max2165_read_reg(struct max2165_priv *priv, u8 reg, u8 *p_data)
 
 	ret = i2c_transfer(priv->i2c, msg, 2);
 	if (ret != 2) {
-		dprintk("%s: error reg=0x%x, ret=%i\n", __func__, reg, ret);
+;
 		return -EIO;
 	}
 
 	*p_data = b1[0];
 	if (debug >= 2)
-		dprintk("%s: reg=0x%02X, data=0x%02X\n",
-			__func__, reg, b1[0]);
+//		dprintk("%s: reg=0x%02X, data=0x%02X\n",
+;
 	return 0;
 }
 
@@ -122,12 +122,12 @@ static int max2165_read_rom_table(struct max2165_priv *priv)
 	priv->bb_filter_7mhz_cfg = dat[2] & 0x0F;
 	priv->bb_filter_8mhz_cfg = dat[2] >> 4;
 
-	dprintk("tf_ntch_low_cfg = 0x%X\n", priv->tf_ntch_low_cfg);
-	dprintk("tf_ntch_hi_cfg = 0x%X\n", priv->tf_ntch_hi_cfg);
-	dprintk("tf_balun_low_ref = 0x%X\n", priv->tf_balun_low_ref);
-	dprintk("tf_balun_hi_ref = 0x%X\n", priv->tf_balun_hi_ref);
-	dprintk("bb_filter_7mhz_cfg = 0x%X\n", priv->bb_filter_7mhz_cfg);
-	dprintk("bb_filter_8mhz_cfg = 0x%X\n", priv->bb_filter_8mhz_cfg);
+;
+;
+;
+;
+;
+;
 
 	return 0;
 }
@@ -217,7 +217,7 @@ static int max2165_set_rf(struct max2165_priv *priv, u32 freq)
 		* (freq / 1000 - 470000) / (780000 - 470000);
 
 	tf = t;
-	dprintk("tf = %X\n", tf);
+;
 	tf |= tf_ntch << 4;
 
 	max2165_write_reg(priv, REG_TRACK_FILTER, tf);
@@ -248,13 +248,13 @@ static void max2165_debug_status(struct max2165_priv *priv)
 	vco_sub_band = (autotune >> 3) & 0x7;
 	adc = autotune & 0x7;
 
-	dprintk("auto VCO active: %d, auto VCO success: %d\n",
-		auto_vco_active, auto_vco_success);
-	dprintk("PLL locked: %d\n", pll_locked);
-	dprintk("DC offset low: %d, DC offset high: %d\n",
-		dc_offset_low, dc_offset_hi);
-	dprintk("Signal lvl over threshold: %d\n", signal_lv_over_threshold);
-	dprintk("VCO: %d, VCO Sub-band: %d, ADC: %d\n", vco, vco_sub_band, adc);
+//	dprintk("auto VCO active: %d, auto VCO success: %d\n",
+;
+;
+//	dprintk("DC offset low: %d, DC offset high: %d\n",
+;
+;
+;
 }
 
 static int max2165_set_params(struct dvb_frontend *fe,
@@ -263,11 +263,11 @@ static int max2165_set_params(struct dvb_frontend *fe,
 	struct max2165_priv *priv = fe->tuner_priv;
 	int ret;
 
-	dprintk("%s() frequency=%d (Hz)\n", __func__, params->frequency);
+;
 	if (fe->ops.info.type == FE_ATSC) {
 			return -EINVAL;
 	} else if (fe->ops.info.type == FE_OFDM) {
-		dprintk("%s() OFDM\n", __func__);
+;
 		switch (params->u.ofdm.bandwidth) {
 		case BANDWIDTH_6_MHZ:
 			return -EINVAL;
@@ -277,15 +277,15 @@ static int max2165_set_params(struct dvb_frontend *fe,
 			priv->bandwidth = params->u.ofdm.bandwidth;
 			break;
 		default:
-			printk(KERN_ERR "MAX2165 bandwidth not set!\n");
+;
 			return -EINVAL;
 		}
 	} else {
-		printk(KERN_ERR "MAX2165 modulation type not supported!\n");
+;
 		return -EINVAL;
 	}
 
-	dprintk("%s() frequency=%d\n", __func__, priv->frequency);
+;
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);
@@ -305,7 +305,7 @@ static int max2165_set_params(struct dvb_frontend *fe,
 static int max2165_get_frequency(struct dvb_frontend *fe, u32 *freq)
 {
 	struct max2165_priv *priv = fe->tuner_priv;
-	dprintk("%s()\n", __func__);
+;
 	*freq = priv->frequency;
 	return 0;
 }
@@ -313,7 +313,7 @@ static int max2165_get_frequency(struct dvb_frontend *fe, u32 *freq)
 static int max2165_get_bandwidth(struct dvb_frontend *fe, u32 *bw)
 {
 	struct max2165_priv *priv = fe->tuner_priv;
-	dprintk("%s()\n", __func__);
+;
 
 	*bw = priv->bandwidth;
 	return 0;
@@ -324,7 +324,7 @@ static int max2165_get_status(struct dvb_frontend *fe, u32 *status)
 	struct max2165_priv *priv = fe->tuner_priv;
 	u16 lock_status = 0;
 
-	dprintk("%s()\n", __func__);
+;
 
 	if (fe->ops.i2c_gate_ctrl)
 			fe->ops.i2c_gate_ctrl(fe, 1);
@@ -340,14 +340,14 @@ static int max2165_get_status(struct dvb_frontend *fe, u32 *status)
 
 static int max2165_sleep(struct dvb_frontend *fe)
 {
-	dprintk("%s()\n", __func__);
+;
 	return 0;
 }
 
 static int max2165_init(struct dvb_frontend *fe)
 {
 	struct max2165_priv *priv = fe->tuner_priv;
-	dprintk("%s()\n", __func__);
+;
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);
@@ -381,7 +381,7 @@ static int max2165_init(struct dvb_frontend *fe)
 static int max2165_release(struct dvb_frontend *fe)
 {
 	struct max2165_priv *priv = fe->tuner_priv;
-	dprintk("%s()\n", __func__);
+;
 
 	kfree(priv);
 	fe->tuner_priv = NULL;
@@ -414,9 +414,9 @@ struct dvb_frontend *max2165_attach(struct dvb_frontend *fe,
 {
 	struct max2165_priv *priv = NULL;
 
-	dprintk("%s(%d-%04x)\n", __func__,
-		i2c ? i2c_adapter_id(i2c) : -1,
-		cfg ? cfg->i2c_address : -1);
+//	dprintk("%s(%d-%04x)\n", __func__,
+//		i2c ? i2c_adapter_id(i2c) : -1,
+;
 
 	priv = kzalloc(sizeof(struct max2165_priv), GFP_KERNEL);
 	if (priv == NULL)

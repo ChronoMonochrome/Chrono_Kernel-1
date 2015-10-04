@@ -1794,7 +1794,7 @@ unsigned int oldstate)
 		pl011_power_shutdown(uap);
 		break;
 	default:
-		printk(KERN_ERR "pl011_serial: unknown pm %d\n", state);
+;
 	}
 }
 
@@ -1810,8 +1810,8 @@ pl011_set_termios(struct uart_port *port, struct ktermios *termios,
 	if ((port->line == 0) &&
 	    ((termios->c_ispeed == 4800000) ||
 		 (termios->c_ospeed == 4800000))) {
-		printk(KERN_WARNING
-		"this baud need 2 Stop Bit WA at both the ends, not handled here\n");
+//		printk(KERN_WARNING
+;
 		return;
 	}
 
@@ -2374,7 +2374,7 @@ static struct amba_driver pl011_driver = {
 static int __init pl011_init(void)
 {
 	int ret;
-	printk(KERN_INFO "Serial: AMBA PL011 UART driver\n");
+;
 
 	ret = uart_register_driver(&amba_reg);
 	if (ret == 0) {

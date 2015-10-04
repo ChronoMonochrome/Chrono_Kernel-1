@@ -37,10 +37,10 @@
 
 #ifdef DEBUG_DMA
 #define dev_dbgdma(dev, format, arg...)		\
-	dev_printk(KERN_DEBUG , dev , format , ## arg)
-#else
-#define dev_dbgdma(dev, format, arg...)		\
-	({ if (0) dev_printk(KERN_DEBUG, dev, format, ##arg); 0; })
+//	dev_printk(KERN_DEBUG , dev , format , ## arg)
+//#else
+//#define dev_dbgdma(dev, format, arg...)		\
+;
 #endif
 
 #define DRV_NAME	"pata_macio"
@@ -772,8 +772,8 @@ static void pata_macio_reset_hw(struct pata_macio_priv *priv, int resume)
 		pci_restore_state(priv->pdev);
 		rc = pcim_enable_device(priv->pdev);
 		if (rc)
-			dev_printk(KERN_ERR, &priv->pdev->dev,
-				   "Failed to enable device after resume (%d)\n", rc);
+//			dev_printk(KERN_ERR, &priv->pdev->dev,
+;
 		else
 			pci_set_master(priv->pdev);
 	}
@@ -812,7 +812,7 @@ static int pata_macio_slave_config(struct scsi_device *sdev)
 		blk_queue_update_dma_pad(sdev->request_queue, 31);
 
 		/* Tell the world about it */
-		ata_dev_printk(dev, KERN_INFO, "OHare alignment limits applied\n");
+;
 		return 0;
 	}
 
@@ -838,8 +838,8 @@ static int pata_macio_slave_config(struct scsi_device *sdev)
 				      cmd | PCI_COMMAND_INVALIDATE);
 
 		/* Tell the world about it */
-		ata_dev_printk(dev, KERN_INFO,
-			       "K2/Shasta alignment limits applied\n");
+//		ata_dev_printk(dev, KERN_INFO,
+;
 	}
 
 	return 0;

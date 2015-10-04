@@ -83,7 +83,7 @@ static void cs5520_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 
 static void cs5520_set_dma_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 {
-	printk(KERN_ERR "cs55x0: bad ide timing.\n");
+;
 
 	drive->pio_mode = XFER_PIO_0 + 0;
 	cs5520_set_pio_mode(hwif, drive);
@@ -119,13 +119,13 @@ static int __devinit cs5520_init_one(struct pci_dev *dev, const struct pci_devic
 	 * BARS too and we will freak out other bits of the kernel
 	 */
 	if (pci_enable_device_io(dev)) {
-		printk(KERN_WARNING "%s: Unable to enable 55x0.\n", d->name);
+;
 		return -ENODEV;
 	}
 	pci_set_master(dev);
 	if (pci_set_dma_mask(dev, DMA_BIT_MASK(32))) {
-		printk(KERN_WARNING "%s: No suitable DMA available.\n",
-			d->name);
+//		printk(KERN_WARNING "%s: No suitable DMA available.\n",
+;
 		return -ENODEV;
 	}
 

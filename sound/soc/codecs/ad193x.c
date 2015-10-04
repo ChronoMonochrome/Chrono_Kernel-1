@@ -484,16 +484,16 @@ static int __init ad193x_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret =  i2c_add_driver(&ad193x_i2c_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register AD193X I2C driver: %d\n",
-				ret);
+//		printk(KERN_ERR "Failed to register AD193X I2C driver: %d\n",
+;
 	}
 #endif
 
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&ad193x_spi_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register AD193X SPI driver: %d\n",
-				ret);
+//		printk(KERN_ERR "Failed to register AD193X SPI driver: %d\n",
+;
 	}
 #endif
 	return ret;

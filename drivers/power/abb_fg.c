@@ -2721,7 +2721,7 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 
 		val->intval = di->bat_cap.prev_permille;
 		if (last_capacity != val->intval)
-			printk("[ABB-FG] raw soc = %d\n", val->intval);
+;
 		last_capacity = val->intval;
 		break;
 #endif

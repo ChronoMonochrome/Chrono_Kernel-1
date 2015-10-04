@@ -550,8 +550,8 @@ void __fc_linkup(struct fc_lport *lport)
  */
 void fc_linkup(struct fc_lport *lport)
 {
-	printk(KERN_INFO "host%d: libfc: Link up on port (%6.6x)\n",
-	       lport->host->host_no, lport->port_id);
+//	printk(KERN_INFO "host%d: libfc: Link up on port (%6.6x)\n",
+;
 
 	mutex_lock(&lport->lp_mutex);
 	__fc_linkup(lport);
@@ -580,8 +580,8 @@ void __fc_linkdown(struct fc_lport *lport)
  */
 void fc_linkdown(struct fc_lport *lport)
 {
-	printk(KERN_INFO "host%d: libfc: Link down on port (%6.6x)\n",
-	       lport->host->host_no, lport->port_id);
+//	printk(KERN_INFO "host%d: libfc: Link down on port (%6.6x)\n",
+;
 
 	mutex_lock(&lport->lp_mutex);
 	__fc_linkdown(lport);
@@ -682,9 +682,9 @@ void fc_lport_disc_callback(struct fc_lport *lport, enum fc_disc_event event)
 		FC_LPORT_DBG(lport, "Discovery succeeded\n");
 		break;
 	case DISC_EV_FAILED:
-		printk(KERN_ERR "host%d: libfc: "
-		       "Discovery failed for port (%6.6x)\n",
-		       lport->host->host_no, lport->port_id);
+//		printk(KERN_ERR "host%d: libfc: "
+//		       "Discovery failed for port (%6.6x)\n",
+;
 		mutex_lock(&lport->lp_mutex);
 		fc_lport_enter_reset(lport);
 		mutex_unlock(&lport->lp_mutex);
@@ -729,8 +729,8 @@ static void fc_lport_set_port_id(struct fc_lport *lport, u32 port_id,
 				 struct fc_frame *fp)
 {
 	if (port_id)
-		printk(KERN_INFO "host%d: Assigned Port ID %6.6x\n",
-		       lport->host->host_no, port_id);
+//		printk(KERN_INFO "host%d: Assigned Port ID %6.6x\n",
+;
 
 	lport->port_id = port_id;
 
@@ -801,9 +801,9 @@ static void fc_lport_recv_flogi_req(struct fc_lport *lport,
 		goto out;
 	remote_wwpn = get_unaligned_be64(&flp->fl_wwpn);
 	if (remote_wwpn == lport->wwpn) {
-		printk(KERN_WARNING "host%d: libfc: Received FLOGI from port "
-		       "with same WWPN %16.16llx\n",
-		       lport->host->host_no, remote_wwpn);
+//		printk(KERN_WARNING "host%d: libfc: Received FLOGI from port "
+//		       "with same WWPN %16.16llx\n",
+;
 		goto out;
 	}
 	FC_LPORT_DBG(lport, "FLOGI from port WWPN %16.16llx\n", remote_wwpn);
@@ -1520,10 +1520,10 @@ void fc_lport_flogi_resp(struct fc_seq *sp, struct fc_frame *fp,
 					lport->e_d_tov = e_d_tov;
 				lport->r_a_tov = 2 * e_d_tov;
 				fc_lport_set_port_id(lport, did, fp);
-				printk(KERN_INFO "host%d: libfc: "
-				       "Port (%6.6x) entered "
-				       "point-to-point mode\n",
-				       lport->host->host_no, did);
+//				printk(KERN_INFO "host%d: libfc: "
+//				       "Port (%6.6x) entered "
+//				       "point-to-point mode\n",
+;
 				fc_lport_ptp_setup(lport, fc_frame_sid(fp),
 						   get_unaligned_be64(
 							   &flp->fl_wwpn),

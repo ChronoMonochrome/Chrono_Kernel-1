@@ -2226,32 +2226,32 @@ do { \
  */
 #define ASC_PRINT(s) \
     { \
-        printk("advansys: "); \
-        printk(s); \
+;
+;
     }
 
 #define ASC_PRINT1(s, a1) \
     { \
-        printk("advansys: "); \
-        printk((s), (a1)); \
+;
+;
     }
 
 #define ASC_PRINT2(s, a1, a2) \
     { \
-        printk("advansys: "); \
-        printk((s), (a1), (a2)); \
+;
+;
     }
 
 #define ASC_PRINT3(s, a1, a2, a3) \
     { \
-        printk("advansys: "); \
-        printk((s), (a1), (a2), (a3)); \
+;
+;
     }
 
 #define ASC_PRINT4(s, a1, a2, a3, a4) \
     { \
-        printk("advansys: "); \
-        printk((s), (a1), (a2), (a3), (a4)); \
+;
+;
     }
 
 #ifndef ADVANSYS_DEBUG
@@ -2278,8 +2278,8 @@ do { \
 
 #define ASC_DBG(lvl, format, arg...) {					\
 	if (asc_dbglvl >= (lvl))					\
-		printk(KERN_DEBUG "%s: %s: " format, DRV_NAME,		\
-			__func__ , ## arg);				\
+//		printk(KERN_DEBUG "%s: %s: " format, DRV_NAME,		\
+;
 }
 
 #define ASC_DBG_PRT_SCSI_HOST(lvl, s) \
@@ -2420,34 +2420,34 @@ static int asc_dbglvl = 3;
  */
 static void asc_prt_asc_dvc_var(ASC_DVC_VAR *h)
 {
-	printk("ASC_DVC_VAR at addr 0x%lx\n", (ulong)h);
+;
 
-	printk(" iop_base 0x%x, err_code 0x%x, dvc_cntl 0x%x, bug_fix_cntl "
-	       "%d,\n", h->iop_base, h->err_code, h->dvc_cntl, h->bug_fix_cntl);
+//	printk(" iop_base 0x%x, err_code 0x%x, dvc_cntl 0x%x, bug_fix_cntl "
+;
 
-	printk(" bus_type %d, init_sdtr 0x%x,\n", h->bus_type,
-		(unsigned)h->init_sdtr);
+//	printk(" bus_type %d, init_sdtr 0x%x,\n", h->bus_type,
+;
 
-	printk(" sdtr_done 0x%x, use_tagged_qng 0x%x, unit_not_ready 0x%x, "
-	       "chip_no 0x%x,\n", (unsigned)h->sdtr_done,
-	       (unsigned)h->use_tagged_qng, (unsigned)h->unit_not_ready,
-	       (unsigned)h->chip_no);
+//	printk(" sdtr_done 0x%x, use_tagged_qng 0x%x, unit_not_ready 0x%x, "
+//	       "chip_no 0x%x,\n", (unsigned)h->sdtr_done,
+//	       (unsigned)h->use_tagged_qng, (unsigned)h->unit_not_ready,
+;
 
-	printk(" queue_full_or_busy 0x%x, start_motor 0x%x, scsi_reset_wait "
-	       "%u,\n", (unsigned)h->queue_full_or_busy,
-	       (unsigned)h->start_motor, (unsigned)h->scsi_reset_wait);
+//	printk(" queue_full_or_busy 0x%x, start_motor 0x%x, scsi_reset_wait "
+//	       "%u,\n", (unsigned)h->queue_full_or_busy,
+;
 
-	printk(" is_in_int %u, max_total_qng %u, cur_total_qng %u, "
-	       "in_critical_cnt %u,\n", (unsigned)h->is_in_int,
-	       (unsigned)h->max_total_qng, (unsigned)h->cur_total_qng,
-	       (unsigned)h->in_critical_cnt);
+//	printk(" is_in_int %u, max_total_qng %u, cur_total_qng %u, "
+//	       "in_critical_cnt %u,\n", (unsigned)h->is_in_int,
+//	       (unsigned)h->max_total_qng, (unsigned)h->cur_total_qng,
+;
 
-	printk(" last_q_shortage %u, init_state 0x%x, no_scam 0x%x, "
-	       "pci_fix_asyn_xfer 0x%x,\n", (unsigned)h->last_q_shortage,
-	       (unsigned)h->init_state, (unsigned)h->no_scam,
-	       (unsigned)h->pci_fix_asyn_xfer);
+//	printk(" last_q_shortage %u, init_state 0x%x, no_scam 0x%x, "
+//	       "pci_fix_asyn_xfer 0x%x,\n", (unsigned)h->last_q_shortage,
+//	       (unsigned)h->init_state, (unsigned)h->no_scam,
+;
 
-	printk(" cfg 0x%lx\n", (ulong)h->cfg);
+;
 }
 
 /*
@@ -2455,19 +2455,19 @@ static void asc_prt_asc_dvc_var(ASC_DVC_VAR *h)
  */
 static void asc_prt_asc_dvc_cfg(ASC_DVC_CFG *h)
 {
-	printk("ASC_DVC_CFG at addr 0x%lx\n", (ulong)h);
+;
 
-	printk(" can_tagged_qng 0x%x, cmd_qng_enabled 0x%x,\n",
-	       h->can_tagged_qng, h->cmd_qng_enabled);
-	printk(" disc_enable 0x%x, sdtr_enable 0x%x,\n",
-	       h->disc_enable, h->sdtr_enable);
+//	printk(" can_tagged_qng 0x%x, cmd_qng_enabled 0x%x,\n",
+;
+//	printk(" disc_enable 0x%x, sdtr_enable 0x%x,\n",
+;
 
-	printk(" chip_scsi_id %d, isa_dma_speed %d, isa_dma_channel %d, "
-		"chip_version %d,\n", h->chip_scsi_id, h->isa_dma_speed,
-		h->isa_dma_channel, h->chip_version);
+//	printk(" chip_scsi_id %d, isa_dma_speed %d, isa_dma_channel %d, "
+//		"chip_version %d,\n", h->chip_scsi_id, h->isa_dma_speed,
+;
 
-	printk(" mcode_date 0x%x, mcode_version %d\n",
-		h->mcode_date, h->mcode_version);
+//	printk(" mcode_date 0x%x, mcode_version %d\n",
+;
 }
 
 /*
@@ -2477,29 +2477,29 @@ static void asc_prt_asc_dvc_cfg(ASC_DVC_CFG *h)
  */
 static void asc_prt_adv_dvc_var(ADV_DVC_VAR *h)
 {
-	printk(" ADV_DVC_VAR at addr 0x%lx\n", (ulong)h);
+;
 
-	printk("  iop_base 0x%lx, err_code 0x%x, ultra_able 0x%x\n",
-	       (ulong)h->iop_base, h->err_code, (unsigned)h->ultra_able);
+//	printk("  iop_base 0x%lx, err_code 0x%x, ultra_able 0x%x\n",
+;
 
-	printk("  sdtr_able 0x%x, wdtr_able 0x%x\n",
-	       (unsigned)h->sdtr_able, (unsigned)h->wdtr_able);
+//	printk("  sdtr_able 0x%x, wdtr_able 0x%x\n",
+;
 
-	printk("  start_motor 0x%x, scsi_reset_wait 0x%x\n",
-	       (unsigned)h->start_motor, (unsigned)h->scsi_reset_wait);
+//	printk("  start_motor 0x%x, scsi_reset_wait 0x%x\n",
+;
 
-	printk("  max_host_qng %u, max_dvc_qng %u, carr_freelist 0x%lxn\n",
-	       (unsigned)h->max_host_qng, (unsigned)h->max_dvc_qng,
-	       (ulong)h->carr_freelist);
+//	printk("  max_host_qng %u, max_dvc_qng %u, carr_freelist 0x%lxn\n",
+//	       (unsigned)h->max_host_qng, (unsigned)h->max_dvc_qng,
+;
 
-	printk("  icq_sp 0x%lx, irq_sp 0x%lx\n",
-	       (ulong)h->icq_sp, (ulong)h->irq_sp);
+//	printk("  icq_sp 0x%lx, irq_sp 0x%lx\n",
+;
 
-	printk("  no_scam 0x%x, tagqng_able 0x%x\n",
-	       (unsigned)h->no_scam, (unsigned)h->tagqng_able);
+//	printk("  no_scam 0x%x, tagqng_able 0x%x\n",
+;
 
-	printk("  chip_scsi_id 0x%x, cfg 0x%lx\n",
-	       (unsigned)h->chip_scsi_id, (ulong)h->cfg);
+//	printk("  chip_scsi_id 0x%x, cfg 0x%lx\n",
+;
 }
 
 /*
@@ -2509,16 +2509,16 @@ static void asc_prt_adv_dvc_var(ADV_DVC_VAR *h)
  */
 static void asc_prt_adv_dvc_cfg(ADV_DVC_CFG *h)
 {
-	printk(" ADV_DVC_CFG at addr 0x%lx\n", (ulong)h);
+;
 
-	printk("  disc_enable 0x%x, termination 0x%x\n",
-	       h->disc_enable, h->termination);
+//	printk("  disc_enable 0x%x, termination 0x%x\n",
+;
 
-	printk("  chip_version 0x%x, mcode_date 0x%x\n",
-	       h->chip_version, h->mcode_date);
+//	printk("  chip_version 0x%x, mcode_date 0x%x\n",
+;
 
-	printk("  mcode_version 0x%x, control_flag 0x%x\n",
-	       h->mcode_version, h->control_flag);
+//	printk("  mcode_version 0x%x, control_flag 0x%x\n",
+;
 }
 
 /*
@@ -2528,18 +2528,18 @@ static void asc_prt_scsi_host(struct Scsi_Host *s)
 {
 	struct asc_board *boardp = shost_priv(s);
 
-	printk("Scsi_Host at addr 0x%p, device %s\n", s, dev_name(boardp->dev));
-	printk(" host_busy %u, host_no %d, last_reset %d,\n",
-	       s->host_busy, s->host_no, (unsigned)s->last_reset);
+;
+//	printk(" host_busy %u, host_no %d, last_reset %d,\n",
+;
 
-	printk(" base 0x%lx, io_port 0x%lx, irq %d,\n",
-	       (ulong)s->base, (ulong)s->io_port, boardp->irq);
+//	printk(" base 0x%lx, io_port 0x%lx, irq %d,\n",
+;
 
-	printk(" dma_channel %d, this_id %d, can_queue %d,\n",
-	       s->dma_channel, s->this_id, s->can_queue);
+//	printk(" dma_channel %d, this_id %d, can_queue %d,\n",
+;
 
-	printk(" cmd_per_lun %d, sg_tablesize %d, unchecked_isa_dma %d\n",
-	       s->cmd_per_lun, s->sg_tablesize, s->unchecked_isa_dma);
+//	printk(" cmd_per_lun %d, sg_tablesize %d, unchecked_isa_dma %d\n",
+;
 
 	if (ASC_NARROW_BOARD(boardp)) {
 		asc_prt_asc_dvc_var(&boardp->dvc_var.asc_dvc_var);
@@ -2563,7 +2563,7 @@ static void asc_prt_hex(char *f, uchar *s, int l)
 	int k;
 	int m;
 
-	printk("%s: (%d bytes)\n", f, l);
+;
 
 	for (i = 0; i < l; i += 32) {
 
@@ -2576,11 +2576,11 @@ static void asc_prt_hex(char *f, uchar *s, int l)
 		}
 
 		for (j = 0; j < k; j++) {
-			printk(" %2.2X%2.2X%2.2X%2.2X",
-			       (unsigned)s[i + (j * 4)],
-			       (unsigned)s[i + (j * 4) + 1],
-			       (unsigned)s[i + (j * 4) + 2],
-			       (unsigned)s[i + (j * 4) + 3]);
+//			printk(" %2.2X%2.2X%2.2X%2.2X",
+//			       (unsigned)s[i + (j * 4)],
+//			       (unsigned)s[i + (j * 4) + 1],
+//			       (unsigned)s[i + (j * 4) + 2],
+;
 		}
 
 		switch (m) {
@@ -2591,19 +2591,19 @@ static void asc_prt_hex(char *f, uchar *s, int l)
 			printk(" %2.2X", (unsigned)s[i + (j * 4)]);
 			break;
 		case 2:
-			printk(" %2.2X%2.2X",
-			       (unsigned)s[i + (j * 4)],
-			       (unsigned)s[i + (j * 4) + 1]);
+//			printk(" %2.2X%2.2X",
+//			       (unsigned)s[i + (j * 4)],
+;
 			break;
 		case 3:
-			printk(" %2.2X%2.2X%2.2X",
-			       (unsigned)s[i + (j * 4) + 1],
-			       (unsigned)s[i + (j * 4) + 2],
-			       (unsigned)s[i + (j * 4) + 3]);
+//			printk(" %2.2X%2.2X%2.2X",
+//			       (unsigned)s[i + (j * 4) + 1],
+//			       (unsigned)s[i + (j * 4) + 2],
+;
 			break;
 		}
 
-		printk("\n");
+;
 	}
 }
 
@@ -2615,7 +2615,7 @@ static void asc_prt_asc_scsi_q(ASC_SCSI_Q *q)
 	ASC_SG_HEAD *sgp;
 	int i;
 
-	printk("ASC_SCSI_Q at addr 0x%lx\n", (ulong)q);
+;
 
 	printk
 	    (" target_ix 0x%x, target_lun %u, srb_ptr 0x%lx, tag_code 0x%x,\n",
@@ -2628,19 +2628,19 @@ static void asc_prt_asc_scsi_q(ASC_SCSI_Q *q)
 	     (ulong)le32_to_cpu(q->q1.data_cnt),
 	     (ulong)le32_to_cpu(q->q1.sense_addr), q->q1.sense_len);
 
-	printk(" cdbptr 0x%lx, cdb_len %u, sg_head 0x%lx, sg_queue_cnt %u\n",
-	       (ulong)q->cdbptr, q->q2.cdb_len,
-	       (ulong)q->sg_head, q->q1.sg_queue_cnt);
+//	printk(" cdbptr 0x%lx, cdb_len %u, sg_head 0x%lx, sg_queue_cnt %u\n",
+//	       (ulong)q->cdbptr, q->q2.cdb_len,
+;
 
 	if (q->sg_head) {
 		sgp = q->sg_head;
-		printk("ASC_SG_HEAD at addr 0x%lx\n", (ulong)sgp);
-		printk(" entry_cnt %u, queue_cnt %u\n", sgp->entry_cnt,
-		       sgp->queue_cnt);
+;
+//		printk(" entry_cnt %u, queue_cnt %u\n", sgp->entry_cnt,
+;
 		for (i = 0; i < sgp->entry_cnt; i++) {
-			printk(" [%u]: addr 0x%lx, bytes %lu\n",
-			       i, (ulong)le32_to_cpu(sgp->sg_list[i].addr),
-			       (ulong)le32_to_cpu(sgp->sg_list[i].bytes));
+//			printk(" [%u]: addr 0x%lx, bytes %lu\n",
+//			       i, (ulong)le32_to_cpu(sgp->sg_list[i].addr),
+;
 		}
 
 	}
@@ -2651,10 +2651,10 @@ static void asc_prt_asc_scsi_q(ASC_SCSI_Q *q)
  */
 static void asc_prt_asc_qdone_info(ASC_QDONE_INFO *q)
 {
-	printk("ASC_QDONE_INFO at addr 0x%lx\n", (ulong)q);
-	printk(" srb_ptr 0x%lx, target_ix %u, cdb_len %u, tag_code %u,\n",
-	       (ulong)q->d2.srb_ptr, q->d2.target_ix, q->d2.cdb_len,
-	       q->d2.tag_code);
+;
+//	printk(" srb_ptr 0x%lx, target_ix %u, cdb_len %u, tag_code %u,\n",
+//	       (ulong)q->d2.srb_ptr, q->d2.target_ix, q->d2.cdb_len,
+;
 	printk
 	    (" done_stat 0x%x, host_stat 0x%x, scsi_stat 0x%x, scsi_msg 0x%x\n",
 	     q->d3.done_stat, q->d3.host_stat, q->d3.scsi_stat, q->d3.scsi_msg);
@@ -2669,17 +2669,17 @@ static void asc_prt_adv_sgblock(int sgblockno, ADV_SG_BLOCK *b)
 {
 	int i;
 
-	printk(" ASC_SG_BLOCK at addr 0x%lx (sgblockno %d)\n",
-	       (ulong)b, sgblockno);
-	printk("  sg_cnt %u, sg_ptr 0x%lx\n",
-	       b->sg_cnt, (ulong)le32_to_cpu(b->sg_ptr));
+//	printk(" ASC_SG_BLOCK at addr 0x%lx (sgblockno %d)\n",
+;
+//	printk("  sg_cnt %u, sg_ptr 0x%lx\n",
+;
 	BUG_ON(b->sg_cnt > NO_OF_SG_PER_BLOCK);
 	if (b->sg_ptr != 0)
 		BUG_ON(b->sg_cnt != NO_OF_SG_PER_BLOCK);
 	for (i = 0; i < b->sg_cnt; i++) {
-		printk("  [%u]: sg_addr 0x%lx, sg_count 0x%lx\n",
-		       i, (ulong)b->sg_list[i].sg_addr,
-		       (ulong)b->sg_list[i].sg_count);
+//		printk("  [%u]: sg_addr 0x%lx, sg_count 0x%lx\n",
+//		       i, (ulong)b->sg_list[i].sg_addr,
+;
 	}
 }
 
@@ -2693,28 +2693,28 @@ static void asc_prt_adv_scsi_req_q(ADV_SCSI_REQ_Q *q)
 	int sg_blk_cnt;
 	struct asc_sg_block *sg_ptr;
 
-	printk("ADV_SCSI_REQ_Q at addr 0x%lx\n", (ulong)q);
+;
 
-	printk("  target_id %u, target_lun %u, srb_ptr 0x%lx, a_flag 0x%x\n",
-	       q->target_id, q->target_lun, (ulong)q->srb_ptr, q->a_flag);
+//	printk("  target_id %u, target_lun %u, srb_ptr 0x%lx, a_flag 0x%x\n",
+;
 
-	printk("  cntl 0x%x, data_addr 0x%lx, vdata_addr 0x%lx\n",
-	       q->cntl, (ulong)le32_to_cpu(q->data_addr), (ulong)q->vdata_addr);
+//	printk("  cntl 0x%x, data_addr 0x%lx, vdata_addr 0x%lx\n",
+;
 
-	printk("  data_cnt %lu, sense_addr 0x%lx, sense_len %u,\n",
-	       (ulong)le32_to_cpu(q->data_cnt),
-	       (ulong)le32_to_cpu(q->sense_addr), q->sense_len);
+//	printk("  data_cnt %lu, sense_addr 0x%lx, sense_len %u,\n",
+//	       (ulong)le32_to_cpu(q->data_cnt),
+;
 
 	printk
 	    ("  cdb_len %u, done_status 0x%x, host_status 0x%x, scsi_status 0x%x\n",
 	     q->cdb_len, q->done_status, q->host_status, q->scsi_status);
 
-	printk("  sg_working_ix 0x%x, target_cmd %u\n",
-	       q->sg_working_ix, q->target_cmd);
+//	printk("  sg_working_ix 0x%x, target_cmd %u\n",
+;
 
-	printk("  scsiq_rptr 0x%lx, sg_real_addr 0x%lx, sg_list_ptr 0x%lx\n",
-	       (ulong)le32_to_cpu(q->scsiq_rptr),
-	       (ulong)le32_to_cpu(q->sg_real_addr), (ulong)q->sg_list_ptr);
+//	printk("  scsiq_rptr 0x%lx, sg_real_addr 0x%lx, sg_list_ptr 0x%lx\n",
+//	       (ulong)le32_to_cpu(q->scsiq_rptr),
+;
 
 	/* Display the request's ADV_SG_BLOCK structures. */
 	if (q->sg_list_ptr != NULL) {
@@ -2782,8 +2782,8 @@ static void * advansys_srb_to_ptr(struct asc_dvc_var *asc_dvc, u32 srb)
 
 	srb--;
 	if (srb >= asc_dvc->ptr_map_count) {
-		printk("advansys: bad SRB %u, max %u\n", srb,
-							asc_dvc->ptr_map_count);
+//		printk("advansys: bad SRB %u, max %u\n", srb,
+;
 		return NULL;
 	}
 	ptr = asc_dvc->ptr_map[srb];
@@ -2840,8 +2840,8 @@ static const char *advansys_info(struct Scsi_Host *shost)
 				}
 			} else {
 				busname = "?";
-				shost_printk(KERN_ERR, shost, "unknown bus "
-					"type %d\n", asc_dvc_varp->bus_type);
+//				shost_printk(KERN_ERR, shost, "unknown bus "
+;
 			}
 			sprintf(info,
 				"AdvanSys SCSI %s: %s: IO 0x%lX-0x%lX, IRQ 0x%X",
@@ -2897,7 +2897,7 @@ static int asc_prt_line(char *buf, int buflen, char *fmt, ...)
 	ret = vsprintf(s, fmt, args);
 	BUG_ON(ret >= ASC_PRTLINE_SIZE);
 	if (buf == NULL) {
-		(void)printk(s);
+;
 		ret = 0;
 	} else {
 		ret = min(buflen, ret);
@@ -4792,14 +4792,14 @@ static ushort AscInitAsc1000Driver(ASC_DVC_VAR *asc_dvc)
 
 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
 	if (err) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       fwname, err);
+//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 		asc_dvc->err_code |= ASC_IERR_MCODE_CHKSUM;
 		return err;
 	}
 	if (fw->size < 4) {
-		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
-		       fw->size, fwname);
+//		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
+;
 		release_firmware(fw);
 		asc_dvc->err_code |= ASC_IERR_MCODE_CHKSUM;
 		return -EINVAL;
@@ -5125,14 +5125,14 @@ static int AdvInitAsc3550Driver(ADV_DVC_VAR *asc_dvc)
 
 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
 	if (err) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       fwname, err);
+//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return err;
 	}
 	if (fw->size < 4) {
-		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
-		       fw->size, fwname);
+//		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
+;
 		release_firmware(fw);
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return -EINVAL;
@@ -5641,14 +5641,14 @@ static int AdvInitAsc38C0800Driver(ADV_DVC_VAR *asc_dvc)
 
 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
 	if (err) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       fwname, err);
+//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return err;
 	}
 	if (fw->size < 4) {
-		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
-		       fw->size, fwname);
+//		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
+;
 		release_firmware(fw);
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return -EINVAL;
@@ -6143,14 +6143,14 @@ static int AdvInitAsc38C1600Driver(ADV_DVC_VAR *asc_dvc)
 
 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
 	if (err) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       fwname, err);
+//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return err;
 	}
 	if (fw->size < 4) {
-		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
-		       fw->size, fwname);
+//		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
+;
 		release_firmware(fw);
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return -EINVAL;
@@ -7983,7 +7983,7 @@ static int advansys_reset(struct scsi_cmnd *scp)
 
 	ASC_STATS(shost, reset);
 
-	scmd_printk(KERN_INFO, scp, "SCSI bus reset started...\n");
+;
 
 	if (ASC_NARROW_BOARD(boardp)) {
 		ASC_DVC_VAR *asc_dvc = &boardp->dvc_var.asc_dvc_var;
@@ -7994,16 +7994,16 @@ static int advansys_reset(struct scsi_cmnd *scp)
 
 		/* Refer to ASC_IERR_* definitions for meaning of 'err_code'. */
 		if (asc_dvc->err_code || !asc_dvc->overrun_dma) {
-			scmd_printk(KERN_INFO, scp, "SCSI bus reset error: "
-				    "0x%x, status: 0x%x\n", asc_dvc->err_code,
-				    status);
+//			scmd_printk(KERN_INFO, scp, "SCSI bus reset error: "
+//				    "0x%x, status: 0x%x\n", asc_dvc->err_code,
+;
 			ret = FAILED;
 		} else if (status) {
-			scmd_printk(KERN_INFO, scp, "SCSI bus reset warning: "
-				    "0x%x\n", status);
+//			scmd_printk(KERN_INFO, scp, "SCSI bus reset warning: "
+;
 		} else {
-			scmd_printk(KERN_INFO, scp, "SCSI bus reset "
-				    "successful\n");
+//			scmd_printk(KERN_INFO, scp, "SCSI bus reset "
+;
 		}
 
 		ASC_DBG(1, "after AscInitAsc1000Driver()\n");
@@ -8021,12 +8021,12 @@ static int advansys_reset(struct scsi_cmnd *scp)
 		ASC_DBG(1, "before AdvResetChipAndSB()\n");
 		switch (AdvResetChipAndSB(adv_dvc)) {
 		case ASC_TRUE:
-			scmd_printk(KERN_INFO, scp, "SCSI bus reset "
-				    "successful\n");
+//			scmd_printk(KERN_INFO, scp, "SCSI bus reset "
+;
 			break;
 		case ASC_FALSE:
 		default:
-			scmd_printk(KERN_INFO, scp, "SCSI bus reset error\n");
+;
 			ret = FAILED;
 			break;
 		}
@@ -8433,9 +8433,9 @@ static int asc_build_req(struct asc_board *boardp, struct scsi_cmnd *scp,
 		struct asc_sg_head *asc_sg_head;
 
 		if (use_sg > scp->device->host->sg_tablesize) {
-			scmd_printk(KERN_ERR, scp, "use_sg %d > "
-				"sg_tablesize %d\n", use_sg,
-				scp->device->host->sg_tablesize);
+//			scmd_printk(KERN_ERR, scp, "use_sg %d > "
+//				"sg_tablesize %d\n", use_sg,
+;
 			scsi_dma_unmap(scp);
 			scp->result = HOST_BYTE(DID_ERROR);
 			return ASC_ERROR;
@@ -8680,9 +8680,9 @@ adv_build_req(struct asc_board *boardp, struct scsi_cmnd *scp,
 		scsiqp->sg_real_addr = 0;
 	} else {
 		if (use_sg > ADV_MAX_SG_LIST) {
-			scmd_printk(KERN_ERR, scp, "use_sg %d > "
-				   "ADV_MAX_SG_LIST %d\n", use_sg,
-				   scp->device->host->sg_tablesize);
+//			scmd_printk(KERN_ERR, scp, "use_sg %d > "
+//				   "ADV_MAX_SG_LIST %d\n", use_sg,
+;
 			scsi_dma_unmap(scp);
 			scp->result = HOST_BYTE(DID_ERROR);
 
@@ -9476,14 +9476,14 @@ static int asc_execute_scsi_cmnd(struct scsi_cmnd *scp)
 		ASC_STATS(scp->device->host, exe_busy);
 		break;
 	case ASC_ERROR:
-		scmd_printk(KERN_ERR, scp, "ExeScsiQueue() ASC_ERROR, "
-			"err_code 0x%x\n", err_code);
+//		scmd_printk(KERN_ERR, scp, "ExeScsiQueue() ASC_ERROR, "
+;
 		ASC_STATS(scp->device->host, exe_error);
 		scp->result = HOST_BYTE(DID_ERROR);
 		break;
 	default:
-		scmd_printk(KERN_ERR, scp, "ExeScsiQueue() unknown, "
-			"err_code 0x%x\n", err_code);
+//		scmd_printk(KERN_ERR, scp, "ExeScsiQueue() unknown, "
+;
 		ASC_STATS(scp->device->host, exe_unknown);
 		scp->result = HOST_BYTE(DID_ERROR);
 		break;
@@ -10240,32 +10240,32 @@ static int __devinit AscInitGetConfig(struct Scsi_Host *shost)
 	case 0:	/* No error */
 		break;
 	case ASC_WARN_IO_PORT_ROTATE:
-		shost_printk(KERN_WARNING, shost, "I/O port address "
-				"modified\n");
+//		shost_printk(KERN_WARNING, shost, "I/O port address "
+;
 		break;
 	case ASC_WARN_AUTO_CONFIG:
-		shost_printk(KERN_WARNING, shost, "I/O port increment switch "
-				"enabled\n");
+//		shost_printk(KERN_WARNING, shost, "I/O port increment switch "
+;
 		break;
 	case ASC_WARN_EEPROM_CHKSUM:
-		shost_printk(KERN_WARNING, shost, "EEPROM checksum error\n");
+;
 		break;
 	case ASC_WARN_IRQ_MODIFIED:
-		shost_printk(KERN_WARNING, shost, "IRQ modified\n");
+;
 		break;
 	case ASC_WARN_CMD_QNG_CONFLICT:
-		shost_printk(KERN_WARNING, shost, "tag queuing enabled w/o "
-				"disconnects\n");
+//		shost_printk(KERN_WARNING, shost, "tag queuing enabled w/o "
+;
 		break;
 	default:
-		shost_printk(KERN_WARNING, shost, "unknown warning: 0x%x\n",
-				warn_code);
+//		shost_printk(KERN_WARNING, shost, "unknown warning: 0x%x\n",
+;
 		break;
 	}
 
 	if (asc_dvc->err_code != 0)
-		shost_printk(KERN_ERR, shost, "error 0x%x at init_state "
-			"0x%x\n", asc_dvc->err_code, asc_dvc->init_state);
+//		shost_printk(KERN_ERR, shost, "error 0x%x at init_state "
+;
 
 	return asc_dvc->err_code;
 }
@@ -10338,32 +10338,32 @@ static int __devinit AscInitSetConfig(struct pci_dev *pdev, struct Scsi_Host *sh
 	case 0:	/* No error. */
 		break;
 	case ASC_WARN_IO_PORT_ROTATE:
-		shost_printk(KERN_WARNING, shost, "I/O port address "
-				"modified\n");
+//		shost_printk(KERN_WARNING, shost, "I/O port address "
+;
 		break;
 	case ASC_WARN_AUTO_CONFIG:
-		shost_printk(KERN_WARNING, shost, "I/O port increment switch "
-				"enabled\n");
+//		shost_printk(KERN_WARNING, shost, "I/O port increment switch "
+;
 		break;
 	case ASC_WARN_EEPROM_CHKSUM:
-		shost_printk(KERN_WARNING, shost, "EEPROM checksum error\n");
+;
 		break;
 	case ASC_WARN_IRQ_MODIFIED:
-		shost_printk(KERN_WARNING, shost, "IRQ modified\n");
+;
 		break;
 	case ASC_WARN_CMD_QNG_CONFLICT:
-		shost_printk(KERN_WARNING, shost, "tag queuing w/o "
-				"disconnects\n");
+//		shost_printk(KERN_WARNING, shost, "tag queuing w/o "
+;
 		break;
 	default:
-		shost_printk(KERN_WARNING, shost, "unknown warning: 0x%x\n",
-				warn_code);
+//		shost_printk(KERN_WARNING, shost, "unknown warning: 0x%x\n",
+;
 		break;
 	}
 
 	if (asc_dvc->err_code != 0)
-		shost_printk(KERN_ERR, shost, "error 0x%x at init_state "
-			"0x%x\n", asc_dvc->err_code, asc_dvc->init_state);
+//		shost_printk(KERN_ERR, shost, "error 0x%x at init_state "
+;
 
 	return asc_dvc->err_code;
 }
@@ -11733,11 +11733,11 @@ AdvInitGetConfig(struct pci_dev *pdev, struct Scsi_Host *shost)
 	}
 
 	if (warn_code != 0)
-		shost_printk(KERN_WARNING, shost, "warning: 0x%x\n", warn_code);
+;
 
 	if (asc_dvc->err_code)
-		shost_printk(KERN_ERR, shost, "error code 0x%x\n",
-				asc_dvc->err_code);
+//		shost_printk(KERN_ERR, shost, "error code 0x%x\n",
+;
 
 	return asc_dvc->err_code;
 }
@@ -11856,14 +11856,14 @@ static int __devinit advansys_wide_init_chip(struct Scsi_Host *shost)
 	err_code = adv_dvc->err_code;
 
 	if (warn_code || err_code) {
-		shost_printk(KERN_WARNING, shost, "error: warn 0x%x, error "
-			"0x%x\n", warn_code, err_code);
+//		shost_printk(KERN_WARNING, shost, "error: warn 0x%x, error "
+;
 	}
 
 	goto exit;
 
  kmalloc_failed:
-	shost_printk(KERN_ERR, shost, "error: kmalloc() failed\n");
+;
 	err_code = ADV_ERROR;
  exit:
 	return err_code;
@@ -11920,10 +11920,10 @@ static int __devinit advansys_board_found(struct Scsi_Host *shost,
 		boardp->asc_n_io_port = pci_resource_len(pdev, 1);
 		boardp->ioremap_addr = pci_ioremap_bar(pdev, 1);
 		if (!boardp->ioremap_addr) {
-			shost_printk(KERN_ERR, shost, "ioremap(%lx, %d) "
-					"returned NULL\n",
-					(long)pci_resource_start(pdev, 1),
-					boardp->asc_n_io_port);
+//			shost_printk(KERN_ERR, shost, "ioremap(%lx, %d) "
+//					"returned NULL\n",
+//					(long)pci_resource_start(pdev, 1),
+;
 			ret = -ENODEV;
 			goto err_shost;
 		}
@@ -11949,8 +11949,8 @@ static int __devinit advansys_board_found(struct Scsi_Host *shost,
 	 */
 	boardp->prtbuf = kmalloc(ASC_PRTBUF_SIZE, GFP_KERNEL);
 	if (!boardp->prtbuf) {
-		shost_printk(KERN_ERR, shost, "kmalloc(%d) returned NULL\n",
-				ASC_PRTBUF_SIZE);
+//		shost_printk(KERN_ERR, shost, "kmalloc(%d) returned NULL\n",
+;
 		ret = -ENOMEM;
 		goto err_unmap;
 	}
@@ -11983,8 +11983,8 @@ static int __devinit advansys_board_found(struct Scsi_Host *shost,
 			break;
 #endif /* CONFIG_PCI */
 		default:
-			shost_printk(KERN_ERR, shost, "unknown adapter type: "
-					"%d\n", asc_dvc_varp->bus_type);
+//			shost_printk(KERN_ERR, shost, "unknown adapter type: "
+;
 			shost->unchecked_isa_dma = TRUE;
 			share_irq = 0;
 			break;
@@ -12290,9 +12290,9 @@ static int __devinit advansys_board_found(struct Scsi_Host *shost,
 			shost->dma_channel = asc_dvc_varp->cfg->isa_dma_channel;
 			ret = request_dma(shost->dma_channel, DRV_NAME);
 			if (ret) {
-				shost_printk(KERN_ERR, shost, "request_dma() "
-						"%d failed %d\n",
-						shost->dma_channel, ret);
+//				shost_printk(KERN_ERR, shost, "request_dma() "
+//						"%d failed %d\n",
+;
 				goto err_free_proc;
 			}
 			AscEnableIsaDma(shost->dma_channel);
@@ -12308,14 +12308,14 @@ static int __devinit advansys_board_found(struct Scsi_Host *shost,
 
 	if (ret) {
 		if (ret == -EBUSY) {
-			shost_printk(KERN_ERR, shost, "request_irq(): IRQ 0x%x "
-					"already in use\n", boardp->irq);
+//			shost_printk(KERN_ERR, shost, "request_irq(): IRQ 0x%x "
+;
 		} else if (ret == -EINVAL) {
-			shost_printk(KERN_ERR, shost, "request_irq(): IRQ 0x%x "
-					"not valid\n", boardp->irq);
+//			shost_printk(KERN_ERR, shost, "request_irq(): IRQ 0x%x "
+;
 		} else {
-			shost_printk(KERN_ERR, shost, "request_irq(): IRQ 0x%x "
-					"failed with %d\n", boardp->irq, ret);
+//			shost_printk(KERN_ERR, shost, "request_irq(): IRQ 0x%x "
+;
 		}
 		goto err_free_dma;
 	}
@@ -12334,10 +12334,10 @@ static int __devinit advansys_board_found(struct Scsi_Host *shost,
 		warn_code = AscInitAsc1000Driver(asc_dvc_varp);
 
 		if (warn_code || asc_dvc_varp->err_code) {
-			shost_printk(KERN_ERR, shost, "error: init_state 0x%x, "
-					"warn 0x%x, error 0x%x\n",
-					asc_dvc_varp->init_state, warn_code,
-					asc_dvc_varp->err_code);
+//			shost_printk(KERN_ERR, shost, "error: init_state 0x%x, "
+//					"warn 0x%x, error 0x%x\n",
+//					asc_dvc_varp->init_state, warn_code,
+;
 			if (!asc_dvc_varp->overrun_dma) {
 				ret = -ENODEV;
 				goto err_free_mem;
@@ -12623,8 +12623,8 @@ static int __devinit advansys_eisa_probe(struct device *dev)
 		struct asc_board *board;
 		struct Scsi_Host *shost;
 		if (!request_region(ioport, ASC_IOADR_GAP, DRV_NAME)) {
-			printk(KERN_WARNING "Region %x-%x busy\n", ioport,
-			       ioport + ASC_IOADR_GAP - 1);
+//			printk(KERN_WARNING "Region %x-%x busy\n", ioport,
+;
 			continue;
 		}
 		if (!AscFindSignature(ioport)) {

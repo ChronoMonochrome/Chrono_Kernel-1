@@ -154,9 +154,9 @@ static int wait_uwire_csr_flag(u16 mask, u16 val, int might_not_catch)
 		if ((w & mask) == val)
 			break;
 		if (time_after(jiffies, max_jiffies)) {
-			printk(KERN_ERR "%s: timeout. reg=%#06x "
-					"mask=%#06x val=%#06x\n",
-			       __func__, w, mask, val);
+//			printk(KERN_ERR "%s: timeout. reg=%#06x "
+//					"mask=%#06x val=%#06x\n",
+;
 			return -1;
 		}
 		c++;

@@ -86,7 +86,7 @@ static void s6000_pcm_enqueue_dma(struct snd_pcm_substream *substream)
 		return;
 
 	if (s6dmac_fifo_full(DMA_MASK_DMAC(channel), DMA_INDEX_CHNL(channel))) {
-		printk(KERN_ERR "s6000-pcm: fifo full\n");
+;
 		return;
 	}
 
@@ -154,18 +154,18 @@ static irqreturn_t s6000_pcm_irq(int irq, void *data)
 
 		if (unlikely(pending & ~7)) {
 			if (pending & (1 << 3))
-				printk(KERN_WARNING
-				       "s6000-pcm: DMA %x Underflow\n",
-				       channel);
+//				printk(KERN_WARNING
+//				       "s6000-pcm: DMA %x Underflow\n",
+;
 			if (pending & (1 << 4))
-				printk(KERN_WARNING
-				       "s6000-pcm: DMA %x Overflow\n",
-				       channel);
+//				printk(KERN_WARNING
+//				       "s6000-pcm: DMA %x Overflow\n",
+;
 			if (pending & 0x1e0)
-				printk(KERN_WARNING
-				       "s6000-pcm: DMA %x Master Error "
-				       "(mask %x)\n",
-				       channel, pending >> 5);
+//				printk(KERN_WARNING
+//				       "s6000-pcm: DMA %x Master Error "
+//				       "(mask %x)\n",
+;
 
 		}
 	}
@@ -383,7 +383,7 @@ static int s6000_pcm_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_pcm_lib_malloc_pages(substream,
 				       params_buffer_bytes(hw_params));
 	if (ret < 0) {
-		printk(KERN_WARNING "s6000-pcm: allocation of memory failed\n");
+;
 		return ret;
 	}
 
@@ -475,7 +475,7 @@ static int s6000_pcm_new(struct snd_card *card,
 	res = request_irq(params->irq, s6000_pcm_irq, IRQF_SHARED,
 			  "s6000-audio", pcm);
 	if (res) {
-		printk(KERN_ERR "s6000-pcm couldn't get IRQ\n");
+;
 		return res;
 	}
 
@@ -485,7 +485,7 @@ static int s6000_pcm_new(struct snd_card *card,
 						    S6_PCM_PREALLOCATE_SIZE,
 						    S6_PCM_PREALLOCATE_MAX);
 	if (res)
-		printk(KERN_WARNING "s6000-pcm: preallocation failed\n");
+;
 
 	spin_lock_init(&params->lock);
 	params->in_use = 0;

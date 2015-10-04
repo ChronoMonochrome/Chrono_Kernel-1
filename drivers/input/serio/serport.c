@@ -184,7 +184,7 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
 	serio->dev.parent = tty->dev;
 
 	serio_register_port(serport->serio);
-	printk(KERN_INFO "serio: Serial port %s\n", tty_name(tty, name));
+;
 
 	wait_event_interruptible(serport->wait, test_bit(SERPORT_DEAD, &serport->flags));
 	serio_unregister_port(serport->serio);
@@ -254,7 +254,7 @@ static int __init serport_init(void)
 	int retval;
 	retval = tty_register_ldisc(N_MOUSE, &serport_ldisc);
 	if (retval)
-		printk(KERN_ERR "serport.c: Error registering line discipline.\n");
+;
 
 	return  retval;
 }

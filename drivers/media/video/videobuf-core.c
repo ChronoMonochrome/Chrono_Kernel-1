@@ -27,9 +27,9 @@
 #define MAGIC_CHECK(is, should)						\
 	do {								\
 		if (unlikely((is) != (should))) {			\
-			printk(KERN_ERR					\
-				"magic mismatch: %x (expected %x)\n",	\
-					is, should);			\
+//			printk(KERN_ERR					\
+//				"magic mismatch: %x (expected %x)\n",	\
+;
 			BUG();						\
 		}							\
 	} while (0)
@@ -41,10 +41,10 @@ MODULE_DESCRIPTION("helper module to manage video4linux buffers");
 MODULE_AUTHOR("Mauro Carvalho Chehab <mchehab@infradead.org>");
 MODULE_LICENSE("GPL");
 
-#define dprintk(level, fmt, arg...)					\
-	do {								\
-		if (debug >= level)					\
-			printk(KERN_DEBUG "vbuf: " fmt, ## arg);	\
+//#define dprintk(level, fmt, arg...)					\
+//	do {								\
+//		if (debug >= level)					\
+;
 	} while (0)
 
 /* --------------------------------------------------------------------- */
@@ -59,7 +59,7 @@ struct videobuf_buffer *videobuf_alloc_vb(struct videobuf_queue *q)
 	BUG_ON(q->msize < sizeof(*vb));
 
 	if (!q->int_ops || !q->int_ops->alloc_vb) {
-		printk(KERN_ERR "No specific ops defined!\n");
+;
 		BUG();
 	}
 
@@ -187,30 +187,30 @@ int videobuf_queue_is_busy(struct videobuf_queue *q)
 	MAGIC_CHECK(q->int_ops->magic, MAGIC_QTYPE_OPS);
 
 	if (q->streaming) {
-		dprintk(1, "busy: streaming active\n");
+;
 		return 1;
 	}
 	if (q->reading) {
-		dprintk(1, "busy: pending read #1\n");
+;
 		return 1;
 	}
 	if (q->read_buf) {
-		dprintk(1, "busy: pending read #2\n");
+;
 		return 1;
 	}
 	for (i = 0; i < VIDEO_MAX_FRAME; i++) {
 		if (NULL == q->bufs[i])
 			continue;
 		if (q->bufs[i]->map) {
-			dprintk(1, "busy: buffer #%d mapped\n", i);
+;
 			return 1;
 		}
 		if (q->bufs[i]->state == VIDEOBUF_QUEUED) {
-			dprintk(1, "busy: buffer #%d queued\n", i);
+;
 			return 1;
 		}
 		if (q->bufs[i]->state == VIDEOBUF_ACTIVE) {
-			dprintk(1, "busy: buffer #%d avtive\n", i);
+;
 			return 1;
 		}
 	}
@@ -229,12 +229,12 @@ static int __videobuf_free(struct videobuf_queue *q)
 {
 	int i;
 
-	dprintk(1, "%s\n", __func__);
+;
 	if (!q)
 		return 0;
 
 	if (q->streaming || q->reading) {
-		dprintk(1, "Cannot free buffers when streaming or reading\n");
+;
 		return -EBUSY;
 	}
 
@@ -242,7 +242,7 @@ static int __videobuf_free(struct videobuf_queue *q)
 
 	for (i = 0; i < VIDEO_MAX_FRAME; i++)
 		if (q->bufs[i] && q->bufs[i]->map) {
-			dprintk(1, "Cannot free mmapped buffers\n");
+;
 			return -EBUSY;
 		}
 
@@ -419,7 +419,7 @@ int __videobuf_mmap_setup(struct videobuf_queue *q,
 	if (!i)
 		return -ENOMEM;
 
-	dprintk(1, "mmap setup: %d buffers, %d bytes each\n", i, bsize);
+;
 
 	return i;
 }
@@ -444,31 +444,31 @@ int videobuf_reqbufs(struct videobuf_queue *q,
 	int retval;
 
 	if (req->count < 1) {
-		dprintk(1, "reqbufs: count invalid (%d)\n", req->count);
+;
 		return -EINVAL;
 	}
 
 	if (req->memory != V4L2_MEMORY_MMAP     &&
 	    req->memory != V4L2_MEMORY_USERPTR  &&
 	    req->memory != V4L2_MEMORY_OVERLAY) {
-		dprintk(1, "reqbufs: memory type invalid\n");
+;
 		return -EINVAL;
 	}
 
 	videobuf_queue_lock(q);
 	if (req->type != q->type) {
-		dprintk(1, "reqbufs: queue type invalid\n");
+;
 		retval = -EINVAL;
 		goto done;
 	}
 
 	if (q->streaming) {
-		dprintk(1, "reqbufs: streaming already exists\n");
+;
 		retval = -EBUSY;
 		goto done;
 	}
 	if (!list_empty(&q->stream)) {
-		dprintk(1, "reqbufs: stream running\n");
+;
 		retval = -EBUSY;
 		goto done;
 	}
@@ -478,13 +478,13 @@ int videobuf_reqbufs(struct videobuf_queue *q,
 		count = VIDEO_MAX_FRAME;
 	size = 0;
 	q->ops->buf_setup(q, &count, &size);
-	dprintk(1, "reqbufs: bufs=%d, size=0x%x [%u pages total]\n",
-		count, size,
-		(unsigned int)((count * PAGE_ALIGN(size)) >> PAGE_SHIFT));
+//	dprintk(1, "reqbufs: bufs=%d, size=0x%x [%u pages total]\n",
+//		count, size,
+;
 
 	retval = __videobuf_mmap_setup(q, count, size, req->memory);
 	if (retval < 0) {
-		dprintk(1, "reqbufs: mmap setup returned %d\n", retval);
+;
 		goto done;
 	}
 
@@ -503,15 +503,15 @@ int videobuf_querybuf(struct videobuf_queue *q, struct v4l2_buffer *b)
 
 	videobuf_queue_lock(q);
 	if (unlikely(b->type != q->type)) {
-		dprintk(1, "querybuf: Wrong type.\n");
+;
 		goto done;
 	}
 	if (unlikely(b->index >= VIDEO_MAX_FRAME)) {
-		dprintk(1, "querybuf: index out of range.\n");
+;
 		goto done;
 	}
 	if (unlikely(NULL == q->bufs[b->index])) {
-		dprintk(1, "querybuf: buffer is null.\n");
+;
 		goto done;
 	}
 
@@ -539,36 +539,36 @@ int videobuf_qbuf(struct videobuf_queue *q, struct v4l2_buffer *b)
 	videobuf_queue_lock(q);
 	retval = -EBUSY;
 	if (q->reading) {
-		dprintk(1, "qbuf: Reading running...\n");
+;
 		goto done;
 	}
 	retval = -EINVAL;
 	if (b->type != q->type) {
-		dprintk(1, "qbuf: Wrong type.\n");
+;
 		goto done;
 	}
 	if (b->index >= VIDEO_MAX_FRAME) {
-		dprintk(1, "qbuf: index out of range.\n");
+;
 		goto done;
 	}
 	buf = q->bufs[b->index];
 	if (NULL == buf) {
-		dprintk(1, "qbuf: buffer is null.\n");
+;
 		goto done;
 	}
 	MAGIC_CHECK(buf->magic, MAGIC_BUFFER);
 	if (buf->memory != b->memory) {
-		dprintk(1, "qbuf: memory type is wrong.\n");
+;
 		goto done;
 	}
 	if (buf->state != VIDEOBUF_NEEDS_INIT && buf->state != VIDEOBUF_IDLE) {
-		dprintk(1, "qbuf: buffer is already queued or active.\n");
+;
 		goto done;
 	}
 
 	if (b->flags & V4L2_BUF_FLAG_INPUT) {
 		if (b->input >= q->inputs) {
-			dprintk(1, "qbuf: wrong input.\n");
+;
 			goto done;
 		}
 		buf->input = b->input;
@@ -579,8 +579,8 @@ int videobuf_qbuf(struct videobuf_queue *q, struct v4l2_buffer *b)
 	switch (b->memory) {
 	case V4L2_MEMORY_MMAP:
 		if (0 == buf->baddr) {
-			dprintk(1, "qbuf: mmap requested "
-				   "but buffer addr is zero!\n");
+//			dprintk(1, "qbuf: mmap requested "
+;
 			goto done;
 		}
 		if (q->type == V4L2_BUF_TYPE_VIDEO_OUTPUT
@@ -593,7 +593,7 @@ int videobuf_qbuf(struct videobuf_queue *q, struct v4l2_buffer *b)
 		break;
 	case V4L2_MEMORY_USERPTR:
 		if (b->length < buf->bsize) {
-			dprintk(1, "qbuf: buffer length is not enough\n");
+;
 			goto done;
 		}
 		if (VIDEOBUF_NEEDS_INIT != buf->state &&
@@ -605,15 +605,15 @@ int videobuf_qbuf(struct videobuf_queue *q, struct v4l2_buffer *b)
 		buf->boff = b->m.offset;
 		break;
 	default:
-		dprintk(1, "qbuf: wrong memory type\n");
+;
 		goto done;
 	}
 
-	dprintk(1, "qbuf: requesting next field\n");
+;
 	field = videobuf_next_field(q);
 	retval = q->ops->buf_prepare(q, buf, field);
 	if (0 != retval) {
-		dprintk(1, "qbuf: buffer_prepare returned %d\n", retval);
+;
 		goto done;
 	}
 
@@ -623,7 +623,7 @@ int videobuf_qbuf(struct videobuf_queue *q, struct v4l2_buffer *b)
 		q->ops->buf_queue(q, buf);
 		spin_unlock_irqrestore(q->irqlock, flags);
 	}
-	dprintk(1, "qbuf: succeeded\n");
+;
 	retval = 0;
 	wake_up_interruptible_sync(&q->wait);
 
@@ -644,7 +644,7 @@ static int stream_next_buffer_check_queue(struct videobuf_queue *q, int noblock)
 
 checks:
 	if (!q->streaming) {
-		dprintk(1, "next_buffer: Not streaming\n");
+;
 		retval = -EINVAL;
 		goto done;
 	}
@@ -652,10 +652,10 @@ checks:
 	if (list_empty(&q->stream)) {
 		if (noblock) {
 			retval = -EAGAIN;
-			dprintk(2, "next_buffer: no buffers to dequeue\n");
+;
 			goto done;
 		} else {
-			dprintk(2, "next_buffer: waiting on buffer\n");
+;
 
 			/* Drop lock to avoid deadlock with qbuf */
 			videobuf_queue_unlock(q);
@@ -714,19 +714,19 @@ int videobuf_dqbuf(struct videobuf_queue *q,
 
 	retval = stream_next_buffer(q, &buf, nonblocking);
 	if (retval < 0) {
-		dprintk(1, "dqbuf: next_buffer error: %i\n", retval);
+;
 		goto done;
 	}
 
 	switch (buf->state) {
 	case VIDEOBUF_ERROR:
-		dprintk(1, "dqbuf: state is error\n");
+;
 		break;
 	case VIDEOBUF_DONE:
-		dprintk(1, "dqbuf: state is done\n");
+;
 		break;
 	default:
-		dprintk(1, "dqbuf: state invalid\n");
+;
 		retval = -EINVAL;
 		goto done;
 	}
@@ -910,7 +910,7 @@ ssize_t videobuf_read_one(struct videobuf_queue *q,
 		retval = -ENOMEM;
 		q->read_buf = videobuf_alloc_vb(q);
 
-		dprintk(1, "video alloc=0x%p\n", q->read_buf);
+;
 		if (NULL == q->read_buf)
 			goto done;
 		q->read_buf->memory = V4L2_MEMORY_USERPTR;
@@ -1061,7 +1061,7 @@ ssize_t videobuf_read_stream(struct videobuf_queue *q,
 
 	MAGIC_CHECK(q->int_ops->magic, MAGIC_QTYPE_OPS);
 
-	dprintk(2, "%s\n", __func__);
+;
 	videobuf_queue_lock(q);
 	retval = -EBUSY;
 	if (q->streaming)
@@ -1183,7 +1183,7 @@ int videobuf_mmap_mapper(struct videobuf_queue *q, struct vm_area_struct *vma)
 	MAGIC_CHECK(q->int_ops->magic, MAGIC_QTYPE_OPS);
 
 	if (!(vma->vm_flags & VM_WRITE) || !(vma->vm_flags & VM_SHARED)) {
-		dprintk(1, "mmap appl bug: PROT_WRITE and MAP_SHARED are required\n");
+;
 		return -EINVAL;
 	}
 

@@ -380,12 +380,12 @@ static void adma_qc_prep(struct ata_queued_cmd *qc)
 		for (j = 0; j < i; ++j) {
 			len += sprintf(obuf+len, "%02x ", buf[j]);
 			if ((j & 7) == 7) {
-				printk("%s\n", obuf);
+;
 				len = 0;
 			}
 		}
 		if (len)
-			printk("%s\n", obuf);
+;
 	}
 #endif
 }
@@ -563,8 +563,8 @@ static int adma_port_start(struct ata_port *ap)
 		return -ENOMEM;
 	/* paranoia? */
 	if ((pp->pkt_dma & 7) != 0) {
-		printk(KERN_ERR "bad alignment for pp->pkt_dma: %08x\n",
-						(u32)pp->pkt_dma);
+//		printk(KERN_ERR "bad alignment for pp->pkt_dma: %08x\n",
+;
 		return -ENOMEM;
 	}
 	memset(pp->pkt, 0, ADMA_PKT_BYTES);
@@ -596,14 +596,14 @@ static int adma_set_dma_masks(struct pci_dev *pdev, void __iomem *mmio_base)
 
 	rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (rc) {
-		dev_printk(KERN_ERR, &pdev->dev,
-			"32-bit DMA enable failed\n");
+//		dev_printk(KERN_ERR, &pdev->dev,
+;
 		return rc;
 	}
 	rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (rc) {
-		dev_printk(KERN_ERR, &pdev->dev,
-			"32-bit consistent DMA enable failed\n");
+//		dev_printk(KERN_ERR, &pdev->dev,
+;
 		return rc;
 	}
 	return 0;
@@ -620,7 +620,7 @@ static int adma_ata_init_one(struct pci_dev *pdev,
 	int rc, port_no;
 
 	if (!printed_version++)
-		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+;
 
 	/* alloc host */
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, ADMA_PORTS);

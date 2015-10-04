@@ -197,8 +197,8 @@ static int acpi_ac_add_fs(struct acpi_device *device)
 {
 	struct proc_dir_entry *entry = NULL;
 
-	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for AC is loaded,"
-			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
+//	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for AC is loaded,"
+;
 	if (!acpi_device_dir(device)) {
 		acpi_device_dir(device) = proc_mkdir(acpi_device_bid(device),
 						     acpi_ac_dir);
@@ -296,9 +296,9 @@ static int acpi_ac_add(struct acpi_device *device)
 	if (result)
 		goto end;
 
-	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
-	       acpi_device_name(device), acpi_device_bid(device),
-	       ac->state ? "on-line" : "off-line");
+//	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
+//	       acpi_device_name(device), acpi_device_bid(device),
+;
 
       end:
 	if (result) {

@@ -750,15 +750,15 @@ static int sh_hdmi_read_edid(struct sh_hdmi *hdmi, unsigned long *hdmi_rate,
 		edid[i] = hdmi_read(hdmi, HDMI_EDID_KSV_FIFO_ACCESS_WINDOW);
 #ifdef DEBUG
 		if ((i % 16) == 0) {
-			printk(KERN_CONT "\n");
-			printk(KERN_DEBUG "%02X | %02X", i, edid[i]);
+;
+;
 		} else {
-			printk(KERN_CONT " %02X", edid[i]);
+;
 		}
 #endif
 	}
 #ifdef DEBUG
-	printk(KERN_CONT "\n");
+;
 #endif
 
 	if (!hdmi->edid_blocks) {

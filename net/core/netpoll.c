@@ -630,18 +630,18 @@ out:
 
 void netpoll_print_options(struct netpoll *np)
 {
-	printk(KERN_INFO "%s: local port %d\n",
-			 np->name, np->local_port);
-	printk(KERN_INFO "%s: local IP %pI4\n",
-			 np->name, &np->local_ip);
-	printk(KERN_INFO "%s: interface '%s'\n",
-			 np->name, np->dev_name);
-	printk(KERN_INFO "%s: remote port %d\n",
-			 np->name, np->remote_port);
-	printk(KERN_INFO "%s: remote IP %pI4\n",
-			 np->name, &np->remote_ip);
-	printk(KERN_INFO "%s: remote ethernet address %pM\n",
-	                 np->name, np->remote_mac);
+//	printk(KERN_INFO "%s: local port %d\n",
+;
+//	printk(KERN_INFO "%s: local IP %pI4\n",
+;
+//	printk(KERN_INFO "%s: interface '%s'\n",
+;
+//	printk(KERN_INFO "%s: remote port %d\n",
+;
+//	printk(KERN_INFO "%s: remote IP %pI4\n",
+;
+//	printk(KERN_INFO "%s: remote ethernet address %pM\n",
+;
 }
 EXPORT_SYMBOL(netpoll_print_options);
 
@@ -683,8 +683,8 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
 			goto parse_failed;
 		*delim = 0;
 		if (*cur == ' ' || *cur == '\t')
-			printk(KERN_INFO "%s: warning: whitespace"
-					"is not allowed\n", np->name);
+//			printk(KERN_INFO "%s: warning: whitespace"
+;
 		np->remote_port = simple_strtol(cur, NULL, 10);
 		cur = delim;
 	}
@@ -708,8 +708,8 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
 	return 0;
 
  parse_failed:
-	printk(KERN_INFO "%s: couldn't parse config at '%s'!\n",
-	       np->name, cur);
+//	printk(KERN_INFO "%s: couldn't parse config at '%s'!\n",
+;
 	return -1;
 }
 EXPORT_SYMBOL(netpoll_parse_options);
@@ -724,8 +724,8 @@ int __netpoll_setup(struct netpoll *np)
 
 	if ((ndev->priv_flags & IFF_DISABLE_NETPOLL) ||
 	    !ndev->netdev_ops->ndo_poll_controller) {
-		printk(KERN_ERR "%s: %s doesn't support polling, aborting.\n",
-		       np->name, np->dev_name);
+//		printk(KERN_ERR "%s: %s doesn't support polling, aborting.\n",
+;
 		err = -ENOTSUPP;
 		goto out;
 	}
@@ -788,14 +788,14 @@ int netpoll_setup(struct netpoll *np)
 	if (np->dev_name)
 		ndev = dev_get_by_name(&init_net, np->dev_name);
 	if (!ndev) {
-		printk(KERN_ERR "%s: %s doesn't exist, aborting.\n",
-		       np->name, np->dev_name);
+//		printk(KERN_ERR "%s: %s doesn't exist, aborting.\n",
+;
 		return -ENODEV;
 	}
 
 	if (ndev->master) {
-		printk(KERN_ERR "%s: %s is a slave device, aborting.\n",
-		       np->name, np->dev_name);
+//		printk(KERN_ERR "%s: %s is a slave device, aborting.\n",
+;
 		err = -EBUSY;
 		goto put;
 	}
@@ -803,16 +803,16 @@ int netpoll_setup(struct netpoll *np)
 	if (!netif_running(ndev)) {
 		unsigned long atmost, atleast;
 
-		printk(KERN_INFO "%s: device %s not up yet, forcing it\n",
-		       np->name, np->dev_name);
+//		printk(KERN_INFO "%s: device %s not up yet, forcing it\n",
+;
 
 		rtnl_lock();
 		err = dev_open(ndev);
 		rtnl_unlock();
 
 		if (err) {
-			printk(KERN_ERR "%s: failed to open %s\n",
-			       np->name, ndev->name);
+//			printk(KERN_ERR "%s: failed to open %s\n",
+;
 			goto put;
 		}
 
@@ -820,9 +820,9 @@ int netpoll_setup(struct netpoll *np)
 		atmost = jiffies + carrier_timeout * HZ;
 		while (!netif_carrier_ok(ndev)) {
 			if (time_after(jiffies, atmost)) {
-				printk(KERN_NOTICE
-				       "%s: timeout waiting for carrier\n",
-				       np->name);
+//				printk(KERN_NOTICE
+//				       "%s: timeout waiting for carrier\n",
+;
 				break;
 			}
 			msleep(1);
@@ -834,9 +834,9 @@ int netpoll_setup(struct netpoll *np)
 		 */
 
 		if (time_before(jiffies, atleast)) {
-			printk(KERN_NOTICE "%s: carrier detect appears"
-			       " untrustworthy, waiting 4 seconds\n",
-			       np->name);
+//			printk(KERN_NOTICE "%s: carrier detect appears"
+//			       " untrustworthy, waiting 4 seconds\n",
+;
 			msleep(4000);
 		}
 	}
@@ -847,15 +847,15 @@ int netpoll_setup(struct netpoll *np)
 
 		if (!in_dev || !in_dev->ifa_list) {
 			rcu_read_unlock();
-			printk(KERN_ERR "%s: no IP address for %s, aborting\n",
-			       np->name, np->dev_name);
+//			printk(KERN_ERR "%s: no IP address for %s, aborting\n",
+;
 			err = -EDESTADDRREQ;
 			goto put;
 		}
 
 		np->local_ip = in_dev->ifa_list->ifa_local;
 		rcu_read_unlock();
-		printk(KERN_INFO "%s: local IP %pI4\n", np->name, &np->local_ip);
+;
 	}
 
 	np->dev = ndev;

@@ -432,12 +432,12 @@ static int xlvbd_init_blk_queue(struct gendisk *gd, u16 sector_size)
 static void xlvbd_flush(struct blkfront_info *info)
 {
 	blk_queue_flush(info->rq, info->feature_flush);
-	printk(KERN_INFO "blkfront: %s: %s: %s\n",
-	       info->gd->disk_name,
-	       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
-		"barrier" : (info->flush_op == BLKIF_OP_FLUSH_DISKCACHE ?
-		"flush diskcache" : "barrier or flush"),
-	       info->feature_flush ? "enabled" : "disabled");
+//	printk(KERN_INFO "blkfront: %s: %s: %s\n",
+//	       info->gd->disk_name,
+//	       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
+//		"barrier" : (info->flush_op == BLKIF_OP_FLUSH_DISKCACHE ?
+//		"flush diskcache" : "barrier or flush"),
+;
 }
 
 static int xen_translate_vdev(int vdevice, int *minor, unsigned int *offset)
@@ -493,8 +493,8 @@ static int xen_translate_vdev(int vdevice, int *minor, unsigned int *offset)
 			*offset = *minor / PARTS_PER_DISK;
 			break;
 		default:
-			printk(KERN_WARNING "blkfront: your disk configuration is "
-					"incorrect, please use an xvd device instead\n");
+//			printk(KERN_WARNING "blkfront: your disk configuration is "
+;
 			return -ENODEV;
 	}
 	return 0;
@@ -516,7 +516,7 @@ static int xlvbd_alloc_gendisk(blkif_sector_t capacity,
 
 	if ((info->vdevice>>EXT_SHIFT) > 1) {
 		/* this is above the extended range; something is wrong */
-		printk(KERN_WARNING "blkfront: vdevice 0x%x is above the extended range; ignoring\n", info->vdevice);
+;
 		return -ENODEV;
 	}
 
@@ -530,9 +530,9 @@ static int xlvbd_alloc_gendisk(blkif_sector_t capacity,
 		nr_parts = PARTS_PER_EXT_DISK;
 		offset = minor / nr_parts;
 		if (xen_hvm_domain() && offset < EMULATED_HD_DISK_NAME_OFFSET + 4)
-			printk(KERN_WARNING "blkfront: vdevice 0x%x might conflict with "
-					"emulated IDE disks,\n\t choose an xvd device name"
-					"from xvde on\n", info->vdevice);
+//			printk(KERN_WARNING "blkfront: vdevice 0x%x might conflict with "
+//					"emulated IDE disks,\n\t choose an xvd device name"
+;
 	}
 	err = -ENODEV;
 
@@ -725,18 +725,18 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
 		case BLKIF_OP_FLUSH_DISKCACHE:
 		case BLKIF_OP_WRITE_BARRIER:
 			if (unlikely(bret->status == BLKIF_RSP_EOPNOTSUPP)) {
-				printk(KERN_WARNING "blkfront: %s: write %s op failed\n",
-				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
-				       "barrier" :  "flush disk cache",
-				       info->gd->disk_name);
+//				printk(KERN_WARNING "blkfront: %s: write %s op failed\n",
+//				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
+//				       "barrier" :  "flush disk cache",
+;
 				error = -EOPNOTSUPP;
 			}
 			if (unlikely(bret->status == BLKIF_RSP_ERROR &&
 				     info->shadow[id].req.nr_segments == 0)) {
-				printk(KERN_WARNING "blkfront: %s: empty write %s op failed\n",
-				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
-				       "barrier" :  "flush disk cache",
-				       info->gd->disk_name);
+//				printk(KERN_WARNING "blkfront: %s: empty write %s op failed\n",
+//				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
+//				       "barrier" :  "flush disk cache",
+;
 				error = -EOPNOTSUPP;
 			}
 			if (unlikely(error)) {
@@ -924,9 +924,9 @@ static int blkfront_probe(struct xenbus_device *dev,
 				major = XENVBD_MAJOR;
 
 			if (major != XENVBD_MAJOR) {
-				printk(KERN_INFO
-						"%s: HVM does not support vbd %d as xen block device\n",
-						__FUNCTION__, vdevice);
+//				printk(KERN_INFO
+//						"%s: HVM does not support vbd %d as xen block device\n",
+;
 				return -ENODEV;
 			}
 		}
@@ -1120,8 +1120,8 @@ static void blkfront_connect(struct blkfront_info *info)
 				   "sectors", "%Lu", &sectors);
 		if (XENBUS_EXIST_ERR(err))
 			return;
-		printk(KERN_INFO "Setting capacity to %Lu\n",
-		       sectors);
+//		printk(KERN_INFO "Setting capacity to %Lu\n",
+;
 		set_capacity(info->gd, sectors);
 		revalidate_disk(info->gd);
 
@@ -1389,8 +1389,8 @@ static int __init xlblk_init(void)
 		return -ENODEV;
 
 	if (register_blkdev(XENVBD_MAJOR, DEV_NAME)) {
-		printk(KERN_WARNING "xen_blk: can't get major %d with name %s\n",
-		       XENVBD_MAJOR, DEV_NAME);
+//		printk(KERN_WARNING "xen_blk: can't get major %d with name %s\n",
+;
 		return -ENODEV;
 	}
 

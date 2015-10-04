@@ -842,15 +842,15 @@ int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
 			err = mmc_read_switch(card);
 			if (!err) {
 				if (retries > 1) {
-					printk(KERN_WARNING
-					       "%s: recovered\n", 
-					       mmc_hostname(host));
+//					printk(KERN_WARNING
+//					       "%s: recovered\n", 
+;
 				}
 				break;
 			} else {
-				printk(KERN_WARNING
-				       "%s: read switch failed (attempt %d)\n",
-				       mmc_hostname(host), retries);
+//				printk(KERN_WARNING
+//				       "%s: read switch failed (attempt %d)\n",
+;
 			}
 		}
 #else
@@ -1100,8 +1100,8 @@ send_again:
 		break;
 	}
 	if (!retries) {
-		printk(KERN_ERR "%s(%s): Unable to re-detect card (%d)\n",
-		       __func__, mmc_hostname(host), err);
+//		printk(KERN_ERR "%s(%s): Unable to re-detect card (%d)\n",
+;
 	} else {
 #ifdef _MMC_SAFE_ACCESS_
 		slowcount = slowcount-4;
@@ -1177,8 +1177,8 @@ static int mmc_sd_resume(struct mmc_host *host)
 		err = mmc_sd_init_card(host, host->ocr, host->card);
 
 		if (err) {
-			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d)\n",
-			       mmc_hostname(host), err, retries);
+//			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d)\n",
+;
 			mdelay(5);
 			retries--;
 			continue;
@@ -1318,8 +1318,8 @@ int mmc_attach_sd(struct mmc_host *host)
 	}
 
 	if (!retries) {
-		printk(KERN_ERR "%s: mmc_sd_init_card() failure (err = %d)\n",
-		       mmc_hostname(host), err);
+//		printk(KERN_ERR "%s: mmc_sd_init_card() failure (err = %d)\n",
+;
 		goto err;
 	}
 #else

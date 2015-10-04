@@ -102,7 +102,7 @@ static int asd_init_phy(struct asd_phy *phy)
 					     sizeof(*phy->identify_frame),
 					     GFP_KERNEL);
 	if (!phy->id_frm_tok) {
-		asd_printk("no mem for IDENTIFY for phy%d\n", sas_phy->id);
+;
 		return -ENOMEM;
 	} else
 		asd_init_phy_identify(phy);
@@ -167,15 +167,15 @@ static int asd_init_sw(struct asd_ha_struct *asd_ha)
 	/* Unlock MBARs */
 	err = pci_read_config_dword(pcidev, PCI_CONF_MBAR_KEY, &v);
 	if (err) {
-		asd_printk("couldn't access conf. space of %s\n",
-			   pci_name(pcidev));
+//		asd_printk("couldn't access conf. space of %s\n",
+;
 		goto Err;
 	}
 	if (v)
 		err = pci_write_config_dword(pcidev, PCI_CONF_MBAR_KEY, v);
 	if (err) {
-		asd_printk("couldn't write to MBAR_KEY of %s\n",
-			   pci_name(pcidev));
+//		asd_printk("couldn't write to MBAR_KEY of %s\n",
+;
 		goto Err;
 	}
 
@@ -328,7 +328,7 @@ static int asd_alloc_escbs(struct asd_ha_struct *asd_ha,
 	escbs = seq->num_escbs;
 	escb = asd_ascb_alloc_list(asd_ha, &escbs, gfp_flags);
 	if (!escb) {
-		asd_printk("couldn't allocate list of escbs\n");
+;
 		goto Err;
 	}
 	seq->num_escbs -= escbs;  /* subtract what was not allocated */
@@ -393,13 +393,13 @@ static int asd_init_escbs(struct asd_ha_struct *asd_ha)
 
 	err = asd_alloc_edbs(asd_ha, GFP_KERNEL);
 	if (err) {
-		asd_printk("couldn't allocate edbs\n");
+;
 		return err;
 	}
 
 	err = asd_alloc_escbs(asd_ha, GFP_KERNEL);
 	if (err) {
-		asd_printk("couldn't allocate escbs\n");
+;
 		return err;
 	}
 
@@ -461,8 +461,8 @@ static int asd_init_chip(struct asd_ha_struct *asd_ha)
 
 	err = asd_chip_hardrst(asd_ha);
 	if (err) {
-		asd_printk("couldn't hard reset %s\n",
-			    pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't hard reset %s\n",
+;
 		goto out;
 	}
 
@@ -470,15 +470,15 @@ static int asd_init_chip(struct asd_ha_struct *asd_ha)
 
 	err = asd_init_seqs(asd_ha);
 	if (err) {
-		asd_printk("couldn't init seqs for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't init seqs for %s\n",
+;
 		goto out;
 	}
 
 	err = asd_start_seqs(asd_ha);
 	if (err) {
-		asd_printk("coudln't start seqs for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("coudln't start seqs for %s\n",
+;
 		goto out;
 	}
 out:
@@ -531,8 +531,8 @@ static int asd_extend_devctx(struct asd_ha_struct *asd_ha)
 
 	asd_ha->hw_prof.ddb_ext = asd_alloc_coherent(asd_ha, size, GFP_KERNEL);
 	if (!asd_ha->hw_prof.ddb_ext) {
-		asd_printk("couldn't allocate memory for %d devices\n",
-			   max_devs);
+//		asd_printk("couldn't allocate memory for %d devices\n",
+;
 		max_devs = asd_ha->hw_prof.max_ddbs;
 		return -ENOMEM;
 	}
@@ -567,8 +567,8 @@ static int asd_extend_cmdctx(struct asd_ha_struct *asd_ha)
 
 	asd_ha->hw_prof.scb_ext = asd_alloc_coherent(asd_ha, size, GFP_KERNEL);
 	if (!asd_ha->hw_prof.scb_ext) {
-		asd_printk("couldn't allocate memory for %d commands\n",
-			   max_cmnds);
+//		asd_printk("couldn't allocate memory for %d commands\n",
+;
 		max_cmnds = asd_ha->hw_prof.max_scbs;
 		return -ENOMEM;
 	}
@@ -628,28 +628,28 @@ int asd_init_hw(struct asd_ha_struct *asd_ha)
 
 	err = pci_read_config_dword(asd_ha->pcidev, PCIC_HSTPCIX_CNTRL, &v);
 	if (err) {
-		asd_printk("couldn't read PCIC_HSTPCIX_CNTRL of %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't read PCIC_HSTPCIX_CNTRL of %s\n",
+;
 		return err;
 	}
 	pci_write_config_dword(asd_ha->pcidev, PCIC_HSTPCIX_CNTRL,
 					v | SC_TMR_DIS);
 	if (err) {
-		asd_printk("couldn't disable split completion timer of %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't disable split completion timer of %s\n",
+;
 		return err;
 	}
 
 	err = asd_read_ocm(asd_ha);
 	if (err) {
-		asd_printk("couldn't read ocm(%d)\n", err);
+;
 		/* While suspicios, it is not an error that we
 		 * couldn't read the OCM. */
 	}
 
 	err = asd_read_flash(asd_ha);
 	if (err) {
-		asd_printk("couldn't read flash(%d)\n", err);
+;
 		/* While suspicios, it is not an error that we
 		 * couldn't read FLASH memory.
 		 */
@@ -658,8 +658,8 @@ int asd_init_hw(struct asd_ha_struct *asd_ha)
 	asd_init_ctxmem(asd_ha);
 
 	if (asd_get_user_sas_addr(asd_ha)) {
-		asd_printk("No SAS Address provided for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("No SAS Address provided for %s\n",
+;
 		err = -ENODEV;
 		goto Out;
 	}
@@ -668,8 +668,8 @@ int asd_init_hw(struct asd_ha_struct *asd_ha)
 
 	err = asd_init_phys(asd_ha);
 	if (err) {
-		asd_printk("couldn't initialize phys for %s\n",
-			    pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't initialize phys for %s\n",
+;
 		goto Out;
 	}
 
@@ -677,27 +677,27 @@ int asd_init_hw(struct asd_ha_struct *asd_ha)
 
 	err = asd_init_scbs(asd_ha);
 	if (err) {
-		asd_printk("couldn't initialize scbs for %s\n",
-			    pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't initialize scbs for %s\n",
+;
 		goto Out;
 	}
 
 	err = asd_init_dl(asd_ha);
 	if (err) {
-		asd_printk("couldn't initialize the done list:%d\n",
-			    err);
+//		asd_printk("couldn't initialize the done list:%d\n",
+;
 		goto Out;
 	}
 
 	err = asd_init_escbs(asd_ha);
 	if (err) {
-		asd_printk("couldn't initialize escbs\n");
+;
 		goto Out;
 	}
 
 	err = asd_init_chip(asd_ha);
 	if (err) {
-		asd_printk("couldn't init the chip\n");
+;
 		goto Out;
 	}
 Out:
@@ -789,33 +789,33 @@ static void asd_com_sas_isr(struct asd_ha_struct *asd_ha)
 	asd_write_reg_dword(asd_ha, COMSTAT, 0xFFFFFFFF);
 
 	if (comstat & CSBUFPERR) {
-		asd_printk("%s: command/status buffer dma parity error\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("%s: command/status buffer dma parity error\n",
+;
 	} else if (comstat & CSERR) {
 		int i;
 		u32 dmaerr = asd_read_reg_dword(asd_ha, DMAERR);
 		dmaerr &= 0xFF;
-		asd_printk("%s: command/status dma error, DMAERR: 0x%02x, "
-			   "CSDMAADR: 0x%04x, CSDMAADR+4: 0x%04x\n",
-			   pci_name(asd_ha->pcidev),
-			   dmaerr,
-			   asd_read_reg_dword(asd_ha, CSDMAADR),
-			   asd_read_reg_dword(asd_ha, CSDMAADR+4));
-		asd_printk("CSBUFFER:\n");
+//		asd_printk("%s: command/status dma error, DMAERR: 0x%02x, "
+//			   "CSDMAADR: 0x%04x, CSDMAADR+4: 0x%04x\n",
+//			   pci_name(asd_ha->pcidev),
+//			   dmaerr,
+//			   asd_read_reg_dword(asd_ha, CSDMAADR),
+;
+;
 		for (i = 0; i < 8; i++) {
-			asd_printk("%08x %08x %08x %08x\n",
-				   asd_read_reg_dword(asd_ha, CSBUFFER),
-				   asd_read_reg_dword(asd_ha, CSBUFFER+4),
-				   asd_read_reg_dword(asd_ha, CSBUFFER+8),
-				   asd_read_reg_dword(asd_ha, CSBUFFER+12));
+//			asd_printk("%08x %08x %08x %08x\n",
+//				   asd_read_reg_dword(asd_ha, CSBUFFER),
+//				   asd_read_reg_dword(asd_ha, CSBUFFER+4),
+//				   asd_read_reg_dword(asd_ha, CSBUFFER+8),
+;
 		}
 		asd_dump_seq_state(asd_ha, 0);
 	} else if (comstat & OVLYERR) {
 		u32 dmaerr = asd_read_reg_dword(asd_ha, DMAERR);
 		dmaerr = (dmaerr >> 8) & 0xFF;
-		asd_printk("%s: overlay dma error:0x%x\n",
-			   pci_name(asd_ha->pcidev),
-			   dmaerr);
+//		asd_printk("%s: overlay dma error:0x%x\n",
+//			   pci_name(asd_ha->pcidev),
+;
 	}
 	asd_chip_reset(asd_ha);
 }
@@ -865,17 +865,17 @@ static void asd_arp2_err(struct asd_ha_struct *asd_ha, u32 dchstatus)
 		u32 arp2int = asd_read_reg_dword(asd_ha, CARP2INT);
 
 		if (arp2int & (ARP2WAITTO|ARP2ILLOPC|ARP2PERR|ARP2CIOPERR)) {
-			asd_printk("%s: CSEQ arp2int:0x%x\n",
-				   pci_name(asd_ha->pcidev),
-				   arp2int);
+//			asd_printk("%s: CSEQ arp2int:0x%x\n",
+//				   pci_name(asd_ha->pcidev),
+;
 		} else if (arp2int & ARP2HALTC)
-			asd_printk("%s: CSEQ halted: %s\n",
-				   pci_name(asd_ha->pcidev),
-				   halt_code[(arp2int>>16)&0xFF]);
+//			asd_printk("%s: CSEQ halted: %s\n",
+//				   pci_name(asd_ha->pcidev),
+;
 		else
-			asd_printk("%s: CARP2INT:0x%x\n",
-				   pci_name(asd_ha->pcidev),
-				   arp2int);
+//			asd_printk("%s: CARP2INT:0x%x\n",
+//				   pci_name(asd_ha->pcidev),
+;
 	}
 	if (dchstatus & LSEQINT_MASK) {
 		int lseq;
@@ -886,18 +886,18 @@ static void asd_arp2_err(struct asd_ha_struct *asd_ha, u32 dchstatus)
 							 LmARP2INT(lseq));
 			if (arp2int & (ARP2WAITTO | ARP2ILLOPC | ARP2PERR
 				       | ARP2CIOPERR)) {
-				asd_printk("%s: LSEQ%d arp2int:0x%x\n",
-					   pci_name(asd_ha->pcidev),
-					   lseq, arp2int);
+//				asd_printk("%s: LSEQ%d arp2int:0x%x\n",
+//					   pci_name(asd_ha->pcidev),
+;
 				/* XXX we should only do lseq reset */
 			} else if (arp2int & ARP2HALTC)
-				asd_printk("%s: LSEQ%d halted: %s\n",
-					   pci_name(asd_ha->pcidev),
-					   lseq,halt_code[(arp2int>>16)&0xFF]);
+//				asd_printk("%s: LSEQ%d halted: %s\n",
+//					   pci_name(asd_ha->pcidev),
+;
 			else
-				asd_printk("%s: LSEQ%d ARP2INT:0x%x\n",
-					   pci_name(asd_ha->pcidev), lseq,
-					   arp2int);
+//				asd_printk("%s: LSEQ%d ARP2INT:0x%x\n",
+//					   pci_name(asd_ha->pcidev), lseq,
+;
 		}
 	}
 	asd_chip_reset(asd_ha);
@@ -912,7 +912,7 @@ static void asd_dch_sas_isr(struct asd_ha_struct *asd_ha)
 	u32 dchstatus = asd_read_reg_dword(asd_ha, DCHSTATUS);
 
 	if (dchstatus & CFIFTOERR) {
-		asd_printk("%s: CFIFTOERR\n", pci_name(asd_ha->pcidev));
+;
 		asd_chip_reset(asd_ha);
 	} else
 		asd_arp2_err(asd_ha, dchstatus);
@@ -927,18 +927,18 @@ static void asd_rbi_exsi_isr(struct asd_ha_struct *asd_ha)
 	u32 stat0r = asd_read_reg_dword(asd_ha, ASISTAT0R);
 
 	if (!(stat0r & ASIERR)) {
-		asd_printk("hmm, EXSI interrupted but no error?\n");
+;
 		return;
 	}
 
 	if (stat0r & ASIFMTERR) {
-		asd_printk("ASI SEEPROM format error for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("ASI SEEPROM format error for %s\n",
+;
 	} else if (stat0r & ASISEECHKERR) {
 		u32 stat1r = asd_read_reg_dword(asd_ha, ASISTAT1R);
-		asd_printk("ASI SEEPROM checksum 0x%x error for %s\n",
-			   stat1r & CHECKSUM_MASK,
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("ASI SEEPROM checksum 0x%x error for %s\n",
+//			   stat1r & CHECKSUM_MASK,
+;
 	} else {
 		u32 statr = asd_read_reg_dword(asd_ha, ASIERRSTATR);
 
@@ -949,16 +949,16 @@ static void asd_rbi_exsi_isr(struct asd_ha_struct *asd_ha)
 			u32 addr = asd_read_reg_dword(asd_ha, ASIERRADDR);
 			u32 data = asd_read_reg_dword(asd_ha, ASIERRDATAR);
 
-			asd_printk("%s: CPI2 xfer err: addr: 0x%x, wdata: 0x%x, "
-				   "count: 0x%x, byteen: 0x%x, targerr: 0x%x "
-				   "master id: 0x%x, master err: 0x%x\n",
-				   pci_name(asd_ha->pcidev),
-				   addr, data,
-				   (statr & CPI2ASIBYTECNT_MASK) >> 16,
-				   (statr & CPI2ASIBYTEEN_MASK) >> 12,
-				   (statr & CPI2ASITARGERR_MASK) >> 8,
-				   (statr & CPI2ASITARGMID_MASK) >> 4,
-				   (statr & CPI2ASIMSTERR_MASK));
+//			asd_printk("%s: CPI2 xfer err: addr: 0x%x, wdata: 0x%x, "
+//				   "count: 0x%x, byteen: 0x%x, targerr: 0x%x "
+//				   "master id: 0x%x, master err: 0x%x\n",
+//				   pci_name(asd_ha->pcidev),
+//				   addr, data,
+//				   (statr & CPI2ASIBYTECNT_MASK) >> 16,
+//				   (statr & CPI2ASIBYTEEN_MASK) >> 12,
+//				   (statr & CPI2ASITARGERR_MASK) >> 8,
+//				   (statr & CPI2ASITARGMID_MASK) >> 4,
+;
 		}
 	}
 	asd_chip_reset(asd_ha);
@@ -981,31 +981,31 @@ static void asd_hst_pcix_isr(struct asd_ha_struct *asd_ha)
 	pci_read_config_dword(asd_ha->pcidev, ECC_CTRL_STAT, &ecc_status);
 
 	if (status & PCI_STATUS_DETECTED_PARITY)
-		asd_printk("parity error for %s\n", pci_name(asd_ha->pcidev));
+;
 	else if (status & PCI_STATUS_REC_MASTER_ABORT)
-		asd_printk("master abort for %s\n", pci_name(asd_ha->pcidev));
+;
 	else if (status & PCI_STATUS_REC_TARGET_ABORT)
-		asd_printk("target abort for %s\n", pci_name(asd_ha->pcidev));
+;
 	else if (status & PCI_STATUS_PARITY)
-		asd_printk("data parity for %s\n", pci_name(asd_ha->pcidev));
+;
 	else if (pcix_status & RCV_SCE) {
-		asd_printk("received split completion error for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("received split completion error for %s\n",
+;
 		pci_write_config_dword(asd_ha->pcidev,PCIX_STATUS,pcix_status);
 		/* XXX: Abort task? */
 		return;
 	} else if (pcix_status & UNEXP_SC) {
-		asd_printk("unexpected split completion for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("unexpected split completion for %s\n",
+;
 		pci_write_config_dword(asd_ha->pcidev,PCIX_STATUS,pcix_status);
 		/* ignore */
 		return;
 	} else if (pcix_status & SC_DISCARD)
-		asd_printk("split completion discarded for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("split completion discarded for %s\n",
+;
 	else if (ecc_status & UNCOR_ECCERR)
-		asd_printk("uncorrectable ECC error for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("uncorrectable ECC error for %s\n",
+;
 	asd_chip_reset(asd_ha);
 }
 
@@ -1219,7 +1219,7 @@ int asd_post_ascb_list(struct asd_ha_struct *asd_ha, struct asd_ascb *ascb,
 
 	if (!can_queue) {
 		spin_unlock_irqrestore(&asd_ha->seq.pend_q_lock, flags);
-		asd_printk("%s: scb queue full\n", pci_name(asd_ha->pcidev));
+;
 		return -SAS_QUEUE_FULL;
 	}
 
@@ -1360,7 +1360,7 @@ int asd_enable_phys(struct asd_ha_struct *asd_ha, const u8 phy_mask)
 	struct asd_ascb *ascb_list;
 
 	if (!phy_mask) {
-		asd_printk("%s called with phy_mask of 0!?\n", __func__);
+;
 		return 0;
 	}
 
@@ -1372,7 +1372,7 @@ int asd_enable_phys(struct asd_ha_struct *asd_ha, const u8 phy_mask)
 	k = num;
 	ascb_list = asd_ascb_alloc_list(asd_ha, &k, GFP_KERNEL);
 	if (!ascb_list) {
-		asd_printk("no memory for control phy ascb list\n");
+;
 		return -ENOMEM;
 	}
 	num -= k;

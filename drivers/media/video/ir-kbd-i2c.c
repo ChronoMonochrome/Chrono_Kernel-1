@@ -57,15 +57,15 @@ module_param(debug, int, 0644);    /* debug level (0,1,2) */
 
 
 #define MODULE_NAME "ir-kbd-i2c"
-#define dprintk(level, fmt, arg...)	if (debug >= level) \
-	printk(KERN_DEBUG MODULE_NAME ": " fmt , ## arg)
-
-/* ----------------------------------------------------------------------- */
-
-static int get_key_haup_common(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw,
-			       int size, int offset)
-{
-	unsigned char buf[6];
+//#define dprintk(level, fmt, arg...)	if (debug >= level) \
+//	printk(KERN_DEBUG MODULE_NAME ": " fmt , ## arg)
+//
+///* ----------------------------------------------------------------------- */
+//
+//static int get_key_haup_common(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw,
+//			       int size, int offset)
+//{
+;
 	int start, range, toggle, dev, code, ircode;
 
 	/* poll IR chip */
@@ -104,8 +104,8 @@ static int get_key_haup_common(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw,
 	if (!range)
 		code += 64;
 
-	dprintk(1,"ir hauppauge (rc5): s%d r%d t%d dev=%d code=%d\n",
-		start, range, toggle, dev, code);
+//	dprintk(1,"ir hauppauge (rc5): s%d r%d t%d dev=%d code=%d\n",
+;
 
 	/* return key */
 	*ir_key = (dev << 8) | code;
@@ -142,7 +142,7 @@ static int get_key_pixelview(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 
 	/* poll IR chip */
 	if (1 != i2c_master_recv(ir->c, &b, 1)) {
-		dprintk(1,"read error\n");
+;
 		return -EIO;
 	}
 	*ir_key = b;
@@ -156,13 +156,13 @@ static int get_key_fusionhdtv(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 
 	/* poll IR chip */
 	if (4 != i2c_master_recv(ir->c, buf, 4)) {
-		dprintk(1,"read error\n");
+;
 		return -EIO;
 	}
 
 	if(buf[0] !=0 || buf[1] !=0 || buf[2] !=0 || buf[3] != 0)
-		dprintk(2, "%s: 0x%2x 0x%2x 0x%2x 0x%2x\n", __func__,
-			buf[0], buf[1], buf[2], buf[3]);
+//		dprintk(2, "%s: 0x%2x 0x%2x 0x%2x 0x%2x\n", __func__,
+;
 
 	/* no key pressed or signal from other ir remote */
 	if(buf[0] != 0x1 ||  buf[1] != 0xfe)
@@ -180,7 +180,7 @@ static int get_key_knc1(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 
 	/* poll IR chip */
 	if (1 != i2c_master_recv(ir->c, &b, 1)) {
-		dprintk(1,"read error\n");
+;
 		return -EIO;
 	}
 
@@ -188,7 +188,7 @@ static int get_key_knc1(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 	   down, while 0xff indicates that no button is hold
 	   down. 0xfe sequences are sometimes interrupted by 0xFF */
 
-	dprintk(2,"key %02x\n", b);
+;
 
 	if (b == 0xff)
 		return 0;
@@ -212,7 +212,7 @@ static int get_key_avermedia_cardbus(struct IR_i2c *ir,
 				  .buf = &key, .len = 1} };
 	subaddr = 0x0d;
 	if (2 != i2c_transfer(ir->c->adapter, msg, 2)) {
-		dprintk(1, "read error\n");
+;
 		return -EIO;
 	}
 
@@ -222,18 +222,18 @@ static int get_key_avermedia_cardbus(struct IR_i2c *ir,
 	subaddr = 0x0b;
 	msg[1].buf = &keygroup;
 	if (2 != i2c_transfer(ir->c->adapter, msg, 2)) {
-		dprintk(1, "read error\n");
+;
 		return -EIO;
 	}
 
 	if (keygroup == 0xff)
 		return 0;
 
-	dprintk(1, "read key 0x%02x/0x%02x\n", key, keygroup);
+;
 	if (keygroup < 2 || keygroup > 3) {
 		/* Only a warning */
-		dprintk(1, "warning: invalid key group 0x%02x for key 0x%02x\n",
-								keygroup, key);
+//		dprintk(1, "warning: invalid key group 0x%02x for key 0x%02x\n",
+;
 	}
 	key |= (keygroup & 1) << 6;
 
@@ -249,15 +249,15 @@ static void ir_key_poll(struct IR_i2c *ir)
 	static u32 ir_key, ir_raw;
 	int rc;
 
-	dprintk(3, "%s\n", __func__);
+;
 	rc = ir->get_key(ir, &ir_key, &ir_raw);
 	if (rc < 0) {
-		dprintk(2,"error\n");
+;
 		return;
 	}
 
 	if (rc) {
-		dprintk(1, "%s: keycode = 0x%04x\n", __func__, ir_key);
+;
 		rc_keydown(ir->rc, ir_key, 0);
 	}
 }
@@ -388,8 +388,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 	/* Make sure we are all setup before going on */
 	if (!name || !ir->get_key || !rc_type || !ir_codes) {
-		dprintk(1, ": Unsupported device at address 0x%02x\n",
-			addr);
+//		dprintk(1, ": Unsupported device at address 0x%02x\n",
+;
 		err = -ENODEV;
 		goto err_out_free;
 	}
@@ -422,8 +422,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	if (err)
 		goto err_out_free;
 
-	printk(MODULE_NAME ": %s detected at %s [%s]\n",
-	       ir->name, ir->phys, adap->name);
+//	printk(MODULE_NAME ": %s detected at %s [%s]\n",
+;
 
 	/* start polling via eventd */
 	INIT_DELAYED_WORK(&ir->work, ir_work);

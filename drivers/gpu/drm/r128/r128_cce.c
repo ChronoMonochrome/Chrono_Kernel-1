@@ -55,18 +55,18 @@ static int R128_READ_PLL(struct drm_device *dev, int addr)
 #if R128_FIFO_DEBUG
 static void r128_status(drm_r128_private_t *dev_priv)
 {
-	printk("GUI_STAT           = 0x%08x\n",
-	       (unsigned int)R128_READ(R128_GUI_STAT));
-	printk("PM4_STAT           = 0x%08x\n",
-	       (unsigned int)R128_READ(R128_PM4_STAT));
-	printk("PM4_BUFFER_DL_WPTR = 0x%08x\n",
-	       (unsigned int)R128_READ(R128_PM4_BUFFER_DL_WPTR));
-	printk("PM4_BUFFER_DL_RPTR = 0x%08x\n",
-	       (unsigned int)R128_READ(R128_PM4_BUFFER_DL_RPTR));
-	printk("PM4_MICRO_CNTL     = 0x%08x\n",
-	       (unsigned int)R128_READ(R128_PM4_MICRO_CNTL));
-	printk("PM4_BUFFER_CNTL    = 0x%08x\n",
-	       (unsigned int)R128_READ(R128_PM4_BUFFER_CNTL));
+//	printk("GUI_STAT           = 0x%08x\n",
+;
+//	printk("PM4_STAT           = 0x%08x\n",
+;
+//	printk("PM4_BUFFER_DL_WPTR = 0x%08x\n",
+;
+//	printk("PM4_BUFFER_DL_RPTR = 0x%08x\n",
+;
+//	printk("PM4_MICRO_CNTL     = 0x%08x\n",
+;
+//	printk("PM4_BUFFER_CNTL    = 0x%08x\n",
+;
 }
 #endif
 
@@ -149,21 +149,21 @@ static int r128_cce_load_microcode(drm_r128_private_t *dev_priv)
 
 	pdev = platform_device_register_simple("r128_cce", 0, NULL, 0);
 	if (IS_ERR(pdev)) {
-		printk(KERN_ERR "r128_cce: Failed to register firmware\n");
+;
 		return PTR_ERR(pdev);
 	}
 	rc = request_firmware(&fw, FIRMWARE_NAME, &pdev->dev);
 	platform_device_unregister(pdev);
 	if (rc) {
-		printk(KERN_ERR "r128_cce: Failed to load firmware \"%s\"\n",
-		       FIRMWARE_NAME);
+//		printk(KERN_ERR "r128_cce: Failed to load firmware \"%s\"\n",
+;
 		return rc;
 	}
 
 	if (fw->size != 256 * 8) {
-		printk(KERN_ERR
-		       "r128_cce: Bogus length %zu in firmware \"%s\"\n",
-		       fw->size, FIRMWARE_NAME);
+//		printk(KERN_ERR
+//		       "r128_cce: Bogus length %zu in firmware \"%s\"\n",
+;
 		rc = -EINVAL;
 		goto out_release;
 	}

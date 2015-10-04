@@ -110,7 +110,7 @@ unsigned int unhandled_reset_count = 0;
 #ifdef CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART
 void arm_machine_flush_console(void)
 {
-	printk("\n");
+;
 	pr_emerg("Restarting %s\n", linux_banner);
 	if (console_trylock()) {
 		console_unlock();
@@ -138,7 +138,7 @@ void arm_machine_restart(char mode, const char *cmd)
 #ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
 	int i;
 
-	printk( "arm_machine_restart: mode: %c, cmd: %s\n", mode, cmd ) ;
+;
 	/* reboot mode = Lockup */
 	if( 'L' == mode || 'U' == mode)	{
 		for(i=0; i<100; i++) {
@@ -182,7 +182,7 @@ void arm_machine_restart(char mode, const char *cmd)
 	 * Tell the user!
 	 */
 	mdelay(1000);
-	printk("Reboot failed -- System halted\n");
+;
 	while (1);
 }
 
@@ -319,13 +319,13 @@ void machine_power_off(void)
 void machine_restart(char *cmd)
 {
 #ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
-	printk( "machine_restart: cmd: %s\n", cmd ) ;
+;
 	/*reboot_mode = cmd[0];//kernel will crash at reboot-time. d.moskvitin */
 	if (cmd) 
 		reboot_mode = cmd[0];
 
-	printk( "machine_restart: reboot_mode: %c\n", reboot_mode );
-	printk( "machine_restart: arm_pm_restart: 0x%x\n", arm_pm_restart ) ;
+;
+;
 #endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
 
 #ifndef CONFIG_SAMSUNG_KERNEL_DEBUG
@@ -347,7 +347,7 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	if (addr < PAGE_OFFSET || addr >= (unsigned long)high_memory)
 		return;
 
-	printk("\n%s: %#lx:\n", name, addr);
+;
 
 	/*
 	 * round address down to a 32 bit boundary
@@ -363,17 +363,17 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 		 * just display low 16 bits of address to keep
 		 * each line of the dump < 80 characters
 		 */
-		printk("%04lx ", (unsigned long)p & 0xffff);
+;
 		for (j = 0; j < 8; j++) {
 			u32	data;
 			if (probe_kernel_address(p, data)) {
 				printk(" ********");
 			} else {
-				printk(" %08x", data);
+;
 			}
 			++p;
 		}
-		printk("\n");
+;
 	}
 }
 
@@ -414,19 +414,19 @@ void __show_regs(struct pt_regs *regs)
 		init_utsname()->version);
 	print_symbol("PC is at %s\n", instruction_pointer(regs));
 	print_symbol("LR is at %s\n", regs->ARM_lr);
-	printk("pc : [<%08lx>]    lr : [<%08lx>]    psr: %08lx\n"
-	       "sp : %08lx  ip : %08lx  fp : %08lx\n",
-		regs->ARM_pc, regs->ARM_lr, regs->ARM_cpsr,
-		regs->ARM_sp, regs->ARM_ip, regs->ARM_fp);
-	printk("r10: %08lx  r9 : %08lx  r8 : %08lx\n",
-		regs->ARM_r10, regs->ARM_r9,
-		regs->ARM_r8);
-	printk("r7 : %08lx  r6 : %08lx  r5 : %08lx  r4 : %08lx\n",
-		regs->ARM_r7, regs->ARM_r6,
-		regs->ARM_r5, regs->ARM_r4);
-	printk("r3 : %08lx  r2 : %08lx  r1 : %08lx  r0 : %08lx\n",
-		regs->ARM_r3, regs->ARM_r2,
-		regs->ARM_r1, regs->ARM_r0);
+////	printk("pc : [<%08lx>]    lr : [<%08lx>]    psr: %08lx\n"
+////	       "sp : %08lx  ip : %08lx  fp : %08lx\n",
+////		regs->ARM_pc, regs->ARM_lr, regs->ARM_cpsr,
+;
+////	printk("r10: %08lx  r9 : %08lx  r8 : %08lx\n",
+////		regs->ARM_r10, regs->ARM_r9,
+;
+////	printk("r7 : %08lx  r6 : %08lx  r5 : %08lx  r4 : %08lx\n",
+////		regs->ARM_r7, regs->ARM_r6,
+;
+////	printk("r3 : %08lx  r2 : %08lx  r1 : %08lx  r0 : %08lx\n",
+////		regs->ARM_r3, regs->ARM_r2,
+;
 
 	flags = regs->ARM_cpsr;
 	buf[0] = flags & PSR_N_BIT ? 'N' : 'n';
@@ -435,12 +435,12 @@ void __show_regs(struct pt_regs *regs)
 	buf[3] = flags & PSR_V_BIT ? 'V' : 'v';
 	buf[4] = '\0';
 
-	printk("Flags: %s  IRQs o%s  FIQs o%s  Mode %s  ISA %s  Segment %s\n",
-		buf, interrupts_enabled(regs) ? "n" : "ff",
-		fast_interrupts_enabled(regs) ? "n" : "ff",
-		processor_modes[processor_mode(regs)],
-		isa_modes[isa_mode(regs)],
-		get_fs() == get_ds() ? "kernel" : "user");
+////	printk("Flags: %s  IRQs o%s  FIQs o%s  Mode %s  ISA %s  Segment %s\n",
+////		buf, interrupts_enabled(regs) ? "n" : "ff",
+////		fast_interrupts_enabled(regs) ? "n" : "ff",
+////		processor_modes[processor_mode(regs)],
+////		isa_modes[isa_mode(regs)],
+;
 #ifdef CONFIG_CPU_CP15
 	{
 		unsigned int ctrl;
@@ -458,7 +458,7 @@ void __show_regs(struct pt_regs *regs)
 #endif
 		asm("mrc p15, 0, %0, c1, c0\n" : "=r" (ctrl));
 
-		printk("Control: %08x%s\n", ctrl, buf);
+;
 	}
 #endif
 
@@ -467,8 +467,8 @@ void __show_regs(struct pt_regs *regs)
 
 void show_regs(struct pt_regs * regs)
 {
-	printk("\n");
-	printk("Pid: %d, comm: %20s\n", task_pid_nr(current), current->comm);
+;
+;
 	__show_regs(regs);
 	__backtrace();
 }

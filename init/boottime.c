@@ -95,8 +95,8 @@ static void __init boottime_mark_core(char *name,
 	if (system_up) {
 		b = kmalloc(sizeof(struct boottime_list), GFP_KERNEL);
 		if (!b) {
-			printk(KERN_ERR
-			       "boottime: failed to allocate memory!\n");
+//			printk(KERN_ERR
+;
 			return;
 		}
 
@@ -105,8 +105,8 @@ static void __init boottime_mark_core(char *name,
 			b = &const_boottime_list[num_const_boottime_list];
 			num_const_boottime_list++;
 		} else {
-			printk(KERN_ERR
-			       "boottime: too many early measure points!\n");
+//			printk(KERN_ERR
+;
 			return;
 		}
 	}
@@ -181,14 +181,14 @@ void __init boottime_activate(struct boottime_timer *bt)
 	unsigned long flags;
 
 	if (bt == NULL) {
-		printk(KERN_ERR
-		       "boottime: error: bad configured\n");
+//		printk(KERN_ERR
+;
 		return;
 	}
 
 	if (bt->get_time == NULL) {
-		printk(KERN_ERR
-		       "boottime: error: you must provide a get_time() function\n");
+//		printk(KERN_ERR
+;
 		return;
 	}
 	memcpy(&boottime_timer, bt, sizeof(struct boottime_timer));
@@ -197,13 +197,13 @@ void __init boottime_activate(struct boottime_timer *bt)
 		res = boottime_timer.init();
 
 	if (res) {
-		printk(KERN_ERR "boottime: initialization failed\n");
+;
 		return;
 	}
 
 	if (boottime_arch_startup())
-		printk(KERN_ERR
-		       "boottime: arch specfic initialization failed\n");
+//		printk(KERN_ERR
+;
 
 	spin_lock_irqsave(&boottime_list_lock, flags);
 
@@ -449,13 +449,13 @@ static int __init boottime_init(void)
 
 	boottime_kobj = kobject_create_and_add("boottime", NULL);
 	if (!boottime_kobj) {
-		printk(KERN_ERR "boottime: out of memory!\n");
+;
 		return -ENOMEM;
 	}
 
 	if (sysfs_create_group(boottime_kobj, &boottime_attr_grp) < 0) {
 		kobject_put(boottime_kobj);
-		printk(KERN_ERR "boottime: Failed creating sysfs group\n");
+;
 		return -ENOMEM;
 	}
 

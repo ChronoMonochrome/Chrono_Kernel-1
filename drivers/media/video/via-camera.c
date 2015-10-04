@@ -1337,13 +1337,13 @@ static __devinit bool viacam_serial_is_enabled(void)
 	if ((cbyte & VIACAM_SERIAL_BIT) == 0)
 		return false; /* Not enabled */
 	if (override_serial == 0) {
-		printk(KERN_NOTICE "Via camera: serial port is enabled, " \
-				"refusing to load.\n");
-		printk(KERN_NOTICE "Specify override_serial=1 to force " \
-				"module loading.\n");
+//		printk(KERN_NOTICE "Via camera: serial port is enabled, " \
+;
+//		printk(KERN_NOTICE "Specify override_serial=1 to force " \
+;
 		return true;
 	}
-	printk(KERN_NOTICE "Via camera: overriding serial port\n");
+;
 	pci_bus_write_config_byte(pbus, VIACAM_SERIAL_DEVFN,
 			VIACAM_SERIAL_CREG, cbyte & ~VIACAM_SERIAL_BIT);
 	return false;
@@ -1372,11 +1372,11 @@ static __devinit int viacam_probe(struct platform_device *pdev)
 	 * aside more memory.
 	 */
 	if (viadev->camera_fbmem_size < (VGA_HEIGHT*VGA_WIDTH*4)) {
-		printk(KERN_ERR "viacam: insufficient FB memory reserved\n");
+;
 		return -ENOMEM;
 	}
 	if (viadev->engine_mmio == NULL) {
-		printk(KERN_ERR "viacam: No I/O memory, so no pictures\n");
+;
 		return -ENOMEM;
 	}
 

@@ -261,8 +261,8 @@ parse_options(char *options, uid_t *uid, gid_t *gid, int *mode, int *reserved, s
 		 	/* Silently ignore the quota options */
 			break;
 		default:
-			printk("AFFS: Unrecognized mount option \"%s\" "
-					"or missing value\n", p);
+//			printk("AFFS: Unrecognized mount option \"%s\" "
+;
 			return 0;
 		}
 	}
@@ -312,7 +312,7 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
 	if (!parse_options(data,&uid,&gid,&i,&reserved,&root_block,
 				&blocksize,&sbi->s_prefix,
 				sbi->s_volume, &mount_flags)) {
-		printk(KERN_ERR "AFFS: Error parsing options\n");
+;
 		kfree(sbi->s_prefix);
 		kfree(sbi);
 		return -EINVAL;
@@ -382,8 +382,8 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
 		}
 	}
 	if (!silent)
-		printk(KERN_ERR "AFFS: No valid root block on device %s\n",
-			sb->s_id);
+//		printk(KERN_ERR "AFFS: No valid root block on device %s\n",
+;
 	goto out_error;
 
 	/* N.B. after this point bh must be released */
@@ -393,7 +393,7 @@ got_root:
 	/* Find out which kind of FS we have */
 	boot_bh = sb_bread(sb, 0);
 	if (!boot_bh) {
-		printk(KERN_ERR "AFFS: Cannot read boot block\n");
+;
 		goto out_error;
 	}
 	memcpy(sig, boot_bh->b_data, 4);
@@ -406,8 +406,8 @@ got_root:
 	 */
 	if ((chksum == FS_DCFFS || chksum == MUFS_DCFFS || chksum == FS_DCOFS
 	     || chksum == MUFS_DCOFS) && !(sb->s_flags & MS_RDONLY)) {
-		printk(KERN_NOTICE "AFFS: Dircache FS - mounting %s read only\n",
-			sb->s_id);
+//		printk(KERN_NOTICE "AFFS: Dircache FS - mounting %s read only\n",
+;
 		sb->s_flags |= MS_RDONLY;
 	}
 	switch (chksum) {
@@ -441,8 +441,8 @@ got_root:
 			sb->s_flags |= MS_NOEXEC;
 			break;
 		default:
-			printk(KERN_ERR "AFFS: Unknown filesystem on device %s: %08X\n",
-				sb->s_id, chksum);
+//			printk(KERN_ERR "AFFS: Unknown filesystem on device %s: %08X\n",
+;
 			goto out_error;
 	}
 
@@ -484,7 +484,7 @@ got_root:
 
 	sb->s_root = d_alloc_root(root_inode);
 	if (!sb->s_root) {
-		printk(KERN_ERR "AFFS: Get root inode failed\n");
+;
 		goto out_error;
 	}
 

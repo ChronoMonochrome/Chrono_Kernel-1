@@ -229,14 +229,14 @@ int driver_register(struct device_driver *drv)
 	if ((drv->bus->probe && drv->probe) ||
 	    (drv->bus->remove && drv->remove) ||
 	    (drv->bus->shutdown && drv->shutdown))
-		printk(KERN_WARNING "Driver '%s' needs updating - please use "
-			"bus_type methods\n", drv->name);
+//		printk(KERN_WARNING "Driver '%s' needs updating - please use "
+;
 
 	other = driver_find(drv->name, drv->bus);
 	if (other) {
 		put_driver(other);
-		printk(KERN_ERR "Error: Driver '%s' is already registered, "
-			"aborting...\n", drv->name);
+//		printk(KERN_ERR "Error: Driver '%s' is already registered, "
+;
 		return -EBUSY;
 	}
 

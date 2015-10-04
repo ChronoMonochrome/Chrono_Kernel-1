@@ -1749,8 +1749,8 @@ static netdev_tx_t sky2_xmit_frame(struct sk_buff *skb,
 		goto mapping_error;
 
 	slot = sky2->tx_prod;
-	netif_printk(sky2, tx_queued, KERN_DEBUG, dev,
-		     "tx queued, slot %u, len %d\n", slot, skb->len);
+//	netif_printk(sky2, tx_queued, KERN_DEBUG, dev,
+;
 
 	/* Send high bits if needed */
 	upper = upper_32_bits(mapping);
@@ -1914,8 +1914,8 @@ static void sky2_tx_complete(struct sky2_port *sky2, u16 done)
 		sky2_tx_unmap(sky2->hw->pdev, re);
 
 		if (skb) {
-			netif_printk(sky2, tx_done, KERN_DEBUG, dev,
-				     "tx done %u\n", idx);
+//			netif_printk(sky2, tx_done, KERN_DEBUG, dev,
+;
 
 			u64_stats_update_begin(&sky2->tx_stats.syncp);
 			++sky2->tx_stats.packets;
@@ -2245,10 +2245,10 @@ static void sky2_tx_timeout(struct net_device *dev)
 
 	netif_err(sky2, timer, dev, "tx timeout\n");
 
-	netdev_printk(KERN_DEBUG, dev, "transmit ring %u .. %u report=%u done=%u\n",
-		      sky2->tx_cons, sky2->tx_prod,
-		      sky2_read16(hw, sky2->port == 0 ? STAT_TXA1_RIDX : STAT_TXA2_RIDX),
-		      sky2_read16(hw, Q_ADDR(txqaddr[sky2->port], Q_DONE)));
+//	netdev_printk(KERN_DEBUG, dev, "transmit ring %u .. %u report=%u done=%u\n",
+//		      sky2->tx_cons, sky2->tx_prod,
+//		      sky2_read16(hw, sky2->port == 0 ? STAT_TXA1_RIDX : STAT_TXA2_RIDX),
+;
 
 	/* can't restart safely under softirq */
 	schedule_work(&hw->restart_work);
@@ -2435,9 +2435,9 @@ static struct sk_buff *sky2_receive(struct net_device *dev,
 	struct sk_buff *skb = NULL;
 	u16 count = (status & GMR_FS_LEN) >> 16;
 
-	netif_printk(sky2, rx_status, KERN_DEBUG, dev,
-		     "rx slot %u status 0x%x len %d\n",
-		     sky2->rx_next, status, length);
+//	netif_printk(sky2, rx_status, KERN_DEBUG, dev,
+//		     "rx slot %u status 0x%x len %d\n",
+;
 
 	sky2->rx_next = (sky2->rx_next + 1) % sky2->rx_pending;
 	prefetch(sky2->rx_ring + sky2->rx_next);
@@ -2814,10 +2814,10 @@ static int sky2_rx_hung(struct net_device *dev)
 	     /* Check if the PCI RX hang */
 	     (fifo_rp == sky2->check.fifo_rp &&
 	      fifo_lev != 0 && fifo_lev >= sky2->check.fifo_lev))) {
-		netdev_printk(KERN_DEBUG, dev,
-			      "hung mac %d:%d fifo %d (%d:%d)\n",
-			      mac_lev, mac_rp, fifo_lev,
-			      fifo_rp, sky2_read8(hw, Q_ADDR(rxq, Q_WP)));
+//		netdev_printk(KERN_DEBUG, dev,
+//			      "hung mac %d:%d fifo %d (%d:%d)\n",
+//			      mac_lev, mac_rp, fifo_lev,
+;
 		return 1;
 	} else {
 		sky2->check.last = dev->last_rx;
@@ -4469,7 +4469,7 @@ static int sky2_device_event(struct notifier_block *unused,
 
 	case NETDEV_GOING_DOWN:
 		if (sky2->debugfs) {
-			netdev_printk(KERN_DEBUG, dev, "remove debugfs\n");
+;
 			debugfs_remove(sky2->debugfs);
 			sky2->debugfs = NULL;
 		}

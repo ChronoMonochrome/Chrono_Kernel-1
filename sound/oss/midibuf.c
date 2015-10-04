@@ -162,7 +162,7 @@ int MIDIbuf_open(int dev, struct file *file)
 
 	if (num_midis > MAX_MIDI_DEV)
 	{
-		printk(KERN_ERR "midi: Too many midi interfaces\n");
+;
 		num_midis = MAX_MIDI_DEV;
 	}
 	if (dev < 0 || dev >= num_midis || midi_devs[dev] == NULL)
@@ -182,7 +182,7 @@ int MIDIbuf_open(int dev, struct file *file)
 
 	if (midi_in_buf[dev] == NULL)
 	{
-		printk(KERN_WARNING "midi: Can't allocate buffer\n");
+;
 		midi_devs[dev]->close(dev);
 		return -EIO;
 	}
@@ -192,7 +192,7 @@ int MIDIbuf_open(int dev, struct file *file)
 
 	if (midi_out_buf[dev] == NULL)
 	{
-		printk(KERN_WARNING "midi: Can't allocate buffer\n");
+;
 		midi_devs[dev]->close(dev);
 		vfree(midi_in_buf[dev]);
 		midi_in_buf[dev] = NULL;

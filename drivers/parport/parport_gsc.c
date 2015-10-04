@@ -287,13 +287,13 @@ struct parport *__devinit parport_gsc_probe_port (unsigned long base,
 	p->size = (p->modes & PARPORT_MODE_EPP)?8:3;
 	p->private_data = priv;
 
-	printk(KERN_INFO "%s: PC-style at 0x%lx", p->name, p->base);
+;
 	p->irq = irq;
 	if (p->irq == PARPORT_IRQ_AUTO) {
 		p->irq = PARPORT_IRQ_NONE;
 	}
 	if (p->irq != PARPORT_IRQ_NONE) {
-		printk(", irq %d", p->irq);
+;
 
 		if (p->dma == PARPORT_DMA_AUTO) {
 			p->dma = PARPORT_DMA_NONE;
@@ -303,8 +303,8 @@ struct parport *__devinit parport_gsc_probe_port (unsigned long base,
                                            is mandatory (see above) */
 		p->dma = PARPORT_DMA_NONE;
 
-	printk(" [");
-#define printmode(x) {if(p->modes&PARPORT_MODE_##x){printk("%s%s",f?",":"",#x);f++;}}
+;
+;
 	{
 		int f = 0;
 		printmode(PCSPP);
@@ -315,7 +315,7 @@ struct parport *__devinit parport_gsc_probe_port (unsigned long base,
 //		printmode(DMA);
 	}
 #undef printmode
-	printk("]\n");
+;
 
 	if (p->irq != PARPORT_IRQ_NONE) {
 		if (request_irq (p->irq, parport_irq_handler,
@@ -352,8 +352,8 @@ static int __devinit parport_init_chip(struct parisc_device *dev)
 	unsigned long port;
 
 	if (!dev->irq) {
-		printk(KERN_WARNING "IRQ not found for parallel device at 0x%llx\n",
-			(unsigned long long)dev->hpa.start);
+//		printk(KERN_WARNING "IRQ not found for parallel device at 0x%llx\n",
+;
 		return -ENODEV;
 	}
 
@@ -365,11 +365,11 @@ static int __devinit parport_init_chip(struct parisc_device *dev)
 	if (boot_cpu_data.cpu_type > pcxt && !pdc_add_valid(port+4)) {
 
 		/* Initialize bidirectional-mode (0x10) & data-tranfer-mode #1 (0x20) */
-		printk("%s: initialize bidirectional-mode.\n", __func__);
+;
 		parport_writeb ( (0x10 + 0x20), port + 4);
 
 	} else {
-		printk("%s: enhanced parport-modes not supported.\n", __func__);
+;
 	}
 	
 	p = parport_gsc_probe_port(port, 0, dev->irq,

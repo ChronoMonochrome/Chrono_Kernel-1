@@ -283,7 +283,7 @@ static int __devinit mvs_alloc(struct mvs_info *mvi, struct Scsi_Host *shost)
 	sprintf(pool_name, "%s%d", "mvs_dma_pool", mvi->id);
 	mvi->dma_pool = pci_pool_create(pool_name, mvi->pdev, MVS_SLOT_BUF_SZ, 16, 0);
 	if (!mvi->dma_pool) {
-			printk(KERN_DEBUG "failed to create dma pool %s.\n", pool_name);
+;
 			goto err_out;
 	}
 	mvi->tags_num = slot_nr;
@@ -398,22 +398,22 @@ static int pci_go_64(struct pci_dev *pdev)
 		if (rc) {
 			rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 			if (rc) {
-				dev_printk(KERN_ERR, &pdev->dev,
-					   "64-bit DMA enable failed\n");
+//				dev_printk(KERN_ERR, &pdev->dev,
+;
 				return rc;
 			}
 		}
 	} else {
 		rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-			dev_printk(KERN_ERR, &pdev->dev,
-				   "32-bit DMA enable failed\n");
+//			dev_printk(KERN_ERR, &pdev->dev,
+;
 			return rc;
 		}
 		rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-			dev_printk(KERN_ERR, &pdev->dev,
-				   "32-bit consistent DMA enable failed\n");
+//			dev_printk(KERN_ERR, &pdev->dev,
+;
 			return rc;
 		}
 	}
@@ -522,8 +522,8 @@ static int __devinit mvs_pci_init(struct pci_dev *pdev,
 	struct Scsi_Host *shost = NULL;
 	const struct mvs_chip_info *chip;
 
-	dev_printk(KERN_INFO, &pdev->dev,
-		"mvsas: driver version %s\n", DRV_VERSION);
+//	dev_printk(KERN_INFO, &pdev->dev,
+;
 	rc = pci_enable_device(pdev);
 	if (rc)
 		goto err_out_enable;
@@ -716,7 +716,7 @@ static int __init mvs_init(void)
 							 0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!mvs_task_list_cache) {
 		rc = -ENOMEM;
-		mv_printk("%s: mvs_task_list_cache alloc failed! \n", __func__);
+;
 		goto err_out;
 	}
 

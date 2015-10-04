@@ -164,8 +164,8 @@ void pxa2xx_pcm_dma_irq(int dma_ch, void *dev_id)
 	if (dcsr & DCSR_ENDINTR) {
 		snd_pcm_period_elapsed(substream);
 	} else {
-		printk(KERN_ERR "%s: DMA error on channel %d (DCSR=%#x)\n",
-			rtd->params->name, dma_ch, dcsr);
+//		printk(KERN_ERR "%s: DMA error on channel %d (DCSR=%#x)\n",
+;
 		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 	}
 }

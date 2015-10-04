@@ -107,7 +107,7 @@ l1m_debug(struct FsmInst *fi, char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &va;
 
-	printk(KERN_DEBUG "%s: %pV\n", dev_name(&l1->dch->dev.dev), &vaf);
+;
 
 	va_end(va);
 }
@@ -357,8 +357,8 @@ l1_event(struct layer1 *l1, u_int event)
 		break;
 	default:
 		if (*debug & DEBUG_L1)
-			printk(KERN_DEBUG "%s %x unhandled\n",
-			    __func__, event);
+//			printk(KERN_DEBUG "%s %x unhandled\n",
+;
 		err = -EINVAL;
 	}
 	return err;
@@ -371,7 +371,7 @@ create_l1(struct dchannel *dch, dchannel_l1callback *dcb) {
 
 	nl1 = kzalloc(sizeof(struct layer1), GFP_ATOMIC);
 	if (!nl1) {
-		printk(KERN_ERR "kmalloc struct layer1 failed\n");
+;
 		return -ENOMEM;
 	}
 	nl1->l1m.fsm = &l1fsm_s;

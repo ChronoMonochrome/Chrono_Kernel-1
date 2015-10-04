@@ -1201,7 +1201,7 @@ static int uhci_result_common(struct uhci_hcd *uhci, struct urb *urb)
 					/* Print the chain for debugging */
 					uhci_show_qh(uhci, urbp->qh, errbuf,
 							ERRBUF_LEN, 0);
-					lprintk(errbuf);
+;
 				}
 			}
 

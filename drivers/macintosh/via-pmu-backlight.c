@@ -168,7 +168,7 @@ void __init pmu_backlight_init()
 	bd = backlight_device_register(name, NULL, NULL, &pmu_backlight_data,
 				       &props);
 	if (IS_ERR(bd)) {
-		printk(KERN_ERR "PMU Backlight registration failed\n");
+;
 		return;
 	}
 	uses_pmu_bl = 1;
@@ -191,5 +191,5 @@ void __init pmu_backlight_init()
 	bd->props.power = FB_BLANK_UNBLANK;
 	backlight_update_status(bd);
 
-	printk(KERN_INFO "PMU Backlight initialized (%s)\n", name);
+;
 }

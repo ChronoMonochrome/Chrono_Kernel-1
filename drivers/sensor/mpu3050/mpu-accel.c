@@ -72,24 +72,24 @@ static void
 mpu_accel_print_mldl_cfg(struct mldl_cfg *mldl_cfg)
 {
   if(MPUACC_DEBUG_CFG) {
-    printk("requested_sensors:%ld\n", mldl_cfg->requested_sensors);
-//  printk("ignore_system_suspend:%d\n", mldl_cfg->ignore_system_suspend);
-    printk("addr:%d\n", mldl_cfg->addr);
-    printk("int_config:%d\n", mldl_cfg->int_config);
-    printk("ext_sync:%d\n", mldl_cfg->ext_sync);
-    printk("full_scale:%d\n", mldl_cfg->full_scale);
-    printk("dmp_enable:%d\n", mldl_cfg->dmp_enable);
-    printk("fifo_enable:%d\n", mldl_cfg->fifo_enable);
-    printk("dmp_cfg1:%d\n", mldl_cfg->dmp_cfg1);
-    printk("dmp_cfg2:%d\n", mldl_cfg->dmp_cfg2);
-    printk("gyro_power:%d\n", mldl_cfg->gyro_power);
-    printk("gyro_is_bypassed:%d\n", mldl_cfg->gyro_is_bypassed);
-    printk("dmp_is_running:%d\n", mldl_cfg->dmp_is_running);
-    printk("gyro_is_suspended:%d\n", mldl_cfg->gyro_is_suspended);
-    printk("accel_is_suspended:%d\n", mldl_cfg->accel_is_suspended);
-    printk("compass_is_suspended:%d\n", mldl_cfg->compass_is_suspended);
-    printk("pressure_is_suspended:%d\n", mldl_cfg->pressure_is_suspended);
-    printk("gyro_needs_reset:%d\n", mldl_cfg->gyro_needs_reset);
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
   }
 }
 
@@ -137,7 +137,7 @@ mpu_accel_activate_device(struct mpuaccel_data *data, int enable)
   }
 
   if(MPUACC_DEBUG){
-    printk("activate device:%d, result=%d\n", enable, result);
+;
   }
 
   return result;
@@ -241,7 +241,7 @@ mpu_accel_input_work_func(struct work_struct *work)
   struct mldl_cfg* mldl_cfg = data->mldl_cfg;
   poll_time = atomic_read(&data->poll_delay);
   if(MPUACC_DEBUG){
-    printk("________________START____________________\n");
+;
   }
   if(MPUACC_DEBUG_CFG) {
     mpu_accel_print_mldl_cfg(mldl_cfg);
@@ -289,9 +289,9 @@ mpu_accel_input_work_func(struct work_struct *work)
 
         if(MPUACC_DEBUG) {
           if(data_is_from_mpu==1)
-            printk("MPU_ACCEL:[%d][%d][%d]\n", accel[0],accel[1],accel[2]);
+;
           else
-            printk("ACCEL:[%d][%d][%d]\n", accel[0],accel[1],accel[2]);
+;
         }
 #ifdef MPUACC_USES_CACHED_DATA
         memcpy(data->cached_data, buffer, sizeof(unsigned char)*6);
@@ -301,13 +301,13 @@ mpu_accel_input_work_func(struct work_struct *work)
         input_report_rel(data->input_data, REL_Z, accel[2]);
         input_sync(data->input_data);
         if(MPUACC_DEBUG) {
-          printk("input device is updated\n");
+;
         }
       }
     }
   }
   if(MPUACC_DEBUG){
-    printk("________________END____________________\n");
+;
   }
   mpu_accel_mutex_lock(data);
   enable = atomic_read(&data->enable);
@@ -331,18 +331,18 @@ mpu_accel_enable(struct mpuaccel_data *data)
   struct mldl_cfg* mldl_cfg = data->mldl_cfg;
 
   if(MPUACC_DEBUG){
-    printk("mpu_accel_enable : %d\n",atomic_read(&data->enable));
+;
   }
 
   if(atomic_read(&data->enable) != 1) {
 
     if(MPUACC_DEBUG){
-      printk("mpu_accel_enable : enabled\n");
+;
     }
 
     if(mldl_cfg->accel_is_suspended == 1) {
       if(MPUACC_DEBUG){
-        printk("mpu_accel_enable : turn on accel\n");
+;
       }
       mpu_accel_activate_device(data,1);
     }
@@ -364,7 +364,7 @@ mpu_accel_disable(struct mpuaccel_data *data)
 
 
   if(MPUACC_DEBUG){
-    printk("mpu_accel_disable : %d\n",atomic_read(&data->enable));
+;
   }
 
   if(atomic_read(&data->enable) != 0) {
@@ -372,12 +372,12 @@ mpu_accel_disable(struct mpuaccel_data *data)
     cancel_delayed_work(&data->work);
 
     if(MPUACC_DEBUG){
-      printk("mpu_accel_disable : disabled\n");
+;
     }
 
     if(mldl_cfg->accel_is_suspended == 1) {
       if(MPUACC_DEBUG){
-        printk("mpu_accel_disable : turn off accel\n");
+;
       }
 
       /*turn off accel*/
@@ -479,8 +479,8 @@ int mpu_accel_get_cached_data(unsigned char* cache)
     if(pThisData->device_is_on==1) {
       memcpy(cache, pThisData->cached_data, sizeof(unsigned char)*6);
       if(1) {
-        printk("cached data:[%d][%d][%d][%d][%d][%d]\n",
-          cache[0],cache[1],cache[2],cache[3],cache[4],cache[5]);
+//        printk("cached data:[%d][%d][%d][%d][%d][%d]\n",
+;
       }
       res = ML_SUCCESS;
     }
@@ -536,8 +536,8 @@ mpu_accel_init(struct mldl_cfg* mldl_cfg, void* accel_handle)
   input_data = input_allocate_device();
   if (input_data == NULL) {
       res = -ENOMEM;
-      printk(KERN_ERR
-             "mpu_accel_probe: Failed to allocate input_data device\n");
+//      printk(KERN_ERR
+;
       goto err;
   }
 
@@ -554,9 +554,9 @@ mpu_accel_init(struct mldl_cfg* mldl_cfg, void* accel_handle)
 
   res = input_register_device(input_data);
   if (res) {
-      printk(KERN_ERR
-             "mpu_accel_init: Unable to register input_data device: %s\n",
-             input_data->name);
+//      printk(KERN_ERR
+//             "mpu_accel_init: Unable to register input_data device: %s\n",
+;
       goto err;
   }
 
@@ -568,9 +568,9 @@ mpu_accel_init(struct mldl_cfg* mldl_cfg, void* accel_handle)
   res = sysfs_create_group(&input_data->dev.kobj,
           &mpuaccel_attribute_group);
   if (res) {
-      printk(KERN_ERR
-             "mpu_accel_init: sysfs_create_group failed[%s]\n",
-             input_data->name);
+//      printk(KERN_ERR
+//             "mpu_accel_init: sysfs_create_group failed[%s]\n",
+;
       goto err;
   }
 

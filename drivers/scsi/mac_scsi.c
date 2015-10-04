@@ -161,9 +161,9 @@ static int __init mac_scsi_setup(char *str) {
 	(void)get_options( str, ARRAY_SIZE(ints), ints);
 	
 	if (setup_called++ || ints[0] < 1 || ints[0] > 6) {
-	    printk(KERN_WARNING "scsi: <mac5380>"
-		" Usage: mac5380=<can_queue>[,<cmd_per_lun>,<sg_tablesize>,<hostid>,<use_tags>,<use_pdma>]\n");
-	    printk(KERN_ALERT "scsi: <mac5380> Bad Penguin parameters?\n");
+//	    printk(KERN_WARNING "scsi: <mac5380>"
+;
+;
 	    return 0;
 	}
 	    
@@ -189,7 +189,7 @@ static int __init mac_scsi_setup(char *str) {
 		if (ints[4] >= 0 && ints[4] <= 7)
 			setup_hostid = ints[4];
 		else if (ints[4] > 7)
-			printk(KERN_WARNING "mac_scsi_setup: invalid host ID %d !\n", ints[4] );
+;
 	}
 #ifdef SUPPORT_TAGS	
 	if (ints[0] >= 5) {
@@ -303,21 +303,21 @@ int macscsi_detect(struct scsi_host_template * tpnt)
     if (instance->irq != SCSI_IRQ_NONE)
 	if (request_irq(instance->irq, NCR5380_intr, IRQ_FLG_SLOW, 
 			"ncr5380", instance)) {
-	    printk(KERN_WARNING "scsi%d: IRQ%d not free, interrupts disabled\n",
-		   instance->host_no, instance->irq);
+//	    printk(KERN_WARNING "scsi%d: IRQ%d not free, interrupts disabled\n",
+;
 	    instance->irq = SCSI_IRQ_NONE;
 	}
 
-    printk(KERN_INFO "scsi%d: generic 5380 at port %lX irq", instance->host_no, instance->io_port);
+;
     if (instance->irq == SCSI_IRQ_NONE)
 	printk (KERN_INFO "s disabled");
     else
 	printk (KERN_INFO " %d", instance->irq);
-    printk(KERN_INFO " options CAN_QUEUE=%d CMD_PER_LUN=%d release=%d",
-	   instance->can_queue, instance->cmd_per_lun, MACSCSI_PUBLIC_RELEASE);
-    printk(KERN_INFO "\nscsi%d:", instance->host_no);
+//    printk(KERN_INFO " options CAN_QUEUE=%d CMD_PER_LUN=%d release=%d",
+;
+;
     NCR5380_print_options(instance);
-    printk("\n");
+;
     called = 1;
     return 1;
 }
@@ -348,7 +348,7 @@ static void mac_scsi_reset_boot(struct Scsi_Host *instance)
 	 * with the queues, interrupts, or locks necessary here.
 	 */
 
-	printk(KERN_INFO "Macintosh SCSI: resetting the SCSI bus..." );
+;
 
 	/* switch off SCSI IRQ - catch an interrupt without IRQ bit set else */
 	disable_irq(IRQ_MAC_SCSI);
@@ -371,7 +371,7 @@ static void mac_scsi_reset_boot(struct Scsi_Host *instance)
 	/* switch on SCSI IRQ again */
 	enable_irq(IRQ_MAC_SCSI);
 
-	printk(KERN_INFO " done\n" );
+;
 }
 #endif
 
@@ -468,14 +468,14 @@ static int macscsi_pread (struct Scsi_Host *instance,
       ;
    if (!(NCR5380_read(BUS_AND_STATUS_REG) & BASR_DRQ) 
          && (NCR5380_read(BUS_AND_STATUS_REG) & BASR_PHASE_MATCH)) {
-      printk(KERN_ERR "Error in macscsi_pread\n");
+;
       return -1;
    }
 
    CP_IO_TO_MEM(s, d, len);
    
    if (len != 0) {
-      printk(KERN_NOTICE "Bus error in macscsi_pread\n");
+;
       return -1;
    }
    
@@ -560,14 +560,14 @@ static int macscsi_pwrite (struct Scsi_Host *instance,
             || (NCR5380_read(BUS_AND_STATUS_REG) & BASR_PHASE_MATCH))) 
       ;
    if (!(NCR5380_read(BUS_AND_STATUS_REG) & BASR_DRQ)) {
-      printk(KERN_ERR "Error in macscsi_pwrite\n");
+;
       return -1;
    }
 
    CP_MEM_TO_IO(s, d, len);   
 
    if (len != 0) {
-      printk(KERN_NOTICE "Bus error in macscsi_pwrite\n");
+;
       return -1;
    }
    

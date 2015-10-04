@@ -54,15 +54,15 @@
 			plpar_hcall_norets(H_FREE_CRQ, ua);
 
 /* tmp - will replace with SCSI logging stuff */
-#define eprintk(fmt, args...)					\
-do {								\
-	printk("%s(%d) " fmt, __func__, __LINE__, ##args);	\
+//#define eprintk(fmt, args...)					\
+//do {								\
+;
 } while (0)
 /* #define dprintk eprintk */
-#define dprintk(fmt, args...)
-
-struct vio_port {
-	struct vio_dev *dma_dev;
+//#define dprintk(fmt, args...)
+//
+//struct vio_port {
+;
 
 	struct crq_queue crq_queue;
 	struct work_struct crq_work;
@@ -110,7 +110,7 @@ static int send_iu(struct iu_entry *iue, uint64_t length, uint8_t format)
 			 vport->riobn, iue->remote_token);
 
 	if (rc)
-		eprintk("Error %ld transferring data\n", rc);
+;
 
 	crq.cooked.valid = 0x80;
 	crq.cooked.format = format;
@@ -127,7 +127,7 @@ static int send_iu(struct iu_entry *iue, uint64_t length, uint8_t format)
 	rc1 = h_send_crq(vport->dma_dev->unit_address, crq.raw[0], crq.raw[1]);
 
 	if (rc1) {
-		eprintk("%ld sending response\n", rc1);
+;
 		return rc1;
 	}
 
@@ -209,7 +209,7 @@ retry:
 			err = srp_cmd_queue(shost, cmd, iue,
 					    (unsigned long)rport, 0);
 			if (err) {
-				eprintk("cannot queue cmd %p %d\n", cmd, err);
+;
 				srp_iu_put(iue);
 			}
 			goto retry;
@@ -255,7 +255,7 @@ static int ibmvstgt_rdma(struct scsi_cmnd *sc, struct scatterlist *sg, int nsg,
 						  md[i].va + mdone);
 
 			if (err != H_SUCCESS) {
-				eprintk("rdma error %d %d %ld\n", dir, slen, err);
+;
 				return -EIO;
 			}
 
@@ -270,8 +270,8 @@ static int ibmvstgt_rdma(struct scsi_cmnd *sc, struct scatterlist *sg, int nsg,
 				token = sg_dma_address(sg + sidx);
 
 				if (sidx > nsg) {
-					eprintk("out of sg %p %d %d\n",
-						iue, sidx, nsg);
+//					eprintk("out of sg %p %d %d\n",
+;
 					return -EIO;
 				}
 			}
@@ -290,8 +290,8 @@ static int ibmvstgt_cmd_done(struct scsi_cmnd *sc,
 	struct srp_target *target = iue->target;
 	int err = 0;
 
-	dprintk("%p %p %x %u\n", iue, target, vio_iu(iue)->srp.cmd.cdb[0],
-		scsi_sg_count(sc));
+//	dprintk("%p %p %x %u\n", iue, target, vio_iu(iue)->srp.cmd.cdb[0],
+;
 
 	if (scsi_sg_count(sc))
 		err = srp_transfer_data(sc, &vio_iu(iue)->srp.cmd, ibmvstgt_rdma, 1, 1);
@@ -301,8 +301,8 @@ static int ibmvstgt_cmd_done(struct scsi_cmnd *sc,
 	spin_unlock_irqrestore(&target->lock, flags);
 
 	if (err|| sc->result != SAM_STAT_GOOD) {
-		eprintk("operation failed %p %d %x\n",
-			iue, sc->result, vio_iu(iue)->srp.cmd.cdb[0]);
+//		eprintk("operation failed %p %d %x\n",
+;
 		send_rsp(iue, sc, HARDWARE_ERROR, 0x00);
 	} else
 		send_rsp(iue, sc, NO_SENSE, 0x00);
@@ -325,7 +325,7 @@ int send_adapter_info(struct iu_entry *iue,
 	info = dma_alloc_coherent(target->dev, sizeof(*info), &data_token,
 				  GFP_KERNEL);
 	if (!info) {
-		eprintk("bad dma_alloc_coherent %p\n", target);
+;
 		return 1;
 	}
 
@@ -333,8 +333,8 @@ int send_adapter_info(struct iu_entry *iue,
 	err = h_copy_rdma(sizeof(*info), vport->riobn, remote_buffer,
 			  vport->liobn, data_token);
 	if (err == H_SUCCESS) {
-		dprintk("Client connect: %s (%d)\n",
-			info->partition_name, info->partition_number);
+//		dprintk("Client connect: %s (%d)\n",
+;
 	}
 
 	memset(info, 0, sizeof(*info));
@@ -354,7 +354,7 @@ int send_adapter_info(struct iu_entry *iue,
 	dma_free_coherent(target->dev, sizeof(*info), info, data_token);
 
 	if (err != H_SUCCESS) {
-		eprintk("Error sending adapter info %d\n", err);
+;
 		return 1;
 	}
 
@@ -407,7 +407,7 @@ static int process_tsk_mgmt(struct iu_entry *iue)
 	union viosrp_iu *iu = vio_iu(iue);
 	int fn;
 
-	dprintk("%p %u\n", iue, iu->srp.tsk_mgmt.tsk_mgmt_func);
+;
 
 	switch (iu->srp.tsk_mgmt.tsk_mgmt_func) {
 	case SRP_TSK_ABORT_TASK:
@@ -449,10 +449,10 @@ static int process_mad_iu(struct iu_entry *iue)
 
 	switch (iu->mad.empty_iu.common.type) {
 	case VIOSRP_EMPTY_IU_TYPE:
-		eprintk("%s\n", "Unsupported EMPTY MAD IU");
+;
 		break;
 	case VIOSRP_ERROR_LOG_TYPE:
-		eprintk("%s\n", "Unsupported ERROR LOG MAD IU");
+;
 		iu->mad.error_log.common.status = 1;
 		send_iu(iue, sizeof(iu->mad.error_log),	VIOSRP_MAD_FORMAT);
 		break;
@@ -468,7 +468,7 @@ static int process_mad_iu(struct iu_entry *iue)
 		send_iu(iue, sizeof(*conf), VIOSRP_MAD_FORMAT);
 		break;
 	default:
-		eprintk("Unknown type %u\n", iu->srp.rsp.opcode);
+;
 	}
 
 	return 1;
@@ -499,10 +499,10 @@ static int process_srp_iu(struct iu_entry *iue)
 	case SRP_CRED_RSP:
 	case SRP_AER_REQ:
 	case SRP_AER_RSP:
-		eprintk("Unsupported type %u\n", opcode);
+;
 		break;
 	default:
-		eprintk("Unknown type %u\n", opcode);
+;
 	}
 
 	return done;
@@ -517,7 +517,7 @@ static void process_iu(struct viosrp_crq *crq, struct srp_target *target)
 
 	iue = srp_iu_get(target);
 	if (!iue) {
-		eprintk("Error getting IU from pool, %p\n", target);
+;
 		return;
 	}
 
@@ -527,7 +527,7 @@ static void process_iu(struct viosrp_crq *crq, struct srp_target *target)
 			  iue->remote_token, vport->liobn, iue->sbuf->dma);
 
 	if (err != H_SUCCESS) {
-		eprintk("%ld transferring data error %p\n", err, iue);
+;
 		goto out;
 	}
 
@@ -584,7 +584,7 @@ static int crq_queue_create(struct crq_queue *queue, struct srp_target *target)
 	}
 
 	if (err != H_SUCCESS && err != 2) {
-		eprintk("Error 0x%x opening virtual adapter\n", err);
+;
 		goto reg_crq_failed;
 	}
 
@@ -637,7 +637,7 @@ static void crq_queue_destroy(struct srp_target *target)
 static void process_crq(struct viosrp_crq *crq,	struct srp_target *target)
 {
 	struct vio_port *vport = target_to_port(target);
-	dprintk("%x %x\n", crq->valid, crq->format);
+;
 
 	switch (crq->valid) {
 	case 0xC0:
@@ -650,7 +650,7 @@ static void process_crq(struct viosrp_crq *crq,	struct srp_target *target)
 		case 0x02:
 			break;
 		default:
-			eprintk("Unknown format %u\n", crq->format);
+;
 		}
 		break;
 	case 0xFF:
@@ -667,14 +667,14 @@ static void process_crq(struct viosrp_crq *crq,	struct srp_target *target)
 		case VIOSRP_AIX_FORMAT:
 		case VIOSRP_LINUX_FORMAT:
 		case VIOSRP_INLINE_FORMAT:
-			eprintk("Unsupported format %u\n", crq->format);
+;
 			break;
 		default:
-			eprintk("Unknown format %u\n", crq->format);
+;
 		}
 		break;
 	default:
-		eprintk("unknown message type 0x%02x!?\n", crq->valid);
+;
 	}
 }
 
@@ -729,7 +729,7 @@ static int ibmvstgt_eh_abort_handler(struct scsi_cmnd *sc)
 	struct iu_entry *iue = (struct iu_entry *) sc->SCp.ptr;
 	struct srp_target *target = iue->target;
 
-	dprintk("%p %p %x\n", iue, target, vio_iu(iue)->srp.cmd.cdb[0]);
+;
 
 	spin_lock_irqsave(&target->lock, flags);
 	list_del(&iue->ilist);
@@ -747,7 +747,7 @@ static int ibmvstgt_tsk_mgmt_response(struct Scsi_Host *shost,
 	union viosrp_iu *iu = vio_iu(iue);
 	unsigned char status, asc;
 
-	eprintk("%p %d\n", iue, result);
+;
 	status = NO_SENSE;
 	asc = 0;
 
@@ -774,7 +774,7 @@ static int ibmvstgt_it_nexus_response(struct Scsi_Host *shost, u64 itn_id,
 	struct vio_port *vport = target_to_port(target);
 
 	if (result) {
-		eprintk("%p %d\n", shost, result);
+;
 		srp_rport_del(vport->rport);
 		vport->rport = NULL;
 	}
@@ -856,7 +856,7 @@ static int ibmvstgt_probe(struct vio_dev *dev, const struct vio_device_id *id)
 	dma = (unsigned int *) vio_get_attribute(dev, "ibm,my-dma-window",
 						 &dma_size);
 	if (!dma || dma_size != 40) {
-		eprintk("Couldn't get window property %d\n", dma_size);
+;
 		err = -EIO;
 		goto free_srp_target;
 	}
@@ -960,7 +960,7 @@ static int __init ibmvstgt_init(void)
 {
 	int err = -ENOMEM;
 
-	printk("IBM eServer i/pSeries Virtual SCSI Target Driver\n");
+;
 
 	ibmvstgt_transport_template =
 		srp_attach_transport(&ibmvstgt_transport_functions);
@@ -989,7 +989,7 @@ release_transport:
 
 static void __exit ibmvstgt_exit(void)
 {
-	printk("Unregister IBM virtual SCSI driver\n");
+;
 
 	destroy_workqueue(vtgtd);
 	vio_unregister_driver(&ibmvstgt_driver);

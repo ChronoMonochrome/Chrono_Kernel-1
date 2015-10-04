@@ -294,9 +294,9 @@ static void usblp_bulk_read(struct urb *urb)
 
 	if (usblp->present && usblp->used) {
 		if (status)
-			printk(KERN_WARNING "usblp%d: "
-			    "nonzero read bulk status received: %d\n",
-			    usblp->minor, status);
+//			printk(KERN_WARNING "usblp%d: "
+//			    "nonzero read bulk status received: %d\n",
+;
 	}
 	spin_lock(&usblp->lock);
 	if (status < 0)
@@ -317,9 +317,9 @@ static void usblp_bulk_write(struct urb *urb)
 
 	if (usblp->present && usblp->used) {
 		if (status)
-			printk(KERN_WARNING "usblp%d: "
-			    "nonzero write bulk status received: %d\n",
-			    usblp->minor, status);
+//			printk(KERN_WARNING "usblp%d: "
+//			    "nonzero write bulk status received: %d\n",
+;
 	}
 	spin_lock(&usblp->lock);
 	if (status < 0)
@@ -349,9 +349,9 @@ static int usblp_check_status(struct usblp *usblp, int err)
 	if ((error = usblp_read_status(usblp, usblp->statusbuf)) < 0) {
 		mutex_unlock(&usblp->mut);
 		if (printk_ratelimit())
-			printk(KERN_ERR
-				"usblp%d: error %d reading printer status\n",
-				usblp->minor, error);
+//			printk(KERN_ERR
+//				"usblp%d: error %d reading printer status\n",
+;
 		return 0;
 	}
 	status = *usblp->statusbuf;
@@ -365,8 +365,8 @@ static int usblp_check_status(struct usblp *usblp, int err)
 		newerr = 2;
 
 	if (newerr != err) {
-		printk(KERN_INFO "usblp%d: %s\n",
-		   usblp->minor, usblp_messages[newerr]);
+//		printk(KERN_INFO "usblp%d: %s\n",
+;
 	}
 
 	return newerr;
@@ -438,7 +438,7 @@ out:
 
 static void usblp_cleanup(struct usblp *usblp)
 {
-	printk(KERN_INFO "usblp%d: removed\n", usblp->minor);
+;
 
 	kfree(usblp->readbuf);
 	kfree(usblp->device_id_string);
@@ -654,9 +654,9 @@ static long usblp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		case LPGETSTATUS:
 			if ((retval = usblp_read_status(usblp, usblp->statusbuf))) {
 				if (printk_ratelimit())
-					printk(KERN_ERR "usblp%d:"
-					    "failed reading printer status (%d)\n",
-					    usblp->minor, retval);
+//					printk(KERN_ERR "usblp%d:"
+//					    "failed reading printer status (%d)\n",
+;
 				retval = -EIO;
 				goto done;
 			}
@@ -815,8 +815,8 @@ static ssize_t usblp_read(struct file *file, char __user *buffer, size_t len, lo
 		return rv;
 
 	if ((avail = usblp->rstatus) < 0) {
-		printk(KERN_ERR "usblp%d: error %d reading from printer\n",
-		    usblp->minor, (int)avail);
+//		printk(KERN_ERR "usblp%d: error %d reading from printer\n",
+;
 		usblp_submit_read(usblp);
 		count = -EIO;
 		goto done;
@@ -1159,20 +1159,20 @@ static int usblp_probe(struct usb_interface *intf,
 
 	retval = usb_register_dev(intf, &usblp_class);
 	if (retval) {
-		printk(KERN_ERR "usblp: Not able to get a minor"
-		    " (base %u, slice default): %d\n",
-		    USBLP_MINOR_BASE, retval);
+//		printk(KERN_ERR "usblp: Not able to get a minor"
+//		    " (base %u, slice default): %d\n",
+;
 		goto abort_intfdata;
 	}
 	usblp->minor = intf->minor;
-	printk(KERN_INFO "usblp%d: USB %sdirectional printer dev %d "
-		"if %d alt %d proto %d vid 0x%4.4X pid 0x%4.4X\n",
-		usblp->minor, usblp->bidir ? "Bi" : "Uni", dev->devnum,
-		usblp->ifnum,
-		usblp->protocol[usblp->current_protocol].alt_setting,
-		usblp->current_protocol,
-		le16_to_cpu(usblp->dev->descriptor.idVendor),
-		le16_to_cpu(usblp->dev->descriptor.idProduct));
+//	printk(KERN_INFO "usblp%d: USB %sdirectional printer dev %d "
+//		"if %d alt %d proto %d vid 0x%4.4X pid 0x%4.4X\n",
+//		usblp->minor, usblp->bidir ? "Bi" : "Uni", dev->devnum,
+//		usblp->ifnum,
+//		usblp->protocol[usblp->current_protocol].alt_setting,
+//		usblp->current_protocol,
+//		le16_to_cpu(usblp->dev->descriptor.idVendor),
+;
 
 	return 0;
 
@@ -1254,9 +1254,9 @@ static int usblp_select_alts(struct usblp *usblp)
 		if (ifd->desc.bInterfaceProtocol == 1) {
 			epread = NULL;
 		} else if (usblp->quirks & USBLP_QUIRK_BIDIR) {
-			printk(KERN_INFO "usblp%d: Disabling reads from "
-			    "problematic bidirectional printer\n",
-			    usblp->minor);
+//			printk(KERN_INFO "usblp%d: Disabling reads from "
+//			    "problematic bidirectional printer\n",
+;
 			epread = NULL;
 		}
 
@@ -1296,8 +1296,8 @@ static int usblp_set_protocol(struct usblp *usblp, int protocol)
 		return -EINVAL;
 	r = usb_set_interface(usblp->dev, usblp->ifnum, alts);
 	if (r < 0) {
-		printk(KERN_ERR "usblp: can't set desired altsetting %d on interface %d\n",
-			alts, usblp->ifnum);
+//		printk(KERN_ERR "usblp: can't set desired altsetting %d on interface %d\n",
+;
 		return r;
 	}
 

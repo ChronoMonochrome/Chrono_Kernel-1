@@ -106,8 +106,8 @@ NCR_Q720_probe_one(struct NCR_Q720_private *p, int siop,
 	device.slot.base_v	= vaddr;
 	device.slot.irq		= irq;
 	device.differential	= differential ? 2 : 0;
-	printk("Q720 probe unit %d (siop%d) at 0x%lx, diff = %d, vers = %d\n", unit, siop,
-	       (unsigned long)paddr, differential, version);
+//	printk("Q720 probe unit %d (siop%d) at 0x%lx, diff = %d, vers = %d\n", unit, siop,
+;
 
 	p->hosts[siop] = ncr_attach(&NCR_Q720_tpnt, unit++, &device);
 	
@@ -162,9 +162,9 @@ NCR_Q720_probe(struct device *dev)
 
 
 	if(banner) {
-		printk(KERN_NOTICE "NCR Q720: Driver Version " NCR_Q720_VERSION "\n"
-		       "NCR Q720:  Copyright (c) 2003 by James.Bottomley@HansenPartnership.com\n"
-		       "NCR Q720:\n");
+//		printk(KERN_NOTICE "NCR Q720: Driver Version " NCR_Q720_VERSION "\n"
+//		       "NCR Q720:  Copyright (c) 2003 by James.Bottomley@HansenPartnership.com\n"
+;
 		banner = 0;
 	}
 	io_base = mca_device_transform_ioport(mca_dev, io_base);
@@ -176,7 +176,7 @@ NCR_Q720_probe(struct device *dev)
 	/* sanity check I/O mapping */
 	i = inb(io_base) | (inb(io_base+1)<<8);
 	if(i != NCR_Q720_MCA_ID) {
-		printk(KERN_ERR "NCR_Q720, adapter failed to I/O map registers correctly at 0x%x(0x%x)\n", io_base, i);
+;
 		kfree(p);
 		return -ENODEV;
 	}
@@ -210,16 +210,16 @@ NCR_Q720_probe(struct device *dev)
 	outb(asr9, io_base + 0x11);
 
 	if(!request_mem_region(base_addr, mem_size, "NCR_Q720")) {
-		printk(KERN_ERR "NCR_Q720: Failed to claim memory region 0x%lx\n-0x%lx",
-		       (unsigned long)base_addr,
-		       (unsigned long)(base_addr + mem_size));
+//		printk(KERN_ERR "NCR_Q720: Failed to claim memory region 0x%lx\n-0x%lx",
+//		       (unsigned long)base_addr,
+;
 		goto out_free;
 	}
 	
 	if (dma_declare_coherent_memory(dev, base_addr, base_addr,
 					mem_size, DMA_MEMORY_MAP)
 	    != DMA_MEMORY_MAP) {
-		printk(KERN_ERR "NCR_Q720: DMA declare memory failed\n");
+;
 		goto out_release_region;
 	}
 
@@ -228,7 +228,7 @@ NCR_Q720_probe(struct device *dev)
 	mem_base = dma_mark_declared_memory_occupied(dev, base_addr,
 							    1024);
 	if (IS_ERR(mem_base)) {
-		printk("NCR_Q720 failed to reserve memory mapped region\n");
+;
 		goto out_release;
 	}
 
@@ -245,7 +245,7 @@ NCR_Q720_probe(struct device *dev)
 	/* sanity check mapping (again) */
 	i = readw(mem_base);
 	if(i != NCR_Q720_MCA_ID) {
-		printk(KERN_ERR "NCR_Q720, adapter failed to memory map registers correctly at 0x%lx(0x%x)\n", (unsigned long)base_addr, i);
+;
 		goto out_release;
 	}
 
@@ -255,8 +255,8 @@ NCR_Q720_probe(struct device *dev)
 	/* now do the bus related transforms */
 	irq = mca_device_transform_irq(mca_dev, irq);
 
-	printk(KERN_NOTICE "NCR Q720: found in slot %d  irq = %d  mem base = 0x%lx siops = %d\n", slot, irq, (unsigned long)base_addr, siops);
-	printk(KERN_NOTICE "NCR Q720: On board ram %dk\n", mem_size/1024);
+;
+;
 
 	p->dev = dev;
 	p->mem_base = mem_base;
@@ -266,7 +266,7 @@ NCR_Q720_probe(struct device *dev)
 	p->siops = siops;
 
 	if (request_irq(irq, NCR_Q720_intr, IRQF_SHARED, "NCR_Q720", p)) {
-		printk(KERN_ERR "NCR_Q720: request irq %d failed\n", irq);
+;
 		goto out_release;
 	}
 	/* disable all the siop interrupts */
@@ -292,8 +292,8 @@ NCR_Q720_probe(struct device *dev)
 		outb(0x07, port + 0x41);
 		if ((err = NCR_Q720_probe_one(p, i, irq, slot,
 					      siop_p_base, siop_v_base)) != 0)
-			printk("Q720: SIOP%d: probe failed, error = %d\n",
-			       i, err);
+//			printk("Q720: SIOP%d: probe failed, error = %d\n",
+;
 		else
 			found++;
 	}

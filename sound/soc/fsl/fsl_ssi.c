@@ -786,7 +786,7 @@ static struct platform_driver fsl_ssi_driver = {
 
 static int __init fsl_ssi_init(void)
 {
-	printk(KERN_INFO "Freescale Synchronous Serial Interface (SSI) ASoC Driver\n");
+;
 
 	return platform_driver_register(&fsl_ssi_driver);
 }

@@ -505,7 +505,7 @@ static void start_wakeup_tracer(struct trace_array *tr)
 	smp_wmb();
 
 	if (start_func_tracer(is_graph()))
-		printk(KERN_ERR "failed to start wakeup tracer\n");
+;
 
 	return;
 fail_deprobe_wake_new:

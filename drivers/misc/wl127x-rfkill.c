@@ -40,7 +40,7 @@ static int wl127x_rfkill_set_power(void *data, enum rfkill_state state)
 		gpio_set_value(nshutdown_gpio, 0);
 		break;
 	default:
-		printk(KERN_ERR "invalid bluetooth rfkill state %d\n", state);
+;
 	}
 	return 0;
 }

@@ -230,7 +230,7 @@ static ssize_t led_proc_write(struct file *file, const char *buf,
 
 parse_error:
 	if ((long)data == LED_NOLCD)
-		printk(KERN_CRIT "Parse error: expect \"n n n\" (n == 0 or 1) for heartbeat,\ndisk io and lan tx/rx indicators\n");
+;
 	return -EINVAL;
 }
 
@@ -561,8 +561,8 @@ int __init register_led_driver(int model, unsigned long cmd_reg, unsigned long d
 	switch (lcd_info.model) {
 	case DISPLAY_MODEL_LCD:
 		LCD_DATA_REG = data_reg;
-		printk(KERN_INFO "LCD display at %lx,%lx registered\n", 
-			LCD_CMD_REG , LCD_DATA_REG);
+//		printk(KERN_INFO "LCD display at %lx,%lx registered\n", 
+;
 		led_func_ptr = led_LCD_driver;
 		led_type = LED_HASLCD;
 		break;
@@ -570,21 +570,21 @@ int __init register_led_driver(int model, unsigned long cmd_reg, unsigned long d
 	case DISPLAY_MODEL_LASI:
 		LED_DATA_REG = data_reg;
 		led_func_ptr = led_LASI_driver;
-		printk(KERN_INFO "LED display at %lx registered\n", LED_DATA_REG);
+;
 		led_type = LED_NOLCD;
 		break;
 
 	case DISPLAY_MODEL_OLD_ASP:
 		LED_DATA_REG = data_reg;
 		led_func_ptr = led_ASP_driver;
-		printk(KERN_INFO "LED (ASP-style) display at %lx registered\n", 
-		    LED_DATA_REG);
+//		printk(KERN_INFO "LED (ASP-style) display at %lx registered\n", 
+;
 		led_type = LED_NOLCD;
 		break;
 
 	default:
-		printk(KERN_ERR "%s: Wrong LCD/LED model %d !\n",
-		       __func__, lcd_info.model);
+//		printk(KERN_ERR "%s: Wrong LCD/LED model %d !\n",
+;
 		return 1;
 	}
 	
@@ -698,8 +698,8 @@ int __init led_init(void)
 	case 0x582:		/* KittyHawk DC3 100 (K400) */
 	case 0x583:		/* KittyHawk DC3 120 (K410) */
 	case 0x58B:		/* KittyHawk DC2 100 (K200) */
-		printk(KERN_INFO "%s: KittyHawk-Machine (hversion 0x%x) found, "
-				"LED detection skipped.\n", __FILE__, CPU_HVERSION);
+//		printk(KERN_INFO "%s: KittyHawk-Machine (hversion 0x%x) found, "
+;
 		lcd_no_led_support = 1;
 		goto found;	/* use the preinitialized values of lcd_info */
 	}
@@ -740,7 +740,7 @@ int __init led_init(void)
 			break;
 
 		case DISPLAY_MODEL_NONE:	/* no LED or LCD available */
-			printk(KERN_INFO "PDC reported no LCD or LED.\n");
+;
 			goto not_found;
 
 		case DISPLAY_MODEL_LASI:	/* Lasi style 8 bit LED display */
@@ -749,8 +749,8 @@ int __init led_init(void)
 			break;
 
 		default:
-			printk(KERN_WARNING "PDC reported unknown LCD/LED model %d\n",
-			       lcd_info.model);
+//			printk(KERN_WARNING "PDC reported unknown LCD/LED model %d\n",
+;
 			goto not_found;
 		} /* switch() */
 

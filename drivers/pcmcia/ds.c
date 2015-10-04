@@ -50,8 +50,8 @@ static void pcmcia_check_driver(struct pcmcia_driver *p_drv)
 	u32 hash;
 
 	if (!p_drv->probe || !p_drv->remove)
-		printk(KERN_DEBUG "pcmcia: %s lacks a requisite callback "
-		       "function\n", p_drv->name);
+//		printk(KERN_DEBUG "pcmcia: %s lacks a requisite callback "
+;
 
 	while (did && did->match_flags) {
 		for (i = 0; i < 4; i++) {
@@ -62,13 +62,13 @@ static void pcmcia_check_driver(struct pcmcia_driver *p_drv)
 			if (hash == did->prod_id_hash[i])
 				continue;
 
-			printk(KERN_DEBUG "pcmcia: %s: invalid hash for "
-			       "product string \"%s\": is 0x%x, should "
-			       "be 0x%x\n", p_drv->name, did->prod_id[i],
-			       did->prod_id_hash[i], hash);
-			printk(KERN_DEBUG "pcmcia: see "
-				"Documentation/pcmcia/devicetable.txt for "
-				"details\n");
+//			printk(KERN_DEBUG "pcmcia: %s: invalid hash for "
+//			       "product string \"%s\": is 0x%x, should "
+//			       "be 0x%x\n", p_drv->name, did->prod_id[i],
+;
+//			printk(KERN_DEBUG "pcmcia: see "
+//				"Documentation/pcmcia/devicetable.txt for "
+;
 		}
 		did++;
 	}
@@ -281,8 +281,8 @@ static int pcmcia_device_probe(struct device *dev)
 		dev_dbg(dev, "base %x, regs %x", p_dev->config_base,
 			p_dev->config_regs);
 	} else {
-		dev_printk(KERN_INFO, dev,
-			   "pcmcia: could not parse base and rmask0 of CIS\n");
+//		dev_printk(KERN_INFO, dev,
+;
 		p_dev->config_base = 0;
 		p_dev->config_regs = 0;
 	}
@@ -379,15 +379,15 @@ static int pcmcia_device_remove(struct device *dev)
 
 	/* check for proper unloading */
 	if (p_dev->_irq || p_dev->_io || p_dev->_locked)
-		dev_printk(KERN_INFO, dev,
-			"pcmcia: driver %s did not release config properly\n",
-			p_drv->name);
+//		dev_printk(KERN_INFO, dev,
+//			"pcmcia: driver %s did not release config properly\n",
+;
 
 	for (i = 0; i < MAX_WIN; i++)
 		if (p_dev->_win & CLIENT_WIN_REQ(i))
-			dev_printk(KERN_INFO, dev,
-			  "pcmcia: driver %s did not release window properly\n",
-			   p_drv->name);
+//			dev_printk(KERN_INFO, dev,
+//			  "pcmcia: driver %s did not release window properly\n",
+;
 
 	/* references from pcmcia_probe_device */
 	pcmcia_put_dev(p_dev);
@@ -575,9 +575,9 @@ static struct pcmcia_device *pcmcia_device_add(struct pcmcia_socket *s,
 
 	mutex_unlock(&s->ops_mutex);
 
-	dev_printk(KERN_NOTICE, &p_dev->dev,
-		   "pcmcia: registering new device %s (IRQ: %d)\n",
-		   p_dev->devname, p_dev->irq);
+//	dev_printk(KERN_NOTICE, &p_dev->dev,
+//		   "pcmcia: registering new device %s (IRQ: %d)\n",
+;
 
 	pcmcia_device_query(p_dev);
 
@@ -739,16 +739,16 @@ static int pcmcia_load_firmware(struct pcmcia_device *dev, char * filename)
 	if (request_firmware(&fw, filename, &dev->dev) == 0) {
 		if (fw->size >= CISTPL_MAX_CIS_SIZE) {
 			ret = -EINVAL;
-			dev_printk(KERN_ERR, &dev->dev,
-				   "pcmcia: CIS override is too big\n");
+//			dev_printk(KERN_ERR, &dev->dev,
+;
 			goto release;
 		}
 
 		if (!pcmcia_replace_cis(s, fw->data, fw->size))
 			ret = 0;
 		else {
-			dev_printk(KERN_ERR, &dev->dev,
-				   "pcmcia: CIS override failed\n");
+//			dev_printk(KERN_ERR, &dev->dev,
+;
 			goto release;
 		}
 
@@ -1140,10 +1140,10 @@ static int pcmcia_dev_suspend(struct device *dev, pm_message_t state)
 	if (p_drv->suspend) {
 		ret = p_drv->suspend(p_dev);
 		if (ret) {
-			dev_printk(KERN_ERR, dev,
-				   "pcmcia: device %s (driver %s) did "
-				   "not want to go to sleep (%d)\n",
-				   p_dev->devname, p_drv->name, ret);
+//			dev_printk(KERN_ERR, dev,
+//				   "pcmcia: device %s (driver %s) did "
+//				   "not want to go to sleep (%d)\n",
+;
 			mutex_lock(&p_dev->socket->ops_mutex);
 			p_dev->suspended = 0;
 			mutex_unlock(&p_dev->socket->ops_mutex);
@@ -1334,14 +1334,14 @@ static int __devinit pcmcia_bus_add_socket(struct device *dev,
 
 	socket = pcmcia_get_socket(socket);
 	if (!socket) {
-		dev_printk(KERN_ERR, dev,
-			   "PCMCIA obtaining reference to socket failed\n");
+//		dev_printk(KERN_ERR, dev,
+;
 		return -ENODEV;
 	}
 
 	ret = sysfs_create_bin_file(&dev->kobj, &pccard_cis_attr);
 	if (ret) {
-		dev_printk(KERN_ERR, dev, "PCMCIA registration failed\n");
+;
 		pcmcia_put_socket(socket);
 		return ret;
 	}
@@ -1353,7 +1353,7 @@ static int __devinit pcmcia_bus_add_socket(struct device *dev,
 
 	ret = pccard_register_pcmcia(socket, &pcmcia_bus_callback);
 	if (ret) {
-		dev_printk(KERN_ERR, dev, "PCMCIA registration failed\n");
+;
 		pcmcia_put_socket(socket);
 		return ret;
 	}
@@ -1411,13 +1411,13 @@ static int __init init_pcmcia_bus(void)
 
 	ret = bus_register(&pcmcia_bus_type);
 	if (ret < 0) {
-		printk(KERN_WARNING "pcmcia: bus_register error: %d\n", ret);
+;
 		return ret;
 	}
 	ret = class_interface_register(&pcmcia_bus_interface);
 	if (ret < 0) {
-		printk(KERN_WARNING
-			"pcmcia: class_interface_register error: %d\n", ret);
+//		printk(KERN_WARNING
+;
 		bus_unregister(&pcmcia_bus_type);
 		return ret;
 	}

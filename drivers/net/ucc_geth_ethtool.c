@@ -160,8 +160,8 @@ uec_set_pauseparam(struct net_device *netdev,
 	if (ugeth->phydev->autoneg) {
 		if (netif_running(netdev)) {
 			/* FIXME: automatically restart */
-			printk(KERN_INFO
-				"Please re-open the interface.\n");
+//			printk(KERN_INFO
+;
 		}
 	} else {
 		struct ucc_geth_info *ug_info = ugeth->ug_info;
@@ -240,18 +240,18 @@ uec_set_ringparam(struct net_device *netdev,
 	int queue = 0, ret = 0;
 
 	if (ring->rx_pending < UCC_GETH_RX_BD_RING_SIZE_MIN) {
-		printk("%s: RxBD ring size must be no smaller than %d.\n",
-			       	netdev->name, UCC_GETH_RX_BD_RING_SIZE_MIN);
+//		printk("%s: RxBD ring size must be no smaller than %d.\n",
+;
 		return -EINVAL;
 	}
 	if (ring->rx_pending % UCC_GETH_RX_BD_RING_SIZE_ALIGNMENT) {
-		printk("%s: RxBD ring size must be multiple of %d.\n",
-			netdev->name, UCC_GETH_RX_BD_RING_SIZE_ALIGNMENT);
+//		printk("%s: RxBD ring size must be multiple of %d.\n",
+;
 		return -EINVAL;
 	}
 	if (ring->tx_pending < UCC_GETH_TX_BD_RING_SIZE_MIN) {
-		printk("%s: TxBD ring size must be no smaller than %d.\n",
-				netdev->name, UCC_GETH_TX_BD_RING_SIZE_MIN);
+//		printk("%s: TxBD ring size must be no smaller than %d.\n",
+;
 		return -EINVAL;
 	}
 
@@ -260,8 +260,8 @@ uec_set_ringparam(struct net_device *netdev,
 
 	if (netif_running(netdev)) {
 		/* FIXME: restart automatically */
-		printk(KERN_INFO
-			"Please re-open the interface.\n");
+//		printk(KERN_INFO
+;
 	}
 
 	return ret;

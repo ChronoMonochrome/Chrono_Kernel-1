@@ -300,7 +300,7 @@ static int vxpocket_probe(struct pcmcia_device *p_dev)
 			break;
 	}
 	if (i >= SNDRV_CARDS) {
-		snd_printk(KERN_ERR "vxpocket: too many cards found\n");
+;
 		return -EINVAL;
 	}
 	if (! enable[i])
@@ -309,7 +309,7 @@ static int vxpocket_probe(struct pcmcia_device *p_dev)
 	/* ok, create a card instance */
 	err = snd_card_create(index[i], id[i], THIS_MODULE, 0, &card);
 	if (err < 0) {
-		snd_printk(KERN_ERR "vxpocket: cannot create a card instance\n");
+;
 		return err;
 	}
 

@@ -728,7 +728,7 @@ static int prot_stat_callback(isdn_ctrl *ic)
                            break;
                        
 		         default: 
-                           printk(KERN_WARNING "dss1_divert: unknown proc %d\n",cs->ics.parm.dss1_io.proc);
+;
                            break;
                       } 
 
@@ -736,7 +736,7 @@ static int prot_stat_callback(isdn_ctrl *ic)
                    break;
  
 		   default:
-                     printk(KERN_WARNING "dss1_divert unknown invoke answer %lx\n",ic->arg);
+;
                    break;  
                  } 
                 cs1 = cs; /* remember structure */
@@ -746,11 +746,11 @@ static int prot_stat_callback(isdn_ctrl *ic)
            break;
    
 	   case DSS1_CMD_INVOKE_ABORT:
-             printk(KERN_WARNING "dss1_divert unhandled invoke abort\n"); 
+;
            break;   
          
 	   default:
-             printk(KERN_WARNING "dss1_divert unknown cmd 0x%lx\n",cs->ics.arg); 
+;
            break; 
          } /* switch ics.arg */ 
         cs = cs->next; 
@@ -758,7 +758,7 @@ static int prot_stat_callback(isdn_ctrl *ic)
    }  
    
   if (!cs1) 
-   { printk(KERN_WARNING "dss1_divert unhandled process\n");
+;
      return(0);
    }  
 

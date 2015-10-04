@@ -757,8 +757,8 @@ static int ec_install_handlers(struct acpi_ec *ec)
 			 * The AE_NOT_FOUND error will be ignored and OS
 			 * continue to initialize EC.
 			 */
-			printk(KERN_ERR "Fail in evaluating the _REG object"
-				" of EC device. Broken bios is suspected.\n");
+//			printk(KERN_ERR "Fail in evaluating the _REG object"
+;
 		} else {
 			acpi_remove_gpe_handler(NULL, ec->gpe,
 				&acpi_ec_gpe_handler);
@@ -912,7 +912,7 @@ static int ec_validate_ecdt(const struct dmi_system_id *id)
 /* MSI EC needs special treatment, enable it */
 static int ec_flag_msi(const struct dmi_system_id *id)
 {
-	printk(KERN_DEBUG PREFIX "Detected MSI hardware, enabling workarounds.\n");
+;
 	EC_FLAGS_MSI = 1;
 	EC_FLAGS_VALIDATE_ECDT = 1;
 	return 0;
@@ -1011,7 +1011,7 @@ int __init acpi_ec_ecdt_probe(void)
 
 	/* This workaround is needed only on some broken machines,
 	 * which require early EC, but fail to provide ECDT */
-	printk(KERN_DEBUG PREFIX "Look up EC in DSDT\n");
+;
 	status = acpi_get_devices(ec_device_ids[0].id, ec_parse_device,
 					boot_ec, NULL);
 	/* Check that acpi_get_devices actually find something */

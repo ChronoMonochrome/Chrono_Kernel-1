@@ -129,8 +129,8 @@ static int adl_pci8164_attach(struct comedi_device *dev,
 	struct comedi_subdevice *s;
 	int bus, slot;
 
-	printk(KERN_INFO "comedi: attempt to attach...\n");
-	printk(KERN_INFO "comedi%d: adl_pci8164\n", dev->minor);
+;
+;
 
 	dev->board_name = "pci8164";
 	bus = it->options[0];
@@ -153,13 +153,13 @@ static int adl_pci8164_attach(struct comedi_device *dev,
 			}
 			devpriv->pci_dev = pcidev;
 			if (comedi_pci_enable(pcidev, "adl_pci8164") < 0) {
-				printk(KERN_ERR "comedi%d: Failed to enable "
-				"PCI device and request regions\n", dev->minor);
+//				printk(KERN_ERR "comedi%d: Failed to enable "
+;
 				return -EIO;
 			}
 			dev->iobase = pci_resource_start(pcidev, 2);
-			printk(KERN_DEBUG "comedi: base addr %4lx\n",
-				   dev->iobase);
+//			printk(KERN_DEBUG "comedi: base addr %4lx\n",
+;
 
 			s = dev->subdevices + 0;
 			s->type = COMEDI_SUBD_PROC;
@@ -201,20 +201,20 @@ static int adl_pci8164_attach(struct comedi_device *dev,
 			s->insn_read = adl_pci8164_insn_read_buf1;
 			s->insn_write = adl_pci8164_insn_write_buf1;
 
-			printk(KERN_INFO "comedi: attached\n");
+;
 
 			return 1;
 		}
 	}
 
-	printk(KERN_ERR "comedi%d: no supported board found!"
-		   "(req. bus/slot : %d/%d)\n", dev->minor, bus, slot);
+//	printk(KERN_ERR "comedi%d: no supported board found!"
+;
 	return -EIO;
 }
 
 static int adl_pci8164_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: pci8164: remove\n", dev->minor);
+;
 
 	if (devpriv && devpriv->pci_dev) {
 		if (dev->iobase)
@@ -263,9 +263,9 @@ static void adl_pci8164_insn_read(struct comedi_device *dev,
 	}
 
 	data[0] = inw(dev->iobase + axis_reg + offset);
-	printk(KERN_DEBUG "comedi: pci8164 %s read -> "
-						  "%04X:%04X on axis %s\n",
-				action, data[0], data[1], axisname);
+//	printk(KERN_DEBUG "comedi: pci8164 %s read -> "
+//						  "%04X:%04X on axis %s\n",
+;
 }
 
 static int adl_pci8164_insn_read_msts(struct comedi_device *dev,
@@ -344,9 +344,9 @@ static void adl_pci8164_insn_out(struct comedi_device *dev,
 
 	outw(data[0], dev->iobase + axis_reg + offset);
 
-	printk(KERN_DEBUG "comedi: pci8164 %s write -> "
-						"%04X:%04X on axis %s\n",
-				action, data[0], data[1], axisname);
+//	printk(KERN_DEBUG "comedi: pci8164 %s write -> "
+//						"%04X:%04X on axis %s\n",
+;
 
 }
 

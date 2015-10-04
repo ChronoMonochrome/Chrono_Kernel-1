@@ -470,12 +470,12 @@ static void it821x_quirkproc(ide_drive_t *drive)
 			id[ATA_ID_COMMAND_SET_2] |= 0x0400;   /* LBA48 valid */
 			id[ATA_ID_CFS_ENABLE_2]  |= 0x0400;   /* LBA48 on */
 			/* Reporting logic */
-			printk(KERN_INFO "%s: IT8212 %sRAID %d volume",
-				drive->name, id[147] ? "Bootable " : "",
-				id[ATA_ID_CSFO]);
+//			printk(KERN_INFO "%s: IT8212 %sRAID %d volume",
+//				drive->name, id[147] ? "Bootable " : "",
+;
 			if (id[ATA_ID_CSFO] != 1)
-				printk(KERN_CONT "(%dK stripe)", id[146]);
-			printk(KERN_CONT ".\n");
+;
+;
 		} else {
 			/* Non RAID volume. Fixups to stop the core code
 			   doing unsupported things */
@@ -491,8 +491,8 @@ static void it821x_quirkproc(ide_drive_t *drive)
 			id[ATA_ID_DLF]		  = 0;
 			id[ATA_ID_CSFO]		  = 0;
 			id[ATA_ID_CFA_POWER]	  = 0;
-			printk(KERN_INFO "%s: Performing identify fixups.\n",
-				drive->name);
+//			printk(KERN_INFO "%s: Performing identify fixups.\n",
+;
 		}
 
 		/*
@@ -565,8 +565,8 @@ static void __devinit init_hwif_it821x(ide_hwif_t *hwif)
 		idev->timing10 = 1;
 		hwif->host_flags |= IDE_HFLAG_NO_ATAPI_DMA;
 		if (idev->smart == 0)
-			printk(KERN_WARNING DRV_NAME " %s: revision 0x10, "
-				"workarounds activated\n", pci_name(dev));
+//			printk(KERN_WARNING DRV_NAME " %s: revision 0x10, "
+;
 	}
 
 	if (idev->smart == 0) {
@@ -612,13 +612,13 @@ static int init_chipset_it821x(struct pci_dev *dev)
 
 	/* Force the card into bypass mode if so requested */
 	if (it8212_noraid) {
-		printk(KERN_INFO DRV_NAME " %s: forcing bypass mode\n",
-			pci_name(dev));
+//		printk(KERN_INFO DRV_NAME " %s: forcing bypass mode\n",
+;
 		it8212_disable_raid(dev);
 	}
 	pci_read_config_byte(dev, 0x50, &conf);
-	printk(KERN_INFO DRV_NAME " %s: controller in %s mode\n",
-		pci_name(dev), mode[conf & 1]);
+//	printk(KERN_INFO DRV_NAME " %s: controller in %s mode\n",
+;
 	return 0;
 }
 
@@ -654,7 +654,7 @@ static int __devinit it821x_init_one(struct pci_dev *dev, const struct pci_devic
 
 	itdevs = kzalloc(2 * sizeof(*itdevs), GFP_KERNEL);
 	if (itdevs == NULL) {
-		printk(KERN_ERR DRV_NAME " %s: out of memory\n", pci_name(dev));
+;
 		return -ENOMEM;
 	}
 

@@ -168,7 +168,7 @@ static int force_flush_cache(void)
 		__FILE__, __LINE__, __func__);
 
 	if (ERR == GLOB_FTL_Flush_Cache()) {
-		printk(KERN_ERR "Fail to Flush FTL Cache!\n");
+;
 		return -EFAULT;
 	}
 #if CMD_DMA
@@ -196,8 +196,8 @@ static int ioctl_read_page_data(unsigned long arg)
 
 	buf = kmalloc(IdentifyDeviceData.PageDataSize, GFP_ATOMIC);
 	if (!buf) {
-		printk(KERN_ERR "ioctl_read_page_data: "
-		       "failed to allocate memory\n");
+//		printk(KERN_ERR "ioctl_read_page_data: "
+;
 		return -ENOMEM;
 	}
 
@@ -208,8 +208,8 @@ static int ioctl_read_page_data(unsigned long arg)
 
 	if (copy_to_user((void __user *)info.data, buf,
 			   IdentifyDeviceData.PageDataSize)) {
-		printk(KERN_ERR "ioctl_read_page_data: "
-		       "failed to copy user data\n");
+//		printk(KERN_ERR "ioctl_read_page_data: "
+;
 		kfree(buf);
 		return -EFAULT;
 	}
@@ -229,15 +229,15 @@ static int ioctl_write_page_data(unsigned long arg)
 
 	buf = kmalloc(IdentifyDeviceData.PageDataSize, GFP_ATOMIC);
 	if (!buf) {
-		printk(KERN_ERR "ioctl_write_page_data: "
-		       "failed to allocate memory\n");
+//		printk(KERN_ERR "ioctl_write_page_data: "
+;
 		return -ENOMEM;
 	}
 
 	if (copy_from_user(buf, (void __user *)info.data,
 			   IdentifyDeviceData.PageDataSize)) {
-		printk(KERN_ERR "ioctl_write_page_data: "
-		       "failed to copy user data\n");
+//		printk(KERN_ERR "ioctl_write_page_data: "
+;
 		kfree(buf);
 		return -EFAULT;
 	}
@@ -301,12 +301,12 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		return -EIO;
 
 	if (blk_rq_pos(req) + blk_rq_cur_sectors(req) > get_capacity(tr->gd)) {
-		printk(KERN_ERR "Spectra error: request over the NAND "
-			"capacity!sector %d, current_nr_sectors %d, "
-			"while capacity is %d\n",
-			(int)blk_rq_pos(req),
-			blk_rq_cur_sectors(req),
-			(int)get_capacity(tr->gd));
+//		printk(KERN_ERR "Spectra error: request over the NAND "
+//			"capacity!sector %d, current_nr_sectors %d, "
+//			"while capacity is %d\n",
+//			(int)blk_rq_pos(req),
+//			blk_rq_cur_sectors(req),
+;
 		return -EIO;
 	}
 
@@ -326,8 +326,8 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		/* Read the first NAND page */
 		if (rsect) {
 			if (GLOB_FTL_Page_Read(tr->tmp_buf, addr)) {
-				printk(KERN_ERR "Error in %s, Line %d\n",
-					__FILE__, __LINE__);
+//				printk(KERN_ERR "Error in %s, Line %d\n",
+;
 				return -EIO;
 			}
 			memcpy(buf, tr->tmp_buf + (rsect << 9), tsect << 9);
@@ -339,8 +339,8 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		/* Read the other NAND pages */
 		for (hd_sects = nsect / ratio; hd_sects > 0; hd_sects--) {
 			if (GLOB_FTL_Page_Read(buf, addr)) {
-				printk(KERN_ERR "Error in %s, Line %d\n",
-					__FILE__, __LINE__);
+//				printk(KERN_ERR "Error in %s, Line %d\n",
+;
 				return -EIO;
 			}
 			addr += IdentifyDeviceData.PageDataSize;
@@ -350,8 +350,8 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		/* Read the last NAND pages */
 		if (nsect % ratio) {
 			if (GLOB_FTL_Page_Read(tr->tmp_buf, addr)) {
-				printk(KERN_ERR "Error in %s, Line %d\n",
-					__FILE__, __LINE__);
+//				printk(KERN_ERR "Error in %s, Line %d\n",
+;
 				return -EIO;
 			}
 			memcpy(buf, tr->tmp_buf, (nsect % ratio) << 9);
@@ -368,14 +368,14 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		/* Write the first NAND page */
 		if (rsect) {
 			if (GLOB_FTL_Page_Read(tr->tmp_buf, addr)) {
-				printk(KERN_ERR "Error in %s, Line %d\n",
-					__FILE__, __LINE__);
+//				printk(KERN_ERR "Error in %s, Line %d\n",
+;
 				return -EIO;
 			}
 			memcpy(tr->tmp_buf + (rsect << 9), buf, tsect << 9);
 			if (GLOB_FTL_Page_Write(tr->tmp_buf, addr)) {
-				printk(KERN_ERR "Error in %s, Line %d\n",
-					__FILE__, __LINE__);
+//				printk(KERN_ERR "Error in %s, Line %d\n",
+;
 				return -EIO;
 			}
 			addr += IdentifyDeviceData.PageDataSize;
@@ -386,8 +386,8 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		/* Write the other NAND pages */
 		for (hd_sects = nsect / ratio; hd_sects > 0; hd_sects--) {
 			if (GLOB_FTL_Page_Write(buf, addr)) {
-				printk(KERN_ERR "Error in %s, Line %d\n",
-					__FILE__, __LINE__);
+//				printk(KERN_ERR "Error in %s, Line %d\n",
+;
 				return -EIO;
 			}
 			addr += IdentifyDeviceData.PageDataSize;
@@ -397,14 +397,14 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		/* Write the last NAND pages */
 		if (nsect % ratio) {
 			if (GLOB_FTL_Page_Read(tr->tmp_buf, addr)) {
-				printk(KERN_ERR "Error in %s, Line %d\n",
-					__FILE__, __LINE__);
+//				printk(KERN_ERR "Error in %s, Line %d\n",
+;
 				return -EIO;
 			}
 			memcpy(tr->tmp_buf, buf, (nsect % ratio) << 9);
 			if (GLOB_FTL_Page_Write(tr->tmp_buf, addr)) {
-				printk(KERN_ERR "Error in %s, Line %d\n",
-					__FILE__, __LINE__);
+//				printk(KERN_ERR "Error in %s, Line %d\n",
+;
 				return -EIO;
 			}
 		}
@@ -417,7 +417,7 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		return 0;
 
 	default:
-		printk(KERN_NOTICE "Unknown request %u\n", rq_data_dir(req));
+;
 		return -EIO;
 	}
 }
@@ -639,16 +639,16 @@ static int SBD_setup_device(struct spectra_nand_dev *dev, int which)
 
 	dev->tmp_buf = kmalloc(IdentifyDeviceData.PageDataSize, GFP_ATOMIC);
 	if (!dev->tmp_buf) {
-		printk(KERN_ERR "Failed to kmalloc memory in %s Line %d, exit.\n",
-			__FILE__, __LINE__);
+//		printk(KERN_ERR "Failed to kmalloc memory in %s Line %d, exit.\n",
+;
 		goto out_vfree;
 	}
 
 	dev->queue = blk_init_queue(GLOB_SBD_request, &dev->qlock);
 	if (dev->queue == NULL) {
-		printk(KERN_ERR
-		       "Spectra: Request queue could not be initialized."
-			" Aborting\n ");
+//		printk(KERN_ERR
+//		       "Spectra: Request queue could not be initialized."
+;
 		goto out_vfree;
 	}
 	dev->queue->queuedata = dev;
@@ -668,8 +668,8 @@ static int SBD_setup_device(struct spectra_nand_dev *dev, int which)
 
 	dev->gd = alloc_disk(PARTITIONS);
 	if (!dev->gd) {
-		printk(KERN_ERR
-		       "Spectra: Could not allocate disk. Aborting \n ");
+//		printk(KERN_ERR
+;
 		goto out_vfree;
 	}
 	dev->gd->major = GLOB_SBD_majornum;
@@ -719,14 +719,14 @@ static DEVICE_ATTR(nand_page_size, 0444, show_nand_page_size, NULL);
 static void create_sysfs_entry(struct device *dev)
 {
 	if (device_create_file(dev, &dev_attr_nand_block_num))
-		printk(KERN_ERR "Spectra: "
-			"failed to create sysfs entry nand_block_num.\n");
+//		printk(KERN_ERR "Spectra: "
+;
 	if (device_create_file(dev, &dev_attr_nand_pages_per_block))
-		printk(KERN_ERR "Spectra: "
-		"failed to create sysfs entry nand_pages_per_block.\n");
+//		printk(KERN_ERR "Spectra: "
+;
 	if (device_create_file(dev, &dev_attr_nand_page_size))
-		printk(KERN_ERR "Spectra: "
-		"failed to create sysfs entry nand_page_size.\n");
+//		printk(KERN_ERR "Spectra: "
+;
 }
 */
 
@@ -737,8 +737,8 @@ static void register_spectra_ftl_async(void *unused, async_cookie_t cookie)
 	/* create_sysfs_entry(&dev->dev); */
 
 	if (PASS != GLOB_FTL_IdentifyDevice(&IdentifyDeviceData)) {
-		printk(KERN_ERR "Spectra: Unable to Read Flash Device. "
-		       "Aborting\n");
+//		printk(KERN_ERR "Spectra: Unable to Read Flash Device. "
+;
 		return;
 	} else {
 		nand_dbg_print(NAND_DBG_WARN, "In GLOB_SBD_init: "
@@ -750,18 +750,18 @@ static void register_spectra_ftl_async(void *unused, async_cookie_t cookie)
 		       (int)IdentifyDeviceData.wECCBytesPerSector);
 	}
 
-	printk(KERN_ALERT "Spectra: searching block table, please wait ...\n");
+;
 	if (GLOB_FTL_Init() != PASS) {
-		printk(KERN_ERR "Spectra: Unable to Initialize FTL Layer. "
-		       "Aborting\n");
+//		printk(KERN_ERR "Spectra: Unable to Initialize FTL Layer. "
+;
 		goto out_ftl_flash_register;
 	}
-	printk(KERN_ALERT "Spectra: block table has been found.\n");
+;
 
 	GLOB_SBD_majornum = register_blkdev(0, GLOB_SBD_NAME);
 	if (GLOB_SBD_majornum <= 0) {
-		printk(KERN_ERR "Unable to get the major %d for Spectra",
-		       GLOB_SBD_majornum);
+//		printk(KERN_ERR "Unable to get the major %d for Spectra",
+;
 		goto out_ftl_flash_register;
 	}
 
@@ -779,7 +779,7 @@ out_blk_register:
 	unregister_blkdev(GLOB_SBD_majornum, GLOB_SBD_NAME);
 out_ftl_flash_register:
 	GLOB_FTL_Cache_Release();
-	printk(KERN_ERR "Spectra: Module load failed.\n");
+;
 }
 
 int register_spectra_ftl()
@@ -792,13 +792,13 @@ EXPORT_SYMBOL_GPL(register_spectra_ftl);
 static int GLOB_SBD_init(void)
 {
 	/* Set debug output level (0~3) here. 3 is most verbose */
-	printk(KERN_ALERT "Spectra: %s\n", GLOB_version);
+;
 
 	mutex_init(&spectra_lock);
 
 	if (PASS != GLOB_FTL_Flash_Init()) {
-		printk(KERN_ERR "Spectra: Unable to Initialize Flash Device. "
-		       "Aborting\n");
+//		printk(KERN_ERR "Spectra: Unable to Initialize Flash Device. "
+;
 		return -ENODEV;
 	}
 	return 0;

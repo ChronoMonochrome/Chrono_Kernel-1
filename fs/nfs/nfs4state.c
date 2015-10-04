@@ -935,10 +935,10 @@ static void nfs_increment_seqid(int status, struct nfs_seqid *seqid)
 		case -NFS4ERR_BAD_SEQID:
 			if (seqid->sequence->flags & NFS_SEQID_CONFIRMED)
 				return;
-			printk(KERN_WARNING "NFS: v4 server returned a bad"
-					" sequence-id error on an"
-					" unconfirmed sequence %p!\n",
-					seqid->sequence);
+//			printk(KERN_WARNING "NFS: v4 server returned a bad"
+//					" sequence-id error on an"
+//					" unconfirmed sequence %p!\n",
+;
 		case -NFS4ERR_STALE_CLIENTID:
 		case -NFS4ERR_STALE_STATEID:
 		case -NFS4ERR_BAD_STATEID:
@@ -1112,8 +1112,8 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
 			case -NFS4ERR_CONN_NOT_BOUND_TO_SESSION:
 				goto out;
 			default:
-				printk(KERN_ERR "%s: unhandled error %d. Zeroing state\n",
-						__func__, status);
+//				printk(KERN_ERR "%s: unhandled error %d. Zeroing state\n",
+;
 			case -ENOMEM:
 			case -NFS4ERR_DENIED:
 			case -NFS4ERR_RECLAIM_BAD:
@@ -1159,8 +1159,8 @@ restart:
 				spin_lock(&state->state_lock);
 				list_for_each_entry(lock, &state->lock_states, ls_locks) {
 					if (!(lock->ls_flags & NFS_LOCK_INITIALIZED))
-						printk("%s: Lock reclaim failed!\n",
-							__func__);
+//						printk("%s: Lock reclaim failed!\n",
+;
 				}
 				spin_unlock(&state->state_lock);
 				nfs4_put_open_state(state);
@@ -1169,8 +1169,8 @@ restart:
 		}
 		switch (status) {
 			default:
-				printk(KERN_ERR "%s: unhandled error %d. Zeroing state\n",
-						__func__, status);
+//				printk(KERN_ERR "%s: unhandled error %d. Zeroing state\n",
+;
 			case -ENOENT:
 			case -ENOMEM:
 			case -ESTALE:
@@ -1737,8 +1737,8 @@ static void nfs4_state_manager(struct nfs_client *clp)
 	} while (atomic_read(&clp->cl_count) > 1);
 	return;
 out_error:
-	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
-			" with error %d\n", clp->cl_hostname, -status);
+//	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
+;
 	nfs4_end_drain_session(clp);
 	nfs4_clear_state_manager_bit(clp);
 }

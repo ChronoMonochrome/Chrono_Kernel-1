@@ -71,7 +71,7 @@ int __cpuinit __cpu_up(unsigned int cpu)
 	if (!idle) {
 		idle = fork_idle(cpu);
 		if (IS_ERR(idle)) {
-			printk(KERN_ERR "CPU%u: fork() failed\n", cpu);
+;
 			return PTR_ERR(idle);
 		}
 		ci->idle = idle;
@@ -216,10 +216,10 @@ void __cpu_die(unsigned int cpu)
 		pr_err("CPU%u: cpu didn't die\n", cpu);
 		return;
 	}
-	printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
+;
 
 	if (!platform_cpu_kill(cpu))
-		printk("CPU%u: unable to kill\n", cpu);
+;
 }
 
 /*
@@ -300,7 +300,7 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	current->active_mm = mm;
 	cpumask_set_cpu(cpu, mm_cpumask(mm));
 
-	printk("CPU%u: Booted secondary processor\n", cpu);
+;
 
 	cpu_init();
 	preempt_disable();
@@ -344,11 +344,11 @@ void __init smp_cpus_done(unsigned int max_cpus)
 	for_each_online_cpu(cpu)
 		bogosum += per_cpu(cpu_data, cpu).loops_per_jiffy;
 
-	printk(KERN_INFO "SMP: Total of %d processors activated "
-	       "(%lu.%02lu BogoMIPS).\n",
-	       num_online_cpus(),
-	       bogosum / (500000/HZ),
-	       (bogosum / (5000/HZ)) % 100);
+////	printk(KERN_INFO "SMP: Total of %d processors activated "
+////	       "(%lu.%02lu BogoMIPS).\n",
+////	       num_online_cpus(),
+////	       bogosum / (500000/HZ),
+;
 }
 
 void __init smp_prepare_boot_cpu(void)
@@ -548,7 +548,7 @@ static void ipi_cpu_stop(unsigned int cpu)
 	if (system_state == SYSTEM_BOOTING ||
 	    system_state == SYSTEM_RUNNING) {
 		spin_lock(&stop_lock);
-		printk(KERN_CRIT "CPU%u: stopping\n", cpu);
+;
 		dump_stack();
 		spin_unlock(&stop_lock);
 	}
@@ -662,8 +662,8 @@ asmlinkage void __exception_irq_entry do_IPI(int ipinr, struct pt_regs *regs)
 		break;
 
 	default:
-		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
-		       cpu, ipinr);
+////		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
+;
 		break;
 	}
 	set_irq_regs(old_regs);

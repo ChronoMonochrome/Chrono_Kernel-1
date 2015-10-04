@@ -295,23 +295,23 @@ acornfb_set_timing(struct fb_var_screeninfo *var)
 		vidc_writel(0xbc000000);
 	}
 #ifdef DEBUG_MODE_SELECTION
-	printk(KERN_DEBUG "VIDC registers for %dx%dx%d:\n", var->xres,
-	       var->yres, var->bits_per_pixel);
-	printk(KERN_DEBUG " H-cycle          : %d\n", vidc.h_cycle);
-	printk(KERN_DEBUG " H-sync-width     : %d\n", vidc.h_sync_width);
-	printk(KERN_DEBUG " H-border-start   : %d\n", vidc.h_border_start);
-	printk(KERN_DEBUG " H-display-start  : %d\n", vidc.h_display_start);
-	printk(KERN_DEBUG " H-display-end    : %d\n", vidc.h_display_end);
-	printk(KERN_DEBUG " H-border-end     : %d\n", vidc.h_border_end);
-	printk(KERN_DEBUG " H-interlace      : %d\n", vidc.h_interlace);
-	printk(KERN_DEBUG " V-cycle          : %d\n", vidc.v_cycle);
-	printk(KERN_DEBUG " V-sync-width     : %d\n", vidc.v_sync_width);
-	printk(KERN_DEBUG " V-border-start   : %d\n", vidc.v_border_start);
-	printk(KERN_DEBUG " V-display-start  : %d\n", vidc.v_display_start);
-	printk(KERN_DEBUG " V-display-end    : %d\n", vidc.v_display_end);
-	printk(KERN_DEBUG " V-border-end     : %d\n", vidc.v_border_end);
-	printk(KERN_DEBUG " VIDC Ctrl (E)    : 0x%08X\n", vidc_ctl);
-	printk(KERN_DEBUG " IOEB Ctrl        : 0x%08X\n", vid_ctl);
+//	printk(KERN_DEBUG "VIDC registers for %dx%dx%d:\n", var->xres,
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
 #endif
 }
 
@@ -464,26 +464,26 @@ static void acornfb_set_timing(struct fb_info *info)
 	vidc_writel(VIDC20_DCTL | dat_ctl);
 
 #ifdef DEBUG_MODE_SELECTION
-	printk(KERN_DEBUG "VIDC registers for %dx%dx%d:\n", var->xres,
-	       var->yres, var->bits_per_pixel);
-	printk(KERN_DEBUG " H-cycle          : %d\n", vidc.h_cycle);
-	printk(KERN_DEBUG " H-sync-width     : %d\n", vidc.h_sync_width);
-	printk(KERN_DEBUG " H-border-start   : %d\n", vidc.h_border_start);
-	printk(KERN_DEBUG " H-display-start  : %d\n", vidc.h_display_start);
-	printk(KERN_DEBUG " H-display-end    : %d\n", vidc.h_display_end);
-	printk(KERN_DEBUG " H-border-end     : %d\n", vidc.h_border_end);
-	printk(KERN_DEBUG " H-interlace      : %d\n", vidc.h_interlace);
-	printk(KERN_DEBUG " V-cycle          : %d\n", vidc.v_cycle);
-	printk(KERN_DEBUG " V-sync-width     : %d\n", vidc.v_sync_width);
-	printk(KERN_DEBUG " V-border-start   : %d\n", vidc.v_border_start);
-	printk(KERN_DEBUG " V-display-start  : %d\n", vidc.v_display_start);
-	printk(KERN_DEBUG " V-display-end    : %d\n", vidc.v_display_end);
-	printk(KERN_DEBUG " V-border-end     : %d\n", vidc.v_border_end);
-	printk(KERN_DEBUG " Ext Ctrl  (C)    : 0x%08X\n", ext_ctl);
-	printk(KERN_DEBUG " PLL Ctrl  (D)    : 0x%08X\n", vidc.pll_ctl);
-	printk(KERN_DEBUG " Ctrl      (E)    : 0x%08X\n", vidc.control);
-	printk(KERN_DEBUG " Data Ctrl (F)    : 0x%08X\n", dat_ctl);
-	printk(KERN_DEBUG " Fsize            : 0x%08X\n", fsize);
+//	printk(KERN_DEBUG "VIDC registers for %dx%dx%d:\n", var->xres,
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
 #endif
 }
 
@@ -1060,7 +1060,7 @@ check_values:
 	return;
 
 bad:
-	printk(KERN_ERR "Acornfb: bad monitor settings: %s\n", opt);
+;
 	current_par.montype = -1;
 }
 
@@ -1091,17 +1091,17 @@ static void __devinit acornfb_parse_montype(char *opt)
 
 	if (current_par.montype == -2 ||
 	    current_par.montype > NR_MONTYPES) {
-		printk(KERN_ERR "acornfb: unknown monitor type: %s\n",
-			opt);
+//		printk(KERN_ERR "acornfb: unknown monitor type: %s\n",
+;
 		current_par.montype = -1;
 	} else
 	if (opt && *opt) {
 		if (strcmp(opt, ",dpms") == 0)
 			current_par.dpms = 1;
 		else
-			printk(KERN_ERR
-			       "acornfb: unknown monitor option: %s\n",
-			       opt);
+//			printk(KERN_ERR
+//			       "acornfb: unknown monitor option: %s\n",
+;
 	}
 }
 
@@ -1164,8 +1164,8 @@ static int __devinit acornfb_setup(char *options)
 		}
 
 		if (!optp->name)
-			printk(KERN_ERR "acornfb: unknown parameter: %s\n",
-			       opt);
+//			printk(KERN_ERR "acornfb: unknown parameter: %s\n",
+;
 	}
 	return 0;
 }
@@ -1212,7 +1212,7 @@ free_unused_pages(unsigned int virtual_start, unsigned int virtual_end)
 		mb_freed += PAGE_SIZE / 1024;
 	}
 
-	printk("acornfb: freed %dK memory\n", mb_freed);
+;
 }
 
 static int __devinit acornfb_probe(struct platform_device *dev)
@@ -1300,8 +1300,8 @@ static int __devinit acornfb_probe(struct platform_device *dev)
 		base = dma_alloc_writecombine(current_par.dev, size, &handle,
 					      GFP_KERNEL);
 		if (base == NULL) {
-			printk(KERN_ERR "acornfb: unable to allocate screen "
-			       "memory\n");
+//			printk(KERN_ERR "acornfb: unable to allocate screen "
+;
 			return -ENOMEM;
 		}
 
@@ -1358,7 +1358,7 @@ static int __devinit acornfb_probe(struct platform_device *dev)
 	 * generic database.
 	 */
 	if (rc == 0) {
-		printk("Acornfb: no valid mode found\n");
+;
 		return -EINVAL;
 	}
 
@@ -1368,21 +1368,21 @@ static int __devinit acornfb_probe(struct platform_device *dev)
 	v_sync = h_sync / (fb_info.var.yres + fb_info.var.upper_margin +
 		 fb_info.var.lower_margin + fb_info.var.vsync_len);
 
-	printk(KERN_INFO "Acornfb: %dkB %cRAM, %s, using %dx%d, "
-		"%d.%03dkHz, %dHz\n",
-		fb_info.fix.smem_len / 1024,
-		current_par.using_vram ? 'V' : 'D',
-		VIDC_NAME, fb_info.var.xres, fb_info.var.yres,
-		h_sync / 1000, h_sync % 1000, v_sync);
+//	printk(KERN_INFO "Acornfb: %dkB %cRAM, %s, using %dx%d, "
+//		"%d.%03dkHz, %dHz\n",
+//		fb_info.fix.smem_len / 1024,
+//		current_par.using_vram ? 'V' : 'D',
+//		VIDC_NAME, fb_info.var.xres, fb_info.var.yres,
+;
 
-	printk(KERN_INFO "Acornfb: Monitor: %d.%03d-%d.%03dkHz, %d-%dHz%s\n",
-		fb_info.monspecs.hfmin / 1000, fb_info.monspecs.hfmin % 1000,
-		fb_info.monspecs.hfmax / 1000, fb_info.monspecs.hfmax % 1000,
-		fb_info.monspecs.vfmin, fb_info.monspecs.vfmax,
-		fb_info.monspecs.dpms ? ", DPMS" : "");
+//	printk(KERN_INFO "Acornfb: Monitor: %d.%03d-%d.%03dkHz, %d-%dHz%s\n",
+//		fb_info.monspecs.hfmin / 1000, fb_info.monspecs.hfmin % 1000,
+//		fb_info.monspecs.hfmax / 1000, fb_info.monspecs.hfmax % 1000,
+//		fb_info.monspecs.vfmin, fb_info.monspecs.vfmax,
+;
 
 	if (fb_set_var(&fb_info, &fb_info.var))
-		printk(KERN_ERR "Acornfb: unable to set display parameters\n");
+;
 
 	if (register_framebuffer(&fb_info) < 0)
 		return -EINVAL;

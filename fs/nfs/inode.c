@@ -387,16 +387,16 @@ nfs_fhget(struct super_block *sb, struct nfs_fh *fh, struct nfs_fattr *fattr)
 		unlock_new_inode(inode);
 	} else
 		nfs_refresh_inode(inode, fattr);
-	dprintk("NFS: nfs_fhget(%s/%Ld ct=%d)\n",
-		inode->i_sb->s_id,
-		(long long)NFS_FILEID(inode),
-		atomic_read(&inode->i_count));
+//	dprintk("NFS: nfs_fhget(%s/%Ld ct=%d)\n",
+//		inode->i_sb->s_id,
+//		(long long)NFS_FILEID(inode),
+;
 
 out:
 	return inode;
 
 out_no_inode:
-	dprintk("nfs_fhget: iget failed with error %ld\n", PTR_ERR(inode));
+;
 	goto out;
 }
 
@@ -770,8 +770,8 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 	struct nfs_fattr *fattr = NULL;
 	struct nfs_inode *nfsi = NFS_I(inode);
 
-	dfprintk(PAGECACHE, "NFS: revalidating (%s/%Ld)\n",
-		inode->i_sb->s_id, (long long)NFS_FILEID(inode));
+//	dfprintk(PAGECACHE, "NFS: revalidating (%s/%Ld)\n",
+;
 
 	if (is_bad_inode(inode))
 		goto out;
@@ -786,9 +786,9 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 	nfs_inc_stats(inode, NFSIOS_INODEREVALIDATE);
 	status = NFS_PROTO(inode)->getattr(server, NFS_FH(inode), fattr);
 	if (status != 0) {
-		dfprintk(PAGECACHE, "nfs_revalidate_inode: (%s/%Ld) getattr failed, error=%d\n",
-			 inode->i_sb->s_id,
-			 (long long)NFS_FILEID(inode), status);
+//		dfprintk(PAGECACHE, "nfs_revalidate_inode: (%s/%Ld) getattr failed, error=%d\n",
+//			 inode->i_sb->s_id,
+;
 		if (status == -ESTALE) {
 			nfs_zap_caches(inode);
 			if (!S_ISDIR(inode->i_mode))
@@ -799,18 +799,18 @@ __nfs_revalidate_inode(struct nfs_server *server, struct inode *inode)
 
 	status = nfs_refresh_inode(inode, fattr);
 	if (status) {
-		dfprintk(PAGECACHE, "nfs_revalidate_inode: (%s/%Ld) refresh failed, error=%d\n",
-			 inode->i_sb->s_id,
-			 (long long)NFS_FILEID(inode), status);
+//		dfprintk(PAGECACHE, "nfs_revalidate_inode: (%s/%Ld) refresh failed, error=%d\n",
+//			 inode->i_sb->s_id,
+;
 		goto out;
 	}
 
 	if (nfsi->cache_validity & NFS_INO_INVALID_ACL)
 		nfs_zap_acl_cache(inode);
 
-	dfprintk(PAGECACHE, "NFS: (%s/%Ld) revalidation complete\n",
-		inode->i_sb->s_id,
-		(long long)NFS_FILEID(inode));
+//	dfprintk(PAGECACHE, "NFS: (%s/%Ld) revalidation complete\n",
+//		inode->i_sb->s_id,
+;
 
  out:
 	nfs_free_fattr(fattr);
@@ -862,8 +862,8 @@ static int nfs_invalidate_mapping(struct inode *inode, struct address_space *map
 	spin_unlock(&inode->i_lock);
 	nfs_inc_stats(inode, NFSIOS_DATAINVALIDATE);
 	nfs_fscache_reset_inode_cookie(inode);
-	dfprintk(PAGECACHE, "NFS: (%s/%Ld) data cache invalidated\n",
-			inode->i_sb->s_id, (long long)NFS_FILEID(inode));
+//	dfprintk(PAGECACHE, "NFS: (%s/%Ld) data cache invalidated\n",
+;
 	return 0;
 }
 
@@ -1208,9 +1208,9 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	unsigned long now = jiffies;
 	unsigned long save_cache_validity;
 
-	dfprintk(VFS, "NFS: %s(%s/%ld ct=%d info=0x%x)\n",
-			__func__, inode->i_sb->s_id, inode->i_ino,
-			atomic_read(&inode->i_count), fattr->valid);
+//	dfprintk(VFS, "NFS: %s(%s/%ld ct=%d info=0x%x)\n",
+//			__func__, inode->i_sb->s_id, inode->i_ino,
+;
 
 	if ((fattr->valid & NFS_ATTR_FATTR_FILEID) && nfsi->fileid != fattr->fileid)
 		goto out_fileid;
@@ -1245,8 +1245,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	/* More cache consistency checks */
 	if (fattr->valid & NFS_ATTR_FATTR_CHANGE) {
 		if (inode->i_version != fattr->change_attr) {
-			dprintk("NFS: change_attr change on server for file %s/%ld\n",
-					inode->i_sb->s_id, inode->i_ino);
+//			dprintk("NFS: change_attr change on server for file %s/%ld\n",
+;
 			invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL;
 			if (S_ISDIR(inode->i_mode))
 				nfs_force_lookup_revalidate(inode);
@@ -1258,8 +1258,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	if (fattr->valid & NFS_ATTR_FATTR_MTIME) {
 		/* NFSv2/v3: Check if the mtime agrees */
 		if (!timespec_equal(&inode->i_mtime, &fattr->mtime)) {
-			dprintk("NFS: mtime change on server for file %s/%ld\n",
-					inode->i_sb->s_id, inode->i_ino);
+//			dprintk("NFS: mtime change on server for file %s/%ld\n",
+;
 			invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA;
 			if (S_ISDIR(inode->i_mode))
 				nfs_force_lookup_revalidate(inode);
@@ -1302,12 +1302,12 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 				i_size_write(inode, new_isize);
 				invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA;
 			}
-			dprintk("NFS: isize change on server for file %s/%ld "
-					"(%Ld to %Ld)\n",
-					inode->i_sb->s_id,
-					inode->i_ino,
-					(long long)cur_isize,
-					(long long)new_isize);
+//			dprintk("NFS: isize change on server for file %s/%ld "
+//					"(%Ld to %Ld)\n",
+//					inode->i_sb->s_id,
+//					inode->i_ino,
+//					(long long)cur_isize,
+;
 		}
 	} else
 		invalid |= save_cache_validity & (NFS_INO_INVALID_ATTR
@@ -1403,8 +1403,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	/*
 	 * Big trouble! The inode has become a different object.
 	 */
-	printk(KERN_DEBUG "%s: inode %ld mode changed, %07o to %07o\n",
-			__func__, inode->i_ino, inode->i_mode, fattr->mode);
+//	printk(KERN_DEBUG "%s: inode %ld mode changed, %07o to %07o\n",
+;
  out_err:
 	/*
 	 * No need to worry about unhashing the dentry, as the
@@ -1415,10 +1415,10 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
 	return -ESTALE;
 
  out_fileid:
-	printk(KERN_ERR "NFS: server %s error: fileid changed\n"
-		"fsid %s: expected fileid 0x%Lx, got 0x%Lx\n",
-		NFS_SERVER(inode)->nfs_client->cl_hostname, inode->i_sb->s_id,
-		(long long)nfsi->fileid, (long long)fattr->fileid);
+//	printk(KERN_ERR "NFS: server %s error: fileid changed\n"
+//		"fsid %s: expected fileid 0x%Lx, got 0x%Lx\n",
+//		NFS_SERVER(inode)->nfs_client->cl_hostname, inode->i_sb->s_id,
+;
 	goto out_err;
 }
 
@@ -1528,7 +1528,7 @@ struct workqueue_struct *nfsiod_workqueue;
 static int nfsiod_start(void)
 {
 	struct workqueue_struct *wq;
-	dprintk("RPC:       creating workqueue nfsiod\n");
+;
 	wq = alloc_workqueue("nfsiod", WQ_MEM_RECLAIM, 0);
 	if (wq == NULL)
 		return -ENOMEM;

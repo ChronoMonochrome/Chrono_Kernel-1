@@ -228,8 +228,8 @@ u32 krb5_derive_key(const struct gss_krb5_enctype *gk5e,
 	BUG_ON(gk5e->mk_key == NULL);
 	ret = (*(gk5e->mk_key))(gk5e, &inblock, outkey);
 	if (ret) {
-		dprintk("%s: got %d from mk_key function for '%s'\n",
-			__func__, ret, gk5e->encrypt_name);
+//		dprintk("%s: got %d from mk_key function for '%s'\n",
+;
 		goto err_free_raw;
 	}
 
@@ -276,12 +276,12 @@ u32 gss_krb5_des3_make_key(const struct gss_krb5_enctype *gk5e,
 	u32 ret = EINVAL;
 
 	if (key->len != 24) {
-		dprintk("%s: key->len is %d\n", __func__, key->len);
+;
 		goto err_out;
 	}
 	if (randombits->len != 21) {
-		dprintk("%s: randombits->len is %d\n",
-			__func__, randombits->len);
+//		dprintk("%s: randombits->len is %d\n",
+;
 		goto err_out;
 	}
 
@@ -315,17 +315,17 @@ u32 gss_krb5_aes_make_key(const struct gss_krb5_enctype *gk5e,
 	u32 ret = EINVAL;
 
 	if (key->len != 16 && key->len != 32) {
-		dprintk("%s: key->len is %d\n", __func__, key->len);
+;
 		goto err_out;
 	}
 	if (randombits->len != 16 && randombits->len != 32) {
-		dprintk("%s: randombits->len is %d\n",
-			__func__, randombits->len);
+//		dprintk("%s: randombits->len is %d\n",
+;
 		goto err_out;
 	}
 	if (randombits->len != key->len) {
-		dprintk("%s: randombits->len is %d, key->len is %d\n",
-			__func__, randombits->len, key->len);
+//		dprintk("%s: randombits->len is %d, key->len is %d\n",
+;
 		goto err_out;
 	}
 	memcpy(key->data, randombits->data, key->len);

@@ -51,9 +51,9 @@ MODULE_PARM_DESC(debug, "enable debug messages [dvb]");
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
-#define dprintk(level, fmt, arg...) do {			\
-if (debug >= level) 						\
-	printk(KERN_DEBUG "%s/2-dvb: " fmt, dev->name, ## arg);	\
+//#define dprintk(level, fmt, arg...) do {			\
+//if (debug >= level) 						\
+;
 } while (0)
 
 #define EM28XX_DVB_NUM_BUFS 5
@@ -108,10 +108,10 @@ static inline void print_err_status(struct em28xx *dev,
 		break;
 	}
 	if (packet < 0) {
-		dprintk(1, "URB status %d [%s].\n", status, errmsg);
+;
 	} else {
-		dprintk(1, "URB packet %d, status %d [%s].\n",
-			packet, status, errmsg);
+//		dprintk(1, "URB packet %d, status %d [%s].\n",
+;
 	}
 }
 
@@ -400,8 +400,8 @@ static int register_dvb(struct em28xx_dvb *dvb,
 	result = dvb_register_adapter(&dvb->adapter, dev->name, module, device,
 				      adapter_nr);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: dvb_register_adapter failed (errno = %d)\n",
-		       dev->name, result);
+//		printk(KERN_WARNING "%s: dvb_register_adapter failed (errno = %d)\n",
+;
 		goto fail_adapter;
 	}
 
@@ -415,8 +415,8 @@ static int register_dvb(struct em28xx_dvb *dvb,
 	/* register frontend */
 	result = dvb_register_frontend(&dvb->adapter, dvb->fe[0]);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: dvb_register_frontend failed (errno = %d)\n",
-		       dev->name, result);
+//		printk(KERN_WARNING "%s: dvb_register_frontend failed (errno = %d)\n",
+;
 		goto fail_frontend0;
 	}
 
@@ -424,8 +424,8 @@ static int register_dvb(struct em28xx_dvb *dvb,
 	if (dvb->fe[1]) {
 		result = dvb_register_frontend(&dvb->adapter, dvb->fe[1]);
 		if (result < 0) {
-			printk(KERN_WARNING "%s: 2nd dvb_register_frontend failed (errno = %d)\n",
-				dev->name, result);
+//			printk(KERN_WARNING "%s: 2nd dvb_register_frontend failed (errno = %d)\n",
+;
 			goto fail_frontend1;
 		}
 	}
@@ -442,8 +442,8 @@ static int register_dvb(struct em28xx_dvb *dvb,
 
 	result = dvb_dmx_init(&dvb->demux);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: dvb_dmx_init failed (errno = %d)\n",
-		       dev->name, result);
+//		printk(KERN_WARNING "%s: dvb_dmx_init failed (errno = %d)\n",
+;
 		goto fail_dmx;
 	}
 
@@ -452,31 +452,31 @@ static int register_dvb(struct em28xx_dvb *dvb,
 	dvb->dmxdev.capabilities = 0;
 	result = dvb_dmxdev_init(&dvb->dmxdev, &dvb->adapter);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: dvb_dmxdev_init failed (errno = %d)\n",
-		       dev->name, result);
+//		printk(KERN_WARNING "%s: dvb_dmxdev_init failed (errno = %d)\n",
+;
 		goto fail_dmxdev;
 	}
 
 	dvb->fe_hw.source = DMX_FRONTEND_0;
 	result = dvb->demux.dmx.add_frontend(&dvb->demux.dmx, &dvb->fe_hw);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: add_frontend failed (DMX_FRONTEND_0, errno = %d)\n",
-		       dev->name, result);
+//		printk(KERN_WARNING "%s: add_frontend failed (DMX_FRONTEND_0, errno = %d)\n",
+;
 		goto fail_fe_hw;
 	}
 
 	dvb->fe_mem.source = DMX_MEMORY_FE;
 	result = dvb->demux.dmx.add_frontend(&dvb->demux.dmx, &dvb->fe_mem);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: add_frontend failed (DMX_MEMORY_FE, errno = %d)\n",
-		       dev->name, result);
+//		printk(KERN_WARNING "%s: add_frontend failed (DMX_MEMORY_FE, errno = %d)\n",
+;
 		goto fail_fe_mem;
 	}
 
 	result = dvb->demux.dmx.connect_frontend(&dvb->demux.dmx, &dvb->fe_hw);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: connect_frontend failed (errno = %d)\n",
-		       dev->name, result);
+//		printk(KERN_WARNING "%s: connect_frontend failed (errno = %d)\n",
+;
 		goto fail_fe_conn;
 	}
 
@@ -529,7 +529,7 @@ static int dvb_init(struct em28xx *dev)
 
 	if (!dev->board.has_dvb) {
 		/* This device does not support the extension */
-		printk(KERN_INFO "em28xx_dvb: This device does not support the extension\n");
+;
 		return 0;
 	}
 

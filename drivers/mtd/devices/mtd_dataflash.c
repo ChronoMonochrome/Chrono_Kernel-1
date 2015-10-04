@@ -196,8 +196,8 @@ static int dataflash_erase(struct mtd_info *mtd, struct erase_info *instr)
 		(void) dataflash_waitready(spi);
 
 		if (status < 0) {
-			printk(KERN_ERR "%s: erase %x, err %d\n",
-				dev_name(&spi->dev), pageaddr, status);
+//			printk(KERN_ERR "%s: erase %x, err %d\n",
+;
 			/* REVISIT:  can retry instr->retries times; or
 			 * giveup and instr->fail_addr = instr->addr;
 			 */
@@ -422,8 +422,8 @@ static int dataflash_write(struct mtd_info *mtd, loff_t to, size_t len,
 
 		/* Check result of the compare operation */
 		if (status & (1 << 6)) {
-			printk(KERN_ERR "%s: compare page %u, err %d\n",
-				dev_name(&spi->dev), pageaddr, status);
+//			printk(KERN_ERR "%s: compare page %u, err %d\n",
+;
 			remaining = 0;
 			status = -EIO;
 			break;

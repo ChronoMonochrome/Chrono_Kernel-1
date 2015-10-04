@@ -65,17 +65,17 @@ static int ir_debug;
 module_param(ir_debug, int, 0644);	/* debug level [IR] */
 MODULE_PARM_DESC(ir_debug, "enable debug messages [IR]");
 
-#define ir_dprintk(fmt, arg...)	if (ir_debug) \
-	printk(KERN_DEBUG "%s IR: " fmt , ir->core->name , ##arg)
-
-#define dprintk(fmt, arg...)	if (ir_debug) \
-	printk(KERN_DEBUG "cx88 IR: " fmt , ##arg)
-
-/* ---------------------------------------------------------------------- */
-
-static void cx88_ir_handle_key(struct cx88_IR *ir)
-{
-	struct cx88_core *core = ir->core;
+//#define ir_dprintk(fmt, arg...)	if (ir_debug) \
+//	printk(KERN_DEBUG "%s IR: " fmt , ir->core->name , ##arg)
+//
+//#define dprintk(fmt, arg...)	if (ir_debug) \
+//	printk(KERN_DEBUG "cx88 IR: " fmt , ##arg)
+//
+///* ---------------------------------------------------------------------- */
+//
+//static void cx88_ir_handle_key(struct cx88_IR *ir)
+//{
+;
 	u32 gpio, data, auxgpio;
 
 	/* read gpio value */
@@ -115,11 +115,11 @@ static void cx88_ir_handle_key(struct cx88_IR *ir)
 
 	/* extract data */
 	data = ir_extract_bits(gpio, ir->mask_keycode);
-	ir_dprintk("irq gpio=0x%x code=%d | %s%s%s\n",
-		   gpio, data,
-		   ir->polling ? "poll" : "irq",
-		   (gpio & ir->mask_keydown) ? " down" : "",
-		   (gpio & ir->mask_keyup) ? " up" : "");
+//	ir_dprintk("irq gpio=0x%x code=%d | %s%s%s\n",
+//		   gpio, data,
+//		   ir->polling ? "poll" : "irq",
+//		   (gpio & ir->mask_keydown) ? " down" : "",
+;
 
 	if (ir->core->boardnr == CX88_BOARD_NORWOOD_MICRO) {
 		u32 gpio_key = cx_read(MO_GP0_IO);
@@ -158,7 +158,7 @@ static enum hrtimer_restart cx88_ir_work(struct hrtimer *timer)
 	missed = hrtimer_forward_now(&ir->timer,
 				     ktime_set(0, ir->polling * 1000000));
 	if (missed > 1)
-		ir_dprintk("Missed ticks %ld\n", missed - 1);
+;
 
 	return HRTIMER_RESTART;
 }
@@ -538,7 +538,7 @@ static int get_key_pvr2000(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 	/* poll IR chip */
 	flags = i2c_smbus_read_byte_data(ir->c, 0x10);
 	if (flags < 0) {
-		dprintk("read error\n");
+;
 		return 0;
 	}
 	/* key pressed ? */
@@ -548,12 +548,12 @@ static int get_key_pvr2000(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 	/* read actual key code */
 	code = i2c_smbus_read_byte_data(ir->c, 0x00);
 	if (code < 0) {
-		dprintk("read error\n");
+;
 		return 0;
 	}
 
-	dprintk("IR Key/Flags: (0x%02x/0x%02x)\n",
-		   code & 0xff, flags & 0xff);
+//	dprintk("IR Key/Flags: (0x%02x/0x%02x)\n",
+;
 
 	*ir_key = code & 0xff;
 	*ir_raw = code;

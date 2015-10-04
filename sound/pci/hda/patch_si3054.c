@@ -235,7 +235,7 @@ static int si3054_init(struct hda_codec *codec)
 	} while ((val & SI3054_MEI_READY) != SI3054_MEI_READY && wait_count--);
 
 	if((val&SI3054_MEI_READY) != SI3054_MEI_READY) {
-		snd_printk(KERN_ERR "si3054: cannot initialize. EXT MID = %04x\n", val);
+;
 		/* let's pray that this is no fatal error */
 		/* return -EACCES; */
 	}

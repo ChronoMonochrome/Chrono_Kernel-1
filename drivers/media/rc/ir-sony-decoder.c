@@ -56,8 +56,8 @@ static int ir_sony_decode(struct rc_dev *dev, struct ir_raw_event ev)
 	if (!geq_margin(ev.duration, SONY_UNIT, SONY_UNIT / 2))
 		goto out;
 
-	IR_dprintk(2, "Sony decode started at state %d (%uus %s)\n",
-		   data->state, TO_US(ev.duration), TO_STR(ev.pulse));
+//	IR_dprintk(2, "Sony decode started at state %d (%uus %s)\n",
+;
 
 	switch (data->state) {
 
@@ -137,20 +137,20 @@ static int ir_sony_decode(struct rc_dev *dev, struct ir_raw_event ev)
 			function  = bitrev8((data->bits >> 12) & 0xFE);
 			break;
 		default:
-			IR_dprintk(1, "Sony invalid bitcount %u\n", data->count);
+;
 			goto out;
 		}
 
 		scancode = device << 16 | subdevice << 8 | function;
-		IR_dprintk(1, "Sony(%u) scancode 0x%05x\n", data->count, scancode);
+;
 		rc_keydown(dev, scancode, 0);
 		data->state = STATE_INACTIVE;
 		return 0;
 	}
 
 out:
-	IR_dprintk(1, "Sony decode failed at state %d (%uus %s)\n",
-		   data->state, TO_US(ev.duration), TO_STR(ev.pulse));
+//	IR_dprintk(1, "Sony decode failed at state %d (%uus %s)\n",
+;
 	data->state = STATE_INACTIVE;
 	return -EINVAL;
 }
@@ -164,7 +164,7 @@ static int __init ir_sony_decode_init(void)
 {
 	ir_raw_handler_register(&sony_handler);
 
-	printk(KERN_INFO "IR Sony protocol handler initialized\n");
+;
 	return 0;
 }
 

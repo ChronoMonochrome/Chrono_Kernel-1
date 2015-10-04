@@ -114,26 +114,26 @@ static int __devinit htcpen_isa_probe(struct device *dev, unsigned int id)
 	int err = -EBUSY;
 
 	if (!request_region(HTCPEN_PORT_IRQ_CLEAR, 1, "htcpen")) {
-		printk(KERN_ERR "htcpen: unable to get IO region 0x%x\n",
-			HTCPEN_PORT_IRQ_CLEAR);
+//		printk(KERN_ERR "htcpen: unable to get IO region 0x%x\n",
+;
 		goto request_region1_failed;
 	}
 
 	if (!request_region(HTCPEN_PORT_INIT, 1, "htcpen")) {
-		printk(KERN_ERR "htcpen: unable to get IO region 0x%x\n",
-			HTCPEN_PORT_INIT);
+//		printk(KERN_ERR "htcpen: unable to get IO region 0x%x\n",
+;
 		goto request_region2_failed;
 	}
 
 	if (!request_region(HTCPEN_PORT_INDEX, 2, "htcpen")) {
-		printk(KERN_ERR "htcpen: unable to get IO region 0x%x\n",
-			HTCPEN_PORT_INDEX);
+//		printk(KERN_ERR "htcpen: unable to get IO region 0x%x\n",
+;
 		goto request_region3_failed;
 	}
 
 	htcpen_dev = input_allocate_device();
 	if (!htcpen_dev) {
-		printk(KERN_ERR "htcpen: can't allocate device\n");
+;
 		err = -ENOMEM;
 		goto input_alloc_failed;
 	}
@@ -152,7 +152,7 @@ static int __devinit htcpen_isa_probe(struct device *dev, unsigned int id)
 	err = request_irq(HTCPEN_IRQ, htcpen_interrupt, 0, "htcpen",
 			htcpen_dev);
 	if (err) {
-		printk(KERN_ERR "htcpen: irq busy\n");
+;
 		goto request_irq_failed;
 	}
 

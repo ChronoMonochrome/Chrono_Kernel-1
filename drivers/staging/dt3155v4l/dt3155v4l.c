@@ -98,13 +98,13 @@ read_i2c_reg(void __iomem *addr, u8 index, u8 *data)
 	udelay(45); /* wait at least 43 usec for NEW_CYCLE to clear */
 	if (ioread32(addr + IIC_CSR2) & NEW_CYCLE) {
 		/* error: NEW_CYCLE not cleared */
-		printk(KERN_ERR "dt3155: NEW_CYCLE not cleared\n");
+;
 		return -EIO;
 	}
 	tmp = ioread32(addr + IIC_CSR1);
 	if (tmp & DIRECT_ABORT) {
 		/* error: DIRECT_ABORT set */
-		printk(KERN_ERR "dt3155: DIRECT_ABORT set\n");
+;
 		/* reset DIRECT_ABORT bit */
 		iowrite32(DIRECT_ABORT, addr + IIC_CSR1);
 		return -EIO;
@@ -135,12 +135,12 @@ write_i2c_reg(void __iomem *addr, u8 index, u8 data)
 	udelay(65); /* wait at least 63 usec for NEW_CYCLE to clear */
 	if (ioread32(addr + IIC_CSR2) & NEW_CYCLE) {
 		/* error: NEW_CYCLE not cleared */
-		printk(KERN_ERR "dt3155: NEW_CYCLE not cleared\n");
+;
 		return -EIO;
 	}
 	if (ioread32(addr + IIC_CSR1) & DIRECT_ABORT) {
 		/* error: DIRECT_ABORT set */
-		printk(KERN_ERR "dt3155: DIRECT_ABORT set\n");
+;
 		/* reset DIRECT_ABORT bit */
 		iowrite32(DIRECT_ABORT, addr + IIC_CSR1);
 		return -EIO;
@@ -181,12 +181,12 @@ static int wait_i2c_reg(void __iomem *addr)
 		udelay(65); /* wait at least 63 usec for NEW_CYCLE to clear */
 	if (ioread32(addr + IIC_CSR2) & NEW_CYCLE) {
 		/* error: NEW_CYCLE not cleared */
-		printk(KERN_ERR "dt3155: NEW_CYCLE not cleared\n");
+;
 		return -EIO;
 	}
 	if (ioread32(addr + IIC_CSR1) & DIRECT_ABORT) {
 		/* error: DIRECT_ABORT set */
-		printk(KERN_ERR "dt3155: DIRECT_ABORT set\n");
+;
 		/* reset DIRECT_ABORT bit */
 		iowrite32(DIRECT_ABORT, addr + IIC_CSR1);
 		return -EIO;
@@ -236,7 +236,7 @@ dt3155_stop_acq(struct dt3155_priv *pd)
 	write_i2c_reg(pd->regs, ODD_CSR, CSR_ERROR | CSR_DONE);
 	tmp = ioread32(pd->regs + CSR1) & (FLD_CRPT_EVEN | FLD_CRPT_ODD);
 	if (tmp)
-		printk(KERN_ERR "dt3155: corrupted field %u\n", tmp);
+;
 	iowrite32(FIFO_EN | SRST | FLD_CRPT_ODD | FLD_CRPT_EVEN |
 		  FLD_DN_ODD | FLD_DN_EVEN | CAP_CONT_EVEN | CAP_CONT_ODD,
 							pd->regs + CSR1);
@@ -267,7 +267,7 @@ dt3155_buf_prepare(struct videobuf_queue *q, struct videobuf_buffer *vb,
 		ret = videobuf_iolock(q, vb, NULL);
 	if (ret) {
 		vb->state = VIDEOBUF_ERROR;
-		printk(KERN_ERR "ERROR: videobuf_iolock() failed\n");
+;
 		videobuf_dma_contig_free(q, vb); /* FIXME: needed? */
 	} else
 		vb->state = VIDEOBUF_PREPARED;
@@ -324,7 +324,7 @@ dt3155_irq_handler_even(int irq, void *dev_id)
 	}
 	if ((tmp & FLD_START) && (tmp & FLD_END_ODD)) {
 		if (!ipd->stats.start_before_end++)
-			printk(KERN_ERR "dt3155: irq: START before END\n");
+;
 	}
 	/*	check for corrupted fields     */
 /*	write_i2c_reg(ipd->regs, EVEN_CSR, CSR_ERROR | CSR_DONE);	*/
@@ -332,7 +332,7 @@ dt3155_irq_handler_even(int irq, void *dev_id)
 	tmp = ioread32(ipd->regs + CSR1) & (FLD_CRPT_EVEN | FLD_CRPT_ODD);
 	if (tmp) {
 		if (!ipd->stats.corrupted_fields++)
-			printk(KERN_ERR "dt3155: corrupted field %u\n", tmp);
+;
 		iowrite32(FIFO_EN | SRST | FLD_CRPT_ODD | FLD_CRPT_EVEN |
 						FLD_DN_ODD | FLD_DN_EVEN |
 						CAP_CONT_EVEN | CAP_CONT_ODD,
@@ -413,7 +413,7 @@ dt3155_threadfn(void *arg)
 			dt3155_start_acq(pd);
 			continue;
 		} else
-			printk(KERN_DEBUG "%s(): This is a BUG\n", __func__);
+;
 done:
 		spin_unlock_irqrestore(&pd->lock, flags);
 	}
@@ -426,14 +426,14 @@ dt3155_open(struct file *filp)
 	int ret = 0;
 	struct dt3155_priv *pd = video_drvdata(filp);
 
-	printk(KERN_INFO "dt3155: open(): minor: %i\n", pd->vdev->minor);
+;
 
 	if (mutex_lock_interruptible(&pd->mux) == -EINTR)
 		return -ERESTARTSYS;
 	if (!pd->users) {
 		pd->vidq = kzalloc(sizeof(*pd->vidq), GFP_KERNEL);
 		if (!pd->vidq) {
-			printk(KERN_ERR "dt3155: error: alloc queue\n");
+;
 			ret = -ENOMEM;
 			goto err_alloc_queue;
 		}
@@ -448,14 +448,14 @@ dt3155_open(struct file *filp)
 		ret = request_irq(pd->pdev->irq, pd->irq_handler,
 						IRQF_SHARED, DT3155_NAME, pd);
 		if (ret) {
-			printk(KERN_ERR "dt3155: error: request_irq\n");
+;
 			goto err_request_irq;
 		}
 		pd->curr_buf = NULL;
 		pd->thread = kthread_run(dt3155_threadfn, pd,
 					"dt3155_thread_%i", pd->vdev->minor);
 		if (IS_ERR(pd->thread)) {
-			printk(KERN_ERR "dt3155: kthread_run() failed\n");
+;
 			ret = PTR_ERR(pd->thread);
 			goto err_thread;
 		}
@@ -482,7 +482,7 @@ dt3155_release(struct file *filp)
 	unsigned long flags;
 	int ret = 0;
 
-	printk(KERN_INFO "dt3155: release(): minor: %i\n", pd->vdev->minor);
+;
 
 	if (mutex_lock_interruptible(&pd->mux) == -EINTR)
 		return -ERESTARTSYS;
@@ -717,7 +717,7 @@ done:
 	if (b->count)
 		ret = videobuf_reqbufs(q, b);
 	else { /* FIXME: is it necessary? */
-		printk(KERN_DEBUG "dt3155: request to free buffers\n");
+;
 		/* ret = videobuf_mmap_free(q); */
 		ret = dt3155_ioc_streamoff(filp, p,
 						V4L2_BUF_TYPE_VIDEO_CAPTURE);
@@ -952,8 +952,8 @@ dt3155_init_board(struct pci_dev *dev)
 	buf_cpu = dma_alloc_coherent(&dev->dev, DT3155_BUF_SIZE, &buf_dma,
 								GFP_KERNEL);
 	if (!buf_cpu) {
-		printk(KERN_ERR "dt3155: dma_alloc_coherent "
-					"(in dt3155_init_board) failed\n");
+//		printk(KERN_ERR "dt3155: dma_alloc_coherent "
+;
 		return -ENOMEM;
 	}
 	iowrite32(buf_dma, pd->regs + EVEN_DMA_START);
@@ -977,7 +977,7 @@ dt3155_init_board(struct pci_dev *dev)
 	/*  deallocate memory  */
 	dma_free_coherent(&dev->dev, DT3155_BUF_SIZE, buf_cpu, buf_dma);
 	if (tmp & BUSY_EVEN) {
-		printk(KERN_ERR "dt3155: BUSY_EVEN not cleared\n");
+;
 		return -EIO;
 	}
 	return 0;
@@ -1063,25 +1063,25 @@ dt3155_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	int err;
 	struct dt3155_priv *pd;
 
-	printk(KERN_INFO "dt3155: probe()\n");
+;
 	err = dma_set_mask(&dev->dev, DMA_BIT_MASK(32));
 	if (err) {
-		printk(KERN_ERR "dt3155: cannot set dma_mask\n");
+;
 		return -ENODEV;
 	}
 	err = dma_set_coherent_mask(&dev->dev, DMA_BIT_MASK(32));
 	if (err) {
-		printk(KERN_ERR "dt3155: cannot set dma_coherent_mask\n");
+;
 		return -ENODEV;
 	}
 	pd = kzalloc(sizeof(*pd), GFP_KERNEL);
 	if (!pd) {
-		printk(KERN_ERR "dt3155: cannot allocate dt3155_priv\n");
+;
 		return -ENOMEM;
 	}
 	pd->vdev = video_device_alloc();
 	if (!pd->vdev) {
-		printk(KERN_ERR "dt3155: cannot allocate vdev structure\n");
+;
 		goto err_video_device_alloc;
 	}
 	*pd->vdev = dt3155_vdev;
@@ -1097,7 +1097,7 @@ dt3155_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	pd->config = config_init;
 	err = pci_enable_device(pd->pdev);
 	if (err) {
-		printk(KERN_ERR "dt3155: pci_dev not enabled\n");
+;
 		goto err_enable_dev;
 	}
 	err = pci_request_region(pd->pdev, 0, pci_name(pd->pdev));
@@ -1106,24 +1106,24 @@ dt3155_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	pd->regs = pci_iomap(pd->pdev, 0, pci_resource_len(pd->pdev, 0));
 	if (!pd->regs) {
 		err = -ENOMEM;
-		printk(KERN_ERR "dt3155: pci_iomap failed\n");
+;
 		goto err_pci_iomap;
 	}
 	err = dt3155_init_board(pd->pdev);
 	if (err) {
-		printk(KERN_ERR "dt3155: dt3155_init_board failed\n");
+;
 		goto err_init_board;
 	}
 	err = video_register_device(pd->vdev, VFL_TYPE_GRABBER, -1);
 	if (err) {
-		printk(KERN_ERR "dt3155: Cannot register video device\n");
+;
 		goto err_init_board;
 	}
 	err = dt3155_alloc_coherent(&dev->dev, DT3155_CHUNK_SIZE,
 							DMA_MEMORY_MAP);
 	if (err)
-		printk(KERN_INFO "dt3155: preallocated 8 buffers\n");
-	printk(KERN_INFO "dt3155: /dev/video%i is ready\n", pd->vdev->minor);
+;
+;
 	return 0;  /*   success   */
 
 err_init_board:
@@ -1144,7 +1144,7 @@ dt3155_remove(struct pci_dev *dev)
 {
 	struct dt3155_priv *pd = pci_get_drvdata(dev);
 
-	printk(KERN_INFO "dt3155: remove()\n");
+;
 	dt3155_free_coherent(&dev->dev);
 	video_unregister_device(pd->vdev);
 	pci_iounmap(dev, pd->regs);
@@ -1175,11 +1175,11 @@ dt3155_init_module(void)
 {
 	int err;
 
-	printk(KERN_INFO "dt3155: ==================\n");
-	printk(KERN_INFO "dt3155: init()\n");
+;
+;
 	err = pci_register_driver(&pci_driver);
 	if (err) {
-		printk(KERN_ERR "dt3155: cannot register pci_driver\n");
+;
 		return err;
 	}
 	return 0; /* succes */
@@ -1189,8 +1189,8 @@ static void __exit
 dt3155_exit_module(void)
 {
 	pci_unregister_driver(&pci_driver);
-	printk(KERN_INFO "dt3155: exit()\n");
-	printk(KERN_INFO "dt3155: ==================\n");
+;
+;
 }
 
 module_init(dt3155_init_module);

@@ -40,7 +40,7 @@ static int s3c6400_serial_setsource(struct uart_port *port,
 		/* See notes about transitioning from UCLK to PCLK */
 		ucon &= ~S3C6400_UCON_UCLK0;
 	} else {
-		printk(KERN_ERR "unknown clock source %s\n", clk->name);
+;
 		return -EINVAL;
 	}
 

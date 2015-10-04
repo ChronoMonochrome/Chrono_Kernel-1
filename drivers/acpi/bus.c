@@ -57,8 +57,8 @@ EXPORT_SYMBOL(acpi_root_dir);
 #ifdef CONFIG_X86
 static int set_copy_dsdt(const struct dmi_system_id *id)
 {
-	printk(KERN_NOTICE "%s detected - "
-		"force copy of DSDT to local memory\n", id->ident);
+//	printk(KERN_NOTICE "%s detected - "
+;
 	acpi_gbl_copy_dsdt_locally = 1;
 	return 0;
 }
@@ -239,13 +239,13 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
 	}
 
 	if (!device->power.states[state].flags.valid) {
-		printk(KERN_WARNING PREFIX "Device does not support D%d\n", state);
+;
 		return -ENODEV;
 	}
 	if (device->parent && (state < device->parent->power.state)) {
-		printk(KERN_WARNING PREFIX
-			      "Cannot set device to a higher-powered"
-			      " state than parent\n");
+//		printk(KERN_WARNING PREFIX
+//			      "Cannot set device to a higher-powered"
+;
 		return -ENODEV;
 	}
 
@@ -288,9 +288,9 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
 
       end:
 	if (result)
-		printk(KERN_WARNING PREFIX
-			      "Device [%s] failed to transition to D%d\n",
-			      device->pnp.bus_id, state);
+//		printk(KERN_WARNING PREFIX
+//			      "Device [%s] failed to transition to D%d\n",
+;
 	else {
 		device->power.state = state;
 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
@@ -399,15 +399,15 @@ static void acpi_print_osc_error(acpi_handle handle,
 	int i;
 
 	if (ACPI_FAILURE(acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer)))
-		printk(KERN_DEBUG "%s\n", error);
+;
 	else {
 		printk(KERN_DEBUG "%s:%s\n", (char *)buffer.pointer, error);
 		kfree(buffer.pointer);
 	}
-	printk(KERN_DEBUG"_OSC request data:");
+;
 	for (i = 0; i < context->cap.length; i += sizeof(u32))
 		printk("%x ", *((u32 *)(context->cap.pointer + i)));
-	printk("\n");
+;
 }
 
 static acpi_status acpi_str_to_uuid(char *str, u8 *uuid)
@@ -820,11 +820,11 @@ static int __init acpi_bus_init_irq(void)
 		message = "platform specific model";
 		break;
 	default:
-		printk(KERN_WARNING PREFIX "Unknown interrupt routing model\n");
+;
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO PREFIX "Using %s for interrupt routing\n", message);
+;
 
 	arg.integer.value = acpi_irq_model;
 
@@ -847,7 +847,7 @@ void __init acpi_early_init(void)
 	if (acpi_disabled)
 		return;
 
-	printk(KERN_INFO PREFIX "Core revision %08x\n", ACPI_CA_VERSION);
+;
 
 	/* enable workarounds, unless strict ACPI spec. compliance */
 	if (!acpi_strict)
@@ -863,22 +863,22 @@ void __init acpi_early_init(void)
 
 	status = acpi_reallocate_root_table();
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR PREFIX
-		       "Unable to reallocate ACPI tables\n");
+//		printk(KERN_ERR PREFIX
+;
 		goto error0;
 	}
 
 	status = acpi_initialize_subsystem();
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR PREFIX
-		       "Unable to initialize the ACPI Interpreter\n");
+//		printk(KERN_ERR PREFIX
+;
 		goto error0;
 	}
 
 	status = acpi_load_tables();
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR PREFIX
-		       "Unable to load the System Description Tables\n");
+//		printk(KERN_ERR PREFIX
+;
 		goto error0;
 	}
 
@@ -906,7 +906,7 @@ void __init acpi_early_init(void)
 				  (ACPI_NO_HARDWARE_INIT |
 				   ACPI_NO_ACPI_ENABLE));
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR PREFIX "Unable to enable ACPI\n");
+;
 		goto error0;
 	}
 
@@ -928,8 +928,8 @@ static int __init acpi_bus_init(void)
 	status =
 	    acpi_enable_subsystem(ACPI_NO_HARDWARE_INIT | ACPI_NO_ACPI_ENABLE);
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR PREFIX
-		       "Unable to start the ACPI Interpreter\n");
+//		printk(KERN_ERR PREFIX
+;
 		goto error1;
 	}
 
@@ -946,7 +946,7 @@ static int __init acpi_bus_init(void)
 
 	status = acpi_initialize_objects(ACPI_FULL_INITIALIZATION);
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR PREFIX "Unable to initialize ACPI objects\n");
+;
 		goto error1;
 	}
 
@@ -970,7 +970,7 @@ static int __init acpi_bus_init(void)
 	 */
 	acpi_boot_ec_enable();
 
-	printk(KERN_INFO PREFIX "Interpreter enabled\n");
+;
 
 	/* Initialize sleep structures */
 	acpi_sleep_init();
@@ -989,8 +989,8 @@ static int __init acpi_bus_init(void)
 	    acpi_install_notify_handler(ACPI_ROOT_OBJECT, ACPI_SYSTEM_NOTIFY,
 					&acpi_bus_notify, NULL);
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR PREFIX
-		       "Unable to register for device notifications\n");
+//		printk(KERN_ERR PREFIX
+;
 		goto error1;
 	}
 
@@ -1014,13 +1014,13 @@ static int __init acpi_init(void)
 	int result;
 
 	if (acpi_disabled) {
-		printk(KERN_INFO PREFIX "Interpreter disabled.\n");
+;
 		return -ENODEV;
 	}
 
 	acpi_kobj = kobject_create_and_add("acpi", firmware_kobj);
 	if (!acpi_kobj) {
-		printk(KERN_WARNING "%s: kset create error\n", __func__);
+;
 		acpi_kobj = NULL;
 	}
 

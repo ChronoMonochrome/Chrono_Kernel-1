@@ -36,12 +36,12 @@ static int trace_test_buffer_cpu(struct trace_array *tr, int cpu)
 		 * with the ring buffer.
 		 */
 		if (loops++ > trace_buf_size) {
-			printk(KERN_CONT ".. bad ring buffer ");
+;
 			goto failed;
 		}
 		if (!trace_valid_entry(entry)) {
-			printk(KERN_CONT ".. invalid entry %d ",
-				entry->type);
+//			printk(KERN_CONT ".. invalid entry %d ",
+;
 			goto failed;
 		}
 	}
@@ -50,7 +50,7 @@ static int trace_test_buffer_cpu(struct trace_array *tr, int cpu)
  failed:
 	/* disable tracing */
 	tracing_disabled = 1;
-	printk(KERN_CONT ".. corrupted trace buffer .. ");
+;
 	return -1;
 }
 
@@ -94,8 +94,8 @@ static int trace_test_buffer(struct trace_array *tr, unsigned long *count)
 
 static inline void warn_failed_init_tracer(struct tracer *trace, int init_ret)
 {
-	printk(KERN_WARNING "Failed to init %s tracer, init returned %d\n",
-		trace->name, init_ret);
+//	printk(KERN_WARNING "Failed to init %s tracer, init returned %d\n",
+;
 }
 #ifdef CONFIG_FUNCTION_TRACER
 
@@ -155,12 +155,12 @@ static struct ftrace_ops test_global = {
 
 static void print_counts(void)
 {
-	printk("(%d %d %d %d %d) ",
-	       trace_selftest_test_probe1_cnt,
-	       trace_selftest_test_probe2_cnt,
-	       trace_selftest_test_probe3_cnt,
-	       trace_selftest_test_global_cnt,
-	       trace_selftest_test_dyn_cnt);
+//	printk("(%d %d %d %d %d) ",
+//	       trace_selftest_test_probe1_cnt,
+//	       trace_selftest_test_probe2_cnt,
+//	       trace_selftest_test_probe3_cnt,
+//	       trace_selftest_test_global_cnt,
+;
 }
 
 static void reset_counts(void)
@@ -182,7 +182,7 @@ static int trace_selftest_ops(int cnt)
 	int len2;
 	int ret = -1;
 
-	printk(KERN_CONT "PASSED\n");
+;
 	pr_info("Testing dynamic ftrace ops #%d: ", cnt);
 
 	ftrace_enabled = 1;
@@ -236,7 +236,7 @@ static int trace_selftest_ops(int cnt)
 	/* Add a dynamic probe */
 	dyn_ops = kzalloc(sizeof(*dyn_ops), GFP_KERNEL);
 	if (!dyn_ops) {
-		printk("MEMORY ERROR ");
+;
 		goto out;
 	}
 
@@ -313,7 +313,7 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
 	int ret;
 
 	/* The ftrace test PASSED */
-	printk(KERN_CONT "PASSED\n");
+;
 	pr_info("Testing dynamic ftrace: ");
 
 	/* enable tracing, and record the filter function */
@@ -350,7 +350,7 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
 
 	if (count) {
 		ret = -1;
-		printk(KERN_CONT ".. filter did not filter .. ");
+;
 		goto out;
 	}
 
@@ -371,7 +371,7 @@ int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
 	/* we should only have one item */
 	if (!ret && count != 1) {
 		trace->reset(tr);
-		printk(KERN_CONT ".. filter failed count=%ld ..", count);
+;
 		ret = -1;
 		goto out;
 	}
@@ -435,7 +435,7 @@ trace_selftest_startup_function(struct tracer *trace, struct trace_array *tr)
 	tracing_start();
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 		goto out;
 	}
@@ -469,7 +469,7 @@ static int trace_graph_entry_watchdog(struct ftrace_graph_ent *trace)
 	/* This is harmlessly racy, we want to approximately detect a hang */
 	if (unlikely(++graph_hang_thresh > GRAPH_MAX_FUNC_TEST)) {
 		ftrace_graph_stop();
-		printk(KERN_WARNING "BUG: Function graph tracer hang!\n");
+;
 		if (ftrace_dump_on_oops) {
 			ftrace_dump(DUMP_ALL);
 			/* ftrace_dump() disables tracing */
@@ -525,7 +525,7 @@ trace_selftest_startup_function_graph(struct tracer *trace,
 	tracing_start();
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 		goto out;
 	}
@@ -581,7 +581,7 @@ trace_selftest_startup_irqsoff(struct tracer *trace, struct trace_array *tr)
 	tracing_start();
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 	}
 
@@ -608,7 +608,7 @@ trace_selftest_startup_preemptoff(struct tracer *trace, struct trace_array *tr)
 	 * so keep it in.
 	 */
 	if (preempt_count()) {
-		printk(KERN_CONT "can not test ... force ");
+;
 		return 0;
 	}
 
@@ -643,7 +643,7 @@ trace_selftest_startup_preemptoff(struct tracer *trace, struct trace_array *tr)
 	tracing_start();
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 	}
 
@@ -670,7 +670,7 @@ trace_selftest_startup_preemptirqsoff(struct tracer *trace, struct trace_array *
 	 * so keep it in.
 	 */
 	if (preempt_count()) {
-		printk(KERN_CONT "can not test ... force ");
+;
 		return 0;
 	}
 
@@ -711,7 +711,7 @@ trace_selftest_startup_preemptirqsoff(struct tracer *trace, struct trace_array *
 		goto out;
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 		goto out;
 	}
@@ -739,7 +739,7 @@ trace_selftest_startup_preemptirqsoff(struct tracer *trace, struct trace_array *
 	ret = trace_test_buffer(&max_tr, &count);
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 		goto out;
 	}
@@ -805,7 +805,7 @@ trace_selftest_startup_wakeup(struct tracer *trace, struct trace_array *tr)
 	/* create a high prio thread */
 	p = kthread_run(trace_wakeup_test_thread, &isrt, "ftrace-test");
 	if (IS_ERR(p)) {
-		printk(KERN_CONT "Failed to create ftrace wakeup test thread ");
+;
 		return -1;
 	}
 
@@ -858,7 +858,7 @@ trace_selftest_startup_wakeup(struct tracer *trace, struct trace_array *tr)
 	kthread_stop(p);
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 	}
 
@@ -890,7 +890,7 @@ trace_selftest_startup_sched_switch(struct tracer *trace, struct trace_array *tr
 	tracing_start();
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 	}
 
@@ -922,7 +922,7 @@ trace_selftest_startup_branch(struct tracer *trace, struct trace_array *tr)
 	tracing_start();
 
 	if (!ret && !count) {
-		printk(KERN_CONT ".. no entries found ..");
+;
 		ret = -1;
 	}
 

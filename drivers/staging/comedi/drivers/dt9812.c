@@ -1075,8 +1075,8 @@ static int dt9812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->insn_write = &dt9812_ao_winsn;
 	s->insn_read = &dt9812_ao_rinsn;
 
-	printk(KERN_INFO "comedi%d: successfully attached to dt9812.\n",
-	       dev->minor);
+//	printk(KERN_INFO "comedi%d: successfully attached to dt9812.\n",
+;
 
 	down(&dt9812_mutex);
 	/* Find a slot for the comedi device */
@@ -1138,8 +1138,8 @@ static int __init usb_dt9812_init(void)
 	/* register with the USB subsystem */
 	result = usb_register(&dt9812_usb_driver);
 	if (result) {
-		printk(KERN_ERR KBUILD_MODNAME
-		       ": usb_register failed. Error number %d\n", result);
+//		printk(KERN_ERR KBUILD_MODNAME
+;
 		return result;
 	}
 	/* register with comedi */

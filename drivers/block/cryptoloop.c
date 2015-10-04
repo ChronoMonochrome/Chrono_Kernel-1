@@ -181,7 +181,7 @@ cryptoloop_release(struct loop_device *lo)
 		lo->key_data = NULL;
 		return 0;
 	}
-	printk(KERN_ERR "cryptoloop_release(): tfm == NULL?\n");
+;
 	return -EINVAL;
 }
 
@@ -200,7 +200,7 @@ init_cryptoloop(void)
 	int rc = loop_register_transfer(&cryptoloop_funcs);
 
 	if (rc)
-		printk(KERN_ERR "cryptoloop: loop_register_transfer failed\n");
+;
 	return rc;
 }
 
@@ -208,8 +208,8 @@ static void __exit
 cleanup_cryptoloop(void)
 {
 	if (loop_unregister_transfer(LO_CRYPT_CRYPTOAPI))
-		printk(KERN_ERR
-			"cryptoloop: loop_unregister_transfer failed\n");
+//		printk(KERN_ERR
+;
 }
 
 module_init(init_cryptoloop);

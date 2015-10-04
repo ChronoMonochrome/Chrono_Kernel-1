@@ -57,13 +57,13 @@ static int hppb_probe(struct parisc_device *dev)
 	if(card->hpa) {
 		card->next = kzalloc(sizeof(struct hppb_card), GFP_KERNEL);
 		if(!card->next) {
-			printk(KERN_ERR "HP-PB: Unable to allocate memory.\n");
+;
 			return 1;
 		}
 		card = card->next;
 	}
-	printk(KERN_INFO "Found GeckoBoa at 0x%llx\n",
-			(unsigned long long) dev->hpa.start);
+//	printk(KERN_INFO "Found GeckoBoa at 0x%llx\n",
+;
 
 	card->hpa = dev->hpa.start;
 	card->mmio_region.name = "HP-PB Bus";
@@ -74,10 +74,10 @@ static int hppb_probe(struct parisc_device *dev)
 
 	status = ccio_request_resource(dev, &card->mmio_region);
 	if(status < 0) {
-		printk(KERN_ERR "%s: failed to claim HP-PB "
-			"bus space (0x%08llx, 0x%08llx)\n",
-			__FILE__, (unsigned long long) card->mmio_region.start,
-			(unsigned long long) card->mmio_region.end);
+//		printk(KERN_ERR "%s: failed to claim HP-PB "
+//			"bus space (0x%08llx, 0x%08llx)\n",
+//			__FILE__, (unsigned long long) card->mmio_region.start,
+;
 	}
 
         return 0;

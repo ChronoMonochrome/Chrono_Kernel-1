@@ -807,7 +807,7 @@ void sas_ata_strategy_handler(struct Scsi_Host *shost)
 		if (!dev_is_sata(ddev))
 			continue;
 
-		ata_port_printk(ap, KERN_DEBUG, "sas eh calling libata port error handler");
+;
 		ata_scsi_port_error_handler(shost, ap);
 	}
 }
@@ -853,7 +853,7 @@ int sas_ata_eh(struct Scsi_Host *shost, struct list_head *work_q,
 		}
 
 		if (!list_empty(&sata_q)) {
-			ata_port_printk(ap, KERN_DEBUG, "sas eh calling libata cmd error handler\n");
+;
 			ata_scsi_cmd_error_handler(shost, ap, &sata_q);
 			/*
 			 * ata's error handler may leave the cmd on the list

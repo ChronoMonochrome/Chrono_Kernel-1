@@ -665,7 +665,7 @@ static int hal2_capture_trigger(struct snd_pcm_substream *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_START:
 		hal2->adc.pcm_indirect.hw_io = hal2->adc.buffer_dma;
 		hal2->adc.pcm_indirect.hw_data = 0;
-		printk(KERN_DEBUG "buffer_dma %x\n", hal2->adc.buffer_dma);
+;
 		hal2_start_adc(hal2);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -799,8 +799,8 @@ static int hal2_detect(struct snd_hal2 *hal2)
 	major = (rev & H2_REV_MAJOR_CHIP_M) >> 4;
 	minor = (rev & H2_REV_MINOR_CHIP_M);
 
-	printk(KERN_INFO "SGI HAL2 revision %i.%i.%i\n",
-	       board, major, minor);
+//	printk(KERN_INFO "SGI HAL2 revision %i.%i.%i\n",
+;
 
 	return 0;
 }
@@ -819,7 +819,7 @@ static int hal2_create(struct snd_card *card, struct snd_hal2 **rchip)
 
 	if (request_irq(SGI_HPCDMA_IRQ, hal2_interrupt, IRQF_SHARED,
 			"SGI HAL2", hal2)) {
-		printk(KERN_ERR "HAL2: Can't get irq %d\n", SGI_HPCDMA_IRQ);
+;
 		kfree(hal2);
 		return -EAGAIN;
 	}

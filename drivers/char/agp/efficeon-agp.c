@@ -108,7 +108,7 @@ static int efficeon_fetch_size(void)
 
 static void efficeon_tlbflush(struct agp_memory * mem)
 {
-	printk(KERN_DEBUG PFX "efficeon_tlbflush()\n");
+;
 	pci_write_config_dword(agp_bridge->dev, INTEL_AGPCTRL, 0x2200);
 	pci_write_config_dword(agp_bridge->dev, INTEL_AGPCTRL, 0x2280);
 }
@@ -118,7 +118,7 @@ static void efficeon_cleanup(void)
 	u16 temp;
 	struct aper_size_info_lvl2 *previous_size;
 
-	printk(KERN_DEBUG PFX "efficeon_cleanup()\n");
+;
 	previous_size = A_SIZE_LVL2(agp_bridge->previous_size);
 	pci_read_config_word(agp_bridge->dev, INTEL_NBXCFG, &temp);
 	pci_write_config_word(agp_bridge->dev, INTEL_NBXCFG, temp & ~(1 << 9));
@@ -132,7 +132,7 @@ static int efficeon_configure(void)
 	u16 temp2;
 	struct aper_size_info_lvl2 *current_size;
 
-	printk(KERN_DEBUG PFX "efficeon_configure()\n");
+;
 
 	current_size = A_SIZE_LVL2(agp_bridge->current_size);
 
@@ -168,12 +168,12 @@ static int efficeon_free_gatt_table(struct agp_bridge_data *bridge)
 			free_page(page);
 			freed++;
 		}
-		printk(KERN_DEBUG PFX "efficeon_free_gatt_table(%p, %02x, %08x)\n",
-			agp_bridge->dev, EFFICEON_ATTPAGE, index);
+//		printk(KERN_DEBUG PFX "efficeon_free_gatt_table(%p, %02x, %08x)\n",
+;
 		pci_write_config_dword(agp_bridge->dev,
 			EFFICEON_ATTPAGE, index);
 	}
-	printk(KERN_DEBUG PFX "efficeon_free_gatt_table() freed %d pages\n", freed);
+;
 	return 0;
 }
 
@@ -201,7 +201,7 @@ static int efficeon_create_gatt_table(struct agp_bridge_data *bridge)
 
 	num_entries = A_SIZE_LVL2(agp_bridge->current_size)->num_entries;
 
-	printk(KERN_DEBUG PFX "efficeon_create_gatt_table(%d)\n", num_entries);
+;
 
 	/* There are 2^10 PTE pages per PDE page */
 	BUG_ON(num_entries & 0x3ff);
@@ -243,7 +243,7 @@ static int efficeon_insert_memory(struct agp_memory * mem, off_t pg_start, int t
 	const int clflush_chunk = ((cpuid_ebx(1) >> 8) & 0xff) << 3;
 	const unsigned long clflush_mask = ~(clflush_chunk-1);
 
-	printk(KERN_DEBUG PFX "efficeon_insert_memory(%lx, %d)\n", pg_start, count);
+;
 
 	num_entries = A_SIZE_LVL2(agp_bridge->current_size)->num_entries;
 	if ((pg_start + mem->page_count) > num_entries)
@@ -289,7 +289,7 @@ static int efficeon_remove_memory(struct agp_memory * mem, off_t pg_start, int t
 {
 	int i, count = mem->page_count, num_entries;
 
-	printk(KERN_DEBUG PFX "efficeon_remove_memory(%lx, %d)\n", pg_start, count);
+;
 
 	num_entries = A_SIZE_LVL2(agp_bridge->current_size)->num_entries;
 
@@ -356,12 +356,12 @@ static int __devinit agp_efficeon_probe(struct pci_dev *pdev,
 
 	/* Probe for Efficeon controller */
 	if (pdev->device != PCI_DEVICE_ID_EFFICEON) {
-		printk(KERN_ERR PFX "Unsupported Efficeon chipset (device id: %04x)\n",
-		    pdev->device);
+//		printk(KERN_ERR PFX "Unsupported Efficeon chipset (device id: %04x)\n",
+;
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO PFX "Detected Transmeta Efficeon TM8000 series chipset\n");
+;
 
 	bridge = agp_alloc_bridge();
 	if (!bridge)
@@ -377,7 +377,7 @@ static int __devinit agp_efficeon_probe(struct pci_dev *pdev,
 	* 20030610 - hamish@zot.org
 	*/
 	if (pci_enable_device(pdev)) {
-		printk(KERN_ERR PFX "Unable to Enable PCI device\n");
+;
 		agp_put_bridge(bridge);
 		return -ENODEV;
 	}
@@ -390,7 +390,7 @@ static int __devinit agp_efficeon_probe(struct pci_dev *pdev,
 	r = &pdev->resource[0];
 	if (!r->start && r->end) {
 		if (pci_assign_resource(pdev, 0)) {
-			printk(KERN_ERR PFX "could not assign resource 0\n");
+;
 			agp_put_bridge(bridge);
 			return -ENODEV;
 		}
@@ -423,7 +423,7 @@ static int agp_efficeon_suspend(struct pci_dev *dev, pm_message_t state)
 
 static int agp_efficeon_resume(struct pci_dev *pdev)
 {
-	printk(KERN_DEBUG PFX "agp_efficeon_resume()\n");
+;
 	return efficeon_configure();
 }
 #endif

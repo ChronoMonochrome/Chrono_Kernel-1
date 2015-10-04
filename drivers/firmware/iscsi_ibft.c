@@ -223,15 +223,15 @@ static ssize_t sprintf_string(char *str, int len, char *buf)
 static int ibft_verify_hdr(char *t, struct ibft_hdr *hdr, int id, int length)
 {
 	if (hdr->id != id) {
-		printk(KERN_ERR "iBFT error: We expected the %s " \
-				"field header.id to have %d but " \
-				"found %d instead!\n", t, id, hdr->id);
+//		printk(KERN_ERR "iBFT error: We expected the %s " \
+//				"field header.id to have %d but " \
+;
 		return -ENODEV;
 	}
 	if (hdr->length != length) {
-		printk(KERN_ERR "iBFT error: We expected the %s " \
-				"field header.length to have %d but " \
-				"found %d instead!\n", t, length, hdr->length);
+//		printk(KERN_ERR "iBFT error: We expected the %s " \
+//				"field header.length to have %d but " \
+;
 		return -ENODEV;
 	}
 
@@ -413,16 +413,16 @@ static int __init ibft_check_device(void)
 
 	/* Sanity checking of iBFT. */
 	if (ibft_addr->header.revision != 1) {
-		printk(KERN_ERR "iBFT module supports only revision 1, " \
-				"while this is %d.\n",
-				ibft_addr->header.revision);
+//		printk(KERN_ERR "iBFT module supports only revision 1, " \
+//				"while this is %d.\n",
+;
 		return -ENOENT;
 	}
 	for (pos = (u8 *)ibft_addr; pos < (u8 *)ibft_addr + len; pos++)
 		csum += *pos;
 
 	if (csum) {
-		printk(KERN_ERR "iBFT has incorrect checksum (0x%x)!\n", csum);
+;
 		return -ENOENT;
 	}
 
@@ -638,9 +638,9 @@ static int __init ibft_create_kobject(struct acpi_table_ibft *header,
 		rc = 1;
 		break;
 	default:
-		printk(KERN_ERR "iBFT has unknown structure type (%d). " \
-				"Report this bug to %.6s!\n", hdr->id,
-				header->header.oem_id);
+//		printk(KERN_ERR "iBFT has unknown structure type (%d). " \
+//				"Report this bug to %.6s!\n", hdr->id,
+;
 		rc = 1;
 		break;
 	}
@@ -695,7 +695,7 @@ static int __init ibft_register_kobjects(struct acpi_table_ibft *header)
 	/* iBFT table safety checking */
 	rc |= ((control->hdr.index) ? -ENODEV : 0);
 	if (rc) {
-		printk(KERN_ERR "iBFT error: Control header is invalid!\n");
+;
 		return rc;
 	}
 	for (ptr = &control->initiator_off; ptr < end; ptr += sizeof(u16)) {
@@ -800,7 +800,7 @@ static int __init ibft_init(void)
 		if (rc)
 			goto out_free;
 	} else
-		printk(KERN_INFO "No iBFT detected.\n");
+;
 
 	return 0;
 

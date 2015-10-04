@@ -390,12 +390,12 @@ static bool disk_unlock_native_capacity(struct gendisk *disk)
 
 	if (bdops->unlock_native_capacity &&
 	    !(disk->flags & GENHD_FL_NATIVE_CAPACITY)) {
-		printk(KERN_CONT "enabling native capacity\n");
+;
 		bdops->unlock_native_capacity(disk);
 		disk->flags |= GENHD_FL_NATIVE_CAPACITY;
 		return true;
 	} else {
-		printk(KERN_CONT "truncated\n");
+;
 		return false;
 	}
 }
@@ -448,8 +448,8 @@ rescan:
 		 * after unlocking native capacity.
 		 */
 		if (PTR_ERR(state) == -ENOSPC) {
-			printk(KERN_WARNING "%s: partition table beyond EOD, ",
-			       disk->disk_name);
+//			printk(KERN_WARNING "%s: partition table beyond EOD, ",
+;
 			if (disk_unlock_native_capacity(disk))
 				goto rescan;
 		}
@@ -461,9 +461,9 @@ rescan:
 	 * successfully read as we could be missing some partitions.
 	 */
 	if (state->access_beyond_eod) {
-		printk(KERN_WARNING
-		       "%s: partition table partially beyond EOD, ",
-		       disk->disk_name);
+//		printk(KERN_WARNING
+//		       "%s: partition table partially beyond EOD, ",
+;
 		if (disk_unlock_native_capacity(disk))
 			goto rescan;
 	}
@@ -492,18 +492,18 @@ rescan:
 
 		from = state->parts[p].from;
 		if (from >= get_capacity(disk)) {
-			printk(KERN_WARNING
-			       "%s: p%d start %llu is beyond EOD, ",
-			       disk->disk_name, p, (unsigned long long) from);
+//			printk(KERN_WARNING
+//			       "%s: p%d start %llu is beyond EOD, ",
+;
 			if (disk_unlock_native_capacity(disk))
 				goto rescan;
 			continue;
 		}
 
 		if (from + size > get_capacity(disk)) {
-			printk(KERN_WARNING
-			       "%s: p%d size %llu extends beyond EOD, ",
-			       disk->disk_name, p, (unsigned long long) size);
+//			printk(KERN_WARNING
+//			       "%s: p%d size %llu extends beyond EOD, ",
+;
 
 			if (disk_unlock_native_capacity(disk)) {
 				/* free state and restart */
@@ -525,8 +525,8 @@ rescan:
 				     state->parts[p].flags,
 				     &state->parts[p].info);
 		if (IS_ERR(part)) {
-			printk(KERN_ERR " %s: p%d could not be added: %ld\n",
-			       disk->disk_name, p, -PTR_ERR(part));
+//			printk(KERN_ERR " %s: p%d could not be added: %ld\n",
+;
 			continue;
 		}
 #ifdef CONFIG_BLK_DEV_MD

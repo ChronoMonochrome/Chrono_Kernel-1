@@ -46,7 +46,7 @@ static int tda665x_read(struct tda665x_state *state, u8 *buf)
 
 	return err;
 exit:
-	printk(KERN_ERR "%s: I/O Error err=<%d>\n", __func__, err);
+;
 	return err;
 }
 
@@ -62,7 +62,7 @@ static int tda665x_write(struct tda665x_state *state, u8 *buf, u8 length)
 
 	return err;
 exit:
-	printk(KERN_ERR "%s: I/O Error err=<%d>\n", __func__, err);
+;
 	return err;
 }
 
@@ -80,7 +80,7 @@ static int tda665x_get_state(struct dvb_frontend *fe,
 	case DVBFE_TUNER_BANDWIDTH:
 		break;
 	default:
-		printk(KERN_ERR "%s: Unknown parameter (param=%d)\n", __func__, param);
+;
 		err = -EINVAL;
 		break;
 	}
@@ -101,13 +101,13 @@ static int tda665x_get_status(struct dvb_frontend *fe, u32 *status)
 		goto exit;
 
 	if ((result >> 6) & 0x01) {
-		printk(KERN_DEBUG "%s: Tuner Phase Locked\n", __func__);
+;
 		*status = 1;
 	}
 
 	return err;
 exit:
-	printk(KERN_ERR "%s: I/O Error\n", __func__);
+;
 	return err;
 }
 
@@ -125,7 +125,7 @@ static int tda665x_set_state(struct dvb_frontend *fe,
 
 		frequency = tstate->frequency;
 		if ((frequency < config->frequency_max) || (frequency > config->frequency_min)) {
-			printk(KERN_ERR "%s: Frequency beyond limits, frequency=%d\n", __func__, frequency);
+;
 			return -EINVAL;
 		}
 
@@ -179,7 +179,7 @@ static int tda665x_set_state(struct dvb_frontend *fe,
 			goto exit;
 
 		/* sleep for some time */
-		printk(KERN_DEBUG "%s: Waiting to Phase LOCK\n", __func__);
+;
 		msleep(20);
 		/* check status */
 		err = tda665x_get_status(fe, &status);
@@ -187,19 +187,19 @@ static int tda665x_set_state(struct dvb_frontend *fe,
 			goto exit;
 
 		if (status == 1) {
-			printk(KERN_DEBUG "%s: Tuner Phase locked: status=%d\n", __func__, status);
+;
 			state->frequency = frequency; /* cache successful state */
 		} else {
-			printk(KERN_ERR "%s: No Phase lock: status=%d\n", __func__, status);
+;
 		}
 	} else {
-		printk(KERN_ERR "%s: Unknown parameter (param=%d)\n", __func__, param);
+;
 		return -EINVAL;
 	}
 
 	return 0;
 exit:
-	printk(KERN_ERR "%s: I/O Error\n", __func__);
+;
 	return err;
 }
 
@@ -243,7 +243,7 @@ struct dvb_frontend *tda665x_attach(struct dvb_frontend *fe,
 	info->frequency_max	= config->frequency_max;
 	info->frequency_step	= config->frequency_offst;
 
-	printk(KERN_DEBUG "%s: Attaching TDA665x (%s) tuner\n", __func__, info->name);
+;
 
 	return fe;
 

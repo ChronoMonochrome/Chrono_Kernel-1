@@ -73,7 +73,7 @@ int snd_vx_setup_firmware(struct vx_core *chip)
 			continue;
 		sprintf(path, "vx/%s", fw_files[chip->type][i]);
 		if (request_firmware(&fw, path, chip->dev)) {
-			snd_printk(KERN_ERR "vx: can't load firmware %s\n", path);
+;
 			return -ENOENT;
 		}
 		err = chip->ops->load_dsp(chip, i, fw);
@@ -165,14 +165,14 @@ static int vx_hwdep_dsp_load(struct snd_hwdep *hw,
 
 	fw = kmalloc(sizeof(*fw), GFP_KERNEL);
 	if (! fw) {
-		snd_printk(KERN_ERR "cannot allocate firmware\n");
+;
 		return -ENOMEM;
 	}
 	fw->size = dsp->length;
 	fw->data = vmalloc(fw->size);
 	if (! fw->data) {
-		snd_printk(KERN_ERR "cannot allocate firmware image (length=%d)\n",
-			   (int)fw->size);
+//		snd_printk(KERN_ERR "cannot allocate firmware image (length=%d)\n",
+;
 		kfree(fw);
 		return -ENOMEM;
 	}

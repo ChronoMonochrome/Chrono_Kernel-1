@@ -887,9 +887,9 @@ static void pmcraid_erp_done(struct pmcraid_cmd *cmd)
 
 	if (PMCRAID_IOASC_SENSE_KEY(ioasc) > 0) {
 		scsi_cmd->result |= (DID_ERROR << 16);
-		scmd_printk(KERN_INFO, scsi_cmd,
-			    "command CDB[0] = %x failed with IOASC: 0x%08X\n",
-			    cmd->ioa_cb->ioarcb.cdb[0], ioasc);
+//		scmd_printk(KERN_INFO, scsi_cmd,
+//			    "command CDB[0] = %x failed with IOASC: 0x%08X\n",
+;
 	}
 
 	/* if we had allocated sense buffers for request sense, copy the sense
@@ -2794,8 +2794,8 @@ static int pmcraid_reset_device(
 	res = scsi_cmd->device->hostdata;
 
 	if (!res) {
-		sdev_printk(KERN_ERR, scsi_cmd->device,
-			    "reset_device: NULL resource pointer\n");
+//		sdev_printk(KERN_ERR, scsi_cmd->device,
+;
 		return FAILED;
 	}
 
@@ -3033,8 +3033,8 @@ static int pmcraid_eh_abort_handler(struct scsi_cmnd *scsi_cmd)
 	pinstance =
 		(struct pmcraid_instance *)scsi_cmd->device->host->hostdata;
 
-	scmd_printk(KERN_INFO, scsi_cmd,
-		    "I/O command timed out, aborting it.\n");
+//	scmd_printk(KERN_INFO, scsi_cmd,
+;
 
 	res = scsi_cmd->device->hostdata;
 
@@ -3105,8 +3105,8 @@ static int pmcraid_eh_abort_handler(struct scsi_cmnd *scsi_cmd)
  */
 static int pmcraid_eh_device_reset_handler(struct scsi_cmnd *scmd)
 {
-	scmd_printk(KERN_INFO, scmd,
-		    "resetting device due to an I/O command timeout.\n");
+//	scmd_printk(KERN_INFO, scmd,
+;
 	return pmcraid_reset_device(scmd,
 				    PMCRAID_INTERNAL_TIMEOUT,
 				    RESET_DEVICE_LUN);
@@ -3114,8 +3114,8 @@ static int pmcraid_eh_device_reset_handler(struct scsi_cmnd *scmd)
 
 static int pmcraid_eh_bus_reset_handler(struct scsi_cmnd *scmd)
 {
-	scmd_printk(KERN_INFO, scmd,
-		    "Doing bus reset due to an I/O command timeout.\n");
+//	scmd_printk(KERN_INFO, scmd,
+;
 	return pmcraid_reset_device(scmd,
 				    PMCRAID_RESET_BUS_TIMEOUT,
 				    RESET_DEVICE_BUS);
@@ -3123,8 +3123,8 @@ static int pmcraid_eh_bus_reset_handler(struct scsi_cmnd *scmd)
 
 static int pmcraid_eh_target_reset_handler(struct scsi_cmnd *scmd)
 {
-	scmd_printk(KERN_INFO, scmd,
-		    "Doing target reset due to an I/O command timeout.\n");
+//	scmd_printk(KERN_INFO, scmd,
+;
 	return pmcraid_reset_device(scmd,
 				    PMCRAID_INTERNAL_TIMEOUT,
 				    RESET_DEVICE_TARGET);
@@ -3272,12 +3272,12 @@ static int pmcraid_build_ioadl(
 	nseg = scsi_dma_map(scsi_cmd);
 
 	if (nseg < 0) {
-		scmd_printk(KERN_ERR, scsi_cmd, "scsi_map_dma failed!\n");
+;
 		return -1;
 	} else if (nseg > PMCRAID_MAX_IOADLS) {
 		scsi_dma_unmap(scsi_cmd);
-		scmd_printk(KERN_ERR, scsi_cmd,
-			"sg count is (%d) more than allowed!\n", nseg);
+//		scmd_printk(KERN_ERR, scsi_cmd,
+;
 		return -1;
 	}
 
@@ -4425,7 +4425,7 @@ static irqreturn_t pmcraid_isr(int irq, void *dev_id)
 	 * isrs, it may be possible that the current interrupt is not from IOA
 	 */
 	if (!dev_id) {
-		printk(KERN_INFO "%s(): NULL host pointer\n", __func__);
+;
 		return IRQ_NONE;
 	}
 	hrrq_vector = (struct pmcraid_isr_param *)dev_id;

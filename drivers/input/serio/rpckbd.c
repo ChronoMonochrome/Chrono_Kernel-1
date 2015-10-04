@@ -84,12 +84,12 @@ static int rpckbd_open(struct serio *port)
 	iomd_readb(IOMD_KARTRX);
 
 	if (request_irq(IRQ_KEYBOARDRX, rpckbd_rx, 0, "rpckbd", port) != 0) {
-		printk(KERN_ERR "rpckbd.c: Could not allocate keyboard receive IRQ\n");
+;
 		return -EBUSY;
 	}
 
 	if (request_irq(IRQ_KEYBOARDTX, rpckbd_tx, 0, "rpckbd", port) != 0) {
-		printk(KERN_ERR "rpckbd.c: Could not allocate keyboard transmit IRQ\n");
+;
 		free_irq(IRQ_KEYBOARDRX, port);
 		return -EBUSY;
 	}

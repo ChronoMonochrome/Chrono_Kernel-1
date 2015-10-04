@@ -202,7 +202,7 @@ static int mark_swapfiles(struct swap_map_handle *handle, unsigned int flags)
 		error = hib_bio_write_page(swsusp_resume_block,
 					swsusp_header, NULL);
 	} else {
-		printk(KERN_ERR "PM: Swap header not found!\n");
+;
 		error = -ENODEV;
 	}
 	return error;
@@ -278,8 +278,8 @@ static int get_swap_writer(struct swap_map_handle *handle)
 	ret = swsusp_swap_check();
 	if (ret) {
 		if (ret != -ENOSPC)
-			printk(KERN_ERR "PM: Cannot find swap device, try "
-					"swapon -a.\n");
+//			printk(KERN_ERR "PM: Cannot find swap device, try "
+;
 		return ret;
 	}
 	handle->cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
@@ -347,9 +347,9 @@ static int swap_writer_finish(struct swap_map_handle *handle,
 {
 	if (!error) {
 		flush_swap_writer(handle);
-		printk(KERN_INFO "PM: S");
+;
 		error = mark_swapfiles(handle, flags);
-		printk("|\n");
+;
 	}
 
 	if (error)
@@ -388,8 +388,8 @@ static int save_image(struct swap_map_handle *handle,
 	struct timeval start;
 	struct timeval stop;
 
-	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
-		nr_to_write);
+//	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
+;
 	m = nr_to_write / 100;
 	if (!m)
 		m = 1;
@@ -404,7 +404,7 @@ static int save_image(struct swap_map_handle *handle,
 		if (ret)
 			break;
 		if (!(nr_pages % m))
-			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
+;
 		nr_pages++;
 	}
 	err2 = hib_wait_on_bio_chain(&bio);
@@ -412,9 +412,9 @@ static int save_image(struct swap_map_handle *handle,
 	if (!ret)
 		ret = err2;
 	if (!ret)
-		printk(KERN_CONT "\b\b\b\bdone\n");
+;
 	else
-		printk(KERN_CONT "\n");
+;
 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
 	return ret;
 }
@@ -442,20 +442,20 @@ static int save_image_lzo(struct swap_map_handle *handle,
 
 	page = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
 	if (!page) {
-		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+;
 		return -ENOMEM;
 	}
 
 	wrk = vmalloc(LZO1X_1_MEM_COMPRESS);
 	if (!wrk) {
-		printk(KERN_ERR "PM: Failed to allocate LZO workspace\n");
+;
 		free_page((unsigned long)page);
 		return -ENOMEM;
 	}
 
 	unc = vmalloc(LZO_UNC_SIZE);
 	if (!unc) {
-		printk(KERN_ERR "PM: Failed to allocate LZO uncompressed\n");
+;
 		vfree(wrk);
 		free_page((unsigned long)page);
 		return -ENOMEM;
@@ -463,16 +463,16 @@ static int save_image_lzo(struct swap_map_handle *handle,
 
 	cmp = vmalloc(LZO_CMP_SIZE);
 	if (!cmp) {
-		printk(KERN_ERR "PM: Failed to allocate LZO compressed\n");
+;
 		vfree(unc);
 		vfree(wrk);
 		free_page((unsigned long)page);
 		return -ENOMEM;
 	}
 
-	printk(KERN_INFO
-		"PM: Compressing and saving image data (%u pages) ...     ",
-		nr_to_write);
+//	printk(KERN_INFO
+//		"PM: Compressing and saving image data (%u pages) ...     ",
+;
 	m = nr_to_write / 100;
 	if (!m)
 		m = 1;
@@ -491,7 +491,7 @@ static int save_image_lzo(struct swap_map_handle *handle,
 			memcpy(unc + off, data_of(*snapshot), PAGE_SIZE);
 
 			if (!(nr_pages % m))
-				printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
+;
 			nr_pages++;
 		}
 
@@ -502,13 +502,13 @@ static int save_image_lzo(struct swap_map_handle *handle,
 		ret = lzo1x_1_compress(unc, unc_len,
 		                       cmp + LZO_HEADER, &cmp_len, wrk);
 		if (ret < 0) {
-			printk(KERN_ERR "PM: LZO compression failed\n");
+;
 			break;
 		}
 
 		if (unlikely(!cmp_len ||
 		             cmp_len > lzo1x_worst_compress(unc_len))) {
-			printk(KERN_ERR "PM: Invalid LZO compressed length\n");
+;
 			ret = -1;
 			break;
 		}
@@ -537,9 +537,9 @@ out_finish:
 	if (!ret)
 		ret = err2;
 	if (!ret)
-		printk(KERN_CONT "\b\b\b\bdone\n");
+;
 	else
-		printk(KERN_CONT "\n");
+;
 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
 
 	vfree(cmp);
@@ -590,11 +590,11 @@ int swsusp_write(unsigned int flags)
 	pages = snapshot_get_image_size();
 	error = get_swap_writer(&handle);
 	if (error) {
-		printk(KERN_ERR "PM: Cannot get swap writer\n");
+;
 		return error;
 	}
 	if (!enough_swap(pages, flags)) {
-		printk(KERN_ERR "PM: Not enough free swap\n");
+;
 		error = -ENOSPC;
 		goto out_finish;
 	}
@@ -704,8 +704,8 @@ static int load_image(struct swap_map_handle *handle,
 	int err2;
 	unsigned nr_pages;
 
-	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
-		nr_to_read);
+//	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
+;
 	m = nr_to_read / 100;
 	if (!m)
 		m = 1;
@@ -724,7 +724,7 @@ static int load_image(struct swap_map_handle *handle,
 		if (error)
 			break;
 		if (!(nr_pages % m))
-			printk("\b\b\b\b%3d%%", nr_pages / m);
+;
 		nr_pages++;
 	}
 	err2 = hib_wait_on_bio_chain(&bio);
@@ -732,12 +732,12 @@ static int load_image(struct swap_map_handle *handle,
 	if (!error)
 		error = err2;
 	if (!error) {
-		printk("\b\b\b\bdone\n");
+;
 		snapshot_write_finalize(snapshot);
 		if (!snapshot_image_loaded(snapshot))
 			error = -ENODATA;
 	} else
-		printk("\n");
+;
 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
 	return error;
 }
@@ -764,7 +764,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
 	for (i = 0; i < LZO_CMP_PAGES; i++) {
 		page[i] = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
 		if (!page[i]) {
-			printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+;
 
 			while (i)
 				free_page((unsigned long)page[--i]);
@@ -775,7 +775,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
 
 	unc = vmalloc(LZO_UNC_SIZE);
 	if (!unc) {
-		printk(KERN_ERR "PM: Failed to allocate LZO uncompressed\n");
+;
 
 		for (i = 0; i < LZO_CMP_PAGES; i++)
 			free_page((unsigned long)page[i]);
@@ -785,7 +785,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
 
 	cmp = vmalloc(LZO_CMP_SIZE);
 	if (!cmp) {
-		printk(KERN_ERR "PM: Failed to allocate LZO compressed\n");
+;
 
 		vfree(unc);
 		for (i = 0; i < LZO_CMP_PAGES; i++)
@@ -794,9 +794,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
 		return -ENOMEM;
 	}
 
-	printk(KERN_INFO
-		"PM: Loading and decompressing image data (%u pages) ...     ",
-		nr_to_read);
+//	printk(KERN_INFO
+//		"PM: Loading and decompressing image data (%u pages) ...     ",
+;
 	m = nr_to_read / 100;
 	if (!m)
 		m = 1;
@@ -816,7 +816,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
 		cmp_len = *(size_t *)page[0];
 		if (unlikely(!cmp_len ||
 		             cmp_len > lzo1x_worst_compress(LZO_UNC_SIZE))) {
-			printk(KERN_ERR "PM: Invalid LZO compressed length\n");
+;
 			error = -1;
 			break;
 		}
@@ -841,14 +841,14 @@ static int load_image_lzo(struct swap_map_handle *handle,
 		error = lzo1x_decompress_safe(cmp + LZO_HEADER, cmp_len,
 		                              unc, &unc_len);
 		if (error < 0) {
-			printk(KERN_ERR "PM: LZO decompression failed\n");
+;
 			break;
 		}
 
 		if (unlikely(!unc_len ||
 		             unc_len > LZO_UNC_SIZE ||
 		             unc_len & (PAGE_SIZE - 1))) {
-			printk(KERN_ERR "PM: Invalid LZO uncompressed length\n");
+;
 			error = -1;
 			break;
 		}
@@ -857,7 +857,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
 			memcpy(data_of(*snapshot), unc + off, PAGE_SIZE);
 
 			if (!(nr_pages % m))
-				printk("\b\b\b\b%3d%%", nr_pages / m);
+;
 			nr_pages++;
 
 			error = snapshot_write_next(snapshot);
@@ -869,12 +869,12 @@ static int load_image_lzo(struct swap_map_handle *handle,
 out_finish:
 	do_gettimeofday(&stop);
 	if (!error) {
-		printk("\b\b\b\bdone\n");
+;
 		snapshot_write_finalize(snapshot);
 		if (!snapshot_image_loaded(snapshot))
 			error = -ENODATA;
 	} else
-		printk("\n");
+;
 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
 
 	vfree(cmp);

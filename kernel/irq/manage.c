@@ -844,9 +844,9 @@ void exit_irq_thread(void)
 	if (!tsk->irqaction)
 		return;
 
-	printk(KERN_ERR
-	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
-	       tsk->comm ? tsk->comm : "", tsk->pid, tsk->irqaction->irq);
+//	printk(KERN_ERR
+//	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
+;
 
 	desc = irq_to_desc(tsk->irqaction->irq);
 
@@ -1114,9 +1114,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 mismatch:
 #ifdef CONFIG_DEBUG_SHIRQ
 	if (!(new->flags & IRQF_PROBE_SHARED)) {
-		printk(KERN_ERR "IRQ handler type mismatch for IRQ %d\n", irq);
+;
 		if (old_name)
-			printk(KERN_ERR "current handler: %s\n", old_name);
+;
 		dump_stack();
 	}
 #endif

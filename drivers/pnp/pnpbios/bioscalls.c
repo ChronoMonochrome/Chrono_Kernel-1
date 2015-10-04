@@ -139,12 +139,12 @@ static inline u16 call_pnp_bios(u16 func, u16 arg1, u16 arg2, u16 arg3,
 
 	/* If we get here and this is set then the PnP BIOS faulted on us. */
 	if (pnp_bios_is_utter_crap) {
-		printk(KERN_ERR
-		       "PnPBIOS: Warning! Your PnP BIOS caused a fatal error. Attempting to continue\n");
-		printk(KERN_ERR
-		       "PnPBIOS: You may need to reboot with the \"pnpbios=off\" option to operate stably\n");
-		printk(KERN_ERR
-		       "PnPBIOS: Check with your vendor for an updated BIOS\n");
+//		printk(KERN_ERR
+;
+//		printk(KERN_ERR
+;
+//		printk(KERN_ERR
+;
 	}
 
 	return status;
@@ -154,77 +154,77 @@ void pnpbios_print_status(const char *module, u16 status)
 {
 	switch (status) {
 	case PNP_SUCCESS:
-		printk(KERN_ERR "PnPBIOS: %s: function successful\n", module);
+;
 		break;
 	case PNP_NOT_SET_STATICALLY:
-		printk(KERN_ERR "PnPBIOS: %s: unable to set static resources\n",
-		       module);
+//		printk(KERN_ERR "PnPBIOS: %s: unable to set static resources\n",
+;
 		break;
 	case PNP_UNKNOWN_FUNCTION:
-		printk(KERN_ERR "PnPBIOS: %s: invalid function number passed\n",
-		       module);
+//		printk(KERN_ERR "PnPBIOS: %s: invalid function number passed\n",
+;
 		break;
 	case PNP_FUNCTION_NOT_SUPPORTED:
-		printk(KERN_ERR
-		       "PnPBIOS: %s: function not supported on this system\n",
-		       module);
+//		printk(KERN_ERR
+//		       "PnPBIOS: %s: function not supported on this system\n",
+;
 		break;
 	case PNP_INVALID_HANDLE:
-		printk(KERN_ERR "PnPBIOS: %s: invalid handle\n", module);
+;
 		break;
 	case PNP_BAD_PARAMETER:
-		printk(KERN_ERR "PnPBIOS: %s: invalid parameters were passed\n",
-		       module);
+//		printk(KERN_ERR "PnPBIOS: %s: invalid parameters were passed\n",
+;
 		break;
 	case PNP_SET_FAILED:
-		printk(KERN_ERR "PnPBIOS: %s: unable to set resources\n",
-		       module);
+//		printk(KERN_ERR "PnPBIOS: %s: unable to set resources\n",
+;
 		break;
 	case PNP_EVENTS_NOT_PENDING:
-		printk(KERN_ERR "PnPBIOS: %s: no events are pending\n", module);
+;
 		break;
 	case PNP_SYSTEM_NOT_DOCKED:
-		printk(KERN_ERR "PnPBIOS: %s: the system is not docked\n",
-		       module);
+//		printk(KERN_ERR "PnPBIOS: %s: the system is not docked\n",
+;
 		break;
 	case PNP_NO_ISA_PNP_CARDS:
-		printk(KERN_ERR
-		       "PnPBIOS: %s: no isapnp cards are installed on this system\n",
-		       module);
+//		printk(KERN_ERR
+//		       "PnPBIOS: %s: no isapnp cards are installed on this system\n",
+;
 		break;
 	case PNP_UNABLE_TO_DETERMINE_DOCK_CAPABILITIES:
-		printk(KERN_ERR
-		       "PnPBIOS: %s: cannot determine the capabilities of the docking station\n",
-		       module);
+//		printk(KERN_ERR
+//		       "PnPBIOS: %s: cannot determine the capabilities of the docking station\n",
+;
 		break;
 	case PNP_CONFIG_CHANGE_FAILED_NO_BATTERY:
-		printk(KERN_ERR
-		       "PnPBIOS: %s: unable to undock, the system does not have a battery\n",
-		       module);
+//		printk(KERN_ERR
+//		       "PnPBIOS: %s: unable to undock, the system does not have a battery\n",
+;
 		break;
 	case PNP_CONFIG_CHANGE_FAILED_RESOURCE_CONFLICT:
-		printk(KERN_ERR
-		       "PnPBIOS: %s: could not dock due to resource conflicts\n",
-		       module);
+//		printk(KERN_ERR
+//		       "PnPBIOS: %s: could not dock due to resource conflicts\n",
+;
 		break;
 	case PNP_BUFFER_TOO_SMALL:
-		printk(KERN_ERR "PnPBIOS: %s: the buffer passed is too small\n",
-		       module);
+//		printk(KERN_ERR "PnPBIOS: %s: the buffer passed is too small\n",
+;
 		break;
 	case PNP_USE_ESCD_SUPPORT:
-		printk(KERN_ERR "PnPBIOS: %s: use ESCD instead\n", module);
+;
 		break;
 	case PNP_MESSAGE_NOT_SUPPORTED:
-		printk(KERN_ERR "PnPBIOS: %s: the message is unsupported\n",
-		       module);
+//		printk(KERN_ERR "PnPBIOS: %s: the message is unsupported\n",
+;
 		break;
 	case PNP_HARDWARE_ERROR:
-		printk(KERN_ERR "PnPBIOS: %s: a hardware failure has occurred\n",
-		       module);
+//		printk(KERN_ERR "PnPBIOS: %s: a hardware failure has occurred\n",
+;
 		break;
 	default:
-		printk(KERN_ERR "PnPBIOS: %s: unexpected status 0x%x\n", module,
-		       status);
+//		printk(KERN_ERR "PnPBIOS: %s: unexpected status 0x%x\n", module,
+;
 		break;
 	}
 }

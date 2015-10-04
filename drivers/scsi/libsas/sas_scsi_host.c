@@ -841,9 +841,9 @@ int sas_change_queue_depth(struct scsi_device *scsi_dev, int new_depth,
 					res);
 	else {
 		struct domain_device *dev = sdev_to_domain_dev(scsi_dev);
-		sas_printk("device %llx LUN %x queue depth changed to 1\n",
-			   SAS_ADDR(dev->sas_addr),
-			   scsi_dev->lun);
+//		sas_printk("device %llx LUN %x queue depth changed to 1\n",
+//			   SAS_ADDR(dev->sas_addr),
+;
 		scsi_adjust_queue_depth(scsi_dev, 0, 1);
 		res = 1;
 	}

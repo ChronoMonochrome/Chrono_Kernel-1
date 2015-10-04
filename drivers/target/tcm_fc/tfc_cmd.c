@@ -66,29 +66,29 @@ void ft_dump_cmd(struct ft_cmd *cmd, const char *caller)
 		return;
 
 	se_cmd = &cmd->se_cmd;
-	printk(KERN_INFO "%s: cmd %p state %d sess %p seq %p se_cmd %p\n",
-		caller, cmd, cmd->state, cmd->sess, cmd->seq, se_cmd);
-	printk(KERN_INFO "%s: cmd %p cdb %p\n",
-		caller, cmd, cmd->cdb);
-	printk(KERN_INFO "%s: cmd %p lun %d\n", caller, cmd, cmd->lun);
+//	printk(KERN_INFO "%s: cmd %p state %d sess %p seq %p se_cmd %p\n",
+;
+//	printk(KERN_INFO "%s: cmd %p cdb %p\n",
+;
+;
 
 	task = T_TASK(se_cmd);
-	printk(KERN_INFO "%s: cmd %p task %p se_num %u buf %p len %u se_cmd_flags <0x%x>\n",
-	       caller, cmd, task, task->t_tasks_se_num,
-	       task->t_task_buf, se_cmd->data_length, se_cmd->se_cmd_flags);
+//	printk(KERN_INFO "%s: cmd %p task %p se_num %u buf %p len %u se_cmd_flags <0x%x>\n",
+//	       caller, cmd, task, task->t_tasks_se_num,
+;
 	if (task->t_mem_list)
 		list_for_each_entry(mem, task->t_mem_list, se_list)
-			printk(KERN_INFO "%s: cmd %p mem %p page %p "
-			       "len 0x%x off 0x%x\n",
-			       caller, cmd, mem,
-			       mem->se_page, mem->se_len, mem->se_off);
+//			printk(KERN_INFO "%s: cmd %p mem %p page %p "
+//			       "len 0x%x off 0x%x\n",
+//			       caller, cmd, mem,
+;
 	sp = cmd->seq;
 	if (sp) {
 		ep = fc_seq_exch(sp);
-		printk(KERN_INFO "%s: cmd %p sid %x did %x "
-			"ox_id %x rx_id %x seq_id %x e_stat %x\n",
-			caller, cmd, ep->sid, ep->did, ep->oxid, ep->rxid,
-			sp->id, ep->esb_stat);
+//		printk(KERN_INFO "%s: cmd %p sid %x did %x "
+//			"ox_id %x rx_id %x seq_id %x e_stat %x\n",
+//			caller, cmd, ep->sid, ep->did, ep->oxid, ep->rxid,
+;
 	}
 	print_hex_dump(KERN_INFO, "ft_dump_cmd ", DUMP_PREFIX_NONE,
 		16, 4, cmd->cdb, MAX_COMMAND_SIZE, 0);
@@ -297,7 +297,7 @@ int ft_is_state_remove(struct se_cmd *se_cmd)
 void ft_new_cmd_failure(struct se_cmd *se_cmd)
 {
 	/* XXX TBD */
-	printk(KERN_INFO "%s: se_cmd %p\n", __func__, se_cmd);
+;
 }
 
 /*
@@ -326,8 +326,8 @@ static void ft_recv_seq(struct fc_seq *sp, struct fc_frame *fp, void *arg)
 	case FC_RCTL_DD_SOL_CTL:	/* transfer ready */
 	case FC_RCTL_DD_DATA_DESC:	/* transfer ready */
 	default:
-		printk(KERN_INFO "%s: unhandled frame r_ctl %x\n",
-		       __func__, fh->fh_r_ctl);
+//		printk(KERN_INFO "%s: unhandled frame r_ctl %x\n",
+;
 		fc_frame_free(fp);
 		transport_generic_free_cmd(&cmd->se_cmd, 0, 1, 0);
 		break;
@@ -550,8 +550,8 @@ void ft_recv_req(struct ft_sess *sess, struct fc_frame *fp)
 	case FC_RCTL_DD_DATA_DESC:	/* transfer ready */
 	case FC_RCTL_ELS4_REQ:		/* SRR, perhaps */
 	default:
-		printk(KERN_INFO "%s: unhandled frame r_ctl %x\n",
-		       __func__, fh->fh_r_ctl);
+//		printk(KERN_INFO "%s: unhandled frame r_ctl %x\n",
+;
 		fc_frame_free(fp);
 		ft_sess_put(sess);	/* undo get from lookup */
 		break;

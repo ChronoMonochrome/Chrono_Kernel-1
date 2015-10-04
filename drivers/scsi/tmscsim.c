@@ -398,7 +398,7 @@ static __inline__ void dc390_Free_insert (struct dc390_acb* pACB, struct dc390_s
 static __inline__ void dc390_Going_append (struct dc390_dcb* pDCB, struct dc390_srb* pSRB)
 {
     pDCB->GoingSRBCnt++;
-    DEBUG0(printk("DC390: Append SRB %p to Going\n", pSRB));
+;
     /* Append to the list of Going commands */
     if( pDCB->pGoingSRB )
 	pDCB->pGoingLast->pNextSRB = pSRB;
@@ -412,7 +412,7 @@ static __inline__ void dc390_Going_append (struct dc390_dcb* pDCB, struct dc390_
 
 static __inline__ void dc390_Going_remove (struct dc390_dcb* pDCB, struct dc390_srb* pSRB)
 {
-	DEBUG0(printk("DC390: Remove SRB %p from Going\n", pSRB));
+;
    if (pSRB == pDCB->pGoingSRB)
 	pDCB->pGoingSRB = pSRB->pNextSRB;
    else
@@ -453,7 +453,7 @@ static int dc390_pci_map (struct dc390_srb* pSRB)
 		/* TODO: error handling */
 		if (pSRB->SGcount != 1)
 			error = 1;
-		DEBUG1(printk("%s(): Mapped sense buffer %p at %x\n", __func__, pcmd->sense_buffer, cmdp->saved_dma_handle));
+;
 	/* Map SG list */
 	} else if (scsi_sg_count(pcmd)) {
 		int nseg;
@@ -466,8 +466,8 @@ static int dc390_pci_map (struct dc390_srb* pSRB)
 		/* TODO: error handling */
 		if (nseg < 0)
 			error = 1;
-		DEBUG1(printk("%s(): Mapped SG %p with %d (%d) elements\n",\
-			      __func__, scsi_sglist(pcmd), nseg, scsi_sg_count(pcmd)));
+//		DEBUG1(printk("%s(): Mapped SG %p with %d (%d) elements\n",\
+;
 	/* Map single segment */
 	} else
 		pSRB->SGcount = 0;
@@ -484,11 +484,11 @@ static void dc390_pci_unmap (struct dc390_srb* pSRB)
 
 	if (pSRB->SRBFlag) {
 		pci_unmap_sg(pdev, &pSRB->Segmentx, 1, DMA_FROM_DEVICE);
-		DEBUG1(printk("%s(): Unmapped sense buffer at %x\n", __func__, cmdp->saved_dma_handle));
+;
 	} else {
 		scsi_dma_unmap(pcmd);
-		DEBUG1(printk("%s(): Unmapped SG at %p with %d elements\n",
-			      __func__, scsi_sglist(pcmd), scsi_sg_count(pcmd)));
+//		DEBUG1(printk("%s(): Unmapped SG at %p with %d elements\n",
+;
 	}
 }
 
@@ -565,12 +565,12 @@ dc390_StartSCSI( struct dc390_acb* pACB, struct dc390_dcb* pDCB, struct dc390_sr
 	pDCB->TagMask |= 1 << tag[1];
 	pSRB->TagNumber = tag[1];
 	DC390_write8(ScsiFifo, tag[1]);
-	DEBUG1(printk(KERN_INFO "DC390: Select w/DisCn for SRB %p, block tag %02x\n", pSRB, tag[1]));
+;
 	cmd = SEL_W_ATN3;
     } else {
 	/* No TagQ */
 //no_tag:
-	DEBUG1(printk(KERN_INFO "DC390: Select w%s/DisCn for SRB %p, No TagQ\n", disc_allowed ? "" : "o", pSRB));
+;
     }
 
     pSRB->SRBState = SRB_START_;
@@ -1285,9 +1285,9 @@ dc390_DataIO_Comm( struct dc390_acb* pACB, struct dc390_srb* pSRB, u8 ioDir)
     if (pSRB == pACB->pTmpSRB)
     {
 	if (pDCB)
-		printk(KERN_ERR "DC390: pSRB == pTmpSRB! (TagQ Error?) (%02i-%i)\n", pDCB->TargetID, pDCB->TargetLUN);
+;
 	else
-		printk(KERN_ERR "DC390: pSRB == pTmpSRB! (TagQ Error?) (DCB 0!)\n");
+;
 
 	/* Try to recover - some broken disks react badly to tagged INQUIRY */
 	if (pDCB && pACB->scan_devices && pDCB->GoingSRBCnt == 1) {
@@ -1392,7 +1392,7 @@ dc390_CommandPhase( struct dc390_acb* pACB, struct dc390_srb* pSRB, u8 *psstatus
 	DC390_write8 (ScsiFifo, 0);
 	DC390_write8 (ScsiFifo, SCSI_SENSE_BUFFERSIZE);
 	DC390_write8 (ScsiFifo, 0);
-	DEBUG0(printk(KERN_DEBUG "DC390: AutoReqSense (CmndPhase)!\n"));
+;
     }
     pSRB->SRBState = SRB_COMMAND;
     DC390_write8 (ScsiCmd, INFO_XFER_CMD);
@@ -1522,15 +1522,15 @@ dc390_Disconnect( struct dc390_acb* pACB )
     struct dc390_srb *pSRB, *psrb;
     u8  i, cnt;
 
-    DEBUG0(printk(KERN_INFO "DISC,"));
+;
 
-    if (!pACB->Connected) printk(KERN_ERR "DC390: Disconnect not-connected bus?\n");
+;
     pACB->Connected = 0;
     pDCB = pACB->pActiveDCB;
     if (!pDCB)
      {
-	DEBUG0(printk(KERN_ERR "ACB:%p->ActiveDCB:%p IOPort:%04x IRQ:%02x !\n",\
-	       pACB, pDCB, pACB->IOPortBase, pACB->IRQLevel));
+//	DEBUG0(printk(KERN_ERR "ACB:%p->ActiveDCB:%p IOPort:%04x IRQ:%02x !\n",\
+;
 	mdelay(400);
 	DC390_read8 (INT_Status);	/* Reset Pending INT */
 	DC390_write8 (ScsiCmd, EN_SEL_RESEL);
@@ -1586,7 +1586,7 @@ dc390_Reselect( struct dc390_acb* pACB )
     struct dc390_srb*   pSRB;
     u8  id, lun;
 
-    DEBUG0(printk(KERN_INFO "RSEL,"));
+;
     pACB->Connected = 1;
     pDCB = pACB->pActiveDCB;
     if( pDCB )
@@ -1601,7 +1601,7 @@ dc390_Reselect( struct dc390_acb* pACB )
 	    dc390_Going_remove(pDCB, pSRB);
 	    dc390_Free_insert(pACB, pSRB);
 	    pcmd->scsi_done (pcmd);
-	    DEBUG0(printk(KERN_DEBUG"DC390: Return SRB %p to free\n", pSRB));
+;
 	}
     }
     /* Get ID */
@@ -1675,8 +1675,8 @@ dc390_RequestSense(struct dc390_acb* pACB, struct dc390_dcb* pDCB, struct dc390_
 
 	pcmd = pSRB->pcmd;
 
-	REMOVABLEDEBUG(printk(KERN_INFO "DC390: RequestSense(Cmd %02x, Id %02x, LUN %02x)\n",\
-			      pcmd->cmnd[0], pDCB->TargetID, pDCB->TargetLUN));
+//	REMOVABLEDEBUG(printk(KERN_INFO "DC390: RequestSense(Cmd %02x, Id %02x, LUN %02x)\n",\
+;
 
 	pSRB->SRBFlag |= AUTO_REQSENSE;
 	pSRB->SavedTotXLen = pSRB->TotalXferredLen;
@@ -1721,8 +1721,8 @@ dc390_SRBdone( struct dc390_acb* pACB, struct dc390_dcb* pDCB, struct dc390_srb*
 	    {
 		/* Don't retry on TEST_UNIT_READY */
 		pcmd->result = MK_RES_LNX(DRIVER_SENSE, DID_OK, 0, SAM_STAT_CHECK_CONDITION);
-		REMOVABLEDEBUG(printk(KERN_INFO "Cmd=%02x, Result=%08x, XferL=%08x\n",pSRB->pcmd->cmnd[0],\
-		       (u32) pcmd->result, (u32) pSRB->TotalXferredLen));
+//		REMOVABLEDEBUG(printk(KERN_INFO "Cmd=%02x, Result=%08x, XferL=%08x\n",pSRB->pcmd->cmnd[0],\
+;
 	    } else {
 		SET_RES_DRV(pcmd->result, DRIVER_SENSE);
 		//pSRB->ScsiCmdLen	 = (u8) (pSRB->Segment1[0] >> 8);
@@ -1856,7 +1856,7 @@ static void
 dc390_ScsiRstDetect( struct dc390_acb* pACB )
 {
     printk ("DC390: Rst_Detect: laststat = %08x\n", dc390_laststatus);
-    //DEBUG0(printk(KERN_INFO "RST_DETECT,"));
+;
 
     DC390_write8 (DMA_Cmd, DMA_IDLE_CMD);
     /* Unlock before ? */
@@ -1996,7 +1996,7 @@ static int DC390_abort(struct scsi_cmnd *cmd)
 	struct dc390_acb *pACB = (struct dc390_acb*) cmd->device->host->hostdata;
 	struct dc390_dcb *pDCB = (struct dc390_dcb*) cmd->device->hostdata;
 
-	scmd_printk(KERN_WARNING, cmd, "DC390: Abort command\n");
+;
 
 	/* abort() is too stupid for already sent commands at the moment. 
 	 * If it's called we are in trouble anyway, so let's dump some info 
@@ -2004,7 +2004,7 @@ static int DC390_abort(struct scsi_cmnd *cmd)
 	dc390_dumpinfo(pACB, pDCB, NULL);
 
 	pDCB->DCBFlag |= ABORT_DEV_;
-	printk(KERN_INFO "DC390: Aborted.\n");
+;
 
 	return FAILED;
 }
@@ -2356,7 +2356,7 @@ static void __devinit dc390_check_eeprom(struct pci_dev *pdev, u8 index)
 	if (wval != 0x1234) {
 		int speed;
 
-		printk(KERN_INFO "DC390_init: No EEPROM found! Trying default settings ...\n");
+;
 
 		/*
 		 * XXX(hch): bogus, because we might have tekram and
@@ -2365,10 +2365,10 @@ static void __devinit dc390_check_eeprom(struct pci_dev *pdev, u8 index)
 		dc390_fill_with_defaults();
 
 		speed = dc390_clock_speed[tmscsim[1]];
-		printk(KERN_INFO "DC390: Used defaults: AdaptID=%i, SpeedIdx=%i (%i.%i MHz), "
-		       "DevMode=0x%02x, AdaptMode=0x%02x, TaggedCmnds=%i (%i), DelayReset=%is\n", 
-		       tmscsim[0], tmscsim[1], speed / 10, speed % 10,
-		       (u8)tmscsim[2], (u8)tmscsim[3], tmscsim[4], 2 << (tmscsim[4]), tmscsim[5]);
+//		printk(KERN_INFO "DC390: Used defaults: AdaptID=%i, SpeedIdx=%i (%i.%i MHz), "
+//		       "DevMode=0x%02x, AdaptMode=0x%02x, TaggedCmnds=%i (%i), DelayReset=%is\n", 
+//		       tmscsim[0], tmscsim[1], speed / 10, speed % 10,
+;
 	}
 }
 
@@ -2490,7 +2490,7 @@ static int __devinit dc390_probe_one(struct pci_dev *pdev,
 	pACB->pdev = pdev;
 
 	if (!request_region(io_port, shost->n_io_port, "tmscsim")) {
-		printk(KERN_ERR "DC390: register IO ports error!\n");
+;
 		goto out_host_put;
 	}
 
@@ -2499,7 +2499,7 @@ static int __devinit dc390_probe_one(struct pci_dev *pdev,
 
 	if (request_irq(pdev->irq, do_DC390_Interrupt, IRQF_SHARED,
 				"tmscsim", pACB)) {
-		printk(KERN_ERR "DC390: register IRQ error!\n");
+;
 		goto out_release_region;
 	}
 
@@ -2574,8 +2574,8 @@ static struct pci_driver dc390_driver = {
 static int __init dc390_module_init(void)
 {
 	if (!disable_clustering) {
-		printk(KERN_INFO "DC390: clustering now enabled by default. If you get problems load\n");
-		printk(KERN_INFO "       with \"disable_clustering=1\" and report to maintainers\n");
+;
+;
 	}
 
 	if (tmscsim[0] == -1 || tmscsim[0] > 15) {

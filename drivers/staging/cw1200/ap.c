@@ -15,12 +15,12 @@
 #include "bh.h"
 
 #if defined(CONFIG_CW1200_STA_DEBUG)
-#define ap_printk(...) printk(__VA_ARGS__)
-#else
-#define ap_printk(...)
-#endif
-
-static int cw1200_upload_beacon(struct cw1200_common *priv);
+//#define ap_printk(...) printk(__VA_ARGS__)
+//#else
+//#define ap_printk(...)
+//#endif
+//
+;
 static int cw1200_start_ap(struct cw1200_common *priv);
 static int cw1200_update_beaconing(struct cw1200_common *priv);
 
@@ -49,7 +49,7 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	map_link.link_id = ffs(~(priv->link_id_map | 1)) - 1;
 	if (map_link.link_id > CW1200_MAX_STA_IN_AP_MODE) {
 		sta_priv->link_id = 0;
-		printk(KERN_INFO "[AP] No more link ID available.\n");
+;
 		return -ENOENT;
 	}
 
@@ -57,8 +57,8 @@ int cw1200_sta_add(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	if (!WARN_ON(wsm_map_link(priv, &map_link))) {
 		sta_priv->link_id = map_link.link_id;
 		priv->link_id_map |= 1 << map_link.link_id;
-		ap_printk(KERN_DEBUG "[AP] STA added, link_id: %d\n",
-			map_link.link_id);
+//		ap_printk(KERN_DEBUG "[AP] STA added, link_id: %d\n",
+;
 	}
 	return 0;
 }
@@ -75,8 +75,8 @@ int cw1200_sta_remove(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 	};
 
 	if (sta_priv->link_id) {
-		ap_printk(KERN_DEBUG "[AP] STA removed, link_id: %d\n",
-			sta_priv->link_id);
+//		ap_printk(KERN_DEBUG "[AP] STA removed, link_id: %d\n",
+;
 		reset.link_id = sta_priv->link_id;
 		priv->link_id_map &= ~(1 << sta_priv->link_id);
 		sta_priv->link_id = 0;
@@ -112,7 +112,7 @@ static int cw1200_set_tim_impl(struct cw1200_common *priv, bool multicast)
 	};
 	u16 tim_offset, tim_length;
 
-	ap_printk(KERN_DEBUG "[AP] %s.\n", __func__);
+;
 
 	frame.skb = ieee80211_beacon_get_tim(priv->hw, priv->vif,
 			&tim_offset, &tim_length);
@@ -199,7 +199,7 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 	     BSS_CHANGED_ERP_PREAMBLE |
 	     BSS_CHANGED_HT |
 	     BSS_CHANGED_ERP_SLOT)) {
-		ap_printk(KERN_DEBUG "BSS_CHANGED_ASSOC.\n");
+;
 		if (info->assoc) { /* TODO: ibss_joined */
 			int dtim_interval = conf->ps_dtim_period;
 			int listen_interval = conf->listen_interval;
@@ -271,16 +271,16 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 			if (listen_interval < dtim_interval)
 				listen_interval = 0;
 
-			ap_printk(KERN_DEBUG "[STA] DTIM %d, listen %d\n",
-				dtim_interval, listen_interval);
-			ap_printk(KERN_DEBUG "[STA] Preamble: %d, " \
-				"Greenfield: %d, Aid: %d, " \
-				"Rates: 0x%.8X, Basic: 0x%.8X\n",
-				priv->association_mode.preambleType,
-				priv->association_mode.greenfieldMode,
-				priv->bss_params.aid,
-				priv->bss_params.operationalRateSet,
-				priv->association_mode.basicRateSet);
+//			ap_printk(KERN_DEBUG "[STA] DTIM %d, listen %d\n",
+;
+//			ap_printk(KERN_DEBUG "[STA] Preamble: %d, " \
+//				"Greenfield: %d, Aid: %d, " \
+//				"Rates: 0x%.8X, Basic: 0x%.8X\n",
+//				priv->association_mode.preambleType,
+//				priv->association_mode.greenfieldMode,
+//				priv->bss_params.aid,
+//				priv->bss_params.operationalRateSet,
+;
 			WARN_ON(wsm_set_association_mode(priv,
 				&priv->association_mode));
 			WARN_ON(wsm_set_bss_params(priv, &priv->bss_params));
@@ -321,16 +321,16 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 		__le32 use_cts_prot = info->use_cts_prot ?
 			__cpu_to_le32(1) : 0;
 
-		ap_printk(KERN_DEBUG "[STA] CTS protection %d\n",
-			info->use_cts_prot);
+//		ap_printk(KERN_DEBUG "[STA] CTS protection %d\n",
+;
 		WARN_ON(wsm_write_mib(priv, WSM_MIB_ID_NON_ERP_PROTECTION,
 			&use_cts_prot, sizeof(use_cts_prot)));
 	}
 	if (changed & (BSS_CHANGED_ASSOC | BSS_CHANGED_ERP_SLOT)) {
 		__le32 slot_time = info->use_short_slot ?
 			__cpu_to_le32(9) : __cpu_to_le32(20);
-		ap_printk(KERN_DEBUG "[STA] Slot time :%d us.\n",
-			__le32_to_cpu(slot_time));
+//		ap_printk(KERN_DEBUG "[STA] Slot time :%d us.\n",
+;
 		WARN_ON(wsm_write_mib(priv, WSM_MIB_ID_DOT11_SLOT_TIME,
 			&slot_time, sizeof(slot_time)));
 	}
@@ -346,13 +346,13 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 		info->cqm_rssi_hyst = 4;
 #endif /* 0 */
 
-		ap_printk(KERN_DEBUG "[CQM] RSSI threshold subscribe: %d +- %d\n",
-			info->cqm_rssi_thold, info->cqm_rssi_hyst);
+//		ap_printk(KERN_DEBUG "[CQM] RSSI threshold subscribe: %d +- %d\n",
+;
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
-		ap_printk(KERN_DEBUG "[CQM] Beacon loss subscribe: %d\n",
-			info->cqm_beacon_miss_thold);
-		ap_printk(KERN_DEBUG "[CQM] TX failure subscribe: %d\n",
-			info->cqm_tx_fail_thold);
+//		ap_printk(KERN_DEBUG "[CQM] Beacon loss subscribe: %d\n",
+;
+//		ap_printk(KERN_DEBUG "[CQM] TX failure subscribe: %d\n",
+;
 		priv->cqm_rssi_thold = info->cqm_rssi_thold;
 		priv->cqm_rssi_hyst = info->cqm_rssi_hyst;
 #endif /* CONFIG_CW1200_USE_STE_EXTENSIONS */
@@ -451,9 +451,9 @@ void cw1200_suspend_resume(struct cw1200_common *priv,
 	if (!arg->link_id) /* For all links */
 		unicast = (1 << (CW1200_MAX_STA_IN_AP_MODE + 1)) - 2;
 
-	ap_printk(KERN_DEBUG "[AP] %s: %s\n",
-		arg->stop ? "stop" : "start",
-		arg->multicast ? "broadcast" : "unicast");
+//	ap_printk(KERN_DEBUG "[AP] %s: %s\n",
+//		arg->stop ? "stop" : "start",
+;
 
 	if (arg->multicast) {
 		if (arg->stop)
@@ -514,7 +514,7 @@ static int cw1200_upload_beacon(struct cw1200_common *priv)
 		.frame_type = WSM_FRAME_TYPE_BEACON,
 	};
 
-	ap_printk(KERN_DEBUG "[AP] %s.\n", __func__);
+;
 
 	frame.skb = ieee80211_beacon_get(priv->hw, priv->vif);
 	if (WARN_ON(!frame.skb))
@@ -602,7 +602,7 @@ static int cw1200_update_beaconing(struct cw1200_common *priv)
 	};
 
 	if (priv->mode == NL80211_IFTYPE_AP) {
-		ap_printk(KERN_DEBUG "[AP] %s.\n", __func__);
+;
 		WARN_ON(wsm_reset(priv, &reset));
 		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
 		WARN_ON(cw1200_start_ap(priv));

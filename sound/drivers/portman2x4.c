@@ -410,9 +410,9 @@ static void portman_flush_input(struct portman *pm, unsigned char port)
 		command = RXDATA1;
 		break;
 	default:
-		snd_printk(KERN_WARNING
-			   "portman_flush_input() Won't flush port %i\n",
-			   port);
+//		snd_printk(KERN_WARNING
+//			   "portman_flush_input() Won't flush port %i\n",
+;
 		return;
 	}
 
@@ -805,7 +805,7 @@ static int __devinit snd_portman_probe(struct platform_device *pdev)
 		goto __err;
 	}
 
-	snd_printk(KERN_INFO "Portman 2x4 on 0x%lx\n", p->base);
+;
 	return 0;
 
 __err:

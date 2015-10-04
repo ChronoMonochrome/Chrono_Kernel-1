@@ -175,11 +175,11 @@ static int rx_buf[RBUF_LEN];
 static unsigned int rx_tail, rx_head;
 
 static int debug;
-#define dprintk(fmt, args...)						\
-	do {								\
-		if (debug)						\
-			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "		\
-				fmt, ## args);				\
+//#define dprintk(fmt, args...)						\
+//	do {								\
+//		if (debug)						\
+//			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "		\
+;
 	} while (0)
 
 /* SECTION: Prototypes */
@@ -424,7 +424,7 @@ static void add_read_queue(int flag, unsigned long val)
 	unsigned int new_rx_tail;
 	int newval;
 
-	dprintk("add flag %d with val %lu\n", flag, val);
+;
 
 	newval = val & PULSE_MASK;
 
@@ -444,7 +444,7 @@ static void add_read_queue(int flag, unsigned long val)
 	}
 	new_rx_tail = (rx_tail + 1) & (RBUF_LEN - 1);
 	if (new_rx_tail == rx_head) {
-		dprintk("Buffer overrun.\n");
+;
 		return;
 	}
 	rx_buf[rx_tail] = newval;
@@ -496,7 +496,7 @@ static int init_chrdev(void)
 	driver.dev = &lirc_sir_dev->dev;
 	driver.minor = lirc_register_driver(&driver);
 	if (driver.minor < 0) {
-		printk(KERN_ERR LIRC_DRIVER_NAME ": init_chrdev() failed.\n");
+;
 		return -EIO;
 	}
 	return 0;
@@ -543,7 +543,7 @@ static void sir_timeout(unsigned long data)
 #endif
 		/* determine 'virtual' pulse end: */
 		pulse_end = delta(&last_tv, &last_intr_tv);
-		dprintk("timeout add %d for %lu usec\n", last_value, pulse_end);
+;
 		add_read_queue(last_value, pulse_end);
 		last_value = 0;
 		last_tv = last_intr_tv;
@@ -569,15 +569,15 @@ static irqreturn_t sir_interrupt(int irq, void *dev_id)
 		int bstat;
 
 		if (debug) {
-			dprintk("EIF\n");
+;
 			bstat = Ser2UTSR1;
 
 			if (bstat & UTSR1_FRE)
-				dprintk("frame error\n");
+;
 			if (bstat & UTSR1_ROR)
-				dprintk("receive fifo overrun\n");
+;
 			if (bstat & UTSR1_PRE)
-				dprintk("parity error\n");
+;
 		}
 
 		bstat = Ser2UTDR;
@@ -590,7 +590,7 @@ static irqreturn_t sir_interrupt(int irq, void *dev_id)
 		deltv = delta(&last_tv, &curr_tv);
 		do {
 			data = Ser2UTDR;
-			dprintk("%d data: %u\n", n, (unsigned int) data);
+;
 			n++;
 		} while (status & UTSR0_RID && /* do not empty fifo in order to
 						* get UTSR0_RID in any case */
@@ -605,7 +605,7 @@ static irqreturn_t sir_interrupt(int irq, void *dev_id)
 	}
 
 	if (status & UTSR0_TFS)
-		printk(KERN_ERR "transmit fifo not full, shouldn't happen\n");
+;
 
 	/* We must clear certain bits. */
 	status &= (UTSR0_RID | UTSR0_RBB | UTSR0_REB);
@@ -639,14 +639,14 @@ static irqreturn_t sir_interrupt(int irq, void *dev_id)
 				do_gettimeofday(&curr_tv);
 				deltv = delta(&last_tv, &curr_tv);
 				deltintrtv = delta(&last_intr_tv, &curr_tv);
-				dprintk("t %lu, d %d\n", deltintrtv, (int)data);
+;
 				/*
 				 * if nothing came in last X cycles,
 				 * it was gap
 				 */
 				if (deltintrtv > TIME_CONST * threshold) {
 					if (last_value) {
-						dprintk("GAP\n");
+;
 						/* simulate signal change */
 						add_read_queue(last_value,
 							       deltv -
@@ -788,7 +788,7 @@ static int init_hardware(void)
 #ifdef LIRC_ON_SA1100
 #ifdef CONFIG_SA1100_BITSY
 	if (machine_is_bitsy()) {
-		printk(KERN_INFO "Power on IR module\n");
+;
 		set_bitsy_egpio(EGPIO_BITSY_IR_ON);
 	}
 #endif
@@ -886,8 +886,8 @@ static int init_hardware(void)
 	udelay(1500);
 
 	/* read previous control byte */
-	printk(KERN_INFO LIRC_DRIVER_NAME
-	       ": 0x%02x\n", sinp(UART_RX));
+//	printk(KERN_INFO LIRC_DRIVER_NAME
+;
 
 	/* Set DLAB 1. */
 	soutp(UART_LCR, sinp(UART_LCR) | UART_LCR_DLAB);
@@ -965,8 +965,8 @@ static int init_port(void)
 	/* get I/O port access and IRQ line */
 #ifndef LIRC_ON_SA1100
 	if (request_region(io, 8, LIRC_DRIVER_NAME) == NULL) {
-		printk(KERN_ERR LIRC_DRIVER_NAME
-		       ": i/o port 0x%.4x already in use.\n", io);
+//		printk(KERN_ERR LIRC_DRIVER_NAME
+;
 		return -EBUSY;
 	}
 #endif
@@ -976,15 +976,15 @@ static int init_port(void)
 #               ifndef LIRC_ON_SA1100
 		release_region(io, 8);
 #               endif
-		printk(KERN_ERR LIRC_DRIVER_NAME
-			": IRQ %d already in use.\n",
-			irq);
+//		printk(KERN_ERR LIRC_DRIVER_NAME
+//			": IRQ %d already in use.\n",
+;
 		return retval;
 	}
 #ifndef LIRC_ON_SA1100
-	printk(KERN_INFO LIRC_DRIVER_NAME
-		": I/O port 0x%.4x, IRQ %d.\n",
-		io, irq);
+//	printk(KERN_INFO LIRC_DRIVER_NAME
+//		": I/O port 0x%.4x, IRQ %d.\n",
+;
 #endif
 
 	init_timer(&timerlist);
@@ -1214,8 +1214,8 @@ static int init_lirc_sir(void)
 	if (retval < 0)
 		return retval;
 	init_hardware();
-	printk(KERN_INFO LIRC_DRIVER_NAME
-		": Installed.\n");
+//	printk(KERN_INFO LIRC_DRIVER_NAME
+;
 	return 0;
 }
 
@@ -1244,23 +1244,23 @@ static int __init lirc_sir_init(void)
 
 	retval = platform_driver_register(&lirc_sir_driver);
 	if (retval) {
-		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform driver register "
-		       "failed!\n");
+//		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform driver register "
+;
 		return -ENODEV;
 	}
 
 	lirc_sir_dev = platform_device_alloc("lirc_dev", 0);
 	if (!lirc_sir_dev) {
-		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device alloc "
-		       "failed!\n");
+//		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device alloc "
+;
 		retval = -ENOMEM;
 		goto pdev_alloc_fail;
 	}
 
 	retval = platform_device_add(lirc_sir_dev);
 	if (retval) {
-		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device add "
-		       "failed!\n");
+//		printk(KERN_ERR LIRC_DRIVER_NAME ": Platform device add "
+;
 		retval = -ENODEV;
 		goto pdev_add_fail;
 	}
@@ -1293,7 +1293,7 @@ static void __exit lirc_sir_exit(void)
 	drop_port();
 	platform_device_unregister(lirc_sir_dev);
 	platform_driver_unregister(&lirc_sir_driver);
-	printk(KERN_INFO LIRC_DRIVER_NAME ": Uninstalled.\n");
+;
 }
 
 module_init(lirc_sir_init);

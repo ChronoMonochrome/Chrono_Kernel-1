@@ -429,11 +429,11 @@ static void i5100_handle_ce(struct mem_ctl_info *mci,
 {
 	const int csrow = i5100_rank_to_csrow(mci, chan, rank);
 
-	printk(KERN_ERR
-		"CE chan %d, bank %u, rank %u, syndrome 0x%lx, "
-		"cas %u, ras %u, csrow %u, label \"%s\": %s\n",
-		chan, bank, rank, syndrome, cas, ras,
-		csrow, mci->csrows[csrow].channels[0].label, msg);
+//	printk(KERN_ERR
+//		"CE chan %d, bank %u, rank %u, syndrome 0x%lx, "
+//		"cas %u, ras %u, csrow %u, label \"%s\": %s\n",
+//		chan, bank, rank, syndrome, cas, ras,
+;
 
 	mci->ce_count++;
 	mci->csrows[csrow].ce_count++;
@@ -451,11 +451,11 @@ static void i5100_handle_ue(struct mem_ctl_info *mci,
 {
 	const int csrow = i5100_rank_to_csrow(mci, chan, rank);
 
-	printk(KERN_ERR
-		"UE chan %d, bank %u, rank %u, syndrome 0x%lx, "
-		"cas %u, ras %u, csrow %u, label \"%s\": %s\n",
-		chan, bank, rank, syndrome, cas, ras,
-		csrow, mci->csrows[csrow].channels[0].label, msg);
+//	printk(KERN_ERR
+//		"UE chan %d, bank %u, rank %u, syndrome 0x%lx, "
+//		"cas %u, ras %u, csrow %u, label \"%s\": %s\n",
+//		chan, bank, rank, syndrome, cas, ras,
+;
 
 	mci->ue_count++;
 	mci->csrows[csrow].ue_count++;
@@ -902,7 +902,7 @@ static int __devinit i5100_init_one(struct pci_dev *pdev,
 	/* ECC enabled? */
 	pci_read_config_dword(pdev, I5100_MC, &dw);
 	if (!i5100_mc_errdeten(dw)) {
-		printk(KERN_INFO "i5100_edac: ECC not enabled.\n");
+;
 		ret = -ENODEV;
 		goto bail_pdev;
 	}

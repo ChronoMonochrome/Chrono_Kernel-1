@@ -66,12 +66,12 @@ int profile_setup(char *str)
 			str += strlen(sleepstr) + 1;
 		if (get_option(&str, &par))
 			prof_shift = par;
-		printk(KERN_INFO
-			"kernel sleep profiling enabled (shift: %ld)\n",
-			prof_shift);
+//		printk(KERN_INFO
+//			"kernel sleep profiling enabled (shift: %ld)\n",
+;
 #else
-		printk(KERN_WARNING
-			"kernel sleep profiling requires CONFIG_SCHEDSTATS\n");
+//		printk(KERN_WARNING
+;
 #endif /* CONFIG_SCHEDSTATS */
 	} else if (!strncmp(str, schedstr, strlen(schedstr))) {
 		prof_on = SCHED_PROFILING;
@@ -79,23 +79,23 @@ int profile_setup(char *str)
 			str += strlen(schedstr) + 1;
 		if (get_option(&str, &par))
 			prof_shift = par;
-		printk(KERN_INFO
-			"kernel schedule profiling enabled (shift: %ld)\n",
-			prof_shift);
+//		printk(KERN_INFO
+//			"kernel schedule profiling enabled (shift: %ld)\n",
+;
 	} else if (!strncmp(str, kvmstr, strlen(kvmstr))) {
 		prof_on = KVM_PROFILING;
 		if (str[strlen(kvmstr)] == ',')
 			str += strlen(kvmstr) + 1;
 		if (get_option(&str, &par))
 			prof_shift = par;
-		printk(KERN_INFO
-			"kernel KVM profiling enabled (shift: %ld)\n",
-			prof_shift);
+//		printk(KERN_INFO
+//			"kernel KVM profiling enabled (shift: %ld)\n",
+;
 	} else if (get_option(&str, &par)) {
 		prof_shift = par;
 		prof_on = CPU_PROFILING;
-		printk(KERN_INFO "kernel profiling enabled (shift: %ld)\n",
-			prof_shift);
+//		printk(KERN_INFO "kernel profiling enabled (shift: %ld)\n",
+;
 	}
 	return 1;
 }

@@ -180,14 +180,14 @@ static void __init attach_v_midi (struct address_info *hw_config)
 	midi1 = sound_alloc_mididev();
 	if (midi1 == -1)
 	{
-		printk(KERN_ERR "v_midi: Too many midi devices detected\n");
+;
 		return;
 	}
 	
 	m = kmalloc(sizeof(struct vmidi_memory), GFP_KERNEL);
 	if (m == NULL)
 	{
-		printk(KERN_WARNING "Loopback MIDI: Failed to allocate memory\n");
+;
 		sound_unload_mididev(midi1);
 		return;
 	}
@@ -272,7 +272,7 @@ static struct address_info cfg; /* dummy */
 
 static int __init init_vmidi(void)
 {
-	printk("MIDI Loopback device driver\n");
+;
 	if (!probe_v_midi(&cfg))
 		return -ENODEV;
 	attach_v_midi(&cfg);

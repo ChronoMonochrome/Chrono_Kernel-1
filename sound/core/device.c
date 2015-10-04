@@ -49,7 +49,7 @@ int snd_device_new(struct snd_card *card, snd_device_type_t type,
 		return -ENXIO;
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (dev == NULL) {
-		snd_printk(KERN_ERR "Cannot allocate device\n");
+;
 		return -ENOMEM;
 	}
 	dev->card = card;
@@ -89,11 +89,11 @@ int snd_device_free(struct snd_card *card, void *device_data)
 		if (dev->state == SNDRV_DEV_REGISTERED &&
 		    dev->ops->dev_disconnect)
 			if (dev->ops->dev_disconnect(dev))
-				snd_printk(KERN_ERR
-					   "device disconnect failure\n");
+//				snd_printk(KERN_ERR
+;
 		if (dev->ops->dev_free) {
 			if (dev->ops->dev_free(dev))
-				snd_printk(KERN_ERR "device free failure\n");
+;
 		}
 		kfree(dev);
 		return 0;
@@ -130,7 +130,7 @@ int snd_device_disconnect(struct snd_card *card, void *device_data)
 		if (dev->state == SNDRV_DEV_REGISTERED &&
 		    dev->ops->dev_disconnect) {
 			if (dev->ops->dev_disconnect(dev))
-				snd_printk(KERN_ERR "device disconnect failure\n");
+;
 			dev->state = SNDRV_DEV_DISCONNECTED;
 		}
 		return 0;

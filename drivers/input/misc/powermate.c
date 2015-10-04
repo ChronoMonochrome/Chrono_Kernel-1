@@ -167,7 +167,7 @@ static void powermate_sync_state(struct powermate_device *pm)
 		pm->configcr->wIndex = cpu_to_le16( pm->static_brightness );
 		pm->requires_update &= ~UPDATE_STATIC_BRIGHTNESS;
 	} else {
-		printk(KERN_ERR "powermate: unknown update required");
+;
 		pm->requires_update = 0; /* fudge the bug */
 		return;
 	}
@@ -183,7 +183,7 @@ static void powermate_sync_state(struct powermate_device *pm)
 			     powermate_config_complete, pm);
 
 	if (usb_submit_urb(pm->config, GFP_ATOMIC))
-		printk(KERN_ERR "powermate: usb_submit_urb(config) failed");
+;
 }
 
 /* Called when our asynchronous control message completes. We may need to issue another immediately */
@@ -193,7 +193,7 @@ static void powermate_config_complete(struct urb *urb)
 	unsigned long flags;
 
 	if (urb->status)
-		printk(KERN_ERR "powermate: config urb returned %d\n", urb->status);
+;
 
 	spin_lock_irqsave(&pm->lock, flags);
 	powermate_sync_state(pm);
@@ -346,8 +346,8 @@ static int powermate_probe(struct usb_interface *intf, const struct usb_device_i
 		break;
 	default:
 		input_dev->name = pm_name_soundknob;
-		printk(KERN_WARNING "powermate: unknown product id %04x\n",
-		       le16_to_cpu(udev->descriptor.idProduct));
+//		printk(KERN_WARNING "powermate: unknown product id %04x\n",
+;
 	}
 
 	input_dev->phys = pm->phys;
@@ -369,8 +369,8 @@ static int powermate_probe(struct usb_interface *intf, const struct usb_device_i
 	maxp = usb_maxpacket(udev, pipe, usb_pipeout(pipe));
 
 	if (maxp < POWERMATE_PAYLOAD_SIZE_MIN || maxp > POWERMATE_PAYLOAD_SIZE_MAX) {
-		printk(KERN_WARNING "powermate: Expected payload of %d--%d bytes, found %d bytes!\n",
-			POWERMATE_PAYLOAD_SIZE_MIN, POWERMATE_PAYLOAD_SIZE_MAX, maxp);
+//		printk(KERN_WARNING "powermate: Expected payload of %d--%d bytes, found %d bytes!\n",
+;
 		maxp = POWERMATE_PAYLOAD_SIZE_MAX;
 	}
 

@@ -42,8 +42,8 @@ static int xencomm_init(struct xencomm_desc *desc,
 
 		paddr = xencomm_vtop(vaddr);
 		if (paddr == ~0UL) {
-			printk(KERN_DEBUG "%s: couldn't translate vaddr %lx\n",
-			       __func__, vaddr);
+//			printk(KERN_DEBUG "%s: couldn't translate vaddr %lx\n",
+;
 			return -EINVAL;
 		}
 
@@ -52,9 +52,9 @@ static int xencomm_init(struct xencomm_desc *desc,
 	}
 
 	if (recorded < bytes) {
-		printk(KERN_DEBUG
-		       "%s: could only translate %ld of %ld bytes\n",
-		       __func__, recorded, bytes);
+//		printk(KERN_DEBUG
+//		       "%s: could only translate %ld of %ld bytes\n",
+;
 		return -ENOSPC;
 	}
 
@@ -136,13 +136,13 @@ static int xencomm_create(void *buffer, unsigned long bytes,
 
 	desc = xencomm_alloc(gfp_mask, buffer, bytes);
 	if (!desc) {
-		printk(KERN_DEBUG "%s failure\n", "xencomm_alloc");
+;
 		return -ENOMEM;
 	}
 
 	rc = xencomm_init(desc, buffer, bytes);
 	if (rc) {
-		printk(KERN_DEBUG "%s failure: %d\n", "xencomm_init", rc);
+;
 		xencomm_free((struct xencomm_handle *)__pa(desc));
 		return rc;
 	}

@@ -319,14 +319,14 @@ static int __init raw_init(void)
 	int ret;
 
 	if (max_raw_minors < 1 || max_raw_minors > 65536) {
-		printk(KERN_WARNING "raw: invalid max_raw_minors (must be"
-			" between 1 and 65536), using %d\n", MAX_RAW_MINORS);
+//		printk(KERN_WARNING "raw: invalid max_raw_minors (must be"
+;
 		max_raw_minors = MAX_RAW_MINORS;
 	}
 
 	raw_devices = vmalloc(sizeof(struct raw_device_data) * max_raw_minors);
 	if (!raw_devices) {
-		printk(KERN_ERR "Not enough memory for raw device structures\n");
+;
 		ret = -ENOMEM;
 		goto error;
 	}
@@ -344,7 +344,7 @@ static int __init raw_init(void)
 
 	raw_class = class_create(THIS_MODULE, "raw");
 	if (IS_ERR(raw_class)) {
-		printk(KERN_ERR "Error creating raw class.\n");
+;
 		cdev_del(&raw_cdev);
 		ret = PTR_ERR(raw_class);
 		goto error_region;

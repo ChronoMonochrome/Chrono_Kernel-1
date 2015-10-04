@@ -720,7 +720,7 @@ static int __init netx_serial_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Serial: NetX driver\n");
+;
 
 	ret = uart_register_driver(&netx_reg);
 	if (ret)

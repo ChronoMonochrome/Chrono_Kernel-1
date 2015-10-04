@@ -41,13 +41,13 @@ static int pinnacle_remote;
 module_param(pinnacle_remote, int, 0644);    /* Choose Pinnacle PCTV remote */
 MODULE_PARM_DESC(pinnacle_remote, "Specify Pinnacle PCTV remote: 0=coloured, 1=grey (defaults to 0)");
 
-#define dprintk(fmt, arg...)	if (ir_debug) \
-	printk(KERN_DEBUG "%s/ir: " fmt, dev->name , ## arg)
-#define i2cdprintk(fmt, arg...)    if (ir_debug) \
-	printk(KERN_DEBUG "%s/ir: " fmt, ir->name , ## arg)
-
-/* Helper function for raw decoding at GPIO16 or GPIO18 */
-static int saa7134_raw_decode_irq(struct saa7134_dev *dev);
+//#define dprintk(fmt, arg...)	if (ir_debug) \
+//	printk(KERN_DEBUG "%s/ir: " fmt, dev->name , ## arg)
+//#define i2cdprintk(fmt, arg...)    if (ir_debug) \
+//	printk(KERN_DEBUG "%s/ir: " fmt, ir->name , ## arg)
+//
+///* Helper function for raw decoding at GPIO16 or GPIO18 */
+;
 
 /* -------------------- GPIO generic keycode builder -------------------- */
 
@@ -75,8 +75,8 @@ static int build_key(struct saa7134_dev *dev)
 	}
 
 	data = ir_extract_bits(gpio, ir->mask_keycode);
-	dprintk("build_key gpio=0x%x mask=0x%x data=%d\n",
-		gpio, ir->mask_keycode, data);
+//	dprintk("build_key gpio=0x%x mask=0x%x data=%d\n",
+;
 
 	switch (dev->board) {
 	case SAA7134_BOARD_KWORLD_PLUS_TV_ANALOG:
@@ -118,8 +118,8 @@ static int get_key_flydvb_trio(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 	struct saa7134_dev *dev = ir->c->adapter->algo_data;
 
 	if (dev == NULL) {
-		i2cdprintk("get_key_flydvb_trio: "
-			   "ir->c->adapter->algo_data is NULL!\n");
+//		i2cdprintk("get_key_flydvb_trio: "
+;
 		return -EIO;
 	}
 
@@ -149,12 +149,12 @@ static int get_key_flydvb_trio(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 			msleep(10);
 			continue;
 		}
-		i2cdprintk("send wake up byte to pic16C505 (IR chip)"
-			   "failed %dx\n", attempt);
+//		i2cdprintk("send wake up byte to pic16C505 (IR chip)"
+;
 		return -EIO;
 	}
 	if (1 != i2c_master_recv(ir->c, &b, 1)) {
-		i2cdprintk("read error\n");
+;
 		return -EIO;
 	}
 
@@ -172,8 +172,8 @@ static int get_key_msi_tvanywhere_plus(struct IR_i2c *ir, u32 *ir_key,
 	/* <dev> is needed to access GPIO. Used by the saa_readl macro. */
 	struct saa7134_dev *dev = ir->c->adapter->algo_data;
 	if (dev == NULL) {
-		i2cdprintk("get_key_msi_tvanywhere_plus: "
-			   "ir->c->adapter->algo_data is NULL!\n");
+//		i2cdprintk("get_key_msi_tvanywhere_plus: "
+;
 		return -EIO;
 	}
 
@@ -193,7 +193,7 @@ static int get_key_msi_tvanywhere_plus(struct IR_i2c *ir, u32 *ir_key,
 	/* GPIO says there is a button press. Get it. */
 
 	if (1 != i2c_master_recv(ir->c, &b, 1)) {
-		i2cdprintk("read error\n");
+;
 		return -EIO;
 	}
 
@@ -204,7 +204,7 @@ static int get_key_msi_tvanywhere_plus(struct IR_i2c *ir, u32 *ir_key,
 
 	/* Button pressed */
 
-	dprintk("get_key_msi_tvanywhere_plus: Key = 0x%02X\n", b);
+;
 	*ir_key = b;
 	*ir_raw = b;
 	return 1;
@@ -216,7 +216,7 @@ static int get_key_purpletv(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 
 	/* poll IR chip */
 	if (1 != i2c_master_recv(ir->c, &b, 1)) {
-		i2cdprintk("read error\n");
+;
 		return -EIO;
 	}
 
@@ -274,7 +274,7 @@ static int get_key_beholdm6xx(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw)
 	ir->c->addr = 0x5a >> 1;
 
 	if (12 != i2c_master_recv(ir->c, data, 12)) {
-		i2cdprintk("read error\n");
+;
 		return -EIO;
 	}
 
@@ -298,7 +298,7 @@ static int get_key_pinnacle(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw,
 
 	/* poll IR chip */
 	if (4 != i2c_master_recv(ir->c, b, 4)) {
-		i2cdprintk("read error\n");
+;
 		return -EIO;
 	}
 
@@ -329,7 +329,7 @@ static int get_key_pinnacle(struct IR_i2c *ir, u32 *ir_key, u32 *ir_raw,
 	*ir_raw = code;
 	*ir_key = code;
 
-	i2cdprintk("Pinnacle PCTV key %02x\n", code);
+;
 
 	return 1;
 }
@@ -766,8 +766,8 @@ int saa7134_input_init1(struct saa7134_dev *dev)
 		break;
 	}
 	if (NULL == ir_codes) {
-		printk("%s: Oops: IR config error [card=%d]\n",
-		       dev->name, dev->board);
+//		printk("%s: Oops: IR config error [card=%d]\n",
+;
 		return -ENODEV;
 	}
 
@@ -851,7 +851,7 @@ void saa7134_probe_i2c_ir(struct saa7134_dev *dev)
 	int rc;
 
 	if (disable_ir) {
-		dprintk("IR has been disabled, not probing for i2c remote\n");
+;
 		return;
 	}
 
@@ -894,9 +894,9 @@ void saa7134_probe_i2c_ir(struct saa7134_dev *dev)
 		   an existing device. Weird...
 		   REVISIT: might no longer be needed */
 		rc = i2c_transfer(&dev->i2c_adap, &msg_msi, 1);
-		dprintk("probe 0x%02x @ %s: %s\n",
-			msg_msi.addr, dev->i2c_adap.name,
-			(1 == rc) ? "yes" : "no");
+//		dprintk("probe 0x%02x @ %s: %s\n",
+//			msg_msi.addr, dev->i2c_adap.name,
+;
 		break;
 	case SAA7134_BOARD_HAUPPAUGE_HVR1110:
 		dev->init_data.name = "HVR 1110";
@@ -936,7 +936,7 @@ void saa7134_probe_i2c_ir(struct saa7134_dev *dev)
 		info.addr = 0x0b;
 		break;
 	default:
-		dprintk("No I2C IR support for board %x\n", dev->board);
+;
 		return;
 	}
 

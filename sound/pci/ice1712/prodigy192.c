@@ -134,8 +134,8 @@ static int stac9460_dac_mute_put(struct snd_kcontrol *kcontrol, struct snd_ctl_e
 	/* due to possible conflicts with stac9460_set_rate_val, mutexing */
 	mutex_lock(&spec->mute_mutex);
 	/*
-	printk(KERN_DEBUG "Mute put: reg 0x%02x, ctrl value: 0x%02x\n", idx,
-	       ucontrol->value.integer.value[0]);
+//	printk(KERN_DEBUG "Mute put: reg 0x%02x, ctrl value: 0x%02x\n", idx,
+;
 	*/
 	change = stac9460_dac_mute(ice, idx, ucontrol->value.integer.value[0]);
 	mutex_unlock(&spec->mute_mutex);
@@ -188,8 +188,8 @@ static int stac9460_dac_vol_put(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	if (change) {
 		ovol =  (0x7f - nvol) | (tmp & 0x80);
 		/*
-		printk(KERN_DEBUG "DAC Volume: reg 0x%02x: 0x%02x\n",
-		       idx, ovol);
+//		printk(KERN_DEBUG "DAC Volume: reg 0x%02x: 0x%02x\n",
+;
 		*/
 		stac9460_put(ice, idx, (0x7f - nvol) | (tmp & 0x80));
 	}

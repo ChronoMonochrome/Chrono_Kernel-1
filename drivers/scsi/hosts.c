@@ -140,12 +140,13 @@ int scsi_host_set_state(struct Scsi_Host *shost, enum scsi_host_state state)
 	return 0;
 
  illegal:
-	SCSI_LOG_ERROR_RECOVERY(1,
-				shost_printk(KERN_ERR, shost,
-					     "Illegal host state transition"
-					     "%s->%s\n",
-					     scsi_host_state_name(oldstate),
-					     scsi_host_state_name(state)));
+	;
+//	SCSI_LOG_ERROR_RECOVERY(1,
+//				shost_printk(KERN_ERR, shost,
+//					     "Illegal host state transition"
+//					     "%s->%s\n",
+//					     scsi_host_state_name(oldstate),
+;
 	return -EINVAL;
 }
 EXPORT_SYMBOL(scsi_host_set_state);
@@ -203,12 +204,12 @@ int scsi_add_host_with_dma(struct Scsi_Host *shost, struct device *dev,
 	struct scsi_host_template *sht = shost->hostt;
 	int error = -EINVAL;
 
-	printk(KERN_INFO "scsi%d : %s\n", shost->host_no,
-			sht->info ? sht->info(shost) : sht->name);
+//	printk(KERN_INFO "scsi%d : %s\n", shost->host_no,
+;
 
 	if (!shost->can_queue) {
-		printk(KERN_ERR "%s: can_queue = 0 no longer supported\n",
-				sht->name);
+//		printk(KERN_ERR "%s: can_queue = 0 no longer supported\n",
+;
 		goto fail;
 	}
 
@@ -427,8 +428,8 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
 	shost->ehandler = kthread_run(scsi_error_handler, shost,
 			"scsi_eh_%d", shost->host_no);
 	if (IS_ERR(shost->ehandler)) {
-		printk(KERN_WARNING "scsi%d: error handler thread failed to spawn, error = %ld\n",
-			shost->host_no, PTR_ERR(shost->ehandler));
+//		printk(KERN_WARNING "scsi%d: error handler thread failed to spawn, error = %ld\n",
+;
 		goto fail_kfree;
 	}
 
@@ -446,8 +447,8 @@ struct Scsi_Host *scsi_register(struct scsi_host_template *sht, int privsize)
 	struct Scsi_Host *shost = scsi_host_alloc(sht, privsize);
 
 	if (!sht->detect) {
-		printk(KERN_WARNING "scsi_register() called on new-style "
-				    "template for driver %s\n", sht->name);
+//		printk(KERN_WARNING "scsi_register() called on new-style "
+;
 		dump_stack();
 	}
 
@@ -551,9 +552,9 @@ EXPORT_SYMBOL(scsi_is_host_device);
 int scsi_queue_work(struct Scsi_Host *shost, struct work_struct *work)
 {
 	if (unlikely(!shost->work_q)) {
-		printk(KERN_ERR
-			"ERROR: Scsi host '%s' attempted to queue scsi-work, "
-			"when no workqueue created.\n", shost->hostt->name);
+//		printk(KERN_ERR
+//			"ERROR: Scsi host '%s' attempted to queue scsi-work, "
+;
 		dump_stack();
 
 		return -EINVAL;
@@ -570,9 +571,9 @@ EXPORT_SYMBOL_GPL(scsi_queue_work);
 void scsi_flush_work(struct Scsi_Host *shost)
 {
 	if (!shost->work_q) {
-		printk(KERN_ERR
-			"ERROR: Scsi host '%s' attempted to flush scsi-work, "
-			"when no workqueue created.\n", shost->hostt->name);
+//		printk(KERN_ERR
+//			"ERROR: Scsi host '%s' attempted to flush scsi-work, "
+;
 		dump_stack();
 		return;
 	}

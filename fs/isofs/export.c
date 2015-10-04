@@ -52,8 +52,8 @@ static struct dentry *isofs_export_get_parent(struct dentry *child)
 
 	/* "child" must always be a directory. */
 	if (!S_ISDIR(child_inode->i_mode)) {
-		printk(KERN_ERR "isofs: isofs_export_get_parent(): "
-		       "child is not a directory!\n");
+//		printk(KERN_ERR "isofs: isofs_export_get_parent(): "
+;
 		rv = ERR_PTR(-EACCES);
 		goto out;
 	}
@@ -62,8 +62,8 @@ static struct dentry *isofs_export_get_parent(struct dentry *child)
 	 * it is not zero, it means the directory failed to be
 	 * normalized for some reason. */
 	if (e_child_inode->i_iget5_offset != 0) {
-		printk(KERN_ERR "isofs: isofs_export_get_parent(): "
-		       "child directory not normalized!\n");
+//		printk(KERN_ERR "isofs: isofs_export_get_parent(): "
+;
 		rv = ERR_PTR(-EACCES);
 		goto out;
 	}
@@ -89,8 +89,8 @@ static struct dentry *isofs_export_get_parent(struct dentry *child)
 
 	/* Verify it is in fact the ".." entry. */
 	if ((isonum_711(de->name_len) != 1) || (de->name[0] != 1)) {
-		printk(KERN_ERR "isofs: Unable to find the \"..\" "
-		       "directory for NFS.\n");
+//		printk(KERN_ERR "isofs: Unable to find the \"..\" "
+;
 		rv = ERR_PTR(-EACCES);
 		goto out;
 	}

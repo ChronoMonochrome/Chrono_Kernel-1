@@ -15,8 +15,8 @@
 static void probe_subsys_event(void *ignore,
 			       struct inode *inode, struct file *file)
 {
-	printk(KERN_INFO "Event is encountered with inode number %lu\n",
-		inode->i_ino);
+//	printk(KERN_INFO "Event is encountered with inode number %lu\n",
+;
 }
 
 static int __init tp_sample_trace_init(void)

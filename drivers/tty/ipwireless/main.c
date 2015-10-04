@@ -181,16 +181,16 @@ static int config_ipwireless(struct ipw_dev *ipw)
 	if (ret != 0)
 		goto exit;
 
-	printk(KERN_INFO IPWIRELESS_PCCARD_NAME ": Card type %s\n",
-			ipw->is_v2_card ? "V2/V3" : "V1");
-	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
-		": I/O ports %pR, irq %d\n", link->resource[0],
-			(unsigned int) link->irq);
+//	printk(KERN_INFO IPWIRELESS_PCCARD_NAME ": Card type %s\n",
+;
+//	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
+//		": I/O ports %pR, irq %d\n", link->resource[0],
+;
 	if (ipw->attr_memory && ipw->common_memory)
-		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
-			": attr memory %pR, common memory %pR\n",
-			link->resource[3],
-			link->resource[2]);
+//		printk(KERN_INFO IPWIRELESS_PCCARD_NAME
+//			": attr memory %pR, common memory %pR\n",
+//			link->resource[3],
+;
 
 	ipw->network = ipwireless_network_create(ipw->hardware);
 	if (!ipw->network)

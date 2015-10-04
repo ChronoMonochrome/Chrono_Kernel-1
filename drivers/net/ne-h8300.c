@@ -247,7 +247,7 @@ static int __init ne_probe1(struct net_device *dev, int ioaddr)
 	}
 
 	if (ei_debug  &&  version_printed++ == 0)
-		printk(KERN_INFO "%s", version1);
+;
 
 	printk(KERN_INFO "NE*000 ethercard probe at %08x:", ioaddr);
 
@@ -297,7 +297,7 @@ static int __init ne_probe1(struct net_device *dev, int ioaddr)
 	name = (wordlength == 2) ? "NE2000" : "NE1000";
 
 	if (! dev->irq) {
-		printk(" failed to detect IRQ line.\n");
+;
 		ret = -EAGAIN;
 		goto err_out;
 	}
@@ -314,10 +314,10 @@ static int __init ne_probe1(struct net_device *dev, int ioaddr)
 
 	for(i = 0; i < ETHER_ADDR_LEN; i++)
 		dev->dev_addr[i] = SA_prom[i];
-	printk(" %pM\n", dev->dev_addr);
+;
 
-	printk("%s: %s found at %#x, using IRQ %d.\n",
-		dev->name, name, ioaddr, dev->irq);
+//	printk("%s: %s found at %#x, using IRQ %d.\n",
+;
 
 	ei_status.name = name;
 	ei_status.tx_start_page = start_page;
@@ -360,7 +360,7 @@ static int ne_open(struct net_device *dev)
 static int ne_close(struct net_device *dev)
 {
 	if (ei_debug > 1)
-		printk(KERN_DEBUG "%s: Shutting down ethercard.\n", dev->name);
+;
 	__ei_close(dev);
 	return 0;
 }
@@ -374,7 +374,7 @@ static void ne_reset_8390(struct net_device *dev)
 	struct ei_device *ei_local = netdev_priv(dev);
 
 	if (ei_debug > 1)
-		printk(KERN_DEBUG "resetting the 8390 t=%ld...", jiffies);
+;
 
 	/* DON'T change these to inb_p/outb_p or reset will fail on clones. */
 	outb(inb(NE_BASE + NE_RESET), NE_BASE + NE_RESET);
@@ -385,7 +385,7 @@ static void ne_reset_8390(struct net_device *dev)
 	/* This check _should_not_ be necessary, omit eventually. */
 	while ((inb_p(NE_BASE+EN0_ISR) & ENISR_RESET) == 0)
 		if (time_after(jiffies, reset_start_time + 2*HZ/100)) {
-			printk(KERN_WARNING "%s: ne_reset_8390() did not complete.\n", dev->name);
+;
 			break;
 		}
 	outb_p(ENISR_RESET, NE_BASE + EN0_ISR);	/* Ack intr. */
@@ -402,9 +402,9 @@ static void ne_get_8390_hdr(struct net_device *dev, struct e8390_pkt_hdr *hdr, i
 
 	if (ei_status.dmaing)
 	{
-		printk(KERN_EMERG "%s: DMAing conflict in ne_get_8390_hdr "
-			"[DMAstat:%d][irqlock:%d].\n",
-			dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk(KERN_EMERG "%s: DMAing conflict in ne_get_8390_hdr "
+//			"[DMAstat:%d][irqlock:%d].\n",
+;
 		return;
 	}
 
@@ -446,9 +446,9 @@ static void ne_block_input(struct net_device *dev, int count, struct sk_buff *sk
 	/* This *shouldn't* happen. If it does, it's the last thing you'll see */
 	if (ei_status.dmaing)
 	{
-		printk(KERN_EMERG "%s: DMAing conflict in ne_block_input "
-			"[DMAstat:%d][irqlock:%d].\n",
-			dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk(KERN_EMERG "%s: DMAing conflict in ne_block_input "
+//			"[DMAstat:%d][irqlock:%d].\n",
+;
 		return;
 	}
 	ei_status.dmaing |= 0x01;
@@ -495,9 +495,9 @@ static void ne_block_input(struct net_device *dev, int count, struct sk_buff *sk
 				break;
 		} while (--tries > 0);
 	 	if (tries <= 0)
-			printk(KERN_WARNING "%s: RX transfer address mismatch,"
-				"%#4.4x (expected) vs. %#4.4x (actual).\n",
-				dev->name, ring_offset + xfer_count, addr);
+//			printk(KERN_WARNING "%s: RX transfer address mismatch,"
+//				"%#4.4x (expected) vs. %#4.4x (actual).\n",
+;
 	}
 #endif
 	outb_p(ENISR_RDC, NE_BASE + EN0_ISR);	/* Ack intr. */
@@ -523,9 +523,9 @@ static void ne_block_output(struct net_device *dev, int count,
 	/* This *shouldn't* happen. If it does, it's the last thing you'll see */
 	if (ei_status.dmaing)
 	{
-		printk(KERN_EMERG "%s: DMAing conflict in ne_block_output."
-			"[DMAstat:%d][irqlock:%d]\n",
-			dev->name, ei_status.dmaing, ei_status.irqlock);
+//		printk(KERN_EMERG "%s: DMAing conflict in ne_block_output."
+//			"[DMAstat:%d][irqlock:%d]\n",
+;
 		return;
 	}
 	ei_status.dmaing |= 0x01;
@@ -589,9 +589,9 @@ retry:
 
 		if (tries <= 0)
 		{
-			printk(KERN_WARNING "%s: Tx packet transfer address mismatch,"
-				"%#4.4x (expected) vs. %#4.4x (actual).\n",
-				dev->name, (start_page << 8) + count, addr);
+//			printk(KERN_WARNING "%s: Tx packet transfer address mismatch,"
+//				"%#4.4x (expected) vs. %#4.4x (actual).\n",
+;
 			if (retries++ == 0)
 				goto retry;
 		}
@@ -600,7 +600,7 @@ retry:
 
 	while ((inb_p(NE_BASE + EN0_ISR) & ENISR_RDC) == 0)
 		if (time_after(jiffies, dma_start + 2*HZ/100)) {		/* 20ms */
-			printk(KERN_WARNING "%s: timeout waiting for Tx RDC.\n", dev->name);
+;
 			ne_reset_8390(dev);
 			__NS8390_init(dev,1);
 			break;
@@ -661,7 +661,7 @@ int init_module(void)
 		if (io[this_dev] != 0)
 			printk(KERN_WARNING "ne.c: No NE*000 card found at i/o = %#x\n", dev->base_addr);
 		else
-			printk(KERN_NOTICE "ne.c: You must supply \"io=0xNNN\" value(s) for ISA cards.\n");
+;
 		return -ENXIO;
 	}
 	if (found)

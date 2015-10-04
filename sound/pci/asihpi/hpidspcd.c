@@ -76,42 +76,42 @@ short hpi_dsp_code_open(u32 adapter, struct dsp_code *ps_dsp_code,
 		&ps_dsp_code->ps_dev->dev);
 
 	if (err != 0) {
-		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
-			"%d, request_firmware failed for  %s\n", err,
-			fw_name);
+//		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
+//			"%d, request_firmware failed for  %s\n", err,
+;
 		goto error1;
 	}
 	if (ps_firmware->size < sizeof(header)) {
-		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
-			"Header size too small %s\n", fw_name);
+//		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
+;
 		goto error2;
 	}
 	memcpy(&header, ps_firmware->data, sizeof(header));
 	if (header.adapter != adapter) {
-		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
-			"Adapter type incorrect %4x != %4x\n", header.adapter,
-			adapter);
+//		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
+//			"Adapter type incorrect %4x != %4x\n", header.adapter,
+;
 		goto error2;
 	}
 	if (header.size != ps_firmware->size) {
-		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
-			"Code size wrong  %d != %ld\n", header.size,
-			(unsigned long)ps_firmware->size);
+//		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
+//			"Code size wrong  %d != %ld\n", header.size,
+;
 		goto error2;
 	}
 
 	if (header.version / 100 != HPI_VER_DECIMAL / 100) {
-		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
-			"Incompatible firmware version "
-			"DSP image %d != Driver %d\n", header.version,
-			HPI_VER_DECIMAL);
+//		dev_printk(KERN_ERR, &ps_dsp_code->ps_dev->dev,
+//			"Incompatible firmware version "
+//			"DSP image %d != Driver %d\n", header.version,
+;
 		goto error2;
 	}
 
 	if (header.version != HPI_VER_DECIMAL) {
-		dev_printk(KERN_WARNING, &ps_dsp_code->ps_dev->dev,
-			"Firmware: release version mismatch  DSP image %d != Driver %d\n",
-			header.version, HPI_VER_DECIMAL);
+//		dev_printk(KERN_WARNING, &ps_dsp_code->ps_dev->dev,
+//			"Firmware: release version mismatch  DSP image %d != Driver %d\n",
+;
 	}
 
 	HPI_DEBUG_LOG(DEBUG, "dsp code %s opened\n", fw_name);

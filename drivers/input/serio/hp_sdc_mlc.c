@@ -66,7 +66,7 @@ static void hp_sdc_mlc_isr (int irq, void *dev_id,
 
 	write_lock(&mlc->lock);
 	if (mlc->icount < 0) {
-		printk(KERN_WARNING PREFIX "HIL Overflow!\n");
+;
 		up(&mlc->isem);
 		goto out;
 	}
@@ -104,11 +104,11 @@ static void hp_sdc_mlc_isr (int irq, void *dev_id,
 	goto out;
 
  err:
-	printk(KERN_DEBUG PREFIX "err code %x\n", data);
+;
 
 	switch (data) {
 	case HP_SDC_HIL_RC_DONE:
-		printk(KERN_WARNING PREFIX "Bastard SDC reconfigured loop!\n");
+;
 		break;
 
 	case HP_SDC_HIL_ERR:
@@ -121,11 +121,11 @@ static void hp_sdc_mlc_isr (int irq, void *dev_id,
 		break;
 
 	case HP_SDC_HIL_RC:
-		printk(KERN_WARNING PREFIX "Bastard SDC decided to reconfigure loop!\n");
+;
 		break;
 
 	default:
-		printk(KERN_WARNING PREFIX "Unknown HIL Error status (%x)!\n", data);
+;
 		break;
 	}
 
@@ -312,7 +312,7 @@ static int __init hp_sdc_mlc_init(void)
 		return -ENODEV;
 #endif
 
-	printk(KERN_INFO PREFIX "Registering the System Domain Controller's HIL MLC.\n");
+;
 
 	hp_sdc_mlc_priv.emtestmode = 0;
 	hp_sdc_mlc_priv.trans.seq = hp_sdc_mlc_priv.tseq;
@@ -326,15 +326,15 @@ static int __init hp_sdc_mlc_init(void)
 
 	err = hil_mlc_register(mlc);
 	if (err) {
-		printk(KERN_WARNING PREFIX "Failed to register MLC structure with hil_mlc\n");
+;
 		return err;
 	}
 
 	if (hp_sdc_request_hil_irq(&hp_sdc_mlc_isr)) {
-		printk(KERN_WARNING PREFIX "Request for raw HIL ISR hook denied\n");
+;
 		if (hil_mlc_unregister(mlc))
-			printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
-				"This is bad.  Could cause an oops.\n");
+//			printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
+;
 		return -EBUSY;
 	}
 
@@ -346,12 +346,12 @@ static void __exit hp_sdc_mlc_exit(void)
 	hil_mlc *mlc = &hp_sdc_mlc;
 
 	if (hp_sdc_release_hil_irq(&hp_sdc_mlc_isr))
-		printk(KERN_ERR PREFIX "Failed to release the raw HIL ISR hook.\n"
-			"This is bad.  Could cause an oops.\n");
+//		printk(KERN_ERR PREFIX "Failed to release the raw HIL ISR hook.\n"
+;
 
 	if (hil_mlc_unregister(mlc))
-		printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
-			"This is bad.  Could cause an oops.\n");
+//		printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
+;
 }
 
 module_init(hp_sdc_mlc_init);

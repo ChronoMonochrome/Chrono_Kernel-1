@@ -410,8 +410,8 @@ static int outmixer_event(struct snd_soc_dapm_widget *w,
 	case WM8991_SPEAKER_MIXER | (WM8991_LDSPK_BIT << 8):
 		reg = snd_soc_read(w->codec, WM8991_OUTPUT_MIXER1);
 		if (reg & WM8991_LDLO) {
-			printk(KERN_WARNING
-			       "Cannot set as Output Mixer 1 LDLO Set\n");
+//			printk(KERN_WARNING
+;
 			ret = -1;
 		}
 		break;
@@ -419,8 +419,8 @@ static int outmixer_event(struct snd_soc_dapm_widget *w,
 	case WM8991_SPEAKER_MIXER | (WM8991_RDSPK_BIT << 8):
 		reg = snd_soc_read(w->codec, WM8991_OUTPUT_MIXER2);
 		if (reg & WM8991_RDRO) {
-			printk(KERN_WARNING
-			       "Cannot set as Output Mixer 2 RDRO Set\n");
+//			printk(KERN_WARNING
+;
 			ret = -1;
 		}
 		break;
@@ -428,8 +428,8 @@ static int outmixer_event(struct snd_soc_dapm_widget *w,
 	case WM8991_OUTPUT_MIXER1 | (WM8991_LDLO_BIT << 8):
 		reg = snd_soc_read(w->codec, WM8991_SPEAKER_MIXER);
 		if (reg & WM8991_LDSPK) {
-			printk(KERN_WARNING
-			       "Cannot set as Speaker Mixer LDSPK Set\n");
+//			printk(KERN_WARNING
+;
 			ret = -1;
 		}
 		break;
@@ -437,8 +437,8 @@ static int outmixer_event(struct snd_soc_dapm_widget *w,
 	case WM8991_OUTPUT_MIXER2 | (WM8991_RDRO_BIT << 8):
 		reg = snd_soc_read(w->codec, WM8991_SPEAKER_MIXER);
 		if (reg & WM8991_RDSPK) {
-			printk(KERN_WARNING
-			       "Cannot set as Speaker Mixer RDSPK Set\n");
+//			printk(KERN_WARNING
+;
 			ret = -1;
 		}
 		break;
@@ -940,8 +940,8 @@ static void pll_factors(struct _pll_div *pll_div, unsigned int target,
 		pll_div->div2 = 0;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
-		printk(KERN_WARNING
-		       "WM8991 N value outwith recommended range! N = %d\n", Ndiv);
+//		printk(KERN_WARNING
+;
 
 	pll_div->n = Ndiv;
 	Nmod = target % source;
@@ -1408,8 +1408,8 @@ static int __init wm8991_modinit(void)
 	int ret;
 	ret = i2c_add_driver(&wm8991_i2c_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register WM8991 I2C driver: %d\n",
-		       ret);
+//		printk(KERN_ERR "Failed to register WM8991 I2C driver: %d\n",
+;
 	}
 	return 0;
 }

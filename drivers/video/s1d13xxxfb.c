@@ -44,7 +44,7 @@
  * set this to enable debugging on general functions
  */
 #if 0
-#define dbg(fmt, args...) do { printk(KERN_INFO fmt, ## args); } while(0)
+;
 #else
 #define dbg(fmt, args...) do { } while (0)
 #endif
@@ -53,7 +53,7 @@
  * set this to enable debugging on 2D acceleration
  */
 #if 0
-#define dbg_blit(fmt, args...) do { printk(KERN_INFO BLIT fmt, ## args); } while (0)
+;
 #else
 #define dbg_blit(fmt, args...) do { } while (0)
 #endif
@@ -664,7 +664,7 @@ s1d13xxxfb_fetch_hw_state(struct fb_info *info)
 	lcd_enabled = (par->display & 0x01) != 0;
 
 	if (lcd_enabled && crt_enabled)
-		printk(KERN_WARNING PFX "Warning: LCD and CRT detected, using LCD\n");
+;
 
 	if (lcd_enabled)
 		display = s1d13xxxfb_readreg(par, S1DREG_LCD_DISP_MODE);
@@ -776,7 +776,7 @@ s1d13xxxfb_probe(struct platform_device *pdev)
 
 	dbg("probe called: device is %p\n", pdev);
 
-	printk(KERN_INFO "Epson S1D13XXX FB Driver\n");
+;
 
 	/* enable platform-dependent hardware glue, if any */
 	if (pdev->dev.platform_data)
@@ -825,7 +825,7 @@ s1d13xxxfb_probe(struct platform_device *pdev)
 	default_par->regs = ioremap_nocache(pdev->resource[1].start,
 			pdev->resource[1].end - pdev->resource[1].start +1);
 	if (!default_par->regs) {
-		printk(KERN_ERR PFX "unable to map registers\n");
+;
 		ret = -ENOMEM;
 		goto bail;
 	}
@@ -835,7 +835,7 @@ s1d13xxxfb_probe(struct platform_device *pdev)
 			pdev->resource[0].end - pdev->resource[0].start +1);
 
 	if (!info->screen_base) {
-		printk(KERN_ERR PFX "unable to map framebuffer\n");
+;
 		ret = -ENOMEM;
 		goto bail;
 	}
@@ -857,14 +857,14 @@ s1d13xxxfb_probe(struct platform_device *pdev)
 	}
 
 	if (!ret) {
-		printk(KERN_INFO PFX "chip production id %i = %s\n",
-			prod_id, s1d13xxxfb_prod_names[i]);
-		printk(KERN_INFO PFX "chip revision %i\n", revision);
+//		printk(KERN_INFO PFX "chip production id %i = %s\n",
+;
+;
 	} else {
-		printk(KERN_INFO PFX
-			"unknown chip production id %i, revision %i\n",
-			prod_id, revision);
-		printk(KERN_INFO PFX "please contant maintainer\n");
+//		printk(KERN_INFO PFX
+//			"unknown chip production id %i, revision %i\n",
+;
+;
 		goto bail;
 	}
 
@@ -874,8 +874,8 @@ s1d13xxxfb_probe(struct platform_device *pdev)
 	info->fix.smem_start = pdev->resource[0].start;
 	info->fix.smem_len = pdev->resource[0].end - pdev->resource[0].start + 1;
 
-	printk(KERN_INFO PFX "regs mapped at 0x%p, fb %d KiB mapped at 0x%p\n",
-	       default_par->regs, info->fix.smem_len / 1024, info->screen_base);
+//	printk(KERN_INFO PFX "regs mapped at 0x%p, fb %d KiB mapped at 0x%p\n",
+;
 
 	info->par = default_par;
 	info->flags = FBINFO_DEFAULT | FBINFO_HWACCEL_YPAN;
@@ -903,8 +903,8 @@ s1d13xxxfb_probe(struct platform_device *pdev)
 		goto bail;
 	}
 
-	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-	       info->node, info->fix.id);
+//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+;
 
 	return 0;
 
@@ -933,7 +933,7 @@ static int s1d13xxxfb_suspend(struct platform_device *dev, pm_message_t state)
 		s1dfb->disp_save = kmalloc(info->fix.smem_len, GFP_KERNEL);
 
 	if (!s1dfb->disp_save) {
-		printk(KERN_ERR PFX "no memory to save screen");
+;
 		return -ENOMEM;
 	}
 
@@ -946,7 +946,7 @@ static int s1d13xxxfb_suspend(struct platform_device *dev, pm_message_t state)
 		s1dfb->regs_save = kmalloc(info->fix.mmio_len, GFP_KERNEL);
 
 	if (!s1dfb->regs_save) {
-		printk(KERN_ERR PFX "no memory to save registers");
+;
 		return -ENOMEM;
 	}
 

@@ -79,8 +79,8 @@ int lmc_proto_open(lmc_softc_t *sc)
 	if (sc->if_type == LMC_PPP) {
 		ret = hdlc_open(sc->lmc_device);
 		if (ret < 0)
-			printk(KERN_WARNING "%s: HDLC open failed: %d\n",
-			       sc->name, ret);
+//			printk(KERN_WARNING "%s: HDLC open failed: %d\n",
+;
 	}
 
 	lmc_trace(sc->lmc_device, "lmc_proto_open out");
@@ -111,7 +111,7 @@ __be16 lmc_proto_type(lmc_softc_t *sc, struct sk_buff *skb) /*FOLD00*/
         return htons(ETH_P_802_2);
         break;
     default:
-        printk(KERN_WARNING "%s: No protocol set for this interface, assuming 802.2 (which is wrong!!)\n", sc->name);
+;
         return htons(ETH_P_802_2);
         break;
     }

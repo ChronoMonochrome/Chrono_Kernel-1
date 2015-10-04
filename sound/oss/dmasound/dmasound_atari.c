@@ -1481,7 +1481,7 @@ static int TTStateInfo(char *buffer, size_t space)
 	len += sprintf(buffer+len, "\ttreble    %ddB [-12...+12]\n",
 		       dmasound.treble);
 	if (len >= space) {
-		printk(KERN_ERR "dmasound_atari: overflowed state buffer alloc.\n") ;
+;
 		len = space ;
 	}
 	return len;
@@ -1495,7 +1495,7 @@ static int FalconStateInfo(char *buffer, size_t space)
 	len += sprintf(buffer+len, "\tvol right %ddB [-22.5 ... 0]\n",
 		       dmasound.volume_right);
 	if (len >= space) {
-		printk(KERN_ERR "dmasound_atari: overflowed state buffer alloc.\n") ;
+;
 		len = space ;
 	}
 	return len;
@@ -1603,7 +1603,7 @@ static int __init dmasound_atari_init(void)
 	    if ((st_mfp.int_en_a & st_mfp.int_mk_a & 0x20) == 0)
 		return dmasound_init();
 	    else {
-		printk("DMA sound driver: Timer A interrupt already in use\n");
+;
 		return -EBUSY;
 	    }
 	}

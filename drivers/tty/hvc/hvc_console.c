@@ -343,7 +343,7 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
 		tty_kref_put(tty);
 		tty->driver_data = NULL;
 		kref_put(&hp->kref, destroy_hvc_struct);
-		printk(KERN_ERR "hvc_open: request_irq failed with rc %d.\n", rc);
+;
 	}
 	/* Force wakeup of the polling thread */
 	hvc_kick();
@@ -390,8 +390,8 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
 		tty_wait_until_sent(tty, HVC_CLOSE_WAIT);
 	} else {
 		if (hp->count < 0)
-			printk(KERN_ERR "hvc_close %X: oops, count is %d\n",
-				hp->vtermno, hp->count);
+//			printk(KERN_ERR "hvc_close %X: oops, count is %d\n",
+;
 		spin_unlock_irqrestore(&hp->lock, flags);
 	}
 
@@ -871,14 +871,14 @@ static int hvc_init(void)
 	 * added later. */
 	hvc_task = kthread_run(khvcd, NULL, "khvcd");
 	if (IS_ERR(hvc_task)) {
-		printk(KERN_ERR "Couldn't create kthread for console.\n");
+;
 		err = PTR_ERR(hvc_task);
 		goto put_tty;
 	}
 
 	err = tty_register_driver(drv);
 	if (err) {
-		printk(KERN_ERR "Couldn't register hvc console driver\n");
+;
 		goto stop_thread;
 	}
 

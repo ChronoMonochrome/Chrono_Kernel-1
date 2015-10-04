@@ -85,7 +85,7 @@ int wifi_get_irq_number(unsigned long *irq_flags_ptr)
 
 int wifi_set_carddetect(int on)
 {
-	printk("%s = %d\n", __FUNCTION__, on);
+;
 #ifdef CONFIG_WIFI_CONTROL_FUNC
 	if (wifi_control_data && wifi_control_data->set_carddetect) {
 		wifi_control_data->set_carddetect(on);
@@ -96,7 +96,7 @@ int wifi_set_carddetect(int on)
 
 int wifi_set_power(int on, unsigned long msec)
 {
-	printk("%s = %d\n", __FUNCTION__, on);
+;
 #ifdef CONFIG_WIFI_CONTROL_FUNC
 	if (wifi_control_data && wifi_control_data->set_power) {
 		wifi_control_data->set_power(on);

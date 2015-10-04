@@ -70,7 +70,7 @@ static int __init imx_phycore_init(void)
 	ret = platform_device_add(imx_phycore_snd_device);
 
 	if (ret) {
-		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
+;
 		goto fail3;
 	}
 

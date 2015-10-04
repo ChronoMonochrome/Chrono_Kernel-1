@@ -221,7 +221,7 @@ static int i2o_device_add(struct i2o_controller *c, i2o_lct_entry *entry)
 
 	i2o_dev = i2o_device_alloc();
 	if (IS_ERR(i2o_dev)) {
-		printk(KERN_ERR "i2o: unable to allocate i2o device\n");
+;
 		return PTR_ERR(i2o_dev);
 	}
 
@@ -556,7 +556,7 @@ int i2o_parm_table_get(struct i2o_device *dev, int oper, int group,
 
 	opblk = kmalloc(size, GFP_KERNEL);
 	if (opblk == NULL) {
-		printk(KERN_ERR "i2o: no memory for query buffer.\n");
+;
 		return -ENOMEM;
 	}
 

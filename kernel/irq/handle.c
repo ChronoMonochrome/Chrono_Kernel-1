@@ -70,8 +70,8 @@ static void warn_no_thread(unsigned int irq, struct irqaction *action)
 	if (test_and_set_bit(IRQTF_WARNED, &action->thread_flags))
 		return;
 
-	printk(KERN_WARNING "IRQ %d device %s returned IRQ_WAKE_THREAD "
-	       "but no thread function available.", irq, action->name);
+//	printk(KERN_WARNING "IRQ %d device %s returned IRQ_WAKE_THREAD "
+;
 }
 
 static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)

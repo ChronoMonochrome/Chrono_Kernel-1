@@ -358,8 +358,8 @@ static void fc_fcp_can_queue_ramp_up(struct fc_lport *lport)
 		si->last_can_queue_ramp_down_time = 0;
 	}
 	lport->host->can_queue = can_queue;
-	shost_printk(KERN_ERR, lport->host, "libfc: increased "
-		     "can_queue to %d.\n", can_queue);
+//	shost_printk(KERN_ERR, lport->host, "libfc: increased "
+;
 
 unlock:
 	spin_unlock_irqrestore(lport->host->host_lock, flags);
@@ -395,8 +395,8 @@ static void fc_fcp_can_queue_ramp_down(struct fc_lport *lport)
 	if (!can_queue)
 		can_queue = 1;
 	lport->host->can_queue = can_queue;
-	shost_printk(KERN_ERR, lport->host, "libfc: Could not allocate frame.\n"
-		     "Reducing can_queue to %d.\n", can_queue);
+//	shost_printk(KERN_ERR, lport->host, "libfc: Could not allocate frame.\n"
+;
 
 unlock:
 	spin_unlock_irqrestore(lport->host->host_lock, flags);
@@ -499,9 +499,9 @@ crc_err:
 			stats->ErrorFrames++;
 			/* per cpu count, not total count, but OK for limit */
 			if (stats->InvalidCRCCount++ < 5)
-				printk(KERN_WARNING "libfc: CRC error on data "
-				       "frame for port (%6.6x)\n",
-				       lport->port_id);
+//				printk(KERN_WARNING "libfc: CRC error on data "
+//				       "frame for port (%6.6x)\n",
+;
 			put_cpu();
 			/*
 			 * Assume the frame is total garbage.
@@ -2082,7 +2082,7 @@ int fc_eh_device_reset(struct scsi_cmnd *sc_cmd)
 
 	fsp = fc_fcp_pkt_alloc(lport, GFP_NOIO);
 	if (fsp == NULL) {
-		printk(KERN_WARNING "libfc: could not allocate scsi_pkt\n");
+;
 		goto out;
 	}
 
@@ -2124,13 +2124,13 @@ int fc_eh_host_reset(struct scsi_cmnd *sc_cmd)
 		msleep(1000);
 
 	if (fc_fcp_lport_queue_ready(lport)) {
-		shost_printk(KERN_INFO, shost, "libfc: Host reset succeeded "
-			     "on port (%6.6x)\n", lport->port_id);
+//		shost_printk(KERN_INFO, shost, "libfc: Host reset succeeded "
+;
 		return SUCCESS;
 	} else {
-		shost_printk(KERN_INFO, shost, "libfc: Host reset failed, "
-			     "port (%6.6x) is not ready.\n",
-			     lport->port_id);
+//		shost_printk(KERN_INFO, shost, "libfc: Host reset failed, "
+//			     "port (%6.6x) is not ready.\n",
+;
 		return FAILED;
 	}
 }
@@ -2214,8 +2214,8 @@ void fc_fcp_destroy(struct fc_lport *lport)
 	struct fc_fcp_internal *si = fc_get_scsi_internal(lport);
 
 	if (!list_empty(&si->scsi_pkt_queue))
-		printk(KERN_ERR "libfc: Leaked SCSI packets when destroying "
-		       "port (%6.6x)\n", lport->port_id);
+//		printk(KERN_ERR "libfc: Leaked SCSI packets when destroying "
+;
 
 	mempool_destroy(si->scsi_pkt_pool);
 	kfree(si);
@@ -2231,8 +2231,8 @@ int fc_setup_fcp(void)
 					    sizeof(struct fc_fcp_pkt),
 					    0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!scsi_pkt_cachep) {
-		printk(KERN_ERR "libfc: Unable to allocate SRB cache, "
-		       "module load failed!");
+//		printk(KERN_ERR "libfc: Unable to allocate SRB cache, "
+;
 		rc = -ENOMEM;
 	}
 

@@ -147,7 +147,7 @@ static void DAC1064_setmclk(struct matrox_fb_info *minfo, int oscinfo,
 				break;
 		}
 		if (!clk)
-			printk(KERN_ERR "matroxfb: aiee, SYSPLL not locked\n");
+;
 		/* select PLL */
 		mx |= 0x00000005;
 	} else {
@@ -465,15 +465,15 @@ static void DAC1064_restore_2(struct matrox_fb_info *minfo)
 	DBG(__func__)
 
 #ifdef DEBUG
-	dprintk(KERN_DEBUG "DAC1064regs ");
+;
 	for (i = 0; i < sizeof(MGA1064_DAC_regs); i++) {
-		dprintk("R%02X=%02X ", MGA1064_DAC_regs[i], minfo->hw.DACreg[i]);
-		if ((i & 0x7) == 0x7) dprintk(KERN_DEBUG "continuing... ");
+;
+;
 	}
-	dprintk(KERN_DEBUG "DAC1064clk ");
+;
 	for (i = 0; i < 6; i++)
-		dprintk("C%02X=%02X ", i, minfo->hw.DACclk[i]);
-	dprintk("\n");
+;
+;
 #endif
 }
 
@@ -499,7 +499,7 @@ static int m1064_compute(void* out, struct my_timming* m) {
 		CRITEND
 
 		if (!tmout)
-			printk(KERN_ERR "matroxfb: Pixel PLL not locked after 5 secs\n");
+;
 	}
 #undef minfo
 	return 0;
@@ -641,7 +641,7 @@ static void MGAG100_progPixClock(const struct matrox_fb_info *minfo, int flags,
 		udelay(10);
 	};
 	if (!clk)
-		printk(KERN_ERR "matroxfb: Pixel PLL%c not locked after usual time\n", (reg-M1064_XPIXPLLAM-2)/4 + 'A');
+;
 	selClk = inDAC1064(minfo, M1064_XPIXCLKCTRL) & ~M1064_XPIXCLKCTRL_SRC_MASK;
 	switch (flags & 0x0C) {
 		case 0x00:	selClk |= M1064_XPIXCLKCTRL_SRC_PCI; break;

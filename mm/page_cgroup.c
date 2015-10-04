@@ -95,13 +95,13 @@ void __init page_cgroup_init_flatmem(void)
 		if (fail)
 			goto fail;
 	}
-	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
-	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
-	" don't want memory cgroups\n");
+;
+//	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
+;
 	return;
 fail:
-	printk(KERN_CRIT "allocation of page_cgroup failed.\n");
-	printk(KERN_CRIT "please try 'cgroup_disable=memory' boot option\n");
+;
+;
 	panic("Out of memory");
 }
 
@@ -187,7 +187,7 @@ static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
 	kmemleak_not_leak(base);
 
 	if (!base) {
-		printk(KERN_ERR "page cgroup allocation failure\n");
+;
 		return -ENOMEM;
 	}
 
@@ -331,12 +331,12 @@ void __init page_cgroup_init(void)
 		}
 	}
 	hotplug_memory_notifier(page_cgroup_callback, 0);
-	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
-	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you "
-			 "don't want memory cgroups\n");
+;
+//	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you "
+;
 	return;
 oom:
-	printk(KERN_CRIT "try 'cgroup_disable=memory' boot option\n");
+;
 	panic("Out of memory");
 }
 
@@ -535,9 +535,9 @@ int swap_cgroup_swapon(int type, unsigned long max_pages)
 
 	return 0;
 nomem:
-	printk(KERN_INFO "couldn't allocate enough memory for swap_cgroup.\n");
-	printk(KERN_INFO
-		"swap_cgroup can be disabled by noswapaccount boot option\n");
+;
+//	printk(KERN_INFO
+;
 	return -ENOMEM;
 }
 

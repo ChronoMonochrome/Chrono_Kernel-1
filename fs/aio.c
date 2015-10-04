@@ -42,7 +42,7 @@
 #if DEBUG > 1
 #define dprintk		printk
 #else
-#define dprintk(x...)	do { ; } while (0)
+;
 #endif
 
 /*------ sysctl variables----*/
@@ -133,7 +133,7 @@ static int aio_setup_ring(struct kioctx *ctx)
 	}
 
 	info->mmap_size = nr_pages * PAGE_SIZE;
-	dprintk("attempting mmap of %lu bytes\n", info->mmap_size);
+;
 	down_write(&ctx->mm->mmap_sem);
 	info->mmap_base = do_mmap(NULL, 0, info->mmap_size, 
 				  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE,
@@ -145,7 +145,7 @@ static int aio_setup_ring(struct kioctx *ctx)
 		return -EAGAIN;
 	}
 
-	dprintk("mmap address: 0x%08lx\n", info->mmap_base);
+;
 	info->nr_pages = get_user_pages(current, ctx->mm,
 					info->mmap_base, nr_pages, 
 					1, 0, info->ring_pages, NULL);
@@ -305,8 +305,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
 	hlist_add_head_rcu(&ctx->list, &mm->ioctx_list);
 	spin_unlock(&mm->ioctx_lock);
 
-	dprintk("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
-		ctx, ctx->user_id, current->mm, ctx->ring_info.nr);
+//	dprintk("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
+;
 	return ctx;
 
 out_cleanup:
@@ -318,7 +318,7 @@ out_freectx:
 	kmem_cache_free(kioctx_cachep, ctx);
 	ctx = ERR_PTR(-ENOMEM);
 
-	dprintk("aio: error allocating ioctx %p\n", ctx);
+;
 	return ctx;
 }
 
@@ -413,10 +413,10 @@ void exit_aio(struct mm_struct *mm)
 		cancel_work_sync(&ctx->wq.work);
 
 		if (1 != atomic_read(&ctx->users))
-			printk(KERN_DEBUG
-				"exit_aio:ioctx still alive: %d %d %d\n",
-				atomic_read(&ctx->users), ctx->dead,
-				ctx->reqs_active);
+//			printk(KERN_DEBUG
+//				"exit_aio:ioctx still alive: %d %d %d\n",
+//				atomic_read(&ctx->users), ctx->dead,
+;
 		put_ioctx(ctx);
 	}
 }
@@ -614,8 +614,8 @@ static void aio_fput_routine(struct work_struct *data)
  */
 static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
 {
-	dprintk(KERN_DEBUG "aio_put(%p): f_count=%ld\n",
-		req, atomic_long_read(&req->ki_filp->f_count));
+//	dprintk(KERN_DEBUG "aio_put(%p): f_count=%ld\n",
+;
 
 	assert_spin_locked(&ctx->ctx_lock);
 
@@ -737,7 +737,7 @@ static ssize_t aio_run_iocb(struct kiocb *iocb)
 	ssize_t ret;
 
 	if (!(retry = iocb->ki_retry)) {
-		printk("aio_run_iocb: iocb->ki_retry = NULL\n");
+;
 		return 0;
 	}
 
@@ -1022,9 +1022,9 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
 	event->res = res;
 	event->res2 = res2;
 
-	dprintk("aio_complete: %p[%lu]: %p: %p %Lx %lx %lx\n",
-		ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
-		res, res2);
+//	dprintk("aio_complete: %p[%lu]: %p: %p %Lx %lx %lx\n",
+//		ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
+;
 
 	/* after flagging the request as done, we
 	 * must never even look at it again
@@ -1081,9 +1081,9 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
 	int ret = 0;
 
 	ring = kmap_atomic(info->ring_pages[0], KM_USER0);
-	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
-		 (unsigned long)ring->head, (unsigned long)ring->tail,
-		 (unsigned long)ring->nr);
+//	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
+//		 (unsigned long)ring->head, (unsigned long)ring->tail,
+;
 
 	if (ring->head == ring->tail)
 		goto out;
@@ -1104,8 +1104,8 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
 
 out:
 	kunmap_atomic(ring, KM_USER0);
-	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
-		 (unsigned long)ring->head, (unsigned long)ring->tail);
+//	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
+;
 	return ret;
 }
 
@@ -1170,13 +1170,13 @@ retry:
 		if (unlikely(ret <= 0))
 			break;
 
-		dprintk("read event: %Lx %Lx %Lx %Lx\n",
-			ent.data, ent.obj, ent.res, ent.res2);
+//		dprintk("read event: %Lx %Lx %Lx %Lx\n",
+;
 
 		/* Could we split the check in two? */
 		ret = -EFAULT;
 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
-			dprintk("aio: lost an event due to EFAULT.\n");
+;
 			break;
 		}
 		ret = 0;
@@ -1246,7 +1246,7 @@ retry:
 
 		ret = -EFAULT;
 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
-			dprintk("aio: lost an event due to EFAULT.\n");
+;
 			break;
 		}
 
@@ -1277,7 +1277,7 @@ static void io_destroy(struct kioctx *ioctx)
 	hlist_del_rcu(&ioctx->list);
 	spin_unlock(&mm->ioctx_lock);
 
-	dprintk("aio_release(%p)\n", ioctx);
+;
 	if (likely(!was_dead))
 		put_ioctx(ioctx);	/* twice for the list */
 
@@ -1573,7 +1573,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
 			kiocb->ki_retry = aio_fsync;
 		break;
 	default:
-		dprintk("EINVAL: io_submit: no operation provided\n");
+;
 		ret = -EINVAL;
 	}
 
@@ -1634,7 +1634,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 
 	ret = put_user(req->ki_key, &user_iocb->aio_key);
 	if (unlikely(ret)) {
-		dprintk("EFAULT: aio_key\n");
+;
 		goto out_put_req;
 	}
 

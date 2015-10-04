@@ -129,9 +129,9 @@ static int vmlfb_alloc_vram_area(struct vram_area *va, unsigned max_order,
 	 */
 	set_pages_uc(virt_to_page(va->logical), va->size >> PAGE_SHIFT);
 
-	printk(KERN_DEBUG MODULE_NAME
-	       ": Allocated %ld bytes vram area at 0x%08lx\n",
-	       va->size, va->phys);
+//	printk(KERN_DEBUG MODULE_NAME
+//	       ": Allocated %ld bytes vram area at 0x%08lx\n",
+;
 
 	return 0;
 }
@@ -164,9 +164,9 @@ static void vmlfb_free_vram_area(struct vram_area *va)
 			(void)put_page_testzero(virt_to_page(j));
 		}
 
-		printk(KERN_DEBUG MODULE_NAME
-		       ": Freeing %ld bytes vram area at 0x%08lx\n",
-		       va->size, va->phys);
+//		printk(KERN_DEBUG MODULE_NAME
+//		       ": Freeing %ld bytes vram area at 0x%08lx\n",
+;
 		free_pages(va->logical, va->order);
 
 		va->logical = 0;
@@ -258,16 +258,16 @@ static int vmlfb_alloc_vram(struct vml_info *vinfo,
 	if (vinfo->vram_contig_size > min_total &&
 	    vinfo->vram_contig_size > min_contig) {
 
-		printk(KERN_DEBUG MODULE_NAME
-		       ": Contiguous vram: %ld bytes at physical 0x%08lx.\n",
-		       (unsigned long)vinfo->vram_contig_size,
-		       (unsigned long)vinfo->vram_start);
+//		printk(KERN_DEBUG MODULE_NAME
+//		       ": Contiguous vram: %ld bytes at physical 0x%08lx.\n",
+//		       (unsigned long)vinfo->vram_contig_size,
+;
 
 		return 0;
 	}
 
-	printk(KERN_ERR MODULE_NAME
-	       ": Could not allocate requested minimal amount of vram.\n");
+//	printk(KERN_ERR MODULE_NAME
+;
 
 	vmlfb_free_vram(vinfo);
 
@@ -327,14 +327,14 @@ static int vmlfb_enable_mmio(struct vml_par *par)
 	par->vdc_mem_base = pci_resource_start(par->vdc, 0);
 	par->vdc_mem_size = pci_resource_len(par->vdc, 0);
 	if (!request_mem_region(par->vdc_mem_base, par->vdc_mem_size, "vmlfb")) {
-		printk(KERN_ERR MODULE_NAME
-		       ": Could not claim display controller MMIO.\n");
+//		printk(KERN_ERR MODULE_NAME
+;
 		return -EBUSY;
 	}
 	par->vdc_mem = ioremap_nocache(par->vdc_mem_base, par->vdc_mem_size);
 	if (par->vdc_mem == NULL) {
-		printk(KERN_ERR MODULE_NAME
-		       ": Could not map display controller MMIO.\n");
+//		printk(KERN_ERR MODULE_NAME
+;
 		err = -ENOMEM;
 		goto out_err_0;
 	}
@@ -342,13 +342,13 @@ static int vmlfb_enable_mmio(struct vml_par *par)
 	par->gpu_mem_base = pci_resource_start(par->gpu, 0);
 	par->gpu_mem_size = pci_resource_len(par->gpu, 0);
 	if (!request_mem_region(par->gpu_mem_base, par->gpu_mem_size, "vmlfb")) {
-		printk(KERN_ERR MODULE_NAME ": Could not claim GPU MMIO.\n");
+;
 		err = -EBUSY;
 		goto out_err_1;
 	}
 	par->gpu_mem = ioremap_nocache(par->gpu_mem_base, par->gpu_mem_size);
 	if (par->gpu_mem == NULL) {
-		printk(KERN_ERR MODULE_NAME ": Could not map GPU MMIO.\n");
+;
 		err = -ENOMEM;
 		goto out_err_2;
 	}
@@ -525,7 +525,7 @@ static int __devinit vml_pci_probe(struct pci_dev *dev,
 
 	if (!fb_find_mode
 	    (&info->var, info, vml_default_mode, NULL, 0, &defaultmode, 16)) {
-		printk(KERN_ERR MODULE_NAME ": Could not find initial mode\n");
+;
 	}
 
 	if (fb_alloc_cmap(&info->cmap, 256, 1) < 0) {
@@ -535,11 +535,11 @@ static int __devinit vml_pci_probe(struct pci_dev *dev,
 
 	err = register_framebuffer(info);
 	if (err) {
-		printk(KERN_ERR MODULE_NAME ": Register framebuffer error.\n");
+;
 		goto out_err_5;
 	}
 
-	printk("Initialized vmlfb\n");
+;
 
 	return 0;
 
@@ -624,7 +624,7 @@ static int vmlfb_check_var_locked(struct fb_var_screeninfo *var,
 	clock_diff = (clock_diff < 0) ? -clock_diff : clock_diff;
 	if (clock_diff > clock / 5) {
 #if 0
-		printk(KERN_DEBUG MODULE_NAME ": Diff failure. %d %d\n",clock_diff,clock);
+;
 #endif
 		return -EINVAL;
 	}
@@ -632,12 +632,12 @@ static int vmlfb_check_var_locked(struct fb_var_screeninfo *var,
 	v.pixclock = KHZ2PICOS(nearest_clock);
 
 	if (var->xres > VML_MAX_XRES || var->yres > VML_MAX_YRES) {
-		printk(KERN_DEBUG MODULE_NAME ": Resolution failure.\n");
+;
 		return -EINVAL;
 	}
 	if (var->xres_virtual > VML_MAX_XRES_VIRTUAL) {
-		printk(KERN_DEBUG MODULE_NAME
-		       ": Virtual resolution failure.\n");
+//		printk(KERN_DEBUG MODULE_NAME
+;
 		return -EINVAL;
 	}
 	switch (v.bits_per_pixel) {
@@ -648,8 +648,8 @@ static int vmlfb_check_var_locked(struct fb_var_screeninfo *var,
 		v.bits_per_pixel = 32;
 		break;
 	default:
-		printk(KERN_DEBUG MODULE_NAME ": Invalid bpp: %d.\n",
-		       var->bits_per_pixel);
+//		printk(KERN_DEBUG MODULE_NAME ": Invalid bpp: %d.\n",
+;
 		return -EINVAL;
 	}
 
@@ -737,42 +737,42 @@ static void vml_dump_regs(struct vml_info *vinfo)
 {
 	struct vml_par *par = vinfo->par;
 
-	printk(KERN_DEBUG MODULE_NAME ": Modesetting register dump:\n");
-	printk(KERN_DEBUG MODULE_NAME ": \tHTOTAL_A         : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_HTOTAL_A));
-	printk(KERN_DEBUG MODULE_NAME ": \tHBLANK_A         : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_HBLANK_A));
-	printk(KERN_DEBUG MODULE_NAME ": \tHSYNC_A          : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_HSYNC_A));
-	printk(KERN_DEBUG MODULE_NAME ": \tVTOTAL_A         : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_VTOTAL_A));
-	printk(KERN_DEBUG MODULE_NAME ": \tVBLANK_A         : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_VBLANK_A));
-	printk(KERN_DEBUG MODULE_NAME ": \tVSYNC_A          : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_VSYNC_A));
-	printk(KERN_DEBUG MODULE_NAME ": \tDSPCSTRIDE       : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_DSPCSTRIDE));
-	printk(KERN_DEBUG MODULE_NAME ": \tDSPCSIZE         : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_DSPCSIZE));
-	printk(KERN_DEBUG MODULE_NAME ": \tDSPCPOS          : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_DSPCPOS));
-	printk(KERN_DEBUG MODULE_NAME ": \tDSPARB           : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_DSPARB));
-	printk(KERN_DEBUG MODULE_NAME ": \tDSPCADDR         : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_DSPCADDR));
-	printk(KERN_DEBUG MODULE_NAME ": \tBCLRPAT_A        : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_BCLRPAT_A));
-	printk(KERN_DEBUG MODULE_NAME ": \tCANVSCLR_A       : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_CANVSCLR_A));
-	printk(KERN_DEBUG MODULE_NAME ": \tPIPEASRC         : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_PIPEASRC));
-	printk(KERN_DEBUG MODULE_NAME ": \tPIPEACONF        : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_PIPEACONF));
-	printk(KERN_DEBUG MODULE_NAME ": \tDSPCCNTR         : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_DSPCCNTR));
-	printk(KERN_DEBUG MODULE_NAME ": \tRCOMPSTAT        : 0x%08x\n",
-	       (unsigned)VML_READ32(par, VML_RCOMPSTAT));
-	printk(KERN_DEBUG MODULE_NAME ": End of modesetting register dump.\n");
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tHTOTAL_A         : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tHBLANK_A         : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tHSYNC_A          : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tVTOTAL_A         : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tVBLANK_A         : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tVSYNC_A          : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tDSPCSTRIDE       : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tDSPCSIZE         : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tDSPCPOS          : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tDSPARB           : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tDSPCADDR         : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tBCLRPAT_A        : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tCANVSCLR_A       : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tPIPEASRC         : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tPIPEACONF        : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tDSPCCNTR         : 0x%08x\n",
+;
+//	printk(KERN_DEBUG MODULE_NAME ": \tRCOMPSTAT        : 0x%08x\n",
+;
+;
 }
 #endif
 
@@ -817,9 +817,9 @@ static int vmlfb_set_par_locked(struct vml_info *vinfo)
 	} else {
 		clock = vml_nearest_clock(clock);
 	}
-	printk(KERN_DEBUG MODULE_NAME
-	       ": Set mode Hfreq : %d kHz, Vfreq : %d Hz.\n", clock / htotal,
-	       ((clock / htotal) * 1000) / vtotal);
+//	printk(KERN_DEBUG MODULE_NAME
+//	       ": Set mode Hfreq : %d kHz, Vfreq : %d Hz.\n", clock / htotal,
+;
 
 	switch (var->bits_per_pixel) {
 	case 16:
@@ -1079,7 +1079,7 @@ static int __init vmlfb_init(void)
 		return -ENODEV;
 #endif
 
-	printk(KERN_DEBUG MODULE_NAME ": initializing\n");
+;
 	mutex_init(&vml_mutex);
 	INIT_LIST_HEAD(&global_no_mode);
 	INIT_LIST_HEAD(&global_has_mode);
@@ -1136,8 +1136,8 @@ int vmlfb_register_subsys(struct vml_sys *sys)
 				    FB_ACTIVATE_FORCE | FB_ACTIVATE_NOW;
 				fb_set_var(&entry->info, &entry->info.var);
 			} else {
-				printk(KERN_ERR MODULE_NAME
-				       ": Sorry. no mode found for this subsys.\n");
+//				printk(KERN_ERR MODULE_NAME
+;
 			}
 			entry->info.var.activate = save_activate;
 			mutex_lock(&vml_mutex);
@@ -1147,8 +1147,8 @@ int vmlfb_register_subsys(struct vml_sys *sys)
 	}
 	mutex_unlock(&vml_mutex);
 
-	printk(KERN_DEBUG MODULE_NAME ": Registered %s subsystem.\n",
-				subsys->name ? subsys->name : "unknown");
+//	printk(KERN_DEBUG MODULE_NAME ": Registered %s subsystem.\n",
+;
 	return 0;
 }
 
@@ -1166,7 +1166,7 @@ void vmlfb_unregister_subsys(struct vml_sys *sys)
 	subsys->restore(subsys);
 	subsys = NULL;
 	list_for_each_entry_safe(entry, next, &global_has_mode, head) {
-		printk(KERN_DEBUG MODULE_NAME ": subsys disable pipe\n");
+;
 		vmlfb_disable_pipe(entry);
 		list_del(&entry->head);
 		list_add_tail(&entry->head, &global_no_mode);

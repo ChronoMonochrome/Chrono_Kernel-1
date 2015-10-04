@@ -149,8 +149,8 @@ void x25_write_internal(struct sock *sk, int frametype)
 		case X25_RESET_CONFIRMATION:
 			break;
 		default:
-			printk(KERN_ERR "X.25: invalid frame type %02X\n",
-			       frametype);
+//			printk(KERN_ERR "X.25: invalid frame type %02X\n",
+;
 			return;
 	}
 
@@ -340,8 +340,8 @@ int x25_decode(struct sock *sk, struct sk_buff *skb, int *ns, int *nr, int *q,
 		}
 	}
 
-	printk(KERN_DEBUG "X.25: invalid PLP frame %02X %02X %02X\n",
-	       frame[0], frame[1], frame[2]);
+//	printk(KERN_DEBUG "X.25: invalid PLP frame %02X %02X %02X\n",
+;
 
 	return X25_ILLEGAL;
 }

@@ -29,8 +29,8 @@ jornada720_pcmcia_configure_socket(struct soc_pcmcia_socket *skt, const socket_s
 	unsigned int pa_dwr_mask, pa_dwr_set;
 	int ret;
 
-	printk(KERN_INFO "%s(): config socket %d vcc %d vpp %d\n", __func__,
-		skt->nr, state->Vcc, state->Vpp);
+//	printk(KERN_INFO "%s(): config socket %d vcc %d vpp %d\n", __func__,
+;
 
 	switch (skt->nr) {
 	case 0:
@@ -72,8 +72,8 @@ jornada720_pcmcia_configure_socket(struct soc_pcmcia_socket *skt, const socket_s
 	}
 
 	if (state->Vpp != state->Vcc && state->Vpp != 0) {
-		printk(KERN_ERR "%s(): slot cannot support VPP %u\n",
-			__func__, state->Vpp);
+//		printk(KERN_ERR "%s(): slot cannot support VPP %u\n",
+;
 		return -EPERM;
 	}
 

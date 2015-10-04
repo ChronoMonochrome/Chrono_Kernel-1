@@ -93,8 +93,8 @@ static int __init ide_generic_init(void)
 	ide_generic_check_pci_legacy_iobases(&primary, &secondary);
 
 	if (!probe_mask) {
-		printk(KERN_INFO DRV_NAME ": please use \"probe_mask=0x3f\" "
-		     "module parameter for probing all legacy ISA IDE ports\n");
+//		printk(KERN_INFO DRV_NAME ": please use \"probe_mask=0x3f\" "
+;
 
 		if (primary == 0)
 			probe_mask |= 0x1;
@@ -102,25 +102,25 @@ static int __init ide_generic_init(void)
 		if (secondary == 0)
 			probe_mask |= 0x2;
 	} else
-		printk(KERN_INFO DRV_NAME ": enforcing probing of I/O ports "
-			"upon user request\n");
+//		printk(KERN_INFO DRV_NAME ": enforcing probing of I/O ports "
+;
 
 	for (i = 0; i < ARRAY_SIZE(legacy_bases); i++) {
 		io_addr = legacy_bases[i];
 
 		if ((probe_mask & (1 << i)) && io_addr) {
 			if (!request_region(io_addr, 8, DRV_NAME)) {
-				printk(KERN_ERR "%s: I/O resource 0x%lX-0x%lX "
-						"not free.\n",
-						DRV_NAME, io_addr, io_addr + 7);
+//				printk(KERN_ERR "%s: I/O resource 0x%lX-0x%lX "
+//						"not free.\n",
+;
 				rc = -EBUSY;
 				continue;
 			}
 
 			if (!request_region(io_addr + 0x206, 1, DRV_NAME)) {
-				printk(KERN_ERR "%s: I/O resource 0x%lX "
-						"not free.\n",
-						DRV_NAME, io_addr + 0x206);
+//				printk(KERN_ERR "%s: I/O resource 0x%lX "
+//						"not free.\n",
+;
 				release_region(io_addr, 8);
 				rc = -EBUSY;
 				continue;

@@ -194,7 +194,7 @@ static int __init display_class_init(void)
 {
 	display_class = class_create(THIS_MODULE, "display");
 	if (IS_ERR(display_class)) {
-		printk(KERN_ERR "Failed to create display class\n");
+;
 		display_class = NULL;
 		return -EINVAL;
 	}

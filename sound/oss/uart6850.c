@@ -192,7 +192,7 @@ static int uart6850_out(int dev, unsigned char midi_byte)
 										 */
 	if (!output_ready())
 	{
-		printk(KERN_WARNING "Midi6850: Timeout\n");
+;
 		return 0;
 	}
 	uart6850_write(midi_byte);
@@ -256,7 +256,7 @@ static void __init attach_uart6850(struct address_info *hw_config)
 
 	if ((my_dev = sound_alloc_mididev()) == -1)
 	{
-		printk(KERN_INFO "uart6850: Too many midi devices detected\n");
+;
 		return;
 	}
 	uart6850_base = hw_config->io_base;
@@ -324,7 +324,7 @@ static int __init init_uart6850(void)
 	cfg_mpu.irq = irq;
 
 	if (cfg_mpu.io_base == -1 || cfg_mpu.irq == -1) {
-		printk(KERN_INFO "uart6850: irq and io must be set.\n");
+;
 		return -EINVAL;
 	}
 

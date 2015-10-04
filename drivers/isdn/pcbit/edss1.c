@@ -255,7 +255,7 @@ static void pcbit_fsm_timer(unsigned long data)
         dev = chan2dev(chan);
 
         if (dev == NULL) {
-                printk(KERN_WARNING "pcbit: timer for unknown device\n");
+;
                 return;
         }
 
@@ -279,8 +279,8 @@ void pcbit_fsm_event(struct pcbit_dev *dev, struct pcbit_chan *chan,
 	if (action->init == 0xff) {
 		
 		spin_unlock_irqrestore(&dev->lock, flags);
-		printk(KERN_DEBUG "fsm error: event %x on state %x\n", 
-                       event, chan->fsm_state);
+//		printk(KERN_DEBUG "fsm error: event %x on state %x\n", 
+;
 		return;
 	}
 

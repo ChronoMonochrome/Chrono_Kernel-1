@@ -167,7 +167,7 @@ void __init t128_setup(char *str, int *ints){
     static int commandline_current = 0;
     int i;
     if (ints[0] != 2) 
-	printk("t128_setup : usage t128=address,irq\n");
+;
     else 
 	if (commandline_current < NO_OVERRIDES) {
 	    overrides[commandline_current].address = ints[1];
@@ -216,7 +216,7 @@ int __init t128_detect(struct scsi_host_template * tpnt){
 	} else 
 	    for (; !base && (current_base < NO_BASES); ++current_base) {
 #if (TDEBUG & TDEBUG_INIT)
-    printk("scsi-t128 : probing address %08x\n", bases[current_base].address);
+;
 #endif
 		if (bases[current_base].noauto)
 			continue;
@@ -229,7 +229,7 @@ int __init t128_detect(struct scsi_host_template * tpnt){
 					strlen(signatures[sig].string))) {
 			base = bases[current_base].address;
 #if (TDEBUG & TDEBUG_INIT)
-			printk("scsi-t128 : detected board.\n");
+;
 #endif
 			goto found;
 		    }
@@ -237,7 +237,7 @@ int __init t128_detect(struct scsi_host_template * tpnt){
 	    }
 
 #if defined(TDEBUG) && (TDEBUG & TDEBUG_INIT)
-	printk("scsi-t128 : base = %08x\n", (unsigned int) base);
+;
 #endif
 
 	if (!base)
@@ -261,29 +261,29 @@ found:
 	if (instance->irq != SCSI_IRQ_NONE) 
 	    if (request_irq(instance->irq, t128_intr, IRQF_DISABLED, "t128",
 			    instance)) {
-		printk("scsi%d : IRQ%d not free, interrupts disabled\n", 
-		    instance->host_no, instance->irq);
+//		printk("scsi%d : IRQ%d not free, interrupts disabled\n", 
+;
 		instance->irq = SCSI_IRQ_NONE;
 	    } 
 
 	if (instance->irq == SCSI_IRQ_NONE) {
-	    printk("scsi%d : interrupts not enabled. for better interactive performance,\n", instance->host_no);
-	    printk("scsi%d : please jumper the board for a free IRQ.\n", instance->host_no);
+;
+;
 	}
 
 #if defined(TDEBUG) && (TDEBUG & TDEBUG_INIT)
-	printk("scsi%d : irq = %d\n", instance->host_no, instance->irq);
+;
 #endif
 
-	printk("scsi%d : at 0x%08lx", instance->host_no, instance->base);
+;
 	if (instance->irq == SCSI_IRQ_NONE)
 	    printk (" interrupts disabled");
 	else 
 	    printk (" irq %d", instance->irq);
-	printk(" options CAN_QUEUE=%d  CMD_PER_LUN=%d release=%d",
-	    CAN_QUEUE, CMD_PER_LUN, T128_PUBLIC_RELEASE);
+//	printk(" options CAN_QUEUE=%d  CMD_PER_LUN=%d release=%d",
+;
 	NCR5380_print_options(instance);
-	printk("\n");
+;
 
 	++current_override;
 	++count;
@@ -373,8 +373,8 @@ static inline int NCR5380_pread (struct Scsi_Host *instance, unsigned char *dst,
 	tmp = readb(foo);
 	writeb(tmp | T_CR_CT, foo);
 	writeb(tmp, foo);
-	printk("scsi%d : watchdog timer fired in NCR5380_pread()\n",
-	    instance->host_no);
+//	printk("scsi%d : watchdog timer fired in NCR5380_pread()\n",
+;
 	return -1;
     } else
 	return 0;
@@ -419,8 +419,8 @@ static inline int NCR5380_pwrite (struct Scsi_Host *instance, unsigned char *src
 	tmp = readb(foo);
 	writeb(tmp | T_CR_CT, foo);
 	writeb(tmp, foo);
-	printk("scsi%d : watchdog timer fired in NCR5380_pwrite()\n",
-	    instance->host_no);
+//	printk("scsi%d : watchdog timer fired in NCR5380_pwrite()\n",
+;
 	return -1;
     } else 
 	return 0;

@@ -92,8 +92,8 @@ do_xor_speed(struct xor_block_template *tmpl, void *b1, void *b2)
 	speed = max * (HZ * BENCH_SIZE / 1024);
 	tmpl->speed = speed;
 
-	printk(KERN_INFO "   %-10s: %5d.%03d MB/sec\n", tmpl->name,
-	       speed / 1000, speed % 1000);
+//	printk(KERN_INFO "   %-10s: %5d.%03d MB/sec\n", tmpl->name,
+;
 }
 
 static int __init
@@ -109,7 +109,7 @@ calibrate_xor_blocks(void)
 	 */
 	b1 = (void *) __get_free_pages(GFP_KERNEL | __GFP_NOTRACK, 2);
 	if (!b1) {
-		printk(KERN_WARNING "xor: Yikes!  No memory available.\n");
+;
 		return -ENOMEM;
 	}
 	b2 = b1 + 2*PAGE_SIZE + BENCH_SIZE;
@@ -128,12 +128,12 @@ calibrate_xor_blocks(void)
 #define xor_speed(templ)	do_xor_speed((templ), b1, b2)
 
 	if (fastest) {
-		printk(KERN_INFO "xor: automatically using best "
-			"checksumming function: %s\n",
-			fastest->name);
+//		printk(KERN_INFO "xor: automatically using best "
+//			"checksumming function: %s\n",
+;
 		xor_speed(fastest);
 	} else {
-		printk(KERN_INFO "xor: measuring software checksum speed\n");
+;
 		XOR_TRY_TEMPLATES;
 		fastest = template_list;
 		for (f = fastest; f; f = f->next)
@@ -141,8 +141,8 @@ calibrate_xor_blocks(void)
 				fastest = f;
 	}
 
-	printk(KERN_INFO "xor: using function: %s (%d.%03d MB/sec)\n",
-	       fastest->name, fastest->speed / 1000, fastest->speed % 1000);
+//	printk(KERN_INFO "xor: using function: %s (%d.%03d MB/sec)\n",
+;
 
 #undef xor_speed
 

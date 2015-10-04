@@ -27,7 +27,7 @@
 #include <linux/tty_flip.h>
 #include <asm/atomic.h>
 
-#define pr_init(fmt, args...) ({ static const __initconst char __fmt[] = fmt; printk(__fmt, ## args); })
+;
 
 /* See the Debug/Emulation chapter in the HRM */
 #define EMUDOF   0x00000001	/* EMUDAT_OUT full & valid */

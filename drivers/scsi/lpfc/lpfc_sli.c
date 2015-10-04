@@ -1159,8 +1159,8 @@ lpfc_sli_iocb_cmd_type(uint8_t iocb_cmnd)
 	case CMD_IOCB_FCP_ITASKMGT64_CX:
 	case CMD_IOCB_LOGENTRY_CN:
 	case CMD_IOCB_LOGENTRY_ASYNC_CN:
-		printk("%s - Unhandled SLI-3 Command x%x\n",
-				__func__, iocb_cmnd);
+//		printk("%s - Unhandled SLI-3 Command x%x\n",
+;
 		type = LPFC_UNKNOWN_IOCB;
 		break;
 	default:
@@ -3251,8 +3251,8 @@ lpfc_sli_handle_slow_ring_event_s3(struct lpfc_hba *phba,
 		phba->last_completion_time = jiffies;
 		rspiocbp = __lpfc_sli_get_iocbq(phba);
 		if (rspiocbp == NULL) {
-			printk(KERN_ERR "%s: out of buffers! Failing "
-			       "completion.\n", __func__);
+//			printk(KERN_ERR "%s: out of buffers! Failing "
+;
 			break;
 		}
 
@@ -7995,10 +7995,10 @@ lpfc_sli_setup(struct lpfc_hba *phba)
 	}
 	if (totiocbsize > MAX_SLIM_IOCB_SIZE) {
 		/* Too many cmd / rsp ring entries in SLI2 SLIM */
-		printk(KERN_ERR "%d:0462 Too many cmd / rsp ring entries in "
-		       "SLI2 SLIM Data: x%x x%lx\n",
-		       phba->brd_no, totiocbsize,
-		       (unsigned long) MAX_SLIM_IOCB_SIZE);
+//		printk(KERN_ERR "%d:0462 Too many cmd / rsp ring entries in "
+//		       "SLI2 SLIM Data: x%x x%lx\n",
+//		       phba->brd_no, totiocbsize,
+;
 	}
 	if (phba->cfg_multi_ring_support == 2)
 		lpfc_extra_ring_setup(phba);
@@ -8824,8 +8824,8 @@ lpfc_sli_validate_fcp_iocb(struct lpfc_iocbq *iocbq, struct lpfc_vport *vport,
 		rc = 0;
 		break;
 	default:
-		printk(KERN_ERR "%s: Unknown context cmd type, value %d\n",
-			__func__, ctx_cmd);
+//		printk(KERN_ERR "%s: Unknown context cmd type, value %d\n",
+;
 		break;
 	}
 

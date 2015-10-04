@@ -75,8 +75,8 @@ static int tc86c001_timer_expiry(ide_drive_t *drive)
 		unsigned long twcr_port	= sc_base + (drive->dn ? 0x06 : 0x04);
 		u8 dma_cmd		= inb(hwif->dma_base + ATA_DMA_CMD);
 
-		printk(KERN_WARNING "%s: DMA interrupt possibly stuck, "
-		       "attempting recovery...\n", drive->name);
+//		printk(KERN_WARNING "%s: DMA interrupt possibly stuck, "
+;
 
 		/* Stop DMA */
 		outb(dma_cmd & ~0x01, hwif->dma_base + ATA_DMA_CMD);
@@ -213,7 +213,7 @@ static int __devinit tc86c001_init_one(struct pci_dev *dev,
 
 	rc = pci_request_region(dev, 5, DRV_NAME);
 	if (rc) {
-		printk(KERN_ERR DRV_NAME ": system control regs already in use");
+;
 		goto out_disable;
 	}
 

@@ -580,8 +580,8 @@ l3dss1_msg_without_setup(struct l3_process *pc, u_char pr, void *arg)
 			*p++ = pc->para.cause | 0x80;
 			break;
 		default:
-			printk(KERN_ERR "HiSax l3dss1_msg_without_setup wrong cause %d\n",
-				pc->para.cause);
+//			printk(KERN_ERR "HiSax l3dss1_msg_without_setup wrong cause %d\n",
+;
 			return;
 	}
 	l = p - tmp;
@@ -2961,7 +2961,7 @@ dss1up(struct PStack *st, int pr, void *arg)
 			return;
 			break;
                 default:
-                        printk(KERN_ERR "HiSax dss1up unknown pr=%04x\n", pr);
+;
                         return;
 	}
 	if (skb->len < 3) {
@@ -3136,7 +3136,7 @@ dss1down(struct PStack *st, int pr, void *arg)
 		proc = arg;
 	}
 	if (!proc) {
-		printk(KERN_ERR "HiSax dss1down without proc pr=%04x\n", pr);
+;
 		return;
 	}
 
@@ -3170,7 +3170,7 @@ dss1man(struct PStack *st, int pr, void *arg)
         struct l3_process *proc = arg;
  
         if (!proc) {
-                printk(KERN_ERR "HiSax dss1man without proc pr=%04x\n", pr);
+;
                 return;
         }
         for (i = 0; i < ARRAY_SIZE(manstatelist); i++)
@@ -3209,7 +3209,7 @@ setstack_dss1(struct PStack *st)
 		st->prot.dss1.invoke_used[i++] = 0;   
 
 	if (!(st->l3.global = kmalloc(sizeof(struct l3_process), GFP_ATOMIC))) {
-		printk(KERN_ERR "HiSax can't get memory for dss1 global CR\n");
+;
 	} else {
 		st->l3.global->state = 0;
 		st->l3.global->callref = 0;
@@ -3222,5 +3222,5 @@ setstack_dss1(struct PStack *st)
 		L3InitTimer(st->l3.global, &st->l3.global->timer);
 	}
 	strcpy(tmp, dss1_revision);
-	printk(KERN_INFO "HiSax: DSS1 Rev. %s\n", HiSax_getrev(tmp));
+;
 }

@@ -656,7 +656,7 @@ snd_emu8000_load_chorus_fx(struct snd_emu8000 *emu, int mode, const void __user 
 {
 	struct soundfont_chorus_fx rec;
 	if (mode < SNDRV_EMU8000_CHORUS_PREDEFINED || mode >= SNDRV_EMU8000_CHORUS_NUMBERS) {
-		snd_printk(KERN_WARNING "invalid chorus mode %d for uploading\n", mode);
+;
 		return -EINVAL;
 	}
 	if (len < (long)sizeof(rec) || copy_from_user(&rec, buf, sizeof(rec)))
@@ -784,7 +784,7 @@ snd_emu8000_load_reverb_fx(struct snd_emu8000 *emu, int mode, const void __user 
 	struct soundfont_reverb_fx rec;
 
 	if (mode < SNDRV_EMU8000_REVERB_PREDEFINED || mode >= SNDRV_EMU8000_REVERB_NUMBERS) {
-		snd_printk(KERN_WARNING "invalid reverb mode %d for uploading\n", mode);
+;
 		return -EINVAL;
 	}
 	if (len < (long)sizeof(rec) || copy_from_user(&rec, buf, sizeof(rec)))
@@ -1100,7 +1100,7 @@ snd_emu8000_new(struct snd_card *card, int index, long port, int seq_ports,
 	if (!(hw->res_port1 = request_region(hw->port1, 4, "Emu8000-1")) ||
 	    !(hw->res_port2 = request_region(hw->port2, 4, "Emu8000-2")) ||
 	    !(hw->res_port3 = request_region(hw->port3, 4, "Emu8000-3"))) {
-		snd_printk(KERN_ERR "sbawe: can't grab ports 0x%lx, 0x%lx, 0x%lx\n", hw->port1, hw->port2, hw->port3);
+;
 		snd_emu8000_free(hw);
 		return -EBUSY;
 	}

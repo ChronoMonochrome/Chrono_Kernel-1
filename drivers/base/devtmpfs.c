@@ -370,9 +370,9 @@ int devtmpfs_mount(const char *mntdir)
 
 	err = sys_mount("devtmpfs", (char *)mntdir, "devtmpfs", MS_SILENT, NULL);
 	if (err)
-		printk(KERN_INFO "devtmpfs: error mounting %i\n", err);
+;
 	else
-		printk(KERN_INFO "devtmpfs: mounted\n");
+;
 	return err;
 }
 
@@ -432,8 +432,8 @@ int __init devtmpfs_init(void)
 {
 	int err = register_filesystem(&dev_fs_type);
 	if (err) {
-		printk(KERN_ERR "devtmpfs: unable to register devtmpfs "
-		       "type %i\n", err);
+//		printk(KERN_ERR "devtmpfs: unable to register devtmpfs "
+;
 		return err;
 	}
 
@@ -446,11 +446,11 @@ int __init devtmpfs_init(void)
 	}
 
 	if (err) {
-		printk(KERN_ERR "devtmpfs: unable to create devtmpfs %i\n", err);
+;
 		unregister_filesystem(&dev_fs_type);
 		return err;
 	}
 
-	printk(KERN_INFO "devtmpfs: initialized\n");
+;
 	return 0;
 }

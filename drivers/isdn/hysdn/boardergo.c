@@ -372,7 +372,7 @@ ergo_waitpofready(struct HYSDN_CARD *card)
 			}
 #ifdef CONFIG_HYSDN_CAPI
 			if((i = hycapi_capi_create(card))) {
-				printk(KERN_WARNING "HYSDN: failed to create capi-interface.\n");
+;
 			}
 #endif /* CONFIG_HYSDN_CAPI */
 			return (0);	/* success */

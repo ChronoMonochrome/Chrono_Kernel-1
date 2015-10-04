@@ -124,9 +124,9 @@ void afs_lock_work(struct work_struct *work)
 		 * wait 5 minutes and it'll time out anyway */
 		ret = afs_vnode_release_lock(vnode, vnode->unlock_key);
 		if (ret < 0)
-			printk(KERN_WARNING "AFS:"
-			       " Failed to release lock on {%x:%x} error %d\n",
-			       vnode->fid.vid, vnode->fid.vnode, ret);
+//			printk(KERN_WARNING "AFS:"
+//			       " Failed to release lock on {%x:%x} error %d\n",
+;
 
 		spin_lock(&vnode->lock);
 		key_put(vnode->unlock_key);
@@ -156,9 +156,9 @@ void afs_lock_work(struct work_struct *work)
 		default:
 			/* ummm... we failed to extend the lock - retry
 			 * extension shortly */
-			printk(KERN_WARNING "AFS:"
-			       " Failed to extend lock on {%x:%x} error %d\n",
-			       vnode->fid.vid, vnode->fid.vnode, ret);
+//			printk(KERN_WARNING "AFS:"
+//			       " Failed to extend lock on {%x:%x} error %d\n",
+;
 			queue_delayed_work(afs_lock_manager, &vnode->lock_work,
 					   HZ * 10);
 			break;

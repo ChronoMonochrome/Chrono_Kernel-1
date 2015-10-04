@@ -238,7 +238,7 @@ struct hwmem_alloc *hwmem_alloc(size_t size, enum hwmem_alloc_flags flags,
 	struct hwmem_alloc *alloc;
 
 	if (hwdev == NULL) {
-		printk(KERN_ERR "HWMEM: Badly configured\n");
+;
 		return ERR_PTR(-ENOMSG);
 	}
 
@@ -363,7 +363,7 @@ int hwmem_pin(struct hwmem_alloc *alloc, struct hwmem_mem_chunk *mem_chunks,
 
 	if (*mem_chunks_length < 1) {
 		*mem_chunks_length = 1;
-		printk(KERN_ERR "HWMEM: hwmem_pin mem_chunks_length < 1\n");
+;
 		return -ENOSPC;
 	}
 

@@ -136,20 +136,20 @@ gc_writel(struct pxa3xx_gcu_priv *priv, unsigned int off, unsigned long val)
 									\
 		do_gettimeofday(&tv);					\
 									\
-		printk(level "%ld.%03ld.%03ld - %-17s: %-21s (%s, "	\
-			"STATUS "					\
-			"0x%02lx, B 0x%08lx [%ld], E %5ld, H %5ld, "	\
-			"T %5ld)\n",					\
-			tv.tv_sec - priv->base_time.tv_sec,		\
-			tv.tv_usec / 1000, tv.tv_usec % 1000,		\
-			__func__, msg,					\
-			shared->hw_running ? "running" : "   idle",	\
-			gc_readl(priv, REG_GCISCR),			\
-			gc_readl(priv, REG_GCRBBR),			\
-			gc_readl(priv, REG_GCRBLR),			\
-			(gc_readl(priv, REG_GCRBEXHR) - base) / 4,	\
-			(gc_readl(priv, REG_GCRBHR) - base) / 4,	\
-			(gc_readl(priv, REG_GCRBTR) - base) / 4);	\
+//		printk(level "%ld.%03ld.%03ld - %-17s: %-21s (%s, "	\
+//			"STATUS "					\
+//			"0x%02lx, B 0x%08lx [%ld], E %5ld, H %5ld, "	\
+//			"T %5ld)\n",					\
+//			tv.tv_sec - priv->base_time.tv_sec,		\
+//			tv.tv_usec / 1000, tv.tv_usec % 1000,		\
+//			__func__, msg,					\
+//			shared->hw_running ? "running" : "   idle",	\
+//			gc_readl(priv, REG_GCISCR),			\
+//			gc_readl(priv, REG_GCRBBR),			\
+//			gc_readl(priv, REG_GCRBLR),			\
+//			(gc_readl(priv, REG_GCRBEXHR) - base) / 4,	\
+//			(gc_readl(priv, REG_GCRBHR) - base) / 4,	\
+;
 	} while (0)
 
 static void
@@ -187,15 +187,15 @@ dump_whole_state(struct pxa3xx_gcu_priv *priv)
 
 	QDUMP("DUMP");
 
-	printk(KERN_DEBUG "== PXA3XX-GCU DUMP ==\n"
-		"%s, STATUS 0x%02lx, B 0x%08lx [%ld], E %5ld, H %5ld, T %5ld\n",
-		sh->hw_running ? "running" : "idle   ",
-		gc_readl(priv, REG_GCISCR),
-		gc_readl(priv, REG_GCRBBR),
-		gc_readl(priv, REG_GCRBLR),
-		(gc_readl(priv, REG_GCRBEXHR) - base) / 4,
-		(gc_readl(priv, REG_GCRBHR) - base) / 4,
-		(gc_readl(priv, REG_GCRBTR) - base) / 4);
+//	printk(KERN_DEBUG "== PXA3XX-GCU DUMP ==\n"
+//		"%s, STATUS 0x%02lx, B 0x%08lx [%ld], E %5ld, H %5ld, T %5ld\n",
+//		sh->hw_running ? "running" : "idle   ",
+//		gc_readl(priv, REG_GCISCR),
+//		gc_readl(priv, REG_GCRBBR),
+//		gc_readl(priv, REG_GCRBLR),
+//		(gc_readl(priv, REG_GCRBEXHR) - base) / 4,
+//		(gc_readl(priv, REG_GCRBHR) - base) / 4,
+;
 }
 
 static void

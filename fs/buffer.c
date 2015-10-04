@@ -107,9 +107,9 @@ static int quiet_error(struct buffer_head *bh)
 static void buffer_io_error(struct buffer_head *bh)
 {
 	char b[BDEVNAME_SIZE];
-	printk(KERN_ERR "Buffer I/O error on device %s, logical block %Lu\n",
-			bdevname(bh->b_bdev, b),
-			(unsigned long long)bh->b_blocknr);
+//	printk(KERN_ERR "Buffer I/O error on device %s, logical block %Lu\n",
+//			bdevname(bh->b_bdev, b),
+;
 }
 
 /*
@@ -151,9 +151,9 @@ void end_buffer_write_sync(struct buffer_head *bh, int uptodate)
 	} else {
 		if (!quiet_error(bh)) {
 			buffer_io_error(bh);
-			printk(KERN_WARNING "lost page write due to "
-					"I/O error on %s\n",
-				       bdevname(bh->b_bdev, b));
+//			printk(KERN_WARNING "lost page write due to "
+//					"I/O error on %s\n",
+;
 		}
 		set_buffer_write_io_error(bh);
 		clear_buffer_uptodate(bh);
@@ -213,13 +213,13 @@ __find_get_block_slow(struct block_device *bdev, sector_t block)
 	 * elsewhere, don't buffer_error if we had some unmapped buffers
 	 */
 	if (all_mapped) {
-		printk("__find_get_block_slow() failed. "
-			"block=%llu, b_blocknr=%llu\n",
-			(unsigned long long)block,
-			(unsigned long long)bh->b_blocknr);
-		printk("b_state=0x%08lx, b_size=%zu\n",
-			bh->b_state, bh->b_size);
-		printk("device blocksize: %d\n", 1 << bd_inode->i_blkbits);
+//		printk("__find_get_block_slow() failed. "
+//			"block=%llu, b_blocknr=%llu\n",
+//			(unsigned long long)block,
+;
+//		printk("b_state=0x%08lx, b_size=%zu\n",
+;
+;
 	}
 out_unlock:
 	spin_unlock(&bd_mapping->private_lock);
@@ -380,9 +380,9 @@ void end_buffer_async_write(struct buffer_head *bh, int uptodate)
 	} else {
 		if (!quiet_error(bh)) {
 			buffer_io_error(bh);
-			printk(KERN_WARNING "lost page write due to "
-					"I/O error on %s\n",
-			       bdevname(bh->b_bdev, b));
+//			printk(KERN_WARNING "lost page write due to "
+//					"I/O error on %s\n",
+;
 		}
 		set_bit(AS_EIO, &page->mapping->flags);
 		set_buffer_write_io_error(bh);
@@ -562,15 +562,15 @@ static void do_thaw_one(struct super_block *sb, void *unused)
 {
 	char b[BDEVNAME_SIZE];
 	while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
-		printk(KERN_WARNING "Emergency Thaw on %s\n",
-		       bdevname(sb->s_bdev, b));
+//		printk(KERN_WARNING "Emergency Thaw on %s\n",
+;
 }
 
 static void do_thaw_all(struct work_struct *work)
 {
 	iterate_supers(do_thaw_one, NULL);
 	kfree(work);
-	printk(KERN_WARNING "Emergency Thaw complete\n");
+;
 }
 
 /**
@@ -1072,10 +1072,10 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
 	if (unlikely(index != block >> sizebits)) {
 		char b[BDEVNAME_SIZE];
 
-		printk(KERN_ERR "%s: requested out-of-range block %llu for "
-			"device %s\n",
-			__func__, (unsigned long long)block,
-			bdevname(bdev, b));
+//		printk(KERN_ERR "%s: requested out-of-range block %llu for "
+//			"device %s\n",
+//			__func__, (unsigned long long)block,
+;
 		return -EIO;
 	}
 
@@ -1089,10 +1089,10 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
 	/* Size must be multiple of hard sectorsize */
 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
 			(size < 512 || size > PAGE_SIZE))) {
-		printk(KERN_ERR "getblk(): invalid block size %d requested\n",
-					size);
-		printk(KERN_ERR "logical block size: %d\n",
-					bdev_logical_block_size(bdev));
+//		printk(KERN_ERR "getblk(): invalid block size %d requested\n",
+;
+//		printk(KERN_ERR "logical block size: %d\n",
+;
 
 		dump_stack();
 		return NULL;
@@ -3171,10 +3171,10 @@ SYSCALL_DEFINE2(bdflush, int, func, long, data)
 
 	if (msg_count < 5) {
 		msg_count++;
-		printk(KERN_INFO
-			"warning: process `%s' used the obsolete bdflush"
-			" system call\n", current->comm);
-		printk(KERN_INFO "Fix your initscripts?\n");
+//		printk(KERN_INFO
+//			"warning: process `%s' used the obsolete bdflush"
+;
+;
 	}
 
 	if (func == 1)

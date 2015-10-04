@@ -828,8 +828,8 @@ int ql_mb_get_port_cfg(struct ql_adapter *qdev)
 			  "Failed Get Port Configuration.\n");
 		status = -EIO;
 	} else	{
-		netif_printk(qdev, drv, KERN_DEBUG, qdev->ndev,
-			     "Passed Get Port Configuration.\n");
+//		netif_printk(qdev, drv, KERN_DEBUG, qdev->ndev,
+;
 		qdev->link_config = mbcp->mbox_out[1];
 		qdev->max_frame_size = mbcp->mbox_out[2];
 	}
@@ -1189,8 +1189,8 @@ void ql_mpi_idc_work(struct work_struct *work)
 				netif_err(qdev, drv, qdev->ndev,
 					  "Bug: No pending IDC!\n");
 		} else {
-			netif_printk(qdev, drv, KERN_DEBUG, qdev->ndev,
-				     "IDC ACK not required\n");
+//			netif_printk(qdev, drv, KERN_DEBUG, qdev->ndev,
+;
 			status = 0; /* success */
 		}
 		break;
@@ -1222,8 +1222,8 @@ void ql_mpi_idc_work(struct work_struct *work)
 				netif_err(qdev, drv, qdev->ndev,
 					  "Bug: No pending IDC!\n");
 		} else {
-			netif_printk(qdev, drv, KERN_DEBUG, qdev->ndev,
-				     "IDC ACK not required\n");
+//			netif_printk(qdev, drv, KERN_DEBUG, qdev->ndev,
+;
 			status = 0; /* success */
 		}
 		break;

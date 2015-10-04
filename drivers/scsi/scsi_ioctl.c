@@ -96,7 +96,7 @@ static int ioctl_internal_command(struct scsi_device *sdev, char *cmd,
 	result = scsi_execute_req(sdev, cmd, DMA_NONE, NULL, 0,
 				  &sshdr, timeout, retries, NULL);
 
-	SCSI_LOG_IOCTL(2, printk("Ioctl returned  0x%x\n", result));
+;
 
 	if ((driver_byte(result) & DRIVER_SENSE) &&
 	    (scsi_sense_valid(&sshdr))) {
@@ -105,9 +105,9 @@ static int ioctl_internal_command(struct scsi_device *sdev, char *cmd,
 			if (cmd[0] == ALLOW_MEDIUM_REMOVAL)
 				sdev->lockable = 0;
 			else
-				printk(KERN_INFO "ioctl_internal_command: "
-				       "ILLEGAL REQUEST asc=0x%x ascq=0x%x\n",
-				       sshdr.asc, sshdr.ascq);
+//				printk(KERN_INFO "ioctl_internal_command: "
+//				       "ILLEGAL REQUEST asc=0x%x ascq=0x%x\n",
+;
 			break;
 		case NOT_READY:	/* This happens if there is no disc in drive */
 			if (sdev->removable)
@@ -119,15 +119,15 @@ static int ioctl_internal_command(struct scsi_device *sdev, char *cmd,
 				break;
 			}
 		default:	/* Fall through for non-removable media */
-			sdev_printk(KERN_INFO, sdev,
-				    "ioctl_internal_command return code = %x\n",
-				    result);
+//			sdev_printk(KERN_INFO, sdev,
+//				    "ioctl_internal_command return code = %x\n",
+;
 			scsi_print_sense_hdr("   ", &sshdr);
 			break;
 		}
 	}
 
-	SCSI_LOG_IOCTL(2, printk("IOCTL Releasing command\n"));
+;
 	return result;
 }
 
@@ -217,8 +217,8 @@ int scsi_ioctl(struct scsi_device *sdev, int cmd, void __user *arg)
 	case SCSI_IOCTL_SYNC:
 	case SCSI_IOCTL_START_UNIT:
 	case SCSI_IOCTL_STOP_UNIT:
-		printk(KERN_WARNING "program %s is using a deprecated SCSI "
-		       "ioctl, please convert it to SG_IO\n", current->comm);
+//		printk(KERN_WARNING "program %s is using a deprecated SCSI "
+;
 		break;
 	default:
 		break;

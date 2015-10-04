@@ -176,9 +176,9 @@ static int __init parse_options(struct early_serial8250_device *device,
 #else
 		port->membase = ioremap_nocache(port->mapbase, 64);
 		if (!port->membase) {
-			printk(KERN_ERR "%s: Couldn't ioremap 0x%llx\n",
-				__func__,
-			       (unsigned long long) port->mapbase);
+//			printk(KERN_ERR "%s: Couldn't ioremap 0x%llx\n",
+//				__func__,
+;
 			return -ENOMEM;
 		}
 #endif
@@ -202,16 +202,16 @@ static int __init parse_options(struct early_serial8250_device *device,
 	}
 
 	if (mmio || mmio32)
-		printk(KERN_INFO
-		       "Early serial console at MMIO%s 0x%llx (options '%s')\n",
-			mmio32 ? "32" : "",
-			(unsigned long long)port->mapbase,
-			device->options);
+//		printk(KERN_INFO
+//		       "Early serial console at MMIO%s 0x%llx (options '%s')\n",
+//			mmio32 ? "32" : "",
+//			(unsigned long long)port->mapbase,
+;
 	else
-		printk(KERN_INFO
-		      "Early serial console at I/O port 0x%lx (options '%s')\n",
-			port->iobase,
-			device->options);
+//		printk(KERN_INFO
+//		      "Early serial console at I/O port 0x%lx (options '%s')\n",
+//			port->iobase,
+;
 
 	return 0;
 }

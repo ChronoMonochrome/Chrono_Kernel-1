@@ -533,8 +533,8 @@ static int __init streamzap_init(void)
 	/* register this driver with the USB subsystem */
 	ret = usb_register(&streamzap_driver);
 	if (ret < 0)
-		printk(KERN_ERR DRIVER_NAME ": usb register failed, "
-		       "result = %d\n", ret);
+//		printk(KERN_ERR DRIVER_NAME ": usb register failed, "
+;
 
 	return ret;
 }

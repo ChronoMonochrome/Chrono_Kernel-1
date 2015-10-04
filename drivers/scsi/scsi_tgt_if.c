@@ -119,13 +119,13 @@ int scsi_tgt_uspace_send_cmd(struct scsi_cmnd *cmd, u64 itn_id,
 	ev.p.cmd_req.attribute = cmd->tag;
 	ev.p.cmd_req.tag = tag;
 
-	dprintk("%p %d %u %x %llx\n", cmd, shost->host_no,
-		ev.p.cmd_req.data_len, cmd->tag,
-		(unsigned long long) ev.p.cmd_req.tag);
+//	dprintk("%p %d %u %x %llx\n", cmd, shost->host_no,
+//		ev.p.cmd_req.data_len, cmd->tag,
+;
 
 	err = tgt_uspace_send_event(TGT_KEVENT_CMD_REQ, &ev);
 	if (err)
-		eprintk("tx buf is full, could not send\n");
+;
 
 	return err;
 }
@@ -142,13 +142,13 @@ int scsi_tgt_uspace_send_status(struct scsi_cmnd *cmd, u64 itn_id, u64 tag)
 	ev.p.cmd_done.tag = tag;
 	ev.p.cmd_done.result = cmd->result;
 
-	dprintk("%p %d %llu %u %x\n", cmd, shost->host_no,
-		(unsigned long long) ev.p.cmd_req.tag,
-		ev.p.cmd_req.data_len, cmd->tag);
+//	dprintk("%p %d %llu %u %x\n", cmd, shost->host_no,
+//		(unsigned long long) ev.p.cmd_req.tag,
+;
 
 	err = tgt_uspace_send_event(TGT_KEVENT_CMD_DONE, &ev);
 	if (err)
-		eprintk("tx buf is full, could not send\n");
+;
 
 	return err;
 }
@@ -167,12 +167,12 @@ int scsi_tgt_uspace_send_tsk_mgmt(int host_no, u64 itn_id, int function,
 	memcpy(ev.p.tsk_mgmt_req.lun, scsilun, sizeof(ev.p.tsk_mgmt_req.lun));
 	ev.p.tsk_mgmt_req.mid = (u64) (unsigned long) data;
 
-	dprintk("%d %x %llx %llx\n", host_no, function, (unsigned long long) tag,
-		(unsigned long long) ev.p.tsk_mgmt_req.mid);
+//	dprintk("%d %x %llx %llx\n", host_no, function, (unsigned long long) tag,
+;
 
 	err = tgt_uspace_send_event(TGT_KEVENT_TSK_MGMT_REQ, &ev);
 	if (err)
-		eprintk("tx buf is full, could not send\n");
+;
 
 	return err;
 }
@@ -191,11 +191,11 @@ int scsi_tgt_uspace_send_it_nexus_request(int host_no, u64 itn_id,
 		strncpy(ev.p.it_nexus_req.initiator_id, initiator_id,
 			sizeof(ev.p.it_nexus_req.initiator_id));
 
-	dprintk("%d %x %llx\n", host_no, function, (unsigned long long)itn_id);
+;
 
 	err = tgt_uspace_send_event(TGT_KEVENT_IT_NEXUS_REQ, &ev);
 	if (err)
-		eprintk("tx buf is full, could not send\n");
+;
 
 	return err;
 }
@@ -228,7 +228,7 @@ static int event_recv_msg(struct tgt_event *ev)
 						   ev->p.it_nexus_rsp.result);
 		break;
 	default:
-		eprintk("unknown type %d\n", ev->hdr.type);
+;
 		err = -EINVAL;
 	}
 
@@ -304,8 +304,8 @@ static int tgt_mmap(struct file *filp, struct vm_area_struct *vma)
 		return -EINVAL;
 
 	if (vma->vm_end - vma->vm_start != TGT_RING_SIZE * 2) {
-		eprintk("mmap size must be %lu, not %lu \n",
-			TGT_RING_SIZE * 2, vma->vm_end - vma->vm_start);
+//		eprintk("mmap size must be %lu, not %lu \n",
+;
 		return -EINVAL;
 	}
 
@@ -357,7 +357,7 @@ static int tgt_ring_init(struct tgt_ring *ring)
 	for (i = 0; i < TGT_RING_PAGES; i++) {
 		ring->tr_pages[i] = get_zeroed_page(GFP_KERNEL);
 		if (!ring->tr_pages[i]) {
-			eprintk("out of memory\n");
+;
 			return -ENOMEM;
 		}
 	}

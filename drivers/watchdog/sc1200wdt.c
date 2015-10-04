@@ -176,7 +176,7 @@ static int sc1200wdt_open(struct inode *inode, struct file *file)
 		timeout = MAX_TIMEOUT;
 
 	sc1200wdt_start();
-	printk(KERN_INFO PFX "Watchdog enabled, timeout = %d min(s)", timeout);
+;
 
 	return nonseekable_open(inode, file);
 }
@@ -254,11 +254,11 @@ static int sc1200wdt_release(struct inode *inode, struct file *file)
 {
 	if (expect_close == 42) {
 		sc1200wdt_stop();
-		printk(KERN_INFO PFX "Watchdog disabled\n");
+;
 	} else {
 		sc1200wdt_write_data(WDTO, timeout);
-		printk(KERN_CRIT PFX
-			"Unexpected close!, timeout = %d min(s)\n", timeout);
+//		printk(KERN_CRIT PFX
+;
 	}
 	clear_bit(0, &open_flag);
 	expect_close = 0;
@@ -361,12 +361,12 @@ static int scl200wdt_pnp_probe(struct pnp_dev *dev,
 	io_len = pnp_port_len(wdt_dev, 0);
 
 	if (!request_region(io, io_len, SC1200_MODULE_NAME)) {
-		printk(KERN_ERR PFX "Unable to register IO port %#x\n", io);
+;
 		return -EBUSY;
 	}
 
-	printk(KERN_INFO "scl200wdt: PnP device found at io port %#x/%d\n",
-								io, io_len);
+//	printk(KERN_INFO "scl200wdt: PnP device found at io port %#x/%d\n",
+;
 	return 0;
 }
 
@@ -392,7 +392,7 @@ static int __init sc1200wdt_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "%s\n", banner);
+;
 
 #if defined CONFIG_PNP
 	if (isapnp) {
@@ -403,7 +403,7 @@ static int __init sc1200wdt_init(void)
 #endif
 
 	if (io == -1) {
-		printk(KERN_ERR PFX "io parameter must be specified\n");
+;
 		ret = -EINVAL;
 		goto out_pnp;
 	}
@@ -416,7 +416,7 @@ static int __init sc1200wdt_init(void)
 #endif
 
 	if (!request_region(io, io_len, SC1200_MODULE_NAME)) {
-		printk(KERN_ERR PFX "Unable to register IO port %#x\n", io);
+;
 		ret = -EBUSY;
 		goto out_pnp;
 	}
@@ -427,16 +427,16 @@ static int __init sc1200wdt_init(void)
 
 	ret = register_reboot_notifier(&sc1200wdt_notifier);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"Unable to register reboot notifier err = %d\n", ret);
+//		printk(KERN_ERR PFX
+;
 		goto out_io;
 	}
 
 	ret = misc_register(&sc1200wdt_miscdev);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"Unable to register miscdev on minor %d\n",
-							WATCHDOG_MINOR);
+//		printk(KERN_ERR PFX
+//			"Unable to register miscdev on minor %d\n",
+;
 		goto out_rbt;
 	}
 

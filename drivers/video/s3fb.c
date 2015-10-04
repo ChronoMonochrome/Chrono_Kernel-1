@@ -304,8 +304,8 @@ static void s3fb_settile_fast(struct fb_info *info, struct fb_tilemap *map)
 
 	if ((map->width != 8) || (map->height != 16) ||
 	    (map->depth != 1) || (map->length != 256)) {
-	    	printk(KERN_ERR "fb%d: unsupported font parameters: width %d, height %d, depth %d, length %d\n",
-			info->node, map->width, map->height, map->depth, map->length);
+//	    	printk(KERN_ERR "fb%d: unsupported font parameters: width %d, height %d, depth %d, length %d\n",
+;
 		return;
 	}
 
@@ -474,7 +474,7 @@ static void s3_set_pixclock(struct fb_info *info, u32 pixclock)
 	rv = svga_compute_pll((par->chip == CHIP_365_TRIO3D) ? &s3_trio3d_pll : &s3_pll,
 			      1000000000 / pixclock, &m, &n, &r, info->node);
 	if (rv < 0) {
-		printk(KERN_ERR "fb%d: cannot set requested pixclock, keeping old value\n", info->node);
+;
 		return;
 	}
 
@@ -566,7 +566,7 @@ static int s3fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 		rv = -EINVAL;
 
 	if (rv < 0) {
-		printk(KERN_ERR "fb%d: unsupported mode requested\n", info->node);
+;
 		return rv;
 	}
 
@@ -584,22 +584,22 @@ static int s3fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 	/* Check whether have enough memory */
 	mem = ((var->bits_per_pixel * var->xres_virtual) >> 3) * var->yres_virtual;
 	if (mem > info->screen_size) {
-		printk(KERN_ERR "fb%d: not enough framebuffer memory (%d kB requested , %d kB available)\n",
-			info->node, mem >> 10, (unsigned int) (info->screen_size >> 10));
+//		printk(KERN_ERR "fb%d: not enough framebuffer memory (%d kB requested , %d kB available)\n",
+;
 		return -EINVAL;
 	}
 
 	rv = svga_check_timings (&s3_timing_regs, var, info->node);
 	if (rv < 0) {
-		printk(KERN_ERR "fb%d: invalid timings requested\n", info->node);
+;
 		return rv;
 	}
 
 	rv = svga_compute_pll(&s3_pll, PICOS2KHZ(var->pixclock), &m, &n, &r,
 				info->node);
 	if (rv < 0) {
-		printk(KERN_ERR "fb%d: invalid pixclock value requested\n",
-			info->node);
+//		printk(KERN_ERR "fb%d: invalid pixclock value requested\n",
+;
 		return rv;
 	}
 
@@ -879,7 +879,7 @@ static int s3fb_set_par(struct fb_info *info)
 		svga_wcrt_mask(par->state.vgabase, 0x67, 0xD0, 0xF0);
 		break;
 	default:
-		printk(KERN_ERR "fb%d: unsupported mode - bug\n", info->node);
+;
 		return -EINVAL;
 	}
 
@@ -1322,13 +1322,13 @@ static int __devinit s3_pci_probe(struct pci_dev *dev, const struct pci_device_i
 		goto err_reg_fb;
 	}
 
-	printk(KERN_INFO "fb%d: %s on %s, %d MB RAM, %d MHz MCLK\n", info->node, info->fix.id,
-		 pci_name(dev), info->fix.smem_len >> 20, (par->mclk_freq + 500) / 1000);
+//	printk(KERN_INFO "fb%d: %s on %s, %d MB RAM, %d MHz MCLK\n", info->node, info->fix.id,
+;
 
 	if (par->chip == CHIP_UNKNOWN)
-		printk(KERN_INFO "fb%d: unknown chip, CR2D=%x, CR2E=%x, CRT2F=%x, CRT30=%x\n",
-			info->node, vga_rcrt(par->state.vgabase, 0x2d), vga_rcrt(par->state.vgabase, 0x2e),
-			vga_rcrt(par->state.vgabase, 0x2f), vga_rcrt(par->state.vgabase, 0x30));
+//		printk(KERN_INFO "fb%d: unknown chip, CR2D=%x, CR2E=%x, CRT2F=%x, CRT30=%x\n",
+//			info->node, vga_rcrt(par->state.vgabase, 0x2d), vga_rcrt(par->state.vgabase, 0x2e),
+;
 
 	/* Record a reference to the driver data */
 	pci_set_drvdata(dev, info);

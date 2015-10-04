@@ -224,7 +224,7 @@ static int cw1200_load_firmware_generic(struct CW1200_priv *priv, const struct f
 		}
 
 	/* Bootloader downloading loop */
-	printk(KERN_ERR "%s: NUM_BLOCKS = %d\n",__func__,num_blocks);
+;
 	for (block = 0; block < num_blocks ; block++) {
 		size_t tx_size;
 		size_t block_size;
@@ -267,7 +267,7 @@ static int cw1200_load_firmware_generic(struct CW1200_priv *priv, const struct f
 		if ((put - get) > (DOWNLOAD_FIFO_SIZE - DOWNLOAD_BLOCK_SIZE)) {
 			DEBUG(DBG_ERROR, "%s: Timeout waiting for FIFO.\n",
 				__func__);
-		printk(KERN_ERR "%s:LOOP COUNT = %d\n",__func__,block);
+;
 			return -ETIMEDOUT;
 		}
 
@@ -299,7 +299,7 @@ static int cw1200_load_firmware_generic(struct CW1200_priv *priv, const struct f
 		if (ret < 0) {
 			DEBUG(DBG_ERROR, "%s: can't write block at line %d.\n",
 				__func__, __LINE__);
-			printk(KERN_ERR "%s:LOOP COUNT = %d\n",__func__,block);
+;
 			goto error;
 		}
 
@@ -380,7 +380,7 @@ int cw1200_load_firmware_cw1260_fpga(struct CW1200_priv *priv)
     	}
 
 	/*Load Bootloader File*/
-	printk(KERN_ERR "%s: BL FILE = %s\n",__func__,bl_path);
+;
 	
 	ret = request_firmware(&bootloader, bl_path, priv->pdev);
 	if (ret) {
@@ -393,9 +393,9 @@ int cw1200_load_firmware_cw1260_fpga(struct CW1200_priv *priv)
 	
 	if(ret)
 		goto error;
-	printk(KERN_ERR "%s: BOOTLOADER DOWNLOAD SUCCESS\n",__func__);
+;
 
-	printk(KERN_ERR "%s:FW FILE = %s\n",__func__,fw_path);
+;
 	ret = request_firmware(&firmware, fw_path, priv->pdev);
 	if (ret) {
 		DEBUG(DBG_ERROR, "%s: can't load firmware file %s.\n",
@@ -406,7 +406,7 @@ int cw1200_load_firmware_cw1260_fpga(struct CW1200_priv *priv)
 	ret = cw1200_load_firmware_generic(priv, firmware);
 	if(ret)
 		goto error;
-	printk(KERN_ERR "%s: FIRMWARE DOWNLOAD SUCCESS\n",__func__);
+;
 	
 error:
 //	kfree(buf);
@@ -517,7 +517,7 @@ int cw1200_load_firmware_cw1260(struct CW1200_priv *priv)
 		addr += 4;
 	}
 
-	printk(KERN_ERR "%s:WRITE COMPLETE\n",__func__);
+;
 
 	ret = cw1200_load_firmware_cw1200(priv);
 error:	

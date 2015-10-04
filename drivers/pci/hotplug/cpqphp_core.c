@@ -824,8 +824,8 @@ static int cpqhpc_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR MY_NAME ": cannot enable PCI device %s (%d)\n",
-			pci_name(pdev), err);
+//		printk(KERN_ERR MY_NAME ": cannot enable PCI device %s (%d)\n",
+;
 		return err;
 	}
 

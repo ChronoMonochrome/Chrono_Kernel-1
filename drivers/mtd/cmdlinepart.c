@@ -49,7 +49,7 @@
 
 /* debug macro */
 #if 0
-#define dbg(x) do { printk("DEBUG-CMDLINE-PART: "); printk x; } while(0)
+;
 #else
 #define dbg(x)
 #endif
@@ -108,7 +108,7 @@ static struct mtd_partition * newpart(char *s,
 		size = memparse(s, &s);
 		if (size < PAGE_SIZE)
 		{
-			printk(KERN_ERR ERRP "partition size too small (%lx)\n", size);
+;
 			return NULL;
 		}
 	}
@@ -136,7 +136,7 @@ static struct mtd_partition * newpart(char *s,
 		p = strchr(name, delim);
 		if (!p)
 		{
-			printk(KERN_ERR ERRP "no closing %c found in partition name\n", delim);
+;
 			return NULL;
 		}
 		name_len = p - name;
@@ -170,7 +170,7 @@ static struct mtd_partition * newpart(char *s,
 	{
 		if (size == SIZE_REMAINING)
 		{
-			printk(KERN_ERR ERRP "no partitions allowed after a fill-up partition\n");
+;
 			return NULL;
 		}
 		/* more partitions follow, parse them */
@@ -189,7 +189,7 @@ static struct mtd_partition * newpart(char *s,
 		parts = kzalloc(alloc_size, GFP_KERNEL);
 		if (!parts)
 		{
-			printk(KERN_ERR ERRP "out of memory\n");
+;
 			return NULL;
 		}
 		extra_mem = (unsigned char *)(parts + *num_parts);
@@ -246,7 +246,7 @@ static int mtdpart_setup_real(char *s)
 		/* fetch <mtd-id> */
 		if (!(p = strchr(s, ':')))
 		{
-			printk(KERN_ERR ERRP "no mtd-id\n");
+;
 			return 0;
 		}
 		mtd_id_len = p - mtd_id;
@@ -342,9 +342,9 @@ static int parse_cmdline_partitions(struct mtd_info *master,
 				  part->parts[i].size = master->size - offset;
 				if (offset + part->parts[i].size > master->size)
 				{
-					printk(KERN_WARNING ERRP
-					       "%s: partitioning exceeds flash size, truncating\n",
-					       part->mtd_id);
+//					printk(KERN_WARNING ERRP
+//					       "%s: partitioning exceeds flash size, truncating\n",
+;
 					part->parts[i].size = master->size - offset;
 					part->num_parts = i;
 				}

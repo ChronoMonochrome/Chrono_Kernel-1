@@ -137,8 +137,8 @@ static int __devinit sedlbauer_config(struct pcmcia_device *link)
     ret = hisax_init_pcmcia(link, 
 			    &(((local_info_t *)link->priv)->stop), &icard);
     if (ret < 0) {
-	printk(KERN_ERR "sedlbauer_cs: failed to initialize SEDLBAUER PCMCIA %d with %pR\n",
-		ret, link->resource[0]);
+//	printk(KERN_ERR "sedlbauer_cs: failed to initialize SEDLBAUER PCMCIA %d with %pR\n",
+;
     	sedlbauer_release(link);
 	return -ENODEV;
     } else

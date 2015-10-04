@@ -387,7 +387,7 @@ hysdn_procconf_init(void)
 
 	hysdn_proc_entry = proc_mkdir(PROC_SUBDIR_NAME, init_net.proc_net);
 	if (!hysdn_proc_entry) {
-		printk(KERN_ERR "HYSDN: unable to create hysdn subdir\n");
+;
 		return (-1);
 	}
 	card = card_root;	/* point to first card */
@@ -403,7 +403,7 @@ hysdn_procconf_init(void)
 		card = card->next;	/* next entry */
 	}
 
-	printk(KERN_NOTICE "HYSDN: procfs initialised\n");
+;
 	return (0);
 }				/* hysdn_procconf_init */
 

@@ -412,7 +412,7 @@ static int __init wusbcore_init(void)
 	wusbd = create_singlethread_workqueue("wusbd");
 	if (wusbd == NULL) {
 		result = -ENOMEM;
-		printk(KERN_ERR "WUSB-core: Cannot create wusbd workqueue\n");
+;
 		goto error_wusbd_create;
 	}
 	usb_register_notify(&wusb_usb_notifier);
@@ -435,8 +435,8 @@ static void __exit wusbcore_exit(void)
 		char buf[256];
 		bitmap_scnprintf(buf, sizeof(buf), wusb_cluster_id_table,
 				 CLUSTER_IDS);
-		printk(KERN_ERR "BUG: WUSB Cluster IDs not released "
-		       "on exit: %s\n", buf);
+//		printk(KERN_ERR "BUG: WUSB Cluster IDs not released "
+;
 		WARN_ON(1);
 	}
 	usb_unregister_notify(&wusb_usb_notifier);

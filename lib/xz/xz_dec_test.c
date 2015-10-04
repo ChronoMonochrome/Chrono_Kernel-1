@@ -76,7 +76,7 @@ static int xz_dec_test_open(struct inode *i, struct file *f)
 	buffers.in_size = 0;
 	buffers.out_pos = 0;
 
-	printk(KERN_INFO DEVICE_NAME ": opened\n");
+;
 	return 0;
 }
 
@@ -85,9 +85,9 @@ static int xz_dec_test_release(struct inode *i, struct file *f)
 	device_is_open = false;
 
 	if (ret == XZ_OK)
-		printk(KERN_INFO DEVICE_NAME ": input was truncated\n");
+;
 
-	printk(KERN_INFO DEVICE_NAME ": closed\n");
+;
 	return 0;
 }
 
@@ -106,15 +106,15 @@ static ssize_t xz_dec_test_write(struct file *file, const char __user *buf,
 
 	if (ret != XZ_OK) {
 		if (size > 0)
-			printk(KERN_INFO DEVICE_NAME ": %zu bytes of "
-					"garbage at the end of the file\n",
-					size);
+//			printk(KERN_INFO DEVICE_NAME ": %zu bytes of "
+//					"garbage at the end of the file\n",
+;
 
 		return -ENOSPC;
 	}
 
-	printk(KERN_INFO DEVICE_NAME ": decoding %zu bytes of input\n",
-			size);
+//	printk(KERN_INFO DEVICE_NAME ": decoding %zu bytes of input\n",
+;
 
 	remaining = size;
 	while ((remaining > 0 || buffers.out_pos == buffers.out_size)
@@ -136,36 +136,36 @@ static ssize_t xz_dec_test_write(struct file *file, const char __user *buf,
 
 	switch (ret) {
 	case XZ_OK:
-		printk(KERN_INFO DEVICE_NAME ": XZ_OK\n");
+;
 		return size;
 
 	case XZ_STREAM_END:
-		printk(KERN_INFO DEVICE_NAME ": XZ_STREAM_END, "
-				"CRC32 = 0x%08X\n", ~crc);
+//		printk(KERN_INFO DEVICE_NAME ": XZ_STREAM_END, "
+;
 		return size - remaining - (buffers.in_size - buffers.in_pos);
 
 	case XZ_MEMLIMIT_ERROR:
-		printk(KERN_INFO DEVICE_NAME ": XZ_MEMLIMIT_ERROR\n");
+;
 		break;
 
 	case XZ_FORMAT_ERROR:
-		printk(KERN_INFO DEVICE_NAME ": XZ_FORMAT_ERROR\n");
+;
 		break;
 
 	case XZ_OPTIONS_ERROR:
-		printk(KERN_INFO DEVICE_NAME ": XZ_OPTIONS_ERROR\n");
+;
 		break;
 
 	case XZ_DATA_ERROR:
-		printk(KERN_INFO DEVICE_NAME ": XZ_DATA_ERROR\n");
+;
 		break;
 
 	case XZ_BUF_ERROR:
-		printk(KERN_INFO DEVICE_NAME ": XZ_BUF_ERROR\n");
+;
 		break;
 
 	default:
-		printk(KERN_INFO DEVICE_NAME ": Bug detected!\n");
+;
 		break;
 	}
 
@@ -192,10 +192,10 @@ static int __init xz_dec_test_init(void)
 		return device_major;
 	}
 
-	printk(KERN_INFO DEVICE_NAME ": module loaded\n");
-	printk(KERN_INFO DEVICE_NAME ": Create a device node with "
-			"'mknod " DEVICE_NAME " c %d 0' and write .xz files "
-			"to it.\n", device_major);
+;
+//	printk(KERN_INFO DEVICE_NAME ": Create a device node with "
+//			"'mknod " DEVICE_NAME " c %d 0' and write .xz files "
+;
 	return 0;
 }
 
@@ -203,7 +203,7 @@ static void __exit xz_dec_test_exit(void)
 {
 	unregister_chrdev(device_major, DEVICE_NAME);
 	xz_dec_end(state);
-	printk(KERN_INFO DEVICE_NAME ": module unloaded\n");
+;
 }
 
 module_init(xz_dec_test_init);

@@ -407,7 +407,7 @@ static int __devexit msm_hs_remove(struct platform_device *pdev)
 	struct device *dev;
 
 	if (pdev->id < 0 || pdev->id >= UARTDM_NR) {
-		printk(KERN_ERR "Invalid plaform device ID = %d\n", pdev->id);
+;
 		return -EINVAL;
 	}
 
@@ -450,14 +450,14 @@ static int msm_hs_init_clk_locked(struct uart_port *uport)
 
 	ret = clk_enable(msm_uport->clk);
 	if (ret) {
-		printk(KERN_ERR "Error could not turn on UART clk\n");
+;
 		return ret;
 	}
 
 	/* Set up the MREG/NREG/DREG/MNDREG */
 	ret = clk_set_rate(msm_uport->clk, uport->uartclk);
 	if (ret) {
-		printk(KERN_WARNING "Error setting clock rate on UART\n");
+;
 		clk_disable(msm_uport->clk);
 		return ret;
 	}
@@ -593,7 +593,7 @@ static void msm_hs_set_bps_locked(struct uart_port *uport,
 		uport->uartclk = UARTCLK;
 
 	if (clk_set_rate(msm_uport->clk, uport->uartclk)) {
-		printk(KERN_WARNING "Error setting clock rate on UART\n");
+;
 		return;
 	}
 
@@ -1407,7 +1407,7 @@ static int msm_hs_startup(struct uart_port *uport)
 	/* turn on uart clk */
 	ret = msm_hs_init_clk_locked(uport);
 	if (unlikely(ret)) {
-		printk(KERN_ERR "Turning uartclk failed!\n");
+;
 		goto err_msm_hs_init_clk;
 	}
 
@@ -1486,7 +1486,7 @@ static int msm_hs_startup(struct uart_port *uport)
 	ret = request_irq(uport->irq, msm_hs_isr, IRQF_TRIGGER_HIGH,
 			  "msm_hs_uart", msm_uport);
 	if (unlikely(ret)) {
-		printk(KERN_ERR "Request msm_hs_uart IRQ failed!\n");
+;
 		goto err_request_irq;
 	}
 	if (use_low_power_rx_wakeup(msm_uport)) {
@@ -1495,7 +1495,7 @@ static int msm_hs_startup(struct uart_port *uport)
 				  IRQF_TRIGGER_FALLING,
 				  "msm_hs_rx_wakeup", msm_uport);
 		if (unlikely(ret)) {
-			printk(KERN_ERR "Request msm_hs_rx_wakeup IRQ failed!\n");
+;
 			free_irq(uport->irq, msm_uport);
 			goto err_request_irq;
 		}
@@ -1626,7 +1626,7 @@ static int __devinit msm_hs_probe(struct platform_device *pdev)
 						pdev->dev.platform_data;
 
 	if (pdev->id < 0 || pdev->id >= UARTDM_NR) {
-		printk(KERN_ERR "Invalid plaform device ID = %d\n", pdev->id);
+;
 		return -EINVAL;
 	}
 
@@ -1721,13 +1721,13 @@ static int __init msm_serial_hs_init(void)
 
 	ret = uart_register_driver(&msm_hs_driver);
 	if (unlikely(ret)) {
-		printk(KERN_ERR "%s failed to load\n", __func__);
+;
 		goto err_uart_register_driver;
 	}
 
 	ret = platform_driver_register(&msm_serial_hs_platform_driver);
 	if (ret) {
-		printk(KERN_ERR "%s failed to load\n", __func__);
+;
 		goto err_platform_driver_register;
 	}
 

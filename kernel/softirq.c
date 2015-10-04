@@ -238,11 +238,11 @@ restart:
 			h->action(h);
 			trace_softirq_exit(vec_nr);
 			if (unlikely(prev_count != preempt_count())) {
-				printk(KERN_ERR "huh, entered softirq %u %s %p"
-				       "with preempt_count %08x,"
-				       " exited with %08x?\n", vec_nr,
-				       softirq_to_name[vec_nr], h->action,
-				       prev_count, preempt_count());
+//				printk(KERN_ERR "huh, entered softirq %u %s %p"
+//				       "with preempt_count %08x,"
+//				       " exited with %08x?\n", vec_nr,
+//				       softirq_to_name[vec_nr], h->action,
+;
 				preempt_count() = prev_count;
 			}
 
@@ -528,7 +528,7 @@ EXPORT_SYMBOL(tasklet_init);
 void tasklet_kill(struct tasklet_struct *t)
 {
 	if (in_interrupt())
-		printk("Attempt to kill tasklet from interrupt\n");
+;
 
 	while (test_and_set_bit(TASKLET_STATE_SCHED, &t->state)) {
 		do {
@@ -859,7 +859,7 @@ static int __cpuinit cpu_callback(struct notifier_block *nfb,
 					   cpu_to_node(hotcpu),
 					   "ksoftirqd/%d", hotcpu);
 		if (IS_ERR(p)) {
-			printk("ksoftirqd for %i failed\n", hotcpu);
+;
 			return notifier_from_errno(PTR_ERR(p));
 		}
 		kthread_bind(p, hotcpu);

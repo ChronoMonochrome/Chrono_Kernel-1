@@ -116,8 +116,8 @@ static void sym2_setup_params(void)
 			sym_driver_setup.settle_delay = 10;
 			sym_driver_setup.use_nvram = 1;
 		} else if (*safe_string != 'n') {
-			printk(KERN_WARNING NAME53C8XX "Ignoring parameter %s"
-					" passed to safe option", safe_string);
+//			printk(KERN_WARNING NAME53C8XX "Ignoring parameter %s"
+;
 		}
 	}
 }
@@ -379,7 +379,7 @@ int sym_setup_data_and_start(struct sym_hcb *np, struct scsi_cmnd *cmd, struct s
 	 */
 	switch (dir) {
 	case DMA_BIDIRECTIONAL:
-		scmd_printk(KERN_INFO, cmd, "got DMA_BIDIRECTIONAL command");
+;
 		sym_set_cam_status(cmd, DID_ERROR);
 		goto out_abort;
 	case DMA_TO_DEVICE:
@@ -457,8 +457,8 @@ static void sym_timer(struct sym_hcb *np)
 	if (np->s.settle_time_valid) {
 		if (time_before_eq(np->s.settle_time, thistime)) {
 			if (sym_verbose >= 2 )
-				printk("%s: command processing resumed\n",
-				       sym_name(np));
+//				printk("%s: command processing resumed\n",
+;
 			np->s.settle_time_valid = 0;
 		}
 		return;
@@ -496,8 +496,8 @@ void sym_log_bus_error(struct Scsi_Host *shost)
 	pci_read_config_word(pdev, PCI_STATUS, &pci_sts);
 	if (pci_sts & 0xf900) {
 		pci_write_config_word(pdev, PCI_STATUS, pci_sts);
-		shost_printk(KERN_WARNING, shost,
-			"PCI bus error: status = 0x%04x\n", pci_sts & 0xf900);
+//		shost_printk(KERN_WARNING, shost,
+;
 	}
 }
 
@@ -600,7 +600,7 @@ static int sym_eh_handler(int op, char *opname, struct scsi_cmnd *cmd)
 	int sts = -1;
 	struct completion eh_done;
 
-	scmd_printk(KERN_WARNING, cmd, "%s operation started\n", opname);
+;
 
 	/* We may be in an error condition because the PCI bus
 	 * went down. In this case, we need to wait until the
@@ -758,8 +758,8 @@ static int sym53c8xx_slave_alloc(struct scsi_device *sdev)
 
 	if (tp->usrflags & SYM_SCAN_BOOT_DISABLED) {
 		tp->usrflags &= ~SYM_SCAN_BOOT_DISABLED;
-		starget_printk(KERN_INFO, sdev->sdev_target,
-				"Scan at boot disabled in NVRAM\n");
+//		starget_printk(KERN_INFO, sdev->sdev_target,
+;
 		error = -ENXIO;
 		goto out;
 	}
@@ -769,8 +769,8 @@ static int sym53c8xx_slave_alloc(struct scsi_device *sdev)
 			error = -ENXIO;
 			goto out;
 		}
-		starget_printk(KERN_INFO, sdev->sdev_target,
-				"Multiple LUNs disabled in NVRAM\n");
+//		starget_printk(KERN_INFO, sdev->sdev_target,
+;
 	}
 
 	lp = sym_alloc_lcb(np, sdev->id, sdev->lun);
@@ -850,8 +850,8 @@ static void sym53c8xx_slave_destroy(struct scsi_device *sdev)
 		 * This really shouldn't happen, but we can't return an error
 		 * so let's try to stop all on-going I/O.
 		 */
-		starget_printk(KERN_WARNING, tp->starget,
-			       "Removing busy LCB (%d)\n", sdev->lun);
+//		starget_printk(KERN_WARNING, tp->starget,
+;
 		sym_reset_scsi_bus(np, 1);
 	}
 
@@ -1068,7 +1068,7 @@ static int sym_user_command(struct Scsi_Host *shost, char *buffer, int length)
 		arg_len = 0;
 
 #ifdef DEBUG_PROC_INFO
-printk("sym_user_command: arg_len=%d, cmd=%ld\n", arg_len, uc->cmd);
+;
 #endif
 
 	if (!arg_len)
@@ -1090,7 +1090,7 @@ printk("sym_user_command: arg_len=%d, cmd=%ld\n", arg_len, uc->cmd);
 			GET_INT_ARG(ptr, len, target);
 			uc->target = (1<<target);
 #ifdef DEBUG_PROC_INFO
-printk("sym_user_command: target=%ld\n", target);
+;
 #endif
 		}
 		break;
@@ -1104,7 +1104,7 @@ printk("sym_user_command: target=%ld\n", target);
 		SKIP_SPACES(ptr, len);
 		GET_INT_ARG(ptr, len, uc->data);
 #ifdef DEBUG_PROC_INFO
-printk("sym_user_command: data=%ld\n", uc->data);
+;
 #endif
 		break;
 #ifdef SYM_LINUX_DEBUG_CONTROL_SUPPORT
@@ -1138,7 +1138,7 @@ printk("sym_user_command: data=%ld\n", uc->data);
 			ptr += arg_len; len -= arg_len;
 		}
 #ifdef DEBUG_PROC_INFO
-printk("sym_user_command: data=%ld\n", uc->data);
+;
 #endif
 		break;
 #endif /* SYM_LINUX_DEBUG_CONTROL_SUPPORT */
@@ -1336,9 +1336,9 @@ static struct Scsi_Host * __devinit sym_attach(struct scsi_host_template *tpnt,
 	struct sym_fw *fw;
 	int do_free_irq = 0;
 
-	printk(KERN_INFO "sym%d: <%s> rev 0x%x at pci %s irq %u\n",
-		unit, dev->chip.name, pdev->revision, pci_name(pdev),
-		pdev->irq);
+//	printk(KERN_INFO "sym%d: <%s> rev 0x%x at pci %s irq %u\n",
+//		unit, dev->chip.name, pdev->revision, pci_name(pdev),
+;
 
 	/*
 	 *  Get the firmware for this chip.
@@ -1704,7 +1704,7 @@ static void sym_config_pqs(struct pci_dev *pdev, struct sym_device *sym_dev)
 static int sym_detach(struct Scsi_Host *shost, struct pci_dev *pdev)
 {
 	struct sym_hcb *np = sym_get_hcb(shost);
-	printk("%s: detaching ...\n", sym_name(np));
+;
 
 	del_timer_sync(&np->s.timer);
 
@@ -1713,7 +1713,7 @@ static int sym_detach(struct Scsi_Host *shost, struct pci_dev *pdev)
 	 * We should use sym_soft_reset(), but we don't want to do 
 	 * so, since we may not be safe if interrupts occur.
 	 */
-	printk("%s: resetting chip\n", sym_name(np));
+;
 	OUTB(np, nc_istat, SRST);
 	INB(np, nc_mbox1);
 	udelay(10);
@@ -1902,12 +1902,12 @@ static pci_ers_result_t sym2_io_slot_reset(struct pci_dev *pdev)
 	struct Scsi_Host *shost = pci_get_drvdata(pdev);
 	struct sym_hcb *np = sym_get_hcb(shost);
 
-	printk(KERN_INFO "%s: recovering from a PCI slot reset\n",
-	          sym_name(np));
+//	printk(KERN_INFO "%s: recovering from a PCI slot reset\n",
+;
 
 	if (pci_enable_device(pdev)) {
-		printk(KERN_ERR "%s: Unable to enable after PCI reset\n",
-		        sym_name(np));
+//		printk(KERN_ERR "%s: Unable to enable after PCI reset\n",
+;
 		return PCI_ERS_RESULT_DISCONNECT;
 	}
 
@@ -1926,8 +1926,8 @@ static pci_ers_result_t sym2_io_slot_reset(struct pci_dev *pdev)
 	/* Perform host reset only on one instance of the card */
 	if (PCI_FUNC(pdev->devfn) == 0) {
 		if (sym_reset_scsi_bus(np, 0)) {
-			printk(KERN_ERR "%s: Unable to reset scsi host\n",
-			        sym_name(np));
+//			printk(KERN_ERR "%s: Unable to reset scsi host\n",
+;
 			return PCI_ERS_RESULT_DISCONNECT;
 		}
 		sym_start_up(shost, 1);

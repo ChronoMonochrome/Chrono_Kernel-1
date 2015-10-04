@@ -260,9 +260,9 @@ static int pcxhr_get_clock_reg(struct pcxhr_mgr *mgr, unsigned int rate,
 			rmh.cmd_len = 3;
 			err = pcxhr_send_msg(mgr, &rmh);
 			if (err < 0) {
-				snd_printk(KERN_ERR
-					   "error CMD_ACCESS_IO_WRITE "
-					   "for PLL register : %x!\n", err);
+//				snd_printk(KERN_ERR
+//					   "error CMD_ACCESS_IO_WRITE "
+;
 				return err;
 			}
 		}
@@ -488,8 +488,8 @@ static int pcxhr_set_stream_state(struct pcxhr_stream *stream)
 		start = 1;
 	else {
 		if (stream->status != PCXHR_STREAM_STATUS_SCHEDULE_STOP) {
-			snd_printk(KERN_ERR "ERROR pcxhr_set_stream_state "
-				   "CANNOT be stopped\n");
+//			snd_printk(KERN_ERR "ERROR pcxhr_set_stream_state "
+;
 			return -EINVAL;
 		}
 		start = 0;
@@ -513,7 +513,7 @@ static int pcxhr_set_stream_state(struct pcxhr_stream *stream)
 
 	err = pcxhr_send_msg(chip->mgr, &rmh);
 	if (err)
-		snd_printk(KERN_ERR "ERROR pcxhr_set_stream_state err=%x;\n",
+;
 			   err);
 	stream->status =
 	  start ? PCXHR_STREAM_STATUS_STARTED : PCXHR_STREAM_STATUS_STOPPED;
@@ -558,8 +558,8 @@ static int pcxhr_set_format(struct pcxhr_stream *stream)
 		header = HEADER_FMT_BASE_FLOAT | HEADER_FMT_INTEL;
 		break;
 	default:
-		snd_printk(KERN_ERR
-			   "error pcxhr_set_format() : unknown format\n");
+//		snd_printk(KERN_ERR
+;
 		return -EINVAL;
 	}
 	chip = snd_pcm_substream_chip(stream->substream);
@@ -604,7 +604,7 @@ static int pcxhr_set_format(struct pcxhr_stream *stream)
 	rmh.cmd[rmh.cmd_len++] = (header & 0xff) << 16;
 	err = pcxhr_send_msg(chip->mgr, &rmh);
 	if (err)
-		snd_printk(KERN_ERR "ERROR pcxhr_set_format err=%x;\n", err);
+;
 	return err;
 }
 
@@ -641,8 +641,8 @@ static int pcxhr_update_r_buffer(struct pcxhr_stream *stream)
 	rmh.cmd_len = 4;
 	err = pcxhr_send_msg(chip->mgr, &rmh);
 	if (err)
-		snd_printk(KERN_ERR
-			   "ERROR CMD_UPDATE_R_BUFFERS err=%x;\n", err);
+//		snd_printk(KERN_ERR
+;
 	return err;
 }
 
@@ -711,7 +711,7 @@ static void pcxhr_trigger_tasklet(unsigned long arg)
 	}
 	if (capture_mask == 0 && playback_mask == 0) {
 		mutex_unlock(&mgr->setup_mutex);
-		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : no pipes\n");
+;
 		return;
 	}
 
@@ -723,9 +723,9 @@ static void pcxhr_trigger_tasklet(unsigned long arg)
 	err = pcxhr_set_pipe_state(mgr,  playback_mask, capture_mask, 0);
 	if (err) {
 		mutex_unlock(&mgr->setup_mutex);
-		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : "
-			   "error stop pipes (P%x C%x)\n",
-			   playback_mask, capture_mask);
+//		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : "
+//			   "error stop pipes (P%x C%x)\n",
+;
 		return;
 	}
 
@@ -768,9 +768,9 @@ static void pcxhr_trigger_tasklet(unsigned long arg)
 	err = pcxhr_set_pipe_state(mgr, playback_mask, capture_mask, 1);
 	if (err) {
 		mutex_unlock(&mgr->setup_mutex);
-		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : "
-			   "error start pipes (P%x C%x)\n",
-			   playback_mask, capture_mask);
+//		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : "
+//			   "error start pipes (P%x C%x)\n",
+;
 		return;
 	}
 
@@ -878,8 +878,8 @@ static int pcxhr_hardware_timer(struct pcxhr_mgr *mgr, int start)
 	}
 	err = pcxhr_send_msg(mgr, &rmh);
 	if (err < 0)
-		snd_printk(KERN_ERR "error pcxhr_hardware_timer err(%x)\n",
-			   err);
+//		snd_printk(KERN_ERR "error pcxhr_hardware_timer err(%x)\n",
+;
 	return err;
 }
 
@@ -1015,8 +1015,8 @@ static int pcxhr_open(struct snd_pcm_substream *subs)
 	}
 	if (stream->status != PCXHR_STREAM_STATUS_FREE){
 		/* streams in use */
-		snd_printk(KERN_ERR "pcxhr_open chip%d subs%d in use\n",
-			   chip->chip_idx, subs->number);
+//		snd_printk(KERN_ERR "pcxhr_open chip%d subs%d in use\n",
+;
 		mutex_unlock(&mgr->setup_mutex);
 		return -EBUSY;
 	}
@@ -1144,7 +1144,7 @@ int pcxhr_create_pcm(struct snd_pcxhr *chip)
 	if ((err = snd_pcm_new(chip->card, name, 0,
 			       chip->nb_streams_play,
 			       chip->nb_streams_capt, &pcm)) < 0) {
-		snd_printk(KERN_ERR "cannot create pcm %s\n", name);
+;
 		return err;
 	}
 	pcm->private_data = chip;
@@ -1190,7 +1190,7 @@ static int __devinit pcxhr_create(struct pcxhr_mgr *mgr,
 
 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
 	if (! chip) {
-		snd_printk(KERN_ERR "cannot allocate chip\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1450,8 +1450,8 @@ static int __devinit pcxhr_probe(struct pci_dev *pci,
 
 	/* check if we can restrict PCI DMA transfers to 32 bits */
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(32)) < 0) {
-		snd_printk(KERN_ERR "architecture does not support "
-			   "32bit PCI busmaster DMA\n");
+//		snd_printk(KERN_ERR "architecture does not support "
+;
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -1502,7 +1502,7 @@ static int __devinit pcxhr_probe(struct pci_dev *pci,
 
 	if (request_irq(pci->irq, pcxhr_interrupt, IRQF_SHARED,
 			card_name, mgr)) {
-		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
+;
 		pcxhr_free(mgr);
 		return -EBUSY;
 	}
@@ -1554,7 +1554,7 @@ static int __devinit pcxhr_probe(struct pci_dev *pci,
 		err = snd_card_create(idx, tmpid, THIS_MODULE, 0, &card);
 
 		if (err < 0) {
-			snd_printk(KERN_ERR "cannot allocate the card %d\n", i);
+;
 			pcxhr_free(mgr);
 			return err;
 		}

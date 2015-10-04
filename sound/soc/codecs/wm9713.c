@@ -724,9 +724,9 @@ static void pll_factors(struct _pll_div *pll_div, unsigned int source)
 
 	Ndiv = target / source;
 	if ((Ndiv < 5) || (Ndiv > 12))
-		printk(KERN_WARNING
-			"WM9713 PLL N value %u out of recommended range!\n",
-			Ndiv);
+//		printk(KERN_WARNING
+//			"WM9713 PLL N value %u out of recommended range!\n",
+;
 
 	pll_div->n = Ndiv;
 	Nmod = target % source;
@@ -1165,7 +1165,7 @@ static int wm9713_soc_resume(struct snd_soc_codec *codec)
 
 	ret = wm9713_reset(codec, 1);
 	if (ret < 0) {
-		printk(KERN_ERR "could not reset AC97 codec\n");
+;
 		return ret;
 	}
 
@@ -1207,7 +1207,7 @@ static int wm9713_soc_probe(struct snd_soc_codec *codec)
 	wm9713_reset(codec, 0);
 	ret = wm9713_reset(codec, 1);
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to reset WM9713: AC97 link error\n");
+;
 		goto reset_err;
 	}
 

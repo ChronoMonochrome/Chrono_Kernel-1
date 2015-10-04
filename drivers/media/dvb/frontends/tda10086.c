@@ -44,9 +44,9 @@ struct tda10086_state {
 };
 
 static int debug;
-#define dprintk(args...) \
-	do { \
-		if (debug) printk(KERN_DEBUG "tda10086: " args); \
+//#define dprintk(args...) \
+//	do { \
+;
 	} while (0)
 
 static int tda10086_write_byte(struct tda10086_state *state, int reg, int data)
@@ -59,8 +59,8 @@ static int tda10086_write_byte(struct tda10086_state *state, int reg, int data)
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
-		dprintk("%s: error reg=0x%x, data=0x%x, ret=%i\n",
-			__func__, reg, data, ret);
+//		dprintk("%s: error reg=0x%x, data=0x%x, ret=%i\n",
+;
 
 	return (ret != 1) ? ret : 0;
 }
@@ -78,8 +78,8 @@ static int tda10086_read_byte(struct tda10086_state *state, int reg)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2) {
-		dprintk("%s: error reg=0x%x, ret=%i\n", __func__, reg,
-			ret);
+//		dprintk("%s: error reg=0x%x, ret=%i\n", __func__, reg,
+;
 		return ret;
 	}
 
@@ -178,7 +178,7 @@ static void tda10086_diseqc_wait(struct tda10086_state *state)
 	unsigned long timeout = jiffies + msecs_to_jiffies(200);
 	while (!(tda10086_read_byte(state, 0x50) & 0x01)) {
 		if(time_after(jiffies, timeout)) {
-			printk("%s: diseqc queue not ready, command may be lost.\n", __func__);
+;
 			break;
 		}
 		msleep(10);

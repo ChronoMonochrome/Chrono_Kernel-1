@@ -209,20 +209,20 @@ static void psb_intel_sdvo_write_cmd(struct psb_intel_output *psb_intel_output,
 		for (i = 0; i < args_len; i++)
 			printk(KERN_INFO"%02X ", ((u8 *) args)[i]);
 		for (; i < 8; i++)
-			printk("   ");
+;
 		for (i = 0;
 		     i <
 		     sizeof(sdvo_cmd_names) / sizeof(sdvo_cmd_names[0]);
 		     i++) {
 			if (cmd == sdvo_cmd_names[i].cmd) {
-				printk("(%s)", sdvo_cmd_names[i].name);
+;
 				break;
 			}
 		}
 		if (i ==
 		    sizeof(sdvo_cmd_names) / sizeof(sdvo_cmd_names[0]))
-			printk("(%02X)", cmd);
-		printk("\n");
+;
+;
 	}
 
 	for (i = 0; i < args_len; i++) {
@@ -271,13 +271,13 @@ static u8 psb_intel_sdvo_read_response(
 			for (i = 0; i < response_len; i++)
 				printk(KERN_INFO"%02X ", ((u8 *) response)[i]);
 			for (; i < 8; i++)
-				printk("   ");
+;
 			if (status <= SDVO_CMD_STATUS_SCALING_NOT_SUPP)
-				printk(KERN_INFO"(%s)",
-					 cmd_status_names[status]);
+//				printk(KERN_INFO"(%s)",
+;
 			else
-				printk(KERN_INFO"(??? %d)", status);
-			printk("\n");
+;
+;
 		}
 
 		if (status != SDVO_CMD_STATUS_PENDING)

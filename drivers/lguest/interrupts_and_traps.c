@@ -301,8 +301,8 @@ int init_interrupts(void)
 	if (syscall_vector != SYSCALL_VECTOR) {
 		if (test_bit(syscall_vector, used_vectors) ||
 		    vector_used_by_percpu_irq(syscall_vector)) {
-			printk(KERN_ERR "lg: couldn't reserve syscall %u\n",
-				 syscall_vector);
+//			printk(KERN_ERR "lg: couldn't reserve syscall %u\n",
+;
 			return -EBUSY;
 		}
 		set_bit(syscall_vector, used_vectors);

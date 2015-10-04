@@ -25,14 +25,14 @@
 #undef GENERAL_DEBUG
 
 #ifdef GENERAL_DEBUG
-#define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
-#else
-#define DPRINTK(format,args...)
-#endif
-
-
-struct idt77105_priv {
-	struct idt77105_stats stats;    /* link diagnostics */
+//#define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
+//#else
+//#define DPRINTK(format,args...)
+//#endif
+//
+//
+//struct idt77105_priv {
+;
 	struct atm_dev *dev;		/* device back-pointer */
 	struct idt77105_priv *next;
         int loop_mode;
@@ -127,8 +127,8 @@ static void idt77105_restart_timer_func(unsigned long dummy)
                 if (istat & IDT77105_ISTAT_GOODSIG) {
                     /* Found signal again */
                     atm_dev_signal_change(dev, ATM_PHY_SIG_FOUND);
-	            printk(KERN_NOTICE "%s(itf %d): signal detected again\n",
-                        dev->type,dev->number);
+//	            printk(KERN_NOTICE "%s(itf %d): signal detected again\n",
+;
                     /* flush the receive FIFO */
                     PUT( GET(DIAG) | IDT77105_DIAG_RFLUSH, DIAG);
                     /* re-enable interrupts */
@@ -174,13 +174,13 @@ static int set_loopback(struct atm_dev *dev,int mode)
 			return -EINVAL;
 	}
 	PUT(diag,DIAG);
-	printk(KERN_NOTICE "%s(%d) Loopback mode is: %s\n", dev->type,
-	    dev->number,
-	    (mode == ATM_LM_NONE ? "NONE" : 
-	      (mode == ATM_LM_LOC_ATM ? "DIAG (local)" :
-		(mode == IDT77105_DIAG_LC_LINE_LOOPBACK ? "LOOP (remote)" :
-		  "unknown")))
-		    );
+//	printk(KERN_NOTICE "%s(%d) Loopback mode is: %s\n", dev->type,
+//	    dev->number,
+//	    (mode == ATM_LM_NONE ? "NONE" : 
+//	      (mode == ATM_LM_LOC_ATM ? "DIAG (local)" :
+//		(mode == IDT77105_DIAG_LC_LINE_LOOPBACK ? "LOOP (remote)" :
+//		  "unknown")))
+;
 	PRIV(dev)->loop_mode = mode;
 	return 0;
 }
@@ -188,7 +188,7 @@ static int set_loopback(struct atm_dev *dev,int mode)
 
 static int idt77105_ioctl(struct atm_dev *dev,unsigned int cmd,void __user *arg)
 {
-        printk(KERN_NOTICE "%s(%d) idt77105_ioctl() called\n",dev->type,dev->number);
+;
 	switch (cmd) {
 		case IDT77105_GETSTATZ:
 			if (!capable(CAP_NET_ADMIN)) return -EPERM;
@@ -236,23 +236,23 @@ static void idt77105_int(struct atm_dev *dev)
                     IDT77105_MCR_HALTTX
                     ) & ~IDT77105_MCR_EIP, MCR);
 		atm_dev_signal_change(dev, ATM_PHY_SIG_LOST);
-	        printk(KERN_NOTICE "%s(itf %d): signal lost\n",
-                    dev->type,dev->number);
+//	        printk(KERN_NOTICE "%s(itf %d): signal lost\n",
+;
             }
         }
         
         if (istat & IDT77105_ISTAT_RFO) {
             /* Rx FIFO Overrun -- perform a FIFO flush */
             PUT( GET(DIAG) | IDT77105_DIAG_RFLUSH, DIAG);
-	    printk(KERN_NOTICE "%s(itf %d): receive FIFO overrun\n",
-                dev->type,dev->number);
+//	    printk(KERN_NOTICE "%s(itf %d): receive FIFO overrun\n",
+;
         }
 #ifdef GENERAL_DEBUG
         if (istat & (IDT77105_ISTAT_HECERR | IDT77105_ISTAT_SCR |
                      IDT77105_ISTAT_RSE)) {
             /* normally don't care - just report in stats */
-	    printk(KERN_NOTICE "%s(itf %d): received cell with error\n",
-                dev->type,dev->number);
+//	    printk(KERN_NOTICE "%s(itf %d): received cell with error\n",
+;
         }
 #endif
 }
@@ -276,8 +276,8 @@ static int idt77105_start(struct atm_dev *dev)
 		GET(ISTAT) & IDT77105_ISTAT_GOODSIG ?
 		ATM_PHY_SIG_FOUND : ATM_PHY_SIG_LOST);
 	if (dev->signal == ATM_PHY_SIG_LOST)
-		printk(KERN_WARNING "%s(itf %d): no signal\n",dev->type,
-		    dev->number);
+//		printk(KERN_WARNING "%s(itf %d): no signal\n",dev->type,
+;
 
         /* initialise loop mode from hardware */
         switch ( GET(DIAG) & IDT77105_DIAG_LCMASK ) {

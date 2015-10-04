@@ -2069,7 +2069,7 @@ static int __init i2o_proc_init(void)
 {
 	int rc;
 
-	printk(KERN_INFO OSM_DESCRIPTION " v" OSM_VERSION "\n");
+;
 
 	rc = i2o_driver_register(&i2o_proc_driver);
 	if (rc)

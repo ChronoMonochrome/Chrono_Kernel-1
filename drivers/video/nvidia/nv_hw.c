@@ -730,8 +730,8 @@ static void nForceUpdateArbitrationSettings(unsigned VClk,
 		dimm[2] = (dimm[2] >> 8) & 0x4f;
 
 		if ((dimm[0] + dimm[1]) != dimm[2]) {
-			printk("nvidiafb: your nForce DIMMs are not arranged "
-			       "in optimal banks!\n");
+//			printk("nvidiafb: your nForce DIMMs are not arranged "
+;
 		}
 		pci_dev_put(dev);
 	}

@@ -520,8 +520,8 @@ static int ess_audio_prepare_for_output(int dev, int bsize, int bcount)
 	sb_devc *devc = audio_devs[dev]->devc;
 
 #ifdef FKS_REG_LOGGING
-printk(KERN_INFO "ess_audio_prepare_for_output: dma_out=%d,dma_in=%d\n"
-, audio_devs[dev]->dmap_out->dma, audio_devs[dev]->dmap_in->dma);
+//printk(KERN_INFO "ess_audio_prepare_for_output: dma_out=%d,dma_in=%d\n"
+;
 #endif
 
 	if (devc->duplex) {
@@ -767,7 +767,7 @@ static void ess_handle_channel
 {
 	if (!intr_active || !flag) return;
 #ifdef FKS_REG_LOGGING
-printk(KERN_INFO "FKS: ess_handle_channel %s irq_mode=%d\n", channel, irq_mode);
+;
 #endif
 	switch (irq_mode) {
 		case IMODE_OUTPUT:
@@ -804,7 +804,7 @@ void ess_intr (sb_devc *devc)
 	}
 
 #ifdef FKS_REG_LOGGING
-printk(KERN_INFO "FKS: sbintr src=%x\n",(int)src);
+;
 #endif
 	ess_handle_channel
 		( "Audio 1"
@@ -834,7 +834,7 @@ static void ess_extended (sb_devc * devc)
 static int ess_write (sb_devc * devc, unsigned char reg, unsigned char data)
 {
 #ifdef FKS_REG_LOGGING
-printk(KERN_INFO "FKS: write reg %x: %x\n", reg, data);
+;
 #endif
 	/* Write a byte to an extended mode register of ES1688 */
 
@@ -861,11 +861,11 @@ int ess_dsp_reset(sb_devc * devc)
 	int loopc;
 
 #ifdef FKS_REG_LOGGING
-printk(KERN_INFO "FKS: ess_dsp_reset 1\n");
+;
 ess_show_mixerregs (devc);
 #endif
 
-	DEB(printk("Entered ess_dsp_reset()\n"));
+;
 
 	outb(3, DSP_RESET); /* Reset FIFO too */
 
@@ -876,15 +876,15 @@ ess_show_mixerregs (devc);
 	for (loopc = 0; loopc < 1000 && !(inb(DSP_DATA_AVAIL) & 0x80); loopc++);
 
 	if (inb(DSP_READ) != 0xAA) {
-		DDB(printk("sb: No response to RESET\n"));
+;
 		return 0;   /* Sorry */
 	}
 	ess_extended (devc);
 
-	DEB(printk("sb_dsp_reset() OK\n"));
+;
 
 #ifdef FKS_LOGGING
-printk(KERN_INFO "FKS: dsp_reset 2\n");
+;
 ess_show_mixerregs (devc);
 #endif
 
@@ -908,7 +908,7 @@ static int ess_irq_bits (int irq)
 		return 3;
 
 	default:
-		printk(KERN_ERR "ESS1688: Invalid IRQ %d\n", irq);
+;
 		return -1;
 	}
 }
@@ -923,7 +923,7 @@ static int ess_common_set_irq_hw (sb_devc * devc)
 	if ((irq_bits = ess_irq_bits (devc->irq)) == -1) return 0;
 
 	if (!ess_write (devc, 0xb1, 0x50 | (irq_bits << 2))) {
-		printk(KERN_ERR "ES1688: Failed to write to IRQ config register\n");
+;
 		return 0;
 	}
 	return 1;
@@ -1242,8 +1242,8 @@ static int ess_set_dma_hw(sb_devc * devc)
 	int dma;
 
 #ifdef FKS_LOGGING
-printk(KERN_INFO "ess_set_dma_hw: dma8=%d,dma16=%d,dup=%d\n"
-, devc->dma8, devc->dma16, devc->duplex);
+//printk(KERN_INFO "ess_set_dma_hw: dma8=%d,dma16=%d,dup=%d\n"
+;
 #endif
 
 	/*
@@ -1253,7 +1253,7 @@ printk(KERN_INFO "ess_set_dma_hw: dma8=%d,dma16=%d,dup=%d\n"
 
 	if (dma > 3 || dma < 0 || dma == 2) {
 		dma_bits = 0;
-		printk(KERN_ERR "ESS1688: Invalid DMA8 %d\n", dma);
+;
 		return 0;
 	} else {
 		/* Extended mode DMA enable */
@@ -1267,7 +1267,7 @@ printk(KERN_INFO "ess_set_dma_hw: dma8=%d,dma16=%d,dup=%d\n"
 	}
 
 	if (!ess_write (devc, 0xb2, cfg | (dma_bits << 2))) {
-		printk(KERN_ERR "ESS1688: Failed to write to DMA config register\n");
+;
 		return 0;
 	}
 
@@ -1291,7 +1291,7 @@ printk(KERN_INFO "ess_set_dma_hw: dma8=%d,dma16=%d,dup=%d\n"
 				dma16_bits = 0x20;
 				break;
 			default:
-				printk(KERN_ERR "ESS1887: Invalid DMA16 %d\n", dma);
+;
 				return 0;
 			};
 			ess_chgmixer (devc, 0x78, 0x20, dma16_bits);
@@ -1572,7 +1572,7 @@ void ess_setmixer (sb_devc * devc, unsigned int port, unsigned int value)
 	unsigned long flags;
 
 #ifdef FKS_LOGGING
-printk(KERN_INFO "FKS: write mixer %x: %x\n", port, value);
+;
 #endif
 
 	spin_lock_irqsave(&devc->lock, flags);

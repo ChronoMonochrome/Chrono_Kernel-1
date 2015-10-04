@@ -254,7 +254,7 @@ MODULE_PARM_DESC(rdac_logging, "A bit mask of rdac logging levels, "
 #define RDAC_LOG(SHIFT, sdev, f, arg...) \
 do { \
 	if (unlikely(RDAC_LOG_LEVEL(SHIFT))) \
-		sdev_printk(KERN_INFO, sdev, RDAC_NAME ": " f "\n", ## arg); \
+;
 } while (0);
 
 static inline struct rdac_dh_data *get_rdac_data(struct scsi_device *sdev)
@@ -273,15 +273,15 @@ static struct request *get_rdac_req(struct scsi_device *sdev,
 	rq = blk_get_request(q, rw, GFP_NOIO);
 
 	if (!rq) {
-		sdev_printk(KERN_INFO, sdev,
-				"get_rdac_req: blk_get_request failed.\n");
+//		sdev_printk(KERN_INFO, sdev,
+;
 		return NULL;
 	}
 
 	if (buflen && blk_rq_map_kern(q, rq, buffer, buflen, GFP_NOIO)) {
 		blk_put_request(rq);
-		sdev_printk(KERN_INFO, sdev,
-				"get_rdac_req: blk_rq_map_kern failed.\n");
+//		sdev_printk(KERN_INFO, sdev,
+;
 		return NULL;
 	}
 
@@ -839,8 +839,8 @@ static int rdac_bus_attach(struct scsi_device *sdev)
 	scsi_dh_data = kzalloc(sizeof(*scsi_dh_data)
 			       + sizeof(*h) , GFP_KERNEL);
 	if (!scsi_dh_data) {
-		sdev_printk(KERN_ERR, sdev, "%s: Attach failed\n",
-			    RDAC_NAME);
+//		sdev_printk(KERN_ERR, sdev, "%s: Attach failed\n",
+;
 		return 0;
 	}
 
@@ -872,10 +872,10 @@ static int rdac_bus_attach(struct scsi_device *sdev)
 	sdev->scsi_dh_data = scsi_dh_data;
 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
 
-	sdev_printk(KERN_NOTICE, sdev,
-		    "%s: LUN %d (%s) (%s)\n",
-		    RDAC_NAME, h->lun, mode[(int)h->mode],
-		    lun_state[(int)h->lun_state]);
+//	sdev_printk(KERN_NOTICE, sdev,
+//		    "%s: LUN %d (%s) (%s)\n",
+//		    RDAC_NAME, h->lun, mode[(int)h->mode],
+;
 
 	return 0;
 
@@ -884,8 +884,8 @@ clean_ctlr:
 
 failed:
 	kfree(scsi_dh_data);
-	sdev_printk(KERN_ERR, sdev, "%s: not attached\n",
-		    RDAC_NAME);
+//	sdev_printk(KERN_ERR, sdev, "%s: not attached\n",
+;
 	return -EINVAL;
 }
 
@@ -905,7 +905,7 @@ static void rdac_bus_detach( struct scsi_device *sdev )
 		kref_put(&h->ctlr->kref, release_controller);
 	kfree(scsi_dh_data);
 	module_put(THIS_MODULE);
-	sdev_printk(KERN_NOTICE, sdev, "%s: Detached\n", RDAC_NAME);
+;
 }
 
 
@@ -916,7 +916,7 @@ static int __init rdac_init(void)
 
 	r = scsi_register_device_handler(&rdac_dh);
 	if (r != 0) {
-		printk(KERN_ERR "Failed to register scsi device handler.");
+;
 		goto done;
 	}
 
@@ -926,7 +926,7 @@ static int __init rdac_init(void)
 	kmpath_rdacd = create_singlethread_workqueue("kmpath_rdacd");
 	if (!kmpath_rdacd) {
 		scsi_unregister_device_handler(&rdac_dh);
-		printk(KERN_ERR "kmpath_rdacd creation failed.\n");
+;
 	}
 done:
 	return r;

@@ -55,8 +55,6 @@ early_param("initrd", early_initrd);
 
 static int __init parse_tag_initrd(const struct tag *tag)
 {
-	printk(KERN_WARNING "ATAG_INITRD is deprecated; "
-		"please update your bootloader.\n");
 	phys_initrd_start = __virt_to_phys(tag->u.initrd.start);
 	phys_initrd_size = tag->u.initrd.size;
 	return 0;
@@ -94,7 +92,7 @@ void show_mem(unsigned int filter)
 	int shared = 0, cached = 0, slab = 0, i;
 	struct meminfo * mi = &meminfo;
 
-	printk("Mem-info:\n");
+;
 	show_free_areas(filter);
 
 	for_each_bank (i, mi) {
@@ -124,12 +122,12 @@ void show_mem(unsigned int filter)
 		} while (page < end);
 	}
 
-	printk("%d pages of RAM\n", total);
-	printk("%d free pages\n", free);
-	printk("%d reserved pages\n", reserved);
-	printk("%d slab pages\n", slab);
-	printk("%d pages shared\n", shared);
-	printk("%d pages swap cached\n", cached);
+;
+;
+;
+;
+;
+;
 }
 
 static void __init find_limits(unsigned long *min, unsigned long *max_low,
@@ -429,7 +427,7 @@ static inline int free_area(unsigned long pfn, unsigned long end, char *s)
 	}
 
 	if (size && s)
-		printk(KERN_INFO "Freeing %s memory: %dK\n", s, size);
+;
 
 	return pages;
 }
@@ -622,69 +620,69 @@ void __init mem_init(void)
 	 * Since our memory may not be contiguous, calculate the
 	 * real number of pages we have in this system
 	 */
-	printk(KERN_INFO "Memory:");
+;
 	num_physpages = 0;
 	for_each_memblock(memory, reg) {
 		unsigned long pages = memblock_region_memory_end_pfn(reg) -
 			memblock_region_memory_base_pfn(reg);
 		num_physpages += pages;
-		printk(" %ldMB", pages >> (20 - PAGE_SHIFT));
+;
 	}
-	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
+;
 
-	printk(KERN_NOTICE "Memory: %luk/%luk available, %luk reserved, %luK highmem\n",
-		nr_free_pages() << (PAGE_SHIFT-10),
-		free_pages << (PAGE_SHIFT-10),
-		reserved_pages << (PAGE_SHIFT-10),
-		totalhigh_pages << (PAGE_SHIFT-10));
+//	printk(KERN_NOTICE "Memory: %luk/%luk available, %luk reserved, %luK highmem\n",
+//		nr_free_pages() << (PAGE_SHIFT-10),
+//		free_pages << (PAGE_SHIFT-10),
+//		reserved_pages << (PAGE_SHIFT-10),
+;
 
 #define MLK(b, t) b, t, ((t) - (b)) >> 10
 #define MLM(b, t) b, t, ((t) - (b)) >> 20
 #define MLK_ROUNDUP(b, t) b, t, DIV_ROUND_UP(((t) - (b)), SZ_1K)
 
-	printk(KERN_NOTICE "Virtual kernel memory layout:\n"
-			"    vector  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
-#ifdef CONFIG_HAVE_TCM
-			"    DTCM    : 0x%08lx - 0x%08lx   (%4ld kB)\n"
-			"    ITCM    : 0x%08lx - 0x%08lx   (%4ld kB)\n"
-#endif
-			"    fixmap  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
-#ifdef CONFIG_MMU
-			"    DMA     : 0x%08lx - 0x%08lx   (%4ld MB)\n"
-#endif
-			"    vmalloc : 0x%08lx - 0x%08lx   (%4ld MB)\n"
-			"    lowmem  : 0x%08lx - 0x%08lx   (%4ld MB)\n"
-#ifdef CONFIG_HIGHMEM
-			"    pkmap   : 0x%08lx - 0x%08lx   (%4ld MB)\n"
-#endif
-			"    modules : 0x%08lx - 0x%08lx   (%4ld MB)\n"
-			"      .init : 0x%p" " - 0x%p" "   (%4d kB)\n"
-			"      .text : 0x%p" " - 0x%p" "   (%4d kB)\n"
-			"      .data : 0x%p" " - 0x%p" "   (%4d kB)\n"
-			"       .bss : 0x%p" " - 0x%p" "   (%4d kB)\n",
-
-			MLK(UL(CONFIG_VECTORS_BASE), UL(CONFIG_VECTORS_BASE) +
-				(PAGE_SIZE)),
-#ifdef CONFIG_HAVE_TCM
-			MLK(DTCM_OFFSET, (unsigned long) dtcm_end),
-			MLK(ITCM_OFFSET, (unsigned long) itcm_end),
-#endif
-			MLK(FIXADDR_START, FIXADDR_TOP),
-#ifdef CONFIG_MMU
-			MLM(CONSISTENT_BASE, CONSISTENT_END),
-#endif
-			MLM(VMALLOC_START, VMALLOC_END),
-			MLM(PAGE_OFFSET, (unsigned long)high_memory),
-#ifdef CONFIG_HIGHMEM
-			MLM(PKMAP_BASE, (PKMAP_BASE) + (LAST_PKMAP) *
-				(PAGE_SIZE)),
-#endif
-			MLM(MODULES_VADDR, MODULES_END),
-
-			MLK_ROUNDUP(__init_begin, __init_end),
-			MLK_ROUNDUP(_text, _etext),
-			MLK_ROUNDUP(_sdata, _edata),
-			MLK_ROUNDUP(__bss_start, __bss_stop));
+//	printk(KERN_NOTICE "Virtual kernel memory layout:\n"
+//			"    vector  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+//#ifdef CONFIG_HAVE_TCM
+//			"    DTCM    : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+//			"    ITCM    : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+//#endif
+//			"    fixmap  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+//#ifdef CONFIG_MMU
+//			"    DMA     : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+//#endif
+//			"    vmalloc : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+//			"    lowmem  : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+//#ifdef CONFIG_HIGHMEM
+//			"    pkmap   : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+//#endif
+//			"    modules : 0x%08lx - 0x%08lx   (%4ld MB)\n"
+//			"      .init : 0x%p" " - 0x%p" "   (%4d kB)\n"
+//			"      .text : 0x%p" " - 0x%p" "   (%4d kB)\n"
+//			"      .data : 0x%p" " - 0x%p" "   (%4d kB)\n"
+//			"       .bss : 0x%p" " - 0x%p" "   (%4d kB)\n",
+//
+//			MLK(UL(CONFIG_VECTORS_BASE), UL(CONFIG_VECTORS_BASE) +
+//				(PAGE_SIZE)),
+//#ifdef CONFIG_HAVE_TCM
+//			MLK(DTCM_OFFSET, (unsigned long) dtcm_end),
+//			MLK(ITCM_OFFSET, (unsigned long) itcm_end),
+//#endif
+//			MLK(FIXADDR_START, FIXADDR_TOP),
+//#ifdef CONFIG_MMU
+//			MLM(CONSISTENT_BASE, CONSISTENT_END),
+//#endif
+//			MLM(VMALLOC_START, VMALLOC_END),
+//			MLM(PAGE_OFFSET, (unsigned long)high_memory),
+//#ifdef CONFIG_HIGHMEM
+//			MLM(PKMAP_BASE, (PKMAP_BASE) + (LAST_PKMAP) *
+//				(PAGE_SIZE)),
+//#endif
+//			MLM(MODULES_VADDR, MODULES_END),
+//
+//			MLK_ROUNDUP(__init_begin, __init_end),
+//			MLK_ROUNDUP(_text, _etext),
+//			MLK_ROUNDUP(_sdata, _edata),
+;
 
 #undef MLK
 #undef MLM

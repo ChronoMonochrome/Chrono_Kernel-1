@@ -1381,8 +1381,8 @@ w6692_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		return err;
 	}
 
-	printk(KERN_INFO "mISDN_w6692: found adapter %s at %s\n",
-	       m->name, pci_name(pdev));
+//	printk(KERN_INFO "mISDN_w6692: found adapter %s at %s\n",
+;
 
 	card->addr = pci_resource_start(pdev, 1);
 	card->irq = pdev->irq;

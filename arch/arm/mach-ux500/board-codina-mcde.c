@@ -173,7 +173,7 @@ static void pri_lcd_pwr_setup(struct device *dev)
 			return;
 		}
 		ret = regulator_set_voltage(vreg_lcd_1v8_regulator, min_uV, max_uV);
-		printk("lcd_pwr_setup_regulator setup =[%d]",ret);
+;
 		ret = regulator_enable(vreg_lcd_1v8_regulator);
 		if (ret < 0) {
 			regulator_put(vreg_lcd_1v8_regulator);
@@ -190,7 +190,7 @@ static int pri_display_power_on(struct ssg_dpi_display_platform_data *pd,
 	if (system_rev > CODINA_TMO_R0_4) {
 
 		if (vreg_lcd_1v8_regulator == NULL) {
-			printk(KERN_ERR "%s: no regulator\n", __func__);
+;
 			return;
 		}
 

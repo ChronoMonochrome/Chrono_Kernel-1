@@ -361,8 +361,8 @@ static int setup_serial(struct pcmcia_device *handle, struct serial_info * info,
 
 	line = serial8250_register_port(&port);
 	if (line < 0) {
-		printk(KERN_NOTICE "serial_cs: serial8250_register_port() at "
-		       "0x%04lx, irq %d failed\n", (u_long)iobase, irq);
+//		printk(KERN_NOTICE "serial_cs: serial8250_register_port() at "
+;
 		return -EINVAL;
 	}
 

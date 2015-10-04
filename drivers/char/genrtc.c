@@ -135,8 +135,8 @@ static void gen_rtc_timer(unsigned long data)
 	if (lostint<0) 
 		lostint = 60 - lostint;
 	if (time_after(jiffies, tt_exp))
-		printk(KERN_INFO "genrtc: timer task delayed by %ld jiffies\n",
-		       jiffies-tt_exp);
+//		printk(KERN_INFO "genrtc: timer task delayed by %ld jiffies\n",
+;
 	ttask_active=0;
 	stask_active=1;
 	if ((schedule_work(&genrtc_task) == 0))
@@ -161,7 +161,7 @@ static void gen_rtc_interrupt(unsigned long arg)
 	gen_rtc_irq_data |= RTC_UIE;
 
 	if (lostint){
-		printk("genrtc: system delaying clock ticks?\n");
+;
 		/* increment count so that userspace knows something is wrong */
 		gen_rtc_irq_data += ((lostint-1)<<8);
 		lostint = 0;
@@ -512,7 +512,7 @@ static int __init rtc_generic_init(void)
 {
 	int retval;
 
-	printk(KERN_INFO "Generic RTC Driver v%s\n", RTC_VERSION);
+;
 
 	retval = misc_register(&rtc_gen_dev);
 	if (retval < 0)

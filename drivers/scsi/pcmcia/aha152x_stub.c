@@ -172,7 +172,7 @@ static int aha152x_config_cs(struct pcmcia_device *link)
 
     host = aha152x_probe_one(&s);
     if (host == NULL) {
-	printk(KERN_INFO "aha152x_cs: no SCSI devices found\n");
+;
 	goto failed;
     }
 

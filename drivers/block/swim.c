@@ -600,8 +600,8 @@ static void setup_medium(struct floppy_state *fs)
 		fs->type = swim_readbit(base, ONEMEG_MEDIA);
 
 		if (swim_track00(base))
-			printk(KERN_ERR
-				"SWIM: cannot move floppy head to track 0\n");
+//			printk(KERN_ERR
+;
 
 		swim_track00(base);
 
@@ -717,8 +717,8 @@ static int floppy_ioctl(struct block_device *bdev, fmode_t mode,
 		break;
 
 	default:
-		printk(KERN_DEBUG "SWIM floppy_ioctl: unknown cmd %d\n",
-		       cmd);
+//		printk(KERN_DEBUG "SWIM floppy_ioctl: unknown cmd %d\n",
+;
 		return -ENOSYS;
 	}
 	return 0;
@@ -832,8 +832,8 @@ static int __devinit swim_floppy_init(struct swim_priv *swd)
 
 	err = register_blkdev(FLOPPY_MAJOR, "fd");
 	if (err) {
-		printk(KERN_ERR "Unable to get major %d for SWIM floppy\n",
-		       FLOPPY_MAJOR);
+//		printk(KERN_ERR "Unable to get major %d for SWIM floppy\n",
+;
 		return -EBUSY;
 	}
 
@@ -904,7 +904,7 @@ static int __devinit swim_probe(struct platform_device *dev)
 
 	set_swim_mode(swim_base, 1);
 	if (!get_swim_mode(swim_base)) {
-		printk(KERN_INFO "SWIM device not found !\n");
+;
 		ret = -ENODEV;
 		goto out_iounmap;
 	}
@@ -982,7 +982,7 @@ static struct platform_driver swim_driver = {
 
 static int __init swim_init(void)
 {
-	printk(KERN_INFO "SWIM floppy driver %s\n", DRIVER_VERSION);
+;
 
 	return platform_driver_register(&swim_driver);
 }

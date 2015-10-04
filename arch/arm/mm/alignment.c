@@ -489,9 +489,9 @@ do_alignment_ldmstm(unsigned long addr, unsigned long instr, struct pt_regs *reg
 	 * processor for us.
 	 */
 	if (addr != eaddr) {
-		printk(KERN_ERR "LDMSTM: PC = %08lx, instr = %08lx, "
-			"addr = %08lx, eaddr = %08lx\n",
-			 instruction_pointer(regs), instr, addr, eaddr);
+//		printk(KERN_ERR "LDMSTM: PC = %08lx, instr = %08lx, "
+//			"addr = %08lx, eaddr = %08lx\n",
+;
 		show_regs(regs);
 	}
 #endif
@@ -533,7 +533,7 @@ fault:
 	return TYPE_FAULT;
 
 bad:
-	printk(KERN_ERR "Alignment trap: not handling ldm with s-bit set\n");
+;
 	return TYPE_ERROR;
 }
 
@@ -853,16 +853,16 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 	return 0;
 
  swp:
-	printk(KERN_ERR "Alignment trap: not handling swp instruction\n");
+;
 
  bad:
 	/*
 	 * Oops, we didn't handle the instruction.
 	 */
-	printk(KERN_ERR "Alignment trap: not handling instruction "
-		"%0*lx at [<%08lx>]\n",
-		isize << 1,
-		isize == 2 ? tinstr : instr, instrptr);
+//	printk(KERN_ERR "Alignment trap: not handling instruction "
+//		"%0*lx at [<%08lx>]\n",
+//		isize << 1,
+;
 	ai_skipped += 1;
 	return 1;
 

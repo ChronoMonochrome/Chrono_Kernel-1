@@ -1219,7 +1219,7 @@ copyarea_foreward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
 		/* We may need a 32-byte copy to ensure 64 byte alignment.  */
 		need_second = (dpos + xincr_first) & 63;
 		if ((need_second & 32) != need_second)
-			printk(KERN_ERR "tgafb: need_second wrong\n");
+;
 		if (left >= need_second + 64) {
 			left -= need_second;
 			n64 = left / 64;
@@ -1270,9 +1270,9 @@ copyarea_foreward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
 		}
 
 		if (n64 && (((unsigned long)sfb | (unsigned long)dfb) & 63))
-			printk(KERN_ERR
-			       "tgafb: misaligned copy64 (s:%p, d:%p)\n",
-			       sfb, dfb);
+//			printk(KERN_ERR
+//			       "tgafb: misaligned copy64 (s:%p, d:%p)\n",
+;
 
 		for (j = 0; j < n64; ++j) {
 			__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
@@ -1576,14 +1576,14 @@ tgafb_register(struct device *dev)
 
 	/* Enable device in PCI config.  */
 	if (tga_bus_pci && pci_enable_device(to_pci_dev(dev))) {
-		printk(KERN_ERR "tgafb: Cannot enable PCI device\n");
+;
 		return -ENODEV;
 	}
 
 	/* Allocate the fb and par structures.  */
 	info = framebuffer_alloc(sizeof(struct tga_par), dev);
 	if (!info) {
-		printk(KERN_ERR "tgafb: Cannot allocate memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1601,14 +1601,14 @@ tgafb_register(struct device *dev)
 		bar0_len = to_tc_dev(dev)->resource.end - bar0_start + 1;
 	}
 	if (!request_mem_region (bar0_start, bar0_len, "tgafb")) {
-		printk(KERN_ERR "tgafb: cannot reserve FB region\n");
+;
 		goto err0;
 	}
 
 	/* Map the framebuffer.  */
 	mem_base = ioremap_nocache(bar0_start, bar0_len);
 	if (!mem_base) {
-		printk(KERN_ERR "tgafb: Cannot map MMIO\n");
+;
 		goto err1;
 	}
 
@@ -1645,13 +1645,13 @@ tgafb_register(struct device *dev)
 			   modedb_tga, modedbsize_tga, NULL,
 			   tga_type == TGA_TYPE_8PLANE ? 8 : 32);
 	if (ret == 0 || ret == 4) {
-		printk(KERN_ERR "tgafb: Could not find valid video mode\n");
+;
 		ret = -EINVAL;
 		goto err1;
 	}
 
 	if (fb_alloc_cmap(&info->cmap, 256, 0)) {
-		printk(KERN_ERR "tgafb: Could not allocate color map\n");
+;
 		ret = -ENOMEM;
 		goto err1;
 	}
@@ -1660,7 +1660,7 @@ tgafb_register(struct device *dev)
 	tgafb_init_fix(info);
 
 	if (register_framebuffer(info) < 0) {
-		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
+;
 		ret = -EINVAL;
 		goto err2;
 	}
@@ -1741,9 +1741,9 @@ tgafb_setup(char *arg)
 			if (!strncmp(this_opt, "mode:", 5))
 				mode_option = this_opt+5;
 			else
-				printk(KERN_ERR
-				       "tgafb: unknown parameter %s\n",
-				       this_opt);
+//				printk(KERN_ERR
+//				       "tgafb: unknown parameter %s\n",
+;
 		}
 	}
 

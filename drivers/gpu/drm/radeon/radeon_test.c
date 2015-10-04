@@ -213,6 +213,6 @@ out_cleanup:
 		radeon_fence_unref(&fence);
 	}
 	if (r) {
-		printk(KERN_WARNING "Error while testing BO move.\n");
+;
 	}
 }

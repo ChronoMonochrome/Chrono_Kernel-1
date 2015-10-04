@@ -95,8 +95,8 @@ void bnx2i_identify_device(struct bnx2i_hba *hba)
 		   hba->pci_did == PCI_DEVICE_ID_NX2_57712E)
 		set_bit(BNX2I_NX2_DEV_57710, &hba->cnic_dev_type);
 	else
-		printk(KERN_ALERT "bnx2i: unknown device, 0x%x\n",
-				  hba->pci_did);
+//		printk(KERN_ALERT "bnx2i: unknown device, 0x%x\n",
+;
 }
 
 
@@ -164,8 +164,8 @@ void bnx2i_start(void *handle)
 	int i = HZ;
 
 	if (!hba->cnic->max_iscsi_conn) {
-		printk(KERN_ALERT "bnx2i: dev %s does not support "
-			"iSCSI\n", hba->netdev->name);
+//		printk(KERN_ALERT "bnx2i: dev %s does not support "
+;
 
 		if (test_bit(BNX2I_CNIC_REGISTERED, &hba->reg_with_cnic)) {
 			mutex_lock(&bnx2i_dev_lock);
@@ -201,9 +201,9 @@ static void bnx2i_chip_cleanup(struct bnx2i_hba *hba)
 		 * This is the case where the daemon is either slow or
 		 * not present
 		 */
-		printk(KERN_ALERT "bnx2i: (%s) chip cleanup for %d active "
-			"connections\n", hba->netdev->name,
-			hba->ofld_conns_active);
+//		printk(KERN_ALERT "bnx2i: (%s) chip cleanup for %d active "
+//			"connections\n", hba->netdev->name,
+;
 		mutex_lock(&hba->net_dev_lock);
 		list_for_each_safe(pos, tmp, &hba->ep_active_list) {
 			bnx2i_ep = list_entry(pos, struct bnx2i_endpoint, link);
@@ -289,14 +289,14 @@ static int bnx2i_init_one(struct bnx2i_hba *hba, struct cnic_dev *cnic)
 		list_add_tail(&hba->link, &adapter_list);
 		adapter_count++;
 	} else if (rc == -EBUSY) 	/* duplicate registration */
-		printk(KERN_ALERT "bnx2i, duplicate registration"
-				  "hba=%p, cnic=%p\n", hba, cnic);
+//		printk(KERN_ALERT "bnx2i, duplicate registration"
+;
 	else if (rc == -EAGAIN)
-		printk(KERN_ERR "bnx2i, driver not registered\n");
+;
 	else if (rc == -EINVAL)
-		printk(KERN_ERR "bnx2i, invalid type %d\n", CNIC_ULP_ISCSI);
+;
 	else
-		printk(KERN_ERR "bnx2i dev reg, unknown error, %d\n", rc);
+;
 
 	mutex_unlock(&bnx2i_dev_lock);
 
@@ -319,14 +319,14 @@ void bnx2i_ulp_init(struct cnic_dev *dev)
 	/* Allocate a HBA structure for this device */
 	hba = bnx2i_alloc_hba(dev);
 	if (!hba) {
-		printk(KERN_ERR "bnx2i init: hba initialization failed\n");
+;
 		return;
 	}
 
 	/* Get PCI related information and update hba struct members */
 	clear_bit(BNX2I_CNIC_REGISTERED, &hba->reg_with_cnic);
 	if (bnx2i_init_one(hba, dev)) {
-		printk(KERN_ERR "bnx2i - hba %p init failed\n", hba);
+;
 		bnx2i_free_hba(hba);
 	}
 }
@@ -343,8 +343,8 @@ void bnx2i_ulp_exit(struct cnic_dev *dev)
 
 	hba = bnx2i_find_hba_for_cnic(dev);
 	if (!hba) {
-		printk(KERN_INFO "bnx2i_ulp_exit: hba not "
-				 "found, dev 0x%p\n", dev);
+//		printk(KERN_INFO "bnx2i_ulp_exit: hba not "
+;
 		return;
 	}
 	mutex_lock(&bnx2i_dev_lock);
@@ -372,7 +372,7 @@ static int __init bnx2i_mod_init(void)
 {
 	int err;
 
-	printk(KERN_INFO "%s", version);
+;
 
 	if (sq_size && !is_power_of_2(sq_size))
 		sq_size = roundup_pow_of_two(sq_size);
@@ -382,14 +382,14 @@ static int __init bnx2i_mod_init(void)
 	bnx2i_scsi_xport_template =
 			iscsi_register_transport(&bnx2i_iscsi_transport);
 	if (!bnx2i_scsi_xport_template) {
-		printk(KERN_ERR "Could not register bnx2i transport.\n");
+;
 		err = -ENOMEM;
 		goto out;
 	}
 
 	err = cnic_register_driver(CNIC_ULP_ISCSI, &bnx2i_cnic_cb);
 	if (err) {
-		printk(KERN_ERR "Could not register bnx2i cnic driver.\n");
+;
 		goto unreg_xport;
 	}
 

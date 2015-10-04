@@ -36,8 +36,8 @@ static int __devinit s3d_get_props(struct s3d_info *sp)
 	sp->depth = of_getintprop_default(sp->of_node, "depth", 8);
 
 	if (!sp->width || !sp->height) {
-		printk(KERN_ERR "s3d: Critical properties missing for %s\n",
-		       pci_name(sp->pdev));
+//		printk(KERN_ERR "s3d: Critical properties missing for %s\n",
+;
 		return -EINVAL;
 	}
 
@@ -108,7 +108,7 @@ static int __devinit s3d_set_fbinfo(struct s3d_info *sp)
 	var->transp.length = 0;
 
 	if (fb_alloc_cmap(&info->cmap, 256, 0)) {
-		printk(KERN_ERR "s3d: Cannot allocate color map.\n");
+;
 		return -ENOMEM;
 	}
 
@@ -124,14 +124,14 @@ static int __devinit s3d_pci_register(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err < 0) {
-		printk(KERN_ERR "s3d: Cannot enable PCI device %s\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "s3d: Cannot enable PCI device %s\n",
+;
 		goto err_out;
 	}
 
 	info = framebuffer_alloc(sizeof(struct s3d_info), &pdev->dev);
 	if (!info) {
-		printk(KERN_ERR "s3d: Cannot allocate fb_info\n");
+;
 		err = -ENOMEM;
 		goto err_disable;
 	}
@@ -141,8 +141,8 @@ static int __devinit s3d_pci_register(struct pci_dev *pdev,
 	sp->pdev = pdev;
 	sp->of_node = pci_device_to_OF_node(pdev);
 	if (!sp->of_node) {
-		printk(KERN_ERR "s3d: Cannot find OF node of %s\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "s3d: Cannot find OF node of %s\n",
+;
 		err = -ENODEV;
 		goto err_release_fb;
 	}
@@ -151,8 +151,8 @@ static int __devinit s3d_pci_register(struct pci_dev *pdev,
 
 	err = pci_request_region(pdev, 1, "s3d framebuffer");
 	if (err < 0) {
-		printk("s3d: Cannot request region 1 for %s\n",
-		       pci_name(pdev));
+//		printk("s3d: Cannot request region 1 for %s\n",
+;
 		goto err_release_fb;
 	}
 
@@ -190,12 +190,12 @@ static int __devinit s3d_pci_register(struct pci_dev *pdev,
 
 	pci_set_drvdata(pdev, info);
 
-	printk("s3d: Found device at %s\n", pci_name(pdev));
+;
 
 	err = register_framebuffer(info);
 	if (err < 0) {
-		printk(KERN_ERR "s3d: Could not register framebuffer %s\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "s3d: Could not register framebuffer %s\n",
+;
 		goto err_unmap_fb;
 	}
 

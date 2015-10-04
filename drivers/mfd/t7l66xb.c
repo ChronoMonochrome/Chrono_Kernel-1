@@ -377,9 +377,9 @@ static int t7l66xb_probe(struct platform_device *dev)
 	/* Mask all interrupts */
 	tmio_iowrite8(0xbf, t7l66xb->scr + SCR_IMR);
 
-	printk(KERN_INFO "%s rev %d @ 0x%08lx, irq %d\n",
-		dev->name, tmio_ioread8(t7l66xb->scr + SCR_REVID),
-		(unsigned long)iomem->start, t7l66xb->irq);
+//	printk(KERN_INFO "%s rev %d @ 0x%08lx, irq %d\n",
+//		dev->name, tmio_ioread8(t7l66xb->scr + SCR_REVID),
+;
 
 	t7l66xb_attach_irq(dev);
 

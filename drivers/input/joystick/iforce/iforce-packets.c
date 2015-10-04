@@ -37,10 +37,10 @@ void iforce_dump_packet(char *msg, u16 cmd, unsigned char *data)
 {
 	int i;
 
-	printk(KERN_DEBUG __FILE__ ": %s cmd = %04x, data = ", msg, cmd);
+;
 	for (i = 0; i < LO(cmd); i++)
-		printk("%02x ", data[i]);
-	printk("\n");
+;
+;
 }
 
 /*

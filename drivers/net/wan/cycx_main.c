@@ -106,9 +106,9 @@ static int __init cycx_init(void)
 {
 	int cnt, err = -ENOMEM;
 
-	printk(KERN_INFO "%s v%u.%u %s\n",
-		cycx_fullname, CYCX_DRV_VERSION, CYCX_DRV_RELEASE,
-		cycx_copyright);
+//	printk(KERN_INFO "%s v%u.%u %s\n",
+//		cycx_fullname, CYCX_DRV_VERSION, CYCX_DRV_RELEASE,
+;
 
 	/* Verify number of cards and allocate adapter data space */
 	cycx_ncards = min_t(int, cycx_ncards, CYCX_MAX_CARDS);
@@ -132,9 +132,9 @@ static int __init cycx_init(void)
 		err = register_wan_device(wandev);
 
 		if (err) {
-			printk(KERN_ERR "%s: %s registration failed with "
-					"error %d!\n",
-					cycx_drvname, card->devname, err);
+//			printk(KERN_ERR "%s: %s registration failed with "
+//					"error %d!\n",
+;
 			break;
 		}
 	}
@@ -197,14 +197,14 @@ static int cycx_wan_setup(struct wan_device *wandev, wandev_conf_t *conf)
 
 	rc = -EINVAL;
 	if (!conf->data_size || !conf->data) {
-		printk(KERN_ERR "%s: firmware not found in configuration "
-				"data!\n", wandev->name);
+//		printk(KERN_ERR "%s: firmware not found in configuration "
+;
 		goto out;
 	}
 
 	if (conf->irq <= 0) {
-		printk(KERN_ERR "%s: can't configure without IRQ!\n",
-				wandev->name);
+//		printk(KERN_ERR "%s: can't configure without IRQ!\n",
+;
 		goto out;
 	}
 
@@ -212,8 +212,8 @@ static int cycx_wan_setup(struct wan_device *wandev, wandev_conf_t *conf)
 	irq = conf->irq == 2 ? 9 : conf->irq;	/* IRQ2 -> IRQ9 */
 
 	if (request_irq(irq, cycx_isr, 0, wandev->name, card)) {
-		printk(KERN_ERR "%s: can't reserve IRQ %d!\n",
-				wandev->name, irq);
+//		printk(KERN_ERR "%s: can't reserve IRQ %d!\n",
+;
 		goto out;
 	}
 
@@ -245,8 +245,8 @@ static int cycx_wan_setup(struct wan_device *wandev, wandev_conf_t *conf)
 		break;
 #endif
 	default:
-		printk(KERN_ERR "%s: this firmware is not supported!\n",
-				wandev->name);
+//		printk(KERN_ERR "%s: this firmware is not supported!\n",
+;
 		rc = -EINVAL;
 	}
 
@@ -287,8 +287,8 @@ static int cycx_wan_shutdown(struct wan_device *wandev)
 	card = wandev->private;
 	wandev->state = WAN_UNCONFIGURED;
 	cycx_down(&card->hw);
-	printk(KERN_INFO "%s: irq %d being freed!\n", wandev->name,
-			wandev->irq);
+//	printk(KERN_INFO "%s: irq %d being freed!\n", wandev->name,
+;
 	free_irq(wandev->irq, card);
 out:	return ret;
 }
@@ -307,8 +307,8 @@ static irqreturn_t cycx_isr(int irq, void *dev_id)
 		goto out;
 
 	if (card->in_isr) {
-		printk(KERN_WARNING "%s: interrupt re-entrancy on IRQ %d!\n",
-				    card->devname, card->wandev.irq);
+//		printk(KERN_WARNING "%s: interrupt re-entrancy on IRQ %d!\n",
+;
 		goto out;
 	}
 
@@ -336,7 +336,7 @@ void cycx_set_state(struct cycx_device *card, int state)
 			string_state = "disconnected!";
 			break;
 		}
-		printk(KERN_INFO "%s: link %s\n", card->devname, string_state);
+;
 		card->wandev.state = state;
 	}
 

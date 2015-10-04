@@ -1016,7 +1016,7 @@ static int __devinit snd_mts64_probe(struct platform_device *pdev)
 		goto __err;
 	}
 
-	snd_printk(KERN_INFO "ESI Miditerminal 4140 on 0x%lx\n", p->base);
+;
 	return 0;
 
 __err:

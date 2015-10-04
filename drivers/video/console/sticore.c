@@ -88,7 +88,7 @@ static int sti_init_graph(struct sti_struct *sti)
 	spin_unlock_irqrestore(&sti->lock, flags);
 
 	if (ret < 0) {
-		printk(KERN_ERR "STI init_graph failed (ret %d, errno %d)\n",ret,outptr.errno);
+;
 		return -1;
 	}
 	
@@ -570,11 +570,11 @@ static struct sti_cooked_font __devinit
 static void __devinit
 sti_dump_rom(struct sti_rom *rom)
 {
-	printk(KERN_INFO "    id %04x-%04x, conforms to spec rev. %d.%02x\n",
-		rom->graphics_id[0], 
-		rom->graphics_id[1],
-		rom->revno[0] >> 4, 
-		rom->revno[0] & 0x0f);
+//	printk(KERN_INFO "    id %04x-%04x, conforms to spec rev. %d.%02x\n",
+//		rom->graphics_id[0], 
+//		rom->graphics_id[1],
+//		rom->revno[0] >> 4, 
+;
 	DPRINTK(("      supports %d monitors\n", rom->num_mons));
 	DPRINTK(("      font start %08x\n", rom->font_start));
 	DPRINTK(("      region list %08x\n", rom->region_list));
@@ -741,7 +741,7 @@ static int __devinit sti_read_rom(int wordmode, struct sti_struct *sti,
 		goto out_err;
 
 	if (!sti_cook_fonts(cooked, raw)) {
-		printk(KERN_ERR "No font found for STI at %08lx\n", address);
+;
 		goto out_err;
 	}
 
@@ -794,9 +794,9 @@ ok:
 	return 1;
 
 msg_not_supported:
-	printk(KERN_ERR "Sorry, this GSC/STI card is not yet supported.\n");
-	printk(KERN_ERR "Please see http://parisc-linux.org/faq/"
-			"graphics-howto.html for more info.\n");
+;
+//	printk(KERN_ERR "Please see http://parisc-linux.org/faq/"
+;
 	/* fall through */
 out_err:
 	kfree(raw);
@@ -812,13 +812,13 @@ sti_try_rom_generic(unsigned long address, unsigned long hpa, struct pci_dev *pd
 	u32 sig;
 
 	if (num_sti_roms >= MAX_STI_ROMS) {
-		printk(KERN_WARNING "maximum number of STI ROMS reached !\n");
+;
 		return NULL;
 	}
 	
 	sti = kzalloc(sizeof(*sti), GFP_KERNEL);
 	if (!sti) {
-		printk(KERN_ERR "Not enough memory !\n");
+;
 		return NULL;
 	}
 
@@ -840,8 +840,8 @@ test_rom:
 		if (i != 1) {
 			/* The ROM could have multiple architecture 
 			 * dependent images (e.g. i386, parisc,...) */
-			printk(KERN_WARNING 
-				"PCI ROM is not a STI ROM type image (0x%8x)\n", i);
+//			printk(KERN_WARNING 
+;
 			goto out_err;
 		}
 		
@@ -907,7 +907,7 @@ test_rom:
 	sti_dump_globcfg(sti->glob_cfg, sti->sti_mem_request);
 	sti_dump_outptr(sti);
 	
-	printk(KERN_INFO "    graphics card name: %s\n", sti->outptr.dev_name );
+;
 
 	sti_roms[num_sti_roms] = sti;
 	num_sti_roms++;
@@ -975,8 +975,8 @@ static int __devinit sticore_pci_init(struct pci_dev *pd,
 		DPRINTK((KERN_DEBUG "STI PCI ROM enabled at 0x%08lx\n", rom_base));
 	}
 
-	printk(KERN_INFO "STI PCI graphic ROM found at %08lx (%u kB), fb at %08lx (%u MB)\n",
-		rom_base, rom_len/1024, fb_base, fb_len/1024/1024);
+//	printk(KERN_INFO "STI PCI graphic ROM found at %08lx (%u kB), fb at %08lx (%u MB)\n",
+;
 
 	DPRINTK((KERN_DEBUG "Trying PCI STI ROM at %08lx, PCI hpa at %08lx\n",
 		    rom_base, fb_base));
@@ -989,8 +989,8 @@ static int __devinit sticore_pci_init(struct pci_dev *pd,
 	}
 	
 	if (!sti) {
-		printk(KERN_WARNING "Unable to handle STI device '%s'\n",
-			pci_name(pd));
+//		printk(KERN_WARNING "Unable to handle STI device '%s'\n",
+;
 		return -ENODEV;
 	}
 #endif /* CONFIG_PCI */
@@ -1048,8 +1048,8 @@ static void __devinit sti_init_roms(void)
 
 	sticore_initialized = 1;
 
-	printk(KERN_INFO "STI GSC/PCI core graphics driver "
-			STI_DRIVERVERSION "\n");
+//	printk(KERN_INFO "STI GSC/PCI core graphics driver "
+;
 
 	/* Register drivers for native & PCI cards */
 	register_parisc_driver(&pa_sti_driver);

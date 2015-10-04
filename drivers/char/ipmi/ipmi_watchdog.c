@@ -436,8 +436,8 @@ static int i_ipmi_set_timeout(struct ipmi_smi_msg  *smi_msg,
 				      recv_msg,
 				      1);
 	if (rv) {
-		printk(KERN_WARNING PFX "set timeout error: %d\n",
-		       rv);
+//		printk(KERN_WARNING PFX "set timeout error: %d\n",
+;
 	}
 
 	if (send_heartbeat_now)
@@ -558,8 +558,8 @@ static void panic_halt_ipmi_set_timeout(void)
 		if (send_heartbeat_now)
 			panic_halt_ipmi_heartbeat();
 	} else
-		printk(KERN_WARNING PFX
-		       "Unable to extend the watchdog timeout.");
+//		printk(KERN_WARNING PFX
+;
 	while (atomic_read(&panic_done_count) != 0)
 		ipmi_poll_interface(watchdog_user);
 }
@@ -644,8 +644,8 @@ static int ipmi_heartbeat(void)
 				      1);
 	if (rv) {
 		mutex_unlock(&heartbeat_lock);
-		printk(KERN_WARNING PFX "heartbeat failure: %d\n",
-		       rv);
+//		printk(KERN_WARNING PFX "heartbeat failure: %d\n",
+;
 		return rv;
 	}
 
@@ -888,8 +888,8 @@ static int ipmi_close(struct inode *ino, struct file *filep)
 			ipmi_watchdog_state = WDOG_TIMEOUT_NONE;
 			ipmi_set_timeout(IPMI_SET_TIMEOUT_NO_HB);
 		} else {
-			printk(KERN_CRIT PFX
-			       "Unexpected close, not stopping watchdog!\n");
+//			printk(KERN_CRIT PFX
+;
 			ipmi_heartbeat();
 		}
 		clear_bit(0, &ipmi_wdog_open);
@@ -922,9 +922,9 @@ static void ipmi_wdog_msg_handler(struct ipmi_recv_msg *msg,
 				  void                 *handler_data)
 {
 	if (msg->msg.data[0] != 0) {
-		printk(KERN_ERR PFX "response: Error %x on cmd %x\n",
-		       msg->msg.data[0],
-		       msg->msg.cmd);
+//		printk(KERN_ERR PFX "response: Error %x on cmd %x\n",
+//		       msg->msg.data[0],
+;
 	}
 
 	ipmi_free_recv_msg(msg);
@@ -972,7 +972,7 @@ static void ipmi_register_watchdog(int ipmi_intf)
 
 	rv = ipmi_create_user(ipmi_intf, &ipmi_hndlrs, NULL, &watchdog_user);
 	if (rv < 0) {
-		printk(KERN_CRIT PFX "Unable to register with ipmi\n");
+;
 		goto out;
 	}
 
@@ -984,7 +984,7 @@ static void ipmi_register_watchdog(int ipmi_intf)
 	if (rv < 0) {
 		ipmi_destroy_user(watchdog_user);
 		watchdog_user = NULL;
-		printk(KERN_CRIT PFX "Unable to register misc device\n");
+;
 	}
 
 #ifdef HAVE_DIE_NMI
@@ -1006,9 +1006,9 @@ static void ipmi_register_watchdog(int ipmi_intf)
 
 		rv = ipmi_set_timeout(IPMI_SET_TIMEOUT_FORCE_HB);
 		if (rv) {
-			printk(KERN_WARNING PFX "Error starting timer to"
-			       " test NMI: 0x%x.  The NMI pretimeout will"
-			       " likely not work\n", rv);
+//			printk(KERN_WARNING PFX "Error starting timer to"
+//			       " test NMI: 0x%x.  The NMI pretimeout will"
+;
 			rv = 0;
 			goto out_restore;
 		}
@@ -1016,9 +1016,9 @@ static void ipmi_register_watchdog(int ipmi_intf)
 		msleep(1500);
 
 		if (testing_nmi != 2) {
-			printk(KERN_WARNING PFX "IPMI NMI didn't seem to"
-			       " occur.  The NMI pretimeout will"
-			       " likely not work\n");
+//			printk(KERN_WARNING PFX "IPMI NMI didn't seem to"
+//			       " occur.  The NMI pretimeout will"
+;
 		}
  out_restore:
 		testing_nmi = 0;
@@ -1034,7 +1034,7 @@ static void ipmi_register_watchdog(int ipmi_intf)
 		start_now = 0; /* Disable this function after first startup. */
 		ipmi_watchdog_state = action_val;
 		ipmi_set_timeout(IPMI_SET_TIMEOUT_FORCE_HB);
-		printk(KERN_INFO PFX "Starting now!\n");
+;
 	} else {
 		/* Stop the timer now. */
 		ipmi_watchdog_state = WDOG_TIMEOUT_NONE;
@@ -1066,8 +1066,8 @@ static void ipmi_unregister_watchdog(int ipmi_intf)
 	/* Disconnect from IPMI. */
 	rv = ipmi_destroy_user(watchdog_user);
 	if (rv) {
-		printk(KERN_WARNING PFX "error unlinking from IPMI: %d\n",
-		       rv);
+//		printk(KERN_WARNING PFX "error unlinking from IPMI: %d\n",
+;
 	}
 	watchdog_user = NULL;
 
@@ -1282,9 +1282,9 @@ static void check_parms(void)
 	if (preaction_val == WDOG_PRETIMEOUT_NMI) {
 		do_nmi = 1;
 		if (preop_val == WDOG_PREOP_GIVE_DATA) {
-			printk(KERN_WARNING PFX "Pretimeout op is to give data"
-			       " but NMI pretimeout is enabled, setting"
-			       " pretimeout op to none\n");
+//			printk(KERN_WARNING PFX "Pretimeout op is to give data"
+//			       " but NMI pretimeout is enabled, setting"
+;
 			preop_op("preop_none", NULL);
 			do_nmi = 0;
 		}
@@ -1292,8 +1292,8 @@ static void check_parms(void)
 	if (do_nmi && !nmi_handler_registered) {
 		rv = register_die_notifier(&ipmi_nmi_handler);
 		if (rv) {
-			printk(KERN_WARNING PFX
-			       "Can't register nmi handler\n");
+//			printk(KERN_WARNING PFX
+;
 			return;
 		} else
 			nmi_handler_registered = 1;
@@ -1310,20 +1310,20 @@ static int __init ipmi_wdog_init(void)
 
 	if (action_op(action, NULL)) {
 		action_op("reset", NULL);
-		printk(KERN_INFO PFX "Unknown action '%s', defaulting to"
-		       " reset\n", action);
+//		printk(KERN_INFO PFX "Unknown action '%s', defaulting to"
+;
 	}
 
 	if (preaction_op(preaction, NULL)) {
 		preaction_op("pre_none", NULL);
-		printk(KERN_INFO PFX "Unknown preaction '%s', defaulting to"
-		       " none\n", preaction);
+//		printk(KERN_INFO PFX "Unknown preaction '%s', defaulting to"
+;
 	}
 
 	if (preop_op(preop, NULL)) {
 		preop_op("preop_none", NULL);
-		printk(KERN_INFO PFX "Unknown preop '%s', defaulting to"
-		       " none\n", preop);
+//		printk(KERN_INFO PFX "Unknown preop '%s', defaulting to"
+;
 	}
 
 	check_parms();
@@ -1341,11 +1341,11 @@ static int __init ipmi_wdog_init(void)
 		atomic_notifier_chain_unregister(&panic_notifier_list,
 						 &wdog_panic_notifier);
 		unregister_reboot_notifier(&wdog_reboot_notifier);
-		printk(KERN_WARNING PFX "can't register smi watcher\n");
+;
 		return rv;
 	}
 
-	printk(KERN_INFO PFX "driver initialized\n");
+;
 
 	return 0;
 }

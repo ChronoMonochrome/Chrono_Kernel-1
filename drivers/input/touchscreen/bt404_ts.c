@@ -227,8 +227,8 @@ extern bool dt2w_use_wakelock;
 static int m_ts_debug_mode = BT404_DEBUG;
 #define	debug_msg(fmt, args...)	\
 	if (m_ts_debug_mode)	\
-		printk(KERN_INFO "bt404:[%-18s:%5d]" fmt, \
-		__func__, __LINE__, ## args);
+//		printk(KERN_INFO "bt404:[%-18s:%5d]" fmt, \
+;
 
 #ifdef TSP_FACTORY
 #define TSP_CMD_STR_LEN		32
@@ -636,7 +636,7 @@ static bool ts_get_raw_data(struct bt404_ts_data *data)
 
 		if (bt404_ts_read_raw_data(data->client, BT404_RAWDATA_REG,
 					(char *)data->cur_data, sz) < 0) {
-			printk(KERN_INFO "error : read zinitix tc raw data\n");
+;
 			up(&data->raw_data_lock);
 			return false;
 		}
@@ -671,8 +671,8 @@ static bool ts_get_raw_data(struct bt404_ts_data *data)
 			if (bt404_ts_read_raw_data(data->client,
 					BT404_RAWDATA_REG,
 					(char *)data->cur_data, sz) < 0) {
-				printk(KERN_INFO
-					"error : read zinitix tc raw data\n");
+//				printk(KERN_INFO
+;
 				up(&data->raw_data_lock);
 				return false;
 			}
@@ -687,7 +687,7 @@ static bool ts_get_raw_data(struct bt404_ts_data *data)
 		if (bt404_ts_read_raw_data(data->client,
 			BT404_RAWDATA_REG,
 			(char *)data->cur_data, sz) < 0) {
-			printk(KERN_INFO "error : read zinitix tc raw data\n");
+;
 			up(&data->raw_data_lock);
 			return false;
 		}
@@ -1977,8 +1977,8 @@ ssize_t zinitix_set_testmode(struct device *dev,
 {
 	unsigned char value = 0;
 
-	printk(KERN_INFO "[zinitix_touch] zinitix_set_testmode, buf = %d\n",
-		*buf);
+//	printk(KERN_INFO "[zinitix_touch] zinitix_set_testmode, buf = %d\n",
+;
 
 	if (misc_data == NULL) {
 		debug_msg("device NULL : NULL\n");
@@ -1988,34 +1988,34 @@ ssize_t zinitix_set_testmode(struct device *dev,
 	sscanf(buf, "%c", &value);
 
 	if (value != TOUCH_TEST_RAW_MODE && value != TOUCH_NORMAL_MODE) {
-		printk(KERN_WARNING
-				"[zinitix ts] test mode setting value error."
-				"you must set %d[=normal] or %d[=raw mode]\n",
-				TOUCH_NORMAL_MODE, TOUCH_TEST_RAW_MODE);
+//		printk(KERN_WARNING
+//				"[zinitix ts] test mode setting value error."
+//				"you must set %d[=normal] or %d[=raw mode]\n",
+;
 		return 1;
 	}
 
 	down(&misc_data->raw_data_lock);
 	misc_data->raw_mode_flag = value;
 
-	printk(KERN_INFO "[zinitix_touch] zinitix_set_testmode,"
-			"touchkey_testmode = %d\n", misc_data->raw_mode_flag);
+//	printk(KERN_INFO "[zinitix_touch] zinitix_set_testmode,"
+;
 
 	if (misc_data->raw_mode_flag == TOUCH_NORMAL_MODE) {
 		/* enter into normal mode */
-		printk(KERN_INFO "[zinitix_touch] TEST Mode Exit\n");
+;
 
 		if (bt404_ts_write_reg(misc_data->client,
 			BT404_PERIODICAL_INTERRUPT_INTERVAL, BT404_SCAN_RATE_HZ
 			*BT404_ESD_TIMER_INTERVAL) != I2C_SUCCESS)
-			printk(KERN_INFO "[zinitix_touch] Fail to set"
-				"BT404_PERIODICAL_INTERRUPT_INTERVAL.\n");
+//			printk(KERN_INFO "[zinitix_touch] Fail to set"
+;
 
 		if (bt404_ts_write_reg(misc_data->client,
 			BT404_TOUCH_MODE, TOUCH_MODE) != I2C_SUCCESS)
-			printk(KERN_INFO
-				"[zinitix_touch] Fail to set touch mode %d.\n",
-				TOUCH_MODE);
+//			printk(KERN_INFO
+//				"[zinitix_touch] Fail to set touch mode %d.\n",
+;
 
 		/* clear garbage data */
 		bt404_ts_write_cmd(misc_data->client,
@@ -2025,21 +2025,21 @@ ssize_t zinitix_set_testmode(struct device *dev,
 			BT404_CLEAR_INT_STATUS_CMD);
 	} else {
 		/* enter into test mode */
-		printk(KERN_INFO "[zinitix_touch] TEST Mode Enter\n");
+;
 
 		if (bt404_ts_write_reg(misc_data->client,
 			BT404_PERIODICAL_INTERRUPT_INTERVAL,
 			BT404_SCAN_RATE_HZ
 			*BT404_RAW_DATA_ESD_TIMER_INTERVAL) != I2C_SUCCESS)
-			printk(KERN_INFO
-					"[zinitix_touch] Fail to set"
-					"BT404_RAW_DATA_ESD_TIMER_INTERVAL.\n");
+//			printk(KERN_INFO
+//					"[zinitix_touch] Fail to set"
+;
 
 		if (bt404_ts_write_reg(misc_data->client,
 			BT404_TOUCH_MODE, TOUCH_TEST_RAW_MODE) != I2C_SUCCESS)
-			printk(KERN_INFO
-				"[zinitix_touch] Fail to set touch mode %d.\n",
-				TOUCH_TEST_RAW_MODE);
+//			printk(KERN_INFO
+//				"[zinitix_touch] Fail to set touch mode %d.\n",
+;
 		bt404_ts_write_cmd(misc_data->client,
 			BT404_CLEAR_INT_STATUS_CMD);
 		/* clear garbage data */
@@ -2113,16 +2113,16 @@ static long ts_misc_fops_ioctl(struct file *filp,
 
 	case TOUCH_IOCTL_SET_DEBUGMSG_STATE:
 		if (copy_from_user(&nval, argp, 4)) {
-			printk(KERN_INFO
-				"[zinitix_touch] error : copy_from_user\n");
+//			printk(KERN_INFO
+;
 			return -1;
 		}
 		if (nval)
-			printk(KERN_INFO "[zinitix_touch] on debug mode (%d)\n",
-									nval);
+//			printk(KERN_INFO "[zinitix_touch] on debug mode (%d)\n",
+;
 		else
-			printk(KERN_INFO
-				"[zinitix_touch] off debug mode (%d)\n", nval);
+//			printk(KERN_INFO
+;
 		m_ts_debug_mode = nval;
 		break;
 
@@ -2148,9 +2148,9 @@ static long ts_misc_fops_ioctl(struct file *filp,
 		if (copy_from_user(&sz, argp, sizeof(size_t)))
 			return -1;
 
-		printk(KERN_INFO "firmware size = %d\n", sz);
+;
 		if (misc_data->cap_info.fw_len != sz) {
-			printk(KERN_INFO "firmware size error\n");
+;
 			return -1;
 		}
 		break;
@@ -2164,7 +2164,7 @@ static long ts_misc_fops_ioctl(struct file *filp,
 			(u16)(((u16)misc_data->fw_data[FW_VER_OFFSET+1]<<8)
 			|(u16)misc_data->fw_data[FW_VER_OFFSET]);
 
-		printk(KERN_INFO "firmware version = %x\n", version);
+;
 
 		if (copy_to_user(argp, &version, sizeof(version)))
 			return -1;
@@ -2185,7 +2185,7 @@ static long ts_misc_fops_ioctl(struct file *filp,
 		bt404_ts_report_touch_data(misc_data, true);
 		/* zinitix_clear_report_data(misc_data); */
 
-		printk(KERN_INFO "start upgrade firmware\n");
+;
 		if (bt404_ts_fw_update(misc_data,
 			&misc_data->fw_data[2]) == false) {
 			enable_irq(misc_data->irq);
@@ -2248,8 +2248,8 @@ static long ts_misc_fops_ioctl(struct file *filp,
 		disable_irq(misc_data->irq);
 		down(&misc_data->work_lock);
 		if (misc_data->work_state != NOTHING) {
-			printk(KERN_INFO"other process occupied.. (%d)\n",
-				misc_data->work_state);
+//			printk(KERN_INFO"other process occupied.. (%d)\n",
+;
 			up(&misc_data->work_lock);
 			return -1;
 		}
@@ -2296,8 +2296,8 @@ fail_hw_cal:
 			mode = misc_data->raw_mode_flag;
 		if (bt404_ts_write_reg(misc_data->client,
 			BT404_TOUCH_MODE, mode) != I2C_SUCCESS) {
-			printk(KERN_INFO "fail to set touch mode %d.\n",
-				mode);
+//			printk(KERN_INFO "fail to set touch mode %d.\n",
+;
 			goto fail_hw_cal2;
 		}
 
@@ -2323,16 +2323,16 @@ fail_hw_cal2:
 
 		down(&misc_data->work_lock);
 		if (misc_data->work_state != NOTHING) {
-			printk(KERN_INFO"other process occupied.. (%d)\n",
-				misc_data->work_state);
+//			printk(KERN_INFO"other process occupied.. (%d)\n",
+;
 			up(&misc_data->work_lock);
 			return -1;
 		}
 		misc_data->work_state = SET_MODE;
 
 		if (copy_from_user(&nval, argp, 4)) {
-			printk(KERN_INFO
-				"[zinitix_touch] error : copy_from_user\n");
+//			printk(KERN_INFO
+;
 			misc_data->work_state = NOTHING;
 			return -1;
 		}
@@ -2344,20 +2344,20 @@ fail_hw_cal2:
 			misc_data->raw_mode_flag != TOUCH_NORMAL_MODE) {
 			/* enter into normal mode */
 			misc_data->raw_mode_flag = nval;
-			printk(KERN_INFO
-					"[zinitix_touch] raw data mode exit\n");
+//			printk(KERN_INFO
+;
 
 			if (bt404_ts_write_reg(misc_data->client,
 				BT404_PERIODICAL_INTERRUPT_INTERVAL,
 				BT404_SCAN_RATE_HZ*BT404_ESD_TIMER_INTERVAL)
 				!= I2C_SUCCESS)
-				printk(KERN_INFO "[zinitix_touch] Fail to set"
-				"BT404_PERIODICAL_INTERRUPT_INTERVAL.\n");
+//				printk(KERN_INFO "[zinitix_touch] Fail to set"
+;
 
 			if (bt404_ts_write_reg(misc_data->client,
 				BT404_TOUCH_MODE, TOUCH_MODE) != I2C_SUCCESS)
-				printk(KERN_INFO "[zinitix_touch] fail to set"
-						"TOUCH_MODE.\n");
+//				printk(KERN_INFO "[zinitix_touch] fail to set"
+;
 
 			/* clear garbage data */
 			bt404_ts_write_cmd(misc_data->client,
@@ -2368,24 +2368,24 @@ fail_hw_cal2:
 		} else if (nval != TOUCH_NORMAL_MODE) {
 			/* enter into test mode*/
 			misc_data->raw_mode_flag = nval;
-			printk(KERN_INFO
-				"[zinitix_touch] raw data mode enter\n");
+//			printk(KERN_INFO
+;
 
 			if (bt404_ts_write_reg(misc_data->client,
 				BT404_PERIODICAL_INTERRUPT_INTERVAL,
 				BT404_SCAN_RATE_HZ
 				*BT404_RAW_DATA_ESD_TIMER_INTERVAL)
 				!= I2C_SUCCESS)
-				printk(KERN_INFO "[zinitix_touch] Fail to set"
-					"BT404_RAW_DATA_ESD_TIMER_INTERVAL.\n");
+//				printk(KERN_INFO "[zinitix_touch] Fail to set"
+;
 
 			if (bt404_ts_write_reg(misc_data->client,
 				BT404_TOUCH_MODE,
 				misc_data->raw_mode_flag) != I2C_SUCCESS)
-				printk(KERN_INFO
-					"[zinitix_touch] raw data mode :"
-					"Fail to set TOUCH_MODE %d.\n",
-					misc_data->raw_mode_flag);
+//				printk(KERN_INFO
+//					"[zinitix_touch] raw data mode :"
+//					"Fail to set TOUCH_MODE %d.\n",
+;
 
 			bt404_ts_write_cmd(misc_data->client,
 				BT404_CLEAR_INT_STATUS_CMD);
@@ -2406,8 +2406,8 @@ fail_hw_cal2:
 		}
 		down(&misc_data->work_lock);
 		if (misc_data->work_state != NOTHING) {
-			printk(KERN_INFO "other process occupied.. (%d)\n",
-				misc_data->work_state);
+//			printk(KERN_INFO "other process occupied.. (%d)\n",
+;
 			up(&misc_data->work_lock);
 			return -1;
 		}
@@ -2418,8 +2418,8 @@ fail_hw_cal2:
 			argp, sizeof(struct _reg_ioctl))) {
 			misc_data->work_state = NOTHING;
 			up(&misc_data->work_lock);
-			printk(KERN_INFO
-				"[zinitix_touch] error : copy_from_user\n");
+//			printk(KERN_INFO
+;
 			return -1;
 		}
 
@@ -2432,8 +2432,8 @@ fail_hw_cal2:
 		if (copy_to_user(reg_ioctl.val, (u8 *)&nval, 4)) {
 			misc_data->work_state = NOTHING;
 			up(&misc_data->work_lock);
-			printk(KERN_INFO
-				"[zinitix_touch] error : copy_to_user\n");
+//			printk(KERN_INFO
+;
 			return -1;
 		}
 
@@ -2452,8 +2452,8 @@ fail_hw_cal2:
 		}
 		down(&misc_data->work_lock);
 		if (misc_data->work_state != NOTHING) {
-			printk(KERN_INFO "other process occupied.. (%d)\n",
-				misc_data->work_state);
+//			printk(KERN_INFO "other process occupied.. (%d)\n",
+;
 			up(&misc_data->work_lock);
 			return -1;
 		}
@@ -2463,16 +2463,16 @@ fail_hw_cal2:
 				argp, sizeof(struct _reg_ioctl))) {
 			misc_data->work_state = NOTHING;
 			up(&misc_data->work_lock);
-			printk(KERN_INFO
-				"[zinitix_touch] error : copy_from_user\n");
+//			printk(KERN_INFO
+;
 			return -1;
 		}
 
 		if (copy_from_user(&val, reg_ioctl.val, 4)) {
 			misc_data->work_state = NOTHING;
 			up(&misc_data->work_lock);
-			printk(KERN_INFO
-				"[zinitix_touch] error : copy_from_user\n");
+//			printk(KERN_INFO
+;
 			return -1;
 		}
 
@@ -2494,8 +2494,8 @@ fail_hw_cal2:
 		}
 		down(&misc_data->work_lock);
 		if (misc_data->work_state != NOTHING) {
-			printk(KERN_INFO"other process occupied.. (%d)\n",
-				misc_data->work_state);
+//			printk(KERN_INFO"other process occupied.. (%d)\n",
+;
 			up(&misc_data->work_lock);
 			return -1;
 		}
@@ -2518,8 +2518,8 @@ fail_hw_cal2:
 		}
 		down(&misc_data->work_lock);
 		if (misc_data->work_state != NOTHING) {
-			printk(KERN_INFO"other process occupied.. (%d)\n",
-				misc_data->work_state);
+//			printk(KERN_INFO"other process occupied.. (%d)\n",
+;
 			up(&misc_data->work_lock);
 			return -1;
 		}
@@ -2552,8 +2552,8 @@ fail_hw_cal2:
 		if (copy_from_user(&raw_ioctl,
 			argp, sizeof(raw_ioctl))) {
 			up(&misc_data->raw_data_lock);
-			printk(KERN_INFO
-				"[zinitix_touch] error : copy_from_user\n");
+//			printk(KERN_INFO
+;
 			return -1;
 		}
 

@@ -137,7 +137,7 @@ static struct gsmi_buf *gsmi_buf_alloc(void)
 
 	smibuf = kzalloc(sizeof(*smibuf), GFP_KERNEL);
 	if (!smibuf) {
-		printk(KERN_ERR "gsmi: out of memory\n");
+;
 		return NULL;
 	}
 
@@ -145,7 +145,7 @@ static struct gsmi_buf *gsmi_buf_alloc(void)
 	smibuf->start = dma_pool_alloc(gsmi_dev.dma_pool, GFP_KERNEL,
 				       &smibuf->handle);
 	if (!smibuf->start) {
-		printk(KERN_ERR "gsmi: failed to allocate name buffer\n");
+;
 		kfree(smibuf);
 		return NULL;
 	}
@@ -243,34 +243,34 @@ static int gsmi_exec(u8 func, u8 sub)
 		rc = 1;
 		break;
 	case GSMI_INVALID_PARAMETER:
-		printk(KERN_ERR "gsmi: exec 0x%04x: Invalid parameter\n", cmd);
+;
 		rc = -EINVAL;
 		break;
 	case GSMI_BUFFER_TOO_SMALL:
-		printk(KERN_ERR "gsmi: exec 0x%04x: Buffer too small\n", cmd);
+;
 		rc = -ENOMEM;
 		break;
 	case GSMI_UNSUPPORTED:
 	case GSMI_UNSUPPORTED2:
 		if (sub != GSMI_CMD_HANDSHAKE_TYPE)
-			printk(KERN_ERR "gsmi: exec 0x%04x: Not supported\n",
-			       cmd);
+//			printk(KERN_ERR "gsmi: exec 0x%04x: Not supported\n",
+;
 		rc = -ENOSYS;
 		break;
 	case GSMI_NOT_READY:
-		printk(KERN_ERR "gsmi: exec 0x%04x: Not ready\n", cmd);
+;
 		rc = -EBUSY;
 		break;
 	case GSMI_DEVICE_ERROR:
-		printk(KERN_ERR "gsmi: exec 0x%04x: Device error\n", cmd);
+;
 		rc = -EFAULT;
 		break;
 	case GSMI_NOT_FOUND:
-		printk(KERN_ERR "gsmi: exec 0x%04x: Data not found\n", cmd);
+;
 		rc = -ENOENT;
 		break;
 	case GSMI_LOG_FULL:
-		printk(KERN_ERR "gsmi: exec 0x%04x: Log full\n", cmd);
+;
 		rc = -ENOSPC;
 		break;
 	case GSMI_HANDSHAKE_CF:
@@ -279,8 +279,8 @@ static int gsmi_exec(u8 func, u8 sub)
 		rc = result;
 		break;
 	default:
-		printk(KERN_ERR "gsmi: exec 0x%04x: Unknown error 0x%04x\n",
-		       cmd, result);
+//		printk(KERN_ERR "gsmi: exec 0x%04x: Unknown error 0x%04x\n",
+;
 		rc = -ENXIO;
 	}
 
@@ -334,7 +334,7 @@ static efi_status_t gsmi_get_variable(efi_char16_t *name,
 
 	rc = gsmi_exec(GSMI_CALLBACK, GSMI_CMD_GET_NVRAM_VAR);
 	if (rc < 0) {
-		printk(KERN_ERR "gsmi: Get Variable failed\n");
+;
 		ret = EFI_LOAD_ERROR;
 	} else if (rc == 1) {
 		/* variable was not found */
@@ -395,7 +395,7 @@ static efi_status_t gsmi_get_next_variable(unsigned long *name_size,
 
 	rc = gsmi_exec(GSMI_CALLBACK, GSMI_CMD_GET_NEXT_VAR);
 	if (rc < 0) {
-		printk(KERN_ERR "gsmi: Get Next Variable Name failed\n");
+;
 		ret = EFI_LOAD_ERROR;
 	} else if (rc == 1) {
 		/* variable not found -- end of list */
@@ -459,7 +459,7 @@ static efi_status_t gsmi_set_variable(efi_char16_t *name,
 
 	rc = gsmi_exec(GSMI_CALLBACK, GSMI_CMD_SET_NVRAM_VAR);
 	if (rc < 0) {
-		printk(KERN_ERR "gsmi: Set Variable failed\n");
+;
 		ret = EFI_INVALID_PARAMETER;
 	}
 
@@ -508,7 +508,7 @@ static ssize_t eventlog_write(struct file *filp, struct kobject *kobj,
 
 	rc = gsmi_exec(GSMI_CALLBACK, GSMI_CMD_SET_EVENT_LOG);
 	if (rc < 0)
-		printk(KERN_ERR "gsmi: Set Event Log failed\n");
+;
 
 	spin_unlock_irqrestore(&gsmi_dev.lock, flags);
 
@@ -636,10 +636,10 @@ static int gsmi_shutdown_reason(int reason)
 	spin_unlock_irqrestore(&gsmi_dev.lock, flags);
 
 	if (rc < 0)
-		printk(KERN_ERR "gsmi: Log Shutdown Reason failed\n");
+;
 	else
-		printk(KERN_EMERG "gsmi: Log Shutdown Reason 0x%02x\n",
-		       reason);
+//		printk(KERN_EMERG "gsmi: Log Shutdown Reason 0x%02x\n",
+;
 
 	return rc;
 }
@@ -744,7 +744,7 @@ static __init int gsmi_system_valid(void)
 	 * whitewash our board names out of the public driver.
 	 */
 	if (!strncmp(acpi_gbl_FADT.header.oem_table_id, "FACP", 4)) {
-		printk(KERN_INFO "gsmi: Board is too old\n");
+;
 		return -ENODEV;
 	}
 
@@ -786,7 +786,7 @@ static __init int gsmi_init(void)
 	/* register device */
 	gsmi_dev.pdev = platform_device_register_simple("gsmi", -1, NULL, 0);
 	if (IS_ERR(gsmi_dev.pdev)) {
-		printk(KERN_ERR "gsmi: unable to register platform device\n");
+;
 		return PTR_ERR(gsmi_dev.pdev);
 	}
 
@@ -809,19 +809,19 @@ static __init int gsmi_init(void)
 	 */
 	gsmi_dev.name_buf = gsmi_buf_alloc();
 	if (!gsmi_dev.name_buf) {
-		printk(KERN_ERR "gsmi: failed to allocate name buffer\n");
+;
 		goto out_err;
 	}
 
 	gsmi_dev.data_buf = gsmi_buf_alloc();
 	if (!gsmi_dev.data_buf) {
-		printk(KERN_ERR "gsmi: failed to allocate data buffer\n");
+;
 		goto out_err;
 	}
 
 	gsmi_dev.param_buf = gsmi_buf_alloc();
 	if (!gsmi_dev.param_buf) {
-		printk(KERN_ERR "gsmi: failed to allocate param buffer\n");
+;
 		goto out_err;
 	}
 
@@ -863,38 +863,38 @@ static __init int gsmi_init(void)
 
 	/* Remove and clean up gsmi if the handshake could not complete. */
 	if (gsmi_dev.handshake_type == -ENXIO) {
-		printk(KERN_INFO "gsmi version " DRIVER_VERSION
-		       " failed to load\n");
+//		printk(KERN_INFO "gsmi version " DRIVER_VERSION
+;
 		ret = -ENODEV;
 		goto out_err;
 	}
 
-	printk(KERN_INFO "gsmi version " DRIVER_VERSION " loaded\n");
+;
 
 	/* Register in the firmware directory */
 	ret = -ENOMEM;
 	gsmi_kobj = kobject_create_and_add("gsmi", firmware_kobj);
 	if (!gsmi_kobj) {
-		printk(KERN_INFO "gsmi: Failed to create firmware kobj\n");
+;
 		goto out_err;
 	}
 
 	/* Setup eventlog access */
 	ret = sysfs_create_bin_file(gsmi_kobj, &eventlog_bin_attr);
 	if (ret) {
-		printk(KERN_INFO "gsmi: Failed to setup eventlog");
+;
 		goto out_err;
 	}
 
 	/* Other attributes */
 	ret = sysfs_create_files(gsmi_kobj, gsmi_attrs);
 	if (ret) {
-		printk(KERN_INFO "gsmi: Failed to add attrs");
+;
 		goto out_err;
 	}
 
 	if (register_efivars(&efivars, &efivar_ops, gsmi_kobj)) {
-		printk(KERN_INFO "gsmi: Failed to register efivars\n");
+;
 		goto out_err;
 	}
 

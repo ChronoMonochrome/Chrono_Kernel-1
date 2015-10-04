@@ -82,7 +82,7 @@ static __init int map_switcher(void)
 	 */
 	if (SWITCHER_ADDR + (TOTAL_SWITCHER_PAGES+1)*PAGE_SIZE > FIXADDR_START){
 		err = -ENOMEM;
-		printk("lguest: mapping switcher would thwack fixmap\n");
+;
 		goto free_pages;
 	}
 
@@ -97,7 +97,7 @@ static __init int map_switcher(void)
 				     + (TOTAL_SWITCHER_PAGES+1) * PAGE_SIZE);
 	if (!switcher_vma) {
 		err = -ENOMEM;
-		printk("lguest: could not map switcher pages high\n");
+;
 		goto free_pages;
 	}
 
@@ -111,7 +111,7 @@ static __init int map_switcher(void)
 	pagep = switcher_page;
 	err = map_vm_area(switcher_vma, PAGE_KERNEL_EXEC, &pagep);
 	if (err) {
-		printk("lguest: map_vm_area failed: %i\n", err);
+;
 		goto free_vma;
 	}
 
@@ -122,8 +122,8 @@ static __init int map_switcher(void)
 	memcpy(switcher_vma->addr, start_switcher_text,
 	       end_switcher_text - start_switcher_text);
 
-	printk(KERN_INFO "lguest: mapped switcher at %p\n",
-	       switcher_vma->addr);
+//	printk(KERN_INFO "lguest: mapped switcher at %p\n",
+;
 	/* And we succeeded... */
 	return 0;
 
@@ -314,7 +314,7 @@ static int __init init(void)
 
 	/* Lguest can't run under Xen, VMI or itself.  It does Tricky Stuff. */
 	if (paravirt_enabled()) {
-		printk("lguest is afraid of being a guest\n");
+;
 		return -EPERM;
 	}
 

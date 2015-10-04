@@ -54,8 +54,8 @@
 
 #define em28xx_videodbg(fmt, arg...) do {\
 	if (video_debug) \
-		printk(KERN_INFO "%s %s :"fmt, \
-			 dev->name, __func__ , ##arg); } while (0)
+//		printk(KERN_INFO "%s %s :"fmt, \
+;
 
 static unsigned int isoc_debug;
 module_param(isoc_debug, int, 0644);
@@ -64,8 +64,8 @@ MODULE_PARM_DESC(isoc_debug, "enable debug messages [isoc transfers]");
 #define em28xx_isocdbg(fmt, arg...) \
 do {\
 	if (isoc_debug) { \
-		printk(KERN_INFO "%s %s :"fmt, \
-			 dev->name, __func__ , ##arg); \
+//		printk(KERN_INFO "%s %s :"fmt, \
+;
 	} \
   } while (0)
 
@@ -2450,10 +2450,10 @@ int em28xx_register_analog_devices(struct em28xx *dev)
       u8 val;
 	int ret;
 
-	printk(KERN_INFO "%s: v4l2 driver version %d.%d.%d\n",
-		dev->name,
-		(EM28XX_VERSION_CODE >> 16) & 0xff,
-		(EM28XX_VERSION_CODE >> 8) & 0xff, EM28XX_VERSION_CODE & 0xff);
+//	printk(KERN_INFO "%s: v4l2 driver version %d.%d.%d\n",
+//		dev->name,
+//		(EM28XX_VERSION_CODE >> 16) & 0xff,
+;
 
 	/* set default norm */
 	dev->norm = em28xx_video_template.current_norm;

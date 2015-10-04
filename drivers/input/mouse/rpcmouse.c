@@ -87,7 +87,7 @@ static int __init rpcmouse_init(void)
 	rpcmouse_lasty = (short) iomd_readl(IOMD_MOUSEY);
 
 	if (request_irq(IRQ_VSYNCPULSE, rpcmouse_irq, IRQF_SHARED, "rpcmouse", rpcmouse_dev)) {
-		printk(KERN_ERR "rpcmouse: unable to allocate VSYNC interrupt\n");
+;
 		err = -EBUSY;
 		goto err_free_dev;
 	}

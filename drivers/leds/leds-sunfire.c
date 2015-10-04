@@ -130,14 +130,14 @@ static int __devinit sunfire_led_generic_probe(struct platform_device *pdev,
 	int i, err = -EINVAL;
 
 	if (pdev->num_resources != 1) {
-		printk(KERN_ERR PFX "Wrong number of resources %d, should be 1\n",
-		       pdev->num_resources);
+//		printk(KERN_ERR PFX "Wrong number of resources %d, should be 1\n",
+;
 		goto out;
 	}
 
 	p = kzalloc(sizeof(*p), GFP_KERNEL);
 	if (!p) {
-		printk(KERN_ERR PFX "Could not allocate struct sunfire_drvdata\n");
+;
 		goto out;
 	}
 
@@ -152,8 +152,8 @@ static int __devinit sunfire_led_generic_probe(struct platform_device *pdev,
 
 		err = led_classdev_register(&pdev->dev, lp);
 		if (err) {
-			printk(KERN_ERR PFX "Could not register %s LED\n",
-			       lp->name);
+//			printk(KERN_ERR PFX "Could not register %s LED\n",
+;
 			goto out_unregister_led_cdevs;
 		}
 	}
@@ -251,13 +251,13 @@ static int __init sunfire_leds_init(void)
 	int err = platform_driver_register(&sunfire_clockboard_led_driver);
 
 	if (err) {
-		printk(KERN_ERR PFX "Could not register clock board LED driver\n");
+;
 		return err;
 	}
 
 	err = platform_driver_register(&sunfire_fhc_led_driver);
 	if (err) {
-		printk(KERN_ERR PFX "Could not register FHC LED driver\n");
+;
 		platform_driver_unregister(&sunfire_clockboard_led_driver);
 	}
 

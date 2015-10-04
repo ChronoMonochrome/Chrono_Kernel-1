@@ -692,12 +692,12 @@ static int fll_factors(struct _fll_div *fll_div, unsigned int Fref,
 	}
 
 	if (target > 100000000)
-		printk(KERN_WARNING "wm8900: FLL rate %u out of range, Fref=%u"
-		       " Fout=%u\n", target, Fref, Fout);
+//		printk(KERN_WARNING "wm8900: FLL rate %u out of range, Fref=%u"
+;
 	if (div > 32) {
-		printk(KERN_ERR "wm8900: Invalid FLL division rate %u, "
-		       "Fref=%u, Fout=%u, target=%u\n",
-		       div, Fref, Fout, target);
+//		printk(KERN_ERR "wm8900: Invalid FLL division rate %u, "
+//		       "Fref=%u, Fout=%u, target=%u\n",
+;
 		return -EINVAL;
 	}
 
@@ -1342,15 +1342,15 @@ static int __init wm8900_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8900_i2c_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register wm8900 I2C driver: %d\n",
-		       ret);
+//		printk(KERN_ERR "Failed to register wm8900 I2C driver: %d\n",
+;
 	}
 #endif
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&wm8900_spi_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register wm8900 SPI driver: %d\n",
-		       ret);
+//		printk(KERN_ERR "Failed to register wm8900 SPI driver: %d\n",
+;
 	}
 #endif
 	return ret;

@@ -488,7 +488,7 @@ static void mms_ts_int_set_pull(bool to_up)
 	int pull = (to_up) ? NMK_GPIO_PULL_UP : NMK_GPIO_PULL_DOWN;
 	ret = nmk_gpio_set_pull(TSP_INT_HENDRIX_BRINGUP, pull);
 	if (ret < 0)
-		printk(KERN_ERR "%s: fail to set pull xx on interrupt pin\n", __func__);
+;
 }
 static int mms_ts_pin_configure(bool to_gpios)
 {
@@ -520,7 +520,7 @@ static void mms_ts_vdd_on(struct device *dev, bool on)
 	if (!tsp_reg) {
 		tsp_reg = regulator_get(dev, "v-tsp-3.3");
 		if (IS_ERR(tsp_reg)) {
-			printk(KERN_ERR "[%s] Failed to get v-tsp-3.3 regulator for TSP\n",__func__);
+;
 			tsp_reg = NULL;
 		}
 	}
@@ -528,7 +528,7 @@ static void mms_ts_vdd_on(struct device *dev, bool on)
 	if (!io_reg) {
 		io_reg = regulator_get(dev, "v-tsp-1.8");
 		if (IS_ERR(io_reg)) {
-			printk(KERN_ERR "[%s] Failed to get v-tsp-1.8 regulator for TSP\n", __func__);
+;
 			io_reg = NULL;
 		}
 	}
@@ -543,7 +543,7 @@ static void mms_ts_vdd_on(struct device *dev, bool on)
 	}
 
 	if (ret < 0)
-		printk(KERN_ERR "Failed to enable or disable v-tsp_3.3 (%d)\n", ret);
+;
 	else
 		reg_enabled = on;
 }
@@ -1748,7 +1748,7 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
-	printk("@@@@ BT WAKE_PEER\n");
+;
 	return;
 }
 
@@ -2082,7 +2082,7 @@ static void fetch_usb_serial_no(int len)
 					buf[0], buf[1], buf[2], buf[3], buf[4]);
 		iounmap(backup_ram);
 	} else {
-		printk(KERN_ERR "$$ ioremap failed\n");
+;
 	}
 }
 #endif
@@ -2209,19 +2209,19 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 0x0101:
-		printk(KERN_INFO "SKOMER Board for Rev0.0\n");
+;
 		system_rev = SKOMER_R0_0;
 		break;
 	case 0x0102:
-		printk(KERN_INFO "SKOMER Board for Rev0.1\n");
+;
 		system_rev = SKOMER_R0_1;
 		break;
 	case 0x0103:
-		printk(KERN_INFO "SKOMER Board for Rev0.2\n");
+;
 		system_rev = SKOMER_R0_2;
 		break;
 	case 0x0104:
-		printk(KERN_INFO "SKOMER Board for Rev0.3\n");
+;
 		system_rev = SKOMER_R0_3;
 		break;
 	default:

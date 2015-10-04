@@ -37,16 +37,16 @@ static void mv64x60_pci_check(struct edac_pci_ctl_info *pci)
 	if (!cause)
 		return;
 
-	printk(KERN_ERR "Error in PCI %d Interface\n", pdata->pci_hose);
-	printk(KERN_ERR "Cause register: 0x%08x\n", cause);
-	printk(KERN_ERR "Address Low: 0x%08x\n",
-	       in_le32(pdata->pci_vbase + MV64X60_PCI_ERROR_ADDR_LO));
-	printk(KERN_ERR "Address High: 0x%08x\n",
-	       in_le32(pdata->pci_vbase + MV64X60_PCI_ERROR_ADDR_HI));
-	printk(KERN_ERR "Attribute: 0x%08x\n",
-	       in_le32(pdata->pci_vbase + MV64X60_PCI_ERROR_ATTR));
-	printk(KERN_ERR "Command: 0x%08x\n",
-	       in_le32(pdata->pci_vbase + MV64X60_PCI_ERROR_CMD));
+;
+;
+//	printk(KERN_ERR "Address Low: 0x%08x\n",
+;
+//	printk(KERN_ERR "Address High: 0x%08x\n",
+;
+//	printk(KERN_ERR "Attribute: 0x%08x\n",
+;
+//	printk(KERN_ERR "Command: 0x%08x\n",
+;
 	out_le32(pdata->pci_vbase + MV64X60_PCI_ERROR_CAUSE, ~cause);
 
 	if (cause & MV64X60_PCI_PE_MASK)
@@ -85,8 +85,8 @@ static int __init mv64x60_pci_fixup(struct platform_device *pdev)
 
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (!r) {
-		printk(KERN_ERR "%s: Unable to get resource for "
-		       "PCI err regs\n", __func__);
+//		printk(KERN_ERR "%s: Unable to get resource for "
+;
 		return -ENOENT;
 	}
 
@@ -132,8 +132,8 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
 
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!r) {
-		printk(KERN_ERR "%s: Unable to get resource for "
-		       "PCI err regs\n", __func__);
+//		printk(KERN_ERR "%s: Unable to get resource for "
+;
 		res = -ENOENT;
 		goto err;
 	}
@@ -142,8 +142,8 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
 				     r->start,
 				     resource_size(r),
 				     pdata->name)) {
-		printk(KERN_ERR "%s: Error while requesting mem region\n",
-		       __func__);
+//		printk(KERN_ERR "%s: Error while requesting mem region\n",
+;
 		res = -EBUSY;
 		goto err;
 	}
@@ -152,14 +152,14 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
 					r->start,
 					resource_size(r));
 	if (!pdata->pci_vbase) {
-		printk(KERN_ERR "%s: Unable to setup PCI err regs\n", __func__);
+;
 		res = -ENOMEM;
 		goto err;
 	}
 
 	res = mv64x60_pci_fixup(pdev);
 	if (res < 0) {
-		printk(KERN_ERR "%s: PCI fixup failed\n", __func__);
+;
 		goto err;
 	}
 
@@ -182,13 +182,13 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
 				       "[EDAC] PCI err",
 				       pci);
 		if (res < 0) {
-			printk(KERN_ERR "%s: Unable to request irq %d for "
-			       "MV64x60 PCI ERR\n", __func__, pdata->irq);
+//			printk(KERN_ERR "%s: Unable to request irq %d for "
+;
 			res = -ENODEV;
 			goto err2;
 		}
-		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for PCI Err\n",
-		       pdata->irq);
+//		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for PCI Err\n",
+;
 	}
 
 	devres_remove_group(&pdev->dev, mv64x60_pci_err_probe);
@@ -239,18 +239,18 @@ static void mv64x60_sram_check(struct edac_device_ctl_info *edac_dev)
 	if (!cause)
 		return;
 
-	printk(KERN_ERR "Error in internal SRAM\n");
-	printk(KERN_ERR "Cause register: 0x%08x\n", cause);
-	printk(KERN_ERR "Address Low: 0x%08x\n",
-	       in_le32(pdata->sram_vbase + MV64X60_SRAM_ERR_ADDR_LO));
-	printk(KERN_ERR "Address High: 0x%08x\n",
-	       in_le32(pdata->sram_vbase + MV64X60_SRAM_ERR_ADDR_HI));
-	printk(KERN_ERR "Data Low: 0x%08x\n",
-	       in_le32(pdata->sram_vbase + MV64X60_SRAM_ERR_DATA_LO));
-	printk(KERN_ERR "Data High: 0x%08x\n",
-	       in_le32(pdata->sram_vbase + MV64X60_SRAM_ERR_DATA_HI));
-	printk(KERN_ERR "Parity: 0x%08x\n",
-	       in_le32(pdata->sram_vbase + MV64X60_SRAM_ERR_PARITY));
+;
+;
+//	printk(KERN_ERR "Address Low: 0x%08x\n",
+;
+//	printk(KERN_ERR "Address High: 0x%08x\n",
+;
+//	printk(KERN_ERR "Data Low: 0x%08x\n",
+;
+//	printk(KERN_ERR "Data High: 0x%08x\n",
+;
+//	printk(KERN_ERR "Parity: 0x%08x\n",
+;
 	out_le32(pdata->sram_vbase + MV64X60_SRAM_ERR_CAUSE, 0);
 
 	edac_device_handle_ue(edac_dev, 0, 0, edac_dev->ctl_name);
@@ -298,8 +298,8 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
 
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!r) {
-		printk(KERN_ERR "%s: Unable to get resource for "
-		       "SRAM err regs\n", __func__);
+//		printk(KERN_ERR "%s: Unable to get resource for "
+;
 		res = -ENOENT;
 		goto err;
 	}
@@ -308,8 +308,8 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
 				     r->start,
 				     resource_size(r),
 				     pdata->name)) {
-		printk(KERN_ERR "%s: Error while request mem region\n",
-		       __func__);
+//		printk(KERN_ERR "%s: Error while request mem region\n",
+;
 		res = -EBUSY;
 		goto err;
 	}
@@ -318,8 +318,8 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
 					 r->start,
 					 resource_size(r));
 	if (!pdata->sram_vbase) {
-		printk(KERN_ERR "%s: Unable to setup SRAM err regs\n",
-		       __func__);
+//		printk(KERN_ERR "%s: Unable to setup SRAM err regs\n",
+;
 		res = -ENOMEM;
 		goto err;
 	}
@@ -349,15 +349,15 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
 				       "[EDAC] SRAM err",
 				       edac_dev);
 		if (res < 0) {
-			printk(KERN_ERR
-			       "%s: Unable to request irq %d for "
-			       "MV64x60 SRAM ERR\n", __func__, pdata->irq);
+//			printk(KERN_ERR
+//			       "%s: Unable to request irq %d for "
+;
 			res = -ENODEV;
 			goto err2;
 		}
 
-		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for SRAM Err\n",
-		       pdata->irq);
+//		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for SRAM Err\n",
+;
 	}
 
 	devres_remove_group(&pdev->dev, mv64x60_sram_err_probe);
@@ -406,18 +406,18 @@ static void mv64x60_cpu_check(struct edac_device_ctl_info *edac_dev)
 	if (!cause)
 		return;
 
-	printk(KERN_ERR "Error on CPU interface\n");
-	printk(KERN_ERR "Cause register: 0x%08x\n", cause);
-	printk(KERN_ERR "Address Low: 0x%08x\n",
-	       in_le32(pdata->cpu_vbase[0] + MV64x60_CPU_ERR_ADDR_LO));
-	printk(KERN_ERR "Address High: 0x%08x\n",
-	       in_le32(pdata->cpu_vbase[0] + MV64x60_CPU_ERR_ADDR_HI));
-	printk(KERN_ERR "Data Low: 0x%08x\n",
-	       in_le32(pdata->cpu_vbase[1] + MV64x60_CPU_ERR_DATA_LO));
-	printk(KERN_ERR "Data High: 0x%08x\n",
-	       in_le32(pdata->cpu_vbase[1] + MV64x60_CPU_ERR_DATA_HI));
-	printk(KERN_ERR "Parity: 0x%08x\n",
-	       in_le32(pdata->cpu_vbase[1] + MV64x60_CPU_ERR_PARITY));
+;
+;
+//	printk(KERN_ERR "Address Low: 0x%08x\n",
+;
+//	printk(KERN_ERR "Address High: 0x%08x\n",
+;
+//	printk(KERN_ERR "Data Low: 0x%08x\n",
+;
+//	printk(KERN_ERR "Data High: 0x%08x\n",
+;
+//	printk(KERN_ERR "Parity: 0x%08x\n",
+;
 	out_le32(pdata->cpu_vbase[1] + MV64x60_CPU_ERR_CAUSE, 0);
 
 	edac_device_handle_ue(edac_dev, 0, 0, edac_dev->ctl_name);
@@ -466,8 +466,8 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
 
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!r) {
-		printk(KERN_ERR "%s: Unable to get resource for "
-		       "CPU err regs\n", __func__);
+//		printk(KERN_ERR "%s: Unable to get resource for "
+;
 		res = -ENOENT;
 		goto err;
 	}
@@ -476,8 +476,8 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
 				     r->start,
 				     resource_size(r),
 				     pdata->name)) {
-		printk(KERN_ERR "%s: Error while requesting mem region\n",
-		       __func__);
+//		printk(KERN_ERR "%s: Error while requesting mem region\n",
+;
 		res = -EBUSY;
 		goto err;
 	}
@@ -486,15 +486,15 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
 					   r->start,
 					   resource_size(r));
 	if (!pdata->cpu_vbase[0]) {
-		printk(KERN_ERR "%s: Unable to setup CPU err regs\n", __func__);
+;
 		res = -ENOMEM;
 		goto err;
 	}
 
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (!r) {
-		printk(KERN_ERR "%s: Unable to get resource for "
-		       "CPU err regs\n", __func__);
+//		printk(KERN_ERR "%s: Unable to get resource for "
+;
 		res = -ENOENT;
 		goto err;
 	}
@@ -503,8 +503,8 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
 				     r->start,
 				     resource_size(r),
 				     pdata->name)) {
-		printk(KERN_ERR "%s: Error while requesting mem region\n",
-		       __func__);
+//		printk(KERN_ERR "%s: Error while requesting mem region\n",
+;
 		res = -EBUSY;
 		goto err;
 	}
@@ -513,7 +513,7 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
 					   r->start,
 					   resource_size(r));
 	if (!pdata->cpu_vbase[1]) {
-		printk(KERN_ERR "%s: Unable to setup CPU err regs\n", __func__);
+;
 		res = -ENOMEM;
 		goto err;
 	}
@@ -544,15 +544,15 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
 				       "[EDAC] CPU err",
 				       edac_dev);
 		if (res < 0) {
-			printk(KERN_ERR
-			       "%s: Unable to request irq %d for MV64x60 "
-			       "CPU ERR\n", __func__, pdata->irq);
+//			printk(KERN_ERR
+//			       "%s: Unable to request irq %d for MV64x60 "
+;
 			res = -ENODEV;
 			goto err2;
 		}
 
-		printk(KERN_INFO EDAC_MOD_STR
-		       " acquired irq %d for CPU Err\n", pdata->irq);
+//		printk(KERN_INFO EDAC_MOD_STR
+;
 	}
 
 	devres_remove_group(&pdev->dev, mv64x60_cpu_err_probe);
@@ -703,7 +703,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
 
 	mci = edac_mc_alloc(sizeof(struct mv64x60_mc_pdata), 1, 1, edac_mc_idx);
 	if (!mci) {
-		printk(KERN_ERR "%s: No memory for CPU err\n", __func__);
+;
 		devres_release_group(&pdev->dev, mv64x60_mc_err_probe);
 		return -ENOMEM;
 	}
@@ -718,8 +718,8 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
 
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!r) {
-		printk(KERN_ERR "%s: Unable to get resource for "
-		       "MC err regs\n", __func__);
+//		printk(KERN_ERR "%s: Unable to get resource for "
+;
 		res = -ENOENT;
 		goto err;
 	}
@@ -728,8 +728,8 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
 				     r->start,
 				     resource_size(r),
 				     pdata->name)) {
-		printk(KERN_ERR "%s: Error while requesting mem region\n",
-		       __func__);
+//		printk(KERN_ERR "%s: Error while requesting mem region\n",
+;
 		res = -EBUSY;
 		goto err;
 	}
@@ -738,7 +738,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
 				       r->start,
 				       resource_size(r));
 	if (!pdata->mc_vbase) {
-		printk(KERN_ERR "%s: Unable to setup MC err regs\n", __func__);
+;
 		res = -ENOMEM;
 		goto err;
 	}
@@ -746,7 +746,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
 	ctl = in_le32(pdata->mc_vbase + MV64X60_SDRAM_CONFIG);
 	if (!(ctl & MV64X60_SDRAM_ECC)) {
 		/* Non-ECC RAM? */
-		printk(KERN_WARNING "%s: No ECC DIMMs discovered\n", __func__);
+;
 		res = -ENODEV;
 		goto err2;
 	}
@@ -789,14 +789,14 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
 				       "[EDAC] MC err",
 				       mci);
 		if (res < 0) {
-			printk(KERN_ERR "%s: Unable to request irq %d for "
-			       "MV64x60 DRAM ERR\n", __func__, pdata->irq);
+//			printk(KERN_ERR "%s: Unable to request irq %d for "
+;
 			res = -ENODEV;
 			goto err2;
 		}
 
-		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for MC Err\n",
-		       pdata->irq);
+//		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for MC Err\n",
+;
 	}
 
 	/* get this far and it's successful */
@@ -835,8 +835,8 @@ static int __init mv64x60_edac_init(void)
 {
 	int ret = 0;
 
-	printk(KERN_INFO "Marvell MV64x60 EDAC driver " MV64x60_REVISION "\n");
-	printk(KERN_INFO "\t(C) 2006-2007 MontaVista Software\n");
+;
+;
 	/* make sure error reporting method is sane */
 	switch (edac_op_state) {
 	case EDAC_OPSTATE_POLL:
@@ -849,23 +849,23 @@ static int __init mv64x60_edac_init(void)
 
 	ret = platform_driver_register(&mv64x60_mc_err_driver);
 	if (ret)
-		printk(KERN_WARNING EDAC_MOD_STR "MC err failed to register\n");
+;
 
 	ret = platform_driver_register(&mv64x60_cpu_err_driver);
 	if (ret)
-		printk(KERN_WARNING EDAC_MOD_STR
-			"CPU err failed to register\n");
+//		printk(KERN_WARNING EDAC_MOD_STR
+;
 
 	ret = platform_driver_register(&mv64x60_sram_err_driver);
 	if (ret)
-		printk(KERN_WARNING EDAC_MOD_STR
-			"SRAM err failed to register\n");
+//		printk(KERN_WARNING EDAC_MOD_STR
+;
 
 #ifdef CONFIG_PCI
 	ret = platform_driver_register(&mv64x60_pci_err_driver);
 	if (ret)
-		printk(KERN_WARNING EDAC_MOD_STR
-			"PCI err failed to register\n");
+//		printk(KERN_WARNING EDAC_MOD_STR
+;
 #endif
 
 	return ret;

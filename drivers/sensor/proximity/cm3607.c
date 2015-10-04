@@ -116,7 +116,7 @@ static int proximity_mode(int enable)
 	}
 	
 	debug("gpio_get_value of GPIO_PS_EN is %d",gpio_get_value(GPIO_PS_EN));     
-	printk("--------GPIO_PS_EN setting successfull \n");
+;
 	return 0;
 }
 
@@ -179,7 +179,7 @@ static DEVICE_ATTR(prox_value, S_IRUGO, cm3607_show_prox_value, NULL);
 static int cm3607_prox_probe( struct platform_device* pdev )
 {	
 	int ret=0;	
-	printk("--------Proximity Sensor driver probe start \n");
+;
 	
 	/*misc device registration*/
     if( (ret = misc_register(&cm3607_misc_device)) < 0 )
@@ -284,7 +284,7 @@ static int cm3607_prox_probe( struct platform_device* pdev )
 	input_report_abs(cm3607_data->prox_input_dev,ABS_DISTANCE,gpio_get_value(GPIO_PS_OUT));
 	input_sync(cm3607_data->prox_input_dev);
 	mdelay(1);
-	printk("--------Proximity Sensor driver probe end \n");
+;
 	
 	//TEST
 	if (device_create_file(cm3607_misc_device.this_device, &dev_attr_prox_value) < 0)

@@ -1228,7 +1228,7 @@ static int mv_stop_edma(struct ata_port *ap)
 	pp->pp_flags &= ~MV_PP_FLAG_EDMA_EN;
 	mv_wait_for_edma_empty_idle(ap);
 	if (mv_stop_edma_engine(port_mmio)) {
-		ata_port_printk(ap, KERN_ERR, "Unable to stop eDMA\n");
+;
 		err = -EIO;
 	}
 	mv_edma_cfg(ap, 0, 0);
@@ -1242,10 +1242,10 @@ static void mv_dump_mem(void __iomem *start, unsigned bytes)
 	for (b = 0; b < bytes; ) {
 		DPRINTK("%p: ", start + b);
 		for (w = 0; b < bytes && w < 4; w++) {
-			printk("%08x ", readl(start + b));
+;
 			b += sizeof(u32);
 		}
-		printk("\n");
+;
 	}
 }
 #endif
@@ -1259,10 +1259,10 @@ static void mv_dump_pci_cfg(struct pci_dev *pdev, unsigned bytes)
 		DPRINTK("%02x: ", b);
 		for (w = 0; b < bytes && w < 4; w++) {
 			(void) pci_read_config_dword(pdev, b, &dw);
-			printk("%08x ", dw);
+;
 			b += sizeof(u32);
 		}
-		printk("\n");
+;
 	}
 #endif
 }
@@ -1382,8 +1382,8 @@ static void mv6_dev_config(struct ata_device *adev)
 	if (adev->flags & ATA_DFLAG_NCQ) {
 		if (sata_pmp_attached(adev->link->ap)) {
 			adev->flags &= ~ATA_DFLAG_NCQ;
-			ata_dev_printk(adev, KERN_INFO,
-				"NCQ disabled for command-based switching\n");
+//			ata_dev_printk(adev, KERN_INFO,
+;
 		}
 	}
 }
@@ -2225,9 +2225,9 @@ static unsigned int mv_send_fis(struct ata_port *ap, u32 *fis, int nwords)
 
 	/* See if it worked */
 	if ((ifstat & 0x3000) != 0x1000) {
-		ata_port_printk(ap, KERN_WARNING,
-				"%s transmission error, ifstat=%08x\n",
-				__func__, ifstat);
+//		ata_port_printk(ap, KERN_WARNING,
+//				"%s transmission error, ifstat=%08x\n",
+;
 		return AC_ERR_OTHER;
 	}
 	return 0;
@@ -2342,9 +2342,9 @@ static unsigned int mv_qc_issue(struct ata_queued_cmd *qc)
 		 */
 		if (limit_warnings > 0 && (qc->nbytes / qc->sect_size) > 1) {
 			--limit_warnings;
-			ata_link_printk(qc->dev->link, KERN_WARNING, DRV_NAME
-					": attempting PIO w/multiple DRQ: "
-					"this may fail due to h/w errata\n");
+//			ata_link_printk(qc->dev->link, KERN_WARNING, DRV_NAME
+//					": attempting PIO w/multiple DRQ: "
+;
 		}
 		/* drop through */
 	case ATA_PROT_NODATA:
@@ -2499,20 +2499,20 @@ static int mv_handle_fbs_ncq_dev_err(struct ata_port *ap)
 	}
 	failed_links = hweight16(new_map);
 
-	ata_port_printk(ap, KERN_INFO, "%s: pmp_map=%04x qc_map=%04x "
-			"failed_links=%d nr_active_links=%d\n",
-			__func__, pp->delayed_eh_pmp_map,
-			ap->qc_active, failed_links,
-			ap->nr_active_links);
+//	ata_port_printk(ap, KERN_INFO, "%s: pmp_map=%04x qc_map=%04x "
+//			"failed_links=%d nr_active_links=%d\n",
+//			__func__, pp->delayed_eh_pmp_map,
+//			ap->qc_active, failed_links,
+;
 
 	if (ap->nr_active_links <= failed_links && mv_req_q_empty(ap)) {
 		mv_process_crpb_entries(ap, pp);
 		mv_stop_edma(ap);
 		mv_eh_freeze(ap);
-		ata_port_printk(ap, KERN_INFO, "%s: done\n", __func__);
+;
 		return 1;	/* handled */
 	}
-	ata_port_printk(ap, KERN_INFO, "%s: waiting\n", __func__);
+;
 	return 1;	/* handled */
 }
 
@@ -2554,9 +2554,9 @@ static int mv_handle_dev_err(struct ata_port *ap, u32 edma_err_cause)
 		 * and we cannot handle it here.
 		 */
 		if (edma_err_cause & EDMA_ERR_SELF_DIS) {
-			ata_port_printk(ap, KERN_WARNING,
-				"%s: err_cause=0x%x pp_flags=0x%x\n",
-				__func__, edma_err_cause, pp->pp_flags);
+//			ata_port_printk(ap, KERN_WARNING,
+//				"%s: err_cause=0x%x pp_flags=0x%x\n",
+;
 			return 0; /* not handled */
 		}
 		return mv_handle_fbs_ncq_dev_err(ap);
@@ -2567,9 +2567,9 @@ static int mv_handle_dev_err(struct ata_port *ap, u32 edma_err_cause)
 		 * and we cannot handle it here.
 		 */
 		if (!(edma_err_cause & EDMA_ERR_SELF_DIS)) {
-			ata_port_printk(ap, KERN_WARNING,
-				"%s: err_cause=0x%x pp_flags=0x%x\n",
-				__func__, edma_err_cause, pp->pp_flags);
+//			ata_port_printk(ap, KERN_WARNING,
+//				"%s: err_cause=0x%x pp_flags=0x%x\n",
+;
 			return 0; /* not handled */
 		}
 		return mv_handle_fbs_non_ncq_dev_err(ap);
@@ -2930,7 +2930,7 @@ static int mv_pci_error(struct ata_host *host, void __iomem *mmio)
 
 	err_cause = readl(mmio + hpriv->irq_cause_offset);
 
-	dev_printk(KERN_ERR, host->dev, "PCI ERROR; PCI IRQ cause=0x%08x\n",
+;
 		   err_cause);
 
 	DPRINTK("All regs @ PCI error\n");
@@ -3253,7 +3253,7 @@ static int mv6_reset_hc(struct mv_host_priv *hpriv, void __iomem *mmio,
 			break;
 	}
 	if (!(PCI_MASTER_EMPTY & t)) {
-		printk(KERN_ERR DRV_NAME ": PCI master won't flush\n");
+;
 		rc = 1;
 		goto done;
 	}
@@ -3267,7 +3267,7 @@ static int mv6_reset_hc(struct mv_host_priv *hpriv, void __iomem *mmio,
 	} while (!(GLOB_SFT_RST & t) && (i-- > 0));
 
 	if (!(GLOB_SFT_RST & t)) {
-		printk(KERN_ERR DRV_NAME ": can't set global reset\n");
+;
 		rc = 1;
 		goto done;
 	}
@@ -3281,7 +3281,7 @@ static int mv6_reset_hc(struct mv_host_priv *hpriv, void __iomem *mmio,
 	} while ((GLOB_SFT_RST & t) && (i-- > 0));
 
 	if (GLOB_SFT_RST & t) {
-		printk(KERN_ERR DRV_NAME ": can't clear global reset\n");
+;
 		rc = 1;
 	}
 done:
@@ -3760,8 +3760,8 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			hp_flags |= MV_HP_ERRATA_50XXB2;
 			break;
 		default:
-			dev_printk(KERN_WARNING, &pdev->dev,
-			   "Applying 50XXB2 workarounds to unknown rev\n");
+//			dev_printk(KERN_WARNING, &pdev->dev,
+;
 			hp_flags |= MV_HP_ERRATA_50XXB2;
 			break;
 		}
@@ -3780,8 +3780,8 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			hp_flags |= MV_HP_ERRATA_50XXB2;
 			break;
 		default:
-			dev_printk(KERN_WARNING, &pdev->dev,
-			   "Applying B2 workarounds to unknown rev\n");
+//			dev_printk(KERN_WARNING, &pdev->dev,
+;
 			hp_flags |= MV_HP_ERRATA_50XXB2;
 			break;
 		}
@@ -3801,8 +3801,8 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			hp_flags |= MV_HP_ERRATA_60X1C0;
 			break;
 		default:
-			dev_printk(KERN_WARNING, &pdev->dev,
-				   "Applying B2 workarounds to unknown rev\n");
+//			dev_printk(KERN_WARNING, &pdev->dev,
+;
 			hp_flags |= MV_HP_ERRATA_60X1B2;
 			break;
 		}
@@ -3830,14 +3830,14 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			 *
 			 * Warn the user, lest they think we're just buggy.
 			 */
-			printk(KERN_WARNING DRV_NAME ": Highpoint RocketRAID"
-				" BIOS CORRUPTS DATA on all attached drives,"
-				" regardless of if/how they are configured."
-				" BEWARE!\n");
-			printk(KERN_WARNING DRV_NAME ": For data safety, do not"
-				" use sectors 8-9 on \"Legacy\" drives,"
-				" and avoid the final two gigabytes on"
-				" all RocketRAID BIOS initialized drives.\n");
+//			printk(KERN_WARNING DRV_NAME ": Highpoint RocketRAID"
+//				" BIOS CORRUPTS DATA on all attached drives,"
+//				" regardless of if/how they are configured."
+;
+//			printk(KERN_WARNING DRV_NAME ": For data safety, do not"
+//				" use sectors 8-9 on \"Legacy\" drives,"
+//				" and avoid the final two gigabytes on"
+;
 		}
 		/* drop through */
 	case chip_6042:
@@ -3851,8 +3851,8 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 			hp_flags |= MV_HP_ERRATA_60X1C0;
 			break;
 		default:
-			dev_printk(KERN_WARNING, &pdev->dev,
-			   "Applying 60X1C0 workarounds to unknown rev\n");
+//			dev_printk(KERN_WARNING, &pdev->dev,
+;
 			hp_flags |= MV_HP_ERRATA_60X1C0;
 			break;
 		}
@@ -3867,8 +3867,8 @@ static int mv_chip_id(struct ata_host *host, unsigned int board_idx)
 		break;
 
 	default:
-		dev_printk(KERN_ERR, host->dev,
-			   "BUG: invalid board index %u\n", board_idx);
+//		dev_printk(KERN_ERR, host->dev,
+;
 		return 1;
 	}
 
@@ -4033,7 +4033,7 @@ static int mv_platform_probe(struct platform_device *pdev)
 	int n_ports, rc;
 
 	if (!printed_version++)
-		dev_printk(KERN_INFO, &pdev->dev, "version " DRV_VERSION "\n");
+;
 
 	/*
 	 * Simple resource validation ..
@@ -4091,9 +4091,9 @@ static int mv_platform_probe(struct platform_device *pdev)
 	if (rc)
 		goto err;
 
-	dev_printk(KERN_INFO, &pdev->dev,
-		   "slots %u ports %d\n", (unsigned)MV_MAX_Q_DEPTH,
-		   host->n_ports);
+//	dev_printk(KERN_INFO, &pdev->dev,
+//		   "slots %u ports %d\n", (unsigned)MV_MAX_Q_DEPTH,
+;
 
 	return ata_host_activate(host, platform_get_irq(pdev, 0), mv_interrupt,
 				 IRQF_SHARED, &mv6_sht);
@@ -4162,7 +4162,7 @@ static int mv_platform_resume(struct platform_device *pdev)
 		/* initialize adapter */
 		ret = mv_init_host(host);
 		if (ret) {
-			printk(KERN_ERR DRV_NAME ": Error during HW init\n");
+;
 			return ret;
 		}
 		ata_host_resume(host);
@@ -4217,22 +4217,22 @@ static int pci_go_64(struct pci_dev *pdev)
 		if (rc) {
 			rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 			if (rc) {
-				dev_printk(KERN_ERR, &pdev->dev,
-					   "64-bit DMA enable failed\n");
+//				dev_printk(KERN_ERR, &pdev->dev,
+;
 				return rc;
 			}
 		}
 	} else {
 		rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-			dev_printk(KERN_ERR, &pdev->dev,
-				   "32-bit DMA enable failed\n");
+//			dev_printk(KERN_ERR, &pdev->dev,
+;
 			return rc;
 		}
 		rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-			dev_printk(KERN_ERR, &pdev->dev,
-				   "32-bit consistent DMA enable failed\n");
+//			dev_printk(KERN_ERR, &pdev->dev,
+;
 			return rc;
 		}
 	}
@@ -4276,10 +4276,10 @@ static void mv_print_info(struct ata_host *host)
 	else
 		gen = "?";
 
-	dev_printk(KERN_INFO, &pdev->dev,
-	       "Gen-%s %u slots %u ports %s mode IRQ via %s\n",
-	       gen, (unsigned)MV_MAX_Q_DEPTH, host->n_ports,
-	       scc_s, (MV_HP_FLAG_MSI & hpriv->hp_flags) ? "MSI" : "INTx");
+//	dev_printk(KERN_INFO, &pdev->dev,
+//	       "Gen-%s %u slots %u ports %s mode IRQ via %s\n",
+//	       gen, (unsigned)MV_MAX_Q_DEPTH, host->n_ports,
+;
 }
 
 /**
@@ -4301,7 +4301,7 @@ static int mv_pci_init_one(struct pci_dev *pdev,
 	int n_ports, port, rc;
 
 	if (!printed_version++)
-		dev_printk(KERN_INFO, &pdev->dev, "version " DRV_VERSION "\n");
+;
 
 	/* allocate host */
 	n_ports = mv_get_hc_count(ppi[0]->flags) * MV_PORTS_PER_HC;

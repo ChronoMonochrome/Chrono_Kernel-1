@@ -1567,8 +1567,8 @@ static int b2r2_blt_probe(struct platform_device *pdev)
 
 	ret = misc_register(&b2r2_blt->miscdev);
 	if (ret != 0) {
-		printk(KERN_WARNING "%s: registering misc device fails\n",
-				__func__);
+//		printk(KERN_WARNING "%s: registering misc device fails\n",
+;
 		goto error_exit;
 	}
 
@@ -1648,7 +1648,7 @@ static struct platform_driver platform_b2r2_blt_driver = {
  */
 static int __init b2r2_blt_init(void)
 {
-	printk(KERN_INFO "%s\n", __func__);
+;
 	return platform_driver_probe(&platform_b2r2_blt_driver, b2r2_blt_probe);
 }
 module_init(b2r2_blt_init);
@@ -1658,7 +1658,7 @@ module_init(b2r2_blt_init);
  */
 static void __exit b2r2_blt_exit(void)
 {
-	printk(KERN_INFO "%s\n", __func__);
+;
 	platform_driver_unregister(&platform_b2r2_blt_driver);
 	return;
 }

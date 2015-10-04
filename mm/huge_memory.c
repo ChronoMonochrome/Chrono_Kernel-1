@@ -148,8 +148,8 @@ static int start_khugepaged(void)
 			khugepaged_thread = kthread_run(khugepaged, NULL,
 							"khugepaged");
 		if (unlikely(IS_ERR(khugepaged_thread))) {
-			printk(KERN_ERR
-			       "khugepaged: kthread_run(khugepaged) failed\n");
+//			printk(KERN_ERR
+;
 			err = PTR_ERR(khugepaged_thread);
 			khugepaged_thread = NULL;
 		}
@@ -505,19 +505,19 @@ static int __init hugepage_init(void)
 	err = -ENOMEM;
 	hugepage_kobj = kobject_create_and_add("transparent_hugepage", mm_kobj);
 	if (unlikely(!hugepage_kobj)) {
-		printk(KERN_ERR "hugepage: failed kobject create\n");
+;
 		goto out;
 	}
 
 	err = sysfs_create_group(hugepage_kobj, &hugepage_attr_group);
 	if (err) {
-		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+;
 		goto out;
 	}
 
 	err = sysfs_create_group(hugepage_kobj, &khugepaged_attr_group);
 	if (err) {
-		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+;
 		goto out;
 	}
 #endif
@@ -575,8 +575,8 @@ static int __init setup_transparent_hugepage(char *str)
 	}
 out:
 	if (!ret)
-		printk(KERN_WARNING
-		       "transparent_hugepage= cannot parse, ignored\n");
+//		printk(KERN_WARNING
+;
 	return ret;
 }
 __setup("transparent_hugepage=", setup_transparent_hugepage);
@@ -1427,8 +1427,8 @@ static void __split_huge_page(struct page *page,
 	 * walk, to be able to set it as pmd_trans_splitting too.
 	 */
 	if (mapcount != page_mapcount(page))
-		printk(KERN_ERR "mapcount %d page_mapcount %d\n",
-		       mapcount, page_mapcount(page));
+//		printk(KERN_ERR "mapcount %d page_mapcount %d\n",
+;
 	BUG_ON(mapcount != page_mapcount(page));
 
 	__split_huge_page_refcount(page);
@@ -1443,8 +1443,8 @@ static void __split_huge_page(struct page *page,
 		mapcount2 += __split_huge_page_map(page, vma, addr);
 	}
 	if (mapcount != mapcount2)
-		printk(KERN_ERR "mapcount %d mapcount2 %d page_mapcount %d\n",
-		       mapcount, mapcount2, page_mapcount(page));
+//		printk(KERN_ERR "mapcount %d mapcount2 %d page_mapcount %d\n",
+;
 	BUG_ON(mapcount != mapcount2);
 }
 

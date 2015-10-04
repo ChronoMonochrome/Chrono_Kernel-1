@@ -69,7 +69,7 @@ static long lpddr_get_qinforec_pos(struct map_info *map, char *id_str)
 			return minor | (major << bankwidth);
 		}
 	}
-	printk(KERN_ERR"%s qinfo id string is wrong! \n", map->name);
+;
 	BUG();
 	return -1;
 }
@@ -126,8 +126,8 @@ static int lpddr_pfow_present(struct map_info *map, struct lpddr_private *lpddr)
 
 	return 1;	/* "PFOW" is found */
 out:
-	printk(KERN_WARNING"%s: PFOW string at 0x%lx is not found \n",
-					map->name, map->pfow_base);
+//	printk(KERN_WARNING"%s: PFOW string at 0x%lx is not found \n",
+;
 	return 0;
 }
 
@@ -136,8 +136,8 @@ static int lpddr_chip_setup(struct map_info *map, struct lpddr_private *lpddr)
 
 	lpddr->qinfo = kzalloc(sizeof(struct qinfo_chip), GFP_KERNEL);
 	if (!lpddr->qinfo) {
-		printk(KERN_WARNING "%s: no memory for LPDDR qinfo structure\n",
-				map->name);
+//		printk(KERN_WARNING "%s: no memory for LPDDR qinfo structure\n",
+;
 		return 0;
 	}
 
@@ -167,9 +167,9 @@ static struct lpddr_private *lpddr_probe_chip(struct map_info *map)
 
 
 	if ((map->pfow_base + 0x1000) >= map->size) {
-		printk(KERN_NOTICE"%s Probe at base (0x%08lx) past the end of"
-				"the map(0x%08lx)\n", map->name,
-				(unsigned long)map->pfow_base, map->size - 1);
+//		printk(KERN_NOTICE"%s Probe at base (0x%08lx) past the end of"
+//				"the map(0x%08lx)\n", map->name,
+;
 		return NULL;
 	}
 	memset(&lpddr, 0, sizeof(struct lpddr_private));
@@ -212,9 +212,9 @@ struct mtd_info *lpddr_probe(struct map_info *map)
 	mtd = lpddr_cmdset(map);
 	if (mtd) {
 		if (mtd->size > map->size) {
-			printk(KERN_WARNING "Reducing visibility of %ldKiB chip"
-				"to %ldKiB\n", (unsigned long)mtd->size >> 10,
-				(unsigned long)map->size >> 10);
+//			printk(KERN_WARNING "Reducing visibility of %ldKiB chip"
+//				"to %ldKiB\n", (unsigned long)mtd->size >> 10,
+;
 			mtd->size = map->size;
 		}
 		return mtd;

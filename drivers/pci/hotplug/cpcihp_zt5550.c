@@ -52,12 +52,12 @@
 			printk (KERN_DEBUG "%s: " format "\n",	\
 				MY_NAME , ## arg); 		\
 	} while(0)
-#define err(format, arg...) printk(KERN_ERR "%s: " format "\n", MY_NAME , ## arg)
-#define info(format, arg...) printk(KERN_INFO "%s: " format "\n", MY_NAME , ## arg)
-#define warn(format, arg...) printk(KERN_WARNING "%s: " format "\n", MY_NAME , ## arg)
-
-/* local variables */
-static int debug;
+//#define err(format, arg...) printk(KERN_ERR "%s: " format "\n", MY_NAME , ## arg)
+//#define info(format, arg...) printk(KERN_INFO "%s: " format "\n", MY_NAME , ## arg)
+//#define warn(format, arg...) printk(KERN_WARNING "%s: " format "\n", MY_NAME , ## arg)
+//
+///* local variables */
+;
 static int poll;
 static struct cpci_hp_controller_ops zt5550_hpc_ops;
 static struct cpci_hp_controller zt5550_hpc;

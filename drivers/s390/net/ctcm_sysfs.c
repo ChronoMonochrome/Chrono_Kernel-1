@@ -101,8 +101,8 @@ static void ctcm_print_statistics(struct ctcm_priv *priv)
 	p += sprintf(p, "  Max. TX IO-time: %ld\n",
 		     priv->channel[WRITE]->prof.tx_time);
 
-	printk(KERN_INFO "Statistics for %s:\n%s",
-				priv->channel[CTCM_WRITE]->netdev->name, sbuf);
+//	printk(KERN_INFO "Statistics for %s:\n%s",
+;
 	kfree(sbuf);
 	return;
 }

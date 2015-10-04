@@ -728,7 +728,7 @@ int sb_mixer_init(sb_devc * devc, struct module *owner)
 			break;
 
 		default:
-			printk(KERN_WARNING "sb_mixer: Unsupported mixer type %d\n", devc->model);
+;
 			return 0;
 	}
 
@@ -739,7 +739,7 @@ int sb_mixer_init(sb_devc * devc, struct module *owner)
 	mixer_devs[m] = kmalloc(sizeof(struct mixer_operations), GFP_KERNEL);
 	if (mixer_devs[m] == NULL)
 	{
-		printk(KERN_ERR "sb_mixer: Can't allocate memory\n");
+;
 		sound_unload_mixerdev(m);
 		return 0;
 	}

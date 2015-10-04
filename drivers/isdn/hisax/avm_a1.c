@@ -185,7 +185,7 @@ setup_avm_a1(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, avm_revision);
-	printk(KERN_INFO "HiSax: AVM driver Rev. %s\n", HiSax_getrev(tmp));
+;
 	if (cs->typ != ISDN_CTYPE_A1)
 		return (0);
 
@@ -198,54 +198,54 @@ setup_avm_a1(struct IsdnCard *card)
 	cs->hw.avm.hscxfifo[1] = card->para[1] + 0x800;
 	cs->irq = card->para[0];
 	if (!request_region(cs->hw.avm.cfg_reg, 8, "avm cfg")) {
-		printk(KERN_WARNING
-		       "HiSax: AVM A1 config port %x-%x already in use\n",
-		       cs->hw.avm.cfg_reg,
-		       cs->hw.avm.cfg_reg + 8);
+//		printk(KERN_WARNING
+//		       "HiSax: AVM A1 config port %x-%x already in use\n",
+//		       cs->hw.avm.cfg_reg,
+;
 		return (0);
 	}
 	if (!request_region(cs->hw.avm.isac + 32, 32, "HiSax isac")) {
-		printk(KERN_WARNING
-		       "HiSax: AVM A1 isac ports %x-%x already in use\n",
-		       cs->hw.avm.isac + 32,
-		       cs->hw.avm.isac + 64);
+//		printk(KERN_WARNING
+//		       "HiSax: AVM A1 isac ports %x-%x already in use\n",
+//		       cs->hw.avm.isac + 32,
+;
 		release_ioregs(cs, 0);
 		return (0);
 	}
 	if (!request_region(cs->hw.avm.isacfifo, 1, "HiSax isac fifo")) {
-		printk(KERN_WARNING
-		       "HiSax: AVM A1 isac fifo port %x already in use\n",
-		       cs->hw.avm.isacfifo);
+//		printk(KERN_WARNING
+//		       "HiSax: AVM A1 isac fifo port %x already in use\n",
+;
 		release_ioregs(cs, 1);
 		return (0);
 	}
 	if (!request_region(cs->hw.avm.hscx[0] + 32, 32, "HiSax hscx A")) {
-		printk(KERN_WARNING
-		       "HiSax: AVM A1 hscx A ports %x-%x already in use\n",
-		       cs->hw.avm.hscx[0] + 32,
-		       cs->hw.avm.hscx[0] + 64);
+//		printk(KERN_WARNING
+//		       "HiSax: AVM A1 hscx A ports %x-%x already in use\n",
+//		       cs->hw.avm.hscx[0] + 32,
+;
 		release_ioregs(cs, 3);
 		return (0);
 	}
 	if (!request_region(cs->hw.avm.hscxfifo[0], 1, "HiSax hscx A fifo")) {
-		printk(KERN_WARNING
-		       "HiSax: AVM A1 hscx A fifo port %x already in use\n",
-		       cs->hw.avm.hscxfifo[0]);
+//		printk(KERN_WARNING
+//		       "HiSax: AVM A1 hscx A fifo port %x already in use\n",
+;
 		release_ioregs(cs, 7);
 		return (0);
 	}
 	if (!request_region(cs->hw.avm.hscx[1] + 32, 32, "HiSax hscx B")) {
-		printk(KERN_WARNING
-		       "HiSax: AVM A1 hscx B ports %x-%x already in use\n",
-		       cs->hw.avm.hscx[1] + 32,
-		       cs->hw.avm.hscx[1] + 64);
+//		printk(KERN_WARNING
+//		       "HiSax: AVM A1 hscx B ports %x-%x already in use\n",
+//		       cs->hw.avm.hscx[1] + 32,
+;
 		release_ioregs(cs, 0xf);
 		return (0);
 	}
 	if (!request_region(cs->hw.avm.hscxfifo[1], 1, "HiSax hscx B fifo")) {
-		printk(KERN_WARNING
-		       "HiSax: AVM A1 hscx B fifo port %x already in use\n",
-		       cs->hw.avm.hscxfifo[1]);
+//		printk(KERN_WARNING
+//		       "HiSax: AVM A1 hscx B fifo port %x already in use\n",
+;
 		release_ioregs(cs, 0x1f);
 		return (0);
 	}
@@ -264,28 +264,28 @@ setup_avm_a1(struct IsdnCard *card)
 	HZDELAY(HZ / 5 + 1);
 
 	val = bytein(cs->hw.avm.cfg_reg);
-	printk(KERN_INFO "AVM A1: Byte at %x is %x\n",
-	       cs->hw.avm.cfg_reg, val);
+//	printk(KERN_INFO "AVM A1: Byte at %x is %x\n",
+;
 	val = bytein(cs->hw.avm.cfg_reg + 3);
-	printk(KERN_INFO "AVM A1: Byte at %x is %x\n",
-	       cs->hw.avm.cfg_reg + 3, val);
+//	printk(KERN_INFO "AVM A1: Byte at %x is %x\n",
+;
 	val = bytein(cs->hw.avm.cfg_reg + 2);
-	printk(KERN_INFO "AVM A1: Byte at %x is %x\n",
-	       cs->hw.avm.cfg_reg + 2, val);
+//	printk(KERN_INFO "AVM A1: Byte at %x is %x\n",
+;
 	val = bytein(cs->hw.avm.cfg_reg);
-	printk(KERN_INFO "AVM A1: Byte at %x is %x\n",
-	       cs->hw.avm.cfg_reg, val);
+//	printk(KERN_INFO "AVM A1: Byte at %x is %x\n",
+;
 
-	printk(KERN_INFO "HiSax: AVM A1 config irq:%d cfg:0x%X\n",
-	       cs->irq,
-	       cs->hw.avm.cfg_reg);
-	printk(KERN_INFO
-	       "HiSax: isac:0x%X/0x%X\n",
-	       cs->hw.avm.isac + 32, cs->hw.avm.isacfifo);
-	printk(KERN_INFO
-	       "HiSax: hscx A:0x%X/0x%X  hscx B:0x%X/0x%X\n",
-	       cs->hw.avm.hscx[0] + 32, cs->hw.avm.hscxfifo[0],
-	       cs->hw.avm.hscx[1] + 32, cs->hw.avm.hscxfifo[1]);
+//	printk(KERN_INFO "HiSax: AVM A1 config irq:%d cfg:0x%X\n",
+//	       cs->irq,
+;
+//	printk(KERN_INFO
+//	       "HiSax: isac:0x%X/0x%X\n",
+;
+//	printk(KERN_INFO
+//	       "HiSax: hscx A:0x%X/0x%X  hscx B:0x%X/0x%X\n",
+//	       cs->hw.avm.hscx[0] + 32, cs->hw.avm.hscxfifo[0],
+;
 
 	cs->readisac = &ReadISAC;
 	cs->writeisac = &WriteISAC;
@@ -299,8 +299,8 @@ setup_avm_a1(struct IsdnCard *card)
 	cs->irq_func = &avm_a1_interrupt;
 	ISACVersion(cs, "AVM A1:");
 	if (HscxVersion(cs, "AVM A1:")) {
-		printk(KERN_WARNING
-		       "AVM A1: wrong HSCX versions check IO address\n");
+//		printk(KERN_WARNING
+;
 		release_ioregs(cs, 0x3f);
 		return (0);
 	}

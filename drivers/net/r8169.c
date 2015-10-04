@@ -45,29 +45,29 @@
 #ifdef RTL8169_DEBUG
 #define assert(expr) \
 	if (!(expr)) {					\
-		printk( "Assertion failed! %s,%s,%s,line=%d\n",	\
-		#expr,__FILE__,__func__,__LINE__);		\
+//		printk( "Assertion failed! %s,%s,%s,line=%d\n",	\
+;
 	}
-#define dprintk(fmt, args...) \
-	do { printk(KERN_DEBUG PFX fmt, ## args); } while (0)
+//#define dprintk(fmt, args...) \
+;
 #else
 #define assert(expr) do {} while (0)
-#define dprintk(fmt, args...)	do {} while (0)
-#endif /* RTL8169_DEBUG */
-
-#define R8169_MSG_DEFAULT \
-	(NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN)
-
-#define TX_SLOTS_AVAIL(tp) \
-	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx)
-
-/* A skbuff with nr_frags needs nr_frags+1 entries in the tx queue */
-#define TX_FRAGS_READY_FOR(tp,nr_frags) \
-	(TX_SLOTS_AVAIL(tp) >= (nr_frags + 1))
-
-/* Maximum number of multicast addresses to filter (vs. Rx-all-multicast).
-   The RTL chips use a 64 element hash table based on the Ethernet CRC. */
-static const int multicast_filter_limit = 32;
+//#define dprintk(fmt, args...)	do {} while (0)
+//#endif /* RTL8169_DEBUG */
+//
+//#define R8169_MSG_DEFAULT \
+//	(NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN)
+//
+//#define TX_SLOTS_AVAIL(tp) \
+//	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx)
+//
+///* A skbuff with nr_frags needs nr_frags+1 entries in the tx queue */
+//#define TX_FRAGS_READY_FOR(tp,nr_frags) \
+//	(TX_SLOTS_AVAIL(tp) >= (nr_frags + 1))
+//
+///* Maximum number of multicast addresses to filter (vs. Rx-all-multicast).
+//   The RTL chips use a 64 element hash table based on the Ethernet CRC. */
+;
 
 /* MAC address length */
 #define MAC_ADDR_LEN	6
@@ -1782,7 +1782,7 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
 
 static void rtl8169_print_mac_version(struct rtl8169_private *tp)
 {
-	dprintk("mac_version = 0x%02x\n", tp->mac_version);
+;
 }
 
 struct phy_reg {
@@ -2880,7 +2880,7 @@ static void rtl8169_init_phy(struct net_device *dev, struct rtl8169_private *tp)
 	rtl_hw_phy_config(dev);
 
 	if (tp->mac_version <= RTL_GIGA_MAC_VER_06) {
-		dprintk("Set MAC Reg C+CR Offset 0x82h = 0x01h\n");
+;
 		RTL_W8(0x82, 0x01);
 	}
 
@@ -2890,9 +2890,9 @@ static void rtl8169_init_phy(struct net_device *dev, struct rtl8169_private *tp)
 		pci_write_config_byte(tp->pci_dev, PCI_CACHE_LINE_SIZE, 0x08);
 
 	if (tp->mac_version == RTL_GIGA_MAC_VER_02) {
-		dprintk("Set MAC Reg C+CR Offset 0x82h = 0x01h\n");
+;
 		RTL_W8(0x82, 0x01);
-		dprintk("Set PHY Reg 0x0bh = 0x00h\n");
+;
 		rtl_writephy(tp, 0x0b, 0x0000); //w 0x0b 15 0 0
 	}
 
@@ -3505,8 +3505,8 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	int rc;
 
 	if (netif_msg_drv(&debug)) {
-		printk(KERN_INFO "%s Gigabit Ethernet driver %s loaded\n",
-		       MODULENAME, RTL8169_VERSION);
+//		printk(KERN_INFO "%s Gigabit Ethernet driver %s loaded\n",
+;
 	}
 
 	dev = alloc_etherdev(sizeof (*tp));
@@ -3994,8 +3994,8 @@ static void rtl_hw_start_8169(struct net_device *dev)
 
 	if (tp->mac_version == RTL_GIGA_MAC_VER_02 ||
 	    tp->mac_version == RTL_GIGA_MAC_VER_03) {
-		dprintk("Set MAC Reg C+CR Offset 0xE0. "
-			"Bit-3 and bit-14 MUST be 1\n");
+//		dprintk("Set MAC Reg C+CR Offset 0xE0. "
+;
 		tp->cp_cmd |= (1 << 14);
 	}
 
@@ -4406,8 +4406,8 @@ static void rtl_hw_start_8168(struct net_device *dev)
 		break;
 
 	default:
-		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
-			dev->name, tp->mac_version);
+//		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
+;
 		break;
 	}
 

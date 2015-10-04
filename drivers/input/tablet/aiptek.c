@@ -1924,9 +1924,9 @@ static int __init aiptek_init(void)
 {
 	int result = usb_register(&aiptek_driver);
 	if (result == 0) {
-		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-		       DRIVER_DESC "\n");
-		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_AUTHOR "\n");
+//		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
+;
 	}
 	return result;
 }

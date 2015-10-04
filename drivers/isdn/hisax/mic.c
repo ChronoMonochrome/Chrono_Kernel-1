@@ -195,7 +195,7 @@ setup_mic(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, mic_revision);
-	printk(KERN_INFO "HiSax: mic driver Rev. %s\n", HiSax_getrev(tmp));
+;
 	if (cs->typ != ISDN_CTYPE_MIC)
 		return (0);
 
@@ -207,14 +207,14 @@ setup_mic(struct IsdnCard *card)
 	cs->hw.mic.hscx = cs->hw.mic.cfg_reg + MIC_HSCX;
 
 	if (!request_region(cs->hw.mic.cfg_reg, bytecnt, "mic isdn")) {
-		printk(KERN_WARNING
-		       "HiSax: ith mic config port %x-%x already in use\n",
-		       cs->hw.mic.cfg_reg,
-		       cs->hw.mic.cfg_reg + bytecnt);
+//		printk(KERN_WARNING
+//		       "HiSax: ith mic config port %x-%x already in use\n",
+//		       cs->hw.mic.cfg_reg,
+;
 		return (0);
 	}
-	printk(KERN_INFO "mic: defined at 0x%x IRQ %d\n",
-		cs->hw.mic.cfg_reg, cs->irq);
+//	printk(KERN_INFO "mic: defined at 0x%x IRQ %d\n",
+;
 	setup_isac(cs);
 	cs->readisac = &ReadISAC;
 	cs->writeisac = &WriteISAC;
@@ -227,8 +227,8 @@ setup_mic(struct IsdnCard *card)
 	cs->irq_func = &mic_interrupt;
 	ISACVersion(cs, "mic:");
 	if (HscxVersion(cs, "mic:")) {
-		printk(KERN_WARNING
-		    "mic: wrong HSCX versions check IO address\n");
+//		printk(KERN_WARNING
+;
 		release_io_mic(cs);
 		return (0);
 	}

@@ -1008,7 +1008,7 @@ static int __init isapnp_init(void)
 	struct pnp_dev *dev;
 
 	if (isapnp_disable) {
-		printk(KERN_INFO "isapnp: ISA Plug & Play support disabled\n");
+;
 		return 0;
 	}
 #ifdef CONFIG_PPC
@@ -1017,15 +1017,15 @@ static int __init isapnp_init(void)
 #endif
 #ifdef ISAPNP_REGION_OK
 	if (!request_region(_PIDXR, 1, "isapnp index")) {
-		printk(KERN_ERR "isapnp: Index Register 0x%x already used\n",
-		       _PIDXR);
+//		printk(KERN_ERR "isapnp: Index Register 0x%x already used\n",
+;
 		return -EBUSY;
 	}
 #endif
 	if (!request_region(_PNPWRP, 1, "isapnp write")) {
-		printk(KERN_ERR
-		       "isapnp: Write Data Register 0x%x already used\n",
-		       _PNPWRP);
+//		printk(KERN_ERR
+//		       "isapnp: Write Data Register 0x%x already used\n",
+;
 #ifdef ISAPNP_REGION_OK
 		release_region(_PIDXR, 1);
 #endif
@@ -1040,13 +1040,13 @@ static int __init isapnp_init(void)
 	 *      so let the user know where.
 	 */
 
-	printk(KERN_INFO "isapnp: Scanning for PnP cards...\n");
+;
 	if (isapnp_rdp >= 0x203 && isapnp_rdp <= 0x3ff) {
 		isapnp_rdp |= 3;
 		if (!request_region(isapnp_rdp, 1, "isapnp read")) {
-			printk(KERN_ERR
-			       "isapnp: Read Data Register 0x%x already used\n",
-			       isapnp_rdp);
+//			printk(KERN_ERR
+//			       "isapnp: Read Data Register 0x%x already used\n",
+;
 #ifdef ISAPNP_REGION_OK
 			release_region(_PIDXR, 1);
 #endif
@@ -1062,8 +1062,8 @@ static int __init isapnp_init(void)
 			release_region(_PIDXR, 1);
 #endif
 			release_region(_PNPWRP, 1);
-			printk(KERN_INFO
-			       "isapnp: No Plug & Play device found\n");
+//			printk(KERN_INFO
+;
 			return 0;
 		}
 		request_region(isapnp_rdp, 1, "isapnp read");
@@ -1085,11 +1085,11 @@ static int __init isapnp_init(void)
 		}
 	}
 	if (cards)
-		printk(KERN_INFO
-		       "isapnp: %i Plug & Play card%s detected total\n", cards,
-		       cards > 1 ? "s" : "");
+//		printk(KERN_INFO
+//		       "isapnp: %i Plug & Play card%s detected total\n", cards,
+;
 	else
-		printk(KERN_INFO "isapnp: No Plug & Play card found\n");
+;
 
 	isapnp_proc_init();
 	return 0;

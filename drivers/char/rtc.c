@@ -984,7 +984,7 @@ static int __init rtc_init(void)
 		}
 	}
 	rtc_has_irq = 0;
-	printk(KERN_ERR "rtc_init: no PC rtc found\n");
+;
 	return -EIO;
 
 found:
@@ -1000,7 +1000,7 @@ found:
 	if (request_irq(rtc_irq, rtc_interrupt, IRQF_SHARED, "rtc",
 			(void *)&rtc_port)) {
 		rtc_has_irq = 0;
-		printk(KERN_ERR "rtc: cannot register IRQ %d\n", rtc_irq);
+;
 		return -EIO;
 	}
 no_irq:
@@ -1020,8 +1020,8 @@ no_irq:
 #ifdef RTC_IRQ
 		rtc_has_irq = 0;
 #endif
-		printk(KERN_ERR "rtc: I/O resource %lx is not free.\n",
-		       (long)(RTC_PORT(0)));
+//		printk(KERN_ERR "rtc: I/O resource %lx is not free.\n",
+;
 		return -EIO;
 	}
 
@@ -1032,8 +1032,8 @@ no_irq:
 		rtc_int_handler_ptr = hpet_rtc_interrupt;
 		err = hpet_register_irq_handler(rtc_interrupt);
 		if (err != 0) {
-			printk(KERN_WARNING "hpet_register_irq_handler failed "
-					"in rtc_init().");
+//			printk(KERN_WARNING "hpet_register_irq_handler failed "
+;
 			return err;
 		}
 	} else {
@@ -1044,7 +1044,7 @@ no_irq:
 			"rtc", NULL)) {
 		/* Yeah right, seeing as irq 8 doesn't even hit the bus. */
 		rtc_has_irq = 0;
-		printk(KERN_ERR "rtc: IRQ %d is not free.\n", RTC_IRQ);
+;
 		rtc_release_region();
 
 		return -EIO;
@@ -1068,7 +1068,7 @@ no_irq:
 #ifdef CONFIG_PROC_FS
 	ent = proc_create("driver/rtc", 0, NULL, &rtc_proc_fops);
 	if (!ent)
-		printk(KERN_WARNING "rtc: Failed to register with procfs.\n");
+;
 #endif
 
 #if defined(__alpha__) || defined(__mips__)
@@ -1108,8 +1108,8 @@ no_irq:
 #endif
 	}
 	if (guess)
-		printk(KERN_INFO "rtc: %s epoch (%lu) detected\n",
-			guess, epoch);
+//		printk(KERN_INFO "rtc: %s epoch (%lu) detected\n",
+;
 #endif
 #ifdef RTC_IRQ
 	if (rtc_has_irq == 0)
@@ -1131,7 +1131,7 @@ no_irq2:
 
 	(void) init_sysctl();
 
-	printk(KERN_INFO "Real Time Clock Driver v" RTC_VERSION "\n");
+;
 
 	return 0;
 }
@@ -1196,8 +1196,8 @@ static void rtc_dropped_irq(unsigned long data)
 	spin_unlock_irq(&rtc_lock);
 
 	if (printk_ratelimit()) {
-		printk(KERN_WARNING "rtc: lost some interrupts at %ldHz.\n",
-			freq);
+//		printk(KERN_WARNING "rtc: lost some interrupts at %ldHz.\n",
+;
 	}
 
 	/* Now we have new data */

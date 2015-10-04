@@ -120,10 +120,10 @@ void store_cpu_topology(unsigned int cpuid)
 	}
 	smp_wmb();
 
-	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
-		cpuid, cpu_topology[cpuid].thread_id,
-		cpu_topology[cpuid].core_id,
-		cpu_topology[cpuid].socket_id, mpidr);
+////	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
+////		cpuid, cpu_topology[cpuid].thread_id,
+////		cpu_topology[cpuid].core_id,
+;
 }
 
 /*

@@ -346,7 +346,7 @@ static void log_ultrastor_abort(struct ultrastor_config *config,
     }
   fmt[20 + ULTRASTOR_MAX_CMDS * 2] = '\n';
   fmt[21 + ULTRASTOR_MAX_CMDS * 2] = 0;
-  printk(fmt, command, &config->mscp[command], config->mscp_free);
+;
 
 }
 #endif
@@ -369,7 +369,7 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
     } config_2;
 
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-    printk("US14F: detect: called\n");
+;
 #endif
 
     /* If a 24F has already been configured, don't look for a 14F.  */
@@ -378,7 +378,7 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
 
 #ifdef PORT_OVERRIDE
     if(!request_region(PORT_OVERRIDE, 0xc, "ultrastor")) {
-      printk("Ultrastor I/O space already in use\n");
+;
       return FALSE;
     };
     config.port_address = PORT_OVERRIDE;
@@ -389,16 +389,16 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
 #endif
 
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-	printk("US14F: detect: testing port address %03X\n", config.port_address);
+;
 #endif
 
 	in_byte = inb(U14F_PRODUCT_ID(config.port_address));
 	if (in_byte != US14F_PRODUCT_ID_0) {
 #if (ULTRASTOR_DEBUG & UD_DETECT)
 # ifdef PORT_OVERRIDE
-	    printk("US14F: detect: wrong product ID 0 - %02X\n", in_byte);
+;
 # else
-	    printk("US14F: detect: no adapter at port %03X\n", config.port_address);
+;
 # endif
 #endif
 #ifdef PORT_OVERRIDE
@@ -413,9 +413,9 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
 	if ((in_byte & 0xF0) != US14F_PRODUCT_ID_1) {
 #if (ULTRASTOR_DEBUG & UD_DETECT)
 # ifdef PORT_OVERRIDE
-	    printk("US14F: detect: wrong product ID 1 - %02X\n", in_byte);
+;
 # else
-	    printk("US14F: detect: no adapter at port %03X\n", config.port_address);
+;
 # endif
 #endif
 #ifdef PORT_OVERRIDE
@@ -431,7 +431,7 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
     }
     if (i == ARRAY_SIZE(ultrastor_ports_14f)) {
 # if (ULTRASTOR_DEBUG & UD_DETECT)
-	printk("US14F: detect: no port address found!\n");
+;
 # endif
 	/* all ports probed already released - we can just go straight out */
 	return FALSE;
@@ -439,8 +439,8 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
 #endif
 
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-    printk("US14F: detect: adapter found at port address %03X\n",
-	   config.port_address);
+//    printk("US14F: detect: adapter found at port address %03X\n",
+;
 #endif
 
     /* Set local doorbell mask to disallow bus reset unless
@@ -471,7 +471,7 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
 
     if (!config.bios_segment) {
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-	printk("US14F: detect: not detected.\n");
+;
 #endif
 	goto out_release_port;
     }
@@ -480,7 +480,7 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
     if (config.subversion != U34F)
 	if (!config.dma_channel || !(config_2.tfr_port & 0x2)) {
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-	    printk("US14F: detect: consistency check failed\n");
+;
 #endif
            goto out_release_port;
 	}
@@ -491,15 +491,15 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
 
     /* Finally!  Now I'm satisfied... */
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-    printk("US14F: detect: detect succeeded\n"
-	   "  Port address: %03X\n"
-	   "  BIOS segment: %05X\n"
-	   "  Interrupt: %u\n"
-	   "  DMA channel: %u\n"
-	   "  H/A SCSI ID: %u\n"
-	   "  Subversion: %u\n",
-	   config.port_address, config.bios_segment, config.interrupt,
-	   config.dma_channel, config.ha_scsi_id, config.subversion);
+//    printk("US14F: detect: detect succeeded\n"
+//	   "  Port address: %03X\n"
+//	   "  BIOS segment: %05X\n"
+//	   "  Interrupt: %u\n"
+//	   "  DMA channel: %u\n"
+//	   "  H/A SCSI ID: %u\n"
+//	   "  Subversion: %u\n",
+//	   config.port_address, config.bios_segment, config.interrupt,
+;
 #endif
     tpnt->this_id = config.ha_scsi_id;
     tpnt->unchecked_isa_dma = (config.subversion != U34F);
@@ -513,19 +513,19 @@ static int ultrastor_14f_detect(struct scsi_host_template * tpnt)
      * XXX and FIXME
      */
     if (request_irq(config.interrupt, do_ultrastor_interrupt, 0, "Ultrastor", &config.mscp[0].SCint->device->host)) {
-	printk("Unable to allocate IRQ%u for UltraStor controller.\n",
-	       config.interrupt);
+//	printk("Unable to allocate IRQ%u for UltraStor controller.\n",
+;
 	goto out_release_port;
     }
     if (config.dma_channel && request_dma(config.dma_channel,"Ultrastor")) {
-	printk("Unable to allocate DMA channel %u for UltraStor controller.\n",
-	       config.dma_channel);
+//	printk("Unable to allocate DMA channel %u for UltraStor controller.\n",
+;
 	free_irq(config.interrupt, NULL);
 	goto out_release_port;
     }
     tpnt->sg_tablesize = ULTRASTOR_14F_MAX_SG;
-    printk("UltraStor driver version" VERSION ".  Using %d SG lists.\n",
-	   ULTRASTOR_14F_MAX_SG);
+//    printk("UltraStor driver version" VERSION ".  Using %d SG lists.\n",
+;
 
     return TRUE;
 out_release_port:
@@ -539,7 +539,7 @@ static int ultrastor_24f_detect(struct scsi_host_template * tpnt)
   struct Scsi_Host * shpnt = NULL;
 
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-  printk("US24F: detect");
+;
 #endif
 
   /* probe each EISA slot at slot address C80 */
@@ -558,12 +558,12 @@ static int ultrastor_24f_detect(struct scsi_host_template * tpnt)
       if (! (inb(addr+4) & 1))
 	{
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-	  printk("U24F: found disabled card in slot %u\n", i);
+;
 #endif
 	  continue;
 	}
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-      printk("U24F: found card in slot %u\n", i);
+;
 #endif
       config_1 = inb(addr + 5);
       config.bios_segment = bios_segment_table[config_1 & 7];
@@ -582,7 +582,7 @@ static int ultrastor_24f_detect(struct scsi_host_template * tpnt)
 	  config.interrupt = 10;
 	  break;
 	default:
-	  printk("U24F: invalid IRQ\n");
+;
 	  return FALSE;
 	}
 
@@ -597,13 +597,13 @@ static int ultrastor_24f_detect(struct scsi_host_template * tpnt)
       config.heads = mapping_table[(config_2 >> 3) & 3].heads;
       config.sectors = mapping_table[(config_2 >> 3) & 3].sectors;
 #if (ULTRASTOR_DEBUG & UD_DETECT)
-      printk("US24F: detect: detect succeeded\n"
-	     "  Port address: %03X\n"
-	     "  BIOS segment: %05X\n"
-	     "  Interrupt: %u\n"
-	     "  H/A SCSI ID: %u\n",
-	     config.port_address, config.bios_segment,
-	     config.interrupt, config.ha_scsi_id);
+//      printk("US24F: detect: detect succeeded\n"
+//	     "  Port address: %03X\n"
+//	     "  BIOS segment: %05X\n"
+//	     "  Interrupt: %u\n"
+//	     "  H/A SCSI ID: %u\n",
+//	     config.port_address, config.bios_segment,
+;
 #endif
       tpnt->this_id = config.ha_scsi_id;
       tpnt->unchecked_isa_dma = 0;
@@ -611,15 +611,15 @@ static int ultrastor_24f_detect(struct scsi_host_template * tpnt)
 
       shpnt = scsi_register(tpnt, 0);
       if (!shpnt) {
-             printk(KERN_WARNING "(ultrastor:) Could not register scsi device. Aborting registration.\n");
+;
              free_irq(config.interrupt, do_ultrastor_interrupt);
              return FALSE;
       }
       
       if (request_irq(config.interrupt, do_ultrastor_interrupt, 0, "Ultrastor", shpnt))
 	{
-	  printk("Unable to allocate IRQ%u for UltraStor controller.\n",
-		 config.interrupt);
+//	  printk("Unable to allocate IRQ%u for UltraStor controller.\n",
+;
 	  return FALSE;
 	}
 
@@ -638,8 +638,8 @@ static int ultrastor_24f_detect(struct scsi_host_template * tpnt)
 	 ultrastor_bus_reset is true.  */
       outb(ultrastor_bus_reset ? 0xc2 : 0x82, LCL_DOORBELL_MASK(addr+12));
       outb(0x02, SYS_DOORBELL_MASK(addr+12));
-      printk("UltraStor driver version " VERSION ".  Using %d SG lists.\n",
-	     tpnt->sg_tablesize);
+//      printk("UltraStor driver version " VERSION ".  Using %d SG lists.\n",
+;
       return TRUE;
     }
   return FALSE;
@@ -787,7 +787,7 @@ retry:
     if (status != 0xff) {
 
 #if ULTRASTOR_DEBUG & (UD_COMMAND | UD_ABORT)
-	printk("USx4F: queuecommand: aborted\n");
+;
 #if ULTRASTOR_MAX_CMDS > 1
 	log_ultrastor_abort(&config, mscp_index);
 #endif
@@ -820,7 +820,7 @@ retry:
     }
 
 #if (ULTRASTOR_DEBUG & UD_COMMAND)
-    printk("USx4F: queuecommand: returning\n");
+;
 #endif
 
     return 0;
@@ -898,7 +898,7 @@ static int ultrastor_abort(struct scsi_cmnd *SCpnt)
     if (config.slot ? inb(config.icm_address - 1) == 2 :
 	(inb(SYS_DOORBELL_INTR(config.doorbell_address)) & 1))
       {
-	printk("Ux4F: abort while completed command pending\n");
+;
 	
 	spin_lock_irqsave(host->host_lock, flags);
 	/* FIXME: Ewww... need to think about passing host around properly */
@@ -928,7 +928,7 @@ static int ultrastor_abort(struct scsi_cmnd *SCpnt)
 	outb(0x2, LCL_DOORBELL_INTR(config.doorbell_address));
 #if ULTRASTOR_DEBUG & UD_ABORT
 	log_ultrastor_abort(&config, mscp_index);
-	printk(out, ogm_status, ogm_addr, icm_status, icm_addr);
+;
 #endif
 	spin_unlock_irqrestore(host->host_lock, flags);
 	/* FIXME: add a wait for the abort to complete */
@@ -951,8 +951,8 @@ static int ultrastor_abort(struct scsi_cmnd *SCpnt)
 
 #if ULTRASTOR_DEBUG & UD_ABORT
     if (config.mscp[mscp_index].SCint != SCpnt)
-	printk("abort: command mismatch, %p != %p\n",
-	       config.mscp[mscp_index].SCint, SCpnt);
+//	printk("abort: command mismatch, %p != %p\n",
+;
 #endif
     if (config.mscp[mscp_index].SCint == NULL)
 	return FAILED;
@@ -977,7 +977,7 @@ static int ultrastor_host_reset(struct scsi_cmnd * SCpnt)
     struct Scsi_Host *host = SCpnt->device->host;
     
 #if (ULTRASTOR_DEBUG & UD_RESET)
-    printk("US14F: reset: called\n");
+;
 #endif
 
     if(config.slot)
@@ -1064,7 +1064,7 @@ static void ultrastor_interrupt(void *dev_id)
     mscp = (struct mscp *)isa_bus_to_virt(inl(config.icm_address));
     mscp_index = mscp - config.mscp;
     if (mscp_index >= ULTRASTOR_MAX_CMDS) {
-	printk("Ux4F interrupt: bad MSCP address %x\n", (unsigned int) mscp);
+;
 	/* A command has been lost.  Reset and report an error
 	   for all commands.  */
 	ultrastor_host_reset(dev_id);
@@ -1077,15 +1077,15 @@ static void ultrastor_interrupt(void *dev_id)
 	unsigned char icm_status = inb(config.icm_address - 1);
 #if ULTRASTOR_DEBUG & (UD_INTERRUPT|UD_ERROR|UD_ABORT)
 	if (icm_status != 1 && icm_status != 2)
-	    printk("US24F: ICM status %x for MSCP %d (%x)\n", icm_status,
-		   mscp_index, (unsigned int) mscp);
+//	    printk("US24F: ICM status %x for MSCP %d (%x)\n", icm_status,
+;
 #endif
 	/* The manual says clear interrupt then write 0 to ICM status.
 	   This seems backwards, but I'll do it anyway.  --jfc */
 	outb(2, SYS_DOORBELL_INTR(config.doorbell_address));
 	outb(0, config.icm_address - 1);
 	if (icm_status == 4) {
-	    printk("UltraStor abort command failed\n");
+;
 	    return;
 	}
 	if (icm_status == 3) {
@@ -1107,7 +1107,7 @@ static void ultrastor_interrupt(void *dev_id)
     if (!SCtmp)
       {
 #if ULTRASTOR_DEBUG & (UD_ABORT|UD_INTERRUPT)
-	printk("MSCP %d (%x): no command\n", mscp_index, (unsigned int) mscp);
+;
 #endif	
 #if ULTRASTOR_MAX_CMDS == 1
 	config.mscp_busy = FALSE;
@@ -1157,26 +1157,26 @@ static void ultrastor_interrupt(void *dev_id)
 
 #if ULTRASTOR_DEBUG & (UD_ABORT|UD_INTERRUPT)
     if (config.aborted[mscp_index])
-	printk("Ux4 interrupt: MSCP %d (%x) aborted = %d\n",
-	       mscp_index, (unsigned int) mscp, config.aborted[mscp_index]);
+//	printk("Ux4 interrupt: MSCP %d (%x) aborted = %d\n",
+;
 #endif
     config.aborted[mscp_index] = 0;
 
     if (done)
 	done(SCtmp);
     else
-	printk("US14F: interrupt: unexpected interrupt\n");
+;
 
     if (config.slot ? inb(config.icm_address - 1) :
        (inb(SYS_DOORBELL_INTR(config.doorbell_address)) & 1))
 #if (ULTRASTOR_DEBUG & UD_MULTI_CMD)
-      printk("Ux4F: multiple commands completed\n");
+;
 #else
       ;
 #endif
 
 #if (ULTRASTOR_DEBUG & UD_INTERRUPT)
-    printk("USx4F: interrupt: returning\n");
+;
 #endif
 }
 

@@ -216,7 +216,7 @@ static inline dma_addr_t cpu2qe_addr(void *addr, struct uart_qe_port *qe_port)
 		return qe_port->bd_dma_addr + (addr - qe_port->bd_virt);
 
 	/* something nasty happened */
-	printk(KERN_ERR "%s: addr=%p\n", __func__, addr);
+;
 	BUG();
 	return 0;
 }
@@ -235,7 +235,7 @@ static inline void *qe2cpu_addr(dma_addr_t addr, struct uart_qe_port *qe_port)
 		return qe_port->bd_virt + (addr - qe_port->bd_dma_addr);
 
 	/* something nasty happened */
-	printk(KERN_ERR "%s: addr=%x\n", __func__, addr);
+;
 	BUG();
 	return NULL;
 }
@@ -1501,29 +1501,29 @@ static int __init ucc_uart_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Freescale QUICC Engine UART device driver\n");
+;
 #ifdef LOOPBACK
-	printk(KERN_INFO "ucc-uart: Using loopback mode\n");
+;
 #endif
 
 	ret = uart_register_driver(&ucc_uart_driver);
 	if (ret) {
-		printk(KERN_ERR "ucc-uart: could not register UART driver\n");
+;
 		return ret;
 	}
 
 	ret = platform_driver_register(&ucc_uart_of_driver);
 	if (ret)
-		printk(KERN_ERR
-		       "ucc-uart: could not register platform driver\n");
+//		printk(KERN_ERR
+;
 
 	return ret;
 }
 
 static void __exit ucc_uart_exit(void)
 {
-	printk(KERN_INFO
-	       "Freescale QUICC Engine UART device driver unloading\n");
+//	printk(KERN_INFO
+;
 
 	platform_driver_unregister(&ucc_uart_of_driver);
 	uart_unregister_driver(&ucc_uart_driver);

@@ -742,11 +742,11 @@ static void vx_pcm_delayed_start(unsigned long arg)
 	/*  printk( KERN_DEBUG "DDDD tasklet delayed start jiffies = %ld\n", jiffies);*/
 
 	if ((err = vx_start_stream(chip, pipe)) < 0) {
-		snd_printk(KERN_ERR "vx: cannot start stream\n");
+;
 		return;
 	}
 	if ((err = vx_toggle_pipe(chip, pipe, 1)) < 0) {
-		snd_printk(KERN_ERR "vx: cannot start pipe\n");
+;
 		return;
 	}
 	/*   printk( KERN_DEBUG "dddd tasklet delayed start jiffies = %ld \n", jiffies);*/
@@ -861,8 +861,8 @@ static int vx_pcm_prepare(struct snd_pcm_substream *subs)
 	}
 
 	if (chip->pcm_running && chip->freq != runtime->rate) {
-		snd_printk(KERN_ERR "vx: cannot set different clock %d "
-			   "from the current %d\n", runtime->rate, chip->freq);
+//		snd_printk(KERN_ERR "vx: cannot set different clock %d "
+;
 		return -EINVAL;
 	}
 	vx_set_clock(chip, runtime->rate);
@@ -1198,7 +1198,7 @@ static int vx_init_audio_io(struct vx_core *chip)
 
 	vx_init_rmh(&rmh, CMD_SUPPORTED);
 	if (vx_send_msg(chip, &rmh) < 0) {
-		snd_printk(KERN_ERR "vx: cannot get the supported audio data\n");
+;
 		return -ENXIO;
 	}
 

@@ -651,7 +651,7 @@ disc_reject:
 			scp->persist = dn_nsp_persist(sk);
 			break;
 		default:
-			printk(KERN_DEBUG "DECnet: dn_destroy_sock passed socket in invalid state\n");
+;
 		case DN_O:
 			dn_stop_slow_timer(sk);
 
@@ -2371,7 +2371,7 @@ static int __init decnet_init(void)
 {
 	int rc;
 
-	printk(banner);
+;
 
 	rc = proto_register(&dn_proto, 1);
 	if (rc != 0)

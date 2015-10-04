@@ -57,10 +57,10 @@ static int debug;
 module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "Debug level (0-4)");
 
-#define dprintk(num, format, args...) \
-	do { \
-		if (debug >= num) \
-			printk(format, ##args); \
+//#define dprintk(num, format, args...) \
+//	do { \
+//		if (debug >= num) \
+;
 	} while (0)
 
 /* =========================================================================
@@ -82,12 +82,12 @@ zr36016_read (struct zr36016 *ptr,
 		    (ptr->codec->master_data->
 		     readreg(ptr->codec, reg)) & 0xFF;
 	else
-		dprintk(1,
-			KERN_ERR "%s: invalid I/O setup, nothing read!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR "%s: invalid I/O setup, nothing read!\n",
+;
 
-	dprintk(4, "%s: reading from 0x%04x: %02x\n", ptr->name, reg,
-		value);
+//	dprintk(4, "%s: reading from 0x%04x: %02x\n", ptr->name, reg,
+;
 
 	return value;
 }
@@ -97,17 +97,17 @@ zr36016_write (struct zr36016 *ptr,
 	       u16             reg,
 	       u8              value)
 {
-	dprintk(4, "%s: writing 0x%02x to 0x%04x\n", ptr->name, value,
-		reg);
+//	dprintk(4, "%s: writing 0x%02x to 0x%04x\n", ptr->name, value,
+;
 
 	// just in case something is wrong...
 	if (ptr->codec->master_data->writereg) {
 		ptr->codec->master_data->writereg(ptr->codec, reg, value);
 	} else
-		dprintk(1,
-			KERN_ERR
-			"%s: invalid I/O setup, nothing written!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: invalid I/O setup, nothing written!\n",
+;
 }
 
 /* indirect read and write functions */
@@ -125,13 +125,13 @@ zr36016_readi (struct zr36016 *ptr,
 		ptr->codec->master_data->writereg(ptr->codec, ZR016_IADDR, reg & 0x0F);	// ADDR
 		value = (ptr->codec->master_data->readreg(ptr->codec, ZR016_IDATA)) & 0xFF;	// DATA
 	} else
-		dprintk(1,
-			KERN_ERR
-			"%s: invalid I/O setup, nothing read (i)!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: invalid I/O setup, nothing read (i)!\n",
+;
 
-	dprintk(4, "%s: reading indirect from 0x%04x: %02x\n", ptr->name,
-		reg, value);
+//	dprintk(4, "%s: reading indirect from 0x%04x: %02x\n", ptr->name,
+;
 	return value;
 }
 
@@ -140,18 +140,18 @@ zr36016_writei (struct zr36016 *ptr,
 		u16             reg,
 		u8              value)
 {
-	dprintk(4, "%s: writing indirect 0x%02x to 0x%04x\n", ptr->name,
-		value, reg);
+//	dprintk(4, "%s: writing indirect 0x%02x to 0x%04x\n", ptr->name,
+;
 
 	// just in case something is wrong...
 	if (ptr->codec->master_data->writereg) {
 		ptr->codec->master_data->writereg(ptr->codec, ZR016_IADDR, reg & 0x0F);	// ADDR
 		ptr->codec->master_data->writereg(ptr->codec, ZR016_IDATA, value & 0x0FF);	// DATA
 	} else
-		dprintk(1,
-			KERN_ERR
-			"%s: invalid I/O setup, nothing written (i)!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: invalid I/O setup, nothing written (i)!\n",
+;
 }
 
 /* =========================================================================
@@ -180,36 +180,36 @@ zr36016_basic_test (struct zr36016 *ptr)
 	if (debug) {
 		int i;
 		zr36016_writei(ptr, ZR016I_PAX_LO, 0x55);
-		dprintk(1, KERN_INFO "%s: registers: ", ptr->name);
+;
 		for (i = 0; i <= 0x0b; i++)
-			dprintk(1, "%02x ", zr36016_readi(ptr, i));
-		dprintk(1, "\n");
+;
+;
 	}
 	// for testing just write 0, then the default value to a register and read
 	// it back in both cases
 	zr36016_writei(ptr, ZR016I_PAX_LO, 0x00);
 	if (zr36016_readi(ptr, ZR016I_PAX_LO) != 0x0) {
-		dprintk(1,
-			KERN_ERR
-			"%s: attach failed, can't connect to vfe processor!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: attach failed, can't connect to vfe processor!\n",
+;
 		return -ENXIO;
 	}
 	zr36016_writei(ptr, ZR016I_PAX_LO, 0x0d0);
 	if (zr36016_readi(ptr, ZR016I_PAX_LO) != 0x0d0) {
-		dprintk(1,
-			KERN_ERR
-			"%s: attach failed, can't connect to vfe processor!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: attach failed, can't connect to vfe processor!\n",
+;
 		return -ENXIO;
 	}
 	// we allow version numbers from 0-3, should be enough, though
 	zr36016_read_version(ptr);
 	if (ptr->version & 0x0c) {
-		dprintk(1,
-			KERN_ERR
-			"%s: attach failed, suspicious version %d found...\n",
-			ptr->name, ptr->version);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: attach failed, suspicious version %d found...\n",
+;
 		return -ENXIO;
 	}
 
@@ -230,8 +230,8 @@ static int zr36016_pushit (struct zr36016 *ptr,
 {
 	int i=0;
 
-	dprintk(4, "%s: write data block to 0x%04x (len=%d)\n",
-		ptr->name, startreg,len);
+//	dprintk(4, "%s: write data block to 0x%04x (len=%d)\n",
+;
 	while (i<len) {
 		zr36016_writei(ptr, startreg++,  data[i++]);
 	}
@@ -297,7 +297,7 @@ zr36016_set_mode (struct videocodec *codec,
 {
 	struct zr36016 *ptr = (struct zr36016 *) codec->data;
 
-	dprintk(2, "%s: set_mode %d call\n", ptr->name, mode);
+;
 
 	if ((mode != CODEC_DO_EXPANSION) && (mode != CODEC_DO_COMPRESSION))
 		return -EINVAL;
@@ -317,10 +317,10 @@ zr36016_set_video (struct videocodec   *codec,
 {
 	struct zr36016 *ptr = (struct zr36016 *) codec->data;
 
-	dprintk(2, "%s: set_video %d.%d, %d/%d-%dx%d (0x%x) call\n",
-		ptr->name, norm->HStart, norm->VStart,
-		cap->x, cap->y, cap->width, cap->height,
-		cap->decimation);
+//	dprintk(2, "%s: set_video %d.%d, %d/%d-%dx%d (0x%x) call\n",
+//		ptr->name, norm->HStart, norm->VStart,
+//		cap->x, cap->y, cap->width, cap->height,
+;
 
 	/* if () return -EINVAL;
 	 * trust the master driver that it knows what it does - so
@@ -356,8 +356,8 @@ zr36016_control (struct videocodec *codec,
 	struct zr36016 *ptr = (struct zr36016 *) codec->data;
 	int *ival = (int *) data;
 
-	dprintk(2, "%s: control %d call with %d byte\n", ptr->name, type,
-		size);
+//	dprintk(2, "%s: control %d call with %d byte\n", ptr->name, type,
+;
 
 	switch (type) {
 	case CODEC_G_STATUS:	/* get last status - we don't know it ... */
@@ -409,8 +409,8 @@ zr36016_unset (struct videocodec *codec)
 	if (ptr) {
 		/* do wee need some codec deinit here, too ???? */
 
-		dprintk(1, "%s: finished codec #%d\n", ptr->name,
-			ptr->num);
+//		dprintk(1, "%s: finished codec #%d\n", ptr->name,
+;
 		kfree(ptr);
 		codec->data = NULL;
 
@@ -436,18 +436,18 @@ zr36016_setup (struct videocodec *codec)
 	struct zr36016 *ptr;
 	int res;
 
-	dprintk(2, "zr36016: initializing VFE subsystem #%d.\n",
-		zr36016_codecs);
+//	dprintk(2, "zr36016: initializing VFE subsystem #%d.\n",
+;
 
 	if (zr36016_codecs == MAX_CODECS) {
-		dprintk(1,
-			KERN_ERR "zr36016: Can't attach more codecs!\n");
+//		dprintk(1,
+;
 		return -ENOSPC;
 	}
 	//mem structure init
 	codec->data = ptr = kzalloc(sizeof(struct zr36016), GFP_KERNEL);
 	if (NULL == ptr) {
-		dprintk(1, KERN_ERR "zr36016: Can't get enough memory!\n");
+;
 		return -ENOMEM;
 	}
 
@@ -470,8 +470,8 @@ zr36016_setup (struct videocodec *codec)
 	ptr->ydec = 0;
 	zr36016_init(ptr);
 
-	dprintk(1, KERN_INFO "%s: codec v%d attached and running\n",
-		ptr->name, ptr->version);
+//	dprintk(1, KERN_INFO "%s: codec v%d attached and running\n",
+;
 
 	return 0;
 }
@@ -499,7 +499,7 @@ static const struct videocodec zr36016_codec = {
 static int __init
 zr36016_init_module (void)
 {
-	//dprintk(1, "ZR36016 driver %s\n",ZR016_VERSION);
+;
 	zr36016_codecs = 0;
 	return videocodec_register(&zr36016_codec);
 }
@@ -508,9 +508,9 @@ static void __exit
 zr36016_cleanup_module (void)
 {
 	if (zr36016_codecs) {
-		dprintk(1,
-			"zr36016: something's wrong - %d codecs left somehow.\n",
-			zr36016_codecs);
+//		dprintk(1,
+//			"zr36016: something's wrong - %d codecs left somehow.\n",
+;
 	}
 	videocodec_unregister(&zr36016_codec);
 }

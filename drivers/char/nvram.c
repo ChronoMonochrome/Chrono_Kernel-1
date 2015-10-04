@@ -448,17 +448,17 @@ static int __init nvram_init(void)
 
 	ret = misc_register(&nvram_dev);
 	if (ret) {
-		printk(KERN_ERR "nvram: can't misc_register on minor=%d\n",
-		    NVRAM_MINOR);
+//		printk(KERN_ERR "nvram: can't misc_register on minor=%d\n",
+;
 		goto out;
 	}
 	ret = nvram_add_proc_fs();
 	if (ret) {
-		printk(KERN_ERR "nvram: can't create /proc/driver/nvram\n");
+;
 		goto outmisc;
 	}
 	ret = 0;
-	printk(KERN_INFO "Non-volatile memory driver v" NVRAM_VERSION "\n");
+;
 out:
 	return ret;
 outmisc:

@@ -41,20 +41,20 @@ static char *print_time(time_t t)
 
 static void sd_print_item(struct item_head *ih, char *item)
 {
-	printk("\tmode | size | nlinks | first direct | mtime\n");
+;
 	if (stat_data_v1(ih)) {
 		struct stat_data_v1 *sd = (struct stat_data_v1 *)item;
 
-		printk("\t0%-6o | %6u | %2u | %d | %s\n", sd_v1_mode(sd),
-		       sd_v1_size(sd), sd_v1_nlink(sd),
-		       sd_v1_first_direct_byte(sd),
-		       print_time(sd_v1_mtime(sd)));
+//		printk("\t0%-6o | %6u | %2u | %d | %s\n", sd_v1_mode(sd),
+//		       sd_v1_size(sd), sd_v1_nlink(sd),
+//		       sd_v1_first_direct_byte(sd),
+;
 	} else {
 		struct stat_data *sd = (struct stat_data *)item;
 
-		printk("\t0%-6o | %6Lu | %2u | %d | %s\n", sd_v2_mode(sd),
-		       (unsigned long long)sd_v2_size(sd), sd_v2_nlink(sd),
-		       sd_v2_rdev(sd), print_time(sd_v2_mtime(sd)));
+//		printk("\t0%-6o | %6Lu | %2u | %d | %s\n", sd_v2_mode(sd),
+//		       (unsigned long long)sd_v2_size(sd), sd_v2_nlink(sd),
+;
 	}
 }
 
@@ -145,10 +145,10 @@ static void direct_print_item(struct item_head *ih, char *item)
 	int j = 0;
 
 //    return;
-	printk("\"");
+;
 	while (j < ih_item_len(ih))
-		printk("%c", item[j++]);
-	printk("\"\n");
+;
+;
 }
 
 static void direct_check_item(struct item_head *ih, char *item)
@@ -265,9 +265,9 @@ static void print_sequence(__u32 start, int len)
 		return;
 
 	if (len == 1)
-		printk(" %d", start);
+;
 	else
-		printk(" %d(%d)", start, len);
+;
 }
 
 static void indirect_print_item(struct item_head *ih, char *item)
@@ -282,7 +282,7 @@ static void indirect_print_item(struct item_head *ih, char *item)
 	if (ih_item_len(ih) % UNFM_P_SIZE)
 		reiserfs_warning(NULL, "reiserfs-16102", "invalid item len");
 
-	printk("%d pointers\n[ ", (int)I_UNFM_NUM(ih));
+;
 	for (j = 0; j < I_UNFM_NUM(ih); j++) {
 		if (sequence_finished(prev, &num, get_block_num(unp, j))) {
 			print_sequence(prev, num);
@@ -290,7 +290,7 @@ static void indirect_print_item(struct item_head *ih, char *item)
 		}
 	}
 	print_sequence(prev, num);
-	printk("]\n");
+;
 }
 
 static void indirect_check_item(struct item_head *ih, char *item)
@@ -391,8 +391,8 @@ static void direntry_print_item(struct item_head *ih, char *item)
 	char *name;
 	static char namebuf[80];
 
-	printk("\n # %-15s%-30s%-15s%-15s%-15s\n", "Name",
-	       "Key of pointed object", "Hash", "Gen number", "Status");
+//	printk("\n # %-15s%-30s%-15s%-15s%-15s\n", "Name",
+;
 
 	deh = (struct reiserfs_de_head *)item;
 
@@ -414,12 +414,12 @@ static void direntry_print_item(struct item_head *ih, char *item)
 			namebuf[namelen + 2] = 0;
 		}
 
-		printk("%d:  %-15s%-15d%-15d%-15Ld%-15Ld(%s)\n",
-		       i, namebuf,
-		       deh_dir_id(deh), deh_objectid(deh),
-		       GET_HASH_VALUE(deh_offset(deh)),
-		       GET_GENERATION_NUMBER((deh_offset(deh))),
-		       (de_hidden(deh)) ? "HIDDEN" : "VISIBLE");
+//		printk("%d:  %-15s%-15d%-15d%-15Ld%-15Ld(%s)\n",
+//		       i, namebuf,
+//		       deh_dir_id(deh), deh_objectid(deh),
+//		       GET_HASH_VALUE(deh_offset(deh)),
+//		       GET_GENERATION_NUMBER((deh_offset(deh))),
+;
 	}
 }
 
@@ -622,10 +622,10 @@ static void direntry_print_vi(struct virtual_item *vi)
 	reiserfs_warning(NULL, "reiserfs-16104",
 			 "DIRENTRY, index %d, type 0x%x, %h, flags 0x%x",
 			 vi->vi_index, vi->vi_type, vi->vi_ih, dir_u->flags);
-	printk("%d entries: ", dir_u->entry_count);
+;
 	for (i = 0; i < dir_u->entry_count; i++)
-		printk("%d ", dir_u->entry_sizes[i]);
-	printk("\n");
+;
+;
 }
 
 static struct item_operations direntry_ops = {

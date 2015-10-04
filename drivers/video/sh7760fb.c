@@ -386,7 +386,7 @@ static int sh7760fb_alloc_mem(struct fb_info *info)
 	/* get color info from register value */
 	ret = sh7760fb_get_color_info(info->dev, par->pd->lddfr, &bpp, NULL);
 	if (ret) {
-		printk(KERN_ERR "colinfo\n");
+;
 		return ret;
 	}
 
@@ -533,11 +533,11 @@ static int __devinit sh7760fb_probe(struct platform_device *pdev)
 	}
 	platform_set_drvdata(pdev, info);
 
-	printk(KERN_INFO "%s: memory at phys 0x%08lx-0x%08lx, size %ld KiB\n",
-	       pdev->name,
-	       (unsigned long)par->fbdma,
-	       (unsigned long)(par->fbdma + info->screen_size - 1),
-	       info->screen_size >> 10);
+//	printk(KERN_INFO "%s: memory at phys 0x%08lx-0x%08lx, size %ld KiB\n",
+//	       pdev->name,
+//	       (unsigned long)par->fbdma,
+//	       (unsigned long)(par->fbdma + info->screen_size - 1),
+;
 
 	return 0;
 

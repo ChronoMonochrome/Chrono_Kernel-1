@@ -115,10 +115,10 @@ isdn_dumppkt(char *s, u_char * p, int len, int dumplen)
 {
 	int dumpc;
 
-	printk(KERN_DEBUG "%s(%d) ", s, len);
+;
 	for (dumpc = 0; (dumpc < dumplen) && (len); len--, dumpc++)
 		printk(" %02x", *p++);
-	printk("\n");
+;
 }
 #endif
 
@@ -338,17 +338,17 @@ int
 isdn_command(isdn_ctrl *cmd)
 {
 	if (cmd->driver == -1) {
-		printk(KERN_WARNING "isdn_command command(%x) driver -1\n", cmd->command);
+;
 		return(1);
 	}
 	if (!dev->drv[cmd->driver]) {
-		printk(KERN_WARNING "isdn_command command(%x) dev->drv[%d] NULL\n",
-			cmd->command, cmd->driver);
+//		printk(KERN_WARNING "isdn_command command(%x) dev->drv[%d] NULL\n",
+;
 		return(1);
 	}
 	if (!dev->drv[cmd->driver]->interface) {
-		printk(KERN_WARNING "isdn_command command(%x) dev->drv[%d]->interface NULL\n",
-			cmd->command, cmd->driver);
+//		printk(KERN_WARNING "isdn_command command(%x) dev->drv[%d]->interface NULL\n",
+;
 		return(1);
 	}
 	if (cmd->command == ISDN_CMD_SETL2) {
@@ -455,7 +455,7 @@ isdn_status_callback(isdn_ctrl * c)
 			if (i < 0)
 				return -1;
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "ICALL (net): %d %ld %s\n", di, c->arg, c->parm.num);
+;
 #endif
 			if (dev->global_flags & ISDN_GLOBAL_STOPPED) {
 				cmd.driver = di;
@@ -508,7 +508,7 @@ isdn_status_callback(isdn_ctrl * c)
 				case 2:	/* For calling back, first reject incoming call ... */
 				case 3:	/* Interface found, but down, reject call actively  */
 					retval = 2;
-					printk(KERN_INFO "isdn: Rejecting Call\n");
+;
 					cmd.driver = di;
 					cmd.arg = c->arg;
 					cmd.command = ISDN_CMD_HANGUP;
@@ -526,7 +526,7 @@ isdn_status_callback(isdn_ctrl * c)
 					break;
 			}
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "ICALL: ret=%d\n", retval);
+;
 #endif
 			return retval;
 			break;
@@ -534,7 +534,7 @@ isdn_status_callback(isdn_ctrl * c)
 			if (i < 0)
 				return -1;
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "CINF: %ld %s\n", c->arg, c->parm.num);
+;
 #endif
 			if (dev->global_flags & ISDN_GLOBAL_STOPPED)
 				return 0;
@@ -544,10 +544,10 @@ isdn_status_callback(isdn_ctrl * c)
 			break;
 		case ISDN_STAT_CAUSE:
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "CAUSE: %ld %s\n", c->arg, c->parm.num);
+;
 #endif
-			printk(KERN_INFO "isdn: %s,ch%ld cause: %s\n",
-			       dev->drvid[di], c->arg, c->parm.num);
+//			printk(KERN_INFO "isdn: %s,ch%ld cause: %s\n",
+;
 			isdn_tty_stat_callback(i, c);
 #ifdef CONFIG_ISDN_DIVERSION
                         if (divert_if)
@@ -556,7 +556,7 @@ isdn_status_callback(isdn_ctrl * c)
 			break;
 		case ISDN_STAT_DISPLAY:
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "DISPLAY: %ld %s\n", c->arg, c->parm.display);
+;
 #endif
 			isdn_tty_stat_callback(i, c);
 #ifdef CONFIG_ISDN_DIVERSION
@@ -568,7 +568,7 @@ isdn_status_callback(isdn_ctrl * c)
 			if (i < 0)
 				return -1;
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "DCONN: %ld\n", c->arg);
+;
 #endif
 			if (dev->global_flags & ISDN_GLOBAL_STOPPED)
 				return 0;
@@ -589,7 +589,7 @@ isdn_status_callback(isdn_ctrl * c)
 			if (i < 0)
 				return -1;
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "DHUP: %ld\n", c->arg);
+;
 #endif
 			if (dev->global_flags & ISDN_GLOBAL_STOPPED)
 				return 0;
@@ -611,7 +611,7 @@ isdn_status_callback(isdn_ctrl * c)
 			if (i < 0)
 				return -1;
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "BCONN: %ld\n", c->arg);
+;
 #endif
 			/* Signal B-channel-connect to network-devices */
 			if (dev->global_flags & ISDN_GLOBAL_STOPPED)
@@ -628,7 +628,7 @@ isdn_status_callback(isdn_ctrl * c)
 			if (i < 0)
 				return -1;
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "BHUP: %ld\n", c->arg);
+;
 #endif
 			if (dev->global_flags & ISDN_GLOBAL_STOPPED)
 				return 0;
@@ -647,7 +647,7 @@ isdn_status_callback(isdn_ctrl * c)
 			if (i < 0)
 				return -1;
 #ifdef ISDN_DEBUG_STATCALLB
-			printk(KERN_DEBUG "NODCH: %ld\n", c->arg);
+;
 #endif
 			if (dev->global_flags & ISDN_GLOBAL_STOPPED)
 				return 0;
@@ -1094,7 +1094,7 @@ isdn_read(struct file *file, char __user *buf, size_t count, loff_t * off)
 		goto out;
 	}
 	if (minor <= ISDN_MINOR_BMAX) {
-		printk(KERN_WARNING "isdn_read minor %d obsolete!\n", minor);
+;
 		drvidx = isdn_minor2drv(minor);
 		if (drvidx < 0) {
 			retval = -ENODEV;
@@ -1178,7 +1178,7 @@ isdn_write(struct file *file, const char __user *buf, size_t count, loff_t * off
 
 	mutex_lock(&isdn_mutex);
 	if (minor <= ISDN_MINOR_BMAX) {
-		printk(KERN_WARNING "isdn_write minor %d obsolete!\n", minor);
+;
 		drvidx = isdn_minor2drv(minor);
 		if (drvidx < 0) {
 			retval = -ENODEV;
@@ -1348,10 +1348,10 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
  */
 		switch (cmd) {
 			case IIOCNETDWRSET:
-				printk(KERN_INFO "INFO: ISDN_DW_ABC_EXTENSION not enabled\n");
+;
 				return(-EINVAL);
 			case IIOCNETLCR:
-				printk(KERN_INFO "INFO: ISDN_ABC_LCR_SUPPORT not enabled\n");
+;
 				return -ENODEV;
 #ifdef CONFIG_NETDEVICES
 			case IIOCNETAIF:
@@ -1495,15 +1495,15 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
 #endif                          /* CONFIG_NETDEVICES */
 			case IIOCSETVER:
 				dev->net_verbose = arg;
-				printk(KERN_INFO "isdn: Verbose-Level is %d\n", dev->net_verbose);
+;
 				return 0;
 			case IIOCSETGST:
 				if (arg)
 					dev->global_flags |= ISDN_GLOBAL_STOPPED;
 				else
 					dev->global_flags &= ~ISDN_GLOBAL_STOPPED;
-				printk(KERN_INFO "isdn: Global Mode %s\n",
-				       (dev->global_flags & ISDN_GLOBAL_STOPPED) ? "stopped" : "running");
+//				printk(KERN_INFO "isdn: Global Mode %s\n",
+;
 				return 0;
 			case IIOCSETBRJ:
 				drvidx = -1;
@@ -1759,7 +1759,7 @@ isdn_open(struct inode *ino, struct file *filep)
 	if (!dev->channels)
 		goto out;
 	if (minor <= ISDN_MINOR_BMAX) {
-		printk(KERN_WARNING "isdn_open minor %d obsolete!\n", minor);
+;
 		drvidx = isdn_minor2drv(minor);
 		if (drvidx < 0)
 			goto out;
@@ -1816,7 +1816,7 @@ isdn_close(struct inode *ino, struct file *filep)
 			q = p;
 			p = (infostruct *) (p->next);
 		}
-		printk(KERN_WARNING "isdn: No private data while closing isdnctrl\n");
+;
 		goto out;
 	}
 	isdn_unlock_drivers();
@@ -1931,8 +1931,8 @@ isdn_free_channel(int di, int ch, int usage)
 	int i;
 
 	if ((di < 0) || (ch < 0)) {
-		printk(KERN_WARNING "%s: called with invalid drv(%d) or channel(%d)\n",
-			__func__, di, ch);
+//		printk(KERN_WARNING "%s: called with invalid drv(%d) or channel(%d)\n",
+;
 		return;
 	}
 	for (i = 0; i < ISDN_MAX_CHANNELS; i++)
@@ -2038,7 +2038,7 @@ isdn_writebuf_skb_stub(int drvidx, int chan, int ack, struct sk_buff *skb)
 			struct sk_buff * skb_tmp;
 
 			skb_tmp = skb_realloc_headroom(skb, hl);
-			printk(KERN_DEBUG "isdn_writebuf_skb_stub: reallocating headroom%s\n", skb_tmp ? "" : " failed");
+;
 			if (!skb_tmp) return -ENOMEM; /* 0 better? */
 			ret = dev->drv[drvidx]->interface->writebuf_skb(drvidx, chan, ack, skb_tmp);
 			if( ret > 0 ){
@@ -2082,22 +2082,22 @@ isdn_add_channels(isdn_driver_t *d, int drvidx, int n, int adding)
 	m = (adding) ? d->channels + n : n;
 
 	if (dev->channels + n > ISDN_MAX_CHANNELS) {
-		printk(KERN_WARNING "register_isdn: Max. %d channels supported\n",
-		       ISDN_MAX_CHANNELS);
+//		printk(KERN_WARNING "register_isdn: Max. %d channels supported\n",
+;
 		return -1;
 	}
 
 	if ((adding) && (d->rcverr))
 		kfree(d->rcverr);
 	if (!(d->rcverr = kzalloc(sizeof(int) * m, GFP_ATOMIC))) {
-		printk(KERN_WARNING "register_isdn: Could not alloc rcverr\n");
+;
 		return -1;
 	}
 
 	if ((adding) && (d->rcvcount))
 		kfree(d->rcvcount);
 	if (!(d->rcvcount = kzalloc(sizeof(int) * m, GFP_ATOMIC))) {
-		printk(KERN_WARNING "register_isdn: Could not alloc rcvcount\n");
+;
 		if (!adding)
 			kfree(d->rcverr);
 		return -1;
@@ -2109,7 +2109,7 @@ isdn_add_channels(isdn_driver_t *d, int drvidx, int n, int adding)
 		kfree(d->rpqueue);
 	}
 	if (!(d->rpqueue = kmalloc(sizeof(struct sk_buff_head) * m, GFP_ATOMIC))) {
-		printk(KERN_WARNING "register_isdn: Could not alloc rpqueue\n");
+;
 		if (!adding) {
 			kfree(d->rcvcount);
 			kfree(d->rcverr);
@@ -2124,7 +2124,7 @@ isdn_add_channels(isdn_driver_t *d, int drvidx, int n, int adding)
 		kfree(d->rcv_waitq);
 	d->rcv_waitq = kmalloc(sizeof(wait_queue_head_t) * 2 * m, GFP_ATOMIC);
 	if (!d->rcv_waitq) {
-		printk(KERN_WARNING "register_isdn: Could not alloc rcv_waitq\n");
+;
 		if (!adding) {
 			kfree(d->rpqueue);
 			kfree(d->rcvcount);
@@ -2233,16 +2233,16 @@ register_isdn(isdn_if * i)
 	int drvidx;
 
 	if (dev->drivers >= ISDN_MAX_DRIVERS) {
-		printk(KERN_WARNING "register_isdn: Max. %d drivers supported\n",
-		       ISDN_MAX_DRIVERS);
+//		printk(KERN_WARNING "register_isdn: Max. %d drivers supported\n",
+;
 		return 0;
 	}
 	if (!i->writebuf_skb) {
-		printk(KERN_WARNING "register_isdn: No write routine given.\n");
+;
 		return 0;
 	}
 	if (!(d = kzalloc(sizeof(isdn_driver_t), GFP_KERNEL))) {
-		printk(KERN_WARNING "register_isdn: Could not alloc driver-struct\n");
+;
 		return 0;
 	}
 
@@ -2309,7 +2309,7 @@ static int __init isdn_init(void)
 	char tmprev[50];
 
 	if (!(dev = vmalloc(sizeof(isdn_dev)))) {
-		printk(KERN_WARNING "isdn: Could not allocate device-struct.\n");
+;
 		return -EIO;
 	}
 	memset((char *) dev, 0, sizeof(isdn_dev));
@@ -2331,19 +2331,19 @@ static int __init isdn_init(void)
 		init_waitqueue_head(&dev->mdm.info[i].close_wait);
 	}
 	if (register_chrdev(ISDN_MAJOR, "isdn", &isdn_fops)) {
-		printk(KERN_WARNING "isdn: Could not register control devices\n");
+;
 		vfree(dev);
 		return -EIO;
 	}
 	if ((isdn_tty_modem_init()) < 0) {
-		printk(KERN_WARNING "isdn: Could not register tty devices\n");
+;
 		vfree(dev);
 		unregister_chrdev(ISDN_MAJOR, "isdn");
 		return -EIO;
 	}
 #ifdef CONFIG_ISDN_PPP
 	if (isdn_ppp_init() < 0) {
-		printk(KERN_WARNING "isdn: Could not create PPP-device-structs\n");
+;
 		isdn_tty_exit();
 		unregister_chrdev(ISDN_MAJOR, "isdn");
 		vfree(dev);
@@ -2352,22 +2352,22 @@ static int __init isdn_init(void)
 #endif                          /* CONFIG_ISDN_PPP */
 
 	strcpy(tmprev, isdn_revision);
-	printk(KERN_NOTICE "ISDN subsystem Rev: %s/", isdn_getrev(tmprev));
+;
 	strcpy(tmprev, isdn_tty_revision);
-	printk("%s/", isdn_getrev(tmprev));
+;
 	strcpy(tmprev, isdn_net_revision);
-	printk("%s/", isdn_getrev(tmprev));
+;
 	strcpy(tmprev, isdn_ppp_revision);
-	printk("%s/", isdn_getrev(tmprev));
+;
 	strcpy(tmprev, isdn_audio_revision);
-	printk("%s/", isdn_getrev(tmprev));
+;
 	strcpy(tmprev, isdn_v110_revision);
-	printk("%s", isdn_getrev(tmprev));
+;
 
 #ifdef MODULE
-	printk(" loaded\n");
+;
 #else
-	printk("\n");
+;
 #endif
 	isdn_info_update();
 	return 0;
@@ -2382,7 +2382,7 @@ static void __exit isdn_exit(void)
 	isdn_ppp_cleanup();
 #endif
 	if (isdn_net_rmall() < 0) {
-		printk(KERN_WARNING "isdn: net-device busy, remove cancelled\n");
+;
 		return;
 	}
 	isdn_tty_exit();
@@ -2390,7 +2390,7 @@ static void __exit isdn_exit(void)
 	del_timer(&dev->timer);
 	/* call vfree with interrupts enabled, else it will hang */
 	vfree(dev);
-	printk(KERN_NOTICE "ISDN-subsystem unloaded\n");
+;
 }
 
 module_init(isdn_init);

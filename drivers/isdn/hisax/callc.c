@@ -1007,7 +1007,7 @@ dchan_l3l4(struct PStack *st, int pr, void *arg)
 
 static void
 dummy_pstack(struct PStack *st, int pr, void *arg) {
-	printk(KERN_WARNING"call to dummy_pstack pr=%04x arg %lx\n", pr, (long)arg);
+;
 }
 
 static int
@@ -1127,16 +1127,16 @@ CallcNewChan(struct IsdnCardState *csta) {
 	err = init_chan(1, csta);
 	if (err)
 		return err;
-	printk(KERN_INFO "HiSax: 2 channels added\n");
+;
 
 	for (i = 0; i < MAX_WAITING_CALLS; i++) { 
 		err = init_chan(i+2,csta);
 		if (err)
 			return err;
 	}
-	printk(KERN_INFO "HiSax: MAX_WAITING_CALLS added\n");
+;
 	if (test_bit(FLG_PTP, &csta->channel->d_st->l2.flag)) {
-		printk(KERN_INFO "LAYER2 WATCHING ESTABLISH\n");
+;
 		csta->channel->d_st->lli.l4l3(csta->channel->d_st,
 			DL_ESTABLISH | REQUEST, NULL);
 	}
@@ -1172,7 +1172,7 @@ CallcFreeChan(struct IsdnCardState *csta)
 			kfree(csta->channel[i].b_st);
 			csta->channel[i].b_st = NULL;
 		} else
-			printk(KERN_WARNING "CallcFreeChan b_st ch%d already freed\n", i);
+;
 		if (i || test_bit(FLG_TWO_DCHAN, &csta->HW_Flags)) {
 			release_d_st(csta->channel + i);
 		} else
@@ -1206,8 +1206,8 @@ lldata_handler(struct PStack *st, int pr, void *arg)
 			FsmEvent(&chanp->fi, EV_BC_REL, NULL);
 			break;
 		default:
-			printk(KERN_WARNING "lldata_handler unknown primitive %#x\n",
-				pr);
+//			printk(KERN_WARNING "lldata_handler unknown primitive %#x\n",
+;
 			break;
 	}
 }
@@ -1238,8 +1238,8 @@ lltrans_handler(struct PStack *st, int pr, void *arg)
 			FsmEvent(&chanp->fi, EV_BC_REL, NULL);
 			break;
 		default:
-			printk(KERN_WARNING "lltrans_handler unknown primitive %#x\n",
-				pr);
+//			printk(KERN_WARNING "lltrans_handler unknown primitive %#x\n",
+;
 			break;
 	}
 }
@@ -1348,8 +1348,8 @@ leased_l4l3(struct PStack *st, int pr, void *arg)
 		case (DL_RELEASE | REQUEST):
 			break;
 		default:
-			printk(KERN_WARNING "transd_l4l3 unknown primitive %#x\n",
-				pr);
+//			printk(KERN_WARNING "transd_l4l3 unknown primitive %#x\n",
+;
 			break;
 	}
 }
@@ -1382,8 +1382,8 @@ leased_l1l2(struct PStack *st, int pr, void *arg)
 			}
 			break;
 		default:
-			printk(KERN_WARNING
-				"transd_l1l2 unknown primitive %#x\n", pr);
+//			printk(KERN_WARNING
+;
 			break;
 	}
 }
@@ -1501,9 +1501,9 @@ HiSax_command(isdn_ctrl * ic)
 	u_int num;
 
 	if (!csta) {
-		printk(KERN_ERR
-		"HiSax: if_command %d called with invalid driverId %d!\n",
-			ic->command, ic->driver);
+//		printk(KERN_ERR
+//		"HiSax: if_command %d called with invalid driverId %d!\n",
+;
 		return -ENODEV;
 	}
 	switch (ic->command) {
@@ -1589,8 +1589,8 @@ HiSax_command(isdn_ctrl * ic)
 				case (1):
 					num = *(unsigned int *) ic->parm.num;
 					distr_debug(csta, num);
-					printk(KERN_DEBUG "HiSax: debugging flags card %d set to %x\n",
-						csta->cardnr + 1, num);
+//					printk(KERN_DEBUG "HiSax: debugging flags card %d set to %x\n",
+;
 					HiSax_putstatus(csta, "debugging flags ",
 						"card %d set to %x", csta->cardnr + 1, num);
 					break;
@@ -1600,16 +1600,16 @@ HiSax_command(isdn_ctrl * ic)
 					csta->channel[1].b_st->l1.delay = num;
 					HiSax_putstatus(csta, "delay ", "card %d set to %d ms",
 						csta->cardnr + 1, num);
-					printk(KERN_DEBUG "HiSax: delay card %d set to %d ms\n",
-						csta->cardnr + 1, num);
+//					printk(KERN_DEBUG "HiSax: delay card %d set to %d ms\n",
+;
 					break;
 				case (5):	/* set card in leased mode */
 					num = *(unsigned int *) ic->parm.num;
 					if ((num <1) || (num > 2)) {
 						HiSax_putstatus(csta, "Set LEASED ",
 							"wrong channel %d", num);
-						printk(KERN_WARNING "HiSax: Set LEASED wrong channel %d\n",
-							num);
+//						printk(KERN_WARNING "HiSax: Set LEASED wrong channel %d\n",
+;
 					} else {
 						num--;
 						chanp = csta->channel +num;
@@ -1632,21 +1632,21 @@ HiSax_command(isdn_ctrl * ic)
 				case (7):	/* set card in PTP mode */
 					num = *(unsigned int *) ic->parm.num;
 					if (test_bit(FLG_TWO_DCHAN, &csta->HW_Flags)) {
-						printk(KERN_ERR "HiSax PTP mode only with one TEI possible\n");
+;
 					} else if (num) {
 						test_and_set_bit(FLG_PTP, &csta->channel[0].d_st->l2.flag);
 						test_and_set_bit(FLG_FIXED_TEI, &csta->channel[0].d_st->l2.flag);
 						csta->channel[0].d_st->l2.tei = 0;
 						HiSax_putstatus(csta, "set card ", "in PTP mode");
-						printk(KERN_DEBUG "HiSax: set card in PTP mode\n");
-						printk(KERN_INFO "LAYER2 WATCHING ESTABLISH\n");
+;
+;
 						csta->channel[0].d_st->lli.l4l3(csta->channel[0].d_st,
 							DL_ESTABLISH | REQUEST, NULL);
 					} else {
 						test_and_clear_bit(FLG_PTP, &csta->channel[0].d_st->l2.flag);
 						test_and_clear_bit(FLG_FIXED_TEI, &csta->channel[0].d_st->l2.flag);
 						HiSax_putstatus(csta, "set card ", "in PTMP mode");
-						printk(KERN_DEBUG "HiSax: set card in PTMP mode\n");
+;
 					}
 					break;
 				case (8):	/* set card in FIXED TEI mode */
@@ -1657,13 +1657,13 @@ HiSax_command(isdn_ctrl * ic)
 						test_and_clear_bit(FLG_FIXED_TEI, &chanp->d_st->l2.flag);
 						chanp->d_st->l2.tei = -1;
 						HiSax_putstatus(csta, "set card ", "in VAR TEI mode");
-						printk(KERN_DEBUG "HiSax: set card in VAR TEI mode\n");
+;
 					} else {
 						test_and_set_bit(FLG_FIXED_TEI, &chanp->d_st->l2.flag);
 						chanp->d_st->l2.tei = num;
 						HiSax_putstatus(csta, "set card ", "in FIXED TEI (%d) mode", num);
-						printk(KERN_DEBUG "HiSax: set card in FIXED TEI (%d) mode\n",
-							num);
+//						printk(KERN_DEBUG "HiSax: set card in FIXED TEI (%d) mode\n",
+;
 					}
 					chanp->d_st->lli.l4l3(chanp->d_st,
 						DL_ESTABLISH | REQUEST, NULL);
@@ -1675,8 +1675,8 @@ HiSax_command(isdn_ctrl * ic)
 					HiSax_putstatus(cards[0].cs, "l1 debugging ",
 						"flags card %d set to %x",
 						csta->cardnr + 1, csta->debug);
-					printk(KERN_DEBUG "HiSax: l1 debugging flags card %d set to %x\n",
-						csta->cardnr + 1, csta->debug);
+//					printk(KERN_DEBUG "HiSax: l1 debugging flags card %d set to %x\n",
+;
 					break;
 				case (13):
 					csta->channel[0].d_st->l3.debug = *(unsigned int *) ic->parm.num;
@@ -1684,8 +1684,8 @@ HiSax_command(isdn_ctrl * ic)
 					HiSax_putstatus(cards[0].cs, "l3 debugging ",
 						"flags card %d set to %x\n", csta->cardnr + 1,
 						*(unsigned int *) ic->parm.num);
-					printk(KERN_DEBUG "HiSax: l3 debugging flags card %d set to %x\n",
-						csta->cardnr + 1, *(unsigned int *) ic->parm.num);
+//					printk(KERN_DEBUG "HiSax: l3 debugging flags card %d set to %x\n",
+;
 					break;
 				case (10):
 					i = *(unsigned int *) ic->parm.num;
@@ -1693,8 +1693,8 @@ HiSax_command(isdn_ctrl * ic)
 				default:
 					if (csta->auxcmd)
 						return(csta->auxcmd(csta, ic));
-					printk(KERN_DEBUG "HiSax: invalid ioclt %d\n",
-						(int) ic->arg);
+//					printk(KERN_DEBUG "HiSax: invalid ioclt %d\n",
+;
 					return (-EINVAL);
 			}
 			break;
@@ -1746,8 +1746,8 @@ HiSax_writebuf_skb(int id, int chan, int ack, struct sk_buff *skb)
 	struct sk_buff *nskb;
 
 	if (!csta) {
-		printk(KERN_ERR
-			"HiSax: if_sendbuf called with invalid driverId!\n");
+//		printk(KERN_ERR
+;
 		return -ENODEV;
 	}
 	chanp = csta->channel + chan;
@@ -1758,8 +1758,8 @@ HiSax_writebuf_skb(int id, int chan, int ack, struct sk_buff *skb)
 	}
 	if (len > MAX_DATA_SIZE) {
 		link_debug(chanp, 1, "writebuf: packet too large (%d bytes)", len);
-		printk(KERN_WARNING "HiSax_writebuf: packet too large (%d bytes) !\n",
-			len);
+//		printk(KERN_WARNING "HiSax_writebuf: packet too large (%d bytes) !\n",
+;
 		return -EINVAL;
 	}
 	if (len) {

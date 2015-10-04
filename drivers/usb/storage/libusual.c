@@ -114,9 +114,9 @@ static int usu_probe(struct usb_interface *intf,
 	task = kthread_run(usu_probe_thread, (void*)type, "libusual_%ld", type);
 	if (IS_ERR(task)) {
 		rc = PTR_ERR(task);
-		printk(KERN_WARNING "libusual: "
-		    "Unable to start the thread for %s: %d\n",
-		    bias_names[type], rc);
+//		printk(KERN_WARNING "libusual: "
+//		    "Unable to start the thread for %s: %d\n",
+;
 		spin_lock_irqsave(&usu_lock, flags);
 		stat[type].fls &= ~USU_MOD_FL_THREAD;
 		spin_unlock_irqrestore(&usu_lock, flags);
@@ -162,9 +162,9 @@ static int usu_probe_thread(void *arg)
 		/*
 		 * This should not happen, but let us keep tabs on it.
 		 */
-		printk(KERN_NOTICE "libusual: "
-		    "modprobe for %s succeeded, but module is not present\n",
-		    bias_names[type]);
+//		printk(KERN_NOTICE "libusual: "
+//		    "modprobe for %s succeeded, but module is not present\n",
+;
 	}
 	st->fls &= ~USU_MOD_FL_THREAD;
 	spin_unlock_irqrestore(&usu_lock, flags);

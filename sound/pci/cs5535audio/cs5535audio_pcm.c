@@ -317,7 +317,7 @@ static int snd_cs5535audio_trigger(struct snd_pcm_substream *substream, int cmd)
 		dma->ops->disable_dma(cs5535au);
 		break;
 	default:
-		snd_printk(KERN_ERR "unhandled trigger\n");
+;
 		err = -EINVAL;
 		break;
 	}
@@ -335,14 +335,14 @@ static snd_pcm_uframes_t snd_cs5535audio_pcm_pointer(struct snd_pcm_substream
 	dma = substream->runtime->private_data;
 	curdma = dma->ops->read_dma_pntr(cs5535au);
 	if (curdma < dma->buf_addr) {
-		snd_printk(KERN_ERR "curdma=%x < %x bufaddr.\n",
-					curdma, dma->buf_addr);
+//		snd_printk(KERN_ERR "curdma=%x < %x bufaddr.\n",
+;
 		return 0;
 	}
 	curdma -= dma->buf_addr;
 	if (curdma >= dma->buf_bytes) {
-		snd_printk(KERN_ERR "diff=%x >= %x buf_bytes.\n",
-					curdma, dma->buf_bytes);
+//		snd_printk(KERN_ERR "diff=%x >= %x buf_bytes.\n",
+;
 		return 0;
 	}
 	return bytes_to_frames(substream->runtime, curdma);

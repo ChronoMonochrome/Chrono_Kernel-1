@@ -61,7 +61,7 @@ struct mpu_config
 
 #define MBUF_MAX	10
 #define BUFTEST(dc) if (dc->m_ptr >= MBUF_MAX || dc->m_ptr < 0) \
-	{printk( "MPU: Invalid buffer pointer %d/%d, s=%d\n",  dc->m_ptr,  dc->m_left,  dc->m_state);dc->m_ptr--;}
+;
 	  int             m_busy;
 	  unsigned char   m_buf[MBUF_MAX];
 	  int             m_ptr;
@@ -185,7 +185,7 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 					break;
 
 				case 0xfc:
-					printk("<all end>");
+;
 			 		break;
 
 				case 0xfd:
@@ -204,11 +204,11 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 				case 0xf5:
 				case 0xf6:
 				case 0xf7:
-					printk("<Trk data rq #%d>", midic & 0x0f);
+;
 					break;
 
 				case 0xf9:
-					printk("<conductor rq>");
+;
 					break;
 
 				case 0xff:
@@ -222,7 +222,7 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 						devc->m_state = ST_TIMED;
 					}
 					else
-						printk("<MPU: Unknown event %02x> ", midic);
+;
 			}
 			break;
 
@@ -269,7 +269,7 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 							break;
 
 						default:
-							printk("Unknown MPU mark %02x\n", midic);
+;
 					}
 				}
 				else
@@ -296,7 +296,7 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 			switch (midic)
 			{
 				case 0xf0:
-					printk("<SYX>");
+;
 					devc->m_state = ST_SYSEX;
 					break;
 
@@ -352,24 +352,24 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 					break;
 
 				default:
-					printk("unknown MIDI sysmsg %0x\n", midic);
+;
 					devc->m_state = ST_INIT;
 			}
 			break;
 
 		case ST_MTC:
 			devc->m_state = ST_INIT;
-			printk("MTC frame %x02\n", midic);
+;
 			break;
 
 		case ST_SYSEX:
 			if (midic == 0xf7)
 			{
-				printk("<EOX>");
+;
 				devc->m_state = ST_INIT;
 			}
 			else
-				printk("%02x ", midic);
+;
 			break;
 
 		case ST_SONGPOS:
@@ -397,7 +397,7 @@ static int mpu_input_scanner(struct mpu_config *devc, unsigned char midic)
 			break;
 
 		default:
-			printk("Bad state %d ", devc->m_state);
+;
 			devc->m_state = ST_INIT;
 	}
 	return 1;
@@ -482,7 +482,7 @@ static int mpu401_open(int dev, int mode,
 	{
 		if (mpu401_status(devc) == 0xff)	/* Bus float */
 		{
-			printk(KERN_ERR "mpu401: Device not initialized properly\n");
+;
 			return -EIO;
 		}
 		reset_mpu401(devc);
@@ -497,7 +497,7 @@ static int mpu401_open(int dev, int mode,
 
 		if ((err = coprocessor->open(coprocessor->devc, COPR_MIDI)) < 0)
 		{
-			printk(KERN_WARNING "MPU-401: Can't access coprocessor device\n");
+;
 			mpu401_close(dev);
 			return err;
 		}
@@ -555,7 +555,7 @@ static int mpu401_out(int dev, unsigned char midi_byte)
 	spin_lock_irqsave(&devc->lock,flags);
 	if (!output_ready(devc))
 	{
-		printk(KERN_WARNING "mpu401: Send data timeout\n");
+;
 		spin_unlock_irqrestore(&devc->lock,flags);
 		return 0;
 	}
@@ -577,7 +577,7 @@ static int mpu401_command(int dev, mpu_command_rec * cmd)
 				 * Not possible in UART mode
 				 */
 	{
-		printk(KERN_WARNING "mpu401: commands not possible in the UART mode\n");
+;
 		return -EINVAL;
 	}
 	/*
@@ -595,7 +595,7 @@ static int mpu401_command(int dev, mpu_command_rec * cmd)
 retry:
 	if (timeout-- <= 0)
 	{
-		printk(KERN_WARNING "mpu401: Command (0x%x) timeout\n", (int) cmd->cmd);
+;
 		return -EIO;
 	}
 	spin_lock_irqsave(&devc->lock,flags);
@@ -639,7 +639,7 @@ retry:
 			if (!mpu401_out(dev, cmd->data[i]))
 			{
 				spin_unlock_irqrestore(&devc->lock,flags);
-				printk(KERN_WARNING "mpu401: Command (0x%x), parm send failed.\n", (int) cmd->cmd);
+;
 				return -EIO;
 			}
 		}
@@ -731,7 +731,7 @@ static int mpu401_ioctl(int dev, unsigned cmd, void __user *arg)
 	{
 		case SNDCTL_MIDI_MPUMODE:
 			if (!(devc->capabilities & MPU_CAP_INTLG)) { /* No intelligent mode */
-				printk(KERN_WARNING "mpu401: Intelligent mode not supported by the HW\n");
+;
 				return -EINVAL;
 			}
 			if (get_user(val, (int __user *)arg))
@@ -817,7 +817,7 @@ static int mpu_synth_open(int dev, int mode)
 	{
 		if (mpu401_status(devc) == 0xff)	/* Bus float */
 		{
-			printk(KERN_ERR "mpu401: Device not initialized properly\n");
+;
 			return -EIO;
 		}
 		reset_mpu401(devc);
@@ -836,7 +836,7 @@ static int mpu_synth_open(int dev, int mode)
 
 		if ((err = coprocessor->open(coprocessor->devc, COPR_MIDI)) < 0)
 		{
-			printk(KERN_WARNING "mpu401: Can't access coprocessor device\n");
+;
 			return err;
 		}
 	}
@@ -956,7 +956,7 @@ int attach_mpu401(struct address_info *hw_config, struct module *owner)
 	m = sound_alloc_mididev();
 	if (m == -1)
 	{
-		printk(KERN_WARNING "MPU-401: Too many midi devices detected\n");
+;
 		ret = -ENOMEM;
 		goto out_err;
 	}
@@ -988,7 +988,7 @@ int attach_mpu401(struct address_info *hw_config, struct module *owner)
 		/* Verify the hardware again */
 		if (!reset_mpu401(devc))
 		{
-			printk(KERN_WARNING "mpu401: Device didn't respond\n");
+;
 			ret = -ENODEV;
 			goto out_mididev;
 		}
@@ -997,7 +997,7 @@ int attach_mpu401(struct address_info *hw_config, struct module *owner)
 			if (request_irq(devc->irq, mpuintr, 0, "mpu401",
 					hw_config) < 0)
 			{
-				printk(KERN_WARNING "mpu401: Failed to allocate IRQ%d\n", devc->irq);
+;
 				ret = -ENOMEM;
 				goto out_mididev;
 			}
@@ -1019,7 +1019,7 @@ int attach_mpu401(struct address_info *hw_config, struct module *owner)
 
 	if (mpu401_synth_operations[m] == NULL)
 	{
-		printk(KERN_ERR "mpu401: Can't allocate memory\n");
+;
 		ret = -ENOMEM;
 		goto out_irq;
 	}
@@ -1174,7 +1174,7 @@ static void set_uart_mode(int dev, struct mpu_config *devc, int arg)
 	{
 		if (mpu_cmd(dev, UART_MODE_ON, 0) < 0)
 		{
-			printk(KERN_ERR "mpu401: Can't enter UART mode\n");
+;
 			devc->uart_mode = 0;
 			return;
 		}
@@ -1199,14 +1199,14 @@ int probe_mpu401(struct address_info *hw_config, struct resource *ports)
 
 	if (inb(hw_config->io_base + 1) == 0xff)
 	{
-		DDB(printk("MPU401: Port %x looks dead.\n", hw_config->io_base));
+;
 		return 0;	/* Just bus float? */
 	}
 	ok = reset_mpu401(&tmp_devc);
 
 	if (!ok)
 	{
-		DDB(printk("MPU401: Reset failed on port %x\n", hw_config->io_base));
+;
 	}
 	return ok;
 }
@@ -1446,7 +1446,7 @@ static int mpu_timer_event(int dev, unsigned char *event)
 			 	if (parm > 250)
 					parm = 250;
 				if (mpu_cmd(midi_dev, 0xE0, parm) < 0)
-					printk(KERN_WARNING "mpu401: Can't set tempo to %d\n", (int) parm);
+;
 				curr_tempo = parm;
 			}
 			break;
@@ -1552,7 +1552,7 @@ static int mpu_timer_ioctl(int dev, unsigned int command, void __user *arg)
 						val = 250;
 					if ((ret = mpu_cmd(midi_dev, 0xE0, val)) < 0)
 					{
-						printk(KERN_WARNING "mpu401: Can't set tempo to %d\n", (int) val);
+;
 						return ret;
 					}
 					curr_tempo = val;
@@ -1646,11 +1646,11 @@ static void timer_ext_event(struct mpu_config *devc, int event, int parm)
 	switch (event)
 	{
 		case TMR_CLOCK:
-			printk("<MIDI clk>");
+;
 			break;
 
 		case TMR_START:
-			printk("Ext MIDI start\n");
+;
 			if (!tmr_running)
 			{
 				if (timer_mode & TMR_EXTERNAL)
@@ -1664,7 +1664,7 @@ static void timer_ext_event(struct mpu_config *devc, int event, int parm)
 			break;
 
 		case TMR_STOP:
-			printk("Ext MIDI stop\n");
+;
 			if (timer_mode & TMR_EXTERNAL)
 			{
 				tmr_running = 0;
@@ -1674,7 +1674,7 @@ static void timer_ext_event(struct mpu_config *devc, int event, int parm)
 			break;
 
 		case TMR_CONTINUE:
-			printk("Ext MIDI continue\n");
+;
 			if (timer_mode & TMR_EXTERNAL)
 			{
 				tmr_running = 1;
@@ -1684,7 +1684,7 @@ static void timer_ext_event(struct mpu_config *devc, int event, int parm)
 		  	break;
 
 		case TMR_SPP:
-			printk("Songpos: %d\n", parm);
+;
 			if (timer_mode & TMR_EXTERNAL)
 			{
 				STORE(SEQ_SONGPOS(parm));

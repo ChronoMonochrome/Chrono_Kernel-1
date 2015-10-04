@@ -92,13 +92,13 @@ MODULE_LICENSE("GPL");
 #define ci_dbg_print(args...) \
 	do { \
 		if (ci_dbg) \
-			printk(KERN_DEBUG args); \
+;
 	} while (0)
 
 #define pid_dbg_print(args...) \
 	do { \
 		if (pid_dbg) \
-			printk(KERN_DEBUG args); \
+;
 	} while (0)
 
 struct altera_ci_state;

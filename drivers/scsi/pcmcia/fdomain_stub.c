@@ -139,7 +139,7 @@ static int fdomain_config(struct pcmcia_device *link)
 
     host = __fdomain_16x0_detect(&fdomain_driver_template);
     if (!host) {
-        printk(KERN_INFO "fdomain_cs: no SCSI devices found\n");
+;
 	goto failed;
     }
 

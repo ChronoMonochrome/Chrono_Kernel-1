@@ -369,10 +369,10 @@ static void snd_emu10k1x_pcm_interrupt(struct emu10k1x *emu, struct emu10k1x_voi
 	if (epcm->substream == NULL)
 		return;
 #if 0
-	snd_printk(KERN_INFO "IRQ: position = 0x%x, period = 0x%x, size = 0x%x\n",
-		   epcm->substream->ops->pointer(epcm->substream),
-		   snd_pcm_lib_period_bytes(epcm->substream),
-		   snd_pcm_lib_buffer_bytes(epcm->substream));
+//	snd_printk(KERN_INFO "IRQ: position = 0x%x, period = 0x%x, size = 0x%x\n",
+//		   epcm->substream->ops->pointer(epcm->substream),
+//		   snd_pcm_lib_period_bytes(epcm->substream),
+;
 #endif
 	snd_pcm_period_elapsed(epcm->substream);
 }
@@ -487,7 +487,7 @@ static int snd_emu10k1x_pcm_trigger(struct snd_pcm_substream *substream,
 	int channel = epcm->voice->number;
 	int result = 0;
 
-//	snd_printk(KERN_INFO "trigger - emu10k1x = 0x%x, cmd = %i, pointer = %d\n", (int)emu, cmd, (int)substream->ops->pointer(substream));
+;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -826,7 +826,7 @@ static irqreturn_t snd_emu10k1x_interrupt(int irq, void *dev_id)
 	// acknowledge the interrupt if necessary
 	outl(status, chip->port + IPR);
 
-	// snd_printk(KERN_INFO "interrupt %08x\n", status);
+;
 	return IRQ_HANDLED;
 }
 
@@ -898,7 +898,7 @@ static int __devinit snd_emu10k1x_create(struct snd_card *card,
 		return err;
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(28)) < 0 ||
 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(28)) < 0) {
-		snd_printk(KERN_ERR "error to set 28bit mask DMA\n");
+;
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -919,14 +919,14 @@ static int __devinit snd_emu10k1x_create(struct snd_card *card,
 	chip->port = pci_resource_start(pci, 0);
 	if ((chip->res_port = request_region(chip->port, 8,
 					     "EMU10K1X")) == NULL) { 
-		snd_printk(KERN_ERR "emu10k1x: cannot allocate the port 0x%lx\n", chip->port);
+;
 		snd_emu10k1x_free(chip);
 		return -EBUSY;
 	}
 
 	if (request_irq(pci->irq, snd_emu10k1x_interrupt,
 			IRQF_SHARED, "EMU10K1X", chip)) {
-		snd_printk(KERN_ERR "emu10k1x: cannot grab irq %d\n", pci->irq);
+;
 		snd_emu10k1x_free(chip);
 		return -EBUSY;
 	}
@@ -943,8 +943,8 @@ static int __devinit snd_emu10k1x_create(struct snd_card *card,
 	chip->revision = pci->revision;
 	pci_read_config_dword(pci, PCI_SUBSYSTEM_VENDOR_ID, &chip->serial);
 	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &chip->model);
-	snd_printk(KERN_INFO "Model %04x Rev %08x Serial %08x\n", chip->model,
-		   chip->revision, chip->serial);
+//	snd_printk(KERN_INFO "Model %04x Rev %08x Serial %08x\n", chip->model,
+;
 
 	outl(0, chip->port + INTE);	
 
@@ -1227,7 +1227,7 @@ static void mpu401_clear_rx(struct emu10k1x *emu, struct emu10k1x_midi *mpu)
 		mpu401_read_data(emu, mpu);
 #ifdef CONFIG_SND_DEBUG
 	if (timeout <= 0)
-		snd_printk(KERN_ERR "cmd: clear rx timeout (status = 0x%x)\n", mpu401_read_stat(emu, mpu));
+;
 #endif
 }
 
@@ -1301,10 +1301,10 @@ static int snd_emu10k1x_midi_cmd(struct emu10k1x * emu,
 	}
 	spin_unlock_irqrestore(&midi->input_lock, flags);
 	if (!ok) {
-		snd_printk(KERN_ERR "midi_cmd: 0x%x failed at 0x%lx (status = 0x%x, data = 0x%x)!!!\n",
-			   cmd, emu->port,
-			   mpu401_read_stat(emu, midi),
-			   mpu401_read_data(emu, midi));
+//		snd_printk(KERN_ERR "midi_cmd: 0x%x failed at 0x%lx (status = 0x%x, data = 0x%x)!!!\n",
+//			   cmd, emu->port,
+//			   mpu401_read_stat(emu, midi),
+;
 		return 1;
 	}
 	return 0;

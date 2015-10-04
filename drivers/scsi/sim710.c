@@ -74,9 +74,9 @@ param_setup(char *str)
 			slot = val;
 		else if(!strncmp(pos, "id:", 3)) {
 			if(slot == -1) {
-				printk(KERN_WARNING "sim710: Must specify slot for id parameter\n");
+;
 			} else if(slot >= MAX_SLOTS) {
-				printk(KERN_WARNING "sim710: Illegal slot %d for id %d\n", slot, val);
+;
 			} else {
 				id_array[slot] = val;
 			}
@@ -103,18 +103,18 @@ sim710_probe_common(struct device *dev, unsigned long base_addr,
 	struct NCR_700_Host_Parameters *hostdata =
 		kzalloc(sizeof(struct NCR_700_Host_Parameters),	GFP_KERNEL);
 
-	printk(KERN_NOTICE "sim710: %s\n", dev_name(dev));
-	printk(KERN_NOTICE "sim710: irq = %d, clock = %d, base = 0x%lx, scsi_id = %d\n",
-	       irq, clock, base_addr, scsi_id);
+;
+//	printk(KERN_NOTICE "sim710: irq = %d, clock = %d, base = 0x%lx, scsi_id = %d\n",
+;
 
 	if(hostdata == NULL) {
-		printk(KERN_ERR "sim710: Failed to allocate host data\n");
+;
 		goto out;
 	}
 
 	if(request_region(base_addr, 64, "sim710") == NULL) {
-		printk(KERN_ERR "sim710: Failed to reserve IO region 0x%lx\n",
-		       base_addr);
+//		printk(KERN_ERR "sim710: Failed to reserve IO region 0x%lx\n",
+;
 		goto out_free;
 	}
 
@@ -128,14 +128,14 @@ sim710_probe_common(struct device *dev, unsigned long base_addr,
 	/* and register the chip */
 	if((host = NCR_700_detect(&sim710_driver_template, hostdata, dev))
 	   == NULL) {
-		printk(KERN_ERR "sim710: No host detected; card configuration problem?\n");
+;
 		goto out_release;
 	}
 	host->this_id = scsi_id;
 	host->base = base_addr;
 	host->irq = irq;
 	if (request_irq(irq, NCR_700_intr, IRQF_SHARED, "sim710", host)) {
-		printk(KERN_ERR "sim710: request_irq failed\n");
+;
 		goto out_put_host;
 	}
 
@@ -306,7 +306,7 @@ sim710_eisa_probe(struct device *dev)
 		scsi_id = ffs(val) - 1;
 
 		if(scsi_id > 7 || (val & ~(1<<scsi_id)) != 0) {
-			printk(KERN_ERR "sim710.c, EISA card %s has incorrect scsi_id, setting to 7\n", dev_name(dev));
+;
 			scsi_id = 7;
 		}
 	} else {
@@ -315,7 +315,7 @@ sim710_eisa_probe(struct device *dev)
 	}
 
 	if(irq_index >= strlen(eisa_irqs)) {
-		printk("sim710.c: irq nasty\n");
+;
 		return -ENODEV;
 	}
 

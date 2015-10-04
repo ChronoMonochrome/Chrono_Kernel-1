@@ -257,8 +257,8 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
 #endif
 
 		default:
-			printk(KERN_ERR "%s: unknown relocation: %u\n",
-			       module->name, ELF32_R_TYPE(rel->r_info));
+////			printk(KERN_ERR "%s: unknown relocation: %u\n",
+;
 			return -ENOEXEC;
 		}
 	}
@@ -269,8 +269,8 @@ int
 apply_relocate_add(Elf32_Shdr *sechdrs, const char *strtab,
 		   unsigned int symindex, unsigned int relsec, struct module *module)
 {
-	printk(KERN_ERR "module %s: ADD RELOCATION unsupported\n",
-	       module->name);
+////	printk(KERN_ERR "module %s: ADD RELOCATION unsupported\n",
+;
 	return -ENOEXEC;
 }
 

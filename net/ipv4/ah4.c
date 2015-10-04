@@ -404,8 +404,8 @@ static void ah4_err(struct sk_buff *skb, u32 info)
 			      ah->spi, IPPROTO_AH, AF_INET);
 	if (!x)
 		return;
-	printk(KERN_DEBUG "pmtu discovery on SA AH/%08x/%08x\n",
-	       ntohl(ah->spi), ntohl(iph->daddr));
+//	printk(KERN_DEBUG "pmtu discovery on SA AH/%08x/%08x\n",
+;
 	xfrm_state_put(x);
 }
 
@@ -445,9 +445,9 @@ static int ah_init_state(struct xfrm_state *x)
 
 	if (aalg_desc->uinfo.auth.icv_fullbits/8 !=
 	    crypto_ahash_digestsize(ahash)) {
-		printk(KERN_INFO "AH: %s digestsize %u != %hu\n",
-		       x->aalg->alg_name, crypto_ahash_digestsize(ahash),
-		       aalg_desc->uinfo.auth.icv_fullbits/8);
+//		printk(KERN_INFO "AH: %s digestsize %u != %hu\n",
+//		       x->aalg->alg_name, crypto_ahash_digestsize(ahash),
+;
 		goto error;
 	}
 
@@ -510,11 +510,11 @@ static const struct net_protocol ah4_protocol = {
 static int __init ah4_init(void)
 {
 	if (xfrm_register_type(&ah_type, AF_INET) < 0) {
-		printk(KERN_INFO "ip ah init: can't add xfrm type\n");
+;
 		return -EAGAIN;
 	}
 	if (inet_add_protocol(&ah4_protocol, IPPROTO_AH) < 0) {
-		printk(KERN_INFO "ip ah init: can't add protocol\n");
+;
 		xfrm_unregister_type(&ah_type, AF_INET);
 		return -EAGAIN;
 	}
@@ -524,9 +524,9 @@ static int __init ah4_init(void)
 static void __exit ah4_fini(void)
 {
 	if (inet_del_protocol(&ah4_protocol, IPPROTO_AH) < 0)
-		printk(KERN_INFO "ip ah close: can't remove protocol\n");
+;
 	if (xfrm_unregister_type(&ah_type, AF_INET) < 0)
-		printk(KERN_INFO "ip ah close: can't remove xfrm type\n");
+;
 }
 
 module_init(ah4_init);

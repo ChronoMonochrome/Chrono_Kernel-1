@@ -74,7 +74,7 @@ static void powernow_k6_set_state(unsigned int best_i)
 	struct cpufreq_freqs freqs;
 
 	if (clock_ratio[best_i].index > max_multiplier) {
-		printk(KERN_ERR PFX "invalid target frequency\n");
+;
 		return;
 	}
 
@@ -227,7 +227,7 @@ static int __init powernow_k6_init(void)
 		return -ENODEV;
 
 	if (!request_region(POWERNOW_IOPORT, 16, "PowerNow!")) {
-		printk(KERN_INFO PFX "PowerNow IOPORT region already used.\n");
+;
 		return -EIO;
 	}
 

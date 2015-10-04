@@ -355,7 +355,7 @@ static int __init mon_init(void)
 	mon_bus0_init();
 
 	if (usb_mon_register(&mon_ops_0) != 0) {
-		printk(KERN_NOTICE TAG ": unable to register with the core\n");
+;
 		rc = -ENODEV;
 		goto err_reg;
 	}
@@ -403,9 +403,9 @@ static void __exit mon_exit(void)
 		 * before reaching here. However, better be safe...
 		 */
 		if (mbus->nreaders) {
-			printk(KERN_ERR TAG
-			    ": Outstanding opens (%d) on usb%d, leaking...\n",
-			    mbus->nreaders, mbus->u_bus->busnum);
+//			printk(KERN_ERR TAG
+//			    ": Outstanding opens (%d) on usb%d, leaking...\n",
+;
 			atomic_set(&mbus->ref.refcount, 2);	/* Force leak */
 		}
 

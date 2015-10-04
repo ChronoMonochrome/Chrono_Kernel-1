@@ -96,8 +96,8 @@ static void sas_form_port(struct asd_sas_phy *phy)
 	}
 
 	if (i >= sas_ha->num_phys) {
-		printk(KERN_NOTICE "%s: couldn't find a free port, bug?\n",
-		       __func__);
+//		printk(KERN_NOTICE "%s: couldn't find a free port, bug?\n",
+;
 		spin_unlock_irqrestore(&sas_ha->phy_port_lock, flags);
 		return;
 	}

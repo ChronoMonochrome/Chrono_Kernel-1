@@ -578,15 +578,15 @@ eesoxscsi_probe(struct expansion_card *ec, const struct ecard_id *id)
 
 	ret = request_irq(ec->irq, eesoxscsi_intr, 0, "eesoxscsi", info);
 	if (ret) {
-		printk("scsi%d: IRQ%d not free: %d\n",
-		       host->host_no, ec->irq, ret);
+//		printk("scsi%d: IRQ%d not free: %d\n",
+;
 		goto out_remove;
 	}
 
 	if (info->info.scsi.dma != NO_DMA) {
 		if (request_dma(info->info.scsi.dma, "eesox")) {
-			printk("scsi%d: DMA%d not free, DMA disabled\n",
-			       host->host_no, info->info.scsi.dma);
+//			printk("scsi%d: DMA%d not free, DMA disabled\n",
+;
 			info->info.scsi.dma = NO_DMA;
 		} else {
 			set_dma_speed(info->info.scsi.dma, 180);

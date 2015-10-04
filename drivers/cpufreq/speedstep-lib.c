@@ -113,8 +113,8 @@ static unsigned int pentiumM_get_frequency(void)
 
 	/* see table B-2 of 24547212.pdf */
 	if (msr_lo & 0x00040000) {
-		printk(KERN_DEBUG PFX "PM - invalid FSB: 0x%x 0x%x\n",
-				msr_lo, msr_tmp);
+//		printk(KERN_DEBUG PFX "PM - invalid FSB: 0x%x 0x%x\n",
+;
 		return 0;
 	}
 
@@ -153,7 +153,7 @@ static unsigned int pentium_core_get_frequency(void)
 		fsb = 333333;
 		break;
 	default:
-		printk(KERN_ERR "PCORE - MSR_FSB_FREQ undefined value");
+;
 	}
 
 	rdmsr(MSR_IA32_EBL_CR_POWERON, msr_lo, msr_tmp);
@@ -208,8 +208,8 @@ static unsigned int pentium4_get_frequency(void)
 	}
 
 	if (!fsb)
-		printk(KERN_DEBUG PFX "couldn't detect FSB speed. "
-				"Please send an e-mail to <linux@brodo.de>\n");
+//		printk(KERN_DEBUG PFX "couldn't detect FSB speed. "
+;
 
 	/* Multiplier. */
 	mult = msr_lo >> 24;
@@ -452,11 +452,11 @@ unsigned int speedstep_get_freqs(enum speedstep_processor processor,
 		 */
 		if (*transition_latency > 10000000 ||
 		    *transition_latency < 50000) {
-			printk(KERN_WARNING PFX "frequency transition "
-					"measured seems out of range (%u "
-					"nSec), falling back to a safe one of"
-					"%u nSec.\n",
-					*transition_latency, 500000);
+//			printk(KERN_WARNING PFX "frequency transition "
+//					"measured seems out of range (%u "
+//					"nSec), falling back to a safe one of"
+//					"%u nSec.\n",
+;
 			*transition_latency = 500000;
 		}
 	}

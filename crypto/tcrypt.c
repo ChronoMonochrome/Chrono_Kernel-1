@@ -85,8 +85,8 @@ static int test_cipher_jiffies(struct blkcipher_desc *desc, int enc,
 			return ret;
 	}
 
-	printk("%d operations in %d seconds (%ld bytes)\n",
-	       bcount, sec, (long)bcount * blen);
+//	printk("%d operations in %d seconds (%ld bytes)\n",
+;
 	return 0;
 }
 
@@ -133,8 +133,8 @@ out:
 	local_bh_enable();
 
 	if (ret == 0)
-		printk("1 operation in %lu cycles (%d bytes)\n",
-		       (cycles + 4) / 8, blen);
+//		printk("1 operation in %lu cycles (%d bytes)\n",
+;
 
 	return ret;
 }
@@ -158,13 +158,13 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
 	else
 		e = "decryption";
 
-	printk("\ntesting speed of %s %s\n", algo, e);
+;
 
 	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
 
 	if (IS_ERR(tfm)) {
-		printk("failed to load transform for %s: %ld\n", algo,
-		       PTR_ERR(tfm));
+//		printk("failed to load transform for %s: %ld\n", algo,
+;
 		return;
 	}
 	desc.tfm = tfm;
@@ -178,14 +178,14 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
 			struct scatterlist sg[TVMEMSIZE];
 
 			if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
-				printk("template (%u) too big for "
-				       "tvmem (%lu)\n", *keysize + *b_size,
-				       TVMEMSIZE * PAGE_SIZE);
+//				printk("template (%u) too big for "
+//				       "tvmem (%lu)\n", *keysize + *b_size,
+;
 				goto out;
 			}
 
-			printk("test %u (%d bit key, %d byte blocks): ", i,
-					*keysize * 8, *b_size);
+//			printk("test %u (%d bit key, %d byte blocks): ", i,
+;
 
 			memset(tvmem[0], 0xff, PAGE_SIZE);
 
@@ -200,8 +200,8 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
 
 			ret = crypto_blkcipher_setkey(tfm, key, *keysize);
 			if (ret) {
-				printk("setkey() failed flags=%x\n",
-						crypto_blkcipher_get_flags(tfm));
+//				printk("setkey() failed flags=%x\n",
+;
 				goto out;
 			}
 
@@ -227,7 +227,7 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
 							 *b_size);
 
 			if (ret) {
-				printk("%s() failed flags=%x\n", e, desc.flags);
+;
 				break;
 			}
 			b_size++;
@@ -255,8 +255,8 @@ static int test_hash_jiffies_digest(struct hash_desc *desc,
 			return ret;
 	}
 
-	printk("%6u opers/sec, %9lu bytes/sec\n",
-	       bcount / sec, ((long)bcount * blen) / sec);
+//	printk("%6u opers/sec, %9lu bytes/sec\n",
+;
 
 	return 0;
 }
@@ -287,8 +287,8 @@ static int test_hash_jiffies(struct hash_desc *desc, struct scatterlist *sg,
 			return ret;
 	}
 
-	printk("%6u opers/sec, %9lu bytes/sec\n",
-	       bcount / sec, ((long)bcount * blen) / sec);
+//	printk("%6u opers/sec, %9lu bytes/sec\n",
+;
 
 	return 0;
 }
@@ -332,8 +332,8 @@ out:
 	if (ret)
 		return ret;
 
-	printk("%6lu cycles/operation, %4lu cycles/byte\n",
-	       cycles / 8, cycles / (8 * blen));
+//	printk("%6lu cycles/operation, %4lu cycles/byte\n",
+;
 
 	return 0;
 }
@@ -396,8 +396,8 @@ out:
 	if (ret)
 		return ret;
 
-	printk("%6lu cycles/operation, %4lu cycles/byte\n",
-	       cycles / 8, cycles / (8 * blen));
+//	printk("%6lu cycles/operation, %4lu cycles/byte\n",
+;
 
 	return 0;
 }
@@ -423,13 +423,13 @@ static void test_hash_speed(const char *algo, unsigned int sec,
 	int i;
 	int ret;
 
-	printk(KERN_INFO "\ntesting speed of %s\n", algo);
+;
 
 	tfm = crypto_alloc_hash(algo, 0, CRYPTO_ALG_ASYNC);
 
 	if (IS_ERR(tfm)) {
-		printk(KERN_ERR "failed to load transform for %s: %ld\n", algo,
-		       PTR_ERR(tfm));
+//		printk(KERN_ERR "failed to load transform for %s: %ld\n", algo,
+;
 		return;
 	}
 
@@ -437,26 +437,26 @@ static void test_hash_speed(const char *algo, unsigned int sec,
 	desc.flags = 0;
 
 	if (crypto_hash_digestsize(tfm) > sizeof(output)) {
-		printk(KERN_ERR "digestsize(%u) > outputbuffer(%zu)\n",
-		       crypto_hash_digestsize(tfm), sizeof(output));
+//		printk(KERN_ERR "digestsize(%u) > outputbuffer(%zu)\n",
+;
 		goto out;
 	}
 
 	test_hash_sg_init(sg);
 	for (i = 0; speed[i].blen != 0; i++) {
 		if (speed[i].blen > TVMEMSIZE * PAGE_SIZE) {
-			printk(KERN_ERR
-			       "template (%u) too big for tvmem (%lu)\n",
-			       speed[i].blen, TVMEMSIZE * PAGE_SIZE);
+//			printk(KERN_ERR
+//			       "template (%u) too big for tvmem (%lu)\n",
+;
 			goto out;
 		}
 
 		if (speed[i].klen)
 			crypto_hash_setkey(tfm, tvmem[0], speed[i].klen);
 
-		printk(KERN_INFO "test%3u "
-		       "(%5u byte blocks,%5u bytes per update,%4u updates): ",
-		       i, speed[i].blen, speed[i].plen, speed[i].blen / speed[i].plen);
+//		printk(KERN_INFO "test%3u "
+//		       "(%5u byte blocks,%5u bytes per update,%4u updates): ",
+;
 
 		if (sec)
 			ret = test_hash_jiffies(&desc, sg, speed[i].blen,
@@ -466,7 +466,7 @@ static void test_hash_speed(const char *algo, unsigned int sec,
 					       speed[i].plen, output);
 
 		if (ret) {
-			printk(KERN_ERR "hashing failed ret=%d\n", ret);
+;
 			break;
 		}
 	}
@@ -518,8 +518,8 @@ static int test_ahash_jiffies_digest(struct ahash_request *req, int blen,
 			return ret;
 	}
 
-	printk("%6u opers/sec, %9lu bytes/sec\n",
-	       bcount / sec, ((long)bcount * blen) / sec);
+//	printk("%6u opers/sec, %9lu bytes/sec\n",
+;
 
 	return 0;
 }
@@ -661,7 +661,7 @@ static void test_ahash_speed(const char *algo, unsigned int sec,
 	static char output[1024];
 	int i, ret;
 
-	printk(KERN_INFO "\ntesting speed of async %s\n", algo);
+;
 
 	tfm = crypto_alloc_ahash(algo, 0, 0);
 	if (IS_ERR(tfm)) {
@@ -1262,7 +1262,7 @@ static int __init tcrypt_mod_init(void)
 		err = do_test(mode);
 
 	if (err) {
-		printk(KERN_ERR "tcrypt: one or more tests failed!\n");
+;
 		goto err_free_tv;
 	}
 

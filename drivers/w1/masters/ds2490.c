@@ -200,8 +200,8 @@ static int ds_send_control_cmd(struct ds_device *dev, u16 value, u16 index)
 	err = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, dev->ep[EP_CONTROL]),
 			CONTROL_CMD, 0x40, value, index, NULL, 0, 1000);
 	if (err < 0) {
-		printk(KERN_ERR "Failed to send command control message %x.%x: err=%d.\n",
-				value, index, err);
+//		printk(KERN_ERR "Failed to send command control message %x.%x: err=%d.\n",
+;
 		return err;
 	}
 
@@ -215,8 +215,8 @@ static int ds_send_control_mode(struct ds_device *dev, u16 value, u16 index)
 	err = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, dev->ep[EP_CONTROL]),
 			MODE_CMD, 0x40, value, index, NULL, 0, 1000);
 	if (err < 0) {
-		printk(KERN_ERR "Failed to send mode control message %x.%x: err=%d.\n",
-				value, index, err);
+//		printk(KERN_ERR "Failed to send mode control message %x.%x: err=%d.\n",
+;
 		return err;
 	}
 
@@ -230,8 +230,8 @@ static int ds_send_control(struct ds_device *dev, u16 value, u16 index)
 	err = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, dev->ep[EP_CONTROL]),
 			COMM_CMD, 0x40, value, index, NULL, 0, 1000);
 	if (err < 0) {
-		printk(KERN_ERR "Failed to send control message %x.%x: err=%d.\n",
-				value, index, err);
+//		printk(KERN_ERR "Failed to send control message %x.%x: err=%d.\n",
+;
 		return err;
 	}
 
@@ -248,7 +248,7 @@ static int ds_recv_status_nodump(struct ds_device *dev, struct ds_status *st,
 	count = 0;
 	err = usb_bulk_msg(dev->udev, usb_rcvbulkpipe(dev->udev, dev->ep[EP_STATUS]), buf, size, &count, 100);
 	if (err < 0) {
-		printk(KERN_ERR "Failed to read 1-wire data from 0x%x: err=%d.\n", dev->ep[EP_STATUS], err);
+;
 		return err;
 	}
 
@@ -260,17 +260,17 @@ static int ds_recv_status_nodump(struct ds_device *dev, struct ds_status *st,
 
 static inline void ds_print_msg(unsigned char *buf, unsigned char *str, int off)
 {
-	printk(KERN_INFO "%45s: %8x\n", str, buf[off]);
+;
 }
 
 static void ds_dump_status(struct ds_device *dev, unsigned char *buf, int count)
 {
 	int i;
 
-	printk(KERN_INFO "0x%x: count=%d, status: ", dev->ep[EP_STATUS], count);
+;
 	for (i=0; i<count; ++i)
-		printk("%02x ", buf[i]);
-	printk(KERN_INFO "\n");
+;
+;
 
 	if (count >= 16) {
 		ds_print_msg(buf, "enable flag", 0);
@@ -298,21 +298,21 @@ static void ds_dump_status(struct ds_device *dev, unsigned char *buf, int count)
 		}
 		ds_print_msg(buf, "Result Register Value: ", i);
 		if (buf[i] & RR_NRS)
-			printk(KERN_INFO "NRS: Reset no presence or ...\n");
+;
 		if (buf[i] & RR_SH)
-			printk(KERN_INFO "SH: short on reset or set path\n");
+;
 		if (buf[i] & RR_APP)
-			printk(KERN_INFO "APP: alarming presence on reset\n");
+;
 		if (buf[i] & RR_VPP)
-			printk(KERN_INFO "VPP: 12V expected not seen\n");
+;
 		if (buf[i] & RR_CMP)
-			printk(KERN_INFO "CMP: compare error\n");
+;
 		if (buf[i] & RR_CRC)
-			printk(KERN_INFO "CRC: CRC error detected\n");
+;
 		if (buf[i] & RR_RDP)
-			printk(KERN_INFO "RDP: redirected page\n");
+;
 		if (buf[i] & RR_EOS)
-			printk(KERN_INFO "EOS: end of search error\n");
+;
 	}
 }
 
@@ -323,15 +323,15 @@ static void ds_reset_device(struct ds_device *dev)
 	 * the strong pullup.
 	 */
 	if (ds_send_control_mode(dev, MOD_PULSE_EN, PULSE_SPUE))
-		printk(KERN_ERR "ds_reset_device: "
-			"Error allowing strong pullup\n");
+//		printk(KERN_ERR "ds_reset_device: "
+;
 	/* Chip strong pullup time was cleared. */
 	if (dev->spu_sleep) {
 		/* lower 4 bits are 0, see ds_set_pullup */
 		u8 del = dev->spu_sleep>>4;
 		if (ds_send_control(dev, COMM_SET_DURATION | COMM_IM, del))
-			printk(KERN_ERR "ds_reset_device: "
-				"Error setting duration\n");
+//			printk(KERN_ERR "ds_reset_device: "
+;
 	}
 }
 
@@ -356,7 +356,7 @@ static int ds_recv_data(struct ds_device *dev, unsigned char *buf, int size)
 		u8 buf[0x20];
 		int count;
 
-		printk(KERN_INFO "Clearing ep0x%x.\n", dev->ep[EP_DATA_IN]);
+;
 		usb_clear_halt(dev->udev, usb_rcvbulkpipe(dev->udev, dev->ep[EP_DATA_IN]));
 
 		count = ds_recv_status_nodump(dev, &st, buf, sizeof(buf));
@@ -368,10 +368,10 @@ static int ds_recv_data(struct ds_device *dev, unsigned char *buf, int size)
 	{
 		int i;
 
-		printk("%s: count=%d: ", __func__, count);
+;
 		for (i=0; i<count; ++i)
-			printk("%02x ", buf[i]);
-		printk("\n");
+;
+;
 	}
 #endif
 	return count;
@@ -384,8 +384,8 @@ static int ds_send_data(struct ds_device *dev, unsigned char *buf, int len)
 	count = 0;
 	err = usb_bulk_msg(dev->udev, usb_sndbulkpipe(dev->udev, dev->ep[EP_DATA_OUT]), buf, len, &count, 1000);
 	if (err < 0) {
-		printk(KERN_ERR "Failed to write 1-wire data to ep0x%x: "
-			"err=%d.\n", dev->ep[EP_DATA_OUT], err);
+//		printk(KERN_ERR "Failed to write 1-wire data to ep0x%x: "
+;
 		return err;
 	}
 
@@ -458,16 +458,16 @@ static int ds_wait_status(struct ds_device *dev, struct ds_status *st)
 #if 0
 		if (err >= 0) {
 			int i;
-			printk("0x%x: count=%d, status: ", dev->ep[EP_STATUS], err);
+;
 			for (i=0; i<err; ++i)
-				printk("%02x ", buf[i]);
-			printk("\n");
+;
+;
 		}
 #endif
 	} while (!(buf[0x08] & ST_IDLE) && !(err < 0) && ++count < 100);
 
 	if (err >= 16 && st->status & ST_EPOF) {
-		printk(KERN_INFO "Resetting device after ST_EPOF.\n");
+;
 		ds_reset_device(dev);
 		/* Always dump the device status. */
 		count = 101;
@@ -914,7 +914,7 @@ static int ds_probe(struct usb_interface *intf,
 
 	dev = kmalloc(sizeof(struct ds_device), GFP_KERNEL);
 	if (!dev) {
-		printk(KERN_INFO "Failed to allocate new DS9490R structure.\n");
+;
 		return -ENOMEM;
 	}
 	dev->spu_sleep = 0;
@@ -930,20 +930,20 @@ static int ds_probe(struct usb_interface *intf,
 
 	err = usb_set_interface(dev->udev, intf->altsetting[0].desc.bInterfaceNumber, 3);
 	if (err) {
-		printk(KERN_ERR "Failed to set alternative setting 3 for %d interface: err=%d.\n",
-				intf->altsetting[0].desc.bInterfaceNumber, err);
+//		printk(KERN_ERR "Failed to set alternative setting 3 for %d interface: err=%d.\n",
+;
 		goto err_out_clear;
 	}
 
 	err = usb_reset_configuration(dev->udev);
 	if (err) {
-		printk(KERN_ERR "Failed to reset configuration: err=%d.\n", err);
+;
 		goto err_out_clear;
 	}
 
 	iface_desc = &intf->altsetting[0];
 	if (iface_desc->desc.bNumEndpoints != NUM_EP-1) {
-		printk(KERN_INFO "Num endpoints=%d. It is not DS9490R.\n", iface_desc->desc.bNumEndpoints);
+;
 		err = -EINVAL;
 		goto err_out_clear;
 	}
@@ -957,10 +957,10 @@ static int ds_probe(struct usb_interface *intf,
 
 		dev->ep[i+1] = endpoint->bEndpointAddress;
 #if 0
-		printk("%d: addr=%x, size=%d, dir=%s, type=%x\n",
-			i, endpoint->bEndpointAddress, le16_to_cpu(endpoint->wMaxPacketSize),
-			(endpoint->bEndpointAddress & USB_DIR_IN)?"IN":"OUT",
-			endpoint->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK);
+//		printk("%d: addr=%x, size=%d, dir=%s, type=%x\n",
+//			i, endpoint->bEndpointAddress, le16_to_cpu(endpoint->wMaxPacketSize),
+//			(endpoint->bEndpointAddress & USB_DIR_IN)?"IN":"OUT",
+;
 #endif
 	}
 
@@ -1008,7 +1008,7 @@ static int ds_init(void)
 
 	err = usb_register(&ds_driver);
 	if (err) {
-		printk(KERN_INFO "Failed to register DS9490R USB device: err=%d.\n", err);
+;
 		return err;
 	}
 

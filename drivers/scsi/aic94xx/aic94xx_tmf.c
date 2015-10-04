@@ -208,8 +208,8 @@ int asd_I_T_nexus_reset(struct domain_device *dev)
 	/* This is a bit of a problem:  the sequencer is still suspended
 	 * and is refusing to resume.  Hope it will resume on a bigger hammer
 	 * or the disk is lost */
-	dev_printk(KERN_ERR, &phy->dev,
-		   "Failed to resume nexus after reset 0x%x\n", tmp_res);
+//	dev_printk(KERN_ERR, &phy->dev,
+;
 
 	return TMF_RESP_FUNC_FAILED;
 }

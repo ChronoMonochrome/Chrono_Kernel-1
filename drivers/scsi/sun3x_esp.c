@@ -118,8 +118,8 @@ static void sun3x_esp_dma_drain(struct esp *esp)
 	lim = 1000;
 	while (dma_read32(DMA_CSR) & DMA_FIFO_ISDRAIN) {
 		if (--lim == 0) {
-			printk(KERN_ALERT PFX "esp%d: DMA will not drain!\n",
-			       esp->host->unique_id);
+//			printk(KERN_ALERT PFX "esp%d: DMA will not drain!\n",
+;
 			break;
 		}
 		udelay(1);
@@ -134,8 +134,8 @@ static void sun3x_esp_dma_invalidate(struct esp *esp)
 	lim = 1000;
 	while ((val = dma_read32(DMA_CSR)) & DMA_PEND_READ) {
 		if (--lim == 0) {
-			printk(KERN_ALERT PFX "esp%d: DMA will not "
-			       "invalidate!\n", esp->host->unique_id);
+//			printk(KERN_ALERT PFX "esp%d: DMA will not "
+;
 			break;
 		}
 		udelay(1);

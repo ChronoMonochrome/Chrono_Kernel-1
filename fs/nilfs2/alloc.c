@@ -519,8 +519,8 @@ void nilfs_palloc_commit_free_entry(struct inode *inode,
 
 	if (!nilfs_clear_bit_atomic(nilfs_mdt_bgl_lock(inode, group),
 				    group_offset, bitmap))
-		printk(KERN_WARNING "%s: entry number %llu already freed\n",
-		       __func__, (unsigned long long)req->pr_entry_nr);
+//		printk(KERN_WARNING "%s: entry number %llu already freed\n",
+;
 	else
 		nilfs_palloc_group_desc_add_entries(inode, group, desc, 1);
 
@@ -556,8 +556,8 @@ void nilfs_palloc_abort_alloc_entry(struct inode *inode,
 	bitmap = bitmap_kaddr + bh_offset(req->pr_bitmap_bh);
 	if (!nilfs_clear_bit_atomic(nilfs_mdt_bgl_lock(inode, group),
 				    group_offset, bitmap))
-		printk(KERN_WARNING "%s: entry number %llu already freed\n",
-		       __func__, (unsigned long long)req->pr_entry_nr);
+//		printk(KERN_WARNING "%s: entry number %llu already freed\n",
+;
 	else
 		nilfs_palloc_group_desc_add_entries(inode, group, desc, 1);
 
@@ -670,10 +670,10 @@ int nilfs_palloc_freev(struct inode *inode, __u64 *entry_nrs, size_t nitems)
 			if (!nilfs_clear_bit_atomic(
 				    nilfs_mdt_bgl_lock(inode, group),
 				    group_offset, bitmap)) {
-				printk(KERN_WARNING
-				       "%s: entry number %llu already freed\n",
-				       __func__,
-				       (unsigned long long)entry_nrs[j]);
+//				printk(KERN_WARNING
+//				       "%s: entry number %llu already freed\n",
+//				       __func__,
+;
 			} else {
 				n++;
 			}

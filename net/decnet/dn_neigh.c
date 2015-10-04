@@ -169,7 +169,7 @@ static int dn_neigh_construct(struct neighbour *neigh)
 		dn_dn2eth(neigh->ha, dn->addr);
 	else {
 		if (net_ratelimit())
-			printk(KERN_DEBUG "Trying to create neigh for hw %d\n",  dev->type);
+;
 		return -EINVAL;
 	}
 
@@ -193,14 +193,14 @@ static int dn_neigh_construct(struct neighbour *neigh)
 
 static void dn_long_error_report(struct neighbour *neigh, struct sk_buff *skb)
 {
-	printk(KERN_DEBUG "dn_long_error_report: called\n");
+;
 	kfree_skb(skb);
 }
 
 
 static void dn_short_error_report(struct neighbour *neigh, struct sk_buff *skb)
 {
-	printk(KERN_DEBUG "dn_short_error_report: called\n");
+;
 	kfree_skb(skb);
 }
 
@@ -218,7 +218,7 @@ static int dn_neigh_output_packet(struct sk_buff *skb)
 		return neigh->ops->queue_xmit(skb);
 
 	if (net_ratelimit())
-		printk(KERN_DEBUG "dn_neigh_output_packet: oops, can't send packet\n");
+;
 
 	kfree_skb(skb);
 	return -EINVAL;
@@ -239,14 +239,14 @@ static int dn_long_output(struct sk_buff *skb)
 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
 		if (skb2 == NULL) {
 			if (net_ratelimit())
-				printk(KERN_CRIT "dn_long_output: no memory\n");
+;
 			kfree_skb(skb);
 			return -ENOBUFS;
 		}
 		kfree_skb(skb);
 		skb = skb2;
 		if (net_ratelimit())
-			printk(KERN_INFO "dn_long_output: Increasing headroom\n");
+;
 	}
 
 	data = skb_push(skb, sizeof(struct dn_long_packet) + 3);
@@ -286,14 +286,14 @@ static int dn_short_output(struct sk_buff *skb)
 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
 		if (skb2 == NULL) {
 			if (net_ratelimit())
-				printk(KERN_CRIT "dn_short_output: no memory\n");
+;
 			kfree_skb(skb);
 			return -ENOBUFS;
 		}
 		kfree_skb(skb);
 		skb = skb2;
 		if (net_ratelimit())
-			printk(KERN_INFO "dn_short_output: Increasing headroom\n");
+;
 	}
 
 	data = skb_push(skb, sizeof(struct dn_short_packet) + 2);
@@ -329,14 +329,14 @@ static int dn_phase3_output(struct sk_buff *skb)
 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
 		if (skb2 == NULL) {
 			if (net_ratelimit())
-				printk(KERN_CRIT "dn_phase3_output: no memory\n");
+;
 			kfree_skb(skb);
 			return -ENOBUFS;
 		}
 		kfree_skb(skb);
 		skb = skb2;
 		if (net_ratelimit())
-			printk(KERN_INFO "dn_phase3_output: Increasing headroom\n");
+;
 	}
 
 	data = skb_push(skb, sizeof(struct dn_short_packet) + 2);

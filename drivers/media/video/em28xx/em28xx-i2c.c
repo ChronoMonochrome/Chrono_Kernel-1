@@ -45,15 +45,15 @@ MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
 #define dprintk1(lvl, fmt, args...)			\
 do {							\
 	if (i2c_debug >= lvl) {				\
-	printk(fmt, ##args);				\
+;
       }							\
 } while (0)
 
 #define dprintk2(lvl, fmt, args...)			\
 do {							\
 	if (i2c_debug >= lvl) {				\
-		printk(KERN_DEBUG "%s at %s: " fmt,	\
-		       dev->name, __func__ , ##args);	\
+//		printk(KERN_DEBUG "%s at %s: " fmt,	\
+;
       } 						\
 } while (0)
 
@@ -271,13 +271,13 @@ static int em28xx_i2c_xfer(struct i2c_adapter *i2c_adap,
 							   msgs[i].len);
 			if (i2c_debug >= 2) {
 				for (byte = 0; byte < msgs[i].len; byte++)
-					printk(" %02x", msgs[i].buf[byte]);
+;
 			}
 		} else {
 			/* write bytes */
 			if (i2c_debug >= 2) {
 				for (byte = 0; byte < msgs[i].len; byte++)
-					printk(" %02x", msgs[i].buf[byte]);
+;
 			}
 			if (dev->board.is_em2800)
 				rc = em2800_i2c_send_bytes(dev, addr,
@@ -292,7 +292,7 @@ static int em28xx_i2c_xfer(struct i2c_adapter *i2c_adap,
 		if (rc < 0)
 			goto err;
 		if (i2c_debug >= 2)
-			printk("\n");
+;
 	}
 
 	return num;
@@ -357,8 +357,8 @@ static int em28xx_i2c_eeprom(struct em28xx *dev, unsigned char *eedata, int len)
 
 	err = i2c_master_send(&dev->i2c_client, &buf, 1);
 	if (err != 1) {
-		printk(KERN_INFO "%s: Huh, no eeprom present (err=%d)?\n",
-		       dev->name, err);
+//		printk(KERN_INFO "%s: Huh, no eeprom present (err=%d)?\n",
+;
 		return err;
 	}
 	while (size > 0) {
@@ -369,9 +369,9 @@ static int em28xx_i2c_eeprom(struct em28xx *dev, unsigned char *eedata, int len)
 
 		if (block !=
 		    (err = i2c_master_recv(&dev->i2c_client, p, block))) {
-			printk(KERN_WARNING
-			       "%s: i2c eeprom read error (err=%d)\n",
-			       dev->name, err);
+//			printk(KERN_WARNING
+//			       "%s: i2c eeprom read error (err=%d)\n",
+;
 			return err;
 		}
 		size -= block;
@@ -379,64 +379,64 @@ static int em28xx_i2c_eeprom(struct em28xx *dev, unsigned char *eedata, int len)
 	}
 	for (i = 0; i < len; i++) {
 		if (0 == (i % 16))
-			printk(KERN_INFO "%s: i2c eeprom %02x:", dev->name, i);
-		printk(" %02x", eedata[i]);
+;
+;
 		if (15 == (i % 16))
-			printk("\n");
+;
 	}
 
 	if (em_eeprom->id == 0x9567eb1a)
 		dev->hash = em28xx_hash_mem(eedata, len, 32);
 
-	printk(KERN_INFO "%s: EEPROM ID= 0x%08x, EEPROM hash = 0x%08lx\n",
-	       dev->name, em_eeprom->id, dev->hash);
+//	printk(KERN_INFO "%s: EEPROM ID= 0x%08x, EEPROM hash = 0x%08lx\n",
+;
 
-	printk(KERN_INFO "%s: EEPROM info:\n", dev->name);
+;
 
 	switch (em_eeprom->chip_conf >> 4 & 0x3) {
 	case 0:
-		printk(KERN_INFO "%s:\tNo audio on board.\n", dev->name);
+;
 		break;
 	case 1:
-		printk(KERN_INFO "%s:\tAC97 audio (5 sample rates)\n",
-				 dev->name);
+//		printk(KERN_INFO "%s:\tAC97 audio (5 sample rates)\n",
+;
 		break;
 	case 2:
-		printk(KERN_INFO "%s:\tI2S audio, sample rate=32k\n",
-				 dev->name);
+//		printk(KERN_INFO "%s:\tI2S audio, sample rate=32k\n",
+;
 		break;
 	case 3:
-		printk(KERN_INFO "%s:\tI2S audio, 3 sample rates\n",
-				 dev->name);
+//		printk(KERN_INFO "%s:\tI2S audio, 3 sample rates\n",
+;
 		break;
 	}
 
 	if (em_eeprom->chip_conf & 1 << 3)
-		printk(KERN_INFO "%s:\tUSB Remote wakeup capable\n", dev->name);
+;
 
 	if (em_eeprom->chip_conf & 1 << 2)
-		printk(KERN_INFO "%s:\tUSB Self power capable\n", dev->name);
+;
 
 	switch (em_eeprom->chip_conf & 0x3) {
 	case 0:
-		printk(KERN_INFO "%s:\t500mA max power\n", dev->name);
+;
 		break;
 	case 1:
-		printk(KERN_INFO "%s:\t400mA max power\n", dev->name);
+;
 		break;
 	case 2:
-		printk(KERN_INFO "%s:\t300mA max power\n", dev->name);
+;
 		break;
 	case 3:
-		printk(KERN_INFO "%s:\t200mA max power\n", dev->name);
+;
 		break;
 	}
-	printk(KERN_INFO "%s:\tTable at 0x%02x, strings=0x%04x, 0x%04x, 0x%04x\n",
-				dev->name,
-				em_eeprom->string_idx_table,
-				em_eeprom->string1,
-				em_eeprom->string2,
-				em_eeprom->string3);
+//	printk(KERN_INFO "%s:\tTable at 0x%02x, strings=0x%04x, 0x%04x, 0x%04x\n",
+//				dev->name,
+//				em_eeprom->string_idx_table,
+//				em_eeprom->string1,
+//				em_eeprom->string2,
+;
 
 	return 0;
 }
@@ -507,8 +507,8 @@ void em28xx_do_i2c_scan(struct em28xx *dev)
 		if (rc < 0)
 			continue;
 		i2c_devicelist[i] = i;
-		printk(KERN_INFO "%s: found i2c device @ 0x%x [%s]\n",
-		       dev->name, i << 1, i2c_devs[i] ? i2c_devs[i] : "???");
+//		printk(KERN_INFO "%s: found i2c device @ 0x%x [%s]\n",
+;
 	}
 
 	dev->i2c_hash = em28xx_hash_mem(i2c_devicelist,

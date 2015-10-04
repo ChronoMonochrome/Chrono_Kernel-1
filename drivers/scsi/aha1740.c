@@ -158,9 +158,9 @@ static int aha1740_makecode(unchar *sense, unchar *status)
 
 	status_word = * (struct statusword *) status;
 #ifdef DEBUG
-	printk("makecode from %x,%x,%x,%x %x,%x,%x,%x",
-	       status[0], status[1], status[2], status[3],
-	       sense[0], sense[1], sense[2], sense[3]);
+//	printk("makecode from %x,%x,%x,%x %x,%x,%x,%x",
+//	       status[0], status[1], status[2], status[3],
+;
 #endif
 	if (!status_word.don) { /* Anything abnormal was detected */
 		if ( (status[1]&0x18) || status_word.sc ) {
@@ -199,7 +199,7 @@ static int aha1740_makecode(unchar *sense, unchar *status)
 				retval = DID_TIME_OUT; /* forces a redo */
 				/* I think this specific one should
 				 * not happen -Brad */
-				printk("aha1740.c: WARNING: AHA1740 queue overflow!\n");
+;
 			} else
 				if ( status[0]&0x60 ) {
 					 /* Didn't find a better error */
@@ -219,7 +219,7 @@ static int aha1740_test_port(unsigned int base)
 	if ( inb(PORTADR(base)) & PORTADDR_ENH )
 		return 1;   /* Okay, we're all set */
 	
-	printk("aha174x: Board detected, but not in enhanced mode, so disabled it.\n");
+;
 	return 0;
 }
 
@@ -247,7 +247,7 @@ static irqreturn_t aha1740_intr_handle(int irq, void *dev_id)
 
 	while(inb(G2STAT(base)) & G2STAT_INTPEND) {
 		handled = 1;
-		DEB(printk("aha1740_intr top of loop.\n"));
+;
 		adapstat = inb(G2INTST(base));
 		ecbptr = ecb_dma_to_cpu (host, inl(MBOXIN0(base)));
 		outb(G2CNTRL_IRST,G2CNTRL(base)); /* interrupt reset */
@@ -259,16 +259,16 @@ static irqreturn_t aha1740_intr_handle(int irq, void *dev_id)
 			/* Host Ready -> Mailbox in complete */
 			outb(G2CNTRL_HRDY,G2CNTRL(base));
 			if (!ecbptr) {
-				printk("Aha1740 null ecbptr in interrupt (%x,%x,%x,%d)\n",
-				       inb(G2STAT(base)),adapstat,
-				       inb(G2INTST(base)), number_serviced++);
+//				printk("Aha1740 null ecbptr in interrupt (%x,%x,%x,%d)\n",
+//				       inb(G2STAT(base)),adapstat,
+;
 				continue;
 			}
 			SCtmp = ecbptr->SCpnt;
 			if (!SCtmp) {
-				printk("Aha1740 null SCtmp in interrupt (%x,%x,%x,%d)\n",
-				       inb(G2STAT(base)),adapstat,
-				       inb(G2INTST(base)), number_serviced++);
+//				printk("Aha1740 null SCtmp in interrupt (%x,%x,%x,%d)\n",
+//				       inb(G2STAT(base)),adapstat,
+;
 				continue;
 			}
 			sgptr = (struct aha1740_sg *) SCtmp->host_scribble;
@@ -292,8 +292,8 @@ static irqreturn_t aha1740_intr_handle(int irq, void *dev_id)
 			} else
 				errstatus = 0;
 			DEB(if (errstatus)
-			    printk("aha1740_intr_handle: returning %6x\n",
-				   errstatus));
+//			    printk("aha1740_intr_handle: returning %6x\n",
+;
 			SCtmp->result = errstatus;
 			my_done = ecbptr->done;
 			memset(ecbptr,0,sizeof(struct ecb)); 
@@ -302,16 +302,16 @@ static irqreturn_t aha1740_intr_handle(int irq, void *dev_id)
 			break;
 			
 		case	G2INTST_HARDFAIL:
-			printk(KERN_ALERT "aha1740 hardware failure!\n");
+;
 			panic("aha1740.c");	/* Goodbye */
 			
 		case	G2INTST_ASNEVENT:
-			printk("aha1740 asynchronous event: %02x %02x %02x %02x %02x\n",
-			       adapstat,
-			       inb(MBOXIN0(base)),
-			       inb(MBOXIN1(base)),
-			       inb(MBOXIN2(base)),
-			       inb(MBOXIN3(base))); /* Say What? */
+//			printk("aha1740 asynchronous event: %02x %02x %02x %02x %02x\n",
+//			       adapstat,
+//			       inb(MBOXIN0(base)),
+//			       inb(MBOXIN1(base)),
+//			       inb(MBOXIN2(base)),
+;
 			/* Host Ready -> Mailbox in complete */
 			outb(G2CNTRL_HRDY,G2CNTRL(base));
 			break;
@@ -356,11 +356,11 @@ static int aha1740_queuecommand_lck(Scsi_Cmnd * SCpnt, void (*done)(Scsi_Cmnd *)
 		i = scsi2int(cmd+2);
 	else
 		i = -1;
-	printk("aha1740_queuecommand: dev %d cmd %02x pos %d len %d ",
-	       target, *cmd, i, bufflen);
-	printk("scsi cmd:");
-	for (i = 0; i < SCpnt->cmd_len; i++) printk("%02x ", cmd[i]);
-	printk("\n");
+//	printk("aha1740_queuecommand: dev %d cmd %02x pos %d len %d ",
+;
+;
+;
+;
 #endif
 
 	/* locate an available ecb */
@@ -386,7 +386,7 @@ static int aha1740_queuecommand_lck(Scsi_Cmnd * SCpnt, void (*done)(Scsi_Cmnd *)
 	spin_unlock_irqrestore(SCpnt->device->host->host_lock, flags);
 
 #ifdef DEBUG
-	printk("Sending command (%d %x)...", ecbno, done);
+;
 #endif
 
 	host->ecb[ecbno].cdblen = SCpnt->cmd_len; /* SCSI Command
@@ -405,7 +405,7 @@ static int aha1740_queuecommand_lck(Scsi_Cmnd * SCpnt, void (*done)(Scsi_Cmnd *)
 						   sizeof (struct aha1740_sg),
 						   &sg_dma, GFP_ATOMIC);
 	if(SCpnt->host_scribble == NULL) {
-		printk(KERN_WARNING "aha1740: out of memory in queuecommand!\n");
+;
 		return 1;
 	}
 	sgptr = (struct aha1740_sg *) SCpnt->host_scribble;
@@ -429,9 +429,9 @@ static int aha1740_queuecommand_lck(Scsi_Cmnd * SCpnt, void (*done)(Scsi_Cmnd *)
 		host->ecb[ecbno].datalen = nseg * sizeof(struct aha1740_chain);
 		host->ecb[ecbno].dataptr = sg_dma;
 #ifdef DEBUG
-		printk("cptr %x: ",cptr);
+;
 		ptr = (unsigned char *) cptr;
-		for(i=0;i<24;i++) printk("%02x ", ptr[i]);
+;
 #endif
 	} else {
 		host->ecb[ecbno].datalen = 0;
@@ -451,11 +451,11 @@ static int aha1740_queuecommand_lck(Scsi_Cmnd * SCpnt, void (*done)(Scsi_Cmnd *)
 #ifdef DEBUG
 	{
 		int i;
-		printk("aha1740_command: sending.. ");
+;
 		for (i = 0; i < sizeof(host->ecb[ecbno]) - 10; i++)
 			printk("%02x ", ((unchar *)&host->ecb[ecbno])[i]);
 	}
-	printk("\n");
+;
 #endif
 	if (done) {
 	/* The Adaptec Spec says the card is so fast that the loops
@@ -474,13 +474,13 @@ static int aha1740_queuecommand_lck(Scsi_Cmnd * SCpnt, void (*done)(Scsi_Cmnd *)
 #define LOOPCNT_MAX 1000000	/* mbxout deadlock -> panic() after ~ 2 sec. */
 		int loopcnt;
 		unsigned int base = SCpnt->device->host->io_port;
-		DEB(printk("aha1740[%d] critical section\n",ecbno));
+;
 
 		spin_lock_irqsave(SCpnt->device->host->host_lock, flags);
 		for (loopcnt = 0; ; loopcnt++) {
 			if (inb(G2STAT(base)) & G2STAT_MBXOUT) break;
 			if (loopcnt == LOOPCNT_WARN) {
-				printk("aha1740[%d]_mbxout wait!\n",ecbno);
+;
 			}
 			if (loopcnt == LOOPCNT_MAX)
 				panic("aha1740.c: mbxout busy!\n");
@@ -490,16 +490,16 @@ static int aha1740_queuecommand_lck(Scsi_Cmnd * SCpnt, void (*done)(Scsi_Cmnd *)
 		for (loopcnt = 0; ; loopcnt++) {
 			if (! (inb(G2STAT(base)) & G2STAT_BUSY)) break;
 			if (loopcnt == LOOPCNT_WARN) {
-				printk("aha1740[%d]_attn wait!\n",ecbno);
+;
 			}
 			if (loopcnt == LOOPCNT_MAX)
 				panic("aha1740.c: attn wait failed!\n");
 		}
 		outb(ATTN_START | (target & 7), ATTN(base)); /* Start it up */
 		spin_unlock_irqrestore(SCpnt->device->host->host_lock, flags);
-		DEB(printk("aha1740[%d] request queued.\n",ecbno));
+;
 	} else
-		printk(KERN_ALERT "aha1740_queuecommand: done can't be NULL\n");
+;
 	return 0;
 }
 
@@ -527,7 +527,7 @@ static int aha1740_biosparam(struct scsi_device *sdev,
 	int size = capacity;
 	int extended = HOSTDATA(sdev->host)->translation;
 
-	DEB(printk("aha1740_biosparam\n"));
+;
 	if (extended && (ip[2] > 1024))	{
 		ip[0] = 255;
 		ip[1] = 63;
@@ -577,7 +577,7 @@ static int aha1740_probe (struct device *dev)
 	struct aha1740_hostdata *host;
 	struct eisa_device *edev = to_eisa_device (dev);
 
-	DEB(printk("aha1740_probe: \n"));
+;
 	
 	slotbase = edev->base_addr + EISA_VENDOR_ID_OFFSET;
 	if (!request_region(slotbase, SLOTSIZE, "aha1740")) /* See if in use */
@@ -591,10 +591,10 @@ static int aha1740_probe (struct device *dev)
 		outb(G2CNTRL_HRST, G2CNTRL(slotbase));
 		outb(0, G2CNTRL(slotbase));
 	}
-	printk(KERN_INFO "Configuring slot %d at IO:%x, IRQ %u (%s)\n",
-	       edev->slot, slotbase, irq_level, irq_type ? "edge" : "level");
-	printk(KERN_INFO "aha174x: Extended translation %sabled.\n",
-	       translation ? "en" : "dis");
+//	printk(KERN_INFO "Configuring slot %d at IO:%x, IRQ %u (%s)\n",
+;
+//	printk(KERN_INFO "aha174x: Extended translation %sabled.\n",
+;
 	shpnt = scsi_host_alloc(&aha1740_template,
 			      sizeof(struct aha1740_hostdata));
 	if(shpnt == NULL)
@@ -617,11 +617,11 @@ static int aha1740_probe (struct device *dev)
 		goto err_host_put;
 	}
 	
-	DEB(printk("aha1740_probe: enable interrupt channel %d\n",irq_level));
+;
 	if (request_irq(irq_level,aha1740_intr_handle,irq_type ? 0 : IRQF_SHARED,
 			"aha1740",shpnt)) {
-		printk(KERN_ERR "aha1740_probe: Unable to allocate IRQ %d.\n",
-		       irq_level);
+//		printk(KERN_ERR "aha1740_probe: Unable to allocate IRQ %d.\n",
+;
 		goto err_unmap;
 	}
 

@@ -840,7 +840,7 @@ static int r100_cp_init_microcode(struct radeon_device *rdev)
 	pdev = platform_device_register_simple("radeon_cp", 0, NULL, 0);
 	err = IS_ERR(pdev);
 	if (err) {
-		printk(KERN_ERR "radeon_cp: Failed to register firmware\n");
+;
 		return -EINVAL;
 	}
 	if ((rdev->family == CHIP_R100) || (rdev->family == CHIP_RV100) ||
@@ -887,12 +887,12 @@ static int r100_cp_init_microcode(struct radeon_device *rdev)
 	err = request_firmware(&rdev->me_fw, fw_name, &pdev->dev);
 	platform_device_unregister(pdev);
 	if (err) {
-		printk(KERN_ERR "radeon_cp: Failed to load firmware \"%s\"\n",
-		       fw_name);
+//		printk(KERN_ERR "radeon_cp: Failed to load firmware \"%s\"\n",
+;
 	} else if (rdev->me_fw->size % 8) {
-		printk(KERN_ERR
-		       "radeon_cp: Bogus length %zu in firmware \"%s\"\n",
-		       rdev->me_fw->size, fw_name);
+//		printk(KERN_ERR
+//		       "radeon_cp: Bogus length %zu in firmware \"%s\"\n",
+;
 		err = -EINVAL;
 		release_firmware(rdev->me_fw);
 		rdev->me_fw = NULL;
@@ -906,8 +906,8 @@ static void r100_cp_load_microcode(struct radeon_device *rdev)
 	int i, size;
 
 	if (r100_gui_wait_for_idle(rdev)) {
-		printk(KERN_WARNING "Failed to wait GUI idle while "
-		       "programming pipes. Bad things might happen.\n");
+//		printk(KERN_WARNING "Failed to wait GUI idle while "
+;
 	}
 
 	if (rdev->me_fw) {
@@ -1050,8 +1050,8 @@ void r100_cp_disable(struct radeon_device *rdev)
 	WREG32(RADEON_CP_CSQ_CNTL, 0);
 	WREG32(R_000770_SCRATCH_UMSK, 0);
 	if (r100_gui_wait_for_idle(rdev)) {
-		printk(KERN_WARNING "Failed to wait GUI idle while "
-		       "programming pipes. Bad things might happen.\n");
+//		printk(KERN_WARNING "Failed to wait GUI idle while "
+;
 	}
 }
 
@@ -1685,8 +1685,8 @@ static int r100_packet0_check(struct radeon_cs_parser *p,
 		track->tex_dirty = true;
 		break;
 	default:
-		printk(KERN_ERR "Forbidden register 0x%04X in cs at %d\n",
-		       reg, idx);
+//		printk(KERN_ERR "Forbidden register 0x%04X in cs at %d\n",
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -1960,8 +1960,8 @@ int r100_gui_wait_for_idle(struct radeon_device *rdev)
 	uint32_t tmp;
 
 	if (r100_rbbm_fifo_wait_for_entry(rdev, 64)) {
-		printk(KERN_WARNING "radeon: wait for empty RBBM fifo failed !"
-		       " Bad things might happen.\n");
+//		printk(KERN_WARNING "radeon: wait for empty RBBM fifo failed !"
+;
 	}
 	for (i = 0; i < rdev->usec_timeout; i++) {
 		tmp = RREG32(RADEON_RBBM_STATUS);

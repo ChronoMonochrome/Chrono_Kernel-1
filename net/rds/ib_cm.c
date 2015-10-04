@@ -114,7 +114,7 @@ rds_ib_tune_rnr(struct rds_ib_connection *ic, struct ib_qp_attr *attr)
 	attr->min_rnr_timer = IB_RNR_TIMER_000_32;
 	ret = ib_modify_qp(ic->i_cm_id->qp, attr, IB_QP_MIN_RNR_TIMER);
 	if (ret)
-		printk(KERN_NOTICE "ib_modify_qp(IB_QP_MIN_RNR_TIMER): err=%d\n", -ret);
+;
 }
 
 /*
@@ -141,19 +141,19 @@ void rds_ib_cm_connect_complete(struct rds_connection *conn, struct rdma_cm_even
 	}
 
 	if (conn->c_version < RDS_PROTOCOL(3,1)) {
-		printk(KERN_NOTICE "RDS/IB: Connection to %pI4 version %u.%u failed,"
-		       " no longer supported\n",
-		       &conn->c_faddr,
-		       RDS_PROTOCOL_MAJOR(conn->c_version),
-		       RDS_PROTOCOL_MINOR(conn->c_version));
+//		printk(KERN_NOTICE "RDS/IB: Connection to %pI4 version %u.%u failed,"
+//		       " no longer supported\n",
+//		       &conn->c_faddr,
+//		       RDS_PROTOCOL_MAJOR(conn->c_version),
+;
 		rds_conn_destroy(conn);
 		return;
 	} else {
-		printk(KERN_NOTICE "RDS/IB: connected to %pI4 version %u.%u%s\n",
-		       &conn->c_faddr,
-		       RDS_PROTOCOL_MAJOR(conn->c_version),
-		       RDS_PROTOCOL_MINOR(conn->c_version),
-		       ic->i_flowctl ? ", flow control" : "");
+//		printk(KERN_NOTICE "RDS/IB: connected to %pI4 version %u.%u%s\n",
+//		       &conn->c_faddr,
+//		       RDS_PROTOCOL_MAJOR(conn->c_version),
+//		       RDS_PROTOCOL_MINOR(conn->c_version),
+;
 	}
 
 	/*
@@ -172,13 +172,13 @@ void rds_ib_cm_connect_complete(struct rds_connection *conn, struct rdma_cm_even
 	qp_attr.qp_state = IB_QPS_RTS;
 	err = ib_modify_qp(ic->i_cm_id->qp, &qp_attr, IB_QP_STATE);
 	if (err)
-		printk(KERN_NOTICE "ib_modify_qp(IB_QP_STATE, RTS): err=%d\n", err);
+;
 
 	/* update ib_device with this local ipaddr */
 	err = rds_ib_update_ipaddr(ic->rds_ibdev, conn->c_laddr);
 	if (err)
-		printk(KERN_ERR "rds_ib_update_ipaddr failed (%d)\n",
-			err);
+//		printk(KERN_ERR "rds_ib_update_ipaddr failed (%d)\n",
+;
 
 	/* If the peer gave us the last packet it saw, process this as if
 	 * we had received a regular ACK. */
@@ -420,8 +420,8 @@ static u32 rds_ib_protocol_compatible(struct rdma_cm_event *event)
 
 	/* Be paranoid. RDS always has privdata */
 	if (!event->param.conn.private_data_len) {
-		printk(KERN_NOTICE "RDS incoming connection has no private data, "
-			"rejecting\n");
+//		printk(KERN_NOTICE "RDS incoming connection has no private data, "
+;
 		return 0;
 	}
 
@@ -436,11 +436,11 @@ static u32 rds_ib_protocol_compatible(struct rdma_cm_event *event)
 		while ((common >>= 1) != 0)
 			version++;
 	} else if (printk_ratelimit()) {
-		printk(KERN_NOTICE "RDS: Connection from %pI4 using "
-			"incompatible protocol version %u.%u\n",
-			&dp->dp_saddr,
-			dp->dp_protocol_major,
-			dp->dp_protocol_minor);
+//		printk(KERN_NOTICE "RDS: Connection from %pI4 using "
+//			"incompatible protocol version %u.%u\n",
+//			&dp->dp_saddr,
+//			dp->dp_protocol_major,
+;
 	}
 	return version;
 }
@@ -827,6 +827,6 @@ __rds_ib_conn_error(struct rds_connection *conn, const char *fmt, ...)
 	rds_conn_drop(conn);
 
 	va_start(ap, fmt);
-	vprintk(fmt, ap);
+;
 	va_end(ap);
 }

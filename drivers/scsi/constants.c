@@ -214,78 +214,78 @@ static void print_opcode_name(unsigned char * cdbp, int cdb_len)
 	case VARIABLE_LENGTH_CMD:
 		len = scsi_varlen_cdb_length(cdbp);
 		if (len < 10) {
-			printk("short variable length command, "
-			       "len=%d ext_len=%d", len, cdb_len);
+//			printk("short variable length command, "
+;
 			break;
 		}
 		sa = (cdbp[8] << 8) + cdbp[9];
 		name = get_sa_name(variable_length_arr, VARIABLE_LENGTH_SZ, sa);
 		if (name)
-			printk("%s", name);
+;
 		else
-			printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 
 		if ((cdb_len > 0) && (len != cdb_len))
-			printk(", in_cdb_len=%d, ext_len=%d", len, cdb_len);
+;
 
 		break;
 	case MAINTENANCE_IN:
 		sa = cdbp[1] & 0x1f;
 		name = get_sa_name(maint_in_arr, MAINT_IN_SZ, sa);
 		if (name)
-			printk("%s", name);
+;
 		else
-			printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 		break;
 	case MAINTENANCE_OUT:
 		sa = cdbp[1] & 0x1f;
 		name = get_sa_name(maint_out_arr, MAINT_OUT_SZ, sa);
 		if (name)
-			printk("%s", name);
+;
 		else
-			printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 		break;
 	case SERVICE_ACTION_IN_12:
 		sa = cdbp[1] & 0x1f;
 		name = get_sa_name(serv_in12_arr, SERV_IN12_SZ, sa);
 		if (name)
-			printk("%s", name);
+;
 		else
-			printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 		break;
 	case SERVICE_ACTION_OUT_12:
 		sa = cdbp[1] & 0x1f;
 		name = get_sa_name(serv_out12_arr, SERV_OUT12_SZ, sa);
 		if (name)
-			printk("%s", name);
+;
 		else
-			printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 		break;
 	case SERVICE_ACTION_IN_16:
 		sa = cdbp[1] & 0x1f;
 		name = get_sa_name(serv_in16_arr, SERV_IN16_SZ, sa);
 		if (name)
-			printk("%s", name);
+;
 		else
-			printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 		break;
 	case SERVICE_ACTION_OUT_16:
 		sa = cdbp[1] & 0x1f;
 		name = get_sa_name(serv_out16_arr, SERV_OUT16_SZ, sa);
 		if (name)
-			printk("%s", name);
+;
 		else
-			printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 		break;
 	default:
 		if (cdb0 < 0xc0) {
 			name = cdb_byte0_names[cdb0];
 			if (name)
-				printk("%s", name);
+;
 			else
-				printk("cdb[0]=0x%x (reserved)", cdb0);
+;
 		} else
-			printk("cdb[0]=0x%x (vendor)", cdb0);
+;
 		break;
 	}
 }
@@ -301,14 +301,14 @@ static void print_opcode_name(unsigned char * cdbp, int cdb_len)
 	case VARIABLE_LENGTH_CMD:
 		len = scsi_varlen_cdb_length(cdbp);
 		if (len < 10) {
-			printk("short opcode=0x%x command, len=%d "
-			       "ext_len=%d", cdb0, len, cdb_len);
+//			printk("short opcode=0x%x command, len=%d "
+;
 			break;
 		}
 		sa = (cdbp[8] << 8) + cdbp[9];
-		printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 		if (len != cdb_len)
-			printk(", in_cdb_len=%d, ext_len=%d", len, cdb_len);
+;
 		break;
 	case MAINTENANCE_IN:
 	case MAINTENANCE_OUT:
@@ -317,13 +317,13 @@ static void print_opcode_name(unsigned char * cdbp, int cdb_len)
 	case SERVICE_ACTION_IN_16:
 	case SERVICE_ACTION_OUT_16:
 		sa = cdbp[1] & 0x1f;
-		printk("cdb[0]=0x%x, sa=0x%x", cdb0, sa);
+;
 		break;
 	default:
 		if (cdb0 < 0xc0)
-			printk("cdb[0]=0x%x", cdb0);
+;
 		else
-			printk("cdb[0]=0x%x (vendor)", cdb0);
+;
 		break;
 	}
 }
@@ -337,8 +337,8 @@ void __scsi_print_command(unsigned char *cdb)
 	len = scsi_command_size(cdb);
 	/* print out all bytes in cdb */
 	for (k = 0; k < len; ++k) 
-		printk(" %02x", cdb[k]);
-	printk("\n");
+;
+;
 }
 EXPORT_SYMBOL(__scsi_print_command);
 
@@ -349,14 +349,14 @@ void scsi_print_command(struct scsi_cmnd *cmd)
 	if (cmd->cmnd == NULL)
 		return;
 
-	scmd_printk(KERN_INFO, cmd, "CDB: ");
+;
 	print_opcode_name(cmd->cmnd, cmd->cmd_len);
 
 	/* print out all bytes in cdb */
-	printk(":");
+;
 	for (k = 0; k < cmd->cmd_len; ++k)
-		printk(" %02x", cmd->cmnd[k]);
-	printk("\n");
+;
+;
 }
 EXPORT_SYMBOL(scsi_print_command);
 
@@ -388,9 +388,9 @@ scsi_print_status(unsigned char scsi_status) {
 	case 0x40: ccp = "Task Aborted"; break;
 	default:   ccp = "Unknown status";
 	}
-	printk(KERN_INFO "%s", ccp);
+;
 #else
-	printk(KERN_INFO "0x%0x", scsi_status);
+;
 #endif
 }
 EXPORT_SYMBOL(scsi_print_status);
@@ -1234,22 +1234,22 @@ scsi_show_extd_sense(unsigned char asc, unsigned char ascq)
 
 	if (extd_sense_fmt) {
 		if (strstr(extd_sense_fmt, "%x")) {
-			printk("Add. Sense: ");
-			printk(extd_sense_fmt, ascq);
+;
+;
 		} else
-			printk("Add. Sense: %s", extd_sense_fmt);
+;
 	} else {
 		if (asc >= 0x80)
-			printk("<<vendor>> ASC=0x%x ASCQ=0x%x", asc,
-			       ascq);
+//			printk("<<vendor>> ASC=0x%x ASCQ=0x%x", asc,
+;
 		if (ascq >= 0x80)
-			printk("ASC=0x%x <<vendor>> ASCQ=0x%x", asc,
-			       ascq);
+//			printk("ASC=0x%x <<vendor>> ASCQ=0x%x", asc,
+;
 		else
-			printk("ASC=0x%x ASCQ=0x%x", asc, ascq);
+;
 	}
 
-	printk("\n");
+;
 }
 EXPORT_SYMBOL(scsi_show_extd_sense);
 
@@ -1260,17 +1260,17 @@ scsi_show_sense_hdr(struct scsi_sense_hdr *sshdr)
 
 	sense_txt = scsi_sense_key_string(sshdr->sense_key);
 	if (sense_txt)
-		printk("Sense Key : %s ", sense_txt);
+;
 	else
-		printk("Sense Key : 0x%x ", sshdr->sense_key);
+;
 
-	printk("%s", scsi_sense_is_deferred(sshdr) ? "[deferred] " :
-	       "[current] ");
+//	printk("%s", scsi_sense_is_deferred(sshdr) ? "[deferred] " :
+;
 
 	if (sshdr->response_code >= 0x72)
-		printk("[descriptor]");
+;
 
-	printk("\n");
+;
 }
 EXPORT_SYMBOL(scsi_show_sense_hdr);
 
@@ -1280,9 +1280,9 @@ EXPORT_SYMBOL(scsi_show_sense_hdr);
 void
 scsi_print_sense_hdr(const char *name, struct scsi_sense_hdr *sshdr)
 {
-	printk(KERN_INFO "%s: ", name);
+;
 	scsi_show_sense_hdr(sshdr);
-	printk(KERN_INFO "%s: ", name);
+;
 	scsi_show_extd_sense(sshdr->asc, sshdr->ascq);
 }
 EXPORT_SYMBOL(scsi_print_sense_hdr);
@@ -1294,9 +1294,9 @@ void
 scsi_cmd_print_sense_hdr(struct scsi_cmnd *scmd, const char *desc,
 			  struct scsi_sense_hdr *sshdr)
 {
-	scmd_printk(KERN_INFO, scmd, "%s: ", desc);
+;
 	scsi_show_sense_hdr(sshdr);
-	scmd_printk(KERN_INFO, scmd, "%s: ", desc);
+;
 	scsi_show_extd_sense(sshdr->asc, sshdr->ascq);
 }
 EXPORT_SYMBOL(scsi_cmd_print_sense_hdr);
@@ -1311,15 +1311,15 @@ scsi_decode_sense_buffer(const unsigned char *sense_buffer, int sense_len,
 	if (0 == res) {
 		/* this may be SCSI-1 sense data */
 		num = (sense_len < 32) ? sense_len : 32;
-		printk("Unrecognized sense data (in hex):");
+;
 		for (k = 0; k < num; ++k) {
 			if (0 == (k % 16)) {
-				printk("\n");
-				printk(KERN_INFO "        ");
+;
+;
 			}
-			printk("%02x ", sense_buffer[k]);
+;
 		}
-		printk("\n");
+;
 		return;
 	}
 }
@@ -1365,22 +1365,22 @@ scsi_decode_sense_extras(const unsigned char *sense_buffer, int sense_len,
 			res += snprintf(buff + res, blen - res, "ILI");
 		}
 		if (res > 0)
-			printk("%s\n", buff);
+;
 	} else if (sshdr->additional_length > 0) {
 		/* descriptor format with sense descriptors */
 		num = 8 + sshdr->additional_length;
 		num = (sense_len < num) ? sense_len : num;
-		printk("Descriptor sense data with sense descriptors "
-		       "(in hex):");
+//		printk("Descriptor sense data with sense descriptors "
+;
 		for (k = 0; k < num; ++k) {
 			if (0 == (k % 16)) {
-				printk("\n");
-				printk(KERN_INFO "        ");
+;
+;
 			}
-			printk("%02x ", sense_buffer[k]);
+;
 		}
 
-		printk("\n");
+;
 	}
 
 }
@@ -1391,11 +1391,11 @@ void __scsi_print_sense(const char *name, const unsigned char *sense_buffer,
 {
 	struct scsi_sense_hdr sshdr;
 
-	printk(KERN_INFO "%s: ", name);
+;
 	scsi_decode_sense_buffer(sense_buffer, sense_len, &sshdr);
 	scsi_show_sense_hdr(&sshdr);
 	scsi_decode_sense_extras(sense_buffer, sense_len, &sshdr);
-	printk(KERN_INFO "%s: ", name);
+;
 	scsi_show_extd_sense(sshdr.asc, sshdr.ascq);
 }
 EXPORT_SYMBOL(__scsi_print_sense);
@@ -1405,13 +1405,13 @@ void scsi_print_sense(char *name, struct scsi_cmnd *cmd)
 {
 	struct scsi_sense_hdr sshdr;
 
-	scmd_printk(KERN_INFO, cmd, " ");
+;
 	scsi_decode_sense_buffer(cmd->sense_buffer, SCSI_SENSE_BUFFERSIZE,
 				 &sshdr);
 	scsi_show_sense_hdr(&sshdr);
 	scsi_decode_sense_extras(cmd->sense_buffer, SCSI_SENSE_BUFFERSIZE,
 				 &sshdr);
-	scmd_printk(KERN_INFO, cmd, " ");
+;
 	scsi_show_extd_sense(sshdr.asc, sshdr.ascq);
 }
 EXPORT_SYMBOL(scsi_print_sense);
@@ -1435,17 +1435,17 @@ void scsi_show_result(int result)
 	int hb = host_byte(result);
 	int db = driver_byte(result);
 
-	printk("Result: hostbyte=%s driverbyte=%s\n",
-	       (hb < NUM_HOSTBYTE_STRS ? hostbyte_table[hb]     : "invalid"),
-	       (db < NUM_DRIVERBYTE_STRS ? driverbyte_table[db] : "invalid"));
+//	printk("Result: hostbyte=%s driverbyte=%s\n",
+//	       (hb < NUM_HOSTBYTE_STRS ? hostbyte_table[hb]     : "invalid"),
+;
 }
 
 #else
 
 void scsi_show_result(int result)
 {
-	printk("Result: hostbyte=0x%02x driverbyte=0x%02x\n",
-	       host_byte(result), driver_byte(result));
+//	printk("Result: hostbyte=0x%02x driverbyte=0x%02x\n",
+;
 }
 
 #endif
@@ -1454,7 +1454,7 @@ EXPORT_SYMBOL(scsi_show_result);
 
 void scsi_print_result(struct scsi_cmnd *cmd)
 {
-	scmd_printk(KERN_INFO, cmd, " ");
+;
 	scsi_show_result(cmd->result);
 }
 EXPORT_SYMBOL(scsi_print_result);

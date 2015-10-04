@@ -209,8 +209,8 @@ static int __devinit at91wdt_probe(struct platform_device *pdev)
 	if (res)
 		return res;
 
-	printk(KERN_INFO "AT91 Watchdog Timer enabled (%d seconds%s)\n",
-				wdt_time, nowayout ? ", nowayout" : "");
+//	printk(KERN_INFO "AT91 Watchdog Timer enabled (%d seconds%s)\n",
+;
 	return 0;
 }
 

@@ -580,10 +580,10 @@ mgt_get_request(islpci_private *priv, enum oid_num_t n, int extra, void *data,
 		islpci_mgt_release(response);
 
 	if (reslen > isl_oid[n].size)
-		printk(KERN_DEBUG
-		       "mgt_get_request(0x%x): received data length was bigger "
-		       "than expected (%d > %d). Memory is probably corrupted...",
-		       oid, reslen, isl_oid[n].size);
+//		printk(KERN_DEBUG
+//		       "mgt_get_request(0x%x): received data length was bigger "
+//		       "than expected (%d > %d). Memory is probably corrupted...",
+;
 
 	return ret;
 }
@@ -610,9 +610,9 @@ mgt_commit_list(islpci_private *priv, enum oid_num_t *l, int n)
 				islpci_mgt_release(response);
 			}
 			if (r)
-				printk(KERN_ERR "%s: mgt_commit_list: failure. "
-					"oid=%08x err=%d\n",
-					priv->ndev->name, oid, r);
+//				printk(KERN_ERR "%s: mgt_commit_list: failure. "
+//					"oid=%08x err=%d\n",
+;
 			ret |= r;
 			j++;
 			oid++;
@@ -689,7 +689,7 @@ mgt_update_addr(islpci_private *priv)
 		islpci_mgt_release(res);
 
 	if (ret)
-		printk(KERN_ERR "%s: mgt_update_addr: failure\n", priv->ndev->name);
+;
 	return ret;
 }
 
@@ -716,7 +716,7 @@ mgt_commit(islpci_private *priv)
 	if (rvalue) {
 		/* some request have failed. The device might be in an
 		   incoherent state. We should reset it ! */
-		printk(KERN_DEBUG "%s: mgt_commit: failure\n", priv->ndev->name);
+;
 	}
 	return rvalue;
 }
@@ -753,7 +753,7 @@ mgt_unlatch_all(islpci_private *priv)
 #endif
 
 	if (rvalue)
-		printk(KERN_DEBUG "%s: Unlatching OIDs failed\n", priv->ndev->name);
+;
 }
 #endif
 
@@ -785,7 +785,7 @@ mgt_oidtonum(u32 oid)
 		if (isl_oid[i].oid == oid)
 			return i;
 
-	printk(KERN_DEBUG "looking for an unknown oid 0x%x", oid);
+;
 
 	return OID_NUM_LAST;
 }
@@ -834,7 +834,7 @@ mgt_response_to_str(enum oid_num_t n, union oid_res_t *r, char *str)
 	case OID_TYPE_FREQUENCIES:{
 			struct obj_frequencies *freq = r->ptr;
 			int i, t;
-			printk("nr : %u\n", freq->nr);
+;
 			t = snprintf(str, PRIV_STR_SIZE, "nr=%u\n", freq->nr);
 			for (i = 0; i < freq->nr; i++)
 				t += snprintf(str + t, PRIV_STR_SIZE - t,

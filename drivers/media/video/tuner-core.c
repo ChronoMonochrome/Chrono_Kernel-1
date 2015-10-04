@@ -84,28 +84,28 @@ static const struct v4l2_subdev_ops tuner_ops;
  */
 
 #define tuner_warn(fmt, arg...) do {			\
-	printk(KERN_WARNING "%s %d-%04x: " fmt, PREFIX, \
-	       i2c_adapter_id(t->i2c->adapter),		\
-	       t->i2c->addr, ##arg);			\
+//	printk(KERN_WARNING "%s %d-%04x: " fmt, PREFIX, \
+//	       i2c_adapter_id(t->i2c->adapter),		\
+;
 	 } while (0)
 
 #define tuner_info(fmt, arg...) do {			\
-	printk(KERN_INFO "%s %d-%04x: " fmt, PREFIX,	\
-	       i2c_adapter_id(t->i2c->adapter),		\
-	       t->i2c->addr, ##arg);			\
+//	printk(KERN_INFO "%s %d-%04x: " fmt, PREFIX,	\
+//	       i2c_adapter_id(t->i2c->adapter),		\
+;
 	 } while (0)
 
 #define tuner_err(fmt, arg...) do {			\
-	printk(KERN_ERR "%s %d-%04x: " fmt, PREFIX,	\
-	       i2c_adapter_id(t->i2c->adapter),		\
-	       t->i2c->addr, ##arg);			\
+//	printk(KERN_ERR "%s %d-%04x: " fmt, PREFIX,	\
+//	       i2c_adapter_id(t->i2c->adapter),		\
+;
 	 } while (0)
 
 #define tuner_dbg(fmt, arg...) do {				\
 	if (tuner_debug)					\
-		printk(KERN_DEBUG "%s %d-%04x: " fmt, PREFIX,	\
-		       i2c_adapter_id(t->i2c->adapter),		\
-		       t->i2c->addr, ##arg);			\
+//		printk(KERN_DEBUG "%s %d-%04x: " fmt, PREFIX,	\
+//		       i2c_adapter_id(t->i2c->adapter),		\
+;
 	 } while (0)
 
 /*
@@ -155,8 +155,8 @@ static void set_radio_freq(struct i2c_client *c, unsigned int freq);
 		__r = (int) __a(ARGS); \
 		symbol_put(FUNCTION); \
 	} else { \
-		printk(KERN_ERR "TUNER: Unable to find " \
-				"symbol "#FUNCTION"()\n"); \
+//		printk(KERN_ERR "TUNER: Unable to find " \
+;
 	} \
 	__r; \
 })
@@ -591,8 +591,8 @@ static int tuner_probe(struct i2c_client *client,
 		rc = i2c_master_recv(client, buffer, sizeof(buffer));
 		tuner_info("I2C RECV = ");
 		for (i = 0; i < rc; i++)
-			printk(KERN_CONT "%02x ", buffer[i]);
-		printk("\n");
+;
+;
 	}
 
 	/* autodetection code based on the i2c addr */

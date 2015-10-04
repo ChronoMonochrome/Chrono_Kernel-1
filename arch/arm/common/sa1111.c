@@ -276,8 +276,8 @@ static int sa1111_retrigger_lowirq(struct irq_data *d)
 	}
 
 	if (i == 8)
-		printk(KERN_ERR "Danger Will Robinson: failed to "
-			"re-trigger IRQ%d\n", d->irq);
+//		printk(KERN_ERR "Danger Will Robinson: failed to "
+;
 	return i == 8 ? -1 : 0;
 }
 
@@ -378,8 +378,8 @@ static int sa1111_retrigger_highirq(struct irq_data *d)
 	}
 
 	if (i == 8)
-		printk(KERN_ERR "Danger Will Robinson: failed to "
-			"re-trigger IRQ%d\n", d->irq);
+//		printk(KERN_ERR "Danger Will Robinson: failed to "
+;
 	return i == 8 ? -1 : 0;
 }
 
@@ -648,8 +648,8 @@ sa1111_init_one_child(struct sa1111 *sachip, struct resource *parent,
 
 	ret = request_resource(parent, &dev->res);
 	if (ret) {
-		printk("SA1111: failed to allocate resource for %s\n",
-			dev->res.name);
+//		printk("SA1111: failed to allocate resource for %s\n",
+;
 		dev_set_name(&dev->dev, NULL);
 		kfree(dev);
 		goto out;
@@ -741,14 +741,14 @@ __sa1111_probe(struct device *me, struct resource *mem, int irq)
 	 */
 	id = sa1111_readl(sachip->base + SA1111_SKID);
 	if ((id & SKID_ID_MASK) != SKID_SA1111_ID) {
-		printk(KERN_DEBUG "SA1111 not detected: ID = %08lx\n", id);
+;
 		ret = -ENODEV;
 		goto err_unmap;
 	}
 
-	printk(KERN_INFO "SA1111 Microprocessor Companion Chip: "
-		"silicon revision %lx, metal revision %lx\n",
-		(id & SKID_SIREV_MASK)>>4, (id & SKID_MTREV_MASK));
+//	printk(KERN_INFO "SA1111 Microprocessor Companion Chip: "
+//		"silicon revision %lx, metal revision %lx\n",
+;
 
 	/*
 	 * We found it.  Wake the chip up, and initialise.

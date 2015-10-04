@@ -130,8 +130,8 @@ static int kjournald(void *arg)
 	journal->j_task = current;
 	wake_up(&journal->j_wait_done_commit);
 
-	printk(KERN_INFO "kjournald starting.  Commit interval %ld seconds\n",
-			journal->j_commit_interval / HZ);
+//	printk(KERN_INFO "kjournald starting.  Commit interval %ld seconds\n",
+;
 
 	/*
 	 * And now, wait forever for commit wakeup events.
@@ -551,9 +551,9 @@ int log_wait_commit(journal_t *journal, tid_t tid)
 #ifdef CONFIG_JBD_DEBUG
 	spin_lock(&journal->j_state_lock);
 	if (!tid_geq(journal->j_commit_request, tid)) {
-		printk(KERN_EMERG
-		       "%s: error: j_commit_request=%d, tid=%d\n",
-		       __func__, journal->j_commit_request, tid);
+//		printk(KERN_EMERG
+//		       "%s: error: j_commit_request=%d, tid=%d\n",
+;
 	}
 	spin_unlock(&journal->j_state_lock);
 #endif
@@ -570,7 +570,7 @@ int log_wait_commit(journal_t *journal, tid_t tid)
 	spin_unlock(&journal->j_state_lock);
 
 	if (unlikely(is_journal_aborted(journal))) {
-		printk(KERN_EMERG "journal commit I/O error\n");
+;
 		err = -EIO;
 	}
 	return err;
@@ -648,11 +648,11 @@ int journal_bmap(journal_t *journal, unsigned int blocknr,
 		else {
 			char b[BDEVNAME_SIZE];
 
-			printk(KERN_ALERT "%s: journal block not found "
-					"at offset %u on %s\n",
-				__func__,
-				blocknr,
-				bdevname(journal->j_dev, b));
+//			printk(KERN_ALERT "%s: journal block not found "
+//					"at offset %u on %s\n",
+//				__func__,
+//				blocknr,
+;
 			err = -EIO;
 			__journal_abort_soft(journal, err);
 		}
@@ -780,8 +780,8 @@ journal_t * journal_init_dev(struct block_device *bdev,
 	journal->j_wbufsize = n;
 	journal->j_wbuf = kmalloc(n * sizeof(struct buffer_head*), GFP_KERNEL);
 	if (!journal->j_wbuf) {
-		printk(KERN_ERR "%s: Can't allocate bhs for commit thread\n",
-			__func__);
+//		printk(KERN_ERR "%s: Can't allocate bhs for commit thread\n",
+;
 		goto out_err;
 	}
 	journal->j_dev = bdev;
@@ -791,9 +791,9 @@ journal_t * journal_init_dev(struct block_device *bdev,
 
 	bh = __getblk(journal->j_dev, start, journal->j_blocksize);
 	if (!bh) {
-		printk(KERN_ERR
-		       "%s: Cannot get buffer for journal superblock\n",
-		       __func__);
+//		printk(KERN_ERR
+//		       "%s: Cannot get buffer for journal superblock\n",
+;
 		goto out_err;
 	}
 	journal->j_sb_buffer = bh;
@@ -841,24 +841,24 @@ journal_t * journal_init_inode (struct inode *inode)
 	journal->j_wbufsize = n;
 	journal->j_wbuf = kmalloc(n * sizeof(struct buffer_head*), GFP_KERNEL);
 	if (!journal->j_wbuf) {
-		printk(KERN_ERR "%s: Can't allocate bhs for commit thread\n",
-			__func__);
+//		printk(KERN_ERR "%s: Can't allocate bhs for commit thread\n",
+;
 		goto out_err;
 	}
 
 	err = journal_bmap(journal, 0, &blocknr);
 	/* If that failed, give up */
 	if (err) {
-		printk(KERN_ERR "%s: Cannot locate journal superblock\n",
-		       __func__);
+//		printk(KERN_ERR "%s: Cannot locate journal superblock\n",
+;
 		goto out_err;
 	}
 
 	bh = __getblk(journal->j_dev, blocknr, journal->j_blocksize);
 	if (!bh) {
-		printk(KERN_ERR
-		       "%s: Cannot get buffer for journal superblock\n",
-		       __func__);
+//		printk(KERN_ERR
+//		       "%s: Cannot get buffer for journal superblock\n",
+;
 		goto out_err;
 	}
 	journal->j_sb_buffer = bh;
@@ -898,8 +898,8 @@ static int journal_reset(journal_t *journal)
 	first = be32_to_cpu(sb->s_first);
 	last = be32_to_cpu(sb->s_maxlen);
 	if (first + JFS_MIN_JOURNAL_BLOCKS > last + 1) {
-		printk(KERN_ERR "JBD: Journal too short (blocks %u-%u).\n",
-		       first, last);
+//		printk(KERN_ERR "JBD: Journal too short (blocks %u-%u).\n",
+;
 		journal_fail_superblock(journal);
 		return -EINVAL;
 	}
@@ -948,9 +948,9 @@ int journal_create(journal_t *journal)
 		/*
 		 * We don't know what block to start at!
 		 */
-		printk(KERN_EMERG
-		       "%s: creation of journal on external device!\n",
-		       __func__);
+//		printk(KERN_EMERG
+//		       "%s: creation of journal on external device!\n",
+;
 		BUG();
 	}
 
@@ -1034,9 +1034,9 @@ void journal_update_superblock(journal_t *journal, int wait)
 		 * be remapped.  Nothing we can do but to retry the
 		 * write and hope for the best.
 		 */
-		printk(KERN_ERR "JBD: previous I/O error detected "
-		       "for journal superblock update for %s.\n",
-		       journal_dev_name(journal, b));
+//		printk(KERN_ERR "JBD: previous I/O error detected "
+//		       "for journal superblock update for %s.\n",
+;
 		clear_buffer_write_io_error(bh);
 		set_buffer_uptodate(bh);
 	}
@@ -1056,9 +1056,9 @@ void journal_update_superblock(journal_t *journal, int wait)
 		sync_dirty_buffer(bh);
 		if (buffer_write_io_error(bh)) {
 			char b[BDEVNAME_SIZE];
-			printk(KERN_ERR "JBD: I/O error detected "
-			       "when updating journal superblock for %s.\n",
-			       journal_dev_name(journal, b));
+//			printk(KERN_ERR "JBD: I/O error detected "
+//			       "when updating journal superblock for %s.\n",
+;
 			clear_buffer_write_io_error(bh);
 			set_buffer_uptodate(bh);
 		}
@@ -1108,7 +1108,7 @@ static int journal_get_superblock(journal_t *journal)
 
 	if (sb->s_header.h_magic != cpu_to_be32(JFS_MAGIC_NUMBER) ||
 	    sb->s_blocksize != cpu_to_be32(journal->j_blocksize)) {
-		printk(KERN_WARNING "JBD: no valid journal superblock found\n");
+;
 		goto out;
 	}
 
@@ -1120,7 +1120,7 @@ static int journal_get_superblock(journal_t *journal)
 		journal->j_format_version = 2;
 		break;
 	default:
-		printk(KERN_WARNING "JBD: unrecognised superblock format ID\n");
+;
 		goto out;
 	}
 
@@ -1133,17 +1133,17 @@ static int journal_get_superblock(journal_t *journal)
 
 	if (be32_to_cpu(sb->s_first) == 0 ||
 	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-		printk(KERN_WARNING
-			"JBD: Invalid start block of journal: %u\n",
-			be32_to_cpu(sb->s_first));
+//		printk(KERN_WARNING
+//			"JBD: Invalid start block of journal: %u\n",
+;
 		goto out;
 	}
 
 	if (be32_to_cpu(sb->s_first) == 0 ||
 	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-		printk(KERN_WARNING
-			"JBD: Invalid start block of journal: %u\n",
-			be32_to_cpu(sb->s_first));
+//		printk(KERN_WARNING
+//			"JBD: Invalid start block of journal: %u\n",
+;
 		goto out;
 	}
 
@@ -1425,8 +1425,8 @@ static int journal_convert_superblock_v1(journal_t *journal,
 	int offset, blocksize;
 	struct buffer_head *bh;
 
-	printk(KERN_WARNING
-		"JBD: Converting superblock from version 1 to 2.\n");
+//	printk(KERN_WARNING
+;
 
 	/* Pre-initialise new fields to zero */
 	offset = ((char *) &(sb->s_feature_compat)) - ((char *) sb);
@@ -1592,8 +1592,8 @@ static void __journal_abort_hard(journal_t *journal)
 	if (journal->j_flags & JFS_ABORT)
 		return;
 
-	printk(KERN_ERR "Aborting journal on device %s.\n",
-		journal_dev_name(journal, b));
+//	printk(KERN_ERR "Aborting journal on device %s.\n",
+;
 
 	spin_lock(&journal->j_state_lock);
 	journal->j_flags |= JFS_ABORT;
@@ -1755,7 +1755,7 @@ static int journal_init_journal_head_cache(void)
 	retval = 0;
 	if (!journal_head_cache) {
 		retval = -ENOMEM;
-		printk(KERN_EMERG "JBD: no memory for journal_head cache\n");
+;
 	}
 	return retval;
 }
@@ -1916,15 +1916,15 @@ static void __journal_remove_journal_head(struct buffer_head *bh)
 			J_ASSERT_BH(bh, jh2bh(jh) == bh);
 			BUFFER_TRACE(bh, "remove journal_head");
 			if (jh->b_frozen_data) {
-				printk(KERN_WARNING "%s: freeing "
-						"b_frozen_data\n",
-						__func__);
+//				printk(KERN_WARNING "%s: freeing "
+//						"b_frozen_data\n",
+;
 				jbd_free(jh->b_frozen_data, bh->b_size);
 			}
 			if (jh->b_committed_data) {
-				printk(KERN_WARNING "%s: freeing "
-						"b_committed_data\n",
-						__func__);
+//				printk(KERN_WARNING "%s: freeing "
+//						"b_committed_data\n",
+;
 				jbd_free(jh->b_committed_data, bh->b_size);
 			}
 			bh->b_private = NULL;
@@ -2024,7 +2024,7 @@ static int __init journal_init_handle_cache(void)
 				SLAB_TEMPORARY,	/* flags */
 				NULL);		/* ctor */
 	if (jbd_handle_cache == NULL) {
-		printk(KERN_EMERG "JBD: failed to create handle cache\n");
+;
 		return -ENOMEM;
 	}
 	return 0;
@@ -2077,7 +2077,7 @@ static void __exit journal_exit(void)
 #ifdef CONFIG_JBD_DEBUG
 	int n = atomic_read(&nr_journal_heads);
 	if (n)
-		printk(KERN_EMERG "JBD: leaked %d journal_heads!\n", n);
+;
 #endif
 	jbd_remove_debugfs_entry();
 	journal_destroy_caches();

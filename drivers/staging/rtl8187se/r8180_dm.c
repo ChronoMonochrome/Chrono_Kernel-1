@@ -53,7 +53,7 @@ DoTxHighPower(
 	u8			u1bTmp;
 	char			OfdmTxPwrIdx, CckTxPwrIdx;
 
-	//printk("----> DoTxHighPower()\n");
+;
 
 	HiPwrUpperTh = priv->RegHiPwrUpperTh;
 	HiPwrLowerTh = priv->RegHiPwrLowerTh;
@@ -67,14 +67,14 @@ DoTxHighPower(
 	OfdmTxPwrIdx  = priv->chtxpwr_ofdm[priv->ieee80211->current_network.channel];
 	CckTxPwrIdx  = priv->chtxpwr[priv->ieee80211->current_network.channel];
 
-	//	printk("DoTxHighPower() - UndecoratedSmoothedSS:%d, CurCCKRSSI = %d , bCurCCKPkt= %d \n", priv->UndecoratedSmoothedSS, priv->CurCCKRSSI, priv->bCurCCKPkt );
+;
 
 	if((priv->UndecoratedSmoothedSS > HiPwrUpperTh) ||
 		(priv->bCurCCKPkt && (priv->CurCCKRSSI > RSSIHiPwrUpperTh)))
 	{
 		// Stevenl suggested that degrade 8dbm in high power sate. 2007-12-04 Isaiah
 
-	//	printk("=====>DoTxHighPower() - High Power - UndecoratedSmoothedSS:%d,  HiPwrUpperTh = %d \n", priv->UndecoratedSmoothedSS, HiPwrUpperTh );
+;
 		priv->bToUpdateTxPwr = true;
 		u1bTmp= read_nic_byte(dev, CCK_TXAGC);
 
@@ -93,7 +93,7 @@ DoTxHighPower(
 	else if((priv->UndecoratedSmoothedSS < HiPwrLowerTh) &&
 		(!priv->bCurCCKPkt || priv->CurCCKRSSI < RSSIHiPwrLowerTh))
 	{
-	//	 printk("DoTxHighPower() - lower Power - UndecoratedSmoothedSS:%d,  HiPwrUpperTh = %d \n", priv->UndecoratedSmoothedSS, HiPwrLowerTh );
+;
 		if(priv->bToUpdateTxPwr)
 		{
 			priv->bToUpdateTxPwr = false;
@@ -116,7 +116,7 @@ DoTxHighPower(
 		}
 	}
 
-	//printk("<---- DoTxHighPower()\n");
+;
 }
 
 
@@ -135,11 +135,11 @@ void rtl8180_tx_pw_wq (struct work_struct *work)
         struct ieee80211_device *ieee = container_of(dwork,struct ieee80211_device,tx_pw_wq);
         struct net_device *dev = ieee->dev;
 
-//	printk("----> UpdateTxPowerWorkItemCallback()\n");
+;
 
 	DoTxHighPower(dev);
 
-//	printk("<---- UpdateTxPowerWorkItemCallback()\n");
+;
 }
 
 
@@ -182,7 +182,7 @@ DIG_Zebra(
 	int			LowestGainStage = 4; // The capable lowest stage of performing dig workitem.
 	u32 			AwakePeriodIn2Sec=0;
 
-	//printk("---------> DIG_Zebra()\n");
+;
 
 	CCKFalseAlarm = (u16)(priv->FalseAlarmRegValue & 0x0000ffff);
 	OFDMFalseAlarm = (u16)((priv->FalseAlarmRegValue >> 16) & 0x0000ffff);
@@ -203,7 +203,7 @@ DIG_Zebra(
 
 #if 1 //lzm reserved 080826
 	AwakePeriodIn2Sec = (2000-priv ->DozePeriodInPast2Sec);
-	//printk("&&& DozePeriod=%d AwakePeriod=%d\n", priv->DozePeriodInPast2Sec, AwakePeriodIn2Sec);
+;
 	priv ->DozePeriodInPast2Sec=0;
 
 	if(AwakePeriodIn2Sec)
@@ -237,7 +237,7 @@ DIG_Zebra(
 
 					priv->InitialGain = (priv->InitialGain + 1);
 //					printk("DIG**********OFDM False Alarm: %#X,  OfdmFA1: %#X, OfdmFA2: %#X\n", OFDMFalseAlarm, OfdmFA1, OfdmFA2);
-//					printk("DIG+++++++ fallback OFDM:%d \n", priv->InitialGain);
+;
 					UpdateInitialGain(dev);
 				}
 				priv->DIG_NumberFallbackVote = 0;
@@ -265,7 +265,7 @@ DIG_Zebra(
 
 				priv->InitialGain = (priv->InitialGain - 1);
 //				printk("DIG**********OFDM False Alarm: %#X,  OfdmFA1: %#X, OfdmFA2: %#X\n", OFDMFalseAlarm, OfdmFA1, OfdmFA2);
-//				printk("DIG--------- Upgrade OFDM:%d \n", priv->InitialGain);
+;
 				UpdateInitialGain(dev);
 			}
 			priv->DIG_NumberFallbackVote = 0;
@@ -273,8 +273,8 @@ DIG_Zebra(
 		}
 	}
 
-//	printk("DIG+++++++ OFDM:%d\n", priv->InitialGain);
-	//printk("<--------- DIG_Zebra()\n");
+;
+;
 }
 
 //
@@ -393,18 +393,18 @@ GetUpgradeTxRate(
                 break;
 
         default:
-                printk("GetUpgradeTxRate(): Input Tx Rate(%d) is undefined!\n", rate);
+;
                 return rate;
         }
         // Check if the rate is valid.
         if(IncludedInSupportedRates(priv, UpRate))
         {
-//              printk("GetUpgradeTxRate(): GetUpgrade Tx rate(%d) from %d !\n", UpRate, priv->CurrentOperaRate);
+;
                 return UpRate;
         }
         else
         {
-                //printk("GetUpgradeTxRate(): Tx rate (%d) is not in supported rates\n", UpRate);
+;
                 return rate;
         }
         return rate;
@@ -464,18 +464,18 @@ GetDegradeTxRate(
                 break;
 
         default:
-                printk("GetDegradeTxRate(): Input Tx Rate(%d) is undefined!\n", rate);
+;
                 return rate;
         }
         // Check if the rate is valid.
         if(IncludedInSupportedRates(priv, DownRate))
         {
-//              printk("GetDegradeTxRate(): GetDegrade Tx rate(%d) from %d!\n", DownRate, priv->CurrentOperaRate);
+;
                 return DownRate;
         }
         else
         {
-                //printk("GetDegradeTxRate(): Tx rate (%d) is not in supported rates\n", DownRate);
+;
                 return rate;
         }
         return rate;
@@ -518,11 +518,11 @@ TxPwrTracking87SE(
 	CurrentThermal = (tmpu1Byte & 0xf0)>>4; //[ 7:4]: thermal meter indication.
 	CurrentThermal = (CurrentThermal>0x0c)? 0x0c:CurrentThermal;//lzm add 080826
 
-	//printk("TxPwrTracking87SE(): CurrentThermal(%d)\n", CurrentThermal);
+;
 
 	if( CurrentThermal != priv->ThermalMeter)
 	{
-//		printk("TxPwrTracking87SE(): Thermal meter changed!!!\n");
+;
 
 		// Update Tx Power level on each channel.
 		for(Idx = 1; Idx<15; Idx++)
@@ -592,7 +592,7 @@ StaRateAdaptive87SE(
 	TxThroughput = (u32)(priv->NumTxOkBytesTotal - priv->LastTxOKBytes);
 	priv->LastTxOKBytes = priv->NumTxOkBytesTotal;
 	priv->CurrentOperaRate = priv->ieee80211->rate/5;
-	//printk("priv->CurrentOperaRate is %d\n",priv->CurrentOperaRate);
+;
 	//2 Compute retry ratio.
 	if (CurrTxokCnt>0)
 	{
@@ -608,13 +608,13 @@ StaRateAdaptive87SE(
 	// Added by Roger, 2007.01.02.
 	// For debug information.
 	//
-	//printk("\n(1) pHalData->LastRetryRate: %d \n",priv->LastRetryRate);
-	//printk("(2) RetryCnt = %d  \n", CurrRetryCnt);
-	//printk("(3) TxokCnt = %d \n", CurrTxokCnt);
-	//printk("(4) CurrRetryRate = %d \n", CurrRetryRate);
-	//printk("(5) CurrSignalStrength = %d \n",CurrSignalStrength);
-	//printk("(6) TxThroughput is %d\n",TxThroughput);
-	//printk("priv->NumTxOkBytesTotal is %d\n",priv->NumTxOkBytesTotal);
+;
+;
+;
+;
+;
+;
+;
 
 	priv->LastRetryCnt = priv->CurrRetryCnt;
 	priv->LastTxokCnt = priv->NumTxOkTotal;
@@ -629,7 +629,7 @@ StaRateAdaptive87SE(
 		//
 		priv->TryupingCountNoData++;
 
-//		printk("No Tx packets, TryupingCountNoData(%d)\n", priv->TryupingCountNoData);
+;
 		//[TRC Dell Lab] Extend raised period from 4.5sec to 9sec, Isaiah 2008-02-15 18:00
 		if (priv->TryupingCountNoData>30)
 		{
@@ -696,9 +696,9 @@ StaRateAdaptive87SE(
 		{
 			//Not necessary raising rate, fall back rate.
 			bTryDown = true;
-			//printk("case1-1: Not necessary raising rate, fall back rate....\n");
-			//printk("case1-1: pMgntInfo->CurrentOperaRate =%d, TxThroughput = %d, LastThroughput = %d\n",
-			//		priv->CurrentOperaRate, TxThroughput, priv->LastTxThroughput);
+;
+//			//printk("case1-1: pMgntInfo->CurrentOperaRate =%d, TxThroughput = %d, LastThroughput = %d\n",
+;
 		}
 		else
 		{
@@ -721,7 +721,7 @@ StaRateAdaptive87SE(
 			// Upgrade Tx Rate directly.
 			priv->TryupingCount += TryUpTh;
 		}
-//		printk("case2: StaRateAdaptive87SE: Power(%d) is high enough!!. \n", CurrSignalStrength);
+;
 
 	}
 	else if(CurrTxokCnt > 9 && CurrTxokCnt< 100 && CurrRetryRate >= 600)
@@ -733,7 +733,7 @@ StaRateAdaptive87SE(
 		bTryDown = true;
 		// Let Rate Mechanism to degrade tx rate directly.
 		priv->TryDownCountLowData += TryDownTh;
-//		printk("case3: RA: Tx Retry is serious. Degrade Tx Rate to %d directly...\n", priv->CurrentOperaRate);
+;
 	}
 	else if ( priv->CurrentOperaRate == 108 )
 	{
@@ -757,7 +757,7 @@ StaRateAdaptive87SE(
 		{
 			priv->TryDownCountLowData += TryDownTh;
 		}
-		//printk("case4---54M \n");
+;
 
 	}
 	else if ( priv->CurrentOperaRate == 96 )
@@ -793,7 +793,7 @@ StaRateAdaptive87SE(
 		{
 			priv->TryDownCountLowData += TryDownTh;
 		}
-		//printk("case5---48M \n");
+;
 	}
 	else if ( priv->CurrentOperaRate == 72 )
 	{
@@ -820,7 +820,7 @@ StaRateAdaptive87SE(
 		{
 			priv->TryDownCountLowData += TryDownTh;
 		}
-		//printk("case6---36M \n");
+;
 	}
 	else if ( priv->CurrentOperaRate == 48 )
 	{
@@ -856,7 +856,7 @@ StaRateAdaptive87SE(
 		{
 			priv->TryDownCountLowData += TryDownTh;
 		}
-		//printk("case7---24M \n");
+;
 	}
 	else if ( priv->CurrentOperaRate == 36 )
 	{
@@ -882,7 +882,7 @@ StaRateAdaptive87SE(
 		{
 			bTryUp = true;
 		}
-		//printk("case8---18M \n");
+;
 	}
 	else if ( priv->CurrentOperaRate == 22 )
 	{
@@ -897,7 +897,7 @@ StaRateAdaptive87SE(
 			{
 			bTryUp = true;
 			}
-		//printk("case9---11M \n");
+;
 		}
 	else if ( priv->CurrentOperaRate == 11 )
 	{
@@ -913,7 +913,7 @@ StaRateAdaptive87SE(
 			{
 			bTryUp = true;
 			}
-		//printk("case10---5.5M \n");
+;
 		}
 	else if ( priv->CurrentOperaRate == 4 )
 	{
@@ -928,7 +928,7 @@ StaRateAdaptive87SE(
 		{
 			bTryUp = true;
 		}
-		//printk("case11---2M \n");
+;
 	}
 	else if ( priv->CurrentOperaRate == 2 )
 	{
@@ -938,11 +938,11 @@ StaRateAdaptive87SE(
 		{
 			bTryUp = true;
 		}
-		//printk("case12---1M \n");
+;
 	}
 
 	if(bTryUp && bTryDown)
-    	printk("StaRateAdaptive87B(): Tx Rate tried upping and downing simultaneously!\n");
+;
 
 	//1 Test Upgrading Tx Rate
 	// Sometimes the cause of the low throughput (high retry rate) is the compatibility between the AP and NIC.
@@ -954,7 +954,7 @@ StaRateAdaptive87SE(
 		{
 			bTryUp = true;
 			priv->bTryuping = true;
-			//printk("StaRateAdaptive87SE(): Randomly try upgrading...\n");
+;
 		}
 	}
 
@@ -965,10 +965,10 @@ StaRateAdaptive87SE(
 		priv->TryDownCountLowData = 0;
 
 		{
-//			printk("UP: pHalData->TryupingCount = %d\n", priv->TryupingCount);
-//			printk("UP: TryUpTh(%d)+ (FailTxRateCount(%d))^2 =%d\n",
-//				TryUpTh, priv->FailTxRateCount, (TryUpTh + priv->FailTxRateCount * priv->FailTxRateCount) );
-//			printk("UP: pHalData->bTryuping=%d\n",  priv->bTryuping);
+;
+////			printk("UP: TryUpTh(%d)+ (FailTxRateCount(%d))^2 =%d\n",
+;
+;
 
 		}
 
@@ -1000,20 +1000,20 @@ StaRateAdaptive87SE(
 			// (2)If the signal strength is increased, it may be able to upgrade.
 
 			priv->CurrentOperaRate = GetUpgradeTxRate(dev, priv->CurrentOperaRate);
-//			printk("StaRateAdaptive87SE(): Upgrade Tx Rate to %d\n", priv->CurrentOperaRate);
+;
 
 			//[TRC Dell Lab] Bypass 12/9/6, Isaiah 2008-02-18 20:00
 			if(priv->CurrentOperaRate ==36)
 			{
 				priv->bUpdateARFR=true;
 				write_nic_word(dev, ARFR, 0x0F8F); //bypass 12/9/6
-//				printk("UP: ARFR=0xF8F\n");
+;
 			}
 			else if(priv->bUpdateARFR)
 			{
 				priv->bUpdateARFR=false;
 				write_nic_word(dev, ARFR, 0x0FFF); //set 1M ~ 54Mbps.
-//				printk("UP: ARFR=0xFFF\n");
+;
 			}
 
 			// Update Fail Tx rate and count.
@@ -1036,9 +1036,9 @@ StaRateAdaptive87SE(
 		priv->TryDownCountLowData++;
 		priv->TryupingCount = 0;
 		{
-//			printk("DN: pHalData->TryDownCountLowData = %d\n",priv->TryDownCountLowData);
-//			printk("DN: TryDownTh =%d\n", TryDownTh);
-//			printk("DN: pHalData->bTryuping=%d\n",  priv->bTryuping);
+;
+;
+;
 		}
 
 		//Check if Tx rate can be degraded or Test trying upgrading should fallback.
@@ -1069,7 +1069,7 @@ StaRateAdaptive87SE(
 			if( (CurrSignalStrength < -80) && (priv->CurrentOperaRate > 72 ))
 			{
 				priv->CurrentOperaRate = 72;
-//				printk("DN: weak signal strength (%d), degrade to 36Mbps\n", CurrSignalStrength);
+;
 			}
 
 			//[TRC Dell Lab] Bypass 12/9/6, Isaiah 2008-02-18 20:00
@@ -1077,13 +1077,13 @@ StaRateAdaptive87SE(
 			{
 				priv->bUpdateARFR=true;
 				write_nic_word(dev, ARFR, 0x0F8F); //bypass 12/9/6
-//				printk("DN: ARFR=0xF8F\n");
+;
 			}
 			else if(priv->bUpdateARFR)
 			{
 				priv->bUpdateARFR=false;
 				write_nic_word(dev, ARFR, 0x0FFF); //set 1M ~ 54Mbps.
-//				printk("DN: ARFR=0xFFF\n");
+;
 			}
 
 			//
@@ -1093,7 +1093,7 @@ StaRateAdaptive87SE(
 			{
 				bUpdateInitialGain = true;
 			}
-//			printk("StaRateAdaptive87SE(): Degrade Tx Rate to %d\n", priv->CurrentOperaRate);
+;
 		}
 	}
 	else
@@ -1128,7 +1128,7 @@ StaRateAdaptive87SE(
 			priv->bEnhanceTxPwr= true;
 			u1bOfdm = ((u1bOfdm+2) > 35) ? 35: (u1bOfdm+2);
 			write_nic_byte(dev, OFDM_TXAGC, u1bOfdm);
-//			printk("Enhance OFDM_TXAGC : +++++ u1bOfdm= 0x%x\n", u1bOfdm);
+;
 			}
 		}
 		// case 2: enter high power
@@ -1153,7 +1153,7 @@ StaRateAdaptive87SE(
 		{
 		priv->bEnhanceTxPwr= false;
 		write_nic_byte(dev, OFDM_TXAGC, OfdmTxPwrIdx);
-		//printk("Recover OFDM_TXAGC : ===== u1bOfdm= 0x%x\n", OfdmTxPwrIdx);
+;
 		}
 		// case 2: enter high power
 		else if(u1bCck < CckTxPwrIdx)
@@ -1192,7 +1192,7 @@ SetInitialGain:
 				{
 					priv->InitialGain --;
 				}
-				printk("StaRateAdaptive87SE(): update init_gain to index %d for date rate %d\n",priv->InitialGain, priv->CurrentOperaRate);
+;
 				UpdateInitialGain(dev);
 			}
 		}
@@ -1203,7 +1203,7 @@ SetInitialGain:
 				priv->InitialGainBackUp= priv->InitialGain;
 
 				priv->InitialGain ++;
-				printk("StaRateAdaptive87SE(): update init_gain to index %d for date rate %d\n",priv->InitialGain, priv->CurrentOperaRate);
+;
 				UpdateInitialGain(dev);
 			}
 		}
@@ -1255,7 +1255,7 @@ SwAntennaDiversityRxOk8185(
 {
 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
 
-//	printk("+SwAntennaDiversityRxOk8185: RxSs: %d\n", SignalStrength);
+;
 
 	priv->AdRxOkCnt++;
 
@@ -1273,7 +1273,7 @@ SwAntennaDiversityRxOk8185(
 	else	 // Aux antenna.
 		priv->AdAuxAntennaRxOkCnt++;
 //+by amy 080312
-//	printk("-SwAntennaDiversityRxOk8185: AdRxOkCnt: %d AdRxSignalStrength: %d\n", priv->AdRxOkCnt, priv->AdRxSignalStrength);
+;
 }
 //
 //	Description:
@@ -1288,7 +1288,7 @@ SetAntenna8185(
 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
 	bool bAntennaSwitched = false;
 
-//	printk("+SetAntenna8185(): Antenna is switching to: %d \n", u1bAntennaIndex);
+;
 
 	switch(u1bAntennaIndex)
 	{
@@ -1314,7 +1314,7 @@ SetAntenna8185(
 		break;
 
 	default:
-		printk("SetAntenna8185: unknown u1bAntennaIndex(%d)\n", u1bAntennaIndex);
+;
 		break;
 	}
 
@@ -1323,7 +1323,7 @@ SetAntenna8185(
 		priv->CurrAntennaIndex = u1bAntennaIndex;
 	}
 
-//	printk("-SetAntenna8185(): return (%#X)\n", bAntennaSwitched);
+;
 
 	return bAntennaSwitched;
 }
@@ -1344,14 +1344,14 @@ SwitchAntenna(
 	{
 			bResult = SetAntenna8185(dev, 1);
 //by amy 080312
-//		printk("SwitchAntenna(): switching to antenna 1 ......\n");
+;
 //		bResult = SetAntenna8185(dev, 1);//-by amy 080312
 	}
 	else
 	{
 			bResult = SetAntenna8185(dev, 0);
 //by amy 080312
-//		printk("SwitchAntenna(): switching to antenna 0 ......\n");
+;
 //		bResult = SetAntenna8185(dev, 0);//-by amy 080312
 	}
 
@@ -1372,24 +1372,24 @@ SwAntennaDiversity(
 {
 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
 	bool   bSwCheckSS=false;
-//	printk("+SwAntennaDiversity(): CurrAntennaIndex: %d\n", priv->CurrAntennaIndex);
-//	printk("AdTickCount is %d\n",priv->AdTickCount);
+;
+;
 //by amy 080312
 	if(bSwCheckSS)
 	{
 		priv->AdTickCount++;
 
-		printk("(1) AdTickCount: %d, AdCheckPeriod: %d\n",
-			priv->AdTickCount, priv->AdCheckPeriod);
-		printk("(2) AdRxSignalStrength: %ld, AdRxSsThreshold: %ld\n",
-			priv->AdRxSignalStrength, priv->AdRxSsThreshold);
+//		printk("(1) AdTickCount: %d, AdCheckPeriod: %d\n",
+;
+//		printk("(2) AdRxSignalStrength: %ld, AdRxSsThreshold: %ld\n",
+;
 	}
 //	priv->AdTickCount++;//-by amy 080312
 
 	// Case 1. No Link.
 	if(priv->ieee80211->state != IEEE80211_LINKED)
 	{
-	//	printk("SwAntennaDiversity(): Case 1. No Link.\n");
+;
 
 		priv->bAdSwitchedChecking = false;
 		// I switch antenna here to prevent any one of antenna is broken before link established, 2006.04.18, by rcnjko..
@@ -1398,7 +1398,7 @@ SwAntennaDiversity(
 	// Case 2. Linked but no packet received.
 	else if(priv->AdRxOkCnt == 0)
 	{
-	//	printk("SwAntennaDiversity(): Case 2. Linked but no packet received.\n");
+;
 
 		priv->bAdSwitchedChecking = false;
 		SwitchAntenna(dev);
@@ -1406,7 +1406,7 @@ SwAntennaDiversity(
 	// Case 3. Evaluate last antenna switch action and undo it if necessary.
 	else if(priv->bAdSwitchedChecking == true)
 	{
-	//	printk("SwAntennaDiversity(): Case 3. Evaluate last antenna switch action.\n");
+;
 
 		priv->bAdSwitchedChecking = false;
 
@@ -1417,8 +1417,8 @@ SwAntennaDiversity(
 					priv->AdMaxRxSsThreshold: priv->AdRxSsThreshold;
 		if(priv->AdRxSignalStrength < priv->AdRxSsBeforeSwitched)
 		{ // Rx signal strength is not improved after we swtiched antenna. => Swich back.
-//			printk("SwAntennaDiversity(): Rx Signal Strength is not improved, CurrRxSs: %d, LastRxSs: %d\n",
-//				priv->AdRxSignalStrength, priv->AdRxSsBeforeSwitched);
+////			printk("SwAntennaDiversity(): Rx Signal Strength is not improved, CurrRxSs: %d, LastRxSs: %d\n",
+;
 //by amy 080312
 			// Increase Antenna Diversity checking period due to bad decision.
 			priv->AdCheckPeriod *= 2;
@@ -1432,21 +1432,21 @@ SwAntennaDiversity(
 		}
 		else
 		{ // Rx Signal Strength is improved.
-//			printk("SwAntennaDiversity(): Rx Signal Strength is improved, CurrRxSs: %d, LastRxSs: %d\n",
-//				priv->AdRxSignalStrength, priv->AdRxSsBeforeSwitched);
+////			printk("SwAntennaDiversity(): Rx Signal Strength is improved, CurrRxSs: %d, LastRxSs: %d\n",
+;
 
 			// Reset Antenna Diversity checking period to its min value.
 			priv->AdCheckPeriod = priv->AdMinCheckPeriod;
 		}
 
-//		printk("SwAntennaDiversity(): AdRxSsThreshold: %d, AdCheckPeriod: %d\n",
-//			priv->AdRxSsThreshold, priv->AdCheckPeriod);
+////		printk("SwAntennaDiversity(): AdRxSsThreshold: %d, AdCheckPeriod: %d\n",
+;
 	}
 	// Case 4. Evaluate if we shall switch antenna now.
 	// Cause Table Speed is very fast in TRC Dell Lab, we check it every time.
 	else// if(priv->AdTickCount >= priv->AdCheckPeriod)//-by amy 080312
 	{
-//		printk("SwAntennaDiversity(): Case 4. Evaluate if we shall switch antenna now.\n");
+;
 
 		priv->AdTickCount = 0;
 
@@ -1466,8 +1466,8 @@ SwAntennaDiversity(
 			&& (priv->CurrAntennaIndex == 0))
 		{ // We set Main antenna as default but RxOk count was less than Aux ones.
 
-	//		printk("SwAntennaDiversity(): Main antenna RxOK is poor, AdMainAntennaRxOkCnt: %d, AdAuxAntennaRxOkCnt: %d\n",
-	//			priv->AdMainAntennaRxOkCnt, priv->AdAuxAntennaRxOkCnt);
+//	//		printk("SwAntennaDiversity(): Main antenna RxOK is poor, AdMainAntennaRxOkCnt: %d, AdAuxAntennaRxOkCnt: %d\n",
+;
 
 			// Switch to Aux antenna.
 			SwitchAntenna(dev);
@@ -1477,8 +1477,8 @@ SwAntennaDiversity(
 			&& (priv->CurrAntennaIndex == 1))
 		{ // We set Aux antenna as default but RxOk count was less than Main ones.
 
-	//		printk("SwAntennaDiversity(): Aux antenna RxOK is poor, AdMainAntennaRxOkCnt: %d, AdAuxAntennaRxOkCnt: %d\n",
-	//			priv->AdMainAntennaRxOkCnt, priv->AdAuxAntennaRxOkCnt);
+//	//		printk("SwAntennaDiversity(): Aux antenna RxOK is poor, AdMainAntennaRxOkCnt: %d, AdAuxAntennaRxOkCnt: %d\n",
+;
 
 			// Switch to Main antenna.
 			SwitchAntenna(dev);
@@ -1487,8 +1487,8 @@ SwAntennaDiversity(
 		else
 		{// Default antenna is better.
 
-	//		printk("SwAntennaDiversity(): Default antenna is better., AdMainAntennaRxOkCnt: %d, AdAuxAntennaRxOkCnt: %d\n",
-	//			priv->AdMainAntennaRxOkCnt, priv->AdAuxAntennaRxOkCnt);
+//	//		printk("SwAntennaDiversity(): Default antenna is better., AdMainAntennaRxOkCnt: %d, AdAuxAntennaRxOkCnt: %d\n",
+;
 
 			// Still need to check current signal strength.
 			priv->bHWAdSwitched = false;
@@ -1510,8 +1510,8 @@ SwAntennaDiversity(
 		// Evaluate Rx signal strength if we shall switch antenna now.
 		if(priv->AdRxSignalStrength < priv->AdRxSsThreshold)
 		{ // Rx signal strength is weak => Switch Antenna.
-//			printk("SwAntennaDiversity(): Rx Signal Strength is weak, CurrRxSs: %d, RxSsThreshold: %d\n",
-//				priv->AdRxSignalStrength, priv->AdRxSsThreshold);
+////			printk("SwAntennaDiversity(): Rx Signal Strength is weak, CurrRxSs: %d, RxSsThreshold: %d\n",
+;
 
 			priv->AdRxSsBeforeSwitched = priv->AdRxSignalStrength;
 			priv->bAdSwitchedChecking = true;
@@ -1520,8 +1520,8 @@ SwAntennaDiversity(
 		}
 		else
 		{ // Rx signal strength is OK.
-//			printk("SwAntennaDiversity(): Rx Signal Strength is OK, CurrRxSs: %d, RxSsThreshold: %d\n",
-//				priv->AdRxSignalStrength, priv->AdRxSsThreshold);
+////			printk("SwAntennaDiversity(): Rx Signal Strength is OK, CurrRxSs: %d, RxSsThreshold: %d\n",
+;
 
 			priv->bAdSwitchedChecking = false;
 			// Increase Rx signal strength threshold if necessary.
@@ -1550,7 +1550,7 @@ SwAntennaDiversity(
 
 //	priv->AdRxOkCnt = 0;//-by amy 080312
 
-//	printk("-SwAntennaDiversity()\n");
+;
 }
 
 //
@@ -1595,7 +1595,7 @@ SwAntennaDiversityTimerCallback(
 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
 	RT_RF_POWER_STATE rtState;
 
-	//printk("+SwAntennaDiversityTimerCallback()\n");
+;
 
 	//
 	// We do NOT need to switch antenna while RF is off.
@@ -1605,7 +1605,7 @@ SwAntennaDiversityTimerCallback(
 	do{
 		if (rtState == eRfOff)
 		{
-//			printk("SwAntennaDiversityTimer - RF is OFF.\n");
+;
 			break;
 		}
 		else if (rtState == eRfSleep)
@@ -1624,6 +1624,6 @@ SwAntennaDiversityTimerCallback(
 		add_timer(&priv->SwAntennaDiversityTimer);
 	}
 
-	//printk("-SwAntennaDiversityTimerCallback()\n");
+;
 }
 

@@ -484,8 +484,8 @@ acpi_sbs_add_fs(struct proc_dir_entry **dir,
 		const struct file_operations *state_fops,
 		const struct file_operations *alarm_fops, void *data)
 {
-	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for SBS is loaded,"
-			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
+//	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for SBS is loaded,"
+;
 	if (!*dir) {
 		*dir = proc_mkdir(dir_name, parent_dir);
 		if (!*dir) {
@@ -809,9 +809,9 @@ static int acpi_battery_add(struct acpi_sbs *sbs, int id)
 		goto end;
 	battery->have_sysfs_alarm = 1;
       end:
-	printk(KERN_INFO PREFIX "%s [%s]: Battery Slot [%s] (battery %s)\n",
-	       ACPI_SBS_DEVICE_NAME, acpi_device_bid(sbs->device),
-	       battery->name, battery->present ? "present" : "absent");
+//	printk(KERN_INFO PREFIX "%s [%s]: Battery Slot [%s] (battery %s)\n",
+//	       ACPI_SBS_DEVICE_NAME, acpi_device_bid(sbs->device),
+;
 	return result;
 }
 
@@ -850,9 +850,9 @@ static int acpi_charger_add(struct acpi_sbs *sbs)
 	sbs->charger.num_properties = ARRAY_SIZE(sbs_ac_props);
 	sbs->charger.get_property = sbs_get_ac_property;
 	power_supply_register(&sbs->device->dev, &sbs->charger);
-	printk(KERN_INFO PREFIX "%s [%s]: AC Adapter [%s] (%s)\n",
-	       ACPI_SBS_DEVICE_NAME, acpi_device_bid(sbs->device),
-	       ACPI_AC_DIR_NAME, sbs->charger_present ? "on-line" : "off-line");
+//	printk(KERN_INFO PREFIX "%s [%s]: AC Adapter [%s] (%s)\n",
+//	       ACPI_SBS_DEVICE_NAME, acpi_device_bid(sbs->device),
+;
       end:
 	return result;
 }

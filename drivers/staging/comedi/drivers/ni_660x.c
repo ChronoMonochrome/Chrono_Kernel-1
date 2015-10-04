@@ -748,8 +748,8 @@ static enum NI_660x_Register ni_gpct_to_660x_register(enum ni_gpct_register reg)
 		ni_660x_register = G3InterruptEnable;
 		break;
 	default:
-		printk(KERN_WARNING "%s: unhandled register 0x%x in switch.\n",
-		       __func__, reg);
+//		printk(KERN_WARNING "%s: unhandled register 0x%x in switch.\n",
+;
 		BUG();
 		return 0;
 		break;
@@ -773,8 +773,8 @@ static inline void ni_660x_write_register(struct comedi_device *dev,
 		writel(bits, write_address);
 		break;
 	default:
-		printk(KERN_WARNING "%s: %s: bug! unhandled case (reg=0x%x) in switch.\n",
-		       __FILE__, __func__, reg);
+//		printk(KERN_WARNING "%s: %s: bug! unhandled case (reg=0x%x) in switch.\n",
+;
 		BUG();
 		break;
 	}
@@ -796,8 +796,8 @@ static inline unsigned ni_660x_read_register(struct comedi_device *dev,
 		return readl(read_address);
 		break;
 	default:
-		printk(KERN_WARNING "%s: %s: bug! unhandled case (reg=0x%x) in switch.\n",
-		       __FILE__, __func__, reg);
+//		printk(KERN_WARNING "%s: %s: bug! unhandled case (reg=0x%x) in switch.\n",
+;
 		BUG();
 		break;
 	}
@@ -1070,7 +1070,7 @@ static int ni_660x_attach(struct comedi_device *dev,
 	unsigned i;
 	unsigned global_interrupt_config_bits;
 
-	printk(KERN_INFO "comedi%d: ni_660x: ", dev->minor);
+;
 
 	ret = ni_660x_allocate_private(dev);
 	if (ret < 0)
@@ -1083,7 +1083,7 @@ static int ni_660x_attach(struct comedi_device *dev,
 
 	ret = mite_setup2(private(dev)->mite, 1);
 	if (ret < 0) {
-		printk(KERN_WARNING "error setting up mite\n");
+;
 		return ret;
 	}
 	comedi_set_hw_dev(dev, &private(dev)->mite->pcidev->dev);
@@ -1091,7 +1091,7 @@ static int ni_660x_attach(struct comedi_device *dev,
 	if (ret < 0)
 		return ret;
 
-	printk(KERN_INFO " %s ", dev->board_name);
+;
 
 	dev->n_subdevices = 2 + NI_660X_MAX_NUM_COUNTERS;
 
@@ -1175,7 +1175,7 @@ static int ni_660x_attach(struct comedi_device *dev,
 	ret = request_irq(mite_irq(private(dev)->mite), ni_660x_interrupt,
 			  IRQF_SHARED, "ni_660x", dev);
 	if (ret < 0) {
-		printk(KERN_WARNING " irq not available\n");
+;
 		return ret;
 	}
 	dev->irq = mite_irq(private(dev)->mite);
@@ -1184,13 +1184,13 @@ static int ni_660x_attach(struct comedi_device *dev,
 		global_interrupt_config_bits |= Cascade_Int_Enable_Bit;
 	ni_660x_write_register(dev, 0, global_interrupt_config_bits,
 			       GlobalInterruptConfigRegister);
-	printk(KERN_INFO "attached\n");
+;
 	return 0;
 }
 
 static int ni_660x_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: ni_660x: remove\n", dev->minor);
+;
 
 	/* Free irq */
 	if (dev->irq)
@@ -1268,7 +1268,7 @@ static int ni_660x_find_device(struct comedi_device *dev, int bus, int slot)
 			}
 		}
 	}
-	printk(KERN_WARNING "no device found\n");
+;
 	mite_list_devices();
 	return -EIO;
 }

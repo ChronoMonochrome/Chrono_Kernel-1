@@ -1012,8 +1012,8 @@ static int __init au1550_spi_init(void)
 	if (usedma) {
 		ddma_memid = au1xxx_ddma_add_device(&au1550_spi_mem_dbdev);
 		if (!ddma_memid)
-			printk(KERN_ERR "au1550-spi: cannot add memory"
-					"dbdma device\n");
+//			printk(KERN_ERR "au1550-spi: cannot add memory"
+;
 	}
 	return platform_driver_probe(&au1550_spi_drv, au1550_spi_probe);
 }

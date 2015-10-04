@@ -38,10 +38,10 @@ mISDN_FsmNew(struct Fsm *fsm,
 	for (i = 0; i < fncount; i++)
 		if ((fnlist[i].state >= fsm->state_count) ||
 		    (fnlist[i].event >= fsm->event_count)) {
-			printk(KERN_ERR
-			    "mISDN_FsmNew Error: %d st(%ld/%ld) ev(%ld/%ld)\n",
-			    i, (long)fnlist[i].state, (long)fsm->state_count,
-			    (long)fnlist[i].event, (long)fsm->event_count);
+//			printk(KERN_ERR
+//			    "mISDN_FsmNew Error: %d st(%ld/%ld) ev(%ld/%ld)\n",
+//			    i, (long)fnlist[i].state, (long)fsm->state_count,
+;
 		} else
 			fsm->jumpmatrix[fsm->state_count * fnlist[i].event +
 			    fnlist[i].state] = (FSMFNPTR) fnlist[i].routine;
@@ -62,10 +62,10 @@ mISDN_FsmEvent(struct FsmInst *fi, int event, void *arg)
 
 	if ((fi->state >= fi->fsm->state_count) ||
 	    (event >= fi->fsm->event_count)) {
-		printk(KERN_ERR
-		    "mISDN_FsmEvent Error st(%ld/%ld) ev(%d/%ld)\n",
-		    (long)fi->state, (long)fi->fsm->state_count, event,
-		    (long)fi->fsm->event_count);
+//		printk(KERN_ERR
+//		    "mISDN_FsmEvent Error st(%ld/%ld) ev(%d/%ld)\n",
+//		    (long)fi->state, (long)fi->fsm->state_count, event,
+;
 		return 1;
 	}
 	r = fi->fsm->jumpmatrix[fi->fsm->state_count * event + fi->state];
@@ -145,8 +145,8 @@ mISDN_FsmAddTimer(struct FsmTimer *ft,
 
 	if (timer_pending(&ft->tl)) {
 		if (ft->fi->debug) {
-			printk(KERN_WARNING
-				"mISDN_FsmAddTimer: timer already active!\n");
+//			printk(KERN_WARNING
+;
 			ft->fi->printdebug(ft->fi,
 				"mISDN_FsmAddTimer already active!");
 		}

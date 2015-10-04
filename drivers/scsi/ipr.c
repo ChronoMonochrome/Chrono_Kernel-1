@@ -1190,9 +1190,9 @@ static void ipr_update_res_entry(struct ipr_resource_entry *res,
 		}
 
 		if (res->sdev && new_path)
-			sdev_printk(KERN_INFO, res->sdev, "Resource path: %s\n",
-				    ipr_format_res_path(res->res_path, buffer,
-							sizeof(buffer)));
+//			sdev_printk(KERN_INFO, res->sdev, "Resource path: %s\n",
+//				    ipr_format_res_path(res->res_path, buffer,
+;
 	} else {
 		res->flags = cfgtew->u.cfgte->flags;
 		if (res->flags & IPR_IS_IOA_RESOURCE)
@@ -4525,9 +4525,9 @@ static int ipr_slave_configure(struct scsi_device *sdev)
 		} else
 			scsi_adjust_queue_depth(sdev, 0, sdev->host->cmd_per_lun);
 		if (ioa_cfg->sis64)
-			sdev_printk(KERN_INFO, sdev, "Resource path: %s\n",
-				    ipr_format_res_path(res->res_path, buffer,
-							sizeof(buffer)));
+//			sdev_printk(KERN_INFO, sdev, "Resource path: %s\n",
+//				    ipr_format_res_path(res->res_path, buffer,
+;
 		return 0;
 	}
 	spin_unlock_irqrestore(ioa_cfg->host->host_lock, lock_flags);
@@ -4789,7 +4789,7 @@ static int __ipr_eh_dev_reset(struct scsi_cmnd * scsi_cmd)
 	}
 
 	res->resetting_device = 1;
-	scmd_printk(KERN_ERR, scsi_cmd, "Resetting device\n");
+;
 
 	if (ipr_is_gata(res) && res->sata_port) {
 		ap = res->sata_port->ap;
@@ -4883,7 +4883,7 @@ static void ipr_abort_timeout(struct ipr_cmnd *ipr_cmd)
 		return;
 	}
 
-	sdev_printk(KERN_ERR, ipr_cmd->u.sdev, "Abort timed out. Resetting bus.\n");
+;
 	reset_cmd = ipr_get_free_ipr_cmnd(ioa_cfg);
 	ipr_cmd->sibling = reset_cmd;
 	reset_cmd->sibling = ipr_cmd;
@@ -4947,8 +4947,8 @@ static int ipr_cancel_op(struct scsi_cmnd * scsi_cmd)
 	cmd_pkt->cdb[0] = IPR_CANCEL_ALL_REQUESTS;
 	ipr_cmd->u.sdev = scsi_cmd->device;
 
-	scmd_printk(KERN_ERR, scsi_cmd, "Aborting command: %02X\n",
-		    scsi_cmd->cmnd[0]);
+//	scmd_printk(KERN_ERR, scsi_cmd, "Aborting command: %02X\n",
+;
 	ipr_send_blocking_cmd(ipr_cmd, ipr_abort_timeout, IPR_CANCEL_ALL_TIMEOUT);
 	ioasc = be32_to_cpu(ipr_cmd->s.ioasa.hdr.ioasc);
 
@@ -5336,8 +5336,8 @@ static void ipr_erp_done(struct ipr_cmnd *ipr_cmd)
 
 	if (IPR_IOASC_SENSE_KEY(ioasc) > 0) {
 		scsi_cmd->result |= (DID_ERROR << 16);
-		scmd_printk(KERN_ERR, scsi_cmd,
-			    "Request Sense failed with IOASC: 0x%08X\n", ioasc);
+//		scmd_printk(KERN_ERR, scsi_cmd,
+;
 	} else {
 		memcpy(scsi_cmd->sense_buffer, ipr_cmd->sense_buffer,
 		       SCSI_SENSE_BUFFERSIZE);

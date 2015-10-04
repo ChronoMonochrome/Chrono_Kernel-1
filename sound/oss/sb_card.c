@@ -99,25 +99,25 @@ MODULE_PARM_DESC(uart401,  "When set to 1, will attempt to detect and enable"\
 static int sb_register_oss(struct sb_card_config *scc, struct sb_module_options *sbmo)
 {
 	if (!request_region(scc->conf.io_base, 16, "soundblaster")) {
-		printk(KERN_ERR "sb: ports busy.\n");
+;
 		kfree(scc);
 		return -EBUSY;
 	}
 
 	if (!sb_dsp_detect(&scc->conf, 0, 0, sbmo)) {
 		release_region(scc->conf.io_base, 16);
-		printk(KERN_ERR "sb: Failed DSP Detect.\n");
+;
 		kfree(scc);
 		return -ENODEV;
 	}
 	if(!sb_dsp_init(&scc->conf, THIS_MODULE)) {
-		printk(KERN_ERR "sb: Failed DSP init.\n");
+;
 		kfree(scc);
 		return -ENODEV;
 	}
 	if(scc->mpucnf.io_base > 0) {
 		scc->mpu = 1;
-		printk(KERN_INFO "sb: Turning on MPU\n");
+;
 		if(!probe_sbmpu(&scc->mpucnf, THIS_MODULE))
 			scc->mpu = 0;
 	}
@@ -139,7 +139,7 @@ static int __init sb_init_legacy(void)
 	struct sb_module_options sbmo = {0};
 
 	if((legacy = kzalloc(sizeof(struct sb_card_config), GFP_KERNEL)) == NULL) {
-		printk(KERN_ERR "sb: Error: Could not allocate memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -248,21 +248,21 @@ static int sb_pnp_probe(struct pnp_card_link *card, const struct pnp_card_device
 	}
 
 	if((scc = kzalloc(sizeof(struct sb_card_config), GFP_KERNEL)) == NULL) {
-		printk(KERN_ERR "sb: Error: Could not allocate memory\n");
+;
 		return -ENOMEM;
 	}
 
-	printk(KERN_INFO "sb: PnP: Found Card Named = \"%s\", Card PnP id = " \
-	       "%s, Device PnP id = %s\n", card->card->name, card_id->id,
-	       dev->id->id);
+//	printk(KERN_INFO "sb: PnP: Found Card Named = \"%s\", Card PnP id = " \
+//	       "%s, Device PnP id = %s\n", card->card->name, card_id->id,
+;
 
 	scc->card_id = card_id->id;
 	scc->dev_id = dev->id->id;
 	sb_dev2cfg(dev, scc);
 
-	printk(KERN_INFO "sb: PnP:      Detected at: io=0x%x, irq=%d, " \
-	       "dma=%d, dma16=%d\n", scc->conf.io_base, scc->conf.irq,
-	       scc->conf.dma, scc->conf.dma2);
+//	printk(KERN_INFO "sb: PnP:      Detected at: io=0x%x, irq=%d, " \
+//	       "dma=%d, dma16=%d\n", scc->conf.io_base, scc->conf.irq,
+;
 
 	pnp_set_card_drvdata(card, scc);
 	sb_pnp_devices++;
@@ -277,7 +277,7 @@ static void sb_pnp_remove(struct pnp_card_link *card)
 	if(!scc)
 		return;
 
-	printk(KERN_INFO "sb: PnP: Removing %s\n", scc->card_id);
+;
 
 	sb_unload(scc);
 }
@@ -304,16 +304,16 @@ static int __init sb_init(void)
 	int lres = 0;
 	int pres = 0;
 
-	printk(KERN_INFO "sb: Init: Starting Probe...\n");
+;
 
 	if(io != -1 && irq != -1 && dma != -1) {
-		printk(KERN_INFO "sb: Probing legacy card with io=%x, "\
-		       "irq=%d, dma=%d, dma16=%d\n",io, irq, dma, dma16);
+//		printk(KERN_INFO "sb: Probing legacy card with io=%x, "\
+;
 		lres = sb_init_legacy();
 	} else if((io != -1 || irq != -1 || dma != -1) ||
 		  (!pnp && (io == -1 && irq == -1 && dma == -1)))
-		printk(KERN_ERR "sb: Error: At least io, irq, and dma "\
-		       "must be set for legacy cards.\n");
+//		printk(KERN_ERR "sb: Error: At least io, irq, and dma "\
+;
 
 #ifdef CONFIG_PNP
 	if(pnp) {
@@ -323,7 +323,7 @@ static int __init sb_init(void)
 		pres = sb_pnp_devices;
 	}
 #endif
-	printk(KERN_INFO "sb: Init: Done\n");
+;
 
 	/* If either PnP or Legacy registered a card then return
 	 * success */
@@ -336,7 +336,7 @@ static int __init sb_init(void)
 
 static void __exit sb_exit(void)
 {
-	printk(KERN_INFO "sb: Unloading...\n");
+;
 
 	/* Unload legacy card */
 	if (legacy) {

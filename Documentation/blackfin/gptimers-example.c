@@ -52,14 +52,14 @@ static int __init gptimer_example_init(void)
 	/* grab the peripheral pins */
 	ret = peripheral_request(P_TMR5, DRIVER_NAME);
 	if (ret) {
-		printk(KERN_NOTICE DRIVER_NAME ": peripheral request failed\n");
+;
 		return ret;
 	}
 
 	/* grab the IRQ for the timer */
 	ret = request_irq(IRQ_TIMER5, gptimer_example_irq, IRQF_SHARED, DRIVER_NAME, &data);
 	if (ret) {
-		printk(KERN_NOTICE DRIVER_NAME ": IRQ request failed\n");
+;
 		peripheral_free(P_TMR5);
 		return ret;
 	}

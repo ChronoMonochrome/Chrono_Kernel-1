@@ -688,12 +688,12 @@ void saa7146_write_out_dma(struct saa7146_dev* dev, int which, struct saa7146_vi
 	/* upload */
 	saa7146_write(dev, MC2, (MASK_02<<(which-1))|(MASK_18<<(which-1)));
 /*
-	printk("vdma%d.base_even:     0x%08x\n", which,vdma->base_even);
-	printk("vdma%d.base_odd:      0x%08x\n", which,vdma->base_odd);
-	printk("vdma%d.prot_addr:     0x%08x\n", which,vdma->prot_addr);
-	printk("vdma%d.base_page:     0x%08x\n", which,vdma->base_page);
-	printk("vdma%d.pitch:         0x%08x\n", which,vdma->pitch);
-	printk("vdma%d.num_line_byte: 0x%08x\n", which,vdma->num_line_byte);
+;
+;
+;
+;
+;
+;
 */
 }
 
@@ -1027,13 +1027,13 @@ void saa7146_set_capture(struct saa7146_dev *dev, struct saa7146_buf *buf, struc
 	}
 
 /*
-	printk("vdma%d.base_even:     0x%08x\n", 1,saa7146_read(dev,BASE_EVEN1));
-	printk("vdma%d.base_odd:      0x%08x\n", 1,saa7146_read(dev,BASE_ODD1));
-	printk("vdma%d.prot_addr:     0x%08x\n", 1,saa7146_read(dev,PROT_ADDR1));
-	printk("vdma%d.base_page:     0x%08x\n", 1,saa7146_read(dev,BASE_PAGE1));
-	printk("vdma%d.pitch:         0x%08x\n", 1,saa7146_read(dev,PITCH1));
-	printk("vdma%d.num_line_byte: 0x%08x\n", 1,saa7146_read(dev,NUM_LINE_BYTE1));
-	printk("vdma%d => vptr      : 0x%08x\n", 1,saa7146_read(dev,PCI_VDP1));
+;
+;
+;
+;
+;
+;
+;
 */
 
 	/* write the address of the rps-program */

@@ -179,8 +179,8 @@ void svc_rdma_put_req_map(struct svc_rdma_req_map *map)
 static void cq_event_handler(struct ib_event *event, void *context)
 {
 	struct svc_xprt *xprt = context;
-	dprintk("svcrdma: received CQ event id=%d, context=%p\n",
-		event->event, context);
+//	dprintk("svcrdma: received CQ event id=%d, context=%p\n",
+;
 	set_bit(XPT_CLOSE, &xprt->xpt_flags);
 }
 
@@ -195,8 +195,8 @@ static void qp_event_handler(struct ib_event *event, void *context)
 	case IB_EVENT_COMM_EST:
 	case IB_EVENT_SQ_DRAINED:
 	case IB_EVENT_QP_LAST_WQE_REACHED:
-		dprintk("svcrdma: QP event %d received for QP=%p\n",
-			event->event, event->element.qp);
+//		dprintk("svcrdma: QP event %d received for QP=%p\n",
+;
 		break;
 	/* These are considered fatal events */
 	case IB_EVENT_PATH_MIG_ERR:
@@ -205,9 +205,9 @@ static void qp_event_handler(struct ib_event *event, void *context)
 	case IB_EVENT_QP_ACCESS_ERR:
 	case IB_EVENT_DEVICE_FATAL:
 	default:
-		dprintk("svcrdma: QP ERROR event %d received for QP=%p, "
-			"closing transport\n",
-			event->event, event->element.qp);
+//		dprintk("svcrdma: QP ERROR event %d received for QP=%p, "
+//			"closing transport\n",
+;
 		set_bit(XPT_CLOSE, &xprt->xpt_flags);
 		break;
 	}
@@ -307,7 +307,7 @@ static void rq_cq_reap(struct svcxprt_rdma *xprt)
 		svc_rdma_unmap_dma(ctxt);
 		if (wc.status != IB_WC_SUCCESS) {
 			/* Close the transport */
-			dprintk("svcrdma: transport closing putting ctxt %p\n", ctxt);
+;
 			set_bit(XPT_CLOSE, &xprt->sc_xprt.xpt_flags);
 			svc_rdma_put_context(ctxt, 1);
 			svc_xprt_put(&xprt->sc_xprt);
@@ -369,9 +369,9 @@ static void process_context(struct svcxprt_rdma *xprt,
 		break;
 
 	default:
-		printk(KERN_ERR "svcrdma: unexpected completion type, "
-		       "opcode=%d\n",
-		       ctxt->wr_op);
+//		printk(KERN_ERR "svcrdma: unexpected completion type, "
+//		       "opcode=%d\n",
+;
 		break;
 	}
 }
@@ -483,8 +483,8 @@ struct page *svc_rdma_get_page(void)
 
 	while ((page = alloc_page(GFP_KERNEL)) == NULL) {
 		/* If we can't get memory, wait a bit and try again */
-		printk(KERN_INFO "svcrdma: out of memory...retrying in 1000 "
-		       "jiffies.\n");
+//		printk(KERN_INFO "svcrdma: out of memory...retrying in 1000 "
+;
 		schedule_timeout_uninterruptible(msecs_to_jiffies(1000));
 	}
 	return page;
@@ -559,13 +559,13 @@ static void handle_connect_req(struct rdma_cm_id *new_cma_id, size_t client_ird)
 	/* Create a new transport */
 	newxprt = rdma_create_xprt(listen_xprt->sc_xprt.xpt_server, 0);
 	if (!newxprt) {
-		dprintk("svcrdma: failed to create new transport\n");
+;
 		return;
 	}
 	newxprt->sc_cm_id = new_cma_id;
 	new_cma_id->context = newxprt;
-	dprintk("svcrdma: Creating newxprt=%p, cm_id=%p, listenxprt=%p\n",
-		newxprt, newxprt->sc_cm_id, listen_xprt);
+//	dprintk("svcrdma: Creating newxprt=%p, cm_id=%p, listenxprt=%p\n",
+;
 
 	/* Save client advertised inbound read limit for use later in accept. */
 	newxprt->sc_ord = client_ird;
@@ -604,28 +604,28 @@ static int rdma_listen_handler(struct rdma_cm_id *cma_id,
 
 	switch (event->event) {
 	case RDMA_CM_EVENT_CONNECT_REQUEST:
-		dprintk("svcrdma: Connect request on cma_id=%p, xprt = %p, "
-			"event=%d\n", cma_id, cma_id->context, event->event);
+//		dprintk("svcrdma: Connect request on cma_id=%p, xprt = %p, "
+;
 		handle_connect_req(cma_id,
 				   event->param.conn.initiator_depth);
 		break;
 
 	case RDMA_CM_EVENT_ESTABLISHED:
 		/* Accept complete */
-		dprintk("svcrdma: Connection completed on LISTEN xprt=%p, "
-			"cm_id=%p\n", xprt, cma_id);
+//		dprintk("svcrdma: Connection completed on LISTEN xprt=%p, "
+;
 		break;
 
 	case RDMA_CM_EVENT_DEVICE_REMOVAL:
-		dprintk("svcrdma: Device removal xprt=%p, cm_id=%p\n",
-			xprt, cma_id);
+//		dprintk("svcrdma: Device removal xprt=%p, cm_id=%p\n",
+;
 		if (xprt)
 			set_bit(XPT_CLOSE, &xprt->sc_xprt.xpt_flags);
 		break;
 
 	default:
-		dprintk("svcrdma: Unexpected event on listening endpoint %p, "
-			"event=%d\n", cma_id, event->event);
+//		dprintk("svcrdma: Unexpected event on listening endpoint %p, "
+;
 		break;
 	}
 
@@ -642,14 +642,14 @@ static int rdma_cma_handler(struct rdma_cm_id *cma_id,
 	case RDMA_CM_EVENT_ESTABLISHED:
 		/* Accept complete */
 		svc_xprt_get(xprt);
-		dprintk("svcrdma: Connection completed on DTO xprt=%p, "
-			"cm_id=%p\n", xprt, cma_id);
+//		dprintk("svcrdma: Connection completed on DTO xprt=%p, "
+;
 		clear_bit(RDMAXPRT_CONN_PENDING, &rdma->sc_flags);
 		svc_xprt_enqueue(xprt);
 		break;
 	case RDMA_CM_EVENT_DISCONNECTED:
-		dprintk("svcrdma: Disconnect on DTO xprt=%p, cm_id=%p\n",
-			xprt, cma_id);
+//		dprintk("svcrdma: Disconnect on DTO xprt=%p, cm_id=%p\n",
+;
 		if (xprt) {
 			set_bit(XPT_CLOSE, &xprt->xpt_flags);
 			svc_xprt_enqueue(xprt);
@@ -657,16 +657,16 @@ static int rdma_cma_handler(struct rdma_cm_id *cma_id,
 		}
 		break;
 	case RDMA_CM_EVENT_DEVICE_REMOVAL:
-		dprintk("svcrdma: Device removal cma_id=%p, xprt = %p, "
-			"event=%d\n", cma_id, xprt, event->event);
+//		dprintk("svcrdma: Device removal cma_id=%p, xprt = %p, "
+;
 		if (xprt) {
 			set_bit(XPT_CLOSE, &xprt->xpt_flags);
 			svc_xprt_enqueue(xprt);
 		}
 		break;
 	default:
-		dprintk("svcrdma: Unexpected event on DTO endpoint %p, "
-			"event=%d\n", cma_id, event->event);
+//		dprintk("svcrdma: Unexpected event on DTO endpoint %p, "
+;
 		break;
 	}
 	return 0;
@@ -685,9 +685,9 @@ static struct svc_xprt *svc_rdma_create(struct svc_serv *serv,
 	struct svc_xprt *xprt;
 	int ret;
 
-	dprintk("svcrdma: Creating RDMA socket\n");
+;
 	if (sa->sa_family != AF_INET) {
-		dprintk("svcrdma: Address family %d is not supported.\n", sa->sa_family);
+;
 		return ERR_PTR(-EAFNOSUPPORT);
 	}
 	cma_xprt = rdma_create_xprt(serv, 1);
@@ -699,20 +699,20 @@ static struct svc_xprt *svc_rdma_create(struct svc_serv *serv,
 				   IB_QPT_RC);
 	if (IS_ERR(listen_id)) {
 		ret = PTR_ERR(listen_id);
-		dprintk("svcrdma: rdma_create_id failed = %d\n", ret);
+;
 		goto err0;
 	}
 
 	ret = rdma_bind_addr(listen_id, sa);
 	if (ret) {
-		dprintk("svcrdma: rdma_bind_addr failed = %d\n", ret);
+;
 		goto err1;
 	}
 	cma_xprt->sc_cm_id = listen_id;
 
 	ret = rdma_listen(listen_id, RPCRDMA_LISTEN_BACKLOG);
 	if (ret) {
-		dprintk("svcrdma: rdma_listen failed = %d\n", ret);
+;
 		goto err1;
 	}
 
@@ -861,13 +861,13 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 	if (!newxprt)
 		return NULL;
 
-	dprintk("svcrdma: newxprt from accept queue = %p, cm_id=%p\n",
-		newxprt, newxprt->sc_cm_id);
+//	dprintk("svcrdma: newxprt from accept queue = %p, cm_id=%p\n",
+;
 
 	ret = ib_query_device(newxprt->sc_cm_id->device, &devattr);
 	if (ret) {
-		dprintk("svcrdma: could not query device attributes on "
-			"device %p, rc=%d\n", newxprt->sc_cm_id->device, ret);
+//		dprintk("svcrdma: could not query device attributes on "
+;
 		goto errout;
 	}
 
@@ -888,7 +888,7 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 
 	newxprt->sc_pd = ib_alloc_pd(newxprt->sc_cm_id->device);
 	if (IS_ERR(newxprt->sc_pd)) {
-		dprintk("svcrdma: error creating PD for connect request\n");
+;
 		goto errout;
 	}
 	newxprt->sc_sq_cq = ib_create_cq(newxprt->sc_cm_id->device,
@@ -898,7 +898,7 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 					 newxprt->sc_sq_depth,
 					 0);
 	if (IS_ERR(newxprt->sc_sq_cq)) {
-		dprintk("svcrdma: error creating SQ CQ for connect request\n");
+;
 		goto errout;
 	}
 	newxprt->sc_rq_cq = ib_create_cq(newxprt->sc_cm_id->device,
@@ -908,7 +908,7 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 					 newxprt->sc_max_requests,
 					 0);
 	if (IS_ERR(newxprt->sc_rq_cq)) {
-		dprintk("svcrdma: error creating RQ CQ for connect request\n");
+;
 		goto errout;
 	}
 
@@ -923,18 +923,18 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 	qp_attr.qp_type = IB_QPT_RC;
 	qp_attr.send_cq = newxprt->sc_sq_cq;
 	qp_attr.recv_cq = newxprt->sc_rq_cq;
-	dprintk("svcrdma: newxprt->sc_cm_id=%p, newxprt->sc_pd=%p\n"
-		"    cm_id->device=%p, sc_pd->device=%p\n"
-		"    cap.max_send_wr = %d\n"
-		"    cap.max_recv_wr = %d\n"
-		"    cap.max_send_sge = %d\n"
-		"    cap.max_recv_sge = %d\n",
-		newxprt->sc_cm_id, newxprt->sc_pd,
-		newxprt->sc_cm_id->device, newxprt->sc_pd->device,
-		qp_attr.cap.max_send_wr,
-		qp_attr.cap.max_recv_wr,
-		qp_attr.cap.max_send_sge,
-		qp_attr.cap.max_recv_sge);
+//	dprintk("svcrdma: newxprt->sc_cm_id=%p, newxprt->sc_pd=%p\n"
+//		"    cm_id->device=%p, sc_pd->device=%p\n"
+//		"    cap.max_send_wr = %d\n"
+//		"    cap.max_recv_wr = %d\n"
+//		"    cap.max_send_sge = %d\n"
+//		"    cap.max_recv_sge = %d\n",
+//		newxprt->sc_cm_id, newxprt->sc_pd,
+//		newxprt->sc_cm_id->device, newxprt->sc_pd->device,
+//		qp_attr.cap.max_send_wr,
+//		qp_attr.cap.max_recv_wr,
+//		qp_attr.cap.max_send_sge,
+;
 
 	ret = rdma_create_qp(newxprt->sc_cm_id, newxprt->sc_pd, &qp_attr);
 	if (ret) {
@@ -948,7 +948,7 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 		ret = rdma_create_qp(newxprt->sc_cm_id, newxprt->sc_pd,
 				     &qp_attr);
 		if (ret) {
-			dprintk("svcrdma: failed to create QP, ret=%d\n", ret);
+;
 			goto errout;
 		}
 		newxprt->sc_max_sge = qp_attr.cap.max_send_sge;
@@ -1020,8 +1020,8 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 		newxprt->sc_phys_mr =
 			ib_get_dma_mr(newxprt->sc_pd, dma_mr_acc);
 		if (IS_ERR(newxprt->sc_phys_mr)) {
-			dprintk("svcrdma: Failed to create DMA MR ret=%d\n",
-				ret);
+//			dprintk("svcrdma: Failed to create DMA MR ret=%d\n",
+;
 			goto errout;
 		}
 		newxprt->sc_dma_lkey = newxprt->sc_phys_mr->lkey;
@@ -1033,7 +1033,7 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 	for (i = 0; i < newxprt->sc_max_requests; i++) {
 		ret = svc_rdma_post_recv(newxprt);
 		if (ret) {
-			dprintk("svcrdma: failure posting receive buffers\n");
+;
 			goto errout;
 		}
 	}
@@ -1055,39 +1055,39 @@ static struct svc_xprt *svc_rdma_accept(struct svc_xprt *xprt)
 	conn_param.initiator_depth = newxprt->sc_ord;
 	ret = rdma_accept(newxprt->sc_cm_id, &conn_param);
 	if (ret) {
-		dprintk("svcrdma: failed to accept new connection, ret=%d\n",
-		       ret);
+//		dprintk("svcrdma: failed to accept new connection, ret=%d\n",
+;
 		goto errout;
 	}
 
-	dprintk("svcrdma: new connection %p accepted with the following "
-		"attributes:\n"
-		"    local_ip        : %pI4\n"
-		"    local_port	     : %d\n"
-		"    remote_ip       : %pI4\n"
-		"    remote_port     : %d\n"
-		"    max_sge         : %d\n"
-		"    sq_depth        : %d\n"
-		"    max_requests    : %d\n"
-		"    ord             : %d\n",
-		newxprt,
-		&((struct sockaddr_in *)&newxprt->sc_cm_id->
-			 route.addr.src_addr)->sin_addr.s_addr,
-		ntohs(((struct sockaddr_in *)&newxprt->sc_cm_id->
-		       route.addr.src_addr)->sin_port),
-		&((struct sockaddr_in *)&newxprt->sc_cm_id->
-			 route.addr.dst_addr)->sin_addr.s_addr,
-		ntohs(((struct sockaddr_in *)&newxprt->sc_cm_id->
-		       route.addr.dst_addr)->sin_port),
-		newxprt->sc_max_sge,
-		newxprt->sc_sq_depth,
-		newxprt->sc_max_requests,
-		newxprt->sc_ord);
+//	dprintk("svcrdma: new connection %p accepted with the following "
+//		"attributes:\n"
+//		"    local_ip        : %pI4\n"
+//		"    local_port	     : %d\n"
+//		"    remote_ip       : %pI4\n"
+//		"    remote_port     : %d\n"
+//		"    max_sge         : %d\n"
+//		"    sq_depth        : %d\n"
+//		"    max_requests    : %d\n"
+//		"    ord             : %d\n",
+//		newxprt,
+//		&((struct sockaddr_in *)&newxprt->sc_cm_id->
+//			 route.addr.src_addr)->sin_addr.s_addr,
+//		ntohs(((struct sockaddr_in *)&newxprt->sc_cm_id->
+//		       route.addr.src_addr)->sin_port),
+//		&((struct sockaddr_in *)&newxprt->sc_cm_id->
+//			 route.addr.dst_addr)->sin_addr.s_addr,
+//		ntohs(((struct sockaddr_in *)&newxprt->sc_cm_id->
+//		       route.addr.dst_addr)->sin_port),
+//		newxprt->sc_max_sge,
+//		newxprt->sc_sq_depth,
+//		newxprt->sc_max_requests,
+;
 
 	return &newxprt->sc_xprt;
 
  errout:
-	dprintk("svcrdma: failure accepting new connection rc=%d.\n", ret);
+;
 	/* Take a reference in case the DTO handler runs */
 	svc_xprt_get(&newxprt->sc_xprt);
 	if (newxprt->sc_qp && !IS_ERR(newxprt->sc_qp))
@@ -1118,7 +1118,7 @@ static void svc_rdma_detach(struct svc_xprt *xprt)
 {
 	struct svcxprt_rdma *rdma =
 		container_of(xprt, struct svcxprt_rdma, sc_xprt);
-	dprintk("svc: svc_rdma_detach(%p)\n", xprt);
+;
 
 	/* Disconnect and flush posted WQE */
 	rdma_disconnect(rdma->sc_cm_id);
@@ -1128,7 +1128,7 @@ static void __svc_rdma_free(struct work_struct *work)
 {
 	struct svcxprt_rdma *rdma =
 		container_of(work, struct svcxprt_rdma, sc_work);
-	dprintk("svcrdma: svc_rdma_free(%p)\n", rdma);
+;
 
 	/* We should only be called from kref_put */
 	BUG_ON(atomic_read(&rdma->sc_xprt.xpt_ref.refcount) != 0);
@@ -1297,10 +1297,10 @@ int svc_rdma_send(struct svcxprt_rdma *xprt, struct ib_send_wr *wr)
 			atomic_sub(wr_count, &xprt->sc_sq_count);
 			for (i = 0; i < wr_count; i ++)
 				svc_xprt_put(&xprt->sc_xprt);
-			dprintk("svcrdma: failed to post SQ WR rc=%d, "
-			       "sc_sq_count=%d, sc_sq_depth=%d\n",
-			       ret, atomic_read(&xprt->sc_sq_count),
-			       xprt->sc_sq_depth);
+//			dprintk("svcrdma: failed to post SQ WR rc=%d, "
+//			       "sc_sq_count=%d, sc_sq_depth=%d\n",
+//			       ret, atomic_read(&xprt->sc_sq_count),
+;
 		}
 		spin_unlock_bh(&xprt->sc_lock);
 		if (ret)
@@ -1355,8 +1355,8 @@ void svc_rdma_send_error(struct svcxprt_rdma *xprt, struct rpcrdma_msg *rmsgp,
 	/* Post It */
 	ret = svc_rdma_send(xprt, &err_wr);
 	if (ret) {
-		dprintk("svcrdma: Error %d posting send for protocol error\n",
-			ret);
+//		dprintk("svcrdma: Error %d posting send for protocol error\n",
+;
 		svc_rdma_unmap_dma(ctxt);
 		svc_rdma_put_context(ctxt, 1);
 	}

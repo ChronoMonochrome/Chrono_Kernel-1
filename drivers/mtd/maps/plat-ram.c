@@ -277,7 +277,7 @@ static struct platform_driver platram_driver = {
 
 static int __init platram_init(void)
 {
-	printk("Generic platform RAM MTD, (c) 2004 Simtec Electronics\n");
+;
 	return platform_driver_register(&platram_driver);
 }
 

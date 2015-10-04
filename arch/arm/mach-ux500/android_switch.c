@@ -25,7 +25,7 @@ static int __init android_switch_init(void)
 
 	ret = switch_dev_register(&ux500_android_switch);
 	if (ret < 0) {
-		printk(KERN_ERR "Switch reg failed %d\n", ret);
+;
 		return ret;
 	}
 

@@ -57,13 +57,13 @@ MODULE_AUTHOR("Pete Popov <ppopov@embeddedalley.com>");
 MODULE_DESCRIPTION("Linux PCMCIA Card Services: Au1x00 Socket Controller");
 
 #if 0
-#define debug(x,args...) printk(KERN_DEBUG "%s: " x, __func__ , ##args)
-#else
-#define debug(x,args...)
-#endif
-
-#define MAP_SIZE 0x100000
-extern struct au1000_pcmcia_socket au1000_pcmcia_socket[];
+//#define debug(x,args...) printk(KERN_DEBUG "%s: " x, __func__ , ##args)
+//#else
+//#define debug(x,args...)
+//#endif
+//
+//#define MAP_SIZE 0x100000
+;
 #define PCMCIA_SOCKET(x)	(au1000_pcmcia_socket + (x))
 #define to_au1000_socket(x)	container_of(x, struct au1000_pcmcia_socket, socket)
 

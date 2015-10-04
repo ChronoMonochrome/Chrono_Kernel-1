@@ -115,8 +115,8 @@ static void service_tasklet_func(unsigned long unused)
 				if (CM_ReadMPCString(osalEnv.mpc[i].coreId,
 						     desc.u.print.dspAddress, msg,
 						     sizeof(msg)) == CM_OK)
-					printk(msg, desc.u.print.value1,
-					       desc.u.print.value2);
+//					printk(msg, desc.u.print.value1,
+;
 				break;
 			}
 			case CM_MPC_SERVICE_TRACE:

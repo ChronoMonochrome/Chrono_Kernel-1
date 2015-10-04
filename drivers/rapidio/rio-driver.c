@@ -213,7 +213,7 @@ struct bus_type rio_bus_type = {
 static int __init rio_bus_init(void)
 {
 	if (device_register(&rio_bus) < 0)
-		printk("RIO: failed to register RIO bus device\n");
+;
 	return bus_register(&rio_bus_type);
 }
 

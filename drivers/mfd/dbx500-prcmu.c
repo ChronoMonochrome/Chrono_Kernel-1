@@ -15,37 +15,29 @@
 #include <mach/hardware.h>
 
 #define dbx500_prcmu_warn(a) do {\
-	printk(KERN_WARN "%s : dbx500-prcmu driver %s",\
-	__func__, a);\
+;						\
 	} while (0)
 
 
 #define dbx500_prcmu_error(a) do {\
-	printk(KERN_ERR "%s : dbx500-prcmu driver %s",\
-	__func__, a);\
+;				\
 	} while (0)
 
 #define dbx500_prcmu_early_trap_void do {\
-	printk(KERN_ERR "%s called :dbx500-prcmu driver not initialized",\
-		__func__); \
+					\
 	} while (0)
 
 
 #define dbx500_prcmu_early_trap(a) do {\
-	printk(KERN_ERR "%s called :dbx500-prcmu driver not initialized",\
-		__func__);\
 	return a;\
 	} while (0)
 
 #define dbx500_prcmu_trap(a)	do {\
-	printk(KERN_ERR "%s called : dbx500-prcmu driver not probed",\
-	__func__);\
 	return a;\
 	} while (0)
 
 #define dbx500_prcmu_trap_void do {\
-	printk(KERN_ERR "%s called : dbx500-prcmu driver not probed",\
-	__func__);\
+			;\
 	} while (0)
 
 /* dummy handler */

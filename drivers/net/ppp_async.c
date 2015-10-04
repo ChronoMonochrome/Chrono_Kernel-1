@@ -394,8 +394,8 @@ ppp_async_init(void)
 
 	err = tty_register_ldisc(N_PPP, &ppp_ldisc);
 	if (err != 0)
-		printk(KERN_ERR "PPP_async: error %d registering line disc.\n",
-		       err);
+//		printk(KERN_ERR "PPP_async: error %d registering line disc.\n",
+;
 	return err;
 }
 
@@ -929,7 +929,7 @@ ppp_async_input(struct asyncppp *ap, const unsigned char *buf,
 	return;
 
  nomem:
-	printk(KERN_ERR "PPPasync: no memory (input pkt)\n");
+;
 	ap->state |= SC_TOSS;
 }
 
@@ -1020,7 +1020,7 @@ static void async_lcp_peek(struct asyncppp *ap, unsigned char *data,
 static void __exit ppp_async_cleanup(void)
 {
 	if (tty_unregister_ldisc(N_PPP) != 0)
-		printk(KERN_ERR "failed to unregister PPP line discipline\n");
+;
 }
 
 module_init(ppp_async_init);

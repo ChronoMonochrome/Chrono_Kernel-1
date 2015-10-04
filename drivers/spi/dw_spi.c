@@ -446,8 +446,8 @@ static void pump_transfers(unsigned long data)
 		if (transfer->speed_hz != speed) {
 			speed = transfer->speed_hz;
 			if (speed > dws->max_freq) {
-				printk(KERN_ERR "MRST SPI0: unsupported"
-					"freq: %dHz\n", speed);
+//				printk(KERN_ERR "MRST SPI0: unsupported"
+;
 				message->status = -EIO;
 				goto early_exit;
 			}
@@ -469,8 +469,8 @@ static void pump_transfers(unsigned long data)
 			dws->n_bytes = dws->dma_width = bits >> 3;
 			break;
 		default:
-			printk(KERN_ERR "MRST SPI0: unsupported bits:"
-				"%db\n", bits);
+//			printk(KERN_ERR "MRST SPI0: unsupported bits:"
+;
 			message->status = -EIO;
 			goto early_exit;
 		}

@@ -151,30 +151,30 @@ int blk_integrity_compare(struct gendisk *gd1, struct gendisk *gd2)
 		return -1;
 
 	if (b1->sector_size != b2->sector_size) {
-		printk(KERN_ERR "%s: %s/%s sector sz %u != %u\n", __func__,
-		       gd1->disk_name, gd2->disk_name,
-		       b1->sector_size, b2->sector_size);
+//		printk(KERN_ERR "%s: %s/%s sector sz %u != %u\n", __func__,
+//		       gd1->disk_name, gd2->disk_name,
+;
 		return -1;
 	}
 
 	if (b1->tuple_size != b2->tuple_size) {
-		printk(KERN_ERR "%s: %s/%s tuple sz %u != %u\n", __func__,
-		       gd1->disk_name, gd2->disk_name,
-		       b1->tuple_size, b2->tuple_size);
+//		printk(KERN_ERR "%s: %s/%s tuple sz %u != %u\n", __func__,
+//		       gd1->disk_name, gd2->disk_name,
+;
 		return -1;
 	}
 
 	if (b1->tag_size && b2->tag_size && (b1->tag_size != b2->tag_size)) {
-		printk(KERN_ERR "%s: %s/%s tag sz %u != %u\n", __func__,
-		       gd1->disk_name, gd2->disk_name,
-		       b1->tag_size, b2->tag_size);
+//		printk(KERN_ERR "%s: %s/%s tag sz %u != %u\n", __func__,
+//		       gd1->disk_name, gd2->disk_name,
+;
 		return -1;
 	}
 
 	if (strcmp(b1->name, b2->name)) {
-		printk(KERN_ERR "%s: %s/%s type %s != %s\n", __func__,
-		       gd1->disk_name, gd2->disk_name,
-		       b1->name, b2->name);
+//		printk(KERN_ERR "%s: %s/%s type %s != %s\n", __func__,
+//		       gd1->disk_name, gd2->disk_name,
+;
 		return -1;
 	}
 

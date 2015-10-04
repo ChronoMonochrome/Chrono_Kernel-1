@@ -47,11 +47,11 @@ int rds_trans_register(struct rds_transport *trans)
 	down_write(&rds_trans_sem);
 
 	if (transports[trans->t_type])
-		printk(KERN_ERR "RDS Transport type %d already registered\n",
-			trans->t_type);
+//		printk(KERN_ERR "RDS Transport type %d already registered\n",
+;
 	else {
 		transports[trans->t_type] = trans;
-		printk(KERN_INFO "Registered RDS/%s transport\n", trans->t_name);
+;
 	}
 
 	up_write(&rds_trans_sem);
@@ -65,7 +65,7 @@ void rds_trans_unregister(struct rds_transport *trans)
 	down_write(&rds_trans_sem);
 
 	transports[trans->t_type] = NULL;
-	printk(KERN_INFO "Unregistered RDS/%s transport\n", trans->t_name);
+;
 
 	up_write(&rds_trans_sem);
 }

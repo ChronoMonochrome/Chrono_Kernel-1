@@ -70,28 +70,28 @@ MODULE_PARM_DESC(iic_force_fast, "Force fast mode (400 kHz)");
 #endif
 
 #if DBG_LEVEL > 0
-#  define DBG(f,x...)	printk(KERN_DEBUG "ibm-iic" f, ##x)
-#else
-#  define DBG(f,x...)	((void)0)
-#endif
-#if DBG_LEVEL > 1
-#  define DBG2(f,x...) 	DBG(f, ##x)
-#else
-#  define DBG2(f,x...) 	((void)0)
-#endif
-#if DBG_LEVEL > 2
-static void dump_iic_regs(const char* header, struct ibm_iic_private* dev)
-{
-	volatile struct iic_regs __iomem *iic = dev->vaddr;
-	printk(KERN_DEBUG "ibm-iic%d: %s\n", dev->idx, header);
-	printk(KERN_DEBUG
-	       "  cntl     = 0x%02x, mdcntl = 0x%02x\n"
-	       "  sts      = 0x%02x, extsts = 0x%02x\n"
-	       "  clkdiv   = 0x%02x, xfrcnt = 0x%02x\n"
-	       "  xtcntlss = 0x%02x, directcntl = 0x%02x\n",
-		in_8(&iic->cntl), in_8(&iic->mdcntl), in_8(&iic->sts),
-		in_8(&iic->extsts), in_8(&iic->clkdiv), in_8(&iic->xfrcnt),
-		in_8(&iic->xtcntlss), in_8(&iic->directcntl));
+//#  define DBG(f,x...)	printk(KERN_DEBUG "ibm-iic" f, ##x)
+//#else
+//#  define DBG(f,x...)	((void)0)
+//#endif
+//#if DBG_LEVEL > 1
+//#  define DBG2(f,x...) 	DBG(f, ##x)
+//#else
+//#  define DBG2(f,x...) 	((void)0)
+//#endif
+//#if DBG_LEVEL > 2
+//static void dump_iic_regs(const char* header, struct ibm_iic_private* dev)
+//{
+;
+;
+//	printk(KERN_DEBUG
+//	       "  cntl     = 0x%02x, mdcntl = 0x%02x\n"
+//	       "  sts      = 0x%02x, extsts = 0x%02x\n"
+//	       "  clkdiv   = 0x%02x, xfrcnt = 0x%02x\n"
+//	       "  xtcntlss = 0x%02x, directcntl = 0x%02x\n",
+//		in_8(&iic->cntl), in_8(&iic->mdcntl), in_8(&iic->sts),
+//		in_8(&iic->extsts), in_8(&iic->clkdiv), in_8(&iic->xfrcnt),
+;
 }
 #  define DUMP_REGS(h,dev)	dump_iic_regs((h),(dev))
 #else
@@ -644,8 +644,8 @@ static inline u8 iic_clckdiv(unsigned int opb)
 	 * it corresponds to OPB frequency from the range (40, 50] MHz
 	 */
 	if (!opb){
-		printk(KERN_WARNING "ibm-iic: using compatibility value for OPB freq,"
-			" fix your board specific setup\n");
+//		printk(KERN_WARNING "ibm-iic: using compatibility value for OPB freq,"
+;
 		opb = 50000000;
 	}
 
@@ -653,8 +653,8 @@ static inline u8 iic_clckdiv(unsigned int opb)
 	opb /= 1000000;
 
 	if (opb < 20 || opb > 150){
-		printk(KERN_WARNING "ibm-iic: invalid OPB clock frequency %u MHz\n",
-			opb);
+//		printk(KERN_WARNING "ibm-iic: invalid OPB clock frequency %u MHz\n",
+;
 		opb = opb < 20 ? 20 : 150;
 	}
 	return (u8)((opb + 9) / 10 - 1);

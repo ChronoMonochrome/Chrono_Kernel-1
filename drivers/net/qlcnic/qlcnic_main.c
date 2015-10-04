@@ -4298,11 +4298,11 @@ static int __init qlcnic_init_module(void)
 {
 	int ret;
 
-	printk(KERN_INFO "%s\n", qlcnic_driver_string);
+;
 
 	qlcnic_wq = create_singlethread_workqueue("qlcnic");
 	if (qlcnic_wq == NULL) {
-		printk(KERN_ERR "qlcnic: cannot create workqueue\n");
+;
 		return -ENOMEM;
 	}
 

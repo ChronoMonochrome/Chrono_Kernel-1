@@ -37,19 +37,19 @@ MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
 
 #define deb(args...)  do { \
 	if (debug) { \
-		printk(KERN_DEBUG   "ITD1000: " args);\
-		printk("\n"); \
+;
+;
 	} \
 } while (0)
 
 #define warn(args...) do { \
-	printk(KERN_WARNING "ITD1000: " args); \
-	printk("\n"); \
+;
+;
 } while (0)
 
 #define info(args...) do { \
-	printk(KERN_INFO    "ITD1000: " args); \
-	printk("\n"); \
+;
+;
 } while (0)
 
 /* don't write more than one byte with flexcop behind */
@@ -65,7 +65,7 @@ static int itd1000_write_regs(struct itd1000_state *state, u8 reg, u8 v[], u8 le
 	/* deb("wr %02x: %02x", reg, v[0]); */
 
 	if (i2c_transfer(state->i2c, &msg, 1) != 1) {
-		printk(KERN_WARNING "itd1000 I2C write failed\n");
+;
 		return -EREMOTEIO;
 	}
 	return 0;

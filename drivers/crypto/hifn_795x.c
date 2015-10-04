@@ -41,12 +41,12 @@
 //#define HIFN_DEBUG
 
 #ifdef HIFN_DEBUG
-#define dprintk(f, a...) 	printk(f, ##a)
-#else
-#define dprintk(f, a...)	do {} while (0)
-#endif
-
-static char hifn_pll_ref[sizeof("extNNN")] = "ext";
+//#define dprintk(f, a...) 	printk(f, ##a)
+//#else
+//#define dprintk(f, a...)	do {} while (0)
+//#endif
+//
+;
 module_param_string(hifn_pll_ref, hifn_pll_ref, sizeof(hifn_pll_ref), 0444);
 MODULE_PARM_DESC(hifn_pll_ref,
 		 "PLL reference clock (pci[freq] or ext[freq], default ext)");
@@ -704,7 +704,7 @@ static void hifn_wait_puc(struct hifn_device *dev)
 	}
 
 	if (!i)
-		dprintk("%s: Failed to reset PUC unit.\n", dev->name);
+;
 }
 
 static void hifn_reset_puc(struct hifn_device *dev)
@@ -856,15 +856,15 @@ static int hifn_init_pubrng(struct hifn_device *dev)
 	}
 
 	if (!i)
-		dprintk("Chip %s: Failed to initialise public key engine.\n",
-				dev->name);
+//		dprintk("Chip %s: Failed to initialise public key engine.\n",
+;
 	else {
 		hifn_write_1(dev, HIFN_1_PUB_IEN, HIFN_PUBIEN_DONE);
 		dev->dmareg |= HIFN_DMAIER_PUBDONE;
 		hifn_write_1(dev, HIFN_1_DMA_IER, dev->dmareg);
 
-		dprintk("Chip %s: Public key engine has been successfully "
-				"initialised.\n", dev->name);
+//		dprintk("Chip %s: Public key engine has been successfully "
+;
 	}
 
 	/*
@@ -873,8 +873,8 @@ static int hifn_init_pubrng(struct hifn_device *dev)
 
 	hifn_write_1(dev, HIFN_1_RNG_CONFIG,
 			hifn_read_1(dev, HIFN_1_RNG_CONFIG) | HIFN_RNGCFG_ENA);
-	dprintk("Chip %s: RNG engine has been successfully initialised.\n",
-			dev->name);
+//	dprintk("Chip %s: RNG engine has been successfully initialised.\n",
+;
 
 #ifdef CONFIG_CRYPTO_DEV_HIFN_795X_RNG
 	/* First value must be discarded */
@@ -899,7 +899,7 @@ static int hifn_enable_crypto(struct hifn_device *dev)
 	}
 
 	if (offtbl == NULL) {
-		dprintk("Chip %s: Unknown card!\n", dev->name);
+;
 		return -ENODEV;
 	}
 
@@ -922,7 +922,7 @@ static int hifn_enable_crypto(struct hifn_device *dev)
 	}
 	hifn_write_1(dev, HIFN_1_DMA_CNFG, dmacfg);
 
-	dprintk("Chip %s: %s.\n", dev->name, pci_name(dev->pdev));
+;
 
 	return 0;
 }
@@ -986,9 +986,9 @@ static void hifn_init_pll(struct hifn_device *dev)
 		freq = simple_strtoul(hifn_pll_ref + 3, NULL, 10);
 	else {
 		freq = 66;
-		printk(KERN_INFO "hifn795x: assuming %uMHz clock speed, "
-				 "override with hifn_pll_ref=%.3s<frequency>\n",
-		       freq, hifn_pll_ref);
+//		printk(KERN_INFO "hifn795x: assuming %uMHz clock speed, "
+//				 "override with hifn_pll_ref=%.3s<frequency>\n",
+;
 	}
 
 	m = HIFN_PLL_FCK_MAX / freq;
@@ -1473,8 +1473,8 @@ static int ablkcipher_add(unsigned int *drestp, struct scatterlist *dst,
 		drest -= copy;
 		nbytes -= copy;
 
-		dprintk("%s: copy: %u, size: %u, drest: %u, nbytes: %u.\n",
-				__func__, copy, size, drest, nbytes);
+//		dprintk("%s: copy: %u, size: %u, drest: %u, nbytes: %u.\n",
+;
 
 		dst++;
 		idx++;
@@ -1501,8 +1501,8 @@ static int hifn_cipher_walk(struct ablkcipher_request *req,
 
 		dst = &req->dst[idx];
 
-		dprintk("\n%s: dlen: %u, doff: %u, offset: %u, nbytes: %u.\n",
-			__func__, dst->length, dst->offset, offset, nbytes);
+//		dprintk("\n%s: dlen: %u, doff: %u, offset: %u, nbytes: %u.\n",
+;
 
 		if (!IS_ALIGNED(dst->offset, HIFN_D_DST_DALIGN) ||
 		    !IS_ALIGNED(dst->length, HIFN_D_DST_DALIGN) ||
@@ -1538,14 +1538,14 @@ static int hifn_cipher_walk(struct ablkcipher_request *req,
 				 * Temporary of course...
 				 * Kick author if you will catch this one.
 				 */
-				printk(KERN_ERR "%s: dlen: %u, nbytes: %u,"
-					"slen: %u, offset: %u.\n",
-					__func__, dlen, nbytes, slen, offset);
-				printk(KERN_ERR "%s: please contact author to fix this "
-					"issue, generally you should not catch "
-					"this path under any condition but who "
-					"knows how did you use crypto code.\n"
-					"Thank you.\n",	__func__);
+//				printk(KERN_ERR "%s: dlen: %u, nbytes: %u,"
+//					"slen: %u, offset: %u.\n",
+;
+//				printk(KERN_ERR "%s: please contact author to fix this "
+//					"issue, generally you should not catch "
+//					"this path under any condition but who "
+//					"knows how did you use crypto code.\n"
+;
 				BUG();
 			} else {
 				copy += diff + nbytes;
@@ -1632,11 +1632,11 @@ err_out:
 	spin_unlock_irqrestore(&dev->lock, flags);
 err_out_exit:
 	if (err) {
-		printk("%s: iv: %p [%d], key: %p [%d], mode: %u, op: %u, "
-				"type: %u, err: %d.\n",
-			dev->name, rctx->iv, rctx->ivsize,
-			ctx->key, ctx->keysize,
-			rctx->mode, rctx->op, rctx->type, err);
+//		printk("%s: iv: %p [%d], key: %p [%d], mode: %u, op: %u, "
+//				"type: %u, err: %d.\n",
+//			dev->name, rctx->iv, rctx->ivsize,
+//			ctx->key, ctx->keysize,
+;
 	}
 
 	return err;
@@ -1676,23 +1676,23 @@ static int hifn_test(struct hifn_device *dev, int encdec, u8 snum)
 	dev->started = 0;
 	msleep(200);
 
-	dprintk("%s: decoded: ", dev->name);
+;
 	for (n=0; n<sizeof(src); ++n)
-		dprintk("%02x ", src[n]);
-	dprintk("\n");
-	dprintk("%s: FIPS   : ", dev->name);
+;
+;
+;
 	for (n=0; n<sizeof(fips_aes_ecb_from_zero); ++n)
-		dprintk("%02x ", fips_aes_ecb_from_zero[n]);
-	dprintk("\n");
+;
+;
 
 	if (!memcmp(src, fips_aes_ecb_from_zero, sizeof(fips_aes_ecb_from_zero))) {
-		printk(KERN_INFO "%s: AES 128 ECB test has been successfully "
-				"passed.\n", dev->name);
+//		printk(KERN_INFO "%s: AES 128 ECB test has been successfully "
+;
 		return 0;
 	}
 
 err_out:
-	printk(KERN_INFO "%s: AES 128 ECB test has been failed.\n", dev->name);
+;
 	return -1;
 }
 
@@ -1741,8 +1741,8 @@ static int ablkcipher_get(void *saddr, unsigned int *srestp, unsigned int offset
 		saddr += copy;
 		offset = 0;
 
-		dprintk("%s: copy: %u, size: %u, srest: %u, nbytes: %u.\n",
-				__func__, copy, size, srest, nbytes);
+//		dprintk("%s: copy: %u, size: %u, srest: %u, nbytes: %u.\n",
+;
 
 		dst++;
 		idx++;
@@ -1762,7 +1762,7 @@ static inline void hifn_complete_sa(struct hifn_device *dev, int i)
 	dev->sa[i] = NULL;
 	dev->started--;
 	if (dev->started < 0)
-		printk("%s: started: %d.\n", __func__, dev->started);
+;
 	spin_unlock_irqrestore(&dev->lock, flags);
 	BUG_ON(dev->started < 0);
 }
@@ -1781,11 +1781,11 @@ static void hifn_process_ready(struct ablkcipher_request *req, int error)
 			t = &rctx->walk.cache[idx];
 			dst = &req->dst[idx];
 
-			dprintk("\n%s: sg_page(t): %p, t->length: %u, "
-				"sg_page(dst): %p, dst->length: %u, "
-				"nbytes: %u.\n",
-				__func__, sg_page(t), t->length,
-				sg_page(dst), dst->length, nbytes);
+//			dprintk("\n%s: sg_page(t): %p, t->length: %u, "
+//				"sg_page(dst): %p, dst->length: %u, "
+//				"nbytes: %u.\n",
+//				__func__, sg_page(t), t->length,
+;
 
 			if (!t->length) {
 				nbytes -= min(dst->length, nbytes);
@@ -1817,12 +1817,12 @@ static void hifn_clear_rings(struct hifn_device *dev, int error)
 	struct hifn_dma *dma = (struct hifn_dma *)dev->desc_virt;
 	int i, u;
 
-	dprintk("%s: ring cleanup 1: i: %d.%d.%d.%d, u: %d.%d.%d.%d, "
-			"k: %d.%d.%d.%d.\n",
-			dev->name,
-			dma->cmdi, dma->srci, dma->dsti, dma->resi,
-			dma->cmdu, dma->srcu, dma->dstu, dma->resu,
-			dma->cmdk, dma->srck, dma->dstk, dma->resk);
+//	dprintk("%s: ring cleanup 1: i: %d.%d.%d.%d, u: %d.%d.%d.%d, "
+//			"k: %d.%d.%d.%d.\n",
+//			dev->name,
+//			dma->cmdi, dma->srci, dma->dsti, dma->resi,
+//			dma->cmdu, dma->srcu, dma->dstu, dma->resu,
+;
 
 	i = dma->resk; u = dma->resu;
 	while (u != 0) {
@@ -1872,12 +1872,12 @@ static void hifn_clear_rings(struct hifn_device *dev, int error)
 	}
 	dma->dstk = i; dma->dstu = u;
 
-	dprintk("%s: ring cleanup 2: i: %d.%d.%d.%d, u: %d.%d.%d.%d, "
-			"k: %d.%d.%d.%d.\n",
-			dev->name,
-			dma->cmdi, dma->srci, dma->dsti, dma->resi,
-			dma->cmdu, dma->srcu, dma->dstu, dma->resu,
-			dma->cmdk, dma->srck, dma->dstk, dma->resk);
+//	dprintk("%s: ring cleanup 2: i: %d.%d.%d.%d, u: %d.%d.%d.%d, "
+//			"k: %d.%d.%d.%d.\n",
+//			dev->name,
+//			dma->cmdi, dma->srci, dma->dsti, dma->resi,
+//			dma->cmdu, dma->srcu, dma->dstu, dma->resu,
+;
 }
 
 static void hifn_work(struct work_struct *work)
@@ -1923,21 +1923,21 @@ static void hifn_work(struct work_struct *work)
 			int i;
 			struct hifn_dma *dma = (struct hifn_dma *)dev->desc_virt;
 
-			printk("%s: r: %08x, active: %d, started: %d, "
-				"success: %lu: qlen: %u/%u, reset: %d.\n",
-				dev->name, r, dev->active, dev->started,
-				dev->success, dev->queue.qlen, dev->queue.max_qlen,
-				reset);
+//			printk("%s: r: %08x, active: %d, started: %d, "
+//				"success: %lu: qlen: %u/%u, reset: %d.\n",
+//				dev->name, r, dev->active, dev->started,
+//				dev->success, dev->queue.qlen, dev->queue.max_qlen,
+;
 
-			printk("%s: res: ", __func__);
+;
 			for (i=0; i<HIFN_D_RES_RSIZE; ++i) {
-				printk("%x.%p ", dma->resr[i].l, dev->sa[i]);
+;
 				if (dev->sa[i]) {
 					hifn_process_ready(dev->sa[i], -ENODEV);
 					hifn_complete_sa(dev, i);
 				}
 			}
-			printk("\n");
+;
 
 			hifn_reset_dma(dev, 1);
 			hifn_stop_device(dev);
@@ -1959,11 +1959,11 @@ static irqreturn_t hifn_interrupt(int irq, void *data)
 
 	dmacsr = hifn_read_1(dev, HIFN_1_DMA_CSR);
 
-	dprintk("%s: 1 dmacsr: %08x, dmareg: %08x, res: %08x [%d], "
-			"i: %d.%d.%d.%d, u: %d.%d.%d.%d.\n",
-		dev->name, dmacsr, dev->dmareg, dmacsr & dev->dmareg, dma->cmdi,
-		dma->cmdi, dma->srci, dma->dsti, dma->resi,
-		dma->cmdu, dma->srcu, dma->dstu, dma->resu);
+//	dprintk("%s: 1 dmacsr: %08x, dmareg: %08x, res: %08x [%d], "
+//			"i: %d.%d.%d.%d, u: %d.%d.%d.%d.\n",
+//		dev->name, dmacsr, dev->dmareg, dmacsr & dev->dmareg, dma->cmdi,
+//		dma->cmdi, dma->srci, dma->dsti, dma->resi,
+;
 
 	if ((dmacsr & dev->dmareg) == 0)
 		return IRQ_NONE;
@@ -1980,10 +1980,10 @@ static irqreturn_t hifn_interrupt(int irq, void *data)
 	if (restart) {
 		u32 puisr = hifn_read_0(dev, HIFN_0_PUISR);
 
-		printk(KERN_WARNING "%s: overflow: r: %d, d: %d, puisr: %08x, d: %u.\n",
-			dev->name, !!(dmacsr & HIFN_DMACSR_R_OVER),
-			!!(dmacsr & HIFN_DMACSR_D_OVER),
-			puisr, !!(puisr & HIFN_PUISR_DSTOVER));
+//		printk(KERN_WARNING "%s: overflow: r: %d, d: %d, puisr: %08x, d: %u.\n",
+//			dev->name, !!(dmacsr & HIFN_DMACSR_R_OVER),
+//			!!(dmacsr & HIFN_DMACSR_D_OVER),
+;
 		if (!!(puisr & HIFN_PUISR_DSTOVER))
 			hifn_write_0(dev, HIFN_0_PUISR, HIFN_PUISR_DSTOVER);
 		hifn_write_1(dev, HIFN_1_DMA_CSR, dmacsr & (HIFN_DMACSR_R_OVER |
@@ -1993,18 +1993,18 @@ static irqreturn_t hifn_interrupt(int irq, void *data)
 	restart = dmacsr & (HIFN_DMACSR_C_ABORT | HIFN_DMACSR_S_ABORT |
 			HIFN_DMACSR_D_ABORT | HIFN_DMACSR_R_ABORT);
 	if (restart) {
-		printk(KERN_WARNING "%s: abort: c: %d, s: %d, d: %d, r: %d.\n",
-			dev->name, !!(dmacsr & HIFN_DMACSR_C_ABORT),
-			!!(dmacsr & HIFN_DMACSR_S_ABORT),
-			!!(dmacsr & HIFN_DMACSR_D_ABORT),
-			!!(dmacsr & HIFN_DMACSR_R_ABORT));
+//		printk(KERN_WARNING "%s: abort: c: %d, s: %d, d: %d, r: %d.\n",
+//			dev->name, !!(dmacsr & HIFN_DMACSR_C_ABORT),
+//			!!(dmacsr & HIFN_DMACSR_S_ABORT),
+//			!!(dmacsr & HIFN_DMACSR_D_ABORT),
+;
 		hifn_reset_dma(dev, 1);
 		hifn_init_dma(dev);
 		hifn_init_registers(dev);
 	}
 
 	if ((dmacsr & HIFN_DMACSR_C_WAIT) && (dma->cmdu == 0)) {
-		dprintk("%s: wait on command.\n", dev->name);
+;
 		dev->dmareg &= ~(HIFN_DMAIER_C_WAIT);
 		hifn_write_1(dev, HIFN_1_DMA_IER, dev->dmareg);
 	}
@@ -2585,8 +2585,8 @@ static int __devinit hifn_probe(struct pci_dev *pdev, const struct pci_device_id
 	if (pci_resource_len(pdev, 0) < HIFN_BAR0_SIZE ||
 	    pci_resource_len(pdev, 1) < HIFN_BAR1_SIZE ||
 	    pci_resource_len(pdev, 2) < HIFN_BAR2_SIZE) {
-		dprintk("%s: Broken hardware - I/O regions are too small.\n",
-				pci_name(pdev));
+//		dprintk("%s: Broken hardware - I/O regions are too small.\n",
+;
 		err = -ENODEV;
 		goto err_out_free_regions;
 	}
@@ -2617,7 +2617,7 @@ static int __devinit hifn_probe(struct pci_dev *pdev, const struct pci_device_id
 	dev->desc_virt = pci_alloc_consistent(pdev, sizeof(struct hifn_dma),
 			&dev->desc_dma);
 	if (!dev->desc_virt) {
-		dprintk("Failed to allocate descriptor rings.\n");
+;
 		goto err_out_unmap_bars;
 	}
 	memset(dev->desc_virt, 0, sizeof(struct hifn_dma));
@@ -2636,7 +2636,7 @@ static int __devinit hifn_probe(struct pci_dev *pdev, const struct pci_device_id
 
 	err = request_irq(dev->irq, hifn_interrupt, IRQF_SHARED, dev->name, dev);
 	if (err) {
-		dprintk("Failed to request IRQ%d: err: %d.\n", dev->irq, err);
+;
 		dev->irq = 0;
 		goto err_out_free_desc;
 	}
@@ -2660,9 +2660,9 @@ static int __devinit hifn_probe(struct pci_dev *pdev, const struct pci_device_id
 	INIT_DELAYED_WORK(&dev->work, hifn_work);
 	schedule_delayed_work(&dev->work, HZ);
 
-	dprintk("HIFN crypto accelerator card at %s has been "
-			"successfully registered as %s.\n",
-			pci_name(pdev), dev->name);
+//	dprintk("HIFN crypto accelerator card at %s has been "
+//			"successfully registered as %s.\n",
+;
 
 	return 0;
 
@@ -2745,14 +2745,14 @@ static int __init hifn_init(void)
 	int err;
 
 	if (sizeof(dma_addr_t) > 4) {
-		printk(KERN_INFO "HIFN supports only 32-bit addresses.\n");
+;
 		return -EINVAL;
 	}
 
 	if (strncmp(hifn_pll_ref, "ext", 3) &&
 	    strncmp(hifn_pll_ref, "pci", 3)) {
-		printk(KERN_ERR "hifn795x: invalid hifn_pll_ref clock, "
-				"must be pci or ext");
+//		printk(KERN_ERR "hifn795x: invalid hifn_pll_ref clock, "
+;
 		return -EINVAL;
 	}
 
@@ -2764,22 +2764,22 @@ static int __init hifn_init(void)
 	if (hifn_pll_ref[3] != '\0') {
 		freq = simple_strtoul(hifn_pll_ref + 3, NULL, 10);
 		if (freq < 20 || freq > 100) {
-			printk(KERN_ERR "hifn795x: invalid hifn_pll_ref "
-					"frequency, must be in the range "
-					"of 20-100");
+//			printk(KERN_ERR "hifn795x: invalid hifn_pll_ref "
+//					"frequency, must be in the range "
+;
 			return -EINVAL;
 		}
 	}
 
 	err = pci_register_driver(&hifn_pci_driver);
 	if (err < 0) {
-		dprintk("Failed to register PCI driver for %s device.\n",
-				hifn_pci_driver.name);
+//		dprintk("Failed to register PCI driver for %s device.\n",
+;
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO "Driver for HIFN 795x crypto accelerator chip "
-			"has been successfully registered.\n");
+//	printk(KERN_INFO "Driver for HIFN 795x crypto accelerator chip "
+;
 
 	return 0;
 }
@@ -2788,8 +2788,8 @@ static void __exit hifn_fini(void)
 {
 	pci_unregister_driver(&hifn_pci_driver);
 
-	printk(KERN_INFO "Driver for HIFN 795x crypto accelerator chip "
-			"has been successfully unregistered.\n");
+//	printk(KERN_INFO "Driver for HIFN 795x crypto accelerator chip "
+;
 }
 
 module_init(hifn_init);

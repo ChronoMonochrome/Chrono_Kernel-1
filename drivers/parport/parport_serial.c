@@ -440,8 +440,8 @@ static int parport_serial_pci_resume(struct pci_dev *dev)
 	 */
 	err = pci_enable_device(dev);
 	if (err) {
-		printk(KERN_ERR "parport_serial: %s: error enabling "
-			"device for resume (%d)\n", pci_name(dev), err);
+//		printk(KERN_ERR "parport_serial: %s: error enabling "
+;
 		return err;
 	}
 

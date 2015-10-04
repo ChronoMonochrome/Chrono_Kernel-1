@@ -636,7 +636,7 @@ int __init ulite_init(void)
 err_plat:
 	uart_unregister_driver(&ulite_uart_driver);
 err_uart:
-	printk(KERN_ERR "registering uartlite driver failed: err=%i", ret);
+;
 	return ret;
 }
 

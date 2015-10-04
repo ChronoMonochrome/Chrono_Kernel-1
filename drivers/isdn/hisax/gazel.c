@@ -478,15 +478,15 @@ reserve_regions(struct IsdnCard *card, struct IsdnCardState *cs)
 	return 0;
 
       error:
-	printk(KERN_WARNING "Gazel: io ports 0x%x-0x%x already in use\n",
-	       adr, adr + len);
+//	printk(KERN_WARNING "Gazel: io ports 0x%x-0x%x already in use\n",
+;
 	return 1;
 }
 
 static int __devinit
 setup_gazelisa(struct IsdnCard *card, struct IsdnCardState *cs)
 {
-	printk(KERN_INFO "Gazel: ISA PnP card automatic recognition\n");
+;
 	// we got an irq parameter, assume it is an ISA card
 	// R742 decodes address even in not started...
 	// R647 returns FF if not present or not started
@@ -509,22 +509,22 @@ setup_gazelisa(struct IsdnCard *card, struct IsdnCardState *cs)
 
 	switch (cs->subtyp) {
 		case R647:
-			printk(KERN_INFO "Gazel: Card ISA R647/R648 found\n");
+;
 			cs->dc.isac.adf2 = 0x87;
-			printk(KERN_INFO
-				"Gazel: config irq:%d isac:0x%X  cfg:0x%X\n",
-				cs->irq, cs->hw.gazel.isac, cs->hw.gazel.cfg_reg);
-			printk(KERN_INFO
-				"Gazel: hscx A:0x%X  hscx B:0x%X\n",
-				cs->hw.gazel.hscx[0], cs->hw.gazel.hscx[1]);
+//			printk(KERN_INFO
+//				"Gazel: config irq:%d isac:0x%X  cfg:0x%X\n",
+;
+//			printk(KERN_INFO
+//				"Gazel: hscx A:0x%X  hscx B:0x%X\n",
+;
 
 			break;
 		case R742:
-			printk(KERN_INFO "Gazel: Card ISA R742 found\n");
+;
 			test_and_set_bit(HW_IPAC, &cs->HW_Flags);
-			printk(KERN_INFO
-			       "Gazel: config irq:%d ipac:0x%X\n",
-			       cs->irq, cs->hw.gazel.ipac);
+//			printk(KERN_INFO
+//			       "Gazel: config irq:%d ipac:0x%X\n",
+;
 			break;
 	}
 
@@ -541,7 +541,7 @@ setup_gazelpci(struct IsdnCardState *cs)
 	u_char pci_irq = 0, found;
 	u_int nbseek, seekcard;
 
-	printk(KERN_WARNING "Gazel: PCI card automatic recognition\n");
+;
 
 	found = 0;
 	seekcard = PCI_DEVICE_ID_PLX_R685;
@@ -572,11 +572,11 @@ setup_gazelpci(struct IsdnCardState *cs)
 		}
 	}
 	if (!found) {
-		printk(KERN_WARNING "Gazel: No PCI card found\n");
+;
 		return (1);
 	}
 	if (!pci_irq) {
-		printk(KERN_WARNING "Gazel: No IRQ for PCI card found\n");
+;
 		return 1;
 	}
 	cs->hw.gazel.pciaddr[0] = pci_ioaddr0;
@@ -596,25 +596,25 @@ setup_gazelpci(struct IsdnCardState *cs)
 
 	switch (seekcard) {
 		case PCI_DEVICE_ID_PLX_R685:
-			printk(KERN_INFO "Gazel: Card PCI R685 found\n");
+;
 			cs->subtyp = R685;
 			cs->dc.isac.adf2 = 0x87;
-			printk(KERN_INFO
-			    "Gazel: config irq:%d isac:0x%X  cfg:0x%X\n",
-			cs->irq, cs->hw.gazel.isac, cs->hw.gazel.cfg_reg);
-			printk(KERN_INFO
-			       "Gazel: hscx A:0x%X  hscx B:0x%X\n",
-			     cs->hw.gazel.hscx[0], cs->hw.gazel.hscx[1]);
+//			printk(KERN_INFO
+//			    "Gazel: config irq:%d isac:0x%X  cfg:0x%X\n",
+;
+//			printk(KERN_INFO
+//			       "Gazel: hscx A:0x%X  hscx B:0x%X\n",
+;
 			break;
 		case PCI_DEVICE_ID_PLX_R753:
 		case PCI_DEVICE_ID_PLX_DJINN_ITOO:
 		case PCI_DEVICE_ID_PLX_OLITEC:
-			printk(KERN_INFO "Gazel: Card PCI R753 found\n");
+;
 			cs->subtyp = R753;
 			test_and_set_bit(HW_IPAC, &cs->HW_Flags);
-			printk(KERN_INFO
-			    "Gazel: config irq:%d ipac:0x%X  cfg:0x%X\n",
-			cs->irq, cs->hw.gazel.ipac, cs->hw.gazel.cfg_reg);
+//			printk(KERN_INFO
+//			    "Gazel: config irq:%d ipac:0x%X  cfg:0x%X\n",
+;
 			break;
 	}
 
@@ -630,7 +630,7 @@ setup_gazel(struct IsdnCard *card)
 	u_char val;
 
 	strcpy(tmp, gazel_revision);
-	printk(KERN_INFO "Gazel: Driver Revision %s\n", HiSax_getrev(tmp));
+;
 
 	if (cs->typ != ISDN_CTYPE_GAZEL)
 		return (0);
@@ -644,7 +644,7 @@ setup_gazel(struct IsdnCard *card)
 		if (setup_gazelpci(cs))
 			return (0);
 #else
-		printk(KERN_WARNING "Gazel: Card PCI requested and NO_PCI_BIOS, unable to config\n");
+;
 		return (0);
 #endif				/* CONFIG_PCI */
 	}
@@ -653,7 +653,7 @@ setup_gazel(struct IsdnCard *card)
 		return (0);
 	}
 	if (reset_gazel(cs)) {
-		printk(KERN_WARNING "Gazel: wrong IRQ\n");
+;
 		release_io_gazel(cs);
 		return (0);
 	}
@@ -672,8 +672,8 @@ setup_gazel(struct IsdnCard *card)
 			cs->irq_func = &gazel_interrupt;
 			ISACVersion(cs, "Gazel:");
 			if (HscxVersion(cs, "Gazel:")) {
-				printk(KERN_WARNING
-				       "Gazel: wrong HSCX versions check IO address\n");
+//				printk(KERN_WARNING
+;
 				release_io_gazel(cs);
 				return (0);
 			}
@@ -682,7 +682,7 @@ setup_gazel(struct IsdnCard *card)
 		case R753:
 			cs->irq_func = &gazel_interrupt_ipac;
 			val = ReadISAC(cs, IPAC_ID - 0x80);
-			printk(KERN_INFO "Gazel: IPAC version %x\n", val);
+;
 			break;
 	}
 

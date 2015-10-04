@@ -592,12 +592,12 @@ static int __init macfb_init(void)
 	if (!fb_info.screen_base)
 		return -ENODEV;
 
-	printk("macfb: framebuffer at 0x%08lx, mapped to 0x%p, size %dk\n",
-	       macfb_fix.smem_start, fb_info.screen_base,
-	       macfb_fix.smem_len / 1024);
-	printk("macfb: mode is %dx%dx%d, linelength=%d\n",
-	       macfb_defined.xres, macfb_defined.yres,
-	       macfb_defined.bits_per_pixel, macfb_fix.line_length);
+//	printk("macfb: framebuffer at 0x%08lx, mapped to 0x%p, size %dk\n",
+//	       macfb_fix.smem_start, fb_info.screen_base,
+;
+//	printk("macfb: mode is %dx%dx%d, linelength=%d\n",
+//	       macfb_defined.xres, macfb_defined.yres,
+;
 
 	/* Fill in the available video resolution */
 	macfb_defined.xres_virtual = macfb_defined.xres;
@@ -662,8 +662,8 @@ static int __init macfb_init(void)
 	default:
 		video_cmap_len = 0;
 		macfb_fix.visual = FB_VISUAL_MONO01;
-		printk("macfb: unknown or unsupported bit depth: %d\n",
-		       macfb_defined.bits_per_pixel);
+//		printk("macfb: unknown or unsupported bit depth: %d\n",
+;
 		break;
 	}
 	
@@ -918,8 +918,8 @@ static int __init macfb_init(void)
 	if (err)
 		goto fail_dealloc;
 
-	printk("fb%d: %s frame buffer device\n",
-	       fb_info.node, fb_info.fix.id);
+//	printk("fb%d: %s frame buffer device\n",
+;
 	return 0;
 
 fail_dealloc:

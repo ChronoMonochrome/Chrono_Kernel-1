@@ -43,7 +43,7 @@ static int __init ux500_debug_last_io_init(void)
 	ux500_last_io = dma_alloc_coherent(NULL, size, &ux500_last_io_phys,
 								GFP_KERNEL);
 	if (!ux500_last_io) {
-		printk(KERN_ERR"%s: Failed to allocate memory\n", __func__);
+;
 		return -ENOMEM;
 	}
 

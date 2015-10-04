@@ -338,8 +338,8 @@ static void bm_free_pages(struct page **pages, unsigned long number)
 
 	for (i = 0; i < number; i++) {
 		if (!pages[i]) {
-			printk(KERN_ALERT "drbd: bm_free_pages tried to free "
-					  "a NULL pointer; i=%lu n=%lu\n",
+//			printk(KERN_ALERT "drbd: bm_free_pages tried to free "
+;
 					  i, number);
 			continue;
 		}
@@ -574,7 +574,7 @@ static void bm_memset(struct drbd_bitmap *b, size_t offset, int c, size_t len)
 	end = offset + len;
 
 	if (end > b->bm_words) {
-		printk(KERN_ALERT "drbd: bm_memset end > bm_words\n");
+;
 		return;
 	}
 
@@ -584,8 +584,8 @@ static void bm_memset(struct drbd_bitmap *b, size_t offset, int c, size_t len)
 		p_addr = bm_map_pidx(b, idx);
 		bm = p_addr + MLPP(offset);
 		if (bm+do_now > p_addr + LWPP) {
-			printk(KERN_ALERT "drbd: BUG BUG BUG! p_addr:%p bm:%p do_now:%d\n",
-			       p_addr, bm, (int)do_now);
+//			printk(KERN_ALERT "drbd: BUG BUG BUG! p_addr:%p bm:%p do_now:%d\n",
+;
 		} else
 			memset(bm, c, do_now * sizeof(long));
 		bm_unmap(p_addr);

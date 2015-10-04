@@ -52,7 +52,7 @@ MODULE_PARM_DESC(dvb_demux_speedcheck,
 
 #define dprintk_tscheck(x...) do {                              \
 		if (dvb_demux_tscheck && printk_ratelimit())    \
-			printk(x);                              \
+;
 	} while (0)
 
 /******************************************************************************
@@ -117,7 +117,7 @@ static inline int dvb_dmx_swfilter_payload(struct dvb_demux_feed *feed,
 	ccok = ((feed->cc + 1) & 0x0f) == cc;
 	feed->cc = cc;
 	if (!ccok)
-		printk("missed packet!\n");
+;
 	*/
 
 	if (buf[1] & 0x40)	// PUSI ?
@@ -194,12 +194,12 @@ static void dvb_dmx_swfilter_section_new(struct dvb_demux_feed *feed)
 		 * but just first and last.
 		 */
 		if (sec->secbuf[0] != 0xff || sec->secbuf[n - 1] != 0xff) {
-			printk("dvb_demux.c section ts padding loss: %d/%d\n",
-			       n, sec->tsfeedp);
-			printk("dvb_demux.c pad data:");
+//			printk("dvb_demux.c section ts padding loss: %d/%d\n",
+;
+;
 			for (i = 0; i < n; i++)
-				printk(" %02x", sec->secbuf[i]);
-			printk("\n");
+;
+;
 		}
 	}
 #endif
@@ -238,9 +238,9 @@ static int dvb_dmx_swfilter_section_copy_dump(struct dvb_demux_feed *feed,
 
 	if (sec->tsfeedp + len > DMX_MAX_SECFEED_SIZE) {
 #ifdef DVB_DEMUX_SECTION_LOSS_LOG
-		printk("dvb_demux.c section buffer full loss: %d/%d\n",
-		       sec->tsfeedp + len - DMX_MAX_SECFEED_SIZE,
-		       DMX_MAX_SECFEED_SIZE);
+//		printk("dvb_demux.c section buffer full loss: %d/%d\n",
+//		       sec->tsfeedp + len - DMX_MAX_SECFEED_SIZE,
+;
 #endif
 		len = DMX_MAX_SECFEED_SIZE - sec->tsfeedp;
 	}
@@ -273,7 +273,7 @@ static int dvb_dmx_swfilter_section_copy_dump(struct dvb_demux_feed *feed,
 			dvb_dmx_swfilter_section_feed(feed);
 #ifdef DVB_DEMUX_SECTION_LOSS_LOG
 		else
-			printk("dvb_demux.c pusi not seen, discarding section data\n");
+;
 #endif
 		sec->secbufp += seclen;	/* secbufp and secbuf moving together is */
 		sec->secbuf += seclen;	/* redundant but saves pointer arithmetic */
@@ -308,8 +308,8 @@ static int dvb_dmx_swfilter_section_packet(struct dvb_demux_feed *feed,
 
 	if (!ccok || dc_i) {
 #ifdef DVB_DEMUX_SECTION_LOSS_LOG
-		printk("dvb_demux.c discontinuity detected %d bytes lost\n",
-		       count);
+//		printk("dvb_demux.c discontinuity detected %d bytes lost\n",
+;
 		/*
 		 * those bytes under sume circumstances will again be reported
 		 * in the following dvb_dmx_swfilter_section_new
@@ -341,7 +341,7 @@ static int dvb_dmx_swfilter_section_packet(struct dvb_demux_feed *feed,
 		}
 #ifdef DVB_DEMUX_SECTION_LOSS_LOG
 		else if (count > 0)
-			printk("dvb_demux.c PUSI=1 but %d bytes lost\n", count);
+;
 #endif
 	} else {
 		/* PUSI=0 (is not set), no section boundary */
@@ -416,9 +416,9 @@ static void dvb_dmx_swfilter_packet(struct dvb_demux *demux, const u8 *buf)
 					(u64)timespec_to_ns(&delta_time);
 				speed_timedelta = div64_u64(speed_timedelta,
 						1000000); /* nsec -> usec */
-				printk(KERN_INFO "TS speed %llu Kbits/sec \n",
-						div64_u64(speed_bytes,
-							speed_timedelta));
+//				printk(KERN_INFO "TS speed %llu Kbits/sec \n",
+//						div64_u64(speed_bytes,
+;
 			};
 
 			demux->speed_last_time = cur_time;
@@ -615,8 +615,8 @@ static void dvb_demux_feed_add(struct dvb_demux_feed *feed)
 {
 	spin_lock_irq(&feed->demux->lock);
 	if (dvb_demux_feed_find(feed)) {
-		printk(KERN_ERR "%s: feed already in list (type=%x state=%x pid=%x)\n",
-		       __func__, feed->type, feed->state, feed->pid);
+//		printk(KERN_ERR "%s: feed already in list (type=%x state=%x pid=%x)\n",
+;
 		goto out;
 	}
 
@@ -629,8 +629,8 @@ static void dvb_demux_feed_del(struct dvb_demux_feed *feed)
 {
 	spin_lock_irq(&feed->demux->lock);
 	if (!(dvb_demux_feed_find(feed))) {
-		printk(KERN_ERR "%s: feed not in list (type=%x state=%x pid=%x)\n",
-		       __func__, feed->type, feed->state, feed->pid);
+//		printk(KERN_ERR "%s: feed not in list (type=%x state=%x pid=%x)\n",
+;
 		goto out;
 	}
 
@@ -1243,7 +1243,7 @@ int dvb_dmx_init(struct dvb_demux *dvbdemux)
 
 	dvbdemux->cnt_storage = vmalloc(MAX_PID + 1);
 	if (!dvbdemux->cnt_storage)
-		printk(KERN_WARNING "Couldn't allocate memory for TS/TEI check. Disabling it\n");
+;
 
 	INIT_LIST_HEAD(&dvbdemux->frontend_list);
 

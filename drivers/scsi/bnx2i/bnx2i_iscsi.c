@@ -112,16 +112,16 @@ static void bnx2i_setup_write_cmd_bd_info(struct iscsi_task *task)
 		    (start_bd_idx > scsi_sg_count(cmd->scsi_cmd))) {
 			int i = 0;
 
-			iscsi_conn_printk(KERN_ALERT, task->conn,
-					  "bnx2i- error, buf offset 0x%x "
-					  "bd_valid %d use_sg %d\n",
-					  buffer_offset, cmd->io_tbl.bd_valid,
-					  scsi_sg_count(cmd->scsi_cmd));
+//			iscsi_conn_printk(KERN_ALERT, task->conn,
+//					  "bnx2i- error, buf offset 0x%x "
+//					  "bd_valid %d use_sg %d\n",
+//					  buffer_offset, cmd->io_tbl.bd_valid,
+;
 			for (i = 0; i < cmd->io_tbl.bd_valid; i++)
-				iscsi_conn_printk(KERN_ALERT, task->conn,
-						  "bnx2i err, bd[%d]: len %x\n",
-						  i, cmd->io_tbl.bd_tbl[i].\
-						  buffer_length);
+//				iscsi_conn_printk(KERN_ALERT, task->conn,
+//						  "bnx2i err, bd[%d]: len %x\n",
+//						  i, cmd->io_tbl.bd_tbl[i].\
+;
 		}
 		cmd->req.sd_buffer_offset = start_bd_offset;
 		cmd->req.sd_start_bd_index = start_bd_idx;
@@ -237,8 +237,8 @@ static int bnx2i_bind_conn_to_iscsi_cid(struct bnx2i_hba *hba,
 					u32 iscsi_cid)
 {
 	if (hba && hba->cid_que.conn_cid_tbl[iscsi_cid]) {
-		iscsi_conn_printk(KERN_ALERT, bnx2i_conn->cls_conn->dd_data,
-				 "conn bind - entry #%d not free\n", iscsi_cid);
+//		iscsi_conn_printk(KERN_ALERT, bnx2i_conn->cls_conn->dd_data,
+;
 		return -EBUSY;
 	}
 
@@ -256,11 +256,11 @@ struct bnx2i_conn *bnx2i_get_conn_from_id(struct bnx2i_hba *hba,
 					  u16 iscsi_cid)
 {
 	if (!hba->cid_que.conn_cid_tbl) {
-		printk(KERN_ERR "bnx2i: ERROR - missing conn<->cid table\n");
+;
 		return NULL;
 
 	} else if (iscsi_cid >= hba->max_active_conns) {
-		printk(KERN_ERR "bnx2i: wrong cid #%d\n", iscsi_cid);
+;
 		return NULL;
 	}
 	return hba->cid_que.conn_cid_tbl[iscsi_cid];
@@ -383,7 +383,7 @@ static struct iscsi_endpoint *bnx2i_alloc_ep(struct bnx2i_hba *hba)
 
 	ep = iscsi_create_endpoint(sizeof(*bnx2i_ep));
 	if (!ep) {
-		printk(KERN_ERR "bnx2i: Could not allocate ep\n");
+;
 		return NULL;
 	}
 
@@ -448,8 +448,8 @@ static int bnx2i_alloc_bdt(struct bnx2i_hba *hba, struct iscsi_session *session,
 					ISCSI_MAX_BDS_PER_CMD * sizeof(*bd),
 					&io->bd_tbl_dma, GFP_KERNEL);
 	if (!io->bd_tbl) {
-		iscsi_session_printk(KERN_ERR, session, "Could not "
-				     "allocate bdt.\n");
+//		iscsi_session_printk(KERN_ERR, session, "Could not "
+;
 		return -ENOMEM;
 	}
 	io->bd_valid = 0;
@@ -527,7 +527,7 @@ static int bnx2i_setup_mp_bdt(struct bnx2i_hba *hba)
 	hba->mp_bd_tbl = dma_alloc_coherent(&hba->pcidev->dev, PAGE_SIZE,
 					    &hba->mp_bd_dma, GFP_KERNEL);
 	if (!hba->mp_bd_tbl) {
-		printk(KERN_ERR "unable to allocate Middle Path BDT\n");
+;
 		rc = -1;
 		goto out;
 	}
@@ -535,7 +535,7 @@ static int bnx2i_setup_mp_bdt(struct bnx2i_hba *hba)
 	hba->dummy_buffer = dma_alloc_coherent(&hba->pcidev->dev, PAGE_SIZE,
 					       &hba->dummy_buf_dma, GFP_KERNEL);
 	if (!hba->dummy_buffer) {
-		printk(KERN_ERR "unable to alloc Middle Path Dummy Buffer\n");
+;
 		dma_free_coherent(&hba->pcidev->dev, PAGE_SIZE,
 				  hba->mp_bd_tbl, hba->mp_bd_dma);
 		hba->mp_bd_tbl = NULL;
@@ -684,7 +684,7 @@ bnx2i_find_ep_in_ofld_list(struct bnx2i_hba *hba, u32 iscsi_cid)
 	read_unlock_bh(&hba->ep_rdwr_lock);
 
 	if (!ep)
-		printk(KERN_ERR "l5 cid %d not found\n", iscsi_cid);
+;
 	return ep;
 }
 
@@ -712,7 +712,7 @@ bnx2i_find_ep_in_destroy_list(struct bnx2i_hba *hba, u32 iscsi_cid)
 	read_unlock_bh(&hba->ep_rdwr_lock);
 
 	if (!ep)
-		printk(KERN_ERR "l5 cid %d not found\n", iscsi_cid);
+;
 
 	return ep;
 }
@@ -1023,8 +1023,8 @@ login_resp_buf_failure:
 			  bnx2i_conn->gen_pdu.req_dma_addr);
 	bnx2i_conn->gen_pdu.req_buf = NULL;
 login_req_buf_failure:
-	iscsi_conn_printk(KERN_ERR, bnx2i_conn->cls_conn->dd_data,
-			  "login resource alloc failed!!\n");
+//	iscsi_conn_printk(KERN_ERR, bnx2i_conn->cls_conn->dd_data,
+;
 	return -ENOMEM;
 
 }
@@ -1102,9 +1102,9 @@ static int bnx2i_iscsi_send_generic_request(struct iscsi_task *task)
 		rc = bnx2i_send_iscsi_text(bnx2i_conn, task);
 		break;
 	default:
-		iscsi_conn_printk(KERN_ALERT, bnx2i_conn->cls_conn->dd_data,
-				  "send_gen: unsupported op 0x%x\n",
-				  task->hdr->opcode);
+//		iscsi_conn_printk(KERN_ALERT, bnx2i_conn->cls_conn->dd_data,
+//				  "send_gen: unsupported op 0x%x\n",
+;
 	}
 	return rc;
 }
@@ -1276,7 +1276,7 @@ bnx2i_session_create(struct iscsi_endpoint *ep,
 	struct bnx2i_endpoint *bnx2i_ep;
 
 	if (!ep) {
-		printk(KERN_ERR "bnx2i: missing ep.\n");
+;
 		return NULL;
 	}
 
@@ -1359,8 +1359,8 @@ bnx2i_conn_create(struct iscsi_cls_session *cls_session, uint32_t cid)
 	init_completion(&bnx2i_conn->cmd_cleanup_cmpl);
 
 	if (bnx2i_conn_alloc_login_resources(hba, bnx2i_conn)) {
-		iscsi_conn_printk(KERN_ALERT, conn,
-				  "conn_new: login resc alloc failed!!\n");
+//		iscsi_conn_printk(KERN_ALERT, conn,
+;
 		goto free_conn;
 	}
 
@@ -1417,12 +1417,12 @@ static int bnx2i_conn_bind(struct iscsi_cls_session *cls_session,
 	if (bnx2i_ep->hba != hba) {
 		/* Error - TCP connection does not belong to this device
 		 */
-		iscsi_conn_printk(KERN_ALERT, cls_conn->dd_data,
-				  "conn bind, ep=0x%p (%s) does not",
-				  bnx2i_ep, bnx2i_ep->hba->netdev->name);
-		iscsi_conn_printk(KERN_ALERT, cls_conn->dd_data,
-				  "belong to hba (%s)\n",
-				  hba->netdev->name);
+//		iscsi_conn_printk(KERN_ALERT, cls_conn->dd_data,
+//				  "conn bind, ep=0x%p (%s) does not",
+;
+//		iscsi_conn_printk(KERN_ALERT, cls_conn->dd_data,
+//				  "belong to hba (%s)\n",
+;
 		return -EEXIST;
 	}
 	bnx2i_ep->conn = bnx2i_conn;
@@ -1628,8 +1628,8 @@ static struct bnx2i_hba *bnx2i_check_route(struct sockaddr *dst_addr)
 	if (hba && hba->cnic)
 		cnic = hba->cnic->cm_select_dev(desti, CNIC_ULP_ISCSI);
 	if (!cnic) {
-		printk(KERN_ALERT "bnx2i: no route,"
-		       "can't connect using cnic\n");
+//		printk(KERN_ALERT "bnx2i: no route,"
+;
 		goto no_nx2_route;
 	}
 	hba = bnx2i_find_hba_for_cnic(cnic);
@@ -1637,14 +1637,14 @@ static struct bnx2i_hba *bnx2i_check_route(struct sockaddr *dst_addr)
 		goto no_nx2_route;
 
 	if (bnx2i_adapter_ready(hba)) {
-		printk(KERN_ALERT "bnx2i: check route, hba not found\n");
+;
 		goto no_nx2_route;
 	}
 	if (hba->netdev->mtu > hba->mtu_supported) {
-		printk(KERN_ALERT "bnx2i: %s network i/f mtu is set to %d\n",
-				  hba->netdev->name, hba->netdev->mtu);
-		printk(KERN_ALERT "bnx2i: iSCSI HBA can support mtu of %d\n",
-				  hba->mtu_supported);
+//		printk(KERN_ALERT "bnx2i: %s network i/f mtu is set to %d\n",
+;
+//		printk(KERN_ALERT "bnx2i: iSCSI HBA can support mtu of %d\n",
+;
 		goto no_nx2_route;
 	}
 	return hba;
@@ -1679,10 +1679,10 @@ static int bnx2i_tear_down_conn(struct bnx2i_hba *hba,
 		 * on what transcribed in TCP layer, different targets behave
 		 * differently
 		 */
-		printk(KERN_ALERT "bnx2i (%s): - WARN - CONN_DISCON timed out, "
-				  "please submit GRC Dump, NW/PCIe trace, "
-				  "driver msgs to developers for analysis\n",
-				  hba->netdev->name);
+//		printk(KERN_ALERT "bnx2i (%s): - WARN - CONN_DISCON timed out, "
+//				  "please submit GRC Dump, NW/PCIe trace, "
+//				  "driver msgs to developers for analysis\n",
+;
 	}
 
 	ep->state = EP_STATE_CLEANUP_START;
@@ -1709,7 +1709,7 @@ static int bnx2i_tear_down_conn(struct bnx2i_hba *hba,
 
 	if (ep->state != EP_STATE_CLEANUP_CMPL)
 		/* should never happen */
-		printk(KERN_ALERT "bnx2i - conn destroy failed\n");
+;
 
 	return 0;
 }
@@ -1772,8 +1772,8 @@ static struct iscsi_endpoint *bnx2i_ep_connect(struct Scsi_Host *shost,
 	bnx2i_ep->num_active_cmds = 0;
 	iscsi_cid = bnx2i_alloc_iscsi_cid(hba);
 	if (iscsi_cid == -1) {
-		printk(KERN_ALERT "bnx2i (%s): alloc_ep - unable to allocate "
-			"iscsi cid\n", hba->netdev->name);
+//		printk(KERN_ALERT "bnx2i (%s): alloc_ep - unable to allocate "
+;
 		rc = -ENOMEM;
 		bnx2i_free_ep(ep);
 		goto check_busy;
@@ -1782,8 +1782,8 @@ static struct iscsi_endpoint *bnx2i_ep_connect(struct Scsi_Host *shost,
 
 	rc = bnx2i_alloc_qp_resc(hba, bnx2i_ep);
 	if (rc != 0) {
-		printk(KERN_ALERT "bnx2i (%s): ep_conn - alloc QP resc error"
-			"\n", hba->netdev->name);
+//		printk(KERN_ALERT "bnx2i (%s): ep_conn - alloc QP resc error"
+;
 		rc = -ENOMEM;
 		goto qp_resc_err;
 	}
@@ -1800,13 +1800,13 @@ static struct iscsi_endpoint *bnx2i_ep_connect(struct Scsi_Host *shost,
 
 	if (bnx2i_send_conn_ofld_req(hba, bnx2i_ep)) {
 		if (bnx2i_ep->state == EP_STATE_OFLD_FAILED_CID_BUSY) {
-			printk(KERN_ALERT "bnx2i (%s): iscsi cid %d is busy\n",
-				hba->netdev->name, bnx2i_ep->ep_iscsi_cid);
+//			printk(KERN_ALERT "bnx2i (%s): iscsi cid %d is busy\n",
+;
 			rc = -EBUSY;
 		} else
 			rc = -ENOSPC;
-		printk(KERN_ALERT "bnx2i (%s): unable to send conn offld kwqe"
-			"\n", hba->netdev->name);
+//		printk(KERN_ALERT "bnx2i (%s): unable to send conn offld kwqe"
+;
 		bnx2i_ep_ofld_list_del(hba, bnx2i_ep);
 		goto conn_failed;
 	}
@@ -1823,8 +1823,8 @@ static struct iscsi_endpoint *bnx2i_ep_connect(struct Scsi_Host *shost,
 
 	if (bnx2i_ep->state != EP_STATE_OFLD_COMPL) {
 		if (bnx2i_ep->state == EP_STATE_OFLD_FAILED_CID_BUSY) {
-			printk(KERN_ALERT "bnx2i (%s): iscsi cid %d is busy\n",
-				hba->netdev->name, bnx2i_ep->ep_iscsi_cid);
+//			printk(KERN_ALERT "bnx2i (%s): iscsi cid %d is busy\n",
+;
 			rc = -EBUSY;
 		} else
 			rc = -ENOSPC;
@@ -2025,10 +2025,10 @@ int bnx2i_hw_ep_disconnect(struct bnx2i_endpoint *bnx2i_ep)
 			if (session->state == ISCSI_STATE_LOGGING_OUT) {
 				if (bnx2i_ep->state == EP_STATE_LOGOUT_SENT) {
 					/* Logout sent, but no resp */
-					printk(KERN_ALERT "bnx2i (%s): WARNING"
-						" logout response was not "
-						"received!\n",
-						bnx2i_ep->hba->netdev->name);
+//					printk(KERN_ALERT "bnx2i (%s): WARNING"
+//						" logout response was not "
+//						"received!\n",
+;
 				} else if (bnx2i_ep->state ==
 					   EP_STATE_LOGOUT_RESP_RCVD)
 					close = 1;
@@ -2047,8 +2047,8 @@ int bnx2i_hw_ep_disconnect(struct bnx2i_endpoint *bnx2i_ep)
 		close_ret = cnic->cm_abort(bnx2i_ep->cm_sk);
 
 	if (close_ret)
-		printk(KERN_ALERT "bnx2i (%s): close/abort(%d) returned %d\n",
-			bnx2i_ep->hba->netdev->name, close, close_ret);
+//		printk(KERN_ALERT "bnx2i (%s): close/abort(%d) returned %d\n",
+;
 	else
 		/* wait for option-2 conn teardown */
 		wait_event_interruptible(bnx2i_ep->ofld_wait,

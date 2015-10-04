@@ -484,7 +484,7 @@ int ad1843_init(struct snd_ad1843 *ad1843)
 	unsigned long later;
 
 	if (ad1843_read_bits(ad1843, &ad1843_INIT) != 0) {
-		printk(KERN_ERR "ad1843: AD1843 won't initialize\n");
+;
 		return -EIO;
 	}
 
@@ -496,8 +496,8 @@ int ad1843_init(struct snd_ad1843 *ad1843)
 
 	while (ad1843_read_bits(ad1843, &ad1843_PDNO)) {
 		if (time_after(jiffies, later)) {
-			printk(KERN_ERR
-			       "ad1843: AD1843 won't power up\n");
+//			printk(KERN_ERR
+;
 			return -EIO;
 		}
 		schedule_timeout_interruptible(5);

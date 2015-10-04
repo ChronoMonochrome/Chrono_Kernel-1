@@ -94,7 +94,7 @@ static int get_msg(struct mixart_mgr *mgr, struct mixart_msg *resp,
 
 	if( (size < MSG_DESCRIPTOR_SIZE) || (resp->size < (size - MSG_DESCRIPTOR_SIZE))) {
 		err = -EINVAL;
-		snd_printk(KERN_ERR "problem with response size = %d\n", size);
+;
 		goto _clean_exit;
 	}
 	size -= MSG_DESCRIPTOR_SIZE;
@@ -161,7 +161,7 @@ static int send_msg( struct mixart_mgr *mgr,
 	headptr = readl_be(MIXART_MEM(mgr, MSG_INBOUND_FREE_HEAD));
 
 	if (tailptr == headptr) {
-		snd_printk(KERN_ERR "error: no message frame available\n");
+;
 		return -EBUSY;
 	}
 
@@ -265,7 +265,7 @@ int snd_mixart_send_msg(struct mixart_mgr *mgr, struct mixart_msg *request, int 
 	if (! timeout) {
 		/* error - no ack */
 		mutex_unlock(&mgr->msg_mutex);
-		snd_printk(KERN_ERR "error: no response on msg %x\n", msg_frame);
+;
 		return -EIO;
 	}
 
@@ -278,7 +278,7 @@ int snd_mixart_send_msg(struct mixart_mgr *mgr, struct mixart_msg *request, int 
 	err = get_msg(mgr, &resp, msg_frame);
 
 	if( request->message_id != resp.message_id )
-		snd_printk(KERN_ERR "RESPONSE ERROR!\n");
+;
 
 	mutex_unlock(&mgr->msg_mutex);
 	return err;
@@ -321,7 +321,7 @@ int snd_mixart_send_msg_wait_notif(struct mixart_mgr *mgr,
 	if (! timeout) {
 		/* error - no ack */
 		mutex_unlock(&mgr->msg_mutex);
-		snd_printk(KERN_ERR "error: notification %x not received\n", notif_event);
+;
 		return -EIO;
 	}
 
@@ -378,7 +378,7 @@ void snd_mixart_msg_tasklet(unsigned long arg)
 			resp.size = sizeof(mixart_msg_data);
 			err = get_msg(mgr, &resp, addr);
 			if( err < 0 ) {
-				snd_printk(KERN_ERR "tasklet: error(%d) reading mf %x\n", err, msg);
+;
 				break;
 			}
 
@@ -401,7 +401,7 @@ void snd_mixart_msg_tasklet(unsigned long arg)
 		case MSG_TYPE_COMMAND:
 			/* get_msg() necessary */
 		default:
-			snd_printk(KERN_ERR "tasklet doesn't know what to do with message %x\n", msg);
+;
 		} /* switch type */
 
 		/* decrement counter */
@@ -451,7 +451,7 @@ irqreturn_t snd_mixart_interrupt(int irq, void *dev_id)
 			resp.size = sizeof(mixart_msg_data);
 			err = get_msg(mgr, &resp, msg & ~MSG_TYPE_MASK);
 			if( err < 0 ) {
-				snd_printk(KERN_ERR "interrupt: error(%d) reading mf %x\n", err, msg);
+;
 				break;
 			}
 
@@ -472,8 +472,8 @@ irqreturn_t snd_mixart_interrupt(int irq, void *dev_id)
 					struct mixart_stream *stream;
 
 					if ((chip_number >= mgr->num_cards) || (pcm_number >= MIXART_PCM_TOTAL) || (sub_number >= MIXART_PLAYBACK_STREAMS)) {
-						snd_printk(KERN_ERR "error MSG_SERVICES_TIMER_NOTIFY buffer_id (%x) pos(%d)\n",
-							   buffer_id, notify->streams[i].sample_pos_low_part);
+//						snd_printk(KERN_ERR "error MSG_SERVICES_TIMER_NOTIFY buffer_id (%x) pos(%d)\n",
+;
 						break;
 					}
 
@@ -535,7 +535,7 @@ irqreturn_t snd_mixart_interrupt(int irq, void *dev_id)
 		case MSG_TYPE_NOTIFY:
 			if(msg & MSG_CANCEL_NOTIFY_MASK) {
 				msg &= ~MSG_CANCEL_NOTIFY_MASK;
-				snd_printk(KERN_ERR "canceled notification %x !\n", msg);
+;
 			}
 			/* no break, continue ! */
 		case MSG_TYPE_ANSWER:

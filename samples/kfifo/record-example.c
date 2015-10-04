@@ -75,12 +75,12 @@ static int __init testfunc(void)
 	unsigned int	ret;
 	struct { unsigned char buf[6]; } hello = { "hello" };
 
-	printk(KERN_INFO "record fifo test start\n");
+;
 
 	kfifo_in(&test, &hello, sizeof(hello));
 
 	/* show the size of the next record in the fifo */
-	printk(KERN_INFO "fifo peek len: %u\n", kfifo_peek_len(&test));
+;
 
 	/* put in variable length data */
 	for (i = 0; i < 10; i++) {
@@ -89,10 +89,10 @@ static int __init testfunc(void)
 	}
 
 	/* skip first element of the fifo */
-	printk(KERN_INFO "skip 1st element\n");
+;
 	kfifo_skip(&test);
 
-	printk(KERN_INFO "fifo len: %u\n", kfifo_len(&test));
+;
 
 	/* show the first record without removing from the fifo */
 	ret = kfifo_out_peek(&test, buf, sizeof(buf));
@@ -106,15 +106,15 @@ static int __init testfunc(void)
 		buf[ret] = '\0';
 		printk(KERN_INFO "item = %.*s\n", ret, buf);
 		if (strcmp(buf, expected_result[i++])) {
-			printk(KERN_WARNING "value mismatch: test failed\n");
+;
 			return -EIO;
 		}
 	}
 	if (i != ARRAY_SIZE(expected_result)) {
-		printk(KERN_WARNING "size mismatch: test failed\n");
+;
 		return -EIO;
 	}
-	printk(KERN_INFO "test passed\n");
+;
 
 	return 0;
 }
@@ -165,7 +165,7 @@ static int __init example_init(void)
 
 	ret = kfifo_alloc(&test, FIFO_SIZE, GFP_KERNEL);
 	if (ret) {
-		printk(KERN_ERR "error kfifo_alloc\n");
+;
 		return ret;
 	}
 #else

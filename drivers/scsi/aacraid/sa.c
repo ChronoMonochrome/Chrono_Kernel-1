@@ -329,7 +329,7 @@ int aac_sa_init(struct aac_dev *dev)
 	name     = dev->name;
 
 	if (aac_sa_ioremap(dev, dev->base_size)) {
-		printk(KERN_WARNING "%s: unable to map adapter.\n", name);
+;
 		goto error_iounmap;
 	}
 
@@ -337,14 +337,14 @@ int aac_sa_init(struct aac_dev *dev)
 	 *	Check to see if the board failed any self tests.
 	 */
 	if (sa_readl(dev, Mailbox7) & SELF_TEST_FAILED) {
-		printk(KERN_WARNING "%s%d: adapter self-test failed.\n", name, instance);
+;
 		goto error_iounmap;
 	}
 	/*
 	 *	Check to see if the board panic'd while booting.
 	 */
 	if (sa_readl(dev, Mailbox7) & KERNEL_PANIC) {
-		printk(KERN_WARNING "%s%d: adapter kernel panic'd.\n", name, instance);
+;
 		goto error_iounmap;
 	}
 	start = jiffies;
@@ -354,8 +354,8 @@ int aac_sa_init(struct aac_dev *dev)
 	while (!(sa_readl(dev, Mailbox7) & KERNEL_UP_AND_RUNNING)) {
 		if (time_after(jiffies, start+startup_timeout*HZ)) {
 			status = sa_readl(dev, Mailbox7);
-			printk(KERN_WARNING "%s%d: adapter kernel failed to start, init status = %lx.\n", 
-					name, instance, status);
+//			printk(KERN_WARNING "%s%d: adapter kernel failed to start, init status = %lx.\n", 
+;
 			goto error_iounmap;
 		}
 		msleep(1);
@@ -388,8 +388,8 @@ int aac_sa_init(struct aac_dev *dev)
 	if (request_irq(dev->pdev->irq, dev->a_ops.adapter_intr,
 			IRQF_SHARED|IRQF_DISABLED,
 			"aacraid", (void *)dev ) < 0) {
-		printk(KERN_WARNING "%s%d: Interrupt unavailable.\n",
-			name, instance);
+//		printk(KERN_WARNING "%s%d: Interrupt unavailable.\n",
+;
 		goto error_iounmap;
 	}
 	dev->dbg_base = dev->scsi_host_ptr->base;

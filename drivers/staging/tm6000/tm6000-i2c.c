@@ -38,9 +38,9 @@ static unsigned int i2c_debug;
 module_param(i2c_debug, int, 0644);
 MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
 
-#define i2c_dprintk(lvl, fmt, args...) if (i2c_debug >= lvl) do { \
-			printk(KERN_DEBUG "%s at %s: " fmt, \
-			dev->name, __FUNCTION__ , ##args); } while (0)
+//#define i2c_dprintk(lvl, fmt, args...) if (i2c_debug >= lvl) do { \
+//			printk(KERN_DEBUG "%s at %s: " fmt, \
+;
 
 static int tm6000_i2c_send_regs(struct tm6000_core *dev, unsigned char addr,
 				__u8 reg, char *buf, int len)
@@ -56,8 +56,8 @@ static int tm6000_i2c_send_regs(struct tm6000_core *dev, unsigned char addr,
 		return -1;
 
 	if (len < 1 || len > i2c_packet_limit) {
-		printk(KERN_ERR "Incorrect length of i2c packet = %d, limit set to %d\n",
-			len, i2c_packet_limit);
+//		printk(KERN_ERR "Incorrect length of i2c packet = %d, limit set to %d\n",
+;
 		return -1;
 	}
 
@@ -94,8 +94,8 @@ static int tm6000_i2c_recv_regs(struct tm6000_core *dev, unsigned char addr,
 		return -1;
 
 	if (len < 1 || len > i2c_packet_limit) {
-		printk(KERN_ERR "Incorrect length of i2c packet = %d, limit set to %d\n",
-			len, i2c_packet_limit);
+//		printk(KERN_ERR "Incorrect length of i2c packet = %d, limit set to %d\n",
+;
 		return -1;
 	}
 
@@ -169,9 +169,9 @@ static int tm6000_i2c_xfer(struct i2c_adapter *i2c_adap,
 		return 0;
 	for (i = 0; i < num; i++) {
 		addr = (msgs[i].addr << 1) & 0xff;
-		i2c_dprintk(2, "%s %s addr=0x%x len=%d:",
-			 (msgs[i].flags & I2C_M_RD) ? "read" : "write",
-			 i == num - 1 ? "stop" : "nonstop", addr, msgs[i].len);
+//		i2c_dprintk(2, "%s %s addr=0x%x len=%d:",
+//			 (msgs[i].flags & I2C_M_RD) ? "read" : "write",
+;
 		if (msgs[i].flags & I2C_M_RD) {
 			/* read request without preceding register selection */
 			/*
@@ -179,8 +179,8 @@ static int tm6000_i2c_xfer(struct i2c_adapter *i2c_adap,
 			 * immediately after a 1 or 2 byte write to select
 			 * a register.  We cannot fulfil this request.
 			 */
-			i2c_dprintk(2, " read without preceding write not"
-				       " supported");
+//			i2c_dprintk(2, " read without preceding write not"
+;
 			rc = -EOPNOTSUPP;
 			goto err;
 		} else if (i + 1 < num && msgs[i].len <= 2 &&
@@ -189,8 +189,8 @@ static int tm6000_i2c_xfer(struct i2c_adapter *i2c_adap,
 			/* 1 or 2 byte write followed by a read */
 			if (i2c_debug >= 2)
 				for (byte = 0; byte < msgs[i].len; byte++)
-					printk(" %02x", msgs[i].buf[byte]);
-			i2c_dprintk(2, "; joined to read %s len=%d:",
+;
+;
 				    i == num - 2 ? "stop" : "nonstop",
 				    msgs[i + 1].len);
 
@@ -211,12 +211,12 @@ static int tm6000_i2c_xfer(struct i2c_adapter *i2c_adap,
 			}
 			if (i2c_debug >= 2)
 				for (byte = 0; byte < msgs[i].len; byte++)
-					printk(" %02x", msgs[i].buf[byte]);
+;
 		} else {
 			/* write bytes */
 			if (i2c_debug >= 2)
 				for (byte = 0; byte < msgs[i].len; byte++)
-					printk(" %02x", msgs[i].buf[byte]);
+;
 			rc = tm6000_i2c_send_regs(dev, addr, msgs[i].buf[0],
 				msgs[i].buf + 1, msgs[i].len - 1);
 
@@ -226,14 +226,14 @@ static int tm6000_i2c_xfer(struct i2c_adapter *i2c_adap,
 			}
 		}
 		if (i2c_debug >= 2)
-			printk("\n");
+;
 		if (rc < 0)
 			goto err;
 	}
 
 	return num;
 err:
-	i2c_dprintk(2, " ERROR: %i\n", rc);
+;
 	return rc;
 }
 
@@ -254,17 +254,17 @@ static int tm6000_i2c_eeprom(struct tm6000_core *dev)
 			if (p == dev->eedata)
 				goto noeeprom;
 			else {
-				printk(KERN_WARNING
-				"%s: i2c eeprom read error (err=%d)\n",
-				dev->name, rc);
+//				printk(KERN_WARNING
+//				"%s: i2c eeprom read error (err=%d)\n",
+;
 			}
 			return -EINVAL;
 		}
 		dev->eedata_size++;
 		p++;
 		if (0 == (i % 16))
-			printk(KERN_INFO "%s: i2c eeprom %02x:", dev->name, i);
-		printk(" %02x", dev->eedata[i]);
+;
+;
 		if ((dev->eedata[i] >= ' ') && (dev->eedata[i] <= 'z'))
 			bytes[i%16] = dev->eedata[i];
 		else
@@ -274,21 +274,21 @@ static int tm6000_i2c_eeprom(struct tm6000_core *dev)
 
 		if (0 == (i % 16)) {
 			bytes[16] = '\0';
-			printk("  %s\n", bytes);
+;
 		}
 	}
 	if (0 != (i%16)) {
 		bytes[i%16] = '\0';
 		for (i %= 16; i < 16; i++)
-			printk("   ");
-		printk("  %s\n", bytes);
+;
+;
 	}
 
 	return 0;
 
 noeeprom:
-	printk(KERN_INFO "%s: Huh, no eeprom present (err=%d)?\n",
-	       dev->name, rc);
+//	printk(KERN_INFO "%s: Huh, no eeprom present (err=%d)?\n",
+;
 	return -EINVAL;
 }
 

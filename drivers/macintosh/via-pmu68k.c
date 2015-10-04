@@ -199,7 +199,7 @@ pmu_init(void)
 	timeout =  100000;
 	while (!req.complete) {
 		if (--timeout < 0) {
-			printk(KERN_ERR "pmu_init: no response from PMU\n");
+;
 			return -EAGAIN;
 		}
 		udelay(10);
@@ -211,7 +211,7 @@ pmu_init(void)
 	interrupt_data[0] = 1;
 	while (interrupt_data[0] || pmu_state != idle) {
 		if (--timeout < 0) {
-			printk(KERN_ERR "pmu_init: timed out acking intrs\n");
+;
 			return -EAGAIN;
 		}
 		if (pmu_state == idle) {
@@ -227,7 +227,7 @@ pmu_init(void)
 	timeout =  100000;
 	while (!req.complete) {
 		if (--timeout < 0) {
-			printk(KERN_ERR "pmu_init: no response from PMU\n");
+;
 			return -EAGAIN;
 		}
 		udelay(10);
@@ -240,14 +240,14 @@ pmu_init(void)
 
 	if (request_irq(IRQ_MAC_ADB_SR, pmu_interrupt, 0, "pmu-shift",
 			pmu_interrupt)) {
-		printk(KERN_ERR "pmu_init: can't get irq %d\n",
-			IRQ_MAC_ADB_SR);
+//		printk(KERN_ERR "pmu_init: can't get irq %d\n",
+;
 		return -EAGAIN;
 	}
 	if (request_irq(IRQ_MAC_ADB_CL, pmu_interrupt, 0, "pmu-clock",
 			pmu_interrupt)) {
-		printk(KERN_ERR "pmu_init: can't get irq %d\n",
-			IRQ_MAC_ADB_CL);
+//		printk(KERN_ERR "pmu_init: can't get irq %d\n",
+;
 		free_irq(IRQ_MAC_ADB_SR, pmu_interrupt);
 		return -EAGAIN;
 	}
@@ -257,7 +257,7 @@ pmu_init(void)
 	/* Enable backlight */
 	pmu_enable_backlight(1);
 
-	printk("adb: PMU 68K driver v0.5 for Unified ADB.\n");
+;
 
 	return 0;
 }
@@ -422,7 +422,7 @@ pmu_reset_bus(void)
 	req.reply_expected = 1;
 	if (pmu_queue_request(&req) != 0)
 	{
-		printk(KERN_ERR "pmu_adb_reset_bus: pmu_queue_request failed\n");
+;
 		return -EIO;
 	}
 	while (!req.complete)
@@ -430,7 +430,7 @@ pmu_reset_bus(void)
 	timeout = 100000;
 	while (!req.complete) {
 		if (--timeout < 0) {
-			printk(KERN_ERR "pmu_adb_reset_bus (reset): no response from PMU\n");
+;
 			return -EIO;
 		}
 		udelay(10);
@@ -452,7 +452,7 @@ pmu_request(struct adb_request *req, void (*done)(struct adb_request *),
 	int i;
 
 	if (nbytes < 0 || nbytes > 32) {
-		printk(KERN_ERR "pmu_request: bad nbytes (%d)\n", nbytes);
+;
 		req->complete = 1;
 		return -EINVAL;
 	}
@@ -573,15 +573,15 @@ pmu_interrupt(int irq, void *dev_id)
 	int timeout, bite = 0;	/* to prevent compiler warning */
 
 #if 0
-	printk("pmu_interrupt: irq %d state %d acr %02X, b %02X data_index %d/%d adb_int_pending %d\n",
-		irq, pmu_state, (uint) via1[ACR], (uint) via2[B], data_index, data_len, adb_int_pending);
+//	printk("pmu_interrupt: irq %d state %d acr %02X, b %02X data_index %d/%d adb_int_pending %d\n",
+;
 #endif
 
 	if (irq == IRQ_MAC_ADB_CL) {		/* CB1 interrupt */
 		adb_int_pending = 1;
 	} else if (irq == IRQ_MAC_ADB_SR) {	/* SR interrupt  */
 		if (via2[B] & TACK) {
-			printk(KERN_DEBUG "PMU: SR_INT but ack still high! (%x)\n", via2[B]);
+;
 		}
 
 		/* if reading grab the byte */
@@ -592,7 +592,7 @@ pmu_interrupt(int irq, void *dev_id)
 		timeout = 3200;
 		while (!(via2[B] & TACK)) {
 			if (--timeout < 0) {
-				printk(KERN_ERR "PMU not responding (!ack)\n");
+;
 				goto finish;
 			}
 			udelay(10);
@@ -640,8 +640,8 @@ pmu_interrupt(int irq, void *dev_id)
 			if (data_len == -1) {
 				data_len = bite;
 				if (bite > 32)
-					printk(KERN_ERR "PMU: bad reply len %d\n",
-					       bite);
+//					printk(KERN_ERR "PMU: bad reply len %d\n",
+;
 			} else {
 				reply_ptr[data_index++] = bite;
 			}
@@ -663,8 +663,8 @@ pmu_interrupt(int irq, void *dev_id)
 			break;
 
 		default:
-			printk(KERN_ERR "pmu_interrupt: unknown state %d?\n",
-			       pmu_state);
+//			printk(KERN_ERR "pmu_interrupt: unknown state %d?\n",
+;
 		}
 	}
 finish:
@@ -679,8 +679,8 @@ finish:
 	}
 
 #if 0
-	printk("pmu_interrupt: exit state %d acr %02X, b %02X data_index %d/%d adb_int_pending %d\n",
-		pmu_state, (uint) via1[ACR], (uint) via2[B], data_index, data_len, adb_int_pending);
+//	printk("pmu_interrupt: exit state %d acr %02X, b %02X data_index %d/%d adb_int_pending %d\n",
+;
 #endif
 	return IRQ_HANDLED;
 }
@@ -708,7 +708,7 @@ pmu_handle_data(unsigned char *data, int len)
 		if ((data[0] & PMU_INT_ADB_AUTO) == 0) {
 			struct adb_request *req = req_awaiting_reply;
 			if (req == 0) {
-				printk(KERN_ERR "PMU: extra ADB reply\n");
+;
 				return;
 			}
 			req_awaiting_reply = NULL;
@@ -730,10 +730,10 @@ pmu_handle_data(unsigned char *data, int len)
 		} else if (show_pmu_ints
 			   && !(data[0] == PMU_INT_TICK && len == 1)) {
 			int i;
-			printk(KERN_DEBUG "pmu intr");
+;
 			for (i = 0; i < len; ++i)
-				printk(" %.2x", data[i]);
-			printk("\n");
+;
+;
 		}
 	}
 }
@@ -757,7 +757,7 @@ pmu_enable_backlight(int on)
 			pmu_request(&req, NULL, 3, PMU_READ_NVRAM, 0x14, 0xe);
 			while (!req.complete)
 				pmu_poll();
-			printk(KERN_DEBUG "pmu: nvram returned bright: %d\n", (int)req.reply[1]);
+;
 			backlight_level = req.reply[1];
 			break;
 		    default:

@@ -197,7 +197,7 @@ static int spi_sh_send(struct spi_sh_data *ss, struct spi_message *mesg,
 						 ss->cr1 & SPI_SH_TBE,
 						 SPI_SH_SEND_TIMEOUT);
 			if (ret == 0 && !(ss->cr1 & SPI_SH_TBE)) {
-				printk(KERN_ERR "%s: timeout\n", __func__);
+;
 				return -ETIMEDOUT;
 			}
 		}
@@ -215,7 +215,7 @@ static int spi_sh_send(struct spi_sh_data *ss, struct spi_message *mesg,
 					 ss->cr1 & SPI_SH_TBE,
 					 SPI_SH_SEND_TIMEOUT);
 		if (ret == 0 && (ss->cr1 & SPI_SH_TBE)) {
-			printk(KERN_ERR "%s: timeout\n", __func__);
+;
 			return -ETIMEDOUT;
 		}
 	}
@@ -255,7 +255,7 @@ static int spi_sh_receive(struct spi_sh_data *ss, struct spi_message *mesg,
 						 SPI_SH_RECEIVE_TIMEOUT);
 			if (ret == 0 &&
 			    spi_sh_read(ss, SPI_SH_CR1) & SPI_SH_RBE) {
-				printk(KERN_ERR "%s: timeout\n", __func__);
+;
 				return -ETIMEDOUT;
 			}
 		}
@@ -498,7 +498,7 @@ static int __devinit spi_sh_probe(struct platform_device *pdev)
 
 	ret = spi_register_master(master);
 	if (ret < 0) {
-		printk(KERN_ERR "spi_register_master error.\n");
+;
 		goto error4;
 	}
 

@@ -100,14 +100,14 @@ static int __devinit asd_map_memio(struct asd_ha_struct *asd_ha)
 		io_handle->flags = pci_resource_flags(asd_ha->pcidev, i);
 		err = -ENODEV;
 		if (!io_handle->start || !io_handle->len) {
-			asd_printk("MBAR%d start or length for %s is 0.\n",
-				   i==0?0:1, pci_name(asd_ha->pcidev));
+//			asd_printk("MBAR%d start or length for %s is 0.\n",
+;
 			goto Err;
 		}
 		err = pci_request_region(asd_ha->pcidev, i, ASD_DRIVER_NAME);
 		if (err) {
-			asd_printk("couldn't reserve memory region for %s\n",
-				   pci_name(asd_ha->pcidev));
+//			asd_printk("couldn't reserve memory region for %s\n",
+;
 			goto Err;
 		}
 		if (io_handle->flags & IORESOURCE_CACHEABLE)
@@ -117,8 +117,8 @@ static int __devinit asd_map_memio(struct asd_ha_struct *asd_ha)
 			io_handle->addr = ioremap_nocache(io_handle->start,
 							  io_handle->len);
 		if (!io_handle->addr) {
-			asd_printk("couldn't map MBAR%d of %s\n", i==0?0:1,
-				   pci_name(asd_ha->pcidev));
+//			asd_printk("couldn't map MBAR%d of %s\n", i==0?0:1,
+;
 			goto Err_unreq;
 		}
 	}
@@ -159,14 +159,14 @@ static int __devinit asd_map_ioport(struct asd_ha_struct *asd_ha)
 	io_handle->flags = pci_resource_flags(asd_ha->pcidev, i);
 	io_handle->addr  = (void __iomem *) io_handle->start;
 	if (!io_handle->start || !io_handle->len) {
-		asd_printk("couldn't get IO ports for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't get IO ports for %s\n",
+;
 		return -ENODEV;
 	}
 	err = pci_request_region(asd_ha->pcidev, i, ASD_DRIVER_NAME);
 	if (err) {
-		asd_printk("couldn't reserve io space for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't reserve io space for %s\n",
+;
 	}
 
 	return err;
@@ -184,8 +184,8 @@ static int __devinit asd_map_ha(struct asd_ha_struct *asd_ha)
 
 	err = pci_read_config_word(asd_ha->pcidev, PCI_COMMAND, &cmd_reg);
 	if (err) {
-		asd_printk("couldn't read command register of %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't read command register of %s\n",
+;
 		goto Err;
 	}
 
@@ -196,11 +196,11 @@ static int __devinit asd_map_ha(struct asd_ha_struct *asd_ha)
 	} else if (cmd_reg & PCI_COMMAND_IO) {
 		if ((err = asd_map_ioport(asd_ha)))
 			goto Err;
-		asd_printk("%s ioport mapped -- upgrade your hardware\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("%s ioport mapped -- upgrade your hardware\n",
+;
 	} else {
-		asd_printk("no proper device access to %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("no proper device access to %s\n",
+;
 		goto Err;
 	}
 
@@ -231,10 +231,10 @@ static int __devinit asd_common_setup(struct asd_ha_struct *asd_ha)
 
 	err = -ENODEV;
 	if (asd_ha->revision_id < AIC9410_DEV_REV_B0) {
-		asd_printk("%s is revision %s (%X), which is not supported\n",
-			   pci_name(asd_ha->pcidev),
-			   asd_dev_rev[asd_ha->revision_id],
-			   asd_ha->revision_id);
+//		asd_printk("%s is revision %s (%X), which is not supported\n",
+//			   pci_name(asd_ha->pcidev),
+//			   asd_dev_rev[asd_ha->revision_id],
+;
 		goto Err;
 	}
 	/* Provide some sane default values. */
@@ -399,8 +399,8 @@ static ssize_t asd_store_update_bios(struct device *dev,
 				   filename_ptr,
 				   &asd_ha->pcidev->dev);
 	if (err) {
-		asd_printk("Failed to load bios image file %s, error %d\n",
-			   filename_ptr, err);
+//		asd_printk("Failed to load bios image file %s, error %d\n",
+;
 		err = FAIL_OPEN_BIOS_FILE;
 		goto out1;
 	}
@@ -553,7 +553,7 @@ static int asd_create_ha_caches(struct asd_ha_struct *asd_ha)
 					   sizeof(struct scb),
 					   8, 0);
 	if (!asd_ha->scb_pool) {
-		asd_printk("couldn't create scb pool\n");
+;
 		return -ENOMEM;
 	}
 
@@ -649,7 +649,7 @@ static int asd_create_global_caches(void)
 					    SLAB_HWCACHE_ALIGN,
 					    NULL);
 		if (!asd_dma_token_cache) {
-			asd_printk("couldn't create dma token cache\n");
+;
 			return -ENOMEM;
 		}
 	}
@@ -661,7 +661,7 @@ static int asd_create_global_caches(void)
 						   SLAB_HWCACHE_ALIGN,
 						   NULL);
 		if (!asd_ascb_cache) {
-			asd_printk("couldn't create ascb cache\n");
+;
 			goto Err;
 		}
 	}
@@ -743,12 +743,12 @@ static int __devinit asd_pci_probe(struct pci_dev *dev,
 	int err;
 
 	if (asd_id >= ARRAY_SIZE(asd_pcidev_data)) {
-		asd_printk("wrong driver_data in PCI table\n");
+;
 		return -ENODEV;
 	}
 
 	if ((err = pci_enable_device(dev))) {
-		asd_printk("couldn't enable device %s\n", pci_name(dev));
+;
 		return err;
 	}
 
@@ -764,7 +764,7 @@ static int __devinit asd_pci_probe(struct pci_dev *dev,
 
 	asd_ha = kzalloc(sizeof(*asd_ha), GFP_KERNEL);
 	if (!asd_ha) {
-		asd_printk("out of memory\n");
+;
 		goto Err_put;
 	}
 	asd_ha->pcidev = dev;
@@ -773,7 +773,7 @@ static int __devinit asd_pci_probe(struct pci_dev *dev,
 
 	asd_ha->bios_status = FLASH_OK;
 	asd_ha->name = asd_dev->name;
-	asd_printk("found %s, device %s\n", asd_ha->name, pci_name(dev));
+;
 
 	SHOST_TO_SAS_HA(shost) = &asd_ha->sas_ha;
 	asd_ha->sas_ha.core.shost = shost;
@@ -798,7 +798,7 @@ static int __devinit asd_pci_probe(struct pci_dev *dev,
 		 && !pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32)))
 		;
 	else {
-		asd_printk("no suitable DMA mask for %s\n", pci_name(dev));
+;
 		goto Err_remove;
 	}
 
@@ -816,14 +816,14 @@ static int __devinit asd_pci_probe(struct pci_dev *dev,
 	if (err)
 		goto Err_free_cache;
 
-	asd_printk("device %s: SAS addr %llx, PCBA SN %s, %d phys, %d enabled "
-		   "phys, flash %s, BIOS %s%d\n",
-		   pci_name(dev), SAS_ADDR(asd_ha->hw_prof.sas_addr),
-		   asd_ha->hw_prof.pcba_sn, asd_ha->hw_prof.max_phys,
-		   asd_ha->hw_prof.num_phys,
-		   asd_ha->hw_prof.flash.present ? "present" : "not present",
-		   asd_ha->hw_prof.bios.present ? "build " : "not present",
-		   asd_ha->hw_prof.bios.bld);
+//	asd_printk("device %s: SAS addr %llx, PCBA SN %s, %d phys, %d enabled "
+//		   "phys, flash %s, BIOS %s%d\n",
+//		   pci_name(dev), SAS_ADDR(asd_ha->hw_prof.sas_addr),
+//		   asd_ha->hw_prof.pcba_sn, asd_ha->hw_prof.max_phys,
+//		   asd_ha->hw_prof.num_phys,
+//		   asd_ha->hw_prof.flash.present ? "present" : "not present",
+//		   asd_ha->hw_prof.bios.present ? "build " : "not present",
+;
 
 	shost->can_queue = asd_ha->seq.can_queue;
 
@@ -833,16 +833,16 @@ static int __devinit asd_pci_probe(struct pci_dev *dev,
 	err = request_irq(asd_ha->pcidev->irq, asd_hw_isr, IRQF_SHARED,
 			  ASD_DRIVER_NAME, asd_ha);
 	if (err) {
-		asd_printk("couldn't get irq %d for %s\n",
-			   asd_ha->pcidev->irq, pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't get irq %d for %s\n",
+;
 		goto Err_irq;
 	}
 	asd_enable_ints(asd_ha);
 
 	err = asd_init_post_escbs(asd_ha);
 	if (err) {
-		asd_printk("couldn't post escbs for %s\n",
-			   pci_name(asd_ha->pcidev));
+//		asd_printk("couldn't post escbs for %s\n",
+;
 		goto Err_escbs;
 	}
 	ASD_DPRINTK("escbs posted\n");
@@ -962,7 +962,7 @@ static void asd_scan_start(struct Scsi_Host *shost)
 	asd_ha = SHOST_TO_SAS_HA(shost)->lldd_ha;
 	err = asd_enable_phys(asd_ha, asd_ha->hw_prof.enabled_phys);
 	if (err)
-		asd_printk("Couldn't enable phys, err:%d\n", err);
+;
 }
 
 static int asd_scan_finished(struct Scsi_Host *shost, unsigned long time)
@@ -1039,8 +1039,8 @@ static int __init aic94xx_init(void)
 	int err;
 
 
-	asd_printk("%s version %s loaded\n", ASD_DRIVER_DESCRIPTION,
-		   ASD_DRIVER_VERSION);
+//	asd_printk("%s version %s loaded\n", ASD_DRIVER_DESCRIPTION,
+;
 
 	err = asd_create_global_caches();
 	if (err)
@@ -1078,8 +1078,8 @@ static void __exit aic94xx_exit(void)
 	sas_release_transport(aic94xx_transport_template);
 	asd_release_firmware();
 	asd_destroy_global_caches();
-	asd_printk("%s version %s unloaded\n", ASD_DRIVER_DESCRIPTION,
-		   ASD_DRIVER_VERSION);
+//	asd_printk("%s version %s unloaded\n", ASD_DRIVER_DESCRIPTION,
+;
 }
 
 module_init(aic94xx_init);

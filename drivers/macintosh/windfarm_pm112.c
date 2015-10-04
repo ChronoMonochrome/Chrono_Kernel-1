@@ -25,29 +25,29 @@
 #undef LOTSA_DEBUG
 
 #ifdef DEBUG
-#define DBG(args...)	printk(args)
-#else
-#define DBG(args...)	do { } while(0)
-#endif
-
-#ifdef LOTSA_DEBUG
-#define DBG_LOTS(args...)	printk(args)
-#else
-#define DBG_LOTS(args...)	do { } while(0)
-#endif
-
-/* define this to force CPU overtemp to 60 degree, useful for testing
- * the overtemp code
- */
-#undef HACKED_OVERTEMP
-
-/* We currently only handle 2 chips, 4 cores... */
-#define NR_CHIPS	2
-#define NR_CORES	4
-#define NR_CPU_FANS	3 * NR_CHIPS
-
-/* Controls and sensors */
-static struct wf_sensor *sens_cpu_temp[NR_CORES];
+//#define DBG(args...)	printk(args)
+//#else
+//#define DBG(args...)	do { } while(0)
+//#endif
+//
+//#ifdef LOTSA_DEBUG
+//#define DBG_LOTS(args...)	printk(args)
+//#else
+//#define DBG_LOTS(args...)	do { } while(0)
+//#endif
+//
+///* define this to force CPU overtemp to 60 degree, useful for testing
+// * the overtemp code
+// */
+//#undef HACKED_OVERTEMP
+//
+///* We currently only handle 2 chips, 4 cores... */
+//#define NR_CHIPS	2
+//#define NR_CORES	4
+//#define NR_CPU_FANS	3 * NR_CHIPS
+//
+///* Controls and sensors */
+;
 static struct wf_sensor *sens_cpu_power[NR_CORES];
 static struct wf_sensor *hd_temp;
 static struct wf_sensor *slots_power;
@@ -136,7 +136,7 @@ static int create_cpu_loop(int cpu)
 	/* Get PID params from the appropriate SAT */
 	hdr = smu_sat_get_sdb_partition(chip, 0xC8 + core, NULL);
 	if (hdr == NULL) {
-		printk(KERN_WARNING"windfarm: can't get CPU PID fan config\n");
+;
 		return -EINVAL;
 	}
 	piddata = (struct smu_sdbp_cpupiddata *)&hdr[1];
@@ -202,14 +202,14 @@ static int cpu_check_overtemp(s32 temp)
 	if (temp >= (cpu_all_tmax + LOW_OVER_IMMEDIATE)) {
 		new_state |= FAILURE_LOW_OVERTEMP;
 		if ((failure_state & FAILURE_LOW_OVERTEMP) == 0)
-			printk(KERN_ERR "windfarm: Overtemp due to immediate CPU"
-			       " temperature !\n");
+//			printk(KERN_ERR "windfarm: Overtemp due to immediate CPU"
+;
 	}
 	if (temp >= (cpu_all_tmax + HIGH_OVER_IMMEDIATE)) {
 		new_state |= FAILURE_HIGH_OVERTEMP;
 		if ((failure_state & FAILURE_HIGH_OVERTEMP) == 0)
-			printk(KERN_ERR "windfarm: Critical overtemp due to"
-			       " immediate CPU temperature !\n");
+//			printk(KERN_ERR "windfarm: Critical overtemp due to"
+;
 	}
 
 	/* We calculate a history of max temperatures and use that for the
@@ -229,14 +229,14 @@ static int cpu_check_overtemp(s32 temp)
 	if (t_avg >= (cpu_all_tmax + LOW_OVER_AVERAGE)) {
 		new_state |= FAILURE_LOW_OVERTEMP;
 		if ((failure_state & FAILURE_LOW_OVERTEMP) == 0)
-			printk(KERN_ERR "windfarm: Overtemp due to average CPU"
-			       " temperature !\n");
+//			printk(KERN_ERR "windfarm: Overtemp due to average CPU"
+;
 	}
 	if (t_avg >= (cpu_all_tmax + HIGH_OVER_AVERAGE)) {
 		new_state |= FAILURE_HIGH_OVERTEMP;
 		if ((failure_state & FAILURE_HIGH_OVERTEMP) == 0)
-			printk(KERN_ERR "windfarm: Critical overtemp due to"
-			       " average CPU temperature !\n");
+//			printk(KERN_ERR "windfarm: Critical overtemp due to"
+;
 	}
 
 	/* Now handle overtemp conditions. We don't currently use the windfarm
@@ -252,7 +252,7 @@ static int cpu_check_overtemp(s32 temp)
 		failure_state |= new_state;
 	} else if ((failure_state & FAILURE_LOW_OVERTEMP) &&
 		   (temp < (cpu_all_tmax + LOW_OVER_CLEAR))) {
-		printk(KERN_ERR "windfarm: Overtemp condition cleared !\n");
+;
 		failure_state &= ~FAILURE_LOW_OVERTEMP;
 	}
 
@@ -276,8 +276,8 @@ static void cpu_fans_tick(void)
 		err = sr->ops->get_value(sr, &temp);
 		if (err) {
 			DBG("\n");
-			printk(KERN_WARNING "windfarm: CPU %d temperature "
-			       "sensor error %d\n", cpu, err);
+//			printk(KERN_WARNING "windfarm: CPU %d temperature "
+;
 			failure_state |= FAILURE_SENSOR;
 			cpu_max_all_fans();
 			return;
@@ -291,8 +291,8 @@ static void cpu_fans_tick(void)
 		err = sr->ops->get_value(sr, &power);
 		if (err) {
 			DBG("\n");
-			printk(KERN_WARNING "windfarm: CPU %d power "
-			       "sensor error %d\n", cpu, err);
+//			printk(KERN_WARNING "windfarm: CPU %d power "
+;
 			failure_state |= FAILURE_SENSOR;
 			cpu_max_all_fans();
 			return;
@@ -329,8 +329,8 @@ static void cpu_fans_tick(void)
 			continue;
 		err = ct->ops->set_value(ct, target * cpu_fan_scale[i] / 100);
 		if (err) {
-			printk(KERN_WARNING "windfarm: fan %s reports "
-			       "error %d\n", ct->name, err);
+//			printk(KERN_WARNING "windfarm: fan %s reports "
+;
 			failure_state |= FAILURE_FAN;
 			break;
 		}
@@ -358,7 +358,7 @@ static void backside_fan_tick(void)
 		return;
 	if (!backside_tick) {
 		/* first time; initialize things */
-		printk(KERN_INFO "windfarm: Backside control loop started.\n");
+;
 		backside_param.min = backside_fan->ops->get_min(backside_fan);
 		backside_param.max = backside_fan->ops->get_max(backside_fan);
 		wf_pid_init(&backside_pid, &backside_param);
@@ -370,8 +370,8 @@ static void backside_fan_tick(void)
 
 	err = u4_temp->ops->get_value(u4_temp, &temp);
 	if (err) {
-		printk(KERN_WARNING "windfarm: U4 temp sensor error %d\n",
-		       err);
+//		printk(KERN_WARNING "windfarm: U4 temp sensor error %d\n",
+;
 		failure_state |= FAILURE_SENSOR;
 		wf_control_set_max(backside_fan);
 		return;
@@ -382,7 +382,7 @@ static void backside_fan_tick(void)
 
 	err = backside_fan->ops->set_value(backside_fan, speed);
 	if (err) {
-		printk(KERN_WARNING "windfarm: backside fan error %d\n", err);
+;
 		failure_state |= FAILURE_FAN;
 	}
 }
@@ -408,7 +408,7 @@ static void drive_bay_fan_tick(void)
 		return;
 	if (!drive_bay_tick) {
 		/* first time; initialize things */
-		printk(KERN_INFO "windfarm: Drive bay control loop started.\n");
+;
 		drive_bay_prm.min = drive_bay_fan->ops->get_min(drive_bay_fan);
 		drive_bay_prm.max = drive_bay_fan->ops->get_max(drive_bay_fan);
 		wf_pid_init(&drive_bay_pid, &drive_bay_prm);
@@ -420,8 +420,8 @@ static void drive_bay_fan_tick(void)
 
 	err = hd_temp->ops->get_value(hd_temp, &temp);
 	if (err) {
-		printk(KERN_WARNING "windfarm: drive bay temp sensor "
-		       "error %d\n", err);
+//		printk(KERN_WARNING "windfarm: drive bay temp sensor "
+;
 		failure_state |= FAILURE_SENSOR;
 		wf_control_set_max(drive_bay_fan);
 		return;
@@ -432,7 +432,7 @@ static void drive_bay_fan_tick(void)
 
 	err = drive_bay_fan->ops->set_value(drive_bay_fan, speed);
 	if (err) {
-		printk(KERN_WARNING "windfarm: drive bay fan error %d\n", err);
+;
 		failure_state |= FAILURE_FAN;
 	}
 }
@@ -460,15 +460,15 @@ static void slots_fan_tick(void)
 		return;
 	if (!slots_started) {
 		/* first time; initialize things */
-		printk(KERN_INFO "windfarm: Slots control loop started.\n");
+;
 		wf_pid_init(&slots_pid, &slots_param);
 		slots_started = 1;
 	}
 
 	err = slots_power->ops->get_value(slots_power, &power);
 	if (err) {
-		printk(KERN_WARNING "windfarm: slots power sensor error %d\n",
-		       err);
+//		printk(KERN_WARNING "windfarm: slots power sensor error %d\n",
+;
 		failure_state |= FAILURE_SENSOR;
 		wf_control_set_max(slots_fan);
 		return;
@@ -479,7 +479,7 @@ static void slots_fan_tick(void)
 
 	err = slots_fan->ops->set_value(slots_fan, speed);
 	if (err) {
-		printk(KERN_WARNING "windfarm: slots fan error %d\n", err);
+;
 		failure_state |= FAILURE_FAN;
 	}
 }
@@ -507,7 +507,7 @@ static void pm112_tick(void)
 
 	if (!started) {
 		started = 1;
-		printk(KERN_INFO "windfarm: CPUs control loops started.\n");
+;
 		for (i = 0; i < nr_cores; ++i) {
 			if (create_cpu_loop(i) < 0) {
 				failure_state = FAILURE_PERM;
@@ -684,7 +684,7 @@ static int __init wf_pm112_init(void)
 	for (cpu = NULL; (cpu = of_find_node_by_type(cpu, "cpu")) != NULL; )
 		++nr_cores;
 
-	printk(KERN_INFO "windfarm: initializing for dual-core desktop G5\n");
+;
 
 #ifdef MODULE
 	request_module("windfarm_smu_controls");

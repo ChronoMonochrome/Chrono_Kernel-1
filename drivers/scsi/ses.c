@@ -58,7 +58,7 @@ static int ses_probe(struct device *dev)
 		goto out;
 
 	err = 0;
-	sdev_printk(KERN_NOTICE, sdev, "Attached Enclosure device\n");
+;
 
  out:
 	return err;
@@ -100,8 +100,8 @@ static int ses_send_diag(struct scsi_device *sdev, int page_code,
 	result = scsi_execute_req(sdev, cmd, DMA_TO_DEVICE, buf, bufflen,
 				  NULL, SES_TIMEOUT, SES_RETRIES, NULL);
 	if (result)
-		sdev_printk(KERN_ERR, sdev, "SEND DIAGNOSTIC result: %8x\n",
-			    result);
+//		sdev_printk(KERN_ERR, sdev, "SEND DIAGNOSTIC result: %8x\n",
+;
 	return result;
 }
 
@@ -526,7 +526,7 @@ static int ses_intf_add(struct device *cdev,
 
 	/* TYPE_ENCLOSURE prints a message in probe */
 	if (sdev->type != TYPE_ENCLOSURE)
-		sdev_printk(KERN_NOTICE, sdev, "Embedded Enclosure Device\n");
+;
 
 	ses_dev = kzalloc(sizeof(*ses_dev), GFP_KERNEL);
 	hdr_buf = kzalloc(INIT_ALLOC_SIZE, GFP_KERNEL);
@@ -636,8 +636,8 @@ static int ses_intf_add(struct device *cdev,
 	return 0;
 
  recv_failed:
-	sdev_printk(KERN_ERR, sdev, "Failed to get diagnostic page 0x%x\n",
-		    result);
+//	sdev_printk(KERN_ERR, sdev, "Failed to get diagnostic page 0x%x\n",
+;
 	err = -ENODEV;
  err_free:
 	kfree(buf);
@@ -648,7 +648,7 @@ static int ses_intf_add(struct device *cdev,
  err_init_free:
 	kfree(ses_dev);
 	kfree(hdr_buf);
-	sdev_printk(KERN_ERR, sdev, "Failed to bind enclosure %d\n", err);
+;
 	return err;
 }
 

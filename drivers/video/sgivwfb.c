@@ -138,7 +138,7 @@ static unsigned long bytes_per_pixel(int bpp)
 		case 32:
 			return 4;
 		default:
-			printk(KERN_INFO "sgivwfb: unsupported bpp %d\n", bpp);
+;
 			return 0;
 	}
 }
@@ -272,8 +272,8 @@ static int sgivwfb_check_var(struct fb_var_screeninfo *var,
 	/* XXX FIXME - should try to pick best refresh rate */
 	/* for now, pick closest dot-clock within 3MHz */
 	req_dot = PICOS2KHZ(var->pixclock);
-	printk(KERN_INFO "sgivwfb: requested pixclock=%d ps (%d KHz)\n",
-	       var->pixclock, req_dot);
+//	printk(KERN_INFO "sgivwfb: requested pixclock=%d ps (%d KHz)\n",
+;
 	test_mode = min_mode;
 	while (dbeVTimings[min_mode].width == dbeVTimings[test_mode].width) {
 		if (dbeVTimings[test_mode].cfreq + 3000 > req_dot)
@@ -284,7 +284,7 @@ static int sgivwfb_check_var(struct fb_var_screeninfo *var,
 		test_mode--;
 	min_mode = test_mode;
 	timing = &dbeVTimings[min_mode];
-	printk(KERN_INFO "sgivwfb: granted dot-clock=%d KHz\n", timing->cfreq);
+;
 
 	/* Adjust virtual resolution, if necessary */
 	if (var->xres > var->xres_virtual || (!ywrap && !ypan))
@@ -351,10 +351,10 @@ static int sgivwfb_check_var(struct fb_var_screeninfo *var,
 	* change a video mode */
 	par->timing_num = min_mode;
 
-	printk(KERN_INFO "sgivwfb: new video mode xres=%d yres=%d bpp=%d\n",
-		var->xres, var->yres, var->bits_per_pixel);
-	printk(KERN_INFO "         vxres=%d vyres=%d\n", var->xres_virtual,
-		var->yres_virtual);
+//	printk(KERN_INFO "sgivwfb: new video mode xres=%d yres=%d bpp=%d\n",
+;
+//	printk(KERN_INFO "         vxres=%d vyres=%d\n", var->xres_virtual,
+;
 	return 0;
 }
 
@@ -431,8 +431,8 @@ static int sgivwfb_set_par(struct fb_info *info)
 	if (wholeTilesX * maxPixelsPerTileX < xpmax)
 		wholeTilesX++;
 
-	printk(KERN_DEBUG "sgivwfb: pixPerTile=%d wholeTilesX=%d\n",
-	       maxPixelsPerTileX, wholeTilesX);
+//	printk(KERN_DEBUG "sgivwfb: pixPerTile=%d wholeTilesX=%d\n",
+;
 
 	/* dbe_InitGammaMap(); */
 	udelay(10);
@@ -642,8 +642,8 @@ static int sgivwfb_set_par(struct fb_info *info)
 	}
 
 	if (i == 100000)
-		printk(KERN_INFO
-		       "sgivwfb: timeout waiting for frame DMA enable.\n");
+//		printk(KERN_INFO
+;
 
 	outputVal = 0;
 	htmp = currentTiming->hblank_end - 19;
@@ -719,8 +719,8 @@ static int sgivwfb_mmap(struct fb_info *info,
 	if (remap_pfn_range(vma, vma->vm_start, offset >> PAGE_SHIFT,
 						size, vma->vm_page_prot))
 		return -EAGAIN;
-	printk(KERN_DEBUG "sgivwfb: mmap framebuffer P(%lx)->V(%lx)\n",
-	       offset, vma->vm_start);
+//	printk(KERN_DEBUG "sgivwfb: mmap framebuffer P(%lx)->V(%lx)\n",
+;
 	return 0;
 }
 
@@ -757,14 +757,14 @@ static int __devinit sgivwfb_probe(struct platform_device *dev)
 	par = info->par;
 
 	if (!request_mem_region(DBE_REG_PHYS, DBE_REG_SIZE, "sgivwfb")) {
-		printk(KERN_ERR "sgivwfb: couldn't reserve mmio region\n");
+;
 		framebuffer_release(info);
 		return -EBUSY;
 	}
 
 	par->regs = (struct asregs *) ioremap_nocache(DBE_REG_PHYS, DBE_REG_SIZE);
 	if (!par->regs) {
-		printk(KERN_ERR "sgivwfb: couldn't ioremap registers\n");
+;
 		goto fail_ioremap_regs;
 	}
 
@@ -787,7 +787,7 @@ static int __devinit sgivwfb_probe(struct platform_device *dev)
 			monitor = "CRT";
 	}
 
-	printk(KERN_INFO "sgivwfb: %s monitor selected\n", monitor);
+;
 
 	info->fbops = &sgivwfb_ops;
 	info->pseudo_palette = (void *) (par + 1);
@@ -795,7 +795,7 @@ static int __devinit sgivwfb_probe(struct platform_device *dev)
 
 	info->screen_base = ioremap_nocache((unsigned long) sgivwfb_mem_phys, sgivwfb_mem_size);
 	if (!info->screen_base) {
-		printk(KERN_ERR "sgivwfb: couldn't ioremap screen_base\n");
+;
 		goto fail_ioremap_fbmem;
 	}
 
@@ -803,14 +803,14 @@ static int __devinit sgivwfb_probe(struct platform_device *dev)
 		goto fail_color_map;
 
 	if (register_framebuffer(info) < 0) {
-		printk(KERN_ERR "sgivwfb: couldn't register framebuffer\n");
+;
 		goto fail_register_framebuffer;
 	}
 
 	platform_set_drvdata(dev, info);
 
-	printk(KERN_INFO "fb%d: SGI DBE frame buffer device, using %ldK of video memory at %#lx\n",      
-		info->node, sgivwfb_mem_size >> 10, sgivwfb_mem_phys);
+//	printk(KERN_INFO "fb%d: SGI DBE frame buffer device, using %ldK of video memory at %#lx\n",      
+;
 	return 0;
 
 fail_register_framebuffer:

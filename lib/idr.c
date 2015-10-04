@@ -349,8 +349,8 @@ EXPORT_SYMBOL(idr_get_new);
 
 static void idr_remove_warning(int id)
 {
-	printk(KERN_WARNING
-		"idr_remove called for id=%d which is not allocated.\n", id);
+//	printk(KERN_WARNING
+;
 	dump_stack();
 }
 
@@ -920,8 +920,8 @@ void ida_remove(struct ida *ida, int id)
 	return;
 
  err:
-	printk(KERN_WARNING
-	       "ida_remove called for id=%d which is not allocated.\n", id);
+//	printk(KERN_WARNING
+;
 }
 EXPORT_SYMBOL(ida_remove);
 

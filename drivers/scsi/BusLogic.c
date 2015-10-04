@@ -2315,10 +2315,10 @@ static int __init BusLogic_init(void)
 			if (!request_region(HostAdapter->IO_Address,
 					    HostAdapter->AddressCount,
 					    HostAdapter->FullModelName)) {
-				printk(KERN_WARNING
-					"BusLogic: Release and re-register of "
-					"port 0x%04lx failed \n",
-					(unsigned long)HostAdapter->IO_Address);
+//				printk(KERN_WARNING
+//					"BusLogic: Release and re-register of "
+//					"port 0x%04lx failed \n",
+;
 				BusLogic_DestroyCCBs(HostAdapter);
 				BusLogic_ReleaseResources(HostAdapter);
 				list_del(&HostAdapter->host_list);
@@ -2330,9 +2330,9 @@ static int __init BusLogic_init(void)
 				if (scsi_add_host(Host, HostAdapter->PCI_Device
 						? &HostAdapter->PCI_Device->dev
 						  : NULL)) {
-					printk(KERN_WARNING
-					       "BusLogic: scsi_add_host()"
-					       "failed!\n");
+//					printk(KERN_WARNING
+//					       "BusLogic: scsi_add_host()"
+;
 					BusLogic_DestroyCCBs(HostAdapter);
 					BusLogic_ReleaseResources(HostAdapter);
 					list_del(&HostAdapter->host_list);
@@ -3335,23 +3335,23 @@ static void BusLogic_Message(enum BusLogic_MessageLevel MessageLevel, char *Form
 		strcpy(&HostAdapter->MessageBuffer[HostAdapter->MessageBufferLength], Buffer);
 		HostAdapter->MessageBufferLength += Length;
 		if (++AnnouncementLines <= 2)
-			printk("%sscsi: %s", BusLogic_MessageLevelMap[MessageLevel], Buffer);
+;
 	} else if (MessageLevel == BusLogic_InfoLevel) {
 		strcpy(&HostAdapter->MessageBuffer[HostAdapter->MessageBufferLength], Buffer);
 		HostAdapter->MessageBufferLength += Length;
 		if (BeginningOfLine) {
 			if (Buffer[0] != '\n' || Length > 1)
-				printk("%sscsi%d: %s", BusLogic_MessageLevelMap[MessageLevel], HostAdapter->HostNumber, Buffer);
+;
 		} else
-			printk("%s", Buffer);
+;
 	} else {
 		if (BeginningOfLine) {
 			if (HostAdapter != NULL && HostAdapter->HostAdapterInitialized)
-				printk("%sscsi%d: %s", BusLogic_MessageLevelMap[MessageLevel], HostAdapter->HostNumber, Buffer);
+;
 			else
-				printk("%s%s", BusLogic_MessageLevelMap[MessageLevel], Buffer);
+;
 		} else
-			printk("%s", Buffer);
+;
 	}
 	BeginningOfLine = (Buffer[Length - 1] == '\n');
 }

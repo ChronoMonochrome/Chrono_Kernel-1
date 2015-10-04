@@ -476,8 +476,8 @@ static void read_in_urb_mode3(struct snd_usb_caiaqdev *dev,
 				if (usb_buf[i] != ((stream << 1) | c) &&
 				    !dev->first_packet) {
 					if (!dev->input_panic)
-						printk(" EXPECTED: %02x got %02x, c %d, stream %d, i %d\n",
-							((stream << 1) | c), usb_buf[i], c, stream, i);
+//						printk(" EXPECTED: %02x got %02x, c %d, stream %d, i %d\n",
+;
 					dev->input_panic = 1;
 				}
 

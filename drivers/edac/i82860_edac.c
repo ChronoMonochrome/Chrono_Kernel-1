@@ -19,27 +19,27 @@
 #define  I82860_REVISION " Ver: 2.0.2"
 #define EDAC_MOD_STR	"i82860_edac"
 
-#define i82860_printk(level, fmt, arg...) \
-	edac_printk(level, "i82860", fmt, ##arg)
-
-#define i82860_mc_printk(mci, level, fmt, arg...) \
-	edac_mc_chipset_printk(mci, level, "i82860", fmt, ##arg)
-
-#ifndef PCI_DEVICE_ID_INTEL_82860_0
-#define PCI_DEVICE_ID_INTEL_82860_0	0x2531
-#endif				/* PCI_DEVICE_ID_INTEL_82860_0 */
-
-#define I82860_MCHCFG 0x50
-#define I82860_GBA 0x60
-#define I82860_GBA_MASK 0x7FF
-#define I82860_GBA_SHIFT 24
-#define I82860_ERRSTS 0xC8
-#define I82860_EAP 0xE4
-#define I82860_DERRCTL_STS 0xE2
-
-enum i82860_chips {
-	I82860 = 0,
-};
+//#define i82860_printk(level, fmt, arg...) \
+//	edac_printk(level, "i82860", fmt, ##arg)
+//
+//#define i82860_mc_printk(mci, level, fmt, arg...) \
+//	edac_mc_chipset_printk(mci, level, "i82860", fmt, ##arg)
+//
+//#ifndef PCI_DEVICE_ID_INTEL_82860_0
+//#define PCI_DEVICE_ID_INTEL_82860_0	0x2531
+//#endif				/* PCI_DEVICE_ID_INTEL_82860_0 */
+//
+//#define I82860_MCHCFG 0x50
+//#define I82860_GBA 0x60
+//#define I82860_GBA_MASK 0x7FF
+//#define I82860_GBA_SHIFT 24
+//#define I82860_ERRSTS 0xC8
+//#define I82860_EAP 0xE4
+//#define I82860_DERRCTL_STS 0xE2
+//
+//enum i82860_chips {
+//	I82860 = 0,
+;
 
 struct i82860_dev_info {
 	const char *ctl_name;
@@ -217,12 +217,12 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	i82860_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i82860_pci) {
-		printk(KERN_WARNING
-			"%s(): Unable to create PCI control\n",
-			__func__);
-		printk(KERN_WARNING
-			"%s(): PCI error report via EDAC not setup\n",
-			__func__);
+//		printk(KERN_WARNING
+//			"%s(): Unable to create PCI control\n",
+;
+//		printk(KERN_WARNING
+//			"%s(): PCI error report via EDAC not setup\n",
+;
 	}
 
 	/* get this far and it's successful */
@@ -242,7 +242,7 @@ static int __devinit i82860_init_one(struct pci_dev *pdev,
 	int rc;
 
 	debugf0("%s()\n", __func__);
-	i82860_printk(KERN_INFO, "i82860 init one\n");
+;
 
 	if (pci_enable_device(pdev) < 0)
 		return -EIO;

@@ -86,7 +86,7 @@ int saa7164_irq_dequeue(struct saa7164_dev *dev)
 	u32 timeout;
 	wait_queue_head_t *q = NULL;
 	u8 tmp[512];
-	dprintk(DBGLVL_CMD, "%s()\n", __func__);
+;
 
 	/* While any outstand message on the bus exists... */
 	do {
@@ -99,21 +99,21 @@ int saa7164_irq_dequeue(struct saa7164_dev *dev)
 
 		q = &dev->cmds[tRsp.seqno].wait;
 		timeout = saa7164_cmd_timeout_get(dev, tRsp.seqno);
-		dprintk(DBGLVL_CMD, "%s() timeout = %d\n", __func__, timeout);
+;
 		if (!timeout) {
-			dprintk(DBGLVL_CMD,
-				"%s() signalled seqno(%d) (for dequeue)\n",
-				__func__, tRsp.seqno);
+//			dprintk(DBGLVL_CMD,
+//				"%s() signalled seqno(%d) (for dequeue)\n",
+;
 			dev->cmds[tRsp.seqno].signalled = 1;
 			wake_up(q);
 		} else {
-			printk(KERN_ERR
-				"%s() found timed out command on the bus\n",
-					__func__);
+//			printk(KERN_ERR
+//				"%s() found timed out command on the bus\n",
+;
 
 			/* Clean the bus */
 			ret = saa7164_bus_get(dev, &tRsp, &tmp, 0);
-			printk(KERN_ERR "%s() ret = %x\n", __func__, ret);
+;
 			if (ret == SAA_ERR_EMPTY)
 				/* Someone else already fetched the response */
 				return SAA_OK;
@@ -139,7 +139,7 @@ int saa7164_cmd_dequeue(struct saa7164_dev *dev)
 	u32 timeout;
 	wait_queue_head_t *q = NULL;
 	u8 tmp[512];
-	dprintk(DBGLVL_CMD, "%s()\n", __func__);
+;
 
 	while (loop) {
 
@@ -153,13 +153,13 @@ int saa7164_cmd_dequeue(struct saa7164_dev *dev)
 
 		q = &dev->cmds[tRsp.seqno].wait;
 		timeout = saa7164_cmd_timeout_get(dev, tRsp.seqno);
-		dprintk(DBGLVL_CMD, "%s() timeout = %d\n", __func__, timeout);
+;
 		if (timeout) {
-			printk(KERN_ERR "found timed out command on the bus\n");
+;
 
 			/* Clean the bus */
 			ret = saa7164_bus_get(dev, &tRsp, &tmp, 0);
-			printk(KERN_ERR "ret = %x\n", ret);
+;
 			if (ret == SAA_ERR_EMPTY)
 				/* Someone else already fetched the response */
 				return SAA_OK;
@@ -168,16 +168,16 @@ int saa7164_cmd_dequeue(struct saa7164_dev *dev)
 				return ret;
 
 			if (tRsp.flags & PVC_CMDFLAG_CONTINUE)
-				printk(KERN_ERR "split response\n");
+;
 			else
 				saa7164_cmd_free_seqno(dev, tRsp.seqno);
 
-			printk(KERN_ERR " timeout continue\n");
+;
 			continue;
 		}
 
-		dprintk(DBGLVL_CMD, "%s() signalled seqno(%d) (for dequeue)\n",
-			__func__, tRsp.seqno);
+//		dprintk(DBGLVL_CMD, "%s() signalled seqno(%d) (for dequeue)\n",
+;
 		dev->cmds[tRsp.seqno].signalled = 1;
 		wake_up(q);
 		return SAA_OK;
@@ -197,7 +197,7 @@ int saa7164_cmd_set(struct saa7164_dev *dev, struct tmComResInfo *msg,
 	int ret = -1;
 
 	if (!msg) {
-		printk(KERN_ERR "%s() !msg\n", __func__);
+;
 		return SAA_ERR_BAD_PARAMETER;
 	}
 
@@ -220,7 +220,7 @@ int saa7164_cmd_set(struct saa7164_dev *dev, struct tmComResInfo *msg,
 
 		ret = saa7164_bus_set(dev, msg, tmp);
 		if (ret != SAA_OK) {
-			printk(KERN_ERR "%s() set failed %d\n", __func__, ret);
+;
 
 			if (cmd_sent) {
 				ret = SAA_ERR_BUSY;
@@ -240,7 +240,7 @@ int saa7164_cmd_set(struct saa7164_dev *dev, struct tmComResInfo *msg,
 
 	ret = saa7164_bus_set(dev, msg, buf + idx * bus->m_wMaxReqSize);
 	if (ret != SAA_OK) {
-		printk(KERN_ERR "%s() set last failed %d\n", __func__, ret);
+;
 
 		if (cmd_sent) {
 			ret = SAA_ERR_BUSY;
@@ -269,7 +269,7 @@ int saa7164_cmd_wait(struct saa7164_dev *dev, u8 seqno)
 	if (saa_debug >= 4)
 		saa7164_bus_dump(dev);
 
-	dprintk(DBGLVL_CMD, "%s(seqno=%d)\n", __func__, seqno);
+;
 
 	mutex_lock(&dev->lock);
 	if ((dev->cmds[seqno].inuse == 1) &&
@@ -282,9 +282,9 @@ int saa7164_cmd_wait(struct saa7164_dev *dev, u8 seqno)
 		/* If we haven't been signalled we need to wait */
 		if (dev->cmds[seqno].signalled == 0) {
 			stamp = jiffies;
-			dprintk(DBGLVL_CMD,
-				"%s(seqno=%d) Waiting (signalled=%d)\n",
-				__func__, seqno, dev->cmds[seqno].signalled);
+//			dprintk(DBGLVL_CMD,
+//				"%s(seqno=%d) Waiting (signalled=%d)\n",
+;
 
 			/* Wait for signalled to be flagged or timeout */
 			/* In a highly stressed system this can easily extend
@@ -301,14 +301,14 @@ int saa7164_cmd_wait(struct saa7164_dev *dev, u8 seqno)
 			else
 				saa7164_cmd_timeout_seqno(dev, seqno);
 
-			dprintk(DBGLVL_CMD, "%s(seqno=%d) Waiting res = %d "
-				"(signalled=%d)\n", __func__, seqno, r,
-				dev->cmds[seqno].signalled);
+//			dprintk(DBGLVL_CMD, "%s(seqno=%d) Waiting res = %d "
+//				"(signalled=%d)\n", __func__, seqno, r,
+;
 		} else
 			ret = SAA_OK;
 	} else
-		printk(KERN_ERR "%s(seqno=%d) seqno is invalid\n",
-			__func__, seqno);
+//		printk(KERN_ERR "%s(seqno=%d) seqno is invalid\n",
+;
 
 	return ret;
 }
@@ -316,24 +316,24 @@ int saa7164_cmd_wait(struct saa7164_dev *dev, u8 seqno)
 void saa7164_cmd_signal(struct saa7164_dev *dev, u8 seqno)
 {
 	int i;
-	dprintk(DBGLVL_CMD, "%s()\n", __func__);
+;
 
 	mutex_lock(&dev->lock);
 	for (i = 0; i < SAA_CMD_MAX_MSG_UNITS; i++) {
 		if (dev->cmds[i].inuse == 1) {
-			dprintk(DBGLVL_CMD,
-				"seqno %d inuse, sig = %d, t/out = %d\n",
-				dev->cmds[i].seqno,
-				dev->cmds[i].signalled,
-				dev->cmds[i].timeout);
+//			dprintk(DBGLVL_CMD,
+//				"seqno %d inuse, sig = %d, t/out = %d\n",
+//				dev->cmds[i].seqno,
+//				dev->cmds[i].signalled,
+;
 		}
 	}
 
 	for (i = 0; i < SAA_CMD_MAX_MSG_UNITS; i++) {
 		if ((dev->cmds[i].inuse == 1) && ((i == 0) ||
 			(dev->cmds[i].signalled) || (dev->cmds[i].timeout))) {
-			dprintk(DBGLVL_CMD, "%s(seqno=%d) calling wake_up\n",
-				__func__, i);
+//			dprintk(DBGLVL_CMD, "%s(seqno=%d) calling wake_up\n",
+;
 			dev->cmds[i].signalled = 1;
 			wake_up(&dev->cmds[i].wait);
 		}
@@ -353,12 +353,12 @@ int saa7164_cmd_send(struct saa7164_dev *dev, u8 id, enum tmComResCmd command,
 	int ret;
 	int safety = 0;
 
-	dprintk(DBGLVL_CMD, "%s(unitid = %s (%d) , command = 0x%x, "
-		"sel = 0x%x)\n", __func__, saa7164_unitid_name(dev, id), id,
-		command, controlselector);
+//	dprintk(DBGLVL_CMD, "%s(unitid = %s (%d) , command = 0x%x, "
+//		"sel = 0x%x)\n", __func__, saa7164_unitid_name(dev, id), id,
+;
 
 	if ((size == 0) || (buf == NULL)) {
-		printk(KERN_ERR "%s() Invalid param\n", __func__);
+;
 		return SAA_ERR_BAD_PARAMETER;
 	}
 
@@ -375,7 +375,7 @@ int saa7164_cmd_send(struct saa7164_dev *dev, u8 id, enum tmComResCmd command,
 	/* Allocate a unique sequence number */
 	ret = saa7164_cmd_alloc_seqno(dev);
 	if (ret < 0) {
-		printk(KERN_ERR "%s() No free sequences\n", __func__);
+;
 		ret = SAA_ERR_NO_RESOURCES;
 		goto out;
 	}
@@ -386,15 +386,15 @@ int saa7164_cmd_send(struct saa7164_dev *dev, u8 id, enum tmComResCmd command,
 	resp_dsize = size;
 	pcommand_t->size = size;
 
-	dprintk(DBGLVL_CMD, "%s() pcommand_t.seqno = %d\n",
-		__func__, pcommand_t->seqno);
+//	dprintk(DBGLVL_CMD, "%s() pcommand_t.seqno = %d\n",
+;
 
-	dprintk(DBGLVL_CMD, "%s() pcommand_t.size = %d\n",
-		__func__, pcommand_t->size);
+//	dprintk(DBGLVL_CMD, "%s() pcommand_t.size = %d\n",
+;
 
 	ret = saa7164_cmd_set(dev, pcommand_t, buf);
 	if (ret != SAA_OK) {
-		printk(KERN_ERR "%s() set command failed %d\n", __func__, ret);
+;
 
 		if (ret != SAA_ERR_BUSY)
 			saa7164_cmd_free_seqno(dev, pcommand_t->seqno);
@@ -410,60 +410,60 @@ int saa7164_cmd_send(struct saa7164_dev *dev, u8 id, enum tmComResCmd command,
 	data_recd = 0;
 	loop = 1;
 	while (loop) {
-		dprintk(DBGLVL_CMD, "%s() loop\n", __func__);
+;
 
 		ret = saa7164_cmd_wait(dev, pcommand_t->seqno);
-		dprintk(DBGLVL_CMD, "%s() loop ret = %d\n", __func__, ret);
+;
 
 		/* if power is down and this is not a power command ... */
 
 		if (ret == SAA_BUS_TIMEOUT) {
-			printk(KERN_ERR "Event timed out\n");
+;
 			saa7164_cmd_timeout_seqno(dev, pcommand_t->seqno);
 			return ret;
 		}
 
 		if (ret != SAA_OK) {
-			printk(KERN_ERR "spurious error\n");
+;
 			return ret;
 		}
 
 		/* Peek response */
 		ret = saa7164_bus_get(dev, presponse_t, NULL, 1);
 		if (ret == SAA_ERR_EMPTY) {
-			dprintk(4, "%s() SAA_ERR_EMPTY\n", __func__);
+;
 			continue;
 		}
 		if (ret != SAA_OK) {
-			printk(KERN_ERR "peek failed\n");
+;
 			return ret;
 		}
 
-		dprintk(DBGLVL_CMD, "%s() presponse_t->seqno = %d\n",
-			__func__, presponse_t->seqno);
+//		dprintk(DBGLVL_CMD, "%s() presponse_t->seqno = %d\n",
+;
 
-		dprintk(DBGLVL_CMD, "%s() presponse_t->flags = 0x%x\n",
-			__func__, presponse_t->flags);
+//		dprintk(DBGLVL_CMD, "%s() presponse_t->flags = 0x%x\n",
+;
 
-		dprintk(DBGLVL_CMD, "%s() presponse_t->size = %d\n",
-			__func__, presponse_t->size);
+//		dprintk(DBGLVL_CMD, "%s() presponse_t->size = %d\n",
+;
 
 		/* Check if the response was for our command */
 		if (presponse_t->seqno != pcommand_t->seqno) {
 
-			dprintk(DBGLVL_CMD,
-				"wrong event: seqno = %d, "
-				"expected seqno = %d, "
-				"will dequeue regardless\n",
-				presponse_t->seqno, pcommand_t->seqno);
+//			dprintk(DBGLVL_CMD,
+//				"wrong event: seqno = %d, "
+//				"expected seqno = %d, "
+//				"will dequeue regardless\n",
+;
 
 			ret = saa7164_cmd_dequeue(dev);
 			if (ret != SAA_OK) {
-				printk(KERN_ERR "dequeue failed, ret = %d\n",
-					ret);
+//				printk(KERN_ERR "dequeue failed, ret = %d\n",
+;
 				if (safety++ > 16) {
-					printk(KERN_ERR
-					"dequeue exceeded, safety exit\n");
+//					printk(KERN_ERR
+;
 					return SAA_ERR_BUSY;
 				}
 			}
@@ -477,52 +477,52 @@ int saa7164_cmd_send(struct saa7164_dev *dev, u8 id, enum tmComResCmd command,
 
 			ret = saa7164_bus_get(dev, presponse_t, &errdata[0], 0);
 			if (ret != SAA_OK) {
-				printk(KERN_ERR "get error(2)\n");
+;
 				return ret;
 			}
 
 			saa7164_cmd_free_seqno(dev, pcommand_t->seqno);
 
-			dprintk(DBGLVL_CMD, "%s() errdata %02x%02x%02x%02x\n",
-				__func__, errdata[0], errdata[1], errdata[2],
-				errdata[3]);
+//			dprintk(DBGLVL_CMD, "%s() errdata %02x%02x%02x%02x\n",
+//				__func__, errdata[0], errdata[1], errdata[2],
+;
 
 			/* Map error codes */
-			dprintk(DBGLVL_CMD, "%s() cmd, error code  = 0x%x\n",
-				__func__, errdata[0]);
+//			dprintk(DBGLVL_CMD, "%s() cmd, error code  = 0x%x\n",
+;
 
 			switch (errdata[0]) {
 			case PVC_ERRORCODE_INVALID_COMMAND:
-				dprintk(DBGLVL_CMD, "%s() INVALID_COMMAND\n",
-					__func__);
+//				dprintk(DBGLVL_CMD, "%s() INVALID_COMMAND\n",
+;
 				ret = SAA_ERR_INVALID_COMMAND;
 				break;
 			case PVC_ERRORCODE_INVALID_DATA:
-				dprintk(DBGLVL_CMD, "%s() INVALID_DATA\n",
-					__func__);
+//				dprintk(DBGLVL_CMD, "%s() INVALID_DATA\n",
+;
 				ret = SAA_ERR_BAD_PARAMETER;
 				break;
 			case PVC_ERRORCODE_TIMEOUT:
-				dprintk(DBGLVL_CMD, "%s() TIMEOUT\n", __func__);
+;
 				ret = SAA_ERR_TIMEOUT;
 				break;
 			case PVC_ERRORCODE_NAK:
-				dprintk(DBGLVL_CMD, "%s() NAK\n", __func__);
+;
 				ret = SAA_ERR_NULL_PACKET;
 				break;
 			case PVC_ERRORCODE_UNKNOWN:
 			case PVC_ERRORCODE_INVALID_CONTROL:
-				dprintk(DBGLVL_CMD,
-					"%s() UNKNOWN OR INVALID CONTROL\n",
-					__func__);
+//				dprintk(DBGLVL_CMD,
+//					"%s() UNKNOWN OR INVALID CONTROL\n",
+;
 			default:
-				dprintk(DBGLVL_CMD, "%s() UNKNOWN\n", __func__);
+;
 				ret = SAA_ERR_NOT_SUPPORTED;
 			}
 
 			/* See of other commands are on the bus */
 			if (saa7164_cmd_dequeue(dev) != SAA_OK)
-				printk(KERN_ERR "dequeue(2) failed\n");
+;
 
 			return ret;
 		}
@@ -537,35 +537,35 @@ int saa7164_cmd_send(struct saa7164_dev *dev, u8 id, enum tmComResCmd command,
 			((resp_dsize - data_recd) < presponse_t->size)) {
 
 			/* Invalid */
-			dprintk(DBGLVL_CMD, "%s() Invalid\n", __func__);
+;
 			ret = saa7164_bus_get(dev, presponse_t, NULL, 0);
 			if (ret != SAA_OK) {
-				printk(KERN_ERR "get failed\n");
+;
 				return ret;
 			}
 
 			/* See of other commands are on the bus */
 			if (saa7164_cmd_dequeue(dev) != SAA_OK)
-				printk(KERN_ERR "dequeue(3) failed\n");
+;
 			continue;
 		}
 
 		/* OK, now we're actually getting out correct response */
 		ret = saa7164_bus_get(dev, presponse_t, buf + data_recd, 0);
 		if (ret != SAA_OK) {
-			printk(KERN_ERR "get failed\n");
+;
 			return ret;
 		}
 
 		data_recd = presponse_t->size + data_recd;
 		if (resp_dsize == data_recd) {
-			dprintk(DBGLVL_CMD, "%s() Resp recd\n", __func__);
+;
 			break;
 		}
 
 		/* See of other commands are on the bus */
 		if (saa7164_cmd_dequeue(dev) != SAA_OK)
-			printk(KERN_ERR "dequeue(3) failed\n");
+;
 
 		continue;
 
@@ -576,11 +576,11 @@ int saa7164_cmd_send(struct saa7164_dev *dev, u8 id, enum tmComResCmd command,
 
 	/* if powerdown signal all pending commands */
 
-	dprintk(DBGLVL_CMD, "%s() Calling dequeue then exit\n", __func__);
+;
 
 	/* See of other commands are on the bus */
 	if (saa7164_cmd_dequeue(dev) != SAA_OK)
-		printk(KERN_ERR "dequeue(4) failed\n");
+;
 
 	ret = SAA_OK;
 out:

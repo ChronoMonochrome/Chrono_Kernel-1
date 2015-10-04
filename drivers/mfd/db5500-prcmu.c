@@ -642,8 +642,8 @@ void db5500_prcmu_modem_reset(void)
 	wait_for_completion(&mb4_transfer.work);
 	if (mb4_transfer.ack.status != RC_SUCCESS ||
 			mb4_transfer.ack.header != MB4H_CGF_MODEM_RESET)
-		printk(KERN_ERR,
-				"ACK not received for modem reset interrupt\n");
+//		printk(KERN_ERR,
+;
 	mutex_unlock(&mb4_transfer.lock);
 }
 

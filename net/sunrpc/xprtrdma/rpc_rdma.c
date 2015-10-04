@@ -216,10 +216,10 @@ rpcrdma_create_chunks(struct rpc_rqst *rqst, struct xdr_buf *target,
 			xdr_encode_hyper(
 					(__be32 *)&cur_rchunk->rc_target.rs_offset,
 					seg->mr_base);
-			dprintk("RPC:       %s: read chunk "
-				"elem %d@0x%llx:0x%x pos %u (%s)\n", __func__,
-				seg->mr_len, (unsigned long long)seg->mr_base,
-				seg->mr_rkey, pos, n < nsegs ? "more" : "last");
+//			dprintk("RPC:       %s: read chunk "
+//				"elem %d@0x%llx:0x%x pos %u (%s)\n", __func__,
+//				seg->mr_len, (unsigned long long)seg->mr_base,
+;
 			cur_rchunk++;
 			r_xprt->rx_stats.read_chunk_count++;
 		} else {		/* write/reply */
@@ -228,11 +228,11 @@ rpcrdma_create_chunks(struct rpc_rqst *rqst, struct xdr_buf *target,
 			xdr_encode_hyper(
 					(__be32 *)&cur_wchunk->wc_target.rs_offset,
 					seg->mr_base);
-			dprintk("RPC:       %s: %s chunk "
-				"elem %d@0x%llx:0x%x (%s)\n", __func__,
-				(type == rpcrdma_replych) ? "reply" : "write",
-				seg->mr_len, (unsigned long long)seg->mr_base,
-				seg->mr_rkey, n < nsegs ? "more" : "last");
+//			dprintk("RPC:       %s: %s chunk "
+//				"elem %d@0x%llx:0x%x (%s)\n", __func__,
+//				(type == rpcrdma_replych) ? "reply" : "write",
+//				seg->mr_len, (unsigned long long)seg->mr_base,
+;
 			cur_wchunk++;
 			if (type == rpcrdma_replych)
 				r_xprt->rx_stats.reply_chunk_count++;
@@ -310,8 +310,8 @@ rpcrdma_inline_pullup(struct rpc_rqst *rqst, int pad)
 	if (pad < 0 || rqst->rq_slen - curlen < RPCRDMA_INLINE_PAD_THRESH)
 		pad = 0;	/* don't pad this request */
 
-	dprintk("RPC:       %s: pad %d destp 0x%p len %d hdrlen %d\n",
-		__func__, pad, destp, rqst->rq_slen, curlen);
+//	dprintk("RPC:       %s: pad %d destp 0x%p len %d hdrlen %d\n",
+;
 
 	copy_len = rqst->rq_snd_buf.page_len;
 
@@ -322,8 +322,8 @@ rpcrdma_inline_pullup(struct rpc_rqst *rqst, int pad)
 				rqst->rq_snd_buf.tail[0].iov_base, curlen);
 			r_xprt->rx_stats.pullup_copy_count += curlen;
 		}
-		dprintk("RPC:       %s: tail destp 0x%p len %d\n",
-			__func__, destp + copy_len, curlen);
+//		dprintk("RPC:       %s: tail destp 0x%p len %d\n",
+;
 		rqst->rq_svec[0].iov_len += curlen;
 	}
 	r_xprt->rx_stats.pullup_copy_count += copy_len;
@@ -336,8 +336,8 @@ rpcrdma_inline_pullup(struct rpc_rqst *rqst, int pad)
 		curlen = PAGE_SIZE - page_base;
 		if (curlen > copy_len)
 			curlen = copy_len;
-		dprintk("RPC:       %s: page %d destp 0x%p len %d curlen %d\n",
-			__func__, i, destp, copy_len, curlen);
+//		dprintk("RPC:       %s: page %d destp 0x%p len %d curlen %d\n",
+;
 		srcp = kmap_atomic(ppages[i], KM_SKB_SUNRPC_DATA);
 		memcpy(destp, srcp+page_base, curlen);
 		kunmap_atomic(srcp, KM_SKB_SUNRPC_DATA);
@@ -446,8 +446,8 @@ rpcrdma_marshal_req(struct rpc_rqst *rqst)
 	if (r_xprt->rx_ia.ri_memreg_strategy == RPCRDMA_BOUNCEBUFFERS &&
 	    (rtype != rpcrdma_noch || wtype != rpcrdma_noch)) {
 		/* forced to "pure inline"? */
-		dprintk("RPC:       %s: too much data (%d/%d) for inline\n",
-			__func__, rqst->rq_rcv_buf.len, rqst->rq_snd_buf.len);
+//		dprintk("RPC:       %s: too much data (%d/%d) for inline\n",
+;
 		return -1;
 	}
 
@@ -515,10 +515,10 @@ rpcrdma_marshal_req(struct rpc_rqst *rqst)
 	if (hdrlen == 0)
 		return -1;
 
-	dprintk("RPC:       %s: %s: hdrlen %zd rpclen %zd padlen %zd"
-		" headerp 0x%p base 0x%p lkey 0x%x\n",
-		__func__, transfertypes[wtype], hdrlen, rpclen, padlen,
-		headerp, base, req->rl_iov.lkey);
+//	dprintk("RPC:       %s: %s: hdrlen %zd rpclen %zd padlen %zd"
+//		" headerp 0x%p base 0x%p lkey 0x%x\n",
+//		__func__, transfertypes[wtype], hdrlen, rpclen, padlen,
+;
 
 	/*
 	 * initialize send_iov's - normally only two: rdma chunk header and
@@ -574,11 +574,11 @@ rpcrdma_count_chunks(struct rpcrdma_rep *rep, unsigned int max, int wrchunk, __b
 		ifdebug(FACILITY) {
 			u64 off;
 			xdr_decode_hyper((__be32 *)&seg->rs_offset, &off);
-			dprintk("RPC:       %s: chunk %d@0x%llx:0x%x\n",
-				__func__,
-				ntohl(seg->rs_length),
-				(unsigned long long)off,
-				ntohl(seg->rs_handle));
+//			dprintk("RPC:       %s: chunk %d@0x%llx:0x%x\n",
+//				__func__,
+//				ntohl(seg->rs_length),
+//				(unsigned long long)off,
+;
 		}
 		total_len += ntohl(seg->rs_length);
 		++cur_wchunk;
@@ -614,8 +614,8 @@ rpcrdma_inline_fixup(struct rpc_rqst *rqst, char *srcp, int copy_len, int pad)
 		rqst->rq_rcv_buf.head[0].iov_len = curlen;
 	}
 
-	dprintk("RPC:       %s: srcp 0x%p len %d hdrlen %d\n",
-		__func__, srcp, copy_len, curlen);
+//	dprintk("RPC:       %s: srcp 0x%p len %d hdrlen %d\n",
+;
 
 	/* Shift pointer for first receive segment only */
 	rqst->rq_rcv_buf.head[0].iov_base = srcp;
@@ -636,9 +636,9 @@ rpcrdma_inline_fixup(struct rpc_rqst *rqst, char *srcp, int copy_len, int pad)
 			curlen = PAGE_SIZE - page_base;
 			if (curlen > copy_len)
 				curlen = copy_len;
-			dprintk("RPC:       %s: page %d"
-				" srcp 0x%p len %d curlen %d\n",
-				__func__, i, srcp, copy_len, curlen);
+//			dprintk("RPC:       %s: page %d"
+//				" srcp 0x%p len %d curlen %d\n",
+;
 			destp = kmap_atomic(ppages[i], KM_SKB_SUNRPC_DATA);
 			memcpy(destp + page_base, srcp, curlen);
 			flush_dcache_page(ppages[i]);
@@ -659,8 +659,8 @@ rpcrdma_inline_fixup(struct rpc_rqst *rqst, char *srcp, int copy_len, int pad)
 			curlen = rqst->rq_rcv_buf.tail[0].iov_len;
 		if (rqst->rq_rcv_buf.tail[0].iov_base != srcp)
 			memmove(rqst->rq_rcv_buf.tail[0].iov_base, srcp, curlen);
-		dprintk("RPC:       %s: tail srcp 0x%p len %d curlen %d\n",
-			__func__, srcp, copy_len, curlen);
+//		dprintk("RPC:       %s: tail srcp 0x%p len %d curlen %d\n",
+;
 		rqst->rq_rcv_buf.tail[0].iov_len = curlen;
 		copy_len -= curlen; ++i;
 	} else
@@ -674,9 +674,9 @@ rpcrdma_inline_fixup(struct rpc_rqst *rqst, char *srcp, int copy_len, int pad)
 	}
 
 	if (copy_len)
-		dprintk("RPC:       %s: %d bytes in"
-			" %d extra segments (%d lost)\n",
-			__func__, olen, i, copy_len);
+//		dprintk("RPC:       %s: %d bytes in"
+//			" %d extra segments (%d lost)\n",
+;
 
 	/* TBD avoid a warning from call_decode() */
 	rqst->rq_private_buf = rqst->rq_rcv_buf;
@@ -742,13 +742,13 @@ rpcrdma_reply_handler(struct rpcrdma_rep *rep)
 		return;
 	}
 	if (rep->rr_len < 28) {
-		dprintk("RPC:       %s: short/invalid reply\n", __func__);
+;
 		goto repost;
 	}
 	headerp = (struct rpcrdma_msg *) rep->rr_base;
 	if (headerp->rm_vers != xdr_one) {
-		dprintk("RPC:       %s: invalid version %d\n",
-			__func__, ntohl(headerp->rm_vers));
+//		dprintk("RPC:       %s: invalid version %d\n",
+;
 		goto repost;
 	}
 
@@ -757,9 +757,9 @@ rpcrdma_reply_handler(struct rpcrdma_rep *rep)
 	rqst = xprt_lookup_rqst(xprt, headerp->rm_xid);
 	if (rqst == NULL) {
 		spin_unlock(&xprt->transport_lock);
-		dprintk("RPC:       %s: reply 0x%p failed "
-			"to match any request xid 0x%08x len %d\n",
-			__func__, rep, headerp->rm_xid, rep->rr_len);
+//		dprintk("RPC:       %s: reply 0x%p failed "
+//			"to match any request xid 0x%08x len %d\n",
+;
 repost:
 		r_xprt->rx_stats.bad_reply_count++;
 		rep->rr_func = rpcrdma_reply_handler;
@@ -772,9 +772,9 @@ repost:
 	/* get request object */
 	req = rpcr_to_rdmar(rqst);
 
-	dprintk("RPC:       %s: reply 0x%p completes request 0x%p\n"
-		"                   RPC request 0x%p xid 0x%08x\n",
-			__func__, rep, req, rqst, headerp->rm_xid);
+//	dprintk("RPC:       %s: reply 0x%p completes request 0x%p\n"
+//		"                   RPC request 0x%p xid 0x%08x\n",
+;
 
 	BUG_ON(!req || req->rl_reply);
 
@@ -841,14 +841,14 @@ repost:
 
 badheader:
 	default:
-		dprintk("%s: invalid rpcrdma reply header (type %d):"
-				" chunks[012] == %d %d %d"
-				" expected chunks <= %d\n",
-				__func__, ntohl(headerp->rm_type),
-				headerp->rm_body.rm_chunks[0],
-				headerp->rm_body.rm_chunks[1],
-				headerp->rm_body.rm_chunks[2],
-				req->rl_nchunks);
+//		dprintk("%s: invalid rpcrdma reply header (type %d):"
+//				" chunks[012] == %d %d %d"
+//				" expected chunks <= %d\n",
+//				__func__, ntohl(headerp->rm_type),
+//				headerp->rm_body.rm_chunks[0],
+//				headerp->rm_body.rm_chunks[1],
+//				headerp->rm_body.rm_chunks[2],
+;
 		status = -EIO;
 		r_xprt->rx_stats.bad_reply_count++;
 		break;
@@ -875,8 +875,8 @@ badheader:
 		break;
 	}
 
-	dprintk("RPC:       %s: xprt_complete_rqst(0x%p, 0x%p, %d)\n",
-			__func__, xprt, rqst, status);
+//	dprintk("RPC:       %s: xprt_complete_rqst(0x%p, 0x%p, %d)\n",
+;
 	xprt_complete_rqst(rqst->rq_task, status);
 	spin_unlock(&xprt->transport_lock);
 }

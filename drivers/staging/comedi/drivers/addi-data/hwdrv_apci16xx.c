@@ -127,7 +127,7 @@ int i_APCI16XX_InsnConfigInitTTLIO(struct comedi_device *dev,
 				/* Data size error */
 		 /*******************/
 
-				printk("\nBuffer size error");
+;
 				i_ReturnValue = -101;
 			}
 
@@ -137,7 +137,7 @@ int i_APCI16XX_InsnConfigInitTTLIO(struct comedi_device *dev,
 				/* Data size error */
 		 /*******************/
 
-				printk("\nBuffer size error");
+;
 				i_ReturnValue = -101;
 			}
 		} else {
@@ -145,7 +145,7 @@ int i_APCI16XX_InsnConfigInitTTLIO(struct comedi_device *dev,
 			/* Config command error */
 	      /************************/
 
-			printk("\nCommand selection error");
+;
 			i_ReturnValue = -100;
 		}
 	} else {
@@ -153,7 +153,7 @@ int i_APCI16XX_InsnConfigInitTTLIO(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
-		printk("\nBuffer size error");
+;
 		i_ReturnValue = -101;
 	}
 
@@ -181,8 +181,8 @@ int i_APCI16XX_InsnConfigInitTTLIO(struct comedi_device *dev,
 				/* Port direction error */
 		 /************************/
 
-				printk("\nPort %d direction selection error",
-					(int) b_Cpt);
+//				printk("\nPort %d direction selection error",
+;
 				i_ReturnValue = -(int) b_Cpt;
 			}
 
@@ -339,7 +339,7 @@ int i_APCI16XX_InsnBitsReadTTLIO(struct comedi_device *dev,
 						/* The selected TTL digital input is wrong */
 		       /*******************************************/
 
-						printk("\nChannel selection error");
+;
 						i_ReturnValue = -103;
 					}
 				} else {
@@ -347,7 +347,7 @@ int i_APCI16XX_InsnBitsReadTTLIO(struct comedi_device *dev,
 					/* The selected TTL input port is wrong */
 		    /****************************************/
 
-					printk("\nPort selection error");
+;
 					i_ReturnValue = -102;
 				}
 			} else {
@@ -355,7 +355,7 @@ int i_APCI16XX_InsnBitsReadTTLIO(struct comedi_device *dev,
 				/* The selected TTL input port is wrong */
 		 /****************************************/
 
-				printk("\nPort selection error");
+;
 				i_ReturnValue = -102;
 			}
 		} else {
@@ -363,7 +363,7 @@ int i_APCI16XX_InsnBitsReadTTLIO(struct comedi_device *dev,
 			/* Config command error */
 	      /************************/
 
-			printk("\nCommand selection error");
+;
 			i_ReturnValue = -100;
 		}
 	} else {
@@ -371,7 +371,7 @@ int i_APCI16XX_InsnBitsReadTTLIO(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
-		printk("\nBuffer size error");
+;
 		i_ReturnValue = -101;
 	}
 
@@ -512,7 +512,7 @@ int i_APCI16XX_InsnReadTTLIOAllPortValue(struct comedi_device *dev,
 			/* Data size error */
 	      /*******************/
 
-			printk("\nBuffer size error");
+;
 			i_ReturnValue = -101;
 		}
 	} else {
@@ -520,7 +520,7 @@ int i_APCI16XX_InsnReadTTLIOAllPortValue(struct comedi_device *dev,
 		/* Command error */
 	   /*****************/
 
-		printk("\nCommand selection error");
+;
 		i_ReturnValue = -100;
 	}
 
@@ -625,7 +625,7 @@ int i_APCI16XX_InsnBitsWriteTTLIO(struct comedi_device *dev,
 						/* The selected TTL digital output is wrong */
 		       /********************************************/
 
-						printk("\nChannel selection error");
+;
 						i_ReturnValue = -103;
 					}
 
@@ -634,7 +634,7 @@ int i_APCI16XX_InsnBitsWriteTTLIO(struct comedi_device *dev,
 						/* The selected TTL digital output is wrong */
 		       /********************************************/
 
-						printk("\nOutput memory disabled");
+;
 						i_ReturnValue = -104;
 					}
 
@@ -647,7 +647,7 @@ int i_APCI16XX_InsnBitsWriteTTLIO(struct comedi_device *dev,
 						/* Data size error */
 		       /*******************/
 
-						printk("\nBuffer size error");
+;
 						i_ReturnValue = -101;
 					}
 				} else {
@@ -655,9 +655,9 @@ int i_APCI16XX_InsnBitsWriteTTLIO(struct comedi_device *dev,
 					/* The selected TTL output port is wrong */
 		    /*****************************************/
 
-					printk("\nPort selection error %lX",
-						(unsigned long)devpriv->
-						ul_TTLPortConfiguration[0]);
+//					printk("\nPort selection error %lX",
+//						(unsigned long)devpriv->
+;
 					i_ReturnValue = -102;
 				}
 			} else {
@@ -665,8 +665,8 @@ int i_APCI16XX_InsnBitsWriteTTLIO(struct comedi_device *dev,
 				/* The selected TTL output port is wrong */
 		 /****************************************/
 
-				printk("\nPort selection error %d %d",
-					b_SelectedPort, b_NumberOfPort);
+//				printk("\nPort selection error %d %d",
+;
 				i_ReturnValue = -102;
 			}
 		} else {
@@ -674,7 +674,7 @@ int i_APCI16XX_InsnBitsWriteTTLIO(struct comedi_device *dev,
 			/* Config command error */
 	      /************************/
 
-			printk("\nCommand selection error");
+;
 			i_ReturnValue = -100;
 		}
 	} else {
@@ -682,7 +682,7 @@ int i_APCI16XX_InsnBitsWriteTTLIO(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
-		printk("\nBuffer size error");
+;
 		i_ReturnValue = -101;
 	}
 

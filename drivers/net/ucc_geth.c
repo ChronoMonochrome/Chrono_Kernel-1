@@ -45,27 +45,27 @@
 
 #undef DEBUG
 
-#define ugeth_printk(level, format, arg...)  \
-        printk(level format "\n", ## arg)
-
-#define ugeth_dbg(format, arg...)            \
-        ugeth_printk(KERN_DEBUG , format , ## arg)
-#define ugeth_err(format, arg...)            \
-        ugeth_printk(KERN_ERR , format , ## arg)
-#define ugeth_info(format, arg...)           \
-        ugeth_printk(KERN_INFO , format , ## arg)
-#define ugeth_warn(format, arg...)           \
-        ugeth_printk(KERN_WARNING , format , ## arg)
-
-#ifdef UGETH_VERBOSE_DEBUG
-#define ugeth_vdbg ugeth_dbg
-#else
-#define ugeth_vdbg(fmt, args...) do { } while (0)
-#endif				/* UGETH_VERBOSE_DEBUG */
-#define UGETH_MSG_DEFAULT	(NETIF_MSG_IFUP << 1 ) - 1
-
-
-static DEFINE_SPINLOCK(ugeth_lock);
+//#define ugeth_printk(level, format, arg...)  \
+//        printk(level format "\n", ## arg)
+//
+//#define ugeth_dbg(format, arg...)            \
+//        ugeth_printk(KERN_DEBUG , format , ## arg)
+//#define ugeth_err(format, arg...)            \
+//        ugeth_printk(KERN_ERR , format , ## arg)
+//#define ugeth_info(format, arg...)           \
+//        ugeth_printk(KERN_INFO , format , ## arg)
+//#define ugeth_warn(format, arg...)           \
+//        ugeth_printk(KERN_WARNING , format , ## arg)
+//
+//#ifdef UGETH_VERBOSE_DEBUG
+//#define ugeth_vdbg ugeth_dbg
+//#else
+//#define ugeth_vdbg(fmt, args...) do { } while (0)
+//#endif				/* UGETH_VERBOSE_DEBUG */
+//#define UGETH_MSG_DEFAULT	(NETIF_MSG_IFUP << 1 ) - 1
+//
+//
+;
 
 static struct {
 	u32 msg_enable;
@@ -174,19 +174,19 @@ static void mem_disp(u8 *addr, int size)
 		notAlign = 1;
 
 	for (i = addr; (u32) i < (u32) addr + size16Aling; i += 16)
-		printk("0x%08x: %08x %08x %08x %08x\r\n",
-		       (u32) i,
-		       *((u32 *) (i)),
-		       *((u32 *) (i + 4)),
-		       *((u32 *) (i + 8)), *((u32 *) (i + 12)));
+//		printk("0x%08x: %08x %08x %08x %08x\r\n",
+//		       (u32) i,
+//		       *((u32 *) (i)),
+//		       *((u32 *) (i + 4)),
+;
 	if (notAlign == 1)
-		printk("0x%08x: ", (u32) i);
+;
 	for (; (u32) i < (u32) addr + size4Aling; i += 4)
 		printk("%08x ", *((u32 *) (i)));
 	for (; (u32) i < (u32) addr + size; i++)
 		printk("%02x", *((u8 *) (i)));
 	if (notAlign == 1)
-		printk("\r\n");
+;
 }
 #endif /* DEBUG */
 
@@ -3795,8 +3795,8 @@ static int ucc_geth_probe(struct platform_device* ofdev)
 		ug_info->uf_info.rx_clock = qe_clock_source(sprop);
 		if ((ug_info->uf_info.rx_clock < QE_CLK_NONE) ||
 		    (ug_info->uf_info.rx_clock > QE_CLK24)) {
-			printk(KERN_ERR
-				"ucc_geth: invalid rx-clock-name property\n");
+//			printk(KERN_ERR
+;
 			return -EINVAL;
 		}
 	} else {
@@ -3804,13 +3804,13 @@ static int ucc_geth_probe(struct platform_device* ofdev)
 		if (!prop) {
 			/* If both rx-clock-name and rx-clock are missing,
 			   we want to tell people to use rx-clock-name. */
-			printk(KERN_ERR
-				"ucc_geth: missing rx-clock-name property\n");
+//			printk(KERN_ERR
+;
 			return -EINVAL;
 		}
 		if ((*prop < QE_CLK_NONE) || (*prop > QE_CLK24)) {
-			printk(KERN_ERR
-				"ucc_geth: invalid rx-clock propperty\n");
+//			printk(KERN_ERR
+;
 			return -EINVAL;
 		}
 		ug_info->uf_info.rx_clock = *prop;
@@ -3821,20 +3821,20 @@ static int ucc_geth_probe(struct platform_device* ofdev)
 		ug_info->uf_info.tx_clock = qe_clock_source(sprop);
 		if ((ug_info->uf_info.tx_clock < QE_CLK_NONE) ||
 		    (ug_info->uf_info.tx_clock > QE_CLK24)) {
-			printk(KERN_ERR
-				"ucc_geth: invalid tx-clock-name property\n");
+//			printk(KERN_ERR
+;
 			return -EINVAL;
 		}
 	} else {
 		prop = of_get_property(np, "tx-clock", NULL);
 		if (!prop) {
-			printk(KERN_ERR
-				"ucc_geth: missing tx-clock-name property\n");
+//			printk(KERN_ERR
+;
 			return -EINVAL;
 		}
 		if ((*prop < QE_CLK_NONE) || (*prop > QE_CLK24)) {
-			printk(KERN_ERR
-				"ucc_geth: invalid tx-clock property\n");
+//			printk(KERN_ERR
+;
 			return -EINVAL;
 		}
 		ug_info->uf_info.tx_clock = *prop;
@@ -3905,9 +3905,9 @@ static int ucc_geth_probe(struct platform_device* ofdev)
 	}
 
 	if (netif_msg_probe(&debug))
-		printk(KERN_INFO "ucc_geth: UCC%1d at 0x%8x (irq = %d)\n",
-			ug_info->uf_info.ucc_num + 1, ug_info->uf_info.regs,
-			ug_info->uf_info.irq);
+//		printk(KERN_INFO "ucc_geth: UCC%1d at 0x%8x (irq = %d)\n",
+//			ug_info->uf_info.ucc_num + 1, ug_info->uf_info.regs,
+;
 
 	/* Create an ethernet device instance */
 	dev = alloc_etherdev(sizeof(*ugeth));
@@ -4003,7 +4003,7 @@ static int __init ucc_geth_init(void)
 	int i, ret;
 
 	if (netif_msg_drv(&debug))
-		printk(KERN_INFO "ucc_geth: " DRV_DESC "\n");
+;
 	for (i = 0; i < 8; i++)
 		memcpy(&(ugeth_info[i]), &ugeth_primary_info,
 		       sizeof(ugeth_primary_info));

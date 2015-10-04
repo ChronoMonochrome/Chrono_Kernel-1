@@ -20,8 +20,8 @@ static void pmf_gpio_set_##name(struct gpio_runtime *rt, int on)\
 	if (unlikely(!rt)) return;				\
 	rc = pmf_call_function(rt->node, #name "-mute", &args);	\
 	if (rc && rc != -ENODEV)				\
-		printk(KERN_WARNING "pmf_gpio_set_" #name	\
-		" failed, rc: %d\n", rc);			\
+//		printk(KERN_WARNING "pmf_gpio_set_" #name	\
+;
 	rt->implementation_private &= ~(1<<bit);		\
 	rt->implementation_private |= (!!on << bit);		\
 }								\
@@ -43,8 +43,8 @@ static void pmf_gpio_set_hw_reset(struct gpio_runtime *rt, int on)
 	if (unlikely(!rt)) return;
 	rc = pmf_call_function(rt->node, "hw-reset", &args);
 	if (rc)
-		printk(KERN_WARNING "pmf_gpio_set_hw_reset"
-		       " failed, rc: %d\n", rc);
+//		printk(KERN_WARNING "pmf_gpio_set_hw_reset"
+;
 }
 
 static void pmf_gpio_all_amps_off(struct gpio_runtime *rt)
@@ -190,8 +190,8 @@ static int pmf_set_notify(struct gpio_runtime *rt,
 					      name,
 					      irq_client);
 		if (err) {
-			printk(KERN_ERR "snd-aoa: gpio layer failed to"
-					" register %s irq (%d)\n", name, err);
+//			printk(KERN_ERR "snd-aoa: gpio layer failed to"
+;
 			kfree(irq_client);
 			goto out_unlock;
 		}

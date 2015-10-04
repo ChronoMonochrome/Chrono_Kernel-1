@@ -95,11 +95,11 @@ static int teles_cs_configcheck(struct pcmcia_device *p_dev, void *priv_data)
 	p_dev->resource[0]->flags |= IO_DATA_PATH_WIDTH_AUTO;
 
 	if ((p_dev->resource[0]->end) && p_dev->resource[0]->start) {
-		printk(KERN_INFO "(teles_cs: looks like the 96 model)\n");
+;
 		if (!pcmcia_request_io(p_dev))
 			return 0;
 	} else {
-		printk(KERN_INFO "(teles_cs: looks like the 97 model)\n");
+;
 		for (j = 0x2f0; j > 0x100; j -= 0x10) {
 			p_dev->resource[0]->start = j;
 			if (!pcmcia_request_io(p_dev))
@@ -134,8 +134,8 @@ static int __devinit teles_cs_config(struct pcmcia_device *link)
     
     i = hisax_init_pcmcia(link, &(((local_info_t*)link->priv)->busy), &icard);
     if (i < 0) {
-    	printk(KERN_ERR "teles_cs: failed to initialize Teles PCMCIA %d at i/o %#x\n",
-			i, (unsigned int) link->resource[0]->start);
+//    	printk(KERN_ERR "teles_cs: failed to initialize Teles PCMCIA %d at i/o %#x\n",
+;
     	teles_cs_release(link);
 	return -ENODEV;
     }

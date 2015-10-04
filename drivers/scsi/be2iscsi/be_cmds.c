@@ -46,7 +46,7 @@ int beiscsi_pci_soft_reset(struct beiscsi_hba *phba)
 	}
 
 	if (sreset & BE2_SET_RESET) {
-		printk(KERN_ERR "Soft Reset  did not deassert\n");
+;
 		return -EIO;
 	}
 	pconline1 = BE2_MPU_IRAM_ONLINE;
@@ -65,7 +65,7 @@ int beiscsi_pci_soft_reset(struct beiscsi_hba *phba)
 		i++;
 	}
 	if (sreset & BE2_SET_RESET) {
-		printk(KERN_ERR "MPU Online Soft Reset did not deassert\n");
+;
 		return -EIO;
 	}
 	return 0;
@@ -91,8 +91,8 @@ int be_chk_reset_complete(struct beiscsi_hba *phba)
 	}
 
 	if ((status & 0x80000000) || (!num_loop)) {
-		printk(KERN_ERR "Failed in be_chk_reset_complete"
-		"status = 0x%x\n", status);
+//		printk(KERN_ERR "Failed in be_chk_reset_complete"
+;
 		return -EIO;
 	}
 

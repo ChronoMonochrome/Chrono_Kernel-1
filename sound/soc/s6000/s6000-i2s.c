@@ -127,7 +127,7 @@ static void s6000_i2s_start_channel(struct s6000_i2s_dev *dev, int channel)
 		}
 	}
 	if (j < 6)
-		printk(KERN_WARNING "s6000-i2s: timeout waiting for WCLK\n");
+;
 
 	s6_i2s_write_reg(dev, S6_I2S_ENABLE(channel), S6_I2S_ENABLE_IF);
 }
@@ -204,7 +204,7 @@ static unsigned int s6000_i2s_check_xrun(struct snd_soc_dai *cpu_dai)
 
 	ret = 0;
 	if (errors & S6_I2S_INT_ALIGNMENT)
-		printk(KERN_ERR "s6000-i2s: WCLK misaligned\n");
+;
 	if (errors & S6_I2S_INT_UNDERRUN)
 		ret |= 1 << SNDRV_PCM_STREAM_PLAYBACK;
 	if (errors & S6_I2S_INT_OVERRUN)
@@ -226,7 +226,7 @@ static void s6000_i2s_wait_disabled(struct s6000_i2s_dev *dev)
 		}
 	}
 	if (n < 0)
-		printk(KERN_WARNING "s6000-i2s: timeout disabling interfaces");
+;
 }
 
 static int s6000_i2s_set_dai_fmt(struct snd_soc_dai *cpu_dai,
@@ -308,14 +308,14 @@ static int s6000_i2s_hw_params(struct snd_pcm_substream *substream,
 		w |= S6_I2S_32BIT | S6_I2S_MEM_32BIT;
 		break;
 	default:
-		printk(KERN_WARNING "s6000-i2s: unsupported PCM format %x\n",
-		       params_format(params));
+//		printk(KERN_WARNING "s6000-i2s: unsupported PCM format %x\n",
+;
 		return -EINVAL;
 	}
 
 	if (s6_i2s_read_reg(dev, S6_I2S_INTERFACE_CFG(interf))
 	     & S6_I2S_IS_ENABLED) {
-		printk(KERN_ERR "s6000-i2s: interface already enabled\n");
+;
 		return -EBUSY;
 	}
 

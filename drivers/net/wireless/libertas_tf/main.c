@@ -179,13 +179,13 @@ static void command_timer_fn(unsigned long data)
 	spin_lock_irqsave(&priv->driver_lock, flags);
 
 	if (!priv->cur_cmd) {
-		printk(KERN_DEBUG "libertastf: command timer expired; "
+;
 				  "no pending command\n");
 		goto out;
 	}
 
-	printk(KERN_DEBUG "libertas: command %x timed out\n",
-		le16_to_cpu(priv->cur_cmd->cmdbuf->command));
+//	printk(KERN_DEBUG "libertas: command %x timed out\n",
+;
 
 	priv->cmd_timed_out = 1;
 	queue_work(lbtf_wq, &priv->cmd_work);
@@ -322,7 +322,7 @@ static int lbtf_op_start(struct ieee80211_hw *hw)
 		goto err_prog_firmware;
 	}
 
-	printk(KERN_INFO "libertastf: Marvell WLAN 802.11 thinfirm adapter\n");
+;
 	lbtf_deb_leave(LBTF_DEB_MACOPS);
 	return 0;
 
@@ -743,7 +743,7 @@ static int __init lbtf_init_module(void)
 	lbtf_deb_enter(LBTF_DEB_MAIN);
 	lbtf_wq = create_workqueue("libertastf");
 	if (lbtf_wq == NULL) {
-		printk(KERN_ERR "libertastf: couldn't create workqueue\n");
+;
 		return -ENOMEM;
 	}
 	lbtf_deb_leave(LBTF_DEB_MAIN);

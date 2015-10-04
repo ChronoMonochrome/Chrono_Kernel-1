@@ -36,15 +36,15 @@
 
 #define MY_NAME	"acpi_pcihp"
 
-#define dbg(fmt, arg...) do { if (debug_acpi) printk(KERN_DEBUG "%s: %s: " fmt , MY_NAME , __func__ , ## arg); } while (0)
-#define err(format, arg...) printk(KERN_ERR "%s: " format , MY_NAME , ## arg)
-#define info(format, arg...) printk(KERN_INFO "%s: " format , MY_NAME , ## arg)
-#define warn(format, arg...) printk(KERN_WARNING "%s: " format , MY_NAME , ## arg)
-
-#define	METHOD_NAME__SUN	"_SUN"
-#define	METHOD_NAME_OSHP	"OSHP"
-
-static int debug_acpi;
+;
+//#define err(format, arg...) printk(KERN_ERR "%s: " format , MY_NAME , ## arg)
+//#define info(format, arg...) printk(KERN_INFO "%s: " format , MY_NAME , ## arg)
+//#define warn(format, arg...) printk(KERN_WARNING "%s: " format , MY_NAME , ## arg)
+//
+//#define	METHOD_NAME__SUN	"_SUN"
+//#define	METHOD_NAME_OSHP	"OSHP"
+//
+;
 
 static acpi_status
 decode_type0_hpx_record(union acpi_object *record, struct hotplug_params *hpx)
@@ -68,9 +68,9 @@ decode_type0_hpx_record(union acpi_object *record, struct hotplug_params *hpx)
 		hpx->t0->enable_perr     = fields[5].integer.value;
 		break;
 	default:
-		printk(KERN_WARNING
-		       "%s: Type 0 Revision %d record not supported\n",
-		       __func__, revision);
+//		printk(KERN_WARNING
+//		       "%s: Type 0 Revision %d record not supported\n",
+;
 		return AE_ERROR;
 	}
 	return AE_OK;
@@ -97,9 +97,9 @@ decode_type1_hpx_record(union acpi_object *record, struct hotplug_params *hpx)
 		hpx->t1->tot_max_split = fields[4].integer.value;
 		break;
 	default:
-		printk(KERN_WARNING
-		       "%s: Type 1 Revision %d record not supported\n",
-		       __func__, revision);
+//		printk(KERN_WARNING
+//		       "%s: Type 1 Revision %d record not supported\n",
+;
 		return AE_ERROR;
 	}
 	return AE_OK;
@@ -139,9 +139,9 @@ decode_type2_hpx_record(union acpi_object *record, struct hotplug_params *hpx)
 		hpx->t2->sec_unc_err_mask_or   = fields[17].integer.value;
 		break;
 	default:
-		printk(KERN_WARNING
-		       "%s: Type 2 Revision %d record not supported\n",
-		       __func__, revision);
+//		printk(KERN_WARNING
+//		       "%s: Type 2 Revision %d record not supported\n",
+;
 		return AE_ERROR;
 	}
 	return AE_OK;
@@ -201,8 +201,8 @@ acpi_run_hpx(acpi_handle handle, struct hotplug_params *hpx)
 				goto exit;
 			break;
 		default:
-			printk(KERN_ERR "%s: Type %d record not supported\n",
-			       __func__, type);
+//			printk(KERN_ERR "%s: Type %d record not supported\n",
+;
 			status = AE_ERROR;
 			goto exit;
 		}
@@ -270,8 +270,8 @@ static acpi_status acpi_run_oshp(acpi_handle handle)
 	status = acpi_evaluate_object(handle, METHOD_NAME_OSHP, NULL, NULL);
 	if (ACPI_FAILURE(status))
 		if (status != AE_NOT_FOUND)
-			printk(KERN_ERR "%s:%s OSHP fails=0x%x\n",
-			       __func__, (char *)string.pointer, status);
+//			printk(KERN_ERR "%s:%s OSHP fails=0x%x\n",
+;
 		else
 			dbg("%s:%s OSHP not found\n",
 			    __func__, (char *)string.pointer);

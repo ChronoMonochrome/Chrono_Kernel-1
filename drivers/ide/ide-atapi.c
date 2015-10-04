@@ -16,16 +16,16 @@
 
 #ifdef DEBUG
 #define debug_log(fmt, args...) \
-	printk(KERN_INFO "ide: " fmt, ## args)
-#else
-#define debug_log(fmt, args...) do {} while (0)
-#endif
-
-#define ATAPI_MIN_CDB_BYTES	12
-
-static inline int dev_is_idecd(ide_drive_t *drive)
-{
-	return drive->media == ide_cdrom || drive->media == ide_optical;
+//	printk(KERN_INFO "ide: " fmt, ## args)
+//#else
+//#define debug_log(fmt, args...) do {} while (0)
+//#endif
+//
+//#define ATAPI_MIN_CDB_BYTES	12
+//
+//static inline int dev_is_idecd(ide_drive_t *drive)
+//{
+;
 }
 
 /*
@@ -54,21 +54,21 @@ int ide_check_atapi_device(ide_drive_t *drive, const char *s)
 #endif
 
 	if (protocol != 2)
-		printk(KERN_ERR "%s: %s: protocol (0x%02x) is not ATAPI\n",
-			s, drive->name, protocol);
+//		printk(KERN_ERR "%s: %s: protocol (0x%02x) is not ATAPI\n",
+;
 	else if ((drive->media == ide_floppy && device_type != 0) ||
 		 (drive->media == ide_tape && device_type != 1))
-		printk(KERN_ERR "%s: %s: invalid device type (0x%02x)\n",
-			s, drive->name, device_type);
+//		printk(KERN_ERR "%s: %s: invalid device type (0x%02x)\n",
+;
 	else if (removable == 0)
-		printk(KERN_ERR "%s: %s: the removable flag is not set\n",
-			s, drive->name);
+//		printk(KERN_ERR "%s: %s: the removable flag is not set\n",
+;
 	else if (drive->media == ide_floppy && drq_type == 3)
-		printk(KERN_ERR "%s: %s: sorry, DRQ type (0x%02x) not "
-			"supported\n", s, drive->name, drq_type);
+//		printk(KERN_ERR "%s: %s: sorry, DRQ type (0x%02x) not "
+;
 	else if (packet_size != 0)
-		printk(KERN_ERR "%s: %s: packet size (0x%02x) is not 12 "
-			"bytes\n", s, drive->name, packet_size);
+//		printk(KERN_ERR "%s: %s: packet size (0x%02x) is not 12 "
+;
 	else
 		return 1;
 	return 0;
@@ -201,8 +201,8 @@ void ide_prep_sense(ide_drive_t *drive, struct request *rq)
 			      GFP_NOIO);
 	if (unlikely(err)) {
 		if (printk_ratelimit())
-			printk(KERN_WARNING PFX "%s: failed to map sense "
-					    "buffer\n", drive->name);
+//			printk(KERN_WARNING PFX "%s: failed to map sense "
+;
 		return;
 	}
 
@@ -223,8 +223,8 @@ int ide_queue_sense_rq(ide_drive_t *drive, void *special)
 {
 	/* deferred failure from ide_prep_sense() */
 	if (!drive->sense_rq_armed) {
-		printk(KERN_WARNING PFX "%s: error queuing a sense request\n",
-		       drive->name);
+//		printk(KERN_WARNING PFX "%s: error queuing a sense request\n",
+;
 		return -ENOMEM;
 	}
 
@@ -295,8 +295,8 @@ int ide_cd_expiry(ide_drive_t *drive)
 		break;
 	default:
 		if (!(rq->cmd_flags & REQ_QUIET))
-			printk(KERN_INFO PFX "cmd 0x%x timed out\n",
-					 rq->cmd[0]);
+//			printk(KERN_INFO PFX "cmd 0x%x timed out\n",
+;
 		wait = 0;
 		break;
 	}
@@ -349,8 +349,8 @@ int ide_check_ireason(ide_drive_t *drive, struct request *rq, int len,
 	if (ireason == (!rw << 1))
 		return 0;
 	else if (ireason == (rw << 1)) {
-		printk(KERN_ERR PFX "%s: %s: wrong transfer direction!\n",
-				drive->name, __func__);
+//		printk(KERN_ERR PFX "%s: %s: wrong transfer direction!\n",
+;
 
 		if (dev_is_idecd(drive))
 			ide_pad_transfer(drive, rw, len);
@@ -365,12 +365,12 @@ int ide_check_ireason(ide_drive_t *drive, struct request *rq, int len,
 		}
 	} else {
 		if (ireason & ATAPI_COD)
-			printk(KERN_ERR PFX "%s: CoD != 0 in %s\n", drive->name,
-					__func__);
+//			printk(KERN_ERR PFX "%s: CoD != 0 in %s\n", drive->name,
+;
 
 		/* drive wants a command packet, or invalid ireason... */
-		printk(KERN_ERR PFX "%s: %s: bad interrupt reason 0x%02x\n",
-				drive->name, __func__, ireason);
+//		printk(KERN_ERR PFX "%s: %s: bad interrupt reason 0x%02x\n",
+;
 	}
 
 	if (dev_is_idecd(drive) && rq->cmd_type == REQ_TYPE_ATA_PC)
@@ -414,9 +414,9 @@ static ide_startstop_t ide_pc_intr(ide_drive_t *drive)
 
 		if (rc || (drive->media == ide_tape && (stat & ATA_ERR))) {
 			if (drive->media == ide_floppy)
-				printk(KERN_ERR PFX "%s: DMA %s error\n",
-					drive->name, rq_data_dir(pc->rq)
-						     ? "write" : "read");
+//				printk(KERN_ERR PFX "%s: DMA %s error\n",
+//					drive->name, rq_data_dir(pc->rq)
+;
 			pc->flags |= PC_FLAG_DMA_ERROR;
 		} else
 			rq->resid_len = 0;
@@ -446,8 +446,8 @@ static ide_startstop_t ide_pc_intr(ide_drive_t *drive)
 				pc->rq->errors++;
 
 			if (rq->cmd[0] == REQUEST_SENSE) {
-				printk(KERN_ERR PFX "%s: I/O error in request "
-						"sense command\n", drive->name);
+//				printk(KERN_ERR PFX "%s: I/O error in request "
+;
 				return ide_do_reset(drive);
 			}
 
@@ -495,8 +495,8 @@ static ide_startstop_t ide_pc_intr(ide_drive_t *drive)
 
 	if (pc->flags & PC_FLAG_DMA_IN_PROGRESS) {
 		pc->flags &= ~PC_FLAG_DMA_IN_PROGRESS;
-		printk(KERN_ERR PFX "%s: The device wants to issue more "
-				"interrupts in DMA mode\n", drive->name);
+//		printk(KERN_ERR PFX "%s: The device wants to issue more "
+;
 		ide_dma_off(drive);
 		return ide_do_reset(drive);
 	}
@@ -553,14 +553,14 @@ static u8 ide_wait_ireason(ide_drive_t *drive, u8 ireason)
 
 	while (retries-- && ((ireason & ATAPI_COD) == 0 ||
 		(ireason & ATAPI_IO))) {
-		printk(KERN_ERR PFX "%s: (IO,CoD != (0,1) while issuing "
-				"a packet command, retrying\n", drive->name);
+//		printk(KERN_ERR PFX "%s: (IO,CoD != (0,1) while issuing "
+;
 		udelay(100);
 		ireason = ide_read_ireason(drive);
 		if (retries == 0) {
-			printk(KERN_ERR PFX "%s: (IO,CoD != (0,1) while issuing"
-					" a packet command, ignoring\n",
-					drive->name);
+//			printk(KERN_ERR PFX "%s: (IO,CoD != (0,1) while issuing"
+//					" a packet command, ignoring\n",
+;
 			ireason |= ATAPI_COD;
 			ireason &= ~ATAPI_IO;
 		}
@@ -590,8 +590,8 @@ static ide_startstop_t ide_transfer_pc(ide_drive_t *drive)
 	u8 ireason;
 
 	if (ide_wait_stat(&startstop, drive, ATA_DRQ, ATA_BUSY, WAIT_READY)) {
-		printk(KERN_ERR PFX "%s: Strange, packet command initiated yet "
-				"DRQ isn't asserted\n", drive->name);
+//		printk(KERN_ERR PFX "%s: Strange, packet command initiated yet "
+;
 		return startstop;
 	}
 
@@ -632,8 +632,8 @@ static ide_startstop_t ide_transfer_pc(ide_drive_t *drive)
 			ireason = ide_wait_ireason(drive, ireason);
 
 		if ((ireason & ATAPI_COD) == 0 || (ireason & ATAPI_IO)) {
-			printk(KERN_ERR PFX "%s: (IO,CoD) != (0,1) while "
-				"issuing a packet command\n", drive->name);
+//			printk(KERN_ERR PFX "%s: (IO,CoD) != (0,1) while "
+;
 
 			return ide_do_reset(drive);
 		}

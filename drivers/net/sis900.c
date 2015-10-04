@@ -290,8 +290,8 @@ static int __devinit sis630e_get_mac_addr(struct pci_dev * pci_dev,
 	if (!isa_bridge)
 		isa_bridge = pci_get_device(PCI_VENDOR_ID_SI, 0x0018, isa_bridge);
 	if (!isa_bridge) {
-		printk(KERN_WARNING "%s: Can not find ISA bridge\n",
-		       pci_name(pci_dev));
+//		printk(KERN_WARNING "%s: Can not find ISA bridge\n",
+;
 		return 0;
 	}
 	pci_read_config_byte(isa_bridge, 0x48, &reg);
@@ -442,7 +442,7 @@ static int __devinit sis900_probe(struct pci_dev *pci_dev,
 #ifndef MODULE
 	static int printed_version;
 	if (!printed_version++)
-		printk(version);
+;
 #endif
 
 	/* setup various bits in PCI command register */
@@ -451,8 +451,8 @@ static int __devinit sis900_probe(struct pci_dev *pci_dev,
 
 	i = pci_set_dma_mask(pci_dev, DMA_BIT_MASK(32));
 	if(i){
-		printk(KERN_ERR "sis900.c: architecture does not support "
-			"32bit PCI busmaster DMA\n");
+//		printk(KERN_ERR "sis900.c: architecture does not support "
+;
 		return i;
 	}
 
@@ -512,9 +512,9 @@ static int __devinit sis900_probe(struct pci_dev *pci_dev,
 	/* Get Mac address according to the chip revision */
 	sis_priv->chipset_rev = pci_dev->revision;
 	if(netif_msg_probe(sis_priv))
-		printk(KERN_DEBUG "%s: detected revision %2.2x, "
-				"trying to get MAC address...\n",
-				dev_name, sis_priv->chipset_rev);
+//		printk(KERN_DEBUG "%s: detected revision %2.2x, "
+//				"trying to get MAC address...\n",
+;
 
 	ret = 0;
 	if (sis_priv->chipset_rev == SIS630E_900_REV)
@@ -528,8 +528,8 @@ static int __devinit sis900_probe(struct pci_dev *pci_dev,
 
 	if (!ret || !is_valid_ether_addr(net_dev->dev_addr)) {
 		random_ether_addr(net_dev->dev_addr);
-		printk(KERN_WARNING "%s: Unreadable or invalid MAC address,"
-				"using random generated one\n", dev_name);
+//		printk(KERN_WARNING "%s: Unreadable or invalid MAC address,"
+;
 	}
 
 	/* 630ET : set the mii access mode as software-mode */
@@ -538,8 +538,8 @@ static int __devinit sis900_probe(struct pci_dev *pci_dev,
 
 	/* probe for mii transceiver */
 	if (sis900_mii_probe(net_dev) == 0) {
-		printk(KERN_WARNING "%s: Error probing MII device.\n",
-		       dev_name);
+//		printk(KERN_WARNING "%s: Error probing MII device.\n",
+;
 		ret = -ENODEV;
 		goto err_unmap_rx;
 	}
@@ -556,14 +556,14 @@ static int __devinit sis900_probe(struct pci_dev *pci_dev,
 		goto err_unmap_rx;
 
 	/* print some information about our NIC */
-	printk(KERN_INFO "%s: %s at %#lx, IRQ %d, %pM\n",
-	       net_dev->name, card_name, ioaddr, net_dev->irq,
-	       net_dev->dev_addr);
+//	printk(KERN_INFO "%s: %s at %#lx, IRQ %d, %pM\n",
+//	       net_dev->name, card_name, ioaddr, net_dev->irq,
+;
 
 	/* Detect Wake on Lan support */
 	ret = (inl(net_dev->base_addr + CFGPMC) & PMESP) >> 27;
 	if (netif_msg_probe(sis_priv) && (ret & PME_D3C) == 0)
-		printk(KERN_INFO "%s: Wake on LAN only available from suspend to RAM.", net_dev->name);
+;
 
 	return 0;
 
@@ -612,14 +612,14 @@ static int __devinit sis900_mii_probe(struct net_device * net_dev)
 
 		if (mii_status == 0xffff || mii_status == 0x0000) {
 			if (netif_msg_probe(sis_priv))
-				printk(KERN_DEBUG "%s: MII at address %d"
-						" not accessible\n",
-						dev_name, phy_addr);
+//				printk(KERN_DEBUG "%s: MII at address %d"
+//						" not accessible\n",
+;
 			continue;
 		}
 
 		if ((mii_phy = kmalloc(sizeof(struct mii_phy), GFP_KERNEL)) == NULL) {
-			printk(KERN_WARNING "Cannot allocate mem for struct mii_phy\n");
+;
 			mii_phy = sis_priv->first_mii;
 			while (mii_phy) {
 				struct mii_phy *phy;
@@ -645,23 +645,23 @@ static int __devinit sis900_mii_probe(struct net_device * net_dev)
 				if (mii_chip_table[i].phy_types == MIX)
 					mii_phy->phy_types =
 					    (mii_status & (MII_STAT_CAN_TX_FDX | MII_STAT_CAN_TX)) ? LAN : HOME;
-				printk(KERN_INFO "%s: %s transceiver found "
-							"at address %d.\n",
-							dev_name,
-							mii_chip_table[i].name,
-							phy_addr);
+//				printk(KERN_INFO "%s: %s transceiver found "
+//							"at address %d.\n",
+//							dev_name,
+//							mii_chip_table[i].name,
+;
 				break;
 			}
 
 		if( !mii_chip_table[i].phy_id1 ) {
-			printk(KERN_INFO "%s: Unknown PHY transceiver found at address %d.\n",
-			       dev_name, phy_addr);
+//			printk(KERN_INFO "%s: Unknown PHY transceiver found at address %d.\n",
+;
 			mii_phy->phy_types = UNKNOWN;
 		}
 	}
 
 	if (sis_priv->mii == NULL) {
-		printk(KERN_INFO "%s: No MII transceivers found!\n", dev_name);
+;
 		return 0;
 	}
 
@@ -685,8 +685,8 @@ static int __devinit sis900_mii_probe(struct net_device * net_dev)
 
 			poll_bit ^= (mdio_read(net_dev, sis_priv->cur_phy, MII_STATUS) & poll_bit);
 			if (time_after_eq(jiffies, timeout)) {
-				printk(KERN_WARNING "%s: reset phy and link down now\n",
-				       dev_name);
+//				printk(KERN_WARNING "%s: reset phy and link down now\n",
+;
 				return -ETIME;
 			}
 		}
@@ -754,8 +754,8 @@ static u16 sis900_default_phy(struct net_device * net_dev)
 	if (sis_priv->mii != default_phy) {
 		sis_priv->mii = default_phy;
 		sis_priv->cur_phy = default_phy->phy_addr;
-		printk(KERN_INFO "%s: Using transceiver found at address %d as default\n",
-		       pci_name(sis_priv->pci_dev), sis_priv->cur_phy);
+//		printk(KERN_INFO "%s: Using transceiver found at address %d as default\n",
+;
 	}
 
 	sis_priv->mii_info.phy_id = sis_priv->cur_phy;
@@ -1093,8 +1093,8 @@ sis900_init_rxfilter (struct net_device * net_dev)
 		outl(w, ioaddr + rfdr);
 
 		if (netif_msg_hw(sis_priv)) {
-			printk(KERN_DEBUG "%s: Receive Filter Addrss[%d]=%x\n",
-			       net_dev->name, i, inl(ioaddr + rfdr));
+//			printk(KERN_DEBUG "%s: Receive Filter Addrss[%d]=%x\n",
+;
 		}
 	}
 
@@ -1131,8 +1131,8 @@ sis900_init_tx_ring(struct net_device *net_dev)
 	/* load Transmit Descriptor Register */
 	outl(sis_priv->tx_ring_dma, ioaddr + txdp);
 	if (netif_msg_hw(sis_priv))
-		printk(KERN_DEBUG "%s: TX descriptor register loaded with: %8.8x\n",
-		       net_dev->name, inl(ioaddr + txdp));
+//		printk(KERN_DEBUG "%s: TX descriptor register loaded with: %8.8x\n",
+;
 }
 
 /**
@@ -1184,8 +1184,8 @@ sis900_init_rx_ring(struct net_device *net_dev)
 	/* load Receive Descriptor Register */
 	outl(sis_priv->rx_ring_dma, ioaddr + rxdp);
 	if (netif_msg_hw(sis_priv))
-		printk(KERN_DEBUG "%s: RX descriptor register loaded with: %8.8x\n",
-		       net_dev->name, inl(ioaddr + rxdp));
+//		printk(KERN_DEBUG "%s: RX descriptor register loaded with: %8.8x\n",
+;
 }
 
 /**
@@ -1328,7 +1328,7 @@ static void sis900_timer(unsigned long data)
                 if (!(status & MII_STAT_LINK)){
                 	netif_carrier_off(net_dev);
 			if(netif_msg_link(sis_priv))
-                		printk(KERN_INFO "%s: Media Link Off\n", net_dev->name);
+;
 
                 	/* Change mode issue */
                 	if ((mii_phy->phy_id0 == 0x001D) &&
@@ -1447,7 +1447,7 @@ static void sis900_auto_negotiate(struct net_device *net_dev, int phy_addr)
 
 	if (!(status & MII_STAT_LINK)){
 		if(netif_msg_link(sis_priv))
-			printk(KERN_INFO "%s: Media Link Off\n", net_dev->name);
+;
 		sis_priv->autong_complete = 1;
 		netif_carrier_off(net_dev);
 		return;
@@ -1510,12 +1510,12 @@ static void sis900_read_mode(struct net_device *net_dev, int *speed, int *duplex
 	}
 
 	if(netif_msg_link(sis_priv))
-		printk(KERN_INFO "%s: Media Link On %s %s-duplex\n",
-	       				net_dev->name,
-	       				*speed == HW_SPEED_100_MBPS ?
-	       					"100mbps" : "10mbps",
-	       				*duplex == FDX_CAPABLE_FULL_SELECTED ?
-	       					"full" : "half");
+//		printk(KERN_INFO "%s: Media Link On %s %s-duplex\n",
+//	       				net_dev->name,
+//	       				*speed == HW_SPEED_100_MBPS ?
+//	       					"100mbps" : "10mbps",
+//	       				*duplex == FDX_CAPABLE_FULL_SELECTED ?
+;
 }
 
 /**
@@ -1534,8 +1534,8 @@ static void sis900_tx_timeout(struct net_device *net_dev)
 	int i;
 
 	if(netif_msg_tx_err(sis_priv))
-		printk(KERN_INFO "%s: Transmit timeout, status %8.8x %8.8x\n",
-	       		net_dev->name, inl(ioaddr + cr), inl(ioaddr + isr));
+//		printk(KERN_INFO "%s: Transmit timeout, status %8.8x %8.8x\n",
+;
 
 	/* Disable interrupts by clearing the interrupt mask. */
 	outl(0x0000, ioaddr + imr);
@@ -1634,9 +1634,9 @@ sis900_start_xmit(struct sk_buff *skb, struct net_device *net_dev)
 	spin_unlock_irqrestore(&sis_priv->lock, flags);
 
 	if (netif_msg_tx_queued(sis_priv))
-		printk(KERN_DEBUG "%s: Queued Tx packet at %p size %d "
-		       "to slot %d.\n",
-		       net_dev->name, skb->data, (int)skb->len, entry);
+//		printk(KERN_DEBUG "%s: Queued Tx packet at %p size %d "
+//		       "to slot %d.\n",
+;
 
 	return NETDEV_TX_OK;
 }
@@ -1681,23 +1681,23 @@ static irqreturn_t sis900_interrupt(int irq, void *dev_instance)
 		/* something strange happened !!! */
 		if (status & HIBERR) {
 			if(netif_msg_intr(sis_priv))
-				printk(KERN_INFO "%s: Abnormal interrupt, "
-					"status %#8.8x.\n", net_dev->name, status);
+//				printk(KERN_INFO "%s: Abnormal interrupt, "
+;
 			break;
 		}
 		if (--boguscnt < 0) {
 			if(netif_msg_intr(sis_priv))
-				printk(KERN_INFO "%s: Too much work at interrupt, "
-					"interrupt status = %#8.8x.\n",
-					net_dev->name, status);
+//				printk(KERN_INFO "%s: Too much work at interrupt, "
+//					"interrupt status = %#8.8x.\n",
+;
 			break;
 		}
 	} while (1);
 
 	if(netif_msg_intr(sis_priv))
-		printk(KERN_DEBUG "%s: exiting interrupt, "
-		       "interrupt status = 0x%#8.8x.\n",
-		       net_dev->name, inl(ioaddr + isr));
+//		printk(KERN_DEBUG "%s: exiting interrupt, "
+//		       "interrupt status = 0x%#8.8x.\n",
+;
 
 	spin_unlock (&sis_priv->lock);
 	return IRQ_RETVAL(handled);
@@ -1722,9 +1722,9 @@ static int sis900_rx(struct net_device *net_dev)
 	int rx_work_limit;
 
 	if (netif_msg_rx_status(sis_priv))
-		printk(KERN_DEBUG "sis900_rx, cur_rx:%4.4d, dirty_rx:%4.4d "
-		       "status:0x%8.8x\n",
-		       sis_priv->cur_rx, sis_priv->dirty_rx, rx_status);
+//		printk(KERN_DEBUG "sis900_rx, cur_rx:%4.4d, dirty_rx:%4.4d "
+//		       "status:0x%8.8x\n",
+;
 	rx_work_limit = sis_priv->dirty_rx + NUM_RX_DESC - sis_priv->cur_rx;
 
 	while (rx_status & OWN) {
@@ -1746,9 +1746,9 @@ static int sis900_rx(struct net_device *net_dev)
 		if (rx_status & (ABORT|OVERRUN|TOOLONG|RUNT|RXISERR|CRCERR|FAERR)) {
 			/* corrupted packet received */
 			if (netif_msg_rx_err(sis_priv))
-				printk(KERN_DEBUG "%s: Corrupted packet "
-				       "received, buffer status = 0x%8.8x/%d.\n",
-				       net_dev->name, rx_status, data_size);
+//				printk(KERN_DEBUG "%s: Corrupted packet "
+//				       "received, buffer status = 0x%8.8x/%d.\n",
+;
 			net_dev->stats.rx_errors++;
 			if (rx_status & OVERRUN)
 				net_dev->stats.rx_over_errors++;
@@ -1787,11 +1787,11 @@ static int sis900_rx(struct net_device *net_dev)
 			   we are working on NULL sk_buff :-( */
 			if (sis_priv->rx_skbuff[entry] == NULL) {
 				if (netif_msg_rx_err(sis_priv))
-					printk(KERN_WARNING "%s: NULL pointer "
-					      "encountered in Rx ring\n"
-					      "cur_rx:%4.4d, dirty_rx:%4.4d\n",
-					      net_dev->name, sis_priv->cur_rx,
-					      sis_priv->dirty_rx);
+//					printk(KERN_WARNING "%s: NULL pointer "
+//					      "encountered in Rx ring\n"
+//					      "cur_rx:%4.4d, dirty_rx:%4.4d\n",
+//					      net_dev->name, sis_priv->cur_rx,
+;
 				dev_kfree_skb(skb);
 				break;
 			}
@@ -1834,9 +1834,9 @@ refill_rx_ring:
 				 * how the hardware will react to this kind
 				 * of degenerated buffer */
 				if (netif_msg_rx_err(sis_priv))
-					printk(KERN_INFO "%s: Memory squeeze, "
-						"deferring packet.\n",
-						net_dev->name);
+//					printk(KERN_INFO "%s: Memory squeeze, "
+//						"deferring packet.\n",
+;
 				net_dev->stats.rx_dropped++;
 				break;
 			}
@@ -1885,9 +1885,9 @@ static void sis900_finish_xmit (struct net_device *net_dev)
 		if (tx_status & (ABORT | UNDERRUN | OWCOLL)) {
 			/* packet unsuccessfully transmitted */
 			if (netif_msg_tx_err(sis_priv))
-				printk(KERN_DEBUG "%s: Transmit "
-				       "error, Tx status %8.8x.\n",
-				       net_dev->name, tx_status);
+//				printk(KERN_DEBUG "%s: Transmit "
+//				       "error, Tx status %8.8x.\n",
+;
 			net_dev->stats.tx_errors++;
 			if (tx_status & UNDERRUN)
 				net_dev->stats.tx_fifo_errors++;
@@ -2064,7 +2064,7 @@ static int sis900_set_wol(struct net_device *net_dev, struct ethtool_wolinfo *wo
 		pci_write_config_dword(sis_priv->pci_dev, CFGPMCSR, cfgpmcsr);
 		outl(pmctrl_bits, pmctrl_addr);
 		if (netif_msg_wol(sis_priv))
-			printk(KERN_DEBUG "%s: Wake on LAN disabled\n", net_dev->name);
+;
 		return 0;
 	}
 
@@ -2083,7 +2083,7 @@ static int sis900_set_wol(struct net_device *net_dev, struct ethtool_wolinfo *wo
 	cfgpmcsr |= PME_EN;
 	pci_write_config_dword(sis_priv->pci_dev, CFGPMCSR, cfgpmcsr);
 	if (netif_msg_wol(sis_priv))
-		printk(KERN_DEBUG "%s: Wake on LAN enabled\n", net_dev->name);
+;
 
 	return 0;
 }
@@ -2478,7 +2478,7 @@ static int __init sis900_init_module(void)
 {
 /* when a module, this is printed whether or not devices are found in probe */
 #ifdef MODULE
-	printk(version);
+;
 #endif
 
 	return pci_register_driver(&sis900_pci_driver);

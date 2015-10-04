@@ -65,8 +65,8 @@ unsigned short pxa2xx_ac97_read(struct snd_ac97 *ac97, unsigned short reg)
 		goto out;
 	if (wait_event_timeout(gsr_wq, (GSR | gsr_bits) & GSR_SDONE, 1) <= 0 &&
 	    !((GSR | gsr_bits) & GSR_SDONE)) {
-		printk(KERN_ERR "%s: read error (ac97_reg=%d GSR=%#lx)\n",
-				__func__, reg, GSR | gsr_bits);
+//		printk(KERN_ERR "%s: read error (ac97_reg=%d GSR=%#lx)\n",
+;
 		val = -1;
 		goto out;
 	}
@@ -102,8 +102,8 @@ void pxa2xx_ac97_write(struct snd_ac97 *ac97, unsigned short reg,
 	*reg_addr = val;
 	if (wait_event_timeout(gsr_wq, (GSR | gsr_bits) & GSR_CDONE, 1) <= 0 &&
 	    !((GSR | gsr_bits) & GSR_CDONE))
-		printk(KERN_ERR "%s: write error (ac97_reg=%d GSR=%#lx)\n",
-				__func__, reg, GSR | gsr_bits);
+//		printk(KERN_ERR "%s: write error (ac97_reg=%d GSR=%#lx)\n",
+;
 
 	mutex_unlock(&car_mutex);
 }
@@ -223,8 +223,8 @@ bool pxa2xx_ac97_try_warm_reset(struct snd_ac97 *ac97)
 		BUG();
 	gsr = GSR | gsr_bits;
 	if (!(gsr & (GSR_PCR | GSR_SCR))) {
-		printk(KERN_INFO "%s: warm reset timeout (GSR=%#lx)\n",
-				 __func__, gsr);
+//		printk(KERN_INFO "%s: warm reset timeout (GSR=%#lx)\n",
+;
 
 		return false;
 	}
@@ -256,8 +256,8 @@ bool pxa2xx_ac97_try_cold_reset(struct snd_ac97 *ac97)
 
 	gsr = GSR | gsr_bits;
 	if (!(gsr & (GSR_PCR | GSR_SCR))) {
-		printk(KERN_INFO "%s: cold reset timeout (GSR=%#lx)\n",
-				 __func__, gsr);
+//		printk(KERN_INFO "%s: cold reset timeout (GSR=%#lx)\n",
+;
 
 		return false;
 	}

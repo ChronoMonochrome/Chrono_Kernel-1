@@ -242,8 +242,8 @@ static int db1x_pcmcia_configure(struct pcmcia_socket *skt,
 	case 0:
 		break;
 	default:
-		printk(KERN_INFO "pcmcia%d unsupported Vcc %d\n",
-			sock->nr, state->Vcc);
+//		printk(KERN_INFO "pcmcia%d unsupported Vcc %d\n",
+;
 	}
 
 	switch (state->Vpp) {
@@ -255,15 +255,15 @@ static int db1x_pcmcia_configure(struct pcmcia_socket *skt,
 	case 0:
 		break;
 	default:
-		printk(KERN_INFO "pcmcia%d unsupported Vpp %d\n",
-			sock->nr, state->Vpp);
+//		printk(KERN_INFO "pcmcia%d unsupported Vpp %d\n",
+;
 	}
 
 	/* sanity check: Vpp must be 0, 12, or Vcc */
 	if (((state->Vcc == 33) && (state->Vpp == 50)) ||
 	    ((state->Vcc == 50) && (state->Vpp == 33))) {
-		printk(KERN_INFO "pcmcia%d bad Vcc/Vpp combo (%d %d)\n",
-			sock->nr, state->Vcc, state->Vpp);
+//		printk(KERN_INFO "pcmcia%d bad Vcc/Vpp combo (%d %d)\n",
+;
 		v = p = 0;
 		ret = -EINVAL;
 	}
@@ -419,7 +419,7 @@ static int __devinit db1x_pcmcia_socket_probe(struct platform_device *pdev)
 		sock->board_type = BOARD_TYPE_DB1200;
 		break;
 	default:
-		printk(KERN_INFO "db1xxx-ss: unknown board %d!\n", bid);
+;
 		ret = -ENODEV;
 		goto out0;
 	};
@@ -455,8 +455,8 @@ static int __devinit db1x_pcmcia_socket_probe(struct platform_device *pdev)
 	/* 36bit PCMCIA Attribute area address */
 	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pcmcia-attr");
 	if (!r) {
-		printk(KERN_ERR "pcmcia%d has no 'pseudo-attr' resource!\n",
-			sock->nr);
+//		printk(KERN_ERR "pcmcia%d has no 'pseudo-attr' resource!\n",
+;
 		goto out0;
 	}
 	sock->phys_attr = r->start;
@@ -464,8 +464,8 @@ static int __devinit db1x_pcmcia_socket_probe(struct platform_device *pdev)
 	/* 36bit PCMCIA Memory area address */
 	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pcmcia-mem");
 	if (!r) {
-		printk(KERN_ERR "pcmcia%d has no 'pseudo-mem' resource!\n",
-			sock->nr);
+//		printk(KERN_ERR "pcmcia%d has no 'pseudo-mem' resource!\n",
+;
 		goto out0;
 	}
 	sock->phys_mem = r->start;
@@ -473,8 +473,8 @@ static int __devinit db1x_pcmcia_socket_probe(struct platform_device *pdev)
 	/* 36bit PCMCIA IO area address */
 	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pcmcia-io");
 	if (!r) {
-		printk(KERN_ERR "pcmcia%d has no 'pseudo-io' resource!\n",
-			sock->nr);
+//		printk(KERN_ERR "pcmcia%d has no 'pseudo-io' resource!\n",
+;
 		goto out0;
 	}
 	sock->phys_io = r->start;
@@ -491,8 +491,8 @@ static int __devinit db1x_pcmcia_socket_probe(struct platform_device *pdev)
 				 mips_io_port_base);
 
 	if (!sock->virt_io) {
-		printk(KERN_ERR "pcmcia%d: cannot remap IO area\n",
-			sock->nr);
+//		printk(KERN_ERR "pcmcia%d: cannot remap IO area\n",
+;
 		ret = -ENOMEM;
 		goto out0;
 	}
@@ -510,8 +510,8 @@ static int __devinit db1x_pcmcia_socket_probe(struct platform_device *pdev)
 
 	ret = db1x_pcmcia_setup_irqs(sock);
 	if (ret) {
-		printk(KERN_ERR "pcmcia%d cannot setup interrupts\n",
-			sock->nr);
+//		printk(KERN_ERR "pcmcia%d cannot setup interrupts\n",
+;
 		goto out1;
 	}
 
@@ -519,15 +519,15 @@ static int __devinit db1x_pcmcia_socket_probe(struct platform_device *pdev)
 
 	ret = pcmcia_register_socket(&sock->socket);
 	if (ret) {
-		printk(KERN_ERR "pcmcia%d failed to register\n", sock->nr);
+;
 		goto out2;
 	}
 
-	printk(KERN_INFO "Alchemy Db/Pb1xxx pcmcia%d @ io/attr/mem %09llx"
-		"(%p) %09llx %09llx  card/insert/stschg/eject irqs @ %d "
-		"%d %d %d\n", sock->nr, sock->phys_io, sock->virt_io,
-		sock->phys_attr, sock->phys_mem, sock->card_irq,
-		sock->insert_irq, sock->stschg_irq, sock->eject_irq);
+//	printk(KERN_INFO "Alchemy Db/Pb1xxx pcmcia%d @ io/attr/mem %09llx"
+//		"(%p) %09llx %09llx  card/insert/stschg/eject irqs @ %d "
+//		"%d %d %d\n", sock->nr, sock->phys_io, sock->virt_io,
+//		sock->phys_attr, sock->phys_mem, sock->card_irq,
+;
 
 	return 0;
 

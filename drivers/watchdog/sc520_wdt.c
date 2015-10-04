@@ -151,8 +151,8 @@ static void wdt_timer_ping(unsigned long data)
 		/* Re-set the timer interval */
 		mod_timer(&timer, jiffies + WDT_INTERVAL);
 	} else
-		printk(KERN_WARNING PFX
-			"Heartbeat lost! Will not ping the watchdog\n");
+//		printk(KERN_WARNING PFX
+;
 }
 
 /*
@@ -187,7 +187,7 @@ static int wdt_startup(void)
 	/* Start the watchdog */
 	wdt_config(WDT_ENB | WDT_WRST_ENB | WDT_EXP_SEL_04);
 
-	printk(KERN_INFO PFX "Watchdog timer is now enabled.\n");
+;
 	return 0;
 }
 
@@ -199,7 +199,7 @@ static int wdt_turnoff(void)
 	/* Stop the watchdog */
 	wdt_config(0);
 
-	printk(KERN_INFO PFX "Watchdog timer is now disabled...\n");
+;
 	return 0;
 }
 
@@ -270,8 +270,8 @@ static int fop_close(struct inode *inode, struct file *file)
 	if (wdt_expect_close == 42)
 		wdt_turnoff();
 	else {
-		printk(KERN_CRIT PFX
-			"Unexpected close, not stopping watchdog!\n");
+//		printk(KERN_CRIT PFX
+;
 		wdt_keepalive();
 	}
 	clear_bit(0, &wdt_is_open);
@@ -393,36 +393,36 @@ static int __init sc520_wdt_init(void)
 	   if not reset to the default */
 	if (wdt_set_heartbeat(timeout)) {
 		wdt_set_heartbeat(WATCHDOG_TIMEOUT);
-		printk(KERN_INFO PFX
-		    "timeout value must be 1 <= timeout <= 3600, using %d\n",
-							WATCHDOG_TIMEOUT);
+//		printk(KERN_INFO PFX
+//		    "timeout value must be 1 <= timeout <= 3600, using %d\n",
+;
 	}
 
 	wdtmrctl = ioremap((unsigned long)(MMCR_BASE + OFFS_WDTMRCTL), 2);
 	if (!wdtmrctl) {
-		printk(KERN_ERR PFX "Unable to remap memory\n");
+;
 		rc = -ENOMEM;
 		goto err_out_region2;
 	}
 
 	rc = register_reboot_notifier(&wdt_notifier);
 	if (rc) {
-		printk(KERN_ERR PFX
-			"cannot register reboot notifier (err=%d)\n", rc);
+//		printk(KERN_ERR PFX
+;
 		goto err_out_ioremap;
 	}
 
 	rc = misc_register(&wdt_miscdev);
 	if (rc) {
-		printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-							WATCHDOG_MINOR, rc);
+//		printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 		goto err_out_notifier;
 	}
 
-	printk(KERN_INFO PFX
-	   "WDT driver for SC520 initialised. timeout=%d sec (nowayout=%d)\n",
-							timeout, nowayout);
+//	printk(KERN_INFO PFX
+//	   "WDT driver for SC520 initialised. timeout=%d sec (nowayout=%d)\n",
+;
 
 	return 0;
 

@@ -94,8 +94,8 @@ static int ide_floppy_callback(ide_drive_t *drive, int dsc)
 				      "ascq = %x", floppy->sense_key,
 				      floppy->asc, floppy->ascq);
 		} else
-			printk(KERN_ERR PFX "Error in REQUEST SENSE itself - "
-			       "Aborting request!\n");
+//			printk(KERN_ERR PFX "Error in REQUEST SENSE itself - "
+;
 	}
 
 	if (rq->cmd_type == REQ_TYPE_SPECIAL)
@@ -113,10 +113,10 @@ static void ide_floppy_report_error(struct ide_disk_obj *floppy,
 	    floppy->ascq      == 0x00)
 		return;
 
-	printk(KERN_ERR PFX "%s: I/O error, pc = %2x, key = %2x, "
-			"asc = %2x, ascq = %2x\n",
-			floppy->drive->name, pc->c[0], floppy->sense_key,
-			floppy->asc, floppy->ascq);
+//	printk(KERN_ERR PFX "%s: I/O error, pc = %2x, key = %2x, "
+//			"asc = %2x, ascq = %2x\n",
+//			floppy->drive->name, pc->c[0], floppy->sense_key,
+;
 
 }
 
@@ -182,7 +182,7 @@ void ide_floppy_create_mode_sense_cmd(struct ide_atapi_pc *pc, u8 page_code)
 		length += 32;
 		break;
 	default:
-		printk(KERN_ERR PFX "unsupported page code in %s\n", __func__);
+;
 	}
 	put_unaligned(cpu_to_be16(length), (u16 *) &pc->c[7]);
 	pc->req_xfer = length;
@@ -245,7 +245,7 @@ static ide_startstop_t ide_floppy_do_request(ide_drive_t *drive,
 			ide_floppy_report_error(floppy, drive->failed_pc);
 			drive->failed_pc = NULL;
 		} else
-			printk(KERN_ERR PFX "%s: I/O error\n", drive->name);
+;
 
 		if (rq->cmd_type == REQ_TYPE_SPECIAL) {
 			rq->errors = 0;
@@ -259,8 +259,8 @@ static ide_startstop_t ide_floppy_do_request(ide_drive_t *drive,
 	case REQ_TYPE_FS:
 		if (((long)blk_rq_pos(rq) % floppy->bs_factor) ||
 		    (blk_rq_sectors(rq) % floppy->bs_factor)) {
-			printk(KERN_ERR PFX "%s: unsupported r/w rq size\n",
-				drive->name);
+//			printk(KERN_ERR PFX "%s: unsupported r/w rq size\n",
+;
 			goto out_end;
 		}
 		pc = &floppy->queued_pc;
@@ -320,7 +320,7 @@ static int ide_floppy_get_flexible_disk_page(ide_drive_t *drive,
 	ide_floppy_create_mode_sense_cmd(pc, IDEFLOPPY_FLEXIBLE_DISK_PAGE);
 
 	if (ide_queue_pc_tail(drive, disk, pc, buf, pc->req_xfer)) {
-		printk(KERN_ERR PFX "Can't get flexible disk page params\n");
+;
 		return 1;
 	}
 
@@ -343,10 +343,10 @@ static int ide_floppy_get_flexible_disk_page(ide_drive_t *drive,
 	capacity = cyls * heads * sectors * sector_size;
 
 	if (memcmp(page, &floppy->flexible_disk_page, 32))
-		printk(KERN_INFO PFX "%s: %dkB, %d/%d/%d CHS, %d kBps, "
-				"%d sector size, %d rpm\n",
-				drive->name, capacity / 1024, cyls, heads,
-				sectors, transfer_rate / 8, sector_size, rpm);
+//		printk(KERN_INFO PFX "%s: %dkB, %d/%d/%d CHS, %d kBps, "
+//				"%d sector size, %d rpm\n",
+//				drive->name, capacity / 1024, cyls, heads,
+;
 
 	memcpy(&floppy->flexible_disk_page, page, 32);
 	drive->bios_cyl = cyls;
@@ -355,9 +355,9 @@ static int ide_floppy_get_flexible_disk_page(ide_drive_t *drive,
 	lba_capacity = floppy->blocks * floppy->block_size;
 
 	if (capacity < lba_capacity) {
-		printk(KERN_NOTICE PFX "%s: The disk reports a capacity of %d "
-			"bytes, but the drive only handles %d\n",
-			drive->name, lba_capacity, capacity);
+//		printk(KERN_NOTICE PFX "%s: The disk reports a capacity of %d "
+//			"bytes, but the drive only handles %d\n",
+;
 		floppy->blocks = floppy->block_size ?
 			capacity / floppy->block_size : 0;
 		drive->capacity64 = floppy->blocks * floppy->bs_factor;
@@ -389,7 +389,7 @@ static int ide_floppy_get_capacity(ide_drive_t *drive)
 
 	ide_floppy_create_read_capacity_cmd(&pc);
 	if (ide_queue_pc_tail(drive, disk, &pc, pc_buf, pc.req_xfer)) {
-		printk(KERN_ERR PFX "Can't get floppy parameters\n");
+;
 		return 1;
 	}
 	header_len = pc_buf[3];
@@ -425,24 +425,24 @@ static int ide_floppy_get_capacity(ide_drive_t *drive)
 		case CAPACITY_CURRENT:
 			/* Normal Zip/LS-120 disks */
 			if (memcmp(cap_desc, &floppy->cap_desc, 8))
-				printk(KERN_INFO PFX "%s: %dkB, %d blocks, %d "
-				       "sector size\n",
-				       drive->name, blocks * length / 1024,
-				       blocks, length);
+//				printk(KERN_INFO PFX "%s: %dkB, %d blocks, %d "
+//				       "sector size\n",
+//				       drive->name, blocks * length / 1024,
+;
 			memcpy(&floppy->cap_desc, cap_desc, 8);
 
 			if (!length || length % 512) {
-				printk(KERN_NOTICE PFX "%s: %d bytes block size"
-				       " not supported\n", drive->name, length);
+//				printk(KERN_NOTICE PFX "%s: %d bytes block size"
+;
 			} else {
 				floppy->blocks = blocks;
 				floppy->block_size = length;
 				floppy->bs_factor = length / 512;
 				if (floppy->bs_factor != 1)
-					printk(KERN_NOTICE PFX "%s: Warning: "
-					       "non 512 bytes block size not "
-					       "fully supported\n",
-					       drive->name);
+//					printk(KERN_NOTICE PFX "%s: Warning: "
+//					       "non 512 bytes block size not "
+//					       "fully supported\n",
+;
 				drive->capacity64 =
 					floppy->blocks * floppy->bs_factor;
 				rc = 0;
@@ -453,12 +453,12 @@ static int ide_floppy_get_capacity(ide_drive_t *drive)
 			 * This is a KERN_ERR so it appears on screen
 			 * for the user to see
 			 */
-			printk(KERN_ERR PFX "%s: No disk in drive\n",
-			       drive->name);
+//			printk(KERN_ERR PFX "%s: No disk in drive\n",
+;
 			break;
 		case CAPACITY_INVALID:
-			printk(KERN_ERR PFX "%s: Invalid capacity for disk "
-				"in drive\n", drive->name);
+//			printk(KERN_ERR PFX "%s: Invalid capacity for disk "
+;
 			break;
 		}
 		ide_debug_log(IDE_DBG_PROBE, "Descriptor 0 Code: %d",

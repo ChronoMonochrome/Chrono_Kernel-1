@@ -115,14 +115,14 @@ static int __init wanrouter_init(void)
 {
 	int err;
 
-	printk(KERN_INFO "%s v%u.%u %s\n",
-	       wanrouter_fullname, ROUTER_VERSION, ROUTER_RELEASE,
-	       wanrouter_copyright);
+//	printk(KERN_INFO "%s v%u.%u %s\n",
+//	       wanrouter_fullname, ROUTER_VERSION, ROUTER_RELEASE,
+;
 
 	err = wanrouter_proc_init();
 	if (err)
-		printk(KERN_INFO "%s: can't create entry in proc filesystem!\n",
-		       wanrouter_modname);
+//		printk(KERN_INFO "%s: can't create entry in proc filesystem!\n",
+;
 
 	return err;
 }
@@ -177,8 +177,8 @@ int register_wan_device(struct wan_device *wandev)
 		return -EEXIST;
 
 #ifdef WANDEBUG
-	printk(KERN_INFO "%s: registering WAN device %s\n",
-	       wanrouter_modname, wandev->name);
+//	printk(KERN_INFO "%s: registering WAN device %s\n",
+;
 #endif
 
 	/*
@@ -186,9 +186,9 @@ int register_wan_device(struct wan_device *wandev)
 	 */
 	err = wanrouter_proc_add(wandev);
 	if (err) {
-		printk(KERN_INFO
-			"%s: can't create /proc/net/router/%s entry!\n",
-			wanrouter_modname, wandev->name);
+//		printk(KERN_INFO
+//			"%s: can't create /proc/net/router/%s entry!\n",
+;
 		return err;
 	}
 
@@ -232,8 +232,8 @@ int unregister_wan_device(char *name)
 		return -ENODEV;
 
 #ifdef WANDEBUG
-	printk(KERN_INFO "%s: unregistering WAN device %s\n",
-	       wanrouter_modname, name);
+//	printk(KERN_INFO "%s: unregistering WAN device %s\n",
+;
 #endif
 
 	if (wandev->state != WAN_UNCONFIGURED)
@@ -285,9 +285,9 @@ int wanrouter_encapsulate(struct sk_buff *skb, struct net_device *dev,
 		break;
 
 	default:		/* Unknown packet type */
-		printk(KERN_INFO
-			"%s: unsupported Ethertype 0x%04X on interface %s!\n",
-			wanrouter_modname, type, dev->name);
+//		printk(KERN_INFO
+//			"%s: unsupported Ethertype 0x%04X on interface %s!\n",
+;
 		hdr_len = -EINVAL;
 	}
 	return hdr_len;
@@ -319,11 +319,11 @@ __be16 wanrouter_type_trans(struct sk_buff *skb, struct net_device *dev)
 	case NLPID_SNAP:	/* SNAP encapsulation */
 		if (memcmp(&skb->data[cnt + 1], wanrouter_oui_ether,
 			   sizeof(wanrouter_oui_ether))){
-			printk(KERN_INFO
-				"%s: unsupported SNAP OUI %02X-%02X-%02X "
-				"on interface %s!\n", wanrouter_modname,
-				skb->data[cnt+1], skb->data[cnt+2],
-				skb->data[cnt+3], dev->name);
+//			printk(KERN_INFO
+//				"%s: unsupported SNAP OUI %02X-%02X-%02X "
+//				"on interface %s!\n", wanrouter_modname,
+//				skb->data[cnt+1], skb->data[cnt+2],
+;
 			return 0;
 		}
 		ethertype = *((__be16*)&skb->data[cnt+4]);
@@ -333,9 +333,9 @@ __be16 wanrouter_type_trans(struct sk_buff *skb, struct net_device *dev)
 	/* add other protocols, e.g. CLNP, ESIS, ISIS, if needed */
 
 	default:
-		printk(KERN_INFO
-			"%s: unsupported NLPID 0x%02X on interface %s!\n",
-			wanrouter_modname, skb->data[cnt], dev->name);
+//		printk(KERN_INFO
+//			"%s: unsupported NLPID 0x%02X on interface %s!\n",
+;
 		return 0;
 	}
 	skb->protocol = ethertype;
@@ -431,46 +431,46 @@ static int wanrouter_device_setup(struct wan_device *wandev,
 	int err = -EINVAL;
 
 	if (wandev->setup == NULL) {	/* Nothing to do ? */
-		printk(KERN_INFO "%s: ERROR, No setup script: wandev->setup()\n",
-				wandev->name);
+//		printk(KERN_INFO "%s: ERROR, No setup script: wandev->setup()\n",
+;
 		return 0;
 	}
 
 	conf = kmalloc(sizeof(wandev_conf_t), GFP_KERNEL);
 	if (conf == NULL){
-		printk(KERN_INFO "%s: ERROR, Failed to allocate kernel memory !\n",
-				wandev->name);
+//		printk(KERN_INFO "%s: ERROR, Failed to allocate kernel memory !\n",
+;
 		return -ENOBUFS;
 	}
 
 	if (copy_from_user(conf, u_conf, sizeof(wandev_conf_t))) {
-		printk(KERN_INFO "%s: Failed to copy user config data to kernel space!\n",
-				wandev->name);
+//		printk(KERN_INFO "%s: Failed to copy user config data to kernel space!\n",
+;
 		kfree(conf);
 		return -EFAULT;
 	}
 
 	if (conf->magic != ROUTER_MAGIC) {
 		kfree(conf);
-		printk(KERN_INFO "%s: ERROR, Invalid MAGIC Number\n",
-				wandev->name);
+//		printk(KERN_INFO "%s: ERROR, Invalid MAGIC Number\n",
+;
 		return -EINVAL;
 	}
 
 	if (conf->data_size && conf->data) {
 		if (conf->data_size > 128000) {
-			printk(KERN_INFO
-			    "%s: ERROR, Invalid firmware data size %i !\n",
-					wandev->name, conf->data_size);
+//			printk(KERN_INFO
+//			    "%s: ERROR, Invalid firmware data size %i !\n",
+;
 			kfree(conf);
 			return -EINVAL;
 		}
 
 		data = vmalloc(conf->data_size);
 		if (!data) {
-			printk(KERN_INFO
-				"%s: ERROR, Failed allocate kernel memory !\n",
-				wandev->name);
+//			printk(KERN_INFO
+//				"%s: ERROR, Failed allocate kernel memory !\n",
+;
 			kfree(conf);
 			return -ENOBUFS;
 		}
@@ -478,16 +478,16 @@ static int wanrouter_device_setup(struct wan_device *wandev,
 			conf->data = data;
 			err = wandev->setup(wandev, conf);
 		} else {
-			printk(KERN_INFO
-			     "%s: ERROR, Failed to copy from user data !\n",
-			       wandev->name);
+//			printk(KERN_INFO
+//			     "%s: ERROR, Failed to copy from user data !\n",
+;
 			err = -EFAULT;
 		}
 		vfree(data);
 	} else {
-		printk(KERN_INFO
-		    "%s: ERROR, No firmware found ! Firmware size = %i !\n",
-				wandev->name, conf->data_size);
+//		printk(KERN_INFO
+//		    "%s: ERROR, No firmware found ! Firmware size = %i !\n",
+;
 	}
 
 	kfree(conf);
@@ -508,7 +508,7 @@ static int wanrouter_device_shutdown(struct wan_device *wandev)
 	if (wandev->state == WAN_UNCONFIGURED)
 		return 0;
 
-	printk(KERN_INFO "\n%s: Shutting Down!\n",wandev->name);
+;
 
 	for (dev = wandev->dev; dev;) {
 		err = wanrouter_delete_interface(wandev, dev->name);
@@ -588,8 +588,8 @@ static int wanrouter_device_new_if(struct wan_device *wandev,
 		goto out;
 
 	if (cnf->config_id == WANCONFIG_MPPP) {
-		printk(KERN_INFO "%s: Wanpipe Mulit-Port PPP support has not been compiled in!\n",
-				wandev->name);
+//		printk(KERN_INFO "%s: Wanpipe Mulit-Port PPP support has not been compiled in!\n",
+;
 		err = -EPROTONOSUPPORT;
 		goto out;
 	} else {
@@ -603,8 +603,8 @@ static int wanrouter_device_new_if(struct wan_device *wandev,
 		 */
 
 #ifdef WANDEBUG
-		printk(KERN_INFO "%s: registering interface %s...\n",
-		       wanrouter_modname, dev->name);
+//		printk(KERN_INFO "%s: registering interface %s...\n",
+;
 #endif
 
 		err = register_netdev(dev);
@@ -750,7 +750,7 @@ static int wanrouter_delete_interface(struct wan_device *wandev, char *name)
 	--wandev->ndev;
 	unlock_adapter_irq(&wandev->lock, &smp_flags);
 
-	printk(KERN_INFO "%s: unregistering '%s'\n", wandev->name, dev->name);
+;
 
 	unregister_netdev(dev);
 

@@ -273,16 +273,16 @@ void __iomem *i3200_map_mchbar(struct pci_dev *pdev)
 	u.mchbar &= I3200_MCHBAR_MASK;
 
 	if (u.mchbar != (resource_size_t)u.mchbar) {
-		printk(KERN_ERR
-			"i3200: mmio space beyond accessible range (0x%llx)\n",
-			(unsigned long long)u.mchbar);
+//		printk(KERN_ERR
+//			"i3200: mmio space beyond accessible range (0x%llx)\n",
+;
 		return NULL;
 	}
 
 	window = ioremap_nocache(u.mchbar, I3200_MMR_WINDOW_SIZE);
 	if (!window)
-		printk(KERN_ERR "i3200: cannot map mmio space at 0x%llx\n",
-			(unsigned long long)u.mchbar);
+//		printk(KERN_ERR "i3200: cannot map mmio space at 0x%llx\n",
+;
 
 	return window;
 }

@@ -63,9 +63,9 @@ static void check_poison_mem(unsigned char *mem, size_t bytes)
 	if (!printk_ratelimit())
 		return;
 	else if (start == end && single_bit_flip(*start, PAGE_POISON))
-		printk(KERN_ERR "pagealloc: single bit error\n");
+;
 	else
-		printk(KERN_ERR "pagealloc: memory corruption\n");
+;
 
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 1, start,
 			end - start + 1, 1);

@@ -195,8 +195,8 @@ hysdn_rx_netpkt(hysdn_card * card, unsigned char *buf, unsigned short len)
 
 	skb = dev_alloc_skb(len);
 	if (skb == NULL) {
-		printk(KERN_NOTICE "%s: Memory squeeze, dropping packet.\n",
-		       dev->name);
+//		printk(KERN_NOTICE "%s: Memory squeeze, dropping packet.\n",
+;
 		dev->stats.rx_dropped++;
 		return;
 	}
@@ -251,14 +251,14 @@ hysdn_net_create(hysdn_card * card)
 	struct net_local *lp;
 
 	if(!card) {
-		printk(KERN_WARNING "No card-pt in hysdn_net_create!\n");
+;
 		return (-ENOMEM);
 	}
 	hysdn_net_release(card);	/* release an existing net device */
 
 	dev = alloc_etherdev(sizeof(struct net_local));
 	if (!dev) {
-		printk(KERN_WARNING "HYSDN: unable to allocate mem\n");
+;
 		return (-ENOMEM);
 	}
 
@@ -274,7 +274,7 @@ hysdn_net_create(hysdn_card * card)
 
 	dev->netdev_ops = &hysdn_netdev_ops;
 	if ((i = register_netdev(dev))) {
-		printk(KERN_WARNING "HYSDN: unable to create network device\n");
+;
 		free_netdev(dev);
 		return (i);
 	}

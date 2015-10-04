@@ -212,7 +212,7 @@ static void __release_child_resources(struct resource *r)
 		tmp->sibling = NULL;
 		__release_child_resources(tmp);
 
-		printk(KERN_DEBUG "release child resource %pR\n", tmp);
+;
 		/* need to restore size, and keep flags */
 		size = resource_size(tmp);
 		tmp->start = 0;
@@ -678,7 +678,7 @@ void insert_resource_expand_to_fit(struct resource *root, struct resource *new)
 		if (conflict->end > new->end)
 			new->end = conflict->end;
 
-		printk("Expanded resource %s due to conflict with %s\n", new->name, conflict->name);
+;
 	}
 	write_unlock(&resource_lock);
 }
@@ -961,9 +961,9 @@ void __release_region(struct resource *parent, resource_size_t start,
 
 	write_unlock(&resource_lock);
 
-	printk(KERN_WARNING "Trying to free nonexistent resource "
-		"<%016llx-%016llx>\n", (unsigned long long)start,
-		(unsigned long long)end);
+//	printk(KERN_WARNING "Trying to free nonexistent resource "
+//		"<%016llx-%016llx>\n", (unsigned long long)start,
+;
 }
 EXPORT_SYMBOL(__release_region);
 
@@ -1093,13 +1093,13 @@ int iomem_map_sanity_check(resource_size_t addr, unsigned long size)
 		if (p->flags & IORESOURCE_BUSY)
 			continue;
 
-		printk(KERN_WARNING "resource map sanity check conflict: "
-		       "0x%llx 0x%llx 0x%llx 0x%llx %s\n",
-		       (unsigned long long)addr,
-		       (unsigned long long)(addr + size - 1),
-		       (unsigned long long)p->start,
-		       (unsigned long long)p->end,
-		       p->name);
+//		printk(KERN_WARNING "resource map sanity check conflict: "
+//		       "0x%llx 0x%llx 0x%llx 0x%llx %s\n",
+//		       (unsigned long long)addr,
+//		       (unsigned long long)(addr + size - 1),
+//		       (unsigned long long)p->start,
+//		       (unsigned long long)p->end,
+;
 		err = -1;
 		break;
 	}

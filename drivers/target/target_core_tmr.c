@@ -43,22 +43,22 @@
 
 #define DEBUG_LUN_RESET
 #ifdef DEBUG_LUN_RESET
-#define DEBUG_LR(x...) printk(KERN_INFO x)
-#else
-#define DEBUG_LR(x...)
-#endif
-
-struct se_tmr_req *core_tmr_alloc_req(
-	struct se_cmd *se_cmd,
-	void *fabric_tmr_ptr,
-	u8 function)
-{
-	struct se_tmr_req *tmr;
+//#define DEBUG_LR(x...) printk(KERN_INFO x)
+//#else
+//#define DEBUG_LR(x...)
+//#endif
+//
+//struct se_tmr_req *core_tmr_alloc_req(
+//	struct se_cmd *se_cmd,
+//	void *fabric_tmr_ptr,
+//	u8 function)
+//{
+;
 
 	tmr = kmem_cache_zalloc(se_tmr_req_cache, (in_interrupt()) ?
 					GFP_ATOMIC : GFP_KERNEL);
 	if (!(tmr)) {
-		printk(KERN_ERR "Unable to allocate struct se_tmr_req\n");
+;
 		return ERR_PTR(-ENOMEM);
 	}
 	tmr->task_cmd = se_cmd;
@@ -165,7 +165,7 @@ int core_tmr_lun_reset(
 
 		cmd = tmr_p->task_cmd;
 		if (!(cmd)) {
-			printk(KERN_ERR "Unable to locate struct se_cmd for TMR\n");
+;
 			continue;
 		}
 		/*
@@ -225,15 +225,15 @@ int core_tmr_lun_reset(
 	list_for_each_entry_safe(task, task_tmp, &dev->state_task_list,
 				t_state_list) {
 		if (!(TASK_CMD(task))) {
-			printk(KERN_ERR "TASK_CMD(task) is NULL!\n");
+;
 			continue;
 		}
 		cmd = TASK_CMD(task);
 
 		if (!T_TASK(cmd)) {
-			printk(KERN_ERR "T_TASK(cmd) is NULL for task: %p cmd:"
-				" %p ITT: 0x%08x\n", task, cmd,
-				CMD_TFO(cmd)->get_task_tag(cmd));
+//			printk(KERN_ERR "T_TASK(cmd) is NULL for task: %p cmd:"
+//				" %p ITT: 0x%08x\n", task, cmd,
+;
 			continue;
 		}
 		/*
@@ -402,7 +402,7 @@ int core_tmr_lun_reset(
 		dev->dev_reserved_node_acl = NULL;
 		dev->dev_flags &= ~DF_SPC2_RESERVATIONS;
 		spin_unlock(&dev->dev_reservation_lock);
-		printk(KERN_INFO "LUN_RESET: SCSI-2 Released reservation\n");
+;
 	}
 
 	spin_lock_irq(&dev->stats_lock);

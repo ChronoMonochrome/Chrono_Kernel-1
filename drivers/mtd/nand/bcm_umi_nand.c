@@ -123,14 +123,14 @@ static int nand_dma_init(void)
 	rc = dma_set_device_handler(DMA_DEVICE_NAND_MEM_TO_MEM,
 		nand_dma_handler, NULL);
 	if (rc != 0) {
-		printk(KERN_ERR "dma_set_device_handler failed: %d\n", rc);
+;
 		return rc;
 	}
 
 	virtPtr =
 	    dma_alloc_coherent(NULL, DMA_MAX_BUFLEN, &physPtr, GFP_KERNEL);
 	if (virtPtr == NULL) {
-		printk(KERN_ERR "NAND - Failed to allocate memory for DMA buffer\n");
+;
 		return -ENOMEM;
 	}
 
@@ -158,9 +158,9 @@ static void nand_dma_read(void *buf, int len)
 
 	hndl = dma_request_channel(DMA_DEVICE_NAND_MEM_TO_MEM);
 	if (hndl < 0) {
-		printk(KERN_ERR
-		       "nand_dma_read: unable to allocate dma channel: %d\n",
-		       (int)hndl);
+//		printk(KERN_ERR
+//		       "nand_dma_read: unable to allocate dma channel: %d\n",
+;
 		panic("\n");
 	}
 
@@ -208,9 +208,9 @@ static void nand_dma_write(const void *buf, int len)
 
 	hndl = dma_request_channel(DMA_DEVICE_NAND_MEM_TO_MEM);
 	if (hndl < 0) {
-		printk(KERN_ERR
-		       "nand_dma_write: unable to allocate dma channel: %d\n",
-		       (int)hndl);
+//		printk(KERN_ERR
+//		       "nand_dma_write: unable to allocate dma channel: %d\n",
+;
 		panic("\n");
 	}
 
@@ -362,15 +362,15 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
 	struct resource *r;
 	int err = 0;
 
-	printk(gBanner);
+;
 
 	/* Allocate memory for MTD device structure and private data */
 	board_mtd =
 	    kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip),
 		    GFP_KERNEL);
 	if (!board_mtd) {
-		printk(KERN_WARNING
-		       "Unable to allocate NAND MTD device structure.\n");
+//		printk(KERN_WARNING
+;
 		return -ENOMEM;
 	}
 
@@ -383,7 +383,7 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
 	bcm_umi_io_base = ioremap(r->start, r->end - r->start + 1);
 
 	if (!bcm_umi_io_base) {
-		printk(KERN_ERR "ioremap to access BCM UMI NAND chip failed\n");
+;
 		kfree(board_mtd);
 		return -EIO;
 	}
@@ -400,7 +400,7 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
 
 	/* Initialize the NAND hardware.  */
 	if (bcm_umi_nand_inithw() < 0) {
-		printk(KERN_ERR "BCM UMI NAND chip could not be initialized\n");
+;
 		iounmap(bcm_umi_io_base);
 		kfree(board_mtd);
 		return -EIO;
@@ -446,7 +446,7 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
 
 	err = nand_scan_ident(board_mtd, 1, NULL);
 	if (err) {
-		printk(KERN_ERR "nand_scan failed: %d\n", err);
+;
 		iounmap(bcm_umi_io_base);
 		kfree(board_mtd);
 		return err;
@@ -466,8 +466,8 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
 		break;
 	default:
 		{
-			printk(KERN_ERR "NAND - Unrecognized pagesize: %d\n",
-					 board_mtd->writesize);
+//			printk(KERN_ERR "NAND - Unrecognized pagesize: %d\n",
+;
 			return -EINVAL;
 		}
 	}
@@ -484,7 +484,7 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
 
 	err = nand_scan_tail(board_mtd);
 	if (err) {
-		printk(KERN_ERR "nand_scan failed: %d\n", err);
+;
 		iounmap(bcm_umi_io_base);
 		kfree(board_mtd);
 		return err;
@@ -501,8 +501,8 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
 					 &partition_info, 0);
 
 		if (nr_partitions <= 0) {
-			printk(KERN_ERR "BCM UMI NAND: Too few partitions - %d\n",
-			       nr_partitions);
+//			printk(KERN_ERR "BCM UMI NAND: Too few partitions - %d\n",
+;
 			iounmap(bcm_umi_io_base);
 			kfree(board_mtd);
 			return -EIO;
@@ -536,13 +536,13 @@ static int bcm_umi_nand_remove(struct platform_device *pdev)
 static int bcm_umi_nand_suspend(struct platform_device *pdev,
 				pm_message_t state)
 {
-	printk(KERN_ERR "MTD NAND suspend is being called\n");
+;
 	return 0;
 }
 
 static int bcm_umi_nand_resume(struct platform_device *pdev)
 {
-	printk(KERN_ERR "MTD NAND resume is being called\n");
+;
 	return 0;
 }
 #else

@@ -115,7 +115,7 @@ static void btrfs_handle_error(struct btrfs_fs_info *fs_info)
 
 	if (fs_info->fs_state & BTRFS_SUPER_FLAG_ERROR) {
 		sb->s_flags |= MS_RDONLY;
-		printk(KERN_INFO "btrfs is forced readonly\n");
+;
 	}
 }
 
@@ -138,8 +138,8 @@ void __btrfs_std_error(struct btrfs_fs_info *fs_info, const char *function,
 		return;
 
 	errstr = btrfs_decode_error(fs_info, errno, nbuf);
-	printk(KERN_CRIT "BTRFS error (device %s) in %s:%d: %s\n",
-		sb->s_id, function, line, errstr);
+//	printk(KERN_CRIT "BTRFS error (device %s) in %s:%d: %s\n",
+;
 	save_error_info(fs_info);
 
 	btrfs_handle_error(fs_info);
@@ -241,7 +241,7 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 		token = match_token(p, tokens, args);
 		switch (token) {
 		case Opt_degraded:
-			printk(KERN_INFO "btrfs: allowing degraded mounts\n");
+;
 			btrfs_set_opt(info->mount_opt, DEGRADED);
 			break;
 		case Opt_subvol:
@@ -254,11 +254,11 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 			 */
 			break;
 		case Opt_nodatasum:
-			printk(KERN_INFO "btrfs: setting nodatasum\n");
+;
 			btrfs_set_opt(info->mount_opt, NODATASUM);
 			break;
 		case Opt_nodatacow:
-			printk(KERN_INFO "btrfs: setting nodatacow\n");
+;
 			btrfs_set_opt(info->mount_opt, NODATACOW);
 			btrfs_set_opt(info->mount_opt, NODATASUM);
 			break;
@@ -290,24 +290,24 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 					compress_type);
 			break;
 		case Opt_ssd:
-			printk(KERN_INFO "btrfs: use ssd allocation scheme\n");
+;
 			btrfs_set_opt(info->mount_opt, SSD);
 			break;
 		case Opt_ssd_spread:
-			printk(KERN_INFO "btrfs: use spread ssd "
-			       "allocation scheme\n");
+//			printk(KERN_INFO "btrfs: use spread ssd "
+;
 			btrfs_set_opt(info->mount_opt, SSD);
 			btrfs_set_opt(info->mount_opt, SSD_SPREAD);
 			break;
 		case Opt_nossd:
-			printk(KERN_INFO "btrfs: not using ssd allocation "
-			       "scheme\n");
+//			printk(KERN_INFO "btrfs: not using ssd allocation "
+;
 			btrfs_set_opt(info->mount_opt, NOSSD);
 			btrfs_clear_opt(info->mount_opt, SSD);
 			btrfs_clear_opt(info->mount_opt, SSD_SPREAD);
 			break;
 		case Opt_nobarrier:
-			printk(KERN_INFO "btrfs: turning off barriers\n");
+;
 			btrfs_set_opt(info->mount_opt, NOBARRIER);
 			break;
 		case Opt_thread_pool:
@@ -315,8 +315,8 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 			match_int(&args[0], &intarg);
 			if (intarg) {
 				info->thread_pool_size = intarg;
-				printk(KERN_INFO "btrfs: thread pool %d\n",
-				       info->thread_pool_size);
+//				printk(KERN_INFO "btrfs: thread pool %d\n",
+;
 			}
 			break;
 		case Opt_max_inline:
@@ -330,8 +330,8 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 						info->max_inline,
 						root->sectorsize);
 				}
-				printk(KERN_INFO "btrfs: max_inline at %llu\n",
-					(unsigned long long)info->max_inline);
+//				printk(KERN_INFO "btrfs: max_inline at %llu\n",
+;
 			}
 			break;
 		case Opt_alloc_start:
@@ -339,20 +339,20 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 			if (num) {
 				info->alloc_start = memparse(num, NULL);
 				kfree(num);
-				printk(KERN_INFO
-					"btrfs: allocations start at %llu\n",
-					(unsigned long long)info->alloc_start);
+//				printk(KERN_INFO
+//					"btrfs: allocations start at %llu\n",
+;
 			}
 			break;
 		case Opt_noacl:
 			root->fs_info->sb->s_flags &= ~MS_POSIXACL;
 			break;
 		case Opt_notreelog:
-			printk(KERN_INFO "btrfs: disabling tree log\n");
+;
 			btrfs_set_opt(info->mount_opt, NOTREELOG);
 			break;
 		case Opt_flushoncommit:
-			printk(KERN_INFO "btrfs: turning on flush-on-commit\n");
+;
 			btrfs_set_opt(info->mount_opt, FLUSHONCOMMIT);
 			break;
 		case Opt_ratio:
@@ -360,8 +360,8 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 			match_int(&args[0], &intarg);
 			if (intarg) {
 				info->metadata_ratio = intarg;
-				printk(KERN_INFO "btrfs: metadata ratio %d\n",
-				       info->metadata_ratio);
+//				printk(KERN_INFO "btrfs: metadata ratio %d\n",
+;
 			}
 			break;
 		case Opt_discard:
@@ -371,15 +371,15 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 			btrfs_set_opt(info->mount_opt, SPACE_CACHE);
 			break;
 		case Opt_no_space_cache:
-			printk(KERN_INFO "btrfs: disabling disk space caching\n");
+;
 			btrfs_clear_opt(info->mount_opt, SPACE_CACHE);
 			break;
 		case Opt_inode_cache:
-			printk(KERN_INFO "btrfs: enabling inode map caching\n");
+;
 			btrfs_set_opt(info->mount_opt, INODE_MAP_CACHE);
 			break;
 		case Opt_clear_cache:
-			printk(KERN_INFO "btrfs: force clearing of disk cache\n");
+;
 			btrfs_set_opt(info->mount_opt, CLEAR_CACHE);
 			break;
 		case Opt_user_subvol_rm_allowed:
@@ -389,12 +389,12 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 			btrfs_set_opt(info->mount_opt, ENOSPC_DEBUG);
 			break;
 		case Opt_defrag:
-			printk(KERN_INFO "btrfs: enabling auto defrag");
+;
 			btrfs_set_opt(info->mount_opt, AUTO_DEFRAG);
 			break;
 		case Opt_err:
-			printk(KERN_INFO "btrfs: unrecognized mount option "
-			       "'%s'\n", p);
+//			printk(KERN_INFO "btrfs: unrecognized mount option "
+;
 			ret = -EINVAL;
 			goto out;
 		default:
@@ -403,7 +403,7 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
 	}
 out:
 	if (!ret && btrfs_test_opt(root, SPACE_CACHE))
-		printk(KERN_INFO "btrfs: disk space caching is enabled\n");
+;
 	kfree(orig);
 	return ret;
 }
@@ -617,7 +617,7 @@ static int btrfs_fill_super(struct super_block *sb,
 	tree_root = open_ctree(sb, fs_devices, (char *)data);
 
 	if (IS_ERR(tree_root)) {
-		printk("btrfs: open_ctree failed\n");
+;
 		return PTR_ERR(tree_root);
 	}
 	sb->s_fs_info = tree_root;
@@ -1311,7 +1311,7 @@ static int btrfs_interface_init(void)
 static void btrfs_interface_exit(void)
 {
 	if (misc_deregister(&btrfs_misc) < 0)
-		printk(KERN_INFO "misc_deregister failed for control device");
+;
 }
 
 static int __init init_btrfs_fs(void)
@@ -1350,7 +1350,7 @@ static int __init init_btrfs_fs(void)
 	if (err)
 		goto unregister_ioctl;
 
-	printk(KERN_INFO "%s loaded\n", BTRFS_BUILD_VERSION);
+;
 	return 0;
 
 unregister_ioctl:

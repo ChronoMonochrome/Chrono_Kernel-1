@@ -59,10 +59,10 @@ static int debug;
 module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "Debug level (0-4)");
 
-#define dprintk(num, format, args...) \
-	do { \
-		if (debug >= num) \
-			printk(format, ##args); \
+//#define dprintk(num, format, args...) \
+//	do { \
+//		if (debug >= num) \
+;
 	} while (0)
 
 /* =========================================================================
@@ -83,11 +83,11 @@ zr36060_read (struct zr36060 *ptr,
 		value = (ptr->codec->master_data->readreg(ptr->codec,
 							  reg)) & 0xff;
 	else
-		dprintk(1,
-			KERN_ERR "%s: invalid I/O setup, nothing read!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR "%s: invalid I/O setup, nothing read!\n",
+;
 
-	//dprintk(4, "%s: reading from 0x%04x: %02x\n",ptr->name,reg,value);
+;
 
 	return value;
 }
@@ -97,17 +97,17 @@ zr36060_write(struct zr36060 *ptr,
 	      u16             reg,
 	      u8              value)
 {
-	//dprintk(4, "%s: writing 0x%02x to 0x%04x\n",ptr->name,value,reg);
-	dprintk(4, "0x%02x @0x%04x\n", value, reg);
+;
+;
 
 	// just in case something is wrong...
 	if (ptr->codec->master_data->writereg)
 		ptr->codec->master_data->writereg(ptr->codec, reg, value);
 	else
-		dprintk(1,
-			KERN_ERR
-			"%s: invalid I/O setup, nothing written!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: invalid I/O setup, nothing written!\n",
+;
 }
 
 /* =========================================================================
@@ -158,9 +158,9 @@ zr36060_wait_end (struct zr36060 *ptr)
 	while (zr36060_read_status(ptr) & ZR060_CFSR_Busy) {
 		udelay(1);
 		if (i++ > 200000) {	// 200ms, there is for sure something wrong!!!
-			dprintk(1,
-				"%s: timeout at wait_end (last status: 0x%02x)\n",
-				ptr->name, ptr->status);
+//			dprintk(1,
+//				"%s: timeout at wait_end (last status: 0x%02x)\n",
+;
 			break;
 		}
 	}
@@ -177,19 +177,19 @@ zr36060_basic_test (struct zr36060 *ptr)
 {
 	if ((zr36060_read(ptr, ZR060_IDR_DEV) != 0x33) &&
 	    (zr36060_read(ptr, ZR060_IDR_REV) != 0x01)) {
-		dprintk(1,
-			KERN_ERR
-			"%s: attach failed, can't connect to jpeg processor!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: attach failed, can't connect to jpeg processor!\n",
+;
 		return -ENXIO;
 	}
 
 	zr36060_wait_end(ptr);
 	if (ptr->status & ZR060_CFSR_Busy) {
-		dprintk(1,
-			KERN_ERR
-			"%s: attach failed, jpeg processor failed (end flag)!\n",
-			ptr->name);
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: attach failed, jpeg processor failed (end flag)!\n",
+;
 		return -EBUSY;
 	}
 
@@ -210,8 +210,8 @@ zr36060_pushit (struct zr36060 *ptr,
 {
 	int i = 0;
 
-	dprintk(4, "%s: write data block to 0x%04x (len=%d)\n", ptr->name,
-		startreg, len);
+//	dprintk(4, "%s: write data block to 0x%04x (len=%d)\n", ptr->name,
+;
 	while (i < len) {
 		zr36060_write(ptr, startreg++, data[i++]);
 	}
@@ -339,8 +339,8 @@ zr36060_set_sof (struct zr36060 *ptr)
 	char sof_data[34];	// max. size of register set
 	int i;
 
-	dprintk(3, "%s: write SOF (%dx%d, %d components)\n", ptr->name,
-		ptr->width, ptr->height, NO_OF_COMPONENTS);
+//	dprintk(3, "%s: write SOF (%dx%d, %d components)\n", ptr->name,
+;
 	sof_data[0] = 0xff;
 	sof_data[1] = 0xc0;
 	sof_data[2] = 0x00;
@@ -372,7 +372,7 @@ zr36060_set_sos (struct zr36060 *ptr)
 	char sos_data[16];	// max. size of register set
 	int i;
 
-	dprintk(3, "%s: write SOS\n", ptr->name);
+;
 	sos_data[0] = 0xff;
 	sos_data[1] = 0xda;
 	sos_data[2] = 0x00;
@@ -400,7 +400,7 @@ zr36060_set_dri (struct zr36060 *ptr)
 {
 	char dri_data[6];	// max. size of register set
 
-	dprintk(3, "%s: write DRI\n", ptr->name);
+;
 	dri_data[0] = 0xff;
 	dri_data[1] = 0xdd;
 	dri_data[2] = 0x00;
@@ -425,7 +425,7 @@ zr36060_init (struct zr36060 *ptr)
 	long bitcnt, tmp;
 
 	if (ptr->mode == CODEC_DO_COMPRESSION) {
-		dprintk(2, "%s: COMPRESSION SETUP\n", ptr->name);
+;
 
 		zr36060_write(ptr, ZR060_LOAD, ZR060_LOAD_SyncRst);
 
@@ -487,9 +487,9 @@ zr36060_init (struct zr36060 *ptr)
 		bitcnt = sum << 3;	/* need the size in bits */
 
 		tmp = bitcnt >> 16;
-		dprintk(3,
-			"%s: code: csize=%d, tot=%d, bit=%ld, highbits=%ld\n",
-			ptr->name, sum, ptr->real_code_vol, bitcnt, tmp);
+//		dprintk(3,
+//			"%s: code: csize=%d, tot=%d, bit=%ld, highbits=%ld\n",
+;
 		zr36060_write(ptr, ZR060_TCV_NET_HI, tmp >> 8);
 		zr36060_write(ptr, ZR060_TCV_NET_MH, tmp & 0xff);
 		tmp = bitcnt & 0xffff;
@@ -500,8 +500,8 @@ zr36060_init (struct zr36060 *ptr)
 		bitcnt -= ((bitcnt * 5) >> 6);	// bits without eob
 
 		tmp = bitcnt >> 16;
-		dprintk(3, "%s: code: nettobit=%ld, highnettobits=%ld\n",
-			ptr->name, bitcnt, tmp);
+//		dprintk(3, "%s: code: nettobit=%ld, highnettobits=%ld\n",
+;
 		zr36060_write(ptr, ZR060_TCV_DATA_HI, tmp >> 8);
 		zr36060_write(ptr, ZR060_TCV_DATA_MH, tmp & 0xff);
 		tmp = bitcnt & 0xffff;
@@ -519,7 +519,7 @@ zr36060_init (struct zr36060 *ptr)
 		zr36060_write(ptr, ZR060_VCR, ZR060_VCR_Range);
 
 	} else {
-		dprintk(2, "%s: EXPANSION SETUP\n", ptr->name);
+;
 
 		zr36060_write(ptr, ZR060_LOAD, ZR060_LOAD_SyncRst);
 
@@ -555,11 +555,11 @@ zr36060_init (struct zr36060 *ptr)
 	zr36060_write(ptr, ZR060_LOAD,
 		      ZR060_LOAD_SyncRst | ZR060_LOAD_Load);
 	zr36060_wait_end(ptr);
-	dprintk(2, "%s: Status after table preload: 0x%02x\n", ptr->name,
-		ptr->status);
+//	dprintk(2, "%s: Status after table preload: 0x%02x\n", ptr->name,
+;
 
 	if (ptr->status & ZR060_CFSR_Busy) {
-		dprintk(1, KERN_ERR "%s: init aborted!\n", ptr->name);
+;
 		return;		// something is wrong, its timed out!!!!
 	}
 }
@@ -578,7 +578,7 @@ zr36060_set_mode (struct videocodec *codec,
 {
 	struct zr36060 *ptr = (struct zr36060 *) codec->data;
 
-	dprintk(2, "%s: set_mode %d call\n", ptr->name, mode);
+;
 
 	if ((mode != CODEC_DO_EXPANSION) && (mode != CODEC_DO_COMPRESSION))
 		return -EINVAL;
@@ -600,8 +600,8 @@ zr36060_set_video (struct videocodec   *codec,
 	u32 reg;
 	int size;
 
-	dprintk(2, "%s: set_video %d/%d-%dx%d (%%%d) call\n", ptr->name,
-		cap->x, cap->y, cap->width, cap->height, cap->decimation);
+//	dprintk(2, "%s: set_video %d/%d-%dx%d (%%%d) call\n", ptr->name,
+;
 
 	/* if () return -EINVAL;
 	 * trust the master driver that it knows what it does - so
@@ -759,8 +759,8 @@ zr36060_control (struct videocodec *codec,
 	struct zr36060 *ptr = (struct zr36060 *) codec->data;
 	int *ival = (int *) data;
 
-	dprintk(2, "%s: control %d call with %d byte\n", ptr->name, type,
-		size);
+//	dprintk(2, "%s: control %d call with %d byte\n", ptr->name, type,
+;
 
 	switch (type) {
 	case CODEC_G_STATUS:	/* get last status */
@@ -879,8 +879,8 @@ zr36060_unset (struct videocodec *codec)
 	if (ptr) {
 		/* do wee need some codec deinit here, too ???? */
 
-		dprintk(1, "%s: finished codec #%d\n", ptr->name,
-			ptr->num);
+//		dprintk(1, "%s: finished codec #%d\n", ptr->name,
+;
 		kfree(ptr);
 		codec->data = NULL;
 
@@ -906,18 +906,18 @@ zr36060_setup (struct videocodec *codec)
 	struct zr36060 *ptr;
 	int res;
 
-	dprintk(2, "zr36060: initializing MJPEG subsystem #%d.\n",
-		zr36060_codecs);
+//	dprintk(2, "zr36060: initializing MJPEG subsystem #%d.\n",
+;
 
 	if (zr36060_codecs == MAX_CODECS) {
-		dprintk(1,
-			KERN_ERR "zr36060: Can't attach more codecs!\n");
+//		dprintk(1,
+;
 		return -ENOSPC;
 	}
 	//mem structure init
 	codec->data = ptr = kzalloc(sizeof(struct zr36060), GFP_KERNEL);
 	if (NULL == ptr) {
-		dprintk(1, KERN_ERR "zr36060: Can't get enough memory!\n");
+;
 		return -ENOMEM;
 	}
 
@@ -954,8 +954,8 @@ zr36060_setup (struct videocodec *codec)
 
 	zr36060_init(ptr);
 
-	dprintk(1, KERN_INFO "%s: codec attached and running\n",
-		ptr->name);
+//	dprintk(1, KERN_INFO "%s: codec attached and running\n",
+;
 
 	return 0;
 }
@@ -983,7 +983,7 @@ static const struct videocodec zr36060_codec = {
 static int __init
 zr36060_init_module (void)
 {
-	//dprintk(1, "zr36060 driver %s\n",ZR060_VERSION);
+;
 	zr36060_codecs = 0;
 	return videocodec_register(&zr36060_codec);
 }
@@ -992,9 +992,9 @@ static void __exit
 zr36060_cleanup_module (void)
 {
 	if (zr36060_codecs) {
-		dprintk(1,
-			"zr36060: something's wrong - %d codecs left somehow.\n",
-			zr36060_codecs);
+//		dprintk(1,
+//			"zr36060: something's wrong - %d codecs left somehow.\n",
+;
 	}
 
 	/* however, we can't just stay alive */

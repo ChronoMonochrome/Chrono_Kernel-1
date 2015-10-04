@@ -290,11 +290,11 @@ int __init it8152_pci_setup(int nr, struct pci_sys_data *sys)
 	sys->io_offset  = IT8152_IO_BASE;
 
 	if (request_resource(&ioport_resource, &it8152_io)) {
-		printk(KERN_ERR "PCI: unable to allocate IO region\n");
+;
 		goto err0;
 	}
 	if (request_resource(&iomem_resource, &it8152_mem)) {
-		printk(KERN_ERR "PCI: unable to allocate memory region\n");
+;
 		goto err1;
 	}
 
@@ -302,7 +302,7 @@ int __init it8152_pci_setup(int nr, struct pci_sys_data *sys)
 	sys->resource[1] = &it8152_mem;
 
 	if (platform_notify || platform_notify_remove) {
-		printk(KERN_ERR "PCI: Can't use platform_notify\n");
+;
 		goto err2;
 	}
 
@@ -343,8 +343,8 @@ void pcibios_set_master(struct pci_dev *dev)
 		lat = pcibios_max_latency;
 	else
 		return;
-	printk(KERN_DEBUG "PCI: Setting latency timer of device %s to %d\n",
-	       pci_name(dev), lat);
+//	printk(KERN_DEBUG "PCI: Setting latency timer of device %s to %d\n",
+;
 	pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
 }
 

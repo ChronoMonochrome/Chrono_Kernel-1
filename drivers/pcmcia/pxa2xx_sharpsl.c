@@ -61,7 +61,7 @@ static int sharpsl_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
 		ret = soc_pcmcia_request_irqs(skt, &cd_irq, 1);
 
 		if (ret) {
-			printk(KERN_ERR "Request for Compact Flash IRQ failed\n");
+;
 			return ret;
 		}
 	}
@@ -129,7 +129,7 @@ static void sharpsl_pcmcia_socket_state(struct soc_pcmcia_socket *skt,
 	state->vs_Xv  = (csr & 0x0080) ? 0 : 1;
 
 	if ((cpr & 0x0080) && ((cpr & 0x8040) != 0x8040)) {
-		printk(KERN_ERR "sharpsl_pcmcia_socket_state(): CPR=%04X, Low voltage!\n", cpr);
+;
 	}
 }
 
@@ -147,12 +147,12 @@ static int sharpsl_pcmcia_configure_socket(struct soc_pcmcia_socket *skt,
 	case 	33: 	break;
 	case	50: 	break;
 	default:
-		 printk(KERN_ERR "sharpsl_pcmcia_configure_socket(): bad Vcc %u\n", state->Vcc);
+;
 		 return -1;
 	}
 
 	if ((state->Vpp!=state->Vcc) && (state->Vpp!=0)) {
-		printk(KERN_ERR "CF slot cannot support Vpp %u\n", state->Vpp);
+;
 		return -1;
 	}
 

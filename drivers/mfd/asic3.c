@@ -913,7 +913,7 @@ static int __init asic3_probe(struct platform_device *pdev)
 
 	asic = kzalloc(sizeof(struct asic3), GFP_KERNEL);
 	if (asic == NULL) {
-		printk(KERN_ERR "kzalloc failed\n");
+;
 		return -ENOMEM;
 	}
 

@@ -183,7 +183,7 @@ static int legacy_probe_add(unsigned long port, unsigned int irq,
 		lp++;
 	}
 	if (free == NULL) {
-		printk(KERN_ERR "pata_legacy: Too many interfaces.\n");
+;
 		return -1;
 	}
 	/* Fill in the entry for later probing */
@@ -213,7 +213,7 @@ static int legacy_set_mode(struct ata_link *link, struct ata_device **unused)
 	struct ata_device *dev;
 
 	ata_for_each_dev(dev, link, ENABLED) {
-		ata_dev_printk(dev, KERN_INFO, "configured for PIO\n");
+;
 		dev->pio_mode = XFER_PIO_0;
 		dev->xfer_mode = XFER_PIO_0;
 		dev->xfer_shift = ATA_SHIFT_PIO;
@@ -947,8 +947,8 @@ static __init int probe_chip_type(struct legacy_probe *probe)
 
 		if ((inb(0x1F2) & 0x80) == 0) {
 			/* PDC20230c or 20630 ? */
-			printk(KERN_INFO  "PDC20230-C/20630 VLB ATA controller"
-							" detected.\n");
+//			printk(KERN_INFO  "PDC20230-C/20630 VLB ATA controller"
+;
 			udelay(100);
 			inb(0x1F5);
 			local_irq_restore(flags);
@@ -958,8 +958,8 @@ static __init int probe_chip_type(struct legacy_probe *probe)
 			inb(0x1F2);
 			inb(0x1F2);
 			if (inb(0x1F2) == 0x00)
-				printk(KERN_INFO "PDC20230-B VLB ATA "
-						     "controller detected.\n");
+//				printk(KERN_INFO "PDC20230-B VLB ATA "
+;
 			local_irq_restore(flags);
 			return BIOS;
 		}
@@ -1116,8 +1116,8 @@ static __init void probe_opti_vlb(void)
 	u8 ctrl = (opti_syscfg(0x30) & 0xC0) >> 6;
 
 	opti82c46x = 3;	/* Assume master and slave first */
-	printk(KERN_INFO DRV_NAME ": Opti 82C46%s chipset support.\n",
-								optis[ctrl]);
+//	printk(KERN_INFO DRV_NAME ": Opti 82C46%s chipset support.\n",
+;
 	if (ctrl == 3)
 		chans = (opti_syscfg(0x3F) & 0x20) ? 2 : 1;
 	ctrl = opti_syscfg(0xAC);

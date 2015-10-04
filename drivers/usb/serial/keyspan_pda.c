@@ -903,8 +903,8 @@ static int __init keyspan_pda_init(void)
 	retval = usb_register(&keyspan_pda_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 #ifdef XIRCOM

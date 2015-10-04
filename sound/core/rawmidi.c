@@ -195,7 +195,7 @@ int snd_rawmidi_drain_output(struct snd_rawmidi_substream *substream)
 	if (signal_pending(current))
 		err = -ERESTARTSYS;
 	if (runtime->avail < runtime->buffer_size && !timeout) {
-		snd_printk(KERN_WARNING "rawmidi drain error (avail = %li, buffer_size = %li)\n", (long)runtime->avail, (long)runtime->buffer_size);
+;
 		err = -EIO;
 	}
 	runtime->drain = 0;
@@ -819,7 +819,7 @@ static long snd_rawmidi_ioctl(struct file *file, unsigned int cmd, unsigned long
 	}
 #ifdef CONFIG_SND_DEBUG
 	default:
-		snd_printk(KERN_WARNING "rawmidi: unknown command = 0x%x\n", cmd);
+;
 #endif
 	}
 	return -ENOTTY;
@@ -1428,7 +1428,7 @@ static int snd_rawmidi_alloc_substreams(struct snd_rawmidi *rmidi,
 	for (idx = 0; idx < count; idx++) {
 		substream = kzalloc(sizeof(*substream), GFP_KERNEL);
 		if (substream == NULL) {
-			snd_printk(KERN_ERR "rawmidi: cannot allocate substream\n");
+;
 			return -ENOMEM;
 		}
 		substream->stream = direction;
@@ -1473,7 +1473,7 @@ int snd_rawmidi_new(struct snd_card *card, char *id, int device,
 		*rrawmidi = NULL;
 	rmidi = kzalloc(sizeof(*rmidi), GFP_KERNEL);
 	if (rmidi == NULL) {
-		snd_printk(KERN_ERR "rawmidi: cannot allocate\n");
+;
 		return -ENOMEM;
 	}
 	rmidi->card = card;
@@ -1572,7 +1572,7 @@ static int snd_rawmidi_dev_register(struct snd_device *device)
 	if ((err = snd_register_device(SNDRV_DEVICE_TYPE_RAWMIDI,
 				       rmidi->card, rmidi->device,
 				       &snd_rawmidi_f_ops, rmidi, name)) < 0) {
-		snd_printk(KERN_ERR "unable to register rawmidi device %i:%i\n", rmidi->card->number, rmidi->device);
+;
 		list_del(&rmidi->list);
 		mutex_unlock(&register_mutex);
 		return err;
@@ -1590,7 +1590,7 @@ static int snd_rawmidi_dev_register(struct snd_device *device)
 		if (snd_register_oss_device(SNDRV_OSS_DEVICE_TYPE_MIDI,
 					    rmidi->card, 0, &snd_rawmidi_f_ops,
 					    rmidi, name) < 0) {
-			snd_printk(KERN_ERR "unable to register OSS rawmidi device %i:%i\n", rmidi->card->number, 0);
+;
 		} else {
 			rmidi->ossreg++;
 #ifdef SNDRV_OSS_INFO_DEV_MIDI
@@ -1602,7 +1602,7 @@ static int snd_rawmidi_dev_register(struct snd_device *device)
 		if (snd_register_oss_device(SNDRV_OSS_DEVICE_TYPE_MIDI,
 					    rmidi->card, 1, &snd_rawmidi_f_ops,
 					    rmidi, name) < 0) {
-			snd_printk(KERN_ERR "unable to register OSS rawmidi device %i:%i\n", rmidi->card->number, 1);
+;
 		} else {
 			rmidi->ossreg++;
 		}
@@ -1700,11 +1700,11 @@ static int __init alsa_rawmidi_init(void)
 	/* check device map table */
 	for (i = 0; i < SNDRV_CARDS; i++) {
 		if (midi_map[i] < 0 || midi_map[i] >= SNDRV_RAWMIDI_DEVICES) {
-			snd_printk(KERN_ERR "invalid midi_map[%d] = %d\n", i, midi_map[i]);
+;
 			midi_map[i] = 0;
 		}
 		if (amidi_map[i] < 0 || amidi_map[i] >= SNDRV_RAWMIDI_DEVICES) {
-			snd_printk(KERN_ERR "invalid amidi_map[%d] = %d\n", i, amidi_map[i]);
+;
 			amidi_map[i] = 1;
 		}
 	}

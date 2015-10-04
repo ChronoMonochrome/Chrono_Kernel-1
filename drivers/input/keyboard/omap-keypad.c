@@ -185,15 +185,15 @@ static void omap_kp_tasklet(unsigned long data)
 			if (!(changed & (1 << row)))
 				continue;
 #ifdef NEW_BOARD_LEARNING_MODE
-			printk(KERN_INFO "omap-keypad: key %d-%d %s\n", col,
-			       row, (new_state[col] & (1 << row)) ?
-			       "pressed" : "released");
+//			printk(KERN_INFO "omap-keypad: key %d-%d %s\n", col,
+//			       row, (new_state[col] & (1 << row)) ?
+;
 #else
 			key = keycodes[MATRIX_SCAN_CODE(row, col, row_shift)];
 			if (key < 0) {
-				printk(KERN_WARNING
-				      "omap-keypad: Spurious key event %d-%d\n",
-				       col, row);
+//				printk(KERN_WARNING
+//				      "omap-keypad: Spurious key event %d-%d\n",
+;
 				/* We scan again after a couple of seconds */
 				spurious = 1;
 				continue;
@@ -292,7 +292,7 @@ static int __devinit omap_kp_probe(struct platform_device *pdev)
 	unsigned int row_shift, keycodemax;
 
 	if (!pdata->rows || !pdata->cols || !pdata->keymap_data) {
-		printk(KERN_ERR "No rows, cols or keymap_data from pdata\n");
+;
 		return -EINVAL;
 	}
 
@@ -338,9 +338,9 @@ static int __devinit omap_kp_probe(struct platform_device *pdev)
 		/* Cols: outputs */
 		for (col_idx = 0; col_idx < omap_kp->cols; col_idx++) {
 			if (gpio_request(col_gpios[col_idx], "omap_kp_col") < 0) {
-				printk(KERN_ERR "Failed to request"
-				       "GPIO%d for keypad\n",
-				       col_gpios[col_idx]);
+//				printk(KERN_ERR "Failed to request"
+//				       "GPIO%d for keypad\n",
+;
 				goto err1;
 			}
 			gpio_direction_output(col_gpios[col_idx], 0);
@@ -348,9 +348,9 @@ static int __devinit omap_kp_probe(struct platform_device *pdev)
 		/* Rows: inputs */
 		for (row_idx = 0; row_idx < omap_kp->rows; row_idx++) {
 			if (gpio_request(row_gpios[row_idx], "omap_kp_row") < 0) {
-				printk(KERN_ERR "Failed to request"
-				       "GPIO%d for keypad\n",
-				       row_gpios[row_idx]);
+//				printk(KERN_ERR "Failed to request"
+//				       "GPIO%d for keypad\n",
+;
 				goto err2;
 			}
 			gpio_direction_input(row_gpios[row_idx]);
@@ -385,7 +385,7 @@ static int __devinit omap_kp_probe(struct platform_device *pdev)
 
 	ret = input_register_device(omap_kp->input);
 	if (ret < 0) {
-		printk(KERN_ERR "Unable to register omap-keypad input device\n");
+;
 		goto err3;
 	}
 
@@ -476,7 +476,7 @@ static struct platform_driver omap_kp_driver = {
 
 static int __init omap_kp_init(void)
 {
-	printk(KERN_INFO "OMAP Keypad Driver\n");
+;
 	return platform_driver_register(&omap_kp_driver);
 }
 

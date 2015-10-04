@@ -49,7 +49,7 @@ static u8 caleb_reg_read(int reg)
 
 	value = *((volatile u8 *)(ENP2611_CALEB_VIRT_BASE + reg));
 
-//	printk(KERN_INFO "caleb_reg_read(%d) = %.2x\n", reg, value);
+;
 
 	return value;
 }
@@ -58,7 +58,7 @@ static void caleb_reg_write(int reg, u8 value)
 {
 	u8 dummy;
 
-//	printk(KERN_INFO "caleb_reg_write(%d, %.2x)\n", reg, value);
+;
 
 	*((volatile u8 *)(ENP2611_CALEB_VIRT_BASE + reg)) = value;
 

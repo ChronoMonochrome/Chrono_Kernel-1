@@ -308,8 +308,8 @@ nfsd4_open(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 				&rp->rp_openfh);
 		status = fh_verify(rqstp, &cstate->current_fh, 0, NFSD_MAY_NOP);
 		if (status)
-			dprintk("nfsd4_open: replay failed"
-				" restoring previous filehandle\n");
+//			dprintk("nfsd4_open: replay failed"
+;
 		else
 			status = nfserr_replay_me;
 	}
@@ -358,13 +358,13 @@ nfsd4_open(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 			break;
              	case NFS4_OPEN_CLAIM_DELEGATE_PREV:
 			open->op_stateowner->so_confirmed = 1;
-			dprintk("NFSD: unsupported OPEN claim type %d\n",
-				open->op_claim_type);
+//			dprintk("NFSD: unsupported OPEN claim type %d\n",
+;
 			status = nfserr_notsupp;
 			goto out;
 		default:
-			dprintk("NFSD: Invalid OPEN claim type %d\n",
-				open->op_claim_type);
+//			dprintk("NFSD: Invalid OPEN claim type %d\n",
+;
 			status = nfserr_inval;
 			goto out;
 	}
@@ -655,7 +655,7 @@ nfsd4_read(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	/* check stateid */
 	if ((status = nfs4_preprocess_stateid_op(cstate, &read->rd_stateid,
 						 RD_STATE, &read->rd_filp))) {
-		dprintk("NFSD: nfsd4_read: couldn't process stateid!\n");
+;
 		goto out;
 	}
 	if (read->rd_filp)
@@ -820,7 +820,7 @@ nfsd4_setattr(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 			&setattr->sa_stateid, WR_STATE, NULL);
 		nfs4_unlock_state();
 		if (status) {
-			dprintk("NFSD: nfsd4_setattr: couldn't process stateid!\n");
+;
 			return status;
 		}
 	}
@@ -868,7 +868,7 @@ nfsd4_write(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	nfs4_unlock_state();
 
 	if (status) {
-		dprintk("NFSD: nfsd4_write: couldn't process stateid!\n");
+;
 		return status;
 	}
 
@@ -1131,9 +1131,9 @@ nfsd4_proc_compound(struct svc_rqst *rqstp,
 	while (!status && resp->opcnt < args->opcnt) {
 		op = &args->ops[resp->opcnt++];
 
-		dprintk("nfsv4 compound op #%d/%d: %d (%s)\n",
-			resp->opcnt, args->opcnt, op->opnum,
-			nfsd4_op_name(op->opnum));
+//		dprintk("nfsv4 compound op #%d/%d: %d (%s)\n",
+//			resp->opcnt, args->opcnt, op->opnum,
+;
 		/*
 		 * The XDR decode routines may have pre-set op->status;
 		 * for example, if there is a miscellaneous XDR error
@@ -1179,7 +1179,7 @@ nfsd4_proc_compound(struct svc_rqst *rqstp,
 encode_op:
 		/* Only from SEQUENCE */
 		if (resp->cstate.status == nfserr_replay_cache) {
-			dprintk("%s NFS4.1 replay from cache\n", __func__);
+;
 			status = op->status;
 			goto out;
 		}
@@ -1192,9 +1192,9 @@ encode_op:
 			status = op->status;
 		}
 
-		dprintk("nfsv4 compound op %p opcnt %d #%d: %d: status %d\n",
-			args->ops, args->opcnt, resp->opcnt, op->opnum,
-			be32_to_cpu(status));
+//		dprintk("nfsv4 compound op %p opcnt %d #%d: %d: status %d\n",
+//			args->ops, args->opcnt, resp->opcnt, op->opnum,
+;
 
 		if (cstate->replay_owner) {
 			nfs4_put_stateowner(cstate->replay_owner);
@@ -1215,7 +1215,7 @@ out:
 	nfsd4_release_compoundargs(args);
 	/* Reset deferral mechanism for RPC deferrals */
 	rqstp->rq_usedeferral = 1;
-	dprintk("nfsv4 compound returned %d\n", ntohl(status));
+;
 	return status;
 }
 

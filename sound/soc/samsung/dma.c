@@ -167,7 +167,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
 					  prtd->params->client, NULL);
 
 		if (ret < 0) {
-			printk(KERN_ERR "failed to get dma channel\n");
+;
 			return ret;
 		}
 

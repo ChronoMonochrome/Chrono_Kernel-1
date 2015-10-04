@@ -44,7 +44,7 @@ int snd_sbdsp_command(struct snd_sb *chip, unsigned char val)
 {
 	int i;
 #ifdef IO_DEBUG
-	snd_printk(KERN_DEBUG "command 0x%x\n", val);
+;
 #endif
 	for (i = BUSY_LOOPS; i; i--)
 		if ((inb(SBP(chip, STATUS)) & 0x80) == 0) {
@@ -63,7 +63,7 @@ int snd_sbdsp_get_byte(struct snd_sb *chip)
 		if (inb(SBP(chip, DATA_AVAIL)) & 0x80) {
 			val = inb(SBP(chip, READ));
 #ifdef IO_DEBUG
-			snd_printk(KERN_DEBUG "get_byte 0x%x\n", val);
+;
 #endif
 			return val;
 		}
@@ -153,8 +153,8 @@ static int snd_sbdsp_probe(struct snd_sb * chip)
 			str = "16";
 			break;
 		default:
-			snd_printk(KERN_INFO "SB [0x%lx]: unknown DSP chip version %i.%i\n",
-				   chip->port, major, minor);
+//			snd_printk(KERN_INFO "SB [0x%lx]: unknown DSP chip version %i.%i\n",
+;
 			return -ENODEV;
 		}
 		break;
@@ -242,7 +242,7 @@ int snd_sbdsp_create(struct snd_card *card,
 			 hardware == SB_HW_CS5530) ?
 			IRQF_SHARED : IRQF_DISABLED,
 			"SoundBlaster", (void *) chip)) {
-		snd_printk(KERN_ERR "sb: can't grab irq %d\n", irq);
+;
 		snd_sbdsp_free(chip);
 		return -EBUSY;
 	}
@@ -252,14 +252,14 @@ int snd_sbdsp_create(struct snd_card *card,
 		goto __skip_allocation;
 	
 	if ((chip->res_port = request_region(port, 16, "SoundBlaster")) == NULL) {
-		snd_printk(KERN_ERR "sb: can't grab port 0x%lx\n", port);
+;
 		snd_sbdsp_free(chip);
 		return -EBUSY;
 	}
 
 #ifdef CONFIG_ISA
 	if (dma8 >= 0 && request_dma(dma8, "SoundBlaster - 8bit")) {
-		snd_printk(KERN_ERR "sb: can't grab DMA8 %d\n", dma8);
+;
 		snd_sbdsp_free(chip);
 		return -EBUSY;
 	}
@@ -269,7 +269,7 @@ int snd_sbdsp_create(struct snd_card *card,
 			/* no duplex */
 			dma16 = -1;
 		} else if (request_dma(dma16, "SoundBlaster - 16bit")) {
-			snd_printk(KERN_ERR "sb: can't grab DMA16 %d\n", dma16);
+;
 			snd_sbdsp_free(chip);
 			return -EBUSY;
 		}

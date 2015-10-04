@@ -26,7 +26,7 @@ static struct platform_device *pdev;
 
 static int __init clevo_mail_led_dmi_callback(const struct dmi_system_id *id)
 {
-	printk(KERN_INFO KBUILD_MODNAME ": '%s' found\n", id->ident);
+;
 	return 1;
 }
 
@@ -135,10 +135,10 @@ static int clevo_mail_led_blink(struct led_classdev *led_cdev,
 		status = 0;
 
 	} else {
-		printk(KERN_DEBUG KBUILD_MODNAME
-		       ": clevo_mail_led_blink(..., %lu, %lu),"
-		       " returning -EINVAL (unsupported)\n",
-		       *delay_on, *delay_off);
+//		printk(KERN_DEBUG KBUILD_MODNAME
+//		       ": clevo_mail_led_blink(..., %lu, %lu),"
+//		       " returning -EINVAL (unsupported)\n",
+;
 	}
 
 	i8042_unlock_chip();
@@ -183,10 +183,10 @@ static int __init clevo_mail_led_init(void)
 		count = dmi_check_system(mail_led_whitelist);
 	} else {
 		count = 1;
-		printk(KERN_ERR KBUILD_MODNAME ": Skipping DMI detection. "
-		       "If the driver works on your hardware please "
-		       "report model and the output of dmidecode in tracker "
-		       "at http://sourceforge.net/projects/clevo-mailled/\n");
+//		printk(KERN_ERR KBUILD_MODNAME ": Skipping DMI detection. "
+//		       "If the driver works on your hardware please "
+//		       "report model and the output of dmidecode in tracker "
+;
 	}
 
 	if (!count)
@@ -197,8 +197,8 @@ static int __init clevo_mail_led_init(void)
 		error = platform_driver_probe(&clevo_mail_led_driver,
 					      clevo_mail_led_probe);
 		if (error) {
-			printk(KERN_ERR KBUILD_MODNAME
-			       ": Can't probe platform driver\n");
+//			printk(KERN_ERR KBUILD_MODNAME
+;
 			platform_device_unregister(pdev);
 		}
 	} else

@@ -98,12 +98,12 @@ static int ct82c170_wait(void)
 static void ct82c710_close(struct serio *serio)
 {
 	if (ct82c170_wait())
-		printk(KERN_WARNING "ct82c710.c: Device busy in close()\n");
+;
 
 	outb_p(inb_p(CT82C710_STATUS) & ~(CT82C710_ENABLE | CT82C710_INTS_ON), CT82C710_STATUS);
 
 	if (ct82c170_wait())
-		printk(KERN_WARNING "ct82c710.c: Device busy in close()\n");
+;
 
 	free_irq(CT82C710_IRQ, NULL);
 }
@@ -129,7 +129,7 @@ static int ct82c710_open(struct serio *serio)
 	outb_p(status, CT82C710_STATUS);	/* Enable interrupts */
 
 	while (ct82c170_wait()) {
-		printk(KERN_ERR "ct82c710: Device busy in open()\n");
+;
 		status &= ~(CT82C710_ENABLE | CT82C710_INTS_ON);
 		outb_p(status, CT82C710_STATUS);
 		free_irq(CT82C710_IRQ, NULL);
@@ -193,8 +193,8 @@ static int __devinit ct82c710_probe(struct platform_device *dev)
 
 	serio_register_port(ct82c710_port);
 
-	printk(KERN_INFO "serio: C&T 82c710 mouse port at %#llx irq %d\n",
-		(unsigned long long)CT82C710_DATA, CT82C710_IRQ);
+//	printk(KERN_INFO "serio: C&T 82c710 mouse port at %#llx irq %d\n",
+;
 
 	return 0;
 }

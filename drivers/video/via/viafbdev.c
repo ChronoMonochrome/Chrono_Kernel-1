@@ -419,7 +419,7 @@ static int viafb_ioctl(struct fb_info *info, u_int cmd, u_long arg)
 	u32 gpu32;
 
 	DEBUG_MSG(KERN_INFO "viafb_ioctl: 0x%X !!\n", cmd);
-	printk(KERN_WARNING "viafb_ioctl: Please avoid this interface as it is unstable and might change or vanish at any time!\n");
+;
 	memset(&u, 0, sizeof(u));
 
 	switch (cmd) {
@@ -813,8 +813,8 @@ static int viafb_cursor(struct fb_info *info, struct fb_cursor *cursor)
 	else if (cursor->image.width <= 64 && cursor->image.height <= 64)
 		cur_size = 64;
 	else {
-		printk(KERN_WARNING "viafb_cursor: The cursor is too large "
-			"%dx%d", cursor->image.width, cursor->image.height);
+//		printk(KERN_WARNING "viafb_cursor: The cursor is too large "
+;
 		return -ENXIO;
 	}
 
@@ -1751,7 +1751,7 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
 		ALIGN(sizeof(struct viafb_shared), BITS_PER_LONG/8),
 		&vdev->pdev->dev);
 	if (!viafbinfo) {
-		printk(KERN_ERR"Could not allocate memory for viafb_info.\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1828,8 +1828,8 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
 		viafbinfo1 = framebuffer_alloc(viafb_par_length,
 				&vdev->pdev->dev);
 		if (!viafbinfo1) {
-			printk(KERN_ERR
-			"allocate the second framebuffer struct error\n");
+//			printk(KERN_ERR
+;
 			rc = -ENOMEM;
 			goto out_fb_release;
 		}
@@ -2042,9 +2042,9 @@ int __init viafb_init(void)
 		|| parse_active_dev())
 		return -EINVAL;
 
-	printk(KERN_INFO
-       "VIA Graphics Integration Chipset framebuffer %d.%d initializing\n",
-	       VERSION_MAJOR, VERSION_MINOR);
+//	printk(KERN_INFO
+//       "VIA Graphics Integration Chipset framebuffer %d.%d initializing\n",
+;
 	return 0;
 }
 

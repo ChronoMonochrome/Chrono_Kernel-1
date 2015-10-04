@@ -172,9 +172,9 @@ static void taos_work_func_prox(struct work_struct *work)
 						(CMD_REG | PRX_MAXTHRESHLO));
 	threshold_low = i2c_smbus_read_word_data(taos->client,
 						(CMD_REG | PRX_MINTHRESHLO));
-	printk(KERN_INFO "%s: ADC: %d, H: %d, L: %d\n, threshold_high: %d",
-			__func__, adc_data, threshold_high, threshold_low,
-			taos->threshold_high);
+//	printk(KERN_INFO "%s: ADC: %d, H: %d, L: %d\n, threshold_high: %d",
+//			__func__, adc_data, threshold_high, threshold_low,
+;
 	if ((threshold_high == (PRX_THRSH_HI_PARAM))
 			 && (adc_data >= (PRX_THRSH_HI_PARAM))) {
 		pr_info("threshold_high=PRX_THRSH_HI_PARAM\n");
@@ -239,7 +239,7 @@ static irqreturn_t taos_irq_handler(int irq, void *dev_id)
 {
 	struct taos_data *taos = dev_id;
 
-	printk(KERN_INFO "[PROXIMITY] taos->irq = %d\n", taos->irq);
+;
 
 	if (taos->irq != -1) {
 		wake_lock_timeout(&taos->prx_wake_lock, 3 * HZ);
@@ -934,7 +934,7 @@ static int taos_opt_probe(struct i2c_client *client,
 
 	taos_poweron(taos);
 	err = i2c_smbus_read_byte_data(taos->client, CMD_REG | CHIPID);
-	printk(KERN_INFO "[PROXIMITY] %s: chipID[%X]\n", __func__, err);
+;
 	if (err < 0)
 		goto err_setup_regulator;
 

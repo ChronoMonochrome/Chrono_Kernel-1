@@ -1540,11 +1540,11 @@ no_dma:
 			case 0x0c :
 				uap->port_type = PMAC_SCC_I2S1;
 			}
-			printk(KERN_INFO "pmac_zilog: i2c-modem detected, id: %d\n",
-				mid ? (*mid) : 0);
+//			printk(KERN_INFO "pmac_zilog: i2c-modem detected, id: %d\n",
+;
 			of_node_put(i2c_modem);
 		} else {
-			printk(KERN_INFO "pmac_zilog: serial modem detected\n");
+;
 		}
 	}
 
@@ -1615,9 +1615,9 @@ static int pmz_attach(struct macio_dev *mdev, const struct of_device_id *match)
 			uap->dev = mdev;
 			dev_set_drvdata(&mdev->ofdev.dev, uap);
 			if (macio_request_resources(uap->dev, "pmac_zilog"))
-				printk(KERN_WARNING "%s: Failed to request resource"
-				       ", port still active\n",
-				       uap->node->name);
+//				printk(KERN_WARNING "%s: Failed to request resource"
+//				       ", port still active\n",
+;
 			else
 				uap->flags |= PMACZILOG_FLAG_RSRC_REQUESTED;				
 			return 0;
@@ -1654,7 +1654,7 @@ static int pmz_suspend(struct macio_dev *mdev, pm_message_t pm_state)
 	unsigned long flags;
 
 	if (uap == NULL) {
-		printk("HRM... pmz_suspend with NULL uap\n");
+;
 		return 0;
 	}
 
@@ -1808,8 +1808,8 @@ static int __init pmz_probe(void)
 		if (!node_a && !node_b) {
 			of_node_put(node_a);
 			of_node_put(node_b);
-			printk(KERN_ERR "pmac_zilog: missing node %c for escc %s\n",
-				(!node_a) ? 'a' : 'b', node_p->full_name);
+//			printk(KERN_ERR "pmac_zilog: missing node %c for escc %s\n",
+;
 			goto next;
 		}
 
@@ -2029,7 +2029,7 @@ static struct platform_driver pmz_driver = {
 static int __init init_pmz(void)
 {
 	int rc, i;
-	printk(KERN_INFO "%s\n", version);
+;
 
 	/* 
 	 * First, we need to do a direct OF-based probe pass. We
@@ -2052,9 +2052,9 @@ static int __init init_pmz(void)
 	 */
 	rc = pmz_register();
 	if (rc) {
-		printk(KERN_ERR 
-			"pmac_zilog: Error registering serial device, disabling pmac_zilog.\n"
-		 	"pmac_zilog: Did another serial driver already claim the minors?\n"); 
+//		printk(KERN_ERR 
+//			"pmac_zilog: Error registering serial device, disabling pmac_zilog.\n"
+;
 		/* effectively "pmz_unprobe()" */
 		for (i=0; i < pmz_ports_count; i++)
 			pmz_dispose_port(&pmz_ports[i]);

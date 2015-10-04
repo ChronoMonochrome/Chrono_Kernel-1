@@ -47,44 +47,44 @@ static void ccw_timeout_log(struct ccw_device *cdev)
 	orb = &private->orb;
 	cc = stsch_err(sch->schid, &schib);
 
-	printk(KERN_WARNING "cio: ccw device timeout occurred at %llx, "
-	       "device information:\n", get_clock());
-	printk(KERN_WARNING "cio: orb:\n");
+//	printk(KERN_WARNING "cio: ccw device timeout occurred at %llx, "
+;
+;
 	print_hex_dump(KERN_WARNING, "cio:  ", DUMP_PREFIX_NONE, 16, 1,
 		       orb, sizeof(*orb), 0);
-	printk(KERN_WARNING "cio: ccw device bus id: %s\n",
-	       dev_name(&cdev->dev));
-	printk(KERN_WARNING "cio: subchannel bus id: %s\n",
-	       dev_name(&sch->dev));
-	printk(KERN_WARNING "cio: subchannel lpm: %02x, opm: %02x, "
-	       "vpm: %02x\n", sch->lpm, sch->opm, sch->vpm);
+//	printk(KERN_WARNING "cio: ccw device bus id: %s\n",
+;
+//	printk(KERN_WARNING "cio: subchannel bus id: %s\n",
+;
+//	printk(KERN_WARNING "cio: subchannel lpm: %02x, opm: %02x, "
+;
 
 	if (orb->tm.b) {
-		printk(KERN_WARNING "cio: orb indicates transport mode\n");
-		printk(KERN_WARNING "cio: last tcw:\n");
+;
+;
 		print_hex_dump(KERN_WARNING, "cio:  ", DUMP_PREFIX_NONE, 16, 1,
 			       (void *)(addr_t)orb->tm.tcw,
 			       sizeof(struct tcw), 0);
 	} else {
-		printk(KERN_WARNING "cio: orb indicates command mode\n");
+;
 		if ((void *)(addr_t)orb->cmd.cpa == &private->sense_ccw ||
 		    (void *)(addr_t)orb->cmd.cpa == cdev->private->iccws)
-			printk(KERN_WARNING "cio: last channel program "
-			       "(intern):\n");
+//			printk(KERN_WARNING "cio: last channel program "
+;
 		else
-			printk(KERN_WARNING "cio: last channel program:\n");
+;
 
 		print_hex_dump(KERN_WARNING, "cio:  ", DUMP_PREFIX_NONE, 16, 1,
 			       (void *)(addr_t)orb->cmd.cpa,
 			       sizeof(struct ccw1), 0);
 	}
-	printk(KERN_WARNING "cio: ccw device state: %d\n",
-	       cdev->private->state);
-	printk(KERN_WARNING "cio: store subchannel returned: cc=%d\n", cc);
-	printk(KERN_WARNING "cio: schib:\n");
+//	printk(KERN_WARNING "cio: ccw device state: %d\n",
+;
+;
+;
 	print_hex_dump(KERN_WARNING, "cio:  ", DUMP_PREFIX_NONE, 16, 1,
 		       &schib, sizeof(schib), 0);
-	printk(KERN_WARNING "cio: ccw device flags:\n");
+;
 	print_hex_dump(KERN_WARNING, "cio:  ", DUMP_PREFIX_NONE, 16, 1,
 		       &cdev->private->flags, sizeof(cdev->private->flags), 0);
 }

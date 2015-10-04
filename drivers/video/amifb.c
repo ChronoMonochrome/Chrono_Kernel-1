@@ -96,91 +96,91 @@
 #endif
 
 #ifdef DEBUG
-#  define DPRINTK(fmt, args...)	printk(KERN_DEBUG "%s: " fmt, __func__ , ## args)
-#else
-#  define DPRINTK(fmt, args...)
-#endif
-
-/*******************************************************************************
-
-
-   Generic video timings
-   ---------------------
-
-   Timings used by the frame buffer interface:
-
-   +----------+---------------------------------------------+----------+-------+
-   |          |                ^                            |          |       |
-   |          |                |upper_margin                |          |       |
-   |          |                v                            |          |       |
-   +----------###############################################----------+-------+
-   |          #                ^                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |   left   #                |                            #  right   | hsync |
-   |  margin  #                |       xres                 #  margin  |  len  |
-   |<-------->#<---------------+--------------------------->#<-------->|<----->|
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |yres                        #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                |                            #          |       |
-   |          #                v                            #          |       |
-   +----------###############################################----------+-------+
-   |          |                ^                            |          |       |
-   |          |                |lower_margin                |          |       |
-   |          |                v                            |          |       |
-   +----------+---------------------------------------------+----------+-------+
-   |          |                ^                            |          |       |
-   |          |                |vsync_len                   |          |       |
-   |          |                v                            |          |       |
-   +----------+---------------------------------------------+----------+-------+
-
-
-   Amiga video timings
-   -------------------
-
-   The Amiga native chipsets uses another timing scheme:
-
-      - hsstrt:   Start of horizontal synchronization pulse
-      - hsstop:   End of horizontal synchronization pulse
-      - htotal:   Last value on the line (i.e. line length = htotal+1)
-      - vsstrt:   Start of vertical synchronization pulse
-      - vsstop:   End of vertical synchronization pulse
-      - vtotal:   Last line value (i.e. number of lines = vtotal+1)
-      - hcenter:  Start of vertical retrace for interlace
-
-   You can specify the blanking timings independently. Currently I just set
-   them equal to the respective synchronization values:
-
-      - hbstrt:   Start of horizontal blank
-      - hbstop:   End of horizontal blank
-      - vbstrt:   Start of vertical blank
-      - vbstop:   End of vertical blank
-
-   Horizontal values are in color clock cycles (280 ns), vertical values are in
-   scanlines.
-
-   (0, 0) is somewhere in the upper-left corner :-)
-
-
-   Amiga visible window definitions
-   --------------------------------
-
-   Currently I only have values for AGA, SHRES (28 MHz dotclock). Feel free to
-   make corrections and/or additions.
-
-   Within the above synchronization specifications, the visible window is
-   defined by the following parameters (actual register resolutions may be
-   different; all horizontal values are normalized with respect to the pixel
+//#  define DPRINTK(fmt, args...)	printk(KERN_DEBUG "%s: " fmt, __func__ , ## args)
+//#else
+//#  define DPRINTK(fmt, args...)
+//#endif
+//
+///*******************************************************************************
+//
+//
+//   Generic video timings
+//   ---------------------
+//
+//   Timings used by the frame buffer interface:
+//
+//   +----------+---------------------------------------------+----------+-------+
+//   |          |                ^                            |          |       |
+//   |          |                |upper_margin                |          |       |
+//   |          |                v                            |          |       |
+//   +----------###############################################----------+-------+
+//   |          #                ^                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |   left   #                |                            #  right   | hsync |
+//   |  margin  #                |       xres                 #  margin  |  len  |
+//   |<-------->#<---------------+--------------------------->#<-------->|<----->|
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |yres                        #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                |                            #          |       |
+//   |          #                v                            #          |       |
+//   +----------###############################################----------+-------+
+//   |          |                ^                            |          |       |
+//   |          |                |lower_margin                |          |       |
+//   |          |                v                            |          |       |
+//   +----------+---------------------------------------------+----------+-------+
+//   |          |                ^                            |          |       |
+//   |          |                |vsync_len                   |          |       |
+//   |          |                v                            |          |       |
+//   +----------+---------------------------------------------+----------+-------+
+//
+//
+//   Amiga video timings
+//   -------------------
+//
+//   The Amiga native chipsets uses another timing scheme:
+//
+//      - hsstrt:   Start of horizontal synchronization pulse
+//      - hsstop:   End of horizontal synchronization pulse
+//      - htotal:   Last value on the line (i.e. line length = htotal+1)
+//      - vsstrt:   Start of vertical synchronization pulse
+//      - vsstop:   End of vertical synchronization pulse
+//      - vtotal:   Last line value (i.e. number of lines = vtotal+1)
+//      - hcenter:  Start of vertical retrace for interlace
+//
+//   You can specify the blanking timings independently. Currently I just set
+//   them equal to the respective synchronization values:
+//
+//      - hbstrt:   Start of horizontal blank
+//      - hbstop:   End of horizontal blank
+//      - vbstrt:   Start of vertical blank
+//      - vbstop:   End of vertical blank
+//
+//   Horizontal values are in color clock cycles (280 ns), vertical values are in
+//   scanlines.
+//
+//   (0, 0) is somewhere in the upper-left corner :-)
+//
+//
+//   Amiga visible window definitions
+//   --------------------------------
+//
+//   Currently I only have values for AGA, SHRES (28 MHz dotclock). Feel free to
+//   make corrections and/or additions.
+//
+//   Within the above synchronization specifications, the visible window is
+//   defined by the following parameters (actual register resolutions may be
+;
    clock):
 
       - diwstrt_h:   Horizontal start of the visible window
@@ -2322,7 +2322,7 @@ default_chipset:
 
 		default:
 #ifdef CONFIG_FB_AMIGA_OCS
-			printk("Unknown graphics chipset, defaulting to OCS\n");
+;
 			strcat(fb_info.fix.id, "Unknown");
 			goto default_chipset;
 #else /* CONFIG_FB_AMIGA_OCS */
@@ -2407,7 +2407,7 @@ default_chipset:
 	videomemory = (u_long)ioremap_writethrough(fb_info.fix.smem_start,
 						   fb_info.fix.smem_len);
 	if (!videomemory) {
-		printk("amifb: WARNING! unable to map videomem cached writethrough\n");
+;
 		fb_info.screen_base = (char *)ZTWO_VADDR(fb_info.fix.smem_start);
 	} else
 		fb_info.screen_base = (char *)videomemory;
@@ -2442,8 +2442,8 @@ default_chipset:
 		goto amifb_error;
 	}
 
-	printk("fb%d: %s frame buffer device, using %dK of video memory\n",
-	       fb_info.node, fb_info.fix.id, fb_info.fix.smem_len>>10);
+//	printk("fb%d: %s frame buffer device, using %dK of video memory\n",
+;
 
 	return 0;
 

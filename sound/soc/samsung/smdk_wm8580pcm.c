@@ -54,8 +54,8 @@ static int smdk_wm8580_pcm_hw_params(struct snd_pcm_substream *substream,
 	case 8000:
 		break;
 	default:
-		printk(KERN_ERR "%s:%d Sampling Rate %u not supported!\n",
-		__func__, __LINE__, params_rate(params));
+//		printk(KERN_ERR "%s:%d Sampling Rate %u not supported!\n",
+;
 		return -EINVAL;
 	}
 

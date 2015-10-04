@@ -455,7 +455,7 @@ static int sq_setup(struct sound_queue *sq)
 
 	if (sq->locked) { /* are we already set? - and not changeable */
 #ifdef DEBUG_DMASOUND
-printk("dmasound_core: tried to sq_setup a locked queue\n") ;
+;
 #endif
 		return -EINVAL ;
 	}
@@ -508,7 +508,7 @@ printk("dmasound_core: tried to sq_setup a locked queue\n") ;
 		/* let's just check for obvious mistakes */
 		if ( sq->block_size <= 0 || sq->block_size > sq->bufSize) {
 #ifdef DEBUG_DMASOUND
-printk("dmasound_core: invalid frag size (user set %d)\n", sq->user_frag_size) ;
+;
 #endif
 			sq->block_size = sq->bufSize ;
 		}
@@ -519,7 +519,7 @@ printk("dmasound_core: invalid frag size (user set %d)\n", sq->user_frag_size) ;
 				sq->max_active : sq->max_count ;
 		} else {
 #ifdef DEBUG_DMASOUND
-printk("dmasound_core: invalid frag count (user set %d)\n", sq->user_frags) ;
+;
 #endif
 			sq->max_count =
 			sq->max_active = sq->numBufs ;
@@ -854,7 +854,7 @@ static int sq_fsync(struct file *filp, struct dentry *dentry)
 			break;
 		}
 		if (!--timeout) {
-			printk(KERN_WARNING "dmasound: Timeout draining output\n");
+;
 			sq_reset_output();
 			rc = -EIO;
 			break;
@@ -947,7 +947,7 @@ static int set_queue_frags(struct sound_queue *sq, int bufs, int size)
 {
 	if (sq->locked) {
 #ifdef DEBUG_DMASOUND
-printk("dmasound_core: tried to set_queue_frags on a locked queue\n") ;
+;
 #endif
 		return -EINVAL ;
 	}
@@ -1169,7 +1169,7 @@ static int sq_init(void)
 
 	sq_unit = register_sound_dsp(fops, -1);
 	if (sq_unit < 0) {
-		printk(KERN_ERR "dmasound_core: couldn't register fops\n") ;
+;
 		return sq_unit ;
 	}
 
@@ -1321,11 +1321,11 @@ static int state_open(struct inode *inode, struct file *file)
 		write_sq.count, write_sq.rear_size, write_sq.active,
 		write_sq.busy, write_sq.syncing, write_sq.locked, write_sq.xruns) ;
 #ifdef DEBUG_DMASOUND
-printk("dmasound: stat buffer used %d bytes\n", len) ;
+;
 #endif
 
 	if (len >= STAT_BUFF_LEN)
-		printk(KERN_ERR "dmasound_core: stat buffer overflowed!\n");
+;
 
 	state.len = len;
 	ret = 0;
@@ -1406,22 +1406,22 @@ int dmasound_init(void)
 	mixer_init();
 
 	if (!dmasound.mach.irqinit()) {
-		printk(KERN_ERR "DMA sound driver: Interrupt initialization failed\n");
+;
 		return -ENODEV;
 	}
 #ifdef MODULE
 	irq_installed = 1;
 #endif
 
-	printk(KERN_INFO "%s DMA sound driver rev %03d installed\n",
-		dmasound.mach.name, (DMASOUND_CORE_REVISION<<4) +
-		((dmasound.mach.version>>8) & 0x0f));
-	printk(KERN_INFO
-		"Core driver edition %02d.%02d : %s driver edition %02d.%02d\n",
-		DMASOUND_CORE_REVISION, DMASOUND_CORE_EDITION, dmasound.mach.name2,
-		(dmasound.mach.version >> 8), (dmasound.mach.version & 0xff)) ;
-	printk(KERN_INFO "Write will use %4d fragments of %7d bytes as default\n",
-		numWriteBufs, writeBufSize) ;
+//	printk(KERN_INFO "%s DMA sound driver rev %03d installed\n",
+//		dmasound.mach.name, (DMASOUND_CORE_REVISION<<4) +
+;
+//	printk(KERN_INFO
+//		"Core driver edition %02d.%02d : %s driver edition %02d.%02d\n",
+//		DMASOUND_CORE_REVISION, DMASOUND_CORE_EDITION, dmasound.mach.name2,
+;
+//	printk(KERN_INFO "Write will use %4d fragments of %7d bytes as default\n",
+;
 	return 0;
 }
 
@@ -1462,13 +1462,13 @@ static int dmasound_setup(char *str)
 	switch (ints[0]) {
 	case 3:
 		if ((ints[3] < 0) || (ints[3] > MAX_CATCH_RADIUS))
-			printk("dmasound_setup: invalid catch radius, using default = %d\n", catchRadius);
+;
 		else
 			catchRadius = ints[3];
 		/* fall through */
 	case 2:
 		if (ints[1] < MIN_BUFFERS)
-			printk("dmasound_setup: invalid number of buffers, using default = %d\n", numWriteBufs);
+;
 		else
 			numWriteBufs = ints[1];
 		/* fall through */
@@ -1476,13 +1476,13 @@ static int dmasound_setup(char *str)
 		if ((size = ints[2]) < 256) /* check for small buffer specs */
 			size <<= 10 ;
                 if (size < MIN_BUFSIZE || size > MAX_BUFSIZE)
-                        printk("dmasound_setup: invalid write buffer size, using default = %d\n", writeBufSize);
+;
                 else
                         writeBufSize = size;
 	case 0:
 		break;
 	default:
-		printk("dmasound_setup: invalid number of arguments\n");
+;
 		return 0;
 	}
 	return 1;

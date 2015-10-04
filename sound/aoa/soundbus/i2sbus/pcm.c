@@ -267,7 +267,7 @@ static void i2sbus_wait_for_stop(struct i2sbus_dev *i2sdev,
 		pi->stop_completion = NULL;
 		if (timeout == 0) {
 			/* timeout expired, stop dbdma forcefully */
-			printk(KERN_ERR "i2sbus_wait_for_stop: timed out\n");
+;
 			/* make sure RUN, PAUSE and S0 bits are cleared */
 			out_le32(&pi->dbdma->control, (RUN | PAUSE | 1) << 16);
 			pi->dbdma_ring.stopping = 0;
@@ -680,8 +680,8 @@ static inline void handle_interrupt(struct i2sbus_dev *i2sdev, int in)
 			if (!(status & ACTIVE) && (!in || (status & 0x80)))
 				break;
 			if (--timeout <= 0) {
-				printk(KERN_ERR "i2sbus: timed out "
-				       "waiting for DMA to stop!\n");
+//				printk(KERN_ERR "i2sbus: timed out "
+;
 				break;
 			}
 			udelay(1);
@@ -867,7 +867,7 @@ static void i2sbus_private_free(struct snd_pcm *pcm)
 	i2sdev->out.created = 0;
 	i2sdev->in.created = 0;
 	list_for_each_entry_safe(p, tmp, &i2sdev->sound.codec_list, list) {
-		printk(KERN_ERR "i2sbus: a codec didn't unregister!\n");
+;
 		list_del(&p->list);
 		module_put(p->codec->owner);
 		kfree(p);
@@ -886,7 +886,7 @@ i2sbus_attach_codec(struct soundbus_dev *dev, struct snd_card *card,
 	struct codec_info_item *cii;
 
 	if (!dev->pcmname || dev->pcmid == -1) {
-		printk(KERN_ERR "i2sbus: pcm name and id must be set!\n");
+;
 		return -EINVAL;
 	}
 
@@ -909,13 +909,13 @@ i2sbus_attach_codec(struct soundbus_dev *dev, struct snd_card *card,
 	 * sysclock/busclock stuff above to depend on which is usable */
 	list_for_each_entry(cii, &dev->codec_list, list) {
 		if (cii->codec->sysclock_factor != ci->sysclock_factor) {
-			printk(KERN_DEBUG
-			       "cannot yet handle multiple different sysclocks!\n");
+//			printk(KERN_DEBUG
+;
 			return -EINVAL;
 		}
 		if (cii->codec->bus_factor != ci->bus_factor) {
-			printk(KERN_DEBUG
-			       "cannot yet handle multiple different bus clocks!\n");
+//			printk(KERN_DEBUG
+;
 			return -EINVAL;
 		}
 	}
@@ -931,7 +931,7 @@ i2sbus_attach_codec(struct soundbus_dev *dev, struct snd_card *card,
 
 	cii = kzalloc(sizeof(struct codec_info_item), GFP_KERNEL);
 	if (!cii) {
-		printk(KERN_DEBUG "i2sbus: failed to allocate cii\n");
+;
 		return -ENOMEM;
 	}
 
@@ -941,21 +941,21 @@ i2sbus_attach_codec(struct soundbus_dev *dev, struct snd_card *card,
 	cii->codec_data = data;
 
 	if (!cii->sdev) {
-		printk(KERN_DEBUG
-		       "i2sbus: failed to get soundbus dev reference\n");
+//		printk(KERN_DEBUG
+;
 		err = -ENODEV;
 		goto out_free_cii;
 	}
 
 	if (!try_module_get(THIS_MODULE)) {
-		printk(KERN_DEBUG "i2sbus: failed to get module reference!\n");
+;
 		err = -EBUSY;
 		goto out_put_sdev;
 	}
 
 	if (!try_module_get(ci->owner)) {
-		printk(KERN_DEBUG
-		       "i2sbus: failed to get module reference to codec owner!\n");
+//		printk(KERN_DEBUG
+;
 		err = -EBUSY;
 		goto out_put_this_module;
 	}
@@ -964,7 +964,7 @@ i2sbus_attach_codec(struct soundbus_dev *dev, struct snd_card *card,
 		err = snd_pcm_new(card, dev->pcmname, dev->pcmid, 0, 0,
 				  &dev->pcm);
 		if (err) {
-			printk(KERN_DEBUG "i2sbus: failed to create pcm\n");
+;
 			goto out_put_ci_module;
 		}
 		dev->pcm->dev = &dev->ofdev.dev;
@@ -977,8 +977,8 @@ i2sbus_attach_codec(struct soundbus_dev *dev, struct snd_card *card,
 	if (!i2sdev->out.created && out) {
 		if (dev->pcm->card != card) {
 			/* eh? */
-			printk(KERN_ERR
-			       "Can't attach same bus to different cards!\n");
+//			printk(KERN_ERR
+;
 			err = -EINVAL;
 			goto out_put_ci_module;
 		}
@@ -992,8 +992,8 @@ i2sbus_attach_codec(struct soundbus_dev *dev, struct snd_card *card,
 
 	if (!i2sdev->in.created && in) {
 		if (dev->pcm->card != card) {
-			printk(KERN_ERR
-			       "Can't attach same bus to different cards!\n");
+//			printk(KERN_ERR
+;
 			err = -EINVAL;
 			goto out_put_ci_module;
 		}
@@ -1013,7 +1013,7 @@ i2sbus_attach_codec(struct soundbus_dev *dev, struct snd_card *card,
 	 */
 	err = snd_device_register(card, dev->pcm);
 	if (err) {
-		printk(KERN_ERR "i2sbus: error registering new pcm\n");
+;
 		goto out_put_ci_module;
 	}
 	/* no errors any more, so let's add this to our list */

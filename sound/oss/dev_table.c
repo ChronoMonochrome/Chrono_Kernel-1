@@ -57,13 +57,13 @@ int sound_install_audiodrv(int vers, char *name, struct audio_driver *driver,
 	int num;
 
 	if (vers != AUDIO_DRIVER_VERSION || driver_size > sizeof(struct audio_driver)) {
-		printk(KERN_ERR "Sound: Incompatible audio driver for %s\n", name);
+;
 		return -(EINVAL);
 	}
 	num = sound_alloc_audiodev();
 
 	if (num == -1) {
-		printk(KERN_ERR "sound: Too many audio drivers\n");
+;
 		return -(EBUSY);
 	}
 	d = (struct audio_driver *) (sound_mem_blocks[sound_nblocks] = vmalloc(sizeof(struct audio_driver)));
@@ -77,7 +77,7 @@ int sound_install_audiodrv(int vers, char *name, struct audio_driver *driver,
 		sound_nblocks = MAX_MEM_BLOCKS - 1;
 
 	if (d == NULL || op == NULL) {
-		printk(KERN_ERR "Sound: Can't allocate driver for (%s)\n", name);
+;
 		sound_unload_audiodev(num);
 		return -(ENOMEM);
 	}
@@ -115,12 +115,12 @@ int sound_install_mixer(int vers, char *name, struct mixer_operations *driver,
 	int n = sound_alloc_mixerdev();
 
 	if (n == -1) {
-		printk(KERN_ERR "Sound: Too many mixer drivers\n");
+;
 		return -EBUSY;
 	}
 	if (vers != MIXER_DRIVER_VERSION ||
 		driver_size > sizeof(struct mixer_operations)) {
-		printk(KERN_ERR "Sound: Incompatible mixer driver for %s\n", name);
+;
 		return -EINVAL;
 	}
 	
@@ -133,7 +133,7 @@ int sound_install_mixer(int vers, char *name, struct mixer_operations *driver,
 		sound_nblocks = MAX_MEM_BLOCKS - 1;
 
 	if (op == NULL) {
-		printk(KERN_ERR "Sound: Can't allocate mixer driver for (%s)\n", name);
+;
 		return -ENOMEM;
 	}
 	memcpy((char *) op, (char *) driver, driver_size);

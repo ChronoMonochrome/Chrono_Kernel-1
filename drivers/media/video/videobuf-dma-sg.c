@@ -39,8 +39,8 @@
 
 #define MAGIC_CHECK(is, should)						\
 	if (unlikely((is) != (should))) {				\
-		printk(KERN_ERR "magic mismatch: %x (expected %x)\n",	\
-				is, should);				\
+//		printk(KERN_ERR "magic mismatch: %x (expected %x)\n",	\
+;
 		BUG();							\
 	}
 
@@ -51,21 +51,21 @@ MODULE_DESCRIPTION("helper module to manage video4linux dma sg buffers");
 MODULE_AUTHOR("Mauro Carvalho Chehab <mchehab@infradead.org>");
 MODULE_LICENSE("GPL");
 
-#define dprintk(level, fmt, arg...)					\
-	if (debug >= level)						\
-		printk(KERN_DEBUG "vbuf-sg: " fmt , ## arg)
-
-/* --------------------------------------------------------------------- */
-
-/*
- * Return a scatterlist for some page-aligned vmalloc()'ed memory
- * block (NULL on errors).  Memory for the scatterlist is allocated
- * using kmalloc.  The caller must free the memory.
- */
-static struct scatterlist *videobuf_vmalloc_to_sg(unsigned char *virt,
-						  int nr_pages)
-{
-	struct scatterlist *sglist;
+//#define dprintk(level, fmt, arg...)					\
+//	if (debug >= level)						\
+//		printk(KERN_DEBUG "vbuf-sg: " fmt , ## arg)
+//
+///* --------------------------------------------------------------------- */
+//
+///*
+// * Return a scatterlist for some page-aligned vmalloc()'ed memory
+// * block (NULL on errors).  Memory for the scatterlist is allocated
+// * using kmalloc.  The caller must free the memory.
+// */
+//static struct scatterlist *videobuf_vmalloc_to_sg(unsigned char *virt,
+//						  int nr_pages)
+//{
+;
 	struct page *pg;
 	int i;
 
@@ -121,12 +121,12 @@ static struct scatterlist *videobuf_pages_to_sg(struct page **pages,
 	return sglist;
 
 nopage:
-	dprintk(2, "sgl: oops - no page\n");
+;
 	vfree(sglist);
 	return NULL;
 
 highmem:
-	dprintk(2, "sgl: oops - highmem page\n");
+;
 	vfree(sglist);
 	return NULL;
 }
@@ -178,8 +178,8 @@ static int videobuf_dma_init_user_locked(struct videobuf_dmabuf *dma,
 	if (NULL == dma->pages)
 		return -ENOMEM;
 
-	dprintk(1, "init user [0x%lx+0x%lx => %d pages]\n",
-		data, size, dma->nr_pages);
+//	dprintk(1, "init user [0x%lx+0x%lx => %d pages]\n",
+;
 
 	err = get_user_pages(current, current->mm,
 			     data & PAGE_MASK, dma->nr_pages,
@@ -188,7 +188,7 @@ static int videobuf_dma_init_user_locked(struct videobuf_dmabuf *dma,
 
 	if (err != dma->nr_pages) {
 		dma->nr_pages = (err >= 0) ? err : 0;
-		dprintk(1, "get_user_pages: err=%d [%d]\n", err, dma->nr_pages);
+;
 		return err < 0 ? err : -EINVAL;
 	}
 	return 0;
@@ -210,18 +210,18 @@ EXPORT_SYMBOL_GPL(videobuf_dma_init_user);
 int videobuf_dma_init_kernel(struct videobuf_dmabuf *dma, int direction,
 			     int nr_pages)
 {
-	dprintk(1, "init kernel [%d pages]\n", nr_pages);
+;
 
 	dma->direction = direction;
 	dma->vaddr = vmalloc_32(nr_pages << PAGE_SHIFT);
 	if (NULL == dma->vaddr) {
-		dprintk(1, "vmalloc_32(%d pages) failed\n", nr_pages);
+;
 		return -ENOMEM;
 	}
 
-	dprintk(1, "vmalloc is at addr 0x%08lx, size=%d\n",
-				(unsigned long)dma->vaddr,
-				nr_pages << PAGE_SHIFT);
+//	dprintk(1, "vmalloc is at addr 0x%08lx, size=%d\n",
+//				(unsigned long)dma->vaddr,
+;
 
 	memset(dma->vaddr, 0, nr_pages << PAGE_SHIFT);
 	dma->nr_pages = nr_pages;
@@ -233,8 +233,8 @@ EXPORT_SYMBOL_GPL(videobuf_dma_init_kernel);
 int videobuf_dma_init_overlay(struct videobuf_dmabuf *dma, int direction,
 			      dma_addr_t addr, int nr_pages)
 {
-	dprintk(1, "init overlay [%d pages @ bus 0x%lx]\n",
-		nr_pages, (unsigned long)addr);
+//	dprintk(1, "init overlay [%d pages @ bus 0x%lx]\n",
+;
 	dma->direction = direction;
 
 	if (0 == addr)
@@ -271,15 +271,15 @@ int videobuf_dma_map(struct device *dev, struct videobuf_dmabuf *dma)
 		}
 	}
 	if (NULL == dma->sglist) {
-		dprintk(1, "scatterlist is NULL\n");
+;
 		return -ENOMEM;
 	}
 	if (!dma->bus_addr) {
 		dma->sglen = dma_map_sg(dev, dma->sglist,
 					dma->nr_pages, dma->direction);
 		if (0 == dma->sglen) {
-			printk(KERN_WARNING
-			       "%s: videobuf_map_sg failed\n", __func__);
+//			printk(KERN_WARNING
+;
 			vfree(dma->sglist);
 			dma->sglist = NULL;
 			dma->sglen = 0;
@@ -338,8 +338,8 @@ static void videobuf_vm_open(struct vm_area_struct *vma)
 {
 	struct videobuf_mapping *map = vma->vm_private_data;
 
-	dprintk(2, "vm_open %p [count=%d,vma=%08lx-%08lx]\n", map,
-		map->count, vma->vm_start, vma->vm_end);
+//	dprintk(2, "vm_open %p [count=%d,vma=%08lx-%08lx]\n", map,
+;
 
 	map->count++;
 }
@@ -351,12 +351,12 @@ static void videobuf_vm_close(struct vm_area_struct *vma)
 	struct videobuf_dma_sg_memory *mem;
 	int i;
 
-	dprintk(2, "vm_close %p [count=%d,vma=%08lx-%08lx]\n", map,
-		map->count, vma->vm_start, vma->vm_end);
+//	dprintk(2, "vm_close %p [count=%d,vma=%08lx-%08lx]\n", map,
+;
 
 	map->count--;
 	if (0 == map->count) {
-		dprintk(1, "munmap %p q=%p\n", map, q);
+;
 		videobuf_queue_lock(q);
 		for (i = 0; i < VIDEO_MAX_FRAME; i++) {
 			if (NULL == q->bufs[i])
@@ -389,9 +389,9 @@ static int videobuf_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	struct page *page;
 
-	dprintk(3, "fault: fault @ %08lx [vma %08lx-%08lx]\n",
-		(unsigned long)vmf->virtual_address,
-		vma->vm_start, vma->vm_end);
+//	dprintk(3, "fault: fault @ %08lx [vma %08lx-%08lx]\n",
+//		(unsigned long)vmf->virtual_address,
+;
 
 	page = alloc_page(GFP_USER | __GFP_DMA32);
 	if (!page)
@@ -432,9 +432,9 @@ static struct videobuf_buffer *__videobuf_alloc_vb(size_t size)
 
 	videobuf_dma_init(&mem->dma);
 
-	dprintk(1, "%s: allocated at %p(%ld+%ld) & %p(%ld)\n",
-		__func__, vb, (long)sizeof(*vb), (long)size - sizeof(*vb),
-		mem, (long)sizeof(*mem));
+//	dprintk(1, "%s: allocated at %p(%ld+%ld) & %p(%ld)\n",
+//		__func__, vb, (long)sizeof(*vb), (long)size - sizeof(*vb),
+;
 
 	return vb;
 }
@@ -556,8 +556,8 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
 
 	/* paranoia, should never happen since buf is always valid. */
 	if (!size) {
-		dprintk(1, "mmap app bug: offset invalid [offset=0x%lx]\n",
-				(vma->vm_pgoff << PAGE_SHIFT));
+//		dprintk(1, "mmap app bug: offset invalid [offset=0x%lx]\n",
+;
 		goto done;
 	}
 
@@ -584,8 +584,8 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
 	vma->vm_flags |= VM_DONTEXPAND | VM_RESERVED;
 	vma->vm_flags &= ~VM_IO; /* using shared anonymous pages */
 	vma->vm_private_data = map;
-	dprintk(1, "mmap %p: q=%p %08lx-%08lx pgoff %08lx bufs %d-%d\n",
-		map, q, vma->vm_start, vma->vm_end, vma->vm_pgoff, first, last);
+//	dprintk(1, "mmap %p: q=%p %08lx-%08lx pgoff %08lx bufs %d-%d\n",
+;
 	retval = 0;
 
 done:

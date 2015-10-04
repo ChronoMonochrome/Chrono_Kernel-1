@@ -763,7 +763,7 @@ static void set_source_common(u8 index, u8 offset, u8 iga)
 		value = mask;
 		break;
 	default:
-		printk(KERN_WARNING "viafb: Unsupported source: %d\n", iga);
+;
 		return;
 	}
 
@@ -782,7 +782,7 @@ static void set_crt_source(u8 iga)
 		value = 0x40;
 		break;
 	default:
-		printk(KERN_WARNING "viafb: Unsupported source: %d\n", iga);
+;
 		return;
 	}
 
@@ -955,8 +955,8 @@ void via_set_state(u32 devices, u8 state)
 void via_set_sync_polarity(u32 devices, u8 polarity)
 {
 	if (polarity & ~(VIA_HSYNC_NEGATIVE | VIA_VSYNC_NEGATIVE)) {
-		printk(KERN_WARNING "viafb: Unsupported polarity: %d\n",
-			polarity);
+//		printk(KERN_WARNING "viafb: Unsupported polarity: %d\n",
+;
 		return;
 	}
 

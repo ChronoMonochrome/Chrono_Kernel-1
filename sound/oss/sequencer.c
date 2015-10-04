@@ -216,7 +216,7 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 
 	dev = dev >> 4;
 
-	DEB(printk("sequencer_write(dev=%d, count=%d)\n", dev, count));
+;
 
 	if (mode == OPEN_READ)
 		return -EIO;
@@ -251,7 +251,7 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 		{
 			if (seq_mode == SEQ_2 && ev_code == SEQ_EXTENDED)
 			{
-				printk(KERN_WARNING "Sequencer: Invalid level 2 event %x\n", ev_code);
+;
 				return -EINVAL;
 			}
 			ev_size = 8;
@@ -271,7 +271,7 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 		{
 			if (seq_mode == SEQ_2)
 			{
-				printk(KERN_WARNING "Sequencer: 4 byte event in level 2 mode\n");
+;
 				return -EINVAL;
 			}
 			ev_size = 4;
@@ -298,7 +298,7 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 								sequencer_midi_input, sequencer_midi_output)) < 0)
 				{
 					seq_reset();
-					printk(KERN_WARNING "Sequencer Error: Unable to open Midi #%d\n", dev);
+;
 					return err;
 				}
 				midi_opened[dev] = 1;
@@ -953,7 +953,7 @@ int sequencer_open(int dev, struct file *file)
 	dev = dev >> 4;
 	mode = translate_mode(file);
 
-	DEB(printk("sequencer_open(dev=%d)\n", dev));
+;
 
 	if (!sequencer_ok)
 	{
@@ -1042,9 +1042,9 @@ int sequencer_open(int dev, struct file *file)
 
 		if ((tmp = synth_devs[i]->open(i, mode)) < 0)
 		{
-			printk(KERN_WARNING "Sequencer: Warning! Cannot open synth device #%d (%d)\n", i, tmp);
+;
 			if (synth_devs[i]->midi_dev)
-				printk(KERN_WARNING "(Maps to MIDI dev #%d)\n", synth_devs[i]->midi_dev);
+;
 		}
 		else
 		{
@@ -1128,7 +1128,7 @@ void sequencer_release(int dev, struct file *file)
 
 	dev = dev >> 4;
 
-	DEB(printk("sequencer_release(dev=%d)\n", dev));
+;
 
 	/*
 	 * Wait until the queue is empty (if we don't have nonblock)
@@ -1185,7 +1185,7 @@ void sequencer_release(int dev, struct file *file)
 	}
 
 	if (obsolete_api_used)
-		printk(KERN_WARNING "/dev/music: Obsolete (4 byte) API was used by %s\n", current->comm);
+;
 	sequencer_busy = 0;
 }
 
@@ -1649,13 +1649,13 @@ void sequencer_init(void)
 	queue = vmalloc(SEQ_MAX_QUEUE * EV_SZ);
 	if (queue == NULL)
 	{
-		printk(KERN_ERR "sequencer: Can't allocate memory for sequencer output queue\n");
+;
 		return;
 	}
 	iqueue = vmalloc(SEQ_MAX_QUEUE * IEV_SZ);
 	if (iqueue == NULL)
 	{
-		printk(KERN_ERR "sequencer: Can't allocate memory for sequencer input queue\n");
+;
 		vfree(queue);
 		return;
 	}

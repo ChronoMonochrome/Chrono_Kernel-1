@@ -976,12 +976,12 @@ static int init_mediavision(struct pms *dev)
 		return -ENOMEM;
 
 	if (!request_region(0x9a01, 1, "Mediavision PMS config")) {
-		printk(KERN_WARNING "mediavision: unable to detect: 0x9a01 in use.\n");
+;
 		iounmap(dev->mem);
 		return -EBUSY;
 	}
 	if (!request_region(dev->io, 3, "Mediavision PMS")) {
-		printk(KERN_WARNING "mediavision: I/O port %d in use.\n", dev->io);
+;
 		release_region(0x9a01, 1);
 		iounmap(dev->mem);
 		return -EBUSY;
@@ -1002,7 +1002,7 @@ static int init_mediavision(struct pms *dev)
 	else
 		idec = 0;
 
-	printk(KERN_INFO "PMS type is %d\n", idec);
+;
 	if (idec == 0) {
 		release_region(dev->io, 3);
 		release_region(0x9a01, 1);

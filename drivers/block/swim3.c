@@ -334,11 +334,11 @@ static void start_request(struct floppy_state *fs)
 		}
 		req = fd_req;
 #if 0
-		printk("do_fd_req: dev=%s cmd=%d sec=%ld nr_sec=%u buf=%p\n",
-		       req->rq_disk->disk_name, req->cmd,
-		       (long)blk_rq_pos(req), blk_rq_sectors(req), req->buffer);
-		printk("           errors=%d current_nr_sectors=%u\n",
-		       req->errors, blk_rq_cur_sectors(req));
+//		printk("do_fd_req: dev=%s cmd=%d sec=%ld nr_sec=%u buf=%p\n",
+//		       req->rq_disk->disk_name, req->cmd,
+;
+//		printk("           errors=%d current_nr_sectors=%u\n",
+;
 #endif
 
 		if (blk_rq_pos(req) >= fs->total_secs) {
@@ -444,7 +444,7 @@ static inline void setup_transfer(struct floppy_state *fs)
 	struct dbdma_regs __iomem *dr = fs->dma;
 
 	if (blk_rq_cur_sectors(fd_req) <= 0) {
-		printk(KERN_ERR "swim3: transfer 0 sectors?\n");
+;
 		return;
 	}
 	if (rq_data_dir(fd_req) == WRITE)
@@ -511,7 +511,7 @@ static void act(struct floppy_state *fs)
 				break;
 			}
 			if (fs->req_cyl == fs->cur_cyl) {
-				printk("whoops, seeking 0\n");
+;
 				fs->state = do_transfer;
 				break;
 			}
@@ -542,7 +542,7 @@ static void act(struct floppy_state *fs)
 			return;
 
 		default:
-			printk(KERN_ERR"swim3: unknown state %d\n", fs->state);
+;
 			return;
 		}
 	}
@@ -577,7 +577,7 @@ static void seek_timeout(unsigned long data)
 	out_8(&sw->control_bic, DO_SEEK);
 	out_8(&sw->select, RELAX);
 	out_8(&sw->intr_enable, 0);
-	printk(KERN_ERR "swim3: seek timeout\n");
+;
 	swim3_end_request_cur(-EIO);
 	fs->state = idle;
 	start_request(fs);
@@ -601,7 +601,7 @@ static void settle_timeout(unsigned long data)
 		set_timeout(fs, 1, settle_timeout);
 		return;
 	}
-	printk(KERN_ERR "swim3: seek settle timeout\n");
+;
 	swim3_end_request_cur(-EIO);
 	fs->state = idle;
 	start_request(fs);
@@ -622,9 +622,9 @@ static void xfer_timeout(unsigned long data)
 	out_8(&sw->intr_enable, 0);
 	out_8(&sw->control_bic, WRITE_SECTORS | DO_ACTION);
 	out_8(&sw->select, RELAX);
-	printk(KERN_ERR "swim3: timeout %sing sector %ld\n",
-	       (rq_data_dir(fd_req)==WRITE? "writ": "read"),
-	       (long)blk_rq_pos(fd_req));
+//	printk(KERN_ERR "swim3: timeout %sing sector %ld\n",
+//	       (rq_data_dir(fd_req)==WRITE? "writ": "read"),
+;
 	swim3_end_request_cur(-EIO);
 	fs->state = idle;
 	start_request(fs);
@@ -642,8 +642,8 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
 	intr = in_8(&sw->intr);
 	err = (intr & ERROR_INTR)? in_8(&sw->error): 0;
 	if ((intr & ERROR_INTR) && fs->state != do_transfer)
-		printk(KERN_ERR "swim3_interrupt, state=%d, dir=%x, intr=%x, err=%x\n",
-		       fs->state, rq_data_dir(fd_req), intr, err);
+//		printk(KERN_ERR "swim3_interrupt, state=%d, dir=%x, intr=%x, err=%x\n",
+;
 	switch (fs->state) {
 	case locating:
 		if (intr & SEEN_SECTOR) {
@@ -653,7 +653,7 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
 			del_timer(&fs->timeout);
 			fs->timeout_pending = 0;
 			if (sw->ctrack == 0xff) {
-				printk(KERN_ERR "swim3: seen sector but cyl=ff?\n");
+;
 				fs->cur_cyl = -1;
 				if (fs->retries > 5) {
 					swim3_end_request_cur(-EIO);
@@ -668,8 +668,8 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
 			fs->cur_cyl = sw->ctrack;
 			fs->cur_sector = sw->csect;
 			if (fs->expect_cyl != -1 && fs->expect_cyl != fs->cur_cyl)
-				printk(KERN_ERR "swim3: expected cyl %d, got %d\n",
-				       fs->expect_cyl, fs->cur_cyl);
+//				printk(KERN_ERR "swim3: expected cyl %d, got %d\n",
+;
 			fs->state = do_transfer;
 			act(fs);
 		}
@@ -736,18 +736,18 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
 				++fs->retries;
 				act(fs);
 			} else {
-				printk("swim3: error %sing block %ld (err=%x)\n",
-				       rq_data_dir(fd_req) == WRITE? "writ": "read",
-				       (long)blk_rq_pos(fd_req), err);
+//				printk("swim3: error %sing block %ld (err=%x)\n",
+//				       rq_data_dir(fd_req) == WRITE? "writ": "read",
+;
 				swim3_end_request_cur(-EIO);
 				fs->state = idle;
 			}
 		} else {
 			if ((stat & ACTIVE) == 0 || resid != 0) {
 				/* musta been an error */
-				printk(KERN_ERR "swim3: fd dma: stat=%x resid=%d\n", stat, resid);
-				printk(KERN_ERR "  state=%d, dir=%x, intr=%x, err=%x\n",
-				       fs->state, rq_data_dir(fd_req), intr, err);
+;
+//				printk(KERN_ERR "  state=%d, dir=%x, intr=%x, err=%x\n",
+;
 				swim3_end_request_cur(-EIO);
 				fs->state = idle;
 				start_request(fs);
@@ -770,7 +770,7 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
 			start_request(fs);
 		break;
 	default:
-		printk(KERN_ERR "swim3: don't know what to do in state %d\n", fs->state);
+;
 	}
 	return IRQ_HANDLED;
 }
@@ -1039,22 +1039,22 @@ static int swim3_add_device(struct macio_dev *mdev, int index)
 
 	/* Check & Request resources */
 	if (macio_resource_count(mdev) < 2) {
-		printk(KERN_WARNING "ifd%d: no address for %s\n",
-		       index, swim->full_name);
+//		printk(KERN_WARNING "ifd%d: no address for %s\n",
+;
 		return -ENXIO;
 	}
 	if (macio_irq_count(mdev) < 2) {
-		printk(KERN_WARNING "fd%d: no intrs for device %s\n",
-			index, swim->full_name);
+//		printk(KERN_WARNING "fd%d: no intrs for device %s\n",
+;
 	}
 	if (macio_request_resource(mdev, 0, "swim3 (mmio)")) {
-		printk(KERN_ERR "fd%d: can't request mmio resource for %s\n",
-		       index, swim->full_name);
+//		printk(KERN_ERR "fd%d: can't request mmio resource for %s\n",
+;
 		return -EBUSY;
 	}
 	if (macio_request_resource(mdev, 1, "swim3 (dma)")) {
-		printk(KERN_ERR "fd%d: can't request dma resource for %s\n",
-		       index, swim->full_name);
+//		printk(KERN_ERR "fd%d: can't request dma resource for %s\n",
+;
 		macio_release_resource(mdev, 0);
 		return -EBUSY;
 	}
@@ -1069,16 +1069,16 @@ static int swim3_add_device(struct macio_dev *mdev, int index)
 	fs->swim3 = (struct swim3 __iomem *)
 		ioremap(macio_resource_start(mdev, 0), 0x200);
 	if (fs->swim3 == NULL) {
-		printk("fd%d: couldn't map registers for %s\n",
-		       index, swim->full_name);
+//		printk("fd%d: couldn't map registers for %s\n",
+;
 		rc = -ENOMEM;
 		goto out_release;
 	}
 	fs->dma = (struct dbdma_regs __iomem *)
 		ioremap(macio_resource_start(mdev, 1), 0x200);
 	if (fs->dma == NULL) {
-		printk("fd%d: couldn't map DMA for %s\n",
-		       index, swim->full_name);
+//		printk("fd%d: couldn't map DMA for %s\n",
+;
 		iounmap(fs->swim3);
 		rc = -ENOMEM;
 		goto out_release;
@@ -1098,24 +1098,24 @@ static int swim3_add_device(struct macio_dev *mdev, int index)
 	st_le16(&fs->dma_cmd[1].command, DBDMA_STOP);
 
 	if (request_irq(fs->swim3_intr, swim3_interrupt, 0, "SWIM3", fs)) {
-		printk(KERN_ERR "fd%d: couldn't request irq %d for %s\n",
-		       index, fs->swim3_intr, swim->full_name);
+//		printk(KERN_ERR "fd%d: couldn't request irq %d for %s\n",
+;
 		pmac_call_feature(PMAC_FTR_SWIM3_ENABLE, swim, 0, 0);
 		goto out_unmap;
 		return -EBUSY;
 	}
 /*
 	if (request_irq(fs->dma_intr, fd_dma_interrupt, 0, "SWIM3-dma", fs)) {
-		printk(KERN_ERR "Couldn't get irq %d for SWIM3 DMA",
-		       fs->dma_intr);
+//		printk(KERN_ERR "Couldn't get irq %d for SWIM3 DMA",
+;
 		return -EBUSY;
 	}
 */
 
 	init_timer(&fs->timeout);
 
-	printk(KERN_INFO "fd%d: SWIM3 floppy controller %s\n", floppy_count,
-		mdev->media_bay ? "in media bay" : "");
+//	printk(KERN_INFO "fd%d: SWIM3 floppy controller %s\n", floppy_count,
+;
 
 	return 0;
 

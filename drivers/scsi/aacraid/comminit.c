@@ -68,7 +68,7 @@ static int aac_alloc_comm(struct aac_dev *dev, void **commaddr, unsigned long co
 
 	if(base == NULL)
 	{
-		printk(KERN_ERR "aacraid: unable to create mapping.\n");
+;
 		return 0;
 	}
 	dev->comm_addr = (void *)base;
@@ -118,12 +118,12 @@ static int aac_alloc_comm(struct aac_dev *dev, void **commaddr, unsigned long co
 	init->InitFlags = 0;
 	if (dev->comm_interface == AAC_COMM_MESSAGE) {
 		init->InitFlags |= cpu_to_le32(INITFLAGS_NEW_COMM_SUPPORTED);
-		dprintk((KERN_WARNING"aacraid: New Comm Interface enabled\n"));
+;
 	} else if (dev->comm_interface == AAC_COMM_MESSAGE_TYPE1) {
 		init->InitStructRevision = cpu_to_le32(ADAPTER_INIT_STRUCT_REVISION_6);
 		init->InitFlags |= cpu_to_le32(INITFLAGS_NEW_COMM_TYPE1_SUPPORTED);
-		dprintk((KERN_WARNING
-			"aacraid: New Comm Interface type1 enabled\n"));
+//		dprintk((KERN_WARNING
+;
 	}
 	init->InitFlags |= cpu_to_le32(INITFLAGS_DRIVER_USES_UTC_TIME |
 				       INITFLAGS_DRIVER_SUPPORTS_PM);
@@ -361,8 +361,8 @@ struct aac_dev *aac_init_adapter(struct aac_dev *dev)
 				/* remap failed, go back ... */
 				dev->comm_interface = AAC_COMM_PRODUCER;
 				if (aac_adapter_ioremap(dev, AAC_MIN_FOOTPRINT_SIZE)) {
-					printk(KERN_WARNING
-					  "aacraid: unable to map adapter.\n");
+//					printk(KERN_WARNING
+;
 					return NULL;
 				}
 			}
@@ -419,7 +419,7 @@ struct aac_dev *aac_init_adapter(struct aac_dev *dev)
 			dev->sg_tablesize = 337;
 			host->can_queue = 128 - AAC_NUM_MGT_FIB;
 		} else if (acbsize > 0) {
-			printk("Illegal acbsize=%d ignored\n", acbsize);
+;
 		}
 	}
 	{
@@ -428,7 +428,7 @@ struct aac_dev *aac_init_adapter(struct aac_dev *dev)
 			if (numacb < host->can_queue)
 				host->can_queue = numacb;
 			else
-				printk("numacb=%d ignored\n", numacb);
+;
 		}
 	}
 
@@ -438,7 +438,7 @@ struct aac_dev *aac_init_adapter(struct aac_dev *dev)
 
 	dev->queues = kzalloc(sizeof(struct aac_queue_block), GFP_KERNEL);
 	if (dev->queues == NULL) {
-		printk(KERN_ERR "Error could not allocate comm region.\n");
+;
 		return NULL;
 	}
 

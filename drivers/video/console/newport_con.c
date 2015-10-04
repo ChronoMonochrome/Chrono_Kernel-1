@@ -237,7 +237,7 @@ static void newport_get_screensize(void)
 			newport_ysize += linetable[i + 1];
 		}
 	}
-	printk("NG1: Screensize %dx%d\n", newport_xsize, newport_ysize);
+;
 }
 
 static void newport_get_revisions(void)

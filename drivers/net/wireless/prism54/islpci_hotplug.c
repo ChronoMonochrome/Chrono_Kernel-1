@@ -102,7 +102,7 @@ prism54_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	/* Enable the pci device */
 	if (pci_enable_device(pdev)) {
-		printk(KERN_ERR "%s: pci_enable_device() failed.\n", DRV_NAME);
+;
 		return -ENODEV;
 	}
 
@@ -119,7 +119,7 @@ prism54_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	/* enable PCI DMA */
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-		printk(KERN_ERR "%s: 32-bit PCI DMA not supported", DRV_NAME);
+;
 		goto do_pci_disable_device;
         }
 
@@ -140,21 +140,21 @@ prism54_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 		pci_write_config_byte(pdev, 0x40, (u8)init_pcitm);
 		pci_write_config_byte(pdev, 0x41, (u8)init_pcitm);
 	} else {
-		printk(KERN_INFO "PCI TRDY/RETRY unchanged\n");
+;
 	}
 
 	/* request the pci device I/O regions */
 	rvalue = pci_request_regions(pdev, DRV_NAME);
 	if (rvalue) {
-		printk(KERN_ERR "%s: pci_request_regions failure (rc=%d)\n",
-		       DRV_NAME, rvalue);
+//		printk(KERN_ERR "%s: pci_request_regions failure (rc=%d)\n",
+;
 		goto do_pci_disable_device;
 	}
 
 	/* check if the memory window is indeed set */
 	rvalue = pci_read_config_dword(pdev, PCI_BASE_ADDRESS_0, &mem_addr);
 	if (rvalue || !mem_addr) {
-		printk(KERN_ERR "%s: PCI device memory region not configured; fix your BIOS or CardBus bridge/drivers\n",
+;
 		       DRV_NAME);
 		goto do_pci_release_regions;
 	}
@@ -169,8 +169,8 @@ prism54_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	/* setup the network device interface and its structure */
 	if (!(ndev = islpci_setup(pdev))) {
 		/* error configuring the driver as a network device */
-		printk(KERN_ERR "%s: could not configure network device\n",
-		       DRV_NAME);
+//		printk(KERN_ERR "%s: could not configure network device\n",
+;
 		goto do_pci_clear_mwi;
 	}
 
@@ -186,8 +186,8 @@ prism54_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	if (rvalue) {
 		/* error, could not hook the handler to the irq */
-		printk(KERN_ERR "%s: could not install IRQ handler\n",
-		       ndev->name);
+//		printk(KERN_ERR "%s: could not install IRQ handler\n",
+;
 		goto do_unregister_netdev;
 	}
 
@@ -222,11 +222,11 @@ prism54_remove(struct pci_dev *pdev)
 	BUG_ON(!priv);
 
 	if (!__in_cleanup_module) {
-		printk(KERN_DEBUG "%s: hot unplug detected\n", ndev->name);
+;
 		islpci_set_state(priv, PRV_STATE_OFF);
 	}
 
-	printk(KERN_DEBUG "%s: removing device\n", ndev->name);
+;
 
 	unregister_netdev(ndev);
 
@@ -289,12 +289,12 @@ prism54_resume(struct pci_dev *pdev)
 
 	BUG_ON(!priv);
 
-	printk(KERN_NOTICE "%s: got resume request\n", ndev->name);
+;
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
-		       ndev->name);
+//		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
+;
 		return err;
 	}
 
@@ -312,8 +312,8 @@ prism54_resume(struct pci_dev *pdev)
 static int __init
 prism54_module_init(void)
 {
-	printk(KERN_INFO "Loaded %s driver, version %s\n",
-	       DRV_NAME, DRV_VERSION);
+//	printk(KERN_INFO "Loaded %s driver, version %s\n",
+;
 
 	__bug_on_wrong_struct_sizes ();
 
@@ -330,7 +330,7 @@ prism54_module_exit(void)
 
 	pci_unregister_driver(&prism54_driver);
 
-	printk(KERN_INFO "Unloaded %s driver\n", DRV_NAME);
+;
 
 	__in_cleanup_module = 0;
 }

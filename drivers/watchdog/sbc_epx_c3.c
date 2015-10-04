@@ -51,7 +51,7 @@ static void epx_c3_stop(void)
 
 	outb(0, EPXC3_WATCHDOG_CTL_REG);
 
-	printk(KERN_INFO PFX "Stopped watchdog timer.\n");
+;
 }
 
 static void epx_c3_pet(void)
@@ -75,7 +75,7 @@ static int epx_c3_open(struct inode *inode, struct file *file)
 	epx_c3_pet();
 
 	epx_c3_alive = 1;
-	printk(KERN_INFO "Started watchdog timer.\n");
+;
 
 	return nonseekable_open(inode, file);
 }
@@ -185,20 +185,20 @@ static int __init watchdog_init(void)
 
 	ret = register_reboot_notifier(&epx_c3_notifier);
 	if (ret) {
-		printk(KERN_ERR PFX "cannot register reboot notifier "
-			"(err=%d)\n", ret);
+//		printk(KERN_ERR PFX "cannot register reboot notifier "
+;
 		goto out;
 	}
 
 	ret = misc_register(&epx_c3_miscdev);
 	if (ret) {
-		printk(KERN_ERR PFX "cannot register miscdev on minor=%d "
-			"(err=%d)\n", WATCHDOG_MINOR, ret);
+//		printk(KERN_ERR PFX "cannot register miscdev on minor=%d "
+;
 		unregister_reboot_notifier(&epx_c3_notifier);
 		goto out;
 	}
 
-	printk(banner);
+;
 
 	return 0;
 

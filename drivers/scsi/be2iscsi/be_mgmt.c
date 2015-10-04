@@ -127,8 +127,8 @@ int mgmt_get_fw_config(struct be_ctrl_info *ctrl,
 			phba->fw_config.iscsi_cid_count = BE2_MAX_SESSIONS / 2;
 		}
 	} else {
-		shost_printk(KERN_WARNING, phba->shost,
-			     "Failed in mgmt_get_fw_config\n");
+//		shost_printk(KERN_WARNING, phba->shost,
+;
 	}
 
 	spin_unlock(&ctrl->mbox_lock);
@@ -207,8 +207,8 @@ int mgmt_epfw_cleanup(struct beiscsi_hba *phba, unsigned short chute)
 
 	status =  be_mcc_notify_wait(phba);
 	if (status)
-		shost_printk(KERN_WARNING, phba->shost,
-			     " mgmt_epfw_cleanup , FAILED\n");
+//		shost_printk(KERN_WARNING, phba->shost,
+;
 	spin_unlock(&ctrl->mbox_lock);
 	return status;
 }
@@ -392,8 +392,8 @@ int mgmt_open_connection(struct beiscsi_hba *phba,
 		       &daddr_in6->sin6_addr.in6_u.u6_addr8, 16);
 		beiscsi_ep->ip_type = BE2_IPV6;
 	} else{
-		shost_printk(KERN_ERR, phba->shost, "unknown addr family %d\n",
-			     dst_addr->sa_family);
+//		shost_printk(KERN_ERR, phba->shost, "unknown addr family %d\n",
+;
 		spin_unlock(&ctrl->mbox_lock);
 		free_mcc_tag(&phba->ctrl, tag);
 		return -EINVAL;

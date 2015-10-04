@@ -271,11 +271,11 @@ static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
 	event->parameter_len = strlen(header->err_specific_desc);
 	memcpy(event->parameter_data, header->err_specific_desc, event->parameter_len + 1 + strlen(error_str));
 	if (event->severity != TW_AEN_SEVERITY_DEBUG)
-		printk(KERN_WARNING "3w-sas:%s AEN: %s (0x%02X:0x%04X): %s:%s.\n",
-		       host,
-		       twl_aen_severity_lookup(TW_SEV_OUT(header->status_block.severity__reserved)),
-		       TW_MESSAGE_SOURCE_CONTROLLER_EVENT, aen, error_str,
-		       header->err_specific_desc);
+//		printk(KERN_WARNING "3w-sas:%s AEN: %s (0x%02X:0x%04X): %s:%s.\n",
+//		       host,
+//		       twl_aen_severity_lookup(TW_SEV_OUT(header->status_block.severity__reserved)),
+//		       TW_MESSAGE_SOURCE_CONTROLLER_EVENT, aen, error_str,
+;
 	else
 		tw_dev->aen_count--;
 
@@ -829,9 +829,9 @@ static long twl_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long 
 		/* We timed out, and didn't get an interrupt */
 		if (tw_dev->chrdev_request_id != TW_IOCTL_CHRDEV_FREE) {
 			/* Now we need to reset the board */
-			printk(KERN_WARNING "3w-sas: scsi%d: WARNING: (0x%02X:0x%04X): Character ioctl (0x%x) timed out, resetting card.\n",
-			       tw_dev->host->host_no, TW_DRIVER, 0x6,
-			       cmd);
+//			printk(KERN_WARNING "3w-sas: scsi%d: WARNING: (0x%02X:0x%04X): Character ioctl (0x%x) timed out, resetting card.\n",
+//			       tw_dev->host->host_no, TW_DRIVER, 0x6,
+;
 			retval = -EIO;
 			twl_reset_device_extension(tw_dev, 1);
 			goto out3;
@@ -912,18 +912,18 @@ static int twl_fill_sense(TW_Device_Extension *tw_dev, int i, int request_id, in
 	error = le16_to_cpu(header->status_block.error);
 	if ((error != TW_ERROR_LOGICAL_UNIT_NOT_SUPPORTED) && (error != TW_ERROR_UNIT_OFFLINE) && (error != TW_ERROR_INVALID_FIELD_IN_CDB)) {
 		if (print_host)
-			printk(KERN_WARNING "3w-sas: scsi%d: ERROR: (0x%02X:0x%04X): %s:%s.\n",
-			       tw_dev->host->host_no,
-			       TW_MESSAGE_SOURCE_CONTROLLER_ERROR,
-			       header->status_block.error,
-			       error_str, 
-			       header->err_specific_desc);
+//			printk(KERN_WARNING "3w-sas: scsi%d: ERROR: (0x%02X:0x%04X): %s:%s.\n",
+//			       tw_dev->host->host_no,
+//			       TW_MESSAGE_SOURCE_CONTROLLER_ERROR,
+//			       header->status_block.error,
+//			       error_str, 
+;
 		else
-			printk(KERN_WARNING "3w-sas: ERROR: (0x%02X:0x%04X): %s:%s.\n",
-			       TW_MESSAGE_SOURCE_CONTROLLER_ERROR,
-			       header->status_block.error,
-			       error_str,
-			       header->err_specific_desc);
+//			printk(KERN_WARNING "3w-sas: ERROR: (0x%02X:0x%04X): %s:%s.\n",
+//			       TW_MESSAGE_SOURCE_CONTROLLER_ERROR,
+//			       header->status_block.error,
+//			       error_str,
+;
 	}
 
 	if (copy_sense) {
@@ -1481,9 +1481,9 @@ static int twl_scsi_eh_reset(struct scsi_cmnd *SCpnt)
 
 	tw_dev->num_resets++;
 
-	sdev_printk(KERN_WARNING, SCpnt->device,
-		"WARNING: (0x%02X:0x%04X): Command (0x%x) timed out, resetting card.\n",
-		TW_DRIVER, 0x2c, SCpnt->cmnd[0]);
+//	sdev_printk(KERN_WARNING, SCpnt->device,
+//		"WARNING: (0x%02X:0x%04X): Command (0x%x) timed out, resetting card.\n",
+;
 
 	/* Make sure we are not issuing an ioctl or resetting from ioctl */
 	mutex_lock(&tw_dev->ioctl_lock);
@@ -1547,13 +1547,13 @@ static void __twl_shutdown(TW_Device_Extension *tw_dev)
 	/* Free up the IRQ */
 	free_irq(tw_dev->tw_pci_dev->irq, tw_dev);
 
-	printk(KERN_WARNING "3w-sas: Shutting down host %d.\n", tw_dev->host->host_no);
+;
 
 	/* Tell the card we are shutting down */
 	if (twl_initconnection(tw_dev, 1, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL)) {
 		TW_PRINTK(tw_dev->host, TW_DRIVER, 0x16, "Connection shutdown failed");
 	} else {
-		printk(KERN_WARNING "3w-sas: Shutdown complete.\n");
+;
 	}
 
 	/* Clear doorbell interrupt just before exit */
@@ -1684,24 +1684,24 @@ static int __devinit twl_probe(struct pci_dev *pdev, const struct pci_device_id 
 
 	pci_set_drvdata(pdev, host);
 
-	printk(KERN_WARNING "3w-sas: scsi%d: Found an LSI 3ware %s Controller at 0x%llx, IRQ: %d.\n",
-	       host->host_no,
-	       (char *)twl_get_param(tw_dev, 1, TW_VERSION_TABLE,
-				     TW_PARAM_MODEL, TW_PARAM_MODEL_LENGTH),
-	       (u64)pci_resource_start(pdev, 1), pdev->irq);
+//	printk(KERN_WARNING "3w-sas: scsi%d: Found an LSI 3ware %s Controller at 0x%llx, IRQ: %d.\n",
+//	       host->host_no,
+//	       (char *)twl_get_param(tw_dev, 1, TW_VERSION_TABLE,
+//				     TW_PARAM_MODEL, TW_PARAM_MODEL_LENGTH),
+;
 
 	ptr_phycount = twl_get_param(tw_dev, 2, TW_PARAM_PHY_SUMMARY_TABLE,
 				     TW_PARAM_PHYCOUNT, TW_PARAM_PHYCOUNT_LENGTH);
 	if (ptr_phycount)
 		phycount = le32_to_cpu(*(int *)ptr_phycount);
 
-	printk(KERN_WARNING "3w-sas: scsi%d: Firmware %s, BIOS %s, Phys: %d.\n",
-	       host->host_no,
-	       (char *)twl_get_param(tw_dev, 1, TW_VERSION_TABLE,
-				     TW_PARAM_FWVER, TW_PARAM_FWVER_LENGTH),
-	       (char *)twl_get_param(tw_dev, 2, TW_VERSION_TABLE,
-				     TW_PARAM_BIOSVER, TW_PARAM_BIOSVER_LENGTH),
-	       phycount);
+//	printk(KERN_WARNING "3w-sas: scsi%d: Firmware %s, BIOS %s, Phys: %d.\n",
+//	       host->host_no,
+//	       (char *)twl_get_param(tw_dev, 1, TW_VERSION_TABLE,
+//				     TW_PARAM_FWVER, TW_PARAM_FWVER_LENGTH),
+//	       (char *)twl_get_param(tw_dev, 2, TW_VERSION_TABLE,
+//				     TW_PARAM_BIOSVER, TW_PARAM_BIOSVER_LENGTH),
+;
 
 	/* Try to enable MSI */
 	if (use_msi && !pci_enable_msi(pdev))
@@ -1807,7 +1807,7 @@ static int twl_suspend(struct pci_dev *pdev, pm_message_t state)
 	struct Scsi_Host *host = pci_get_drvdata(pdev);
 	TW_Device_Extension *tw_dev = (TW_Device_Extension *)host->hostdata;
 
-	printk(KERN_WARNING "3w-sas: Suspending host %d.\n", tw_dev->host->host_no);
+;
 	/* Disable interrupts */
 	TWL_MASK_INTERRUPTS(tw_dev);
 
@@ -1817,7 +1817,7 @@ static int twl_suspend(struct pci_dev *pdev, pm_message_t state)
 	if (twl_initconnection(tw_dev, 1, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL)) {
 		TW_PRINTK(tw_dev->host, TW_DRIVER, 0x23, "Connection shutdown failed during suspend");
 	} else {
-		printk(KERN_WARNING "3w-sas: Suspend complete.\n");
+;
 	}
 
 	/* Clear doorbell interrupt */
@@ -1837,7 +1837,7 @@ static int twl_resume(struct pci_dev *pdev)
 	struct Scsi_Host *host = pci_get_drvdata(pdev);
 	TW_Device_Extension *tw_dev = (TW_Device_Extension *)host->hostdata;
 
-	printk(KERN_WARNING "3w-sas: Resuming host %d.\n", tw_dev->host->host_no);
+;
 	pci_set_power_state(pdev, PCI_D0);
 	pci_enable_wake(pdev, PCI_D0, 0);
 	pci_restore_state(pdev);
@@ -1881,7 +1881,7 @@ static int twl_resume(struct pci_dev *pdev)
 	/* Re-enable interrupts on the card */
 	TWL_UNMASK_INTERRUPTS(tw_dev);
 
-	printk(KERN_WARNING "3w-sas: Resume complete.\n");
+;
 	return 0;
 
 out_disable_device:
@@ -1915,7 +1915,7 @@ static struct pci_driver twl_driver = {
 /* This function is called on driver initialization */
 static int __init twl_init(void)
 {
-	printk(KERN_INFO "LSI 3ware SAS/SATA-RAID Controller device driver for Linux v%s.\n", TW_DRIVER_VERSION);
+;
 
 	return pci_register_driver(&twl_driver);
 } /* End twl_init() */

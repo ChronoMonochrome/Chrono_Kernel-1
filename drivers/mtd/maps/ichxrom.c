@@ -148,7 +148,7 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
 	}
 
 	if (window->phys == 0) {
-		printk(KERN_ERR MOD_NAME ": Rom window is closed\n");
+;
 		goto out;
 	}
 	window->phys -= 0x400000UL;
@@ -160,7 +160,7 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
 		/* The BIOS will generate an error if I enable
 		 * this device, so don't even try.
 		 */
-		printk(KERN_ERR MOD_NAME ": firmware access control, I can't enable writes\n");
+;
 		goto out;
 	}
 	pci_write_config_word(pdev, BIOS_CNTL, word | 1);
@@ -175,16 +175,16 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
 	window->rsrc.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
 	if (request_resource(&iomem_resource, &window->rsrc)) {
 		window->rsrc.parent = NULL;
-		printk(KERN_DEBUG MOD_NAME ": "
-		       "%s(): Unable to register resource %pR - kernel bug?\n",
-		       __func__, &window->rsrc);
+//		printk(KERN_DEBUG MOD_NAME ": "
+//		       "%s(): Unable to register resource %pR - kernel bug?\n",
+;
 	}
 
 	/* Map the firmware hub into my address space. */
 	window->virt = ioremap_nocache(window->phys, window->size);
 	if (!window->virt) {
-		printk(KERN_ERR MOD_NAME ": ioremap(%08lx, %08lx) failed\n",
-			window->phys, window->size);
+//		printk(KERN_ERR MOD_NAME ": ioremap(%08lx, %08lx) failed\n",
+;
 		goto out;
 	}
 
@@ -212,7 +212,7 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
 			map = kmalloc(sizeof(*map), GFP_KERNEL);
 		}
 		if (!map) {
-			printk(KERN_ERR MOD_NAME ": kmalloc failed");
+;
 			goto out;
 		}
 		memset(map, 0, sizeof(*map));
@@ -255,9 +255,9 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
 	found:
 		/* Trim the size if we are larger than the map */
 		if (map->mtd->size > map->map.size) {
-			printk(KERN_WARNING MOD_NAME
-				" rom(%llu) larger than window(%lu). fixing...\n",
-				(unsigned long long)map->mtd->size, map->map.size);
+//			printk(KERN_WARNING MOD_NAME
+//				" rom(%llu) larger than window(%lu). fixing...\n",
+;
 			map->mtd->size = map->map.size;
 		}
 		if (window->rsrc.parent) {
@@ -271,8 +271,8 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
 			map->rsrc.end   = map->map.phys + map->mtd->size - 1;
 			map->rsrc.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
 			if (request_resource(&window->rsrc, &map->rsrc)) {
-				printk(KERN_ERR MOD_NAME
-					": cannot reserve MTD resource\n");
+//				printk(KERN_ERR MOD_NAME
+;
 				map->rsrc.parent = NULL;
 			}
 		}

@@ -518,8 +518,8 @@ static int wpa_set_scan(PSDevice pDevice,
 /**set ap_scan=1&&scan_ssid=1 under hidden ssid mode**/
         PSMgmtObject        pMgmt = &(pDevice->sMgmtObj);
         PWLAN_IE_SSID       pItemSSID;
-printk("wpa_set_scan-->desired [ssid=%s,ssid_len=%d]\n",
-	     param->u.scan_req.ssid,param->u.scan_req.ssid_len);
+//printk("wpa_set_scan-->desired [ssid=%s,ssid_len=%d]\n",
+;
 // Set the SSID
 memset(pMgmt->abyDesireSSID, 0, WLAN_IEHDR_LEN + WLAN_SSID_MAXLEN + 1);
 pItemSSID = (PWLAN_IE_SSID)pMgmt->abyDesireSSID;
@@ -634,7 +634,7 @@ static int wpa_get_scan(PSDevice pDevice,
 
     if (ptempBSS == NULL) {
 
-       printk("bubble sort kmalloc memory fail@@@\n");
+;
 
         ret = -ENOMEM;
 
@@ -664,7 +664,7 @@ static int wpa_get_scan(PSDevice pDevice,
 
   kfree(ptempBSS);
 
- // printk("bubble sort result:\n");
+;
 
 	count = 0;
 	pBSS = &(pMgmt->sBSSList[0]);
@@ -882,7 +882,7 @@ static int wpa_set_associate(PSDevice pDevice,
                               );
 
     if (pCurr == NULL){
-    printk("wpa_set_associate---->hidden mode site survey before associate.......\n");
+;
     bScheduleCommand((void *) pDevice,
 		     WLAN_CMD_BSSID_SCAN,
 		     pMgmt->abyDesireSSID);

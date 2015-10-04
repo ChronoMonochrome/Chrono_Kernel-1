@@ -37,10 +37,10 @@ static int __init serial_init_chip(struct parisc_device *dev)
 		 * the user what they're missing.
 		 */
 		if (parisc_parent(dev)->id.hw_type != HPHW_IOA)
-			printk(KERN_INFO
-				"Serial: device 0x%llx not configured.\n"
-				"Enable support for Wax, Lasi, Asp or Dino.\n",
-				(unsigned long long)dev->hpa.start);
+//			printk(KERN_INFO
+//				"Serial: device 0x%llx not configured.\n"
+//				"Enable support for Wax, Lasi, Asp or Dino.\n",
+;
 		return -ENODEV;
 	}
 
@@ -60,8 +60,8 @@ static int __init serial_init_chip(struct parisc_device *dev)
 
 	err = serial8250_register_port(&port);
 	if (err < 0) {
-		printk(KERN_WARNING
-			"serial8250_register_port returned error %d\n", err);
+//		printk(KERN_WARNING
+;
 		iounmap(port.membase);
 		return err;
 	}

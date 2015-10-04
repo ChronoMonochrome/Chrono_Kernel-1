@@ -64,86 +64,86 @@
 #undef DINO_DEBUG
 
 #ifdef DINO_DEBUG
-#define DBG(x...) printk(x)
-#else
-#define DBG(x...)
-#endif
-
-/*
-** Config accessor functions only pass in the 8-bit bus number
-** and not the 8-bit "PCI Segment" number. Each Dino will be
-** assigned a PCI bus number based on "when" it's discovered.
-**
-** The "secondary" bus number is set to this before calling
-** pci_scan_bus(). If any PPB's are present, the scan will
-** discover them and update the "secondary" and "subordinate"
-** fields in Dino's pci_bus structure.
-**
-** Changes in the configuration *will* result in a different
-** bus number for each dino.
-*/
-
-#define is_card_dino(id)	((id)->hw_type == HPHW_A_DMA)
-#define is_cujo(id)		((id)->hversion == 0x682)
-
-#define DINO_IAR0		0x004
-#define DINO_IODC_ADDR		0x008
-#define DINO_IODC_DATA_0	0x008
-#define DINO_IODC_DATA_1	0x008
-#define DINO_IRR0		0x00C
-#define DINO_IAR1		0x010
-#define DINO_IRR1		0x014
-#define DINO_IMR		0x018
-#define DINO_IPR		0x01C
-#define DINO_TOC_ADDR		0x020
-#define DINO_ICR		0x024
-#define DINO_ILR		0x028
-#define DINO_IO_COMMAND		0x030
-#define DINO_IO_STATUS		0x034
-#define DINO_IO_CONTROL		0x038
-#define DINO_IO_GSC_ERR_RESP	0x040
-#define DINO_IO_ERR_INFO	0x044
-#define DINO_IO_PCI_ERR_RESP	0x048
-#define DINO_IO_FBB_EN		0x05c
-#define DINO_IO_ADDR_EN		0x060
-#define DINO_PCI_ADDR		0x064
-#define DINO_CONFIG_DATA	0x068
-#define DINO_IO_DATA		0x06c
-#define DINO_MEM_DATA		0x070	/* Dino 3.x only */
-#define DINO_GSC2X_CONFIG	0x7b4
-#define DINO_GMASK		0x800
-#define DINO_PAMR		0x804
-#define DINO_PAPR		0x808
-#define DINO_DAMODE		0x80c
-#define DINO_PCICMD		0x810
-#define DINO_PCISTS		0x814
-#define DINO_MLTIM		0x81c
-#define DINO_BRDG_FEAT		0x820
-#define DINO_PCIROR		0x824
-#define DINO_PCIWOR		0x828
-#define DINO_TLTIM		0x830
-
-#define DINO_IRQS 11		/* bits 0-10 are architected */
-#define DINO_IRR_MASK	0x5ff	/* only 10 bits are implemented */
-#define DINO_LOCAL_IRQS (DINO_IRQS+1)
-
-#define DINO_MASK_IRQ(x)	(1<<(x))
-
-#define PCIINTA   0x001
-#define PCIINTB   0x002
-#define PCIINTC   0x004
-#define PCIINTD   0x008
-#define PCIINTE   0x010
-#define PCIINTF   0x020
-#define GSCEXTINT 0x040
-/* #define xxx       0x080 - bit 7 is "default" */
-/* #define xxx    0x100 - bit 8 not used */
-/* #define xxx    0x200 - bit 9 not used */
-#define RS232INT  0x400
-
-struct dino_device
-{
-	struct pci_hba_data	hba;	/* 'C' inheritance - must be first */
+//#define DBG(x...) printk(x)
+//#else
+//#define DBG(x...)
+//#endif
+//
+///*
+//** Config accessor functions only pass in the 8-bit bus number
+//** and not the 8-bit "PCI Segment" number. Each Dino will be
+//** assigned a PCI bus number based on "when" it's discovered.
+//**
+//** The "secondary" bus number is set to this before calling
+//** pci_scan_bus(). If any PPB's are present, the scan will
+//** discover them and update the "secondary" and "subordinate"
+//** fields in Dino's pci_bus structure.
+//**
+//** Changes in the configuration *will* result in a different
+//** bus number for each dino.
+//*/
+//
+//#define is_card_dino(id)	((id)->hw_type == HPHW_A_DMA)
+//#define is_cujo(id)		((id)->hversion == 0x682)
+//
+//#define DINO_IAR0		0x004
+//#define DINO_IODC_ADDR		0x008
+//#define DINO_IODC_DATA_0	0x008
+//#define DINO_IODC_DATA_1	0x008
+//#define DINO_IRR0		0x00C
+//#define DINO_IAR1		0x010
+//#define DINO_IRR1		0x014
+//#define DINO_IMR		0x018
+//#define DINO_IPR		0x01C
+//#define DINO_TOC_ADDR		0x020
+//#define DINO_ICR		0x024
+//#define DINO_ILR		0x028
+//#define DINO_IO_COMMAND		0x030
+//#define DINO_IO_STATUS		0x034
+//#define DINO_IO_CONTROL		0x038
+//#define DINO_IO_GSC_ERR_RESP	0x040
+//#define DINO_IO_ERR_INFO	0x044
+//#define DINO_IO_PCI_ERR_RESP	0x048
+//#define DINO_IO_FBB_EN		0x05c
+//#define DINO_IO_ADDR_EN		0x060
+//#define DINO_PCI_ADDR		0x064
+//#define DINO_CONFIG_DATA	0x068
+//#define DINO_IO_DATA		0x06c
+//#define DINO_MEM_DATA		0x070	/* Dino 3.x only */
+//#define DINO_GSC2X_CONFIG	0x7b4
+//#define DINO_GMASK		0x800
+//#define DINO_PAMR		0x804
+//#define DINO_PAPR		0x808
+//#define DINO_DAMODE		0x80c
+//#define DINO_PCICMD		0x810
+//#define DINO_PCISTS		0x814
+//#define DINO_MLTIM		0x81c
+//#define DINO_BRDG_FEAT		0x820
+//#define DINO_PCIROR		0x824
+//#define DINO_PCIWOR		0x828
+//#define DINO_TLTIM		0x830
+//
+//#define DINO_IRQS 11		/* bits 0-10 are architected */
+//#define DINO_IRR_MASK	0x5ff	/* only 10 bits are implemented */
+//#define DINO_LOCAL_IRQS (DINO_IRQS+1)
+//
+//#define DINO_MASK_IRQ(x)	(1<<(x))
+//
+//#define PCIINTA   0x001
+//#define PCIINTB   0x002
+//#define PCIINTC   0x004
+//#define PCIINTD   0x008
+//#define PCIINTE   0x010
+//#define PCIINTF   0x020
+//#define GSCEXTINT 0x040
+///* #define xxx       0x080 - bit 7 is "default" */
+///* #define xxx    0x100 - bit 8 not used */
+///* #define xxx    0x200 - bit 9 not used */
+//#define RS232INT  0x400
+//
+//struct dino_device
+//{
+;
 	spinlock_t		dinosaur_pen;
 	unsigned long		txn_addr; /* EIR addr to generate interrupt */ 
 	u32			txn_data; /* EIR data assign to each dino */ 
@@ -394,8 +394,8 @@ ilr_again:
 	if (mask) {
 		if (--ilr_loop > 0)
 			goto ilr_again;
-		printk(KERN_ERR "Dino 0x%p: stuck interrupt %d\n", 
-		       dino_dev->hba.base_addr, mask);
+//		printk(KERN_ERR "Dino 0x%p: stuck interrupt %d\n", 
+;
 		return IRQ_NONE;
 	}
 	return IRQ_HANDLED;
@@ -434,8 +434,8 @@ static void dino_choose_irq(struct parisc_device *dev, void *ctrl)
 static void __devinit quirk_cirrus_cardbus(struct pci_dev *dev)
 {
 	u8 new_irq = dev->irq - 1;
-	printk(KERN_INFO "PCI: Cirrus Cardbus IRQ fixup for %s, from %d to %d\n",
-			pci_name(dev), dev->irq, new_irq);
+//	printk(KERN_INFO "PCI: Cirrus Cardbus IRQ fixup for %s, from %d to %d\n",
+;
 	dev->irq = new_irq;
 }
 DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_CIRRUS, PCI_DEVICE_ID_CIRRUS_6832, quirk_cirrus_cardbus );
@@ -480,8 +480,8 @@ dino_card_setup(struct pci_bus *bus, void __iomem *base_addr)
 				F_EXTEND(0xffffffffUL) &~ _8MB, _8MB) < 0) {
 		struct list_head *ln, *tmp_ln;
 
-		printk(KERN_ERR "Dino: cannot attach bus %s\n",
-		       dev_name(bus->bridge));
+//		printk(KERN_ERR "Dino: cannot attach bus %s\n",
+;
 		/* kill the bus, we can't do anything with it */
 		list_for_each_safe(ln, tmp_ln, &bus->devices) {
 			struct pci_dev *dev = pci_dev_b(ln);
@@ -661,14 +661,14 @@ dino_fixup_bus(struct pci_bus *bus)
 			dino_cfg_read(dev->bus, dev->devfn, 
 				      PCI_INTERRUPT_PIN, 1, &irq_pin);
 			irq_pin = pci_swizzle_interrupt_pin(dev, irq_pin) - 1;
-			printk(KERN_WARNING "Device %s has undefined IRQ, "
-					"setting to %d\n", pci_name(dev), irq_pin);
+//			printk(KERN_WARNING "Device %s has undefined IRQ, "
+;
 			dino_cfg_write(dev->bus, dev->devfn, 
 				       PCI_INTERRUPT_LINE, 1, irq_pin);
 			dino_assign_irq(dino_dev, irq_pin, &dev->irq);
 #else
 			dev->irq = 65535;
-			printk(KERN_WARNING "Device %s has unassigned IRQ\n", pci_name(dev));
+;
 #endif
 		} else {
 			/* Adjust INT_LINE for that busses region */
@@ -762,7 +762,7 @@ dino_bridge_init(struct dino_device *dino_dev, const char *name)
 
 	io_addr = __raw_readl(dino_dev->hba.base_addr + DINO_IO_ADDR_EN);
 	if (io_addr == 0) {
-		printk(KERN_WARNING "%s: No PCI devices enabled.\n", name);
+;
 		return -ENODEV;
 	}
 
@@ -783,7 +783,7 @@ dino_bridge_init(struct dino_device *dino_dev, const char *name)
 			prevres->end = end;
 		} else {
 			if(count >= DINO_MAX_LMMIO_RESOURCES) {
-				printk(KERN_ERR "%s is out of resource windows for range %d (0x%lx-0x%lx)\n", name, count, start, end);
+;
 				break;
 			}
 			prevres = res;
@@ -807,9 +807,9 @@ dino_bridge_init(struct dino_device *dino_dev, const char *name)
 
 		result = ccio_request_resource(dino_dev->hba.dev, &res[i]);
 		if (result < 0) {
-			printk(KERN_ERR "%s: failed to claim PCI Bus address "
-			       "space %d (0x%lx-0x%lx)!\n", name, i,
-			       (unsigned long)res[i].start, (unsigned long)res[i].end);
+//			printk(KERN_ERR "%s: failed to claim PCI Bus address "
+//			       "space %d (0x%lx-0x%lx)!\n", name, i,
+;
 			return result;
 		}
 	}
@@ -846,14 +846,14 @@ static int __init dino_common_init(struct parisc_device *dev,
 	** arch/parisc/kernel/irq.c returns an EIRR bit.
 	*/
 	if (dev->irq < 0) {
-		printk(KERN_WARNING "%s: gsc_alloc_irq() failed\n", name);
+;
 		return 1;
 	}
 
 	status = request_irq(dev->irq, dino_isr, 0, name, dino_dev);
 	if (status) {
-		printk(KERN_WARNING "%s: request_irq() failed with %d\n", 
-			name, status);
+//		printk(KERN_WARNING "%s: request_irq() failed with %d\n", 
+;
 		return 1;
 	}
 
@@ -887,10 +887,10 @@ static int __init dino_common_init(struct parisc_device *dev,
 	res->end = res->start + (HBA_PORT_SPACE_SIZE - 1);
 	res->flags = IORESOURCE_IO; /* do not mark it busy ! */
 	if (request_resource(&ioport_resource, res) < 0) {
-		printk(KERN_ERR "%s: request I/O Port region failed "
-		       "0x%lx/%lx (hpa 0x%p)\n",
-		       name, (unsigned long)res->start, (unsigned long)res->end,
-		       dino_dev->hba.base_addr);
+//		printk(KERN_ERR "%s: request I/O Port region failed "
+//		       "0x%lx/%lx (hpa 0x%p)\n",
+//		       name, (unsigned long)res->start, (unsigned long)res->end,
+;
 		return 1;
 	}
 
@@ -947,34 +947,34 @@ static int __init dino_probe(struct parisc_device *dev)
 		}
 	}
 
-	printk("%s version %s found at 0x%lx\n", name, version, hpa);
+;
 
 	if (!request_mem_region(hpa, PAGE_SIZE, name)) {
-		printk(KERN_ERR "DINO: Hey! Someone took my MMIO space (0x%ld)!\n",
-			hpa);
+//		printk(KERN_ERR "DINO: Hey! Someone took my MMIO space (0x%ld)!\n",
+;
 		return 1;
 	}
 
 	/* Check for bugs */
 	if (is_cujo && dev->id.hversion_rev == 1) {
 #ifdef CONFIG_IOMMU_CCIO
-		printk(KERN_WARNING "Enabling Cujo 2.0 bug workaround\n");
+;
 		if (hpa == (unsigned long)CUJO_RAVEN_ADDR) {
 			ccio_cujo20_fixup(dev, CUJO_RAVEN_BADPAGE);
 		} else if (hpa == (unsigned long)CUJO_FIREHAWK_ADDR) {
 			ccio_cujo20_fixup(dev, CUJO_FIREHAWK_BADPAGE);
 		} else {
-			printk("Don't recognise Cujo at address 0x%lx, not enabling workaround\n", hpa);
+;
 		}
 #endif
 	} else if (!is_cujo && !is_card_dino(&dev->id) &&
 			dev->id.hversion_rev < 3) {
-		printk(KERN_WARNING
-"The GSCtoPCI (Dino hrev %d) bus converter found may exhibit\n"
-"data corruption.  See Service Note Numbers: A4190A-01, A4191A-01.\n"
-"Systems shipped after Aug 20, 1997 will not exhibit this problem.\n"
-"Models affected: C180, C160, C160L, B160L, and B132L workstations.\n\n",
-			dev->id.hversion_rev);
+//		printk(KERN_WARNING
+//"The GSCtoPCI (Dino hrev %d) bus converter found may exhibit\n"
+//"data corruption.  See Service Note Numbers: A4190A-01, A4191A-01.\n"
+//"Systems shipped after Aug 20, 1997 will not exhibit this problem.\n"
+//"Models affected: C180, C160, C160L, B160L, and B132L workstations.\n\n",
+;
 /* REVISIT: why are C200/C240 listed in the README table but not
 **   "Models affected"? Could be an omission in the original literature.
 */
@@ -982,7 +982,7 @@ static int __init dino_probe(struct parisc_device *dev)
 
 	dino_dev = kzalloc(sizeof(struct dino_device), GFP_KERNEL);
 	if (!dino_dev) {
-		printk("dino_init_chip - couldn't alloc dino_device\n");
+;
 		return 1;
 	}
 
@@ -1018,8 +1018,8 @@ static int __init dino_probe(struct parisc_device *dev)
 		pci_bus_assign_resources(bus);
 		pci_bus_add_devices(bus);
 	} else {
-		printk(KERN_ERR "ERROR: failed to scan PCI bus on %s (duplicate bus number %d?)\n",
-		       dev_name(&dev->dev), dino_current_bus);
+//		printk(KERN_ERR "ERROR: failed to scan PCI bus on %s (duplicate bus number %d?)\n",
+;
 		/* increment the bus number in case of duplicates */
 		dino_current_bus++;
 	}

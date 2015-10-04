@@ -141,8 +141,8 @@ struct mca_bus * __devinit mca_attach_bus(int bus)
 
 	if (unlikely(mca_root_busses[bus] != NULL)) {
 		/* This should never happen, but just in case */
-		printk(KERN_EMERG "MCA tried to add already existing bus %d\n",
-		       bus);
+//		printk(KERN_EMERG "MCA tried to add already existing bus %d\n",
+;
 		dump_stack();
 		return NULL;
 	}

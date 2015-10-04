@@ -159,67 +159,67 @@ static int xc2028_get_reg(struct xc2028_data *priv, u16 reg, u16 *val)
 static void dump_firm_type_and_int_freq(unsigned int type, u16 int_freq)
 {
 	 if (type & BASE)
-		printk("BASE ");
+;
 	 if (type & INIT1)
-		printk("INIT1 ");
+;
 	 if (type & F8MHZ)
-		printk("F8MHZ ");
+;
 	 if (type & MTS)
-		printk("MTS ");
+;
 	 if (type & D2620)
-		printk("D2620 ");
+;
 	 if (type & D2633)
-		printk("D2633 ");
+;
 	 if (type & DTV6)
-		printk("DTV6 ");
+;
 	 if (type & QAM)
-		printk("QAM ");
+;
 	 if (type & DTV7)
-		printk("DTV7 ");
+;
 	 if (type & DTV78)
-		printk("DTV78 ");
+;
 	 if (type & DTV8)
-		printk("DTV8 ");
+;
 	 if (type & FM)
-		printk("FM ");
+;
 	 if (type & INPUT1)
-		printk("INPUT1 ");
+;
 	 if (type & LCD)
-		printk("LCD ");
+;
 	 if (type & NOGD)
-		printk("NOGD ");
+;
 	 if (type & MONO)
-		printk("MONO ");
+;
 	 if (type & ATSC)
-		printk("ATSC ");
+;
 	 if (type & IF)
-		printk("IF ");
+;
 	 if (type & LG60)
-		printk("LG60 ");
+;
 	 if (type & ATI638)
-		printk("ATI638 ");
+;
 	 if (type & OREN538)
-		printk("OREN538 ");
+;
 	 if (type & OREN36)
-		printk("OREN36 ");
+;
 	 if (type & TOYOTA388)
-		printk("TOYOTA388 ");
+;
 	 if (type & TOYOTA794)
-		printk("TOYOTA794 ");
+;
 	 if (type & DIBCOM52)
-		printk("DIBCOM52 ");
+;
 	 if (type & ZARLINK456)
-		printk("ZARLINK456 ");
+;
 	 if (type & CHINA)
-		printk("CHINA ");
+;
 	 if (type & F6MHZ)
-		printk("F6MHZ ");
+;
 	 if (type & INPUT2)
-		printk("INPUT2 ");
+;
 	 if (type & SCODE)
-		printk("SCODE ");
+;
 	 if (type & HAS_IF)
-		printk("HAS_IF_%d ", int_freq);
+;
 }
 
 static  v4l2_std_id parse_audio_std_option(void)
@@ -355,10 +355,10 @@ static int load_all_firmwares(struct dvb_frontend *fe)
 		if (!size || size > endp - p) {
 			tuner_err("Firmware type ");
 			dump_firm_type(type);
-			printk("(%x), id %llx is corrupted "
-			       "(size=%d, expected %d)\n",
-			       type, (unsigned long long)id,
-			       (unsigned)(endp - p), size);
+//			printk("(%x), id %llx is corrupted "
+//			       "(size=%d, expected %d)\n",
+//			       type, (unsigned long long)id,
+;
 			goto corrupt;
 		}
 
@@ -371,8 +371,8 @@ static int load_all_firmwares(struct dvb_frontend *fe)
 		tuner_dbg("Reading firmware type ");
 		if (debug) {
 			dump_firm_type_and_int_freq(type, int_freq);
-			printk("(%x), id %llx, size=%d.\n",
-			       type, (unsigned long long)id, size);
+//			printk("(%x), id %llx, size=%d.\n",
+;
 		}
 
 		memcpy(priv->firm[n].ptr, p, size);
@@ -532,8 +532,8 @@ static int load_firmware(struct dvb_frontend *fe, unsigned int type,
 
 	tuner_info("Loading firmware for type=");
 	dump_firm_type(priv->firm[pos].type);
-	printk("(%x), id %016llx.\n", priv->firm[pos].type,
-	       (unsigned long long)*id);
+//	printk("(%x), id %016llx.\n", priv->firm[pos].type,
+;
 
 	p = priv->firm[pos].ptr;
 	endp = p + priv->firm[pos].size;
@@ -659,8 +659,8 @@ static int load_scode(struct dvb_frontend *fe, unsigned int type,
 	tuner_info("Loading SCODE for type=");
 	dump_firm_type_and_int_freq(priv->firm[pos].type,
 				    priv->firm[pos].int_freq);
-	printk("(%x), id %016llx.\n", priv->firm[pos].type,
-	       (unsigned long long)*id);
+//	printk("(%x), id %016llx.\n", priv->firm[pos].type,
+;
 
 	if (priv->firm_version < 0x0202)
 		rc = send_seq(priv, {0x20, 0x00, 0x00, 0x00});
@@ -716,15 +716,15 @@ retry:
 	tuner_dbg("checking firmware, user requested type=");
 	if (debug) {
 		dump_firm_type(new_fw.type);
-		printk("(%x), id %016llx, ", new_fw.type,
-		       (unsigned long long)new_fw.std_req);
+//		printk("(%x), id %016llx, ", new_fw.type,
+;
 		if (!int_freq) {
-			printk("scode_tbl ");
+;
 			dump_firm_type(priv->ctrl.scode_table);
-			printk("(%x), ", priv->ctrl.scode_table);
+;
 		} else
-			printk("int_freq %d, ", new_fw.int_freq);
-		printk("scode_nr %d\n", new_fw.scode_nr);
+;
+;
 	}
 
 	/* No need to reload base firmware if it matches */
@@ -1295,13 +1295,13 @@ struct dvb_frontend *xc2028_attach(struct dvb_frontend *fe,
 	int instance;
 
 	if (debug)
-		printk(KERN_DEBUG "xc2028: Xcv2028/3028 init called!\n");
+;
 
 	if (NULL == cfg)
 		return NULL;
 
 	if (!fe) {
-		printk(KERN_ERR "xc2028: No frontend!\n");
+;
 		return NULL;
 	}
 

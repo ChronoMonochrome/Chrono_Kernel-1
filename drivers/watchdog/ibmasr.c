@@ -234,12 +234,12 @@ static int __init asr_get_base_address(void)
 	}
 
 	if (!request_region(asr_base, asr_length, "ibmasr")) {
-		printk(KERN_ERR PFX "address %#x already in use\n",
-			asr_base);
+//		printk(KERN_ERR PFX "address %#x already in use\n",
+;
 		return -EBUSY;
 	}
 
-	printk(KERN_INFO PFX "found %sASR @ addr %#x\n", type, asr_base);
+;
 
 	return 0;
 }
@@ -332,8 +332,8 @@ static int asr_release(struct inode *inode, struct file *file)
 	if (asr_expect_close == 42)
 		asr_disable();
 	else {
-		printk(KERN_CRIT PFX
-				"unexpected close, not stopping watchdog!\n");
+//		printk(KERN_CRIT PFX
+;
 		asr_toggle();
 	}
 	clear_bit(0, &asr_is_open);
@@ -395,7 +395,7 @@ static int __init ibmasr_init(void)
 	rc = misc_register(&asr_miscdev);
 	if (rc < 0) {
 		release_region(asr_base, asr_length);
-		printk(KERN_ERR PFX "failed to register misc device\n");
+;
 		return rc;
 	}
 

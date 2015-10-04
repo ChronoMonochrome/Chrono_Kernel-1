@@ -1550,7 +1550,7 @@ static inline int read_pdu_skb(struct iscsi_conn *conn,
 		 * pdus should always fit in the skb and we should get
 		 * segment done notifcation.
 		 */
-		iscsi_conn_printk(KERN_ERR, conn, "Invalid pdu or skb.");
+;
 		return -EFAULT;
 	case ISCSI_TCP_SEGMENT_DONE:
 		log_debug(1 << CXGBI_DBG_PDU_RX,
@@ -2047,7 +2047,7 @@ int cxgbi_conn_xmit_pdu(struct iscsi_task *task)
 	log_debug(1 << CXGBI_DBG_ISCSI | 1 << CXGBI_DBG_PDU_TX,
 		"itt 0x%x, skb 0x%p, len %u/%u, xmit err %d.\n",
 		task->itt, skb, skb->len, skb->data_len, err);
-	iscsi_conn_printk(KERN_ERR, task->conn, "xmit err %d.\n", err);
+;
 	iscsi_conn_failure(task->conn, ISCSI_ERR_XMIT_FAILED);
 	return err;
 }
@@ -2353,8 +2353,8 @@ int cxgbi_set_host_param(struct Scsi_Host *shost, enum iscsi_host_param param,
 	struct cxgbi_hba *chba = iscsi_host_priv(shost);
 
 	if (!chba->ndev) {
-		shost_printk(KERN_ERR, shost, "Could not get host param. "
-				"netdev for host not set.\n");
+//		shost_printk(KERN_ERR, shost, "Could not get host param. "
+;
 		return -ENODEV;
 	}
 
@@ -2387,8 +2387,8 @@ int cxgbi_get_host_param(struct Scsi_Host *shost, enum iscsi_host_param param,
 	int len = 0;
 
 	if (!chba->ndev) {
-		shost_printk(KERN_ERR, shost, "Could not get host param. "
-				"netdev for host not set.\n");
+//		shost_printk(KERN_ERR, shost, "Could not get host param. "
+;
 		return -ENODEV;
 	}
 

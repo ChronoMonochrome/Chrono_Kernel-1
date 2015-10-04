@@ -174,14 +174,14 @@ static void* i2c_matroxfb_probe(struct matrox_fb_info* minfo) {
 				  DDC2_DATA, DDC2_CLK,
 				  "DDC:fb%u #1", I2C_CLASS_DDC);
 		if (err == -ENODEV) {
-			printk(KERN_INFO "i2c-matroxfb: VGA->TV plug detected, DDC unavailable.\n");
+;
 		} else if (err)
-			printk(KERN_INFO "i2c-matroxfb: Could not register secondary output i2c bus. Continuing anyway.\n");
+;
 		/* Register maven bus even on G450/G550 */
 		err = i2c_bus_reg(&m2info->maven, minfo,
 				  MAT_DATA, MAT_CLK, "MAVEN:fb%u", 0);
 		if (err)
-			printk(KERN_INFO "i2c-matroxfb: Could not register Maven i2c bus. Continuing anyway.\n");
+;
 		else {
 			struct i2c_board_info maven_info = {
 				I2C_BOARD_INFO("maven", 0x1b),
@@ -197,7 +197,7 @@ static void* i2c_matroxfb_probe(struct matrox_fb_info* minfo) {
 	return m2info;
 fail_ddc1:;
 	kfree(m2info);
-	printk(KERN_ERR "i2c-matroxfb: Could not register primary adapter DDC bus.\n");
+;
 	return NULL;
 }
 
@@ -219,7 +219,7 @@ static struct matroxfb_driver i2c_matroxfb = {
 
 static int __init i2c_matroxfb_init(void) {
 	if (matroxfb_register_driver(&i2c_matroxfb)) {
-		printk(KERN_ERR "i2c-matroxfb: failed to register driver\n");
+;
 		return -ENXIO;
 	}
 	return 0;

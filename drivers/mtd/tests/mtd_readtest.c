@@ -56,8 +56,8 @@ static int read_eraseblock_by_page(int ebnum)
 		if (ret == -EUCLEAN)
 			ret = 0;
 		if (ret || read != pgsize) {
-			printk(PRINT_PREF "error: read failed at %#llx\n",
-			       (long long)addr);
+//			printk(PRINT_PREF "error: read failed at %#llx\n",
+;
 			if (!err)
 				err = ret;
 			if (!err)
@@ -76,8 +76,8 @@ static int read_eraseblock_by_page(int ebnum)
 			ops.oobbuf    = oobbuf;
 			ret = mtd->read_oob(mtd, addr, &ops);
 			if (ret || ops.oobretlen != mtd->oobsize) {
-				printk(PRINT_PREF "error: read oob failed at "
-						  "%#llx\n", (long long)addr);
+//				printk(PRINT_PREF "error: read oob failed at "
+;
 				if (!err)
 					err = ret;
 				if (!err)
@@ -98,7 +98,7 @@ static void dump_eraseblock(int ebnum)
 	char line[128];
 	int pg, oob;
 
-	printk(PRINT_PREF "dumping eraseblock %d\n", ebnum);
+;
 	n = mtd->erasesize;
 	for (i = 0; i < n;) {
 		char *p = line;
@@ -106,12 +106,12 @@ static void dump_eraseblock(int ebnum)
 		p += sprintf(p, "%05x: ", i);
 		for (j = 0; j < 32 && i < n; j++, i++)
 			p += sprintf(p, "%02x", (unsigned int)iobuf[i]);
-		printk(KERN_CRIT "%s\n", line);
+;
 		cond_resched();
 	}
 	if (!mtd->oobsize)
 		return;
-	printk(PRINT_PREF "dumping oob from eraseblock %d\n", ebnum);
+;
 	n = mtd->oobsize;
 	for (pg = 0, i = 0; pg < pgcnt; pg++)
 		for (oob = 0; oob < n;) {
@@ -121,7 +121,7 @@ static void dump_eraseblock(int ebnum)
 			for (j = 0; j < 32 && oob < n; j++, oob++, i++)
 				p += sprintf(p, "%02x",
 					     (unsigned int)iobuf1[i]);
-			printk(KERN_CRIT "%s\n", line);
+;
 			cond_resched();
 		}
 }
@@ -133,7 +133,7 @@ static int is_block_bad(int ebnum)
 
 	ret = mtd->block_isbad(mtd, addr);
 	if (ret)
-		printk(PRINT_PREF "block %d is bad\n", ebnum);
+;
 	return ret;
 }
 
@@ -143,7 +143,7 @@ static int scan_for_bad_eraseblocks(void)
 
 	bbt = kzalloc(ebcnt, GFP_KERNEL);
 	if (!bbt) {
-		printk(PRINT_PREF "error: cannot allocate memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -151,14 +151,14 @@ static int scan_for_bad_eraseblocks(void)
 	if (mtd->block_isbad == NULL)
 		return 0;
 
-	printk(PRINT_PREF "scanning for bad eraseblocks\n");
+;
 	for (i = 0; i < ebcnt; ++i) {
 		bbt[i] = is_block_bad(i) ? 1 : 0;
 		if (bbt[i])
 			bad += 1;
 		cond_resched();
 	}
-	printk(PRINT_PREF "scanned %d eraseblocks, %d are bad\n", i, bad);
+;
 	return 0;
 }
 
@@ -167,20 +167,20 @@ static int __init mtd_readtest_init(void)
 	uint64_t tmp;
 	int err, i;
 
-	printk(KERN_INFO "\n");
-	printk(KERN_INFO "=================================================\n");
-	printk(PRINT_PREF "MTD device: %d\n", dev);
+;
+;
+;
 
 	mtd = get_mtd_device(NULL, dev);
 	if (IS_ERR(mtd)) {
 		err = PTR_ERR(mtd);
-		printk(PRINT_PREF "error: Cannot get MTD device\n");
+;
 		return err;
 	}
 
 	if (mtd->writesize == 1) {
-		printk(PRINT_PREF "not NAND flash, assume page size is 512 "
-		       "bytes.\n");
+//		printk(PRINT_PREF "not NAND flash, assume page size is 512 "
+;
 		pgsize = 512;
 	} else
 		pgsize = mtd->writesize;
@@ -190,21 +190,21 @@ static int __init mtd_readtest_init(void)
 	ebcnt = tmp;
 	pgcnt = mtd->erasesize / pgsize;
 
-	printk(PRINT_PREF "MTD device size %llu, eraseblock size %u, "
-	       "page size %u, count of eraseblocks %u, pages per "
-	       "eraseblock %u, OOB size %u\n",
-	       (unsigned long long)mtd->size, mtd->erasesize,
-	       pgsize, ebcnt, pgcnt, mtd->oobsize);
+//	printk(PRINT_PREF "MTD device size %llu, eraseblock size %u, "
+//	       "page size %u, count of eraseblocks %u, pages per "
+//	       "eraseblock %u, OOB size %u\n",
+//	       (unsigned long long)mtd->size, mtd->erasesize,
+;
 
 	err = -ENOMEM;
 	iobuf = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!iobuf) {
-		printk(PRINT_PREF "error: cannot allocate memory\n");
+;
 		goto out;
 	}
 	iobuf1 = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!iobuf1) {
-		printk(PRINT_PREF "error: cannot allocate memory\n");
+;
 		goto out;
 	}
 
@@ -213,7 +213,7 @@ static int __init mtd_readtest_init(void)
 		goto out;
 
 	/* Read all eraseblocks 1 page at a time */
-	printk(PRINT_PREF "testing page read\n");
+;
 	for (i = 0; i < ebcnt; ++i) {
 		int ret;
 
@@ -229,9 +229,9 @@ static int __init mtd_readtest_init(void)
 	}
 
 	if (err)
-		printk(PRINT_PREF "finished with errors\n");
+;
 	else
-		printk(PRINT_PREF "finished\n");
+;
 
 out:
 
@@ -240,8 +240,8 @@ out:
 	kfree(bbt);
 	put_mtd_device(mtd);
 	if (err)
-		printk(PRINT_PREF "error %d occurred\n", err);
-	printk(KERN_INFO "=================================================\n");
+;
+;
 	return err;
 }
 module_init(mtd_readtest_init);

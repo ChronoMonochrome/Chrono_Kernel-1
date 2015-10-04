@@ -268,8 +268,8 @@ static int ali_release(struct inode *inode, struct file *file)
 	if (ali_expect_release == 42)
 		ali_stop();
 	else {
-		printk(KERN_CRIT PFX
-				"Unexpected close, not stopping watchdog!\n");
+//		printk(KERN_CRIT PFX
+;
 		ali_keepalive();
 	}
 	clear_bit(0, &ali_is_open);
@@ -399,9 +399,9 @@ static int __init watchdog_init(void)
 	   if not reset to the default */
 	if (timeout < 1 || timeout >= 18000) {
 		timeout = WATCHDOG_TIMEOUT;
-		printk(KERN_INFO PFX
-		     "timeout value must be 0 < timeout < 18000, using %d\n",
-							timeout);
+//		printk(KERN_INFO PFX
+//		     "timeout value must be 0 < timeout < 18000, using %d\n",
+;
 	}
 
 	/* Calculate the watchdog's timeout */
@@ -409,21 +409,21 @@ static int __init watchdog_init(void)
 
 	ret = register_reboot_notifier(&ali_notifier);
 	if (ret != 0) {
-		printk(KERN_ERR PFX
-			"cannot register reboot notifier (err=%d)\n", ret);
+//		printk(KERN_ERR PFX
+;
 		goto out;
 	}
 
 	ret = misc_register(&ali_miscdev);
 	if (ret != 0) {
-		printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-						WATCHDOG_MINOR, ret);
+//		printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 		goto unreg_reboot;
 	}
 
-	printk(KERN_INFO PFX "initialized. timeout=%d sec (nowayout=%d)\n",
-		timeout, nowayout);
+//	printk(KERN_INFO PFX "initialized. timeout=%d sec (nowayout=%d)\n",
+;
 
 out:
 	return ret;

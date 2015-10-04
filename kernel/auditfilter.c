@@ -245,7 +245,7 @@ static inline struct audit_entry *audit_to_entry_common(struct audit_rule *rule)
 		;
 	}
 	if (unlikely(rule->action == AUDIT_POSSIBLE)) {
-		printk(KERN_ERR "AUDIT_POSSIBLE is deprecated\n");
+;
 		goto exit_err;
 	}
 	if (rule->action != AUDIT_NEVER && rule->action != AUDIT_ALWAYS)
@@ -483,8 +483,8 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
 			/* Keep currently invalid fields around in case they
 			 * become valid after a policy reload. */
 			if (err == -EINVAL) {
-				printk(KERN_WARNING "audit rule for LSM "
-				       "\'%s\' is invalid\n",  str);
+//				printk(KERN_WARNING "audit rule for LSM "
+;
 				err = 0;
 			}
 			if (err) {
@@ -733,8 +733,8 @@ static inline int audit_dupe_lsm_field(struct audit_field *df,
 	/* Keep currently invalid fields around in case they
 	 * become valid after a policy reload. */
 	if (ret == -EINVAL) {
-		printk(KERN_WARNING "audit rule for LSM \'%s\' is "
-		       "invalid\n", df->lsm_str);
+//		printk(KERN_WARNING "audit rule for LSM \'%s\' is "
+;
 		ret = 0;
 	}
 

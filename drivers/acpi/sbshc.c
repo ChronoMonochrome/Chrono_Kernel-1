@@ -127,7 +127,7 @@ static int acpi_smbus_transaction(struct acpi_smb_hc *hc, u8 protocol,
 	u8 temp, sz = 0;
 
 	if (!hc) {
-		printk(KERN_ERR PREFIX "host controller is not configured\n");
+;
 		return ret;
 	}
 
@@ -268,7 +268,7 @@ static int acpi_smbus_hc_add(struct acpi_device *device)
 
 	status = acpi_evaluate_integer(device->handle, "_EC", NULL, &val);
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR PREFIX "error obtaining _EC.\n");
+;
 		return -EIO;
 	}
 
@@ -287,8 +287,8 @@ static int acpi_smbus_hc_add(struct acpi_device *device)
 	device->driver_data = hc;
 
 	acpi_ec_add_query_handler(hc->ec, hc->query_bit, NULL, smbus_alarm, hc);
-	printk(KERN_INFO PREFIX "SBS HC: EC = 0x%p, offset = 0x%0x, query_bit = 0x%0x\n",
-		hc->ec, hc->offset, hc->query_bit);
+//	printk(KERN_INFO PREFIX "SBS HC: EC = 0x%p, offset = 0x%0x, query_bit = 0x%0x\n",
+;
 
 	return 0;
 }

@@ -102,7 +102,7 @@ static int r8a66597_clock_enable(struct r8a66597 *r8a66597)
 			r8a66597_write(r8a66597, SCKE, SYSCFG0);
 			tmp = r8a66597_read(r8a66597, SYSCFG0);
 			if (i++ > 1000) {
-				printk(KERN_ERR "r8a66597: reg access fail.\n");
+;
 				return -ENXIO;
 			}
 		} while ((tmp & SCKE) != SCKE);
@@ -112,7 +112,7 @@ static int r8a66597_clock_enable(struct r8a66597 *r8a66597)
 			r8a66597_write(r8a66597, USBE, SYSCFG0);
 			tmp = r8a66597_read(r8a66597, SYSCFG0);
 			if (i++ > 1000) {
-				printk(KERN_ERR "r8a66597: reg access fail.\n");
+;
 				return -ENXIO;
 			}
 		} while ((tmp & USBE) != USBE);
@@ -126,7 +126,7 @@ static int r8a66597_clock_enable(struct r8a66597 *r8a66597)
 			msleep(1);
 			tmp = r8a66597_read(r8a66597, SYSCFG0);
 			if (i++ > 500) {
-				printk(KERN_ERR "r8a66597: reg access fail.\n");
+;
 				return -ENXIO;
 			}
 		} while ((tmp & SCKE) != SCKE);
@@ -268,7 +268,7 @@ static void get_port_number(struct r8a66597 *r8a66597,
 	if (root_port) {
 		*root_port = (devpath[0] & 0x0F) - 1;
 		if (*root_port >= r8a66597->max_root_hub)
-			printk(KERN_ERR "r8a66597: Illegal root port number.\n");
+;
 	}
 	if (hub_port)
 		*hub_port = devpath[2] & 0x0F;
@@ -289,7 +289,7 @@ static u16 get_r8a66597_usb_speed(enum usb_device_speed speed)
 		usbspd = HSMODE;
 		break;
 	default:
-		printk(KERN_ERR "r8a66597: unknown speed\n");
+;
 		break;
 	}
 
@@ -458,8 +458,8 @@ static void r8a66597_reg_wait(struct r8a66597 *r8a66597, unsigned long reg,
 	do {
 		tmp = r8a66597_read(r8a66597, reg);
 		if (i++ > 1000000) {
-			printk(KERN_ERR "r8a66597: register%lx, loop %x "
-			       "is timeout\n", reg, loop);
+//			printk(KERN_ERR "r8a66597: register%lx, loop %x "
+;
 			break;
 		}
 		ndelay(1);
@@ -699,7 +699,7 @@ static u16 get_empty_pipenum(struct r8a66597 *r8a66597,
 			array[i++] = 1;
 		break;
 	default:
-		printk(KERN_ERR "r8a66597: Illegal type\n");
+;
 		return 0;
 	}
 
@@ -729,7 +729,7 @@ static u16 get_r8a66597_type(__u8 type)
 		r8a66597_type = R8A66597_ISO;
 		break;
 	default:
-		printk(KERN_ERR "r8a66597: Illegal type\n");
+;
 		r8a66597_type = 0x0000;
 		break;
 	}
@@ -748,7 +748,7 @@ static u16 get_bufnum(u16 pipenum)
 	else if (check_interrupt(pipenum))
 		bufnum = 4 + (pipenum - 6);
 	else
-		printk(KERN_ERR "r8a66597: Illegal pipenum (%d)\n", pipenum);
+;
 
 	return bufnum;
 }
@@ -764,7 +764,7 @@ static u16 get_buf_bsize(u16 pipenum)
 	else if (check_interrupt(pipenum))
 		buf_bsize = 0;
 	else
-		printk(KERN_ERR "r8a66597: Illegal pipenum (%d)\n", pipenum);
+;
 
 	return buf_bsize;
 }
@@ -1236,7 +1236,7 @@ static int start_transfer(struct r8a66597 *r8a66597, struct r8a66597_td *td)
 		prepare_status_packet(r8a66597, td);
 		break;
 	default:
-		printk(KERN_ERR "r8a66597: invalid type.\n");
+;
 		break;
 	}
 
@@ -1341,7 +1341,7 @@ static void packet_read(struct r8a66597 *r8a66597, u16 pipenum)
 	if (unlikely((tmp & FRDY) == 0)) {
 		pipe_stop(r8a66597, td->pipe);
 		pipe_irq_disable(r8a66597, pipenum);
-		printk(KERN_ERR "r8a66597: in fifo not ready (%d)\n", pipenum);
+;
 		finish_request(r8a66597, td, pipenum, td->urb, -EPIPE);
 		return;
 	}
@@ -1416,7 +1416,7 @@ static void packet_write(struct r8a66597 *r8a66597, u16 pipenum)
 	if (unlikely((tmp & FRDY) == 0)) {
 		pipe_stop(r8a66597, td->pipe);
 		pipe_irq_disable(r8a66597, pipenum);
-		printk(KERN_ERR "r8a66597: out fifo not ready (%d)\n", pipenum);
+;
 		finish_request(r8a66597, td, pipenum, urb, -EPIPE);
 		return;
 	}
@@ -2061,7 +2061,7 @@ static struct r8a66597_device *get_r8a66597_device(struct r8a66597 *r8a66597,
 		return dev;
 	}
 
-	printk(KERN_ERR "r8a66597: get_r8a66597_device fail.(%d)\n", addr);
+;
 	return NULL;
 }
 
@@ -2557,8 +2557,8 @@ static int __init r8a66597_init(void)
 	if (usb_disabled())
 		return -ENODEV;
 
-	printk(KERN_INFO KBUILD_MODNAME ": driver %s, %s\n", hcd_name,
-	       DRIVER_VERSION);
+//	printk(KERN_INFO KBUILD_MODNAME ": driver %s, %s\n", hcd_name,
+;
 	return platform_driver_register(&r8a66597_driver);
 }
 module_init(r8a66597_init);

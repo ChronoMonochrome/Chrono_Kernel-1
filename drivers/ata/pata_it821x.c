@@ -432,7 +432,7 @@ static unsigned int it821x_smart_qc_issue(struct ata_queued_cmd *qc)
 		case ATA_CMD_SET_FEATURES:
 			return ata_bmdma_qc_issue(qc);
 	}
-	printk(KERN_DEBUG "it821x: can't process command 0x%02X\n", qc->tf.command);
+;
 	return AC_ERR_DEV;
 }
 
@@ -473,12 +473,12 @@ static int it821x_smart_set_mode(struct ata_link *link, struct ata_device **unus
 		/* We do need the right mode information for DMA or PIO
 		   and this comes from the current configuration flags */
 		if (ata_id_has_dma(dev->id)) {
-			ata_dev_printk(dev, KERN_INFO, "configured for DMA\n");
+;
 			dev->xfer_mode = XFER_MW_DMA_0;
 			dev->xfer_shift = ATA_SHIFT_MWDMA;
 			dev->flags &= ~ATA_DFLAG_PIO;
 		} else {
-			ata_dev_printk(dev, KERN_INFO, "configured for PIO\n");
+;
 			dev->xfer_mode = XFER_PIO_0;
 			dev->xfer_shift = ATA_SHIFT_PIO;
 			dev->flags |= ATA_DFLAG_PIO;
@@ -508,12 +508,12 @@ static void it821x_dev_config(struct ata_device *adev)
 
 	if (strstr(model_num, "Integrated Technology Express")) {
 		/* RAID mode */
-		ata_dev_printk(adev, KERN_INFO, "%sRAID%d volume",
-			adev->id[147]?"Bootable ":"",
-			adev->id[129]);
+//		ata_dev_printk(adev, KERN_INFO, "%sRAID%d volume",
+//			adev->id[147]?"Bootable ":"",
+;
 		if (adev->id[129] != 1)
-			printk("(%dK stripe)", adev->id[146]);
-		printk(".\n");
+;
+;
 	}
 	/* This is a controller firmware triggered funny, don't
 	   report the drive faulty! */
@@ -634,13 +634,13 @@ static void it821x_display_disk(int n, u8 *buf)
 	else
 		strcpy(mbuf, "PIO");
 	if (buf[52] == 4)
-		printk(KERN_INFO "%d: %-6s %-8s          %s %s\n",
-				n, mbuf, types[buf[52]], id, cbl);
+//		printk(KERN_INFO "%d: %-6s %-8s          %s %s\n",
+;
 	else
-		printk(KERN_INFO "%d: %-6s %-8s Volume: %1d %s %s\n",
-				n, mbuf, types[buf[52]], buf[53], id, cbl);
+//		printk(KERN_INFO "%d: %-6s %-8s Volume: %1d %s %s\n",
+;
 	if (buf[125] < 100)
-		printk(KERN_INFO "%d: Rebuilding: %d%%\n", n, buf[125]);
+;
 }
 
 /**
@@ -660,7 +660,7 @@ static u8 *it821x_firmware_command(struct ata_port *ap, u8 cmd, int len)
 	int n = 0;
 	u16 *buf = kmalloc(len, GFP_KERNEL);
 	if (buf == NULL) {
-		printk(KERN_ERR "it821x_firmware_command: Out of memory\n");
+;
 		return NULL;
 	}
 	/* This isn't quite a normal ATA command as we are talking to the
@@ -677,7 +677,7 @@ static u8 *it821x_firmware_command(struct ata_port *ap, u8 cmd, int len)
 		status = ioread8(ap->ioaddr.status_addr);
 		if (status & ATA_ERR) {
 			kfree(buf);
-			printk(KERN_ERR "it821x_firmware_command: rejected\n");
+;
 			return NULL;
 		}
 		if (status & ATA_DRQ) {
@@ -687,7 +687,7 @@ static u8 *it821x_firmware_command(struct ata_port *ap, u8 cmd, int len)
 		mdelay(1);
 	}
 	kfree(buf);
-	printk(KERN_ERR "it821x_firmware_command: timeout\n");
+;
 	return NULL;
 }
 
@@ -710,11 +710,11 @@ static void it821x_probe_firmware(struct ata_port *ap)
 	buf = it821x_firmware_command(ap, 0xFA, 512);
 
 	if (buf != NULL) {
-		printk(KERN_INFO "pata_it821x: Firmware %02X/%02X/%02X%02X\n",
-				buf[505],
-				buf[506],
-				buf[507],
-				buf[508]);
+//		printk(KERN_INFO "pata_it821x: Firmware %02X/%02X/%02X%02X\n",
+//				buf[505],
+//				buf[506],
+//				buf[507],
+;
 		for (i = 0; i < 4; i++)
  			it821x_display_disk(i, buf + 128 * i);
 		kfree(buf);
@@ -772,7 +772,7 @@ static int it821x_port_start(struct ata_port *ap)
 		itdev->timing10 = 1;
 		/* Need to disable ATAPI DMA for this case */
 		if (!itdev->smart)
-			printk(KERN_WARNING DRV_NAME": Revision 0x10, workarounds activated.\n");
+;
 	}
 
 	return 0;
@@ -920,14 +920,14 @@ static int it821x_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
 	} else {
 		/* Force the card into bypass mode if so requested */
 		if (it8212_noraid) {
-			printk(KERN_INFO DRV_NAME ": forcing bypass mode.\n");
+;
 			it821x_disable_raid(pdev);
 		}
 		pci_read_config_byte(pdev, 0x50, &conf);
 		conf &= 1;
 
-		printk(KERN_INFO DRV_NAME": controller in %s mode.\n",
-								mode[conf]);
+//		printk(KERN_INFO DRV_NAME": controller in %s mode.\n",
+;
 		if (conf == 0)
 			ppi[0] = &info_passthru;
 		else

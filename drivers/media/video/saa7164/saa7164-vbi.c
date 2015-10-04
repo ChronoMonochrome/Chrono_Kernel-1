@@ -41,7 +41,7 @@ static const u32 saa7164_v4l2_ctrls[] = {
 static void saa7164_vbi_configure(struct saa7164_port *port)
 {
 	struct saa7164_dev *dev = port->dev;
-	dprintk(DBGLVL_VBI, "%s()\n", __func__);
+;
 
 	port->vbi_params.width = port->width;
 	port->vbi_params.height = port->height;
@@ -60,7 +60,7 @@ static void saa7164_vbi_configure(struct saa7164_port *port)
 	/* Ensure the audio decoder is correct configured */
 	saa7164_api_set_audio_std(port);
 #endif
-	dprintk(DBGLVL_VBI, "%s() ends\n", __func__);
+;
 }
 
 static int saa7164_vbi_buffers_dealloc(struct saa7164_port *port)
@@ -73,21 +73,21 @@ static int saa7164_vbi_buffers_dealloc(struct saa7164_port *port)
 	/* Remove any allocated buffers */
 	mutex_lock(&port->dmaqueue_lock);
 
-	dprintk(DBGLVL_VBI, "%s(port=%d) dmaqueue\n", __func__, port->nr);
+;
 	list_for_each_safe(c, n, &port->dmaqueue.list) {
 		buf = list_entry(c, struct saa7164_buffer, list);
 		list_del(c);
 		saa7164_buffer_dealloc(buf);
 	}
 
-	dprintk(DBGLVL_VBI, "%s(port=%d) used\n", __func__, port->nr);
+;
 	list_for_each_safe(p, q, &port->list_buf_used.list) {
 		ubuf = list_entry(p, struct saa7164_user_buffer, list);
 		list_del(p);
 		saa7164_buffer_dealloc_user(ubuf);
 	}
 
-	dprintk(DBGLVL_VBI, "%s(port=%d) free\n", __func__, port->nr);
+;
 	list_for_each_safe(l, v, &port->list_buf_free.list) {
 		ubuf = list_entry(l, struct saa7164_user_buffer, list);
 		list_del(l);
@@ -95,7 +95,7 @@ static int saa7164_vbi_buffers_dealloc(struct saa7164_port *port)
 	}
 
 	mutex_unlock(&port->dmaqueue_lock);
-	dprintk(DBGLVL_VBI, "%s(port=%d) done\n", __func__, port->nr);
+;
 
 	return 0;
 }
@@ -110,7 +110,7 @@ static int saa7164_vbi_buffers_alloc(struct saa7164_port *port)
 	int result = -ENODEV, i;
 	int len = 0;
 
-	dprintk(DBGLVL_VBI, "%s()\n", __func__);
+;
 
 	/* TODO: NTSC SPECIFIC */
 	/* Init and establish defaults */
@@ -134,9 +134,9 @@ static int saa7164_vbi_buffers_alloc(struct saa7164_port *port)
 			params->pitch);
 
 		if (!buf) {
-			printk(KERN_ERR "%s() failed "
-			       "(errno = %d), unable to allocate buffer\n",
-				__func__, result);
+//			printk(KERN_ERR "%s() failed "
+//			       "(errno = %d), unable to allocate buffer\n",
+;
 			result = -ENOMEM;
 			goto failed;
 		} else {
@@ -257,7 +257,7 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
 	struct saa7164_port *port = fh->port;
 	struct saa7164_dev *dev = port->dev;
 
-	dprintk(DBGLVL_VBI, "%s() input=%d\n", __func__, i);
+;
 
 	if (i >= 7)
 		return -EINVAL;
@@ -284,7 +284,7 @@ static int vidioc_g_tuner(struct file *file, void *priv,
 	t->type = V4L2_TUNER_ANALOG_TV;
 	t->capability = V4L2_TUNER_CAP_NORM | V4L2_TUNER_CAP_STEREO;
 
-	dprintk(DBGLVL_VBI, "VIDIOC_G_TUNER: tuner type %d\n", t->type);
+;
 
 	return 0;
 }
@@ -326,8 +326,8 @@ static int vidioc_s_frequency(struct file *file, void *priv,
 	};
 
 	/* Stop the encoder */
-	dprintk(DBGLVL_VBI, "%s() frequency=%d tuner=%d\n", __func__,
-		f->frequency, f->tuner);
+//	dprintk(DBGLVL_VBI, "%s() frequency=%d tuner=%d\n", __func__,
+;
 
 	if (f->tuner != 0)
 		return -EINVAL;
@@ -351,7 +351,7 @@ static int vidioc_s_frequency(struct file *file, void *priv,
 	if (fe && fe->ops.tuner_ops.set_analog_params)
 		fe->ops.tuner_ops.set_analog_params(fe, &params);
 	else
-		printk(KERN_ERR "%s() No analog tuner, aborting\n", __func__);
+;
 
 	saa7164_vbi_initialize(port);
 
@@ -365,8 +365,8 @@ static int vidioc_g_ctrl(struct file *file, void *priv,
 	struct saa7164_port *port = fh->port;
 	struct saa7164_dev *dev = port->dev;
 
-	dprintk(DBGLVL_VBI, "%s(id=%d, value=%d)\n", __func__,
-		ctl->id, ctl->value);
+//	dprintk(DBGLVL_VBI, "%s(id=%d, value=%d)\n", __func__,
+;
 
 	switch (ctl->id) {
 	case V4L2_CID_BRIGHTNESS:
@@ -402,8 +402,8 @@ static int vidioc_s_ctrl(struct file *file, void *priv,
 	struct saa7164_dev *dev = port->dev;
 	int ret = 0;
 
-	dprintk(DBGLVL_VBI, "%s(id=%d, value=%d)\n", __func__,
-		ctl->id, ctl->value);
+//	dprintk(DBGLVL_VBI, "%s(id=%d, value=%d)\n", __func__,
+;
 
 	switch (ctl->id) {
 	case V4L2_CID_BRIGHTNESS:
@@ -580,8 +580,8 @@ static int saa7164_set_ctrl(struct saa7164_port *port,
 		params->ctl_mute = ctrl->value;
 		ret = saa7164_api_audio_mute(port, params->ctl_mute);
 		if (ret != SAA_OK) {
-			printk(KERN_ERR "%s() error, ret = 0x%x\n", __func__,
-				ret);
+//			printk(KERN_ERR "%s() error, ret = 0x%x\n", __func__,
+;
 			ret = -EIO;
 		}
 		break;
@@ -589,8 +589,8 @@ static int saa7164_set_ctrl(struct saa7164_port *port,
 		params->ctl_aspect = ctrl->value;
 		ret = saa7164_api_set_aspect_ratio(port);
 		if (ret != SAA_OK) {
-			printk(KERN_ERR "%s() error, ret = 0x%x\n", __func__,
-				ret);
+//			printk(KERN_ERR "%s() error, ret = 0x%x\n", __func__,
+;
 			ret = -EIO;
 		}
 		break;
@@ -688,8 +688,8 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.width        = port->width;
 	f->fmt.pix.height       = port->height;
 
-	dprintk(DBGLVL_VBI, "VIDIOC_G_FMT: w: %d, h: %d\n",
-		port->width, port->height);
+//	dprintk(DBGLVL_VBI, "VIDIOC_G_FMT: w: %d, h: %d\n",
+;
 
 	return 0;
 }
@@ -706,8 +706,8 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.sizeimage    =
 		port->ts_packet_size * port->ts_packet_count;
 	f->fmt.pix.colorspace   = 0;
-	dprintk(DBGLVL_VBI, "VIDIOC_TRY_FMT: w: %d, h: %d\n",
-		port->width, port->height);
+//	dprintk(DBGLVL_VBI, "VIDIOC_TRY_FMT: w: %d, h: %d\n",
+;
 	return 0;
 }
 
@@ -724,8 +724,8 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 		port->ts_packet_size * port->ts_packet_count;
 	f->fmt.pix.colorspace   = 0;
 
-	dprintk(DBGLVL_VBI, "VIDIOC_S_FMT: w: %d, h: %d, f: %d\n",
-		f->fmt.pix.width, f->fmt.pix.height, f->fmt.pix.field);
+//	dprintk(DBGLVL_VBI, "VIDIOC_S_FMT: w: %d, h: %d, f: %d\n",
+;
 
 	return 0;
 }
@@ -811,11 +811,11 @@ static int saa7164_vbi_stop_port(struct saa7164_port *port)
 
 	ret = saa7164_api_transition_port(port, SAA_DMASTATE_STOP);
 	if ((ret != SAA_OK) && (ret != SAA_ERR_ALREADY_STOPPED)) {
-		printk(KERN_ERR "%s() stop transition failed, ret = 0x%x\n",
-			__func__, ret);
+//		printk(KERN_ERR "%s() stop transition failed, ret = 0x%x\n",
+;
 		ret = -EIO;
 	} else {
-		dprintk(DBGLVL_VBI, "%s()    Stopped\n", __func__);
+;
 		ret = 0;
 	}
 
@@ -829,11 +829,11 @@ static int saa7164_vbi_acquire_port(struct saa7164_port *port)
 
 	ret = saa7164_api_transition_port(port, SAA_DMASTATE_ACQUIRE);
 	if ((ret != SAA_OK) && (ret != SAA_ERR_ALREADY_STOPPED)) {
-		printk(KERN_ERR "%s() acquire transition failed, ret = 0x%x\n",
-			__func__, ret);
+//		printk(KERN_ERR "%s() acquire transition failed, ret = 0x%x\n",
+;
 		ret = -EIO;
 	} else {
-		dprintk(DBGLVL_VBI, "%s() Acquired\n", __func__);
+;
 		ret = 0;
 	}
 
@@ -847,11 +847,11 @@ static int saa7164_vbi_pause_port(struct saa7164_port *port)
 
 	ret = saa7164_api_transition_port(port, SAA_DMASTATE_PAUSE);
 	if ((ret != SAA_OK) && (ret != SAA_ERR_ALREADY_STOPPED)) {
-		printk(KERN_ERR "%s() pause transition failed, ret = 0x%x\n",
-			__func__, ret);
+//		printk(KERN_ERR "%s() pause transition failed, ret = 0x%x\n",
+;
 		ret = -EIO;
 	} else {
-		dprintk(DBGLVL_VBI, "%s()   Paused\n", __func__);
+;
 		ret = 0;
 	}
 
@@ -872,14 +872,14 @@ static int saa7164_vbi_stop_streaming(struct saa7164_port *port)
 	struct list_head *c, *n;
 	int ret;
 
-	dprintk(DBGLVL_VBI, "%s(port=%d)\n", __func__, port->nr);
+;
 
 	ret = saa7164_vbi_pause_port(port);
 	ret = saa7164_vbi_acquire_port(port);
 	ret = saa7164_vbi_stop_port(port);
 
-	dprintk(DBGLVL_VBI, "%s(port=%d) Hardware stopped\n", __func__,
-		port->nr);
+//	dprintk(DBGLVL_VBI, "%s(port=%d) Hardware stopped\n", __func__,
+;
 
 	/* Reset the state of any allocated buffer resources */
 	mutex_lock(&port->dmaqueue_lock);
@@ -902,7 +902,7 @@ static int saa7164_vbi_stop_streaming(struct saa7164_port *port)
 	/* Free any allocated resources */
 	saa7164_vbi_buffers_dealloc(port);
 
-	dprintk(DBGLVL_VBI, "%s(port=%d) Released\n", __func__, port->nr);
+;
 
 	return ret;
 }
@@ -912,7 +912,7 @@ static int saa7164_vbi_start_streaming(struct saa7164_port *port)
 	struct saa7164_dev *dev = port->dev;
 	int result, ret = 0;
 
-	dprintk(DBGLVL_VBI, "%s(port=%d)\n", __func__, port->nr);
+;
 
 	port->done_first_interrupt = 0;
 
@@ -933,7 +933,7 @@ static int saa7164_vbi_start_streaming(struct saa7164_port *port)
 
 	/* Negotiate format */
 	if (saa7164_api_set_vbi_format(port) != SAA_OK) {
-		printk(KERN_ERR "%s() No supported VBI format\n", __func__);
+;
 		ret = -EIO;
 		goto out;
 	}
@@ -941,49 +941,49 @@ static int saa7164_vbi_start_streaming(struct saa7164_port *port)
 	/* Acquire the hardware */
 	result = saa7164_api_transition_port(port, SAA_DMASTATE_ACQUIRE);
 	if ((result != SAA_OK) && (result != SAA_ERR_ALREADY_STOPPED)) {
-		printk(KERN_ERR "%s() acquire transition failed, res = 0x%x\n",
-			__func__, result);
+//		printk(KERN_ERR "%s() acquire transition failed, res = 0x%x\n",
+;
 
 		ret = -EIO;
 		goto out;
 	} else
-		dprintk(DBGLVL_VBI, "%s()   Acquired\n", __func__);
+;
 
 	/* Pause the hardware */
 	result = saa7164_api_transition_port(port, SAA_DMASTATE_PAUSE);
 	if ((result != SAA_OK) && (result != SAA_ERR_ALREADY_STOPPED)) {
-		printk(KERN_ERR "%s() pause transition failed, res = 0x%x\n",
-				__func__, result);
+//		printk(KERN_ERR "%s() pause transition failed, res = 0x%x\n",
+;
 
 		/* Stop the hardware, regardless */
 		result = saa7164_vbi_stop_port(port);
 		if ((result != SAA_OK) && (result != SAA_ERR_ALREADY_STOPPED)) {
-			printk(KERN_ERR "%s() pause/forced stop transition "
-				"failed, res = 0x%x\n", __func__, result);
+//			printk(KERN_ERR "%s() pause/forced stop transition "
+;
 		}
 
 		ret = -EIO;
 		goto out;
 	} else
-		dprintk(DBGLVL_VBI, "%s()   Paused\n", __func__);
+;
 
 	/* Start the hardware */
 	result = saa7164_api_transition_port(port, SAA_DMASTATE_RUN);
 	if ((result != SAA_OK) && (result != SAA_ERR_ALREADY_STOPPED)) {
-		printk(KERN_ERR "%s() run transition failed, result = 0x%x\n",
-				__func__, result);
+//		printk(KERN_ERR "%s() run transition failed, result = 0x%x\n",
+;
 
 		/* Stop the hardware, regardless */
 		result = saa7164_vbi_acquire_port(port);
 		result = saa7164_vbi_stop_port(port);
 		if ((result != SAA_OK) && (result != SAA_ERR_ALREADY_STOPPED)) {
-			printk(KERN_ERR "%s() run/forced stop transition "
-				"failed, res = 0x%x\n", __func__, result);
+//			printk(KERN_ERR "%s() run/forced stop transition "
+;
 		}
 
 		ret = -EIO;
 	} else
-		dprintk(DBGLVL_VBI, "%s()   Running\n", __func__);
+;
 
 out:
 	return ret;
@@ -1017,7 +1017,7 @@ static int fops_open(struct file *file)
 
 	dev = port->dev;
 
-	dprintk(DBGLVL_VBI, "%s()\n", __func__);
+;
 
 	/* allocate + initialize per filehandle data */
 	fh = kzalloc(sizeof(*fh), GFP_KERNEL);
@@ -1036,7 +1036,7 @@ static int fops_release(struct file *file)
 	struct saa7164_port *port = fh->port;
 	struct saa7164_dev *dev = port->dev;
 
-	dprintk(DBGLVL_VBI, "%s()\n", __func__);
+;
 
 	/* Shut device down on last close */
 	if (atomic_cmpxchg(&fh->v4l_reading, 1, 0) == 1) {
@@ -1066,16 +1066,16 @@ struct saa7164_user_buffer *saa7164_vbi_next_buf(struct saa7164_port *port)
 		if (crc_checking) {
 			crc = crc32(0, ubuf->data, ubuf->actual_size);
 			if (crc != ubuf->crc) {
-				printk(KERN_ERR "%s() ubuf %p crc became invalid, was 0x%x became 0x%x\n",
-					__func__,
-					ubuf, ubuf->crc, crc);
+//				printk(KERN_ERR "%s() ubuf %p crc became invalid, was 0x%x became 0x%x\n",
+//					__func__,
+;
 			}
 		}
 
 	}
 	mutex_unlock(&port->dmaqueue_lock);
 
-	dprintk(DBGLVL_VBI, "%s() returns %p\n", __func__, ubuf);
+;
 
 	return ubuf;
 }
@@ -1100,7 +1100,7 @@ static ssize_t fops_read(struct file *file, char __user *buffer,
 		port->last_read_msecs_diff);
 
 	if (*pos) {
-		printk(KERN_ERR "%s() ESPIPE\n", __func__);
+;
 		return -ESPIPE;
 	}
 
@@ -1108,7 +1108,7 @@ static ssize_t fops_read(struct file *file, char __user *buffer,
 		if (atomic_inc_return(&port->v4l_reader_count) == 1) {
 
 			if (saa7164_vbi_initialize(port) < 0) {
-				printk(KERN_ERR "%s() EINVAL\n", __func__);
+;
 				return -EINVAL;
 			}
 
@@ -1121,7 +1121,7 @@ static ssize_t fops_read(struct file *file, char __user *buffer,
 	if ((file->f_flags & O_NONBLOCK) == 0) {
 		if (wait_event_interruptible(port->wait_read,
 			saa7164_vbi_next_buf(port))) {
-				printk(KERN_ERR "%s() ERESTARTSYS\n", __func__);
+;
 				return -ERESTARTSYS;
 		}
 	}
@@ -1137,14 +1137,14 @@ static ssize_t fops_read(struct file *file, char __user *buffer,
 
 		p = ubuf->data + ubuf->pos;
 
-		dprintk(DBGLVL_VBI,
-			"%s() count=%d cnt=%d rem=%d buf=%p buf->pos=%d\n",
-			__func__, (int)count, cnt, rem, ubuf, ubuf->pos);
+//		dprintk(DBGLVL_VBI,
+//			"%s() count=%d cnt=%d rem=%d buf=%p buf->pos=%d\n",
+;
 
 		if (copy_to_user(buffer, p, cnt)) {
-			printk(KERN_ERR "%s() copy_to_user failed\n", __func__);
+;
 			if (!ret) {
-				printk(KERN_ERR "%s() EFAULT\n", __func__);
+;
 				ret = -EFAULT;
 			}
 			goto err;
@@ -1156,7 +1156,7 @@ static ssize_t fops_read(struct file *file, char __user *buffer,
 		ret += cnt;
 
 		if (ubuf->pos > ubuf->actual_size)
-			printk(KERN_ERR "read() pos > actual, huh?\n");
+;
 
 		if (ubuf->pos == ubuf->actual_size) {
 
@@ -1181,7 +1181,7 @@ static ssize_t fops_read(struct file *file, char __user *buffer,
 	}
 err:
 	if (!ret && !ubuf) {
-		printk(KERN_ERR "%s() EAGAIN\n", __func__);
+;
 		ret = -EAGAIN;
 	}
 
@@ -1294,7 +1294,7 @@ static struct video_device *saa7164_vbi_alloc(
 	struct video_device *vfd;
 	struct saa7164_dev *dev = port->dev;
 
-	dprintk(DBGLVL_VBI, "%s()\n", __func__);
+;
 
 	vfd = video_device_alloc();
 	if (NULL == vfd)
@@ -1314,16 +1314,16 @@ int saa7164_vbi_register(struct saa7164_port *port)
 	struct saa7164_dev *dev = port->dev;
 	int result = -ENODEV;
 
-	dprintk(DBGLVL_VBI, "%s()\n", __func__);
+;
 
 	if (port->type != SAA7164_MPEG_VBI)
 		BUG();
 
 	/* Sanity check that the PCI configuration space is active */
 	if (port->hwcfg.BARLocation == 0) {
-		printk(KERN_ERR "%s() failed "
-		       "(errno = %d), NO PCI configuration\n",
-			__func__, result);
+//		printk(KERN_ERR "%s() failed "
+//		       "(errno = %d), NO PCI configuration\n",
+;
 		result = -ENOMEM;
 		goto failed;
 	}
@@ -1335,8 +1335,8 @@ int saa7164_vbi_register(struct saa7164_port *port)
 		dev->pci, &saa7164_vbi_template, "vbi");
 
 	if (!port->v4l_device) {
-		printk(KERN_INFO "%s: can't allocate vbi device\n",
-			dev->name);
+//		printk(KERN_INFO "%s: can't allocate vbi device\n",
+;
 		result = -ENOMEM;
 		goto failed;
 	}
@@ -1345,16 +1345,16 @@ int saa7164_vbi_register(struct saa7164_port *port)
 	result = video_register_device(port->v4l_device,
 		VFL_TYPE_VBI, -1);
 	if (result < 0) {
-		printk(KERN_INFO "%s: can't register vbi device\n",
-			dev->name);
+//		printk(KERN_INFO "%s: can't register vbi device\n",
+;
 		/* TODO: We're going to leak here if we don't dealloc
 		 The buffers above. The unreg function can't deal wit it.
 		*/
 		goto failed;
 	}
 
-	printk(KERN_INFO "%s: registered device vbi%d [vbi]\n",
-		dev->name, port->v4l_device->num);
+//	printk(KERN_INFO "%s: registered device vbi%d [vbi]\n",
+;
 
 	/* Configure the hardware defaults */
 
@@ -1367,7 +1367,7 @@ void saa7164_vbi_unregister(struct saa7164_port *port)
 {
 	struct saa7164_dev *dev = port->dev;
 
-	dprintk(DBGLVL_VBI, "%s(port=%d)\n", __func__, port->nr);
+;
 
 	if (port->type != SAA7164_MPEG_VBI)
 		BUG();

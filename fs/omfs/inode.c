@@ -120,8 +120,8 @@ static int __omfs_write_inode(struct inode *inode, int wait)
 	else if (S_ISREG(inode->i_mode))
 		oi->i_type = OMFS_FILE;
 	else {
-		printk(KERN_WARNING "omfs: unknown file type: %d\n",
-			inode->i_mode);
+//		printk(KERN_WARNING "omfs: unknown file type: %d\n",
+;
 		goto out_brelse;
 	}
 
@@ -456,8 +456,8 @@ static int omfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	if (omfs_sb->s_magic != cpu_to_be32(OMFS_MAGIC)) {
 		if (!silent)
-			printk(KERN_ERR "omfs: Invalid superblock (%x)\n",
-				   omfs_sb->s_magic);
+//			printk(KERN_ERR "omfs: Invalid superblock (%x)\n",
+;
 		goto out_brelse_bh;
 	}
 	sb->s_magic = OMFS_MAGIC;
@@ -470,15 +470,15 @@ static int omfs_fill_super(struct super_block *sb, void *data, int silent)
 	mutex_init(&sbi->s_bitmap_lock);
 
 	if (sbi->s_sys_blocksize > PAGE_SIZE) {
-		printk(KERN_ERR "omfs: sysblock size (%d) is out of range\n",
-			sbi->s_sys_blocksize);
+//		printk(KERN_ERR "omfs: sysblock size (%d) is out of range\n",
+;
 		goto out_brelse_bh;
 	}
 
 	if (sbi->s_blocksize < sbi->s_sys_blocksize ||
 	    sbi->s_blocksize > OMFS_MAX_BLOCK_SIZE) {
-		printk(KERN_ERR "omfs: block size (%d) is out of range\n",
-			sbi->s_blocksize);
+//		printk(KERN_ERR "omfs: block size (%d) is out of range\n",
+;
 		goto out_brelse_bh;
 	}
 
@@ -505,25 +505,25 @@ static int omfs_fill_super(struct super_block *sb, void *data, int silent)
 	sbi->s_clustersize = be32_to_cpu(omfs_rb->r_clustersize);
 
 	if (sbi->s_num_blocks != be64_to_cpu(omfs_rb->r_num_blocks)) {
-		printk(KERN_ERR "omfs: block count discrepancy between "
-			"super and root blocks (%llx, %llx)\n",
-			(unsigned long long)sbi->s_num_blocks,
-			(unsigned long long)be64_to_cpu(omfs_rb->r_num_blocks));
+//		printk(KERN_ERR "omfs: block count discrepancy between "
+//			"super and root blocks (%llx, %llx)\n",
+//			(unsigned long long)sbi->s_num_blocks,
+;
 		goto out_brelse_bh2;
 	}
 
 	if (sbi->s_bitmap_ino != ~0ULL &&
 	    sbi->s_bitmap_ino > sbi->s_num_blocks) {
-		printk(KERN_ERR "omfs: free space bitmap location is corrupt "
-			"(%llx, total blocks %llx)\n",
-			(unsigned long long) sbi->s_bitmap_ino,
-			(unsigned long long) sbi->s_num_blocks);
+//		printk(KERN_ERR "omfs: free space bitmap location is corrupt "
+//			"(%llx, total blocks %llx)\n",
+//			(unsigned long long) sbi->s_bitmap_ino,
+;
 		goto out_brelse_bh2;
 	}
 	if (sbi->s_clustersize < 1 ||
 	    sbi->s_clustersize > OMFS_MAX_CLUSTER_SIZE) {
-		printk(KERN_ERR "omfs: cluster size out of range (%d)",
-			sbi->s_clustersize);
+//		printk(KERN_ERR "omfs: cluster size out of range (%d)",
+;
 		goto out_brelse_bh2;
 	}
 
@@ -544,7 +544,7 @@ static int omfs_fill_super(struct super_block *sb, void *data, int silent)
 		iput(root);
 		goto out_brelse_bh2;
 	}
-	printk(KERN_DEBUG "omfs: Mounted volume %s\n", omfs_rb->r_name);
+;
 
 	ret = 0;
 out_brelse_bh2:

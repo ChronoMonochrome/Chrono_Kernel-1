@@ -552,8 +552,8 @@ static int __init parse_crash_elf64_headers(void)
 		ehdr.e_ehsize != sizeof(Elf64_Ehdr) ||
 		ehdr.e_phentsize != sizeof(Elf64_Phdr) ||
 		ehdr.e_phnum == 0) {
-		printk(KERN_WARNING "Warning: Core image elf header is not"
-					"sane\n");
+//		printk(KERN_WARNING "Warning: Core image elf header is not"
+;
 		return -EINVAL;
 	}
 
@@ -608,8 +608,8 @@ static int __init parse_crash_elf32_headers(void)
 		ehdr.e_ehsize != sizeof(Elf32_Ehdr) ||
 		ehdr.e_phentsize != sizeof(Elf32_Phdr) ||
 		ehdr.e_phnum == 0) {
-		printk(KERN_WARNING "Warning: Core image elf header is not"
-					"sane\n");
+//		printk(KERN_WARNING "Warning: Core image elf header is not"
+;
 		return -EINVAL;
 	}
 
@@ -652,8 +652,8 @@ static int __init parse_crash_elf_headers(void)
 	if (rc < 0)
 		return rc;
 	if (memcmp(e_ident, ELFMAG, SELFMAG) != 0) {
-		printk(KERN_WARNING "Warning: Core image elf header"
-					" not found\n");
+//		printk(KERN_WARNING "Warning: Core image elf header"
+;
 		return -EINVAL;
 	}
 
@@ -672,8 +672,8 @@ static int __init parse_crash_elf_headers(void)
 		/* Determine vmcore size. */
 		vmcore_size = get_vmcore_size_elf32(elfcorebuf);
 	} else {
-		printk(KERN_WARNING "Warning: Core image elf header is not"
-					" sane\n");
+//		printk(KERN_WARNING "Warning: Core image elf header is not"
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -689,7 +689,7 @@ static int __init vmcore_init(void)
 		return rc;
 	rc = parse_crash_elf_headers();
 	if (rc) {
-		printk(KERN_WARNING "Kdump: vmcore not initialized\n");
+;
 		return rc;
 	}
 

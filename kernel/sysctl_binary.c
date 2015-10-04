@@ -1384,12 +1384,12 @@ static void deprecated_sysctl_warning(const int *name, int nlen)
 		return;
 
 	if (printk_ratelimit()) {
-		printk(KERN_INFO
-			"warning: process `%s' used the deprecated sysctl "
-			"system call with ", current->comm);
+//		printk(KERN_INFO
+//			"warning: process `%s' used the deprecated sysctl "
+;
 		for (i = 0; i < nlen; i++)
-			printk("%d.", name[i]);
-		printk("\n");
+;
+;
 	}
 	return;
 }

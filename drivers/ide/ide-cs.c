@@ -122,14 +122,14 @@ static struct ide_host *idecs_register(unsigned long io, unsigned long ctl,
     struct ide_hw hw, *hws[] = { &hw };
 
     if (!request_region(io, 8, DRV_NAME)) {
-	printk(KERN_ERR "%s: I/O resource 0x%lX-0x%lX not free.\n",
-			DRV_NAME, io, io + 7);
+//	printk(KERN_ERR "%s: I/O resource 0x%lX-0x%lX not free.\n",
+;
 	return NULL;
     }
 
     if (!request_region(ctl, 1, DRV_NAME)) {
-	printk(KERN_ERR "%s: I/O resource 0x%lX not free.\n",
-			DRV_NAME, ctl);
+//	printk(KERN_ERR "%s: I/O resource 0x%lX not free.\n",
+;
 	release_region(io, 8);
 	return NULL;
     }

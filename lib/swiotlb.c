@@ -130,11 +130,11 @@ void swiotlb_print_info(void)
 	pstart = virt_to_phys(io_tlb_start);
 	pend = virt_to_phys(io_tlb_end);
 
-	printk(KERN_INFO "Placing %luMB software IO TLB between %p - %p\n",
-	       bytes >> 20, io_tlb_start, io_tlb_end);
-	printk(KERN_INFO "software IO TLB at phys %#llx - %#llx\n",
-	       (unsigned long long)pstart,
-	       (unsigned long long)pend);
+//	printk(KERN_INFO "Placing %luMB software IO TLB between %p - %p\n",
+;
+//	printk(KERN_INFO "software IO TLB at phys %#llx - %#llx\n",
+//	       (unsigned long long)pstart,
+;
 }
 
 void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
@@ -235,8 +235,8 @@ swiotlb_late_init_with_default_size(size_t default_size)
 		goto cleanup1;
 
 	if (order != get_order(bytes)) {
-		printk(KERN_WARNING "Warning: only able to allocate %ld MB "
-		       "for software IO TLB\n", (PAGE_SIZE << order) >> 20);
+//		printk(KERN_WARNING "Warning: only able to allocate %ld MB "
+;
 		io_tlb_nslabs = SLABS_PER_PAGE << order;
 		bytes = io_tlb_nslabs << IO_TLB_SHIFT;
 	}
@@ -599,9 +599,9 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
 
 	/* Confirm address can be DMA'd by device */
 	if (dev_addr + size - 1 > dma_mask) {
-		printk("hwdev DMA mask = 0x%016Lx, dev_addr = 0x%016Lx\n",
-		       (unsigned long long)dma_mask,
-		       (unsigned long long)dev_addr);
+//		printk("hwdev DMA mask = 0x%016Lx, dev_addr = 0x%016Lx\n",
+//		       (unsigned long long)dma_mask,
+;
 
 		/* DMA_TO_DEVICE to avoid memcpy in unmap_single */
 		swiotlb_tbl_unmap_single(hwdev, ret, size, DMA_TO_DEVICE);
@@ -638,8 +638,8 @@ swiotlb_full(struct device *dev, size_t size, enum dma_data_direction dir,
 	 * When the mapping is small enough return a static buffer to limit
 	 * the damage, or panic when the transfer is too big.
 	 */
-	printk(KERN_ERR "DMA: Out of SW-IOMMU space for %zu bytes at "
-	       "device %s\n", size, dev ? dev_name(dev) : "?");
+//	printk(KERN_ERR "DMA: Out of SW-IOMMU space for %zu bytes at "
+;
 
 	if (size <= io_tlb_overflow || !do_panic)
 		return;

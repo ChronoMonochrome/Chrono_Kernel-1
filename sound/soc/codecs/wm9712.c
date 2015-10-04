@@ -594,7 +594,7 @@ static int wm9712_reset(struct snd_soc_codec *codec, int try_warm)
 	return 0;
 
 err:
-	printk(KERN_ERR "WM9712 AC97 reset failed\n");
+;
 	return -EIO;
 }
 
@@ -612,7 +612,7 @@ static int wm9712_soc_resume(struct snd_soc_codec *codec)
 
 	ret = wm9712_reset(codec, 1);
 	if (ret < 0) {
-		printk(KERN_ERR "could not reset AC97 codec\n");
+;
 		return ret;
 	}
 
@@ -635,17 +635,17 @@ static int wm9712_soc_probe(struct snd_soc_codec *codec)
 {
 	int ret = 0;
 
-	printk(KERN_INFO "WM9711/WM9712 SoC Audio Codec %s\n", WM9712_VERSION);
+;
 
 	ret = snd_soc_new_ac97_codec(codec, &soc_ac97_ops, 0);
 	if (ret < 0) {
-		printk(KERN_ERR "wm9712: failed to register AC97 codec\n");
+;
 		return ret;
 	}
 
 	ret = wm9712_reset(codec, 0);
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to reset WM9712: AC97 link error\n");
+;
 		goto reset_err;
 	}
 

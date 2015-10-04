@@ -557,7 +557,7 @@ static void __irqsoff_tracer_init(struct trace_array *tr)
 	tracing_reset_online_cpus(tr);
 
 	if (start_irqsoff_tracer(tr, is_graph()))
-		printk(KERN_ERR "failed to start irqsoff tracer\n");
+;
 }
 
 static void irqsoff_tracer_reset(struct trace_array *tr)

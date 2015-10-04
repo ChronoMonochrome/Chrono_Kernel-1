@@ -1343,8 +1343,8 @@ static void BuildLAF(int *ladrf, int *adr)
 
 #ifdef PCMCIA_DEBUG
   if (0)
-    printk(KERN_DEBUG "    adr =%pM\n", adr);
-  printk(KERN_DEBUG "    hashcode = %d(decimal), ladrf[0:63] =", hashcode);
+;
+;
   for (i = 0; i < 8; i++)
     pr_cont(" %02X", ladrf[i]);
   pr_cont("\n");

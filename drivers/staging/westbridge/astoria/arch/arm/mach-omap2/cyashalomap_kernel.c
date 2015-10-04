@@ -1012,10 +1012,10 @@ static void p_nand_lbd_read(u16 col_addr, u32 row_addr, u16 count, void *buff)
 #ifdef PFE_READ_DEBUG
 	tmp32 = IORD32(GPMC_VMA(GPMC_PREFETCH_CONFIG1));
 	if (tmp32 != GPMC_PREFETCH_CONFIG1_VAL) {
-		printk(KERN_INFO "<1> prefetch is CONFIG1 read val:%8.8x, != VAL written:%8.8x\n",
-				tmp32, GPMC_PREFETCH_CONFIG1_VAL);
+//		printk(KERN_INFO "<1> prefetch is CONFIG1 read val:%8.8x, != VAL written:%8.8x\n",
+;
 		tmp32 = IORD32(GPMC_VMA(GPMC_PREFETCH_STATUS));
-		printk(KERN_INFO "<1> GPMC_PREFETCH_STATUS : %8.8x\n", tmp32);
+;
 	}
 
 	/*
@@ -1023,8 +1023,8 @@ static void p_nand_lbd_read(u16 col_addr, u32 row_addr, u16 count, void *buff)
 	 */
 	tmp32 = IORD32(GPMC_VMA(GPMC_PREFETCH_CONFIG2));
 	if (tmp32 != (count))
-		printk(KERN_INFO "<1> GPMC_PREFETCH_CONFIG2 read val:%d, "
-				"!= VAL written:%d\n", tmp32, count);
+//		printk(KERN_INFO "<1> GPMC_PREFETCH_CONFIG2 read val:%d, "
+;
 #endif
 
 	/*
@@ -1065,9 +1065,9 @@ static void p_nand_lbd_read(u16 col_addr, u32 row_addr, u16 count, void *buff)
 		*   by DMA or MPU whether COUNTVAL indicates number of BUS
 		*   words yet to be read from PNAND bus words
 		*/
-		printk(KERN_ERR "<1> got PF_STATUS:%8.8x FIFO_PTR:%d, COUNTVAL:%d, w32cnt:%d\n",
-					pfe_status, bytes_in_fifo,
-					(pfe_status & 0x3fff), w32cnt);
+//		printk(KERN_ERR "<1> got PF_STATUS:%8.8x FIFO_PTR:%d, COUNTVAL:%d, w32cnt:%d\n",
+//					pfe_status, bytes_in_fifo,
+;
 #endif
 
 		while (w32cnt--)
@@ -1128,8 +1128,8 @@ static void p_nand_lbd_read(u16 col_addr, u32 row_addr, u16 count, void *buff)
 				break;
 
 			default:
-				printk(KERN_ERR"<1>_error: PFE FIFO bytes leftover is not read:%d\n",
-								bytes_in_fifo);
+//				printk(KERN_ERR"<1>_error: PFE FIFO bytes leftover is not read:%d\n",
+;
 				break;
 			}
 			/*
@@ -2381,9 +2381,9 @@ int start_o_m_a_p_kernel(const char *pgm,
 		/*
 		 * astoria device is not found
 		 */
-		printk(KERN_ERR "ERROR: astoria device is not found, CY_AS_MEM_CM_WB_CFG_ID ");
-		printk(KERN_ERR "read returned:%4.4X: CY_AS_MEM_PNAND_CFG:%4.4x !\n",
-				data16[0], data16[0]);
+;
+//		printk(KERN_ERR "read returned:%4.4X: CY_AS_MEM_PNAND_CFG:%4.4x !\n",
+;
 		goto bus_acc_error;
 	}
 

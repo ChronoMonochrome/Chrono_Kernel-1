@@ -114,15 +114,13 @@ static struct nlm_host *nlm_alloc_host(struct nlm_lookup_host_info *ni,
 		nsm = nsm_get_handle(ni->sap, ni->salen,
 					ni->hostname, ni->hostname_len);
 		if (unlikely(nsm == NULL)) {
-			dprintk("lockd: %s failed; no nsm handle\n",
-				__func__);
 			goto out;
 		}
 	}
 
 	host = kmalloc(sizeof(*host), GFP_KERNEL);
 	if (unlikely(host == NULL)) {
-		dprintk("lockd: %s failed; no memory\n", __func__);
+;
 		nsm_release(nsm);
 		goto out;
 	}
@@ -169,7 +167,7 @@ static void nlm_destroy_host_locked(struct nlm_host *host)
 {
 	struct rpc_clnt	*clnt;
 
-	dprintk("lockd: destroy host %s\n", host->h_name);
+;
 
 	BUG_ON(!list_empty(&host->h_lockowners));
 	BUG_ON(atomic_read(&host->h_count));
@@ -223,9 +221,9 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
 	struct nlm_host	*host;
 	struct nsm_handle *nsm = NULL;
 
-	dprintk("lockd: %s(host='%s', vers=%u, proto=%s)\n", __func__,
-			(hostname ? hostname : "<none>"), version,
-			(protocol == IPPROTO_UDP ? "udp" : "tcp"));
+//	dprintk("lockd: %s(host='%s', vers=%u, proto=%s)\n", __func__,
+//			(hostname ? hostname : "<none>"), version,
+;
 
 	mutex_lock(&nlm_host_mutex);
 
@@ -244,8 +242,8 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
 			continue;
 
 		nlm_get_host(host);
-		dprintk("lockd: %s found host %s (%s)\n", __func__,
-			host->h_name, host->h_addrbuf);
+//		dprintk("lockd: %s found host %s (%s)\n", __func__,
+;
 		goto out;
 	}
 
@@ -256,8 +254,8 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
 	hlist_add_head(&host->h_hash, chain);
 	nrhosts++;
 
-	dprintk("lockd: %s created host %s (%s)\n", __func__,
-		host->h_name, host->h_addrbuf);
+//	dprintk("lockd: %s created host %s (%s)\n", __func__,
+;
 
 out:
 	mutex_unlock(&nlm_host_mutex);
@@ -274,7 +272,7 @@ void nlmclnt_release_host(struct nlm_host *host)
 	if (host == NULL)
 		return;
 
-	dprintk("lockd: release client host %s\n", host->h_name);
+;
 
 	BUG_ON(atomic_read(&host->h_count) < 0);
 	BUG_ON(host->h_server);
@@ -350,8 +348,6 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
 		src_sap = (struct sockaddr *)&sin6;
 		break;
 	default:
-		dprintk("lockd: %s failed; unrecognized address family\n",
-			__func__);
 		goto out;
 	}
 
@@ -379,8 +375,8 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
 		hlist_add_head(&host->h_hash, chain);
 
 		nlm_get_host(host);
-		dprintk("lockd: %s found host %s (%s)\n",
-			__func__, host->h_name, host->h_addrbuf);
+//		dprintk("lockd: %s found host %s (%s)\n",
+;
 		goto out;
 	}
 
@@ -393,8 +389,8 @@ struct nlm_host *nlmsvc_lookup_host(const struct svc_rqst *rqstp,
 	hlist_add_head(&host->h_hash, chain);
 	nrhosts++;
 
-	dprintk("lockd: %s created host %s (%s)\n",
-		__func__, host->h_name, host->h_addrbuf);
+//	dprintk("lockd: %s created host %s (%s)\n",
+;
 
 out:
 	mutex_unlock(&nlm_host_mutex);
@@ -412,7 +408,7 @@ void nlmsvc_release_host(struct nlm_host *host)
 	if (host == NULL)
 		return;
 
-	dprintk("lockd: release server host %s\n", host->h_name);
+;
 
 	BUG_ON(atomic_read(&host->h_count) < 0);
 	BUG_ON(!host->h_server);
@@ -427,8 +423,8 @@ nlm_bind_host(struct nlm_host *host)
 {
 	struct rpc_clnt	*clnt;
 
-	dprintk("lockd: nlm_bind_host %s (%s)\n",
-			host->h_name, host->h_addrbuf);
+//	dprintk("lockd: nlm_bind_host %s (%s)\n",
+;
 
 	/* Lock host handle */
 	mutex_lock(&host->h_mutex);
@@ -440,8 +436,8 @@ nlm_bind_host(struct nlm_host *host)
 		if (time_after_eq(jiffies, host->h_nextrebind)) {
 			rpc_force_rebind(clnt);
 			host->h_nextrebind = jiffies + NLM_HOST_REBIND;
-			dprintk("lockd: next rebind in %lu jiffies\n",
-					host->h_nextrebind - jiffies);
+//			dprintk("lockd: next rebind in %lu jiffies\n",
+;
 		}
 	} else {
 		unsigned long increment = nlmsvc_timeout;
@@ -481,7 +477,7 @@ nlm_bind_host(struct nlm_host *host)
 		if (!IS_ERR(clnt))
 			host->h_rpcclnt = clnt;
 		else {
-			printk("lockd: couldn't create RPC handle for %s\n", host->h_name);
+;
 			clnt = NULL;
 		}
 	}
@@ -496,7 +492,7 @@ nlm_bind_host(struct nlm_host *host)
 void
 nlm_rebind_host(struct nlm_host *host)
 {
-	dprintk("lockd: rebind host %s\n", host->h_name);
+;
 	if (host->h_rpcclnt && time_after_eq(jiffies, host->h_nextrebind)) {
 		rpc_force_rebind(host->h_rpcclnt);
 		host->h_nextrebind = jiffies + NLM_HOST_REBIND;
@@ -509,7 +505,7 @@ nlm_rebind_host(struct nlm_host *host)
 struct nlm_host * nlm_get_host(struct nlm_host *host)
 {
 	if (host) {
-		dprintk("lockd: get host %s\n", host->h_name);
+;
 		atomic_inc(&host->h_count);
 		host->h_expires = jiffies + NLM_HOST_EXPIRE;
 	}
@@ -585,11 +581,11 @@ nlm_shutdown_hosts(void)
 	struct hlist_node *pos;
 	struct nlm_host	*host;
 
-	dprintk("lockd: shutting down host module\n");
+;
 	mutex_lock(&nlm_host_mutex);
 
 	/* First, make all hosts eligible for gc */
-	dprintk("lockd: nuking all hosts...\n");
+;
 	for_each_host(host, pos, chain, nlm_server_hosts) {
 		host->h_expires = jiffies - 1;
 		if (host->h_rpcclnt) {
@@ -604,12 +600,12 @@ nlm_shutdown_hosts(void)
 
 	/* complain if any hosts are left */
 	if (nrhosts != 0) {
-		printk(KERN_WARNING "lockd: couldn't shutdown host module!\n");
-		dprintk("lockd: %lu hosts left:\n", nrhosts);
+;
+;
 		for_each_host(host, pos, chain, nlm_server_hosts) {
-			dprintk("       %s (cnt %d use %d exp %ld)\n",
-				host->h_name, atomic_read(&host->h_count),
-				host->h_inuse, host->h_expires);
+//			dprintk("       %s (cnt %d use %d exp %ld)\n",
+//				host->h_name, atomic_read(&host->h_count),
+;
 		}
 	}
 }
@@ -626,7 +622,7 @@ nlm_gc_hosts(void)
 	struct hlist_node *pos, *next;
 	struct nlm_host	*host;
 
-	dprintk("lockd: host garbage collection\n");
+;
 	for_each_host(host, pos, chain, nlm_server_hosts)
 		host->h_inuse = 0;
 
@@ -636,10 +632,10 @@ nlm_gc_hosts(void)
 	for_each_host_safe(host, pos, next, chain, nlm_server_hosts) {
 		if (atomic_read(&host->h_count) || host->h_inuse
 		 || time_before(jiffies, host->h_expires)) {
-			dprintk("nlm_gc_hosts skipping %s "
-				"(cnt %d use %d exp %ld)\n",
-				host->h_name, atomic_read(&host->h_count),
-				host->h_inuse, host->h_expires);
+//			dprintk("nlm_gc_hosts skipping %s "
+//				"(cnt %d use %d exp %ld)\n",
+//				host->h_name, atomic_read(&host->h_count),
+;
 			continue;
 		}
 		nlm_destroy_host_locked(host);

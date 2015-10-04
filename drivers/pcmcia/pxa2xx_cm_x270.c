@@ -117,7 +117,7 @@ int __init cmx270_pcmcia_init(void)
 				       sizeof(cmx270_pcmcia_ops));
 
 	if (ret == 0) {
-		printk(KERN_INFO "Registering cm-x270 PCMCIA interface.\n");
+;
 		ret = platform_device_add(cmx270_pcmcia_device);
 	}
 

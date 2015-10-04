@@ -39,8 +39,8 @@ cifs_dump_mem(char *label, void *data, int length)
 	char *charptr = data;
 	char buf[10], line[80];
 
-	printk(KERN_DEBUG "%s: dump of %d bytes of data at 0x%p\n",
-		label, length, data);
+//	printk(KERN_DEBUG "%s: dump of %d bytes of data at 0x%p\n",
+;
 	for (i = 0; i < length; i += 16) {
 		line[0] = 0;
 		for (j = 0; (j < 4) && (i + j * 4 < length); j++) {
@@ -53,7 +53,7 @@ cifs_dump_mem(char *label, void *data, int length)
 			buf[1] = isprint(charptr[i + j]) ? charptr[i + j] : '.';
 			strcat(line, buf);
 		}
-		printk(KERN_DEBUG "%s\n", line);
+;
 	}
 }
 
@@ -526,9 +526,9 @@ static ssize_t cifs_oplock_proc_write(struct file *file,
 	char c;
 	int rc;
 
-	printk(KERN_WARNING "CIFS: The /proc/fs/cifs/OplockEnabled interface "
-	       "will be removed in kernel version 3.4. Please migrate to "
-	       "using the 'enable_oplocks' module parameter in cifs.ko.\n");
+//	printk(KERN_WARNING "CIFS: The /proc/fs/cifs/OplockEnabled interface "
+//	       "will be removed in kernel version 3.4. Please migrate to "
+;
 	rc = get_user(c, buffer);
 	if (rc)
 		return rc;

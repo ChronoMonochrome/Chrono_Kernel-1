@@ -65,7 +65,7 @@ static void kyle_lcd_pwr_setup(struct device *dev)
 
 	ret = gpio_request(KYLE_GPIO_LCD_PWR_EN,"LCD PWR EN");
 	if (ret < 0)
-		printk(KERN_ERR "Failed to get LCD PWR EN gpio (%d)\n",ret);
+;
 }
 
 static void kyle_lcd_pwr_onoff(bool on)
@@ -303,7 +303,7 @@ int __init init_kyle_display_devices(void)
 
 	ret = mcde_dss_register_notifier(&display_nb);
 	if (ret)
-		printk(KERN_ERR "Failed to register dss notifier\n");
+;
 
 	if (display_initialized_during_boot) {
 		hva40wv1_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
@@ -320,8 +320,8 @@ int __init init_kyle_display_devices(void)
 	 */
 	clk_tv = clk_get(&ux500_mcde_device.dev, "tv");
 	if (TV_FREQ_HZ != clk_round_rate(clk_tv, TV_FREQ_HZ))
-		printk(KERN_ERR "%s: TV_CLK freq differs %ld\n", __func__,
-				clk_round_rate(clk_tv, TV_FREQ_HZ));
+//		printk(KERN_ERR "%s: TV_CLK freq differs %ld\n", __func__,
+;
 	clk_set_rate(clk_tv, TV_FREQ_HZ);
 	clk_put(clk_tv);
 
@@ -331,8 +331,8 @@ int __init init_kyle_display_devices(void)
 	 */
 	clk_hdmi = clk_get(&ux500_mcde_device.dev, "hdmi");
 	if (HDMI_FREQ_HZ != clk_round_rate(clk_hdmi, HDMI_FREQ_HZ))
-		printk(KERN_ERR "%s: HDMI freq differs %ld\n", __func__,
-				clk_round_rate(clk_hdmi, HDMI_FREQ_HZ));
+//		printk(KERN_ERR "%s: HDMI freq differs %ld\n", __func__,
+;
 	clk_set_rate(clk_hdmi, HDMI_FREQ_HZ);
 	clk_put(clk_hdmi);
 
@@ -346,15 +346,15 @@ int __init init_kyle_display_devices(void)
 	else if (lcd_type == LCD_PANEL_TYPE_NT35512)
 		dsi_pll_freq = DSI_PLL_FREQ_HZ_NT35512;
 	else {
-		printk(KERN_ERR "Display device type %d not recognised\n", lcd_type);
+;
 		ret = -ENODEV;
 		goto error;
 	}
 
 	clk_dsi_pll = clk_get(&ux500_mcde_device.dev, "dsipll");
 	if (dsi_pll_freq != clk_round_rate(clk_dsi_pll,	dsi_pll_freq))
-		printk(KERN_ERR "%s: DSI_PLL freq differs %ld\n", __func__,
-			clk_round_rate(clk_dsi_pll, dsi_pll_freq));
+//		printk(KERN_ERR "%s: DSI_PLL freq differs %ld\n", __func__,
+;
 	clk_set_rate(clk_dsi_pll, dsi_pll_freq);
 	clk_put(clk_dsi_pll);
 
@@ -383,7 +383,7 @@ int __init init_kyle_display_devices(void)
 		pdata->update_opp = update_mcde_opp;
 
 	if (ret)
-		printk(KERN_ERR "Failed to register display device\n");
+;
 
 error:
 	return ret;

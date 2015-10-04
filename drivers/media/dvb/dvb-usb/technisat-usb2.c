@@ -63,31 +63,31 @@ struct technisat_usb2_state {
 };
 
 /* debug print helpers */
-#define deb_info(args...)    dprintk(debug, 0x01, args)
-#define deb_eeprom(args...)  dprintk(debug, 0x02, args)
-#define deb_i2c(args...)     dprintk(debug, 0x04, args)
-#define deb_rc(args...)      dprintk(debug, 0x08, args)
-
-/* vendor requests */
-#define SET_IFCLK_TO_EXTERNAL_TSCLK_VENDOR_REQUEST 0xB3
-#define SET_FRONT_END_RESET_VENDOR_REQUEST         0xB4
-#define GET_VERSION_INFO_VENDOR_REQUEST            0xB5
-#define SET_GREEN_LED_VENDOR_REQUEST               0xB6
-#define SET_RED_LED_VENDOR_REQUEST                 0xB7
-#define GET_IR_DATA_VENDOR_REQUEST                 0xB8
-#define SET_LED_TIMER_DIVIDER_VENDOR_REQUEST       0xB9
-#define SET_USB_REENUMERATION                      0xBA
-
-/* i2c-access methods */
-#define I2C_SPEED_100KHZ_BIT 0x40
-
-#define I2C_STATUS_NAK 7
-#define I2C_STATUS_OK 8
-
-static int technisat_usb2_i2c_access(struct usb_device *udev,
-		u8 device_addr, u8 *tx, u8 txlen, u8 *rx, u8 rxlen)
-{
-	u8 b[64];
+//#define deb_info(args...)    dprintk(debug, 0x01, args)
+//#define deb_eeprom(args...)  dprintk(debug, 0x02, args)
+//#define deb_i2c(args...)     dprintk(debug, 0x04, args)
+//#define deb_rc(args...)      dprintk(debug, 0x08, args)
+//
+///* vendor requests */
+//#define SET_IFCLK_TO_EXTERNAL_TSCLK_VENDOR_REQUEST 0xB3
+//#define SET_FRONT_END_RESET_VENDOR_REQUEST         0xB4
+//#define GET_VERSION_INFO_VENDOR_REQUEST            0xB5
+//#define SET_GREEN_LED_VENDOR_REQUEST               0xB6
+//#define SET_RED_LED_VENDOR_REQUEST                 0xB7
+//#define GET_IR_DATA_VENDOR_REQUEST                 0xB8
+//#define SET_LED_TIMER_DIVIDER_VENDOR_REQUEST       0xB9
+//#define SET_USB_REENUMERATION                      0xBA
+//
+///* i2c-access methods */
+//#define I2C_SPEED_100KHZ_BIT 0x40
+//
+//#define I2C_STATUS_NAK 7
+//#define I2C_STATUS_OK 8
+//
+//static int technisat_usb2_i2c_access(struct usb_device *udev,
+//		u8 device_addr, u8 *tx, u8 txlen, u8 *rx, u8 rxlen)
+//{
+;
 	int ret, actual_length;
 
 	deb_i2c("i2c-access: %02x, tx: ", device_addr);

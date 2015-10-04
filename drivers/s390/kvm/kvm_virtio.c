@@ -293,8 +293,8 @@ static void add_kvm_device(struct kvm_device_desc *d, unsigned int offset)
 
 	kdev = kzalloc(sizeof(*kdev), GFP_KERNEL);
 	if (!kdev) {
-		printk(KERN_EMERG "Cannot allocate kvm dev %u type %u\n",
-		       offset, d->type);
+//		printk(KERN_EMERG "Cannot allocate kvm dev %u type %u\n",
+;
 		return;
 	}
 
@@ -304,8 +304,8 @@ static void add_kvm_device(struct kvm_device_desc *d, unsigned int offset)
 	kdev->desc = d;
 
 	if (register_virtio_device(&kdev->vdev) != 0) {
-		printk(KERN_ERR "Failed to register kvm device %u type %u\n",
-		       offset, d->type);
+//		printk(KERN_ERR "Failed to register kvm device %u type %u\n",
+;
 		kfree(kdev);
 	}
 }
@@ -365,7 +365,7 @@ static void hotplug_devices(struct work_struct *dummy)
 		}
 
 		/* new device */
-		printk(KERN_INFO "Adding new virtio device %p\n", d);
+;
 		add_kvm_device(d, i);
 	}
 }
@@ -455,7 +455,7 @@ static int __init kvm_devices_init(void)
 	kvm_root = root_device_register("kvm_s390");
 	if (IS_ERR(kvm_root)) {
 		rc = PTR_ERR(kvm_root);
-		printk(KERN_ERR "Could not register kvm_s390 root device");
+;
 		vmem_remove_mapping(real_memory_size, PAGE_SIZE);
 		return rc;
 	}

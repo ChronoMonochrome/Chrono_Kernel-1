@@ -691,7 +691,7 @@ static inline int bq27x00_battery_i2c_init(void)
 {
 	int ret = i2c_add_driver(&bq27x00_battery_driver);
 	if (ret)
-		printk(KERN_ERR "Unable to register BQ27x00 i2c driver\n");
+;
 
 	return ret;
 }
@@ -813,7 +813,7 @@ static inline int bq27x00_battery_platform_init(void)
 {
 	int ret = platform_driver_register(&bq27000_battery_driver);
 	if (ret)
-		printk(KERN_ERR "Unable to register BQ27000 platform driver\n");
+;
 
 	return ret;
 }

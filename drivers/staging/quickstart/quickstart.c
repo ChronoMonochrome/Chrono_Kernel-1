@@ -245,8 +245,8 @@ static void quickstart_acpi_ghid(struct quickstart_acpi *quickstart)
 	status = acpi_evaluate_object(quickstart->device->handle,
 					"GHID", NULL, &buffer);
 	if (ACPI_FAILURE(status) || !buffer.pointer) {
-		printk(KERN_ERR "quickstart: %s GHID method failed.\n",
-		       quickstart->btn->name);
+//		printk(KERN_ERR "quickstart: %s GHID method failed.\n",
+;
 		return;
 	}
 
@@ -310,7 +310,7 @@ static int quickstart_acpi_add(struct acpi_device *device)
 						quickstart_acpi_notify,
 						quickstart);
 	if (ACPI_FAILURE(status)) {
-		printk(KERN_ERR "quickstart: Notify handler install error\n");
+;
 		ret = -ENODEV;
 		goto fail_installnotify;
 	}
@@ -343,7 +343,7 @@ static int quickstart_acpi_remove(struct acpi_device *device, int type)
 						 ACPI_ALL_NOTIFY,
 					    quickstart_acpi_notify);
 	if (ACPI_FAILURE(status))
-		printk(KERN_ERR "quickstart: Error removing notify handler\n");
+;
 
 
 	kfree(quickstart);
@@ -450,8 +450,8 @@ static int __init quickstart_init(void)
 	if (ret)
 		goto fail_input;
 
-	printk(KERN_INFO "quickstart: ACPI Direct App Launch ver %s\n",
-						QUICKSTART_VERSION);
+//	printk(KERN_INFO "quickstart: ACPI Direct App Launch ver %s\n",
+;
 
 	return 0;
 fail_input:

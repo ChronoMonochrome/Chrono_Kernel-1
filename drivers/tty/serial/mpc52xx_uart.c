@@ -807,9 +807,9 @@ mpc52xx_uart_set_termios(struct uart_port *port, struct ktermios *new,
 		udelay(1);
 
 	if (!j)
-		printk(KERN_ERR "mpc52xx_uart.c: "
-			"Unable to flush RX & TX fifos in-time in set_termios."
-			"Some chars may have been lost.\n");
+//		printk(KERN_ERR "mpc52xx_uart.c: "
+//			"Unable to flush RX & TX fifos in-time in set_termios."
+;
 
 	/* Reset the TX & RX */
 	out_8(&psc->command, MPC52xx_PSC_RST_RX);
@@ -1474,12 +1474,12 @@ mpc52xx_uart_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Serial: MPC52xx PSC UART driver\n");
+;
 
 	ret = uart_register_driver(&mpc52xx_uart_driver);
 	if (ret) {
-		printk(KERN_ERR "%s: uart_register_driver failed (%i)\n",
-		       __FILE__, ret);
+//		printk(KERN_ERR "%s: uart_register_driver failed (%i)\n",
+;
 		return ret;
 	}
 
@@ -1496,8 +1496,8 @@ mpc52xx_uart_init(void)
 
 	ret = platform_driver_register(&mpc52xx_uart_of_driver);
 	if (ret) {
-		printk(KERN_ERR "%s: platform_driver_register failed (%i)\n",
-		       __FILE__, ret);
+//		printk(KERN_ERR "%s: platform_driver_register failed (%i)\n",
+;
 		uart_unregister_driver(&mpc52xx_uart_driver);
 		return ret;
 	}

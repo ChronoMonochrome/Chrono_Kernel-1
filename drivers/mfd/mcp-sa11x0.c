@@ -83,7 +83,7 @@ mcp_sa11x0_write(struct mcp *mcp, unsigned int reg, unsigned int val)
 	}
 
 	if (ret < 0)
-		printk(KERN_WARNING "mcp: write timed out\n");
+;
 }
 
 /*
@@ -109,7 +109,7 @@ mcp_sa11x0_read(struct mcp *mcp, unsigned int reg)
 	}
 
 	if (ret < 0)
-		printk(KERN_WARNING "mcp: read timed out\n");
+;
 
 	return ret;
 }

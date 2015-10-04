@@ -54,7 +54,7 @@ hysdn_sched_rx(hysdn_card *card, unsigned char *buf, unsigned short len,
 			break;
 #endif /* CONFIG_HYSDN_CAPI */
 		default:
-			printk(KERN_INFO "irq message channel %d len %d unhandled \n", chan, len);
+;
 			break;
 
 	}			/* switch rx channel */

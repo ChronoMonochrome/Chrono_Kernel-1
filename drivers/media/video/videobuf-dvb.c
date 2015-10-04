@@ -35,20 +35,20 @@ static unsigned int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug,"enable debug messages");
 
-#define dprintk(fmt, arg...)	if (debug)			\
-	printk(KERN_DEBUG "%s/dvb: " fmt, dvb->name , ## arg)
-
-/* ------------------------------------------------------------------ */
-
-static int videobuf_dvb_thread(void *data)
-{
-	struct videobuf_dvb *dvb = data;
+//#define dprintk(fmt, arg...)	if (debug)			\
+//	printk(KERN_DEBUG "%s/dvb: " fmt, dvb->name , ## arg)
+//
+///* ------------------------------------------------------------------ */
+//
+//static int videobuf_dvb_thread(void *data)
+//{
+;
 	struct videobuf_buffer *buf;
 	unsigned long flags;
 	int err;
 	void *outp;
 
-	dprintk("dvb thread started\n");
+;
 	set_freezable();
 	videobuf_read_start(&dvb->dvbq);
 
@@ -81,7 +81,7 @@ static int videobuf_dvb_thread(void *data)
 	}
 
 	videobuf_read_stop(&dvb->dvbq);
-	dprintk("dvb thread stopped\n");
+;
 
 	/* Hmm, linux becomes *very* unhappy without this ... */
 	while (!kthread_should_stop()) {
@@ -152,8 +152,8 @@ static int videobuf_dvb_register_adapter(struct videobuf_dvb_frontends *fe,
 	result = dvb_register_adapter(&fe->adapter, adapter_name, module,
 		device, adapter_nr);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: dvb_register_adapter failed (errno = %d)\n",
-		       adapter_name, result);
+//		printk(KERN_WARNING "%s: dvb_register_adapter failed (errno = %d)\n",
+;
 	}
 	fe->adapter.priv = adapter_priv;
 	fe->adapter.mfe_shared = mfe_shared;
@@ -170,8 +170,8 @@ static int videobuf_dvb_register_frontend(struct dvb_adapter *adapter,
 	/* register frontend */
 	result = dvb_register_frontend(adapter, dvb->frontend);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: dvb_register_frontend failed (errno = %d)\n",
-		       dvb->name, result);
+//		printk(KERN_WARNING "%s: dvb_register_frontend failed (errno = %d)\n",
+;
 		goto fail_frontend;
 	}
 
@@ -186,8 +186,8 @@ static int videobuf_dvb_register_frontend(struct dvb_adapter *adapter,
 	dvb->demux.stop_feed  = videobuf_dvb_stop_feed;
 	result = dvb_dmx_init(&dvb->demux);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: dvb_dmx_init failed (errno = %d)\n",
-		       dvb->name, result);
+//		printk(KERN_WARNING "%s: dvb_dmx_init failed (errno = %d)\n",
+;
 		goto fail_dmx;
 	}
 
@@ -197,31 +197,31 @@ static int videobuf_dvb_register_frontend(struct dvb_adapter *adapter,
 	result = dvb_dmxdev_init(&dvb->dmxdev, adapter);
 
 	if (result < 0) {
-		printk(KERN_WARNING "%s: dvb_dmxdev_init failed (errno = %d)\n",
-		       dvb->name, result);
+//		printk(KERN_WARNING "%s: dvb_dmxdev_init failed (errno = %d)\n",
+;
 		goto fail_dmxdev;
 	}
 
 	dvb->fe_hw.source = DMX_FRONTEND_0;
 	result = dvb->demux.dmx.add_frontend(&dvb->demux.dmx, &dvb->fe_hw);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: add_frontend failed (DMX_FRONTEND_0, errno = %d)\n",
-		       dvb->name, result);
+//		printk(KERN_WARNING "%s: add_frontend failed (DMX_FRONTEND_0, errno = %d)\n",
+;
 		goto fail_fe_hw;
 	}
 
 	dvb->fe_mem.source = DMX_MEMORY_FE;
 	result = dvb->demux.dmx.add_frontend(&dvb->demux.dmx, &dvb->fe_mem);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: add_frontend failed (DMX_MEMORY_FE, errno = %d)\n",
-		       dvb->name, result);
+//		printk(KERN_WARNING "%s: add_frontend failed (DMX_MEMORY_FE, errno = %d)\n",
+;
 		goto fail_fe_mem;
 	}
 
 	result = dvb->demux.dmx.connect_frontend(&dvb->demux.dmx, &dvb->fe_hw);
 	if (result < 0) {
-		printk(KERN_WARNING "%s: connect_frontend failed (errno = %d)\n",
-		       dvb->name, result);
+//		printk(KERN_WARNING "%s: connect_frontend failed (errno = %d)\n",
+;
 		goto fail_fe_conn;
 	}
 
@@ -267,7 +267,7 @@ int videobuf_dvb_register_bus(struct videobuf_dvb_frontends *f,
 
 	fe = videobuf_dvb_get_frontend(f, 1);
 	if (!fe) {
-		printk(KERN_WARNING "Unable to register the adapter which has no frontends\n");
+;
 		return -EINVAL;
 	}
 
@@ -275,7 +275,7 @@ int videobuf_dvb_register_bus(struct videobuf_dvb_frontends *f,
 	res = videobuf_dvb_register_adapter(f, module, adapter_priv, device,
 		fe->dvb.name, adapter_nr, mfe_shared, fe_ioctl_override);
 	if (res < 0) {
-		printk(KERN_WARNING "videobuf_dvb_register_adapter failed (errno = %d)\n", res);
+;
 		return res;
 	}
 
@@ -285,8 +285,8 @@ int videobuf_dvb_register_bus(struct videobuf_dvb_frontends *f,
 		fe = list_entry(list, struct videobuf_dvb_frontend, felist);
 		res = videobuf_dvb_register_frontend(&f->adapter, &fe->dvb);
 		if (res < 0) {
-			printk(KERN_WARNING "%s: videobuf_dvb_register_frontend failed (errno = %d)\n",
-				fe->dvb.name, res);
+//			printk(KERN_WARNING "%s: videobuf_dvb_register_frontend failed (errno = %d)\n",
+;
 			goto err;
 		}
 	}

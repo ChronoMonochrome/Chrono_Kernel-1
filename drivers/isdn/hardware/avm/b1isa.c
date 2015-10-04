@@ -68,7 +68,7 @@ static int b1isa_probe(struct pci_dev *pdev)
 
 	card = b1_alloc_card(1);
 	if (!card) {
-		printk(KERN_WARNING "b1isa: no memory.\n");
+;
 		retval = -ENOMEM;
 		goto err;
 	}
@@ -82,30 +82,30 @@ static int b1isa_probe(struct pci_dev *pdev)
 
 	if (   card->port != 0x150 && card->port != 0x250
 	    && card->port != 0x300 && card->port != 0x340) {
-		printk(KERN_WARNING "b1isa: invalid port 0x%x.\n", card->port);
+;
 		retval = -EINVAL;
 		goto err_free;
 	}
 	if (b1_irq_table[card->irq & 0xf] == 0) {
-		printk(KERN_WARNING "b1isa: irq %d not valid.\n", card->irq);
+;
 		retval = -EINVAL;
 		goto err_free;
 	}
 	if (!request_region(card->port, AVMB1_PORTLEN, card->name)) {
-		printk(KERN_WARNING "b1isa: ports 0x%03x-0x%03x in use.\n",
-		       card->port, card->port + AVMB1_PORTLEN);
+//		printk(KERN_WARNING "b1isa: ports 0x%03x-0x%03x in use.\n",
+;
 		retval = -EBUSY;
 		goto err_free;
 	}
 	retval = request_irq(card->irq, b1_interrupt, 0, card->name, card);
 	if (retval) {
-		printk(KERN_ERR "b1isa: unable to get IRQ %d.\n", card->irq);
+;
 		goto err_release_region;
 	}
 	b1_reset(card->port);
 	if ((retval = b1_detect(card->port, card->cardtype)) != 0) {
-		printk(KERN_NOTICE "b1isa: NO card at 0x%x (%d)\n",
-		       card->port, retval);
+//		printk(KERN_NOTICE "b1isa: NO card at 0x%x (%d)\n",
+;
 		retval = -ENODEV;
 		goto err_free_irq;
 	}
@@ -126,12 +126,12 @@ static int b1isa_probe(struct pci_dev *pdev)
 
 	retval = attach_capi_ctr(&cinfo->capi_ctrl);
 	if (retval) {
-		printk(KERN_ERR "b1isa: attach controller failed.\n");
+;
 		goto err_free_irq;
 	}
 
-	printk(KERN_INFO "b1isa: AVM B1 ISA at i/o %#x, irq %d, revision %d\n",
-	       card->port, card->irq, card->revision);
+//	printk(KERN_INFO "b1isa: AVM B1 ISA at i/o %#x, irq %d, revision %d\n",
+;
 
 	pci_set_drvdata(pdev, cinfo);
 	return 0;
@@ -223,7 +223,7 @@ static int __init b1isa_init(void)
 
 	strlcpy(capi_driver_b1isa.revision, rev, 32);
 	register_capi_driver(&capi_driver_b1isa);
-	printk(KERN_INFO "b1isa: revision %s\n", rev);
+;
 
 	return 0;
 }

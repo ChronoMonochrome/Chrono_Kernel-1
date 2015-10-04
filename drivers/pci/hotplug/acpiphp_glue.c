@@ -1228,18 +1228,18 @@ static void handle_hotplug_event_bridge(acpi_handle handle, u32 type, void *cont
 		break;
 
 	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
-		printk(KERN_ERR "Device %s cannot be configured due"
-				" to a frequency mismatch\n", objname);
+//		printk(KERN_ERR "Device %s cannot be configured due"
+;
 		break;
 
 	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
-		printk(KERN_ERR "Device %s cannot be configured due"
-				" to a bus mode mismatch\n", objname);
+//		printk(KERN_ERR "Device %s cannot be configured due"
+;
 		break;
 
 	case ACPI_NOTIFY_POWER_FAULT:
-		printk(KERN_ERR "Device %s has suffered a power fault\n",
-				objname);
+//		printk(KERN_ERR "Device %s has suffered a power fault\n",
+;
 		break;
 
 	default:

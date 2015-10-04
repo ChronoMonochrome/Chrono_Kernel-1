@@ -84,9 +84,9 @@ void __snd_printk(unsigned int level, const char *path, int line,
 		vaf.fmt = format + 3;
 	} else if (level)
 		memcpy(verbose_fmt, KERN_DEBUG, 3);
-	printk(verbose_fmt, sanity_file_name(path), line, &vaf);
+;
 #else
-	vprintk(format, args);
+;
 #endif
 	va_end(args);
 }

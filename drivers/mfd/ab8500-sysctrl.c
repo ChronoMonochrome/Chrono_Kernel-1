@@ -254,7 +254,7 @@ void ab8500_restart(u16 reset_code)
 #if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 
 	mdelay(1000);
-	printk(KERN_ERR "Restart via WD expiry failed -- System halted\n");
+;
 	while(1);
 #endif
 }

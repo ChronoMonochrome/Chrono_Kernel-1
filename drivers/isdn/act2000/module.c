@@ -52,7 +52,7 @@ find_channel(act2000_card *card, int channel)
 {
 	if ((channel >= 0) && (channel < ACT2000_BCH))
         	return &(card->bch[channel]);
-	printk(KERN_WARNING "act2000: Invalid channel %d\n", channel);
+;
 	return NULL;
 }
 
@@ -149,9 +149,9 @@ act2000_set_msn(act2000_card *card, char *eazmsn)
 					card->msn_list = p->next;
 				spin_unlock_irqrestore(&card->lock, flags);
 				kfree(p);
-				printk(KERN_DEBUG
-				       "Mapping for EAZ %c deleted\n",
-				       eazmsn[0]);
+//				printk(KERN_DEBUG
+//				       "Mapping for EAZ %c deleted\n",
+;
 				return 0;
 			}
 			q = p;
@@ -166,10 +166,10 @@ act2000_set_msn(act2000_card *card, char *eazmsn)
 			spin_lock_irqsave(&card->lock, flags);
 			strcpy(p->msn, &eazmsn[1]);
 			spin_unlock_irqrestore(&card->lock, flags);
-			printk(KERN_DEBUG
-			       "Mapping for EAZ %c changed to %s\n",
-			       eazmsn[0],
-			       &eazmsn[1]);
+//			printk(KERN_DEBUG
+//			       "Mapping for EAZ %c changed to %s\n",
+//			       eazmsn[0],
+;
 			return 0;
 		}
 		p = p->next;
@@ -184,10 +184,10 @@ act2000_set_msn(act2000_card *card, char *eazmsn)
 	spin_lock_irqsave(&card->lock, flags);
 	card->msn_list = p;
 	spin_unlock_irqrestore(&card->lock, flags);
-	printk(KERN_DEBUG
-	       "Mapping %c -> %s added\n",
-	       eazmsn[0],
-	       &eazmsn[1]);
+//	printk(KERN_DEBUG
+//	       "Mapping %c -> %s added\n",
+//	       eazmsn[0],
+;
 	return 0;
 }
 
@@ -204,8 +204,8 @@ act2000_transmit(struct work_struct *work)
 		case ACT2000_BUS_PCMCIA:
 		case ACT2000_BUS_MCA:
 		default:
-			printk(KERN_WARNING
-			       "act2000_transmit: Illegal bustype %d\n", card->bus);
+//			printk(KERN_WARNING
+;
 	}
 }
 
@@ -222,8 +222,8 @@ act2000_receive(struct work_struct *work)
 		case ACT2000_BUS_PCMCIA:
 		case ACT2000_BUS_MCA:
 		default:
-			printk(KERN_WARNING
-			       "act2000_receive: Illegal bustype %d\n", card->bus);
+//			printk(KERN_WARNING
+;
 	}
 }
 
@@ -273,9 +273,9 @@ act2000_command(act2000_card * card, isdn_ctrl * c)
 							}
 							break;
 						default:
-							printk(KERN_WARNING
-							       "act2000: Illegal BUS type %d\n",
-							       card->bus);
+//							printk(KERN_WARNING
+//							       "act2000: Illegal BUS type %d\n",
+;
 							ret = -EIO;
 					}
 					return ret;
@@ -317,8 +317,8 @@ act2000_command(act2000_card * card, isdn_ctrl * c)
 			spin_lock_irqsave(&card->lock, flags);
 			if (chan->fsm_state != ACT2000_STATE_NULL) {
 				spin_unlock_irqrestore(&card->lock, flags);
-				printk(KERN_WARNING "Dial on channel with state %d\n",
-					chan->fsm_state);
+//				printk(KERN_WARNING "Dial on channel with state %d\n",
+;
 				return -EBUSY;
 			}
 			if (card->ptype == ISDN_PTYPE_EURO)
@@ -404,7 +404,7 @@ act2000_command(act2000_card * card, isdn_ctrl * c)
 			if (!(card->flags & ACT2000_FLAGS_RUNNING))
 				return -ENODEV;
 			if ((c->arg >> 8) != ISDN_PROTO_L3_TRANS) {
-				printk(KERN_WARNING "L3 protocol unknown\n");
+;
 				return -1;
 			}
 			if (!(chan = find_channel(card, c->arg & 0x0f)))
@@ -434,11 +434,11 @@ act2000_sendbuf(act2000_card *card, int channel, int ack, struct sk_buff *skb)
 	if (!len)
 		return 0;
 	if (skb_headroom(skb) < 19) {
-		printk(KERN_WARNING "act2000_sendbuf: Headroom only %d\n",
-		       skb_headroom(skb));
+//		printk(KERN_WARNING "act2000_sendbuf: Headroom only %d\n",
+;
 		xmit_skb = alloc_skb(len + 19, GFP_ATOMIC);
 		if (!xmit_skb) {
-			printk(KERN_WARNING "act2000_sendbuf: Out of memory\n");
+;
 			return 0;
 		}
 		skb_reserve(xmit_skb, 19);
@@ -446,7 +446,7 @@ act2000_sendbuf(act2000_card *card, int channel, int ack, struct sk_buff *skb)
 	} else {
 		xmit_skb = skb_clone(skb, GFP_ATOMIC);
 		if (!xmit_skb) {
-			printk(KERN_WARNING "act2000_sendbuf: Out of memory\n");
+;
 			return 0;
 		}
 	}
@@ -512,9 +512,9 @@ if_command(isdn_ctrl * c)
 
         if (card)
                 return (act2000_command(card, c));
-        printk(KERN_ERR
-             "act2000: if_command %d called with invalid driverId %d!\n",
-               c->command, c->driver);
+//        printk(KERN_ERR
+//             "act2000: if_command %d called with invalid driverId %d!\n",
+;
         return -ENODEV;
 }
 
@@ -528,8 +528,8 @@ if_writecmd(const u_char __user *buf, int len, int id, int channel)
                         return -ENODEV;
                 return (len);
         }
-        printk(KERN_ERR
-               "act2000: if_writecmd called with invalid driverId!\n");
+//        printk(KERN_ERR
+;
         return -ENODEV;
 }
 
@@ -543,8 +543,8 @@ if_readstatus(u_char __user * buf, int len, int id, int channel)
                         return -ENODEV;
                 return (act2000_readstatus(buf, len, card));
         }
-        printk(KERN_ERR
-               "act2000: if_readstatus called with invalid driverId!\n");
+//        printk(KERN_ERR
+;
         return -ENODEV;
 }
 
@@ -558,8 +558,8 @@ if_sendbuf(int id, int channel, int ack, struct sk_buff *skb)
                         return -ENODEV;
 		return (act2000_sendbuf(card, channel, ack, skb));
         }
-        printk(KERN_ERR
-               "act2000: if_sendbuf called with invalid driverId!\n");
+//        printk(KERN_ERR
+;
         return -ENODEV;
 }
 
@@ -574,8 +574,8 @@ act2000_alloccard(int bus, int port, int irq, char *id)
 	int i;
         act2000_card *card;
         if (!(card = kzalloc(sizeof(act2000_card), GFP_KERNEL))) {
-                printk(KERN_WARNING
-		       "act2000: (%s) Could not allocate card-struct.\n", id);
+//                printk(KERN_WARNING
+;
                 return;
         }
         spin_lock_init(&card->lock);
@@ -628,15 +628,15 @@ act2000_registercard(act2000_card * card)
 		case ACT2000_BUS_MCA:
 		case ACT2000_BUS_PCMCIA:
 		default:
-			printk(KERN_WARNING
-			       "act2000: Illegal BUS type %d\n",
-			       card->bus);
+//			printk(KERN_WARNING
+//			       "act2000: Illegal BUS type %d\n",
+;
 			return -1;
         }
         if (!register_isdn(&card->interface)) {
-                printk(KERN_WARNING
-                       "act2000: Unable to register %s\n",
-                       card->interface.id);
+//                printk(KERN_WARNING
+//                       "act2000: Unable to register %s\n",
+;
                 return -1;
         }
         card->myid = card->interface.channels;
@@ -659,9 +659,9 @@ unregister_card(act2000_card * card)
 		case ACT2000_BUS_MCA:
 		case ACT2000_BUS_PCMCIA:
 		default:
-			printk(KERN_WARNING
-			       "act2000: Invalid BUS type %d\n",
-			       card->bus);
+//			printk(KERN_WARNING
+//			       "act2000: Invalid BUS type %d\n",
+;
 			break;
         }
 }
@@ -689,9 +689,9 @@ act2000_addcard(int bus, int port, int irq, char *id)
 		case ACT2000_BUS_ISA:
 			for (i = 0; i < ARRAY_SIZE(act2000_isa_ports); i++)
 				if (act2000_isa_detect(act2000_isa_ports[i])) {
-					printk(KERN_INFO "act2000: Detected "
-						"ISA card at port 0x%x\n",
-						act2000_isa_ports[i]);
+//					printk(KERN_INFO "act2000: Detected "
+//						"ISA card at port 0x%x\n",
+;
 					act2000_alloccard(bus,
 						act2000_isa_ports[i], irq, id);
 				}
@@ -699,8 +699,8 @@ act2000_addcard(int bus, int port, int irq, char *id)
 		case ACT2000_BUS_MCA:
 		case ACT2000_BUS_PCMCIA:
 		default:
-			printk(KERN_WARNING
-				"act2000: addcard: Invalid BUS type %d\n", bus);
+//			printk(KERN_WARNING
+;
 		}
 	}
 	if (!cards)
@@ -719,37 +719,37 @@ act2000_addcard(int bus, int port, int irq, char *id)
 						if (act2000_registercard(p))
 							break;
 						if (act2000_isa_config_port(p, p->port)) {
-							printk(KERN_WARNING
-							       "act2000: Could not request port 0x%04x\n",
-							       p->port);
+//							printk(KERN_WARNING
+//							       "act2000: Could not request port 0x%04x\n",
+;
 							unregister_card(p);
 							p->interface.statcallb = NULL;
 							break;
 						}
 						if (act2000_isa_config_irq(p, p->irq)) {
-							printk(KERN_INFO
-							       "act2000: No IRQ available, fallback to polling\n");
+//							printk(KERN_INFO
+;
 							/* Fall back to polled operation */
 							p->irq = 0;
 						}
-						printk(KERN_INFO
-						       "act2000: ISA"
-						       "-type card at port "
-						       "0x%04x ",
-						       p->port);
+//						printk(KERN_INFO
+//						       "act2000: ISA"
+//						       "-type card at port "
+//						       "0x%04x ",
+;
 						if (p->irq)
-							printk("irq %d\n", p->irq);
+;
 						else
-							printk("polled\n");
+;
 						initialized = 1;
 					}
 					break;
 				case ACT2000_BUS_MCA:
 				case ACT2000_BUS_PCMCIA:
 				default:
-					printk(KERN_WARNING
-					       "act2000: addcard: Invalid BUS type %d\n",
-					       p->bus);
+//					printk(KERN_WARNING
+//					       "act2000: addcard: Invalid BUS type %d\n",
+;
 			}
 		} else
 			/* Card already initialized */
@@ -760,9 +760,9 @@ act2000_addcard(int bus, int port, int irq, char *id)
                         p = p->next;
                 } else {
                         /* Init failed, remove card from list, free memory */
-                        printk(KERN_WARNING
-                               "act2000: Initialization of %s failed\n",
-                               p->interface.id);
+//                        printk(KERN_WARNING
+//                               "act2000: Initialization of %s failed\n",
+;
                         if (q) {
                                 q->next = p->next;
                                 kfree(p);
@@ -782,11 +782,11 @@ act2000_addcard(int bus, int port, int irq, char *id)
 
 static int __init act2000_init(void)
 {
-        printk(KERN_INFO "%s\n", DRIVERNAME);
+;
         if (!cards)
 		act2000_addcard(act_bus, act_port, act_irq, act_id);
         if (!cards)
-                printk(KERN_INFO "act2000: No cards defined yet\n");
+;
         return 0;
 }
 
@@ -806,7 +806,7 @@ static void __exit act2000_exit(void)
 		act2000_clear_msn(last);
                 kfree(last);
         }
-        printk(KERN_INFO "%s unloaded\n", DRIVERNAME);
+;
 }
 
 module_init(act2000_init);

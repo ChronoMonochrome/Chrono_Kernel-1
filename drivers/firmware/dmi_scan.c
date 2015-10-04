@@ -60,7 +60,7 @@ static char * __init dmi_string(const struct dmi_header *dm, u8 s)
 	if (str != NULL)
 		strcpy(str, bp);
 	else
-		printk(KERN_ERR "dmi_string: cannot allocate %Zu bytes.\n", len);
+;
 
 	return str;
 }
@@ -214,7 +214,7 @@ static void __init dmi_save_one_device(int type, const char *name)
 
 	dev = dmi_alloc(sizeof(*dev) + strlen(name) + 1);
 	if (!dev) {
-		printk(KERN_ERR "dmi_save_one_device: out of memory.\n");
+;
 		return;
 	}
 
@@ -253,8 +253,8 @@ static void __init dmi_save_oem_strings_devices(const struct dmi_header *dm)
 
 		dev = dmi_alloc(sizeof(*dev));
 		if (!dev) {
-			printk(KERN_ERR
-			   "dmi_save_oem_strings_devices: out of memory.\n");
+//			printk(KERN_ERR
+;
 			break;
 		}
 
@@ -273,7 +273,7 @@ static void __init dmi_save_ipmi_device(const struct dmi_header *dm)
 
 	data = dmi_alloc(dm->length);
 	if (data == NULL) {
-		printk(KERN_ERR "dmi_save_ipmi_device: out of memory.\n");
+;
 		return;
 	}
 
@@ -281,7 +281,7 @@ static void __init dmi_save_ipmi_device(const struct dmi_header *dm)
 
 	dev = dmi_alloc(sizeof(*dev));
 	if (!dev) {
-		printk(KERN_ERR "dmi_save_ipmi_device: out of memory.\n");
+;
 		return;
 	}
 
@@ -299,7 +299,7 @@ static void __init dmi_save_dev_onboard(int instance, int segment, int bus,
 
 	onboard_dev = dmi_alloc(sizeof(*onboard_dev) + strlen(name) + 1);
 	if (!onboard_dev) {
-		printk(KERN_ERR "dmi_save_dev_onboard: out of memory.\n");
+;
 		return;
 	}
 	onboard_dev->instance = instance;
@@ -394,20 +394,20 @@ static void __init dmi_dump_ids(void)
 {
 	const char *board;	/* Board Name is optional */
 
-	printk(KERN_DEBUG "DMI: ");
+;
 	print_filtered(dmi_get_system_info(DMI_SYS_VENDOR));
-	printk(KERN_CONT " ");
+;
 	print_filtered(dmi_get_system_info(DMI_PRODUCT_NAME));
 	board = dmi_get_system_info(DMI_BOARD_NAME);
 	if (board) {
-		printk(KERN_CONT "/");
+;
 		print_filtered(board);
 	}
-	printk(KERN_CONT ", BIOS ");
+;
 	print_filtered(dmi_get_system_info(DMI_BIOS_VERSION));
-	printk(KERN_CONT " ");
+;
 	print_filtered(dmi_get_system_info(DMI_BIOS_DATE));
-	printk(KERN_CONT "\n");
+;
 }
 
 static int __init dmi_present(const char __iomem *p)
@@ -515,7 +515,7 @@ void __init dmi_scan_machine(void)
 		dmi_iounmap(p, 0x10000);
 	}
  error:
-	printk(KERN_INFO "DMI not present or invalid.\n");
+;
  out:
 	dmi_initialized = 1;
 }

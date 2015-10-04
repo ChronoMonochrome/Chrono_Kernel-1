@@ -482,15 +482,15 @@ static void dsi_perf_show(struct platform_device *dsidev, const char *name)
 		dsi->update_region.h *
 		dsi->update_region.device->ctrl.pixel_size / 8;
 
-	printk(KERN_INFO "DSI(%s): %u us + %u us = %u us (%uHz), "
-			"%u bytes, %u kbytes/sec\n",
-			name,
-			setup_us,
-			trans_us,
-			total_us,
-			1000*1000 / total_us,
-			total_bytes,
-			total_bytes * 1000 / total_us);
+//	printk(KERN_INFO "DSI(%s): %u us + %u us = %u us (%uHz), "
+//			"%u bytes, %u kbytes/sec\n",
+//			name,
+//			setup_us,
+//			trans_us,
+//			total_us,
+//			1000*1000 / total_us,
+//			total_bytes,
+;
 }
 #else
 #define dsi_perf_mark_setup(x)
@@ -507,11 +507,11 @@ static void print_irq_status(u32 status)
 	if ((status & ~DSI_IRQ_CHANNEL_MASK) == 0)
 		return;
 #endif
-	printk(KERN_DEBUG "DSI IRQ: 0x%x: ", status);
+;
 
 #define PIS(x) \
 	if (status & DSI_IRQ_##x) \
-		printk(#x " ");
+;
 #ifdef VERBOSE_IRQ
 	PIS(VC0);
 	PIS(VC1);
@@ -533,7 +533,7 @@ static void print_irq_status(u32 status)
 	PIS(TA_TIMEOUT);
 #undef PIS
 
-	printk("\n");
+;
 }
 
 static void print_irq_status_vc(int channel, u32 status)
@@ -545,11 +545,11 @@ static void print_irq_status_vc(int channel, u32 status)
 	if ((status & ~DSI_VC_IRQ_PACKET_SENT) == 0)
 		return;
 #endif
-	printk(KERN_DEBUG "DSI VC(%d) IRQ 0x%x: ", channel, status);
+;
 
 #define PIS(x) \
 	if (status & DSI_VC_IRQ_##x) \
-		printk(#x " ");
+;
 	PIS(CS);
 	PIS(ECC_CORR);
 #ifdef VERBOSE_IRQ
@@ -562,7 +562,7 @@ static void print_irq_status_vc(int channel, u32 status)
 	PIS(FIFO_TX_UDF);
 	PIS(PP_BUSY_CHANGE);
 #undef PIS
-	printk("\n");
+;
 }
 
 static void print_irq_status_cio(u32 status)
@@ -570,11 +570,11 @@ static void print_irq_status_cio(u32 status)
 	if (status == 0)
 		return;
 
-	printk(KERN_DEBUG "DSI CIO IRQ 0x%x: ", status);
+;
 
 #define PIS(x) \
 	if (status & DSI_CIO_IRQ_##x) \
-		printk(#x " ");
+;
 	PIS(ERRSYNCESC1);
 	PIS(ERRSYNCESC2);
 	PIS(ERRSYNCESC3);
@@ -597,7 +597,7 @@ static void print_irq_status_cio(u32 status)
 	PIS(ULPSACTIVENOT_ALL1);
 #undef PIS
 
-	printk("\n");
+;
 }
 
 #ifdef CONFIG_OMAP2_DSS_COLLECT_IRQ_STATS
@@ -1079,13 +1079,13 @@ static void _dsi_print_reset_status(struct platform_device *dsidev)
 	 * I/O. */
 	l = dsi_read_reg(dsidev, DSI_DSIPHY_CFG5);
 
-	printk(KERN_DEBUG "DSI resets: ");
+;
 
 	l = dsi_read_reg(dsidev, DSI_PLL_STATUS);
-	printk("PLL (%d) ", FLD_GET(l, 0, 0));
+;
 
 	l = dsi_read_reg(dsidev, DSI_COMPLEXIO_CFG1);
-	printk("CIO (%d) ", FLD_GET(l, 29, 29));
+;
 
 	if (dss_has_feature(FEAT_DSI_REVERSE_TXCLKESC)) {
 		b0 = 28;
@@ -1098,13 +1098,13 @@ static void _dsi_print_reset_status(struct platform_device *dsidev)
 	}
 
 	l = dsi_read_reg(dsidev, DSI_DSIPHY_CFG5);
-	printk("PHY (%x%x%x, %d, %d, %d)\n",
-			FLD_GET(l, b0, b0),
-			FLD_GET(l, b1, b1),
-			FLD_GET(l, b2, b2),
-			FLD_GET(l, 29, 29),
-			FLD_GET(l, 30, 30),
-			FLD_GET(l, 31, 31));
+//	printk("PHY (%x%x%x, %d, %d, %d)\n",
+//			FLD_GET(l, b0, b0),
+//			FLD_GET(l, b1, b1),
+//			FLD_GET(l, b2, b2),
+//			FLD_GET(l, 29, 29),
+//			FLD_GET(l, 30, 30),
+;
 }
 #else
 #define _dsi_print_reset_status(x)

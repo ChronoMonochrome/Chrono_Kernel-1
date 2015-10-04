@@ -971,9 +971,9 @@ static int eata2x_slave_configure(struct scsi_device *dev)
 	else
 		link_suffix = "";
 
-	sdev_printk(KERN_INFO, dev,
-		"cmds/lun %d%s%s.\n",
-	       dev->queue_depth, link_suffix, tag_suffix);
+//	sdev_printk(KERN_INFO, dev,
+//		"cmds/lun %d%s%s.\n",
+;
 
 	return 0;
 }
@@ -1037,8 +1037,8 @@ static struct pci_dev *get_pci_dev(unsigned long port_base)
 		addr = pci_resource_start(dev, 0);
 
 #if defined(DEBUG_PCI_DETECT)
-		printk("%s: get_pci_dev, bus %d, devfn 0x%x, addr 0x%x.\n",
-		       driver_name, dev->bus->number, dev->devfn, addr);
+//		printk("%s: get_pci_dev, bus %d, devfn 0x%x, addr 0x%x.\n",
+;
 #endif
 
 		/* we are in so much trouble for a pci hotplug system with this driver
@@ -1060,8 +1060,8 @@ static void enable_pci_ports(void)
 
 	while ((dev = pci_get_class(PCI_CLASS_STORAGE_SCSI << 8, dev))) {
 #if defined(DEBUG_PCI_DETECT)
-		printk("%s: enable_pci_ports, bus %d, devfn 0x%x.\n",
-		       driver_name, dev->bus->number, dev->devfn);
+//		printk("%s: enable_pci_ports, bus %d, devfn 0x%x.\n",
+;
 #endif
 
 		if (pci_enable_device(dev))
@@ -1091,8 +1091,8 @@ static int port_detect(unsigned long port_base, unsigned int j,
 
 	if (!request_region(port_base, REGION_SIZE, driver_name)) {
 #if defined(DEBUG_DETECT)
-		printk("%s: address 0x%03lx in use, skipping probe.\n", name,
-		       port_base);
+//		printk("%s: address 0x%03lx in use, skipping probe.\n", name,
+;
 #endif
 		goto fail;
 	}
@@ -1101,8 +1101,8 @@ static int port_detect(unsigned long port_base, unsigned int j,
 
 	if (do_dma(port_base, 0, READ_CONFIG_PIO)) {
 #if defined(DEBUG_DETECT)
-		printk("%s: detect, do_dma failed at 0x%03lx.\n", name,
-		       port_base);
+//		printk("%s: detect, do_dma failed at 0x%03lx.\n", name,
+;
 #endif
 		goto freelock;
 	}
@@ -1110,8 +1110,8 @@ static int port_detect(unsigned long port_base, unsigned int j,
 	/* Read the info structure */
 	if (read_pio(port_base, (ushort *) & info, (ushort *) & info.ipad[0])) {
 #if defined(DEBUG_DETECT)
-		printk("%s: detect, read_pio failed at 0x%03lx.\n", name,
-		       port_base);
+//		printk("%s: detect, read_pio failed at 0x%03lx.\n", name,
+;
 #endif
 		goto freelock;
 	}
@@ -1127,7 +1127,7 @@ static int port_detect(unsigned long port_base, unsigned int j,
 	/* Check the controller "EATA" signature */
 	if (info.sign != EATA_SIG_BE) {
 #if defined(DEBUG_DETECT)
-		printk("%s: signature 0x%04x discarded.\n", name, info.sign);
+;
 #endif
 		goto freelock;
 	}
@@ -1145,7 +1145,7 @@ static int port_detect(unsigned long port_base, unsigned int j,
 		protocol_rev = 'C';
 
 	if (protocol_rev != 'A' && info.forcaddr) {
-		printk("%s: warning, port address has been forced.\n", name);
+;
 		bus_type = "PCI";
 		is_pci = 1;
 		subversion = ESA;
@@ -1179,23 +1179,23 @@ static int port_detect(unsigned long port_base, unsigned int j,
 
 	if (info.drqvld) {
 		if (subversion == ESA)
-			printk("%s: warning, weird %s board using DMA.\n", name,
-			       bus_type);
+//			printk("%s: warning, weird %s board using DMA.\n", name,
+;
 
 		subversion = ISA;
 		dma_channel = dma_channel_table[3 - info.drqx];
 	} else {
 		if (subversion == ISA)
-			printk("%s: warning, weird %s board not using DMA.\n",
-			       name, bus_type);
+//			printk("%s: warning, weird %s board not using DMA.\n",
+;
 
 		subversion = ESA;
 		dma_channel = NO_DMA;
 	}
 
 	if (!info.dmasup)
-		printk("%s: warning, DMA protocol support not asserted.\n",
-		       name);
+//		printk("%s: warning, DMA protocol support not asserted.\n",
+;
 
 	irq = info.irq;
 
@@ -1214,8 +1214,8 @@ static int port_detect(unsigned long port_base, unsigned int j,
 		pdev = NULL;
 
 	if (pdev && (irq != pdev->irq)) {
-		printk("%s: IRQ %u mapped to IO-APIC IRQ %u.\n", name, irq,
-		       pdev->irq);
+//		printk("%s: IRQ %u mapped to IO-APIC IRQ %u.\n", name, irq,
+;
 		irq = pdev->irq;
 	}
 
@@ -1223,14 +1223,14 @@ static int port_detect(unsigned long port_base, unsigned int j,
 	if (request_irq(irq, do_interrupt_handler,
 			IRQF_DISABLED | ((subversion == ESA) ? IRQF_SHARED : 0),
 			driver_name, (void *)&sha[j])) {
-		printk("%s: unable to allocate IRQ %u, detaching.\n", name,
-		       irq);
+//		printk("%s: unable to allocate IRQ %u, detaching.\n", name,
+;
 		goto freelock;
 	}
 
 	if (subversion == ISA && request_dma(dma_channel, driver_name)) {
-		printk("%s: unable to allocate DMA channel %u, detaching.\n",
-		       name, dma_channel);
+//		printk("%s: unable to allocate DMA channel %u, detaching.\n",
+;
 		goto freeirq;
 	}
 #if defined(FORCE_CONFIG)
@@ -1270,7 +1270,7 @@ static int port_detect(unsigned long port_base, unsigned int j,
 	spin_lock_irq(&driver_lock);
 
 	if (shost == NULL) {
-		printk("%s: unable to register host, detaching.\n", name);
+;
 		goto freedma;
 	}
 
@@ -1312,15 +1312,15 @@ static int port_detect(unsigned long port_base, unsigned int j,
 
 	/* DPT PM2012 does not allow to detect sg_tablesize correctly */
 	if (shost->sg_tablesize > MAX_SGLIST || shost->sg_tablesize < 2) {
-		printk("%s: detect, wrong n. of SG lists %d, fixed.\n",
-		       ha->board_name, shost->sg_tablesize);
+//		printk("%s: detect, wrong n. of SG lists %d, fixed.\n",
+;
 		shost->sg_tablesize = MAX_SGLIST;
 	}
 
 	/* DPT PM2012 does not allow to detect can_queue correctly */
 	if (shost->can_queue > MAX_MAILBOXES || shost->can_queue < 2) {
-		printk("%s: detect, wrong n. of mbox %d, fixed.\n",
-		       ha->board_name, shost->can_queue);
+//		printk("%s: detect, wrong n. of mbox %d, fixed.\n",
+;
 		shost->can_queue = MAX_MAILBOXES;
 	}
 
@@ -1368,7 +1368,7 @@ static int port_detect(unsigned long port_base, unsigned int j,
 	if (!(ha->sp_cpu_addr = pci_alloc_consistent(ha->pdev,
 							sizeof(struct mssp),
 							&ha->sp_dma_addr))) {
-		printk("%s: pci_alloc_consistent failed, detaching.\n", ha->board_name);
+;
 		goto release;
 	}
 
@@ -1392,10 +1392,10 @@ static int port_detect(unsigned long port_base, unsigned int j,
 		     YESNO(pci_probe));
 	}
 
-	printk("%s: 2.0%c, %s 0x%03lx, IRQ %u, %s, SG %d, MB %d.\n",
-	       ha->board_name, ha->protocol_rev, bus_type,
-	       (unsigned long)shost->io_port, shost->irq, dma_name,
-	       shost->sg_tablesize, shost->can_queue);
+//	printk("%s: 2.0%c, %s 0x%03lx, IRQ %u, %s, SG %d, MB %d.\n",
+//	       ha->board_name, ha->protocol_rev, bus_type,
+//	       (unsigned long)shost->io_port, shost->irq, dma_name,
+;
 
 	if (shost->max_id > 8 || shost->max_lun > 8)
 		printk
@@ -1403,32 +1403,32 @@ static int port_detect(unsigned long port_base, unsigned int j,
 		     ha->board_name, shost->max_id, shost->max_lun);
 
 	for (i = 0; i <= shost->max_channel; i++)
-		printk("%s: SCSI channel %u enabled, host target ID %d.\n",
-		       ha->board_name, i, info.host_addr[3 - i]);
+//		printk("%s: SCSI channel %u enabled, host target ID %d.\n",
+;
 
 #if defined(DEBUG_DETECT)
-	printk("%s: Vers. 0x%x, ocs %u, tar %u, trnxfr %u, more %u, SYNC 0x%x, "
-	       "sec. %u, infol %d, cpl %d spl %d.\n", name, info.version,
-	       info.ocsena, info.tarsup, info.trnxfr, info.morsup, info.sync,
-	       info.second, info.data_len, info.cp_len, info.sp_len);
+//	printk("%s: Vers. 0x%x, ocs %u, tar %u, trnxfr %u, more %u, SYNC 0x%x, "
+//	       "sec. %u, infol %d, cpl %d spl %d.\n", name, info.version,
+//	       info.ocsena, info.tarsup, info.trnxfr, info.morsup, info.sync,
+;
 
 	if (protocol_rev == 'B' || protocol_rev == 'C')
-		printk("%s: isaena %u, forcaddr %u, max_id %u, max_chan %u, "
-		       "large_sg %u, res1 %u.\n", name, info.isaena,
-		       info.forcaddr, info.max_id, info.max_chan, info.large_sg,
-		       info.res1);
+//		printk("%s: isaena %u, forcaddr %u, max_id %u, max_chan %u, "
+//		       "large_sg %u, res1 %u.\n", name, info.isaena,
+//		       info.forcaddr, info.max_id, info.max_chan, info.large_sg,
+;
 
 	if (protocol_rev == 'C')
-		printk("%s: max_lun %u, m1 %u, idquest %u, pci %u, eisa %u, "
-		       "raidnum %u.\n", name, info.max_lun, info.m1,
-		       info.idquest, info.pci, info.eisa, info.raidnum);
+//		printk("%s: max_lun %u, m1 %u, idquest %u, pci %u, eisa %u, "
+//		       "raidnum %u.\n", name, info.max_lun, info.m1,
+;
 #endif
 
 	if (ha->pdev) {
 		pci_set_master(ha->pdev);
 		if (pci_set_dma_mask(ha->pdev, DMA_BIT_MASK(32)))
-			printk("%s: warning, pci_set_dma_mask failed.\n",
-			       ha->board_name);
+//			printk("%s: warning, pci_set_dma_mask failed.\n",
+;
 	}
 
 	return 1;
@@ -1545,8 +1545,8 @@ static void add_pci_ports(void)
 		addr = pci_resource_start(dev, 0);
 
 #if defined(DEBUG_PCI_DETECT)
-		printk("%s: detect, seq. %d, bus %d, devfn 0x%x, addr 0x%x.\n",
-		       driver_name, k, dev->bus->number, dev->devfn, addr);
+//		printk("%s: detect, seq. %d, bus %d, devfn 0x%x, addr 0x%x.\n",
+;
 #endif
 
 		/* Order addresses according to rev_scan value */
@@ -1783,7 +1783,7 @@ static int eata2x_queuecommand_lck(struct scsi_cmnd *SCpnt,
 	}
 
 	if (k == shost->can_queue) {
-		printk("%s: qcomm, no free mailbox.\n", ha->board_name);
+;
 		return 1;
 	}
 
@@ -1800,8 +1800,8 @@ static int eata2x_queuecommand_lck(struct scsi_cmnd *SCpnt,
 	SCpnt->host_scribble = (unsigned char *)&cpp->cpp_index;
 
 	if (do_trace)
-		scmd_printk(KERN_INFO, SCpnt,
-			"qcomm, mbox %d.\n", i);
+//		scmd_printk(KERN_INFO, SCpnt,
+;
 
 	cpp->reqsen = 1;
 	cpp->dispri = 1;
@@ -1833,7 +1833,7 @@ static int eata2x_queuecommand_lck(struct scsi_cmnd *SCpnt,
 	if (do_dma(shost->io_port, cpp->cp_dma_addr, SEND_CP_DMA)) {
 		unmap_dma(i, ha);
 		SCpnt->host_scribble = NULL;
-		scmd_printk(KERN_INFO, SCpnt, "qcomm, adapter busy.\n");
+;
 		return 1;
 	}
 
@@ -1850,47 +1850,47 @@ static int eata2x_eh_abort(struct scsi_cmnd *SCarg)
 	unsigned int i;
 
 	if (SCarg->host_scribble == NULL) {
-		scmd_printk(KERN_INFO, SCarg, "abort, cmd inactive.\n");
+;
 		return SUCCESS;
 	}
 
 	i = *(unsigned int *)SCarg->host_scribble;
-	scmd_printk(KERN_WARNING, SCarg, "abort, mbox %d.\n", i);
+;
 
 	if (i >= shost->can_queue)
 		panic("%s: abort, invalid SCarg->host_scribble.\n", ha->board_name);
 
 	if (wait_on_busy(shost->io_port, MAXLOOP)) {
-		printk("%s: abort, timeout error.\n", ha->board_name);
+;
 		return FAILED;
 	}
 
 	if (ha->cp_stat[i] == FREE) {
-		printk("%s: abort, mbox %d is free.\n", ha->board_name, i);
+;
 		return SUCCESS;
 	}
 
 	if (ha->cp_stat[i] == IN_USE) {
-		printk("%s: abort, mbox %d is in use.\n", ha->board_name, i);
+;
 
 		if (SCarg != ha->cp[i].SCpnt)
 			panic("%s: abort, mbox %d, SCarg %p, cp SCpnt %p.\n",
 			      ha->board_name, i, SCarg, ha->cp[i].SCpnt);
 
 		if (inb(shost->io_port + REG_AUX_STATUS) & IRQ_ASSERTED)
-			printk("%s: abort, mbox %d, interrupt pending.\n",
-			       ha->board_name, i);
+//			printk("%s: abort, mbox %d, interrupt pending.\n",
+;
 
 		return FAILED;
 	}
 
 	if (ha->cp_stat[i] == IN_RESET) {
-		printk("%s: abort, mbox %d is in reset.\n", ha->board_name, i);
+;
 		return FAILED;
 	}
 
 	if (ha->cp_stat[i] == LOCKED) {
-		printk("%s: abort, mbox %d is locked.\n", ha->board_name, i);
+;
 		return SUCCESS;
 	}
 
@@ -1899,8 +1899,8 @@ static int eata2x_eh_abort(struct scsi_cmnd *SCarg)
 		SCarg->result = DID_ABORT << 16;
 		SCarg->host_scribble = NULL;
 		ha->cp_stat[i] = FREE;
-		printk("%s, abort, mbox %d ready, DID_ABORT, done.\n",
-		       ha->board_name, i);
+//		printk("%s, abort, mbox %d ready, DID_ABORT, done.\n",
+;
 		SCarg->scsi_done(SCarg);
 		return SUCCESS;
 	}
@@ -1916,21 +1916,21 @@ static int eata2x_eh_host_reset(struct scsi_cmnd *SCarg)
 	struct Scsi_Host *shost = SCarg->device->host;
 	struct hostdata *ha = (struct hostdata *)shost->hostdata;
 
-	scmd_printk(KERN_INFO, SCarg, "reset, enter.\n");
+;
 
 	spin_lock_irq(shost->host_lock);
 
 	if (SCarg->host_scribble == NULL)
-		printk("%s: reset, inactive.\n", ha->board_name);
+;
 
 	if (ha->in_reset) {
-		printk("%s: reset, exit, already in reset.\n", ha->board_name);
+;
 		spin_unlock_irq(shost->host_lock);
 		return FAILED;
 	}
 
 	if (wait_on_busy(shost->io_port, MAXLOOP)) {
-		printk("%s: reset, exit, timeout error.\n", ha->board_name);
+;
 		spin_unlock_irq(shost->host_lock);
 		return FAILED;
 	}
@@ -1950,8 +1950,8 @@ static int eata2x_eh_host_reset(struct scsi_cmnd *SCarg)
 
 		if (ha->cp_stat[i] == LOCKED) {
 			ha->cp_stat[i] = FREE;
-			printk("%s: reset, locked mbox %d forced free.\n",
-			       ha->board_name, i);
+//			printk("%s: reset, locked mbox %d forced free.\n",
+;
 			continue;
 		}
 
@@ -1960,14 +1960,14 @@ static int eata2x_eh_host_reset(struct scsi_cmnd *SCarg)
 
 		if (ha->cp_stat[i] == READY || ha->cp_stat[i] == ABORTING) {
 			ha->cp_stat[i] = ABORTING;
-			printk("%s: reset, mbox %d aborting.\n",
-			       ha->board_name, i);
+//			printk("%s: reset, mbox %d aborting.\n",
+;
 		}
 
 		else {
 			ha->cp_stat[i] = IN_RESET;
-			printk("%s: reset, mbox %d in reset.\n",
-			       ha->board_name, i);
+//			printk("%s: reset, mbox %d in reset.\n",
+;
 		}
 
 		if (SCpnt->host_scribble == NULL)
@@ -1985,12 +1985,12 @@ static int eata2x_eh_host_reset(struct scsi_cmnd *SCarg)
 	}
 
 	if (do_dma(shost->io_port, 0, RESET_PIO)) {
-		printk("%s: reset, cannot reset, timeout error.\n", ha->board_name);
+;
 		spin_unlock_irq(shost->host_lock);
 		return FAILED;
 	}
 
-	printk("%s: reset, board reset done, enabling interrupts.\n", ha->board_name);
+;
 
 #if defined(DEBUG_RESET)
 	do_trace = 1;
@@ -2007,7 +2007,7 @@ static int eata2x_eh_host_reset(struct scsi_cmnd *SCarg)
 
 	spin_lock_irq(shost->host_lock);
 
-	printk("%s: reset, interrupts disabled, loops %d.\n", ha->board_name, limit);
+;
 
 	for (i = 0; i < shost->can_queue; i++) {
 
@@ -2050,9 +2050,9 @@ static int eata2x_eh_host_reset(struct scsi_cmnd *SCarg)
 	do_trace = 0;
 
 	if (arg_done)
-		printk("%s: reset, exit, done.\n", ha->board_name);
+;
 	else
-		printk("%s: reset, exit.\n", ha->board_name);
+;
 
 	spin_unlock_irq(shost->host_lock);
 	return SUCCESS;
@@ -2069,8 +2069,8 @@ int eata2x_bios_param(struct scsi_device *sdev, struct block_device *bdev,
 		dkinfo[2] = size / (dkinfo[0] * dkinfo[1]);
 	}
 #if defined (DEBUG_GEOMETRY)
-	printk("%s: bios_param, head=%d, sec=%d, cyl=%d.\n", driver_name,
-	       dkinfo[0], dkinfo[1], dkinfo[2]);
+//	printk("%s: bios_param, head=%d, sec=%d, cyl=%d.\n", driver_name,
+;
 #endif
 
 	return 0;
@@ -2125,11 +2125,11 @@ static int reorder(struct hostdata *ha, unsigned long cursec,
 	static unsigned long seeksorted = 0, seeknosort = 0;
 
 	if (link_statistics && !(++flushcount % link_statistics))
-		printk("fc %d bc %d ic %d oc %d rc %d rs %d sc %d re %d"
-		       " av %ldK as %ldK.\n", flushcount, batchcount,
-		       inputcount, ovlcount, readycount, readysorted, sortcount,
-		       revcount, seeknosort / (readycount + 1),
-		       seeksorted / (readycount + 1));
+//		printk("fc %d bc %d ic %d oc %d rc %d rs %d sc %d re %d"
+//		       " av %ldK as %ldK.\n", flushcount, batchcount,
+//		       inputcount, ovlcount, readycount, readysorted, sortcount,
+//		       revcount, seeknosort / (readycount + 1),
+;
 
 	if (n_ready <= 1)
 		return 0;
@@ -2233,15 +2233,15 @@ static int reorder(struct hostdata *ha, unsigned long cursec,
 			k = il[n];
 			cpp = &ha->cp[k];
 			SCpnt = cpp->SCpnt;
-			scmd_printk(KERN_INFO, SCpnt,
-			    "%s mb %d fc %d nr %d sec %ld ns %u"
-			     " cur %ld s:%c r:%c rev:%c in:%c ov:%c xd %d.\n",
-			     (ihdlr ? "ihdlr" : "qcomm"),
-			     k, flushcount,
-			     n_ready, blk_rq_pos(SCpnt->request),
-			     blk_rq_sectors(SCpnt->request), cursec, YESNO(s),
-			     YESNO(r), YESNO(rev), YESNO(input_only),
-			     YESNO(overlap), cpp->din);
+//			scmd_printk(KERN_INFO, SCpnt,
+//			    "%s mb %d fc %d nr %d sec %ld ns %u"
+//			     " cur %ld s:%c r:%c rev:%c in:%c ov:%c xd %d.\n",
+//			     (ihdlr ? "ihdlr" : "qcomm"),
+//			     k, flushcount,
+//			     n_ready, blk_rq_pos(SCpnt->request),
+//			     blk_rq_sectors(SCpnt->request), cursec, YESNO(s),
+//			     YESNO(r), YESNO(rev), YESNO(input_only),
+;
 		}
 #endif
 	return overlap;
@@ -2280,11 +2280,11 @@ static void flush_dev(struct scsi_device *dev, unsigned long cursec,
 		SCpnt = cpp->SCpnt;
 
 		if (do_dma(dev->host->io_port, cpp->cp_dma_addr, SEND_CP_DMA)) {
-			scmd_printk(KERN_INFO, SCpnt,
-			    "%s, mbox %d, adapter"
-			     " busy, will abort.\n",
-			     (ihdlr ? "ihdlr" : "qcomm"),
-			     k);
+//			scmd_printk(KERN_INFO, SCpnt,
+//			    "%s, mbox %d, adapter"
+//			     " busy, will abort.\n",
+//			     (ihdlr ? "ihdlr" : "qcomm"),
+;
 			ha->cp_stat[k] = ABORTING;
 			continue;
 		}
@@ -2309,8 +2309,8 @@ static irqreturn_t ihdlr(struct Scsi_Host *shost)
 	ha->iocount++;
 
 	if (do_trace)
-		printk("%s: ihdlr, enter, irq %d, count %d.\n", ha->board_name, irq,
-		       ha->iocount);
+//		printk("%s: ihdlr, enter, irq %d, count %d.\n", ha->board_name, irq,
+;
 
 	/* Check if this board is still busy */
 	if (wait_on_busy(shost->io_port, 20 * MAXLOOP)) {
@@ -2338,10 +2338,10 @@ static irqreturn_t ihdlr(struct Scsi_Host *shost)
 		int cnt;
 		bytesp = (unsigned char *)spp;
 		if (ha->iocount < 200) {
-			printk("sp[] =");
+;
 			for (cnt = 0; cnt < 15; cnt++)
-				printk(" 0x%x", bytesp[cnt]);
-			printk("\n");
+;
+;
 		}
 	}
 #endif
@@ -2374,15 +2374,15 @@ static irqreturn_t ihdlr(struct Scsi_Host *shost)
 		goto handled;
 	} else if (ha->cp_stat[i] == LOCKED) {
 		ha->cp_stat[i] = FREE;
-		printk("%s: ihdlr, mbox %d unlocked, count %d.\n", ha->board_name, i,
-		       ha->iocount);
+//		printk("%s: ihdlr, mbox %d unlocked, count %d.\n", ha->board_name, i,
+;
 		goto handled;
 	} else if (ha->cp_stat[i] == FREE) {
-		printk("%s: ihdlr, mbox %d is free, count %d.\n", ha->board_name, i,
-		       ha->iocount);
+//		printk("%s: ihdlr, mbox %d is free, count %d.\n", ha->board_name, i,
+;
 		goto handled;
 	} else if (ha->cp_stat[i] == IN_RESET)
-		printk("%s: ihdlr, mbox %d is in reset.\n", ha->board_name, i);
+;
 	else if (ha->cp_stat[i] != IN_USE)
 		panic("%s: ihdlr, mbox %d, invalid cp_stat: %d.\n",
 		      ha->board_name, i, ha->cp_stat[i]);
@@ -2445,12 +2445,12 @@ static irqreturn_t ihdlr(struct Scsi_Host *shost)
 		if (spp->target_status && SCpnt->device->type == TYPE_DISK &&
 		    (!(tstatus == CHECK_CONDITION && ha->iocount <= 1000 &&
 		       (SCpnt->sense_buffer[2] & 0xf) == NOT_READY)))
-			printk("%s: ihdlr, target %d.%d:%d, "
-			       "target_status 0x%x, sense key 0x%x.\n",
-			       ha->board_name,
-			       SCpnt->device->channel, SCpnt->device->id,
-			       SCpnt->device->lun,
-			       spp->target_status, SCpnt->sense_buffer[2]);
+//			printk("%s: ihdlr, target %d.%d:%d, "
+//			       "target_status 0x%x, sense key 0x%x.\n",
+//			       ha->board_name,
+//			       SCpnt->device->channel, SCpnt->device->id,
+//			       SCpnt->device->lun,
+;
 
 		ha->target_to[SCpnt->device->id][SCpnt->device->channel] = 0;
 
@@ -2517,10 +2517,10 @@ static irqreturn_t ihdlr(struct Scsi_Host *shost)
 	     spp->adapter_status != ASST && ha->iocount <= 1000) ||
 	    do_trace || msg_byte(spp->target_status))
 #endif
-		scmd_printk(KERN_INFO, SCpnt, "ihdlr, mbox %2d, err 0x%x:%x,"
-		       " reg 0x%x, count %d.\n",
-		       i, spp->adapter_status, spp->target_status,
-		       reg, ha->iocount);
+//		scmd_printk(KERN_INFO, SCpnt, "ihdlr, mbox %2d, err 0x%x:%x,"
+//		       " reg 0x%x, count %d.\n",
+//		       i, spp->adapter_status, spp->target_status,
+;
 
 	unmap_dma(i, ha);
 
@@ -2530,8 +2530,8 @@ static irqreturn_t ihdlr(struct Scsi_Host *shost)
 	SCpnt->scsi_done(SCpnt);
 
 	if (do_trace)
-		printk("%s: ihdlr, exit, irq %d, count %d.\n", ha->board_name,
-				irq, ha->iocount);
+//		printk("%s: ihdlr, exit, irq %d, count %d.\n", ha->board_name,
+;
 
       handled:
 	return IRQ_HANDLED;

@@ -1341,7 +1341,7 @@ static int ibmvfc_map_sg_data(struct scsi_cmnd *scmd,
 		return 0;
 	} else if (unlikely(sg_mapped < 0)) {
 		if (vhost->log_level > IBMVFC_DEFAULT_LOG_LEVEL)
-			scmd_printk(KERN_ERR, scmd, "Failed to map DMA buffer for command\n");
+;
 		return sg_mapped;
 	}
 
@@ -1367,7 +1367,7 @@ static int ibmvfc_map_sg_data(struct scsi_cmnd *scmd,
 		if (!evt->ext_list) {
 			scsi_dma_unmap(scmd);
 			if (vhost->log_level > IBMVFC_DEFAULT_LOG_LEVEL)
-				scmd_printk(KERN_ERR, scmd, "Can't allocate memory for scatterlist\n");
+;
 			return -ENOMEM;
 		}
 	}
@@ -1487,10 +1487,10 @@ static void ibmvfc_log_error(struct ibmvfc_event *evt)
 	if (rsp->flags & FCP_RSP_LEN_VALID)
 		rsp_code = rsp->data.info.rsp_code;
 
-	scmd_printk(KERN_ERR, cmnd, "Command (%02X) failed: %s (%x:%x) "
-		    "flags: %x fcp_rsp: %x, resid=%d, scsi_status: %x\n",
-		    cmnd->cmnd[0], err, vfc_cmd->status, vfc_cmd->error,
-		    rsp->flags, rsp_code, scsi_get_resid(cmnd), rsp->scsi_status);
+//	scmd_printk(KERN_ERR, cmnd, "Command (%02X) failed: %s (%x:%x) "
+//		    "flags: %x fcp_rsp: %x, resid=%d, scsi_status: %x\n",
+//		    cmnd->cmnd[0], err, vfc_cmd->status, vfc_cmd->error,
+;
 }
 
 /**
@@ -1664,8 +1664,8 @@ static int ibmvfc_queuecommand_lck(struct scsi_cmnd *cmnd,
 		return SCSI_MLQUEUE_HOST_BUSY;
 
 	if (vhost->log_level > IBMVFC_DEFAULT_LOG_LEVEL)
-		scmd_printk(KERN_ERR, cmnd,
-			    "Failed to map DMA buffer for command. rc=%d\n", rc);
+//		scmd_printk(KERN_ERR, cmnd,
+;
 
 	cmnd->result = DID_ERROR << 16;
 	done(cmnd);
@@ -2004,12 +2004,12 @@ static int ibmvfc_reset_device(struct scsi_device *sdev, int type, char *desc)
 	spin_unlock_irqrestore(vhost->host->host_lock, flags);
 
 	if (rsp_rc != 0) {
-		sdev_printk(KERN_ERR, sdev, "Failed to send %s reset event. rc=%d\n",
-			    desc, rsp_rc);
+//		sdev_printk(KERN_ERR, sdev, "Failed to send %s reset event. rc=%d\n",
+;
 		return -EIO;
 	}
 
-	sdev_printk(KERN_INFO, sdev, "Resetting %s\n", desc);
+;
 	wait_for_completion(&evt->comp);
 
 	if (rsp_iu.cmd.status)
@@ -2019,14 +2019,14 @@ static int ibmvfc_reset_device(struct scsi_device *sdev, int type, char *desc)
 		if (fc_rsp->flags & FCP_RSP_LEN_VALID)
 			rsp_code = fc_rsp->data.info.rsp_code;
 
-		sdev_printk(KERN_ERR, sdev, "%s reset failed: %s (%x:%x) "
-			    "flags: %x fcp_rsp: %x, scsi_status: %x\n",
-			    desc, ibmvfc_get_cmd_error(rsp_iu.cmd.status, rsp_iu.cmd.error),
-			    rsp_iu.cmd.status, rsp_iu.cmd.error, fc_rsp->flags, rsp_code,
-			    fc_rsp->scsi_status);
+//		sdev_printk(KERN_ERR, sdev, "%s reset failed: %s (%x:%x) "
+//			    "flags: %x fcp_rsp: %x, scsi_status: %x\n",
+//			    desc, ibmvfc_get_cmd_error(rsp_iu.cmd.status, rsp_iu.cmd.error),
+//			    rsp_iu.cmd.status, rsp_iu.cmd.error, fc_rsp->flags, rsp_code,
+;
 		rsp_rc = -EIO;
 	} else
-		sdev_printk(KERN_INFO, sdev, "%s reset successful\n", desc);
+;
 
 	spin_lock_irqsave(vhost->host->host_lock, flags);
 	ibmvfc_free_event(evt);
@@ -2174,7 +2174,7 @@ static int ibmvfc_cancel_all(struct scsi_device *sdev, int type)
 
 	if (!found_evt) {
 		if (vhost->log_level > IBMVFC_DEFAULT_LOG_LEVEL)
-			sdev_printk(KERN_INFO, sdev, "No events found to cancel\n");
+;
 		spin_unlock_irqrestore(vhost->host->host_lock, flags);
 		return 0;
 	}
@@ -2202,11 +2202,11 @@ static int ibmvfc_cancel_all(struct scsi_device *sdev, int type)
 	spin_unlock_irqrestore(vhost->host->host_lock, flags);
 
 	if (rsp_rc != 0) {
-		sdev_printk(KERN_ERR, sdev, "Failed to send cancel event. rc=%d\n", rsp_rc);
+;
 		return -EIO;
 	}
 
-	sdev_printk(KERN_INFO, sdev, "Cancelling outstanding commands.\n");
+;
 
 	wait_for_completion(&evt->comp);
 	status = rsp.mad_common.status;
@@ -2215,11 +2215,11 @@ static int ibmvfc_cancel_all(struct scsi_device *sdev, int type)
 	spin_unlock_irqrestore(vhost->host->host_lock, flags);
 
 	if (status != IBMVFC_MAD_SUCCESS) {
-		sdev_printk(KERN_WARNING, sdev, "Cancel failed with rc=%x\n", status);
+;
 		return -EIO;
 	}
 
-	sdev_printk(KERN_INFO, sdev, "Successfully cancelled outstanding commands\n");
+;
 	return 0;
 }
 
@@ -2274,7 +2274,7 @@ static int ibmvfc_abort_task_set(struct scsi_device *sdev)
 
 	if (!found_evt) {
 		if (vhost->log_level > IBMVFC_DEFAULT_LOG_LEVEL)
-			sdev_printk(KERN_INFO, sdev, "No events found to abort\n");
+;
 		spin_unlock_irqrestore(vhost->host->host_lock, flags);
 		return 0;
 	}
@@ -2304,11 +2304,11 @@ static int ibmvfc_abort_task_set(struct scsi_device *sdev)
 	spin_unlock_irqrestore(vhost->host->host_lock, flags);
 
 	if (rsp_rc != 0) {
-		sdev_printk(KERN_ERR, sdev, "Failed to send abort. rc=%d\n", rsp_rc);
+;
 		return -EIO;
 	}
 
-	sdev_printk(KERN_INFO, sdev, "Aborting outstanding commands\n");
+;
 	timeout = wait_for_completion_timeout(&evt->comp, timeout);
 
 	if (!timeout) {
@@ -2320,7 +2320,7 @@ static int ibmvfc_abort_task_set(struct scsi_device *sdev)
 		}
 
 		if (rc) {
-			sdev_printk(KERN_INFO, sdev, "Cancel failed, resetting host\n");
+;
 			ibmvfc_reset_host(vhost);
 			rsp_rc = 0;
 			goto out;
@@ -2334,14 +2334,14 @@ static int ibmvfc_abort_task_set(struct scsi_device *sdev)
 		if (fc_rsp->flags & FCP_RSP_LEN_VALID)
 			rsp_code = fc_rsp->data.info.rsp_code;
 
-		sdev_printk(KERN_ERR, sdev, "Abort failed: %s (%x:%x) "
-			    "flags: %x fcp_rsp: %x, scsi_status: %x\n",
-			    ibmvfc_get_cmd_error(rsp_iu.cmd.status, rsp_iu.cmd.error),
-			    rsp_iu.cmd.status, rsp_iu.cmd.error, fc_rsp->flags, rsp_code,
-			    fc_rsp->scsi_status);
+//		sdev_printk(KERN_ERR, sdev, "Abort failed: %s (%x:%x) "
+//			    "flags: %x fcp_rsp: %x, scsi_status: %x\n",
+//			    ibmvfc_get_cmd_error(rsp_iu.cmd.status, rsp_iu.cmd.error),
+//			    rsp_iu.cmd.status, rsp_iu.cmd.error, fc_rsp->flags, rsp_code,
+;
 		rsp_rc = -EIO;
 	} else
-		sdev_printk(KERN_INFO, sdev, "Abort successful\n");
+;
 
 out:
 	spin_lock_irqsave(vhost->host->host_lock, flags);
@@ -4947,8 +4947,8 @@ static int __init ibmvfc_module_init(void)
 	if (!firmware_has_feature(FW_FEATURE_VIO))
 		return -ENODEV;
 
-	printk(KERN_INFO IBMVFC_NAME": IBM Virtual Fibre Channel Driver version: %s %s\n",
-	       IBMVFC_DRIVER_VERSION, IBMVFC_DRIVER_DATE);
+//	printk(KERN_INFO IBMVFC_NAME": IBM Virtual Fibre Channel Driver version: %s %s\n",
+;
 
 	ibmvfc_transport_template = fc_attach_transport(&ibmvfc_transport_functions);
 	if (!ibmvfc_transport_template)

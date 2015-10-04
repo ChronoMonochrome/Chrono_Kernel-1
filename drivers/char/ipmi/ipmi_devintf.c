@@ -892,8 +892,8 @@ static void ipmi_new_smi(int if_num, struct device *device)
 
 	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
 	if (!entry) {
-		printk(KERN_ERR "ipmi_devintf: Unable to create the"
-		       " ipmi class device link\n");
+//		printk(KERN_ERR "ipmi_devintf: Unable to create the"
+;
 		return;
 	}
 	entry->dev = dev;
@@ -935,18 +935,18 @@ static int __init init_ipmi_devintf(void)
 	if (ipmi_major < 0)
 		return -EINVAL;
 
-	printk(KERN_INFO "ipmi device interface\n");
+;
 
 	ipmi_class = class_create(THIS_MODULE, "ipmi");
 	if (IS_ERR(ipmi_class)) {
-		printk(KERN_ERR "ipmi: can't register device class\n");
+;
 		return PTR_ERR(ipmi_class);
 	}
 
 	rv = register_chrdev(ipmi_major, DEVICE_NAME, &ipmi_fops);
 	if (rv < 0) {
 		class_destroy(ipmi_class);
-		printk(KERN_ERR "ipmi: can't get major %d\n", ipmi_major);
+;
 		return rv;
 	}
 
@@ -958,7 +958,7 @@ static int __init init_ipmi_devintf(void)
 	if (rv) {
 		unregister_chrdev(ipmi_major, DEVICE_NAME);
 		class_destroy(ipmi_class);
-		printk(KERN_WARNING "ipmi: can't register smi watcher\n");
+;
 		return rv;
 	}
 

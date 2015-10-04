@@ -52,8 +52,8 @@ static int cw1200_sdio_memcpy_fromio(struct sbus_priv *self,
 {
 	int ret = sdio_memcpy_fromio(self->func, dst, addr, count);
 	if (ret) {
-		printk(KERN_ERR "!!! Can't read %d bytes from 0x%.8X. Err %d.\n",
-				count, addr, ret);
+//		printk(KERN_ERR "!!! Can't read %d bytes from 0x%.8X. Err %d.\n",
+;
 	}
 	return ret;
 }
@@ -162,7 +162,7 @@ static int cw1200_sdio_irq_subscribe(struct sbus_priv *self,
 	self->irq_handler = handler;
 	spin_unlock_irqrestore(&self->lock, flags);
 
-	printk(KERN_DEBUG "SW IRQ subscribe\n");
+;
 	sdio_claim_host(self->func);
 #ifndef CONFIG_CW1200_USE_GPIO_IRQ
 	ret = sdio_claim_irq(self->func, cw1200_sdio_irq_handler);
@@ -185,7 +185,7 @@ static int cw1200_sdio_irq_unsubscribe(struct sbus_priv *self)
 	if (!self->irq_handler)
 		return 0;
 
-	printk(KERN_DEBUG "SW IRQ unsubscribe\n");
+;
 #ifndef CONFIG_CW1200_USE_GPIO_IRQ
 	sdio_claim_host(self->func);
 	ret = sdio_release_irq(self->func);
@@ -225,8 +225,8 @@ static int cw1200_detect_card(const struct cw1200_platform_data *pdata)
 	for (;;) {
 		dev = class_dev_iter_next(&iter);
 		if (!dev) {
-			printk(KERN_ERR "cw1200: %s is not found.\n",
-				pdata->mmc_id);
+//			printk(KERN_ERR "cw1200: %s is not found.\n",
+;
 			break;
 		} else {
 			struct mmc_host *host = container_of(dev,

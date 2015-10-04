@@ -401,8 +401,8 @@ static int snd_nativeinstruments_control_get(struct snd_kcontrol *kcontrol,
 	up_read(&mixer->chip->shutdown_rwsem);
 
 	if (ret < 0) {
-		snd_printk(KERN_ERR
-			   "unable to issue vendor read request (ret = %d)", ret);
+//		snd_printk(KERN_ERR
+;
 		return ret;
 	}
 
@@ -432,8 +432,8 @@ static int snd_nativeinstruments_control_put(struct snd_kcontrol *kcontrol,
 	up_read(&mixer->chip->shutdown_rwsem);
 
 	if (ret < 0) {
-		snd_printk(KERN_ERR
-			   "unable to issue vendor write request (ret = %d)", ret);
+//		snd_printk(KERN_ERR
+;
 		return ret;
 	}
 

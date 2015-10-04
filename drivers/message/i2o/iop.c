@@ -1191,7 +1191,7 @@ static int __init i2o_iop_init(void)
 {
 	int rc = 0;
 
-	printk(KERN_INFO OSM_DESCRIPTION " v" OSM_VERSION "\n");
+;
 
 	if ((rc = i2o_driver_init()))
 		goto exit;

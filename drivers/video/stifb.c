@@ -163,12 +163,12 @@ static int __initdata stifb_bpp_pref[MAX_STI_ROMS];
 # define  DEBUG_OFF() debug_on=0
 # define  DEBUG_ON()  debug_on=1
 # define WRITE_BYTE(value,fb,reg)	do { if (debug_on) \
-						printk(KERN_DEBUG "%30s: WRITE_BYTE(0x%06x) = 0x%02x (old=0x%02x)\n", \
-							__func__, reg, value, READ_BYTE(fb,reg)); 		  \
+//						printk(KERN_DEBUG "%30s: WRITE_BYTE(0x%06x) = 0x%02x (old=0x%02x)\n", \
+;
 					gsc_writeb((value),(fb)->info.fix.mmio_start + (reg)); } while (0)
 # define WRITE_WORD(value,fb,reg)	do { if (debug_on) \
-						printk(KERN_DEBUG "%30s: WRITE_WORD(0x%06x) = 0x%08x (old=0x%08x)\n", \
-							__func__, reg, value, READ_WORD(fb,reg)); 		  \
+//						printk(KERN_DEBUG "%30s: WRITE_WORD(0x%06x) = 0x%08x (old=0x%08x)\n", \
+;
 					gsc_writel((value),(fb)->info.fix.mmio_start + (reg)); } while (0)
 #endif /* DEBUG_STIFB_REGS */
 
@@ -1090,7 +1090,7 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
 
 	fb = kzalloc(sizeof(*fb), GFP_ATOMIC);
 	if (!fb) {
-		printk(KERN_ERR "stifb: Could not allocate stifb structure\n");
+;
 		return -ENODEV;
 	}
 	
@@ -1115,10 +1115,10 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
 		  if the device name contains the string "DX" and tell the
 		  user how to reconfigure the card. */
 		if (strstr(sti->outptr.dev_name, "DX")) {
-		   printk(KERN_WARNING
-"WARNING: stifb framebuffer driver does not support '%s' in double-buffer mode.\n"
-"WARNING: Please disable the double-buffer mode in IPL menu (the PARISC-BIOS).\n",
-			sti->outptr.dev_name);
+//		   printk(KERN_WARNING
+//"WARNING: stifb framebuffer driver does not support '%s' in double-buffer mode.\n"
+//"WARNING: Please disable the double-buffer mode in IPL menu (the PARISC-BIOS).\n",
+;
 		   goto out_err0;
 		}
 		/* fall though */
@@ -1129,8 +1129,8 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
 	case S9000_ID_A1439A:
 		break;
 	default:
-		printk(KERN_WARNING "stifb: '%s' (id: 0x%08x) not supported.\n",
-			sti->outptr.dev_name, fb->id);
+//		printk(KERN_WARNING "stifb: '%s' (id: 0x%08x) not supported.\n",
+;
 		goto out_err0;
 	}
 	
@@ -1196,17 +1196,17 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
 		break;
 	default: 
 #ifdef FALLBACK_TO_1BPP
-	       	printk(KERN_WARNING 
-			"stifb: Unsupported graphics card (id=0x%08x) "
-				"- now trying 1bpp mode instead\n",
-			fb->id);
+//	       	printk(KERN_WARNING 
+//			"stifb: Unsupported graphics card (id=0x%08x) "
+//				"- now trying 1bpp mode instead\n",
+;
 		bpp = 1;	/* default to 1 bpp */
 		break;
 #else
-	       	printk(KERN_WARNING 
-			"stifb: Unsupported graphics card (id=0x%08x) "
-				"- skipping.\n",
-			fb->id);
+//	       	printk(KERN_WARNING 
+//			"stifb: Unsupported graphics card (id=0x%08x) "
+//				"- skipping.\n",
+;
 		goto out_err0;
 #endif
 	}
@@ -1267,14 +1267,14 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
 	stifb_init_display(fb);
 
 	if (!request_mem_region(fix->smem_start, fix->smem_len, "stifb fb")) {
-		printk(KERN_ERR "stifb: cannot reserve fb region 0x%04lx-0x%04lx\n",
-				fix->smem_start, fix->smem_start+fix->smem_len);
+//		printk(KERN_ERR "stifb: cannot reserve fb region 0x%04lx-0x%04lx\n",
+;
 		goto out_err2;
 	}
 		
 	if (!request_mem_region(fix->mmio_start, fix->mmio_len, "stifb mmio")) {
-		printk(KERN_ERR "stifb: cannot reserve sti mmio region 0x%04lx-0x%04lx\n",
-				fix->mmio_start, fix->mmio_start+fix->mmio_len);
+//		printk(KERN_ERR "stifb: cannot reserve sti mmio region 0x%04lx-0x%04lx\n",
+;
 		goto out_err3;
 	}
 
@@ -1283,16 +1283,16 @@ static int __init stifb_init_fb(struct sti_struct *sti, int bpp_pref)
 
 	sti->info = info; /* save for unregister_framebuffer() */
 
-	printk(KERN_INFO 
-	    "fb%d: %s %dx%d-%d frame buffer device, %s, id: %04x, mmio: 0x%04lx\n",
-		fb->info.node, 
-		fix->id,
-		var->xres, 
-		var->yres,
-		var->bits_per_pixel,
-		sti->outptr.dev_name,
-		fb->id, 
-		fix->mmio_start);
+//	printk(KERN_INFO 
+//	    "fb%d: %s %dx%d-%d frame buffer device, %s, id: %04x, mmio: 0x%04lx\n",
+//		fb->info.node, 
+//		fix->id,
+//		var->xres, 
+//		var->yres,
+//		var->bits_per_pixel,
+//		sti->outptr.dev_name,
+//		fb->id, 
+;
 
 	return 0;
 
@@ -1329,7 +1329,7 @@ static int __init stifb_init(void)
 	stifb_setup(option);
 #endif
 	if (stifb_disabled) {
-		printk(KERN_INFO "stifb: disabled by \"stifb=off\" kernel parameter\n");
+;
 		return -ENXIO;
 	}
 	

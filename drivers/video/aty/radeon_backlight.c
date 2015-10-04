@@ -151,7 +151,7 @@ void radeonfb_bl_init(struct radeonfb_info *rinfo)
 
 	pdata = kmalloc(sizeof(struct radeon_bl_privdata), GFP_KERNEL);
 	if (!pdata) {
-		printk("radeonfb: Memory allocation failed\n");
+;
 		goto error;
 	}
 
@@ -164,7 +164,7 @@ void radeonfb_bl_init(struct radeonfb_info *rinfo)
 				       &radeon_bl_data, &props);
 	if (IS_ERR(bd)) {
 		rinfo->info->bl_dev = NULL;
-		printk("radeonfb: Backlight registration failed\n");
+;
 		goto error;
 	}
 
@@ -195,7 +195,7 @@ void radeonfb_bl_init(struct radeonfb_info *rinfo)
 	bd->props.power = FB_BLANK_UNBLANK;
 	backlight_update_status(bd);
 
-	printk("radeonfb: Backlight initialized (%s)\n", name);
+;
 
 	return;
 
@@ -216,6 +216,6 @@ void radeonfb_bl_exit(struct radeonfb_info *rinfo)
 		kfree(pdata);
 		rinfo->info->bl_dev = NULL;
 
-		printk("radeonfb: Backlight unloaded\n");
+;
 	}
 }

@@ -63,7 +63,7 @@ static int tuner_attach_stv6110(struct ngene_channel *chan)
 
 	ctl = dvb_attach(stv6110x_attach, chan->fe, tunerconf, i2c);
 	if (ctl == NULL) {
-		printk(KERN_ERR	DEVICE_NAME ": No STV6110X found!\n");
+;
 		return -ENODEV;
 	}
 
@@ -101,7 +101,7 @@ static int demod_attach_stv0900(struct ngene_channel *chan)
 			(chan->number & 1) == 0 ? STV090x_DEMODULATOR_0
 						: STV090x_DEMODULATOR_1);
 	if (chan->fe == NULL) {
-		printk(KERN_ERR	DEVICE_NAME ": No STV0900 found!\n");
+;
 		return -ENODEV;
 	}
 
@@ -111,7 +111,7 @@ static int demod_attach_stv0900(struct ngene_channel *chan)
 
 	if (!dvb_attach(lnbh24_attach, chan->fe, i2c, 0,
 			0, chan->dev->card_info->lnb[chan->number])) {
-		printk(KERN_ERR DEVICE_NAME ": No LNBH24 found!\n");
+;
 		dvb_frontend_detach(chan->fe);
 		chan->fe = NULL;
 		return -ENODEV;
@@ -177,7 +177,7 @@ static int cineS2_probe(struct ngene_channel *chan)
 	}
 	rc = i2c_transfer(i2c, &i2c_msg, 1);
 	if (rc != 1) {
-		printk(KERN_ERR DEVICE_NAME ": could not setup DPNx\n");
+;
 		return -EIO;
 	}
 
@@ -203,7 +203,7 @@ static int demod_attach_lg330x(struct ngene_channel *chan)
 {
 	chan->fe = dvb_attach(lgdt330x_attach, &aver_m780, &chan->i2c_adapter);
 	if (chan->fe == NULL) {
-		printk(KERN_ERR	DEVICE_NAME ": No LGDT330x found!\n");
+;
 		return -ENODEV;
 	}
 
@@ -399,7 +399,7 @@ MODULE_DEVICE_TABLE(pci, ngene_id_tbl);
 static pci_ers_result_t ngene_error_detected(struct pci_dev *dev,
 					     enum pci_channel_state state)
 {
-	printk(KERN_ERR DEVICE_NAME ": PCI error\n");
+;
 	if (state == pci_channel_io_perm_failure)
 		return PCI_ERS_RESULT_DISCONNECT;
 	if (state == pci_channel_io_frozen)
@@ -409,19 +409,19 @@ static pci_ers_result_t ngene_error_detected(struct pci_dev *dev,
 
 static pci_ers_result_t ngene_link_reset(struct pci_dev *dev)
 {
-	printk(KERN_INFO DEVICE_NAME ": link reset\n");
+;
 	return 0;
 }
 
 static pci_ers_result_t ngene_slot_reset(struct pci_dev *dev)
 {
-	printk(KERN_INFO DEVICE_NAME ": slot reset\n");
+;
 	return 0;
 }
 
 static void ngene_resume(struct pci_dev *dev)
 {
-	printk(KERN_INFO DEVICE_NAME ": resume\n");
+;
 }
 
 static struct pci_error_handlers ngene_errors = {
@@ -442,8 +442,8 @@ static struct pci_driver ngene_pci_driver = {
 
 static __init int module_init_ngene(void)
 {
-	printk(KERN_INFO
-	       "nGene PCIE bridge driver, Copyright (C) 2005-2007 Micronas\n");
+//	printk(KERN_INFO
+;
 	return pci_register_driver(&ngene_pci_driver);
 }
 

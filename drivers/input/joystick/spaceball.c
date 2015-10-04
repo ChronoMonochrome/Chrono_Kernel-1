@@ -128,12 +128,12 @@ static void spaceball_process_packet(struct spaceball* spaceball)
 
 		case 'E':					/* Device error */
 			spaceball->data[spaceball->idx - 1] = 0;
-			printk(KERN_ERR "spaceball: Device error. [%s]\n", spaceball->data + 1);
+;
 			break;
 
 		case '?':					/* Bad command packet */
 			spaceball->data[spaceball->idx - 1] = 0;
-			printk(KERN_ERR "spaceball: Bad command. [%s]\n", spaceball->data + 1);
+;
 			break;
 	}
 

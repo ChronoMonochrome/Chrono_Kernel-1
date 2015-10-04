@@ -124,7 +124,7 @@ int __devinit snd_pmac_tumbler_post_init(void)
 		return -ENXIO;
 
 	if ((err = keywest_ctx->init_client(keywest_ctx)) < 0) {
-		snd_printk(KERN_ERR "tumbler: %i :cannot initialize the MCS\n", err);
+;
 		return err;
 	}
 	return 0;
@@ -141,7 +141,7 @@ int __devinit snd_pmac_keywest_init(struct pmac_keywest *i2c)
 	keywest_ctx = i2c;
 
 	if ((err = i2c_add_driver(&keywest_driver))) {
-		snd_printk(KERN_ERR "cannot register keywest i2c driver\n");
+;
 		return err;
 	}
 	return 0;

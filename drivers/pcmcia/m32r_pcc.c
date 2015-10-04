@@ -213,8 +213,8 @@ void pcc_iorw(int sock, unsigned long port, void *buf, size_t size, size_t nmemb
 #if 1
 	/* addr is no longer used */
 	if ((addr = pcc_get(sock, PCIRC)) & PCIRC_BWERR) {
-	  printk("m32r_pcc: BWERR detected : port 0x%04lx : iosize %dbit\n",
-			 port, size * 8);
+//	  printk("m32r_pcc: BWERR detected : port 0x%04lx : iosize %dbit\n",
+;
 	  pcc_set(sock, PCIRC, addr);
 	}
 #endif
@@ -287,13 +287,13 @@ static int __init is_alive(u_short sock)
 	stat = pcc_get(sock, PCIRC);
 	f = (stat & (PCIRC_CDIN1 | PCIRC_CDIN2)) >> 16;
 	if(!f){
-		printk("m32r_pcc: No Card is detected at socket %d : stat = 0x%08x\n",stat,sock);
+;
 		return 0;
 	}
 	if(f!=3)
-		printk("m32r_pcc: Insertion fail (%.8x) at socket %d\n",stat,sock);
+;
 	else
-		printk("m32r_pcc: Card is Inserted at socket %d(%.8x)\n",sock,stat);
+;
 	return 0;
 }
 
@@ -319,8 +319,8 @@ static void add_pcc_socket(ulong base, int irq, ulong mapaddr,
 		request_region(t->base, 0x20, "m32r-pcc");
 	}
 
-	printk(KERN_INFO "  %s ", pcc[pcc_sockets].name);
-	printk("pcc at 0x%08lx\n", t->base);
+;
+;
 
 	/* Update socket interrupt information, capabilities */
 	t->socket.features |= (SS_CAP_PCCARD | SS_CAP_STATIC_MAP);
@@ -374,7 +374,7 @@ static irqreturn_t pcc_interrupt(int irq, void *dev)
 		if (!active) break;
 	}
 	if (j == 20)
-		printk(KERN_NOTICE "m32r-pcc: infinite loop in interrupt handler\n");
+;
 
 	pr_debug("m32r_pcc: interrupt done\n");
 
@@ -690,7 +690,7 @@ static int __init init_m32r_pcc(void)
 		return ret;
 	}
 
-	printk(KERN_INFO "m32r PCC probe:\n");
+;
 
 	pcc_sockets = 0;
 
@@ -701,7 +701,7 @@ static int __init init_m32r_pcc(void)
 #endif
 
 	if (pcc_sockets == 0) {
-		printk("socket is not found.\n");
+;
 		platform_device_unregister(&pcc_device);
 		platform_driver_unregister(&pcc_driver);
 		return -ENODEV;

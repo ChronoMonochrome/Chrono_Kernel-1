@@ -62,7 +62,7 @@ void ux500_restart(char mode, const char *cmd)
 	unsigned short reset_code;
 	int i ;
 #endif
-	printk("ux500_restart: Call arch_reset(), mode: %c, cmd: %s\n", mode, cmd );
+;
 
 #ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
         if( 'L' == mode || 'U' == mode || 'K' == mode)
@@ -78,7 +78,7 @@ void ux500_restart(char mode, const char *cmd)
 
 	mdelay(1000);
 
-	printk(KERN_ERR "Reboot via PRCMU failed -- System halted\n");
+;
 
 	while (1);
 }

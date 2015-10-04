@@ -245,8 +245,8 @@ static int oldpiix_init_one (struct pci_dev *pdev, const struct pci_device_id *e
 	const struct ata_port_info *ppi[] = { &info, NULL };
 
 	if (!printed_version++)
-		dev_printk(KERN_DEBUG, &pdev->dev,
-			   "version " DRV_VERSION "\n");
+//		dev_printk(KERN_DEBUG, &pdev->dev,
+;
 
 	return ata_pci_bmdma_init_one(pdev, ppi, &oldpiix_sht, NULL, 0);
 }

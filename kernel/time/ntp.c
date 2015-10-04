@@ -381,8 +381,8 @@ int second_overflow(unsigned long secs)
 			leap = -1;
 			time_state = TIME_OOP;
 			time_tai++;
-			printk(KERN_NOTICE
-				"Clock: inserting leap second 23:59:60 UTC\n");
+//			printk(KERN_NOTICE
+;
 		}
 		break;
 	case TIME_DEL:
@@ -392,8 +392,8 @@ int second_overflow(unsigned long secs)
 			leap = 1;
 			time_tai--;
 			time_state = TIME_WAIT;
-			printk(KERN_NOTICE
-				"Clock: deleting leap second 23:59:59 UTC\n");
+//			printk(KERN_NOTICE
+;
 		}
 		break;
 	case TIME_OOP:

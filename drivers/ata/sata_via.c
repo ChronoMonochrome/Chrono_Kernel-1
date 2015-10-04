@@ -360,9 +360,9 @@ static int vt6420_prereset(struct ata_link *link, unsigned long deadline)
 
 	online = (sstatus & 0xf) == 0x3;
 
-	ata_port_printk(ap, KERN_INFO,
-			"SATA link %s 1.5 Gbps (SStatus %X SControl %X)\n",
-			online ? "up" : "down", sstatus, scontrol);
+//	ata_port_printk(ap, KERN_INFO,
+//			"SATA link %s 1.5 Gbps (SStatus %X SControl %X)\n",
+;
 
 	/* SStatus is read one more time */
 	svia_scr_read(link, SCR_STATUS, &sstatus);
@@ -469,7 +469,7 @@ static int vt6420_prepare_host(struct pci_dev *pdev, struct ata_host **r_host)
 
 	rc = pcim_iomap_regions(pdev, 1 << 5, DRV_NAME);
 	if (rc) {
-		dev_printk(KERN_ERR, &pdev->dev, "failed to iomap PCI BAR 5\n");
+;
 		return rc;
 	}
 
@@ -488,14 +488,14 @@ static int vt6421_prepare_host(struct pci_dev *pdev, struct ata_host **r_host)
 
 	*r_host = host = ata_host_alloc_pinfo(&pdev->dev, ppi, ARRAY_SIZE(ppi));
 	if (!host) {
-		dev_printk(KERN_ERR, &pdev->dev, "failed to allocate host\n");
+;
 		return -ENOMEM;
 	}
 
 	rc = pcim_iomap_regions(pdev, 0x3f, DRV_NAME);
 	if (rc) {
-		dev_printk(KERN_ERR, &pdev->dev, "failed to request/iomap "
-			   "PCI BARs (errno=%d)\n", rc);
+//		dev_printk(KERN_ERR, &pdev->dev, "failed to request/iomap "
+;
 		return rc;
 	}
 	host->iomap = pcim_iomap_table(pdev);
@@ -526,7 +526,7 @@ static int vt8251_prepare_host(struct pci_dev *pdev, struct ata_host **r_host)
 
 	rc = pcim_iomap_regions(pdev, 1 << 5, DRV_NAME);
 	if (rc) {
-		dev_printk(KERN_ERR, &pdev->dev, "failed to iomap PCI BAR 5\n");
+;
 		return rc;
 	}
 
@@ -542,15 +542,15 @@ static void svia_configure(struct pci_dev *pdev, int board_id)
 	u8 tmp8;
 
 	pci_read_config_byte(pdev, PCI_INTERRUPT_LINE, &tmp8);
-	dev_printk(KERN_INFO, &pdev->dev, "routed to hard irq line %d\n",
-	       (int) (tmp8 & 0xf0) == 0xf0 ? 0 : tmp8 & 0x0f);
+//	dev_printk(KERN_INFO, &pdev->dev, "routed to hard irq line %d\n",
+;
 
 	/* make sure SATA channels are enabled */
 	pci_read_config_byte(pdev, SATA_CHAN_ENAB, &tmp8);
 	if ((tmp8 & ALL_PORTS) != ALL_PORTS) {
-		dev_printk(KERN_DEBUG, &pdev->dev,
-			   "enabling SATA channels (0x%x)\n",
-			   (int) tmp8);
+//		dev_printk(KERN_DEBUG, &pdev->dev,
+//			   "enabling SATA channels (0x%x)\n",
+;
 		tmp8 |= ALL_PORTS;
 		pci_write_config_byte(pdev, SATA_CHAN_ENAB, tmp8);
 	}
@@ -558,9 +558,9 @@ static void svia_configure(struct pci_dev *pdev, int board_id)
 	/* make sure interrupts for each channel sent to us */
 	pci_read_config_byte(pdev, SATA_INT_GATE, &tmp8);
 	if ((tmp8 & ALL_PORTS) != ALL_PORTS) {
-		dev_printk(KERN_DEBUG, &pdev->dev,
-			   "enabling SATA channel interrupts (0x%x)\n",
-			   (int) tmp8);
+//		dev_printk(KERN_DEBUG, &pdev->dev,
+//			   "enabling SATA channel interrupts (0x%x)\n",
+;
 		tmp8 |= ALL_PORTS;
 		pci_write_config_byte(pdev, SATA_INT_GATE, tmp8);
 	}
@@ -568,9 +568,9 @@ static void svia_configure(struct pci_dev *pdev, int board_id)
 	/* make sure native mode is enabled */
 	pci_read_config_byte(pdev, SATA_NATIVE_MODE, &tmp8);
 	if ((tmp8 & NATIVE_MODE_ALL) != NATIVE_MODE_ALL) {
-		dev_printk(KERN_DEBUG, &pdev->dev,
-			   "enabling SATA channel native mode (0x%x)\n",
-			   (int) tmp8);
+//		dev_printk(KERN_DEBUG, &pdev->dev,
+//			   "enabling SATA channel native mode (0x%x)\n",
+;
 		tmp8 |= NATIVE_MODE_ALL;
 		pci_write_config_byte(pdev, SATA_NATIVE_MODE, tmp8);
 	}
@@ -614,7 +614,7 @@ static int svia_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	const unsigned *bar_sizes;
 
 	if (!printed_version++)
-		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+;
 
 	rc = pcim_enable_device(pdev);
 	if (rc)
@@ -628,11 +628,11 @@ static int svia_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	for (i = 0; i < ARRAY_SIZE(svia_bar_sizes); i++)
 		if ((pci_resource_start(pdev, i) == 0) ||
 		    (pci_resource_len(pdev, i) < bar_sizes[i])) {
-			dev_printk(KERN_ERR, &pdev->dev,
-				"invalid PCI BAR %u (sz 0x%llx, val 0x%llx)\n",
-				i,
-				(unsigned long long)pci_resource_start(pdev, i),
-				(unsigned long long)pci_resource_len(pdev, i));
+//			dev_printk(KERN_ERR, &pdev->dev,
+//				"invalid PCI BAR %u (sz 0x%llx, val 0x%llx)\n",
+//				i,
+//				(unsigned long long)pci_resource_start(pdev, i),
+;
 			return -ENODEV;
 		}
 

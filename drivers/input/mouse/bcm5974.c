@@ -130,8 +130,8 @@ MODULE_AUTHOR("Henrik Rydberg");
 MODULE_DESCRIPTION("Apple USB BCM5974 multitouch driver");
 MODULE_LICENSE("GPL");
 
-#define dprintk(level, format, a...)\
-	{ if (debug >= level) printk(KERN_DEBUG format, ##a); }
+//#define dprintk(level, format, a...)\
+;
 
 static int debug = 1;
 module_param(debug, int, 0644);
@@ -426,10 +426,10 @@ static int report_bt_state(struct bcm5974 *dev, int size)
 	if (size != sizeof(struct bt_data))
 		return -EIO;
 
-	dprintk(7,
-		"bcm5974: button data: %x %x %x %x\n",
-		dev->bt_data->unknown1, dev->bt_data->button,
-		dev->bt_data->rel_x, dev->bt_data->rel_y);
+//	dprintk(7,
+//		"bcm5974: button data: %x %x %x %x\n",
+//		dev->bt_data->unknown1, dev->bt_data->button,
+;
 
 	input_report_key(dev->input, BTN_LEFT, dev->bt_data->button);
 	input_sync(dev->input);
@@ -486,10 +486,10 @@ static int report_tp_state(struct bcm5974 *dev, int size)
 		raw_x = raw2int(f->abs_x);
 		raw_y = raw2int(f->abs_y);
 
-		dprintk(9,
-			"bcm5974: "
-			"raw: p: %+05d w: %+05d x: %+05d y: %+05d n: %d\n",
-			raw_p, raw_w, raw_x, raw_y, raw_n);
+//		dprintk(9,
+//			"bcm5974: "
+//			"raw: p: %+05d w: %+05d x: %+05d y: %+05d n: %d\n",
+;
 
 		ptest = int2bound(&c->p, raw_p);
 		origin = raw2int(f->origin);
@@ -534,10 +534,10 @@ static int report_tp_state(struct bcm5974 *dev, int size)
 		input_report_abs(input, ABS_X, abs_x);
 		input_report_abs(input, ABS_Y, abs_y);
 
-		dprintk(8,
-			"bcm5974: abs: p: %+05d w: %+05d x: %+05d y: %+05d "
-			"nmin: %d nmax: %d n: %d ibt: %d\n", abs_p, abs_w,
-			abs_x, abs_y, nmin, nmax, dev->fingers, ibt);
+//		dprintk(8,
+//			"bcm5974: abs: p: %+05d w: %+05d x: %+05d y: %+05d "
+//			"nmin: %d nmax: %d n: %d ibt: %d\n", abs_p, abs_w,
+;
 
 	}
 
@@ -600,8 +600,8 @@ static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
 		goto out;
 	}
 
-	dprintk(2, "bcm5974: switched to %s mode.\n",
-		on ? "wellspring" : "normal");
+//	dprintk(2, "bcm5974: switched to %s mode.\n",
+;
 
  out:
 	kfree(data);
@@ -628,8 +628,8 @@ static void bcm5974_irq_button(struct urb *urb)
 	}
 
 	if (report_bt_state(dev, dev->bt_urb->actual_length))
-		dprintk(1, "bcm5974: bad button package, length: %d\n",
-			dev->bt_urb->actual_length);
+//		dprintk(1, "bcm5974: bad button package, length: %d\n",
+;
 
 exit:
 	error = usb_submit_urb(dev->bt_urb, GFP_ATOMIC);
@@ -661,8 +661,8 @@ static void bcm5974_irq_trackpad(struct urb *urb)
 		goto exit;
 
 	if (report_tp_state(dev, dev->tp_urb->actual_length))
-		dprintk(1, "bcm5974: bad trackpad package, length: %d\n",
-			dev->tp_urb->actual_length);
+//		dprintk(1, "bcm5974: bad trackpad package, length: %d\n",
+;
 
 exit:
 	error = usb_submit_urb(dev->tp_urb, GFP_ATOMIC);
@@ -694,7 +694,7 @@ static int bcm5974_start_traffic(struct bcm5974 *dev)
 
 	error = bcm5974_wellspring_mode(dev, true);
 	if (error) {
-		dprintk(1, "bcm5974: mode switch failed\n");
+;
 		goto err_out;
 	}
 

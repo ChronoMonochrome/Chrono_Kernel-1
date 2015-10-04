@@ -36,7 +36,7 @@ int aoa_alsa_init(char *name, struct module *mod, struct device *dev)
 	strlcpy(alsa_card->mixername, name, sizeof(alsa_card->mixername));
 	err = snd_card_register(aoa_card->alsa_card);
 	if (err < 0) {
-		printk(KERN_ERR "snd-aoa: couldn't register alsa card\n");
+;
 		snd_card_free(aoa_card->alsa_card);
 		aoa_card = NULL;
 		return err;
@@ -70,15 +70,15 @@ int aoa_snd_device_new(snd_device_type_t type,
 
 	err = snd_device_new(card, type, device_data, ops);
 	if (err) {
-		printk(KERN_ERR "snd-aoa: failed to create snd device (%d)\n", err);
+;
 		return err;
 	}
 	err = snd_device_register(card, device_data);
 	if (err) {
-		printk(KERN_ERR "snd-aoa: failed to register "
-				"snd device (%d)\n", err);
-		printk(KERN_ERR "snd-aoa: have you forgotten the "
-				"dev_register callback?\n");
+//		printk(KERN_ERR "snd-aoa: failed to register "
+;
+//		printk(KERN_ERR "snd-aoa: have you forgotten the "
+;
 		snd_device_free(card, device_data);
 	}
 	return err;
@@ -93,8 +93,8 @@ int aoa_snd_ctl_add(struct snd_kcontrol* control)
 
 	err = snd_ctl_add(aoa_card->alsa_card, control);
 	if (err)
-		printk(KERN_ERR "snd-aoa: failed to add alsa control (%d)\n",
-		       err);
+//		printk(KERN_ERR "snd-aoa: failed to add alsa control (%d)\n",
+;
 	return err;
 }
 EXPORT_SYMBOL_GPL(aoa_snd_ctl_add);

@@ -178,7 +178,7 @@ static irqreturn_t amikbd_interrupt(int irq, void *data)
 
 		input_sync(dev);
 	} else				/* scancodes >= 0x78 are error codes */
-		printk(amikbd_messages[scancode - 0x78]);
+;
 
 	return IRQ_HANDLED;
 }

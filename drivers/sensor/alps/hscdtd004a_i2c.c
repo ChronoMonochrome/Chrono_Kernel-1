@@ -133,9 +133,9 @@ static int hscd_i2c_writem(char *txData, int length)
     };
 
 #ifdef ALPS_DEBUG
-    printk("[HSCD] i2c_writem : ");
-    for (i=0; i<length;i++) printk("0X%02X, ", txData[i]);
-    printk("\n");
+;
+;
+;
 #endif
 
     do {
@@ -156,7 +156,7 @@ static int hscd_power_on(void)
 {
 	int err = 0;
 
-	printk(KERN_INFO "%s\n", __func__);
+;
 
 	if (hscd_power.regulator_vdd) {
 		err = regulator_enable(hscd_power.regulator_vdd);
@@ -183,7 +183,7 @@ static int hscd_power_off(void)
 {
 	int err = 0;
 
-	printk(KERN_INFO "%s\n", __func__);
+;
 
 	if (hscd_power.regulator_vdd) {
 		err = regulator_disable(hscd_power.regulator_vdd);
@@ -213,7 +213,7 @@ int hscd_self_test_A(void)
     cr1[0] = HSCD_CTRL1;
     if (hscd_i2c_readm(cr1, 1)) return 1;
 #ifdef ALPS_DEBUG
-    else printk("[HSCD] Control resister1 value, %02X\n", cr1[0]);
+;
 #endif
     mdelay(1);
 
@@ -231,10 +231,10 @@ int hscd_self_test_A(void)
     sx[0] = HSCD_STBA;
     if (hscd_i2c_readm(sx, 1)) return 1;
 #ifdef ALPS_DEBUG
-    else printk("[HSCD] self test A register value, %02X\n", sx[0]);
+;
 #endif
     if (sx[0] != 0x55) {
-        printk("error: self-test-A, initial value is %02X\n", sx[0]);
+;
         return 2;
     }
 
@@ -248,10 +248,10 @@ int hscd_self_test_A(void)
     sx[0] = HSCD_STBA;
     if (hscd_i2c_readm(sx, 1)) return 1;
 #ifdef ALPS_DEBUG
-    else printk("[HSCD] self test A register value, %02X\n", sx[0]);
+;
 #endif
     if (sx[0] != 0xAA) {
-        printk("error: self-test-A, 1st value is %02X\n", sx[0]);
+;
         return 3;
     }
     mdelay(3);
@@ -260,10 +260,10 @@ int hscd_self_test_A(void)
     sx[0] = HSCD_STBA;
     if (hscd_i2c_readm(sx, 1)) return 1;
 #ifdef ALPS_DEBUG
-    else printk("[HSCD] self test A register value, %02X\n", sx[0]);
+;
 #endif
     if (sx[0] != 0x55) {
-        printk("error: self-test-A, 2nd value is %02X\n", sx[0]);
+;
         return 4;
     }
 
@@ -288,7 +288,7 @@ int hscd_self_test_B(void)
     cr1[0] = HSCD_CTRL1;
     if (hscd_i2c_readm(cr1, 1)) return 1;
 #ifdef ALPS_DEBUG
-    else printk("[HSCD] Control resister1 value, %02X\n", cr1[0]);
+;
 #endif
     mdelay(1);
 
@@ -302,10 +302,10 @@ int hscd_self_test_B(void)
     sx[0] = HSCD_STBB;
     if (hscd_i2c_readm(sx, 1)) return 1;
 #ifdef ALPS_DEBUG
-    else printk("[HSCD] self test B register value, %02X\n", sx[0]);
+;
 #endif
     if (sx[0] != 0x55) {
-        printk("error: self-test-B, initial value is %02X\n", sx[0]);
+;
         return 2;
     }
 
@@ -332,16 +332,16 @@ int hscd_self_test_B(void)
             break;
         }
 #ifdef ALPS_DEBUG
-        else printk("[HSCD] self test B register value, %02X\n", sx[0]);
+;
 #endif
         if (sx[0] != 0xAA) {
             if ((sx[0] < 0x01) || (sx[0] > 0x07)) {
-                printk("error: self-test-B, 1st value is %02X\n", sx[0]);
+;
                 rc = 3;
                 break;
             }
             else {
-                printk("error: self-test-B, 1st value is %02X\n", sx[0]);
+;
                 rc = (int)(sx[0] | 0x10);
                 break;
             }
@@ -355,10 +355,10 @@ int hscd_self_test_B(void)
             break;
         }
 #ifdef ALPS_DEBUG
-        else printk("[HSCD] self test B register value, %02X\n", sx[0]);
+;
 #endif
         if (sx[0] != 0x55) {
-            printk("error: self-test-B, 2nd value is %02X\n", sx[0]);
+;
             rc = 4;
             break;
         }
@@ -390,7 +390,7 @@ int hscd_get_magnetic_field_data(int *xyz)
 
 #ifdef ALPS_DEBUG
     /*** DEBUG OUTPUT - REMOVE ***/
-    printk("Mag_I2C, x:%d, y:%d, z:%d\n",xyz[0], xyz[1], xyz[2]);
+;
     /*** <end> DEBUG OUTPUT - REMOVE ***/
 #endif
 
@@ -431,7 +431,7 @@ static void hscd_register_init(void)
     u8  buf[2];
 
 #ifdef ALPS_DEBUG
-    printk("[HSCD] register_init\n");
+;
 #endif
 
     buf[0] = HSCD_CTRL3;
@@ -442,7 +442,7 @@ static void hscd_register_init(void)
     atomic_set(&delay, 100);
     hscd_activate(0, 1, atomic_read(&delay));
     hscd_get_magnetic_field_data(v);
-    printk("[HSCD] x:%d y:%d z:%d\n", v[0], v[1], v[2]);
+;
     hscd_activate(0, 0, atomic_read(&delay));
 }
 
@@ -522,7 +522,7 @@ static ssize_t adc_show(struct device *dev,
 static ssize_t mag_raw_data_read(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	printk("mag_raw_data_read~~~\n");
+;
 	int xyz[3] = {0, };
 
 	if (!atomic_read(&flgEna))
@@ -565,7 +565,7 @@ static int hscd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 	this_client = client;
 	
-    printk("[HSCD] probe\n");
+;
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
         dev_err(&client->adapter->dev, "client not i2c capable\n");
         return -ENOMEM;
@@ -652,7 +652,7 @@ exit:
 
 static int __devexit hscd_remove(struct i2c_client *client)
 {
-    printk("[HSCD] remove\n");
+;
 		hscd_activate(0, 0, atomic_read(&delay));
 #ifdef CONFIG_HAS_EARLYSUSPEND
     unregister_early_suspend(&hscd_early_suspend_handler);
@@ -664,7 +664,7 @@ static int __devexit hscd_remove(struct i2c_client *client)
 static int hscd_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 #ifdef ALPS_DEBUG
-    printk("[HSCD] suspend\n");
+;
 #endif
     atomic_set(&flgSuspend, 1);
     hscd_activate(0, 0, atomic_read(&delay));
@@ -674,7 +674,7 @@ static int hscd_suspend(struct i2c_client *client, pm_message_t mesg)
 static int hscd_resume(struct i2c_client *client)
 {
 #ifdef ALPS_DEBUG
-    printk("[HSCD] resume\n");
+;
 #endif
     atomic_set(&flgSuspend, 0);
     hscd_activate(0, atomic_read(&flgEna), atomic_read(&delay));
@@ -685,7 +685,7 @@ static int hscd_resume(struct i2c_client *client)
 static void hscd_early_suspend(struct early_suspend *handler)
 {
 #ifdef ALPS_DEBUG
-    printk("[HSCD] early_suspend\n");
+;
 #endif
     hscd_suspend(client_hscd, PMSG_SUSPEND);
 }
@@ -693,7 +693,7 @@ static void hscd_early_suspend(struct early_suspend *handler)
 static void hscd_early_resume(struct early_suspend *handler)
 {
 #ifdef ALPS_DEBUG
-    printk("[HSCD] early_resume\n");
+;
 #endif
     hscd_resume(client_hscd);
 }
@@ -732,7 +732,7 @@ static int __init hscd_init(void)
 static void __exit hscd_exit(void)
 {
 #ifdef ALPS_DEBUG
-    printk("[HSCD] exit\n");
+;
 #endif
 	i2c_del_driver(&hscd_driver);
 }

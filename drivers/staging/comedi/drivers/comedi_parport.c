@@ -282,7 +282,7 @@ static int parport_intr_cmd(struct comedi_device *dev,
 static int parport_intr_cancel(struct comedi_device *dev,
 			       struct comedi_subdevice *s)
 {
-	printk(KERN_DEBUG "parport_intr_cancel()\n");
+;
 
 	devpriv->c_data &= ~0x10;
 	outb(devpriv->c_data, dev->iobase + PARPORT_C);
@@ -298,7 +298,7 @@ static irqreturn_t parport_interrupt(int irq, void *d)
 	struct comedi_subdevice *s = dev->subdevices + 3;
 
 	if (!devpriv->enable_irq) {
-		printk(KERN_ERR "comedi_parport: bogus irq, ignored\n");
+;
 		return IRQ_NONE;
 	}
 
@@ -318,20 +318,20 @@ static int parport_attach(struct comedi_device *dev,
 	struct comedi_subdevice *s;
 
 	iobase = it->options[0];
-	printk(KERN_INFO "comedi%d: parport: 0x%04lx ", dev->minor, iobase);
+;
 	if (!request_region(iobase, PARPORT_SIZE, "parport (comedi)")) {
-		printk(KERN_ERR "I/O port conflict\n");
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
 
 	irq = it->options[1];
 	if (irq) {
-		printk(KERN_INFO " irq=%u", irq);
+;
 		ret = request_irq(irq, parport_interrupt, 0, "comedi_parport",
 				  dev);
 		if (ret < 0) {
-			printk(KERN_ERR " irq not available\n");
+;
 			return -EINVAL;
 		}
 		dev->irq = irq;
@@ -391,13 +391,13 @@ static int parport_attach(struct comedi_device *dev,
 	devpriv->c_data = 0;
 	outb(devpriv->c_data, dev->iobase + PARPORT_C);
 
-	printk(KERN_INFO "\n");
+;
 	return 1;
 }
 
 static int parport_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: parport: remove\n", dev->minor);
+;
 
 	if (dev->iobase)
 		release_region(dev->iobase, PARPORT_SIZE);

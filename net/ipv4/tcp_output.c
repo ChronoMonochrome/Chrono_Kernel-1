@@ -2161,7 +2161,7 @@ int tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb)
 #if FASTRETRANS_DEBUG > 0
 		if (TCP_SKB_CB(skb)->sacked & TCPCB_SACKED_RETRANS) {
 			if (net_ratelimit())
-				printk(KERN_DEBUG "retrans_out leaked.\n");
+;
 		}
 #endif
 		if (!tp->retrans_out)
@@ -2393,7 +2393,7 @@ int tcp_send_synack(struct sock *sk)
 
 	skb = tcp_write_queue_head(sk);
 	if (skb == NULL || !(TCP_SKB_CB(skb)->flags & TCPHDR_SYN)) {
-		printk(KERN_DEBUG "tcp_send_synack: wrong queue state\n");
+;
 		return -EFAULT;
 	}
 	if (!(TCP_SKB_CB(skb)->flags & TCPHDR_ACK)) {

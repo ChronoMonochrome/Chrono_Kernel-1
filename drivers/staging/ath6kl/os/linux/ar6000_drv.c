@@ -520,7 +520,7 @@ ar6000_dbglog_get_debug_logs(struct ar6_softc *ar)
     AR6000_SPIN_UNLOCK(&ar->arLock, 0);
 
     debug_hdr_ptr = dbglog_get_debug_hdr_ptr(ar);
-    printk("debug_hdr_ptr: 0x%x\n", debug_hdr_ptr);
+;
 
     /* Get the contents of the ring buffer */
     if (debug_hdr_ptr) {
@@ -913,7 +913,7 @@ ar6000_softmac_update(struct ar6_softc *ar, u8 *eeprom_data, size_t size)
 	AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Invalid Target Type\n"));
         return;
     }
-	printk(KERN_DEBUG "MAC from EEPROM %pM\n", ptr_mac);
+;
 
     /* create a random MAC in case we cannot read file from system */
     ptr_mac[0] = 0;
@@ -942,7 +942,7 @@ ar6000_softmac_update(struct ar6_softc *ar, u8 *eeprom_data, size_t size)
         }
         A_RELEASE_FIRMWARE(softmac_entry);
     }
-	printk(KERN_DEBUG "MAC from %s %pM\n", source, ptr_mac);
+;
    calculate_crc(ar->arTargetType, eeprom_data);
 }
 #endif /* SOFTMAC_FILE_USED */
@@ -1682,7 +1682,7 @@ ar6000_avail_ev(void *context, void *hif_handle)
 
     dev = alloc_netdev_mq(0, "wlan%d", ether_setup, 1);
     if (!dev) {
-        printk(KERN_CRIT "AR6K: no memory for network device instance\n");
+;
         ar6k_cfg80211_deinit(ar);
         return A_ERROR;
     }
@@ -1832,7 +1832,7 @@ static void ar6000_target_failure(void *Instance, int Status)
 
     if (Status != 0) {
 
-        printk(KERN_ERR "ar6000_target_failure: target asserted \n");
+;
 
         if (timer_pending(&ar->arHBChallengeResp.timer)) {
             A_UNTIMEOUT(&ar->arHBChallengeResp.timer);
@@ -6071,7 +6071,7 @@ void ar6000_peer_event(
 
     for (pos=0;pos<6;pos++)
         printk("%02x: ",*(macAddr+pos));
-    printk("\n");
+;
 }
 
 #ifdef HTC_TEST_SEND_PKTS

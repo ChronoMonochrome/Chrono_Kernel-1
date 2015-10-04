@@ -54,11 +54,11 @@ static int ecryptfs_acquire_free_msg_ctx(struct ecryptfs_msg_ctx **msg_ctx)
 	int rc;
 
 	if (list_empty(&ecryptfs_msg_ctx_free_list)) {
-		printk(KERN_WARNING "%s: The eCryptfs free "
-		       "context list is empty.  It may be helpful to "
-		       "specify the ecryptfs_message_buf_len "
-		       "parameter to be greater than the current "
-		       "value of [%d]\n", __func__, ecryptfs_message_buf_len);
+//		printk(KERN_WARNING "%s: The eCryptfs free "
+//		       "context list is empty.  It may be helpful to "
+//		       "specify the ecryptfs_message_buf_len "
+//		       "parameter to be greater than the current "
+;
 		rc = -ENOMEM;
 		goto out;
 	}
@@ -155,8 +155,8 @@ ecryptfs_spawn_daemon(struct ecryptfs_daemon **daemon, uid_t euid,
 	(*daemon) = kzalloc(sizeof(**daemon), GFP_KERNEL);
 	if (!(*daemon)) {
 		rc = -ENOMEM;
-		printk(KERN_ERR "%s: Failed to allocate [%zd] bytes of "
-		       "GFP_KERNEL memory\n", __func__, sizeof(**daemon));
+//		printk(KERN_ERR "%s: Failed to allocate [%zd] bytes of "
+;
 		goto out;
 	}
 	(*daemon)->euid = euid;
@@ -188,9 +188,9 @@ int ecryptfs_exorcise_daemon(struct ecryptfs_daemon *daemon)
 	if ((daemon->flags & ECRYPTFS_DAEMON_IN_READ)
 	    || (daemon->flags & ECRYPTFS_DAEMON_IN_POLL)) {
 		rc = -EBUSY;
-		printk(KERN_WARNING "%s: Attempt to destroy daemon with pid "
-		       "[0x%p], but it is in the midst of a read or a poll\n",
-		       __func__, daemon->pid);
+//		printk(KERN_WARNING "%s: Attempt to destroy daemon with pid "
+//		       "[0x%p], but it is in the midst of a read or a poll\n",
+;
 		mutex_unlock(&daemon->mux);
 		goto out;
 	}
@@ -198,8 +198,8 @@ int ecryptfs_exorcise_daemon(struct ecryptfs_daemon *daemon)
 				 &daemon->msg_ctx_out_queue, daemon_out_list) {
 		list_del(&msg_ctx->daemon_out_list);
 		daemon->num_queued_msg_ctx--;
-		printk(KERN_WARNING "%s: Warning: dropping message that is in "
-		       "the out queue of a dying daemon\n", __func__);
+//		printk(KERN_WARNING "%s: Warning: dropping message that is in "
+;
 		ecryptfs_msg_ctx_alloc_to_free(msg_ctx);
 	}
 	hlist_del(&daemon->euid_chain);
@@ -236,8 +236,8 @@ int ecryptfs_process_quit(uid_t euid, struct user_namespace *user_ns,
 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, user_ns);
 	if (rc || !daemon) {
 		rc = -EINVAL;
-		printk(KERN_ERR "Received request from user [%d] to "
-		       "unregister unrecognized daemon [0x%p]\n", euid, pid);
+//		printk(KERN_ERR "Received request from user [%d] to "
+;
 		goto out_unlock;
 	}
 	rc = ecryptfs_exorcise_daemon(daemon);
@@ -284,8 +284,8 @@ int ecryptfs_process_response(struct ecryptfs_message *msg, uid_t euid,
 
 	if (msg->index >= ecryptfs_message_buf_len) {
 		rc = -EINVAL;
-		printk(KERN_ERR "%s: Attempt to reference "
-		       "context buffer at index [%d]; maximum "
+//		printk(KERN_ERR "%s: Attempt to reference "
+;
 		       "allowable is [%d]\n", __func__, msg->index,
 		       (ecryptfs_message_buf_len - 1));
 		goto out;
@@ -297,8 +297,8 @@ int ecryptfs_process_response(struct ecryptfs_message *msg, uid_t euid,
 	nsproxy = task_nsproxy(msg_ctx->task);
 	if (nsproxy == NULL) {
 		rc = -EBADMSG;
-		printk(KERN_ERR "%s: Receiving process is a zombie. Dropping "
-		       "message.\n", __func__);
+//		printk(KERN_ERR "%s: Receiving process is a zombie. Dropping "
+;
 		rcu_read_unlock();
 		mutex_unlock(&ecryptfs_daemon_hash_mux);
 		goto wake_up;
@@ -310,41 +310,41 @@ int ecryptfs_process_response(struct ecryptfs_message *msg, uid_t euid,
 	mutex_unlock(&ecryptfs_daemon_hash_mux);
 	if (rc) {
 		rc = -EBADMSG;
-		printk(KERN_WARNING "%s: User [%d] received a "
-		       "message response from process [0x%p] but does "
-		       "not have a registered daemon\n", __func__,
-		       ctx_euid, pid);
+//		printk(KERN_WARNING "%s: User [%d] received a "
+//		       "message response from process [0x%p] but does "
+//		       "not have a registered daemon\n", __func__,
+;
 		goto wake_up;
 	}
 	if (ctx_euid != euid) {
 		rc = -EBADMSG;
-		printk(KERN_WARNING "%s: Received message from user "
-		       "[%d]; expected message from user [%d]\n", __func__,
+//		printk(KERN_WARNING "%s: Received message from user "
+;
 		       euid, ctx_euid);
 		goto unlock;
 	}
 	if (tsk_user_ns != user_ns) {
 		rc = -EBADMSG;
-		printk(KERN_WARNING "%s: Received message from user_ns "
-		       "[0x%p]; expected message from user_ns [0x%p]\n",
+//		printk(KERN_WARNING "%s: Received message from user_ns "
+;
 		       __func__, user_ns, tsk_user_ns);
 		goto unlock;
 	}
 	if (daemon->pid != pid) {
 		rc = -EBADMSG;
-		printk(KERN_ERR "%s: User [%d] sent a message response "
-		       "from an unrecognized process [0x%p]\n",
-		       __func__, ctx_euid, pid);
+//		printk(KERN_ERR "%s: User [%d] sent a message response "
+//		       "from an unrecognized process [0x%p]\n",
+;
 		goto unlock;
 	}
 	if (msg_ctx->state != ECRYPTFS_MSG_CTX_STATE_PENDING) {
 		rc = -EINVAL;
-		printk(KERN_WARNING "%s: Desired context element is not "
-		       "pending a response\n", __func__);
+//		printk(KERN_WARNING "%s: Desired context element is not "
+;
 		goto unlock;
 	} else if (msg_ctx->counter != seq) {
 		rc = -EINVAL;
-		printk(KERN_WARNING "%s: Invalid message sequence; "
+;
 		       "expected [%d]; received [%d]\n", __func__,
 		       msg_ctx->counter, seq);
 		goto unlock;
@@ -353,8 +353,8 @@ int ecryptfs_process_response(struct ecryptfs_message *msg, uid_t euid,
 	msg_ctx->msg = kmalloc(msg_size, GFP_KERNEL);
 	if (!msg_ctx->msg) {
 		rc = -ENOMEM;
-		printk(KERN_ERR "%s: Failed to allocate [%zd] bytes of "
-		       "GFP_KERNEL memory\n", __func__, msg_size);
+//		printk(KERN_ERR "%s: Failed to allocate [%zd] bytes of "
+;
 		goto unlock;
 	}
 	memcpy(msg_ctx->msg, msg, msg_size);
@@ -389,16 +389,16 @@ ecryptfs_send_message_locked(char *data, int data_len, u8 msg_type,
 	rc = ecryptfs_find_daemon_by_euid(&daemon, euid, current_user_ns());
 	if (rc || !daemon) {
 		rc = -ENOTCONN;
-		printk(KERN_ERR "%s: User [%d] does not have a daemon "
-		       "registered\n", __func__, euid);
+//		printk(KERN_ERR "%s: User [%d] does not have a daemon "
+;
 		goto out;
 	}
 	mutex_lock(&ecryptfs_msg_ctx_lists_mux);
 	rc = ecryptfs_acquire_free_msg_ctx(msg_ctx);
 	if (rc) {
 		mutex_unlock(&ecryptfs_msg_ctx_lists_mux);
-		printk(KERN_WARNING "%s: Could not claim a free "
-		       "context element\n", __func__);
+//		printk(KERN_WARNING "%s: Could not claim a free "
+;
 		goto out;
 	}
 	ecryptfs_msg_ctx_free_to_alloc(*msg_ctx);
@@ -407,8 +407,8 @@ ecryptfs_send_message_locked(char *data, int data_len, u8 msg_type,
 	rc = ecryptfs_send_miscdev(data, data_len, *msg_ctx, msg_type, 0,
 				   daemon);
 	if (rc)
-		printk(KERN_ERR "%s: Error attempting to send message to "
-		       "userspace daemon; rc = [%d]\n", __func__, rc);
+//		printk(KERN_ERR "%s: Error attempting to send message to "
+;
 out:
 	return rc;
 }
@@ -480,9 +480,9 @@ int __init ecryptfs_init_messaging(void)
 
 	if (ecryptfs_number_of_users > ECRYPTFS_MAX_NUM_USERS) {
 		ecryptfs_number_of_users = ECRYPTFS_MAX_NUM_USERS;
-		printk(KERN_WARNING "%s: Specified number of users is "
-		       "too large, defaulting to [%d] users\n", __func__,
-		       ecryptfs_number_of_users);
+//		printk(KERN_WARNING "%s: Specified number of users is "
+//		       "too large, defaulting to [%d] users\n", __func__,
+;
 	}
 	mutex_init(&ecryptfs_daemon_hash_mux);
 	mutex_lock(&ecryptfs_daemon_hash_mux);
@@ -494,7 +494,7 @@ int __init ecryptfs_init_messaging(void)
 				       GFP_KERNEL);
 	if (!ecryptfs_daemon_hash) {
 		rc = -ENOMEM;
-		printk(KERN_ERR "%s: Failed to allocate memory\n", __func__);
+;
 		mutex_unlock(&ecryptfs_daemon_hash_mux);
 		goto out;
 	}
@@ -506,7 +506,7 @@ int __init ecryptfs_init_messaging(void)
 				       GFP_KERNEL);
 	if (!ecryptfs_msg_ctx_arr) {
 		rc = -ENOMEM;
-		printk(KERN_ERR "%s: Failed to allocate memory\n", __func__);
+;
 		goto out;
 	}
 	mutex_init(&ecryptfs_msg_ctx_lists_mux);
@@ -563,8 +563,8 @@ void ecryptfs_release_messaging(void)
 					     euid_chain) {
 				rc = ecryptfs_exorcise_daemon(daemon);
 				if (rc)
-					printk(KERN_ERR "%s: Error whilst "
-					       "attempting to destroy daemon; "
+//					printk(KERN_ERR "%s: Error whilst "
+;
 					       "rc = [%d]. Dazed and confused, "
 					       "but trying to continue.\n",
 					       __func__, rc);

@@ -482,8 +482,8 @@ snd_harmony_playback_pointer(struct snd_pcm_substream *ss)
 	played = pcuradd - h->pbuf.addr;
 
 #ifdef HARMONY_DEBUG
-	printk(KERN_DEBUG PFX "playback_pointer is 0x%lx-0x%lx = %d bytes\n", 
-	       pcuradd, h->pbuf.addr, played);	
+//	printk(KERN_DEBUG PFX "playback_pointer is 0x%lx-0x%lx = %d bytes\n", 
+;
 #endif
 
 	if (pcuradd > h->pbuf.addr + h->pbuf.size) {
@@ -511,8 +511,8 @@ snd_harmony_capture_pointer(struct snd_pcm_substream *ss)
         caught = rcuradd - h->cbuf.addr;
 
 #ifdef HARMONY_DEBUG
-        printk(KERN_DEBUG PFX "capture_pointer is 0x%lx-0x%lx = %d bytes\n",
-               rcuradd, h->cbuf.addr, caught);
+//        printk(KERN_DEBUG PFX "capture_pointer is 0x%lx-0x%lx = %d bytes\n",
+;
 #endif
 
         if (rcuradd > h->cbuf.addr + h->cbuf.size) {
@@ -654,7 +654,7 @@ snd_harmony_pcm_init(struct snd_harmony *h)
 				  BUF_SIZE*GRAVEYARD_BUFS,
 				  &h->gdma);
 	if (err < 0) {
-		printk(KERN_ERR PFX "cannot allocate graveyard buffer!\n");
+;
 		return err;
 	}
 	
@@ -664,7 +664,7 @@ snd_harmony_pcm_init(struct snd_harmony *h)
 				  BUF_SIZE*SILENCE_BUFS,
 				  &h->sdma);
 	if (err < 0) {
-		printk(KERN_ERR PFX "cannot allocate silence buffer!\n");
+;
 		return err;
 	}
 
@@ -674,7 +674,7 @@ snd_harmony_pcm_init(struct snd_harmony *h)
 						    MAX_BUF_SIZE, 
 						    MAX_BUF_SIZE);
 	if (err < 0) {
-		printk(KERN_ERR PFX "buffer allocation error: %d\n", err);
+;
 		return err;
 	}
 
@@ -938,8 +938,8 @@ snd_harmony_create(struct snd_card *card,
 	h->irq = -1;
 	h->iobase = ioremap_nocache(padev->hpa.start, HARMONY_SIZE);
 	if (h->iobase == NULL) {
-		printk(KERN_ERR PFX "unable to remap hpa 0x%lx\n",
-		       (unsigned long)padev->hpa.start);
+//		printk(KERN_ERR PFX "unable to remap hpa 0x%lx\n",
+;
 		err = -EBUSY;
 		goto free_and_ret;
 	}
@@ -947,8 +947,8 @@ snd_harmony_create(struct snd_card *card,
 	err = request_irq(padev->irq, snd_harmony_interrupt, 0,
 			  "harmony", h);
 	if (err) {
-		printk(KERN_ERR PFX "could not obtain interrupt %d",
-		       padev->irq);
+//		printk(KERN_ERR PFX "could not obtain interrupt %d",
+;
 		goto free_and_ret;
 	}
 	h->irq = padev->irq;

@@ -100,8 +100,8 @@ static void umc_set_speeds(u8 speeds[])
 	}
 	outb_p(0xa5, 0x108); /* disable umc */
 
-	printk("umc8672: drive speeds [0 to 11]: %d %d %d %d\n",
-		speeds[0], speeds[1], speeds[2], speeds[3]);
+//	printk("umc8672: drive speeds [0 to 11]: %d %d %d %d\n",
+;
 }
 
 static void umc_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
@@ -110,12 +110,12 @@ static void umc_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 	unsigned long uninitialized_var(flags);
 	const u8 pio = drive->pio_mode - XFER_PIO_0;
 
-	printk("%s: setting umc8672 to PIO mode%d (speed %d)\n",
-		drive->name, pio, pio_to_umc[pio]);
+//	printk("%s: setting umc8672 to PIO mode%d (speed %d)\n",
+;
 	if (mate)
 		spin_lock_irqsave(&mate->lock, flags);
 	if (mate && mate->handler) {
-		printk(KERN_ERR "umc8672: other interface is busy: exiting tune_umc()\n");
+;
 	} else {
 		current_speeds[drive->name[2] - 'a'] = pio_to_umc[pio];
 		umc_set_speeds(current_speeds);
@@ -141,14 +141,14 @@ static int __init umc8672_probe(void)
 	unsigned long flags;
 
 	if (!request_region(0x108, 2, "umc8672")) {
-		printk(KERN_ERR "umc8672: ports 0x108-0x109 already in use.\n");
+;
 		return 1;
 	}
 	local_irq_save(flags);
 	outb_p(0x5A, 0x108); /* enable umc */
 	if (in_umc (0xd5) != 0xa0) {
 		local_irq_restore(flags);
-		printk(KERN_ERR "umc8672: not found\n");
+;
 		release_region(0x108, 2);
 		return 1;
 	}

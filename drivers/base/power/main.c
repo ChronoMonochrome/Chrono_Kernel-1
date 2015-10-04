@@ -352,9 +352,9 @@ static int pm_noirq_op(struct device *dev,
 	if (initcall_debug) {
 		rettime = ktime_get();
 		delta = ktime_sub(rettime, calltime);
-		printk("initcall %s_i+ returned %d after %Ld usecs\n",
-			dev_name(dev), error,
-			(unsigned long long)ktime_to_ns(delta) >> 10);
+//		printk("initcall %s_i+ returned %d after %Ld usecs\n",
+//			dev_name(dev), error,
+;
 	}
 
 	return error;
@@ -394,8 +394,8 @@ static void pm_dev_dbg(struct device *dev, pm_message_t state, char *info)
 static void pm_dev_err(struct device *dev, pm_message_t state, char *info,
 			int error)
 {
-	printk(KERN_ERR "PM: Device %s failed to %s%s: error %d\n",
-		dev_name(dev), pm_verb(state.event), info, error);
+//	printk(KERN_ERR "PM: Device %s failed to %s%s: error %d\n",
+;
 }
 
 static void dpm_show_time(ktime_t starttime, pm_message_t state, char *info)
@@ -616,7 +616,7 @@ static void dpm_drv_timeout(unsigned long data)
 	printk(KERN_EMERG "**** DPM device timeout: %s (%s)\n", dev_name(dev),
 	       (dev->driver ? dev->driver->name : "no driver"));
 
-	printk(KERN_EMERG "dpm suspend stack:\n");
+;
 	show_stack(tsk, NULL);
 
 	BUG();
@@ -1111,9 +1111,9 @@ int dpm_prepare(pm_message_t state)
 				error = 0;
 				continue;
 			}
-			printk(KERN_INFO "PM: Device %s not prepared "
-				"for power transition: code %d\n",
-				dev_name(dev), error);
+//			printk(KERN_INFO "PM: Device %s not prepared "
+//				"for power transition: code %d\n",
+;
 			put_device(dev);
 			break;
 		}
@@ -1147,7 +1147,7 @@ EXPORT_SYMBOL_GPL(dpm_suspend_start);
 void __suspend_report_result(const char *function, void *fn, int ret)
 {
 	if (ret)
-		printk(KERN_ERR "%s(): %pF returns %d\n", function, fn, ret);
+;
 }
 EXPORT_SYMBOL_GPL(__suspend_report_result);
 

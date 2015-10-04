@@ -20,10 +20,10 @@ static int __of_address_to_resource(struct device_node *dev,
 #ifdef DEBUG
 static void of_dump_addr(const char *s, const __be32 *addr, int na)
 {
-	printk(KERN_DEBUG "%s", s);
+;
 	while (na--)
 		printk(" %08x", be32_to_cpu(*(addr++)));
-	printk("\n");
+;
 }
 #else
 static void of_dump_addr(const char *s, const __be32 *addr, int na) { }
@@ -423,8 +423,8 @@ u64 __of_translate_address(struct device_node *dev, const __be32 *in_addr,
 	/* Cound address cells & copy address locally */
 	bus->count_cells(dev, &na, &ns);
 	if (!OF_CHECK_COUNTS(na, ns)) {
-		printk(KERN_ERR "prom_parse: Bad cell count for %s\n",
-		       dev->full_name);
+//		printk(KERN_ERR "prom_parse: Bad cell count for %s\n",
+;
 		goto bail;
 	}
 	memcpy(addr, in_addr, na * 4);
@@ -451,8 +451,8 @@ u64 __of_translate_address(struct device_node *dev, const __be32 *in_addr,
 		pbus = of_match_bus(parent);
 		pbus->count_cells(dev, &pna, &pns);
 		if (!OF_CHECK_COUNTS(pna, pns)) {
-			printk(KERN_ERR "prom_parse: Bad cell count for %s\n",
-			       dev->full_name);
+//			printk(KERN_ERR "prom_parse: Bad cell count for %s\n",
+;
 			break;
 		}
 

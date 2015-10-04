@@ -749,12 +749,12 @@ static void cg2900_fm_driver_callback(
 {
     struct sk_buff *skb;
 
-    printk("cg2900_fm_driver_callback: \n");
+;
     FM_INFO_REPORT("cg2900_fm_driver_callback: "
             "event = %02x, event_successful = %x",
             event, event_successful);
     
-    printk("cg2900_fm_driver_callback:event =%d \n", event);
+;
 
     switch (event) {
     case FMD_EVENT_GEN_POWERUP:
@@ -768,7 +768,7 @@ static void cg2900_fm_driver_callback(
         break;
     case FMD_EVENT_SEEK_STOPPED:
         FM_DEBUG_REPORT("FMD_EVENT_SEEK_STOPPED");
-        printk("cg2900_fm_driver_callback: Seek has stopped \n");
+;
         skb = alloc_skb(SKB_FM_INTERRUPT_DATA,
             GFP_KERNEL);
         if (!skb) {
@@ -779,7 +779,7 @@ static void cg2900_fm_driver_callback(
         skb->data[0] = CG2900_EVENT_SCAN_CANCELLED;
         skb->data[1] = event_successful;
         skb_queue_tail(&fm_interrupt_queue, skb);
-        printk("FMD_EVENT_SEEK_STOPPED: WakeUp \n");
+;
         wake_up_poll_queue();
         break;
     case FMD_EVENT_SEEK_COMPLETED:
@@ -795,7 +795,7 @@ static void cg2900_fm_driver_callback(
         skb->data[0] = CG2900_EVENT_SEARCH_CHANNEL_FOUND;
         skb->data[1] = event_successful;
         skb_queue_tail(&fm_interrupt_queue, skb);
-        printk("FMD_EVENT_SEEK_COMPLETED: WakeUp \n");
+;
         wake_up_poll_queue();
         break;
     case FMD_EVENT_SCAN_BAND_COMPLETED:
@@ -811,7 +811,7 @@ static void cg2900_fm_driver_callback(
         skb->data[0] = CG2900_EVENT_SCAN_CHANNELS_FOUND;
         skb->data[1] = event_successful;
         skb_queue_tail(&fm_interrupt_queue, skb);
-        printk("FMD_EVENT_SCAN_BAND_COMPLETED: WakeUp \n");
+;
         wake_up_poll_queue();
         break;
     case FMD_EVENT_BLOCK_SCAN_COMPLETED:
@@ -827,12 +827,12 @@ static void cg2900_fm_driver_callback(
         skb->data[0] = CG2900_EVENT_BLOCK_SCAN_CHANNELS_FOUND;
         skb->data[1] = event_successful;
         skb_queue_tail(&fm_interrupt_queue, skb);
-        printk("FMD_EVENT_BLOCK_SCAN_COMPLETED: WakeUp \n");
+;
         wake_up_poll_queue();
         break;
     case FMD_EVENT_AF_UPDATE_SWITCH_COMPLETE:
         FM_DEBUG_REPORT("FMD_EVENT_AF_UPDATE_SWITCH_COMPLETE");
-        printk(" FMD_EVENT_AF_UPDATE_SWITCH_COMPLETE \n");
+;
         break;
     case FMD_EVENT_RDSGROUP_RCVD:
         FM_DEBUG_REPORT("FMD_EVENT_RDSGROUP_RCVD");
@@ -840,9 +840,9 @@ static void cg2900_fm_driver_callback(
         * Release the rds semaphore, poll queue
         * will be woken-up in rds callback
         */
-        printk("FMD_EVENT_RDSGROUP_RCVD \n");
+;
         fmd_set_rds_sem();
-        printk("FMD_EVENT_RDSGROUP_RCVD Semaphore set \n");
+;
         break;
     case FMD_EVENT_MONO_STEREO_TRANSITION_COMPLETE:
         FM_ERR_REPORT(
@@ -857,7 +857,7 @@ static void cg2900_fm_driver_callback(
         skb->data[0] = CG2900_EVENT_MONO_STEREO_TRANSITION;
         skb->data[1] = event_successful;
         skb_queue_tail(&fm_interrupt_queue, skb);
-        printk("FMD_EVENT_MONO_STEREO_TRANSITION_COMPLETE Semaphore set \n");
+;
         wake_up_poll_queue();
         break;
     default:
@@ -1365,8 +1365,8 @@ int cg2900_fm_set_rx_default_settings(
     /* Enable SoftMute */  
     /*printk("@@SoftMute Test: cg2900_fm_set_rx_default_settings: Enable SoftMute Now \n");
     result = fmd_rx_set_softmute(FMD_SOFTMUTE_ON);
-    printk("@@SoftMute Test: cg2900_fm_set_rx_default_settings: Enable SoftMute command sent to IP, "
-            "result=%d\n", result);
+//    printk("@@SoftMute Test: cg2900_fm_set_rx_default_settings: Enable SoftMute command sent to IP, "
+;
     if (0 != result) {
         FM_ERR_REPORT("cg2900_fm_set_rx_default_settings: "
                 "fmd_rx_set_softmute "
@@ -1378,8 +1378,8 @@ int cg2900_fm_set_rx_default_settings(
 	/* Set SoftMute Parameters */  
     /*printk("@@fmd_rx_softmute_setcontrol:Set Parameters of SoftMute Now \n");
     result = fmd_rx_softmute_setcontrol(0x000B, 0x0033, 0x7FFF);
-    printk("@@fmd_rx_softmute_setcontrol:Set Parameters of SoftMute: command sent to IP, "
-            "result=%d\n", result);
+//    printk("@@fmd_rx_softmute_setcontrol:Set Parameters of SoftMute: command sent to IP, "
+;
     if (0 != result) {
         FM_ERR_REPORT("cg2900_fm_set_rx_default_settings: "
                 "fmd_rx_softmute_setcontrol "
@@ -1821,9 +1821,9 @@ int cg2900_fm_stop_scan(void)
         result = -EINVAL;
         goto error;
     }
-    printk("Stop the seek \n");
+;
     result = fmd_rx_stop_seeking();
-    printk("Stop the seek returned\n");
+;
     if (0 != result) {
         FM_ERR_REPORT("cg2900_fm_stop_scan: "
                   "Error Code %d", (unsigned int)result);
@@ -1845,7 +1845,7 @@ int cg2900_fm_stop_scan(void)
 error:
     FM_DEBUG_REPORT("cg2900_fm_stop_scan: returning %d",
             result);
-    printk("Stop the seek return result=%d\n", result);
+;
     return result;
 }
 
@@ -2929,7 +2929,7 @@ int cg2900_fm_softmute_enable(void)
 	int result;
 
 	FM_INFO_REPORT("cg2900_fm_softmute_enable");
-	printk("TEST:cg2900_fm_softmute_enable \n");
+;
 
 	if (CG2900_FM_STATE_SWITCHED_ON != fm_state) {
 		FM_ERR_REPORT("cg2900_fm_softmute_enable: "
@@ -2939,8 +2939,8 @@ int cg2900_fm_softmute_enable(void)
 	}
 
   result = fmd_rx_set_softmute(FMD_SOFTMUTE_ON);
-  printk("@@SoftMute Test: cg2900_fm_softmute_disable: Enable SoftMute command sent to IP, "
-            "result=%d\n", result);
+//  printk("@@SoftMute Test: cg2900_fm_softmute_disable: Enable SoftMute command sent to IP, "
+;
   if (0 != result) {
         FM_ERR_REPORT("cg2900_fm_softmute_enable: "
                 "fmd_rx_set_softmute "
@@ -2960,7 +2960,7 @@ int cg2900_fm_softmute_disable(void)
 	int result;
 
 	FM_INFO_REPORT("cg2900_fm_softmute_disable");
-	printk("TEST:cg2900_fm_softmute_disable \n");
+;
 
 	if (CG2900_FM_STATE_SWITCHED_ON != fm_state) {
 		FM_ERR_REPORT("cg2900_fm_softmute_disable: "
@@ -2970,8 +2970,8 @@ int cg2900_fm_softmute_disable(void)
 	}
 
 	result = fmd_rx_set_softmute(FMD_SOFTMUTE_OFF);
-	printk("@@SoftMute Test: cg2900_fm_softmute_disable: Disable SoftMute command sent to IP, "
-            "result=%d\n", result);
+//	printk("@@SoftMute Test: cg2900_fm_softmute_disable: Disable SoftMute command sent to IP, "
+;
   if (0 != result) {
         FM_ERR_REPORT("cg2900_fm_softmute_disable: "
                 "fmd_rx_set_softmute "
@@ -2996,8 +2996,8 @@ int cg2900_fm_softmute_setcontrol(
     FM_INFO_REPORT("cg2900_fm_softmute_setcontrol: "
             "min_rssi = %d max_rssi =%d max_attenuation=%d", min_rssi, max_rssi, max_attenuation);
     
-    printk("cg2900_fm_softmute_setcontrol: "
-               "min_rssi = %d max_rssi =%d max_attenuation=%d \n", min_rssi, max_rssi, max_attenuation);
+//    printk("cg2900_fm_softmute_setcontrol: "
+;
 
     result = fmd_rx_softmute_setcontrol(min_rssi, max_rssi, max_attenuation);
     
@@ -3286,7 +3286,7 @@ int cg2900_fm_af_switch_start(
     int result;
 
     FM_INFO_REPORT("cg2900_fm_af_switch_start");
-    printk("cg2900_fm_af_switch_start \n");
+;
 
     if (CG2900_FM_STATE_SWITCHED_ON != fm_state) {
         FM_ERR_REPORT("cg2900_fm_af_switch_start: "
@@ -3299,7 +3299,7 @@ int cg2900_fm_af_switch_start(
 				af_switch_pi,
 				af_switch_min_rssi);
     
-    printk("cg2900_fm_af_switch_start result=%d \n", result);
+;
 
     if (0 != result) {
         FM_ERR_REPORT("cg2900_fm_af_switch_start: "
@@ -3517,11 +3517,11 @@ int cg2900_fm_set_rssi_snr_threshold(
     FM_INFO_REPORT("cg2900_fm_set_rssi_snr: "
                "RssiThresold = %d", rssi_snr_thresold);
     
-    printk("cg2900_fm_set_rssi_snr, snr threshold value=%d", rssi_snr_thresold);
+;
 
     result = fmd_rx_set_snr_threshold(rssi_snr_thresold);
     
-    printk("cg2900_fm_set_rssi_snr, snr threshold value=%d result=%d", rssi_snr_thresold, result);
+;
     if (0 != result) {
         FM_ERR_REPORT("cg2900_fm_set_rssi_snr: "
                   "cg2900_fm_set_rssi_snr failed, Error Code %d",

@@ -62,7 +62,7 @@
 #define DBG(fmt, args...) \
 	do { \
 		if (debug) { \
-			printk(KERN_INFO KBUILD_MODNAME " " fmt, ##args); \
+;
 		} \
 	} while (0)
 
@@ -524,11 +524,11 @@ static void zr364xx_fillbuff(struct zr364xx_camera *cam,
 			memcpy(vbuf, tmpbuf, buf->vb.size);
 			break;
 		default:
-			printk(KERN_DEBUG KBUILD_MODNAME ": unknown format?\n");
+;
 		}
 		cam->last_frame = -1;
 	} else {
-		printk(KERN_ERR KBUILD_MODNAME ": =======no frame\n");
+;
 		return;
 	}
 	DBG("%s: Buffer 0x%08lx size= %d\n", __func__,
@@ -1067,13 +1067,13 @@ static void read_pipe_completion(struct urb *purb)
 	pipe_info = purb->context;
 	_DBG("%s %p, status %d\n", __func__, purb, purb->status);
 	if (pipe_info == NULL) {
-		printk(KERN_ERR KBUILD_MODNAME ": no context!\n");
+;
 		return;
 	}
 
 	cam = pipe_info->cam;
 	if (cam == NULL) {
-		printk(KERN_ERR KBUILD_MODNAME ": no context!\n");
+;
 		return;
 	}
 
@@ -1148,7 +1148,7 @@ static int zr364xx_start_readpipe(struct zr364xx_camera *cam)
 	DBG("submitting URB %p\n", pipe_info->stream_urb);
 	retval = usb_submit_urb(pipe_info->stream_urb, GFP_KERNEL);
 	if (retval) {
-		printk(KERN_ERR KBUILD_MODNAME ": start read pipe failed\n");
+;
 		return retval;
 	}
 
@@ -1160,7 +1160,7 @@ static void zr364xx_stop_readpipe(struct zr364xx_camera *cam)
 	struct zr364xx_pipeinfo *pipe_info;
 
 	if (cam == NULL) {
-		printk(KERN_ERR KBUILD_MODNAME ": invalid device\n");
+;
 		return;
 	}
 	DBG("stop read pipe\n");
@@ -1323,7 +1323,7 @@ static void zr364xx_destroy(struct zr364xx_camera *cam)
 	unsigned long i;
 
 	if (!cam) {
-		printk(KERN_ERR KBUILD_MODNAME ", %s: no device\n", __func__);
+;
 		return;
 	}
 	mutex_lock(&cam->open_lock);
@@ -1508,14 +1508,14 @@ static int zr364xx_board_init(struct zr364xx_camera *cam)
 			&cam->buffer.frame[i], i,
 			cam->buffer.frame[i].lpvbits);
 		if (cam->buffer.frame[i].lpvbits == NULL) {
-			printk(KERN_INFO KBUILD_MODNAME ": out of memory. "
-			       "Using less frames\n");
+//			printk(KERN_INFO KBUILD_MODNAME ": out of memory. "
+;
 			break;
 		}
 	}
 
 	if (i == 0) {
-		printk(KERN_INFO KBUILD_MODNAME ": out of memory. Aborting\n");
+;
 		kfree(cam->pipe->transfer_buffer);
 		cam->pipe->transfer_buffer = NULL;
 		return -ENOMEM;
@@ -1701,16 +1701,16 @@ static int __init zr364xx_init(void)
 	int retval;
 	retval = usb_register(&zr364xx_driver);
 	if (retval)
-		printk(KERN_ERR KBUILD_MODNAME ": usb_register failed!\n");
+;
 	else
-		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC "\n");
+;
 	return retval;
 }
 
 
 static void __exit zr364xx_exit(void)
 {
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC " module unloaded\n");
+;
 	usb_deregister(&zr364xx_driver);
 }
 

@@ -364,24 +364,24 @@ static void fusb300_wrcxf(struct fusb300_ep *ep,
 		for (i = length >> 2; i > 0; i--) {
 			data = *tmp | *(tmp + 1) << 8 | *(tmp + 2) << 16 |
 				*(tmp + 3) << 24;
-			printk(KERN_DEBUG "    0x%x\n", data);
+;
 			iowrite32(data, fusb300->reg + FUSB300_OFFSET_CXPORT);
 			tmp = tmp + 4;
 		}
 		switch (length % 4) {
 		case 1:
 			data = *tmp;
-			printk(KERN_DEBUG "    0x%x\n", data);
+;
 			iowrite32(data, fusb300->reg + FUSB300_OFFSET_CXPORT);
 			break;
 		case 2:
 			data = *tmp | *(tmp + 1) << 8;
-			printk(KERN_DEBUG "    0x%x\n", data);
+;
 			iowrite32(data, fusb300->reg + FUSB300_OFFSET_CXPORT);
 			break;
 		case 3:
 			data = *tmp | *(tmp + 1) << 8 | *(tmp + 2) << 16;
-			printk(KERN_DEBUG "    0x%x\n", data);
+;
 			iowrite32(data, fusb300->reg + FUSB300_OFFSET_CXPORT);
 			break;
 		default:
@@ -402,7 +402,7 @@ static void fusb300_clear_epnstall(struct fusb300 *fusb300, u8 ep)
 	u32 reg = ioread32(fusb300->reg + FUSB300_OFFSET_EPSET0(ep));
 
 	if (reg & FUSB300_EPSET0_STL) {
-		printk(KERN_DEBUG "EP%d stall... Clear!!\n", ep);
+;
 		reg &= ~FUSB300_EPSET0_STL;
 		iowrite32(reg, fusb300->reg + FUSB300_OFFSET_EPSET0(ep));
 	}
@@ -414,8 +414,8 @@ static void ep0_queue(struct fusb300_ep *ep, struct fusb300_request *req)
 		if (req->req.length) {
 			fusb300_wrcxf(ep, req);
 		} else
-			printk(KERN_DEBUG "%s : req->req.length = 0x%x\n",
-				__func__, req->req.length);
+//			printk(KERN_DEBUG "%s : req->req.length = 0x%x\n",
+;
 		if ((req->req.length == req->req.actual) ||
 		    (req->req.actual < ep->ep.maxpacket))
 			done(ep, req, 0);
@@ -577,7 +577,7 @@ void fusb300_rdcxf(struct fusb300 *fusb300,
 
 	for (i = (length >> 2); i > 0; i--) {
 		data = ioread32(fusb300->reg + FUSB300_OFFSET_CXPORT);
-		printk(KERN_DEBUG "    0x%x\n", data);
+;
 		*tmp = data & 0xFF;
 		*(tmp + 1) = (data >> 8) & 0xFF;
 		*(tmp + 2) = (data >> 16) & 0xFF;
@@ -588,18 +588,18 @@ void fusb300_rdcxf(struct fusb300 *fusb300,
 	switch (length % 4) {
 	case 1:
 		data = ioread32(fusb300->reg + FUSB300_OFFSET_CXPORT);
-		printk(KERN_DEBUG "    0x%x\n", data);
+;
 		*tmp = data & 0xFF;
 		break;
 	case 2:
 		data = ioread32(fusb300->reg + FUSB300_OFFSET_CXPORT);
-		printk(KERN_DEBUG "    0x%x\n", data);
+;
 		*tmp = data & 0xFF;
 		*(tmp + 1) = (data >> 8) & 0xFF;
 		break;
 	case 3:
 		data = ioread32(fusb300->reg + FUSB300_OFFSET_CXPORT);
-		printk(KERN_DEBUG "    0x%x\n", data);
+;
 		*tmp = data & 0xFF;
 		*(tmp + 1) = (data >> 8) & 0xFF;
 		*(tmp + 2) = (data >> 16) & 0xFF;
@@ -629,20 +629,20 @@ static void fusb300_dbg_fifo(struct fusb300_ep *ep,
 			break;
 		reg = ioread32(ep->fusb300->reg +
 			FUSB300_OFFSET_BUFDBG_START + i * 4);
-		printk(KERN_DEBUG"  0x%-8x", reg);
+;
 		j++;
 		if ((j % 4)  == 0)
-			printk(KERN_DEBUG "\n");
+;
 	}
 
 	if (length % 4) {
 		reg = ioread32(ep->fusb300->reg +
 			FUSB300_OFFSET_BUFDBG_START + i * 4);
-		printk(KERN_DEBUG "  0x%x\n", reg);
+;
 	}
 
 	if ((j % 4)  != 0)
-		printk(KERN_DEBUG "\n");
+;
 
 	fusb300_disable_bit(ep->fusb300, FUSB300_OFFSET_GTM,
 		FUSB300_GTM_TST_FIFO_DEG);
@@ -658,7 +658,7 @@ static void fusb300_cmp_dbg_fifo(struct fusb300_ep *ep,
 
 	tmp = golden;
 
-	printk(KERN_DEBUG "fusb300_cmp_dbg_fifo (entry %d) : start\n", entry);
+;
 
 	reg = ioread32(ep->fusb300->reg + FUSB300_OFFSET_GTM);
 	reg &= ~(FUSB300_GTM_TST_EP_ENTRY(0xF) |
@@ -677,10 +677,10 @@ static void fusb300_cmp_dbg_fifo(struct fusb300_ep *ep,
 			FUSB300_OFFSET_BUFDBG_START + i*4);
 
 		if (reg != golden_value) {
-			printk(KERN_DEBUG "0x%x  :  ", (u32)(ep->fusb300->reg +
-				FUSB300_OFFSET_BUFDBG_START + i*4));
-			printk(KERN_DEBUG "    golden = 0x%x, reg = 0x%x\n",
-				golden_value, reg);
+//			printk(KERN_DEBUG "0x%x  :  ", (u32)(ep->fusb300->reg +
+;
+//			printk(KERN_DEBUG "    golden = 0x%x, reg = 0x%x\n",
+;
 		}
 		tmp += 4;
 	}
@@ -697,14 +697,14 @@ static void fusb300_cmp_dbg_fifo(struct fusb300_ep *ep,
 
 	reg = ioread32(ep->fusb300->reg + FUSB300_OFFSET_BUFDBG_START + i*4);
 	if (reg != golden_value) {
-		printk(KERN_DEBUG "0x%x:", (u32)(ep->fusb300->reg +
-			FUSB300_OFFSET_BUFDBG_START + i*4));
-		printk(KERN_DEBUG "  golden = 0x%x, reg = 0x%x\n",
-			golden_value, reg);
+//		printk(KERN_DEBUG "0x%x:", (u32)(ep->fusb300->reg +
+;
+//		printk(KERN_DEBUG "  golden = 0x%x, reg = 0x%x\n",
+;
 	}
 	}
 
-	printk(KERN_DEBUG "fusb300_cmp_dbg_fifo : end\n");
+;
 	fusb300_disable_bit(ep->fusb300, FUSB300_OFFSET_GTM,
 		FUSB300_GTM_TST_FIFO_DEG);
 }
@@ -723,7 +723,7 @@ static void fusb300_rdfifo(struct fusb300_ep *ep,
 	req->req.actual += length;
 
 	if (req->req.actual > req->req.length)
-		printk(KERN_DEBUG "req->req.actual > req->req.length\n");
+;
 
 	for (i = (length >> 2); i > 0; i--) {
 		data = ioread32(fusb300->reg +
@@ -762,7 +762,7 @@ static void fusb300_rdfifo(struct fusb300_ep *ep,
 		reg = ioread32(fusb300->reg + FUSB300_OFFSET_IGR1);
 		reg &= FUSB300_IGR1_SYNF0_EMPTY_INT;
 		if (i)
-			printk(KERN_INFO "sync fifo is not empty!\n");
+;
 		i++;
 	} while (!reg);
 }
@@ -812,7 +812,7 @@ static void fusb300_wrfifo(struct fusb300_ep *ep,
 		reg = ioread32(fusb300->reg + FUSB300_OFFSET_IGR1);
 		reg &= FUSB300_IGR1_SYNF0_EMPTY_INT;
 		if (i)
-			printk(KERN_INFO"sync fifo is not empty!\n");
+;
 		i++;
 	} while (!reg);
 }
@@ -840,7 +840,7 @@ static u8 fusb300_get_cxstall(struct fusb300 *fusb300)
 static void request_error(struct fusb300 *fusb300)
 {
 	fusb300_set_cxstall(fusb300);
-	printk(KERN_DEBUG "request error!!\n");
+;
 }
 
 static void get_status(struct fusb300 *fusb300, struct usb_ctrlrequest *ctrl)
@@ -1122,7 +1122,7 @@ static void  fusb300_set_idma(struct fusb300_ep *ep,
 
 	if (dma_mapping_error(NULL, d)) {
 		kfree(req->req.buf);
-		printk(KERN_DEBUG "dma_mapping_error\n");
+;
 	}
 
 	dma_sync_single_for_device(NULL, d, req->req.length, DMA_TO_DEVICE);
@@ -1192,7 +1192,7 @@ static void check_device_mode(struct fusb300 *fusb300)
 		fusb300->gadget.speed = USB_SPEED_UNKNOWN;
 		break;
 	}
-	printk(KERN_INFO "dev_mode = %d\n", (reg & FUSB300_GCR_DEVEN_MSK));
+;
 }
 
 
@@ -1269,14 +1269,14 @@ static irqreturn_t fusb300_irq(int irq, void *_fusb300)
 	if (int_grp1 & FUSB300_IGR1_WARM_RST_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_WARM_RST_INT);
-		printk(KERN_INFO"fusb300_warmreset\n");
+;
 		fusb300_reset();
 	}
 
 	if (int_grp1 & FUSB300_IGR1_HOT_RST_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_HOT_RST_INT);
-		printk(KERN_INFO"fusb300_hotreset\n");
+;
 		fusb300_reset();
 	}
 
@@ -1290,13 +1290,13 @@ static irqreturn_t fusb300_irq(int irq, void *_fusb300)
 	if (int_grp1 & FUSB300_IGR1_CX_COMABT_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_CX_COMABT_INT);
-		printk(KERN_INFO"fusb300_ep0abt\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_VBUS_CHG_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_VBUS_CHG_INT);
-		printk(KERN_INFO"fusb300_vbus_change\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_U3_EXIT_FAIL_INT) {
@@ -1327,25 +1327,25 @@ static irqreturn_t fusb300_irq(int irq, void *_fusb300)
 	if (int_grp1 & FUSB300_IGR1_U3_EXIT_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_U3_EXIT_INT);
-		printk(KERN_INFO "FUSB300_IGR1_U3_EXIT_INT\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_U2_EXIT_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_U2_EXIT_INT);
-		printk(KERN_INFO "FUSB300_IGR1_U2_EXIT_INT\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_U1_EXIT_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_U1_EXIT_INT);
-		printk(KERN_INFO "FUSB300_IGR1_U1_EXIT_INT\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_U3_ENTRY_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_U3_ENTRY_INT);
-		printk(KERN_INFO "FUSB300_IGR1_U3_ENTRY_INT\n");
+;
 		fusb300_enable_bit(fusb300, FUSB300_OFFSET_SSCR1,
 				   FUSB300_SSCR1_GO_U3_DONE);
 	}
@@ -1353,31 +1353,31 @@ static irqreturn_t fusb300_irq(int irq, void *_fusb300)
 	if (int_grp1 & FUSB300_IGR1_U2_ENTRY_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_U2_ENTRY_INT);
-		printk(KERN_INFO "FUSB300_IGR1_U2_ENTRY_INT\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_U1_ENTRY_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_U1_ENTRY_INT);
-		printk(KERN_INFO "FUSB300_IGR1_U1_ENTRY_INT\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_RESM_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_RESM_INT);
-		printk(KERN_INFO "fusb300_resume\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_SUSP_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_SUSP_INT);
-		printk(KERN_INFO "fusb300_suspend\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_HS_LPM_INT) {
 		fusb300_clear_int(fusb300, FUSB300_OFFSET_IGR1,
 				  FUSB300_IGR1_HS_LPM_INT);
-		printk(KERN_INFO "fusb300_HS_LPM_INT\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_DEV_MODE_CHG_INT) {
@@ -1388,11 +1388,11 @@ static irqreturn_t fusb300_irq(int irq, void *_fusb300)
 
 	if (int_grp1 & FUSB300_IGR1_CX_COMFAIL_INT) {
 		fusb300_set_cxstall(fusb300);
-		printk(KERN_INFO "fusb300_ep0fail\n");
+;
 	}
 
 	if (int_grp1 & FUSB300_IGR1_CX_SETUP_INT) {
-		printk(KERN_INFO "fusb300_ep0setup\n");
+;
 		if (setup_packet(fusb300, &ctrl)) {
 			spin_unlock(&fusb300->lock);
 			if (fusb300->driver->setup(&fusb300->gadget, &ctrl) < 0)
@@ -1402,16 +1402,16 @@ static irqreturn_t fusb300_irq(int irq, void *_fusb300)
 	}
 
 	if (int_grp1 & FUSB300_IGR1_CX_CMDEND_INT)
-		printk(KERN_INFO "fusb300_cmdend\n");
+;
 
 
 	if (int_grp1 & FUSB300_IGR1_CX_OUT_INT) {
-		printk(KERN_INFO "fusb300_cxout\n");
+;
 		fusb300_ep0out(fusb300);
 	}
 
 	if (int_grp1 & FUSB300_IGR1_CX_IN_INT) {
-		printk(KERN_INFO "fusb300_cxin\n");
+;
 		fusb300_ep0in(fusb300);
 	}
 

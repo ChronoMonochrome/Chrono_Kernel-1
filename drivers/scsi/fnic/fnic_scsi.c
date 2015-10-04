@@ -719,15 +719,15 @@ static void fnic_fcpio_icmnd_cmpl_handler(struct fnic *fnic,
 						 t_sdev->queue_depth - 1);
 					if (qd == -1)
 						qd = t_sdev->host->cmd_per_lun;
-					shost_printk(KERN_INFO,
-						     fnic->lport->host,
-						     "scsi[%d:%d:%d:%d"
-						     "] queue full detected,"
-						     "new depth = %d\n",
-						     t_sdev->host->host_no,
-						     t_sdev->channel,
-						     t_sdev->id, t_sdev->lun,
-						     t_sdev->queue_depth);
+//					shost_printk(KERN_INFO,
+//						     fnic->lport->host,
+//						     "scsi[%d:%d:%d:%d"
+//						     "] queue full detected,"
+//						     "new depth = %d\n",
+//						     t_sdev->host->host_no,
+//						     t_sdev->channel,
+//						     t_sdev->id, t_sdev->lun,
+;
 				}
 			}
 		}
@@ -757,8 +757,8 @@ static void fnic_fcpio_icmnd_cmpl_handler(struct fnic *fnic,
 	case FCPIO_MSS_INVALID:      /* request was aborted due to mss error */
 	case FCPIO_FW_ERR:           /* request was terminated due fw error */
 	default:
-		shost_printk(KERN_ERR, fnic->lport->host, "hdr status = %s\n",
-			     fnic_fcpio_status_to_str(hdr_status));
+//		shost_printk(KERN_ERR, fnic->lport->host, "hdr status = %s\n",
+;
 		sc->result = (DID_ERROR << 16) | icmnd_cmpl->scsi_status;
 		break;
 	}
@@ -872,9 +872,9 @@ static void fnic_fcpio_itmf_cmpl_handler(struct fnic *fnic,
 		spin_unlock_irqrestore(io_lock, flags);
 
 	} else {
-		shost_printk(KERN_ERR, fnic->lport->host,
-			     "Unexpected itmf io state %s tag %x\n",
-			     fnic_ioreq_state_to_str(CMD_STATE(sc)), id);
+//		shost_printk(KERN_ERR, fnic->lport->host,
+//			     "Unexpected itmf io state %s tag %x\n",
+;
 		spin_unlock_irqrestore(io_lock, flags);
 	}
 

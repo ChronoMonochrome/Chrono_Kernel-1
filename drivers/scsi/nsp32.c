@@ -333,9 +333,9 @@ static void nsp32_message(const char *func, int line, char *type, char *fmt, ...
 	va_end(args);
 
 #ifndef NSP32_DEBUG
-	printk("%snsp32: %s\n", type, buf);
+;
 #else
-	printk("%snsp32: %s (%d): %s\n", type, func, line, buf);
+;
 #endif
 }
 
@@ -350,7 +350,7 @@ static void nsp32_dmessage(const char *func, int line, int mask, char *fmt, ...)
 	va_end(args);
 
 	if (mask & NSP32_DEBUG_MASK) {
-		printk("nsp32-debug: 0x%x %s (%d): %s\n", mask, func, line, buf);
+;
 	}
 }
 #endif
@@ -1269,7 +1269,7 @@ static irqreturn_t do_nsp32_isr(int irq, void *dev_id)
 		if ((auto_stat & DATA_IN_PHASE) &&
 		    (scsi_get_resid(SCpnt) > 0) &&
 		    ((nsp32_read2(base, FIFO_REST_CNT) & FIFO_REST_MASK) != 0)) {
-			printk( "auto+fifo\n");
+;
 			//nsp32_pio_read(SCpnt);
 		}
 

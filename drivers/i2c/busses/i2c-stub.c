@@ -179,25 +179,25 @@ static int __init i2c_stub_init(void)
 	int i, ret;
 
 	if (!chip_addr[0]) {
-		printk(KERN_ERR "i2c-stub: Please specify a chip address\n");
+;
 		return -ENODEV;
 	}
 
 	for (i = 0; i < MAX_CHIPS && chip_addr[i]; i++) {
 		if (chip_addr[i] < 0x03 || chip_addr[i] > 0x77) {
-			printk(KERN_ERR "i2c-stub: Invalid chip address "
-			       "0x%02x\n", chip_addr[i]);
+//			printk(KERN_ERR "i2c-stub: Invalid chip address "
+;
 			return -EINVAL;
 		}
 
-		printk(KERN_INFO "i2c-stub: Virtual chip at 0x%02x\n",
-		       chip_addr[i]);
+//		printk(KERN_INFO "i2c-stub: Virtual chip at 0x%02x\n",
+;
 	}
 
 	/* Allocate memory for all chips at once */
 	stub_chips = kzalloc(i * sizeof(struct stub_chip), GFP_KERNEL);
 	if (!stub_chips) {
-		printk(KERN_ERR "i2c-stub: Out of memory\n");
+;
 		return -ENOMEM;
 	}
 

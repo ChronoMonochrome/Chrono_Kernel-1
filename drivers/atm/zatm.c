@@ -49,42 +49,42 @@
 #define ZATM_COPPER	1
 
 #if 0
-#define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
-#else
-#define DPRINTK(format,args...)
-#endif
-
-#ifndef CONFIG_ATM_ZATM_DEBUG
-
-
-#define NULLCHECK(x)
-
-#define EVENT(s,a,b)
-
-
-static void event_dump(void)
-{
-}
-
-
-#else
-
-
-/* 
- * NULL pointer checking
- */
-
-#define NULLCHECK(x) \
-  if ((unsigned long) (x) < 0x30) printk(KERN_CRIT #x "==0x%x\n", (int) (x))
-
-/*
- * Very extensive activity logging. Greatly improves bug detection speed but
- * costs a few Mbps if enabled.
- */
-
-#define EV 64
-
-static const char *ev[EV];
+//#define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
+//#else
+//#define DPRINTK(format,args...)
+//#endif
+//
+//#ifndef CONFIG_ATM_ZATM_DEBUG
+//
+//
+//#define NULLCHECK(x)
+//
+//#define EVENT(s,a,b)
+//
+//
+//static void event_dump(void)
+//{
+//}
+//
+//
+//#else
+//
+//
+///* 
+// * NULL pointer checking
+// */
+//
+//#define NULLCHECK(x) \
+//  if ((unsigned long) (x) < 0x30) printk(KERN_CRIT #x "==0x%x\n", (int) (x))
+//
+///*
+// * Very extensive activity logging. Greatly improves bug detection speed but
+// * costs a few Mbps if enabled.
+// */
+//
+//#define EV 64
+//
+;
 static unsigned long ev_a[EV],ev_b[EV];
 static int ec = 0;
 
@@ -102,13 +102,13 @@ static void event_dump(void)
 {
 	int n,i;
 
-	printk(KERN_NOTICE "----- event dump follows -----\n");
+;
 	for (n = 0; n < EV; n++) {
 		i = (ec+n) % EV;
-		printk(KERN_NOTICE);
-		printk(ev[i] ? ev[i] : "(null)",ev_a[i],ev_b[i]);
+;
+;
 	}
-	printk(KERN_NOTICE "----- event dump ends here -----\n");
+;
 }
 
 
@@ -213,8 +213,8 @@ static void refill_pool(struct atm_dev *dev,int pool)
 
 		skb = alloc_skb(size,GFP_ATOMIC);
 		if (!skb) {
-			printk(KERN_WARNING DEV_LABEL "(Itf %d): got no new "
-			    "skb (%d) with %d free\n",dev->number,size,free);
+//			printk(KERN_WARNING DEV_LABEL "(Itf %d): got no new "
+;
 			break;
 		}
 		skb_reserve(skb,(unsigned char *) ((((unsigned long) skb->data+
@@ -264,8 +264,8 @@ static int pool_index(int max_pdu)
 	int i;
 
 	if (max_pdu % ATM_CELL_PAYLOAD)
-		printk(KERN_ERR DEV_LABEL ": driver error in pool_index: "
-		    "max_pdu is %d\n",max_pdu);
+//		printk(KERN_ERR DEV_LABEL ": driver error in pool_index: "
+;
 	if (max_pdu > 65536) return -1;
 	for (i = 0; (64 << i) < max_pdu; i++);
 	return i+ZATM_AAL5_POOL_BASE;
@@ -323,15 +323,15 @@ static void exception(struct atm_vcc *vcc)
 
    if (count++ > 2) return;
    for (i = 0; i < 8; i++)
-	printk("TX%d: 0x%08lx\n",i,
-	  zpeekl(zatm_dev,zatm_vcc->tx_chan*VC_SIZE/4+i));
+//	printk("TX%d: 0x%08lx\n",i,
+;
    for (i = 0; i < 5; i++)
-	printk("SH%d: 0x%08lx\n",i,
-	  zpeekl(zatm_dev,uPD98401_IM(zatm_vcc->shaper)+16*i));
+//	printk("SH%d: 0x%08lx\n",i,
+;
    qrp = (unsigned long *) zpeekl(zatm_dev,zatm_vcc->tx_chan*VC_SIZE/4+
      uPD98401_TXVC_QRP);
-   printk("qrp=0x%08lx\n",(unsigned long) qrp);
-   for (i = 0; i < 4; i++) printk("QRP[%d]: 0x%08lx",i,qrp[i]);
+;
+;
 }
 #endif
 
@@ -378,15 +378,15 @@ static void poll_rx(struct atm_dev *dev,int mbx)
 			pos = zatm_dev->mbx_start[mbx];
 		cells = here[0] & uPD98401_AAL5_SIZE;
 #if 0
-printk("RX IND: 0x%x, 0x%x, 0x%x, 0x%x\n",here[0],here[1],here[2],here[3]);
+;
 {
 unsigned long *x;
-		printk("POOL: 0x%08x, 0x%08x\n",zpeekl(zatm_dev,
-		      zatm_dev->pool_base),
-		      zpeekl(zatm_dev,zatm_dev->pool_base+1));
+//		printk("POOL: 0x%08x, 0x%08x\n",zpeekl(zatm_dev,
+//		      zatm_dev->pool_base),
+;
 		x = (unsigned long *) here[2];
-		printk("[0..3] = 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx\n",
-		    x[0],x[1],x[2],x[3]);
+//		printk("[0..3] = 0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx\n",
+;
 }
 #endif
 		error = 0;
@@ -408,7 +408,7 @@ printk("[-3..0] 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",((unsigned *) skb->data)[-3],
 		EVENT("skb 0x%lx, here 0x%lx\n",(unsigned long) skb,
 		    (unsigned long) here);
 #if 0
-printk("dummy: 0x%08lx, 0x%08lx\n",dummy[0],dummy[1]);
+;
 #endif
 		size = error ? 0 : ntohs(((__be16 *) skb->data)[cells*
 		    ATM_CELL_PAYLOAD/sizeof(u16)-3]);
@@ -424,8 +424,8 @@ printk("dummy: 0x%08lx, 0x%08lx\n",dummy[0],dummy[1]);
 			skb_unlink(skb, zatm_dev->pool + pos);
 		}
 		else {
-			printk(KERN_ERR DEV_LABEL "(itf %d): RX indication "
-			    "for non-existing channel\n",dev->number);
+//			printk(KERN_ERR DEV_LABEL "(itf %d): RX indication "
+;
 			size = 0;
 			vcc = NULL;
 			event_dump();
@@ -436,9 +436,9 @@ printk("dummy: 0x%08lx, 0x%08lx\n",dummy[0],dummy[1]);
 
 			if (error != last_error ||
 			    time_after(jiffies, silence)  || silence == 0){
-				printk(KERN_WARNING DEV_LABEL "(itf %d): "
-				    "chan %d error %s\n",dev->number,chan,
-				    err_txt[error]);
+//				printk(KERN_WARNING DEV_LABEL "(itf %d): "
+//				    "chan %d error %s\n",dev->number,chan,
+;
 				last_error = error;
 				silence = (jiffies+2*HZ)|1;
 			}
@@ -446,14 +446,14 @@ printk("dummy: 0x%08lx, 0x%08lx\n",dummy[0],dummy[1]);
 		}
 		if (size && (size > cells*ATM_CELL_PAYLOAD-ATM_AAL5_TRAILER ||
 		    size <= (cells-1)*ATM_CELL_PAYLOAD-ATM_AAL5_TRAILER)) {
-			printk(KERN_ERR DEV_LABEL "(itf %d): size %d with %d "
-			    "cells\n",dev->number,size,cells);
+//			printk(KERN_ERR DEV_LABEL "(itf %d): size %d with %d "
+;
 			size = 0;
 			event_dump();
 		}
 		if (size > ATM_MAX_AAL5_PDU) {
-			printk(KERN_ERR DEV_LABEL "(itf %d): size too big "
-			    "(%d)\n",dev->number,size);
+//			printk(KERN_ERR DEV_LABEL "(itf %d): size too big "
+;
 			size = 0;
 			event_dump();
 		}
@@ -586,8 +586,8 @@ static void close_rx(struct atm_vcc *vcc)
 	    uPD98401_CHAN_ADDR_SHIFT),CMR);
 	zwait;
 	if (!(zin(CMR) & uPD98401_CHAN_ADDR))
-		printk(KERN_CRIT DEV_LABEL "(itf %d): can't close RX channel "
-		    "%d\n",vcc->dev->number,zatm_vcc->rx_chan);
+//		printk(KERN_CRIT DEV_LABEL "(itf %d): can't close RX channel "
+;
 	spin_unlock_irqrestore(&zatm_dev->lock, flags);
 	zatm_dev->rx_map[zatm_vcc->rx_chan] = NULL;
 	zatm_vcc->rx_chan = 0;
@@ -661,7 +661,7 @@ static int do_tx(struct sk_buff *skb)
 		EVENT("dsc (0x%lx)\n",(unsigned long) dsc,0);
 	}
 	else {
-printk("NONONONOO!!!!\n");
+;
 		dsc = NULL;
 #if 0
 		u32 *put;
@@ -715,8 +715,8 @@ static inline void dequeue_tx(struct atm_vcc *vcc)
 	zatm_vcc = ZATM_VCC(vcc);
 	skb = skb_dequeue(&zatm_vcc->tx_queue);
 	if (!skb) {
-		printk(KERN_CRIT DEV_LABEL "(itf %d): dequeue_tx but not "
-		    "txing\n",vcc->dev->number);
+//		printk(KERN_CRIT DEV_LABEL "(itf %d): dequeue_tx but not "
+;
 		return;
 	}
 #if 0 /* @@@ would fail on CLP */
@@ -768,8 +768,8 @@ NO !
 		if (chan < zatm_dev->chans && zatm_dev->tx_map[chan])
 			dequeue_tx(zatm_dev->tx_map[chan]);
 		else {
-			printk(KERN_CRIT DEV_LABEL "(itf %d): TX indication "
-			    "for non-existing channel %d\n",dev->number,chan);
+//			printk(KERN_CRIT DEV_LABEL "(itf %d): TX indication "
+;
 			event_dump();
 		}
 		if (((pos += 4) & 0xffff) == zatm_dev->mbx_end[mbx])
@@ -825,8 +825,8 @@ static int alloc_shaper(struct atm_dev *dev,int *pcr,int min,int max,int ubr)
 			}
 		}
 		if (i > m) {
-			printk(KERN_CRIT DEV_LABEL "shaper algorithm botched "
-			    "[%d,%d] -> i=%ld,m=%ld\n",min,max,i,m);
+//			printk(KERN_CRIT DEV_LABEL "shaper algorithm botched "
+;
 			m = i;
 		}
 		*pcr = i*ATM_OC3_PCR/m;
@@ -878,12 +878,12 @@ static void close_tx(struct atm_vcc *vcc)
 	if (!chan) return;
 	DPRINTK("close_tx\n");
 	if (skb_peek(&zatm_vcc->backlog)) {
-		printk("waiting for backlog to drain ...\n");
+;
 		event_dump();
 		wait_event(zatm_vcc->tx_wait, !skb_peek(&zatm_vcc->backlog));
 	}
 	if (skb_peek(&zatm_vcc->tx_queue)) {
-		printk("waiting for TX queue to drain ...\n");
+;
 		event_dump();
 		wait_event(zatm_vcc->tx_wait, !skb_peek(&zatm_vcc->tx_queue));
 	}
@@ -896,8 +896,8 @@ static void close_tx(struct atm_vcc *vcc)
 	zout(uPD98401_CLOSE_CHAN | (chan << uPD98401_CHAN_ADDR_SHIFT),CMR);
 	zwait;
 	if (!(zin(CMR) & uPD98401_CHAN_ADDR))
-		printk(KERN_CRIT DEV_LABEL "(itf %d): can't close TX channel "
-		    "%d\n",vcc->dev->number,chan);
+//		printk(KERN_CRIT DEV_LABEL "(itf %d): can't close TX channel "
+;
 	spin_unlock_irqrestore(&zatm_dev->lock, flags);
 	zatm_vcc->tx_chan = 0;
 	zatm_dev->tx_map[chan] = NULL;
@@ -1048,8 +1048,8 @@ static irqreturn_t zatm_int(int irq,void *dev_id)
 			unsigned long pools;
 			int i;
 			pools = zin(RQU);
-			printk(KERN_WARNING DEV_LABEL "(itf %d): RQU 0x%08lx\n",
-			    dev->number,pools);
+//			printk(KERN_WARNING DEV_LABEL "(itf %d): RQU 0x%08lx\n",
+;
 			event_dump();
 			for (i = 0; pools; i++) {
 				if (pools & 1) {
@@ -1061,21 +1061,21 @@ static irqreturn_t zatm_int(int irq,void *dev_id)
 		}
 		/* don't handle RD */
 		if (reason & uPD98401_INT_SPE)
-			printk(KERN_ALERT DEV_LABEL "(itf %d): system parity "
-			    "error at 0x%08x\n",dev->number,zin(ADDR));
+//			printk(KERN_ALERT DEV_LABEL "(itf %d): system parity "
+;
 		if (reason & uPD98401_INT_CPE)
-			printk(KERN_ALERT DEV_LABEL "(itf %d): control memory "
-			    "parity error at 0x%08x\n",dev->number,zin(ADDR));
+//			printk(KERN_ALERT DEV_LABEL "(itf %d): control memory "
+;
 		if (reason & uPD98401_INT_SBE) {
-			printk(KERN_ALERT DEV_LABEL "(itf %d): system bus "
-			    "error at 0x%08x\n",dev->number,zin(ADDR));
+//			printk(KERN_ALERT DEV_LABEL "(itf %d): system bus "
+;
 			event_dump();
 		}
 		/* don't handle IND */
 		if (reason & uPD98401_INT_MF) {
-			printk(KERN_CRIT DEV_LABEL "(itf %d): mailbox full "
-			    "(0x%x)\n",dev->number,(reason & uPD98401_INT_MF)
-			    >> uPD98401_INT_MF_SHIFT);
+//			printk(KERN_CRIT DEV_LABEL "(itf %d): mailbox full "
+//			    "(0x%x)\n",dev->number,(reason & uPD98401_INT_MF)
+;
 			event_dump();
 			    /* @@@ should try to recover */
 		}
@@ -1100,8 +1100,8 @@ static void __devinit eprom_set(struct zatm_dev *zatm_dev,unsigned long value,
 	int error;
 
 	if ((error = pci_write_config_dword(zatm_dev->pci_dev,cmd,value)))
-		printk(KERN_ERR DEV_LABEL ": PCI write failed (0x%02x)\n",
-		    error);
+//		printk(KERN_ERR DEV_LABEL ": PCI write failed (0x%02x)\n",
+;
 }
 
 
@@ -1112,8 +1112,8 @@ static unsigned long __devinit eprom_get(struct zatm_dev *zatm_dev,
 	int error;
 
 	if ((error = pci_read_config_dword(zatm_dev->pci_dev,cmd,&value)))
-		printk(KERN_ERR DEV_LABEL ": PCI read failed (0x%02x)\n",
-		    error);
+//		printk(KERN_ERR DEV_LABEL ": PCI read failed (0x%02x)\n",
+;
 	return value;
 }
 
@@ -1195,19 +1195,19 @@ static int __devinit zatm_init(struct atm_dev *dev)
 	zatm_dev->base = pci_resource_start(pci_dev, 0);
 	zatm_dev->irq = pci_dev->irq;
 	if ((error = pci_read_config_word(pci_dev,PCI_COMMAND,&command))) {
-		printk(KERN_ERR DEV_LABEL "(itf %d): init error 0x%02x\n",
-		    dev->number,error);
+//		printk(KERN_ERR DEV_LABEL "(itf %d): init error 0x%02x\n",
+;
 		return -EINVAL;
 	}
 	if ((error = pci_write_config_word(pci_dev,PCI_COMMAND,
 	    command | PCI_COMMAND_IO | PCI_COMMAND_MASTER))) {
-		printk(KERN_ERR DEV_LABEL "(itf %d): can't enable IO (0x%02x)"
-		    "\n",dev->number,error);
+//		printk(KERN_ERR DEV_LABEL "(itf %d): can't enable IO (0x%02x)"
+;
 		return -EIO;
 	}
 	eprom_get_esi(dev);
-	printk(KERN_NOTICE DEV_LABEL "(itf %d): rev.%d,base=0x%x,irq=%d,",
-	    dev->number,pci_dev->revision,zatm_dev->base,zatm_dev->irq);
+//	printk(KERN_NOTICE DEV_LABEL "(itf %d): rev.%d,base=0x%x,irq=%d,",
+;
 	/* reset uPD98401 */
 	zout(0,SWR);
 	while (!(zin(GSR) & uPD98401_INT_IND));
@@ -1232,10 +1232,10 @@ static int __devinit zatm_init(struct atm_dev *dev)
 	zout(uPD98401_GMR_ONE | uPD98401_BURST8 | uPD98401_BURST4 |
 	    uPD98401_BURST2 | uPD98401_GMR_PM | uPD98401_GMR_DR,GMR);
 	/* TODO: should shrink allocation now */
-	printk("mem=%dkB,%s (",zatm_dev->mem >> 10,zatm_dev->copper ? "UTP" :
-	    "MMF");
+//	printk("mem=%dkB,%s (",zatm_dev->mem >> 10,zatm_dev->copper ? "UTP" :
+;
 	for (i = 0; i < ESI_LEN; i++)
-		printk("%02X%s",dev->esi[i],i == ESI_LEN-1 ? ")\n" : "-");
+;
 	do {
 		unsigned long flags;
 
@@ -1249,10 +1249,10 @@ static int __devinit zatm_init(struct atm_dev *dev)
 	}
 	while (t0 > t1 || t1 > t2); /* loop if wrapping ... */
 	zatm_dev->khz = t2-2*t1+t0;
-	printk(KERN_NOTICE DEV_LABEL "(itf %d): uPD98401 %d.%d at %d.%03d "
-	    "MHz\n",dev->number,
-	    (zin(VER) & uPD98401_MAJOR) >> uPD98401_MAJOR_SHIFT,
-            zin(VER) & uPD98401_MINOR,zatm_dev->khz/1000,zatm_dev->khz % 1000);
+//	printk(KERN_NOTICE DEV_LABEL "(itf %d): uPD98401 %d.%d at %d.%03d "
+//	    "MHz\n",dev->number,
+//	    (zin(VER) & uPD98401_MAJOR) >> uPD98401_MAJOR_SHIFT,
+;
 	return uPD98402_init(dev);
 }
 
@@ -1271,8 +1271,8 @@ static int __devinit zatm_start(struct atm_dev *dev)
  		zatm_dev->mbx_start[i] = 0;
  	error = request_irq(zatm_dev->irq, zatm_int, IRQF_SHARED, DEV_LABEL, dev);
 	if (error < 0) {
- 		printk(KERN_ERR DEV_LABEL "(itf %d): IRQ%d is already in use\n",
- 		    dev->number,zatm_dev->irq);
+// 		printk(KERN_ERR DEV_LABEL "(itf %d): IRQ%d is already in use\n",
+;
 		goto done;
 	}
 	/* define memory regions */
@@ -1297,9 +1297,9 @@ static int __devinit zatm_start(struct atm_dev *dev)
 	curr += NR_SHAPERS*SHAPER_SIZE/4;
 	DPRINTK("Free    0x%08lx\n",curr);
 	zpokel(zatm_dev,curr,uPD98401_TOS); /* free pool */
-	printk(KERN_INFO DEV_LABEL "(itf %d): %d shapers, %d pools, %d RX, "
-	    "%ld VCs\n",dev->number,NR_SHAPERS,pools,rx,
-	    (zatm_dev->mem-curr*4)/VC_SIZE);
+//	printk(KERN_INFO DEV_LABEL "(itf %d): %d shapers, %d pools, %d RX, "
+//	    "%ld VCs\n",dev->number,NR_SHAPERS,pools,rx,
+;
 	/* create mailboxes */
 	for (i = 0; i < NR_MBX; i++) {
 		void *mbx;
@@ -1317,8 +1317,8 @@ static int __devinit zatm_start(struct atm_dev *dev)
 		 * for this device.
 		 */
 		if (((unsigned long)mbx ^ mbx_dma) & 0xffff) {
-			printk(KERN_ERR DEV_LABEL "(itf %d): system "
-			       "bus incompatible with driver\n", dev->number);
+//			printk(KERN_ERR DEV_LABEL "(itf %d): system "
+;
 			pci_free_consistent(pdev, 2*MBX_SIZE(i), mbx, mbx_dma);
 			error = -ENODEV;
 			goto out;
@@ -1430,7 +1430,7 @@ static int zatm_open(struct atm_vcc *vcc)
 
 static int zatm_change_qos(struct atm_vcc *vcc,struct atm_qos *qos,int flags)
 {
-	printk("Not yet implemented\n");
+;
 	return -ENOSYS;
 	/* @@@ */
 }
@@ -1534,7 +1534,7 @@ static int zatm_send(struct atm_vcc *vcc,struct sk_buff *skb)
 		return -EINVAL;
 	}
 	if (!skb) {
-		printk(KERN_CRIT "!skb in zatm_send ?\n");
+;
 		if (vcc->pop) vcc->pop(vcc,skb);
 		return -EINVAL;
 	}
@@ -1593,7 +1593,7 @@ static int __devinit zatm_init_one(struct pci_dev *pci_dev,
 
 	zatm_dev = kmalloc(sizeof(*zatm_dev), GFP_KERNEL);
 	if (!zatm_dev) {
-		printk(KERN_EMERG "%s: memory shortage\n", DEV_LABEL);
+;
 		goto out;
 	}
 

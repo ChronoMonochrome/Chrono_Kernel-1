@@ -672,8 +672,8 @@ static int nx_p3_nic_add_mac(struct netxen_adapter *adapter,
 
 	cur = kzalloc(sizeof(nx_mac_list_t), GFP_ATOMIC);
 	if (cur == NULL) {
-		printk(KERN_ERR "%s: failed to add mac address filter\n",
-				adapter->netdev->name);
+//		printk(KERN_ERR "%s: failed to add mac address filter\n",
+;
 		return -ENOMEM;
 	}
 	memcpy(cur->mac_addr, addr, ETH_ALEN);
@@ -796,8 +796,8 @@ int netxen_config_intr_coalesce(struct netxen_adapter *adapter)
 
 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
 	if (rv != 0) {
-		printk(KERN_ERR "ERROR. Could not send "
-			"interrupt coalescing parameters\n");
+//		printk(KERN_ERR "ERROR. Could not send "
+;
 	}
 
 	return rv;
@@ -820,8 +820,8 @@ int netxen_config_hw_lro(struct netxen_adapter *adapter, int enable)
 
 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
 	if (rv != 0) {
-		printk(KERN_ERR "ERROR. Could not send "
-			"configure hw lro request\n");
+//		printk(KERN_ERR "ERROR. Could not send "
+;
 	}
 
 	return rv;
@@ -848,8 +848,8 @@ int netxen_config_bridged_mode(struct netxen_adapter *adapter, int enable)
 
 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
 	if (rv != 0) {
-		printk(KERN_ERR "ERROR. Could not send "
-				"configure bridge mode request\n");
+//		printk(KERN_ERR "ERROR. Could not send "
+;
 	}
 
 	adapter->flags ^= NETXEN_NIC_BRIDGE_ENABLED;
@@ -900,8 +900,8 @@ int netxen_config_rss(struct netxen_adapter *adapter, int enable)
 
 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
 	if (rv != 0) {
-		printk(KERN_ERR "%s: could not configure RSS\n",
-				adapter->netdev->name);
+//		printk(KERN_ERR "%s: could not configure RSS\n",
+;
 	}
 
 	return rv;
@@ -924,9 +924,9 @@ int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd)
 
 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
 	if (rv != 0) {
-		printk(KERN_ERR "%s: could not notify %s IP 0x%x reuqest\n",
-				adapter->netdev->name,
-				(cmd == NX_IP_UP) ? "Add" : "Remove", ip);
+//		printk(KERN_ERR "%s: could not notify %s IP 0x%x reuqest\n",
+//				adapter->netdev->name,
+;
 	}
 	return rv;
 }
@@ -946,8 +946,8 @@ int netxen_linkevent_request(struct netxen_adapter *adapter, int enable)
 
 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
 	if (rv != 0) {
-		printk(KERN_ERR "%s: could not configure link notification\n",
-				adapter->netdev->name);
+//		printk(KERN_ERR "%s: could not configure link notification\n",
+;
 	}
 
 	return rv;
@@ -970,8 +970,8 @@ int netxen_send_lro_cleanup(struct netxen_adapter *adapter)
 
 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
 	if (rv != 0) {
-		printk(KERN_ERR "%s: could not cleanup lro flows\n",
-				adapter->netdev->name);
+//		printk(KERN_ERR "%s: could not cleanup lro flows\n",
+;
 	}
 	return rv;
 }
@@ -995,8 +995,8 @@ int netxen_nic_change_mtu(struct net_device *netdev, int mtu)
 		max_mtu = P2_MAX_MTU;
 
 	if (mtu > max_mtu) {
-		printk(KERN_ERR "%s: mtu > %d bytes unsupported\n",
-				netdev->name, max_mtu);
+//		printk(KERN_ERR "%s: mtu > %d bytes unsupported\n",
+;
 		return -EINVAL;
 	}
 

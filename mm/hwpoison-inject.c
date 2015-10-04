@@ -54,7 +54,7 @@ static int hwpoison_inject(void *data, u64 val)
 		return 0;
 
 inject:
-	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
+;
 	return __memory_failure(pfn, 18, MF_COUNT_INCREASED);
 }
 

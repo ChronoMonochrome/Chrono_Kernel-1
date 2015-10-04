@@ -692,7 +692,7 @@ kdb_printit:
 	if (logging) {
 		saved_loglevel = console_loglevel;
 		console_loglevel = 0;
-		printk(KERN_INFO "%s", kdb_buffer);
+;
 	}
 
 	if (KDB_STATE(PAGER) && strchr(kdb_buffer, '\n'))
@@ -744,7 +744,7 @@ kdb_printit:
 		}
 
 		if (logging)
-			printk("%s", moreprompt);
+;
 
 		kdb_read(buf1, 2); /* '2' indicates to return
 				    * immediately after getting one key. */

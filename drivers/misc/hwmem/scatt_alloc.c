@@ -58,7 +58,7 @@ void *scatt_alloc(void *instance, size_t size)
 	new_alloc->pages = kmalloc(array_size, GFP_KERNEL);
 
 	if (!new_alloc->pages) {
-		printk(KERN_ERR "HWMEM: Scattered alloc pages array failed\n");
+;
 		goto alloc_failed;
 	}
 
@@ -66,7 +66,7 @@ void *scatt_alloc(void *instance, size_t size)
 	for (i = 0; i < new_alloc->nr_of_pages; i++) {
 		new_alloc->pages[i] = alloc_page(GFP_KERNEL);
 		if (!new_alloc->pages[i]) {
-			printk(KERN_ERR "HWMEM: Scattered alloc page failed\n");
+;
 			goto alloc_failed;
 		}
 	}

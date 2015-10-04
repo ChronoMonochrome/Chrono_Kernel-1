@@ -298,7 +298,7 @@ static int snd_u8500_alsa_hdmi_open(struct snd_pcm_substream *substream)
 	error = u8500_acodec_setuser(USER_ALSA);
 	status = u8500_acodec_open(I2S_CLIENT_MSP2, stream_id);
 	if (status) {
-		printk("failed in getting open\n");
+;
 		return (-1);
 	}
 
@@ -765,8 +765,8 @@ static int configure_msp_hdmi(int sampling_freq, int channel_count)
 #endif
 
 	if (error_status < 0) {
-		printk("error in msp enable, error_status is %d\n",
-		       error_status);
+//		printk("error in msp enable, error_status is %d\n",
+;
 		return error_status;
 	}
 

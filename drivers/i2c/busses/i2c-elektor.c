@@ -146,27 +146,27 @@ static int pcf_isa_init(void)
 	spin_lock_init(&lock);
 	if (!mmapped) {
 		if (!request_region(base, 2, pcf_isa_ops.name)) {
-			printk(KERN_ERR "%s: requested I/O region (%#x:2) is "
-			       "in use\n", pcf_isa_ops.name, base);
+//			printk(KERN_ERR "%s: requested I/O region (%#x:2) is "
+;
 			return -ENODEV;
 		}
 		base_iomem = ioport_map(base, 2);
 		if (!base_iomem) {
-			printk(KERN_ERR "%s: remap of I/O region %#x failed\n",
-			       pcf_isa_ops.name, base);
+//			printk(KERN_ERR "%s: remap of I/O region %#x failed\n",
+;
 			release_region(base, 2);
 			return -ENODEV;
 		}
 	} else {
 		if (!request_mem_region(base, 2, pcf_isa_ops.name)) {
-			printk(KERN_ERR "%s: requested memory region (%#x:2) "
-			       "is in use\n", pcf_isa_ops.name, base);
+//			printk(KERN_ERR "%s: requested memory region (%#x:2) "
+;
 			return -ENODEV;
 		}
 		base_iomem = ioremap(base, 2);
 		if (base_iomem == NULL) {
-			printk(KERN_ERR "%s: remap of memory region %#x "
-			       "failed\n", pcf_isa_ops.name, base);
+//			printk(KERN_ERR "%s: remap of memory region %#x "
+;
 			release_mem_region(base, 2);
 			return -ENODEV;
 		}
@@ -177,8 +177,8 @@ static int pcf_isa_init(void)
 	if (irq > 0) {
 		if (request_irq(irq, pcf_isa_handler, 0, pcf_isa_ops.name,
 				NULL) < 0) {
-			printk(KERN_ERR "%s: Request irq%d failed\n",
-			       pcf_isa_ops.name, irq);
+//			printk(KERN_ERR "%s: Request irq%d failed\n",
+;
 			irq = 0;
 		} else
 			enable_irq(irq);

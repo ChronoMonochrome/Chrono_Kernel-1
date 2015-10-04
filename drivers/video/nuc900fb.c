@@ -116,8 +116,8 @@ static int nuc900fb_check_var(struct fb_var_screeninfo *var,
 			}
 
 	if (display == NULL) {
-		printk(KERN_ERR "wrong resolution or depth %dx%d at %d bit per pixel\n",
-			var->xres, var->yres, var->bits_per_pixel);
+//		printk(KERN_ERR "wrong resolution or depth %dx%d at %d bit per pixel\n",
+;
 		return -EINVAL;
 	}
 
@@ -599,7 +599,7 @@ static int __devinit nuc900fb_probe(struct platform_device *pdev)
 
 	fbi->clk = clk_get(&pdev->dev, NULL);
 	if (IS_ERR(fbi->clk)) {
-		printk(KERN_ERR "nuc900-lcd:failed to get lcd clock source\n");
+;
 		ret = PTR_ERR(fbi->clk);
 		goto release_irq;
 	}
@@ -622,7 +622,7 @@ static int __devinit nuc900fb_probe(struct platform_device *pdev)
 	/* Initialize Video Memory */
 	ret = nuc900fb_map_video_memory(fbinfo);
 	if (ret) {
-		printk(KERN_ERR "Failed to allocate video RAM: %x\n", ret);
+;
 		goto release_clock;
 	}
 
@@ -644,13 +644,13 @@ static int __devinit nuc900fb_probe(struct platform_device *pdev)
 
 	ret = register_framebuffer(fbinfo);
 	if (ret) {
-		printk(KERN_ERR "failed to register framebuffer device: %d\n",
-			ret);
+//		printk(KERN_ERR "failed to register framebuffer device: %d\n",
+;
 		goto free_cpufreq;
 	}
 
-	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-		fbinfo->node, fbinfo->fix.id);
+//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+;
 
 	return 0;
 
@@ -736,7 +736,7 @@ static int nuc900fb_resume(struct platform_device *dev)
 	struct fb_info	   *fbinfo = platform_get_drvdata(dev);
 	struct nuc900fb_info *fbi = fbinfo->par;
 
-	printk(KERN_INFO "nuc900fb resume\n");
+;
 
 	clk_enable(fbi->clk);
 	msleep(1);

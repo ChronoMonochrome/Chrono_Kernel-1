@@ -38,7 +38,7 @@ static int overo_panel_init(struct lcd_panel *panel,
 	    (gpio_direction_output(LCD_ENABLE, 1) == 0))
 		gpio_export(LCD_ENABLE, 0);
 	else
-		printk(KERN_ERR "could not obtain gpio for LCD_ENABLE\n");
+;
 
 	return 0;
 }

@@ -143,8 +143,8 @@ int sas_smp_host_handler(struct Scsi_Host *shost, struct request *req,
 
 	if (bio_offset(req->bio) + blk_rq_bytes(req) > PAGE_SIZE ||
 	    bio_offset(rsp->bio) + blk_rq_bytes(rsp) > PAGE_SIZE) {
-		shost_printk(KERN_ERR, shost,
-			"SMP request/response frame crosses page boundary");
+//		shost_printk(KERN_ERR, shost,
+;
 		goto out;
 	}
 

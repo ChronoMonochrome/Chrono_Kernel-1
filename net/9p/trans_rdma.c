@@ -345,9 +345,9 @@ static void cq_comp_handler(struct ib_cq *cq, void *cq_context)
 			break;
 
 		default:
-			printk(KERN_ERR "9prdma: unexpected completion type, "
-			       "c->wc_op=%d, wc.opcode=%d, status=%d\n",
-			       c->wc_op, wc.opcode, wc.status);
+//			printk(KERN_ERR "9prdma: unexpected completion type, "
+//			       "c->wc_op=%d, wc.opcode=%d, status=%d\n",
+;
 			break;
 		}
 		kfree(c);

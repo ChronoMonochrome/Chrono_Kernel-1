@@ -278,15 +278,15 @@ int fscache_add_cache(struct fscache_cache *cache,
 	spin_unlock(&fscache_fsdef_index.lock);
 	up_write(&fscache_addremove_sem);
 
-	printk(KERN_NOTICE "FS-Cache: Cache \"%s\" added (type %s)\n",
-	       cache->tag->name, cache->ops->name);
+//	printk(KERN_NOTICE "FS-Cache: Cache \"%s\" added (type %s)\n",
+;
 	kobject_uevent(cache->kobj, KOBJ_ADD);
 
 	_leave(" = 0 [%s]", cache->identifier);
 	return 0;
 
 tag_in_use:
-	printk(KERN_ERR "FS-Cache: Cache tag '%s' already in use\n", tagname);
+;
 	__fscache_release_cache_tag(tag);
 	_leave(" = -EXIST");
 	return -EEXIST;
@@ -316,8 +316,8 @@ void fscache_io_error(struct fscache_cache *cache)
 {
 	set_bit(FSCACHE_IOERROR, &cache->flags);
 
-	printk(KERN_ERR "FS-Cache: Cache %s stopped due to I/O error\n",
-	       cache->ops->name);
+//	printk(KERN_ERR "FS-Cache: Cache %s stopped due to I/O error\n",
+;
 }
 EXPORT_SYMBOL(fscache_io_error);
 
@@ -367,8 +367,8 @@ void fscache_withdraw_cache(struct fscache_cache *cache)
 
 	_enter("");
 
-	printk(KERN_NOTICE "FS-Cache: Withdrawing cache \"%s\"\n",
-	       cache->tag->name);
+//	printk(KERN_NOTICE "FS-Cache: Withdrawing cache \"%s\"\n",
+;
 
 	/* make the cache unavailable for cookie acquisition */
 	if (test_and_set_bit(FSCACHE_CACHE_WITHDRAWN, &cache->flags))

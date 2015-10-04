@@ -172,8 +172,8 @@ libipw_rx_frame_mgmt(struct libipw_device *ieee, struct sk_buff *skb,
 			u16 stype)
 {
 	if (ieee->iw_mode == IW_MODE_MASTER) {
-		printk(KERN_DEBUG "%s: Master mode not yet suppported.\n",
-		       ieee->dev->name);
+//		printk(KERN_DEBUG "%s: Master mode not yet suppported.\n",
+;
 		return 0;
 /*
   hostap_update_sta_ps(ieee, (struct hostap_libipw_hdr_4addr *)
@@ -201,9 +201,9 @@ libipw_rx_frame_mgmt(struct libipw_device *ieee, struct sk_buff *skb,
 
 	if (ieee->iw_mode == IW_MODE_MASTER) {
 		if (type != WLAN_FC_TYPE_MGMT && type != WLAN_FC_TYPE_CTRL) {
-			printk(KERN_DEBUG "%s: unknown management frame "
-			       "(type=0x%02x, stype=0x%02x) dropped\n",
-			       skb->dev->name, type, stype);
+//			printk(KERN_DEBUG "%s: unknown management frame "
+//			       "(type=0x%02x, stype=0x%02x) dropped\n",
+;
 			return -1;
 		}
 
@@ -211,8 +211,8 @@ libipw_rx_frame_mgmt(struct libipw_device *ieee, struct sk_buff *skb,
 		return 0;
 	}
 
-	printk(KERN_DEBUG "%s: hostap_rx_frame_mgmt: management frame "
-	       "received in non-Host AP mode\n", skb->dev->name);
+//	printk(KERN_DEBUG "%s: hostap_rx_frame_mgmt: management frame "
+;
 	return -1;
 }
 #endif
@@ -317,9 +317,9 @@ libipw_rx_frame_decrypt_msdu(struct libipw_device *ieee,
 	res = crypt->ops->decrypt_msdu(skb, keyidx, hdrlen, crypt->priv);
 	atomic_dec(&crypt->refcnt);
 	if (res < 0) {
-		printk(KERN_DEBUG "%s: MSDU decryption/MIC verification failed"
-		       " (SA=%pM keyidx=%d)\n", ieee->dev->name, hdr->addr2,
-		       keyidx);
+//		printk(KERN_DEBUG "%s: MSDU decryption/MIC verification failed"
+//		       " (SA=%pM keyidx=%d)\n", ieee->dev->name, hdr->addr2,
+;
 		return -1;
 	}
 
@@ -355,7 +355,7 @@ int libipw_rx(struct libipw_device *ieee, struct sk_buff *skb,
 
 	hdr = (struct libipw_hdr_4addr *)skb->data;
 	if (skb->len < 10) {
-		printk(KERN_INFO "%s: SKB length < 10\n", dev->name);
+;
 		goto rx_dropped;
 	}
 
@@ -367,8 +367,8 @@ int libipw_rx(struct libipw_device *ieee, struct sk_buff *skb,
 	hdrlen = libipw_get_hdrlen(fc);
 
 	if (skb->len < hdrlen) {
-		printk(KERN_INFO "%s: invalid SKB length %d\n",
-			dev->name, skb->len);
+//		printk(KERN_INFO "%s: invalid SKB length %d\n",
+;
 		goto rx_dropped;
 	}
 
@@ -469,8 +469,8 @@ int libipw_rx(struct libipw_device *ieee, struct sk_buff *skb,
 		if (type == WLAN_FC_TYPE_MGMT && stype == WLAN_FC_STYPE_AUTH &&
 		    fc & IEEE80211_FCTL_PROTECTED && ieee->host_decrypt &&
 		    (keyidx = hostap_rx_frame_decrypt(ieee, skb, crypt)) < 0) {
-			printk(KERN_DEBUG "%s: failed to decrypt mgmt::auth "
-			       "from %pM\n", dev->name, hdr->addr2);
+//			printk(KERN_DEBUG "%s: failed to decrypt mgmt::auth "
+;
 			/* TODO: could inform hostapd about this so that it
 			 * could send auth failure report */
 			goto rx_dropped;
@@ -598,9 +598,9 @@ int libipw_rx(struct libipw_device *ieee, struct sk_buff *skb,
 			flen -= hdrlen;
 
 		if (frag_skb->tail + flen > frag_skb->end) {
-			printk(KERN_WARNING "%s: host decrypted and "
-			       "reassembled frame did not fit skb\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: host decrypted and "
+//			       "reassembled frame did not fit skb\n",
+;
 			libipw_frag_cache_invalidate(ieee, hdr);
 			goto rx_dropped;
 		}
@@ -715,8 +715,8 @@ int libipw_rx(struct libipw_device *ieee, struct sk_buff *skb,
 	 * the received frame. */
 	if (ieee->ieee802_1x && ieee->iw_mode == IW_MODE_MASTER) {
 		if (ethertype == ETH_P_PAE) {
-			printk(KERN_DEBUG "%s: RX: IEEE 802.1X frame\n",
-			       dev->name);
+//			printk(KERN_DEBUG "%s: RX: IEEE 802.1X frame\n",
+;
 			if (ieee->hostapd && ieee->apdev) {
 				/* Send IEEE 802.1X frames to the user
 				 * space daemon for processing */
@@ -727,9 +727,9 @@ int libipw_rx(struct libipw_device *ieee, struct sk_buff *skb,
 				goto rx_exit;
 			}
 		} else if (!frame_authorized) {
-			printk(KERN_DEBUG "%s: dropped frame from "
-			       "unauthorized port (IEEE 802.1X): "
-			       "ethertype=0x%04x\n", dev->name, ethertype);
+//			printk(KERN_DEBUG "%s: dropped frame from "
+//			       "unauthorized port (IEEE 802.1X): "
+;
 			goto rx_dropped;
 		}
 	}
@@ -778,8 +778,8 @@ int libipw_rx(struct libipw_device *ieee, struct sk_buff *skb,
 			ieee->ap->bridged_multicast++;
 			skb2 = skb_clone(skb, GFP_ATOMIC);
 			if (skb2 == NULL)
-				printk(KERN_DEBUG "%s: skb_clone failed for "
-				       "multicast frame\n", dev->name);
+//				printk(KERN_DEBUG "%s: skb_clone failed for "
+;
 		} else if (hostap_is_sta_assoc(ieee->ap, dst)) {
 			/* send frame directly to the associated STA using
 			 * wireless media and not passing to higher layers */
@@ -1277,8 +1277,8 @@ static int libipw_parse_info_param(struct libipw_info_element
 			break;
 
 		case WLAN_EID_QOS_PARAMETER:
-			printk(KERN_ERR
-			       "QoS Error need to parse QOS_PARAMETER IE\n");
+//			printk(KERN_ERR
+;
 			break;
 			/* 802.11h */
 		case WLAN_EID_PWR_CONSTRAINT:

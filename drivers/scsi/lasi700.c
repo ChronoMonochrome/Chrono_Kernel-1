@@ -104,7 +104,7 @@ lasi700_probe(struct parisc_device *dev)
 
 	hostdata = kzalloc(sizeof(*hostdata), GFP_KERNEL);
 	if (!hostdata) {
-		dev_printk(KERN_ERR, &dev->dev, "Failed to allocate host data\n");
+;
 		return -ENOMEM;
 	}
 
@@ -131,7 +131,7 @@ lasi700_probe(struct parisc_device *dev)
 	host->base = base;
 	host->irq = dev->irq;
 	if(request_irq(dev->irq, NCR_700_intr, IRQF_SHARED, "lasi700", host)) {
-		printk(KERN_ERR "lasi700: request_irq failed!\n");
+;
 		goto out_put_host;
 	}
 

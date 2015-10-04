@@ -65,16 +65,16 @@ assabet_pcmcia_configure_socket(struct soc_pcmcia_socket *skt, const socket_stat
 		break;
 
 	case 50:
-		printk(KERN_WARNING "%s(): CS asked for 5V, applying 3.3V...\n",
-			__func__);
+//		printk(KERN_WARNING "%s(): CS asked for 5V, applying 3.3V...\n",
+;
 
 	case 33:  /* Can only apply 3.3V to the CF slot. */
 		mask = ASSABET_BCR_CF_PWR;
 		break;
 
 	default:
-		printk(KERN_ERR "%s(): unrecognized Vcc %u\n", __func__,
-			state->Vcc);
+//		printk(KERN_ERR "%s(): unrecognized Vcc %u\n", __func__,
+;
 		return -1;
 	}
 

@@ -909,16 +909,16 @@ try_again:
 		return 0;
 
 	if (rc) {
-		printk(KERN_WARNING
-		       "%s: could not switch to 4-bit mode, error %d\n",
-		       dev_name(&card->dev), rc);
+//		printk(KERN_WARNING
+//		       "%s: could not switch to 4-bit mode, error %d\n",
+;
 		return 0;
 	}
 
 	msb->system = MEMSTICK_SYS_PAR4;
 	host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_PAR4);
-	printk(KERN_INFO "%s: switching to 4-bit parallel mode\n",
-	       dev_name(&card->dev));
+//	printk(KERN_INFO "%s: switching to 4-bit parallel mode\n",
+;
 
 	if (msb->caps & MEMSTICK_CAP_PAR8) {
 		rc = mspro_block_set_interface(card, MEMSTICK_SYS_PAR8);
@@ -927,13 +927,13 @@ try_again:
 			msb->system = MEMSTICK_SYS_PAR8;
 			host->set_param(host, MEMSTICK_INTERFACE,
 					MEMSTICK_PAR8);
-			printk(KERN_INFO
-			       "%s: switching to 8-bit parallel mode\n",
-			       dev_name(&card->dev));
+//			printk(KERN_INFO
+//			       "%s: switching to 8-bit parallel mode\n",
+;
 		} else
-			printk(KERN_WARNING
-			       "%s: could not switch to 8-bit mode, error %d\n",
-			       dev_name(&card->dev), rc);
+//			printk(KERN_WARNING
+//			       "%s: could not switch to 8-bit mode, error %d\n",
+;
 	}
 
 	card->next_request = h_mspro_block_req_init;
@@ -944,9 +944,9 @@ try_again:
 	rc = card->current_mrq.error;
 
 	if (rc) {
-		printk(KERN_WARNING
-		       "%s: interface error, trying to fall back to serial\n",
-		       dev_name(&card->dev));
+//		printk(KERN_WARNING
+//		       "%s: interface error, trying to fall back to serial\n",
+;
 		msb->system = MEMSTICK_SYS_SERIAL;
 		host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
 		msleep(10);
@@ -1011,15 +1011,15 @@ static int mspro_block_read_attributes(struct memstick_dev *card)
 	}
 
 	if (be16_to_cpu(attr->signature) != MSPRO_BLOCK_SIGNATURE) {
-		printk(KERN_ERR "%s: unrecognized device signature %x\n",
-		       dev_name(&card->dev), be16_to_cpu(attr->signature));
+//		printk(KERN_ERR "%s: unrecognized device signature %x\n",
+;
 		rc = -ENODEV;
 		goto out_free_attr;
 	}
 
 	if (attr->count > MSPRO_BLOCK_MAX_ATTRIBUTES) {
-		printk(KERN_WARNING "%s: way too many attribute entries\n",
-		       dev_name(&card->dev));
+//		printk(KERN_WARNING "%s: way too many attribute entries\n",
+;
 		attr_count = MSPRO_BLOCK_MAX_ATTRIBUTES;
 	} else
 		attr_count = attr->count;
@@ -1470,8 +1470,8 @@ static int __init mspro_block_init(void)
 
 	rc = register_blkdev(major, DRIVER_NAME);
 	if (rc < 0) {
-		printk(KERN_ERR DRIVER_NAME ": failed to register "
-		       "major %d, error %d\n", major, rc);
+//		printk(KERN_ERR DRIVER_NAME ": failed to register "
+;
 		return rc;
 	}
 	if (!major)

@@ -713,8 +713,8 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
 		 * the max trace buffer (no one writes directly to it)
 		 * and flag that it failed.
 		 */
-		trace_array_printk(&max_tr, _THIS_IP_,
-			"Failed to swap buffers due to commit in progress\n");
+//		trace_array_printk(&max_tr, _THIS_IP_,
+;
 	}
 
 	ftrace_enable_cpu();
@@ -800,7 +800,7 @@ __acquires(kernel_lock)
 		/* the test is responsible for resetting too */
 		current_trace = saved_tracer;
 		if (ret) {
-			printk(KERN_CONT "FAILED!\n");
+;
 			goto out;
 		}
 		/* Only reset on passing, to avoid touching corrupted buffers */
@@ -810,7 +810,7 @@ __acquires(kernel_lock)
 		if (ring_buffer_expanded && type->use_max_tr)
 			ring_buffer_resize(max_tr.buffer, 1);
 
-		printk(KERN_CONT "PASSED\n");
+;
 	}
 #endif
 
@@ -827,15 +827,15 @@ __acquires(kernel_lock)
 	if (strncmp(default_bootup_tracer, type->name, MAX_TRACER_SIZE))
 		goto out_unlock;
 
-	printk(KERN_INFO "Starting tracer '%s'\n", type->name);
+;
 	/* Do we want this tracer to start on bootup? */
 	tracing_set_tracer(type->name);
 	default_bootup_tracer = NULL;
 	/* disable other selftests, since this will break it. */
 	tracing_selftest_disabled = 1;
 #ifdef CONFIG_FTRACE_STARTUP_TEST
-	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
-	       type->name);
+//	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
+;
 #endif
 
  out_unlock:
@@ -1453,7 +1453,7 @@ int trace_array_printk(struct trace_array *tr,
 		return 0;
 
 	va_start(ap, fmt);
-	ret = trace_array_vprintk(tr, ip, fmt, ap);
+;
 	va_end(ap);
 	return ret;
 }
@@ -1521,7 +1521,7 @@ int trace_array_vprintk(struct trace_array *tr,
 
 int trace_vprintk(unsigned long ip, const char *fmt, va_list args)
 {
-	return trace_array_vprintk(&global_trace, ip, fmt, args);
+;
 }
 EXPORT_SYMBOL_GPL(trace_vprintk);
 
@@ -3545,7 +3545,7 @@ static int mark_printk(const char *fmt, ...)
 	int ret;
 	va_list args;
 	va_start(args, fmt);
-	ret = trace_vprintk(0, fmt, args);
+;
 	va_end(args);
 	return ret;
 }
@@ -3577,7 +3577,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
 	} else
 		buf[cnt] = '\0';
 
-	written = mark_printk("%s", buf);
+;
 	kfree(buf);
 	*fpos += written;
 
@@ -4498,7 +4498,7 @@ trace_printk_seq(struct trace_seq *s)
 	/* should be zero ended, but we are paranoid. */
 	s->buffer[s->len] = 0;
 
-	printk(KERN_TRACE "%s", s->buffer);
+;
 
 	trace_seq_init(s);
 }
@@ -4562,11 +4562,11 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
 	case DUMP_NONE:
 		goto out_enable;
 	default:
-		printk(KERN_TRACE "Bad dumping mode, switching to all CPUs dump\n");
+;
 		iter.cpu_file = TRACE_PIPE_ALL_CPU;
 	}
 
-	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+;
 
 	/*
 	 * We need to stop all tracing on all CPUS to read the
@@ -4578,7 +4578,7 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
 	while (!trace_empty(&iter)) {
 
 		if (!cnt)
-			printk(KERN_TRACE "---------------------------------\n");
+;
 
 		cnt++;
 
@@ -4601,9 +4601,9 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
 	}
 
 	if (!cnt)
-		printk(KERN_TRACE "   (ftrace buffer empty)\n");
+;
 	else
-		printk(KERN_TRACE "---------------------------------\n");
+;
 
  out_enable:
 	trace_flags |= old_userobj;
@@ -4644,7 +4644,7 @@ __init static int tracer_alloc_buffers(void)
 	/* TODO: make the number of buffers hot pluggable with CPUS */
 	global_trace.buffer = ring_buffer_alloc(ring_buf_size, rb_flags);
 	if (!global_trace.buffer) {
-		printk(KERN_ERR "tracer: failed to allocate ring buffer!\n");
+;
 		WARN_ON(1);
 		goto out_free_cpumask;
 	}
@@ -4654,7 +4654,7 @@ __init static int tracer_alloc_buffers(void)
 #ifdef CONFIG_TRACER_MAX_TRACE
 	max_tr.buffer = ring_buffer_alloc(1, rb_flags);
 	if (!max_tr.buffer) {
-		printk(KERN_ERR "tracer: failed to allocate max ring buffer!\n");
+;
 		WARN_ON(1);
 		ring_buffer_free(global_trace.buffer);
 		goto out_free_cpumask;
@@ -4702,8 +4702,8 @@ __init static int clear_boot_tracer(void)
 	if (!default_bootup_tracer)
 		return 0;
 
-	printk(KERN_INFO "ftrace bootup tracer '%s' not registered.\n",
-	       default_bootup_tracer);
+//	printk(KERN_INFO "ftrace bootup tracer '%s' not registered.\n",
+;
 	default_bootup_tracer = NULL;
 
 	return 0;

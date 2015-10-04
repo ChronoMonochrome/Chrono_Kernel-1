@@ -74,45 +74,45 @@
 #define ABIT_UGURU3_NAME			"abituguru3"
 #define ABIT_UGURU3_DEBUG(format, arg...)	\
 	if (verbose)				\
-		printk(KERN_DEBUG ABIT_UGURU3_NAME ": "	format , ## arg)
-
-/* Macros to help calculate the sysfs_names array length */
-#define ABIT_UGURU3_MAX_NO_SENSORS 26
-/* sum of strlen +1 of: in??_input\0, in??_{min,max}\0, in??_{min,max}_alarm\0,
-   in??_{min,max}_alarm_enable\0, in??_beep\0, in??_shutdown\0, in??_label\0 */
-#define ABIT_UGURU3_IN_NAMES_LENGTH (11 + 2 * 9 + 2 * 15 + 2 * 22 + 10 + 14 + 11)
-/* sum of strlen +1 of: temp??_input\0, temp??_max\0, temp??_crit\0,
-   temp??_alarm\0, temp??_alarm_enable\0, temp??_beep\0, temp??_shutdown\0,
-   temp??_label\0 */
-#define ABIT_UGURU3_TEMP_NAMES_LENGTH (13 + 11 + 12 + 13 + 20 + 12 + 16 + 13)
-/* sum of strlen +1 of: fan??_input\0, fan??_min\0, fan??_alarm\0,
-   fan??_alarm_enable\0, fan??_beep\0, fan??_shutdown\0, fan??_label\0 */
-#define ABIT_UGURU3_FAN_NAMES_LENGTH (12 + 10 + 12 + 19 + 11 + 15 + 12)
-/* Worst case scenario 16 in sensors (longest names_length) and the rest
-   temp sensors (second longest names_length). */
-#define ABIT_UGURU3_SYSFS_NAMES_LENGTH (16 * ABIT_UGURU3_IN_NAMES_LENGTH + \
-	(ABIT_UGURU3_MAX_NO_SENSORS - 16) * ABIT_UGURU3_TEMP_NAMES_LENGTH)
-
-/* All the macros below are named identical to the openguru2 program
-   reverse engineered by Louis Kruger, hence the names might not be 100%
-   logical. I could come up with better names, but I prefer keeping the names
-   identical so that this driver can be compared with his work more easily. */
-/* Two i/o-ports are used by uGuru */
-#define ABIT_UGURU3_BASE			0x00E0
-#define ABIT_UGURU3_CMD				0x00
-#define ABIT_UGURU3_DATA			0x04
-#define ABIT_UGURU3_REGION_LENGTH		5
-/* The wait_xxx functions return this on success and the last contents
-   of the DATA register (0-255) on failure. */
-#define ABIT_UGURU3_SUCCESS			-1
-/* uGuru status flags */
-#define ABIT_UGURU3_STATUS_READY_FOR_READ	0x01
-#define ABIT_UGURU3_STATUS_BUSY			0x02
-
-
-/* Structures */
-struct abituguru3_sensor_info {
-	const char* name;
+//		printk(KERN_DEBUG ABIT_UGURU3_NAME ": "	format , ## arg)
+//
+///* Macros to help calculate the sysfs_names array length */
+//#define ABIT_UGURU3_MAX_NO_SENSORS 26
+///* sum of strlen +1 of: in??_input\0, in??_{min,max}\0, in??_{min,max}_alarm\0,
+//   in??_{min,max}_alarm_enable\0, in??_beep\0, in??_shutdown\0, in??_label\0 */
+//#define ABIT_UGURU3_IN_NAMES_LENGTH (11 + 2 * 9 + 2 * 15 + 2 * 22 + 10 + 14 + 11)
+///* sum of strlen +1 of: temp??_input\0, temp??_max\0, temp??_crit\0,
+//   temp??_alarm\0, temp??_alarm_enable\0, temp??_beep\0, temp??_shutdown\0,
+//   temp??_label\0 */
+//#define ABIT_UGURU3_TEMP_NAMES_LENGTH (13 + 11 + 12 + 13 + 20 + 12 + 16 + 13)
+///* sum of strlen +1 of: fan??_input\0, fan??_min\0, fan??_alarm\0,
+//   fan??_alarm_enable\0, fan??_beep\0, fan??_shutdown\0, fan??_label\0 */
+//#define ABIT_UGURU3_FAN_NAMES_LENGTH (12 + 10 + 12 + 19 + 11 + 15 + 12)
+///* Worst case scenario 16 in sensors (longest names_length) and the rest
+//   temp sensors (second longest names_length). */
+//#define ABIT_UGURU3_SYSFS_NAMES_LENGTH (16 * ABIT_UGURU3_IN_NAMES_LENGTH + \
+//	(ABIT_UGURU3_MAX_NO_SENSORS - 16) * ABIT_UGURU3_TEMP_NAMES_LENGTH)
+//
+///* All the macros below are named identical to the openguru2 program
+//   reverse engineered by Louis Kruger, hence the names might not be 100%
+//   logical. I could come up with better names, but I prefer keeping the names
+//   identical so that this driver can be compared with his work more easily. */
+///* Two i/o-ports are used by uGuru */
+//#define ABIT_UGURU3_BASE			0x00E0
+//#define ABIT_UGURU3_CMD				0x00
+//#define ABIT_UGURU3_DATA			0x04
+//#define ABIT_UGURU3_REGION_LENGTH		5
+///* The wait_xxx functions return this on success and the last contents
+//   of the DATA register (0-255) on failure. */
+//#define ABIT_UGURU3_SUCCESS			-1
+///* uGuru status flags */
+//#define ABIT_UGURU3_STATUS_READY_FOR_READ	0x01
+//#define ABIT_UGURU3_STATUS_BUSY			0x02
+//
+//
+///* Structures */
+//struct abituguru3_sensor_info {
+;
 	int port;
 	int type;
 	int multiplier;

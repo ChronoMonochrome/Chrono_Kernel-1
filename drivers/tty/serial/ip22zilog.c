@@ -1035,7 +1035,7 @@ static int __init ip22zilog_console_setup(struct console *con, char *options)
 
 	up->flags |= IP22ZILOG_FLAG_IS_CONS;
 
-	printk(KERN_INFO "Console: ttyS%d (IP22-Zilog)\n", con->index);
+;
 
 	spin_lock_irqsave(&up->port.lock, flags);
 
@@ -1153,7 +1153,7 @@ static int __init ip22zilog_ports_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Serial: IP22 Zilog driver (%d chips).\n", NUM_IP22ZILOG);
+;
 
 	ip22zilog_prepare();
 

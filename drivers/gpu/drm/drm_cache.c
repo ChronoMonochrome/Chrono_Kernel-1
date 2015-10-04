@@ -75,7 +75,7 @@ drm_clflush_pages(struct page *pages[], unsigned long num_pages)
 	}
 
 	if (on_each_cpu(drm_clflush_ipi_handler, NULL, 1) != 0)
-		printk(KERN_ERR "Timed out waiting for cache flush.\n");
+;
 
 #elif defined(__powerpc__)
 	unsigned long i;
@@ -92,7 +92,7 @@ drm_clflush_pages(struct page *pages[], unsigned long num_pages)
 		kunmap_atomic(page_virtual, KM_USER0);
 	}
 #else
-	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
+;
 	WARN_ON_ONCE(1);
 #endif
 }

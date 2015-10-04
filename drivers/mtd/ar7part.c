@@ -109,7 +109,7 @@ static int create_mtd_partitions(struct mtd_info *master,
 		root_offset &= ~(uint32_t)0xff;
 		break;
 	default:
-		printk(KERN_WARNING "Unknown magic: %08x\n", header.checksum);
+;
 		break;
 	}
 

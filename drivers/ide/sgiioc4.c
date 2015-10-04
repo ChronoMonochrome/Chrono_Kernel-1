@@ -155,12 +155,12 @@ static int sgiioc4_clearirq(ide_drive_t *drive)
 				readl((void __iomem *)(io_ports->irq_addr + 4));
 			pci_read_config_dword(dev, PCI_COMMAND,
 					      &pci_stat_cmd_reg);
-			printk(KERN_ERR "%s(%s): PCI Bus Error when doing DMA: "
-			       "status-cmd reg is 0x%x\n",
-			       __func__, drive->name, pci_stat_cmd_reg);
-			printk(KERN_ERR "%s(%s): PCI Error Address is 0x%x%x\n",
-			       __func__, drive->name,
-			       pci_err_addr_high, pci_err_addr_low);
+//			printk(KERN_ERR "%s(%s): PCI Bus Error when doing DMA: "
+//			       "status-cmd reg is 0x%x\n",
+;
+//			printk(KERN_ERR "%s(%s): PCI Error Address is 0x%x%x\n",
+//			       __func__, drive->name,
+;
 			/* Clear the PCI Error indicator */
 			pci_write_config_dword(dev, PCI_COMMAND, 0x00000146);
 		}
@@ -213,10 +213,10 @@ static int sgiioc4_dma_end(ide_drive_t *drive)
 	ioc4_dma = sgiioc4_ide_dma_stop(hwif, dma_base);
 
 	if (ioc4_dma & IOC4_S_DMA_STOP) {
-		printk(KERN_ERR
-		       "%s(%s): IOC4 DMA STOP bit is still 1 :"
-		       "ioc4_dma_reg 0x%x\n",
-		       __func__, drive->name, ioc4_dma);
+//		printk(KERN_ERR
+//		       "%s(%s): IOC4 DMA STOP bit is still 1 :"
+//		       "ioc4_dma_reg 0x%x\n",
+;
 		dma_stat = 1;
 	}
 
@@ -235,8 +235,8 @@ static int sgiioc4_dma_end(ide_drive_t *drive)
 		udelay(1);
 	}
 	if (!valid) {
-		printk(KERN_ERR "%s(%s) : DMA incomplete\n", __func__,
-		       drive->name);
+//		printk(KERN_ERR "%s(%s) : DMA incomplete\n", __func__,
+;
 		dma_stat = 1;
 	}
 
@@ -245,10 +245,10 @@ static int sgiioc4_dma_end(ide_drive_t *drive)
 
 	if ((bc_dev & 0x01FF) || (bc_mem & 0x1FF)) {
 		if (bc_dev > bc_mem + 8) {
-			printk(KERN_ERR
-			       "%s(%s): WARNING!! byte_count_dev %d "
-			       "!= byte_count_mem %d\n",
-			       __func__, drive->name, bc_dev, bc_mem);
+//			printk(KERN_ERR
+//			       "%s(%s): WARNING!! byte_count_dev %d "
+//			       "!= byte_count_mem %d\n",
+;
 		}
 	}
 
@@ -315,12 +315,12 @@ static int __devinit ide_dma_sgiioc4(ide_hwif_t *hwif,
 	int num_ports = sizeof(struct ioc4_dma_regs);
 	void *pad;
 
-	printk(KERN_INFO "    %s: MMIO-DMA\n", hwif->name);
+;
 
 	if (request_mem_region(dma_base, num_ports, hwif->name) == NULL) {
-		printk(KERN_ERR "%s(%s) -- ERROR: addresses 0x%08lx to 0x%08lx "
-		       "already in use\n", __func__, hwif->name,
-		       dma_base, dma_base + num_ports - 1);
+//		printk(KERN_ERR "%s(%s) -- ERROR: addresses 0x%08lx to 0x%08lx "
+//		       "already in use\n", __func__, hwif->name,
+;
 		return -1;
 	}
 
@@ -344,9 +344,9 @@ static int __devinit ide_dma_sgiioc4(ide_hwif_t *hwif,
 
 	ide_release_dma_engine(hwif);
 
-	printk(KERN_ERR "%s(%s) -- ERROR: Unable to allocate DMA maps\n",
-	       __func__, hwif->name);
-	printk(KERN_INFO "%s: changing from DMA to PIO mode", hwif->name);
+//	printk(KERN_ERR "%s(%s) -- ERROR: Unable to allocate DMA maps\n",
+;
+;
 
 dma_pci_alloc_failure:
 	release_mem_region(dma_base, num_ports);
@@ -366,27 +366,27 @@ static void sgiioc4_configure_for_dma(int dma_direction, ide_drive_t *drive)
 	ioc4_dma = readl((void __iomem *)ioc4_dma_addr);
 
 	if (ioc4_dma & IOC4_S_DMA_ACTIVE) {
-		printk(KERN_WARNING "%s(%s): Warning!! DMA from previous "
-		       "transfer was still active\n", __func__, drive->name);
+//		printk(KERN_WARNING "%s(%s): Warning!! DMA from previous "
+;
 		writel(IOC4_S_DMA_STOP, (void __iomem *)ioc4_dma_addr);
 		ioc4_dma = sgiioc4_ide_dma_stop(hwif, dma_base);
 
 		if (ioc4_dma & IOC4_S_DMA_STOP)
-			printk(KERN_ERR "%s(%s): IOC4 DMA STOP bit is "
-			       "still 1\n", __func__, drive->name);
+//			printk(KERN_ERR "%s(%s): IOC4 DMA STOP bit is "
+;
 	}
 
 	ioc4_dma = readl((void __iomem *)ioc4_dma_addr);
 	if (ioc4_dma & IOC4_S_DMA_ERROR) {
-		printk(KERN_WARNING "%s(%s): Warning!! DMA Error during "
-		       "previous transfer, status 0x%x\n",
-		       __func__, drive->name, ioc4_dma);
+//		printk(KERN_WARNING "%s(%s): Warning!! DMA Error during "
+//		       "previous transfer, status 0x%x\n",
+;
 		writel(IOC4_S_DMA_STOP, (void __iomem *)ioc4_dma_addr);
 		ioc4_dma = sgiioc4_ide_dma_stop(hwif, dma_base);
 
 		if (ioc4_dma & IOC4_S_DMA_STOP)
-			printk(KERN_ERR "%s(%s): IOC4 DMA STOP bit is "
-			       "still 1\n", __func__, drive->name);
+//			printk(KERN_ERR "%s(%s): IOC4 DMA STOP bit is "
+;
 	}
 
 	/* Address of the Scatter Gather List */
@@ -427,9 +427,9 @@ static int sgiioc4_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 
 		while (cur_len) {
 			if (count++ >= IOC4_PRD_ENTRIES) {
-				printk(KERN_WARNING
-				       "%s: DMA table too small\n",
-				       drive->name);
+//				printk(KERN_WARNING
+//				       "%s: DMA table too small\n",
+;
 				return 0;
 			} else {
 				u32 bcount =
@@ -544,8 +544,8 @@ static int __devinit sgiioc4_ide_setup_pci_device(struct pci_dev *dev)
 	bar0 = pci_resource_start(dev, 0);
 	virt_base = pci_ioremap_bar(dev, 0);
 	if (virt_base == NULL) {
-		printk(KERN_ERR "%s: Unable to remap BAR 0 address: 0x%lx\n",
-				DRV_NAME, bar0);
+//		printk(KERN_ERR "%s: Unable to remap BAR 0 address: 0x%lx\n",
+;
 		return -ENOMEM;
 	}
 	cmd_base = (unsigned long)virt_base + IOC4_CMD_OFFSET;
@@ -555,9 +555,9 @@ static int __devinit sgiioc4_ide_setup_pci_device(struct pci_dev *dev)
 	cmd_phys_base = bar0 + IOC4_CMD_OFFSET;
 	if (request_mem_region(cmd_phys_base, IOC4_CMD_CTL_BLK_SIZE,
 			       DRV_NAME) == NULL) {
-		printk(KERN_ERR "%s %s -- ERROR: addresses 0x%08lx to 0x%08lx "
-		       "already in use\n", DRV_NAME, pci_name(dev),
-		       cmd_phys_base, cmd_phys_base + IOC4_CMD_CTL_BLK_SIZE);
+//		printk(KERN_ERR "%s %s -- ERROR: addresses 0x%08lx to 0x%08lx "
+//		       "already in use\n", DRV_NAME, pci_name(dev),
+;
 		rc = -EBUSY;
 		goto req_mem_rgn_err;
 	}
@@ -585,14 +585,14 @@ static unsigned int __devinit pci_init_sgiioc4(struct pci_dev *dev)
 {
 	int ret;
 
-	printk(KERN_INFO "%s: IDE controller at PCI slot %s, revision %d\n",
-			 DRV_NAME, pci_name(dev), dev->revision);
+//	printk(KERN_INFO "%s: IDE controller at PCI slot %s, revision %d\n",
+;
 
 	if (dev->revision < IOC4_SUPPORTED_FIRMWARE_REV) {
-		printk(KERN_ERR "Skipping %s IDE controller in slot %s: "
-				"firmware is obsolete - please upgrade to "
-				"revision46 or higher\n",
-				DRV_NAME, pci_name(dev));
+//		printk(KERN_ERR "Skipping %s IDE controller in slot %s: "
+//				"firmware is obsolete - please upgrade to "
+//				"revision46 or higher\n",
+;
 		ret = -EAGAIN;
 		goto out;
 	}

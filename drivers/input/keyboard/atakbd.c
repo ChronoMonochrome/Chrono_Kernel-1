@@ -210,7 +210,7 @@ static void atakbd_interrupt(unsigned char scancode, char down)
 			input_sync(atakbd_dev);
 		}
 	} else				/* scancodes >= 0xf2 are mouse data, most likely */
-		printk(KERN_INFO "atakbd: unhandled scancode %x\n", scancode);
+;
 
 	return;
 }

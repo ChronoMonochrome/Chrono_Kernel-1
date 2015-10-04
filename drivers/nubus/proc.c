@@ -101,8 +101,8 @@ static void nubus_proc_populate(struct nubus_dev* dev,
 		/* And descend */
 		if (nubus_get_subdir(&ent, &dir) == -1) {
 			/* This shouldn't happen */
-			printk(KERN_ERR "NuBus root directory node %x:%x has no subdir!\n",
-			       dev->board->slot, ent.type);
+//			printk(KERN_ERR "NuBus root directory node %x:%x has no subdir!\n",
+;
 			continue;
 		} else {
 			nubus_proc_subdir(dev, e, &dir);
@@ -117,15 +117,15 @@ int nubus_proc_attach_device(struct nubus_dev *dev)
 	char name[8];
 
 	if (dev == NULL) {
-		printk(KERN_ERR
-		       "NULL pointer in nubus_proc_attach_device, shoot the programmer!\n");
+//		printk(KERN_ERR
+;
 		return -1;
 	}
 		
 	if (dev->board == NULL) {
-		printk(KERN_ERR
-		       "NULL pointer in nubus_proc_attach_device, shoot the programmer!\n");
-		printk("dev = %p, dev->board = %p\n", dev, dev->board);
+//		printk(KERN_ERR
+;
+;
 		return -1;
 	}
 		

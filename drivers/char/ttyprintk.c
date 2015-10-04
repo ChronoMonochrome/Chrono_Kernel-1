@@ -50,7 +50,7 @@ static int tpk_printk(const unsigned char *buf, int count)
 			/* non nl or cr terminated message - add nl */
 			tmp[tpk_curr + 0] = '\n';
 			tmp[tpk_curr + 1] = '\0';
-			printk(KERN_INFO "%s%s", tpk_tag, tmp);
+;
 			tpk_curr = 0;
 		}
 		return i;
@@ -64,14 +64,14 @@ static int tpk_printk(const unsigned char *buf, int count)
 				/* replace cr with nl */
 				tmp[tpk_curr + 0] = '\n';
 				tmp[tpk_curr + 1] = '\0';
-				printk(KERN_INFO "%s%s", tpk_tag, tmp);
+;
 				tpk_curr = 0;
 				if ((i + 1) < count && buf[i + 1] == '\n')
 					i++;
 				break;
 			case '\n':
 				tmp[tpk_curr + 1] = '\0';
-				printk(KERN_INFO "%s%s", tpk_tag, tmp);
+;
 				tpk_curr = 0;
 				break;
 			default:
@@ -82,7 +82,7 @@ static int tpk_printk(const unsigned char *buf, int count)
 			tmp[tpk_curr + 1] = '\\';
 			tmp[tpk_curr + 2] = '\n';
 			tmp[tpk_curr + 3] = '\0';
-			printk(KERN_INFO "%s%s", tpk_tag, tmp);
+;
 			tpk_curr = 0;
 		}
 	}
@@ -109,7 +109,7 @@ static void tpk_close(struct tty_struct *tty, struct file *filp)
 
 	mutex_lock(&tpkp->port_write_mutex);
 	/* flush tpk_printk buffer */
-	tpk_printk(NULL, 0);
+;
 	mutex_unlock(&tpkp->port_write_mutex);
 
 	tty_port_close(&tpkp->port, tty, filp);
@@ -127,7 +127,7 @@ static int tpk_write(struct tty_struct *tty,
 
 	/* exclusive use of tpk_printk within this tty */
 	mutex_lock(&tpkp->port_write_mutex);
-	ret = tpk_printk(buf, count);
+;
 	mutex_unlock(&tpkp->port_write_mutex);
 
 	return ret;
@@ -198,7 +198,7 @@ static int __init ttyprintk_init(void)
 
 	ret = tty_register_driver(ttyprintk_driver);
 	if (ret < 0) {
-		printk(KERN_ERR "Couldn't register ttyprintk driver\n");
+;
 		goto error;
 	}
 
@@ -206,7 +206,7 @@ static int __init ttyprintk_init(void)
 	rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
 				ttyprintk_driver->name);
 	if (IS_ERR(rp)) {
-		printk(KERN_ERR "Couldn't create ttyprintk device\n");
+;
 		ret = PTR_ERR(rp);
 		goto error;
 	}

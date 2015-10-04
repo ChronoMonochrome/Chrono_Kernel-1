@@ -43,42 +43,42 @@
 // ----------------------------------------------------------------------------
 #define K1212_DEBUG_LEVEL		0
 #if K1212_DEBUG_LEVEL > 0
-#define K1212_DEBUG_PRINTK(fmt,args...)	printk(KERN_DEBUG fmt,##args)
-#else
-#define K1212_DEBUG_PRINTK(fmt,...)
-#endif
-#if K1212_DEBUG_LEVEL > 1
-#define K1212_DEBUG_PRINTK_VERBOSE(fmt,args...)	printk(KERN_DEBUG fmt,##args)
-#else
-#define K1212_DEBUG_PRINTK_VERBOSE(fmt,...)
-#endif
-
-// ----------------------------------------------------------------------------
-// Record/Play Buffer Allocation Method. If K1212_LARGEALLOC is defined all 
-// buffers are alocated as a large piece inside KorgSharedBuffer.
-// ----------------------------------------------------------------------------
-//#define K1212_LARGEALLOC		1
-
-// ----------------------------------------------------------------------------
-// Valid states of the Korg 1212 I/O card.
-// ----------------------------------------------------------------------------
-enum CardState {
-   K1212_STATE_NONEXISTENT,		// there is no card here
-   K1212_STATE_UNINITIALIZED,		// the card is awaiting DSP download
-   K1212_STATE_DSP_IN_PROCESS,		// the card is currently downloading its DSP code
-   K1212_STATE_DSP_COMPLETE,		// the card has finished the DSP download
-   K1212_STATE_READY,			// the card can be opened by an application.  Any application
-					//    requests prior to this state should fail.  Only an open
-					//    request can be made at this state.
-   K1212_STATE_OPEN,			// an application has opened the card
-   K1212_STATE_SETUP,			// the card has been setup for play
-   K1212_STATE_PLAYING,			// the card is playing
-   K1212_STATE_MONITOR,			// the card is in the monitor mode
-   K1212_STATE_CALIBRATING,		// the card is currently calibrating
-   K1212_STATE_ERRORSTOP,		// the card has stopped itself because of an error and we
-					//    are in the process of cleaning things up.
-   K1212_STATE_MAX_STATE		// state values of this and beyond are invalid
-};
+//#define K1212_DEBUG_PRINTK(fmt,args...)	printk(KERN_DEBUG fmt,##args)
+//#else
+//#define K1212_DEBUG_PRINTK(fmt,...)
+//#endif
+//#if K1212_DEBUG_LEVEL > 1
+//#define K1212_DEBUG_PRINTK_VERBOSE(fmt,args...)	printk(KERN_DEBUG fmt,##args)
+//#else
+//#define K1212_DEBUG_PRINTK_VERBOSE(fmt,...)
+//#endif
+//
+//// ----------------------------------------------------------------------------
+//// Record/Play Buffer Allocation Method. If K1212_LARGEALLOC is defined all 
+//// buffers are alocated as a large piece inside KorgSharedBuffer.
+//// ----------------------------------------------------------------------------
+////#define K1212_LARGEALLOC		1
+//
+//// ----------------------------------------------------------------------------
+//// Valid states of the Korg 1212 I/O card.
+//// ----------------------------------------------------------------------------
+//enum CardState {
+//   K1212_STATE_NONEXISTENT,		// there is no card here
+//   K1212_STATE_UNINITIALIZED,		// the card is awaiting DSP download
+//   K1212_STATE_DSP_IN_PROCESS,		// the card is currently downloading its DSP code
+//   K1212_STATE_DSP_COMPLETE,		// the card has finished the DSP download
+//   K1212_STATE_READY,			// the card can be opened by an application.  Any application
+//					//    requests prior to this state should fail.  Only an open
+//					//    request can be made at this state.
+//   K1212_STATE_OPEN,			// an application has opened the card
+//   K1212_STATE_SETUP,			// the card has been setup for play
+//   K1212_STATE_PLAYING,			// the card is playing
+//   K1212_STATE_MONITOR,			// the card is in the monitor mode
+//   K1212_STATE_CALIBRATING,		// the card is currently calibrating
+//   K1212_STATE_ERRORSTOP,		// the card has stopped itself because of an error and we
+//					//    are in the process of cleaning things up.
+//   K1212_STATE_MAX_STATE		// state values of this and beyond are invalid
+;
 
 // ----------------------------------------------------------------------------
 // The following enumeration defines the constants written to the card's
@@ -1149,7 +1149,7 @@ static irqreturn_t snd_korg1212_interrupt(int irq, void *dev_id)
 			K1212_DEBUG_PRINTK_VERBOSE("K1212_DEBUG: IRQ DMAE count - %ld, %x, [%s].\n",
 						   korg1212->irqcount, doorbellValue,
 						   stateName[korg1212->cardState]);
-			snd_printk(KERN_ERR "korg1212: DMA Error\n");
+;
 			korg1212->errorcnt++;
 			korg1212->totalerrorcnt++;
 			korg1212->sharedBufferPtr->cardCommand = 0;
@@ -1290,8 +1290,8 @@ static int snd_korg1212_silence(struct snd_korg1212 *korg1212, int pos, int coun
 #if K1212_DEBUG_LEVEL > 0
 		if ( (void *) dst < (void *) korg1212->playDataBufsPtr ||
 		     (void *) dst > (void *) korg1212->playDataBufsPtr[8].bufferData ) {
-			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_silence KERNEL EFAULT dst=%p iter=%d\n",
-			       dst, i);
+//			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_silence KERNEL EFAULT dst=%p iter=%d\n",
+;
 			return -EFAULT;
 		}
 #endif
@@ -1316,7 +1316,7 @@ static int snd_korg1212_copy_to(struct snd_korg1212 *korg1212, void __user *dst,
 #if K1212_DEBUG_LEVEL > 0
 		if ( (void *) src < (void *) korg1212->recordDataBufsPtr ||
 		     (void *) src > (void *) korg1212->recordDataBufsPtr[8].bufferData ) {
-			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_copy_to KERNEL EFAULT, src=%p dst=%p iter=%d\n", src, dst, i);
+;
 			return -EFAULT;
 		}
 #endif
@@ -1347,7 +1347,7 @@ static int snd_korg1212_copy_from(struct snd_korg1212 *korg1212, void __user *sr
 #if K1212_DEBUG_LEVEL > 0
 		if ( (void *) dst < (void *) korg1212->playDataBufsPtr ||
 		     (void *) dst > (void *) korg1212->playDataBufsPtr[8].bufferData ) {
-			printk(KERN_DEBUG "K1212_DEBUG: snd_korg1212_copy_from KERNEL EFAULT, src=%p dst=%p iter=%d\n", src, dst, i);
+;
 			return -EFAULT;
 		}
 #endif
@@ -2233,8 +2233,8 @@ static int __devinit snd_korg1212_create(struct snd_card *card, struct pci_dev *
 		   stateName[korg1212->cardState]);
 
         if ((korg1212->iobase = ioremap(korg1212->iomem, iomem_size)) == NULL) {
-		snd_printk(KERN_ERR "korg1212: unable to remap memory region 0x%lx-0x%lx\n", korg1212->iomem,
-                           korg1212->iomem + iomem_size - 1);
+//		snd_printk(KERN_ERR "korg1212: unable to remap memory region 0x%lx-0x%lx\n", korg1212->iomem,
+;
                 snd_korg1212_free(korg1212);
                 return -EBUSY;
         }
@@ -2244,7 +2244,7 @@ static int __devinit snd_korg1212_create(struct snd_card *card, struct pci_dev *
                           "korg1212", korg1212);
 
         if (err) {
-		snd_printk(KERN_ERR "korg1212: unable to grab IRQ %d\n", pci->irq);
+;
                 snd_korg1212_free(korg1212);
                 return -EBUSY;
         }
@@ -2290,7 +2290,7 @@ static int __devinit snd_korg1212_create(struct snd_card *card, struct pci_dev *
 
 	if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
 				sizeof(struct KorgSharedBuffer), &korg1212->dma_shared) < 0) {
-		snd_printk(KERN_ERR "korg1212: can not allocate shared buffer memory (%Zd bytes)\n", sizeof(struct KorgSharedBuffer));
+;
                 snd_korg1212_free(korg1212);
                 return -ENOMEM;
         }
@@ -2305,7 +2305,7 @@ static int __devinit snd_korg1212_create(struct snd_card *card, struct pci_dev *
 
 	if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
 				korg1212->DataBufsSize, &korg1212->dma_play) < 0) {
-		snd_printk(KERN_ERR "korg1212: can not allocate play data buffer memory (%d bytes)\n", korg1212->DataBufsSize);
+;
                 snd_korg1212_free(korg1212);
                 return -ENOMEM;
         }
@@ -2317,7 +2317,7 @@ static int __devinit snd_korg1212_create(struct snd_card *card, struct pci_dev *
 
 	if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
 				korg1212->DataBufsSize, &korg1212->dma_rec) < 0) {
-		snd_printk(KERN_ERR "korg1212: can not allocate record data buffer memory (%d bytes)\n", korg1212->DataBufsSize);
+;
                 snd_korg1212_free(korg1212);
                 return -ENOMEM;
         }
@@ -2346,14 +2346,14 @@ static int __devinit snd_korg1212_create(struct snd_card *card, struct pci_dev *
 	err = request_firmware(&dsp_code, "korg/k1212.dsp", &pci->dev);
 	if (err < 0) {
 		release_firmware(dsp_code);
-		snd_printk(KERN_ERR "firmware not available\n");
+;
 		snd_korg1212_free(korg1212);
 		return err;
 	}
 
 	if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
 				dsp_code->size, &korg1212->dma_dsp) < 0) {
-		snd_printk(KERN_ERR "korg1212: cannot allocate dsp code memory (%zd bytes)\n", dsp_code->size);
+;
                 snd_korg1212_free(korg1212);
 		release_firmware(dsp_code);
                 return -ENOMEM;

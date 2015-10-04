@@ -106,14 +106,14 @@ static int dcc_tty_open(struct tty_struct * tty, struct file * filp)
 		ret = -EBUSY;
 	spin_unlock_irqrestore(&g_dcc_tty_lock, irq_flags);
 
-	printk("dcc_tty_open, tty %p, f_flags %x, returned %d\n", tty, filp->f_flags, ret);
+;
 
 	return ret;
 }
 
 static void dcc_tty_close(struct tty_struct * tty, struct file * filp)
 {
-	printk("dcc_tty_close, tty %p, f_flags %x\n", tty, filp->f_flags);
+;
 	if (g_dcc_tty == tty) {
 		if (--g_dcc_tty_open_count == 0)
 			g_dcc_tty = NULL;
@@ -168,7 +168,7 @@ static int dcc_tty_write(struct tty_struct * tty, const unsigned char *buf, int 
 	/* printk("dcc_tty_write %p, %d\n", buf, count); */
 	ret = dcc_write(buf, count);
 	if (ret != count)
-		printk("dcc_tty_write %p, %d, returned %d\n", buf, count, ret);
+;
 	return ret;
 }
 
@@ -273,7 +273,7 @@ static int __init dcc_tty_init(void)
 
 	g_dcc_tty_driver = alloc_tty_driver(1);
 	if (!g_dcc_tty_driver) {
-		printk(KERN_ERR "dcc_tty_probe: alloc_tty_driver failed\n");
+;
 		ret = -ENOMEM;
 		goto err_alloc_tty_driver_failed;
 	}
@@ -289,7 +289,7 @@ static int __init dcc_tty_init(void)
 	tty_set_operations(g_dcc_tty_driver, &dcc_tty_ops);
 	ret = tty_register_driver(g_dcc_tty_driver);
 	if (ret) {
-		printk(KERN_ERR "dcc_tty_probe: tty_register_driver failed, %d\n", ret);
+;
 		goto err_tty_register_driver_failed;
 	}
 	tty_register_device(g_dcc_tty_driver, 0, NULL);
@@ -313,7 +313,7 @@ static void  __exit dcc_tty_exit(void)
 	tty_unregister_device(g_dcc_tty_driver, 0);
 	ret = tty_unregister_driver(g_dcc_tty_driver);
 	if (ret < 0) {
-		printk(KERN_ERR "dcc_tty_remove: tty_unregister_driver failed, %d\n", ret);
+;
 	} else {
 		put_tty_driver(g_dcc_tty_driver);
 	}

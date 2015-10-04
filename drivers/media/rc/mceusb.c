@@ -1306,8 +1306,8 @@ static int __init mceusb_dev_init(void)
 
 	ret = usb_register(&mceusb_dev_driver);
 	if (ret < 0)
-		printk(KERN_ERR DRIVER_NAME
-		       ": usb register failed, result = %d\n", ret);
+//		printk(KERN_ERR DRIVER_NAME
+;
 
 	return ret;
 }

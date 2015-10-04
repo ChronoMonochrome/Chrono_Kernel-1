@@ -1713,7 +1713,7 @@ static void send_skb_to_core(struct uart_info *uart_info, struct sk_buff *skb)
 		kfree_skb(skb);
 	} else {
 		/* Just pass data to CG2900 Core */
-		printk("nd:send_cr\n");
+;
 		uart_info->chip_dev.c_cb.data_from_chip
 						(&uart_info->chip_dev, skb);
 	}
@@ -1811,7 +1811,7 @@ static int cg2900_hu_receive(struct hci_uart *hu,
 
 	r_ptr = (const u8 *)data;
 
-	printk("nd:hu_rec\n");
+;
 	spin_lock_bh(&(uart_info->transmission_lock));
 	/* Mark that there is an ongoing transfer. */
 	uart_info->rx_in_progress = true;

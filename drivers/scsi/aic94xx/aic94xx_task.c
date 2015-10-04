@@ -586,8 +586,8 @@ int asd_execute_task(struct sas_task *task, const int num,
 			res = asd_build_ssp_ascb(a, t, gfp_flags);
 			break;
 		default:
-			asd_printk("unknown sas_task proto: 0x%x\n",
-				   t->task_proto);
+//			asd_printk("unknown sas_task proto: 0x%x\n",
+;
 			res = -ENOMEM;
 			break;
 		}

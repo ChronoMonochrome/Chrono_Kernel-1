@@ -576,7 +576,7 @@ static unsigned int intel_gtt_total_entries(void)
 		switch (snb_gmch_ctl & SNB_GTT_SIZE_MASK) {
 		default:
 		case SNB_GTT_SIZE_0M:
-			printk(KERN_ERR "Bad GTT size mask: 0x%04x.\n", snb_gmch_ctl);
+;
 			size = MB(0);
 			break;
 		case SNB_GTT_SIZE_1M:

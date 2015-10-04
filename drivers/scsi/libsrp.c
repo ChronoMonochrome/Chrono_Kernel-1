@@ -38,17 +38,17 @@ enum srp_task_attributes {
 };
 
 /* tmp - will replace with SCSI logging stuff */
-#define eprintk(fmt, args...)					\
-do {								\
-	printk("%s(%d) " fmt, __func__, __LINE__, ##args);	\
+//#define eprintk(fmt, args...)					\
+//do {								\
+;
 } while (0)
 /* #define dprintk eprintk */
-#define dprintk(fmt, args...)
-
-static int srp_iu_pool_alloc(struct srp_queue *q, size_t max,
-			     struct srp_buf **ring)
-{
-	int i;
+//#define dprintk(fmt, args...)
+//
+//static int srp_iu_pool_alloc(struct srp_queue *q, size_t max,
+//			     struct srp_buf **ring)
+//{
+;
 	struct iu_entry *iue;
 
 	q->pool = kcalloc(max, sizeof(struct iu_entry *), GFP_KERNEL);
@@ -197,13 +197,13 @@ static int srp_direct_data(struct scsi_cmnd *sc, struct srp_direct_buf *md,
 		iue = (struct iu_entry *) sc->SCp.ptr;
 		sg = scsi_sglist(sc);
 
-		dprintk("%p %u %u %d\n", iue, scsi_bufflen(sc),
-			md->len, scsi_sg_count(sc));
+//		dprintk("%p %u %u %d\n", iue, scsi_bufflen(sc),
+;
 
 		nsg = dma_map_sg(iue->target->dev, sg, scsi_sg_count(sc),
 				 DMA_BIDIRECTIONAL);
 		if (!nsg) {
-			printk("fail to map %p %d\n", iue, scsi_sg_count(sc));
+;
 			return 0;
 		}
 		len = min(scsi_bufflen(sc), md->len);
@@ -234,9 +234,9 @@ static int srp_indirect_data(struct scsi_cmnd *sc, struct srp_cmd *cmd,
 		iue = (struct iu_entry *) sc->SCp.ptr;
 		sg = scsi_sglist(sc);
 
-		dprintk("%p %u %u %d %d\n",
-			iue, scsi_bufflen(sc), id->len,
-			cmd->data_in_desc_cnt, cmd->data_out_desc_cnt);
+//		dprintk("%p %u %u %d %d\n",
+//			iue, scsi_bufflen(sc), id->len,
+;
 	}
 
 	nmd = id->table_desc.len / sizeof(struct srp_direct_buf);
@@ -251,7 +251,7 @@ static int srp_indirect_data(struct scsi_cmnd *sc, struct srp_cmd *cmd,
 		md = dma_alloc_coherent(iue->target->dev, id->table_desc.len,
 				&token, GFP_KERNEL);
 		if (!md) {
-			eprintk("Can't get dma memory %u\n", id->table_desc.len);
+;
 			return -ENOMEM;
 		}
 
@@ -261,11 +261,11 @@ static int srp_indirect_data(struct scsi_cmnd *sc, struct srp_cmd *cmd,
 		err = rdma_io(sc, &dummy, 1, &id->table_desc, 1, DMA_TO_DEVICE,
 			      id->table_desc.len);
 		if (err) {
-			eprintk("Error copying indirect table %d\n", err);
+;
 			goto free_mem;
 		}
 	} else {
-		eprintk("This command uses external indirect buffer\n");
+;
 		return -EINVAL;
 	}
 
@@ -274,7 +274,7 @@ rdma:
 		nsg = dma_map_sg(iue->target->dev, sg, scsi_sg_count(sc),
 				 DMA_BIDIRECTIONAL);
 		if (!nsg) {
-			eprintk("fail to map %p %d\n", iue, scsi_sg_count(sc));
+;
 			err = -EIO;
 			goto free_mem;
 		}
@@ -310,7 +310,7 @@ static int data_out_desc_size(struct srp_cmd *cmd)
 			sizeof(struct srp_direct_buf) * cmd->data_out_desc_cnt;
 		break;
 	default:
-		eprintk("client error. Invalid data_out_format %x\n", fmt);
+;
 		break;
 	}
 	return size;
@@ -355,7 +355,7 @@ int srp_transfer_data(struct scsi_cmnd *sc, struct srp_cmd *cmd,
 					ext_desc);
 		break;
 	default:
-		eprintk("Unknown format %d %x\n", dir, format);
+;
 		err = -EINVAL;
 	}
 
@@ -389,7 +389,7 @@ static int vscsis_data_length(struct srp_cmd *cmd, enum dma_data_direction dir)
 		len = id->len;
 		break;
 	default:
-		eprintk("invalid data format %x\n", fmt);
+;
 		break;
 	}
 	return len;
@@ -413,15 +413,15 @@ int srp_cmd_queue(struct Scsi_Host *shost, struct srp_cmd *cmd, void *info,
 		tag = MSG_HEAD_TAG;
 		break;
 	default:
-		eprintk("Task attribute %d not supported\n", cmd->task_attr);
+;
 		tag = MSG_ORDERED_TAG;
 	}
 
 	dir = srp_cmd_direction(cmd);
 	len = vscsis_data_length(cmd, dir);
 
-	dprintk("%p %x %lx %d %d %d %llx\n", info, cmd->cdb[0],
-		cmd->lun, dir, len, tag, (unsigned long long) cmd->tag);
+//	dprintk("%p %x %lx %d %d %d %llx\n", info, cmd->cdb[0],
+;
 
 	sc = scsi_host_get_command(shost, dir, GFP_KERNEL);
 	if (!sc)

@@ -135,7 +135,7 @@
 	{ \
 		if (!(C)) \
 		{ \
-			printk(KERN_INFO "Wireless, parameter error: \"%s\"\n", #C); \
+;
 			goto failed; \
 		} \
 	}
@@ -905,7 +905,7 @@ int wl_insert( struct net_device *dev )
 			   dev->name, dev->base_addr, dev->irq );
 
 	for( i = 0; i < ETH_ALEN; i++ ) {
-		printk( "%02X%c", dev->dev_addr[i], (( i < ( ETH_ALEN-1 )) ? ':' : '\n' ));
+;
 	}
 
 #if 0 //SCULL_USE_PROC /* don't waste space if unused */
@@ -2054,7 +2054,7 @@ static int __init wl_module_init( void )
 #endif /* DBG */
 
 	DBG_ENTER( DbgInfo );
-	printk(KERN_INFO "%s\n", VERSION_INFO);
+;
     	printk(KERN_INFO "*** Modified for kernel 2.6 by Henk de Groot <pe1dnn@amsat.org>\n");
         printk(KERN_INFO "*** Based on 7.18 version by Andrey Borzenkov <arvidjaar@mail.ru> $Revision: 39 $\n");
 
@@ -3821,7 +3821,7 @@ static int write_int(struct file *file, const char *buffer, unsigned long count,
 		lp->timer_oor.data = (unsigned long)lp;
 		lp->timer_oor.expires = RUN_AT( 3 * HZ );
 		add_timer( &lp->timer_oor );
-		printk( "<5>wl_enable: %ld\n", jiffies );		//;?remove me 1 day
+;
 #endif //DN554
 #ifdef DN554
 /*******************************************************************************
@@ -3851,7 +3851,7 @@ void timer_oor( u_long arg )
     DBG_ENTER( DbgInfo );
     DBG_PARAM( DbgInfo, "arg", "0x%08lx", arg );
 
-	printk( "<5>timer_oor: %ld 0x%04X\n", jiffies, lp->timer_oor_cnt );		//;?remove me 1 day
+;
 	lp->timer_oor_cnt += 10;
     if ( (lp->timer_oor_cnt & ~DS_OOR) > 300 ) {
 		lp->timer_oor_cnt = 300;

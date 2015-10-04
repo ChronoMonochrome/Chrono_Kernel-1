@@ -126,8 +126,8 @@ int snd_msnd_upload_host(struct snd_msnd *dev, const u8 *bin, int len)
 	int i;
 
 	if (len % 3 != 0) {
-		snd_printk(KERN_ERR LOGNAME
-			   ": Upload host data not multiple of 3!\n");
+//		snd_printk(KERN_ERR LOGNAME
+;
 		return -EINVAL;
 	}
 

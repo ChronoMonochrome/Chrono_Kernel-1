@@ -261,7 +261,7 @@ static int init_alloc_list(struct instance *instance)
 	struct alloc *alloc;
 
 	if (PAGE_SIZE >= SZ_64M) {
-		printk(KERN_WARNING "CONA: PAGE_SIZE >= 64MiB\n");
+;
 		return -ENOMSG;
 	}
 

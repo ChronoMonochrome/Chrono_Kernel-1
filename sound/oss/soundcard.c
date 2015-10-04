@@ -94,7 +94,7 @@ int *load_mixer_volumes(char *name, int *levels, int present)
 		}
 	}
 	if (num_mixer_volumes >= MAX_MIXER_DEV) {
-		printk(KERN_ERR "Sound: Too many mixers (%s)\n", name);
+;
 		return levels;
 	}
 	n = num_mixer_volumes++;
@@ -154,7 +154,7 @@ static ssize_t sound_read(struct file *file, char __user *buf, size_t count, lof
 	 
 	mutex_lock(&soundcard_mutex);
 	
-	DEB(printk("sound_read(dev=%d, count=%d)\n", dev, count));
+;
 	switch (dev & 0x0f) {
 	case SND_DEV_DSP:
 	case SND_DEV_DSP16:
@@ -180,7 +180,7 @@ static ssize_t sound_write(struct file *file, const char __user *buf, size_t cou
 	int ret = -EINVAL;
 	
 	mutex_lock(&soundcard_mutex);
-	DEB(printk("sound_write(dev=%d, count=%d)\n", dev, count));
+;
 	switch (dev & 0x0f) {
 	case SND_DEV_SEQ:
 	case SND_DEV_SEQ2:
@@ -206,9 +206,9 @@ static int sound_open(struct inode *inode, struct file *file)
 	int dev = iminor(inode);
 	int retval;
 
-	DEB(printk("sound_open(dev=%d)\n", dev));
+;
 	if ((dev >= SND_NDEVS) || (dev < 0)) {
-		printk(KERN_ERR "Invalid minor device %d\n", dev);
+;
 		return -ENXIO;
 	}
 	mutex_lock(&soundcard_mutex);
@@ -244,7 +244,7 @@ static int sound_open(struct inode *inode, struct file *file)
 		break;
 
 	default:
-		printk(KERN_ERR "Invalid minor device %d\n", dev);
+;
 		retval = -ENXIO;
 	}
 
@@ -257,7 +257,7 @@ static int sound_release(struct inode *inode, struct file *file)
 	int dev = iminor(inode);
 
 	mutex_lock(&soundcard_mutex);
-	DEB(printk("sound_release(dev=%d)\n", dev));
+;
 	switch (dev & 0x0f) {
 	case SND_DEV_CTL:
 		module_put(mixer_devs[dev >> 4]->owner);
@@ -279,7 +279,7 @@ static int sound_release(struct inode *inode, struct file *file)
 		break;
 
 	default:
-		printk(KERN_ERR "Sound error: Releasing unknown device 0x%02x\n", dev);
+;
 	}
 	mutex_unlock(&soundcard_mutex);
 
@@ -351,7 +351,7 @@ static long sound_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			if (!access_ok(VERIFY_WRITE, p, len))
 				return -EFAULT;
 	}
-	DEB(printk("sound_ioctl(dev=%d, cmd=0x%x, arg=0x%x)\n", dev, cmd, arg));
+;
 	if (cmd == OSS_GETVERSION)
 		return __put_user(SOUND_VERSION, (int __user *)p);
 	
@@ -409,7 +409,7 @@ static unsigned int sound_poll(struct file *file, poll_table * wait)
 	struct inode *inode = file->f_path.dentry->d_inode;
 	int dev = iminor(inode);
 
-	DEB(printk("sound_poll(dev=%d)\n", dev));
+;
 	switch (dev & 0x0f) {
 	case SND_DEV_SEQ:
 	case SND_DEV_SEQ2:
@@ -437,7 +437,7 @@ static int sound_mmap(struct file *file, struct vm_area_struct *vma)
 	dev >>= 4;
 
 	if (dev_class != SND_DEV_DSP && dev_class != SND_DEV_DSP16 && dev_class != SND_DEV_AUDIO) {
-		printk(KERN_ERR "Sound: mmap() not supported for other than audio devices\n");
+;
 		return -EINVAL;
 	}
 	mutex_lock(&soundcard_mutex);
@@ -446,35 +446,35 @@ static int sound_mmap(struct file *file, struct vm_area_struct *vma)
 	else if (vma->vm_flags & VM_READ)
 		dmap = audio_devs[dev]->dmap_in;
 	else {
-		printk(KERN_ERR "Sound: Undefined mmap() access\n");
+;
 		mutex_unlock(&soundcard_mutex);
 		return -EINVAL;
 	}
 
 	if (dmap == NULL) {
-		printk(KERN_ERR "Sound: mmap() error. dmap == NULL\n");
+;
 		mutex_unlock(&soundcard_mutex);
 		return -EIO;
 	}
 	if (dmap->raw_buf == NULL) {
-		printk(KERN_ERR "Sound: mmap() called when raw_buf == NULL\n");
+;
 		mutex_unlock(&soundcard_mutex);
 		return -EIO;
 	}
 	if (dmap->mapping_flags) {
-		printk(KERN_ERR "Sound: mmap() called twice for the same DMA buffer\n");
+;
 		mutex_unlock(&soundcard_mutex);
 		return -EIO;
 	}
 	if (vma->vm_pgoff != 0) {
-		printk(KERN_ERR "Sound: mmap() offset must be 0.\n");
+;
 		mutex_unlock(&soundcard_mutex);
 		return -EINVAL;
 	}
 	size = vma->vm_end - vma->vm_start;
 
 	if (size != dmap->bytes_in_use) {
-		printk(KERN_WARNING "Sound: mmap() size = %ld. Should be %d\n", size, dmap->bytes_in_use);
+;
 	}
 	if (remap_pfn_range(vma, vma->vm_start,
 			virt_to_phys(dmap->raw_buf) >> PAGE_SHIFT,
@@ -553,7 +553,7 @@ static int __init oss_init(void)
 
 	err = create_special_devices();
 	if (err) {
-		printk(KERN_ERR "sound: driver already loaded/included in kernel\n");
+;
 		return err;
 	}
 
@@ -570,7 +570,7 @@ static int __init oss_init(void)
 	}
 
 	if (sound_nblocks >= MAX_MEM_BLOCKS - 1)
-		printk(KERN_ERR "Sound warning: Deallocation table was too small.\n");
+;
 	
 	return 0;
 }
@@ -596,7 +596,7 @@ static void __exit oss_cleanup(void)
 
 	for (i = 0; i < MAX_DMA_CHANNELS; i++)
 		if (dma_alloc_map[i] != DMA_MAP_UNAVAIL) {
-			printk(KERN_ERR "Sound: Hmm, DMA%d was left allocated - fixed\n", i);
+;
 			sound_free_dma(i);
 		}
 
@@ -628,12 +628,12 @@ EXPORT_SYMBOL(sound_alloc_dma);
 int sound_open_dma(int chn, char *deviceID)
 {
 	if (!valid_dma(chn)) {
-		printk(KERN_ERR "sound_open_dma: Invalid DMA channel %d\n", chn);
+;
 		return 1;
 	}
 
 	if (dma_alloc_map[chn] != DMA_MAP_FREE) {
-		printk("sound_open_dma: DMA channel %d busy or not allocated (%d)\n", chn, dma_alloc_map[chn]);
+;
 		return 1;
 	}
 	dma_alloc_map[chn] = DMA_MAP_BUSY;
@@ -655,7 +655,7 @@ EXPORT_SYMBOL(sound_free_dma);
 void sound_close_dma(int chn)
 {
 	if (dma_alloc_map[chn] != DMA_MAP_BUSY) {
-		printk(KERN_ERR "sound_close_dma: Bad access to DMA channel %d\n", chn);
+;
 		return;
 	}
 	dma_alloc_map[chn] = DMA_MAP_FREE;
@@ -700,18 +700,18 @@ void conf_printf(char *name, struct address_info *hw_config)
 #ifndef CONFIG_SOUND_TRACEINIT
 	return;
 #else
-	printk("<%s> at 0x%03x", name, hw_config->io_base);
+;
 
 	if (hw_config->irq)
-		printk(" irq %d", (hw_config->irq > 0) ? hw_config->irq : -hw_config->irq);
+;
 
 	if (hw_config->dma != -1 || hw_config->dma2 != -1)
 	{
-		printk(" dma %d", hw_config->dma);
+;
 		if (hw_config->dma2 != -1)
-			printk(",%d", hw_config->dma2);
+;
 	}
-	printk("\n");
+;
 #endif
 }
 EXPORT_SYMBOL(conf_printf);
@@ -721,18 +721,18 @@ void conf_printf2(char *name, int base, int irq, int dma, int dma2)
 #ifndef CONFIG_SOUND_TRACEINIT
 	return;
 #else
-	printk("<%s> at 0x%03x", name, base);
+;
 
 	if (irq)
-		printk(" irq %d", (irq > 0) ? irq : -irq);
+;
 
 	if (dma != -1 || dma2 != -1)
 	{
-		  printk(" dma %d", dma);
+;
 		  if (dma2 != -1)
-			  printk(",%d", dma2);
+;
 	}
-	printk("\n");
+;
 #endif
 }
 EXPORT_SYMBOL(conf_printf2);

@@ -185,7 +185,7 @@ L3AddTimer(struct L3Timer *t,
 	   int millisec, int event)
 {
 	if (timer_pending(&t->tl)) {
-		printk(KERN_WARNING "L3AddTimer: timer already active!\n");
+;
 		return -1;
 	}
 	init_timer(&t->tl);
@@ -207,7 +207,7 @@ l3_alloc_skb(int len)
 	struct sk_buff *skb;
 
 	if (!(skb = alloc_skb(len + MAX_HEADER_LEN, GFP_ATOMIC))) {
-		printk(KERN_WARNING "HiSax: No skb for D-channel\n");
+;
 		return (NULL);
 	}
 	skb_reserve(skb, MAX_HEADER_LEN);
@@ -228,7 +228,7 @@ no_l3_proto(struct PStack *st, int pr, void *arg)
 static int
 no_l3_proto_spec(struct PStack *st, isdn_ctrl *ic)
 {
-	printk(KERN_WARNING "HiSax: no specific protocol handler for proto %lu\n",ic->arg & 0xFF);
+;
 	return(-1);
 }
 
@@ -251,7 +251,7 @@ struct l3_process
 	struct l3_process *p, *np;
 
 	if (!(p = kmalloc(sizeof(struct l3_process), GFP_ATOMIC))) {
-		printk(KERN_ERR "HiSax can't get memory for cr %d\n", cr);
+;
 		return (NULL);
 	}
 	if (!st->l3.proc)
@@ -308,7 +308,7 @@ release_l3_process(struct l3_process *p)
 		pp = np;
 		np = np->next;
 	}
-	printk(KERN_ERR "HiSax internal L3 error CR(%d) not in list\n", p->callref);
+;
 	l3_debug(p->st, "HiSax internal L3 error CR(%d) not in list", p->callref);
 };
 
@@ -363,7 +363,7 @@ setstack_l3dc(struct PStack *st, struct Channel *chanp)
 		st->lli.l4l3 = no_l3_proto;
 		st->l2.l2l3 = no_l3_proto;
                 st->l3.l3ml3 = no_l3_proto;
-		printk(KERN_INFO "HiSax: Leased line mode\n");
+;
 	} else {
 		st->lli.l4l3 = no_l3_proto;
 		st->l2.l2l3 = no_l3_proto;
@@ -373,7 +373,7 @@ setstack_l3dc(struct PStack *st, struct Channel *chanp)
 			(st->protocol == ISDN_PTYPE_EURO) ? "euro" :
 			(st->protocol == ISDN_PTYPE_NI1) ? "ni1" :
 			"unknown");
-		printk(KERN_WARNING "HiSax: %s\n", tmp);
+;
 		st->protocol = -1;
 	}
 }

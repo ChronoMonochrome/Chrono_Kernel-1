@@ -869,8 +869,8 @@ static netdev_tx_t mv643xx_eth_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	if (has_tiny_unaligned_frags(skb) && __skb_linearize(skb)) {
 		txq->tx_dropped++;
-		netdev_printk(KERN_DEBUG, dev,
-			      "failed to linearize skb with tiny unaligned fragment\n");
+//		netdev_printk(KERN_DEBUG, dev,
+;
 		return NETDEV_TX_BUSY;
 	}
 

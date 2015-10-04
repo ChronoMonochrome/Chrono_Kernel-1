@@ -94,8 +94,8 @@ static int netfs_trans_send_pages(struct netfs_trans *t, struct netfs_state *st)
 
 		err = kernel_sendmsg(st->socket, &msg, (struct kvec *)msg.msg_iov, 1, sizeof(struct netfs_cmd));
 		if (err <= 0) {
-			printk("%s: %d/%d failed to send transaction header: t: %p, gen: %u, err: %d.\n",
-					__func__, i, t->page_num, t, t->gen, err);
+//			printk("%s: %d/%d failed to send transaction header: t: %p, gen: %u, err: %d.\n",
+;
 			if (err == 0)
 				err = -ECONNRESET;
 			goto err_out;
@@ -106,15 +106,15 @@ static int netfs_trans_send_pages(struct netfs_trans *t, struct netfs_state *st)
 
 		err = kernel_sendpage(st->socket, page, 0, size, msg.msg_flags);
 		if (err <= 0) {
-			printk("%s: %d/%d failed to send transaction page: t: %p, gen: %u, size: %u, err: %d.\n",
-					__func__, i, t->page_num, t, t->gen, size, err);
+//			printk("%s: %d/%d failed to send transaction page: t: %p, gen: %u, size: %u, err: %d.\n",
+;
 			if (err == 0)
 				err = -ECONNRESET;
 			goto err_out;
 		}
 
-		dprintk("%s: %d/%d sent t: %p, gen: %u, page: %p/%p, size: %u.\n",
-			__func__, i, t->page_num, t, t->gen, page, p, size);
+//		dprintk("%s: %d/%d sent t: %p, gen: %u, page: %p/%p, size: %u.\n",
+;
 
 		err = 0;
 		attached_pages--;
@@ -125,7 +125,7 @@ static int netfs_trans_send_pages(struct netfs_trans *t, struct netfs_state *st)
 		continue;
 
 err_out:
-		printk("%s: t: %p, gen: %u, err: %d.\n", __func__, t, t->gen, err);
+;
 		netfs_state_exit(st);
 		break;
 	}
@@ -161,16 +161,16 @@ int netfs_trans_send(struct netfs_trans *t, struct netfs_state *st)
 
 	err = kernel_sendmsg(st->socket, &msg, (struct kvec *)msg.msg_iov, 1, t->iovec.iov_len);
 	if (err <= 0) {
-		printk("%s: failed to send contig transaction: t: %p, gen: %u, size: %zu, err: %d.\n",
-				__func__, t, t->gen, t->iovec.iov_len, err);
+//		printk("%s: failed to send contig transaction: t: %p, gen: %u, size: %zu, err: %d.\n",
+;
 		if (err == 0)
 			err = -ECONNRESET;
 		goto err_out_unlock_return;
 	}
 
-	dprintk("%s: sent %s transaction: t: %p, gen: %u, size: %zu, page_num: %u.\n",
-			__func__, (t->page_num)?"partial":"full",
-			t, t->gen, t->iovec.iov_len, t->page_num);
+//	dprintk("%s: sent %s transaction: t: %p, gen: %u, size: %zu, page_num: %u.\n",
+//			__func__, (t->page_num)?"partial":"full",
+;
 
 	err = 0;
 	if (t->attached_pages)
@@ -183,8 +183,8 @@ err_out_unlock_return:
 
 	netfs_state_unlock_send(st);
 
-	dprintk("%s: t: %p, gen: %u, err: %d.\n",
-		__func__, t, t->gen, err);
+//	dprintk("%s: t: %p, gen: %u, err: %d.\n",
+;
 
 	t->result = err;
 	return err;
@@ -251,10 +251,10 @@ static int netfs_trans_insert(struct netfs_trans_dst *ndst, struct netfs_state *
 	}
 
 	if (ret) {
-		printk("%s: exist: old: gen: %u, flags: %x, send_time: %lu, "
-				"new: gen: %u, flags: %x, send_time: %lu.\n",
-			__func__, t->gen, t->flags, ret->send_time,
-			new->gen, new->flags, ndst->send_time);
+//		printk("%s: exist: old: gen: %u, flags: %x, send_time: %lu, "
+//				"new: gen: %u, flags: %x, send_time: %lu.\n",
+//			__func__, t->gen, t->flags, ret->send_time,
+;
 		return -EEXIST;
 	}
 
@@ -453,8 +453,8 @@ int netfs_trans_finish_send(struct netfs_trans *t, struct pohmelfs_sb *psb)
 	int err = -ENODEV;
 	struct netfs_state *st;
 #if 0
-	dprintk("%s: t: %p, gen: %u, size: %u, page_num: %u, active: %p.\n",
-		__func__, t, t->gen, t->iovec.iov_len, t->page_num, psb->active_state);
+//	dprintk("%s: t: %p, gen: %u, size: %u, page_num: %u, active: %p.\n",
+;
 #endif
 	mutex_lock(&psb->state_lock);
 	list_for_each_entry(c, &psb->state_list, config_entry) {
@@ -479,8 +479,8 @@ int netfs_trans_finish_send(struct netfs_trans *t, struct pohmelfs_sb *psb)
 
 	mutex_unlock(&psb->state_lock);
 #if 0
-	dprintk("%s: fully sent t: %p, gen: %u, size: %u, page_num: %u, err: %d.\n",
-		__func__, t, t->gen, t->iovec.iov_len, t->page_num, err);
+//	dprintk("%s: fully sent t: %p, gen: %u, size: %u, page_num: %u, err: %d.\n",
+;
 #endif
 	if (err)
 		t->result = err;
@@ -505,14 +505,14 @@ int netfs_trans_finish(struct netfs_trans *t, struct pohmelfs_sb *psb)
 		cmd->csize = psb->crypto_attached_size;
 	}
 
-	dprintk("%s: t: %u, size: %u, iov_len: %zu, attached_size: %u, attached_pages: %u.\n",
-			__func__, t->gen, cmd->size, t->iovec.iov_len, t->attached_size, t->attached_pages);
+//	dprintk("%s: t: %u, size: %u, iov_len: %zu, attached_size: %u, attached_pages: %u.\n",
+;
 	err = pohmelfs_trans_crypt(t, psb);
 	if (err) {
 		t->result = err;
 		netfs_convert_cmd(cmd);
-		dprintk("%s: trans: %llu, crypto_attached_size: %u, attached_size: %u, attached_pages: %d, trans_size: %u, err: %d.\n",
-			__func__, cmd->start, psb->crypto_attached_size, t->attached_size, t->attached_pages, cmd->size, err);
+//		dprintk("%s: trans: %llu, crypto_attached_size: %u, attached_size: %u, attached_pages: %d, trans_size: %u, err: %d.\n",
+;
 	}
 	netfs_trans_put(t);
 	return err;
@@ -554,8 +554,8 @@ int netfs_trans_resend(struct netfs_trans *t, struct pohmelfs_sb *psb)
 		if (exist) {
 			if (!(t->flags & NETFS_TRANS_SINGLE_DST) ||
 					(c->config_entry.next == &psb->state_list)) {
-				dprintk("%s: resending st: %p, t: %p, gen: %u.\n",
-						__func__, st, t, t->gen);
+//				dprintk("%s: resending st: %p, t: %p, gen: %u.\n",
+;
 				err = netfs_trans_send(t, st);
 				if (!err)
 					error = 0;
@@ -563,8 +563,8 @@ int netfs_trans_resend(struct netfs_trans *t, struct pohmelfs_sb *psb)
 			continue;
 		}
 
-		dprintk("%s: pushing/resending st: %p, t: %p, gen: %u.\n",
-				__func__, st, t, t->gen);
+//		dprintk("%s: pushing/resending st: %p, t: %p, gen: %u.\n",
+;
 		err = netfs_trans_push(t, st);
 		if (err)
 			continue;
@@ -588,8 +588,8 @@ void *netfs_trans_add(struct netfs_trans *t, unsigned int size)
 	}
 
 	if (io->iov_len + size > t->total_size) {
-		dprintk("%s: too big size t: %p, gen: %u, iov_len: %zu, size: %u, total: %u.\n",
-				__func__, t, t->gen, io->iov_len, size, t->total_size);
+//		dprintk("%s: too big size t: %p, gen: %u, iov_len: %zu, size: %u, total: %u.\n",
+;
 		ptr = ERR_PTR(-E2BIG);
 		goto out;
 	}
@@ -598,8 +598,8 @@ void *netfs_trans_add(struct netfs_trans *t, unsigned int size)
 	io->iov_len += size;
 
 out:
-	dprintk("%s: t: %p, gen: %u, size: %u, total: %zu.\n",
-		__func__, t, t->gen, size, io->iov_len);
+//	dprintk("%s: t: %p, gen: %u, size: %u, total: %zu.\n",
+;
 	return ptr;
 }
 
@@ -667,10 +667,10 @@ struct netfs_trans *netfs_trans_alloc(struct pohmelfs_sb *psb, unsigned int size
 	cmd->cpad = pad;
 	cmd->csize = crypto_added;
 
-	dprintk("%s: t: %p, gen: %u, size: %u, padding: %u, align_size: %u, flags: %x, "
-			"page_num: %u, base: %p, pages: %p.\n",
-			__func__, t, t->gen, size, pad, psb->crypto_align_size, flags, nr,
-			t->iovec.iov_base, t->pages);
+//	dprintk("%s: t: %p, gen: %u, size: %u, padding: %u, align_size: %u, flags: %x, "
+//			"page_num: %u, base: %p, pages: %p.\n",
+//			__func__, t, t->gen, size, pad, psb->crypto_align_size, flags, nr,
+;
 
 	return t;
 

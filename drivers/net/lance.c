@@ -336,7 +336,7 @@ int __init init_module(void)
 		if (io[this_dev] == 0)  {
 			if (this_dev != 0) /* only complain once */
 				break;
-			printk(KERN_NOTICE "lance.c: Module autoprobing not allowed. Append \"io=0xNNN\" value(s).\n");
+;
 			return -EPERM;
 		}
 		dev = alloc_etherdev(0);
@@ -522,7 +522,7 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 		outw(89, ioaddr+LANCE_ADDR);
 		chip_version |= inw(ioaddr+LANCE_DATA) << 16;
 		if (lance_debug > 2)
-			printk("  LANCE chip version is %#x.\n", chip_version);
+;
 		if ((chip_version & 0xfff) != 0x003)
 			return -ENODEV;
 		chip_version = (chip_version >> 12) & 0xffff;
@@ -535,13 +535,13 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 	/* We can't allocate private data from alloc_etherdev() because it must
 	   a ISA DMA-able region. */
 	chipname = chip_table[lance_version].name;
-	printk("%s: %s at %#3x, ", dev->name, chipname, ioaddr);
+;
 
 	/* There is a 16 byte station address PROM at the base address.
 	   The first six bytes are the station address. */
 	for (i = 0; i < 6; i++)
 		dev->dev_addr[i] = inb(ioaddr + i);
-	printk("%pM", dev->dev_addr);
+;
 
 	dev->base_addr = ioaddr;
 	/* Make certain the data structures used by the LANCE are aligned and DMAble. */
@@ -549,7 +549,7 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 	lp = kzalloc(sizeof(*lp), GFP_DMA | GFP_KERNEL);
 	if(lp==NULL)
 		return -ENODEV;
-	if (lance_debug > 6) printk(" (#0x%05lx)", (unsigned long)lp);
+;
 	dev->ml_priv = lp;
 	lp->name = chipname;
 	lp->rx_buffs = (unsigned long)kmalloc(PKT_BUF_SZ*RX_RING_SIZE,
@@ -593,14 +593,14 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 		unsigned char port_val = inb(hp_builtin);
 		dev->dma = dma_tbl[(port_val >> 4) & 3];
 		dev->irq = irq_tbl[(port_val >> 2) & 3];
-		printk(" HP Vectra IRQ %d DMA %d.\n", dev->irq, dev->dma);
+;
 	} else if (hpJ2405A) {
 		static const char dma_tbl[4] = {3, 5, 6, 7};
 		static const char irq_tbl[8] = {3, 4, 5, 9, 10, 11, 12, 15};
 		short reset_val = inw(ioaddr+LANCE_RESET);
 		dev->dma = dma_tbl[(reset_val >> 2) & 3];
 		dev->irq = irq_tbl[(reset_val >> 4) & 7];
-		printk(" HP J2405A IRQ %d DMA %d.\n", dev->irq, dev->dma);
+;
 	} else if (lance_version == PCNET_ISAP) {		/* The plug-n-play version. */
 		short bus_info;
 		outw(8, ioaddr+LANCE_ADDR);
@@ -621,7 +621,7 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 	}
 	err = -ENODEV;
 	if (dev->irq >= 2)
-		printk(" assigned IRQ %d", dev->irq);
+;
 	else if (lance_version != 0)  {	/* 7990 boards need DMA detection first. */
 		unsigned long irq_mask;
 
@@ -636,9 +636,9 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 		mdelay(20);
 		dev->irq = probe_irq_off(irq_mask);
 		if (dev->irq)
-			printk(", probed IRQ %d", dev->irq);
+;
 		else {
-			printk(", failed to detect IRQ line.\n");
+;
 			goto out_tx;
 		}
 
@@ -649,13 +649,13 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 	}
 
 	if (dev->dma == 4) {
-		printk(", no DMA needed.\n");
+;
 	} else if (dev->dma) {
 		if (request_dma(dev->dma, chipname)) {
-			printk("DMA %d allocation failed.\n", dev->dma);
+;
 			goto out_tx;
 		} else
-			printk(", assigned DMA %d.\n", dev->dma);
+;
 	} else {			/* OK, we have to auto-DMA. */
 		for (i = 0; i < 4; i++) {
 			static const char dmas[] = { 5, 6, 7, 3 };
@@ -682,7 +682,7 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 					break;
 			if (inw(ioaddr+LANCE_DATA) & 0x0100) {
 				dev->dma = dma;
-				printk(", DMA %d.\n", dev->dma);
+;
 				break;
 			} else {
 				flags=claim_dma_lock();
@@ -692,7 +692,7 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 			}
 		}
 		if (i == 4) {			/* Failure: bail. */
-			printk("DMA detection failed.\n");
+;
 			goto out_tx;
 		}
 	}
@@ -708,10 +708,10 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 		mdelay(40);
 		dev->irq = probe_irq_off(irq_mask);
 		if (dev->irq == 0) {
-			printk("  Failed to detect the 7990 IRQ line.\n");
+;
 			goto out_dma;
 		}
-		printk("  Auto-IRQ detected IRQ%d.\n", dev->irq);
+;
 	}
 
 	if (chip_table[lp->chip_version].flags & LANCE_ENABLE_AUTOSELECT) {
@@ -723,7 +723,7 @@ static int __init lance_probe1(struct net_device *dev, int ioaddr, int irq, int 
 	}
 
 	if (lance_debug > 0  &&  did_version++ == 0)
-		printk(version);
+;
 
 	/* The LANCE-specific entries in the device structure. */
 	dev->netdev_ops = &lance_netdev_ops;
@@ -784,11 +784,11 @@ lance_open(struct net_device *dev)
  	}
 
 	if (lance_debug > 1)
-		printk("%s: lance_open() irq %d dma %d tx/rx rings %#x/%#x init %#x.\n",
-			   dev->name, dev->irq, dev->dma,
-		           (u32) isa_virt_to_bus(lp->tx_ring),
-		           (u32) isa_virt_to_bus(lp->rx_ring),
-			   (u32) isa_virt_to_bus(&lp->init_block));
+//		printk("%s: lance_open() irq %d dma %d tx/rx rings %#x/%#x init %#x.\n",
+//			   dev->name, dev->irq, dev->dma,
+//		           (u32) isa_virt_to_bus(lp->tx_ring),
+//		           (u32) isa_virt_to_bus(lp->rx_ring),
+;
 
 	lance_init_ring(dev, GFP_KERNEL);
 	/* Re-initialize the LANCE, and start it when done. */
@@ -816,8 +816,8 @@ lance_open(struct net_device *dev)
  	outw(0x0042, ioaddr+LANCE_DATA);
 
 	if (lance_debug > 2)
-		printk("%s: LANCE open after %d ticks, init block %#x csr0 %4.4x.\n",
-			   dev->name, i, (u32) isa_virt_to_bus(&lp->init_block), inw(ioaddr+LANCE_DATA));
+//		printk("%s: LANCE open after %d ticks, init block %#x csr0 %4.4x.\n",
+;
 
 	return 0;					/* Always succeed */
 }
@@ -961,8 +961,8 @@ static netdev_tx_t lance_start_xmit(struct sk_buff *skb,
 
 	if (lance_debug > 3) {
 		outw(0x0000, ioaddr+LANCE_ADDR);
-		printk("%s: lance_start_xmit() called, csr0 %4.4x.\n", dev->name,
-			   inw(ioaddr+LANCE_DATA));
+//		printk("%s: lance_start_xmit() called, csr0 %4.4x.\n", dev->name,
+;
 		outw(0x0000, ioaddr+LANCE_DATA);
 	}
 
@@ -994,8 +994,8 @@ static netdev_tx_t lance_start_xmit(struct sk_buff *skb,
 	   buffer. */
 	if ((u32)isa_virt_to_bus(skb->data) + skb->len > 0x01000000) {
 		if (lance_debug > 5)
-			printk("%s: bouncing a high-memory packet (%#x).\n",
-				   dev->name, (u32)isa_virt_to_bus(skb->data));
+//			printk("%s: bouncing a high-memory packet (%#x).\n",
+;
 		skb_copy_from_linear_data(skb, &lp->tx_bounce_buffs[entry], skb->len);
 		lp->tx_ring[entry].base =
 			((u32)isa_virt_to_bus((lp->tx_bounce_buffs + entry)) & 0xffffff) | 0x83000000;
@@ -1040,8 +1040,8 @@ static irqreturn_t lance_interrupt(int irq, void *dev_id)
 		must_restart = 0;
 
 		if (lance_debug > 5)
-			printk("%s: interrupt  csr0=%#2.2x new csr=%#2.2x.\n",
-				   dev->name, csr0, inw(dev->base_addr + LANCE_DATA));
+//			printk("%s: interrupt  csr0=%#2.2x new csr=%#2.2x.\n",
+;
 
 		if (csr0 & 0x0400)			/* Rx interrupt */
 			lance_rx(dev);
@@ -1072,8 +1072,8 @@ static irqreturn_t lance_interrupt(int irq, void *dev_id)
 						/* Ackk!  On FIFO errors the Tx unit is turned off! */
 						dev->stats.tx_fifo_errors++;
 						/* Remove this verbosity later! */
-						printk("%s: Tx FIFO error! Status %4.4x.\n",
-							   dev->name, csr0);
+//						printk("%s: Tx FIFO error! Status %4.4x.\n",
+;
 						/* Restart the chip. */
 						must_restart = 1;
 					}
@@ -1094,9 +1094,9 @@ static irqreturn_t lance_interrupt(int irq, void *dev_id)
 
 #ifndef final_version
 			if (lp->cur_tx - dirty_tx >= TX_RING_SIZE) {
-				printk("out-of-sync dirty pointer, %d vs. %d, full=%s.\n",
-					   dirty_tx, lp->cur_tx,
-					   netif_queue_stopped(dev) ? "yes" : "no");
+//				printk("out-of-sync dirty pointer, %d vs. %d, full=%s.\n",
+//					   dirty_tx, lp->cur_tx,
+;
 				dirty_tx += TX_RING_SIZE;
 			}
 #endif
@@ -1115,8 +1115,8 @@ static irqreturn_t lance_interrupt(int irq, void *dev_id)
 		if (csr0 & 0x1000)
 			dev->stats.rx_errors++; /* Missed a Rx frame. */
 		if (csr0 & 0x0800) {
-			printk("%s: Bus master arbitration failure, status %4.4x.\n",
-				   dev->name, csr0);
+//			printk("%s: Bus master arbitration failure, status %4.4x.\n",
+;
 			/* Restart the chip. */
 			must_restart = 1;
 		}
@@ -1134,9 +1134,9 @@ static irqreturn_t lance_interrupt(int irq, void *dev_id)
 	outw(0x7940, dev->base_addr + LANCE_DATA);
 
 	if (lance_debug > 4)
-		printk("%s: exiting interrupt, csr%d=%#4.4x.\n",
-			   dev->name, inw(ioaddr + LANCE_ADDR),
-			   inw(dev->base_addr + LANCE_DATA));
+//		printk("%s: exiting interrupt, csr%d=%#4.4x.\n",
+//			   dev->name, inw(ioaddr + LANCE_ADDR),
+;
 
 	spin_unlock (&lp->devlock);
 	return IRQ_HANDLED;
@@ -1178,7 +1178,7 @@ lance_rx(struct net_device *dev)
 
 			if(pkt_len<60)
 			{
-				printk("%s: Runt packet!\n",dev->name);
+;
 				dev->stats.rx_errors++;
 			}
 			else
@@ -1186,7 +1186,7 @@ lance_rx(struct net_device *dev)
 				skb = dev_alloc_skb(pkt_len+2);
 				if (skb == NULL)
 				{
-					printk("%s: Memory squeeze, deferring packet.\n", dev->name);
+;
 					for (i=0; i < RX_RING_SIZE; i++)
 						if (lp->rx_ring[(entry+i) & RX_RING_MOD_MASK].base < 0)
 							break;
@@ -1238,8 +1238,8 @@ lance_close(struct net_device *dev)
 	outw(0, ioaddr+LANCE_ADDR);
 
 	if (lance_debug > 1)
-		printk("%s: Shutting down ethercard, status was %2.2x.\n",
-			   dev->name, inw(ioaddr+LANCE_DATA));
+//		printk("%s: Shutting down ethercard, status was %2.2x.\n",
+;
 
 	/* We stop the LANCE here -- it occasionally polls
 	   memory if we don't. */

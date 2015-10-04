@@ -82,11 +82,11 @@ void __iomem *cpm_uart_map_pram(struct uart_cpm_port *port,
 		return pram;
 
 	if (len != 2) {
-		printk(KERN_WARNING "cpm_uart[%d]: device tree references "
-			"SMC pram, using boot loader/wrapper pram mapping. "
-			"Please fix your device tree to reference the pram "
-			"base register instead.\n",
-			port->port.line);
+//		printk(KERN_WARNING "cpm_uart[%d]: device tree references "
+//			"SMC pram, using boot loader/wrapper pram mapping. "
+//			"Please fix your device tree to reference the pram "
+//			"base register instead.\n",
+;
 		return pram;
 	}
 
@@ -121,8 +121,8 @@ int cpm_uart_allocbuf(struct uart_cpm_port *pinfo, unsigned int is_con)
 	dpmemsz = sizeof(cbd_t) * (pinfo->rx_nrfifos + pinfo->tx_nrfifos);
 	dp_offset = cpm_dpalloc(dpmemsz, 8);
 	if (IS_ERR_VALUE(dp_offset)) {
-		printk(KERN_ERR
-		       "cpm_uart_cpm.c: could not allocate buffer descriptors\n");
+//		printk(KERN_ERR
+;
 		return -ENOMEM;
 	}
 
@@ -140,8 +140,8 @@ int cpm_uart_allocbuf(struct uart_cpm_port *pinfo, unsigned int is_con)
 
 	if (mem_addr == NULL) {
 		cpm_dpfree(dp_offset);
-		printk(KERN_ERR
-		       "cpm_uart_cpm.c: could not allocate coherent memory\n");
+//		printk(KERN_ERR
+;
 		return -ENOMEM;
 	}
 

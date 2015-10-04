@@ -313,8 +313,8 @@ static int cdrom_decode_status(ide_drive_t *drive, u8 stat)
 
 			if (rq->cmd_type == REQ_TYPE_FS &&
 			    !(rq->cmd_flags & REQ_QUIET))
-				printk(KERN_ERR PFX "%s: tray open\n",
-					drive->name);
+//				printk(KERN_ERR PFX "%s: tray open\n",
+;
 		}
 		do_end_request = 1;
 		break;
@@ -542,8 +542,8 @@ static ide_startstop_t cdrom_newpc_intr(ide_drive_t *drive)
 		dma_error = hwif->dma_ops->dma_end(drive);
 		ide_dma_unmap_sg(drive, cmd);
 		if (dma_error) {
-			printk(KERN_ERR PFX "%s: DMA %s error\n", drive->name,
-					write ? "write" : "read");
+//			printk(KERN_ERR PFX "%s: DMA %s error\n", drive->name,
+;
 			ide_dma_off(drive);
 		}
 	}
@@ -586,9 +586,9 @@ static ide_startstop_t cdrom_newpc_intr(ide_drive_t *drive)
 			 */
 			uptodate = 1;
 			if (cmd->nleft > 0) {
-				printk(KERN_ERR PFX "%s: %s: data underrun "
-					"(%u bytes)\n", drive->name, __func__,
-					cmd->nleft);
+//				printk(KERN_ERR PFX "%s: %s: data underrun "
+//					"(%u bytes)\n", drive->name, __func__,
+;
 				if (!write)
 					rq->cmd_flags |= REQ_FAILED;
 				uptodate = 0;
@@ -645,8 +645,8 @@ static ide_startstop_t cdrom_newpc_intr(ide_drive_t *drive)
 		if (rq->cmd_type != REQ_TYPE_FS || write == 0)
 			ide_pad_transfer(drive, write, len);
 		else {
-			printk(KERN_ERR PFX "%s: confused, missing data\n",
-				drive->name);
+//			printk(KERN_ERR PFX "%s: confused, missing data\n",
+;
 			blk_dump_rq_flags(rq, "cdrom_newpc_intr");
 		}
 	}
@@ -967,8 +967,8 @@ int ide_cd_read_toc(ide_drive_t *drive, struct request_sense *sense)
 		/* try to allocate space */
 		toc = kmalloc(sizeof(struct atapi_toc), GFP_KERNEL);
 		if (toc == NULL) {
-			printk(KERN_ERR PFX "%s: No cdrom TOC buffer!\n",
-					drive->name);
+//			printk(KERN_ERR PFX "%s: No cdrom TOC buffer!\n",
+;
 			return -ENOMEM;
 		}
 		info->toc = toc;
@@ -1220,8 +1220,8 @@ static int ide_cdrom_probe_capabilities(ide_drive_t *drive)
 
 	if (drive->media == ide_optical) {
 		cdi->mask &= ~(CDC_MO_DRIVE | CDC_RAM);
-		printk(KERN_ERR PFX "%s: ATAPI magneto-optical drive\n",
-				drive->name);
+//		printk(KERN_ERR PFX "%s: ATAPI magneto-optical drive\n",
+;
 		return nslots;
 	}
 
@@ -1278,31 +1278,31 @@ static int ide_cdrom_probe_capabilities(ide_drive_t *drive)
 
 	ide_cdrom_update_speed(drive, buf);
 
-	printk(KERN_INFO PFX "%s: ATAPI", drive->name);
+;
 
 	/* don't print speed if the drive reported 0 */
 	if (cd->max_speed)
-		printk(KERN_CONT " %dX", cd->max_speed);
+;
 
-	printk(KERN_CONT " %s", (cdi->mask & CDC_DVD) ? "CD-ROM" : "DVD-ROM");
+;
 
 	if ((cdi->mask & CDC_DVD_R) == 0 || (cdi->mask & CDC_DVD_RAM) == 0)
-		printk(KERN_CONT " DVD%s%s",
-				 (cdi->mask & CDC_DVD_R) ? "" : "-R",
-				 (cdi->mask & CDC_DVD_RAM) ? "" : "/RAM");
+//		printk(KERN_CONT " DVD%s%s",
+//				 (cdi->mask & CDC_DVD_R) ? "" : "-R",
+;
 
 	if ((cdi->mask & CDC_CD_R) == 0 || (cdi->mask & CDC_CD_RW) == 0)
-		printk(KERN_CONT " CD%s%s",
-				 (cdi->mask & CDC_CD_R) ? "" : "-R",
-				 (cdi->mask & CDC_CD_RW) ? "" : "/RW");
+//		printk(KERN_CONT " CD%s%s",
+//				 (cdi->mask & CDC_CD_R) ? "" : "-R",
+;
 
 	if ((cdi->mask & CDC_SELECT_DISC) == 0)
-		printk(KERN_CONT " changer w/%d slots", nslots);
+;
 	else
-		printk(KERN_CONT " drive");
+;
 
-	printk(KERN_CONT ", %dkB Cache\n",
-			 be16_to_cpup((__be16 *)&buf[8 + 12]));
+//	printk(KERN_CONT ", %dkB Cache\n",
+;
 
 	return nslots;
 }
@@ -1527,8 +1527,8 @@ static int ide_cdrom_setup(ide_drive_t *drive)
 	blk_queue_logical_block_size(q, CD_FRAMESIZE);
 
 	if (ide_cdrom_register(drive, nslots)) {
-		printk(KERN_ERR PFX "%s: %s failed to register device with the"
-				" cdrom driver.\n", drive->name, __func__);
+//		printk(KERN_ERR PFX "%s: %s failed to register device with the"
+;
 		cd->devinfo.handle = NULL;
 		return 1;
 	}
@@ -1746,8 +1746,8 @@ static int ide_cd_probe(ide_drive_t *drive)
 
 	info = kzalloc(sizeof(struct cdrom_info), GFP_KERNEL);
 	if (info == NULL) {
-		printk(KERN_ERR PFX "%s: Can't allocate a cdrom structure\n",
-				drive->name);
+//		printk(KERN_ERR PFX "%s: Can't allocate a cdrom structure\n",
+;
 		goto failed;
 	}
 
@@ -1801,7 +1801,7 @@ static void __exit ide_cdrom_exit(void)
 
 static int __init ide_cdrom_init(void)
 {
-	printk(KERN_INFO DRV_NAME " driver " IDECD_VERSION "\n");
+;
 	return driver_register(&ide_cdrom_driver.gen_driver);
 }
 

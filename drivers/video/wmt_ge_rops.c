@@ -147,7 +147,7 @@ static int __devinit wmt_ge_rops_probe(struct platform_device *pdev)
 	}
 
 	writel(1, regbase + GE_ENABLE_OFF);
-	printk(KERN_INFO "Enabled support for WMT GE raster acceleration\n");
+;
 
 	return 0;
 }

@@ -70,55 +70,55 @@ static unsigned int skip_txen_test; /* force skip of txen test at init time */
  * Debugging.
  */
 #if 0
-#define DEBUG_AUTOCONF(fmt...)	printk(fmt)
-#else
-#define DEBUG_AUTOCONF(fmt...)	do { } while (0)
-#endif
-
-#if 0
-#define DEBUG_INTR(fmt...)	printk(fmt)
-#else
-#define DEBUG_INTR(fmt...)	do { } while (0)
-#endif
-
-#define PASS_LIMIT	512
-
-#define BOTH_EMPTY 	(UART_LSR_TEMT | UART_LSR_THRE)
-
-
-/*
- * We default to IRQ0 for the "no irq" hack.   Some
- * machine types want others as well - they're free
- * to redefine this in their header file.
- */
-#define is_real_interrupt(irq)	((irq) != 0)
-
-#ifdef CONFIG_SERIAL_8250_DETECT_IRQ
-#define CONFIG_SERIAL_DETECT_IRQ 1
-#endif
-#ifdef CONFIG_SERIAL_8250_MANY_PORTS
-#define CONFIG_SERIAL_MANY_PORTS 1
-#endif
-
-/*
- * HUB6 is always on.  This will be removed once the header
- * files have been cleaned.
- */
-#define CONFIG_HUB6 1
-
-#include <asm/serial.h>
-/*
- * SERIAL_PORT_DFNS tells us about built-in ports that have no
- * standard enumeration mechanism.   Platforms that can find all
- * serial ports via mechanisms like ACPI or PCI need not supply it.
- */
-#ifndef SERIAL_PORT_DFNS
-#define SERIAL_PORT_DFNS
-#endif
-
-static const struct old_serial_port old_serial_port[] = {
-	SERIAL_PORT_DFNS /* defined in asm/serial.h */
-};
+//#define DEBUG_AUTOCONF(fmt...)	printk(fmt)
+//#else
+//#define DEBUG_AUTOCONF(fmt...)	do { } while (0)
+//#endif
+//
+//#if 0
+//#define DEBUG_INTR(fmt...)	printk(fmt)
+//#else
+//#define DEBUG_INTR(fmt...)	do { } while (0)
+//#endif
+//
+//#define PASS_LIMIT	512
+//
+//#define BOTH_EMPTY 	(UART_LSR_TEMT | UART_LSR_THRE)
+//
+//
+///*
+// * We default to IRQ0 for the "no irq" hack.   Some
+// * machine types want others as well - they're free
+// * to redefine this in their header file.
+// */
+//#define is_real_interrupt(irq)	((irq) != 0)
+//
+//#ifdef CONFIG_SERIAL_8250_DETECT_IRQ
+//#define CONFIG_SERIAL_DETECT_IRQ 1
+//#endif
+//#ifdef CONFIG_SERIAL_8250_MANY_PORTS
+//#define CONFIG_SERIAL_MANY_PORTS 1
+//#endif
+//
+///*
+// * HUB6 is always on.  This will be removed once the header
+// * files have been cleaned.
+// */
+//#define CONFIG_HUB6 1
+//
+//#include <asm/serial.h>
+///*
+// * SERIAL_PORT_DFNS tells us about built-in ports that have no
+// * standard enumeration mechanism.   Platforms that can find all
+// * serial ports via mechanisms like ACPI or PCI need not supply it.
+// */
+//#ifndef SERIAL_PORT_DFNS
+//#define SERIAL_PORT_DFNS
+//#endif
+//
+//static const struct old_serial_port old_serial_port[] = {
+//	SERIAL_PORT_DFNS /* defined in asm/serial.h */
+;
 
 #define UART_NR	CONFIG_SERIAL_8250_NR_UARTS
 
@@ -1273,10 +1273,10 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
 	serial_outp(up, UART_LCR, save_lcr);
 
 	if (up->capabilities != uart_config[up->port.type].flags) {
-		printk(KERN_WARNING
-		       "ttyS%d: detected caps %08x should be %08x\n",
-		       serial_index(&up->port), up->capabilities,
-		       uart_config[up->port.type].flags);
+//		printk(KERN_WARNING
+//		       "ttyS%d: detected caps %08x should be %08x\n",
+//		       serial_index(&up->port), up->capabilities,
+;
 	}
 
 	up->port.fifosize = uart_config[up->port.type].fifo_size;
@@ -2081,8 +2081,8 @@ static int serial8250_startup(struct uart_port *port)
 	 */
 	if (!(up->port.flags & UPF_BUGGY_UART) &&
 	    (serial_inp(up, UART_LSR) == 0xff)) {
-		printk(KERN_INFO "ttyS%d: LSR safety check engaged!\n",
-		       serial_index(&up->port));
+//		printk(KERN_INFO "ttyS%d: LSR safety check engaged!\n",
+;
 		return -ENODEV;
 	}
 
@@ -3336,9 +3336,9 @@ static int __init serial8250_init(void)
 	if (nr_uarts > UART_NR)
 		nr_uarts = UART_NR;
 
-	printk(KERN_INFO "Serial: 8250/16550 driver, "
-		"%d ports, IRQ sharing %sabled\n", nr_uarts,
-		share_irqs ? "en" : "dis");
+//	printk(KERN_INFO "Serial: 8250/16550 driver, "
+//		"%d ports, IRQ sharing %sabled\n", nr_uarts,
+;
 
 #ifdef CONFIG_SPARC
 	ret = sunserial_register_minors(&serial8250_reg, UART_NR);

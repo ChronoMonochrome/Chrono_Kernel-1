@@ -19,14 +19,14 @@ static void ide_legacy_init_one(struct ide_hw **hws, struct ide_hw *hw,
 	}
 
 	if (!request_region(base, 8, d->name)) {
-		printk(KERN_ERR "%s: I/O resource 0x%lX-0x%lX not free.\n",
-				d->name, base, base + 7);
+//		printk(KERN_ERR "%s: I/O resource 0x%lX-0x%lX not free.\n",
+;
 		return;
 	}
 
 	if (!request_region(ctl, 1, d->name)) {
-		printk(KERN_ERR "%s: I/O resource 0x%lX not free.\n",
-				d->name, ctl);
+//		printk(KERN_ERR "%s: I/O resource 0x%lX not free.\n",
+;
 		release_region(base, 8);
 		return;
 	}

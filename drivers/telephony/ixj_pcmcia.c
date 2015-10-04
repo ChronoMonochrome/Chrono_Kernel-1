@@ -57,11 +57,11 @@ static void ixj_get_serial(struct pcmcia_device * link, IXJ * j)
 	str = link->prod_id[0];
 	if (!str)
 		goto failed;
-	printk("%s", str);
+;
 	str = link->prod_id[1];
 	if (!str)
 		goto failed;
-	printk(" %s", str);
+;
 	str = link->prod_id[2];
 	if (!str)
 		goto failed;
@@ -102,7 +102,7 @@ static void ixj_get_serial(struct pcmcia_device * link, IXJ * j)
 	str = link->prod_id[3];
 	if (!str)
 		goto failed;
-	printk(" version %s\n", str);
+;
 failed:
 	return;
 }

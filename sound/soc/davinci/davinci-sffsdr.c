@@ -139,7 +139,7 @@ static int __init sffsdr_init(void)
 
 	sffsdr_snd_device = platform_device_alloc("soc-audio", 0);
 	if (!sffsdr_snd_device) {
-		printk(KERN_ERR "platform device allocation failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -151,7 +151,7 @@ static int __init sffsdr_init(void)
 					    sffsdr_snd_resources,
 					    ARRAY_SIZE(sffsdr_snd_resources));
 	if (ret) {
-		printk(KERN_ERR "platform device add resources failed\n");
+;
 		goto error;
 	}
 

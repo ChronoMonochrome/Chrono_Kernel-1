@@ -307,7 +307,7 @@ static struct fb_info * __devinit gx1fb_init_fbinfo(struct device *dev)
 	/* CRT and panel options */
 	par->enable_crt = crt_option;
 	if (parse_panel_option(info) < 0)
-		printk(KERN_WARNING "gx1fb: invalid 'panel' option -- disabling flat panel\n");
+;
 	if (!par->panel_x)
 		par->enable_crt = 1; /* fall back to CRT if no panel is specified */
 
@@ -357,7 +357,7 @@ static int __devinit gx1fb_probe(struct pci_dev *pdev, const struct pci_device_i
 		goto err;
 	}
 	pci_set_drvdata(pdev, info);
-	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
+;
 	return 0;
 
   err:

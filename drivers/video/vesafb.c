@@ -280,9 +280,9 @@ static int __init vesafb_probe(struct platform_device *dev)
 #endif
 
 	if (!request_mem_region(vesafb_fix.smem_start, size_total, "vesafb")) {
-		printk(KERN_WARNING
-		       "vesafb: cannot reserve video memory at 0x%lx\n",
-			vesafb_fix.smem_start);
+//		printk(KERN_WARNING
+//		       "vesafb: cannot reserve video memory at 0x%lx\n",
+;
 		/* We cannot make this fatal. Sometimes this comes from magic
 		   spaces our resource handlers simply don't know about */
 	}
@@ -304,12 +304,12 @@ static int __init vesafb_probe(struct platform_device *dev)
 	info->apertures->ranges[0].base = screen_info.lfb_base;
 	info->apertures->ranges[0].size = size_total;
 
-	printk(KERN_INFO "vesafb: mode is %dx%dx%d, linelength=%d, pages=%d\n",
-	       vesafb_defined.xres, vesafb_defined.yres, vesafb_defined.bits_per_pixel, vesafb_fix.line_length, screen_info.pages);
+//	printk(KERN_INFO "vesafb: mode is %dx%dx%d, linelength=%d, pages=%d\n",
+;
 
 	if (screen_info.vesapm_seg) {
-		printk(KERN_INFO "vesafb: protected mode interface info at %04x:%04x\n",
-		       screen_info.vesapm_seg,screen_info.vesapm_off);
+//		printk(KERN_INFO "vesafb: protected mode interface info at %04x:%04x\n",
+;
 	}
 
 	if (screen_info.vesapm_seg < 0xc000)
@@ -320,12 +320,12 @@ static int __init vesafb_probe(struct platform_device *dev)
 		pmi_base  = (unsigned short*)phys_to_virt(((unsigned long)screen_info.vesapm_seg << 4) + screen_info.vesapm_off);
 		pmi_start = (void*)((char*)pmi_base + pmi_base[1]);
 		pmi_pal   = (void*)((char*)pmi_base + pmi_base[2]);
-		printk(KERN_INFO "vesafb: pmi: set display start = %p, set palette = %p\n",pmi_start,pmi_pal);
+;
 		if (pmi_base[3]) {
-			printk(KERN_INFO "vesafb: pmi: ports = ");
+;
 				for (i = pmi_base[3]/2; pmi_base[i] != 0xffff; i++)
-					printk("%x ",pmi_base[i]);
-			printk("\n");
+;
+;
 			if (pmi_base[i] != 0xffff) {
 				/*
 				 * memory areas not supported (yet?)
@@ -333,25 +333,25 @@ static int __init vesafb_probe(struct platform_device *dev)
 				 * Rules are: we have to set up a descriptor for the requested
 				 * memory area and pass it in the ES register to the BIOS function.
 				 */
-				printk(KERN_INFO "vesafb: can't handle memory requests, pmi disabled\n");
+;
 				ypan = pmi_setpal = 0;
 			}
 		}
 	}
 
 	if (vesafb_defined.bits_per_pixel == 8 && !pmi_setpal && !vga_compat) {
-		printk(KERN_WARNING "vesafb: hardware palette is unchangeable,\n"
-		                    "        colors may be incorrect\n");
+//		printk(KERN_WARNING "vesafb: hardware palette is unchangeable,\n"
+;
 		vesafb_fix.visual = FB_VISUAL_STATIC_PSEUDOCOLOR;
 	}
 
 	vesafb_defined.xres_virtual = vesafb_defined.xres;
 	vesafb_defined.yres_virtual = vesafb_fix.smem_len / vesafb_fix.line_length;
 	if (ypan && vesafb_defined.yres_virtual > vesafb_defined.yres) {
-		printk(KERN_INFO "vesafb: scrolling: %s using protected mode interface, yres_virtual=%d\n",
-		       (ypan > 1) ? "ywrap" : "ypan",vesafb_defined.yres_virtual);
+//		printk(KERN_INFO "vesafb: scrolling: %s using protected mode interface, yres_virtual=%d\n",
+;
 	} else {
-		printk(KERN_INFO "vesafb: scrolling: redraw\n");
+;
 		vesafb_defined.yres_virtual = vesafb_defined.yres;
 		ypan = 0;
 	}
@@ -378,19 +378,19 @@ static int __init vesafb_probe(struct platform_device *dev)
 		vesafb_defined.bits_per_pixel;
 	}
 
-	printk(KERN_INFO "vesafb: %s: "
-	       "size=%d:%d:%d:%d, shift=%d:%d:%d:%d\n",
-	       (vesafb_defined.bits_per_pixel > 8) ?
-	       "Truecolor" : (vga_compat || pmi_setpal) ?
-	       "Pseudocolor" : "Static Pseudocolor",
-	       screen_info.rsvd_size,
-	       screen_info.red_size,
-	       screen_info.green_size,
-	       screen_info.blue_size,
-	       screen_info.rsvd_pos,
-	       screen_info.red_pos,
-	       screen_info.green_pos,
-	       screen_info.blue_pos);
+//	printk(KERN_INFO "vesafb: %s: "
+//	       "size=%d:%d:%d:%d, shift=%d:%d:%d:%d\n",
+//	       (vesafb_defined.bits_per_pixel > 8) ?
+//	       "Truecolor" : (vga_compat || pmi_setpal) ?
+//	       "Pseudocolor" : "Static Pseudocolor",
+//	       screen_info.rsvd_size,
+//	       screen_info.red_size,
+//	       screen_info.green_size,
+//	       screen_info.blue_size,
+//	       screen_info.rsvd_pos,
+//	       screen_info.red_pos,
+//	       screen_info.green_pos,
+;
 
 	vesafb_fix.ypanstep  = ypan     ? 1 : 0;
 	vesafb_fix.ywrapstep = (ypan>1) ? 1 : 0;
@@ -454,17 +454,17 @@ static int __init vesafb_probe(struct platform_device *dev)
 		break;
 	}
 	if (!info->screen_base) {
-		printk(KERN_ERR
-		       "vesafb: abort, cannot ioremap video memory 0x%x @ 0x%lx\n",
-			vesafb_fix.smem_len, vesafb_fix.smem_start);
+//		printk(KERN_ERR
+//		       "vesafb: abort, cannot ioremap video memory 0x%x @ 0x%lx\n",
+;
 		err = -EIO;
 		goto err;
 	}
 
-	printk(KERN_INFO "vesafb: framebuffer at 0x%lx, mapped to 0x%p, "
-	       "using %dk, total %dk\n",
-	       vesafb_fix.smem_start, info->screen_base,
-	       size_remap/1024, size_total/1024);
+//	printk(KERN_INFO "vesafb: framebuffer at 0x%lx, mapped to 0x%p, "
+//	       "using %dk, total %dk\n",
+//	       vesafb_fix.smem_start, info->screen_base,
+;
 
 	info->fbops = &vesafb_ops;
 	info->var = vesafb_defined;
@@ -484,8 +484,8 @@ static int __init vesafb_probe(struct platform_device *dev)
 		fb_dealloc_cmap(&info->cmap);
 		goto err;
 	}
-	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-	       info->node, info->fix.id);
+//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+;
 	return 0;
 err:
 	if (info->screen_base)

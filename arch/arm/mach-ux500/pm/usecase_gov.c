@@ -135,7 +135,7 @@ static unsigned long determine_cpu_load(void)
 		if (info->idx >= LOAD_MONITOR)
 			info->idx = 0;
 
-		hp_printk("cpu %d load %u ", i, load);
+;
 
 		total_load += load;
 	}
@@ -160,7 +160,7 @@ static unsigned long determine_cpu_load_trend(void)
 
 		load /= LOAD_MONITOR;
 
-		hp_printk("cpu %d load trend %u\n", i, load);
+;
 
 		total_load += load;
 	}
@@ -446,22 +446,22 @@ static void delayed_usecase_work(struct work_struct *work)
 
 	/* determine loadavg  */
 	avg = determine_loadavg();
-	hp_printk("loadavg = %lu lower th %lu upper th %lu\n",
-					avg, lower_threshold, upper_threshold);
+//	hp_printk("loadavg = %lu lower th %lu upper th %lu\n",
+;
 
 	/* determine instant load */
 	load = determine_cpu_load();
-	hp_printk("cpu instant load = %lu max %lu\n", load, max_instant);
+;
 
 	/* determine load trend */
 	trend = determine_cpu_load_trend();
-	hp_printk("cpu load trend = %lu min %lu unbal %lu\n",
-					trend, min_trend, trend_unbalance);
+//	hp_printk("cpu load trend = %lu min %lu unbal %lu\n",
+;
 
 	/* determine load balancing */
 	balance = determine_cpu_balance_trend();
-	hp_printk("load balancing trend = %lu min %lu\n",
-					balance, max_unbalance);
+//	hp_printk("load balancing trend = %lu min %lu\n",
+;
 
 	irqs_per_s = get_num_interrupts_per_s();
 
@@ -534,7 +534,7 @@ static ssize_t set_##_name(struct file *file, \
 		return err; \
  \
 	_name = i; \
-	hp_printk("New value : %lu\n", _name); \
+;
  \
 	return count; \
 }

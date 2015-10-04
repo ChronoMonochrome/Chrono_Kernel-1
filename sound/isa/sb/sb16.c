@@ -269,7 +269,7 @@ static int __devinit snd_card_sb16_pnp(int dev, struct snd_card_sb16 *acard,
 
 	err = pnp_activate_dev(pdev); 
 	if (err < 0) { 
-		snd_printk(KERN_ERR PFX "AUDIO pnp configure failure\n"); 
+;
 		return err; 
 	} 
 	port[dev] = pnp_port_start(pdev, 0);
@@ -297,7 +297,7 @@ static int __devinit snd_card_sb16_pnp(int dev, struct snd_card_sb16 *acard,
 __wt_error:
 		if (pdev) {
 			pnp_release_card_device(pdev);
-			snd_printk(KERN_ERR PFX "WaveTable pnp configure failure\n");
+;
 		}
 		acard->devwt = NULL;
 		awe_port[dev] = -1;
@@ -366,7 +366,7 @@ static int __devinit snd_sb16_probe(struct snd_card *card, int dev)
 
 	acard->chip = chip;
 	if (chip->hardware != SB_HW_16) {
-		snd_printk(KERN_ERR PFX "SB 16 chip was not detected at 0x%lx\n", port[dev]);
+;
 		return -ENODEV;
 	}
 	chip->mpu_port = mpu_port[dev];
@@ -410,8 +410,8 @@ static int __devinit snd_sb16_probe(struct snd_card *card, int dev)
 				    OPL3_HW_OPL3,
 				    acard->fm_res != NULL || fm_port[dev] == port[dev],
 				    &opl3) < 0) {
-			snd_printk(KERN_ERR PFX "no OPL device at 0x%lx-0x%lx\n",
-				   fm_port[dev], fm_port[dev] + 2);
+//			snd_printk(KERN_ERR PFX "no OPL device at 0x%lx-0x%lx\n",
+;
 		} else {
 #ifdef SNDRV_SBAWE_EMU8000
 			int seqdev = awe_port[dev] > 0 ? 2 : 1;
@@ -434,7 +434,7 @@ static int __devinit snd_sb16_probe(struct snd_card *card, int dev)
 			chip->csp = xcsp->private_data;
 			chip->hardware = SB_HW_16CSP;
 		} else {
-			snd_printk(KERN_INFO PFX "warning - CSP chip not detected on soundcard #%i\n", dev + 1);
+;
 		}
 	}
 #endif
@@ -442,7 +442,7 @@ static int __devinit snd_sb16_probe(struct snd_card *card, int dev)
 	if (awe_port[dev] > 0) {
 		if ((err = snd_emu8000_new(card, 1, awe_port[dev],
 					   seq_ports[dev], NULL)) < 0) {
-			snd_printk(KERN_ERR PFX "fatal error - EMU-8000 synthesizer not detected at 0x%lx\n", awe_port[dev]);
+;
 
 			return err;
 		}
@@ -530,19 +530,19 @@ static int __devinit snd_sb16_isa_probe(struct device *pdev, unsigned int dev)
 
 	if (irq[dev] == SNDRV_AUTO_IRQ) {
 		if ((irq[dev] = snd_legacy_find_free_irq(possible_irqs)) < 0) {
-			snd_printk(KERN_ERR PFX "unable to find a free IRQ\n");
+;
 			return -EBUSY;
 		}
 	}
 	if (dma8[dev] == SNDRV_AUTO_DMA) {
 		if ((dma8[dev] = snd_legacy_find_free_dma(possible_dmas8)) < 0) {
-			snd_printk(KERN_ERR PFX "unable to find a free 8-bit DMA\n");
+;
 			return -EBUSY;
 		}
 	}
 	if (dma16[dev] == SNDRV_AUTO_DMA) {
 		if ((dma16[dev] = snd_legacy_find_free_dma(possible_dmas16)) < 0) {
-			snd_printk(KERN_ERR PFX "unable to find a free 16-bit DMA\n");
+;
 			return -EBUSY;
 		}
 	}

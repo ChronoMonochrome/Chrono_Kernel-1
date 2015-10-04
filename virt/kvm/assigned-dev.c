@@ -50,7 +50,7 @@ static int find_index_from_host_irq(struct kvm_assigned_dev_kernel
 			break;
 		}
 	if (index < 0) {
-		printk(KERN_WARNING "Fail to find correlated MSI-X entry!\n");
+;
 		return 0;
 	}
 
@@ -202,8 +202,8 @@ static void kvm_free_assigned_device(struct kvm *kvm,
 	pci_reset_function(assigned_dev->dev);
 	if (pci_load_and_free_saved_state(assigned_dev->dev,
 					  &assigned_dev->pci_saved_state))
-		printk(KERN_INFO "%s: Couldn't reload %s saved state\n",
-		       __func__, dev_name(&assigned_dev->dev->dev));
+//		printk(KERN_INFO "%s: Couldn't reload %s saved state\n",
+;
 	else
 		pci_restore_state(assigned_dev->dev);
 
@@ -560,8 +560,8 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
 
 	match = kzalloc(sizeof(struct kvm_assigned_dev_kernel), GFP_KERNEL);
 	if (match == NULL) {
-		printk(KERN_INFO "%s: Couldn't allocate memory\n",
-		       __func__);
+//		printk(KERN_INFO "%s: Couldn't allocate memory\n",
+;
 		r = -ENOMEM;
 		goto out;
 	}
@@ -569,7 +569,7 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
 				   assigned_dev->busnr,
 				   assigned_dev->devfn);
 	if (!dev) {
-		printk(KERN_INFO "%s: host device not found\n", __func__);
+;
 		r = -EINVAL;
 		goto out_free;
 	}
@@ -586,14 +586,14 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
 		goto out_put;
 
 	if (pci_enable_device(dev)) {
-		printk(KERN_INFO "%s: Could not enable PCI device\n", __func__);
+;
 		r = -EBUSY;
 		goto out_put;
 	}
 	r = pci_request_regions(dev, "kvm_assigned_device");
 	if (r) {
-		printk(KERN_INFO "%s: Could not get access to device regions\n",
-		       __func__);
+//		printk(KERN_INFO "%s: Could not get access to device regions\n",
+;
 		goto out_disable;
 	}
 
@@ -601,8 +601,8 @@ static int kvm_vm_ioctl_assign_device(struct kvm *kvm,
 	pci_save_state(dev);
 	match->pci_saved_state = pci_store_saved_state(dev);
 	if (!match->pci_saved_state)
-		printk(KERN_DEBUG "%s: Couldn't store %s saved state\n",
-		       __func__, dev_name(&dev->dev));
+//		printk(KERN_DEBUG "%s: Couldn't store %s saved state\n",
+;
 	match->assigned_dev_id = assigned_dev->assigned_dev_id;
 	match->host_segnr = assigned_dev->segnr;
 	match->host_busnr = assigned_dev->busnr;
@@ -631,8 +631,8 @@ out:
 	return r;
 out_list_del:
 	if (pci_load_and_free_saved_state(dev, &match->pci_saved_state))
-		printk(KERN_INFO "%s: Couldn't reload %s saved state\n",
-		       __func__, dev_name(&dev->dev));
+//		printk(KERN_INFO "%s: Couldn't reload %s saved state\n",
+;
 	list_del(&match->list);
 	pci_release_regions(dev);
 out_disable:
@@ -657,8 +657,8 @@ static int kvm_vm_ioctl_deassign_device(struct kvm *kvm,
 	match = kvm_find_assigned_dev(&kvm->arch.assigned_dev_head,
 				      assigned_dev->assigned_dev_id);
 	if (!match) {
-		printk(KERN_INFO "%s: device hasn't been assigned before, "
-		  "so cannot be deassigned\n", __func__);
+//		printk(KERN_INFO "%s: device hasn't been assigned before, "
+;
 		r = -EINVAL;
 		goto out;
 	}

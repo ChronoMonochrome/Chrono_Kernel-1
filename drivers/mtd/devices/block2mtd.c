@@ -19,13 +19,13 @@
 #include <linux/mount.h>
 #include <linux/slab.h>
 
-#define ERROR(fmt, args...) printk(KERN_ERR "block2mtd: " fmt "\n" , ## args)
-#define INFO(fmt, args...) printk(KERN_INFO "block2mtd: " fmt "\n" , ## args)
-
-
-/* Info for the block device */
-struct block2mtd_dev {
-	struct list_head list;
+//#define ERROR(fmt, args...) printk(KERN_ERR "block2mtd: " fmt "\n" , ## args)
+//#define INFO(fmt, args...) printk(KERN_INFO "block2mtd: " fmt "\n" , ## args)
+//
+//
+///* Info for the block device */
+//struct block2mtd_dev {
+;
 	struct block_device *blkdev;
 	struct mtd_info mtd;
 	struct mutex write_mutex;

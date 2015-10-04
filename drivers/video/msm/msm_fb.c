@@ -50,7 +50,7 @@
 #define DLOG(mask, fmt, args...) \
 do { \
 	if (msmfb_debug_mask & mask) \
-		printk(KERN_INFO "msmfb: "fmt, ##args); \
+;
 } while (0)
 
 static int msmfb_debug_mask;
@@ -131,8 +131,8 @@ static int msmfb_start_dma(struct msmfb_info *msmfb)
 	if (time_since_request > 20 * NSEC_PER_MSEC) {
 		uint32_t us;
 		us = do_div(time_since_request, NSEC_PER_MSEC) / NSEC_PER_USEC;
-		printk(KERN_WARNING "msmfb_start_dma %lld.%03u ms after vsync "
-			"request\n", time_since_request, us);
+//		printk(KERN_WARNING "msmfb_start_dma %lld.%03u ms after vsync "
+;
 	}
 	if (msmfb->frame_done == msmfb->frame_requested) {
 		spin_unlock_irqrestore(&msmfb->update_lock, irq_flags);
@@ -154,8 +154,8 @@ static int msmfb_start_dma(struct msmfb_info *msmfb)
 	msmfb->update_info.ebottom = 0;
 	if (unlikely(w > msmfb->xres || h > msmfb->yres ||
 		     w == 0 || h == 0)) {
-		printk(KERN_INFO "invalid update: %d %d %d "
-				"%d\n", x, y, w, h);
+//		printk(KERN_INFO "invalid update: %d %d %d "
+;
 		msmfb->frame_done = msmfb->frame_requested;
 		goto error;
 	}
@@ -233,13 +233,13 @@ restart:
 				panel->request_vsync(panel,
 					&msmfb->vsync_callback);
 				retry = 0;
-				printk(KERN_WARNING "msmfb_pan_display timeout "
-					"rerequest vsync\n");
+//				printk(KERN_WARNING "msmfb_pan_display timeout "
+;
 			} else {
-				printk(KERN_WARNING "msmfb_pan_display timeout "
-					"waiting for frame start, %d %d\n",
-					msmfb->frame_requested,
-					msmfb->frame_done);
+//				printk(KERN_WARNING "msmfb_pan_display timeout "
+//					"waiting for frame start, %d %d\n",
+//					msmfb->frame_requested,
+;
 				return;
 			}
 		}
@@ -308,8 +308,8 @@ static void power_on_panel(struct work_struct *work)
 	DLOG(SUSPEND_RESUME, "turning on panel\n");
 	if (msmfb->sleeping == UPDATING) {
 		if (panel->unblank(panel)) {
-			printk(KERN_INFO "msmfb: panel unblank failed,"
-			       "not starting drawing\n");
+//			printk(KERN_INFO "msmfb: panel unblank failed,"
+;
 			goto error;
 		}
 		spin_lock_irqsave(&msmfb->update_lock, irq_flags);
@@ -417,7 +417,7 @@ static int msmfb_ioctl(struct fb_info *p, unsigned int cmd, unsigned long arg)
 			return ret;
 		break;
 	default:
-			printk(KERN_INFO "msmfb unknown ioctl: %d\n", cmd);
+;
 			return -EINVAL;
 	}
 	return 0;
@@ -520,8 +520,8 @@ static int setup_fbmem(struct msmfb_info *msmfb, struct platform_device *pdev)
 
 	/* check the resource is large enough to fit the fb */
 	if (resource->end - resource->start < size) {
-		printk(KERN_ERR "allocated resource is too small for "
-				"fb\n");
+//		printk(KERN_ERR "allocated resource is too small for "
+;
 		return -ENOMEM;
 	}
 	fb->fix.smem_start = resource->start;
@@ -529,7 +529,7 @@ static int setup_fbmem(struct msmfb_info *msmfb, struct platform_device *pdev)
 	fbram = ioremap(resource->start,
 			resource->end - resource->start);
 	if (fbram == 0) {
-		printk(KERN_ERR "msmfb: cannot allocate fbram!\n");
+;
 		return -ENOMEM;
 	}
 	fb->screen_base = fbram;
@@ -574,8 +574,8 @@ static int msmfb_probe(struct platform_device *pdev)
 	msmfb->black = kzalloc(msmfb->fb->var.bits_per_pixel*msmfb->xres,
 			       GFP_KERNEL);
 
-	printk(KERN_INFO "msmfb_probe() installing %d x %d panel\n",
-	       msmfb->xres, msmfb->yres);
+//	printk(KERN_INFO "msmfb_probe() installing %d x %d panel\n",
+;
 
 	msmfb->dma_callback.func = msmfb_handle_dma_interrupt;
 	msmfb->vsync_callback.func = msmfb_handle_vsync_interrupt;

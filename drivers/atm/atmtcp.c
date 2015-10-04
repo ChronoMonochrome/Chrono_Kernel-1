@@ -101,8 +101,8 @@ static int atmtcp_recv_control(const struct atmtcp_control *msg)
 		change_bit(ATM_VF_ADDR,&vcc->flags);
 		break;
 	    default:
-		printk(KERN_ERR "atmtcp_recv_control: unknown type %d\n",
-		    msg->type);
+//		printk(KERN_ERR "atmtcp_recv_control: unknown type %d\n",
+;
 		return -EINVAL;
 	}
 	wake_up(sk_sleep(sk_atm(vcc)));

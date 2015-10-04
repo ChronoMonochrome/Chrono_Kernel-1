@@ -1470,8 +1470,8 @@ signed long __sched schedule_timeout(signed long timeout)
 		 * that will tell you if something is gone wrong and where.
 		 */
 		if (timeout < 0) {
-			printk(KERN_ERR "schedule_timeout: wrong timeout "
-				"value %lx\n", timeout);
+//			printk(KERN_ERR "schedule_timeout: wrong timeout "
+;
 			dump_stack();
 			current->state = TASK_RUNNING;
 			goto out;

@@ -985,8 +985,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 			vol->no_xattr = 1;
 		} else if (strnicmp(data, "user", 4) == 0) {
 			if (!value) {
-				printk(KERN_WARNING
-				       "CIFS: invalid or missing username\n");
+//				printk(KERN_WARNING
+;
 				goto cifs_parse_mount_err;
 			} else if (!*value) {
 				/* null user, ie anonymous, authentication */
@@ -996,12 +996,12 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 						MAX_USERNAME_SIZE) {
 				vol->username = kstrdup(value, GFP_KERNEL);
 				if (!vol->username) {
-					printk(KERN_WARNING "CIFS: no memory "
-							    "for username\n");
+//					printk(KERN_WARNING "CIFS: no memory "
+;
 					goto cifs_parse_mount_err;
 				}
 			} else {
-				printk(KERN_WARNING "CIFS: username too long\n");
+;
 				goto cifs_parse_mount_err;
 			}
 		} else if (strnicmp(data, "pass", 4) == 0) {
@@ -1064,8 +1064,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 				allocating a few bytes too many, which is ok */
 				vol->password = kzalloc(temp_len, GFP_KERNEL);
 				if (vol->password == NULL) {
-					printk(KERN_WARNING "CIFS: no memory "
-							    "for password\n");
+//					printk(KERN_WARNING "CIFS: no memory "
+;
 					goto cifs_parse_mount_err;
 				}
 				for (i = 0, j = 0; i < temp_len; i++, j++) {
@@ -1080,8 +1080,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 			} else {
 				vol->password = kzalloc(temp_len+1, GFP_KERNEL);
 				if (vol->password == NULL) {
-					printk(KERN_WARNING "CIFS: no memory "
-							    "for password\n");
+//					printk(KERN_WARNING "CIFS: no memory "
+;
 					goto cifs_parse_mount_err;
 				}
 				strcpy(vol->password, value);
@@ -1094,13 +1094,13 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 							INET6_ADDRSTRLEN) {
 				vol->UNCip = kstrdup(value, GFP_KERNEL);
 				if (!vol->UNCip) {
-					printk(KERN_WARNING "CIFS: no memory "
-							    "for UNC IP\n");
+//					printk(KERN_WARNING "CIFS: no memory "
+;
 					goto cifs_parse_mount_err;
 				}
 			} else {
-				printk(KERN_WARNING "CIFS: ip address "
-						    "too long\n");
+//				printk(KERN_WARNING "CIFS: ip address "
+;
 				goto cifs_parse_mount_err;
 			}
 		} else if (strnicmp(data, "sec", 3) == 0) {
@@ -1159,8 +1159,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 			   || (strnicmp(data, "target", 6) == 0)
 			   || (strnicmp(data, "path", 4) == 0)) {
 			if (!value || !*value) {
-				printk(KERN_WARNING "CIFS: invalid path to "
-						    "network resource\n");
+//				printk(KERN_WARNING "CIFS: invalid path to "
+;
 				goto cifs_parse_mount_err;
 			}
 			if ((temp_len = strnlen(value, 300)) < 300) {
@@ -1172,19 +1172,19 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 					vol->UNC[0] = '\\';
 					vol->UNC[1] = '\\';
 				} else if (strncmp(vol->UNC, "\\\\", 2) != 0) {
-					printk(KERN_WARNING
-					       "CIFS: UNC Path does not begin "
-					       "with // or \\\\ \n");
+//					printk(KERN_WARNING
+//					       "CIFS: UNC Path does not begin "
+;
 					goto cifs_parse_mount_err;
 				}
 			} else {
-				printk(KERN_WARNING "CIFS: UNC name too long\n");
+;
 				goto cifs_parse_mount_err;
 			}
 		} else if ((strnicmp(data, "domain", 3) == 0)
 			   || (strnicmp(data, "workgroup", 5) == 0)) {
 			if (!value || !*value) {
-				printk(KERN_WARNING "CIFS: invalid domain name\n");
+;
 				goto cifs_parse_mount_err;
 			}
 			/* BB are there cases in which a comma can be valid in
@@ -1192,36 +1192,36 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 			if (strnlen(value, 256) < 256) {
 				vol->domainname = kstrdup(value, GFP_KERNEL);
 				if (!vol->domainname) {
-					printk(KERN_WARNING "CIFS: no memory "
-							    "for domainname\n");
+//					printk(KERN_WARNING "CIFS: no memory "
+;
 					goto cifs_parse_mount_err;
 				}
 				cFYI(1, "Domain name set");
 			} else {
-				printk(KERN_WARNING "CIFS: domain name too "
-						    "long\n");
+//				printk(KERN_WARNING "CIFS: domain name too "
+;
 				goto cifs_parse_mount_err;
 			}
 		} else if (strnicmp(data, "srcaddr", 7) == 0) {
 			vol->srcaddr.ss_family = AF_UNSPEC;
 
 			if (!value || !*value) {
-				printk(KERN_WARNING "CIFS: srcaddr value"
-				       " not specified.\n");
+//				printk(KERN_WARNING "CIFS: srcaddr value"
+;
 				goto cifs_parse_mount_err;
 			}
 			i = cifs_convert_address((struct sockaddr *)&vol->srcaddr,
 						 value, strlen(value));
 			if (i == 0) {
-				printk(KERN_WARNING "CIFS:  Could not parse"
-				       " srcaddr: %s\n",
-				       value);
+//				printk(KERN_WARNING "CIFS:  Could not parse"
+//				       " srcaddr: %s\n",
+;
 				goto cifs_parse_mount_err;
 			}
 		} else if (strnicmp(data, "prefixpath", 10) == 0) {
 			if (!value || !*value) {
-				printk(KERN_WARNING
-					"CIFS: invalid path prefix\n");
+//				printk(KERN_WARNING
+;
 				goto cifs_parse_mount_err;
 			}
 			if ((temp_len = strnlen(value, 1024)) < 1024) {
@@ -1237,13 +1237,13 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 					strcpy(vol->prepath, value);
 				cFYI(1, "prefix path %s", vol->prepath);
 			} else {
-				printk(KERN_WARNING "CIFS: prefix too long\n");
+;
 				goto cifs_parse_mount_err;
 			}
 		} else if (strnicmp(data, "iocharset", 9) == 0) {
 			if (!value || !*value) {
-				printk(KERN_WARNING "CIFS: invalid iocharset "
-						    "specified\n");
+//				printk(KERN_WARNING "CIFS: invalid iocharset "
+;
 				goto cifs_parse_mount_err;
 			}
 			if (strnlen(value, 65) < 65) {
@@ -1252,9 +1252,9 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 								 GFP_KERNEL);
 
 					if (!vol->iocharset) {
-						printk(KERN_WARNING "CIFS: no "
-								   "memory for"
-								   "charset\n");
+//						printk(KERN_WARNING "CIFS: no "
+//								   "memory for"
+;
 						goto cifs_parse_mount_err;
 					}
 				}
@@ -1262,8 +1262,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 				   is used by caller */
 				cFYI(1, "iocharset set to %s", value);
 			} else {
-				printk(KERN_WARNING "CIFS: iocharset name "
-						    "too long.\n");
+//				printk(KERN_WARNING "CIFS: iocharset name "
+;
 				goto cifs_parse_mount_err;
 			}
 		} else if (!strnicmp(data, "uid", 3) && value && *value) {
@@ -1339,8 +1339,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 				/* The string has 16th byte zero still from
 				set at top of the function  */
 				if (i == RFC1001_NAME_LEN && value[i] != 0)
-					printk(KERN_WARNING "CIFS: netbiosname"
-						" longer than 15 truncated.\n");
+//					printk(KERN_WARNING "CIFS: netbiosname"
+;
 			}
 		} else if (strnicmp(data, "servern", 7) == 0) {
 			/* servernetbiosname specified override *SMBSERVER */
@@ -1367,8 +1367,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 				/* The string has 16th byte zero still from
 				   set at top of the function  */
 				if (i == RFC1001_NAME_LEN && value[i] != 0)
-					printk(KERN_WARNING "CIFS: server net"
-					"biosname longer than 15 truncated.\n");
+//					printk(KERN_WARNING "CIFS: server net"
+;
 			}
 		} else if (strnicmp(data, "actimeo", 7) == 0) {
 			if (value && *value) {
@@ -1516,9 +1516,9 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 		} else if (strnicmp(data, "strictcache", 11) == 0) {
 			vol->strict_io = 1;
 		} else if (strnicmp(data, "noac", 4) == 0) {
-			printk(KERN_WARNING "CIFS: Mount option noac not "
-				"supported. Instead set "
-				"/proc/fs/cifs/LookupCacheEnabled to 0\n");
+//			printk(KERN_WARNING "CIFS: Mount option noac not "
+//				"supported. Instead set "
+;
 		} else if (strnicmp(data, "fsc", 3) == 0) {
 #ifndef CONFIG_CIFS_FSCACHE
 			cERROR(1, "FS-Cache support needs CONFIG_CIFS_FSCACHE "
@@ -1547,13 +1547,13 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 			}
 			vol->backupgid_specified = true;
 		} else
-			printk(KERN_WARNING "CIFS: Unknown mount option %s\n",
-						data);
+//			printk(KERN_WARNING "CIFS: Unknown mount option %s\n",
+;
 	}
 	if (vol->UNC == NULL) {
 		if (devname == NULL) {
-			printk(KERN_WARNING "CIFS: Missing UNC name for mount "
-						"target\n");
+//			printk(KERN_WARNING "CIFS: Missing UNC name for mount "
+;
 			goto cifs_parse_mount_err;
 		}
 		if ((temp_len = strnlen(devname, 300)) < 300) {
@@ -1565,15 +1565,15 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 				vol->UNC[0] = '\\';
 				vol->UNC[1] = '\\';
 			} else if (strncmp(vol->UNC, "\\\\", 2) != 0) {
-				printk(KERN_WARNING "CIFS: UNC Path does not "
-						    "begin with // or \\\\ \n");
+//				printk(KERN_WARNING "CIFS: UNC Path does not "
+;
 				goto cifs_parse_mount_err;
 			}
 			value = strpbrk(vol->UNC+2, "/\\");
 			if (value)
 				*value = '\\';
 		} else {
-			printk(KERN_WARNING "CIFS: UNC name too long\n");
+;
 			goto cifs_parse_mount_err;
 		}
 	}
@@ -1590,14 +1590,14 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
 	if (uid_specified)
 		vol->override_uid = override_uid;
 	else if (override_uid == 1)
-		printk(KERN_NOTICE "CIFS: ignoring forceuid mount option "
-				   "specified with no uid= option.\n");
+//		printk(KERN_NOTICE "CIFS: ignoring forceuid mount option "
+;
 
 	if (gid_specified)
 		vol->override_gid = override_gid;
 	else if (override_gid == 1)
-		printk(KERN_NOTICE "CIFS: ignoring forcegid mount option "
-				   "specified with no gid= option.\n");
+//		printk(KERN_NOTICE "CIFS: ignoring forcegid mount option "
+;
 
 	kfree(mountdata_copy);
 	return 0;

@@ -122,8 +122,8 @@ static bool uac_clock_source_is_valid(struct snd_usb_audio *chip, int source_id)
 			      &data, sizeof(data), 1000);
 
 	if (err < 0) {
-		snd_printk(KERN_WARNING "%s(): cannot get clock validity for id %d\n",
-			   __func__, source_id);
+//		snd_printk(KERN_WARNING "%s(): cannot get clock validity for id %d\n",
+;
 		return 0;
 	}
 
@@ -140,9 +140,9 @@ static int __uac_clock_find_source(struct snd_usb_audio *chip,
 	entity_id &= 0xff;
 
 	if (test_and_set_bit(entity_id, visited)) {
-		snd_printk(KERN_WARNING
-			"%s(): recursive clock topology detected, id %d.\n",
-			__func__, entity_id);
+//		snd_printk(KERN_WARNING
+//			"%s(): recursive clock topology detected, id %d.\n",
+;
 		return -EINVAL;
 	}
 
@@ -164,9 +164,9 @@ static int __uac_clock_find_source(struct snd_usb_audio *chip,
 		/* Selector values are one-based */
 
 		if (ret > selector->bNrInPins || ret < 1) {
-			printk(KERN_ERR
-				"%s(): selector reported illegal value, id %d, ret %d\n",
-				__func__, selector->bClockID, ret);
+//			printk(KERN_ERR
+//				"%s(): selector reported illegal value, id %d, ret %d\n",
+;
 
 			return -EINVAL;
 		}
@@ -224,8 +224,8 @@ static int set_sample_rate_v1(struct snd_usb_audio *chip, int iface,
 				   USB_TYPE_CLASS | USB_RECIP_ENDPOINT | USB_DIR_OUT,
 				   UAC_EP_CS_ATTR_SAMPLE_RATE << 8, ep,
 				   data, sizeof(data), 1000)) < 0) {
-		snd_printk(KERN_ERR "%d:%d:%d: cannot set freq %d to ep %#x\n",
-			   dev->devnum, iface, fmt->altsetting, rate, ep);
+//		snd_printk(KERN_ERR "%d:%d:%d: cannot set freq %d to ep %#x\n",
+;
 		return err;
 	}
 
@@ -233,8 +233,8 @@ static int set_sample_rate_v1(struct snd_usb_audio *chip, int iface,
 				   USB_TYPE_CLASS | USB_RECIP_ENDPOINT | USB_DIR_IN,
 				   UAC_EP_CS_ATTR_SAMPLE_RATE << 8, ep,
 				   data, sizeof(data), 1000)) < 0) {
-		snd_printk(KERN_WARNING "%d:%d:%d: cannot get freq at ep %#x\n",
-			   dev->devnum, iface, fmt->altsetting, ep);
+//		snd_printk(KERN_WARNING "%d:%d:%d: cannot get freq at ep %#x\n",
+;
 		return 0; /* some devices don't support reading */
 	}
 
@@ -261,8 +261,8 @@ static int set_sample_rate_v2(struct snd_usb_audio *chip, int iface,
 
 	if (!uac_clock_source_is_valid(chip, clock)) {
 		/* TODO: should we try to find valid clock setups by ourself? */
-		snd_printk(KERN_ERR "%d:%d:%d: clock source %d is not valid, cannot use\n",
-			   dev->devnum, iface, fmt->altsetting, clock);
+//		snd_printk(KERN_ERR "%d:%d:%d: clock source %d is not valid, cannot use\n",
+;
 		return -ENXIO;
 	}
 
@@ -275,8 +275,8 @@ static int set_sample_rate_v2(struct snd_usb_audio *chip, int iface,
 				   UAC2_CS_CONTROL_SAM_FREQ << 8,
 				   snd_usb_ctrl_intf(chip) | (clock << 8),
 				   data, sizeof(data), 1000)) < 0) {
-		snd_printk(KERN_ERR "%d:%d:%d: cannot set freq %d (v2)\n",
-			   dev->devnum, iface, fmt->altsetting, rate);
+//		snd_printk(KERN_ERR "%d:%d:%d: cannot set freq %d (v2)\n",
+;
 		return err;
 	}
 
@@ -285,8 +285,8 @@ static int set_sample_rate_v2(struct snd_usb_audio *chip, int iface,
 				   UAC2_CS_CONTROL_SAM_FREQ << 8,
 				   snd_usb_ctrl_intf(chip) | (clock << 8),
 				   data, sizeof(data), 1000)) < 0) {
-		snd_printk(KERN_WARNING "%d:%d:%d: cannot get freq (v2)\n",
-			   dev->devnum, iface, fmt->altsetting);
+//		snd_printk(KERN_WARNING "%d:%d:%d: cannot get freq (v2)\n",
+;
 		return err;
 	}
 

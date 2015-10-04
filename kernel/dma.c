@@ -88,12 +88,12 @@ int request_dma(unsigned int dmanr, const char * device_id)
 void free_dma(unsigned int dmanr)
 {
 	if (dmanr >= MAX_DMA_CHANNELS) {
-		printk(KERN_WARNING "Trying to free DMA%d\n", dmanr);
+;
 		return;
 	}
 
 	if (xchg(&dma_chan_busy[dmanr].lock, 0) == 0) {
-		printk(KERN_WARNING "Trying to free free DMA%d\n", dmanr);
+;
 		return;
 	}
 

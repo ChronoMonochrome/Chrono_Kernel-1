@@ -219,8 +219,8 @@ static int padlock_cra_init(struct crypto_tfm *tfm)
 	fallback_tfm = crypto_alloc_shash(fallback_driver_name, 0,
 					  CRYPTO_ALG_NEED_FALLBACK);
 	if (IS_ERR(fallback_tfm)) {
-		printk(KERN_WARNING PFX "Fallback driver '%s' could not be loaded!\n",
-		       fallback_driver_name);
+//		printk(KERN_WARNING PFX "Fallback driver '%s' could not be loaded!\n",
+;
 		err = PTR_ERR(fallback_tfm);
 		goto out;
 	}
@@ -534,12 +534,12 @@ static int __init padlock_init(void)
 	struct shash_alg *sha256;
 
 	if (!cpu_has_phe) {
-		printk(KERN_NOTICE PFX "VIA PadLock Hash Engine not detected.\n");
+;
 		return -ENODEV;
 	}
 
 	if (!cpu_has_phe_enabled) {
-		printk(KERN_NOTICE PFX "VIA PadLock detected, but not enabled. Hmm, strange...\n");
+;
 		return -ENODEV;
 	}
 
@@ -561,7 +561,7 @@ static int __init padlock_init(void)
 	if (rc)
 		goto out_unreg1;
 
-	printk(KERN_NOTICE PFX "Using VIA PadLock ACE for SHA1/SHA256 algorithms.\n");
+;
 
 	return 0;
 
@@ -569,7 +569,7 @@ out_unreg1:
 	crypto_unregister_shash(sha1);
 
 out:
-	printk(KERN_ERR PFX "VIA PadLock SHA1/SHA256 initialization failed.\n");
+;
 	return rc;
 }
 

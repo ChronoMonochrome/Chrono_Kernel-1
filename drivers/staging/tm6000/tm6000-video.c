@@ -172,7 +172,7 @@ static inline void get_next_buf(struct tm6000_dmaqueue *dma_q,
 	char *outp;
 
 	if (list_empty(&dma_q->active)) {
-		dprintk(dev, V4L2_DEBUG_QUEUE, "No active queue to serve\n");
+;
 		*buf = NULL;
 		return;
 	}
@@ -197,7 +197,7 @@ static inline void buffer_filled(struct tm6000_core *dev,
 				 struct tm6000_buffer *buf)
 {
 	/* Advice that buffer was filled */
-	dprintk(dev, V4L2_DEBUG_ISOC, "[%p/%d] wakeup\n", buf, buf->vb.i);
+;
 	buf->vb.state = VIDEOBUF_DONE;
 	buf->vb.field_count++;
 	do_gettimeofday(&buf->vb.ts);
@@ -302,8 +302,8 @@ static int copy_streams(u8 *data, unsigned long len,
 					 * were filled
 					 */
 						buffer_filled(dev, dma_q, vbuf);
-						dprintk(dev, V4L2_DEBUG_ISOC,
-							"new buffer filled\n");
+//						dprintk(dev, V4L2_DEBUG_ISOC,
+;
 						get_next_buf(dma_q, &vbuf);
 						if (!vbuf)
 							return rc;
@@ -360,8 +360,8 @@ static int copy_streams(u8 *data, unsigned long len,
 				/* Need some code to copy pts */
 				u32 pts;
 				pts = *(u32 *)ptr;
-				dprintk(dev, V4L2_DEBUG_ISOC, "field %d, PTS %x",
-					field, pts);
+//				dprintk(dev, V4L2_DEBUG_ISOC, "field %d, PTS %x",
+;
 				break;
 			}
 			}
@@ -414,7 +414,7 @@ static int copy_multiplexed(u8 *ptr, unsigned long len,
 			pos = 0;
 			/* Announces that a new buffer were filled */
 			buffer_filled(dev, dma_q, buf);
-			dprintk(dev, V4L2_DEBUG_ISOC, "new buffer filled\n");
+;
 			get_next_buf(dma_q, &buf);
 			if (!buf)
 				break;
@@ -461,11 +461,11 @@ static inline void print_err_status(struct tm6000_core *dev,
 		break;
 	}
 	if (packet < 0) {
-		dprintk(dev, V4L2_DEBUG_QUEUE, "URB status %d [%s].\n",
-			status, errmsg);
+//		dprintk(dev, V4L2_DEBUG_QUEUE, "URB status %d [%s].\n",
+;
 	} else {
-		dprintk(dev, V4L2_DEBUG_QUEUE, "URB packet %d, status %d [%s].\n",
-			packet, status, errmsg);
+//		dprintk(dev, V4L2_DEBUG_QUEUE, "URB packet %d, status %d [%s].\n",
+;
 	}
 }
 
@@ -629,10 +629,10 @@ static int tm6000_prepare_isoc(struct tm6000_core *dev)
 		return -ENOMEM;
 	}
 
-	dprintk(dev, V4L2_DEBUG_QUEUE, "Allocating %d x %d packets"
-		    " (%d bytes) of %d bytes each to handle %u size\n",
-		    max_packets, num_bufs, sb_size,
-		    dev->isoc_in.maxsize, size);
+//	dprintk(dev, V4L2_DEBUG_QUEUE, "Allocating %d x %d packets"
+//		    " (%d bytes) of %d bytes each to handle %u size\n",
+//		    max_packets, num_bufs, sb_size,
+;
 
 	/* allocate urbs and transfer buffers */
 	for (i = 0; i < dev->isoc_ctl.num_bufs; i++) {
@@ -867,7 +867,7 @@ static bool res_get(struct tm6000_core *dev, struct tm6000_fh *fh,
 	/* grab it */
 	dev->resources = fh;
 	dev->is_res_read = is_res_read;
-	dprintk(dev, V4L2_DEBUG_RES_LOCK, "res: get\n");
+;
 	return true;
 }
 
@@ -878,7 +878,7 @@ static void res_free(struct tm6000_core *dev, struct tm6000_fh *fh)
 		return;
 
 	dev->resources = NULL;
-	dprintk(dev, V4L2_DEBUG_RES_LOCK, "res: put\n");
+;
 }
 
 /* ------------------------------------------------------------------
@@ -951,8 +951,8 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 
 	fmt = format_by_fourcc(f->fmt.pix.pixelformat);
 	if (NULL == fmt) {
-		dprintk(dev, V4L2_DEBUG_IOCTL_ARG, "Fourcc format (0x%08x)"
-				" invalid.\n", f->fmt.pix.pixelformat);
+//		dprintk(dev, V4L2_DEBUG_IOCTL_ARG, "Fourcc format (0x%08x)"
+;
 		return -EINVAL;
 	}
 
@@ -961,7 +961,7 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	if (field == V4L2_FIELD_ANY)
 		field = V4L2_FIELD_SEQ_TB;
 	else if (V4L2_FIELD_INTERLACED != field) {
-		dprintk(dev, V4L2_DEBUG_IOCTL_ARG, "Field type invalid.\n");
+;
 		return -EINVAL;
 	}
 
@@ -1272,7 +1272,7 @@ static int vidioc_s_tuner(struct file *file, void *priv,
 		return -EINVAL;
 
 	dev->amode = t->audmode;
-	dprintk(dev, 3, "audio mode: %x\n", t->audmode);
+;
 
 	v4l2_device_call_all(&dev->v4l2_dev, 0, tuner, s_tuner, t);
 
@@ -1467,11 +1467,11 @@ static int tm6000_open(struct file *file)
 	int i, rc;
 	int radio = 0;
 
-	printk(KERN_INFO "tm6000: open called (dev=%s)\n",
-		video_device_node_name(vdev));
+//	printk(KERN_INFO "tm6000: open called (dev=%s)\n",
+;
 
-	dprintk(dev, V4L2_DEBUG_OPEN, "tm6000: open called (dev=%s)\n",
-		video_device_node_name(vdev));
+//	dprintk(dev, V4L2_DEBUG_OPEN, "tm6000: open called (dev=%s)\n",
+;
 
 	switch (vdev->vfl_type) {
 	case VFL_TYPE_GRABBER:
@@ -1488,9 +1488,9 @@ static int tm6000_open(struct file *file)
 	/* If more than one user, mutex should be added */
 	dev->users++;
 
-	dprintk(dev, V4L2_DEBUG_OPEN, "open dev=%s type=%s users=%d\n",
-		video_device_node_name(vdev), v4l2_type_names[type],
-		dev->users);
+//	dprintk(dev, V4L2_DEBUG_OPEN, "open dev=%s type=%s users=%d\n",
+//		video_device_node_name(vdev), v4l2_type_names[type],
+;
 
 	/* allocate + initialize per filehandle data */
 	fh = kzalloc(sizeof(*fh), GFP_KERNEL);
@@ -1513,13 +1513,13 @@ static int tm6000_open(struct file *file)
 	fh->width    = dev->width;
 	fh->height   = dev->height;
 
-	dprintk(dev, V4L2_DEBUG_OPEN, "Open: fh=0x%08lx, dev=0x%08lx, "
-						"dev->vidq=0x%08lx\n",
-		(unsigned long)fh,(unsigned long)dev,(unsigned long)&dev->vidq);
-	dprintk(dev, V4L2_DEBUG_OPEN, "Open: list_empty "
-				"queued=%d\n",list_empty(&dev->vidq.queued));
-	dprintk(dev, V4L2_DEBUG_OPEN, "Open: list_empty "
-				"active=%d\n",list_empty(&dev->vidq.active));
+//	dprintk(dev, V4L2_DEBUG_OPEN, "Open: fh=0x%08lx, dev=0x%08lx, "
+//						"dev->vidq=0x%08lx\n",
+;
+//	dprintk(dev, V4L2_DEBUG_OPEN, "Open: list_empty "
+;
+//	dprintk(dev, V4L2_DEBUG_OPEN, "Open: list_empty "
+;
 
 	/* initialize hardware on analog mode */
 	rc = tm6000_init_analog_mode(dev);
@@ -1541,7 +1541,7 @@ static int tm6000_open(struct file *file)
 			sizeof(struct tm6000_buffer), fh, &dev->lock);
 
 	if (fh->radio) {
-		dprintk(dev, V4L2_DEBUG_OPEN, "video_open: setting radio device\n");
+;
 		dev->input = 5;
 		tm6000_set_audio_rinput(dev);
 		v4l2_device_call_all(&dev->v4l2_dev, 0, tuner, s_radio);
@@ -1602,8 +1602,8 @@ static int tm6000_release(struct file *file)
 	struct tm6000_core      *dev = fh->dev;
 	struct video_device    *vdev = video_devdata(file);
 
-	dprintk(dev, V4L2_DEBUG_OPEN, "tm6000: close called (dev=%s, users=%d)\n",
-		video_device_node_name(vdev), dev->users);
+//	dprintk(dev, V4L2_DEBUG_OPEN, "tm6000: close called (dev=%s, users=%d)\n",
+;
 
 	dev->users--;
 
@@ -1736,8 +1736,8 @@ int tm6000_v4l2_register(struct tm6000_core *dev)
 	dev->vfd = vdev_init(dev, &tm6000_template, "video");
 
 	if (!dev->vfd) {
-		printk(KERN_INFO "%s: can't register video device\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: can't register video device\n",
+;
 		return -ENOMEM;
 	}
 
@@ -1748,36 +1748,36 @@ int tm6000_v4l2_register(struct tm6000_core *dev)
 	ret = video_register_device(dev->vfd, VFL_TYPE_GRABBER, video_nr);
 
 	if (ret < 0) {
-		printk(KERN_INFO "%s: can't register video device\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: can't register video device\n",
+;
 		return ret;
 	}
 
-	printk(KERN_INFO "%s: registered device %s\n",
-	       dev->name, video_device_node_name(dev->vfd));
+//	printk(KERN_INFO "%s: registered device %s\n",
+;
 
 	if (dev->caps.has_radio) {
 		dev->radio_dev = vdev_init(dev, &tm6000_radio_template,
 							   "radio");
 		if (!dev->radio_dev) {
-			printk(KERN_INFO "%s: can't register radio device\n",
-			       dev->name);
+//			printk(KERN_INFO "%s: can't register radio device\n",
+;
 			return ret; /* FIXME release resource */
 		}
 
 		ret = video_register_device(dev->radio_dev, VFL_TYPE_RADIO,
 					    radio_nr);
 		if (ret < 0) {
-			printk(KERN_INFO "%s: can't register radio device\n",
-			       dev->name);
+//			printk(KERN_INFO "%s: can't register radio device\n",
+;
 			return ret; /* FIXME release resource */
 		}
 
-		printk(KERN_INFO "%s: registered device %s\n",
-		       dev->name, video_device_node_name(dev->radio_dev));
+//		printk(KERN_INFO "%s: registered device %s\n",
+;
 	}
 
-	printk(KERN_INFO "Trident TVMaster TM5600/TM6000/TM6010 USB2 board (Load status: %d)\n", ret);
+;
 	return ret;
 }
 

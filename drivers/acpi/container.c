@@ -99,7 +99,7 @@ static int acpi_container_add(struct acpi_device *device)
 
 
 	if (!device) {
-		printk(KERN_ERR PREFIX "device is NULL\n");
+;
 		return -EINVAL;
 	}
 
@@ -166,9 +166,9 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
 	case ACPI_NOTIFY_BUS_CHECK:
 		/* Fall through */
 	case ACPI_NOTIFY_DEVICE_CHECK:
-		printk(KERN_WARNING "Container driver received %s event\n",
-		       (type == ACPI_NOTIFY_BUS_CHECK) ?
-		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
+//		printk(KERN_WARNING "Container driver received %s event\n",
+//		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+;
 		status = acpi_bus_get_device(handle, &device);
 		if (present) {
 			if (ACPI_FAILURE(status) || !device) {
@@ -177,8 +177,8 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
 					kobject_uevent(&device->dev.kobj,
 						       KOBJ_ONLINE);
 				else
-					printk(KERN_WARNING
-					       "Failed to add container\n");
+//					printk(KERN_WARNING
+;
 			}
 		} else {
 			if (ACPI_SUCCESS(status)) {

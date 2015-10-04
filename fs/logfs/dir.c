@@ -249,7 +249,7 @@ static int logfs_unlink(struct inode *dir, struct dentry *dentry)
 
 	if (ret) {
 		abort_transaction(dir, ta);
-		printk(KERN_ERR"LOGFS: unable to delete inode\n");
+;
 		goto out;
 	}
 
@@ -372,8 +372,8 @@ static struct dentry *logfs_lookup(struct inode *dir, struct dentry *dentry,
 
 	inode = logfs_iget(dir->i_sb, ino);
 	if (IS_ERR(inode))
-		printk(KERN_ERR"LogFS: Cannot read inode #%llx for dentry (%lx, %lx)n",
-				ino, dir->i_ino, index);
+//		printk(KERN_ERR"LogFS: Cannot read inode #%llx for dentry (%lx, %lx)n",
+;
 	return d_splice_alias(inode, dentry);
 }
 
@@ -755,7 +755,7 @@ int logfs_replay_journal(struct super_block *sb)
 	if (super->s_victim_ino) {
 		/* delete victim inode */
 		ino = super->s_victim_ino;
-		printk(KERN_INFO"LogFS: delete unmapped inode #%llx\n", ino);
+;
 		inode = logfs_iget(sb, ino);
 		if (IS_ERR(inode))
 			goto fail;
@@ -773,8 +773,8 @@ int logfs_replay_journal(struct super_block *sb)
 		/* delete old dd from rename */
 		ino = super->s_rename_dir;
 		pos = super->s_rename_pos;
-		printk(KERN_INFO"LogFS: delete unbacked dentry (%llx, %llx)\n",
-				ino, pos);
+//		printk(KERN_INFO"LogFS: delete unbacked dentry (%llx, %llx)\n",
+;
 		inode = logfs_iget(sb, ino);
 		if (IS_ERR(inode))
 			goto fail;

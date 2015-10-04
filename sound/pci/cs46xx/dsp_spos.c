@@ -157,7 +157,7 @@ static int add_symbols (struct snd_cs46xx * chip, struct dsp_module_desc * modul
 
 	for (i = 0;i < module->symbol_table.nsymbols; ++i) {
 		if (ins->symbol_table.nsymbols == (DSP_MAX_SYMBOLS - 1)) {
-			snd_printk(KERN_ERR "dsp_spos: symbol table is full\n");
+;
 			return -ENOMEM;
 		}
 
@@ -192,14 +192,14 @@ add_symbol (struct snd_cs46xx * chip, char * symbol_name, u32 address, int type)
 	int index;
 
 	if (ins->symbol_table.nsymbols == (DSP_MAX_SYMBOLS - 1)) {
-		snd_printk(KERN_ERR "dsp_spos: symbol table is full\n");
+;
 		return NULL;
 	}
   
 	if (cs46xx_dsp_lookup_symbol(chip,
 				     symbol_name,
 				     type) != NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol <%s> duplicated\n", symbol_name);
+;
 		return NULL;
 	}
 
@@ -316,8 +316,8 @@ static int dsp_load_parameter(struct snd_cs46xx *chip,
 		    "downloading parameter data to chip (%08x-%08x)\n",
 		    doffset,doffset + dsize);
 	if (snd_cs46xx_download (chip, parameter->data, doffset, dsize)) {
-		snd_printk(KERN_ERR "dsp_spos: "
-			   "failed to download parameter data to DSP\n");
+//		snd_printk(KERN_ERR "dsp_spos: "
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -340,7 +340,7 @@ static int dsp_load_sample(struct snd_cs46xx *chip,
 		    doffset,doffset + dsize);
 
 	if (snd_cs46xx_download (chip,sample->data,doffset,dsize)) {
-		snd_printk(KERN_ERR "dsp_spos: failed to sample data to DSP\n");
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -354,7 +354,7 @@ int cs46xx_dsp_load_module (struct snd_cs46xx * chip, struct dsp_module_desc * m
 	int err;
 
 	if (ins->nmodules == DSP_MAX_MODULES - 1) {
-		snd_printk(KERN_ERR "dsp_spos: to many modules loaded into DSP\n");
+;
 		return -ENOMEM;
 	}
 
@@ -389,7 +389,7 @@ int cs46xx_dsp_load_module (struct snd_cs46xx * chip, struct dsp_module_desc * m
 		snd_printdd("dsp_spos: module got no code segment\n");
 	} else {
 		if (ins->code.offset + code->size > DSP_CODE_BYTE_SIZE) {
-			snd_printk(KERN_ERR "dsp_spos: no space available in DSP\n");
+;
 			return -ENOMEM;
 		}
 
@@ -401,7 +401,7 @@ int cs46xx_dsp_load_module (struct snd_cs46xx * chip, struct dsp_module_desc * m
 		if (snd_BUG_ON(!module->symbol_table.symbols))
 			return -ENOMEM;
 		if (add_symbols(chip,module)) {
-			snd_printk(KERN_ERR "dsp_spos: failed to load symbol table\n");
+;
 			return -ENOMEM;
 		}
     
@@ -413,7 +413,7 @@ int cs46xx_dsp_load_module (struct snd_cs46xx * chip, struct dsp_module_desc * m
 		module->nfixups = shadow_and_reallocate_code(chip,code->data,code->size,module->overlay_begin_address);
 
 		if (snd_cs46xx_download (chip,(ins->code.data + ins->code.offset),doffset,dsize)) {
-			snd_printk(KERN_ERR "dsp_spos: failed to download code to DSP\n");
+;
 			return -EINVAL;
 		}
 
@@ -960,7 +960,7 @@ static struct dsp_scb_descriptor * _map_scb (struct snd_cs46xx *chip, char * nam
 	int index;
 
 	if (ins->nscb == DSP_MAX_SCB_DESC - 1) {
-		snd_printk(KERN_ERR "dsp_spos: got no place for other SCB\n");
+;
 		return NULL;
 	}
 
@@ -991,7 +991,7 @@ _map_task_tree (struct snd_cs46xx *chip, char * name, u32 dest, u32 size)
 	struct dsp_task_descriptor * desc = NULL;
 
 	if (ins->ntask == DSP_MAX_TASK_DESC - 1) {
-		snd_printk(KERN_ERR "dsp_spos: got no place for other TASK\n");
+;
 		return NULL;
 	}
 
@@ -1031,7 +1031,7 @@ cs46xx_dsp_create_scb (struct snd_cs46xx *chip, char * name, u32 * scb_data, u32
 		desc->data = scb_data;
 		_dsp_create_scb(chip,scb_data,dest);
 	} else {
-		snd_printk(KERN_ERR "dsp_spos: failed to map SCB\n");
+;
 #ifdef CONFIG_PM
 		kfree(scb_data);
 #endif
@@ -1052,7 +1052,7 @@ cs46xx_dsp_create_task_tree (struct snd_cs46xx *chip, char * name, u32 * task_da
 		desc->data = task_data;
 		_dsp_create_task_tree(chip,task_data,dest,size);
 	} else {
-		snd_printk(KERN_ERR "dsp_spos: failed to map TASK\n");
+;
 	}
 
 	return desc;
@@ -1105,31 +1105,31 @@ int cs46xx_dsp_scb_and_task_init (struct snd_cs46xx *chip)
 
 	null_algorithm  = cs46xx_dsp_lookup_symbol(chip, "NULLALGORITHM", SYMBOL_CODE);
 	if (null_algorithm == NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol NULLALGORITHM not found\n");
+;
 		return -EIO;
 	}
 
 	fg_task_tree_header_code = cs46xx_dsp_lookup_symbol(chip, "FGTASKTREEHEADERCODE", SYMBOL_CODE);  
 	if (fg_task_tree_header_code == NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol FGTASKTREEHEADERCODE not found\n");
+;
 		return -EIO;
 	}
 
 	task_tree_header_code = cs46xx_dsp_lookup_symbol(chip, "TASKTREEHEADERCODE", SYMBOL_CODE);  
 	if (task_tree_header_code == NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol TASKTREEHEADERCODE not found\n");
+;
 		return -EIO;
 	}
   
 	task_tree_thread = cs46xx_dsp_lookup_symbol(chip, "TASKTREETHREAD", SYMBOL_CODE);
 	if (task_tree_thread == NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol TASKTREETHREAD not found\n");
+;
 		return -EIO;
 	}
 
 	magic_snoop_task = cs46xx_dsp_lookup_symbol(chip, "MAGICSNOOPTASK", SYMBOL_CODE);
 	if (magic_snoop_task == NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol MAGICSNOOPTASK not found\n");
+;
 		return -EIO;
 	}
   
@@ -1476,7 +1476,7 @@ int cs46xx_dsp_scb_and_task_init (struct snd_cs46xx *chip)
 	return 0;
 
  _fail_end:
-	snd_printk(KERN_ERR "dsp_spos: failed to setup SCB's in DSP\n");
+;
 	return -EINVAL;
 }
 
@@ -1491,18 +1491,18 @@ static int cs46xx_dsp_async_init (struct snd_cs46xx *chip,
 
 	s16_async_codec_input_task = cs46xx_dsp_lookup_symbol(chip, "S16_ASYNCCODECINPUTTASK", SYMBOL_CODE);
 	if (s16_async_codec_input_task == NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol S16_ASYNCCODECINPUTTASK not found\n");
+;
 		return -EIO;
 	}
 	spdifo_task = cs46xx_dsp_lookup_symbol(chip, "SPDIFOTASK", SYMBOL_CODE);
 	if (spdifo_task == NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol SPDIFOTASK not found\n");
+;
 		return -EIO;
 	}
 
 	spdifi_task = cs46xx_dsp_lookup_symbol(chip, "SPDIFITASK", SYMBOL_CODE);
 	if (spdifi_task == NULL) {
-		snd_printk(KERN_ERR "dsp_spos: symbol SPDIFITASK not found\n");
+;
 		return -EIO;
 	}
 
@@ -1883,7 +1883,7 @@ int cs46xx_poke_via_dsp (struct snd_cs46xx *chip, u32 address, u32 data)
 	}
 
 	if (i == 25) {
-		snd_printk(KERN_ERR "dsp_spos: SPIOWriteTask not responding\n");
+;
 		return -EBUSY;
 	}
 

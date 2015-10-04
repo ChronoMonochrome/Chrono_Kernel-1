@@ -137,10 +137,10 @@ static irqreturn_t sunkbd_interrupt(struct serio *serio,
 					 !(data & SUNKBD_RELEASE));
 			input_sync(sunkbd->dev);
 		} else {
-			printk(KERN_WARNING
-				"sunkbd.c: Unknown key (scancode %#x) %s.\n",
-				data & SUNKBD_KEY,
-				data & SUNKBD_RELEASE ? "released" : "pressed");
+//			printk(KERN_WARNING
+//				"sunkbd.c: Unknown key (scancode %#x) %s.\n",
+//				data & SUNKBD_KEY,
+;
 		}
 	}
 out:

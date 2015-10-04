@@ -240,7 +240,7 @@ static pin_cfg_t gavini_lcd_spi_pins_enable[] = {
 static int lcd_gpio_cfg_earlysuspend(void)
 {
 	int ret = 0;
-	printk("%s\n",__func__);
+;
 
 	ret=nmk_config_pins(gavini_lcd_spi_pins_disable,
 		ARRAY_SIZE(gavini_lcd_spi_pins_disable));
@@ -251,7 +251,7 @@ static int lcd_gpio_cfg_earlysuspend(void)
 static int lcd_gpio_cfg_lateresume(void)
 {
 	int ret = 0;
- printk("%s\n",__func__);
+;
 	ret=nmk_config_pins(gavini_lcd_spi_pins_enable,
 		ARRAY_SIZE(gavini_lcd_spi_pins_enable));
 

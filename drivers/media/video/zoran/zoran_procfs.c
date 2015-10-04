@@ -104,11 +104,11 @@ setparam (struct zoran *zr,
 			if ((val & ~zr67[i].mask))
 				break;
 			reg |= (val & zr67[i].mask) << zr67[i].bit;
-			dprintk(4,
-				KERN_INFO
-				"%s: setparam: setting ZR36067 register 0x%03x: 0x%08x=>0x%08x %s=%d\n",
-				ZR_DEVNAME(zr), zr67[i].reg, reg0, reg,
-				zr67[i].name, val);
+//			dprintk(4,
+//				KERN_INFO
+//				"%s: setparam: setting ZR36067 register 0x%03x: 0x%08x=>0x%08x %s=%d\n",
+//				ZR_DEVNAME(zr), zr67[i].reg, reg0, reg,
+;
 			btwrite(reg, zr67[i].reg);
 			break;
 		}
@@ -146,10 +146,10 @@ static ssize_t zoran_write(struct file *file, const char __user *buffer,
 
 	string = sp = vmalloc(count + 1);
 	if (!string) {
-		dprintk(1,
-			KERN_ERR
-			"%s: write_proc: can not allocate memory\n",
-			ZR_DEVNAME(zr));
+//		dprintk(1,
+//			KERN_ERR
+//			"%s: write_proc: can not allocate memory\n",
+;
 		return -ENOMEM;
 	}
 	if (copy_from_user(string, buffer, count)) {
@@ -157,8 +157,8 @@ static ssize_t zoran_write(struct file *file, const char __user *buffer,
 		return -EFAULT;
 	}
 	string[count] = 0;
-	dprintk(4, KERN_INFO "%s: write_proc: name=%s count=%zu zr=%p\n",
-		ZR_DEVNAME(zr), file->f_path.dentry->d_name.name, count, zr);
+//	dprintk(4, KERN_INFO "%s: write_proc: name=%s count=%zu zr=%p\n",
+;
 	ldelim = " \t\n";
 	tdelim = "=";
 	line = strpbrk(sp, ldelim);
@@ -198,13 +198,13 @@ zoran_proc_init (struct zoran *zr)
 	snprintf(name, 7, "zoran%d", zr->id);
 	zr->zoran_proc = proc_create_data(name, 0, NULL, &zoran_operations, zr);
 	if (zr->zoran_proc != NULL) {
-		dprintk(2,
-			KERN_INFO
-			"%s: procfs entry /proc/%s allocated. data=%p\n",
-			ZR_DEVNAME(zr), name, zr->zoran_proc->data);
+//		dprintk(2,
+//			KERN_INFO
+//			"%s: procfs entry /proc/%s allocated. data=%p\n",
+;
 	} else {
-		dprintk(1, KERN_ERR "%s: Unable to initialise /proc/%s\n",
-			ZR_DEVNAME(zr), name);
+//		dprintk(1, KERN_ERR "%s: Unable to initialise /proc/%s\n",
+;
 		return 1;
 	}
 #endif

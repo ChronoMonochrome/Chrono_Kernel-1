@@ -203,7 +203,7 @@ static struct p9_req_t *p9_tag_alloc(struct p9_client *c, u16 tag)
 					sizeof(struct p9_req_t), GFP_ATOMIC);
 
 			if (!c->reqs[row]) {
-				printk(KERN_ERR "Couldn't grow tag array\n");
+;
 				spin_unlock_irqrestore(&c->lock, flags);
 				return ERR_PTR(-ENOMEM);
 			}
@@ -222,7 +222,7 @@ static struct p9_req_t *p9_tag_alloc(struct p9_client *c, u16 tag)
 	if (!req->tc) {
 		req->wq = kmalloc(sizeof(wait_queue_head_t), GFP_NOFS);
 		if (!req->wq) {
-			printk(KERN_ERR "Couldn't grow tag array\n");
+;
 			return ERR_PTR(-ENOMEM);
 		}
 		init_waitqueue_head(req->wq);
@@ -244,7 +244,7 @@ static struct p9_req_t *p9_tag_alloc(struct p9_client *c, u16 tag)
 			req->rc->capacity = c->msize;
 		}
 		if ((!req->tc) || (!req->rc)) {
-			printk(KERN_ERR "Couldn't grow tag array\n");
+;
 			kfree(req->tc);
 			kfree(req->rc);
 			kfree(req->wq);
@@ -857,7 +857,7 @@ void p9_client_destroy(struct p9_client *clnt)
 	v9fs_put_trans(clnt->trans_mod);
 
 	list_for_each_entry_safe(fid, fidptr, &clnt->fidlist, flist) {
-		printk(KERN_INFO "Found fid %d not clunked\n", fid->fid);
+;
 		p9_fid_destroy(fid);
 	}
 

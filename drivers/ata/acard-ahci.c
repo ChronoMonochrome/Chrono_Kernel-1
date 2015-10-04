@@ -135,8 +135,8 @@ static int acard_ahci_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg
 
 	if (mesg.event & PM_EVENT_SUSPEND &&
 	    hpriv->flags & AHCI_HFLAG_NO_SUSPEND) {
-		dev_printk(KERN_ERR, &pdev->dev,
-			   "BIOS update required for suspend/resume\n");
+//		dev_printk(KERN_ERR, &pdev->dev,
+;
 		return -EIO;
 	}
 
@@ -187,22 +187,22 @@ static int acard_ahci_configure_dma_masks(struct pci_dev *pdev, int using_dac)
 		if (rc) {
 			rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 			if (rc) {
-				dev_printk(KERN_ERR, &pdev->dev,
-					   "64-bit DMA enable failed\n");
+//				dev_printk(KERN_ERR, &pdev->dev,
+;
 				return rc;
 			}
 		}
 	} else {
 		rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-			dev_printk(KERN_ERR, &pdev->dev,
-				   "32-bit DMA enable failed\n");
+//			dev_printk(KERN_ERR, &pdev->dev,
+;
 			return rc;
 		}
 		rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-			dev_printk(KERN_ERR, &pdev->dev,
-				   "32-bit consistent DMA enable failed\n");
+//			dev_printk(KERN_ERR, &pdev->dev,
+;
 			return rc;
 		}
 	}
@@ -343,14 +343,14 @@ static int acard_ahci_port_start(struct ata_port *ap)
 		if (cmd & PORT_CMD_FBSCP)
 			pp->fbs_supported = true;
 		else if (hpriv->flags & AHCI_HFLAG_YES_FBS) {
-			dev_printk(KERN_INFO, dev,
-				   "port %d can do FBS, forcing FBSCP\n",
-				   ap->port_no);
+//			dev_printk(KERN_INFO, dev,
+//				   "port %d can do FBS, forcing FBSCP\n",
+;
 			pp->fbs_supported = true;
 		} else
-			dev_printk(KERN_WARNING, dev,
-				   "port %d is not capable of FBS\n",
-				   ap->port_no);
+//			dev_printk(KERN_WARNING, dev,
+//				   "port %d is not capable of FBS\n",
+;
 	}
 
 	if (pp->fbs_supported) {
@@ -420,7 +420,7 @@ static int acard_ahci_init_one(struct pci_dev *pdev, const struct pci_device_id 
 	WARN_ON((int)ATA_MAX_QUEUE > AHCI_MAX_CMDS);
 
 	if (!printed_version++)
-		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+;
 
 	/* acquire resources */
 	rc = pcim_enable_device(pdev);
@@ -473,7 +473,7 @@ static int acard_ahci_init_one(struct pci_dev *pdev, const struct pci_device_id 
 	if (!(hpriv->cap & HOST_CAP_SSS) || ahci_ignore_sss)
 		host->flags |= ATA_HOST_PARALLEL_SCAN;
 	else
-		printk(KERN_INFO "ahci: SSS flag set, parallel bus scan disabled\n");
+;
 
 	for (i = 0; i < host->n_ports; i++) {
 		struct ata_port *ap = host->ports[i];

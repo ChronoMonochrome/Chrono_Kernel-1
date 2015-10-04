@@ -1030,7 +1030,7 @@ static int __init dm355_ccdc_probe(struct platform_device *pdev)
 	 */
 	setup_pinmux();
 	ccdc_cfg.dev = &pdev->dev;
-	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
+;
 	return 0;
 fail_sclk:
 	clk_put(ccdc_cfg.sclk);

@@ -542,7 +542,7 @@ static int cafe_smbus_setup(struct cafe_camera *cam)
 	i2c_set_adapdata(adap, &cam->v4l2_dev);
 	ret = i2c_add_adapter(adap);
 	if (ret)
-		printk(KERN_ERR "Unable to register cafe i2c adapter\n");
+;
 	return ret;
 }
 
@@ -2042,7 +2042,7 @@ static int cafe_pci_probe(struct pci_dev *pdev,
 	ret = -EIO;
 	cam->regs = pci_iomap(pdev, 0, 0);
 	if (! cam->regs) {
-		printk(KERN_ERR "Unable to ioremap cafe-ccic regs\n");
+;
 		goto out_unreg;
 	}
 	ret = request_irq(pdev->irq, cafe_irq, IRQF_SHARED, "cafe-ccic", cam);
@@ -2147,7 +2147,7 @@ static void cafe_pci_remove(struct pci_dev *pdev)
 	struct cafe_camera *cam = to_cam(v4l2_dev);
 
 	if (cam == NULL) {
-		printk(KERN_WARNING "pci_remove on unknown pdev %p\n", pdev);
+;
 		return;
 	}
 	mutex_lock(&cam->s_mutex);
@@ -2244,11 +2244,11 @@ static int __init cafe_init(void)
 {
 	int ret;
 
-	printk(KERN_NOTICE "Marvell M88ALP01 'CAFE' Camera Controller version %d\n",
-			CAFE_VERSION);
+//	printk(KERN_NOTICE "Marvell M88ALP01 'CAFE' Camera Controller version %d\n",
+;
 	ret = pci_register_driver(&cafe_pci_driver);
 	if (ret) {
-		printk(KERN_ERR "Unable to register cafe_ccic driver\n");
+;
 		goto out;
 	}
 	ret = 0;

@@ -83,15 +83,15 @@
 /* for print_hex_dumps with line references */
 #define xstr(s) str(s)
 #define str(s) #s
-#define debug(format, arg...) printk(format, arg)
-#else
-#define debug(format, arg...)
-#endif
-
-/* Set DK bit in class 1 operation if shared */
-static inline void append_dec_op1(u32 *desc, u32 type)
-{
-	u32 *jump_cmd, *uncond_jump_cmd;
+//#define debug(format, arg...) printk(format, arg)
+//#else
+//#define debug(format, arg...)
+//#endif
+//
+///* Set DK bit in class 1 operation if shared */
+//static inline void append_dec_op1(u32 *desc, u32 type)
+//{
+;
 
 	jump_cmd = append_jump(desc, JUMP_TEST_ALL | JUMP_COND_SHRD);
 	append_operation(desc, type | OP_ALG_AS_INITFINAL |
@@ -602,10 +602,10 @@ static int aead_setkey(struct crypto_aead *aead,
 	ctx->split_key_pad_len = ALIGN(ctx->split_key_len, 16);
 
 #ifdef DEBUG
-	printk(KERN_ERR "keylen %d enckeylen %d authkeylen %d\n",
-	       keylen, enckeylen, authkeylen);
-	printk(KERN_ERR "split_key_len %d split_key_pad_len %d\n",
-	       ctx->split_key_len, ctx->split_key_pad_len);
+//	printk(KERN_ERR "keylen %d enckeylen %d authkeylen %d\n",
+;
+//	printk(KERN_ERR "split_key_len %d split_key_pad_len %d\n",
+;
 	print_hex_dump(KERN_ERR, "key in @"xstr(__LINE__)": ",
 		       DUMP_PREFIX_ADDRESS, 16, 4, key, keylen, 1);
 #endif

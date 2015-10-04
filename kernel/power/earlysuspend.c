@@ -151,7 +151,7 @@ static void late_resume(struct work_struct *work)
 		/* just for this write, set us real-time */
 		if (!(unlikely(earlysuspend_old_policy == SCHED_FIFO) || unlikely(earlysuspend_old_policy == SCHED_RR))) {
 			if ((sched_setscheduler(current, SCHED_RR, &earlysuspend_s)) < 0)
-				printk(KERN_ERR "late_resume: up late_resume failed\n");
+;
 		}
 	#endif
 
@@ -189,7 +189,7 @@ abort:
 	if (!(unlikely(earlysuspend_old_policy == SCHED_FIFO) || unlikely(earlysuspend_old_policy == SCHED_RR))) {
 		earlysuspend_v.sched_priority = earlysuspend_old_prio;
 		if ((sched_setscheduler(current, earlysuspend_old_policy, &earlysuspend_v)) < 0)
-			printk(KERN_ERR "late_resume: down late_resume failed\n");
+;
 	}
 	#endif
 }

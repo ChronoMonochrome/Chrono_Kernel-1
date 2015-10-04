@@ -355,13 +355,13 @@ EXPORT_SYMBOL(iTCO_vendor_check_noreboot_on);
 
 static int __init iTCO_vendor_init_module(void)
 {
-	printk(KERN_INFO PFX "vendor-support=%d\n", vendorsupport);
+;
 	return 0;
 }
 
 static void __exit iTCO_vendor_exit_module(void)
 {
-	printk(KERN_INFO PFX "Module Unloaded\n");
+;
 }
 
 module_init(iTCO_vendor_init_module);

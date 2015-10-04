@@ -366,8 +366,8 @@ get_var_data(struct efivars *efivars, struct efi_variable *var)
 					    var->Data);
 	spin_unlock(&efivars->lock);
 	if (status != EFI_SUCCESS) {
-		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
-			status);
+//		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
+;
 	}
 	return status;
 }
@@ -477,18 +477,18 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
 	 */
 	if (memcmp(new_var->VariableName, var->VariableName, sizeof(var->VariableName)) ||
 		efi_guidcmp(new_var->VendorGuid, var->VendorGuid)) {
-		printk(KERN_ERR "efivars: Cannot edit the wrong variable!\n");
+;
 		return -EINVAL;
 	}
 
 	if ((new_var->DataSize <= 0) || (new_var->Attributes == 0)){
-		printk(KERN_ERR "efivars: DataSize & Attributes must be valid!\n");
+;
 		return -EINVAL;
 	}
 
 	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
 	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-		printk(KERN_ERR "efivars: Malformed variable content\n");
+;
 		return -EINVAL;
 	}
 
@@ -502,8 +502,8 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
 	spin_unlock(&efivars->lock);
 
 	if (status != EFI_SUCCESS) {
-		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
-			status);
+//		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+;
 		return -EIO;
 	}
 
@@ -619,7 +619,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
 
 	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
 	    validate_var(new_var, new_var->Data, new_var->DataSize) == false) {
-		printk(KERN_ERR "efivars: Malformed variable content\n");
+;
 		return -EINVAL;
 	}
 
@@ -653,8 +653,8 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
 					    new_var->Data);
 
 	if (status != EFI_SUCCESS) {
-		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
-			status);
+//		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+;
 		spin_unlock(&efivars->lock);
 		return -EIO;
 	}
@@ -667,7 +667,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
 					   new_var->VariableName,
 					   &new_var->VendorGuid);
 	if (status) {
-		printk(KERN_WARNING "efivars: variable created, but sysfs entry wasn't.\n");
+;
 	}
 	return count;
 }
@@ -718,8 +718,8 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
 					    del_var->Data);
 
 	if (status != EFI_SUCCESS) {
-		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
-			status);
+//		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+;
 		spin_unlock(&efivars->lock);
 		return -EIO;
 	}
@@ -923,15 +923,15 @@ create_efivars_bin_attributes(struct efivars *efivars)
 	error = sysfs_create_bin_file(&efivars->kset->kobj,
 				      efivars->new_var);
 	if (error) {
-		printk(KERN_ERR "efivars: unable to create new_var sysfs file"
-			" due to error %d\n", error);
+//		printk(KERN_ERR "efivars: unable to create new_var sysfs file"
+;
 		goto out_free;
 	}
 	error = sysfs_create_bin_file(&efivars->kset->kobj,
 				      efivars->del_var);
 	if (error) {
-		printk(KERN_ERR "efivars: unable to create del_var sysfs file"
-			" due to error %d\n", error);
+//		printk(KERN_ERR "efivars: unable to create del_var sysfs file"
+;
 		sysfs_remove_bin_file(&efivars->kset->kobj,
 				      efivars->new_var);
 		goto out_free;
@@ -983,8 +983,8 @@ static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
 	for (i = 0; i < len8; i++)
 		s8[i] = s16[i];
 
-	printk(KERN_WARNING "efivars: duplicate variable: %s-%pUl\n",
-	       s8, vendor_guid);
+//	printk(KERN_WARNING "efivars: duplicate variable: %s-%pUl\n",
+;
 	kfree(s8);
 }
 
@@ -1000,7 +1000,7 @@ int register_efivars(struct efivars *efivars,
 
 	variable_name = kzalloc(variable_name_size, GFP_KERNEL);
 	if (!variable_name) {
-		printk(KERN_ERR "efivars: Memory allocation failed.\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1010,7 +1010,7 @@ int register_efivars(struct efivars *efivars,
 
 	efivars->kset = kset_create_and_add("vars", NULL, parent_kobj);
 	if (!efivars->kset) {
-		printk(KERN_ERR "efivars: Subsystem registration failed.\n");
+;
 		error = -ENOMEM;
 		goto out;
 	}
@@ -1054,8 +1054,8 @@ int register_efivars(struct efivars *efivars,
 		case EFI_NOT_FOUND:
 			break;
 		default:
-			printk(KERN_WARNING "efivars: get_next_variable: status=%lx\n",
-				status);
+//			printk(KERN_WARNING "efivars: get_next_variable: status=%lx\n",
+;
 			status = EFI_NOT_FOUND;
 			break;
 		}
@@ -1085,8 +1085,8 @@ efivars_init(void)
 {
 	int error = 0;
 
-	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
-	       EFIVARS_DATE);
+//	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
+;
 
 	if (!efi_enabled)
 		return 0;
@@ -1094,7 +1094,7 @@ efivars_init(void)
 	/* For now we'll register the efi directory at /sys/firmware/efi */
 	efi_kobj = kobject_create_and_add("efi", firmware_kobj);
 	if (!efi_kobj) {
-		printk(KERN_ERR "efivars: Firmware registration failed.\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1108,9 +1108,9 @@ efivars_init(void)
 	/* Don't forget the systab entry */
 	error = sysfs_create_group(efi_kobj, &efi_subsys_attr_group);
 	if (error) {
-		printk(KERN_ERR
-		       "efivars: Sysfs attribute export failed with error %d.\n",
-		       error);
+//		printk(KERN_ERR
+//		       "efivars: Sysfs attribute export failed with error %d.\n",
+;
 		goto err_unregister;
 	}
 

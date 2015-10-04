@@ -30,12 +30,12 @@
 /*************************************************************************
 *	 DEFINES
 **************************************************************************/
-#define ktd267_err(fmt,...)   printk(KERN_ERR " KTD267 ERROR: %s[%d]"fmt,__FUNCTION__,__LINE__, ##__VA_ARGS__);
+;
 
 #ifndef KTD267_DEBUG
 #define ktd267_dbg(fmt,...)
 #else
-#define ktd267_dbg(fmt,...)   printk(KERN_DEBUG " KTD267 DEBUG: %s[%d]"fmt,__FUNCTION__,__LINE__, ##__VA_ARGS__);
+;
 #endif
 
 /*************************************************************************

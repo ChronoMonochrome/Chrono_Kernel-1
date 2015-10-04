@@ -171,12 +171,12 @@ uvc_video_complete(struct usb_ep *ep, struct usb_request *req)
 		break;
 
 	case -ESHUTDOWN:
-		printk(KERN_INFO "VS request cancelled.\n");
+;
 		goto requeue;
 
 	default:
-		printk(KERN_INFO "VS request completed with status %d.\n",
-			req->status);
+//		printk(KERN_INFO "VS request completed with status %d.\n",
+;
 		goto requeue;
 	}
 
@@ -190,7 +190,7 @@ uvc_video_complete(struct usb_ep *ep, struct usb_request *req)
 	video->encode(req, video, buf);
 
 	if ((ret = usb_ep_queue(ep, req, GFP_ATOMIC)) < 0) {
-		printk(KERN_INFO "Failed to queue request (%d).\n", ret);
+;
 		usb_ep_set_halt(ep);
 		spin_unlock_irqrestore(&video->queue.irqlock, flags);
 		goto requeue;
@@ -311,7 +311,7 @@ uvc_video_pump(struct uvc_video *video)
 
 		/* Queue the USB request */
 		if ((ret = usb_ep_queue(video->ep, req, GFP_KERNEL)) < 0) {
-			printk(KERN_INFO "Failed to queue request (%d)\n", ret);
+;
 			usb_ep_set_halt(video->ep);
 			spin_unlock_irqrestore(&video->queue.irqlock, flags);
 			break;
@@ -335,8 +335,8 @@ uvc_video_enable(struct uvc_video *video, int enable)
 	int ret;
 
 	if (video->ep == NULL) {
-		printk(KERN_INFO "Video enable failed, device is "
-			"uninitialized.\n");
+//		printk(KERN_INFO "Video enable failed, device is "
+;
 		return -ENODEV;
 	}
 

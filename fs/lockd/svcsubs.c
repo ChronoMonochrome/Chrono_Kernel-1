@@ -38,17 +38,17 @@ static inline void nlm_debug_print_fh(char *msg, struct nfs_fh *f)
 	u32 *fhp = (u32*)f->data;
 
 	/* print the first 32 bytes of the fh */
-	dprintk("lockd: %s (%08x %08x %08x %08x %08x %08x %08x %08x)\n",
-		msg, fhp[0], fhp[1], fhp[2], fhp[3],
-		fhp[4], fhp[5], fhp[6], fhp[7]);
+//	dprintk("lockd: %s (%08x %08x %08x %08x %08x %08x %08x %08x)\n",
+//		msg, fhp[0], fhp[1], fhp[2], fhp[3],
+;
 }
 
 static inline void nlm_debug_print_file(char *msg, struct nlm_file *file)
 {
 	struct inode *inode = file->f_file->f_path.dentry->d_inode;
 
-	dprintk("lockd: %s %s/%ld\n",
-		msg, inode->i_sb->s_id, inode->i_ino);
+//	dprintk("lockd: %s %s/%ld\n",
+;
 }
 #else
 static inline void nlm_debug_print_fh(char *msg, struct nfs_fh *f)
@@ -119,14 +119,14 @@ nlm_lookup_file(struct svc_rqst *rqstp, struct nlm_file **result,
 	 * the file.
 	 */
 	if ((nfserr = nlmsvc_ops->fopen(rqstp, f, &file->f_file)) != 0) {
-		dprintk("lockd: open failed (error %d)\n", nfserr);
+;
 		goto out_free;
 	}
 
 	hlist_add_head(&file->f_list, &nlm_files[hash]);
 
 found:
-	dprintk("lockd: found file %p (count %d)\n", file, file->f_count);
+;
 	*result = file;
 	file->f_count++;
 	nfserr = 0;
@@ -152,7 +152,7 @@ nlm_delete_file(struct nlm_file *file)
 		nlmsvc_ops->fclose(file->f_file);
 		kfree(file);
 	} else {
-		printk(KERN_WARNING "lockd: attempt to release unknown file!\n");
+;
 	}
 }
 
@@ -187,8 +187,8 @@ again:
 			lock.fl_start = 0;
 			lock.fl_end   = OFFSET_MAX;
 			if (vfs_lock_file(file->f_file, F_SETLK, &lock, NULL) < 0) {
-				printk("lockd: unlock failure in %s:%d\n",
-						__FILE__, __LINE__);
+//				printk("lockd: unlock failure in %s:%d\n",
+;
 				return 1;
 			}
 			goto again;
@@ -292,8 +292,8 @@ nlm_traverse_files(void *data, nlm_host_match_fn_t match,
 void
 nlm_release_file(struct nlm_file *file)
 {
-	dprintk("lockd: nlm_release_file(%p, ct = %d)\n",
-				file, file->f_count);
+//	dprintk("lockd: nlm_release_file(%p, ct = %d)\n",
+;
 
 	/* Lock file table */
 	mutex_lock(&nlm_file_mutex);
@@ -360,7 +360,7 @@ nlmsvc_is_client(void *data, struct nlm_host *dummy)
 void
 nlmsvc_mark_resources(void)
 {
-	dprintk("lockd: nlmsvc_mark_resources\n");
+;
 	nlm_traverse_files(NULL, nlmsvc_mark_host, NULL);
 }
 
@@ -370,12 +370,12 @@ nlmsvc_mark_resources(void)
 void
 nlmsvc_free_host_resources(struct nlm_host *host)
 {
-	dprintk("lockd: nlmsvc_free_host_resources\n");
+;
 
 	if (nlm_traverse_files(host, nlmsvc_same_host, NULL)) {
-		printk(KERN_WARNING
-			"lockd: couldn't remove all locks held by %s\n",
-			host->h_name);
+//		printk(KERN_WARNING
+//			"lockd: couldn't remove all locks held by %s\n",
+;
 		BUG();
 	}
 }

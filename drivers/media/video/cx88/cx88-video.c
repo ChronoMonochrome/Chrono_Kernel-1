@@ -72,75 +72,75 @@ static unsigned int vid_limit = 16;
 module_param(vid_limit,int,0644);
 MODULE_PARM_DESC(vid_limit,"capture memory limit in megabytes");
 
-#define dprintk(level,fmt, arg...)	if (video_debug >= level) \
-	printk(KERN_DEBUG "%s/0: " fmt, core->name , ## arg)
-
-/* ------------------------------------------------------------------- */
-/* static data                                                         */
-
-static const struct cx8800_fmt formats[] = {
-	{
-		.name     = "8 bpp, gray",
-		.fourcc   = V4L2_PIX_FMT_GREY,
-		.cxformat = ColorFormatY8,
-		.depth    = 8,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "15 bpp RGB, le",
-		.fourcc   = V4L2_PIX_FMT_RGB555,
-		.cxformat = ColorFormatRGB15,
-		.depth    = 16,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "15 bpp RGB, be",
-		.fourcc   = V4L2_PIX_FMT_RGB555X,
-		.cxformat = ColorFormatRGB15 | ColorFormatBSWAP,
-		.depth    = 16,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "16 bpp RGB, le",
-		.fourcc   = V4L2_PIX_FMT_RGB565,
-		.cxformat = ColorFormatRGB16,
-		.depth    = 16,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "16 bpp RGB, be",
-		.fourcc   = V4L2_PIX_FMT_RGB565X,
-		.cxformat = ColorFormatRGB16 | ColorFormatBSWAP,
-		.depth    = 16,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "24 bpp RGB, le",
-		.fourcc   = V4L2_PIX_FMT_BGR24,
-		.cxformat = ColorFormatRGB24,
-		.depth    = 24,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "32 bpp RGB, le",
-		.fourcc   = V4L2_PIX_FMT_BGR32,
-		.cxformat = ColorFormatRGB32,
-		.depth    = 32,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "32 bpp RGB, be",
-		.fourcc   = V4L2_PIX_FMT_RGB32,
-		.cxformat = ColorFormatRGB32 | ColorFormatBSWAP | ColorFormatWSWAP,
-		.depth    = 32,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "4:2:2, packed, YUYV",
-		.fourcc   = V4L2_PIX_FMT_YUYV,
-		.cxformat = ColorFormatYUY2,
-		.depth    = 16,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},{
-		.name     = "4:2:2, packed, UYVY",
-		.fourcc   = V4L2_PIX_FMT_UYVY,
-		.cxformat = ColorFormatYUY2 | ColorFormatBSWAP,
-		.depth    = 16,
-		.flags    = FORMAT_FLAGS_PACKED,
-	},
-};
+//#define dprintk(level,fmt, arg...)	if (video_debug >= level) \
+//	printk(KERN_DEBUG "%s/0: " fmt, core->name , ## arg)
+//
+///* ------------------------------------------------------------------- */
+///* static data                                                         */
+//
+//static const struct cx8800_fmt formats[] = {
+//	{
+//		.name     = "8 bpp, gray",
+//		.fourcc   = V4L2_PIX_FMT_GREY,
+//		.cxformat = ColorFormatY8,
+//		.depth    = 8,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "15 bpp RGB, le",
+//		.fourcc   = V4L2_PIX_FMT_RGB555,
+//		.cxformat = ColorFormatRGB15,
+//		.depth    = 16,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "15 bpp RGB, be",
+//		.fourcc   = V4L2_PIX_FMT_RGB555X,
+//		.cxformat = ColorFormatRGB15 | ColorFormatBSWAP,
+//		.depth    = 16,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "16 bpp RGB, le",
+//		.fourcc   = V4L2_PIX_FMT_RGB565,
+//		.cxformat = ColorFormatRGB16,
+//		.depth    = 16,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "16 bpp RGB, be",
+//		.fourcc   = V4L2_PIX_FMT_RGB565X,
+//		.cxformat = ColorFormatRGB16 | ColorFormatBSWAP,
+//		.depth    = 16,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "24 bpp RGB, le",
+//		.fourcc   = V4L2_PIX_FMT_BGR24,
+//		.cxformat = ColorFormatRGB24,
+//		.depth    = 24,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "32 bpp RGB, le",
+//		.fourcc   = V4L2_PIX_FMT_BGR32,
+//		.cxformat = ColorFormatRGB32,
+//		.depth    = 32,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "32 bpp RGB, be",
+//		.fourcc   = V4L2_PIX_FMT_RGB32,
+//		.cxformat = ColorFormatRGB32 | ColorFormatBSWAP | ColorFormatWSWAP,
+//		.depth    = 32,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "4:2:2, packed, YUYV",
+//		.fourcc   = V4L2_PIX_FMT_YUYV,
+//		.cxformat = ColorFormatYUY2,
+//		.depth    = 16,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},{
+//		.name     = "4:2:2, packed, UYVY",
+//		.fourcc   = V4L2_PIX_FMT_UYVY,
+//		.cxformat = ColorFormatYUY2 | ColorFormatBSWAP,
+//		.depth    = 16,
+//		.flags    = FORMAT_FLAGS_PACKED,
+//	},
+;
 
 static const struct cx8800_fmt* format_by_fourcc(unsigned int fourcc)
 {
@@ -355,7 +355,7 @@ static int res_get(struct cx8800_dev *dev, struct cx8800_fh *fh, unsigned int bi
 	/* it's free, grab it */
 	fh->resources  |= bit;
 	dev->resources |= bit;
-	dprintk(1,"res: get %d\n",bit);
+;
 	mutex_unlock(&core->lock);
 	return 1;
 }
@@ -381,7 +381,7 @@ void res_free(struct cx8800_dev *dev, struct cx8800_fh *fh, unsigned int bits)
 	mutex_lock(&core->lock);
 	fh->resources  &= ~bits;
 	dev->resources &= ~bits;
-	dprintk(1,"res: put %d\n",bits);
+;
 	mutex_unlock(&core->lock);
 }
 
@@ -391,10 +391,10 @@ int cx88_video_mux(struct cx88_core *core, unsigned int input)
 {
 	/* struct cx88_core *core = dev->core; */
 
-	dprintk(1,"video_mux: %d [vmux=%d,gpio=0x%x,0x%x,0x%x,0x%x]\n",
-		input, INPUT(input).vmux,
-		INPUT(input).gpio0,INPUT(input).gpio1,
-		INPUT(input).gpio2,INPUT(input).gpio3);
+//	dprintk(1,"video_mux: %d [vmux=%d,gpio=0x%x,0x%x,0x%x,0x%x]\n",
+//		input, INPUT(input).vmux,
+//		INPUT(input).gpio0,INPUT(input).gpio1,
+;
 	core->input = input;
 	cx_andor(MO_INPUT_FORMAT, 0x03 << 14, INPUT(input).vmux << 14);
 	cx_write(MO_GP3_IO, INPUT(input).gpio3);
@@ -513,8 +513,8 @@ static int restart_video_queue(struct cx8800_dev    *dev,
 
 	if (!list_empty(&q->active)) {
 		buf = list_entry(q->active.next, struct cx88_buffer, vb.queue);
-		dprintk(2,"restart_queue [%p/%d]: restart dma\n",
-			buf, buf->vb.i);
+//		dprintk(2,"restart_queue [%p/%d]: restart dma\n",
+;
 		start_video_dma(dev, q, buf);
 		list_for_each_entry(buf, &q->active, vb.queue)
 			buf->count = q->count++;
@@ -533,8 +533,8 @@ static int restart_video_queue(struct cx8800_dev    *dev,
 			buf->vb.state = VIDEOBUF_ACTIVE;
 			buf->count    = q->count++;
 			mod_timer(&q->timeout, jiffies+BUFFER_TIMEOUT);
-			dprintk(2,"[%p/%d] restart_queue - first active\n",
-				buf,buf->vb.i);
+//			dprintk(2,"[%p/%d] restart_queue - first active\n",
+;
 
 		} else if (prev->vb.width  == buf->vb.width  &&
 			   prev->vb.height == buf->vb.height &&
@@ -543,8 +543,8 @@ static int restart_video_queue(struct cx8800_dev    *dev,
 			buf->vb.state = VIDEOBUF_ACTIVE;
 			buf->count    = q->count++;
 			prev->risc.jmp[1] = cpu_to_le32(buf->risc.dma);
-			dprintk(2,"[%p/%d] restart_queue - move to active\n",
-				buf,buf->vb.i);
+//			dprintk(2,"[%p/%d] restart_queue - move to active\n",
+;
 		} else {
 			return 0;
 		}
@@ -640,10 +640,10 @@ buffer_prepare(struct videobuf_queue *q, struct videobuf_buffer *vb,
 			BUG();
 		}
 	}
-	dprintk(2,"[%p/%d] buffer_prepare - %dx%d %dbpp \"%s\" - dma=0x%08lx\n",
-		buf, buf->vb.i,
-		fh->width, fh->height, fh->fmt->depth, fh->fmt->name,
-		(unsigned long)buf->risc.dma);
+//	dprintk(2,"[%p/%d] buffer_prepare - %dx%d %dbpp \"%s\" - dma=0x%08lx\n",
+//		buf, buf->vb.i,
+//		fh->width, fh->height, fh->fmt->depth, fh->fmt->name,
+;
 
 	buf->vb.state = VIDEOBUF_PREPARED;
 	return 0;
@@ -670,8 +670,8 @@ buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
 	if (!list_empty(&q->queued)) {
 		list_add_tail(&buf->vb.queue,&q->queued);
 		buf->vb.state = VIDEOBUF_QUEUED;
-		dprintk(2,"[%p/%d] buffer_queue - append to queued\n",
-			buf, buf->vb.i);
+//		dprintk(2,"[%p/%d] buffer_queue - append to queued\n",
+;
 
 	} else if (list_empty(&q->active)) {
 		list_add_tail(&buf->vb.queue,&q->active);
@@ -679,8 +679,8 @@ buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
 		buf->vb.state = VIDEOBUF_ACTIVE;
 		buf->count    = q->count++;
 		mod_timer(&q->timeout, jiffies+BUFFER_TIMEOUT);
-		dprintk(2,"[%p/%d] buffer_queue - first active\n",
-			buf, buf->vb.i);
+//		dprintk(2,"[%p/%d] buffer_queue - first active\n",
+;
 
 	} else {
 		prev = list_entry(q->active.prev, struct cx88_buffer, vb.queue);
@@ -691,14 +691,14 @@ buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
 			buf->vb.state = VIDEOBUF_ACTIVE;
 			buf->count    = q->count++;
 			prev->risc.jmp[1] = cpu_to_le32(buf->risc.dma);
-			dprintk(2,"[%p/%d] buffer_queue - append to active\n",
-				buf, buf->vb.i);
+//			dprintk(2,"[%p/%d] buffer_queue - append to active\n",
+;
 
 		} else {
 			list_add_tail(&buf->vb.queue,&q->queued);
 			buf->vb.state = VIDEOBUF_QUEUED;
-			dprintk(2,"[%p/%d] buffer_queue - first queued\n",
-				buf, buf->vb.i);
+//			dprintk(2,"[%p/%d] buffer_queue - first queued\n",
+;
 		}
 	}
 }
@@ -769,8 +769,8 @@ static int video_open(struct file *file)
 		break;
 	}
 
-	dprintk(1, "open dev=%s radio=%d type=%s\n",
-		video_device_node_name(vdev), radio, v4l2_type_names[type]);
+//	dprintk(1, "open dev=%s radio=%d type=%s\n",
+;
 
 	/* allocate + initialize per filehandle data */
 	fh = kzalloc(sizeof(*fh),GFP_KERNEL);
@@ -801,7 +801,7 @@ static int video_open(struct file *file)
 			    fh, NULL);
 
 	if (fh->radio) {
-		dprintk(1,"video_open: setting radio device\n");
+;
 		cx_write(MO_GP3_IO, core->board.radio.gpio3);
 		cx_write(MO_GP0_IO, core->board.radio.gpio0);
 		cx_write(MO_GP1_IO, core->board.radio.gpio1);
@@ -966,9 +966,9 @@ int cx88_get_control (struct cx88_core  *core, struct v4l2_control *ctl)
 		ctl->value = ((value + (c->off << c->shift)) & c->mask) >> c->shift;
 		break;
 	}
-	dprintk(1,"get_control id=0x%X(%s) ctrl=0x%02x, reg=0x%02x val=0x%02x (mask 0x%02x)%s\n",
-				ctl->id, c->v.name, ctl->value, c->reg,
-				value,c->mask, c->sreg ? " [shadowed]" : "");
+//	dprintk(1,"get_control id=0x%X(%s) ctrl=0x%02x, reg=0x%02x val=0x%02x (mask 0x%02x)%s\n",
+//				ctl->id, c->v.name, ctl->value, c->reg,
+;
 	return 0;
 }
 EXPORT_SYMBOL(cx88_get_control);
@@ -1049,9 +1049,9 @@ int cx88_set_control(struct cx88_core *core, struct v4l2_control *ctl)
 		value = ((ctl->value - c->off) << c->shift) & c->mask;
 		break;
 	}
-	dprintk(1,"set_control id=0x%X(%s) ctrl=0x%02x, reg=0x%02x val=0x%02x (mask 0x%02x)%s\n",
-				ctl->id, c->v.name, ctl->value, c->reg, value,
-				mask, c->sreg ? " [shadowed]" : "");
+//	dprintk(1,"set_control id=0x%X(%s) ctrl=0x%02x, reg=0x%02x val=0x%02x (mask 0x%02x)%s\n",
+//				ctl->id, c->v.name, ctl->value, c->reg, value,
+;
 	if (c->sreg) {
 		cx_sandor(c->sreg, c->reg, mask, value);
 	} else {
@@ -1590,8 +1590,8 @@ static void cx8800_vid_timeout(unsigned long data)
 		list_del(&buf->vb.queue);
 		buf->vb.state = VIDEOBUF_ERROR;
 		wake_up(&buf->vb.done);
-		printk("%s/0: [%p/%d] timeout - dma=0x%08lx\n", core->name,
-		       buf, buf->vb.i, (unsigned long)buf->risc.dma);
+//		printk("%s/0: [%p/%d] timeout - dma=0x%08lx\n", core->name,
+;
 	}
 	restart_video_queue(dev,q);
 	spin_unlock_irqrestore(&dev->slock,flags);
@@ -1622,7 +1622,7 @@ static void cx8800_vid_irq(struct cx8800_dev *dev)
 
 	/* risc op code error */
 	if (status & (1 << 16)) {
-		printk(KERN_WARNING "%s/0: video risc op code error\n",core->name);
+;
 		cx_clear(MO_VID_DMACNTRL, 0x11);
 		cx_clear(VID_CAPTURE_CONTROL, 0x06);
 		cx88_sram_channel_dump(core, &cx88_sram_channels[SRAM_CH21]);
@@ -1646,7 +1646,7 @@ static void cx8800_vid_irq(struct cx8800_dev *dev)
 
 	/* risc2 y */
 	if (status & 0x10) {
-		dprintk(2,"stopper video\n");
+;
 		spin_lock(&dev->slock);
 		restart_video_queue(dev,&dev->vidq);
 		spin_unlock(&dev->slock);
@@ -1654,7 +1654,7 @@ static void cx8800_vid_irq(struct cx8800_dev *dev)
 
 	/* risc2 vbi */
 	if (status & 0x80) {
-		dprintk(2,"stopper vbi\n");
+;
 		spin_lock(&dev->slock);
 		cx8800_restart_vbi_queue(dev,&dev->vbiq);
 		spin_unlock(&dev->slock);
@@ -1682,8 +1682,8 @@ static irqreturn_t cx8800_irq(int irq, void *dev_id)
 			cx8800_vid_irq(dev);
 	};
 	if (10 == loop) {
-		printk(KERN_WARNING "%s/0: irq loop -- clearing mask\n",
-		       core->name);
+//		printk(KERN_WARNING "%s/0: irq loop -- clearing mask\n",
+;
 		cx_write(MO_PCI_INTMSK,0);
 	}
 
@@ -1835,14 +1835,14 @@ static int __devinit cx8800_initdev(struct pci_dev *pci_dev,
 	/* print pci info */
 	dev->pci_rev = pci_dev->revision;
 	pci_read_config_byte(pci_dev, PCI_LATENCY_TIMER,  &dev->pci_lat);
-	printk(KERN_INFO "%s/0: found at %s, rev: %d, irq: %d, "
-	       "latency: %d, mmio: 0x%llx\n", core->name,
-	       pci_name(pci_dev), dev->pci_rev, pci_dev->irq,
-	       dev->pci_lat,(unsigned long long)pci_resource_start(pci_dev,0));
+//	printk(KERN_INFO "%s/0: found at %s, rev: %d, irq: %d, "
+//	       "latency: %d, mmio: 0x%llx\n", core->name,
+//	       pci_name(pci_dev), dev->pci_rev, pci_dev->irq,
+;
 
 	pci_set_master(pci_dev);
 	if (!pci_dma_supported(pci_dev,DMA_BIT_MASK(32))) {
-		printk("%s/0: Oops: no 32bit PCI DMA ???\n",core->name);
+;
 		err = -EIO;
 		goto fail_core;
 	}
@@ -1878,8 +1878,8 @@ static int __devinit cx8800_initdev(struct pci_dev *pci_dev,
 	err = request_irq(pci_dev->irq, cx8800_irq,
 			  IRQF_SHARED | IRQF_DISABLED, core->name, dev);
 	if (err < 0) {
-		printk(KERN_ERR "%s/0: can't get IRQ %d\n",
-		       core->name,pci_dev->irq);
+//		printk(KERN_ERR "%s/0: can't get IRQ %d\n",
+;
 		goto fail_core;
 	}
 	cx_set(MO_PCI_INTMSK, core->pci_irqmask);
@@ -1943,24 +1943,24 @@ static int __devinit cx8800_initdev(struct pci_dev *pci_dev,
 	err = video_register_device(dev->video_dev,VFL_TYPE_GRABBER,
 				    video_nr[core->nr]);
 	if (err < 0) {
-		printk(KERN_ERR "%s/0: can't register video device\n",
-		       core->name);
+//		printk(KERN_ERR "%s/0: can't register video device\n",
+;
 		goto fail_unreg;
 	}
-	printk(KERN_INFO "%s/0: registered device %s [v4l2]\n",
-	       core->name, video_device_node_name(dev->video_dev));
+//	printk(KERN_INFO "%s/0: registered device %s [v4l2]\n",
+;
 
 	dev->vbi_dev = cx88_vdev_init(core,dev->pci,&cx8800_vbi_template,"vbi");
 	video_set_drvdata(dev->vbi_dev, dev);
 	err = video_register_device(dev->vbi_dev,VFL_TYPE_VBI,
 				    vbi_nr[core->nr]);
 	if (err < 0) {
-		printk(KERN_ERR "%s/0: can't register vbi device\n",
-		       core->name);
+//		printk(KERN_ERR "%s/0: can't register vbi device\n",
+;
 		goto fail_unreg;
 	}
-	printk(KERN_INFO "%s/0: registered device %s\n",
-	       core->name, video_device_node_name(dev->vbi_dev));
+//	printk(KERN_INFO "%s/0: registered device %s\n",
+;
 
 	if (core->board.radio.type == CX88_RADIO) {
 		dev->radio_dev = cx88_vdev_init(core,dev->pci,
@@ -1969,12 +1969,12 @@ static int __devinit cx8800_initdev(struct pci_dev *pci_dev,
 		err = video_register_device(dev->radio_dev,VFL_TYPE_RADIO,
 					    radio_nr[core->nr]);
 		if (err < 0) {
-			printk(KERN_ERR "%s/0: can't register radio device\n",
-			       core->name);
+//			printk(KERN_ERR "%s/0: can't register radio device\n",
+;
 			goto fail_unreg;
 		}
-		printk(KERN_INFO "%s/0: registered device %s\n",
-		       core->name, video_device_node_name(dev->radio_dev));
+//		printk(KERN_INFO "%s/0: registered device %s\n",
+;
 	}
 
 	/* start tvaudio thread */
@@ -1982,8 +1982,8 @@ static int __devinit cx8800_initdev(struct pci_dev *pci_dev,
 		core->kthread = kthread_run(cx88_audio_thread, core, "cx88 tvaudio");
 		if (IS_ERR(core->kthread)) {
 			err = PTR_ERR(core->kthread);
-			printk(KERN_ERR "%s/0: failed to create cx88 audio thread, err=%d\n",
-			       core->name, err);
+//			printk(KERN_ERR "%s/0: failed to create cx88 audio thread, err=%d\n",
+;
 		}
 	}
 	mutex_unlock(&core->lock);
@@ -2039,12 +2039,12 @@ static int cx8800_suspend(struct pci_dev *pci_dev, pm_message_t state)
 	/* stop video+vbi capture */
 	spin_lock(&dev->slock);
 	if (!list_empty(&dev->vidq.active)) {
-		printk("%s/0: suspend video\n", core->name);
+;
 		stop_video_dma(dev);
 		del_timer(&dev->vidq.timeout);
 	}
 	if (!list_empty(&dev->vbiq.active)) {
-		printk("%s/0: suspend vbi\n", core->name);
+;
 		cx8800_stop_vbi_dma(dev);
 		del_timer(&dev->vbiq.timeout);
 	}
@@ -2072,8 +2072,8 @@ static int cx8800_resume(struct pci_dev *pci_dev)
 	if (dev->state.disabled) {
 		err=pci_enable_device(pci_dev);
 		if (err) {
-			printk(KERN_ERR "%s/0: can't enable device\n",
-			       core->name);
+//			printk(KERN_ERR "%s/0: can't enable device\n",
+;
 			return err;
 		}
 
@@ -2081,7 +2081,7 @@ static int cx8800_resume(struct pci_dev *pci_dev)
 	}
 	err= pci_set_power_state(pci_dev, PCI_D0);
 	if (err) {
-		printk(KERN_ERR "%s/0: can't set power state\n", core->name);
+;
 		pci_disable_device(pci_dev);
 		dev->state.disabled = 1;
 
@@ -2099,11 +2099,11 @@ static int cx8800_resume(struct pci_dev *pci_dev)
 	/* restart video+vbi capture */
 	spin_lock(&dev->slock);
 	if (!list_empty(&dev->vidq.active)) {
-		printk("%s/0: resume video\n", core->name);
+;
 		restart_video_queue(dev,&dev->vidq);
 	}
 	if (!list_empty(&dev->vbiq.active)) {
-		printk("%s/0: resume vbi\n", core->name);
+;
 		cx8800_restart_vbi_queue(dev,&dev->vbiq);
 	}
 	spin_unlock(&dev->slock);
@@ -2139,13 +2139,13 @@ static struct pci_driver cx8800_pci_driver = {
 
 static int __init cx8800_init(void)
 {
-	printk(KERN_INFO "cx88/0: cx2388x v4l2 driver version %d.%d.%d loaded\n",
-	       (CX88_VERSION_CODE >> 16) & 0xff,
-	       (CX88_VERSION_CODE >>  8) & 0xff,
-	       CX88_VERSION_CODE & 0xff);
+//	printk(KERN_INFO "cx88/0: cx2388x v4l2 driver version %d.%d.%d loaded\n",
+//	       (CX88_VERSION_CODE >> 16) & 0xff,
+//	       (CX88_VERSION_CODE >>  8) & 0xff,
+;
 #ifdef SNAPSHOT
-	printk(KERN_INFO "cx2388x: snapshot date %04d-%02d-%02d\n",
-	       SNAPSHOT/10000, (SNAPSHOT/100)%100, SNAPSHOT%100);
+//	printk(KERN_INFO "cx2388x: snapshot date %04d-%02d-%02d\n",
+;
 #endif
 	return pci_register_driver(&cx8800_pci_driver);
 }

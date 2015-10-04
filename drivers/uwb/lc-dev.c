@@ -317,8 +317,8 @@ int uwb_dev_add(struct uwb_dev *uwb_dev, struct device *parent_dev,
 	uwb_dev->rc = parent_rc;
 	result = __uwb_dev_sys_add(uwb_dev, parent_dev);
 	if (result < 0)
-		printk(KERN_ERR "UWB: unable to register dev %s with sysfs: %d\n",
-		       dev_name(dev), result);
+//		printk(KERN_ERR "UWB: unable to register dev %s with sysfs: %d\n",
+;
 	mutex_unlock(&uwb_dev->mutex);
 	return result;
 }

@@ -35,16 +35,16 @@ extern void flush_cache(void);
 /* BLT Engine Routines */
 static inline void i810_report_error(u8 __iomem *mmio)
 {
-	printk("IIR     : 0x%04x\n"
-	       "EIR     : 0x%04x\n"
-	       "PGTBL_ER: 0x%04x\n"
-	       "IPEIR   : 0x%04x\n"
-	       "IPEHR   : 0x%04x\n",
-	       i810_readw(IIR, mmio),
-	       i810_readb(EIR, mmio),
-	       i810_readl(PGTBL_ER, mmio),
-	       i810_readl(IPEIR, mmio), 
-	       i810_readl(IPEHR, mmio));
+//	printk("IIR     : 0x%04x\n"
+//	       "EIR     : 0x%04x\n"
+//	       "PGTBL_ER: 0x%04x\n"
+//	       "IPEIR   : 0x%04x\n"
+//	       "IPEHR   : 0x%04x\n",
+//	       i810_readw(IIR, mmio),
+//	       i810_readb(EIR, mmio),
+//	       i810_readl(PGTBL_ER, mmio),
+//	       i810_readl(IPEIR, mmio), 
+;
 }
 
 /**
@@ -72,7 +72,7 @@ static inline int wait_for_space(struct fb_info *info, u32 space)
 			return 0;	
 		}
 	}
-	printk("ringbuffer lockup!!!\n");
+;
 	i810_report_error(mmio); 
 	par->dev_flags |= LOCKUP;
 	info->pixmap.scan_align = 1;
@@ -99,8 +99,8 @@ static inline int wait_for_engine_idle(struct fb_info *info)
 	while((i810_readw(INSTDONE, mmio) & 0x7B) != 0x7B && --count); 
 	if (count) return 0;
 
-	printk("accel engine lockup!!!\n");
-	printk("INSTDONE: 0x%04x\n", i810_readl(INSTDONE, mmio));
+;
+;
 	i810_report_error(mmio); 
 	par->dev_flags |= LOCKUP;
 	info->pixmap.scan_align = 1;

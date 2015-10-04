@@ -319,9 +319,9 @@ static void hwreg_io_init(void)
 			ioremap(hwreg_io_current_map[i].base,
 				hwreg_io_current_map[i].size);
 		if (!hwreg_io_current_map[i].addr)
-			printk(KERN_WARNING
-				"%s: ioremap for %d (%08x) failed\n",
-				__func__, i, hwreg_io_current_map[i].base);
+//			printk(KERN_WARNING
+//				"%s: ioremap for %d (%08x) failed\n",
+;
 	}
 }
 
@@ -612,12 +612,12 @@ static ssize_t hwreg_common_write(char *b, struct hwreg_cfg *cfg)
 	*cfg = loc;
 
 #ifdef DEBUG
-	printk(KERN_INFO "HWREG request: %s %d-bit reg, %s, addr=0x%08X, "
-	       "mask=0x%X, shift=%d value=0x%X\n",
-	       (write) ? "write" : "read",
-	       REG_FMT_32B(cfg) ? 32 : REG_FMT_16B(cfg) ? 16 : 8,
-	       REG_FMT_DEC(cfg) ? "decimal" : "hexa",
-	       cfg->addr, cfg->mask, cfg->shift, val);
+//	printk(KERN_INFO "HWREG request: %s %d-bit reg, %s, addr=0x%08X, "
+//	       "mask=0x%X, shift=%d value=0x%X\n",
+//	       (write) ? "write" : "read",
+//	       REG_FMT_32B(cfg) ? 32 : REG_FMT_16B(cfg) ? 16 : 8,
+//	       REG_FMT_DEC(cfg) ? "decimal" : "hexa",
+;
 #endif
 
 	if (write) {
@@ -680,10 +680,10 @@ static int __init hwreg_initialize(void)
 	static struct dentry *file;
 
 	if (cpu_is_u9540()) {
-		printk(KERN_INFO "hwreg: cpu is U9540\n");
+;
 		hwreg_io_current_map = hwreg_u9540_io_map;
 	} else {
-		printk(KERN_INFO "hwreg: cpu is U8500\n");
+;
 		hwreg_io_current_map = hwreg_u8500_io_map;
 	}
 
@@ -718,7 +718,7 @@ static int __init hwreg_initialize(void)
 debugfs_err:
 	if (hwreg_debugfs_dir)
 		debugfs_remove_recursive(hwreg_debugfs_dir);
-	printk(KERN_ERR "hwreg: failed to register debugfs entries.\n");
+;
 	return -1;
 }
 

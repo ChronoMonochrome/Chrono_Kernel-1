@@ -66,9 +66,9 @@ static int gdth_set_asc_info(struct Scsi_Host *host, char *buffer,
                 drive = drive*10 + (int)(*buffer-'0');
                 ++buffer; --length;
             }
-            printk("GDT: Flushing host drive %d .. ",drive);
+;
         } else {
-            printk("GDT: Flushing all host drives .. ");
+;
         }
         for (i = 0; i < MAX_HDRIVES; ++i) {
             if (ha->hdr[i].present) {
@@ -89,39 +89,39 @@ static int gdth_set_asc_info(struct Scsi_Host *host, char *buffer,
             }
         }
         if (!found)
-            printk("\nNo host drive found !\n");
+;
         else
-            printk("Done.\n");
+;
         return(orig_length);
     }
 
     if (length >= 7 && strncmp(buffer,"wbp_off",7)==0) {
         buffer += 8;
         length -= 8;
-        printk("GDT: Disabling write back permanently .. ");
+;
         wb_mode = 1;
     } else if (length >= 6 && strncmp(buffer,"wbp_on",6)==0) {
         buffer += 7;
         length -= 7;
-        printk("GDT: Enabling write back permanently .. ");
+;
         wb_mode = 2;
     } else if (length >= 6 && strncmp(buffer,"wb_off",6)==0) {
         buffer += 7;
         length -= 7;
-        printk("GDT: Disabling write back commands .. ");
+;
         if (ha->cache_feat & GDT_WR_THROUGH) {
             gdth_write_through = TRUE;
-            printk("Done.\n");
+;
         } else {
-            printk("Not supported !\n");
+;
         }
         return(orig_length);
     } else if (length >= 5 && strncmp(buffer,"wb_on",5)==0) {
         buffer += 6;
         length -= 6;
-        printk("GDT: Enabling write back commands .. ");
+;
         gdth_write_through = FALSE;
-        printk("Done.\n");
+;
         return(orig_length);
     }
 
@@ -141,11 +141,11 @@ static int gdth_set_asc_info(struct Scsi_Host *host, char *buffer,
         gdth_execute(host, &gdtcmd, cmnd, 30, NULL);
 
         gdth_ioctl_free(ha, GDTH_SCRATCH, ha->pscratch, paddr);
-        printk("Done.\n");
+;
         return(orig_length);
     }
 
-    printk("GDT: Unknown command: %s  Length: %d\n",buffer,length);
+;
     return(-EINVAL);
 }
 

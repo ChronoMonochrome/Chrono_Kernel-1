@@ -537,8 +537,8 @@ static int snd_intel8x0_codec_semaphore(struct intel8x0 *chip, unsigned int code
 	/* access to some forbidden (non existent) ac97 registers will not
 	 * reset the semaphore. So even if you don't get the semaphore, still
 	 * continue the access. We don't need the semaphore anyway. */
-	snd_printk(KERN_ERR "codec_semaphore: semaphore is not ready [0x%x][0x%x]\n",
-			igetbyte(chip, ICHREG(ACC_SEMA)), igetdword(chip, ICHREG(GLOB_STA)));
+//	snd_printk(KERN_ERR "codec_semaphore: semaphore is not ready [0x%x][0x%x]\n",
+;
 	iagetword(chip, 0);	/* clear semaphore flag */
 	/* I don't care about the semaphore */
 	return -EBUSY;
@@ -552,7 +552,7 @@ static void snd_intel8x0_codec_write(struct snd_ac97 *ac97,
 	
 	if (snd_intel8x0_codec_semaphore(chip, ac97->num) < 0) {
 		if (! chip->in_ac97_init)
-			snd_printk(KERN_ERR "codec_write %d: semaphore is not ready for register 0x%x\n", ac97->num, reg);
+;
 	}
 	iaputword(chip, reg + ac97->num * 0x80, val);
 }
@@ -566,7 +566,7 @@ static unsigned short snd_intel8x0_codec_read(struct snd_ac97 *ac97,
 
 	if (snd_intel8x0_codec_semaphore(chip, ac97->num) < 0) {
 		if (! chip->in_ac97_init)
-			snd_printk(KERN_ERR "codec_read %d: semaphore is not ready for register 0x%x\n", ac97->num, reg);
+;
 		res = 0xffff;
 	} else {
 		res = iagetword(chip, reg + ac97->num * 0x80);
@@ -575,7 +575,7 @@ static unsigned short snd_intel8x0_codec_read(struct snd_ac97 *ac97,
 			iputdword(chip, ICHREG(GLOB_STA), tmp &
 				  ~(chip->codec_ready_bits | ICH_GSCI));
 			if (! chip->in_ac97_init)
-				snd_printk(KERN_ERR "codec_read %d: read timeout for register 0x%x\n", ac97->num, reg);
+;
 			res = 0xffff;
 		}
 	}
@@ -621,7 +621,7 @@ static int snd_intel8x0_ali_codec_semaphore(struct intel8x0 *chip)
 	while (--time && (igetdword(chip, ICHREG(ALI_CAS)) & ALI_CAS_SEM_BUSY))
 		udelay(1);
 	if (! time && ! chip->in_ac97_init)
-		snd_printk(KERN_WARNING "ali_codec_semaphore timeout\n");
+;
 	return snd_intel8x0_ali_codec_ready(chip, ALI_CSPSR_CODEC_READY);
 }
 
@@ -690,8 +690,8 @@ static void snd_intel8x0_setup_periods(struct intel8x0 *chip, struct ichdev *ich
 			bdbar[idx + 1] = cpu_to_le32(0x80000000 | /* interrupt on completion */
 						     ichdev->fragsize >> ichdev->pos_shift);
 #if 0
-			printk(KERN_DEBUG "bdbar[%i] = 0x%x [0x%x]\n",
-			       idx + 0, bdbar[idx + 0], bdbar[idx + 1]);
+//			printk(KERN_DEBUG "bdbar[%i] = 0x%x [0x%x]\n",
+;
 #endif
 		}
 		ichdev->frags = ichdev->size / ichdev->fragsize;
@@ -702,10 +702,10 @@ static void snd_intel8x0_setup_periods(struct intel8x0 *chip, struct ichdev *ich
 	ichdev->lvi_frag = ICH_REG_LVI_MASK % ichdev->frags;
 	ichdev->position = 0;
 #if 0
-	printk(KERN_DEBUG "lvi_frag = %i, frags = %i, period_size = 0x%x, "
-	       "period_size1 = 0x%x\n",
-	       ichdev->lvi_frag, ichdev->frags, ichdev->fragsize,
-	       ichdev->fragsize1);
+//	printk(KERN_DEBUG "lvi_frag = %i, frags = %i, period_size = 0x%x, "
+//	       "period_size1 = 0x%x\n",
+//	       ichdev->lvi_frag, ichdev->frags, ichdev->fragsize,
+;
 #endif
 	/* clear interrupts */
 	iputbyte(chip, port + ichdev->roff_sr, ICH_FIFOE | ICH_BCIS | ICH_LVBCI);
@@ -771,11 +771,11 @@ static inline void snd_intel8x0_update(struct intel8x0 *chip, struct ichdev *ich
 		ichdev->lvi_frag %= ichdev->frags;
 		ichdev->bdbar[ichdev->lvi * 2] = cpu_to_le32(ichdev->physbuf + ichdev->lvi_frag * ichdev->fragsize1);
 #if 0
-	printk(KERN_DEBUG "new: bdbar[%i] = 0x%x [0x%x], prefetch = %i, "
-	       "all = 0x%x, 0x%x\n",
-	       ichdev->lvi * 2, ichdev->bdbar[ichdev->lvi * 2],
-	       ichdev->bdbar[ichdev->lvi * 2 + 1], inb(ICH_REG_OFF_PIV + port),
-	       inl(port + 4), inb(port + ICH_REG_OFF_CR));
+//	printk(KERN_DEBUG "new: bdbar[%i] = 0x%x [0x%x], prefetch = %i, "
+//	       "all = 0x%x, 0x%x\n",
+//	       ichdev->lvi * 2, ichdev->bdbar[ichdev->lvi * 2],
+//	       ichdev->bdbar[ichdev->lvi * 2 + 1], inb(ICH_REG_OFF_PIV + port),
+;
 #endif
 		if (--ichdev->ack == 0) {
 			ichdev->ack = ichdev->ack_reload;
@@ -2244,7 +2244,7 @@ static int __devinit snd_intel8x0_mixer(struct intel8x0 *chip, int ac97_clock,
 		ac97.num = i;
 		if ((err = snd_ac97_mixer(pbus, &ac97, &chip->ac97[i])) < 0) {
 			if (err != -EACCES)
-				snd_printk(KERN_ERR "Unable to initialize codec #%d\n", i);
+;
 			if (i == 0)
 				goto __err;
 		}
@@ -2396,8 +2396,8 @@ static int snd_intel8x0_ich_chip_reset(struct intel8x0 *chip)
 			return 0;
 		schedule_timeout_uninterruptible(1);
 	} while (time_after_eq(end_time, jiffies));
-	snd_printk(KERN_ERR "AC'97 warm reset still in progress? [0x%x]\n",
-		   igetdword(chip, ICHREG(GLOB_CNT)));
+//	snd_printk(KERN_ERR "AC'97 warm reset still in progress? [0x%x]\n",
+;
 	return -EIO;
 }
 
@@ -2438,8 +2438,8 @@ static int snd_intel8x0_ich_chip_init(struct intel8x0 *chip, int probing)
 		} while (time_after_eq(end_time, jiffies));
 		if (! status) {
 			/* no codec is found */
-			snd_printk(KERN_ERR "codec_ready: codec is not ready [0x%x]\n",
-				   igetdword(chip, ICHREG(GLOB_STA)));
+//			snd_printk(KERN_ERR "codec_ready: codec is not ready [0x%x]\n",
+;
 			return -EIO;
 		}
 
@@ -2502,7 +2502,7 @@ static int snd_intel8x0_ali_chip_init(struct intel8x0 *chip, int probing)
 			goto __ok;
 		schedule_timeout_uninterruptible(1);
 	}
-	snd_printk(KERN_ERR "AC'97 reset failed.\n");
+;
 	if (probing)
 		return -EIO;
 
@@ -2546,7 +2546,7 @@ static int snd_intel8x0_chip_init(struct intel8x0 *chip, int probing)
         		        break;
                 }
                 if (timeout == 0)
-                        printk(KERN_ERR "intel8x0: reset of registers failed?\n");
+;
         }
 	/* initialize Buffer Descriptor Lists */
 	for (i = 0; i < chip->bdbars_count; i++)
@@ -2645,8 +2645,8 @@ static int intel8x0_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-		printk(KERN_ERR "intel8x0: pci_enable_device failed, "
-		       "disabling device\n");
+//		printk(KERN_ERR "intel8x0: pci_enable_device failed, "
+;
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -2654,8 +2654,8 @@ static int intel8x0_resume(struct pci_dev *pci)
 	snd_intel8x0_chip_init(chip, 0);
 	if (request_irq(pci->irq, snd_intel8x0_interrupt,
 			IRQF_SHARED, card->shortname, chip)) {
-		printk(KERN_ERR "intel8x0: unable to grab IRQ %d, "
-		       "disabling device\n", pci->irq);
+//		printk(KERN_ERR "intel8x0: unable to grab IRQ %d, "
+;
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -2727,7 +2727,7 @@ static void __devinit intel8x0_measure_ac97_clock(struct intel8x0 *chip)
       __again:
 	subs = chip->pcm[0]->streams[0].substream;
 	if (! subs || subs->dma_buffer.bytes < INTEL8X0_TESTBUF_SIZE) {
-		snd_printk(KERN_WARNING "no playback buffer allocated - aborting measure ac97 clock\n");
+;
 		return;
 	}
 	ichdev = &chip->ichd[ICHD_PCMOUT];
@@ -2737,7 +2737,7 @@ static void __devinit intel8x0_measure_ac97_clock(struct intel8x0 *chip)
 
 	/* set rate */
 	if (snd_ac97_set_rate(chip->ac97[0], AC97_PCM_FRONT_DAC_RATE, 48000) < 0) {
-		snd_printk(KERN_ERR "cannot set ac97 rate: clock = %d\n", chip->ac97_bus->clock);
+;
 		return;
 	}
 	snd_intel8x0_setup_periods(chip, ichdev);
@@ -2791,7 +2791,7 @@ static void __devinit intel8x0_measure_ac97_clock(struct intel8x0 *chip)
 	spin_unlock_irq(&chip->reg_lock);
 
 	if (pos == 0) {
-		snd_printk(KERN_ERR "intel8x0: measure - unreliable DMA position..\n");
+;
 	      __retry:
 		if (attempt < 3) {
 			msleep(300);
@@ -2805,16 +2805,16 @@ static void __devinit intel8x0_measure_ac97_clock(struct intel8x0 *chip)
 	t = stop_time.tv_sec - start_time.tv_sec;
 	t *= 1000000;
 	t += (stop_time.tv_nsec - start_time.tv_nsec) / 1000;
-	printk(KERN_INFO "%s: measured %lu usecs (%lu samples)\n", __func__, t, pos);
+;
 	if (t == 0) {
-		snd_printk(KERN_ERR "intel8x0: ?? calculation error..\n");
+;
 		goto __retry;
 	}
 	pos *= 1000;
 	pos = (pos / t) * 1000 + ((pos % t) * 1000) / t;
 	if (pos < 40000 || pos >= 60000) {
 		/* abnormal value. hw problem? */
-		printk(KERN_INFO "intel8x0: measured clock %ld rejected\n", pos);
+;
 		goto __retry;
 	} else if (pos > 40500 && pos < 41500)
 		/* first exception - 41000Hz reference clock */
@@ -2826,7 +2826,7 @@ static void __devinit intel8x0_measure_ac97_clock(struct intel8x0 *chip)
 		/* not 48000Hz, tuning the clock.. */
 		chip->ac97_bus->clock = (chip->ac97_bus->clock * 48000) / pos;
       __end:
-	printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97_bus->clock);
+;
 	snd_ac97_update_power(chip->ac97[0], AC97_PCM_FRONT_DAC_RATE, 0);
 }
 
@@ -2847,8 +2847,8 @@ static int __devinit intel8x0_in_clock_list(struct intel8x0 *chip)
 	wl = snd_pci_quirk_lookup(pci, intel8x0_clock_list);
 	if (!wl)
 		return 0;
-	printk(KERN_INFO "intel8x0: white list rate for %04x:%04x is %i\n",
-	       pci->subsystem_vendor, pci->subsystem_device, wl->value);
+//	printk(KERN_INFO "intel8x0: white list rate for %04x:%04x is %i\n",
+;
 	chip->ac97_bus->clock = wl->value;
 	return 1;
 }
@@ -3005,7 +3005,7 @@ static int __devinit snd_intel8x0_create(struct snd_card *card,
 	else
 		chip->addr = pci_iomap(pci, 0, 0);
 	if (!chip->addr) {
-		snd_printk(KERN_ERR "AC'97 space ioremap problem\n");
+;
 		snd_intel8x0_free(chip);
 		return -EIO;
 	}
@@ -3014,7 +3014,7 @@ static int __devinit snd_intel8x0_create(struct snd_card *card,
 	else
 		chip->bmaddr = pci_iomap(pci, 1, 0);
 	if (!chip->bmaddr) {
-		snd_printk(KERN_ERR "Controller space ioremap problem\n");
+;
 		snd_intel8x0_free(chip);
 		return -EIO;
 	}
@@ -3059,7 +3059,7 @@ static int __devinit snd_intel8x0_create(struct snd_card *card,
 				chip->bdbars_count * sizeof(u32) * ICH_MAX_FRAGS * 2,
 				&chip->bdbars) < 0) {
 		snd_intel8x0_free(chip);
-		snd_printk(KERN_ERR "intel8x0: cannot allocate buffer descriptors\n");
+;
 		return -ENOMEM;
 	}
 	/* tables must be aligned to 8 bytes here, but the kernel pages
@@ -3113,7 +3113,7 @@ static int __devinit snd_intel8x0_create(struct snd_card *card,
 	/* request irq after initializaing int_sta_mask, etc */
 	if (request_irq(pci->irq, snd_intel8x0_interrupt,
 			IRQF_SHARED, card->shortname, chip)) {
-		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
+;
 		snd_intel8x0_free(chip);
 		return -EBUSY;
 	}

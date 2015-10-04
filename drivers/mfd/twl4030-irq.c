@@ -306,9 +306,9 @@ static int twl4030_irq_thread(void *data)
 			pr_warning("twl4030: I2C error %d reading PIH ISR\n",
 					ret);
 			if (++i2c_errors >= max_i2c_errors) {
-				printk(KERN_ERR "Maximum I2C error count"
-						" exceeded.  Terminating %s.\n",
-						__func__);
+//				printk(KERN_ERR "Maximum I2C error count"
+//						" exceeded.  Terminating %s.\n",
+;
 				break;
 			}
 			complete(&irq_event);

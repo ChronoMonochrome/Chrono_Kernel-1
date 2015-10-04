@@ -136,8 +136,8 @@ static inline void emac_report_timeout_error(struct emac_instance *dev,
 				  EMAC_FTR_440EP_PHY_CLK_FIX))
 		DBG(dev, "%s" NL, error);
 	else if (net_ratelimit())
-		printk(KERN_ERR "%s: %s\n", dev->ofdev->dev.of_node->full_name,
-			error);
+//		printk(KERN_ERR "%s: %s\n", dev->ofdev->dev.of_node->full_name,
+;
 }
 
 /* EMAC PHY clock workaround:
@@ -447,8 +447,8 @@ static u32 __emac_calc_base_mr1(struct emac_instance *dev, int tx_size, int rx_s
 		ret |= EMAC_MR1_TFS_2K;
 		break;
 	default:
-		printk(KERN_WARNING "%s: Unknown Tx FIFO size %d\n",
-		       dev->ndev->name, tx_size);
+//		printk(KERN_WARNING "%s: Unknown Tx FIFO size %d\n",
+;
 	}
 
 	switch(rx_size) {
@@ -459,8 +459,8 @@ static u32 __emac_calc_base_mr1(struct emac_instance *dev, int tx_size, int rx_s
 		ret |= EMAC_MR1_RFS_4K;
 		break;
 	default:
-		printk(KERN_WARNING "%s: Unknown Rx FIFO size %d\n",
-		       dev->ndev->name, rx_size);
+//		printk(KERN_WARNING "%s: Unknown Rx FIFO size %d\n",
+;
 	}
 
 	return ret;
@@ -484,8 +484,8 @@ static u32 __emac4_calc_base_mr1(struct emac_instance *dev, int tx_size, int rx_
 		ret |= EMAC4_MR1_TFS_2K;
 		break;
 	default:
-		printk(KERN_WARNING "%s: Unknown Tx FIFO size %d\n",
-		       dev->ndev->name, tx_size);
+//		printk(KERN_WARNING "%s: Unknown Tx FIFO size %d\n",
+;
 	}
 
 	switch(rx_size) {
@@ -499,8 +499,8 @@ static u32 __emac4_calc_base_mr1(struct emac_instance *dev, int tx_size, int rx_
 		ret |= EMAC4_MR1_RFS_2K;
 		break;
 	default:
-		printk(KERN_WARNING "%s: Unknown Rx FIFO size %d\n",
-		       dev->ndev->name, rx_size);
+//		printk(KERN_WARNING "%s: Unknown Rx FIFO size %d\n",
+;
 	}
 
 	return ret;
@@ -1117,13 +1117,13 @@ static inline int emac_alloc_rx_skb(struct emac_instance *dev, int slot,
 static void emac_print_link_status(struct emac_instance *dev)
 {
 	if (netif_carrier_ok(dev->ndev))
-		printk(KERN_INFO "%s: link is up, %d %s%s\n",
-		       dev->ndev->name, dev->phy.speed,
-		       dev->phy.duplex == DUPLEX_FULL ? "FDX" : "HDX",
-		       dev->phy.pause ? ", pause enabled" :
-		       dev->phy.asym_pause ? ", asymmetric pause enabled" : "");
+//		printk(KERN_INFO "%s: link is up, %d %s%s\n",
+//		       dev->ndev->name, dev->phy.speed,
+//		       dev->phy.duplex == DUPLEX_FULL ? "FDX" : "HDX",
+//		       dev->phy.pause ? ", pause enabled" :
+;
 	else
-		printk(KERN_INFO "%s: link is down\n", dev->ndev->name);
+;
 }
 
 /* Process ctx, rtnl_lock semaphore */
@@ -1137,16 +1137,16 @@ static int emac_open(struct net_device *ndev)
 	/* Setup error IRQ handler */
 	err = request_irq(dev->emac_irq, emac_irq, 0, "EMAC", dev);
 	if (err) {
-		printk(KERN_ERR "%s: failed to request IRQ %d\n",
-		       ndev->name, dev->emac_irq);
+//		printk(KERN_ERR "%s: failed to request IRQ %d\n",
+;
 		return err;
 	}
 
 	/* Allocate RX ring */
 	for (i = 0; i < NUM_RX_BUFF; ++i)
 		if (emac_alloc_rx_skb(dev, i, GFP_KERNEL)) {
-			printk(KERN_ERR "%s: failed to allocate RX ring\n",
-			       ndev->name);
+//			printk(KERN_ERR "%s: failed to allocate RX ring\n",
+;
 			goto oom;
 		}
 
@@ -2359,8 +2359,8 @@ static int __devinit emac_read_uint_prop(struct device_node *np, const char *nam
 	const u32 *prop = of_get_property(np, name, &len);
 	if (prop == NULL || len < sizeof(u32)) {
 		if (fatal)
-			printk(KERN_ERR "%s: missing %s property\n",
-			       np->full_name, name);
+//			printk(KERN_ERR "%s: missing %s property\n",
+;
 		return -ENODEV;
 	}
 	*val = *prop;
@@ -2460,7 +2460,7 @@ static int __devinit emac_init_phy(struct emac_instance *dev)
 #endif
 	mutex_unlock(&emac_phy_map_lock);
 	if (i == 0x20) {
-		printk(KERN_WARNING "%s: can't find PHY!\n", np->full_name);
+;
 		return -ENXIO;
 	}
 
@@ -2605,8 +2605,8 @@ static int __devinit emac_init_config(struct emac_instance *dev)
 #ifdef CONFIG_IBM_NEW_EMAC_NO_FLOW_CTRL
 			dev->features |= EMAC_FTR_NO_FLOW_CONTROL_40x;
 #else
-			printk(KERN_ERR "%s: Flow control not disabled!\n",
-					np->full_name);
+//			printk(KERN_ERR "%s: Flow control not disabled!\n",
+;
 			return -ENXIO;
 #endif
 		}
@@ -2629,8 +2629,8 @@ static int __devinit emac_init_config(struct emac_instance *dev)
 #ifdef CONFIG_IBM_NEW_EMAC_TAH
 		dev->features |= EMAC_FTR_HAS_TAH;
 #else
-		printk(KERN_ERR "%s: TAH support not enabled !\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: TAH support not enabled !\n",
+;
 		return -ENXIO;
 #endif
 	}
@@ -2639,8 +2639,8 @@ static int __devinit emac_init_config(struct emac_instance *dev)
 #ifdef CONFIG_IBM_NEW_EMAC_ZMII
 		dev->features |= EMAC_FTR_HAS_ZMII;
 #else
-		printk(KERN_ERR "%s: ZMII support not enabled !\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: ZMII support not enabled !\n",
+;
 		return -ENXIO;
 #endif
 	}
@@ -2649,8 +2649,8 @@ static int __devinit emac_init_config(struct emac_instance *dev)
 #ifdef CONFIG_IBM_NEW_EMAC_RGMII
 		dev->features |= EMAC_FTR_HAS_RGMII;
 #else
-		printk(KERN_ERR "%s: RGMII support not enabled !\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: RGMII support not enabled !\n",
+;
 		return -ENXIO;
 #endif
 	}
@@ -2658,8 +2658,8 @@ static int __devinit emac_init_config(struct emac_instance *dev)
 	/* Read MAC-address */
 	p = of_get_property(np, "local-mac-address", NULL);
 	if (p == NULL) {
-		printk(KERN_ERR "%s: Can't find local-mac-address property\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: Can't find local-mac-address property\n",
+;
 		return -ENXIO;
 	}
 	memcpy(dev->ndev->dev_addr, p, 6);
@@ -2732,8 +2732,8 @@ static int __devinit emac_probe(struct platform_device *ofdev)
 	err = -ENOMEM;
 	ndev = alloc_etherdev(sizeof(struct emac_instance));
 	if (!ndev) {
-		printk(KERN_ERR "%s: could not allocate ethernet device!\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: could not allocate ethernet device!\n",
+;
 		goto err_gone;
 	}
 	dev = netdev_priv(ndev);
@@ -2757,23 +2757,23 @@ static int __devinit emac_probe(struct platform_device *ofdev)
 	dev->emac_irq = irq_of_parse_and_map(np, 0);
 	dev->wol_irq = irq_of_parse_and_map(np, 1);
 	if (dev->emac_irq == NO_IRQ) {
-		printk(KERN_ERR "%s: Can't map main interrupt\n", np->full_name);
+;
 		goto err_free;
 	}
 	ndev->irq = dev->emac_irq;
 
 	/* Map EMAC regs */
 	if (of_address_to_resource(np, 0, &dev->rsrc_regs)) {
-		printk(KERN_ERR "%s: Can't get registers address\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: Can't get registers address\n",
+;
 		goto err_irq_unmap;
 	}
 	// TODO : request_mem_region
 	dev->emacp = ioremap(dev->rsrc_regs.start,
 			     dev->rsrc_regs.end - dev->rsrc_regs.start + 1);
 	if (dev->emacp == NULL) {
-		printk(KERN_ERR "%s: Can't map device registers!\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: Can't map device registers!\n",
+;
 		err = -ENOMEM;
 		goto err_irq_unmap;
 	}
@@ -2781,9 +2781,9 @@ static int __devinit emac_probe(struct platform_device *ofdev)
 	/* Wait for dependent devices */
 	err = emac_wait_deps(dev);
 	if (err) {
-		printk(KERN_ERR
-		       "%s: Timeout waiting for dependent devices\n",
-		       np->full_name);
+//		printk(KERN_ERR
+//		       "%s: Timeout waiting for dependent devices\n",
+;
 		/*  display more info about what's missing ? */
 		goto err_reg_unmap;
 	}
@@ -2798,8 +2798,8 @@ static int __devinit emac_probe(struct platform_device *ofdev)
 	dev->commac.rx_chan_mask = MAL_CHAN_MASK(dev->mal_rx_chan);
 	err = mal_register_commac(dev->mal, &dev->commac);
 	if (err) {
-		printk(KERN_ERR "%s: failed to register with mal %s!\n",
-		       np->full_name, dev->mal_dev->dev.of_node->full_name);
+//		printk(KERN_ERR "%s: failed to register with mal %s!\n",
+;
 		goto err_rel_deps;
 	}
 	dev->rx_skb_size = emac_rx_skb_size(ndev->mtu);
@@ -2864,8 +2864,8 @@ static int __devinit emac_probe(struct platform_device *ofdev)
 
 	err = register_netdev(ndev);
 	if (err) {
-		printk(KERN_ERR "%s: failed to register net device (%d)!\n",
-		       np->full_name, err);
+//		printk(KERN_ERR "%s: failed to register net device (%d)!\n",
+;
 		goto err_detach_tah;
 	}
 
@@ -2879,15 +2879,15 @@ static int __devinit emac_probe(struct platform_device *ofdev)
 	wake_up_all(&emac_probe_wait);
 
 
-	printk(KERN_INFO "%s: EMAC-%d %s, MAC %pM\n",
-	       ndev->name, dev->cell_index, np->full_name, ndev->dev_addr);
+//	printk(KERN_INFO "%s: EMAC-%d %s, MAC %pM\n",
+;
 
 	if (dev->phy_mode == PHY_MODE_SGMII)
-		printk(KERN_NOTICE "%s: in SGMII mode\n", ndev->name);
+;
 
 	if (dev->phy.address >= 0)
-		printk("%s: found %s PHY (0x%02x)\n", ndev->name,
-		       dev->phy.def->name, dev->phy.address);
+//		printk("%s: found %s PHY (0x%02x)\n", ndev->name,
+;
 
 	emac_dbg_register(dev);
 
@@ -3038,7 +3038,7 @@ static int __init emac_init(void)
 {
 	int rc;
 
-	printk(KERN_INFO DRV_DESC ", version " DRV_VERSION "\n");
+;
 
 	/* Init debug stuff */
 	emac_init_debug();

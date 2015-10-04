@@ -29,7 +29,7 @@ MODULE_PARM_DESC(debug, "Set Debug Level 0=quiet, 5=noisy");
 #undef DEBUG
 #define DEBUG(n, format, arg...) \
 	if (n <= debug) {	 \
-		printk(KERN_DEBUG __FILE__ ":%s(): " format "\n", __func__ , ## arg); \
+;
 	}
 
 #else
@@ -38,15 +38,15 @@ MODULE_PARM_DESC(debug, "Set Debug Level 0=quiet, 5=noisy");
 static const int debug = 0;
 #endif
 
-#define info(format, arg...) printk(KERN_INFO "pcmciamtd: " format "\n" , ## arg)
-
-#define DRIVER_DESC	"PCMCIA Flash memory card driver"
-
-/* Size of the PCMCIA address space: 26 bits = 64 MB */
-#define MAX_PCMCIA_ADDR	0x4000000
-
-struct pcmciamtd_dev {
-	struct pcmcia_device	*p_dev;
+//#define info(format, arg...) printk(KERN_INFO "pcmciamtd: " format "\n" , ## arg)
+//
+//#define DRIVER_DESC	"PCMCIA Flash memory card driver"
+//
+///* Size of the PCMCIA address space: 26 bits = 64 MB */
+//#define MAX_PCMCIA_ADDR	0x4000000
+//
+//struct pcmciamtd_dev {
+;
 	caddr_t		win_base;	/* ioremapped address of PCMCIA window */
 	unsigned int	win_size;	/* size of window */
 	unsigned int	offset;		/* offset into card the window currently points at */

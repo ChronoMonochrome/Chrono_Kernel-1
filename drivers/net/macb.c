@@ -177,11 +177,11 @@ static void macb_handle_link_change(struct net_device *dev)
 
 	if (status_change) {
 		if (phydev->link)
-			printk(KERN_INFO "%s: link up (%d/%s)\n",
-			       dev->name, phydev->speed,
-			       DUPLEX_FULL == phydev->duplex ? "Full":"Half");
+//			printk(KERN_INFO "%s: link up (%d/%s)\n",
+//			       dev->name, phydev->speed,
+;
 		else
-			printk(KERN_INFO "%s: link down\n", dev->name);
+;
 	}
 }
 
@@ -208,7 +208,7 @@ static int macb_mii_probe(struct net_device *dev)
 				 PHY_INTERFACE_MODE_RMII :
 				 PHY_INTERFACE_MODE_MII);
 	if (ret) {
-		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
+;
 		return ret;
 	}
 
@@ -307,9 +307,9 @@ static void macb_tx(struct macb *bp)
 
 	if (status & (MACB_BIT(UND) | MACB_BIT(TSR_RLE))) {
 		int i;
-		printk(KERN_ERR "%s: TX %s, resetting buffers\n",
-			bp->dev->name, status & MACB_BIT(UND) ?
-			"underrun" : "retry limit exceeded");
+//		printk(KERN_ERR "%s: TX %s, resetting buffers\n",
+//			bp->dev->name, status & MACB_BIT(UND) ?
+;
 
 		/* Transfer ongoing, disable transmitter, to avoid confusion */
 		if (status & MACB_BIT(TGO))
@@ -586,8 +586,8 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
 			 * TODO: Reset the hardware, and maybe move the printk
 			 * to a lower-priority context as well (work queue?)
 			 */
-			printk(KERN_ERR "%s: DMA bus error: HRESP not OK\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: DMA bus error: HRESP not OK\n",
+;
 		}
 
 		status = macb_readl(bp, ISR);
@@ -630,8 +630,8 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	dev_dbg(&bp->pdev->dev,
 		"data:");
 	for (i = 0; i < 16; i++)
-		printk(" %02x", (unsigned int)skb->data[i]);
-	printk("\n");
+;
+;
 #endif
 
 	len = skb->len;
@@ -959,9 +959,9 @@ static int macb_open(struct net_device *dev)
 
 	err = macb_alloc_consistent(bp);
 	if (err) {
-		printk(KERN_ERR
-		       "%s: Unable to allocate DMA memory (error %d)\n",
-		       dev->name, err);
+//		printk(KERN_ERR
+//		       "%s: Unable to allocate DMA memory (error %d)\n",
+;
 		return err;
 	}
 
@@ -1179,9 +1179,9 @@ static int __init macb_probe(struct platform_device *pdev)
 	dev->irq = platform_get_irq(pdev, 0);
 	err = request_irq(dev->irq, macb_interrupt, 0, dev->name, dev);
 	if (err) {
-		printk(KERN_ERR
-		       "%s: Unable to request IRQ %d (error %d)\n",
-		       dev->name, dev->irq, err);
+//		printk(KERN_ERR
+//		       "%s: Unable to request IRQ %d (error %d)\n",
+;
 		goto err_out_iounmap;
 	}
 
@@ -1233,13 +1233,13 @@ static int __init macb_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, dev);
 
-	printk(KERN_INFO "%s: Atmel MACB at 0x%08lx irq %d (%pM)\n",
-	       dev->name, dev->base_addr, dev->irq, dev->dev_addr);
+//	printk(KERN_INFO "%s: Atmel MACB at 0x%08lx irq %d (%pM)\n",
+;
 
 	phydev = bp->phy_dev;
-	printk(KERN_INFO "%s: attached PHY driver [%s] "
-		"(mii_bus:phy_addr=%s, irq=%d)\n", dev->name,
-		phydev->drv->name, dev_name(&phydev->dev), phydev->irq);
+//	printk(KERN_INFO "%s: attached PHY driver [%s] "
+//		"(mii_bus:phy_addr=%s, irq=%d)\n", dev->name,
+;
 
 	return 0;
 

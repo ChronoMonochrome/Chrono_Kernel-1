@@ -303,7 +303,7 @@ static int __init fd_mcs_setup(char *str)
 
 	get_options(str, 3, ints);
 	if (done_setup++ || ints[0] < 1 || ints[0] > 2 || ints[1] < 1 || ints[1] > 16) {
-		printk("fd_mcs: usage: fd_mcs=FIFO_COUNT, FIFO_SIZE\n");
+;
 		return 0;
 	}
 
@@ -317,15 +317,15 @@ __setup("fd_mcs=", fd_mcs_setup);
 
 static void print_banner(struct Scsi_Host *shpnt)
 {
-	printk("scsi%d <fd_mcs>: ", shpnt->host_no);
+;
 
 	if (bios_base) {
-		printk("BIOS at 0x%lX", bios_base);
+;
 	} else {
-		printk("No BIOS");
+;
 	}
 
-	printk(", HostID %d, %s Chip, IRQ %d, IO 0x%lX\n", shpnt->this_id, chip == tmc18c50 ? "TMC-18C50" : (chip == tmc18c30 ? "TMC-18C30" : (chip == tmc1800 ? "TMC-1800" : "Unknown")), shpnt->irq, shpnt->io_port);
+;
 }
 
 
@@ -371,7 +371,7 @@ static int fd_mcs_detect(struct scsi_host_template * tpnt)
 			/* if we get this far, an adapter has been detected and is
 			   enabled */
 
-			printk(KERN_INFO "scsi  <fd_mcs>: %s at slot %d\n", fd_mcs_adapters[loop].name, slot + 1);
+;
 
 			pos2 = mca_read_stored_pos(slot, 2);
 			pos3 = mca_read_stored_pos(slot, 3);
@@ -404,18 +404,18 @@ static int fd_mcs_detect(struct scsi_host_template * tpnt)
 
 				/* check irq/region */
 				if (request_irq(irq, fd_mcs_intr, IRQF_SHARED, "fd_mcs", hosts)) {
-					printk(KERN_ERR "fd_mcs: interrupt is not available, skipping...\n");
+;
 					continue;
 				}
 
 				/* request I/O region */
 				if (request_region(port, 0x10, "fd_mcs")) {
-					printk(KERN_ERR "fd_mcs: I/O region is already in use, skipping...\n");
+;
 					continue;
 				}
 				/* register */
 				if (!(shpnt = scsi_register(tpnt, sizeof(struct fd_hostdata)))) {
-					printk(KERN_ERR "fd_mcs: scsi_register() failed\n");
+;
 					release_region(port, 0x10);
 					free_irq(irq, hosts);
 					continue;
@@ -445,7 +445,7 @@ static int fd_mcs_detect(struct scsi_host_template * tpnt)
 						chip = tmc18c30;
 						FIFO_Size = 0x800;	/* 2k FIFO */
 
-						printk("FIRST: chip=%s, fifo_size=0x%x\n", (chip == tmc18c30) ? "tmc18c30" : "tmc18c50", FIFO_Size);
+;
 					}
 				}
 
@@ -457,7 +457,7 @@ static int fd_mcs_detect(struct scsi_host_template * tpnt)
 					chip = tmc18c30;
 					FIFO_Size = 0x800;	/* 2k FIFO */
 
-					printk("SECOND: chip=%s, fifo_size=0x%x\n", (chip == tmc18c30) ? "tmc18c30" : "tmc18c50", FIFO_Size);
+;
 				}
 				/* *************************************************** */
 #endif
@@ -514,7 +514,7 @@ static int fd_mcs_detect(struct scsi_host_template * tpnt)
 		}
 
 		if (found == FD_MAX_HOSTS) {
-			printk("fd_mcs: detecting reached max=%d host adapters.\n", FD_MAX_HOSTS);
+;
 			break;
 		}
 	}
@@ -588,7 +588,7 @@ static int fd_mcs_select(struct Scsi_Host *shpnt, int target)
 	fd_mcs_make_bus_idle(shpnt);
 #if EVERY_ACCESS
 	if (!target)
-		printk("Selection failed\n");
+;
 #endif
 #if ERRORS_ONLY
 	if (!target) {
@@ -597,7 +597,7 @@ static int fd_mcs_select(struct Scsi_Host *shpnt, int target)
 		if (!flag)	/* Skip first failure for all chips. */
 			++flag;
 		else
-			printk("fd_mcs: Selection failed\n");
+;
 	}
 #endif
 	return 1;
@@ -650,7 +650,7 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 	/* Abort calls my_done, so we do nothing here. */
 	if (current_SC->SCp.phase & aborted) {
 #if DEBUG_ABORT
-		printk("Interrupt after abort, ignoring\n");
+;
 #endif
 		/* return IRQ_HANDLED; */
 	}
@@ -662,7 +662,7 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 		status = inb(TMC_Status_port);	/* Read adapter status */
 		if (!(status & 0x02)) {
 #if EVERY_ACCESS
-			printk(" AFAIL ");
+;
 #endif
 			spin_lock_irqsave(shpnt->host_lock, flags);
 			my_done(shpnt, DID_BUS_BUSY << 16);
@@ -688,7 +688,7 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 			/* Try again, for slow devices */
 			if (fd_mcs_select(shpnt, scmd_id(current_SC))) {
 #if EVERY_ACCESS
-				printk(" SFAIL ");
+;
 #endif
 				spin_lock_irqsave(shpnt->host_lock, flags);
 				my_done(shpnt, DID_NO_CONNECT << 16);
@@ -696,7 +696,7 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 				return IRQ_HANDLED;
 			} else {
 #if EVERY_ACCESS
-				printk(" AltSel ");
+;
 #endif
 				/* Stop arbitration and enable parity */
 				outb(0x10 | PARITY_MASK, TMC_Cntl_port);
@@ -722,7 +722,7 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 		case 0x08:	/* COMMAND OUT */
 			outb(current_SC->cmnd[current_SC->SCp.sent_command++], Write_SCSI_Data_port);
 #if EVERY_ACCESS
-			printk("CMD = %x,", current_SC->cmnd[current_SC->SCp.sent_command - 1]);
+;
 #endif
 			break;
 		case 0x00:	/* DATA OUT -- tmc18c50/tmc18c30 only */
@@ -740,11 +740,11 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 		case 0x0c:	/* STATUS IN */
 			current_SC->SCp.Status = inb(Read_SCSI_Data_port);
 #if EVERY_ACCESS
-			printk("Status = %x, ", current_SC->SCp.Status);
+;
 #endif
 #if ERRORS_ONLY
 			if (current_SC->SCp.Status && current_SC->SCp.Status != 2 && current_SC->SCp.Status != 8) {
-				printk("ERROR fd_mcs: target = %d, command = %x, status = %x\n", current_SC->device->id, current_SC->cmnd[0], current_SC->SCp.Status);
+;
 			}
 #endif
 			break;
@@ -754,13 +754,13 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 		case 0x0e:	/* MESSAGE IN */
 			current_SC->SCp.Message = inb(Read_SCSI_Data_port);
 #if EVERY_ACCESS
-			printk("Message = %x, ", current_SC->SCp.Message);
+;
 #endif
 			if (!current_SC->SCp.Message)
 				++done;
 #if DEBUG_MESSAGES || EVERY_ACCESS
 			if (current_SC->SCp.Message) {
-				printk("fd_mcs: message = %x\n", current_SC->SCp.Message);
+;
 			}
 #endif
 			break;
@@ -948,13 +948,13 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 	if (current_SC->SCp.have_data_in == -1) {	/* DATA OUT */
 		while ((data_count = FIFO_Size - inw(FIFO_Data_Count_port)) > 512) {
 #if EVERY_ACCESS
-			printk("DC=%d, ", data_count);
+;
 #endif
 			if (data_count > current_SC->SCp.this_residual)
 				data_count = current_SC->SCp.this_residual;
 			if (data_count > 0) {
 #if EVERY_ACCESS
-				printk("%d OUT, ", data_count);
+;
 #endif
 				if (data_count == 1) {
 					Bytes_Written++;
@@ -983,13 +983,13 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 	} else if (current_SC->SCp.have_data_in == 1) {	/* DATA IN */
 		while ((data_count = inw(FIFO_Data_Count_port)) > 0) {
 #if EVERY_ACCESS
-			printk("DC=%d, ", data_count);
+;
 #endif
 			if (data_count > current_SC->SCp.this_residual)
 				data_count = current_SC->SCp.this_residual;
 			if (data_count) {
 #if EVERY_ACCESS
-				printk("%d IN, ", data_count);
+;
 #endif
 				if (data_count == 1) {
 					Bytes_Read++;
@@ -1019,14 +1019,14 @@ static irqreturn_t fd_mcs_intr(int irq, void *dev_id)
 #endif
 
 #if EVERY_ACCESS
-		printk("BEFORE MY_DONE. . .");
+;
 #endif
 		spin_lock_irqsave(shpnt->host_lock, flags);
 		my_done(shpnt, (current_SC->SCp.Status & 0xff)
 			| ((current_SC->SCp.Message & 0xff) << 8) | (DID_OK << 16));
 		spin_unlock_irqrestore(shpnt->host_lock, flags);
 #if EVERY_ACCESS
-		printk("RETURNING.\n");
+;
 #endif
 
 	} else {
@@ -1080,9 +1080,9 @@ static int fd_mcs_queue_lck(Scsi_Cmnd * SCpnt, void (*done) (Scsi_Cmnd *))
 		panic("fd_mcs: fd_mcs_queue() NOT REENTRANT!\n");
 	}
 #if EVERY_ACCESS
-	printk("queue: target = %d cmnd = 0x%02x pieces = %d size = %u\n",
-		SCpnt->target, *(unsigned char *) SCpnt->cmnd,
-		scsi_sg_count(SCpnt), scsi_bufflen(SCpnt));
+//	printk("queue: target = %d cmnd = 0x%02x pieces = %d size = %u\n",
+//		SCpnt->target, *(unsigned char *) SCpnt->cmnd,
+;
 #endif
 
 	fd_mcs_make_bus_idle(shpnt);
@@ -1133,32 +1133,32 @@ static void fd_mcs_print_info(Scsi_Cmnd * SCpnt)
 	struct Scsi_Host *shpnt = SCpnt->host;
 
 	if (!SCpnt || !SCpnt->host) {
-		printk("fd_mcs: cannot provide detailed information\n");
+;
 	}
 
-	printk("%s\n", fd_mcs_info(SCpnt->host));
+;
 	print_banner(SCpnt->host);
 	switch (SCpnt->SCp.phase) {
 	case in_arbitration:
-		printk("arbitration ");
+;
 		break;
 	case in_selection:
-		printk("selection ");
+;
 		break;
 	case in_other:
-		printk("other ");
+;
 		break;
 	default:
-		printk("unknown ");
+;
 		break;
 	}
 
-	printk("(%d), target = %d cmnd = 0x%02x pieces = %d size = %u\n",
-		SCpnt->SCp.phase, SCpnt->device->id, *(unsigned char *) SCpnt->cmnd,
-		scsi_sg_count(SCpnt), scsi_bufflen(SCpnt));
-	printk("sent_command = %d, have_data_in = %d, timeout = %d\n", SCpnt->SCp.sent_command, SCpnt->SCp.have_data_in, SCpnt->timeout);
+//	printk("(%d), target = %d cmnd = 0x%02x pieces = %d size = %u\n",
+//		SCpnt->SCp.phase, SCpnt->device->id, *(unsigned char *) SCpnt->cmnd,
+;
+;
 #if DEBUG_RACE
-	printk("in_interrupt_flag = %d\n", in_interrupt_flag);
+;
 #endif
 
 	imr = (inb(0x0a1) << 8) + inb(0x21);
@@ -1172,27 +1172,27 @@ static void fd_mcs_print_info(Scsi_Cmnd * SCpnt)
 	isr += inb(0x20);
 
 	/* Print out interesting information */
-	printk("IMR = 0x%04x", imr);
+;
 	if (imr & (1 << shpnt->irq))
-		printk(" (masked)");
-	printk(", IRR = 0x%04x, ISR = 0x%04x\n", irr, isr);
+;
+;
 
-	printk("SCSI Status      = 0x%02x\n", inb(SCSI_Status_port));
-	printk("TMC Status       = 0x%02x", inb(TMC_Status_port));
+;
+;
 	if (inb(TMC_Status_port) & 1)
-		printk(" (interrupt)");
-	printk("\n");
-	printk("Interrupt Status = 0x%02x", inb(Interrupt_Status_port));
+;
+;
+;
 	if (inb(Interrupt_Status_port) & 0x08)
-		printk(" (enabled)");
-	printk("\n");
+;
+;
 	if (chip == tmc18c50 || chip == tmc18c30) {
-		printk("FIFO Status      = 0x%02x\n", inb(shpnt->io_port + FIFO_Status));
-		printk("Int. Condition   = 0x%02x\n", inb(shpnt->io_port + Interrupt_Cond));
+;
+;
 	}
-	printk("Configuration 1  = 0x%02x\n", inb(shpnt->io_port + Configuration1));
+;
 	if (chip == tmc18c50 || chip == tmc18c30)
-		printk("Configuration 2  = 0x%02x\n", inb(shpnt->io_port + Configuration2));
+;
 }
 #endif
 
@@ -1202,18 +1202,18 @@ static int fd_mcs_abort(Scsi_Cmnd * SCpnt)
 
 	unsigned long flags;
 #if EVERY_ACCESS || ERRORS_ONLY || DEBUG_ABORT
-	printk("fd_mcs: abort ");
+;
 #endif
 
 	spin_lock_irqsave(shpnt->host_lock, flags);
 	if (!in_command) {
 #if EVERY_ACCESS || ERRORS_ONLY
-		printk(" (not in command)\n");
+;
 #endif
 		spin_unlock_irqrestore(shpnt->host_lock, flags);
 		return FAILED;
 	} else
-		printk("\n");
+;
 
 #if DEBUG_ABORT
 	fd_mcs_print_info(SCpnt);
@@ -1242,7 +1242,7 @@ static int fd_mcs_bus_reset(Scsi_Cmnd * SCpnt) {
 
 #if ERRORS_ONLY
 	if (SCpnt)
-		printk("fd_mcs: SCSI Bus Reset\n");
+;
 #endif
 
 #if DEBUG_RESET

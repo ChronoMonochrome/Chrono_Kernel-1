@@ -106,7 +106,7 @@ int sb_dsp_command(sb_devc * devc, unsigned char val)
 			return 1;
 		}
 	}
-	printk(KERN_WARNING "Sound Blaster:  DSP command(%x) timeout.\n", val);
+;
 	return 0;
 }
 
@@ -226,7 +226,7 @@ int sb_dsp_reset(sb_devc * devc)
 {
 	int loopc;
 
-	DEB(printk("Entered sb_dsp_reset()\n"));
+;
 
 	if (devc->model == MDL_ESS) return ess_dsp_reset (devc);
 
@@ -242,11 +242,11 @@ int sb_dsp_reset(sb_devc * devc)
 
 	if (inb(DSP_READ) != 0xAA)
 	{
-		DDB(printk("sb: No response to RESET\n"));
+;
 		return 0;	/* Sorry */
 	}
 
-	DEB(printk("sb_dsp_reset() OK\n"));
+;
 
 	return 1;
 }
@@ -257,7 +257,7 @@ static void dsp_get_vers(sb_devc * devc)
 
 	unsigned long   flags;
 
-	DDB(printk("Entered dsp_get_vers()\n"));
+;
 	spin_lock_irqsave(&devc->lock, flags);
 	devc->major = devc->minor = 0;
 	sb_dsp_command(devc, 0xe1);	/* Get version */
@@ -276,7 +276,7 @@ static void dsp_get_vers(sb_devc * devc)
 		}
 	}
 	spin_unlock_irqrestore(&devc->lock, flags);
-	DDB(printk("DSP version %d.%02d\n", devc->major, devc->minor));
+;
 }
 
 static int sb16_set_dma_hw(sb_devc * devc)
@@ -285,7 +285,7 @@ static int sb16_set_dma_hw(sb_devc * devc)
 
 	if (devc->dma8 != 0 && devc->dma8 != 1 && devc->dma8 != 3)
 	{
-		printk(KERN_ERR "SB16: Invalid 8 bit DMA (%d)\n", devc->dma8);
+;
 		return 0;
 	}
 	bits = (1 << devc->dma8);
@@ -316,7 +316,7 @@ static void sb16_set_mpu_port(sb_devc * devc, struct address_info *hw_config)
 
 		default:
 			sb_setmixer(devc, 0x84, bits | 0x02);		/* Disable MPU */
-			printk(KERN_ERR "SB16: Invalid MIDI I/O port %x\n", hw_config->io_base);
+;
 	}
 }
 
@@ -339,7 +339,7 @@ static int sb16_set_irq_hw(sb_devc * devc, int level)
 			ival = 8;
 			break;
 		default:
-			printk(KERN_ERR "SB16: Invalid IRQ%d\n", level);
+;
 			return 0;
 	}
 	sb_setmixer(devc, IRQ_NR, ival);
@@ -400,22 +400,22 @@ static int init_Jazz16(sb_devc * devc, struct address_info *hw_config)
 	 */
 	if (hw_config->irq < 1 || hw_config->irq > 15 || jazz_irq_bits[hw_config->irq] == 0)
 	{
-		printk(KERN_ERR "Jazz16: Invalid interrupt (IRQ%d)\n", hw_config->irq);
+;
 		return 0;
 	}
 	if (hw_config->dma < 0 || hw_config->dma > 3 || jazz_dma_bits[hw_config->dma] == 0)
 	{
-		  printk(KERN_ERR "Jazz16: Invalid 8 bit DMA (DMA%d)\n", hw_config->dma);
+;
 		  return 0;
 	}
 	if (hw_config->dma2 < 0)
 	{
-		printk(KERN_ERR "Jazz16: No 16 bit DMA channel defined\n");
+;
 		return 0;
 	}
 	if (hw_config->dma2 < 5 || hw_config->dma2 > 7 || jazz_dma_bits[hw_config->dma2] == 0)
 	{
-		printk(KERN_ERR "Jazz16: Invalid 16 bit DMA (DMA%d)\n", hw_config->dma2);
+;
 		return 0;
 	}
 	devc->dma16 = hw_config->dma2;
@@ -463,7 +463,7 @@ static void relocate_ess1688(sb_devc * devc)
 			return;	/* Wrong port */
 	}
 
-	DDB(printk("Doing ESS1688 address selection\n"));
+;
 	
 	/*
 	 * ES1688 supports two alternative ways for software address config.
@@ -519,7 +519,7 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 	 * Initialize variables 
 	 */
 	
-	DDB(printk("sb_dsp_detect(%x) entered\n", hw_config->io_base));
+;
 
 	spin_lock_init(&devc->lock);
 	devc->type = hw_config->card_subtype;
@@ -546,7 +546,7 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 		hw_config->driver_use_1 |= SB_PCI_IRQ;
 		hw_config->card_subtype	= MDL_YMPCI;
 		
-		printk("Yamaha PCI mode.\n");
+;
 	}
 	
 	if (devc->sbmo.acer)
@@ -585,9 +585,9 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 
 	if (!sb_dsp_reset(devc))
 	{
-		DDB(printk("SB reset failed\n"));
+;
 #ifdef MODULE
-		printk(KERN_INFO "sb: dsp reset failed.\n");
+;
 #endif
 		return 0;
 	}
@@ -617,7 +617,7 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 		
 	if(devc->type == MDL_YMPCI)
 	{
-		printk("YMPCI selected\n");
+;
 		devc->model = MDL_YMPCI;
 	}
 		
@@ -629,11 +629,11 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 	detected_devc = kmalloc(sizeof(sb_devc), GFP_KERNEL);
 	if (detected_devc == NULL)
 	{
-		printk(KERN_ERR "sb: Can't allocate memory for device information\n");
+;
 		return 0;
 	}
 	memcpy(detected_devc, devc, sizeof(sb_devc));
-	MDB(printk(KERN_INFO "SB %d.%02d detected OK (%x)\n", devc->major, devc->minor, hw_config->io_base));
+;
 	return 1;
 }
 
@@ -647,12 +647,12 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 /*
  * Check if we had detected a SB device earlier
  */
-	DDB(printk("sb_dsp_init(%x) entered\n", hw_config->io_base));
+;
 	name[0] = 0;
 
 	if (detected_devc == NULL)
 	{
-		MDB(printk("No detected device\n"));
+;
 		return 0;
 	}
 	devc = detected_devc;
@@ -660,7 +660,7 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 
 	if (devc->base != hw_config->io_base)
 	{
-		DDB(printk("I/O port mismatch\n"));
+;
 		release_region(devc->base, 16);
 		return 0;
 	}
@@ -682,7 +682,7 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 		
 		if (request_irq(hw_config->irq, sbintr, i, "soundblaster", devc) < 0)
 		{
-			printk(KERN_ERR "SB: Can't allocate IRQ%d\n", hw_config->irq);
+;
 			release_region(devc->base, 16);
 			return 0;
 		}
@@ -704,7 +704,7 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 				if ((devc->type != 0 && devc->type != MDL_JAZZ &&
 					 devc->type != MDL_SMW) || !init_Jazz16(devc, hw_config))
 				{
-					DDB(printk("This is a genuine SB Pro\n"));
+;
 				}
 			}
 		}
@@ -724,10 +724,10 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 				}
 			}
 			if (!devc->irq_ok)
-				printk(KERN_WARNING "sb: Interrupt test on IRQ%d failed - Probable IRQ conflict\n", devc->irq);
+;
 			else
 			{
-				DDB(printk("IRQ test OK (IRQ%d)\n", devc->irq));
+;
 			}
 		}
 	}			/* IRQ setup */
@@ -800,7 +800,7 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 				devc->dma16 = devc->dma8;
 			else if (hw_config->dma2 < 5 || hw_config->dma2 > 7)
 			{
-				printk(KERN_WARNING  "SB16: Bad or missing 16 bit DMA channel\n");
+;
 				devc->dma16 = devc->dma8;
 			}
 			else
@@ -839,16 +839,16 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 	{
 		if (devc->major == 3 && devc->minor != 1)	/* "True" SB Pro should have v3.1 (rare ones may have 3.2). */
 		{
-			printk(KERN_INFO "This sound card may not be fully Sound Blaster Pro compatible.\n");
-			printk(KERN_INFO "In many cases there is another way to configure OSS so that\n");
-			printk(KERN_INFO "it works properly with OSS (for example in 16 bit mode).\n");
-			printk(KERN_INFO "Please ignore this message if you _really_ have a SB Pro.\n");
+;
+;
+;
+;
 		}
 		else if (!sb_be_quiet && devc->model == MDL_SBPRO)
 		{
-			printk(KERN_INFO "SB DSP version is just %d.%02d which means that your card is\n", devc->major, devc->minor);
-			printk(KERN_INFO "several years old (8 bit only device) or alternatively the sound driver\n");
-			printk(KERN_INFO "is incorrectly configured.\n");
+;
+;
+;
 		}
 	}
 	hw_config->card_subtype = devc->model;
@@ -859,19 +859,19 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 	{
 		if (sound_alloc_dma(devc->dma8, "SoundBlaster8"))
 		{
-			printk(KERN_WARNING "Sound Blaster: Can't allocate 8 bit DMA channel %d\n", devc->dma8);
+;
 		}
 		if (devc->dma16 >= 0 && devc->dma16 != devc->dma8)
 		{
 			if (sound_alloc_dma(devc->dma16, "SoundBlaster16"))
-				printk(KERN_WARNING "Sound Blaster:  can't allocate 16 bit DMA channel %d.\n", devc->dma16);
+;
 		}
 		sb_audio_init(devc, name, owner);
 		hw_config->slots[0]=devc->dev;
 	}
 	else
 	{
-		MDB(printk("Sound Blaster:  no audio devices found.\n"));
+;
 	}
 	return 1;
 }
@@ -1035,7 +1035,7 @@ static int smw_midi_init(sb_devc * devc, struct address_info *hw_config)
 
 	if (smw_getmem(devc, mp_base, 0) != 0x00 || smw_getmem(devc, mp_base, 1) != 0xff)
 	{
-		DDB(printk("SM Wave: No microcontroller RAM detected (%02x, %02x)\n", smw_getmem(devc, mp_base, 0), smw_getmem(devc, mp_base, 1)));
+;
 		return 0;	/* No RAM */
 	}
 	/*
@@ -1056,7 +1056,7 @@ static int smw_midi_init(sb_devc * devc, struct address_info *hw_config)
 	{
 		if (smw_ucodeLen != 8192)
 		{
-			printk(KERN_ERR "SM Wave: Invalid microcode (MIDI0001.BIN) length\n");
+;
 			return 1;
 		}
 		/*
@@ -1073,7 +1073,7 @@ static int smw_midi_init(sb_devc * devc, struct address_info *hw_config)
 		for (i = 0; i < 8192; i++)
 			if (smw_getmem(devc, mp_base, i) != smw_ucode[i])
 			{
-				printk(KERN_ERR "SM Wave: Microcode verification failed\n");
+;
 				return 0;
 			}
 	}
@@ -1126,7 +1126,7 @@ static int init_Jazz16_midi(sb_devc * devc, struct address_info *hw_config)
 	if (irq < 1 || irq > 15 ||
 	    jazz_irq_bits[irq] == 0)
 	{
-		printk(KERN_ERR "Jazz16: Invalid MIDI interrupt (IRQ%d)\n", irq);
+;
 		return 0;
 	}
 	switch (sb_base)
@@ -1156,7 +1156,7 @@ static int init_Jazz16_midi(sb_devc * devc, struct address_info *hw_config)
 			bits |= 3;
 			break;
 		default:
-			printk(KERN_ERR "Jazz16: Invalid MIDI I/O port %x\n", mpu_base);
+;
 			return 0;
 	}
 	/*
@@ -1214,7 +1214,7 @@ int probe_sbmpu(struct address_info *hw_config, struct module *owner)
 		struct resource *ports;
 		ports = request_region(hw_config->io_base, 2, "mpu401");
 		if (!ports) {
-			printk(KERN_ERR "sbmpu: I/O port conflict (%x)\n", hw_config->io_base);
+;
 			return 0;
 		}
 		if (!ess_midi_init(devc, hw_config)) {
@@ -1240,7 +1240,7 @@ int probe_sbmpu(struct address_info *hw_config, struct module *owner)
 		case MDL_SB16:
 			if (hw_config->io_base != 0x300 && hw_config->io_base != 0x330)
 			{
-				printk(KERN_ERR "SB16: Invalid MIDI port %x\n", hw_config->io_base);
+;
 				return 0;
 			}
 			hw_config->name = "Sound Blaster 16";
@@ -1259,7 +1259,7 @@ int probe_sbmpu(struct address_info *hw_config, struct module *owner)
 
 		case MDL_YMPCI:
 			hw_config->name = "Yamaha PCI Legacy";
-			printk("Yamaha PCI legacy UART401 check.\n");
+;
 			break;
 		default:
 			return 0;

@@ -779,31 +779,31 @@ static void ata_dump_status(unsigned id, struct ata_taskfile *tf)
 {
 	u8 stat = tf->command, err = tf->feature;
 
-	printk(KERN_WARNING "ata%u: status=0x%02x { ", id, stat);
+;
 	if (stat & ATA_BUSY) {
 		printk("Busy }\n");	/* Data is not valid in this case */
 	} else {
-		if (stat & 0x40)	printk("DriveReady ");
-		if (stat & 0x20)	printk("DeviceFault ");
-		if (stat & 0x10)	printk("SeekComplete ");
-		if (stat & 0x08)	printk("DataRequest ");
-		if (stat & 0x04)	printk("CorrectedError ");
-		if (stat & 0x02)	printk("Index ");
-		if (stat & 0x01)	printk("Error ");
-		printk("}\n");
+;
+;
+;
+;
+;
+;
+;
+;
 
 		if (err) {
-			printk(KERN_WARNING "ata%u: error=0x%02x { ", id, err);
-			if (err & 0x04)		printk("DriveStatusError ");
+;
+;
 			if (err & 0x80) {
-				if (err & 0x04)	printk("BadCRC ");
-				else		printk("Sector ");
+;
+;
 			}
-			if (err & 0x40)		printk("UncorrectableError ");
-			if (err & 0x10)		printk("SectorIdNotFound ");
-			if (err & 0x02)		printk("TrackZeroNotFound ");
-			if (err & 0x01)		printk("AddrMarkNotFound ");
-			printk("}\n");
+;
+;
+;
+;
+;
 		}
 	}
 }
@@ -892,8 +892,8 @@ static void ata_to_sense_error(unsigned id, u8 drv_stat, u8 drv_err, u8 *sk,
 		}
 		/* No immediate match */
 		if (verbose)
-			printk(KERN_WARNING "ata%u: no sense translation for "
-			       "error 0x%02x\n", id, drv_err);
+//			printk(KERN_WARNING "ata%u: no sense translation for "
+;
 	}
 
 	/* Fall back to interpreting status bits */
@@ -907,8 +907,8 @@ static void ata_to_sense_error(unsigned id, u8 drv_stat, u8 drv_err, u8 *sk,
 	}
 	/* No error?  Undecoded? */
 	if (verbose)
-		printk(KERN_WARNING "ata%u: no sense translation for "
-		       "status: 0x%02x\n", id, drv_stat);
+//		printk(KERN_WARNING "ata%u: no sense translation for "
+;
 
 	/* We need a sensible error return here, which is tricky, and one
 	   that won't cause people to do things like return a disk wrongly */
@@ -918,9 +918,9 @@ static void ata_to_sense_error(unsigned id, u8 drv_stat, u8 drv_err, u8 *sk,
 
  translate_done:
 	if (verbose)
-		printk(KERN_ERR "ata%u: translated ATA stat/err 0x%02x/%02x "
-		       "to SCSI SK/ASC/ASCQ 0x%x/%02x/%02x\n",
-		       id, drv_stat, drv_err, *sk, *asc, *ascq);
+//		printk(KERN_ERR "ata%u: translated ATA stat/err 0x%02x/%02x "
+//		       "to SCSI SK/ASC/ASCQ 0x%x/%02x/%02x\n",
+;
 	return;
 }
 
@@ -1110,8 +1110,8 @@ static int ata_scsi_dev_config(struct scsi_device *sdev,
 		/* configure draining */
 		buf = kmalloc(ATAPI_MAX_DRAIN, q->bounce_gfp | GFP_KERNEL);
 		if (!buf) {
-			ata_dev_printk(dev, KERN_ERR,
-				       "drain buffer allocation failed\n");
+//			ata_dev_printk(dev, KERN_ERR,
+;
 			return -ENOMEM;
 		}
 
@@ -1129,9 +1129,9 @@ static int ata_scsi_dev_config(struct scsi_device *sdev,
 	 * IDENTIFY_PACKET is executed as ATA_PROT_PIO.
 	 */
 	if (sdev->sector_size > PAGE_SIZE)
-		ata_dev_printk(dev, KERN_WARNING,
-			"sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
-			sdev->sector_size);
+//		ata_dev_printk(dev, KERN_WARNING,
+//			"sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
+;
 
 	blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
 
@@ -1786,8 +1786,8 @@ static int ata_scsi_translate(struct ata_device *dev, struct scsi_cmnd *cmd,
 	if (cmd->sc_data_direction == DMA_FROM_DEVICE ||
 	    cmd->sc_data_direction == DMA_TO_DEVICE) {
 		if (unlikely(scsi_bufflen(cmd) < 1)) {
-			ata_dev_printk(dev, KERN_WARNING,
-				       "WARNING: zero len r/w req\n");
+//			ata_dev_printk(dev, KERN_WARNING,
+;
 			goto err_did;
 		}
 
@@ -2971,9 +2971,9 @@ static unsigned int ata_scsi_pass_thru(struct ata_queued_cmd *qc)
 		 * with the cached multi_count of libata
 		 */
 		if (multi_count != dev->multi_count)
-			ata_dev_printk(dev, KERN_WARNING,
-				       "invalid multi_count %u ignored\n",
-				       multi_count);
+//			ata_dev_printk(dev, KERN_WARNING,
+//				       "invalid multi_count %u ignored\n",
+;
 	}
 
 	/*
@@ -3468,9 +3468,9 @@ void ata_scsi_scan_host(struct ata_port *ap, int sync)
 			goto repeat;
 		}
 
-		ata_port_printk(ap, KERN_ERR, "WARNING: synchronous SCSI scan "
-				"failed without making any progress,\n"
-				"                  switching to async\n");
+//		ata_port_printk(ap, KERN_ERR, "WARNING: synchronous SCSI scan "
+//				"failed without making any progress,\n"
+;
 	}
 
 	queue_delayed_work(system_long_wq, &ap->hotplug_task,
@@ -3552,8 +3552,8 @@ static void ata_scsi_remove_dev(struct ata_device *dev)
 	mutex_unlock(&ap->scsi_host->scan_mutex);
 
 	if (sdev) {
-		ata_dev_printk(dev, KERN_INFO, "detaching (SCSI %s)\n",
-			       dev_name(&sdev->sdev_gendev));
+//		ata_dev_printk(dev, KERN_INFO, "detaching (SCSI %s)\n",
+;
 
 		scsi_remove_device(sdev);
 		scsi_device_put(sdev);

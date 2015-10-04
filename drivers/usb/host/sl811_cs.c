@@ -35,14 +35,14 @@ MODULE_LICENSE("GPL");
 /* MACROS                                                             */
 /*====================================================================*/
 
-#define INFO(args...) printk(KERN_INFO "sl811_cs: " args)
-
-/*====================================================================*/
-/* VARIABLES                                                          */
-/*====================================================================*/
-
-typedef struct local_info_t {
-	struct pcmcia_device	*p_dev;
+//#define INFO(args...) printk(KERN_INFO "sl811_cs: " args)
+//
+///*====================================================================*/
+///* VARIABLES                                                          */
+///*====================================================================*/
+//
+//typedef struct local_info_t {
+;
 } local_info_t;
 
 static void sl811_cs_release(struct pcmcia_device * link);
@@ -167,7 +167,7 @@ static int sl811_cs_config(struct pcmcia_device *link)
 	if (sl811_hc_init(parent, link->resource[0]->start, link->irq)
 			< 0) {
 failed:
-		printk(KERN_WARNING "sl811_cs_config failed\n");
+;
 		sl811_cs_release(link);
 		return  -ENODEV;
 	}

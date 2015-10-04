@@ -280,12 +280,12 @@ int __init find_via_pmu(void)
 
 	reg = of_get_property(vias, "reg", NULL);
 	if (reg == NULL) {
-		printk(KERN_ERR "via-pmu: No \"reg\" property !\n");
+;
 		goto fail;
 	}
 	taddr = of_translate_address(vias, reg);
 	if (taddr == OF_BAD_ADDR) {
-		printk(KERN_ERR "via-pmu: Can't translate address !\n");
+;
 		goto fail;
 	}
 
@@ -330,7 +330,7 @@ int __init find_via_pmu(void)
 				gpio_reg = ioremap(gaddr, 0x10);
 		}
 		if (gpio_reg == NULL) {
-			printk(KERN_ERR "via-pmu: Can't find GPIO reg !\n");
+;
 			goto fail_gpio;
 		}
 	} else
@@ -338,7 +338,7 @@ int __init find_via_pmu(void)
 
 	via = ioremap(taddr, 0x2000);
 	if (via == NULL) {
-		printk(KERN_ERR "via-pmu: Can't map address !\n");
+;
 		goto fail;
 	}
 	
@@ -352,8 +352,8 @@ int __init find_via_pmu(void)
 		return 0;
 	}
 
-	printk(KERN_INFO "PMU driver v%d initialized for %s, firmware: %02x\n",
-	       PMU_DRIVER_VERSION, pbook_type[pmu_kind], pmu_version);
+//	printk(KERN_INFO "PMU driver v%d initialized for %s, firmware: %02x\n",
+;
 	       
 	sys_ctrler = SYS_CTRLER_PMU;
 	
@@ -399,7 +399,7 @@ static int __init via_pmu_start(void)
 
 	irq = irq_of_parse_and_map(vias, 0);
 	if (irq == NO_IRQ) {
-		printk(KERN_ERR "via-pmu: can't map interrupt\n");
+;
 		return -ENODEV;
 	}
 	/* We set IRQF_NO_SUSPEND because we don't want the interrupt
@@ -408,7 +408,7 @@ static int __init via_pmu_start(void)
 	 */
 	if (request_irq(irq, via_pmu_interrupt, IRQF_NO_SUSPEND,
 			"VIA-PMU", (void *)0)) {
-		printk(KERN_ERR "via-pmu: can't request irq %d\n", irq);
+;
 		return -ENODEV;
 	}
 
@@ -423,8 +423,8 @@ static int __init via_pmu_start(void)
 		if (gpio_irq != NO_IRQ) {
 			if (request_irq(gpio_irq, gpio1_interrupt, IRQF_TIMER,
 					"GPIO1 ADB", (void *)0))
-				printk(KERN_ERR "pmu: can't get irq %d"
-				       " (GPIO1)\n", gpio_irq);
+//				printk(KERN_ERR "pmu: can't get irq %d"
+;
 			else
 				gpio_irq_enabled = 1;
 		}
@@ -533,7 +533,7 @@ init_pmu(void)
 	timeout =  100000;
 	while (!req.complete) {
 		if (--timeout < 0) {
-			printk(KERN_ERR "init_pmu: no response from PMU\n");
+;
 			return 0;
 		}
 		udelay(10);
@@ -545,7 +545,7 @@ init_pmu(void)
 	interrupt_data[0][0] = 1;
 	while (interrupt_data[0][0] || pmu_state != idle) {
 		if (--timeout < 0) {
-			printk(KERN_ERR "init_pmu: timed out acking intrs\n");
+;
 			return 0;
 		}
 		if (pmu_state == idle)
@@ -575,8 +575,8 @@ init_pmu(void)
 		if (req.reply_len == 2) {
 			if (req.reply[1] & PMU_PWR_WAKEUP_AC_INSERT)
 				option_server_mode = 1;
-			printk(KERN_INFO "via-pmu: Server Mode is %s\n",
-			       option_server_mode ? "enabled" : "disabled");
+//			printk(KERN_INFO "via-pmu: Server Mode is %s\n",
+;
 		}
 	}
 	return 1;
@@ -751,8 +751,8 @@ done_battery_state_smart(struct adb_request* req)
 				voltage = (req->reply[8] << 8) | req->reply[9];
 				break;
 			default:
-				printk(KERN_WARNING "pmu.c : unrecognized battery info, len: %d, %02x %02x %02x %02x\n",
-					req->reply_len, req->reply[0], req->reply[1], req->reply[2], req->reply[3]);
+//				printk(KERN_WARNING "pmu.c : unrecognized battery info, len: %d, %02x %02x %02x %02x\n",
+;
 				break;
 		}
 	}
@@ -1081,7 +1081,7 @@ static int pmu_adb_reset_bus(void)
 	req.reply_len = 0;
 	req.reply_expected = 1;
 	if (pmu_queue_request(&req) != 0) {
-		printk(KERN_ERR "pmu_adb_reset_bus: pmu_queue_request failed\n");
+;
 		return -EIO;
 	}
 	pmu_wait_complete(&req);
@@ -1105,7 +1105,7 @@ pmu_request(struct adb_request *req, void (*done)(struct adb_request *),
 		return -ENXIO;
 
 	if (nbytes < 0 || nbytes > 32) {
-		printk(KERN_ERR "pmu_request: bad nbytes (%d)\n", nbytes);
+;
 		req->complete = 1;
 		return -EINVAL;
 	}
@@ -1168,7 +1168,7 @@ wait_for_ack(void)
 	int timeout = 4000;
 	while ((in_8(&via[B]) & TACK) == 0) {
 		if (--timeout < 0) {
-			printk(KERN_ERR "PMU not responding (!ack)\n");
+;
 			return;
 		}
 		udelay(10);
@@ -1376,7 +1376,7 @@ next:
 		if ((data[0] & PMU_INT_ADB_AUTO) == 0) {
 			struct adb_request *req = req_awaiting_reply;
 			if (req == 0) {
-				printk(KERN_ERR "PMU: extra ADB reply\n");
+;
 				return;
 			}
 			req_awaiting_reply = NULL;
@@ -1449,7 +1449,7 @@ pmu_sr_intr(void)
 	int bite = 0;
 
 	if (via[B] & TREQ) {
-		printk(KERN_ERR "PMU: spurious SR intr (%x)\n", via[B]);
+;
 		out_8(&via[IFR], SR_INT);
 		return NULL;
 	}
@@ -1511,7 +1511,7 @@ pmu_sr_intr(void)
 		if (data_len == -1) {
 			data_len = bite;
 			if (bite > 32)
-				printk(KERN_ERR "PMU: bad reply len %d\n", bite);
+;
 		} else if (data_index < 32) {
 			reply_ptr[data_index++] = bite;
 		}
@@ -1542,8 +1542,8 @@ pmu_sr_intr(void)
 		break;
 
 	default:
-		printk(KERN_ERR "via_pmu_interrupt: unknown state %d?\n",
-		       pmu_state);
+//		printk(KERN_ERR "via_pmu_interrupt: unknown state %d?\n",
+;
 	}
 	return NULL;
 }
@@ -1568,9 +1568,9 @@ via_pmu_interrupt(int irq, void *arg)
 			break;
 		handled = 1;
 		if (++nloop > 1000) {
-			printk(KERN_DEBUG "PMU: stuck in intr loop, "
-			       "intr=%x, ier=%x pmu_state=%d\n",
-			       intr, in_8(&via[IER]), pmu_state);
+//			printk(KERN_DEBUG "PMU: stuck in intr loop, "
+//			       "intr=%x, ier=%x pmu_state=%d\n",
+;
 			break;
 		}
 		out_8(&via[IFR], intr);
@@ -1869,7 +1869,7 @@ powerbook_sleep_Core99(void)
 	struct adb_request req;
 	
 	if (pmac_call_feature(PMAC_FTR_SLEEP_STATE,NULL,0,-1) < 0) {
-		printk(KERN_ERR "Sleep mode not supported on this machine\n");
+;
 		return -ENOSYS;
 	}
 
@@ -1959,7 +1959,7 @@ static void powerbook_sleep_init_3400(void)
 	/* map in the memory controller registers */
 	pb3400_mem_ctrl = ioremap(PB3400_MEM_CTRL, 0x100);
 	if (pb3400_mem_ctrl == NULL)
-		printk(KERN_WARNING "ioremap failed: sleep won't be possible");
+;
 }
 
 static int powerbook_sleep_3400(void)
@@ -2411,7 +2411,7 @@ static int pmu_device_init(void)
 	if (!via)
 		return 0;
 	if (misc_register(&pmu_device) < 0)
-		printk(KERN_ERR "via-pmu: cannot register misc device.\n");
+;
 	return 0;
 }
 device_initcall(pmu_device_init);

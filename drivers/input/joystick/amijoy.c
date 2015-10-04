@@ -84,7 +84,7 @@ static int amijoy_open(struct input_dev *dev)
 		return err;
 
 	if (!amijoy_used && request_irq(IRQ_AMIGA_VERTB, amijoy_interrupt, 0, "amijoy", amijoy_interrupt)) {
-		printk(KERN_ERR "amijoy.c: Can't allocate irq %d\n", IRQ_AMIGA_VERTB);
+;
 		err = -EBUSY;
 		goto out;
 	}

@@ -539,8 +539,8 @@ static int iop_adma_alloc_chan_resources(struct dma_chan *chan)
 
 		slot = kzalloc(sizeof(*slot), GFP_KERNEL);
 		if (!slot) {
-			printk(KERN_INFO "IOP ADMA Channel only initialized"
-				" %d descriptor slots", idx);
+//			printk(KERN_INFO "IOP ADMA Channel only initialized"
+;
 			break;
 		}
 		hw_desc = (char *) iop_chan->device->dma_desc_pool_virt;
@@ -889,8 +889,8 @@ static void iop_adma_free_chan_resources(struct dma_chan *chan)
 
 	/* one is ok since we left it on there on purpose */
 	if (in_use_descs > 1)
-		printk(KERN_ERR "IOP: Freeing %d in use descriptors!\n",
-			in_use_descs - 1);
+//		printk(KERN_ERR "IOP: Freeing %d in use descriptors!\n",
+;
 }
 
 /**
@@ -955,15 +955,15 @@ static irqreturn_t iop_adma_err_handler(int irq, void *data)
 	struct iop_adma_chan *chan = data;
 	unsigned long status = iop_chan_get_status(chan);
 
-	dev_printk(KERN_ERR, chan->device->common.dev,
-		"error ( %s%s%s%s%s%s%s)\n",
-		iop_is_err_int_parity(status, chan) ? "int_parity " : "",
-		iop_is_err_mcu_abort(status, chan) ? "mcu_abort " : "",
-		iop_is_err_int_tabort(status, chan) ? "int_tabort " : "",
-		iop_is_err_int_mabort(status, chan) ? "int_mabort " : "",
-		iop_is_err_pci_tabort(status, chan) ? "pci_tabort " : "",
-		iop_is_err_pci_mabort(status, chan) ? "pci_mabort " : "",
-		iop_is_err_split_tx(status, chan) ? "split_tx " : "");
+//	dev_printk(KERN_ERR, chan->device->common.dev,
+//		"error ( %s%s%s%s%s%s%s)\n",
+//		iop_is_err_int_parity(status, chan) ? "int_parity " : "",
+//		iop_is_err_mcu_abort(status, chan) ? "mcu_abort " : "",
+//		iop_is_err_int_tabort(status, chan) ? "int_tabort " : "",
+//		iop_is_err_int_mabort(status, chan) ? "int_mabort " : "",
+//		iop_is_err_pci_tabort(status, chan) ? "pci_tabort " : "",
+//		iop_is_err_pci_mabort(status, chan) ? "pci_mabort " : "",
+;
 
 	iop_adma_device_clear_err_status(chan);
 
@@ -1036,8 +1036,8 @@ static int __devinit iop_adma_memcpy_self_test(struct iop_adma_device *device)
 
 	if (iop_adma_status(dma_chan, cookie, NULL) !=
 			DMA_SUCCESS) {
-		dev_printk(KERN_ERR, dma_chan->device->dev,
-			"Self-test copy timed out, disabling\n");
+//		dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 		err = -ENODEV;
 		goto free_resources;
 	}
@@ -1046,8 +1046,8 @@ static int __devinit iop_adma_memcpy_self_test(struct iop_adma_device *device)
 	dma_sync_single_for_cpu(&iop_chan->device->pdev->dev, dest_dma,
 		IOP_ADMA_TEST_SIZE, DMA_FROM_DEVICE);
 	if (memcmp(src, dest, IOP_ADMA_TEST_SIZE)) {
-		dev_printk(KERN_ERR, dma_chan->device->dev,
-			"Self-test copy failed compare, disabling\n");
+//		dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 		err = -ENODEV;
 		goto free_resources;
 	}
@@ -1136,8 +1136,8 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
 
 	if (iop_adma_status(dma_chan, cookie, NULL) !=
 		DMA_SUCCESS) {
-		dev_printk(KERN_ERR, dma_chan->device->dev,
-			"Self-test xor timed out, disabling\n");
+//		dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 		err = -ENODEV;
 		goto free_resources;
 	}
@@ -1148,8 +1148,8 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
 	for (i = 0; i < (PAGE_SIZE / sizeof(u32)); i++) {
 		u32 *ptr = page_address(dest);
 		if (ptr[i] != cmp_word) {
-			dev_printk(KERN_ERR, dma_chan->device->dev,
-				"Self-test xor failed compare, disabling\n");
+//			dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 			err = -ENODEV;
 			goto free_resources;
 		}
@@ -1182,15 +1182,15 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
 	msleep(8);
 
 	if (iop_adma_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
-		dev_printk(KERN_ERR, dma_chan->device->dev,
-			"Self-test zero sum timed out, disabling\n");
+//		dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 		err = -ENODEV;
 		goto free_resources;
 	}
 
 	if (zero_sum_result != 0) {
-		dev_printk(KERN_ERR, dma_chan->device->dev,
-			"Self-test zero sum failed compare, disabling\n");
+//		dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 		err = -ENODEV;
 		goto free_resources;
 	}
@@ -1206,8 +1206,8 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
 	msleep(8);
 
 	if (iop_adma_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
-		dev_printk(KERN_ERR, dma_chan->device->dev,
-			"Self-test memset timed out, disabling\n");
+//		dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 		err = -ENODEV;
 		goto free_resources;
 	}
@@ -1215,8 +1215,8 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
 	for (i = 0; i < PAGE_SIZE/sizeof(u32); i++) {
 		u32 *ptr = page_address(dest);
 		if (ptr[i]) {
-			dev_printk(KERN_ERR, dma_chan->device->dev,
-				"Self-test memset failed compare, disabling\n");
+//			dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 			err = -ENODEV;
 			goto free_resources;
 		}
@@ -1238,15 +1238,15 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
 	msleep(8);
 
 	if (iop_adma_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
-		dev_printk(KERN_ERR, dma_chan->device->dev,
-			"Self-test non-zero sum timed out, disabling\n");
+//		dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 		err = -ENODEV;
 		goto free_resources;
 	}
 
 	if (zero_sum_result != 1) {
-		dev_printk(KERN_ERR, dma_chan->device->dev,
-			"Self-test non-zero sum failed compare, disabling\n");
+//		dev_printk(KERN_ERR, dma_chan->device->dev,
+;
 		err = -ENODEV;
 		goto free_resources;
 	}
@@ -1597,15 +1597,15 @@ static int __devinit iop_adma_probe(struct platform_device *pdev)
 			goto err_free_iop_chan;
 	}
 
-	dev_printk(KERN_INFO, &pdev->dev, "Intel(R) IOP: "
-	  "( %s%s%s%s%s%s%s)\n",
-	  dma_has_cap(DMA_PQ, dma_dev->cap_mask) ? "pq " : "",
-	  dma_has_cap(DMA_PQ_VAL, dma_dev->cap_mask) ? "pq_val " : "",
-	  dma_has_cap(DMA_XOR, dma_dev->cap_mask) ? "xor " : "",
-	  dma_has_cap(DMA_XOR_VAL, dma_dev->cap_mask) ? "xor_val " : "",
-	  dma_has_cap(DMA_MEMSET, dma_dev->cap_mask)  ? "fill " : "",
-	  dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask) ? "cpy " : "",
-	  dma_has_cap(DMA_INTERRUPT, dma_dev->cap_mask) ? "intr " : "");
+//	dev_printk(KERN_INFO, &pdev->dev, "Intel(R) IOP: "
+//	  "( %s%s%s%s%s%s%s)\n",
+//	  dma_has_cap(DMA_PQ, dma_dev->cap_mask) ? "pq " : "",
+//	  dma_has_cap(DMA_PQ_VAL, dma_dev->cap_mask) ? "pq_val " : "",
+//	  dma_has_cap(DMA_XOR, dma_dev->cap_mask) ? "xor " : "",
+//	  dma_has_cap(DMA_XOR_VAL, dma_dev->cap_mask) ? "xor_val " : "",
+//	  dma_has_cap(DMA_MEMSET, dma_dev->cap_mask)  ? "fill " : "",
+//	  dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask) ? "cpy " : "",
+;
 
 	dma_async_device_register(dma_dev);
 	goto out;
@@ -1673,8 +1673,8 @@ static void iop_chan_start_null_memcpy(struct iop_adma_chan *iop_chan)
 		/* run the descriptor */
 		iop_chan_enable(iop_chan);
 	} else
-		dev_printk(KERN_ERR, iop_chan->device->common.dev,
-			 "failed to allocate null descriptor\n");
+//		dev_printk(KERN_ERR, iop_chan->device->common.dev,
+;
 	spin_unlock_bh(&iop_chan->lock);
 }
 
@@ -1730,8 +1730,8 @@ static void iop_chan_start_null_xor(struct iop_adma_chan *iop_chan)
 		/* run the descriptor */
 		iop_chan_enable(iop_chan);
 	} else
-		dev_printk(KERN_ERR, iop_chan->device->common.dev,
-			"failed to allocate null descriptor\n");
+//		dev_printk(KERN_ERR, iop_chan->device->common.dev,
+;
 	spin_unlock_bh(&iop_chan->lock);
 }
 

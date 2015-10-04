@@ -65,9 +65,9 @@ __again:
 				continue;	/* multi request */
 			already |= _current_;	/* mark request */
 #if 0
-			printk(KERN_DEBUG "voice = %i, voice_status = 0x%x, "
-			       "voice_verify = %i\n",
-			       voice, voice_status, inb(GUSP(gus, GF1PAGE)));
+//			printk(KERN_DEBUG "voice = %i, voice_status = 0x%x, "
+//			       "voice_verify = %i\n",
+;
 #endif
 			pvoice = &gus->gf1.voices[voice]; 
 			if (pvoice->use) {

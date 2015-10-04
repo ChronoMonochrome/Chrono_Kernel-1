@@ -133,18 +133,18 @@ in the event that chatty debug messages are desired - jjs 12/30/98 */
 
 #include <asm/io.h>
 
-#define DPRINTK(format, args...) printk("%s: " format, dev->name , ## args)
-#define DPRINTD(format, args...) DummyCall("%s: " format, dev->name , ## args)
-
-/* version and credits */
-#ifndef PCMCIA
-static char version[] __devinitdata =
-    "\nibmtr.c: v1.3.57   8/ 7/94 Peter De Schrijver and Mark Swanson\n"
-    "         v2.1.125 10/20/98 Paul Norton    <pnorton@ieee.org>\n"
-    "         v2.2.0   12/30/98 Joel Sloan     <jjs@c-me.com>\n"
-    "         v2.2.1   02/08/00 Mike Sullivan  <sullivam@us.ibm.com>\n" 
-    "         v2.2.2   07/27/00 Burt Silverman <burts@us.ibm.com>\n" 
-    "         v2.4.0   03/01/01 Mike Sullivan <sullivan@us.ibm.com>\n";
+//#define DPRINTK(format, args...) printk("%s: " format, dev->name , ## args)
+//#define DPRINTD(format, args...) DummyCall("%s: " format, dev->name , ## args)
+//
+///* version and credits */
+//#ifndef PCMCIA
+//static char version[] __devinitdata =
+//    "\nibmtr.c: v1.3.57   8/ 7/94 Peter De Schrijver and Mark Swanson\n"
+//    "         v2.1.125 10/20/98 Paul Norton    <pnorton@ieee.org>\n"
+//    "         v2.2.0   12/30/98 Joel Sloan     <jjs@c-me.com>\n"
+//    "         v2.2.1   02/08/00 Mike Sullivan  <sullivam@us.ibm.com>\n" 
+//    "         v2.2.2   07/27/00 Burt Silverman <burts@us.ibm.com>\n" 
+;
 #endif
 
 /* this allows displaying full adapter information */
@@ -220,16 +220,16 @@ static void __devinit PrtChanID(char *pcid, short stride)
 {
 	short i, j;
 	for (i = 0, j = 0; i < 24; i++, j += stride)
-		printk("%1x", ((int) pcid[j]) & 0x0f);
-	printk("\n");
+;
+;
 }
 
 static void __devinit HWPrtChanID(void __iomem *pcid, short stride)
 {
 	short i, j;
 	for (i = 0, j = 0; i < 24; i++, j += stride)
-		printk("%1x", ((int) readb(pcid + j)) & 0x0f);
-	printk("\n");
+;
+;
 }
 
 /* We have to ioremap every checked address, because isa_readb is 
@@ -278,13 +278,13 @@ static void __devinit find_turbo_adapters(int *iolist)
 		intf_tbl=ntohs(readw(ram_mapped+ACA_OFFSET+ACA_RW+WRBR_EVEN));
 		if (intf_tbl) {
 #if IBMTR_DEBUG_MESSAGES
-			printk("ibmtr::find_turbo_adapters, Turbo found at "
-				"ram_addr %x\n",ram_addr);
-			printk("ibmtr::find_turbo_adapters, interface_table ");
+//			printk("ibmtr::find_turbo_adapters, Turbo found at "
+;
+;
 			for(i=0; i<6; i++) {
-				printk("%x:",readb(ram_addr+intf_tbl+i));
+;
 			}
-			printk("\n");
+;
 #endif
 			turbo_io[index]=ntohs(readw(ram_mapped+intf_tbl+4));
 			turbo_irq[index]=readb(ram_mapped+intf_tbl+3);
@@ -295,8 +295,8 @@ static void __devinit find_turbo_adapters(int *iolist)
 			continue;
 		}
 #if IBMTR_DEBUG_MESSAGES 
-		printk("ibmtr::find_turbo_adapters, ibmtr card found at"
-			" %x but not a Turbo model\n",ram_addr);
+//		printk("ibmtr::find_turbo_adapters, ibmtr card found at"
+;
 #endif
 	iounmap(ram_mapped) ; 	
 	} /* for */
@@ -484,8 +484,8 @@ static int __devinit ibmtr_probe1(struct net_device *dev, int PIOaddr)
                 if (turbo_io[i] != PIOaddr)
 			continue;
 #if IBMTR_DEBUG_MESSAGES 
-		printk("ibmtr::tr_probe1, setting PIOaddr %x to Turbo\n",
-		       PIOaddr);
+//		printk("ibmtr::tr_probe1, setting PIOaddr %x to Turbo\n",
+;
 #endif
 		ti->turbo = 1;
 		t_irq = turbo_irq[i];
@@ -539,12 +539,12 @@ static int __devinit ibmtr_probe1(struct net_device *dev, int PIOaddr)
 
 	if (ibmtr_debug_trace & TRC_INIT) {	/* just report int */
 		DPRINTK("irq=%d", irq);
-		printk(", sram_phys=0x%x", ti->sram_phys);
+;
 		if(ibmtr_debug_trace&TRC_INITV){ /* full chat in verbose only */
 			DPRINTK(", ti->mmio=%p", ti->mmio);
-			printk(", segment=%02X", segment);
+;
 		}
-		printk(".\n");
+;
 	}
 
 	/* Get hw address of token ring card */
@@ -697,7 +697,7 @@ static int __devinit ibmtr_probe1(struct net_device *dev, int PIOaddr)
 	}
 
 	if (!version_printed++) {
-		printk(version);
+;
 	}
 #endif /* !PCMCIA */
 	DPRINTK("%s %s found\n",
@@ -874,7 +874,7 @@ static int tok_open(struct net_device *dev)
 	/*the case we were left in a failure state during a previous open */
 	if (ti->open_failure == YES) {
 		DPRINTK("Last time you were disconnected, how about now?\n");
-		printk("You can't insert with an ICS connector half-cocked.\n");
+;
 	}
 
 	ti->open_status  = CLOSED; /* CLOSED or OPEN      */
@@ -1014,8 +1014,8 @@ static void tok_set_multicast_list(struct net_device *dev)
 	writeb(CMD_IN_SRB, ti->mmio + ACA_OFFSET + ACA_SET + ISRA_ODD);
 #if TR_VERBOSE
 	DPRINTK("Setting functional address: ");
-	for (i=0;i<4;i++)  printk("%02X ", address[i]);
-	printk("\n");
+;
+;
 #endif
 }
 
@@ -1133,12 +1133,12 @@ static void dir_open_adapter (struct net_device *dev)
 					"ring speed, ");
                 } else if (err == 0x2d) {
 			DPRINTK("Physical Insertion: No Monitor Detected, ");
-			printk("retrying after %ds delay...\n",
-					TR_RETRY_INTERVAL/HZ);
+//			printk("retrying after %ds delay...\n",
+;
                 } else if (err == 0x11) {
 			DPRINTK("Lobe Media Function Failure (0x11), ");
-			printk(" retrying after %ds delay...\n",
-					TR_RETRY_INTERVAL/HZ);
+//			printk(" retrying after %ds delay...\n",
+;
                 } else {
 			char **prphase = printphase;
 			char **prerror = printerror;
@@ -1148,12 +1148,12 @@ static void dir_open_adapter (struct net_device *dev)
 			if (pnr < 0 || pnr >= ARRAY_SIZE(printphase) ||
 					enr < 0 ||
 					enr >= ARRAY_SIZE(printerror))
-				printk("0x%x, invalid Phase/Error.", err);
+;
 			else
-				printk("0x%x, Phase: %s, Error: %s\n", err,
-						prphase[pnr], prerror[enr]);
-			printk(" retrying after %ds delay...\n",
-					TR_RETRY_INTERVAL/HZ);
+//				printk("0x%x, Phase: %s, Error: %s\n", err,
+;
+//			printk(" retrying after %ds delay...\n",
+;
                 }
         } else DPRINTK("open failed: ret_code = %02X..., ", ret_code);
 	if (ti->open_action != FAIL) {
@@ -1227,8 +1227,8 @@ static irqreturn_t tok_interrupt(int irq, void *dev_id)
 		DPRINTK("Adapter check interrupt\n");
 		DPRINTK("8 reason bytes follow: ");
 		for (i = 0; i < 8; i++, check_reason++)
-			printk("%02X ", (int) readb(check_reason));
-		printk("\n");
+;
+;
 		writeb(~ADAP_CHK_INT, ti->mmio+ ACA_OFFSET+ACA_RESET+ ISRP_ODD);
 		status = readb(ti->mmio + ACA_OFFSET + ACA_RW + ISRA_EVEN);
 		DPRINTK("ISRA_EVEN == 0x02%x\n",status);
@@ -1534,8 +1534,8 @@ static void initial_tok_int(struct net_device *dev)
 	DPRINTK("ti->init_srb_page=0x%x\n", ti->init_srb_page);
 	DPRINTK("init_srb(%p):", ti->init_srb );
 	for (i = 0; i < 20; i++)
-		printk("%02X ", (int) readb(ti->init_srb + i));
-	printk("\n");
+;
+;
 	}
 #endif
 
@@ -1942,7 +1942,7 @@ static int __init ibmtr_init(void)
 		count++;
 	}
 	if (count) return 0;
-	printk("ibmtr: register_netdev() returned non-zero.\n");
+;
 	return -EIO;
 }
 module_init(ibmtr_init);

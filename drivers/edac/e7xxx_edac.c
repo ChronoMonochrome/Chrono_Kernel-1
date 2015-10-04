@@ -32,95 +32,95 @@
 #define	E7XXX_REVISION " Ver: 2.0.2"
 #define	EDAC_MOD_STR	"e7xxx_edac"
 
-#define e7xxx_printk(level, fmt, arg...) \
-	edac_printk(level, "e7xxx", fmt, ##arg)
-
-#define e7xxx_mc_printk(mci, level, fmt, arg...) \
-	edac_mc_chipset_printk(mci, level, "e7xxx", fmt, ##arg)
-
-#ifndef PCI_DEVICE_ID_INTEL_7205_0
-#define PCI_DEVICE_ID_INTEL_7205_0	0x255d
-#endif				/* PCI_DEVICE_ID_INTEL_7205_0 */
-
-#ifndef PCI_DEVICE_ID_INTEL_7205_1_ERR
-#define PCI_DEVICE_ID_INTEL_7205_1_ERR	0x2551
-#endif				/* PCI_DEVICE_ID_INTEL_7205_1_ERR */
-
-#ifndef PCI_DEVICE_ID_INTEL_7500_0
-#define PCI_DEVICE_ID_INTEL_7500_0	0x2540
-#endif				/* PCI_DEVICE_ID_INTEL_7500_0 */
-
-#ifndef PCI_DEVICE_ID_INTEL_7500_1_ERR
-#define PCI_DEVICE_ID_INTEL_7500_1_ERR	0x2541
-#endif				/* PCI_DEVICE_ID_INTEL_7500_1_ERR */
-
-#ifndef PCI_DEVICE_ID_INTEL_7501_0
-#define PCI_DEVICE_ID_INTEL_7501_0	0x254c
-#endif				/* PCI_DEVICE_ID_INTEL_7501_0 */
-
-#ifndef PCI_DEVICE_ID_INTEL_7501_1_ERR
-#define PCI_DEVICE_ID_INTEL_7501_1_ERR	0x2541
-#endif				/* PCI_DEVICE_ID_INTEL_7501_1_ERR */
-
-#ifndef PCI_DEVICE_ID_INTEL_7505_0
-#define PCI_DEVICE_ID_INTEL_7505_0	0x2550
-#endif				/* PCI_DEVICE_ID_INTEL_7505_0 */
-
-#ifndef PCI_DEVICE_ID_INTEL_7505_1_ERR
-#define PCI_DEVICE_ID_INTEL_7505_1_ERR	0x2551
-#endif				/* PCI_DEVICE_ID_INTEL_7505_1_ERR */
-
-#define E7XXX_NR_CSROWS		8	/* number of csrows */
-#define E7XXX_NR_DIMMS		8	/* FIXME - is this correct? */
-
-/* E7XXX register addresses - device 0 function 0 */
-#define E7XXX_DRB		0x60	/* DRAM row boundary register (8b) */
-#define E7XXX_DRA		0x70	/* DRAM row attribute register (8b) */
-					/*
-					 * 31   Device width row 7 0=x8 1=x4
-					 * 27   Device width row 6
-					 * 23   Device width row 5
-					 * 19   Device width row 4
-					 * 15   Device width row 3
-					 * 11   Device width row 2
-					 *  7   Device width row 1
-					 *  3   Device width row 0
-					 */
-#define E7XXX_DRC		0x7C	/* DRAM controller mode reg (32b) */
-					/*
-					 * 22    Number channels 0=1,1=2
-					 * 19:18 DRB Granularity 32/64MB
-					 */
-#define E7XXX_TOLM		0xC4	/* DRAM top of low memory reg (16b) */
-#define E7XXX_REMAPBASE		0xC6	/* DRAM remap base address reg (16b) */
-#define E7XXX_REMAPLIMIT	0xC8	/* DRAM remap limit address reg (16b) */
-
-/* E7XXX register addresses - device 0 function 1 */
-#define E7XXX_DRAM_FERR		0x80	/* DRAM first error register (8b) */
-#define E7XXX_DRAM_NERR		0x82	/* DRAM next error register (8b) */
-#define E7XXX_DRAM_CELOG_ADD	0xA0	/* DRAM first correctable memory */
-					/*     error address register (32b) */
-					/*
-					 * 31:28 Reserved
-					 * 27:6  CE address (4k block 33:12)
-					 *  5:0  Reserved
-					 */
-#define E7XXX_DRAM_UELOG_ADD	0xB0	/* DRAM first uncorrectable memory */
-					/*     error address register (32b) */
-					/*
-					 * 31:28 Reserved
-					 * 27:6  CE address (4k block 33:12)
-					 *  5:0  Reserved
-					 */
-#define E7XXX_DRAM_CELOG_SYNDROME 0xD0	/* DRAM first correctable memory */
-					/*     error syndrome register (16b) */
-
-enum e7xxx_chips {
-	E7500 = 0,
-	E7501,
-	E7505,
-	E7205,
-};
+//#define e7xxx_printk(level, fmt, arg...) \
+//	edac_printk(level, "e7xxx", fmt, ##arg)
+//
+//#define e7xxx_mc_printk(mci, level, fmt, arg...) \
+//	edac_mc_chipset_printk(mci, level, "e7xxx", fmt, ##arg)
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7205_0
+//#define PCI_DEVICE_ID_INTEL_7205_0	0x255d
+//#endif				/* PCI_DEVICE_ID_INTEL_7205_0 */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7205_1_ERR
+//#define PCI_DEVICE_ID_INTEL_7205_1_ERR	0x2551
+//#endif				/* PCI_DEVICE_ID_INTEL_7205_1_ERR */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7500_0
+//#define PCI_DEVICE_ID_INTEL_7500_0	0x2540
+//#endif				/* PCI_DEVICE_ID_INTEL_7500_0 */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7500_1_ERR
+//#define PCI_DEVICE_ID_INTEL_7500_1_ERR	0x2541
+//#endif				/* PCI_DEVICE_ID_INTEL_7500_1_ERR */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7501_0
+//#define PCI_DEVICE_ID_INTEL_7501_0	0x254c
+//#endif				/* PCI_DEVICE_ID_INTEL_7501_0 */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7501_1_ERR
+//#define PCI_DEVICE_ID_INTEL_7501_1_ERR	0x2541
+//#endif				/* PCI_DEVICE_ID_INTEL_7501_1_ERR */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7505_0
+//#define PCI_DEVICE_ID_INTEL_7505_0	0x2550
+//#endif				/* PCI_DEVICE_ID_INTEL_7505_0 */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7505_1_ERR
+//#define PCI_DEVICE_ID_INTEL_7505_1_ERR	0x2551
+//#endif				/* PCI_DEVICE_ID_INTEL_7505_1_ERR */
+//
+//#define E7XXX_NR_CSROWS		8	/* number of csrows */
+//#define E7XXX_NR_DIMMS		8	/* FIXME - is this correct? */
+//
+///* E7XXX register addresses - device 0 function 0 */
+//#define E7XXX_DRB		0x60	/* DRAM row boundary register (8b) */
+//#define E7XXX_DRA		0x70	/* DRAM row attribute register (8b) */
+//					/*
+//					 * 31   Device width row 7 0=x8 1=x4
+//					 * 27   Device width row 6
+//					 * 23   Device width row 5
+//					 * 19   Device width row 4
+//					 * 15   Device width row 3
+//					 * 11   Device width row 2
+//					 *  7   Device width row 1
+//					 *  3   Device width row 0
+//					 */
+//#define E7XXX_DRC		0x7C	/* DRAM controller mode reg (32b) */
+//					/*
+//					 * 22    Number channels 0=1,1=2
+//					 * 19:18 DRB Granularity 32/64MB
+//					 */
+//#define E7XXX_TOLM		0xC4	/* DRAM top of low memory reg (16b) */
+//#define E7XXX_REMAPBASE		0xC6	/* DRAM remap base address reg (16b) */
+//#define E7XXX_REMAPLIMIT	0xC8	/* DRAM remap limit address reg (16b) */
+//
+///* E7XXX register addresses - device 0 function 1 */
+//#define E7XXX_DRAM_FERR		0x80	/* DRAM first error register (8b) */
+//#define E7XXX_DRAM_NERR		0x82	/* DRAM next error register (8b) */
+//#define E7XXX_DRAM_CELOG_ADD	0xA0	/* DRAM first correctable memory */
+//					/*     error address register (32b) */
+//					/*
+//					 * 31:28 Reserved
+//					 * 27:6  CE address (4k block 33:12)
+//					 *  5:0  Reserved
+//					 */
+//#define E7XXX_DRAM_UELOG_ADD	0xB0	/* DRAM first uncorrectable memory */
+//					/*     error address register (32b) */
+//					/*
+//					 * 31:28 Reserved
+//					 * 27:6  CE address (4k block 33:12)
+//					 *  5:0  Reserved
+//					 */
+//#define E7XXX_DRAM_CELOG_SYNDROME 0xD0	/* DRAM first correctable memory */
+//					/*     error syndrome register (16b) */
+//
+//enum e7xxx_chips {
+//	E7500 = 0,
+//	E7501,
+//	E7505,
+//	E7205,
+;
 
 struct e7xxx_pvt {
 	struct pci_dev *bridge_ck;
@@ -194,7 +194,7 @@ static unsigned long ctl_page_to_phys(struct mem_ctl_info *mci,
 	if (remap < pvt->remaplimit)
 		return remap;
 
-	e7xxx_printk(KERN_ERR, "Invalid page %lx - out of range\n", page);
+;
 	return pvt->tolm - 1;
 }
 
@@ -436,9 +436,9 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
 					pvt->dev_info->err_dev, pvt->bridge_ck);
 
 	if (!pvt->bridge_ck) {
-		e7xxx_printk(KERN_ERR, "error reporting device not found:"
-			"vendor %x device 0x%x (broken BIOS?)\n",
-			PCI_VENDOR_ID_INTEL, e7xxx_devs[dev_idx].err_dev);
+//		e7xxx_printk(KERN_ERR, "error reporting device not found:"
+//			"vendor %x device 0x%x (broken BIOS?)\n",
+;
 		goto fail0;
 	}
 
@@ -457,9 +457,9 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
 	pvt->remapbase = ((u32) pci_data) << 14;
 	pci_read_config_word(pdev, E7XXX_REMAPLIMIT, &pci_data);
 	pvt->remaplimit = ((u32) pci_data) << 14;
-	e7xxx_printk(KERN_INFO,
-		"tolm = %x, remapbase = %x, remaplimit = %x\n", pvt->tolm,
-		pvt->remapbase, pvt->remaplimit);
+//	e7xxx_printk(KERN_INFO,
+//		"tolm = %x, remapbase = %x, remaplimit = %x\n", pvt->tolm,
+;
 
 	/* clear any pending errors, or initial state bits */
 	e7xxx_get_error_info(mci, &discard);
@@ -475,12 +475,12 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	e7xxx_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!e7xxx_pci) {
-		printk(KERN_WARNING
-			"%s(): Unable to create PCI control\n",
-			__func__);
-		printk(KERN_WARNING
-			"%s(): PCI error report via EDAC not setup\n",
-			__func__);
+//		printk(KERN_WARNING
+//			"%s(): Unable to create PCI control\n",
+;
+//		printk(KERN_WARNING
+//			"%s(): PCI error report via EDAC not setup\n",
+;
 	}
 
 	/* get this far and it's successful */

@@ -33,159 +33,159 @@ static int sysbus_parity = -1;
 
 static struct edac_pci_ctl_info *e752x_pci;
 
-#define e752x_printk(level, fmt, arg...) \
-	edac_printk(level, "e752x", fmt, ##arg)
-
-#define e752x_mc_printk(mci, level, fmt, arg...) \
-	edac_mc_chipset_printk(mci, level, "e752x", fmt, ##arg)
-
-#ifndef PCI_DEVICE_ID_INTEL_7520_0
-#define PCI_DEVICE_ID_INTEL_7520_0      0x3590
-#endif				/* PCI_DEVICE_ID_INTEL_7520_0      */
-
-#ifndef PCI_DEVICE_ID_INTEL_7520_1_ERR
-#define PCI_DEVICE_ID_INTEL_7520_1_ERR  0x3591
-#endif				/* PCI_DEVICE_ID_INTEL_7520_1_ERR  */
-
-#ifndef PCI_DEVICE_ID_INTEL_7525_0
-#define PCI_DEVICE_ID_INTEL_7525_0      0x359E
-#endif				/* PCI_DEVICE_ID_INTEL_7525_0      */
-
-#ifndef PCI_DEVICE_ID_INTEL_7525_1_ERR
-#define PCI_DEVICE_ID_INTEL_7525_1_ERR  0x3593
-#endif				/* PCI_DEVICE_ID_INTEL_7525_1_ERR  */
-
-#ifndef PCI_DEVICE_ID_INTEL_7320_0
-#define PCI_DEVICE_ID_INTEL_7320_0	0x3592
-#endif				/* PCI_DEVICE_ID_INTEL_7320_0 */
-
-#ifndef PCI_DEVICE_ID_INTEL_7320_1_ERR
-#define PCI_DEVICE_ID_INTEL_7320_1_ERR	0x3593
-#endif				/* PCI_DEVICE_ID_INTEL_7320_1_ERR */
-
-#ifndef PCI_DEVICE_ID_INTEL_3100_0
-#define PCI_DEVICE_ID_INTEL_3100_0	0x35B0
-#endif				/* PCI_DEVICE_ID_INTEL_3100_0 */
-
-#ifndef PCI_DEVICE_ID_INTEL_3100_1_ERR
-#define PCI_DEVICE_ID_INTEL_3100_1_ERR	0x35B1
-#endif				/* PCI_DEVICE_ID_INTEL_3100_1_ERR */
-
-#define E752X_NR_CSROWS		8	/* number of csrows */
-
-/* E752X register addresses - device 0 function 0 */
-#define E752X_MCHSCRB		0x52	/* Memory Scrub register (16b) */
-					/*
-					 * 6:5     Scrub Completion Count
-					 * 3:2     Scrub Rate (i3100 only)
-					 *      01=fast 10=normal
-					 * 1:0     Scrub Mode enable
-					 *      00=off 10=on
-					 */
-#define E752X_DRB		0x60	/* DRAM row boundary register (8b) */
-#define E752X_DRA		0x70	/* DRAM row attribute register (8b) */
-					/*
-					 * 31:30   Device width row 7
-					 *      01=x8 10=x4 11=x8 DDR2
-					 * 27:26   Device width row 6
-					 * 23:22   Device width row 5
-					 * 19:20   Device width row 4
-					 * 15:14   Device width row 3
-					 * 11:10   Device width row 2
-					 *  7:6    Device width row 1
-					 *  3:2    Device width row 0
-					 */
-#define E752X_DRC		0x7C	/* DRAM controller mode reg (32b) */
-					/* FIXME:IS THIS RIGHT? */
-					/*
-					 * 22    Number channels 0=1,1=2
-					 * 19:18 DRB Granularity 32/64MB
-					 */
-#define E752X_DRM		0x80	/* Dimm mapping register */
-#define E752X_DDRCSR		0x9A	/* DDR control and status reg (16b) */
-					/*
-					 * 14:12 1 single A, 2 single B, 3 dual
-					 */
-#define E752X_TOLM		0xC4	/* DRAM top of low memory reg (16b) */
-#define E752X_REMAPBASE		0xC6	/* DRAM remap base address reg (16b) */
-#define E752X_REMAPLIMIT	0xC8	/* DRAM remap limit address reg (16b) */
-#define E752X_REMAPOFFSET	0xCA	/* DRAM remap limit offset reg (16b) */
-
-/* E752X register addresses - device 0 function 1 */
-#define E752X_FERR_GLOBAL	0x40	/* Global first error register (32b) */
-#define E752X_NERR_GLOBAL	0x44	/* Global next error register (32b) */
-#define E752X_HI_FERR		0x50	/* Hub interface first error reg (8b) */
-#define E752X_HI_NERR		0x52	/* Hub interface next error reg (8b) */
-#define E752X_HI_ERRMASK	0x54	/* Hub interface error mask reg (8b) */
-#define E752X_HI_SMICMD		0x5A	/* Hub interface SMI command reg (8b) */
-#define E752X_SYSBUS_FERR	0x60	/* System buss first error reg (16b) */
-#define E752X_SYSBUS_NERR	0x62	/* System buss next error reg (16b) */
-#define E752X_SYSBUS_ERRMASK	0x64	/* System buss error mask reg (16b) */
-#define E752X_SYSBUS_SMICMD	0x6A	/* System buss SMI command reg (16b) */
-#define E752X_BUF_FERR		0x70	/* Memory buffer first error reg (8b) */
-#define E752X_BUF_NERR		0x72	/* Memory buffer next error reg (8b) */
-#define E752X_BUF_ERRMASK	0x74	/* Memory buffer error mask reg (8b) */
-#define E752X_BUF_SMICMD	0x7A	/* Memory buffer SMI cmd reg (8b) */
-#define E752X_DRAM_FERR		0x80	/* DRAM first error register (16b) */
-#define E752X_DRAM_NERR		0x82	/* DRAM next error register (16b) */
-#define E752X_DRAM_ERRMASK	0x84	/* DRAM error mask register (8b) */
-#define E752X_DRAM_SMICMD	0x8A	/* DRAM SMI command register (8b) */
-#define E752X_DRAM_RETR_ADD	0xAC	/* DRAM Retry address register (32b) */
-#define E752X_DRAM_SEC1_ADD	0xA0	/* DRAM first correctable memory */
-					/*     error address register (32b) */
-					/*
-					 * 31    Reserved
-					 * 30:2  CE address (64 byte block 34:6
-					 * 1     Reserved
-					 * 0     HiLoCS
-					 */
-#define E752X_DRAM_SEC2_ADD	0xC8	/* DRAM first correctable memory */
-					/*     error address register (32b) */
-					/*
-					 * 31    Reserved
-					 * 30:2  CE address (64 byte block 34:6)
-					 * 1     Reserved
-					 * 0     HiLoCS
-					 */
-#define E752X_DRAM_DED_ADD	0xA4	/* DRAM first uncorrectable memory */
-					/*     error address register (32b) */
-					/*
-					 * 31    Reserved
-					 * 30:2  CE address (64 byte block 34:6)
-					 * 1     Reserved
-					 * 0     HiLoCS
-					 */
-#define E752X_DRAM_SCRB_ADD	0xA8	/* DRAM 1st uncorrectable scrub mem */
-					/*     error address register (32b) */
-					/*
-					 * 31    Reserved
-					 * 30:2  CE address (64 byte block 34:6
-					 * 1     Reserved
-					 * 0     HiLoCS
-					 */
-#define E752X_DRAM_SEC1_SYNDROME 0xC4	/* DRAM first correctable memory */
-					/*     error syndrome register (16b) */
-#define E752X_DRAM_SEC2_SYNDROME 0xC6	/* DRAM second correctable memory */
-					/*     error syndrome register (16b) */
-#define E752X_DEVPRES1		0xF4	/* Device Present 1 register (8b) */
-
-/* 3100 IMCH specific register addresses - device 0 function 1 */
-#define I3100_NSI_FERR		0x48	/* NSI first error reg (32b) */
-#define I3100_NSI_NERR		0x4C	/* NSI next error reg (32b) */
-#define I3100_NSI_SMICMD	0x54	/* NSI SMI command register (32b) */
-#define I3100_NSI_EMASK		0x90	/* NSI error mask register (32b) */
-
-/* ICH5R register addresses - device 30 function 0 */
-#define ICH5R_PCI_STAT		0x06	/* PCI status register (16b) */
-#define ICH5R_PCI_2ND_STAT	0x1E	/* PCI status secondary reg (16b) */
-#define ICH5R_PCI_BRIDGE_CTL	0x3E	/* PCI bridge control register (16b) */
-
-enum e752x_chips {
-	E7520 = 0,
-	E7525 = 1,
-	E7320 = 2,
-	I3100 = 3
-};
+//#define e752x_printk(level, fmt, arg...) \
+//	edac_printk(level, "e752x", fmt, ##arg)
+//
+//#define e752x_mc_printk(mci, level, fmt, arg...) \
+//	edac_mc_chipset_printk(mci, level, "e752x", fmt, ##arg)
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7520_0
+//#define PCI_DEVICE_ID_INTEL_7520_0      0x3590
+//#endif				/* PCI_DEVICE_ID_INTEL_7520_0      */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7520_1_ERR
+//#define PCI_DEVICE_ID_INTEL_7520_1_ERR  0x3591
+//#endif				/* PCI_DEVICE_ID_INTEL_7520_1_ERR  */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7525_0
+//#define PCI_DEVICE_ID_INTEL_7525_0      0x359E
+//#endif				/* PCI_DEVICE_ID_INTEL_7525_0      */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7525_1_ERR
+//#define PCI_DEVICE_ID_INTEL_7525_1_ERR  0x3593
+//#endif				/* PCI_DEVICE_ID_INTEL_7525_1_ERR  */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7320_0
+//#define PCI_DEVICE_ID_INTEL_7320_0	0x3592
+//#endif				/* PCI_DEVICE_ID_INTEL_7320_0 */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_7320_1_ERR
+//#define PCI_DEVICE_ID_INTEL_7320_1_ERR	0x3593
+//#endif				/* PCI_DEVICE_ID_INTEL_7320_1_ERR */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_3100_0
+//#define PCI_DEVICE_ID_INTEL_3100_0	0x35B0
+//#endif				/* PCI_DEVICE_ID_INTEL_3100_0 */
+//
+//#ifndef PCI_DEVICE_ID_INTEL_3100_1_ERR
+//#define PCI_DEVICE_ID_INTEL_3100_1_ERR	0x35B1
+//#endif				/* PCI_DEVICE_ID_INTEL_3100_1_ERR */
+//
+//#define E752X_NR_CSROWS		8	/* number of csrows */
+//
+///* E752X register addresses - device 0 function 0 */
+//#define E752X_MCHSCRB		0x52	/* Memory Scrub register (16b) */
+//					/*
+//					 * 6:5     Scrub Completion Count
+//					 * 3:2     Scrub Rate (i3100 only)
+//					 *      01=fast 10=normal
+//					 * 1:0     Scrub Mode enable
+//					 *      00=off 10=on
+//					 */
+//#define E752X_DRB		0x60	/* DRAM row boundary register (8b) */
+//#define E752X_DRA		0x70	/* DRAM row attribute register (8b) */
+//					/*
+//					 * 31:30   Device width row 7
+//					 *      01=x8 10=x4 11=x8 DDR2
+//					 * 27:26   Device width row 6
+//					 * 23:22   Device width row 5
+//					 * 19:20   Device width row 4
+//					 * 15:14   Device width row 3
+//					 * 11:10   Device width row 2
+//					 *  7:6    Device width row 1
+//					 *  3:2    Device width row 0
+//					 */
+//#define E752X_DRC		0x7C	/* DRAM controller mode reg (32b) */
+//					/* FIXME:IS THIS RIGHT? */
+//					/*
+//					 * 22    Number channels 0=1,1=2
+//					 * 19:18 DRB Granularity 32/64MB
+//					 */
+//#define E752X_DRM		0x80	/* Dimm mapping register */
+//#define E752X_DDRCSR		0x9A	/* DDR control and status reg (16b) */
+//					/*
+//					 * 14:12 1 single A, 2 single B, 3 dual
+//					 */
+//#define E752X_TOLM		0xC4	/* DRAM top of low memory reg (16b) */
+//#define E752X_REMAPBASE		0xC6	/* DRAM remap base address reg (16b) */
+//#define E752X_REMAPLIMIT	0xC8	/* DRAM remap limit address reg (16b) */
+//#define E752X_REMAPOFFSET	0xCA	/* DRAM remap limit offset reg (16b) */
+//
+///* E752X register addresses - device 0 function 1 */
+//#define E752X_FERR_GLOBAL	0x40	/* Global first error register (32b) */
+//#define E752X_NERR_GLOBAL	0x44	/* Global next error register (32b) */
+//#define E752X_HI_FERR		0x50	/* Hub interface first error reg (8b) */
+//#define E752X_HI_NERR		0x52	/* Hub interface next error reg (8b) */
+//#define E752X_HI_ERRMASK	0x54	/* Hub interface error mask reg (8b) */
+//#define E752X_HI_SMICMD		0x5A	/* Hub interface SMI command reg (8b) */
+//#define E752X_SYSBUS_FERR	0x60	/* System buss first error reg (16b) */
+//#define E752X_SYSBUS_NERR	0x62	/* System buss next error reg (16b) */
+//#define E752X_SYSBUS_ERRMASK	0x64	/* System buss error mask reg (16b) */
+//#define E752X_SYSBUS_SMICMD	0x6A	/* System buss SMI command reg (16b) */
+//#define E752X_BUF_FERR		0x70	/* Memory buffer first error reg (8b) */
+//#define E752X_BUF_NERR		0x72	/* Memory buffer next error reg (8b) */
+//#define E752X_BUF_ERRMASK	0x74	/* Memory buffer error mask reg (8b) */
+//#define E752X_BUF_SMICMD	0x7A	/* Memory buffer SMI cmd reg (8b) */
+//#define E752X_DRAM_FERR		0x80	/* DRAM first error register (16b) */
+//#define E752X_DRAM_NERR		0x82	/* DRAM next error register (16b) */
+//#define E752X_DRAM_ERRMASK	0x84	/* DRAM error mask register (8b) */
+//#define E752X_DRAM_SMICMD	0x8A	/* DRAM SMI command register (8b) */
+//#define E752X_DRAM_RETR_ADD	0xAC	/* DRAM Retry address register (32b) */
+//#define E752X_DRAM_SEC1_ADD	0xA0	/* DRAM first correctable memory */
+//					/*     error address register (32b) */
+//					/*
+//					 * 31    Reserved
+//					 * 30:2  CE address (64 byte block 34:6
+//					 * 1     Reserved
+//					 * 0     HiLoCS
+//					 */
+//#define E752X_DRAM_SEC2_ADD	0xC8	/* DRAM first correctable memory */
+//					/*     error address register (32b) */
+//					/*
+//					 * 31    Reserved
+//					 * 30:2  CE address (64 byte block 34:6)
+//					 * 1     Reserved
+//					 * 0     HiLoCS
+//					 */
+//#define E752X_DRAM_DED_ADD	0xA4	/* DRAM first uncorrectable memory */
+//					/*     error address register (32b) */
+//					/*
+//					 * 31    Reserved
+//					 * 30:2  CE address (64 byte block 34:6)
+//					 * 1     Reserved
+//					 * 0     HiLoCS
+//					 */
+//#define E752X_DRAM_SCRB_ADD	0xA8	/* DRAM 1st uncorrectable scrub mem */
+//					/*     error address register (32b) */
+//					/*
+//					 * 31    Reserved
+//					 * 30:2  CE address (64 byte block 34:6
+//					 * 1     Reserved
+//					 * 0     HiLoCS
+//					 */
+//#define E752X_DRAM_SEC1_SYNDROME 0xC4	/* DRAM first correctable memory */
+//					/*     error syndrome register (16b) */
+//#define E752X_DRAM_SEC2_SYNDROME 0xC6	/* DRAM second correctable memory */
+//					/*     error syndrome register (16b) */
+//#define E752X_DEVPRES1		0xF4	/* Device Present 1 register (8b) */
+//
+///* 3100 IMCH specific register addresses - device 0 function 1 */
+//#define I3100_NSI_FERR		0x48	/* NSI first error reg (32b) */
+//#define I3100_NSI_NERR		0x4C	/* NSI next error reg (32b) */
+//#define I3100_NSI_SMICMD	0x54	/* NSI SMI command register (32b) */
+//#define I3100_NSI_EMASK		0x90	/* NSI error mask register (32b) */
+//
+///* ICH5R register addresses - device 30 function 0 */
+//#define ICH5R_PCI_STAT		0x06	/* PCI status register (16b) */
+//#define ICH5R_PCI_2ND_STAT	0x1E	/* PCI status secondary reg (16b) */
+//#define ICH5R_PCI_BRIDGE_CTL	0x3E	/* PCI bridge control register (16b) */
+//
+//enum e752x_chips {
+//	E7520 = 0,
+//	E7525 = 1,
+//	E7320 = 2,
+//	I3100 = 3
+;
 
 struct e752x_pvt {
 	struct pci_dev *bridge_ck;
@@ -301,7 +301,7 @@ static unsigned long ctl_page_to_phys(struct mem_ctl_info *mci,
 	if (remap < pvt->remaplimit)
 		return remap;
 
-	e752x_printk(KERN_ERR, "Invalid page %lx - out of range\n", page);
+;
 	return pvt->tolm - 1;
 }
 
@@ -323,11 +323,11 @@ static void do_process_ce(struct mem_ctl_info *mci, u16 error_one,
 	if (pvt->mc_symmetric) {
 		/* chip select are bits 14 & 13 */
 		row = ((page >> 1) & 3);
-		e752x_printk(KERN_WARNING,
-			"Test row %d Table %d %d %d %d %d %d %d %d\n", row,
-			pvt->map[0], pvt->map[1], pvt->map[2], pvt->map[3],
-			pvt->map[4], pvt->map[5], pvt->map[6],
-			pvt->map[7]);
+//		e752x_printk(KERN_WARNING,
+//			"Test row %d Table %d %d %d %d %d %d %d %d\n", row,
+//			pvt->map[0], pvt->map[1], pvt->map[2], pvt->map[3],
+//			pvt->map[4], pvt->map[5], pvt->map[6],
+;
 
 		/* test for channel remapping */
 		for (i = 0; i < 8; i++) {
@@ -335,14 +335,14 @@ static void do_process_ce(struct mem_ctl_info *mci, u16 error_one,
 				break;
 		}
 
-		e752x_printk(KERN_WARNING, "Test computed row %d\n", i);
+;
 
 		if (i < 8)
 			row = i;
 		else
-			e752x_mc_printk(mci, KERN_WARNING,
-					"row %d not found in remap table\n",
-					row);
+//			e752x_mc_printk(mci, KERN_WARNING,
+//					"row %d not found in remap table\n",
+;
 	} else
 		row = edac_mc_find_csrow_by_page(mci, page);
 
@@ -443,9 +443,9 @@ static void do_process_ded_retry(struct mem_ctl_info *mci, u16 error,
 	row = pvt->mc_symmetric ? ((page >> 1) & 3) :
 		edac_mc_find_csrow_by_page(mci, page);
 
-	e752x_mc_printk(mci, KERN_WARNING,
-			"CE page 0x%lx, row %d : Memory read retry\n",
-			(long unsigned int)page, row);
+//	e752x_mc_printk(mci, KERN_WARNING,
+//			"CE page 0x%lx, row %d : Memory read retry\n",
+;
 }
 
 static inline void process_ded_retry(struct mem_ctl_info *mci, u16 error,
@@ -464,7 +464,7 @@ static inline void process_threshold_ce(struct mem_ctl_info *mci, u16 error,
 	*error_found = 1;
 
 	if (handle_error)
-		e752x_mc_printk(mci, KERN_WARNING, "Memory threshold CE\n");
+;
 }
 
 static char *global_message[11] = {
@@ -496,9 +496,9 @@ static void do_global_error(int fatal, u32 errors)
 			 * report the error
 			 */
 			if ((i == DRAM_ENTRY) || report_non_memory_errors)
-				e752x_printk(KERN_WARNING, "%sError %s\n",
-					fatal_message[fatal],
-					global_message[i]);
+//				e752x_printk(KERN_WARNING, "%sError %s\n",
+//					fatal_message[fatal],
+;
 		}
 	}
 }
@@ -525,8 +525,8 @@ static void do_hub_error(int fatal, u8 errors)
 
 	for (i = 0; i < 7; i++) {
 		if (errors & (1 << i))
-			e752x_printk(KERN_WARNING, "%sError %s\n",
-				fatal_message[fatal], hub_message[i]);
+//			e752x_printk(KERN_WARNING, "%sError %s\n",
+;
 	}
 }
 
@@ -582,8 +582,8 @@ static void do_nsi_error(int fatal, u32 errors)
 
 	for (i = 0; i < 30; i++) {
 		if (errors & (1 << i))
-			printk(KERN_WARNING "%sError %s\n",
-			       fatal_message[fatal], nsi_message[i]);
+//			printk(KERN_WARNING "%sError %s\n",
+;
 	}
 }
 
@@ -609,8 +609,8 @@ static void do_membuf_error(u8 errors)
 
 	for (i = 0; i < 4; i++) {
 		if (errors & (1 << i))
-			e752x_printk(KERN_WARNING, "Non-Fatal Error %s\n",
-				membuf_message[i]);
+//			e752x_printk(KERN_WARNING, "Non-Fatal Error %s\n",
+;
 	}
 }
 
@@ -640,8 +640,8 @@ static void do_sysbus_error(int fatal, u32 errors)
 
 	for (i = 0; i < 10; i++) {
 		if (errors & (1 << i))
-			e752x_printk(KERN_WARNING, "%sError System Bus %s\n",
-				fatal_message[fatal], sysbus_message[i]);
+//			e752x_printk(KERN_WARNING, "%sError System Bus %s\n",
+;
 	}
 }
 
@@ -1009,8 +1009,8 @@ static int get_sdram_scrub_rate(struct mem_ctl_info *mci)
 			break;
 
 	if (scrubrates[i].bandwidth == SDRATE_EOT) {
-		e752x_printk(KERN_WARNING,
-			"Invalid sdram scrub control value: 0x%x\n", scrubval);
+//		e752x_printk(KERN_WARNING,
+;
 		return -1;
 	}
 	return scrubrates[i].bandwidth;
@@ -1150,9 +1150,9 @@ static int e752x_get_devs(struct pci_dev *pdev, int dev_idx,
 							PCI_DEVFN(0, 1));
 
 	if (pvt->bridge_ck == NULL) {
-		e752x_printk(KERN_ERR, "error reporting device not found:"
-			"vendor %x device 0x%x (broken BIOS?)\n",
-			PCI_VENDOR_ID_INTEL, e752x_devs[dev_idx].err_dev);
+//		e752x_printk(KERN_ERR, "error reporting device not found:"
+//			"vendor %x device 0x%x (broken BIOS?)\n",
+;
 		return 1;
 	}
 
@@ -1187,8 +1187,8 @@ static void e752x_init_sysbus_parity_mask(struct e752x_pvt *pvt)
 	if (sysbus_parity != -1) {
 		enable = sysbus_parity;
 	} else if (cpu_id[0] && !strstr(cpu_id, "Xeon")) {
-		e752x_printk(KERN_INFO, "System Bus Parity not "
-			     "supported by CPU, disabling\n");
+//		e752x_printk(KERN_INFO, "System Bus Parity not "
+;
 		enable = 0;
 	}
 
@@ -1240,8 +1240,8 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
 	 * fail the probe. */
 	pci_read_config_byte(pdev, E752X_DEVPRES1, &stat8);
 	if (!force_function_unhide && !(stat8 & (1 << 5))) {
-		printk(KERN_INFO "Contact your BIOS vendor to see if the "
-			"E752x error registers can be safely un-hidden\n");
+//		printk(KERN_INFO "Contact your BIOS vendor to see if the "
+;
 		return -ENODEV;
 	}
 	stat8 |= (1 << 5);
@@ -1309,9 +1309,9 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
 	pvt->remapbase = ((u32) pci_data) << 14;
 	pci_read_config_word(pdev, E752X_REMAPLIMIT, &pci_data);
 	pvt->remaplimit = ((u32) pci_data) << 14;
-	e752x_printk(KERN_INFO,
-			"tolm = %x, remapbase = %x, remaplimit = %x\n",
-			pvt->tolm, pvt->remapbase, pvt->remaplimit);
+//	e752x_printk(KERN_INFO,
+//			"tolm = %x, remapbase = %x, remaplimit = %x\n",
+;
 
 	/* Here we assume that we will never see multiple instances of this
 	 * type of memory controller.  The ID is therefore hardcoded to 0.
@@ -1327,11 +1327,11 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	e752x_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!e752x_pci) {
-		printk(KERN_WARNING
-			"%s(): Unable to create PCI control\n", __func__);
-		printk(KERN_WARNING
-			"%s(): PCI error report via EDAC not setup\n",
-			__func__);
+//		printk(KERN_WARNING
+;
+//		printk(KERN_WARNING
+//			"%s(): PCI error report via EDAC not setup\n",
+;
 	}
 
 	/* get this far and it's successful */

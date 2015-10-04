@@ -207,7 +207,7 @@ int snd_dma_alloc_pages(int type, struct device *device, size_t size,
 		break;
 #endif
 	default:
-		printk(KERN_ERR "snd-malloc: invalid device type %d\n", type);
+;
 		dmab->area = NULL;
 		dmab->addr = 0;
 		return -ENXIO;
@@ -279,7 +279,7 @@ void snd_dma_free_pages(struct snd_dma_buffer *dmab)
 		break;
 #endif
 	default:
-		printk(KERN_ERR "snd-malloc: invalid device type %d\n", dmab->dev.type);
+;
 	}
 }
 
@@ -440,7 +440,7 @@ static ssize_t snd_mem_proc_write(struct file *file, const char __user * buffer,
 		    (token = gettoken(&p)) == NULL ||
 		    (buffers = simple_strtol(token, NULL, 0)) <= 0 ||
 		    buffers > 4) {
-			printk(KERN_ERR "snd-page-alloc: invalid proc write format\n");
+;
 			return count;
 		}
 		vendor &= 0xffff;
@@ -452,7 +452,7 @@ static ssize_t snd_mem_proc_write(struct file *file, const char __user * buffer,
 			if (mask > 0 && mask < 0xffffffff) {
 				if (pci_set_dma_mask(pci, mask) < 0 ||
 				    pci_set_consistent_dma_mask(pci, mask) < 0) {
-					printk(KERN_ERR "snd-page-alloc: cannot set DMA mask %lx for pci %04x:%04x\n", mask, vendor, device);
+;
 					pci_dev_put(pci);
 					return count;
 				}
@@ -462,7 +462,7 @@ static ssize_t snd_mem_proc_write(struct file *file, const char __user * buffer,
 				memset(&dmab, 0, sizeof(dmab));
 				if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
 							size, &dmab) < 0) {
-					printk(KERN_ERR "snd-page-alloc: cannot allocate buffer pages (size = %d)\n", size);
+;
 					pci_dev_put(pci);
 					return count;
 				}
@@ -479,7 +479,7 @@ static ssize_t snd_mem_proc_write(struct file *file, const char __user * buffer,
 				 */
 				if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, NULL,
 							size, &dmab) < 0) {
-					printk(KERN_ERR "snd-page-alloc: cannot allocate buffer pages (size = %d)\n", size);
+;
 					break;
 				}
 				snd_dma_reserve_buf(&dmab, (unsigned int)((vendor << 16) | device));
@@ -489,7 +489,7 @@ static ssize_t snd_mem_proc_write(struct file *file, const char __user * buffer,
 		/* FIXME: need for releasing each buffer chunk? */
 		free_all_reserved_pages();
 	else
-		printk(KERN_ERR "snd-page-alloc: invalid proc cmd\n");
+;
 	return count;
 }
 #endif /* CONFIG_PCI */
@@ -525,7 +525,7 @@ static void __exit snd_mem_exit(void)
 	remove_proc_entry(SND_MEM_PROC_FILE, NULL);
 	free_all_reserved_pages();
 	if (snd_allocated_pages > 0)
-		printk(KERN_ERR "snd-malloc: Memory leak?  pages not freed = %li\n", snd_allocated_pages);
+;
 }
 
 

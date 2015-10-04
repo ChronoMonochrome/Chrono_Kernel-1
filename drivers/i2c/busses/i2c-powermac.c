@@ -218,9 +218,9 @@ static int __devexit i2c_powermac_remove(struct platform_device *dev)
 	rc = i2c_del_adapter(adapter);
 	/* We aren't that prepared to deal with this... */
 	if (rc)
-		printk(KERN_WARNING
-		       "i2c-powermac.c: Failed to remove bus %s !\n",
-		       adapter->name);
+//		printk(KERN_WARNING
+//		       "i2c-powermac.c: Failed to remove bus %s !\n",
+;
 	platform_set_drvdata(dev, NULL);
 	memset(adapter, 0, sizeof(*adapter));
 
@@ -274,12 +274,12 @@ static int __devinit i2c_powermac_probe(struct platform_device *dev)
 	adapter->dev.parent = &dev->dev;
 	rc = i2c_add_adapter(adapter);
 	if (rc) {
-		printk(KERN_ERR "i2c-powermac: Adapter %s registration "
-		       "failed\n", adapter->name);
+//		printk(KERN_ERR "i2c-powermac: Adapter %s registration "
+;
 		memset(adapter, 0, sizeof(*adapter));
 	}
 
-	printk(KERN_INFO "PowerMac i2c bus %s registered\n", adapter->name);
+;
 
 	if (!strncmp(basename, "uni-n", 5)) {
 		struct device_node *np;

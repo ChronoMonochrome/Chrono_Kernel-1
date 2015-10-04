@@ -220,8 +220,8 @@ static int send_isa_command(int cmd)
 	int port0, last_port0;	/* Double read for stabilising */
 
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "sending following data cmd=0x%02x\n",
-			cmd);
+//		printk(KERN_DEBUG PFX "sending following data cmd=0x%02x\n",
+;
 
 	/* The WCMD bit must be 1 and the command is only 4 bits in size */
 	control_status = (cmd & 0x0F) | WD_WCMD;
@@ -240,9 +240,9 @@ static int send_isa_command(int cmd)
 	}
 
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "received following data for "
-			"cmd=0x%02x: port0=0x%02x last_port0=0x%02x\n",
-			cmd, port0, last_port0);
+//		printk(KERN_DEBUG PFX "received following data for "
+//			"cmd=0x%02x: port0=0x%02x last_port0=0x%02x\n",
+;
 
 	return port0;
 }
@@ -271,8 +271,8 @@ static int set_command_mode(void)
 	pcwd_private.command_mode = found;
 
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "command_mode=%d\n",
-				pcwd_private.command_mode);
+//		printk(KERN_DEBUG PFX "command_mode=%d\n",
+;
 
 	return found;
 }
@@ -288,8 +288,8 @@ static void unset_command_mode(void)
 	pcwd_private.command_mode = 0;
 
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "command_mode=%d\n",
-				pcwd_private.command_mode);
+//		printk(KERN_DEBUG PFX "command_mode=%d\n",
+;
 }
 
 static inline void pcwd_check_temperature_support(void)
@@ -336,20 +336,20 @@ static void pcwd_show_card_info(void)
 
 	/* Get some extra info from the hardware (in command/debug/diag mode) */
 	if (pcwd_private.revision == PCWD_REVISION_A)
-		printk(KERN_INFO PFX
-			"ISA-PC Watchdog (REV.A) detected at port 0x%04x\n",
-							pcwd_private.io_addr);
+//		printk(KERN_INFO PFX
+//			"ISA-PC Watchdog (REV.A) detected at port 0x%04x\n",
+;
 	else if (pcwd_private.revision == PCWD_REVISION_C) {
 		pcwd_get_firmware();
-		printk(KERN_INFO PFX "ISA-PC Watchdog (REV.C) detected at port "
-			"0x%04x (Firmware version: %s)\n",
-			pcwd_private.io_addr, pcwd_private.fw_ver_str);
+//		printk(KERN_INFO PFX "ISA-PC Watchdog (REV.C) detected at port "
+//			"0x%04x (Firmware version: %s)\n",
+;
 		option_switches = pcwd_get_option_switches();
-		printk(KERN_INFO PFX "Option switches (0x%02x): "
-			"Temperature Reset Enable=%s, Power On Delay=%s\n",
-			option_switches,
-			((option_switches & 0x10) ? "ON" : "OFF"),
-			((option_switches & 0x08) ? "ON" : "OFF"));
+//		printk(KERN_INFO PFX "Option switches (0x%02x): "
+//			"Temperature Reset Enable=%s, Power On Delay=%s\n",
+//			option_switches,
+//			((option_switches & 0x10) ? "ON" : "OFF"),
+;
 
 		/* Reprogram internal heartbeat to 2 seconds */
 		if (set_command_mode()) {
@@ -359,22 +359,22 @@ static void pcwd_show_card_info(void)
 	}
 
 	if (pcwd_private.supports_temp)
-		printk(KERN_INFO PFX "Temperature Option Detected\n");
+;
 
 	if (pcwd_private.boot_status & WDIOF_CARDRESET)
-		printk(KERN_INFO PFX
-			"Previous reboot was caused by the card\n");
+//		printk(KERN_INFO PFX
+;
 
 	if (pcwd_private.boot_status & WDIOF_OVERHEAT) {
-		printk(KERN_EMERG PFX
-			"Card senses a CPU Overheat. Panicking!\n");
-		printk(KERN_EMERG PFX
-			"CPU Overheat\n");
+//		printk(KERN_EMERG PFX
+;
+//		printk(KERN_EMERG PFX
+;
 	}
 
 	if (pcwd_private.boot_status == 0)
-		printk(KERN_INFO PFX
-			"No previous trip detected - Cold boot or reset\n");
+//		printk(KERN_INFO PFX
+;
 }
 
 static void pcwd_timer_ping(unsigned long data)
@@ -404,8 +404,8 @@ static void pcwd_timer_ping(unsigned long data)
 
 		spin_unlock(&pcwd_private.io_lock);
 	} else {
-		printk(KERN_WARNING PFX
-			"Heartbeat lost! Will not ping the watchdog\n");
+//		printk(KERN_WARNING PFX
+;
 	}
 }
 
@@ -426,13 +426,13 @@ static int pcwd_start(void)
 		stat_reg = inb_p(pcwd_private.io_addr + 2);
 		spin_unlock(&pcwd_private.io_lock);
 		if (stat_reg & WD_WDIS) {
-			printk(KERN_INFO PFX "Could not start watchdog\n");
+;
 			return -EIO;
 		}
 	}
 
 	if (debug >= VERBOSE)
-		printk(KERN_DEBUG PFX "Watchdog started\n");
+;
 
 	return 0;
 }
@@ -454,13 +454,13 @@ static int pcwd_stop(void)
 		stat_reg = inb_p(pcwd_private.io_addr + 2);
 		spin_unlock(&pcwd_private.io_lock);
 		if ((stat_reg & WD_WDIS) == 0) {
-			printk(KERN_INFO PFX "Could not stop watchdog\n");
+;
 			return -EIO;
 		}
 	}
 
 	if (debug >= VERBOSE)
-		printk(KERN_DEBUG PFX "Watchdog stopped\n");
+;
 
 	return 0;
 }
@@ -471,7 +471,7 @@ static int pcwd_keepalive(void)
 	pcwd_private.next_heartbeat = jiffies + (heartbeat * HZ);
 
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "Watchdog keepalive signal send\n");
+;
 
 	return 0;
 }
@@ -484,8 +484,8 @@ static int pcwd_set_heartbeat(int t)
 	heartbeat = t;
 
 	if (debug >= VERBOSE)
-		printk(KERN_DEBUG PFX "New heartbeat: %d\n",
-		       heartbeat);
+//		printk(KERN_DEBUG PFX "New heartbeat: %d\n",
+;
 
 	return 0;
 }
@@ -518,8 +518,8 @@ static int pcwd_get_status(int *status)
 		if (control_status & WD_T110) {
 			*status |= WDIOF_OVERHEAT;
 			if (temp_panic) {
-				printk(KERN_INFO PFX
-					"Temperature overheat trip!\n");
+//				printk(KERN_INFO PFX
+;
 				kernel_power_off();
 			}
 		}
@@ -530,8 +530,8 @@ static int pcwd_get_status(int *status)
 		if (control_status & WD_REVC_TTRP) {
 			*status |= WDIOF_OVERHEAT;
 			if (temp_panic) {
-				printk(KERN_INFO PFX
-					"Temperature overheat trip!\n");
+//				printk(KERN_INFO PFX
+;
 				kernel_power_off();
 			}
 		}
@@ -548,16 +548,16 @@ static int pcwd_clear_status(void)
 		spin_lock(&pcwd_private.io_lock);
 
 		if (debug >= VERBOSE)
-			printk(KERN_INFO PFX
-					"clearing watchdog trip status\n");
+//			printk(KERN_INFO PFX
+;
 
 		control_status = inb_p(pcwd_private.io_addr + 1);
 
 		if (debug >= DEBUG) {
-			printk(KERN_DEBUG PFX "status was: 0x%02x\n",
-				control_status);
-			printk(KERN_DEBUG PFX "sending: 0x%02x\n",
-				(control_status & WD_REVC_R2DS));
+//			printk(KERN_DEBUG PFX "status was: 0x%02x\n",
+;
+//			printk(KERN_DEBUG PFX "sending: 0x%02x\n",
+;
 		}
 
 		/* clear reset status & Keep Relay 2 disable state as it is */
@@ -588,8 +588,8 @@ static int pcwd_get_temperature(int *temperature)
 	spin_unlock(&pcwd_private.io_lock);
 
 	if (debug >= DEBUG) {
-		printk(KERN_DEBUG PFX "temperature is: %d F\n",
-			*temperature);
+//		printk(KERN_DEBUG PFX "temperature is: %d F\n",
+;
 	}
 
 	return 0;
@@ -720,8 +720,8 @@ static int pcwd_close(struct inode *inode, struct file *file)
 	if (expect_close == 42)
 		pcwd_stop();
 	else {
-		printk(KERN_CRIT PFX
-			"Unexpected close, not stopping watchdog!\n");
+//		printk(KERN_CRIT PFX
+;
 		pcwd_keepalive();
 	}
 	expect_close = 0;
@@ -828,11 +828,11 @@ static int __devinit pcwd_isa_match(struct device *dev, unsigned int id)
 	int retval;
 
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "pcwd_isa_match id=%d\n",
-			id);
+//		printk(KERN_DEBUG PFX "pcwd_isa_match id=%d\n",
+;
 
 	if (!request_region(base_addr, 4, "PCWD")) {
-		printk(KERN_INFO PFX "Port 0x%04x unavailable\n", base_addr);
+;
 		return 0;
 	}
 
@@ -870,21 +870,21 @@ static int __devinit pcwd_isa_probe(struct device *dev, unsigned int id)
 	int ret;
 
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "pcwd_isa_probe id=%d\n",
-			id);
+//		printk(KERN_DEBUG PFX "pcwd_isa_probe id=%d\n",
+;
 
 	cards_found++;
 	if (cards_found == 1)
-		printk(KERN_INFO PFX "v%s Ken Hollis (kenji@bitgate.com)\n",
-							WATCHDOG_VERSION);
+//		printk(KERN_INFO PFX "v%s Ken Hollis (kenji@bitgate.com)\n",
+;
 
 	if (cards_found > 1) {
-		printk(KERN_ERR PFX "This driver only supports 1 device\n");
+;
 		return -ENODEV;
 	}
 
 	if (pcwd_ioports[id] == 0x0000) {
-		printk(KERN_ERR PFX "No I/O-Address for card detected\n");
+;
 		return -ENODEV;
 	}
 	pcwd_private.io_addr = pcwd_ioports[id];
@@ -896,8 +896,8 @@ static int __devinit pcwd_isa_probe(struct device *dev, unsigned int id)
 
 	if (!request_region(pcwd_private.io_addr,
 		(pcwd_private.revision == PCWD_REVISION_A) ? 2 : 4, "PCWD")) {
-		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
-			pcwd_private.io_addr);
+//		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
+;
 		ret = -EIO;
 		goto error_request_region;
 	}
@@ -932,31 +932,31 @@ static int __devinit pcwd_isa_probe(struct device *dev, unsigned int id)
 	   if not reset to the default */
 	if (pcwd_set_heartbeat(heartbeat)) {
 		pcwd_set_heartbeat(WATCHDOG_HEARTBEAT);
-		printk(KERN_INFO PFX
-		  "heartbeat value must be 2 <= heartbeat <= 7200, using %d\n",
-							WATCHDOG_HEARTBEAT);
+//		printk(KERN_INFO PFX
+//		  "heartbeat value must be 2 <= heartbeat <= 7200, using %d\n",
+;
 	}
 
 	if (pcwd_private.supports_temp) {
 		ret = misc_register(&temp_miscdev);
 		if (ret) {
-			printk(KERN_ERR PFX
-			    "cannot register miscdev on minor=%d (err=%d)\n",
-							TEMP_MINOR, ret);
+//			printk(KERN_ERR PFX
+//			    "cannot register miscdev on minor=%d (err=%d)\n",
+;
 			goto error_misc_register_temp;
 		}
 	}
 
 	ret = misc_register(&pcwd_miscdev);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-					WATCHDOG_MINOR, ret);
+//		printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 		goto error_misc_register_watchdog;
 	}
 
-	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
-		heartbeat, nowayout);
+//	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
+;
 
 	return 0;
 
@@ -975,8 +975,8 @@ error_request_region:
 static int __devexit pcwd_isa_remove(struct device *dev, unsigned int id)
 {
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "pcwd_isa_remove id=%d\n",
-			id);
+//		printk(KERN_DEBUG PFX "pcwd_isa_remove id=%d\n",
+;
 
 	if (!pcwd_private.io_addr)
 		return 1;
@@ -1000,8 +1000,8 @@ static int __devexit pcwd_isa_remove(struct device *dev, unsigned int id)
 static void pcwd_isa_shutdown(struct device *dev, unsigned int id)
 {
 	if (debug >= DEBUG)
-		printk(KERN_DEBUG PFX "pcwd_isa_shutdown id=%d\n",
-			id);
+//		printk(KERN_DEBUG PFX "pcwd_isa_shutdown id=%d\n",
+;
 
 	pcwd_stop();
 }
@@ -1025,7 +1025,7 @@ static int __init pcwd_init_module(void)
 static void __exit pcwd_cleanup_module(void)
 {
 	isa_unregister_driver(&pcwd_isa_driver);
-	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
+;
 }
 
 module_init(pcwd_init_module);

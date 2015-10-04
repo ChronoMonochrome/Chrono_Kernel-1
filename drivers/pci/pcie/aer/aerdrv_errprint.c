@@ -141,11 +141,11 @@ static void __aer_print_error(const char *prefix,
 				aer_uncorrectable_error_string[i] : NULL;
 
 		if (errmsg)
-			printk("%s""   [%2d] %-22s%s\n", prefix, i, errmsg,
-				info->first_error == i ? " (First)" : "");
+//			printk("%s""   [%2d] %-22s%s\n", prefix, i, errmsg,
+;
 		else
-			printk("%s""   [%2d] Unknown Error Bit%s\n", prefix, i,
-				info->first_error == i ? " (First)" : "");
+//			printk("%s""   [%2d] Unknown Error Bit%s\n", prefix, i,
+;
 	}
 }
 
@@ -159,41 +159,41 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
 		 dev_driver_string(&dev->dev), dev_name(&dev->dev));
 
 	if (info->status == 0) {
-		printk("%s""PCIe Bus Error: severity=%s, type=Unaccessible, "
-			"id=%04x(Unregistered Agent ID)\n", prefix,
-			aer_error_severity_string[info->severity], id);
+//		printk("%s""PCIe Bus Error: severity=%s, type=Unaccessible, "
+//			"id=%04x(Unregistered Agent ID)\n", prefix,
+;
 	} else {
 		int layer, agent;
 
 		layer = AER_GET_LAYER_ERROR(info->severity, info->status);
 		agent = AER_GET_AGENT(info->severity, info->status);
 
-		printk("%s""PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
-			prefix, aer_error_severity_string[info->severity],
-			aer_error_layer[layer], id, aer_agent_string[agent]);
+//		printk("%s""PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
+//			prefix, aer_error_severity_string[info->severity],
+;
 
-		printk("%s""  device [%04x:%04x] error status/mask=%08x/%08x\n",
-			prefix, dev->vendor, dev->device,
-			info->status, info->mask);
+//		printk("%s""  device [%04x:%04x] error status/mask=%08x/%08x\n",
+//			prefix, dev->vendor, dev->device,
+;
 
 		__aer_print_error(prefix, info);
 
 		if (info->tlp_header_valid) {
 			unsigned char *tlp = (unsigned char *) &info->tlp;
-			printk("%s""  TLP Header:"
-				" %02x%02x%02x%02x %02x%02x%02x%02x"
-				" %02x%02x%02x%02x %02x%02x%02x%02x\n",
-				prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
-				*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
-				*(tlp + 11), *(tlp + 10), *(tlp + 9),
-				*(tlp + 8), *(tlp + 15), *(tlp + 14),
-				*(tlp + 13), *(tlp + 12));
+//			printk("%s""  TLP Header:"
+//				" %02x%02x%02x%02x %02x%02x%02x%02x"
+//				" %02x%02x%02x%02x %02x%02x%02x%02x\n",
+//				prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
+//				*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
+//				*(tlp + 11), *(tlp + 10), *(tlp + 9),
+//				*(tlp + 8), *(tlp + 15), *(tlp + 14),
+;
 		}
 	}
 
 	if (info->id && info->error_dev_num > 1 && info->id == id)
-		printk("%s""  Error of this Agent(%04x) is reported first\n",
-			prefix, id);
+//		printk("%s""  Error of this Agent(%04x) is reported first\n",
+;
 }
 
 void aer_print_port_info(struct pci_dev *dev, struct aer_err_info *info)
@@ -238,25 +238,25 @@ void cper_print_aer(const char *prefix, int cper_severity,
 	}
 	layer = AER_GET_LAYER_ERROR(aer_severity, status);
 	agent = AER_GET_AGENT(aer_severity, status);
-	printk("%s""aer_status: 0x%08x, aer_mask: 0x%08x\n",
-	       prefix, status, mask);
+//	printk("%s""aer_status: 0x%08x, aer_mask: 0x%08x\n",
+;
 	cper_print_bits(prefix, status, status_strs, status_strs_size);
-	printk("%s""aer_layer=%s, aer_agent=%s\n", prefix,
-	       aer_error_layer[layer], aer_agent_string[agent]);
+//	printk("%s""aer_layer=%s, aer_agent=%s\n", prefix,
+;
 	if (aer_severity != AER_CORRECTABLE)
-		printk("%s""aer_uncor_severity: 0x%08x\n",
-		       prefix, aer->uncor_severity);
+//		printk("%s""aer_uncor_severity: 0x%08x\n",
+;
 	if (tlp_header_valid) {
 		const unsigned char *tlp;
 		tlp = (const unsigned char *)&aer->header_log;
-		printk("%s""aer_tlp_header:"
-			" %02x%02x%02x%02x %02x%02x%02x%02x"
-			" %02x%02x%02x%02x %02x%02x%02x%02x\n",
-			prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
-			*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
-			*(tlp + 11), *(tlp + 10), *(tlp + 9),
-			*(tlp + 8), *(tlp + 15), *(tlp + 14),
-			*(tlp + 13), *(tlp + 12));
+//		printk("%s""aer_tlp_header:"
+//			" %02x%02x%02x%02x %02x%02x%02x%02x"
+//			" %02x%02x%02x%02x %02x%02x%02x%02x\n",
+//			prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
+//			*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
+//			*(tlp + 11), *(tlp + 10), *(tlp + 9),
+//			*(tlp + 8), *(tlp + 15), *(tlp + 14),
+;
 	}
 }
 #endif

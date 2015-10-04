@@ -104,8 +104,8 @@ static int radeon_apply_workarounds(struct radeonfb_info *rinfo)
 		    (id->subsystem_device == rinfo->pdev->subsystem_device )) {
 
 			/* we found a device that requires workaround */
-			printk(KERN_DEBUG "radeonfb: %s detected"
-			       ", enabling workaround\n", id->ident);
+//			printk(KERN_DEBUG "radeonfb: %s detected"
+;
 
 			rinfo->pm_mode |= id->pm_mode_modifier;
 
@@ -1444,8 +1444,8 @@ static void radeon_pm_reset_pad_ctlr_strength(struct radeonfb_info *rinfo)
 			i = 0;
 			j++;
 			if (j > 10) {
-				printk(KERN_WARNING "radeon: PAD_CTLR_STRENGTH doesn't "
-				       "stabilize !\n");
+//				printk(KERN_WARNING "radeon: PAD_CTLR_STRENGTH doesn't "
+;
 				break;
 			}
 		}
@@ -2540,8 +2540,8 @@ static void radeon_set_suspend(struct radeonfb_info *rinfo, int suspend)
 	 * including PCI config registers, clocks, AGP conf, ...)
 	 */
 	if (suspend) {
-		printk(KERN_DEBUG "radeonfb (%s): switching to D2 state...\n",
-		       pci_name(rinfo->pdev));
+//		printk(KERN_DEBUG "radeonfb (%s): switching to D2 state...\n",
+;
 
 		/* Disable dynamic power management of clocks for the
 		 * duration of the suspend/resume process
@@ -2586,8 +2586,8 @@ static void radeon_set_suspend(struct radeonfb_info *rinfo, int suspend)
 		radeonfb_whack_power_state(rinfo, PCI_D2);
 		__pci_complete_power_transition(rinfo->pdev, PCI_D2);
 	} else {
-		printk(KERN_DEBUG "radeonfb (%s): switching to D0 state...\n",
-		       pci_name(rinfo->pdev));
+//		printk(KERN_DEBUG "radeonfb (%s): switching to D0 state...\n",
+;
 
 		if (rinfo->family <= CHIP_FAMILY_RV250) {
 			/* Reset the SDRAM controller  */
@@ -2612,8 +2612,8 @@ int radeonfb_pci_suspend(struct pci_dev *pdev, pm_message_t mesg)
 	if (mesg.event == pdev->dev.power.power_state.event)
 		return 0;
 
-	printk(KERN_DEBUG "radeonfb (%s): suspending for event: %d...\n",
-	       pci_name(pdev), mesg.event);
+//	printk(KERN_DEBUG "radeonfb (%s): suspending for event: %d...\n",
+;
 
 	/* For suspend-to-disk, we cheat here. We don't suspend anything and
 	 * let fbcon continue drawing until we are all set. That shouldn't
@@ -2720,8 +2720,8 @@ int radeonfb_pci_resume(struct pci_dev *pdev)
 	} else
 		console_lock();
 
-	printk(KERN_DEBUG "radeonfb (%s): resuming from state: %d...\n",
-	       pci_name(pdev), pdev->dev.power.power_state.event);
+//	printk(KERN_DEBUG "radeonfb (%s): resuming from state: %d...\n",
+;
 
 	/* PCI state will have been restored by the core, so
 	 * we should be in D0 now with our config space fully
@@ -2733,8 +2733,8 @@ int radeonfb_pci_resume(struct pci_dev *pdev)
 			if (rinfo->reinit_func != NULL)
 				rinfo->reinit_func(rinfo);
 			else {
-				printk(KERN_ERR "radeonfb (%s): can't resume radeon from"
-				       " D3 cold, need softboot !", pci_name(pdev));
+//				printk(KERN_ERR "radeonfb (%s): can't resume radeon from"
+;
 				rc = -EIO;
 				goto bail;
 			}
@@ -2815,10 +2815,10 @@ void radeonfb_pm_init(struct radeonfb_info *rinfo, int dynclk, int ignore_devlis
 
 	if (rinfo->dynclk == 1) {
 		radeon_pm_enable_dynamic_mode(rinfo);
-		printk("radeonfb: Dynamic Clock Power Management enabled\n");
+;
 	} else if (rinfo->dynclk == 0) {
 		radeon_pm_disable_dynamic_mode(rinfo);
-		printk("radeonfb: Dynamic Clock Power Management disabled\n");
+;
 	}
 
 #if defined(CONFIG_PM)
@@ -2883,14 +2883,14 @@ void radeonfb_pm_init(struct radeonfb_info *rinfo, int dynclk, int ignore_devlis
 #endif /* defined(CONFIG_PM) */
 
 	if (ignore_devlist)
-		printk(KERN_DEBUG
-		       "radeonfb: skipping test for device workarounds\n");
+//		printk(KERN_DEBUG
+;
 	else
 		radeon_apply_workarounds(rinfo);
 
 	if (force_sleep) {
-		printk(KERN_DEBUG
-		       "radeonfb: forcefully enabling D2 sleep mode\n");
+//		printk(KERN_DEBUG
+;
 		rinfo->pm_mode |= radeon_pm_d2;
 	}
 }

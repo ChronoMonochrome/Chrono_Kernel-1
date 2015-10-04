@@ -214,12 +214,12 @@ snd_vortex_pcm_hw_params(struct snd_pcm_substream *substream,
 	err =
 	    snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	if (err < 0) {
-		printk(KERN_ERR "Vortex: pcm page alloc failed!\n");
+;
 		return err;
 	}
 	/*
-	   printk(KERN_INFO "Vortex: periods %d, period_bytes %d, channels = %d\n", params_periods(hw_params),
-	   params_period_bytes(hw_params), params_channels(hw_params));
+//	   printk(KERN_INFO "Vortex: periods %d, period_bytes %d, channels = %d\n", params_periods(hw_params),
+;
 	 */
 	spin_lock_irq(&chip->lock);
 	// Make audio routes and config buffer DMA.
@@ -335,7 +335,7 @@ static int snd_vortex_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		// do something to start the PCM engine
-		//printk(KERN_INFO "vortex: start %d\n", dma);
+;
 		stream->fifo_enabled = 1;
 		if (VORTEX_PCM_TYPE(substream->pcm) != VORTEX_PCM_WT) {
 			vortex_adbdma_resetup(chip, dma);
@@ -343,27 +343,27 @@ static int snd_vortex_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 		}
 #ifndef CHIP_AU8810
 		else {
-			printk(KERN_INFO "vortex: wt start %d\n", dma);
+;
 			vortex_wtdma_startfifo(chip, dma);
 		}
 #endif
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 		// do something to stop the PCM engine
-		//printk(KERN_INFO "vortex: stop %d\n", dma);
+;
 		stream->fifo_enabled = 0;
 		if (VORTEX_PCM_TYPE(substream->pcm) != VORTEX_PCM_WT)
 			vortex_adbdma_pausefifo(chip, dma);
 		//vortex_adbdma_stopfifo(chip, dma);
 #ifndef CHIP_AU8810
 		else {
-			printk(KERN_INFO "vortex: wt stop %d\n", dma);
+;
 			vortex_wtdma_stopfifo(chip, dma);
 		}
 #endif
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		//printk(KERN_INFO "vortex: pause %d\n", dma);
+;
 		if (VORTEX_PCM_TYPE(substream->pcm) != VORTEX_PCM_WT)
 			vortex_adbdma_pausefifo(chip, dma);
 #ifndef CHIP_AU8810
@@ -372,7 +372,7 @@ static int snd_vortex_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 #endif
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		//printk(KERN_INFO "vortex: resume %d\n", dma);
+;
 		if (VORTEX_PCM_TYPE(substream->pcm) != VORTEX_PCM_WT)
 			vortex_adbdma_resumefifo(chip, dma);
 #ifndef CHIP_AU8810
@@ -403,7 +403,7 @@ static snd_pcm_uframes_t snd_vortex_pcm_pointer(struct snd_pcm_substream *substr
 	else
 		current_ptr = vortex_wtdma_getlinearpos(chip, dma);
 #endif
-	//printk(KERN_INFO "vortex: pointer = 0x%x\n", current_ptr);
+;
 	spin_unlock(&chip->lock);
 	return (bytes_to_frames(substream->runtime, current_ptr));
 }

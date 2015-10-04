@@ -317,7 +317,7 @@ static int x25_state3_machine(struct sock *sk, struct sk_buff *skb, int frametyp
 			break;
 
 		default:
-			printk(KERN_WARNING "x25: unknown %02X in state 3\n", frametype);
+;
 			break;
 	}
 

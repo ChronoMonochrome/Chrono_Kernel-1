@@ -196,38 +196,38 @@ static void dump_regs(struct cardinfo *card)
 
 	p = card->csr_remap;
 	for (i = 0; i < 8; i++) {
-		printk(KERN_DEBUG "%p   ", p);
+;
 
 		for (i1 = 0; i1 < 16; i1++)
 			printk("%02x ", *p++);
 
-		printk("\n");
+;
 	}
 }
 #endif
 
 static void dump_dmastat(struct cardinfo *card, unsigned int dmastat)
 {
-	dev_printk(KERN_DEBUG, &card->dev->dev, "DMAstat - ");
+;
 	if (dmastat & DMASCR_ANY_ERR)
-		printk(KERN_CONT "ANY_ERR ");
+;
 	if (dmastat & DMASCR_MBE_ERR)
-		printk(KERN_CONT "MBE_ERR ");
+;
 	if (dmastat & DMASCR_PARITY_ERR_REP)
-		printk(KERN_CONT "PARITY_ERR_REP ");
+;
 	if (dmastat & DMASCR_PARITY_ERR_DET)
-		printk(KERN_CONT "PARITY_ERR_DET ");
+;
 	if (dmastat & DMASCR_SYSTEM_ERR_SIG)
-		printk(KERN_CONT "SYSTEM_ERR_SIG ");
+;
 	if (dmastat & DMASCR_TARGET_ABT)
-		printk(KERN_CONT "TARGET_ABT ");
+;
 	if (dmastat & DMASCR_MASTER_ABT)
-		printk(KERN_CONT "MASTER_ABT ");
+;
 	if (dmastat & DMASCR_CHAIN_COMPLETE)
-		printk(KERN_CONT "CHAIN_COMPLETE ");
+;
 	if (dmastat & DMASCR_DMA_COMPLETE)
-		printk(KERN_CONT "DMA_COMPLETE ");
-	printk("\n");
+;
+;
 }
 
 /*
@@ -461,18 +461,18 @@ static void process_page(unsigned long data)
 		if (control & DMASCR_HARD_ERROR) {
 			/* error */
 			clear_bit(BIO_UPTODATE, &bio->bi_flags);
-			dev_printk(KERN_WARNING, &card->dev->dev,
-				"I/O error on sector %d/%d\n",
-				le32_to_cpu(desc->local_addr)>>9,
-				le32_to_cpu(desc->transfer_size));
+//			dev_printk(KERN_WARNING, &card->dev->dev,
+//				"I/O error on sector %d/%d\n",
+//				le32_to_cpu(desc->local_addr)>>9,
+;
 			dump_dmastat(card, control);
 		} else if ((bio->bi_rw & REQ_WRITE) &&
 			   le32_to_cpu(desc->local_addr) >> 9 ==
 				card->init_size) {
 			card->init_size += le32_to_cpu(desc->transfer_size) >> 9;
 			if (card->init_size >> 1 >= card->mm_size) {
-				dev_printk(KERN_INFO, &card->dev->dev,
-					"memory now initialised\n");
+//				dev_printk(KERN_INFO, &card->dev->dev,
+;
 				set_userbit(card, MEMORY_INITIALIZED, 1);
 			}
 		}
@@ -614,51 +614,51 @@ HW_TRACE(0x30);
 		dump_dmastat(card, dma_status);
 
 		if (stat & 0x01)
-			dev_printk(KERN_ERR, &card->dev->dev,
-				"Memory access error detected (err count %d)\n",
-				count);
+//			dev_printk(KERN_ERR, &card->dev->dev,
+//				"Memory access error detected (err count %d)\n",
+;
 		if (stat & 0x02)
-			dev_printk(KERN_ERR, &card->dev->dev,
-				"Multi-bit EDC error\n");
+//			dev_printk(KERN_ERR, &card->dev->dev,
+;
 
-		dev_printk(KERN_ERR, &card->dev->dev,
-			"Fault Address 0x%02x%08x, Fault Data 0x%08x%08x\n",
-			addr_log2, addr_log1, data_log2, data_log1);
-		dev_printk(KERN_ERR, &card->dev->dev,
-			"Fault Check 0x%02x, Fault Syndrome 0x%02x\n",
-			check, syndrome);
+//		dev_printk(KERN_ERR, &card->dev->dev,
+//			"Fault Address 0x%02x%08x, Fault Data 0x%08x%08x\n",
+;
+//		dev_printk(KERN_ERR, &card->dev->dev,
+//			"Fault Check 0x%02x, Fault Syndrome 0x%02x\n",
+;
 
 		writeb(0, card->csr_remap + ERROR_COUNT);
 	}
 
 	if (dma_status & DMASCR_PARITY_ERR_REP) {
-		dev_printk(KERN_ERR, &card->dev->dev,
-			"PARITY ERROR REPORTED\n");
+//		dev_printk(KERN_ERR, &card->dev->dev,
+;
 		pci_read_config_word(card->dev, PCI_STATUS, &cfg_status);
 		pci_write_config_word(card->dev, PCI_STATUS, cfg_status);
 	}
 
 	if (dma_status & DMASCR_PARITY_ERR_DET) {
-		dev_printk(KERN_ERR, &card->dev->dev,
-			"PARITY ERROR DETECTED\n");
+//		dev_printk(KERN_ERR, &card->dev->dev,
+;
 		pci_read_config_word(card->dev, PCI_STATUS, &cfg_status);
 		pci_write_config_word(card->dev, PCI_STATUS, cfg_status);
 	}
 
 	if (dma_status & DMASCR_SYSTEM_ERR_SIG) {
-		dev_printk(KERN_ERR, &card->dev->dev, "SYSTEM ERROR\n");
+;
 		pci_read_config_word(card->dev, PCI_STATUS, &cfg_status);
 		pci_write_config_word(card->dev, PCI_STATUS, cfg_status);
 	}
 
 	if (dma_status & DMASCR_TARGET_ABT) {
-		dev_printk(KERN_ERR, &card->dev->dev, "TARGET ABORT\n");
+;
 		pci_read_config_word(card->dev, PCI_STATUS, &cfg_status);
 		pci_write_config_word(card->dev, PCI_STATUS, cfg_status);
 	}
 
 	if (dma_status & DMASCR_MASTER_ABT) {
-		dev_printk(KERN_ERR, &card->dev->dev, "MASTER ABORT\n");
+;
 		pci_read_config_word(card->dev, PCI_STATUS, &cfg_status);
 		pci_write_config_word(card->dev, PCI_STATUS, cfg_status);
 	}
@@ -699,20 +699,20 @@ static int check_battery(struct cardinfo *card, int battery, int status)
 		card->battery[battery].last_change = jiffies;
 
 		if (card->battery[battery].good) {
-			dev_printk(KERN_ERR, &card->dev->dev,
-				"Battery %d now good\n", battery + 1);
+//			dev_printk(KERN_ERR, &card->dev->dev,
+;
 			card->battery[battery].warned = 0;
 		} else
-			dev_printk(KERN_ERR, &card->dev->dev,
-				"Battery %d now FAILED\n", battery + 1);
+//			dev_printk(KERN_ERR, &card->dev->dev,
+;
 
 		return 1;
 	} else if (!card->battery[battery].good &&
 		   !card->battery[battery].warned &&
 		   time_after_eq(jiffies, card->battery[battery].last_change +
 				 (HZ * 60 * 60 * 5))) {
-		dev_printk(KERN_ERR, &card->dev->dev,
-			"Battery %d still FAILED after 5 hours\n", battery + 1);
+//		dev_printk(KERN_ERR, &card->dev->dev,
+;
 		card->battery[battery].warned = 1;
 
 		return 1;
@@ -732,10 +732,10 @@ static void check_batteries(struct cardinfo *card)
 
 	status = readb(card->csr_remap + MEMCTRLSTATUS_BATTERY);
 	if (debug & DEBUG_BATTERY_POLLING)
-		dev_printk(KERN_DEBUG, &card->dev->dev,
-			"checking battery status, 1 = %s, 2 = %s\n",
-		       (status & BATTERY_1_FAILURE) ? "FAILURE" : "OK",
-		       (status & BATTERY_2_FAILURE) ? "FAILURE" : "OK");
+//		dev_printk(KERN_DEBUG, &card->dev->dev,
+//			"checking battery status, 1 = %s, 2 = %s\n",
+//		       (status & BATTERY_1_FAILURE) ? "FAILURE" : "OK",
+;
 
 	ret1 = check_battery(card, 0, !(status & BATTERY_1_FAILURE));
 	ret2 = check_battery(card, 1, !(status & BATTERY_2_FAILURE));
@@ -826,7 +826,7 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	static int	printed_version;
 
 	if (!printed_version++)
-		printk(KERN_INFO DRIVER_VERSION " : " DRIVER_DESC "\n");
+;
 
 	ret = pci_enable_device(dev);
 	if (ret)
@@ -842,34 +842,34 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	if (!csr_base || !csr_len)
 		return -ENODEV;
 
-	dev_printk(KERN_INFO, &dev->dev,
-	  "Micro Memory(tm) controller found (PCI Mem Module (Battery Backup))\n");
+//	dev_printk(KERN_INFO, &dev->dev,
+;
 
 	if (pci_set_dma_mask(dev, DMA_BIT_MASK(64)) &&
 	    pci_set_dma_mask(dev, DMA_BIT_MASK(32))) {
-		dev_printk(KERN_WARNING, &dev->dev, "NO suitable DMA found\n");
+;
 		return  -ENOMEM;
 	}
 
 	ret = pci_request_regions(dev, DRIVER_NAME);
 	if (ret) {
-		dev_printk(KERN_ERR, &card->dev->dev,
-			"Unable to request memory region\n");
+//		dev_printk(KERN_ERR, &card->dev->dev,
+;
 		goto failed_req_csr;
 	}
 
 	card->csr_remap = ioremap_nocache(csr_base, csr_len);
 	if (!card->csr_remap) {
-		dev_printk(KERN_ERR, &card->dev->dev,
-			"Unable to remap memory region\n");
+//		dev_printk(KERN_ERR, &card->dev->dev,
+;
 		ret = -ENOMEM;
 
 		goto failed_remap_csr;
 	}
 
-	dev_printk(KERN_INFO, &card->dev->dev,
-		"CSR 0x%08lx -> 0x%p (0x%lx)\n",
-	       csr_base, card->csr_remap, csr_len);
+//	dev_printk(KERN_INFO, &card->dev->dev,
+//		"CSR 0x%08lx -> 0x%p (0x%lx)\n",
+;
 
 	switch (card->dev->device) {
 	case 0x5415:
@@ -894,7 +894,7 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	}
 
 	if (readb(card->csr_remap + MEMCTRLSTATUS_MAGIC) != magic_number) {
-		dev_printk(KERN_ERR, &card->dev->dev, "Magic number invalid\n");
+;
 		ret = -ENOMEM;
 		goto failed_magic;
 	}
@@ -907,7 +907,7 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 						&card->mm_pages[1].page_dma);
 	if (card->mm_pages[0].desc == NULL ||
 	    card->mm_pages[1].desc == NULL) {
-		dev_printk(KERN_ERR, &card->dev->dev, "alloc failed\n");
+;
 		goto failed_alloc;
 	}
 	reset_page(&card->mm_pages[0]);
@@ -962,16 +962,16 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	card->battery[0].last_change = card->battery[1].last_change = jiffies;
 
 	if (card->flags & UM_FLAG_NO_BATT)
-		dev_printk(KERN_INFO, &card->dev->dev,
-			"Size %d KB\n", card->mm_size);
+//		dev_printk(KERN_INFO, &card->dev->dev,
+;
 	else {
-		dev_printk(KERN_INFO, &card->dev->dev,
-			"Size %d KB, Battery 1 %s (%s), Battery 2 %s (%s)\n",
-		       card->mm_size,
-		       batt_status & BATTERY_1_DISABLED ? "Disabled" : "Enabled",
-		       card->battery[0].good ? "OK" : "FAILURE",
-		       batt_status & BATTERY_2_DISABLED ? "Disabled" : "Enabled",
-		       card->battery[1].good ? "OK" : "FAILURE");
+//		dev_printk(KERN_INFO, &card->dev->dev,
+//			"Size %d KB, Battery 1 %s (%s), Battery 2 %s (%s)\n",
+//		       card->mm_size,
+//		       batt_status & BATTERY_1_DISABLED ? "Disabled" : "Enabled",
+//		       card->battery[0].good ? "OK" : "FAILURE",
+//		       batt_status & BATTERY_2_DISABLED ? "Disabled" : "Enabled",
+;
 
 		set_fault_to_battery_status(card);
 	}
@@ -987,14 +987,14 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 
 	if (request_irq(dev->irq, mm_interrupt, IRQF_SHARED, DRIVER_NAME,
 			card)) {
-		dev_printk(KERN_ERR, &card->dev->dev,
-			"Unable to allocate IRQ\n");
+//		dev_printk(KERN_ERR, &card->dev->dev,
+;
 		ret = -ENODEV;
 		goto failed_req_irq;
 	}
 
-	dev_printk(KERN_INFO, &card->dev->dev,
-		"Window size %d bytes, IRQ %d\n", data, dev->irq);
+//	dev_printk(KERN_INFO, &card->dev->dev,
+;
 
 	spin_lock_init(&card->lock);
 
@@ -1014,12 +1014,12 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	num_cards++;
 
 	if (!get_userbit(card, MEMORY_INITIALIZED)) {
-		dev_printk(KERN_INFO, &card->dev->dev,
-		  "memory NOT initialized. Consider over-writing whole device.\n");
+//		dev_printk(KERN_INFO, &card->dev->dev,
+;
 		card->init_size = 0;
 	} else {
-		dev_printk(KERN_INFO, &card->dev->dev,
-			"memory already initialized\n");
+//		dev_printk(KERN_INFO, &card->dev->dev,
+;
 		card->init_size = card->mm_size;
 	}
 
@@ -1127,7 +1127,7 @@ static int __init mm_init(void)
 	}
 
 	init_battery_timer();
-	printk(KERN_INFO "MM: desc_per_page = %ld\n", DESC_PER_PAGE);
+;
 /* printk("mm_init: Done. 10-19-01 9:00\n"); */
 	return 0;
 

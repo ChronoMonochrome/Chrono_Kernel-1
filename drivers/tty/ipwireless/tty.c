@@ -77,17 +77,17 @@ static void report_registering(struct ipw_tty *tty)
 {
 	char *iftype = tty_type_name(tty->tty_type);
 
-	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
-	       ": registering %s device ttyIPWp%d\n", iftype, tty->index);
+//	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
+;
 }
 
 static void report_deregistering(struct ipw_tty *tty)
 {
 	char *iftype = tty_type_name(tty->tty_type);
 
-	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
-	       ": deregistering %s device ttyIPWp%d\n", iftype,
-	       tty->index);
+//	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
+//	       ": deregistering %s device ttyIPWp%d\n", iftype,
+;
 }
 
 static struct ipw_tty *get_tty(int minor)
@@ -207,9 +207,9 @@ void ipwireless_tty_received(struct ipw_tty *tty, unsigned char *data,
 	work = tty_insert_flip_string(linux_tty, data, length);
 
 	if (work != length)
-		printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME
-				": %d chars not inserted to flip buffer!\n",
-				length - work);
+//		printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME
+//				": %d chars not inserted to flip buffer!\n",
+;
 
 	/*
 	 * This may sleep if ->low_latency is set
@@ -630,8 +630,8 @@ int ipwireless_tty_init(void)
 	tty_set_operations(ipw_tty_driver, &tty_ops);
 	result = tty_register_driver(ipw_tty_driver);
 	if (result) {
-		printk(KERN_ERR IPWIRELESS_PCCARD_NAME
-		       ": failed to register tty driver\n");
+//		printk(KERN_ERR IPWIRELESS_PCCARD_NAME
+;
 		put_tty_driver(ipw_tty_driver);
 		return result;
 	}
@@ -646,8 +646,8 @@ void ipwireless_tty_release(void)
 	ret = tty_unregister_driver(ipw_tty_driver);
 	put_tty_driver(ipw_tty_driver);
 	if (ret != 0)
-		printk(KERN_ERR IPWIRELESS_PCCARD_NAME
-			": tty_unregister_driver failed with code %d\n", ret);
+//		printk(KERN_ERR IPWIRELESS_PCCARD_NAME
+;
 }
 
 int ipwireless_tty_is_modem(struct ipw_tty *tty)

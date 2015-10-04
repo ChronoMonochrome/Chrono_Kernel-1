@@ -4270,7 +4270,7 @@ static void mcde_underflow_function(struct work_struct *ptr)
 	ret = mcde_suspend(dev, dummy);
 	if (ret < 0) {
 		dev_err(dev, "mcde_suspend() failed ret=%d\n", ret);
-		printk(KERN_INFO "mcde_suspend() failed ret=%d\n", ret);
+;
 		goto suspend_failed;
 	}
 
@@ -4280,11 +4280,11 @@ static void mcde_underflow_function(struct work_struct *ptr)
 	ret = mcde_resume(dev);
 	if (ret == 0) {
 		dev_info(dev, "%s: mcde recovered\n", __func__);
-		printk(KERN_INFO "%s: mcde recovered\n", __func__);
+;
 	}
 	else {
 		dev_err(dev, "mcde_resume() failed ret=%d\n", ret);
-		printk(KERN_INFO "mcde_resume() failed ret=%d\n", ret);
+;
 	}
 
 	update_area.x = 0;
@@ -4294,12 +4294,12 @@ static void mcde_underflow_function(struct work_struct *ptr)
 	ret = mcde_chnl_update(chnl, &update_area, 0 /* tripple_buffer */);
 	if (ret < 0) {
 		dev_err(dev, "mcde_chnl_update() failed ret=%d\n", ret);
-		printk(KERN_INFO "mcde_chnl_update() failed ret=%d\n", ret);
+;
 	}
 
 suspend_failed:
 	dev_vdbg(dev, "%s: resume b2r2\n", __func__);
-	printk(KERN_INFO "%s: resume b2r2\n", __func__);
+;
 	/* args are not used, always returns 0 */
 	b2r2_resume(NULL);
 #endif

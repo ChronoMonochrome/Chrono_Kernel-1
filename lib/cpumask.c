@@ -97,7 +97,7 @@ bool alloc_cpumask_var_node(cpumask_var_t *mask, gfp_t flags, int node)
 
 #ifdef CONFIG_DEBUG_PER_CPU_MAPS
 	if (!*mask) {
-		printk(KERN_ERR "=> alloc_cpumask_var: failed!\n");
+;
 		dump_stack();
 	}
 #endif

@@ -113,7 +113,7 @@ static void mddi_handle_link_list_done(struct mddi_info *mddi)
 
 static void mddi_reset_rev_encap_ptr(struct mddi_info *mddi)
 {
-	printk(KERN_INFO "mddi: resetting rev ptr\n");
+;
 	mddi->rev_data_curr = 0;
 	mddi_writel(mddi->rev_addr, REV_PTR);
 	mddi_writel(mddi->rev_addr, REV_PTR);
@@ -144,18 +144,18 @@ static void mddi_handle_rev_data(struct mddi_info *mddi, union mddi_rev *rev)
 		case TYPE_REGISTER_ACCESS:
 			ri = mddi->reg_read;
 			if (ri == 0) {
-				printk(KERN_INFO "rev: got reg %x = %x without "
-						 " pending read\n",
-				       rev->reg.register_address,
-				       rev->reg.register_data_list);
+//				printk(KERN_INFO "rev: got reg %x = %x without "
+//						 " pending read\n",
+//				       rev->reg.register_address,
+;
 				break;
 			}
 			if (ri->reg != rev->reg.register_address) {
-				printk(KERN_INFO "rev: got reg %x = %x for "
-						 "wrong register, expected "
-						 "%x\n",
-				       rev->reg.register_address,
-				       rev->reg.register_data_list, ri->reg);
+//				printk(KERN_INFO "rev: got reg %x = %x for "
+//						 "wrong register, expected "
+//						 "%x\n",
+//				       rev->reg.register_address,
+;
 				break;
 			}
 			mddi->reg_read = NULL;
@@ -164,21 +164,21 @@ static void mddi_handle_rev_data(struct mddi_info *mddi, union mddi_rev *rev)
 			complete(&ri->done);
 			break;
 		default:
-			printk(KERN_INFO "rev: unknown reverse packet: "
-					 "len=%04x type=%04x CURR_REV_PTR=%x\n",
-			       rev->hdr.length, rev->hdr.type,
-			       mddi_readl(CURR_REV_PTR));
+//			printk(KERN_INFO "rev: unknown reverse packet: "
+//					 "len=%04x type=%04x CURR_REV_PTR=%x\n",
+//			       rev->hdr.length, rev->hdr.type,
+;
 			for (i = 0; i < rev->hdr.length + 2; i++) {
 				if ((i % 16) == 0)
-					printk(KERN_INFO "\n");
-				printk(KERN_INFO " %02x", rev->raw[i]);
+;
+;
 			}
-			printk(KERN_INFO "\n");
+;
 			mddi_reset_rev_encap_ptr(mddi);
 		}
 	} else {
-		printk(KERN_INFO "bad rev length, %d, CURR_REV_PTR %x\n",
-		       rev->hdr.length, mddi_readl(CURR_REV_PTR));
+//		printk(KERN_INFO "bad rev length, %d, CURR_REV_PTR %x\n",
+;
 		mddi_reset_rev_encap_ptr(mddi);
 	}
 }
@@ -200,15 +200,15 @@ static void mddi_handle_rev_data_avail(struct mddi_info *mddi)
 	rev_data_count = mddi_readl(REV_PKT_CNT);
 	rev_crc_err_count = mddi_readl(REV_CRC_ERR);
 	if (rev_data_count > 1)
-		printk(KERN_INFO "rev_data_count %d\n", rev_data_count);
+;
 
 	if (rev_crc_err_count) {
-		printk(KERN_INFO "rev_crc_err_count %d, INT %x\n",
-		       rev_crc_err_count,  mddi_readl(INT));
+//		printk(KERN_INFO "rev_crc_err_count %d, INT %x\n",
+;
 		ri = mddi->reg_read;
 		if (ri == 0) {
-			printk(KERN_INFO "rev: got crc error without pending "
-			       "read\n");
+//			printk(KERN_INFO "rev: got crc error without pending "
+;
 		} else {
 			mddi->reg_read = NULL;
 			ri->status = -EIO;
@@ -233,8 +233,8 @@ static void mddi_handle_rev_data_avail(struct mddi_info *mddi)
 			mddi->rev_data_curr % MDDI_REV_BUFFER_SIZE;
 
 	if (length > MDDI_REV_BUFFER_SIZE - 2) {
-		printk(KERN_INFO "mddi: rev data length greater than buffer"
-			"size\n");
+//		printk(KERN_INFO "mddi: rev data length greater than buffer"
+;
 		mddi_reset_rev_encap_ptr(mddi);
 		return;
 	}
@@ -318,10 +318,10 @@ static long mddi_wait_interrupt_timeout(struct mddi_info *mddi,
 static void mddi_wait_interrupt(struct mddi_info *mddi, uint32_t intmask)
 {
 	if (mddi_wait_interrupt_timeout(mddi, intmask, HZ/10) == 0)
-		printk(KERN_INFO "mddi_wait_interrupt %d, timeout "
-		       "waiting for %x, INT = %x, STAT = %x gotint = %x\n",
-		       current->pid, intmask, mddi_readl(INT), mddi_readl(STAT),
-		       mddi->got_int);
+//		printk(KERN_INFO "mddi_wait_interrupt %d, timeout "
+//		       "waiting for %x, INT = %x, STAT = %x gotint = %x\n",
+//		       current->pid, intmask, mddi_readl(INT), mddi_readl(STAT),
+;
 }
 
 static void mddi_init_rev_encap(struct mddi_info *mddi)
@@ -450,9 +450,9 @@ static int __init mddi_get_client_caps(struct mddi_info *mddi)
 			mddi_writel(MDDI_CMD_SEND_RTD, CMD);
 			mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
 			stat = mddi_readl(STAT);
-			printk(KERN_INFO "mddi cmd send rtd: int %x, stat %x, "
-					"rtd val %x\n", mddi_readl(INT), stat,
-					mddi_readl(RTD_VAL));
+//			printk(KERN_INFO "mddi cmd send rtd: int %x, stat %x, "
+//					"rtd val %x\n", mddi_readl(INT), stat,
+;
 			if ((stat & MDDI_STAT_RTD_MEAS_FAIL) == 0)
 				break;
 			msleep(1);
@@ -465,7 +465,7 @@ static int __init mddi_get_client_caps(struct mddi_info *mddi)
 
 		if (mddi->flags & FLAG_HAVE_CAPS)
 			break;
-		printk(KERN_INFO "mddi_init, timeout waiting for caps\n");
+;
 	}
 	return mddi->flags & FLAG_HAVE_CAPS;
 }
@@ -488,15 +488,15 @@ int mddi_check_status(struct mddi_info *mddi)
 
 		if (mddi->flags & FLAG_HAVE_STATUS) {
 			if (mddi->status.crc_error_count)
-				printk(KERN_INFO "mddi status: crc_error "
-					"count: %d\n",
-					mddi->status.crc_error_count);
+//				printk(KERN_INFO "mddi status: crc_error "
+//					"count: %d\n",
+;
 			else
 				ret = 0;
 			break;
 		} else
-			printk(KERN_INFO "mddi status: failed to get client "
-				"status\n");
+//			printk(KERN_INFO "mddi status: failed to get client "
+;
 		mddi_writel(MDDI_CMD_SEND_RTD, CMD);
 		mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
 	} while (--retry);
@@ -592,9 +592,9 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
 		mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
 		if (wait_for_completion_timeout(&ri.done, HZ/10) == 0 &&
 		    !ri.done.done) {
-			printk(KERN_INFO "mddi_remote_read(%x) timeout "
-					 "(%d %d %d)\n",
-			       reg, ri.status, ri.result, ri.done.done);
+//			printk(KERN_INFO "mddi_remote_read(%x) timeout "
+//					 "(%d %d %d)\n",
+;
 			spin_lock_irqsave(&mddi->int_lock, irq_flags);
 			mddi->reg_read = NULL;
 			spin_unlock_irqrestore(&mddi->int_lock, irq_flags);
@@ -607,10 +607,10 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
 		mddi_writel(MDDI_CMD_SEND_RTD, CMD);
 		mddi_writel(MDDI_CMD_LINK_ACTIVE, CMD);
 		mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
-		printk(KERN_INFO "mddi_remote_read: failed, sent "
-		       "MDDI_CMD_SEND_RTD: int %x, stat %x, rtd val %x "
-		       "curr_rev_ptr %x\n", mddi_readl(INT), mddi_readl(STAT),
-		       mddi_readl(RTD_VAL), mddi_readl(CURR_REV_PTR));
+//		printk(KERN_INFO "mddi_remote_read: failed, sent "
+//		       "MDDI_CMD_SEND_RTD: int %x, stat %x, rtd val %x "
+//		       "curr_rev_ptr %x\n", mddi_readl(INT), mddi_readl(STAT),
+;
 	} while (retry_count-- > 0);
 	/* Disable Periodic Reverse Encapsulation. */
 	mddi_writel(MDDI_CMD_PERIODIC_REV_ENCAP | 0, CMD);
@@ -631,7 +631,7 @@ static int __init mddi_clk_setup(struct platform_device *pdev,
 	/* set up the clocks */
 	mddi->clk = clk_get(&pdev->dev, "mddi_clk");
 	if (IS_ERR(mddi->clk)) {
-		printk(KERN_INFO "mddi: failed to get clock\n");
+;
 		return PTR_ERR(mddi->clk);
 	}
 	ret =  clk_enable(mddi->clk);
@@ -676,24 +676,24 @@ static int __devinit mddi_probe(struct platform_device *pdev)
 
 	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!resource) {
-		printk(KERN_ERR "mddi: no associated mem resource!\n");
+;
 		return -ENOMEM;
 	}
 	mddi->base = ioremap(resource->start, resource_size(resource));
 	if (!mddi->base) {
-		printk(KERN_ERR "mddi: failed to remap base!\n");
+;
 		ret = -EINVAL;
 		goto error_ioremap;
 	}
 	resource = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!resource) {
-		printk(KERN_ERR "mddi: no associated irq resource!\n");
+;
 		ret = -EINVAL;
 		goto error_get_irq_resource;
 	}
 	mddi->irq = resource->start;
-	printk(KERN_INFO "mddi: init() base=0x%p irq=%d\n", mddi->base,
-	       mddi->irq);
+//	printk(KERN_INFO "mddi: init() base=0x%p irq=%d\n", mddi->base,
+;
 	mddi->power_client = pdata->power_client;
 
 	mutex_init(&mddi->reg_write_lock);
@@ -703,13 +703,13 @@ static int __devinit mddi_probe(struct platform_device *pdev)
 
 	ret = mddi_clk_setup(pdev, mddi, pdata->clk_rate);
 	if (ret) {
-		printk(KERN_ERR "mddi: failed to setup clock!\n");
+;
 		goto error_clk_setup;
 	}
 
 	ret = mddi_rev_data_setup(mddi);
 	if (ret) {
-		printk(KERN_ERR "mddi: failed to setup rev data!\n");
+;
 		goto error_rev_data;
 	}
 
@@ -718,7 +718,7 @@ static int __devinit mddi_probe(struct platform_device *pdev)
 	ret = request_irq(mddi->irq, mddi_isr, IRQF_DISABLED, "mddi",
 			  &mddi->client_data);
 	if (ret) {
-		printk(KERN_ERR "mddi: failed to request enable irq!\n");
+;
 		goto error_request_irq;
 	}
 
@@ -732,20 +732,20 @@ static int __devinit mddi_probe(struct platform_device *pdev)
 	mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
 	mddi->version = mddi_init_registers(mddi);
 	if (mddi->version < 0x20) {
-		printk(KERN_ERR "mddi: unsupported version 0x%x\n",
-		       mddi->version);
+//		printk(KERN_ERR "mddi: unsupported version 0x%x\n",
+;
 		ret = -ENODEV;
 		goto error_mddi_version;
 	}
 
 	/* read the capabilities off the client */
 	if (!mddi_get_client_caps(mddi)) {
-		printk(KERN_INFO "mddi: no client found\n");
+;
 		/* power down the panel */
 		mddi_writel(MDDI_CMD_POWERDOWN, CMD);
-		printk(KERN_INFO "mddi powerdown: stat %x\n", mddi_readl(STAT));
+;
 		msleep(100);
-		printk(KERN_INFO "mddi powerdown: stat %x\n", mddi_readl(STAT));
+;
 		return 0;
 	}
 	mddi_set_auto_hibernate(&mddi->client_data, 1);
@@ -770,8 +770,8 @@ static int __devinit mddi_probe(struct platform_device *pdev)
 
 	if (i >= pdata->num_clients)
 		mddi->client_pdev.name = "mddi_c_dummy";
-	printk(KERN_INFO "mddi: registering panel %s\n",
-		mddi->client_pdev.name);
+//	printk(KERN_INFO "mddi: registering panel %s\n",
+;
 
 	mddi->client_data.suspend = mddi_suspend;
 	mddi->client_data.resume = mddi_resume;
@@ -785,14 +785,14 @@ static int __devinit mddi_probe(struct platform_device *pdev)
 	else if (pdev->id == 1)
 		mddi->client_data.interface_type = MSM_MDDI_EMDH_INTERFACE;
 	else {
-		printk(KERN_ERR "mddi: can not determine interface %d!\n",
-		       pdev->id);
+//		printk(KERN_ERR "mddi: can not determine interface %d!\n",
+;
 		ret = -EINVAL;
 		goto error_mddi_interface;
 	}
 
 	mddi->client_pdev.dev.platform_data = &mddi->client_data;
-	printk(KERN_INFO "mddi: publish: %s\n", mddi->client_name);
+;
 	platform_device_register(&mddi->client_pdev);
 	return 0;
 
@@ -807,7 +807,7 @@ error_get_irq_resource:
 	iounmap(mddi->base);
 error_ioremap:
 
-	printk(KERN_INFO "mddi: mddi_init() failed (%d)\n", ret);
+;
 	return ret;
 }
 

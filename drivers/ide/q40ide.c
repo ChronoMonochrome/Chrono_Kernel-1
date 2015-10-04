@@ -137,19 +137,19 @@ static int __init q40ide_init(void)
     if (!MACH_IS_Q40)
       return -ENODEV;
 
-    printk(KERN_INFO "ide: Q40 IDE controller\n");
+;
 
     for (i = 0; i < Q40IDE_NUM_HWIFS; i++) {
 	const char *name = q40_ide_names[i];
 
 	if (!request_region(pcide_bases[i], 8, name)) {
-		printk("could not reserve ports %lx-%lx for %s\n",
-		       pcide_bases[i],pcide_bases[i]+8,name);
+//		printk("could not reserve ports %lx-%lx for %s\n",
+;
 		continue;
 	}
 	if (!request_region(pcide_bases[i]+0x206, 1, name)) {
-		printk("could not reserve port %lx for %s\n",
-		       pcide_bases[i]+0x206,name);
+//		printk("could not reserve port %lx for %s\n",
+;
 		release_region(pcide_bases[i], 8);
 		continue;
 	}

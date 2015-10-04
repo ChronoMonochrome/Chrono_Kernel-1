@@ -47,7 +47,7 @@ nfsd_proc_getattr(struct svc_rqst *rqstp, struct nfsd_fhandle  *argp,
 					  struct nfsd_attrstat *resp)
 {
 	__be32 nfserr;
-	dprintk("nfsd: GETATTR  %s\n", SVCFH_fmt(&argp->fh));
+;
 
 	fh_copy(&resp->fh, &argp->fh);
 	nfserr = fh_verify(rqstp, &resp->fh, 0,
@@ -64,9 +64,9 @@ nfsd_proc_setattr(struct svc_rqst *rqstp, struct nfsd_sattrargs *argp,
 					  struct nfsd_attrstat  *resp)
 {
 	__be32 nfserr;
-	dprintk("nfsd: SETATTR  %s, valid=%x, size=%ld\n",
-		SVCFH_fmt(&argp->fh),
-		argp->attrs.ia_valid, (long) argp->attrs.ia_size);
+//	dprintk("nfsd: SETATTR  %s, valid=%x, size=%ld\n",
+//		SVCFH_fmt(&argp->fh),
+;
 
 	fh_copy(&resp->fh, &argp->fh);
 	nfserr = nfsd_setattr(rqstp, &resp->fh, &argp->attrs,0, (time_t)0);
@@ -105,7 +105,7 @@ nfsd_proc_readlink(struct svc_rqst *rqstp, struct nfsd_readlinkargs *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: READLINK %s\n", SVCFH_fmt(&argp->fh));
+;
 
 	/* Read the symlink. */
 	resp->len = NFS_MAXPATHLEN;
@@ -125,9 +125,9 @@ nfsd_proc_read(struct svc_rqst *rqstp, struct nfsd_readargs *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: READ    %s %d bytes at %d\n",
-		SVCFH_fmt(&argp->fh),
-		argp->count, argp->offset);
+//	dprintk("nfsd: READ    %s %d bytes at %d\n",
+//		SVCFH_fmt(&argp->fh),
+;
 
 	/* Obtain buffer pointer for payload. 19 is 1 word for
 	 * status, 17 words for fattr, and 1 word for the byte count.
@@ -135,10 +135,10 @@ nfsd_proc_read(struct svc_rqst *rqstp, struct nfsd_readargs *argp,
 
 	if (NFSSVC_MAXBLKSIZE_V2 < argp->count) {
 		char buf[RPC_MAX_ADDRBUFLEN];
-		printk(KERN_NOTICE
-			"oversized read request from %s (%d bytes)\n",
-				svc_print_addr(rqstp, buf, sizeof(buf)),
-				argp->count);
+//		printk(KERN_NOTICE
+//			"oversized read request from %s (%d bytes)\n",
+//				svc_print_addr(rqstp, buf, sizeof(buf)),
+;
 		argp->count = NFSSVC_MAXBLKSIZE_V2;
 	}
 	svc_reserve_auth(rqstp, (19<<2) + argp->count + 4);
@@ -167,9 +167,9 @@ nfsd_proc_write(struct svc_rqst *rqstp, struct nfsd_writeargs *argp,
 	int	stable = 1;
 	unsigned long cnt = argp->len;
 
-	dprintk("nfsd: WRITE    %s %d bytes at %d\n",
-		SVCFH_fmt(&argp->fh),
-		argp->len, argp->offset);
+//	dprintk("nfsd: WRITE    %s %d bytes at %d\n",
+//		SVCFH_fmt(&argp->fh),
+;
 
 	nfserr = nfsd_write(rqstp, fh_copy(&resp->fh, &argp->fh), NULL,
 				   argp->offset,
@@ -234,8 +234,8 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
 		 */
 		nfserr = nfserr_acces;
 		if (!newfhp->fh_dentry) {
-			printk(KERN_WARNING 
-				"nfsd_proc_create: file handle not verified\n");
+//			printk(KERN_WARNING 
+;
 			goto out_unlock;
 		}
 	}
@@ -316,8 +316,8 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
 		nfserr = nfsd_create(rqstp, dirfhp, argp->name, argp->len,
 					attr, type, rdev, newfhp);
 	} else if (type == S_IFREG) {
-		dprintk("nfsd:   existing %s, valid=%x, size=%ld\n",
-			argp->name, attr->ia_valid, (long) attr->ia_size);
+//		dprintk("nfsd:   existing %s, valid=%x, size=%ld\n",
+;
 		/* File already exists. We ignore all attributes except
 		 * size, so that creat() behaves exactly like
 		 * open(..., O_CREAT|O_TRUNC|O_WRONLY).
@@ -375,8 +375,8 @@ nfsd_proc_link(struct svc_rqst *rqstp, struct nfsd_linkargs *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: LINK     %s ->\n",
-		SVCFH_fmt(&argp->ffh));
+//	dprintk("nfsd: LINK     %s ->\n",
+;
 	dprintk("nfsd:    %s %.*s\n",
 		SVCFH_fmt(&argp->tfh),
 		argp->tlen,
@@ -427,8 +427,8 @@ nfsd_proc_mkdir(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
 	dprintk("nfsd: MKDIR    %s %.*s\n", SVCFH_fmt(&argp->fh), argp->len, argp->name);
 
 	if (resp->fh.fh_dentry) {
-		printk(KERN_WARNING
-			"nfsd_proc_mkdir: response already verified??\n");
+//		printk(KERN_WARNING
+;
 	}
 
 	argp->attrs.ia_valid &= ~ATTR_SIZE;
@@ -466,9 +466,9 @@ nfsd_proc_readdir(struct svc_rqst *rqstp, struct nfsd_readdirargs *argp,
 	__be32		nfserr;
 	loff_t		offset;
 
-	dprintk("nfsd: READDIR  %s %d bytes at %d\n",
-		SVCFH_fmt(&argp->fh),		
-		argp->count, argp->cookie);
+//	dprintk("nfsd: READDIR  %s %d bytes at %d\n",
+//		SVCFH_fmt(&argp->fh),		
+;
 
 	/* Shrink to the client read size */
 	count = (argp->count >> 2) - 2;
@@ -504,7 +504,7 @@ nfsd_proc_statfs(struct svc_rqst * rqstp, struct nfsd_fhandle   *argp,
 {
 	__be32	nfserr;
 
-	dprintk("nfsd: STATFS   %s\n", SVCFH_fmt(&argp->fh));
+;
 
 	nfserr = nfsd_statfs(rqstp, &argp->fh, &resp->stats,
 			NFSD_MAY_BYPASS_GSS_ON_ROOT);

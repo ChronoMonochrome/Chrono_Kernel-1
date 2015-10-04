@@ -146,7 +146,7 @@ static int acpi_button_add_fs(struct acpi_device *device)
 		return 0;
 
 	if (acpi_button_dir || acpi_lid_dir) {
-		printk(KERN_ERR PREFIX "More than one Lid device found!\n");
+;
 		return -EEXIST;
 	}
 
@@ -358,7 +358,7 @@ static int acpi_button_add(struct acpi_device *device)
 		sprintf(class, "%s/%s",
 			ACPI_BUTTON_CLASS, ACPI_BUTTON_SUBCLASS_LID);
 	} else {
-		printk(KERN_ERR PREFIX "Unsupported hid [%s]\n", hid);
+;
 		error = -ENODEV;
 		goto err_free_input;
 	}
@@ -414,7 +414,7 @@ static int acpi_button_add(struct acpi_device *device)
 		}
 	}
 
-	printk(KERN_INFO PREFIX "%s [%s]\n", name, acpi_device_bid(device));
+;
 	return 0;
 
  err_remove_fs:

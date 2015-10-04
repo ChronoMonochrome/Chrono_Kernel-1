@@ -154,7 +154,7 @@ static int __init mk712_init(void)
 	int err;
 
 	if (!request_region(mk712_io, 8, "mk712")) {
-		printk(KERN_WARNING "mk712: unable to get IO region\n");
+;
 		return -ENODEV;
 	}
 
@@ -163,14 +163,14 @@ static int __init mk712_init(void)
 	if ((inw(mk712_io + MK712_X) & 0xf000) ||	/* Sanity check */
 	    (inw(mk712_io + MK712_Y) & 0xf000) ||
 	    (inw(mk712_io + MK712_STATUS) & 0xf333)) {
-		printk(KERN_WARNING "mk712: device not present\n");
+;
 		err = -ENODEV;
 		goto fail1;
 	}
 
 	mk712_dev = input_allocate_device();
 	if (!mk712_dev) {
-		printk(KERN_ERR "mk712: not enough memory\n");
+;
 		err = -ENOMEM;
 		goto fail1;
 	}
@@ -191,7 +191,7 @@ static int __init mk712_init(void)
 	input_set_abs_params(mk712_dev, ABS_Y, 0, 0xfff, 88, 0);
 
 	if (request_irq(mk712_irq, mk712_interrupt, 0, "mk712", mk712_dev)) {
-		printk(KERN_WARNING "mk712: unable to get IRQ\n");
+;
 		err = -EBUSY;
 		goto fail1;
 	}

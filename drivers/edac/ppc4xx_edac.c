@@ -120,30 +120,30 @@
 /*
  * Kernel logging without an EDAC instance
  */
-#define ppc4xx_edac_printk(level, fmt, arg...) \
-	edac_printk(level, "PPC4xx MC", fmt, ##arg)
-
-/*
- * Kernel logging with an EDAC instance
- */
-#define ppc4xx_edac_mc_printk(level, mci, fmt, arg...) \
-	edac_mc_chipset_printk(mci, level, "PPC4xx", fmt, ##arg)
-
-/*
- * Macros to convert bank configuration size enumerations into MiB and
- * page values.
- */
-#define SDRAM_MBCF_SZ_MiB_MIN		4
-#define SDRAM_MBCF_SZ_TO_MiB(n)		(SDRAM_MBCF_SZ_MiB_MIN \
-					 << (SDRAM_MBCF_SZ_DECODE(n)))
-#define SDRAM_MBCF_SZ_TO_PAGES(n)	(SDRAM_MBCF_SZ_MiB_MIN \
-					 << (20 - PAGE_SHIFT + \
-					     SDRAM_MBCF_SZ_DECODE(n)))
-
-/*
- * The ibm,sdram-4xx-ddr2 Device Control Registers (DCRs) are
- * indirectly acccessed and have a base and length defined by the
- * device tree. The base can be anything; however, we expect the
+//#define ppc4xx_edac_printk(level, fmt, arg...) \
+//	edac_printk(level, "PPC4xx MC", fmt, ##arg)
+//
+///*
+// * Kernel logging with an EDAC instance
+// */
+//#define ppc4xx_edac_mc_printk(level, mci, fmt, arg...) \
+//	edac_mc_chipset_printk(mci, level, "PPC4xx", fmt, ##arg)
+//
+///*
+// * Macros to convert bank configuration size enumerations into MiB and
+// * page values.
+// */
+//#define SDRAM_MBCF_SZ_MiB_MIN		4
+//#define SDRAM_MBCF_SZ_TO_MiB(n)		(SDRAM_MBCF_SZ_MiB_MIN \
+//					 << (SDRAM_MBCF_SZ_DECODE(n)))
+//#define SDRAM_MBCF_SZ_TO_PAGES(n)	(SDRAM_MBCF_SZ_MiB_MIN \
+//					 << (20 - PAGE_SHIFT + \
+//					     SDRAM_MBCF_SZ_DECODE(n)))
+//
+///*
+// * The ibm,sdram-4xx-ddr2 Device Control Registers (DCRs) are
+// * indirectly acccessed and have a base and length defined by the
+;
  * length to be precisely two registers, the first for the address
  * window and the second for the data window.
  */
@@ -635,19 +635,19 @@ ppc4xx_ecc_dump_status(const struct mem_ctl_info *mci,
 
 	ppc4xx_edac_generate_message(mci, status, message, sizeof(message));
 
-	ppc4xx_edac_mc_printk(KERN_INFO, mci,
-			      "\n"
-			      "\tECCES: 0x%08x\n"
-			      "\tWMIRQ: 0x%08x\n"
-			      "\tBESR:  0x%08x\n"
-			      "\tBEAR:  0x%08x%08x\n"
-			      "\t%s\n",
-			      status->ecces,
-			      status->wmirq,
-			      status->besr,
-			      status->bearh,
-			      status->bearl,
-			      message);
+//	ppc4xx_edac_mc_printk(KERN_INFO, mci,
+//			      "\n"
+//			      "\tECCES: 0x%08x\n"
+//			      "\tWMIRQ: 0x%08x\n"
+//			      "\tBESR:  0x%08x\n"
+//			      "\tBEAR:  0x%08x%08x\n"
+//			      "\t%s\n",
+//			      status->ecces,
+//			      status->wmirq,
+//			      status->besr,
+//			      status->bearh,
+//			      status->bearl,
+;
 }
 #endif /* DEBUG */
 
@@ -951,10 +951,10 @@ ppc4xx_edac_init_csrows(struct mem_ctl_info *mci, u32 mcopt1)
 			csi->nr_pages = SDRAM_MBCF_SZ_TO_PAGES(size);
 			break;
 		default:
-			ppc4xx_edac_mc_printk(KERN_ERR, mci,
-					      "Unrecognized memory bank %d "
-					      "size 0x%08x\n",
-					      row, SDRAM_MBCF_SZ_DECODE(size));
+//			ppc4xx_edac_mc_printk(KERN_ERR, mci,
+//					      "Unrecognized memory bank %d "
+//					      "size 0x%08x\n",
+;
 			status = -EINVAL;
 			goto done;
 		}
@@ -1081,8 +1081,8 @@ ppc4xx_edac_mc_init(struct mem_ctl_info *mci,
 	status = ppc4xx_edac_init_csrows(mci, mcopt1);
 
 	if (status)
-		ppc4xx_edac_mc_printk(KERN_ERR, mci,
-				      "Failed to initialize rows!\n");
+//		ppc4xx_edac_mc_printk(KERN_ERR, mci,
+;
 
 	return status;
 }
@@ -1114,8 +1114,8 @@ ppc4xx_edac_register_irq(struct platform_device *op, struct mem_ctl_info *mci)
 	sec_irq = irq_of_parse_and_map(np, INTMAP_ECCSEC_INDEX);
 
 	if (ded_irq == NO_IRQ || sec_irq == NO_IRQ) {
-		ppc4xx_edac_mc_printk(KERN_ERR, mci,
-				      "Unable to map interrupts.\n");
+//		ppc4xx_edac_mc_printk(KERN_ERR, mci,
+;
 		status = -ENODEV;
 		goto fail;
 	}
@@ -1127,9 +1127,9 @@ ppc4xx_edac_register_irq(struct platform_device *op, struct mem_ctl_info *mci)
 			     mci);
 
 	if (status < 0) {
-		ppc4xx_edac_mc_printk(KERN_ERR, mci,
-				      "Unable to request irq %d for ECC DED",
-				      ded_irq);
+//		ppc4xx_edac_mc_printk(KERN_ERR, mci,
+//				      "Unable to request irq %d for ECC DED",
+;
 		status = -ENODEV;
 		goto fail1;
 	}
@@ -1141,15 +1141,15 @@ ppc4xx_edac_register_irq(struct platform_device *op, struct mem_ctl_info *mci)
 			     mci);
 
 	if (status < 0) {
-		ppc4xx_edac_mc_printk(KERN_ERR, mci,
-				      "Unable to request irq %d for ECC SEC",
-				      sec_irq);
+//		ppc4xx_edac_mc_printk(KERN_ERR, mci,
+//				      "Unable to request irq %d for ECC SEC",
+;
 		status = -ENODEV;
 		goto fail2;
 	}
 
-	ppc4xx_edac_mc_printk(KERN_INFO, mci, "ECCDED irq is %d\n", ded_irq);
-	ppc4xx_edac_mc_printk(KERN_INFO, mci, "ECCSEC irq is %d\n", sec_irq);
+;
+;
 
 	pdata->irqs.ded = ded_irq;
 	pdata->irqs.sec = sec_irq;
@@ -1194,15 +1194,15 @@ ppc4xx_edac_map_dcrs(const struct device_node *np, dcr_host_t *dcr_host)
 	dcr_len = dcr_resource_len(np, 0);
 
 	if (dcr_base == 0 || dcr_len == 0) {
-		ppc4xx_edac_printk(KERN_ERR,
-				   "Failed to obtain DCR property.\n");
+//		ppc4xx_edac_printk(KERN_ERR,
+;
 		return -ENODEV;
 	}
 
 	if (dcr_len != SDRAM_DCR_RESOURCE_LEN) {
-		ppc4xx_edac_printk(KERN_ERR,
-				   "Unexpected DCR length %d, expected %d.\n",
-				   dcr_len, SDRAM_DCR_RESOURCE_LEN);
+//		ppc4xx_edac_printk(KERN_ERR,
+//				   "Unexpected DCR length %d, expected %d.\n",
+;
 		return -ENODEV;
 	}
 
@@ -1211,7 +1211,7 @@ ppc4xx_edac_map_dcrs(const struct device_node *np, dcr_host_t *dcr_host)
 	*dcr_host = dcr_map(np, dcr_base, dcr_len);
 
 	if (!DCR_MAP_OK(*dcr_host)) {
-		ppc4xx_edac_printk(KERN_INFO, "Failed to map DCRs.\n");
+;
 		    return -ENODEV;
 	}
 
@@ -1245,8 +1245,8 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
 
 	if (!of_device_is_compatible(np, "ibm,sdram-405ex") &&
 	    !of_device_is_compatible(np, "ibm,sdram-405exr")) {
-		ppc4xx_edac_printk(KERN_NOTICE,
-				   "Only the PPC405EX[r] is supported.\n");
+//		ppc4xx_edac_printk(KERN_NOTICE,
+;
 		return -ENODEV;
 	}
 
@@ -1270,8 +1270,8 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
 	memcheck = (mcopt1 & SDRAM_MCOPT1_MCHK_MASK);
 
 	if (memcheck == SDRAM_MCOPT1_MCHK_NON) {
-		ppc4xx_edac_printk(KERN_INFO, "%s: No ECC memory detected or "
-				   "ECC is disabled.\n", np->full_name);
+//		ppc4xx_edac_printk(KERN_INFO, "%s: No ECC memory detected or "
+;
 		status = -ENODEV;
 		goto done;
 	}
@@ -1288,9 +1288,9 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
 			    ppc4xx_edac_instance);
 
 	if (mci == NULL) {
-		ppc4xx_edac_printk(KERN_ERR, "%s: "
-				   "Failed to allocate EDAC MC instance!\n",
-				   np->full_name);
+//		ppc4xx_edac_printk(KERN_ERR, "%s: "
+//				   "Failed to allocate EDAC MC instance!\n",
+;
 		status = -ENOMEM;
 		goto done;
 	}
@@ -1298,8 +1298,8 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
 	status = ppc4xx_edac_mc_init(mci, op, &dcr_host, mcopt1);
 
 	if (status) {
-		ppc4xx_edac_mc_printk(KERN_ERR, mci,
-				      "Failed to initialize instance!\n");
+//		ppc4xx_edac_mc_printk(KERN_ERR, mci,
+;
 		goto fail;
 	}
 
@@ -1310,8 +1310,8 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
 	 */
 
 	if (edac_mc_add_mc(mci)) {
-		ppc4xx_edac_mc_printk(KERN_ERR, mci,
-				      "Failed to add instance!\n");
+//		ppc4xx_edac_mc_printk(KERN_ERR, mci,
+;
 		status = -ENODEV;
 		goto fail;
 	}
@@ -1389,12 +1389,12 @@ ppc4xx_edac_opstate_init(void)
 		break;
 	}
 
-	ppc4xx_edac_printk(KERN_INFO, "Reporting type: %s\n",
-			   ((edac_op_state == EDAC_OPSTATE_POLL) ?
-			    EDAC_OPSTATE_POLL_STR :
-			    ((edac_op_state == EDAC_OPSTATE_INT) ?
-			     EDAC_OPSTATE_INT_STR :
-			     EDAC_OPSTATE_UNKNOWN_STR)));
+//	ppc4xx_edac_printk(KERN_INFO, "Reporting type: %s\n",
+//			   ((edac_op_state == EDAC_OPSTATE_POLL) ?
+//			    EDAC_OPSTATE_POLL_STR :
+//			    ((edac_op_state == EDAC_OPSTATE_INT) ?
+//			     EDAC_OPSTATE_INT_STR :
+;
 }
 
 /**
@@ -1408,7 +1408,7 @@ ppc4xx_edac_opstate_init(void)
 static int __init
 ppc4xx_edac_init(void)
 {
-	ppc4xx_edac_printk(KERN_INFO, PPC4XX_EDAC_MODULE_REVISION "\n");
+;
 
 	ppc4xx_edac_opstate_init();
 

@@ -66,16 +66,16 @@ static struct concap_proto_ops ix25_pops = {
 /* error message helper function */
 static void illegal_state_warn( unsigned state, unsigned char firstbyte) 
 {
-	printk( KERN_WARNING "isdn_x25iface: firstbyte %x illegal in"
-		"current state %d\n",firstbyte, state );
+//	printk( KERN_WARNING "isdn_x25iface: firstbyte %x illegal in"
+;
 }
 
 /* check protocol data field for consistency */
 static int pdata_is_bad( ix25_pdata_t * pda ){
 
 	if( pda  &&  pda -> magic == ISDN_X25IFACE_MAGIC ) return 0;
-	printk( KERN_WARNING
-		"isdn_x25iface_xxx: illegal pointer to proto data\n" );
+//	printk( KERN_WARNING
+;
 	return 1;
 }
 
@@ -110,8 +110,8 @@ static int isdn_x25iface_proto_close(struct concap_proto *cprot){
 	ulong flags;
 
 	if( ! cprot ){
-		printk( KERN_ERR "isdn_x25iface_proto_close: "
-			"invalid concap_proto pointer\n" );
+//		printk( KERN_ERR "isdn_x25iface_proto_close: "
+;
 		return -1;
 	}
 	IX25DEBUG( "isdn_x25iface_proto_close %s \n", MY_DEVNAME(cprot -> net_dev) );
@@ -136,14 +136,14 @@ static void isdn_x25iface_proto_del(struct concap_proto *cprot){
  
 	IX25DEBUG( "isdn_x25iface_proto_del \n" );
 	if( ! cprot ){
-		printk( KERN_ERR "isdn_x25iface_proto_del: "
-			"concap_proto pointer is NULL\n" );
+//		printk( KERN_ERR "isdn_x25iface_proto_del: "
+;
 		return;
 	}
 	tmp = cprot -> proto_data;
 	if( tmp == NULL ){ 
-		printk( KERN_ERR "isdn_x25iface_proto_del: inconsistent "
-			"proto_data pointer (maybe already deleted?)\n"); 
+//		printk( KERN_ERR "isdn_x25iface_proto_del: inconsistent "
+;
 		return;
 	}
 	/* close if the protocol is still open */
@@ -172,8 +172,8 @@ static int isdn_x25iface_proto_restart(struct concap_proto *cprot,
 
 	if( !( dops  && dops -> data_req && dops -> connect_req 
 	       && dops -> disconn_req )  ){
-		printk( KERN_WARNING "isdn_x25iface_restart: required dops"
-			" missing\n" );
+//		printk( KERN_WARNING "isdn_x25iface_restart: required dops"
+;
 		isdn_x25iface_proto_close(cprot);
 		return -1;
 	}
@@ -200,7 +200,7 @@ static int isdn_x25iface_receive(struct concap_proto *cprot, struct sk_buff *skb
 			return 0;
 		}
 	}
-	printk(KERN_WARNING "isdn_x25iface_receive %s: not connected, skb dropped\n", MY_DEVNAME(cprot->net_dev) );
+;
 	dev_kfree_skb(skb);
 	return -1;
 }
@@ -215,9 +215,9 @@ static int isdn_x25iface_connect_ind(struct concap_proto *cprot)
 	IX25DEBUG( "isdn_x25iface_connect_ind %s \n"
 		   , MY_DEVNAME(cprot->net_dev) );
 	if( *state_p == WAN_UNCONFIGURED ){ 
-		printk(KERN_WARNING 
-		       "isdn_x25iface_connect_ind while unconfigured %s\n"
-		       , MY_DEVNAME(cprot->net_dev) );
+//		printk(KERN_WARNING 
+//		       "isdn_x25iface_connect_ind while unconfigured %s\n"
+;
 		return -1;
 	}
 	*state_p = WAN_CONNECTED;
@@ -229,8 +229,8 @@ static int isdn_x25iface_connect_ind(struct concap_proto *cprot)
 		netif_rx(skb);
 		return 0;
 	} else {
-		printk(KERN_WARNING "isdn_x25iface_connect_ind: "
-		       " out of memory -- disconnecting\n");
+//		printk(KERN_WARNING "isdn_x25iface_connect_ind: "
+;
 		cprot -> dops -> disconn_req(cprot);
 		return -1;
 	}
@@ -245,8 +245,8 @@ static int isdn_x25iface_disconn_ind(struct concap_proto *cprot)
 	  = &( ( (ix25_pdata_t*) (cprot->proto_data) ) -> state);
 	IX25DEBUG( "isdn_x25iface_disconn_ind %s \n", MY_DEVNAME(cprot -> net_dev) );
 	if( *state_p == WAN_UNCONFIGURED ){ 
-		printk(KERN_WARNING 
-		       "isdn_x25iface_disconn_ind while unconfigured\n");
+//		printk(KERN_WARNING 
+;
 		return -1;
 	}
 	if(! cprot -> net_dev) return -1;
@@ -258,8 +258,8 @@ static int isdn_x25iface_disconn_ind(struct concap_proto *cprot)
 		netif_rx(skb);
 		return 0;
 	} else {
-		printk(KERN_WARNING "isdn_x25iface_disconn_ind:"
-		       " out of memory\n");
+//		printk(KERN_WARNING "isdn_x25iface_disconn_ind:"
+;
 		return -1;
 	}
 }
@@ -306,8 +306,8 @@ static int isdn_x25iface_xmit(struct concap_proto *cprot, struct sk_buff *skb)
 			   chance to recover from inconstistency  but don't
 			   trust the lower layer sending the disconn_confirm
 			   when already disconnected */
-			printk(KERN_WARNING "isdn_x25iface_xmit: disconnect "
-			       " requested while disconnected\n" );
+//			printk(KERN_WARNING "isdn_x25iface_xmit: disconnect "
+;
 			isdn_x25iface_disconn_ind(cprot);
 			break; /* prevent infinite loops */
 		case WAN_CONNECTING:
@@ -320,12 +320,12 @@ static int isdn_x25iface_xmit(struct concap_proto *cprot, struct sk_buff *skb)
 		}
 		break;
 	case X25_IFACE_PARAMS:
-		printk(KERN_WARNING "isdn_x25iface_xmit: setting of lapb"
-		       " options not yet supported\n");
+//		printk(KERN_WARNING "isdn_x25iface_xmit: setting of lapb"
+;
 		break;
 	default:
-		printk(KERN_WARNING "isdn_x25iface_xmit: frame with illegal"
-		       " first byte %x ignored:\n", firstbyte);
+//		printk(KERN_WARNING "isdn_x25iface_xmit: frame with illegal"
+;
 	}
 	dev_kfree_skb(skb);
 	return 0;

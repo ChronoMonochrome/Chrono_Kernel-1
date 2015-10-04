@@ -349,10 +349,10 @@ int nilfs_dat_move(struct inode *dat, __u64 vblocknr, sector_t blocknr)
 	kaddr = kmap_atomic(entry_bh->b_page, KM_USER0);
 	entry = nilfs_palloc_block_get_entry(dat, vblocknr, entry_bh, kaddr);
 	if (unlikely(entry->de_blocknr == cpu_to_le64(0))) {
-		printk(KERN_CRIT "%s: vbn = %llu, [%llu, %llu)\n", __func__,
-		       (unsigned long long)vblocknr,
-		       (unsigned long long)le64_to_cpu(entry->de_start),
-		       (unsigned long long)le64_to_cpu(entry->de_end));
+//		printk(KERN_CRIT "%s: vbn = %llu, [%llu, %llu)\n", __func__,
+//		       (unsigned long long)vblocknr,
+//		       (unsigned long long)le64_to_cpu(entry->de_start),
+;
 		kunmap_atomic(kaddr, KM_USER0);
 		brelse(entry_bh);
 		return -EINVAL;

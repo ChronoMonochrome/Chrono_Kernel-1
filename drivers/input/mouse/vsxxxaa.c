@@ -92,27 +92,27 @@ MODULE_LICENSE("GPL");
 
 #undef VSXXXAA_DEBUG
 #ifdef VSXXXAA_DEBUG
-#define DBG(x...) printk(x)
-#else
-#define DBG(x...) do {} while (0)
-#endif
-
-#define VSXXXAA_INTRO_MASK	0x80
-#define VSXXXAA_INTRO_HEAD	0x80
-#define IS_HDR_BYTE(x)			\
-	(((x) & VSXXXAA_INTRO_MASK) == VSXXXAA_INTRO_HEAD)
-
-#define VSXXXAA_PACKET_MASK	0xe0
-#define VSXXXAA_PACKET_REL	0x80
-#define VSXXXAA_PACKET_ABS	0xc0
-#define VSXXXAA_PACKET_POR	0xa0
-#define MATCH_PACKET_TYPE(data, type)	\
-	(((data) & VSXXXAA_PACKET_MASK) == (type))
-
-
-
-struct vsxxxaa {
-	struct input_dev *dev;
+//#define DBG(x...) printk(x)
+//#else
+//#define DBG(x...) do {} while (0)
+//#endif
+//
+//#define VSXXXAA_INTRO_MASK	0x80
+//#define VSXXXAA_INTRO_HEAD	0x80
+//#define IS_HDR_BYTE(x)			\
+//	(((x) & VSXXXAA_INTRO_MASK) == VSXXXAA_INTRO_HEAD)
+//
+//#define VSXXXAA_PACKET_MASK	0xe0
+//#define VSXXXAA_PACKET_REL	0x80
+//#define VSXXXAA_PACKET_ABS	0xc0
+//#define VSXXXAA_PACKET_POR	0xa0
+//#define MATCH_PACKET_TYPE(data, type)	\
+//	(((data) & VSXXXAA_PACKET_MASK) == (type))
+//
+//
+//
+//struct vsxxxaa {
+;
 	struct serio *serio;
 #define BUFLEN 15 /* At least 5 is needed for a full tablet packet */
 	unsigned char buf[BUFLEN];
@@ -137,8 +137,8 @@ static void vsxxxaa_drop_bytes(struct vsxxxaa *mouse, int num)
 static void vsxxxaa_queue_byte(struct vsxxxaa *mouse, unsigned char byte)
 {
 	if (mouse->count == BUFLEN) {
-		printk(KERN_ERR "%s on %s: Dropping a byte of full buffer.\n",
-			mouse->name, mouse->phys);
+//		printk(KERN_ERR "%s on %s: Dropping a byte of full buffer.\n",
+;
 		vsxxxaa_drop_bytes(mouse, 1);
 	}
 
@@ -167,9 +167,9 @@ static void vsxxxaa_detection_done(struct vsxxxaa *mouse)
 		break;
 	}
 
-	printk(KERN_INFO
-		"Found %s version 0x%02x from country 0x%02x on port %s\n",
-		mouse->name, mouse->version, mouse->country, mouse->phys);
+//	printk(KERN_INFO
+//		"Found %s version 0x%02x from country 0x%02x on port %s\n",
+;
 }
 
 /*
@@ -188,9 +188,9 @@ static int vsxxxaa_check_packet(struct vsxxxaa *mouse, int packet_len)
 	/* Check all following bytes */
 	for (i = 1; i < packet_len; i++) {
 		if (IS_HDR_BYTE(mouse->buf[i])) {
-			printk(KERN_ERR
-				"Need to drop %d bytes of a broken packet.\n",
-				i - 1);
+//			printk(KERN_ERR
+//				"Need to drop %d bytes of a broken packet.\n",
+;
 			DBG(KERN_INFO "check: len=%d, b[%d]=0x%02x\n",
 			    packet_len, i, mouse->buf[i]);
 			return i - 1;
@@ -365,8 +365,8 @@ static void vsxxxaa_handle_POR_packet(struct vsxxxaa *mouse)
 		input_sync(dev);
 
 		if (error != 0)
-			printk(KERN_INFO "Your %s on %s reports error=0x%02x\n",
-				mouse->name, mouse->phys, error);
+//			printk(KERN_INFO "Your %s on %s reports error=0x%02x\n",
+;
 
 	}
 
@@ -374,10 +374,10 @@ static void vsxxxaa_handle_POR_packet(struct vsxxxaa *mouse)
 	 * If the mouse was hot-plugged, we need to force differential mode
 	 * now... However, give it a second to recover from it's reset.
 	 */
-	printk(KERN_NOTICE
-		"%s on %s: Forcing standard packet format, "
-		"incremental streaming mode and 72 samples/sec\n",
-		mouse->name, mouse->phys);
+//	printk(KERN_NOTICE
+//		"%s on %s: Forcing standard packet format, "
+//		"incremental streaming mode and 72 samples/sec\n",
+;
 	serio_write(mouse->serio, 'S');	/* Standard format */
 	mdelay(50);
 	serio_write(mouse->serio, 'R');	/* Incremental */
@@ -402,9 +402,9 @@ static void vsxxxaa_parse_buffer(struct vsxxxaa *mouse)
 		 * activity on the mouse.
 		 */
 		while (mouse->count > 0 && !IS_HDR_BYTE(buf[0])) {
-			printk(KERN_ERR "%s on %s: Dropping a byte to regain "
-				"sync with mouse data stream...\n",
-				mouse->name, mouse->phys);
+//			printk(KERN_ERR "%s on %s: Dropping a byte to regain "
+//				"sync with mouse data stream...\n",
+;
 			vsxxxaa_drop_bytes(mouse, 1);
 		}
 
@@ -437,8 +437,8 @@ static void vsxxxaa_parse_buffer(struct vsxxxaa *mouse)
 		}
 
 		if (stray_bytes > 0) {
-			printk(KERN_ERR "Dropping %d bytes now...\n",
-				stray_bytes);
+//			printk(KERN_ERR "Dropping %d bytes now...\n",
+;
 			vsxxxaa_drop_bytes(mouse, stray_bytes);
 		}
 

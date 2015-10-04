@@ -54,7 +54,7 @@ static void via_i2c_setscl(void *data, int state)
 		val |= 0x80;
 		break;
 	default:
-		printk(KERN_ERR "viafb_i2c: specify wrong i2c type.\n");
+;
 	}
 	via_write_reg(adap_data->io_port, adap_data->ioport_index, val);
 	spin_unlock_irqrestore(&i2c_vdev->reg_lock, flags);
@@ -106,7 +106,7 @@ static void via_i2c_setsda(void *data, int state)
 		val |= 0x40;
 		break;
 	default:
-		printk(KERN_ERR "viafb_i2c: specify wrong i2c type.\n");
+;
 	}
 	via_write_reg(adap_data->io_port, adap_data->ioport_index, val);
 	spin_unlock_irqrestore(&i2c_vdev->reg_lock, flags);
@@ -244,8 +244,8 @@ static int viafb_i2c_probe(struct platform_device *platdev)
 				     &i2c_stuff->algo, adap_cfg,
 				NULL); /* FIXME: PCIDEV */
 		if (ret < 0) {
-			printk(KERN_ERR "viafb: cannot create i2c bus %u:%d\n",
-				i, ret);
+//			printk(KERN_ERR "viafb: cannot create i2c bus %u:%d\n",
+;
 			continue;  /* Still try to make the rest */
 		}
 		i2c_stuff->is_active = 1;

@@ -181,7 +181,7 @@ static void __init dtc_setup(char *str, int *ints)
 	static int commandline_current = 0;
 	int i;
 	if (ints[0] != 2)
-		printk("dtc_setup: usage dtc=address,irq\n");
+;
 	else if (commandline_current < NO_OVERRIDES) {
 		overrides[commandline_current].address = ints[1];
 		overrides[commandline_current].irq = ints[2];
@@ -231,7 +231,7 @@ static int __init dtc_detect(struct scsi_host_template * tpnt)
 		} else
 			for (; !addr && (current_base < NO_BASES); ++current_base) {
 #if (DTCDEBUG & DTCDEBUG_INIT)
-				printk(KERN_DEBUG "scsi-dtc : probing address %08x\n", bases[current_base].address);
+;
 #endif
 				if (bases[current_base].noauto)
 					continue;
@@ -242,7 +242,7 @@ static int __init dtc_detect(struct scsi_host_template * tpnt)
 					if (check_signature(base + signatures[sig].offset, signatures[sig].string, strlen(signatures[sig].string))) {
 						addr = bases[current_base].address;
 #if (DTCDEBUG & DTCDEBUG_INIT)
-						printk(KERN_DEBUG "scsi-dtc : detected board.\n");
+;
 #endif
 						goto found;
 					}
@@ -251,7 +251,7 @@ static int __init dtc_detect(struct scsi_host_template * tpnt)
 			}
 
 #if defined(DTCDEBUG) && (DTCDEBUG & DTCDEBUG_INIT)
-		printk(KERN_DEBUG "scsi-dtc : base = %08x\n", addr);
+;
 #endif
 
 		if (!addr)
@@ -279,31 +279,31 @@ found:
 		if (instance->irq != SCSI_IRQ_NONE)
 			if (request_irq(instance->irq, dtc_intr, IRQF_DISABLED,
 					"dtc", instance)) {
-				printk(KERN_ERR "scsi%d : IRQ%d not free, interrupts disabled\n", instance->host_no, instance->irq);
+;
 				instance->irq = SCSI_IRQ_NONE;
 			}
 
 		if (instance->irq == SCSI_IRQ_NONE) {
-			printk(KERN_WARNING "scsi%d : interrupts not enabled. for better interactive performance,\n", instance->host_no);
-			printk(KERN_WARNING "scsi%d : please jumper the board for a free IRQ.\n", instance->host_no);
+;
+;
 		}
 #else
 		if (instance->irq != SCSI_IRQ_NONE)
-			printk(KERN_WARNING "scsi%d : interrupts not used. Might as well not jumper it.\n", instance->host_no);
+;
 		instance->irq = SCSI_IRQ_NONE;
 #endif
 #if defined(DTCDEBUG) && (DTCDEBUG & DTCDEBUG_INIT)
-		printk("scsi%d : irq = %d\n", instance->host_no, instance->irq);
+;
 #endif
 
-		printk(KERN_INFO "scsi%d : at 0x%05X", instance->host_no, (int) instance->base);
+;
 		if (instance->irq == SCSI_IRQ_NONE)
-			printk(" interrupts disabled");
+;
 		else
-			printk(" irq %d", instance->irq);
-		printk(" options CAN_QUEUE=%d  CMD_PER_LUN=%d release=%d", CAN_QUEUE, CMD_PER_LUN, DTC_PUBLIC_RELEASE);
+;
+;
 		NCR5380_print_options(instance);
-		printk("\n");
+;
 
 		++current_override;
 		++count;

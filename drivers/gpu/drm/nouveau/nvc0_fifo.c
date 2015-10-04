@@ -424,16 +424,16 @@ nvc0_fifo_isr_vm_fault(struct drm_device *dev, int unit)
 	NV_INFO(dev, "PFIFO: %s fault at 0x%010llx [",
 		(stat & 0x00000080) ? "write" : "read", (u64)vahi << 32 | valo);
 	nouveau_enum_print(nvc0_fifo_fault_reason, stat & 0x0000000f);
-	printk("] from ");
+;
 	nouveau_enum_print(nvc0_fifo_fault_unit, unit);
 	if (stat & 0x00000040) {
-		printk("/");
+;
 		nouveau_enum_print(nvc0_fifo_fault_hubclient, client);
 	} else {
-		printk("/GPC%d/", (stat & 0x1f000000) >> 24);
+;
 		nouveau_enum_print(nvc0_fifo_fault_gpcclient, client);
 	}
-	printk(" on channel 0x%010llx\n", (u64)inst << 12);
+;
 }
 
 static void

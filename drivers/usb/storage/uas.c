@@ -158,10 +158,10 @@ static void uas_sense(struct urb *urb, struct scsi_cmnd *cmnd)
 			int newlen = min(len + 16, urb->actual_length) - 16;
 			if (newlen < 0)
 				newlen = 0;
-			sdev_printk(KERN_INFO, sdev, "%s: urb length %d "
-				"disagrees with IU sense data length %d, "
-				"using %d bytes of sense data\n", __func__,
-					urb->actual_length, len, newlen);
+//			sdev_printk(KERN_INFO, sdev, "%s: urb length %d "
+//				"disagrees with IU sense data length %d, "
+//				"using %d bytes of sense data\n", __func__,
+;
 			len = newlen;
 		}
 		memcpy(cmnd->sense_buffer, sense_iu->sense, len);
@@ -185,10 +185,10 @@ static void uas_sense_old(struct urb *urb, struct scsi_cmnd *cmnd)
 			int newlen = min(len + 8, urb->actual_length) - 8;
 			if (newlen < 0)
 				newlen = 0;
-			sdev_printk(KERN_INFO, sdev, "%s: urb length %d "
-				"disagrees with IU sense data length %d, "
-				"using %d bytes of sense data\n", __func__,
-					urb->actual_length, len, newlen);
+//			sdev_printk(KERN_INFO, sdev, "%s: urb length %d "
+//				"disagrees with IU sense data length %d, "
+//				"using %d bytes of sense data\n", __func__,
+;
 			len = newlen;
 		}
 		memcpy(cmnd->sense_buffer, sense_iu->sense, len);
@@ -255,8 +255,8 @@ static void uas_stat_cmplt(struct urb *urb)
 		uas_xfer_data(urb, cmnd, SUBMIT_DATA_OUT_URB);
 		break;
 	default:
-		scmd_printk(KERN_ERR, cmnd,
-			"Bogus IU (%d) received on status pipe\n", iu->iu_id);
+//		scmd_printk(KERN_ERR, cmnd,
+;
 	}
 }
 
@@ -370,8 +370,8 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
 
 	if (cmdinfo->state & SUBMIT_STATUS_URB) {
 		if (usb_submit_urb(cmdinfo->status_urb, gfp)) {
-			scmd_printk(KERN_INFO, cmnd,
-					"sense urb submission failure\n");
+//			scmd_printk(KERN_INFO, cmnd,
+;
 			return SCSI_MLQUEUE_DEVICE_BUSY;
 		}
 		cmdinfo->state &= ~SUBMIT_STATUS_URB;
@@ -388,8 +388,8 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
 
 	if (cmdinfo->state & SUBMIT_DATA_IN_URB) {
 		if (usb_submit_urb(cmdinfo->data_in_urb, gfp)) {
-			scmd_printk(KERN_INFO, cmnd,
-					"data in urb submission failure\n");
+//			scmd_printk(KERN_INFO, cmnd,
+;
 			return SCSI_MLQUEUE_DEVICE_BUSY;
 		}
 		cmdinfo->state &= ~SUBMIT_DATA_IN_URB;
@@ -406,8 +406,8 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
 
 	if (cmdinfo->state & SUBMIT_DATA_OUT_URB) {
 		if (usb_submit_urb(cmdinfo->data_out_urb, gfp)) {
-			scmd_printk(KERN_INFO, cmnd,
-					"data out urb submission failure\n");
+//			scmd_printk(KERN_INFO, cmnd,
+;
 			return SCSI_MLQUEUE_DEVICE_BUSY;
 		}
 		cmdinfo->state &= ~SUBMIT_DATA_OUT_URB;
@@ -423,8 +423,8 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
 
 	if (cmdinfo->state & SUBMIT_CMD_URB) {
 		if (usb_submit_urb(cmdinfo->cmd_urb, gfp)) {
-			scmd_printk(KERN_INFO, cmnd,
-					"cmd urb submission failure\n");
+//			scmd_printk(KERN_INFO, cmnd,
+;
 			return SCSI_MLQUEUE_DEVICE_BUSY;
 		}
 		cmdinfo->state &= ~SUBMIT_CMD_URB;
@@ -496,8 +496,8 @@ static DEF_SCSI_QCMD(uas_queuecommand)
 static int uas_eh_abort_handler(struct scsi_cmnd *cmnd)
 {
 	struct scsi_device *sdev = cmnd->device;
-	sdev_printk(KERN_INFO, sdev, "%s tag %d\n", __func__,
-							cmnd->request->tag);
+//	sdev_printk(KERN_INFO, sdev, "%s tag %d\n", __func__,
+;
 
 /* XXX: Send ABORT TASK Task Management command */
 	return FAILED;
@@ -506,8 +506,8 @@ static int uas_eh_abort_handler(struct scsi_cmnd *cmnd)
 static int uas_eh_device_reset_handler(struct scsi_cmnd *cmnd)
 {
 	struct scsi_device *sdev = cmnd->device;
-	sdev_printk(KERN_INFO, sdev, "%s tag %d\n", __func__,
-							cmnd->request->tag);
+//	sdev_printk(KERN_INFO, sdev, "%s tag %d\n", __func__,
+;
 
 /* XXX: Send LOGICAL UNIT RESET Task Management command */
 	return FAILED;
@@ -516,8 +516,8 @@ static int uas_eh_device_reset_handler(struct scsi_cmnd *cmnd)
 static int uas_eh_target_reset_handler(struct scsi_cmnd *cmnd)
 {
 	struct scsi_device *sdev = cmnd->device;
-	sdev_printk(KERN_INFO, sdev, "%s tag %d\n", __func__,
-							cmnd->request->tag);
+//	sdev_printk(KERN_INFO, sdev, "%s tag %d\n", __func__,
+;
 
 /* XXX: Can we reset just the one USB interface?
  * Would calling usb_set_interface() have the right effect?
@@ -531,8 +531,8 @@ static int uas_eh_bus_reset_handler(struct scsi_cmnd *cmnd)
 	struct uas_dev_info *devinfo = sdev->hostdata;
 	struct usb_device *udev = devinfo->udev;
 
-	sdev_printk(KERN_INFO, sdev, "%s tag %d\n", __func__,
-							cmnd->request->tag);
+//	sdev_printk(KERN_INFO, sdev, "%s tag %d\n", __func__,
+;
 
 	if (usb_reset_device(udev))
 		return SUCCESS;

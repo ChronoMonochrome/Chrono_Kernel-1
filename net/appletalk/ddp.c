@@ -706,9 +706,9 @@ static int atif_ioctl(int cmd, void __user *arg)
 			if ((dev->flags & IFF_POINTOPOINT) &&
 			    atalk_find_interface(sa->sat_addr.s_net,
 						 sa->sat_addr.s_node)) {
-				printk(KERN_DEBUG "AppleTalk: point-to-point "
-						  "interface added with "
-						  "existing address\n");
+//				printk(KERN_DEBUG "AppleTalk: point-to-point "
+//						  "interface added with "
+;
 				add_route = 0;
 			}
 
@@ -770,8 +770,8 @@ static int atif_ioctl(int cmd, void __user *arg)
 			} else {
 				limit = ntohs(nr->nr_lastnet);
 				if (limit - ntohs(nr->nr_firstnet) > 4096) {
-					printk(KERN_WARNING "Too many routes/"
-							    "iface.\n");
+//					printk(KERN_WARNING "Too many routes/"
+;
 					return -EINVAL;
 				}
 				if (add_route)
@@ -1209,10 +1209,10 @@ static int atalk_connect(struct socket *sock, struct sockaddr *uaddr,
 	if (addr->sat_addr.s_node == ATADDR_BCAST &&
 	    !sock_flag(sk, SOCK_BROADCAST)) {
 #if 1
-		printk(KERN_WARNING "%s is broken and did not set "
-				    "SO_BROADCAST. It will break when 2.2 is "
-				    "released.\n",
-			current->comm);
+//		printk(KERN_WARNING "%s is broken and did not set "
+//				    "SO_BROADCAST. It will break when 2.2 is "
+//				    "released.\n",
+;
 #else
 		return -EACCES;
 #endif
@@ -1335,8 +1335,8 @@ static int atalk_route_packet(struct sk_buff *skb, struct net_device *dev,
 		 * needs to be broadcast onto the default network?
 		 */
 		if (dev->type == ARPHRD_PPP)
-			printk(KERN_DEBUG "AppleTalk: didn't forward broadcast "
-					  "packet received from PPP iface\n");
+//			printk(KERN_DEBUG "AppleTalk: didn't forward broadcast "
+;
 		goto free_it;
 	}
 
@@ -1932,7 +1932,7 @@ static int __init atalk_init(void)
 	(void)sock_register(&atalk_family_ops);
 	ddp_dl = register_snap_client(ddp_snap_id, atalk_rcv);
 	if (!ddp_dl)
-		printk(atalk_err_snap);
+;
 
 	dev_add_pack(&ltalk_packet_type);
 	dev_add_pack(&ppptalk_packet_type);

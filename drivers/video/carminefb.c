@@ -493,7 +493,7 @@ static int init_hardware(struct carmine_hw *hw)
 		}
 
 		if (loops >= CARMINE_DCTL_INIT_WAIT_LIMIT) {
-			printk(KERN_ERR "DRAM init failed\n");
+;
 			return -EIO;
 		}
 	}
@@ -583,8 +583,8 @@ static int __devinit alloc_carmine_fb(void __iomem *regs, void __iomem *smem_bas
 	if (ret < 0)
 		goto err_dealloc_cmap;
 
-	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
-			info->fix.id);
+//	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
+;
 
 	*rinfo = info;
 	return 0;
@@ -628,15 +628,15 @@ static int __devinit carminefb_probe(struct pci_dev *dev,
 	if (!request_mem_region(carminefb_fix.mmio_start,
 				carminefb_fix.mmio_len,
 				"carminefb regbase")) {
-		printk(KERN_ERR "carminefb: Can't reserve regbase.\n");
+;
 		ret = -EBUSY;
 		goto err_free_hw;
 	}
 	hw->v_regs = ioremap_nocache(carminefb_fix.mmio_start,
 			carminefb_fix.mmio_len);
 	if (!hw->v_regs) {
-		printk(KERN_ERR "carminefb: Can't remap %s register.\n",
-				carminefb_fix.id);
+//		printk(KERN_ERR "carminefb: Can't remap %s register.\n",
+;
 		goto err_free_reg_mmio;
 	}
 
@@ -651,22 +651,22 @@ static int __devinit carminefb_probe(struct pci_dev *dev,
 		carminefb_fix.smem_len = CARMINE_TOTAL_DIPLAY_MEM;
 
 	else if (carminefb_fix.smem_len < CARMINE_TOTAL_DIPLAY_MEM) {
-		printk(KERN_ERR "carminefb: Memory bar is only %d bytes, %d "
-				"are required.", carminefb_fix.smem_len,
-				CARMINE_TOTAL_DIPLAY_MEM);
+//		printk(KERN_ERR "carminefb: Memory bar is only %d bytes, %d "
+//				"are required.", carminefb_fix.smem_len,
+;
 		goto err_unmap_vregs;
 	}
 
 	if (!request_mem_region(carminefb_fix.smem_start,
 				carminefb_fix.smem_len,	"carminefb smem")) {
-		printk(KERN_ERR "carminefb: Can't reserve smem.\n");
+;
 		goto err_unmap_vregs;
 	}
 
 	hw->screen_mem = ioremap_nocache(carminefb_fix.smem_start,
 			carminefb_fix.smem_len);
 	if (!hw->screen_mem) {
-		printk(KERN_ERR "carmine: Can't ioremap smem area.\n");
+;
 		goto err_reg_smem;
 	}
 
@@ -770,8 +770,8 @@ static int __init carminefb_init(void)
 {
 	if (!(fb_displays &
 		(CARMINE_USE_DISPLAY0 | CARMINE_USE_DISPLAY1))) {
-		printk(KERN_ERR "If you disable both displays than you don't "
-				"need the driver at all\n");
+//		printk(KERN_ERR "If you disable both displays than you don't "
+;
 		return -EINVAL;
 	}
 	return pci_register_driver(&carmine_pci_driver);

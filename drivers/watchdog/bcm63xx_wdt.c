@@ -82,7 +82,7 @@ static void bcm63xx_timer_tick(unsigned long unused)
 		bcm63xx_wdt_hw_start();
 		mod_timer(&bcm63xx_wdt_device.timer, jiffies + HZ);
 	} else
-		printk(KERN_CRIT PFX ": watchdog will restart system\n");
+;
 }
 
 static void bcm63xx_wdt_pet(void)
@@ -126,8 +126,8 @@ static int bcm63xx_wdt_release(struct inode *inode, struct file *file)
 	if (expect_close == 42)
 		bcm63xx_wdt_pause();
 	else {
-		printk(KERN_CRIT PFX
-			": Unexpected close, not stopping watchdog!\n");
+//		printk(KERN_CRIT PFX
+;
 		bcm63xx_wdt_start();
 	}
 	clear_bit(0, &bcm63xx_wdt_device.inuse);

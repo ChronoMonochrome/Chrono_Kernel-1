@@ -73,32 +73,32 @@ static void skomer_lcd_pwr_setup(struct device *dev)
 	vreg_lcd_1v8_regulator = regulator_get(dev, "v_lcd_1v8");
 	if (IS_ERR(vreg_lcd_1v8_regulator)) {
 		ret = PTR_ERR(vreg_lcd_1v8_regulator);
-		printk(KERN_ERR "%s: fail to get vreg_lcd_1v8_regulator (%d)\n", __func__, ret);
+;
 		return;
 	}
 	ret = regulator_set_voltage(vreg_lcd_1v8_regulator, min_uV, max_uV);
 	if (ret < 0) {
-		printk(KERN_ERR "%s: fail to set vreg_lcd_1v8_regulator to %d, %d (%d)\n", __func__, min_uV, max_uV, ret);
+;
 		regulator_put(vreg_lcd_1v8_regulator);
 		return;
 	}
-	printk(KERN_INFO "%s: set vdd to %d uV - %d uV (%d)\n",  __func__, min_uV, max_uV, ret);
+;
 
 	min_uV = max_uV = 3000000;
 	vreg_lcd_3v0_regulator = regulator_get(dev, "v_lcd_3v0");
 	if (IS_ERR(vreg_lcd_3v0_regulator)) {
 		ret = PTR_ERR(vreg_lcd_3v0_regulator);
-		printk(KERN_ERR "%s: fail to get vreg_lcd_3v0_regulator (%d)\n", __func__, ret);
+;
 		return;
 	}
 	ret = regulator_set_voltage(vreg_lcd_3v0_regulator, min_uV, max_uV);
 	if (ret < 0) {
-		printk(KERN_ERR "%s: fail to set vreg_lcd_3v0_regulator to %d, %d (%d)\n", __func__, min_uV, max_uV, ret);
+;
 		regulator_put(vreg_lcd_1v8_regulator);
 		regulator_put(vreg_lcd_3v0_regulator);
 		return;
 	}
-	printk(KERN_INFO "%s: set vdd to %d uV - %d uV (%d)\n",  __func__, min_uV, max_uV, ret);
+;
 }
 
 
@@ -107,7 +107,7 @@ static void skomer_lcd_pwr_onoff(bool on)
 	static bool is_on = false;
 
 	if (vreg_lcd_1v8_regulator == NULL || vreg_lcd_3v0_regulator == NULL) {
-		printk(KERN_ERR "%s: no regulator\n", __func__);
+;
 		return;
 	}
 
@@ -120,7 +120,7 @@ static void skomer_lcd_pwr_onoff(bool on)
 		regulator_disable(vreg_lcd_1v8_regulator);
 		regulator_disable(vreg_lcd_3v0_regulator);
 	}
-	printk(KERN_INFO "%s: %s\n", __func__, (is_on) ? "on" : "off");
+;
 }
 
 extern void skomer_backlight_on_off(bool on);
@@ -346,7 +346,7 @@ int __init init_skomer_display_devices(void)
 
 	ret = mcde_dss_register_notifier(&display_nb);
 	if (ret)
-		printk(KERN_ERR "Failed to register dss notifier\n");
+;
 
 	if (display_initialized_during_boot) {
 		hva40wv1_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
@@ -363,8 +363,8 @@ int __init init_skomer_display_devices(void)
 	 */
 	clk_tv = clk_get(&ux500_mcde_device.dev, "tv");
 	if (TV_FREQ_HZ != clk_round_rate(clk_tv, TV_FREQ_HZ))
-		printk(KERN_ERR "%s: TV_CLK freq differs %ld\n", __func__,
-				clk_round_rate(clk_tv, TV_FREQ_HZ));
+//		printk(KERN_ERR "%s: TV_CLK freq differs %ld\n", __func__,
+;
 	clk_set_rate(clk_tv, TV_FREQ_HZ);
 	clk_put(clk_tv);
 
@@ -374,8 +374,8 @@ int __init init_skomer_display_devices(void)
 	 */
 	clk_hdmi = clk_get(&ux500_mcde_device.dev, "hdmi");
 	if (HDMI_FREQ_HZ != clk_round_rate(clk_hdmi, HDMI_FREQ_HZ))
-		printk(KERN_ERR "%s: HDMI freq differs %ld\n", __func__,
-				clk_round_rate(clk_hdmi, HDMI_FREQ_HZ));
+//		printk(KERN_ERR "%s: HDMI freq differs %ld\n", __func__,
+;
 	clk_set_rate(clk_hdmi, HDMI_FREQ_HZ);
 	clk_put(clk_hdmi);
 
@@ -389,15 +389,15 @@ int __init init_skomer_display_devices(void)
 	else if (lcd_type == LCD_PANEL_TYPE_NT35512)
 		dsi_pll_freq = DSI_PLL_FREQ_HZ_NT35512;
 	else {
-		printk(KERN_ERR "Display device type %d not recognised\n", lcd_type);
+;
 		ret = -ENODEV;
 		goto error;
 	}
 
 	clk_dsi_pll = clk_get(&ux500_mcde_device.dev, "dsipll");
 	if (dsi_pll_freq != clk_round_rate(clk_dsi_pll,	dsi_pll_freq))
-		printk(KERN_ERR "%s: DSI_PLL freq differs %ld\n", __func__,
-			clk_round_rate(clk_dsi_pll, dsi_pll_freq));
+//		printk(KERN_ERR "%s: DSI_PLL freq differs %ld\n", __func__,
+;
 	clk_set_rate(clk_dsi_pll, dsi_pll_freq);
 	clk_put(clk_dsi_pll);
 
@@ -427,7 +427,7 @@ int __init init_skomer_display_devices(void)
 
 
 	if (ret)
-		printk(KERN_ERR "Failed to register display device\n");
+;
 
 error:
 	return ret;

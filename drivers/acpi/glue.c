@@ -17,11 +17,11 @@
 
 #define ACPI_GLUE_DEBUG	0
 #if ACPI_GLUE_DEBUG
-#define DBG(x...) printk(PREFIX x)
-#else
-#define DBG(x...) do { } while(0)
-#endif
-static LIST_HEAD(bus_type_list);
+//#define DBG(x...) printk(PREFIX x)
+//#else
+//#define DBG(x...) do { } while(0)
+//#endif
+;
 static DECLARE_RWSEM(bus_type_sem);
 
 int register_acpi_bus_type(struct acpi_bus_type *type)
@@ -32,8 +32,8 @@ int register_acpi_bus_type(struct acpi_bus_type *type)
 		down_write(&bus_type_sem);
 		list_add_tail(&type->list, &bus_type_list);
 		up_write(&bus_type_sem);
-		printk(KERN_INFO PREFIX "bus type %s registered\n",
-		       type->bus->name);
+//		printk(KERN_INFO PREFIX "bus type %s registered\n",
+;
 		return 0;
 	}
 	return -ENODEV;
@@ -47,8 +47,8 @@ int unregister_acpi_bus_type(struct acpi_bus_type *type)
 		down_write(&bus_type_sem);
 		list_del_init(&type->list);
 		up_write(&bus_type_sem);
-		printk(KERN_INFO PREFIX "ACPI bus type %s unregistered\n",
-		       type->bus->name);
+//		printk(KERN_INFO PREFIX "ACPI bus type %s unregistered\n",
+;
 		return 0;
 	}
 	return -ENODEV;
@@ -248,7 +248,7 @@ static int acpi_platform_notify_remove(struct device *dev)
 int __init init_acpi_device_notify(void)
 {
 	if (platform_notify || platform_notify_remove) {
-		printk(KERN_ERR PREFIX "Can't use platform_notify\n");
+;
 		return 0;
 	}
 	platform_notify = acpi_platform_notify;

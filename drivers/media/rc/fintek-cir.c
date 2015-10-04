@@ -111,12 +111,12 @@ static u8 fintek_cir_reg_read(struct fintek_dev *fintek, u8 offset)
 }
 
 #define pr_reg(text, ...) \
-	printk(KERN_INFO KBUILD_MODNAME ": " text, ## __VA_ARGS__)
-
-/* dump current cir register contents */
-static void cir_dump_regs(struct fintek_dev *fintek)
-{
-	fintek_config_mode_enable(fintek);
+//	printk(KERN_INFO KBUILD_MODNAME ": " text, ## __VA_ARGS__)
+//
+///* dump current cir register contents */
+//static void cir_dump_regs(struct fintek_dev *fintek)
+//{
+;
 	fintek_select_logical_dev(fintek, LOGICAL_DEV_CIR);
 
 	pr_reg("%s: Dump CIR logical device registers:\n", FINTEK_DRIVER_NAME);

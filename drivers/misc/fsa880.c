@@ -279,14 +279,14 @@ static ssize_t show_current_connection_log(unsigned long charger_event)
 	if (string == NULL)
 		string = "none";
 
-	return printk(KERN_INFO "%s  is connnected to the device\n", string);
+;
 }
 #endif
 
 /* SW RESET for TI USB:To fix no USB recog problem after jig attach&detach*/
 static void TI_SWreset(struct FSA9480_instance *instance)
 {
-	printk(KERN_INFO "[TSU6111] TI_SW reset Start, Disable IRQ\n");
+;
 	disable_irq(instance->irq_bit);
 
 	/*Hold SCL&SDA Low more than 30ms*/
@@ -304,7 +304,7 @@ static void TI_SWreset(struct FSA9480_instance *instance)
 	write_FSA9480_register(instance, FSA9490_CONTROL_REGISTER, 0x1E);
 
 	mdelay(20);
-	printk(KERN_INFO "[TSU6111] TI_SWreset Done, Enable IRQ\n");
+;
 	enable_irq(instance->irq_bit);
 }
 
@@ -365,7 +365,7 @@ static ssize_t store_jig_smd(struct device *dev, struct device_attribute *attr, 
 
 	sscanf(buf, "%d\n", &data);
 	jig_smd = data;
-	printk(KERN_DEBUG "jig_smd value : %d.\n", jig_smd);
+;
 
 	return size;
 }
@@ -566,9 +566,9 @@ static unsigned long get_current_connection_mask(struct FSA9480_instance *instan
 	unsigned long event = 0;
 	int event_found = 0;
 
-	printk(KERN_INFO "%s entered\n", __func__);
+;
 	read_FSA9480_register(instance, FSA9490_INTERRUPT_1_REGISTER, &c);
-	printk(KERN_INFO "%s : Read Interrupt 1 Register: %#x\n", __func__, c);
+;
 
 	event |= (c & FSA9490_ATTACH_MASK_BIT) ? USB_SWITCH_CONNECTION_EVENT : 0;
 	event |= (c & FSA9490_DETACH_MASK_BIT) ? USB_SWITCH_DISCONNECTION_EVENT : 0;
@@ -606,7 +606,7 @@ static void switch_dock_init(void)
 
 	ret = switch_dev_register(&switch_dock);
 	if (ret < 0)
-		printk(KERN_INFO "Failed to register dock switch\n");
+;
 }
 
 static void usb_switch_notify_clients(struct work_struct *work)
@@ -628,7 +628,7 @@ static void usb_switch_notify_clients(struct work_struct *work)
 	/* TSU6111 Bug W/A Case */
 	if (id == TI_6111 && instance->prev_event & (EXTERNAL_JIG_UART_ON | EXTERNAL_JIG_UART_OFF)
 		&& instance->last_event & USB_SWITCH_DISCONNECTION_EVENT) {
-		printk(KERN_INFO "S/W Reset Case for TSU6111\n");
+;
 		TI_SWreset(instance);
 	}
 
@@ -637,7 +637,7 @@ static void usb_switch_notify_clients(struct work_struct *work)
 /*weichang.dong remove Desktop Dock Support for codina chn 4.1.2  */
 	if (instance->last_event == (USB_SWITCH_CONNECTION_EVENT | EXTERNAL_AV_CABLE)) {
 		if (id == FC_9485) {	
-			printk(KERN_INFO "%s: GPIO #200 Value : %x\n", __func__, gpio_get_value(200));
+;
 
 			write_FSA9480_register(instance, FSA9490_MANUAL_SWITCH_1_REGISTER, SW_AUDIO);
 			read_FSA9480_register(instance, FSA9490_CONTROL_REGISTER, &c);
@@ -651,7 +651,7 @@ static void usb_switch_notify_clients(struct work_struct *work)
     if (instance->last_event == USB_SWITCH_DISCONNECTION_EVENT &&
 			instance->prev_event == (USB_SWITCH_CONNECTION_EVENT | EXTERNAL_AV_CABLE)) {
 		if (id == FC_9485) {	
-			printk(KERN_INFO "%s: GPIO #200 Value : %x\n", __func__, gpio_get_value(200));
+;
 
 			write_FSA9480_register(instance, FSA9490_MANUAL_SWITCH_1_REGISTER, 0x00);
 			read_FSA9480_register(instance, FSA9490_CONTROL_REGISTER, &c);
@@ -663,7 +663,7 @@ static void usb_switch_notify_clients(struct work_struct *work)
 			TI_SWreset(instance);
 	}
 	
-	printk(KERN_INFO "%s : Event = 0x%08lx\n", __func__, instance->last_event);
+;
 
 #ifdef CONFIG_SAMSUNG_LOG_BUF
 	show_current_connection_log(instance->last_event);
@@ -674,11 +674,11 @@ static void usb_switch_notify_clients(struct work_struct *work)
 static irqreturn_t FSA9480_irq_thread_fn(int irq, void *data)
 {
 	struct FSA9480_instance *instance = (struct FSA9480_instance *) data;
-	printk(KERN_INFO "%s\n", __func__);
+;
 	
 #if defined(FSA_DELAYED_WORK)
 	schedule_delayed_work(&instance->notifier_queue, FSA880_DELAY);
-	printk(KERN_INFO "scheduled_delayed_work called, %s, Line no:%d\n", __func__, __LINE__);
+;
 #else
 	queue_work(usb_switch_workqueue, &instance->notifier_queue);
 #endif
@@ -839,7 +839,7 @@ static int init_driver_instance(struct FSA9480_instance *instance, struct i2c_cl
 
 	/* Read Control register of MUIC */
 	read_FSA9480_register(instance, FSA9490_CONTROL_REGISTER, &c);
-	printk(KERN_INFO "microUSB switch IC's Control register : 0x%02x, bootmode : %d\n", c, sec_bootmode);
+;
  
 	gpio_request(instance->current_switch->connection_changed_interrupt_gpio, instance->current_switch->name);
 	nmk_gpio_set_pull(instance->current_switch->connection_changed_interrupt_gpio, NMK_GPIO_PULL_UP);
@@ -847,7 +847,7 @@ static int init_driver_instance(struct FSA9480_instance *instance, struct i2c_cl
 
 	if (instance->current_switch->charger_detect_gpio != 0xFFFF) {
 		if (gpio_request(instance->current_switch->charger_detect_gpio, "usb_charger_detect"))
-			printk(KERN_INFO "\n %s:gpio_request failed\n ", __FUNCTION__);
+;
 		else
 			instance->charge_detect_gpio = instance->current_switch->charger_detect_gpio;
 	}
@@ -867,28 +867,28 @@ static int init_driver_instance(struct FSA9480_instance *instance, struct i2c_cl
 
 	/* Find the inserted accessory before probing */
 	instance->prev_event = instance->last_event = current_connection_mask(instance);
-	printk(KERN_INFO "MUIC Initial Event = 0x%08lx\n", instance->last_event);
+;
 
 	/* /sys/class/usb_switch/FSA_SWITCH/ * */
 	instance->dev = device_create(usb_switch_class, NULL, 0, instance, "%s", "FSA_SWITCH");
 	for (i = 0; i < ARRAY_SIZE(FSA9480_device_attrs); i++) {
 			ret = device_create_file(instance->dev, &FSA9480_device_attrs[i]);
 			if (ret < 0)
-				printk(KERN_INFO "device_create_file failed for file %s error =%d\n", FSA9480_device_attrs[i].attr.name, ret);
+;
 	}
 
 	micro_usb_switch = device_create(sec_class, NULL, 0, NULL, "switch");
 	if (IS_ERR(micro_usb_switch)) {
-		printk(KERN_ERR "Failed to create device(sec_switch)!\n");
+;
 	}
 	/* /sys/class/sec/switch/usb_state */
 	if (device_create_file(micro_usb_switch, &dev_attr_usb_state) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_usb_state.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 	/* /sys/class/sec/switch/adc */
 	if (device_create_file(micro_usb_switch, &dev_attr_adc) < 0)
-			printk(KERN_ERR "Failed to create device file(%s)!\n",
-					dev_attr_adc.attr.name);
+//			printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	blocking_notifier_call_chain(&usb_switch_notifier, USB_SWITCH_DRIVER_STARTED | instance->last_event, NULL);
 	instance->started = 1;
@@ -906,7 +906,7 @@ static int init_driver_instance(struct FSA9480_instance *instance, struct i2c_cl
 			instance->current_switch->name, instance);
 #endif
 	if (ret < 0)
-		printk(KERN_INFO "Failed to request IRQ %d (err: %d).\n", instance->irq_bit, ret);
+;
 
 	/* Enable IRQ PM wake-up */
 	ret = enable_irq_wake(instance->irq_bit);
@@ -934,7 +934,7 @@ static int __devexit FSA9480_i2c_remove(struct i2c_client *client)
 {
 	struct FSA9480_instance *instance = i2c_get_clientdata(client);
 
-	printk(KERN_INFO "\n -----------%s:..........\n ", __FUNCTION__);
+;
 
 	if (instance && instance->proc_entry)
 		remove_proc_entry("MUSB", NULL);
@@ -995,7 +995,7 @@ static int __init FSA9480_module_init(void)
 
 	ret = i2c_add_driver(&FSA9480_i2c_driver);
 	if (ret < 0) {
-		printk(KERN_INFO "%s  failed to register\n ", __FUNCTION__);
+;
 		return ret;
 	}
 

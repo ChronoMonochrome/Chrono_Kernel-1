@@ -32,13 +32,13 @@ static int frontend_bus_id(char bus_id[XEN_BUS_ID_SIZE], const char *nodename)
 {
 	nodename = strchr(nodename, '/');
 	if (!nodename || strlen(nodename + 1) >= XEN_BUS_ID_SIZE) {
-		printk(KERN_WARNING "XENBUS: bad frontend %s\n", nodename);
+;
 		return -EINVAL;
 	}
 
 	strlcpy(bus_id, nodename + 1, XEN_BUS_ID_SIZE);
 	if (!strchr(bus_id, '/')) {
-		printk(KERN_WARNING "XENBUS: bus_id %s no slash\n", bus_id);
+;
 		return -EINVAL;
 	}
 	*strchr(bus_id, '/') = '-';
@@ -197,15 +197,15 @@ static int print_device_status(struct device *dev, void *data)
 
 	if (!dev->driver) {
 		/* Information only: is this too noisy? */
-		printk(KERN_INFO "XENBUS: Device with no driver: %s\n",
-		       xendev->nodename);
+//		printk(KERN_INFO "XENBUS: Device with no driver: %s\n",
+;
 	} else if (xendev->state < XenbusStateConnected) {
 		enum xenbus_state rstate = XenbusStateUnknown;
 		if (xendev->otherend)
 			rstate = xenbus_read_driver_state(xendev->otherend);
-		printk(KERN_WARNING "XENBUS: Timeout connecting "
-		       "to device: %s (local state %d, remote state %d)\n",
-		       xendev->nodename, xendev->state, rstate);
+//		printk(KERN_WARNING "XENBUS: Timeout connecting "
+//		       "to device: %s (local state %d, remote state %d)\n",
+;
 	}
 
 	return 0;
@@ -219,8 +219,8 @@ static bool wait_loop(unsigned long start, unsigned int max_delay,
 {
 	if (time_after(jiffies, start + (*seconds_waited+5)*HZ)) {
 		if (!*seconds_waited)
-			printk(KERN_WARNING "XENBUS: Waiting for "
-			       "devices to initialise: ");
+//			printk(KERN_WARNING "XENBUS: Waiting for "
+;
 		*seconds_waited += 5;
 		printk("%us...", max_delay - *seconds_waited);
 		if (*seconds_waited == max_delay)
@@ -264,7 +264,7 @@ static void wait_for_devices(struct xenbus_driver *xendrv)
 			break;
 
 	if (seconds_waited)
-		printk("\n");
+;
 
 	bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
 			 print_device_status);

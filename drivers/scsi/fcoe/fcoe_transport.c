@@ -408,8 +408,8 @@ static int __exit fcoe_transport_exit(void)
 	unregister_netdevice_notifier(&libfcoe_notifier);
 	mutex_lock(&ft_mutex);
 	list_for_each_entry(ft, &fcoe_transports, list)
-		printk(KERN_ERR "FCoE transport %s is still attached!\n",
-		      ft->name);
+//		printk(KERN_ERR "FCoE transport %s is still attached!\n",
+;
 	mutex_unlock(&ft_mutex);
 	return 0;
 }
@@ -422,7 +422,7 @@ static int fcoe_add_netdev_mapping(struct net_device *netdev,
 
 	nm = kmalloc(sizeof(*nm), GFP_KERNEL);
 	if (!nm) {
-		printk(KERN_ERR "Unable to allocate netdev_mapping");
+;
 		return -ENOMEM;
 	}
 
@@ -518,8 +518,8 @@ static int libfcoe_device_notification(struct notifier_block *notifier,
 
 	switch (event) {
 	case NETDEV_UNREGISTER:
-		printk(KERN_ERR "libfcoe_device_notification: NETDEV_UNREGISTER %s\n",
-				netdev->name);
+//		printk(KERN_ERR "libfcoe_device_notification: NETDEV_UNREGISTER %s\n",
+;
 		fcoe_del_netdev_mapping(netdev);
 		break;
 	}

@@ -726,8 +726,8 @@ static int u14_34f_slave_configure(struct scsi_device *dev) {
    else
       link_suffix = "";
 
-   sdev_printk(KERN_INFO, dev, "cmds/lun %d%s%s.\n",
-          dev->queue_depth, link_suffix, tag_suffix);
+//   sdev_printk(KERN_INFO, dev, "cmds/lun %d%s%s.\n",
+;
 
    return FALSE;
 }
@@ -762,7 +762,7 @@ static int board_inquiry(unsigned int j) {
    cpp->cdb[0] = HA_CMD_INQUIRY;
 
    if (wait_on_busy(sh[j]->io_port, MAXLOOP)) {
-      printk("%s: board_inquiry, adapter busy.\n", BN(j));
+;
       return TRUE;
       }
 
@@ -784,7 +784,7 @@ static int board_inquiry(unsigned int j) {
 
    if (cpp->adapter_status || HD(j)->cp_stat[0] != FREE) {
       HD(j)->cp_stat[0] = FREE;
-      printk("%s: board_inquiry, err 0x%x.\n", BN(j), cpp->adapter_status);
+;
       return TRUE;
       }
 
@@ -852,7 +852,7 @@ static int port_detect \
 
    if (!request_region(port_base, REGION_SIZE, driver_name)) {
 #if defined(DEBUG_DETECT)
-      printk("%s: address 0x%03lx in use, skipping probe.\n", name, port_base);
+;
 #endif
       goto fail;
       }
@@ -876,13 +876,13 @@ static int port_detect \
    if (request_irq(irq, do_interrupt_handler,
              IRQF_DISABLED | ((subversion == ESA) ? IRQF_SHARED : 0),
              driver_name, (void *) &sha[j])) {
-      printk("%s: unable to allocate IRQ %u, detaching.\n", name, irq);
+;
       goto freelock;
       }
 
    if (subversion == ISA && request_dma(dma_channel, driver_name)) {
-      printk("%s: unable to allocate DMA channel %u, detaching.\n",
-             name, dma_channel);
+//      printk("%s: unable to allocate DMA channel %u, detaching.\n",
+;
       goto freeirq;
       }
 
@@ -893,7 +893,7 @@ static int port_detect \
    spin_lock_irq(&driver_lock);
 
    if (sh[j] == NULL) {
-      printk("%s: unable to register host, detaching.\n", name);
+;
       goto freedma;
       }
 
@@ -913,7 +913,7 @@ static int port_detect \
 
    sys_mask = inb(sh[j]->io_port + REG_SYS_MASK);
    lcl_mask = inb(sh[j]->io_port + REG_LCL_MASK);
-   printk("SYS_MASK 0x%x, LCL_MASK 0x%x.\n", sys_mask, lcl_mask);
+;
    }
 #endif
 
@@ -962,9 +962,9 @@ static int port_detect \
       HD(j)->board_id[40] = 0;
 
       if (strcmp(&HD(j)->board_id[32], "06000600")) {
-         printk("%s: %s.\n", BN(j), &HD(j)->board_id[8]);
-         printk("%s: firmware %s is outdated, FW PROM should be 28004-006.\n",
-                BN(j), &HD(j)->board_id[32]);
+;
+//         printk("%s: firmware %s is outdated, FW PROM should be 28004-006.\n",
+;
          sh[j]->hostt->use_clustering = DISABLE_CLUSTERING;
          sh[j]->sg_tablesize = MAX_SAFE_SGLIST;
          }
@@ -983,7 +983,7 @@ static int port_detect \
       if (! ((&HD(j)->cp[i])->sglist = kmalloc(
             sh[j]->sg_tablesize * sizeof(struct sg_list),
             (sh[j]->unchecked_isa_dma ? GFP_DMA : 0) | GFP_ATOMIC))) {
-         printk("%s: kmalloc SGlist failed, mbox %d, detaching.\n", BN(j), i);
+;
          goto release;
          }
 
@@ -996,23 +996,23 @@ static int port_detect \
       tag_mode = TAG_ORDERED;
 
    if (j == 0) {
-      printk("UltraStor 14F/34F: Copyright (C) 1994-2003 Dario Ballabio.\n");
-      printk("%s config options -> of:%c, tm:%d, lc:%c, mq:%d, et:%c.\n",
-             driver_name, YESNO(have_old_firmware), tag_mode,
-             YESNO(linked_comm), max_queue_depth, YESNO(ext_tran));
+;
+//      printk("%s config options -> of:%c, tm:%d, lc:%c, mq:%d, et:%c.\n",
+//             driver_name, YESNO(have_old_firmware), tag_mode,
+;
       }
 
-   printk("%s: %s 0x%03lx, BIOS 0x%05x, IRQ %u, %s, SG %d, MB %d.\n",
-          BN(j), bus_type, (unsigned long)sh[j]->io_port, (int)sh[j]->base,
-          sh[j]->irq, dma_name, sh[j]->sg_tablesize, sh[j]->can_queue);
+//   printk("%s: %s 0x%03lx, BIOS 0x%05x, IRQ %u, %s, SG %d, MB %d.\n",
+//          BN(j), bus_type, (unsigned long)sh[j]->io_port, (int)sh[j]->base,
+;
 
    if (sh[j]->max_id > 8 || sh[j]->max_lun > 8)
-      printk("%s: wide SCSI support enabled, max_id %u, max_lun %u.\n",
-             BN(j), sh[j]->max_id, sh[j]->max_lun);
+//      printk("%s: wide SCSI support enabled, max_id %u, max_lun %u.\n",
+;
 
    for (i = 0; i <= sh[j]->max_channel; i++)
-      printk("%s: SCSI channel %u enabled, host target ID %d.\n",
-             BN(j), i, sh[j]->this_id);
+//      printk("%s: SCSI channel %u enabled, host target ID %d.\n",
+;
 
    return TRUE;
 
@@ -1274,7 +1274,7 @@ static int u14_34f_queuecommand_lck(struct scsi_cmnd *SCpnt, void (*done)(struct
       }
 
    if (k == sh[j]->can_queue) {
-      printk("%s: qcomm, no free mailbox.\n", BN(j));
+;
       return 1;
       }
 
@@ -1286,9 +1286,9 @@ static int u14_34f_queuecommand_lck(struct scsi_cmnd *SCpnt, void (*done)(struct
    cpp->cpp_index = i;
    SCpnt->host_scribble = (unsigned char *) &cpp->cpp_index;
 
-   if (do_trace) printk("%s: qcomm, mbox %d, target %d.%d:%d.\n",
-                        BN(j), i, SCpnt->device->channel, SCpnt->device->id,
-                        SCpnt->device->lun);
+//   if (do_trace) printk("%s: qcomm, mbox %d, target %d.%d:%d.\n",
+//                        BN(j), i, SCpnt->device->channel, SCpnt->device->id,
+;
 
    cpp->opcode = OP_SCSI;
    cpp->channel = SCpnt->device->channel;
@@ -1314,8 +1314,8 @@ static int u14_34f_queuecommand_lck(struct scsi_cmnd *SCpnt, void (*done)(struct
    if (wait_on_busy(sh[j]->io_port, MAXLOOP)) {
       unmap_dma(i, j);
       SCpnt->host_scribble = NULL;
-      scmd_printk(KERN_INFO, SCpnt,
-      		"qcomm, adapter busy.\n");
+//      scmd_printk(KERN_INFO, SCpnt,
+;
       return 1;
       }
 
@@ -1337,46 +1337,46 @@ static int u14_34f_eh_abort(struct scsi_cmnd *SCarg) {
    j = ((struct hostdata *) SCarg->device->host->hostdata)->board_number;
 
    if (SCarg->host_scribble == NULL) {
-      scmd_printk(KERN_INFO, SCarg, "abort, command inactive.\n");
+;
       return SUCCESS;
       }
 
    i = *(unsigned int *)SCarg->host_scribble;
-   scmd_printk(KERN_INFO, SCarg, "abort, mbox %d.\n", i);
+;
 
    if (i >= sh[j]->can_queue)
       panic("%s: abort, invalid SCarg->host_scribble.\n", BN(j));
 
    if (wait_on_busy(sh[j]->io_port, MAXLOOP)) {
-      printk("%s: abort, timeout error.\n", BN(j));
+;
       return FAILED;
       }
 
    if (HD(j)->cp_stat[i] == FREE) {
-      printk("%s: abort, mbox %d is free.\n", BN(j), i);
+;
       return SUCCESS;
       }
 
    if (HD(j)->cp_stat[i] == IN_USE) {
-      printk("%s: abort, mbox %d is in use.\n", BN(j), i);
+;
 
       if (SCarg != HD(j)->cp[i].SCpnt)
          panic("%s: abort, mbox %d, SCarg %p, cp SCpnt %p.\n",
                BN(j), i, SCarg, HD(j)->cp[i].SCpnt);
 
       if (inb(sh[j]->io_port + REG_SYS_INTR) & IRQ_ASSERTED)
-         printk("%s: abort, mbox %d, interrupt pending.\n", BN(j), i);
+;
 
       return FAILED;
       }
 
    if (HD(j)->cp_stat[i] == IN_RESET) {
-      printk("%s: abort, mbox %d is in reset.\n", BN(j), i);
+;
       return FAILED;
       }
 
    if (HD(j)->cp_stat[i] == LOCKED) {
-      printk("%s: abort, mbox %d is locked.\n", BN(j), i);
+;
       return SUCCESS;
       }
 
@@ -1385,7 +1385,7 @@ static int u14_34f_eh_abort(struct scsi_cmnd *SCarg) {
       SCarg->result = DID_ABORT << 16;
       SCarg->host_scribble = NULL;
       HD(j)->cp_stat[i] = FREE;
-      printk("%s, abort, mbox %d ready, DID_ABORT, done.\n", BN(j), i);
+;
       SCarg->scsi_done(SCarg);
       return SUCCESS;
       }
@@ -1400,21 +1400,21 @@ static int u14_34f_eh_host_reset(struct scsi_cmnd *SCarg) {
    struct scsi_cmnd *SCpnt;
 
    j = ((struct hostdata *) SCarg->device->host->hostdata)->board_number;
-   scmd_printk(KERN_INFO, SCarg, "reset, enter.\n");
+;
 
    spin_lock_irq(sh[j]->host_lock);
 
    if (SCarg->host_scribble == NULL)
-      printk("%s: reset, inactive.\n", BN(j));
+;
 
    if (HD(j)->in_reset) {
-      printk("%s: reset, exit, already in reset.\n", BN(j));
+;
       spin_unlock_irq(sh[j]->host_lock);
       return FAILED;
       }
 
    if (wait_on_busy(sh[j]->io_port, MAXLOOP)) {
-      printk("%s: reset, exit, timeout error.\n", BN(j));
+;
       spin_unlock_irq(sh[j]->host_lock);
       return FAILED;
       }
@@ -1433,7 +1433,7 @@ static int u14_34f_eh_host_reset(struct scsi_cmnd *SCarg) {
 
       if (HD(j)->cp_stat[i] == LOCKED) {
          HD(j)->cp_stat[i] = FREE;
-         printk("%s: reset, locked mbox %d forced free.\n", BN(j), i);
+;
          continue;
          }
 
@@ -1442,12 +1442,12 @@ static int u14_34f_eh_host_reset(struct scsi_cmnd *SCarg) {
 
       if (HD(j)->cp_stat[i] == READY || HD(j)->cp_stat[i] == ABORTING) {
          HD(j)->cp_stat[i] = ABORTING;
-         printk("%s: reset, mbox %d aborting.\n", BN(j), i);
+;
          }
 
       else {
          HD(j)->cp_stat[i] = IN_RESET;
-         printk("%s: reset, mbox %d in reset.\n", BN(j), i);
+;
          }
 
       if (SCpnt->host_scribble == NULL)
@@ -1463,13 +1463,13 @@ static int u14_34f_eh_host_reset(struct scsi_cmnd *SCarg) {
       }
 
    if (wait_on_busy(sh[j]->io_port, MAXLOOP)) {
-      printk("%s: reset, cannot reset, timeout error.\n", BN(j));
+;
       spin_unlock_irq(sh[j]->host_lock);
       return FAILED;
       }
 
    outb(CMD_RESET, sh[j]->io_port + REG_LCL_INTR);
-   printk("%s: reset, board reset done, enabling interrupts.\n", BN(j));
+;
 
 #if defined(DEBUG_RESET)
    do_trace = TRUE;
@@ -1482,7 +1482,7 @@ static int u14_34f_eh_host_reset(struct scsi_cmnd *SCarg) {
    while ((jiffies - time) < (10 * HZ) && limit++ < 200000) udelay(100L);
    spin_lock_irq(sh[j]->host_lock);
 
-   printk("%s: reset, interrupts disabled, loops %d.\n", BN(j), limit);
+;
 
    for (i = 0; i < sh[j]->can_queue; i++) {
 
@@ -1495,7 +1495,7 @@ static int u14_34f_eh_host_reset(struct scsi_cmnd *SCarg) {
          /* This mailbox is still waiting for its interrupt */
          HD(j)->cp_stat[i] = LOCKED;
 
-         printk("%s, reset, mbox %d locked, DID_RESET, done.\n", BN(j), i);
+;
          }
 
       else if (HD(j)->cp_stat[i] == ABORTING) {
@@ -1507,7 +1507,7 @@ static int u14_34f_eh_host_reset(struct scsi_cmnd *SCarg) {
          /* This mailbox was never queued to the adapter */
          HD(j)->cp_stat[i] = FREE;
 
-         printk("%s, reset, mbox %d aborting, DID_RESET, done.\n", BN(j), i);
+;
          }
 
       else
@@ -1521,8 +1521,8 @@ static int u14_34f_eh_host_reset(struct scsi_cmnd *SCarg) {
    HD(j)->in_reset = FALSE;
    do_trace = FALSE;
 
-   if (arg_done) printk("%s: reset, exit, done.\n", BN(j));
-   else          printk("%s: reset, exit.\n", BN(j));
+;
+;
 
    spin_unlock_irq(sh[j]->host_lock);
    return SUCCESS;
@@ -1593,11 +1593,11 @@ static int reorder(unsigned int j, unsigned long cursec,
    static unsigned long seeksorted = 0, seeknosort = 0;
 
    if (link_statistics && !(++flushcount % link_statistics))
-      printk("fc %d bc %d ic %d oc %d rc %d rs %d sc %d re %d"\
-             " av %ldK as %ldK.\n", flushcount, batchcount, inputcount,
-             ovlcount, readycount, readysorted, sortcount, revcount,
-             seeknosort / (readycount + 1),
-             seeksorted / (readycount + 1));
+//      printk("fc %d bc %d ic %d oc %d rc %d rs %d sc %d re %d"\
+//             " av %ldK as %ldK.\n", flushcount, batchcount, inputcount,
+//             ovlcount, readycount, readysorted, sortcount, revcount,
+//             seeknosort / (readycount + 1),
+;
 
    if (n_ready <= 1) return FALSE;
 
@@ -1664,13 +1664,13 @@ static int reorder(unsigned int j, unsigned long cursec,
    if (link_statistics && (overlap || !(flushcount % link_statistics)))
       for (n = 0; n < n_ready; n++) {
          k = il[n]; cpp = &HD(j)->cp[k]; SCpnt = cpp->SCpnt;
-         printk("%s %d.%d:%d mb %d fc %d nr %d sec %ld ns %u"\
-                " cur %ld s:%c r:%c rev:%c in:%c ov:%c xd %d.\n",
-                (ihdlr ? "ihdlr" : "qcomm"), SCpnt->channel, SCpnt->target,
-                SCpnt->lun, k, flushcount, n_ready,
-                blk_rq_pos(SCpnt->request), blk_rq_sectors(SCpnt->request),
-		cursec, YESNO(s), YESNO(r), YESNO(rev), YESNO(input_only),
-                YESNO(overlap), cpp->xdir);
+//         printk("%s %d.%d:%d mb %d fc %d nr %d sec %ld ns %u"\
+//                " cur %ld s:%c r:%c rev:%c in:%c ov:%c xd %d.\n",
+//                (ihdlr ? "ihdlr" : "qcomm"), SCpnt->channel, SCpnt->target,
+//                SCpnt->lun, k, flushcount, n_ready,
+//                blk_rq_pos(SCpnt->request), blk_rq_sectors(SCpnt->request),
+//		cursec, YESNO(s), YESNO(r), YESNO(rev), YESNO(input_only),
+;
          }
 #endif
    return overlap;
@@ -1701,10 +1701,10 @@ static void flush_dev(struct scsi_device *dev, unsigned long cursec, unsigned in
       k = il[n]; cpp = &HD(j)->cp[k]; SCpnt = cpp->SCpnt;
 
       if (wait_on_busy(sh[j]->io_port, MAXLOOP)) {
-         scmd_printk(KERN_INFO, SCpnt,
-	 	"%s, mbox %d, adapter"
-                " busy, will abort.\n", (ihdlr ? "ihdlr" : "qcomm"),
-                k);
+//         scmd_printk(KERN_INFO, SCpnt,
+//	 	"%s, mbox %d, adapter"
+//                " busy, will abort.\n", (ihdlr ? "ihdlr" : "qcomm"),
+;
          HD(j)->cp_stat[k] = ABORTING;
          continue;
          }
@@ -1728,14 +1728,14 @@ static irqreturn_t ihdlr(unsigned int j)
 
    HD(j)->iocount++;
 
-   if (do_trace) printk("%s: ihdlr, enter, irq %d, count %d.\n", BN(j), irq,
-                        HD(j)->iocount);
+//   if (do_trace) printk("%s: ihdlr, enter, irq %d, count %d.\n", BN(j), irq,
+;
 
    /* Check if this board is still busy */
    if (wait_on_busy(sh[j]->io_port, 20 * MAXLOOP)) {
       outb(CMD_CLR_INTR, sh[j]->io_port + REG_SYS_INTR);
-      printk("%s: ihdlr, busy timeout error,  irq %d, reg 0x%x, count %d.\n",
-             BN(j), irq, reg, HD(j)->iocount);
+//      printk("%s: ihdlr, busy timeout error,  irq %d, reg 0x%x, count %d.\n",
+;
       goto none;
       }
 
@@ -1765,17 +1765,17 @@ static irqreturn_t ihdlr(unsigned int j)
       }
    else if (HD(j)->cp_stat[i] == LOCKED) {
       HD(j)->cp_stat[i] = FREE;
-      printk("%s: ihdlr, mbox %d unlocked, count %d.\n", BN(j), i,
-             HD(j)->iocount);
+//      printk("%s: ihdlr, mbox %d unlocked, count %d.\n", BN(j), i,
+;
       goto handled;
       }
    else if (HD(j)->cp_stat[i] == FREE) {
-      printk("%s: ihdlr, mbox %d is free, count %d.\n", BN(j), i,
-             HD(j)->iocount);
+//      printk("%s: ihdlr, mbox %d is free, count %d.\n", BN(j), i,
+;
       goto handled;
       }
    else if (HD(j)->cp_stat[i] == IN_RESET)
-      printk("%s: ihdlr, mbox %d is in reset.\n", BN(j), i);
+;
    else if (HD(j)->cp_stat[i] != IN_USE)
       panic("%s: ihdlr, mbox %d, invalid cp_stat: %d.\n",
             BN(j), i, HD(j)->cp_stat[i]);
@@ -1833,10 +1833,10 @@ static irqreturn_t ihdlr(unsigned int j)
          if (spp->target_status && SCpnt->device->type == TYPE_DISK &&
              (!(tstatus == CHECK_CONDITION && HD(j)->iocount <= 1000 &&
                (SCpnt->sense_buffer[2] & 0xf) == NOT_READY)))
-            scmd_printk(KERN_INFO, SCpnt,
-	    	"ihdlr, target_status 0x%x, sense key 0x%x.\n",
-                   spp->target_status,
-                   SCpnt->sense_buffer[2]);
+//            scmd_printk(KERN_INFO, SCpnt,
+//	    	"ihdlr, target_status 0x%x, sense key 0x%x.\n",
+//                   spp->target_status,
+;
 
          HD(j)->target_to[scmd_id(SCpnt)][scmd_channel(SCpnt)] = 0;
 
@@ -1905,10 +1905,10 @@ static irqreturn_t ihdlr(unsigned int j)
         spp->adapter_status != ASST && HD(j)->iocount <= 1000) ||
         do_trace || msg_byte(spp->target_status))
 #endif
-      scmd_printk(KERN_INFO, SCpnt, "ihdlr, mbox %2d, err 0x%x:%x,"\
-             " reg 0x%x, count %d.\n",
-             i, spp->adapter_status, spp->target_status,
-             reg, HD(j)->iocount);
+//      scmd_printk(KERN_INFO, SCpnt, "ihdlr, mbox %2d, err 0x%x:%x,"\
+//             " reg 0x%x, count %d.\n",
+//             i, spp->adapter_status, spp->target_status,
+;
 
    unmap_dma(i, j);
 
@@ -1917,8 +1917,8 @@ static irqreturn_t ihdlr(unsigned int j)
 
    SCpnt->scsi_done(SCpnt);
 
-   if (do_trace) printk("%s: ihdlr, exit, irq %d, count %d.\n", BN(j), irq,
-                        HD(j)->iocount);
+//   if (do_trace) printk("%s: ihdlr, exit, irq %d, count %d.\n", BN(j), irq,
+;
 
 handled:
    return IRQ_HANDLED;

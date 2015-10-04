@@ -483,7 +483,7 @@ static void i810EmitContextVerified(struct drm_device *dev,
 			OUT_RING(tmp);
 			j++;
 		} else
-			printk("constext state dropped!!!\n");
+;
 	}
 
 	if (j & 1)
@@ -514,7 +514,7 @@ static void i810EmitTexVerified(struct drm_device *dev, volatile unsigned int *c
 			OUT_RING(tmp);
 			j++;
 		} else
-			printk("texture state dropped!!!\n");
+;
 	}
 
 	if (j & 1)

@@ -245,8 +245,8 @@ void set_port_type(struct orinoco_private *priv)
 		priv->createibss = 0;
 		break;
 	default:
-		printk(KERN_ERR "%s: Invalid priv->iw_mode in set_port_type()\n",
-		       priv->ndev->name);
+//		printk(KERN_ERR "%s: Invalid priv->iw_mode in set_port_type()\n",
+;
 	}
 }
 
@@ -308,8 +308,8 @@ void orinoco_set_multicast_list(struct net_device *dev)
 	unsigned long flags;
 
 	if (orinoco_lock(priv, &flags) != 0) {
-		printk(KERN_DEBUG "%s: orinoco_set_multicast_list() "
-		       "called when hw_unavailable\n", dev->name);
+//		printk(KERN_DEBUG "%s: orinoco_set_multicast_list() "
+;
 		return;
 	}
 
@@ -395,9 +395,9 @@ int orinoco_process_xmit_skb(struct sk_buff *skb,
 
 		if (skb_headroom(skb) < ENCAPS_OVERHEAD) {
 			if (net_ratelimit())
-				printk(KERN_ERR
-				       "%s: Not enough headroom for 802.2 headers %d\n",
-				       dev->name, skb_headroom(skb));
+//				printk(KERN_ERR
+//				       "%s: Not enough headroom for 802.2 headers %d\n",
+;
 			return -ENOMEM;
 		}
 
@@ -445,20 +445,20 @@ static netdev_tx_t orinoco_xmit(struct sk_buff *skb, struct net_device *dev)
 	u8 mic_buf[MICHAEL_MIC_LEN+1];
 
 	if (!netif_running(dev)) {
-		printk(KERN_ERR "%s: Tx on stopped device!\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: Tx on stopped device!\n",
+;
 		return NETDEV_TX_BUSY;
 	}
 
 	if (netif_queue_stopped(dev)) {
-		printk(KERN_DEBUG "%s: Tx while transmitter busy!\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: Tx while transmitter busy!\n",
+;
 		return NETDEV_TX_BUSY;
 	}
 
 	if (orinoco_lock(priv, &flags) != 0) {
-		printk(KERN_ERR "%s: orinoco_xmit() called while hw_unavailable\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: orinoco_xmit() called while hw_unavailable\n",
+;
 		return NETDEV_TX_BUSY;
 	}
 
@@ -496,8 +496,8 @@ static netdev_tx_t orinoco_xmit(struct sk_buff *skb, struct net_device *dev)
 					  txfid, 0);
 		if (err) {
 			if (net_ratelimit())
-				printk(KERN_ERR "%s: Error %d writing Tx "
-				       "descriptor to BAP\n", dev->name, err);
+//				printk(KERN_ERR "%s: Error %d writing Tx "
+;
 			goto busy;
 		}
 	} else {
@@ -510,8 +510,8 @@ static netdev_tx_t orinoco_xmit(struct sk_buff *skb, struct net_device *dev)
 					  txfid, 0);
 		if (err) {
 			if (net_ratelimit())
-				printk(KERN_ERR "%s: Error %d writing Tx "
-				       "descriptor to BAP\n", dev->name, err);
+//				printk(KERN_ERR "%s: Error %d writing Tx "
+;
 			goto busy;
 		}
 
@@ -525,8 +525,8 @@ static netdev_tx_t orinoco_xmit(struct sk_buff *skb, struct net_device *dev)
 	err = hw->ops->bap_pwrite(hw, USER_BAP, skb->data, skb->len,
 				  txfid, HERMES_802_3_OFFSET);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d writing packet to BAP\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d writing packet to BAP\n",
+;
 		goto busy;
 	}
 
@@ -541,8 +541,8 @@ static netdev_tx_t orinoco_xmit(struct sk_buff *skb, struct net_device *dev)
 		err = hw->ops->bap_pwrite(hw, USER_BAP, &mic_buf[0], len,
 					  txfid, offset);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d writing MIC to BAP\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d writing MIC to BAP\n",
+;
 			goto busy;
 		}
 	}
@@ -555,8 +555,8 @@ static netdev_tx_t orinoco_xmit(struct sk_buff *skb, struct net_device *dev)
 	if (err) {
 		netif_start_queue(dev);
 		if (net_ratelimit())
-			printk(KERN_ERR "%s: Error %d transmitting packet\n",
-				dev->name, err);
+//			printk(KERN_ERR "%s: Error %d transmitting packet\n",
+;
 		goto busy;
 	}
 
@@ -586,8 +586,8 @@ static void __orinoco_ev_alloc(struct net_device *dev, hermes_t *hw)
 
 	if (fid != priv->txfid) {
 		if (fid != DUMMY_FID)
-			printk(KERN_WARNING "%s: Allocate event on unexpected fid (%04X)\n",
-			       dev->name, fid);
+//			printk(KERN_WARNING "%s: Allocate event on unexpected fid (%04X)\n",
+;
 		return;
 	}
 
@@ -627,9 +627,9 @@ static void __orinoco_ev_txexc(struct net_device *dev, hermes_t *hw)
 	stats->tx_errors++;
 
 	if (err) {
-		printk(KERN_WARNING "%s: Unable to read descriptor on Tx error "
-		       "(FID=%04X error %d)\n",
-		       dev->name, fid, err);
+//		printk(KERN_WARNING "%s: Unable to read descriptor on Tx error "
+//		       "(FID=%04X error %d)\n",
+;
 		return;
 	}
 
@@ -668,10 +668,10 @@ void orinoco_tx_timeout(struct net_device *dev)
 	struct net_device_stats *stats = &priv->stats;
 	struct hermes *hw = &priv->hw;
 
-	printk(KERN_WARNING "%s: Tx timeout! "
-	       "ALLOCFID=%04x, TXCOMPLFID=%04x, EVSTAT=%04x\n",
-	       dev->name, hermes_read_regn(hw, ALLOCFID),
-	       hermes_read_regn(hw, TXCOMPLFID), hermes_read_regn(hw, EVSTAT));
+//	printk(KERN_WARNING "%s: Tx timeout! "
+//	       "ALLOCFID=%04x, TXCOMPLFID=%04x, EVSTAT=%04x\n",
+//	       dev->name, hermes_read_regn(hw, ALLOCFID),
+;
 
 	stats->tx_errors++;
 
@@ -793,16 +793,16 @@ static void orinoco_rx_monitor(struct net_device *dev, u16 rxfid,
 
 	/* sanity check the length */
 	if (datalen > IEEE80211_MAX_DATA_LEN + 12) {
-		printk(KERN_DEBUG "%s: oversized monitor frame, "
-		       "data length = %d\n", dev->name, datalen);
+//		printk(KERN_DEBUG "%s: oversized monitor frame, "
+;
 		stats->rx_length_errors++;
 		goto update_stats;
 	}
 
 	skb = dev_alloc_skb(hdrlen + datalen);
 	if (!skb) {
-		printk(KERN_WARNING "%s: Cannot allocate skb for monitor frame\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Cannot allocate skb for monitor frame\n",
+;
 		goto update_stats;
 	}
 
@@ -816,8 +816,8 @@ static void orinoco_rx_monitor(struct net_device *dev, u16 rxfid,
 					 ALIGN(datalen, 2), rxfid,
 					 HERMES_802_2_OFFSET);
 		if (err) {
-			printk(KERN_ERR "%s: error %d reading monitor frame\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: error %d reading monitor frame\n",
+;
 			goto drop;
 		}
 	}
@@ -854,9 +854,9 @@ void __orinoco_ev_rx(struct net_device *dev, hermes_t *hw)
 
 	desc = kmalloc(sizeof(*desc), GFP_ATOMIC);
 	if (!desc) {
-		printk(KERN_WARNING
-		       "%s: Can't allocate space for RX descriptor\n",
-		       dev->name);
+//		printk(KERN_WARNING
+//		       "%s: Can't allocate space for RX descriptor\n",
+;
 		goto update_stats;
 	}
 
@@ -865,8 +865,8 @@ void __orinoco_ev_rx(struct net_device *dev, hermes_t *hw)
 	err = hw->ops->bap_pread(hw, IRQ_BAP, desc, sizeof(*desc),
 				 rxfid, 0);
 	if (err) {
-		printk(KERN_ERR "%s: error %d reading Rx descriptor. "
-		       "Frame dropped.\n", dev->name, err);
+//		printk(KERN_ERR "%s: error %d reading Rx descriptor. "
+;
 		goto update_stats;
 	}
 
@@ -902,8 +902,8 @@ void __orinoco_ev_rx(struct net_device *dev, hermes_t *hw)
 		goto out;
 	}
 	if (length > IEEE80211_MAX_DATA_LEN) {
-		printk(KERN_WARNING "%s: Oversized frame received (%d bytes)\n",
-		       dev->name, length);
+//		printk(KERN_WARNING "%s: Oversized frame received (%d bytes)\n",
+;
 		stats->rx_length_errors++;
 		goto update_stats;
 	}
@@ -920,8 +920,8 @@ void __orinoco_ev_rx(struct net_device *dev, hermes_t *hw)
 	   bits */
 	skb = dev_alloc_skb(length+ETH_HLEN+2+1);
 	if (!skb) {
-		printk(KERN_WARNING "%s: Can't allocate skb for Rx\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Can't allocate skb for Rx\n",
+;
 		goto update_stats;
 	}
 
@@ -934,16 +934,16 @@ void __orinoco_ev_rx(struct net_device *dev, hermes_t *hw)
 				 ALIGN(length, 2), rxfid,
 				 HERMES_802_2_OFFSET);
 	if (err) {
-		printk(KERN_ERR "%s: error %d reading frame. "
-		       "Frame dropped.\n", dev->name, err);
+//		printk(KERN_ERR "%s: error %d reading frame. "
+;
 		goto drop;
 	}
 
 	/* Add desc and skb to rx queue */
 	rx_data = kzalloc(sizeof(*rx_data), GFP_ATOMIC);
 	if (!rx_data) {
-		printk(KERN_WARNING "%s: Can't allocate RX packet\n",
-			dev->name);
+//		printk(KERN_WARNING "%s: Can't allocate RX packet\n",
+;
 		goto drop;
 	}
 	rx_data->desc = desc;
@@ -996,9 +996,9 @@ static void orinoco_rx(struct net_device *dev,
 		key = (struct orinoco_tkip_key *) priv->keys[key_id].key;
 
 		if (!key) {
-			printk(KERN_WARNING "%s: Received encrypted frame from "
-			       "%pM using key %i, but key is not installed\n",
-			       dev->name, src, key_id);
+//			printk(KERN_WARNING "%s: Received encrypted frame from "
+//			       "%pM using key %i, but key is not installed\n",
+;
 			goto drop;
 		}
 
@@ -1011,10 +1011,10 @@ static void orinoco_rx(struct net_device *dev,
 			union iwreq_data wrqu;
 			struct iw_michaelmicfailure wxmic;
 
-			printk(KERN_WARNING "%s: "
-			       "Invalid Michael MIC in data frame from %pM, "
-			       "using key %i\n",
-			       dev->name, src, key_id);
+//			printk(KERN_WARNING "%s: "
+//			       "Invalid Michael MIC in data frame from %pM, "
+//			       "using key %i\n",
+;
 
 			/* TODO: update stats */
 
@@ -1154,8 +1154,8 @@ static void print_linkstatus(struct net_device *dev, u16 status)
 		s = "UNKNOWN";
 	}
 
-	printk(KERN_DEBUG "%s: New link status: %s (%04x)\n",
-	       dev->name, s, status);
+//	printk(KERN_DEBUG "%s: New link status: %s (%04x)\n",
+;
 }
 
 /* Search scan results for requested BSSID, join it if found */
@@ -1198,8 +1198,8 @@ static void orinoco_join_ap(struct work_struct *work)
 				HERMES_RID_SCANRESULTSTABLE,
 				MAX_SCAN_LEN, &len, buf);
 	if (err) {
-		printk(KERN_ERR "%s: Cannot read scan results\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: Cannot read scan results\n",
+;
 		goto out;
 	}
 
@@ -1226,7 +1226,7 @@ static void orinoco_join_ap(struct work_struct *work)
 	err = HERMES_WRITE_RECORD(hw, USER_BAP, HERMES_RID_CNFJOINREQUEST,
 				  &req);
 	if (err)
-		printk(KERN_ERR "%s: Error issuing join request\n", dev->name);
+;
 
  out:
 	orinoco_unlock(priv, &flags);
@@ -1423,8 +1423,8 @@ void __orinoco_ev_info(struct net_device *dev, hermes_t *hw)
 	err = hw->ops->bap_pread(hw, IRQ_BAP, &info, sizeof(info),
 				 infofid, 0);
 	if (err) {
-		printk(KERN_ERR "%s: error %d reading info frame. "
-		       "Frame dropped.\n", dev->name, err);
+//		printk(KERN_ERR "%s: error %d reading info frame. "
+;
 		return;
 	}
 
@@ -1437,8 +1437,8 @@ void __orinoco_ev_info(struct net_device *dev, hermes_t *hw)
 		struct iw_statistics *wstats = &priv->wstats;
 
 		if (len > sizeof(tallies)) {
-			printk(KERN_WARNING "%s: Tallies frame too long (%d bytes)\n",
-			       dev->name, len);
+//			printk(KERN_WARNING "%s: Tallies frame too long (%d bytes)\n",
+;
 			len = sizeof(tallies);
 		}
 
@@ -1473,8 +1473,8 @@ void __orinoco_ev_info(struct net_device *dev, hermes_t *hw)
 			break;
 
 		if (len != sizeof(linkstatus)) {
-			printk(KERN_WARNING "%s: Unexpected size for linkstatus frame (%d bytes)\n",
-			       dev->name, len);
+//			printk(KERN_WARNING "%s: Unexpected size for linkstatus frame (%d bytes)\n",
+;
 			break;
 		}
 
@@ -1528,8 +1528,8 @@ void __orinoco_ev_info(struct net_device *dev, hermes_t *hw)
 
 		/* Sanity check */
 		if (len > 4096) {
-			printk(KERN_WARNING "%s: Scan results too large (%d bytes)\n",
-			       dev->name, len);
+//			printk(KERN_WARNING "%s: Scan results too large (%d bytes)\n",
+;
 			qabort_scan(priv);
 			break;
 		}
@@ -1554,10 +1554,10 @@ void __orinoco_ev_info(struct net_device *dev, hermes_t *hw)
 #ifdef ORINOCO_DEBUG
 		{
 			int	i;
-			printk(KERN_DEBUG "Scan result [%02X", buf[0]);
+;
 			for (i = 1; i < (len * 2); i++)
-				printk(":%02X", buf[i]);
-			printk("]\n");
+;
+;
 		}
 #endif	/* ORINOCO_DEBUG */
 
@@ -1569,8 +1569,8 @@ void __orinoco_ev_info(struct net_device *dev, hermes_t *hw)
 		struct agere_ext_scan_info *bss;
 
 		if (!priv->scan_request) {
-			printk(KERN_DEBUG "%s: Got chaninfo without scan, "
-			       "len=%d\n", dev->name, len);
+//			printk(KERN_DEBUG "%s: Got chaninfo without scan, "
+;
 			break;
 		}
 
@@ -1585,9 +1585,9 @@ void __orinoco_ev_info(struct net_device *dev, hermes_t *hw)
 					   data) + 2)) {
 			/* Drop this result now so we don't have to
 			 * keep checking later */
-			printk(KERN_WARNING
-			       "%s: Ext scan results too short (%d bytes)\n",
-			       dev->name, len);
+//			printk(KERN_WARNING
+//			       "%s: Ext scan results too short (%d bytes)\n",
+;
 			break;
 		}
 
@@ -1612,8 +1612,8 @@ void __orinoco_ev_info(struct net_device *dev, hermes_t *hw)
 			break;
 		/* fall through */
 	default:
-		printk(KERN_DEBUG "%s: Unknown information frame received: "
-		       "type 0x%04x, length %d\n", dev->name, type, len);
+//		printk(KERN_DEBUG "%s: Unknown information frame received: "
+;
 		/* We don't actually do anything about it */
 		break;
 	}
@@ -1623,7 +1623,7 @@ EXPORT_SYMBOL(__orinoco_ev_info);
 static void __orinoco_ev_infdrop(struct net_device *dev, hermes_t *hw)
 {
 	if (net_ratelimit())
-		printk(KERN_DEBUG "%s: Information frame lost.\n", dev->name);
+;
 }
 
 /********************************************************************/
@@ -1640,8 +1640,8 @@ static int __orinoco_up(struct orinoco_private *priv)
 
 	err = __orinoco_commit(priv);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d configuring card\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d configuring card\n",
+;
 		return err;
 	}
 
@@ -1649,8 +1649,8 @@ static int __orinoco_up(struct orinoco_private *priv)
 	hermes_set_irqmask(hw, ORINOCO_INTEN);
 	err = hermes_enable_port(hw, 0);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d enabling MAC port\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d enabling MAC port\n",
+;
 		return err;
 	}
 
@@ -1674,8 +1674,8 @@ static int __orinoco_down(struct orinoco_private *priv)
 				/* Some firmwares (e.g. Intersil 1.3.x) seem
 				 * to have problems disabling the port, oh
 				 * well, too bad. */
-				printk(KERN_WARNING "%s: Error %d disabling MAC port\n",
-				       dev->name, err);
+//				printk(KERN_WARNING "%s: Error %d disabling MAC port\n",
+;
 				priv->broken_disableport = 1;
 			}
 		}
@@ -1768,16 +1768,16 @@ void orinoco_reset(struct work_struct *work)
 	if (priv->hard_reset) {
 		err = (*priv->hard_reset)(priv);
 		if (err) {
-			printk(KERN_ERR "%s: orinoco_reset: Error %d "
-			       "performing hard reset\n", dev->name, err);
+//			printk(KERN_ERR "%s: orinoco_reset: Error %d "
+;
 			goto disable;
 		}
 	}
 
 	err = orinoco_reinit_firmware(priv);
 	if (err) {
-		printk(KERN_ERR "%s: orinoco_reset: Error %d re-initializing firmware\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: orinoco_reset: Error %d re-initializing firmware\n",
+;
 		goto disable;
 	}
 
@@ -1791,8 +1791,8 @@ void orinoco_reset(struct work_struct *work)
 	if (priv->open && (!priv->hw_unavailable)) {
 		err = __orinoco_up(priv);
 		if (err) {
-			printk(KERN_ERR "%s: orinoco_reset: Error %d reenabling card\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: orinoco_reset: Error %d reenabling card\n",
+;
 		} else
 			dev->trans_start = jiffies;
 	}
@@ -1803,7 +1803,7 @@ void orinoco_reset(struct work_struct *work)
  disable:
 	hermes_set_irqmask(hw, 0);
 	netif_device_detach(dev);
-	printk(KERN_ERR "%s: Device has been disabled!\n", dev->name);
+;
 }
 
 static int __orinoco_commit(struct orinoco_private *priv)
@@ -1841,29 +1841,29 @@ int orinoco_commit(struct orinoco_private *priv)
 
 	err = hermes_disable_port(hw, 0);
 	if (err) {
-		printk(KERN_WARNING "%s: Unable to disable port "
-		       "while reconfiguring card\n", dev->name);
+//		printk(KERN_WARNING "%s: Unable to disable port "
+;
 		priv->broken_disableport = 1;
 		goto out;
 	}
 
 	err = __orinoco_commit(priv);
 	if (err) {
-		printk(KERN_WARNING "%s: Unable to reconfigure card\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Unable to reconfigure card\n",
+;
 		goto out;
 	}
 
 	err = hermes_enable_port(hw, 0);
 	if (err) {
-		printk(KERN_WARNING "%s: Unable to enable port while reconfiguring card\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Unable to enable port while reconfiguring card\n",
+;
 		goto out;
 	}
 
  out:
 	if (err) {
-		printk(KERN_WARNING "%s: Resetting instead...\n", dev->name);
+;
 		schedule_work(&priv->reset_work);
 		err = 0;
 	}
@@ -1876,15 +1876,15 @@ int orinoco_commit(struct orinoco_private *priv)
 
 static void __orinoco_ev_tick(struct net_device *dev, hermes_t *hw)
 {
-	printk(KERN_DEBUG "%s: TICK\n", dev->name);
+;
 }
 
 static void __orinoco_ev_wterr(struct net_device *dev, hermes_t *hw)
 {
 	/* This seems to happen a fair bit under load, but ignoring it
 	   seems to work fine...*/
-	printk(KERN_DEBUG "%s: MAC controller error (WTERR). Ignoring.\n",
-	       dev->name);
+//	printk(KERN_DEBUG "%s: MAC controller error (WTERR). Ignoring.\n",
+;
 }
 
 irqreturn_t orinoco_interrupt(int irq, void *dev_id)
@@ -1923,8 +1923,8 @@ irqreturn_t orinoco_interrupt(int irq, void *dev_id)
 
 	while (events && count--) {
 		if (++loops_this_jiffy > MAX_IRQLOOPS_PER_JIFFY) {
-			printk(KERN_WARNING "%s: IRQ handler is looping too "
-			       "much! Resetting.\n", dev->name);
+//			printk(KERN_WARNING "%s: IRQ handler is looping too "
+;
 			/* Disable interrupts for now */
 			hermes_set_irqmask(hw, 0);
 			schedule_work(&priv->reset_work);
@@ -2368,8 +2368,8 @@ int orinoco_up(struct orinoco_private *priv)
 
 	err = orinoco_reinit_firmware(priv);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d re-initializing firmware\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d re-initializing firmware\n",
+;
 		goto exit;
 	}
 
@@ -2379,8 +2379,8 @@ int orinoco_up(struct orinoco_private *priv)
 	if (priv->open && !priv->hw_unavailable) {
 		err = __orinoco_up(priv);
 		if (err)
-			printk(KERN_ERR "%s: Error %d restarting card\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d restarting card\n",
+;
 	}
 
 exit:
@@ -2399,8 +2399,8 @@ void orinoco_down(struct orinoco_private *priv)
 	priv->hw.ops->lock_irqsave(&priv->lock, &flags);
 	err = __orinoco_down(priv);
 	if (err)
-		printk(KERN_WARNING "%s: Error %d downing interface\n",
-		       dev->name, err);
+//		printk(KERN_WARNING "%s: Error %d downing interface\n",
+;
 
 	netif_device_detach(dev);
 	priv->hw_unavailable++;
@@ -2420,7 +2420,7 @@ static char version[] __initdata = DRIVER_NAME " " DRIVER_VERSION
 
 static int __init init_orinoco(void)
 {
-	printk(KERN_DEBUG "%s\n", version);
+;
 	return 0;
 }
 

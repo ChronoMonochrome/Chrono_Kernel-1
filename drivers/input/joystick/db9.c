@@ -564,7 +564,7 @@ static struct db9 __init *db9_probe(int parport, int mode)
 	int err;
 
 	if (mode < 1 || mode >= DB9_MAX_PAD || !db9_modes[mode].n_buttons) {
-		printk(KERN_ERR "db9.c: Bad device type %d\n", mode);
+;
 		err = -EINVAL;
 		goto err_out;
 	}
@@ -573,27 +573,27 @@ static struct db9 __init *db9_probe(int parport, int mode)
 
 	pp = parport_find_number(parport);
 	if (!pp) {
-		printk(KERN_ERR "db9.c: no such parport\n");
+;
 		err = -ENODEV;
 		goto err_out;
 	}
 
 	if (db9_mode->bidirectional && !(pp->modes & PARPORT_MODE_TRISTATE)) {
-		printk(KERN_ERR "db9.c: specified parport is not bidirectional\n");
+;
 		err = -EINVAL;
 		goto err_put_pp;
 	}
 
 	pd = parport_register_device(pp, "db9", NULL, NULL, NULL, PARPORT_DEV_EXCL, NULL);
 	if (!pd) {
-		printk(KERN_ERR "db9.c: parport busy already - lp.o loaded?\n");
+;
 		err = -EBUSY;
 		goto err_put_pp;
 	}
 
 	db9 = kzalloc(sizeof(struct db9), GFP_KERNEL);
 	if (!db9) {
-		printk(KERN_ERR "db9.c: Not enough memory\n");
+;
 		err = -ENOMEM;
 		goto err_unreg_pardev;
 	}
@@ -609,7 +609,7 @@ static struct db9 __init *db9_probe(int parport, int mode)
 
 		db9->dev[i] = input_dev = input_allocate_device();
 		if (!input_dev) {
-			printk(KERN_ERR "db9.c: Not enough memory for input device\n");
+;
 			err = -ENOMEM;
 			goto err_unreg_devs;
 		}
@@ -682,7 +682,7 @@ static int __init db9_init(void)
 			continue;
 
 		if (db9_cfg[i].nargs < 2) {
-			printk(KERN_ERR "db9.c: Device type must be specified.\n");
+;
 			err = -EINVAL;
 			break;
 		}

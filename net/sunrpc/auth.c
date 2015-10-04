@@ -421,8 +421,8 @@ rpcauth_lookupcred(struct rpc_auth *auth, int flags)
 	struct rpc_cred *ret;
 	const struct cred *cred = current_cred();
 
-	dprintk("RPC:       looking up %s cred\n",
-		auth->au_ops->au_name);
+//	dprintk("RPC:       looking up %s cred\n",
+;
 
 	memset(&acred, 0, sizeof(acred));
 	acred.uid = cred->fsuid;
@@ -454,8 +454,8 @@ EXPORT_SYMBOL_GPL(rpcauth_init_cred);
 struct rpc_cred *
 rpcauth_generic_bind_cred(struct rpc_task *task, struct rpc_cred *cred, int lookupflags)
 {
-	dprintk("RPC: %5u holding %s cred %p\n", task->tk_pid,
-			cred->cr_auth->au_ops->au_name, cred);
+//	dprintk("RPC: %5u holding %s cred %p\n", task->tk_pid,
+;
 	return get_rpccred(cred);
 }
 EXPORT_SYMBOL_GPL(rpcauth_generic_bind_cred);
@@ -469,8 +469,8 @@ rpcauth_bind_root_cred(struct rpc_task *task, int lookupflags)
 		.gid = 0,
 	};
 
-	dprintk("RPC: %5u looking up %s cred\n",
-		task->tk_pid, task->tk_client->cl_auth->au_ops->au_name);
+//	dprintk("RPC: %5u looking up %s cred\n",
+;
 	return auth->au_ops->lookup_cred(auth, &acred, lookupflags);
 }
 
@@ -479,8 +479,8 @@ rpcauth_bind_new_cred(struct rpc_task *task, int lookupflags)
 {
 	struct rpc_auth *auth = task->tk_client->cl_auth;
 
-	dprintk("RPC: %5u looking up %s cred\n",
-		task->tk_pid, auth->au_ops->au_name);
+//	dprintk("RPC: %5u looking up %s cred\n",
+;
 	return rpcauth_lookupcred(auth, lookupflags);
 }
 
@@ -548,8 +548,8 @@ rpcauth_marshcred(struct rpc_task *task, __be32 *p)
 {
 	struct rpc_cred	*cred = task->tk_rqstp->rq_cred;
 
-	dprintk("RPC: %5u marshaling %s cred %p\n",
-		task->tk_pid, cred->cr_auth->au_ops->au_name, cred);
+//	dprintk("RPC: %5u marshaling %s cred %p\n",
+;
 
 	return cred->cr_ops->crmarshal(task, p);
 }
@@ -559,8 +559,8 @@ rpcauth_checkverf(struct rpc_task *task, __be32 *p)
 {
 	struct rpc_cred	*cred = task->tk_rqstp->rq_cred;
 
-	dprintk("RPC: %5u validating %s cred %p\n",
-		task->tk_pid, cred->cr_auth->au_ops->au_name, cred);
+//	dprintk("RPC: %5u validating %s cred %p\n",
+;
 
 	return cred->cr_ops->crvalidate(task, p);
 }
@@ -580,8 +580,8 @@ rpcauth_wrap_req(struct rpc_task *task, kxdreproc_t encode, void *rqstp,
 {
 	struct rpc_cred *cred = task->tk_rqstp->rq_cred;
 
-	dprintk("RPC: %5u using %s cred %p to wrap rpc data\n",
-			task->tk_pid, cred->cr_ops->cr_name, cred);
+//	dprintk("RPC: %5u using %s cred %p to wrap rpc data\n",
+;
 	if (cred->cr_ops->crwrap_req)
 		return cred->cr_ops->crwrap_req(task, encode, rqstp, data, obj);
 	/* By default, we encode the arguments normally. */
@@ -605,8 +605,8 @@ rpcauth_unwrap_resp(struct rpc_task *task, kxdrdproc_t decode, void *rqstp,
 {
 	struct rpc_cred *cred = task->tk_rqstp->rq_cred;
 
-	dprintk("RPC: %5u using %s cred %p to unwrap rpc data\n",
-			task->tk_pid, cred->cr_ops->cr_name, cred);
+//	dprintk("RPC: %5u using %s cred %p to unwrap rpc data\n",
+;
 	if (cred->cr_ops->crunwrap_resp)
 		return cred->cr_ops->crunwrap_resp(task, decode, rqstp,
 						   data, obj);
@@ -627,8 +627,8 @@ rpcauth_refreshcred(struct rpc_task *task)
 			goto out;
 		cred = task->tk_rqstp->rq_cred;
 	};
-	dprintk("RPC: %5u refreshing %s cred %p\n",
-		task->tk_pid, cred->cr_auth->au_ops->au_name, cred);
+//	dprintk("RPC: %5u refreshing %s cred %p\n",
+;
 
 	err = cred->cr_ops->crrefresh(task);
 out:
@@ -642,8 +642,8 @@ rpcauth_invalcred(struct rpc_task *task)
 {
 	struct rpc_cred *cred = task->tk_rqstp->rq_cred;
 
-	dprintk("RPC: %5u invalidating %s cred %p\n",
-		task->tk_pid, cred->cr_auth->au_ops->au_name, cred);
+//	dprintk("RPC: %5u invalidating %s cred %p\n",
+;
 	if (cred)
 		clear_bit(RPCAUTH_CRED_UPTODATE, &cred->cr_flags);
 }

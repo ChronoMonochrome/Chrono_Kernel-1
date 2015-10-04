@@ -114,22 +114,22 @@ static int __init pc110pad_init(void)
 		return -ENODEV;
 
 	if (!request_region(pc110pad_io, 4, "pc110pad")) {
-		printk(KERN_ERR "pc110pad: I/O area %#x-%#x in use.\n",
-				pc110pad_io, pc110pad_io + 4);
+//		printk(KERN_ERR "pc110pad: I/O area %#x-%#x in use.\n",
+;
 		return -EBUSY;
 	}
 
 	outb(PC110PAD_OFF, pc110pad_io + 2);
 
 	if (request_irq(pc110pad_irq, pc110pad_interrupt, 0, "pc110pad", NULL)) {
-		printk(KERN_ERR "pc110pad: Unable to get irq %d.\n", pc110pad_irq);
+;
 		err = -EBUSY;
 		goto err_release_region;
 	}
 
 	pc110pad_dev = input_allocate_device();
 	if (!pc110pad_dev) {
-		printk(KERN_ERR "pc110pad: Not enough memory.\n");
+;
 		err = -ENOMEM;
 		goto err_free_irq;
 	}

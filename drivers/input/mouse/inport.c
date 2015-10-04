@@ -133,7 +133,7 @@ static int __init inport_init(void)
 	int err;
 
 	if (!request_region(INPORT_BASE, INPORT_EXTENT, "inport")) {
-		printk(KERN_ERR "inport.c: Can't allocate ports at %#x\n", INPORT_BASE);
+;
 		return -EBUSY;
 	}
 
@@ -141,14 +141,14 @@ static int __init inport_init(void)
 	b = inb(INPORT_SIGNATURE_PORT);
 	c = inb(INPORT_SIGNATURE_PORT);
 	if (a == b || a != c) {
-		printk(KERN_INFO "inport.c: Didn't find InPort mouse at %#x\n", INPORT_BASE);
+;
 		err = -ENODEV;
 		goto err_release_region;
 	}
 
 	inport_dev = input_allocate_device();
 	if (!inport_dev) {
-		printk(KERN_ERR "inport.c: Not enough memory for input device\n");
+;
 		err = -ENOMEM;
 		goto err_release_region;
 	}

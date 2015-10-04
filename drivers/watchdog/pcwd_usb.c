@@ -52,7 +52,7 @@
 /* Use our own dbg macro */
 #undef dbg
 #define dbg(format, arg...) \
-	do { if (debug) printk(KERN_DEBUG PFX format "\n" , ## arg); } while (0)
+;
 
 /* Module and Version Information */
 #define DRIVER_VERSION "1.02"
@@ -220,8 +220,8 @@ static void usb_pcwd_intr_done(struct urb *urb)
 resubmit:
 	retval = usb_submit_urb(urb, GFP_ATOMIC);
 	if (retval)
-		printk(KERN_ERR PFX "can't resubmit intr, "
-			"usb_submit_urb failed with result %d\n", retval);
+//		printk(KERN_ERR PFX "can't resubmit intr, "
+;
 }
 
 static int usb_pcwd_send_command(struct usb_pcwd_private *usb_pcwd,
@@ -284,8 +284,8 @@ static int usb_pcwd_start(struct usb_pcwd_private *usb_pcwd)
 								&msb, &lsb);
 
 	if ((retval == 0) || (lsb == 0)) {
-		printk(KERN_ERR PFX
-				"Card did not acknowledge enable attempt\n");
+//		printk(KERN_ERR PFX
+;
 		return -1;
 	}
 
@@ -303,8 +303,8 @@ static int usb_pcwd_stop(struct usb_pcwd_private *usb_pcwd)
 								&msb, &lsb);
 
 	if ((retval == 0) || (lsb != 0)) {
-		printk(KERN_ERR PFX
-			"Card did not acknowledge disable attempt\n");
+//		printk(KERN_ERR PFX
+;
 		return -1;
 	}
 
@@ -506,8 +506,8 @@ static int usb_pcwd_release(struct inode *inode, struct file *file)
 	if (expect_release == 42) {
 		usb_pcwd_stop(usb_pcwd_device);
 	} else {
-		printk(KERN_CRIT PFX
-			"Unexpected close, not stopping watchdog!\n");
+//		printk(KERN_CRIT PFX
+;
 		usb_pcwd_keepalive(usb_pcwd_device);
 	}
 	expect_release = 0;
@@ -627,7 +627,7 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 
 	cards_found++;
 	if (cards_found > 1) {
-		printk(KERN_ERR PFX "This driver only supports 1 device\n");
+;
 		return -ENODEV;
 	}
 
@@ -636,8 +636,8 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 
 	/* check out that we have a HID device */
 	if (!(iface_desc->desc.bInterfaceClass == USB_CLASS_HID)) {
-		printk(KERN_ERR PFX
-			"The device isn't a Human Interface Device\n");
+//		printk(KERN_ERR PFX
+;
 		return -ENODEV;
 	}
 
@@ -646,7 +646,7 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 
 	if (!usb_endpoint_is_int_in(endpoint)) {
 		/* we didn't find a Interrupt endpoint with direction IN */
-		printk(KERN_ERR PFX "Couldn't find an INTR & IN endpoint\n");
+;
 		return -ENODEV;
 	}
 
@@ -657,7 +657,7 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 	/* allocate memory for our device and initialize it */
 	usb_pcwd = kzalloc(sizeof(struct usb_pcwd_private), GFP_KERNEL);
 	if (usb_pcwd == NULL) {
-		printk(KERN_ERR PFX "Out of memory\n");
+;
 		goto error;
 	}
 
@@ -674,14 +674,14 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 	usb_pcwd->intr_buffer = usb_alloc_coherent(udev, usb_pcwd->intr_size,
 					GFP_ATOMIC, &usb_pcwd->intr_dma);
 	if (!usb_pcwd->intr_buffer) {
-		printk(KERN_ERR PFX "Out of memory\n");
+;
 		goto error;
 	}
 
 	/* allocate the urb's */
 	usb_pcwd->intr_urb = usb_alloc_urb(0, GFP_KERNEL);
 	if (!usb_pcwd->intr_urb) {
-		printk(KERN_ERR PFX "Out of memory\n");
+;
 		goto error;
 	}
 
@@ -694,7 +694,7 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 
 	/* register our interrupt URB with the USB system */
 	if (usb_submit_urb(usb_pcwd->intr_urb, GFP_KERNEL)) {
-		printk(KERN_ERR PFX "Problem registering interrupt URB\n");
+;
 		retval = -EIO; /* failure */
 		goto error;
 	}
@@ -713,18 +713,18 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 	else
 		sprintf(fw_ver_str, "<card no answer>");
 
-	printk(KERN_INFO PFX "Found card (Firmware: %s) with temp option\n",
-		fw_ver_str);
+//	printk(KERN_INFO PFX "Found card (Firmware: %s) with temp option\n",
+;
 
 	/* Get switch settings */
 	usb_pcwd_send_command(usb_pcwd, CMD_GET_DIP_SWITCH_SETTINGS, &dummy,
 							&option_switches);
 
-	printk(KERN_INFO PFX "Option switches (0x%02x): "
-		"Temperature Reset Enable=%s, Power On Delay=%s\n",
-		option_switches,
-		((option_switches & 0x10) ? "ON" : "OFF"),
-		((option_switches & 0x08) ? "ON" : "OFF"));
+//	printk(KERN_INFO PFX "Option switches (0x%02x): "
+//		"Temperature Reset Enable=%s, Power On Delay=%s\n",
+//		option_switches,
+//		((option_switches & 0x10) ? "ON" : "OFF"),
+;
 
 	/* If heartbeat = 0 then we use the heartbeat from the dip-switches */
 	if (heartbeat == 0)
@@ -734,40 +734,40 @@ static int usb_pcwd_probe(struct usb_interface *interface,
 	 * if not reset to the default */
 	if (usb_pcwd_set_heartbeat(usb_pcwd, heartbeat)) {
 		usb_pcwd_set_heartbeat(usb_pcwd, WATCHDOG_HEARTBEAT);
-		printk(KERN_INFO PFX
-			"heartbeat value must be 0<heartbeat<65536, using %d\n",
-			WATCHDOG_HEARTBEAT);
+//		printk(KERN_INFO PFX
+//			"heartbeat value must be 0<heartbeat<65536, using %d\n",
+;
 	}
 
 	retval = register_reboot_notifier(&usb_pcwd_notifier);
 	if (retval != 0) {
-		printk(KERN_ERR PFX
-			"cannot register reboot notifier (err=%d)\n",
-			retval);
+//		printk(KERN_ERR PFX
+//			"cannot register reboot notifier (err=%d)\n",
+;
 		goto error;
 	}
 
 	retval = misc_register(&usb_pcwd_temperature_miscdev);
 	if (retval != 0) {
-		printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-			TEMP_MINOR, retval);
+//		printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 		goto err_out_unregister_reboot;
 	}
 
 	retval = misc_register(&usb_pcwd_miscdev);
 	if (retval != 0) {
-		printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-			WATCHDOG_MINOR, retval);
+//		printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 		goto err_out_misc_deregister;
 	}
 
 	/* we can register the device now, as it is ready */
 	usb_set_intfdata(interface, usb_pcwd);
 
-	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
-		heartbeat, nowayout);
+//	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
+;
 
 	return 0;
 
@@ -824,7 +824,7 @@ static void usb_pcwd_disconnect(struct usb_interface *interface)
 
 	mutex_unlock(&disconnect_mutex);
 
-	printk(KERN_INFO PFX "USB PC Watchdog disconnected\n");
+;
 }
 
 
@@ -839,12 +839,12 @@ static int __init usb_pcwd_init(void)
 	/* register this driver with the USB subsystem */
 	result = usb_register(&usb_pcwd_driver);
 	if (result) {
-		printk(KERN_ERR PFX "usb_register failed. Error number %d\n",
-		    result);
+//		printk(KERN_ERR PFX "usb_register failed. Error number %d\n",
+;
 		return result;
 	}
 
-	printk(KERN_INFO PFX DRIVER_DESC " v" DRIVER_VERSION "\n");
+;
 	return 0;
 }
 

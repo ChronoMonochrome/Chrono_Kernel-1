@@ -78,7 +78,7 @@ static int __init hp_zx1_ioc_shared(void)
 {
 	struct _hp_private *hp = &hp_private;
 
-	printk(KERN_INFO PFX "HP ZX1 IOC: IOPDIR shared with sba_iommu\n");
+;
 
 	/*
 	 * IOC already configured by sba_iommu module; just use
@@ -93,8 +93,8 @@ static int __init hp_zx1_ioc_shared(void)
 		case 2: hp->io_tlb_shift = 14; break;
 		case 3: hp->io_tlb_shift = 16; break;
 		default:
-			printk(KERN_ERR PFX "Invalid IOTLB page size "
-			       "configuration 0x%x\n", hp->io_tlb_ps);
+//			printk(KERN_ERR PFX "Invalid IOTLB page size "
+;
 			hp->gatt = NULL;
 			hp->gatt_entries = 0;
 			return -ENODEV;
@@ -115,7 +115,7 @@ static int __init hp_zx1_ioc_shared(void)
 		/* Normal case when no AGP device in system */
 		hp->gatt = NULL;
 		hp->gatt_entries = 0;
-		printk(KERN_ERR PFX "No reserved IO PDIR entry found; "
+;
 		       "GART disabled\n");
 		return -ENODEV;
 	}
@@ -128,7 +128,7 @@ hp_zx1_ioc_owner (void)
 {
 	struct _hp_private *hp = &hp_private;
 
-	printk(KERN_INFO PFX "HP ZX1 IOC: IOPDIR dedicated to GART\n");
+;
 
 	/*
 	 * Select an IOV page size no larger than system page size.
@@ -217,8 +217,8 @@ hp_zx1_lba_init (u64 hpa)
 
 	cap = readl(hp->lba_regs+hp->lba_cap_offset) & 0xff;
 	if (cap != PCI_CAP_ID_AGP) {
-		printk(KERN_ERR PFX "Invalid capability ID 0x%02x at 0x%x\n",
-		       cap, hp->lba_cap_offset);
+//		printk(KERN_ERR PFX "Invalid capability ID 0x%02x at 0x%x\n",
+;
 		iounmap(hp->lba_regs);
 		return -ENODEV;
 	}
@@ -297,8 +297,8 @@ hp_zx1_create_gatt_table (struct agp_bridge_data *bridge)
 		hp->io_pdir = (u64 *) __get_free_pages(GFP_KERNEL,
 						get_order(hp->io_pdir_size));
 		if (!hp->io_pdir) {
-			printk(KERN_ERR PFX "Couldn't allocate contiguous "
-				"memory for I/O PDIR\n");
+//			printk(KERN_ERR PFX "Couldn't allocate contiguous "
+;
 			hp->gatt = NULL;
 			hp->gatt_entries = 0;
 			return -ENOMEM;
@@ -498,8 +498,8 @@ zx1_gart_probe (acpi_handle obj, u32 depth, void *context, void **ret)
 				if (ACPI_SUCCESS(status))
 					break;
 				else {
-					printk(KERN_ERR PFX "Detected HP ZX1 "
-					       "AGP LBA but no IOC.\n");
+//					printk(KERN_ERR PFX "Detected HP ZX1 "
+;
 					return AE_OK;
 				}
 			}
@@ -515,9 +515,9 @@ zx1_gart_probe (acpi_handle obj, u32 depth, void *context, void **ret)
 	if (hp_zx1_setup(sba_hpa + HP_ZX1_IOC_OFFSET, lba_hpa))
 		return AE_OK;
 
-	printk(KERN_INFO PFX "Detected HP ZX1 %s AGP chipset "
-		"(ioc=%llx, lba=%llx)\n", (char *)context,
-		sba_hpa + HP_ZX1_IOC_OFFSET, lba_hpa);
+//	printk(KERN_INFO PFX "Detected HP ZX1 %s AGP chipset "
+//		"(ioc=%llx, lba=%llx)\n", (char *)context,
+;
 
 	hp_zx1_gart_found = 1;
 	return AE_CTRL_TERMINATE; /* we only support one bridge; quit looking */

@@ -85,7 +85,7 @@ static int ttm_agp_bind(struct ttm_backend *backend, struct ttm_mem_reg *bo_mem)
 
 	ret = agp_bind_memory(mem, node->start);
 	if (ret)
-		printk(KERN_ERR TTM_PFX "AGP Bind memory failed.\n");
+;
 
 	return ret;
 }

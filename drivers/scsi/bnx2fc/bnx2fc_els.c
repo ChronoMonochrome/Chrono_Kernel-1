@@ -73,7 +73,7 @@ int bnx2fc_send_rrq(struct bnx2fc_cmd *aborted_io_req)
 
 	cb_arg = kzalloc(sizeof(struct bnx2fc_els_cb_arg), GFP_NOIO);
 	if (!cb_arg) {
-		printk(KERN_ERR PFX "Unable to allocate cb_arg for RRQ\n");
+;
 		rc = -ENOMEM;
 		goto rrq_err;
 	}
@@ -149,13 +149,13 @@ static void bnx2fc_l2_els_compl(struct bnx2fc_els_cb_arg *cb_arg)
 
 	buf = kzalloc(PAGE_SIZE, GFP_ATOMIC);
 	if (!buf) {
-		printk(KERN_ERR PFX "Unable to alloc mp buf\n");
+;
 		goto free_arg;
 	}
 	hdr_len = sizeof(*fc_hdr);
 	if (hdr_len + resp_len > PAGE_SIZE) {
-		printk(KERN_ERR PFX "l2_els_compl: resp len is "
-				    "beyond page size\n");
+//		printk(KERN_ERR PFX "l2_els_compl: resp len is "
+;
 		goto free_buf;
 	}
 	memcpy(buf, fc_hdr, hdr_len);
@@ -182,7 +182,7 @@ int bnx2fc_send_adisc(struct bnx2fc_rport *tgt, struct fc_frame *fp)
 	fh = fc_frame_header_get(fp);
 	cb_arg = kzalloc(sizeof(struct bnx2fc_els_cb_arg), GFP_ATOMIC);
 	if (!cb_arg) {
-		printk(KERN_ERR PFX "Unable to allocate cb_arg for ADISC\n");
+;
 		return -ENOMEM;
 	}
 
@@ -210,7 +210,7 @@ int bnx2fc_send_logo(struct bnx2fc_rport *tgt, struct fc_frame *fp)
 	fh = fc_frame_header_get(fp);
 	cb_arg = kzalloc(sizeof(struct bnx2fc_els_cb_arg), GFP_ATOMIC);
 	if (!cb_arg) {
-		printk(KERN_ERR PFX "Unable to allocate cb_arg for LOGO\n");
+;
 		return -ENOMEM;
 	}
 
@@ -238,7 +238,7 @@ int bnx2fc_send_rls(struct bnx2fc_rport *tgt, struct fc_frame *fp)
 	fh = fc_frame_header_get(fp);
 	cb_arg = kzalloc(sizeof(struct bnx2fc_els_cb_arg), GFP_ATOMIC);
 	if (!cb_arg) {
-		printk(KERN_ERR PFX "Unable to allocate cb_arg for LOGO\n");
+;
 		return -ENOMEM;
 	}
 
@@ -274,18 +274,18 @@ static int bnx2fc_initiate_els(struct bnx2fc_rport *tgt, unsigned int op,
 
 	rc = fc_remote_port_chkready(rport);
 	if (rc) {
-		printk(KERN_ALERT PFX "els 0x%x: rport not ready\n", op);
+;
 		rc = -EINVAL;
 		goto els_err;
 	}
 	if (lport->state != LPORT_ST_READY || !(lport->link_up)) {
-		printk(KERN_ALERT PFX "els 0x%x: link is not ready\n", op);
+;
 		rc = -EINVAL;
 		goto els_err;
 	}
 	if (!(test_bit(BNX2FC_FLAG_SESSION_READY, &tgt->flags)) ||
 	     (test_bit(BNX2FC_FLAG_EXPL_LOGO, &tgt->flags))) {
-		printk(KERN_ERR PFX "els 0x%x: tgt not ready\n", op);
+;
 		rc = -EINVAL;
 		goto els_err;
 	}
@@ -305,7 +305,7 @@ static int bnx2fc_initiate_els(struct bnx2fc_rport *tgt, unsigned int op,
 	mp_req = (struct bnx2fc_mp_req *)&(els_req->mp_req);
 	rc = bnx2fc_init_mp_req(els_req);
 	if (rc == FAILED) {
-		printk(KERN_ALERT PFX "ELS MP request init failed\n");
+;
 		spin_lock_bh(&tgt->tgt_lock);
 		kref_put(&els_req->refcount, bnx2fc_cmd_release);
 		spin_unlock_bh(&tgt->tgt_lock);
@@ -324,7 +324,7 @@ static int bnx2fc_initiate_els(struct bnx2fc_rport *tgt, unsigned int op,
 	if ((op >= ELS_LS_RJT) && (op <= ELS_AUTH_ELS)) {
 		memcpy(mp_req->req_buf, data, data_len);
 	} else {
-		printk(KERN_ALERT PFX "Invalid ELS op 0x%x\n", op);
+;
 		els_req->cb_func = NULL;
 		els_req->cb_arg = NULL;
 		spin_lock_bh(&tgt->tgt_lock);
@@ -359,7 +359,7 @@ static int bnx2fc_initiate_els(struct bnx2fc_rport *tgt, unsigned int op,
 	spin_lock_bh(&tgt->tgt_lock);
 
 	if (!test_bit(BNX2FC_FLAG_SESSION_READY, &tgt->flags)) {
-		printk(KERN_ERR PFX "initiate_els.. session not ready\n");
+;
 		els_req->cb_func = NULL;
 		els_req->cb_arg = NULL;
 		kref_put(&els_req->refcount, bnx2fc_cmd_release);
@@ -450,15 +450,15 @@ static void bnx2fc_flogi_resp(struct fc_seq *seq, struct fc_frame *fp,
 	if (is_zero_ether_addr(mac)) {
 		fh = fc_frame_header_get(fp);
 		if (fh->fh_type != FC_TYPE_ELS) {
-			printk(KERN_ERR PFX "bnx2fc_flogi_resp:"
-				"fh_type != FC_TYPE_ELS\n");
+//			printk(KERN_ERR PFX "bnx2fc_flogi_resp:"
+;
 			fc_frame_free(fp);
 			return;
 		}
 		op = fc_frame_payload_op(fp);
 		if (lport->vport) {
 			if (op == ELS_LS_RJT) {
-				printk(KERN_ERR PFX "bnx2fc_flogi_resp is LS_RJT\n");
+;
 				fc_vport_terminate(lport->vport);
 				fc_frame_free(fp);
 				return;

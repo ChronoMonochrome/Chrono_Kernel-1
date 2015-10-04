@@ -89,7 +89,7 @@ static int x25_receive_data(struct sk_buff *skb, struct x25_neigh *nb)
 */
 
 	if (frametype != X25_CLEAR_CONFIRMATION)
-		printk(KERN_DEBUG "x25_receive_data(): unknown frame type %2x\n",frametype);
+;
 
 	return 0;
 }
@@ -114,7 +114,7 @@ int x25_lapb_receive_frame(struct sk_buff *skb, struct net_device *dev,
 	 */
 	nb = x25_get_neigh(dev);
 	if (!nb) {
-		printk(KERN_DEBUG "X.25: unknown neighbour - %s\n", dev->name);
+;
 		goto drop;
 	}
 
@@ -154,7 +154,7 @@ void x25_establish_link(struct x25_neigh *nb)
 	switch (nb->dev->type) {
 		case ARPHRD_X25:
 			if ((skb = alloc_skb(1, GFP_ATOMIC)) == NULL) {
-				printk(KERN_ERR "x25_dev: out of memory\n");
+;
 				return;
 			}
 			ptr  = skb_put(skb, 1);
@@ -189,7 +189,7 @@ void x25_terminate_link(struct x25_neigh *nb)
 
 	skb = alloc_skb(1, GFP_ATOMIC);
 	if (!skb) {
-		printk(KERN_ERR "x25_dev: out of memory\n");
+;
 		return;
 	}
 

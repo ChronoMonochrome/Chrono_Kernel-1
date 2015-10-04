@@ -597,7 +597,7 @@ static acpi_status acpi_tb_load_namespace(void)
 		}
 
 		if (no_auto_ssdt) {
-			printk(KERN_WARNING "ACPI: SSDT ignored due to \"acpi_no_auto_ssdt\"\n");
+;
 			continue;
 		}
 
@@ -738,7 +738,7 @@ ACPI_EXPORT_SYMBOL(acpi_remove_table_handler)
 
 static int __init acpi_no_auto_ssdt_setup(char *s) {
 
-        printk(KERN_NOTICE "ACPI: SSDT auto-load disabled\n");
+;
 
         no_auto_ssdt = 1;
 

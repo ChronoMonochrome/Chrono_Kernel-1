@@ -667,7 +667,7 @@ geomagnetic_enable_store(struct device *dev,
     struct geomagnetic_data *data = input_get_drvdata(input_data);
     int value;
 
-    printk(KERN_INFO "[%s] %d \n", __func__, __LINE__);
+;
     value = !!simple_strtol(buf, NULL, 10);
     if (hwdep_driver.set_enable == NULL) {
         return -ENOTTY;
@@ -1592,7 +1592,7 @@ geomagnetic_input_work_func(struct work_struct *work)
     uint32_t time_delay_ms;
     struct yas_mag_data magdata;
 
-//    printk("[%s] %d \n", __func__, __LINE__);
+;
 
     time_delay_ms = geomagnetic_work(&magdata);
 
@@ -1645,7 +1645,7 @@ geomagnetic_probe(struct i2c_client *client, const struct i2c_device_id *id)
     int data_registered = 0, raw_registered = 0, i;
     struct yas_mag_filter filter;
 
-	printk(KERN_INFO "%s\n", __func__);
+;
 
     i2c_set_clientdata(client, NULL);
     data = kzalloc(sizeof(struct geomagnetic_data), GFP_KERNEL);
@@ -1901,7 +1901,7 @@ static struct i2c_driver geomagnetic_i2c_driver = {
 static int __init
 geomagnetic_init(void)
 {
-	printk(KERN_INFO "%s\n", __func__);
+;
     return i2c_add_driver(&geomagnetic_i2c_driver);
 }
 

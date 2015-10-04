@@ -79,7 +79,7 @@
 #endif
 #if defined(CONFIG_ATM_FORE200E_DEBUG) && (CONFIG_ATM_FORE200E_DEBUG > 0)
 #define DPRINTK(level, format, args...)  do { if (CONFIG_ATM_FORE200E_DEBUG >= (level)) \
-                                                  printk(FORE200E format, ##args); } while (0)
+;
 #else
 #define DPRINTK(level, format, args...)  do {} while (0)
 #endif
@@ -96,8 +96,8 @@
 
 #if 1
 #define ASSERT(expr)     if (!(expr)) { \
-			     printk(FORE200E "assertion failed! %s[%d]: %s\n", \
-				    __func__, __LINE__, #expr); \
+//			     printk(FORE200E "assertion failed! %s[%d]: %s\n", \
+;
 			     panic(FORE200E "%s", __func__); \
 			 }
 #else
@@ -235,8 +235,8 @@ fore200e_poll(struct fore200e* fore200e, volatile u32* addr, u32 val, int msecs)
 
 #if 1
     if (!ok) {
-	printk(FORE200E "cmd polling failed, got status 0x%08x, expected 0x%08x\n",
-	       *addr, val);
+//	printk(FORE200E "cmd polling failed, got status 0x%08x, expected 0x%08x\n",
+;
     }
 #endif
 
@@ -258,8 +258,8 @@ fore200e_io_poll(struct fore200e* fore200e, volatile u32 __iomem *addr, u32 val,
 
 #if 1
     if (!ok) {
-	printk(FORE200E "I/O polling failed, got status 0x%08x, expected 0x%08x\n",
-	       fore200e->bus->read(addr), val);
+//	printk(FORE200E "I/O polling failed, got status 0x%08x, expected 0x%08x\n",
+;
     }
 #endif
 
@@ -327,11 +327,11 @@ fore200e_reset(struct fore200e* fore200e, int diag)
 	ok = fore200e_io_poll(fore200e, &fore200e->cp_monitor->bstat, BSTAT_SELFTEST_OK, 1000);
 	if (ok == 0) {
 	    
-	    printk(FORE200E "device %s self-test failed\n", fore200e->name);
+;
 	    return -ENODEV;
 	}
 
-	printk(FORE200E "device %s self-test passed\n", fore200e->name);
+;
 	
 	fore200e->state = FORE200E_STATE_RESET;
     }
@@ -343,9 +343,9 @@ fore200e_reset(struct fore200e* fore200e, int diag)
 static void
 fore200e_shutdown(struct fore200e* fore200e)
 {
-    printk(FORE200E "removing device %s at 0x%lx, IRQ %s\n",
-	   fore200e->name, fore200e->phys_base, 
-	   fore200e_irq_itoa(fore200e->irq));
+//    printk(FORE200E "removing device %s at 0x%lx, IRQ %s\n",
+//	   fore200e->name, fore200e->phys_base, 
+;
     
     if (fore200e->state > FORE200E_STATE_RESET) {
 	/* first, reset the board to prevent further interrupts or data transfers */
@@ -535,7 +535,7 @@ fore200e_pca_map(struct fore200e* fore200e)
     fore200e->virt_base = ioremap(fore200e->phys_base, PCA200E_IOSPACE_LENGTH);
     
     if (fore200e->virt_base == NULL) {
-	printk(FORE200E "can't map device %s\n", fore200e->name);
+;
 	return -EFAULT;
     }
 
@@ -570,7 +570,7 @@ fore200e_pca_configure(struct fore200e* fore200e)
     DPRINTK(2, "device %s being configured\n", fore200e->name);
 
     if ((pci_dev->irq == 0) || (pci_dev->irq == 0xFF)) {
-	printk(FORE200E "incorrect IRQ setting - misconfigured PCI-PCI bridge?\n");
+;
 	return -EIO;
     }
 
@@ -631,7 +631,7 @@ fore200e_pca_prom_read(struct fore200e* fore200e, struct prom_data* prom)
     fore200e->bus->dma_unmap(fore200e, prom_dma, sizeof(struct prom_data), DMA_FROM_DEVICE);
 
     if (ok == 0) {
-	printk(FORE200E "unable to get PROM data from device %s\n", fore200e->name);
+;
 	return -EIO;
     }
 
@@ -780,7 +780,7 @@ static int __init fore200e_sba_map(struct fore200e *fore200e)
 	fore200e->virt_base    = of_ioremap(&op->resource[3], 0, SBA200E_RAM_LENGTH, "SBA RAM");
 
 	if (!fore200e->virt_base) {
-		printk(FORE200E "unable to map RAM of device %s\n", fore200e->name);
+;
 		return -EFAULT;
 	}
 
@@ -958,23 +958,23 @@ int bsq_audit(int where, struct host_bsq* bsq, int scheme, int magn)
     while (buffer) {
 
 	if (buffer->supplied) {
-	    printk(FORE200E "bsq_audit(%d): queue %d.%d, buffer %ld supplied but in free list!\n",
-		   where, scheme, magn, buffer->index);
+//	    printk(FORE200E "bsq_audit(%d): queue %d.%d, buffer %ld supplied but in free list!\n",
+;
 	}
 
 	if (buffer->magn != magn) {
-	    printk(FORE200E "bsq_audit(%d): queue %d.%d, buffer %ld, unexpected magn = %d\n",
-		   where, scheme, magn, buffer->index, buffer->magn);
+//	    printk(FORE200E "bsq_audit(%d): queue %d.%d, buffer %ld, unexpected magn = %d\n",
+;
 	}
 
 	if (buffer->scheme != scheme) {
-	    printk(FORE200E "bsq_audit(%d): queue %d.%d, buffer %ld, unexpected scheme = %d\n",
-		   where, scheme, magn, buffer->index, buffer->scheme);
+//	    printk(FORE200E "bsq_audit(%d): queue %d.%d, buffer %ld, unexpected scheme = %d\n",
+;
 	}
 
 	if ((buffer->index < 0) || (buffer->index >= fore200e_rx_buf_nbr[ scheme ][ magn ])) {
-	    printk(FORE200E "bsq_audit(%d): queue %d.%d, out of range buffer index = %ld !\n",
-		   where, scheme, magn, buffer->index);
+//	    printk(FORE200E "bsq_audit(%d): queue %d.%d, out of range buffer index = %ld !\n",
+;
 	}
 
 	count++;
@@ -982,8 +982,8 @@ int bsq_audit(int where, struct host_bsq* bsq, int scheme, int magn)
     }
 
     if (count != bsq->freebuf_count) {
-	printk(FORE200E "bsq_audit(%d): queue %d.%d, %d bufs in free list, but freebuf_count = %d\n",
-	       where, scheme, magn, count, bsq->freebuf_count);
+//	printk(FORE200E "bsq_audit(%d): queue %d.%d, %d bufs in free list, but freebuf_count = %d\n",
+;
     }
     return 0;
 }
@@ -1019,16 +1019,16 @@ fore200e_supply(struct fore200e* fore200e)
 		    /* take the first buffer in the free buffer list */
 		    buffer = bsq->freebuf;
 		    if (!buffer) {
-			printk(FORE200E "no more free bufs in queue %d.%d, but freebuf_count = %d\n",
-			       scheme, magn, bsq->freebuf_count);
+//			printk(FORE200E "no more free bufs in queue %d.%d, but freebuf_count = %d\n",
+;
 			return;
 		    }
 		    bsq->freebuf = buffer->next;
 		    
 #ifdef FORE200E_BSQ_DEBUG
 		    if (buffer->supplied)
-			printk(FORE200E "queue %d.%d, buffer %lu already supplied\n",
-			       scheme, magn, buffer->index);
+//			printk(FORE200E "queue %d.%d, buffer %lu already supplied\n",
+;
 		    buffer->supplied = 1;
 #endif
 		    entry->rbd_block->rbd[ i ].buffer_haddr = buffer->data.dma_addr;
@@ -1160,8 +1160,8 @@ fore200e_collect_rpd(struct fore200e* fore200e, struct rpd* rpd)
 	bsq_audit(2, bsq, buffer->scheme, buffer->magn);
 
 	if (buffer->supplied == 0)
-	    printk(FORE200E "queue %d.%d, buffer %ld was not supplied\n",
-		   buffer->scheme, buffer->magn, buffer->index);
+//	    printk(FORE200E "queue %d.%d, buffer %ld was not supplied\n",
+;
 	buffer->supplied = 0;
 #endif
 
@@ -1364,8 +1364,8 @@ fore200e_activate_vcin(struct fore200e* fore200e, int activate, struct atm_vcc* 
     *entry->status = STATUS_FREE;
 
     if (ok == 0) {
-	printk(FORE200E "unable to %s VC %d.%d.%d\n",
-	       activate ? "open" : "close", vcc->itf, vcc->vpi, vcc->vci);
+//	printk(FORE200E "unable to %s VC %d.%d.%d\n",
+;
 	return -EIO;
     }
 
@@ -1414,8 +1414,8 @@ fore200e_open(struct atm_vcc *vcc)
 
 	spin_unlock_irqrestore(&fore200e->q_lock, flags);
 
-	printk(FORE200E "VC %d.%d.%d already in use\n",
-	       fore200e->atm_dev->number, vpi, vci);
+//	printk(FORE200E "VC %d.%d.%d already in use\n",
+;
 
 	return -EINVAL;
     }
@@ -1776,7 +1776,7 @@ fore200e_getstats(struct fore200e* fore200e)
     fore200e->bus->dma_unmap(fore200e, stats_dma_addr, sizeof(struct stats), DMA_FROM_DEVICE);
     
     if (ok == 0) {
-	printk(FORE200E "unable to get statistics from device %s\n", fore200e->name);
+;
 	return -EIO;
     }
 
@@ -1840,7 +1840,7 @@ fore200e_get_oc3(struct fore200e* fore200e, struct oc3_regs* regs)
     fore200e->bus->dma_unmap(fore200e, oc3_regs_dma_addr, sizeof(struct oc3_regs), DMA_FROM_DEVICE);
     
     if (ok == 0) {
-	printk(FORE200E "unable to get OC-3 regs of device %s\n", fore200e->name);
+;
 	return -EIO;
     }
 
@@ -1877,7 +1877,7 @@ fore200e_set_oc3(struct fore200e* fore200e, u32 reg, u32 value, u32 mask)
     *entry->status = STATUS_FREE;
 
     if (ok == 0) {
-	printk(FORE200E "unable to set OC-3 reg 0x%02x of device %s\n", reg, fore200e->name);
+;
 	return -EIO;
     }
 
@@ -2033,13 +2033,13 @@ fore200e_irq_request(struct fore200e* fore200e)
 {
     if (request_irq(fore200e->irq, fore200e_interrupt, IRQF_SHARED, fore200e->name, fore200e->atm_dev) < 0) {
 
-	printk(FORE200E "unable to reserve IRQ %s for device %s\n",
-	       fore200e_irq_itoa(fore200e->irq), fore200e->name);
+//	printk(FORE200E "unable to reserve IRQ %s for device %s\n",
+;
 	return -EBUSY;
     }
 
-    printk(FORE200E "IRQ %s reserved for device %s\n",
-	   fore200e_irq_itoa(fore200e->irq), fore200e->name);
+//    printk(FORE200E "IRQ %s reserved for device %s\n",
+;
 
 #ifdef FORE200E_USE_TASKLET
     tasklet_init(&fore200e->tx_tasklet, fore200e_tx_tasklet, (unsigned long)fore200e);
@@ -2066,10 +2066,10 @@ fore200e_get_esi(struct fore200e* fore200e)
 	return -EBUSY;
     }
 	
-    printk(FORE200E "device %s, rev. %c, S/N: %d, ESI: %pM\n",
-	   fore200e->name, 
-	   (prom->hw_revision & 0xFF) + '@',    /* probably meaningless with SBA boards */
-	   prom->serial_number & 0xFFFF, &prom->mac_addr[2]);
+//    printk(FORE200E "device %s, rev. %c, S/N: %d, ESI: %pM\n",
+//	   fore200e->name, 
+//	   (prom->hw_revision & 0xFF) + '@',    /* probably meaningless with SBA boards */
+;
 	
     for (i = 0; i < ESI_LEN; i++) {
 	fore200e->esi[ i ] = fore200e->atm_dev->esi[ i ] = prom->mac_addr[ i + 2 ];
@@ -2429,11 +2429,11 @@ fore200e_initialize(struct fore200e* fore200e)
 
     ok = fore200e_io_poll(fore200e, &cpq->init.status, STATUS_COMPLETE, 3000);
     if (ok == 0) {
-	printk(FORE200E "device %s initialization failed\n", fore200e->name);
+;
 	return -ENODEV;
     }
 
-    printk(FORE200E "device %s initialized\n", fore200e->name);
+;
 
     fore200e->state = FORE200E_STATE_INITIALIZE;
     return 0;
@@ -2446,7 +2446,7 @@ fore200e_monitor_putc(struct fore200e* fore200e, char c)
     struct cp_monitor __iomem * monitor = fore200e->cp_monitor;
 
 #if 0
-    printk("%c", c);
+;
 #endif
     fore200e->bus->write(((u32) c) | FORE200E_CP_MONITOR_UART_AVAIL, &monitor->soft_uart.send);
 }
@@ -2467,7 +2467,7 @@ fore200e_monitor_getc(struct fore200e* fore200e)
 
 	    fore200e->bus->write(FORE200E_CP_MONITOR_UART_FREE, &monitor->soft_uart.recv);
 #if 0
-	    printk("%c", c & 0xFF);
+;
 #endif
 	    return c & 0xFF;
 	}
@@ -2520,7 +2520,7 @@ fore200e_load_and_start_fw(struct fore200e* fore200e)
 
     sprintf(buf, "%s%s", fore200e->bus->proc_name, FW_EXT);
     if ((err = request_firmware(&firmware, buf, device)) < 0) {
-	printk(FORE200E "problem loading firmware image %s\n", fore200e->bus->model_name);
+;
 	return err;
     }
 
@@ -2533,7 +2533,7 @@ fore200e_load_and_start_fw(struct fore200e* fore200e)
 	    fore200e->name, load_addr, fw_size);
 
     if (le32_to_cpu(fw_header->magic) != FW_HEADER_MAGIC) {
-	printk(FORE200E "corrupted %s firmware image\n", fore200e->bus->model_name);
+;
 	goto release;
     }
 
@@ -2551,11 +2551,11 @@ fore200e_load_and_start_fw(struct fore200e* fore200e)
     fore200e_monitor_puts(fore200e, buf);
 
     if (fore200e_io_poll(fore200e, &fore200e->cp_monitor->bstat, BSTAT_CP_RUNNING, 1000) == 0) {
-	printk(FORE200E "device %s firmware didn't start\n", fore200e->name);
+;
 	goto release;
     }
 
-    printk(FORE200E "device %s firmware started\n", fore200e->name);
+;
 
     fore200e->state = FORE200E_STATE_START_FW;
     err = 0;
@@ -2576,7 +2576,7 @@ fore200e_register(struct fore200e* fore200e, struct device *parent)
     atm_dev = atm_dev_register(fore200e->bus->proc_name, parent, &fore200e_ops,
                                -1, NULL);
     if (atm_dev == NULL) {
-	printk(FORE200E "unable to register device %s\n", fore200e->name);
+;
 	return -ENODEV;
     }
 
@@ -2740,9 +2740,9 @@ fore200e_pca_detect(struct pci_dev *pci_dev, const struct pci_device_id *pci_ent
 
     pci_set_master(pci_dev);
 
-    printk(FORE200E "device %s found at 0x%lx, IRQ %s\n",
-	   fore200e->bus->model_name, 
-	   fore200e->phys_base, fore200e_irq_itoa(fore200e->irq));
+//    printk(FORE200E "device %s found at 0x%lx, IRQ %s\n",
+//	   fore200e->bus->model_name, 
+;
 
     sprintf(fore200e->name, "%s-%d", bus->model_name, index);
 
@@ -2798,7 +2798,7 @@ static int __init fore200e_module_init(void)
 {
 	int err;
 
-	printk(FORE200E "FORE Systems 200E-series ATM driver - version " FORE200E_VERSION "\n");
+;
 
 #ifdef CONFIG_SBUS
 	err = platform_driver_register(&fore200e_sba_driver);

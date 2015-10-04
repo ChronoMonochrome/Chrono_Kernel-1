@@ -302,8 +302,8 @@ static inline int rocket_paranoia_check(struct r_port *info,
 	if (!info)
 		return 1;
 	if (info->magic != RPORT_MAGIC) {
-		printk(KERN_WARNING "Warning: bad magic number for rocketport "
-				"struct in %s\n", routine);
+//		printk(KERN_WARNING "Warning: bad magic number for rocketport "
+;
 		return 1;
 	}
 #endif
@@ -325,7 +325,7 @@ static void rp_do_receive(struct r_port *info,
 
 	ToRecv = sGetRxCnt(cp);
 #ifdef ROCKET_DEBUG_INTR
-	printk(KERN_INFO "rp_do_receive(%d)...\n", ToRecv);
+;
 #endif
 	if (ToRecv == 0)
 		return;
@@ -338,7 +338,7 @@ static void rp_do_receive(struct r_port *info,
 	if (ChanStatus & (RXFOVERFL | RXBREAK | RXFRAME | RXPARITY)) {
 		if (!(ChanStatus & STATMODE)) {
 #ifdef ROCKET_DEBUG_RECEIVE
-			printk(KERN_INFO "Entering STATMODE...\n");
+;
 #endif
 			ChanStatus |= STATMODE;
 			sEnRxStatusMode(cp);
@@ -352,15 +352,15 @@ static void rp_do_receive(struct r_port *info,
 	 */
 	if (ChanStatus & STATMODE) {
 #ifdef ROCKET_DEBUG_RECEIVE
-		printk(KERN_INFO "Ignore %x, read %x...\n",
-			info->ignore_status_mask, info->read_status_mask);
+//		printk(KERN_INFO "Ignore %x, read %x...\n",
+;
 #endif
 		while (ToRecv) {
 			char flag;
 
 			CharNStat = sInW(sGetTxRxDataIO(cp));
 #ifdef ROCKET_DEBUG_RECEIVE
-			printk(KERN_INFO "%x...\n", CharNStat);
+;
 #endif
 			if (CharNStat & STMBREAKH)
 				CharNStat &= ~(STMFRAMEH | STMPARITYH);
@@ -389,7 +389,7 @@ static void rp_do_receive(struct r_port *info,
 		 */
 		if (sGetRxCnt(cp) == 0) {
 #ifdef ROCKET_DEBUG_RECEIVE
-			printk(KERN_INFO "Status mode off.\n");
+;
 #endif
 			sDisRxStatusMode(cp);
 		}
@@ -402,7 +402,7 @@ static void rp_do_receive(struct r_port *info,
 		space = tty_prepare_flip_string(tty, &cbuf, ToRecv);
 		if (space < ToRecv) {
 #ifdef ROCKET_DEBUG_RECEIVE
-			printk(KERN_INFO "rp_do_receive:insufficient space ToRecv=%d space=%d\n", ToRecv, space);
+;
 #endif
 			if (space <= 0)
 				return;
@@ -432,14 +432,14 @@ static void rp_do_transmit(struct r_port *info)
 	unsigned long flags;
 
 #ifdef ROCKET_DEBUG_INTR
-	printk(KERN_DEBUG "%s\n", __func__);
+;
 #endif
 	if (!info)
 		return;
 	tty = tty_port_tty_get(&info->port);
 
 	if (tty == NULL) {
-		printk(KERN_WARNING "rp: WARNING %s called with tty==NULL\n", __func__);
+;
 		clear_bit((info->aiop * 8) + info->chan, (void *) &xmit_flags[info->board]);
 		return;
 	}
@@ -463,7 +463,7 @@ static void rp_do_transmit(struct r_port *info)
 		info->xmit_cnt -= c;
 		info->xmit_fifo_room -= c;
 #ifdef ROCKET_DEBUG_INTR
-		printk(KERN_INFO "tx %d chars...\n", c);
+;
 #endif
 	}
 
@@ -481,8 +481,8 @@ static void rp_do_transmit(struct r_port *info)
 	tty_kref_put(tty);
 
 #ifdef ROCKET_DEBUG_INTR
-	printk(KERN_DEBUG "(%d,%d,%d,%d)...\n", info->xmit_cnt, info->xmit_head,
-	       info->xmit_tail, info->xmit_fifo_room);
+//	printk(KERN_DEBUG "(%d,%d,%d,%d)...\n", info->xmit_cnt, info->xmit_head,
+;
 #endif
 }
 
@@ -501,21 +501,21 @@ static void rp_handle_port(struct r_port *info)
 		return;
 
 	if ((info->port.flags & ASYNC_INITIALIZED) == 0) {
-		printk(KERN_WARNING "rp: WARNING: rp_handle_port called with "
-				"info->flags & NOT_INIT\n");
+//		printk(KERN_WARNING "rp: WARNING: rp_handle_port called with "
+;
 		return;
 	}
 	tty = tty_port_tty_get(&info->port);
 	if (!tty) {
-		printk(KERN_WARNING "rp: WARNING: rp_handle_port called with "
-				"tty==NULL\n");
+//		printk(KERN_WARNING "rp: WARNING: rp_handle_port called with "
+;
 		return;
 	}
 	cp = &info->channel;
 
 	IntMask = sGetChanIntID(cp) & info->intmask;
 #ifdef ROCKET_DEBUG_INTR
-	printk(KERN_INFO "rp_interrupt %02x...\n", IntMask);
+;
 #endif
 	ChanStatus = sGetChanStatus(cp);
 	if (IntMask & RXF_TRIG) {	/* Rx FIFO trigger level */
@@ -523,12 +523,12 @@ static void rp_handle_port(struct r_port *info)
 	}
 	if (IntMask & DELTA_CD) {	/* CD change  */
 #if (defined(ROCKET_DEBUG_OPEN) || defined(ROCKET_DEBUG_INTR) || defined(ROCKET_DEBUG_HANGUP))
-		printk(KERN_INFO "ttyR%d CD now %s...\n", info->line,
-		       (ChanStatus & CD_ACT) ? "on" : "off");
+//		printk(KERN_INFO "ttyR%d CD now %s...\n", info->line,
+;
 #endif
 		if (!(ChanStatus & CD_ACT) && info->cd_status) {
 #ifdef ROCKET_DEBUG_HANGUP
-			printk(KERN_INFO "CD drop, calling hangup.\n");
+;
 #endif
 			tty_hangup(tty);
 		}
@@ -537,10 +537,10 @@ static void rp_handle_port(struct r_port *info)
 	}
 #ifdef ROCKET_DEBUG_INTR
 	if (IntMask & DELTA_CTS) {	/* CTS change */
-		printk(KERN_INFO "CTS change...\n");
+;
 	}
 	if (IntMask & DELTA_DSR) {	/* DSR change */
-		printk(KERN_INFO "DSR change...\n");
+;
 	}
 #endif
 	tty_kref_put(tty);
@@ -641,8 +641,8 @@ static void init_r_port(int board, int aiop, int chan, struct pci_dev *pci_dev)
 	/*  Get a r_port struct for the port, fill it in and save it globally, indexed by line number */
 	info = kzalloc(sizeof (struct r_port), GFP_KERNEL);
 	if (!info) {
-		printk(KERN_ERR "Couldn't allocate info struct for line #%d\n",
-				line);
+//		printk(KERN_ERR "Couldn't allocate info struct for line #%d\n",
+;
 		return;
 	}
 
@@ -671,8 +671,8 @@ static void init_r_port(int board, int aiop, int chan, struct pci_dev *pci_dev)
 
 	info->intmask = RXF_TRIG | TXFIFO_MT | SRC_INT | DELTA_CD | DELTA_CTS | DELTA_DSR;
 	if (sInitChan(ctlp, &info->channel, aiop, chan) == 0) {
-		printk(KERN_ERR "RocketPort sInitChan(%d, %d, %d) failed!\n",
-				board, aiop, chan);
+//		printk(KERN_ERR "RocketPort sInitChan(%d, %d, %d) failed!\n",
+;
 		kfree(info);
 		return;
 	}
@@ -928,12 +928,12 @@ static int rp_open(struct tty_struct *tty, struct file *filp)
 		atomic_inc(&rp_num_ports_open);
 
 #ifdef ROCKET_DEBUG_OPEN
-		printk(KERN_INFO "rocket mod++ = %d...\n",
-				atomic_read(&rp_num_ports_open));
+//		printk(KERN_INFO "rocket mod++ = %d...\n",
+;
 #endif
 	}
 #ifdef ROCKET_DEBUG_OPEN
-	printk(KERN_INFO "rp_open ttyR%d, count=%d\n", info->line, info->port.count);
+;
 #endif
 
 	/*
@@ -989,7 +989,7 @@ static int rp_open(struct tty_struct *tty, struct file *filp)
 	retval = tty_port_block_til_ready(port, tty, filp);
 	if (retval) {
 #ifdef ROCKET_DEBUG_OPEN
-		printk(KERN_INFO "rp_open returning after block_til_ready with %d\n", retval);
+;
 #endif
 		return retval;
 	}
@@ -1010,7 +1010,7 @@ static void rp_close(struct tty_struct *tty, struct file *filp)
 		return;
 
 #ifdef ROCKET_DEBUG_OPEN
-	printk(KERN_INFO "rp_close ttyR%d, count = %d\n", info->line, info->port.count);
+;
 #endif
 
 	if (tty_port_close_start(port, tty, filp) == 0)
@@ -1072,9 +1072,9 @@ static void rp_close(struct tty_struct *tty, struct file *filp)
 	atomic_dec(&rp_num_ports_open);
 
 #ifdef ROCKET_DEBUG_OPEN
-	printk(KERN_INFO "rocket mod-- = %d...\n",
-			atomic_read(&rp_num_ports_open));
-	printk(KERN_INFO "rp_close ttyR%d complete shutdown\n", info->line);
+//	printk(KERN_INFO "rocket mod-- = %d...\n",
+;
+;
 #endif
 
 }
@@ -1382,8 +1382,8 @@ static void rp_throttle(struct tty_struct *tty)
 	struct r_port *info = tty->driver_data;
 
 #ifdef ROCKET_DEBUG_THROTTLE
-	printk(KERN_INFO "throttle %s: %d....\n", tty->name,
-	       tty->ldisc.chars_in_buffer(tty));
+//	printk(KERN_INFO "throttle %s: %d....\n", tty->name,
+;
 #endif
 
 	if (rocket_paranoia_check(info, "rp_throttle"))
@@ -1399,8 +1399,8 @@ static void rp_unthrottle(struct tty_struct *tty)
 {
 	struct r_port *info = tty->driver_data;
 #ifdef ROCKET_DEBUG_THROTTLE
-	printk(KERN_INFO "unthrottle %s: %d....\n", tty->name,
-	       tty->ldisc.chars_in_buffer(tty));
+//	printk(KERN_INFO "unthrottle %s: %d....\n", tty->name,
+;
 #endif
 
 	if (rocket_paranoia_check(info, "rp_throttle"))
@@ -1425,8 +1425,8 @@ static void rp_stop(struct tty_struct *tty)
 	struct r_port *info = tty->driver_data;
 
 #ifdef ROCKET_DEBUG_FLOW
-	printk(KERN_INFO "stop %s: %d %d....\n", tty->name,
-	       info->xmit_cnt, info->xmit_fifo_room);
+//	printk(KERN_INFO "stop %s: %d %d....\n", tty->name,
+;
 #endif
 
 	if (rocket_paranoia_check(info, "rp_stop"))
@@ -1441,8 +1441,8 @@ static void rp_start(struct tty_struct *tty)
 	struct r_port *info = tty->driver_data;
 
 #ifdef ROCKET_DEBUG_FLOW
-	printk(KERN_INFO "start %s: %d %d....\n", tty->name,
-	       info->xmit_cnt, info->xmit_fifo_room);
+//	printk(KERN_INFO "start %s: %d %d....\n", tty->name,
+;
 #endif
 
 	if (rocket_paranoia_check(info, "rp_stop"))
@@ -1471,9 +1471,9 @@ static void rp_wait_until_sent(struct tty_struct *tty, int timeout)
 
 	orig_jiffies = jiffies;
 #ifdef ROCKET_DEBUG_WAIT_UNTIL_SENT
-	printk(KERN_INFO "In RP_wait_until_sent(%d) (jiff=%lu)...\n", timeout,
-	       jiffies);
-	printk(KERN_INFO "cps=%d...\n", info->cps);
+//	printk(KERN_INFO "In RP_wait_until_sent(%d) (jiff=%lu)...\n", timeout,
+;
+;
 #endif
 	while (1) {
 		txcnt = sGetTxCnt(cp);
@@ -1494,8 +1494,8 @@ static void rp_wait_until_sent(struct tty_struct *tty, int timeout)
 		if (check_time == 0)
 			check_time = 1;
 #ifdef ROCKET_DEBUG_WAIT_UNTIL_SENT
-		printk(KERN_INFO "txcnt = %d (jiff=%lu,check=%d)...\n", txcnt,
-				jiffies, check_time);
+//		printk(KERN_INFO "txcnt = %d (jiff=%lu,check=%d)...\n", txcnt,
+;
 #endif
 		msleep_interruptible(jiffies_to_msecs(check_time));
 		if (signal_pending(current))
@@ -1503,7 +1503,7 @@ static void rp_wait_until_sent(struct tty_struct *tty, int timeout)
 	}
 	__set_current_state(TASK_RUNNING);
 #ifdef ROCKET_DEBUG_WAIT_UNTIL_SENT
-	printk(KERN_INFO "txcnt = %d (jiff=%lu)...done\n", txcnt, jiffies);
+;
 #endif
 }
 
@@ -1520,7 +1520,7 @@ static void rp_hangup(struct tty_struct *tty)
 		return;
 
 #if (defined(ROCKET_DEBUG_OPEN) || defined(ROCKET_DEBUG_HANGUP))
-	printk(KERN_INFO "rp_hangup of ttyR%d...\n", info->line);
+;
 #endif
 	rp_flush_buffer(tty);
 	spin_lock_irqsave(&info->port.lock, flags);
@@ -1570,7 +1570,7 @@ static int rp_put_char(struct tty_struct *tty, unsigned char ch)
 	mutex_lock(&info->write_mtx);
 
 #ifdef ROCKET_DEBUG_WRITE
-	printk(KERN_INFO "rp_put_char %c...\n", ch);
+;
 #endif
 
 	spin_lock_irqsave(&info->slock, flags);
@@ -1616,7 +1616,7 @@ static int rp_write(struct tty_struct *tty,
 		return -ERESTARTSYS;
 
 #ifdef ROCKET_DEBUG_WRITE
-	printk(KERN_INFO "rp_write %d chars...\n", count);
+;
 #endif
 	cp = &info->channel;
 
@@ -1706,7 +1706,7 @@ static int rp_write_room(struct tty_struct *tty)
 	if (ret < 0)
 		ret = 0;
 #ifdef ROCKET_DEBUG_WRITE
-	printk(KERN_INFO "rp_write_room returns %d...\n", ret);
+;
 #endif
 	return ret;
 }
@@ -1723,7 +1723,7 @@ static int rp_chars_in_buffer(struct tty_struct *tty)
 		return 0;
 
 #ifdef ROCKET_DEBUG_WRITE
-	printk(KERN_INFO "rp_chars_in_buffer returns %d...\n", info->xmit_cnt);
+;
 #endif
 	return info->xmit_cnt;
 }
@@ -2102,9 +2102,9 @@ static int __init init_ISA(int i)
 
 	/*  Reserve the IO region */
 	if (!request_region(rcktpt_io_addr[i], 64, "Comtrol RocketPort")) {
-		printk(KERN_ERR "Unable to reserve IO region for configured "
-				"ISA RocketPort at address 0x%lx, board not "
-				"installed...\n", rcktpt_io_addr[i]);
+//		printk(KERN_ERR "Unable to reserve IO region for configured "
+//				"ISA RocketPort at address 0x%lx, board not "
+;
 		rcktpt_io_addr[i] = 0;
 		return (0);
 	}
@@ -2184,14 +2184,14 @@ static int __init init_ISA(int i)
 	rocketModel[i].numPorts = total_num_chan;
 	rocketModel[i].model = MODEL_ISA;
 
-	printk(KERN_INFO "RocketPort ISA card #%d found at 0x%lx - %d AIOPs %s\n", 
-	       i, rcktpt_io_addr[i], num_aiops, type_string);
+//	printk(KERN_INFO "RocketPort ISA card #%d found at 0x%lx - %d AIOPs %s\n", 
+;
 
-	printk(KERN_INFO "Installing %s, creating /dev/ttyR%d - %ld\n",
-	       rocketModel[i].modelString,
-	       rocketModel[i].startingPortNumber,
-	       rocketModel[i].startingPortNumber +
-	       rocketModel[i].numPorts - 1);
+//	printk(KERN_INFO "Installing %s, creating /dev/ttyR%d - %ld\n",
+//	       rocketModel[i].modelString,
+//	       rocketModel[i].startingPortNumber,
+//	       rocketModel[i].startingPortNumber +
+;
 
 	return (1);
 }
@@ -2230,8 +2230,8 @@ static int __init rp_init(void)
 {
 	int ret = -ENOMEM, pci_boards_found, isa_boards_found, i;
 
-	printk(KERN_INFO "RocketPort device driver module, version %s, %s\n",
-	       ROCKET_VERSION, ROCKET_DATE);
+//	printk(KERN_INFO "RocketPort device driver module, version %s, %s\n",
+;
 
 	rocket_driver = alloc_tty_driver(MAX_RP_PORTS);
 	if (!rocket_driver)
@@ -2250,9 +2250,9 @@ static int __init rp_init(void)
 
 	/*  If an ISA card is configured, reserve the 4 byte IO space for the Mudbac controller */
 	if (controller && (!request_region(controller, 4, "Comtrol RocketPort"))) {
-		printk(KERN_ERR "Unable to reserve IO region for first "
-			"configured ISA RocketPort controller 0x%lx.  "
-			"Driver exiting\n", controller);
+//		printk(KERN_ERR "Unable to reserve IO region for first "
+//			"configured ISA RocketPort controller 0x%lx.  "
+;
 		ret = -EBUSY;
 		goto err_tty;
 	}
@@ -2297,12 +2297,12 @@ static int __init rp_init(void)
 
 	ret = tty_register_driver(rocket_driver);
 	if (ret < 0) {
-		printk(KERN_ERR "Couldn't install tty RocketPort driver\n");
+;
 		goto err_controller;
 	}
 
 #ifdef ROCKET_DEBUG_OPEN
-	printk(KERN_INFO "RocketPort driver is major %d\n", rocket_driver.major);
+;
 #endif
 
 	/*
@@ -2325,7 +2325,7 @@ static int __init rp_init(void)
 	max_board = pci_boards_found + isa_boards_found;
 
 	if (max_board == 0) {
-		printk(KERN_ERR "No rocketport ports found; unloading driver\n");
+;
 		ret = -ENXIO;
 		goto err_ttyu;
 	}
@@ -2352,8 +2352,8 @@ static void rp_cleanup_module(void)
 
 	retval = tty_unregister_driver(rocket_driver);
 	if (retval)
-		printk(KERN_ERR "Error %d while trying to unregister "
-		       "rocketport driver\n", -retval);
+//		printk(KERN_ERR "Error %d while trying to unregister "
+;
 
 	for (i = 0; i < MAX_RP_PORTS; i++)
 		if (rp_table[i]) {

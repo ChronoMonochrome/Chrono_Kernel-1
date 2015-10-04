@@ -909,8 +909,8 @@ lpfc_debugfs_dumpData_open(struct inode *inode, struct file *file)
 		goto out;
 
 	/* Round to page boundary */
-	printk(KERN_ERR "9059 BLKGRD:  %s: _dump_buf_data=0x%p\n",
-			__func__, _dump_buf_data);
+//	printk(KERN_ERR "9059 BLKGRD:  %s: _dump_buf_data=0x%p\n",
+;
 	debug->buffer = _dump_buf_data;
 	if (!debug->buffer) {
 		kfree(debug);
@@ -939,8 +939,8 @@ lpfc_debugfs_dumpDif_open(struct inode *inode, struct file *file)
 		goto out;
 
 	/* Round to page boundary */
-	printk(KERN_ERR	"9060 BLKGRD: %s: _dump_buf_dif=0x%p file=%s\n",
-		__func__, _dump_buf_dif, file->f_dentry->d_name.name);
+//	printk(KERN_ERR	"9060 BLKGRD: %s: _dump_buf_dif=0x%p file=%s\n",
+;
 	debug->buffer = _dump_buf_dif;
 	if (!debug->buffer) {
 		kfree(debug);
@@ -2578,9 +2578,9 @@ lpfc_debugfs_initialize(struct lpfc_vport *vport)
 					i++;
 				}
 				lpfc_debugfs_max_slow_ring_trc = (1 << i);
-				printk(KERN_ERR
-				       "lpfc_debugfs_max_disc_trc changed to "
-				       "%d\n", lpfc_debugfs_max_disc_trc);
+//				printk(KERN_ERR
+//				       "lpfc_debugfs_max_disc_trc changed to "
+;
 			}
 		}
 
@@ -2636,9 +2636,9 @@ lpfc_debugfs_initialize(struct lpfc_vport *vport)
 				i++;
 			}
 			lpfc_debugfs_max_disc_trc = (1 << i);
-			printk(KERN_ERR
-			       "lpfc_debugfs_max_disc_trc changed to %d\n",
-			       lpfc_debugfs_max_disc_trc);
+//			printk(KERN_ERR
+//			       "lpfc_debugfs_max_disc_trc changed to %d\n",
+;
 		}
 	}
 

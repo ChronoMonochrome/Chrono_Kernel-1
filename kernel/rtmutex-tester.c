@@ -409,7 +409,7 @@ static int init_rttest(void)
 			break;
 	}
 
-	printk("Initializing RT-Tester: %s\n", ret ? "Failed" : "OK" );
+;
 
 	return ret;
 }

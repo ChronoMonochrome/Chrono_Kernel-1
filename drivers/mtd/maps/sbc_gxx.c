@@ -194,24 +194,24 @@ static int __init init_sbc_gxx(void)
 {
   	iomapadr = ioremap(WINDOW_START, WINDOW_LENGTH);
 	if (!iomapadr) {
-		printk( KERN_ERR"%s: failed to ioremap memory region\n",
-			sbc_gxx_map.name );
+//		printk( KERN_ERR"%s: failed to ioremap memory region\n",
+;
 		return -EIO;
 	}
 
 	if (!request_region( PAGE_IO, PAGE_IO_SIZE, "SBC-GXx flash")) {
-		printk( KERN_ERR"%s: IO ports 0x%x-0x%x in use\n",
-			sbc_gxx_map.name,
-			PAGE_IO, PAGE_IO+PAGE_IO_SIZE-1 );
+//		printk( KERN_ERR"%s: IO ports 0x%x-0x%x in use\n",
+//			sbc_gxx_map.name,
+;
 		iounmap(iomapadr);
 		return -EAGAIN;
 	}
 
 
-	printk( KERN_INFO"%s: IO:0x%x-0x%x MEM:0x%x-0x%x\n",
-		sbc_gxx_map.name,
-		PAGE_IO, PAGE_IO+PAGE_IO_SIZE-1,
-		WINDOW_START, WINDOW_START+WINDOW_LENGTH-1 );
+//	printk( KERN_INFO"%s: IO:0x%x-0x%x MEM:0x%x-0x%x\n",
+//		sbc_gxx_map.name,
+//		PAGE_IO, PAGE_IO+PAGE_IO_SIZE-1,
+;
 
 	/* Probe for chip. */
 	all_mtd = do_map_probe( "cfi_probe", &sbc_gxx_map );

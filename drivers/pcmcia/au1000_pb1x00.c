@@ -103,8 +103,8 @@ pb1x00_pcmcia_socket_state(unsigned sock, struct pcmcia_state *state)
 					break;
 				default:
 					/* return without setting 'detect' */
-					printk(KERN_ERR "pb1x00 bad VS (%d)\n",
-							vs0);
+//					printk(KERN_ERR "pb1x00 bad VS (%d)\n",
+;
 					return 0;
 			}
 			state->detect = 1;
@@ -121,8 +121,8 @@ pb1x00_pcmcia_socket_state(unsigned sock, struct pcmcia_state *state)
 					break;
 				default:
 					/* return without setting 'detect' */
-					printk(KERN_ERR "pb1x00 bad VS (%d)\n",
-							vs1);
+//					printk(KERN_ERR "pb1x00 bad VS (%d)\n",
+;
 					return 0;
 			}
 			state->detect = 1;
@@ -198,10 +198,10 @@ pb1x00_pcmcia_configure_socket(const struct pcmcia_configure *configure)
 				default:
 					pcr |= SET_VCC_VPP(VCC_HIZ,VPP_HIZ,
 							configure->sock);
-					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
-							__func__,
-							configure->vcc, 
-							configure->vpp);
+//					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
+//							__func__,
+//							configure->vcc, 
+;
 					break;
 			}
 			break;
@@ -226,10 +226,10 @@ pb1x00_pcmcia_configure_socket(const struct pcmcia_configure *configure)
 				default:
 					pcr |= SET_VCC_VPP(VCC_HIZ,VPP_HIZ,
 							configure->sock);
-					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
-							__func__,
-							configure->vcc, 
-							configure->vpp);
+//					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
+//							__func__,
+//							configure->vcc, 
+;
 					break;
 			}
 			break;
@@ -254,17 +254,17 @@ pb1x00_pcmcia_configure_socket(const struct pcmcia_configure *configure)
 				default:
 					pcr |= SET_VCC_VPP(VCC_HIZ,VPP_HIZ,
 							configure->sock);
-					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
-							__func__,
-							configure->vcc, 
-							configure->vpp);
+//					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
+//							__func__,
+//							configure->vcc, 
+;
 					break;
 			}
 			break;
 		default: /* what's this ? */
 			pcr |= SET_VCC_VPP(VCC_HIZ,VPP_HIZ,configure->sock);
-			printk(KERN_ERR "%s: bad Vcc %d\n", 
-					__func__, configure->vcc);
+//			printk(KERN_ERR "%s: bad Vcc %d\n", 
+;
 			break;
 	}
 

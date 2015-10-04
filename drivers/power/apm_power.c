@@ -162,7 +162,7 @@ static int do_calculate_time(int status, enum apm_source source)
 		cur_now_prop = POWER_SUPPLY_PROP_VOLTAGE_NOW;
 		break;
 	default:
-		printk(KERN_ERR "Unsupported source: %d\n", source);
+;
 		return -1;
 	}
 
@@ -243,7 +243,7 @@ static int calculate_capacity(enum apm_source source)
 		avg_prop = POWER_SUPPLY_PROP_VOLTAGE_AVG;
 		break;
 	default:
-		printk(KERN_ERR "Unsupported source: %d\n", source);
+;
 		return -1;
 	}
 
@@ -356,7 +356,7 @@ static void apm_battery_apm_get_power_status(struct apm_power_info *info)
 
 static int __init apm_battery_init(void)
 {
-	printk(KERN_INFO "APM Battery Driver\n");
+;
 
 	apm_get_power_status = apm_battery_apm_get_power_status;
 	return 0;

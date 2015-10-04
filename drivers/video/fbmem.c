@@ -996,9 +996,9 @@ fb_set_var(struct fb_info *info, struct fb_var_screeninfo *var)
 
 				if (ret) {
 					info->var = old_var;
-					printk(KERN_WARNING "detected "
-						"fb_set_par error, "
-						"error code: %d\n", ret);
+//					printk(KERN_WARNING "detected "
+//						"fb_set_par error, "
+;
 					goto done;
 				}
 			}
@@ -1514,11 +1514,11 @@ static bool fb_do_apertures_overlap(struct apertures_struct *gena,
 		struct aperture *h = &hwa->ranges[i];
 		for (j = 0; j < gena->count; ++j) {
 			struct aperture *g = &gena->ranges[j];
-			printk(KERN_DEBUG "checking generic (%llx %llx) vs hw (%llx %llx)\n",
-				(unsigned long long)g->base,
-				(unsigned long long)g->size,
-				(unsigned long long)h->base,
-				(unsigned long long)h->size);
+//			printk(KERN_DEBUG "checking generic (%llx %llx) vs hw (%llx %llx)\n",
+//				(unsigned long long)g->base,
+//				(unsigned long long)g->size,
+//				(unsigned long long)h->base,
+;
 			if (apertures_overlap(g, h))
 				return true;
 		}
@@ -1549,9 +1549,9 @@ static void do_remove_conflicting_framebuffers(struct apertures_struct *a,
 			(primary && gen_aper && gen_aper->count &&
 			 gen_aper->ranges[0].base == VGA_FB_PHYS)) {
 
-			printk(KERN_INFO "fb: conflicting fb hw usage "
-			       "%s vs %s - removing generic driver\n",
-			       name, registered_fb[i]->fix.id);
+//			printk(KERN_INFO "fb: conflicting fb hw usage "
+//			       "%s vs %s - removing generic driver\n",
+;
 			do_unregister_framebuffer(registered_fb[i]);
 		}
 	}
@@ -1585,7 +1585,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 				     MKDEV(FB_MAJOR, i), NULL, "fb%d", i);
 	if (IS_ERR(fb_info->dev)) {
 		/* Not fatal */
-		printk(KERN_WARNING "Unable to create device for framebuffer %d; errno = %ld\n", i, PTR_ERR(fb_info->dev));
+;
 		fb_info->dev = NULL;
 	} else
 		fb_init_device(fb_info);
@@ -1775,11 +1775,11 @@ fbmem_init(void)
 	proc_create("fb", 0, NULL, &fb_proc_fops);
 
 	if (register_chrdev(FB_MAJOR,"fb",&fb_fops))
-		printk("unable to get major %d for fb devs\n", FB_MAJOR);
+;
 
 	fb_class = class_create(THIS_MODULE, "graphics");
 	if (IS_ERR(fb_class)) {
-		printk(KERN_WARNING "Unable to create fb class; errno = %ld\n", PTR_ERR(fb_class));
+;
 		fb_class = NULL;
 	}
 	return 0;

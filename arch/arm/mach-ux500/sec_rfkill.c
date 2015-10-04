@@ -91,7 +91,7 @@ static int bluetooth_set_power(void *data, enum rfkill_user_states state)
 	switch (state) {
 
 	case RFKILL_USER_STATE_UNBLOCKED:
-		printk(KERN_INFO "[BT] Device Powering ON\n");
+;
 
 		if (gpio_is_valid(BT_VREG_EN_GTI9060_R0_1))
 			gpio_direction_output(BT_VREG_EN_GTI9060_R0_1, GPIO_LEVEL_HIGH);
@@ -99,11 +99,11 @@ static int bluetooth_set_power(void *data, enum rfkill_user_states state)
 		if (gpio_is_valid(BT_RST_N_GTI9060_R0_1))
 			gpio_direction_output(BT_RST_N_GTI9060_R0_1, GPIO_LEVEL_HIGH);
 
-		printk(KERN_INFO "[BT] BT_RST_N_GTI9060_R0_1 = %d\n",
-				gpio_get_value(BT_RST_N_GTI9060_R0_1));
+//		printk(KERN_INFO "[BT] BT_RST_N_GTI9060_R0_1 = %d\n",
+;
 
-		printk(KERN_INFO "[BT] BT_VREG_EN_GTI9060_R0_1 = %d\n",
-				gpio_get_value(BT_VREG_EN_GTI9060_R0_1));
+//		printk(KERN_INFO "[BT] BT_VREG_EN_GTI9060_R0_1 = %d\n",
+;
 
 		ret = enable_irq_wake(irq);
 		if (ret < 0)
@@ -113,7 +113,7 @@ static int bluetooth_set_power(void *data, enum rfkill_user_states state)
 		break;
 
 	case RFKILL_USER_STATE_SOFT_BLOCKED:
-		printk(KERN_INFO "[BT] Device Powering OFF\n");
+;
 
 		ret = disable_irq_wake(irq);
 		if (ret < 0)
@@ -130,11 +130,11 @@ static int bluetooth_set_power(void *data, enum rfkill_user_states state)
 		if (gpio_is_valid(BT_VREG_EN_GTI9060_R0_1))
 			gpio_direction_output(BT_VREG_EN_GTI9060_R0_1, GPIO_LEVEL_LOW);
 
-		printk(KERN_INFO "[BT] BT_RST_N_GTI9060_R0_1 = %d\n",
-				gpio_get_value(BT_RST_N_GTI9060_R0_1));
+//		printk(KERN_INFO "[BT] BT_RST_N_GTI9060_R0_1 = %d\n",
+;
 
-		printk(KERN_INFO "[BT] BT_VREG_EN_GTI9060_R0_1 = %d\n",
-				gpio_get_value(BT_VREG_EN_GTI9060_R0_1));
+//		printk(KERN_INFO "[BT] BT_VREG_EN_GTI9060_R0_1 = %d\n",
+;
 
 		break;
 

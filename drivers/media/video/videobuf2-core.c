@@ -24,10 +24,10 @@
 static int debug;
 module_param(debug, int, 0644);
 
-#define dprintk(level, fmt, arg...)					\
-	do {								\
-		if (debug >= level)					\
-			printk(KERN_DEBUG "vb2: " fmt, ## arg);		\
+//#define dprintk(level, fmt, arg...)					\
+//	do {								\
+//		if (debug >= level)					\
+;
 	} while (0)
 
 #define call_memop(q, plane, op, args...)				\
@@ -82,8 +82,8 @@ static void __vb2_buf_mem_free(struct vb2_buffer *vb)
 	for (plane = 0; plane < vb->num_planes; ++plane) {
 		call_memop(q, plane, put, vb->planes[plane].mem_priv);
 		vb->planes[plane].mem_priv = NULL;
-		dprintk(3, "Freed plane %d of buffer %d\n",
-				plane, vb->v4l2_buf.index);
+//		dprintk(3, "Freed plane %d of buffer %d\n",
+;
 	}
 }
 
@@ -124,8 +124,8 @@ static void __setup_offsets(struct vb2_queue *q)
 		for (plane = 0; plane < vb->num_planes; ++plane) {
 			vb->v4l2_planes[plane].m.mem_offset = off;
 
-			dprintk(3, "Buffer %d, plane %d offset 0x%08lx\n",
-					buffer, plane, off);
+//			dprintk(3, "Buffer %d, plane %d offset 0x%08lx\n",
+;
 
 			off += vb->v4l2_planes[plane].length;
 			off = PAGE_ALIGN(off);
@@ -152,7 +152,7 @@ static int __vb2_queue_alloc(struct vb2_queue *q, enum v4l2_memory memory,
 		/* Allocate videobuf buffer structures */
 		vb = kzalloc(q->buf_struct_size, GFP_KERNEL);
 		if (!vb) {
-			dprintk(1, "Memory alloc for buffer struct failed\n");
+;
 			break;
 		}
 
@@ -171,8 +171,8 @@ static int __vb2_queue_alloc(struct vb2_queue *q, enum v4l2_memory memory,
 		if (memory == V4L2_MEMORY_MMAP) {
 			ret = __vb2_buf_mem_alloc(vb, plane_sizes);
 			if (ret) {
-				dprintk(1, "Failed allocating memory for "
-						"buffer %d\n", buffer);
+//				dprintk(1, "Failed allocating memory for "
+;
 				kfree(vb);
 				break;
 			}
@@ -183,8 +183,8 @@ static int __vb2_queue_alloc(struct vb2_queue *q, enum v4l2_memory memory,
 			 */
 			ret = call_qop(q, buf_init, vb);
 			if (ret) {
-				dprintk(1, "Buffer %d %p initialization"
-					" failed\n", buffer, vb);
+//				dprintk(1, "Buffer %d %p initialization"
+;
 				__vb2_buf_mem_free(vb);
 				kfree(vb);
 				break;
@@ -198,8 +198,8 @@ static int __vb2_queue_alloc(struct vb2_queue *q, enum v4l2_memory memory,
 
 	__setup_offsets(q);
 
-	dprintk(1, "Allocated %d buffers, %d plane(s) each\n",
-			q->num_buffers, num_planes);
+//	dprintk(1, "Allocated %d buffers, %d plane(s) each\n",
+;
 
 	return buffer;
 }
@@ -264,14 +264,14 @@ static int __verify_planes_array(struct vb2_buffer *vb, struct v4l2_buffer *b)
 {
 	/* Is memory for copying plane information present? */
 	if (NULL == b->m.planes) {
-		dprintk(1, "Multi-planar buffer passed but "
-			   "planes array not provided\n");
+//		dprintk(1, "Multi-planar buffer passed but "
+;
 		return -EINVAL;
 	}
 
 	if (b->length < vb->num_planes || b->length > VIDEO_MAX_PLANES) {
-		dprintk(1, "Incorrect planes array length, "
-			   "expected %d, got %d\n", vb->num_planes, b->length);
+//		dprintk(1, "Incorrect planes array length, "
+;
 		return -EINVAL;
 	}
 
@@ -361,12 +361,12 @@ int vb2_querybuf(struct vb2_queue *q, struct v4l2_buffer *b)
 	struct vb2_buffer *vb;
 
 	if (b->type != q->type) {
-		dprintk(1, "querybuf: wrong buffer type\n");
+;
 		return -EINVAL;
 	}
 
 	if (b->index >= q->num_buffers) {
-		dprintk(1, "querybuf: buffer index out of range\n");
+;
 		return -EINVAL;
 	}
 	vb = q->bufs[b->index];
@@ -458,23 +458,23 @@ int vb2_reqbufs(struct vb2_queue *q, struct v4l2_requestbuffers *req)
 	int ret = 0;
 
 	if (q->fileio) {
-		dprintk(1, "reqbufs: file io in progress\n");
+;
 		return -EBUSY;
 	}
 
 	if (req->memory != V4L2_MEMORY_MMAP
 			&& req->memory != V4L2_MEMORY_USERPTR) {
-		dprintk(1, "reqbufs: unsupported memory type\n");
+;
 		return -EINVAL;
 	}
 
 	if (req->type != q->type) {
-		dprintk(1, "reqbufs: requested type is incorrect\n");
+;
 		return -EINVAL;
 	}
 
 	if (q->streaming) {
-		dprintk(1, "reqbufs: streaming active\n");
+;
 		return -EBUSY;
 	}
 
@@ -483,12 +483,12 @@ int vb2_reqbufs(struct vb2_queue *q, struct v4l2_requestbuffers *req)
 	 * are available.
 	 */
 	if (req->memory == V4L2_MEMORY_MMAP && __verify_mmap_ops(q)) {
-		dprintk(1, "reqbufs: MMAP for current setup unsupported\n");
+;
 		return -EINVAL;
 	}
 
 	if (req->memory == V4L2_MEMORY_USERPTR && __verify_userptr_ops(q)) {
-		dprintk(1, "reqbufs: USERPTR for current setup unsupported\n");
+;
 		return -EINVAL;
 	}
 
@@ -498,7 +498,7 @@ int vb2_reqbufs(struct vb2_queue *q, struct v4l2_requestbuffers *req)
 		 * are not in use and can be freed.
 		 */
 		if (q->memory == V4L2_MEMORY_MMAP && __buffers_in_use(q)) {
-			dprintk(1, "reqbufs: memory in use, cannot free\n");
+;
 			return -EBUSY;
 		}
 
@@ -533,7 +533,7 @@ int vb2_reqbufs(struct vb2_queue *q, struct v4l2_requestbuffers *req)
 	ret = __vb2_queue_alloc(q, req->memory, num_buffers, num_planes,
 				plane_sizes);
 	if (ret == 0) {
-		dprintk(1, "Memory allocation failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -639,8 +639,8 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
 	if (state != VB2_BUF_STATE_DONE && state != VB2_BUF_STATE_ERROR)
 		return;
 
-	dprintk(4, "Done processing on buffer %d, state: %d\n",
-			vb->v4l2_buf.index, vb->state);
+//	dprintk(4, "Done processing on buffer %d, state: %d\n",
+;
 
 	/* Add the buffer to the done buffers list */
 	spin_lock_irqsave(&q->done_lock, flags);
@@ -742,8 +742,8 @@ static int __qbuf_userptr(struct vb2_buffer *vb, struct v4l2_buffer *b)
 		    && vb->v4l2_planes[plane].length == planes[plane].length)
 			continue;
 
-		dprintk(3, "qbuf: userspace address for plane %d changed, "
-				"reacquiring memory\n", plane);
+//		dprintk(3, "qbuf: userspace address for plane %d changed, "
+;
 
 		/* Release previously acquired memory if present */
 		if (vb->planes[plane].mem_priv)
@@ -759,8 +759,8 @@ static int __qbuf_userptr(struct vb2_buffer *vb, struct v4l2_buffer *b)
 							planes[plane].length,
 							write);
 			if (IS_ERR(mem_priv)) {
-				dprintk(1, "qbuf: failed acquiring userspace "
-						"memory for plane %d\n", plane);
+//				dprintk(1, "qbuf: failed acquiring userspace "
+;
 				ret = PTR_ERR(mem_priv);
 				goto err;
 			}
@@ -774,7 +774,7 @@ static int __qbuf_userptr(struct vb2_buffer *vb, struct v4l2_buffer *b)
 	 */
 	ret = call_qop(q, buf_init, vb);
 	if (ret) {
-		dprintk(1, "qbuf: buffer initialization failed\n");
+;
 		goto err;
 	}
 
@@ -840,34 +840,34 @@ int vb2_qbuf(struct vb2_queue *q, struct v4l2_buffer *b)
 	int ret = 0;
 
 	if (q->fileio) {
-		dprintk(1, "qbuf: file io in progress\n");
+;
 		return -EBUSY;
 	}
 
 	if (b->type != q->type) {
-		dprintk(1, "qbuf: invalid buffer type\n");
+;
 		return -EINVAL;
 	}
 
 	if (b->index >= q->num_buffers) {
-		dprintk(1, "qbuf: buffer index out of range\n");
+;
 		return -EINVAL;
 	}
 
 	vb = q->bufs[b->index];
 	if (NULL == vb) {
 		/* Should never happen */
-		dprintk(1, "qbuf: buffer is NULL\n");
+;
 		return -EINVAL;
 	}
 
 	if (b->memory != q->memory) {
-		dprintk(1, "qbuf: invalid memory type\n");
+;
 		return -EINVAL;
 	}
 
 	if (vb->state != VB2_BUF_STATE_DEQUEUED) {
-		dprintk(1, "qbuf: buffer already in use\n");
+;
 		return -EINVAL;
 	}
 
@@ -885,7 +885,7 @@ int vb2_qbuf(struct vb2_queue *q, struct v4l2_buffer *b)
 
 	ret = call_qop(q, buf_prepare, vb);
 	if (ret) {
-		dprintk(1, "qbuf: buffer preparation failed\n");
+;
 		return ret;
 	}
 
@@ -903,7 +903,7 @@ int vb2_qbuf(struct vb2_queue *q, struct v4l2_buffer *b)
 	if (q->streaming)
 		__enqueue_in_driver(vb);
 
-	dprintk(1, "qbuf of buffer %d succeeded\n", vb->v4l2_buf.index);
+;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(vb2_qbuf);
@@ -929,7 +929,7 @@ static int __vb2_wait_for_done_vb(struct vb2_queue *q, int nonblocking)
 		int ret;
 
 		if (!q->streaming) {
-			dprintk(1, "Streaming off, will not wait for buffers\n");
+;
 			return -EINVAL;
 		}
 
@@ -941,8 +941,8 @@ static int __vb2_wait_for_done_vb(struct vb2_queue *q, int nonblocking)
 		}
 
 		if (nonblocking) {
-			dprintk(1, "Nonblocking and no buffers to dequeue, "
-								"will not wait\n");
+//			dprintk(1, "Nonblocking and no buffers to dequeue, "
+;
 			return -EAGAIN;
 		}
 
@@ -956,7 +956,7 @@ static int __vb2_wait_for_done_vb(struct vb2_queue *q, int nonblocking)
 		/*
 		 * All locks have been released, it is safe to sleep now.
 		 */
-		dprintk(3, "Will sleep waiting for buffers\n");
+;
 		ret = wait_event_interruptible(q->done_wq,
 				!list_empty(&q->done_list) || !q->streaming);
 
@@ -1013,7 +1013,7 @@ static int __vb2_get_done_vb(struct vb2_queue *q, struct vb2_buffer **vb,
 int vb2_wait_for_all_buffers(struct vb2_queue *q)
 {
 	if (!q->streaming) {
-		dprintk(1, "Streaming off, will not wait for buffers\n");
+;
 		return -EINVAL;
 	}
 
@@ -1049,36 +1049,36 @@ int vb2_dqbuf(struct vb2_queue *q, struct v4l2_buffer *b, bool nonblocking)
 	int ret;
 
 	if (q->fileio) {
-		dprintk(1, "dqbuf: file io in progress\n");
+;
 		return -EBUSY;
 	}
 
 	if (b->type != q->type) {
-		dprintk(1, "dqbuf: invalid buffer type\n");
+;
 		return -EINVAL;
 	}
 
 	ret = __vb2_get_done_vb(q, &vb, nonblocking);
 	if (ret < 0) {
-		dprintk(1, "dqbuf: error getting next done buffer\n");
+;
 		return ret;
 	}
 
 	ret = call_qop(q, buf_finish, vb);
 	if (ret) {
-		dprintk(1, "dqbuf: buffer finish failed\n");
+;
 		return ret;
 	}
 
 	switch (vb->state) {
 	case VB2_BUF_STATE_DONE:
-		dprintk(3, "dqbuf: Returning done buffer\n");
+;
 		break;
 	case VB2_BUF_STATE_ERROR:
-		dprintk(3, "dqbuf: Returning done buffer with errors\n");
+;
 		break;
 	default:
-		dprintk(1, "dqbuf: Invalid buffer state\n");
+;
 		return -EINVAL;
 	}
 
@@ -1087,8 +1087,8 @@ int vb2_dqbuf(struct vb2_queue *q, struct v4l2_buffer *b, bool nonblocking)
 	/* Remove from videobuf queue */
 	list_del(&vb->queued_entry);
 
-	dprintk(1, "dqbuf of buffer %d, with state %d\n",
-			vb->v4l2_buf.index, vb->state);
+//	dprintk(1, "dqbuf of buffer %d, with state %d\n",
+;
 
 	vb->state = VB2_BUF_STATE_DEQUEUED;
 	return 0;
@@ -1114,17 +1114,17 @@ int vb2_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
 	int ret;
 
 	if (q->fileio) {
-		dprintk(1, "streamon: file io in progress\n");
+;
 		return -EBUSY;
 	}
 
 	if (type != q->type) {
-		dprintk(1, "streamon: invalid stream type\n");
+;
 		return -EINVAL;
 	}
 
 	if (q->streaming) {
-		dprintk(1, "streamon: already streaming\n");
+;
 		return -EBUSY;
 	}
 
@@ -1134,7 +1134,7 @@ int vb2_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
 	 */
 	if (V4L2_TYPE_IS_OUTPUT(q->type)) {
 		if (list_empty(&q->queued_list)) {
-			dprintk(1, "streamon: no output buffers queued\n");
+;
 			return -EINVAL;
 		}
 	}
@@ -1144,7 +1144,7 @@ int vb2_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
 	 */
 	ret = call_qop(q, start_streaming, q);
 	if (ret) {
-		dprintk(1, "streamon: driver refused to start streaming\n");
+;
 		return ret;
 	}
 
@@ -1157,7 +1157,7 @@ int vb2_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
 	list_for_each_entry(vb, &q->queued_list, queued_entry)
 		__enqueue_in_driver(vb);
 
-	dprintk(3, "Streamon successful\n");
+;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(vb2_streamon);
@@ -1217,17 +1217,17 @@ static void __vb2_queue_cancel(struct vb2_queue *q)
 int vb2_streamoff(struct vb2_queue *q, enum v4l2_buf_type type)
 {
 	if (q->fileio) {
-		dprintk(1, "streamoff: file io in progress\n");
+;
 		return -EBUSY;
 	}
 
 	if (type != q->type) {
-		dprintk(1, "streamoff: invalid stream type\n");
+;
 		return -EINVAL;
 	}
 
 	if (!q->streaming) {
-		dprintk(1, "streamoff: not streaming\n");
+;
 		return -EINVAL;
 	}
 
@@ -1237,7 +1237,7 @@ int vb2_streamoff(struct vb2_queue *q, enum v4l2_buf_type type)
 	 */
 	__vb2_queue_cancel(q);
 
-	dprintk(3, "Streamoff successful\n");
+;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(vb2_streamoff);
@@ -1299,7 +1299,7 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
 	int ret;
 
 	if (q->memory != V4L2_MEMORY_MMAP) {
-		dprintk(1, "Queue is not currently set up for mmap\n");
+;
 		return -EINVAL;
 	}
 
@@ -1307,17 +1307,17 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
 	 * Check memory area access mode.
 	 */
 	if (!(vma->vm_flags & VM_SHARED)) {
-		dprintk(1, "Invalid vma flags, VM_SHARED needed\n");
+;
 		return -EINVAL;
 	}
 	if (V4L2_TYPE_IS_OUTPUT(q->type)) {
 		if (!(vma->vm_flags & VM_WRITE)) {
-			dprintk(1, "Invalid vma flags, VM_WRITE needed\n");
+;
 			return -EINVAL;
 		}
 	} else {
 		if (!(vma->vm_flags & VM_READ)) {
-			dprintk(1, "Invalid vma flags, VM_READ needed\n");
+;
 			return -EINVAL;
 		}
 	}
@@ -1339,7 +1339,7 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
 	vb_plane->mapped = 1;
 	vb->num_planes_mapped++;
 
-	dprintk(3, "Buffer %d, plane %d successfully mapped\n", buffer, plane);
+;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(vb2_mmap);
@@ -1532,8 +1532,8 @@ static int __vb2_init_fileio(struct vb2_queue *q, int read)
 	 */
 	count = 1;
 
-	dprintk(3, "setting up file io: mode %s, count %d, flags %08x\n",
-		(read) ? "read" : "write", count, q->io_flags);
+//	dprintk(3, "setting up file io: mode %s, count %d, flags %08x\n",
+;
 
 	fileio = kzalloc(sizeof(struct vb2_fileio_data), GFP_KERNEL);
 	if (fileio == NULL)
@@ -1630,7 +1630,7 @@ static int __vb2_cleanup_fileio(struct vb2_queue *q)
 		fileio->req.count = 0;
 		vb2_reqbufs(q, &fileio->req);
 		kfree(fileio);
-		dprintk(3, "file io emulator closed\n");
+;
 	}
 	return 0;
 }
@@ -1651,9 +1651,9 @@ static size_t __vb2_perform_fileio(struct vb2_queue *q, char __user *data, size_
 	struct vb2_fileio_buf *buf;
 	int ret, index;
 
-	dprintk(3, "file io: mode %s, offset %ld, count %zd, %sblocking\n",
-		read ? "read" : "write", (long)*ppos, count,
-		nonblock ? "non" : "");
+//	dprintk(3, "file io: mode %s, offset %ld, count %zd, %sblocking\n",
+//		read ? "read" : "write", (long)*ppos, count,
+;
 
 	if (!data)
 		return -EINVAL;
@@ -1663,7 +1663,7 @@ static size_t __vb2_perform_fileio(struct vb2_queue *q, char __user *data, size_
 	 */
 	if (!q->fileio) {
 		ret = __vb2_init_fileio(q, read);
-		dprintk(3, "file io: vb2_init_fileio result: %d\n", ret);
+;
 		if (ret)
 			return ret;
 	}
@@ -1692,7 +1692,7 @@ static size_t __vb2_perform_fileio(struct vb2_queue *q, char __user *data, size_
 		fileio->b.memory = q->memory;
 		fileio->b.index = index;
 		ret = vb2_dqbuf(q, &fileio->b, nonblock);
-		dprintk(5, "file io: vb2_dqbuf result: %d\n", ret);
+;
 		if (ret)
 			goto end;
 		fileio->dq_count += 1;
@@ -1710,20 +1710,20 @@ static size_t __vb2_perform_fileio(struct vb2_queue *q, char __user *data, size_
 	 */
 	if (buf->pos + count > buf->size) {
 		count = buf->size - buf->pos;
-		dprintk(5, "reducing read count: %zd\n", count);
+;
 	}
 
 	/*
 	 * Transfer data to userspace.
 	 */
-	dprintk(3, "file io: copying %zd bytes - buffer %d, offset %u\n",
-		count, index, buf->pos);
+//	dprintk(3, "file io: copying %zd bytes - buffer %d, offset %u\n",
+;
 	if (read)
 		ret = copy_to_user(data, buf->vaddr + buf->pos, count);
 	else
 		ret = copy_from_user(buf->vaddr + buf->pos, data, count);
 	if (ret) {
-		dprintk(3, "file io: error copying data\n");
+;
 		ret = -EFAULT;
 		goto end;
 	}
@@ -1744,7 +1744,7 @@ static size_t __vb2_perform_fileio(struct vb2_queue *q, char __user *data, size_
 		 */
 		if (read && (fileio->flags & VB2_FILEIO_READ_ONCE) &&
 		    fileio->dq_count == 1) {
-			dprintk(3, "file io: read limit reached\n");
+;
 			/*
 			 * Restore fileio pointer and release the context.
 			 */
@@ -1761,7 +1761,7 @@ static size_t __vb2_perform_fileio(struct vb2_queue *q, char __user *data, size_
 		fileio->b.index = index;
 		fileio->b.bytesused = buf->pos;
 		ret = vb2_qbuf(q, &fileio->b);
-		dprintk(5, "file io: vb2_dbuf result: %d\n", ret);
+;
 		if (ret)
 			goto end;
 

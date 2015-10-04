@@ -267,7 +267,7 @@ void mrst_get_vbt_data(struct drm_psb_private *dev_priv)
 	memcpy(vbt, vbt_virtual, sizeof(*vbt));
 	iounmap(vbt_virtual); /* Free virtual address space */
 
-	printk(KERN_ALERT "GCT revision is %x\n", vbt->revision);
+;
 
 	switch (vbt->revision) {
 	case 0:
@@ -359,7 +359,7 @@ void mrst_get_vbt_data(struct drm_psb_private *dev_priv)
 						(*((u8 *)pGCT + 0x0e)) << 8;
 		break;
 	default:
-		printk(KERN_ERR "Unknown revision of GCT!\n");
+;
 		vbt->size = 0;
 	}
 }

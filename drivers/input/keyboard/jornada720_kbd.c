@@ -66,10 +66,10 @@ static irqreturn_t jornada720_kbd_interrupt(int irq, void *dev_id)
 	jornada_ssp_start();
 
 	if (jornada_ssp_inout(GETSCANKEYCODE) != TXDUMMY) {
-		printk(KERN_DEBUG
-			"jornada720_kbd: "
-			"GetKeycode command failed with ETIMEDOUT, "
-			"flushed bus\n");
+//		printk(KERN_DEBUG
+//			"jornada720_kbd: "
+//			"GetKeycode command failed with ETIMEDOUT, "
+;
 	} else {
 		/* How many keycodes are waiting for us? */
 		count = jornada_ssp_byte(TXDUMMY);
@@ -132,7 +132,7 @@ static int __devinit jornada720_kbd_probe(struct platform_device *pdev)
 			  IRQF_DISABLED | IRQF_TRIGGER_FALLING,
 			  "jornadakbd", pdev);
 	if (err) {
-		printk(KERN_INFO "jornadakbd720_kbd: Unable to grab IRQ\n");
+;
 		goto fail1;
 	}
 

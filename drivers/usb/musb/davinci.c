@@ -110,8 +110,8 @@ static void davinci_musb_enable(struct musb *musb)
 	musb_writel(musb->ctrl_base, DAVINCI_USB_INT_MASK_SET_REG, tmp);
 
 	if (is_dma_capable() && !dma_off)
-		printk(KERN_WARNING "%s %s: dma not reactivated\n",
-				__FILE__, __func__);
+//		printk(KERN_WARNING "%s %s: dma not reactivated\n",
+;
 	else
 		dma_off = 0;
 

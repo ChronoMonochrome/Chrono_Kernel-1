@@ -960,22 +960,22 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
 	if (debug_locks != expected) {
 		if (expected_failure) {
 			expected_testcase_failures++;
-			printk("failed|");
+;
 		} else {
 			unexpected_testcase_failures++;
 
-			printk("FAILED|");
+;
 			dump_stack();
 		}
 	} else {
 		testcase_successes++;
-		printk("  ok  |");
+;
 	}
 	testcase_total++;
 
 	if (debug_locks_verbose)
-		printk(" lockclass mask: %x, debug_locks: %d, expected: %d\n",
-			lockclass_mask, debug_locks, expected);
+//		printk(" lockclass mask: %x, debug_locks: %d, expected: %d\n",
+;
 	/*
 	 * Some tests (e.g. double-unlock) might corrupt the preemption
 	 * count, so restore it:
@@ -993,32 +993,32 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
 
 static inline void print_testname(const char *testname)
 {
-	printk("%33s:", testname);
+;
 }
 
 #define DO_TESTCASE_1(desc, name, nr)				\
 	print_testname(desc"/"#nr);				\
 	dotest(name##_##nr, SUCCESS, LOCKTYPE_RWLOCK);		\
-	printk("\n");
+;
 
 #define DO_TESTCASE_1B(desc, name, nr)				\
 	print_testname(desc"/"#nr);				\
 	dotest(name##_##nr, FAILURE, LOCKTYPE_RWLOCK);		\
-	printk("\n");
+;
 
 #define DO_TESTCASE_3(desc, name, nr)				\
 	print_testname(desc"/"#nr);				\
 	dotest(name##_spin_##nr, FAILURE, LOCKTYPE_SPIN);	\
 	dotest(name##_wlock_##nr, FAILURE, LOCKTYPE_RWLOCK);	\
 	dotest(name##_rlock_##nr, SUCCESS, LOCKTYPE_RWLOCK);	\
-	printk("\n");
+;
 
 #define DO_TESTCASE_3RW(desc, name, nr)				\
 	print_testname(desc"/"#nr);				\
 	dotest(name##_spin_##nr, FAILURE, LOCKTYPE_SPIN|LOCKTYPE_RWLOCK);\
 	dotest(name##_wlock_##nr, FAILURE, LOCKTYPE_RWLOCK);	\
 	dotest(name##_rlock_##nr, SUCCESS, LOCKTYPE_RWLOCK);	\
-	printk("\n");
+;
 
 #define DO_TESTCASE_6(desc, name)				\
 	print_testname(desc);					\
@@ -1028,7 +1028,7 @@ static inline void print_testname(const char *testname)
 	dotest(name##_mutex, FAILURE, LOCKTYPE_MUTEX);		\
 	dotest(name##_wsem, FAILURE, LOCKTYPE_RWSEM);		\
 	dotest(name##_rsem, FAILURE, LOCKTYPE_RWSEM);		\
-	printk("\n");
+;
 
 #define DO_TESTCASE_6_SUCCESS(desc, name)			\
 	print_testname(desc);					\
@@ -1038,7 +1038,7 @@ static inline void print_testname(const char *testname)
 	dotest(name##_mutex, SUCCESS, LOCKTYPE_MUTEX);		\
 	dotest(name##_wsem, SUCCESS, LOCKTYPE_RWSEM);		\
 	dotest(name##_rsem, SUCCESS, LOCKTYPE_RWSEM);		\
-	printk("\n");
+;
 
 /*
  * 'read' variant: rlocks must not trigger.
@@ -1051,7 +1051,7 @@ static inline void print_testname(const char *testname)
 	dotest(name##_mutex, FAILURE, LOCKTYPE_MUTEX);		\
 	dotest(name##_wsem, FAILURE, LOCKTYPE_RWSEM);		\
 	dotest(name##_rsem, FAILURE, LOCKTYPE_RWSEM);		\
-	printk("\n");
+;
 
 #define DO_TESTCASE_2I(desc, name, nr)				\
 	DO_TESTCASE_1("hard-"desc, name##_hard, nr);		\
@@ -1116,20 +1116,20 @@ void locking_selftest(void)
 	 * Got a locking failure before the selftest ran?
 	 */
 	if (!debug_locks) {
-		printk("----------------------------------\n");
-		printk("| Locking API testsuite disabled |\n");
-		printk("----------------------------------\n");
+;
+;
+;
 		return;
 	}
 
 	/*
 	 * Run the testsuite:
 	 */
-	printk("------------------------\n");
-	printk("| Locking API testsuite:\n");
-	printk("----------------------------------------------------------------------------\n");
-	printk("                                 | spin |wlock |rlock |mutex | wsem | rsem |\n");
-	printk("  --------------------------------------------------------------------------\n");
+;
+;
+;
+;
+;
 
 	init_shared_classes();
 	debug_locks_silent = !debug_locks_verbose;
@@ -1145,36 +1145,36 @@ void locking_selftest(void)
 	DO_TESTCASE_6("initialize held", init_held);
 	DO_TESTCASE_6_SUCCESS("bad unlock order", bad_unlock_order);
 
-	printk("  --------------------------------------------------------------------------\n");
+;
 	print_testname("recursive read-lock");
-	printk("             |");
+;
 	dotest(rlock_AA1, SUCCESS, LOCKTYPE_RWLOCK);
-	printk("             |");
+;
 	dotest(rsem_AA1, FAILURE, LOCKTYPE_RWSEM);
-	printk("\n");
+;
 
 	print_testname("recursive read-lock #2");
-	printk("             |");
+;
 	dotest(rlock_AA1B, SUCCESS, LOCKTYPE_RWLOCK);
-	printk("             |");
+;
 	dotest(rsem_AA1B, FAILURE, LOCKTYPE_RWSEM);
-	printk("\n");
+;
 
 	print_testname("mixed read-write-lock");
-	printk("             |");
+;
 	dotest(rlock_AA2, FAILURE, LOCKTYPE_RWLOCK);
-	printk("             |");
+;
 	dotest(rsem_AA2, FAILURE, LOCKTYPE_RWSEM);
-	printk("\n");
+;
 
 	print_testname("mixed write-read-lock");
-	printk("             |");
+;
 	dotest(rlock_AA3, FAILURE, LOCKTYPE_RWLOCK);
-	printk("             |");
+;
 	dotest(rsem_AA3, FAILURE, LOCKTYPE_RWSEM);
-	printk("\n");
+;
 
-	printk("  --------------------------------------------------------------------------\n");
+;
 
 	/*
 	 * irq-context testcases:
@@ -1190,28 +1190,28 @@ void locking_selftest(void)
 //	DO_TESTCASE_6x2B("irq read-recursion #2", irq_read_recursion2);
 
 	if (unexpected_testcase_failures) {
-		printk("-----------------------------------------------------------------\n");
+;
 		debug_locks = 0;
-		printk("BUG: %3d unexpected failures (out of %3d) - debugging disabled! |\n",
-			unexpected_testcase_failures, testcase_total);
-		printk("-----------------------------------------------------------------\n");
+//		printk("BUG: %3d unexpected failures (out of %3d) - debugging disabled! |\n",
+;
+;
 	} else if (expected_testcase_failures && testcase_successes) {
-		printk("--------------------------------------------------------\n");
-		printk("%3d out of %3d testcases failed, as expected. |\n",
-			expected_testcase_failures, testcase_total);
-		printk("----------------------------------------------------\n");
+;
+//		printk("%3d out of %3d testcases failed, as expected. |\n",
+;
+;
 		debug_locks = 1;
 	} else if (expected_testcase_failures && !testcase_successes) {
-		printk("--------------------------------------------------------\n");
-		printk("All %3d testcases failed, as expected. |\n",
-			expected_testcase_failures);
-		printk("----------------------------------------\n");
+;
+//		printk("All %3d testcases failed, as expected. |\n",
+;
+;
 		debug_locks = 1;
 	} else {
-		printk("-------------------------------------------------------\n");
-		printk("Good, all %3d testcases passed! |\n",
-			testcase_successes);
-		printk("---------------------------------\n");
+;
+//		printk("Good, all %3d testcases passed! |\n",
+;
+;
 		debug_locks = 1;
 	}
 	debug_locks_silent = 0;

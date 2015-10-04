@@ -727,14 +727,14 @@ int init_ft1000_netdev(struct ft1000_device *ft1000dev)
 		card_nr[1] = '\0';
 		ret_val = strict_strtoul(card_nr, 10, &gCardIndex);
 		if (ret_val) {
-			printk(KERN_ERR "Can't parse netdev\n");
+;
 			goto err_net;
 		}
 
 		pInfo->CardNumber = gCardIndex;
 		DEBUG("card number = %d\n", pInfo->CardNumber);
 	} else {
-		printk(KERN_ERR "ft1000: Invalid device name\n");
+;
 		ret_val = -ENXIO;
 		goto err_net;
 	}

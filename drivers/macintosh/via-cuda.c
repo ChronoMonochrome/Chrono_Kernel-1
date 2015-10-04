@@ -129,7 +129,7 @@ int __init find_via_cuda(void)
 
     err = cuda_init_via();
     if (err) {
-	printk(KERN_ERR "cuda_init_via() failed\n");
+;
 	via = NULL;
 	return 0;
     }
@@ -157,17 +157,17 @@ int __init find_via_cuda(void)
 
     reg = of_get_property(vias, "reg", NULL);
     if (reg == NULL) {
-	    printk(KERN_ERR "via-cuda: No \"reg\" property !\n");
+;
 	    goto fail;
     }
     taddr = of_translate_address(vias, reg);
     if (taddr == 0) {
-	    printk(KERN_ERR "via-cuda: Can't translate address !\n");
+;
 	    goto fail;
     }
     via = ioremap(taddr, 0x2000);
     if (via == NULL) {
-	    printk(KERN_ERR "via-cuda: Can't map address !\n");
+;
 	    goto fail;
     }
 
@@ -176,7 +176,7 @@ int __init find_via_cuda(void)
 
     err = cuda_init_via();
     if (err) {
-	printk(KERN_ERR "cuda_init_via() failed\n");
+;
 	via = NULL;
 	return 0;
     }
@@ -211,18 +211,18 @@ static int __init via_cuda_start(void)
 #else
     cuda_irq = irq_of_parse_and_map(vias, 0);
     if (cuda_irq == NO_IRQ) {
-	printk(KERN_ERR "via-cuda: can't map interrupts for %s\n",
-	       vias->full_name);
+//	printk(KERN_ERR "via-cuda: can't map interrupts for %s\n",
+;
 	return -ENODEV;
     }
 #endif
 
     if (request_irq(cuda_irq, cuda_interrupt, 0, "ADB", cuda_interrupt)) {
-	printk(KERN_ERR "via-cuda: can't request irq %d\n", cuda_irq);
+;
 	return -EAGAIN;
     }
 
-    printk("Macintosh CUDA driver v0.5 for Unified ADB.\n");
+;
 
     cuda_fully_inited = 1;
     return 0;
@@ -252,7 +252,7 @@ cuda_probe(void)
     	int x;							\
 	for (x = 1000; !(cond); --x) {				\
 	    if (x == 0) {					\
-		printk("Timeout waiting for " what "\n");	\
+;
 		return -ENXIO;					\
 	    }							\
 	    udelay(100);					\
@@ -478,7 +478,7 @@ cuda_interrupt(int irq, void *arg)
     case idle:
 	/* CUDA has sent us the first byte of data - unsolicited */
 	if (status != TREQ)
-	    printk("cuda: state=idle, status=%x\n", status);
+;
 	(void)in_8(&via[SR]);
 	out_8(&via[B], in_8(&via[B]) & ~TIP);
 	cuda_state = reading;
@@ -489,7 +489,7 @@ cuda_interrupt(int irq, void *arg)
     case awaiting_reply:
 	/* CUDA has sent us the first byte of data of a reply */
 	if (status != TREQ)
-	    printk("cuda: state=awaiting_reply, status=%x\n", status);
+;
 	(void)in_8(&via[SR]);
 	out_8(&via[B], in_8(&via[B]) & ~TIP);
 	cuda_state = reading;
@@ -507,7 +507,7 @@ cuda_interrupt(int irq, void *arg)
 	} else {
 	    /* assert status == TIP + SR_OUT */
 	    if (status != TIP + SR_OUT)
-		printk("cuda: state=sent_first_byte status=%x\n", status);
+;
 	    out_8(&via[SR], current_req->data[1]);
 	    out_8(&via[B], in_8(&via[B]) ^ TACK);
 	    data_index = 2;
@@ -546,7 +546,7 @@ cuda_interrupt(int irq, void *arg)
 	} else {
 	    /* assert status == TIP | TREQ */
 	    if (status != TIP + TREQ)
-		printk("cuda: state=reading status=%x\n", status);
+;
 	    out_8(&via[B], in_8(&via[B]) ^ TACK);
 	}
 	break;
@@ -592,7 +592,7 @@ cuda_interrupt(int irq, void *arg)
 	break;
 
     default:
-	printk("cuda_interrupt: unknown cuda_state %d?\n", cuda_state);
+;
     }
     spin_unlock(&cuda_lock);
     if (complete && req) {
@@ -632,9 +632,9 @@ cuda_input(unsigned char *buf, int nb)
 	break;
 
     default:
-	printk("data from cuda (%d bytes):", nb);
+;
 	for (i = 0; i < nb; ++i)
-	    printk(" %.2x", buf[i]);
-	printk("\n");
+;
+;
     }
 }

@@ -41,7 +41,7 @@ static int mantis_ca_read_attr_mem(struct dvb_ca_en50221 *en50221, int slot, int
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
-	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Request Attribute Mem Read", slot);
+;
 
 	if (slot != 0)
 		return -EINVAL;
@@ -54,7 +54,7 @@ static int mantis_ca_write_attr_mem(struct dvb_ca_en50221 *en50221, int slot, in
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
-	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Request Attribute Mem Write", slot);
+;
 
 	if (slot != 0)
 		return -EINVAL;
@@ -67,7 +67,7 @@ static int mantis_ca_read_cam_ctl(struct dvb_ca_en50221 *en50221, int slot, u8 a
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
-	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Request CAM control Read", slot);
+;
 
 	if (slot != 0)
 		return -EINVAL;
@@ -80,7 +80,7 @@ static int mantis_ca_write_cam_ctl(struct dvb_ca_en50221 *en50221, int slot, u8 
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
-	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Request CAM control Write", slot);
+;
 
 	if (slot != 0)
 		return -EINVAL;
@@ -93,7 +93,7 @@ static int mantis_ca_slot_reset(struct dvb_ca_en50221 *en50221, int slot)
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
-	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Slot RESET", slot);
+;
 	udelay(500); /* Wait.. */
 	mmwrite(0xda, MANTIS_PCMCIA_RESET); /* Leading edge assert */
 	udelay(500);
@@ -109,7 +109,7 @@ static int mantis_ca_slot_shutdown(struct dvb_ca_en50221 *en50221, int slot)
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
-	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Slot shutdown", slot);
+;
 
 	return 0;
 }
@@ -119,7 +119,7 @@ static int mantis_ts_control(struct dvb_ca_en50221 *en50221, int slot)
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
-	dprintk(MANTIS_DEBUG, 1, "Slot(%d): TS control", slot);
+;
 /*	mantis_set_direction(mantis, 1); */ /* Enable TS through CAM */
 
 	return 0;
@@ -130,13 +130,13 @@ static int mantis_slot_status(struct dvb_ca_en50221 *en50221, int slot, int open
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
-	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Poll Slot status", slot);
+;
 
 	if (ca->slot_state == MODULE_INSERTED) {
-		dprintk(MANTIS_DEBUG, 1, "CA Module present and ready");
+;
 		return DVB_CA_EN50221_POLL_CAM_PRESENT | DVB_CA_EN50221_POLL_CAM_READY;
 	} else {
-		dprintk(MANTIS_DEBUG, 1, "CA Module not present or not ready");
+;
 	}
 
 	return 0;
@@ -148,10 +148,10 @@ int mantis_ca_init(struct mantis_pci *mantis)
 	struct mantis_ca *ca;
 	int ca_flags = 0, result;
 
-	dprintk(MANTIS_DEBUG, 1, "Initializing Mantis CA");
+;
 	ca = kzalloc(sizeof(struct mantis_ca), GFP_KERNEL);
 	if (!ca) {
-		dprintk(MANTIS_ERROR, 1, "Out of memory!, exiting ..");
+;
 		result = -ENOMEM;
 		goto err;
 	}
@@ -177,13 +177,13 @@ int mantis_ca_init(struct mantis_pci *mantis)
 	init_waitqueue_head(&ca->hif_opdone_wq);
 	init_waitqueue_head(&ca->hif_write_wq);
 
-	dprintk(MANTIS_ERROR, 1, "Registering EN50221 device");
+;
 	result = dvb_ca_en50221_init(dvb_adapter, &ca->en50221, ca_flags, 1);
 	if (result != 0) {
-		dprintk(MANTIS_ERROR, 1, "EN50221: Initialization failed <%d>", result);
+;
 		goto err;
 	}
-	dprintk(MANTIS_ERROR, 1, "Registered EN50221 device");
+;
 	mantis_evmgr_init(ca);
 	return 0;
 err:
@@ -196,10 +196,10 @@ void mantis_ca_exit(struct mantis_pci *mantis)
 {
 	struct mantis_ca *ca = mantis->mantis_ca;
 
-	dprintk(MANTIS_DEBUG, 1, "Mantis CA exit");
+;
 
 	mantis_evmgr_exit(ca);
-	dprintk(MANTIS_ERROR, 1, "Unregistering EN50221 device");
+;
 	if (ca)
 		dvb_ca_en50221_release(&ca->en50221);
 

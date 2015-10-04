@@ -242,12 +242,12 @@ au1000_dma_interrupt(int irq, void *dev_id)
 		enable_dma_buffer1(stream->dma);
 		break;
 	case (DMA_D0 | DMA_D1):
-		printk(KERN_ERR "DMA %d missed interrupt.\n",stream->dma);
+;
 		au1000_dma_stop(stream);
 		au1000_dma_start(stream);
 		break;
 	case (~DMA_D0 & ~DMA_D1):
-		printk(KERN_ERR "DMA %d empty irq.\n",stream->dma);
+;
 	}
 	spin_unlock(&stream->dma_lock);
 	snd_pcm_period_elapsed(substream);
@@ -504,7 +504,7 @@ get the interrupt driven case to work efficiently */
 		if (!(au1000->ac97_ioport->status & AC97C_CP))
 			break;
 	if (i == 0x5000)
-		printk(KERN_ERR "au1000 AC97: AC97 command read timeout\n");
+;
 
 	cmd = (u32) reg & AC97C_INDEX_MASK;
 	cmd |= AC97C_READ;
@@ -515,7 +515,7 @@ get the interrupt driven case to work efficiently */
 		if (!(au1000->ac97_ioport->status & AC97C_CP))
 			break;
 	if (i == 0x5000) {
-		printk(KERN_ERR "au1000 AC97: AC97 command read timeout\n");
+;
 		spin_unlock(&au1000->ac97_lock);
 		return 0;
 	}
@@ -542,7 +542,7 @@ get the interrupt driven case to work efficiently */
 		if (!(au1000->ac97_ioport->status & AC97C_CP))
 			break;
 	if (i == 0x5000)
-		printk(KERN_ERR "au1000 AC97: AC97 command write timeout\n");
+;
 
 	cmd = (u32) reg & AC97C_INDEX_MASK;
 	cmd &= ~AC97C_READ;
@@ -564,7 +564,7 @@ snd_au1000_ac97_new(struct snd_au1000 *au1000)
 
 	if ((au1000->ac97_res_port = request_mem_region(CPHYSADDR(AC97C_CONFIG),
 	       		0x100000, "Au1x00 AC97")) == NULL) {
-		snd_printk(KERN_ERR "ALSA AC97: can't grap AC97 port\n");
+;
 		return -EBUSY;
 	}
 	au1000->ac97_ioport = (struct au1000_ac97_reg *)
@@ -680,7 +680,7 @@ au1000_init(void)
 		return err;
 	}
 
-	printk(KERN_INFO "ALSA AC97: Driver Initialized\n");
+;
 	au1000_card = card;
 	return 0;
 }

@@ -137,9 +137,9 @@ static void sst_dbg_print_read_reg(u32 reg, u32 val) {
 	default:	regname = NULL;       break;
 	}
 	if (regname == NULL)
-		r_ddprintk("sst_read(%#x): %#x\n", reg, val);
+;
 	else
-		r_dprintk(" sst_read(%s): %#x\n", regname, val);
+;
 }
 
 static void sst_dbg_print_write_reg(u32 reg, u32 val) {
@@ -155,9 +155,9 @@ static void sst_dbg_print_write_reg(u32 reg, u32 val) {
 	default:	regname = NULL;       break;
 	}
 	if (regname == NULL)
-		r_ddprintk("sst_write(%#x, %#x)\n", reg, val);
+;
 	else
-		r_dprintk(" sst_write(%s, %#x)\n", regname, val);
+;
 }
 #else /*  (SST_DEBUG_REG > 0) */
 #  define sst_dbg_print_read_reg(reg, val)	do {} while(0)
@@ -193,13 +193,13 @@ static inline void __sst_write(u8 __iomem *vbase, u32 reg, u32 val)
 
 static inline void __sst_set_bits(u8 __iomem *vbase, u32 reg, u32 val)
 {
-	r_dprintk("sst_set_bits(%#x, %#x)\n", reg, val);
+;
 	__sst_write(vbase, reg, __sst_read(vbase, reg) | val);
 }
 
 static inline void __sst_unset_bits(u8 __iomem *vbase, u32 reg, u32 val)
 {
-	r_dprintk("sst_unset_bits(%#x, %#x)\n", reg, val);
+;
 	__sst_write(vbase, reg, __sst_read(vbase, reg) & ~val);
 }
 
@@ -220,14 +220,14 @@ static int __sst_wait_idle(u8 __iomem *vbase)
 
 	while(1) {
 		if (__sst_read(vbase, STATUS) & STATUS_FBI_BUSY) {
-			f_dddprintk("status: busy\n");
+;
 /* FIXME basically, this is a busy wait. maybe not that good. oh well;
  * this is a small loop after all.
  * Or maybe we should use mdelay() or udelay() here instead ? */
 			count = 0;
 		} else {
 			count++;
-			f_dddprintk("status: idle(%d)\n", count);
+;
 		}
 		if (count >= 5) return 1;
 /* XXX  do something to avoid hanging the machine if the voodoo is out */
@@ -246,14 +246,14 @@ static u8 __sst_dac_read(u8 __iomem *vbase, u8 reg)
 	__sst_wait_idle(vbase);
 	/* udelay(10); */
 	ret = __sst_read(vbase, DAC_READ) & 0xff;
-	r_dprintk("sst_dac_read(%#x): %#x\n", reg, ret);
+;
 
 	return ret;
 }
 
 static void __sst_dac_write(u8 __iomem *vbase, u8 reg, u8 val)
 {
-	r_dprintk("sst_dac_write(%#x, %#x)\n", reg, val);
+;
 	reg &= 0x07;
 	__sst_write(vbase, DAC_DATA,(((u32)reg << 8)) | (u32)val);
 	__sst_wait_idle(vbase);
@@ -266,12 +266,12 @@ static u32 __dac_i_read(u8 __iomem *vbase, u8 reg)
 
 	__sst_dac_write(vbase, DACREG_ADDR_I, reg);
 	ret = __sst_dac_read(vbase, DACREG_DATA_I);
-	r_dprintk("sst_dac_read_i(%#x): %#x\n", reg, ret);
+;
 	return ret;
 }
 static void __dac_i_write(u8 __iomem *vbase, u8 reg,u8 val)
 {
-	r_dprintk("sst_dac_write_i(%#x, %#x)\n", reg, val);
+;
 	__sst_dac_write(vbase, DACREG_ADDR_I, reg);
 	__sst_dac_write(vbase, DACREG_DATA_I, val);
 }
@@ -358,8 +358,8 @@ static int sstfb_check_var(struct fb_var_screeninfo *var,
 	unsigned int freq;
 
 	if (sst_calc_pll(PICOS2KHZ(var->pixclock), &freq, &par->pll)) {
-		printk(KERN_ERR "sstfb: Pixclock at %ld KHZ out of range\n",
-				PICOS2KHZ(var->pixclock));
+//		printk(KERN_ERR "sstfb: Pixclock at %ld KHZ out of range\n",
+;
 		return -EINVAL;
 	}
 	var->pixclock = KHZ2PICOS(freq);
@@ -378,7 +378,7 @@ static int sstfb_check_var(struct fb_var_screeninfo *var,
 		var->bits_per_pixel = 16;
 		break;
 	default :
-		printk(KERN_ERR "sstfb: Unsupported bpp %d\n", var->bits_per_pixel);
+;
 		return -EINVAL;
 	}
 	
@@ -394,8 +394,8 @@ static int sstfb_check_var(struct fb_var_screeninfo *var,
 		tiles_in_X = (var->xres + 63 ) / 64 * 2;		
 
 		if (var->xres  > POW2(11) || yDim >= POW2(11)) {
-			printk(KERN_ERR "sstfb: Unsupported resolution %dx%d\n",
-			         var->xres, var->yres);
+//			printk(KERN_ERR "sstfb: Unsupported resolution %dx%d\n",
+;
 			return -EINVAL;
 		}
 
@@ -403,7 +403,7 @@ static int sstfb_check_var(struct fb_var_screeninfo *var,
 		    var->left_margin - 2 >= POW2(9) || vSyncOn >= POW2(13) ||
 		    vSyncOff >= POW2(13) || vBackPorch >= POW2(9) ||
 		    tiles_in_X >= POW2(6) || tiles_in_X <= 0) {
-			printk(KERN_ERR "sstfb: Unsupported timings\n");
+;
 			return -EINVAL;
 		}
 	} else {
@@ -411,20 +411,20 @@ static int sstfb_check_var(struct fb_var_screeninfo *var,
 		tiles_in_X = (var->xres + 63 ) / 64;
 
 		if (var->vmode) {
-			printk(KERN_ERR "sstfb: Interlace/doublescan not supported %#x\n",
-				var->vmode);
+//			printk(KERN_ERR "sstfb: Interlace/doublescan not supported %#x\n",
+;
 			return -EINVAL;
 		}
 		if (var->xres > POW2(10) || var->yres >= POW2(10)) {
-			printk(KERN_ERR "sstfb: Unsupported resolution %dx%d\n",
-			         var->xres, var->yres);
+//			printk(KERN_ERR "sstfb: Unsupported resolution %dx%d\n",
+;
 			return -EINVAL;
 		}
 		if (var->hsync_len > POW2(8) || hSyncOff - 1 > POW2(10) ||
 		    var->left_margin - 2 >= POW2(8) || vSyncOn >= POW2(12) ||
 		    vSyncOff >= POW2(12) || vBackPorch >= POW2(8) ||
 		    tiles_in_X >= POW2(4) || tiles_in_X <= 0) {
-			printk(KERN_ERR "sstfb: Unsupported timings\n");
+;
 			return -EINVAL;
 		}
 	}
@@ -435,7 +435,7 @@ static int sstfb_check_var(struct fb_var_screeninfo *var,
 	              * ((var->bits_per_pixel == 16) ? 2 : 4);
 
 	if (real_length * yDim > info->fix.smem_len) {
-		printk(KERN_ERR "sstfb: Not enough video memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -509,14 +509,14 @@ static int sstfb_set_par(struct fb_info *info)
 		par->tiles_in_X = (info->var.xres + 63 ) / 64;
 	}
 
-	f_ddprintk("hsync_len hSyncOff vsync_len vSyncOff\n");
-	f_ddprintk("%-7d %-8d %-7d %-8d\n",
-	           info->var.hsync_len, par->hSyncOff,
-	           par->vSyncOn, par->vSyncOff);
-	f_ddprintk("left_margin upper_margin xres yres Freq\n");
-	f_ddprintk("%-10d %-10d %-4d %-4d %-8ld\n",
-	           info->var.left_margin, info->var.upper_margin,
-	           info->var.xres, info->var.yres, PICOS2KHZ(info->var.pixclock));
+;
+//	f_ddprintk("%-7d %-8d %-7d %-8d\n",
+//	           info->var.hsync_len, par->hSyncOff,
+;
+;
+//	f_ddprintk("%-10d %-10d %-4d %-4d %-8ld\n",
+//	           info->var.left_margin, info->var.upper_margin,
+;
 
 	sst_write(NOPCMD, 0);
 	sst_wait_idle();
@@ -641,8 +641,8 @@ static int sstfb_set_par(struct fb_info *info)
 	/* btw, it requires enabling pixel pipeline in LFBMODE .
 	   off screen read/writes will just wrap and read/print pixels
 	   on screen. Ugly but not that dangerous */
-		f_ddprintk("setting clipping dimensions 0..%d, 0..%d\n",
-		            info->var.xres - 1, par->yDim - 1);
+//		f_ddprintk("setting clipping dimensions 0..%d, 0..%d\n",
+;
 
 		sst_write(CLIP_LEFT_RIGHT, info->var.xres);
 		sst_write(CLIP_LOWY_HIGHY, par->yDim);
@@ -669,9 +669,9 @@ static int sstfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
 	struct sstfb_par *par = info->par;
 	u32 col;
 
-	f_dddprintk("sstfb_setcolreg\n");
-	f_dddprintk("%-2d rgbt: %#x, %#x, %#x, %#x\n",
-	            regno, red, green, blue, transp);
+;
+//	f_dddprintk("%-2d rgbt: %#x, %#x, %#x, %#x\n",
+;
 	if (regno > 15)
 		return 0;
 
@@ -706,10 +706,10 @@ static void sstfb_setvgapass( struct fb_info *info, int enable )
 	fbiinit0 = sst_read (FBIINIT0);
 	if (par->vgapass) {
 		sst_write(FBIINIT0, fbiinit0 & ~DIS_VGA_PASSTHROUGH);
-		printk(KERN_INFO "fb%d: Enabling VGA pass-through\n", info->node );
+;
 	} else {
 		sst_write(FBIINIT0, fbiinit0 | DIS_VGA_PASSTHROUGH);
-		printk(KERN_INFO "fb%d: Disabling VGA pass-through\n", info->node );
+;
 	}
 	pci_write_config_dword(sst_dev, PCI_INIT_ENABLE, tmp);
 }
@@ -836,15 +836,15 @@ static int __devinit sst_get_memsize(struct fb_info *info, __u32 *memsize)
 	writel(0xdeadbeef, fbbase_virt);
 	writel(0xdeadbeef, fbbase_virt+0x100000);
 	writel(0xdeadbeef, fbbase_virt+0x200000);
-	f_ddprintk("0MB: %#x, 1MB: %#x, 2MB: %#x\n",
-	           readl(fbbase_virt), readl(fbbase_virt + 0x100000),
-	           readl(fbbase_virt + 0x200000));
+//	f_ddprintk("0MB: %#x, 1MB: %#x, 2MB: %#x\n",
+//	           readl(fbbase_virt), readl(fbbase_virt + 0x100000),
+;
 
 	writel(0xabcdef01, fbbase_virt);
 
-	f_ddprintk("0MB: %#x, 1MB: %#x, 2MB: %#x\n",
-	           readl(fbbase_virt), readl(fbbase_virt + 0x100000),
-	           readl(fbbase_virt + 0x200000));
+//	f_ddprintk("0MB: %#x, 1MB: %#x, 2MB: %#x\n",
+//	           readl(fbbase_virt), readl(fbbase_virt + 0x100000),
+;
 
 	/* checks for 4mb lfb, then 2, then defaults to 1 */
 	if (readl(fbbase_virt + 0x200000) == 0xdeadbeef)
@@ -882,7 +882,7 @@ static int __devinit sst_detect_att(struct fb_info *info)
 		mir = sst_dac_read(DACREG_RMR);
 		/*the 7th, device ID register */
 		dir = sst_dac_read(DACREG_RMR);
-		f_ddprintk("mir: %#x, dir: %#x\n", mir, dir);
+;
 		if (mir == DACREG_MIR_ATT && dir == DACREG_DIR_ATT) {
 			return 1;
 		}
@@ -907,7 +907,7 @@ static int __devinit sst_detect_ti(struct fb_info *info)
 		mir = sst_dac_read(DACREG_RMR);
 		/*the 7th, device ID register */
 		dir = sst_dac_read(DACREG_RMR);
-		f_ddprintk("mir: %#x, dir: %#x\n", mir, dir);
+;
 		if ((mir == DACREG_MIR_TI ) && (dir == DACREG_DIR_TI)) {
 			return 1;
 		}
@@ -943,10 +943,10 @@ static int __devinit sst_detect_ics(struct fb_info *info)
 		sst_dac_write(DACREG_ICS_PLLRMA, 0xb);	/* fB */
 		m_clk1_b= sst_dac_read(DACREG_ICS_PLLDATA);
 		n_clk1_b= sst_dac_read(DACREG_ICS_PLLDATA);
-		f_ddprintk("m_clk0_1: %#x, m_clk0_7: %#x, m_clk1_b: %#x\n",
-			m_clk0_1, m_clk0_7, m_clk1_b);
-		f_ddprintk("n_clk0_1: %#x, n_clk0_7: %#x, n_clk1_b: %#x\n",
-			n_clk0_1, n_clk0_7, n_clk1_b);
+//		f_ddprintk("m_clk0_1: %#x, m_clk0_7: %#x, m_clk1_b: %#x\n",
+;
+//		f_ddprintk("n_clk0_1: %#x, n_clk0_7: %#x, n_clk1_b: %#x\n",
+;
 		if ((   m_clk0_1 == DACREG_ICS_PLL_CLK0_1_INI)
 		    && (m_clk0_7 == DACREG_ICS_PLL_CLK0_7_INI)
 		    && (m_clk1_b == DACREG_ICS_PLL_CLK1_B_INI)) {
@@ -1004,8 +1004,8 @@ static int sst_set_pll_att_ti(struct fb_info *info,
 		            (cc & 0xf0) | DACREG_CC_CLKB | DACREG_CC_CLKB_D);
 		break;
 	default:
-		dprintk("%s: wrong clock code '%d'\n",
-		        __func__, clock);
+//		dprintk("%s: wrong clock code '%d'\n",
+;
 		return 0;
 		}
 	udelay(300);
@@ -1046,8 +1046,8 @@ static int sst_set_pll_ics(struct fb_info *info,
 		              (pll_ctrl & 0xef) | DACREG_ICS_CLK1_A);
 		break;
 	default:
-		dprintk("%s: wrong clock code '%d'\n",
-		        __func__, clock);
+//		dprintk("%s: wrong clock code '%d'\n",
+;
 		return 0;
 		}
 	udelay(300);
@@ -1078,7 +1078,7 @@ static void sst_set_vidmod_att_ti(struct fb_info *info, const int bpp)
 		sst_dac_write(DACREG_RMR, (cr0 & 0x0f) | DACREG_CR0_16BPP);
 		break;
 	default:
-		dprintk("%s: bad depth '%u'\n", __func__, bpp);
+;
 		break;
 	}
 }
@@ -1092,7 +1092,7 @@ static void sst_set_vidmod_ics(struct fb_info *info, const int bpp)
 		sst_dac_write(DACREG_ICS_CMD, DACREG_ICS_CMD_16BPP);
 		break;
 	default:
-		dprintk("%s: bad depth '%u'\n", __func__, bpp);
+;
 		break;
 	}
 }
@@ -1132,7 +1132,7 @@ static int __devinit sst_detect_dactype(struct fb_info *info, struct sstfb_par *
 	}
 	if (!ret)
 		return 0;
-	f_dprintk("%s found %s\n", __func__, dacs[i].name);
+;
 	par->dac_sw = dacs[i];
 	return 1;
 }
@@ -1150,11 +1150,11 @@ static int __devinit sst_init(struct fb_info *info, struct sstfb_par *par)
 	int gfx_clock;
 
 	spec = &voodoo_spec[par->type];
-	f_ddprintk(" fbiinit0   fbiinit1   fbiinit2   fbiinit3   fbiinit4  "
-	           " fbiinit6\n");
-	f_ddprintk("%0#10x %0#10x %0#10x %0#10x %0#10x %0#10x\n",
-	            sst_read(FBIINIT0), sst_read(FBIINIT1), sst_read(FBIINIT2),
-	            sst_read(FBIINIT3), sst_read(FBIINIT4), sst_read(FBIINIT6));
+//	f_ddprintk(" fbiinit0   fbiinit1   fbiinit2   fbiinit3   fbiinit4  "
+;
+//	f_ddprintk("%0#10x %0#10x %0#10x %0#10x %0#10x %0#10x\n",
+//	            sst_read(FBIINIT0), sst_read(FBIINIT1), sst_read(FBIINIT2),
+;
 	/* disable video clock */
 	pci_write_config_dword(dev, PCI_VCLK_DISABLE, 0);
 
@@ -1182,7 +1182,7 @@ static int __devinit sst_init(struct fb_info *info, struct sstfb_par *par)
 				PCI_EN_INIT_WR | PCI_REMAP_DAC );
 	/* detect dac type */
 	if (!sst_detect_dactype(info, par)) {
-		printk(KERN_ERR "sstfb: unknown dac type.\n");
+;
 		//FIXME watch it: we are not in a safe state, bad bad bad.
 		return 0;
 	}
@@ -1190,10 +1190,10 @@ static int __devinit sst_init(struct fb_info *info, struct sstfb_par *par)
 	/* set graphic clock */
 	gfx_clock = spec->default_gfx_clock;
 	if ((gfxclk >10 ) && (gfxclk < spec->max_gfxclk)) {
-		printk(KERN_INFO "sstfb: Using supplied graphic freq : %dMHz\n", gfxclk);
+;
 		 gfx_clock = gfxclk *1000;
 	} else if (gfxclk) {
-		printk(KERN_WARNING "sstfb: %dMhz is way out of spec! Using default\n", gfxclk);
+;
 	}
 
 	sst_calc_pll(gfx_clock, &Fout, &gfx_timings);
@@ -1281,7 +1281,7 @@ static int  __devinit sstfb_setup(char *options)
 	while ((this_opt = strsep(&options, ",")) != NULL) {
 		if (!*this_opt) continue;
 
-		f_ddprintk("option %s\n", this_opt);
+;
 
 		if (!strcmp(this_opt, "vganopass"))
 			vgapass = 0;
@@ -1328,7 +1328,7 @@ static int __devinit sstfb_probe(struct pci_dev *pdev,
 
 	/* Enable device in PCI config. */
 	if ((err=pci_enable_device(pdev))) {
-		printk(KERN_ERR "cannot enable device\n");
+;
 		return err;
 	}
 
@@ -1344,7 +1344,7 @@ static int __devinit sstfb_probe(struct pci_dev *pdev,
 	
 	par->type = id->driver_data;
 	spec = &voodoo_spec[par->type];
-	f_ddprintk("found device : %s\n", spec->name);
+;
 
 	par->dev = pdev;
 	par->revision = pdev->revision;
@@ -1354,45 +1354,45 @@ static int __devinit sstfb_probe(struct pci_dev *pdev,
 	fix->smem_start = fix->mmio_start + 0x400000;
 
 	if (!request_mem_region(fix->mmio_start, fix->mmio_len, "sstfb MMIO")) {
-		printk(KERN_ERR "sstfb: cannot reserve mmio memory\n");
+;
 		goto fail_mmio_mem;
 	}
 
 	if (!request_mem_region(fix->smem_start, 0x400000,"sstfb FB")) {
-		printk(KERN_ERR "sstfb: cannot reserve fb memory\n");
+;
 		goto fail_fb_mem;
 	}
 
 	par->mmio_vbase = ioremap_nocache(fix->mmio_start,
 					fix->mmio_len);
 	if (!par->mmio_vbase) {
-		printk(KERN_ERR "sstfb: cannot remap register area %#lx\n",
-		        fix->mmio_start);
+//		printk(KERN_ERR "sstfb: cannot remap register area %#lx\n",
+;
 		goto fail_mmio_remap;
 	}
 	info->screen_base = ioremap_nocache(fix->smem_start, 0x400000);
 	if (!info->screen_base) {
-		printk(KERN_ERR "sstfb: cannot remap framebuffer %#lx\n",
-		        fix->smem_start);
+//		printk(KERN_ERR "sstfb: cannot remap framebuffer %#lx\n",
+;
 		goto fail_fb_remap;
 	}
 
 	if (!sst_init(info, par)) {
-		printk(KERN_ERR "sstfb: Init failed\n");
+;
 		goto fail;
 	}
 	sst_get_memsize(info, &fix->smem_len);
 	strlcpy(fix->id, spec->name, sizeof(fix->id));
 
-	printk(KERN_INFO "%s (revision %d) with %s dac\n",
-		fix->id, par->revision, par->dac_sw.name);
-	printk(KERN_INFO "framebuffer at %#lx, mapped to 0x%p, size %dMB\n",
-	        fix->smem_start, info->screen_base,
-	        fix->smem_len >> 20);
+//	printk(KERN_INFO "%s (revision %d) with %s dac\n",
+;
+//	printk(KERN_INFO "framebuffer at %#lx, mapped to 0x%p, size %dMB\n",
+//	        fix->smem_start, info->screen_base,
+;
 
-	f_ddprintk("regbase_virt: %#lx\n", par->mmio_vbase);
-	f_ddprintk("membase_phys: %#lx\n", fix->smem_start);
-	f_ddprintk("fbbase_virt: %p\n", info->screen_base);
+;
+;
+;
 
 	info->flags	= FBINFO_DEFAULT;
 	info->fbops	= &sstfb_ops;
@@ -1411,35 +1411,35 @@ static int __devinit sstfb_probe(struct pci_dev *pdev,
 	fb_find_mode(&info->var, info, mode_option, NULL, 0, NULL, 16);
 
 	if (sstfb_check_var(&info->var, info)) {
-		printk(KERN_ERR "sstfb: invalid video mode.\n");
+;
 		goto fail;
 	}
 
 	if (sstfb_set_par(info)) {
-		printk(KERN_ERR "sstfb: can't set default video mode.\n");
+;
 		goto fail;
 	}
 	
 	if (fb_alloc_cmap(&info->cmap, 256, 0)) {
-		printk(KERN_ERR "sstfb: can't alloc cmap memory.\n");
+;
 		goto fail;
 	}
 
 	/* register fb */
 	info->device = &pdev->dev;
 	if (register_framebuffer(info) < 0) {
-		printk(KERN_ERR "sstfb: can't register framebuffer.\n");
+;
 		goto fail_register;
 	}
 
 	sstfb_clear_screen(info);
 
 	if (device_create_file(info->dev, &device_attrs[0]))
-		printk(KERN_WARNING "sstfb: can't create sysfs entry.\n");
+;
 
 
-	printk(KERN_INFO "fb%d: %s frame buffer device at 0x%p\n",
-	       info->node, fix->id, info->screen_base);
+//	printk(KERN_INFO "fb%d: %s frame buffer device at 0x%p\n",
+;
 
 	return 0;
 

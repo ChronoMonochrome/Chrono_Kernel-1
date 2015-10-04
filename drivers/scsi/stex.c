@@ -780,8 +780,8 @@ static void stex_mu_intr(struct st_hba *hba, u32 doorbell)
 	/* status payloads */
 	hba->status_head = readl(base + OMR1);
 	if (unlikely(hba->status_head > hba->sts_count)) {
-		printk(KERN_WARNING DRV_NAME "(%s): invalid status head\n",
-			pci_name(hba->pdev));
+//		printk(KERN_WARNING DRV_NAME "(%s): invalid status head\n",
+;
 		return;
 	}
 
@@ -804,8 +804,8 @@ static void stex_mu_intr(struct st_hba *hba, u32 doorbell)
 		resp = stex_get_status(hba);
 		tag = le16_to_cpu(resp->tag);
 		if (unlikely(tag >= hba->host->can_queue)) {
-			printk(KERN_WARNING DRV_NAME
-				"(%s): invalid tag\n", pci_name(hba->pdev));
+//			printk(KERN_WARNING DRV_NAME
+;
 			continue;
 		}
 
@@ -814,16 +814,16 @@ static void stex_mu_intr(struct st_hba *hba, u32 doorbell)
 		if (unlikely(hba->wait_ccb == ccb))
 			hba->wait_ccb = NULL;
 		if (unlikely(ccb->req == NULL)) {
-			printk(KERN_WARNING DRV_NAME
-				"(%s): lagging req\n", pci_name(hba->pdev));
+//			printk(KERN_WARNING DRV_NAME
+;
 			continue;
 		}
 
 		size = resp->payload_sz * sizeof(u32); /* payload size */
 		if (unlikely(size < sizeof(*resp) - STATUS_VAR_LEN ||
 			size > sizeof(*resp))) {
-			printk(KERN_WARNING DRV_NAME "(%s): bad status size\n",
-				pci_name(hba->pdev));
+//			printk(KERN_WARNING DRV_NAME "(%s): bad status size\n",
+;
 		} else {
 			size -= sizeof(*resp) - STATUS_VAR_LEN; /* copy size */
 			if (size)
@@ -909,8 +909,8 @@ static void stex_ss_mu_intr(struct st_hba *hba)
 
 		tag = (u16)value;
 		if (unlikely(tag >= hba->host->can_queue)) {
-			printk(KERN_WARNING DRV_NAME
-				"(%s): invalid tag\n", pci_name(hba->pdev));
+//			printk(KERN_WARNING DRV_NAME
+;
 			continue;
 		}
 
@@ -919,8 +919,8 @@ static void stex_ss_mu_intr(struct st_hba *hba)
 		if (unlikely(hba->wait_ccb == ccb))
 			hba->wait_ccb = NULL;
 		if (unlikely(ccb->req == NULL)) {
-			printk(KERN_WARNING DRV_NAME
-				"(%s): lagging req\n", pci_name(hba->pdev));
+//			printk(KERN_WARNING DRV_NAME
+;
 			continue;
 		}
 
@@ -934,9 +934,9 @@ static void stex_ss_mu_intr(struct st_hba *hba)
 			size = resp->payload_sz * sizeof(u32);
 			if (unlikely(size < sizeof(*resp) - STATUS_VAR_LEN ||
 				size > sizeof(*resp))) {
-				printk(KERN_WARNING DRV_NAME
-					"(%s): bad status size\n",
-					pci_name(hba->pdev));
+//				printk(KERN_WARNING DRV_NAME
+//					"(%s): bad status size\n",
+;
 			} else {
 				size -= sizeof(*resp) - STATUS_VAR_LEN;
 				if (size)
@@ -993,9 +993,9 @@ static int stex_common_handshake(struct st_hba *hba)
 		before = jiffies;
 		while (readl(base + OMR0) != MU_HANDSHAKE_SIGNATURE) {
 			if (time_after(jiffies, before + MU_MAX_DELAY * HZ)) {
-				printk(KERN_ERR DRV_NAME
-					"(%s): no handshake signature\n",
-					pci_name(hba->pdev));
+//				printk(KERN_ERR DRV_NAME
+//					"(%s): no handshake signature\n",
+;
 				return -1;
 			}
 			rmb();
@@ -1043,9 +1043,9 @@ static int stex_common_handshake(struct st_hba *hba)
 	before = jiffies;
 	while (readl(base + OMR0) != MU_HANDSHAKE_SIGNATURE) {
 		if (time_after(jiffies, before + MU_MAX_DELAY * HZ)) {
-			printk(KERN_ERR DRV_NAME
-				"(%s): no signature after handshake frame\n",
-				pci_name(hba->pdev));
+//			printk(KERN_ERR DRV_NAME
+//				"(%s): no signature after handshake frame\n",
+;
 			return -1;
 		}
 		rmb();
@@ -1076,9 +1076,9 @@ static int stex_ss_handshake(struct st_hba *hba)
 	before = jiffies;
 	while ((readl(base + YIOA_STATUS) & SS_MU_OPERATIONAL) == 0) {
 		if (time_after(jiffies, before + MU_MAX_DELAY * HZ)) {
-			printk(KERN_ERR DRV_NAME
-				"(%s): firmware not operational\n",
-				pci_name(hba->pdev));
+//			printk(KERN_ERR DRV_NAME
+//				"(%s): firmware not operational\n",
+;
 			return -1;
 		}
 		msleep(1);
@@ -1112,9 +1112,9 @@ static int stex_ss_handshake(struct st_hba *hba)
 	before = jiffies;
 	while (!(le32_to_cpu(*scratch) & SS_STS_HANDSHAKE)) {
 		if (time_after(jiffies, before + MU_MAX_DELAY * HZ)) {
-			printk(KERN_ERR DRV_NAME
-				"(%s): no signature after handshake frame\n",
-				pci_name(hba->pdev));
+//			printk(KERN_ERR DRV_NAME
+//				"(%s): no signature after handshake frame\n",
+;
 			ret = -1;
 			break;
 		}
@@ -1162,8 +1162,8 @@ static int stex_abort(struct scsi_cmnd *cmd)
 	int result = SUCCESS;
 	unsigned long flags;
 
-	printk(KERN_INFO DRV_NAME
-		"(%s): aborting command\n", pci_name(hba->pdev));
+//	printk(KERN_INFO DRV_NAME
+;
 	scsi_print_command(cmd);
 
 	base = hba->mmio_base;
@@ -1192,8 +1192,8 @@ static int stex_abort(struct scsi_cmnd *cmd)
 		stex_mu_intr(hba, data);
 	}
 	if (hba->wait_ccb == NULL) {
-		printk(KERN_WARNING DRV_NAME
-			"(%s): lost interrupt\n", pci_name(hba->pdev));
+//		printk(KERN_WARNING DRV_NAME
+;
 		goto out;
 	}
 
@@ -1258,8 +1258,8 @@ static int stex_yos_reset(struct st_hba *hba)
 	before = jiffies;
 	while (hba->out_req_cnt > 0) {
 		if (time_after(jiffies, before + ST_INTERNAL_TIMEOUT * HZ)) {
-			printk(KERN_WARNING DRV_NAME
-				"(%s): reset timeout\n", pci_name(hba->pdev));
+//			printk(KERN_WARNING DRV_NAME
+;
 			ret = -1;
 			break;
 		}
@@ -1294,8 +1294,8 @@ static int stex_do_reset(struct st_hba *hba)
 	spin_lock_irqsave(hba->host->host_lock, flags);
 	if (hba->mu_status == MU_STATE_STARTING) {
 		spin_unlock_irqrestore(hba->host->host_lock, flags);
-		printk(KERN_INFO DRV_NAME "(%s): request reset during init\n",
-			pci_name(hba->pdev));
+//		printk(KERN_INFO DRV_NAME "(%s): request reset during init\n",
+;
 		return 0;
 	}
 	while (hba->mu_status == MU_STATE_RESETTING) {
@@ -1341,8 +1341,8 @@ static int stex_do_reset(struct st_hba *hba)
 	if (stex_handshake(hba) == 0)
 		return 0;
 
-	printk(KERN_WARNING DRV_NAME "(%s): resetting: handshake failed\n",
-		pci_name(hba->pdev));
+//	printk(KERN_WARNING DRV_NAME "(%s): resetting: handshake failed\n",
+;
 	return -1;
 }
 
@@ -1352,8 +1352,8 @@ static int stex_reset(struct scsi_cmnd *cmd)
 
 	hba = (struct st_hba *) &cmd->device->host->hostdata[0];
 
-	printk(KERN_INFO DRV_NAME
-		"(%s): resetting host\n", pci_name(hba->pdev));
+//	printk(KERN_INFO DRV_NAME
+;
 	scsi_print_command(cmd);
 
 	return stex_do_reset(hba) ? FAILED : SUCCESS;
@@ -1513,9 +1513,9 @@ static int stex_request_irq(struct st_hba *hba)
 	if (msi) {
 		status = pci_enable_msi(pdev);
 		if (status != 0)
-			printk(KERN_ERR DRV_NAME
-				"(%s): error %d setting up MSI\n",
-				pci_name(pdev), status);
+//			printk(KERN_ERR DRV_NAME
+//				"(%s): error %d setting up MSI\n",
+;
 		else
 			hba->msi_enabled = 1;
 	} else
@@ -1558,8 +1558,8 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	host = scsi_host_alloc(&driver_template, sizeof(struct st_hba));
 
 	if (!host) {
-		printk(KERN_ERR DRV_NAME "(%s): scsi_host_alloc failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): scsi_host_alloc failed\n",
+;
 		err = -ENOMEM;
 		goto out_disable;
 	}
@@ -1569,23 +1569,23 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	err = pci_request_regions(pdev, DRV_NAME);
 	if (err < 0) {
-		printk(KERN_ERR DRV_NAME "(%s): request regions failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): request regions failed\n",
+;
 		goto out_scsi_host_put;
 	}
 
 	hba->mmio_base = pci_ioremap_bar(pdev, 0);
 	if ( !hba->mmio_base) {
-		printk(KERN_ERR DRV_NAME "(%s): memory map failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): memory map failed\n",
+;
 		err = -ENOMEM;
 		goto out_release_regions;
 	}
 
 	err = stex_set_dma_mask(pdev);
 	if (err) {
-		printk(KERN_ERR DRV_NAME "(%s): set dma mask failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): set dma mask failed\n",
+;
 		goto out_iounmap;
 	}
 
@@ -1607,9 +1607,9 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 		/* Retry minimum coherent mapping for st_seq and st_vsc */
 		if (hba->cardtype == st_seq ||
 		    (hba->cardtype == st_vsc && (pdev->subsystem_device & 1))) {
-			printk(KERN_WARNING DRV_NAME
-				"(%s): allocating min buffer for controller\n",
-				pci_name(pdev));
+//			printk(KERN_WARNING DRV_NAME
+//				"(%s): allocating min buffer for controller\n",
+;
 			hba->dma_size = hba->extra_offset
 				+ ST_ADDITIONAL_MEM_MIN;
 			hba->dma_mem = dma_alloc_coherent(&pdev->dev,
@@ -1618,8 +1618,8 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 		if (!hba->dma_mem) {
 			err = -ENOMEM;
-			printk(KERN_ERR DRV_NAME "(%s): dma mem alloc failed\n",
-				pci_name(pdev));
+//			printk(KERN_ERR DRV_NAME "(%s): dma mem alloc failed\n",
+;
 			goto out_iounmap;
 		}
 	}
@@ -1627,8 +1627,8 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	hba->ccb = kcalloc(ci->rq_count, sizeof(struct st_ccb), GFP_KERNEL);
 	if (!hba->ccb) {
 		err = -ENOMEM;
-		printk(KERN_ERR DRV_NAME "(%s): ccb alloc failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): ccb alloc failed\n",
+;
 		goto out_pci_free;
 	}
 
@@ -1664,8 +1664,8 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 		 "stex_wq_%d", host->host_no);
 	hba->work_q = create_singlethread_workqueue(hba->work_q_name);
 	if (!hba->work_q) {
-		printk(KERN_ERR DRV_NAME "(%s): create workqueue failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): create workqueue failed\n",
+;
 		err = -ENOMEM;
 		goto out_ccb_free;
 	}
@@ -1673,8 +1673,8 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	err = stex_request_irq(hba);
 	if (err) {
-		printk(KERN_ERR DRV_NAME "(%s): request irq failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): request irq failed\n",
+;
 		goto out_free_wq;
 	}
 
@@ -1684,8 +1684,8 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	err = scsi_init_shared_tag_map(host, host->can_queue);
 	if (err) {
-		printk(KERN_ERR DRV_NAME "(%s): init shared queue failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): init shared queue failed\n",
+;
 		goto out_free_irq;
 	}
 
@@ -1693,8 +1693,8 @@ stex_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	err = scsi_add_host(host, &pdev->dev);
 	if (err) {
-		printk(KERN_ERR DRV_NAME "(%s): scsi_add_host failed\n",
-			pci_name(pdev));
+//		printk(KERN_ERR DRV_NAME "(%s): scsi_add_host failed\n",
+;
 		goto out_free_irq;
 	}
 
@@ -1821,9 +1821,9 @@ static struct pci_driver stex_pci_driver = {
 
 static int __init stex_init(void)
 {
-	printk(KERN_INFO DRV_NAME
-		": Promise SuperTrak EX Driver version: %s\n",
-		 ST_DRIVER_VERSION);
+//	printk(KERN_INFO DRV_NAME
+//		": Promise SuperTrak EX Driver version: %s\n",
+;
 
 	return pci_register_driver(&stex_pci_driver);
 }

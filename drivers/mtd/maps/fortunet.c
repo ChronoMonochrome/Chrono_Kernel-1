@@ -103,14 +103,14 @@ static int __init MTD_New_Region(char *line)
 	get_options (get_string_option(string,sizeof(string),line),6,params);
 	if(params[0]<1)
 	{
-		printk(MTD_FORTUNET_PK "Bad parameters for MTD Region "
-			" name,region-number[,base,size,bankwidth,altbankwidth]\n");
+//		printk(MTD_FORTUNET_PK "Bad parameters for MTD Region "
+;
 		return 1;
 	}
 	if((params[1]<0)||(params[1]>=MAX_NUM_REGIONS))
 	{
-		printk(MTD_FORTUNET_PK "Bad region index of %d only have 0..%u regions\n",
-			params[1],MAX_NUM_REGIONS-1);
+//		printk(MTD_FORTUNET_PK "Bad region index of %d only have 0..%u regions\n",
+;
 		return 1;
 	}
 	memset(&map_regions[params[1]],0,sizeof(map_regions[params[1]]));
@@ -148,19 +148,19 @@ static int __init MTD_New_Partition(char *line)
 	get_options (get_string_option(string,sizeof(string),line),4,params);
 	if(params[0]<3)
 	{
-		printk(MTD_FORTUNET_PK "Bad parameters for MTD Partition "
-			" name,region-number,size,offset\n");
+//		printk(MTD_FORTUNET_PK "Bad parameters for MTD Partition "
+;
 		return 1;
 	}
 	if((params[1]<0)||(params[1]>=MAX_NUM_REGIONS))
 	{
-		printk(MTD_FORTUNET_PK "Bad region index of %d only have 0..%u regions\n",
-			params[1],MAX_NUM_REGIONS-1);
+//		printk(MTD_FORTUNET_PK "Bad region index of %d only have 0..%u regions\n",
+;
 		return 1;
 	}
 	if(map_regions_parts[params[1]]>=MAX_NUM_PARTITIONS)
 	{
-		printk(MTD_FORTUNET_PK "Out of space for partition in this region\n");
+;
 		return 1;
 	}
 	map_regions[params[1]].parts[map_regions_parts[params[1]]].name =
@@ -188,8 +188,8 @@ static int __init init_fortunet(void)
 	{
 		if(map_regions_parts[ix]&&(!map_regions_set[ix]))
 		{
-			printk(MTD_FORTUNET_PK "Region %d is not setup (Setting to default)\n",
-				ix);
+//			printk(MTD_FORTUNET_PK "Region %d is not setup (Setting to default)\n",
+;
 			memset(&map_regions[ix],0,sizeof(map_regions[ix]));
 			memcpy(&map_regions[ix].map_info,&default_map,
 				sizeof(map_regions[ix].map_info));
@@ -203,11 +203,11 @@ static int __init init_fortunet(void)
 		if(map_regions_set[ix])
 		{
 			iy++;
-			printk(KERN_NOTICE MTD_FORTUNET_PK "%s flash device at physically "
-				" address %x size %x\n",
-				map_regions[ix].map_info.name,
-				map_regions[ix].window_addr_physical,
-				map_regions[ix].map_info.size);
+//			printk(KERN_NOTICE MTD_FORTUNET_PK "%s flash device at physically "
+//				" address %x size %x\n",
+//				map_regions[ix].map_info.name,
+//				map_regions[ix].window_addr_physical,
+;
 
 			map_regions[ix].map_info.phys =	map_regions[ix].window_addr_physical,
 
@@ -218,25 +218,25 @@ static int __init init_fortunet(void)
 			if(!map_regions[ix].map_info.virt)
 			{
 				int j = 0;
-				printk(MTD_FORTUNET_PK "%s flash failed to ioremap!\n",
-					map_regions[ix].map_info.name);
+//				printk(MTD_FORTUNET_PK "%s flash failed to ioremap!\n",
+;
 				for (j = 0 ; j < ix; j++)
 					iounmap(map_regions[j].map_info.virt);
 				return -ENXIO;
 			}
 			simple_map_init(&map_regions[ix].map_info);
 
-			printk(KERN_NOTICE MTD_FORTUNET_PK "%s flash is virtually at: %x\n",
-				map_regions[ix].map_info.name,
-				map_regions[ix].map_info.virt);
+//			printk(KERN_NOTICE MTD_FORTUNET_PK "%s flash is virtually at: %x\n",
+//				map_regions[ix].map_info.name,
+;
 			map_regions[ix].mymtd = do_map_probe("cfi_probe",
 				&map_regions[ix].map_info);
 			if((!map_regions[ix].mymtd)&&(
 				map_regions[ix].altbankwidth!=map_regions[ix].map_info.bankwidth))
 			{
-				printk(KERN_NOTICE MTD_FORTUNET_PK "Trying alternate bankwidth "
-					"for %s flash.\n",
-					map_regions[ix].map_info.name);
+//				printk(KERN_NOTICE MTD_FORTUNET_PK "Trying alternate bankwidth "
+//					"for %s flash.\n",
+;
 				map_regions[ix].map_info.bankwidth =
 					map_regions[ix].altbankwidth;
 				map_regions[ix].mymtd = do_map_probe("cfi_probe",

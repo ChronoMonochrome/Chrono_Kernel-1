@@ -425,7 +425,7 @@ static void omap1_spi100k_work(struct work_struct *work)
 	spin_unlock_irq(&spi100k->lock);
 
 	if (status < 0)
-		printk(KERN_WARNING "spi transfer failed with %d\n", status);
+;
 }
 
 static int omap1_spi100k_transfer(struct spi_device *spi, struct spi_message *m)

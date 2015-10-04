@@ -312,7 +312,7 @@ static void oxygen_restore_eeprom(struct oxygen *chip,
 		oxygen_clear_bits8(chip, OXYGEN_MISC,
 				   OXYGEN_MISC_WRITE_PCI_SUBID);
 
-		snd_printk(KERN_INFO "EEPROM ID restored\n");
+;
 	}
 }
 
@@ -615,13 +615,13 @@ int oxygen_pci_probe(struct pci_dev *pci, int index, char *id,
 
 	err = pci_request_regions(pci, DRIVER);
 	if (err < 0) {
-		snd_printk(KERN_ERR "cannot reserve PCI resources\n");
+;
 		goto err_pci_enable;
 	}
 
 	if (!(pci_resource_flags(pci, 0) & IORESOURCE_IO) ||
 	    pci_resource_len(pci, 0) < OXYGEN_IO_SIZE) {
-		snd_printk(KERN_ERR "invalid PCI I/O range\n");
+;
 		err = -ENXIO;
 		goto err_pci_regions;
 	}
@@ -657,7 +657,7 @@ int oxygen_pci_probe(struct pci_dev *pci, int index, char *id,
 	err = request_irq(pci->irq, oxygen_interrupt, IRQF_SHARED,
 			  DRIVER, chip);
 	if (err < 0) {
-		snd_printk(KERN_ERR "cannot grab interrupt %d\n", pci->irq);
+;
 		goto err_card;
 	}
 	chip->irq = pci->irq;
@@ -795,7 +795,7 @@ int oxygen_pci_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-		snd_printk(KERN_ERR "cannot reenable device");
+;
 		snd_card_disconnect(card);
 		return -EIO;
 	}

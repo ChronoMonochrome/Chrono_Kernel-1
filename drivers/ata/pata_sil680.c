@@ -300,11 +300,11 @@ static u8 sil680_init_chip(struct pci_dev *pdev, int *try_mmio)
 	pci_write_config_dword(pdev, 0xBC, 0x40094009);
 
 	switch(tmpbyte & 0x30) {
-		case 0x00: printk(KERN_INFO "sil680: 100MHz clock.\n");break;
-		case 0x10: printk(KERN_INFO "sil680: 133MHz clock.\n");break;
-		case 0x20: printk(KERN_INFO "sil680: Using PCI clock.\n");break;
+;
+;
+;
 		/* This last case is _NOT_ ok */
-		case 0x30: printk(KERN_ERR "sil680: Clock disabled ?\n");
+;
 	}
 	return tmpbyte & 0x30;
 }
@@ -333,7 +333,7 @@ static int __devinit sil680_init_one(struct pci_dev *pdev,
 	int rc, try_mmio;
 
 	if (!printed_version++)
-		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+;
 
 	rc = pcim_enable_device(pdev);
 	if (rc)

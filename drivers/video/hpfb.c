@@ -249,10 +249,10 @@ static int __devinit hpfb_init_one(unsigned long phys_base,
 	hpfb_defined.yres_virtual = hpfb_defined.yres;
 	hpfb_defined.bits_per_pixel = in_8(fb_regs + HPFB_NUMPLANES);
 
-	printk(KERN_INFO "hpfb: framebuffer at 0x%lx, mapped to 0x%lx, size %dk\n",
-	       fb_info.fix.smem_start, fb_start, fb_info.fix.smem_len/1024);
-	printk(KERN_INFO "hpfb: mode is %dx%dx%d, linelength=%d\n",
-	       hpfb_defined.xres, hpfb_defined.yres, hpfb_defined.bits_per_pixel, fb_info.fix.line_length);
+//	printk(KERN_INFO "hpfb: framebuffer at 0x%lx, mapped to 0x%lx, size %dk\n",
+;
+//	printk(KERN_INFO "hpfb: mode is %dx%dx%d, linelength=%d\n",
+;
 
 	/*
 	 *	Give the hardware a bit of a prod and work out how many bits per
@@ -299,8 +299,8 @@ static int __devinit hpfb_init_one(unsigned long phys_base,
 		return 1;
 	}
 
-	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-	       fb_info.node, fb_info.fix.id);
+//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+;
 
 	return 0;
 }
@@ -329,8 +329,8 @@ static int __devinit hpfb_dio_probe(struct dio_dev * d, const struct dio_device_
 	} else {
 		vaddr = paddr + DIO_VIRADDRBASE;
 	}
-	printk(KERN_INFO "Topcat found at DIO select code %d "
-	       "(secondary id %02x)\n", d->scode, (d->id >> 8) & 0xff);
+//	printk(KERN_INFO "Topcat found at DIO select code %d "
+;
 	if (hpfb_init_one(paddr, vaddr)) {
 		if (d->scode >= DIOII_SCBASE)
 			iounmap((void *)vaddr);
@@ -398,7 +398,7 @@ int __init hpfb_init(void)
 	if (!err && (i == DIO_ID_FBUFFER) && topcat_sid_ok(sid = DIO_SECID(INTFBVADDR))) {
 		if (!request_mem_region(INTFBPADDR, DIO_DEVSIZE, "Internal Topcat"))
 			return -EBUSY;
-		printk(KERN_INFO "Internal Topcat found (secondary id %02x)\n", sid);
+;
 		if (hpfb_init_one(INTFBPADDR, INTFBVADDR)) {
 			return -ENOMEM;
 		}

@@ -865,7 +865,7 @@ int tm6000_cards_setup(struct tm6000_core *dev)
 			rc = tm6000_set_reg(dev, REQ_03_SET_GET_MCU_PIN,
 						dev->gpio.tuner_reset, 0x00);
 			if (rc < 0) {
-				printk(KERN_ERR "Error %i doing tuner reset\n", rc);
+;
 				return rc;
 			}
 
@@ -873,12 +873,12 @@ int tm6000_cards_setup(struct tm6000_core *dev)
 			rc = tm6000_set_reg(dev, REQ_03_SET_GET_MCU_PIN,
 						dev->gpio.tuner_reset, 0x01);
 			if (rc < 0) {
-				printk(KERN_ERR "Error %i doing tuner reset\n", rc);
+;
 				return rc;
 			}
 		}
 	} else {
-		printk(KERN_ERR "Tuner reset is not configured\n");
+;
 		return -1;
 	}
 
@@ -940,7 +940,7 @@ static void tm6000_config_tuner(struct tm6000_core *dev)
 				ctl.fname = "xc3028-v24.fw";
 		}
 
-		printk(KERN_INFO "Setting firmware parameters for xc2028\n");
+;
 		v4l2_device_call_all(&dev->v4l2_dev, 0, tuner, s_config,
 				     &xc2028_cfg);
 
@@ -963,7 +963,7 @@ static void tm6000_config_tuner(struct tm6000_core *dev)
 		}
 		break;
 	default:
-		printk(KERN_INFO "Unknown tuner type. Tuner is not configured.\n");
+;
 		break;
 	}
 }
@@ -1024,14 +1024,14 @@ static void use_alternative_detection_method(struct tm6000_core *dev)
 		}
 	}
 	if (model < 0) {
-		printk(KERN_INFO "Device has eeprom but is currently unknown\n");
+;
 		return;
 	}
 
 	dev->model = model;
 
-	printk(KERN_INFO "Device identified via eeprom as %s (type = %d)\n",
-	       tm6000_boards[model].name, model);
+//	printk(KERN_INFO "Device identified via eeprom as %s (type = %d)\n",
+;
 }
 
 static int tm6000_init_dev(struct tm6000_core *dev)
@@ -1125,9 +1125,9 @@ static void get_max_endpoint(struct usb_device *udev,
 		tm_ep->bInterfaceNumber = alt->desc.bInterfaceNumber;
 		tm_ep->bAlternateSetting = alt->desc.bAlternateSetting;
 
-		printk(KERN_INFO "tm6000: %s endpoint: 0x%02x (max size=%u bytes)\n",
-					msgtype, curr_e->desc.bEndpointAddress,
-					size);
+//		printk(KERN_INFO "tm6000: %s endpoint: 0x%02x (max size=%u bytes)\n",
+//					msgtype, curr_e->desc.bEndpointAddress,
+;
 	}
 }
 
@@ -1154,7 +1154,7 @@ static int tm6000_usb_probe(struct usb_interface *interface,
 	/* Check to see next free device and mark as used */
 	nr = find_first_zero_bit(&tm6000_devused, TM6000_MAXBOARDS);
 	if (nr >= TM6000_MAXBOARDS) {
-		printk(KERN_ERR "tm6000: Supports only %i tm60xx boards.\n", TM6000_MAXBOARDS);
+;
 		usb_put_dev(usbdev);
 		return -ENOMEM;
 	}
@@ -1162,7 +1162,7 @@ static int tm6000_usb_probe(struct usb_interface *interface,
 	/* Create and initialize dev struct */
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (dev == NULL) {
-		printk(KERN_ERR "tm6000" ": out of memory!\n");
+;
 		usb_put_dev(usbdev);
 		return -ENOMEM;
 	}
@@ -1209,10 +1209,10 @@ static int tm6000_usb_probe(struct usb_interface *interface,
 			dir_out = ((e->desc.bEndpointAddress &
 					USB_ENDPOINT_DIR_MASK) == USB_DIR_OUT);
 
-			printk(KERN_INFO "tm6000: alt %d, interface %i, class %i\n",
-			       i,
-			       interface->altsetting[i].desc.bInterfaceNumber,
-			       interface->altsetting[i].desc.bInterfaceClass);
+//			printk(KERN_INFO "tm6000: alt %d, interface %i, class %i\n",
+//			       i,
+//			       interface->altsetting[i].desc.bInterfaceNumber,
+;
 
 			switch (e->desc.bmAttributes) {
 			case USB_ENDPOINT_XFER_BULK:
@@ -1259,15 +1259,15 @@ static int tm6000_usb_probe(struct usb_interface *interface,
 	}
 
 
-	printk(KERN_INFO "tm6000: New video device @ %s Mbps (%04x:%04x, ifnum %d)\n",
-		speed,
-		le16_to_cpu(dev->udev->descriptor.idVendor),
-		le16_to_cpu(dev->udev->descriptor.idProduct),
-		interface->altsetting->desc.bInterfaceNumber);
+//	printk(KERN_INFO "tm6000: New video device @ %s Mbps (%04x:%04x, ifnum %d)\n",
+//		speed,
+//		le16_to_cpu(dev->udev->descriptor.idVendor),
+//		le16_to_cpu(dev->udev->descriptor.idProduct),
+;
 
 /* check if the the device has the iso in endpoint at the correct place */
 	if (!dev->isoc_in.endp) {
-		printk(KERN_ERR "tm6000: probing error: no IN ISOC endpoint!\n");
+;
 		rc = -ENODEV;
 
 		goto err;
@@ -1276,7 +1276,7 @@ static int tm6000_usb_probe(struct usb_interface *interface,
 	/* save our data pointer in this interface device */
 	usb_set_intfdata(interface, dev);
 
-	printk(KERN_INFO "tm6000: Found %s\n", tm6000_boards[dev->model].name);
+;
 
 	rc = tm6000_init_dev(dev);
 
@@ -1286,7 +1286,7 @@ static int tm6000_usb_probe(struct usb_interface *interface,
 	return 0;
 
 err:
-	printk(KERN_ERR "tm6000: Error %d while registering\n", rc);
+;
 
 	tm6000_devused &= ~(1<<nr);
 	usb_put_dev(usbdev);
@@ -1308,7 +1308,7 @@ static void tm6000_usb_disconnect(struct usb_interface *interface)
 	if (!dev)
 		return;
 
-	printk(KERN_INFO "tm6000: disconnecting %s\n", dev->name);
+;
 
 	tm6000_ir_fini(dev);
 
@@ -1360,15 +1360,15 @@ static int __init tm6000_module_init(void)
 {
 	int result;
 
-	printk(KERN_INFO "tm6000" " v4l2 driver version %d.%d.%d loaded\n",
-	       (TM6000_VERSION  >> 16) & 0xff,
-	       (TM6000_VERSION  >> 8) & 0xff, TM6000_VERSION  & 0xff);
+//	printk(KERN_INFO "tm6000" " v4l2 driver version %d.%d.%d loaded\n",
+//	       (TM6000_VERSION  >> 16) & 0xff,
+;
 
 	/* register this driver with the USB subsystem */
 	result = usb_register(&tm6000_usb_driver);
 	if (result)
-		printk(KERN_ERR "tm6000"
-			   " usb_register failed. Error number %d.\n", result);
+//		printk(KERN_ERR "tm6000"
+;
 
 	return result;
 }

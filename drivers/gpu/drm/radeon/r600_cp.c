@@ -317,7 +317,7 @@ static int r600_cp_init_microcode(drm_radeon_private_t *dev_priv)
 	pdev = platform_device_register_simple("r600_cp", 0, NULL, 0);
 	err = IS_ERR(pdev);
 	if (err) {
-		printk(KERN_ERR "r600_cp: Failed to register firmware\n");
+;
 		return -EINVAL;
 	}
 
@@ -352,9 +352,9 @@ static int r600_cp_init_microcode(drm_radeon_private_t *dev_priv)
 	if (err)
 		goto out;
 	if (dev_priv->pfp_fw->size != pfp_req_size) {
-		printk(KERN_ERR
-		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
-		       dev_priv->pfp_fw->size, fw_name);
+//		printk(KERN_ERR
+//		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
+;
 		err = -EINVAL;
 		goto out;
 	}
@@ -364,9 +364,9 @@ static int r600_cp_init_microcode(drm_radeon_private_t *dev_priv)
 	if (err)
 		goto out;
 	if (dev_priv->me_fw->size != me_req_size) {
-		printk(KERN_ERR
-		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
-		       dev_priv->me_fw->size, fw_name);
+//		printk(KERN_ERR
+//		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
+;
 		err = -EINVAL;
 	}
 out:
@@ -374,9 +374,9 @@ out:
 
 	if (err) {
 		if (err != -EINVAL)
-			printk(KERN_ERR
-			       "r600_cp: Failed to load firmware \"%s\"\n",
-			       fw_name);
+//			printk(KERN_ERR
+//			       "r600_cp: Failed to load firmware \"%s\"\n",
+;
 		release_firmware(dev_priv->pfp_fw);
 		dev_priv->pfp_fw = NULL;
 		release_firmware(dev_priv->me_fw);

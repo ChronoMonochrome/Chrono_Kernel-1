@@ -138,7 +138,7 @@ static int add_new_node(struct hda_codec *codec, struct hda_gspec *spec, hda_nid
 		node->conn_list = kmalloc(sizeof(hda_nid_t) * nconns,
 					  GFP_KERNEL);
 		if (! node->conn_list) {
-			snd_printk(KERN_ERR "hda-generic: cannot malloc\n");
+;
 			kfree(node);
 			return -ENOMEM;
 		}
@@ -185,7 +185,7 @@ static int build_afg_tree(struct hda_codec *codec)
 
 	nodes = snd_hda_get_sub_nodes(codec, codec->afg, &nid);
 	if (! nid || nodes < 0) {
-		printk(KERN_ERR "Invalid AFG subtree\n");
+;
 		return -EINVAL;
 	}
 
@@ -549,7 +549,7 @@ static int parse_adc_sub_nodes(struct hda_codec *codec, struct hda_gspec *spec,
 		return 0; /* skip SPDIF */
 
 	if (spec->input_mux.num_items >= HDA_MAX_NUM_INPUTS) {
-		snd_printk(KERN_ERR "hda_generic: Too many items for capture\n");
+;
 		return -EINVAL;
 	}
 
@@ -661,7 +661,7 @@ static void add_input_loopback(struct hda_codec *codec, hda_nid_t nid,
 	struct hda_amp_list *p;
 
 	if (spec->num_loopbacks >= MAX_LOOPBACK_AMPS) {
-		snd_printk(KERN_ERR "hda_generic: Too many loopback ctls\n");
+;
 		return;
 	}
 	p = &spec->loopback_list[spec->num_loopbacks++];
@@ -1060,7 +1060,7 @@ int snd_hda_parse_generic_codec(struct hda_codec *codec)
 
 	spec = kzalloc(sizeof(*spec), GFP_KERNEL);
 	if (spec == NULL) {
-		printk(KERN_ERR "hda_generic: can't allocate spec\n");
+;
 		return -ENOMEM;
 	}
 	codec->spec = spec;

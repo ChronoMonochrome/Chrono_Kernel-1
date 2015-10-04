@@ -401,18 +401,18 @@ static int __init ds1620_init(void)
 	if (proc_therm_ds1620)
 		proc_therm_ds1620->read_proc = proc_therm_ds1620_read;
 	else
-		printk(KERN_ERR "therm: unable to register /proc/therm\n");
+;
 #endif
 
 	ds1620_read_state(&th);
 	ret = cvt_9_to_int(ds1620_in(THERM_READ_TEMP, 9));
 
-	printk(KERN_INFO "Thermostat: high %i.%i, low %i.%i, "
-	       "current %i.%i C, fan %s.\n",
-	       th.hi >> 1, th.hi & 1 ? 5 : 0,
-	       th.lo >> 1, th.lo & 1 ? 5 : 0,
-	       ret   >> 1, ret   & 1 ? 5 : 0,
-	       fan_state[netwinder_get_fan()]);
+//	printk(KERN_INFO "Thermostat: high %i.%i, low %i.%i, "
+//	       "current %i.%i C, fan %s.\n",
+//	       th.hi >> 1, th.hi & 1 ? 5 : 0,
+//	       th.lo >> 1, th.lo & 1 ? 5 : 0,
+//	       ret   >> 1, ret   & 1 ? 5 : 0,
+;
 
 	return 0;
 }

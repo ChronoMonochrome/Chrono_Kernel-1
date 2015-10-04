@@ -485,8 +485,8 @@ static int aac_rx_restart_adapter(struct aac_dev *dev, int bled)
 	if (!(dev->supplement_adapter_info.SupportedOptions2 &
 	  AAC_OPTION_MU_RESET) || (bled >= 0) || (bled == -2)) {
 		if (bled)
-			printk(KERN_ERR "%s%d: adapter kernel panic'd %x.\n",
-				dev->name, dev->id, bled);
+//			printk(KERN_ERR "%s%d: adapter kernel panic'd %x.\n",
+;
 		else {
 			bled = aac_adapter_sync_cmd(dev, IOP_RESET_ALWAYS,
 			  0, 0, 0, 0, 0, 0, &var, NULL, NULL, NULL, NULL);
@@ -557,7 +557,7 @@ int _aac_rx_init(struct aac_dev *dev)
 	const char * name = dev->name;
 
 	if (aac_adapter_ioremap(dev, dev->base_size)) {
-		printk(KERN_WARNING "%s: unable to map adapter.\n", name);
+;
 		goto error_iounmap;
 	}
 
@@ -584,14 +584,14 @@ int _aac_rx_init(struct aac_dev *dev)
 	 */
 	status = rx_readl(dev, MUnit.OMRx[0]);
 	if (status & SELF_TEST_FAILED) {
-		printk(KERN_ERR "%s%d: adapter self-test failed.\n", dev->name, instance);
+;
 		goto error_iounmap;
 	}
 	/*
 	 *	Check to see if the monitor panic'd while booting.
 	 */
 	if (status & MONITOR_PANIC) {
-		printk(KERN_ERR "%s%d: adapter monitor panic.\n", dev->name, instance);
+;
 		goto error_iounmap;
 	}
 	start = jiffies;
@@ -603,8 +603,8 @@ int _aac_rx_init(struct aac_dev *dev)
 		if ((restart &&
 		  (status & (KERNEL_PANIC|SELF_TEST_FAILED|MONITOR_PANIC))) ||
 		  time_after(jiffies, start+HZ*startup_timeout)) {
-			printk(KERN_ERR "%s%d: adapter kernel failed to start, init status = %lx.\n", 
-					dev->name, instance, status);
+//			printk(KERN_ERR "%s%d: adapter kernel failed to start, init status = %lx.\n", 
+;
 			goto error_iounmap;
 		}
 		if (!restart &&
@@ -648,8 +648,8 @@ int _aac_rx_init(struct aac_dev *dev)
 			IRQF_SHARED|IRQF_DISABLED, "aacraid", dev) < 0) {
 		if (dev->msi)
 			pci_disable_msi(dev->pdev);
-		printk(KERN_ERR "%s%d: Interrupt unavailable.\n",
-			name, instance);
+//		printk(KERN_ERR "%s%d: Interrupt unavailable.\n",
+;
 		goto error_iounmap;
 	}
 	dev->dbg_base = dev->scsi_host_ptr->base;

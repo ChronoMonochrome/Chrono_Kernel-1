@@ -142,7 +142,7 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 	int i, strobe = 0;
 	struct au0828_dev *dev = i2c_adap->algo_data;
 
-	dprintk(4, "%s()\n", __func__);
+;
 
 	au0828_write(dev, AU0828_I2C_MULTIBYTE_MODE_2FF, 0x01);
 
@@ -153,7 +153,7 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 	/* Hardware needs 8 bit addresses */
 	au0828_write(dev, AU0828_I2C_DEST_ADDR_203, msg->addr << 1);
 
-	dprintk(4, "SEND: %02x\n", msg->addr);
+;
 
 	/* Deal with i2c_scan */
 	if (msg->len == 0) {
@@ -177,7 +177,7 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 
 	for (i = 0; i < msg->len;) {
 
-		dprintk(4, " %02x\n", msg->buf[i]);
+;
 
 		au0828_write(dev, AU0828_I2C_WRITE_FIFO_205, msg->buf[i]);
 
@@ -207,7 +207,7 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 	if (!i2c_wait_done(i2c_adap))
 		return -EIO;
 
-	dprintk(4, "\n");
+;
 
 	return msg->len;
 }
@@ -219,7 +219,7 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 	struct au0828_dev *dev = i2c_adap->algo_data;
 	int i;
 
-	dprintk(4, "%s()\n", __func__);
+;
 
 	au0828_write(dev, AU0828_I2C_MULTIBYTE_MODE_2FF, 0x01);
 
@@ -230,7 +230,7 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 	/* Hardware needs 8 bit addresses */
 	au0828_write(dev, AU0828_I2C_DEST_ADDR_203, msg->addr << 1);
 
-	dprintk(4, " RECV:\n");
+;
 
 	/* Deal with i2c_scan */
 	if (msg->len == 0) {
@@ -260,12 +260,12 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 		msg->buf[i-1] = au0828_read(dev, AU0828_I2C_READ_FIFO_209) &
 			0xff;
 
-		dprintk(4, " %02x\n", msg->buf[i-1]);
+;
 	}
 	if (!i2c_wait_done(i2c_adap))
 		return -EIO;
 
-	dprintk(4, "\n");
+;
 
 	return msg->len;
 }
@@ -275,11 +275,11 @@ static int i2c_xfer(struct i2c_adapter *i2c_adap,
 {
 	int i, retval = 0;
 
-	dprintk(4, "%s(num = %d)\n", __func__, num);
+;
 
 	for (i = 0; i < num; i++) {
-		dprintk(4, "%s(num = %d) addr = 0x%02x  len = 0x%x\n",
-			__func__, num, msgs[i].addr, msgs[i].len);
+//		dprintk(4, "%s(num = %d) addr = 0x%02x  len = 0x%x\n",
+;
 		if (msgs[i].flags & I2C_M_RD) {
 			/* read */
 			retval = i2c_readbytes(i2c_adap, &msgs[i], 0);
@@ -343,15 +343,15 @@ static void do_i2c_scan(char *name, struct i2c_client *c)
 		rc = i2c_master_recv(c, &buf, 0);
 		if (rc < 0)
 			continue;
-		printk(KERN_INFO "%s: i2c scan: found device @ 0x%x  [%s]\n",
-		       name, i << 1, i2c_devs[i] ? i2c_devs[i] : "???");
+//		printk(KERN_INFO "%s: i2c scan: found device @ 0x%x  [%s]\n",
+;
 	}
 }
 
 /* init + register i2c algo-bit adapter */
 int au0828_i2c_register(struct au0828_dev *dev)
 {
-	dprintk(1, "%s()\n", __func__);
+;
 
 	memcpy(&dev->i2c_adap, &au0828_i2c_adap_template,
 	       sizeof(dev->i2c_adap));
@@ -373,11 +373,11 @@ int au0828_i2c_register(struct au0828_dev *dev)
 	dev->i2c_client.adapter = &dev->i2c_adap;
 
 	if (0 == dev->i2c_rc) {
-		printk(KERN_INFO "%s: i2c bus registered\n", DRIVER_NAME);
+;
 		if (i2c_scan)
 			do_i2c_scan(DRIVER_NAME, &dev->i2c_client);
 	} else
-		printk(KERN_INFO "%s: i2c bus register FAILED\n", DRIVER_NAME);
+;
 
 	return dev->i2c_rc;
 }

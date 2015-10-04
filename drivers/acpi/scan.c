@@ -101,16 +101,16 @@ static void acpi_bus_hot_remove_device(void *context)
 		"Hot-removing device %s...\n", dev_name(&device->dev)));
 
 	if (acpi_bus_trim(device, 1)) {
-		printk(KERN_ERR PREFIX
-				"Removing device failed\n");
+//		printk(KERN_ERR PREFIX
+;
 		return;
 	}
 
 	/* power off device */
 	status = acpi_evaluate_object(handle, "_PS3", NULL, NULL);
 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND)
-		printk(KERN_WARNING PREFIX
-				"Power-off device failed\n");
+//		printk(KERN_WARNING PREFIX
+;
 
 	if (device->flags.lockable) {
 		arg_list.count = 1;
@@ -130,8 +130,8 @@ static void acpi_bus_hot_remove_device(void *context)
 	 */
 	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
 	if (ACPI_FAILURE(status))
-		printk(KERN_WARNING PREFIX
-				"Eject device failed\n");
+//		printk(KERN_WARNING PREFIX
+;
 
 	return;
 }
@@ -466,7 +466,7 @@ static int acpi_device_register(struct acpi_device *device)
 
 	new_bus_id = kzalloc(sizeof(struct acpi_device_bus_id), GFP_KERNEL);
 	if (!new_bus_id) {
-		printk(KERN_ERR PREFIX "Memory allocation error\n");
+;
 		return -ENOMEM;
 	}
 
@@ -511,8 +511,8 @@ static int acpi_device_register(struct acpi_device *device)
 
 	result = acpi_device_setup_files(device);
 	if (result)
-		printk(KERN_ERR PREFIX "Error creating sysfs interface for device %s\n",
-		       dev_name(&device->dev));
+//		printk(KERN_ERR PREFIX "Error creating sysfs interface for device %s\n",
+;
 
 	device->removal_type = ACPI_BUS_REMOVAL_NORMAL;
 	return 0;
@@ -1128,7 +1128,7 @@ static void acpi_device_set_id(struct acpi_device *device)
 
 		status = acpi_get_object_info(device->handle, &info);
 		if (ACPI_FAILURE(status)) {
-			printk(KERN_ERR PREFIX "%s: Error reading device info\n", __func__);
+;
 			return;
 		}
 
@@ -1203,7 +1203,7 @@ static int acpi_device_set_context(struct acpi_device *device)
 	if (ACPI_SUCCESS(status))
 		return 0;
 
-	printk(KERN_ERR PREFIX "Error attaching device data\n");
+;
 	return -ENODEV;
 }
 
@@ -1241,7 +1241,7 @@ static int acpi_add_single_object(struct acpi_device **child,
 
 	device = kzalloc(sizeof(struct acpi_device), GFP_KERNEL);
 	if (!device) {
-		printk(KERN_ERR PREFIX "Memory allocation error\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1592,7 +1592,7 @@ int __init acpi_scan_init(void)
 	result = bus_register(&acpi_bus_type);
 	if (result) {
 		/* We don't want to quit even if we failed to add suspend/resume */
-		printk(KERN_ERR PREFIX "Could not register bus type\n");
+;
 	}
 
 	acpi_power_init();

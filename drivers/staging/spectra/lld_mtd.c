@@ -49,13 +49,13 @@ module_param(mtddev, int, 0);
 u16 mtd_Flash_Init(void)
 {
 	if (mtddev == -1) {
-		printk(KERN_ERR "No MTD device specified. Give mtddev parameter\n");
+;
 		return FAIL;
 	}
 
 	spectra_mtd = get_mtd_device(NULL, mtddev);
 	if (!spectra_mtd) {
-		printk(KERN_ERR "Failed to obtain MTD device #%d\n", mtddev);
+;
 		return FAIL;
 	}
 
@@ -174,8 +174,8 @@ u16 mtd_Erase_Block(u32 block_add)
 		       __FILE__, __LINE__, __func__);
 
 	if (block_add >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "mtd_Erase_Block error! "
-		       "Too big block address: %d\n", block_add);
+//		printk(KERN_ERR "mtd_Erase_Block error! "
+;
 		return FAIL;
 	}
 
@@ -195,9 +195,9 @@ u16 mtd_Erase_Block(u32 block_add)
 			ret = -EIO;
 	}
 	if (ret) {
-		printk(KERN_WARNING "mtd_Erase_Block error! "
-		       "erase of region [0x%llx, 0x%llx] failed\n",
-		       erase.addr, erase.len);
+//		printk(KERN_WARNING "mtd_Erase_Block error! "
+//		       "erase of region [0x%llx, 0x%llx] failed\n",
+;
 		return FAIL;
 	}
 
@@ -237,7 +237,7 @@ u16 mtd_Write_Page_Main(u8 *write_data, u32 Block,
 					 (Block * spectra_mtd->erasesize) + (Page * spectra_mtd->writesize),
 					 DeviceInfo.wPageDataSize, &retlen, write_data);
 		if (ret) {
-			printk(KERN_ERR "%s failed %d\n", __func__, ret);
+;
 			return FAIL;
 		}
 		write_data += DeviceInfo.wPageDataSize;
@@ -287,7 +287,7 @@ u16 mtd_Read_Page_Main(u8 *read_data, u32 Block,
 					(Block * spectra_mtd->erasesize) + (Page * spectra_mtd->writesize),
 					DeviceInfo.wPageDataSize, &retlen, read_data);
 		if (ret) {
-			printk(KERN_ERR "%s failed %d\n", __func__, ret);
+;
 			return FAIL;
 		}
 		read_data += DeviceInfo.wPageDataSize;
@@ -318,15 +318,15 @@ u16 mtd_Read_Page_Main_Spare(u8 *read_data, u32 Block,
 		       __FILE__, __LINE__, __func__);
 
 	if (Block >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "Read Page Main+Spare "
-		       "Error: Block Address too big\n");
+//		printk(KERN_ERR "Read Page Main+Spare "
+;
 		return FAIL;
 	}
 
 	if (Page + PageCount > DeviceInfo.wPagesPerBlock) {
-		printk(KERN_ERR "Read Page Main+Spare "
-		       "Error: Page number %d+%d too big in block %d\n",
-		       Page, PageCount, Block);
+//		printk(KERN_ERR "Read Page Main+Spare "
+//		       "Error: Page number %d+%d too big in block %d\n",
+;
 		return FAIL;
 	}
 
@@ -351,7 +351,7 @@ u16 mtd_Read_Page_Main_Spare(u8 *read_data, u32 Block,
 					    (Block * spectra_mtd->erasesize) + (Page * spectra_mtd->writesize),
 					    &ops);
 		if (ret) {
-			printk(KERN_ERR "%s failed %d\n", __func__, ret);
+;
 			return FAIL;
 		}
 		read_data += DeviceInfo.wPageSize;
@@ -378,15 +378,15 @@ u16 mtd_Write_Page_Main_Spare(u8 *write_data, u32 Block,
 		       __FILE__, __LINE__, __func__);
 
 	if (Block >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "Write Page Main + Spare "
-		       "Error: Block Address too big\n");
+//		printk(KERN_ERR "Write Page Main + Spare "
+;
 		return FAIL;
 	}
 
 	if (Page + page_count > DeviceInfo.wPagesPerBlock) {
-		printk(KERN_ERR "Write Page Main + Spare "
-		       "Error: Page number %d+%d too big in block %d\n",
-		       Page, page_count, Block);
+//		printk(KERN_ERR "Write Page Main + Spare "
+//		       "Error: Page number %d+%d too big in block %d\n",
+;
 		WARN_ON(1);
 		return FAIL;
 	}
@@ -411,7 +411,7 @@ u16 mtd_Write_Page_Main_Spare(u8 *write_data, u32 Block,
 					     (Block * spectra_mtd->erasesize) + (Page * spectra_mtd->writesize),
 					     &ops);
 		if (ret) {
-			printk(KERN_ERR "%s failed %d\n", __func__, ret);
+;
 			return FAIL;
 		}
 		write_data += DeviceInfo.wPageSize;
@@ -454,14 +454,14 @@ u16 mtd_Read_Page_Spare(u8 *read_data, u32 Block,
 		       __FILE__, __LINE__, __func__);
 
 	if (Block >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "Read Page Spare "
-		       "Error: Block Address too big\n");
+//		printk(KERN_ERR "Read Page Spare "
+;
 		return FAIL;
 	}
 
 	if (Page + PageCount > DeviceInfo.wPagesPerBlock) {
-		printk(KERN_ERR "Read Page Spare "
-		       "Error: Page number too big\n");
+//		printk(KERN_ERR "Read Page Spare "
+;
 		return FAIL;
 	}
 
@@ -484,7 +484,7 @@ u16 mtd_Read_Page_Spare(u8 *read_data, u32 Block,
 					    (Block * spectra_mtd->erasesize) + (Page * spectra_mtd->writesize),
 					    &ops);
 		if (ret) {
-			printk(KERN_ERR "%s failed %d\n", __func__, ret);
+;
 			return FAIL;
 		}
 

@@ -39,7 +39,7 @@ static int s3c2412_serial_setsource(struct uart_port *port,
 	else if (strcmp(clk->name, "usysclk") == 0)
 		ucon |= S3C2412_UCON_USYSCLK;
 	else {
-		printk(KERN_ERR "unknown clock source %s\n", clk->name);
+;
 		return -EINVAL;
 	}
 

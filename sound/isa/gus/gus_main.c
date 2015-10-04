@@ -171,30 +171,30 @@ int snd_gus_create(struct snd_card *card,
 	gus->gf1.reg_timerdata = GUSP(gus, TIMERDATA);
 	/* allocate resources */
 	if ((gus->gf1.res_port1 = request_region(port, 16, "GUS GF1 (Adlib/SB)")) == NULL) {
-		snd_printk(KERN_ERR "gus: can't grab SB port 0x%lx\n", port);
+;
 		snd_gus_free(gus);
 		return -EBUSY;
 	}
 	if ((gus->gf1.res_port2 = request_region(port + 0x100, 12, "GUS GF1 (Synth)")) == NULL) {
-		snd_printk(KERN_ERR "gus: can't grab synth port 0x%lx\n", port + 0x100);
+;
 		snd_gus_free(gus);
 		return -EBUSY;
 	}
 	if (irq >= 0 && request_irq(irq, snd_gus_interrupt, IRQF_DISABLED, "GUS GF1", (void *) gus)) {
-		snd_printk(KERN_ERR "gus: can't grab irq %d\n", irq);
+;
 		snd_gus_free(gus);
 		return -EBUSY;
 	}
 	gus->gf1.irq = irq;
 	if (request_dma(dma1, "GUS - 1")) {
-		snd_printk(KERN_ERR "gus: can't grab DMA1 %d\n", dma1);
+;
 		snd_gus_free(gus);
 		return -EBUSY;
 	}
 	gus->gf1.dma1 = dma1;
 	if (dma2 >= 0 && dma1 != dma2) {
 		if (request_dma(dma2, "GUS - 2")) {
-			snd_printk(KERN_ERR "gus: can't grab DMA2 %d\n", dma2);
+;
 			snd_gus_free(gus);
 			return -EBUSY;
 		}
@@ -239,7 +239,7 @@ static int snd_gus_detect_memory(struct snd_gus_card * gus)
 	snd_gf1_poke(gus, 0L, 0xaa);
 	snd_gf1_poke(gus, 1L, 0x55);
 	if (snd_gf1_peek(gus, 0L) != 0xaa || snd_gf1_peek(gus, 1L) != 0x55) {
-		snd_printk(KERN_ERR "plain GF1 card at 0x%lx without onboard DRAM?\n", gus->gf1.port);
+;
 		return -ENOMEM;
 	}
 	for (idx = 1, d = 0xab; idx < 4; idx++, d++) {
@@ -297,14 +297,14 @@ static int snd_gus_init_dma_irq(struct snd_gus_card * gus, int latches)
 	dma1 |= gus->equal_dma ? 0x40 : (dma2 << 3);
 
 	if ((dma1 & 7) == 0 || (dma2 & 7) == 0) {
-		snd_printk(KERN_ERR "Error! DMA isn't defined.\n");
+;
 		return -EINVAL;
 	}
 	irq = gus->gf1.irq;
 	irq = abs(irq);
 	irq = irqs[irq & 0x0f];
 	if (irq == 0) {
-		snd_printk(KERN_ERR "Error! IRQ isn't defined.\n");
+;
 		return -EINVAL;
 	}
 	irq |= 0x40;
@@ -392,8 +392,8 @@ static int snd_gus_check_version(struct snd_gus_card * gus)
 				strcpy(card->longname, "Gravis UltraSound Extreme");
 				gus->ess_flag = 1;
 			} else {
-				snd_printk(KERN_ERR "unknown GF1 revision number at 0x%lx - 0x%x (0x%x)\n", gus->gf1.port, rev, val);
-				snd_printk(KERN_ERR "  please - report to <perex@perex.cz>\n");
+;
+;
 			}
 		}
 	}
@@ -409,7 +409,7 @@ int snd_gus_initialize(struct snd_gus_card *gus)
 
 	if (!gus->interwave) {
 		if ((err = snd_gus_check_version(gus)) < 0) {
-			snd_printk(KERN_ERR "version check failed\n");
+;
 			return err;
 		}
 		if ((err = snd_gus_detect_memory(gus)) < 0)

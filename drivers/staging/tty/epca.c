@@ -414,7 +414,7 @@ static void pc_sched_event(struct channel *ch, int event)
 
 static void epca_error(int line, char *msg)
 {
-	printk(KERN_ERR "epca_error (Digi): line = %d %s\n", line, msg);
+;
 }
 
 static void pc_close(struct tty_struct *tty, struct file *filp)
@@ -776,17 +776,17 @@ static int pc_open(struct tty_struct *tty, struct file *filp)
 	 */
 	if (invalid_lilo_config) {
 		if (setup_error_code & INVALID_BOARD_TYPE)
-			printk(KERN_ERR "epca: pc_open: Invalid board type specified in kernel options.\n");
+;
 		if (setup_error_code & INVALID_NUM_PORTS)
-			printk(KERN_ERR "epca: pc_open: Invalid number of ports specified in kernel options.\n");
+;
 		if (setup_error_code & INVALID_MEM_BASE)
-			printk(KERN_ERR "epca: pc_open: Invalid board memory address specified in kernel options.\n");
+;
 		if (setup_error_code & INVALID_PORT_BASE)
-			printk(KERN_ERR "epca; pc_open: Invalid board port address specified in kernel options.\n");
+;
 		if (setup_error_code & INVALID_BOARD_STATUS)
-			printk(KERN_ERR "epca: pc_open: Invalid board status specified in kernel options.\n");
+;
 		if (setup_error_code & INVALID_ALTPIN)
-			printk(KERN_ERR "epca: pc_open: Invalid board altpin specified in kernel options;\n");
+;
 		tty->driver_data = NULL;   /* Mark this device as 'down' */
 		return -ENODEV;
 	}
@@ -881,7 +881,7 @@ static void __exit epca_module_exit(void)
 
 	if (tty_unregister_driver(pc_driver) ||
 				tty_unregister_driver(pc_info)) {
-		printk(KERN_WARNING "epca: cleanup_module failed to un-register tty driver\n");
+;
 		return;
 	}
 	put_tty_driver(pc_driver);
@@ -890,7 +890,7 @@ static void __exit epca_module_exit(void)
 	for (crd = 0; crd < num_cards; crd++) {
 		bd = &boards[crd];
 		if (!bd) { /* sanity check */
-			printk(KERN_ERR "<Error> - Digi : cleanup_module failed\n");
+;
 			return;
 		}
 		ch = card_ptr[crd];
@@ -984,7 +984,7 @@ static int __init pc_init(void)
 	 * Set up interrupt, we will worry about memory allocation in
 	 * post_fep_init.
 	 */
-	printk(KERN_INFO "DIGI epca driver version %s loaded.\n", VERSION);
+;
 
 	/*
 	 * NOTE : This code assumes that the number of ports found in the
@@ -1137,20 +1137,20 @@ static int __init pc_init(void)
 				if ((board_id & 0x30) == 0x30)
 					bd->memory_seg = 0x8000;
 			} else
-				printk(KERN_ERR "epca: Board at 0x%x doesn't appear to be an XI\n", (int)bd->port);
+;
 			break;
 		}
 	}
 
 	err = tty_register_driver(pc_driver);
 	if (err) {
-		printk(KERN_ERR "Couldn't register Digi PC/ driver");
+;
 		goto out3;
 	}
 
 	err = tty_register_driver(pc_info);
 	if (err) {
-		printk(KERN_ERR "Couldn't register Digi PC/ info ");
+;
 		goto out4;
 	}
 
@@ -1403,10 +1403,10 @@ static void post_fep_init(unsigned int crd)
 		spin_unlock_irqrestore(&epca_lock, flags);
 	}
 
-	printk(KERN_INFO
-	"Digi PC/Xx Driver V%s:  %s I/O = 0x%lx Mem = 0x%lx Ports = %d\n",
-				VERSION, board_desc[bd->type], (long)bd->port,
-					(long)bd->membase, bd->numports);
+//	printk(KERN_INFO
+//	"Digi PC/Xx Driver V%s:  %s I/O = 0x%lx Mem = 0x%lx Ports = %d\n",
+//				VERSION, board_desc[bd->type], (long)bd->port,
+;
 	memwinoff(bd, 0);
 }
 
@@ -1583,10 +1583,10 @@ static void fepcmd(struct channel *ch, int cmd, int word_or_byte,
 	memaddr = ch->board->re_map_membase;
 
 	if (head >= (cmdMax - cmdStart) || (head & 03))  {
-		printk(KERN_ERR "line %d: Out of range, cmd = %x, head = %x\n",
-						__LINE__,  cmd, head);
-		printk(KERN_ERR "line %d: Out of range, cmdMax = %x, cmdStart = %x\n",
-						__LINE__,  cmdMax, cmdStart);
+//		printk(KERN_ERR "line %d: Out of range, cmd = %x, head = %x\n",
+;
+//		printk(KERN_ERR "line %d: Out of range, cmdMax = %x, cmdStart = %x\n",
+;
 		return;
 	}
 	if (bytecmd)  {
@@ -1608,7 +1608,7 @@ static void fepcmd(struct channel *ch, int cmd, int word_or_byte,
 	for (;;) {
 		count--;
 		if (count == 0)  {
-			printk(KERN_ERR "<Error> - Fep not responding in fepcmd()\n");
+;
 			return;
 		}
 		head = readw(&ch->mailbox->cin);
@@ -1886,7 +1886,7 @@ static void receive_data(struct channel *ch, struct tty_struct *tty)
 
 	if (readb(&bc->orun)) {
 		writeb(0, &bc->orun);
-		printk(KERN_WARNING "epca; overrun! DigiBoard device %s\n",
+;
 								tty->name);
 		tty_insert_flip_char(tty, 0, TTY_OVERRUN);
 	}
@@ -1955,7 +1955,7 @@ static int info_ioctl(struct tty_struct *tty,
 			unsigned char state = arg & 0xff;
 
 			if (brd < 0 || brd >= num_cards) {
-				printk(KERN_ERR "epca: DIGI POLLER : brd not valid!\n");
+;
 				return -ENODEV;
 			}
 			digi_poller_inhibited = state;
@@ -2438,8 +2438,8 @@ static void __init epca_setup(char *str, int *ints)
 			} /* End ignore epcaconfig as well as lilo cmd line */
 
 			if (board.status > 2) {
-				printk(KERN_ERR "epca_setup: Invalid board status 0x%x\n",
-						board.status);
+//				printk(KERN_ERR "epca_setup: Invalid board status 0x%x\n",
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_BOARD_STATUS;
 				return;
@@ -2449,7 +2449,7 @@ static void __init epca_setup(char *str, int *ints)
 		case 2:
 			board.type = ints[index];
 			if (board.type >= PCIXEM)  {
-				printk(KERN_ERR "epca_setup: Invalid board type 0x%x\n", board.type);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_BOARD_TYPE;
 				return;
@@ -2459,7 +2459,7 @@ static void __init epca_setup(char *str, int *ints)
 		case 3:
 			board.altpin = ints[index];
 			if (board.altpin > 1) {
-				printk(KERN_ERR "epca_setup: Invalid board altpin 0x%x\n", board.altpin);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_ALTPIN;
 				return;
@@ -2470,7 +2470,7 @@ static void __init epca_setup(char *str, int *ints)
 		case 4:
 			board.numports = ints[index];
 			if (board.numports < 2 || board.numports > 256) {
-				printk(KERN_ERR "epca_setup: Invalid board numports 0x%x\n", board.numports);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_NUM_PORTS;
 				return;
@@ -2482,7 +2482,7 @@ static void __init epca_setup(char *str, int *ints)
 		case 5:
 			board.port = ints[index];
 			if (ints[index] <= 0) {
-				printk(KERN_ERR "epca_setup: Invalid io port 0x%x\n", (unsigned int)board.port);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_PORT_BASE;
 				return;
@@ -2493,8 +2493,8 @@ static void __init epca_setup(char *str, int *ints)
 		case 6:
 			board.membase = ints[index];
 			if (ints[index] <= 0) {
-				printk(KERN_ERR "epca_setup: Invalid memory base 0x%x\n",
-					(unsigned int)board.membase);
+//				printk(KERN_ERR "epca_setup: Invalid memory base 0x%x\n",
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_MEM_BASE;
 				return;
@@ -2503,7 +2503,7 @@ static void __init epca_setup(char *str, int *ints)
 			break;
 
 		default:
-			printk(KERN_ERR "<Error> - epca_setup: Too many integer parms\n");
+;
 			return;
 
 		} /* End parse switch */
@@ -2529,7 +2529,7 @@ static void __init epca_setup(char *str, int *ints)
 			else if (strncmp("Enable", str, len) == 0)
 				board.status = 1;
 			else {
-				printk(KERN_ERR "epca_setup: Invalid status %s\n", str);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_BOARD_STATUS;
 				return;
@@ -2548,7 +2548,7 @@ static void __init epca_setup(char *str, int *ints)
 			if (index < EPCA_NUM_TYPES)
 				board.type = loop;
 			else {
-				printk(KERN_ERR "epca_setup: Invalid board type: %s\n", str);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_BOARD_TYPE;
 				return;
@@ -2563,7 +2563,7 @@ static void __init epca_setup(char *str, int *ints)
 			else if (strncmp("Enable", str, len) == 0)
 				board.altpin = 1;
 			else {
-				printk(KERN_ERR "epca_setup: Invalid altpin %s\n", str);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_ALTPIN;
 				return;
@@ -2577,7 +2577,7 @@ static void __init epca_setup(char *str, int *ints)
 				t2++;
 
 			if (*t2) {
-				printk(KERN_ERR "epca_setup: Invalid port count %s\n", str);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_NUM_PORTS;
 				return;
@@ -2609,7 +2609,7 @@ static void __init epca_setup(char *str, int *ints)
 				t2++;
 
 			if (*t2) {
-				printk(KERN_ERR "epca_setup: Invalid i/o address %s\n", str);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_PORT_BASE;
 				return;
@@ -2625,7 +2625,7 @@ static void __init epca_setup(char *str, int *ints)
 				t2++;
 
 			if (*t2) {
-				printk(KERN_ERR "epca_setup: Invalid memory base %s\n", str);
+;
 				invalid_lilo_config = 1;
 				setup_error_code |= INVALID_MEM_BASE;
 				return;
@@ -2634,14 +2634,14 @@ static void __init epca_setup(char *str, int *ints)
 			last = index;
 			break;
 		default:
-			printk(KERN_ERR "epca: Too many string parms\n");
+;
 			return;
 		}
 		str = temp;
 	} /* End while there is a string arg */
 
 	if (last < 6) {
-		printk(KERN_ERR "epca: Insufficient parms specified\n");
+;
 		return;
 	}
 
@@ -2649,9 +2649,9 @@ static void __init epca_setup(char *str, int *ints)
 	/* Copies our local copy of board into boards */
 	memcpy((void *)&boards[num_cards], (void *)&board, sizeof(board));
 	/* Does this get called once per lilo arg are what ? */
-	printk(KERN_INFO "PC/Xx: Added board %i, %s %i ports at 0x%4.4X base 0x%6.6X\n",
-		num_cards, board_desc[board.type],
-		board.numports, (int)board.port, (unsigned int) board.membase);
+//	printk(KERN_INFO "PC/Xx: Added board %i, %s %i ports at 0x%4.4X base 0x%6.6X\n",
+//		num_cards, board_desc[board.type],
+;
 	num_cards++;
 }
 
@@ -2701,8 +2701,8 @@ static int __devinit epca_init_one(struct pci_dev *pdev,
 
 	addr = pci_resource_start(pdev, epca_info_tbl[info_idx].bar_idx);
 	if (!addr) {
-		printk(KERN_ERR PFX "PCI region #%d not available (size 0)\n",
-			epca_info_tbl[info_idx].bar_idx);
+//		printk(KERN_ERR PFX "PCI region #%d not available (size 0)\n",
+;
 		goto err_out;
 	}
 
@@ -2713,29 +2713,29 @@ static int __devinit epca_init_one(struct pci_dev *pdev,
 	boards[board_idx].membase = addr;
 
 	if (!request_mem_region(addr + PCI_IO_OFFSET, 0x200000, "epca")) {
-		printk(KERN_ERR PFX "resource 0x%x @ 0x%lx unavailable\n",
-			0x200000, addr + PCI_IO_OFFSET);
+//		printk(KERN_ERR PFX "resource 0x%x @ 0x%lx unavailable\n",
+;
 		goto err_out;
 	}
 
 	boards[board_idx].re_map_port = ioremap_nocache(addr + PCI_IO_OFFSET,
 								0x200000);
 	if (!boards[board_idx].re_map_port) {
-		printk(KERN_ERR PFX "cannot map 0x%x @ 0x%lx\n",
-			0x200000, addr + PCI_IO_OFFSET);
+//		printk(KERN_ERR PFX "cannot map 0x%x @ 0x%lx\n",
+;
 		goto err_out_free_pciio;
 	}
 
 	if (!request_mem_region(addr, 0x200000, "epca")) {
-		printk(KERN_ERR PFX "resource 0x%x @ 0x%lx unavailable\n",
-			0x200000, addr);
+//		printk(KERN_ERR PFX "resource 0x%x @ 0x%lx unavailable\n",
+;
 		goto err_out_free_iounmap;
 	}
 
 	boards[board_idx].re_map_membase = ioremap_nocache(addr, 0x200000);
 	if (!boards[board_idx].re_map_membase) {
-		printk(KERN_ERR PFX "cannot map 0x%x @ 0x%lx\n",
-			0x200000, addr + PCI_IO_OFFSET);
+//		printk(KERN_ERR PFX "cannot map 0x%x @ 0x%lx\n",
+;
 		goto err_out_free_memregion;
 	}
 

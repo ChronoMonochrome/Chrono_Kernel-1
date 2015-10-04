@@ -85,8 +85,8 @@ check_filename(char *str, int len, __be32 err)
 out:						\
 	return status;				\
 xdr_error:					\
-	dprintk("NFSD: xdr error (%s:%d)\n",	\
-			__FILE__, __LINE__);	\
+//	dprintk("NFSD: xdr error (%s:%d)\n",	\
+;
 	status = nfserr_bad_xdr;		\
 	goto out
 
@@ -108,8 +108,8 @@ xdr_error:					\
 	if (!(x = (p==argp->tmp || p == argp->tmpp) ? \
  		savemem(argp, p, nbytes) :	\
  		(char *)p)) {			\
-		dprintk("NFSD: xdr error (%s:%d)\n", \
-				__FILE__, __LINE__); \
+//		dprintk("NFSD: xdr error (%s:%d)\n", \
+;
 		goto xdr_error;			\
 		}				\
 	p += XDR_QUADLEN(nbytes);		\
@@ -125,8 +125,8 @@ xdr_error:					\
 		p = argp->p;			\
 		argp->p += XDR_QUADLEN(nbytes);	\
 	} else if (!(p = read_buf(argp, nbytes))) { \
-		dprintk("NFSD: xdr error (%s:%d)\n", \
-				__FILE__, __LINE__); \
+//		dprintk("NFSD: xdr error (%s:%d)\n", \
+;
 		goto xdr_error;			\
 	}					\
 } while (0)
@@ -972,8 +972,8 @@ nfsd4_decode_write(struct nfsd4_compoundargs *argp, struct nfsd4_write *write)
 	 */
 	avail = (char*)argp->end - (char*)argp->p;
 	if (avail + argp->pagelen < write->wr_buflen) {
-		dprintk("NFSD: xdr error (%s:%d)\n",
-				__FILE__, __LINE__);
+//		dprintk("NFSD: xdr error (%s:%d)\n",
+;
 		goto xdr_error;
 	}
 	argp->rqstp->rq_vec[0].iov_base = p;
@@ -1152,7 +1152,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
 		READ_BUF(4);
 		READ32(sess->fore_channel.rdma_attrs);
 	} else if (sess->fore_channel.nr_rdma_attrs > 1) {
-		dprintk("Too many fore channel attr bitmaps!\n");
+;
 		goto xdr_error;
 	}
 
@@ -1169,7 +1169,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
 		READ_BUF(4);
 		READ32(sess->back_channel.rdma_attrs);
 	} else if (sess->back_channel.nr_rdma_attrs > 1) {
-		dprintk("Too many back channel attr bitmaps!\n");
+;
 		goto xdr_error;
 	}
 
@@ -1206,8 +1206,8 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
 			READ_BUF(dummy * 4);
 			break;
 		case RPC_AUTH_GSS:
-			dprintk("RPC_AUTH_GSS callback secflavor "
-				"not supported!\n");
+//			dprintk("RPC_AUTH_GSS callback secflavor "
+;
 			READ_BUF(8);
 			/* gcbp_service */
 			READ32(dummy);
@@ -1221,7 +1221,7 @@ nfsd4_decode_create_session(struct nfsd4_compoundargs *argp,
 			READ_BUF(dummy);
 			break;
 		default:
-			dprintk("Illegal callback secflavor\n");
+;
 			return nfserr_inval;
 		}
 	}
@@ -1420,7 +1420,7 @@ nfsd4_decode_compound(struct nfsd4_compoundargs *argp)
 		argp->ops = kmalloc(argp->opcnt * sizeof(*argp->ops), GFP_KERNEL);
 		if (!argp->ops) {
 			argp->ops = argp->iops;
-			dprintk("nfsd: couldn't allocate room for COMPOUND\n");
+;
 			goto xdr_error;
 		}
 	}
@@ -1582,7 +1582,7 @@ static __be32 nfsd4_encode_components(char sep, char *components,
 	int strlen, count=0;
 	char *str, *end;
 
-	dprintk("nfsd4_encode_components(%s)\n", components);
+;
 	if ((*buflen -= 4) < 0)
 		return nfserr_resource;
 	WRITE32(0); /* We will fill this in with @count later */
@@ -1648,7 +1648,7 @@ static char *nfsd4_path(struct svc_rqst *rqstp, struct svc_export *exp, __be32 *
 
 	rootlen = strlen(rootpath);
 	if (strncmp(path, rootpath, rootlen)) {
-		dprintk("nfsd: fs_locations failed;"
+;
 			"%s is not contained in %s\n", path, rootpath);
 		*stat = nfserr_notsupp;
 		path = NULL;
@@ -3263,8 +3263,8 @@ static int nfsd4_check_drc_limit(struct nfsd4_compoundres *resp)
 
 		length = xb->head[0].iov_len + xb->page_len + tlen + pad;
 	}
-	dprintk("%s length %u, xb->page_len %u tlen %u pad %u\n", __func__,
-		length, xb->page_len, tlen, pad);
+//	dprintk("%s length %u, xb->page_len %u tlen %u pad %u\n", __func__,
+;
 
 	if (length <= session->se_fchannel.maxresp_cached)
 		return status;
@@ -3391,7 +3391,7 @@ nfs4svc_encode_compoundres(struct svc_rqst *rqstp, __be32 *p, struct nfsd4_compo
 	if (nfsd4_has_session(cs)) {
 		if (cs->status != nfserr_replay_cache) {
 			nfsd4_store_cache_entry(resp);
-			dprintk("%s: SET SLOT STATE TO AVAILABLE\n", __func__);
+;
 			cs->slot->sl_inuse = false;
 		}
 		/* Renew the clientid on success and on replay */

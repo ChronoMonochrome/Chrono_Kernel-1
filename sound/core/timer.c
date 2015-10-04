@@ -770,7 +770,7 @@ int snd_timer_new(struct snd_card *card, char *id, struct snd_timer_id *tid,
 		*rtimer = NULL;
 	timer = kzalloc(sizeof(*timer), GFP_KERNEL);
 	if (timer == NULL) {
-		snd_printk(KERN_ERR "timer: cannot allocate\n");
+;
 		return -ENOMEM;
 	}
 	timer->tmr_class = tid->dev_class;
@@ -809,7 +809,7 @@ static int snd_timer_free(struct snd_timer *timer)
 	if (! list_empty(&timer->open_list_head)) {
 		struct list_head *p, *n;
 		struct snd_timer_instance *ti;
-		snd_printk(KERN_WARNING "timer %p is busy?\n", timer);
+;
 		list_for_each_safe(p, n, &timer->open_list_head) {
 			list_del_init(p);
 			ti = list_entry(p, struct snd_timer_instance, open_list);
@@ -1951,12 +1951,12 @@ static int __init alsa_timer_init(void)
 #endif
 
 	if ((err = snd_timer_register_system()) < 0)
-		snd_printk(KERN_ERR "unable to register system timer (%i)\n",
-			   err);
+//		snd_printk(KERN_ERR "unable to register system timer (%i)\n",
+;
 	if ((err = snd_register_device(SNDRV_DEVICE_TYPE_TIMER, NULL, 0,
 				       &snd_timer_f_ops, NULL, "timer")) < 0)
-		snd_printk(KERN_ERR "unable to register timer device (%i)\n",
-			   err);
+//		snd_printk(KERN_ERR "unable to register timer device (%i)\n",
+;
 	snd_timer_proc_init();
 	return 0;
 }

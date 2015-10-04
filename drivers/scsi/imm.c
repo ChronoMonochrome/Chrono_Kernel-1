@@ -130,7 +130,7 @@ static inline int imm_proc_write(imm_struct *dev, char *buffer, int length)
 		dev->mode = x;
 		return length;
 	}
-	printk("imm /proc: invalid variable\n");
+;
 	return (-EINVAL);
 }
 
@@ -163,8 +163,8 @@ static int imm_proc_info(struct Scsi_Host *host, char *buffer, char **start,
 }
 
 #if IMM_DEBUG > 0
-#define imm_fail(x,y) printk("imm: imm_fail(%i) from %s at line %d\n",\
-	   y, __func__, __LINE__); imm_fail_func(x,y);
+//#define imm_fail(x,y) printk("imm: imm_fail(%i) from %s at line %d\n",\
+;
 static inline void
 imm_fail_func(imm_struct *dev, int error_code)
 #else
@@ -227,7 +227,7 @@ static unsigned char imm_wait(imm_struct *dev)
 
 	/* Counter expired - Time out occurred */
 	imm_fail(dev, DID_TIME_OUT);
-	printk("imm timeout in imm_wait\n");
+;
 	return 0;		/* command timed out */
 }
 
@@ -307,7 +307,7 @@ static inline void ecp_sync(imm_struct *dev)
 				return;
 			udelay(5);
 		}
-		printk("imm: ECP sync failed as data still present in FIFO.\n");
+;
 	}
 }
 
@@ -373,7 +373,7 @@ static int imm_out(imm_struct *dev, char *buffer, int len)
 	 */
 	if ((r & 0x18) != 0x08) {
 		imm_fail(dev, DID_ERROR);
-		printk("IMM: returned SCSI status %2x\n", r);
+;
 		return 0;
 	}
 	switch (dev->mode) {
@@ -404,7 +404,7 @@ static int imm_out(imm_struct *dev, char *buffer, int len)
 		break;
 
 	default:
-		printk("IMM: bug in imm_out()\n");
+;
 		r = 0;
 	}
 	return r;
@@ -458,7 +458,7 @@ static int imm_in(imm_struct *dev, char *buffer, int len)
 		break;
 
 	default:
-		printk("IMM: bug in imm_ins()\n");
+;
 		r = 0;
 		break;
 	}
@@ -749,32 +749,32 @@ static void imm_interrupt(struct work_struct *work)
 	case DID_OK:
 		break;
 	case DID_NO_CONNECT:
-		printk("imm: no device at SCSI ID %i\n", cmd->device->id);
+;
 		break;
 	case DID_BUS_BUSY:
-		printk("imm: BUS BUSY - EPP timeout detected\n");
+;
 		break;
 	case DID_TIME_OUT:
-		printk("imm: unknown timeout\n");
+;
 		break;
 	case DID_ABORT:
-		printk("imm: told to abort\n");
+;
 		break;
 	case DID_PARITY:
-		printk("imm: parity error (???)\n");
+;
 		break;
 	case DID_ERROR:
-		printk("imm: internal driver error\n");
+;
 		break;
 	case DID_RESET:
-		printk("imm: told to reset device\n");
+;
 		break;
 	case DID_BAD_INTR:
-		printk("imm: bad interrupt (???)\n");
+;
 		break;
 	default:
-		printk("imm: bad return code (%02x)\n",
-		       (cmd->result >> 16) & 0xff);
+//		printk("imm: bad return code (%02x)\n",
+;
 	}
 #endif
 
@@ -921,7 +921,7 @@ static int imm_engine(imm_struct *dev, struct scsi_cmnd *cmd)
 		break;
 
 	default:
-		printk("imm: Invalid scsi phase\n");
+;
 	}
 	return 0;
 }
@@ -932,7 +932,7 @@ static int imm_queuecommand_lck(struct scsi_cmnd *cmd,
 	imm_struct *dev = imm_dev(cmd->device->host);
 
 	if (dev->cur_cmd) {
-		printk("IMM: bug in imm_queuecommand\n");
+;
 		return 0;
 	}
 	dev->failed = 0;
@@ -1041,8 +1041,8 @@ static int device_check(imm_struct *dev)
 			imm_disconnect(dev);
 			continue;
 		}
-		printk("imm: Found device at ID %i, Attempting to use %s\n",
-		       loop, IMM_MODE_STRING[dev->mode]);
+//		printk("imm: Found device at ID %i, Attempting to use %s\n",
+;
 
 		/* Send SCSI command */
 		status = 1;
@@ -1061,7 +1061,7 @@ static int device_check(imm_struct *dev)
 				dev->mode = old_mode;
 				goto second_pass;
 			}
-			printk("imm: Unable to establish communication\n");
+;
 			return -EIO;
 		}
 		w_ctr(ppb, 0x0c);
@@ -1101,7 +1101,7 @@ static int device_check(imm_struct *dev)
 		udelay(1000);
 		return 0;
 	}
-	printk("imm: No devices found\n");
+;
 	return -ENODEV;
 }
 
@@ -1176,9 +1176,9 @@ static int __imm_attach(struct parport *pb)
 	if (imm_pb_claim(dev))
 		schedule_timeout(3 * HZ);
 	if (dev->wanted) {
-		printk(KERN_ERR "imm%d: failed to claim parport because "
-			"a pardevice is owning the port for too long "
-			"time!\n", pb->number);
+//		printk(KERN_ERR "imm%d: failed to claim parport because "
+//			"a pardevice is owning the port for too long "
+;
 		imm_pb_dismiss(dev);
 		dev->waiting = NULL;
 		finish_wait(&waiting, &wait);
@@ -1271,7 +1271,7 @@ static struct parport_driver imm_driver = {
 
 static int __init imm_driver_init(void)
 {
-	printk("imm: Version %s\n", IMM_VERSION);
+;
 	return parport_register_driver(&imm_driver);
 }
 

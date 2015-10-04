@@ -37,7 +37,7 @@ static void dump_registers(struct saa7146_dev* dev)
 
 	INFO((" @ %li jiffies:\n",jiffies));
 	for(i = 0; i <= 0x148; i+=4) {
-		printk("0x%03x: 0x%08x\n",i,saa7146_read(dev,i));
+;
 	}
 }
 #endif
@@ -72,9 +72,9 @@ static inline int saa7146_wait_for_debi_done_sleep(struct saa7146_dev *dev,
 		if (saa7146_read(dev, MC2) & 2)
 			break;
 		if (err) {
-			printk(KERN_ERR "%s: %s timed out while waiting for "
-					"registers getting programmed\n",
-					dev->name, __func__);
+//			printk(KERN_ERR "%s: %s timed out while waiting for "
+//					"registers getting programmed\n",
+;
 			return -ETIMEDOUT;
 		}
 		msleep(1);
@@ -109,9 +109,9 @@ static inline int saa7146_wait_for_debi_done_busyloop(struct saa7146_dev *dev,
 		if (saa7146_read(dev, MC2) & 2)
 			break;
 		if (!loops--) {
-			printk(KERN_ERR "%s: %s timed out while waiting for "
-					"registers getting programmed\n",
-					dev->name, __func__);
+//			printk(KERN_ERR "%s: %s timed out while waiting for "
+//					"registers getting programmed\n",
+;
 			return -ETIMEDOUT;
 		}
 		udelay(1);
@@ -264,7 +264,7 @@ int saa7146_pgtable_build_single(struct pci_dev *pci, struct saa7146_pgtable *pt
 	ptr = pt->cpu;
 	for (i = 0; i < sglen; i++, list++) {
 /*
-		printk("i:%d, adr:0x%08x, len:%d, offset:%d\n", i,sg_dma_address(list), sg_dma_len(list), list->offset);
+;
 */
 		for (p = 0; p * 4096 < list->length; p++, ptr++) {
 			*ptr = cpu_to_le32(sg_dma_address(list) + p * 4096);
@@ -281,9 +281,9 @@ int saa7146_pgtable_build_single(struct pci_dev *pci, struct saa7146_pgtable *pt
 
 /*
 	ptr = pt->cpu;
-	printk("offset: %d\n",pt->offset);
+;
 	for(i=0;i<5;i++) {
-		printk("ptr1 %d: 0x%08x\n",i,ptr[i]);
+;
 	}
 */
 	return 0;
@@ -333,8 +333,8 @@ static irqreturn_t interrupt_hw(int irq, void *dev_id)
 		} else {
 			u32 psr = saa7146_read(dev, PSR);
 			u32 ssr = saa7146_read(dev, SSR);
-			printk(KERN_WARNING "%s: unexpected i2c irq: isr %08x psr %08x ssr %08x\n",
-			       dev->name, isr, psr, ssr);
+//			printk(KERN_WARNING "%s: unexpected i2c irq: isr %08x psr %08x ssr %08x\n",
+;
 		}
 		isr &= ~(MASK_16|MASK_17);
 	}
@@ -559,14 +559,14 @@ int saa7146_register_extension(struct saa7146_extension* ext)
 	ext->driver.probe = saa7146_init_one;
 	ext->driver.remove = saa7146_remove_one;
 
-	printk("saa7146: register extension '%s'.\n",ext->name);
+;
 	return pci_register_driver(&ext->driver);
 }
 
 int saa7146_unregister_extension(struct saa7146_extension* ext)
 {
 	DEB_EE(("ext:%p\n",ext));
-	printk("saa7146: unregister extension '%s'.\n",ext->name);
+;
 	pci_unregister_driver(&ext->driver);
 	return 0;
 }

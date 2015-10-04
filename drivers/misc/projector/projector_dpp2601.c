@@ -137,20 +137,20 @@ int dpp_flash(unsigned char *DataSetArray, int iNumArray)
 		if (DataSetArray[i + OFFSET_I2C_DIRECTION] == PRJ_WRITE) {
 			i2c_master_send(info->client, &DataSetArray[CurrentDataIndex], Bytes);
 #ifdef PROJECTOR_DEBUG
-			printk("[%s] WRITE addr:", __func__);
+;
 			for(i=0;i<Bytes;i++)
-				printk("%x ", DataSetArray[CurrentDataIndex+i]);
-			printk("\n");
+;
+;
 #endif
 		} else if (DataSetArray[i + OFFSET_I2C_DIRECTION] == PRJ_READ) {
 			memset(RGB_BUF, 0x0, sizeof(RGB_BUF));
 			i2c_master_recv(info->client, RGB_BUF, Bytes);
 #ifdef PROJECTOR_DEBUG
-			printk(KERN_INFO "[%s] READ value:%x %x %x %x\n", __func__,
-				RGB_BUF[0], RGB_BUF[1], RGB_BUF[2], RGB_BUF[3]);
+//			printk(KERN_INFO "[%s] READ value:%x %x %x %x\n", __func__,
+;
 #endif
 		} else {
-			printk(KERN_INFO "[%s] data is invalid !!\n", __func__);
+;
 			return -EINVAL;
 		}
 	}
@@ -160,7 +160,7 @@ int dpp_flash(unsigned char *DataSetArray, int iNumArray)
 void set_proj_status(int enProjectorStatus)
 {
 	status = enProjectorStatus;
-	printk(KERN_INFO "[%s] projector status : %d\n", __func__, status);
+;
 }
 
 int get_proj_status(void)
@@ -176,7 +176,7 @@ static void projector_motor_cw_work(struct work_struct *work)
 		motor_step = 0;
  
 	MOTOR_PHASE_CW_OUT(motor_step);
-	printk(KERN_INFO "[%s] CW:%d\n", __func__, motor_step);
+;
 	motor_abs_step--;
 }
 
@@ -192,7 +192,7 @@ static void projector_motor_ccw_work(struct work_struct *work)
 		motor_step = MOTOR_MAX_PHASE;
 
 	MOTOR_PHASE_CW_OUT(motor_step);
-	printk(KERN_INFO "[%s] CCW:%d\n", __func__, motor_step);
+;
 	motor_abs_step++;
 }
 
@@ -203,7 +203,7 @@ void projector_motor_ccw(void)
 
 void set_led_current(int level)
 {
-	printk(KERN_ERR "[%s] level:%d\n", __func__, level);
+;
 	
 	int i;
 
@@ -302,9 +302,9 @@ void pwron_seq_fdr(void)
 		}
 	}
 	seq_number = RGB_BUF[MAX_LENGTH-1];
-	printk(KERN_ERR "[%s] seq_number %x\n", __func__, seq_number);
-	printk(KERN_INFO "[%s] max_dac : %d, %d, %d\n", __func__,
-					max_dac[0], max_dac[1], max_dac[2]);
+;
+//	printk(KERN_INFO "[%s] max_dac : %d, %d, %d\n", __func__,
+;
 
 	DPPDATAFLASH(InitData_TransferCtrlToI2C);
 }
@@ -358,8 +358,8 @@ void pwron_seq_current_limit(void)
 	current_limit[3] = ireg;
 
 	DPPDATAFLASH(current_limit);
-	printk(KERN_INFO "[%s] Current Limit : %u, %#x\n", __func__,
-			limit, (ireg & (~0x7)) >> 3);
+//	printk(KERN_INFO "[%s] Current Limit : %u, %#x\n", __func__,
+;
 }
 
 static void proj_pwron_seq_work(struct work_struct *work)
@@ -549,14 +549,14 @@ int __devinit dpp2601_i2c_probe(struct i2c_client *client,
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
 	{
-		printk(KERN_ERR "[%s] need I2C_FUNC_I2C\n", __func__);
+;
 		ret = -ENODEV;
 		return ret;
 	}
 	
 	info = kzalloc(sizeof(struct projector_dpp2601_info), GFP_KERNEL);
 	if (!info) {
-		printk(KERN_ERR "[%s] fail to memory allocation.\n", __func__);
+;
 		return -1;
 	}
 
@@ -573,13 +573,13 @@ int __devinit dpp2601_i2c_probe(struct i2c_client *client,
 
 	projector_work_queue = create_singlethread_workqueue("projector_work_queue");
 	if (!projector_work_queue) {
-		printk(KERN_ERR "[%s] i2c_probe fail.\n", __func__);
+;
 		return -ENOMEM;
 	}
 
 	stepmotor_work_queue = create_singlethread_workqueue("stepmotor_work_queue");
 	if (!stepmotor_work_queue) {
-		printk(KERN_ERR "[%s] i2c_probe fail.\n", __func__);
+;
 		return -ENOMEM;
 	}
 
@@ -597,7 +597,7 @@ int __devinit dpp2601_i2c_probe(struct i2c_client *client,
 	INIT_WORK(&projector_work_testmode_on, proj_testmode_pwron_seq_work);
 	INIT_WORK(&projector_work_rotate_screen, projector_rotate_screen_work);
 	
-	printk(KERN_ERR "[%s] dpp2601_i2c_probe.\n", __func__);
+;
 
 	return 0;
 }
@@ -739,7 +739,7 @@ void move_motor_step(int value)
 			if (motor_step > MOTOR_MAX_PHASE)
 				motor_step = 0;
 
-			printk(KERN_INFO "[%s] CW:%d\n", __func__, motor_step);
+;
 			MOTOR_PHASE_CW_FIRST(motor_step);
 		}
 
@@ -751,7 +751,7 @@ void move_motor_step(int value)
 			if (motor_step < 0)
 				motor_step = MOTOR_MAX_PHASE;
 
-			printk(KERN_INFO "[%s] CCW:%d\n", __func__, motor_step);
+;
 			MOTOR_PHASE_CW_FIRST(motor_step);
 			motor_abs_step++;
 		}
@@ -764,8 +764,8 @@ void move_motor_step(int value)
 				if (motor_step > MOTOR_MAX_PHASE)
 					motor_step = 0;
 
-				printk(KERN_INFO "[%s] CW:%d\n",
-						__func__, motor_step);
+//				printk(KERN_INFO "[%s] CW:%d\n",
+;
 				MOTOR_PHASE_CW_OUT(motor_step);
 				motor_abs_step--;
 			}
@@ -775,16 +775,16 @@ void move_motor_step(int value)
 				if (motor_step < 0)
 					motor_step = MOTOR_MAX_PHASE;
 
-				printk(KERN_INFO "[%s] CCW:%d\n",
-						__func__, motor_step);
+//				printk(KERN_INFO "[%s] CCW:%d\n",
+;
 				MOTOR_PHASE_CW_OUT(motor_step);
 				motor_abs_step++;
 			}
 		}
 	}
 
-	printk(KERN_INFO "[%s] Projector Motor ABS Step : %d\n",
-			__func__, motor_abs_step);
+//	printk(KERN_INFO "[%s] Projector Motor ABS Step : %d\n",
+;
 	verify_value = 300 + value;
 }
 
@@ -836,8 +836,8 @@ static ssize_t store_brightness(struct device *dev,
 	} else {
 		brightness = value;
 		set_led_current(value);
-		printk(KERN_INFO "[%s] Proj Brightness Changed : %d\n",
-					__func__, value);
+//		printk(KERN_INFO "[%s] Proj Brightness Changed : %d\n",
+;
 	}
 	return count;
 }
@@ -865,7 +865,7 @@ static ssize_t store_proj_key(struct device *dev,
 		break;
 	};
 
-	printk(KERN_INFO "[%s] -->  %d\n", __func__, value);
+;
 	return count;
 }
 
@@ -927,7 +927,7 @@ static ssize_t store_rotate_screen(struct device *dev,
 		screen_direction = value;
 		queue_work(projector_work_queue, &projector_work_rotate_screen);
 
-		printk(KERN_INFO "[%s] inputed rotate : %d\n", __func__, value);
+;
 	}
 
 	return count;
@@ -939,8 +939,8 @@ static ssize_t store_projection_verify(struct device *dev,
 	int value;
 
 	sscanf(buf, "%d\n", &value);
-	printk(KERN_INFO "[%s] selected internal pattern : %d\n",
-				__func__, value);
+//	printk(KERN_INFO "[%s] selected internal pattern : %d\n",
+;
 
 
 	if (value == CURTAIN_ON) {
@@ -993,49 +993,49 @@ int __init projector_module_init(void)
 
 	sec_projector = device_create(sec_class, NULL, 0, NULL, "sec_projector");
 	if (IS_ERR(sec_projector)) {
-		printk(KERN_ERR "Failed to create device(sec_projector)!\n");
+;
 	}
 
 	if (device_create_file(sec_projector, &dev_attr_proj_motor) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_proj_motor.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	if (device_create_file(sec_projector, &dev_attr_brightness) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_brightness.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	if (device_create_file(sec_projector, &dev_attr_proj_key) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_proj_key.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	if (device_create_file(sec_projector, &dev_attr_cal_history) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_cal_history.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	if (device_create_file(sec_projector, &dev_attr_rotate_screen) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_rotate_screen.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	if (device_create_file(sec_projector, &dev_attr_screen_direction) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_screen_direction.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	if (device_create_file(sec_projector, &dev_attr_projection_verify) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_projection_verify.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	if (device_create_file(sec_projector, &dev_attr_motor_verify) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_motor_verify.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	if (device_create_file(sec_projector, &dev_attr_retval) < 0)
-		printk(KERN_ERR "Failed to create device file(%s)!\n",
-				dev_attr_retval.attr.name);
+//		printk(KERN_ERR "Failed to create device file(%s)!\n",
+;
 
 	ret = i2c_add_driver(&dpp2601_i2c_driver);
 	ret |= misc_register(&projector_module_device);
 	if (ret) {
-		printk(KERN_ERR "Projector driver registration failed!\n");
+;
 	}
 	return ret;
 }

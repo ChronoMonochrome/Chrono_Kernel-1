@@ -679,7 +679,7 @@ spi_dv_device_echo_buffer(struct scsi_device *sdev, u8 *buffer,
 				return SPI_COMPARE_SKIP_TEST;
 
 
-			sdev_printk(KERN_ERR, sdev, "Write Buffer failure %x\n", result);
+;
 			return SPI_COMPARE_FAILURE;
 		}
 
@@ -763,10 +763,10 @@ spi_dv_retrain(struct scsi_device *sdev, u8 *buffer, u8 *ptr,
 		 * IU, then QAS (if we can control them), then finally
 		 * fall down the periods */
 		if (i->f->set_iu && spi_iu(starget)) {
-			starget_printk(KERN_ERR, starget, "Domain Validation Disabing Information Units\n");
+;
 			DV_SET(iu, 0);
 		} else if (i->f->set_qas && spi_qas(starget)) {
-			starget_printk(KERN_ERR, starget, "Domain Validation Disabing Quick Arbitration and Selection\n");
+;
 			DV_SET(qas, 0);
 		} else {
 			newperiod = spi_period(starget);
@@ -778,11 +778,11 @@ spi_dv_retrain(struct scsi_device *sdev, u8 *buffer, u8 *ptr,
 
 			if (unlikely(period > 0xff || period == prevperiod)) {
 				/* Total failure; set to async and return */
-				starget_printk(KERN_ERR, starget, "Domain Validation Failure, dropping back to Asynchronous\n");
+;
 				DV_SET(offset, 0);
 				return SPI_COMPARE_FAILURE;
 			}
-			starget_printk(KERN_ERR, starget, "Domain Validation detected failure, dropping back\n");
+;
 			DV_SET(period, period);
 			prevperiod = period;
 		}
@@ -852,7 +852,7 @@ spi_dv_device_internal(struct scsi_device *sdev, u8 *buffer)
 
 	if (spi_dv_device_compare_inquiry(sdev, buffer, buffer, DV_LOOPS)
 	    != SPI_COMPARE_SUCCESS) {
-		starget_printk(KERN_ERR, starget, "Domain Validation Initial Inquiry Failed\n");
+;
 		/* FIXME: should probably offline the device here? */
 		return;
 	}
@@ -870,7 +870,7 @@ spi_dv_device_internal(struct scsi_device *sdev, u8 *buffer)
 						   buffer + len,
 						   DV_LOOPS)
 		    != SPI_COMPARE_SUCCESS) {
-			starget_printk(KERN_ERR, starget, "Wide Transfers Fail\n");
+;
 			i->f->set_width(starget, 0);
 			/* Make sure we don't force wide back on by asking
 			 * for a transfer period that requires it */
@@ -952,12 +952,12 @@ spi_dv_device_internal(struct scsi_device *sdev, u8 *buffer)
 		len = spi_dv_device_get_echo_buffer(sdev, buffer);
 
 	if (len <= 0) {
-		starget_printk(KERN_INFO, starget, "Domain Validation skipping write tests\n");
+;
 		return;
 	}
 
 	if (len > SPI_MAX_ECHO_BUFFER_SIZE) {
-		starget_printk(KERN_WARNING, starget, "Echo buffer size %d is too big, trimming to %d\n", len, SPI_MAX_ECHO_BUFFER_SIZE);
+;
 		len = SPI_MAX_ECHO_BUFFER_SIZE;
 	}
 
@@ -1010,11 +1010,11 @@ spi_dv_device(struct scsi_device *sdev)
 	spi_dv_pending(starget) = 1;
 	mutex_lock(&spi_dv_mutex(starget));
 
-	starget_printk(KERN_INFO, starget, "Beginning Domain Validation\n");
+;
 
 	spi_dv_device_internal(sdev, buffer);
 
-	starget_printk(KERN_INFO, starget, "Ending Domain Validation\n");
+;
 
 	mutex_unlock(&spi_dv_mutex(starget));
 	spi_dv_pending(starget) = 0;
@@ -1213,20 +1213,20 @@ static void print_nego(const unsigned char *msg, int per, int off, int width)
 	if (per) {
 		char buf[20];
 		period_to_str(buf, msg[per]);
-		printk("period = %s ns ", buf);
+;
 	}
 
 	if (off)
-		printk("offset = %d ", msg[off]);
+;
 	if (width)
-		printk("width = %d ", 8 << msg[width]);
+;
 }
 
 static void print_ptr(const unsigned char *msg, int msb, const char *desc)
 {
 	int ptr = (msg[msb] << 24) | (msg[msb+1] << 16) | (msg[msb+2] << 8) |
 			msg[msb+3];
-	printk("%s = %d ", desc, ptr);
+;
 }
 
 int spi_print_msg(const unsigned char *msg)
@@ -1260,33 +1260,33 @@ int spi_print_msg(const unsigned char *msg)
 			break;
 		default:
 		for (i = 2; i < len; ++i) 
-			printk("%02x ", msg[i]);
+;
 		}
 	/* Identify */
 	} else if (msg[0] & 0x80) {
-		printk("Identify disconnect %sallowed %s %d ",
-			(msg[0] & 0x40) ? "" : "not ",
-			(msg[0] & 0x20) ? "target routine" : "lun",
-			msg[0] & 0x7);
+//		printk("Identify disconnect %sallowed %s %d ",
+//			(msg[0] & 0x40) ? "" : "not ",
+//			(msg[0] & 0x20) ? "target routine" : "lun",
+;
 	/* Normal One byte */
 	} else if (msg[0] < 0x1f) {
 		if (msg[0] < ARRAY_SIZE(one_byte_msgs) && one_byte_msgs[msg[0]])
-			printk("%s ", one_byte_msgs[msg[0]]);
+;
 		else
-			printk("reserved (%02x) ", msg[0]);
+;
 	} else if (msg[0] == 0x55) {
-		printk("QAS Request ");
+;
 	/* Two byte */
 	} else if (msg[0] <= 0x2f) {
 		if ((msg[0] - 0x20) < ARRAY_SIZE(two_byte_msgs))
-			printk("%s %02x ", two_byte_msgs[msg[0] - 0x20], 
-				msg[1]);
+//			printk("%s %02x ", two_byte_msgs[msg[0] - 0x20], 
+;
 		else 
-			printk("reserved two byte (%02x %02x) ", 
-				msg[0], msg[1]);
+//			printk("reserved two byte (%02x %02x) ", 
+;
 		len = 2;
 	} else 
-		printk("reserved ");
+;
 	return len;
 }
 EXPORT_SYMBOL(spi_print_msg);
@@ -1302,19 +1302,19 @@ int spi_print_msg(const unsigned char *msg)
 		if (len == 2)
 			len += 256;
 		for (i = 0; i < len; ++i)
-			printk("%02x ", msg[i]);
+;
 	/* Identify */
 	} else if (msg[0] & 0x80) {
-		printk("%02x ", msg[0]);
+;
 	/* Normal One byte */
 	} else if ((msg[0] < 0x1f) || (msg[0] == 0x55)) {
-		printk("%02x ", msg[0]);
+;
 	/* Two byte */
 	} else if (msg[0] <= 0x2f) {
-		printk("%02x %02x", msg[0], msg[1]);
+;
 		len = 2;
 	} else 
-		printk("%02x ", msg[0]);
+;
 	return len;
 }
 EXPORT_SYMBOL(spi_print_msg);

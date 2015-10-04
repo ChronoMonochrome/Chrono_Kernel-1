@@ -274,8 +274,8 @@ static int __devinit aec62xx_init_one(struct pci_dev *dev, const struct pci_devi
 		unsigned long dma_base = pci_resource_start(dev, 4);
 
 		if (inb(dma_base + 2) & 0x10) {
-			printk(KERN_INFO DRV_NAME " %s: AEC6880%s card detected"
-				"\n", pci_name(dev), (idx == 4) ? "R" : "");
+//			printk(KERN_INFO DRV_NAME " %s: AEC6880%s card detected"
+;
 			d.udma_mask = ATA_UDMA6;
 		}
 	}

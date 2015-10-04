@@ -107,8 +107,8 @@ ide_startstop_t ide_dma_intr(ide_drive_t *drive)
 						blk_rq_sectors(cmd->rq) << 9);
 			return ide_stopped;
 		}
-		printk(KERN_ERR "%s: %s: bad DMA status (0x%02x)\n",
-			drive->name, __func__, dma_stat);
+//		printk(KERN_ERR "%s: %s: bad DMA status (0x%02x)\n",
+;
 	}
 	return ide_error(drive, "dma_intr", stat);
 }
@@ -195,7 +195,7 @@ EXPORT_SYMBOL(ide_dma_off_quietly);
 
 void ide_dma_off(ide_drive_t *drive)
 {
-	printk(KERN_INFO "%s: DMA disabled\n", drive->name);
+;
 	ide_dma_off_quietly(drive);
 }
 EXPORT_SYMBOL(ide_dma_off);
@@ -221,8 +221,8 @@ int __ide_dma_bad_drive(ide_drive_t *drive)
 
 	int blacklist = ide_in_drive_list(id, drive_blacklist);
 	if (blacklist) {
-		printk(KERN_WARNING "%s: Disabling (U)DMA for %s (blacklisted)\n",
-				    drive->name, (char *)&id[ATA_ID_PROD]);
+//		printk(KERN_WARNING "%s: Disabling (U)DMA for %s (blacklisted)\n",
+;
 		return blacklist;
 	}
 	return 0;
@@ -343,8 +343,8 @@ u8 ide_find_dma_mode(ide_drive_t *drive, u8 req_mode)
 
 	mode = min(mode, req_mode);
 
-	printk(KERN_INFO "%s: %s mode selected\n", drive->name,
-			  mode ? ide_xfer_verbose(mode) : "no DMA");
+//	printk(KERN_INFO "%s: %s mode selected\n", drive->name,
+;
 
 	return mode;
 }
@@ -435,7 +435,7 @@ void ide_check_dma_crc(ide_drive_t *drive)
 
 void ide_dma_lost_irq(ide_drive_t *drive)
 {
-	printk(KERN_ERR "%s: DMA interrupt recovery\n", drive->name);
+;
 }
 EXPORT_SYMBOL_GPL(ide_dma_lost_irq);
 
@@ -456,17 +456,17 @@ ide_startstop_t ide_dma_timeout_retry(ide_drive_t *drive, int error)
 	 */
 
 	if (error < 0) {
-		printk(KERN_WARNING "%s: DMA timeout error\n", drive->name);
+;
 		drive->waiting_for_dma = 0;
 		(void)dma_ops->dma_end(drive);
 		ide_dma_unmap_sg(drive, cmd);
 		ret = ide_error(drive, "dma timeout error",
 				hwif->tp_ops->read_status(hwif));
 	} else {
-		printk(KERN_WARNING "%s: DMA timeout retry\n", drive->name);
+;
 		if (dma_ops->dma_clear)
 			dma_ops->dma_clear(drive);
-		printk(KERN_ERR "%s: timeout waiting for DMA\n", drive->name);
+;
 		if (dma_ops->dma_test_irq(drive) == 0) {
 			ide_dump_status(drive, "DMA timeout",
 					hwif->tp_ops->read_status(hwif));
@@ -520,8 +520,8 @@ int ide_allocate_dma_engine(ide_hwif_t *hwif)
 						&hwif->dmatable_dma,
 						GFP_ATOMIC);
 	if (hwif->dmatable_cpu == NULL) {
-		printk(KERN_ERR "%s: unable to allocate PRD table\n",
-			hwif->name);
+//		printk(KERN_ERR "%s: unable to allocate PRD table\n",
+;
 		return -ENOMEM;
 	}
 

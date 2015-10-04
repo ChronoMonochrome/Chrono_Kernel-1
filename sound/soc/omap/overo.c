@@ -47,7 +47,7 @@ static int overo_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0) {
-		printk(KERN_ERR "can't set codec DAI configuration\n");
+;
 		return ret;
 	}
 
@@ -57,7 +57,7 @@ static int overo_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0) {
-		printk(KERN_ERR "can't set cpu DAI configuration\n");
+;
 		return ret;
 	}
 
@@ -65,7 +65,7 @@ static int overo_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_set_sysclk(codec_dai, 0, 26000000,
 					    SND_SOC_CLOCK_IN);
 	if (ret < 0) {
-		printk(KERN_ERR "can't set codec system clock\n");
+;
 		return ret;
 	}
 
@@ -104,11 +104,11 @@ static int __init overo_soc_init(void)
 		pr_debug("Incomatible machine!\n");
 		return -ENODEV;
 	}
-	printk(KERN_INFO "overo SoC init\n");
+;
 
 	overo_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!overo_snd_device) {
-		printk(KERN_ERR "Platform device allocation failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -121,7 +121,7 @@ static int __init overo_soc_init(void)
 	return 0;
 
 err1:
-	printk(KERN_ERR "Unable to add platform device\n");
+;
 	platform_device_put(overo_snd_device);
 
 	return ret;

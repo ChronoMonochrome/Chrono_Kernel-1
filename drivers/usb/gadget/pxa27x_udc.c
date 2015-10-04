@@ -2662,7 +2662,7 @@ static int __init udc_init(void)
 	if (!cpu_is_pxa27x() && !cpu_is_pxa3xx())
 		return -ENODEV;
 
-	printk(KERN_INFO "%s: version %s\n", driver_name, DRIVER_VERSION);
+;
 	return platform_driver_probe(&udc_driver, pxa_udc_probe);
 }
 module_init(udc_init);

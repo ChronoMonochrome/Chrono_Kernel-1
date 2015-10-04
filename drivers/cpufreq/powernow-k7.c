@@ -117,8 +117,8 @@ static int check_powernow(void)
 
 	if ((c->x86_vendor != X86_VENDOR_AMD) || (c->x86 != 6)) {
 #ifdef MODULE
-		printk(KERN_INFO PFX "This module only works with "
-				"AMD K7 CPUs\n");
+//		printk(KERN_INFO PFX "This module only works with "
+;
 #endif
 		return 0;
 	}
@@ -127,14 +127,14 @@ static int check_powernow(void)
 	maxei = cpuid_eax(0x80000000);
 	if (maxei < 0x80000007) {	/* Any powernow info ? */
 #ifdef MODULE
-		printk(KERN_INFO PFX "No powernow capabilities detected\n");
+;
 #endif
 		return 0;
 	}
 
 	if ((c->x86_model == 6) && (c->x86_mask == 0)) {
-		printk(KERN_INFO PFX "K7 660[A0] core detected, "
-				"enabling errata workarounds\n");
+//		printk(KERN_INFO PFX "K7 660[A0] core detected, "
+;
 		have_a0 = 1;
 	}
 
@@ -144,22 +144,22 @@ static int check_powernow(void)
 	if (!(edx & (1 << 1 | 1 << 2)))
 		return 0;
 
-	printk(KERN_INFO PFX "PowerNOW! Technology present. Can scale: ");
+;
 
 	if (edx & 1 << 1) {
-		printk("frequency");
+;
 		can_scale_bus = 1;
 	}
 
 	if ((edx & (1 << 1 | 1 << 2)) == 0x6)
-		printk(" and ");
+;
 
 	if (edx & 1 << 2) {
-		printk("voltage");
+;
 		can_scale_vid = 1;
 	}
 
-	printk(".\n");
+;
 	return 1;
 }
 
@@ -432,16 +432,16 @@ err1:
 err05:
 	kfree(acpi_processor_perf);
 err0:
-	printk(KERN_WARNING PFX "ACPI perflib can not be used on "
-			"this platform\n");
+//	printk(KERN_WARNING PFX "ACPI perflib can not be used on "
+;
 	acpi_processor_perf = NULL;
 	return retval;
 }
 #else
 static int powernow_acpi_init(void)
 {
-	printk(KERN_INFO PFX "no support for ACPI processor found."
-	       "  Please recompile your kernel with ACPI processor\n");
+//	printk(KERN_INFO PFX "no support for ACPI processor found."
+;
 	return -EINVAL;
 }
 #endif
@@ -473,8 +473,8 @@ static int powernow_decode_bios(int maxfid, int startvid)
 			psb = (struct psb_s *) p;
 			pr_debug("Table version: 0x%x\n", psb->tableversion);
 			if (psb->tableversion != 0x12) {
-				printk(KERN_INFO PFX "Sorry, only v1.2 tables"
-						" supported right now\n");
+//				printk(KERN_INFO PFX "Sorry, only v1.2 tables"
+;
 				return -ENODEV;
 			}
 
@@ -486,10 +486,10 @@ static int powernow_decode_bios(int maxfid, int startvid)
 
 			latency = psb->settlingtime;
 			if (latency < 100) {
-				printk(KERN_INFO PFX "BIOS set settling time "
-						"to %d microseconds. "
-						"Should be at least 100. "
-						"Correcting.\n", latency);
+//				printk(KERN_INFO PFX "BIOS set settling time "
+//						"to %d microseconds. "
+//						"Should be at least 100. "
+;
 				latency = 100;
 			}
 			pr_debug("Settling Time: %d microseconds.\n",
@@ -521,10 +521,10 @@ static int powernow_decode_bios(int maxfid, int startvid)
 						p += 2;
 				}
 			}
-			printk(KERN_INFO PFX "No PST tables match this cpuid "
-					"(0x%x)\n", etuple);
-			printk(KERN_INFO PFX "This is indicative of a broken "
-					"BIOS.\n");
+//			printk(KERN_INFO PFX "No PST tables match this cpuid "
+;
+//			printk(KERN_INFO PFX "This is indicative of a broken "
+;
 
 			return -EINVAL;
 		}
@@ -578,7 +578,7 @@ static int __cpuinit fixup_sgtc(void)
 	sgtc = 100 * m * latency;
 	sgtc = sgtc / 3;
 	if (sgtc > 0xfffff) {
-		printk(KERN_WARNING PFX "SGTC too large %d\n", sgtc);
+;
 		sgtc = 0xfffff;
 	}
 	return sgtc;
@@ -600,14 +600,14 @@ static unsigned int powernow_get(unsigned int cpu)
 
 static int __cpuinit acer_cpufreq_pst(const struct dmi_system_id *d)
 {
-	printk(KERN_WARNING PFX
-		"%s laptop with broken PST tables in BIOS detected.\n",
-		d->ident);
-	printk(KERN_WARNING PFX
-		"You need to downgrade to 3A21 (09/09/2002), or try a newer "
-		"BIOS than 3A71 (01/20/2003)\n");
-	printk(KERN_WARNING PFX
-		"cpufreq scaling has been disabled as a result of this.\n");
+//	printk(KERN_WARNING PFX
+//		"%s laptop with broken PST tables in BIOS detected.\n",
+;
+//	printk(KERN_WARNING PFX
+//		"You need to downgrade to 3A21 (09/09/2002), or try a newer "
+;
+//	printk(KERN_WARNING PFX
+;
 	return 0;
 }
 
@@ -642,40 +642,40 @@ static int __cpuinit powernow_cpu_init(struct cpufreq_policy *policy)
 
 	fsb = (10 * cpu_khz) / fid_codes[fidvidstatus.bits.CFID];
 	if (!fsb) {
-		printk(KERN_WARNING PFX "can not determine bus frequency\n");
+;
 		return -EINVAL;
 	}
 	pr_debug("FSB: %3dMHz\n", fsb/1000);
 
 	if (dmi_check_system(powernow_dmi_table) || acpi_force) {
-		printk(KERN_INFO PFX "PSB/PST known to be broken.  "
-				"Trying ACPI instead\n");
+//		printk(KERN_INFO PFX "PSB/PST known to be broken.  "
+;
 		result = powernow_acpi_init();
 	} else {
 		result = powernow_decode_bios(fidvidstatus.bits.MFID,
 				fidvidstatus.bits.SVID);
 		if (result) {
-			printk(KERN_INFO PFX "Trying ACPI perflib\n");
+;
 			maximum_speed = 0;
 			minimum_speed = -1;
 			latency = 0;
 			result = powernow_acpi_init();
 			if (result) {
-				printk(KERN_INFO PFX
-					"ACPI and legacy methods failed\n");
+//				printk(KERN_INFO PFX
+;
 			}
 		} else {
 			/* SGTC use the bus clock as timer */
 			latency = fixup_sgtc();
-			printk(KERN_INFO PFX "SGTC: %d\n", latency);
+;
 		}
 	}
 
 	if (result)
 		return result;
 
-	printk(KERN_INFO PFX "Minimum speed %d MHz. Maximum speed %d MHz.\n",
-				minimum_speed/1000, maximum_speed/1000);
+//	printk(KERN_INFO PFX "Minimum speed %d MHz. Maximum speed %d MHz.\n",
+;
 
 	policy->cpuinfo.transition_latency =
 		cpufreq_scale(2000000UL, fsb, latency);

@@ -278,8 +278,8 @@ int affs_init_bitmap(struct super_block *sb, int *flags)
 		return 0;
 
 	if (!AFFS_ROOT_TAIL(sb, sbi->s_root_bh)->bm_flag) {
-		printk(KERN_NOTICE "AFFS: Bitmap invalid - mounting %s read only\n",
-			sb->s_id);
+//		printk(KERN_NOTICE "AFFS: Bitmap invalid - mounting %s read only\n",
+;
 		*flags |= MS_RDONLY;
 		return 0;
 	}
@@ -292,7 +292,7 @@ int affs_init_bitmap(struct super_block *sb, int *flags)
 	size = sbi->s_bmap_count * sizeof(*bm);
 	bm = sbi->s_bitmap = kzalloc(size, GFP_KERNEL);
 	if (!sbi->s_bitmap) {
-		printk(KERN_ERR "AFFS: Bitmap allocation failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -306,13 +306,13 @@ int affs_init_bitmap(struct super_block *sb, int *flags)
 		bm->bm_key = be32_to_cpu(bmap_blk[blk]);
 		bh = affs_bread(sb, bm->bm_key);
 		if (!bh) {
-			printk(KERN_ERR "AFFS: Cannot read bitmap\n");
+;
 			res = -EIO;
 			goto out;
 		}
 		if (affs_checksum_block(sb, bh)) {
-			printk(KERN_WARNING "AFFS: Bitmap %u invalid - mounting %s read only.\n",
-			       bm->bm_key, sb->s_id);
+//			printk(KERN_WARNING "AFFS: Bitmap %u invalid - mounting %s read only.\n",
+;
 			*flags |= MS_RDONLY;
 			goto out;
 		}
@@ -328,7 +328,7 @@ int affs_init_bitmap(struct super_block *sb, int *flags)
 			affs_brelse(bmap_bh);
 		bmap_bh = affs_bread(sb, be32_to_cpu(bmap_blk[blk]));
 		if (!bmap_bh) {
-			printk(KERN_ERR "AFFS: Cannot read bitmap extension\n");
+;
 			res = -EIO;
 			goto out;
 		}

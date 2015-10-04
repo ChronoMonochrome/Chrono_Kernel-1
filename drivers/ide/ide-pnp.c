@@ -39,7 +39,7 @@ static int idepnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
 	int rc;
 	struct ide_hw hw, *hws[] = { &hw };
 
-	printk(KERN_INFO DRV_NAME ": generic PnP IDE interface\n");
+;
 
 	if (!(pnp_port_valid(dev, 0) && pnp_port_valid(dev, 1) && pnp_irq_valid(dev, 0)))
 		return -1;
@@ -48,14 +48,14 @@ static int idepnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
 	ctl = pnp_port_start(dev, 1);
 
 	if (!request_region(base, 8, DRV_NAME)) {
-		printk(KERN_ERR "%s: I/O resource 0x%lX-0x%lX not free.\n",
-				DRV_NAME, base, base + 7);
+//		printk(KERN_ERR "%s: I/O resource 0x%lX-0x%lX not free.\n",
+;
 		return -EBUSY;
 	}
 
 	if (!request_region(ctl, 1, DRV_NAME)) {
-		printk(KERN_ERR "%s: I/O resource 0x%lX not free.\n",
-				DRV_NAME, ctl);
+//		printk(KERN_ERR "%s: I/O resource 0x%lX not free.\n",
+;
 		release_region(base, 8);
 		return -EBUSY;
 	}

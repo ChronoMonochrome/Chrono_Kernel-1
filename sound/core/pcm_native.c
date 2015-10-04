@@ -189,12 +189,12 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
 		if (!(params->rmask & (1 << k)))
 			continue;
 #ifdef RULES_DEBUG
-		printk(KERN_DEBUG "%s = ", snd_pcm_hw_param_names[k]);
-		printk("%04x%04x%04x%04x -> ", m->bits[3], m->bits[2], m->bits[1], m->bits[0]);
+;
+;
 #endif
 		changed = snd_mask_refine(m, constrs_mask(constrs, k));
 #ifdef RULES_DEBUG
-		printk("%04x%04x%04x%04x\n", m->bits[3], m->bits[2], m->bits[1], m->bits[0]);
+;
 #endif
 		if (changed)
 			params->cmask |= 1 << k;
@@ -209,23 +209,23 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
 		if (!(params->rmask & (1 << k)))
 			continue;
 #ifdef RULES_DEBUG
-		printk(KERN_DEBUG "%s = ", snd_pcm_hw_param_names[k]);
+;
 		if (i->empty)
-			printk("empty");
+;
 		else
-			printk("%c%u %u%c", 
-			       i->openmin ? '(' : '[', i->min,
-			       i->max, i->openmax ? ')' : ']');
-		printk(" -> ");
+//			printk("%c%u %u%c", 
+//			       i->openmin ? '(' : '[', i->min,
+;
+;
 #endif
 		changed = snd_interval_refine(i, constrs_interval(constrs, k));
 #ifdef RULES_DEBUG
 		if (i->empty)
-			printk("empty\n");
+;
 		else 
-			printk("%c%u %u%c\n", 
-			       i->openmin ? '(' : '[', i->min,
-			       i->max, i->openmax ? ')' : ']');
+//			printk("%c%u %u%c\n", 
+//			       i->openmin ? '(' : '[', i->min,
+;
 #endif
 		if (changed)
 			params->cmask |= 1 << k;
@@ -254,39 +254,39 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
 			if (!doit)
 				continue;
 #ifdef RULES_DEBUG
-			printk(KERN_DEBUG "Rule %d [%p]: ", k, r->func);
+;
 			if (r->var >= 0) {
-				printk("%s = ", snd_pcm_hw_param_names[r->var]);
+;
 				if (hw_is_mask(r->var)) {
 					m = hw_param_mask(params, r->var);
 					printk("%x", *m->bits);
 				} else {
 					i = hw_param_interval(params, r->var);
 					if (i->empty)
-						printk("empty");
+;
 					else
-						printk("%c%u %u%c", 
-						       i->openmin ? '(' : '[', i->min,
-						       i->max, i->openmax ? ')' : ']');
+//						printk("%c%u %u%c", 
+//						       i->openmin ? '(' : '[', i->min,
+;
 				}
 			}
 #endif
 			changed = r->func(params, r);
 #ifdef RULES_DEBUG
 			if (r->var >= 0) {
-				printk(" -> ");
+;
 				if (hw_is_mask(r->var))
 					printk("%x", *m->bits);
 				else {
 					if (i->empty)
-						printk("empty");
+;
 					else
-						printk("%c%u %u%c", 
-						       i->openmin ? '(' : '[', i->min,
-						       i->max, i->openmax ? ')' : ']');
+//						printk("%c%u %u%c", 
+//						       i->openmin ? '(' : '[', i->min,
+;
 				}
 			}
-			printk("\n");
+;
 #endif
 			rstamps[k] = stamp;
 			if (changed && r->var >= 0) {

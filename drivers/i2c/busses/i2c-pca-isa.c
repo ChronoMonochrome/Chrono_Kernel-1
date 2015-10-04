@@ -96,7 +96,7 @@ static int pca_isa_waitforcompletion(void *pd)
 static void pca_isa_resetchip(void *pd)
 {
 	/* apparently only an external reset will do it. not a lot can be done */
-	printk(KERN_WARNING DRIVER ": Haven't figured out how to do a reset yet\n");
+;
 }
 
 static irqreturn_t pca_handler(int this_irq, void *dev_id) {

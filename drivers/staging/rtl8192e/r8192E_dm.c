@@ -1670,7 +1670,7 @@ static void dm_check_edca_turbo(struct r8192_priv *priv)
 					(((u32)(qos_parameters->cw_max[0]))<< AC_PARAM_ECW_MAX_OFFSET)|
 					(((u32)(qos_parameters->cw_min[0]))<< AC_PARAM_ECW_MIN_OFFSET)|
 					((u32)u1bAIFS << AC_PARAM_AIFS_OFFSET));
-				printk("===>u4bAcParam:%x, ", u4bAcParam);
+;
 			//write_nic_dword(dev, WDCAPARA_ADD[i], u4bAcParam);
 				write_nic_dword(priv, EDCAPARA_BE,  u4bAcParam);
 

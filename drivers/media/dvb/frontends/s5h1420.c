@@ -71,9 +71,9 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "enable debugging");
 
-#define dprintk(x...) do { \
-	if (debug) \
-		printk(KERN_DEBUG "S5H1420: " x); \
+//#define dprintk(x...) do { \
+//	if (debug) \
+;
 } while (0)
 
 static u8 s5h1420_readreg(struct s5h1420_state *state, u8 reg)
@@ -116,7 +116,7 @@ static int s5h1420_writereg (struct s5h1420_state* state, u8 reg, u8 data)
 	/* dprintk("wr(%02x): %02x %02x\n", state->config->demod_address, reg, data); */
 	err = i2c_transfer(state->i2c, &msg, 1);
 	if (err != 1) {
-		dprintk("%s: writereg error (err == %i, reg == 0x%02x, data == 0x%02x)\n", __func__, err, reg, data);
+;
 		return -EREMOTEIO;
 	}
 	state->shadow[reg] = data;
@@ -128,7 +128,7 @@ static int s5h1420_set_voltage (struct dvb_frontend* fe, fe_sec_voltage_t voltag
 {
 	struct s5h1420_state* state = fe->demodulator_priv;
 
-	dprintk("enter %s\n", __func__);
+;
 
 	switch(voltage) {
 	case SEC_VOLTAGE_13:
@@ -145,7 +145,7 @@ static int s5h1420_set_voltage (struct dvb_frontend* fe, fe_sec_voltage_t voltag
 		break;
 	}
 
-	dprintk("leave %s\n", __func__);
+;
 	return 0;
 }
 
@@ -153,7 +153,7 @@ static int s5h1420_set_tone (struct dvb_frontend* fe, fe_sec_tone_mode_t tone)
 {
 	struct s5h1420_state* state = fe->demodulator_priv;
 
-	dprintk("enter %s\n", __func__);
+;
 	switch(tone) {
 	case SEC_TONE_ON:
 		s5h1420_writereg(state, 0x3b,
@@ -165,7 +165,7 @@ static int s5h1420_set_tone (struct dvb_frontend* fe, fe_sec_tone_mode_t tone)
 				 (s5h1420_readreg(state, 0x3b) & 0x74) | 0x01);
 		break;
 	}
-	dprintk("leave %s\n", __func__);
+;
 
 	return 0;
 }
@@ -179,7 +179,7 @@ static int s5h1420_send_master_cmd (struct dvb_frontend* fe,
 	unsigned long timeout;
 	int result = 0;
 
-	dprintk("enter %s\n", __func__);
+;
 	if (cmd->msg_len > 8)
 		return -EINVAL;
 
@@ -211,7 +211,7 @@ static int s5h1420_send_master_cmd (struct dvb_frontend* fe,
 	/* restore original settings */
 	s5h1420_writereg(state, 0x3b, val);
 	msleep(15);
-	dprintk("leave %s\n", __func__);
+;
 	return result;
 }
 
@@ -333,7 +333,7 @@ static int s5h1420_read_status(struct dvb_frontend* fe, fe_status_t* status)
 	struct s5h1420_state* state = fe->demodulator_priv;
 	u8 val;
 
-	dprintk("enter %s\n", __func__);
+;
 
 	if (status == NULL)
 		return -EINVAL;
@@ -372,7 +372,7 @@ static int s5h1420_read_status(struct dvb_frontend* fe, fe_status_t* status)
 		}
 
 		if (tmp == 0) {
-			printk(KERN_ERR "s5h1420: avoided division by 0\n");
+;
 			tmp = 1;
 		}
 		tmp = state->fclk / tmp;
@@ -395,7 +395,7 @@ static int s5h1420_read_status(struct dvb_frontend* fe, fe_status_t* status)
 			val = 0x06;
 		else
 			val = 0x07;
-		dprintk("for MPEG_CLK_INTL %d %x\n", tmp, val);
+;
 
 		s5h1420_writereg(state, FEC01, 0x18);
 		s5h1420_writereg(state, FEC01, 0x10);
@@ -423,7 +423,7 @@ static int s5h1420_read_status(struct dvb_frontend* fe, fe_status_t* status)
 		state->postlocked = 1;
 	}
 
-	dprintk("leave %s\n", __func__);
+;
 
 	return 0;
 }
@@ -465,7 +465,7 @@ static int s5h1420_read_ucblocks(struct dvb_frontend* fe, u32* ucblocks)
 
 static void s5h1420_reset(struct s5h1420_state* state)
 {
-	dprintk("%s\n", __func__);
+;
 	s5h1420_writereg (state, 0x01, 0x08);
 	s5h1420_writereg (state, 0x01, 0x00);
 	udelay(10);
@@ -477,14 +477,14 @@ static void s5h1420_setsymbolrate(struct s5h1420_state* state,
 	u8 v;
 	u64 val;
 
-	dprintk("enter %s\n", __func__);
+;
 
 	val = ((u64) p->u.qpsk.symbol_rate / 1000ULL) * (1ULL<<24);
 	if (p->u.qpsk.symbol_rate < 29000000)
 		val *= 2;
 	do_div(val, (state->fclk / 1000));
 
-	dprintk("symbol rate register: %06llx\n", (unsigned long long)val);
+;
 
 	v = s5h1420_readreg(state, Loop01);
 	s5h1420_writereg(state, Loop01, v & 0x7f);
@@ -492,7 +492,7 @@ static void s5h1420_setsymbolrate(struct s5h1420_state* state,
 	s5h1420_writereg(state, Tnco02, val >> 8);
 	s5h1420_writereg(state, Tnco03, val & 0xff);
 	s5h1420_writereg(state, Loop01,  v | 0x80);
-	dprintk("leave %s\n", __func__);
+;
 }
 
 static u32 s5h1420_getsymbolrate(struct s5h1420_state* state)
@@ -505,13 +505,13 @@ static void s5h1420_setfreqoffset(struct s5h1420_state* state, int freqoffset)
 	int val;
 	u8 v;
 
-	dprintk("enter %s\n", __func__);
+;
 
 	/* remember freqoffset is in kHz, but the chip wants the offset in Hz, so
 	 * divide fclk by 1000000 to get the correct value. */
 	val = -(int) ((freqoffset * (1<<24)) / (state->fclk / 1000000));
 
-	dprintk("phase rotator/freqoffset: %d %06x\n", freqoffset, val);
+;
 
 	v = s5h1420_readreg(state, Loop01);
 	s5h1420_writereg(state, Loop01, v & 0xbf);
@@ -519,7 +519,7 @@ static void s5h1420_setfreqoffset(struct s5h1420_state* state, int freqoffset)
 	s5h1420_writereg(state, Pnco02, val >> 8);
 	s5h1420_writereg(state, Pnco03, val & 0xff);
 	s5h1420_writereg(state, Loop01, v | 0x40);
-	dprintk("leave %s\n", __func__);
+;
 }
 
 static int s5h1420_getfreqoffset(struct s5h1420_state* state)
@@ -548,7 +548,7 @@ static void s5h1420_setfec_inversion(struct s5h1420_state* state,
 	u8 inversion = 0;
 	u8 vit08, vit09;
 
-	dprintk("enter %s\n", __func__);
+;
 
 	if (p->inversion == INVERSION_OFF)
 		inversion = state->config->invert ? 0x08 : 0;
@@ -589,10 +589,10 @@ static void s5h1420_setfec_inversion(struct s5h1420_state* state,
 		}
 	}
 	vit09 |= inversion;
-	dprintk("fec: %02x %02x\n", vit08, vit09);
+;
 	s5h1420_writereg(state, Vit08, vit08);
 	s5h1420_writereg(state, Vit09, vit09);
-	dprintk("leave %s\n", __func__);
+;
 }
 
 static fe_code_rate_t s5h1420_getfec(struct s5h1420_state* state)
@@ -636,7 +636,7 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
 	struct dvb_frontend_tune_settings fesettings;
 	uint8_t clock_settting;
 
-	dprintk("enter %s\n", __func__);
+;
 
 	/* check if we should do a fast-tune */
 	memcpy(&fesettings.parameters, p, sizeof(struct dvb_frontend_parameters));
@@ -660,10 +660,10 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
 		} else {
 			s5h1420_setfreqoffset(state, 0);
 		}
-		dprintk("simple tune\n");
+;
 		return 0;
 	}
-	dprintk("tuning demod\n");
+;
 
 	/* first of all, software reset */
 	s5h1420_reset(state);
@@ -762,7 +762,7 @@ static int s5h1420_set_frontend(struct dvb_frontend* fe,
 	state->postlocked = 0;
 	state->tunedfreq = p->frequency;
 
-	dprintk("leave %s\n", __func__);
+;
 	return 0;
 }
 
@@ -924,7 +924,7 @@ struct dvb_frontend *s5h1420_attach(const struct s5h1420_config *config,
 	state->tuner_i2c_adapter.algo_data = NULL;
 	i2c_set_adapdata(&state->tuner_i2c_adapter, state);
 	if (i2c_add_adapter(&state->tuner_i2c_adapter) < 0) {
-		printk(KERN_ERR "S5H1420/PN1010: tuner i2c bus could not be initialized\n");
+;
 		goto error;
 	}
 

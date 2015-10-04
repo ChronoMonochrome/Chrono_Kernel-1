@@ -103,14 +103,14 @@ static void watchdog_fire(unsigned long data)
 		module_put(THIS_MODULE);
 
 	if (soft_noboot)
-		printk(KERN_CRIT PFX "Triggered - Reboot ignored.\n");
+;
 	else if (soft_panic) {
-		printk(KERN_CRIT PFX "Initiating panic.\n");
+;
 		panic("Software Watchdog Timer expired.");
 	} else {
-		printk(KERN_CRIT PFX "Initiating system reboot.\n");
+;
 		emergency_restart();
-		printk(KERN_CRIT PFX "Reboot didn't ?????\n");
+;
 	}
 }
 
@@ -166,8 +166,8 @@ static int softdog_release(struct inode *inode, struct file *file)
 		softdog_stop();
 		module_put(THIS_MODULE);
 	} else {
-		printk(KERN_CRIT PFX
-			"Unexpected close, not stopping watchdog!\n");
+//		printk(KERN_CRIT PFX
+;
 		set_bit(0, &orphan_timer);
 		softdog_keepalive();
 	}
@@ -287,28 +287,28 @@ static int __init watchdog_init(void)
 	   if not reset to the default */
 	if (softdog_set_heartbeat(soft_margin)) {
 		softdog_set_heartbeat(TIMER_MARGIN);
-		printk(KERN_INFO PFX
-		    "soft_margin must be 0 < soft_margin < 65536, using %d\n",
-			TIMER_MARGIN);
+//		printk(KERN_INFO PFX
+//		    "soft_margin must be 0 < soft_margin < 65536, using %d\n",
+;
 	}
 
 	ret = register_reboot_notifier(&softdog_notifier);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"cannot register reboot notifier (err=%d)\n", ret);
+//		printk(KERN_ERR PFX
+;
 		return ret;
 	}
 
 	ret = misc_register(&softdog_miscdev);
 	if (ret) {
-		printk(KERN_ERR PFX
-			"cannot register miscdev on minor=%d (err=%d)\n",
-						WATCHDOG_MINOR, ret);
+//		printk(KERN_ERR PFX
+//			"cannot register miscdev on minor=%d (err=%d)\n",
+;
 		unregister_reboot_notifier(&softdog_notifier);
 		return ret;
 	}
 
-	printk(banner, soft_noboot, soft_margin, soft_panic, nowayout);
+;
 
 	return 0;
 }

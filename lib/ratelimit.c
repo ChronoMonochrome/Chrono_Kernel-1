@@ -47,8 +47,8 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
 
 	if (time_is_before_jiffies(rs->begin + rs->interval)) {
 		if (rs->missed)
-			printk(KERN_WARNING "%s: %d callbacks suppressed\n",
-				func, rs->missed);
+//			printk(KERN_WARNING "%s: %d callbacks suppressed\n",
+;
 		rs->begin   = 0;
 		rs->printed = 0;
 		rs->missed  = 0;

@@ -128,9 +128,9 @@ static int vdc_handle_unknown(struct vdc_port *port, void *arg)
 {
 	struct vio_msg_tag *pkt = arg;
 
-	printk(KERN_ERR PFX "Received unknown msg [%02x:%02x:%04x:%08x]\n",
-	       pkt->type, pkt->stype, pkt->stype_env, pkt->sid);
-	printk(KERN_ERR PFX "Resetting connection.\n");
+//	printk(KERN_ERR PFX "Received unknown msg [%02x:%02x:%04x:%08x]\n",
+;
+;
 
 	ldc_disconnect(port->vio.lp);
 
@@ -178,16 +178,16 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
 			break;
 
 		default:
-			printk(KERN_ERR PFX "%s: Bogus vdisk_type 0x%x\n",
-			       vio->name, pkt->vdisk_type);
+//			printk(KERN_ERR PFX "%s: Bogus vdisk_type 0x%x\n",
+;
 			return -ECONNRESET;
 		}
 
 		if (pkt->vdisk_block_size > port->vdisk_block_size) {
-			printk(KERN_ERR PFX "%s: BLOCK size increased "
-			       "%u --> %u\n",
-			       vio->name,
-			       port->vdisk_block_size, pkt->vdisk_block_size);
+//			printk(KERN_ERR PFX "%s: BLOCK size increased "
+//			       "%u --> %u\n",
+//			       vio->name,
+;
 			return -ECONNRESET;
 		}
 
@@ -199,7 +199,7 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
 		port->vdisk_block_size = pkt->vdisk_block_size;
 		return 0;
 	} else {
-		printk(KERN_ERR PFX "%s: Attribute NACK\n", vio->name);
+;
 
 		return -ECONNRESET;
 	}
@@ -278,7 +278,7 @@ static void vdc_event(void *arg, int event)
 	}
 
 	if (unlikely(event != LDC_EVENT_DATA_READY)) {
-		printk(KERN_WARNING PFX "Unexpected LDC event %d\n", event);
+;
 		spin_unlock_irqrestore(&vio->lock, flags);
 		return;
 	}
@@ -400,7 +400,7 @@ static int __send_request(struct request *req)
 			 desc->cookies, port->ring_cookies,
 			 map_perm);
 	if (err < 0) {
-		printk(KERN_ERR PFX "ldc_map_sg() failure, err=%d.\n", err);
+;
 		return err;
 	}
 
@@ -428,7 +428,7 @@ static int __send_request(struct request *req)
 
 	err = __vdc_tx_trigger(port);
 	if (err < 0) {
-		printk(KERN_ERR PFX "vdc_tx_trigger() failure, err=%d\n", err);
+;
 	} else {
 		port->req_id++;
 		dr->prod = (dr->prod + 1) & (VDC_TX_RING_SIZE - 1);
@@ -659,15 +659,15 @@ static int probe_disk(struct vdc_port *port)
 	err = generic_request(port, VD_OP_GET_VTOC,
 			      &port->label, sizeof(port->label));
 	if (err < 0) {
-		printk(KERN_ERR PFX "VD_OP_GET_VTOC returns error %d\n", err);
+;
 		return err;
 	}
 
 	err = generic_request(port, VD_OP_GET_DISKGEOM,
 			      &port->geom, sizeof(port->geom));
 	if (err < 0) {
-		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
-		       "error %d\n", err);
+//		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+;
 		return err;
 	}
 
@@ -677,14 +677,14 @@ static int probe_disk(struct vdc_port *port)
 
 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
 	if (!q) {
-		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
-		       port->vio.name);
+//		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
+;
 		return -ENOMEM;
 	}
 	g = alloc_disk(1 << PARTITION_SHIFT);
 	if (!g) {
-		printk(KERN_ERR PFX "%s: Could not allocate gendisk.\n",
-		       port->vio.name);
+//		printk(KERN_ERR PFX "%s: Could not allocate gendisk.\n",
+;
 		blk_cleanup_queue(q);
 		return -ENOMEM;
 	}
@@ -704,9 +704,9 @@ static int probe_disk(struct vdc_port *port)
 
 	set_capacity(g, port->vdisk_size);
 
-	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
-	       g->disk_name,
-	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
+//	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
+//	       g->disk_name,
+;
 
 	add_disk(g);
 
@@ -730,7 +730,7 @@ static void __devinit print_version(void)
 	static int version_printed;
 
 	if (version_printed++ == 0)
-		printk(KERN_INFO "%s", version);
+;
 }
 
 static int __devinit vdc_port_probe(struct vio_dev *vdev,
@@ -746,15 +746,15 @@ static int __devinit vdc_port_probe(struct vio_dev *vdev,
 
 	err = -ENODEV;
 	if ((vdev->dev_no << PARTITION_SHIFT) & ~(u64)MINORMASK) {
-		printk(KERN_ERR PFX "Port id [%llu] too large.\n",
-		       vdev->dev_no);
+//		printk(KERN_ERR PFX "Port id [%llu] too large.\n",
+;
 		goto err_out_release_mdesc;
 	}
 
 	port = kzalloc(sizeof(*port), GFP_KERNEL);
 	err = -ENOMEM;
 	if (!port) {
-		printk(KERN_ERR PFX "Cannot allocate vdc_port.\n");
+;
 		goto err_out_release_mdesc;
 	}
 

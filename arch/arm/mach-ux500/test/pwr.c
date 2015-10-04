@@ -663,47 +663,47 @@ repeat:
 	pr_err("pwr test: ERROR: AB8500 regulator %s ", s.name);
 
 	if (t->mode != s.mode)
-		printk("mode is: %d expected: %d ",
-		       s.mode, t->mode);
+//		printk("mode is: %d expected: %d ",
+;
 
 	if (t->hwmode != s.hwmode)
-		printk("hwmode is: %d expected: %d ",
-		       s.hwmode, t->hwmode);
+//		printk("hwmode is: %d expected: %d ",
+;
 
 	if (t->volt_selected != s.volt_selected &&
 	    t->alt_volt_selected != s.volt_selected) {
-		printk("volt selected is: %d expected: %d ",
-		       s.volt_selected, t->volt_selected);
+//		printk("volt selected is: %d expected: %d ",
+;
 		if (t->alt_volt_selected)
-			printk("(alt volt: %d) ", t->alt_volt_selected);
+;
 	}
 
 	if (t->volt_len != s.volt_len)
-		printk("volt len is: %d expected: %d ",
-		       s.volt_len, t->volt_len);
+//		printk("volt len is: %d expected: %d ",
+;
 
 	for (j = 0; j < 4; j++)
 		if (s.hwmode_auto[j] != t->hwmode_auto[j])
 			break;
 	if (j != 4 && s.hwmode != AB8500_HWMODE_NONE) {
 
-		printk("hwmode auto:: {");
+;
 		for (j = 0; j < 4; j++) {
 			switch(s.hwmode_auto[j]) {
-			case HWM_OFF: { printk("OFF "); break; }
-			case HWM_ON: { printk("ON  "); break; }
-			case HWM_INVAL: { printk("INVAL "); break; }
+;
+;
+;
 			}
 		}
-		printk("}, expected: {");
+;
 		for (j = 0; j < 4; j++) {
 			switch(t->hwmode_auto[j]) {
-			case HWM_OFF: { printk("OFF "); break; }
-			case HWM_ON: { printk("ON  "); break; }
-			case HWM_INVAL: { printk("INVAL "); break; }
+;
+;
+;
 			}
 		}
-		printk("} ");
+;
 	}
 
 	if (s.volt_len == t->volt_len) {
@@ -717,22 +717,22 @@ repeat:
 	}
 
 	if (j != s.volt_len) {
-		printk("voltage: {");
+;
 		for (j = 0; j < s.volt_len; j++)
-			printk("%d ", s.volt[j]);
+;
 
 		if (t->alt_volt) {
-			printk("} alt voltage: {");
+;
 			for (j = 0; j < s.volt_len; j++)
-				printk("%d ", t->alt_volt[j]);
+;
 		}
-		printk("} expected: {");
+;
 		for (j = 0; j < t->volt_len; j++)
-			printk("%d ", t->volt[j]);
-		printk("} ");
+;
+;
 	}
 
-	printk("\n");
+;
 
 	return -EINVAL;
 }

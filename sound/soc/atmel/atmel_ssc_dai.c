@@ -391,7 +391,7 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
 		dma_params->pdc_xfer_size = 4;
 		break;
 	default:
-		printk(KERN_WARNING "atmel_ssc_dai: unsupported PCM format");
+;
 		return -EINVAL;
 	}
 
@@ -401,9 +401,9 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
 	 */
 	if ((ssc_p->daifmt & SND_SOC_DAIFMT_FORMAT_MASK) == SND_SOC_DAIFMT_I2S
 		&& bits > 16) {
-		printk(KERN_WARNING
-				"atmel_ssc_dai: sample size %d"
-				"is too large for I2S\n", bits);
+//		printk(KERN_WARNING
+//				"atmel_ssc_dai: sample size %d"
+;
 		return -EINVAL;
 	}
 
@@ -544,8 +544,8 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
 
 	case SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBM_CFM:
 	default:
-		printk(KERN_WARNING "atmel_ssc_dai: unsupported DAI format 0x%x\n",
-			ssc_p->daifmt);
+//		printk(KERN_WARNING "atmel_ssc_dai: unsupported DAI format 0x%x\n",
+;
 		return -EINVAL;
 	}
 	pr_debug("atmel_ssc_hw_params: "
@@ -574,8 +574,8 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
 		ret = request_irq(ssc_p->ssc->irq, atmel_ssc_interrupt, 0,
 				ssc_p->name, ssc_p);
 		if (ret < 0) {
-			printk(KERN_WARNING
-					"atmel_ssc_dai: request_irq failure\n");
+//			printk(KERN_WARNING
+;
 			pr_debug("Atmel_ssc_dai: Stoping clock\n");
 			clk_disable(ssc_p->ssc->clk);
 			return ret;
@@ -699,7 +699,7 @@ static int atmel_ssc_probe(struct snd_soc_dai *dai)
 	 */
 	ssc_p->ssc = ssc_request(dai->id);
 	if (IS_ERR(ssc_p->ssc)) {
-		printk(KERN_ERR "ASoC: Failed to request SSC %d\n", dai->id);
+;
 		ret = PTR_ERR(ssc_p->ssc);
 	}
 

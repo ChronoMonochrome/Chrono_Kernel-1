@@ -264,11 +264,11 @@ static inline int rio_paranoia_check(struct rio_port const *port, char *name, co
 	static const char *badinfo = KERN_ERR "rio: Warning: null rio port for device %s in %s\n";
 
 	if (!port) {
-		printk(badinfo, name, routine);
+;
 		return 1;
 	}
 	if (port->magic != RIO_MAGIC) {
-		printk(badmagic, name, routine);
+;
 		return 1;
 	}
 
@@ -286,15 +286,15 @@ static void my_hd(void *ad, int len)
 	unsigned char *addr = ad;
 
 	for (i = 0; i < len; i += 16) {
-		rio_dprintk(RIO_DEBUG_PARAM, "%08lx ", (unsigned long) addr + i);
+;
 		for (j = 0; j < 16; j++) {
-			rio_dprintk(RIO_DEBUG_PARAM, "%02x %s", addr[j + i], (j == 7) ? " " : "");
+;
 		}
 		for (j = 0; j < 16; j++) {
 			ch = addr[j + i];
-			rio_dprintk(RIO_DEBUG_PARAM, "%c", (ch < 0x20) ? '.' : ((ch > 0x7f) ? '.' : ch));
+;
 		}
-		rio_dprintk(RIO_DEBUG_PARAM, "\n");
+;
 	}
 }
 #else
@@ -307,7 +307,7 @@ int RIODelay(struct Port *PortP, int njiffies)
 {
 	func_enter();
 
-	rio_dprintk(RIO_DEBUG_DELAY, "delaying %d jiffies\n", njiffies);
+;
 	msleep_interruptible(jiffies_to_msecs(njiffies));
 	func_exit();
 
@@ -323,7 +323,7 @@ int RIODelay_ni(struct Port *PortP, int njiffies)
 {
 	func_enter();
 
-	rio_dprintk(RIO_DEBUG_DELAY, "delaying %d jiffies (ni)\n", njiffies);
+;
 	msleep(jiffies_to_msecs(njiffies));
 	func_exit();
 	return !RIO_FAIL;
@@ -366,7 +366,7 @@ static irqreturn_t rio_interrupt(int irq, void *ptr)
 	func_enter();
 
 	HostP = ptr;			/* &p->RIOHosts[(long)ptr]; */
-	rio_dprintk(RIO_DEBUG_IFLOW, "rio: enter rio_interrupt (%d/%d)\n", irq, HostP->Ivec);
+;
 
 	/* AAargh! The order in which to do these things is essential and
 	   not trivial.
@@ -385,7 +385,7 @@ static irqreturn_t rio_interrupt(int irq, void *ptr)
 	   - The initialized test goes before recursive.
 	 */
 
-	rio_dprintk(RIO_DEBUG_IFLOW, "rio: We've have noticed the interrupt\n");
+;
 	if (HostP->Ivec == irq) {
 		/* Tell the card we've noticed the interrupt. */
 		rio_reset_interrupt(HostP);
@@ -395,16 +395,16 @@ static irqreturn_t rio_interrupt(int irq, void *ptr)
 		return IRQ_HANDLED;
 
 	if (test_and_set_bit(RIO_BOARD_INTR_LOCK, &HostP->locks)) {
-		printk(KERN_ERR "Recursive interrupt! (host %p/irq%d)\n", ptr, HostP->Ivec);
+;
 		return IRQ_HANDLED;
 	}
 
 	RIOServiceHost(p, HostP);
 
-	rio_dprintk(RIO_DEBUG_IFLOW, "riointr() doing host %p type %d\n", ptr, HostP->Type);
+;
 
 	clear_bit(RIO_BOARD_INTR_LOCK, &HostP->locks);
-	rio_dprintk(RIO_DEBUG_IFLOW, "rio: exit rio_interrupt (%d/%d)\n", irq, HostP->Ivec);
+;
 	func_exit();
 	return IRQ_HANDLED;
 }
@@ -486,7 +486,7 @@ static int rio_carrier_raised(struct tty_port *port)
 	func_enter();
 	rv = (PortP->ModemState & RIOC_MSVR1_CD) != 0;
 
-	rio_dprintk(RIO_DEBUG_INIT, "Getting CD status: %d\n", rv);
+;
 
 	func_exit();
 	return rv;
@@ -552,7 +552,7 @@ static void rio_close(void *ptr)
 	riotclose(ptr);
 
 	if (PortP->gs.port.count) {
-		printk(KERN_ERR "WARNING port count:%d\n", PortP->gs.port.count);
+;
 		PortP->gs.port.count = 0;
 	}
 
@@ -603,19 +603,19 @@ static int rio_ioctl(struct tty_struct *tty, struct file *filp, unsigned int cmd
 		break;
 	case TCSBRK:
 		if (PortP->State & RIO_DELETED) {
-			rio_dprintk(RIO_DEBUG_TTY, "BREAK on deleted RTA\n");
+;
 			rc = -EIO;
 		} else {
 			if (RIOShortCommand(p, PortP, RIOC_SBREAK, 2, 250) ==
 					RIO_FAIL) {
-				rio_dprintk(RIO_DEBUG_INTR, "SBREAK RIOShortCommand failed\n");
+;
 				rc = -EIO;
 			}
 		}
 		break;
 	case TCSBRKP:
 		if (PortP->State & RIO_DELETED) {
-			rio_dprintk(RIO_DEBUG_TTY, "BREAK on deleted RTA\n");
+;
 			rc = -EIO;
 		} else {
 			int l;
@@ -624,7 +624,7 @@ static int rio_ioctl(struct tty_struct *tty, struct file *filp, unsigned int cmd
 				l = 255;
 			if (RIOShortCommand(p, PortP, RIOC_SBREAK, 2,
 					arg ? arg * 100 : 250) == RIO_FAIL) {
-				rio_dprintk(RIO_DEBUG_INTR, "SBREAK RIOShortCommand failed\n");
+;
 				rc = -EIO;
 			}
 		}
@@ -708,7 +708,7 @@ static struct vpd_prom *get_VPD_PROM(struct Host *hp)
 	int i;
 
 	func_enter();
-	rio_dprintk(RIO_DEBUG_PROBE, "Going to verify vpd prom at %p.\n", hp->Caddr + RIO_VPD_ROM);
+;
 
 	p = (char *) &vpdp;
 	for (i = 0; i < sizeof(struct vpd_prom); i++)
@@ -780,7 +780,7 @@ static int rio_init_drivers(void)
 	rio_driver2->flags = TTY_DRIVER_REAL_RAW;
 	tty_set_operations(rio_driver2, &rio_ops);
 
-	rio_dprintk(RIO_DEBUG_INIT, "set_termios = %p\n", gs_set_termios);
+;
 
 	if ((error = tty_register_driver(rio_driver)))
 		goto out2;
@@ -795,7 +795,7 @@ static int rio_init_drivers(void)
       out1:
 	put_tty_driver(rio_driver);
       out:
-	printk(KERN_ERR "rio: Couldn't register a rio driver, error = %d\n", error);
+;
 	return 1;
 }
 
@@ -828,7 +828,7 @@ static int rio_init_datastructures(void)
 	if (!(p->RIOPortp = kzalloc(RIO_PORTS * PORT_SZ, GFP_KERNEL)))
 		goto free2;
 	p->RIOConf = RIOConf;
-	rio_dprintk(RIO_DEBUG_INIT, "Got : %p %p %p\n", p, p->RIOHosts, p->RIOPortp);
+;
 
 #if 1
 	for (i = 0; i < RIO_PORTS; i++) {
@@ -836,7 +836,7 @@ static int rio_init_datastructures(void)
 		if (!port) {
 			goto free6;
 		}
-		rio_dprintk(RIO_DEBUG_INIT, "initing port %d (%d)\n", i, port->Mapped);
+;
 		tty_port_init(&port->gs.port);
 		port->gs.port.ops = &rio_port_ops;
 		port->PortNum = i;
@@ -867,7 +867,7 @@ static int rio_init_datastructures(void)
  free3:*/ kfree(p->RIOPortp);
       free2:kfree(p->RIOHosts);
       free1:
-	rio_dprintk(RIO_DEBUG_INIT, "Not enough memory! %p %p %p\n", p, p->RIOHosts, p->RIOPortp);
+;
 	kfree(p);
       free0:
 	return -ENOMEM;
@@ -917,7 +917,7 @@ static void fix_rio_pci(struct pci_dev *pdev)
 	rebase = ioremap(hwbase, 0x80);
 	t = readl(rebase + CNTRL_REG_OFFSET);
 	if (t != CNTRL_REG_GOODVALUE) {
-		printk(KERN_DEBUG "rio: performing cntrl reg fix: %08x -> %08x\n", t, CNTRL_REG_GOODVALUE);
+;
 		writel(CNTRL_REG_GOODVALUE, rebase + CNTRL_REG_OFFSET);
 	}
 	iounmap(rebase);
@@ -940,15 +940,15 @@ static int __init rio_init(void)
 #endif
 
 	func_enter();
-	rio_dprintk(RIO_DEBUG_INIT, "Initing rio module... (rio_debug=%d)\n", rio_debug);
+;
 
 	if (abs((long) (&rio_debug) - rio_debug) < 0x10000) {
-		printk(KERN_WARNING "rio: rio_debug is an address, instead of a value. " "Assuming -1. Was %x/%p.\n", rio_debug, &rio_debug);
+;
 		rio_debug = -1;
 	}
 
 	if (misc_register(&rio_fw_device) < 0) {
-		printk(KERN_ERR "RIO: Unable to register firmware loader driver.\n");
+;
 		return -EIO;
 	}
 
@@ -974,12 +974,12 @@ static int __init rio_init(void)
 		   ourselves */
 		pci_read_config_dword(pdev, 0x2c, &tint);
 		tshort = (tint >> 16) & 0xffff;
-		rio_dprintk(RIO_DEBUG_PROBE, "Got a specialix card: %x.\n", tint);
+;
 		if (tshort != 0x0100) {
-			rio_dprintk(RIO_DEBUG_PROBE, "But it's not a RIO card (%d)...\n", tshort);
+;
 			continue;
 		}
-		rio_dprintk(RIO_DEBUG_PROBE, "cp1\n");
+;
 
 		hp = &p->RIOHosts[p->RIONumHosts];
 		hp->PaddrP = pci_resource_start(pdev, 2);
@@ -997,12 +997,12 @@ static int __init rio_init(void)
 
 		rio_dprintk(RIO_DEBUG_PROBE, "Going to test it (%p/%p).\n", (void *) p->RIOHosts[p->RIONumHosts].PaddrP, p->RIOHosts[p->RIONumHosts].Caddr);
 		if (RIOBoardTest(p->RIOHosts[p->RIONumHosts].PaddrP, p->RIOHosts[p->RIONumHosts].Caddr, RIO_PCI, 0) == 0) {
-			rio_dprintk(RIO_DEBUG_INIT, "Done RIOBoardTest\n");
+;
 			writeb(0xFF, &p->RIOHosts[p->RIONumHosts].ResetInt);
 			p->RIOHosts[p->RIONumHosts].UniqueNum =
 			    ((readb(&p->RIOHosts[p->RIONumHosts].Unique[0]) & 0xFF) << 0) |
 			    ((readb(&p->RIOHosts[p->RIONumHosts].Unique[1]) & 0xFF) << 8) | ((readb(&p->RIOHosts[p->RIONumHosts].Unique[2]) & 0xFF) << 16) | ((readb(&p->RIOHosts[p->RIONumHosts].Unique[3]) & 0xFF) << 24);
-			rio_dprintk(RIO_DEBUG_PROBE, "Hmm Tested ok, uniqid = %x.\n", p->RIOHosts[p->RIONumHosts].UniqueNum);
+;
 
 			fix_rio_pci(pdev);
 
@@ -1046,8 +1046,8 @@ static int __init rio_init(void)
 		hp->Mode = RIO_PCI_BOOT_FROM_RAM;
 		spin_lock_init(&hp->HostLock);
 
-		rio_dprintk(RIO_DEBUG_PROBE, "Ivec: %x\n", hp->Ivec);
-		rio_dprintk(RIO_DEBUG_PROBE, "Mode: %x\n", hp->Mode);
+;
+;
 
 		rio_reset_interrupt(hp);
 		rio_start_card_running(hp);
@@ -1057,7 +1057,7 @@ static int __init rio_init(void)
 			p->RIOHosts[p->RIONumHosts].UniqueNum =
 			    ((readb(&p->RIOHosts[p->RIONumHosts].Unique[0]) & 0xFF) << 0) |
 			    ((readb(&p->RIOHosts[p->RIONumHosts].Unique[1]) & 0xFF) << 8) | ((readb(&p->RIOHosts[p->RIONumHosts].Unique[2]) & 0xFF) << 16) | ((readb(&p->RIOHosts[p->RIONumHosts].Unique[3]) & 0xFF) << 24);
-			rio_dprintk(RIO_DEBUG_PROBE, "Hmm Tested ok, uniqid = %x.\n", p->RIOHosts[p->RIONumHosts].UniqueNum);
+;
 
 			p->RIOHosts[p->RIONumHosts].pdev = pdev;
 			pci_dev_get(pdev);
@@ -1070,7 +1070,7 @@ static int __init rio_init(void)
 			p->RIOHosts[p->RIONumHosts].Caddr = NULL;
 		}
 #else
-		printk(KERN_ERR "Found an older RIO PCI card, but the driver is not " "compiled to support it.\n");
+;
 #endif
 	}
 #endif				/* PCI */
@@ -1093,15 +1093,15 @@ static int __init rio_init(void)
 		spin_lock_init(&hp->HostLock);
 
 		vpdp = get_VPD_PROM(hp);
-		rio_dprintk(RIO_DEBUG_PROBE, "Got VPD ROM\n");
+;
 		okboard = 0;
 		if ((strncmp(vpdp->identifier, RIO_ISA_IDENT, 16) == 0) || (strncmp(vpdp->identifier, RIO_ISA2_IDENT, 16) == 0) || (strncmp(vpdp->identifier, RIO_ISA3_IDENT, 16) == 0)) {
 			/* Board is present... */
 			if (RIOBoardTest(hp->PaddrP, hp->Caddr, RIO_AT, 0) == 0) {
 				/* ... and feeling fine!!!! */
-				rio_dprintk(RIO_DEBUG_PROBE, "Hmm Tested ok, uniqid = %x.\n", p->RIOHosts[p->RIONumHosts].UniqueNum);
+;
 				if (RIOAssignAT(p, hp->PaddrP, hp->Caddr, 0)) {
-					rio_dprintk(RIO_DEBUG_PROBE, "Hmm Tested ok, host%d uniqid = %x.\n", p->RIONumHosts, p->RIOHosts[p->RIONumHosts - 1].UniqueNum);
+;
 					okboard++;
 					found++;
 				}
@@ -1123,20 +1123,20 @@ static int __init rio_init(void)
 				mode = 0;
 				hp->Ivec &= 0x7fff;
 			}
-			rio_dprintk(RIO_DEBUG_INIT, "Requesting interrupt hp: %p rio_interrupt: %d Mode: %x\n", hp, hp->Ivec, hp->Mode);
+;
 			retval = request_irq(hp->Ivec, rio_interrupt, mode, "rio", hp);
-			rio_dprintk(RIO_DEBUG_INIT, "Return value from request_irq: %d\n", retval);
+;
 			if (retval) {
-				printk(KERN_ERR "rio: Cannot allocate irq %d.\n", hp->Ivec);
+;
 				hp->Ivec = 0;
 			}
-			rio_dprintk(RIO_DEBUG_INIT, "Got irq %d.\n", hp->Ivec);
+;
 			if (hp->Ivec != 0) {
-				rio_dprintk(RIO_DEBUG_INIT, "Enabling interrupts on rio card.\n");
+;
 				hp->Mode |= RIO_PCI_INT_ENABLE;
 			} else
 				hp->Mode &= ~RIO_PCI_INT_ENABLE;
-			rio_dprintk(RIO_DEBUG_INIT, "New Mode: %x\n", hp->Mode);
+;
 			rio_start_card_running(hp);
 		}
 		/* Init the timer "always" to make sure that it can safely be
@@ -1144,13 +1144,13 @@ static int __init rio_init(void)
 
 		setup_timer(&hp->timer, rio_pollfunc, i);
 		if (!hp->Ivec) {
-			rio_dprintk(RIO_DEBUG_INIT, "Starting polling at %dj intervals.\n", rio_poll);
+;
 			mod_timer(&hp->timer, jiffies + rio_poll);
 		}
 	}
 
 	if (found) {
-		rio_dprintk(RIO_DEBUG_INIT, "rio: total of %d boards detected.\n", found);
+;
 		rio_init_drivers();
 	} else {
 		/* deregister the misc device we created earlier */
@@ -1173,7 +1173,7 @@ static void __exit rio_exit(void)
 		RIOHostReset(hp->Type, hp->CardP, hp->Slot);
 		if (hp->Ivec) {
 			free_irq(hp->Ivec, hp);
-			rio_dprintk(RIO_DEBUG_INIT, "freed irq %d.\n", hp->Ivec);
+;
 		}
 		/* It is safe/allowed to del_timer a non-active timer */
 		del_timer_sync(&hp->timer);
@@ -1184,11 +1184,11 @@ static void __exit rio_exit(void)
 	}
 
 	if (misc_deregister(&rio_fw_device) < 0) {
-		printk(KERN_INFO "rio: couldn't deregister control-device\n");
+;
 	}
 
 
-	rio_dprintk(RIO_DEBUG_CLEANUP, "Cleaning up drivers\n");
+;
 
 	rio_release_drivers();
 

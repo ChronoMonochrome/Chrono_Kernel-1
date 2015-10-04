@@ -48,8 +48,8 @@ void cb_out_1(struct pcbit_dev * dev, struct pcbit_chan* chan,
 
 
 #ifdef DEBUG
-        printk(KERN_DEBUG "Called Party Number: %s\n", 
-               cbdata->data.setup.CalledPN);
+//        printk(KERN_DEBUG "Called Party Number: %s\n", 
+;
 #endif
         /*
          * hdr - kmalloc in capi_conn_req
@@ -59,7 +59,7 @@ void cb_out_1(struct pcbit_dev * dev, struct pcbit_chan* chan,
         if ((len = capi_conn_req(cbdata->data.setup.CalledPN, &skb, 
 				 chan->proto)) < 0)
         {
-                printk("capi_conn_req failed\n");
+;
                 return;
         }
 
@@ -91,7 +91,7 @@ void cb_out_2(struct pcbit_dev * dev, struct pcbit_chan* chan,
 
         if ((len=capi_conn_active_resp(chan, &skb)) < 0)
         {
-                printk("capi_conn_active_req failed\n");
+;
                 return;
         }
 
@@ -111,7 +111,7 @@ void cb_out_2(struct pcbit_dev * dev, struct pcbit_chan* chan,
         /* Select protocol  */
 
         if ((len=capi_select_proto_req(chan, &skb, 1 /*outgoing*/)) < 0) { 
-                printk("capi_select_proto_req failed\n");
+;
                 return;
         }
 
@@ -145,14 +145,14 @@ void cb_in_1(struct pcbit_dev * dev, struct pcbit_chan* chan,
          */
 
 	if (cbdata->data.setup.CallingPN == NULL) {
-		printk(KERN_DEBUG "NULL CallingPN to phone; using 0\n");
+;
 		strcpy(ictl.parm.setup.phone, "0");
 	}
 	else {
 		strcpy(ictl.parm.setup.phone, cbdata->data.setup.CallingPN);
 	}
 	if (cbdata->data.setup.CalledPN == NULL) {
-		printk(KERN_DEBUG "NULL CalledPN to eazmsn; using 0\n");
+;
 		strcpy(ictl.parm.setup.eazmsn, "0");
 	}
 	else {
@@ -164,14 +164,14 @@ void cb_in_1(struct pcbit_dev * dev, struct pcbit_chan* chan,
 	ictl.parm.setup.screen = 0;
 
 #ifdef DEBUG
-	printk(KERN_DEBUG "statstr: %s\n", ictl.num);
+;
 #endif
 
         dev->dev_if->statcallb(&ictl);
 
         
         if ((len=capi_conn_resp(chan, &skb)) < 0) {
-                printk(KERN_DEBUG "capi_conn_resp failed\n");
+;
                 return;
 	}
 
@@ -195,7 +195,7 @@ void cb_in_2(struct pcbit_dev * dev, struct pcbit_chan* chan,
         int len;
         
         if ((len = capi_conn_active_req(chan, &skb)) < 0) {        
-                printk(KERN_DEBUG "capi_conn_active_req failed\n");
+;
                 return;
         }
 
@@ -203,7 +203,7 @@ void cb_in_2(struct pcbit_dev * dev, struct pcbit_chan* chan,
         refnum = last_ref_num++ & 0x7fffU;
         chan->s_refnum = refnum;
 
-	printk(KERN_DEBUG "sending MSG_CONN_ACTV_REQ\n");
+;
         pcbit_l2_write(dev, MSG_CONN_ACTV_REQ, refnum, skb, len);
 }
 
@@ -222,7 +222,7 @@ void cb_in_3(struct pcbit_dev * dev, struct pcbit_chan* chan,
         
         if ((len = capi_select_proto_req(chan, &skb, 0 /*incoming*/)) < 0)
         {
-                printk("capi_select_proto_req failed\n");
+;
                 return;
         }
 
@@ -248,7 +248,7 @@ void cb_disc_1(struct pcbit_dev * dev, struct pcbit_chan* chan,
         isdn_ctrl ictl;
   
         if ((len = capi_disc_resp(chan, &skb)) < 0) {
-                printk("capi_disc_resp failed\n");
+;
                 return;
         }
 
@@ -277,7 +277,7 @@ void cb_disc_2(struct pcbit_dev * dev, struct pcbit_chan* chan,
 
         if ((len = capi_disc_req(chan->callref, &skb, CAUSE_NORMAL)) < 0)
         {
-                printk("capi_disc_req failed\n");
+;
                 return;
         }
 
@@ -320,7 +320,7 @@ void cb_selp_1(struct pcbit_dev * dev, struct pcbit_chan* chan,
 
         if ((len = capi_activate_transp_req(chan, &skb)) < 0)
         {
-                printk("capi_conn_activate_transp_req failed\n");
+;
                 return;
         }
 

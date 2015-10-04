@@ -115,11 +115,11 @@ static int opl3_ioctl(int dev, unsigned int cmd, void __user * arg)
 	
 	switch (cmd) {
 		case SNDCTL_FM_LOAD_INSTR:
-			printk(KERN_WARNING "Warning: Obsolete ioctl(SNDCTL_FM_LOAD_INSTR) used. Fix the program.\n");
+;
 			if (copy_from_user(&ins, arg, sizeof(ins)))
 				return -EFAULT;
 			if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR) {
-				printk(KERN_WARNING "FM Error: Invalid instrument number %d\n", ins.channel);
+;
 				return -EINVAL;
 			}
 			return store_instr(ins.channel, &ins);
@@ -161,7 +161,7 @@ static int opl3_detect(int ioaddr)
 
 	if (devc != NULL)
 	{
-		printk(KERN_ERR "opl3: Only one OPL3 supported.\n");
+;
 		return 0;
 	}
 
@@ -169,15 +169,15 @@ static int opl3_detect(int ioaddr)
 
 	if (devc == NULL)
 	{
-		printk(KERN_ERR "opl3: Can't allocate memory for the device control "
-			"structure \n ");
+//		printk(KERN_ERR "opl3: Can't allocate memory for the device control "
+;
 		return 0;
 	}
 
 	strcpy(devc->fm_info.name, "OPL2");
 
 	if (!request_region(ioaddr, 4, devc->fm_info.name)) {
-		printk(KERN_WARNING "opl3: I/O port 0x%x already in use\n", ioaddr);
+;
 		goto cleanup_devc;
 	}
 
@@ -194,7 +194,7 @@ static int opl3_detect(int ioaddr)
 	if (signature != 0x00 && signature != 0x06 && signature != 0x02 &&
 		signature != 0x0f)
 	{
-		MDB(printk(KERN_INFO "OPL3 not detected %x\n", signature));
+;
 		goto cleanup_region;
 	}
 
@@ -275,7 +275,7 @@ static int opl3_kill_note  (int devno, int voice, int note, int velocity)
 	 devc->v_alloc->map[voice] = 0;
 
 	 map = &pv_map[devc->lv_map[voice]];
-	 DEB(printk("Kill note %d\n", voice));
+;
 
 	 if (map->voice_mode == 0)
 		 return 0;
@@ -303,7 +303,7 @@ static int opl3_kill_note  (int devno, int voice, int note, int velocity)
 static int store_instr(int instr_no, struct sbi_instrument *instr)
 {
 	if (instr->key != FM_PATCH && (instr->key != OPL3_PATCH || devc->model != 2))
-		printk(KERN_WARNING "FM warning: Invalid patch format field (key) 0x%x\n", instr->key);
+;
 	memcpy((char *) &(devc->i_map[instr_no]), (char *) instr, sizeof(*instr));
 	return 0;
 }
@@ -511,7 +511,7 @@ static int opl3_start_note (int dev, int voice, int note, int volume)
 
 	if (instr->channel < 0)
 	{
-		printk(KERN_WARNING "opl3: Initializing voice %d with undefined instrument\n", voice);
+;
 		return 0;
 	}
 
@@ -826,7 +826,7 @@ static int opl3_load_patch(int dev, int format, const char __user *addr,
 
 	if (count <sizeof(ins))
 	{
-		printk(KERN_WARNING "FM Error: Patch record too short\n");
+;
 		return -EINVAL;
 	}
 
@@ -835,7 +835,7 @@ static int opl3_load_patch(int dev, int format, const char __user *addr,
 
 	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
 	{
-		printk(KERN_WARNING "FM Error: Invalid instrument number %d\n", ins.channel);
+;
 		return -EINVAL;
 	}
 	ins.key = format;
@@ -873,7 +873,7 @@ static void opl3_aftertouch(int dev, int voice, int pressure)
 
 	map = &pv_map[devc->lv_map[voice]];
 
-	DEB(printk("Aftertouch %d\n", voice));
+;
 
 	if (map->voice_mode == 0)
 		return;
@@ -1117,13 +1117,13 @@ static int opl3_init(int ioaddr, struct module *owner)
 
 	if (devc == NULL)
 	{
-		printk(KERN_ERR "opl3: Device control structure not initialized.\n");
+;
 		return -1;
 	}
 
 	if ((me = sound_alloc_synthdev()) == -1)
 	{
-		printk(KERN_WARNING "opl3: Too many synthesizers\n");
+;
 		return -1;
 	}
 
@@ -1207,7 +1207,7 @@ module_param(io, int, 0);
 
 static int __init init_opl3 (void)
 {
-	printk(KERN_INFO "YM3812 and OPL-3 driver Copyright (C) by Hannu Savolainen, Rob Hooft 1993-1996\n");
+;
 
 	if (io != -1)	/* User loading pure OPL3 module */
 	{

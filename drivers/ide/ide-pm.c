@@ -83,8 +83,8 @@ void ide_complete_power_step(ide_drive_t *drive, struct request *rq)
 	struct request_pm_state *pm = rq->special;
 
 #ifdef DEBUG_PM
-	printk(KERN_INFO "%s: complete_power_step(step: %d)\n",
-		drive->name, pm->pm_step);
+//	printk(KERN_INFO "%s: complete_power_step(step: %d)\n",
+;
 #endif
 	if (drive->media != ide_disk)
 		return;
@@ -190,8 +190,8 @@ void ide_complete_pm_rq(ide_drive_t *drive, struct request *rq)
 		return;
 
 #ifdef DEBUG_PM
-	printk("%s: completing PM request, %s\n", drive->name,
-	       (rq->cmd_type == REQ_TYPE_PM_SUSPEND) ? "suspend" : "resume");
+//	printk("%s: completing PM request, %s\n", drive->name,
+;
 #endif
 	spin_lock_irqsave(q->queue_lock, flags);
 	if (rq->cmd_type == REQ_TYPE_PM_SUSPEND)
@@ -230,16 +230,16 @@ void ide_check_pm_state(ide_drive_t *drive, struct request *rq)
 		unsigned long flags;
 		int rc;
 #ifdef DEBUG_PM
-		printk("%s: Wakeup request inited, waiting for !BSY...\n", drive->name);
+;
 #endif
 		rc = ide_wait_not_busy(hwif, 35000);
 		if (rc)
-			printk(KERN_WARNING "%s: bus not ready on wakeup\n", drive->name);
+;
 		tp_ops->dev_select(drive);
 		tp_ops->write_devctl(hwif, ATA_DEVCTL_OBS);
 		rc = ide_wait_not_busy(hwif, 100000);
 		if (rc)
-			printk(KERN_WARNING "%s: drive not ready on wakeup\n", drive->name);
+;
 
 		spin_lock_irqsave(q->queue_lock, flags);
 		blk_start_queue(q);

@@ -33,22 +33,22 @@ MODULE_PARM_DESC(debug, "set debug level");
 
 /* ------------------------------------------------------------------------- */
 
-#define mxl_printk(kern, fmt, arg...) \
-	printk(kern "%s: " fmt "\n", __func__, ##arg)
-
-#define mxl_err(fmt, arg...) \
-	mxl_printk(KERN_ERR, "%d: " fmt, __LINE__, ##arg)
-
-#define mxl_warn(fmt, arg...) \
-	mxl_printk(KERN_WARNING, fmt, ##arg)
-
-#define mxl_info(fmt, arg...) \
-	mxl_printk(KERN_INFO, fmt, ##arg)
-
-#define mxl_debug(fmt, arg...)				\
-({							\
-	if (mxl5007t_debug)				\
-		mxl_printk(KERN_DEBUG, fmt, ##arg);	\
+//#define mxl_printk(kern, fmt, arg...) \
+//	printk(kern "%s: " fmt "\n", __func__, ##arg)
+//
+//#define mxl_err(fmt, arg...) \
+//	mxl_printk(KERN_ERR, "%d: " fmt, __LINE__, ##arg)
+//
+//#define mxl_warn(fmt, arg...) \
+//	mxl_printk(KERN_WARNING, fmt, ##arg)
+//
+//#define mxl_info(fmt, arg...) \
+//	mxl_printk(KERN_INFO, fmt, ##arg)
+//
+//#define mxl_debug(fmt, arg...)				\
+//({							\
+//	if (mxl5007t_debug)				\
+;
 })
 
 #define mxl_fail(ret)							\
@@ -56,8 +56,8 @@ MODULE_PARM_DESC(debug, "set debug level");
 	int __ret;							\
 	__ret = (ret < 0);						\
 	if (__ret)							\
-		mxl_printk(KERN_ERR, "error %d on line %d",		\
-			   ret, __LINE__);				\
+//		mxl_printk(KERN_ERR, "error %d on line %d",		\
+;
 	__ret;								\
 })
 
@@ -802,7 +802,7 @@ static int mxl5007t_get_chip_id(struct mxl5007t_state *state)
 		break;
 	default:
 		name = "MxL5007T";
-		printk(KERN_WARNING "%s: unknown rev (%02x)\n", __func__, id);
+;
 		id = MxL_UNKNOWN_ID;
 	}
 	state->chip_id = id;

@@ -406,9 +406,9 @@ dch_l2l1(struct hisax_d_if *iface, int pr, void *arg)
 			break;
 
 		default:
-			printk(KERN_INFO
-			       "HFC-4S/8S: Unknown D-chan cmd 0x%x received, ignored\n",
-			       pr);
+//			printk(KERN_INFO
+//			       "HFC-4S/8S: Unknown D-chan cmd 0x%x received, ignored\n",
+;
 			break;
 	}
 	if (!l1->enabled)
@@ -619,9 +619,9 @@ bch_l2l1(struct hisax_if *ifc, int pr, void *arg)
 			break;
 
 		default:
-			printk(KERN_INFO
-			       "HFC-4S/8S: Unknown B-chan cmd 0x%x received, ignored\n",
-			       pr);
+//			printk(KERN_INFO
+//			       "HFC-4S/8S: Unknown B-chan cmd 0x%x received, ignored\n",
+;
 			break;
 	}
 	if (!l1->enabled)
@@ -705,9 +705,9 @@ rx_d_frame(struct hfc4s8s_l1 *l1p, int ech)
 			z1 += 384;
 
 		if (!(skb = dev_alloc_skb(MAX_D_FRAME_SIZE))) {
-			printk(KERN_INFO
-			       "HFC-4S/8S: Could not allocate D/E "
-			       "channel receive buffer");
+//			printk(KERN_INFO
+//			       "HFC-4S/8S: Could not allocate D/E "
+;
 			Write_hfc8(l1p->hw, A_INC_RES_FIFO, 2);
 			wait_busy(l1p->hw);
 			return;
@@ -837,9 +837,9 @@ rx_b_frame(struct hfc4s8s_btype *bch)
 			     dev_alloc_skb((bch->mode ==
 					    L1_MODE_TRANS) ? z1
 					   : (MAX_B_FRAME_SIZE + 3)))) {
-				printk(KERN_ERR
-				       "HFC-4S/8S: Could not allocate B "
-				       "channel receive buffer");
+//				printk(KERN_ERR
+//				       "HFC-4S/8S: Could not allocate B "
+;
 				return;
 			}
 			bch->rx_ptr = skb->data;
@@ -1138,10 +1138,10 @@ hfc4s8s_bh(struct work_struct *work)
 							  jiffies +
 							  L1_TIMER_T1);
 					}
-					printk(KERN_INFO
-					       "HFC-4S/8S: NT ch %d l1 state %d -> %d\n",
-					       l1p->st_num, oldstate,
-					       l1p->l1_state);
+//					printk(KERN_INFO
+//					       "HFC-4S/8S: NT ch %d l1 state %d -> %d\n",
+//					       l1p->st_num, oldstate,
+;
 				} else {
 					u_char oldstate = l1p->l1_state;
 
@@ -1187,11 +1187,11 @@ hfc4s8s_bh(struct work_struct *work)
 								     NULL);
 						}
 					}
-					printk(KERN_INFO
-					       "HFC-4S/8S: TE %d ch %d l1 state %d -> %d\n",
-					       l1p->hw->cardnum,
-					       l1p->st_num, oldstate,
-					       l1p->l1_state);
+//					printk(KERN_INFO
+//					       "HFC-4S/8S: TE %d ch %d l1 state %d -> %d\n",
+//					       l1p->hw->cardnum,
+//					       l1p->st_num, oldstate,
+;
 				}
 			}
 		}
@@ -1435,9 +1435,9 @@ hfc_hardware_enable(hfc4s8s_hw * hw, int enable, int nt_mode)
 				hw->mr.r_irqmsk_statchg &= ~(1 << i);
 				Write_hfc8(hw, R_SCI_MSK,
 					   hw->mr.r_irqmsk_statchg);
-				printk(KERN_INFO
-				       "HFC-4S/8S: Unable to register S/T device %s, break\n",
-				       if_name);
+//				printk(KERN_INFO
+//				       "HFC-4S/8S: Unable to register S/T device %s, break\n",
+;
 				break;
 			}
 		}
@@ -1539,16 +1539,16 @@ setup_instance(hfc4s8s_hw * hw)
 
 	i = Read_hfc8(hw, R_CHIP_ID) >> CHIP_ID_SHIFT;
 	if (i != hw->driver_data.chip_id) {
-		printk(KERN_INFO
-		       "HFC-4S/8S: invalid chip id 0x%x instead of 0x%x, card ignored\n",
-		       i, hw->driver_data.chip_id);
+//		printk(KERN_INFO
+//		       "HFC-4S/8S: invalid chip id 0x%x instead of 0x%x, card ignored\n",
+;
 		goto out;
 	}
 
 	i = Read_hfc8(hw, R_CHIP_RV) & 0xf;
 	if (!i) {
-		printk(KERN_INFO
-		       "HFC-4S/8S: chip revision 0 not supported, card ignored\n");
+//		printk(KERN_INFO
+;
 		goto out;
 	}
 
@@ -1556,19 +1556,19 @@ setup_instance(hfc4s8s_hw * hw)
 
 	if (request_irq
 	    (hw->irq, hfc4s8s_interrupt, IRQF_SHARED, hw->card_name, hw)) {
-		printk(KERN_INFO
-		       "HFC-4S/8S: unable to alloc irq %d, card ignored\n",
-		       hw->irq);
+//		printk(KERN_INFO
+//		       "HFC-4S/8S: unable to alloc irq %d, card ignored\n",
+;
 		goto out;
 	}
 #ifdef HISAX_HFC4S8S_PCIMEM
-	printk(KERN_INFO
-	       "HFC-4S/8S: found PCI card at membase 0x%p, irq %d\n",
-	       hw->hw_membase, hw->irq);
+//	printk(KERN_INFO
+//	       "HFC-4S/8S: found PCI card at membase 0x%p, irq %d\n",
+;
 #else
-	printk(KERN_INFO
-	       "HFC-4S/8S: found PCI card at iobase 0x%x, irq %d\n",
-	       hw->iobase, hw->irq);
+//	printk(KERN_INFO
+//	       "HFC-4S/8S: found PCI card at iobase 0x%x, irq %d\n",
+;
 #endif
 
 	hfc_hardware_enable(hw, 1, 0);
@@ -1593,7 +1593,7 @@ hfc4s8s_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	hfc4s8s_hw *hw;
 
 	if (!(hw = kzalloc(sizeof(hfc4s8s_hw), GFP_ATOMIC))) {
-		printk(KERN_ERR "No kmem for HFC-4S/8S card\n");
+;
 		return (err);
 	}
 
@@ -1605,8 +1605,8 @@ hfc4s8s_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	hw->cardnum = card_cnt;
 	sprintf(hw->card_name, "hfc4s8s_%d", hw->cardnum);
-	printk(KERN_INFO "HFC-4S/8S: found adapter %s (%s) at %s\n",
-	       driver_data->device_name, hw->card_name, pci_name(pdev));
+//	printk(KERN_INFO "HFC-4S/8S: found adapter %s (%s) at %s\n",
+;
 
 	spin_lock_init(&hw->lock);
 
@@ -1619,9 +1619,9 @@ hfc4s8s_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	hw->membase = ioremap((ulong) hw->hw_membase, 256);
 #else
 	if (!request_region(hw->iobase, 8, hw->card_name)) {
-		printk(KERN_INFO
-		       "HFC-4S/8S: failed to rquest address space at 0x%04x\n",
-		       hw->iobase);
+//		printk(KERN_INFO
+//		       "HFC-4S/8S: failed to rquest address space at 0x%04x\n",
+;
 		goto out;
 	}
 #endif
@@ -1645,7 +1645,7 @@ hfc4s8s_remove(struct pci_dev *pdev)
 {
 	hfc4s8s_hw *hw = pci_get_drvdata(pdev);
 
-	printk(KERN_INFO "HFC-4S/8S: removing card %d\n", hw->cardnum);
+;
 	hfc_hardware_enable(hw, 0, 0);
 
 	if (hw->irq)
@@ -1674,11 +1674,11 @@ hfc4s8s_module_init(void)
 {
 	int err;
 
-	printk(KERN_INFO
-	       "HFC-4S/8S: Layer 1 driver module for HFC-4S/8S isdn chips, %s\n",
-	       hfc4s8s_rev);
-	printk(KERN_INFO
-	       "HFC-4S/8S: (C) 2003 Cornelius Consult, www.cornelius-consult.de\n");
+//	printk(KERN_INFO
+//	       "HFC-4S/8S: Layer 1 driver module for HFC-4S/8S isdn chips, %s\n",
+;
+//	printk(KERN_INFO
+;
 
 	card_cnt = 0;
 
@@ -1686,7 +1686,7 @@ hfc4s8s_module_init(void)
 	if (err < 0) {
 		goto out;
 	}
-	printk(KERN_INFO "HFC-4S/8S: found %d cards\n", card_cnt);
+;
 
 #if !defined(CONFIG_HOTPLUG)
 	if (err == 0) {
@@ -1709,7 +1709,7 @@ static void __exit
 hfc4s8s_module_exit(void)
 {
 	pci_unregister_driver(&hfc4s8s_driver);
-	printk(KERN_INFO "HFC-4S/8S: module removed\n");
+;
 }				/* hfc4s8s_release_hw */
 
 module_init(hfc4s8s_module_init);

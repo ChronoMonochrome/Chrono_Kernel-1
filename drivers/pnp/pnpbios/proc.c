@@ -98,8 +98,8 @@ static int escd_proc_show(struct seq_file *m, void *v)
 
 	/* sanity check */
 	if (escd.escd_size > MAX_SANE_ESCD_SIZE) {
-		printk(KERN_ERR
-		       "PnPBIOS: %s: ESCD size reported by BIOS escd_info call is too great\n", __func__);
+//		printk(KERN_ERR
+;
 		return -EFBIG;
 	}
 
@@ -117,8 +117,8 @@ static int escd_proc_show(struct seq_file *m, void *v)
 
 	/* sanity check */
 	if (escd_size > MAX_SANE_ESCD_SIZE) {
-		printk(KERN_ERR "PnPBIOS: %s: ESCD size reported by"
-				" BIOS read_escd call is too great\n", __func__);
+//		printk(KERN_ERR "PnPBIOS: %s: ESCD size reported by"
+;
 		kfree(tmpbuf);
 		return -EFBIG;
 	}
@@ -190,11 +190,11 @@ static int pnp_devices_proc_show(struct seq_file *m, void *v)
 			     node->type_code[0], node->type_code[1],
 			     node->type_code[2], node->flags);
 		if (nodenum <= thisnodenum) {
-			printk(KERN_ERR
-			       "%s Node number 0x%x is out of sequence following node 0x%x. Aborting.\n",
-			       "PnPBIOS: proc_read_devices:",
-			       (unsigned int)nodenum,
-			       (unsigned int)thisnodenum);
+//			printk(KERN_ERR
+//			       "%s Node number 0x%x is out of sequence following node 0x%x. Aborting.\n",
+//			       "PnPBIOS: proc_read_devices:",
+//			       (unsigned int)nodenum,
+;
 			break;
 		}
 	}

@@ -25,8 +25,8 @@ static void set_sensor_attr(struct device *dev,
 
 	for (i = 0; attributes[i] != NULL; i++)
 		if ((device_create_file(dev, attributes[i])) < 0)
-			printk(KERN_INFO "[SENSOR CORE] fail!!! device_create_file"
-						"( dev, attributes[%d] )\n", i);
+//			printk(KERN_INFO "[SENSOR CORE] fail!!! device_create_file"
+;
 }
 
 int sensors_register(struct device *dev, void * drvdata,
@@ -46,8 +46,8 @@ int sensors_register(struct device *dev, void * drvdata,
 
 	if (IS_ERR(dev)) {
 		ret = PTR_ERR(dev);
-		printk(KERN_ERR "[SENSORS CORE] device_create failed!"
-					"[%d]\n", ret);
+//		printk(KERN_ERR "[SENSORS CORE] device_create failed!"
+;
 		return ret;
 	}
 
@@ -69,7 +69,7 @@ EXPORT_SYMBOL_GPL(sensors_unregister);
 
 static int __init sensors_class_init(void)
 {
-	printk(KERN_INFO "[SENSORS CORE] sensors_class_init\n");
+;
 	sensors_class = class_create(THIS_MODULE, "sensors");
 
 	if (IS_ERR(sensors_class))

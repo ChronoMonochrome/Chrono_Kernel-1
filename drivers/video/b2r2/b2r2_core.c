@@ -2812,7 +2812,7 @@ static struct platform_driver platform_b2r2_driver = {
  */
 static int __init b2r2_init(void)
 {
-	printk(KERN_INFO "%s\n", __func__);
+;
 	return platform_driver_probe(&platform_b2r2_driver, b2r2_probe);
 }
 module_init(b2r2_init);
@@ -2822,7 +2822,7 @@ module_init(b2r2_init);
  */
 static void __exit b2r2_exit(void)
 {
-	printk(KERN_INFO "%s\n", __func__);
+;
 	platform_driver_unregister(&platform_b2r2_driver);
 	return;
 }

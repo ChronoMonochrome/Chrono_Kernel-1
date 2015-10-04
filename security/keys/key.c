@@ -50,8 +50,8 @@ static struct key_type key_type_dead = {
 #ifdef KEY_DEBUGGING
 void __key_check(const struct key *key)
 {
-	printk("__key_check: key %p {%08x} should be {%08x}\n",
-	       key, key->magic, KEY_DEBUG_MAGIC);
+//	printk("__key_check: key %p {%08x} should be {%08x}\n",
+;
 	BUG();
 }
 #endif

@@ -470,8 +470,8 @@ static void mms_ts_int_set_pull(bool to_up)
 
 	ret = nmk_gpio_set_pull(KYLE_GPIO_TSP_INT_1V8, pull);
 	if (ret < 0)
-		printk(KERN_ERR "%s: fail to set pull xx on interrupt pin\n",
-								__func__);
+//		printk(KERN_ERR "%s: fail to set pull xx on interrupt pin\n",
+;
 
 }
 static int mms_ts_pin_configure(bool to_gpios)
@@ -509,8 +509,8 @@ static void mms_ts_vdd_on(struct device *dev, bool on)
 	if (!tsp_reg_3v3) {
 		tsp_reg_3v3 = regulator_get(dev, "v-tsp-3.3");
 		if (IS_ERR(tsp_reg_3v3)) {
-			printk(KERN_ERR "[%s] Failed to get v-tsp-3.3 regulator for TSP\n",
-				__func__);
+//			printk(KERN_ERR "[%s] Failed to get v-tsp-3.3 regulator for TSP\n",
+;
 			tsp_reg_3v3 = NULL;
 
 		}
@@ -519,8 +519,8 @@ static void mms_ts_vdd_on(struct device *dev, bool on)
 	if ( system_rev >= KYLE_ATT_R0_1 && !tsp_reg_1v8) {
 		tsp_reg_1v8 = regulator_get(dev, "v-tsp-1.8");
 		if (IS_ERR(tsp_reg_1v8)) {
-			printk(KERN_ERR "[%s] Failed to get v-tsp-1.8 regulator for TSP\n",
-				__func__);
+//			printk(KERN_ERR "[%s] Failed to get v-tsp-1.8 regulator for TSP\n",
+;
 			tsp_reg_1v8 = NULL;
 
 		}
@@ -541,7 +541,7 @@ static void mms_ts_vdd_on(struct device *dev, bool on)
 	}
 
 	if (ret < 0)
-		printk(KERN_ERR "Failed to enable or disable TSP regulators (%d)\n", ret);
+;
 	else
 		reg_enabled = on;
 }
@@ -1599,7 +1599,7 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
-	printk("@@@@ BT WAKE_PEER\n");
+;
 	return;
 }
 
@@ -1959,7 +1959,7 @@ static void fetch_usb_serial_no(int len)
 					buf[0], buf[1], buf[2], buf[3], buf[4]);
 		iounmap(backup_ram);
 	} else {
-		printk(KERN_ERR "$$ ioremap failed\n");
+;
 	}
 }
 #endif
@@ -2091,31 +2091,31 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 0x101:
-		printk(KERN_INFO "Kyle AT&T Board Rev 0.0\n");
+;
 		system_rev = KYLE_ATT_R0_0;
 		break;
 	case 0x102:
-		printk(KERN_INFO "Kyle AT&T Board Rev 0.1\n");
+;
 		system_rev = KYLE_ATT_R0_1;
 		break;
 	case 0x103:
-		printk(KERN_INFO "Kyle AT&T Board Rev 0.2\n");
+;
 		system_rev = KYLE_ATT_R0_2;
 		break;
 	case 0x104:
-		printk(KERN_INFO "Kyle AT&T Board Rev 0.3\n");
+;
 		system_rev = KYLE_ATT_R0_3;
 		break;
 	case 0x105:
-		printk(KERN_INFO "Kyle AT&T Board Rev 0.4\n");
+;
 		system_rev = KYLE_ATT_R0_4;
 		break;
 	case 0x106:
-		printk(KERN_INFO "Kyle AT&T Board Rev 0.5\n");
+;
 		system_rev = KYLE_ATT_R0_5;
 		break;
 	case 0x107:
-		printk(KERN_INFO "Kyle AT&T Board Rev 0.6\n");
+;
 		system_rev = KYLE_ATT_R0_6;
 		break;
 	default:

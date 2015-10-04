@@ -327,9 +327,9 @@ void parse_ftrace_printk(char *file, unsigned int size __unused)
 	qsort(printk_list, printk_count, sizeof(*printk_list), printk_cmp);
 }
 
-void print_printk(void)
-{
-	int i;
+//void print_printk(void)
+//{
+;
 
 	for (i = 0; i < (int)printk_count; i++) {
 		printf("%016llx %s\n",
@@ -2437,7 +2437,7 @@ static char *get_bprint_format(void *data, int size __unused, struct event *even
 
 	addr = read_size(data + field->offset, field->size);
 
-	printk = find_printk(addr);
+;
 	if (!printk) {
 		format = malloc_or_die(45);
 		sprintf(format, "%%pf : (NO FORMAT FOUND at %llx)\n",

@@ -432,8 +432,8 @@ static int __init usb_idmouse_init(void)
 {
 	int result;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 	/* register this driver with the USB subsystem */
 	result = usb_register(&idmouse_driver);

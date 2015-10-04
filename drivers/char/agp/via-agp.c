@@ -36,7 +36,7 @@ static int via_fetch_size(void)
 			return values[i].size;
 		}
 	}
-	printk(KERN_ERR PFX "Unknown aperture size from AGP bridge (0x%x)\n", temp);
+;
 	return 0;
 }
 
@@ -467,7 +467,7 @@ static int __devinit agp_via_probe(struct pci_dev *pdev,
 	if (pdev->device == PCI_DEVICE_ID_VIA_8367_0) {
 		/* Is there a KT400 subsystem ? */
 		if (pdev->subsystem_device == PCI_DEVICE_ID_VIA_8377_0) {
-			printk(KERN_INFO PFX "Found KT400 in disguise as a KT266.\n");
+;
 			check_via_agp3(bridge);
 		}
 	}

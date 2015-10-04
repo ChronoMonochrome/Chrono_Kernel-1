@@ -1643,7 +1643,7 @@ static int __init dac33_module_init(void)
 	int r;
 	r = i2c_add_driver(&tlv320dac33_i2c_driver);
 	if (r < 0) {
-		printk(KERN_ERR "DAC33: driver registration failed\n");
+;
 		return r;
 	}
 	return 0;

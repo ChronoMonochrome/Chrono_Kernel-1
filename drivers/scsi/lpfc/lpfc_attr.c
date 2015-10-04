@@ -2057,8 +2057,8 @@ lpfc_soft_wwpn_store(struct device *dev, struct device_attribute *attr,
 	if (phba->cfg_soft_wwnn)
 		fc_host_node_name(shost) = phba->cfg_soft_wwnn;
 
-	dev_printk(KERN_NOTICE, &phba->pcidev->dev,
-		   "lpfc%d: Reinitializing to use soft_wwpn\n", phba->brd_no);
+//	dev_printk(KERN_NOTICE, &phba->pcidev->dev,
+;
 
 	stat1 = lpfc_do_offline(phba, LPFC_EVT_OFFLINE);
 	if (stat1)
@@ -2150,9 +2150,9 @@ lpfc_soft_wwnn_store(struct device *dev, struct device_attribute *attr,
 	}
 	phba->cfg_soft_wwnn = wwn_to_u64(wwnn);
 
-	dev_printk(KERN_NOTICE, &phba->pcidev->dev,
-		   "lpfc%d: soft_wwnn set. Value will take effect upon "
-		   "setting of the soft_wwpn\n", phba->brd_no);
+//	dev_printk(KERN_NOTICE, &phba->pcidev->dev,
+//		   "lpfc%d: soft_wwnn set. Value will take effect upon "
+;
 
 	return count;
 }
@@ -4126,9 +4126,9 @@ sysfs_mbox_read(struct file *filp, struct kobject *kobj,
 		case MBX_SET_MASK:
 		case MBX_SET_DEBUG:
 			if (!(vport->fc_flag & FC_OFFLINE_MODE)) {
-				printk(KERN_WARNING "mbox_read:Command 0x%x "
-				       "is illegal in on-line state\n",
-				       pmb->mbxCommand);
+//				printk(KERN_WARNING "mbox_read:Command 0x%x "
+//				       "is illegal in on-line state\n",
+;
 				sysfs_mbox_idle(phba);
 				spin_unlock_irq(&phba->hbalock);
 				return -EPERM;
@@ -4159,8 +4159,8 @@ sysfs_mbox_read(struct file *filp, struct kobject *kobj,
 		case MBX_SECURITY_MGMT:
 		case MBX_AUTH_PORT:
 			if (phba->pci_dev_grp == LPFC_PCI_DEV_OC) {
-				printk(KERN_WARNING "mbox_read:Command 0x%x "
-				       "is not permitted\n", pmb->mbxCommand);
+//				printk(KERN_WARNING "mbox_read:Command 0x%x "
+;
 				sysfs_mbox_idle(phba);
 				spin_unlock_irq(&phba->hbalock);
 				return -EPERM;
@@ -4172,14 +4172,14 @@ sysfs_mbox_read(struct file *filp, struct kobject *kobj,
 		case MBX_REG_LOGIN64:
 		case MBX_CONFIG_PORT:
 		case MBX_RUN_BIU_DIAG:
-			printk(KERN_WARNING "mbox_read: Illegal Command 0x%x\n",
-			       pmb->mbxCommand);
+//			printk(KERN_WARNING "mbox_read: Illegal Command 0x%x\n",
+;
 			sysfs_mbox_idle(phba);
 			spin_unlock_irq(&phba->hbalock);
 			return -EPERM;
 		default:
-			printk(KERN_WARNING "mbox_read: Unknown Command 0x%x\n",
-			       pmb->mbxCommand);
+//			printk(KERN_WARNING "mbox_read: Unknown Command 0x%x\n",
+;
 			sysfs_mbox_idle(phba);
 			spin_unlock_irq(&phba->hbalock);
 			return -EPERM;
@@ -4238,7 +4238,7 @@ sysfs_mbox_read(struct file *filp, struct kobject *kobj,
 	}
 	else if (phba->sysfs_mbox.offset != off ||
 		 phba->sysfs_mbox.state  != SMBOX_READING) {
-		printk(KERN_WARNING  "mbox_read: Bad State\n");
+;
 		sysfs_mbox_idle(phba);
 		spin_unlock_irq(&phba->hbalock);
 		return -EAGAIN;

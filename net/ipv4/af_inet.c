@@ -1105,14 +1105,14 @@ out:
 	return;
 
 out_permanent:
-	printk(KERN_ERR "Attempt to override permanent protocol %d.\n",
-	       protocol);
+//	printk(KERN_ERR "Attempt to override permanent protocol %d.\n",
+;
 	goto out;
 
 out_illegal:
-	printk(KERN_ERR
-	       "Ignoring attempt to register invalid socket type %d.\n",
-	       p->type);
+//	printk(KERN_ERR
+//	       "Ignoring attempt to register invalid socket type %d.\n",
+;
 	goto out;
 }
 EXPORT_SYMBOL(inet_register_protosw);
@@ -1120,9 +1120,9 @@ EXPORT_SYMBOL(inet_register_protosw);
 void inet_unregister_protosw(struct inet_protosw *p)
 {
 	if (INET_PROTOSW_PERMANENT & p->flags) {
-		printk(KERN_ERR
-		       "Attempt to unregister permanent protocol %d.\n",
-		       p->protocol);
+//		printk(KERN_ERR
+//		       "Attempt to unregister permanent protocol %d.\n",
+;
 	} else {
 		spin_lock_bh(&inetsw_lock);
 		list_del_rcu(&p->list);
@@ -1170,8 +1170,8 @@ static int inet_sk_reselect_saddr(struct sock *sk)
 		return 0;
 
 	if (sysctl_ip_dynaddr > 1) {
-		printk(KERN_INFO "%s(): shifting inet->saddr from %pI4 to %pI4\n",
-		       __func__, &old_saddr, &new_saddr);
+//		printk(KERN_INFO "%s(): shifting inet->saddr from %pI4 to %pI4\n",
+;
 	}
 
 	inet->inet_saddr = inet->inet_rcv_saddr = new_saddr;
@@ -1703,14 +1703,14 @@ static int __init inet_init(void)
 	 */
 
 	if (inet_add_protocol(&icmp_protocol, IPPROTO_ICMP) < 0)
-		printk(KERN_CRIT "inet_init: Cannot add ICMP protocol\n");
+;
 	if (inet_add_protocol(&udp_protocol, IPPROTO_UDP) < 0)
-		printk(KERN_CRIT "inet_init: Cannot add UDP protocol\n");
+;
 	if (inet_add_protocol(&tcp_protocol, IPPROTO_TCP) < 0)
-		printk(KERN_CRIT "inet_init: Cannot add TCP protocol\n");
+;
 #ifdef CONFIG_IP_MULTICAST
 	if (inet_add_protocol(&igmp_protocol, IPPROTO_IGMP) < 0)
-		printk(KERN_CRIT "inet_init: Cannot add IGMP protocol\n");
+;
 #endif
 
 	/* Register the socket-side information for inet_create. */
@@ -1757,14 +1757,14 @@ static int __init inet_init(void)
 	 */
 #if defined(CONFIG_IP_MROUTE)
 	if (ip_mr_init())
-		printk(KERN_CRIT "inet_init: Cannot init ipv4 mroute\n");
+;
 #endif
 	/*
 	 *	Initialise per-cpu ipv4 mibs
 	 */
 
 	if (init_ipv4_mibs())
-		printk(KERN_CRIT "inet_init: Cannot init ipv4 mibs\n");
+;
 
 	ipv4_proc_init();
 

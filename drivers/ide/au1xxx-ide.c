@@ -58,7 +58,7 @@ static inline void auide_insw(unsigned long port, void *addr, u32 count)
 
 	if (!au1xxx_dbdma_put_dest(ahwif->rx_chan, virt_to_phys(addr),
 				   count << 1, DDMA_FLAGS_NOIE)) {
-		printk(KERN_ERR "%s failed %d\n", __func__, __LINE__);
+;
 		return;
 	}
 	ctp = *((chan_tab_t **)ahwif->rx_chan);
@@ -76,7 +76,7 @@ static inline void auide_outsw(unsigned long port, void *addr, u32 count)
 
 	if (!au1xxx_dbdma_put_source(ahwif->tx_chan, virt_to_phys(addr),
 				     count << 1, DDMA_FLAGS_NOIE)) {
-		printk(KERN_ERR "%s failed %d\n", __func__, __LINE__);
+;
 		return;
 	}
 	ctp = *((chan_tab_t **)ahwif->tx_chan);
@@ -233,8 +233,8 @@ static int auide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 			unsigned int tc = (cur_len < 0xfe00)? cur_len: 0xfe00;
 
 			if (++count >= PRD_ENTRIES) {
-				printk(KERN_WARNING "%s: DMA table too small\n",
-				       drive->name);
+//				printk(KERN_WARNING "%s: DMA table too small\n",
+;
 				return 0;
 			}
 
@@ -247,14 +247,14 @@ static int auide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 			if (iswrite) {
 				if (!au1xxx_dbdma_put_source(ahwif->tx_chan,
 					sg_phys(sg), tc, flags)) {
-					printk(KERN_ERR "%s failed %d\n", 
-					       __func__, __LINE__);
+//					printk(KERN_ERR "%s failed %d\n", 
+;
 				}
 			} else  {
 				if (!au1xxx_dbdma_put_dest(ahwif->rx_chan,
 					sg_phys(sg), tc, flags)) {
-					printk(KERN_ERR "%s failed %d\n", 
-					       __func__, __LINE__);
+//					printk(KERN_ERR "%s failed %d\n", 
+;
 				}
 			}
 
@@ -296,8 +296,8 @@ static int auide_dma_test_irq(ide_drive_t *drive)
 	 */
 	drive->waiting_for_dma++;
 	if (drive->waiting_for_dma >= DMA_WAIT_TIMEOUT) {
-		printk(KERN_WARNING "%s: timeout waiting for ddma to complete\n",
-		       drive->name);
+//		printk(KERN_WARNING "%s: timeout waiting for ddma to complete\n",
+;
 		return 1;
 	}
 	udelay(10);
@@ -553,7 +553,7 @@ static int au_ide_probe(struct platform_device *dev)
 
 	platform_set_drvdata(dev, host);
 
-	printk(KERN_INFO "Au1xxx IDE(builtin) configured for %s\n", mode );
+;
 
  out:
 	return ret;

@@ -496,8 +496,8 @@ static int sddr55_write_data(struct us_data *us,
 
 		/* check that new_pba wasn't already being used */
 		if (info->pba_to_lba[new_pba] != UNUSED_BLOCK) {
-			printk(KERN_ERR "sddr55 error: new PBA %04X already in use for LBA %04X\n",
-				new_pba, info->pba_to_lba[new_pba]);
+//			printk(KERN_ERR "sddr55 error: new PBA %04X already in use for LBA %04X\n",
+;
 			info->fatal_error = 1;
 			set_sense_info (3, 0x31, 0);
 			result = USB_STOR_TRANSPORT_FAILED;
@@ -746,9 +746,9 @@ static int sddr55_read_map(struct us_data *us) {
 		
 		if (info->lba_to_pba[lba + zone * 1000] != NOT_ALLOCATED &&
 		    !info->force_read_only) {
-			printk(KERN_WARNING
-			       "sddr55: map inconsistency at LBA %04X\n",
-			       lba + zone * 1000);
+//			printk(KERN_WARNING
+//			       "sddr55: map inconsistency at LBA %04X\n",
+;
 			info->force_read_only = 1;
 		}
 

@@ -321,7 +321,7 @@ static int ucb1400_ts_detect_irq(struct ucb1400_ts *ucb)
 						UCB_ADC_DAT_VALID)) {
 		cpu_relax();
 		if (time_after(jiffies, timeout)) {
-			printk(KERN_ERR "ucb1400: timed out in IRQ probe\n");
+;
 			probe_irq_off(mask);
 			return -ENODEV;
 		}
@@ -358,7 +358,7 @@ static int ucb1400_ts_probe(struct platform_device *dev)
 	if (ucb->irq < 0) {
 		error = ucb1400_ts_detect_irq(ucb);
 		if (error) {
-			printk(KERN_ERR "UCB1400: IRQ probe failed\n");
+;
 			goto err_free_devs;
 		}
 	}
@@ -368,11 +368,11 @@ static int ucb1400_ts_probe(struct platform_device *dev)
 	error = request_irq(ucb->irq, ucb1400_hard_irq, IRQF_TRIGGER_RISING,
 				"UCB1400", ucb);
 	if (error) {
-		printk(KERN_ERR "ucb1400: unable to grab irq%d: %d\n",
-				ucb->irq, error);
+//		printk(KERN_ERR "ucb1400: unable to grab irq%d: %d\n",
+;
 		goto err_free_devs;
 	}
-	printk(KERN_DEBUG "UCB1400: found IRQ %d\n", ucb->irq);
+;
 
 	input_set_drvdata(ucb->ts_idev, ucb);
 
@@ -398,7 +398,7 @@ static int ucb1400_ts_probe(struct platform_device *dev)
 	x_res = ucb1400_ts_read_xres(ucb);
 	y_res = ucb1400_ts_read_yres(ucb);
 	ucb1400_adc_disable(ucb->ac97);
-	printk(KERN_DEBUG "UCB1400: x/y = %d/%d\n", x_res, y_res);
+;
 
 	input_set_abs_params(ucb->ts_idev, ABS_X, 0, x_res, 0, 0);
 	input_set_abs_params(ucb->ts_idev, ABS_Y, 0, y_res, 0, 0);

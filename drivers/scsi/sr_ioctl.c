@@ -218,7 +218,7 @@ int sr_do_ioctl(Scsi_CD *cd, struct packet_command *cgc)
 		case UNIT_ATTENTION:
 			SDev->changed = 1;
 			if (!cgc->quiet)
-				printk(KERN_INFO "%s: disc change detected.\n", cd->cdi.name);
+;
 			if (retries++ < 10)
 				goto retry;
 			err = -ENOMEDIUM;
@@ -228,7 +228,7 @@ int sr_do_ioctl(Scsi_CD *cd, struct packet_command *cgc)
 			    sshdr.ascq == 0x01) {
 				/* sense: Logical unit is in process of becoming ready */
 				if (!cgc->quiet)
-					printk(KERN_INFO "%s: CDROM not ready yet.\n", cd->cdi.name);
+;
 				if (retries++ < 10) {
 					/* sleep 2 sec and try again */
 					ssleep(2);
@@ -240,7 +240,7 @@ int sr_do_ioctl(Scsi_CD *cd, struct packet_command *cgc)
 				}
 			}
 			if (!cgc->quiet)
-				printk(KERN_INFO "%s: CDROM not ready.  Make sure there is a disc in the drive.\n", cd->cdi.name);
+;
 #ifdef DEBUG
 			scsi_print_sense_hdr("sr", &sshdr);
 #endif
@@ -258,7 +258,7 @@ int sr_do_ioctl(Scsi_CD *cd, struct packet_command *cgc)
 #endif
 			break;
 		default:
-			printk(KERN_ERR "%s: CDROM (ioctl) error, command: ", cd->cdi.name);
+;
 			__scsi_print_command(cgc->cmd);
 			scsi_print_sense_hdr("sr", &sshdr);
 			err = -EIO;
@@ -490,8 +490,8 @@ static int sr_read_cd(Scsi_CD *cd, unsigned char *dest, int lba, int format, int
 	struct packet_command cgc;
 
 #ifdef DEBUG
-	printk("%s: sr_read_cd lba=%d format=%d blksize=%d\n",
-	       cd->cdi.name, lba, format, blksize);
+//	printk("%s: sr_read_cd lba=%d format=%d blksize=%d\n",
+;
 #endif
 
 	memset(&cgc, 0, sizeof(struct packet_command));
@@ -538,7 +538,7 @@ static int sr_read_sector(Scsi_CD *cd, int lba, int blksize, unsigned char *dest
 		if (-EDRIVE_CANT_DO_THIS != rc)
 			return rc;
 		cd->readcd_known = 0;
-		printk("CDROM does'nt support READ CD (0xbe) command\n");
+;
 		/* fall & retry the other way */
 	}
 	/* ... if this fails, we switch the blocksize using MODE SELECT */
@@ -547,7 +547,7 @@ static int sr_read_sector(Scsi_CD *cd, int lba, int blksize, unsigned char *dest
 			return rc;
 	}
 #ifdef DEBUG
-	printk("%s: sr_read_sector lba=%d blksize=%d\n", cd->cdi.name, lba, blksize);
+;
 #endif
 
 	memset(&cgc, 0, sizeof(struct packet_command));
@@ -591,7 +591,7 @@ int sr_is_xa(Scsi_CD *cd)
 	}
 	kfree(raw_sector);
 #ifdef DEBUG
-	printk("%s: sr_is_xa: %d\n", cd->cdi.name, is_xa);
+;
 #endif
 	return is_xa;
 }

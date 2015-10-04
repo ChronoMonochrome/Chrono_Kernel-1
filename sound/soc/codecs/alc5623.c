@@ -1098,7 +1098,7 @@ static int __init alc5623_modinit(void)
 
 	ret = i2c_add_driver(&alc5623_i2c_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "%s: can't add i2c driver", __func__);
+;
 		return ret;
 	}
 

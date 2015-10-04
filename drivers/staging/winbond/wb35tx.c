@@ -32,7 +32,7 @@ static void Wb35Tx_complete(struct urb * pUrb)
 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
 	struct wb35_mds *pMds = &adapter->Mds;
 
-	printk("wb35: tx complete\n");
+;
 	// Variable setting
 	pWb35Tx->EP4vm_state = VM_COMPLETED;
 	pWb35Tx->EP4VM_status = pUrb->status; //Store the last result of Irp
@@ -48,7 +48,7 @@ static void Wb35Tx_complete(struct urb * pUrb)
 
 	// The URB is completed, check the result
 	if (pWb35Tx->EP4VM_status != 0) {
-		printk("URB submission failed\n");
+;
 		pWb35Tx->EP4vm_state = VM_STOP;
 		goto error;
 	}
@@ -96,7 +96,7 @@ static void Wb35Tx(struct wbsoft_priv *adapter)
 	pWb35Tx->EP4vm_state = VM_RUNNING;
 	retv = usb_submit_urb(pUrb, GFP_ATOMIC);
 	if (retv<0) {
-		printk("EP4 Tx Irp sending error\n");
+;
 		goto cleanup;
 	}
 
@@ -223,7 +223,7 @@ static void Wb35Tx_EP2VM_complete(struct urb * pUrb)
 
 	//The Urb is completed, check the result
 	if (pWb35Tx->EP2VM_status != 0) {
-		printk("EP2 IoCompleteRoutine return error\n");
+;
 		pWb35Tx->EP2vm_state= VM_STOP;
 		goto error;
 	}

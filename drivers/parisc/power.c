@@ -82,14 +82,14 @@ static int shutdown_timer __read_mostly;
 static void process_shutdown(void)
 {
 	if (shutdown_timer == 0)
-		printk(KERN_ALERT KTHREAD_NAME ": Shutdown requested...\n");
+;
 
 	shutdown_timer++;
 	
 	/* wait until the button was pressed for 1 second */
 	if (shutdown_timer == (POWERSWITCH_DOWN_SEC*POWERSWITCH_POLL_PER_SEC)) {
 		static const char msg[] = "Shutting down...";
-		printk(KERN_INFO KTHREAD_NAME ": %s\n", msg);
+;
 		lcd_print(msg);
 
 		/* send kill signal */
@@ -150,7 +150,7 @@ static int kpowerswd(void *param)
 			if (unlikely(shutdown_timer && /* avoid writing if not necessary */
 				shutdown_timer < (POWERSWITCH_DOWN_SEC*POWERSWITCH_POLL_PER_SEC))) {
 				shutdown_timer = 0;
-				printk(KERN_INFO KTHREAD_NAME ": Shutdown request aborted.\n");
+;
 			}
 		} else
 			process_shutdown();
@@ -168,7 +168,7 @@ static int kpowerswd(void *param)
 #if 0
 static void powerfail_interrupt(int code, void *x)
 {
-	printk(KERN_CRIT "POWERFAIL INTERRUPTION !\n");
+;
 	poweroff();
 }
 #endif
@@ -213,19 +213,19 @@ static int __init power_init(void)
 		soft_power_reg = -1UL;
 	
 	switch (soft_power_reg) {
-	case 0:		printk(KERN_INFO DRIVER_NAME ": Gecko-style soft power switch enabled.\n");
+;
 			break;
 			
-	case -1UL:	printk(KERN_INFO DRIVER_NAME ": Soft power switch support not available.\n");
+;
 			return -ENODEV;
 	
-	default:	printk(KERN_INFO DRIVER_NAME ": Soft power switch at 0x%08lx enabled.\n",
-				soft_power_reg);
+//	default:	printk(KERN_INFO DRIVER_NAME ": Soft power switch at 0x%08lx enabled.\n",
+;
 	}
 
 	power_task = kthread_run(kpowerswd, (void*)soft_power_reg, KTHREAD_NAME);
 	if (IS_ERR(power_task)) {
-		printk(KERN_ERR DRIVER_NAME ": thread creation failed.  Driver not loaded.\n");
+;
 		pdc_soft_power_button(0);
 		return -EIO;
 	}

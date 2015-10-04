@@ -1037,13 +1037,13 @@ static struct platform_driver ti_hecc_driver = {
 
 static int __init ti_hecc_init_driver(void)
 {
-	printk(KERN_INFO DRV_DESC "\n");
+;
 	return platform_driver_register(&ti_hecc_driver);
 }
 
 static void __exit ti_hecc_exit_driver(void)
 {
-	printk(KERN_INFO DRV_DESC " unloaded\n");
+;
 	platform_driver_unregister(&ti_hecc_driver);
 }
 

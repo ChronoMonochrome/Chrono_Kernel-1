@@ -250,9 +250,9 @@ static void pll_factors(unsigned int target, unsigned int source)
 		pll_div.pre_div = 0;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
-		printk(KERN_WARNING
-			"WM8510 N value %u outwith recommended range!d\n",
-			Ndiv);
+//		printk(KERN_WARNING
+//			"WM8510 N value %u outwith recommended range!d\n",
+;
 
 	pll_div.n = Ndiv;
 	Nmod = target % source;
@@ -562,7 +562,7 @@ static int wm8510_probe(struct snd_soc_codec *codec)
 
 	ret = snd_soc_codec_set_cache_io(codec, 7, 9,  wm8510->control_type);
 	if (ret < 0) {
-		printk(KERN_ERR "wm8510: failed to set cache I/O: %d\n", ret);
+;
 		return ret;
 	}
 
@@ -684,15 +684,15 @@ static int __init wm8510_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8510_i2c_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register WM8510 I2C driver: %d\n",
-		       ret);
+//		printk(KERN_ERR "Failed to register WM8510 I2C driver: %d\n",
+;
 	}
 #endif
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&wm8510_spi_driver);
 	if (ret != 0) {
-		printk(KERN_ERR "Failed to register WM8510 SPI driver: %d\n",
-		       ret);
+//		printk(KERN_ERR "Failed to register WM8510 SPI driver: %d\n",
+;
 	}
 #endif
 	return ret;

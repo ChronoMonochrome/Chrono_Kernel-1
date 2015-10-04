@@ -33,14 +33,14 @@ static int i2c_xfer(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs, int num)
 	struct saa7164_dev *dev = bus->dev;
 	int i, retval = 0;
 
-	dprintk(DBGLVL_I2C, "%s(num = %d)\n", __func__, num);
+;
 
 	for (i = 0 ; i < num; i++) {
-		dprintk(DBGLVL_I2C, "%s(num = %d) addr = 0x%02x  len = 0x%x\n",
-			__func__, num, msgs[i].addr, msgs[i].len);
+//		dprintk(DBGLVL_I2C, "%s(num = %d) addr = 0x%02x  len = 0x%x\n",
+;
 		if (msgs[i].flags & I2C_M_RD) {
 			/* Unsupported - Yet*/
-			printk(KERN_ERR "%s() Unsupported - Yet\n", __func__);
+;
 			continue;
 		} else if (i + 1 < num && (msgs[i + 1].flags & I2C_M_RD) &&
 			   msgs[i].addr == msgs[i + 1].addr) {
@@ -104,7 +104,7 @@ int saa7164_i2c_register(struct saa7164_i2c *bus)
 {
 	struct saa7164_dev *dev = bus->dev;
 
-	dprintk(DBGLVL_I2C, "%s(bus = %d)\n", __func__, bus->nr);
+;
 
 	memcpy(&bus->i2c_adap, &saa7164_i2c_adap_template,
 	       sizeof(bus->i2c_adap));
@@ -128,8 +128,8 @@ int saa7164_i2c_register(struct saa7164_i2c *bus)
 	bus->i2c_client.adapter = &bus->i2c_adap;
 
 	if (0 != bus->i2c_rc)
-		printk(KERN_ERR "%s: i2c bus %d register FAILED\n",
-			dev->name, bus->nr);
+//		printk(KERN_ERR "%s: i2c bus %d register FAILED\n",
+;
 
 	return bus->i2c_rc;
 }

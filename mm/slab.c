@@ -791,8 +791,8 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
 static void __slab_error(const char *function, struct kmem_cache *cachep,
 			char *msg)
 {
-	printk(KERN_ERR "slab error in %s(): cache `%s': %s\n",
-	       function, cachep->name, msg);
+//	printk(KERN_ERR "slab error in %s(): cache `%s': %s\n",
+;
 	dump_stack();
 }
 
@@ -1813,26 +1813,26 @@ static void dump_line(char *data, int offset, int limit)
 	unsigned char error = 0;
 	int bad_count = 0;
 
-	printk(KERN_ERR "%03x:", offset);
+;
 	for (i = 0; i < limit; i++) {
 		if (data[offset + i] != POISON_FREE) {
 			error = data[offset + i];
 			bad_count++;
 		}
-		printk(" %02x", (unsigned char)data[offset + i]);
+;
 	}
-	printk("\n");
+;
 
 	if (bad_count == 1) {
 		error ^= POISON_FREE;
 		if (!(error & (error - 1))) {
-			printk(KERN_ERR "Single bit error detected. Probably "
-					"bad RAM.\n");
+//			printk(KERN_ERR "Single bit error detected. Probably "
+;
 #ifdef CONFIG_X86
-			printk(KERN_ERR "Run memtest86+ or a similar memory "
-					"test tool.\n");
+//			printk(KERN_ERR "Run memtest86+ or a similar memory "
+;
 #else
-			printk(KERN_ERR "Run a memory test tool.\n");
+;
 #endif
 		}
 	}
@@ -1847,17 +1847,17 @@ static void print_objinfo(struct kmem_cache *cachep, void *objp, int lines)
 	char *realobj;
 
 	if (cachep->flags & SLAB_RED_ZONE) {
-		printk(KERN_ERR "Redzone: 0x%llx/0x%llx.\n",
-			*dbg_redzone1(cachep, objp),
-			*dbg_redzone2(cachep, objp));
+//		printk(KERN_ERR "Redzone: 0x%llx/0x%llx.\n",
+//			*dbg_redzone1(cachep, objp),
+;
 	}
 
 	if (cachep->flags & SLAB_STORE_USER) {
-		printk(KERN_ERR "Last user: [<%p>]",
-			*dbg_userword(cachep, objp));
+//		printk(KERN_ERR "Last user: [<%p>]",
+;
 		print_symbol("(%s)",
 				(unsigned long)*dbg_userword(cachep, objp));
-		printk("\n");
+;
 	}
 	realobj = (char *)objp + obj_offset(cachep);
 	size = obj_size(cachep);
@@ -1888,9 +1888,9 @@ static void check_poison_obj(struct kmem_cache *cachep, void *objp)
 			/* Mismatch ! */
 			/* Print header */
 			if (lines == 0) {
-				printk(KERN_ERR
-					"Slab corruption: %s start=%p, len=%d\n",
-					cachep->name, realobj, size);
+//				printk(KERN_ERR
+//					"Slab corruption: %s start=%p, len=%d\n",
+;
 				print_objinfo(cachep, objp, 0);
 			}
 			/* Hexdump the affected line */
@@ -1917,15 +1917,15 @@ static void check_poison_obj(struct kmem_cache *cachep, void *objp)
 		if (objnr) {
 			objp = index_to_obj(cachep, slabp, objnr - 1);
 			realobj = (char *)objp + obj_offset(cachep);
-			printk(KERN_ERR "Prev obj: start=%p, len=%d\n",
-			       realobj, size);
+//			printk(KERN_ERR "Prev obj: start=%p, len=%d\n",
+;
 			print_objinfo(cachep, objp, 2);
 		}
 		if (objnr + 1 < cachep->num) {
 			objp = index_to_obj(cachep, slabp, objnr + 1);
 			realobj = (char *)objp + obj_offset(cachep);
-			printk(KERN_ERR "Next obj: start=%p, len=%d\n",
-			       realobj, size);
+//			printk(KERN_ERR "Next obj: start=%p, len=%d\n",
+;
 			print_objinfo(cachep, objp, 2);
 		}
 	}
@@ -2180,8 +2180,8 @@ kmem_cache_create (const char *name, size_t size, size_t align,
 	 */
 	if (!name || in_interrupt() || (size < BYTES_PER_WORD) ||
 	    size > KMALLOC_MAX_SIZE) {
-		printk(KERN_ERR "%s: Early error in slab %s\n", __func__,
-				name);
+//		printk(KERN_ERR "%s: Early error in slab %s\n", __func__,
+;
 		BUG();
 	}
 
@@ -2205,15 +2205,15 @@ kmem_cache_create (const char *name, size_t size, size_t align,
 		 */
 		res = probe_kernel_address(pc->name, tmp);
 		if (res) {
-			printk(KERN_ERR
-			       "SLAB: cache with size %d has lost its name\n",
-			       pc->buffer_size);
+//			printk(KERN_ERR
+//			       "SLAB: cache with size %d has lost its name\n",
+;
 			continue;
 		}
 
 		if (!strcmp(pc->name, name)) {
-			printk(KERN_ERR
-			       "kmem_cache_create: duplicate cache %s\n", name);
+//			printk(KERN_ERR
+;
 			dump_stack();
 			goto oops;
 		}
@@ -2361,8 +2361,8 @@ kmem_cache_create (const char *name, size_t size, size_t align,
 	left_over = calculate_slab_order(cachep, size, align, flags);
 
 	if (!cachep->num) {
-		printk(KERN_ERR
-		       "kmem_cache_create: couldn't create cache %s.\n", name);
+//		printk(KERN_ERR
+;
 		kmem_cache_free(&cache_cache, cachep);
 		cachep = NULL;
 		goto oops;
@@ -2773,8 +2773,8 @@ static void slab_put_obj(struct kmem_cache *cachep, struct slab *slabp,
 	WARN_ON(slabp->nodeid != nodeid);
 
 	if (slab_bufctl(slabp)[objnr] + 1 <= SLAB_LIMIT + 1) {
-		printk(KERN_ERR "slab: double free detected in cache "
-				"'%s', objp %p\n", cachep->name, objp);
+//		printk(KERN_ERR "slab: double free detected in cache "
+;
 		BUG();
 	}
 #endif
@@ -2899,8 +2899,8 @@ failed:
 static void kfree_debugcheck(const void *objp)
 {
 	if (!virt_addr_valid(objp)) {
-		printk(KERN_ERR "kfree_debugcheck: out of range ptr %lxh.\n",
-		       (unsigned long)objp);
+//		printk(KERN_ERR "kfree_debugcheck: out of range ptr %lxh.\n",
+;
 		BUG();
 	}
 }
@@ -2923,8 +2923,8 @@ static inline void verify_redzone_free(struct kmem_cache *cache, void *obj)
 	else
 		slab_error(cache, "memory outside object was overwritten");
 
-	printk(KERN_ERR "%p: redzone 1:0x%llx, redzone 2:0x%llx.\n",
-			obj, redzone1, redzone2);
+//	printk(KERN_ERR "%p: redzone 1:0x%llx, redzone 2:0x%llx.\n",
+;
 }
 
 static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
@@ -2987,17 +2987,17 @@ static void check_slabp(struct kmem_cache *cachep, struct slab *slabp)
 	}
 	if (entries != cachep->num - slabp->inuse) {
 bad:
-		printk(KERN_ERR "slab: Internal list corruption detected in "
-				"cache '%s'(%d), slabp %p(%d). Hexdump:\n",
-			cachep->name, cachep->num, slabp, slabp->inuse);
+//		printk(KERN_ERR "slab: Internal list corruption detected in "
+//				"cache '%s'(%d), slabp %p(%d). Hexdump:\n",
+;
 		for (i = 0;
 		     i < sizeof(*slabp) + cachep->num * sizeof(kmem_bufctl_t);
 		     i++) {
 			if (i % 16 == 0)
-				printk("\n%03x:", i);
+;
 			printk(" %02x", ((unsigned char *)slabp)[i]);
 		}
-		printk("\n");
+;
 		BUG();
 	}
 }
@@ -3135,10 +3135,10 @@ static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
 				*dbg_redzone2(cachep, objp) != RED_INACTIVE) {
 			slab_error(cachep, "double free, or memory outside"
 						" object was overwritten");
-			printk(KERN_ERR
-				"%p: redzone 1:0x%llx, redzone 2:0x%llx\n",
-				objp, *dbg_redzone1(cachep, objp),
-				*dbg_redzone2(cachep, objp));
+//			printk(KERN_ERR
+//				"%p: redzone 1:0x%llx, redzone 2:0x%llx\n",
+//				objp, *dbg_redzone1(cachep, objp),
+;
 		}
 		*dbg_redzone1(cachep, objp) = RED_ACTIVE;
 		*dbg_redzone2(cachep, objp) = RED_ACTIVE;
@@ -3158,8 +3158,8 @@ static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
 		cachep->ctor(objp);
 #if ARCH_SLAB_MINALIGN
 	if ((u32)objp & (ARCH_SLAB_MINALIGN-1)) {
-		printk(KERN_ERR "0x%p: not aligned to ARCH_SLAB_MINALIGN=%d\n",
-		       objp, ARCH_SLAB_MINALIGN);
+//		printk(KERN_ERR "0x%p: not aligned to ARCH_SLAB_MINALIGN=%d\n",
+;
 	}
 #endif
 	return objp;
@@ -4046,8 +4046,8 @@ static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp)
 #endif
 	err = do_tune_cpucache(cachep, limit, (limit + 1) / 2, shared, gfp);
 	if (err)
-		printk(KERN_ERR "enable_cpucache failed for %s, error %d.\n",
-		       cachep->name, -err);
+//		printk(KERN_ERR "enable_cpucache failed for %s, error %d.\n",
+;
 	return err;
 }
 
@@ -4249,7 +4249,7 @@ static int s_show(struct seq_file *m, void *p)
 
 	name = cachep->name;
 	if (error)
-		printk(KERN_ERR "slab: cache %s error: %s\n", name, error);
+;
 
 	seq_printf(m, "%-17s %6lu %6lu %6u %4u %4d",
 		   name, active_objs, num_objs, cachep->buffer_size,

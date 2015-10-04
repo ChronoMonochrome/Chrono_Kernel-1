@@ -77,13 +77,13 @@ static int __init init_impa7(void)
 
 	for(i=0; i<NUM_FLASHBANKS; i++)
 	{
-		printk(KERN_NOTICE MSG_PREFIX "probing 0x%08lx at 0x%08lx\n",
-		       pt[i].size, pt[i].addr);
+//		printk(KERN_NOTICE MSG_PREFIX "probing 0x%08lx at 0x%08lx\n",
+;
 
 		impa7_map[i].phys = pt[i].addr;
 		impa7_map[i].virt = ioremap(pt[i].addr, pt[i].size);
 		if (!impa7_map[i].virt) {
-			printk(MSG_PREFIX "failed to ioremap\n");
+;
 			return -EIO;
 		}
 		simple_map_init(&impa7_map[i]);
@@ -109,9 +109,9 @@ static int __init init_impa7(void)
 				part_type = "static";
 			}
 
-			printk(KERN_NOTICE MSG_PREFIX
-			       "using %s partition definition\n",
-			       part_type);
+//			printk(KERN_NOTICE MSG_PREFIX
+//			       "using %s partition definition\n",
+;
 			mtd_device_register(impa7_mtd[i],
 					    mtd_parts[i], mtd_parts_nb[i]);
 		}

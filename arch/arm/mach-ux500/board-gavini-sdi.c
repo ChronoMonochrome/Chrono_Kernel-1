@@ -116,7 +116,7 @@ static int brcm_init_wlan_mem(void)
 	if(!wlan_static_scan_buf1)
 		goto err_mem_alloc;
 
-	printk("%s: WIFI MEM Allocated\n", __FUNCTION__);
+;
 	return 0;
 
  err_mem_alloc:
@@ -243,7 +243,7 @@ static void __init sdi0_configure(void)
 
 	ret = gpio_request(TXS0206_EN_GAVINI_R0_0, "SD Card LS EN");
 	if (ret) {
-		printk(KERN_WARNING "unable to config gpios for level shifter.\n");
+;
 		return;
 	}
 
@@ -347,10 +347,10 @@ static struct stedma40_chan_cfg sdi2_dma_cfg_tx = {
 static void suspend_resume_handler_sdi2(struct mmc_host *host, bool suspend)
 {
 	if (suspend) {
-		printk(KERN_ERR "[MMC] TURN OFF EXTERNAL LDO\n");
+;
 		gpio_set_value(MEM_LDO_EN_GAVINI_R0_0, 0);
 	} else {
-		printk(KERN_ERR "[MMC] TURN ON EXTERNAL LDO\n");
+;
 /* Enable external LDO */
 		gpio_set_value(MEM_LDO_EN_GAVINI_R0_0, 1);
 	}
@@ -384,16 +384,16 @@ static int brcm_wlan_power(int onoff)
 {
 	sdi1_card_power_on = (onoff == 0) ? false : true;
 
-	printk("%s Enter: power %s\n", __FUNCTION__, onoff ? "on" : "off");
+;
 	pr_info("111%s Enter: power %s\n", __FUNCTION__, onoff ? "on" : "off");
 	if (onoff) {
 		gpio_set_value(wifi_gpio_reset, 1);
-		printk(KERN_DEBUG "WLAN: GPIO_WLAN_EN = %d \n"
-				, gpio_get_value(wifi_gpio_reset));
+//		printk(KERN_DEBUG "WLAN: GPIO_WLAN_EN = %d \n"
+;
 	} else {
 		gpio_set_value(wifi_gpio_reset, 0);
-		printk(KERN_DEBUG "WLAN: GPIO_WLAN_EN = %d \n"
-				, gpio_get_value(wifi_gpio_reset));
+//		printk(KERN_DEBUG "WLAN: GPIO_WLAN_EN = %d \n"
+;
 	}
 
 	return 0;
@@ -529,7 +529,7 @@ static void gavini_wifi_init(void)
 	status = gpio_request(wifi_gpio_reset, "wlan_power");
 	if (status)
 	{
-		printk(KERN_INFO "INIT : Unable to request GPIO_WLAN_ENABLE\n");
+;
 		return;
 	}
 
@@ -537,13 +537,13 @@ static void gavini_wifi_init(void)
 
 	if(gpio_request(wifi_gpio_irq, "bcmsdh_sdmmc"))
 	{
-		printk(KERN_INFO "Unable to request WLAN_IRQ\n");
+;
 		return;
 	}
 
 	if(gpio_direction_input(wifi_gpio_irq))
 	{
-		printk(KERN_INFO "Unable to set directtion on WLAN_IRQ\n");
+;
 		return;
 	} 
 	return;
@@ -568,8 +568,8 @@ extern void u8500_sdio_detect_card(void);
 
 int u8500_wifi_power(int on, int flag)
 {
-	printk(KERN_INFO "%s: WLAN Power %s, flag %d\n",
-		__FUNCTION__, on ? "on" : "down", flag);
+//	printk(KERN_INFO "%s: WLAN Power %s, flag %d\n",
+;
 	if (flag != 1) {
 		gpio_set_value(wifi_gpio_reset, on);
 		if (on)

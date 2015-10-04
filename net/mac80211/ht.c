@@ -182,8 +182,8 @@ void ieee80211_send_delba(struct ieee80211_sub_if_data *sdata,
 	skb = dev_alloc_skb(sizeof(*mgmt) + local->hw.extra_tx_headroom);
 
 	if (!skb) {
-		printk(KERN_ERR "%s: failed to allocate buffer "
-					"for delba frame\n", sdata->name);
+//		printk(KERN_ERR "%s: failed to allocate buffer "
+;
 		return;
 	}
 
@@ -227,9 +227,9 @@ void ieee80211_process_delba(struct ieee80211_sub_if_data *sdata,
 
 #ifdef CONFIG_MAC80211_HT_DEBUG
 	if (net_ratelimit())
-		printk(KERN_DEBUG "delba from %pM (%s) tid %d reason code %d\n",
-			mgmt->sa, initiator ? "initiator" : "recipient", tid,
-			le16_to_cpu(mgmt->u.action.u.delba.reason_code));
+//		printk(KERN_DEBUG "delba from %pM (%s) tid %d reason code %d\n",
+//			mgmt->sa, initiator ? "initiator" : "recipient", tid,
+;
 #endif /* CONFIG_MAC80211_HT_DEBUG */
 
 	if (initiator == WLAN_BACK_INITIATOR)

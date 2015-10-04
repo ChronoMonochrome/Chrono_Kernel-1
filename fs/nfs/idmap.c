@@ -92,7 +92,7 @@ int nfs_idmap_init(void)
 	struct key *keyring;
 	int ret = 0;
 
-	printk(KERN_NOTICE "Registering the %s key type\n", key_type_id_resolver.name);
+;
 
 	cred = prepare_kernel_cred(NULL);
 	if (!cred)

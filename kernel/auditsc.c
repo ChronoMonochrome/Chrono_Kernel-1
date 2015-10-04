@@ -833,17 +833,17 @@ static inline void audit_free_names(struct audit_context *context)
 
 #if AUDIT_DEBUG == 2
 	if (context->put_count + context->ino_count != context->name_count) {
-		printk(KERN_ERR "%s:%d(:%d): major=%d in_syscall=%d"
-		       " name_count=%d put_count=%d"
-		       " ino_count=%d [NOT freeing]\n",
-		       __FILE__, __LINE__,
-		       context->serial, context->major, context->in_syscall,
-		       context->name_count, context->put_count,
-		       context->ino_count);
+//		printk(KERN_ERR "%s:%d(:%d): major=%d in_syscall=%d"
+//		       " name_count=%d put_count=%d"
+//		       " ino_count=%d [NOT freeing]\n",
+//		       __FILE__, __LINE__,
+//		       context->serial, context->major, context->in_syscall,
+//		       context->name_count, context->put_count,
+;
 		for (i = 0; i < context->name_count; i++) {
-			printk(KERN_ERR "names[%d] = %p = %s\n", i,
-			       context->names[i].name,
-			       context->names[i].name ?: "(null)");
+//			printk(KERN_ERR "names[%d] = %p = %s\n", i,
+//			       context->names[i].name,
+;
 		}
 		dump_stack();
 		return;
@@ -940,10 +940,10 @@ static inline void audit_free_context(struct audit_context *context)
 		previous = context->previous;
 		if (previous || (count &&  count < 10)) {
 			++count;
-			printk(KERN_ERR "audit(:%d): major=%d name_count=%d:"
-			       " freeing multiple contexts (%d)\n",
-			       context->serial, context->major,
-			       context->name_count, count);
+//			printk(KERN_ERR "audit(:%d): major=%d name_count=%d:"
+//			       " freeing multiple contexts (%d)\n",
+//			       context->serial, context->major,
+;
 		}
 		audit_free_names(context);
 		unroll_tree_refs(context, NULL, 0);
@@ -955,7 +955,7 @@ static inline void audit_free_context(struct audit_context *context)
 		context  = previous;
 	} while (context);
 	if (count >= 10)
-		printk(KERN_ERR "audit: freed %d contexts\n", count);
+;
 }
 
 void audit_log_task_context(struct audit_buffer *ab)
@@ -1642,8 +1642,8 @@ void audit_syscall_entry(int arch, int major,
 		struct audit_context *newctx;
 
 #if AUDIT_DEBUG
-		printk(KERN_ERR
-		       "audit(:%d) pid=%d in syscall=%d;"
+//		printk(KERN_ERR
+;
 		       " entering syscall=%d\n",
 		       context->serial, tsk->pid, context->major, major);
 #endif
@@ -1782,7 +1782,7 @@ static inline void handle_one(const struct inode *inode)
 	if (likely(put_tree_ref(context, chunk)))
 		return;
 	if (unlikely(!grow_tree_refs(context))) {
-		printk(KERN_WARNING "out of memory, audit has lost a tree reference\n");
+;
 		audit_set_auditable(context);
 		audit_put_chunk(chunk);
 		unroll_tree_refs(context, p, count);
@@ -1841,8 +1841,8 @@ retry:
 			goto retry;
 		}
 		/* too bad */
-		printk(KERN_WARNING
-			"out of memory, audit has lost a tree reference\n");
+//		printk(KERN_WARNING
+;
 		unroll_tree_refs(context, p, count);
 		audit_set_auditable(context);
 		return;
@@ -1867,8 +1867,8 @@ void __audit_getname(const char *name)
 
 	if (!context->in_syscall) {
 #if AUDIT_DEBUG == 2
-		printk(KERN_ERR "%s:%d(:%d): ignoring getname(%p)\n",
-		       __FILE__, __LINE__, context->serial, name);
+//		printk(KERN_ERR "%s:%d(:%d): ignoring getname(%p)\n",
+;
 		dump_stack();
 #endif
 		return;
@@ -1898,14 +1898,14 @@ void audit_putname(const char *name)
 	BUG_ON(!context);
 	if (!context->in_syscall) {
 #if AUDIT_DEBUG == 2
-		printk(KERN_ERR "%s:%d(:%d): __putname(%p)\n",
-		       __FILE__, __LINE__, context->serial, name);
+//		printk(KERN_ERR "%s:%d(:%d): __putname(%p)\n",
+;
 		if (context->name_count) {
 			int i;
 			for (i = 0; i < context->name_count; i++)
-				printk(KERN_ERR "name[%d] = %p = %s\n", i,
-				       context->names[i].name,
-				       context->names[i].name ?: "(null)");
+//				printk(KERN_ERR "name[%d] = %p = %s\n", i,
+//				       context->names[i].name,
+;
 		}
 #endif
 		__putname(name);
@@ -1914,13 +1914,13 @@ void audit_putname(const char *name)
 	else {
 		++context->put_count;
 		if (context->put_count > context->name_count) {
-			printk(KERN_ERR "%s:%d(:%d): major=%d"
-			       " in_syscall=%d putname(%p) name_count=%d"
-			       " put_count=%d\n",
-			       __FILE__, __LINE__,
-			       context->serial, context->major,
-			       context->in_syscall, name, context->name_count,
-			       context->put_count);
+//			printk(KERN_ERR "%s:%d(:%d): major=%d"
+//			       " in_syscall=%d putname(%p) name_count=%d"
+//			       " put_count=%d\n",
+//			       __FILE__, __LINE__,
+//			       context->serial, context->major,
+//			       context->in_syscall, name, context->name_count,
+;
 			dump_stack();
 		}
 	}
@@ -1932,14 +1932,14 @@ static int audit_inc_name_count(struct audit_context *context,
 {
 	if (context->name_count >= AUDIT_NAMES) {
 		if (inode)
-			printk(KERN_DEBUG "audit: name_count maxed, losing inode data: "
-			       "dev=%02x:%02x, inode=%lu\n",
-			       MAJOR(inode->i_sb->s_dev),
-			       MINOR(inode->i_sb->s_dev),
-			       inode->i_ino);
+//			printk(KERN_DEBUG "audit: name_count maxed, losing inode data: "
+//			       "dev=%02x:%02x, inode=%lu\n",
+//			       MAJOR(inode->i_sb->s_dev),
+//			       MINOR(inode->i_sb->s_dev),
+;
 
 		else
-			printk(KERN_DEBUG "name_count maxed, losing inode data\n");
+;
 		return 1;
 	}
 	context->name_count++;

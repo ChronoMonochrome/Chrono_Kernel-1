@@ -164,7 +164,7 @@ static int mixart_enum_connectors(struct mixart_mgr *mgr)
 
 	err = snd_mixart_send_msg(mgr, &request, sizeof(*connector), connector);
 	if((err < 0) || (connector->error_code) || (connector->uid_count > MIXART_MAX_PHYS_CONNECTORS)) {
-		snd_printk(KERN_ERR "error MSG_SYSTEM_ENUM_PLAY_CONNECTOR\n");
+;
 		err = -EINVAL;
 		goto __error;
 	}
@@ -193,7 +193,7 @@ static int mixart_enum_connectors(struct mixart_mgr *mgr)
 
 		err = snd_mixart_send_msg(mgr, &request, sizeof(*audio_info), audio_info);
 		if( err < 0 ) {
-			snd_printk(KERN_ERR "error MSG_CONNECTOR_GET_AUDIO_INFO\n");
+;
 			goto __error;
 		}
 		/*snd_printk(KERN_DEBUG "play  analog_info.analog_level_present = %x\n", audio_info->info.analog_info.analog_level_present);*/
@@ -206,7 +206,7 @@ static int mixart_enum_connectors(struct mixart_mgr *mgr)
 
 	err = snd_mixart_send_msg(mgr, &request, sizeof(*connector), connector);
 	if((err < 0) || (connector->error_code) || (connector->uid_count > MIXART_MAX_PHYS_CONNECTORS)) {
-		snd_printk(KERN_ERR "error MSG_SYSTEM_ENUM_RECORD_CONNECTOR\n");
+;
 		err = -EINVAL;
 		goto __error;
 	}
@@ -235,7 +235,7 @@ static int mixart_enum_connectors(struct mixart_mgr *mgr)
 
 		err = snd_mixart_send_msg(mgr, &request, sizeof(*audio_info), audio_info);
 		if( err < 0 ) {
-			snd_printk(KERN_ERR "error MSG_CONNECTOR_GET_AUDIO_INFO\n");
+;
 			goto __error;
 		}
 		/*snd_printk(KERN_DEBUG "rec  analog_info.analog_level_present = %x\n", audio_info->info.analog_info.analog_level_present);*/
@@ -271,7 +271,7 @@ static int mixart_enum_physio(struct mixart_mgr *mgr)
 	err = snd_mixart_send_msg(mgr, &request, sizeof(console_mgr), &console_mgr);
 
 	if( (err < 0) || (console_mgr.error_code != 0) ) {
-		snd_printk(KERN_DEBUG "error MSG_CONSOLE_GET_CLOCK_UID : err=%x\n", console_mgr.error_code);
+;
 		return -EINVAL;
 	}
 
@@ -285,7 +285,7 @@ static int mixart_enum_physio(struct mixart_mgr *mgr)
 
 	err = snd_mixart_send_msg(mgr, &request, sizeof(phys_io), &phys_io);
 	if( (err < 0) || ( phys_io.error_code != 0 ) ) {
-		snd_printk(KERN_ERR "error MSG_SYSTEM_ENUM_PHYSICAL_IO err(%x) error_code(%x)\n", err, phys_io.error_code );
+;
 		return -EINVAL;
 	}
 
@@ -321,7 +321,7 @@ static int mixart_first_init(struct mixart_mgr *mgr)
 	/* this command has no data. response is a 32 bit status */
 	err = snd_mixart_send_msg(mgr, &request, sizeof(k), &k);
 	if( (err < 0) || (k != 0) ) {
-		snd_printk(KERN_ERR "error MSG_SYSTEM_SEND_SYNCHRO_CMD\n");
+;
 		return err == 0 ? -EINVAL : err;
 	}
 
@@ -347,7 +347,7 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 
 	/* motherboard xilinx status 5 will say that the board is performing a reset */
 	if (status_xilinx == 5) {
-		snd_printk(KERN_ERR "miXart is resetting !\n");
+;
 		return -EAGAIN; /* try again later */
 	}
 
@@ -356,13 +356,13 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 
 		/* xilinx already loaded ? */ 
 		if (status_xilinx == 4) {
-			snd_printk(KERN_DEBUG "xilinx is already loaded !\n");
+;
 			return 0;
 		}
 		/* the status should be 0 == "idle" */
 		if (status_xilinx != 0) {
-			snd_printk(KERN_ERR "xilinx load error ! status = %d\n",
-				   status_xilinx);
+//			snd_printk(KERN_ERR "xilinx load error ! status = %d\n",
+;
 			return -EIO; /* modprob -r may help ? */
 		}
 
@@ -392,22 +392,22 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 	case MIXART_MOTHERBOARD_ELF_INDEX:
 
 		if (status_elf == 4) {
-			snd_printk(KERN_DEBUG "elf file already loaded !\n");
+;
 			return 0;
 		}
 
 		/* the status should be 0 == "idle" */
 		if (status_elf != 0) {
-			snd_printk(KERN_ERR "elf load error ! status = %d\n",
-				   status_elf);
+//			snd_printk(KERN_ERR "elf load error ! status = %d\n",
+;
 			return -EIO; /* modprob -r may help ? */
 		}
 
 		/* wait for xilinx status == 4 */
 		err = mixart_wait_nice_for_register_value( mgr, MIXART_PSEUDOREG_MXLX_STATUS_OFFSET, 1, 4, 500); /* 5sec */
 		if (err < 0) {
-			snd_printk(KERN_ERR "xilinx was not loaded or "
-				   "could not be started\n");
+//			snd_printk(KERN_ERR "xilinx was not loaded or "
+;
 			return err;
 		}
 
@@ -428,7 +428,7 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 		/* wait for elf status == 4 */
 		err = mixart_wait_nice_for_register_value( mgr, MIXART_PSEUDOREG_ELF_STATUS_OFFSET, 1, 4, 300); /* 3sec */
 		if (err < 0) {
-			snd_printk(KERN_ERR "elf could not be started\n");
+;
 			return err;
 		}
 
@@ -442,15 +442,15 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 
 		/* elf and xilinx should be loaded */
 		if (status_elf != 4 || status_xilinx != 4) {
-			printk(KERN_ERR "xilinx or elf not "
-			       "successfully loaded\n");
+//			printk(KERN_ERR "xilinx or elf not "
+;
 			return -EIO; /* modprob -r may help ? */
 		}
 
 		/* wait for daughter detection != 0 */
 		err = mixart_wait_nice_for_register_value( mgr, MIXART_PSEUDOREG_DBRD_PRESENCE_OFFSET, 0, 0, 30); /* 300msec */
 		if (err < 0) {
-			snd_printk(KERN_ERR "error starting elf file\n");
+;
 			return err;
 		}
 
@@ -466,8 +466,8 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 
 		/* daughter should be idle */
 		if (status_daught != 0) {
-			printk(KERN_ERR "daughter load error ! status = %d\n",
-			       status_daught);
+//			printk(KERN_ERR "daughter load error ! status = %d\n",
+;
 			return -EIO; /* modprob -r may help ? */
 		}
  
@@ -486,7 +486,7 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 		/* wait for status == 2 */
 		err = mixart_wait_nice_for_register_value( mgr, MIXART_PSEUDOREG_DXLX_STATUS_OFFSET, 1, 2, 30); /* 300msec */
 		if (err < 0) {
-			snd_printk(KERN_ERR "daughter board load error\n");
+;
 			return err;
 		}
 
@@ -508,8 +508,8 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
         /* wait for daughter status == 3 */
         err = mixart_wait_nice_for_register_value( mgr, MIXART_PSEUDOREG_DXLX_STATUS_OFFSET, 1, 3, 300); /* 3sec */
         if (err < 0) {
-		snd_printk(KERN_ERR
-			   "daughter board could not be initialised\n");
+//		snd_printk(KERN_ERR
+;
 		return err;
 	}
 
@@ -519,7 +519,7 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 	/* first communication with embedded */
 	err = mixart_first_init(mgr);
         if (err < 0) {
-		snd_printk(KERN_ERR "miXart could not be set up\n");
+;
 		return err;
 	}
 
@@ -566,7 +566,7 @@ int snd_mixart_setup_firmware(struct mixart_mgr *mgr)
 	for (i = 0; i < 3; i++) {
 		sprintf(path, "mixart/%s", fw_files[i]);
 		if (request_firmware(&fw_entry, path, &mgr->pci->dev)) {
-			snd_printk(KERN_ERR "miXart: can't load firmware %s\n", path);
+;
 			return -ENOENT;
 		}
 		/* fake hwdep dsp record */
@@ -613,8 +613,8 @@ static int mixart_hwdep_dsp_load(struct snd_hwdep *hw,
 	fw.size = dsp->length;
 	fw.data = vmalloc(dsp->length);
 	if (! fw.data) {
-		snd_printk(KERN_ERR "miXart: cannot allocate image size %d\n",
-			   (int)dsp->length);
+//		snd_printk(KERN_ERR "miXart: cannot allocate image size %d\n",
+;
 		return -ENOMEM;
 	}
 	if (copy_from_user((void *) fw.data, dsp->image, dsp->length)) {

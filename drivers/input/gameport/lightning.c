@@ -228,7 +228,7 @@ static int __init l4_create_ports(int card_no)
 		l4 = &l4_ports[idx];
 
 		if (!(l4->gameport = port = gameport_allocate_port())) {
-			printk(KERN_ERR "lightning: Memory allocation failed\n");
+;
 			while (--i >= 0) {
 				gameport_free_port(l4->gameport);
 				l4->gameport = NULL;
@@ -287,8 +287,8 @@ static int __init l4_add_card(int card_no)
 	if (result)
 		return result;
 
-	printk(KERN_INFO "gameport: PDPI Lightning 4 %s card v%d.%d at %#x\n",
-		card_no ? "secondary" : "primary", rev >> 4, rev, L4_PORT);
+//	printk(KERN_INFO "gameport: PDPI Lightning 4 %s card v%d.%d at %#x\n",
+;
 
 	for (i = 0; i < 4; i++) {
 		l4 = &l4_ports[card_no * 4 + i];

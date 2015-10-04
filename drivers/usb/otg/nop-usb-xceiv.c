@@ -45,7 +45,7 @@ void usb_nop_xceiv_register(void)
 		return;
 	pd = platform_device_register_simple("nop_usb_xceiv", -1, NULL, 0);
 	if (!pd) {
-		printk(KERN_ERR "Unable to register usb nop transceiver\n");
+;
 		return;
 	}
 }
