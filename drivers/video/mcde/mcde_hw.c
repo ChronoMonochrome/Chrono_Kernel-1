@@ -3528,6 +3528,7 @@ int mcde_chnl_set_rotation(struct mcde_chnl_state *chnl,
 
 	return 0;
 }
+EXPORT_SYMBOL(mcde_chnl_set_rotation);
 
 int mcde_chnl_set_power_mode(struct mcde_chnl_state *chnl,
 				enum mcde_display_power_mode power_mode)
@@ -3565,6 +3566,7 @@ int mcde_chnl_apply(struct mcde_chnl_state *chnl)
 
 	return ret;
 }
+EXPORT_SYMBOL(mcde_chnl_apply);
 
 int mcde_chnl_update(struct mcde_chnl_state *chnl,
 					bool tripple_buffer)
@@ -3592,6 +3594,7 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 
 	return ret;
 }
+EXPORT_SYMBOL(mcde_chnl_update);
 
 void mcde_chnl_put(struct mcde_chnl_state *chnl)
 {
@@ -3617,6 +3620,7 @@ void mcde_chnl_put(struct mcde_chnl_state *chnl)
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
+EXPORT_SYMBOL(mcde_chnl_put);
 
 void mcde_chnl_stop_flow(struct mcde_chnl_state *chnl)
 {
@@ -3629,6 +3633,7 @@ void mcde_chnl_stop_flow(struct mcde_chnl_state *chnl)
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
+EXPORT_SYMBOL(mcde_chnl_stop_flow);
 
 void mcde_chnl_enable(struct mcde_chnl_state *chnl)
 {
@@ -3640,6 +3645,7 @@ void mcde_chnl_enable(struct mcde_chnl_state *chnl)
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
+EXPORT_SYMBOL(mcde_chnl_enable);
 
 void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 {
@@ -3655,6 +3661,7 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
+EXPORT_SYMBOL(mcde_chnl_disable);
 
 void mcde_formatter_enable(struct mcde_chnl_state *chnl)
 {

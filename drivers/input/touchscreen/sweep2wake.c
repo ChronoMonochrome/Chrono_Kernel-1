@@ -41,6 +41,7 @@
 
 /* Resources */
 int s2w_switch = 0;
+EXPORT_SYMBOL(s2w_switch);
 static bool scr_suspended = false, exec_count = true;
 static bool scr_on_touch = false, barrier[2] = {false, false};
 static struct input_dev * sweep2wake_pwrdev;
@@ -284,7 +285,7 @@ static int set_s2w_use_wakelock(const char *val, struct kernel_param *kp){
 module_param_call(s2w_use_wakelock, set_s2w_use_wakelock, param_get_bool, &s2w_use_wakelock, 0664);
 #endif
 
-static int __init sweep2wake_init(void)
+int __devinit sweep2wake_init(void)
 {
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
 	wake_lock_init(&s2w_wake_lock, WAKE_LOCK_SUSPEND, "s2w_kernel_wake_lock");
@@ -292,14 +293,12 @@ static int __init sweep2wake_init(void)
 	pr_info("[sweep2wake]: %s done\n", __func__);
 	return 0;
 }
+EXPORT_SYMBOL(sweep2wake_init);
 
-static void __exit sweep2wake_exit(void)
+void __exit sweep2wake_exit(void)
 {
 	return;
 }
-
-module_init(sweep2wake_init);
-module_exit(sweep2wake_exit);
 
 MODULE_DESCRIPTION("Sweep2wake");
 MODULE_LICENSE("GPLv2");

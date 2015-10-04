@@ -327,6 +327,7 @@ int hscd_get_magnetic_field_data(int *xyz)
 
 	return err;
 }
+EXPORT_SYMBOL(hscd_get_magnetic_field_data);
 
 int hscd_activate(int flgatm, int flg, int dtime)
 {
@@ -387,6 +388,7 @@ int hscd_activate(int flgatm, int flg, int dtime)
 
 	return 0;
 }
+EXPORT_SYMBOL(hscd_activate);
 
 static ssize_t selftest_show(struct device *dev,
 	struct device_attribute *attr, char *buf)

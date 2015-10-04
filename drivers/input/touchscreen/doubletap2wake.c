@@ -52,6 +52,7 @@ module_param_named(dt2w_pwrkey_dur, dt2w_pwrkey_dur, uint, 0644);
 /* Resources */
 
 int dt2w_switch = DT2W_DEFAULT;
+EXPORT_SYMBOL(dt2w_switch);
 static cputime64_t tap_time_pre = 0;
 static int touch_nr = 0, x_pre = 0, y_pre = 0;
 static bool scr_suspended = false, exec_count = true;
@@ -257,7 +258,7 @@ static int set_dt2w_use_wakelock(const char *val, struct kernel_param *kp){
 module_param_call(dt2w_use_wakelock, set_dt2w_use_wakelock, param_get_bool, &dt2w_use_wakelock, 0664);
 #endif
 
-static int __init doubletap2wake_init(void)
+int __devinit doubletap2wake_init(void)
 {
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
 	wake_lock_init(&dt2w_wake_lock, WAKE_LOCK_SUSPEND, "dt2w_kernel_wake_lock");		
@@ -265,15 +266,13 @@ static int __init doubletap2wake_init(void)
 	pr_err("[doubletap2wake]: %s done\n", __func__);
 	return 0;
 }
+EXPORT_SYMBOL(doubletap2wake_init);
 
-static void __exit doubletap2wake_exit(void)
+void __exit doubletap2wake_exit(void)
 {
 	wake_lock_destroy(&dt2w_wake_lock);
 	return;
 }
-
-module_init(doubletap2wake_init);
-module_exit(doubletap2wake_exit);
 
 MODULE_DESCRIPTION("DoubleTap2wake");
 MODULE_LICENSE("GPLv2");

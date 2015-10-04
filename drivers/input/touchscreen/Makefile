@@ -9,8 +9,10 @@ wm97xx-ts-y := wm97xx-core.o
 CFLAGS_bt404_ts.o += -fno-strict-aliasing
 
 # for sweep2wake, leave 1st to avoid merge issues at the end of the file
-obj-$(CONFIG_TOUCHSCREEN_SWEEP2WAKE)	+= sweep2wake.o
-obj-$(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE) += doubletap2wake.o
+bt404_ts_mod-objs += bt404_ts.o
+bt404_ts_mod-objs += sweep2wake.o
+bt404_ts_mod-objs += doubletap2wake.o
+obj-$(CONFIG_TOUCHSCREEN_ZINITIX_BT404) += bt404_ts_mod.o
 obj-$(CONFIG_TOUCHSCREEN_88PM860X)	+= 88pm860x-ts.o
 obj-$(CONFIG_TOUCHSCREEN_AD7877)	+= ad7877.o
 obj-$(CONFIG_TOUCHSCREEN_AD7879)	+= ad7879.o
@@ -69,7 +71,6 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+= mainstone-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
 obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
-obj-$(CONFIG_TOUCHSCREEN_ZINITIX_BT404)	+= bt404_ts.o
 obj-$(CONFIG_TOUCHSCREEN_ZINITIX)	+= zinitix_touch.o
 obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXT224E)	+= mxt224e.o
 obj-$(CONFIG_TOUCHSCREEN_ATMEL_MXT224S)	+= mxt224s.o

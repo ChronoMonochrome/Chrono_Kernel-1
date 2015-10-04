@@ -1793,18 +1793,6 @@ static void check_for_gpl_usage(enum export exp, const char *m, const char *s)
 	const char *e = is_vmlinux(m) ?"":".ko";
 
 	switch (exp) {
-	case export_gpl:
-		fatal("modpost: GPL-incompatible module %s%s "
-		      "uses GPL-only symbol '%s'\n", m, e, s);
-		break;
-	case export_unused_gpl:
-		fatal("modpost: GPL-incompatible module %s%s "
-		      "uses GPL-only symbol marked UNUSED '%s'\n", m, e, s);
-		break;
-	case export_gpl_future:
-		warn("modpost: GPL-incompatible module %s%s "
-		      "uses future GPL-only symbol '%s'\n", m, e, s);
-		break;
 	case export_plain:
 	case export_unused:
 	case export_unknown:

@@ -576,6 +576,7 @@ bool prcmu_qos_requirement_is_active(int prcmu_qos_class, char *name)
 
 	return false;
 }
+EXPORT_SYMBOL(prcmu_qos_requirement_is_active);
 
 /**
  * prcmu_qos_add_requirement - inserts new qos request into the list

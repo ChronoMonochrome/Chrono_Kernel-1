@@ -38,6 +38,18 @@ lvm=/ramdisk/lvm.cpio
 busybox insmod /ramdisk/modules/exfat.ko
 busybox insmod /ramdisk/modules/f2fs.ko
 
+if busybox grep -q lcdtype=4 /proc/cmdline ; then
+	if test -f /ramdisk/modules/display-ws2401_dpi.ko ; then
+		busybox insmod /ramdisk/modules/display-ws2401_dpi.ko
+	fi
+fi
+
+if busybox grep -q lcdtype=13 /proc/cmdline ; then
+        if test -f /ramdisk/modules/display-s6d27a1_dpi.ko ; then
+                busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
+        fi
+fi
+
 if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
 	busybox chmod 644 /ramdisk/recovery.cpio

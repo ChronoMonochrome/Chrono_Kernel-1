@@ -661,9 +661,13 @@ static int __init parse_tag_revision(const struct tag *tag)
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
 unsigned int is_lpm = 0;
+EXPORT_SYMBOL(is_lpm);
 static unsigned int setup_debug = 0;
 module_param_named(is_lpm, is_lpm, uint, 0444);
 module_param_named(setup_debug, setup_debug, uint, 0644);
+
+unsigned int lcdtype = 0;
+EXPORT_SYMBOL(lcdtype);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
@@ -701,7 +705,17 @@ static int __init parse_tag_cmdline(const struct tag *tag)
                strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
        }
 
+	if (strstr(tag->u.cmdline.cmdline, "lcdtype=4") != NULL) {
+               pr_err("LCD type WS2401 from bootloader\n");
+	       lcdtype = 4;
+               strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
+	}
 
+        if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
+               pr_err("LCD type S6D from bootloader\n");
+               lcdtype = 13;
+               strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);
+        }
 
 	return 0;
 }

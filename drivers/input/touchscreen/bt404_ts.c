@@ -3823,11 +3823,11 @@ static int bt404_ts_probe(struct i2c_client *client,
 	struct device *fac_dev_tk;
 	struct device *fac_dev_ts_temp;
 
-	extern unsigned int lcd_type;
+	extern unsigned int lcdtype;
 
-	if (!lcd_type) {
+	if (!lcdtype) {
 		dev_err(&client->dev, "touch screen is not connected.(%d)\n",
-								lcd_type);
+								lcdtype);
 		return -ENODEV;
 	}
 
@@ -4339,6 +4339,8 @@ err_i2c:
 static int last_suspend_skipped = 0, last_resume_skipped = 0;
 bool break_suspend_early(bool);
 
+extern int s2w_switch, dt2w_switch;
+
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
 static int bt404_ts_suspend(struct device *dev)
 {
@@ -4595,8 +4597,13 @@ static struct i2c_driver bt404_ts_driver = {
 	},
 };
 
+extern int __devinit sweep2wake_init(void);
+extern int __devinit doubletap2wake_init(void);
+
 static int __devinit bt404_ts_init(void)
 {
+	sweep2wake_init();
+	doubletap2wake_init();
 	return i2c_add_driver(&bt404_ts_driver);
 }
 
