@@ -705,13 +705,17 @@ static int __init parse_tag_cmdline(const struct tag *tag)
                strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
        }
 
+	 strlcat(default_command_line, "logo.  ", COMMAND_LINE_SIZE);
+
 	if (strstr(tag->u.cmdline.cmdline, "lcdtype=4") != NULL) {
                pr_err("LCD type WS2401 from bootloader\n");
 	       lcdtype = 4;
                strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
-	}
-
-        if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
+	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=8") != NULL) { 
+               pr_err("LCD type S6D from bootloader\n");
+               lcdtype = 8;
+               strlcat(default_command_line, "lcdtype=8 ", COMMAND_LINE_SIZE);
+        } else if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
                pr_err("LCD type S6D from bootloader\n");
                lcdtype = 13;
                strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);

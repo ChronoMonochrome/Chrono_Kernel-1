@@ -47,7 +47,7 @@ if busybox grep -q lcdtype=4 /proc/cmdline ; then
 	fi
 fi
 
-if busybox grep -q lcdtype=13 /proc/cmdline ; then
+if ! busybox grep -q lcdtype=4 /proc/cmdline ; then
         if test -f /ramdisk/modules/display-s6d27a1_dpi.ko ; then
                 busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
         fi
