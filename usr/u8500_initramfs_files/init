@@ -11,6 +11,12 @@ busybox mount -t sysfs sysfs /sys
 
 busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
 
+busybox insmod /ramdisk/modules/startup_reason.ko
+busybox insmod /ramdisk/modules/exfat.ko
+busybox insmod /ramdisk/modules/f2fs.ko
+busybox insmod /ramdisk/modules/tmd2672.ko
+busybox insmod /ramdisk/modules/bt404_ts.ko
+
 if ! busybox grep -q bootmode=2 /proc/cmdline ; then
 
 	for i in /ramdisk/modules/autoload/*.ko
@@ -35,8 +41,17 @@ fi
 load_image=/ramdisk/boot.cpio
 lvm=/ramdisk/lvm.cpio
 
-busybox insmod /ramdisk/modules/exfat.ko
-busybox insmod /ramdisk/modules/f2fs.ko
+if busybox grep -q lcdtype=4 /proc/cmdline ; then
+	if test -f /ramdisk/modules/display-ws2401_dpi.ko ; then
+		busybox insmod /ramdisk/modules/display-ws2401_dpi.ko
+	fi
+fi
+
+if busybox grep -q lcdtype=13 /proc/cmdline ; then
+        if test -f /ramdisk/modules/display-s6d27a1_dpi.ko ; then
+                busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
+        fi
+fi
 
 if busybox grep -q lcdtype=4 /proc/cmdline ; then
 	if test -f /ramdisk/modules/display-ws2401_dpi.ko ; then
