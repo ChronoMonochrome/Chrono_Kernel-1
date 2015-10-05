@@ -89,6 +89,7 @@
 
 static signed char apeopp_requirement = 50, ddropp_requirement = 50;
 static unsigned int reset_delay = 5, power_on_delay = 5;
+static unsigned int sleep_in_delay = 50, sleep_out_delay = 120, display_off_delay = 25;
 
 /* to be removed when display works */
 //#define dev_dbg	dev_info
@@ -549,7 +550,7 @@ static int ws2401_write_dcs_sequence(struct ws2401_dpi *lcd, const u8 *p_seq)
 
 	while ((p_seq[0] != DCS_CMD_SEQ_END) && !ret) {
 		if (p_seq[0] == DCS_CMD_SEQ_DELAY_MS) {
-			msleep(p_seq[1]);
+			mdelay(p_seq[1]);
 			p_seq += 2;
 		} else {
 			ret = ws2401_spi_write_byte(lcd,
@@ -595,8 +596,8 @@ static int ws2401_dpi_ldi_init(struct ws2401_dpi *lcd)
 	ret = ws2401_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_WS2401_EXIT_SLEEP_MODE);
 
-	if (lcd->pd->sleep_out_delay)
-		msleep(lcd->pd->sleep_out_delay);
+	if (sleep_out_delay)
+		mdelay(sleep_out_delay);
 
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_INIT);
 
@@ -616,11 +617,11 @@ static int ws2401_dpi_ldi_enable(struct ws2401_dpi *lcd)
 {
 	int ret = 0;
 	dev_dbg(lcd->dev, "ws2401_dpi_ldi_enable\n");
-if (lcd->pd->sleep_out_delay)
-			msleep(lcd->pd->sleep_out_delay);
+	if (sleep_out_delay)
+		mdelay(sleep_out_delay);
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_DISPLAY_ON);
-if (lcd->pd->sleep_out_delay)
-			msleep(lcd->pd->sleep_out_delay);
+	if (sleep_out_delay)
+		mdelay(sleep_out_delay);
 	if (!ret)
 		lcd->ldi_state = LDI_STATE_ON;
 
@@ -637,8 +638,8 @@ static int ws2401_dpi_ldi_disable(struct ws2401_dpi *lcd)
 	ret |= ws2401_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_WS2401_ENTER_SLEEP_MODE);
 
-	if (lcd->pd->sleep_in_delay)
-		msleep(lcd->pd->sleep_in_delay);
+	if (sleep_in_delay)
+		mdelay(sleep_in_delay);
 
 	return ret;
 }
@@ -677,7 +678,7 @@ static int ws2401_dpi_power_on(struct ws2401_dpi *lcd)
 	}
 
 	dpd->power_on(dpd, LCD_POWER_UP);
-	msleep(power_on_delay);
+	mdelay(power_on_delay);
 
 	if (!dpd->gpio_cfg_lateresume) {
 		dev_err(lcd->dev, "gpio_cfg_lateresume is NULL.\n");
@@ -686,7 +687,7 @@ static int ws2401_dpi_power_on(struct ws2401_dpi *lcd)
 		dpd->gpio_cfg_lateresume();
 
 	dpd->reset(dpd);
-	msleep(reset_delay);
+	mdelay(reset_delay);
 
 	ret = ws2401_dpi_ldi_init(lcd);
 	if (ret) {
@@ -923,9 +924,13 @@ static ssize_t sysfs_show_display_settings(struct device *dev,
 				      struct device_attribute *attr, char *buf)
 {
 	return sprintf(buf, "power_on_delay=%d\n"
-			    "reset_delay=%d\n",
+			    "reset_delay=%d\n"
+			    "sleep_in_delay=%d\n"
+			    "sleep_out_delay=%d\n",
 			    power_on_delay,
-			    reset_delay);
+			    reset_delay,
+			    sleep_in_delay,
+			    sleep_out_delay);
 }
 
 static ssize_t sysfs_store_display_settings(struct device *dev,
@@ -948,6 +953,24 @@ static ssize_t sysfs_store_display_settings(struct device *dev,
 
 		return len;
 	}
+
+        if (!strncmp(&buf[0], "sleep_out_delay=",16))
+        {
+                sscanf(&buf[16], "%d", &val);
+                sleep_out_delay = val;
+
+                return len;
+        }
+
+
+        if (!strncmp(&buf[0], "sleep_in_delay=", 15))
+        {
+                sscanf(&buf[15], "%d", &val);
+                sleep_in_delay = val;
+
+                return len;
+        }
+
 	return -EINVAL;
 }
 static DEVICE_ATTR(display_settings, 0644,
