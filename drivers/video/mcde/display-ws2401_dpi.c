@@ -89,7 +89,7 @@
 
 static signed char apeopp_requirement = 50, ddropp_requirement = 50;
 static unsigned int reset_delay = 5, power_on_delay = 5;
-static unsigned int sleep_in_delay = 50, sleep_out_delay = 120, display_off_delay = 25;
+static unsigned int sleep_in_delay = 50, sleep_out_delay = 120, display_off_delay = 0;
 
 /* to be removed when display works */
 //#define dev_dbg	dev_info
@@ -596,7 +596,7 @@ static int ws2401_dpi_ldi_init(struct ws2401_dpi *lcd)
 	ret = ws2401_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_WS2401_EXIT_SLEEP_MODE);
 
-	if (sleep_out_delay)
+	if (likely(sleep_out_delay > 0))
 		mdelay(sleep_out_delay);
 
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_INIT);
@@ -617,10 +617,10 @@ static int ws2401_dpi_ldi_enable(struct ws2401_dpi *lcd)
 {
 	int ret = 0;
 	dev_dbg(lcd->dev, "ws2401_dpi_ldi_enable\n");
-	if (sleep_out_delay)
+	if (likely(sleep_out_delay > 0))
 		mdelay(sleep_out_delay);
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_DISPLAY_ON);
-	if (sleep_out_delay)
+	if (likely(sleep_out_delay > 0))
 		mdelay(sleep_out_delay);
 	if (!ret)
 		lcd->ldi_state = LDI_STATE_ON;
@@ -638,7 +638,7 @@ static int ws2401_dpi_ldi_disable(struct ws2401_dpi *lcd)
 	ret |= ws2401_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_WS2401_ENTER_SLEEP_MODE);
 
-	if (sleep_in_delay)
+	if (likely(sleep_in_delay > 0))
 		mdelay(sleep_in_delay);
 
 	return ret;
@@ -672,7 +672,7 @@ static int ws2401_dpi_power_on(struct ws2401_dpi *lcd)
 	ws2401_request_opp(lcd);
 
 	dpd = lcd->pd;
-	if (!dpd) {
+	if (unlikely(dpd == NULL)) {
 		dev_err(lcd->dev, "ws2401_dpi platform data is NULL.\n");
 		return -EFAULT;
 	}
@@ -680,7 +680,7 @@ static int ws2401_dpi_power_on(struct ws2401_dpi *lcd)
 	dpd->power_on(dpd, LCD_POWER_UP);
 	mdelay(power_on_delay);
 
-	if (!dpd->gpio_cfg_lateresume) {
+	if (unlikely(dpd->gpio_cfg_lateresume == NULL)) {
 		dev_err(lcd->dev, "gpio_cfg_lateresume is NULL.\n");
 		return -EFAULT;
 	} else
@@ -690,14 +690,14 @@ static int ws2401_dpi_power_on(struct ws2401_dpi *lcd)
 	mdelay(reset_delay);
 
 	ret = ws2401_dpi_ldi_init(lcd);
-	if (ret) {
+	if (unlikely(ret > 0)) {
 		dev_err(lcd->dev, "failed to initialize ldi.\n");
 		return ret;
 	}
 	dev_dbg(lcd->dev, "ldi init successful\n");
 
 	ret = ws2401_dpi_ldi_enable(lcd);
-	if (ret) {
+	if (unlikely(ret > 0)) {
 		dev_err(lcd->dev, "failed to enable ldi.\n");
 		return ret;
 	}
@@ -716,24 +716,27 @@ static int ws2401_dpi_power_off(struct ws2401_dpi *lcd)
 	dev_dbg(lcd->dev, "ws2401_dpi_power_off\n");
 
 	dpd = lcd->pd;
-	if (!dpd) {
+	if (unlikely(dpd == NULL)) {
 		dev_err(lcd->dev, "platform data is NULL.\n");
 		return -EFAULT;
 	}
 
+	if (display_off_delay)
+		mdelay(display_off_delay);
+
 	ret = ws2401_dpi_ldi_disable(lcd);
-	if (ret) {
+	if (unlikely(ret > 0)) {
 		dev_err(lcd->dev, "lcd setting failed.\n");
 		return -EIO;
 	}
 
-	if (!dpd->gpio_cfg_earlysuspend) {
+	if (unlikely(dpd->gpio_cfg_earlysuspend == NULL)) {
 		dev_err(lcd->dev, "gpio_cfg_earlysuspend is NULL.\n");
 		return -EFAULT;
 	} else
 		dpd->gpio_cfg_earlysuspend();
 
-	if (!dpd->power_on) {
+	if (unlikely(dpd->power_on == NULL)) {
 		dev_err(lcd->dev, "power_on is NULL.\n");
 		return -EFAULT;
 	} else
@@ -856,7 +859,7 @@ static int ws2401_dpi_set_brightness(struct backlight_device *bd)
 		ret = ws2401_update_brightness(lcd);
 		dev_info(lcd->dev, "brightness=%d, bl=%d\n",
 			bd->props.brightness, lcd->bl);
-		if (ret < 0)
+		if (unlikely(ret < 0))
 			dev_err(&bd->dev, "update brightness failed.\n");
 	}
 
@@ -926,11 +929,13 @@ static ssize_t sysfs_show_display_settings(struct device *dev,
 	return sprintf(buf, "power_on_delay=%d\n"
 			    "reset_delay=%d\n"
 			    "sleep_in_delay=%d\n"
-			    "sleep_out_delay=%d\n",
+			    "sleep_out_delay=%d\n"
+			    "display_off_delay=%d\n",
 			    power_on_delay,
 			    reset_delay,
 			    sleep_in_delay,
-			    sleep_out_delay);
+			    sleep_out_delay,
+			    display_off_delay);
 }
 
 static ssize_t sysfs_store_display_settings(struct device *dev,
@@ -967,6 +972,14 @@ static ssize_t sysfs_store_display_settings(struct device *dev,
         {
                 sscanf(&buf[15], "%d", &val);
                 sleep_in_delay = val;
+
+                return len;
+        }
+
+        if (!strncmp(&buf[0], "display_off_delay=", 18))
+        {
+                sscanf(&buf[18], "%d", &val);
+                display_off_delay = val;
 
                 return len;
         }
@@ -1272,7 +1285,7 @@ static int __devinit ws2401_dpi_spi_probe(struct spi_device *spi)
 	spi->bits_per_word = 9;
 
 	ret = spi_setup(spi);
-	if (ret < 0) {
+	if (unlikely(ret < 0)) {
 		dev_err(&spi->dev, "spi setup failed.\n");
 		goto out;
 	}
