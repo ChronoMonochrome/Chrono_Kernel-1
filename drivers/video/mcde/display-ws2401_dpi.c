@@ -88,8 +88,8 @@
 #define DPI_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
 
 static signed char apeopp_requirement = 50, ddropp_requirement = 50;
-static unsigned int reset_delay = 5, power_on_delay = 5;
-static unsigned int sleep_in_delay = 50, sleep_out_delay = 120, display_off_delay = 0;
+static unsigned int reset_delay = 5, power_on_delay = 20;
+static unsigned int sleep_in_delay = 50, sleep_out_delay = 5, display_off_delay = 0;
 
 /* to be removed when display works */
 //#define dev_dbg	dev_info
