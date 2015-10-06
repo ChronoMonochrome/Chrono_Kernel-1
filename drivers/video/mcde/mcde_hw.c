@@ -1250,13 +1250,13 @@ static DECLARE_WORK(lcdclk_work, lcdclk_thread);
 #define ATTR_RW(_name)	\
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0644, _name##_show, _name##_store);
 
-extern bool is_s6d(void);
+extern int lcdtype;
 
 static ssize_t lcdclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	int i;
 
-        if (is_s6d())
+        if (lcdtype != 4)
                 sprintf(buf, "%sLCD type: %s\n", buf,  "S6D27A1");
         else
                 sprintf(buf, "%sLCD type: %s\n", buf,  "WS2401");

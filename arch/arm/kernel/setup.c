@@ -666,7 +666,7 @@ static unsigned int setup_debug = 0;
 module_param_named(is_lpm, is_lpm, uint, 0444);
 module_param_named(setup_debug, setup_debug, uint, 0644);
 
-unsigned int lcdtype = 0;
+int lcdtype = 0;
 EXPORT_SYMBOL(lcdtype);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
