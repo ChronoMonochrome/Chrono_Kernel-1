@@ -98,6 +98,19 @@ static DEFINE_PER_CPU(struct cpu_dbs_info_s, cs_cpu_dbs_info);
 
 static unsigned int dbs_enable;	/* number of CPUs using this policy */
 
+int get_max_cpufreq(void) {
+        struct cpufreq_policy *policy = cpufreq_cpu_get(0);
+
+        return policy->max;
+}
+
+int get_min_cpufreq(void) {
+        struct cpufreq_policy *policy = cpufreq_cpu_get(0);
+
+        return policy->min;
+}
+
+
 static bool suspend = false;
 module_param(suspend, bool, 0644);
 static bool standby  = false;
