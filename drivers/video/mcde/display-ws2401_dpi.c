@@ -89,7 +89,8 @@
 
 static signed char apeopp_requirement = 50, ddropp_requirement = 50;
 static unsigned int reset_delay = 5, power_on_delay = 50;
-static unsigned int sleep_in_delay = 50, sleep_out_delay = 5, display_off_delay = 0;
+static unsigned int sleep_in_delay = 50, sleep_out_delay = 5, sleep_out_delay_1st = 5,
+			 sleep_out_delay_2nd = 5, display_off_delay = 0;
 
 /* to be removed when display works */
 //#define dev_dbg	dev_info
@@ -596,7 +597,7 @@ static int ws2401_dpi_ldi_init(struct ws2401_dpi *lcd)
 	ret = ws2401_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_WS2401_EXIT_SLEEP_MODE);
 
-	if (likely(sleep_out_delay > 0))
+	if (sleep_out_delay)
 		mdelay(sleep_out_delay);
 
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_INIT);
@@ -617,11 +618,11 @@ static int ws2401_dpi_ldi_enable(struct ws2401_dpi *lcd)
 {
 	int ret = 0;
 	dev_dbg(lcd->dev, "ws2401_dpi_ldi_enable\n");
-	if (likely(sleep_out_delay > 0))
-		mdelay(sleep_out_delay);
+	if (sleep_out_delay_1st)
+		mdelay(sleep_out_delay_1st);
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_DISPLAY_ON);
-	if (likely(sleep_out_delay > 0))
-		mdelay(sleep_out_delay);
+	if (likely(sleep_out_delay_2nd > 0))
+		mdelay(sleep_out_delay_2nd);
 	if (!ret)
 		lcd->ldi_state = LDI_STATE_ON;
 
@@ -930,11 +931,15 @@ static ssize_t sysfs_show_display_settings(struct device *dev,
 			    "reset_delay=%d\n"
 			    "sleep_in_delay=%d\n"
 			    "sleep_out_delay=%d\n"
+			    "sleep_out_delay_1st=%d\n"
+			    "sleep_out_delay_2nd=%d\n"
 			    "display_off_delay=%d\n",
 			    power_on_delay,
 			    reset_delay,
 			    sleep_in_delay,
 			    sleep_out_delay,
+			    sleep_out_delay_1st,
+			    sleep_out_delay_2nd,
 			    display_off_delay);
 }
 
@@ -967,6 +972,21 @@ static ssize_t sysfs_store_display_settings(struct device *dev,
                 return len;
         }
 
+        if (!strncmp(&buf[0], "sleep_out_delay_1st=",20))
+        {
+                sscanf(&buf[20], "%d", &val);
+                sleep_out_delay_1st = val;
+
+                return len;
+        }
+
+        if (!strncmp(&buf[0], "sleep_out_delay_2nd=",20))
+        {
+                sscanf(&buf[20], "%d", &val);
+                sleep_out_delay_2nd = val;
+
+                return len;
+        }
 
         if (!strncmp(&buf[0], "sleep_in_delay=", 15))
         {
