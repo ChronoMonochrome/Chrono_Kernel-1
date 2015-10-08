@@ -146,6 +146,9 @@ static void late_resume_work_fn(struct work_struct *work)
 	is_suspend = false;
 }
 
+static DECLARE_WORK(early_suspend_work, early_suspend_work_fn);
+static DECLARE_WORK(late_resume_work, late_resume_work_fn);
+
 static struct early_suspend driver_early_suspend = {
 	.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1,
 	.suspend = early_suspend_fn,
@@ -405,14 +408,13 @@ static int cpufreq_limits_driver_init(void)
 					 screenoff_min_cpufreq / 1000,  screenoff_max_cpufreq / 1000
 	);
 	
-	INIT_WORK(&early_suspend_work, early_suspend_work_fn);
-	INIT_WORK(&late_resume_work, late_resume_work_fn);
-	
 	register_early_suspend(&driver_early_suspend);
 
-	cpufreq_kobject = kobject_create_and_add("cpufreq", kernel_kobj);
 	if (!cpufreq_kobject) {
-		pr_err("[cpufreq] Failed to create kobject interface\n");
+		cpufreq_kobject = kobject_create_and_add("cpufreq", kernel_kobj);
+		if (!cpufreq_kobject) {
+			pr_err("[cpufreq] Failed to create kobject interface\n");
+		}
 	}
 
 	ret = sysfs_create_group(cpufreq_kobject, &cpufreq_interface_group);
@@ -421,6 +423,7 @@ static int cpufreq_limits_driver_init(void)
 	}
 	
 	ret = input_register_handler(&cpufreq_input_handler);
+
 	if (ret)
 		pr_err("Cannot register cpufreq input handler.\n");
 		
@@ -439,7 +442,13 @@ static void cpufreq_limits_driver_exit(void)
 {
 	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "APEBOOST");
 	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST");
+
 	unregister_early_suspend(&driver_early_suspend);
+	sysfs_remove_group(cpufreq_kobject, &cpufreq_interface_group);
+	if (cpufreq_kobject != NULL)
+		kobject_put(cpufreq_kobject);
+	cpufreq_unregister_notifier(&cpufreq_notifier_block, CPUFREQ_POLICY_NOTIFIER);
+	input_unregister_handler(&cpufreq_input_handler);
 }
 
 module_init(cpufreq_limits_driver_init);
