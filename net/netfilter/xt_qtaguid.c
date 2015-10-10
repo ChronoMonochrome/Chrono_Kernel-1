@@ -1222,7 +1222,7 @@ static int ipx_proto(const struct sk_buff *skb,
 	int thoff, tproto;
 
 	switch (par->family) {
-#ifdef CONFIG_IPV6
+#ifdef CONFIG_IP6_NF_IPTABLES
         case NFPROTO_IPV6:
                 tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
                 if (tproto < 0)
@@ -1697,7 +1697,7 @@ static struct sock *qtaguid_find_sk(const struct sk_buff *skb,
 		return NULL;
 
 	switch (par->family) {
-#ifdef CONFIG_IPV6
+#ifdef CONFIG_IP6_NF_IPTABLES
 	case NFPROTO_IPV6:
 		sk = xt_socket_get6_sk(skb, par);
 		break;

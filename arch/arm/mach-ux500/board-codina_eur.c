@@ -2313,7 +2313,7 @@ static void __init codina_i2c_init(void)
 	i2c_register_board_info(7,
 		ARRAY_AND_SIZE(codina_r0_0_gpio_i2c7_devices));
 	if	(system_rev >= CODINA_TMO_R0_1)	{
-#ifndef CONFIG_NFC_PN544
+#if 0
 		platform_device_register(&codina_gpio_i2c8_pdata);
 	i2c_register_board_info(8,
 		ARRAY_AND_SIZE(codina_r0_0_gpio_i2c8_devices));

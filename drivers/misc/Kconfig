@@ -605,7 +605,7 @@ config CLONEDEV_DEBUG
 	  devices.
 
 config NFC_PN544
-        bool "NXP PN544 NFC Controller Driver"
+        tristate "NXP PN544 NFC Controller Driver"
         default n
         help
           NXP PN544 Near Field Communication controller support.
@@ -656,7 +656,7 @@ config TORCH_FLASH
 	  This driver provides torch flash function.
 
 config GENERIC_BLN
-	bool "Generic BLN support for backlight notification"
+	tristate "Generic BLN support for backlight notification"
 	depends on SYSFS && EXPERIMENTAL
 	default y
 	help
