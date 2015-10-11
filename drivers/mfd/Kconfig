@@ -702,8 +702,25 @@ config DB8500_LIVEOPP
 	  supports OC/UC/UV/OV in userspace.
 
 config LIVEOPP_DEBUG
+	depends on DB8500_LIVEOPP
 	int  "LiveOPP debug level"
 	default 0
+
+config LIVEOPP_CUSTOM_BOOTUP_FREQ
+	bool "LiveOPP bootup freq"
+	depends on DB8500_LIVEOPP
+	default n
+
+config LIVEOPP_CUSTOM_BOOTUP_FREQ_MIN
+	int "LiveOPP bootup min freq"
+	depends on LIVEOPP_CUSTOM_BOOTUP_FREQ
+	default 200
+
+config LIVEOPP_CUSTOM_BOOTUP_FREQ_MAX
+	int "LiveOPP bootup max freq"
+	depends on LIVEOPP_CUSTOM_BOOTUP_FREQ
+	default 800
+
 
 config MFD_CS5535
 	tristate "Support for CS5535 and CS5536 southbridge core functions"
