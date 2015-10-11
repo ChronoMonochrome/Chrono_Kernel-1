@@ -602,8 +602,8 @@ static int ws2401_dpi_ldi_init(struct ws2401_dpi *lcd)
 	ret = ws2401_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_WS2401_EXIT_SLEEP_MODE);
 
-	if (sleep_out_first_delay)
-		mdelay(sleep_out_first_delay);
+	if (unlikely(first_sleep_out_delay))
+		mdelay(first_sleep_out_delay);
 
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_INIT);
 
