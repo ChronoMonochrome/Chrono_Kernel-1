@@ -43,6 +43,8 @@ fi
 
 if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
+	busybox chmod 644 /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+	busybox echo 200000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
 	busybox chmod 644 /ramdisk/recovery.cpio
 	load_image=/ramdisk/recovery.cpio
 	# since it's pain, load j4fs and param from separate partition
@@ -74,15 +76,13 @@ if test -f /ramdisk/init.kernel.rc ; then
 	busybox chmod 750 /ramdisk/init.kernel.rc
 fi
 
-cp /init.rc /stage1/init.rc
+busybox cp /init.rc /stage1/
 
-cat > /init.rc << _EOF
-#monkey-patched by stage1 init script
-import /init.kernel.rc
-#monkey-patch end
+busybox echo "import /init.kernel.rc" > /init.rc
+busybox echo "" >> /init.rc
 
-_EOF
-cat /stage1/init.rc >> /init.rc
+busybox cat /stage1/init.rc >> /init.rc
+
 
 busybox umount /sys
 busybox umount /proc
