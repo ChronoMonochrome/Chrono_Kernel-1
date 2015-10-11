@@ -1470,9 +1470,6 @@ static struct liveopp_arm_table liveopp_arm[] __read_mostly = {
 	{1000000,  998400, 0x00050182, 0x31, 0x8F, 1},
 	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 1},
 	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 1},
-#ifdef CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ
-	{1190000, 1190400, 0x0005019B, 0x37, 0x8F, 1},
-#endif
 	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 1},
 	{1215000, 1213440, 0x0005019E, 0x37, 0x8F, 1},
 	{1220000, 1221120, 0x0005019f, 0x37, 0x8F, 1},
@@ -2153,9 +2150,6 @@ ARM_STEP(arm_step10, 10);
 ARM_STEP(arm_step11, 11);
 ARM_STEP(arm_step12, 12);
 ARM_STEP(arm_step13, 13);
-#ifdef CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ
-ARM_STEP(arm_step14, 14);
-#endif
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
@@ -2545,9 +2539,6 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step11_interface.attr, 
 	&arm_step12_interface.attr, 
 	&arm_step13_interface.attr, 
-#ifdef CONFIG_LIVEOPP_CUSTOM_BOOTUP_FREQ
-        &arm_step14_interface.attr,
-#endif
 	&pllddr_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,

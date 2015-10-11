@@ -713,13 +713,11 @@ config LIVEOPP_CUSTOM_BOOTUP_FREQ
 
 config LIVEOPP_CUSTOM_BOOTUP_FREQ_MIN
 	int "LiveOPP bootup min freq"
-	depends on LIVEOPP_CUSTOM_BOOTUP_FREQ
-	default 200
+	default 200000
 
 config LIVEOPP_CUSTOM_BOOTUP_FREQ_MAX
 	int "LiveOPP bootup max freq"
-	depends on LIVEOPP_CUSTOM_BOOTUP_FREQ
-	default 800
+	default 800000
 
 
 config MFD_CS5535
