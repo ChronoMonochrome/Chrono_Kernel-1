@@ -511,9 +511,9 @@ config CPU_FREQ_GOV_FANTASY
 	  If in doubt, say N.
 
 config CPU_FREQ_LIMITS_ON_SUSPEND
-	tristate "CPUfreq limits on suspend"
+	bool "CPUfreq limits on suspend"
 	depends on CPU_FREQ
-	default n
+	default y
 		 
 menu "x86 CPU frequency scaling drivers"
 depends on X86

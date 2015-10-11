@@ -72,13 +72,13 @@ bool is_suspended_get(void) {
 }
 EXPORT_SYMBOL(is_suspended_get);
 
-static int get_max_cpufreq(void) {
+int get_max_cpufreq(void) {
 	struct cpufreq_policy *policy = cpufreq_cpu_get(0);
 	
 	return screenon_max_cpufreq ? screenon_max_cpufreq : policy->max;
 }
 
-static int get_min_cpufreq(void) {
+int get_min_cpufreq(void) {
 	struct cpufreq_policy *policy = cpufreq_cpu_get(0);
 	
 	return screenon_min_cpufreq ? screenon_min_cpufreq : policy->min;
