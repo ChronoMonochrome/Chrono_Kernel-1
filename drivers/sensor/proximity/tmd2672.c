@@ -1212,6 +1212,23 @@ static void __exit taos_opt_exit(void)
 	i2c_del_driver(&taos_opt_driver);
 }
 
+static unsigned int enabled = 1;
+
+static int taos_set_enable(const char *val, struct kernel_param *kp)
+{
+	if (strcmp(val, "0") >= 0) {
+		i2c_del_driver(&taos_opt_driver);
+		enabled = 0;
+		return 0;
+	} else if (strcmp(val, "1") >= 0) {
+		enabled = (i2c_add_driver(&taos_opt_driver) >= 0);
+		return enabled;
+	}
+
+	return -1;
+}
+module_param_call(enabled, taos_set_enable, param_get_int, &enabled, 0644);
+
 module_init(taos_opt_init);
 module_exit(taos_opt_exit);
 MODULE_AUTHOR("SAMSUNG");
