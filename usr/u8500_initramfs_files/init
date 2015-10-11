@@ -2,20 +2,22 @@
 _PATH="$PATH"
 export PATH=/stage1
 
+busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
+busybox rm /ramdisk/last_boot.txt 
+busybox date >>/ramdisk/last_boot.txt
+exec >>/ramdisk/last_boot.txt 2>&1
+
 busybox cd /
-busybox date >>boot.txt
-exec >>boot.txt 2>&1
 busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
+load_image=/ramdisk/boot.cpio
+lvm=/ramdisk/lvm.cpio
 
 busybox insmod /ramdisk/modules/startup_reason.ko
 busybox insmod /ramdisk/modules/exfat.ko
 busybox insmod /ramdisk/modules/f2fs.ko
-busybox insmod /ramdisk/modules/tmd2672.ko
-busybox insmod /ramdisk/modules/bt404_ts.ko
 
 if ! busybox grep -q bootmode=2 /proc/cmdline ; then
 
@@ -23,46 +25,20 @@ if ! busybox grep -q bootmode=2 /proc/cmdline ; then
 	do
 		busybox insmod $i
 	done
-	
-	if busybox test -f /ramdisk/00userinit ; then
-		busybox sh /ramdisk/00userinit
-	fi
-fi
 
-if busybox grep -q lpm_boot=1 /proc/cmdline ; then
-	busybox echo 1 > /sys/module/doubletap2wake/parameters/enable
-	busybox echo 1 > /sys/module/sweep2wake/parameters/enable
+	busybox sh /ramdisk/00userinit
 fi
-
-if test -f /ramdisk/boot.cpio ; then
-	busybox chmod 644 /ramdisk/boot.cpio
-fi
-
-load_image=/ramdisk/boot.cpio
-lvm=/ramdisk/lvm.cpio
 
 if busybox grep -q lcdtype=4 /proc/cmdline ; then
-	if test -f /ramdisk/modules/display-ws2401_dpi.ko ; then
-		busybox insmod /ramdisk/modules/display-ws2401_dpi.ko
-	fi
+	busybox insmod /ramdisk/modules/display-ws2401_dpi.ko
 fi
 
 if ! busybox grep -q lcdtype=4 /proc/cmdline ; then
-        if test -f /ramdisk/modules/display-s6d27a1_dpi.ko ; then
-                busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
-        fi
-fi
-
-if busybox grep -q lcdtype=4 /proc/cmdline ; then
-	if test -f /ramdisk/modules/display-ws2401_dpi.ko ; then
-		busybox insmod /ramdisk/modules/display-ws2401_dpi.ko
-	fi
+	busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
 fi
 
 if busybox grep -q lcdtype=13 /proc/cmdline ; then
-        if test -f /ramdisk/modules/display-s6d27a1_dpi.ko ; then
-                busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
-        fi
+	busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
 fi
 
 if busybox grep -q bootmode=2 /proc/cmdline ; then
@@ -77,25 +53,25 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 	busybox sh /ramdisk/00recovery
 fi
 
-if busybox test -f ${load_image} ; then
+if test -f ${load_image} ; then
 	busybox cpio -i < ${load_image}
 fi
 
-if busybox test -f ${load_image}.gz ; then
+if test -f ${load_image}.gz ; then
 	busybox zcat ${load_image}.gz | busybox cpio -i -u
 fi
 
-if busybox test -f ${lvm} ; then
+if test -f ${lvm} ; then
 	busybox cpio -i < ${lwm}
 fi
 
-if busybox test -f ${lvm}.gz ; then
-	busybox zcat ${lvm}.gz | busybox cpio -i -u
+if test -f ${lvm}.gz ; then
+	busybox zcat ${lvm}.gz | cpio -i -u
 fi
 
 busybox umount /sys
 busybox umount /proc
-busybox date >>boot.txt
+busybox date >>/ramdisk/last_boot.txt
 busybox rm -fr /stage1 /dev/*
 export PATH="${_PATH}"
 exec /init
