@@ -92,6 +92,11 @@ static unsigned int reset_delay = 5, power_on_delay = 50;
 static unsigned int sleep_in_delay = 50, sleep_out_delay = 5, sleep_out_delay_1st = 5,
 			 sleep_out_delay_2nd = 5, display_off_delay = 0;
 
+static bool is_first_sleep_in_delay = 1;
+static bool is_first_sleep_out_delay = 1;
+static unsigned first_sleep_in_delay = 120;
+static unsigned first_sleep_out_delay = 120;
+
 /* to be removed when display works */
 //#define dev_dbg	dev_info
 //#define ESD_OPERATION
@@ -597,8 +602,8 @@ static int ws2401_dpi_ldi_init(struct ws2401_dpi *lcd)
 	ret = ws2401_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_WS2401_EXIT_SLEEP_MODE);
 
-	if (sleep_out_delay)
-		mdelay(sleep_out_delay);
+	if (sleep_out_first_delay)
+		mdelay(sleep_out_first_delay);
 
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_INIT);
 
@@ -618,11 +623,20 @@ static int ws2401_dpi_ldi_enable(struct ws2401_dpi *lcd)
 {
 	int ret = 0;
 	dev_dbg(lcd->dev, "ws2401_dpi_ldi_enable\n");
-	if (sleep_out_delay_1st)
-		mdelay(sleep_out_delay_1st);
+
+	if (unlikely(is_first_sleep_out_delay == 1)) {
+                mdelay(first_sleep_out_delay);
+        } else if (sleep_out_delay_1st > 0)
+                mdelay(sleep_out_delay_1st);
+
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_DISPLAY_ON);
-	if (likely(sleep_out_delay_2nd > 0))
-		mdelay(sleep_out_delay_2nd);
+
+	if (unlikely(is_first_sleep_out_delay == 1)) {
+                mdelay(first_sleep_out_delay);
+		is_first_sleep_out_delay = 0;
+        } else if (likely(sleep_out_delay_2nd > 0))
+                mdelay(sleep_out_delay_2nd);
+
 	if (!ret)
 		lcd->ldi_state = LDI_STATE_ON;
 
@@ -639,7 +653,10 @@ static int ws2401_dpi_ldi_disable(struct ws2401_dpi *lcd)
 	ret |= ws2401_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_WS2401_ENTER_SLEEP_MODE);
 
-	if (likely(sleep_in_delay > 0))
+	if (unlikely(is_first_sleep_in_delay == 1)) {
+		mdelay(first_sleep_in_delay);
+		is_first_sleep_in_delay = 0;
+	} else if (likely(sleep_in_delay > 0))
 		mdelay(sleep_in_delay);
 
 	return ret;
