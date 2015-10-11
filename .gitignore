@@ -1,2 +1,3 @@
 Ramdisk/*
 *.patch
+arch/arm/configs/private_defconfig
