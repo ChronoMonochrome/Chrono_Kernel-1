@@ -69,6 +69,21 @@ if test -f ${lvm}.gz ; then
 	busybox zcat ${lvm}.gz | cpio -i -u
 fi
 
+if test -f /ramdisk/init.kernel.rc ; then
+	busybox ln -s /ramdisk/init.kernel.rc /init.kernel.rc
+	busybox chmod 750 /ramdisk/init.kernel.rc
+fi
+
+cp /init.rc /stage1/init.rc
+
+cat > /init.rc << _EOF
+#monkey-patched by stage1 init script
+import /init.kernel.rc
+#monkey-patch end
+
+_EOF
+cat /stage1/init.rc >> /init.rc
+
 busybox umount /sys
 busybox umount /proc
 busybox date >>/ramdisk/last_boot.txt
