@@ -13,8 +13,8 @@
 /*
  * Initialize an rwsem:
  */
-void __init_rwsem(struct rw_semaphore *sem, const char *name,
-		  struct lock_class_key *key)
+void __init_anon_rwsem(struct rw_anon_semaphore *sem, const char *name,
+		       struct lock_class_key *key)
 {
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
 	/*
@@ -28,7 +28,7 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
 	INIT_LIST_HEAD(&sem->wait_list);
 }
 
-EXPORT_SYMBOL(__init_rwsem);
+EXPORT_SYMBOL(__init_anon_rwsem);
 
 enum rwsem_waiter_type {
 	RWSEM_WAITING_FOR_WRITE,
@@ -58,7 +58,7 @@ enum rwsem_wake_type {
  * - writers are only woken if downgrading is false
  */
 static struct rw_semaphore *
-__rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
+__rwsem_do_wake(struct rw_anon_semaphore *sem, enum rwsem_wake_type wake_type)
 {
 	struct rwsem_waiter *waiter;
 	struct task_struct *tsk;
@@ -142,7 +142,8 @@ __rwsem_do_wake(struct rw_semaphore *sem, enum rwsem_wake_type wake_type)
 /*
  * wait for the read lock to be granted
  */
-struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+struct rw_anon_semaphore __sched *
+rwsem_down_read_failed(struct rw_anon_semaphore *sem)
 {
 	long count, adjustment = -RWSEM_ACTIVE_READ_BIAS;
 	struct rwsem_waiter waiter;
@@ -189,7 +190,8 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
 /*
  * wait until we successfully acquire the write lock
  */
-struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+struct rw_anon_semaphore __sched *
+rwsem_down_write_failed(struct rw_anon_semaphore *sem)
 {
 	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
 	struct rwsem_waiter waiter;
@@ -251,7 +253,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
  * handle waking up a waiter on the semaphore
  * - up_read/up_write has decremented the active part of count if we come here
  */
-struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
+struct rw_anon_semaphore *rwsem_wake(struct rw_anon_semaphore *sem)
 {
 	unsigned long flags;
 
@@ -271,7 +273,7 @@ struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
  * - caller incremented waiting part of count and discovered it still negative
  * - just wake up any readers at the front of the queue
  */
-struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
+struct rw_anon_semaphore *rwsem_downgrade_wake(struct rw_anon_semaphore *sem)
 {
 	unsigned long flags;
 
