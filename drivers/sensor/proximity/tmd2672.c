@@ -88,16 +88,11 @@ struct taos_data {
 static void set_prox_offset(struct taos_data *taos, u8 offset);
 static int proximity_open_offset(struct taos_data *data);
 
-static unsigned int disable = 0;
-module_param(disable, uint, 0644);
-
 static int opt_i2c_write(struct taos_data *taos, u8 reg, u8 * val)
 {
 	int err;
 	unsigned char data[2];
 	struct i2c_msg msg[1];
-
-	if (disable) return;
 
 	if (taos->client == NULL)
 		return -ENODEV;
@@ -121,8 +116,6 @@ static int opt_i2c_write(struct taos_data *taos, u8 reg, u8 * val)
 static int opt_i2c_read(struct taos_data *taos, u8 reg , u8 *val)
 {
 	int ret;
-	
-	if (disable) return;
 
 	i2c_smbus_write_byte(taos->client, (CMD_REG | reg));
 
@@ -134,8 +127,6 @@ static int opt_i2c_read(struct taos_data *taos, u8 reg , u8 *val)
 
 static int taos_poweron(struct taos_data *taos)
 {
-	if (disable) return;
-
 	func_dbg();
 
 	if (!taos)
@@ -152,8 +143,6 @@ static int taos_poweron(struct taos_data *taos)
 
 static int taos_poweroff(struct taos_data *taos)
 {
-	if (disable) return;
-
 	func_dbg();
 
 	if (!taos)
@@ -169,11 +158,7 @@ static int taos_poweroff(struct taos_data *taos)
 
 static void taos_work_func_prox(struct work_struct *work)
 {
-	struct taos_data *taos;
-
-	if (disable) return;
-
-	taos = container_of(work,
+	struct taos_data *taos = container_of(work,
 		struct taos_data, work_prox);
 	u16 adc_data;
 	u16 threshold_high;
@@ -254,7 +239,7 @@ static irqreturn_t taos_irq_handler(int irq, void *dev_id)
 {
 	struct taos_data *taos = dev_id;
 
-	if (disable) return;
+;
 
 	if (taos->irq != -1) {
 		wake_lock_timeout(&taos->prx_wake_lock, 3 * HZ);
@@ -266,8 +251,6 @@ static irqreturn_t taos_irq_handler(int irq, void *dev_id)
 
 static void taos_work_func_ptime(struct work_struct *work)
 {
-	if (disable) return;
-
 	struct taos_data *taos =
 			container_of(work, struct taos_data, work_ptime);
 	u16 value = 0;
@@ -306,8 +289,6 @@ static void taos_work_func_ptime(struct work_struct *work)
 
 static enum hrtimer_restart taos_timer_func(struct hrtimer *timer)
 {
-	if (disable) return;
-
 	struct taos_data *taos =
 	    container_of(timer, struct taos_data, timer);
 
@@ -323,8 +304,6 @@ void taos_chip_on(struct taos_data *taos)
 	int err = 0;
 	int i;
 	int fail_num = 0;
-
-	if (disable) return;
 
 	value = CNTL_REG_CLEAR;
 	err = opt_i2c_write(taos, (CMD_REG | CNTRL), &value);
@@ -407,8 +386,6 @@ static int taos_chip_off(struct taos_data *taos)
 	int ret = 0;
 	int err = 0;
 
-	if (disable) return;
-
 	err = irq_set_irq_wake(taos->irq, 0);
 	if (err)
 		pr_err("%s: register wakeup source failed\n", __func__);
@@ -425,8 +402,6 @@ static int taos_chip_off(struct taos_data *taos)
 
 void taos_on(struct taos_data *taos)
 {
-	if (disable) return;
-
 	func_dbg();
 
 	taos_chip_on(taos);
@@ -437,8 +412,6 @@ void taos_on(struct taos_data *taos)
 
 void taos_off(struct taos_data *taos)
 {
-	if (disable) return;
-
 	func_dbg();
 
 	disable_irq(taos->irq);
@@ -463,7 +436,6 @@ static ssize_t proximity_enable_show(struct device *dev,
 				      struct device_attribute *attr,
 				      char *buf)
 {
-	if (disable) return;
 	struct taos_data *taos = dev_get_drvdata(dev);
 
 	return sprintf(buf, "%d\n", (taos->proximity_enable) ? 1 : 0);
@@ -473,7 +445,6 @@ static ssize_t proximity_enable_store(struct device *dev,
 					struct device_attribute *attr,
 					const char *buf, size_t size)
 {
-	if (disable) return;
 	struct taos_data *taos = dev_get_drvdata(dev);
 	int value = 0;
 	int ret = 0;
@@ -518,8 +489,6 @@ static void set_prox_offset(struct taos_data *taos, u8 offset)
 {
 	int ret = 0;
 
-	if (disable) return;
-
 	ret = opt_i2c_write(taos, (CMD_REG|PRX_OFFSET), &offset);
 	if (ret < 0)
 		pr_info("%s: opt_i2c_write to prx offset reg failed\n"
@@ -531,8 +500,6 @@ static void taos_thresh_set(struct taos_data *taos)
 	int i = 0;
 	int ret = 0;
 	u8 prox_int_thresh[4];
-
-	if (disable) return;
 
 	/* Setting for proximity interrupt */
 	if (taos->proximity_value == 1) {
@@ -566,8 +533,6 @@ static int proximity_adc_read(struct taos_data *taos)
 	int max = 0;
 	int total = 0;
 
-	if (disable) return;
-
 	mutex_lock(&taos->prox_mutex);
 	for (i = 0; i < OFFSET_ARRAY_LENGTH; i++) {
 		usleep_range(11000, 11000);
@@ -597,8 +562,6 @@ static int proximity_open_offset(struct taos_data *data)
 	struct file *offset_filp = NULL;
 	int err = 0;
 	mm_segment_t old_fs;
-
-	if (disable) return;
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
@@ -640,8 +603,6 @@ static int proximity_store_offset(struct device *dev, bool do_calib)
 	int target_xtalk = 150;
 	int offset_change = 0x20;
 	u8 reg_cntrl = 0x2D;
-
-	if (disable) return;
 
 	pr_err("%s: return %d\n", __func__, err);
 	if (do_calib) {
@@ -732,8 +693,6 @@ static ssize_t proximity_cal_store(struct device *dev,
 					  struct device_attribute *attr,
 					  const char *buf, size_t size)
 {
-	if (disable) return;
-
 	bool do_calib;
 	int err;
 	if (sysfs_streq(buf, "1")) { /* calibrate cancelation value */
@@ -765,7 +724,6 @@ static ssize_t prox_offset_pass_show(struct device *dev,
 static ssize_t proximity_cal_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	if (disable) return;
 	struct taos_data *taos = dev_get_drvdata(dev);
 	u8 p_offset = 0;
 
@@ -780,7 +738,6 @@ static ssize_t proximity_cal_show(struct device *dev,
 static ssize_t proximity_thresh_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	if (disable) return;
 	struct taos_data *taos = dev_get_drvdata(dev);
 	int thresh_hi = 0;
 
@@ -796,7 +753,6 @@ static ssize_t proximity_thresh_show(struct device *dev,
 static ssize_t proximity_thresh_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t size)
 {
-	if (disable) return;
 	struct taos_data *taos = dev_get_drvdata(dev);
 	int thresh_value = 0;
 	int err = 0;
@@ -813,7 +769,6 @@ static ssize_t proximity_thresh_store(struct device *dev,
 static ssize_t proximity_adc_show(struct device *dev,
 				    struct device_attribute *attr, char *buf)
 {
-	if (disable) return;
 	struct taos_data *taos = dev_get_drvdata(dev);
 	u16 value = 0;
 
@@ -830,7 +785,6 @@ static ssize_t proximity_adc_show(struct device *dev,
 static ssize_t proximity_avg_show(struct device *dev,
 				    struct device_attribute *attr, char *buf)
 {
-	if (disable) return;
 	struct taos_data *taos = dev_get_drvdata(dev);
 
 	return sprintf(buf, "%d,%d,%d\n", taos->avg[0], taos->avg[1],
@@ -841,7 +795,6 @@ static ssize_t proximity_avg_store(struct device *dev,
 				     struct device_attribute *attr,
 				     const char *buf, size_t size)
 {
-	if (disable) return;
 	struct taos_data *taos = dev_get_drvdata(dev);
 	int value;
 	sscanf(buf, "%d", &value);
@@ -901,7 +854,6 @@ static struct attribute_group proximity_attribute_group = {
 
 static int taos_get_initial_offset(struct taos_data *taos)
 {
-	if (disable) return;
 	int ret = 0;
 	u8 p_offset = 0;
 
@@ -925,8 +877,6 @@ static int taos_opt_probe(struct i2c_client *client,
 	struct input_dev *input_dev;
 	struct tmd2672_platform_data *pdata = client->dev.platform_data;
 	struct device *proximity_sensor_device = NULL;
-
-	if (disable) return;
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		pr_err("%s: i2c_check_functionality error.\n", __func__);
@@ -984,6 +934,7 @@ static int taos_opt_probe(struct i2c_client *client,
 
 	taos_poweron(taos);
 	err = i2c_smbus_read_byte_data(taos->client, CMD_REG | CHIPID);
+;
 	if (err < 0)
 		goto err_setup_regulator;
 
@@ -1111,8 +1062,6 @@ static int taos_opt_remove(struct i2c_client *client)
 {
 	struct taos_data *taos = i2c_get_clientdata(client);
 
-	if (disable) return;
-
 	func_dbg();
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -1145,8 +1094,6 @@ static int taos_opt_remove(struct i2c_client *client)
 static void taos_opt_shutdown(struct i2c_client *client)
 {
 	struct taos_data *taos = i2c_get_clientdata(client);
-
-	if (disable) return;
 
 	func_dbg();
 
@@ -1181,8 +1128,6 @@ static int taos_opt_suspend(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct taos_data *taos = i2c_get_clientdata(client);
 
-	if (disable) return;
-
 	func_dbg();
 
 	if (taos->factorytest_enable == ON) {
@@ -1196,8 +1141,6 @@ static int taos_opt_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct taos_data *taos = i2c_get_clientdata(client);
-
-	if (disable) return;
 
 	func_dbg();
 
@@ -1214,8 +1157,6 @@ static void taos_early_suspend(struct early_suspend *handler)
 	struct taos_data *taos;
 	taos = container_of(handler, struct taos_data, early_suspend_handler);
 
-	if (disable) return;
-
 	func_dbg();
 
 	if (taos->factorytest_enable == ON) {
@@ -1228,8 +1169,6 @@ static void taos_early_resume(struct early_suspend *handler)
 {
 	struct taos_data *taos;
 	taos = container_of(handler, struct taos_data, early_suspend_handler);
-
-	if (disable) return;
 
 	func_dbg();
 
@@ -1265,13 +1204,11 @@ static struct i2c_driver taos_opt_driver = {
 
 static int __init taos_opt_init(void)
 {
-	if (disable) return;
 	return i2c_add_driver(&taos_opt_driver);
 }
 
 static void __exit taos_opt_exit(void)
 {
-	if (disable) return;
 	i2c_del_driver(&taos_opt_driver);
 }
 
