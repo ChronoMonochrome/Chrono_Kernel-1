@@ -11,7 +11,7 @@
  */
 
 #include <linux/module.h>
-#include <linux/plist.h>
+#include <linux/plist_old.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/spinlock_types.h>

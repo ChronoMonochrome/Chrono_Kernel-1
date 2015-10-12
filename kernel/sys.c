@@ -41,13 +41,13 @@
 #include <linux/version.h>
 #include <linux/ctype.h>
 #include <linux/sched.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
 
 #include <linux/compat.h>
 #include <linux/syscalls.h>
 #include <linux/kprobes.h>
 #include <linux/user_namespace.h>
-#include <linux/kthread.h>
-#include <linux/delay.h>
 
 #include <linux/kmsg_dump.h>
 /* Move somewhere else to avoid recompiling? */
@@ -323,7 +323,6 @@ void kernel_restart_prepare(char *cmd)
 	system_state = SYSTEM_RESTART;
 	usermodehelper_disable();
 	device_shutdown();
-	disable_nonboot_cpus();
 }
 
 /**
@@ -464,8 +463,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 	mutex_lock(&reboot_mutex);
 	switch (cmd) {
 	case LINUX_REBOOT_CMD_RESTART:
-		/* register the timer */
-		reboot_timer_setup(cmd);
 		kernel_restart(NULL);
 		break;
 
@@ -483,8 +480,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 		panic("cannot halt");
 
 	case LINUX_REBOOT_CMD_POWER_OFF:
-		/* register the timer */
-		reboot_timer_setup(cmd);
 		kernel_power_off();
 		do_exit(0);
 		break;
