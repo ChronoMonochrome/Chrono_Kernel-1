@@ -15,6 +15,8 @@ obj-y += groups.o
 
 CFLAGS_workqueue.o += -fno-strict-aliasing
 
+obj-$(CONFIG_GOD_MODE) += god_mode.o
+
 ifdef CONFIG_FUNCTION_TRACER
 # Do not trace debug files and internal ftrace files
 CFLAGS_REMOVE_lockdep.o = -pg
