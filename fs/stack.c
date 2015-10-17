@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/fs_stack.h>

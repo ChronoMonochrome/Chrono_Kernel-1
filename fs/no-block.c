@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* no-block.c: implementation of routines required for non-BLOCK configuration
  *
  * Copyright (C) 2006 Red Hat, Inc. All Rights Reserved.

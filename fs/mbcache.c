@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/mbcache.c
  * (C) 2001-2002 Andreas Gruenbacher, <a.gruenbacher@computer.org>

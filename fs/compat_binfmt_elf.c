@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * 32-bit compatibility support for ELF format executables and core dumps.
  *

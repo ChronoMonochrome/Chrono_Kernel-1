@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * ioctl32.c: Conversion between 32bit and 64bit native ioctls.
  *

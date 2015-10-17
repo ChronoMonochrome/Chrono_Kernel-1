@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *	An async IO implementation for Linux
  *	Written by Benjamin LaHaise <bcrl@kvack.org>
