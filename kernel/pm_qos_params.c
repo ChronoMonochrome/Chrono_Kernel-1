@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * This module exposes the interface to kernel space for specifying
  * QoS dependencies.  It provides infrastructure for registration of:
@@ -378,7 +381,15 @@ static int pm_qos_power_open(struct inode *inode, struct file *filp)
 		if (filp->private_data)
 			return 0;
 	}
-	return -EPERM;
+	
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 }
 
 static int pm_qos_power_release(struct inode *inode, struct file *filp)

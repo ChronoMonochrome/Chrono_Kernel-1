@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * kernel/power/suspend.c - Suspend to RAM and standby functionality.
  *
@@ -101,7 +104,15 @@ static int suspend_prepare(void)
 	int error;
 
 	if (!suspend_ops || !suspend_ops->enter)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	pm_prepare_console();
 

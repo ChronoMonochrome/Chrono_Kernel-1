@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifdef CONFIG_SCHED_AUTOGROUP
 
 #include <linux/proc_fs.h>
@@ -222,7 +225,15 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
 		return err;
 
 	if (*nice < 0 && !can_nice(current, *nice))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/* this is a heavy operation taking global locks.. */
 	if (!capable(CAP_SYS_ADMIN) && time_before(jiffies, next))

