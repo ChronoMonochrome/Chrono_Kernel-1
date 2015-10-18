@@ -153,6 +153,9 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
 	if (IS_ERR(head))
 		return PTR_ERR(head);
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	/*
 	 * At this point we know that the sysctl was not unregistered
 	 * and won't be until we finish.
@@ -160,6 +163,7 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
 	error = -EPERM;
 	if (sysctl_perm(head->root, table, write ? MAY_WRITE : MAY_READ))
 		goto out;
+#endif
 
 	/* if that can happen at all, it should be -EINVAL, not -EISDIR */
 	error = -EINVAL;

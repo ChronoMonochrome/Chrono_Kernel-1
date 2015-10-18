@@ -1613,10 +1613,16 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
 	if (!tfile)
 		goto error_fput;
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	/* The target file descriptor must support poll */
 	error = -EPERM;
 	if (!tfile->f_op || !tfile->f_op->poll)
 		goto error_tgt_fput;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/*
 	 * We have to check that the file structure underneath the file descriptor

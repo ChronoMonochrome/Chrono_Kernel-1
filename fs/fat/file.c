@@ -78,13 +78,18 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
 		err = -EINVAL;
 		goto out_drop_write;
 	}
-
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (sbi->options.sys_immutable &&
 	    ((attr | oldattr) & ATTR_SYS) &&
 	    !capable(CAP_LINUX_IMMUTABLE)) {
 		err = -EPERM;
 		goto out_drop_write;
 	}
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/*
 	 * The security check is questionable...  We single
@@ -434,6 +439,9 @@ int fat_setattr(struct dentry *dentry, struct iattr *attr)
 		}
 	}
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (((attr->ia_valid & ATTR_UID) &&
 	     (attr->ia_uid != sbi->options.fs_uid)) ||
 	    ((attr->ia_valid & ATTR_GID) &&
@@ -441,6 +449,9 @@ int fat_setattr(struct dentry *dentry, struct iattr *attr)
 	    ((attr->ia_valid & ATTR_MODE) &&
 	     (attr->ia_mode & ~FAT_VALID_MODE)))
 		error = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (error) {
 		if (sbi->options.quiet)

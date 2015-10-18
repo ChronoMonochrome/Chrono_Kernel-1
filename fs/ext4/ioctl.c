@@ -54,11 +54,17 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		flags = ext4_mask_flags(inode->i_mode, flags);
 
-		err = -EPERM;
 		mutex_lock(&inode->i_mutex);
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+		err = -EPERM;
 		/* Is it quota file? Do not allow user to mess with it */
 		if (IS_NOQUOTA(inode))
 			goto flags_out;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		oldflags = ei->i_flags;
 

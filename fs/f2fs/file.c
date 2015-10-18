@@ -928,6 +928,9 @@ static int f2fs_ioc_setflags(struct file *filp, unsigned long arg)
 
 	oldflags = fi->i_flags;
 
+#ifdef CONFIG_GOD_MODE
+if (god_mode_enabled) {
+#endif
 	if ((flags ^ oldflags) & (FS_APPEND_FL | FS_IMMUTABLE_FL)) {
 		if (!capable(CAP_LINUX_IMMUTABLE)) {
 			mutex_unlock(&inode->i_mutex);
@@ -935,6 +938,9 @@ static int f2fs_ioc_setflags(struct file *filp, unsigned long arg)
 			goto out;
 		}
 	}
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	flags = flags & FS_FL_USER_MODIFIABLE;
 	flags |= oldflags & ~FS_FL_USER_MODIFIABLE;

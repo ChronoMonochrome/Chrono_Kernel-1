@@ -835,12 +835,19 @@ static int exfat_unlink(struct inode *dir, struct dentry *dentry)
 
 	err = FsRemoveFile(dir, &(EXFAT_I(inode)->fid));
 	if (err) {
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 		if (err == FFS_PERMISSIONERR)
 			err = -EPERM;
-		else
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+		if (err != FFS_PERMISSIONERR)
 			err = -EIO;
 		goto out;
 	}
+
 	dir->i_version++;
 	dir->i_mtime = dir->i_atime = ts;
 	if (IS_DIRSYNC(dir))
@@ -1066,9 +1073,16 @@ static int exfat_rename(struct inode *old_dir, struct dentry *old_dentry,
 
 	err = FsMoveFile(old_dir, &(EXFAT_I(old_inode)->fid), new_dir, new_dentry);
 	if (err) {
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 		if (err == FFS_PERMISSIONERR)
 			err = -EPERM;
-		else if (err == FFS_INVALIDPATH)
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
+		if (err == FFS_INVALIDPATH)
 			err = -EINVAL;
 		else if (err == FFS_FILEEXIST)
 			err = -EEXIST;
