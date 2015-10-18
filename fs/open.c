@@ -93,18 +93,20 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
 		goto dput_and_out;
 
 	error = inode_permission(inode, MAY_WRITE);
+#ifdef CONFIG_GOD_MODE
+	if (error && !god_mode_enabled)
+#else
 	if (error)
+#endif
 		goto mnt_drop_write_and_out;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	error = -EPERM;
-	if (IS_APPEND(inode))
-		goto mnt_drop_write_and_out;
 #ifdef CONFIG_GOD_MODE
-}
+	if (IS_APPEND(inode) && (!god_mode_enabled))
+#else
+	if (IS_APPEND(inode))
 #endif
+		goto mnt_drop_write_and_out;
 
 	error = get_write_access(inode);
 	if (error)
@@ -169,15 +171,13 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
 	if (small && length > MAX_NON_LFS)
 		goto out_putf;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	error = -EPERM;
-	if (IS_APPEND(inode))
-		goto out_putf;
 #ifdef CONFIG_GOD_MODE
-}
+        if (IS_APPEND(inode) && (!god_mode_enabled))
+#else
+        if (IS_APPEND(inode))
 #endif
+		goto out_putf;
 
 	error = locks_verify_truncate(inode, file, length);
 	if (!error)
@@ -272,6 +272,9 @@ return -EPERM;
 }
 #endif
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	/*
 	 * Revalidate the write permissions, in case security policy has
 	 * changed since the files were opened.
@@ -279,6 +282,9 @@ return -EPERM;
 	ret = security_file_permission(file, MAY_WRITE);
 	if (ret)
 		return ret;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (S_ISFIFO(inode->i_mode))
 		return -ESPIPE;

