@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/ceph/ceph_debug.h>
 
 #include <linux/sort.h>

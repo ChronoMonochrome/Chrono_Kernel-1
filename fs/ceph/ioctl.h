@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef FS_CEPH_IOCTL_H
 #define FS_CEPH_IOCTL_H
 

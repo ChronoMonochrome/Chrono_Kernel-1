@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (c) 2008, Christoph Hellwig
  * All Rights Reserved.

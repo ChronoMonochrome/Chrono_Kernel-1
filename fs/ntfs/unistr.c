@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * unistr.c - NTFS Unicode string handling. Part of the Linux-NTFS project.
  *

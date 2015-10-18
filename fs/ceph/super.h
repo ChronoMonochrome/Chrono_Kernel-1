@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef _FS_CEPH_SUPER_H
 #define _FS_CEPH_SUPER_H
 

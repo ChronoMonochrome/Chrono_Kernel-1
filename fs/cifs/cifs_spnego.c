@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *   fs/cifs/cifs_spnego.c -- SPNEGO upcall management for CIFS
  *

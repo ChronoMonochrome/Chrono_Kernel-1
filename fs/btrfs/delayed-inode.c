@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (C) 2011 Fujitsu.  All rights reserved.
  * Written by Miao Xie <miaox@cn.fujitsu.com>

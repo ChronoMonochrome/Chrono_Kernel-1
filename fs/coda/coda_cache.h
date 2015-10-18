@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Coda filesystem -- Linux Minicache
  *
  * Copyright (C) 1989 - 1997 Carnegie Mellon University

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (C) 1995-1997 Olaf Kirch <okir@monad.swb.de>
  */

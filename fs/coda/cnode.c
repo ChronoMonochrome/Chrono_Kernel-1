@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* cnode related routines for the coda kernel code
    (C) 1996 Peter Braam
    */

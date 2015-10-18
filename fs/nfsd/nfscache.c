@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Request reply cache. This is currently a global cache, but this may
  * change in the future and be a per-client cache.

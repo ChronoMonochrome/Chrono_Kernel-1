@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * segment.h - NILFS Segment constructor prototypes and definitions
  *

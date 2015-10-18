@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* getroot.c: get the root dentry for an NFS mount
  *
  * Copyright (C) 2006 Red Hat, Inc. All Rights Reserved.

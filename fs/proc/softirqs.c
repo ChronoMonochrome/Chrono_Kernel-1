@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/init.h>
 #include <linux/kernel_stat.h>
 #include <linux/proc_fs.h>

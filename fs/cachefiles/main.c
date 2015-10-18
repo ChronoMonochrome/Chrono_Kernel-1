@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Network filesystem caching backend to use cache files on a premounted
  * filesystem
  *

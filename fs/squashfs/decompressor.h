@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef DECOMPRESSOR_H
 #define DECOMPRESSOR_H
 /*

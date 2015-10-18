@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Cache page management and data I/O routines
  *
  * Copyright (C) 2004-2008 Red Hat, Inc. All Rights Reserved.

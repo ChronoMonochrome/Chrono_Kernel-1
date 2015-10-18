@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * fs/logfs/file.c	- prepare_write, commit_write and friends
  *

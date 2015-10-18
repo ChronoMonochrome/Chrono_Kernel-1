@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Request reply cache. This was heavily inspired by the
  * implementation in 4.3BSD/4.4BSD.

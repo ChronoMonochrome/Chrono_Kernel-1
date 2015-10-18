@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * bitmap.c - NTFS kernel bitmap handling.  Part of the Linux-NTFS project.
  *

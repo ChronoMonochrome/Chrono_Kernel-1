@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* client.c: NFS client sharing and management code
  *
  * Copyright (C) 2006 Red Hat, Inc. All Rights Reserved.

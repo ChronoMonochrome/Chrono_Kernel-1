@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * malloc.h - NTFS kernel memory handling. Part of the Linux-NTFS project.
  *

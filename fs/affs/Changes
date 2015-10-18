@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 (Note: I consider version numbers as cheap. That means
 that I do not like numbers like 0.1 and the like for
 things that can be used since quite some time. But

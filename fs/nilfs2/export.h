@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef NILFS_EXPORT_H
 #define NILFS_EXPORT_H
 

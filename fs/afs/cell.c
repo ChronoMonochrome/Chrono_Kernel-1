@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* AFS cell and server record management
  *
  * Copyright (C) 2002 Red Hat, Inc. All Rights Reserved.

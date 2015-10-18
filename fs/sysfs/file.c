@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * fs/sysfs/file.c - sysfs regular (text) file implementation
  *

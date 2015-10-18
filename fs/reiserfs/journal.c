@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
 ** Write ahead logging implementation copyright Chris Mason 2000
 **

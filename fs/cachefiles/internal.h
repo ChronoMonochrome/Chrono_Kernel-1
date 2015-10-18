@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* General netfs cache on cache files internal defs
  *
  * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.

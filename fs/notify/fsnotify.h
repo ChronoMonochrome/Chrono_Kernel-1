@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef __FS_NOTIFY_FSNOTIFY_H_
 #define __FS_NOTIFY_FSNOTIFY_H_
 

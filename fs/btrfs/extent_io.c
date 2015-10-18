@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/bitops.h>
 #include <linux/slab.h>
 #include <linux/bio.h>

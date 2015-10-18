@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * logfile.h - Defines for NTFS kernel journal ($LogFile) handling.  Part of
  *	       the Linux-NTFS project.

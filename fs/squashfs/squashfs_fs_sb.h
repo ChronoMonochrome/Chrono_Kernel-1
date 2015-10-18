@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef SQUASHFS_FS_SB
 #define SQUASHFS_FS_SB
 /*

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef _XFS_VNODEOPS_H
 #define _XFS_VNODEOPS_H 1
 

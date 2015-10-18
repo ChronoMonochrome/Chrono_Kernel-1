@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * lcnalloc.h - Exports for NTFS kernel cluster (de)allocation.  Part of the
  *		Linux-NTFS project.

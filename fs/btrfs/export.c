@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/fs.h>
 #include <linux/types.h>
 #include "ctree.h"

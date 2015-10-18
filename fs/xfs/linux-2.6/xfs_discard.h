@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef XFS_DISCARD_H
 #define XFS_DISCARD_H 1
 

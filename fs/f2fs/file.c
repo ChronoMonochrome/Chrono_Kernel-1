@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * fs/f2fs/file.c
  *
@@ -1062,7 +1065,15 @@ static int f2fs_ioc_shutdown(struct file *filp, unsigned long arg)
 	__u32 in;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (get_user(in, (__u32 __user *)arg))
 		return -EFAULT;
@@ -1098,7 +1109,15 @@ static int f2fs_ioc_fitrim(struct file *filp, unsigned long arg)
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (!blk_queue_discard(q))
 		return -EOPNOTSUPP;

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 
 /*
  * Keyed 32-bit hash function using TEA in a Davis-Meyer function

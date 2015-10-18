@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* inode.c: /proc/openprom handling routines
  *
  * Copyright (C) 1996-1999 Jakub Jelinek  (jakub@redhat.com)

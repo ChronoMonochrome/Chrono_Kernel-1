@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Inode operations for Coda filesystem
  * Original version: (C) 1996 P. Braam and M. Callahan

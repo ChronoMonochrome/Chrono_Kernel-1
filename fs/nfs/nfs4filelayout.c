@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  Module for the pnfs nfs4 file layout driver.
  *  Defines all I/O and Policy interface operations, plus code

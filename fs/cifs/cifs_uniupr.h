@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *   Copyright (c) International Business Machines  Corp., 2000,2002
  *

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *	fs/proc/vmcore.c Interface for accessing the crash
  * 				 dump from the system's previous life.

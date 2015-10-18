@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/module.h>

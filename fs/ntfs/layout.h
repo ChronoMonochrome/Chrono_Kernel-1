@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * layout.h - All NTFS associated on-disk structures. Part of the Linux-NTFS
  *	      project.

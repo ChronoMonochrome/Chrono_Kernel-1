@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* /proc interface for AFS
  *
  * Copyright (C) 2002 Red Hat, Inc. All Rights Reserved.

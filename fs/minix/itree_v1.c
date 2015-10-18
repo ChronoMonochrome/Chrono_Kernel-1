@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/buffer_head.h>
 #include <linux/slab.h>
 #include "minix.h"

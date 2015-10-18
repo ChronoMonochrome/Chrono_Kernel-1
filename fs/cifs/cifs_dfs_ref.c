@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *   Contains the CIFS DFS referral mounting routines used for handling
  *   traversal via DFS junction point

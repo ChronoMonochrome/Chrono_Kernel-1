@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (C) 2004, OGAWA Hirofumi
  * Released under GPL v2.

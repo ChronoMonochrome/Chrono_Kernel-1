@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/ncp_fs.h>
 #include "ncp_fs_i.h"
 #include "ncp_fs_sb.h"

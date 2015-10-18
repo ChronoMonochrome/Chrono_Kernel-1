@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef OCFS2_MMAP_H
 #define OCFS2_MMAP_H
 

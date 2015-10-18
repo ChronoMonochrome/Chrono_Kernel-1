@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* XDR types for nfsd. This is mainly a typing exercise. */
 
 #ifndef LINUX_NFSD_H

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* AFS client file system
  *
  * Copyright (C) 2002,5 Red Hat, Inc. All Rights Reserved.

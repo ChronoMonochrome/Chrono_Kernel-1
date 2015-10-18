@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (c) 2003-2006, Cluster File Systems, Inc, info@clusterfs.com
  * Written by Alex Tomas <alex@clusterfs.com>

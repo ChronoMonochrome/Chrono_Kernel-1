@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef _UFS_UFS_H
 #define _UFS_UFS_H 1
 

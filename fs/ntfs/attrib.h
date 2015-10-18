@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * attrib.h - Defines for attribute handling in NTFS Linux kernel driver.
  *	      Part of the Linux-NTFS project.

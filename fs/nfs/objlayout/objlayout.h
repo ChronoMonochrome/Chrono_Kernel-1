@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  Data types and function declerations for interfacing with the
  *  pNFS standard object layout driver.

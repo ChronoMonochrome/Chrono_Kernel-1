@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * types.h - Defines for NTFS Linux kernel driver specific types.
  *	     Part of the Linux-NTFS project.

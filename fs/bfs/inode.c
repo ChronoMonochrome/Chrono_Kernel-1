@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *	fs/bfs/inode.c
  *	BFS superblock and inode operations.

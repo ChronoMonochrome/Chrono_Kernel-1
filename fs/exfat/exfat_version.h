@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /************************************************************************/
 /*                                                                      */
 /*  PROJECT : exFAT & FAT12/16/32 File System                           */

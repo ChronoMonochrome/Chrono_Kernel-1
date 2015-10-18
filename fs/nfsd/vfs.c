@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * File operations used by nfsd. Some of these have been ripped from
  * other parts of the kernel because they weren't exported, others

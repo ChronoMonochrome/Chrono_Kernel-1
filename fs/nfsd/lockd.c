@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * This file contains all the stubs needed when communicating with lockd.
  * This level of indirection is necessary so we can run nfsd+lockd without

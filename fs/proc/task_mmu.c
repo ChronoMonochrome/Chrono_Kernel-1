@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/mm.h>
 #include <linux/hugetlb.h>
 #include <linux/huge_mm.h>

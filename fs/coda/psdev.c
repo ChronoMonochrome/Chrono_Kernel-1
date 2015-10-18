@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *      	An implementation of a loadable kernel mode driver providing
  *		multiple kernel/user space bidirectional communications links.

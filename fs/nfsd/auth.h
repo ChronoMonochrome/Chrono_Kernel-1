@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * nfsd-specific authentication stuff.
  * uid/gid mapping not yet implemented.

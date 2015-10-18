@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  Copyright (c) 2001 The Regents of the University of Michigan.
  *  All rights reserved.

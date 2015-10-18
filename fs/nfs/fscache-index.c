@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* NFS FS-Cache index structure definition
  *
  * Copyright (C) 2008 Red Hat, Inc. All Rights Reserved.

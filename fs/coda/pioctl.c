@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Pioctl operations for Coda.
  * Original version: (C) 1996 Peter Braam

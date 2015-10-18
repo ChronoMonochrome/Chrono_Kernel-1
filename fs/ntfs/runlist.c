@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /**
  * runlist.c - NTFS runlist handling code.  Part of the Linux-NTFS project.
  *

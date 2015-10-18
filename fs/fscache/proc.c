@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* FS-Cache statistics viewing interface
  *
  * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/fanotify.h>
 #include <linux/fdtable.h>
 #include <linux/fsnotify_backend.h>

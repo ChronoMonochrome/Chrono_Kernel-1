@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Some of the source code in this file came from "linux/fs/fat/misc.c".  */
 /*
  *  linux/fs/fat/misc.c

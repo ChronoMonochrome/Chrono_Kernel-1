@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Cache operations for Coda.
  * For Linux 2.1: (C) 1997 Carnegie Mellon University

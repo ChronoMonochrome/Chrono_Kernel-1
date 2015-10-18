@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* General filesystem local caching manager
  *
  * Copyright (C) 2004-2007 Red Hat, Inc. All Rights Reserved.

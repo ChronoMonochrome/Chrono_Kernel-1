@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*  linux/fs/ext3/namei.h
  *
  * Copyright (C) 2005 Simtec Electronics

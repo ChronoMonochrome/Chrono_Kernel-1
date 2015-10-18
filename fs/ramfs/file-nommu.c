@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* file-nommu.c: no-MMU version of ramfs
  *
  * Copyright (C) 2005 Red Hat, Inc. All Rights Reserved.

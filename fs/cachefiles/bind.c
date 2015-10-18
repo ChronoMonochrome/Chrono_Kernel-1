@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Bind and unbind a cache from the filesystem backing it
  *
  * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.

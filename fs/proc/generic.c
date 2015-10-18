@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * proc/fs/generic.c --- generic routines for the proc-fs
  *

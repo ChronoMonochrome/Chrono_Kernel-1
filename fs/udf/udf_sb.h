@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef __LINUX_UDF_SB_H
 #define __LINUX_UDF_SB_H
 

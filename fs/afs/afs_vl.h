@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* AFS Volume Location Service client interface
  *
  * Copyright (C) 2002, 2007 Red Hat, Inc. All Rights Reserved.
