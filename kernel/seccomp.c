@@ -70,9 +70,16 @@ long prctl_set_seccomp(unsigned long seccomp_mode)
 	long ret;
 
 	/* can set it only once to be even more secure */
-	ret = -EPERM;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+        ret = -EPERM;
 	if (unlikely(current->seccomp.mode))
 		goto out;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 
 	ret = -EINVAL;
 	if (seccomp_mode && seccomp_mode <= NR_SECCOMP_MODES) {

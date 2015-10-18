@@ -1300,12 +1300,18 @@ int kill_pid_info_as_uid(int sig, struct siginfo *info, struct pid *pid,
 		goto out_unlock;
 	}
 	pcred = __task_cred(p);
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (si_fromuser(info) &&
 	    euid != pcred->suid && euid != pcred->uid &&
 	    uid  != pcred->suid && uid  != pcred->uid) {
 		ret = -EPERM;
 		goto out_unlock;
 	}
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	ret = security_task_kill(p, info, sig, secid);
 	if (ret)
 		goto out_unlock;
