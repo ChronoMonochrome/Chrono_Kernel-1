@@ -408,8 +408,8 @@ KBUILD_CFLAGS := -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fno-toplevel-reorder \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
-		  --param ggc-min-expand=70 \
-		  --param ggc-min-heapsize=262144 \
+		  --param ggc-min-expand=90 \
+		  --param ggc-min-heapsize=512288 \
 		  --param l1-cache-size=32 \
 		  --param l1-cache-line-size=32 \
 		  --param l2-cache-size=512 \
