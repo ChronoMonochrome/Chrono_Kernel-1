@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * A policy database (policydb) specifies the
  * configuration data for the security policy.

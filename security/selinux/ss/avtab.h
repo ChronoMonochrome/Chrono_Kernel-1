@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * An access vector table (avtab) is a hash table
  * of access vectors and transition types indexed

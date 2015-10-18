@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef __ENCRYPTED_KEY_H
 #define __ENCRYPTED_KEY_H
 

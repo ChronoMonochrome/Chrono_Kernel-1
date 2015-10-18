@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Key permission checking
  *
  * Copyright (C) 2005 Red Hat, Inc. All Rights Reserved.

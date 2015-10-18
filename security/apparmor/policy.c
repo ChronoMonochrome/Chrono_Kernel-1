@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * AppArmor security module
  *
@@ -920,7 +923,15 @@ static int replacement_allowed(struct aa_profile *profile, int noreplace,
 	if (profile) {
 		if (profile->flags & PFLAG_IMMUTABLE) {
 			*info = "cannot replace immutible profile";
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		} else if (noreplace) {
 			*info = "profile already exists";
 			return -EEXIST;

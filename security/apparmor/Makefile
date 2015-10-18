@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 # Makefile for AppArmor Linux Security Module
 #
 obj-$(CONFIG_SECURITY_APPARMOR) += apparmor.o

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Interface to booleans in the security server. This is exported
  * for the selinuxfs.

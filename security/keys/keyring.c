@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Keyring handling
  *
  * Copyright (C) 2004-2005, 2008 Red Hat, Inc. All Rights Reserved.

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #ifndef __TRUSTED_KEY_H
 #define __TRUSTED_KEY_H
 
