@@ -36,7 +36,7 @@ int ip6_route_me_harder(struct sk_buff *skb)
 	skb_dst_set(skb, dst);
 
 #ifdef CONFIG_XFRM
-	if (!(((struct inet6_skb_parm*)((skb)->cb))->flags & IP6SKB_XFRM_TRANSFORMED) &&
+	if (!(IP6CB(skb)->flags & IP6SKB_XFRM_TRANSFORMED) &&
 	    xfrm_decode_session(skb, flowi6_to_flowi(&fl6), AF_INET6) == 0) {
 		skb_dst_set(skb, NULL);
 		dst = xfrm_lookup(net, dst, flowi6_to_flowi(&fl6), skb->sk, 0);

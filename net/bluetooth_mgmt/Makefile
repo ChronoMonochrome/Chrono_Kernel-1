@@ -2,8 +2,6 @@
 # Makefile for the Linux Bluetooth subsystem.
 #
 
-KBUILD_CFLAGS += -fno-strict-aliasing
-
 obj-$(CONFIG_BT)	+= bluetooth.o
 obj-$(CONFIG_BT_RFCOMM)	+= rfcomm/
 obj-$(CONFIG_BT_BNEP)	+= bnep/

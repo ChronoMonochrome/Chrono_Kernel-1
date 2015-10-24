@@ -3,8 +3,6 @@
 #
 
 CFLAGS_MODULE += $(DISABLE_LTO)
-KBUILD_CFLAGS += -fno-strict-aliasing
-CFLAGS_MODULE += -fno-strict-aliasing
 
 obj-$(CONFIG_SUNRPC) += sunrpc.o
 obj-$(CONFIG_SUNRPC_GSS) += auth_gss/

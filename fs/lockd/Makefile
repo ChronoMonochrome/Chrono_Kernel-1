@@ -3,8 +3,6 @@
 #
 
 CFLAGS_MODULE += $(DISABLE_LTO)
-CFLAGS_svclock.o += -fno-strict-aliasing
-CFLAGS_MODULE_svclock.o += -fno-strict-aliasing
 
 obj-$(CONFIG_LOCKD) += lockd.o
 

@@ -316,7 +316,7 @@ static struct sock *__udp6_lib_lookup_skb(struct sk_buff *skb,
 	if (unlikely(sk = skb_steal_sock(skb)))
 		return sk;
 	return __udp6_lib_lookup(dev_net(skb_dst(skb)->dev), &iph->saddr, sport,
-				 &iph->daddr, dport, ((struct inet6_skb_parm*)((skb)->cb))->iif,
+				 &iph->daddr, dport, inet6_iif(skb),
 				 udptable);
 }
 
@@ -420,7 +420,7 @@ try_again:
 			ipv6_addr_copy(&sin6->sin6_addr,
 				       &ipv6_hdr(skb)->saddr);
 			if (ipv6_addr_type(&sin6->sin6_addr) & IPV6_ADDR_LINKLOCAL)
-				sin6->sin6_scope_id = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+				sin6->sin6_scope_id = IP6CB(skb)->iif;
 		}
 
 	}
@@ -474,7 +474,7 @@ void __udp6_lib_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 	int err;
 
 	sk = __udp6_lib_lookup(dev_net(skb->dev), daddr, uh->dest,
-			       saddr, uh->source, ((struct inet6_skb_parm*)((skb)->cb))->iif, udptable);
+			       saddr, uh->source, inet6_iif(skb), udptable);
 	if (sk == NULL)
 		return;
 
@@ -647,7 +647,7 @@ static int __udp6_lib_mcast_deliver(struct net *net, struct sk_buff *skb,
 
 	spin_lock(&hslot->lock);
 	sk = sk_nulls_head(&hslot->head);
-	dif = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+	dif = inet6_iif(skb);
 	sk = udp_v6_mcast_next(net, sk, uh->dest, daddr, uh->source, saddr, dif);
 	while (sk) {
 		stack[count++] = sk;

@@ -40,7 +40,7 @@
 
 #include <linux/isdn/capilli.h>
 
-#include <net/bluetooth/bluetooth_mgmt_stuff.h>
+#include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/l2cap.h>
 
 #include "cmtp.h"

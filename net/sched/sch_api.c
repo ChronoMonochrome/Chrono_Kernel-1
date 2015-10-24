@@ -32,7 +32,7 @@
 
 #include <net/net_namespace.h>
 #include <net/sock.h>
-#include <linux/netlink_stuff.h>
+#include <net/netlink.h>
 #include <net/pkt_sched.h>
 
 static int qdisc_notify(struct net *net, struct sk_buff *oskb,

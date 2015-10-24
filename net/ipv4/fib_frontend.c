@@ -44,7 +44,6 @@
 #include <net/arp.h>
 #include <net/ip_fib.h>
 #include <net/rtnetlink.h>
-#include <linux/netlink_stuff.h>
 #include <net/xfrm.h>
 
 #ifndef CONFIG_IP_MULTIPLE_TABLES

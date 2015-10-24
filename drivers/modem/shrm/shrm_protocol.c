@@ -10,7 +10,6 @@
 #include <linux/hrtimer.h>
 #include <linux/delay.h>
 #include <linux/netlink.h>
-#include <linux/netlink_stuff.h>
 #include <linux/kthread.h>
 #include <linux/modem/shrm/shrm.h>
 #include <linux/modem/shrm/shrm_driver.h>

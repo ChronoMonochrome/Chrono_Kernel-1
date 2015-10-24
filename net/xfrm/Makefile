@@ -2,9 +2,6 @@
 # Makefile for the XFRM subsystem.
 #
 
-CFLAGS_xfrm_input.o += -fno-strict-aliasing
-CFLAGS_xfrm_replay.o += -fno-strict-aliasing
-
 obj-$(CONFIG_XFRM) := xfrm_policy.o xfrm_state.o xfrm_hash.o \
 		      xfrm_input.o xfrm_output.o xfrm_algo.o \
 		      xfrm_sysctl.o xfrm_replay.o

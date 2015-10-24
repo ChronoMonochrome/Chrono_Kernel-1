@@ -260,6 +260,14 @@ struct inet6_skb_parm {
 #define IP6SKB_FRAGMENTED      16
 };
 
+#define IP6CB(skb)	((struct inet6_skb_parm*)((skb)->cb))
+#define IP6CBMTU(skb)	((struct ip6_mtuinfo *)((skb)->cb))
+
+static inline int inet6_iif(const struct sk_buff *skb)
+{
+	return IP6CB(skb)->iif;
+}
+
 struct inet6_request_sock {
 	struct in6_addr		loc_addr;
 	struct in6_addr		rmt_addr;

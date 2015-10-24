@@ -129,7 +129,7 @@ _decode_session6(struct sk_buff *skb, struct flowi *fl, int reverse)
 	const struct ipv6hdr *hdr = ipv6_hdr(skb);
 	struct ipv6_opt_hdr *exthdr;
 	const unsigned char *nh = skb_network_header(skb);
-	u8 nexthdr = nh[((struct inet6_skb_parm*)((skb)->cb))->nhoff];
+	u8 nexthdr = nh[IP6CB(skb)->nhoff];
 
 	memset(fl6, 0, sizeof(struct flowi6));
 	fl6->flowi6_mark = skb->mark;

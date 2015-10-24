@@ -33,7 +33,6 @@
 #include <linux/jiffies.h>
 #include <linux/in.h>
 #include <linux/in6.h>
-#include <linux/skbuff_stuff.h>
 #include <linux/netdevice.h>
 #include <linux/init.h>
 #include <linux/jhash.h>
@@ -436,7 +435,7 @@ static void tcp_v6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 			goto out;
 
 		req = inet6_csk_search_req(sk, &prev, th->dest, &hdr->daddr,
-					   &hdr->saddr, ((struct inet6_skb_parm*)((skb)->cb))->iif);
+					   &hdr->saddr, inet6_iif(skb));
 		if (!req)
 			goto out;
 
@@ -1065,7 +1064,7 @@ static void tcp_v6_send_response(struct sk_buff *skb, u32 seq, u32 ack, u32 win,
 
 	fl6.flowi6_proto = IPPROTO_TCP;
 	if (ipv6_addr_type(&fl6.daddr) & IPV6_ADDR_LINKLOCAL)
-		fl6.flowi6_oif = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+		fl6.flowi6_oif = inet6_iif(skb);
 	fl6.flowi6_mark = IP6_REPLY_MARK(net, skb->mark);
 	fl6.fl6_dport = t1->dest;
 	fl6.fl6_sport = t1->source;
@@ -1149,13 +1148,13 @@ static struct sock *tcp_v6_hnd_req(struct sock *sk,struct sk_buff *skb)
 	/* Find possible connection requests. */
 	req = inet6_csk_search_req(sk, &prev, th->source,
 				   &ipv6_hdr(skb)->saddr,
-				   &ipv6_hdr(skb)->daddr, ((struct inet6_skb_parm*)((skb)->cb))->iif);
+				   &ipv6_hdr(skb)->daddr, inet6_iif(skb));
 	if (req)
 		return tcp_check_req(sk, skb, req, prev);
 
 	nsk = __inet6_lookup_established(sock_net(sk), &tcp_hashinfo,
 			&ipv6_hdr(skb)->saddr, th->source,
-			&ipv6_hdr(skb)->daddr, ntohs(th->dest), ((struct inet6_skb_parm*)((skb)->cb))->iif);
+			&ipv6_hdr(skb)->daddr, ntohs(th->dest), inet6_iif(skb));
 
 	if (nsk) {
 		if (nsk->sk_state != TCP_TIME_WAIT) {
@@ -1289,7 +1288,7 @@ static int tcp_v6_conn_request(struct sock *sk, struct sk_buff *skb)
 	/* So that link locals have meaning */
 	if (!sk->sk_bound_dev_if &&
 	    ipv6_addr_type(&treq->rmt_addr) & IPV6_ADDR_LINKLOCAL)
-		treq->iif = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+		treq->iif = inet6_iif(skb);
 
 	if (!isn) {
 		struct inet_peer *peer = NULL;
@@ -1421,7 +1420,7 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
 		newnp->ipv6_fl_list = NULL;
 		newnp->pktoptions  = NULL;
 		newnp->opt	   = NULL;
-		newnp->mcast_oif   = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+		newnp->mcast_oif   = inet6_iif(skb);
 		newnp->mcast_hops  = ipv6_hdr(skb)->hop_limit;
 
 		/*
@@ -1499,7 +1498,7 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
 			skb_set_owner_r(newnp->pktoptions, newsk);
 	}
 	newnp->opt	  = NULL;
-	newnp->mcast_oif  = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+	newnp->mcast_oif  = inet6_iif(skb);
 	newnp->mcast_hops = ipv6_hdr(skb)->hop_limit;
 
 	/* Clone native IPv6 options from listening socket (if any)
@@ -1702,7 +1701,7 @@ ipv6_pktoptions:
 	if (TCP_SKB_CB(opt_skb)->end_seq == tp->rcv_nxt &&
 	    !((1 << sk->sk_state) & (TCPF_CLOSE | TCPF_LISTEN))) {
 		if (np->rxopt.bits.rxinfo || np->rxopt.bits.rxoinfo)
-			np->mcast_oif = ((struct inet6_skb_parm*)((opt_skb)->cb))->iif;
+			np->mcast_oif = inet6_iif(opt_skb);
 		if (np->rxopt.bits.rxhlim || np->rxopt.bits.rxohlim)
 			np->mcast_hops = ipv6_hdr(opt_skb)->hop_limit;
 		if (ipv6_opt_accepted(sk, opt_skb)) {
@@ -1846,7 +1845,7 @@ do_time_wait:
 
 		sk2 = inet6_lookup_listener(dev_net(skb->dev), &tcp_hashinfo,
 					    &ipv6_hdr(skb)->daddr,
-					    ntohs(th->dest), ((struct inet6_skb_parm*)((skb)->cb))->iif);
+					    ntohs(th->dest), inet6_iif(skb));
 		if (sk2 != NULL) {
 			struct inet_timewait_sock *tw = inet_twsk(sk);
 			inet_twsk_deschedule(tw, &tcp_death_row);

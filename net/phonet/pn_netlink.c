@@ -24,7 +24,7 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/netlink_stuff.h>
+#include <linux/netlink.h>
 #include <linux/phonet.h>
 #include <linux/slab.h>
 #include <net/sock.h>

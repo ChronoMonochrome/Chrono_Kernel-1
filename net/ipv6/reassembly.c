@@ -515,8 +515,8 @@ static int ip6_frag_reasm(struct frag_queue *fq, struct sk_buff *prev,
 	head->dev = dev;
 	head->tstamp = fq->q.stamp;
 	ipv6_hdr(head)->payload_len = htons(payload_len);
-	((struct inet6_skb_parm*)((head)->cb))->nhoff = nhoff;
-	((struct inet6_skb_parm*)((head)->cb))->flags |= IP6SKB_FRAGMENTED;
+	IP6CB(head)->nhoff = nhoff;
+	IP6CB(head)->flags |= IP6SKB_FRAGMENTED;
 
 	/* Yes, and fold redundant checksum back. 8) */
 	if (head->ip_summed == CHECKSUM_COMPLETE)
@@ -552,7 +552,7 @@ static int ipv6_frag_rcv(struct sk_buff *skb)
 	const struct ipv6hdr *hdr = ipv6_hdr(skb);
 	struct net *net = dev_net(skb_dst(skb)->dev);
 
-	if (((struct inet6_skb_parm*)((skb)->cb))->flags & IP6SKB_FRAGMENTED)
+	if (IP6CB(skb)->flags & IP6SKB_FRAGMENTED)
 		goto fail_hdr;
 
 	IP6_INC_STATS_BH(net, ip6_dst_idev(skb_dst(skb)), IPSTATS_MIB_REASMREQDS);
@@ -574,8 +574,8 @@ static int ipv6_frag_rcv(struct sk_buff *skb)
 		IP6_INC_STATS_BH(net,
 				 ip6_dst_idev(skb_dst(skb)), IPSTATS_MIB_REASMOKS);
 
-		((struct inet6_skb_parm*)((skb)->cb))->nhoff = (u8 *)fhdr - skb_network_header(skb);
-		((struct inet6_skb_parm*)((skb)->cb))->flags |= IP6SKB_FRAGMENTED;
+		IP6CB(skb)->nhoff = (u8 *)fhdr - skb_network_header(skb);
+		IP6CB(skb)->flags |= IP6SKB_FRAGMENTED;
 		return 1;
 	}
 
@@ -588,7 +588,7 @@ static int ipv6_frag_rcv(struct sk_buff *skb)
 
 		spin_lock(&fq->q.lock);
 
-		ret = ip6_frag_queue(fq, skb, fhdr, ((struct inet6_skb_parm*)((skb)->cb))->nhoff);
+		ret = ip6_frag_queue(fq, skb, fhdr, IP6CB(skb)->nhoff);
 
 		spin_unlock(&fq->q.lock);
 		fq_put(fq);

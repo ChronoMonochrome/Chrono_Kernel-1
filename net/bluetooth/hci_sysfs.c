@@ -6,7 +6,7 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 
-#include <net/bluetooth/bluetooth_mgmt_stuff.h>
+#include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h>
 
 static struct class *bt_class;

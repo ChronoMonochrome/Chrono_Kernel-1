@@ -68,7 +68,7 @@
 #include <linux/proc_fs.h>
 #include <linux/rcupdate.h>
 #include <linux/skbuff.h>
-#include <linux/netlink_stuff.h>
+#include <linux/netlink.h>
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/slab.h>

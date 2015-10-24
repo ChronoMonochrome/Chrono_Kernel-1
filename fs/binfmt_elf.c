@@ -39,19 +39,6 @@
 #include <asm/param.h>
 #include <asm/page.h>
 
-#ifdef __KERNEL__
-#if ELF_CLASS == ELFCLASS32
-
-#define elfhdr          elf32_hdr
-
-#else
-
-#define elfhdr          elf64_hdr
-
-#endif
-#endif /* __KERNEL__ */
-
-
 static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs);
 static int load_elf_library(struct file *);
 static unsigned long elf_map(struct file *, unsigned long, struct elf_phdr *,

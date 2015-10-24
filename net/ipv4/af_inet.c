@@ -106,7 +106,7 @@
 #include <net/udp.h>
 #include <net/udplite.h>
 #include <net/ping.h>
-#include <linux/skbuff_stuff.h>
+#include <linux/skbuff.h>
 #include <net/sock.h>
 #include <net/raw.h>
 #include <net/icmp.h>
