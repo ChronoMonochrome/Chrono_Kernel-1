@@ -6,7 +6,6 @@
 #include <linux/bitops.h>
 #include <linux/etherdevice.h>
 #include <linux/slab.h>
-#include <linux/netlink_stuff.h>
 #include <net/cfg80211.h>
 #include <net/ip.h>
 #include "core.h"
