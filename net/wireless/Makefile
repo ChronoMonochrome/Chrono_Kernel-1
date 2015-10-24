@@ -1,7 +1,4 @@
 CFLAGS_scan.o += -fno-strict-aliasing
-CFLAGS_core.o += -fno-strict-aliasing
-CFLAGS_sysfs.o += -fno-strict-aliasing
-CFLAGS_util.o += -fno-strict-aliasing
 CFLAGS_nl80211.o += -fno-strict-aliasing
 
 obj-$(CONFIG_CFG80211) += cfg80211.o

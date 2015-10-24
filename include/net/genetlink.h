@@ -200,6 +200,33 @@ static inline void genlmsg_cancel(struct sk_buff *skb, void *hdr)
 }
 
 /**
+ * genlmsg_multicast_netns - multicast a netlink message to a specific netns
+ * @net: the net namespace
+ * @skb: netlink message as socket buffer
+ * @pid: own netlink pid to avoid sending to yourself
+ * @group: multicast group id
+ * @flags: allocation flags
+ */
+static inline int genlmsg_multicast_netns(struct net *net, struct sk_buff *skb,
+					  u32 pid, unsigned int group, gfp_t flags)
+{
+	return nlmsg_multicast(net->genl_sock, skb, pid, group, flags);
+}
+
+/**
+ * genlmsg_multicast - multicast a netlink message to the default netns
+ * @skb: netlink message as socket buffer
+ * @pid: own netlink pid to avoid sending to yourself
+ * @group: multicast group id
+ * @flags: allocation flags
+ */
+static inline int genlmsg_multicast(struct sk_buff *skb, u32 pid,
+				    unsigned int group, gfp_t flags)
+{
+	return genlmsg_multicast_netns(&init_net, skb, pid, group, flags);
+}
+
+/**
  * genlmsg_multicast_allns - multicast a netlink message to all net namespaces
  * @skb: netlink message as socket buffer
  * @pid: own netlink pid to avoid sending to yourself

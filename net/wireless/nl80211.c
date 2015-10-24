@@ -16,7 +16,7 @@
 #include <linux/netlink.h>
 #include <linux/etherdevice.h>
 #include <net/net_namespace.h>
-#include <net/genetlink_stuff.h>
+#include <net/genetlink.h>
 #include <net/cfg80211.h>
 #include <net/sock.h>
 #include "core.h"
