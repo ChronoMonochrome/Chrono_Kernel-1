@@ -27,7 +27,7 @@
 #include <net/inet_hashtables.h>
 #include <net/inet_timewait_sock.h>
 #include <net/inet6_hashtables.h>
-#include <linux/netlink_stuff.h>
+#include <net/netlink.h>
 
 #include <linux/inet.h>
 #include <linux/stddef.h>

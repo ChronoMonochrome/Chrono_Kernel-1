@@ -213,7 +213,7 @@ struct sock *cookie_v6_check(struct sock *sk, struct sk_buff *skb)
 	/* So that link locals have meaning */
 	if (!sk->sk_bound_dev_if &&
 	    ipv6_addr_type(&ireq6->rmt_addr) & IPV6_ADDR_LINKLOCAL)
-		ireq6->iif = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+		ireq6->iif = inet6_iif(skb);
 
 	ireq->ir_mark = inet_request_mark(sk, skb);
 

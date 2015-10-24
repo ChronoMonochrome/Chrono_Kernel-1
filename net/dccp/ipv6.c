@@ -100,7 +100,7 @@ static void dccp_v6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 
 	sk = inet6_lookup(net, &dccp_hashinfo,
 			&hdr->daddr, dh->dccph_dport,
-			&hdr->saddr, dh->dccph_sport, ((struct inet6_skb_parm*)((skb)->cb))->iif);
+			&hdr->saddr, dh->dccph_sport, inet6_iif(skb));
 
 	if (sk == NULL) {
 		ICMP6_INC_STATS_BH(net, __in6_dev_get(skb->dev),
@@ -183,7 +183,7 @@ static void dccp_v6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 
 		req = inet6_csk_search_req(sk, &prev, dh->dccph_dport,
 					   &hdr->daddr, &hdr->saddr,
-					   ((struct inet6_skb_parm*)((skb)->cb))->iif);
+					   inet6_iif(skb));
 		if (req == NULL)
 			goto out;
 
@@ -317,7 +317,7 @@ static void dccp_v6_ctl_send_reset(struct sock *sk, struct sk_buff *rxskb)
 	ipv6_addr_copy(&fl6.saddr, &rxip6h->daddr);
 
 	fl6.flowi6_proto = IPPROTO_DCCP;
-	fl6.flowi6_oif = ((struct inet6_skb_parm*)((rxskb)->cb))->iif;
+	fl6.flowi6_oif = inet6_iif(rxskb);
 	fl6.fl6_dport = dccp_hdr(skb)->dccph_dport;
 	fl6.fl6_sport = dccp_hdr(skb)->dccph_sport;
 	security_skb_classify_flow(rxskb, flowi6_to_flowi(&fl6));
@@ -355,14 +355,14 @@ static struct sock *dccp_v6_hnd_req(struct sock *sk,struct sk_buff *skb)
 							dh->dccph_sport,
 							&iph->saddr,
 							&iph->daddr,
-							((struct inet6_skb_parm*)((skb)->cb))->iif);
+							inet6_iif(skb));
 	if (req != NULL)
 		return dccp_check_req(sk, skb, req, prev);
 
 	nsk = __inet6_lookup_established(sock_net(sk), &dccp_hashinfo,
 					 &iph->saddr, dh->dccph_sport,
 					 &iph->daddr, ntohs(dh->dccph_dport),
-					 ((struct inet6_skb_parm*)((skb)->cb))->iif);
+					 inet6_iif(skb));
 	if (nsk != NULL) {
 		if (nsk->sk_state != DCCP_TIME_WAIT) {
 			bh_lock_sock(nsk);
@@ -433,7 +433,7 @@ static int dccp_v6_conn_request(struct sock *sk, struct sk_buff *skb)
 	/* So that link locals have meaning */
 	if (!sk->sk_bound_dev_if &&
 	    ipv6_addr_type(&ireq6->rmt_addr) & IPV6_ADDR_LINKLOCAL)
-		ireq6->iif = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+		ireq6->iif = inet6_iif(skb);
 
 	/*
 	 * Step 3: Process LISTEN state
@@ -497,7 +497,7 @@ static struct sock *dccp_v6_request_recv_sock(struct sock *sk,
 		newsk->sk_backlog_rcv = dccp_v4_do_rcv;
 		newnp->pktoptions  = NULL;
 		newnp->opt	   = NULL;
-		newnp->mcast_oif   = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+		newnp->mcast_oif   = inet6_iif(skb);
 		newnp->mcast_hops  = ipv6_hdr(skb)->hop_limit;
 
 		/*
@@ -583,7 +583,7 @@ static struct sock *dccp_v6_request_recv_sock(struct sock *sk,
 			skb_set_owner_r(newnp->pktoptions, newsk);
 	}
 	newnp->opt	  = NULL;
-	newnp->mcast_oif  = ((struct inet6_skb_parm*)((skb)->cb))->iif;
+	newnp->mcast_oif  = inet6_iif(skb);
 	newnp->mcast_hops = ipv6_hdr(skb)->hop_limit;
 
 	/*

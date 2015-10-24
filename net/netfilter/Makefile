@@ -1,17 +1,3 @@
-CFLAGS_nf_conntrack_core.o += -fno-strict-aliasing
-CFLAGS_nf_conntrack_proto_tcp.o += -fno-strict-aliasing
-CFLAGS_nfnetlink_queue.o += -fno-strict-aliasing
-CFLAGS_nfnetlink_log.o  += -fno-strict-aliasing
-CFLAGS_nf_conntrack_netlink.o += -fno-strict-aliasing
-CFLAGS_nf_conntrack_ftp.o += -fno-strict-aliasing
-CFLAGS_nf_tproxy_core.o += -fno-strict-aliasing
-CFLAGS_xt_tcpudp.o += -fno-strict-aliasing
-CFLAGS_xt_TPROXY.o += -fno-strict-aliasing
-CFLAGS_xt_TCPMSS.o += -fno-strict-aliasing
-CFLAGS_xt_qtaguid.o += -fno-strict-aliasing
-CFLAGS_xt_quota2.o += -fno-strict-aliasing
-CFLAGS_xt_socket.o += -fno-strict-aliasing
-
 netfilter-objs := core.o nf_log.o nf_queue.o nf_sockopt.o
 
 nf_conntrack-y	:= nf_conntrack_core.o nf_conntrack_standalone.o nf_conntrack_expect.o nf_conntrack_helper.o nf_conntrack_proto.o nf_conntrack_l3proto_generic.o nf_conntrack_proto_generic.o nf_conntrack_proto_tcp.o nf_conntrack_proto_udp.o nf_conntrack_extend.o nf_conntrack_acct.o

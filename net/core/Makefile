@@ -2,12 +2,6 @@
 # Makefile for the Linux networking core.
 #
 
-#CFLAGS_sock.o += -fno-strict-aliasing
-#CFLAGS_skbuff.o += -fno-strict-aliasing
-#CFLAGS_dev.o += -fno-strict-aliasing
-
-KBUILD_CFLAGS += -fno-strict-aliasing
-
 obj-y := sock.o request_sock.o skbuff.o iovec.o datagram.o stream.o scm.o \
 	 gen_stats.o gen_estimator.o net_namespace.o secure_seq.o
 

@@ -94,7 +94,7 @@
 #include <linux/etherdevice.h>
 #include <linux/ethtool.h>
 #include <linux/notifier.h>
-#include <linux/skbuff_stuff.h>
+#include <linux/skbuff.h>
 #include <net/net_namespace.h>
 #include <net/sock.h>
 #include <linux/rtnetlink.h>

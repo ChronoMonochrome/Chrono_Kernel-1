@@ -51,7 +51,6 @@
 #include <net/pkt_sched.h>
 #include <net/fib_rules.h>
 #include <net/rtnetlink.h>
-#include <linux/netlink_stuff.h>
 #include <net/net_namespace.h>
 
 struct rtnl_link {

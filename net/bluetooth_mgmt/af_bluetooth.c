@@ -38,7 +38,7 @@
 #include <asm/ioctls.h>
 #include <linux/kmod.h>
 
-#include <net/bluetooth/bluetooth_mgmt_stuff.h>
+#include <net/bluetooth/bluetooth.h>
 
 #ifdef CONFIG_ANDROID_PARANOID_NETWORK
 #include <linux/android_aid.h>

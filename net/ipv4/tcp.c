@@ -252,7 +252,7 @@
 #include <linux/poll.h>
 #include <linux/init.h>
 #include <linux/fs.h>
-#include <linux/skbuff_stuff.h>
+#include <linux/skbuff.h>
 #include <linux/scatterlist.h>
 #include <linux/splice.h>
 #include <linux/net.h>

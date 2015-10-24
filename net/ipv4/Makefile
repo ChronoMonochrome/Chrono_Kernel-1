@@ -2,14 +2,7 @@
 # Makefile for the Linux TCP/IP (INET) layer.
 #
 
-#CFLAGS_route.o += -fno-strict-aliasing
-#CFLAGS_ip_input.o += -fno-strict-aliasing
-#CFLAGS_ip_fragment.o += -fno-strict-aliasing
-#CFLAGS_ip_forward.o += -fno-strict-aliasing
-
-KBUILD_CFLAGS += -fno-strict-aliasing
-
-obj-y := route.o inetpeer.o protocol.o \
+obj-y     := route.o inetpeer.o protocol.o \
 	     ip_input.o ip_fragment.o ip_forward.o ip_options.o \
 	     ip_output.o ip_sockglue.o inet_hashtables.o \
 	     inet_timewait_sock.o inet_connection_sock.o \

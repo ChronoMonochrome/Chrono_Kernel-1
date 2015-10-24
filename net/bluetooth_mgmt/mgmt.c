@@ -27,7 +27,7 @@
 #include <linux/module.h>
 #include <asm/unaligned.h>
 
-#include <net/bluetooth/bluetooth_mgmt_stuff.h>
+#include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h>
 #include <net/bluetooth/mgmt.h>
 #include <net/bluetooth/smp.h>

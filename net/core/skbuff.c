@@ -50,7 +50,7 @@
 #include <net/pkt_sched.h>
 #endif
 #include <linux/string.h>
-#include <linux/skbuff_stuff.h>
+#include <linux/skbuff.h>
 #include <linux/splice.h>
 #include <linux/cache.h>
 #include <linux/rtnetlink.h>

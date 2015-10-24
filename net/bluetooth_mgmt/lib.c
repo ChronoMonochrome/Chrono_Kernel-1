@@ -31,7 +31,7 @@
 #include <linux/string.h>
 #include <asm/errno.h>
 
-#include <net/bluetooth/bluetooth_mgmt_stuff.h>
+#include <net/bluetooth/bluetooth.h>
 
 #ifdef CONFIG_BT_CG2900
 #define CMP_OFFSET 3

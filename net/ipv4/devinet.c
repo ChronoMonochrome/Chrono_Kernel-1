@@ -45,7 +45,7 @@
 #include <linux/inet.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
-#include <linux/skbuff_stuff.h>
+#include <linux/skbuff.h>
 #include <linux/init.h>
 #include <linux/notifier.h>
 #include <linux/inetdevice.h>
@@ -63,7 +63,6 @@
 #include <net/route.h>
 #include <net/ip_fib.h>
 #include <net/rtnetlink.h>
-#include <linux/netlink_stuff.h>
 #include <net/net_namespace.h>
 
 #include "fib_lookup.h"

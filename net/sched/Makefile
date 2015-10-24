@@ -2,9 +2,6 @@
 # Makefile for the Linux Traffic Control Unit.
 #
 
-CFLAGS_sch_api.o += -fno-strict-aliasing
-CFLAGS_act_api.o += -fno-strict-aliasing
-CFLAGS_cls_api.o += -fno-strict-aliasing
 obj-y	:= sch_generic.o sch_mq.o
 
 obj-$(CONFIG_NET_SCHED)		+= sch_api.o sch_blackhole.o

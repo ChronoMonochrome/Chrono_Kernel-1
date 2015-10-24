@@ -13,8 +13,7 @@
  */
 #include <linux/list.h>
 #include <linux/proc_fs.h>
-#include <linux/skbuff_stuff.h>
-#include <linux/netlink_stuff.h>
+#include <linux/skbuff.h>
 #include <linux/spinlock.h>
 #include <asm/atomic.h>
 

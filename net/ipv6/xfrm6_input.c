@@ -31,7 +31,7 @@ EXPORT_SYMBOL(xfrm6_rcv_spi);
 
 int xfrm6_transport_finish(struct sk_buff *skb, int async)
 {
-	skb_network_header(skb)[((struct inet6_skb_parm*)((skb)->cb))->nhoff] =
+	skb_network_header(skb)[IP6CB(skb)->nhoff] =
 		XFRM_MODE_SKB_CB(skb)->protocol;
 
 #ifndef CONFIG_NETFILTER
@@ -49,7 +49,7 @@ int xfrm6_transport_finish(struct sk_buff *skb, int async)
 
 int xfrm6_rcv(struct sk_buff *skb)
 {
-	return xfrm6_rcv_spi(skb, skb_network_header(skb)[((struct inet6_skb_parm*)((skb)->cb))->nhoff],
+	return xfrm6_rcv_spi(skb, skb_network_header(skb)[IP6CB(skb)->nhoff],
 			     0);
 }
 

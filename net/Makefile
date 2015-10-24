@@ -5,8 +5,6 @@
 # Rewritten to use lists instead of if-statements.
 #
 
-CFLAGS_activity_stats.o += -fno-strict-aliasing
-
 obj-y	:= nonet.o
 
 obj-$(CONFIG_NET)		:= socket.o core/

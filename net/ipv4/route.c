@@ -105,7 +105,6 @@
 #include <net/icmp.h>
 #include <net/xfrm.h>
 #include <net/netevent.h>
-#include <linux/netlink_stuff.h>
 #include <net/rtnetlink.h>
 #ifdef CONFIG_SYSCTL
 #include <linux/sysctl.h>
