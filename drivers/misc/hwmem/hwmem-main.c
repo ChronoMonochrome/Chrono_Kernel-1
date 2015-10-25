@@ -168,7 +168,7 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 {
 	int ret;
 	pgprot_t pgprot;
-	void *alloc_kaddr = NULL;
+	void *alloc_kaddr;
 	void *vmap_addr;
 
 	if (alloc->mem_type->id != HWMEM_MEM_SCATTERED_SYS) {
@@ -238,7 +238,7 @@ struct hwmem_alloc *hwmem_alloc(size_t size, enum hwmem_alloc_flags flags,
 	struct hwmem_alloc *alloc;
 
 	if (hwdev == NULL) {
-;
+		printk(KERN_ERR "HWMEM: Badly configured\n");
 		return ERR_PTR(-ENOMSG);
 	}
 
@@ -305,8 +305,7 @@ struct hwmem_alloc *hwmem_alloc(size_t size, enum hwmem_alloc_flags flags,
 
 	list_add_tail(&alloc->list, &alloc_list);
 
-	if (alloc->mem_type->id != HWMEM_MEM_PROTECTED_SYS)
-		clear_alloc_mem(alloc);
+	clear_alloc_mem(alloc);
 
 	goto out;
 
@@ -363,7 +362,7 @@ int hwmem_pin(struct hwmem_alloc *alloc, struct hwmem_mem_chunk *mem_chunks,
 
 	if (*mem_chunks_length < 1) {
 		*mem_chunks_length = 1;
-;
+		printk(KERN_ERR "HWMEM: hwmem_pin mem_chunks_length < 1\n");
 		return -ENOSPC;
 	}
 
@@ -616,46 +615,6 @@ out:
 	return alloc;
 }
 EXPORT_SYMBOL(hwmem_resolve_by_name);
-
-struct hwmem_alloc *hwmem_resolve_by_vm_addr(void *vm_addr)
-{
-	struct hwmem_alloc *alloc;
-	struct vm_area_struct *vma;
-	struct mm_struct *mm = current->mm;
-
-	if (vm_addr == NULL)
-		return ERR_PTR(-EINVAL);
-
-	down_write(&mm->mmap_sem);
-
-	/* Find the first overlapping VMA */
-	vma = find_vma(mm, (unsigned long)vm_addr);
-	if (vma == NULL) {
-		alloc = ERR_PTR(-EINVAL);
-		goto out;
-	}
-
-	/* Check if VMA is from hwmem */
-	if (vma->vm_ops != &vm_ops) {
-		alloc = ERR_PTR(-EINVAL);
-		goto out;
-	}
-
-	/* Fetch hwmem alloc reference from VMA */
-	alloc = (struct hwmem_alloc *)vma->vm_private_data;
-	if (alloc == NULL) {
-		alloc = ERR_PTR(-EINVAL);
-		goto out;
-	}
-
-	atomic_inc(&alloc->ref_cnt);
-
-out:
-	up_write(&mm->mmap_sem);
-
-	return alloc;
-}
-EXPORT_SYMBOL(hwmem_resolve_by_vm_addr);
 
 /* Debug */
 
