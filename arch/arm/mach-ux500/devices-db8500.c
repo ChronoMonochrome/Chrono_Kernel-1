@@ -707,6 +707,7 @@ static struct cpufreq_frequency_table db8500_freq_table[] = {
                 .index = 19,
                 .frequency = CPUFREQ_TABLE_END,
         },
+/*
         [20] = {
                 .index = 20,
                 .frequency = CPUFREQ_TABLE_END,
@@ -827,210 +828,7 @@ static struct cpufreq_frequency_table db8500_freq_table[] = {
                 .index = 49,
                 .frequency = CPUFREQ_TABLE_END,
         },
-        [50] = {
-                .index = 50,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [51] = {
-                .index = 51,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [52] = {
-                .index = 52,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [53] = {
-                .index = 53,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [54] = {
-                .index = 54,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [55] = {
-                .index = 55,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [56] = {
-                .index = 56,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [57] = {
-                .index = 57,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [58] = {
-                .index = 58,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [59] = {
-                .index = 59,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [60] = {
-                .index = 60,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [61] = {
-                .index = 61,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [62] = {
-                .index = 62,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [63] = {
-                .index = 63,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [64] = {
-                .index = 64,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [65] = {
-                .index = 65,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [66] = {
-                .index = 66,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [67] = {
-                .index = 67,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [68] = {
-                .index = 68,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [69] = {
-                .index = 69,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [70] = {
-                .index = 70,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [71] = {
-                .index = 71,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [72] = {
-                .index = 72,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [73] = {
-                .index = 73,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [74] = {
-                .index = 74,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [75] = {
-                .index = 75,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [76] = {
-                .index = 76,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [77] = {
-                .index = 77,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [78] = {
-                .index = 78,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [79] = {
-                .index = 79,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [80] = {
-                .index = 80,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [81] = {
-                .index = 81,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [82] = {
-                .index = 82,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [83] = {
-                .index = 83,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [84] = {
-                .index = 84,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [85] = {
-                .index = 85,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [86] = {
-                .index = 86,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [87] = {
-                .index = 87,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [88] = {
-                .index = 88,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [89] = {
-                .index = 89,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [90] = {
-                .index = 90,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [91] = {
-                .index = 91,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [92] = {
-                .index = 92,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [93] = {
-                .index = 93,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [94] = {
-                .index = 94,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [95] = {
-                .index = 95,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [96] = {
-                .index = 96,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [97] = {
-                .index = 97,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [98] = {
-                .index = 98,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [99] = {
-                .index = 99,
-                .frequency = CPUFREQ_TABLE_END,
-        },
-        [100] = {
-                .index = 100,
-                .frequency = CPUFREQ_TABLE_END,
-        },
+*/
 #endif
 };
 struct platform_device db8500_prcmu_device = {
@@ -1040,6 +838,7 @@ struct platform_device db8500_prcmu_device = {
 	},
 };
 
+#if 0
 static struct cpufreq_frequency_table dbx540_freq_table[] = {
 	[0] = {
 		.index = 0,
@@ -1194,3 +993,4 @@ struct platform_device u9540_usecase_gov_device = {
 		}
 };
 
+#endif

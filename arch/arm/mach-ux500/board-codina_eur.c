@@ -2389,7 +2389,6 @@ static void __init codina_init_machine(void)
 #endif
 
 	platform_device_register(&db8500_prcmu_device);
-	platform_device_register(&u8500_usecase_gov_device);
 
 	u8500_init_devices();
 
