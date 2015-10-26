@@ -158,11 +158,12 @@ static struct early_suspend driver_early_suspend = {
 static int cpufreq_callback(struct notifier_block *nfb,
 		unsigned long event, void *data)
 {
+	struct cpufreq_policy *policy;
   
 	if (event != CPUFREQ_ADJUST)
 		return 0;
 	
-	struct cpufreq_policy *policy = data; 
+	policy = data; 
 	  
 	if (!is_suspend) {
 		screenon_max_cpufreq = policy->max;

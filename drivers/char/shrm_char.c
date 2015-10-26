@@ -966,7 +966,7 @@ int isa_init(struct shrm_dev *shrm)
                 if (unlikely(message_fifo == NULL)) {
                         pr_err("%s: unable to allocate message_fifo (size %d)",
                                 __func__, sizeof(u8*) * ISA_DEVICES);
-                        return;
+                        return -ENOMEM;
                 }
         }
 

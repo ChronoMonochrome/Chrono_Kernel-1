@@ -153,7 +153,7 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
 	waiter.type = RWSEM_WAITING_FOR_READ;
 	get_task_struct(tsk);
 
-	raw_spin_lock_irq(&sem->wait_lock);
+	spin_lock_irq(&sem->wait_lock);
 	if (list_empty(&sem->wait_list))
 		adjustment += RWSEM_WAITING_BIAS;
 	list_add_tail(&waiter.list, &sem->wait_list);
@@ -199,7 +199,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
 	waiter.task = tsk;
 	waiter.type = RWSEM_WAITING_FOR_WRITE;
 
-	raw_spin_lock_irq(&sem->wait_lock);
+	spin_lock_irq(&sem->wait_lock);
 	if (list_empty(&sem->wait_list))
 		adjustment += RWSEM_WAITING_BIAS;
 	list_add_tail(&waiter.list, &sem->wait_list);
@@ -229,7 +229,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
 				break;
 		}
 
-		raw_spin_unlock_irq(&sem->wait_lock);
+		spin_unlock_irq(&sem->wait_lock);
 
 		/* Block until there are no active lockers. */
 		do {
@@ -237,11 +237,11 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
 			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
 		} while ((count = sem->count) & RWSEM_ACTIVE_MASK);
 
-		raw_spin_lock_irq(&sem->wait_lock);
+		spin_lock_irq(&sem->wait_lock);
 	}
 
 	list_del(&waiter.list);
-	raw_spin_unlock_irq(&sem->wait_lock);
+	spin_unlock_irq(&sem->wait_lock);
 	tsk->state = TASK_RUNNING;
 
 	return sem;

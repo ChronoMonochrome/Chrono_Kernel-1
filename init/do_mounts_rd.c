@@ -165,7 +165,7 @@ int __init rd_load_image(char *from)
 	unsigned short rotate = 0;
 	decompress_fn decompressor = NULL;
 #if !defined(CONFIG_S390) && !defined(CONFIG_PPC_ISERIES)
-	char rotator[4] = { '|' , '/' , '-' , '\\' };
+//	char rotator[4] = { '|' , '/' , '-' , '\\' };
 #endif
 
 	out_fd = sys_open((const char __user __force *) "/dev/ram", O_RDWR, 0);

@@ -404,6 +404,7 @@ static DEFINE_MUTEX(reboot_mutex);
 
 #define REBOOT_TIMEOUT 5
 
+/*
 static int reboot_timer_expired(void *data)
 {
 	static DEFINE_MUTEX(lock);
@@ -437,6 +438,7 @@ static int reboot_timer_setup(unsigned long cmd)
 	
 	return 0;
 }
+*/
 
 /*
  * Reboot system call: for obvious reasons only root may call it,

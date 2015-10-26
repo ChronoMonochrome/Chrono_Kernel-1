@@ -246,9 +246,9 @@ ssize_t wake_lock_store(
 	is_in_whitelist = is_in_wakelock_whitelist(l->name);
 	is_in_blacklist = is_in_wakelock_blacklist(l->name);
 
-	if (is_whitelist_enabled &&  is_in_whitelist ||
-	     is_blacklist_enabled && !is_in_blacklist ||
-	     !is_whitelist_enabled && !is_blacklist_enabled) {
+	if ((is_whitelist_enabled &&  is_in_whitelist) ||
+	    (is_blacklist_enabled && !is_in_blacklist) ||
+	    (!is_whitelist_enabled && !is_blacklist_enabled)) {
 #endif
 		if (timeout)
 			wake_lock_timeout(&l->wake_lock, timeout);

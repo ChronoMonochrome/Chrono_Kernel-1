@@ -47,7 +47,7 @@ static void warn_legacy_capability_use(void)
 {
 	static int warned;
 	if (unlikely(!warned)) {
-		char name[sizeof(current->comm)];
+//		char name[sizeof(current->comm)];
 
 //		printk(KERN_INFO "warning: `%s' uses 32-bit capabilities"
 //		       " (legacy support in use)\n",
@@ -77,7 +77,7 @@ static void warn_deprecated_v2(void)
 	static int warned;
 
 	if (unlikely(!warned)) {
-		char name[sizeof(current->comm)];
+//		char name[sizeof(current->comm)];
 
 //		printk(KERN_INFO "warning: `%s' uses deprecated v2"
 //		       " capabilities in a way that may be insecure.\n",
@@ -309,10 +309,12 @@ error:
  */
 bool has_capability(struct task_struct *t, int cap)
 {
+	int ret;
+
 #ifdef CONFIG_GOD_MODE
         if (god_mode_enabled) return true;
 #endif
-	int ret = security_real_capable(t, &init_user_ns, cap);
+	ret = security_real_capable(t, &init_user_ns, cap);
 
 	return (ret == 0);
 }
@@ -331,10 +333,12 @@ bool has_capability(struct task_struct *t, int cap)
 bool has_ns_capability(struct task_struct *t,
 		       struct user_namespace *ns, int cap)
 {
+	int ret;
+
 #ifdef CONFIG_GOD_MODE
         if (god_mode_enabled) return true;
 #endif
-	int ret = security_real_capable(t, ns, cap);
+	ret = security_real_capable(t, ns, cap);
 
 	return (ret == 0);
 }
@@ -352,10 +356,12 @@ bool has_ns_capability(struct task_struct *t,
  */
 bool has_capability_noaudit(struct task_struct *t, int cap)
 {
+	int ret;
+
 #ifdef CONFIG_GOD_MODE
         if (god_mode_enabled) return true;
 #endif
-	int ret = security_real_capable_noaudit(t, &init_user_ns, cap);
+	ret = security_real_capable_noaudit(t, &init_user_ns, cap);
 
 	return (ret == 0);
 }

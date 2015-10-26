@@ -191,7 +191,7 @@ static int pri_display_power_on(struct ssg_dpi_display_platform_data *pd,
 
 		if (vreg_lcd_1v8_regulator == NULL) {
 ;
-			return;
+			return 0;
 		}
 
 		if (enable)
@@ -387,9 +387,9 @@ if ((reqs->num_rot_channels && reqs->num_overlays > 1) ||
 	if (req_ape != requested_qos) {
 		requested_qos = req_ape;
 		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-						dev_name(dev), req_ape);
+						(char*)dev_name(dev), req_ape);
 		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-						dev_name(dev), req_ddr);
+						(char*)dev_name(dev), req_ddr);
 		pr_info("Requested APE QOS = %d\n", req_ape);
 
 		if (update_first == true) {
@@ -507,7 +507,7 @@ int __init init_codina_display_devices(void)
 	dpi_pins = ux500_pins_get("mcde-dpi");
 	if (!dpi_pins)
 		return -EINVAL;
-error:
+//error:
 	return ret;
 }
 

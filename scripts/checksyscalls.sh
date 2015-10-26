@@ -204,5 +204,5 @@ sed -n -e '/^\#define/ s/[^_]*__NR_\([^[:space:]]*\).*/\
 \#endif/p' $1
 }
 
-(ignore_list && syscall_list $(dirname $0)/../arch/x86/include/asm/unistd_32.h) | \
+(ignore_list) | \
 $* -E -x c - > /dev/null

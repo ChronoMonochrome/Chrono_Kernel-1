@@ -37,7 +37,15 @@
 	||defined(CONFIG_MACH_SEC_HENDRIX)
 #define XSHUTDOWN_PRIMARY_SENSOR 142
 #define XSHUTDOWN_SECONDARY_SENSOR 64
+
+#ifdef RESET_PRIMARY_SENSOR
+#undef RESET_PRIMARY_SENSOR
+#endif
 #define RESET_PRIMARY_SENSOR	149
+
+#ifdef RESET_SECONDARY_SENSOR
+#undef RESET_SECONDARY_SENSOR
+#endif
 #define RESET_SECONDARY_SENSOR	65
 #define CAM_FLASH_EN	140
 #define CAM_FLASH_MODE	      141
@@ -50,6 +58,7 @@
 #error "Unknown machine type"
 #endif
 
+/*
 static pin_cfg_t i2c2_pins[] = {
 	GPIO8_I2C2_SDA,
 	GPIO9_I2C2_SCL
@@ -62,6 +71,7 @@ static pin_cfg_t i2c_disable_pins[] = {
 	GPIO8_GPIO | PIN_INPUT_NOPULL,
 	GPIO9_GPIO | PIN_INPUT_NOPULL,
 };
+*/
 
 #if 0
 static pin_cfg_t xshutdown_host[] = {
@@ -110,7 +120,7 @@ static char *regulator_names[] = {"vddcsi1v2"};
 static char *regulator_names[] = {"vddcsi1v2", "v_sensor_3v" , "v_sensor_1v8"};
 #endif
 
-
+#if 0
 /* This function is used to translate the physical GPIO used for reset GPIO
  * to logical IPGPIO that needs to be communicated to Firmware. so that
  * firmware can control reset GPIO of a RAW Bayer sensor */
@@ -161,6 +171,7 @@ static int mmio_get_ipgpio(struct mmio_platform_data *pdata, int gpio,
 	}
 	return err;
 }
+#endif
 
 static int mmio_clock_init(struct mmio_platform_data *pdata)
 {
@@ -235,7 +246,7 @@ static int mmio_clock_init(struct mmio_platform_data *pdata)
 	return 0;
 err_sec_ext_clk:
 	/*clk_put(extra->clk_ptr_ext[PRIMARY_CAMERA]);*/
-err_pri_ext_clk:
+//err_pri_ext_clk:
 	clk_put(extra->clk_ptr_ipi2c);
 err_ipi2c_clk:
 	clk_put(extra->clk_ptr_bml);
@@ -297,8 +308,8 @@ static int mmio_pin_cfg_init(struct mmio_platform_data *pdata)
 
 static void mmio_pin_cfg_exit(struct mmio_platform_data *pdata)
 {
-	struct mmio_board_data *extra = pdata->extra;
-	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
+	//struct mmio_board_data *extra = pdata->extra;
+	//dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 #if 0
 gpio_free(extra->xenon_charge);
 #endif
@@ -463,7 +474,7 @@ static int mmio_clock_enable(struct mmio_platform_data *pdata)
 {
 	int err = 0;
 	struct mmio_board_data *extra = pdata->extra;
-	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
+	//dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 
 #ifdef CONFIG_MACH_JANICE
 	/* Enable appropriate external clock */
@@ -547,8 +558,8 @@ static int mmio_config_xshutdown_pins(struct mmio_platform_data *pdata,
 }
 static void mmio_set_xshutdown(struct mmio_platform_data *pdata)
 {
-	struct mmio_board_data *extra = pdata->extra;
-	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
+	//struct mmio_board_data *extra = pdata->extra;
+	//dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 #if 0
 	gpio_set_value(extra->xshutdown_pins[pdata->camera_slot].gpio ,
 		(extra->xshutdown_pins[pdata->camera_slot].active_high ? 1 :

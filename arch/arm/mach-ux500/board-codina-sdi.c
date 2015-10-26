@@ -360,6 +360,7 @@ static struct stedma40_chan_cfg sdi2_dma_cfg_tx = {
 #endif
 
 
+#if 0
 static void suspend_resume_handler_sdi2(struct mmc_host *host, bool suspend)
 {
    if (suspend) {
@@ -371,6 +372,7 @@ static void suspend_resume_handler_sdi2(struct mmc_host *host, bool suspend)
 	gpio_set_value(MEM_LDO_EN_CODINA_R0_0, 1);
    }
 }
+#endif
 
 static struct mmci_platform_data ssg_sdi2_data = {
 	.ocr_mask	= MMC_VDD_165_195,

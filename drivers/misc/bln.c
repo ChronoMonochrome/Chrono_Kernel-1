@@ -154,7 +154,7 @@ static struct early_suspend bln_suspend_data = {
 	.resume = bln_late_resume,
 };
 
-static void blink_thread(void)
+static int blink_thread(void *data)
 {
 	while(bln_suspended)
 	{
@@ -163,6 +163,8 @@ static void blink_thread(void)
 		bln_disable_backlights(get_led_mask(), bln_blink_mode);
 		msleep(bln_blinkoff_delay);
 	}
+
+	return 0;
 }
 
 static void enable_led_notification(void)

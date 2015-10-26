@@ -249,6 +249,7 @@ static struct res_to_temp temp_tbl[] = {
 	{65,   9425},
 };
 
+/*
 static struct res_to_temp adc_temp_tbl[] = {
 	{-10, 780},
 	{-5, 660},
@@ -270,7 +271,7 @@ static struct res_to_temp adc_temp_tbl[] = {
 	{63, 60},
 	{65, 55},
 	{70, 48},
-};
+};*/
 
 #ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
 /*
@@ -291,6 +292,7 @@ static struct batres_vs_temp temp_to_batres_tbl[] = {
  * Note that the batres_vs_temp table must be strictly sorted by falling
  * temperature values to work.
  */
+/*
 static struct batres_vs_temp temp_to_batres_tbl[] = {
 	{ 60, 300},
 	{ 30, 300},
@@ -300,6 +302,7 @@ static struct batres_vs_temp temp_to_batres_tbl[] = {
 	{-10, 300},
 	{-20, 300},
 };
+*/
 #endif
 
 static const struct battery_type bat_type[] = {

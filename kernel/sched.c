@@ -4369,6 +4369,7 @@ pick_next_task(struct rq *rq)
 	}
 
 	BUG(); /* the idle class will always have a runnable task */
+	return (struct task_struct *)(NULL);
 }
 
 /*
@@ -6019,7 +6020,7 @@ static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
 
 void sched_show_task(struct task_struct *p)
 {
-	unsigned long free = 0;
+//	unsigned long free = 0;
 	unsigned state;
 
 	state = p->state ? __ffs(p->state) + 1 : 0;
