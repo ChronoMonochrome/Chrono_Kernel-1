@@ -309,12 +309,7 @@ error:
  */
 bool has_capability(struct task_struct *t, int cap)
 {
-	int ret;
-
-#ifdef CONFIG_GOD_MODE
-        if (god_mode_enabled) return true;
-#endif
-	ret = security_real_capable(t, &init_user_ns, cap);
+	int ret = security_real_capable(t, &init_user_ns, cap);
 
 	return (ret == 0);
 }
@@ -333,12 +328,7 @@ bool has_capability(struct task_struct *t, int cap)
 bool has_ns_capability(struct task_struct *t,
 		       struct user_namespace *ns, int cap)
 {
-	int ret;
-
-#ifdef CONFIG_GOD_MODE
-        if (god_mode_enabled) return true;
-#endif
-	ret = security_real_capable(t, ns, cap);
+	int ret = security_real_capable(t, ns, cap);
 
 	return (ret == 0);
 }
@@ -356,12 +346,7 @@ bool has_ns_capability(struct task_struct *t,
  */
 bool has_capability_noaudit(struct task_struct *t, int cap)
 {
-	int ret;
-
-#ifdef CONFIG_GOD_MODE
-        if (god_mode_enabled) return true;
-#endif
-	ret = security_real_capable_noaudit(t, &init_user_ns, cap);
+	int ret = security_real_capable_noaudit(t, &init_user_ns, cap);
 
 	return (ret == 0);
 }
@@ -378,9 +363,6 @@ bool has_capability_noaudit(struct task_struct *t, int cap)
  */
 bool capable(int cap)
 {
-#ifdef CONFIG_GOD_MODE
-        if (god_mode_enabled) return true;
-#endif
 	return ns_capable(&init_user_ns, cap);
 }
 EXPORT_SYMBOL(capable);
@@ -398,10 +380,6 @@ EXPORT_SYMBOL(capable);
  */
 bool ns_capable(struct user_namespace *ns, int cap)
 {
-#ifdef CONFIG_GOD_MODE
-	if (god_mode_enabled) return true;
-#endif
-
 	if (unlikely(!cap_valid(cap))) {
 ;
 		BUG();
@@ -425,9 +403,6 @@ EXPORT_SYMBOL(ns_capable);
  */
 bool task_ns_capable(struct task_struct *t, int cap)
 {
-#ifdef CONFIG_GOD_MODE
-        if (god_mode_enabled) return true;
-#endif
 	return ns_capable(task_cred_xxx(t, user)->user_ns, cap);
 }
 EXPORT_SYMBOL(task_ns_capable);
@@ -441,8 +416,5 @@ EXPORT_SYMBOL(task_ns_capable);
  */
 bool nsown_capable(int cap)
 {
-#ifdef CONFIG_GOD_MODE
-        if (god_mode_enabled) return true;
-#endif
 	return ns_capable(current_user_ns(), cap);
 }

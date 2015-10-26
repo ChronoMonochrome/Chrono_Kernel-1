@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #ifndef _LINUX_SECUREBITS_H
 #define _LINUX_SECUREBITS_H 1
 
@@ -10,10 +7,7 @@
    changed from user-level. */
 #define issecure_mask(X)	(1 << (X))
 #ifdef __KERNEL__
-#ifdef CONFIG_GOD_MODE
-#define issecure(X)		((issecure_mask(X) & current_cred_xxx(securebits)) || (god_mode_enabled))
-#else
-#endif /* CONFIG_GOD_MODE */
+#define issecure(X)		(issecure_mask(X) & current_cred_xxx(securebits))
 #endif
 
 #define SECUREBITS_DEFAULT 0x00000000
