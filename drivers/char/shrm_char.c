@@ -39,16 +39,21 @@ static int new_message_fifo_len = 0;
 static u8 message_fifo_rpc_messaging[SIZE_OF_FIFO];
 static u8 message_fifo_isi_messaging[10*1024];
 //static u8 message_fifo_audio_messaging[SIZE_OF_FIFO];
-static u8 message_fifo_sec_messaging[SIZE_OF_FIFO];
-static u8 message_fifo_common_messaging[SIZE_OF_FIFO];
+//static u8 message_fifo_sec_messaging[SIZE_OF_FIFO];
+//static u8 message_fifo_common_messaging[SIZE_OF_FIFO];
 //static u8 message_fifo_aulo_messaging[SIZE_OF_FIFO];
-static u8 message_fifo_ciq_messaging[SIZE_OF_FIFO];
+//static u8 message_fifo_ciq_messaging[SIZE_OF_FIFO];
 //static u8 message_fifo_rtc_messaging[SIZE_OF_FIFO];
-static u8 message_fifo_ipcctr_messaging[SIZE_OF_FIFO];
-static u8 message_fifo_ipcdata_messaging[SIZE_OF_FIFO];
+//static u8 message_fifo_ipcctr_messaging[SIZE_OF_FIFO];
+//static u8 message_fifo_ipcdata_messaging[SIZE_OF_FIFO];
 
 int fifo_audio_allocated = 0;
 int fifo_aulo_allocated = 0;
+int fifo_sec_allocated = 0;
+int fifo_common_allocated = 0;
+int fifo_ipcctr_allocated = 0;
+int fifo_ciq_allocated = 0;
+int fifo_ipcdata_allocated = 0;
 
 int shrm_allocate_mem(int idx, int alloc_flag)
 {
@@ -86,6 +91,8 @@ int shrm_free_mem(int idx, int alloc_flag)
 
 	return false;
 }
+
+
 
 static u8 wr_rpc_msg[10*1024];
 static u8 wr_sec_msg[10*1024];
@@ -211,15 +218,42 @@ void shrm_char_reset_queues(struct shrm_dev *shrm)
 static int create_queue(struct message_queue *q, u32 devicetype,
 						struct shrm_dev *shrm)
 {
-
-	if (!message_fifo[devicetype] && (devicetype ==  AUDIO_MESSAGING || devicetype == AUDIO_LOOPBACK_MESSAGING)) {
-		if (devicetype ==  AUDIO_MESSAGING)
+	if (unlikely(!message_fifo[devicetype])) {
+		switch (devicetype) {
+		case AUDIO_MESSAGING:
 			fifo_audio_allocated = shrm_allocate_mem(devicetype, fifo_audio_allocated);
-		else  fifo_aulo_allocated = shrm_allocate_mem(devicetype, fifo_aulo_allocated);
-	}
+			break;
 
-	if (!message_fifo[devicetype])
-		return -ENOMEM;
+		case SECURITY_MESSAGING:
+			fifo_sec_allocated =  shrm_allocate_mem(devicetype, fifo_sec_allocated);
+			break;
+
+		case 4:
+			fifo_common_allocated =  shrm_allocate_mem(devicetype, fifo_common_allocated);
+			break;
+
+		case 5:
+			fifo_aulo_allocated =  shrm_allocate_mem(devicetype, fifo_aulo_allocated);
+			break;
+
+		case 6:
+			fifo_ciq_allocated =  shrm_allocate_mem(devicetype, fifo_ciq_allocated);
+			break;
+
+		case 7: break;
+
+		case 8:
+			fifo_ipcctr_allocated =  shrm_allocate_mem(devicetype, fifo_ipcctr_allocated);
+			break;
+
+		case 9:
+			fifo_ipcdata_allocated =  shrm_allocate_mem(devicetype, fifo_ipcdata_allocated);
+			break;
+
+		default:
+			pr_err("[SHRM] cannot allocate memory for device %d with static allocation\n", devicetype);
+		}
+	}
 
 	q->fifo_base = message_fifo[devicetype];
 	q->size = message_fifo_len;
@@ -540,6 +574,10 @@ ssize_t isa_write(struct file *filp, const char __user *buf,
 	if (len <= 0 || buf == NULL)
 		return -EFAULT;
 	q = &isadev->dl_queue;
+
+	if (!q->fifo_base)
+		return -ENOMEM;
+
 	l2_header = shrm_get_cdev_l2header(isadev->device_id);
 	if (l2_header < 0) {
 		dev_err(shrm->dev, "failed to get L2 header\n");
@@ -551,23 +589,39 @@ ssize_t isa_write(struct file *filp, const char __user *buf,
 		dev_dbg(shrm->dev, "RPC\n");
 		addr = (void *)wr_rpc_msg;
 		break;
+
 	case AUDIO_MESSAGING:
-		dev_dbg(shrm->dev, "Audio\n");
-		addr = (void *)wr_audio_msg;
+		if (!fifo_audio_allocated)
+			return -ENOMEM;
+
+			dev_dbg(shrm->dev, "Audio\n");
+			addr = (void *)wr_audio_msg;
 		break;
 	case SECURITY_MESSAGING:
+		if (!fifo_sec_allocated)
+			return -ENOMEM;
+
 		dev_dbg(shrm->dev, "Security\n");
 		addr = (void *)wr_sec_msg;
 		break;
 	case COMMON_LOOPBACK_MESSAGING:
+		if (!fifo_common_allocated)
+			return -ENOMEM;
+
 		dev_dbg(shrm->dev, "Common loopback\n");
 		addr = isadev->addr;
 		break;
 	case AUDIO_LOOPBACK_MESSAGING:
+		if (!fifo_aulo_allocated)
+			return -ENOMEM;
+
 		dev_dbg(shrm->dev, "Audio loopback\n");
 		addr = isadev->addr;
 		break;
 	case CIQ_MESSAGING:
+		if (!fifo_ciq_allocated)
+			return -ENOMEM;
+
 		dev_dbg(shrm->dev, "CIQ\n");
 		addr = isadev->addr;
 		break;
@@ -578,10 +632,16 @@ ssize_t isa_write(struct file *filp, const char __user *buf,
 		break;
 */
 	case IPCCTRL:
+		if (!fifo_ipcctr_allocated)
+			return -ENOMEM;
+
 		dev_dbg(shrm->dev, "ipc-control\n");
 		addr = isadev->addr;
 		break;
 	case IPCDATA:
+		if (!fifo_ipcdata_allocated)
+			return -ENOMEM;
+
 		dev_dbg(shrm->dev, "ipc-data\n");
 		addr = isadev->addr;
 		break;
@@ -936,13 +996,13 @@ int isa_init(struct shrm_dev *shrm)
 	message_fifo[0] = message_fifo_isi_messaging;
 	message_fifo[1] = message_fifo_rpc_messaging;
 	//message_fifo[2] = message_fifo_audio_messaging;
- 	message_fifo[3] = message_fifo_sec_messaging;
-	message_fifo[4] = message_fifo_common_messaging;
+ 	//message_fifo[3] = message_fifo_sec_messaging;
+	//message_fifo[4] = message_fifo_common_messaging;
 	//message_fifo[5] = message_fifo_aulo_messaging;
- 	message_fifo[6] = message_fifo_ciq_messaging;
+ 	//message_fifo[6] = message_fifo_ciq_messaging;
 	//message_fifo[7] = message_fifo_rtc_messaging;
-	message_fifo[8] = message_fifo_ipcctr_messaging;
-	message_fifo[9] = message_fifo_ipcdata_messaging;
+	//message_fifo[8] = message_fifo_ipcctr_messaging;
+	//message_fifo[9] = message_fifo_ipcdata_messaging;
 
 	isa_context = kzalloc(sizeof(struct isa_driver_context),
 								GFP_KERNEL);
