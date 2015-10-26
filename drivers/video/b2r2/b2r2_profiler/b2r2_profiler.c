@@ -130,15 +130,15 @@ static void print_blt(const struct b2r2_blt_req * const req,
 		is_scale_blt(req),
 		info->pixels);
 	if (use_mpix_per_second_in_print_blts)
-		printk(KERN_ALERT "%s, MPix/s: %3i\n", tmp_str,
-			get_blt_mpix_per_second(info));
+//		printk(KERN_ALERT "%s, MPix/s: %3i\n", tmp_str,
+;
 	else
-		printk(KERN_ALERT "%s, CPU: %14lld, B2R2: %14lld, "
-			"Tot: %14lld ns\n",
-			tmp_str,
-			info->nsec_active_in_cpu,
-			info->nsec_active_in_b2r2,
-			info->total_time_nsec);
+//		printk(KERN_ALERT "%s, CPU: %14lld, B2R2: %14lld, "
+//			"Tot: %14lld ns\n",
+//			tmp_str,
+//			info->nsec_active_in_cpu,
+//			info->nsec_active_in_b2r2,
+;
 }
 
 static void print_profiler_stats(void)
@@ -147,44 +147,44 @@ static void print_profiler_stats(void)
 			(profiler_stats.num_pixels[0] > 0) &&
 			(profiler_stats.num_pixels[1] > 0)) {
 		int i;
-		printk(KERN_ALERT "\nAverage overall blit speed on "
-			"all active cores for %d jobs "
-			"(%dpx, %dus): %3i MPix/s\n",
-			profiler_stats.num_blts_done,
-			profiler_stats.accumulated_num_pixels,
-			profiler_stats.accumulated_num_usecs,
-			get_mpix_per_second(
-				profiler_stats.accumulated_num_pixels,
-				profiler_stats.accumulated_num_usecs));
+//		printk(KERN_ALERT "\nAverage overall blit speed on "
+//			"all active cores for %d jobs "
+//			"(%dpx, %dus): %3i MPix/s\n",
+//			profiler_stats.num_blts_done,
+//			profiler_stats.accumulated_num_pixels,
+//			profiler_stats.accumulated_num_usecs,
+//			get_mpix_per_second(
+//				profiler_stats.accumulated_num_pixels,
+;
 		if (drops > 0)
-			printk(KERN_ALERT "Dropped %d blits due to cache overflow\n",
-					drops);
+//			printk(KERN_ALERT "Dropped %d blits due to cache overflow\n",
+;
 		for (i = 0; i < B2R2_MAX_NBR_DEVICES; i++) {
-			printk(KERN_ALERT "Average blit speed on core%d "
-					"(%dpx, %dus): %3i MPix/s\n", i,
-					profiler_stats.num_pixels[i],
-					profiler_stats.num_usecs[i],
-					get_mpix_per_second(
-						profiler_stats.num_pixels[i],
-						profiler_stats.num_usecs[i]));
+//			printk(KERN_ALERT "Average blit speed on core%d "
+//					"(%dpx, %dus): %3i MPix/s\n", i,
+//					profiler_stats.num_pixels[i],
+//					profiler_stats.num_usecs[i],
+//					get_mpix_per_second(
+//						profiler_stats.num_pixels[i],
+;
 		}
 	} else {
-		printk(KERN_ALERT "\nAverage blit speed for %d jobs "
-			"(%dpx, %dus): %3i MPix/s\n",
-			profiler_stats.num_blts_done,
-			profiler_stats.accumulated_num_pixels,
-			profiler_stats.accumulated_num_usecs,
-			get_mpix_per_second(
-				profiler_stats.accumulated_num_pixels,
-				profiler_stats.accumulated_num_usecs));
+//		printk(KERN_ALERT "\nAverage blit speed for %d jobs "
+//			"(%dpx, %dus): %3i MPix/s\n",
+//			profiler_stats.num_blts_done,
+//			profiler_stats.accumulated_num_pixels,
+//			profiler_stats.accumulated_num_usecs,
+//			get_mpix_per_second(
+//				profiler_stats.accumulated_num_pixels,
+;
 	}
 
-	printk(KERN_ALERT "Slowest blit (%3i MPix/s):\n",
-			profiler_stats.min_mpix_per_second);
+//	printk(KERN_ALERT "Slowest blit (%3i MPix/s):\n",
+;
 	print_blt(&profiler_stats.min_blt_request,
 		&profiler_stats.min_blt_profiling_info);
-	printk(KERN_ALERT "Fastest blit (%3i MPix/s):\n",
-			profiler_stats.max_mpix_per_second);
+//	printk(KERN_ALERT "Fastest blit (%3i MPix/s):\n",
+;
 	print_blt(&profiler_stats.max_blt_request,
 		&profiler_stats.max_blt_profiling_info);
 }
