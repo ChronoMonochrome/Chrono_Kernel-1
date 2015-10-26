@@ -55,7 +55,6 @@
 #include <linux/memcontrol.h>
 #include <linux/mmu_notifier.h>
 #include <linux/migrate.h>
-#include <linux/hugetlb.h>
 #include <linux/backing-dev.h>
 
 #include <asm/tlbflush.h>
@@ -528,8 +527,6 @@ vma_address(struct page *page, struct vm_area_struct *vma)
 	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
 	unsigned long address;
 
-	if (unlikely(is_vm_hugetlb_page(vma)))
-		pgoff = page->index << huge_page_order(page_hstate(page));
 	address = vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
 	if (unlikely(address < vma->vm_start || address >= vma->vm_end)) {
 		/* page should be within @vma mapping range */
@@ -580,12 +577,6 @@ pte_t *__page_check_address(struct page *page, struct mm_struct *mm,
 	pte_t *pte;
 	spinlock_t *ptl;
 
-	if (unlikely(PageHuge(page))) {
-		pte = huge_pte_offset(mm, address);
-		ptl = &mm->page_table_lock;
-		goto check;
-	}
-
 	pgd = pgd_offset(mm, address);
 	if (!pgd_present(*pgd))
 		return NULL;
@@ -596,8 +587,6 @@ pte_t *__page_check_address(struct page *page, struct mm_struct *mm,
 
 	pmd = pmd_offset(pud, address);
 	if (!pmd_present(*pmd))
-		return NULL;
-	if (pmd_trans_huge(*pmd))
 		return NULL;
 
 	pte = pte_offset_map(pmd, address);
@@ -655,6 +644,7 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
 	struct mm_struct *mm = vma->vm_mm;
 	int referenced = 0;
 
+#if 0
 	if (unlikely(PageTransHuge(page))) {
 		pmd_t *pmd;
 
@@ -682,6 +672,7 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
 			referenced++;
 		spin_unlock(&mm->page_table_lock);
 	} else {
+#endif
 		pte_t *pte;
 		spinlock_t *ptl;
 
@@ -712,7 +703,9 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
 				referenced++;
 		}
 		pte_unmap_unlock(pte, ptl);
+#if 0
 	}
+#endif
 
 	/* Pretend the page is referenced if the task has the
 	   swap token and is in the middle of a page fault. */
@@ -1052,11 +1045,7 @@ void do_page_add_anon_rmap(struct page *page,
 {
 	int first = atomic_inc_and_test(&page->_mapcount);
 	if (first) {
-		if (!PageTransHuge(page))
-			__inc_zone_page_state(page, NR_ANON_PAGES);
-		else
-			__inc_zone_page_state(page,
-					      NR_ANON_TRANSPARENT_HUGEPAGES);
+		__inc_zone_page_state(page, NR_ANON_PAGES);
 	}
 	if (unlikely(PageKsm(page)))
 		return;
@@ -1085,10 +1074,7 @@ void page_add_new_anon_rmap(struct page *page,
 	VM_BUG_ON(address < vma->vm_start || address >= vma->vm_end);
 	SetPageSwapBacked(page);
 	atomic_set(&page->_mapcount, 0); /* increment count (starts at -1) */
-	if (!PageTransHuge(page))
-		__inc_zone_page_state(page, NR_ANON_PAGES);
-	else
-		__inc_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
+	__inc_zone_page_state(page, NR_ANON_PAGES);
 	__page_set_anon_rmap(page, vma, address, 1);
 	if (page_evictable(page, vma))
 		lru_cache_add_lru(page, LRU_ACTIVE_ANON);
@@ -1145,19 +1131,9 @@ void page_remove_rmap(struct page *page)
 	if (mapping && !mapping_cap_account_dirty(mapping) &&
 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
 		set_page_dirty(page);
-	/*
-	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
-	 * and not charged by memcg for now.
-	 */
-	if (unlikely(PageHuge(page)))
-		return;
 	if (PageAnon(page)) {
 		mem_cgroup_uncharge_page(page);
-		if (!PageTransHuge(page))
-			__dec_zone_page_state(page, NR_ANON_PAGES);
-		else
-			__dec_zone_page_state(page,
-					      NR_ANON_TRANSPARENT_HUGEPAGES);
+		__dec_zone_page_state(page, NR_ANON_PAGES);
 	} else {
 		__dec_zone_page_state(page, NR_FILE_MAPPED);
 		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
@@ -1611,7 +1587,6 @@ int try_to_unmap(struct page *page, enum ttu_flags flags)
 	int ret;
 
 	BUG_ON(!PageLocked(page));
-	VM_BUG_ON(!PageHuge(page) && PageTransHuge(page));
 
 	if (unlikely(PageKsm(page)))
 		ret = try_to_unmap_ksm(page, flags);
