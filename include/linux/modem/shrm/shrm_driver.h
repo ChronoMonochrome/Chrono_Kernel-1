@@ -33,6 +33,21 @@
 #define BOOT_DONE  (2)
 #define BOOT_UNKNOWN (3)
 
+int shrm_allocate_mem(int idx, int alloc_flag);
+int shrm_free_mem(int idx, int alloc_flag);
+enum {
+	ISI_MESSAGING = 0,
+	RPC_MESSAGING = 1,
+	AUDIO_MESSAGING = 2,
+        SECURITY_MESSAGING = 3, 
+        COMMON_LOOPBACK_MESSAGING = 4,
+        AUDIO_LOOPBACK_MESSAGING = 5,
+        CIQ_MESSAGING = 6,
+        RTC_CAL_MESSAGING = 7,
+        IPCCTRL = 8,
+        IPCDATA = 9
+};
+
 /**
  * struct shrm_dev - shrm device information
  * @ca_wake_irq:		CMT wake interrupt number
