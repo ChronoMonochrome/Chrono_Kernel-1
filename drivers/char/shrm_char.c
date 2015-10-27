@@ -38,6 +38,7 @@ static u8 message_fifo_rpc_messaging[SIZE_OF_FIFO];
 static u8 **message_fifo = NULL;
 
 int fifo_mem_lock[ISA_DEVICES];
+struct file *isa_device_filp[ISA_DEVICES];
 
 void shrm_allocate_mem(int idx)
 {
@@ -784,6 +785,126 @@ static int isa_close(struct inode *inode, struct file *filp)
 	mutex_unlock(&isa_lock);
 	return 0;
 }
+
+static int isa_close_by_idx(int dev_idx, struct file *filp)
+{
+	struct isadev_context *isadev;
+	struct shrm_dev *shrm;
+	struct isa_driver_context *isa_context;
+	u8 m;
+	int idx;
+
+	if (unlikely(dev_idx < ISI || dev_idx > IPCDAT)) {
+		pr_err("%s: can't close ISA device %d, no such device present\n", __func__, dev_idx);
+		return -EINVAL;
+	} else if (unlikely(isa_device_filp[dev_idx] == NULL && filp == NULL)) {
+                pr_err("%s: can't close ISA device %d, filp dereferences a NULL pointer\n", __func__, dev_idx);
+                return -EFAULT;
+        }
+
+	if (!isa_device_filp[dev_idx])
+		isa_device_filp[dev_idx] = filp;
+
+	isadev = isa_device_filp[dev_idx]->private_data;
+	shrm = isadev->dl_queue.shrm;
+	isa_context = shrm->isa_context;
+
+	mutex_lock(&isa_lock);
+	m = iminor(isa_device_filp[dev_idx]->f_path.dentry->d_inode);
+	idx = shrm_get_cdev_index(m);
+	if (idx < 0) {
+		dev_err(shrm->dev, "failed to get index\n");
+		mutex_unlock(&isa_lock);
+		return idx;
+	}
+	dev_dbg(shrm->dev, "isa_close %d", m);
+
+	if (atomic_dec_and_test(&isa_context->is_open[idx])) {
+		atomic_inc(&isa_context->is_open[idx]);
+		dev_err(shrm->dev, "Device not opened yet\n");
+		mutex_unlock(&isa_lock);
+		return -ENODEV;
+	}
+	atomic_set(&isa_context->is_open[idx], 1);
+
+	switch (m) {
+	case RPC_MESSAGING:
+		shrm_free_mem(RPC);
+		dev_info(shrm->dev, "Close RPC_MESSAGING Device\n");
+		break;
+	case AUDIO_MESSAGING:
+		shrm_free_mem(AUDIO);
+		dev_info(shrm->dev, "Close AUDIO_MESSAGING Device\n");
+		break;
+	case SECURITY_MESSAGING:
+		shrm_free_mem(SECURITY);
+		dev_info(shrm->dev, "CLose SECURITY_MESSAGING Device\n");
+		break;
+	case COMMON_LOOPBACK_MESSAGING:
+		shrm_free_mem(COMMON_LOOPBACK);
+		kfree(isadev->addr);
+		dev_info(shrm->dev, "Close COMMON_LOOPBACK_MESSAGING Device\n");
+		break;
+	case AUDIO_LOOPBACK_MESSAGING:
+		shrm_free_mem(AUDIO_LOOPBACK);
+		kfree(isadev->addr);
+		dev_info(shrm->dev, "Close AUDIO_LOOPBACK_MESSAGING Device\n");
+		break;
+	case CIQ_MESSAGING:
+		shrm_free_mem(CIQ);
+		kfree(isadev->addr);
+		dev_info(shrm->dev, "Close CIQ_MESSAGING Device\n");
+		break;
+	case RTC_CAL_MESSAGING:
+		shrm_free_mem(RTC_CAL);
+		dev_info(shrm->dev, "Close RTC_CAL_MESSAGING Device\n");
+		break;
+	case IPCCTRL:
+		shrm_free_mem(IPCCTR);
+		kfree(isadev->addr);
+		dev_info(shrm->dev, "Close ipc-ctrl\n");
+		break;
+	case IPCDATA:
+		shrm_free_mem(IPCDAT);
+		kfree(isadev->addr);
+		dev_info(shrm->dev, "Close ipc-data\n");
+		break;
+	default:
+		dev_info(shrm->dev, "No such device present\n");
+		mutex_unlock(&isa_lock);
+		return -ENODEV;
+	};
+	mutex_unlock(&isa_lock);
+	return 0;
+
+}
+
+static int set_close_by_idx(const char *val, struct kernel_param *kp)
+{
+        int idx = 0;
+
+        if (likely(sscanf(val, "%d", &idx) == 1) && idx > 2 && idx < ISA_DEVICES) {
+                return isa_close_by_idx(idx, NULL);
+        } else {
+                pr_err("%s: invalid input: %d\n", __func__, idx);
+                return -EINVAL;
+        }
+}
+module_param_call(shrm_close_by_idx, set_close_by_idx, NULL, NULL, 0644);
+
+static int set_free_by_idx(const char *val, struct kernel_param *kp)
+{
+        int idx = 0;
+
+        if (likely(sscanf(val, "%d", &idx) == 1) && idx > 2 && idx < ISA_DEVICES) {
+                shrm_free_mem(idx);
+        } else {
+                pr_err("%s: invalid input: %d\n", __func__, idx);
+                return -EINVAL;
+        }
+}
+module_param_call(shrm_free_by_idx, set_free_by_idx, NULL, NULL, 0644);
+
 /**
  * isa_open() -  Open device file
  * @inode:	structure is used by the kernel internally to represent files
@@ -849,15 +970,19 @@ static int isa_open(struct inode *inode, struct file *filp)
 
 	switch (m) {
 	case RPC_MESSAGING:
+		isa_device_filp[RPC] = filp;
 		dev_info(shrm->dev, "Open RPC_MESSAGING Device\n");
 		break;
 	case AUDIO_MESSAGING:
+		isa_device_filp[AUDIO] = filp;
 		dev_info(shrm->dev, "Open AUDIO_MESSAGING Device\n");
 		break;
 	case SECURITY_MESSAGING:
+		isa_device_filp[SECURITY] = filp;
 		dev_info(shrm->dev, "Open SECURITY_MESSAGING Device\n");
 		break;
 	case COMMON_LOOPBACK_MESSAGING:
+		isa_device_filp[COMMON_LOOPBACK] = filp;
 		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
 		if (!isadev->addr) {
 			mutex_unlock(&isa_lock);
@@ -866,6 +991,7 @@ static int isa_open(struct inode *inode, struct file *filp)
 		dev_info(shrm->dev, "Open COMMON_LOOPBACK_MESSAGING Device\n");
 		break;
 	case AUDIO_LOOPBACK_MESSAGING:
+		isa_device_filp[AUDIO_LOOPBACK] = filp;
 		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
 		if (!isadev->addr) {
 			mutex_unlock(&isa_lock);
@@ -874,6 +1000,7 @@ static int isa_open(struct inode *inode, struct file *filp)
 		dev_info(shrm->dev, "Open AUDIO_LOOPBACK_MESSAGING Device\n");
 		break;
 	case CIQ_MESSAGING:
+		isa_device_filp[CIQ] = filp;
 		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
 		if (!isadev->addr) {
 			mutex_unlock(&isa_lock);
@@ -882,9 +1009,11 @@ static int isa_open(struct inode *inode, struct file *filp)
 		dev_info(shrm->dev, "Open CIQ_MESSAGING Device\n");
 		break;
 	case RTC_CAL_MESSAGING:
+		isa_device_filp[RTC_CAL] = filp;
 		dev_info(shrm->dev, "Open RTC_CAL_MESSAGING Device\n");
 		break;
 	case IPCCTRL:
+		isa_device_filp[IPCCTR] = filp;
 		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
 		if (!isadev->addr) {
                         mutex_unlock(&isa_lock);
@@ -893,6 +1022,7 @@ static int isa_open(struct inode *inode, struct file *filp)
                 dev_info(shrm->dev, "Open IPCCTRL Device\n");
                 break;
 	case IPCDATA:
+		isa_device_filp[IPCDAT] = filp;
 		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
 		if (!isadev->addr) {
                         mutex_unlock(&isa_lock);
