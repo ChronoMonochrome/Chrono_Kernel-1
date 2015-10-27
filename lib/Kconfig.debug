@@ -86,7 +86,7 @@ config UNUSED_SYMBOLS
 	  you really need it, and what the merge plan to the mainline kernel for
 	  your module is.
 
-config DEBUG_FS_ENABLED
+config DEBUG_FS_ENABLE
 	bool "Debug Filesystem"
 	help
 	  debugfs is a virtual file system that kernel developers use to put
