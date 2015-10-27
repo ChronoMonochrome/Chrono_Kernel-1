@@ -62,6 +62,41 @@ static void (*set_cpu_topology_mask)(void) = default_cpu_topology_mask;
  */
 static DEFINE_PER_CPU(unsigned int, cpu_scale);
 
+
+struct cputopo_scale {
+	int scale;
+};
+
+static struct cputopo_scale cpu_power[NR_CPUS];
+
+#define CPU_TOPO_MAX_SCALING 2
+
+#define ARM_CORTEX_A9_DEFAULT_SCALE 0
+#define ARM_CORTEX_A9_POWER_SCALE 1
+
+/* This table sets the cpu_power scale of a cpu according to the sched_mc mode.
+ * The content of this table could be SoC specific so we should add a method to
+ * overwrite this default table.
+ * TODO: Study how to use DT for setting this table
+ */
+static unsigned long table_cpu_power[CPU_TOPO_MAX_SCALING] = {
+	{1024}, /* default */
+	{4096}, /* Power save mode CA9 MP */
+};
+
+static void set_power_scale(unsigned int cpuid, unsigned int idx)
+{
+	cpu_power[cpuid].scale = idx;
+	per_cpu(cpu_scale, cpuid) = table_cpu_power[cpu_power[cpuid].scale];
+	smp_wmb();
+}
+
+static int topo_cpuscale_init(void)
+{
+	/* Nothing to do right now */
+	return 0;
+}
+
 /*
  * Update the cpu power
  */
@@ -123,6 +158,8 @@ static void default_cpu_topology_mask(void)
 				}
 			}
 		}
+
+		set_power_scale(cpuid, ARM_CORTEX_A9_DEFAULT_SCALE);
 	}
 	smp_wmb();
 }
@@ -133,8 +170,12 @@ static void default_cpu_topology_mask(void)
  */
 static void power_cpu_topology_mask_CA9(void)
 {
+	unsigned int cpuid, cpu, idx;
 
-	unsigned int cpuid, cpu;
+	if (num_possible_cpus() > 2)
+		idx = ARM_CORTEX_A9_DEFAULT_SCALE;
+	else
+		idx = ARM_CORTEX_A9_POWER_SCALE;
 
 	for_each_possible_cpu(cpuid) {
 		struct cputopo_arm *cpuid_topo = &cpu_topology[cpuid];
@@ -158,6 +199,8 @@ static void power_cpu_topology_mask_CA9(void)
 				}
 			}
 		}
+
+		set_power_scale(cpuid, idx);
 	}
 	smp_wmb();
 }
@@ -194,6 +237,7 @@ static int update_cpu_topology_policy(void)
 
 	return 0;
 }
+
 /*
  * store_cpu_topology is called at boot when only one cpu is running
  * and with the mutex cpu_hotplug.lock locked, when several cpus have booted,
@@ -293,6 +337,8 @@ void init_cpu_topology(void)
 		cpumask_clear(&cpu_topo->thread_sibling);
 
 		per_cpu(cpu_scale, cpu) = SCHED_POWER_SCALE;
+
+		cpu_power[cpu].scale = ARM_CORTEX_A9_DEFAULT_SCALE;
 	}
 	smp_wmb();
 }
