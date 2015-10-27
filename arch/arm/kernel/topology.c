@@ -18,6 +18,7 @@
 #include <linux/node.h>
 #include <linux/nodemask.h>
 #include <linux/sched.h>
+#include <linux/cpumask.h>
 
 #include <asm/cputype.h>
 #include <asm/topology.h>
@@ -107,18 +108,36 @@ static void default_cpu_topology_mask(void)
 }
 
 /*
- * For Cortex-A9 MPcore dual core, we emulate a multi-package single core
- * topology in power mode.
+ * For Cortex-A9 MPcore, we emulate a multi-package topology in power mode.
+ * The goal is to gathers tasks on 1 virtual package
  */
 static void power_cpu_topology_mask_CA9(void)
 {
-	unsigned int cpuid;
+
+	unsigned int cpuid, cpu;
+
 	for_each_possible_cpu(cpuid) {
-		struct cputopo_arm *cpuid_topo = &(cpu_topology[cpuid]);
+		struct cputopo_arm *cpuid_topo = &cpu_topology[cpuid];
 
-		cpumask_set_cpu(cpuid, &cpuid_topo->core_sibling);
-		cpumask_set_cpu(cpuid, &cpuid_topo->thread_sibling);
+		for_each_possible_cpu(cpu) {
+			struct cputopo_arm *cpu_topo = &cpu_topology[cpu];
 
+			if ((cpuid_topo->socket_id == cpu_topo->socket_id)
+			&& ((cpuid & 0x1) == (cpu & 0x1))) {
+				cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
+				if (cpu != cpuid)
+					cpumask_set_cpu(cpu,
+						&cpuid_topo->core_sibling);
+
+				if (cpuid_topo->core_id == cpu_topo->core_id) {
+					cpumask_set_cpu(cpuid,
+						&cpu_topo->thread_sibling);
+					if (cpu != cpuid)
+						cpumask_set_cpu(cpu,
+							&cpuid_topo->thread_sibling);
+				}
+			}
+		}
 	}
 	smp_wmb();
 }
