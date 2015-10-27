@@ -30,74 +30,62 @@
 #define NAME "IPC_ISA"
 /* L2 header for common loopback device is 0xc0 and hence 0xdd+1 = 222*/
 #define MAX_L2_HEADERS 222
-
 #define SIZE_OF_FIFO (512*1024)
 
-static u8 **message_fifo = NULL;
-static u32 message_fifo_len = SIZE_OF_FIFO;
-static int new_message_fifo_len = 0;
+static u8 message_fifo_isi_messaging[10 * 1024];
 static u8 message_fifo_rpc_messaging[SIZE_OF_FIFO];
-static u8 message_fifo_isi_messaging[10*1024];
-//static u8 message_fifo_audio_messaging[SIZE_OF_FIFO];
-//static u8 message_fifo_sec_messaging[SIZE_OF_FIFO];
-//static u8 message_fifo_common_messaging[SIZE_OF_FIFO];
-//static u8 message_fifo_aulo_messaging[SIZE_OF_FIFO];
-//static u8 message_fifo_ciq_messaging[SIZE_OF_FIFO];
-//static u8 message_fifo_rtc_messaging[SIZE_OF_FIFO];
-//static u8 message_fifo_ipcctr_messaging[SIZE_OF_FIFO];
-//static u8 message_fifo_ipcdata_messaging[SIZE_OF_FIFO];
 
-int fifo_audio_allocated = 0;
-int fifo_aulo_allocated = 0;
-int fifo_sec_allocated = 0;
-int fifo_common_allocated = 0;
-int fifo_ipcctr_allocated = 0;
-int fifo_ciq_allocated = 0;
-int fifo_ipcdata_allocated = 0;
+static u8 **message_fifo = NULL;
 
-int shrm_allocate_mem(int idx, int alloc_flag)
+int fifo_mem_lock[ISA_DEVICES];
+
+void shrm_allocate_mem(int idx)
 {
 	u8 *new_message_fifo;
 	unsigned long mem;
 
-	if (alloc_flag || message_fifo[idx])
-		return false;
+	if (fifo_mem_lock[idx] || message_fifo[idx]) {
+		fifo_mem_lock[idx] = 0;
+		return;
+	}
 
 	mem = memblock_alloc(SIZE_OF_FIFO, PAGE_SIZE);
-	if (mem == MEMBLOCK_ERROR)
-		return false;
+	if (unlikely(mem == MEMBLOCK_ERROR)) {
+		fifo_mem_lock[idx] = 0;
+		return;
+	}
 
 	new_message_fifo = __va(mem);
 
         if (unlikely(!new_message_fifo)) {
         	pr_err("message_fifo - %d: %d bytes not available\n", idx,
                 	SIZE_OF_FIFO);
-                return false;
-        } 
+		fifo_mem_lock[idx] = 0;
+                return;
+        }
 
        	message_fifo[idx] = new_message_fifo;
+	fifo_mem_lock[idx] = 1;
 	pr_err("message_fifo - allocated %d bytes for %d device\n", SIZE_OF_FIFO, idx);
-
-	return true;
 }
 
-int shrm_free_mem(int idx, int alloc_flag)
+void shrm_free_mem(int idx)
 {
-	if (!alloc_flag || !message_fifo[idx])
-		return true;
+	if (!fifo_mem_lock[idx] || !message_fifo[idx]) {
+		fifo_mem_lock[idx] = 1;
+		return;
+	}
 
         memblock_free(__pa(message_fifo[idx]), SIZE_OF_FIFO);
 	message_fifo[idx] = NULL;
-
-	return false;
+	fifo_mem_lock[idx] = 0;
+	pr_err("message_fifo - freed %d bytes (%d device)\n", SIZE_OF_FIFO, idx);
 }
-
-
 
 static u8 wr_rpc_msg[10*1024];
 static u8 wr_sec_msg[10*1024];
 static u8 wr_audio_msg[10*1024];
-//static u8 wr_rtc_cal_msg[100];
+static u8 wr_rtc_cal_msg[100];
 
 struct map_device {
 	u8 l2_header;
@@ -190,7 +178,7 @@ void shrm_char_reset_queues(struct shrm_dev *shrm)
 		}
 
 		/* reset the msg queue pointers */
-		q->size = message_fifo_len;
+		q->size = SIZE_OF_FIFO;
 		q->readptr = 0;
 		q->writeptr = 0;
 		q->no = 0;
@@ -218,45 +206,13 @@ void shrm_char_reset_queues(struct shrm_dev *shrm)
 static int create_queue(struct message_queue *q, u32 devicetype,
 						struct shrm_dev *shrm)
 {
-	if (unlikely(!message_fifo[devicetype])) {
-		switch (devicetype) {
-		case AUDIO_MESSAGING:
-			fifo_audio_allocated = shrm_allocate_mem(devicetype, fifo_audio_allocated);
-			break;
-
-		case SECURITY_MESSAGING:
-			fifo_sec_allocated =  shrm_allocate_mem(devicetype, fifo_sec_allocated);
-			break;
-
-		case 4:
-			fifo_common_allocated =  shrm_allocate_mem(devicetype, fifo_common_allocated);
-			break;
-
-		case 5:
-			fifo_aulo_allocated =  shrm_allocate_mem(devicetype, fifo_aulo_allocated);
-			break;
-
-		case 6:
-			fifo_ciq_allocated =  shrm_allocate_mem(devicetype, fifo_ciq_allocated);
-			break;
-
-		case 7: break;
-
-		case 8:
-			fifo_ipcctr_allocated =  shrm_allocate_mem(devicetype, fifo_ipcctr_allocated);
-			break;
-
-		case 9:
-			fifo_ipcdata_allocated =  shrm_allocate_mem(devicetype, fifo_ipcdata_allocated);
-			break;
-
-		default:
-			pr_err("[SHRM] cannot allocate memory for device %d with static allocation\n", devicetype);
-		}
+	if (likely(devicetype > ISI && devicetype <= IPCDAT && devicetype != RPC)) {
+		if (unlikely(message_fifo[devicetype] == NULL))
+			shrm_allocate_mem(devicetype);
 	}
 
 	q->fifo_base = message_fifo[devicetype];
-	q->size = message_fifo_len;
+	q->size = SIZE_OF_FIFO;
 	q->readptr = 0;
 	q->writeptr = 0;
 	q->no = 0;
@@ -299,9 +255,6 @@ int add_msg_to_queue(struct message_queue *q, u32 size)
 	new_msg->offset = q->writeptr;
 	new_msg->size = size;
 	new_msg->no = q->no++;
-
-	//pr_err("q->writeptr=%llu, q->readptr=%llu, size=%llu, q->size=%llu\n",
-	//				q->writeptr, q->readptr, size, q->size);
 
 	/* check for overflow condition */
 	if (q->readptr <= q->writeptr) {
@@ -591,55 +544,55 @@ ssize_t isa_write(struct file *filp, const char __user *buf,
 		break;
 
 	case AUDIO_MESSAGING:
-		if (!fifo_audio_allocated)
+		if (!fifo_mem_lock[AUDIO])
 			return -ENOMEM;
 
 			dev_dbg(shrm->dev, "Audio\n");
 			addr = (void *)wr_audio_msg;
 		break;
 	case SECURITY_MESSAGING:
-		if (!fifo_sec_allocated)
+		if (!fifo_mem_lock[SECURITY])
 			return -ENOMEM;
 
 		dev_dbg(shrm->dev, "Security\n");
 		addr = (void *)wr_sec_msg;
 		break;
 	case COMMON_LOOPBACK_MESSAGING:
-		if (!fifo_common_allocated)
+		if (!fifo_mem_lock[COMMON_LOOPBACK])
 			return -ENOMEM;
 
 		dev_dbg(shrm->dev, "Common loopback\n");
 		addr = isadev->addr;
 		break;
 	case AUDIO_LOOPBACK_MESSAGING:
-		if (!fifo_aulo_allocated)
+		if (!fifo_mem_lock[AUDIO_LOOPBACK])
 			return -ENOMEM;
 
 		dev_dbg(shrm->dev, "Audio loopback\n");
 		addr = isadev->addr;
 		break;
 	case CIQ_MESSAGING:
-		if (!fifo_ciq_allocated)
+		if (!fifo_mem_lock[CIQ])
 			return -ENOMEM;
 
 		dev_dbg(shrm->dev, "CIQ\n");
 		addr = isadev->addr;
 		break;
-/*
 	case RTC_CAL_MESSAGING:
+		if (!fifo_mem_lock[RTC_CAL])
+                        return -ENOMEM;
 		dev_dbg(shrm->dev, "isa_write(): RTC Calibration\n");
 		addr = (void *)wr_rtc_cal_msg;
 		break;
-*/
 	case IPCCTRL:
-		if (!fifo_ipcctr_allocated)
+		if (!fifo_mem_lock[IPCCTR])
 			return -ENOMEM;
 
 		dev_dbg(shrm->dev, "ipc-control\n");
 		addr = isadev->addr;
 		break;
 	case IPCDATA:
-		if (!fifo_ipcdata_allocated)
+		if (!fifo_mem_lock[IPCDAT])
 			return -ENOMEM;
 
 		dev_dbg(shrm->dev, "ipc-data\n");
@@ -787,33 +740,39 @@ static int isa_close(struct inode *inode, struct file *filp)
 		dev_info(shrm->dev, "Close RPC_MESSAGING Device\n");
 		break;
 	case AUDIO_MESSAGING:
+		//shrm_free_mem(AUDIO);
 		dev_info(shrm->dev, "Close AUDIO_MESSAGING Device\n");
 		break;
 	case SECURITY_MESSAGING:
+		//shrm_free_mem(SECURITY);
 		dev_info(shrm->dev, "CLose SECURITY_MESSAGING Device\n");
 		break;
 	case COMMON_LOOPBACK_MESSAGING:
+		//shrm_free_mem(COMMON_LOOPBACK);
 		kfree(isadev->addr);
 		dev_info(shrm->dev, "Close COMMON_LOOPBACK_MESSAGING Device\n");
 		break;
 	case AUDIO_LOOPBACK_MESSAGING:
+		//shrm_free_mem(AUDIO_LOOPBACK);
 		kfree(isadev->addr);
 		dev_info(shrm->dev, "Close AUDIO_LOOPBACK_MESSAGING Device\n");
 		break;
 	case CIQ_MESSAGING:
+		//shrm_free_mem(CIQ);
 		kfree(isadev->addr);
 		dev_info(shrm->dev, "Close CIQ_MESSAGING Device\n");
 		break;
-/*
 	case RTC_CAL_MESSAGING:
+		//shrm_free_mem(RTC_CAL);
 		dev_info(shrm->dev, "Close RTC_CAL_MESSAGING Device\n");
 		break;
-*/
 	case IPCCTRL:
+		//shrm_free_mem(IPCCTR);
 		kfree(isadev->addr);
 		dev_info(shrm->dev, "Close ipc-ctrl\n");
 		break;
 	case IPCDATA:
+		//shrm_free_mem(IPCDAT);
 		kfree(isadev->addr);
 		dev_info(shrm->dev, "Close ipc-data\n");
 		break;
@@ -922,11 +881,9 @@ static int isa_open(struct inode *inode, struct file *filp)
 		}
 		dev_info(shrm->dev, "Open CIQ_MESSAGING Device\n");
 		break;
-/*
 	case RTC_CAL_MESSAGING:
 		dev_info(shrm->dev, "Open RTC_CAL_MESSAGING Device\n");
 		break;
-*/
 	case IPCCTRL:
 		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
 		if (!isadev->addr) {
@@ -982,6 +939,7 @@ int isa_init(struct shrm_dev *shrm)
 	int	retval, no_dev;
 	struct isadev_context *isadev;
 	struct isa_driver_context *isa_context;
+	int i;
 
 	if (message_fifo == NULL) {
                 message_fifo = (u8 **)kcalloc(ISA_DEVICES, sizeof(u8 *), GFP_KERNEL);
@@ -993,16 +951,13 @@ int isa_init(struct shrm_dev *shrm)
                 }
         }
 
+	for (i = 0; i < ISA_DEVICES; i++) {
+		message_fifo[i] = NULL;
+		fifo_mem_lock[i] = 0;
+	}
+
 	message_fifo[0] = message_fifo_isi_messaging;
 	message_fifo[1] = message_fifo_rpc_messaging;
-	//message_fifo[2] = message_fifo_audio_messaging;
- 	//message_fifo[3] = message_fifo_sec_messaging;
-	//message_fifo[4] = message_fifo_common_messaging;
-	//message_fifo[5] = message_fifo_aulo_messaging;
- 	//message_fifo[6] = message_fifo_ciq_messaging;
-	//message_fifo[7] = message_fifo_rtc_messaging;
-	//message_fifo[8] = message_fifo_ipcctr_messaging;
-	//message_fifo[9] = message_fifo_ipcdata_messaging;
 
 	isa_context = kzalloc(sizeof(struct isa_driver_context),
 								GFP_KERNEL);

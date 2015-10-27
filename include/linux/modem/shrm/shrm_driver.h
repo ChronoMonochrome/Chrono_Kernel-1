@@ -33,19 +33,19 @@
 #define BOOT_DONE  (2)
 #define BOOT_UNKNOWN (3)
 
-int shrm_allocate_mem(int idx, int alloc_flag);
-int shrm_free_mem(int idx, int alloc_flag);
+void shrm_allocate_mem(int idx);
+void shrm_free_mem(int idx);
 enum {
-	ISI_MESSAGING = 0,
-	RPC_MESSAGING = 1,
-	AUDIO_MESSAGING = 2,
-        SECURITY_MESSAGING = 3, 
-        COMMON_LOOPBACK_MESSAGING = 4,
-        AUDIO_LOOPBACK_MESSAGING = 5,
-        CIQ_MESSAGING = 6,
-        RTC_CAL_MESSAGING = 7,
-        IPCCTRL = 8,
-        IPCDATA = 9
+	ISI = 0,
+	RPC = 1,
+	AUDIO = 2,
+        SECURITY = 3, 
+        COMMON_LOOPBACK = 4,
+        AUDIO_LOOPBACK = 5,
+        CIQ = 6,
+        RTC_CAL = 7,
+        IPCCTR = 8,
+        IPCDAT = 9
 };
 
 /**

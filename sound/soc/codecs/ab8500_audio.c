@@ -3807,8 +3807,6 @@ static void ab850x_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
 /* Extended interface for codec-driver */
 
 #include <linux/modem/shrm/shrm_driver.h>
-extern int fifo_audio_allocated;
-extern int fifo_aulo_allocated;
 
 int ab850x_audio_power_control(bool power_on)
 {
@@ -3826,8 +3824,8 @@ int ab850x_audio_power_control(bool power_on)
 	ret = snd_soc_update_bits(ab850x_codec, REG_POWERUP,
                 pwr_mask, (power_on) ? pwr_mask : REG_MASK_NONE);
 
-	fifo_aulo_allocated = shrm_free_mem(AUDIO_LOOPBACK_MESSAGING, fifo_aulo_allocated);
-	fifo_audio_allocated = shrm_free_mem(AUDIO_MESSAGING, fifo_audio_allocated);
+	shrm_free_mem(AUDIO_LOOPBACK);
+	shrm_free_mem(AUDIO);
 
 	return ret;
 }
