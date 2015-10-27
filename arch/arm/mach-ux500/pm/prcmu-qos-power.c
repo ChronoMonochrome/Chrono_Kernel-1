@@ -22,7 +22,7 @@
 #include <linux/cpufreq.h>
 #include <linux/mfd/dbx500-prcmu.h>
 
-#ifdef CONFIG_DEBUG_FS
+#ifdef CONFIG_DEBUG_FS_ENABLED
 #include <linux/seq_file.h>
 #include <linux/debugfs.h>
 #endif
@@ -142,7 +142,7 @@ static struct prcmu_qos_object *prcmu_qos_array[] = {
 	&vsafe_opp_qos,
 };
 
-#ifdef CONFIG_DEBUG_FS
+#ifdef CONFIG_DEBUG_FS_ENABLED
 static int requirements_print(struct seq_file *s, struct prcmu_qos_object *qo)
 {
 	struct requirement_list *node;
@@ -1082,7 +1082,7 @@ static int __init prcmu_qos_power_init(void)
 				PRCMU_QOS_DEFAULT_VALUE);
 	}
 
-#ifdef CONFIG_DEBUG_FS
+#ifdef CONFIG_DEBUG_FS_ENABLED
 	ret = setup_debugfs();
 #endif
 
