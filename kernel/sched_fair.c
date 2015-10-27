@@ -4642,8 +4642,10 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
 	struct rq *rq;
 	int balance_cpu;
 
-	if (idle != CPU_IDLE || !this_rq->nohz_balance_kick)
+	if (idle != CPU_IDLE || !this_rq->nohz_balance_kick) {
+		this_rq->nohz_balance_kick = 0;
 		return;
+	}
 
 	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
 		if (balance_cpu == this_cpu)
