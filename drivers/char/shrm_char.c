@@ -32,7 +32,7 @@
 #define MAX_L2_HEADERS 222
 #define SIZE_OF_FIFO (512*1024)
 
-static u8 message_fifo_isi_messaging[SIZE_OF_FIFO];
+static u8 message_fifo_isi_messaging[10 * 1024];
 static u8 message_fifo_rpc_messaging[SIZE_OF_FIFO];
 
 static u8 **message_fifo = NULL;

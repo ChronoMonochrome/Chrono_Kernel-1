@@ -3806,6 +3806,8 @@ static void ab850x_codec_configure_audio_macrocell(struct snd_soc_codec *codec)
 
 /* Extended interface for codec-driver */
 
+#include <linux/modem/shrm/shrm_driver.h>
+
 int ab850x_audio_power_control(bool power_on)
 {
 	int pwr_mask = BMASK(REG_POWERUP_POWERUP) | BMASK(REG_POWERUP_ENANA);
@@ -3821,6 +3823,9 @@ int ab850x_audio_power_control(bool power_on)
 
 	ret = snd_soc_update_bits(ab850x_codec, REG_POWERUP,
                 pwr_mask, (power_on) ? pwr_mask : REG_MASK_NONE);
+
+	shrm_free_mem(AUDIO_LOOPBACK);
+	shrm_free_mem(AUDIO);
 
 	return ret;
 }
