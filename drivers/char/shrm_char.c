@@ -43,7 +43,7 @@ static u8 message_fifo_sec_messaging[SIZE_OF_FIFO];
 static u8 message_fifo_common_messaging[SIZE_OF_FIFO];
 static u8 message_fifo_aulo_messaging[SIZE_OF_FIFO];
 static u8 message_fifo_ciq_messaging[SIZE_OF_FIFO];
-//static u8 message_fifo_rtc_messaging[SIZE_OF_FIFO];
+static u8 message_fifo_rtc_messaging[SIZE_OF_FIFO];
 static u8 message_fifo_ipcctr_messaging[SIZE_OF_FIFO];
 static u8 message_fifo_ipcdata_messaging[SIZE_OF_FIFO];
 
@@ -116,7 +116,7 @@ static u8 **message_fifo = NULL;
 static u8 wr_rpc_msg[10*1024];
 static u8 wr_sec_msg[10*1024];
 static u8 wr_audio_msg[10*1024];
-//static u8 wr_rtc_cal_msg[100];
+static u8 wr_rtc_cal_msg[100];
 
 struct map_device {
 	u8 l2_header;
@@ -255,10 +255,8 @@ static int create_queue(struct message_queue *q, u32 devicetype,
                 q->fifo_base = message_fifo_aulo_messaging; break;
 	case CIQ_MESSAGING:
                 q->fifo_base = message_fifo_ciq_messaging; break;
-/*
 	case RTC_CAL_MESSAGING:
                 q->fifo_base = message_fifo_rtc_messaging; break;
-*/
 	case IPCCTRL:
                 q->fifo_base = message_fifo_ipcctr_messaging; break;
 	case IPCDATA:
@@ -615,12 +613,10 @@ ssize_t isa_write(struct file *filp, const char __user *buf,
 		dev_dbg(shrm->dev, "CIQ\n");
 		addr = isadev->addr;
 		break;
-/*
 	case RTC_CAL_MESSAGING:
 		dev_dbg(shrm->dev, "isa_write(): RTC Calibration\n");
 		addr = (void *)wr_rtc_cal_msg;
 		break;
-*/
 	case IPCCTRL:
 		dev_dbg(shrm->dev, "ipc-control\n");
 		addr = isadev->addr;
@@ -788,11 +784,9 @@ static int isa_close(struct inode *inode, struct file *filp)
 		kfree(isadev->addr);
 		dev_info(shrm->dev, "Close CIQ_MESSAGING Device\n");
 		break;
-/*
 	case RTC_CAL_MESSAGING:
 		dev_info(shrm->dev, "Close RTC_CAL_MESSAGING Device\n");
 		break;
-*/
 	case IPCCTRL:
 		kfree(isadev->addr);
 		dev_info(shrm->dev, "Close ipc-ctrl\n");
@@ -906,11 +900,9 @@ static int isa_open(struct inode *inode, struct file *filp)
 		}
 		dev_info(shrm->dev, "Open CIQ_MESSAGING Device\n");
 		break;
-/*
 	case RTC_CAL_MESSAGING:
 		dev_info(shrm->dev, "Open RTC_CAL_MESSAGING Device\n");
 		break;
-*/
 	case IPCCTRL:
 		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
 		if (!isadev->addr) {
@@ -985,9 +977,9 @@ int isa_init(struct shrm_dev *shrm)
 	message_fifo[4] = message_fifo_common_messaging;
 	message_fifo[5] = message_fifo_aulo_messaging;
  	message_fifo[6] = message_fifo_ciq_messaging;
-	//message_fifo[7] = message_fifo_rtc_messaging;
-	message_fifo[7] = message_fifo_ipcctr_messaging;
-	message_fifo[8] = message_fifo_ipcdata_messaging;
+	message_fifo[7] = message_fifo_rtc_messaging;
+	message_fifo[8] = message_fifo_ipcctr_messaging;
+	message_fifo[9] = message_fifo_ipcdata_messaging;
 
 	isa_context = kzalloc(sizeof(struct isa_driver_context),
 								GFP_KERNEL);
