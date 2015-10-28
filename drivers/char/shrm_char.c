@@ -218,9 +218,6 @@ static int create_queue(struct message_queue *q, u32 devicetype,
 		else  fifo_aulo_allocated = shrm_allocate_mem(devicetype, fifo_aulo_allocated);
 	}
 
-	if (!message_fifo[devicetype])
-		return -ENOMEM;
-
 	q->fifo_base = message_fifo[devicetype];
 	q->size = message_fifo_len;
 	q->readptr = 0;
@@ -439,9 +436,6 @@ ssize_t isa_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
 
 	q = &isadev->dl_queue;
 
-        if (!q->fifo_base)
-		return -ENOMEM;
-
 	if (shrm->msr_flag) {
 		atomic_set(&q->q_rp, 0);
 		return -ENODEV;
@@ -470,7 +464,6 @@ ssize_t isa_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
 	if ((q->readptr+msgsize) >= q->size) {
 		dev_dbg(shrm->dev, "Inside Loop Back\n");
 		psrc = (char *)buf;
-
 		size = (q->size-q->readptr);
 		/* Copy First Part of msg */
 		if (copy_to_user(psrc,
