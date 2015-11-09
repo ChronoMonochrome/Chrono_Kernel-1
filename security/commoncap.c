@@ -187,14 +187,7 @@ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
 		goto out;
 	if (ns_capable(child_cred->user->user_ns, CAP_SYS_PTRACE))
 		goto out;
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	ret = -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
-
 out:
 	rcu_read_unlock();
 	return ret;
@@ -226,13 +219,7 @@ int cap_ptrace_traceme(struct task_struct *parent)
 		goto out;
 	if (has_ns_capability(parent, child_cred->user->user_ns, CAP_SYS_PTRACE))
 		goto out;
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	ret = -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 out:
 	rcu_read_unlock();
 	return ret;
@@ -435,16 +422,9 @@ static inline int bprm_caps_from_vfs_caps(struct cpu_vfs_cap_data *caps,
 			(new->cap_bset.cap[i] & permitted) |
 			(new->cap_inheritable.cap[i] & inheritable);
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 		if (permitted & ~new->cap_permitted.cap[i])
 			/* insufficient to execute correctly */
 			ret = -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
-
 	}
 
 	/*
@@ -1008,14 +988,7 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 	 * capability-based-privilege environment.
 	 */
 	case PR_SET_SECUREBITS:
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 		error = -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
-
 		if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
 		     & (new->securebits ^ arg2))			/*[1]*/
 		    || ((new->securebits & SECURE_ALL_LOCKS & ~arg2))	/*[2]*/
@@ -1049,13 +1022,7 @@ if (!god_mode_enabled) {
 		error = -EINVAL;
 		if (arg2 > 1) /* Note, we rely on arg2 being unsigned here */
 			goto error;
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 		error = -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 		if (issecure(SECURE_KEEP_CAPS_LOCKED))
 			goto error;
 		if (arg2)
