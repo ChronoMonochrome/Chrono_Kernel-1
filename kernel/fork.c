@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/kernel/fork.c
  *
@@ -1509,15 +1506,7 @@ long do_fork(unsigned long clone_flags,
 		 */
 		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
 				!capable(CAP_SETGID))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 	}
 
 	/*

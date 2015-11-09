@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/kernel/capability.c
  *
@@ -250,15 +247,7 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
 
 	/* may only affect current now */
 	if (pid != 0 && pid != task_pid_vnr(current))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	copybytes = tocopy * sizeof(struct __user_cap_data_struct);
 	if (copybytes > sizeof(kdata))

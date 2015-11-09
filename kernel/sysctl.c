@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * sysctl.c: General linux system control interface
  *
@@ -2443,15 +2440,7 @@ static int proc_taint(struct ctl_table *table, int write,
 	int err;
 
 	if (write && !capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	t = *table;
 	t.data = &tmptaint;
@@ -2479,15 +2468,7 @@ static int proc_dointvec_minmax_sysadmin(struct ctl_table *table, int write,
 				void __user *buffer, size_t *lenp, loff_t *ppos)
 {
 	if (write && !capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	return proc_dointvec_minmax(table, write, buffer, lenp, ppos);
 }

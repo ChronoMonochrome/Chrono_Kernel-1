@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  kernel/sched.c
  *
@@ -5109,15 +5106,7 @@ SYSCALL_DEFINE1(nice, int, increment)
 		nice = 19;
 
 	if (increment < 0 && !can_nice(current, nice))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	retval = security_task_setnice(current, nice);
 	if (retval)
@@ -5263,28 +5252,12 @@ recheck:
 
 			/* can't set/change the rt policy */
 			if (policy != p->policy && !rlim_rtprio)
-				
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+				return -EPERM;
 
 			/* can't increase priority */
 			if (param->sched_priority > p->rt_priority &&
 			    param->sched_priority > rlim_rtprio)
-				
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+				return -EPERM;
 		}
 
 		/*
@@ -5293,40 +5266,16 @@ return -EPERM;
 		 */
 		if (p->policy == SCHED_IDLE && policy != SCHED_IDLE) {
 			if (!can_nice(p, TASK_NICE(p)))
-				
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+				return -EPERM;
 		}
 
 		/* can't change other user's priorities */
 		if (!check_same_owner(p))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		/* Normal users shall not reset the sched_reset_on_fork flag */
 		if (p->sched_reset_on_fork && !reset_on_fork)
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 	}
 
 	if (user) {
@@ -5373,15 +5322,7 @@ return -EPERM;
 				task_group(p)->rt_bandwidth.rt_runtime == 0 &&
 				!task_group_is_autogroup(task_group(p))) {
 			task_rq_unlock(rq, p, &flags);
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 		}
 	}
 #endif

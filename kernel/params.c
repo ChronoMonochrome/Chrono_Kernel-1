@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Helpers for initial module or kernel cmdline parsing
    Copyright (C) 2001 Rusty Russell.
 
@@ -520,15 +517,7 @@ static ssize_t param_attr_show(struct module_attribute *mattr,
 	struct param_attribute *attribute = to_param_attr(mattr);
 
 	if (!attribute->param->ops->get)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	mutex_lock(&param_lock);
 	count = attribute->param->ops->get(buf, attribute->param);
@@ -549,15 +538,7 @@ static ssize_t param_attr_store(struct module_attribute *mattr,
 	struct param_attribute *attribute = to_param_attr(mattr);
 
 	if (!attribute->param->ops->set)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	mutex_lock(&param_lock);
 	err = attribute->param->ops->set(buf, attribute->param);

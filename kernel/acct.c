@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/kernel/acct.c
  *
@@ -279,15 +276,7 @@ SYSCALL_DEFINE1(acct, const char __user *, name)
 	int error = 0;
 
 	if (!capable(CAP_SYS_PACCT))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (name) {
 		char *tmp = getname(name);

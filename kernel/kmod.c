@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
 	kmod, the new module loader (replaces kerneld)
 	Kirk Petersen
@@ -464,15 +461,7 @@ static int proc_cap_handler(struct ctl_table *table, int write,
 
 	if (write && (!capable(CAP_SETPCAP) ||
 		      !capable(CAP_SYS_MODULE)))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/*
 	 * convert from the global kernel_cap_t to the ulong array to print to

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/kernel/power/snapshot.c
  *
@@ -1789,15 +1786,7 @@ static int check_header(struct swsusp_info *info)
 		reason = "memory size";
 	if (reason) {
 ;
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 	return 0;
 }

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/kernel/sys.c
  *
@@ -449,15 +446,7 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 
 	/* We only trust the superuser with rebooting the system. */
 	if (!capable(CAP_SYS_BOOT))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/* For safety, we require "magic" arguments. */
 	if (magic1 != LINUX_REBOOT_MAGIC1 ||
@@ -1292,15 +1281,7 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
 	char tmp[__NEW_UTS_LEN];
 
 	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (len < 0 || len > __NEW_UTS_LEN)
 		return -EINVAL;
@@ -1351,15 +1332,7 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
 	char tmp[__NEW_UTS_LEN];
 
 	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (len < 0 || len > __NEW_UTS_LEN)
 		return -EINVAL;
 
@@ -1461,15 +1434,7 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
 			return -EINVAL;
 		if (resource == RLIMIT_NOFILE &&
 				new_rlim->rlim_max > sysctl_nr_open)
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 	}
 
 	/* protect tsk->signal and tsk->sighand from disappearing */
@@ -1542,15 +1507,7 @@ static int check_prlimit_permission(struct task_struct *task)
 	if (ns_capable(tcred->user->user_ns, CAP_SYS_RESOURCE))
 		return 0;
 
-	
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+	return -EPERM;
 }
 
 SYSCALL_DEFINE4(prlimit64, pid_t, pid, unsigned int, resource,
@@ -1895,15 +1852,7 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
 		case PR_SET_TIMERSLACK_PID:
 			if (current->pid != (pid_t)arg3 &&
 					!capable(CAP_SYS_NICE))
-				
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+				return -EPERM;
 			rcu_read_lock();
 			tsk = find_task_by_pid_ns((pid_t)arg3, &init_pid_ns);
 			if (tsk == NULL) {

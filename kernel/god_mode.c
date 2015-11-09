@@ -19,7 +19,6 @@
 #include <linux/sysfs.h> 
 
 unsigned int god_mode_enabled __read_mostly = 0;
-EXPORT_SYMBOL(god_mode_enabled);
 
 static ssize_t god_mode_enabled_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)

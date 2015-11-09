@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Alarmtimer interface
  *
@@ -426,15 +423,7 @@ static int alarm_timer_create(struct k_itimer *new_timer)
 		return -ENOTSUPP;
 
 	if (!capable(CAP_WAKE_ALARM))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	type = clock2alarm(new_timer->it_clock);
 	base = &alarm_bases[type];
@@ -641,15 +630,7 @@ static int alarm_timer_nsleep(const clockid_t which_clock, int flags,
 		return -ENOTSUPP;
 
 	if (!capable(CAP_WAKE_ALARM))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	alarm_init(&alarm, type, alarmtimer_nsleep_wakeup);
 
