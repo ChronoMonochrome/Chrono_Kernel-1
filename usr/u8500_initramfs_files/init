@@ -18,6 +18,7 @@ lvm=/ramdisk/lvm.cpio
 busybox insmod /ramdisk/modules/startup_reason.ko
 busybox insmod /ramdisk/modules/exfat.ko
 busybox insmod /ramdisk/modules/f2fs.ko
+busybox insmod /ramdisk/modules/snd-soc-ab8500_audio.ko
 
 if ! busybox grep -q bootmode=2 /proc/cmdline ; then
 
