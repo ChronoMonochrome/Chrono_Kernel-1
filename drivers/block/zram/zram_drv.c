@@ -45,7 +45,7 @@ static int zram_major;
 static const char *default_compressor = "lz4";
 
 /* Module params (documentation at end) */
-static unsigned int num_devices = 1;
+extern unsigned int zram_num_devices;
 
 static inline void deprecated_attr_warn(const char *name)
 {
@@ -1440,15 +1440,16 @@ static int __init zram_init(void)
 		return -EBUSY;
 	}
 
-	while (num_devices != 0) {
+	while (zram_num_devices != 0) {
 		mutex_lock(&zram_index_mutex);
 		ret = zram_add();
 		mutex_unlock(&zram_index_mutex);
 		if (ret < 0)
 			goto out_error;
-		num_devices--;
+		zram_num_devices--;
 	}
 
+	pr_err("Created %u device(s)\n", zram_num_devices);
 	return 0;
 
 out_error:
@@ -1463,9 +1464,6 @@ static void __exit zram_exit(void)
 
 module_init(zram_init);
 module_exit(zram_exit);
-
-module_param(num_devices, uint, 0);
-MODULE_PARM_DESC(num_devices, "Number of pre-created zram devices");
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
