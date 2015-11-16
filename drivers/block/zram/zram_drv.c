@@ -48,7 +48,7 @@ static const char *default_compressor = "lz4";
 #define ALLOC_ERROR_LOG_RATE_MS 1000
 
 /* Module params (documentation at end) */
-static unsigned int num_devices = 1;
+extern unsigned int zram_num_devices;
 
 static inline void deprecated_attr_warn(const char *name)
 {
@@ -1281,9 +1281,9 @@ static int __init zram_init(void)
 {
 	int ret, dev_id;
 
-	if (num_devices > max_num_devices) {
+	if (zram_num_devices > max_num_devices) {
 		pr_warn("Invalid value for num_devices: %u\n",
-				num_devices);
+				zram_num_devices);
 		return -EINVAL;
 	}
 
@@ -1294,19 +1294,19 @@ static int __init zram_init(void)
 	}
 
 	/* Allocate the device array and initialize each one */
-	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
+	zram_devices = kzalloc(zram_num_devices * sizeof(struct zram), GFP_KERNEL);
 	if (!zram_devices) {
 		unregister_blkdev(zram_major, "zram");
 		return -ENOMEM;
 	}
 
-	for (dev_id = 0; dev_id < num_devices; dev_id++) {
+	for (dev_id = 0; dev_id < zram_num_devices; dev_id++) {
 		ret = create_device(&zram_devices[dev_id], dev_id);
 		if (ret)
 			goto out_error;
 	}
 
-	pr_info("Created %u device(s)\n", num_devices);
+	pr_info("Created %u device(s)\n", zram_num_devices);
 	return 0;
 
 out_error:
@@ -1316,14 +1316,11 @@ out_error:
 
 static void __exit zram_exit(void)
 {
-	destroy_devices(num_devices);
+	destroy_devices(zram_num_devices);
 }
 
 module_init(zram_init);
 module_exit(zram_exit);
-
-module_param(num_devices, uint, 0);
-MODULE_PARM_DESC(num_devices, "Number of zram devices");
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");

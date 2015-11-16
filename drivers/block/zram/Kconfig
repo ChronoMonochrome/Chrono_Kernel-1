@@ -3,6 +3,7 @@ config ZRAM
 	depends on BLOCK && SYSFS && ZSMALLOC
 	select LZO_COMPRESS
 	select LZO_DECOMPRESS
+        select ZRAM_NUM_DEVICES
 	default n
 	help
 	  Creates virtual block devices called /dev/zramX (X = 0, 1, ...).
